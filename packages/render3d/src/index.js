@@ -30,7 +30,8 @@ function castColumn(state, angle, maxDepth = 20) {
 }
 
 export function render3D(context, state, viewport) {
-  const horizon = viewport.height * 0.52;
+  const jumpOffset = (viewport.jumpHeight ?? 0) * viewport.height * 0.18;
+  const horizon = viewport.height * 0.52 + jumpOffset;
   const fov = Math.PI / 2.8;
 
   const gradientSky = context.createLinearGradient(0, 0, 0, horizon);

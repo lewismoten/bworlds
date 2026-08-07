@@ -51,8 +51,8 @@ root.innerHTML = `
             <li>WASD or arrow keys to move smoothly</li>
             <li>Q/E to rotate in both 2D and 3D</li>
             <li>In 3D, left/right rotate unless Shift is held to strafe</li>
+            <li>In 3D, Space jumps and Enter interacts</li>
             <li>V to toggle 2D and 3D</li>
-            <li>Enter or Space to interact</li>
             <li>X to leave a place when standing on its exit</li>
           </ul>
         </div>
@@ -85,6 +85,23 @@ const state = createWorldState({
     facing: 0,
   }),
 });
+
+const motion = {
+  jumpHeight: 0,
+  isJumping: false,
+  spaceHeld: false,
+  spaceReady: true,
+  jumpVelocity: 0,
+  jumpGravity: 0.0000135,
+  jumpHoldGravityFactor: 0.38,
+  jumpHoldWindow: 260,
+  jumpHoldElapsed: 0,
+  maxJumpHeight: 0.34,
+  shortJumpVelocity: 0.00125,
+  longJumpVelocity: 0.00195,
+  longJumpThreshold: 110,
+  longJumpActivated: false,
+};
 
 drawAtlas(atlasCanvas.getContext('2d'));
 
@@ -144,6 +161,16 @@ function forwardDelta() {
 
 function handleInteraction() {
   state.interact();
+}
+
+function jump() {
+  if (state.viewMode !== '3d') return;
+  if (motion.isJumping) return;
+  motion.isJumping = true;
+  motion.jumpHeight = 0;
+  motion.jumpVelocity = motion.shortJumpVelocity;
+  motion.jumpHoldElapsed = 0;
+  motion.longJumpActivated = false;
 }
 
 function updateMovement(deltaMs) {
@@ -214,6 +241,51 @@ function updateMovement(deltaMs) {
     const normalizedY = (moveY / magnitude) * moveSpeed;
     attemptMove(normalizedX, normalizedY);
   }
+
+  if (motion.isJumping) {
+    if (
+      motion.spaceHeld &&
+      !motion.longJumpActivated &&
+      motion.jumpHoldElapsed >= motion.longJumpThreshold &&
+      motion.jumpVelocity > 0
+    ) {
+      motion.jumpVelocity = Math.max(
+        motion.jumpVelocity,
+        motion.longJumpVelocity
+      );
+      motion.longJumpActivated = true;
+    }
+
+    const shouldSustainJump =
+      motion.spaceHeld &&
+      motion.jumpVelocity > 0 &&
+      motion.jumpHoldElapsed < motion.jumpHoldWindow;
+
+    if (shouldSustainJump) {
+      motion.jumpHoldElapsed = Math.min(
+        motion.jumpHoldElapsed + deltaMs,
+        motion.jumpHoldWindow
+      );
+    }
+
+    const gravity = shouldSustainJump
+      ? motion.jumpGravity * motion.jumpHoldGravityFactor
+      : motion.jumpGravity;
+
+    motion.jumpVelocity -= gravity * deltaMs;
+    motion.jumpHeight = Math.min(
+      motion.maxJumpHeight,
+      motion.jumpHeight + motion.jumpVelocity * deltaMs
+    );
+
+    if (motion.jumpHeight <= 0 && motion.jumpVelocity <= 0) {
+      motion.isJumping = false;
+      motion.jumpHeight = 0;
+      motion.jumpVelocity = 0;
+      motion.jumpHoldElapsed = 0;
+      motion.longJumpActivated = false;
+    }
+  }
 }
 
 function render() {
@@ -230,6 +302,7 @@ function render() {
     render3D(context, state, {
       width: viewport.width,
       height: viewport.height,
+      jumpHeight: motion.jumpHeight,
     });
   }
 
@@ -257,7 +330,18 @@ window.addEventListener('keydown', (event) => {
   keys.add(key);
 
   if (key === 'v') toggleView();
-  if (key === ' ' || key === 'Enter') handleInteraction();
+  if (key === 'Enter') handleInteraction();
+  if (key === ' ') {
+    if (state.viewMode === '3d') {
+      motion.spaceHeld = true;
+      if (motion.spaceReady) {
+        motion.spaceReady = false;
+        jump();
+      }
+    } else {
+      handleInteraction();
+    }
+  }
   if (key === 'x') state.tryExit();
 
   if (
@@ -270,6 +354,10 @@ window.addEventListener('keydown', (event) => {
 window.addEventListener('keyup', (event) => {
   const key = event.key.length === 1 ? event.key.toLowerCase() : event.key;
   keys.delete(key);
+  if (event.key === ' ') {
+    motion.spaceHeld = false;
+    motion.spaceReady = true;
+  }
 });
 
 toggleButton.addEventListener('click', toggleView);
