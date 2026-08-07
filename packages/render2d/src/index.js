@@ -1,4 +1,4 @@
-import { getTileDefinition } from '@bworlds/core';
+import { drawTileSprite } from '@bworlds/atlas';
 
 export function render2D(context, state, viewport) {
   const tileSize = Math.max(
@@ -30,32 +30,10 @@ export function render2D(context, state, viewport) {
       const worldX = anchorX + x;
       const worldY = anchorY + y;
       const tile = state.getCurrentTile(worldX, worldY);
-      const definition = getTileDefinition(tile.kind);
       const drawX = (x - offsetX) * tileSize;
       const drawY = (y - offsetY) * tileSize;
 
-      context.fillStyle = definition.color;
-      context.fillRect(drawX, drawY, tileSize + 1, tileSize + 1);
-
-      if (tile.kind === 'road' || tile.kind === 'bridge') {
-        context.fillStyle = 'rgba(255,255,255,0.18)';
-        context.fillRect(
-          drawX + tileSize * 0.2,
-          drawY + tileSize * 0.4,
-          tileSize * 0.6,
-          tileSize * 0.2
-        );
-      }
-
-      if (tile.poi || tile.kind === 'sign' || tile.kind === 'door') {
-        context.fillStyle = '#ffffff';
-        context.fillRect(
-          drawX + tileSize * 0.35,
-          drawY + tileSize * 0.2,
-          tileSize * 0.3,
-          tileSize * 0.3
-        );
-      }
+      drawTileSprite(context, tile.kind, drawX, drawY, tileSize + 1);
     }
   }
 
