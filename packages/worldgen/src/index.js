@@ -11,19 +11,56 @@ function isTownTile(tile) {
 function createOverworldMap(seed, plugins) {
   const cache = new Map();
   const curatedSpawnTiles = new Map([
-    ['-2,-2', { kind: 'forest', note: 'A thick treeline hems the meadow.' }],
+    ['-3,-3', { kind: 'forest', note: 'A thick treeline hems the meadow.' }],
     [
-      '2,-1',
+      '3,-2',
       { kind: 'forest', note: 'Pines cluster near the starting field.' },
     ],
-    ['-1,2', { kind: 'forest', note: 'A small woodland borders the plains.' }],
+    ['-2,3', { kind: 'forest', note: 'A small woodland borders the plains.' }],
+    ['-5,-1', { kind: 'mountain', note: 'A rugged mountain rises nearby.' }],
     [
-      '5,0',
+      '-5,4',
+      {
+        kind: 'dungeon',
+        poi: { type: 'dungeon', name: 'Starter Dungeon' },
+        note: 'A dungeon entrance waits in the foothills.',
+      },
+    ],
+    [
+      '-4,5',
+      {
+        kind: 'cave',
+        poi: { type: 'cave', name: 'Starter Cave' },
+        note: 'A cave mouth opens beneath the ridge.',
+      },
+    ],
+    [
+      '5,4',
+      {
+        kind: 'town',
+        poi: { type: 'town', name: 'Starter Town' },
+        note: 'A welcoming town sits just beyond the meadow.',
+      },
+    ],
+    ['0,2', { kind: 'road', note: 'A road cuts through the starting plains.' }],
+    [
+      '1,2',
+      { kind: 'sign', note: 'The sign points toward town and the coast.' },
+    ],
+    ['2,2', { kind: 'road', note: 'Cart tracks press into the packed road.' }],
+    [
+      '3,1',
+      { kind: 'river', note: 'A narrow river winds through the meadow.' },
+    ],
+    ['3,2', { kind: 'bridge', note: 'A timber bridge crosses the river.' }],
+    ['3,3', { kind: 'river', note: 'The river continues toward the coast.' }],
+    [
+      '7,0',
       { kind: 'shore', note: 'The grass gives way to a sandy shoreline.' },
     ],
-    ['6,0', { kind: 'ocean', note: 'Open water stretches beyond the shore.' }],
-    ['5,1', { kind: 'shore', note: 'Foamy surf washes onto the coast.' }],
-    ['6,1', { kind: 'ocean', note: 'The sea rolls just beyond the beach.' }],
+    ['8,0', { kind: 'ocean', note: 'Open water stretches beyond the shore.' }],
+    ['7,1', { kind: 'shore', note: 'Foamy surf washes onto the coast.' }],
+    ['8,1', { kind: 'ocean', note: 'The sea rolls just beyond the beach.' }],
   ]);
 
   function classifyTile(x, y) {
@@ -32,7 +69,7 @@ function createOverworldMap(seed, plugins) {
       return curatedTile;
     }
 
-    if (Math.abs(x) <= 2 && Math.abs(y) <= 2) {
+    if (Math.abs(x) <= 4 && Math.abs(y) <= 4) {
       return {
         kind: 'plains',
         note: 'A calm starting meadow stretches around you.',
@@ -70,7 +107,7 @@ function createOverworldMap(seed, plugins) {
 
     if (continent < 0.38) {
       tile = { kind: 'ocean' };
-    } else if (continent < 0.42) {
+    } else if (continent < 0.46) {
       tile = { kind: 'shore' };
     } else if (elevation > 0.72) {
       tile = { kind: 'mountain' };
@@ -119,6 +156,39 @@ function createOverworldMap(seed, plugins) {
           note: `Marker ${x}, ${y}: roads lead onward.`,
         };
       }
+    }
+
+    const neighboringSeaSignal = Math.min(
+      octaveNoise2D(`${seed}:continent`, (x + 1) / 160, y / 160, {
+        octaves: 5,
+        persistence: 0.55,
+      }),
+      octaveNoise2D(`${seed}:continent`, (x - 1) / 160, y / 160, {
+        octaves: 5,
+        persistence: 0.55,
+      }),
+      octaveNoise2D(`${seed}:continent`, x / 160, (y + 1) / 160, {
+        octaves: 5,
+        persistence: 0.55,
+      }),
+      octaveNoise2D(`${seed}:continent`, x / 160, (y - 1) / 160, {
+        octaves: 5,
+        persistence: 0.55,
+      })
+    );
+
+    if (
+      tile.kind !== 'ocean' &&
+      tile.kind !== 'river' &&
+      tile.kind !== 'bridge' &&
+      tile.kind !== 'mountain' &&
+      neighboringSeaSignal < 0.4
+    ) {
+      tile = {
+        ...tile,
+        kind: 'shore',
+        note: tile.note ?? 'The terrain softens into a coastal edge.',
+      };
     }
 
     return plugins.runHook('decorateOverworldTile', {
