@@ -158,7 +158,9 @@ function toggleView() {
 function attemptMove(stepX, stepY) {
   const nextX = state.player.x + stepX;
   const nextY = state.player.y + stepY;
-  if (state.canWalk(nextX, nextY)) {
+  const canOccupy3d =
+    state.viewMode !== '3d' || renderer3d.canOccupy(state, nextX, nextY);
+  if (state.canWalk(nextX, nextY) && canOccupy3d) {
     state.player.x = nextX;
     state.player.y = nextY;
   }
