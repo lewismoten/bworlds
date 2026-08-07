@@ -71,6 +71,7 @@ export function create3DRenderer(host) {
   const bridgeStyleCache = new Map();
   const bridgeClusterCache = new Map();
   const roadStyleCache = new Map();
+  const dungeonStyleCache = new Map();
   const mountainTexture = createMountainTexture();
   const treeGeometry = {
     trunk: new THREE.CylinderGeometry(0.075, 0.1, 1, 6),
@@ -126,6 +127,8 @@ export function create3DRenderer(host) {
           worldRoot.add(createMountainGroup(state, x, y));
         } else if (tile.kind === 'cave') {
           worldRoot.add(createCaveGroup(state, x, y));
+        } else if (tile.kind === 'dungeon') {
+          worldRoot.add(createDungeonGroup(state, x, y));
         } else if (tile.kind === 'town') {
           worldRoot.add(createTownGroup(tile, x, y));
         } else if (tile.kind === 'sign') {
@@ -1712,6 +1715,341 @@ export function create3DRenderer(host) {
     }
 
     return Infinity;
+  }
+
+  function createDungeonGroup(state, tileX, tileY) {
+    const group = new THREE.Group();
+    const style = getDungeonStyle(tileX, tileY);
+    const entrance = getDungeonEntranceDirection(state, tileX, tileY);
+    const baseWidth = 0.9 + hash2D('dungeon-width', tileX, tileY) * 0.16;
+    const baseDepth = 0.9 + hash2D('dungeon-depth', tileX, tileY) * 0.18;
+    const baseHeight = 0.7 + hash2D('dungeon-height', tileX, tileY) * 0.16;
+
+    const base = new THREE.Mesh(
+      new THREE.BoxGeometry(baseWidth, baseHeight, baseDepth),
+      style.wallMaterial
+    );
+    base.position.set(tileX, baseHeight * 0.5, tileY);
+    group.add(base);
+
+    const keep = new THREE.Mesh(
+      new THREE.BoxGeometry(
+        baseWidth * 0.62,
+        baseHeight * 0.8,
+        baseDepth * 0.62
+      ),
+      style.wallMaterial
+    );
+    keep.position.set(tileX, baseHeight * 0.9, tileY);
+    group.add(keep);
+
+    for (const tower of getDungeonTowerOffsets(
+      tileX,
+      tileY,
+      baseWidth,
+      baseDepth
+    )) {
+      const towerMesh = new THREE.Mesh(
+        new THREE.CylinderGeometry(
+          tower.radius,
+          tower.radius * 1.08,
+          tower.height,
+          6
+        ),
+        style.wallMaterial
+      );
+      towerMesh.position.set(
+        tileX + tower.x,
+        tower.height * 0.5,
+        tileY + tower.z
+      );
+      group.add(towerMesh);
+
+      const cap = new THREE.Mesh(
+        new THREE.ConeGeometry(tower.radius * 1.08, tower.capHeight, 6),
+        style.roofMaterial
+      );
+      cap.position.set(
+        tileX + tower.x,
+        tower.height + tower.capHeight * 0.5 - 0.02,
+        tileY + tower.z
+      );
+      group.add(cap);
+    }
+
+    const gate = new THREE.Group();
+    gate.position.set(
+      tileX + entrance.dx * (baseDepth * 0.42),
+      0,
+      tileY + entrance.dy * (baseDepth * 0.42)
+    );
+    gate.rotation.y = entrance.rotationY;
+
+    const arch = new THREE.Mesh(
+      new THREE.TorusGeometry(0.18, 0.04, 6, 12, Math.PI),
+      style.trimMaterial
+    );
+    arch.position.set(0, 0.33, 0.03);
+    arch.rotation.z = Math.PI;
+    gate.add(arch);
+
+    const leftPost = new THREE.Mesh(
+      new THREE.BoxGeometry(0.08, 0.34, 0.08),
+      style.trimMaterial
+    );
+    leftPost.position.set(-0.16, 0.17, 0.03);
+    gate.add(leftPost);
+
+    const rightPost = new THREE.Mesh(
+      new THREE.BoxGeometry(0.08, 0.34, 0.08),
+      style.trimMaterial
+    );
+    rightPost.position.set(0.16, 0.17, 0.03);
+    gate.add(rightPost);
+
+    const portcullis = new THREE.Mesh(
+      new THREE.PlaneGeometry(0.24, 0.28),
+      new THREE.MeshBasicMaterial({
+        color: '#111827',
+        side: THREE.DoubleSide,
+      })
+    );
+    portcullis.position.set(0, 0.17, 0.08);
+    gate.add(portcullis);
+
+    const bars = new THREE.Mesh(
+      new THREE.BoxGeometry(0.22, 0.26, 0.02),
+      style.barMaterial
+    );
+    bars.position.set(0, 0.17, 0.02);
+    gate.add(bars);
+
+    const darkness = new THREE.Mesh(
+      new THREE.CircleGeometry(0.12, 18),
+      new THREE.MeshBasicMaterial({
+        color: '#000000',
+        side: THREE.DoubleSide,
+      })
+    );
+    darkness.position.set(0, 0.15, -0.1);
+    gate.add(darkness);
+
+    group.add(gate);
+    return group;
+  }
+
+  function getDungeonTowerOffsets(tileX, tileY, baseWidth, baseDepth) {
+    const towerCount =
+      2 + Math.floor(hash2D('dungeon-tower-count', tileX, tileY) * 3);
+    const corners = [
+      { x: -baseWidth * 0.42, z: -baseDepth * 0.42 },
+      { x: baseWidth * 0.42, z: -baseDepth * 0.42 },
+      { x: baseWidth * 0.42, z: baseDepth * 0.42 },
+      { x: -baseWidth * 0.42, z: baseDepth * 0.42 },
+    ];
+
+    return corners.slice(0, towerCount).map((corner, index) => ({
+      ...corner,
+      radius: 0.1 + hash2D('dungeon-tower-radius', tileX + index, tileY) * 0.03,
+      height:
+        0.72 + hash2D('dungeon-tower-height', tileX, tileY + index) * 0.22,
+      capHeight:
+        0.14 + hash2D('dungeon-tower-cap', tileX - index, tileY) * 0.08,
+    }));
+  }
+
+  function getDungeonEntranceDirection(state, tileX, tileY) {
+    const directions = [
+      { dx: 0, dy: -1, rotationY: Math.PI, label: 'north' },
+      { dx: 1, dy: 0, rotationY: -Math.PI * 0.5, label: 'east' },
+      { dx: 0, dy: 1, rotationY: 0, label: 'south' },
+      { dx: -1, dy: 0, rotationY: Math.PI * 0.5, label: 'west' },
+    ];
+
+    return directions
+      .map((direction) => {
+        const roadDistance = getNearestAccessibleRoadDistance(
+          state,
+          tileX,
+          tileY,
+          direction
+        );
+        const tile = state.getCurrentTile(
+          tileX + direction.dx,
+          tileY + direction.dy
+        );
+        const walkable = getTileDefinition(tile.kind).walkable;
+        return {
+          ...direction,
+          score:
+            (roadDistance === 1 ? 8 : 0) +
+            (roadDistance > 1 && Number.isFinite(roadDistance)
+              ? Math.max(0, 6 - roadDistance)
+              : 0) +
+            (walkable ? 2 : 0) +
+            hash2D(`dungeon-facing:${direction.label}`, tileX, tileY),
+        };
+      })
+      .sort((a, b) => b.score - a.score)[0];
+  }
+
+  function getDungeonStyle(tileX, tileY) {
+    const regionX = Math.floor(tileX / 18);
+    const regionY = Math.floor(tileY / 18);
+    const key = `${regionX}:${regionY}`;
+
+    if (!dungeonStyleCache.has(key)) {
+      const wallBase =
+        hash2D('dungeon-wall-tone', regionX, regionY) > 0.5
+          ? '#7b7064'
+          : '#645b53';
+      const roofBase =
+        hash2D('dungeon-roof-tone', regionX, regionY) > 0.5
+          ? '#4b1f1f'
+          : '#374151';
+      const trimBase =
+        hash2D('dungeon-trim-tone', regionX, regionY) > 0.5
+          ? '#2f241c'
+          : '#1f2937';
+      const wallTexture = createDungeonStoneTexture(
+        wallBase,
+        trimBase,
+        regionX,
+        regionY
+      );
+      const roofTexture = createDungeonRoofTexture(
+        roofBase,
+        trimBase,
+        regionX,
+        regionY
+      );
+      const barTexture = createDungeonBarTexture(regionX, regionY);
+
+      dungeonStyleCache.set(key, {
+        wallMaterial: new THREE.MeshStandardMaterial({
+          color: '#ffffff',
+          map: wallTexture,
+          roughness: 0.95,
+          metalness: 0.03,
+        }),
+        roofMaterial: new THREE.MeshStandardMaterial({
+          color: '#ffffff',
+          map: roofTexture,
+          roughness: 0.9,
+          metalness: 0.04,
+        }),
+        trimMaterial: new THREE.MeshStandardMaterial({
+          color: trimBase,
+          roughness: 0.88,
+          metalness: 0.05,
+        }),
+        barMaterial: new THREE.MeshStandardMaterial({
+          color: '#ffffff',
+          map: barTexture,
+          roughness: 0.7,
+          metalness: 0.18,
+        }),
+      });
+    }
+
+    return dungeonStyleCache.get(key);
+  }
+
+  function createDungeonStoneTexture(baseColor, accentColor, regionX, regionY) {
+    const canvas = document.createElement('canvas');
+    canvas.width = 64;
+    canvas.height = 64;
+    const context = canvas.getContext('2d');
+    context.fillStyle = baseColor;
+    context.fillRect(0, 0, canvas.width, canvas.height);
+
+    for (let row = 0; row < canvas.height; row += 12) {
+      context.fillStyle = 'rgba(255,255,255,0.12)';
+      context.fillRect(0, row, canvas.width, 1);
+      context.fillStyle = accentColor;
+      const shift = ((row / 12) % 2) * 10;
+      for (let col = -10 + shift; col < canvas.width + 10; col += 20) {
+        context.fillRect(col, row, 2, 12);
+      }
+    }
+
+    for (let i = 0; i < 26; i += 1) {
+      const x = Math.floor(
+        hash2D('dungeon-chip-x', regionX * 37 + i, regionY) * canvas.width
+      );
+      const y = Math.floor(
+        hash2D('dungeon-chip-y', regionY * 41 + i, regionX) * canvas.height
+      );
+      context.fillStyle = 'rgba(20,20,24,0.18)';
+      context.fillRect(x, y, 3, 2);
+    }
+
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.RepeatWrapping;
+    texture.repeat.set(1.2, 1.2);
+    texture.magFilter = THREE.NearestFilter;
+    texture.minFilter = THREE.NearestFilter;
+    texture.generateMipmaps = false;
+    texture.needsUpdate = true;
+    return texture;
+  }
+
+  function createDungeonRoofTexture(baseColor, accentColor, regionX, regionY) {
+    const canvas = document.createElement('canvas');
+    canvas.width = 64;
+    canvas.height = 64;
+    const context = canvas.getContext('2d');
+    context.fillStyle = baseColor;
+    context.fillRect(0, 0, canvas.width, canvas.height);
+
+    for (let row = 0; row < canvas.height; row += 7) {
+      context.fillStyle = accentColor;
+      context.fillRect(0, row, canvas.width, 2);
+      context.fillStyle = 'rgba(255,255,255,0.08)';
+      context.fillRect(0, row + 1, canvas.width, 1);
+    }
+
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.RepeatWrapping;
+    texture.repeat.set(1, 1.3);
+    texture.magFilter = THREE.NearestFilter;
+    texture.minFilter = THREE.NearestFilter;
+    texture.generateMipmaps = false;
+    texture.needsUpdate = true;
+    return texture;
+  }
+
+  function createDungeonBarTexture(regionX, regionY) {
+    const canvas = document.createElement('canvas');
+    canvas.width = 32;
+    canvas.height = 64;
+    const context = canvas.getContext('2d');
+    context.fillStyle = '#2b3139';
+    context.fillRect(0, 0, canvas.width, canvas.height);
+
+    for (let x = 2; x < canvas.width; x += 6) {
+      context.fillStyle = '#717b88';
+      context.fillRect(x, 0, 2, canvas.height);
+    }
+    for (let y = 8; y < canvas.height; y += 12) {
+      context.fillStyle = 'rgba(255,255,255,0.16)';
+      context.fillRect(0, y, canvas.width, 2);
+    }
+
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.RepeatWrapping;
+    texture.repeat.set(1, 1);
+    texture.magFilter = THREE.NearestFilter;
+    texture.minFilter = THREE.NearestFilter;
+    texture.generateMipmaps = false;
+    texture.needsUpdate = true;
+    return texture;
   }
 
   function getMountainPeakScale(state, tileX, tileY) {
