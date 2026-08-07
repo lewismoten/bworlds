@@ -55,6 +55,18 @@ export function getTileVariantIndex(kind, worldX, worldY) {
   return Math.floor(hash * VARIANTS_PER_TILE) % VARIANTS_PER_TILE;
 }
 
+export function getTileAtlasCanvas() {
+  return getAtlasCanvas();
+}
+
+export function getTilePixelSize() {
+  return TILE_PIXEL_SIZE;
+}
+
+export function getTileSpriteRect(kind, variant) {
+  return getTileSpriteRegion(kind, variant);
+}
+
 function getTileSpriteRegion(kind, variant) {
   const kinds = Object.keys(TILE_DEFINITIONS);
   const index = Math.max(0, kinds.indexOf(kind));
