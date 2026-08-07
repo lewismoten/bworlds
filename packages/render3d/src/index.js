@@ -388,14 +388,22 @@ export function create3DRenderer(host) {
     }
 
     const neighbors = {
-      north: state.getCurrentTile(tileX, tileY - 1).kind === 'river',
-      northeast: state.getCurrentTile(tileX + 1, tileY - 1).kind === 'river',
-      east: state.getCurrentTile(tileX + 1, tileY).kind === 'river',
-      southeast: state.getCurrentTile(tileX + 1, tileY + 1).kind === 'river',
-      south: state.getCurrentTile(tileX, tileY + 1).kind === 'river',
-      southwest: state.getCurrentTile(tileX - 1, tileY + 1).kind === 'river',
-      west: state.getCurrentTile(tileX - 1, tileY).kind === 'river',
-      northwest: state.getCurrentTile(tileX - 1, tileY - 1).kind === 'river',
+      north: isWaterBoundaryKind(state.getCurrentTile(tileX, tileY - 1).kind),
+      northeast: isWaterBoundaryKind(
+        state.getCurrentTile(tileX + 1, tileY - 1).kind
+      ),
+      east: isWaterBoundaryKind(state.getCurrentTile(tileX + 1, tileY).kind),
+      southeast: isWaterBoundaryKind(
+        state.getCurrentTile(tileX + 1, tileY + 1).kind
+      ),
+      south: isWaterBoundaryKind(state.getCurrentTile(tileX, tileY + 1).kind),
+      southwest: isWaterBoundaryKind(
+        state.getCurrentTile(tileX - 1, tileY + 1).kind
+      ),
+      west: isWaterBoundaryKind(state.getCurrentTile(tileX - 1, tileY).kind),
+      northwest: isWaterBoundaryKind(
+        state.getCurrentTile(tileX - 1, tileY - 1).kind
+      ),
       count: 0,
     };
     neighbors.count =
@@ -417,6 +425,10 @@ export function create3DRenderer(host) {
       kind !== 'bridge' &&
       getTileSurfaceHeight(kind) >= 0
     );
+  }
+
+  function isWaterBoundaryKind(kind) {
+    return kind === 'river' || kind === 'bridge';
   }
 
   function createBridgeGroup(state, tileX, tileY) {
