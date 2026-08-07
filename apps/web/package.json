@@ -1,0 +1,19 @@
+{
+  "name": "@bworlds/app",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@bworlds/atlas": "0.1.0",
+    "@bworlds/core": "0.1.0",
+    "@bworlds/plugin-api": "0.1.0",
+    "@bworlds/render2d": "0.1.0",
+    "@bworlds/render3d": "0.1.0",
+    "@bworlds/worldgen": "0.1.0"
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "name": "bworlds",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev -w @bworlds/app",
+    "build": "npm run build -w @bworlds/app",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "coverage": "vitest run --coverage",
+    "format": "prettier --check .",
+    "format:write": "prettier --write ."
+  },
+  "devDependencies": {
+    "@vitest/coverage-v8": "^3.2.4",
+    "prettier": "^3.3.3",
+    "vite": "^5.4.2",
+    "vitest": "^3.2.4"
+  }
+}
