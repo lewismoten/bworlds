@@ -20,7 +20,7 @@ const TOWN_REGION_SIZE = 18;
 const BRIDGE_REGION_SIZE = 22;
 const ROAD_REGION_SIZE = 20;
 const MOUNTAIN_BASE_COLOR = '#6b7280';
-const RIVER_SURFACE_DROP = -0.12;
+const WATER_SURFACE_DROP = -0.12;
 const MAX_RIVER_CHAMFER_DROP = 0.08;
 const RIVER_WALL_THICKNESS = 0.05;
 const BRIDGE_DECK_THICKNESS = 0.08;
@@ -133,7 +133,7 @@ export function create3DRenderer(host) {
           worldRoot.add(createTownGroup(tile, x, y));
         } else if (tile.kind === 'sign') {
           worldRoot.add(createSignGroup(state, x, y));
-        } else if (definition.wallHeight > 0.08) {
+        } else if (tile.kind !== 'ocean' && definition.wallHeight > 0.08) {
           const wallHeight = Math.max(definition.wallHeight * 1.9, 0.18);
           const wallMesh = new THREE.Mesh(
             new THREE.BoxGeometry(TILE_SIZE, wallHeight, TILE_SIZE),
@@ -201,8 +201,8 @@ export function create3DRenderer(host) {
   }
 
   function getTileSurfaceHeight(kind) {
-    if (kind === 'river') {
-      return RIVER_SURFACE_DROP;
+    if (kind === 'river' || kind === 'ocean') {
+      return WATER_SURFACE_DROP;
     }
 
     return 0;
@@ -277,7 +277,7 @@ export function create3DRenderer(host) {
 
     const edgeHeight = Math.max(
       surfaceHeight - MAX_RIVER_CHAMFER_DROP,
-      RIVER_SURFACE_DROP
+      WATER_SURFACE_DROP
     );
     const cornerHeights = {
       nw: surfaceHeight,
@@ -343,7 +343,7 @@ export function create3DRenderer(host) {
     topGeometry.computeVertexNormals();
     group.add(new THREE.Mesh(topGeometry, material));
 
-    const wallHeight = edgeHeight - RIVER_SURFACE_DROP;
+    const wallHeight = edgeHeight - WATER_SURFACE_DROP;
     if (wallHeight > 0.01) {
       if (riverNeighbors.north) {
         addRiverEdgeWall(group, material, 'north', wallHeight);
@@ -369,7 +369,7 @@ export function create3DRenderer(host) {
     );
     floorMesh.position.set(
       tileX * TILE_SIZE,
-      RIVER_SURFACE_DROP - FLOOR_THICKNESS * 0.5,
+      WATER_SURFACE_DROP - FLOOR_THICKNESS * 0.5,
       tileY * TILE_SIZE
     );
     return floorMesh;
@@ -412,13 +412,13 @@ export function create3DRenderer(host) {
           );
 
     if (edge === 'north') {
-      mesh.position.set(0, RIVER_SURFACE_DROP + wallHeight * 0.5, -0.5);
+      mesh.position.set(0, WATER_SURFACE_DROP + wallHeight * 0.5, -0.5);
     } else if (edge === 'east') {
-      mesh.position.set(0.5, RIVER_SURFACE_DROP + wallHeight * 0.5, 0);
+      mesh.position.set(0.5, WATER_SURFACE_DROP + wallHeight * 0.5, 0);
     } else if (edge === 'south') {
-      mesh.position.set(0, RIVER_SURFACE_DROP + wallHeight * 0.5, 0.5);
+      mesh.position.set(0, WATER_SURFACE_DROP + wallHeight * 0.5, 0.5);
     } else {
-      mesh.position.set(-0.5, RIVER_SURFACE_DROP + wallHeight * 0.5, 0);
+      mesh.position.set(-0.5, WATER_SURFACE_DROP + wallHeight * 0.5, 0);
     }
 
     group.add(mesh);
@@ -470,7 +470,7 @@ export function create3DRenderer(host) {
   }
 
   function isWaterBoundaryKind(kind) {
-    return kind === 'river' || kind === 'bridge';
+    return kind === 'river' || kind === 'ocean' || kind === 'bridge';
   }
 
   function createRoadGroup(state, tileX, tileY) {
@@ -1138,7 +1138,7 @@ export function create3DRenderer(host) {
       return;
     }
 
-    const pillarHeight = BRIDGE_DECK_THICKNESS - RIVER_SURFACE_DROP;
+    const pillarHeight = BRIDGE_DECK_THICKNESS - WATER_SURFACE_DROP;
     const pillar = new THREE.Mesh(
       new THREE.BoxGeometry(
         style.pillarWidth,
@@ -1147,7 +1147,7 @@ export function create3DRenderer(host) {
       ),
       style.pillarMaterial
     );
-    pillar.position.y = RIVER_SURFACE_DROP + pillarHeight * 0.5;
+    pillar.position.y = WATER_SURFACE_DROP + pillarHeight * 0.5;
     pillar.rotation.y = alongX ? 0 : Math.PI * 0.5;
     group.add(pillar);
   }
