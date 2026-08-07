@@ -19,6 +19,8 @@ const SIGN_REGION_SIZE = 10;
 const TOWN_REGION_SIZE = 18;
 const MOUNTAIN_BASE_COLOR = '#6b7280';
 const RIVER_SURFACE_DROP = -0.12;
+const MAX_RIVER_CHAMFER_DROP = 0.08;
+const RIVER_WALL_THICKNESS = 0.05;
 
 export function create3DRenderer(host) {
   const renderer = new THREE.WebGLRenderer({
@@ -100,17 +102,8 @@ export function create3DRenderer(host) {
         const tile = state.getCurrentTile(x, y);
         const definition = getTileDefinition(tile.kind);
         const variant = getTileVariantIndex(tile.kind, x, y);
-        const floorMesh = new THREE.Mesh(
-          new THREE.BoxGeometry(TILE_SIZE, FLOOR_THICKNESS, TILE_SIZE),
-          getTileMaterial(tile.kind, variant)
-        );
         const surfaceHeight = getTileSurfaceHeight(tile.kind);
-        floorMesh.position.set(
-          x * TILE_SIZE,
-          surfaceHeight - FLOOR_THICKNESS * 0.5,
-          y * TILE_SIZE
-        );
-        worldRoot.add(floorMesh);
+        worldRoot.add(createFloorMesh(state, tile, x, y, variant));
 
         if (tile.kind === 'forest') {
           const treeGroup = createForestTileGroup(x, y);
@@ -227,6 +220,178 @@ export function create3DRenderer(host) {
       );
     }
     return materialCache.get(key);
+  }
+
+  function createFloorMesh(state, tile, tileX, tileY, variant) {
+    const material = getTileMaterial(tile.kind, variant);
+    const surfaceHeight = getTileSurfaceHeight(tile.kind);
+    const riverNeighbors = getAdjacentRiverNeighbors(
+      state,
+      tileX,
+      tileY,
+      tile.kind
+    );
+
+    if (!riverNeighbors || riverNeighbors.count === 0) {
+      const floorMesh = new THREE.Mesh(
+        new THREE.BoxGeometry(TILE_SIZE, FLOOR_THICKNESS, TILE_SIZE),
+        material
+      );
+      floorMesh.position.set(
+        tileX * TILE_SIZE,
+        surfaceHeight - FLOOR_THICKNESS * 0.5,
+        tileY * TILE_SIZE
+      );
+      return floorMesh;
+    }
+
+    const edgeHeight = Math.max(
+      surfaceHeight - MAX_RIVER_CHAMFER_DROP,
+      RIVER_SURFACE_DROP
+    );
+    const cornerHeights = {
+      nw: surfaceHeight,
+      ne: surfaceHeight,
+      se: surfaceHeight,
+      sw: surfaceHeight,
+    };
+
+    if (
+      riverNeighbors.north ||
+      riverNeighbors.west ||
+      riverNeighbors.northwest
+    ) {
+      cornerHeights.nw = edgeHeight;
+    }
+    if (
+      riverNeighbors.north ||
+      riverNeighbors.east ||
+      riverNeighbors.northeast
+    ) {
+      cornerHeights.ne = edgeHeight;
+    }
+    if (
+      riverNeighbors.south ||
+      riverNeighbors.east ||
+      riverNeighbors.southeast
+    ) {
+      cornerHeights.se = edgeHeight;
+    }
+    if (
+      riverNeighbors.south ||
+      riverNeighbors.west ||
+      riverNeighbors.southwest
+    ) {
+      cornerHeights.sw = edgeHeight;
+    }
+
+    const group = new THREE.Group();
+    group.position.set(tileX * TILE_SIZE, 0, tileY * TILE_SIZE);
+
+    const topGeometry = new THREE.BufferGeometry();
+    const positions = new Float32Array([
+      -0.5,
+      cornerHeights.nw,
+      -0.5,
+      0.5,
+      cornerHeights.ne,
+      -0.5,
+      -0.5,
+      cornerHeights.sw,
+      0.5,
+      0.5,
+      cornerHeights.se,
+      0.5,
+    ]);
+    const uvs = new Float32Array([0, 1, 1, 1, 0, 0, 1, 0]);
+    topGeometry.setAttribute(
+      'position',
+      new THREE.BufferAttribute(positions, 3)
+    );
+    topGeometry.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
+    topGeometry.setIndex([0, 2, 1, 2, 3, 1]);
+    topGeometry.computeVertexNormals();
+    group.add(new THREE.Mesh(topGeometry, material));
+
+    const wallHeight = edgeHeight - RIVER_SURFACE_DROP;
+    if (wallHeight > 0.01) {
+      if (riverNeighbors.north) {
+        addRiverEdgeWall(group, material, 'north', wallHeight);
+      }
+      if (riverNeighbors.east) {
+        addRiverEdgeWall(group, material, 'east', wallHeight);
+      }
+      if (riverNeighbors.south) {
+        addRiverEdgeWall(group, material, 'south', wallHeight);
+      }
+      if (riverNeighbors.west) {
+        addRiverEdgeWall(group, material, 'west', wallHeight);
+      }
+    }
+
+    return group;
+  }
+
+  function addRiverEdgeWall(group, material, edge, wallHeight) {
+    const mesh =
+      edge === 'north' || edge === 'south'
+        ? new THREE.Mesh(
+            new THREE.BoxGeometry(TILE_SIZE, wallHeight, RIVER_WALL_THICKNESS),
+            material
+          )
+        : new THREE.Mesh(
+            new THREE.BoxGeometry(RIVER_WALL_THICKNESS, wallHeight, TILE_SIZE),
+            material
+          );
+
+    if (edge === 'north') {
+      mesh.position.set(0, RIVER_SURFACE_DROP + wallHeight * 0.5, -0.5);
+    } else if (edge === 'east') {
+      mesh.position.set(0.5, RIVER_SURFACE_DROP + wallHeight * 0.5, 0);
+    } else if (edge === 'south') {
+      mesh.position.set(0, RIVER_SURFACE_DROP + wallHeight * 0.5, 0.5);
+    } else {
+      mesh.position.set(-0.5, RIVER_SURFACE_DROP + wallHeight * 0.5, 0);
+    }
+
+    group.add(mesh);
+  }
+
+  function getAdjacentRiverNeighbors(state, tileX, tileY, kind) {
+    if (!isRiverChamferTile(kind)) {
+      return null;
+    }
+
+    const neighbors = {
+      north: state.getCurrentTile(tileX, tileY - 1).kind === 'river',
+      northeast: state.getCurrentTile(tileX + 1, tileY - 1).kind === 'river',
+      east: state.getCurrentTile(tileX + 1, tileY).kind === 'river',
+      southeast: state.getCurrentTile(tileX + 1, tileY + 1).kind === 'river',
+      south: state.getCurrentTile(tileX, tileY + 1).kind === 'river',
+      southwest: state.getCurrentTile(tileX - 1, tileY + 1).kind === 'river',
+      west: state.getCurrentTile(tileX - 1, tileY).kind === 'river',
+      northwest: state.getCurrentTile(tileX - 1, tileY - 1).kind === 'river',
+      count: 0,
+    };
+    neighbors.count =
+      Number(neighbors.north) +
+      Number(neighbors.northeast) +
+      Number(neighbors.east) +
+      Number(neighbors.southeast) +
+      Number(neighbors.south) +
+      Number(neighbors.southwest) +
+      Number(neighbors.west) +
+      Number(neighbors.northwest);
+    return neighbors;
+  }
+
+  function isRiverChamferTile(kind) {
+    return (
+      kind !== 'river' &&
+      kind !== 'ocean' &&
+      kind !== 'bridge' &&
+      getTileSurfaceHeight(kind) >= 0
+    );
   }
 
   function createForestTileGroup(tileX, tileY) {
