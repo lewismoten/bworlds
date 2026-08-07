@@ -8,6 +8,7 @@ import {
   pickThresholdColor,
 } from '@bworlds/procedural-style';
 import {
+  createBasicMaterial,
   createPaintedCanvasTexture,
   createPaintedStandardMaterial,
 } from '@bworlds/three-support';
@@ -133,7 +134,7 @@ export function createDungeonTilePlugin() {
 
       const portcullis = new three.Mesh(
         new three.PlaneGeometry(0.24, 0.28),
-        new three.MeshBasicMaterial({
+        createBasicMaterial(three, {
           color: '#111827',
           side: three.DoubleSide,
         })
@@ -150,7 +151,7 @@ export function createDungeonTilePlugin() {
 
       const darkness = new three.Mesh(
         new three.CircleGeometry(0.12, 18),
-        new three.MeshBasicMaterial({
+        createBasicMaterial(three, {
           color: '#000000',
           side: three.DoubleSide,
         })
@@ -196,7 +197,7 @@ function getDungeonEntranceDirection(state, tileX: number, tileY: number) {
   });
 }
 
-const dungeonStyleCache = new Map<string, DungeonStyle>();
+const dungeonStyleCache = new Map<string, DungeonStyleBlueprint>();
 const resolveDungeonStyle = createRegionalValueResolver(
   dungeonStyleCache,
   18,
@@ -363,4 +364,8 @@ interface DungeonStyle {
   roofMaterial: ThreeMaterialLike;
   trimMaterial: ThreeMaterialLike;
   barMaterial: ThreeMaterialLike;
+}
+
+interface DungeonStyleBlueprint {
+  createMaterials(three: ThreeHostLike): DungeonStyle;
 }

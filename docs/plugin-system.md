@@ -170,7 +170,7 @@ That gives external packages a smaller shared API surface to learn while still l
 
 ## Shared 3D Helpers
 
-`@bworlds/three-support` now provides shared canvas-texture setup helpers plus reusable spline/ribbon geometry helpers for plugin-owned 3D assets. Tile packages can use `createCanvasTexture(...)`, `createPaintedCanvasTexture(...)`, `createQuadraticBezierPoints(...)`, `createCubicBezierPoints(...)`, and `createRibbonMesh(...)` to build procedural textures, curved paths, channels, and similar strip-like geometry without re-implementing canvas or Three.js mesh plumbing inside each tile package.
+`@bworlds/three-support` now provides shared canvas-texture setup helpers plus reusable spline/ribbon geometry helpers for plugin-owned 3D assets. Tile packages can use `createCanvasTexture(...)`, `createPaintedCanvasTexture(...)`, `getOrCreatePaintedCanvasTexture(...)`, `createBasicMaterial(...)`, `createTexturedPlaneMesh(...)`, `createQuadraticBezierPoints(...)`, `createCubicBezierPoints(...)`, and `createRibbonMesh(...)` to build procedural textures, cached label/sign textures, lightweight placard meshes, simple flat portal/gate surfaces, curved paths, channels, and similar strip-like geometry without re-implementing canvas or Three.js mesh plumbing inside each tile package.
 
 That gives plugin authors a reusable renderer-support layer for both textured materials and common curved-surface meshes without tying packages to app-specific renderer code.
 

@@ -39,3 +39,11 @@
 - [ ] Add a mushroom ring or stone ring in the middle of large forests
 - [ ] Trees in the middle of large forest may have an occasional stump or fallen tree.
 - [ ] A large forest may have a very large and tall tree deep inside, that is a woodland town of its own. There are a few types - inabitants live (a) inside the hollowed trunk/bark of the tree, (b) high above the other trees in the branches, (c) underneath the tree roots, or (d) a combination where different town maps lead to each level.
+- [ ] setup geography to represent hills rather than flat terrain.
+- [ ] Add docks at POI, and prevent bridges from becomming docks. All bridges should go strait in one direction to the other side of a river or ocean.
+- [ ] A bridge should not run along the side of land in parallel for long lengths (5+ tiles) within 2 tiles.
+- [ ] We should be able to see the sun rise and set
+- [ ] A dock may only participate as a ship transportation area if there in an unobstructed path of ocean tiles to another dock between 20-60 tiles. A draw bridge also counts as an unobstructed ocean tile. A bridge that raises high above the ocean allowing a boat to pass under it is also an unobstructed ocean tile.
+- [ ] A boat route must be circular in that the boat should not double-back on any part of it's path between each dock
+- [ ] A dock with a boat should have a sign indicating the name of the stops except its own. Each stop should indicate the closest POI to each dock. The sign should state the name of the boat.
+- [ ] All POI should have a procdurally generated name.

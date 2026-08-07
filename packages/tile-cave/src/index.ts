@@ -4,7 +4,10 @@ import {
   createAnchoredEnterablePoiTilePlugin,
   pickPreferredLandmarkFacing,
 } from '@bworlds/poi-support';
-import { createMountainTerrainMaterials } from '@bworlds/three-support';
+import {
+  createBasicMaterial,
+  createMountainTerrainMaterials,
+} from '@bworlds/three-support';
 import type {
   Create3DModelContext,
   Paint2DContext,
@@ -118,7 +121,7 @@ export function createCaveTilePlugin() {
 
       const mouthVoid = new three.Mesh(
         new three.CircleGeometry(0.18, 20),
-        new three.MeshBasicMaterial({
+        createBasicMaterial(three, {
           color: '#010308',
           side: three.DoubleSide,
         })
@@ -128,7 +131,7 @@ export function createCaveTilePlugin() {
 
       const tunnelBack = new three.Mesh(
         new three.CircleGeometry(0.12, 18),
-        new three.MeshBasicMaterial({
+        createBasicMaterial(three, {
           color: '#000000',
           side: three.DoubleSide,
         })
@@ -138,7 +141,7 @@ export function createCaveTilePlugin() {
 
       const tunnelCeiling = new three.Mesh(
         new three.PlaneGeometry(0.24, 0.46),
-        new three.MeshBasicMaterial({
+        createBasicMaterial(three, {
           color: '#03060a',
           side: three.DoubleSide,
         })
@@ -149,7 +152,7 @@ export function createCaveTilePlugin() {
 
       const tunnelFloor = new three.Mesh(
         new three.PlaneGeometry(0.22, 0.34),
-        new three.MeshBasicMaterial({
+        createBasicMaterial(three, {
           color: '#080b10',
           side: three.DoubleSide,
         })

@@ -20,6 +20,35 @@ describe('runtime start region', () => {
     );
   });
 
+  it('preserves curated starter feature tiles inside the meadow band', () => {
+    const plugin = createStartRegionRuntimePlugin();
+    const samples = [
+      { x: 0, y: 2, kind: 'road' },
+      { x: 1, y: 2, kind: 'sign' },
+      { x: 2, y: 2, kind: 'road' },
+      { x: 3, y: 1, kind: 'river' },
+      { x: 3, y: 2, kind: 'bridge' },
+      { x: 3, y: 3, kind: 'river' },
+    ];
+
+    for (const sample of samples) {
+      const tile = plugin.resolveOverworldTile?.({
+        seed: 'spec',
+        x: sample.x,
+        y: sample.y,
+        sampleTerrainSignals() {
+          throw new Error('starter region lookup should not need terrain signals');
+        },
+      } as any);
+
+      expect(tile).toEqual(
+        expect.objectContaining({
+          kind: sample.kind,
+        })
+      );
+    }
+  });
+
   it('replaces starter poi names with deterministic generated names', () => {
     const plugin = createStartRegionRuntimePlugin();
     const tile = plugin.resolveOverworldTile?.({

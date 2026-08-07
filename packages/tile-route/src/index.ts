@@ -2,8 +2,7 @@ import { hash2D } from '@bworlds/core';
 import { createPlainsBackedTilePainter } from '@bworlds/paint-support';
 import { createTilePlugin } from '@bworlds/plugin-api';
 import {
-  createRegionKey,
-  getOrCreateRegionalValue,
+  createRegionalValueResolver,
   pickThresholdColor,
 } from '@bworlds/procedural-style';
 import {
@@ -46,7 +45,75 @@ const ROAD_CORE_HEIGHT = 0.02;
 
 const bridgeStyleCache = new Map<string, BridgeStyle>();
 const bridgeClusterCache = new Map<string, BridgeClusterInfo>();
-const roadStyleCache = new Map<string, RoadStyle>();
+const roadStyleCache = new Map<string, RoadStyleBlueprint>();
+const resolveRoadStyle = createRegionalValueResolver(
+  roadStyleCache,
+  ROAD_REGION_SIZE,
+  ({ regionX, regionY }) => {
+    const tier = Math.floor(hash2D('road-tier', regionX, regionY) * 3);
+    const styleType = ['footpath', 'cobble', 'brick'][tier];
+    const palette =
+      styleType === 'brick'
+        ? { road: '#a14d34', shoulder: '#6b5d48', accent: '#7a2f1d' }
+        : styleType === 'cobble'
+          ? { road: '#8f8578', shoulder: '#6e7a68', accent: '#5f5b56' }
+          : {
+              road: '#8d6a42',
+              shoulder: pickThresholdColor(
+                hash2D('road-footpath-shoulder', regionX, regionY),
+                0.5,
+                '#5f7a4d',
+                '#62724a'
+              ),
+              accent: '#5a4025',
+            };
+
+    return {
+      createMaterials(three: ThreeHostLike): RoadStyle {
+        const roadTexture = createRoadTexture(
+          three,
+          palette.road,
+          palette.accent,
+          styleType,
+          regionX,
+          regionY
+        );
+        const shoulderTexture = createRoadShoulderTexture(
+          three,
+          palette.shoulder,
+          palette.road,
+          regionX,
+          regionY
+        );
+
+        return {
+          roadWidth: styleType === 'footpath' ? 0.24 : 0.3,
+          shoulderWidth: styleType === 'footpath' ? 0.36 : 0.42,
+          roadMaterial: new three.MeshStandardMaterial({
+            color: '#ffffff',
+            map: roadTexture,
+            roughness: 0.95,
+            metalness: styleType === 'cobble' ? 0.04 : 0.02,
+            polygonOffset: true,
+            polygonOffsetFactor: -2,
+            polygonOffsetUnits: -2,
+            side: three.DoubleSide,
+          }),
+          shoulderMaterial: new three.MeshStandardMaterial({
+            color: '#ffffff',
+            map: shoulderTexture,
+            roughness: 0.98,
+            metalness: 0.01,
+            polygonOffset: true,
+            polygonOffsetFactor: -1,
+            polygonOffsetUnits: -1,
+            side: three.DoubleSide,
+          }),
+        };
+      },
+    };
+  }
+);
 
 export function createRouteTilePlugin() {
   return createTilePlugin('tile-route', [
@@ -510,71 +577,7 @@ function createRoadRibbonMesh(
 }
 
 function getRoadStyle(three: ThreeHostLike, tileX: number, tileY: number) {
-  return getOrCreateRegionalValue(
-    roadStyleCache,
-    tileX,
-    tileY,
-    ROAD_REGION_SIZE,
-    ({ regionX, regionY }) => {
-      const tier = Math.floor(hash2D('road-tier', regionX, regionY) * 3);
-      const styleType = ['footpath', 'cobble', 'brick'][tier];
-      const palette =
-        styleType === 'brick'
-          ? { road: '#a14d34', shoulder: '#6b5d48', accent: '#7a2f1d' }
-          : styleType === 'cobble'
-            ? { road: '#8f8578', shoulder: '#6e7a68', accent: '#5f5b56' }
-            : {
-                road: '#8d6a42',
-                shoulder: pickThresholdColor(
-                  hash2D('road-footpath-shoulder', regionX, regionY),
-                  0.5,
-                  '#5f7a4d',
-                  '#62724a'
-                ),
-                accent: '#5a4025',
-              };
-      const roadTexture = createRoadTexture(
-        three,
-        palette.road,
-        palette.accent,
-        styleType,
-        regionX,
-        regionY
-      );
-      const shoulderTexture = createRoadShoulderTexture(
-        three,
-        palette.shoulder,
-        palette.road,
-        regionX,
-        regionY
-      );
-
-      return {
-        roadWidth: styleType === 'footpath' ? 0.24 : 0.3,
-        shoulderWidth: styleType === 'footpath' ? 0.36 : 0.42,
-        roadMaterial: new three.MeshStandardMaterial({
-          color: '#ffffff',
-          map: roadTexture,
-          roughness: 0.95,
-          metalness: styleType === 'cobble' ? 0.04 : 0.02,
-          polygonOffset: true,
-          polygonOffsetFactor: -2,
-          polygonOffsetUnits: -2,
-          side: three.DoubleSide,
-        }),
-        shoulderMaterial: new three.MeshStandardMaterial({
-          color: '#ffffff',
-          map: shoulderTexture,
-          roughness: 0.98,
-          metalness: 0.01,
-          polygonOffset: true,
-          polygonOffsetFactor: -1,
-          polygonOffsetUnits: -1,
-          side: three.DoubleSide,
-        }),
-      };
-    }
-  );
+  return resolveRoadStyle(tileX, tileY).createMaterials(three);
 }
 
 function createRoadTexture(
@@ -1229,6 +1232,10 @@ interface RoadStyle {
   shoulderWidth: number;
   roadMaterial: ThreeMaterialLike;
   shoulderMaterial: ThreeMaterialLike;
+}
+
+interface RoadStyleBlueprint {
+  createMaterials(three: ThreeHostLike): RoadStyle;
 }
 
 interface BridgeClusterInfo {

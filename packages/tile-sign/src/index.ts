@@ -3,6 +3,7 @@ import { createPlainsBackedTilePainter } from '@bworlds/paint-support';
 import { canPlaceLandPoi, resolvePlacementChance } from '@bworlds/poi-support';
 import { createTilePlugin } from '@bworlds/plugin-api';
 import {
+  createRegionalValueResolver,
   getOrCreateRegionalValue,
   pickThresholdColor,
 } from '@bworlds/procedural-style';
@@ -10,7 +11,11 @@ import {
   createRoadsideRouteProfile,
   createRouteTraversalProfile,
 } from '@bworlds/tile-support';
-import { createPaintedCanvasTexture } from '@bworlds/three-support';
+import {
+  createPaintedCanvasTexture,
+  createTexturedPlaneMesh,
+  getOrCreatePaintedCanvasTexture,
+} from '@bworlds/three-support';
 import type {
   ClassifyOverworldTileContext,
   Create3DModelContext,
@@ -32,7 +37,72 @@ const LONG_ROAD_SIGN_THRESHOLD = 0.9975;
 const ROADSIDE_SIGN_THRESHOLD = 0.9992;
 const LONG_ROAD_MIN_SPAN = 8;
 const LONG_ROAD_POI_DISTANCE = 28;
-const signStyleCache = new Map<string, SignStyle>();
+const signStyleCache = new Map<string, SignStyleBlueprint>();
+const resolveRegionalSignStyle = createRegionalValueResolver(
+  signStyleCache,
+  SIGN_REGION_SIZE,
+  ({ regionX, regionY, key }) => {
+    const postHeight =
+      1.12 + hash2D('sign-post-height', regionX, regionY) * 0.42;
+    const postThickness =
+      0.07 + hash2D('sign-post-thickness', regionX, regionY) * 0.04;
+    const placardWidth =
+      0.54 + hash2D('sign-placard-width', regionX, regionY) * 0.16;
+    const placardHeight =
+      0.16 + hash2D('sign-placard-height', regionX, regionY) * 0.05;
+    const placardDepth =
+      0.035 + hash2D('sign-placard-depth', regionX, regionY) * 0.02;
+    const barkTint = hash2D('sign-bark', regionX, regionY);
+    const placardTint = hash2D('sign-placard', regionX, regionY);
+    const trimTint = hash2D('sign-trim', regionX, regionY);
+    const postColor = pickThresholdColor(
+      barkTint,
+      0.5,
+      '#5a3418',
+      TREE_BARK_COLOR
+    );
+    const placardColor = pickThresholdColor(
+      placardTint,
+      0.45,
+      '#f0c979',
+      '#e2b762'
+    );
+    const trimColor = pickThresholdColor(trimTint, 0.5, '#7c4a1a', '#8c5b24');
+    const textColor = '#24150c';
+
+    return {
+      createMaterials(three: ThreeHostLike): SignStyle {
+        return {
+          key,
+          postHeight,
+          postThickness,
+          placardWidth,
+          placardHeight,
+          placardDepth,
+          placardColor,
+          trimColor,
+          textColor,
+          labelCache: new Map(),
+          postMaterial: new three.MeshStandardMaterial({
+            color: postColor,
+            roughness: 0.94,
+            metalness: 0.02,
+          }),
+          placardMaterial: new three.MeshStandardMaterial({
+            color: placardColor,
+            roughness: 0.88,
+            metalness: 0.02,
+          }),
+          trimMaterial: new three.MeshStandardMaterial({
+            color: trimColor,
+            roughness: 0.86,
+            metalness: 0.03,
+          }),
+        };
+      },
+    };
+  }
+);
 
 export function createSignTilePlugin() {
   return createTilePlugin('tile-sign', [
@@ -287,14 +357,11 @@ function createSignLabelSprite(
   height: number
 ) {
   const texture = getSignLabelTexture(three, style, poi);
-  return new three.Mesh(
-    new three.PlaneGeometry(width * 0.92, height * 0.78),
-    new three.MeshBasicMaterial({
-      map: texture,
-      transparent: true,
-      depthWrite: false,
-    })
-  );
+  return createTexturedPlaneMesh(three, {
+    width: width * 0.92,
+    height: height * 0.78,
+    texture,
+  });
 }
 
 function getSignLabelTexture(
@@ -303,44 +370,29 @@ function getSignLabelTexture(
   poi: NearbyPoi
 ) {
   const key = `${style.key}:${poi.name}:${poi.arrow}`;
-  if (!style.labelCache.has(key)) {
-    style.labelCache.set(
-      key,
-      createPaintedCanvasTexture(three, {
-        width: 256,
-        height: 96,
-        wrap: false,
-        paint(context, canvas) {
-          context.clearRect(0, 0, canvas.width, canvas.height);
-          context.fillStyle = style.placardColor;
-          context.fillRect(0, 0, canvas.width, canvas.height);
-          context.strokeStyle = style.trimColor;
-          context.lineWidth = 6;
-          context.strokeRect(3, 3, canvas.width - 6, canvas.height - 6);
-          context.fillStyle = style.textColor;
-          context.font = 'bold 28px sans-serif';
-          context.textAlign = 'center';
-          context.textBaseline = 'middle';
-          const mainY = poi.distance > 20 ? 34 : 46;
-          context.fillText(
-            `${poi.arrow} ${poi.name}`,
-            canvas.width * 0.5,
-            mainY
-          );
-          if (poi.distance > 20) {
-            context.font = '16px sans-serif';
-            context.fillText(
-              `${Math.round(poi.distance)}`,
-              canvas.width * 0.5,
-              70
-            );
-          }
-        },
-      })
-    );
-  }
-
-  return style.labelCache.get(key);
+  return getOrCreatePaintedCanvasTexture(style.labelCache, key, three, {
+    width: 256,
+    height: 96,
+    wrap: false,
+    paint(context, canvas) {
+      context.clearRect(0, 0, canvas.width, canvas.height);
+      context.fillStyle = style.placardColor;
+      context.fillRect(0, 0, canvas.width, canvas.height);
+      context.strokeStyle = style.trimColor;
+      context.lineWidth = 6;
+      context.strokeRect(3, 3, canvas.width - 6, canvas.height - 6);
+      context.fillStyle = style.textColor;
+      context.font = 'bold 28px sans-serif';
+      context.textAlign = 'center';
+      context.textBaseline = 'middle';
+      const mainY = poi.distance > 20 ? 34 : 46;
+      context.fillText(`${poi.arrow} ${poi.name}`, canvas.width * 0.5, mainY);
+      if (poi.distance > 20) {
+        context.font = '16px sans-serif';
+        context.fillText(`${Math.round(poi.distance)}`, canvas.width * 0.5, 70);
+      }
+    },
+  });
 }
 
 function getNearbyPois(
@@ -401,69 +453,7 @@ function getRegionalSignStyle(
   tileX: number,
   tileY: number
 ): SignStyle {
-  return getOrCreateRegionalValue(
-    signStyleCache,
-    tileX,
-    tileY,
-    SIGN_REGION_SIZE,
-    ({ regionX, regionY, key }) => {
-      const postHeight =
-        1.12 + hash2D('sign-post-height', regionX, regionY) * 0.42;
-      const postThickness =
-        0.07 + hash2D('sign-post-thickness', regionX, regionY) * 0.04;
-      const placardWidth =
-        0.54 + hash2D('sign-placard-width', regionX, regionY) * 0.16;
-      const placardHeight =
-        0.16 + hash2D('sign-placard-height', regionX, regionY) * 0.05;
-      const placardDepth =
-        0.035 + hash2D('sign-placard-depth', regionX, regionY) * 0.02;
-      const barkTint = hash2D('sign-bark', regionX, regionY);
-      const placardTint = hash2D('sign-placard', regionX, regionY);
-      const trimTint = hash2D('sign-trim', regionX, regionY);
-      const postColor = pickThresholdColor(
-        barkTint,
-        0.5,
-        '#5a3418',
-        TREE_BARK_COLOR
-      );
-      const placardColor = pickThresholdColor(
-        placardTint,
-        0.45,
-        '#f0c979',
-        '#e2b762'
-      );
-      const trimColor = pickThresholdColor(trimTint, 0.5, '#7c4a1a', '#8c5b24');
-      const textColor = '#24150c';
-
-      return {
-        key,
-        postHeight,
-        postThickness,
-        placardWidth,
-        placardHeight,
-        placardDepth,
-        placardColor,
-        trimColor,
-        textColor,
-        labelCache: new Map(),
-        postMaterial: new three.MeshStandardMaterial({
-          color: postColor,
-          roughness: 0.94,
-          metalness: 0.02,
-        }),
-        placardMaterial: new three.MeshStandardMaterial({
-          color: placardColor,
-          roughness: 0.88,
-          metalness: 0.02,
-        }),
-        trimMaterial: new three.MeshStandardMaterial({
-          color: trimColor,
-          roughness: 0.86,
-          metalness: 0.03,
-        }),
-      };
-    }
-  );
+  return resolveRegionalSignStyle(tileX, tileY).createMaterials(three);
 }
 
 function arrowFromVector(dx: number, dy: number) {
@@ -496,4 +486,8 @@ interface SignStyle {
   postMaterial: ThreeMaterialLike;
   placardMaterial: ThreeMaterialLike;
   trimMaterial: ThreeMaterialLike;
+}
+
+interface SignStyleBlueprint {
+  createMaterials(three: ThreeHostLike): SignStyle;
 }

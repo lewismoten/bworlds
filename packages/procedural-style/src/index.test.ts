@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  createCoordinateValueResolver,
   createRegionalValueResolver,
   createRegionKey,
   getOrCreateRegionalValue,
@@ -55,6 +56,29 @@ describe('procedural style helpers', () => {
       tileX: 10,
       tileY: 15,
     });
+  });
+
+  it('creates reusable coordinate value resolvers for per-tile caches', () => {
+    const cache = new Map<string, { key: string; tileX: number; tileY: number }>();
+    const resolveValue = createCoordinateValueResolver(
+      cache,
+      ({ key, tileX, tileY }) => ({
+        key,
+        tileX,
+        tileY,
+      })
+    );
+
+    const first = resolveValue(4, -2);
+    const second = resolveValue(4, -2);
+
+    expect(first).toBe(second);
+    expect(first).toEqual({
+      key: '4:-2',
+      tileX: 4,
+      tileY: -2,
+    });
+    expect(cache.size).toBe(1);
   });
 
   it('tints hex colors by a multiplier', () => {

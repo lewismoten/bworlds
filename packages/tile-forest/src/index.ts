@@ -1,7 +1,11 @@
 import { hash2D, octaveNoise2D } from '@bworlds/core';
 import { createPlainsBackedTilePainter } from '@bworlds/paint-support';
 import { createTilePlugin } from '@bworlds/plugin-api';
-import { createRegionKey, tintHexColor } from '@bworlds/procedural-style';
+import {
+  createCoordinateValueResolver,
+  createRegionKey,
+  tintHexColor,
+} from '@bworlds/procedural-style';
 import { createThresholdTerrainClassifier } from '@bworlds/tile-support';
 import { createPaintedCanvasTexture } from '@bworlds/three-support';
 import type {
@@ -22,6 +26,75 @@ const TREE_REGION_SIZE = 14;
 
 const treeDescriptorCache = new Map<string, ForestTreeDescriptor[]>();
 const treeStyleCache = new Map<string, ForestTreeStyle>();
+const resolveForestTreeDescriptors = createCoordinateValueResolver(
+  treeDescriptorCache,
+  ({ tileX, tileY }) => {
+    const groveCenterX =
+      (hash2D('forest-grove-center-x', tileX, tileY) - 0.5) * 0.36;
+    const groveCenterY =
+      (hash2D('forest-grove-center-y', tileX, tileY) - 0.5) * 0.36;
+    const loneTree =
+      hash2D('forest-lone-tree', tileX, tileY) > 0.9 &&
+      hash2D('forest-tree-count', tileX, tileY) < 0.25;
+    const count = loneTree
+      ? 1
+      : 3 + Math.floor(hash2D('forest-tree-count', tileX, tileY) * 4);
+    const descriptors: ForestTreeDescriptor[] = [];
+
+    for (let index = 0; index < count; index += 1) {
+      const baseSeed = `forest-tree:${tileX}:${tileY}:${index}`;
+      const variety = getTreeVarietyIndex(tileX, tileY, index);
+      const outlierChance = hash2D(baseSeed, 0, 0);
+      const spread = loneTree ? 0.06 : outlierChance > 0.84 ? 0.28 : 0.17;
+      const descriptor: ForestTreeDescriptor = {
+        x: clampToTile(
+          groveCenterX + (hash2D(baseSeed, 1, 0) - 0.5) * spread * 2
+        ),
+        y: clampToTile(
+          groveCenterY + (hash2D(baseSeed, 2, 0) - 0.5) * spread * 2
+        ),
+        radius: 0.08 + hash2D(baseSeed, 3, 0) * 0.05,
+        scale: 0.78 + hash2D(baseSeed, 4, 0) * 0.55,
+        trunkHeight: 0.72 + hash2D(baseSeed, 5, 0) * 0.45,
+        variety,
+        branches: [],
+        foliage: [],
+      };
+
+      const branchCount = 1 + Math.floor(hash2D(baseSeed, 6, 0) * 3);
+      for (let branchIndex = 0; branchIndex < branchCount; branchIndex += 1) {
+        descriptor.branches.push({
+          x: (hash2D(baseSeed, 10 + branchIndex, 1) - 0.5) * 0.16,
+          y:
+            descriptor.trunkHeight *
+            (0.45 + hash2D(baseSeed, 10 + branchIndex, 2) * 0.28),
+          z: (hash2D(baseSeed, 10 + branchIndex, 3) - 0.5) * 0.16,
+          length: 0.72 + hash2D(baseSeed, 10 + branchIndex, 4) * 0.45,
+          pitch: 0.45 + hash2D(baseSeed, 10 + branchIndex, 5) * 0.35,
+          roll: -1.25 + hash2D(baseSeed, 10 + branchIndex, 6) * Math.PI * 0.9,
+        });
+      }
+
+      const foliageCount = 3 + Math.floor(hash2D(baseSeed, 30, 0) * 3);
+      for (let foliageIndex = 0; foliageIndex < foliageCount; foliageIndex += 1) {
+        descriptor.foliage.push({
+          x: (hash2D(baseSeed, 40 + foliageIndex, 1) - 0.5) * 0.28,
+          y:
+            descriptor.trunkHeight *
+            (0.78 + hash2D(baseSeed, 40 + foliageIndex, 2) * 0.5),
+          z: (hash2D(baseSeed, 40 + foliageIndex, 3) - 0.5) * 0.28,
+          scaleX: 0.68 + hash2D(baseSeed, 40 + foliageIndex, 4) * 0.52,
+          scaleY: 0.58 + hash2D(baseSeed, 40 + foliageIndex, 5) * 0.48,
+          scaleZ: 0.68 + hash2D(baseSeed, 40 + foliageIndex, 6) * 0.52,
+        });
+      }
+
+      descriptors.push(descriptor);
+    }
+
+    return descriptors;
+  }
+);
 const treeGeometryCache = new WeakMap<
   object,
   {
@@ -190,79 +263,7 @@ function getTreeGeometry(three: ThreeHostLike) {
 }
 
 function getForestTreeDescriptors(tileX: number, tileY: number) {
-  const key = `${tileX}:${tileY}`;
-  if (!treeDescriptorCache.has(key)) {
-    const groveCenterX =
-      (hash2D('forest-grove-center-x', tileX, tileY) - 0.5) * 0.36;
-    const groveCenterY =
-      (hash2D('forest-grove-center-y', tileX, tileY) - 0.5) * 0.36;
-    const loneTree =
-      hash2D('forest-lone-tree', tileX, tileY) > 0.9 &&
-      hash2D('forest-tree-count', tileX, tileY) < 0.25;
-    const count = loneTree
-      ? 1
-      : 3 + Math.floor(hash2D('forest-tree-count', tileX, tileY) * 4);
-    const descriptors: ForestTreeDescriptor[] = [];
-
-    for (let index = 0; index < count; index += 1) {
-      const baseSeed = `forest-tree:${tileX}:${tileY}:${index}`;
-      const variety = getTreeVarietyIndex(tileX, tileY, index);
-      const outlierChance = hash2D(baseSeed, 0, 0);
-      const spread = loneTree ? 0.06 : outlierChance > 0.84 ? 0.28 : 0.17;
-      const descriptor: ForestTreeDescriptor = {
-        x: clampToTile(
-          groveCenterX + (hash2D(baseSeed, 1, 0) - 0.5) * spread * 2
-        ),
-        y: clampToTile(
-          groveCenterY + (hash2D(baseSeed, 2, 0) - 0.5) * spread * 2
-        ),
-        radius: 0.08 + hash2D(baseSeed, 3, 0) * 0.05,
-        scale: 0.78 + hash2D(baseSeed, 4, 0) * 0.55,
-        trunkHeight: 0.72 + hash2D(baseSeed, 5, 0) * 0.45,
-        variety,
-        branches: [],
-        foliage: [],
-      };
-
-      const branchCount = 1 + Math.floor(hash2D(baseSeed, 6, 0) * 3);
-      for (let branchIndex = 0; branchIndex < branchCount; branchIndex += 1) {
-        descriptor.branches.push({
-          x: (hash2D(baseSeed, 10 + branchIndex, 1) - 0.5) * 0.16,
-          y:
-            descriptor.trunkHeight *
-            (0.45 + hash2D(baseSeed, 10 + branchIndex, 2) * 0.28),
-          z: (hash2D(baseSeed, 10 + branchIndex, 3) - 0.5) * 0.16,
-          length: 0.72 + hash2D(baseSeed, 10 + branchIndex, 4) * 0.45,
-          pitch: 0.45 + hash2D(baseSeed, 10 + branchIndex, 5) * 0.35,
-          roll: -1.25 + hash2D(baseSeed, 10 + branchIndex, 6) * Math.PI * 0.9,
-        });
-      }
-
-      const foliageCount = 3 + Math.floor(hash2D(baseSeed, 30, 0) * 3);
-      for (
-        let foliageIndex = 0;
-        foliageIndex < foliageCount;
-        foliageIndex += 1
-      ) {
-        descriptor.foliage.push({
-          x: (hash2D(baseSeed, 40 + foliageIndex, 1) - 0.5) * 0.28,
-          y:
-            descriptor.trunkHeight *
-            (0.78 + hash2D(baseSeed, 40 + foliageIndex, 2) * 0.5),
-          z: (hash2D(baseSeed, 40 + foliageIndex, 3) - 0.5) * 0.28,
-          scaleX: 0.68 + hash2D(baseSeed, 40 + foliageIndex, 4) * 0.52,
-          scaleY: 0.58 + hash2D(baseSeed, 40 + foliageIndex, 5) * 0.48,
-          scaleZ: 0.68 + hash2D(baseSeed, 40 + foliageIndex, 6) * 0.52,
-        });
-      }
-
-      descriptors.push(descriptor);
-    }
-
-    treeDescriptorCache.set(key, descriptors);
-  }
-
-  return treeDescriptorCache.get(key)!;
+  return resolveForestTreeDescriptors(tileX, tileY);
 }
 
 function getTreeVarietyIndex(tileX: number, tileY: number, treeIndex: number) {

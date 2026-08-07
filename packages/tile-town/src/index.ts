@@ -4,11 +4,14 @@ import {
   createNamedPoi,
 } from '@bworlds/poi-support';
 import {
+  createCoordinateValueResolver,
   createRegionalValueResolver,
   pickThresholdColor,
 } from '@bworlds/procedural-style';
 import {
   createPaintedCanvasTexture,
+  createTexturedPlaneMesh,
+  getOrCreatePaintedCanvasTexture,
   createPaintedStandardMaterial,
 } from '@bworlds/three-support';
 import type {
@@ -25,8 +28,54 @@ import type {
 
 const TOWN_REGION_SIZE = 18;
 const signLabelCache = new Map<string, ThreeTextureLike>();
-const townStyleCache = new Map<string, TownStyle>();
+const townStyleCache = new Map<string, TownStyleBlueprint>();
 const townDescriptorCache = new Map<string, TownDescriptor[]>();
+const resolveTownDescriptors = createCoordinateValueResolver(
+  townDescriptorCache,
+  ({ tileX, tileY }) => {
+    const complexity = hash2D('town-complexity', tileX, tileY);
+    const count = 3 + Math.floor(complexity * 4);
+    const descriptors: TownDescriptor[] = [];
+
+    for (let index = 0; index < count; index += 1) {
+      const baseSeed = `town-building:${tileX}:${tileY}:${index}`;
+      const width = 0.28 + hash2D(baseSeed, 1, 0) * 0.22;
+      const depth = 0.26 + hash2D(baseSeed, 2, 0) * 0.24;
+      const height = 0.55 + hash2D(baseSeed, 3, 0) * 0.55;
+      const descriptor: TownDescriptor = {
+        x: (hash2D(baseSeed, 4, 0) - 0.5) * 0.54,
+        y: (hash2D(baseSeed, 5, 0) - 0.5) * 0.54,
+        width,
+        depth,
+        height,
+        rotation: hash2D(baseSeed, 6, 0) > 0.5 ? 0 : Math.PI * 0.5,
+        roofRadius:
+          Math.max(width, depth) * (0.96 + hash2D(baseSeed, 7, 0) * 0.26),
+        roofHeight: 0.18 + hash2D(baseSeed, 8, 0) * 0.2,
+        windows: [],
+      };
+
+      const windowCount = 1 + Math.floor(hash2D(baseSeed, 9, 0) * 3);
+      for (let windowIndex = 0; windowIndex < windowCount; windowIndex += 1) {
+        descriptor.windows.push({
+          x:
+            ((windowIndex + 1) / (windowCount + 1) - 0.5) *
+            descriptor.width *
+            0.75,
+          y:
+            descriptor.height *
+            (0.48 + hash2D(baseSeed, 10 + windowIndex, 0) * 0.16),
+          width: descriptor.width * 0.12,
+          height: descriptor.height * 0.14,
+        });
+      }
+
+      descriptors.push(descriptor);
+    }
+
+    return descriptors;
+  }
+);
 const resolveTownStyle = createRegionalValueResolver(
   townStyleCache,
   TOWN_REGION_SIZE,
@@ -304,14 +353,11 @@ function createTownLabelSprite(
   style: TownStyle
 ) {
   const texture = getTownLabelTexture(three, name, style);
-  return new three.Mesh(
-    new three.PlaneGeometry(width * 0.9, height * 0.76),
-    new three.MeshBasicMaterial({
-      map: texture,
-      transparent: true,
-      depthWrite: false,
-    })
-  );
+  return createTexturedPlaneMesh(three, {
+    width: width * 0.9,
+    height: height * 0.76,
+    texture,
+  });
 }
 
 function getTownLabelTexture(
@@ -320,31 +366,24 @@ function getTownLabelTexture(
   style: TownStyle
 ) {
   const key = `${style.key}:town:${name}`;
-  if (!signLabelCache.has(key)) {
-    signLabelCache.set(
-      key,
-      createPaintedCanvasTexture(three, {
-        width: 320,
-        height: 96,
-        wrap: false,
-        paint(context, canvas) {
-          context.clearRect(0, 0, canvas.width, canvas.height);
-          context.fillStyle = style.signBaseColor;
-          context.fillRect(0, 0, canvas.width, canvas.height);
-          context.strokeStyle = style.trimColor;
-          context.lineWidth = 6;
-          context.strokeRect(3, 3, canvas.width - 6, canvas.height - 6);
-          context.fillStyle = style.signTextColor;
-          context.font = 'bold 28px sans-serif';
-          context.textAlign = 'center';
-          context.textBaseline = 'middle';
-          context.fillText(name, canvas.width * 0.5, canvas.height * 0.5);
-        },
-      })
-    );
-  }
-
-  return signLabelCache.get(key);
+  return getOrCreatePaintedCanvasTexture(signLabelCache, key, three, {
+    width: 320,
+    height: 96,
+    wrap: false,
+    paint(context, canvas) {
+      context.clearRect(0, 0, canvas.width, canvas.height);
+      context.fillStyle = style.signBaseColor;
+      context.fillRect(0, 0, canvas.width, canvas.height);
+      context.strokeStyle = style.trimColor;
+      context.lineWidth = 6;
+      context.strokeRect(3, 3, canvas.width - 6, canvas.height - 6);
+      context.fillStyle = style.signTextColor;
+      context.font = 'bold 28px sans-serif';
+      context.textAlign = 'center';
+      context.textBaseline = 'middle';
+      context.fillText(name, canvas.width * 0.5, canvas.height * 0.5);
+    },
+  });
 }
 
 function getTownStyle(
@@ -414,52 +453,7 @@ function paintTownRoofTexture(
 }
 
 function getTownDescriptors(tileX: number, tileY: number) {
-  const key = `${tileX}:${tileY}`;
-  if (!townDescriptorCache.has(key)) {
-    const complexity = hash2D('town-complexity', tileX, tileY);
-    const count = 3 + Math.floor(complexity * 4);
-    const descriptors: TownDescriptor[] = [];
-
-    for (let index = 0; index < count; index += 1) {
-      const baseSeed = `town-building:${tileX}:${tileY}:${index}`;
-      const width = 0.28 + hash2D(baseSeed, 1, 0) * 0.22;
-      const depth = 0.26 + hash2D(baseSeed, 2, 0) * 0.24;
-      const height = 0.55 + hash2D(baseSeed, 3, 0) * 0.55;
-      const descriptor: TownDescriptor = {
-        x: (hash2D(baseSeed, 4, 0) - 0.5) * 0.54,
-        y: (hash2D(baseSeed, 5, 0) - 0.5) * 0.54,
-        width,
-        depth,
-        height,
-        rotation: hash2D(baseSeed, 6, 0) > 0.5 ? 0 : Math.PI * 0.5,
-        roofRadius:
-          Math.max(width, depth) * (0.96 + hash2D(baseSeed, 7, 0) * 0.26),
-        roofHeight: 0.18 + hash2D(baseSeed, 8, 0) * 0.2,
-        windows: [],
-      };
-
-      const windowCount = 1 + Math.floor(hash2D(baseSeed, 9, 0) * 3);
-      for (let windowIndex = 0; windowIndex < windowCount; windowIndex += 1) {
-        descriptor.windows.push({
-          x:
-            ((windowIndex + 1) / (windowCount + 1) - 0.5) *
-            descriptor.width *
-            0.75,
-          y:
-            descriptor.height *
-            (0.48 + hash2D(baseSeed, 10 + windowIndex, 0) * 0.16),
-          width: descriptor.width * 0.12,
-          height: descriptor.height * 0.14,
-        });
-      }
-
-      descriptors.push(descriptor);
-    }
-
-    townDescriptorCache.set(key, descriptors);
-  }
-
-  return townDescriptorCache.get(key)!;
+  return resolveTownDescriptors(tileX, tileY);
 }
 
 interface TownStyle {
@@ -471,6 +465,10 @@ interface TownStyle {
   roofMaterial: ThreeMaterialLike;
   trimMaterial: ThreeMaterialLike;
   windowMaterial: ThreeMaterialLike;
+}
+
+interface TownStyleBlueprint {
+  createMaterials(three: ThreeHostLike): TownStyle;
 }
 
 interface TownWindow {

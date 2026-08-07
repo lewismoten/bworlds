@@ -76,6 +76,28 @@ export function createPaintedCanvasTexture(
   });
 }
 
+export function getOrCreatePaintedCanvasTexture(
+  cache: Map<string, ThreeTextureLike>,
+  key: string,
+  three: ThreeHostLike,
+  options: {
+    width: number;
+    height: number;
+    repeatX?: number;
+    repeatY?: number;
+    wrap?: boolean;
+    paint: (
+      context: CanvasRenderingContext2D,
+      canvas: HTMLCanvasElement
+    ) => void;
+  }
+): ThreeTextureLike {
+  if (!cache.has(key)) {
+    cache.set(key, createPaintedCanvasTexture(three, options));
+  }
+  return cache.get(key)!;
+}
+
 export function createPaintedStandardMaterial(
   three: ThreeHostLike,
   options: {
@@ -110,6 +132,47 @@ export function createPaintedStandardMaterial(
     opacity: options.opacity,
     side: options.side,
   });
+}
+
+export function createBasicMaterial(
+  three: ThreeHostLike,
+  options: {
+    color?: string;
+    map?: ThreeTextureLike;
+    transparent?: boolean;
+    depthWrite?: boolean;
+    side?: unknown;
+  } = {}
+) {
+  return new three.MeshBasicMaterial({
+    color: options.color,
+    map: options.map,
+    transparent: options.transparent,
+    depthWrite: options.depthWrite,
+    side: options.side,
+  });
+}
+
+export function createTexturedPlaneMesh(
+  three: ThreeHostLike,
+  options: {
+    width: number;
+    height: number;
+    texture: ThreeTextureLike;
+    transparent?: boolean;
+    depthWrite?: boolean;
+    color?: string;
+  }
+) {
+  return new three.Mesh(
+    new three.PlaneGeometry(options.width, options.height),
+    createBasicMaterial(three, {
+      map: options.texture,
+      transparent: options.transparent ?? true,
+      depthWrite: options.depthWrite ?? false,
+      color: options.color,
+    })
+  );
 }
 
 export interface PathPointLike {

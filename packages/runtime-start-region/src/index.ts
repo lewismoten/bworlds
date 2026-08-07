@@ -59,6 +59,30 @@ function getCuratedTile({
   x: number;
   y: number;
 }) {
+  const tile = curatedSpawnTiles.get(`${x},${y}`);
+  if (tile) {
+    if (tile.kind === 'dungeon' && tile.poi) {
+      return {
+        ...tile,
+        poi: { ...tile.poi, name: generatePoiName(seed, 'dungeon', -5, 4) },
+      };
+    }
+    if (tile.kind === 'cave' && tile.poi) {
+      return {
+        ...tile,
+        poi: { ...tile.poi, name: generatePoiName(seed, 'cave', -4, 5) },
+      };
+    }
+    if (tile.kind === 'town' && tile.poi) {
+      return {
+        ...tile,
+        poi: { ...tile.poi, name: generatePoiName(seed, 'town', 5, 4) },
+      };
+    }
+
+    return tile;
+  }
+
   if (Math.abs(x) <= 4 && Math.abs(y) <= 4) {
     return {
       kind: 'plains',
@@ -66,29 +90,5 @@ function getCuratedTile({
     };
   }
 
-  const tile = curatedSpawnTiles.get(`${x},${y}`);
-  if (!tile) {
-    return null;
-  }
-
-  if (tile.kind === 'dungeon' && tile.poi) {
-    return {
-      ...tile,
-      poi: { ...tile.poi, name: generatePoiName(seed, 'dungeon', -5, 4) },
-    };
-  }
-  if (tile.kind === 'cave' && tile.poi) {
-    return {
-      ...tile,
-      poi: { ...tile.poi, name: generatePoiName(seed, 'cave', -4, 5) },
-    };
-  }
-  if (tile.kind === 'town' && tile.poi) {
-    return {
-      ...tile,
-      poi: { ...tile.poi, name: generatePoiName(seed, 'town', 5, 4) },
-    };
-  }
-
-  return tile;
+  return null;
 }

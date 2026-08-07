@@ -30,7 +30,7 @@ const RUINS_BLOCKED_KINDS = new Set([
   'dungeon',
   'sign',
 ]);
-const ruinsStyleCache = new Map<string, RuinsStyle>();
+const ruinsStyleCache = new Map<string, RuinsStyleBlueprint>();
 const resolveRuinsStyle = createRegionalValueResolver(
   ruinsStyleCache,
   RUINS_REGION_SIZE,
@@ -296,4 +296,8 @@ function withAlpha(hex: string, alpha: number) {
 type RuinsStyle = {
   stoneMaterial: ThreeMaterialLike;
   accentMaterial: ThreeMaterialLike;
+};
+
+type RuinsStyleBlueprint = {
+  createMaterials(three: ThreeHostLike): RuinsStyle;
 };

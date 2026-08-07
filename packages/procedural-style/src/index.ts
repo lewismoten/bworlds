@@ -63,6 +63,30 @@ export function createRegionalValueResolver<T>(
   };
 }
 
+export function createCoordinateValueResolver<T>(
+  cache: Map<string, T>,
+  createValue: (context: {
+    key: string;
+    tileX: number;
+    tileY: number;
+  }) => T
+) {
+  return function resolveCoordinateValue(tileX: number, tileY: number): T {
+    const key = `${tileX}:${tileY}`;
+    if (!cache.has(key)) {
+      cache.set(
+        key,
+        createValue({
+          key,
+          tileX,
+          tileY,
+        })
+      );
+    }
+    return cache.get(key)!;
+  };
+}
+
 export function pickThresholdColor(
   signal: number,
   threshold: number,
