@@ -88,6 +88,33 @@ describe('plugin registry', () => {
     ]);
   });
 
+  it('tracks the plugin-owned default tile kind and definition', () => {
+    const registry = new PluginRegistry();
+    registry.register({
+      name: 'tile-ashlands',
+      tiles: [
+        {
+          kind: 'ashlands',
+          isDefaultTile: true,
+          definition: {
+            name: 'Ashlands',
+            color: '#5b5560',
+            miniColor: '#7a737f',
+            walkable: true,
+            wallHeight: 0,
+          },
+        },
+      ],
+    });
+
+    expect(registry.getDefaultTileKind()).toBe('ashlands');
+    expect(registry.getDefaultTileDefinition()).toEqual(
+      expect.objectContaining({
+        name: 'Ashlands',
+      })
+    );
+  });
+
   it('resolves tile definitions and merged definition catalogs through the registry', () => {
     const registry = new PluginRegistry();
     registry.register({
@@ -177,6 +204,17 @@ describe('plugin registry', () => {
               travelGroup: tileX === 4 && tileY === 5 ? 'forest-path' : null,
             };
           },
+          paint2DOverlay({ worldX, worldY, variant, timeMs }) {
+            return (
+              worldX === 4 &&
+              worldY === 5 &&
+              variant === 2 &&
+              timeMs === 1234
+            );
+          },
+          resolveFloorKind3D({ tileX, tileY }) {
+            return tileX === 4 && tileY === 5 ? 'plains' : null;
+          },
           createWorldAction({ tile, seed, x, y }) {
             return {
               type: 'inspect',
@@ -237,6 +275,34 @@ describe('plugin registry', () => {
         tileY: 5,
       })
     ).toEqual(expect.objectContaining({ travelGroup: 'forest-path' }));
+    expect(
+      registry.paint2DOverlay({
+        context: {} as CanvasRenderingContext2D,
+        tile,
+        definition: {
+          name: 'Forest',
+          color: '#000000',
+          miniColor: '#111111',
+          walkable: true,
+          wallHeight: 0.38,
+        },
+        x: 0,
+        y: 0,
+        size: 16,
+        worldX: 4,
+        worldY: 5,
+        variant: 2,
+        timeMs: 1234,
+      })
+    ).toBe(true);
+    expect(
+      registry.resolveFloorKind3D({
+        state,
+        tile,
+        tileX: 4,
+        tileY: 5,
+      })
+    ).toBe('plains');
     expect(
       registry.createWorldAction({
         seed: 'spec',

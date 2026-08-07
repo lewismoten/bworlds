@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
+  createBoundarySurfaceProfile,
   createRouteTraversalProfile,
   createThresholdTerrainClassifier,
+  resolveDominantNeighborFloorKind3D,
 } from './index.ts';
 
 describe('tile support', () => {
@@ -19,6 +21,29 @@ describe('tile support', () => {
     ).toEqual({
       travelGroup: 'route',
       slideAxis: 'ew',
+    });
+  });
+
+  it('creates reusable boundary surface profiles for 3D terrain transitions', () => {
+    expect(
+      createBoundarySurfaceProfile({
+        surfaceHeight: -0.12,
+        boundaryRole: 'channel',
+        underlayKind: 'river',
+        boundaryTransition: {
+          maxChamferDrop: 0.08,
+          bodyInset: 0.08,
+        },
+      })
+    ).toEqual({
+      surfaceHeight: -0.12,
+      boundaryRole: 'channel',
+      underlayKind: 'river',
+      chamferEligible: false,
+      boundaryTransition: {
+        maxChamferDrop: 0.08,
+        bodyInset: 0.08,
+      },
     });
   });
 
@@ -100,5 +125,38 @@ describe('tile support', () => {
         bridgeAnchors: [],
       })
     ).toEqual({ kind: 'ocean', note: 'Open water.' });
+  });
+
+  it('resolves the dominant neighboring floor kind for 3D tile overlays', () => {
+    expect(
+      resolveDominantNeighborFloorKind3D(
+        {
+          tile: { kind: 'road' },
+          tileX: 0,
+          tileY: 0,
+          state: {
+            getCurrentTile(x: number, y: number) {
+              const key = `${x}:${y}`;
+              const kinds: Record<string, string> = {
+                '-1:-1': 'plains',
+                '0:-1': 'plains',
+                '1:-1': 'forest',
+                '-1:0': 'plains',
+                '1:0': 'road',
+                '-1:1': 'forest',
+                '0:1': 'plains',
+                '1:1': 'river',
+              };
+              return { kind: kinds[key] ?? 'road' };
+            },
+          } as any,
+        },
+        {
+          isExcludedKind(kind) {
+            return kind === 'road' || kind === 'river';
+          },
+        }
+      )
+    ).toBe('plains');
   });
 });

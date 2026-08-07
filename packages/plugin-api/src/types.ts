@@ -115,11 +115,6 @@ export type ThreeGeometryLike = unknown;
 export type ThreeMaterialLike = unknown;
 export type ThreeTextureLike = unknown;
 
-export interface Create3DModelMaterials {
-  mountainMaterial?: ThreeMaterialLike;
-  [key: string]: ThreeMaterialLike | undefined;
-}
-
 export interface CardinalDirectionLike {
   dx: WorldX;
   dy: WorldY;
@@ -181,12 +176,30 @@ export interface Paint2DContext extends TiledPoint {
   ): void;
 }
 
+export interface Paint2DOverlayContext {
+  context: CanvasRenderingContext2D;
+  tile: TileLike;
+  definition: TileDefinition;
+  x: number;
+  y: number;
+  size: number;
+  worldX: number;
+  worldY: number;
+  variant: number;
+  timeMs?: number;
+}
+
 export interface Create3DModelContext extends TileCoordinate {
   three: ThreeHostLike;
-  materials: Create3DModelMaterials;
 }
 
 export type SurfaceBoundaryRole3D = 'sea' | 'channel' | 'crossing';
+
+export interface SurfaceBoundaryTransition3D {
+  maxChamferDrop?: number;
+  minBankHeight?: number;
+  bodyInset?: number;
+}
 
 export interface SurfaceProfile3DContext extends TileCoordinate {}
 
@@ -195,6 +208,7 @@ export interface SurfaceProfile3D {
   boundaryRole?: SurfaceBoundaryRole3D | null;
   underlayKind?: string | null;
   chamferEligible?: boolean;
+  boundaryTransition?: SurfaceBoundaryTransition3D | null;
 }
 
 export type TravelSlideAxis3D = 'ew' | 'ns';
@@ -205,6 +219,8 @@ export interface TraversalProfile3D {
   travelGroup?: string | null;
   slideAxis?: TravelSlideAxis3D | null;
 }
+
+export interface ResolveFloorKind3DContext extends TileCoordinate {}
 
 interface DecoratedSeedTile extends SeededPoint {
   tile: TileLike;
@@ -253,6 +269,10 @@ export interface WorldActionLike {
 export interface PluginRegistryLike {
   getTilePlugin(kind: Kind): TilePlugin | null;
   getTileDefinition(kind: Kind): TileDefinitionLike | null;
+  getDefaultTileKind(fallback?: Kind): Kind;
+  getDefaultTileDefinition(
+    fallback?: TileDefinitionLike | null
+  ): TileDefinitionLike | null;
   resolveTileDefinition(
     kind: Kind,
     fallback?: TileDefinitionLike | null
@@ -272,6 +292,8 @@ export interface PluginRegistryLike {
   getTraversalProfile3D(
     payload: TraversalProfile3DContext
   ): void | TraversalProfile3D;
+  paint2DOverlay(payload: Paint2DOverlayContext): boolean | void;
+  resolveFloorKind3D(payload: ResolveFloorKind3DContext): void | Kind;
   createWorldAction(payload: CreateWorldActionContext): void | WorldActionLike;
   decorateOverworldTile(payload: DecorateOverworldTileContext): TileLike;
   decorateTownTile(payload: DecorateTownTileContext): TileLike;
@@ -296,6 +318,7 @@ export interface CreateWorldActionContext extends SeededPoint {
 
 export interface TilePlugin extends Pick<TileLike, 'kind'> {
   definition?: TileDefinitionLike;
+  isDefaultTile?: boolean;
   classifyTerrainTile?: (
     context: ClassifyOverworldTileContext
   ) => TileLike | null;
@@ -303,6 +326,7 @@ export interface TilePlugin extends Pick<TileLike, 'kind'> {
     context: ClassifyOverworldTileContext
   ) => TileLike | null;
   paint2D?: (context: Paint2DContext) => boolean | void;
+  paint2DOverlay?: (context: Paint2DOverlayContext) => boolean | void;
   create3DModel?: (context: Create3DModelContext) => unknown;
   canOccupy3D?: (context: CanOccupy3DContext) => boolean | null | void;
   getSurfaceProfile3D?: (
@@ -311,6 +335,9 @@ export interface TilePlugin extends Pick<TileLike, 'kind'> {
   getTraversalProfile3D?: (
     context: TraversalProfile3DContext
   ) => TraversalProfile3D | null | void;
+  resolveFloorKind3D?: (
+    context: ResolveFloorKind3DContext
+  ) => Kind | null | void;
   createWorldAction?: (
     context: CreateWorldActionContext
   ) => WorldActionLike | null | void;

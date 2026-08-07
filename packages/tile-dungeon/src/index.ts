@@ -8,7 +8,7 @@ import {
   getOrCreateRegionalValue,
   pickThresholdColor,
 } from '@bworlds/procedural-style';
-import { createCanvasTexture } from '@bworlds/three-support';
+import { createPaintedCanvasTexture } from '@bworlds/three-support';
 import type {
   Create3DModelContext,
   Paint2DContext,
@@ -281,35 +281,37 @@ function createDungeonStoneTexture(
   regionX: number,
   regionY: number
 ) {
-  const canvas = document.createElement('canvas');
-  canvas.width = 64;
-  canvas.height = 64;
-  const context = canvas.getContext('2d')!;
-  context.fillStyle = baseColor;
-  context.fillRect(0, 0, canvas.width, canvas.height);
+  return createPaintedCanvasTexture(three, {
+    width: 64,
+    height: 64,
+    repeatX: 1.2,
+    repeatY: 1.2,
+    paint(context, canvas) {
+      context.fillStyle = baseColor;
+      context.fillRect(0, 0, canvas.width, canvas.height);
 
-  for (let row = 0; row < canvas.height; row += 12) {
-    context.fillStyle = 'rgba(255,255,255,0.12)';
-    context.fillRect(0, row, canvas.width, 1);
-    context.fillStyle = accentColor;
-    const shift = ((row / 12) % 2) * 10;
-    for (let col = -10 + shift; col < canvas.width + 10; col += 20) {
-      context.fillRect(col, row, 2, 12);
-    }
-  }
+      for (let row = 0; row < canvas.height; row += 12) {
+        context.fillStyle = 'rgba(255,255,255,0.12)';
+        context.fillRect(0, row, canvas.width, 1);
+        context.fillStyle = accentColor;
+        const shift = ((row / 12) % 2) * 10;
+        for (let col = -10 + shift; col < canvas.width + 10; col += 20) {
+          context.fillRect(col, row, 2, 12);
+        }
+      }
 
-  for (let i = 0; i < 26; i += 1) {
-    const x = Math.floor(
-      hash2D('dungeon-chip-x', regionX * 37 + i, regionY) * canvas.width
-    );
-    const y = Math.floor(
-      hash2D('dungeon-chip-y', regionY * 41 + i, regionX) * canvas.height
-    );
-    context.fillStyle = 'rgba(20,20,24,0.18)';
-    context.fillRect(x, y, 3, 2);
-  }
-
-  return finalizeTexture(three, canvas, 1.2, 1.2);
+      for (let i = 0; i < 26; i += 1) {
+        const x = Math.floor(
+          hash2D('dungeon-chip-x', regionX * 37 + i, regionY) * canvas.width
+        );
+        const y = Math.floor(
+          hash2D('dungeon-chip-y', regionY * 41 + i, regionX) * canvas.height
+        );
+        context.fillStyle = 'rgba(20,20,24,0.18)';
+        context.fillRect(x, y, 3, 2);
+      }
+    },
+  });
 }
 
 function createDungeonRoofTexture(
@@ -319,50 +321,45 @@ function createDungeonRoofTexture(
   regionX: number,
   regionY: number
 ) {
-  const canvas = document.createElement('canvas');
-  canvas.width = 64;
-  canvas.height = 64;
-  const context = canvas.getContext('2d')!;
-  context.fillStyle = baseColor;
-  context.fillRect(0, 0, canvas.width, canvas.height);
+  return createPaintedCanvasTexture(three, {
+    width: 64,
+    height: 64,
+    repeatX: 1,
+    repeatY: 1.3,
+    paint(context, canvas) {
+      context.fillStyle = baseColor;
+      context.fillRect(0, 0, canvas.width, canvas.height);
 
-  for (let row = 0; row < canvas.height; row += 7) {
-    context.fillStyle = accentColor;
-    context.fillRect(0, row, canvas.width, 2);
-    context.fillStyle = 'rgba(255,255,255,0.08)';
-    context.fillRect(0, row + 1, canvas.width, 1);
-  }
-
-  return finalizeTexture(three, canvas, 1, 1.3);
+      for (let row = 0; row < canvas.height; row += 7) {
+        context.fillStyle = accentColor;
+        context.fillRect(0, row, canvas.width, 2);
+        context.fillStyle = 'rgba(255,255,255,0.08)';
+        context.fillRect(0, row + 1, canvas.width, 1);
+      }
+    },
+  });
 }
 
 function createDungeonBarTexture(three: ThreeHostLike) {
-  const canvas = document.createElement('canvas');
-  canvas.width = 32;
-  canvas.height = 64;
-  const context = canvas.getContext('2d')!;
-  context.fillStyle = '#2b3139';
-  context.fillRect(0, 0, canvas.width, canvas.height);
+  return createPaintedCanvasTexture(three, {
+    width: 32,
+    height: 64,
+    repeatX: 1,
+    repeatY: 1,
+    paint(context, canvas) {
+      context.fillStyle = '#2b3139';
+      context.fillRect(0, 0, canvas.width, canvas.height);
 
-  for (let x = 2; x < canvas.width; x += 6) {
-    context.fillStyle = '#717b88';
-    context.fillRect(x, 0, 2, canvas.height);
-  }
-  for (let y = 8; y < canvas.height; y += 12) {
-    context.fillStyle = 'rgba(255,255,255,0.16)';
-    context.fillRect(0, y, canvas.width, 2);
-  }
-
-  return finalizeTexture(three, canvas, 1, 1);
-}
-
-function finalizeTexture(
-  three: ThreeHostLike,
-  canvas: HTMLCanvasElement,
-  repeatX: number,
-  repeatY: number
-) {
-  return createCanvasTexture(three, canvas, { repeatX, repeatY });
+      for (let x = 2; x < canvas.width; x += 6) {
+        context.fillStyle = '#717b88';
+        context.fillRect(x, 0, 2, canvas.height);
+      }
+      for (let y = 8; y < canvas.height; y += 12) {
+        context.fillStyle = 'rgba(255,255,255,0.16)';
+        context.fillRect(0, y, canvas.width, 2);
+      }
+    },
+  });
 }
 
 interface DungeonStyle {

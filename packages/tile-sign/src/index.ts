@@ -7,7 +7,7 @@ import {
   pickThresholdColor,
 } from '@bworlds/procedural-style';
 import { createRouteTraversalProfile } from '@bworlds/tile-support';
-import { createCanvasTexture } from '@bworlds/three-support';
+import { createPaintedCanvasTexture } from '@bworlds/three-support';
 import type {
   ClassifyOverworldTileContext,
   Create3DModelContext,
@@ -30,116 +30,116 @@ const signStyleCache = new Map<string, SignStyle>();
 
 export function createSignTilePlugin() {
   return createTilePlugin('tile-sign', [
-      {
-        kind: 'sign',
-        definition: {
-          name: 'Sign Post',
-          color: '#d97706',
-          miniColor: '#f59e0b',
-          walkable: true,
-          wallHeight: 0.3,
-        },
-        getTraversalProfile3D(): TraversalProfile3D {
-          return createRouteTraversalProfile();
-        },
-        classifyOverworldTile({
+    {
+      kind: 'sign',
+      definition: {
+        name: 'Sign Post',
+        color: '#d97706',
+        miniColor: '#f59e0b',
+        walkable: true,
+        wallHeight: 0.3,
+      },
+      getTraversalProfile3D(): TraversalProfile3D {
+        return createRouteTraversalProfile();
+      },
+      classifyOverworldTile({
+        x,
+        y,
+        tile,
+        nearLand,
+        signChance,
+        townAnchors,
+        bridgeAnchors,
+        sampleTerrainSignals,
+      }: ClassifyOverworldTileContext) {
+        if (!canPlaceLandPoi(nearLand, tile.kind)) {
+          return null;
+        }
+
+        const nearestTown = [...townAnchors].sort(
+          (left, right) =>
+            Math.hypot(x - left.x, y - left.y) -
+            Math.hypot(x - right.x, y - right.y)
+        )[0];
+        const closeToTown =
+          nearestTown &&
+          Math.hypot(x - nearestTown.x, y - nearestTown.y) < SIGN_TOWN_BUFFER;
+        const roadProfile = getRoadsideSignProfile({
           x,
           y,
-          tile,
-          nearLand,
-          signChance,
           townAnchors,
           bridgeAnchors,
           sampleTerrainSignals,
-        }: ClassifyOverworldTileContext) {
-          if (!canPlaceLandPoi(nearLand, tile.kind)) {
-            return null;
-          }
+        });
 
-          const nearestTown = [...townAnchors].sort(
-            (left, right) =>
-              Math.hypot(x - left.x, y - left.y) -
-              Math.hypot(x - right.x, y - right.y)
-          )[0];
-          const closeToTown =
-            nearestTown &&
-            Math.hypot(x - nearestTown.x, y - nearestTown.y) < SIGN_TOWN_BUFFER;
-          const roadProfile = getRoadsideSignProfile({
-            x,
-            y,
-            townAnchors,
-            bridgeAnchors,
-            sampleTerrainSignals,
-          });
+        if (roadProfile.onRoute) {
+          return null;
+        }
 
-          if (roadProfile.onRoute) {
-            return null;
-          }
+        const threshold = roadProfile.atJunction
+          ? JUNCTION_SIGN_THRESHOLD
+          : ROADSIDE_SIGN_THRESHOLD;
+        const chance = signChance ?? 0;
 
-          const threshold = roadProfile.atJunction
-            ? JUNCTION_SIGN_THRESHOLD
-            : ROADSIDE_SIGN_THRESHOLD;
-          const chance = signChance ?? 0;
+        if (roadProfile.adjacentRoadCount === 0 || chance <= threshold) {
+          return null;
+        }
 
-          if (roadProfile.adjacentRoadCount === 0 || chance <= threshold) {
-            return null;
-          }
+        if (!roadProfile.atJunction && !closeToTown) {
+          return null;
+        }
 
-          if (!roadProfile.atJunction && !closeToTown) {
-            return null;
-          }
-
-          return {
-            kind: 'sign',
-            note: nearestTown
-              ? `A sign points travelers toward ${nearestTown.name ?? 'a nearby town'}.`
-              : 'A weathered sign points farther down the road.',
-          };
-        },
-        paint2D({ context, x, y, motif, fillRect }: Paint2DContext) {
-          paintPlainsBackdrop({ context, x, y, motif, fillRect });
-          const postX = 6 + motif.int(0, 2);
-          fillRect(context, x + postX, y + 5, 2, 7, '#5b3716');
-          fillRect(context, x + postX - 3, y + 3, 8, 4, '#f3c266');
-          fillRect(context, x + postX - 2, y + 4, 6, 1, '#8a5a19');
-          return true;
-        },
-        create3DModel({ three, state, tileX, tileY }: Create3DModelContext) {
-          const style = getRegionalSignStyle(three, tileX, tileY);
-          const group = new three.Group();
-          const nearbyPois = getNearbyPois(state, tileX, tileY);
-          const placardCount = Math.max(1, Math.min(3, nearbyPois.length || 1));
-          const useSecondPost =
-            placardCount > 2 && hash2D('sign-second-post', tileX, tileY) > 0.48;
-
-          const primaryPost = createSignPost(three, style, placardCount);
-          group.add(primaryPost);
-
-          const placards =
-            nearbyPois.length > 0
-              ? nearbyPois.slice(0, 3)
-              : [fallbackPlacard(tileX, tileY)];
-
-          placards.forEach((poi, index) => {
-            const mount =
-              useSecondPost && index === 2
-                ? createSecondaryPost(three, style)
-                : primaryPost;
-
-            if (useSecondPost && index === 2) {
-              mount.position.x = 0.18 + style.postThickness * 0.7;
-              group.add(mount);
-            }
-
-            const signArm = createDirectionalPlacard(three, style, poi, index);
-            mount.add(signArm);
-          });
-
-          group.position.set(tileX, 0, tileY);
-          return group;
-        },
+        return {
+          kind: 'sign',
+          note: nearestTown
+            ? `A sign points travelers toward ${nearestTown.name ?? 'a nearby town'}.`
+            : 'A weathered sign points farther down the road.',
+        };
       },
-    ]);
+      paint2D({ context, x, y, motif, fillRect }: Paint2DContext) {
+        paintPlainsBackdrop({ context, x, y, motif, fillRect });
+        const postX = 6 + motif.int(0, 2);
+        fillRect(context, x + postX, y + 5, 2, 7, '#5b3716');
+        fillRect(context, x + postX - 3, y + 3, 8, 4, '#f3c266');
+        fillRect(context, x + postX - 2, y + 4, 6, 1, '#8a5a19');
+        return true;
+      },
+      create3DModel({ three, state, tileX, tileY }: Create3DModelContext) {
+        const style = getRegionalSignStyle(three, tileX, tileY);
+        const group = new three.Group();
+        const nearbyPois = getNearbyPois(state, tileX, tileY);
+        const placardCount = Math.max(1, Math.min(3, nearbyPois.length || 1));
+        const useSecondPost =
+          placardCount > 2 && hash2D('sign-second-post', tileX, tileY) > 0.48;
+
+        const primaryPost = createSignPost(three, style, placardCount);
+        group.add(primaryPost);
+
+        const placards =
+          nearbyPois.length > 0
+            ? nearbyPois.slice(0, 3)
+            : [fallbackPlacard(tileX, tileY)];
+
+        placards.forEach((poi, index) => {
+          const mount =
+            useSecondPost && index === 2
+              ? createSecondaryPost(three, style)
+              : primaryPost;
+
+          if (useSecondPost && index === 2) {
+            mount.position.x = 0.18 + style.postThickness * 0.7;
+            group.add(mount);
+          }
+
+          const signArm = createDirectionalPlacard(three, style, poi, index);
+          mount.add(signArm);
+        });
+
+        group.position.set(tileX, 0, tileY);
+        return group;
+      },
+    },
+  ]);
 }
 
 function getRoadsideSignProfile({
@@ -198,10 +198,7 @@ function getRoadsideSignProfile({
       sampleTerrainSignals
     ),
     adjacentRoadCount,
-    atJunction:
-      adjacentRoadCount >= 2 &&
-      touchesHorizontal &&
-      touchesVertical,
+    atJunction: adjacentRoadCount >= 2 && touchesHorizontal && touchesVertical,
   };
 }
 
@@ -298,7 +295,9 @@ function isConnectedRoad(
     }
   }
 
-  return bridgeAnchors.some((bridge) => Math.hypot(x - bridge.x, y - bridge.y) < 0.8);
+  return bridgeAnchors.some(
+    (bridge) => Math.hypot(x - bridge.x, y - bridge.y) < 0.8
+  );
 }
 
 function distanceToLineSegment(
@@ -319,10 +318,7 @@ function distanceToLineSegment(
     return Math.hypot(px - ax, py - ay);
   }
 
-  const t = Math.min(
-    1,
-    Math.max(0, (apx * abx + apy * aby) / lengthSquared)
-  );
+  const t = Math.min(1, Math.max(0, (apx * abx + apy * aby) / lengthSquared));
   const nearestX = ax + abx * t;
   const nearestY = ay + aby * t;
   return Math.hypot(px - nearestX, py - nearestY);
@@ -460,30 +456,39 @@ function getSignLabelTexture(
 ) {
   const key = `${style.key}:${poi.name}:${poi.arrow}`;
   if (!style.labelCache.has(key)) {
-    const canvas = document.createElement('canvas');
-    canvas.width = 256;
-    canvas.height = 96;
-    const context = canvas.getContext('2d')!;
-    context.clearRect(0, 0, canvas.width, canvas.height);
-    context.fillStyle = style.placardColor;
-    context.fillRect(0, 0, canvas.width, canvas.height);
-    context.strokeStyle = style.trimColor;
-    context.lineWidth = 6;
-    context.strokeRect(3, 3, canvas.width - 6, canvas.height - 6);
-    context.fillStyle = style.textColor;
-    context.font = 'bold 28px sans-serif';
-    context.textAlign = 'center';
-    context.textBaseline = 'middle';
-    const mainY = poi.distance > 20 ? 34 : 46;
-    context.fillText(`${poi.arrow} ${poi.name}`, canvas.width * 0.5, mainY);
-    if (poi.distance > 20) {
-      context.font = '16px sans-serif';
-      context.fillText(`${Math.round(poi.distance)}`, canvas.width * 0.5, 70);
-    }
-
     style.labelCache.set(
       key,
-      createCanvasTexture(three, canvas, { wrap: false })
+      createPaintedCanvasTexture(three, {
+        width: 256,
+        height: 96,
+        wrap: false,
+        paint(context, canvas) {
+          context.clearRect(0, 0, canvas.width, canvas.height);
+          context.fillStyle = style.placardColor;
+          context.fillRect(0, 0, canvas.width, canvas.height);
+          context.strokeStyle = style.trimColor;
+          context.lineWidth = 6;
+          context.strokeRect(3, 3, canvas.width - 6, canvas.height - 6);
+          context.fillStyle = style.textColor;
+          context.font = 'bold 28px sans-serif';
+          context.textAlign = 'center';
+          context.textBaseline = 'middle';
+          const mainY = poi.distance > 20 ? 34 : 46;
+          context.fillText(
+            `${poi.arrow} ${poi.name}`,
+            canvas.width * 0.5,
+            mainY
+          );
+          if (poi.distance > 20) {
+            context.font = '16px sans-serif';
+            context.fillText(
+              `${Math.round(poi.distance)}`,
+              canvas.width * 0.5,
+              70
+            );
+          }
+        },
+      })
     );
   }
 

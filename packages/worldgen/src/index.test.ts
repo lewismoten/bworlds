@@ -242,6 +242,37 @@ describe('world generator', () => {
     expect(found?.poi?.type).toMatch(/town|dungeon|cave/);
   });
 
+  it('keeps forests, rivers, and bridges present near the overworld origin band', () => {
+    const generator = createGenerator();
+    let foundForest = false;
+    let foundRiver = false;
+    let foundBridge = false;
+
+    for (let y = -160; y <= 160; y += 1) {
+      for (let x = -160; x <= 160; x += 1) {
+        const tile = generator.sampleOverworld(x, y);
+        if (tile.kind === 'forest') {
+          foundForest = true;
+        } else if (tile.kind === 'river') {
+          foundRiver = true;
+        } else if (tile.kind === 'bridge') {
+          foundBridge = true;
+        }
+
+        if (foundForest && foundRiver && foundBridge) {
+          break;
+        }
+      }
+      if (foundForest && foundRiver && foundBridge) {
+        break;
+      }
+    }
+
+    expect(foundForest).toBe(true);
+    expect(foundRiver).toBe(true);
+    expect(foundBridge).toBe(true);
+  });
+
   it('creates town maps through the registered map plugin path', () => {
     const generator = createGenerator();
     const townMap = generator.getMap({

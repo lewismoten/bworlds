@@ -5,7 +5,6 @@ import {
   getTileSpriteRect,
   getTileVariantIndex,
 } from '@bworlds/atlas';
-import { hash2D } from '@bworlds/core';
 import {
   getActivePluginRegistry,
   type SurfaceBoundaryRole3D,
@@ -15,13 +14,7 @@ const TILE_SIZE = 1;
 const CHUNK_RADIUS = 18;
 const FLOOR_THICKNESS = 0.03;
 const WATER_FLOOR_THICKNESS = 0.28;
-const MOUNTAIN_BASE_COLOR = '#6b7280';
-const WATER_SURFACE_DROP = -0.12;
-const MAX_RIVER_CHAMFER_DROP = 0.08;
-const MAX_OCEAN_CHAMFER_DROP = 0.05;
-const MIN_OCEAN_BANK_HEIGHT = 0.05;
 const RIVER_WALL_THICKNESS = 0.05;
-const WATER_BODY_INSET = 0.08;
 const FALLBACK_TILE_DEFINITION = {
   name: 'Unknown Tile',
   color: '#64748b',
@@ -64,13 +57,6 @@ export function create3DRenderer(host) {
   atlasTexture.generateMipmaps = false;
 
   const materialCache = new Map();
-  const mountainMaterial = new THREE.MeshStandardMaterial({
-    color: '#dbe4ea',
-    map: createMountainTexture(),
-    roughness: 0.96,
-    metalness: 0.02,
-    flatShading: true,
-  });
   const visibleTileNodes = new Map();
   let lastCenterKey = '';
   let lastContextKey = '';
@@ -110,9 +96,6 @@ export function create3DRenderer(host) {
       tile,
       tileX: x,
       tileY: y,
-      materials: {
-        mountainMaterial,
-      },
     });
 
     if (pluginModel) {
@@ -243,18 +226,8 @@ export function create3DRenderer(host) {
       boundaryRole,
       underlayKind: pluginProfile.underlayKind ?? null,
       chamferEligible,
+      boundaryTransition: pluginProfile.boundaryTransition ?? null,
     };
-  }
-
-  function getTraversalProfile(state, tile, tileX, tileY) {
-    return (
-      getActivePluginRegistry().getTraversalProfile3D({
-        state,
-        tile,
-        tileX,
-        tileY,
-      }) || {}
-    );
   }
 
   function getTileMaterial(kind, variant) {
@@ -302,9 +275,12 @@ export function create3DRenderer(host) {
     }
 
     const floorKind =
-      tile.kind === 'road' && state.getCurrentContext().type === 'overworld'
-        ? getRoadBedKind(state, tileX, tileY)
-        : tile.kind;
+      getActivePluginRegistry().resolveFloorKind3D({
+        state,
+        tile,
+        tileX,
+        tileY,
+      }) ?? tile.kind;
     const material = getTileMaterial(
       floorKind,
       getTileVariantIndex(floorKind, tileX, tileY)
@@ -341,14 +317,6 @@ export function create3DRenderer(host) {
       return floorMesh;
     }
 
-    const riverEdgeHeight = Math.max(
-      surfaceHeight - MAX_RIVER_CHAMFER_DROP,
-      WATER_SURFACE_DROP
-    );
-    const oceanEdgeHeight = Math.max(
-      surfaceHeight - MAX_OCEAN_CHAMFER_DROP,
-      WATER_SURFACE_DROP + MIN_OCEAN_BANK_HEIGHT
-    );
     const cornerHeights = {
       nw: surfaceHeight,
       ne: surfaceHeight,
@@ -358,26 +326,18 @@ export function create3DRenderer(host) {
 
     cornerHeights.nw = getCornerSurfaceHeight(
       surfaceHeight,
-      riverEdgeHeight,
-      oceanEdgeHeight,
       [riverNeighbors.north, riverNeighbors.west, riverNeighbors.northwest]
     );
     cornerHeights.ne = getCornerSurfaceHeight(
       surfaceHeight,
-      riverEdgeHeight,
-      oceanEdgeHeight,
       [riverNeighbors.north, riverNeighbors.east, riverNeighbors.northeast]
     );
     cornerHeights.se = getCornerSurfaceHeight(
       surfaceHeight,
-      riverEdgeHeight,
-      oceanEdgeHeight,
       [riverNeighbors.south, riverNeighbors.east, riverNeighbors.southeast]
     );
     cornerHeights.sw = getCornerSurfaceHeight(
       surfaceHeight,
-      riverEdgeHeight,
-      oceanEdgeHeight,
       [riverNeighbors.south, riverNeighbors.west, riverNeighbors.southwest]
     );
 
@@ -410,37 +370,57 @@ export function create3DRenderer(host) {
     group.add(new THREE.Mesh(topGeometry, material));
 
     const northWallHeight = getBoundaryWallHeight(
-      riverNeighbors.north,
-      riverEdgeHeight,
-      oceanEdgeHeight
+      surfaceHeight,
+      riverNeighbors.north
     );
     const eastWallHeight = getBoundaryWallHeight(
-      riverNeighbors.east,
-      riverEdgeHeight,
-      oceanEdgeHeight
+      surfaceHeight,
+      riverNeighbors.east
     );
     const southWallHeight = getBoundaryWallHeight(
-      riverNeighbors.south,
-      riverEdgeHeight,
-      oceanEdgeHeight
+      surfaceHeight,
+      riverNeighbors.south
     );
     const westWallHeight = getBoundaryWallHeight(
-      riverNeighbors.west,
-      riverEdgeHeight,
-      oceanEdgeHeight
+      surfaceHeight,
+      riverNeighbors.west
     );
 
     if (northWallHeight > 0.01) {
-      addRiverEdgeWall(group, material, 'north', northWallHeight);
+      addRiverEdgeWall(
+        group,
+        material,
+        'north',
+        northWallHeight,
+        riverNeighbors.north.surfaceHeight
+      );
     }
     if (eastWallHeight > 0.01) {
-      addRiverEdgeWall(group, material, 'east', eastWallHeight);
+      addRiverEdgeWall(
+        group,
+        material,
+        'east',
+        eastWallHeight,
+        riverNeighbors.east.surfaceHeight
+      );
     }
     if (southWallHeight > 0.01) {
-      addRiverEdgeWall(group, material, 'south', southWallHeight);
+      addRiverEdgeWall(
+        group,
+        material,
+        'south',
+        southWallHeight,
+        riverNeighbors.south.surfaceHeight
+      );
     }
     if (westWallHeight > 0.01) {
-      addRiverEdgeWall(group, material, 'west', westWallHeight);
+      addRiverEdgeWall(
+        group,
+        material,
+        'west',
+        westWallHeight,
+        riverNeighbors.west.surfaceHeight
+      );
     }
 
     return group;
@@ -505,28 +485,7 @@ export function create3DRenderer(host) {
     return group;
   }
 
-  function getRoadBedKind(state, tileX, tileY) {
-    const candidates = new Map();
-    for (let y = tileY - 1; y <= tileY + 1; y += 1) {
-      for (let x = tileX - 1; x <= tileX + 1; x += 1) {
-        if (x === tileX && y === tileY) continue;
-        const neighborTile = state.getCurrentTile(x, y);
-        const kind = neighborTile.kind;
-        if (getTraversalProfile(state, neighborTile, x, y).travelGroup) {
-          continue;
-        }
-        const profile = getTileSurfaceProfile(state, neighborTile, x, y);
-        if (profile.boundaryRole) continue;
-        candidates.set(kind, (candidates.get(kind) ?? 0) + 1);
-      }
-    }
-
-    return (
-      [...candidates.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? 'plains'
-    );
-  }
-
-  function addRiverEdgeWall(group, material, edge, wallHeight) {
+  function addRiverEdgeWall(group, material, edge, wallHeight, baseHeight) {
     const mesh =
       edge === 'north' || edge === 'south'
         ? new THREE.Mesh(
@@ -539,13 +498,13 @@ export function create3DRenderer(host) {
           );
 
     if (edge === 'north') {
-      mesh.position.set(0, WATER_SURFACE_DROP + wallHeight * 0.5, -0.5);
+      mesh.position.set(0, baseHeight + wallHeight * 0.5, -0.5);
     } else if (edge === 'east') {
-      mesh.position.set(0.5, WATER_SURFACE_DROP + wallHeight * 0.5, 0);
+      mesh.position.set(0.5, baseHeight + wallHeight * 0.5, 0);
     } else if (edge === 'south') {
-      mesh.position.set(0, WATER_SURFACE_DROP + wallHeight * 0.5, 0.5);
+      mesh.position.set(0, baseHeight + wallHeight * 0.5, 0.5);
     } else {
-      mesh.position.set(-0.5, WATER_SURFACE_DROP + wallHeight * 0.5, 0);
+      mesh.position.set(-0.5, baseHeight + wallHeight * 0.5, 0);
     }
 
     group.add(mesh);
@@ -560,18 +519,22 @@ export function create3DRenderer(host) {
       return { north: 0, east: 0, south: 0, west: 0 };
     }
 
+    const tile = state.getCurrentTile(tileX, tileY);
+    const profile = getTileSurfaceProfile(state, tile, tileX, tileY);
+    const insetAmount = profile.boundaryTransition?.bodyInset ?? 0;
+
     return {
       north: shouldInsetWaterEdge(state, tileX, tileY - 1, kind)
-        ? WATER_BODY_INSET
+        ? insetAmount
         : 0,
       east: shouldInsetWaterEdge(state, tileX + 1, tileY, kind)
-        ? WATER_BODY_INSET
+        ? insetAmount
         : 0,
       south: shouldInsetWaterEdge(state, tileX, tileY + 1, kind)
-        ? WATER_BODY_INSET
+        ? insetAmount
         : 0,
       west: shouldInsetWaterEdge(state, tileX - 1, tileY, kind)
-        ? WATER_BODY_INSET
+        ? insetAmount
         : 0,
     };
   }
@@ -597,49 +560,49 @@ export function create3DRenderer(host) {
     }
 
     const neighbors = {
-      north: getBoundaryRole(
+      north: getBoundaryProfile(
         state,
         state.getCurrentTile(tileX, tileY - 1),
         tileX,
         tileY - 1
       ),
-      northeast: getBoundaryRole(
+      northeast: getBoundaryProfile(
         state,
         state.getCurrentTile(tileX + 1, tileY - 1),
         tileX + 1,
         tileY - 1
       ),
-      east: getBoundaryRole(
+      east: getBoundaryProfile(
         state,
         state.getCurrentTile(tileX + 1, tileY),
         tileX + 1,
         tileY
       ),
-      southeast: getBoundaryRole(
+      southeast: getBoundaryProfile(
         state,
         state.getCurrentTile(tileX + 1, tileY + 1),
         tileX + 1,
         tileY + 1
       ),
-      south: getBoundaryRole(
+      south: getBoundaryProfile(
         state,
         state.getCurrentTile(tileX, tileY + 1),
         tileX,
         tileY + 1
       ),
-      southwest: getBoundaryRole(
+      southwest: getBoundaryProfile(
         state,
         state.getCurrentTile(tileX - 1, tileY + 1),
         tileX - 1,
         tileY + 1
       ),
-      west: getBoundaryRole(
+      west: getBoundaryProfile(
         state,
         state.getCurrentTile(tileX - 1, tileY),
         tileX - 1,
         tileY
       ),
-      northwest: getBoundaryRole(
+      northwest: getBoundaryProfile(
         state,
         state.getCurrentTile(tileX - 1, tileY - 1),
         tileX - 1,
@@ -659,89 +622,59 @@ export function create3DRenderer(host) {
     return neighbors;
   }
 
-  function getBoundaryRole(
+  function getBoundaryProfile(
     state,
     tile,
     tileX,
     tileY
-  ): SurfaceBoundaryRole3D | null {
-    return getTileSurfaceProfile(state, tile, tileX, tileY).boundaryRole;
+  ) {
+    const profile = getTileSurfaceProfile(state, tile, tileX, tileY);
+    return profile.boundaryRole ? profile : null;
   }
 
-  function getCornerSurfaceHeight(
-    surfaceHeight,
-    riverEdgeHeight,
-    oceanEdgeHeight,
-    boundaries
-  ) {
-    if (boundaries.includes('sea')) {
-      return oceanEdgeHeight;
-    }
-    if (boundaries.some(Boolean)) {
-      return riverEdgeHeight;
+  function getCornerSurfaceHeight(surfaceHeight, boundaries) {
+    const boundary = pickCornerBoundaryProfile(boundaries);
+    if (boundary) {
+      return getBoundaryEdgeHeight(surfaceHeight, boundary);
     }
     return surfaceHeight;
   }
 
-  function getBoundaryWallHeight(kind, riverEdgeHeight, oceanEdgeHeight) {
-    if (kind === 'sea') {
-      return oceanEdgeHeight - WATER_SURFACE_DROP;
+  function getBoundaryWallHeight(surfaceHeight, boundaryProfile) {
+    if (!boundaryProfile) {
+      return 0;
     }
-    if (kind === 'channel' || kind === 'crossing') {
-      return riverEdgeHeight - WATER_SURFACE_DROP;
-    }
-    return 0;
+    return getBoundaryEdgeHeight(surfaceHeight, boundaryProfile) - boundaryProfile.surfaceHeight;
   }
 
-  function createMountainTexture() {
-    const canvas = document.createElement('canvas');
-    canvas.width = 64;
-    canvas.height = 64;
-    const context = canvas.getContext('2d');
+  function getBoundaryEdgeHeight(surfaceHeight, boundaryProfile) {
+    const transition = boundaryProfile.boundaryTransition ?? {};
+    const maxChamferDrop = transition.maxChamferDrop ?? 0;
+    const minBankHeight = transition.minBankHeight ?? 0;
+    return Math.max(
+      surfaceHeight - maxChamferDrop,
+      boundaryProfile.surfaceHeight + minBankHeight
+    );
+  }
 
-    context.fillStyle = MOUNTAIN_BASE_COLOR;
-    context.fillRect(0, 0, canvas.width, canvas.height);
+  function pickCornerBoundaryProfile(boundaries) {
+    return boundaries
+      .filter(Boolean)
+      .sort(
+        (left, right) =>
+          getBoundaryPriority(left.boundaryRole) -
+          getBoundaryPriority(right.boundaryRole)
+      )[0] ?? null;
+  }
 
-    for (let row = 0; row < canvas.height; row += 4) {
-      const shade = 90 + ((row * 7) % 55);
-      context.fillStyle = `rgb(${shade}, ${shade + 6}, ${shade + 12})`;
-      context.fillRect(0, row, canvas.width, 2);
+  function getBoundaryPriority(boundaryRole: SurfaceBoundaryRole3D | null) {
+    if (boundaryRole === 'sea') {
+      return 0;
     }
-
-    for (let index = 0; index < 180; index += 1) {
-      const x = Math.floor(
-        hash2D('mountain-texture-x', index, 0) * canvas.width
-      );
-      const y = Math.floor(
-        hash2D('mountain-texture-y', index, 0) * canvas.height
-      );
-      const length = 2 + Math.floor(hash2D('mountain-texture-l', index, 0) * 6);
-      const brightness =
-        110 + Math.floor(hash2D('mountain-texture-b', index, 0) * 70);
-      context.fillStyle = `rgba(${brightness}, ${brightness + 4}, ${brightness + 10}, 0.35)`;
-      context.fillRect(x, y, length, 1);
+    if (boundaryRole === 'channel' || boundaryRole === 'crossing') {
+      return 1;
     }
-
-    for (let index = 0; index < 120; index += 1) {
-      const x = Math.floor(hash2D('mountain-crack-x', index, 0) * canvas.width);
-      const y = Math.floor(
-        hash2D('mountain-crack-y', index, 0) * canvas.height
-      );
-      const depth = 1 + Math.floor(hash2D('mountain-crack-l', index, 0) * 4);
-      context.fillStyle = 'rgba(39, 48, 58, 0.32)';
-      context.fillRect(x, y, 1, depth);
-    }
-
-    const texture = new THREE.CanvasTexture(canvas);
-    texture.colorSpace = THREE.SRGBColorSpace;
-    texture.wrapS = THREE.RepeatWrapping;
-    texture.wrapT = THREE.RepeatWrapping;
-    texture.repeat.set(1.4, 1.4);
-    texture.magFilter = THREE.NearestFilter;
-    texture.minFilter = THREE.NearestFilter;
-    texture.generateMipmaps = false;
-    texture.needsUpdate = true;
-    return texture;
+    return 2;
   }
 
   return {

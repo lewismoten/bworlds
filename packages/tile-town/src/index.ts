@@ -9,7 +9,7 @@ import {
   getOrCreateRegionalValue,
   pickThresholdColor,
 } from '@bworlds/procedural-style';
-import { createCanvasTexture } from '@bworlds/three-support';
+import { createPaintedCanvasTexture } from '@bworlds/three-support';
 import type {
   ClassifyOverworldTileContext,
   CreateWorldActionContext,
@@ -245,25 +245,26 @@ function getTownLabelTexture(
 ) {
   const key = `${style.key}:town:${name}`;
   if (!signLabelCache.has(key)) {
-    const canvas = document.createElement('canvas');
-    canvas.width = 320;
-    canvas.height = 96;
-    const context = canvas.getContext('2d')!;
-    context.clearRect(0, 0, canvas.width, canvas.height);
-    context.fillStyle = style.signBaseColor;
-    context.fillRect(0, 0, canvas.width, canvas.height);
-    context.strokeStyle = style.trimColor;
-    context.lineWidth = 6;
-    context.strokeRect(3, 3, canvas.width - 6, canvas.height - 6);
-    context.fillStyle = style.signTextColor;
-    context.font = 'bold 28px sans-serif';
-    context.textAlign = 'center';
-    context.textBaseline = 'middle';
-    context.fillText(name, canvas.width * 0.5, canvas.height * 0.5);
-
     signLabelCache.set(
       key,
-      createCanvasTexture(three, canvas, { wrap: false })
+      createPaintedCanvasTexture(three, {
+        width: 320,
+        height: 96,
+        wrap: false,
+        paint(context, canvas) {
+          context.clearRect(0, 0, canvas.width, canvas.height);
+          context.fillStyle = style.signBaseColor;
+          context.fillRect(0, 0, canvas.width, canvas.height);
+          context.strokeStyle = style.trimColor;
+          context.lineWidth = 6;
+          context.strokeRect(3, 3, canvas.width - 6, canvas.height - 6);
+          context.fillStyle = style.signTextColor;
+          context.font = 'bold 28px sans-serif';
+          context.textAlign = 'center';
+          context.textBaseline = 'middle';
+          context.fillText(name, canvas.width * 0.5, canvas.height * 0.5);
+        },
+      })
     );
   }
 
@@ -367,41 +368,43 @@ function createTownWallTexture(
   regionX: number,
   regionY: number
 ) {
-  const canvas = document.createElement('canvas');
-  canvas.width = 64;
-  canvas.height = 64;
-  const context = canvas.getContext('2d')!;
+  return createPaintedCanvasTexture(three, {
+    width: 64,
+    height: 64,
+    repeatX: 1.1,
+    repeatY: 1.1,
+    paint(context, canvas) {
+      context.fillStyle = baseColor;
+      context.fillRect(0, 0, canvas.width, canvas.height);
 
-  context.fillStyle = baseColor;
-  context.fillRect(0, 0, canvas.width, canvas.height);
+      for (let row = 0; row < canvas.height; row += 8) {
+        const shade = 210 + ((row * 9 + regionX * 7) % 24);
+        context.fillStyle = `rgba(${shade}, ${shade - 8}, ${shade - 18}, 0.22)`;
+        context.fillRect(0, row, canvas.width, 2);
+      }
 
-  for (let row = 0; row < canvas.height; row += 8) {
-    const shade = 210 + ((row * 9 + regionX * 7) % 24);
-    context.fillStyle = `rgba(${shade}, ${shade - 8}, ${shade - 18}, 0.22)`;
-    context.fillRect(0, row, canvas.width, 2);
-  }
+      context.fillStyle = trimColor;
+      for (let column = 0; column < canvas.width; column += 16) {
+        context.fillRect(column, 0, 2, canvas.height);
+      }
+      for (let row = 0; row < canvas.height; row += 16) {
+        context.fillRect(0, row, canvas.width, 2);
+      }
 
-  context.fillStyle = trimColor;
-  for (let column = 0; column < canvas.width; column += 16) {
-    context.fillRect(column, 0, 2, canvas.height);
-  }
-  for (let row = 0; row < canvas.height; row += 16) {
-    context.fillRect(0, row, canvas.width, 2);
-  }
-
-  for (let index = 0; index < 28; index += 1) {
-    const x = Math.floor(
-      hash2D('town-wall-speck-x', regionX * 100 + regionY, index) * canvas.width
-    );
-    const y = Math.floor(
-      hash2D('town-wall-speck-y', regionY * 100 + regionX, index) *
-        canvas.height
-    );
-    context.fillStyle = 'rgba(255,255,255,0.14)';
-    context.fillRect(x, y, 2, 2);
-  }
-
-  return finalizeTexture(three, canvas, 1.1, 1.1);
+      for (let index = 0; index < 28; index += 1) {
+        const x = Math.floor(
+          hash2D('town-wall-speck-x', regionX * 100 + regionY, index) *
+            canvas.width
+        );
+        const y = Math.floor(
+          hash2D('town-wall-speck-y', regionY * 100 + regionX, index) *
+            canvas.height
+        );
+        context.fillStyle = 'rgba(255,255,255,0.14)';
+        context.fillRect(x, y, 2, 2);
+      }
+    },
+  });
 }
 
 function createTownRoofTexture(
@@ -411,47 +414,39 @@ function createTownRoofTexture(
   regionX: number,
   regionY: number
 ) {
-  const canvas = document.createElement('canvas');
-  canvas.width = 64;
-  canvas.height = 64;
-  const context = canvas.getContext('2d')!;
+  return createPaintedCanvasTexture(three, {
+    width: 64,
+    height: 64,
+    repeatX: 1,
+    repeatY: 1.2,
+    paint(context, canvas) {
+      context.fillStyle = baseColor;
+      context.fillRect(0, 0, canvas.width, canvas.height);
 
-  context.fillStyle = baseColor;
-  context.fillRect(0, 0, canvas.width, canvas.height);
+      for (let row = 0; row < canvas.height; row += 6) {
+        const shift = Math.floor(
+          hash2D('town-roof-shift', regionX + row, regionY) * 4
+        );
+        context.fillStyle = trimColor;
+        for (let column = -8 + shift; column < canvas.width + 8; column += 14) {
+          context.fillRect(column, row, 10, 2);
+        }
+        context.fillStyle = 'rgba(255,255,255,0.18)';
+        context.fillRect(0, row, canvas.width, 1);
+      }
 
-  for (let row = 0; row < canvas.height; row += 6) {
-    const shift = Math.floor(
-      hash2D('town-roof-shift', regionX + row, regionY) * 4
-    );
-    context.fillStyle = trimColor;
-    for (let column = -8 + shift; column < canvas.width + 8; column += 14) {
-      context.fillRect(column, row, 10, 2);
-    }
-    context.fillStyle = 'rgba(255,255,255,0.18)';
-    context.fillRect(0, row, canvas.width, 1);
-  }
-
-  for (let index = 0; index < 18; index += 1) {
-    const x = Math.floor(
-      hash2D('town-roof-chip-x', regionX, index) * canvas.width
-    );
-    const y = Math.floor(
-      hash2D('town-roof-chip-y', regionY, index) * canvas.height
-    );
-    context.fillStyle = 'rgba(35, 20, 20, 0.2)';
-    context.fillRect(x, y, 3, 1);
-  }
-
-  return finalizeTexture(three, canvas, 1, 1.2);
-}
-
-function finalizeTexture(
-  three: ThreeHostLike,
-  canvas: HTMLCanvasElement,
-  repeatX: number,
-  repeatY: number
-) {
-  return createCanvasTexture(three, canvas, { repeatX, repeatY });
+      for (let index = 0; index < 18; index += 1) {
+        const x = Math.floor(
+          hash2D('town-roof-chip-x', regionX, index) * canvas.width
+        );
+        const y = Math.floor(
+          hash2D('town-roof-chip-y', regionY, index) * canvas.height
+        );
+        context.fillStyle = 'rgba(35, 20, 20, 0.2)';
+        context.fillRect(x, y, 3, 1);
+      }
+    },
+  });
 }
 
 function getTownDescriptors(tileX: number, tileY: number) {

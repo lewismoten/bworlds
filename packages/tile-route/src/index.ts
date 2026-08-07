@@ -6,8 +6,17 @@ import {
   getOrCreateRegionalValue,
   pickThresholdColor,
 } from '@bworlds/procedural-style';
-import { createRouteTraversalProfile } from '@bworlds/tile-support';
-import { createCanvasTexture } from '@bworlds/three-support';
+import {
+  createBoundarySurfaceProfile,
+  createRouteTraversalProfile,
+  resolveDominantNeighborFloorKind3D,
+} from '@bworlds/tile-support';
+import {
+  createPaintedCanvasTexture,
+  createQuadraticBezierPoints,
+  createRibbonMesh,
+  type PathPointLike,
+} from '@bworlds/three-support';
 import type {
   ClassifyOverworldTileContext,
   Create3DModelContext,
@@ -82,6 +91,23 @@ export function createRouteTilePlugin() {
         }
         return createRoadGroup(three, state, tileX, tileY);
       },
+      resolveFloorKind3D(context) {
+        if (context.state.getCurrentContext().type !== 'overworld') {
+          return null;
+        }
+        return (
+          resolveDominantNeighborFloorKind3D(context, {
+            isExcludedKind(kind) {
+              return (
+                kind === 'road' ||
+                kind === 'bridge' ||
+                kind === 'river' ||
+                kind === 'ocean'
+              );
+            },
+          }) ?? 'plains'
+        );
+      },
     },
     {
       kind: 'bridge',
@@ -102,12 +128,16 @@ export function createRouteTilePlugin() {
         });
       },
       getSurfaceProfile3D(): SurfaceProfile3D {
-        return {
+        return createBoundarySurfaceProfile({
           surfaceHeight: -0.12,
           boundaryRole: 'crossing',
           underlayKind: 'river',
-          chamferEligible: false,
-        };
+          boundaryTransition: {
+            maxChamferDrop: 0.08,
+            minBankHeight: 0,
+            bodyInset: 0.08,
+          },
+        });
       },
       paint2D({ context, x, y, motif, fillRect }: Paint2DContext) {
         fillRect(context, x, y, TILE_PIXEL_SIZE, TILE_PIXEL_SIZE, '#2a78c8');
@@ -565,8 +595,7 @@ function sampleQuadraticCurve(
   end: RoadVectorLike,
   segments: number
 ) {
-  const curve = new three.QuadraticBezierCurve3(start, control, end);
-  return curve.getPoints(segments);
+  return createQuadraticBezierPoints(three, start, control, end, segments);
 }
 
 function createRoadRibbonMesh(
@@ -577,47 +606,13 @@ function createRoadRibbonMesh(
   seedKey: string,
   lipDepth: number
 ) {
-  const geometry = new three.BufferGeometry();
-  const positions: number[] = [];
-  const uvs: number[] = [];
-  const indices: number[] = [];
-  let distance = 0;
-
-  for (let index = 0; index < points.length; index += 1) {
-    const point = points[index];
-    const previous = points[Math.max(0, index - 1)];
-    const next = points[Math.min(points.length - 1, index + 1)];
-    const tangent = new three.Vector3()
-      .subVectors(next, previous)
-      .setY(0)
-      .normalize();
-    const normal = new three.Vector3(-tangent.z, 0, tangent.x).normalize();
-    const widthNoise =
-      1 +
-      (hash2D(`road-width:${seedKey}`, index, points.length) - 0.5) * lipDepth;
-    const halfWidth = width * widthNoise * 0.5;
-    const left = point.clone().addScaledVector(normal, halfWidth);
-    const right = point.clone().addScaledVector(normal, -halfWidth);
-    positions.push(left.x, left.y, left.z, right.x, right.y, right.z);
-    if (index > 0) {
-      distance += point.distanceTo(previous);
-    }
-    uvs.push(0, distance, 1, distance);
-  }
-
-  for (let index = 0; index < points.length - 1; index += 1) {
-    const base = index * 2;
-    indices.push(base, base + 1, base + 2, base + 1, base + 3, base + 2);
-  }
-
-  geometry.setAttribute(
-    'position',
-    new three.Float32BufferAttribute(positions, 3)
-  );
-  geometry.setAttribute('uv', new three.Float32BufferAttribute(uvs, 2));
-  geometry.setIndex(indices);
-  geometry.computeVertexNormals();
-  return new three.Mesh(geometry, material);
+  return createRibbonMesh(three, points, width, material, {
+    widthNoise(index, total) {
+      return (
+        1 + (hash2D(`road-width:${seedKey}`, index, total) - 0.5) * lipDepth
+      );
+    },
+  });
 }
 
 function getRoadStyle(three: ThreeHostLike, tileX: number, tileY: number) {
@@ -696,57 +691,65 @@ function createRoadTexture(
   regionX: number,
   regionY: number
 ) {
-  const canvas = document.createElement('canvas');
-  canvas.width = 64;
-  canvas.height = 64;
-  const context = canvas.getContext('2d')!;
+  return createPaintedCanvasTexture(three, {
+    width: 64,
+    height: 64,
+    repeatX: 1.2,
+    repeatY: 1.2,
+    paint(context, canvas) {
+      context.fillStyle = baseColor;
+      context.fillRect(0, 0, canvas.width, canvas.height);
 
-  context.fillStyle = baseColor;
-  context.fillRect(0, 0, canvas.width, canvas.height);
-
-  if (styleType === 'brick') {
-    for (let row = 0; row < canvas.height; row += 10) {
-      const shift = ((row / 10) % 2) * 8;
-      context.fillStyle = accentColor;
-      context.fillRect(0, row, canvas.width, 2);
-      for (let column = -8 + shift; column < canvas.width + 8; column += 16) {
-        context.fillRect(column, row, 2, 10);
+      if (styleType === 'brick') {
+        for (let row = 0; row < canvas.height; row += 10) {
+          const shift = ((row / 10) % 2) * 8;
+          context.fillStyle = accentColor;
+          context.fillRect(0, row, canvas.width, 2);
+          for (
+            let column = -8 + shift;
+            column < canvas.width + 8;
+            column += 16
+          ) {
+            context.fillRect(column, row, 2, 10);
+          }
+        }
+      } else if (styleType === 'cobble') {
+        for (let index = 0; index < 42; index += 1) {
+          const x = Math.floor(
+            hash2D('road-cobble-x', regionX * 37 + index, regionY) *
+              canvas.width
+          );
+          const y = Math.floor(
+            hash2D('road-cobble-y', regionY * 41 + index, regionX) *
+              canvas.height
+          );
+          const width =
+            5 + Math.floor(hash2D('road-cobble-w', index, regionX) * 4);
+          const height =
+            3 + Math.floor(hash2D('road-cobble-h', index, regionY) * 3);
+          context.fillStyle =
+            index % 2 === 0 ? accentColor : 'rgba(255,255,255,0.14)';
+          context.fillRect(x, y, width, height);
+        }
+      } else {
+        for (let row = 0; row < canvas.height; row += 7) {
+          const shade = 80 + ((row * 9 + regionX * 7) % 36);
+          context.fillStyle = `rgba(${shade}, ${Math.max(35, shade - 20)}, ${Math.max(20, shade - 34)}, 0.28)`;
+          context.fillRect(0, row, canvas.width, 2);
+        }
+        for (let index = 0; index < 80; index += 1) {
+          const x = Math.floor(
+            hash2D('road-track-x', regionX, index + regionY) * canvas.width
+          );
+          const y = Math.floor(
+            hash2D('road-track-y', regionY, index + regionX) * canvas.height
+          );
+          context.fillStyle = 'rgba(50,30,18,0.16)';
+          context.fillRect(x, y, 2, 1);
+        }
       }
-    }
-  } else if (styleType === 'cobble') {
-    for (let index = 0; index < 42; index += 1) {
-      const x = Math.floor(
-        hash2D('road-cobble-x', regionX * 37 + index, regionY) * canvas.width
-      );
-      const y = Math.floor(
-        hash2D('road-cobble-y', regionY * 41 + index, regionX) * canvas.height
-      );
-      const width = 5 + Math.floor(hash2D('road-cobble-w', index, regionX) * 4);
-      const height =
-        3 + Math.floor(hash2D('road-cobble-h', index, regionY) * 3);
-      context.fillStyle =
-        index % 2 === 0 ? accentColor : 'rgba(255,255,255,0.14)';
-      context.fillRect(x, y, width, height);
-    }
-  } else {
-    for (let row = 0; row < canvas.height; row += 7) {
-      const shade = 80 + ((row * 9 + regionX * 7) % 36);
-      context.fillStyle = `rgba(${shade}, ${Math.max(35, shade - 20)}, ${Math.max(20, shade - 34)}, 0.28)`;
-      context.fillRect(0, row, canvas.width, 2);
-    }
-    for (let index = 0; index < 80; index += 1) {
-      const x = Math.floor(
-        hash2D('road-track-x', regionX, index + regionY) * canvas.width
-      );
-      const y = Math.floor(
-        hash2D('road-track-y', regionY, index + regionX) * canvas.height
-      );
-      context.fillStyle = 'rgba(50,30,18,0.16)';
-      context.fillRect(x, y, 2, 1);
-    }
-  }
-
-  return finalizeTexture(three, canvas, 1.2, 1.2);
+    },
+  });
 }
 
 function createRoadShoulderTexture(
@@ -756,29 +759,33 @@ function createRoadShoulderTexture(
   regionX: number,
   regionY: number
 ) {
-  const canvas = document.createElement('canvas');
-  canvas.width = 64;
-  canvas.height = 64;
-  const context = canvas.getContext('2d')!;
+  return createPaintedCanvasTexture(three, {
+    width: 64,
+    height: 64,
+    repeatX: 1.2,
+    repeatY: 1.2,
+    paint(context, canvas) {
+      context.fillStyle = baseColor;
+      context.fillRect(0, 0, canvas.width, canvas.height);
 
-  context.fillStyle = baseColor;
-  context.fillRect(0, 0, canvas.width, canvas.height);
-
-  for (let index = 0; index < 140; index += 1) {
-    const x = Math.floor(
-      hash2D('road-shoulder-x', regionX * 31 + index, regionY) * canvas.width
-    );
-    const y = Math.floor(
-      hash2D('road-shoulder-y', regionY * 29 + index, regionX) * canvas.height
-    );
-    const size =
-      1 + Math.floor(hash2D('road-shoulder-s', index, regionX + regionY) * 3);
-    context.fillStyle =
-      index % 3 === 0 ? accentColor : 'rgba(255,255,255,0.12)';
-    context.fillRect(x, y, size, size);
-  }
-
-  return finalizeTexture(three, canvas, 1.2, 1.2);
+      for (let index = 0; index < 140; index += 1) {
+        const x = Math.floor(
+          hash2D('road-shoulder-x', regionX * 31 + index, regionY) *
+            canvas.width
+        );
+        const y = Math.floor(
+          hash2D('road-shoulder-y', regionY * 29 + index, regionX) *
+            canvas.height
+        );
+        const size =
+          1 +
+          Math.floor(hash2D('road-shoulder-s', index, regionX + regionY) * 3);
+        context.fillStyle =
+          index % 3 === 0 ? accentColor : 'rgba(255,255,255,0.12)';
+        context.fillRect(x, y, size, size);
+      }
+    },
+  });
 }
 
 function createBridgeGroup(
@@ -1261,74 +1268,59 @@ function createBridgeTexture(
   tileX: number,
   tileY: number
 ) {
-  const canvas = document.createElement('canvas');
-  canvas.width = 64;
-  canvas.height = 64;
-  const context = canvas.getContext('2d')!;
+  return createPaintedCanvasTexture(three, {
+    width: 64,
+    height: 64,
+    repeatX: 1,
+    repeatY: 1,
+    paint(context, canvas) {
+      context.fillStyle = baseColor;
+      context.fillRect(0, 0, canvas.width, canvas.height);
 
-  context.fillStyle = baseColor;
-  context.fillRect(0, 0, canvas.width, canvas.height);
-
-  if (type === 'stone' || type === 'roof-stone') {
-    for (let row = 0; row < canvas.height; row += 12) {
-      context.fillStyle = accentColor;
-      context.fillRect(0, row, canvas.width, 2);
-    }
-    for (let column = 0; column < canvas.width; column += 16) {
-      for (let row = 0; row < canvas.height; row += 12) {
-        const offset =
-          ((row / 12 + column / 16) % 2) * 8 + (layer === 'cover' ? 2 : 0);
-        context.fillRect(column + offset, row, 2, 12);
+      if (type === 'stone' || type === 'roof-stone') {
+        for (let row = 0; row < canvas.height; row += 12) {
+          context.fillStyle = accentColor;
+          context.fillRect(0, row, canvas.width, 2);
+        }
+        for (let column = 0; column < canvas.width; column += 16) {
+          for (let row = 0; row < canvas.height; row += 12) {
+            const offset =
+              ((row / 12 + column / 16) % 2) * 8 + (layer === 'cover' ? 2 : 0);
+            context.fillRect(column + offset, row, 2, 12);
+          }
+        }
+      } else if (type === 'metal') {
+        for (let row = 0; row < canvas.height; row += 8) {
+          context.fillStyle =
+            row % 16 === 0 ? accentColor : 'rgba(255,255,255,0.16)';
+          context.fillRect(0, row, canvas.width, 2);
+        }
+        for (let index = 0; index < 24; index += 1) {
+          const x = Math.floor(
+            hash2D('bridge-rivet-x', tileX, index + tileY) * canvas.width
+          );
+          const y = Math.floor(
+            hash2D('bridge-rivet-y', tileY, index + tileX) * canvas.height
+          );
+          context.fillStyle = 'rgba(255,255,255,0.34)';
+          context.fillRect(x, y, 2, 2);
+        }
+      } else {
+        for (let column = 0; column < canvas.width; column += 7) {
+          const shade = 70 + ((column * 5 + tileX * 3) % 36);
+          context.fillStyle = `rgba(${shade}, ${Math.max(30, shade - 16)}, ${Math.max(18, shade - 28)}, 0.32)`;
+          context.fillRect(column, 0, 3, canvas.height);
+        }
+        for (let row = 0; row < canvas.height; row += 10) {
+          context.fillStyle = 'rgba(255,255,255,0.08)';
+          context.fillRect(0, row, canvas.width, 1);
+        }
       }
-    }
-  } else if (type === 'metal') {
-    for (let row = 0; row < canvas.height; row += 8) {
-      context.fillStyle =
-        row % 16 === 0 ? accentColor : 'rgba(255,255,255,0.16)';
-      context.fillRect(0, row, canvas.width, 2);
-    }
-    for (let index = 0; index < 24; index += 1) {
-      const x = Math.floor(
-        hash2D('bridge-rivet-x', tileX, index + tileY) * canvas.width
-      );
-      const y = Math.floor(
-        hash2D('bridge-rivet-y', tileY, index + tileX) * canvas.height
-      );
-      context.fillStyle = 'rgba(255,255,255,0.34)';
-      context.fillRect(x, y, 2, 2);
-    }
-  } else {
-    for (let column = 0; column < canvas.width; column += 7) {
-      const shade = 70 + ((column * 5 + tileX * 3) % 36);
-      context.fillStyle = `rgba(${shade}, ${Math.max(30, shade - 16)}, ${Math.max(18, shade - 28)}, 0.32)`;
-      context.fillRect(column, 0, 3, canvas.height);
-    }
-    for (let row = 0; row < canvas.height; row += 10) {
-      context.fillStyle = 'rgba(255,255,255,0.08)';
-      context.fillRect(0, row, canvas.width, 1);
-    }
-  }
-
-  return finalizeTexture(three, canvas, 1, 1);
+    },
+  });
 }
 
-function finalizeTexture(
-  three: ThreeHostLike,
-  canvas: HTMLCanvasElement,
-  repeatX: number,
-  repeatY: number
-) {
-  return createCanvasTexture(three, canvas, { repeatX, repeatY });
-}
-
-type RoadVectorLike = {
-  x: number;
-  y: number;
-  z: number;
-  clone(): RoadVectorLike;
-  addScaledVector(vector: RoadVectorLike, scalar: number): RoadVectorLike;
-  distanceTo(vector: RoadVectorLike): number;
-};
+type RoadVectorLike = PathPointLike;
 
 type BridgeGroupLike = {
   add(child: unknown): void;

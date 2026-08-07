@@ -1,7 +1,7 @@
 import { hash2D } from '@bworlds/core';
 import { createContextMapPlugin } from '@bworlds/map-support';
 import {
-  createOverworldGenerationContext,
+  composeOverworldTileFromPlugins,
   createOverworldTerrainSignalSampler,
 } from '@bworlds/overworld-support';
 import type {
@@ -32,47 +32,16 @@ function createOverworldMap(
 ): WorldMapLike {
   const cache = new Map<string, OverworldTile>();
   const sampleTerrainSignals = createOverworldTerrainSignalSampler(seed);
+  const defaultTileKind = plugins.getDefaultTileKind();
 
   function classifyTile(x: number, y: number): OverworldTile {
-    const curatedTile = plugins.resolveOverworldTile({
+    return composeOverworldTileFromPlugins({
       seed,
       x,
       y,
       sampleTerrainSignals,
-    });
-    if (curatedTile) {
-      return curatedTile;
-    }
-
-    let tile: OverworldTile = { kind: 'plains' };
-    const generationContext = createOverworldGenerationContext({
-      seed,
-      x,
-      y,
-      tile,
       plugins,
-      sampleTerrainSignals,
-    });
-
-    const terrainTile = plugins.classifyTerrainTile(generationContext);
-    if (terrainTile) {
-      tile = terrainTile;
-    }
-
-    const pluginTile = plugins.classifyOverworldTile({
-      ...generationContext,
-      tile,
-    });
-    if (pluginTile) {
-      tile = pluginTile;
-    }
-
-    return plugins.decorateOverworldTile({
-      seed,
-      x,
-      y,
-      signals: generationContext.signals,
-      tile,
+      initialTile: { kind: defaultTileKind },
     });
   }
 
@@ -81,7 +50,7 @@ function createOverworldMap(
     if (!cache.has(key)) {
       cache.set(key, classifyTile(x, y));
     }
-    return cache.get(key) ?? { kind: 'plains' };
+    return cache.get(key) ?? { kind: defaultTileKind };
   }
 
   function getAction(x: number, y: number) {

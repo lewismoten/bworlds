@@ -10,10 +10,12 @@ import type {
   DecorateTownTileContext,
   Kind,
   OverworldAnchors,
+  Paint2DOverlayContext,
   PluginPackLike,
   ResolveOverworldAnchorsContext,
   ResolveOverworldTileContext,
   RuntimePlugin,
+  ResolveFloorKind3DContext,
   SurfaceProfile3D,
   SurfaceProfile3DContext,
   TileDefinitionLike,
@@ -53,11 +55,13 @@ export class PluginRegistry implements PluginRegistryLike {
   plugins: RuntimePlugin[];
   tilePlugins: Map<string, TilePlugin>;
   tileDefinitions: Map<string, TileDefinitionLike>;
+  defaultTileKind: Kind | null;
 
   constructor() {
     this.plugins = [];
     this.tilePlugins = new Map();
     this.tileDefinitions = new Map();
+    this.defaultTileKind = null;
   }
 
   register(plugin: RuntimePlugin): void {
@@ -66,6 +70,9 @@ export class PluginRegistry implements PluginRegistryLike {
       this.tilePlugins.set(tile.kind, tile);
       if (tile.definition) {
         this.tileDefinitions.set(tile.kind, tile.definition);
+      }
+      if (tile.isDefaultTile) {
+        this.defaultTileKind = tile.kind;
       }
     }
   }
@@ -90,6 +97,19 @@ export class PluginRegistry implements PluginRegistryLike {
 
   getTileDefinition(kind: Kind): TileDefinitionLike | null {
     return this.tileDefinitions.get(kind) ?? null;
+  }
+
+  getDefaultTileKind(fallback: Kind = 'unknown'): Kind {
+    return this.defaultTileKind ?? fallback;
+  }
+
+  getDefaultTileDefinition(
+    fallback?: TileDefinitionLike | null
+  ): TileDefinitionLike | null {
+    if (!this.defaultTileKind) {
+      return fallback ?? null;
+    }
+    return this.getTileDefinition(this.defaultTileKind) ?? fallback ?? null;
   }
 
   resolveTileDefinition(
@@ -157,6 +177,16 @@ export class PluginRegistry implements PluginRegistryLike {
   ): void | TraversalProfile3D {
     const tilePlugin = this.getTilePlugin(payload.tile.kind);
     return attemptCall(tilePlugin?.getTraversalProfile3D, payload);
+  }
+
+  paint2DOverlay(payload: Paint2DOverlayContext): boolean | void {
+    const tilePlugin = this.getTilePlugin(payload.tile.kind);
+    return attemptCall(tilePlugin?.paint2DOverlay, payload);
+  }
+
+  resolveFloorKind3D(payload: ResolveFloorKind3DContext): void | Kind {
+    const tilePlugin = this.getTilePlugin(payload.tile.kind);
+    return attemptCall(tilePlugin?.resolveFloorKind3D, payload);
   }
 
   createWorldAction(payload: CreateWorldActionContext): void | WorldActionLike {

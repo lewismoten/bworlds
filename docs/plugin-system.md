@@ -19,6 +19,7 @@ The registry now supports:
 - `createMap(payload)`
 - `resolveOverworldTile(payload)`
 - `resolveOverworldAnchors(payload)`
+- `resolveFloorKind3D(payload)`
 - `createWorldAction(payload)`
 - `decorateOverworldTile(payload)`
 - `decorateTownTile(payload)`
@@ -45,11 +46,13 @@ It also exports shared runtime shapes such as `WorldStateLike` and `RuntimePlaye
 
 Tile packages can now also contribute `definition` metadata directly on their tile entries. `PluginRegistry` stores those definitions and exposes `getTileDefinition(kind)`, `resolveTileDefinition(kind, fallback)`, `listTileDefinitions()`, and `listResolvedTileDefinitions(fallbackEntries)` so renderers, atlases, and app bootstrap code can resolve plugin-owned tile metadata through one shared plugin-aware API instead of each reimplementing its own fallback merge logic.
 
+Tile plugins can also mark one tile entry as `isDefaultTile`, which lets the registry expose `getDefaultTileKind()` and `getDefaultTileDefinition()`. The overworld composition path now uses that plugin-owned default tile as its initial terrain draft instead of assuming `plains`, which makes the base terrain of a content-pack stack configurable through the same shared tile contract.
+
 The atlas and 3D renderer now consume the active plugin registry directly for tile-definition discovery, rather than importing the built-in core tile table as their primary source of truth. That keeps visible tile catalogs aligned with the currently selected content-pack stack, which matters for overlay packs and future external packages that introduce new tile kinds.
 
 `@bworlds/core` now treats tile-definition fallback more generically. The built-in tile-definition catalog used by the default world stack is derived from `@bworlds/content-pack-default`, which keeps ownership of those built-in definitions closer to the tile plugins that actually provide them instead of treating one built-in catalog as a universal engine primitive.
 
-For 3D generation hooks it now also exposes named host-side types such as `ThreeHostLike`, `Create3DModelMaterials`, and `ThreeMaterialLike`/`ThreeTextureLike`. These are still lightweight abstractions over the renderer host, but they give plugin packages a shared vocabulary for model-generation dependencies instead of scattering ad hoc `any` material bags across the repo.
+For 3D generation hooks it now also exposes named host-side types such as `ThreeHostLike` and `ThreeMaterialLike`/`ThreeTextureLike`. These are still lightweight abstractions over the renderer host, but they give plugin packages a shared vocabulary for model-generation dependencies without requiring renderer-owned ad hoc material bags in the tile contract.
 
 Shared seeded helpers now live in `@bworlds/core` for things like deterministic POI naming, so tile packages can reuse the same naming and noise-driven conventions without depending on `worldgen` internals.
 
@@ -70,10 +73,16 @@ A tile plugin can expose a `tiles` array. Each tile entry is keyed by `kind` and
 - `classifyTerrainTile(context)` to participate in the base terrain pass before roads and POIs are applied
 - `classifyOverworldTile(context)` to propose or replace a tile during overworld generation
 - `paint2D(context)` to render the tile into the atlas sprite
+- `paint2DOverlay(context)` to draw optional animated or runtime-aware 2D effects on top of the cached atlas sprite
 - `create3DModel(context)` to return a custom 3D model for that tile in the perspective renderer
 - `canOccupy3D(context)` to block or allow smooth movement against tile-owned geometry such as trees
+- `getSurfaceProfile3D(context)` to describe shared 3D surface behavior such as lowered water, bridge underlays, or bank/chamfer transitions
+- `getTraversalProfile3D(context)` to describe shared movement semantics such as route grouping or bridge slide axes
+- `resolveFloorKind3D(context)` to pick the 3D floor texture kind for overlay tiles such as roads without hardcoding that decision in the renderer
 
 This lets one package own the full lifecycle for a tile family instead of spreading its logic across the generator, atlas, and renderer packages.
+
+For terrain/water boundaries, `SurfaceProfile3D` now also carries optional `boundaryTransition` metadata so tiles can declare how neighboring land should taper toward them in 3D. First-party water and bridge tiles now provide those settings through the shared `createBoundarySurfaceProfile(...)` helper in `@bworlds/tile-support`, which moves river/ocean bank tuning out of the renderer and into tile-owned packages.
 
 For package authoring, `@bworlds/plugin-api` now also exposes `createTilePlugin(...)` so tile packages can use a shared wrapper for the common `name + tiles` plugin shape instead of repeating that outer boilerplate by hand.
 
@@ -150,7 +159,9 @@ That gives external packages a smaller shared API surface to learn while still l
 
 ## Shared 3D Helpers
 
-`@bworlds/three-support` now provides shared canvas-texture setup helpers for plugin-owned 3D assets. This gives tile packages a reusable renderer-support layer for consistent `CanvasTexture` setup without tying plugin authors to app-specific renderer code.
+`@bworlds/three-support` now provides shared canvas-texture setup helpers plus reusable spline/ribbon geometry helpers for plugin-owned 3D assets. Tile packages can use `createCanvasTexture(...)`, `createPaintedCanvasTexture(...)`, `createQuadraticBezierPoints(...)`, `createCubicBezierPoints(...)`, and `createRibbonMesh(...)` to build procedural textures, curved paths, channels, and similar strip-like geometry without re-implementing canvas or Three.js mesh plumbing inside each tile package.
+
+That gives plugin authors a reusable renderer-support layer for both textured materials and common curved-surface meshes without tying packages to app-specific renderer code.
 
 ## Shared Style Helpers
 
@@ -158,7 +169,7 @@ That gives external packages a smaller shared API surface to learn while still l
 
 ## Shared Overworld Helpers
 
-`@bworlds/overworld-support` now provides shared seeded overworld helpers such as `createOverworldTerrainSignalSampler(...)`, `isNearOverworldLand(...)`, and `createOverworldGenerationContext(...)`. This keeps the default terrain-noise recipe, common overworld heuristics, and the repeated “signals + anchor resolution + chance rolls” payload assembly in a reusable support package instead of trapping them inside `@bworlds/map-overworld`, which gives future runtime or map packages a stable way to reuse the same signal-generation rules.
+`@bworlds/overworld-support` now provides shared seeded overworld helpers such as `createOverworldTerrainSignalSampler(...)`, `isNearOverworldLand(...)`, `createOverworldGenerationContext(...)`, and `composeOverworldTileFromPlugins(...)`. This keeps the default terrain-noise recipe, common overworld heuristics, and the full “curated override -> terrain pass -> overworld pass -> decoration” tile pipeline in a reusable support package instead of trapping it inside `@bworlds/map-overworld`, which gives future runtime or map packages a stable way to reuse the same signal-generation and plugin-composition rules.
 
 ## Shared POI Helpers
 
@@ -172,11 +183,11 @@ For generated overworld POIs, `createChanceBasedLandPoiClassifier(...)` now cove
 
 `@bworlds/paint-support` now provides reusable 2D tile-painting helpers for common backdrops like plains grass. This reduces repeated atlas and tile-package paint code so new land-based tiles can share visual conventions without copying the same fill-and-blade logic into each package.
 
-The shared atlas no longer keeps special-case painters for extracted tiles like plains or caves. Once a tile package owns `paint2D(...)`, the atlas just hosts sprite generation and variant selection, which keeps tile visuals co-located with the package that owns placement and 3D behavior.
+The shared atlas no longer keeps special-case painters for extracted tiles like plains or caves. Once a tile package owns `paint2D(...)` and any optional `paint2DOverlay(...)`, the atlas just hosts sprite generation, variant selection, and plugin dispatch, which keeps tile visuals co-located with the package that owns placement and 3D behavior.
 
 ## Shared Tile Helpers
 
-`@bworlds/tile-support` now provides small reusable tile-level helpers such as a standard route traversal profile and threshold-based terrain classifiers. This keeps repeated tile-plugin defaults like shared travel-group semantics and common “replace plains when a signal crosses a threshold” placement logic out of individual tile packages so new terrain or route-adjacent tiles can opt into the same behavior with less boilerplate.
+`@bworlds/tile-support` now provides small reusable tile-level helpers such as a standard route traversal profile, threshold-based terrain classifiers, and dominant-neighbor floor resolution for 3D overlays. This keeps repeated tile-plugin defaults like shared travel-group semantics, common “replace plains when a signal crosses a threshold” placement logic, and route-like ground borrowing out of individual tile packages so new terrain or route-adjacent tiles can opt into the same behavior with less boilerplate.
 
 ## Current extracted examples
 

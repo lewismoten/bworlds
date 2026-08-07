@@ -5,9 +5,9 @@ import {
   createChanceBasedEnterablePoiTilePlugin,
   pickPreferredLandmarkFacing,
 } from '@bworlds/poi-support';
+import { createMountainTerrainMaterials } from '@bworlds/three-support';
 import type {
   Create3DModelContext,
-  ThreeMaterialLike,
   Paint2DContext,
 } from '@bworlds/plugin-api';
 
@@ -48,12 +48,8 @@ export function createCaveTilePlugin() {
       state,
       tileX,
       tileY,
-      materials,
     }: Create3DModelContext) {
-      const mountainMaterial = materials.mountainMaterial;
-      if (!mountainMaterial) {
-        return null;
-      }
+      const { mountainMaterial } = createMountainTerrainMaterials(three);
 
       const group = new three.Group();
       const entrance = getCaveEntranceDirection(state, tileX, tileY);

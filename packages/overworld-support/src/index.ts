@@ -5,6 +5,7 @@ import type {
   OverworldSignals,
   PluginRegistryLike,
   Seed,
+  TileLike,
 } from '@bworlds/plugin-api';
 
 export type OverworldTerrainSignalSampler = (
@@ -351,4 +352,54 @@ export function createOverworldGenerationContext({
     bridgeAnchors: anchors.bridgeAnchors,
     poiAnchors: anchors.poiAnchors,
   };
+}
+
+export function composeOverworldTileFromPlugins({
+  seed,
+  x,
+  y,
+  plugins,
+  sampleTerrainSignals,
+  initialTile = { kind: plugins.getDefaultTileKind() },
+}: {
+  seed: Seed;
+  x: number;
+  y: number;
+  plugins: PluginRegistryLike;
+  sampleTerrainSignals: OverworldTerrainSignalSampler;
+  initialTile?: TileLike;
+}): TileLike {
+  const curatedTile = plugins.resolveOverworldTile({
+    seed,
+    x,
+    y,
+    sampleTerrainSignals,
+  });
+  if (curatedTile) {
+    return curatedTile;
+  }
+
+  const generationContext = createOverworldGenerationContext({
+    seed,
+    x,
+    y,
+    tile: initialTile,
+    plugins,
+    sampleTerrainSignals,
+  });
+
+  let tile = plugins.classifyTerrainTile(generationContext) ?? initialTile;
+  tile =
+    plugins.classifyOverworldTile({
+      ...generationContext,
+      tile,
+    }) ?? tile;
+
+  return plugins.decorateOverworldTile({
+    seed,
+    x,
+    y,
+    signals: generationContext.signals,
+    tile,
+  });
 }

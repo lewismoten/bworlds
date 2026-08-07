@@ -25,6 +25,22 @@ import { createSignTilePlugin } from '@bworlds/tile-sign';
 import { createTownTilePlugin } from '@bworlds/tile-town';
 import { createWaterTilePlugin } from '@bworlds/tile-water';
 
+function createDefaultBaseTilePlugin() {
+  const plugin = createPlainsTilePlugin();
+  return {
+    ...plugin,
+    tiles:
+      plugin.tiles?.map((tile) =>
+        tile.kind === 'plains'
+          ? {
+              ...tile,
+              isDefaultTile: true,
+            }
+          : tile
+      ) ?? [],
+  };
+}
+
 export function createDefaultMapPlugins() {
   return [
     withPluginOrder(createTownMapPlugin(), { priority: 10 }),
@@ -52,7 +68,7 @@ export function createDefaultRuntimePlugins() {
 export function createDefaultTilePlugins() {
   return [
     withPluginOrder(createInteriorTilePlugin(), { priority: 5 }),
-    withPluginOrder(createPlainsTilePlugin(), { priority: 8 }),
+    withPluginOrder(createDefaultBaseTilePlugin(), { priority: 8 }),
     withPluginOrder(createWaterTilePlugin(), { priority: 10 }),
     withPluginOrder(createMountainTilePlugin(), { priority: 20 }),
     withPluginOrder(createForestTilePlugin(), { priority: 30 }),
@@ -74,11 +90,17 @@ export function listDefaultTileDefinitions(): Array<[string, TileDefinitionLike]
 }
 
 export function getDefaultTileDefinition(kind: string): TileDefinitionLike {
-  const entries = listDefaultTileDefinitions();
-  const definitions = new Map(entries);
+  const tiles = createDefaultTilePlugins().flatMap((plugin) => plugin.tiles ?? []);
+  const definitions = new Map(
+    tiles.flatMap((tile) =>
+      tile.definition ? [[tile.kind, tile.definition] as const] : []
+    )
+  );
+  const defaultTileDefinition =
+    tiles.find((tile) => tile.isDefaultTile)?.definition ?? null;
   return (
     definitions.get(kind) ??
-    definitions.get('plains') ?? {
+    defaultTileDefinition ?? {
       name: 'Unknown Tile',
       color: '#64748b',
       miniColor: '#94a3b8',

@@ -1,9 +1,9 @@
-import { hash2D } from '@bworlds/core';
+import { hash2D, octaveNoise2D } from '@bworlds/core';
 import { paintPlainsBackdrop } from '@bworlds/paint-support';
 import { createTilePlugin } from '@bworlds/plugin-api';
 import { createRegionKey, tintHexColor } from '@bworlds/procedural-style';
 import { createThresholdTerrainClassifier } from '@bworlds/tile-support';
-import { createCanvasTexture } from '@bworlds/three-support';
+import { createPaintedCanvasTexture } from '@bworlds/three-support';
 import type {
   CanOccupy3DContext,
   ClassifyOverworldTileContext,
@@ -22,13 +22,6 @@ const TREE_REGION_SIZE = 14;
 
 const treeDescriptorCache = new Map<string, ForestTreeDescriptor[]>();
 const treeStyleCache = new Map<string, ForestTreeStyle>();
-const classifyForestTile = createThresholdTerrainClassifier({
-  kind: 'forest',
-  threshold: 0.6,
-  getSignal(context) {
-    return context.signals.moisture;
-  },
-});
 const treeGeometryCache = new WeakMap<
   object,
   {
@@ -40,101 +33,150 @@ const treeGeometryCache = new WeakMap<
 
 export function createForestTilePlugin() {
   return createTilePlugin('tile-forest', [
-      {
-        kind: 'forest',
-        definition: {
-          name: 'Forest',
-          color: '#2f6f3e',
-          miniColor: '#429154',
-          walkable: true,
-          wallHeight: 0.38,
-        },
-        classifyTerrainTile(context: ClassifyOverworldTileContext) {
-          return classifyForestTile(context);
-        },
-        paint2D({
-          context,
-          x,
-          y,
-          definition,
-          motif,
-          fillRect,
-        }: Paint2DContext) {
-          paintPlainsBackdrop({ context, x, y, motif, fillRect });
-          const trees = 2 + motif.int(0, 2);
-          for (let tree = 0; tree < trees; tree += 1) {
-            const offset = 2 + tree * 4 + motif.int(-1, 1);
-            fillRect(context, x + offset + 1, y + 8, 1, 4, TREE_BARK_COLOR);
-            context.fillStyle = TREE_FOLIAGE_COLOR;
-            context.beginPath();
-            context.arc(x + offset + 1.5, y + 7, 2.6, 0, Math.PI * 2);
-            context.fill();
-            context.beginPath();
-            context.arc(x + offset - 0.2, y + 6.2, 2, 0, Math.PI * 2);
-            context.fill();
-          }
-          return true;
-        },
-        create3DModel({ three, tileX, tileY }: Create3DModelContext) {
-          const group = new three.Group();
-          const descriptors = getForestTreeDescriptors(tileX, tileY);
-          const geometry = getTreeGeometry(three);
-
-          for (const descriptor of descriptors) {
-            const style = getTreeStyle(three, tileX, tileY, descriptor.variety);
-            const tree = new three.Group();
-            tree.position.set(tileX + descriptor.x, 0, tileY + descriptor.y);
-            tree.scale.setScalar(descriptor.scale);
-
-            const trunk = new three.Mesh(geometry.trunk, style.trunkMaterial);
-            trunk.position.y = descriptor.trunkHeight * 0.5;
-            trunk.scale.y = descriptor.trunkHeight;
-            tree.add(trunk);
-
-            for (const branch of descriptor.branches) {
-              const limb = new three.Mesh(geometry.branch, style.trunkMaterial);
-              limb.position.set(branch.x, branch.y, branch.z);
-              limb.rotation.z = branch.roll;
-              limb.rotation.x = branch.pitch;
-              limb.scale.y = branch.length;
-              tree.add(limb);
-            }
-
-            for (const clump of descriptor.foliage) {
-              const foliage = new three.Mesh(
-                geometry.foliage,
-                style.foliageMaterial
-              );
-              foliage.position.set(clump.x, clump.y, clump.z);
-              foliage.scale.set(clump.scaleX, clump.scaleY, clump.scaleZ);
-              tree.add(foliage);
-            }
-
-            group.add(tree);
-          }
-
-          return group;
-        },
-        canOccupy3D({
-          tileX,
-          tileY,
-          nextX,
-          nextY,
-          playerRadius,
-        }: CanOccupy3DContext) {
-          const descriptors = getForestTreeDescriptors(tileX, tileY);
-          for (const descriptor of descriptors) {
-            const dx = nextX - (tileX + descriptor.x);
-            const dy = nextY - (tileY + descriptor.y);
-            const distance = Math.hypot(dx, dy);
-            if (distance < descriptor.radius + playerRadius) {
-              return false;
-            }
-          }
-          return true;
-        },
+    {
+      kind: 'forest',
+      definition: {
+        name: 'Forest',
+        color: '#2f6f3e',
+        miniColor: '#429154',
+        walkable: true,
+        wallHeight: 0.38,
       },
-    ]);
+      classifyTerrainTile(context: ClassifyOverworldTileContext) {
+        if (
+          context.signals.continent <= 0.42 ||
+          context.signals.continent >= 0.9
+        ) {
+          return null;
+        }
+        if (
+          context.signals.elevation >= 0.74 ||
+          context.signals.riverSignal >= 0.86
+        ) {
+          return null;
+        }
+
+        const groveSignal = octaveNoise2D(
+          `${context.seed}:forest-grove`,
+          context.x / 24,
+          context.y / 24,
+          {
+            octaves: 3,
+            persistence: 0.58,
+          }
+        );
+        const edgeSignal = octaveNoise2D(
+          `${context.seed}:forest-edge`,
+          context.x / 9,
+          context.y / 9,
+          {
+            octaves: 2,
+            persistence: 0.5,
+          }
+        );
+        const localMoisture = context.sampleTerrainSignals
+          ? averageMoisture(context.sampleTerrainSignals, context.x, context.y)
+          : context.signals.moisture;
+        const clusterStrength =
+          context.signals.moisture * 0.3 +
+          localMoisture * 0.34 +
+          groveSignal * 0.28 +
+          edgeSignal * 0.08;
+        const loneTreeChance = hash2D(
+          `${context.seed}:forest-loner`,
+          context.x,
+          context.y
+        );
+
+          if (clusterStrength >= 0.54) {
+            return { kind: 'forest' };
+          }
+          if (
+            context.signals.moisture >= 0.64 &&
+            groveSignal >= 0.42 &&
+            loneTreeChance >= 0.955
+          ) {
+            return { kind: 'forest' };
+          }
+
+        return null;
+      },
+      paint2D({ context, x, y, definition, motif, fillRect }: Paint2DContext) {
+        paintPlainsBackdrop({ context, x, y, motif, fillRect });
+        const trees = 2 + motif.int(0, 2);
+        for (let tree = 0; tree < trees; tree += 1) {
+          const offset = 2 + tree * 4 + motif.int(-1, 1);
+          fillRect(context, x + offset + 1, y + 8, 1, 4, TREE_BARK_COLOR);
+          context.fillStyle = TREE_FOLIAGE_COLOR;
+          context.beginPath();
+          context.arc(x + offset + 1.5, y + 7, 2.6, 0, Math.PI * 2);
+          context.fill();
+          context.beginPath();
+          context.arc(x + offset - 0.2, y + 6.2, 2, 0, Math.PI * 2);
+          context.fill();
+        }
+        return true;
+      },
+      create3DModel({ three, tileX, tileY }: Create3DModelContext) {
+        const group = new three.Group();
+        const descriptors = getForestTreeDescriptors(tileX, tileY);
+        const geometry = getTreeGeometry(three);
+
+        for (const descriptor of descriptors) {
+          const style = getTreeStyle(three, tileX, tileY, descriptor.variety);
+          const tree = new three.Group();
+          tree.position.set(tileX + descriptor.x, 0, tileY + descriptor.y);
+          tree.scale.setScalar(descriptor.scale);
+
+          const trunk = new three.Mesh(geometry.trunk, style.trunkMaterial);
+          trunk.position.y = descriptor.trunkHeight * 0.5;
+          trunk.scale.y = descriptor.trunkHeight;
+          tree.add(trunk);
+
+          for (const branch of descriptor.branches) {
+            const limb = new three.Mesh(geometry.branch, style.trunkMaterial);
+            limb.position.set(branch.x, branch.y, branch.z);
+            limb.rotation.z = branch.roll;
+            limb.rotation.x = branch.pitch;
+            limb.scale.y = branch.length;
+            tree.add(limb);
+          }
+
+          for (const clump of descriptor.foliage) {
+            const foliage = new three.Mesh(
+              geometry.foliage,
+              style.foliageMaterial
+            );
+            foliage.position.set(clump.x, clump.y, clump.z);
+            foliage.scale.set(clump.scaleX, clump.scaleY, clump.scaleZ);
+            tree.add(foliage);
+          }
+
+          group.add(tree);
+        }
+
+        return group;
+      },
+      canOccupy3D({
+        tileX,
+        tileY,
+        nextX,
+        nextY,
+        playerRadius,
+      }: CanOccupy3DContext) {
+        const descriptors = getForestTreeDescriptors(tileX, tileY);
+        for (const descriptor of descriptors) {
+          const dx = nextX - (tileX + descriptor.x);
+          const dy = nextY - (tileY + descriptor.y);
+          const distance = Math.hypot(dx, dy);
+          if (distance < descriptor.radius + playerRadius) {
+            return false;
+          }
+        }
+        return true;
+      },
+    },
+  ]);
 }
 
 function getTreeGeometry(three: ThreeHostLike) {
@@ -151,15 +193,30 @@ function getTreeGeometry(three: ThreeHostLike) {
 function getForestTreeDescriptors(tileX: number, tileY: number) {
   const key = `${tileX}:${tileY}`;
   if (!treeDescriptorCache.has(key)) {
-    const count = 1 + Math.floor(hash2D('forest-tree-count', tileX, tileY) * 3);
+    const groveCenterX =
+      (hash2D('forest-grove-center-x', tileX, tileY) - 0.5) * 0.36;
+    const groveCenterY =
+      (hash2D('forest-grove-center-y', tileX, tileY) - 0.5) * 0.36;
+    const loneTree =
+      hash2D('forest-lone-tree', tileX, tileY) > 0.9 &&
+      hash2D('forest-tree-count', tileX, tileY) < 0.25;
+    const count = loneTree
+      ? 1
+      : 3 + Math.floor(hash2D('forest-tree-count', tileX, tileY) * 4);
     const descriptors: ForestTreeDescriptor[] = [];
 
     for (let index = 0; index < count; index += 1) {
       const baseSeed = `forest-tree:${tileX}:${tileY}:${index}`;
       const variety = getTreeVarietyIndex(tileX, tileY, index);
+      const outlierChance = hash2D(baseSeed, 0, 0);
+      const spread = loneTree ? 0.06 : outlierChance > 0.84 ? 0.28 : 0.17;
       const descriptor: ForestTreeDescriptor = {
-        x: hash2D(baseSeed, 1, 0) * 0.56 - 0.28,
-        y: hash2D(baseSeed, 2, 0) * 0.56 - 0.28,
+        x: clampToTile(
+          groveCenterX + (hash2D(baseSeed, 1, 0) - 0.5) * spread * 2
+        ),
+        y: clampToTile(
+          groveCenterY + (hash2D(baseSeed, 2, 0) - 0.5) * spread * 2
+        ),
         radius: 0.08 + hash2D(baseSeed, 3, 0) * 0.05,
         scale: 0.78 + hash2D(baseSeed, 4, 0) * 0.55,
         trunkHeight: 0.72 + hash2D(baseSeed, 5, 0) * 0.45,
@@ -286,6 +343,27 @@ function getTreeStyle(
   return treeStyleCache.get(key)!;
 }
 
+function averageMoisture(
+  sampleTerrainSignals: NonNullable<
+    ClassifyOverworldTileContext['sampleTerrainSignals']
+  >,
+  x: number,
+  y: number
+) {
+  const samples = [
+    sampleTerrainSignals(x, y).moisture,
+    sampleTerrainSignals(x + 1, y).moisture,
+    sampleTerrainSignals(x - 1, y).moisture,
+    sampleTerrainSignals(x, y + 1).moisture,
+    sampleTerrainSignals(x, y - 1).moisture,
+  ];
+  return samples.reduce((sum, value) => sum + value, 0) / samples.length;
+}
+
+function clampToTile(value: number) {
+  return Math.max(-0.34, Math.min(0.34, value));
+}
+
 function createTreeBarkTexture(
   three: ThreeHostLike,
   baseColor: string,
@@ -293,34 +371,37 @@ function createTreeBarkTexture(
   regionY: number,
   variety: number
 ) {
-  const canvas = document.createElement('canvas');
-  canvas.width = 64;
-  canvas.height = 64;
-  const context = canvas.getContext('2d')!;
+  return createPaintedCanvasTexture(three, {
+    width: 64,
+    height: 64,
+    repeatX: 1.2,
+    repeatY: 1.2,
+    paint(context, canvas) {
+      context.fillStyle = baseColor;
+      context.fillRect(0, 0, canvas.width, canvas.height);
 
-  context.fillStyle = baseColor;
-  context.fillRect(0, 0, canvas.width, canvas.height);
+      for (let x = 0; x < canvas.width; x += 5) {
+        const darkness = 34 + ((x * 9 + variety * 17) % 26);
+        context.fillStyle = `rgba(${darkness}, ${darkness - 6}, ${darkness - 10}, 0.28)`;
+        context.fillRect(x, 0, 2, canvas.height);
+      }
 
-  for (let x = 0; x < canvas.width; x += 5) {
-    const darkness = 34 + ((x * 9 + variety * 17) % 26);
-    context.fillStyle = `rgba(${darkness}, ${darkness - 6}, ${darkness - 10}, 0.28)`;
-    context.fillRect(x, 0, 2, canvas.height);
-  }
-
-  for (let index = 0; index < 120; index += 1) {
-    const x = Math.floor(
-      hash2D('tree-bark-crack-x', regionX * 31 + variety, index) * canvas.width
-    );
-    const y = Math.floor(
-      hash2D('tree-bark-crack-y', regionY * 29 + variety, index) * canvas.height
-    );
-    const height =
-      3 + Math.floor(hash2D('tree-bark-crack-h', index, variety) * 8);
-    context.fillStyle = 'rgba(20, 12, 8, 0.22)';
-    context.fillRect(x, y, 1, height);
-  }
-
-  return finalizeTexture(three, canvas, 1.2, 1.2);
+      for (let index = 0; index < 120; index += 1) {
+        const x = Math.floor(
+          hash2D('tree-bark-crack-x', regionX * 31 + variety, index) *
+            canvas.width
+        );
+        const y = Math.floor(
+          hash2D('tree-bark-crack-y', regionY * 29 + variety, index) *
+            canvas.height
+        );
+        const height =
+          3 + Math.floor(hash2D('tree-bark-crack-h', index, variety) * 8);
+        context.fillStyle = 'rgba(20, 12, 8, 0.22)';
+        context.fillRect(x, y, 1, height);
+      }
+    },
+  });
 }
 
 function createTreeFoliageTexture(
@@ -330,43 +411,35 @@ function createTreeFoliageTexture(
   regionY: number,
   variety: number
 ) {
-  const canvas = document.createElement('canvas');
-  canvas.width = 64;
-  canvas.height = 64;
-  const context = canvas.getContext('2d')!;
+  return createPaintedCanvasTexture(three, {
+    width: 64,
+    height: 64,
+    repeatX: 1.15,
+    repeatY: 1.15,
+    paint(context, canvas) {
+      context.fillStyle = baseColor;
+      context.fillRect(0, 0, canvas.width, canvas.height);
 
-  context.fillStyle = baseColor;
-  context.fillRect(0, 0, canvas.width, canvas.height);
+      for (let index = 0; index < 180; index += 1) {
+        const x = Math.floor(
+          hash2D('tree-leaf-x', regionX * 17 + variety, index) * canvas.width
+        );
+        const y = Math.floor(
+          hash2D('tree-leaf-y', regionY * 19 + variety, index) * canvas.height
+        );
+        const size = 1 + Math.floor(hash2D('tree-leaf-s', index, variety) * 3);
+        const tint =
+          90 + Math.floor(hash2D('tree-leaf-b', index, regionX + regionY) * 80);
+        context.fillStyle = `rgba(${24 + (tint % 40)}, ${tint}, ${30 + (tint % 30)}, 0.22)`;
+        context.fillRect(x, y, size, size);
+      }
 
-  for (let index = 0; index < 180; index += 1) {
-    const x = Math.floor(
-      hash2D('tree-leaf-x', regionX * 17 + variety, index) * canvas.width
-    );
-    const y = Math.floor(
-      hash2D('tree-leaf-y', regionY * 19 + variety, index) * canvas.height
-    );
-    const size = 1 + Math.floor(hash2D('tree-leaf-s', index, variety) * 3);
-    const tint =
-      90 + Math.floor(hash2D('tree-leaf-b', index, regionX + regionY) * 80);
-    context.fillStyle = `rgba(${24 + (tint % 40)}, ${tint}, ${30 + (tint % 30)}, 0.22)`;
-    context.fillRect(x, y, size, size);
-  }
-
-  for (let row = 0; row < canvas.height; row += 8) {
-    context.fillStyle = 'rgba(255,255,255,0.08)';
-    context.fillRect(0, row, canvas.width, 1);
-  }
-
-  return finalizeTexture(three, canvas, 1.15, 1.15);
-}
-
-function finalizeTexture(
-  three: ThreeHostLike,
-  canvas: HTMLCanvasElement,
-  repeatX: number,
-  repeatY: number
-) {
-  return createCanvasTexture(three, canvas, { repeatX, repeatY });
+      for (let row = 0; row < canvas.height; row += 8) {
+        context.fillStyle = 'rgba(255,255,255,0.08)';
+        context.fillRect(0, row, canvas.width, 1);
+      }
+    },
+  });
 }
 interface ForestTreeStyle {
   trunkMaterial: ThreeMaterialLike;

@@ -52,14 +52,14 @@ const BRIDGE_ANCHOR_SPEC: OverworldCellAnchorSpec<OverworldAnchorLike> = {
   chanceKey: 'bridge-anchor',
   offsetXKey: 'bridge-anchor-x',
   offsetYKey: 'bridge-anchor-y',
-  threshold: 0.72,
+  threshold: 0.68,
   priority: 0,
   isSuitableTerrain(terrain) {
     return (
       terrain.continent > 0.46 &&
       terrain.continent < 0.88 &&
       terrain.elevation < 0.68 &&
-      terrain.riverSignal > 0.8
+      terrain.riverSignal > 0.76
     );
   },
   createAnchor({ x, y }) {

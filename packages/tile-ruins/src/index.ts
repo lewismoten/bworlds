@@ -4,9 +4,12 @@ import {
   DEFAULT_LAND_POI_BLOCKED_KINDS,
   createChanceBasedLandPoiClassifier,
 } from '@bworlds/poi-support';
-import { getOrCreateRegionalValue, pickThresholdColor } from '@bworlds/procedural-style';
+import {
+  getOrCreateRegionalValue,
+  pickThresholdColor,
+} from '@bworlds/procedural-style';
 import { createTilePlugin } from '@bworlds/plugin-api';
-import { createCanvasTexture } from '@bworlds/three-support';
+import { createPaintedCanvasTexture } from '@bworlds/three-support';
 import type {
   ClassifyOverworldTileContext,
   Create3DModelContext,
@@ -37,8 +40,11 @@ const classifyRuinsTile = createChanceBasedLandPoiClassifier({
   blockedKinds: RUINS_BLOCKED_KINDS,
   getChance(context) {
     const regionalBias =
-      hash2D(`${context.seed}:ruins-region`, Math.floor(context.x / 24), Math.floor(context.y / 24)) *
-      0.45;
+      hash2D(
+        `${context.seed}:ruins-region`,
+        Math.floor(context.x / 24),
+        Math.floor(context.y / 24)
+      ) * 0.45;
     const localBias =
       hash2D(`${context.seed}:ruins-local`, context.x, context.y) * 0.4;
     const terrainBias =
@@ -86,17 +92,25 @@ export function createRuinsTilePlugin(): RuntimePlugin {
         base.position.y = 0.05;
         group.add(base);
 
-        const columnCount = 3 + Math.floor(hash2D('ruins-columns', tileX, tileY) * 3);
+        const columnCount =
+          3 + Math.floor(hash2D('ruins-columns', tileX, tileY) * 3);
         for (let index = 0; index < columnCount; index += 1) {
           const angle = (index / columnCount) * Math.PI * 2;
-          const radius = 0.18 + hash2D('ruins-column-radius', tileX + index, tileY) * 0.16;
-          const height = 0.28 + hash2D('ruins-column-height', tileX, tileY + index) * 0.36;
+          const radius =
+            0.18 + hash2D('ruins-column-radius', tileX + index, tileY) * 0.16;
+          const height =
+            0.28 + hash2D('ruins-column-height', tileX, tileY + index) * 0.36;
           const column = new three.Mesh(
             new three.BoxGeometry(0.1, height, 0.1),
             style.stoneMaterial
           );
-          column.position.set(Math.cos(angle) * radius, 0.1 + height * 0.5, Math.sin(angle) * radius);
-          column.rotation.y = hash2D('ruins-column-rot', tileX + index, tileY - index) * Math.PI;
+          column.position.set(
+            Math.cos(angle) * radius,
+            0.1 + height * 0.5,
+            Math.sin(angle) * radius
+          );
+          column.rotation.y =
+            hash2D('ruins-column-rot', tileX + index, tileY - index) * Math.PI;
           group.add(column);
 
           if (height > 0.44) {
@@ -104,7 +118,11 @@ export function createRuinsTilePlugin(): RuntimePlugin {
               new three.BoxGeometry(0.16, 0.06, 0.16),
               style.accentMaterial
             );
-            cap.position.set(column.position.x, column.position.y + height * 0.5 - 0.02, column.position.z);
+            cap.position.set(
+              column.position.x,
+              column.position.y + height * 0.5 - 0.02,
+              column.position.z
+            );
             group.add(cap);
           }
         }
@@ -123,7 +141,8 @@ export function createRuinsTilePlugin(): RuntimePlugin {
           group.add(arch);
         }
 
-        const rubbleCount = 4 + Math.floor(hash2D('ruins-rubble', tileX, tileY) * 4);
+        const rubbleCount =
+          4 + Math.floor(hash2D('ruins-rubble', tileX, tileY) * 4);
         for (let index = 0; index < rubbleCount; index += 1) {
           const rubble = new three.Mesh(
             new three.BoxGeometry(
@@ -138,7 +157,8 @@ export function createRuinsTilePlugin(): RuntimePlugin {
             0.11,
             (hash2D('ruins-rubble-z', tileX, tileY + index) - 0.5) * 0.6
           );
-          rubble.rotation.y = hash2D('ruins-rubble-rot', tileX + index, tileY - index) * Math.PI;
+          rubble.rotation.y =
+            hash2D('ruins-rubble-rot', tileX + index, tileY - index) * Math.PI;
           group.add(rubble);
         }
 
@@ -148,7 +168,11 @@ export function createRuinsTilePlugin(): RuntimePlugin {
   ]);
 }
 
-function getRuinsStyle(three: ThreeHostLike, tileX: number, tileY: number): RuinsStyle {
+function getRuinsStyle(
+  three: ThreeHostLike,
+  tileX: number,
+  tileY: number
+): RuinsStyle {
   return getOrCreateRegionalValue(
     ruinsStyleCache,
     tileX,
@@ -169,7 +193,13 @@ function getRuinsStyle(three: ThreeHostLike, tileX: number, tileY: number): Ruin
         '#746b61',
         '#8c6d5b'
       );
-      const texture = createRuinsTexture(three, regionX, regionY, stoneColor, accentColor);
+      const texture = createRuinsTexture(
+        three,
+        regionX,
+        regionY,
+        stoneColor,
+        accentColor
+      );
 
       return {
         stoneMaterial: new three.MeshStandardMaterial({
@@ -196,38 +226,51 @@ function createRuinsTexture(
   stoneColor: string,
   accentColor: string
 ): ThreeTextureLike {
-  const canvas = document.createElement('canvas');
-  canvas.width = 64;
-  canvas.height = 64;
-  const context = canvas.getContext('2d')!;
-
-  context.fillStyle = stoneColor;
-  context.fillRect(0, 0, canvas.width, canvas.height);
-
-  for (let row = 0; row < canvas.height; row += 8) {
-    context.fillStyle = row % 16 === 0 ? accentColor : withAlpha(accentColor, 0.35);
-    context.fillRect(0, row, canvas.width, 2);
-  }
-
-  for (let index = 0; index < 90; index += 1) {
-    const x = Math.floor(hash2D('ruins-chip-x', regionX * 31 + index, regionY) * canvas.width);
-    const y = Math.floor(hash2D('ruins-chip-y', regionY * 37 + index, regionX) * canvas.height);
-    const size = 1 + Math.floor(hash2D('ruins-chip-size', regionX + index, regionY) * 3);
-    context.fillStyle = withAlpha('#f2ede5', 0.18 + hash2D('ruins-chip-a', regionX, regionY + index) * 0.16);
-    context.fillRect(x, y, size, 1);
-  }
-
-  for (let index = 0; index < 28; index += 1) {
-    const x = Math.floor(hash2D('ruins-crack-x', regionX + index, regionY) * canvas.width);
-    const y = Math.floor(hash2D('ruins-crack-y', regionY + index, regionX) * canvas.height);
-    const length = 3 + Math.floor(hash2D('ruins-crack-l', regionX, regionY + index) * 8);
-    context.fillStyle = 'rgba(41, 34, 30, 0.22)';
-    context.fillRect(x, y, 1, length);
-  }
-
-  return createCanvasTexture(three, canvas, {
+  return createPaintedCanvasTexture(three, {
+    width: 64,
+    height: 64,
     repeatX: 1.5,
     repeatY: 1.5,
+    paint(context, canvas) {
+      context.fillStyle = stoneColor;
+      context.fillRect(0, 0, canvas.width, canvas.height);
+
+      for (let row = 0; row < canvas.height; row += 8) {
+        context.fillStyle =
+          row % 16 === 0 ? accentColor : withAlpha(accentColor, 0.35);
+        context.fillRect(0, row, canvas.width, 2);
+      }
+
+      for (let index = 0; index < 90; index += 1) {
+        const x = Math.floor(
+          hash2D('ruins-chip-x', regionX * 31 + index, regionY) * canvas.width
+        );
+        const y = Math.floor(
+          hash2D('ruins-chip-y', regionY * 37 + index, regionX) * canvas.height
+        );
+        const size =
+          1 +
+          Math.floor(hash2D('ruins-chip-size', regionX + index, regionY) * 3);
+        context.fillStyle = withAlpha(
+          '#f2ede5',
+          0.18 + hash2D('ruins-chip-a', regionX, regionY + index) * 0.16
+        );
+        context.fillRect(x, y, size, 1);
+      }
+
+      for (let index = 0; index < 28; index += 1) {
+        const x = Math.floor(
+          hash2D('ruins-crack-x', regionX + index, regionY) * canvas.width
+        );
+        const y = Math.floor(
+          hash2D('ruins-crack-y', regionY + index, regionX) * canvas.height
+        );
+        const length =
+          3 + Math.floor(hash2D('ruins-crack-l', regionX, regionY + index) * 8);
+        context.fillStyle = 'rgba(41, 34, 30, 0.22)';
+        context.fillRect(x, y, 1, length);
+      }
+    },
   });
 }
 
