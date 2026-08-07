@@ -15,6 +15,7 @@ const TREE_BARK_COLOR = '#4a2f1b';
 const TREE_PLAYER_RADIUS = 0.12;
 const SIGN_REGION_SIZE = 10;
 const TOWN_REGION_SIZE = 18;
+const MOUNTAIN_BASE_COLOR = '#6b7280';
 
 export function create3DRenderer(host) {
   const renderer = new THREE.WebGLRenderer({
@@ -55,6 +56,7 @@ export function create3DRenderer(host) {
   const signLabelCache = new Map();
   const townStyleCache = new Map();
   const townDescriptorCache = new Map();
+  const mountainTexture = createMountainTexture();
   const treeGeometry = {
     trunk: new THREE.CylinderGeometry(0.075, 0.1, 1, 6),
     branch: new THREE.CylinderGeometry(0.028, 0.045, 0.45, 5),
@@ -73,6 +75,13 @@ export function create3DRenderer(host) {
       flatShading: true,
     }),
   };
+  const mountainMaterial = new THREE.MeshStandardMaterial({
+    color: '#dbe4ea',
+    map: mountainTexture,
+    roughness: 0.96,
+    metalness: 0.02,
+    flatShading: true,
+  });
   let lastCenterKey = '';
   let lastContextKey = '';
 
@@ -114,6 +123,8 @@ export function create3DRenderer(host) {
         if (tile.kind === 'forest') {
           const treeGroup = createForestTileGroup(x, y);
           worldRoot.add(treeGroup);
+        } else if (tile.kind === 'mountain') {
+          worldRoot.add(createMountainGroup(state, x, y));
         } else if (tile.kind === 'town') {
           worldRoot.add(createTownGroup(x, y));
         } else if (tile.kind === 'sign') {
@@ -251,6 +262,163 @@ export function create3DRenderer(host) {
     }
 
     return group;
+  }
+
+  function createMountainGroup(state, tileX, tileY) {
+    const group = new THREE.Group();
+    const peakScale = getMountainPeakScale(state, tileX, tileY);
+    const height = 1.4 * peakScale;
+    const width = 0.9 + hash2D('mountain-width', tileX, tileY) * 0.22;
+    const depth = 0.9 + hash2D('mountain-depth', tileX, tileY) * 0.22;
+    const upperHeight =
+      height * (0.5 + hash2D('mountain-upper', tileX, tileY) * 0.16);
+    const lowerHeight = height - upperHeight * 0.45;
+
+    const base = new THREE.Mesh(
+      new THREE.ConeGeometry(Math.max(width, depth) * 0.72, lowerHeight, 4),
+      mountainMaterial
+    );
+    base.position.set(tileX, lowerHeight * 0.5, tileY);
+    base.rotation.y = hash2D('mountain-rot-a', tileX, tileY) * Math.PI;
+    base.scale.z = depth / width;
+    group.add(base);
+
+    const upper = new THREE.Mesh(
+      new THREE.ConeGeometry(Math.max(width, depth) * 0.44, upperHeight, 4),
+      mountainMaterial
+    );
+    upper.position.set(
+      tileX + (hash2D('mountain-offset-x', tileX, tileY) - 0.5) * 0.12,
+      lowerHeight * 0.62 + upperHeight * 0.5,
+      tileY + (hash2D('mountain-offset-y', tileX, tileY) - 0.5) * 0.12
+    );
+    upper.rotation.y = hash2D('mountain-rot-b', tileX, tileY) * Math.PI;
+    upper.scale.z = depth / width;
+    group.add(upper);
+
+    if (peakScale > 1.3) {
+      const crown = new THREE.Mesh(
+        new THREE.ConeGeometry(
+          Math.max(width, depth) * 0.26,
+          upperHeight * 0.68,
+          4
+        ),
+        mountainMaterial
+      );
+      crown.position.set(
+        upper.position.x,
+        upper.position.y + upperHeight * 0.42,
+        upper.position.z
+      );
+      crown.rotation.y = hash2D('mountain-rot-c', tileX, tileY) * Math.PI;
+      crown.scale.z = depth / width;
+      group.add(crown);
+    }
+
+    if (peakScale > 1.55) {
+      const snow = new THREE.Mesh(
+        new THREE.ConeGeometry(
+          Math.max(width, depth) * 0.16,
+          upperHeight * 0.3,
+          4
+        ),
+        new THREE.MeshStandardMaterial({
+          color: '#f8fafc',
+          roughness: 0.88,
+          metalness: 0.02,
+          flatShading: true,
+        })
+      );
+      snow.position.set(
+        upper.position.x,
+        upper.position.y + upperHeight * 0.56,
+        upper.position.z
+      );
+      snow.rotation.y = upper.rotation.y;
+      snow.scale.z = depth / width;
+      group.add(snow);
+    }
+
+    return group;
+  }
+
+  function getMountainPeakScale(state, tileX, tileY) {
+    let scale = 1;
+    const neighbors = [
+      state.getCurrentTile(tileX, tileY - 1).kind,
+      state.getCurrentTile(tileX + 1, tileY).kind,
+      state.getCurrentTile(tileX, tileY + 1).kind,
+      state.getCurrentTile(tileX - 1, tileY).kind,
+    ];
+    const surroundingCount = neighbors.filter(
+      (kind) => kind === 'mountain'
+    ).length;
+
+    if (surroundingCount === 4) {
+      scale += 0.55;
+      const secondRing = [
+        state.getCurrentTile(tileX, tileY - 2).kind,
+        state.getCurrentTile(tileX + 2, tileY).kind,
+        state.getCurrentTile(tileX, tileY + 2).kind,
+        state.getCurrentTile(tileX - 2, tileY).kind,
+      ].filter((kind) => kind === 'mountain').length;
+      scale += secondRing * 0.1;
+    } else {
+      scale += surroundingCount * 0.12;
+    }
+
+    return Math.min(2, scale);
+  }
+
+  function createMountainTexture() {
+    const canvas = document.createElement('canvas');
+    canvas.width = 64;
+    canvas.height = 64;
+    const context = canvas.getContext('2d');
+
+    context.fillStyle = MOUNTAIN_BASE_COLOR;
+    context.fillRect(0, 0, canvas.width, canvas.height);
+
+    for (let row = 0; row < canvas.height; row += 4) {
+      const shade = 90 + ((row * 7) % 55);
+      context.fillStyle = `rgb(${shade}, ${shade + 6}, ${shade + 12})`;
+      context.fillRect(0, row, canvas.width, 2);
+    }
+
+    for (let index = 0; index < 180; index += 1) {
+      const x = Math.floor(
+        hash2D('mountain-texture-x', index, 0) * canvas.width
+      );
+      const y = Math.floor(
+        hash2D('mountain-texture-y', index, 0) * canvas.height
+      );
+      const length = 2 + Math.floor(hash2D('mountain-texture-l', index, 0) * 6);
+      const brightness =
+        110 + Math.floor(hash2D('mountain-texture-b', index, 0) * 70);
+      context.fillStyle = `rgba(${brightness}, ${brightness + 4}, ${brightness + 10}, 0.35)`;
+      context.fillRect(x, y, length, 1);
+    }
+
+    for (let index = 0; index < 120; index += 1) {
+      const x = Math.floor(hash2D('mountain-crack-x', index, 0) * canvas.width);
+      const y = Math.floor(
+        hash2D('mountain-crack-y', index, 0) * canvas.height
+      );
+      const depth = 1 + Math.floor(hash2D('mountain-crack-l', index, 0) * 4);
+      context.fillStyle = 'rgba(39, 48, 58, 0.32)';
+      context.fillRect(x, y, 1, depth);
+    }
+
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.RepeatWrapping;
+    texture.repeat.set(1.4, 1.4);
+    texture.magFilter = THREE.NearestFilter;
+    texture.minFilter = THREE.NearestFilter;
+    texture.generateMipmaps = false;
+    texture.needsUpdate = true;
+    return texture;
   }
 
   function getForestTreeDescriptors(tileX, tileY) {
