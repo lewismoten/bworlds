@@ -14,6 +14,7 @@ const TREE_FOLIAGE_COLOR = '#163b20';
 const TREE_BARK_COLOR = '#4a2f1b';
 const TREE_PLAYER_RADIUS = 0.12;
 const SIGN_REGION_SIZE = 10;
+const TOWN_REGION_SIZE = 18;
 
 export function create3DRenderer(host) {
   const renderer = new THREE.WebGLRenderer({
@@ -52,6 +53,8 @@ export function create3DRenderer(host) {
   const treeDescriptorCache = new Map();
   const signStyleCache = new Map();
   const signLabelCache = new Map();
+  const townStyleCache = new Map();
+  const townDescriptorCache = new Map();
   const treeGeometry = {
     trunk: new THREE.CylinderGeometry(0.075, 0.1, 1, 6),
     branch: new THREE.CylinderGeometry(0.028, 0.045, 0.45, 5),
@@ -111,6 +114,8 @@ export function create3DRenderer(host) {
         if (tile.kind === 'forest') {
           const treeGroup = createForestTileGroup(x, y);
           worldRoot.add(treeGroup);
+        } else if (tile.kind === 'town') {
+          worldRoot.add(createTownGroup(x, y));
         } else if (tile.kind === 'sign') {
           worldRoot.add(createSignGroup(state, x, y));
         } else if (definition.wallHeight > 0.08) {
@@ -307,6 +312,167 @@ export function create3DRenderer(host) {
     }
 
     return treeDescriptorCache.get(key);
+  }
+
+  function createTownGroup(tileX, tileY) {
+    const style = getTownStyle(tileX, tileY);
+    const descriptors = getTownDescriptors(tileX, tileY);
+    const group = new THREE.Group();
+
+    for (const descriptor of descriptors) {
+      const building = new THREE.Group();
+      building.position.set(tileX + descriptor.x, 0, tileY + descriptor.y);
+      building.rotation.y = descriptor.rotation;
+
+      const body = new THREE.Mesh(
+        new THREE.BoxGeometry(
+          descriptor.width,
+          descriptor.height,
+          descriptor.depth
+        ),
+        style.wallMaterial
+      );
+      body.position.y = descriptor.height * 0.5;
+      building.add(body);
+
+      const roof = new THREE.Mesh(
+        new THREE.ConeGeometry(descriptor.roofRadius, descriptor.roofHeight, 4),
+        style.roofMaterial
+      );
+      roof.position.y = descriptor.height + descriptor.roofHeight * 0.5 - 0.03;
+      roof.rotation.y = Math.PI * 0.25;
+      building.add(roof);
+
+      const door = new THREE.Mesh(
+        new THREE.BoxGeometry(
+          descriptor.width * 0.18,
+          descriptor.height * 0.34,
+          0.04
+        ),
+        style.trimMaterial
+      );
+      door.position.set(
+        0,
+        descriptor.height * 0.17,
+        descriptor.depth * 0.5 + 0.01
+      );
+      building.add(door);
+
+      for (const window of descriptor.windows) {
+        const pane = new THREE.Mesh(
+          new THREE.BoxGeometry(window.width, window.height, 0.03),
+          style.windowMaterial
+        );
+        pane.position.set(window.x, window.y, descriptor.depth * 0.5 + 0.008);
+        building.add(pane);
+      }
+
+      group.add(building);
+    }
+
+    return group;
+  }
+
+  function getTownStyle(tileX, tileY) {
+    const regionX = Math.floor(tileX / TOWN_REGION_SIZE);
+    const regionY = Math.floor(tileY / TOWN_REGION_SIZE);
+    const key = `${regionX}:${regionY}`;
+
+    if (!townStyleCache.has(key)) {
+      const wallColor =
+        hash2D('town-wall-tone', regionX, regionY) > 0.5
+          ? '#ece6dc'
+          : '#d8cfbf';
+      const roofColor =
+        hash2D('town-roof-tone', regionX, regionY) > 0.5
+          ? '#b64b3b'
+          : '#7b4032';
+      const trimColor =
+        hash2D('town-trim-tone', regionX, regionY) > 0.45
+          ? '#73563f'
+          : '#54402f';
+      const windowColor =
+        hash2D('town-window-tone', regionX, regionY) > 0.55
+          ? '#d9f4ff'
+          : '#fef3c7';
+
+      townStyleCache.set(key, {
+        wallMaterial: new THREE.MeshStandardMaterial({
+          color: wallColor,
+          roughness: 0.92,
+          metalness: 0.02,
+        }),
+        roofMaterial: new THREE.MeshStandardMaterial({
+          color: roofColor,
+          roughness: 0.88,
+          metalness: 0.03,
+        }),
+        trimMaterial: new THREE.MeshStandardMaterial({
+          color: trimColor,
+          roughness: 0.84,
+          metalness: 0.04,
+        }),
+        windowMaterial: new THREE.MeshStandardMaterial({
+          color: windowColor,
+          emissive: windowColor,
+          emissiveIntensity: 0.08,
+          roughness: 0.4,
+          metalness: 0.02,
+        }),
+      });
+    }
+
+    return townStyleCache.get(key);
+  }
+
+  function getTownDescriptors(tileX, tileY) {
+    const key = `${tileX}:${tileY}`;
+    if (!townDescriptorCache.has(key)) {
+      const complexity = hash2D('town-complexity', tileX, tileY);
+      const count = 3 + Math.floor(complexity * 4);
+      const descriptors = [];
+
+      for (let index = 0; index < count; index += 1) {
+        const baseSeed = `town-building:${tileX}:${tileY}:${index}`;
+        const width = 0.28 + hash2D(baseSeed, 1, 0) * 0.22;
+        const depth = 0.26 + hash2D(baseSeed, 2, 0) * 0.24;
+        const height = 0.55 + hash2D(baseSeed, 3, 0) * 0.55;
+        const descriptor = {
+          x: (hash2D(baseSeed, 4, 0) - 0.5) * 0.54,
+          y: 0,
+          z: (hash2D(baseSeed, 5, 0) - 0.5) * 0.54,
+          width,
+          depth,
+          height,
+          rotation: hash2D(baseSeed, 6, 0) > 0.5 ? 0 : Math.PI * 0.5,
+          roofRadius:
+            Math.max(width, depth) * (0.96 + hash2D(baseSeed, 7, 0) * 0.26),
+          roofHeight: 0.18 + hash2D(baseSeed, 8, 0) * 0.2,
+          windows: [],
+        };
+
+        const windowCount = 1 + Math.floor(hash2D(baseSeed, 9, 0) * 3);
+        for (let windowIndex = 0; windowIndex < windowCount; windowIndex += 1) {
+          descriptor.windows.push({
+            x:
+              ((windowIndex + 1) / (windowCount + 1) - 0.5) *
+              descriptor.width *
+              0.75,
+            y:
+              descriptor.height *
+              (0.48 + hash2D(baseSeed, 10 + windowIndex, 0) * 0.16),
+            width: descriptor.width * 0.12,
+            height: descriptor.height * 0.14,
+          });
+        }
+
+        descriptors.push(descriptor);
+      }
+
+      townDescriptorCache.set(key, descriptors);
+    }
+
+    return townDescriptorCache.get(key);
   }
 
   function createSignGroup(state, tileX, tileY) {

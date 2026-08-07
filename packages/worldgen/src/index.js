@@ -4,12 +4,27 @@ function makeKey(...parts) {
   return parts.join(':');
 }
 
-function isTownTile(tile) {
-  return tile.poi?.type === 'town' || tile.kind === 'town';
+function distanceToLineSegment(px, py, ax, ay, bx, by) {
+  const abx = bx - ax;
+  const aby = by - ay;
+  const apx = px - ax;
+  const apy = py - ay;
+  const lengthSquared = abx * abx + aby * aby;
+
+  if (lengthSquared === 0) {
+    return Math.hypot(px - ax, py - ay);
+  }
+
+  const t = clamp((apx * abx + apy * aby) / lengthSquared, 0, 1);
+  const nearestX = ax + abx * t;
+  const nearestY = ay + aby * t;
+  return Math.hypot(px - nearestX, py - nearestY);
 }
 
 function createOverworldMap(seed, plugins) {
   const cache = new Map();
+  const townAnchorCache = new Map();
+  const bridgeAnchorCache = new Map();
   const curatedSpawnTiles = new Map([
     ['-3,-3', { kind: 'forest', note: 'A thick treeline hems the meadow.' }],
     [
@@ -63,6 +78,210 @@ function createOverworldMap(seed, plugins) {
     ['8,1', { kind: 'ocean', note: 'The sea rolls just beyond the beach.' }],
   ]);
 
+  function sampleTerrainSignals(x, y) {
+    const scaledX = x / 160;
+    const scaledY = y / 160;
+    return {
+      continent: octaveNoise2D(`${seed}:continent`, scaledX, scaledY, {
+        octaves: 5,
+        persistence: 0.55,
+      }),
+      elevation: octaveNoise2D(`${seed}:elevation`, x / 45, y / 45, {
+        octaves: 4,
+        persistence: 0.5,
+      }),
+      moisture: octaveNoise2D(`${seed}:moisture`, x / 65, y / 65, {
+        octaves: 4,
+        persistence: 0.6,
+      }),
+      riverSignal: ridgedNoise2D(`${seed}:river`, x / 75, y / 75, {
+        octaves: 3,
+        persistence: 0.52,
+      }),
+      roadSignal: ridgedNoise2D(`${seed}:road`, x / 42, y / 42, {
+        octaves: 2,
+        persistence: 0.6,
+      }),
+    };
+  }
+
+  function getTownAnchor(cellX, cellY) {
+    const key = makeKey(cellX, cellY);
+    if (!townAnchorCache.has(key)) {
+      const cellSize = 20;
+      const centerX = cellX * cellSize;
+      const centerY = cellY * cellSize;
+      const anchorX =
+        centerX +
+        Math.round((hash2D(`${seed}:town-anchor-x`, cellX, cellY) - 0.5) * 8);
+      const anchorY =
+        centerY +
+        Math.round((hash2D(`${seed}:town-anchor-y`, cellX, cellY) - 0.5) * 8);
+      const chance = hash2D(`${seed}:town-anchor`, cellX, cellY);
+      const terrain = sampleTerrainSignals(anchorX, anchorY);
+      const suitable =
+        chance > 0.64 &&
+        terrain.continent > 0.47 &&
+        terrain.continent < 0.9 &&
+        terrain.elevation < 0.7 &&
+        terrain.riverSignal < 0.82;
+
+      townAnchorCache.set(
+        key,
+        suitable
+          ? {
+              x: anchorX,
+              y: anchorY,
+              name: `Town ${Math.abs(anchorX)}:${Math.abs(anchorY)}`,
+            }
+          : null
+      );
+    }
+    return townAnchorCache.get(key);
+  }
+
+  function getBridgeAnchor(cellX, cellY) {
+    const key = makeKey(cellX, cellY);
+    if (!bridgeAnchorCache.has(key)) {
+      const cellSize = 16;
+      const centerX = cellX * cellSize;
+      const centerY = cellY * cellSize;
+      const anchorX =
+        centerX +
+        Math.round((hash2D(`${seed}:bridge-anchor-x`, cellX, cellY) - 0.5) * 6);
+      const anchorY =
+        centerY +
+        Math.round((hash2D(`${seed}:bridge-anchor-y`, cellX, cellY) - 0.5) * 6);
+      const chance = hash2D(`${seed}:bridge-anchor`, cellX, cellY);
+      const terrain = sampleTerrainSignals(anchorX, anchorY);
+      const suitable =
+        chance > 0.72 &&
+        terrain.continent > 0.46 &&
+        terrain.continent < 0.88 &&
+        terrain.elevation < 0.68 &&
+        terrain.riverSignal > 0.8;
+
+      bridgeAnchorCache.set(
+        key,
+        suitable
+          ? {
+              x: anchorX,
+              y: anchorY,
+            }
+          : null
+      );
+    }
+    return bridgeAnchorCache.get(key);
+  }
+
+  function getNearbyTownAnchors(x, y) {
+    const cellSize = 20;
+    const cellX = Math.floor(x / cellSize);
+    const cellY = Math.floor(y / cellSize);
+    const anchors = [];
+
+    for (let dy = -2; dy <= 2; dy += 1) {
+      for (let dx = -2; dx <= 2; dx += 1) {
+        const anchor = getTownAnchor(cellX + dx, cellY + dy);
+        if (anchor) anchors.push(anchor);
+      }
+    }
+
+    return anchors;
+  }
+
+  function getNearbyBridgeAnchors(x, y) {
+    const cellSize = 16;
+    const cellX = Math.floor(x / cellSize);
+    const cellY = Math.floor(y / cellSize);
+    const anchors = [];
+
+    for (let dy = -2; dy <= 2; dy += 1) {
+      for (let dx = -2; dx <= 2; dx += 1) {
+        const anchor = getBridgeAnchor(cellX + dx, cellY + dy);
+        if (anchor) anchors.push(anchor);
+      }
+    }
+
+    return anchors;
+  }
+
+  function classifyConnectedRoad(x, y, baseKind, townAnchors, bridgeAnchors) {
+    if (baseKind === 'ocean' || baseKind === 'mountain') {
+      return null;
+    }
+
+    const nearestTown = townAnchors
+      .map((anchor) => ({
+        anchor,
+        distance: Math.hypot(x - anchor.x, y - anchor.y),
+      }))
+      .sort((a, b) => a.distance - b.distance)[0];
+
+    if (
+      nearestTown &&
+      nearestTown.distance < 2.6 &&
+      baseKind !== 'river' &&
+      baseKind !== 'bridge'
+    ) {
+      return 'road';
+    }
+
+    const pairs = [];
+    for (let index = 0; index < townAnchors.length; index += 1) {
+      for (let next = index + 1; next < townAnchors.length; next += 1) {
+        const a = townAnchors[index];
+        const b = townAnchors[next];
+        const distance = Math.hypot(a.x - b.x, a.y - b.y);
+        if (distance <= 28) {
+          pairs.push([a, b]);
+        }
+      }
+    }
+
+    for (const [a, b] of pairs) {
+      if (distanceToLineSegment(x, y, a.x, a.y, b.x, b.y) < 0.42) {
+        return baseKind === 'river' ? 'bridge' : 'road';
+      }
+    }
+
+    if (nearestTown) {
+      const nearestBridge = bridgeAnchors
+        .map((anchor) => ({
+          anchor,
+          distance: Math.hypot(
+            nearestTown.anchor.x - anchor.x,
+            nearestTown.anchor.y - anchor.y
+          ),
+        }))
+        .sort((a, b) => a.distance - b.distance)[0];
+
+      if (
+        nearestBridge &&
+        nearestBridge.distance <= 16 &&
+        distanceToLineSegment(
+          x,
+          y,
+          nearestTown.anchor.x,
+          nearestTown.anchor.y,
+          nearestBridge.anchor.x,
+          nearestBridge.anchor.y
+        ) < 0.38
+      ) {
+        return baseKind === 'river' ? 'bridge' : 'road';
+      }
+    }
+
+    for (const bridge of bridgeAnchors) {
+      const distance = Math.hypot(x - bridge.x, y - bridge.y);
+      if (distance < 0.8) {
+        return baseKind === 'river' ? 'bridge' : 'road';
+      }
+    }
+
+    return null;
+  }
+
   function classifyTile(x, y) {
     const curatedTile = curatedSpawnTiles.get(`${x},${y}`);
     if (curatedTile) {
@@ -76,32 +295,14 @@ function createOverworldMap(seed, plugins) {
       };
     }
 
-    const scaledX = x / 160;
-    const scaledY = y / 160;
-    const continent = octaveNoise2D(`${seed}:continent`, scaledX, scaledY, {
-      octaves: 5,
-      persistence: 0.55,
-    });
-    const elevation = octaveNoise2D(`${seed}:elevation`, x / 45, y / 45, {
-      octaves: 4,
-      persistence: 0.5,
-    });
-    const moisture = octaveNoise2D(`${seed}:moisture`, x / 65, y / 65, {
-      octaves: 4,
-      persistence: 0.6,
-    });
-    const riverSignal = ridgedNoise2D(`${seed}:river`, x / 75, y / 75, {
-      octaves: 3,
-      persistence: 0.52,
-    });
-    const roadSignal = ridgedNoise2D(`${seed}:road`, x / 42, y / 42, {
-      octaves: 2,
-      persistence: 0.6,
-    });
+    const { continent, elevation, moisture, riverSignal, roadSignal } =
+      sampleTerrainSignals(x, y);
     const townChance = hash2D(`${seed}:town`, x, y);
     const dungeonChance = hash2D(`${seed}:dungeon`, x, y);
     const caveChance = hash2D(`${seed}:cave`, x, y);
     const signChance = hash2D(`${seed}:sign`, x, y);
+    const townAnchors = getNearbyTownAnchors(x, y);
+    const bridgeAnchors = getNearbyBridgeAnchors(x, y);
 
     let tile = { kind: 'plains' };
 
@@ -124,6 +325,22 @@ function createOverworldMap(seed, plugins) {
       tile.kind !== 'mountain'
     ) {
       tile = { kind: tile.kind === 'river' ? 'bridge' : 'road' };
+    }
+
+    const directTownAnchor = townAnchors.find(
+      (anchor) => Math.hypot(x - anchor.x, y - anchor.y) < 0.55
+    );
+    if (
+      directTownAnchor &&
+      tile.kind !== 'ocean' &&
+      tile.kind !== 'river' &&
+      tile.kind !== 'mountain'
+    ) {
+      tile = {
+        kind: 'town',
+        poi: { type: 'town', name: directTownAnchor.name },
+        note: 'A lively town rises where several roads meet.',
+      };
     }
 
     if (
@@ -156,6 +373,31 @@ function createOverworldMap(seed, plugins) {
           note: `Marker ${x}, ${y}: roads lead onward.`,
         };
       }
+    }
+
+    const connectedRoadKind = classifyConnectedRoad(
+      x,
+      y,
+      tile.kind,
+      townAnchors,
+      bridgeAnchors
+    );
+    if (
+      connectedRoadKind &&
+      tile.kind !== 'town' &&
+      tile.kind !== 'dungeon' &&
+      tile.kind !== 'cave' &&
+      tile.kind !== 'sign'
+    ) {
+      tile = {
+        ...tile,
+        kind: connectedRoadKind,
+        note:
+          tile.note ??
+          (connectedRoadKind === 'bridge'
+            ? 'A crossing links the nearby routes.'
+            : 'A road runs between nearby landmarks.'),
+      };
     }
 
     const neighboringSeaSignal = Math.min(
