@@ -17,10 +17,13 @@ const TREE_REGION_SIZE = 14;
 const TREE_CLUSTER_SIZE = 4;
 const SIGN_REGION_SIZE = 10;
 const TOWN_REGION_SIZE = 18;
+const BRIDGE_REGION_SIZE = 22;
 const MOUNTAIN_BASE_COLOR = '#6b7280';
 const RIVER_SURFACE_DROP = -0.12;
 const MAX_RIVER_CHAMFER_DROP = 0.08;
 const RIVER_WALL_THICKNESS = 0.05;
+const BRIDGE_DECK_THICKNESS = 0.08;
+const BRIDGE_RAIL_HEIGHT = 0.18;
 
 export function create3DRenderer(host) {
   const renderer = new THREE.WebGLRenderer({
@@ -62,6 +65,8 @@ export function create3DRenderer(host) {
   const signLabelCache = new Map();
   const townStyleCache = new Map();
   const townDescriptorCache = new Map();
+  const bridgeStyleCache = new Map();
+  const bridgeClusterCache = new Map();
   const mountainTexture = createMountainTexture();
   const treeGeometry = {
     trunk: new THREE.CylinderGeometry(0.075, 0.1, 1, 6),
@@ -89,6 +94,7 @@ export function create3DRenderer(host) {
 
   function rebuildWorld(state) {
     worldRoot.clear();
+    bridgeClusterCache.clear();
     const context = state.getCurrentContext();
     const centerX = Math.round(state.player.x);
     const centerY = Math.round(state.player.y);
@@ -108,6 +114,8 @@ export function create3DRenderer(host) {
         if (tile.kind === 'forest') {
           const treeGroup = createForestTileGroup(x, y);
           worldRoot.add(treeGroup);
+        } else if (tile.kind === 'bridge') {
+          worldRoot.add(createBridgeGroup(state, x, y));
         } else if (tile.kind === 'mountain') {
           worldRoot.add(createMountainGroup(state, x, y));
         } else if (tile.kind === 'town') {
@@ -223,6 +231,10 @@ export function create3DRenderer(host) {
   }
 
   function createFloorMesh(state, tile, tileX, tileY, variant) {
+    if (tile.kind === 'bridge') {
+      return createBridgeWaterFloor(tileX, tileY);
+    }
+
     const material = getTileMaterial(tile.kind, variant);
     const surfaceHeight = getTileSurfaceHeight(tile.kind);
     const riverNeighbors = getAdjacentRiverNeighbors(
@@ -332,6 +344,19 @@ export function create3DRenderer(host) {
     return group;
   }
 
+  function createBridgeWaterFloor(tileX, tileY) {
+    const floorMesh = new THREE.Mesh(
+      new THREE.BoxGeometry(TILE_SIZE, FLOOR_THICKNESS, TILE_SIZE),
+      getTileMaterial('river', getTileVariantIndex('river', tileX, tileY))
+    );
+    floorMesh.position.set(
+      tileX * TILE_SIZE,
+      RIVER_SURFACE_DROP - FLOOR_THICKNESS * 0.5,
+      tileY * TILE_SIZE
+    );
+    return floorMesh;
+  }
+
   function addRiverEdgeWall(group, material, edge, wallHeight) {
     const mesh =
       edge === 'north' || edge === 'south'
@@ -392,6 +417,477 @@ export function create3DRenderer(host) {
       kind !== 'bridge' &&
       getTileSurfaceHeight(kind) >= 0
     );
+  }
+
+  function createBridgeGroup(state, tileX, tileY) {
+    const info = getBridgeClusterInfo(state, tileX, tileY);
+    const style = getBridgeStyle(info.clusterKey, info.anchorX, info.anchorY);
+    const axis = info.axis;
+    const alongX = axis === 'ew';
+    const deckLength =
+      TILE_SIZE +
+      (info.connectNegative ? 0.08 : 0) +
+      (info.connectPositive ? 0.08 : 0);
+    const deckWidth = 0.72 + style.widthJitter;
+    const group = new THREE.Group();
+    group.position.set(tileX, 0, tileY);
+
+    const deck = new THREE.Mesh(
+      new THREE.BoxGeometry(
+        alongX ? deckLength : deckWidth,
+        BRIDGE_DECK_THICKNESS,
+        alongX ? deckWidth : deckLength
+      ),
+      style.deckMaterial
+    );
+    deck.position.y = -BRIDGE_DECK_THICKNESS * 0.5;
+    group.add(deck);
+
+    if (style.type === 'stone') {
+      addBridgeParapets(group, style, alongX, deckLength, deckWidth);
+    } else {
+      addBridgeRailings(group, style, alongX, deckLength, deckWidth, info);
+    }
+
+    if (style.covered) {
+      addBridgeCover(group, style, alongX, deckLength, deckWidth, info);
+    }
+
+    if (style.drawbridge) {
+      addDrawbridgeDetails(group, style, alongX, deckWidth);
+    }
+
+    if (info.length > 1 && style.pillarSpacing > 0) {
+      addBridgePillars(group, style, alongX, info, deckWidth);
+    }
+
+    return group;
+  }
+
+  function addBridgeParapets(group, style, alongX, deckLength, deckWidth) {
+    const railThickness = 0.08;
+    const sideOffset = deckWidth * 0.5 - railThickness * 0.35;
+    const length = deckLength + 0.02;
+    const createWall = () =>
+      new THREE.Mesh(
+        new THREE.BoxGeometry(
+          alongX ? length : railThickness,
+          BRIDGE_RAIL_HEIGHT,
+          alongX ? railThickness : length
+        ),
+        style.railMaterial
+      );
+
+    const first = createWall();
+    const second = createWall();
+    if (alongX) {
+      first.position.set(0, BRIDGE_RAIL_HEIGHT * 0.5, -sideOffset);
+      second.position.set(0, BRIDGE_RAIL_HEIGHT * 0.5, sideOffset);
+    } else {
+      first.position.set(-sideOffset, BRIDGE_RAIL_HEIGHT * 0.5, 0);
+      second.position.set(sideOffset, BRIDGE_RAIL_HEIGHT * 0.5, 0);
+    }
+    group.add(first);
+    group.add(second);
+  }
+
+  function addBridgeRailings(
+    group,
+    style,
+    alongX,
+    deckLength,
+    deckWidth,
+    info
+  ) {
+    const sideOffset = deckWidth * 0.5 - 0.05;
+    const postCount = Math.max(2, Math.round(deckLength / 0.32));
+    for (let side = -1; side <= 1; side += 2) {
+      const rail = new THREE.Mesh(
+        new THREE.BoxGeometry(
+          alongX ? deckLength + 0.02 : 0.05,
+          0.05,
+          alongX ? 0.05 : deckLength + 0.02
+        ),
+        style.railMaterial
+      );
+      if (alongX) {
+        rail.position.set(0, BRIDGE_RAIL_HEIGHT, side * sideOffset);
+      } else {
+        rail.position.set(side * sideOffset, BRIDGE_RAIL_HEIGHT, 0);
+      }
+      group.add(rail);
+
+      for (let index = 0; index < postCount; index += 1) {
+        const t = postCount === 1 ? 0.5 : index / (postCount - 1);
+        const local = -deckLength * 0.5 + t * deckLength;
+        const post = new THREE.Mesh(
+          new THREE.BoxGeometry(0.05, BRIDGE_RAIL_HEIGHT, 0.05),
+          style.postMaterial
+        );
+        if (alongX) {
+          post.position.set(local, BRIDGE_RAIL_HEIGHT * 0.5, side * sideOffset);
+        } else {
+          post.position.set(side * sideOffset, BRIDGE_RAIL_HEIGHT * 0.5, local);
+        }
+        group.add(post);
+      }
+    }
+
+    if (style.type === 'metal' && info.length > 1) {
+      const truss = new THREE.Mesh(
+        new THREE.BoxGeometry(
+          alongX ? deckLength * 0.86 : 0.04,
+          0.04,
+          alongX ? 0.04 : deckLength * 0.86
+        ),
+        style.trimMaterial
+      );
+      if (alongX) {
+        truss.position.set(0, BRIDGE_RAIL_HEIGHT * 0.64, 0);
+        truss.rotation.z = 0.16;
+      } else {
+        truss.position.set(0, BRIDGE_RAIL_HEIGHT * 0.64, 0);
+        truss.rotation.x = -0.16;
+      }
+      group.add(truss);
+    }
+  }
+
+  function addBridgeCover(group, style, alongX, deckLength, deckWidth, info) {
+    const postHeight = 0.38 + style.coverHeight;
+    const coverY = postHeight + 0.08;
+    const postOffset = deckWidth * 0.5 - 0.08;
+    const spanCount = Math.max(2, Math.round(deckLength / 0.5));
+    for (let index = 0; index < spanCount; index += 1) {
+      const t = spanCount === 1 ? 0.5 : index / (spanCount - 1);
+      const local = -deckLength * 0.5 + t * deckLength;
+      for (let side = -1; side <= 1; side += 2) {
+        const post = new THREE.Mesh(
+          new THREE.BoxGeometry(0.05, postHeight, 0.05),
+          style.postMaterial
+        );
+        if (alongX) {
+          post.position.set(local, postHeight * 0.5, side * postOffset);
+        } else {
+          post.position.set(side * postOffset, postHeight * 0.5, local);
+        }
+        group.add(post);
+      }
+    }
+
+    const roof = new THREE.Mesh(
+      new THREE.BoxGeometry(
+        alongX ? deckLength + 0.12 : deckWidth + 0.22,
+        0.1,
+        alongX ? deckWidth + 0.22 : deckLength + 0.12
+      ),
+      style.coverMaterial
+    );
+    roof.position.y = coverY;
+    roof.rotation.y = alongX ? 0 : Math.PI * 0.5;
+    group.add(roof);
+
+    if (style.type !== 'stone' && info.length > 1) {
+      const ridge = new THREE.Mesh(
+        new THREE.BoxGeometry(
+          alongX ? deckLength + 0.08 : 0.06,
+          0.08,
+          alongX ? 0.06 : deckLength + 0.08
+        ),
+        style.trimMaterial
+      );
+      ridge.position.y = coverY + 0.08;
+      group.add(ridge);
+    }
+  }
+
+  function addDrawbridgeDetails(group, style, alongX, deckWidth) {
+    const towerOffset = 0.24;
+    for (let side = -1; side <= 1; side += 2) {
+      const frame = new THREE.Mesh(
+        new THREE.BoxGeometry(0.09, 0.42, 0.09),
+        style.postMaterial
+      );
+      if (alongX) {
+        frame.position.set(side * towerOffset, 0.21, 0);
+      } else {
+        frame.position.set(0, 0.21, side * towerOffset);
+      }
+      group.add(frame);
+    }
+
+    const spindle = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.025, 0.025, deckWidth * 0.72, 6),
+      style.trimMaterial
+    );
+    spindle.rotation.z = Math.PI * 0.5;
+    spindle.position.y = 0.4;
+    if (!alongX) {
+      spindle.rotation.x = Math.PI * 0.5;
+      spindle.rotation.z = 0;
+    }
+    group.add(spindle);
+  }
+
+  function addBridgePillars(group, style, alongX, info, deckWidth) {
+    const shouldPlace =
+      info.segmentIndex > 0 &&
+      info.segmentIndex < info.length - 1 &&
+      info.segmentIndex % style.pillarSpacing === 0;
+    if (!shouldPlace) {
+      return;
+    }
+
+    const pillarHeight = BRIDGE_DECK_THICKNESS - RIVER_SURFACE_DROP;
+    const pillar = new THREE.Mesh(
+      new THREE.BoxGeometry(
+        style.pillarWidth,
+        pillarHeight,
+        Math.max(0.14, deckWidth * 0.3)
+      ),
+      style.pillarMaterial
+    );
+    pillar.position.y = RIVER_SURFACE_DROP + pillarHeight * 0.5;
+    pillar.rotation.y = alongX ? 0 : Math.PI * 0.5;
+    group.add(pillar);
+  }
+
+  function getBridgeClusterInfo(state, tileX, tileY) {
+    const key = `${tileX}:${tileY}`;
+    if (bridgeClusterCache.has(key)) {
+      return bridgeClusterCache.get(key);
+    }
+
+    const queue = [[tileX, tileY]];
+    const visited = new Set([key]);
+    const tiles = [];
+
+    while (queue.length > 0) {
+      const [currentX, currentY] = queue.shift();
+      tiles.push({ x: currentX, y: currentY });
+      for (const [dx, dy] of [
+        [0, -1],
+        [1, 0],
+        [0, 1],
+        [-1, 0],
+      ]) {
+        const nextX = currentX + dx;
+        const nextY = currentY + dy;
+        const nextKey = `${nextX}:${nextY}`;
+        if (visited.has(nextKey)) continue;
+        if (state.getCurrentTile(nextX, nextY).kind !== 'bridge') continue;
+        visited.add(nextKey);
+        queue.push([nextX, nextY]);
+      }
+    }
+
+    tiles.sort((a, b) => (a.y === b.y ? a.x - b.x : a.y - b.y));
+    const bounds = tiles.reduce(
+      (acc, tile) => ({
+        minX: Math.min(acc.minX, tile.x),
+        maxX: Math.max(acc.maxX, tile.x),
+        minY: Math.min(acc.minY, tile.y),
+        maxY: Math.max(acc.maxY, tile.y),
+      }),
+      { minX: Infinity, maxX: -Infinity, minY: Infinity, maxY: -Infinity }
+    );
+    const spanX = bounds.maxX - bounds.minX + 1;
+    const spanY = bounds.maxY - bounds.minY + 1;
+    const axis = spanX >= spanY ? 'ew' : 'ns';
+    const orderedTiles = [...tiles].sort((a, b) =>
+      axis === 'ew' ? a.x - b.x || a.y - b.y : a.y - b.y || a.x - b.x
+    );
+    const anchor = orderedTiles[0];
+    const clusterKey = `${axis}:${anchor.x}:${anchor.y}`;
+
+    for (let index = 0; index < orderedTiles.length; index += 1) {
+      const tile = orderedTiles[index];
+      const negativeKey =
+        axis === 'ew' ? `${tile.x - 1}:${tile.y}` : `${tile.x}:${tile.y - 1}`;
+      const positiveKey =
+        axis === 'ew' ? `${tile.x + 1}:${tile.y}` : `${tile.x}:${tile.y + 1}`;
+      bridgeClusterCache.set(`${tile.x}:${tile.y}`, {
+        axis,
+        clusterKey,
+        anchorX: anchor.x,
+        anchorY: anchor.y,
+        length: orderedTiles.length,
+        segmentIndex: index,
+        connectNegative: visited.has(negativeKey),
+        connectPositive: visited.has(positiveKey),
+      });
+    }
+
+    return bridgeClusterCache.get(key);
+  }
+
+  function getBridgeStyle(clusterKey, tileX, tileY) {
+    if (!bridgeStyleCache.has(clusterKey)) {
+      const regionX = Math.floor(tileX / BRIDGE_REGION_SIZE);
+      const regionY = Math.floor(tileY / BRIDGE_REGION_SIZE);
+      const typeIndex = Math.floor(hash2D('bridge-type', tileX, tileY) * 4);
+      const type = ['wood', 'stone', 'metal', 'drawbridge'][typeIndex];
+      const covered = hash2D('bridge-covered', regionX, regionY) > 0.72;
+      const drawbridge = type === 'drawbridge';
+      const pillarSpacing =
+        2 + Math.floor(hash2D('bridge-pillar', tileX, tileY) * 3);
+      const palette =
+        type === 'stone'
+          ? {
+              deck: '#c9c2b8',
+              rail: '#8b857d',
+              trim: '#6d655d',
+            }
+          : type === 'metal'
+            ? {
+                deck: '#9b6b3d',
+                rail: '#8e9aa7',
+                trim: '#4b5563',
+              }
+            : {
+                deck: '#8b5a2b',
+                rail: '#6f4a28',
+                trim: '#4a2f1b',
+              };
+      const deckTexture = createBridgeTexture(
+        palette.deck,
+        palette.trim,
+        type,
+        'deck',
+        tileX,
+        tileY
+      );
+      const railTexture = createBridgeTexture(
+        palette.rail,
+        palette.trim,
+        type,
+        'rail',
+        tileX,
+        tileY
+      );
+      const coverTexture = createBridgeTexture(
+        palette.deck,
+        palette.trim,
+        type === 'stone' ? 'roof-stone' : 'roof',
+        'cover',
+        tileX,
+        tileY
+      );
+      bridgeStyleCache.set(clusterKey, {
+        type,
+        covered: covered && !drawbridge,
+        drawbridge,
+        key: clusterKey,
+        widthJitter: hash2D('bridge-width', tileX, tileY) * 0.12,
+        coverHeight: hash2D('bridge-cover-height', tileX, tileY) * 0.16,
+        pillarSpacing,
+        pillarWidth: 0.14 + hash2D('bridge-pillar-width', tileX, tileY) * 0.09,
+        deckMaterial: new THREE.MeshStandardMaterial({
+          color: '#ffffff',
+          map: deckTexture,
+          roughness: 0.9,
+          metalness: type === 'metal' ? 0.28 : 0.04,
+        }),
+        railMaterial: new THREE.MeshStandardMaterial({
+          color: '#ffffff',
+          map: railTexture,
+          roughness: 0.86,
+          metalness: type === 'metal' ? 0.36 : 0.05,
+        }),
+        postMaterial: new THREE.MeshStandardMaterial({
+          color: palette.trim,
+          roughness: 0.88,
+          metalness: type === 'metal' ? 0.22 : 0.03,
+        }),
+        trimMaterial: new THREE.MeshStandardMaterial({
+          color: palette.trim,
+          roughness: 0.82,
+          metalness: type === 'metal' ? 0.34 : 0.04,
+        }),
+        coverMaterial: new THREE.MeshStandardMaterial({
+          color: '#ffffff',
+          map: coverTexture,
+          roughness: 0.9,
+          metalness: 0.03,
+        }),
+        pillarMaterial: new THREE.MeshStandardMaterial({
+          color: '#ffffff',
+          map: railTexture,
+          roughness: 0.92,
+          metalness: type === 'metal' ? 0.18 : 0.02,
+        }),
+      });
+    }
+
+    return bridgeStyleCache.get(clusterKey);
+  }
+
+  function createBridgeTexture(
+    baseColor,
+    accentColor,
+    type,
+    layer,
+    tileX,
+    tileY
+  ) {
+    const canvas = document.createElement('canvas');
+    canvas.width = 64;
+    canvas.height = 64;
+    const context = canvas.getContext('2d');
+
+    context.fillStyle = baseColor;
+    context.fillRect(0, 0, canvas.width, canvas.height);
+
+    if (type === 'stone' || type === 'roof-stone') {
+      for (let row = 0; row < canvas.height; row += 12) {
+        context.fillStyle = accentColor;
+        context.fillRect(0, row, canvas.width, 2);
+      }
+      for (let column = 0; column < canvas.width; column += 16) {
+        for (let row = 0; row < canvas.height; row += 12) {
+          const offset =
+            ((row / 12 + column / 16) % 2) * 8 + (layer === 'cover' ? 2 : 0);
+          context.fillRect(column + offset, row, 2, 12);
+        }
+      }
+    } else if (type === 'metal') {
+      for (let row = 0; row < canvas.height; row += 8) {
+        context.fillStyle =
+          row % 16 === 0 ? accentColor : 'rgba(255,255,255,0.16)';
+        context.fillRect(0, row, canvas.width, 2);
+      }
+      for (let i = 0; i < 24; i += 1) {
+        const x = Math.floor(
+          hash2D('bridge-rivet-x', tileX, i + tileY) * canvas.width
+        );
+        const y = Math.floor(
+          hash2D('bridge-rivet-y', tileY, i + tileX) * canvas.height
+        );
+        context.fillStyle = 'rgba(255,255,255,0.34)';
+        context.fillRect(x, y, 2, 2);
+      }
+    } else {
+      for (let column = 0; column < canvas.width; column += 7) {
+        const shade = 70 + ((column * 5 + tileX * 3) % 36);
+        context.fillStyle = `rgba(${shade}, ${Math.max(30, shade - 16)}, ${Math.max(18, shade - 28)}, 0.32)`;
+        context.fillRect(column, 0, 3, canvas.height);
+      }
+      for (let row = 0; row < canvas.height; row += 10) {
+        context.fillStyle = 'rgba(255,255,255,0.08)';
+        context.fillRect(0, row, canvas.width, 1);
+      }
+    }
+
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.RepeatWrapping;
+    texture.repeat.set(type === 'stone' ? 1 : 1.15, 1.15);
+    texture.magFilter = THREE.NearestFilter;
+    texture.minFilter = THREE.NearestFilter;
+    texture.generateMipmaps = false;
+    texture.needsUpdate = true;
+    return texture;
   }
 
   function createForestTileGroup(tileX, tileY) {
