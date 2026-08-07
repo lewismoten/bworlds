@@ -13,6 +13,8 @@ const FLOOR_THICKNESS = 0.03;
 const TREE_FOLIAGE_COLOR = '#163b20';
 const TREE_BARK_COLOR = '#4a2f1b';
 const TREE_PLAYER_RADIUS = 0.12;
+const TREE_REGION_SIZE = 14;
+const TREE_CLUSTER_SIZE = 4;
 const SIGN_REGION_SIZE = 10;
 const TOWN_REGION_SIZE = 18;
 const MOUNTAIN_BASE_COLOR = '#6b7280';
@@ -52,6 +54,7 @@ export function create3DRenderer(host) {
 
   const materialCache = new Map();
   const treeDescriptorCache = new Map();
+  const treeStyleCache = new Map();
   const signStyleCache = new Map();
   const signLabelCache = new Map();
   const townStyleCache = new Map();
@@ -61,19 +64,6 @@ export function create3DRenderer(host) {
     trunk: new THREE.CylinderGeometry(0.075, 0.1, 1, 6),
     branch: new THREE.CylinderGeometry(0.028, 0.045, 0.45, 5),
     foliage: new THREE.SphereGeometry(0.34, 6, 6),
-  };
-  const treeMaterial = {
-    trunk: new THREE.MeshStandardMaterial({
-      color: TREE_BARK_COLOR,
-      roughness: 0.95,
-      metalness: 0.02,
-    }),
-    foliage: new THREE.MeshStandardMaterial({
-      color: TREE_FOLIAGE_COLOR,
-      roughness: 0.98,
-      metalness: 0.01,
-      flatShading: true,
-    }),
   };
   const mountainMaterial = new THREE.MeshStandardMaterial({
     color: '#dbe4ea',
@@ -230,17 +220,18 @@ export function create3DRenderer(host) {
     const descriptors = getForestTreeDescriptors(tileX, tileY);
 
     for (const descriptor of descriptors) {
+      const style = getTreeStyle(tileX, tileY, descriptor.variety);
       const tree = new THREE.Group();
       tree.position.set(tileX + descriptor.x, 0, tileY + descriptor.y);
       tree.scale.setScalar(descriptor.scale);
 
-      const trunk = new THREE.Mesh(treeGeometry.trunk, treeMaterial.trunk);
+      const trunk = new THREE.Mesh(treeGeometry.trunk, style.trunkMaterial);
       trunk.position.y = descriptor.trunkHeight * 0.5;
       trunk.scale.y = descriptor.trunkHeight;
       tree.add(trunk);
 
       for (const branch of descriptor.branches) {
-        const limb = new THREE.Mesh(treeGeometry.branch, treeMaterial.trunk);
+        const limb = new THREE.Mesh(treeGeometry.branch, style.trunkMaterial);
         limb.position.set(branch.x, branch.y, branch.z);
         limb.rotation.z = branch.roll;
         limb.rotation.x = branch.pitch;
@@ -251,7 +242,7 @@ export function create3DRenderer(host) {
       for (const clump of descriptor.foliage) {
         const foliage = new THREE.Mesh(
           treeGeometry.foliage,
-          treeMaterial.foliage
+          style.foliageMaterial
         );
         foliage.position.set(clump.x, clump.y, clump.z);
         foliage.scale.set(clump.scaleX, clump.scaleY, clump.scaleZ);
@@ -430,6 +421,7 @@ export function create3DRenderer(host) {
 
       for (let index = 0; index < count; index += 1) {
         const baseSeed = `forest-tree:${tileX}:${tileY}:${index}`;
+        const variety = getTreeVarietyIndex(tileX, tileY, index);
         const descriptor = {
           x: hash2D(baseSeed, 1, 0) * 0.56 - 0.28,
           y: 0,
@@ -437,6 +429,7 @@ export function create3DRenderer(host) {
           radius: 0.08 + hash2D(baseSeed, 3, 0) * 0.05,
           scale: 0.78 + hash2D(baseSeed, 4, 0) * 0.55,
           trunkHeight: 0.72 + hash2D(baseSeed, 5, 0) * 0.45,
+          variety,
           branches: [],
           foliage: [],
         };
@@ -480,6 +473,153 @@ export function create3DRenderer(host) {
     }
 
     return treeDescriptorCache.get(key);
+  }
+
+  function getTreeVarietyIndex(tileX, tileY, treeIndex) {
+    const clusterX = Math.floor(tileX / TREE_CLUSTER_SIZE);
+    const clusterY = Math.floor(tileY / TREE_CLUSTER_SIZE);
+    const dominant = Math.floor(
+      hash2D('tree-cluster-dominant', clusterX, clusterY) * 3
+    );
+    const variationChance = hash2D(
+      'tree-cluster-variation',
+      tileX * 13 + treeIndex,
+      tileY * 17
+    );
+
+    if (variationChance > 0.72) {
+      return (dominant + 1 + Math.floor(variationChance * 7)) % 3;
+    }
+
+    return dominant;
+  }
+
+  function getTreeStyle(tileX, tileY, variety) {
+    const regionX = Math.floor(tileX / TREE_REGION_SIZE);
+    const regionY = Math.floor(tileY / TREE_REGION_SIZE);
+    const key = `${regionX}:${regionY}:${variety}`;
+
+    if (!treeStyleCache.has(key)) {
+      const barkBase = createTintedHex(
+        TREE_BARK_COLOR,
+        0.82 + hash2D('tree-bark-tint', regionX + variety, regionY) * 0.32
+      );
+      const foliageBase = createTintedHex(
+        TREE_FOLIAGE_COLOR,
+        0.82 + hash2D('tree-foliage-tint', regionX, regionY + variety) * 0.34
+      );
+
+      const barkTexture = createTreeBarkTexture(
+        barkBase,
+        regionX,
+        regionY,
+        variety
+      );
+      const foliageTexture = createTreeFoliageTexture(
+        foliageBase,
+        regionX,
+        regionY,
+        variety
+      );
+
+      treeStyleCache.set(key, {
+        trunkMaterial: new THREE.MeshStandardMaterial({
+          color: '#ffffff',
+          map: barkTexture,
+          roughness: 0.95,
+          metalness: 0.02,
+        }),
+        foliageMaterial: new THREE.MeshStandardMaterial({
+          color: '#ffffff',
+          map: foliageTexture,
+          roughness: 0.98,
+          metalness: 0.01,
+          flatShading: true,
+        }),
+      });
+    }
+
+    return treeStyleCache.get(key);
+  }
+
+  function createTreeBarkTexture(baseColor, regionX, regionY, variety) {
+    const canvas = document.createElement('canvas');
+    canvas.width = 64;
+    canvas.height = 64;
+    const context = canvas.getContext('2d');
+
+    context.fillStyle = baseColor;
+    context.fillRect(0, 0, canvas.width, canvas.height);
+
+    for (let x = 0; x < canvas.width; x += 5) {
+      const darkness = 34 + ((x * 9 + variety * 17) % 26);
+      context.fillStyle = `rgba(${darkness}, ${darkness - 6}, ${darkness - 10}, 0.28)`;
+      context.fillRect(x, 0, 2, canvas.height);
+    }
+
+    for (let i = 0; i < 120; i += 1) {
+      const x = Math.floor(
+        hash2D('tree-bark-crack-x', regionX * 31 + variety, i) * canvas.width
+      );
+      const y = Math.floor(
+        hash2D('tree-bark-crack-y', regionY * 29 + variety, i) * canvas.height
+      );
+      const height =
+        3 + Math.floor(hash2D('tree-bark-crack-h', i, variety) * 8);
+      context.fillStyle = 'rgba(20, 12, 8, 0.22)';
+      context.fillRect(x, y, 1, height);
+    }
+
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.RepeatWrapping;
+    texture.repeat.set(1.2, 1.2);
+    texture.magFilter = THREE.NearestFilter;
+    texture.minFilter = THREE.NearestFilter;
+    texture.generateMipmaps = false;
+    texture.needsUpdate = true;
+    return texture;
+  }
+
+  function createTreeFoliageTexture(baseColor, regionX, regionY, variety) {
+    const canvas = document.createElement('canvas');
+    canvas.width = 64;
+    canvas.height = 64;
+    const context = canvas.getContext('2d');
+
+    context.fillStyle = baseColor;
+    context.fillRect(0, 0, canvas.width, canvas.height);
+
+    for (let i = 0; i < 180; i += 1) {
+      const x = Math.floor(
+        hash2D('tree-leaf-x', regionX * 17 + variety, i) * canvas.width
+      );
+      const y = Math.floor(
+        hash2D('tree-leaf-y', regionY * 19 + variety, i) * canvas.height
+      );
+      const size = 1 + Math.floor(hash2D('tree-leaf-s', i, variety) * 3);
+      const tint =
+        90 + Math.floor(hash2D('tree-leaf-b', i, regionX + regionY) * 80);
+      context.fillStyle = `rgba(${24 + (tint % 40)}, ${tint}, ${30 + (tint % 30)}, 0.22)`;
+      context.fillRect(x, y, size, size);
+    }
+
+    for (let row = 0; row < canvas.height; row += 8) {
+      context.fillStyle = 'rgba(255,255,255,0.08)';
+      context.fillRect(0, row, canvas.width, 1);
+    }
+
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.RepeatWrapping;
+    texture.repeat.set(1.15, 1.15);
+    texture.magFilter = THREE.NearestFilter;
+    texture.minFilter = THREE.NearestFilter;
+    texture.generateMipmaps = false;
+    texture.needsUpdate = true;
+    return texture;
   }
 
   function createTownGroup(tileX, tileY) {
@@ -697,6 +837,20 @@ export function create3DRenderer(host) {
     texture.generateMipmaps = false;
     texture.needsUpdate = true;
     return texture;
+  }
+
+  function createTintedHex(hex, factor) {
+    const normalized = hex.replace('#', '');
+    const red = Number.parseInt(normalized.slice(0, 2), 16);
+    const green = Number.parseInt(normalized.slice(2, 4), 16);
+    const blue = Number.parseInt(normalized.slice(4, 6), 16);
+    return `#${[red, green, blue]
+      .map((channel) =>
+        Math.max(0, Math.min(255, Math.round(channel * factor)))
+          .toString(16)
+          .padStart(2, '0')
+      )
+      .join('')}`;
   }
 
   function getTownDescriptors(tileX, tileY) {
