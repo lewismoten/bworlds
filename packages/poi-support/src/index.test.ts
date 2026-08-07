@@ -1,14 +1,17 @@
 import { describe, expect, it } from 'vitest';
 import {
   CARDINAL_DIRECTIONS,
+  createAnchoredEnterablePoiTilePlugin,
   createAnchoredLandPoiClassifier,
   canPlaceLandPoi,
   createChanceBasedLandPoiClassifier,
+  createEnterablePoiTilePlugin,
   createEnterablePoiTileFeatures,
   createGeneratedPoiTile,
   createPoiWorldAction,
   getNearestAccessibleRouteDistance,
   pickPreferredLandmarkFacing,
+  resolvePlacementChance,
 } from './index.ts';
 
 describe('poi support', () => {
@@ -188,10 +191,174 @@ describe('poi support', () => {
     });
   });
 
+  it('creates a shared anchored enterable-poi tile plugin', () => {
+    const plugin = createAnchoredEnterablePoiTilePlugin({
+      pluginName: 'tile-town',
+      kind: 'town',
+      definition: {
+        name: 'Town',
+        color: '#ffffff',
+        miniColor: '#cccccc',
+        walkable: true,
+        wallHeight: 0.5,
+      },
+      note: 'A lively town rises where several roads meet.',
+      paint2D() {
+        return true;
+      },
+    });
+    const townTile = plugin.tiles?.find((tile) => tile.kind === 'town');
+
+    expect(
+      townTile?.classifyOverworldTile?.({
+        seed: 'spec',
+        x: 8,
+        y: 9,
+        tile: { kind: 'plains' },
+        nearLand: true,
+        signals: {
+          continent: 0.5,
+          elevation: 0.5,
+          moisture: 0.5,
+          riverSignal: 0.5,
+          roadSignal: 0.5,
+        },
+        townAnchors: [],
+        bridgeAnchors: [],
+        poiAnchors: [{ x: 8, y: 9, type: 'town', name: 'Ashford' }],
+      } as any)
+    ).toMatchObject({
+      kind: 'town',
+      poi: {
+        type: 'town',
+        name: 'Ashford',
+      },
+    });
+
+    expect(
+      townTile?.getTraversalProfile3D?.({
+        state: createMockState({}),
+        tile: { kind: 'town' },
+        tileX: 0,
+        tileY: 0,
+      })
+    ).toEqual({
+      travelGroup: 'route',
+    });
+  });
+
+  it('creates a shared base enterable-poi tile plugin from a supplied classifier', () => {
+    const plugin = createEnterablePoiTilePlugin({
+      pluginName: 'tile-landmark',
+      kind: 'landmark',
+      definition: {
+        name: 'Landmark',
+        color: '#ffffff',
+        miniColor: '#cccccc',
+        walkable: true,
+        wallHeight: 0.4,
+      },
+      classifyPoi(context) {
+        if (context.x === 2 && context.y === 3) {
+          return {
+            kind: 'landmark',
+            poi: { type: 'landmark', name: 'Stone Marker' },
+          };
+        }
+        return null;
+      },
+    });
+    const landmarkTile = plugin.tiles?.find((tile) => tile.kind === 'landmark');
+
+    expect(
+      landmarkTile?.classifyOverworldTile?.({
+        seed: 'spec',
+        x: 2,
+        y: 3,
+        tile: { kind: 'plains' },
+        nearLand: true,
+        signals: {
+          continent: 0.5,
+          elevation: 0.5,
+          moisture: 0.5,
+          riverSignal: 0.5,
+          roadSignal: 0.5,
+        },
+        townAnchors: [],
+        bridgeAnchors: [],
+      } as any)
+    ).toEqual({
+      kind: 'landmark',
+      poi: { type: 'landmark', name: 'Stone Marker' },
+    });
+    expect(
+      landmarkTile?.getTraversalProfile3D?.({
+        state: createMockState({}),
+        tile: { kind: 'landmark' },
+        tileX: 0,
+        tileY: 0,
+      })
+    ).toEqual({
+      travelGroup: 'route',
+    });
+  });
+
   it('checks basic land-poi placement eligibility', () => {
     expect(canPlaceLandPoi(true, 'plains')).toBe(true);
     expect(canPlaceLandPoi(false, 'plains')).toBe(false);
     expect(canPlaceLandPoi(true, 'river')).toBe(false);
+  });
+
+  it('resolves placement chances from the generic keyed API', () => {
+    expect(
+      resolvePlacementChance(
+        {
+          seed: 'spec',
+          x: 5,
+          y: 7,
+          tile: { kind: 'plains' },
+          nearLand: true,
+          placementChances: { ruins: 0.998 },
+          signals: {
+            continent: 0.5,
+            elevation: 0.5,
+            moisture: 0.5,
+            riverSignal: 0.5,
+            roadSignal: 0.5,
+          },
+          townAnchors: [],
+          bridgeAnchors: [],
+          poiAnchors: [],
+        },
+        'ruins'
+      )
+    ).toBe(0.998);
+
+    expect(
+      resolvePlacementChance(
+        {
+          seed: 'spec',
+          x: 5,
+          y: 7,
+          tile: { kind: 'plains' },
+          nearLand: true,
+          signals: {
+            continent: 0.5,
+            elevation: 0.5,
+            moisture: 0.5,
+            riverSignal: 0.5,
+            roadSignal: 0.5,
+          },
+          townAnchors: [],
+          bridgeAnchors: [],
+          poiAnchors: [],
+          getPlacementChance(chanceKey: string) {
+            return chanceKey === 'ruins' ? 0.999 : 0;
+          },
+        },
+        'ruins'
+      )
+    ).toBe(0.999);
   });
 
   it('finds reachable route distances for a facing direction', () => {

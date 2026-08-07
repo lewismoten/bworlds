@@ -14,6 +14,7 @@ import type {
   PluginPackLike,
   ResolveOverworldAnchorsContext,
   ResolveOverworldTileContext,
+  ResolveWorldEnvironmentContext,
   RuntimePlugin,
   ResolveFloorKind3DContext,
   SurfaceProfile3D,
@@ -23,6 +24,7 @@ import type {
   TilePlugin,
   TraversalProfile3D,
   TraversalProfile3DContext,
+  WorldEnvironmentLike,
   WorldActionLike,
   WorldMapLike,
   IndexedPlugin,
@@ -40,14 +42,22 @@ import {
 export type * from './types';
 export {
   attemptCall,
+  createFallbackTileDefinition,
+  createPluginPack,
   createRuntimePlugin,
+  createSingleTilePlugin,
   createTilePlugin,
   dedupePluginPackIds,
   definePluginPack,
+  instantiateOrderedPlugins,
   isCallable,
   listPluginPackManifests,
+  listTileDefinitionsFromPlugins,
+  resolveTileDefinitionFromPlugins,
   selectPluginPackManifests,
   resolvePluginPackDefinition,
+  withDefaultTileKind,
+  withOverworldTileClassifier,
   withPluginOrder,
 } from './utils';
 
@@ -187,6 +197,43 @@ export class PluginRegistry implements PluginRegistryLike {
   resolveFloorKind3D(payload: ResolveFloorKind3DContext): void | Kind {
     const tilePlugin = this.getTilePlugin(payload.tile.kind);
     return attemptCall(tilePlugin?.resolveFloorKind3D, payload);
+  }
+
+  resolveWorldEnvironment(
+    payload: ResolveWorldEnvironmentContext
+  ): WorldEnvironmentLike {
+    const merged: WorldEnvironmentLike = {};
+
+    for (const plugin of this.plugins) {
+      const resolved = attemptCall(plugin.resolveWorldEnvironment, payload);
+      if (!resolved) continue;
+      if (resolved.cycle) {
+        merged.cycle = {
+          ...(merged.cycle ?? {}),
+          ...resolved.cycle,
+        };
+      }
+      if (resolved.sky) {
+        merged.sky = {
+          ...(merged.sky ?? {}),
+          ...resolved.sky,
+        };
+      }
+      if (resolved.lighting) {
+        merged.lighting = {
+          ...(merged.lighting ?? {}),
+          ...resolved.lighting,
+        };
+      }
+      if (resolved.stars) {
+        merged.stars = {
+          ...(merged.stars ?? {}),
+          ...resolved.stars,
+        };
+      }
+    }
+
+    return merged;
   }
 
   createWorldAction(payload: CreateWorldActionContext): void | WorldActionLike {

@@ -76,6 +76,42 @@ export function createPaintedCanvasTexture(
   });
 }
 
+export function createPaintedStandardMaterial(
+  three: ThreeHostLike,
+  options: {
+    color?: string;
+    roughness?: number;
+    metalness?: number;
+    emissive?: string;
+    emissiveIntensity?: number;
+    transparent?: boolean;
+    opacity?: number;
+    side?: unknown;
+    width: number;
+    height: number;
+    repeatX?: number;
+    repeatY?: number;
+    wrap?: boolean;
+    paint: (
+      context: CanvasRenderingContext2D,
+      canvas: HTMLCanvasElement
+    ) => void;
+  }
+): ThreeMaterialLike {
+  const texture = createPaintedCanvasTexture(three, options);
+  return new three.MeshStandardMaterial({
+    color: options.color ?? '#ffffff',
+    map: texture,
+    roughness: options.roughness,
+    metalness: options.metalness,
+    emissive: options.emissive,
+    emissiveIntensity: options.emissiveIntensity,
+    transparent: options.transparent,
+    opacity: options.opacity,
+    side: options.side,
+  });
+}
+
 export interface PathPointLike {
   x: number;
   y: number;

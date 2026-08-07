@@ -1,14 +1,16 @@
 import { hash2D } from '@bworlds/core';
 import {
-  createAnchoredLandPoiClassifier,
-  createChanceBasedEnterablePoiTilePlugin,
+  createAnchoredEnterablePoiTilePlugin,
   pickPreferredLandmarkFacing,
 } from '@bworlds/poi-support';
 import {
-  getOrCreateRegionalValue,
+  createRegionalValueResolver,
   pickThresholdColor,
 } from '@bworlds/procedural-style';
-import { createPaintedCanvasTexture } from '@bworlds/three-support';
+import {
+  createPaintedCanvasTexture,
+  createPaintedStandardMaterial,
+} from '@bworlds/three-support';
 import type {
   Create3DModelContext,
   Paint2DContext,
@@ -20,7 +22,7 @@ import type {
 const TILE_PIXEL_SIZE = 16;
 
 export function createDungeonTilePlugin() {
-  return createChanceBasedEnterablePoiTilePlugin({
+  return createAnchoredEnterablePoiTilePlugin({
     pluginName: 'tile-dungeon',
     kind: 'dungeon',
     definition: {
@@ -31,14 +33,6 @@ export function createDungeonTilePlugin() {
       wallHeight: 0.65,
     },
     note: 'A dungeon descent awaits.',
-    threshold: 0.9975,
-    getChance(context) {
-      return context.dungeonChance;
-    },
-    classifyOverworldTile: createAnchoredLandPoiClassifier({
-      kind: 'dungeon',
-      note: 'A dungeon descent awaits.',
-    }),
     paint2D({ context, x, y, motif, fillRect, speckle }: Paint2DContext) {
       fillRect(context, x, y, TILE_PIXEL_SIZE, TILE_PIXEL_SIZE, '#4b1d1d');
       speckle(context, x, y, '#7f1d1d', 20, 0.3, motif);
@@ -203,141 +197,143 @@ function getDungeonEntranceDirection(state, tileX: number, tileY: number) {
 }
 
 const dungeonStyleCache = new Map<string, DungeonStyle>();
+const resolveDungeonStyle = createRegionalValueResolver(
+  dungeonStyleCache,
+  18,
+  ({ regionX, regionY }) => {
+    const wallBase = pickThresholdColor(
+      hash2D('dungeon-wall-tone', regionX, regionY),
+      0.5,
+      '#7b7064',
+      '#645b53'
+    );
+    const roofBase = pickThresholdColor(
+      hash2D('dungeon-roof-tone', regionX, regionY),
+      0.5,
+      '#4b1f1f',
+      '#374151'
+    );
+    const trimBase = pickThresholdColor(
+      hash2D('dungeon-trim-tone', regionX, regionY),
+      0.5,
+      '#2f241c',
+      '#1f2937'
+    );
+    return {
+      createMaterials(three: ThreeHostLike) {
+        const barTexture = createDungeonBarTexture(three);
+        return {
+          wallMaterial: createPaintedStandardMaterial(three, {
+            color: '#ffffff',
+            roughness: 0.95,
+            metalness: 0.03,
+            width: 64,
+            height: 64,
+            repeatX: 1.2,
+            repeatY: 1.2,
+            paint(context, canvas) {
+              paintDungeonStoneTexture(
+                context,
+                canvas,
+                wallBase,
+                trimBase,
+                regionX,
+                regionY
+              );
+            },
+          }),
+          roofMaterial: createPaintedStandardMaterial(three, {
+            color: '#ffffff',
+            roughness: 0.9,
+            metalness: 0.04,
+            width: 64,
+            height: 64,
+            repeatX: 1.2,
+            repeatY: 1.2,
+            paint(context, canvas) {
+              paintDungeonRoofTexture(
+                context,
+                canvas,
+                roofBase,
+                trimBase,
+                regionX,
+                regionY
+              );
+            },
+          }),
+          trimMaterial: new three.MeshStandardMaterial({
+            color: trimBase,
+            roughness: 0.88,
+            metalness: 0.05,
+          }),
+          barMaterial: new three.MeshStandardMaterial({
+            color: '#ffffff',
+            map: barTexture,
+            roughness: 0.7,
+            metalness: 0.18,
+          }),
+        };
+      },
+    };
+  }
+);
 
 function getDungeonStyle(three: ThreeHostLike, tileX: number, tileY: number) {
-  return getOrCreateRegionalValue(
-    dungeonStyleCache,
-    tileX,
-    tileY,
-    18,
-    ({ regionX, regionY }) => {
-      const wallBase = pickThresholdColor(
-        hash2D('dungeon-wall-tone', regionX, regionY),
-        0.5,
-        '#7b7064',
-        '#645b53'
-      );
-      const roofBase = pickThresholdColor(
-        hash2D('dungeon-roof-tone', regionX, regionY),
-        0.5,
-        '#4b1f1f',
-        '#374151'
-      );
-      const trimBase = pickThresholdColor(
-        hash2D('dungeon-trim-tone', regionX, regionY),
-        0.5,
-        '#2f241c',
-        '#1f2937'
-      );
-      const wallTexture = createDungeonStoneTexture(
-        three,
-        wallBase,
-        trimBase,
-        regionX,
-        regionY
-      );
-      const roofTexture = createDungeonRoofTexture(
-        three,
-        roofBase,
-        trimBase,
-        regionX,
-        regionY
-      );
-      const barTexture = createDungeonBarTexture(three);
+  const style = resolveDungeonStyle(tileX, tileY);
+  return style.createMaterials(three);
+}
 
-      return {
-        wallMaterial: new three.MeshStandardMaterial({
-          color: '#ffffff',
-          map: wallTexture,
-          roughness: 0.95,
-          metalness: 0.03,
-        }),
-        roofMaterial: new three.MeshStandardMaterial({
-          color: '#ffffff',
-          map: roofTexture,
-          roughness: 0.9,
-          metalness: 0.04,
-        }),
-        trimMaterial: new three.MeshStandardMaterial({
-          color: trimBase,
-          roughness: 0.88,
-          metalness: 0.05,
-        }),
-        barMaterial: new three.MeshStandardMaterial({
-          color: '#ffffff',
-          map: barTexture,
-          roughness: 0.7,
-          metalness: 0.18,
-        }),
-      };
+function paintDungeonStoneTexture(
+  context: CanvasRenderingContext2D,
+  canvas: HTMLCanvasElement,
+  baseColor: string,
+  accentColor: string,
+  regionX: number,
+  regionY: number
+) {
+  context.fillStyle = baseColor;
+  context.fillRect(0, 0, canvas.width, canvas.height);
+
+  for (let row = 0; row < canvas.height; row += 12) {
+    context.fillStyle = 'rgba(255,255,255,0.12)';
+    context.fillRect(0, row, canvas.width, 1);
+    context.fillStyle = accentColor;
+    const shift = ((row / 12) % 2) * 10;
+    for (let col = -10 + shift; col < canvas.width + 10; col += 20) {
+      context.fillRect(col, row, 2, 12);
     }
-  );
+  }
+
+  for (let index = 0; index < 60; index += 1) {
+    const x = Math.floor(hash2D('dungeon-stone-chip-x', regionX + index, regionY) * canvas.width);
+    const y = Math.floor(hash2D('dungeon-stone-chip-y', regionY + index, regionX) * canvas.height);
+    context.fillStyle = 'rgba(255,255,255,0.08)';
+    context.fillRect(x, y, 2, 1);
+  }
 }
 
-function createDungeonStoneTexture(
-  three: ThreeHostLike,
+function paintDungeonRoofTexture(
+  context: CanvasRenderingContext2D,
+  canvas: HTMLCanvasElement,
   baseColor: string,
   accentColor: string,
   regionX: number,
   regionY: number
 ) {
-  return createPaintedCanvasTexture(three, {
-    width: 64,
-    height: 64,
-    repeatX: 1.2,
-    repeatY: 1.2,
-    paint(context, canvas) {
-      context.fillStyle = baseColor;
-      context.fillRect(0, 0, canvas.width, canvas.height);
+  context.fillStyle = baseColor;
+  context.fillRect(0, 0, canvas.width, canvas.height);
 
-      for (let row = 0; row < canvas.height; row += 12) {
-        context.fillStyle = 'rgba(255,255,255,0.12)';
-        context.fillRect(0, row, canvas.width, 1);
-        context.fillStyle = accentColor;
-        const shift = ((row / 12) % 2) * 10;
-        for (let col = -10 + shift; col < canvas.width + 10; col += 20) {
-          context.fillRect(col, row, 2, 12);
-        }
-      }
+  for (let row = 0; row < canvas.height; row += 6) {
+    context.fillStyle = row % 12 === 0 ? accentColor : 'rgba(255,255,255,0.06)';
+    context.fillRect(0, row, canvas.width, 2);
+  }
 
-      for (let i = 0; i < 26; i += 1) {
-        const x = Math.floor(
-          hash2D('dungeon-chip-x', regionX * 37 + i, regionY) * canvas.width
-        );
-        const y = Math.floor(
-          hash2D('dungeon-chip-y', regionY * 41 + i, regionX) * canvas.height
-        );
-        context.fillStyle = 'rgba(20,20,24,0.18)';
-        context.fillRect(x, y, 3, 2);
-      }
-    },
-  });
-}
-
-function createDungeonRoofTexture(
-  three: ThreeHostLike,
-  baseColor: string,
-  accentColor: string,
-  regionX: number,
-  regionY: number
-) {
-  return createPaintedCanvasTexture(three, {
-    width: 64,
-    height: 64,
-    repeatX: 1,
-    repeatY: 1.3,
-    paint(context, canvas) {
-      context.fillStyle = baseColor;
-      context.fillRect(0, 0, canvas.width, canvas.height);
-
-      for (let row = 0; row < canvas.height; row += 7) {
-        context.fillStyle = accentColor;
-        context.fillRect(0, row, canvas.width, 2);
-        context.fillStyle = 'rgba(255,255,255,0.08)';
-        context.fillRect(0, row + 1, canvas.width, 1);
-      }
-    },
-  });
+  for (let index = 0; index < 40; index += 1) {
+    const x = Math.floor(hash2D('dungeon-roof-x', regionX + index, regionY) * canvas.width);
+    const y = Math.floor(hash2D('dungeon-roof-y', regionY + index, regionX) * canvas.height);
+    context.fillStyle = 'rgba(17,24,39,0.2)';
+    context.fillRect(x, y, 2, 1);
+  }
 }
 
 function createDungeonBarTexture(three: ThreeHostLike) {

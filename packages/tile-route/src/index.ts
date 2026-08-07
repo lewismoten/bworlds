@@ -1,5 +1,5 @@
-import { clamp, hash2D } from '@bworlds/core';
-import { paintPlainsBackdrop } from '@bworlds/paint-support';
+import { hash2D } from '@bworlds/core';
+import { createPlainsBackedTilePainter } from '@bworlds/paint-support';
 import { createTilePlugin } from '@bworlds/plugin-api';
 import {
   createRegionKey,
@@ -9,6 +9,11 @@ import {
 import {
   createBoundarySurfaceProfile,
   createRouteTraversalProfile,
+  hasConnectedRoutePath,
+  hasLinearRouteSignal,
+  isBridgeWaterKind,
+  isRouteTerminalKind,
+  isWaterOrCrossingKind,
   resolveDominantNeighborFloorKind3D,
 } from '@bworlds/tile-support';
 import {
@@ -78,13 +83,12 @@ export function createRouteTilePlugin() {
 
         return { kind: noiseRoadKind };
       },
-      paint2D({ context, x, y, motif, fillRect }: Paint2DContext) {
-        paintPlainsBackdrop({ context, x, y, motif, fillRect });
+      paint2D: createPlainsBackedTilePainter(({ context, x, y, motif, fillRect }) => {
         const roadY = 5 + motif.int(0, 2);
         fillRect(context, x, y + roadY, TILE_PIXEL_SIZE, 4, '#8a5a19');
         fillRect(context, x, y + roadY + 1, TILE_PIXEL_SIZE, 1, '#d7b172');
         return true;
-      },
+      }),
       create3DModel({ three, state, tileX, tileY }: Create3DModelContext) {
         if (state.getCurrentContext().type !== 'overworld') {
           return null;
@@ -100,9 +104,7 @@ export function createRouteTilePlugin() {
             isExcludedKind(kind) {
               return (
                 kind === 'road' ||
-                kind === 'bridge' ||
-                kind === 'river' ||
-                kind === 'ocean'
+                isWaterOrCrossingKind(kind)
               );
             },
           }) ?? 'plains'
@@ -164,79 +166,11 @@ function classifyConnectedRoad({
   bridgeAnchors,
 }: ClassifyOverworldTileContext) {
   const baseKind = tile.kind;
-  if (baseKind === 'mountain' || isRoadTerminalPoiKind(baseKind)) {
+  if (baseKind === 'mountain' || isRouteTerminalKind(baseKind)) {
     return null;
   }
-
-  const nearestTown = townAnchors
-    .map((anchor) => ({
-      anchor,
-      distance: Math.hypot(x - anchor.x, y - anchor.y),
-    }))
-    .sort((left, right) => left.distance - right.distance)[0];
-
-  if (
-    nearestTown &&
-    nearestTown.distance < 1.1 &&
-    (Math.abs(x - nearestTown.anchor.x) < 0.35 ||
-      Math.abs(y - nearestTown.anchor.y) < 0.35) &&
-    baseKind !== 'river' &&
-    baseKind !== 'bridge'
-  ) {
-    return 'road';
-  }
-
-  const pairs: [(typeof townAnchors)[number], (typeof townAnchors)[number]][] =
-    [];
-  for (let index = 0; index < townAnchors.length; index += 1) {
-    for (let next = index + 1; next < townAnchors.length; next += 1) {
-      const a = townAnchors[index];
-      const b = townAnchors[next];
-      const distance = Math.hypot(a.x - b.x, a.y - b.y);
-      if (distance <= 28) {
-        pairs.push([a, b]);
-      }
-    }
-  }
-
-  for (const [a, b] of pairs) {
-    if (distanceToLineSegment(x, y, a.x, a.y, b.x, b.y) < 0.42) {
-      return isBridgeWaterKind(baseKind) ? 'bridge' : 'road';
-    }
-  }
-
-  if (nearestTown) {
-    const nearestBridge = bridgeAnchors
-      .map((anchor) => ({
-        anchor,
-        distance: Math.hypot(
-          nearestTown.anchor.x - anchor.x,
-          nearestTown.anchor.y - anchor.y
-        ),
-      }))
-      .sort((left, right) => left.distance - right.distance)[0];
-
-    if (
-      nearestBridge &&
-      nearestBridge.distance <= 16 &&
-      distanceToLineSegment(
-        x,
-        y,
-        nearestTown.anchor.x,
-        nearestTown.anchor.y,
-        nearestBridge.anchor.x,
-        nearestBridge.anchor.y
-      ) < 0.38
-    ) {
-      return isBridgeWaterKind(baseKind) ? 'bridge' : 'road';
-    }
-  }
-
-  for (const bridge of bridgeAnchors) {
-    const distance = Math.hypot(x - bridge.x, y - bridge.y);
-    if (distance < 0.8) {
-      return isBridgeWaterKind(baseKind) ? 'bridge' : 'road';
-    }
+  if (hasConnectedRoutePath({ x, y, townAnchors, bridgeAnchors })) {
+    return isBridgeWaterKind(baseKind) ? 'bridge' : 'road';
   }
 
   return null;
@@ -259,7 +193,7 @@ function classifyNoiseRoad({
   if (
     tileKind === 'ocean' ||
     tileKind === 'mountain' ||
-    isRoadTerminalPoiKind(tileKind)
+    isRouteTerminalKind(tileKind)
   ) {
     return null;
   }
@@ -268,20 +202,20 @@ function classifyNoiseRoad({
     return null;
   }
 
-  const north = sampleTerrainSignals(x, y - 1).roadSignal;
-  const east = sampleTerrainSignals(x + 1, y).roadSignal;
-  const south = sampleTerrainSignals(x, y + 1).roadSignal;
-  const west = sampleTerrainSignals(x - 1, y).roadSignal;
-  const horizontalRidge =
-    roadSignal >= north && roadSignal >= south && roadSignal > 0.91;
-  const verticalRidge =
-    roadSignal >= east && roadSignal >= west && roadSignal > 0.91;
-
-  if (!horizontalRidge && !verticalRidge) {
+  const hasNoiseRoute = hasLinearRouteSignal(x, y, sampleTerrainSignals);
+  if (!hasNoiseRoute) {
     return null;
   }
 
   if (isBridgeWaterKind(tileKind)) {
+    const north = sampleTerrainSignals(x, y - 1).roadSignal;
+    const east = sampleTerrainSignals(x + 1, y).roadSignal;
+    const south = sampleTerrainSignals(x, y + 1).roadSignal;
+    const west = sampleTerrainSignals(x - 1, y).roadSignal;
+    const horizontalRidge =
+      roadSignal >= north && roadSignal >= south && roadSignal > 0.91;
+    const verticalRidge =
+      roadSignal >= east && roadSignal >= west && roadSignal > 0.91;
     if (horizontalRidge && verticalRidge) {
       return null;
     }
@@ -289,40 +223,6 @@ function classifyNoiseRoad({
   }
 
   return 'road';
-}
-
-function isBridgeWaterKind(kind: string) {
-  return kind === 'river' || kind === 'ocean';
-}
-
-function isRoadTerminalPoiKind(kind: string) {
-  return (
-    kind === 'sign' || kind === 'town' || kind === 'cave' || kind === 'dungeon'
-  );
-}
-
-function distanceToLineSegment(
-  px: number,
-  py: number,
-  ax: number,
-  ay: number,
-  bx: number,
-  by: number
-) {
-  const abx = bx - ax;
-  const aby = by - ay;
-  const apx = px - ax;
-  const apy = py - ay;
-  const lengthSquared = abx * abx + aby * aby;
-
-  if (lengthSquared === 0) {
-    return Math.hypot(px - ax, py - ay);
-  }
-
-  const t = clamp((apx * abx + apy * aby) / lengthSquared, 0, 1);
-  const nearestX = ax + abx * t;
-  const nearestY = ay + aby * t;
-  return Math.hypot(px - nearestX, py - nearestY);
 }
 
 function createRoadGroup(
@@ -526,13 +426,7 @@ function getRoadConnections(
 }
 
 function isRoadNetworkKind(kind: string) {
-  return (
-    kind === 'road' ||
-    kind === 'bridge' ||
-    kind === 'town' ||
-    kind === 'cave' ||
-    kind === 'dungeon'
-  );
+  return kind === 'road' || kind === 'bridge' || isRouteTerminalKind(kind);
 }
 
 function createRoadCurve(
@@ -859,13 +753,7 @@ function getBridgeAxis(state: WorldStateLike, tileX: number, tileY: number) {
 }
 
 function isBridgeTravelKind(kind: string) {
-  return (
-    kind === 'bridge' ||
-    kind === 'road' ||
-    kind === 'town' ||
-    kind === 'cave' ||
-    kind === 'dungeon'
-  );
+  return kind === 'bridge' || kind === 'road' || isRouteTerminalKind(kind);
 }
 
 function addBridgeParapets(

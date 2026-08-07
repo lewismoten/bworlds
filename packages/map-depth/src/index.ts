@@ -2,6 +2,7 @@ import { hash2D } from '@bworlds/core';
 import {
   createChildContext,
   createContextMapPlugin,
+  createDecoratedMapTileGetter,
   createDeepenMapAction,
   createExitMapAction,
 } from '@bworlds/map-support';
@@ -37,44 +38,44 @@ function createDepthMap(
   const size = 21;
   const radius = Math.floor(size / 2);
 
-  function getTile(x: number, y: number): DepthTile {
-    const localX = x + radius;
-    const localY = y + radius;
-    if (localX < 0 || localY < 0 || localX >= size || localY >= size) {
-      return { kind: 'wall' };
-    }
+  const getTile = createDecoratedMapTileGetter<DepthTile, DepthContext>({
+    context,
+    seed,
+    resolveTile(x: number, y: number) {
+      const localX = x + radius;
+      const localY = y + radius;
+      if (localX < 0 || localY < 0 || localX >= size || localY >= size) {
+        return { kind: 'wall' };
+      }
 
-    let tile: DepthTile = { kind: 'wall' };
-    const chamber =
-      Math.abs(x) <= 7 &&
-      Math.abs(y) <= 7 &&
-      (Math.abs(x) <= 1 || Math.abs(y) <= 1 || hash2D(seed, x, y) > 0.3);
+      let tile: DepthTile = { kind: 'wall' };
+      const chamber =
+        Math.abs(x) <= 7 &&
+        Math.abs(y) <= 7 &&
+        (Math.abs(x) <= 1 || Math.abs(y) <= 1 || hash2D(seed, x, y) > 0.3);
 
-    if (chamber) tile = { kind: 'floor' };
-    if (x === 0 && y === 0) {
-      tile = {
-        kind: context.type === 'cave' ? 'cave' : 'dungeon',
-        note: 'Press interact on the stairs to go deeper.',
-      };
-    }
-    if (x === 0 && y === 6) {
-      tile = { kind: 'stairsUp', note: 'Press X to leave.' };
-    }
-    if (x === 0 && y === -6) {
-      tile = {
-        kind: 'stairsDown',
-        note: 'The next level extends below.',
-      };
-    }
-
-    return plugins.decorateDepthTile({
-      context,
-      seed,
-      x,
-      y,
-      tile,
-    });
-  }
+      if (chamber) tile = { kind: 'floor' };
+      if (x === 0 && y === 0) {
+        tile = {
+          kind: context.type === 'cave' ? 'cave' : 'dungeon',
+          note: 'Press interact on the stairs to go deeper.',
+        };
+      }
+      if (x === 0 && y === 6) {
+        tile = { kind: 'stairsUp', note: 'Press X to leave.' };
+      }
+      if (x === 0 && y === -6) {
+        tile = {
+          kind: 'stairsDown',
+          note: 'The next level extends below.',
+        };
+      }
+      return tile;
+    },
+    decorateTile(payload) {
+      return plugins.decorateDepthTile(payload);
+    },
+  });
 
   function getAction(x: number, y: number) {
     if (x === 0 && y === -6) {

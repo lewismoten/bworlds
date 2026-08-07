@@ -1,0 +1,41 @@
+- [ ] space out all POI a minimum distance from anything else
+- [ ] dungeons should be in the middle of forests
+- [ ] caves should be next to mountains
+- [ ] towns, dungeons, other POI should emit light as the sun goes down
+- [ ] The season should affect the amount of day/night in a given day
+- [ ] The season should also apepar as constallations on the "Timekeeper" as the outer ring
+- [ ] I should be able to set and freeze the season
+- [ ] The moon should be able to eclipse the sun and affect the daylight
+- [ ] Constallations are procedurally generated and named
+- [ ] The "date" should include the constallation and moon phase
+- [ ] Commets and planets should have their own cycles, appearing in the sky of stars sometimes
+- [ ] When walking into a town, dungeon, or other point of interest, it can take you to separate instance of that POI.
+- [ ] When exiting a point of interest, you should appear at the entrance of the POI, facing away from the entrance.
+- [ ] Towns have levels that determine the population and number of residential and professional buildings.
+- [ ] All buildings in a town have roads that run past them.
+- [ ] All buildings in a town have a sidewalk, path, etc. that lead to the road
+- [ ] Some buildings have fences with an opening leading to the entrance
+- [ ] Dock at oceans may have a tall ship arrive that you can walk onto, and it will take you to a nearby dock. A tall ship may have 2-5 docks that it circles around.
+- [ ] Long docks may have multiple boats
+- [ ] Some docks may have a stationary tall ship or broken down ship that may serve as a point of interest, that lets you board and explore
+- [ ] Add a quarry as a POI
+- [ ] Add the ability to toggle the time keeper within the view as either none at all, time, time + date, or graphical.
+- [ ] Add the ablity to toggle a compass wihin the 2D+3D view as graphical, just letters (NW, N, NE, S, SE, SW, E, W), or hidden
+- [ ] Add the ability to toggle the 2D map as a small birds eye overhead view in the corner while in 3D mode. You can control the zoom as well.
+- [ ] Add stars as night
+- [ ] The amount of darkness at night is dependent upon the phase of the moon
+- [ ] Add procedural weather conditions - Heavy Rain, Light Rain, Fog, Wind, Clouds, Snow, Hail. 
+- [ ] Change frequency/duration of weather based on time of year and region.
+- [ ] Add atmospheric effects to indicate possible weather conditions. (Red light at dawn, sailers warn, red light at night, sailors delight)
+- [ ] Add a light house POI that appears within 1-2 tiles of ocean, and make it have a beam that lights up at night that can be seen from afar
+- [ ] Add procedurally generated music that changes based on region or cluster (deep forest may have different music)
+- [ ] Add sound effects for walking / jumping
+- [ ] Add light head bobbing when walking
+- [ ] Setup local storage to remember time of day, season, moon phase, if time is frozen, etc.
+- [ ] Display the world seed and allow it to be changed.
+- [ ] Save/load the world seed
+- [ ] Allow two or more cave entrances along the same mountain pass within a certain distance of eachother to act as a tunnel between each other, leading to the same cave system.
+- [ ] Generate a tileable cave system for caves with stalagtights, stalagmites, glowing mushrooms, pools of water, occasional obstacles, rope bridges, etc.
+- [ ] Add a mushroom ring or stone ring in the middle of large forests
+- [ ] Trees in the middle of large forest may have an occasional stump or fallen tree.
+- [ ] A large forest may have a very large and tall tree deep inside, that is a woodland town of its own. There are a few types - inabitants live (a) inside the hollowed trunk/bark of the tree, (b) high above the other trees in the branches, (c) underneath the tree roots, or (d) a combination where different town maps lead to each level.

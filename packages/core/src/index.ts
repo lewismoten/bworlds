@@ -5,6 +5,17 @@ export const WORLD_TILES_WIDE = Math.floor(
   EARTH_CIRCUMFERENCE_METERS / TILE_METERS
 );
 export const HALF_WORLD_TILES = WORLD_TILES_WIDE / 2;
+export const DEFAULT_DAY_LENGTH_MS = 240000;
+export const MOON_PHASE_NAMES = [
+  'New Moon',
+  'Waxing Crescent',
+  'First Quarter',
+  'Waxing Gibbous',
+  'Full Moon',
+  'Waning Gibbous',
+  'Last Quarter',
+  'Waning Crescent',
+] as const;
 
 export function fract(value) {
   return value - Math.floor(value);
@@ -21,6 +32,120 @@ export function lerp(a, b, t) {
 export function smoothstep(edge0, edge1, value) {
   const t = clamp((value - edge0) / (edge1 - edge0), 0, 1);
   return t * t * (3 - 2 * t);
+}
+
+export function getDaylightCycleState(
+  timeMs,
+  options: {
+    dayLengthMs?: number;
+    offsetMs?: number;
+  } = {}
+) {
+  const dayLengthMs = options.dayLengthMs ?? DEFAULT_DAY_LENGTH_MS;
+  const offsetMs = options.offsetMs ?? 0;
+  const cycleTime = timeMs + offsetMs;
+  const dayProgress = fract(cycleTime / dayLengthMs);
+  const dayNumber = Math.floor(cycleTime / dayLengthMs);
+  const sunAngle = dayProgress * Math.PI * 2 - Math.PI / 2;
+  const sunAltitude = Math.sin(sunAngle);
+  const moonAngle = sunAngle + Math.PI;
+  const moonAltitude = Math.sin(moonAngle);
+  const daylight = smoothstep(-0.16, 0.2, sunAltitude);
+  const twilight = smoothstep(-0.28, 0.16, sunAltitude);
+  const night = 1 - twilight;
+  const starsOpacity = smoothstep(0.08, 0.82, night);
+  const moonPhaseIndex =
+    ((dayNumber % MOON_PHASE_NAMES.length) + MOON_PHASE_NAMES.length) %
+    MOON_PHASE_NAMES.length;
+  const moonPhaseName = MOON_PHASE_NAMES[moonPhaseIndex];
+  const moonIllumination = [
+    0,
+    0.25,
+    0.5,
+    0.75,
+    1,
+    0.75,
+    0.5,
+    0.25,
+  ][moonPhaseIndex];
+
+  return {
+    dayLengthMs,
+    cycleTime,
+    dayNumber,
+    dayProgress,
+    sunAngle,
+    sunAltitude,
+    moonAngle,
+    moonAltitude,
+    daylight,
+    twilight,
+    night,
+    starsOpacity,
+    moonPhaseIndex,
+    moonPhaseName,
+    moonIllumination,
+    isNight: daylight < 0.22,
+  };
+}
+
+export function getWorldTimeMs(
+  realTimeMs,
+  options: {
+    timeOffsetMs?: number;
+  } = {}
+) {
+  return realTimeMs + (options.timeOffsetMs ?? 0);
+}
+
+export function getWorldDaylightCycle(
+  realTimeMs,
+  options: {
+    timeOffsetMs?: number;
+    cycle?: {
+      dayLengthMs?: number;
+      offsetMs?: number;
+    };
+  } = {}
+) {
+  const worldTimeMs = getWorldTimeMs(realTimeMs, {
+    timeOffsetMs: options.timeOffsetMs,
+  });
+  return {
+    worldTimeMs,
+    cycle: getDaylightCycleState(worldTimeMs, options.cycle ?? {}),
+  };
+}
+
+export function advanceWorldTimeOffsetByHours(
+  currentOffsetMs,
+  hours,
+  options: {
+    dayLengthMs?: number;
+  } = {}
+) {
+  const dayLengthMs = options.dayLengthMs ?? DEFAULT_DAY_LENGTH_MS;
+  return currentOffsetMs + (hours / 24) * dayLengthMs;
+}
+
+export function alignWorldTimeOffsetToDayProgress(
+  realTimeMs,
+  currentOffsetMs,
+  targetDayProgress,
+  options: {
+    dayLengthMs?: number;
+    offsetMs?: number;
+  } = {}
+) {
+  const { cycle } = getWorldDaylightCycle(realTimeMs, {
+    timeOffsetMs: currentOffsetMs,
+    cycle: options,
+  });
+  let deltaMs = (targetDayProgress - cycle.dayProgress) * cycle.dayLengthMs;
+  if (deltaMs < 0) {
+    deltaMs += cycle.dayLengthMs;
+  }
+  return currentOffsetMs + deltaMs;
 }
 
 export function hash2D(seed, x, y) {

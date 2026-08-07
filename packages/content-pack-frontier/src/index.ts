@@ -2,25 +2,30 @@ import type {
   PluginPackDefinitionLike,
   PluginPackLike,
   PluginPackManifestLike,
-  RuntimePlugin,
 } from '@bworlds/plugin-api';
-import { definePluginPack, withPluginOrder } from '@bworlds/plugin-api';
+import {
+  createPluginPack,
+  definePluginPack,
+  instantiateOrderedPlugins,
+} from '@bworlds/plugin-api';
 import { createFrontierFlavorRuntimePlugin } from '@bworlds/runtime-frontier-flavor';
 
 export function createFrontierRuntimePlugins() {
-  return [
-    withPluginOrder(createFrontierFlavorRuntimePlugin(), {
-      priority: 30,
-      after: ['runtime-depth-flavor'],
-    }),
-  ];
+  return instantiateOrderedPlugins([
+    {
+      create: createFrontierFlavorRuntimePlugin,
+      order: {
+        priority: 30,
+        after: ['runtime-depth-flavor'],
+      },
+    },
+  ]);
 }
 
 export function createFrontierContentPack(): PluginPackLike {
-  return {
-    name: 'frontier-content-pack',
+  return createPluginPack('frontier-content-pack', {
     runtimePlugins: createFrontierRuntimePlugins(),
-  };
+  });
 }
 
 export const frontierContentPackManifest: PluginPackManifestLike = {

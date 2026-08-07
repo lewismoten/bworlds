@@ -8,6 +8,20 @@ type FrontierTestTile = {
 };
 
 describe('runtime frontier flavor', () => {
+  it('provides a shared overworld environment profile', () => {
+    const plugin = createFrontierFlavorRuntimePlugin();
+    expect(plugin.resolveWorldEnvironment?.({ state: {} as any })).toEqual(
+      expect.objectContaining({
+        cycle: expect.objectContaining({
+          dayLengthMs: 300000,
+        }),
+        stars: expect.objectContaining({
+          density: 1,
+        }),
+      })
+    );
+  });
+
   it('adds regional flavor metadata and plains notes', () => {
     const plugin = createFrontierFlavorRuntimePlugin();
     const tile: FrontierTestTile = { kind: 'plains' };

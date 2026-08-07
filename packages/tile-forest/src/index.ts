@@ -1,5 +1,5 @@
 import { hash2D, octaveNoise2D } from '@bworlds/core';
-import { paintPlainsBackdrop } from '@bworlds/paint-support';
+import { createPlainsBackedTilePainter } from '@bworlds/paint-support';
 import { createTilePlugin } from '@bworlds/plugin-api';
 import { createRegionKey, tintHexColor } from '@bworlds/procedural-style';
 import { createThresholdTerrainClassifier } from '@bworlds/tile-support';
@@ -101,8 +101,7 @@ export function createForestTilePlugin() {
 
         return null;
       },
-      paint2D({ context, x, y, definition, motif, fillRect }: Paint2DContext) {
-        paintPlainsBackdrop({ context, x, y, motif, fillRect });
+      paint2D: createPlainsBackedTilePainter(({ context, x, y, motif, fillRect }) => {
         const trees = 2 + motif.int(0, 2);
         for (let tree = 0; tree < trees; tree += 1) {
           const offset = 2 + tree * 4 + motif.int(-1, 1);
@@ -116,7 +115,7 @@ export function createForestTilePlugin() {
           context.fill();
         }
         return true;
-      },
+      }),
       create3DModel({ three, tileX, tileY }: Create3DModelContext) {
         const group = new three.Group();
         const descriptors = getForestTreeDescriptors(tileX, tileY);

@@ -1,9 +1,11 @@
 import { hash2D, octaveNoise2D } from '@bworlds/core';
-import { paintPlainsBackdrop } from '@bworlds/paint-support';
+import { createPlainsBackedTilePainter } from '@bworlds/paint-support';
 import { createTilePlugin } from '@bworlds/plugin-api';
 import {
   createBoundarySurfaceProfile,
   createThresholdTerrainClassifier,
+  isWaterOrCrossingKind,
+  withTerrainTileClassifier,
 } from '@bworlds/tile-support';
 import {
   createCubicBezierPoints,
@@ -32,25 +34,12 @@ const classifyOceanTile = createThresholdTerrainClassifier({
     return context.signals.continent;
   },
 });
-const classifyRiverTile = createThresholdTerrainClassifier({
-  kind: 'river',
-  threshold: 0.78,
-  getSignal(context) {
-    return context.signals.riverSignal;
-  },
-  createTile(context) {
-    if (context.signals.elevation >= 0.68) {
-      return null;
-    }
-    return { kind: 'river' };
-  },
-});
 
 export function createWaterTilePlugin() {
   return createTilePlugin(
     'tile-water',
     [
-      {
+      withTerrainTileClassifier({
         kind: 'ocean',
         definition: {
           name: 'Ocean',
@@ -58,9 +47,6 @@ export function createWaterTilePlugin() {
           miniColor: '#4ea3ff',
           walkable: false,
           wallHeight: 0.1,
-        },
-        classifyTerrainTile(context: ClassifyOverworldTileContext) {
-          return classifyOceanTile(context);
         },
         getSurfaceProfile3D(): SurfaceProfile3D {
           return createBoundarySurfaceProfile({
@@ -162,7 +148,7 @@ export function createWaterTilePlugin() {
           context.restore();
           return true;
         },
-      },
+      }, classifyOceanTile),
       {
         kind: 'shore',
         definition: {
@@ -208,7 +194,7 @@ export function createWaterTilePlugin() {
           return true;
         },
       },
-      {
+      withTerrainTileClassifier({
         kind: 'river',
         definition: {
           name: 'River',
@@ -216,9 +202,6 @@ export function createWaterTilePlugin() {
           miniColor: '#7dd3fc',
           walkable: false,
           wallHeight: 0.05,
-        },
-        classifyTerrainTile(context: ClassifyOverworldTileContext) {
-          return classifyRiverTile(context);
         },
         getSurfaceProfile3D(): SurfaceProfile3D {
           return createBoundarySurfaceProfile({
@@ -234,15 +217,13 @@ export function createWaterTilePlugin() {
         create3DModel({ three, state, tileX, tileY }: Create3DModelContext) {
           return createRiverGroup(three, state, tileX, tileY);
         },
-        paint2D({
+        paint2D: createPlainsBackedTilePainter(({
           context,
           x,
           y,
           definition,
           motif,
-          fillRect,
-        }: Paint2DContext) {
-          paintPlainsBackdrop({ context, x, y, motif, fillRect });
+        }: Paint2DContext) => {
           const startX = 4 + motif.int(-1, 1);
           const endX = 9 + motif.int(-1, 1);
           const controlA = 2 + motif.int(-1, 2);
@@ -283,8 +264,8 @@ export function createWaterTilePlugin() {
           );
           context.stroke();
           return true;
-        },
-      },
+        }),
+      }, classifyRiverTile),
     ],
     {
       decorateOverworldTile({
@@ -313,9 +294,7 @@ export function createWaterTilePlugin() {
         );
 
         if (
-          tile.kind !== 'ocean' &&
-          tile.kind !== 'river' &&
-          tile.kind !== 'bridge' &&
+          !isWaterOrCrossingKind(tile.kind) &&
           tile.kind !== 'mountain' &&
           neighboringSeaSignal < 0.4
         ) {
@@ -325,6 +304,69 @@ export function createWaterTilePlugin() {
       },
     }
   );
+}
+
+function classifyRiverTile(context: ClassifyOverworldTileContext) {
+  if (context.tile.kind !== 'plains') {
+    return null;
+  }
+
+  const { continent, elevation, riverSignal } = context.signals;
+  if (continent <= 0.42 || continent >= 0.9 || elevation >= 0.68) {
+    return null;
+  }
+
+  if (!context.sampleTerrainSignals) {
+    return riverSignal > 0.78 ? { kind: 'river' } : null;
+  }
+
+  const neighborSignals = [
+    context.sampleTerrainSignals(context.x, context.y - 1).riverSignal,
+    context.sampleTerrainSignals(context.x + 1, context.y).riverSignal,
+    context.sampleTerrainSignals(context.x, context.y + 1).riverSignal,
+    context.sampleTerrainSignals(context.x - 1, context.y).riverSignal,
+  ];
+  const diagonalSignals = [
+    context.sampleTerrainSignals(context.x + 1, context.y - 1).riverSignal,
+    context.sampleTerrainSignals(context.x + 1, context.y + 1).riverSignal,
+    context.sampleTerrainSignals(context.x - 1, context.y + 1).riverSignal,
+    context.sampleTerrainSignals(context.x - 1, context.y - 1).riverSignal,
+  ];
+  const strongCardinalNeighbors = neighborSignals.filter(
+    (signal) => signal >= 0.73
+  ).length;
+  const strongDiagonalNeighbors = diagonalSignals.filter(
+    (signal) => signal >= 0.75
+  ).length;
+  const strongestNeighbor = Math.max(...neighborSignals, ...diagonalSignals);
+  const neighborAverage =
+    [...neighborSignals, ...diagonalSignals].reduce(
+      (total, signal) => total + signal,
+      0
+    ) /
+    (neighborSignals.length + diagonalSignals.length);
+  const hasOpposingFlow =
+    (neighborSignals[0] >= 0.72 && neighborSignals[2] >= 0.72) ||
+    (neighborSignals[1] >= 0.72 && neighborSignals[3] >= 0.72);
+  const hasTurningFlow =
+    strongCardinalNeighbors >= 2 ||
+    (strongCardinalNeighbors >= 1 && strongDiagonalNeighbors >= 1);
+
+  if (riverSignal >= 0.82 && strongestNeighbor >= 0.68) {
+    return { kind: 'river' };
+  }
+  if (riverSignal >= 0.77 && (hasOpposingFlow || hasTurningFlow)) {
+    return { kind: 'river' };
+  }
+  if (
+    riverSignal >= 0.73 &&
+    strongCardinalNeighbors >= 1 &&
+    neighborAverage >= 0.67
+  ) {
+    return { kind: 'river' };
+  }
+
+  return null;
 }
 
 function createRiverGroup(
@@ -548,7 +590,7 @@ function getRiverConnections(
 }
 
 function isRiverNetworkKind(kind: string) {
-  return kind === 'river' || kind === 'ocean' || kind === 'bridge';
+  return isWaterOrCrossingKind(kind);
 }
 
 function createRiverCurve(

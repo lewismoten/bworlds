@@ -3,6 +3,7 @@ import type { CreateMapContext } from '@bworlds/plugin-api';
 import {
   createChildContext,
   createContextMapPlugin,
+  createDecoratedMapTileGetter,
   createDeepenMapAction,
   createEnterMapAction,
   createExitMapAction,
@@ -135,5 +136,38 @@ describe('map support', () => {
         plugins: {} as CreateMapContext['plugins'],
       })
     ).toBeNull();
+  });
+
+  it('creates decorated map tile getters with shared context and seed plumbing', () => {
+    const getTile = createDecoratedMapTileGetter({
+      context: {
+        id: 'town:test',
+        label: 'Town',
+        type: 'town',
+        depth: 1,
+        origin: { x: 1, y: 2 },
+      },
+      seed: 'spec',
+      resolveTile(x, y) {
+        return {
+          kind: x === 0 && y === 0 ? 'road' : 'plains',
+        };
+      },
+      decorateTile({ context, seed, x, y, tile }) {
+        return {
+          ...tile,
+          note: `${context.type}:${seed}:${x}:${y}`,
+        };
+      },
+    });
+
+    expect(getTile(0, 0)).toEqual({
+      kind: 'road',
+      note: 'town:spec:0:0',
+    });
+    expect(getTile(1, 2)).toEqual({
+      kind: 'plains',
+      note: 'town:spec:1:2',
+    });
   });
 });

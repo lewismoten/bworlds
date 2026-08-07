@@ -1,6 +1,9 @@
 import { hash2D } from '@bworlds/core';
-import { createTilePlugin } from '@bworlds/plugin-api';
-import { createThresholdTerrainClassifier } from '@bworlds/tile-support';
+import { createSingleTilePlugin } from '@bworlds/plugin-api';
+import {
+  createThresholdTerrainClassifier,
+  withTerrainTileClassifier,
+} from '@bworlds/tile-support';
 import { createMountainTerrainMaterials } from '@bworlds/three-support';
 import type {
   ClassifyOverworldTileContext,
@@ -31,8 +34,9 @@ const classifyMountainTile = createThresholdTerrainClassifier({
 });
 
 export function createMountainTilePlugin() {
-  return createTilePlugin('tile-mountain', [
-    {
+  return createSingleTilePlugin(
+    'tile-mountain',
+    withTerrainTileClassifier({
       kind: 'mountain',
       definition: {
         name: 'Mountain',
@@ -40,9 +44,6 @@ export function createMountainTilePlugin() {
         miniColor: '#94a3b8',
         walkable: false,
         wallHeight: 0.95,
-      },
-      classifyTerrainTile(context: ClassifyOverworldTileContext) {
-        return classifyMountainTile(context);
       },
       paint2D({ context, x, y, motif, fillRect }: Paint2DContext) {
         const leftPeak = 5 + motif.int(-1, 1);
@@ -133,8 +134,8 @@ export function createMountainTilePlugin() {
 
         return group;
       },
-    },
-  ]);
+    }, classifyMountainTile)
+  );
 }
 
 function getMountainPeakScale(

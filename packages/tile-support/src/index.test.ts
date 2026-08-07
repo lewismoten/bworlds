@@ -1,10 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import {
   createBoundarySurfaceProfile,
+  createRoadsideRouteProfile,
   createRouteTraversalProfile,
   createThresholdTerrainClassifier,
+  isBridgeWaterKind,
+  isWaterKind,
+  isWaterOrCrossingKind,
   resolveDominantNeighborFloorKind3D,
+  withTerrainTileClassifier,
 } from './index.ts';
+import type { TilePlugin } from '@bworlds/plugin-api';
 
 describe('tile support', () => {
   it('creates a default route traversal profile', () => {
@@ -22,6 +28,51 @@ describe('tile support', () => {
       travelGroup: 'route',
       slideAxis: 'ew',
     });
+  });
+
+  it('provides shared water and crossing kind helpers', () => {
+    expect(isWaterKind('river')).toBe(true);
+    expect(isWaterKind('bridge')).toBe(false);
+    expect(isBridgeWaterKind('ocean')).toBe(true);
+    expect(isBridgeWaterKind('bridge')).toBe(false);
+    expect(isWaterOrCrossingKind('bridge')).toBe(true);
+    expect(isWaterOrCrossingKind('forest')).toBe(false);
+  });
+
+  it('profiles roadside route junctions through the adjacent road tile', () => {
+    const profile = createRoadsideRouteProfile({
+      x: 9,
+      y: 10,
+      townAnchors: [{ x: 18, y: 10 }],
+      bridgeAnchors: [],
+      sampleTerrainSignals(x, y) {
+        if (
+          (x === 10 && y === 10) ||
+          (x === 10 && (y === 9 || y === 11)) ||
+          (x === 11 && y === 10)
+        ) {
+          return {
+            continent: 0.6,
+            elevation: 0.4,
+            moisture: 0.5,
+            riverSignal: 0.1,
+            roadSignal: 0.96,
+          };
+        }
+        return {
+          continent: 0.6,
+          elevation: 0.4,
+          moisture: 0.5,
+          riverSignal: 0.1,
+          roadSignal: 0.2,
+        };
+      },
+    });
+
+    expect(profile.onRoute).toBe(false);
+    expect(profile.adjacentRoadCount).toBe(1);
+    expect(profile.atJunction).toBe(true);
+    expect(profile.routeSpan).toBeGreaterThanOrEqual(4);
   });
 
   it('creates reusable boundary surface profiles for 3D terrain transitions', () => {
@@ -125,6 +176,47 @@ describe('tile support', () => {
         bridgeAnchors: [],
       })
     ).toEqual({ kind: 'ocean', note: 'Open water.' });
+  });
+
+  it('wraps terrain classifiers into reusable tile entries', () => {
+    const tile = withTerrainTileClassifier<TilePlugin>(
+      {
+        kind: 'forest',
+        definition: {
+          name: 'Forest',
+          color: '#000000',
+          miniColor: '#111111',
+          walkable: true,
+          wallHeight: 0.3,
+        },
+      },
+      createThresholdTerrainClassifier({
+        kind: 'forest',
+        threshold: 0.6,
+        getSignal(context) {
+          return context.signals.moisture;
+        },
+      })
+    );
+
+    expect(
+      tile.classifyTerrainTile?.({
+        seed: 'spec',
+        x: 0,
+        y: 0,
+        tile: { kind: 'plains' },
+        nearLand: true,
+        signals: {
+          continent: 0.5,
+          elevation: 0.5,
+          moisture: 0.75,
+          riverSignal: 0.5,
+          roadSignal: 0.5,
+        },
+        townAnchors: [],
+        bridgeAnchors: [],
+      })
+    ).toEqual({ kind: 'forest' });
   });
 
   it('resolves the dominant neighboring floor kind for 3D tile overlays', () => {

@@ -191,6 +191,21 @@ button:hover {
   line-height: 1.4;
 }
 
+.time-toggle-row {
+  margin: 0 0 0.75rem;
+}
+
+.time-toggle-row button {
+  width: 100%;
+}
+
+button.is-active {
+  border-color: rgba(85, 214, 190, 0.7);
+  background:
+    linear-gradient(180deg, rgba(85, 214, 190, 0.18), transparent),
+    rgba(255, 255, 255, 0.02);
+}
+
 dl {
   margin: 0;
   display: grid;
@@ -221,6 +236,39 @@ ul {
   border-radius: 14px;
 }
 
+#time-wheel {
+  width: 100%;
+  max-width: 240px;
+  display: block;
+  margin: 0 auto 0.9rem;
+  border-radius: 22px;
+  background:
+    radial-gradient(circle at 50% 42%, rgba(255, 191, 105, 0.14), transparent 42%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(0, 0, 0, 0.12));
+}
+
+.time-skip-controls,
+.time-presets {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.time-skip-controls {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-bottom: 0.65rem;
+}
+
+.time-presets {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.time-skip-controls button,
+.time-presets button {
+  border-radius: 16px;
+  padding: 0.6rem 0.75rem;
+  font-size: 0.92rem;
+}
+
 @media (max-width: 1024px) {
   .hero,
   .dashboard {
@@ -230,5 +278,9 @@ ul {
 
   .hero {
     align-items: start;
+  }
+
+  .time-skip-controls {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }

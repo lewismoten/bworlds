@@ -1,9 +1,12 @@
 import type {
+  Kind,
+  OrderedPluginFactoryLike,
   PluginName,
   PluginPackDefinitionLike,
   PluginPackLike,
   PluginPackManifestLike,
   RuntimePlugin,
+  TileDefinitionLike,
   TilePlugin,
 } from './types';
 
@@ -39,6 +42,16 @@ export function definePluginPack(
   };
 }
 
+export function createPluginPack(
+  name: PluginName,
+  groups: Omit<PluginPackLike, 'name'> = {}
+): PluginPackLike {
+  return {
+    name,
+    ...groups,
+  };
+}
+
 export function createRuntimePlugin(
   name: PluginName,
   extras: Omit<RuntimePlugin, 'name'> = {}
@@ -58,6 +71,101 @@ export function createTilePlugin<TTile extends TilePlugin>(
     ...extras,
     name,
     tiles,
+  };
+}
+
+export function createSingleTilePlugin<TTile extends TilePlugin>(
+  name: PluginName,
+  tile: TTile,
+  extras: Omit<RuntimePlugin, 'name' | 'tiles'> = {}
+): RuntimePlugin {
+  return createTilePlugin(name, [tile], extras);
+}
+
+export function withOverworldTileClassifier<TTile extends TilePlugin>(
+  tile: TTile,
+  classifyOverworldTile: NonNullable<TilePlugin['classifyOverworldTile']>
+): TTile {
+  return {
+    ...tile,
+    classifyOverworldTile,
+  };
+}
+
+export function instantiateOrderedPlugins<TPlugin extends RuntimePlugin>(
+  specs: OrderedPluginFactoryLike<TPlugin>[]
+): TPlugin[] {
+  return specs.map((spec) =>
+    spec.order ? withPluginOrder(spec.create(), spec.order) : spec.create()
+  );
+}
+
+export const DEFAULT_TILE_DEFINITION: TileDefinitionLike = {
+  name: 'Unknown Tile',
+  color: '#64748b',
+  miniColor: '#94a3b8',
+  walkable: true,
+  wallHeight: 0,
+};
+
+export function createFallbackTileDefinition(
+  kind?: Kind | null,
+  fallback: TileDefinitionLike = DEFAULT_TILE_DEFINITION
+): TileDefinitionLike {
+  if (!kind || kind === 'unknown') {
+    return fallback;
+  }
+
+  return {
+    ...fallback,
+    name: `${String(kind).slice(0, 1).toUpperCase()}${String(kind).slice(1)}`,
+  };
+}
+
+export function listTileDefinitionsFromPlugins(
+  plugins: RuntimePlugin[]
+): Array<[Kind, TileDefinitionLike]> {
+  return plugins
+    .flatMap((plugin) => plugin.tiles ?? [])
+    .flatMap((tile) =>
+      tile.definition ? [[tile.kind, tile.definition] as const] : []
+    );
+}
+
+export function resolveTileDefinitionFromPlugins(
+  plugins: RuntimePlugin[],
+  kind: Kind,
+  fallback?: TileDefinitionLike
+): TileDefinitionLike {
+  const definitions = new Map(listTileDefinitionsFromPlugins(plugins));
+  const defaultTileDefinition =
+    plugins
+      .flatMap((plugin) => plugin.tiles ?? [])
+      .find((tile) => tile.isDefaultTile)?.definition ?? null;
+
+  return (
+    definitions.get(kind) ??
+    defaultTileDefinition ??
+    fallback ??
+    createFallbackTileDefinition(kind)
+  );
+}
+
+export function withDefaultTileKind<T extends RuntimePlugin>(
+  plugin: T,
+  kind: Kind
+): T {
+  return {
+    ...plugin,
+    tiles:
+      plugin.tiles?.map((tile) =>
+        tile.kind === kind
+          ? {
+              ...tile,
+              isDefaultTile: true,
+            }
+          : tile
+      ) ?? [],
   };
 }
 

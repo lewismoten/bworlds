@@ -12,11 +12,11 @@ import {
 } from '@bworlds/content-pack-ruins';
 import {
   createDefaultContentPackDefinition,
-  getDefaultTileDefinition,
   createDefaultRuntimePlugins as createDefaultRuntimePluginsFromPack,
   createDefaultTilePlugins as createDefaultTilePluginsFromPack,
 } from '@bworlds/content-pack-default';
 import {
+  createFallbackTileDefinition,
   createPluginPackCatalog,
   PluginRegistry,
   setActivePluginRegistry,
@@ -176,7 +176,10 @@ export function createWorldRuntime({
     generator,
     player: createPlayer(player),
     resolveTileDefinition(kind) {
-      return registry.resolveTileDefinition(kind, getDefaultTileDefinition(kind));
+      const fallback =
+        registry.getDefaultTileDefinition(createFallbackTileDefinition(kind)) ??
+        createFallbackTileDefinition(kind);
+      return registry.resolveTileDefinition(kind, fallback);
     },
   }) as WorldStateLike & {
     stack: WorldContextLike[];

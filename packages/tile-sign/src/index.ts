@@ -1,12 +1,15 @@
 import { hash2D } from '@bworlds/core';
-import { paintPlainsBackdrop } from '@bworlds/paint-support';
-import { canPlaceLandPoi } from '@bworlds/poi-support';
+import { createPlainsBackedTilePainter } from '@bworlds/paint-support';
+import { canPlaceLandPoi, resolvePlacementChance } from '@bworlds/poi-support';
 import { createTilePlugin } from '@bworlds/plugin-api';
 import {
   getOrCreateRegionalValue,
   pickThresholdColor,
 } from '@bworlds/procedural-style';
-import { createRouteTraversalProfile } from '@bworlds/tile-support';
+import {
+  createRoadsideRouteProfile,
+  createRouteTraversalProfile,
+} from '@bworlds/tile-support';
 import { createPaintedCanvasTexture } from '@bworlds/three-support';
 import type {
   ClassifyOverworldTileContext,
@@ -24,8 +27,11 @@ const TILE_PIXEL_SIZE = 16;
 const SIGN_REGION_SIZE = 10;
 const TREE_BARK_COLOR = '#4a2f1b';
 const SIGN_TOWN_BUFFER = 8;
-const JUNCTION_SIGN_THRESHOLD = 0.993;
+const JUNCTION_SIGN_THRESHOLD = 0.985;
+const LONG_ROAD_SIGN_THRESHOLD = 0.9975;
 const ROADSIDE_SIGN_THRESHOLD = 0.9992;
+const LONG_ROAD_MIN_SPAN = 8;
+const LONG_ROAD_POI_DISTANCE = 28;
 const signStyleCache = new Map<string, SignStyle>();
 
 export function createSignTilePlugin() {
@@ -47,10 +53,10 @@ export function createSignTilePlugin() {
         y,
         tile,
         nearLand,
-        signChance,
         townAnchors,
         bridgeAnchors,
         sampleTerrainSignals,
+        ...placementContext
       }: ClassifyOverworldTileContext) {
         if (!canPlaceLandPoi(nearLand, tile.kind)) {
           return null;
@@ -61,10 +67,19 @@ export function createSignTilePlugin() {
             Math.hypot(x - left.x, y - left.y) -
             Math.hypot(x - right.x, y - right.y)
         )[0];
+        const nearestPoi = [...(placementContext.poiAnchors ?? [])].sort(
+          (left, right) =>
+            Math.hypot(x - left.x, y - left.y) -
+            Math.hypot(x - right.x, y - right.y)
+        )[0];
         const closeToTown =
           nearestTown &&
           Math.hypot(x - nearestTown.x, y - nearestTown.y) < SIGN_TOWN_BUFFER;
-        const roadProfile = getRoadsideSignProfile({
+        const closeToPoi =
+          nearestPoi &&
+          Math.hypot(x - nearestPoi.x, y - nearestPoi.y) <=
+            LONG_ROAD_POI_DISTANCE;
+        const roadProfile = createRoadsideRouteProfile({
           x,
           y,
           townAnchors,
@@ -78,32 +93,47 @@ export function createSignTilePlugin() {
 
         const threshold = roadProfile.atJunction
           ? JUNCTION_SIGN_THRESHOLD
+          : roadProfile.routeSpan >= LONG_ROAD_MIN_SPAN && closeToPoi
+            ? LONG_ROAD_SIGN_THRESHOLD
           : ROADSIDE_SIGN_THRESHOLD;
-        const chance = signChance ?? 0;
+        const chance = resolvePlacementChance(
+          {
+            x,
+            y,
+            tile,
+            nearLand,
+            townAnchors,
+            bridgeAnchors,
+            sampleTerrainSignals,
+            ...placementContext,
+          } as ClassifyOverworldTileContext,
+          'sign'
+        );
 
         if (roadProfile.adjacentRoadCount === 0 || chance <= threshold) {
           return null;
         }
 
-        if (!roadProfile.atJunction && !closeToTown) {
+        if (!roadProfile.atJunction && !closeToTown && !closeToPoi) {
           return null;
         }
 
         return {
           kind: 'sign',
-          note: nearestTown
-            ? `A sign points travelers toward ${nearestTown.name ?? 'a nearby town'}.`
+          note: nearestPoi?.name
+            ? `A sign points travelers toward ${nearestPoi.name}.`
+            : nearestTown
+              ? `A sign points travelers toward ${nearestTown.name ?? 'a nearby town'}.`
             : 'A weathered sign points farther down the road.',
         };
       },
-      paint2D({ context, x, y, motif, fillRect }: Paint2DContext) {
-        paintPlainsBackdrop({ context, x, y, motif, fillRect });
+      paint2D: createPlainsBackedTilePainter(({ context, x, y, motif, fillRect }) => {
         const postX = 6 + motif.int(0, 2);
         fillRect(context, x + postX, y + 5, 2, 7, '#5b3716');
         fillRect(context, x + postX - 3, y + 3, 8, 4, '#f3c266');
         fillRect(context, x + postX - 2, y + 4, 6, 1, '#8a5a19');
         return true;
-      },
+      }),
       create3DModel({ three, state, tileX, tileY }: Create3DModelContext) {
         const style = getRegionalSignStyle(three, tileX, tileY);
         const group = new three.Group();
@@ -140,188 +170,6 @@ export function createSignTilePlugin() {
       },
     },
   ]);
-}
-
-function getRoadsideSignProfile({
-  x,
-  y,
-  townAnchors,
-  bridgeAnchors,
-  sampleTerrainSignals,
-}: Pick<
-  ClassifyOverworldTileContext,
-  'x' | 'y' | 'townAnchors' | 'bridgeAnchors' | 'sampleTerrainSignals'
->) {
-  const cardinalRoads = [
-    predictRoadPresence(
-      x,
-      y - 1,
-      townAnchors,
-      bridgeAnchors,
-      sampleTerrainSignals
-    ),
-    predictRoadPresence(
-      x + 1,
-      y,
-      townAnchors,
-      bridgeAnchors,
-      sampleTerrainSignals
-    ),
-    predictRoadPresence(
-      x,
-      y + 1,
-      townAnchors,
-      bridgeAnchors,
-      sampleTerrainSignals
-    ),
-    predictRoadPresence(
-      x - 1,
-      y,
-      townAnchors,
-      bridgeAnchors,
-      sampleTerrainSignals
-    ),
-  ];
-  const north = cardinalRoads[0];
-  const east = cardinalRoads[1];
-  const south = cardinalRoads[2];
-  const west = cardinalRoads[3];
-  const adjacentRoadCount = cardinalRoads.filter(Boolean).length;
-  const touchesHorizontal = east || west;
-  const touchesVertical = north || south;
-  return {
-    onRoute: predictRoadPresence(
-      x,
-      y,
-      townAnchors,
-      bridgeAnchors,
-      sampleTerrainSignals
-    ),
-    adjacentRoadCount,
-    atJunction: adjacentRoadCount >= 2 && touchesHorizontal && touchesVertical,
-  };
-}
-
-function predictRoadPresence(
-  x: number,
-  y: number,
-  townAnchors: ClassifyOverworldTileContext['townAnchors'],
-  bridgeAnchors: ClassifyOverworldTileContext['bridgeAnchors'],
-  sampleTerrainSignals?: ClassifyOverworldTileContext['sampleTerrainSignals']
-) {
-  if (isConnectedRoad(x, y, townAnchors, bridgeAnchors)) {
-    return true;
-  }
-
-  if (!sampleTerrainSignals) {
-    return false;
-  }
-
-  const roadSignal = sampleTerrainSignals(x, y).roadSignal;
-  if (roadSignal <= 0.9) {
-    return false;
-  }
-
-  const north = sampleTerrainSignals(x, y - 1).roadSignal;
-  const east = sampleTerrainSignals(x + 1, y).roadSignal;
-  const south = sampleTerrainSignals(x, y + 1).roadSignal;
-  const west = sampleTerrainSignals(x - 1, y).roadSignal;
-  const horizontalRidge =
-    roadSignal >= north && roadSignal >= south && roadSignal > 0.91;
-  const verticalRidge =
-    roadSignal >= east && roadSignal >= west && roadSignal > 0.91;
-  return horizontalRidge || verticalRidge;
-}
-
-function isConnectedRoad(
-  x: number,
-  y: number,
-  townAnchors: ClassifyOverworldTileContext['townAnchors'],
-  bridgeAnchors: ClassifyOverworldTileContext['bridgeAnchors']
-) {
-  const nearestTown = townAnchors
-    .map((anchor) => ({
-      anchor,
-      distance: Math.hypot(x - anchor.x, y - anchor.y),
-    }))
-    .sort((left, right) => left.distance - right.distance)[0];
-
-  if (
-    nearestTown &&
-    nearestTown.distance < 1.1 &&
-    (Math.abs(x - nearestTown.anchor.x) < 0.35 ||
-      Math.abs(y - nearestTown.anchor.y) < 0.35)
-  ) {
-    return true;
-  }
-
-  for (let index = 0; index < townAnchors.length; index += 1) {
-    for (let next = index + 1; next < townAnchors.length; next += 1) {
-      const a = townAnchors[index];
-      const b = townAnchors[next];
-      if (Math.hypot(a.x - b.x, a.y - b.y) > 28) {
-        continue;
-      }
-      if (distanceToLineSegment(x, y, a.x, a.y, b.x, b.y) < 0.42) {
-        return true;
-      }
-    }
-  }
-
-  if (nearestTown) {
-    const nearestBridge = bridgeAnchors
-      .map((anchor) => ({
-        anchor,
-        distance: Math.hypot(
-          nearestTown.anchor.x - anchor.x,
-          nearestTown.anchor.y - anchor.y
-        ),
-      }))
-      .sort((left, right) => left.distance - right.distance)[0];
-
-    if (
-      nearestBridge &&
-      nearestBridge.distance <= 16 &&
-      distanceToLineSegment(
-        x,
-        y,
-        nearestTown.anchor.x,
-        nearestTown.anchor.y,
-        nearestBridge.anchor.x,
-        nearestBridge.anchor.y
-      ) < 0.38
-    ) {
-      return true;
-    }
-  }
-
-  return bridgeAnchors.some(
-    (bridge) => Math.hypot(x - bridge.x, y - bridge.y) < 0.8
-  );
-}
-
-function distanceToLineSegment(
-  px: number,
-  py: number,
-  ax: number,
-  ay: number,
-  bx: number,
-  by: number
-) {
-  const abx = bx - ax;
-  const aby = by - ay;
-  const apx = px - ax;
-  const apy = py - ay;
-  const lengthSquared = abx * abx + aby * aby;
-
-  if (lengthSquared === 0) {
-    return Math.hypot(px - ax, py - ay);
-  }
-
-  const t = Math.min(1, Math.max(0, (apx * abx + apy * aby) / lengthSquared));
-  const nearestX = ax + abx * t;
-  const nearestY = ay + aby * t;
-  return Math.hypot(px - nearestX, py - nearestY);
 }
 
 function createSignPost(

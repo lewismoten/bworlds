@@ -6,10 +6,17 @@ import type {
   PluginPackDefinitionLike,
   PluginPackLike,
   PluginPackManifestLike,
-  RuntimePlugin,
   TileDefinitionLike,
 } from '@bworlds/plugin-api';
-import { definePluginPack, withPluginOrder } from '@bworlds/plugin-api';
+import {
+  createFallbackTileDefinition,
+  createPluginPack,
+  definePluginPack,
+  instantiateOrderedPlugins,
+  listTileDefinitionsFromPlugins,
+  resolveTileDefinitionFromPlugins,
+  withDefaultTileKind,
+} from '@bworlds/plugin-api';
 import { createDepthFlavorRuntimePlugin } from '@bworlds/runtime-depth-flavor';
 import { createOverworldAnchorsRuntimePlugin } from '@bworlds/runtime-overworld-anchors';
 import { createStartRegionRuntimePlugin } from '@bworlds/runtime-start-region';
@@ -26,97 +33,123 @@ import { createTownTilePlugin } from '@bworlds/tile-town';
 import { createWaterTilePlugin } from '@bworlds/tile-water';
 
 function createDefaultBaseTilePlugin() {
-  const plugin = createPlainsTilePlugin();
-  return {
-    ...plugin,
-    tiles:
-      plugin.tiles?.map((tile) =>
-        tile.kind === 'plains'
-          ? {
-              ...tile,
-              isDefaultTile: true,
-            }
-          : tile
-      ) ?? [],
-  };
+  return withDefaultTileKind(createPlainsTilePlugin(), 'plains');
 }
 
 export function createDefaultMapPlugins() {
-  return [
-    withPluginOrder(createTownMapPlugin(), { priority: 10 }),
-    withPluginOrder(createBuildingMapPlugin(), { priority: 20 }),
-    withPluginOrder(createDepthMapPlugin(), { priority: 30 }),
-    withPluginOrder(createOverworldCompositionPlugin(), { priority: 40 }),
-  ];
+  return instantiateOrderedPlugins([
+    {
+      create: createTownMapPlugin,
+      order: { priority: 10 },
+    },
+    {
+      create: createBuildingMapPlugin,
+      order: { priority: 20 },
+    },
+    {
+      create: createDepthMapPlugin,
+      order: { priority: 30 },
+    },
+    {
+      create: createOverworldCompositionPlugin,
+      order: { priority: 40 },
+    },
+  ]);
 }
 
 export function createDefaultRuntimePlugins() {
-  return [
-    withPluginOrder(createStartRegionRuntimePlugin(), { priority: 5 }),
-    withPluginOrder(createWayfindingRuntimePlugin(), { priority: 10 }),
-    withPluginOrder(createOverworldAnchorsRuntimePlugin(), {
-      priority: 15,
-      after: ['runtime-start-region'],
-    }),
-    withPluginOrder(createDepthFlavorRuntimePlugin(), {
-      priority: 20,
-      after: ['runtime-wayfinding', 'runtime-overworld-anchors'],
-    }),
-  ];
+  return instantiateOrderedPlugins([
+    {
+      create: createStartRegionRuntimePlugin,
+      order: { priority: 5 },
+    },
+    {
+      create: createWayfindingRuntimePlugin,
+      order: { priority: 10 },
+    },
+    {
+      create: createOverworldAnchorsRuntimePlugin,
+      order: {
+        priority: 15,
+        after: ['runtime-start-region'],
+      },
+    },
+    {
+      create: createDepthFlavorRuntimePlugin,
+      order: {
+        priority: 20,
+        after: ['runtime-wayfinding', 'runtime-overworld-anchors'],
+      },
+    },
+  ]);
 }
 
 export function createDefaultTilePlugins() {
-  return [
-    withPluginOrder(createInteriorTilePlugin(), { priority: 5 }),
-    withPluginOrder(createDefaultBaseTilePlugin(), { priority: 8 }),
-    withPluginOrder(createWaterTilePlugin(), { priority: 10 }),
-    withPluginOrder(createMountainTilePlugin(), { priority: 20 }),
-    withPluginOrder(createForestTilePlugin(), { priority: 30 }),
-    withPluginOrder(createCaveTilePlugin(), { priority: 40 }),
-    withPluginOrder(createDungeonTilePlugin(), { priority: 50 }),
-    withPluginOrder(createSignTilePlugin(), { priority: 60 }),
-    withPluginOrder(createTownTilePlugin(), { priority: 70 }),
-    withPluginOrder(createRouteTilePlugin(), {
-      priority: 80,
-      after: ['tile-sign', 'tile-town', 'tile-cave', 'tile-dungeon'],
-    }),
-  ];
+  return instantiateOrderedPlugins([
+    {
+      create: createInteriorTilePlugin,
+      order: { priority: 5 },
+    },
+    {
+      create: createDefaultBaseTilePlugin,
+      order: { priority: 8 },
+    },
+    {
+      create: createWaterTilePlugin,
+      order: { priority: 10 },
+    },
+    {
+      create: createMountainTilePlugin,
+      order: { priority: 20 },
+    },
+    {
+      create: createForestTilePlugin,
+      order: { priority: 30 },
+    },
+    {
+      create: createCaveTilePlugin,
+      order: { priority: 40 },
+    },
+    {
+      create: createDungeonTilePlugin,
+      order: { priority: 50 },
+    },
+    {
+      create: createSignTilePlugin,
+      order: { priority: 60 },
+    },
+    {
+      create: createTownTilePlugin,
+      order: { priority: 70 },
+    },
+    {
+      create: createRouteTilePlugin,
+      order: {
+        priority: 80,
+        after: ['tile-sign', 'tile-town', 'tile-cave', 'tile-dungeon'],
+      },
+    },
+  ]);
 }
 
 export function listDefaultTileDefinitions(): Array<[string, TileDefinitionLike]> {
-  return createDefaultTilePlugins()
-    .flatMap((plugin) => plugin.tiles ?? [])
-    .flatMap((tile) => (tile.definition ? [[tile.kind, tile.definition] as const] : []));
+  return listTileDefinitionsFromPlugins(createDefaultTilePlugins());
 }
 
 export function getDefaultTileDefinition(kind: string): TileDefinitionLike {
-  const tiles = createDefaultTilePlugins().flatMap((plugin) => plugin.tiles ?? []);
-  const definitions = new Map(
-    tiles.flatMap((tile) =>
-      tile.definition ? [[tile.kind, tile.definition] as const] : []
-    )
-  );
-  const defaultTileDefinition =
-    tiles.find((tile) => tile.isDefaultTile)?.definition ?? null;
-  return (
-    definitions.get(kind) ??
-    defaultTileDefinition ?? {
-      name: 'Unknown Tile',
-      color: '#64748b',
-      miniColor: '#94a3b8',
-      walkable: true,
-      wallHeight: 0,
-    }
+  return resolveTileDefinitionFromPlugins(
+    createDefaultTilePlugins(),
+    kind,
+    createFallbackTileDefinition(kind)
   );
 }
 
 export function createDefaultContentPack(): PluginPackLike {
-  return {
-    name: 'default-content-pack',
+  return createPluginPack('default-content-pack', {
     mapPlugins: createDefaultMapPlugins(),
     runtimePlugins: createDefaultRuntimePlugins(),
     tilePlugins: createDefaultTilePlugins(),
-  };
+  });
 }
 
 export const defaultContentPackManifest: PluginPackManifestLike = {

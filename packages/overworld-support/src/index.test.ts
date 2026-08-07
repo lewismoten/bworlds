@@ -1,7 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import {
+  collectNearbyOverworldPoiAnchors,
   composeOverworldTileFromPlugins,
+  createCachedOverworldTileResolver,
+  createOverworldAnchorResolver,
   createOverworldGenerationContext,
+  createGeneratedNamedOverworldCellAnchorSpec,
+  createGeneratedPoiOverworldCellAnchorSpec,
+  getOverworldPlacementChance,
   createOverworldTerrainSignalSampler,
   isNearOverworldLand,
 } from './index.ts';
@@ -13,6 +19,29 @@ describe('overworld support', () => {
 
     expect(sampleA(12, -9)).toEqual(sampleB(12, -9));
     expect(sampleA(12, -9)).not.toEqual(sampleA(13, -9));
+  });
+
+  it('creates cached overworld tile resolvers for curated runtime overlays', () => {
+    let calls = 0;
+    const resolveTile = createCachedOverworldTileResolver(({ seed, x, y }) => {
+      calls += 1;
+      return {
+        kind: 'plains',
+        note: `${seed}:${x}:${y}`,
+      };
+    });
+
+    const first = resolveTile({ seed: 'spec', x: 2, y: 3 });
+    const second = resolveTile({ seed: 'spec', x: 2, y: 3 });
+    const third = resolveTile({ seed: 'spec', x: 2, y: 4 });
+
+    expect(first).toEqual(second);
+    expect(third).toEqual(
+      expect.objectContaining({
+        note: 'spec:2:4',
+      })
+    );
+    expect(calls).toBe(2);
   });
 
   it('exposes the shared near-land heuristic', () => {
@@ -61,6 +90,166 @@ describe('overworld support', () => {
     );
     expect(typeof context.townChance).toBe('number');
     expect(typeof context.signChance).toBe('number');
+    expect(context.placementChances?.town).toBe(
+      getOverworldPlacementChance('spec-seed', 'town', 8, -3)
+    );
+    expect(context.getPlacementChance?.('ruins')).toBe(
+      getOverworldPlacementChance('spec-seed', 'ruins', 8, -3)
+    );
+  });
+
+  it('creates generated named overworld anchor specs with deterministic names', () => {
+    const spec = createGeneratedNamedOverworldCellAnchorSpec({
+      id: 'town',
+      nameType: 'town',
+      cellSize: 20,
+      chanceKey: 'town-anchor',
+      offsetXKey: 'town-anchor-x',
+      offsetYKey: 'town-anchor-y',
+      threshold: 0.5,
+      isSuitableTerrain() {
+        return true;
+      },
+    });
+
+    const anchor = spec.createAnchor({
+      seed: 'spec-seed',
+      x: 12,
+      y: -4,
+      chance: 0.9,
+      cellX: 0,
+      cellY: 0,
+    });
+
+    expect(anchor).toEqual(
+      expect.objectContaining({
+        x: 12,
+        y: -4,
+        name: expect.any(String),
+      })
+    );
+  });
+
+  it('collects nearby poi anchors from shared grouped specs and caches', () => {
+    const sampleTerrainSignals = () => ({
+      continent: 0.6,
+      elevation: 0.4,
+      moisture: 0.4,
+      riverSignal: 0.2,
+      roadSignal: 0.3,
+    });
+    const specs = {
+      cave: createGeneratedPoiOverworldCellAnchorSpec({
+        id: 'cave',
+        poiType: 'cave',
+        cellSize: 18,
+        chanceKey: 'cave-anchor',
+        offsetXKey: 'cave-anchor-x',
+        offsetYKey: 'cave-anchor-y',
+        threshold: 0.1,
+        isSuitableTerrain() {
+          return true;
+        },
+      }),
+      dungeon: createGeneratedPoiOverworldCellAnchorSpec({
+        id: 'dungeon',
+        poiType: 'dungeon',
+        cellSize: 22,
+        chanceKey: 'dungeon-anchor',
+        offsetXKey: 'dungeon-anchor-x',
+        offsetYKey: 'dungeon-anchor-y',
+        threshold: 0.1,
+        isSuitableTerrain() {
+          return true;
+        },
+      }),
+    } as const;
+
+    const anchors = collectNearbyOverworldPoiAnchors({
+      seed: 'spec-seed',
+      x: 0,
+      y: 0,
+      specs,
+      caches: {
+        cave: new Map(),
+        dungeon: new Map(),
+      },
+      sampleTerrainSignals,
+      minSpacing: 0,
+      blockingAnchors: [],
+      baseAnchors: [],
+    });
+
+    expect(anchors.length).toBeGreaterThan(0);
+    expect(anchors.some((anchor) => anchor.type === 'cave')).toBe(true);
+    expect(anchors.some((anchor) => anchor.type === 'dungeon')).toBe(true);
+  });
+
+  it('creates reusable grouped overworld anchor resolvers with internal caches', () => {
+    const sampleTerrainSignals = () => ({
+      continent: 0.6,
+      elevation: 0.4,
+      moisture: 0.4,
+      riverSignal: 0.2,
+      roadSignal: 0.3,
+    });
+    const resolver = createOverworldAnchorResolver({
+      town: {
+        spec: createGeneratedNamedOverworldCellAnchorSpec({
+          id: 'town',
+          nameType: 'town',
+          cellSize: 20,
+          chanceKey: 'town-anchor',
+          offsetXKey: 'town-anchor-x',
+          offsetYKey: 'town-anchor-y',
+          threshold: 0.1,
+          isSuitableTerrain() {
+            return true;
+          },
+        }),
+      },
+      poi: {
+        specs: {
+          cave: createGeneratedPoiOverworldCellAnchorSpec({
+            id: 'cave',
+            poiType: 'cave',
+            cellSize: 18,
+            chanceKey: 'cave-anchor',
+            offsetXKey: 'cave-anchor-x',
+            offsetYKey: 'cave-anchor-y',
+            threshold: 0.1,
+            isSuitableTerrain() {
+              return true;
+            },
+          }),
+        },
+        minSpacing: 0,
+        baseAnchors({ townAnchors }) {
+          return townAnchors.map((anchor) => ({
+            ...anchor,
+            type: 'town',
+          }));
+        },
+      },
+    });
+
+    const first = resolver({
+      seed: 'spec-seed',
+      x: 0,
+      y: 0,
+      sampleTerrainSignals,
+    } as any);
+    const second = resolver({
+      seed: 'spec-seed',
+      x: 0,
+      y: 0,
+      sampleTerrainSignals,
+    } as any);
+
+    expect(first).toEqual(second);
+    expect(first.townAnchors.length).toBeGreaterThan(0);
+    expect(first.poiAnchors.some((anchor) => anchor.type === 'town')).toBe(true);
+    expect(first.poiAnchors.some((anchor) => anchor.type === 'cave')).toBe(true);
   });
 
   it('composes overworld tiles through the shared plugin pipeline', () => {

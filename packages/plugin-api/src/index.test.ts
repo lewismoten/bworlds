@@ -1,15 +1,24 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+import type { TilePlugin } from './types';
 import {
+  createFallbackTileDefinition,
   createPluginPackCatalog,
+  createPluginPack,
   createPluginRegistryFromPackDefinitions,
   createRuntimePlugin,
+  createSingleTilePlugin,
   createTilePlugin,
   dedupePluginPackIds,
   definePluginPack,
+  instantiateOrderedPlugins,
+  listTileDefinitionsFromPlugins,
   listPluginPackManifests,
   PluginRegistry,
+  resolveTileDefinitionFromPlugins,
   resolvePluginPackDefinition,
   selectPluginPackManifests,
+  withDefaultTileKind,
+  withOverworldTileClassifier,
   withPluginOrder,
 } from './index.ts';
 
@@ -113,6 +122,127 @@ describe('plugin registry', () => {
         name: 'Ashlands',
       })
     );
+  });
+
+  it('provides shared tile-definition helpers for plugin bootstrap code', () => {
+    const basePlugin = withDefaultTileKind(
+      createTilePlugin('tile-ashlands', [
+        {
+          kind: 'ashlands',
+          definition: {
+            name: 'Ashlands',
+            color: '#5b5560',
+            miniColor: '#7a737f',
+            walkable: true,
+            wallHeight: 0,
+          },
+        },
+      ]),
+      'ashlands'
+    );
+    const overlayPlugin = createTilePlugin('tile-ruins', [
+      {
+        kind: 'ruins',
+        definition: {
+          name: 'Ruins',
+          color: '#8b8173',
+          miniColor: '#b3ab9f',
+          walkable: true,
+          wallHeight: 0.35,
+        },
+      },
+    ]);
+
+    expect(listTileDefinitionsFromPlugins([basePlugin, overlayPlugin])).toContainEqual([
+      'ashlands',
+      expect.objectContaining({ name: 'Ashlands' }),
+    ]);
+    expect(
+      resolveTileDefinitionFromPlugins([basePlugin, overlayPlugin], 'ruins')
+    ).toEqual(expect.objectContaining({ name: 'Ruins' }));
+    expect(
+      resolveTileDefinitionFromPlugins(
+        [basePlugin],
+        'missing-kind',
+        createFallbackTileDefinition('missing-kind')
+      )
+    ).toEqual(expect.objectContaining({ name: 'Ashlands' }));
+  });
+
+  it('provides a shared overworld classifier wrapper for tile entries', () => {
+    const classifyOverworldTile = vi.fn(() => ({
+      kind: 'ruins',
+      note: 'Ancient stones rise from the field.',
+    }));
+    const tile = withOverworldTileClassifier<TilePlugin>(
+      {
+        kind: 'ruins',
+        definition: {
+          name: 'Ruins',
+          color: '#8b8173',
+          miniColor: '#b3ab9f',
+          walkable: true,
+          wallHeight: 0.35,
+        },
+      },
+      classifyOverworldTile
+    );
+    const payload = {
+      seed: 'spec',
+      x: 3,
+      y: 4,
+      tile: { kind: 'plains' },
+      nearLand: true,
+      signals: {
+        continent: 0.6,
+        elevation: 0.45,
+        moisture: 0.4,
+        riverSignal: 0.2,
+        roadSignal: 0.3,
+      },
+      townAnchors: [],
+      bridgeAnchors: [],
+    };
+
+    expect(tile.classifyOverworldTile?.(payload as any)).toEqual({
+      kind: 'ruins',
+      note: 'Ancient stones rise from the field.',
+    });
+    expect(classifyOverworldTile).toHaveBeenCalledWith(payload);
+  });
+
+  it('merges runtime-provided world environment settings through the registry', () => {
+    const registry = new PluginRegistry();
+    registry.register({
+      name: 'runtime-sky',
+      resolveWorldEnvironment() {
+        return {
+          cycle: { dayLengthMs: 300000 },
+          sky: { dayColor: '#abcdef' },
+        };
+      },
+    });
+    registry.register({
+      name: 'runtime-light',
+      resolveWorldEnvironment() {
+        return {
+          lighting: { sunColor: '#fedcba', shadowStrength: 0.8 },
+          stars: { density: 1.4 },
+        };
+      },
+    });
+
+    expect(
+      registry.resolveWorldEnvironment({
+        state: {} as any,
+        timeMs: 1000,
+      })
+    ).toEqual({
+      cycle: { dayLengthMs: 300000 },
+      sky: { dayColor: '#abcdef' },
+      lighting: { sunColor: '#fedcba', shadowStrength: 0.8 },
+      stars: { density: 1.4 },
+    });
   });
 
   it('resolves tile definitions and merged definition catalogs through the registry', () => {
@@ -341,8 +471,43 @@ describe('plugin registry', () => {
       priority: 30,
       before: ['runtime-late'],
     });
+    expect(
+      createPluginPack('custom-pack', {
+        runtimePlugins: [plugin],
+      })
+    ).toEqual({
+      name: 'custom-pack',
+      runtimePlugins: [plugin],
+    });
     expect(pack.manifest.id).toBe('custom-pack');
     expect(pack.createPack().runtimePlugins?.[0].name).toBe('runtime-custom');
+  });
+
+  it('instantiates ordered plugin specs for content-pack groups', () => {
+    const plugins = instantiateOrderedPlugins([
+      {
+        create: () => createRuntimePlugin('runtime-base'),
+        order: { priority: 10 },
+      },
+      {
+        create: () => createRuntimePlugin('runtime-overlay'),
+        order: { priority: 20, after: ['runtime-base'] },
+      },
+      {
+        create: () => createRuntimePlugin('runtime-freeform'),
+      },
+    ]);
+
+    expect(plugins.map((plugin) => plugin.name)).toEqual([
+      'runtime-base',
+      'runtime-overlay',
+      'runtime-freeform',
+    ]);
+    expect(plugins[1]?.order).toEqual({
+      priority: 20,
+      after: ['runtime-base'],
+    });
+    expect(plugins[2]?.order).toBeUndefined();
   });
 
   it('provides a shared helper for tile-plugin authoring', () => {
@@ -364,6 +529,28 @@ describe('plugin registry', () => {
       tiles: [
         {
           kind: 'customTile',
+        },
+      ],
+    });
+  });
+
+  it('provides a shared helper for single-tile plugin authoring', () => {
+    const plugin = createSingleTilePlugin('tile-plains', {
+      kind: 'plains',
+      definition: {
+        name: 'Plains',
+        color: '#7fb069',
+        miniColor: '#95c779',
+        walkable: true,
+        wallHeight: 0,
+      },
+    });
+
+    expect(plugin).toMatchObject({
+      name: 'tile-plains',
+      tiles: [
+        {
+          kind: 'plains',
         },
       ],
     });

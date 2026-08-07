@@ -98,6 +98,40 @@ export interface RuntimePlayerLike extends Point {
   facing: FacingAngle;
 }
 
+export interface WorldEnvironmentCycleLike {
+  dayLengthMs?: number;
+  offsetMs?: number;
+}
+
+export interface WorldEnvironmentSkyLike {
+  dayColor?: Color;
+  sunsetColor?: Color;
+  nightColor?: Color;
+  fogDayColor?: Color;
+  fogNightColor?: Color;
+}
+
+export interface WorldEnvironmentLightingLike {
+  sunColor?: Color;
+  moonColor?: Color;
+  ambientDayColor?: Color;
+  ambientNightColor?: Color;
+  groundDayColor?: Color;
+  groundNightColor?: Color;
+  shadowStrength?: number;
+}
+
+export interface WorldEnvironmentStarsLike {
+  density?: number;
+}
+
+export interface WorldEnvironmentLike {
+  cycle?: WorldEnvironmentCycleLike;
+  sky?: WorldEnvironmentSkyLike;
+  lighting?: WorldEnvironmentLightingLike;
+  stars?: WorldEnvironmentStarsLike;
+}
+
 export interface WorldStateLike {
   player: RuntimePlayerLike;
   viewMode?: ViewMode;
@@ -129,6 +163,8 @@ export interface ClassifyOverworldTileContext extends SeededPoint {
   caveChance?: number;
   dungeonChance?: number;
   signChance?: number;
+  placementChances?: Record<string, number>;
+  getPlacementChance?(chanceKey: string): number;
   signals: OverworldSignals;
   sampleTerrainSignals?: (x: number, y: number) => OverworldSignals;
   townAnchors: OverworldAnchorLike[];
@@ -221,6 +257,10 @@ export interface TraversalProfile3D {
 }
 
 export interface ResolveFloorKind3DContext extends TileCoordinate {}
+export interface ResolveWorldEnvironmentContext {
+  state: WorldStateLike;
+  timeMs?: number;
+}
 
 interface DecoratedSeedTile extends SeededPoint {
   tile: TileLike;
@@ -294,6 +334,9 @@ export interface PluginRegistryLike {
   ): void | TraversalProfile3D;
   paint2DOverlay(payload: Paint2DOverlayContext): boolean | void;
   resolveFloorKind3D(payload: ResolveFloorKind3DContext): void | Kind;
+  resolveWorldEnvironment(
+    payload: ResolveWorldEnvironmentContext
+  ): WorldEnvironmentLike;
   createWorldAction(payload: CreateWorldActionContext): void | WorldActionLike;
   decorateOverworldTile(payload: DecorateOverworldTileContext): TileLike;
   decorateTownTile(payload: DecorateTownTileContext): TileLike;
@@ -349,6 +392,11 @@ interface OrderPriority {
   before?: string[];
 }
 
+export interface OrderedPluginFactoryLike<TPlugin extends RuntimePlugin = RuntimePlugin> {
+  create(): TPlugin;
+  order?: OrderPriority;
+}
+
 export interface RuntimePlugin {
   name: PluginName;
   order?: OrderPriority;
@@ -360,6 +408,9 @@ export interface RuntimePlugin {
   resolveOverworldAnchors?: (
     context: ResolveOverworldAnchorsContext
   ) => OverworldAnchorSet | null | void;
+  resolveWorldEnvironment?: (
+    context: ResolveWorldEnvironmentContext
+  ) => WorldEnvironmentLike | null | void;
   decorateOverworldTile?: (context: DecorateOverworldTileContext) => void;
   decorateTownTile?: (context: DecorateTownTileContext) => void;
   decorateBuildingTile?: (context: DecorateBuildingTileContext) => void;

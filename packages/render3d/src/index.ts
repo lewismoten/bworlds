@@ -6,7 +6,13 @@ import {
   getTileVariantIndex,
 } from '@bworlds/atlas';
 import {
+  getDaylightCycleState,
+  hash2D,
+} from '@bworlds/core';
+import { isWaterKind } from '@bworlds/tile-support';
+import {
   getActivePluginRegistry,
+  type WorldEnvironmentLike,
   type SurfaceBoundaryRole3D,
 } from '@bworlds/plugin-api';
 
@@ -15,6 +21,13 @@ const CHUNK_RADIUS = 18;
 const FLOOR_THICKNESS = 0.03;
 const WATER_FLOOR_THICKNESS = 0.28;
 const RIVER_WALL_THICKNESS = 0.05;
+const SKY_RADIUS = 58;
+const SHADOW_CAMERA_RADIUS = 18;
+const SKY_DAY_COLOR = '#9ed8ff';
+const SKY_SUNSET_COLOR = '#f08b64';
+const SKY_NIGHT_COLOR = '#06111f';
+const FOG_DAY_COLOR = '#9ed8ff';
+const FOG_NIGHT_COLOR = '#0a1524';
 const FALLBACK_TILE_DEFINITION = {
   name: 'Unknown Tile',
   color: '#64748b',
@@ -31,11 +44,13 @@ export function create3DRenderer(host) {
   });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   host.appendChild(renderer.domElement);
 
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color('#9ed8ff');
-  scene.fog = new THREE.Fog('#9ed8ff', 12, 34);
+  scene.background = new THREE.Color(SKY_DAY_COLOR);
+  scene.fog = new THREE.Fog(FOG_DAY_COLOR, 12, 34);
 
   const camera = new THREE.PerspectiveCamera(68, 16 / 9, 0.1, 120);
   camera.rotation.order = 'YXZ';
@@ -44,8 +59,34 @@ export function create3DRenderer(host) {
   scene.add(ambientLight);
 
   const sunLight = new THREE.DirectionalLight('#fff3cf', 1.6);
-  sunLight.position.set(8, 14, 6);
+  sunLight.castShadow = true;
+  sunLight.shadow.mapSize.set(1024, 1024);
+  sunLight.shadow.bias = -0.00018;
+  sunLight.shadow.camera.near = 1;
+  sunLight.shadow.camera.far = 50;
+  sunLight.shadow.camera.left = -SHADOW_CAMERA_RADIUS;
+  sunLight.shadow.camera.right = SHADOW_CAMERA_RADIUS;
+  sunLight.shadow.camera.top = SHADOW_CAMERA_RADIUS;
+  sunLight.shadow.camera.bottom = -SHADOW_CAMERA_RADIUS;
   scene.add(sunLight);
+  const sunTarget = new THREE.Object3D();
+  scene.add(sunTarget);
+  sunLight.target = sunTarget;
+
+  const moonLight = new THREE.DirectionalLight('#9ec5ff', 0.16);
+  scene.add(moonLight);
+  const moonTarget = new THREE.Object3D();
+  scene.add(moonTarget);
+  moonLight.target = moonTarget;
+
+  const skyRoot = new THREE.Group();
+  scene.add(skyRoot);
+
+  const stars = createStarField();
+  skyRoot.add(stars);
+
+  const moonSprite = createMoonSprite();
+  skyRoot.add(moonSprite);
 
   const worldRoot = new THREE.Group();
   scene.add(worldRoot);
@@ -58,6 +99,12 @@ export function create3DRenderer(host) {
 
   const materialCache = new Map();
   const visibleTileNodes = new Map();
+  const backgroundColor = new THREE.Color(SKY_DAY_COLOR);
+  const twilightColor = new THREE.Color(SKY_SUNSET_COLOR);
+  const nightColor = new THREE.Color(SKY_NIGHT_COLOR);
+  const fogDayColor = new THREE.Color(FOG_DAY_COLOR);
+  const fogNightColor = new THREE.Color(FOG_NIGHT_COLOR);
+  let lastMoonPhaseIndex = -1;
   let lastCenterKey = '';
   let lastContextKey = '';
 
@@ -99,8 +146,12 @@ export function create3DRenderer(host) {
     });
 
     if (pluginModel) {
+      applyShadowSettings(pluginModel, {
+        castShadow: true,
+        receiveShadow: true,
+      });
       tileNode.add(pluginModel);
-    } else if (tile.kind !== 'ocean' && definition.wallHeight > 0.08) {
+    } else if (!isWaterKind(tile.kind) && definition.wallHeight > 0.08) {
       const wallHeight = Math.max(definition.wallHeight * 1.9, 0.18);
       const wallMesh = new THREE.Mesh(
         new THREE.BoxGeometry(TILE_SIZE, wallHeight, TILE_SIZE),
@@ -111,6 +162,8 @@ export function create3DRenderer(host) {
         surfaceHeight + wallHeight * 0.5,
         y * TILE_SIZE
       );
+      wallMesh.castShadow = true;
+      wallMesh.receiveShadow = true;
       tileNode.add(wallMesh);
     }
 
@@ -156,6 +209,8 @@ export function create3DRenderer(host) {
     state,
     options: {
       jumpHeight?: number;
+      timeMs?: number;
+      environment?: WorldEnvironmentLike;
     } = {}
   ) {
     const centerKey = `${Math.round(state.player.x)}:${Math.round(state.player.y)}`;
@@ -175,12 +230,11 @@ export function create3DRenderer(host) {
     camera.rotation.y = -state.player.facing - Math.PI / 2;
     camera.rotation.x = -0.08;
 
-    const dirX = Math.cos(state.player.facing);
-    const dirZ = Math.sin(state.player.facing);
-    sunLight.position.set(
-      state.player.x * TILE_SIZE - dirX * 6,
-      14,
-      state.player.y * TILE_SIZE - dirZ * 6
+    updateSkyAndLights(
+      state.player.x * TILE_SIZE,
+      state.player.y * TILE_SIZE,
+      options.timeMs ?? performance.now(),
+      options.environment ?? {}
     );
     renderer.render(scene, camera);
   }
@@ -292,7 +346,7 @@ export function create3DRenderer(host) {
     });
 
     if (!riverNeighbors || riverNeighbors.count === 0) {
-      if (floorKind === 'ocean' || floorKind === 'river') {
+      if (isWaterKind(floorKind)) {
         return createWaterFloorMesh(
           state,
           tileX,
@@ -302,7 +356,7 @@ export function create3DRenderer(host) {
         );
       }
       const floorThickness =
-        floorKind === 'ocean' || floorKind === 'river'
+        isWaterKind(floorKind)
           ? WATER_FLOOR_THICKNESS
           : FLOOR_THICKNESS;
       const floorMesh = new THREE.Mesh(
@@ -314,6 +368,7 @@ export function create3DRenderer(host) {
         surfaceHeight - floorThickness * 0.5,
         tileY * TILE_SIZE
       );
+      floorMesh.receiveShadow = true;
       return floorMesh;
     }
 
@@ -367,7 +422,9 @@ export function create3DRenderer(host) {
     topGeometry.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
     topGeometry.setIndex([0, 2, 1, 2, 3, 1]);
     topGeometry.computeVertexNormals();
-    group.add(new THREE.Mesh(topGeometry, material));
+    const topMesh = new THREE.Mesh(topGeometry, material);
+    topMesh.receiveShadow = true;
+    group.add(topMesh);
 
     const northWallHeight = getBoundaryWallHeight(
       surfaceHeight,
@@ -427,7 +484,7 @@ export function create3DRenderer(host) {
   }
 
   function createUnderlayFloor(tileX, tileY, kind, surfaceHeight) {
-    if (kind === 'ocean' || kind === 'river') {
+    if (isWaterKind(kind)) {
       return createWaterFloorMesh(
         null,
         tileX,
@@ -437,7 +494,7 @@ export function create3DRenderer(host) {
       );
     }
     const floorThickness =
-      kind === 'ocean' || kind === 'river'
+      isWaterKind(kind)
         ? WATER_FLOOR_THICKNESS
         : FLOOR_THICKNESS;
     const floorMesh = new THREE.Mesh(
@@ -449,6 +506,7 @@ export function create3DRenderer(host) {
       surfaceHeight - floorThickness * 0.5,
       tileY * TILE_SIZE
     );
+    floorMesh.receiveShadow = true;
     return floorMesh;
   }
 
@@ -469,6 +527,7 @@ export function create3DRenderer(host) {
     );
     surfaceMesh.rotation.x = -Math.PI / 2;
     surfaceMesh.position.y = surfaceHeight;
+    surfaceMesh.receiveShadow = true;
     group.add(surfaceMesh);
 
     const bodyMesh = new THREE.Mesh(
@@ -480,6 +539,7 @@ export function create3DRenderer(host) {
       surfaceHeight - WATER_FLOOR_THICKNESS * 0.5,
       centerZ
     );
+    bodyMesh.receiveShadow = true;
     group.add(bodyMesh);
 
     return group;
@@ -507,6 +567,8 @@ export function create3DRenderer(host) {
       mesh.position.set(-0.5, baseHeight + wallHeight * 0.5, 0);
     }
 
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
     group.add(mesh);
   }
 
@@ -542,16 +604,16 @@ export function create3DRenderer(host) {
   function shouldInsetWaterEdge(state, tileX, tileY, kind) {
     const neighborTile = state.getCurrentTile(tileX, tileY);
     const profile = getTileSurfaceProfile(state, neighborTile, tileX, tileY);
-    if (profile.underlayKind === 'ocean' || profile.underlayKind === 'river') {
+    if (profile.underlayKind && isWaterKind(profile.underlayKind)) {
       return false;
     }
     if (neighborTile.kind === 'bridge') {
       return false;
     }
     if (kind === 'ocean') {
-      return neighborTile.kind !== 'ocean' && neighborTile.kind !== 'river';
+      return !isWaterKind(neighborTile.kind);
     }
-    return neighborTile.kind !== 'river' && neighborTile.kind !== 'ocean';
+    return !isWaterKind(neighborTile.kind);
   }
 
   function getAdjacentBoundaryNeighbors(state, tileX, tileY, surfaceProfile) {
@@ -677,11 +739,199 @@ export function create3DRenderer(host) {
     return 2;
   }
 
+  function updateSkyAndLights(worldX, worldY, timeMs, environment) {
+    const cycle = getDaylightCycleState(timeMs, environment.cycle ?? {});
+    const dayBlend = cycle.daylight;
+    const twilightBlend = Math.max(0, 1 - Math.abs(cycle.daylight - 0.5) * 2);
+    const sky = environment.sky ?? {};
+    const lighting = environment.lighting ?? {};
+    const starDensity = environment.stars?.density ?? 1;
+    const daySkyColor = new THREE.Color(sky.dayColor ?? SKY_DAY_COLOR);
+    const sunsetSkyColor = new THREE.Color(sky.sunsetColor ?? SKY_SUNSET_COLOR);
+    const nightSkyColor = new THREE.Color(sky.nightColor ?? SKY_NIGHT_COLOR);
+    const dayFogColor = new THREE.Color(sky.fogDayColor ?? FOG_DAY_COLOR);
+    const nightFogColor = new THREE.Color(sky.fogNightColor ?? FOG_NIGHT_COLOR);
+
+    scene.background
+      .copy(nightSkyColor)
+      .lerp(sunsetSkyColor, cycle.twilight)
+      .lerp(daySkyColor, dayBlend);
+    scene.fog.color.copy(nightFogColor).lerp(dayFogColor, cycle.twilight);
+
+    ambientLight.intensity = 0.2 + cycle.twilight * 0.75 + dayBlend * 0.45;
+    ambientLight.color
+      .set(lighting.ambientNightColor ?? '#9fc4ff')
+      .lerp(new THREE.Color(lighting.ambientDayColor ?? '#eaf6ff'), dayBlend);
+    ambientLight.groundColor
+      .set(lighting.groundNightColor ?? '#101826')
+      .lerp(
+        new THREE.Color(lighting.groundDayColor ?? '#28442f'),
+        0.35 + dayBlend * 0.65
+      );
+
+    const sunHeight = Math.max(-0.2, cycle.sunAltitude);
+    const sunDistance = 18;
+    const sunOrbitX = Math.cos(cycle.sunAngle) * sunDistance;
+    const sunOrbitY = 5 + Math.max(0, sunHeight) * 18;
+    const sunOrbitZ = Math.sin(cycle.sunAngle) * sunDistance * 0.65;
+    sunLight.position.set(worldX - sunOrbitX, sunOrbitY, worldY - sunOrbitZ);
+    sunTarget.position.set(worldX, 0, worldY);
+    sunLight.intensity = dayBlend * 1.75 + twilightBlend * 0.25;
+    sunLight.color
+      .set('#ffb06e')
+      .lerp(
+        new THREE.Color(lighting.sunColor ?? '#fff3cf'),
+        Math.min(1, dayBlend + 0.2)
+      );
+
+    const shadowStrength = Math.max(0, cycle.daylight - 0.12);
+    sunLight.castShadow =
+      shadowStrength * (lighting.shadowStrength ?? 1) > 0.08;
+
+    const moonDistance = 22;
+    const moonOrbitX = Math.cos(cycle.moonAngle) * moonDistance;
+    const moonOrbitY = 6 + Math.max(0, cycle.moonAltitude) * 12;
+    const moonOrbitZ = Math.sin(cycle.moonAngle) * moonDistance * 0.7;
+    moonLight.position.set(worldX - moonOrbitX, moonOrbitY, worldY - moonOrbitZ);
+    moonTarget.position.set(worldX, 0, worldY);
+    moonLight.color.set(lighting.moonColor ?? '#9ec5ff');
+    moonLight.intensity = cycle.night * (0.1 + cycle.moonIllumination * 0.24);
+
+    skyRoot.position.set(worldX, 0, worldY);
+    stars.material.opacity = cycle.starsOpacity;
+    stars.visible = cycle.starsOpacity > 0.02;
+    stars.material.size = 0.18 * Math.max(0.6, Math.min(2, starDensity));
+
+    moonSprite.position.set(moonOrbitX * 1.7, 16 + Math.max(0, cycle.moonAltitude) * 14, moonOrbitZ * 1.7);
+    moonSprite.material.opacity =
+      Math.max(0, cycle.night * 0.85 + cycle.moonIllumination * 0.15);
+    moonSprite.visible = moonSprite.material.opacity > 0.03;
+
+    if (lastMoonPhaseIndex !== cycle.moonPhaseIndex) {
+      updateMoonPhaseTexture(
+        moonSprite.material.map,
+        cycle.moonPhaseIndex,
+        cycle.moonIllumination
+      );
+      moonSprite.material.map.needsUpdate = true;
+      lastMoonPhaseIndex = cycle.moonPhaseIndex;
+    }
+  }
+
   return {
     canOccupy,
     render,
     resize,
   };
+}
+
+function applyShadowSettings(node, options) {
+  node.traverse?.((child) => {
+    if (child && child.isMesh) {
+      child.castShadow = options.castShadow;
+      child.receiveShadow = options.receiveShadow;
+    }
+  });
+}
+
+function createStarField() {
+  const geometry = new THREE.BufferGeometry();
+  const positions = new Float32Array(720 * 3);
+
+  for (let index = 0; index < 720; index += 1) {
+    const theta = hash2D('star-theta', index, 0) * Math.PI * 2;
+    const phi = hash2D('star-phi', 0, index) * Math.PI * 0.55;
+    const radius = SKY_RADIUS + hash2D('star-radius', index, index) * 4;
+    const sinPhi = Math.sin(phi);
+    positions[index * 3] = Math.cos(theta) * sinPhi * radius;
+    positions[index * 3 + 1] = Math.cos(phi) * radius;
+    positions[index * 3 + 2] = Math.sin(theta) * sinPhi * radius;
+  }
+
+  geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  const material = new THREE.PointsMaterial({
+    color: '#eef6ff',
+    size: 0.18,
+    transparent: true,
+    opacity: 0,
+    depthWrite: false,
+    sizeAttenuation: true,
+  });
+  return new THREE.Points(geometry, material);
+}
+
+function createMoonSprite() {
+  const texture = new THREE.CanvasTexture(buildMoonPhaseCanvas(4, 1));
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.needsUpdate = true;
+  const material = new THREE.SpriteMaterial({
+    map: texture,
+    transparent: true,
+    depthWrite: false,
+    opacity: 0,
+    color: '#ffffff',
+  });
+  const sprite = new THREE.Sprite(material);
+  sprite.scale.set(3.2, 3.2, 1);
+  return sprite;
+}
+
+function updateMoonPhaseTexture(texture, phaseIndex, illumination) {
+  const canvas = texture.image;
+  const context = canvas.getContext('2d');
+  if (!context) {
+    return;
+  }
+  const phaseDirection = phaseIndex < 4 ? 1 : -1;
+  paintMoonPhaseCanvas(context, canvas, illumination, phaseDirection);
+}
+
+function buildMoonPhaseCanvas(phaseIndex, illumination) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 128;
+  canvas.height = 128;
+  const context = canvas.getContext('2d');
+  if (!context) {
+    throw new Error('Unable to create moon phase canvas.');
+  }
+  const phaseDirection = phaseIndex < 4 ? 1 : -1;
+  paintMoonPhaseCanvas(context, canvas, illumination, phaseDirection);
+  return canvas;
+}
+
+function paintMoonPhaseCanvas(context, canvas, illumination, phaseDirection) {
+  context.clearRect(0, 0, canvas.width, canvas.height);
+  const center = canvas.width / 2;
+  const radius = canvas.width * 0.34;
+
+  context.fillStyle = 'rgba(170, 196, 255, 0.18)';
+  context.beginPath();
+  context.arc(center, center, radius * 1.18, 0, Math.PI * 2);
+  context.fill();
+
+  context.fillStyle = '#f6f6fb';
+  context.beginPath();
+  context.arc(center, center, radius, 0, Math.PI * 2);
+  context.fill();
+
+  const shadowWidth = radius * 2 * (1 - illumination);
+  if (shadowWidth > 0.001) {
+    context.save();
+    context.globalCompositeOperation = 'multiply';
+    context.fillStyle = '#1a2230';
+    context.beginPath();
+    context.ellipse(
+      center + phaseDirection * shadowWidth * 0.5,
+      center,
+      radius * (1 - illumination * 0.65),
+      radius,
+      0,
+      0,
+      Math.PI * 2
+    );
+    context.fill();
+    context.restore();
+  }
 }
 
 function getTileDefinitionFromRegistry(kind) {

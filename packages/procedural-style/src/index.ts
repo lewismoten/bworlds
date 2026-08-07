@@ -34,6 +34,35 @@ export function getOrCreateRegionalValue<T>(
   return cache.get(context.key)!;
 }
 
+export function createRegionalValueResolver<T>(
+  cache: Map<string, T>,
+  regionSize: number,
+  createValue: (context: {
+    regionX: number;
+    regionY: number;
+    key: string;
+    tileX: number;
+    tileY: number;
+  }) => T
+) {
+  return function resolveRegionalValue(tileX: number, tileY: number): T {
+    return getOrCreateRegionalValue(
+      cache,
+      tileX,
+      tileY,
+      regionSize,
+      ({ regionX, regionY, key }) =>
+        createValue({
+          regionX,
+          regionY,
+          key,
+          tileX,
+          tileY,
+        })
+    );
+  };
+}
+
 export function pickThresholdColor(
   signal: number,
   threshold: number,

@@ -1,5 +1,7 @@
 import type { Paint2DContext } from '@bworlds/plugin-api';
 
+export type TilePainter2D = (context: Paint2DContext) => boolean | void;
+
 export function paintPlainsBackdrop({
   context,
   x,
@@ -31,4 +33,32 @@ export function paintPlainsBackdrop({
       bladeColor
     );
   }
+}
+
+export function composeTilePainter(
+  basePainter?: TilePainter2D | null,
+  overlayPainter?: TilePainter2D | null
+): TilePainter2D {
+  return function paintCompositeTile(context: Paint2DContext) {
+    basePainter?.(context);
+    return overlayPainter?.(context) ?? true;
+  };
+}
+
+export function createPlainsBackedTilePainter(
+  paint?: TilePainter2D
+) {
+  return composeTilePainter(
+    (context) => {
+      paintPlainsBackdrop({
+        context: context.context,
+        x: context.x,
+        y: context.y,
+        motif: context.motif,
+        fillRect: context.fillRect,
+      });
+      return true;
+    },
+    paint
+  );
 }

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  createRegionalValueResolver,
   createRegionKey,
   getOrCreateRegionalValue,
   pickThresholdColor,
@@ -31,6 +32,29 @@ describe('procedural style helpers', () => {
 
     expect(first).toBe(second);
     expect(cache.size).toBe(1);
+  });
+
+  it('creates reusable regional value resolvers for package-local style caches', () => {
+    const cache = new Map<string, { label: string; tileX: number; tileY: number }>();
+    const resolveValue = createRegionalValueResolver(
+      cache,
+      8,
+      ({ key, tileX, tileY }) => ({
+        label: key,
+        tileX,
+        tileY,
+      })
+    );
+
+    const first = resolveValue(10, 15);
+    const second = resolveValue(11, 14);
+
+    expect(first).toBe(second);
+    expect(first).toEqual({
+      label: '1:1',
+      tileX: 10,
+      tileY: 15,
+    });
   });
 
   it('tints hex colors by a multiplier', () => {

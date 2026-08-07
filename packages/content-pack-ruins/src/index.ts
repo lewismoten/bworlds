@@ -3,24 +3,30 @@ import type {
   PluginPackLike,
   PluginPackManifestLike,
 } from '@bworlds/plugin-api';
-import { definePluginPack, withPluginOrder } from '@bworlds/plugin-api';
+import {
+  createPluginPack,
+  definePluginPack,
+  instantiateOrderedPlugins,
+} from '@bworlds/plugin-api';
 import { createRuinsTilePlugin } from '@bworlds/tile-ruins';
 
 export function createRuinsTilePlugins() {
-  return [
-    withPluginOrder(createRuinsTilePlugin(), {
-      priority: 45,
-      after: ['tile-forest', 'tile-mountain'],
-      before: ['tile-route'],
-    }),
-  ];
+  return instantiateOrderedPlugins([
+    {
+      create: createRuinsTilePlugin,
+      order: {
+        priority: 45,
+        after: ['tile-forest', 'tile-mountain'],
+        before: ['tile-route'],
+      },
+    },
+  ]);
 }
 
 export function createRuinsContentPack(): PluginPackLike {
-  return {
-    name: 'ruins-content-pack',
+  return createPluginPack('ruins-content-pack', {
     tilePlugins: createRuinsTilePlugins(),
-  };
+  });
 }
 
 export const ruinsContentPackManifest: PluginPackManifestLike = {

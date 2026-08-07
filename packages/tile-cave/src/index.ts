@@ -1,8 +1,7 @@
 import { hash2D } from '@bworlds/core';
-import { paintPlainsBackdrop } from '@bworlds/paint-support';
+import { createPlainsBackedTilePainter } from '@bworlds/paint-support';
 import {
-  createAnchoredLandPoiClassifier,
-  createChanceBasedEnterablePoiTilePlugin,
+  createAnchoredEnterablePoiTilePlugin,
   pickPreferredLandmarkFacing,
 } from '@bworlds/poi-support';
 import { createMountainTerrainMaterials } from '@bworlds/three-support';
@@ -14,7 +13,7 @@ import type {
 const TILE_PIXEL_SIZE = 16;
 
 export function createCaveTilePlugin() {
-  return createChanceBasedEnterablePoiTilePlugin({
+  return createAnchoredEnterablePoiTilePlugin({
     pluginName: 'tile-cave',
     kind: 'cave',
     definition: {
@@ -25,16 +24,7 @@ export function createCaveTilePlugin() {
       wallHeight: 0.55,
     },
     note: 'A cave mouth opens in the terrain.',
-    threshold: 0.997,
-    getChance(context) {
-      return context.caveChance;
-    },
-    classifyOverworldTile: createAnchoredLandPoiClassifier({
-      kind: 'cave',
-      note: 'A cave mouth opens in the terrain.',
-    }),
-    paint2D({ context, x, y, motif, fillRect, speckle }: Paint2DContext) {
-      paintPlainsBackdrop({ context, x, y, motif, fillRect });
+    paint2D: createPlainsBackedTilePainter(({ context, x, y, motif, fillRect, speckle }) => {
       speckle(context, x, y, '#9ecf82', 14, 0.22, motif);
       context.fillStyle = '#27272a';
       context.beginPath();
@@ -42,7 +32,7 @@ export function createCaveTilePlugin() {
       context.fill();
       fillRect(context, x + 5, y + 8, 6, 4, '#09090b');
       return true;
-    },
+    }),
     create3DModel({
       three,
       state,

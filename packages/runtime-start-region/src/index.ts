@@ -1,4 +1,5 @@
 import { generatePoiName } from '@bworlds/core';
+import { createCachedOverworldTileResolver } from '@bworlds/overworld-support';
 import { createRuntimePlugin } from '@bworlds/plugin-api';
 import type { RuntimePlugin, TileLike } from '@bworlds/plugin-api';
 
@@ -44,20 +45,20 @@ const curatedSpawnTiles = new Map<string, TileLike>([
 ]);
 
 export function createStartRegionRuntimePlugin(): RuntimePlugin {
-  const curatedTileCache = new Map<string, TileLike>();
-
   return createRuntimePlugin('runtime-start-region', {
-    resolveOverworldTile({ seed, x, y }) {
-      const key = `${seed}:${x}:${y}`;
-      if (!curatedTileCache.has(key)) {
-        curatedTileCache.set(key, getCuratedTile(seed, x, y));
-      }
-      return curatedTileCache.get(key) ?? null;
-    },
+    resolveOverworldTile: createCachedOverworldTileResolver(getCuratedTile),
   });
 }
 
-function getCuratedTile(seed: string | number, x: number, y: number) {
+function getCuratedTile({
+  seed,
+  x,
+  y,
+}: {
+  seed: string | number;
+  x: number;
+  y: number;
+}) {
   if (Math.abs(x) <= 4 && Math.abs(y) <= 4) {
     return {
       kind: 'plains',

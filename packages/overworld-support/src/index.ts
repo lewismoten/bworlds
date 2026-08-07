@@ -1,9 +1,12 @@
-import { hash2D, octaveNoise2D, ridgedNoise2D } from '@bworlds/core';
+import { generatePoiName, hash2D, octaveNoise2D, ridgedNoise2D } from '@bworlds/core';
 import type {
   ClassifyOverworldTileContext,
   OverworldAnchorLike,
+  OverworldAnchorSet,
+  PoiAnchorLike,
   OverworldSignals,
   PluginRegistryLike,
+  ResolveOverworldAnchorsContext,
   Seed,
   TileLike,
 } from '@bworlds/plugin-api';
@@ -46,6 +49,9 @@ export interface OverworldCellAnchorCandidate<
   chance: number;
 }
 
+export type GeneratedNamedOverworldAnchor = OverworldAnchorLike & { name: string };
+export type GeneratedNamedPoiAnchor = PoiAnchorLike & { name: string };
+
 export function createOverworldTerrainSignalSampler(
   seed: Seed
 ): OverworldTerrainSignalSampler {
@@ -79,6 +85,109 @@ export function createOverworldTerrainSignalSampler(
 
 export function isNearOverworldLand(signals: OverworldSignals): boolean {
   return signals.continent > 0.45 && signals.continent < 0.9;
+}
+
+export function getOverworldPlacementChance(
+  seed: Seed,
+  chanceKey: string,
+  x: number,
+  y: number
+) {
+  return hash2D(`${seed}:${chanceKey}`, x, y);
+}
+
+export function createCachedOverworldTileResolver(
+  resolveTile: (params: { seed: Seed; x: number; y: number }) => TileLike | null
+) {
+  const cache = new Map<string, TileLike | null>();
+
+  return function resolveOverworldTile({
+    seed,
+    x,
+    y,
+  }: {
+    seed: Seed;
+    x: number;
+    y: number;
+  }) {
+    const key = `${seed}:${x}:${y}`;
+    if (!cache.has(key)) {
+      cache.set(key, resolveTile({ seed, x, y }));
+    }
+    return cache.get(key) ?? null;
+  };
+}
+
+export function createGeneratedNamedOverworldCellAnchorSpec<
+  TAnchor extends GeneratedNamedOverworldAnchor = GeneratedNamedOverworldAnchor,
+>(
+  options: Omit<
+    OverworldCellAnchorSpec<TAnchor>,
+    'createAnchor'
+  > & {
+    nameType: string;
+    createAnchorExtras?(
+      params: {
+        seed: Seed;
+        x: number;
+        y: number;
+        chance: number;
+        cellX: number;
+        cellY: number;
+      }
+    ): Omit<TAnchor, 'x' | 'y' | 'name'>;
+  }
+): OverworldCellAnchorSpec<TAnchor> {
+  return {
+    ...options,
+    createAnchor({ seed, x, y, chance, cellX, cellY }) {
+      return {
+        x,
+        y,
+        name: generatePoiName(seed, options.nameType, x, y),
+        ...(options.createAnchorExtras?.({
+          seed,
+          x,
+          y,
+          chance,
+          cellX,
+          cellY,
+        }) ?? {}),
+      } as TAnchor;
+    },
+  };
+}
+
+export function createGeneratedPoiOverworldCellAnchorSpec<
+  TAnchor extends GeneratedNamedPoiAnchor = GeneratedNamedPoiAnchor,
+>(
+  options: Omit<
+    OverworldCellAnchorSpec<TAnchor>,
+    'createAnchor'
+  > & {
+    poiType: string;
+    createAnchorExtras?(
+      params: {
+        seed: Seed;
+        x: number;
+        y: number;
+        chance: number;
+        cellX: number;
+        cellY: number;
+      }
+    ): Omit<TAnchor, 'x' | 'y' | 'name' | 'type'>;
+  }
+): OverworldCellAnchorSpec<TAnchor> {
+  return createGeneratedNamedOverworldCellAnchorSpec<TAnchor>({
+    ...options,
+    nameType: options.poiType,
+    createAnchorExtras(params) {
+      return {
+        type: options.poiType,
+        ...(options.createAnchorExtras?.(params) ?? {}),
+      } as Omit<TAnchor, 'x' | 'y' | 'name'>;
+    },
+  });
 }
 
 export function createOverworldCellAnchorCandidate<
@@ -190,6 +299,168 @@ export function collectNearbyOverworldCellAnchors<
   }
 
   return anchors;
+}
+
+export function collectNearbyOverworldPoiAnchors<
+  TPoiType extends string,
+  TAnchor extends GeneratedNamedPoiAnchor = GeneratedNamedPoiAnchor,
+>({
+  seed,
+  x,
+  y,
+  specs,
+  caches,
+  sampleTerrainSignals,
+  minSpacing = 0,
+  blockingAnchors = [],
+  baseAnchors = [],
+}: {
+  seed: Seed;
+  x: number;
+  y: number;
+  specs: Record<TPoiType, OverworldCellAnchorSpec<TAnchor>>;
+  caches: Record<TPoiType, Map<string, TAnchor | null>>;
+  sampleTerrainSignals: OverworldTerrainSignalSampler;
+  minSpacing?: number;
+  blockingAnchors?: Array<Pick<OverworldAnchorLike, 'x' | 'y'>>;
+  baseAnchors?: TAnchor[];
+}) {
+  const anchors = [...baseAnchors];
+  const specList = Object.values(specs) as OverworldCellAnchorSpec<TAnchor>[];
+
+  for (const poiType of Object.keys(specs) as TPoiType[]) {
+    anchors.push(
+      ...collectNearbyOverworldCellAnchors({
+        seed,
+        x,
+        y,
+        spec: specs[poiType],
+        sampleTerrainSignals,
+        cache: caches[poiType],
+        minSpacing,
+        blockingAnchors,
+        conflictSpecs: specList,
+      })
+    );
+  }
+
+  return anchors;
+}
+
+export interface OverworldAnchorCollectionOptions<
+  TAnchor extends OverworldAnchorLike = OverworldAnchorLike,
+> {
+  spec: OverworldCellAnchorSpec<TAnchor>;
+  radius?: number;
+  minSpacing?: number;
+  blockingAnchors?: Array<Pick<OverworldAnchorLike, 'x' | 'y'>>;
+  conflictSpecs?: OverworldCellAnchorSpec[];
+}
+
+export interface OverworldPoiAnchorCollectionOptions<
+  TPoiType extends string = string,
+  TAnchor extends GeneratedNamedPoiAnchor = GeneratedNamedPoiAnchor,
+  TTownAnchor extends OverworldAnchorLike = OverworldAnchorLike,
+  TBridgeAnchor extends OverworldAnchorLike = OverworldAnchorLike,
+> {
+  specs: Record<TPoiType, OverworldCellAnchorSpec<TAnchor>>;
+  minSpacing?: number;
+  blockingAnchors?(params: {
+    townAnchors: TTownAnchor[];
+    bridgeAnchors: TBridgeAnchor[];
+  }): Array<Pick<OverworldAnchorLike, 'x' | 'y'>>;
+  baseAnchors?(params: {
+    townAnchors: TTownAnchor[];
+    bridgeAnchors: TBridgeAnchor[];
+  }): TAnchor[];
+}
+
+export function createOverworldAnchorResolver<
+  TTownAnchor extends OverworldAnchorLike = OverworldAnchorLike,
+  TBridgeAnchor extends OverworldAnchorLike = OverworldAnchorLike,
+  TPoiType extends string = string,
+  TPoiAnchor extends GeneratedNamedPoiAnchor = GeneratedNamedPoiAnchor,
+>(options: {
+  town?: OverworldAnchorCollectionOptions<TTownAnchor>;
+  bridge?: OverworldAnchorCollectionOptions<TBridgeAnchor>;
+  poi?: OverworldPoiAnchorCollectionOptions<
+    TPoiType,
+    TPoiAnchor,
+    TTownAnchor,
+    TBridgeAnchor
+  >;
+}) {
+  const townCache = new Map<string, TTownAnchor | null>();
+  const bridgeCache = new Map<string, TBridgeAnchor | null>();
+  const poiCaches = Object.fromEntries(
+    Object.keys(options.poi?.specs ?? {}).map((poiType) => [
+      poiType,
+      new Map<string, TPoiAnchor | null>(),
+    ])
+  ) as Record<TPoiType, Map<string, TPoiAnchor | null>>;
+
+  return function resolveOverworldAnchors({
+    seed,
+    x,
+    y,
+    sampleTerrainSignals,
+  }: ResolveOverworldAnchorsContext): OverworldAnchorSet {
+    const townAnchors = options.town
+      ? collectNearbyOverworldCellAnchors({
+          seed,
+          x,
+          y,
+          spec: options.town.spec,
+          sampleTerrainSignals,
+          cache: townCache,
+          radius: options.town.radius,
+          minSpacing: options.town.minSpacing,
+          blockingAnchors: options.town.blockingAnchors,
+          conflictSpecs: options.town.conflictSpecs,
+        })
+      : [];
+    const bridgeAnchors = options.bridge
+      ? collectNearbyOverworldCellAnchors({
+          seed,
+          x,
+          y,
+          spec: options.bridge.spec,
+          sampleTerrainSignals,
+          cache: bridgeCache,
+          radius: options.bridge.radius,
+          minSpacing: options.bridge.minSpacing,
+          blockingAnchors: options.bridge.blockingAnchors,
+          conflictSpecs: options.bridge.conflictSpecs,
+        })
+      : [];
+    const poiAnchors = options.poi
+      ? collectNearbyOverworldPoiAnchors({
+          seed,
+          x,
+          y,
+          specs: options.poi.specs,
+          caches: poiCaches,
+          sampleTerrainSignals,
+          minSpacing: options.poi.minSpacing,
+          blockingAnchors:
+            options.poi.blockingAnchors?.({
+              townAnchors,
+              bridgeAnchors,
+            }) ?? townAnchors,
+          baseAnchors:
+            options.poi.baseAnchors?.({
+              townAnchors,
+              bridgeAnchors,
+            }) ?? [],
+        })
+      : [];
+
+    return {
+      townAnchors,
+      bridgeAnchors,
+      poiAnchors,
+    };
+  };
 }
 
 export function resolveOverworldCellAnchor<
@@ -335,6 +606,12 @@ export function createOverworldGenerationContext({
     y,
     sampleTerrainSignals,
   });
+  const placementChances = {
+    town: getOverworldPlacementChance(seed, 'town', x, y),
+    cave: getOverworldPlacementChance(seed, 'cave', x, y),
+    dungeon: getOverworldPlacementChance(seed, 'dungeon', x, y),
+    sign: getOverworldPlacementChance(seed, 'sign', x, y),
+  };
 
   return {
     seed,
@@ -342,10 +619,17 @@ export function createOverworldGenerationContext({
     y,
     tile,
     nearLand: isNearOverworldLand(signals),
-    townChance: hash2D(`${seed}:town`, x, y),
-    caveChance: hash2D(`${seed}:cave`, x, y),
-    dungeonChance: hash2D(`${seed}:dungeon`, x, y),
-    signChance: hash2D(`${seed}:sign`, x, y),
+    townChance: placementChances.town,
+    caveChance: placementChances.cave,
+    dungeonChance: placementChances.dungeon,
+    signChance: placementChances.sign,
+    placementChances,
+    getPlacementChance(chanceKey: string) {
+      return (
+        placementChances[chanceKey] ??
+        getOverworldPlacementChance(seed, chanceKey, x, y)
+      );
+    },
     signals,
     sampleTerrainSignals,
     townAnchors: anchors.townAnchors,
@@ -360,7 +644,7 @@ export function composeOverworldTileFromPlugins({
   y,
   plugins,
   sampleTerrainSignals,
-  initialTile = { kind: plugins.getDefaultTileKind() },
+  initialTile,
 }: {
   seed: Seed;
   x: number;
@@ -379,16 +663,20 @@ export function composeOverworldTileFromPlugins({
     return curatedTile;
   }
 
+  const startingTile = initialTile ?? {
+    kind: plugins.getDefaultTileKind?.('plains') ?? 'plains',
+  };
+
   const generationContext = createOverworldGenerationContext({
     seed,
     x,
     y,
-    tile: initialTile,
+    tile: startingTile,
     plugins,
     sampleTerrainSignals,
   });
 
-  let tile = plugins.classifyTerrainTile(generationContext) ?? initialTile;
+  let tile = plugins.classifyTerrainTile(generationContext) ?? startingTile;
   tile =
     plugins.classifyOverworldTile({
       ...generationContext,

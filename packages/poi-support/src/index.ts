@@ -13,7 +13,10 @@ import type {
   WorldActionLike,
   WorldStateLike,
 } from '@bworlds/plugin-api';
-import { createTilePlugin } from '@bworlds/plugin-api';
+import {
+  createSingleTilePlugin,
+  withOverworldTileClassifier,
+} from '@bworlds/plugin-api';
 
 export const DEFAULT_LAND_POI_BLOCKED_KINDS = new Set([
   'river',
@@ -61,7 +64,8 @@ export function createChanceBasedLandPoiClassifier(options: {
   poiType: string;
   note: string;
   threshold: number;
-  getChance(context: ClassifyOverworldTileContext): number | undefined;
+  chanceKey?: string;
+  getChance?(context: ClassifyOverworldTileContext): number | undefined;
   blockedKinds?: ReadonlySet<string>;
 }) {
   return function classifyChanceBasedLandPoi(
@@ -72,7 +76,10 @@ export function createChanceBasedLandPoiClassifier(options: {
       return null;
     }
 
-    if ((options.getChance(context) ?? 0) <= options.threshold) {
+    if (
+      resolvePlacementChance(context, options.chanceKey, options.getChance) <=
+      options.threshold
+    ) {
       return null;
     }
 
@@ -95,7 +102,8 @@ export function createChanceBasedEnterablePoiTilePlugin(options: {
   poiType?: string;
   note: string;
   threshold: number;
-  getChance(context: ClassifyOverworldTileContext): number | undefined;
+  chanceKey?: string;
+  getChance?(context: ClassifyOverworldTileContext): number | undefined;
   blockedKinds?: ReadonlySet<string>;
   traversalProfile?: Partial<TraversalProfile3D>;
   worldAction?: {
@@ -114,40 +122,108 @@ export function createChanceBasedEnterablePoiTilePlugin(options: {
 }) {
   const kind = options.kind;
   const poiType = options.poiType ?? kind;
-  const classifyPoi =
-    options.classifyOverworldTile ??
-    createChanceBasedLandPoiClassifier({
-      kind,
-      poiType,
-      note: options.note,
-      threshold: options.threshold,
-      getChance: options.getChance,
-      blockedKinds: options.blockedKinds,
-    });
+  return createEnterablePoiTilePlugin({
+    ...options,
+    classifyPoi:
+      options.classifyOverworldTile ??
+      createChanceBasedLandPoiClassifier({
+        kind,
+        poiType,
+        note: options.note,
+        threshold: options.threshold,
+        chanceKey: options.chanceKey,
+        getChance: options.getChance,
+        blockedKinds: options.blockedKinds,
+      }),
+  });
+}
+
+export function createAnchoredEnterablePoiTilePlugin(options: {
+  pluginName: string;
+  kind: string;
+  definition: NonNullable<TilePlugin['definition']>;
+  poiType?: string;
+  note: string;
+  blockedKinds?: ReadonlySet<string>;
+  maxDistance?: number;
+  createPoi?(
+    context: ClassifyOverworldTileContext,
+    anchor: PoiAnchorLike
+  ): TileLike;
+  traversalProfile?: Partial<TraversalProfile3D>;
+  worldAction?: {
+    facing?: number;
+    spawn?: { x: number; y: number };
+  };
+  classifyOverworldTile?: (
+    context: ClassifyOverworldTileContext
+  ) => TileLike | null;
+  paint2D?: TilePlugin['paint2D'];
+  create3DModel?: TilePlugin['create3DModel'];
+  canOccupy3D?: TilePlugin['canOccupy3D'];
+  getSurfaceProfile3D?: TilePlugin['getSurfaceProfile3D'];
+  getTraversalProfile3D?: TilePlugin['getTraversalProfile3D'];
+  createWorldAction?: TilePlugin['createWorldAction'];
+}) {
+  const kind = options.kind;
+  const poiType = options.poiType ?? kind;
+  return createEnterablePoiTilePlugin({
+    ...options,
+    classifyPoi:
+      options.classifyOverworldTile ??
+      createAnchoredLandPoiClassifier({
+        kind,
+        poiType,
+        note: options.note,
+        blockedKinds: options.blockedKinds,
+        maxDistance: options.maxDistance,
+        createPoi: options.createPoi,
+      }),
+  });
+}
+
+export function createEnterablePoiTilePlugin(options: {
+  pluginName: string;
+  kind: string;
+  definition: NonNullable<TilePlugin['definition']>;
+  classifyPoi(context: ClassifyOverworldTileContext): TileLike | null;
+  traversalProfile?: Partial<TraversalProfile3D>;
+  worldAction?: {
+    facing?: number;
+    spawn?: { x: number; y: number };
+  };
+  paint2D?: TilePlugin['paint2D'];
+  create3DModel?: TilePlugin['create3DModel'];
+  canOccupy3D?: TilePlugin['canOccupy3D'];
+  getSurfaceProfile3D?: TilePlugin['getSurfaceProfile3D'];
+  getTraversalProfile3D?: TilePlugin['getTraversalProfile3D'];
+  createWorldAction?: TilePlugin['createWorldAction'];
+}) {
   const enterablePoiFeatures = createEnterablePoiTileFeatures({
     traversalProfile: options.traversalProfile,
     worldAction: options.worldAction,
   });
 
-  return createTilePlugin(options.pluginName, [
-    {
-      kind,
-      definition: options.definition,
-      ...enterablePoiFeatures,
-      classifyOverworldTile(context: ClassifyOverworldTileContext) {
-        return classifyPoi(context);
+  return createSingleTilePlugin(
+    options.pluginName,
+    withOverworldTileClassifier(
+      {
+        kind: options.kind,
+        definition: options.definition,
+        ...enterablePoiFeatures,
+        paint2D: options.paint2D,
+        create3DModel: options.create3DModel,
+        canOccupy3D: options.canOccupy3D,
+        getSurfaceProfile3D: options.getSurfaceProfile3D,
+        getTraversalProfile3D:
+          options.getTraversalProfile3D ??
+          enterablePoiFeatures.getTraversalProfile3D,
+        createWorldAction:
+          options.createWorldAction ?? enterablePoiFeatures.createWorldAction,
       },
-      paint2D: options.paint2D,
-      create3DModel: options.create3DModel,
-      canOccupy3D: options.canOccupy3D,
-      getSurfaceProfile3D: options.getSurfaceProfile3D,
-      getTraversalProfile3D:
-        options.getTraversalProfile3D ??
-        enterablePoiFeatures.getTraversalProfile3D,
-      createWorldAction:
-        options.createWorldAction ?? enterablePoiFeatures.createWorldAction,
-    },
-  ]);
+      options.classifyPoi
+    )
+  );
 }
 
 export function findPoiAnchor(
@@ -256,6 +332,34 @@ export function createEnterablePoiTileFeatures(
       return createPoiWorldAction(context, options.worldAction);
     },
   };
+}
+
+export function resolvePlacementChance(
+  context: ClassifyOverworldTileContext,
+  chanceKey?: string,
+  getChance?: ((context: ClassifyOverworldTileContext) => number | undefined) | null
+) {
+  if (typeof getChance === 'function') {
+    const chance = getChance(context);
+    if (typeof chance === 'number') {
+      return chance;
+    }
+  }
+
+  if (chanceKey && typeof context.getPlacementChance === 'function') {
+    return context.getPlacementChance(chanceKey);
+  }
+
+  if (chanceKey && typeof context.placementChances?.[chanceKey] === 'number') {
+    return context.placementChances[chanceKey]!;
+  }
+
+  if (chanceKey === 'town') return context.townChance ?? 0;
+  if (chanceKey === 'cave') return context.caveChance ?? 0;
+  if (chanceKey === 'dungeon') return context.dungeonChance ?? 0;
+  if (chanceKey === 'sign') return context.signChance ?? 0;
+
+  return 0;
 }
 
 export function createNamedPoi(

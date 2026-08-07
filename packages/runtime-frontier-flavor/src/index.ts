@@ -7,6 +7,33 @@ const LAND_DESCRIPTORS = ['frontier', 'wilds', 'marches', 'reach', 'expanse'];
 
 export function createFrontierFlavorRuntimePlugin(): RuntimePlugin {
   return createRuntimePlugin('runtime-frontier-flavor', {
+    resolveWorldEnvironment() {
+      return {
+        cycle: {
+          dayLengthMs: 300000,
+          offsetMs: 45000,
+        },
+        sky: {
+          dayColor: '#9ed8ff',
+          sunsetColor: '#f2a06a',
+          nightColor: '#06111f',
+          fogDayColor: '#9ed8ff',
+          fogNightColor: '#0a1524',
+        },
+        lighting: {
+          sunColor: '#fff3cf',
+          moonColor: '#9ec5ff',
+          ambientDayColor: '#eaf6ff',
+          ambientNightColor: '#9fc4ff',
+          groundDayColor: '#28442f',
+          groundNightColor: '#101826',
+          shadowStrength: 1,
+        },
+        stars: {
+          density: 1,
+        },
+      };
+    },
     decorateOverworldTile({ seed, tile, x, y }) {
       const sky =
         SKY_DESCRIPTORS[

@@ -1,3 +1,4 @@
+import { composeTilePainter } from '@bworlds/paint-support';
 import { createTilePlugin } from '@bworlds/plugin-api';
 import type { Paint2DContext, RuntimePlugin } from '@bworlds/plugin-api';
 
@@ -36,7 +37,7 @@ export function createInteriorTilePlugin(): RuntimePlugin {
         walkable: true,
         wallHeight: 0.1,
       },
-      paint2D: paintDoorTile,
+      paint2D: createFloorBackedInteriorPainter(paintDoorOverlay),
     },
     {
       kind: 'stairsDown',
@@ -47,7 +48,7 @@ export function createInteriorTilePlugin(): RuntimePlugin {
         walkable: true,
         wallHeight: 0.1,
       },
-      paint2D: paintStairsDownTile,
+      paint2D: createFloorBackedInteriorPainter(paintStairsDownOverlay),
     },
     {
       kind: 'stairsUp',
@@ -58,7 +59,7 @@ export function createInteriorTilePlugin(): RuntimePlugin {
         walkable: true,
         wallHeight: 0.1,
       },
-      paint2D: paintStairsUpTile,
+      paint2D: createFloorBackedInteriorPainter(paintStairsUpOverlay),
     },
     {
       kind: 'shop',
@@ -111,8 +112,11 @@ function paintFloorTile({
   return true;
 }
 
-function paintDoorTile(paint: Paint2DContext) {
-  paintFloorTile(paint);
+function createFloorBackedInteriorPainter(overlayPainter: typeof paintDoorOverlay) {
+  return composeTilePainter(paintFloorTile, overlayPainter);
+}
+
+function paintDoorOverlay(paint: Paint2DContext) {
   const { context, x, y, fillRect, motif } = paint;
   const doorX = 4 + motif.int(-1, 1);
   fillRect(context, x + doorX, y + 2, 8, 11, '#b45309');
@@ -121,8 +125,7 @@ function paintDoorTile(paint: Paint2DContext) {
   return true;
 }
 
-function paintStairsDownTile(paint: Paint2DContext) {
-  paintFloorTile(paint);
+function paintStairsDownOverlay(paint: Paint2DContext) {
   const { context, x, y, fillRect, motif } = paint;
   const inset = motif.int(0, 1);
   for (let step = 0; step < 5; step += 1) {
@@ -138,8 +141,7 @@ function paintStairsDownTile(paint: Paint2DContext) {
   return true;
 }
 
-function paintStairsUpTile(paint: Paint2DContext) {
-  paintFloorTile(paint);
+function paintStairsUpOverlay(paint: Paint2DContext) {
   const { context, x, y, fillRect, motif } = paint;
   const inset = motif.int(0, 1);
   for (let step = 0; step < 5; step += 1) {

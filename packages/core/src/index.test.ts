@@ -1,8 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import {
+  advanceWorldTimeOffsetByHours,
+  alignWorldTimeOffsetToDayProgress,
   cardinalFromAngle,
   createPlayer,
   createWorldState,
+  DEFAULT_DAY_LENGTH_MS,
+  getDaylightCycleState,
+  getWorldDaylightCycle,
+  getWorldTimeMs,
   hash2D,
   toGps,
   WORLD_TILES_WIDE,
@@ -23,6 +29,50 @@ describe('core utilities', () => {
     expect(cardinalFromAngle(0)).toBe('E');
     expect(cardinalFromAngle(Math.PI / 2)).toBe('S');
     expect(cardinalFromAngle(Math.PI)).toBe('W');
+  });
+
+  it('computes a shared day-night cycle and moon phase state', () => {
+    const midnight = getDaylightCycleState(0, {
+      dayLengthMs: DEFAULT_DAY_LENGTH_MS,
+    });
+    const noon = getDaylightCycleState(DEFAULT_DAY_LENGTH_MS / 2, {
+      dayLengthMs: DEFAULT_DAY_LENGTH_MS,
+    });
+    const nextDay = getDaylightCycleState(DEFAULT_DAY_LENGTH_MS, {
+      dayLengthMs: DEFAULT_DAY_LENGTH_MS,
+    });
+
+    expect(midnight.dayProgress).toBe(0);
+    expect(midnight.isNight).toBe(true);
+    expect(midnight.moonPhaseName).toBe('New Moon');
+    expect(noon.dayProgress).toBe(0.5);
+    expect(noon.daylight).toBeGreaterThan(0.95);
+    expect(noon.isNight).toBe(false);
+    expect(nextDay.dayNumber).toBe(1);
+    expect(nextDay.moonPhaseName).toBe('Waxing Crescent');
+  });
+
+  it('provides shared world-clock helpers for offset and preset time changes', () => {
+    expect(getWorldTimeMs(1000, { timeOffsetMs: 250 })).toBe(1250);
+
+    const { worldTimeMs, cycle } = getWorldDaylightCycle(1000, {
+      timeOffsetMs: 59000,
+      cycle: { dayLengthMs: 60000 },
+    });
+    expect(worldTimeMs).toBe(60000);
+    expect(cycle.dayNumber).toBe(1);
+
+    expect(
+      advanceWorldTimeOffsetByHours(0, 6, { dayLengthMs: DEFAULT_DAY_LENGTH_MS })
+    ).toBe(DEFAULT_DAY_LENGTH_MS / 4);
+
+    const presetOffset = alignWorldTimeOffsetToDayProgress(
+      0,
+      0,
+      0.5,
+      { dayLengthMs: DEFAULT_DAY_LENGTH_MS }
+    );
+    expect(presetOffset).toBe(DEFAULT_DAY_LENGTH_MS / 2);
   });
 
   it('exposes tile-definition lookup through world state', () => {

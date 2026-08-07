@@ -1,7 +1,11 @@
 import type {
   CreateMapContext,
+  DecorateBuildingTileContext,
+  DecorateDepthTileContext,
+  DecorateTownTileContext,
   RuntimePlugin,
   Point,
+  TileLike,
   WorldActionLike,
   WorldContextLike,
   WorldMapLike,
@@ -65,6 +69,36 @@ export function createExitMapAction(spawn: Point): Partial<WorldActionLike> {
 
 export function createReturnMapAction(): Partial<WorldActionLike> {
   return {};
+}
+
+export function createDecoratedMapTileGetter<
+  TTile extends TileLike,
+  TContext extends WorldContextLike,
+>({
+  context,
+  seed,
+  resolveTile,
+  decorateTile,
+}: {
+  context: TContext;
+  seed: CreateMapContext['seed'];
+  resolveTile(x: number, y: number): TTile;
+  decorateTile(
+    payload:
+      | DecorateTownTileContext
+      | DecorateBuildingTileContext
+      | DecorateDepthTileContext
+  ): TileLike;
+}) {
+  return function getTile(x: number, y: number): TTile {
+    return decorateTile({
+      context,
+      seed,
+      x,
+      y,
+      tile: resolveTile(x, y),
+    }) as TTile;
+  };
 }
 
 export function createContextMapPlugin<TContext extends WorldContextLike>(options: {

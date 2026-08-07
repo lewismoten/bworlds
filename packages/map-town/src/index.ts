@@ -1,6 +1,7 @@
 import {
   createChildContext,
   createContextMapPlugin,
+  createDecoratedMapTileGetter,
   createEnterMapAction,
   createExitMapAction,
 } from '@bworlds/map-support';
@@ -40,47 +41,47 @@ function createTownMap(
   const cx = Math.floor(width / 2);
   const cy = Math.floor(height / 2);
 
-  function getTile(x: number, y: number): TownTile {
-    const localX = x + cx;
-    const localY = y + cy;
-    if (localX < 0 || localY < 0 || localX >= width || localY >= height) {
-      return { kind: 'forest' };
-    }
+  const getTile = createDecoratedMapTileGetter<TownTile, TownContext>({
+    context,
+    seed,
+    resolveTile(x: number, y: number) {
+      const localX = x + cx;
+      const localY = y + cy;
+      if (localX < 0 || localY < 0 || localX >= width || localY >= height) {
+        return { kind: 'forest' };
+      }
 
-    let tile: TownTile = { kind: 'plains' };
-    const onRoad = localX === cx || localY === cy;
-    const plaza =
-      Math.abs(localX - cx) <= 1 && Math.abs(localY - cy) <= 1 && !onRoad;
-    const buildingBand =
-      Math.abs(localY - cy) === 3 &&
-      Math.abs(localX - cx) <= 8 &&
-      localX % 2 === 0;
+      let tile: TownTile = { kind: 'plains' };
+      const onRoad = localX === cx || localY === cy;
+      const plaza =
+        Math.abs(localX - cx) <= 1 && Math.abs(localY - cy) <= 1 && !onRoad;
+      const buildingBand =
+        Math.abs(localY - cy) === 3 &&
+        Math.abs(localX - cx) <= 8 &&
+        localX % 2 === 0;
 
-    if (onRoad || plaza) tile = { kind: 'road' };
-    if (buildingBand) {
-      tile = { kind: 'shop', building: { id: `${context.id}:${x}:${y}` } };
-    }
-    if (Math.abs(localX - cx) === 9 || Math.abs(localY - cy) === 9) {
-      tile = { kind: 'forest' };
-    }
-    if (localX === cx && localY === cy) {
-      tile = {
-        kind: 'town',
-        note: 'Town square. Explore the buildings or leave at the gate.',
-      };
-    }
-    if (localX === cx && localY === height - 2) {
-      tile = { kind: 'door', note: 'Town gate. Press X to return outside.' };
-    }
-
-    return plugins.decorateTownTile({
-      context,
-      seed,
-      x,
-      y,
-      tile,
-    }) as TownTile;
-  }
+      if (onRoad || plaza) tile = { kind: 'road' };
+      if (buildingBand) {
+        tile = { kind: 'shop', building: { id: `${context.id}:${x}:${y}` } };
+      }
+      if (Math.abs(localX - cx) === 9 || Math.abs(localY - cy) === 9) {
+        tile = { kind: 'forest' };
+      }
+      if (localX === cx && localY === cy) {
+        tile = {
+          kind: 'town',
+          note: 'Town square. Explore the buildings or leave at the gate.',
+        };
+      }
+      if (localX === cx && localY === height - 2) {
+        tile = { kind: 'door', note: 'Town gate. Press X to return outside.' };
+      }
+      return tile;
+    },
+    decorateTile(payload) {
+      return plugins.decorateTownTile(payload) as TownTile;
+    },
+  });
 
   function getAction(x: number, y: number) {
     const tile = getTile(x, y);

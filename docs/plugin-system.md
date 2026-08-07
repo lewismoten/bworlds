@@ -19,6 +19,7 @@ The registry now supports:
 - `createMap(payload)`
 - `resolveOverworldTile(payload)`
 - `resolveOverworldAnchors(payload)`
+- `resolveWorldEnvironment(payload)`
 - `resolveFloorKind3D(payload)`
 - `createWorldAction(payload)`
 - `decorateOverworldTile(payload)`
@@ -48,6 +49,8 @@ Tile packages can now also contribute `definition` metadata directly on their ti
 
 Tile plugins can also mark one tile entry as `isDefaultTile`, which lets the registry expose `getDefaultTileKind()` and `getDefaultTileDefinition()`. The overworld composition path now uses that plugin-owned default tile as its initial terrain draft instead of assuming `plains`, which makes the base terrain of a content-pack stack configurable through the same shared tile contract.
 
+For bootstrap and pack authoring, `@bworlds/plugin-api` now also exposes shared helpers such as `withDefaultTileKind(...)`, `listTileDefinitionsFromPlugins(...)`, `resolveTileDefinitionFromPlugins(...)`, and `createFallbackTileDefinition(...)`. That moves common “mark this tile as the pack default” and “derive a tile-definition catalog/fallback from a plugin list” logic out of specific built-in packs, which keeps runtime/bootstrap code less coupled to `@bworlds/content-pack-default`.
+
 The atlas and 3D renderer now consume the active plugin registry directly for tile-definition discovery, rather than importing the built-in core tile table as their primary source of truth. That keeps visible tile catalogs aligned with the currently selected content-pack stack, which matters for overlay packs and future external packages that introduce new tile kinds.
 
 `@bworlds/core` now treats tile-definition fallback more generically. The built-in tile-definition catalog used by the default world stack is derived from `@bworlds/content-pack-default`, which keeps ownership of those built-in definitions closer to the tile plugins that actually provide them instead of treating one built-in catalog as a universal engine primitive.
@@ -55,6 +58,8 @@ The atlas and 3D renderer now consume the active plugin registry directly for ti
 For 3D generation hooks it now also exposes named host-side types such as `ThreeHostLike` and `ThreeMaterialLike`/`ThreeTextureLike`. These are still lightweight abstractions over the renderer host, but they give plugin packages a shared vocabulary for model-generation dependencies without requiring renderer-owned ad hoc material bags in the tile contract.
 
 Shared seeded helpers now live in `@bworlds/core` for things like deterministic POI naming, so tile packages can reuse the same naming and noise-driven conventions without depending on `worldgen` internals.
+
+Shared world-time helpers also now live in `@bworlds/core`. Packages and apps can use `getWorldTimeMs(...)`, `getWorldDaylightCycle(...)`, `advanceWorldTimeOffsetByHours(...)`, and `alignWorldTimeOffsetToDayProgress(...)` so daylight progression, skip-ahead controls, and time presets all share one deterministic clock path instead of each caller hand-rolling its own math.
 
 ## Supported hooks
 
@@ -94,6 +99,8 @@ A runtime plugin can also expose `createMap(context)` plus decoration hooks for 
 
 `@bworlds/map-support` now provides small shared helpers for child-context creation, common enter/deepen/exit action wiring, and `createContextMapPlugin(...)` for the repeated “only handle these context types, then delegate to a map factory” wrapper. That lets new map packages share the same routing and transition semantics instead of hand-building those outer plugin shells each time.
 
+It also now provides `createDecoratedMapTileGetter(...)` for the common “derive a base tile from local map logic, then pass it through the matching `decorate*Tile(...)` runtime hook with the current context/seed/coordinates” pattern. That keeps map packages like towns, buildings, and depth layers focused on their tile layout rules instead of repeating the same decoration wrapper boilerplate.
+
 Current first-party map plugins are:
 
 - `@bworlds/map-overworld`
@@ -119,6 +126,8 @@ Current first-party runtime content plugins are:
 
 These demonstrate that town/depth/overworld decoration and overworld composition support can be shipped as standalone packages and registered alongside map and tile plugins.
 
+Runtime plugins can also now participate in world presentation through `resolveWorldEnvironment(...)`. That hook lets a pack or flavor plugin contribute shared cycle timing, sky colors, star density, and lighting defaults that both the 2D and 3D renderers can consume through the same plugin-owned environment contract.
+
 For package authoring, `@bworlds/plugin-api` now also exposes `createRuntimePlugin(...)` so lightweight runtime-flavor packages can share the same outer plugin shape instead of hand-writing `{ name, hook }` wrappers in each package.
 
 ## Content Packs
@@ -127,7 +136,7 @@ For package authoring, `@bworlds/plugin-api` now also exposes `createRuntimePlug
 
 Plugins can also now declare lightweight `order` metadata with `priority`, `after`, and `before` so content packs can express intra-stage ordering without relying purely on array position.
 
-`@bworlds/plugin-api` now also exports small authoring helpers like `withPluginOrder(...)` and `definePluginPack(...)` so content-pack packages can share the same ordering and manifest-definition conventions instead of reimplementing that boilerplate locally.
+`@bworlds/plugin-api` now also exports small authoring helpers like `withPluginOrder(...)`, `instantiateOrderedPlugins(...)`, `createPluginPack(...)`, and `definePluginPack(...)` so content-pack packages can share the same ordering, staged plugin-group assembly, final pack-shape construction, and manifest-definition conventions instead of reimplementing that boilerplate locally.
 
 It also now exposes shared pack-catalog helpers such as `listPluginPackManifests(...)`, `resolvePluginPackDefinition(...)`, and `createPluginRegistryFromPackDefinitions(...)`. That lets pack-driven tooling and alternate bootstraps reuse the same manifest and registry-composition behavior without depending on `worldgen`.
 
@@ -151,6 +160,8 @@ The built-in monorepo now follows the same staged pattern across package familie
 - map packages use `createContextMapPlugin(...)`
 - runtime flavor packages use `createRuntimePlugin(...)`
 - content packs use `definePluginPack(...)` plus `withPluginOrder(...)`
+- content packs can assemble staged plugin groups with `instantiateOrderedPlugins(...)`
+- content packs can assemble the final pack object with `createPluginPack(...)`
 - pack catalogs use `createPluginPackCatalog(...)`
 
 That gives external packages a smaller shared API surface to learn while still letting each stage own its own world-placement logic, 2D painting, 3D models, traversal rules, map generation, or flavor hooks.
@@ -165,11 +176,17 @@ That gives plugin authors a reusable renderer-support layer for both textured ma
 
 ## Shared Style Helpers
 
-`@bworlds/procedural-style` now provides small seeded style helpers such as regional key generation, threshold-based palette selection, and hex tinting. This starts turning repeated “regional style” logic into reusable support code instead of leaving every tile package to reimplement the same seeded style patterns.
+`@bworlds/procedural-style` now provides small seeded style helpers such as regional key generation, threshold-based palette selection, hex tinting, and `createRegionalValueResolver(...)` for region-scoped style caches. This starts turning repeated “regional style” logic into reusable support code instead of leaving every tile package to reimplement the same seeded cache and style-resolution patterns.
 
 ## Shared Overworld Helpers
 
 `@bworlds/overworld-support` now provides shared seeded overworld helpers such as `createOverworldTerrainSignalSampler(...)`, `isNearOverworldLand(...)`, `createOverworldGenerationContext(...)`, and `composeOverworldTileFromPlugins(...)`. This keeps the default terrain-noise recipe, common overworld heuristics, and the full “curated override -> terrain pass -> overworld pass -> decoration” tile pipeline in a reusable support package instead of trapping it inside `@bworlds/map-overworld`, which gives future runtime or map packages a stable way to reuse the same signal-generation and plugin-composition rules.
+
+It now also provides reusable anchor-generation helpers such as `createGeneratedNamedOverworldCellAnchorSpec(...)`, `createGeneratedPoiOverworldCellAnchorSpec(...)`, and `collectNearbyOverworldPoiAnchors(...)`. That moves deterministic anchor naming, grouped POI-anchor collection, and conflict-aware cell sampling into the shared overworld support layer so future runtime packages can add new anchored landmark families without rebuilding the same cache/spec boilerplate from scratch.
+
+For grouped runtime landmark packages, `@bworlds/overworld-support` now also provides `createOverworldAnchorResolver(...)`. That helper owns the internal per-spec caches plus the common “resolve town anchors, bridge anchors, then grouped POI anchors with spacing and inherited base anchors” orchestration, so runtime packages can focus on declaring anchor specs instead of re-implementing resolver plumbing.
+
+For curated seeded overworld overrides, `@bworlds/overworld-support` now also provides `createCachedOverworldTileResolver(...)`. That gives runtime packages a shared memoized resolver wrapper for deterministic handcrafted regions or special-case landmarks, so packages like the start-region overlay can stay focused on the tile rules themselves instead of re-implementing per-seed tile caches.
 
 ## Shared POI Helpers
 
