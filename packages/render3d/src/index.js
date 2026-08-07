@@ -18,6 +18,7 @@ const TREE_CLUSTER_SIZE = 4;
 const SIGN_REGION_SIZE = 10;
 const TOWN_REGION_SIZE = 18;
 const MOUNTAIN_BASE_COLOR = '#6b7280';
+const RIVER_SURFACE_DROP = -0.12;
 
 export function create3DRenderer(host) {
   const renderer = new THREE.WebGLRenderer({
@@ -103,9 +104,10 @@ export function create3DRenderer(host) {
           new THREE.BoxGeometry(TILE_SIZE, FLOOR_THICKNESS, TILE_SIZE),
           getTileMaterial(tile.kind, variant)
         );
+        const surfaceHeight = getTileSurfaceHeight(tile.kind);
         floorMesh.position.set(
           x * TILE_SIZE,
-          -FLOOR_THICKNESS * 0.5,
+          surfaceHeight - FLOOR_THICKNESS * 0.5,
           y * TILE_SIZE
         );
         worldRoot.add(floorMesh);
@@ -125,7 +127,11 @@ export function create3DRenderer(host) {
             new THREE.BoxGeometry(TILE_SIZE, wallHeight, TILE_SIZE),
             getTileMaterial(tile.kind, variant)
           );
-          wallMesh.position.set(x * TILE_SIZE, wallHeight * 0.5, y * TILE_SIZE);
+          wallMesh.position.set(
+            x * TILE_SIZE,
+            surfaceHeight + wallHeight * 0.5,
+            y * TILE_SIZE
+          );
           worldRoot.add(wallMesh);
         }
       }
@@ -180,6 +186,14 @@ export function create3DRenderer(host) {
       }
     }
     return true;
+  }
+
+  function getTileSurfaceHeight(kind) {
+    if (kind === 'river') {
+      return RIVER_SURFACE_DROP;
+    }
+
+    return 0;
   }
 
   function getTileMaterial(kind, variant) {
