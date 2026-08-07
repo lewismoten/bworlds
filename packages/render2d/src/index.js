@@ -1,4 +1,4 @@
-import { drawTileSprite } from '@bworlds/atlas';
+import { drawTileSprite, getTileVariantIndex } from '@bworlds/atlas';
 
 export function render2D(context, state, viewport) {
   const tileSize = Math.max(
@@ -33,7 +33,11 @@ export function render2D(context, state, viewport) {
       const drawX = (x - offsetX) * tileSize;
       const drawY = (y - offsetY) * tileSize;
 
-      drawTileSprite(context, tile.kind, drawX, drawY, tileSize + 1);
+      drawTileSprite(context, tile.kind, drawX, drawY, tileSize + 1, {
+        variant: getTileVariantIndex(tile.kind, worldX, worldY),
+        worldX,
+        worldY,
+      });
     }
   }
 
