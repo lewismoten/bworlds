@@ -8,6 +8,6 @@
     "three": "^0.179.1"
   },
   "exports": {
-    ".": "./src/index.js"
+    ".": "./src/index.ts"
   }
 }

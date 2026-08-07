@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { PluginRegistry } from '@bworlds/plugin-api';
-import { createWorldGenerator, defaultPlugins } from './index.js';
+import { createWorldGenerator, defaultPlugins } from './index.ts';
 
 function createGenerator() {
   const plugins = new PluginRegistry();

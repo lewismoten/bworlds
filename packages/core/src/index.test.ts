@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { cardinalFromAngle, hash2D, toGps, WORLD_TILES_WIDE } from './index.js';
+import { cardinalFromAngle, hash2D, toGps, WORLD_TILES_WIDE } from './index.ts';
 
 describe('core utilities', () => {
   it('returns deterministic hashes', () => {
