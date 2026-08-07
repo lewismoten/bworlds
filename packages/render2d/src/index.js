@@ -13,6 +13,10 @@ export function render2D(context, state, viewport) {
   const centerX = Math.floor(viewport.width / 2);
   const centerY = Math.floor(viewport.height / 2);
   const rotation = viewport.rotation ?? 0;
+  const anchorX = Math.round(state.player.x);
+  const anchorY = Math.round(state.player.y);
+  const offsetX = state.player.x - anchorX;
+  const offsetY = state.player.y - anchorY;
 
   context.fillStyle = '#081019';
   context.fillRect(0, 0, viewport.width, viewport.height);
@@ -23,12 +27,12 @@ export function render2D(context, state, viewport) {
 
   for (let y = -radiusY; y <= radiusY; y += 1) {
     for (let x = -radiusX; x <= radiusX; x += 1) {
-      const worldX = state.player.x + x;
-      const worldY = state.player.y + y;
+      const worldX = anchorX + x;
+      const worldY = anchorY + y;
       const tile = state.getCurrentTile(worldX, worldY);
       const definition = getTileDefinition(tile.kind);
-      const drawX = x * tileSize;
-      const drawY = y * tileSize;
+      const drawX = (x - offsetX) * tileSize;
+      const drawY = (y - offsetY) * tileSize;
 
       context.fillStyle = definition.color;
       context.fillRect(drawX, drawY, tileSize + 1, tileSize + 1);
