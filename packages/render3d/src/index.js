@@ -124,6 +124,8 @@ export function create3DRenderer(host) {
           worldRoot.add(createBridgeGroup(state, x, y));
         } else if (tile.kind === 'mountain') {
           worldRoot.add(createMountainGroup(state, x, y));
+        } else if (tile.kind === 'cave') {
+          worldRoot.add(createCaveGroup(state, x, y));
         } else if (tile.kind === 'town') {
           worldRoot.add(createTownGroup(tile, x, y));
         } else if (tile.kind === 'sign') {
@@ -1501,6 +1503,215 @@ export function create3DRenderer(host) {
     }
 
     return group;
+  }
+
+  function createCaveGroup(state, tileX, tileY) {
+    const group = new THREE.Group();
+    const entrance = getCaveEntranceDirection(state, tileX, tileY);
+    const width = 0.9 + hash2D('cave-width', tileX, tileY) * 0.22;
+    const depth = 0.92 + hash2D('cave-depth', tileX, tileY) * 0.24;
+    const height = 0.96 + hash2D('cave-height', tileX, tileY) * 0.26;
+    const boulderCount =
+      3 + Math.floor(hash2D('cave-boulders', tileX, tileY) * 3);
+
+    for (let index = 0; index < boulderCount; index += 1) {
+      const boulder = new THREE.Mesh(
+        new THREE.SphereGeometry(0.36, 8, 7),
+        mountainMaterial
+      );
+      const radiusScale =
+        0.9 +
+        hash2D('cave-boulder-scale', tileX * 13 + index, tileY * 17) * 0.45;
+      const xOffset =
+        (hash2D('cave-boulder-x', tileX * 19 + index, tileY) - 0.5) * 0.34;
+      const zOffset =
+        (hash2D('cave-boulder-z', tileX, tileY * 23 + index) - 0.5) * 0.32;
+      const yOffset =
+        0.2 + hash2D('cave-boulder-y', tileX + index, tileY - index) * 0.32;
+      boulder.position.set(tileX + xOffset, yOffset, tileY + zOffset);
+      boulder.scale.set(
+        width * radiusScale,
+        height * (0.72 + radiusScale * 0.12),
+        depth * radiusScale
+      );
+      group.add(boulder);
+    }
+
+    const cap = new THREE.Mesh(
+      new THREE.SphereGeometry(0.3, 7, 6),
+      mountainMaterial
+    );
+    cap.position.set(
+      tileX + (hash2D('cave-cap-x', tileX, tileY) - 0.5) * 0.08,
+      height * 0.82,
+      tileY + (hash2D('cave-cap-z', tileX, tileY) - 0.5) * 0.08
+    );
+    cap.scale.set(width * 0.88, height * 0.6, depth * 0.82);
+    group.add(cap);
+
+    const portal = new THREE.Group();
+    portal.position.set(
+      tileX + entrance.dx * 0.5,
+      0,
+      tileY + entrance.dy * 0.5
+    );
+    portal.rotation.y = entrance.rotationY;
+
+    const crown = new THREE.Mesh(
+      new THREE.SphereGeometry(0.17, 7, 6),
+      mountainMaterial
+    );
+    crown.position.set(0, 0.42, 0.08);
+    crown.scale.set(2.2, 1.5, 1.05);
+    portal.add(crown);
+
+    const leftCheek = new THREE.Mesh(
+      new THREE.SphereGeometry(0.14, 7, 6),
+      mountainMaterial
+    );
+    leftCheek.position.set(-0.24, 0.2, 0.08);
+    leftCheek.scale.set(1.4, 1.9, 1.1);
+    portal.add(leftCheek);
+
+    const rightCheek = new THREE.Mesh(
+      new THREE.SphereGeometry(0.14, 7, 6),
+      mountainMaterial
+    );
+    rightCheek.position.set(0.24, 0.2, 0.08);
+    rightCheek.scale.set(1.4, 1.9, 1.1);
+    portal.add(rightCheek);
+
+    const mouthVoid = new THREE.Mesh(
+      new THREE.CircleGeometry(0.18, 20),
+      new THREE.MeshBasicMaterial({
+        color: '#010308',
+        side: THREE.DoubleSide,
+      })
+    );
+    mouthVoid.position.set(0, 0.2, 0.22);
+    portal.add(mouthVoid);
+
+    const tunnelBack = new THREE.Mesh(
+      new THREE.CircleGeometry(0.12, 18),
+      new THREE.MeshBasicMaterial({
+        color: '#000000',
+        side: THREE.DoubleSide,
+      })
+    );
+    tunnelBack.position.set(0, 0.19, -0.16);
+    portal.add(tunnelBack);
+
+    const tunnelCeiling = new THREE.Mesh(
+      new THREE.PlaneGeometry(0.24, 0.46),
+      new THREE.MeshBasicMaterial({
+        color: '#03060a',
+        side: THREE.DoubleSide,
+      })
+    );
+    tunnelCeiling.position.set(0, 0.26, 0.01);
+    tunnelCeiling.rotation.x = Math.PI * 0.5;
+    portal.add(tunnelCeiling);
+
+    const tunnelFloor = new THREE.Mesh(
+      new THREE.PlaneGeometry(0.22, 0.34),
+      new THREE.MeshBasicMaterial({
+        color: '#080b10',
+        side: THREE.DoubleSide,
+      })
+    );
+    tunnelFloor.position.set(0, 0.04, 0.02);
+    tunnelFloor.rotation.x = -Math.PI * 0.5;
+    portal.add(tunnelFloor);
+
+    const arch = new THREE.Mesh(
+      new THREE.TorusGeometry(0.24, 0.06, 6, 12, Math.PI),
+      mountainMaterial
+    );
+    arch.position.set(0, 0.31, 0.22);
+    arch.rotation.z = Math.PI;
+    portal.add(arch);
+
+    const leftPillar = new THREE.Mesh(
+      new THREE.SphereGeometry(0.08, 6, 6),
+      mountainMaterial
+    );
+    leftPillar.position.set(-0.2, 0.16, 0.16);
+    leftPillar.scale.set(1, 1.9, 1.2);
+    portal.add(leftPillar);
+
+    const rightPillar = new THREE.Mesh(
+      new THREE.SphereGeometry(0.08, 6, 6),
+      mountainMaterial
+    );
+    rightPillar.position.set(0.2, 0.16, 0.16);
+    rightPillar.scale.set(1, 1.9, 1.2);
+    portal.add(rightPillar);
+
+    const sill = new THREE.Mesh(
+      new THREE.SphereGeometry(0.1, 6, 6),
+      mountainMaterial
+    );
+    sill.position.set(0, 0.03, 0.22);
+    sill.scale.set(2.8, 0.55, 1.2);
+    portal.add(sill);
+
+    group.add(portal);
+    return group;
+  }
+
+  function getCaveEntranceDirection(state, tileX, tileY) {
+    const directions = [
+      { dx: 0, dy: -1, rotationY: Math.PI, label: 'north' },
+      { dx: 1, dy: 0, rotationY: -Math.PI * 0.5, label: 'east' },
+      { dx: 0, dy: 1, rotationY: 0, label: 'south' },
+      { dx: -1, dy: 0, rotationY: Math.PI * 0.5, label: 'west' },
+    ];
+
+    return directions
+      .map((direction) => {
+        const tile = state.getCurrentTile(
+          tileX + direction.dx,
+          tileY + direction.dy
+        );
+        const walkable = getTileDefinition(tile.kind).walkable;
+        const landFacing =
+          walkable && tile.kind !== 'river' && tile.kind !== 'ocean';
+        const roadDistance = getNearestAccessibleRoadDistance(
+          state,
+          tileX,
+          tileY,
+          direction
+        );
+        return {
+          ...direction,
+          score:
+            (roadDistance === 1 ? 8 : 0) +
+            (roadDistance > 1 && Number.isFinite(roadDistance)
+              ? Math.max(0, 6 - roadDistance)
+              : 0) +
+            (landFacing ? 4 : 0) +
+            (walkable ? 2 : 0) +
+            hash2D(`cave-facing:${direction.label}`, tileX, tileY),
+        };
+      })
+      .sort((a, b) => b.score - a.score)[0];
+  }
+
+  function getNearestAccessibleRoadDistance(state, tileX, tileY, direction) {
+    for (let distance = 1; distance <= 5; distance += 1) {
+      const tile = state.getCurrentTile(
+        tileX + direction.dx * distance,
+        tileY + direction.dy * distance
+      );
+      if (tile.kind === 'road' || tile.kind === 'bridge') {
+        return distance;
+      }
+      if (!getTileDefinition(tile.kind).walkable) {
+        return Infinity;
+      }
+    }
+
+    return Infinity;
   }
 
   function getMountainPeakScale(state, tileX, tileY) {
