@@ -14,6 +14,8 @@ import { create3DRenderer } from '@bworlds/render3d';
 import { createWorldGenerator, defaultPlugins } from '@bworlds/worldgen';
 import './styles.css';
 
+const STORAGE_KEY = 'bworlds:session';
+
 const root = document.querySelector('#app');
 
 root.innerHTML = `
@@ -75,6 +77,7 @@ const atlasCanvas = document.querySelector('#atlas');
 const status = document.querySelector('#status');
 const toggleButton = document.querySelector('#toggle-view');
 const actionButton = document.querySelector('#action');
+let lastSavedSnapshot = '';
 
 const registry = new PluginRegistry();
 for (const plugin of defaultPlugins) {
@@ -86,14 +89,19 @@ const generator = createWorldGenerator({
   plugins: registry,
 });
 
+const savedSession = loadSession();
 const state = createWorldState({
   generator,
-  player: createPlayer({
-    x: 0,
-    y: 0,
-    facing: 0,
-  }),
+  player: createPlayer(savedSession?.player),
 });
+
+if (savedSession?.viewMode === '3d' || savedSession?.viewMode === '2d') {
+  state.viewMode = savedSession.viewMode;
+}
+
+if (Array.isArray(savedSession?.stack) && savedSession.stack.length > 0) {
+  state.stack = savedSession.stack;
+}
 
 const motion = {
   jumpHeight: 0,
@@ -153,6 +161,7 @@ function toggleView() {
     state.viewMode === '2d' ? 'Switch to 3D' : 'Switch to 2D';
   viewport2d.classList.toggle('is-hidden', state.viewMode !== '2d');
   viewport3d.classList.toggle('is-hidden', state.viewMode !== '3d');
+  saveSession();
 }
 
 function attemptMove(stepX, stepY) {
@@ -163,6 +172,7 @@ function attemptMove(stepX, stepY) {
   if (state.canWalk(nextX, nextY) && canOccupy3d) {
     state.player.x = nextX;
     state.player.y = nextY;
+    saveSession();
   }
 }
 
@@ -175,7 +185,9 @@ function forwardDelta() {
 }
 
 function handleInteraction() {
-  state.interact();
+  if (state.interact()) {
+    saveSession();
+  }
 }
 
 function jump() {
@@ -189,6 +201,9 @@ function jump() {
 }
 
 function updateMovement(deltaMs) {
+  const previousX = state.player.x;
+  const previousY = state.player.y;
+  const previousFacing = state.player.facing;
   const turnSpeed = 0.0034 * deltaMs;
   const moveSpeed = 0.0052 * deltaMs;
   const shiftHeld = keys.has('Shift');
@@ -307,6 +322,14 @@ function updateMovement(deltaMs) {
       motion.longJumpActivated = false;
     }
   }
+
+  if (
+    previousX !== state.player.x ||
+    previousY !== state.player.y ||
+    previousFacing !== state.player.facing
+  ) {
+    saveSession();
+  }
 }
 
 function render() {
@@ -363,7 +386,7 @@ window.addEventListener('keydown', (event) => {
       handleInteraction();
     }
   }
-  if (key === 'x') state.tryExit();
+  if (key === 'x' && state.tryExit()) saveSession();
 
   if (
     ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(event.key)
@@ -385,5 +408,48 @@ toggleButton.addEventListener('click', toggleView);
 actionButton.addEventListener('click', handleInteraction);
 
 resizeCanvas();
+viewport2d.classList.toggle('is-hidden', state.viewMode !== '2d');
+viewport3d.classList.toggle('is-hidden', state.viewMode !== '3d');
 render();
 requestAnimationFrame(loop);
+
+function saveSession() {
+  try {
+    const snapshot = JSON.stringify({
+      player: {
+        x: state.player.x,
+        y: state.player.y,
+        facing: state.player.facing,
+      },
+      stack: state.stack,
+      viewMode: state.viewMode,
+    });
+    if (snapshot === lastSavedSnapshot) return;
+    window.localStorage.setItem(STORAGE_KEY, snapshot);
+    lastSavedSnapshot = snapshot;
+  } catch {
+    // Ignore storage write failures so play continues normally.
+  }
+}
+
+function loadSession() {
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (
+      typeof parsed?.player?.x !== 'number' ||
+      typeof parsed?.player?.y !== 'number' ||
+      typeof parsed?.player?.facing !== 'number'
+    ) {
+      return null;
+    }
+    if (!Array.isArray(parsed?.stack) || parsed.stack.length === 0) {
+      return null;
+    }
+    lastSavedSnapshot = raw;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
