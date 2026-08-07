@@ -47,3 +47,107 @@
 - [ ] A boat route must be circular in that the boat should not double-back on any part of it's path between each dock
 - [ ] A dock with a boat should have a sign indicating the name of the stops except its own. Each stop should indicate the closest POI to each dock. The sign should state the name of the boat.
 - [ ] All POI should have a procdurally generated name.
+- [ ] Setup NPC's in towns
+- [ ] Each NPC should be designated to live in a residence
+- [ ] Each NPC has a name
+- [ ] Each NPC has a mother and father
+- [ ] Each NPC has an age
+- [ ] Adult NPC's have a profession, unless they are old/retired/dead
+- [ ] Working NPC's are designated to a building in town that they work at that is related to their profession
+- [ ] NPC's can walk from their home to their profession and back based on the time of day and their type of profession
+- [ ] If the profession supports it, NPC's at their business may buy/sell items, train/revive players, provide quests, etc.
+- [ ] NPC's may offer quests to players based on the time of day, time of year, player level, profession, prior quests completed, if they are home, at work, walking around town, etc.
+- [ ] Quests may include:
+  - [ ] Fetch quest — retrieve an item and bring it back.
+  - [ ] Kill quest — defeat a certain enemy, boss, or number of enemies.
+  - [ ] Escort quest — protect an NPC while traveling somewhere.
+  - [ ] Delivery quest — carry an item or message to another person or place.
+  - [ ] Rescue quest — find and save an NPC, prisoner, animal, etc.
+  - [ ] Search / investigation quest — gather clues, inspect locations, question NPCs, solve a mystery.
+  - [ ] Exploration quest — discover a location, map an area, reach a landmark, or uncover hidden places.
+  - [ ] Collection quest — gather several items, ingredients, artifacts, or resources.
+  - [ ] Crafting quest — obtain materials and build, repair, cook, or forge something.
+  - [ ] Puzzle quest — solve mechanisms, riddles, codes, environmental puzzles, or logic challenges.
+  - [ ] Defense quest — protect a location or NPC against waves of enemies.
+  - [ ] Survival quest — endure for a period of time or reach safety under difficult conditions.
+  - [ ] Stealth / infiltration quest — enter an area without being detected, steal something, spy, or sabotage.
+  - [ ] Assassination / bounty quest — locate and eliminate a specific target.
+  - [ ] Capture quest — capture rather than kill a target.
+  - [ ] Follow / track quest — trail an NPC, footprints, creature, signal, or other clue.
+  - [ ] Race / timed quest — complete an objective before a deadline or another participant.
+  - [ ] Diplomacy quest — negotiate, persuade, mediate, recruit, intimidate, or resolve a dispute.
+  - [ ] Choice / moral quest — make a decision that changes relationships, rewards, factions, or story outcomes.
+  - [ ] Faction quest — perform work to gain reputation or advance within an organization.
+  - [ ] Companion quest — resolve a party member's personal storyline.
+  - [ ] Revenge quest — pursue someone responsible for an earlier event.
+  - [ ] Recovery quest — reclaim stolen property, territory, equipment, or something lost.
+  - [ ] Activation quest — turn on generators, shrines, portals, towers, switches, etc.
+  - [ ] Destruction / sabotage quest — destroy an object, structure, supply line, machine, or enemy resource.
+  - [ ] Construction / restoration quest — rebuild a town, repair equipment, establish an outpost, or improve a location.
+  - [ ] Training / tutorial quest — teach mechanics by having the player perform them.
+  - [ ] Tournament / challenge quest — win a fight, contest, arena, card game, race, or series of trials.
+- [ ] Towns can become a simulation game of their own to level up the town, and various progressions can depend on prior progressions
+  - [ ] Progression example: clear nearby wolves, establish logging camp, gather timber, build sawmill, recruit carpenter, build houses, population increases, unlock marketplace, attract traveling merchants
+  - [ ] Inn - unlocks resting, travelers, rumors, quests
+  - [ ] Blacksmith - unlocks repair, weapons, smithing
+  - [ ] Market - unlocks player/npc trading
+  - [ ] Stable - unlocks mounts and travel
+  - [ ] Barracks - unlocks guards and defense quests
+  - [ ] Town Hall - unlocks governance and town projects
+  - [ ] Library - unlocks lore, research, recipes
+  - [ ] Temple - unlocks healing, blessings, resurrection
+  - [ ] Farm - unlocks food production
+  - [ ] Warehouse - increased town storage
+  - [ ] Tavern - social activities and NPC recruitment
+  - [ ] Harbor - Fishing, shpping, sea travel (must build dock nearby in overworld)
+  - [ ] Guild Hall - guild services
+  - [ ] School - Profession advancement
+  - [ ] Arena - PvP, tournaments, spectator events
+  - [ ] Bank - Currency/Item storage
+  - [ ] Workshop - advanced crafting
+  - [ ] Building tiers - Forge, blacksmith shop, smithing guild, royal foundry
+  - [ ] Recruit NPC's from other locations to work at businesses in your town
+  - [ ] As NPC levels up, they can train apprentices
+  - [ ] Construction — place new buildings, expand existing ones, repair ruins, upgrade materials, add floors, walls, roads, bridges, lighting, wells, docks, gates, farms, storage, workshops.
+  - [ ] Infrastructure — roads, water, sewage, power/magic, irrigation, transportation, warehouses, town portals, stables, signage, communications.
+  - [ ] Resource gathering — logging camps, mines, quarries, farms, fisheries, hunting grounds, herb gardens.
+  - [ ] Processing — sawmills, smelters, mills, tanneries, kitchens, breweries, refineries.
+  - [ ] Crafting professions — blacksmith, carpenter, tailor, alchemist, jeweler, cook, engineer, enchanter, mason, leatherworker.
+  - [ ] Service professions — merchant, banker, innkeeper, healer, trainer, stablemaster, auctioneer, courier, barber, repair NPC.
+  - [ ] Population growth — attract settlers, provide housing, recruit specialists, improve safety, provide food, create jobs.
+  - [ ] NPC recruitment — convince named NPCs to move into town, rescue them, hire them, earn their loyalty, or meet prerequisites for their arrival.
+  - [ ] NPC advancement — apprentice becomes master smith, healer opens a clinic, merchant expands inventory, guard becomes captain.
+  - [ ] Commerce — markets, shops, trade posts, auction houses, caravans, merchant routes, taxation, imports and exports.
+  - [ ] Town economy — prices, wages, upkeep, taxes, production bonuses, shortages, surpluses, regional specialties.
+  - [ ] Quests — construction quests, gathering quests, recruitment quests, defense quests, exploration quests, political quests, trade quests, profession quests.
+  - [ ] Defense — guards, militia, towers, walls, gates, patrols, traps, warning systems, barracks.
+  - [ ] Threat removal — eliminate nearby monsters, bandits, infestations, curses, enemy camps, dangerous terrain.
+  - [ ] Territory control — secure nearby mines, forests, farms, roads, bridges, ruins, ports, watchtowers.
+  - [ ] Transportation — unlock roads, boats, mounts, carts, airships, teleportation, fast-travel points.
+  - [ ] Government — elect or appoint leaders, establish laws, taxation, permits, town policies, courts, councils.
+  - [ ] Faction relationships — alliances, reputation, diplomatic missions, rival towns, guild relationships.
+  - [ ] Religion/culture — temples, shrines, monuments, festivals, theaters, libraries, museums, schools.
+  - [ ] Entertainment — taverns, arenas, gambling, races, fishing contests, festivals, minigames.
+  - [ ] Player housing — homes, guild halls, plots, decoration, storage, workshops.
+  - [ ] Guild features — guild headquarters, guild banks, crafting bonuses, guild quests, recruitment halls.
+  - [ ] Knowledge — libraries, universities, research facilities, maps, discovered recipes, technology/magic advancement.
+  - [ ] Health and welfare — clinics, hospitals, herbalists, sanitation, food supply, shelters.
+  - [ ] Prestige — statues, fountains, landmarks, decorative improvements, town banners, architecture.
+  - [ ] Regional influence — town reputation affects surrounding settlements, NPC traffic, trade routes, available quests, political power.
+  - [ ] World events — invasions, fires, storms, plagues, shortages, festivals, monster attacks, migrations.
+  - [ ] Maintenance — repair structures, replenish supplies, pay guards, keep roads usable, maintain defenses.
+  - [ ] town projects can require both players and NPC's to assist in materials: stone, timber, iron, gold, bandits (safety)
+  - [ ] As town improves, safety around town on world map increases, in that lower level chance encounters are closer to town, and higher level chance encounters are further away
+  - [ ] procedurally generated towns are at varrying states of progression to begin with. 
+  - [ ] A new player would be offered to start at or near a town that is most preferable for new low-level players
+- [ ] Changes to any POI or world map other than the world map are saved in an indexed DB, or a world map server.
+- [ ] A world map server is optional. A player may choose to play on their own.
+- [ ] A player may specify multiple world-map servers, with an order of preferance.
+- [ ] A POI or change on 2 or more world map servers will apply the change based on the preference the player had added.
+- [ ] A player may build a new POI anywhere.
+- [ ] If a world map server that the player is using offers the option to add a POI, the player may be asked if they would like to build the POI on the server.
+- [ ] Player inventory is also similar in that it may be saved locally in the indexed DB, or with an Inventory server.
+- [ ] Character servers allow the player themselves to save their player information such as location, level, skills, etc.
+- [ ] A player may play one or more characters at the same time.
+- [ ] A player may drop off and pickup their characters at different places in the world.
+- [ ] A player may recruit NPC's to become part of their characters available.
