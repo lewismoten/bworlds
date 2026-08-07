@@ -21,6 +21,10 @@ function distanceToLineSegment(px, py, ax, ay, bx, by) {
   return Math.hypot(px - nearestX, py - nearestY);
 }
 
+function pickFrom(list, seedValue) {
+  return list[Math.floor(seedValue * list.length) % list.length];
+}
+
 function createOverworldMap(seed, plugins) {
   const cache = new Map();
   const townAnchorCache = new Map();
@@ -105,6 +109,74 @@ function createOverworldMap(seed, plugins) {
     };
   }
 
+  function getRegionalNameStyle(x, y) {
+    const regionX = Math.floor(x / 48);
+    const regionY = Math.floor(y / 48);
+    const prefixSets = [
+      ['Ash', 'Briar', 'Cinder', 'Dawn', 'Elder', 'Frost'],
+      ['Green', 'High', 'Low', 'Moss', 'Oak', 'Stone'],
+      ['Red', 'Silver', 'Sun', 'Thorn', 'West', 'Wind'],
+      ['Moon', 'Raven', 'River', 'Storm', 'Vale', 'Wild'],
+    ];
+    const suffixSets = [
+      ['ford', 'gate', 'grove', 'hollow', 'mere', 'watch'],
+      ['barrow', 'crest', 'fell', 'hearth', 'rest', 'run'],
+      ['bridge', 'field', 'keep', 'pass', 'reach', 'ward'],
+      ['den', 'depths', 'hall', 'rift', 'spire', 'way'],
+    ];
+
+    return {
+      regionX,
+      regionY,
+      prefixes:
+        prefixSets[
+          Math.floor(
+            hash2D(`${seed}:name-prefix-set`, regionX, regionY) *
+              prefixSets.length
+          )
+        ],
+      suffixes:
+        suffixSets[
+          Math.floor(
+            hash2D(`${seed}:name-suffix-set`, regionX, regionY) *
+              suffixSets.length
+          )
+        ],
+    };
+  }
+
+  function generatePoiName(type, x, y) {
+    const style = getRegionalNameStyle(x, y);
+    const stem = `${seed}:${type}:${x}:${y}`;
+    const prefix = pickFrom(style.prefixes, hash2D(`${stem}:prefix`, x, y));
+    const suffix = pickFrom(style.suffixes, hash2D(`${stem}:suffix`, y, x));
+
+    if (type === 'town') {
+      const forms = [
+        `${prefix}${suffix}`,
+        `${prefix} ${suffix}`,
+        `${prefix}${pickFrom(['haven', 'stead', 'wick', 'port'], hash2D(`${stem}:tail`, x + y, y))}`,
+      ];
+      return pickFrom(forms, hash2D(`${stem}:form`, x - y, y - x));
+    }
+
+    if (type === 'cave') {
+      const nouns = ['Cave', 'Grotto', 'Hollow', 'Mouth', 'Den', 'Sink'];
+      return `${prefix} ${pickFrom(nouns, hash2D(`${stem}:noun`, x, y))}`;
+    }
+
+    if (type === 'dungeon') {
+      const nouns = ['Barrow', 'Crypt', 'Depths', 'Hall', 'Vault', 'Warren'];
+      return `${prefix} ${pickFrom(nouns, hash2D(`${stem}:noun`, x, y))}`;
+    }
+
+    return `${prefix}${suffix}`;
+  }
+
+  curatedSpawnTiles.get('-5,4').poi.name = generatePoiName('dungeon', -5, 4);
+  curatedSpawnTiles.get('-4,5').poi.name = generatePoiName('cave', -4, 5);
+  curatedSpawnTiles.get('5,4').poi.name = generatePoiName('town', 5, 4);
+
   function getTownAnchor(cellX, cellY) {
     const key = makeKey(cellX, cellY);
     if (!townAnchorCache.has(key)) {
@@ -132,7 +204,7 @@ function createOverworldMap(seed, plugins) {
           ? {
               x: anchorX,
               y: anchorY,
-              name: `Town ${Math.abs(anchorX)}:${Math.abs(anchorY)}`,
+              name: generatePoiName('town', anchorX, anchorY),
             }
           : null
       );
@@ -352,19 +424,19 @@ function createOverworldMap(seed, plugins) {
       if (townChance > 0.996) {
         tile = {
           kind: 'town',
-          poi: { type: 'town', name: `Town ${Math.abs(x)}:${Math.abs(y)}` },
+          poi: { type: 'town', name: generatePoiName('town', x, y) },
           note: 'A town entrance. Press interact to enter.',
         };
       } else if (dungeonChance > 0.9975) {
         tile = {
           kind: 'dungeon',
-          poi: { type: 'dungeon', name: `Dungeon ${x}:${y}` },
+          poi: { type: 'dungeon', name: generatePoiName('dungeon', x, y) },
           note: 'A dungeon descent awaits.',
         };
       } else if (caveChance > 0.997) {
         tile = {
           kind: 'cave',
-          poi: { type: 'cave', name: `Cave ${x}:${y}` },
+          poi: { type: 'cave', name: generatePoiName('cave', x, y) },
           note: 'A cave mouth opens in the terrain.',
         };
       } else if (signChance > 0.997) {
