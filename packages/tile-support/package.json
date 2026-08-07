@@ -1,0 +1,11 @@
+{
+  "name": "@bworlds/tile-support",
+  "version": "0.1.0",
+  "type": "module",
+  "dependencies": {
+    "@bworlds/plugin-api": "0.1.0"
+  },
+  "exports": {
+    ".": "./src/index.ts"
+  }
+}

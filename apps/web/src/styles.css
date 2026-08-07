@@ -160,6 +160,37 @@ button:hover {
   font-size: 1rem;
 }
 
+.pack-form {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.pack-option {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.35rem 0.7rem;
+  align-items: start;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.pack-option input {
+  margin-top: 0.2rem;
+}
+
+.pack-name {
+  font-weight: 600;
+}
+
+.pack-description {
+  grid-column: 2;
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
 dl {
   margin: 0;
   display: grid;

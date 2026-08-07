@@ -1,0 +1,12 @@
+{
+  "name": "@bworlds/content-pack-ruins",
+  "version": "0.1.0",
+  "type": "module",
+  "dependencies": {
+    "@bworlds/plugin-api": "0.1.0",
+    "@bworlds/tile-ruins": "0.1.0"
+  },
+  "exports": {
+    ".": "./src/index.ts"
+  }
+}

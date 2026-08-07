@@ -5,6 +5,7 @@
   "dependencies": {
     "@bworlds/atlas": "0.1.0",
     "@bworlds/core": "0.1.0",
+    "@bworlds/plugin-api": "0.1.0",
     "three": "^0.179.1"
   },
   "exports": {

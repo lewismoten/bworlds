@@ -1,0 +1,15 @@
+{
+  "name": "@bworlds/tile-forest",
+  "version": "0.1.0",
+  "type": "module",
+  "dependencies": {
+    "@bworlds/core": "0.1.0",
+    "@bworlds/paint-support": "0.1.0",
+    "@bworlds/procedural-style": "0.1.0",
+    "@bworlds/plugin-api": "0.1.0",
+    "@bworlds/three-support": "0.1.0"
+  },
+  "exports": {
+    ".": "./src/index.ts"
+  }
+}

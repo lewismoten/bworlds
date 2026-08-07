@@ -49,7 +49,16 @@ export function valueNoise2D(seed, x, y) {
   return lerp(a, b, ty);
 }
 
-export function octaveNoise2D(seed, x, y, options = {}) {
+export function octaveNoise2D(
+  seed,
+  x,
+  y,
+  options: {
+    octaves?: number;
+    persistence?: number;
+    lacunarity?: number;
+  } = {}
+) {
   const octaves = options.octaves ?? 4;
   const persistence = options.persistence ?? 0.5;
   const lacunarity = options.lacunarity ?? 2;
@@ -68,7 +77,16 @@ export function octaveNoise2D(seed, x, y, options = {}) {
   return total / normalizer;
 }
 
-export function ridgedNoise2D(seed, x, y, options = {}) {
+export function ridgedNoise2D(
+  seed,
+  x,
+  y,
+  options: {
+    octaves?: number;
+    persistence?: number;
+    lacunarity?: number;
+  } = {}
+) {
   return 1 - Math.abs(octaveNoise2D(seed, x, y, options) * 2 - 1);
 }
 
@@ -102,140 +120,106 @@ export function cardinalFromAngle(angle) {
   return 'N';
 }
 
-export const TILE_DEFINITIONS = {
-  ocean: {
-    name: 'Ocean',
-    color: '#2563eb',
-    miniColor: '#4ea3ff',
-    walkable: false,
-    wallHeight: 0.1,
-  },
-  shore: {
-    name: 'Shore',
-    color: '#f4d58d',
-    miniColor: '#f8e9b5',
-    walkable: true,
-    wallHeight: 0,
-  },
-  plains: {
-    name: 'Plains',
-    color: '#7fb069',
-    miniColor: '#95c779',
-    walkable: true,
-    wallHeight: 0,
-  },
-  forest: {
-    name: 'Forest',
-    color: '#2f6f3e',
-    miniColor: '#429154',
-    walkable: true,
-    wallHeight: 0.38,
-  },
-  mountain: {
-    name: 'Mountain',
-    color: '#6b7280',
-    miniColor: '#94a3b8',
-    walkable: false,
-    wallHeight: 0.95,
-  },
-  river: {
-    name: 'River',
-    color: '#38bdf8',
-    miniColor: '#7dd3fc',
-    walkable: false,
-    wallHeight: 0.05,
-  },
-  road: {
-    name: 'Road',
-    color: '#a16207',
-    miniColor: '#ca8a04',
-    walkable: true,
-    wallHeight: 0,
-  },
-  bridge: {
-    name: 'Bridge',
-    color: '#92400e',
-    miniColor: '#b45309',
-    walkable: true,
-    wallHeight: 0.1,
-  },
-  sign: {
-    name: 'Sign Post',
-    color: '#d97706',
-    miniColor: '#f59e0b',
-    walkable: true,
-    wallHeight: 0.3,
-  },
-  town: {
-    name: 'Town',
-    color: '#e879f9',
-    miniColor: '#f0abfc',
-    walkable: true,
-    wallHeight: 0.5,
-  },
-  dungeon: {
-    name: 'Dungeon',
-    color: '#991b1b',
-    miniColor: '#ef4444',
-    walkable: true,
-    wallHeight: 0.65,
-  },
-  cave: {
-    name: 'Cave',
-    color: '#52525b',
-    miniColor: '#71717a',
-    walkable: true,
-    wallHeight: 0.55,
-  },
-  wall: {
-    name: 'Wall',
-    color: '#334155',
-    miniColor: '#64748b',
-    walkable: false,
-    wallHeight: 1,
-  },
-  floor: {
-    name: 'Floor',
-    color: '#94a3b8',
-    miniColor: '#cbd5e1',
-    walkable: true,
-    wallHeight: 0,
-  },
-  door: {
-    name: 'Door',
-    color: '#f97316',
-    miniColor: '#fb923c',
-    walkable: true,
-    wallHeight: 0.1,
-  },
-  stairsDown: {
-    name: 'Stairs Down',
-    color: '#0f766e',
-    miniColor: '#14b8a6',
-    walkable: true,
-    wallHeight: 0.1,
-  },
-  stairsUp: {
-    name: 'Stairs Up',
-    color: '#0891b2',
-    miniColor: '#06b6d4',
-    walkable: true,
-    wallHeight: 0.1,
-  },
-  shop: {
-    name: 'Shop',
-    color: '#fb7185',
-    miniColor: '#fda4af',
-    walkable: true,
-    wallHeight: 0.4,
-  },
+function pickFrom(list, seedValue) {
+  return list[Math.floor(seedValue * list.length) % list.length];
+}
+
+export function getRegionalPoiNameStyle(seed, x, y) {
+  const regionX = Math.floor(x / 48);
+  const regionY = Math.floor(y / 48);
+  const prefixSets = [
+    ['Ash', 'Briar', 'Cinder', 'Dawn', 'Elder', 'Frost'],
+    ['Green', 'High', 'Low', 'Moss', 'Oak', 'Stone'],
+    ['Red', 'Silver', 'Sun', 'Thorn', 'West', 'Wind'],
+    ['Moon', 'Raven', 'River', 'Storm', 'Vale', 'Wild'],
+  ];
+  const suffixSets = [
+    ['ford', 'gate', 'grove', 'hollow', 'mere', 'watch'],
+    ['barrow', 'crest', 'fell', 'hearth', 'rest', 'run'],
+    ['bridge', 'field', 'keep', 'pass', 'reach', 'ward'],
+    ['den', 'depths', 'hall', 'rift', 'spire', 'way'],
+  ];
+
+  return {
+    regionX,
+    regionY,
+    prefixes:
+      prefixSets[
+        Math.floor(
+          hash2D(`${seed}:name-prefix-set`, regionX, regionY) *
+            prefixSets.length
+        )
+      ],
+    suffixes:
+      suffixSets[
+        Math.floor(
+          hash2D(`${seed}:name-suffix-set`, regionX, regionY) *
+            suffixSets.length
+        )
+      ],
+  };
+}
+
+export function generatePoiName(seed, type, x, y) {
+  const style = getRegionalPoiNameStyle(seed, x, y);
+  const stem = `${seed}:${type}:${x}:${y}`;
+  const prefix = pickFrom(style.prefixes, hash2D(`${stem}:prefix`, x, y));
+  const suffix = pickFrom(style.suffixes, hash2D(`${stem}:suffix`, y, x));
+
+  if (type === 'town') {
+    const forms = [
+      `${prefix}${suffix}`,
+      `${prefix} ${suffix}`,
+      `${prefix}${pickFrom(
+        ['haven', 'stead', 'wick', 'port'],
+        hash2D(`${stem}:tail`, x + y, y)
+      )}`,
+    ];
+    return pickFrom(forms, hash2D(`${stem}:form`, x - y, y - x));
+  }
+
+  if (type === 'cave') {
+    const nouns = ['Cave', 'Grotto', 'Hollow', 'Mouth', 'Den', 'Sink'];
+    return `${prefix} ${pickFrom(nouns, hash2D(`${stem}:noun`, x, y))}`;
+  }
+
+  if (type === 'dungeon') {
+    const nouns = ['Barrow', 'Crypt', 'Depths', 'Hall', 'Vault', 'Warren'];
+    return `${prefix} ${pickFrom(nouns, hash2D(`${stem}:noun`, x, y))}`;
+  }
+
+  if (type === 'ruins') {
+    const nouns = ['Ruins', 'Forum', 'Temple', 'Sanctum', 'Court', 'Stones'];
+    return `${prefix} ${pickFrom(nouns, hash2D(`${stem}:noun`, x, y))}`;
+  }
+
+  return `${prefix}${suffix}`;
+}
+
+export const DEFAULT_TILE_DEFINITION = {
+  name: 'Unknown Tile',
+  color: '#64748b',
+  miniColor: '#94a3b8',
+  walkable: true,
+  wallHeight: 0,
 };
 
 export function getTileDefinition(kind) {
-  return TILE_DEFINITIONS[kind] ?? TILE_DEFINITIONS.plains;
+  return {
+    ...DEFAULT_TILE_DEFINITION,
+    name: kind
+      ? `${String(kind).slice(0, 1).toUpperCase()}${String(kind).slice(1)}`
+      : DEFAULT_TILE_DEFINITION.name,
+  };
 }
 
-export function createPlayer(overrides = {}) {
+export function createPlayer(
+  overrides: {
+    x?: number;
+    y?: number;
+    facing?: number;
+  } = {}
+) {
   return {
     x: overrides.x ?? 0,
     y: overrides.y ?? 0,
@@ -247,7 +231,27 @@ export function snapWorldCoordinate(value) {
   return Math.round(value);
 }
 
-export function createWorldState({ generator, player }) {
+export function createWorldState({
+  generator,
+  player,
+  resolveTileDefinition,
+}: {
+  generator: {
+    getMap(context: unknown, player?: unknown): {
+      getTile(x: number, y: number): { kind: string };
+      getAction?(x: number, y: number): any;
+      getExit?(x?: number, y?: number): any;
+    };
+  };
+  player: {
+    x: number;
+    y: number;
+    facing: number;
+  };
+  resolveTileDefinition?: (kind: string) => any;
+}) {
+  const getResolvedTileDefinition =
+    resolveTileDefinition ?? ((kind) => getTileDefinition(kind));
   const stack = [
     {
       id: 'overworld',
@@ -275,6 +279,9 @@ export function createWorldState({ generator, player }) {
         snapWorldCoordinate(y)
       );
     },
+    getTileDefinition(kind) {
+      return getResolvedTileDefinition(kind);
+    },
     canWalk(x, y) {
       const probes = [
         [x, y],
@@ -286,7 +293,8 @@ export function createWorldState({ generator, player }) {
 
       return probes.every(
         ([probeX, probeY]) =>
-          getTileDefinition(this.getCurrentTile(probeX, probeY).kind).walkable
+          this.getTileDefinition(this.getCurrentTile(probeX, probeY).kind)
+            .walkable
       );
     },
     interact() {

@@ -2,22 +2,24 @@ import { drawAtlas } from '@bworlds/atlas';
 import {
   HALF_WORLD_TILES,
   cardinalFromAngle,
-  createPlayer,
-  createWorldState,
-  getTileDefinition,
   normalizeAngle,
   snapWorldCoordinate,
   toGps,
 } from '@bworlds/core';
-import { PluginRegistry } from '@bworlds/plugin-api';
 import { render2D } from '@bworlds/render2d';
 import { create3DRenderer } from '@bworlds/render3d';
-import { createWorldGenerator, defaultPlugins } from '@bworlds/worldgen';
+import {
+  createBuiltinContentPackCatalog,
+  createWorldRuntime,
+} from '@bworlds/worldgen';
 import './styles.css';
 
 const STORAGE_KEY = 'bworlds:session';
+const builtinPackCatalog = createBuiltinContentPackCatalog();
+const builtinPackManifests = builtinPackCatalog.list();
+const REQUIRED_PACK_ID = 'default-content-pack';
 
-const root = document.querySelector('#app');
+const root = document.querySelector<HTMLElement>('#app');
 
 root.innerHTML = `
   <main class="shell">
@@ -29,6 +31,7 @@ root.innerHTML = `
           Walk a deterministic world, jump between 2D and 3D instantly, and enter
           towns, dungeons, caves, and buildings that generate on demand.
         </p>
+        <p class="eyebrow" id="content-pack-label"></p>
       </div>
       <div class="controls">
         <button id="toggle-view" type="button">Switch to 3D</button>
@@ -49,6 +52,10 @@ root.innerHTML = `
         </div>
       </div>
       <aside class="sidebar">
+        <div class="card">
+          <h2>Content Packs</h2>
+          <form id="content-pack-form" class="pack-form"></form>
+        </div>
         <div class="card">
           <h2>Status</h2>
           <dl id="status"></dl>
@@ -74,39 +81,32 @@ root.innerHTML = `
   </main>
 `;
 
-const viewport2d = document.querySelector('#viewport-2d');
-const viewport3d = document.querySelector('#viewport-3d');
-const atlasCanvas = document.querySelector('#atlas');
-const status = document.querySelector('#status');
-const toggleButton = document.querySelector('#toggle-view');
-const actionButton = document.querySelector('#action');
-const randomJumpButton = document.querySelector('#jump-random');
-const homeJumpButton = document.querySelector('#jump-home');
+const viewport2d = document.querySelector<HTMLCanvasElement>('#viewport-2d');
+const viewport3d = document.querySelector<HTMLElement>('#viewport-3d');
+const atlasCanvas = document.querySelector<HTMLCanvasElement>('#atlas');
+const status = document.querySelector<HTMLElement>('#status');
+const toggleButton = document.querySelector<HTMLButtonElement>('#toggle-view');
+const actionButton = document.querySelector<HTMLButtonElement>('#action');
+const contentPackForm =
+  document.querySelector<HTMLFormElement>('#content-pack-form');
+const randomJumpButton =
+  document.querySelector<HTMLButtonElement>('#jump-random');
+const homeJumpButton =
+  document.querySelector<HTMLButtonElement>('#jump-home');
 let lastSavedSnapshot = '';
 
-const registry = new PluginRegistry();
-for (const plugin of defaultPlugins) {
-  registry.register(plugin);
-}
-
-const generator = createWorldGenerator({
-  seed: 'bworlds-alpha',
-  plugins: registry,
-});
-
 const savedSession = loadSession();
-const state = createWorldState({
-  generator,
-  player: createPlayer(savedSession?.player),
+let activePackIds = normalizeSelectedPackIds(savedSession?.packIds);
+let runtime = createWorldRuntime({
+  seed: 'bworlds-alpha',
+  packIds: activePackIds,
+  player: savedSession?.player,
+  stack: savedSession?.stack,
+  viewMode: savedSession?.viewMode,
 });
+let { contentPacks: activePacks, generator, registry, state } = runtime;
 
-if (savedSession?.viewMode === '3d' || savedSession?.viewMode === '2d') {
-  state.viewMode = savedSession.viewMode;
-}
-
-if (Array.isArray(savedSession?.stack) && savedSession.stack.length > 0) {
-  state.stack = savedSession.stack;
-}
+const contentPackLabel = document.querySelector('#content-pack-label');
 
 const motion = {
   jumpHeight: 0,
@@ -130,9 +130,15 @@ const renderer3d = create3DRenderer(viewport3d);
 
 const keys = new Set();
 
+renderContentPackControls();
+updateContentPackLabel();
+
 function updateStatus() {
   const tile = state.getCurrentTile();
-  const definition = getTileDefinition(tile.kind);
+  const definition = registry.resolveTileDefinition(
+    tile.kind,
+    state.getTileDefinition(tile.kind)
+  );
   const gps = toGps(state.player.x, state.player.y);
   const context = state.getCurrentContext();
   const facing = cardinalFromAngle(state.player.facing);
@@ -142,7 +148,7 @@ function updateStatus() {
   status.innerHTML = `
     <div><dt>View</dt><dd>${state.viewMode.toUpperCase()}</dd></div>
     <div><dt>Place</dt><dd>${context.label}</dd></div>
-    <div><dt>Tile</dt><dd>${definition.name}</dd></div>
+    <div><dt>Tile</dt><dd>${definition?.name ?? tile.kind}</dd></div>
     <div><dt>Facing</dt><dd>${facing}</dd></div>
     <div><dt>World</dt><dd>${state.player.x.toFixed(2)}, ${state.player.y.toFixed(2)}</dd></div>
     <div><dt>Grid</dt><dd>${gridX}, ${gridY}</dd></div>
@@ -169,6 +175,69 @@ function toggleView() {
   saveSession();
 }
 
+function updateContentPackLabel() {
+  if (!contentPackLabel) return;
+  contentPackLabel.textContent = `Content Packs: ${activePacks.map((pack) => pack.name).join(' + ')}`;
+}
+
+function renderContentPackControls() {
+  if (!contentPackForm) return;
+  contentPackForm.innerHTML = builtinPackManifests
+    .map((pack) => {
+      const checked = activePackIds.includes(pack.id) ? 'checked' : '';
+      const disabled = pack.id === REQUIRED_PACK_ID ? 'disabled' : '';
+      const description = pack.description
+        ? `<span class="pack-description">${pack.description}</span>`
+        : '';
+      return `
+        <label class="pack-option">
+          <input
+            type="checkbox"
+            name="content-pack"
+            value="${pack.id}"
+            ${checked}
+            ${disabled}
+          />
+          <span class="pack-name">${pack.name}</span>
+          ${description}
+        </label>
+      `;
+    })
+    .join('');
+}
+
+function normalizeSelectedPackIds(packIds?: unknown): string[] {
+  const selectedIds = Array.isArray(packIds)
+    ? packIds.filter((packId): packId is string => typeof packId === 'string')
+    : builtinPackCatalog.defaultPackIds;
+  const knownIds = new Set(builtinPackManifests.map((pack) => pack.id));
+  const filtered = selectedIds.filter((packId) => knownIds.has(packId));
+  const unique = [...new Set([REQUIRED_PACK_ID, ...filtered])];
+  return unique.length > 0 ? unique : [REQUIRED_PACK_ID];
+}
+
+function rebuildRuntime(nextPackIds: string[]) {
+  const normalizedPackIds = normalizeSelectedPackIds(nextPackIds);
+  runtime = createWorldRuntime({
+    seed: 'bworlds-alpha',
+    packIds: normalizedPackIds,
+    player: {
+      x: state.player.x,
+      y: state.player.y,
+      facing: state.player.facing,
+    },
+    stack: state.stack,
+    viewMode: state.viewMode,
+  });
+  ({ contentPacks: activePacks, generator, registry, state } = runtime);
+  activePackIds = normalizedPackIds;
+  drawAtlas(atlasCanvas.getContext('2d'));
+  renderContentPackControls();
+  updateContentPackLabel();
+  saveSession();
+  render();
+}
+
 function canMoveTo(nextX, nextY) {
   const canOccupy3d =
     state.viewMode !== '3d' || renderer3d.canOccupy(state, nextX, nextY);
@@ -181,39 +250,18 @@ function commitMove(nextX, nextY) {
   saveSession();
 }
 
-function isBridgeTravelKind(kind) {
-  return kind === 'bridge' || kind === 'road' || kind === 'town';
-}
-
 function getBridgeAxis() {
   const currentX = snapWorldCoordinate(state.player.x);
   const currentY = snapWorldCoordinate(state.player.y);
-  const currentKind = state.getCurrentTile(currentX, currentY).kind;
-  if (currentKind !== 'bridge') {
-    return null;
-  }
-
-  const west = isBridgeTravelKind(
-    state.getCurrentTile(currentX - 1, currentY).kind
-  );
-  const east = isBridgeTravelKind(
-    state.getCurrentTile(currentX + 1, currentY).kind
-  );
-  const north = isBridgeTravelKind(
-    state.getCurrentTile(currentX, currentY - 1).kind
-  );
-  const south = isBridgeTravelKind(
-    state.getCurrentTile(currentX, currentY + 1).kind
-  );
-
-  if ((west || east) && !(north || south)) {
-    return 'ew';
-  }
-  if ((north || south) && !(west || east)) {
-    return 'ns';
-  }
-
-  return null;
+  const currentTile = state.getCurrentTile(currentX, currentY);
+  const profile =
+    registry.getTraversalProfile3D({
+      state,
+      tile: currentTile,
+      tileX: currentX,
+      tileY: currentY,
+    }) || null;
+  return profile?.slideAxis ?? null;
 }
 
 function attemptMove(stepX, stepY) {
@@ -471,7 +519,8 @@ function updateMovement(deltaMs) {
 function render() {
   const timeMs = performance.now();
   if (state.viewMode === '2d') {
-    const context = viewport2d.getContext('2d');
+  const context = viewport2d?.getContext('2d');
+  if (!context) return;
     context.imageSmoothingEnabled = false;
     context.clearRect(0, 0, viewport2d.width, viewport2d.height);
     render2D(context, state, {
@@ -542,6 +591,23 @@ window.addEventListener('keyup', (event) => {
 
 toggleButton.addEventListener('click', toggleView);
 actionButton.addEventListener('click', handleInteraction);
+contentPackForm?.addEventListener('change', () => {
+  const selectedPackIds = builtinPackManifests
+    .filter((pack) => {
+      const input = contentPackForm.elements.namedItem('content-pack');
+      if (!(input instanceof RadioNodeList)) {
+        return pack.id === REQUIRED_PACK_ID;
+      }
+      const controls = Array.from(input).filter(
+        (control): control is HTMLInputElement => control instanceof HTMLInputElement
+      );
+      return controls.some(
+        (control) => control.value === pack.id && control.checked
+      );
+    })
+    .map((pack) => pack.id);
+  rebuildRuntime(selectedPackIds);
+});
 randomJumpButton.addEventListener('click', jumpToRandomPlains);
 homeJumpButton.addEventListener('click', jumpHome);
 
@@ -559,6 +625,7 @@ function saveSession() {
         y: state.player.y,
         facing: state.player.facing,
       },
+      packIds: activePackIds,
       stack: state.stack,
       viewMode: state.viewMode,
     });

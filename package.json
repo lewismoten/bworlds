@@ -10,6 +10,7 @@
   "scripts": {
     "dev": "npm run dev -w @bworlds/app",
     "build": "npm run build -w @bworlds/app",
+    "typecheck": "npm exec -- tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
     "coverage": "vitest run --coverage",

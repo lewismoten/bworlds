@@ -1,13 +1,27 @@
-import { hash2D, TILE_DEFINITIONS } from '@bworlds/core';
+import { hash2D } from '@bworlds/core';
+import { getActivePluginRegistry } from '@bworlds/plugin-api';
 
 const TILE_PIXEL_SIZE = 16;
 const VARIANT_GRID_SIZE = 3;
 const VARIANTS_PER_TILE = VARIANT_GRID_SIZE * VARIANT_GRID_SIZE;
 const KIND_COLUMNS = 4;
 const atlasCache = new Map();
+const FALLBACK_TILE_DEFINITION = {
+  name: 'Unknown Tile',
+  color: '#64748b',
+  miniColor: '#94a3b8',
+  walkable: true,
+  wallHeight: 0,
+};
+type DrawTileSpriteOptions = {
+  variant?: number;
+  worldX?: number;
+  worldY?: number;
+  timeMs?: number;
+};
 
 export function drawAtlas(context) {
-  const entries = Object.entries(TILE_DEFINITIONS);
+  const entries = getTileDefinitionEntries();
   context.clearRect(0, 0, 256, 256);
   context.font = '10px sans-serif';
   context.textBaseline = 'middle';
@@ -22,7 +36,14 @@ export function drawAtlas(context) {
   });
 }
 
-export function drawTileSprite(context, kind, x, y, size, options = {}) {
+export function drawTileSprite(
+  context,
+  kind,
+  x,
+  y,
+  size,
+  options: DrawTileSpriteOptions = {}
+) {
   const variant =
     options.variant ??
     getTileVariantIndex(kind, options.worldX ?? 0, options.worldY ?? 0);
@@ -68,7 +89,7 @@ export function getTileSpriteRect(kind, variant) {
 }
 
 function getTileSpriteRegion(kind, variant) {
-  const kinds = Object.keys(TILE_DEFINITIONS);
+  const kinds = getTileDefinitionEntries().map(([name]) => name);
   const index = Math.max(0, kinds.indexOf(kind));
   const kindColumn = index % KIND_COLUMNS;
   const kindRow = Math.floor(index / KIND_COLUMNS);
@@ -89,7 +110,7 @@ function getAtlasCanvas() {
 }
 
 function buildAtlasCanvas() {
-  const kinds = Object.keys(TILE_DEFINITIONS);
+  const kinds = getTileDefinitionEntries().map(([kind]) => kind);
   const kindRows = Math.ceil(kinds.length / KIND_COLUMNS);
   const canvas = document.createElement('canvas');
   canvas.width = KIND_COLUMNS * VARIANT_GRID_SIZE * TILE_PIXEL_SIZE;
@@ -109,251 +130,35 @@ function buildAtlasCanvas() {
 }
 
 function paintTileSprite(context, kind, variant, x, y) {
-  const definition = TILE_DEFINITIONS[kind];
+  const definition = getActivePluginRegistry().resolveTileDefinition(
+    kind,
+    FALLBACK_TILE_DEFINITION
+  );
   const motif = createVariantMotif(kind, variant);
   fillRect(context, x, y, TILE_PIXEL_SIZE, TILE_PIXEL_SIZE, definition.color);
 
-  const painters = {
-    ocean: paintOceanTile,
-    shore: paintShoreTile,
-    plains: paintPlainsTile,
-    forest: paintForestTile,
-    mountain: paintMountainTile,
-    river: paintRiverTile,
-    road: paintRoadTile,
-    bridge: paintBridgeTile,
-    sign: paintSignTile,
-    town: paintTownTile,
-    dungeon: paintDungeonTile,
-    cave: paintCaveTile,
-    wall: paintWallTile,
-    floor: paintFloorTile,
-    door: paintDoorTile,
-    stairsDown: paintStairsDownTile,
-    stairsUp: paintStairsUpTile,
-    shop: paintShopTile,
-  };
-
-  const painter = painters[kind] ?? paintGenericTile;
-  painter(context, x, y, definition, motif);
+  const tilePlugin = getActivePluginRegistry().getTilePlugin(kind);
+  const handled = tilePlugin?.paint2D?.({
+    context,
+    kind,
+    definition,
+    motif,
+    x,
+    y,
+    tilePixelSize: TILE_PIXEL_SIZE,
+    fillRect,
+    speckle,
+  });
+  if (handled) {
+    shadeTileBorder(context, x, y, definition, motif);
+    return;
+  }
+  paintGenericTile(context, x, y, definition, motif);
   shadeTileBorder(context, x, y, definition, motif);
 }
 
 function paintGenericTile(context, x, y, definition, motif) {
   speckle(context, x, y, definition.miniColor, 26, 0.28, motif);
-}
-
-function paintOceanTile(context, x, y, definition, motif) {
-  const waveOffset = motif.int(0, 2);
-  for (let row = waveOffset; row < TILE_PIXEL_SIZE; row += 3) {
-    fillRect(context, x, y + row, TILE_PIXEL_SIZE, 1, definition.miniColor);
-  }
-  fillRect(context, x + motif.int(1, 3), y + 3, 4, 1, '#d9f4ff');
-  fillRect(context, x + motif.int(8, 10), y + 9, 5, 1, '#d9f4ff');
-}
-
-function paintShoreTile(context, x, y, definition, motif) {
-  speckle(context, x, y, '#fff1c8', 28, 0.35, motif);
-  const tideHeight = 10 + motif.int(0, 2);
-  fillRect(
-    context,
-    x,
-    y + tideHeight,
-    TILE_PIXEL_SIZE,
-    2,
-    definition.miniColor
-  );
-  fillRect(context, x, y + tideHeight + 2, TILE_PIXEL_SIZE, 1, '#d9f4ff');
-}
-
-function paintPlainsTile(context, x, y, _definition, motif) {
-  speckle(context, x, y, '#b7df90', 20, 0.28, motif);
-  const start = 1 + motif.int(0, 2);
-  for (let blade = start; blade < TILE_PIXEL_SIZE; blade += 4) {
-    fillRect(
-      context,
-      x + blade,
-      y + 9 + ((blade + motif.seed) % 3),
-      1,
-      4,
-      '#4f7f3c'
-    );
-  }
-}
-
-function paintForestTile(context, x, y, definition, motif) {
-  paintPlainsTile(context, x, y, definition, motif);
-  const trees = 2 + motif.int(0, 2);
-  for (let tree = 0; tree < trees; tree += 1) {
-    const offset = 2 + tree * 4 + motif.int(-1, 1);
-    fillRect(context, x + offset + 1, y + 8, 1, 4, '#4a2f1b');
-    context.fillStyle = '#163b20';
-    context.beginPath();
-    context.arc(x + offset + 1.5, y + 7, 2.6, 0, Math.PI * 2);
-    context.fill();
-    context.beginPath();
-    context.arc(x + offset - 0.2, y + 6.2, 2, 0, Math.PI * 2);
-    context.fill();
-  }
-}
-
-function paintMountainTile(context, x, y, _definition, motif) {
-  const leftPeak = 5 + motif.int(-1, 1);
-  const rightPeak = 14 + motif.int(-1, 0);
-  context.fillStyle = '#4b5563';
-  context.beginPath();
-  context.moveTo(x + 1, y + 14);
-  context.lineTo(x + leftPeak, y + 4 + motif.int(-1, 1));
-  context.lineTo(x + 10, y + 11);
-  context.lineTo(x + rightPeak, y + 3 + motif.int(0, 1));
-  context.lineTo(x + 15, y + 14);
-  context.closePath();
-  context.fill();
-  fillRect(context, x + leftPeak - 1, y + 5, 2, 2, '#f8fafc');
-  fillRect(context, x + rightPeak - 1, y + 4, 2, 2, '#f8fafc');
-}
-
-function paintRiverTile(context, x, y, definition, motif) {
-  paintPlainsTile(context, x, y, definition, motif);
-  const channel = 4 + motif.int(-1, 1);
-  context.fillStyle = '#38bdf8';
-  context.beginPath();
-  context.moveTo(x + channel, y);
-  context.lineTo(x + channel + 5, y);
-  context.lineTo(x + channel + 8, y + TILE_PIXEL_SIZE);
-  context.lineTo(x + channel + 3, y + TILE_PIXEL_SIZE);
-  context.closePath();
-  context.fill();
-  fillRect(context, x + channel + 3, y + 2, 1, 12, '#d9f4ff');
-}
-
-function paintRoadTile(context, x, y, definition, motif) {
-  paintPlainsTile(context, x, y, definition, motif);
-  const roadY = 5 + motif.int(0, 2);
-  fillRect(context, x, y + roadY, TILE_PIXEL_SIZE, 4, '#8a5a19');
-  fillRect(context, x, y + roadY + 1, TILE_PIXEL_SIZE, 1, '#d7b172');
-}
-
-function paintBridgeTile(context, x, y, _definition, motif) {
-  fillRect(context, x, y, TILE_PIXEL_SIZE, TILE_PIXEL_SIZE, '#2a78c8');
-  const offset = motif.int(0, 1);
-  for (let plank = 1 + offset; plank < TILE_PIXEL_SIZE; plank += 3) {
-    fillRect(context, x + plank, y + 4, 2, 8, '#a86b2d');
-  }
-  fillRect(context, x, y + 3, TILE_PIXEL_SIZE, 1, '#6b3f15');
-  fillRect(context, x, y + 12, TILE_PIXEL_SIZE, 1, '#6b3f15');
-}
-
-function paintSignTile(context, x, y, definition, motif) {
-  paintPlainsTile(context, x, y, definition, motif);
-  const postX = 6 + motif.int(0, 2);
-  fillRect(context, x + postX, y + 5, 2, 7, '#5b3716');
-  fillRect(context, x + postX - 3, y + 3, 8, 4, '#f3c266');
-  fillRect(context, x + postX - 2, y + 4, 6, 1, '#8a5a19');
-}
-
-function paintTownTile(context, x, y, _definition, motif) {
-  fillRect(context, x, y, TILE_PIXEL_SIZE, TILE_PIXEL_SIZE, '#88b871');
-  fillRect(context, x + 1, y + 6, 14, 4, '#9f6f32');
-  const left = 1 + motif.int(0, 1);
-  const right = 9 + motif.int(-1, 0);
-  fillRect(context, x + left, y + 2, 5, 4, '#f8fafc');
-  fillRect(context, x + right, y + 2, 5, 4, '#f8fafc');
-  fillRect(context, x + left, y + 3, 5, 1, '#e879f9');
-  fillRect(context, x + right, y + 3, 5, 1, '#fb7185');
-  fillRect(context, x + left + 2, y + 10, 2, 3, '#7c3f1d');
-  fillRect(context, x + right + 2, y + 10, 2, 3, '#7c3f1d');
-}
-
-function paintDungeonTile(context, x, y, _definition, motif) {
-  fillRect(context, x, y, TILE_PIXEL_SIZE, TILE_PIXEL_SIZE, '#4b1d1d');
-  speckle(context, x, y, '#7f1d1d', 20, 0.3, motif);
-  const mouth = 4 + motif.int(-1, 1);
-  fillRect(context, x + mouth, y + 4, 8, 8, '#111827');
-  fillRect(context, x + mouth + 2, y + 6, 4, 6, '#dc2626');
-}
-
-function paintCaveTile(context, x, y, definition, motif) {
-  fillRect(context, x, y, TILE_PIXEL_SIZE, TILE_PIXEL_SIZE, '#7fb069');
-  speckle(context, x, y, '#9ecf82', 14, 0.22, motif);
-  context.fillStyle = '#27272a';
-  context.beginPath();
-  context.arc(x + 8 + motif.int(-1, 1), y + 8, 5.5, 0, Math.PI * 2);
-  context.fill();
-  fillRect(context, x + 5, y + 8, 6, 4, '#09090b');
-  paintPlainsTile(context, x, y, definition, motif);
-}
-
-function paintWallTile(context, x, y, _definition, motif) {
-  fillRect(context, x, y, TILE_PIXEL_SIZE, TILE_PIXEL_SIZE, '#475569');
-  for (let row = 0; row < TILE_PIXEL_SIZE; row += 4) {
-    fillRect(context, x, y + row, TILE_PIXEL_SIZE, 1, '#334155');
-  }
-  const stagger = motif.int(0, 1) * 4;
-  for (let column = stagger; column < TILE_PIXEL_SIZE; column += 8) {
-    fillRect(context, x + column, y + 4, 1, TILE_PIXEL_SIZE - 4, '#334155');
-  }
-}
-
-function paintFloorTile(context, x, y, _definition, motif) {
-  fillRect(context, x, y, TILE_PIXEL_SIZE, TILE_PIXEL_SIZE, '#b8c5d3');
-  const rowOffset = motif.int(0, 1);
-  for (let row = rowOffset; row < TILE_PIXEL_SIZE; row += 4) {
-    fillRect(context, x, y + row, TILE_PIXEL_SIZE, 1, '#94a3b8');
-  }
-  const colOffset = motif.int(0, 1);
-  for (let column = colOffset; column < TILE_PIXEL_SIZE; column += 4) {
-    fillRect(context, x + column, y, 1, TILE_PIXEL_SIZE, '#94a3b8');
-  }
-}
-
-function paintDoorTile(context, x, y, definition, motif) {
-  paintFloorTile(context, x, y, definition, motif);
-  const doorX = 4 + motif.int(-1, 1);
-  fillRect(context, x + doorX, y + 2, 8, 11, '#b45309');
-  fillRect(context, x + doorX + 1, y + 3, 6, 9, '#ea580c');
-  fillRect(context, x + doorX + 5, y + 7, 1, 1, '#fde68a');
-}
-
-function paintStairsDownTile(context, x, y, definition, motif) {
-  paintFloorTile(context, x, y, definition, motif);
-  const inset = motif.int(0, 1);
-  for (let step = 0; step < 5; step += 1) {
-    fillRect(
-      context,
-      x + 3 + step + inset,
-      y + 3 + step * 2,
-      10 - step * 2,
-      1,
-      '#0f766e'
-    );
-  }
-}
-
-function paintStairsUpTile(context, x, y, definition, motif) {
-  paintFloorTile(context, x, y, definition, motif);
-  const inset = motif.int(0, 1);
-  for (let step = 0; step < 5; step += 1) {
-    fillRect(
-      context,
-      x + 3 + step + inset,
-      y + 11 - step * 2,
-      10 - step * 2,
-      1,
-      '#0891b2'
-    );
-  }
-}
-
-function paintShopTile(context, x, y, _definition, motif) {
-  fillRect(context, x, y, TILE_PIXEL_SIZE, TILE_PIXEL_SIZE, '#8cc071');
-  fillRect(context, x + 2, y + 5, 12, 7, '#fff1f2');
-  fillRect(context, x + 2, y + 3, 12, 2, '#fb7185');
-  const stripeOffset = motif.int(0, 1);
-  for (let stripe = 2 + stripeOffset; stripe < 14; stripe += 4) {
-    fillRect(context, x + stripe, y + 3, 2, 2, '#fecdd3');
-  }
-  fillRect(context, x + 6 + motif.int(0, 1), y + 8, 2, 4, '#7c2d12');
 }
 
 function shadeTileBorder(context, x, y, definition, motif) {
@@ -465,4 +270,12 @@ function createVariantMotif(kind, variant) {
       return min + value;
     },
   };
+}
+
+function getTileDefinitionEntries() {
+  const entries = getActivePluginRegistry().listTileDefinitions();
+  if (entries.length > 0) {
+    return entries;
+  }
+  return [['unknown', FALLBACK_TILE_DEFINITION]];
 }
