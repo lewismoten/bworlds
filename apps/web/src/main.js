@@ -1,5 +1,6 @@
 import { drawAtlas } from '@bworlds/atlas';
 import {
+  HALF_WORLD_TILES,
   cardinalFromAngle,
   createPlayer,
   createWorldState,
@@ -32,6 +33,8 @@ root.innerHTML = `
       <div class="controls">
         <button id="toggle-view" type="button">Switch to 3D</button>
         <button id="action" type="button">Interact</button>
+        <button id="jump-random" type="button">Random Plains</button>
+        <button id="jump-home" type="button">Go Home</button>
       </div>
     </section>
     <section class="dashboard">
@@ -77,6 +80,8 @@ const atlasCanvas = document.querySelector('#atlas');
 const status = document.querySelector('#status');
 const toggleButton = document.querySelector('#toggle-view');
 const actionButton = document.querySelector('#action');
+const randomJumpButton = document.querySelector('#jump-random');
+const homeJumpButton = document.querySelector('#jump-home');
 let lastSavedSnapshot = '';
 
 const registry = new PluginRegistry();
@@ -188,6 +193,69 @@ function handleInteraction() {
   if (state.interact()) {
     saveSession();
   }
+}
+
+function resetMotionState() {
+  motion.jumpHeight = 0;
+  motion.isJumping = false;
+  motion.spaceHeld = false;
+  motion.spaceReady = true;
+  motion.jumpVelocity = 0;
+  motion.jumpHoldElapsed = 0;
+  motion.longJumpActivated = false;
+}
+
+function travelToOverworld(x, y, facing = state.player.facing) {
+  state.stack = [
+    {
+      id: 'overworld',
+      label: 'Overworld',
+      type: 'overworld',
+      depth: 0,
+      origin: { x: 0, y: 0 },
+    },
+  ];
+  state.player.x = x;
+  state.player.y = y;
+  state.player.facing = normalizeAngle(facing);
+  resetMotionState();
+  saveSession();
+  render();
+}
+
+function findRandomPlainsLocation() {
+  for (let attempt = 0; attempt < 3000; attempt += 1) {
+    const x = Math.floor((Math.random() * 2 - 1) * HALF_WORLD_TILES);
+    const y = Math.floor((Math.random() * 2 - 1) * HALF_WORLD_TILES * 0.5);
+    const tile = generator.sampleOverworld(x, y);
+    if (tile.kind === 'plains') {
+      return { x, y };
+    }
+  }
+
+  for (let radius = 0; radius <= 12; radius += 1) {
+    for (let offsetY = -radius; offsetY <= radius; offsetY += 1) {
+      for (let offsetX = -radius; offsetX <= radius; offsetX += 1) {
+        const x = offsetX;
+        const y = offsetY;
+        const tile = generator.sampleOverworld(x, y);
+        if (tile.kind === 'plains') {
+          return { x, y };
+        }
+      }
+    }
+  }
+
+  return { x: 0, y: 0 };
+}
+
+function jumpToRandomPlains() {
+  const destination = findRandomPlainsLocation();
+  travelToOverworld(destination.x, destination.y);
+}
+
+function jumpHome() {
+  travelToOverworld(0, 0, 0);
 }
 
 function jump() {
@@ -406,6 +474,8 @@ window.addEventListener('keyup', (event) => {
 
 toggleButton.addEventListener('click', toggleView);
 actionButton.addEventListener('click', handleInteraction);
+randomJumpButton.addEventListener('click', jumpToRandomPlains);
+homeJumpButton.addEventListener('click', jumpHome);
 
 resizeCanvas();
 viewport2d.classList.toggle('is-hidden', state.viewMode !== '2d');
