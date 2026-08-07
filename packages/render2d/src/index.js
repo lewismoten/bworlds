@@ -5,13 +5,21 @@ export function render2D(context, state, viewport) {
     14,
     Math.floor(Math.min(viewport.width, viewport.height) / 22)
   );
-  const radiusX = Math.floor(viewport.width / tileSize / 2);
-  const radiusY = Math.floor(viewport.height / tileSize / 2);
+  const diagonal = Math.ceil(
+    Math.hypot(viewport.width, viewport.height) / tileSize / 2
+  );
+  const radiusX = diagonal + 2;
+  const radiusY = diagonal + 2;
   const centerX = Math.floor(viewport.width / 2);
   const centerY = Math.floor(viewport.height / 2);
+  const rotation = viewport.rotation ?? 0;
 
   context.fillStyle = '#081019';
   context.fillRect(0, 0, viewport.width, viewport.height);
+
+  context.save();
+  context.translate(centerX + tileSize / 2, centerY + tileSize / 2);
+  context.rotate(rotation);
 
   for (let y = -radiusY; y <= radiusY; y += 1) {
     for (let x = -radiusX; x <= radiusX; x += 1) {
@@ -19,11 +27,11 @@ export function render2D(context, state, viewport) {
       const worldY = state.player.y + y;
       const tile = state.getCurrentTile(worldX, worldY);
       const definition = getTileDefinition(tile.kind);
-      const drawX = centerX + x * tileSize;
-      const drawY = centerY + y * tileSize;
+      const drawX = x * tileSize;
+      const drawY = y * tileSize;
 
       context.fillStyle = definition.color;
-      context.fillRect(drawX, drawY, tileSize, tileSize);
+      context.fillRect(drawX, drawY, tileSize + 1, tileSize + 1);
 
       if (tile.kind === 'road' || tile.kind === 'bridge') {
         context.fillStyle = 'rgba(255,255,255,0.18)';
@@ -47,33 +55,52 @@ export function render2D(context, state, viewport) {
     }
   }
 
-  context.strokeStyle = 'rgba(255,255,255,0.08)';
-  for (let x = 0; x < viewport.width; x += tileSize) {
-    context.beginPath();
-    context.moveTo(x + 0.5, 0);
-    context.lineTo(x + 0.5, viewport.height);
-    context.stroke();
-  }
-  for (let y = 0; y < viewport.height; y += tileSize) {
-    context.beginPath();
-    context.moveTo(0, y + 0.5);
-    context.lineTo(viewport.width, y + 0.5);
-    context.stroke();
-  }
+  context.restore();
+
+  drawRotatedGrid(context, viewport, centerX, centerY, tileSize, rotation);
 
   drawFacingMarker(
     context,
     centerX + tileSize / 2,
     centerY + tileSize / 2,
-    tileSize,
-    state.player.facing
+    tileSize
   );
 }
 
-function drawFacingMarker(context, centerX, centerY, tileSize, angle) {
+function drawRotatedGrid(
+  context,
+  viewport,
+  centerX,
+  centerY,
+  tileSize,
+  rotation
+) {
+  context.save();
+  context.translate(centerX + tileSize / 2, centerY + tileSize / 2);
+  context.rotate(rotation);
+  context.strokeStyle = 'rgba(255,255,255,0.08)';
+
+  for (let x = -viewport.width; x <= viewport.width; x += tileSize) {
+    context.beginPath();
+    context.moveTo(x + 0.5, -viewport.height * 1.5);
+    context.lineTo(x + 0.5, viewport.height * 1.5);
+    context.stroke();
+  }
+
+  for (let y = -viewport.height; y <= viewport.height; y += tileSize) {
+    context.beginPath();
+    context.moveTo(-viewport.width * 1.5, y + 0.5);
+    context.lineTo(viewport.width * 1.5, y + 0.5);
+    context.stroke();
+  }
+
+  context.restore();
+}
+
+function drawFacingMarker(context, centerX, centerY, tileSize) {
   context.save();
   context.translate(centerX, centerY);
-  context.rotate(angle);
+  context.rotate(-Math.PI / 2);
 
   context.fillStyle = '#ffbf69';
   context.beginPath();
