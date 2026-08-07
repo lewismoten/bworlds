@@ -50,6 +50,7 @@ root.innerHTML = `
           <ul>
             <li>WASD or arrow keys to move smoothly</li>
             <li>Q/E to rotate in both 2D and 3D</li>
+            <li>In 3D, left/right rotate unless Shift is held to strafe</li>
             <li>V to toggle 2D and 3D</li>
             <li>Enter or Space to interact</li>
             <li>X to leave a place when standing on its exit</li>
@@ -148,6 +149,7 @@ function handleInteraction() {
 function updateMovement(deltaMs) {
   const turnSpeed = 0.0034 * deltaMs;
   const moveSpeed = 0.0052 * deltaMs;
+  const shiftHeld = keys.has('Shift');
 
   if (keys.has('q')) {
     state.player.facing = normalizeAngle(state.player.facing - turnSpeed);
@@ -182,6 +184,12 @@ function updateMovement(deltaMs) {
       moveY += strafe.y;
     }
   } else {
+    if ((keys.has('ArrowLeft') || keys.has('a')) && !shiftHeld) {
+      state.player.facing = normalizeAngle(state.player.facing - turnSpeed);
+    }
+    if ((keys.has('ArrowRight') || keys.has('d')) && !shiftHeld) {
+      state.player.facing = normalizeAngle(state.player.facing + turnSpeed);
+    }
     if (keys.has('ArrowUp') || keys.has('w')) {
       moveX += forward.x;
       moveY += forward.y;
@@ -190,11 +198,11 @@ function updateMovement(deltaMs) {
       moveX -= forward.x;
       moveY -= forward.y;
     }
-    if (keys.has('ArrowLeft') || keys.has('a')) {
+    if ((keys.has('ArrowLeft') || keys.has('a')) && shiftHeld) {
       moveX -= strafe.x;
       moveY -= strafe.y;
     }
-    if (keys.has('ArrowRight') || keys.has('d')) {
+    if ((keys.has('ArrowRight') || keys.has('d')) && shiftHeld) {
       moveX += strafe.x;
       moveY += strafe.y;
     }
