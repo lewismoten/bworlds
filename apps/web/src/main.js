@@ -296,6 +296,7 @@ function updateMovement(deltaMs) {
 }
 
 function render() {
+  const timeMs = performance.now();
   const context = viewport.getContext('2d');
   context.imageSmoothingEnabled = false;
   context.clearRect(0, 0, viewport.width, viewport.height);
@@ -305,6 +306,7 @@ function render() {
       width: viewport.width,
       height: viewport.height,
       rotation: -(state.player.facing + Math.PI / 2),
+      timeMs,
     });
   } else {
     render3D(context, state, {

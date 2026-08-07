@@ -39,6 +39,15 @@ export function drawTileSprite(context, kind, x, y, size, options = {}) {
     size,
     size
   );
+
+  if (kind === 'ocean' && typeof options.timeMs === 'number') {
+    drawOceanShimmer(context, x, y, size, {
+      timeMs: options.timeMs,
+      worldX: options.worldX ?? 0,
+      worldY: options.worldY ?? 0,
+      variant,
+    });
+  }
 }
 
 export function getTileVariantIndex(kind, worldX, worldY) {
@@ -355,6 +364,57 @@ function shadeTileBorder(context, x, y, definition, motif) {
     'rgba(0,0,0,0.18)'
   );
   fillRect(context, x + 1 + motif.int(0, 1), y + 1, 1, 1, definition.miniColor);
+}
+
+function drawOceanShimmer(context, x, y, size, options) {
+  const { timeMs, worldX, worldY, variant } = options;
+  const time = timeMs * 0.0012;
+  const seed = hash2D(`ocean-shimmer:${variant}`, worldX, worldY);
+  const drift = (seed - 0.5) * 1.8;
+
+  context.save();
+  context.beginPath();
+  context.rect(x, y, size, size);
+  context.clip();
+
+  for (let band = 0; band < 3; band += 1) {
+    const phase = time + band * 1.7 + drift;
+    const centerX = x + (Math.sin(phase) * 0.5 + 0.5) * size;
+    const centerY =
+      y + size * (0.22 + band * 0.22) + Math.cos(phase * 1.3) * size * 0.04;
+    const glow = context.createRadialGradient(
+      centerX,
+      centerY,
+      0,
+      centerX,
+      centerY,
+      size * 0.38
+    );
+    glow.addColorStop(0, 'rgba(255,255,255,0.34)');
+    glow.addColorStop(0.35, 'rgba(217,244,255,0.18)');
+    glow.addColorStop(1, 'rgba(217,244,255,0)');
+    context.fillStyle = glow;
+    context.fillRect(x, y, size, size);
+  }
+
+  context.strokeStyle = 'rgba(255,255,255,0.16)';
+  context.lineWidth = Math.max(1, size * 0.045);
+  for (let streak = 0; streak < 2; streak += 1) {
+    const phase = time * 1.4 + streak * 2.1 + drift;
+    const startX = x + (Math.sin(phase) * 0.5 + 0.5) * size * 0.8 + size * 0.1;
+    const startY = y + size * (0.28 + streak * 0.26);
+    context.beginPath();
+    context.moveTo(startX - size * 0.1, startY);
+    context.quadraticCurveTo(
+      startX + size * 0.06,
+      startY - size * 0.05,
+      startX + size * 0.18,
+      startY
+    );
+    context.stroke();
+  }
+
+  context.restore();
 }
 
 function speckle(context, x, y, color, count, alpha, motif) {

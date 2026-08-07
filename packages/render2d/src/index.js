@@ -35,6 +35,7 @@ export function render2D(context, state, viewport) {
 
       drawTileSprite(context, tile.kind, drawX, drawY, tileSize + 1, {
         variant: getTileVariantIndex(tile.kind, worldX, worldY),
+        timeMs: viewport.timeMs,
         worldX,
         worldY,
       });
