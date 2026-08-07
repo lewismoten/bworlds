@@ -351,10 +351,7 @@ function sortPluginsForRegistration(plugins: RuntimePlugin[]): RuntimePlugin[] {
 const pluginPriority = (indexed: IndexedPlugin): number =>
   indexed.plugin.order?.priority ?? 0;
 
-function comparePluginOrder(
-  left: IndexedPlugin,
-  right: IndexedPlugin
-): number {
+function comparePluginOrder(left: IndexedPlugin, right: IndexedPlugin): number {
   const leftPriority = pluginPriority(left);
   const rightPriority = pluginPriority(right);
   if (leftPriority !== rightPriority) {

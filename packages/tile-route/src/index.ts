@@ -36,94 +36,94 @@ const roadStyleCache = new Map<string, RoadStyle>();
 
 export function createRouteTilePlugin() {
   return createTilePlugin('tile-route', [
-      {
-        kind: 'road',
-        definition: {
-          name: 'Road',
-          color: '#a16207',
-          miniColor: '#ca8a04',
-          walkable: true,
-          wallHeight: 0,
-        },
-        getTraversalProfile3D(): TraversalProfile3D {
-          return createRouteTraversalProfile();
-        },
-        classifyOverworldTile(context: ClassifyOverworldTileContext) {
-          const connectedRoadKind = classifyConnectedRoad(context);
-          if (connectedRoadKind) {
-            return {
-              ...context.tile,
-              kind: connectedRoadKind,
-              note:
-                context.tile.note ??
-                (connectedRoadKind === 'bridge'
-                  ? 'A crossing links the nearby routes.'
-                  : 'A road runs between nearby landmarks.'),
-            };
-          }
-
-          const noiseRoadKind = classifyNoiseRoad(context);
-          if (!noiseRoadKind) {
-            return null;
-          }
-
-          return { kind: noiseRoadKind };
-        },
-        paint2D({ context, x, y, motif, fillRect }: Paint2DContext) {
-          paintPlainsBackdrop({ context, x, y, motif, fillRect });
-          const roadY = 5 + motif.int(0, 2);
-          fillRect(context, x, y + roadY, TILE_PIXEL_SIZE, 4, '#8a5a19');
-          fillRect(context, x, y + roadY + 1, TILE_PIXEL_SIZE, 1, '#d7b172');
-          return true;
-        },
-        create3DModel({ three, state, tileX, tileY }: Create3DModelContext) {
-          if (state.getCurrentContext().type !== 'overworld') {
-            return null;
-          }
-          return createRoadGroup(three, state, tileX, tileY);
-        },
+    {
+      kind: 'road',
+      definition: {
+        name: 'Road',
+        color: '#a16207',
+        miniColor: '#ca8a04',
+        walkable: true,
+        wallHeight: 0,
       },
-      {
-        kind: 'bridge',
-        definition: {
-          name: 'Bridge',
-          color: '#92400e',
-          miniColor: '#b45309',
-          walkable: true,
-          wallHeight: 0.1,
-        },
-        getTraversalProfile3D({
-          state,
-          tileX,
-          tileY,
-        }: TraversalProfile3DContext): TraversalProfile3D {
-          return createRouteTraversalProfile({
-            slideAxis: getBridgeAxis(state, tileX, tileY),
-          });
-        },
-        getSurfaceProfile3D(): SurfaceProfile3D {
+      getTraversalProfile3D(): TraversalProfile3D {
+        return createRouteTraversalProfile();
+      },
+      classifyOverworldTile(context: ClassifyOverworldTileContext) {
+        const connectedRoadKind = classifyConnectedRoad(context);
+        if (connectedRoadKind) {
           return {
-            surfaceHeight: -0.12,
-            boundaryRole: 'crossing',
-            underlayKind: 'river',
-            chamferEligible: false,
+            ...context.tile,
+            kind: connectedRoadKind,
+            note:
+              context.tile.note ??
+              (connectedRoadKind === 'bridge'
+                ? 'A crossing links the nearby routes.'
+                : 'A road runs between nearby landmarks.'),
           };
-        },
-        paint2D({ context, x, y, motif, fillRect }: Paint2DContext) {
-          fillRect(context, x, y, TILE_PIXEL_SIZE, TILE_PIXEL_SIZE, '#2a78c8');
-          const offset = motif.int(0, 1);
-          for (let plank = 1 + offset; plank < TILE_PIXEL_SIZE; plank += 3) {
-            fillRect(context, x + plank, y + 4, 2, 8, '#a86b2d');
-          }
-          fillRect(context, x, y + 3, TILE_PIXEL_SIZE, 1, '#6b3f15');
-          fillRect(context, x, y + 12, TILE_PIXEL_SIZE, 1, '#6b3f15');
-          return true;
-        },
-        create3DModel({ three, state, tileX, tileY }: Create3DModelContext) {
-          return createBridgeGroup(three, state, tileX, tileY);
-        },
+        }
+
+        const noiseRoadKind = classifyNoiseRoad(context);
+        if (!noiseRoadKind) {
+          return null;
+        }
+
+        return { kind: noiseRoadKind };
       },
-    ]);
+      paint2D({ context, x, y, motif, fillRect }: Paint2DContext) {
+        paintPlainsBackdrop({ context, x, y, motif, fillRect });
+        const roadY = 5 + motif.int(0, 2);
+        fillRect(context, x, y + roadY, TILE_PIXEL_SIZE, 4, '#8a5a19');
+        fillRect(context, x, y + roadY + 1, TILE_PIXEL_SIZE, 1, '#d7b172');
+        return true;
+      },
+      create3DModel({ three, state, tileX, tileY }: Create3DModelContext) {
+        if (state.getCurrentContext().type !== 'overworld') {
+          return null;
+        }
+        return createRoadGroup(three, state, tileX, tileY);
+      },
+    },
+    {
+      kind: 'bridge',
+      definition: {
+        name: 'Bridge',
+        color: '#92400e',
+        miniColor: '#b45309',
+        walkable: true,
+        wallHeight: 0.1,
+      },
+      getTraversalProfile3D({
+        state,
+        tileX,
+        tileY,
+      }: TraversalProfile3DContext): TraversalProfile3D {
+        return createRouteTraversalProfile({
+          slideAxis: getBridgeAxis(state, tileX, tileY),
+        });
+      },
+      getSurfaceProfile3D(): SurfaceProfile3D {
+        return {
+          surfaceHeight: -0.12,
+          boundaryRole: 'crossing',
+          underlayKind: 'river',
+          chamferEligible: false,
+        };
+      },
+      paint2D({ context, x, y, motif, fillRect }: Paint2DContext) {
+        fillRect(context, x, y, TILE_PIXEL_SIZE, TILE_PIXEL_SIZE, '#2a78c8');
+        const offset = motif.int(0, 1);
+        for (let plank = 1 + offset; plank < TILE_PIXEL_SIZE; plank += 3) {
+          fillRect(context, x + plank, y + 4, 2, 8, '#a86b2d');
+        }
+        fillRect(context, x, y + 3, TILE_PIXEL_SIZE, 1, '#6b3f15');
+        fillRect(context, x, y + 12, TILE_PIXEL_SIZE, 1, '#6b3f15');
+        return true;
+      },
+      create3DModel({ three, state, tileX, tileY }: Create3DModelContext) {
+        return createBridgeGroup(three, state, tileX, tileY);
+      },
+    },
+  ]);
 }
 
 function classifyConnectedRoad({
@@ -134,7 +134,7 @@ function classifyConnectedRoad({
   bridgeAnchors,
 }: ClassifyOverworldTileContext) {
   const baseKind = tile.kind;
-  if (baseKind === 'mountain') {
+  if (baseKind === 'mountain' || isRoadTerminalPoiKind(baseKind)) {
     return null;
   }
 
@@ -226,7 +226,11 @@ function classifyNoiseRoad({
   const tileKind = tile.kind;
   const roadSignal = signals.roadSignal;
 
-  if (tileKind === 'ocean' || tileKind === 'mountain') {
+  if (
+    tileKind === 'ocean' ||
+    tileKind === 'mountain' ||
+    isRoadTerminalPoiKind(tileKind)
+  ) {
     return null;
   }
 
@@ -259,6 +263,12 @@ function classifyNoiseRoad({
 
 function isBridgeWaterKind(kind: string) {
   return kind === 'river' || kind === 'ocean';
+}
+
+function isRoadTerminalPoiKind(kind: string) {
+  return (
+    kind === 'sign' || kind === 'town' || kind === 'cave' || kind === 'dungeon'
+  );
 }
 
 function distanceToLineSegment(
@@ -490,7 +500,6 @@ function isRoadNetworkKind(kind: string) {
     kind === 'road' ||
     kind === 'bridge' ||
     kind === 'town' ||
-    kind === 'sign' ||
     kind === 'cave' ||
     kind === 'dungeon'
   );
@@ -847,7 +856,6 @@ function isBridgeTravelKind(kind: string) {
     kind === 'bridge' ||
     kind === 'road' ||
     kind === 'town' ||
-    kind === 'sign' ||
     kind === 'cave' ||
     kind === 'dungeon'
   );
@@ -1158,10 +1166,7 @@ function getBridgeStyle(
     const regionY = Math.floor(tileY / BRIDGE_REGION_SIZE);
     const typeIndex = Math.floor(hash2D('bridge-type', tileX, tileY) * 4);
     const type = ['wood', 'stone', 'metal', 'drawbridge'][typeIndex] as
-      | 'wood'
-      | 'stone'
-      | 'metal'
-      | 'drawbridge';
+      'wood' | 'stone' | 'metal' | 'drawbridge';
     const covered = hash2D('bridge-covered', regionX, regionY) > 0.72;
     const drawbridge = type === 'drawbridge';
     const pillarSpacing =

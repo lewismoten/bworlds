@@ -1,5 +1,6 @@
-import { generatePoiName, hash2D } from '@bworlds/core';
+import { hash2D } from '@bworlds/core';
 import {
+  createAnchoredLandPoiClassifier,
   createChanceBasedEnterablePoiTilePlugin,
   pickPreferredLandmarkFacing,
 } from '@bworlds/poi-support';
@@ -34,134 +35,137 @@ export function createDungeonTilePlugin() {
     getChance(context) {
       return context.dungeonChance;
     },
+    classifyOverworldTile: createAnchoredLandPoiClassifier({
+      kind: 'dungeon',
+      note: 'A dungeon descent awaits.',
+    }),
     paint2D({ context, x, y, motif, fillRect, speckle }: Paint2DContext) {
-          fillRect(context, x, y, TILE_PIXEL_SIZE, TILE_PIXEL_SIZE, '#4b1d1d');
-          speckle(context, x, y, '#7f1d1d', 20, 0.3, motif);
-          const mouth = 4 + motif.int(-1, 1);
-          fillRect(context, x + mouth, y + 4, 8, 8, '#111827');
-          fillRect(context, x + mouth + 2, y + 6, 4, 6, '#dc2626');
-          return true;
+      fillRect(context, x, y, TILE_PIXEL_SIZE, TILE_PIXEL_SIZE, '#4b1d1d');
+      speckle(context, x, y, '#7f1d1d', 20, 0.3, motif);
+      const mouth = 4 + motif.int(-1, 1);
+      fillRect(context, x + mouth, y + 4, 8, 8, '#111827');
+      fillRect(context, x + mouth + 2, y + 6, 4, 6, '#dc2626');
+      return true;
     },
     create3DModel({ three, state, tileX, tileY }: Create3DModelContext) {
-          const group = new three.Group();
-          const style = getDungeonStyle(three, tileX, tileY);
-          const entrance = getDungeonEntranceDirection(state, tileX, tileY);
-          const baseWidth = 0.9 + hash2D('dungeon-width', tileX, tileY) * 0.16;
-          const baseDepth = 0.9 + hash2D('dungeon-depth', tileX, tileY) * 0.18;
-          const baseHeight =
-            0.7 + hash2D('dungeon-height', tileX, tileY) * 0.16;
+      const group = new three.Group();
+      const style = getDungeonStyle(three, tileX, tileY);
+      const entrance = getDungeonEntranceDirection(state, tileX, tileY);
+      const baseWidth = 0.9 + hash2D('dungeon-width', tileX, tileY) * 0.16;
+      const baseDepth = 0.9 + hash2D('dungeon-depth', tileX, tileY) * 0.18;
+      const baseHeight = 0.7 + hash2D('dungeon-height', tileX, tileY) * 0.16;
 
-          const base = new three.Mesh(
-            new three.BoxGeometry(baseWidth, baseHeight, baseDepth),
-            style.wallMaterial
-          );
-          base.position.set(tileX, baseHeight * 0.5, tileY);
-          group.add(base);
+      const base = new three.Mesh(
+        new three.BoxGeometry(baseWidth, baseHeight, baseDepth),
+        style.wallMaterial
+      );
+      base.position.set(tileX, baseHeight * 0.5, tileY);
+      group.add(base);
 
-          const keep = new three.Mesh(
-            new three.BoxGeometry(
-              baseWidth * 0.62,
-              baseHeight * 0.8,
-              baseDepth * 0.62
-            ),
-            style.wallMaterial
-          );
-          keep.position.set(tileX, baseHeight * 0.9, tileY);
-          group.add(keep);
+      const keep = new three.Mesh(
+        new three.BoxGeometry(
+          baseWidth * 0.62,
+          baseHeight * 0.8,
+          baseDepth * 0.62
+        ),
+        style.wallMaterial
+      );
+      keep.position.set(tileX, baseHeight * 0.9, tileY);
+      group.add(keep);
 
-          for (const tower of getDungeonTowerOffsets(
-            tileX,
-            tileY,
-            baseWidth,
-            baseDepth
-          )) {
-            const towerMesh = new three.Mesh(
-              new three.CylinderGeometry(
-                tower.radius,
-                tower.radius * 1.08,
-                tower.height,
-                6
-              ),
-              style.wallMaterial
-            );
-            towerMesh.position.set(
-              tileX + tower.x,
-              tower.height * 0.5,
-              tileY + tower.z
-            );
-            group.add(towerMesh);
+      for (const tower of getDungeonTowerOffsets(
+        tileX,
+        tileY,
+        baseWidth,
+        baseDepth
+      )) {
+        const towerMesh = new three.Mesh(
+          new three.CylinderGeometry(
+            tower.radius,
+            tower.radius * 1.08,
+            tower.height,
+            6
+          ),
+          style.wallMaterial
+        );
+        towerMesh.position.set(
+          tileX + tower.x,
+          tower.height * 0.5,
+          tileY + tower.z
+        );
+        group.add(towerMesh);
 
-            const cap = new three.Mesh(
-              new three.ConeGeometry(tower.radius * 1.08, tower.capHeight, 6),
-              style.roofMaterial
-            );
-            cap.position.set(
-              tileX + tower.x,
-              tower.height + tower.capHeight * 0.5 - 0.02,
-              tileY + tower.z
-            );
-            group.add(cap);
-          }
+        const cap = new three.Mesh(
+          new three.ConeGeometry(tower.radius * 1.08, tower.capHeight, 6),
+          style.roofMaterial
+        );
+        cap.position.set(
+          tileX + tower.x,
+          tower.height + tower.capHeight * 0.5 - 0.02,
+          tileY + tower.z
+        );
+        group.add(cap);
+      }
 
-          const gate = new three.Group();
-          gate.position.set(
-            tileX + entrance.dx * (baseDepth * 0.42),
-            0,
-            tileY + entrance.dy * (baseDepth * 0.42)
-          );
-          gate.rotation.y = entrance.rotationY;
+      const gate = new three.Group();
+      gate.position.set(
+        tileX + entrance.dx * (baseDepth * 0.42),
+        0,
+        tileY + entrance.dy * (baseDepth * 0.42)
+      );
+      gate.rotation.y = entrance.rotationY;
 
-          const arch = new three.Mesh(
-            new three.TorusGeometry(0.18, 0.04, 6, 12, Math.PI),
-            style.trimMaterial
-          );
-          arch.position.set(0, 0.33, 0.03);
-          arch.rotation.z = Math.PI;
-          gate.add(arch);
+      const arch = new three.Mesh(
+        new three.TorusGeometry(0.18, 0.04, 6, 12, Math.PI),
+        style.trimMaterial
+      );
+      arch.position.set(0, 0.33, 0.03);
+      arch.rotation.z = Math.PI;
+      gate.add(arch);
 
-          const leftPost = new three.Mesh(
-            new three.BoxGeometry(0.08, 0.34, 0.08),
-            style.trimMaterial
-          );
-          leftPost.position.set(-0.16, 0.17, 0.03);
-          gate.add(leftPost);
+      const leftPost = new three.Mesh(
+        new three.BoxGeometry(0.08, 0.34, 0.08),
+        style.trimMaterial
+      );
+      leftPost.position.set(-0.16, 0.17, 0.03);
+      gate.add(leftPost);
 
-          const rightPost = new three.Mesh(
-            new three.BoxGeometry(0.08, 0.34, 0.08),
-            style.trimMaterial
-          );
-          rightPost.position.set(0.16, 0.17, 0.03);
-          gate.add(rightPost);
+      const rightPost = new three.Mesh(
+        new three.BoxGeometry(0.08, 0.34, 0.08),
+        style.trimMaterial
+      );
+      rightPost.position.set(0.16, 0.17, 0.03);
+      gate.add(rightPost);
 
-          const portcullis = new three.Mesh(
-            new three.PlaneGeometry(0.24, 0.28),
-            new three.MeshBasicMaterial({
-              color: '#111827',
-              side: three.DoubleSide,
-            })
-          );
-          portcullis.position.set(0, 0.17, 0.08);
-          gate.add(portcullis);
+      const portcullis = new three.Mesh(
+        new three.PlaneGeometry(0.24, 0.28),
+        new three.MeshBasicMaterial({
+          color: '#111827',
+          side: three.DoubleSide,
+        })
+      );
+      portcullis.position.set(0, 0.17, 0.08);
+      gate.add(portcullis);
 
-          const bars = new three.Mesh(
-            new three.BoxGeometry(0.22, 0.26, 0.02),
-            style.barMaterial
-          );
-          bars.position.set(0, 0.17, 0.02);
-          gate.add(bars);
+      const bars = new three.Mesh(
+        new three.BoxGeometry(0.22, 0.26, 0.02),
+        style.barMaterial
+      );
+      bars.position.set(0, 0.17, 0.02);
+      gate.add(bars);
 
-          const darkness = new three.Mesh(
-            new three.CircleGeometry(0.12, 18),
-            new three.MeshBasicMaterial({
-              color: '#000000',
-              side: three.DoubleSide,
-            })
-          );
-          darkness.position.set(0, 0.15, -0.1);
-          gate.add(darkness);
+      const darkness = new three.Mesh(
+        new three.CircleGeometry(0.12, 18),
+        new three.MeshBasicMaterial({
+          color: '#000000',
+          side: three.DoubleSide,
+        })
+      );
+      darkness.position.set(0, 0.15, -0.1);
+      gate.add(darkness);
 
-          group.add(gate);
-          return group;
+      group.add(gate);
+      return group;
     },
   });
 }

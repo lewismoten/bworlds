@@ -1,4 +1,3 @@
-
 export type Kind = string;
 export type Identity = string;
 export type PluginName = string;
@@ -14,10 +13,10 @@ export type TileX = number;
 export type TileY = number;
 export type WorldX = number;
 export type WorldY = number;
-export type CardinalDirection = "north" | "east" | "south" | "west";
-export type AngleSnapCardinal = 0 | 90 | 180 | 270;
+export type CardinalDirection = 'E'| 'SE'| 'S'| 'SW'| 'W'| 'NW'| 'N'| 'NE';
+export type AngleSnapCardinal = 0 |  45 | 90 | 135| 180 | 225 | 270 | 315;
 export type FacingAngle = number;
-export type ViewMode = "2d" | "3d";
+export type ViewMode = '2d' | '3d';
 export type Color = string;
 export type Seed = string | number;
 
@@ -74,8 +73,7 @@ export interface NamedPoint extends Point {
 interface SeededPoint extends Point {
   seed: Seed;
 }
-interface TiledPoint extends Point, Tile {
-}
+interface TiledPoint extends Point, Tile {}
 export interface OverworldAnchorLike extends NamedPoint {}
 export interface PoiAnchorLike extends OverworldAnchorLike {
   type: PointOfInterestType;
@@ -140,10 +138,10 @@ export interface ClassifyOverworldTileContext extends SeededPoint {
   sampleTerrainSignals?: (x: number, y: number) => OverworldSignals;
   townAnchors: OverworldAnchorLike[];
   bridgeAnchors: OverworldAnchorLike[];
-  poiAnchors: PoiAnchorLike[];
+  poiAnchors?: PoiAnchorLike[];
 }
 export interface TileCoordinate {
-  tile: Pick<Tile, "kind">;
+  tile: Pick<Tile, 'kind'>;
   tileX: TileX;
   tileY: TileY;
   state: WorldStateLike;
@@ -218,7 +216,7 @@ export interface DecorateOverworldTileContext extends DecoratedSeedTile {
 interface DecoratedContext extends DecoratedSeedTile {
   context: WorldContextLike;
 }
-export interface DecorateTownTileContext extends DecoratedContext{}
+export interface DecorateTownTileContext extends DecoratedContext {}
 export interface DecorateBuildingTileContext extends DecoratedContext {}
 export interface DecorateDepthTileContext extends DecoratedContext {}
 
@@ -296,7 +294,7 @@ export interface CreateWorldActionContext extends SeededPoint {
   tile: TileLike;
 }
 
-export interface TilePlugin extends Pick<TileLike, "kind"> {
+export interface TilePlugin extends Pick<TileLike, 'kind'> {
   definition?: TileDefinitionLike;
   classifyTerrainTile?: (
     context: ClassifyOverworldTileContext
@@ -319,10 +317,10 @@ export interface TilePlugin extends Pick<TileLike, "kind"> {
 }
 
 interface OrderPriority {
-    priority?: number;
-    after?: string[];
-    before?: string[];
-  };
+  priority?: number;
+  after?: string[];
+  before?: string[];
+}
 
 export interface RuntimePlugin {
   name: PluginName;
@@ -342,9 +340,9 @@ export interface RuntimePlugin {
   [key: string]: unknown;
 }
 
-export type IndexedPlugin = { 
-  plugin: RuntimePlugin, 
-  index: number
+export type IndexedPlugin = {
+  plugin: RuntimePlugin;
+  index: number;
 };
 
 export interface PluginPackLike {

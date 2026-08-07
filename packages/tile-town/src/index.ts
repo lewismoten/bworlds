@@ -1,8 +1,7 @@
-import { generatePoiName, hash2D } from '@bworlds/core';
+import { hash2D } from '@bworlds/core';
 import {
-  canPlaceLandPoi,
+  createAnchoredLandPoiClassifier,
   createEnterablePoiTileFeatures,
-  createGeneratedPoiTile,
   createNamedPoi,
 } from '@bworlds/poi-support';
 import { createTilePlugin } from '@bworlds/plugin-api';
@@ -28,162 +27,132 @@ const signLabelCache = new Map<string, ThreeTextureLike>();
 const townStyleCache = new Map<string, TownStyle>();
 const townDescriptorCache = new Map<string, TownDescriptor[]>();
 const enterablePoiFeatures = createEnterablePoiTileFeatures();
+const classifyAnchoredTownPoi = createAnchoredLandPoiClassifier({
+  kind: 'town',
+  note: 'A lively town rises where several roads meet.',
+  createPoi(context, anchor) {
+    return {
+      kind: 'town',
+      poi: createNamedPoi(
+        context.seed,
+        'town',
+        anchor.x,
+        anchor.y,
+        anchor.name
+      ),
+      note: 'A lively town rises where several roads meet.',
+    };
+  },
+});
 
 export function createTownTilePlugin() {
   return createTilePlugin('tile-town', [
-      {
-        kind: 'town',
-        definition: {
-          name: 'Town',
-          color: '#e879f9',
-          miniColor: '#f0abfc',
-          walkable: true,
-          wallHeight: 0.5,
-        },
-        ...enterablePoiFeatures,
-        classifyOverworldTile({
-          seed,
-          x,
-          y,
-          tile,
-          nearLand,
-          townChance,
-          townAnchors,
-        }: ClassifyOverworldTileContext) {
-          if (!canPlaceLandPoi(nearLand, tile.kind)) {
-            return null;
-          }
-
-          const directTownAnchor = townAnchors.find(
-            (anchor) => Math.hypot(x - anchor.x, y - anchor.y) < 0.55
-          );
-          if (directTownAnchor) {
-            return {
-              kind: 'town',
-              poi: createNamedPoi(
-                seed,
-                'town',
-                directTownAnchor.x,
-                directTownAnchor.y,
-                directTownAnchor.name
-              ),
-              note: 'A lively town rises where several roads meet.',
-            };
-          }
-
-          if ((townChance ?? 0) <= 0.996) {
-            return null;
-          }
-
-          return {
-            ...createGeneratedPoiTile({
-              kind: 'town',
-              note: 'A town entrance. Press interact to enter.',
-              poiType: 'town',
-              seed,
-              tile,
-              x,
-              y,
-            }),
-          };
-        },
-        paint2D({ context, x, y, motif, fillRect }: Paint2DContext) {
-          fillRect(context, x, y, 16, 16, '#88b871');
-          fillRect(context, x + 1, y + 6, 14, 4, '#9f6f32');
-          const left = 1 + motif.int(0, 1);
-          const right = 9 + motif.int(-1, 0);
-          fillRect(context, x + left, y + 2, 5, 4, '#f8fafc');
-          fillRect(context, x + right, y + 2, 5, 4, '#f8fafc');
-          fillRect(context, x + left, y + 3, 5, 1, '#e879f9');
-          fillRect(context, x + right, y + 3, 5, 1, '#fb7185');
-          fillRect(context, x + left + 2, y + 10, 2, 3, '#7c3f1d');
-          fillRect(context, x + right + 2, y + 10, 2, 3, '#7c3f1d');
-          return true;
-        },
-        create3DModel({
-          three,
-          tile,
-          tileX,
-          tileY,
-        }: Create3DModelContext & { tile: TileLike }) {
-          const style = getTownStyle(three, tileX, tileY);
-          const descriptors = getTownDescriptors(tileX, tileY);
-          const group = new three.Group();
-
-          for (const descriptor of descriptors) {
-            const building = new three.Group();
-            building.position.set(
-              tileX + descriptor.x,
-              0,
-              tileY + descriptor.y
-            );
-            building.rotation.y = descriptor.rotation;
-
-            const body = new three.Mesh(
-              new three.BoxGeometry(
-                descriptor.width,
-                descriptor.height,
-                descriptor.depth
-              ),
-              style.wallMaterial
-            );
-            body.position.y = descriptor.height * 0.5;
-            building.add(body);
-
-            const roof = new three.Mesh(
-              new three.ConeGeometry(
-                descriptor.roofRadius,
-                descriptor.roofHeight,
-                4
-              ),
-              style.roofMaterial
-            );
-            roof.position.y =
-              descriptor.height + descriptor.roofHeight * 0.5 - 0.03;
-            roof.rotation.y = Math.PI * 0.25;
-            building.add(roof);
-
-            const door = new three.Mesh(
-              new three.BoxGeometry(
-                descriptor.width * 0.18,
-                descriptor.height * 0.34,
-                0.04
-              ),
-              style.trimMaterial
-            );
-            door.position.set(
-              0,
-              descriptor.height * 0.17,
-              descriptor.depth * 0.5 + 0.01
-            );
-            building.add(door);
-
-            for (const window of descriptor.windows) {
-              const pane = new three.Mesh(
-                new three.BoxGeometry(window.width, window.height, 0.03),
-                style.windowMaterial
-              );
-              pane.position.set(
-                window.x,
-                window.y,
-                descriptor.depth * 0.5 + 0.008
-              );
-              building.add(pane);
-            }
-
-            group.add(building);
-          }
-
-          if (tile.poi?.name) {
-            group.add(
-              createTownNameSign(three, tile.poi.name, tileX, tileY, style)
-            );
-          }
-
-          return group;
-        },
+    {
+      kind: 'town',
+      definition: {
+        name: 'Town',
+        color: '#e879f9',
+        miniColor: '#f0abfc',
+        walkable: true,
+        wallHeight: 0.5,
       },
-    ]);
+      ...enterablePoiFeatures,
+      classifyOverworldTile(context: ClassifyOverworldTileContext) {
+        return classifyAnchoredTownPoi(context);
+      },
+      paint2D({ context, x, y, motif, fillRect }: Paint2DContext) {
+        fillRect(context, x, y, 16, 16, '#88b871');
+        fillRect(context, x + 1, y + 6, 14, 4, '#9f6f32');
+        const left = 1 + motif.int(0, 1);
+        const right = 9 + motif.int(-1, 0);
+        fillRect(context, x + left, y + 2, 5, 4, '#f8fafc');
+        fillRect(context, x + right, y + 2, 5, 4, '#f8fafc');
+        fillRect(context, x + left, y + 3, 5, 1, '#e879f9');
+        fillRect(context, x + right, y + 3, 5, 1, '#fb7185');
+        fillRect(context, x + left + 2, y + 10, 2, 3, '#7c3f1d');
+        fillRect(context, x + right + 2, y + 10, 2, 3, '#7c3f1d');
+        return true;
+      },
+      create3DModel({
+        three,
+        tile,
+        tileX,
+        tileY,
+      }: Create3DModelContext & { tile: TileLike }) {
+        const style = getTownStyle(three, tileX, tileY);
+        const descriptors = getTownDescriptors(tileX, tileY);
+        const group = new three.Group();
+
+        for (const descriptor of descriptors) {
+          const building = new three.Group();
+          building.position.set(tileX + descriptor.x, 0, tileY + descriptor.y);
+          building.rotation.y = descriptor.rotation;
+
+          const body = new three.Mesh(
+            new three.BoxGeometry(
+              descriptor.width,
+              descriptor.height,
+              descriptor.depth
+            ),
+            style.wallMaterial
+          );
+          body.position.y = descriptor.height * 0.5;
+          building.add(body);
+
+          const roof = new three.Mesh(
+            new three.ConeGeometry(
+              descriptor.roofRadius,
+              descriptor.roofHeight,
+              4
+            ),
+            style.roofMaterial
+          );
+          roof.position.y =
+            descriptor.height + descriptor.roofHeight * 0.5 - 0.03;
+          roof.rotation.y = Math.PI * 0.25;
+          building.add(roof);
+
+          const door = new three.Mesh(
+            new three.BoxGeometry(
+              descriptor.width * 0.18,
+              descriptor.height * 0.34,
+              0.04
+            ),
+            style.trimMaterial
+          );
+          door.position.set(
+            0,
+            descriptor.height * 0.17,
+            descriptor.depth * 0.5 + 0.01
+          );
+          building.add(door);
+
+          for (const window of descriptor.windows) {
+            const pane = new three.Mesh(
+              new three.BoxGeometry(window.width, window.height, 0.03),
+              style.windowMaterial
+            );
+            pane.position.set(
+              window.x,
+              window.y,
+              descriptor.depth * 0.5 + 0.008
+            );
+            building.add(pane);
+          }
+
+          group.add(building);
+        }
+
+        if (tile.poi?.name) {
+          group.add(
+            createTownNameSign(three, tile.poi.name, tileX, tileY, style)
+          );
+        }
+
+        return group;
+      },
+    },
+  ]);
 }
 
 function createTownNameSign(

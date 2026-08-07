@@ -1,18 +1,133 @@
-import { generatePoiName, hash2D } from '@bworlds/core';
+import { generatePoiName } from '@bworlds/core';
+import {
+  collectNearbyOverworldCellAnchors,
+  resolveOverworldCellAnchor,
+  type OverworldCellAnchorSpec,
+  type OverworldTerrainSignalSampler,
+} from '@bworlds/overworld-support';
 import { createRuntimePlugin } from '@bworlds/plugin-api';
 import type {
   OverworldAnchorLike,
-  OverworldSignals,
+  PoiAnchorLike,
   ResolveOverworldAnchorsContext,
   RuntimePlugin,
 } from '@bworlds/plugin-api';
 
 type NamedPoint = OverworldAnchorLike & { name: string };
-type SampleTerrainSignalsLike = (x: number, y: number) => OverworldSignals;
+type NamedPoiAnchor = PoiAnchorLike & { name: string };
+type PoiType = 'cave' | 'dungeon';
+
+const TOWN_CELL_SIZE = 20;
+const BRIDGE_CELL_SIZE = 16;
+const MIN_POI_SPACING = 9;
+
+const TOWN_ANCHOR_SPEC: OverworldCellAnchorSpec<NamedPoint> = {
+  id: 'town',
+  cellSize: TOWN_CELL_SIZE,
+  chanceKey: 'town-anchor',
+  offsetXKey: 'town-anchor-x',
+  offsetYKey: 'town-anchor-y',
+  threshold: 0.64,
+  priority: 0,
+  isSuitableTerrain(terrain) {
+    return (
+      terrain.continent > 0.47 &&
+      terrain.continent < 0.9 &&
+      terrain.elevation < 0.7 &&
+      terrain.riverSignal < 0.82
+    );
+  },
+  createAnchor({ seed, x, y }) {
+    return {
+      x,
+      y,
+      name: generatePoiName(seed, 'town', x, y),
+    };
+  },
+};
+
+const BRIDGE_ANCHOR_SPEC: OverworldCellAnchorSpec<OverworldAnchorLike> = {
+  id: 'bridge',
+  cellSize: BRIDGE_CELL_SIZE,
+  chanceKey: 'bridge-anchor',
+  offsetXKey: 'bridge-anchor-x',
+  offsetYKey: 'bridge-anchor-y',
+  threshold: 0.72,
+  priority: 0,
+  isSuitableTerrain(terrain) {
+    return (
+      terrain.continent > 0.46 &&
+      terrain.continent < 0.88 &&
+      terrain.elevation < 0.68 &&
+      terrain.riverSignal > 0.8
+    );
+  },
+  createAnchor({ x, y }) {
+    return { x, y };
+  },
+};
+
+const POI_SPECS: Record<PoiType, OverworldCellAnchorSpec<NamedPoiAnchor>> = {
+  cave: {
+    id: 'cave',
+    cellSize: 18,
+    chanceKey: 'cave-anchor',
+    offsetXKey: 'cave-anchor-x',
+    offsetYKey: 'cave-anchor-y',
+    threshold: 0.74,
+    priority: 10,
+    isSuitableTerrain(terrain) {
+      return (
+        terrain.continent > 0.47 &&
+        terrain.continent < 0.9 &&
+        terrain.elevation < 0.78 &&
+        terrain.riverSignal < 0.8
+      );
+    },
+    createAnchor({ seed, x, y }) {
+      return {
+        x,
+        y,
+        type: 'cave',
+        name: generatePoiName(seed, 'cave', x, y),
+      };
+    },
+  },
+  dungeon: {
+    id: 'dungeon',
+    cellSize: 22,
+    chanceKey: 'dungeon-anchor',
+    offsetXKey: 'dungeon-anchor-x',
+    offsetYKey: 'dungeon-anchor-y',
+    threshold: 0.78,
+    priority: 20,
+    isSuitableTerrain(terrain) {
+      return (
+        terrain.continent > 0.5 &&
+        terrain.continent < 0.88 &&
+        terrain.elevation > 0.34 &&
+        terrain.elevation < 0.82 &&
+        terrain.riverSignal < 0.78
+      );
+    },
+    createAnchor({ seed, x, y }) {
+      return {
+        x,
+        y,
+        type: 'dungeon',
+        name: generatePoiName(seed, 'dungeon', x, y),
+      };
+    },
+  },
+};
+
+const POI_SPEC_LIST = Object.values(POI_SPECS);
 
 export function createOverworldAnchorsRuntimePlugin(): RuntimePlugin {
   const townAnchorCache = new Map<string, NamedPoint | null>();
   const bridgeAnchorCache = new Map<string, OverworldAnchorLike | null>();
+  const caveAnchorCache = new Map<string, NamedPoiAnchor | null>();
+  const dungeonAnchorCache = new Map<string, NamedPoiAnchor | null>();
 
   return createRuntimePlugin('runtime-overworld-anchors', {
     resolveOverworldAnchors({
@@ -36,6 +151,15 @@ export function createOverworldAnchorsRuntimePlugin(): RuntimePlugin {
           sampleTerrainSignals,
           bridgeAnchorCache
         ),
+        poiAnchors: getNearbyPoiAnchors(
+          seed,
+          x,
+          y,
+          sampleTerrainSignals,
+          townAnchorCache,
+          caveAnchorCache,
+          dungeonAnchorCache
+        ),
       };
     },
   });
@@ -45,137 +169,93 @@ function getNearbyTownAnchors(
   seed: string | number,
   x: number,
   y: number,
-  sampleTerrainSignals: SampleTerrainSignalsLike,
+  sampleTerrainSignals: OverworldTerrainSignalSampler,
   cache: Map<string, NamedPoint | null>
 ) {
-  const cellSize = 20;
-  const cellX = Math.floor(x / cellSize);
-  const cellY = Math.floor(y / cellSize);
-  const anchors: NamedPoint[] = [];
-
-  for (let dy = -2; dy <= 2; dy += 1) {
-    for (let dx = -2; dx <= 2; dx += 1) {
-      const anchor = getTownAnchor(
-        seed,
-        cellX + dx,
-        cellY + dy,
-        sampleTerrainSignals,
-        cache
-      );
-      if (anchor) anchors.push(anchor);
-    }
-  }
-
-  return anchors;
+  return collectNearbyOverworldCellAnchors({
+    seed,
+    x,
+    y,
+    spec: TOWN_ANCHOR_SPEC,
+    sampleTerrainSignals,
+    cache,
+  });
 }
 
 function getNearbyBridgeAnchors(
   seed: string | number,
   x: number,
   y: number,
-  sampleTerrainSignals: SampleTerrainSignalsLike,
+  sampleTerrainSignals: OverworldTerrainSignalSampler,
   cache: Map<string, OverworldAnchorLike | null>
 ) {
-  const cellSize = 16;
-  const cellX = Math.floor(x / cellSize);
-  const cellY = Math.floor(y / cellSize);
-  const anchors: OverworldAnchorLike[] = [];
+  return collectNearbyOverworldCellAnchors({
+    seed,
+    x,
+    y,
+    spec: BRIDGE_ANCHOR_SPEC,
+    sampleTerrainSignals,
+    cache,
+  });
+}
 
-  for (let dy = -2; dy <= 2; dy += 1) {
-    for (let dx = -2; dx <= 2; dx += 1) {
-      const anchor = getBridgeAnchor(
+function getNearbyPoiAnchors(
+  seed: string | number,
+  x: number,
+  y: number,
+  sampleTerrainSignals: OverworldTerrainSignalSampler,
+  townCache: Map<string, NamedPoint | null>,
+  caveCache: Map<string, NamedPoiAnchor | null>,
+  dungeonCache: Map<string, NamedPoiAnchor | null>
+) {
+  const townAnchors = getNearbyTownAnchors(
+    seed,
+    x,
+    y,
+    sampleTerrainSignals,
+    townCache
+  );
+  const anchors: NamedPoiAnchor[] = townAnchors.map((anchor) => ({
+    ...anchor,
+    type: 'town',
+  }));
+  const caches: Record<PoiType, Map<string, NamedPoiAnchor | null>> = {
+    cave: caveCache,
+    dungeon: dungeonCache,
+  };
+
+  for (const poiType of Object.keys(POI_SPECS) as PoiType[]) {
+    anchors.push(
+      ...collectNearbyOverworldCellAnchors({
         seed,
-        cellX + dx,
-        cellY + dy,
+        x,
+        y,
+        spec: POI_SPECS[poiType],
         sampleTerrainSignals,
-        cache
-      );
-      if (anchor) anchors.push(anchor);
-    }
+        cache: caches[poiType],
+        minSpacing: MIN_POI_SPACING,
+        blockingAnchors: townAnchors,
+        conflictSpecs: POI_SPEC_LIST,
+      })
+    );
   }
 
   return anchors;
 }
 
-function getTownAnchor(
+export function resolveTownAnchor(
   seed: string | number,
   cellX: number,
   cellY: number,
-  sampleTerrainSignals: SampleTerrainSignalsLike,
+  sampleTerrainSignals: OverworldTerrainSignalSampler,
   cache: Map<string, NamedPoint | null>
 ) {
-  const key = `${seed}:town:${cellX}:${cellY}`;
-  if (!cache.has(key)) {
-    const cellSize = 20;
-    const centerX = cellX * cellSize;
-    const centerY = cellY * cellSize;
-    const anchorX =
-      centerX +
-      Math.round((hash2D(`${seed}:town-anchor-x`, cellX, cellY) - 0.5) * 8);
-    const anchorY =
-      centerY +
-      Math.round((hash2D(`${seed}:town-anchor-y`, cellX, cellY) - 0.5) * 8);
-    const chance = hash2D(`${seed}:town-anchor`, cellX, cellY);
-    const terrain = sampleTerrainSignals(anchorX, anchorY);
-    const suitable =
-      chance > 0.64 &&
-      terrain.continent > 0.47 &&
-      terrain.continent < 0.9 &&
-      terrain.elevation < 0.7 &&
-      terrain.riverSignal < 0.82;
-
-    cache.set(
-      key,
-      suitable
-        ? {
-            x: anchorX,
-            y: anchorY,
-            name: generatePoiName(seed, 'town', anchorX, anchorY),
-          }
-        : null
-    );
-  }
-
-  return cache.get(key) ?? null;
-}
-
-function getBridgeAnchor(
-  seed: string | number,
-  cellX: number,
-  cellY: number,
-  sampleTerrainSignals: SampleTerrainSignalsLike,
-  cache: Map<string, OverworldAnchorLike | null>
-) {
-  const key = `${seed}:bridge:${cellX}:${cellY}`;
-  if (!cache.has(key)) {
-    const cellSize = 16;
-    const centerX = cellX * cellSize;
-    const centerY = cellY * cellSize;
-    const anchorX =
-      centerX +
-      Math.round((hash2D(`${seed}:bridge-anchor-x`, cellX, cellY) - 0.5) * 6);
-    const anchorY =
-      centerY +
-      Math.round((hash2D(`${seed}:bridge-anchor-y`, cellX, cellY) - 0.5) * 6);
-    const chance = hash2D(`${seed}:bridge-anchor`, cellX, cellY);
-    const terrain = sampleTerrainSignals(anchorX, anchorY);
-    const suitable =
-      chance > 0.72 &&
-      terrain.continent > 0.46 &&
-      terrain.continent < 0.88 &&
-      terrain.elevation < 0.68 &&
-      terrain.riverSignal > 0.8;
-
-    cache.set(
-      key,
-      suitable
-        ? {
-            x: anchorX,
-            y: anchorY,
-          }
-        : null
-    );
-  }
-
-  return cache.get(key) ?? null;
+  return resolveOverworldCellAnchor({
+    seed,
+    cellX,
+    cellY,
+    spec: TOWN_ANCHOR_SPEC,
+    sampleTerrainSignals,
+    cache,
+  });
 }

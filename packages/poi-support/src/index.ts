@@ -5,6 +5,7 @@ import type {
   CardinalDirectionLike,
   CreateWorldActionContext,
   PoiLike,
+  PoiAnchorLike,
   Seed,
   TileLike,
   TilePlugin,
@@ -101,6 +102,9 @@ export function createChanceBasedEnterablePoiTilePlugin(options: {
     facing?: number;
     spawn?: { x: number; y: number };
   };
+  classifyOverworldTile?: (
+    context: ClassifyOverworldTileContext
+  ) => TileLike | null;
   paint2D?: TilePlugin['paint2D'];
   create3DModel?: TilePlugin['create3DModel'];
   canOccupy3D?: TilePlugin['canOccupy3D'];
@@ -110,14 +114,16 @@ export function createChanceBasedEnterablePoiTilePlugin(options: {
 }) {
   const kind = options.kind;
   const poiType = options.poiType ?? kind;
-  const classifyPoi = createChanceBasedLandPoiClassifier({
-    kind,
-    poiType,
-    note: options.note,
-    threshold: options.threshold,
-    getChance: options.getChance,
-    blockedKinds: options.blockedKinds,
-  });
+  const classifyPoi =
+    options.classifyOverworldTile ??
+    createChanceBasedLandPoiClassifier({
+      kind,
+      poiType,
+      note: options.note,
+      threshold: options.threshold,
+      getChance: options.getChance,
+      blockedKinds: options.blockedKinds,
+    });
   const enterablePoiFeatures = createEnterablePoiTileFeatures({
     traversalProfile: options.traversalProfile,
     worldAction: options.worldAction,
@@ -144,6 +150,72 @@ export function createChanceBasedEnterablePoiTilePlugin(options: {
   ]);
 }
 
+export function findPoiAnchor(
+  context: ClassifyOverworldTileContext,
+  poiType: string,
+  maxDistance = 0.55
+) {
+  return (context.poiAnchors ?? []).find(
+    (anchor) =>
+      anchor.type === poiType &&
+      Math.hypot(context.x - anchor.x, context.y - anchor.y) <= maxDistance
+  );
+}
+
+export function createAnchoredLandPoiClassifier(options: {
+  kind: string;
+  poiType?: string;
+  note: string;
+  blockedKinds?: ReadonlySet<string>;
+  maxDistance?: number;
+  createPoi?(
+    context: ClassifyOverworldTileContext,
+    anchor: PoiAnchorLike
+  ): TileLike;
+}) {
+  return function classifyAnchoredLandPoi(
+    context: ClassifyOverworldTileContext
+  ) {
+    const poiType = options.poiType ?? options.kind;
+    if (
+      !canPlaceLandPoi(
+        context.nearLand,
+        context.tile.kind,
+        options.blockedKinds
+      )
+    ) {
+      return null;
+    }
+
+    const anchor = findPoiAnchor(context, poiType, options.maxDistance);
+    if (!anchor) {
+      return null;
+    }
+
+    if (options.createPoi) {
+      return options.createPoi(context, anchor);
+    }
+
+    return createGeneratedPoiTile({
+      kind: options.kind,
+      note: options.note,
+      poiType,
+      seed: context.seed,
+      tile: {
+        ...context.tile,
+        poi: anchor.name
+          ? {
+              type: poiType,
+              name: anchor.name,
+            }
+          : context.tile.poi,
+      },
+      x: anchor.x,
+      y: anchor.y,
+    });
+  };
+}
+
 export function createPoiWorldAction(
   { x, y, tile }: CreateWorldActionContext,
   options: {
@@ -167,13 +239,15 @@ export function createPoiWorldAction(
   };
 }
 
-export function createEnterablePoiTileFeatures(options: {
-  traversalProfile?: Partial<TraversalProfile3D>;
-  worldAction?: {
-    facing?: number;
-    spawn?: { x: number; y: number };
-  };
-} = {}): Pick<TilePlugin, 'getTraversalProfile3D' | 'createWorldAction'> {
+export function createEnterablePoiTileFeatures(
+  options: {
+    traversalProfile?: Partial<TraversalProfile3D>;
+    worldAction?: {
+      facing?: number;
+      spawn?: { x: number; y: number };
+    };
+  } = {}
+): Pick<TilePlugin, 'getTraversalProfile3D' | 'createWorldAction'> {
   return {
     getTraversalProfile3D() {
       return createRouteTraversalProfile(options.traversalProfile);
@@ -247,7 +321,9 @@ export function pickPreferredLandmarkFacing({
     );
     const walkable = state.getTileDefinition(adjacentTile.kind).walkable;
     const landFacing =
-      walkable && adjacentTile.kind !== 'river' && adjacentTile.kind !== 'ocean';
+      walkable &&
+      adjacentTile.kind !== 'river' &&
+      adjacentTile.kind !== 'ocean';
     const routeDistance = getNearestAccessibleRouteDistance(
       state,
       tileX,

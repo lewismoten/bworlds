@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   CARDINAL_DIRECTIONS,
+  createAnchoredLandPoiClassifier,
   canPlaceLandPoi,
   createChanceBasedLandPoiClassifier,
   createEnterablePoiTileFeatures,
@@ -122,6 +123,7 @@ describe('poi support', () => {
         },
         townAnchors: [],
         bridgeAnchors: [],
+        poiAnchors: [],
       })
     ).toMatchObject({
       kind: 'cave',
@@ -148,8 +150,42 @@ describe('poi support', () => {
         },
         townAnchors: [],
         bridgeAnchors: [],
+        poiAnchors: [],
       })
     ).toBeNull();
+  });
+
+  it('creates a shared anchored land-poi classifier', () => {
+    const classify = createAnchoredLandPoiClassifier({
+      kind: 'cave',
+      note: 'A cave mouth opens in the terrain.',
+    });
+
+    expect(
+      classify({
+        seed: 'spec',
+        x: 8,
+        y: 9,
+        tile: { kind: 'plains' },
+        nearLand: true,
+        signals: {
+          continent: 0.5,
+          elevation: 0.5,
+          moisture: 0.5,
+          riverSignal: 0.5,
+          roadSignal: 0.5,
+        },
+        townAnchors: [],
+        bridgeAnchors: [],
+        poiAnchors: [{ x: 8, y: 9, type: 'cave', name: 'Stone Hollow' }],
+      } as any)
+    ).toMatchObject({
+      kind: 'cave',
+      poi: {
+        type: 'cave',
+        name: 'Stone Hollow',
+      },
+    });
   });
 
   it('checks basic land-poi placement eligibility', () => {
@@ -159,7 +195,9 @@ describe('poi support', () => {
   });
 
   it('finds reachable route distances for a facing direction', () => {
-    const east = CARDINAL_DIRECTIONS.find((direction) => direction.label === 'east')!;
+    const east = CARDINAL_DIRECTIONS.find(
+      (direction) => direction.label === 'east'
+    )!;
     const state = createMockState({
       '1:0': { kind: 'plains' },
       '2:0': { kind: 'road' },
@@ -189,9 +227,7 @@ describe('poi support', () => {
   });
 });
 
-function createMockState(
-  tileMap: Record<string, { kind: string }>
-) {
+function createMockState(tileMap: Record<string, { kind: string }>) {
   return {
     player: { x: 0, y: 0, facing: 0 },
     getCurrentContext() {
