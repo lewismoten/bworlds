@@ -116,7 +116,7 @@ export function create3DRenderer(host) {
         } else if (tile.kind === 'mountain') {
           worldRoot.add(createMountainGroup(state, x, y));
         } else if (tile.kind === 'town') {
-          worldRoot.add(createTownGroup(x, y));
+          worldRoot.add(createTownGroup(tile, x, y));
         } else if (tile.kind === 'sign') {
           worldRoot.add(createSignGroup(state, x, y));
         } else if (definition.wallHeight > 0.08) {
@@ -622,7 +622,7 @@ export function create3DRenderer(host) {
     return texture;
   }
 
-  function createTownGroup(tileX, tileY) {
+  function createTownGroup(tile, tileX, tileY) {
     const style = getTownStyle(tileX, tileY);
     const descriptors = getTownDescriptors(tileX, tileY);
     const group = new THREE.Group();
@@ -678,7 +678,113 @@ export function create3DRenderer(host) {
       group.add(building);
     }
 
+    if (tile.poi?.name) {
+      group.add(createTownNameSign(tile.poi.name, tileX, tileY, style));
+    }
+
     return group;
+  }
+
+  function createTownNameSign(name, tileX, tileY, style) {
+    const signStyle = getRegionalSignStyle(tileX, tileY);
+    const sign = new THREE.Group();
+    const signHeight = signStyle.postHeight * 0.92;
+    const postThickness = signStyle.postThickness * 0.9;
+    const placardWidth = Math.min(
+      1.38,
+      Math.max(0.72, 0.5 + name.length * 0.06)
+    );
+    const placardHeight = signStyle.placardHeight * 1.05;
+    const placardDepth = signStyle.placardDepth;
+    const label = createTownLabelSprite(
+      name,
+      placardWidth,
+      placardHeight,
+      signStyle
+    );
+
+    const post = new THREE.Mesh(
+      new THREE.BoxGeometry(postThickness, signHeight, postThickness),
+      signStyle.postMaterial
+    );
+    post.position.y = signHeight * 0.5;
+    sign.add(post);
+
+    const placard = new THREE.Mesh(
+      new THREE.BoxGeometry(placardWidth, placardHeight, placardDepth),
+      signStyle.placardMaterial
+    );
+    placard.position.set(0, signHeight * 0.7, 0);
+    sign.add(placard);
+
+    const cap = new THREE.Mesh(
+      new THREE.BoxGeometry(
+        placardWidth * 1.04,
+        placardHeight * 0.14,
+        placardDepth * 1.15
+      ),
+      style.trimMaterial
+    );
+    cap.position.set(0, placard.position.y + placardHeight * 0.5 + 0.03, 0);
+    sign.add(cap);
+
+    label.position.set(0, placard.position.y, placardDepth * 0.65);
+    sign.add(label);
+
+    const backLabel = createTownLabelSprite(
+      name,
+      placardWidth,
+      placardHeight,
+      signStyle
+    );
+    backLabel.position.set(0, placard.position.y, -placardDepth * 0.65);
+    backLabel.rotation.y = Math.PI;
+    sign.add(backLabel);
+
+    sign.position.set(tileX - 0.34, 0, tileY + 0.34);
+    sign.rotation.y = hash2D('town-sign-rotation', tileX, tileY) * 0.35 - 0.18;
+    return sign;
+  }
+
+  function createTownLabelSprite(name, width, height, signStyle) {
+    const texture = getTownLabelTexture(name, signStyle);
+    const material = new THREE.MeshBasicMaterial({
+      map: texture,
+      transparent: true,
+      depthWrite: false,
+    });
+    return new THREE.Mesh(
+      new THREE.PlaneGeometry(width * 0.9, height * 0.76),
+      material
+    );
+  }
+
+  function getTownLabelTexture(name, signStyle) {
+    const key = `${signStyle.key}:town:${name}`;
+    if (!signLabelCache.has(key)) {
+      const canvas = document.createElement('canvas');
+      canvas.width = 320;
+      canvas.height = 96;
+      const context = canvas.getContext('2d');
+      context.clearRect(0, 0, canvas.width, canvas.height);
+      context.fillStyle = signStyle.placardColor;
+      context.fillRect(0, 0, canvas.width, canvas.height);
+      context.strokeStyle = signStyle.trimColor;
+      context.lineWidth = 6;
+      context.strokeRect(3, 3, canvas.width - 6, canvas.height - 6);
+      context.fillStyle = signStyle.textColor;
+      context.font = 'bold 28px sans-serif';
+      context.textAlign = 'center';
+      context.textBaseline = 'middle';
+      context.fillText(name, canvas.width * 0.5, canvas.height * 0.5);
+
+      const texture = new THREE.CanvasTexture(canvas);
+      texture.colorSpace = THREE.SRGBColorSpace;
+      texture.needsUpdate = true;
+      signLabelCache.set(key, texture);
+    }
+
+    return signLabelCache.get(key);
   }
 
   function getTownStyle(tileX, tileY) {
