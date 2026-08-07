@@ -169,15 +169,83 @@ function toggleView() {
   saveSession();
 }
 
+function canMoveTo(nextX, nextY) {
+  const canOccupy3d =
+    state.viewMode !== '3d' || renderer3d.canOccupy(state, nextX, nextY);
+  return state.canWalk(nextX, nextY) && canOccupy3d;
+}
+
+function commitMove(nextX, nextY) {
+  state.player.x = nextX;
+  state.player.y = nextY;
+  saveSession();
+}
+
+function isBridgeTravelKind(kind) {
+  return kind === 'bridge' || kind === 'road' || kind === 'town';
+}
+
+function getBridgeAxis() {
+  const currentX = snapWorldCoordinate(state.player.x);
+  const currentY = snapWorldCoordinate(state.player.y);
+  const currentKind = state.getCurrentTile(currentX, currentY).kind;
+  if (currentKind !== 'bridge') {
+    return null;
+  }
+
+  const west = isBridgeTravelKind(
+    state.getCurrentTile(currentX - 1, currentY).kind
+  );
+  const east = isBridgeTravelKind(
+    state.getCurrentTile(currentX + 1, currentY).kind
+  );
+  const north = isBridgeTravelKind(
+    state.getCurrentTile(currentX, currentY - 1).kind
+  );
+  const south = isBridgeTravelKind(
+    state.getCurrentTile(currentX, currentY + 1).kind
+  );
+
+  if ((west || east) && !(north || south)) {
+    return 'ew';
+  }
+  if ((north || south) && !(west || east)) {
+    return 'ns';
+  }
+
+  return null;
+}
+
 function attemptMove(stepX, stepY) {
   const nextX = state.player.x + stepX;
   const nextY = state.player.y + stepY;
-  const canOccupy3d =
-    state.viewMode !== '3d' || renderer3d.canOccupy(state, nextX, nextY);
-  if (state.canWalk(nextX, nextY) && canOccupy3d) {
-    state.player.x = nextX;
-    state.player.y = nextY;
-    saveSession();
+  if (canMoveTo(nextX, nextY)) {
+    commitMove(nextX, nextY);
+    return;
+  }
+
+  const bridgeAxis = getBridgeAxis();
+  if (bridgeAxis === 'ew' && stepX !== 0) {
+    const slideX = state.player.x + stepX;
+    if (canMoveTo(slideX, state.player.y)) {
+      commitMove(slideX, state.player.y);
+      return;
+    }
+  }
+  if (bridgeAxis === 'ns' && stepY !== 0) {
+    const slideY = state.player.y + stepY;
+    if (canMoveTo(state.player.x, slideY)) {
+      commitMove(state.player.x, slideY);
+      return;
+    }
+  }
+
+  if (stepX !== 0 && canMoveTo(state.player.x + stepX, state.player.y)) {
+    commitMove(state.player.x + stepX, state.player.y);
+    return;
+  }
+  if (stepY !== 0 && canMoveTo(state.player.x, state.player.y + stepY)) {
+    commitMove(state.player.x, state.player.y + stepY);
   }
 }
 
