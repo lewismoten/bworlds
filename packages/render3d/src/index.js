@@ -18,12 +18,15 @@ const TREE_CLUSTER_SIZE = 4;
 const SIGN_REGION_SIZE = 10;
 const TOWN_REGION_SIZE = 18;
 const BRIDGE_REGION_SIZE = 22;
+const ROAD_REGION_SIZE = 20;
 const MOUNTAIN_BASE_COLOR = '#6b7280';
 const RIVER_SURFACE_DROP = -0.12;
 const MAX_RIVER_CHAMFER_DROP = 0.08;
 const RIVER_WALL_THICKNESS = 0.05;
 const BRIDGE_DECK_THICKNESS = 0.08;
 const BRIDGE_RAIL_HEIGHT = 0.18;
+const ROAD_SURFACE_HEIGHT = 0.012;
+const ROAD_CORE_HEIGHT = 0.02;
 
 export function create3DRenderer(host) {
   const renderer = new THREE.WebGLRenderer({
@@ -67,6 +70,7 @@ export function create3DRenderer(host) {
   const townDescriptorCache = new Map();
   const bridgeStyleCache = new Map();
   const bridgeClusterCache = new Map();
+  const roadStyleCache = new Map();
   const mountainTexture = createMountainTexture();
   const treeGeometry = {
     trunk: new THREE.CylinderGeometry(0.075, 0.1, 1, 6),
@@ -114,6 +118,8 @@ export function create3DRenderer(host) {
         if (tile.kind === 'forest') {
           const treeGroup = createForestTileGroup(x, y);
           worldRoot.add(treeGroup);
+        } else if (tile.kind === 'road' && context.type === 'overworld') {
+          worldRoot.add(createRoadGroup(state, x, y));
         } else if (tile.kind === 'bridge') {
           worldRoot.add(createBridgeGroup(state, x, y));
         } else if (tile.kind === 'mountain') {
@@ -235,13 +241,20 @@ export function create3DRenderer(host) {
       return createBridgeWaterFloor(tileX, tileY);
     }
 
-    const material = getTileMaterial(tile.kind, variant);
-    const surfaceHeight = getTileSurfaceHeight(tile.kind);
+    const floorKind =
+      tile.kind === 'road' && state.getCurrentContext().type === 'overworld'
+        ? getRoadBedKind(state, tileX, tileY)
+        : tile.kind;
+    const material = getTileMaterial(
+      floorKind,
+      getTileVariantIndex(floorKind, tileX, tileY)
+    );
+    const surfaceHeight = getTileSurfaceHeight(floorKind);
     const riverNeighbors = getAdjacentRiverNeighbors(
       state,
       tileX,
       tileY,
-      tile.kind
+      floorKind
     );
 
     if (!riverNeighbors || riverNeighbors.count === 0) {
@@ -357,6 +370,30 @@ export function create3DRenderer(host) {
     return floorMesh;
   }
 
+  function getRoadBedKind(state, tileX, tileY) {
+    const candidates = new Map();
+    for (let y = tileY - 1; y <= tileY + 1; y += 1) {
+      for (let x = tileX - 1; x <= tileX + 1; x += 1) {
+        if (x === tileX && y === tileY) continue;
+        const kind = state.getCurrentTile(x, y).kind;
+        if (
+          kind === 'road' ||
+          kind === 'bridge' ||
+          kind === 'town' ||
+          kind === 'sign'
+        ) {
+          continue;
+        }
+        if (kind === 'ocean' || kind === 'river') continue;
+        candidates.set(kind, (candidates.get(kind) ?? 0) + 1);
+      }
+    }
+
+    return (
+      [...candidates.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? 'plains'
+    );
+  }
+
   function addRiverEdgeWall(group, material, edge, wallHeight) {
     const mesh =
       edge === 'north' || edge === 'south'
@@ -429,6 +466,452 @@ export function create3DRenderer(host) {
 
   function isWaterBoundaryKind(kind) {
     return kind === 'river' || kind === 'bridge';
+  }
+
+  function createRoadGroup(state, tileX, tileY) {
+    const style = getRoadStyle(tileX, tileY);
+    const connections = getRoadConnections(state, tileX, tileY);
+    const group = new THREE.Group();
+    group.position.set(tileX, 0, tileY);
+
+    if (connections.length === 0) {
+      group.add(
+        createRoadRibbonMesh(
+          [
+            new THREE.Vector3(-0.18, ROAD_SURFACE_HEIGHT, 0),
+            new THREE.Vector3(0, ROAD_SURFACE_HEIGHT, 0),
+            new THREE.Vector3(0.18, ROAD_SURFACE_HEIGHT, 0),
+          ],
+          0.18,
+          style.shoulderMaterial,
+          `${tileX}:${tileY}:stub:shoulder`,
+          0.04
+        )
+      );
+      group.add(
+        createRoadRibbonMesh(
+          [
+            new THREE.Vector3(-0.14, ROAD_CORE_HEIGHT, 0),
+            new THREE.Vector3(0, ROAD_CORE_HEIGHT, 0),
+            new THREE.Vector3(0.14, ROAD_CORE_HEIGHT, 0),
+          ],
+          0.12,
+          style.roadMaterial,
+          `${tileX}:${tileY}:stub`,
+          0.028
+        )
+      );
+      return group;
+    }
+
+    const centerPatch = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.12, 0.15, 0.02, 8),
+      style.shoulderMaterial
+    );
+    centerPatch.position.y = ROAD_SURFACE_HEIGHT;
+    centerPatch.scale.z = 0.85;
+    group.add(centerPatch);
+
+    if (connections.length === 2) {
+      const curve = createRoadCurve(
+        tileX,
+        tileY,
+        connections[0],
+        connections[1]
+      );
+      group.add(
+        createRoadRibbonMesh(
+          curve,
+          style.shoulderWidth,
+          style.shoulderMaterial,
+          `${tileX}:${tileY}:shoulder`,
+          0.045
+        )
+      );
+      group.add(
+        createRoadRibbonMesh(
+          curve,
+          style.roadWidth,
+          style.roadMaterial,
+          `${tileX}:${tileY}:road`,
+          0.03
+        )
+      );
+      return group;
+    }
+
+    connections.forEach((connection, index) => {
+      const branch = createRoadBranch(tileX, tileY, connection, index);
+      group.add(
+        createRoadRibbonMesh(
+          branch,
+          style.shoulderWidth,
+          style.shoulderMaterial,
+          `${tileX}:${tileY}:branch:${connection.id}:shoulder`,
+          0.04
+        )
+      );
+      group.add(
+        createRoadRibbonMesh(
+          branch,
+          style.roadWidth,
+          style.roadMaterial,
+          `${tileX}:${tileY}:branch:${connection.id}`,
+          0.026
+        )
+      );
+    });
+
+    return group;
+  }
+
+  function getRoadConnections(state, tileX, tileY) {
+    const directions = [
+      {
+        id: 'north',
+        dx: 0,
+        dy: -1,
+        edgeX: 0,
+        edgeZ: -0.5,
+        inwardX: 0,
+        inwardZ: -0.18,
+      },
+      {
+        id: 'east',
+        dx: 1,
+        dy: 0,
+        edgeX: 0.5,
+        edgeZ: 0,
+        inwardX: 0.18,
+        inwardZ: 0,
+      },
+      {
+        id: 'south',
+        dx: 0,
+        dy: 1,
+        edgeX: 0,
+        edgeZ: 0.5,
+        inwardX: 0,
+        inwardZ: 0.18,
+      },
+      {
+        id: 'west',
+        dx: -1,
+        dy: 0,
+        edgeX: -0.5,
+        edgeZ: 0,
+        inwardX: -0.18,
+        inwardZ: 0,
+      },
+      {
+        id: 'northeast',
+        dx: 1,
+        dy: -1,
+        edgeX: 0.5,
+        edgeZ: -0.5,
+        inwardX: 0.22,
+        inwardZ: -0.22,
+      },
+      {
+        id: 'southeast',
+        dx: 1,
+        dy: 1,
+        edgeX: 0.5,
+        edgeZ: 0.5,
+        inwardX: 0.22,
+        inwardZ: 0.22,
+      },
+      {
+        id: 'southwest',
+        dx: -1,
+        dy: 1,
+        edgeX: -0.5,
+        edgeZ: 0.5,
+        inwardX: -0.22,
+        inwardZ: 0.22,
+      },
+      {
+        id: 'northwest',
+        dx: -1,
+        dy: -1,
+        edgeX: -0.5,
+        edgeZ: -0.5,
+        inwardX: -0.22,
+        inwardZ: -0.22,
+      },
+    ];
+
+    return directions
+      .filter(({ dx, dy }) =>
+        isRoadNetworkKind(state.getCurrentTile(tileX + dx, tileY + dy).kind)
+      )
+      .sort(
+        (a, b) => Math.atan2(a.edgeZ, a.edgeX) - Math.atan2(b.edgeZ, b.edgeX)
+      );
+  }
+
+  function isRoadNetworkKind(kind) {
+    return (
+      kind === 'road' ||
+      kind === 'bridge' ||
+      kind === 'town' ||
+      kind === 'sign' ||
+      kind === 'cave' ||
+      kind === 'dungeon'
+    );
+  }
+
+  function createRoadCurve(tileX, tileY, start, end) {
+    const startPoint = new THREE.Vector3(
+      start.edgeX,
+      ROAD_CORE_HEIGHT,
+      start.edgeZ
+    );
+    const endPoint = new THREE.Vector3(end.edgeX, ROAD_CORE_HEIGHT, end.edgeZ);
+    const jitter = (hash2D('road-curve-jitter', tileX, tileY) - 0.5) * 0.12;
+    const opposite = start.dx === -end.dx && start.dy === -end.dy;
+    const control = opposite
+      ? new THREE.Vector3(
+          start.dy !== 0 ? jitter : 0,
+          ROAD_SURFACE_HEIGHT,
+          start.dx !== 0 ? jitter : 0
+        )
+      : new THREE.Vector3(
+          (start.inwardX + end.inwardX) * 0.55,
+          ROAD_SURFACE_HEIGHT,
+          (start.inwardZ + end.inwardZ) * 0.55
+        );
+
+    return sampleQuadraticCurve(startPoint, control, endPoint, 9);
+  }
+
+  function createRoadBranch(tileX, tileY, connection, index) {
+    const start = new THREE.Vector3(0, ROAD_CORE_HEIGHT, 0);
+    const end = new THREE.Vector3(
+      connection.edgeX,
+      ROAD_CORE_HEIGHT,
+      connection.edgeZ
+    );
+    const bend =
+      (hash2D('road-branch-bend', tileX * 11 + index, tileY * 13) - 0.5) * 0.1;
+    const control = new THREE.Vector3(
+      connection.inwardX + (connection.dy !== 0 ? bend : 0),
+      ROAD_SURFACE_HEIGHT,
+      connection.inwardZ + (connection.dx !== 0 ? bend : 0)
+    );
+    return sampleQuadraticCurve(start, control, end, 7);
+  }
+
+  function sampleQuadraticCurve(start, control, end, segments) {
+    const curve = new THREE.QuadraticBezierCurve3(start, control, end);
+    return curve.getPoints(segments);
+  }
+
+  function createRoadRibbonMesh(points, width, material, seedKey, lipDepth) {
+    const geometry = new THREE.BufferGeometry();
+    const positions = [];
+    const uvs = [];
+    const indices = [];
+    let distance = 0;
+
+    for (let index = 0; index < points.length; index += 1) {
+      const point = points[index];
+      const previous = points[Math.max(0, index - 1)];
+      const next = points[Math.min(points.length - 1, index + 1)];
+      const tangent = new THREE.Vector3()
+        .subVectors(next, previous)
+        .setY(0)
+        .normalize();
+      const normal = new THREE.Vector3(-tangent.z, 0, tangent.x).normalize();
+      const widthNoise =
+        1 +
+        (hash2D(`road-width:${seedKey}`, index, points.length) - 0.5) *
+          lipDepth;
+      const halfWidth = width * widthNoise * 0.5;
+      const left = point.clone().addScaledVector(normal, halfWidth);
+      const right = point.clone().addScaledVector(normal, -halfWidth);
+      positions.push(left.x, left.y, left.z, right.x, right.y, right.z);
+      if (index > 0) {
+        distance += point.distanceTo(previous);
+      }
+      uvs.push(0, distance, 1, distance);
+    }
+
+    for (let index = 0; index < points.length - 1; index += 1) {
+      const base = index * 2;
+      indices.push(base, base + 1, base + 2, base + 1, base + 3, base + 2);
+    }
+
+    geometry.setAttribute(
+      'position',
+      new THREE.Float32BufferAttribute(positions, 3)
+    );
+    geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+    geometry.setIndex(indices);
+    geometry.computeVertexNormals();
+    return new THREE.Mesh(geometry, material);
+  }
+
+  function getRoadStyle(tileX, tileY) {
+    const regionX = Math.floor(tileX / ROAD_REGION_SIZE);
+    const regionY = Math.floor(tileY / ROAD_REGION_SIZE);
+    const key = `${regionX}:${regionY}`;
+
+    if (!roadStyleCache.has(key)) {
+      const tier = Math.floor(hash2D('road-tier', regionX, regionY) * 3);
+      const styleType = ['footpath', 'cobble', 'brick'][tier];
+      const palette =
+        styleType === 'brick'
+          ? { road: '#a14d34', shoulder: '#6b5d48', accent: '#7a2f1d' }
+          : styleType === 'cobble'
+            ? { road: '#8f8578', shoulder: '#6e7a68', accent: '#5f5b56' }
+            : { road: '#8d6a42', shoulder: '#5f7a4d', accent: '#5a4025' };
+      const roadTexture = createRoadTexture(
+        palette.road,
+        palette.accent,
+        styleType,
+        regionX,
+        regionY
+      );
+      const shoulderTexture = createRoadShoulderTexture(
+        palette.shoulder,
+        palette.road,
+        regionX,
+        regionY
+      );
+
+      roadStyleCache.set(key, {
+        roadWidth: styleType === 'footpath' ? 0.24 : 0.3,
+        shoulderWidth: styleType === 'footpath' ? 0.36 : 0.42,
+        roadMaterial: new THREE.MeshStandardMaterial({
+          color: '#ffffff',
+          map: roadTexture,
+          roughness: 0.95,
+          metalness: styleType === 'cobble' ? 0.04 : 0.02,
+          polygonOffset: true,
+          polygonOffsetFactor: -2,
+          polygonOffsetUnits: -2,
+          side: THREE.DoubleSide,
+        }),
+        shoulderMaterial: new THREE.MeshStandardMaterial({
+          color: '#ffffff',
+          map: shoulderTexture,
+          roughness: 0.98,
+          metalness: 0.01,
+          polygonOffset: true,
+          polygonOffsetFactor: -1,
+          polygonOffsetUnits: -1,
+          side: THREE.DoubleSide,
+        }),
+      });
+    }
+
+    return roadStyleCache.get(key);
+  }
+
+  function createRoadTexture(
+    baseColor,
+    accentColor,
+    styleType,
+    regionX,
+    regionY
+  ) {
+    const canvas = document.createElement('canvas');
+    canvas.width = 64;
+    canvas.height = 64;
+    const context = canvas.getContext('2d');
+
+    context.fillStyle = baseColor;
+    context.fillRect(0, 0, canvas.width, canvas.height);
+
+    if (styleType === 'brick') {
+      for (let row = 0; row < canvas.height; row += 10) {
+        const shift = ((row / 10) % 2) * 8;
+        context.fillStyle = accentColor;
+        context.fillRect(0, row, canvas.width, 2);
+        for (let column = -8 + shift; column < canvas.width + 8; column += 16) {
+          context.fillRect(column, row, 2, 10);
+        }
+      }
+    } else if (styleType === 'cobble') {
+      for (let index = 0; index < 42; index += 1) {
+        const x = Math.floor(
+          hash2D('road-cobble-x', regionX * 37 + index, regionY) * canvas.width
+        );
+        const y = Math.floor(
+          hash2D('road-cobble-y', regionY * 41 + index, regionX) * canvas.height
+        );
+        const width =
+          5 + Math.floor(hash2D('road-cobble-w', index, regionX) * 4);
+        const height =
+          3 + Math.floor(hash2D('road-cobble-h', index, regionY) * 3);
+        context.fillStyle =
+          index % 2 === 0 ? accentColor : 'rgba(255,255,255,0.14)';
+        context.fillRect(x, y, width, height);
+      }
+    } else {
+      for (let row = 0; row < canvas.height; row += 7) {
+        const shade = 80 + ((row * 9 + regionX * 7) % 36);
+        context.fillStyle = `rgba(${shade}, ${Math.max(35, shade - 20)}, ${Math.max(20, shade - 34)}, 0.28)`;
+        context.fillRect(0, row, canvas.width, 2);
+      }
+      for (let index = 0; index < 80; index += 1) {
+        const x = Math.floor(
+          hash2D('road-track-x', regionX, index + regionY) * canvas.width
+        );
+        const y = Math.floor(
+          hash2D('road-track-y', regionY, index + regionX) * canvas.height
+        );
+        context.fillStyle = 'rgba(50,30,18,0.16)';
+        context.fillRect(x, y, 2, 1);
+      }
+    }
+
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.RepeatWrapping;
+    texture.repeat.set(1.2, 1.2);
+    texture.magFilter = THREE.NearestFilter;
+    texture.minFilter = THREE.NearestFilter;
+    texture.generateMipmaps = false;
+    texture.needsUpdate = true;
+    return texture;
+  }
+
+  function createRoadShoulderTexture(baseColor, accentColor, regionX, regionY) {
+    const canvas = document.createElement('canvas');
+    canvas.width = 64;
+    canvas.height = 64;
+    const context = canvas.getContext('2d');
+
+    context.fillStyle = baseColor;
+    context.fillRect(0, 0, canvas.width, canvas.height);
+
+    for (let index = 0; index < 140; index += 1) {
+      const x = Math.floor(
+        hash2D('road-shoulder-x', regionX * 31 + index, regionY) * canvas.width
+      );
+      const y = Math.floor(
+        hash2D('road-shoulder-y', regionY * 29 + index, regionX) * canvas.height
+      );
+      const size =
+        1 + Math.floor(hash2D('road-shoulder-s', index, regionX + regionY) * 3);
+      context.fillStyle =
+        index % 3 === 0 ? accentColor : 'rgba(255,255,255,0.12)';
+      context.fillRect(x, y, size, size);
+    }
+
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.RepeatWrapping;
+    texture.repeat.set(1.2, 1.2);
+    texture.magFilter = THREE.NearestFilter;
+    texture.minFilter = THREE.NearestFilter;
+    texture.generateMipmaps = false;
+    texture.needsUpdate = true;
+    return texture;
   }
 
   function createBridgeGroup(state, tileX, tileY) {

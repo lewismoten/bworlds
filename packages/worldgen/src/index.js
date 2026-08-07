@@ -279,7 +279,7 @@ function createOverworldMap(seed, plugins) {
   }
 
   function classifyConnectedRoad(x, y, baseKind, townAnchors, bridgeAnchors) {
-    if (baseKind === 'ocean' || baseKind === 'mountain') {
+    if (baseKind === 'mountain') {
       return null;
     }
 
@@ -292,7 +292,9 @@ function createOverworldMap(seed, plugins) {
 
     if (
       nearestTown &&
-      nearestTown.distance < 2.6 &&
+      nearestTown.distance < 1.1 &&
+      (Math.abs(x - nearestTown.anchor.x) < 0.35 ||
+        Math.abs(y - nearestTown.anchor.y) < 0.35) &&
       baseKind !== 'river' &&
       baseKind !== 'bridge'
     ) {
@@ -313,7 +315,7 @@ function createOverworldMap(seed, plugins) {
 
     for (const [a, b] of pairs) {
       if (distanceToLineSegment(x, y, a.x, a.y, b.x, b.y) < 0.42) {
-        return baseKind === 'river' ? 'bridge' : 'road';
+        return isBridgeWaterKind(baseKind) ? 'bridge' : 'road';
       }
     }
 
@@ -340,18 +342,54 @@ function createOverworldMap(seed, plugins) {
           nearestBridge.anchor.y
         ) < 0.38
       ) {
-        return baseKind === 'river' ? 'bridge' : 'road';
+        return isBridgeWaterKind(baseKind) ? 'bridge' : 'road';
       }
     }
 
     for (const bridge of bridgeAnchors) {
       const distance = Math.hypot(x - bridge.x, y - bridge.y);
       if (distance < 0.8) {
-        return baseKind === 'river' ? 'bridge' : 'road';
+        return isBridgeWaterKind(baseKind) ? 'bridge' : 'road';
       }
     }
 
     return null;
+  }
+
+  function isBridgeWaterKind(kind) {
+    return kind === 'river' || kind === 'ocean';
+  }
+
+  function classifyNoiseRoad(x, y, tileKind, roadSignal) {
+    if (tileKind === 'ocean' || tileKind === 'mountain') {
+      return null;
+    }
+
+    if (roadSignal <= 0.9) {
+      return null;
+    }
+
+    const north = sampleTerrainSignals(x, y - 1).roadSignal;
+    const east = sampleTerrainSignals(x + 1, y).roadSignal;
+    const south = sampleTerrainSignals(x, y + 1).roadSignal;
+    const west = sampleTerrainSignals(x - 1, y).roadSignal;
+    const horizontalRidge =
+      roadSignal >= north && roadSignal >= south && roadSignal > 0.91;
+    const verticalRidge =
+      roadSignal >= east && roadSignal >= west && roadSignal > 0.91;
+
+    if (!horizontalRidge && !verticalRidge) {
+      return null;
+    }
+
+    if (isBridgeWaterKind(tileKind)) {
+      if (horizontalRidge && verticalRidge) {
+        return null;
+      }
+      return 'bridge';
+    }
+
+    return 'road';
   }
 
   function classifyTile(x, y) {
@@ -391,12 +429,9 @@ function createOverworldMap(seed, plugins) {
     }
 
     const nearLand = continent > 0.45 && continent < 0.9;
-    if (
-      roadSignal > 0.87 &&
-      tile.kind !== 'ocean' &&
-      tile.kind !== 'mountain'
-    ) {
-      tile = { kind: tile.kind === 'river' ? 'bridge' : 'road' };
+    const noiseRoadKind = classifyNoiseRoad(x, y, tile.kind, roadSignal);
+    if (noiseRoadKind) {
+      tile = { kind: noiseRoadKind };
     }
 
     const directTownAnchor = townAnchors.find(
