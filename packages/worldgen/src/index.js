@@ -10,8 +10,28 @@ function isTownTile(tile) {
 
 function createOverworldMap(seed, plugins) {
   const cache = new Map();
+  const curatedSpawnTiles = new Map([
+    ['-2,-2', { kind: 'forest', note: 'A thick treeline hems the meadow.' }],
+    [
+      '2,-1',
+      { kind: 'forest', note: 'Pines cluster near the starting field.' },
+    ],
+    ['-1,2', { kind: 'forest', note: 'A small woodland borders the plains.' }],
+    [
+      '5,0',
+      { kind: 'shore', note: 'The grass gives way to a sandy shoreline.' },
+    ],
+    ['6,0', { kind: 'ocean', note: 'Open water stretches beyond the shore.' }],
+    ['5,1', { kind: 'shore', note: 'Foamy surf washes onto the coast.' }],
+    ['6,1', { kind: 'ocean', note: 'The sea rolls just beyond the beach.' }],
+  ]);
 
   function classifyTile(x, y) {
+    const curatedTile = curatedSpawnTiles.get(`${x},${y}`);
+    if (curatedTile) {
+      return curatedTile;
+    }
+
     if (Math.abs(x) <= 2 && Math.abs(y) <= 2) {
       return {
         kind: 'plains',
