@@ -563,15 +563,29 @@ export function create3DRenderer(host) {
         hash2D('town-window-tone', regionX, regionY) > 0.55
           ? '#d9f4ff'
           : '#fef3c7';
+      const wallTexture = createTownWallTexture(
+        wallColor,
+        trimColor,
+        regionX,
+        regionY
+      );
+      const roofTexture = createTownRoofTexture(
+        roofColor,
+        trimColor,
+        regionX,
+        regionY
+      );
 
       townStyleCache.set(key, {
         wallMaterial: new THREE.MeshStandardMaterial({
-          color: wallColor,
+          color: '#ffffff',
+          map: wallTexture,
           roughness: 0.92,
           metalness: 0.02,
         }),
         roofMaterial: new THREE.MeshStandardMaterial({
-          color: roofColor,
+          color: '#ffffff',
+          map: roofTexture,
           roughness: 0.88,
           metalness: 0.03,
         }),
@@ -591,6 +605,98 @@ export function create3DRenderer(host) {
     }
 
     return townStyleCache.get(key);
+  }
+
+  function createTownWallTexture(baseColor, trimColor, regionX, regionY) {
+    const canvas = document.createElement('canvas');
+    canvas.width = 64;
+    canvas.height = 64;
+    const context = canvas.getContext('2d');
+
+    context.fillStyle = baseColor;
+    context.fillRect(0, 0, canvas.width, canvas.height);
+
+    for (let row = 0; row < canvas.height; row += 8) {
+      const shade = 210 + ((row * 9 + regionX * 7) % 24);
+      context.fillStyle = `rgba(${shade}, ${shade - 8}, ${shade - 18}, 0.22)`;
+      context.fillRect(0, row, canvas.width, 2);
+    }
+
+    context.fillStyle = trimColor;
+    for (let column = 0; column < canvas.width; column += 16) {
+      context.fillRect(column, 0, 2, canvas.height);
+    }
+    for (let row = 0; row < canvas.height; row += 16) {
+      context.fillRect(0, row, canvas.width, 2);
+    }
+
+    for (let index = 0; index < 28; index += 1) {
+      const x = Math.floor(
+        hash2D('town-wall-speck-x', regionX * 100 + regionY, index) *
+          canvas.width
+      );
+      const y = Math.floor(
+        hash2D('town-wall-speck-y', regionY * 100 + regionX, index) *
+          canvas.height
+      );
+      context.fillStyle = 'rgba(255,255,255,0.14)';
+      context.fillRect(x, y, 2, 2);
+    }
+
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.RepeatWrapping;
+    texture.repeat.set(1.1, 1.1);
+    texture.magFilter = THREE.NearestFilter;
+    texture.minFilter = THREE.NearestFilter;
+    texture.generateMipmaps = false;
+    texture.needsUpdate = true;
+    return texture;
+  }
+
+  function createTownRoofTexture(baseColor, trimColor, regionX, regionY) {
+    const canvas = document.createElement('canvas');
+    canvas.width = 64;
+    canvas.height = 64;
+    const context = canvas.getContext('2d');
+
+    context.fillStyle = baseColor;
+    context.fillRect(0, 0, canvas.width, canvas.height);
+
+    for (let row = 0; row < canvas.height; row += 6) {
+      const shift = Math.floor(
+        hash2D('town-roof-shift', regionX + row, regionY) * 4
+      );
+      context.fillStyle = trimColor;
+      for (let column = -8 + shift; column < canvas.width + 8; column += 14) {
+        context.fillRect(column, row, 10, 2);
+      }
+      context.fillStyle = 'rgba(255,255,255,0.18)';
+      context.fillRect(0, row, canvas.width, 1);
+    }
+
+    for (let index = 0; index < 18; index += 1) {
+      const x = Math.floor(
+        hash2D('town-roof-chip-x', regionX, index) * canvas.width
+      );
+      const y = Math.floor(
+        hash2D('town-roof-chip-y', regionY, index) * canvas.height
+      );
+      context.fillStyle = 'rgba(35, 20, 20, 0.2)';
+      context.fillRect(x, y, 3, 1);
+    }
+
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.RepeatWrapping;
+    texture.repeat.set(1, 1.2);
+    texture.magFilter = THREE.NearestFilter;
+    texture.minFilter = THREE.NearestFilter;
+    texture.generateMipmaps = false;
+    texture.needsUpdate = true;
+    return texture;
   }
 
   function getTownDescriptors(tileX, tileY) {
