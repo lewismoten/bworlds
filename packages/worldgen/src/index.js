@@ -12,6 +12,13 @@ function createOverworldMap(seed, plugins) {
   const cache = new Map();
 
   function classifyTile(x, y) {
+    if (Math.abs(x) <= 2 && Math.abs(y) <= 2) {
+      return {
+        kind: 'plains',
+        note: 'A calm starting meadow stretches around you.'
+      };
+    }
+
     const scaledX = x / 160;
     const scaledY = y / 160;
     const continent = octaveNoise2D(`${seed}:continent`, scaledX, scaledY, {
