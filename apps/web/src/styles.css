@@ -113,12 +113,36 @@ button:hover {
   padding: 1rem;
 }
 
-#viewport {
+.viewport-stage {
+  position: relative;
   width: 100%;
   height: min(75vh, 820px);
-  display: block;
   border-radius: 18px;
+  overflow: hidden;
   background: #02060b;
+}
+
+#viewport-2d,
+.viewport-3d {
+  position: absolute;
+  inset: 0;
+}
+
+#viewport-2d {
+  width: 100%;
+  height: 100%;
+  display: block;
+  background: #02060b;
+}
+
+.viewport-3d canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.is-hidden {
+  display: none;
 }
 
 .sidebar {

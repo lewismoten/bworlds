@@ -3,7 +3,9 @@
   "version": "0.1.0",
   "type": "module",
   "dependencies": {
-    "@bworlds/core": "0.1.0"
+    "@bworlds/atlas": "0.1.0",
+    "@bworlds/core": "0.1.0",
+    "three": "^0.179.1"
   },
   "exports": {
     ".": "./src/index.js"

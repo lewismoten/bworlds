@@ -10,7 +10,7 @@ import {
 } from '@bworlds/core';
 import { PluginRegistry } from '@bworlds/plugin-api';
 import { render2D } from '@bworlds/render2d';
-import { render3D } from '@bworlds/render3d';
+import { create3DRenderer } from '@bworlds/render3d';
 import { createWorldGenerator, defaultPlugins } from '@bworlds/worldgen';
 import './styles.css';
 
@@ -34,7 +34,14 @@ root.innerHTML = `
     </section>
     <section class="dashboard">
       <div class="viewport-panel">
-        <canvas id="viewport" width="1280" height="720"></canvas>
+        <div id="viewport-stage" class="viewport-stage">
+          <canvas id="viewport-2d" width="1280" height="720"></canvas>
+          <div
+            id="viewport-3d"
+            class="viewport-3d is-hidden"
+            aria-hidden="true"
+          ></div>
+        </div>
       </div>
       <aside class="sidebar">
         <div class="card">
@@ -62,7 +69,8 @@ root.innerHTML = `
   </main>
 `;
 
-const viewport = document.querySelector('#viewport');
+const viewport2d = document.querySelector('#viewport-2d');
+const viewport3d = document.querySelector('#viewport-3d');
 const atlasCanvas = document.querySelector('#atlas');
 const status = document.querySelector('#status');
 const toggleButton = document.querySelector('#toggle-view');
@@ -105,6 +113,7 @@ const motion = {
 };
 
 drawAtlas(atlasCanvas.getContext('2d'));
+const renderer3d = create3DRenderer(viewport3d);
 
 const keys = new Set();
 
@@ -132,15 +141,18 @@ function updateStatus() {
 
 function resizeCanvas() {
   const ratio = Math.min(window.devicePixelRatio || 1, 2);
-  const rect = viewport.getBoundingClientRect();
-  viewport.width = Math.floor(rect.width * ratio);
-  viewport.height = Math.floor(rect.height * ratio);
+  const rect = viewport2d.getBoundingClientRect();
+  viewport2d.width = Math.floor(rect.width * ratio);
+  viewport2d.height = Math.floor(rect.height * ratio);
+  renderer3d.resize(rect.width, rect.height, ratio);
 }
 
 function toggleView() {
   state.viewMode = state.viewMode === '2d' ? '3d' : '2d';
   toggleButton.textContent =
     state.viewMode === '2d' ? 'Switch to 3D' : 'Switch to 2D';
+  viewport2d.classList.toggle('is-hidden', state.viewMode !== '2d');
+  viewport3d.classList.toggle('is-hidden', state.viewMode !== '3d');
 }
 
 function attemptMove(stepX, stepY) {
@@ -297,21 +309,18 @@ function updateMovement(deltaMs) {
 
 function render() {
   const timeMs = performance.now();
-  const context = viewport.getContext('2d');
-  context.imageSmoothingEnabled = false;
-  context.clearRect(0, 0, viewport.width, viewport.height);
-
   if (state.viewMode === '2d') {
+    const context = viewport2d.getContext('2d');
+    context.imageSmoothingEnabled = false;
+    context.clearRect(0, 0, viewport2d.width, viewport2d.height);
     render2D(context, state, {
-      width: viewport.width,
-      height: viewport.height,
+      width: viewport2d.width,
+      height: viewport2d.height,
       rotation: -(state.player.facing + Math.PI / 2),
       timeMs,
     });
   } else {
-    render3D(context, state, {
-      width: viewport.width,
-      height: viewport.height,
+    renderer3d.render(state, {
       jumpHeight: motion.jumpHeight,
     });
   }
