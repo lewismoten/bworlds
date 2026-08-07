@@ -243,6 +243,10 @@ export function createPlayer(overrides = {}) {
   };
 }
 
+export function snapWorldCoordinate(value) {
+  return Math.round(value);
+}
+
 export function createWorldState({ generator, player }) {
   const stack = [
     {
@@ -266,20 +270,37 @@ export function createWorldState({ generator, player }) {
       return this.generator.getMap(this.getCurrentContext(), this.player);
     },
     getCurrentTile(x = this.player.x, y = this.player.y) {
-      return this.getCurrentMap().getTile(x, y);
+      return this.getCurrentMap().getTile(
+        snapWorldCoordinate(x),
+        snapWorldCoordinate(y)
+      );
     },
     canWalk(x, y) {
-      return getTileDefinition(this.getCurrentTile(x, y).kind).walkable;
+      const probes = [
+        [x, y],
+        [x + 0.3, y],
+        [x - 0.3, y],
+        [x, y + 0.3],
+        [x, y - 0.3],
+      ];
+
+      return probes.every(
+        ([probeX, probeY]) =>
+          getTileDefinition(this.getCurrentTile(probeX, probeY).kind).walkable
+      );
     },
     interact() {
       const map = this.getCurrentMap();
-      const action = map.getAction(this.player.x, this.player.y);
+      const action = map.getAction(
+        snapWorldCoordinate(this.player.x),
+        snapWorldCoordinate(this.player.y)
+      );
       if (!action) return false;
       const nextContext = {
         ...action.context,
         returnTo: action.returnTo ?? {
-          x: this.player.x,
-          y: this.player.y,
+          x: snapWorldCoordinate(this.player.x),
+          y: snapWorldCoordinate(this.player.y),
           facing: this.player.facing,
         },
       };
@@ -302,7 +323,10 @@ export function createWorldState({ generator, player }) {
     },
     tryExit() {
       const map = this.getCurrentMap();
-      const action = map.getExit(this.player.x, this.player.y);
+      const action = map.getExit(
+        snapWorldCoordinate(this.player.x),
+        snapWorldCoordinate(this.player.y)
+      );
       if (!action) return false;
       const currentContext = this.getCurrentContext();
       this.stack.pop();

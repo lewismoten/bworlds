@@ -5,6 +5,7 @@ import {
   createWorldState,
   getTileDefinition,
   normalizeAngle,
+  snapWorldCoordinate,
   toGps,
 } from '@bworlds/core';
 import { PluginRegistry } from '@bworlds/plugin-api';
@@ -47,8 +48,8 @@ root.innerHTML = `
         <div class="card">
           <h2>Controls</h2>
           <ul>
-            <li>WASD or arrow keys to move</li>
-            <li>Q/E to turn in 3D mode</li>
+            <li>WASD or arrow keys to move smoothly</li>
+            <li>Q/E to rotate in both 2D and 3D</li>
             <li>V to toggle 2D and 3D</li>
             <li>Enter or Space to interact</li>
             <li>X to leave a place when standing on its exit</li>
@@ -94,13 +95,16 @@ function updateStatus() {
   const gps = toGps(state.player.x, state.player.y);
   const context = state.getCurrentContext();
   const facing = cardinalFromAngle(state.player.facing);
+  const gridX = snapWorldCoordinate(state.player.x);
+  const gridY = snapWorldCoordinate(state.player.y);
 
   status.innerHTML = `
     <div><dt>View</dt><dd>${state.viewMode.toUpperCase()}</dd></div>
     <div><dt>Place</dt><dd>${context.label}</dd></div>
     <div><dt>Tile</dt><dd>${definition.name}</dd></div>
     <div><dt>Facing</dt><dd>${facing}</dd></div>
-    <div><dt>World</dt><dd>${state.player.x}, ${state.player.y}</dd></div>
+    <div><dt>World</dt><dd>${state.player.x.toFixed(2)}, ${state.player.y.toFixed(2)}</dd></div>
+    <div><dt>Grid</dt><dd>${gridX}, ${gridY}</dd></div>
     <div><dt>GPS</dt><dd>${gps.latitude.toFixed(4)}, ${gps.longitude.toFixed(4)}</dd></div>
     <div><dt>Depth</dt><dd>${context.depth}</dd></div>
     <div><dt>Hint</dt><dd>${tile.note ?? 'Explore the frontier.'}</dd></div>
@@ -121,10 +125,6 @@ function toggleView() {
 }
 
 function attemptMove(stepX, stepY) {
-  if (state.viewMode === '3d' && (stepX !== 0 || stepY !== 0)) {
-    state.player.facing = normalizeAngle(Math.atan2(stepY, stepX));
-  }
-
   const nextX = state.player.x + stepX;
   const nextY = state.player.y + stepY;
   if (state.canWalk(nextX, nextY)) {
@@ -136,8 +136,8 @@ function attemptMove(stepX, stepY) {
 function forwardDelta() {
   const angle = state.player.facing;
   return {
-    x: Math.round(Math.cos(angle)),
-    y: Math.round(Math.sin(angle)),
+    x: Math.cos(angle),
+    y: Math.sin(angle),
   };
 }
 
@@ -145,35 +145,66 @@ function handleInteraction() {
   state.interact();
 }
 
-function updateMovement() {
+function updateMovement(deltaMs) {
+  const turnSpeed = 0.0034 * deltaMs;
+  const moveSpeed = 0.0052 * deltaMs;
+
+  if (keys.has('q')) {
+    state.player.facing = normalizeAngle(state.player.facing - turnSpeed);
+  }
+  if (keys.has('e')) {
+    state.player.facing = normalizeAngle(state.player.facing + turnSpeed);
+  }
+
+  let moveX = 0;
+  let moveY = 0;
+  const forward = forwardDelta();
+  const strafe = {
+    x: Math.cos(state.player.facing + Math.PI / 2),
+    y: Math.sin(state.player.facing + Math.PI / 2),
+  };
+
   if (state.viewMode === '2d') {
-    if (keys.has('ArrowUp') || keys.has('w')) attemptMove(0, -1);
-    if (keys.has('ArrowDown') || keys.has('s')) attemptMove(0, 1);
-    if (keys.has('ArrowLeft') || keys.has('a')) attemptMove(-1, 0);
-    if (keys.has('ArrowRight') || keys.has('d')) attemptMove(1, 0);
-  } else {
-    if (keys.has('q')) {
-      state.player.facing = normalizeAngle(state.player.facing - 0.08);
-    }
-    if (keys.has('e')) {
-      state.player.facing = normalizeAngle(state.player.facing + 0.08);
-    }
     if (keys.has('ArrowUp') || keys.has('w')) {
-      const delta = forwardDelta();
-      attemptMove(delta.x, delta.y);
+      moveX += forward.x;
+      moveY += forward.y;
     }
     if (keys.has('ArrowDown') || keys.has('s')) {
-      const delta = forwardDelta();
-      attemptMove(-delta.x, -delta.y);
+      moveX -= forward.x;
+      moveY -= forward.y;
     }
     if (keys.has('ArrowLeft') || keys.has('a')) {
-      const delta = forwardDelta();
-      attemptMove(delta.y, -delta.x);
+      moveX -= strafe.x;
+      moveY -= strafe.y;
     }
     if (keys.has('ArrowRight') || keys.has('d')) {
-      const delta = forwardDelta();
-      attemptMove(-delta.y, delta.x);
+      moveX += strafe.x;
+      moveY += strafe.y;
     }
+  } else {
+    if (keys.has('ArrowUp') || keys.has('w')) {
+      moveX += forward.x;
+      moveY += forward.y;
+    }
+    if (keys.has('ArrowDown') || keys.has('s')) {
+      moveX -= forward.x;
+      moveY -= forward.y;
+    }
+    if (keys.has('ArrowLeft') || keys.has('a')) {
+      moveX -= strafe.x;
+      moveY -= strafe.y;
+    }
+    if (keys.has('ArrowRight') || keys.has('d')) {
+      moveX += strafe.x;
+      moveY += strafe.y;
+    }
+  }
+
+  const magnitude = Math.hypot(moveX, moveY);
+  if (magnitude > 0) {
+    const normalizedX = (moveX / magnitude) * moveSpeed;
+    const normalizedY = (moveY / magnitude) * moveSpeed;
+    attemptMove(normalizedX, normalizedY);
   }
 }
 
@@ -200,12 +231,11 @@ function render() {
 let lastFrame = 0;
 
 function loop(timestamp) {
-  const delta = timestamp - lastFrame;
-  if (delta > 85) {
-    updateMovement();
-    render();
-    lastFrame = timestamp;
-  }
+  const delta =
+    lastFrame === 0 ? 16.67 : Math.min(timestamp - lastFrame, 33.34);
+  updateMovement(delta);
+  render();
+  lastFrame = timestamp;
   requestAnimationFrame(loop);
 }
 

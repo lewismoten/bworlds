@@ -15,7 +15,7 @@ function createOverworldMap(seed, plugins) {
     if (Math.abs(x) <= 2 && Math.abs(y) <= 2) {
       return {
         kind: 'plains',
-        note: 'A calm starting meadow stretches around you.'
+        note: 'A calm starting meadow stretches around you.',
       };
     }
 

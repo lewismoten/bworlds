@@ -61,14 +61,34 @@ export function render2D(context, state, viewport) {
     context.stroke();
   }
 
-  context.fillStyle = '#ffbf69';
-  context.beginPath();
-  context.arc(
+  drawFacingMarker(
+    context,
     centerX + tileSize / 2,
     centerY + tileSize / 2,
-    tileSize * 0.35,
-    0,
-    Math.PI * 2
+    tileSize,
+    state.player.facing
   );
+}
+
+function drawFacingMarker(context, centerX, centerY, tileSize, angle) {
+  context.save();
+  context.translate(centerX, centerY);
+  context.rotate(angle);
+
+  context.fillStyle = '#ffbf69';
+  context.beginPath();
+  context.moveTo(tileSize * 0.42, 0);
+  context.lineTo(-tileSize * 0.18, -tileSize * 0.24);
+  context.lineTo(-tileSize * 0.18, -tileSize * 0.11);
+  context.lineTo(-tileSize * 0.38, -tileSize * 0.11);
+  context.lineTo(-tileSize * 0.38, tileSize * 0.11);
+  context.lineTo(-tileSize * 0.18, tileSize * 0.11);
+  context.lineTo(-tileSize * 0.18, tileSize * 0.24);
+  context.closePath();
   context.fill();
+
+  context.strokeStyle = '#081019';
+  context.lineWidth = Math.max(2, tileSize * 0.06);
+  context.stroke();
+  context.restore();
 }
