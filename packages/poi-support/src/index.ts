@@ -59,6 +59,28 @@ export function createGeneratedPoiTile({
   };
 }
 
+export function createAnchoredPoiTile({
+  kind,
+  note,
+  poiType,
+  seed,
+  tile,
+  anchor,
+}: {
+  kind: string;
+  note: string;
+  poiType: string;
+  seed: Seed;
+  tile?: TileLike | null;
+  anchor: PoiAnchorLike;
+}) {
+  return {
+    kind,
+    poi: createNamedPoi(seed, poiType, anchor.x, anchor.y, anchor.name ?? tile?.poi?.name),
+    note,
+  };
+}
+
 export function createChanceBasedLandPoiClassifier(options: {
   kind: string;
   poiType: string;
@@ -272,22 +294,13 @@ export function createAnchoredLandPoiClassifier(options: {
       return options.createPoi(context, anchor);
     }
 
-    return createGeneratedPoiTile({
+    return createAnchoredPoiTile({
       kind: options.kind,
       note: options.note,
       poiType,
       seed: context.seed,
-      tile: {
-        ...context.tile,
-        poi: anchor.name
-          ? {
-              type: poiType,
-              name: anchor.name,
-            }
-          : context.tile.poi,
-      },
-      x: anchor.x,
-      y: anchor.y,
+      tile: context.tile,
+      anchor,
     });
   };
 }

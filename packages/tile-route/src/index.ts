@@ -2,7 +2,7 @@ import { hash2D } from '@bworlds/core';
 import { createPlainsBackedTilePainter } from '@bworlds/paint-support';
 import { createTilePlugin } from '@bworlds/plugin-api';
 import {
-  createRegionalValueResolver,
+  createRegionalMaterialResolver,
   pickThresholdColor,
 } from '@bworlds/procedural-style';
 import {
@@ -46,7 +46,7 @@ const ROAD_CORE_HEIGHT = 0.02;
 const bridgeStyleCache = new Map<string, BridgeStyle>();
 const bridgeClusterCache = new Map<string, BridgeClusterInfo>();
 const roadStyleCache = new Map<string, RoadStyleBlueprint>();
-const resolveRoadStyle = createRegionalValueResolver(
+const resolveRoadStyle = createRegionalMaterialResolver(
   roadStyleCache,
   ROAD_REGION_SIZE,
   ({ regionX, regionY }) => {
@@ -577,7 +577,7 @@ function createRoadRibbonMesh(
 }
 
 function getRoadStyle(three: ThreeHostLike, tileX: number, tileY: number) {
-  return resolveRoadStyle(tileX, tileY).createMaterials(three);
+  return resolveRoadStyle(three, tileX, tileY);
 }
 
 function createRoadTexture(

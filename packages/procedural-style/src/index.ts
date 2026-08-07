@@ -1,3 +1,5 @@
+import type { ThreeHostLike } from '@bworlds/plugin-api';
+
 export function createRegionKey(
   tileX: number,
   tileY: number,
@@ -84,6 +86,39 @@ export function createCoordinateValueResolver<T>(
       );
     }
     return cache.get(key)!;
+  };
+}
+
+export function createRegionalMaterialResolver<TMaterial>(
+  cache: Map<
+    string,
+    {
+      createMaterials(three: ThreeHostLike): TMaterial;
+    }
+  >,
+  regionSize: number,
+  createValue: (context: {
+    regionX: number;
+    regionY: number;
+    key: string;
+    tileX: number;
+    tileY: number;
+  }) => {
+    createMaterials(three: ThreeHostLike): TMaterial;
+  }
+) {
+  const resolveBlueprint = createRegionalValueResolver(
+    cache,
+    regionSize,
+    createValue
+  );
+
+  return function resolveRegionalMaterial(
+    three: ThreeHostLike,
+    tileX: number,
+    tileY: number
+  ): TMaterial {
+    return resolveBlueprint(tileX, tileY).createMaterials(three);
   };
 }
 

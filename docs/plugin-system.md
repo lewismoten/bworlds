@@ -176,7 +176,7 @@ That gives plugin authors a reusable renderer-support layer for both textured ma
 
 ## Shared Style Helpers
 
-`@bworlds/procedural-style` now provides small seeded style helpers such as regional key generation, threshold-based palette selection, hex tinting, and `createRegionalValueResolver(...)` for region-scoped style caches. This starts turning repeated “regional style” logic into reusable support code instead of leaving every tile package to reimplement the same seeded cache and style-resolution patterns.
+`@bworlds/procedural-style` now provides small seeded style helpers such as regional key generation, threshold-based palette selection, hex tinting, `createRegionalValueResolver(...)` for region-scoped style caches, `createCoordinateValueResolver(...)` for per-tile generated caches, and `createRegionalMaterialResolver(...)` for the common “region blueprint plus `createMaterials(three)`” pattern used by plugin-owned 3D assets. This keeps tile packages focused on their actual palette and texture rules instead of re-implementing the same seeded cache, tile-key, and material-resolution plumbing in every package.
 
 ## Shared Overworld Helpers
 
@@ -190,11 +190,13 @@ For curated seeded overworld overrides, `@bworlds/overworld-support` now also pr
 
 ## Shared POI Helpers
 
-`@bworlds/poi-support` now provides reusable helpers for common point-of-interest tile behavior such as land-placement eligibility, deterministic named POI tile creation, and enter-action generation. This reduces boilerplate across enterable tile packages like towns, caves, and dungeons while keeping the shared POI conventions in one place.
+`@bworlds/poi-support` now provides reusable helpers for common point-of-interest tile behavior such as land-placement eligibility, deterministic named POI tile creation, anchored named-tile creation, and enter-action generation. This reduces boilerplate across enterable tile packages like towns, caves, and dungeons while keeping the shared POI conventions in one place.
 
 It now also provides `createEnterablePoiTileFeatures(...)` for the common “walk onto it like a route tile and interact to enter” pattern. That gives new enterable POI packages a single helper for shared traversal and enter-action behavior instead of repeating those hooks by hand.
 
 For generated overworld POIs, `createChanceBasedLandPoiClassifier(...)` now covers the common “land-only, chance-threshold, deterministic named POI tile” pattern used by packages like caves and dungeons. That keeps new POI packages aligned on placement rules and seeded naming without copying the same classification boilerplate.
+
+For anchored overworld landmarks, `createAnchoredPoiTile(...)` now owns the common “preserve an anchor-provided name or fall back to the deterministic naming path” tile-construction step. That lets packages like towns rely on the shared anchored classifier contract instead of adding package-local `createPoi(...)` wrappers just to restate the same naming rules.
 
 ## Shared Paint Helpers
 

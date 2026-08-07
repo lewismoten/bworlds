@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   createCoordinateValueResolver,
+  createRegionalMaterialResolver,
   createRegionalValueResolver,
   createRegionKey,
   getOrCreateRegionalValue,
@@ -77,6 +78,37 @@ describe('procedural style helpers', () => {
       key: '4:-2',
       tileX: 4,
       tileY: -2,
+    });
+    expect(cache.size).toBe(1);
+  });
+
+  it('creates reusable regional material resolvers for tile package style helpers', () => {
+    const cache = new Map<
+      string,
+      {
+        createMaterials(three: { label: string }): { cacheKey: string; host: string };
+      }
+    >();
+    const resolveMaterial = createRegionalMaterialResolver(
+      cache,
+      10,
+      ({ key }) => ({
+        createMaterials(three) {
+          return {
+            cacheKey: key,
+            host: three.label,
+          };
+        },
+      })
+    );
+
+    expect(resolveMaterial({ label: 'three-a' } as any, 21, 6)).toEqual({
+      cacheKey: '2:0',
+      host: 'three-a',
+    });
+    expect(resolveMaterial({ label: 'three-b' } as any, 24, 9)).toEqual({
+      cacheKey: '2:0',
+      host: 'three-b',
     });
     expect(cache.size).toBe(1);
   });

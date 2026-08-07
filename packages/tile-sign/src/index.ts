@@ -3,8 +3,7 @@ import { createPlainsBackedTilePainter } from '@bworlds/paint-support';
 import { canPlaceLandPoi, resolvePlacementChance } from '@bworlds/poi-support';
 import { createTilePlugin } from '@bworlds/plugin-api';
 import {
-  createRegionalValueResolver,
-  getOrCreateRegionalValue,
+  createRegionalMaterialResolver,
   pickThresholdColor,
 } from '@bworlds/procedural-style';
 import {
@@ -38,7 +37,7 @@ const ROADSIDE_SIGN_THRESHOLD = 0.9992;
 const LONG_ROAD_MIN_SPAN = 8;
 const LONG_ROAD_POI_DISTANCE = 28;
 const signStyleCache = new Map<string, SignStyleBlueprint>();
-const resolveRegionalSignStyle = createRegionalValueResolver(
+const resolveRegionalSignStyle = createRegionalMaterialResolver(
   signStyleCache,
   SIGN_REGION_SIZE,
   ({ regionX, regionY, key }) => {
@@ -453,7 +452,7 @@ function getRegionalSignStyle(
   tileX: number,
   tileY: number
 ): SignStyle {
-  return resolveRegionalSignStyle(tileX, tileY).createMaterials(three);
+  return resolveRegionalSignStyle(three, tileX, tileY);
 }
 
 function arrowFromVector(dx: number, dy: number) {

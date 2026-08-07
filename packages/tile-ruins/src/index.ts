@@ -5,7 +5,7 @@ import {
   createChanceBasedLandPoiClassifier,
 } from '@bworlds/poi-support';
 import {
-  createRegionalValueResolver,
+  createRegionalMaterialResolver,
   pickThresholdColor,
 } from '@bworlds/procedural-style';
 import { createTilePlugin, withOverworldTileClassifier } from '@bworlds/plugin-api';
@@ -31,7 +31,7 @@ const RUINS_BLOCKED_KINDS = new Set([
   'sign',
 ]);
 const ruinsStyleCache = new Map<string, RuinsStyleBlueprint>();
-const resolveRuinsStyle = createRegionalValueResolver(
+const resolveRuinsStyle = createRegionalMaterialResolver(
   ruinsStyleCache,
   RUINS_REGION_SIZE,
   ({ regionX, regionY }) => {
@@ -234,8 +234,7 @@ function getRuinsStyle(
   tileX: number,
   tileY: number
 ): RuinsStyle {
-  const style = resolveRuinsStyle(tileX, tileY);
-  return style.createMaterials(three);
+  return resolveRuinsStyle(three, tileX, tileY);
 }
 
 function paintRuinsTexture(

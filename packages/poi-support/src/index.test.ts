@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   CARDINAL_DIRECTIONS,
+  createAnchoredPoiTile,
   createAnchoredEnterablePoiTilePlugin,
   createAnchoredLandPoiClassifier,
   canPlaceLandPoi,
@@ -24,6 +25,53 @@ describe('poi support', () => {
         seed: 'spec',
         x: 5,
         y: 7,
+      })
+    ).toMatchObject({
+      kind: 'cave',
+      poi: {
+        type: 'cave',
+        name: expect.any(String),
+      },
+    });
+  });
+
+  it('creates anchored poi tiles that preserve anchor names', () => {
+    expect(
+      createAnchoredPoiTile({
+        kind: 'town',
+        note: 'A lively town rises where several roads meet.',
+        poiType: 'town',
+        seed: 'spec',
+        tile: { kind: 'plains' },
+        anchor: {
+          x: 8,
+          y: 9,
+          type: 'town',
+          name: 'Ashford',
+        },
+      })
+    ).toMatchObject({
+      kind: 'town',
+      poi: {
+        type: 'town',
+        name: 'Ashford',
+      },
+    });
+  });
+
+  it('creates anchored poi tiles with deterministic fallback names when anchors are unnamed', () => {
+    expect(
+      createAnchoredPoiTile({
+        kind: 'cave',
+        note: 'A cave mouth opens in the terrain.',
+        poiType: 'cave',
+        seed: 'spec',
+        tile: { kind: 'plains' },
+        anchor: {
+          x: 5,
+          y: 7,
+          type: 'cave',
+        },
       })
     ).toMatchObject({
       kind: 'cave',

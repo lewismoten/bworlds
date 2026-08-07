@@ -1,11 +1,10 @@
 import { hash2D } from '@bworlds/core';
 import {
   createAnchoredEnterablePoiTilePlugin,
-  createNamedPoi,
 } from '@bworlds/poi-support';
 import {
   createCoordinateValueResolver,
-  createRegionalValueResolver,
+  createRegionalMaterialResolver,
   pickThresholdColor,
 } from '@bworlds/procedural-style';
 import {
@@ -76,7 +75,7 @@ const resolveTownDescriptors = createCoordinateValueResolver(
     return descriptors;
   }
 );
-const resolveTownStyle = createRegionalValueResolver(
+const resolveTownStyle = createRegionalMaterialResolver(
   townStyleCache,
   TOWN_REGION_SIZE,
   ({ regionX, regionY, key }) => {
@@ -186,13 +185,6 @@ export function createTownTilePlugin() {
       wallHeight: 0.5,
     },
     note: 'A lively town rises where several roads meet.',
-    createPoi(context, anchor) {
-      return {
-        kind: 'town',
-        poi: createNamedPoi(context.seed, 'town', anchor.x, anchor.y, anchor.name),
-        note: 'A lively town rises where several roads meet.',
-      };
-    },
     paint2D({ context, x, y, motif, fillRect }: Paint2DContext) {
       fillRect(context, x, y, 16, 16, '#88b871');
       fillRect(context, x + 1, y + 6, 14, 4, '#9f6f32');
@@ -391,8 +383,7 @@ function getTownStyle(
   tileX: number,
   tileY: number
 ): TownStyle {
-  const style = resolveTownStyle(tileX, tileY);
-  return style.createMaterials(three);
+  return resolveTownStyle(three, tileX, tileY);
 }
 
 function paintTownWallTexture(

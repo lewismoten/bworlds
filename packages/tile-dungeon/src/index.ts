@@ -4,7 +4,7 @@ import {
   pickPreferredLandmarkFacing,
 } from '@bworlds/poi-support';
 import {
-  createRegionalValueResolver,
+  createRegionalMaterialResolver,
   pickThresholdColor,
 } from '@bworlds/procedural-style';
 import {
@@ -198,7 +198,7 @@ function getDungeonEntranceDirection(state, tileX: number, tileY: number) {
 }
 
 const dungeonStyleCache = new Map<string, DungeonStyleBlueprint>();
-const resolveDungeonStyle = createRegionalValueResolver(
+const resolveDungeonStyle = createRegionalMaterialResolver(
   dungeonStyleCache,
   18,
   ({ regionX, regionY }) => {
@@ -280,8 +280,7 @@ const resolveDungeonStyle = createRegionalValueResolver(
 );
 
 function getDungeonStyle(three: ThreeHostLike, tileX: number, tileY: number) {
-  const style = resolveDungeonStyle(tileX, tileY);
-  return style.createMaterials(three);
+  return resolveDungeonStyle(three, tileX, tileY);
 }
 
 function paintDungeonStoneTexture(
