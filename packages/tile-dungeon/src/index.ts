@@ -18,12 +18,14 @@ import type {
   Create3DModelContext,
   Paint2DContext,
   RuntimePlugin,
+  ThreeObject3DLike,
   ThreeHostLike,
   ThreeMaterialLike,
   ThreeTextureLike,
 } from '@bworlds/plugin-api';
 
 const TILE_PIXEL_SIZE = 16;
+const DUNGEON_BEACON_KEY = 'dungeonBeacon';
 
 export function createDungeonTilePlugin(): RuntimePlugin {
   return createAnchoredEnterablePoiTilePlugin({
@@ -45,7 +47,13 @@ export function createDungeonTilePlugin(): RuntimePlugin {
       fillRect(context, x + mouth + 2, y + 6, 4, 6, '#dc2626');
       return true;
     },
-    create3DModel({ three, state, tileX, tileY }: Create3DModelContext) {
+    create3DModel({
+      three,
+      state,
+      tileX,
+      tileY,
+      detailLevel = 'full',
+    }: Create3DModelContext) {
       const group = new three.Group();
       const style = getDungeonStyle(three, tileX, tileY);
       const entrance = getDungeonEntranceDirection(state, tileX, tileY);
@@ -162,39 +170,36 @@ export function createDungeonTilePlugin(): RuntimePlugin {
       darkness.position.set(0, 0.15, -0.1);
       gate.add(darkness);
 
-      const beacon = markPoiLightEmitter(
-        new three.Mesh(
-          new three.SphereGeometry(0.04, 6, 6),
-          new three.MeshStandardMaterial({
-            color: '#dc2626',
-            emissive: '#dc2626',
-            emissiveIntensity: 0.02,
-            roughness: 0.32,
-            metalness: 0.04,
-          })
-        ),
+      createDungeonBeacon(
+        three,
+        gate,
         {
-          kind: 'emissive-mesh',
-          dayIntensity: 0.02,
-          nightIntensity: 1.45,
-        }
+          x: 0,
+          y: 0.42,
+          z: 0.06,
+          glowScale: 0.04,
+          pointLightY: 0.4,
+          pointLightZ: 0.03,
+          glowDayIntensity: 0.02,
+          glowNightIntensity: 1.45,
+          pointLightIntensity: 0.95,
+          pointLightDistance: 3.6,
+          pointLightDecay: 1.85,
+          label: 'gate',
+        },
+        style
       );
-      beacon.position.set(0, 0.42, 0.06);
-      gate.add(beacon);
-
-      const beaconLight = markPoiLightEmitter(
-        new three.PointLight('#f87171', 0, 3.6, 1.85),
-        {
-          kind: 'point-light',
-          nightIntensity: 0.95,
-          visibleThreshold: 0.04,
-        }
-      );
-      beaconLight.position.set(0, 0.4, 0.03);
-      beaconLight.visible = false;
-      gate.add(beaconLight);
 
       group.add(gate);
+
+      if (detailLevel === 'full') {
+        getDungeonTowerBeaconDescriptors(tileX, tileY, baseWidth, baseDepth).forEach(
+          (beacon) => {
+            createDungeonBeacon(three, group, beacon, style);
+          }
+        );
+      }
+
       return group;
     },
     sync3DModel({ model, cycle }) {
@@ -226,6 +231,33 @@ function getDungeonTowerOffsets(
     height: 0.72 + hash2D('dungeon-tower-height', tileX, tileY + index) * 0.22,
     capHeight: 0.14 + hash2D('dungeon-tower-cap', tileX - index, tileY) * 0.08,
   }));
+}
+
+function getDungeonTowerBeaconDescriptors(
+  tileX: number,
+  tileY: number,
+  baseWidth: number,
+  baseDepth: number
+): DungeonBeaconDescriptor[] {
+  return getDungeonTowerOffsets(tileX, tileY, baseWidth, baseDepth).map(
+    (tower, index) => ({
+      x: tileX + tower.x,
+      y: tower.height + tower.capHeight * 0.42,
+      z: tileY + tower.z,
+      glowScale: 0.034 + hash2D('dungeon-beacon-scale', tileX + index, tileY) * 0.01,
+      pointLightY: tower.height + tower.capHeight * 0.34,
+      pointLightZ: tileY + tower.z,
+      pointLightIntensity:
+        0.46 + hash2D('dungeon-beacon-intensity', tileX, tileY + index) * 0.18,
+      pointLightDistance:
+        2.2 + hash2D('dungeon-beacon-distance', tileX - index, tileY) * 0.4,
+      pointLightDecay: 1.9,
+      glowDayIntensity: 0.01,
+      glowNightIntensity:
+        0.82 + hash2D('dungeon-beacon-glow', tileX + index, tileY - index) * 0.18,
+      label: `tower-${index}`,
+    })
+  );
 }
 
 function getDungeonEntranceDirection(
@@ -331,6 +363,64 @@ function getDungeonStyle(
   return resolveDungeonStyle(three, tileX, tileY);
 }
 
+function createDungeonBeacon(
+  three: ThreeHostLike,
+  parent: ThreeObject3DLike,
+  descriptor: DungeonBeaconDescriptor,
+  style: DungeonStyle
+) {
+  const brazier = new three.Mesh(
+    new three.CylinderGeometry(0.05, 0.06, 0.06, 6),
+    style.trimMaterial
+  );
+  brazier.position.set(descriptor.x, descriptor.y - 0.02, descriptor.z);
+  brazier.userData = {
+    ...(brazier.userData ?? {}),
+    [DUNGEON_BEACON_KEY]: descriptor.label,
+  };
+  parent.add(brazier);
+
+  const glow = markPoiLightEmitter(
+    new three.Mesh(
+      new three.SphereGeometry(descriptor.glowScale, 6, 6),
+      new three.MeshStandardMaterial({
+        color: '#ef4444',
+        emissive: '#ef4444',
+        emissiveIntensity: descriptor.glowDayIntensity,
+        roughness: 0.3,
+        metalness: 0.04,
+      })
+    ),
+    {
+      kind: 'emissive-mesh',
+      dayIntensity: descriptor.glowDayIntensity,
+      nightIntensity: descriptor.glowNightIntensity,
+    }
+  );
+  glow.position.set(descriptor.x, descriptor.y, descriptor.z);
+  glow.userData = {
+    ...(glow.userData ?? {}),
+    [DUNGEON_BEACON_KEY]: descriptor.label,
+  };
+  parent.add(glow);
+
+  const pointLight = markPoiLightEmitter(
+    new three.PointLight('#f87171', 0, descriptor.pointLightDistance, descriptor.pointLightDecay),
+    {
+      kind: 'point-light',
+      nightIntensity: descriptor.pointLightIntensity,
+      visibleThreshold: 0.04,
+    }
+  );
+  pointLight.position.set(descriptor.x, descriptor.pointLightY, descriptor.pointLightZ);
+  pointLight.visible = false;
+  pointLight.userData = {
+    ...(pointLight.userData ?? {}),
+    [DUNGEON_BEACON_KEY]: descriptor.label,
+  };
+  parent.add(pointLight);
+}
+
 function paintDungeonStoneTexture(
   context: CanvasRenderingContext2D,
   canvas: HTMLCanvasElement,
@@ -415,4 +505,19 @@ interface DungeonStyle {
 
 interface DungeonStyleBlueprint {
   createMaterials(three: ThreeHostLike): DungeonStyle;
+}
+
+interface DungeonBeaconDescriptor {
+  x: number;
+  y: number;
+  z: number;
+  glowScale: number;
+  pointLightY: number;
+  pointLightZ: number;
+  glowDayIntensity: number;
+  glowNightIntensity: number;
+  pointLightIntensity: number;
+  pointLightDistance: number;
+  pointLightDecay: number;
+  label: string;
 }
