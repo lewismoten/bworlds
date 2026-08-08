@@ -151,6 +151,7 @@ const resolveForestFloorDetailDescriptors = createCoordinateValueResolver(
     const denseForest = trees.length >= 5;
     const stumpChance = hash2D('forest-stump-detail', tileX, tileY);
     const fallenTreeChance = hash2D('forest-fallen-detail', tileX, tileY);
+    const interiorChance = hash2D('forest-interior-floor-detail', tileX, tileY);
 
     if (stumpChance > (denseForest ? 0.34 : 0.54)) {
       const stump = createForestFloorDetailDescriptor(
@@ -175,6 +176,24 @@ const resolveForestFloorDetailDescriptors = createCoordinateValueResolver(
       );
       if (fallenTree) {
         details.push(fallenTree);
+      }
+    }
+
+    if (denseForest && interiorChance > 0.58) {
+      const interiorKind: ForestFloorDetailDescriptor['kind'] =
+        interiorChance > 0.8 ? 'fallen-tree' : 'stump';
+      const interiorDetail = createForestFloorDetailDescriptor(
+        interiorKind,
+        tileX,
+        tileY,
+        trees,
+        details.length,
+        {
+          preferInterior: true,
+        }
+      );
+      if (interiorDetail) {
+        details.push(interiorDetail);
       }
     }
 
@@ -1103,14 +1122,18 @@ function createForestFloorDetailDescriptor(
   tileX: number,
   tileY: number,
   trees: ForestTreeDescriptor[],
-  detailIndex: number
+  detailIndex: number,
+  options: {
+    preferInterior?: boolean;
+  } = {}
 ): ForestFloorDetailDescriptor | null {
   const landmark = getForestLandmark(tileX, tileY);
-  const maxAttempts = 4;
+  const maxAttempts = options.preferInterior ? 6 : 4;
   for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
     const seed = `forest-floor:${kind}:${tileX}:${tileY}:${detailIndex}:${attempt}`;
-    const x = clampToTile((hash2D(seed, 1, 0) - 0.5) * 0.56);
-    const y = clampToTile((hash2D(seed, 2, 0) - 0.5) * 0.56);
+    const spread = options.preferInterior ? 0.24 : 0.56;
+    const x = clampToTile((hash2D(seed, 1, 0) - 0.5) * spread);
+    const y = clampToTile((hash2D(seed, 2, 0) - 0.5) * spread);
     const clearance = kind === 'stump' ? 0.09 : 0.12;
     const nearTree = trees.some((tree) => {
       const distance = Math.hypot(x - tree.x, y - tree.y);

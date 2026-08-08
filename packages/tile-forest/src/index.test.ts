@@ -140,6 +140,41 @@ describe('tile forest', () => {
     expect(getForestFloorDetails(first.x, first.y)).toEqual(first.details);
   });
 
+  it('can place extra centered stumps or fallen trees in dense forest interiors', () => {
+    const interiorTiles: Array<{
+      x: number;
+      y: number;
+      details: ReturnType<typeof getForestFloorDetails>;
+    }> = [];
+
+    for (let tileY = 0; tileY < 32; tileY += 1) {
+      for (let tileX = 0; tileX < 32; tileX += 1) {
+        const details = getForestFloorDetails(tileX, tileY);
+        const hasCenteredDetail = details.some(
+          (detail) => Math.abs(detail.x) <= 0.12 && Math.abs(detail.y) <= 0.12
+        );
+        if (details.length >= 2 && hasCenteredDetail) {
+          interiorTiles.push({ x: tileX, y: tileY, details });
+        }
+      }
+    }
+
+    expect(interiorTiles.length).toBeGreaterThan(0);
+    expect(
+      interiorTiles.some(({ details }) =>
+        details.some((detail) => detail.kind === 'stump')
+      )
+    ).toBe(true);
+    expect(
+      interiorTiles.some(({ details }) =>
+        details.some((detail) => detail.kind === 'fallen-tree')
+      )
+    ).toBe(true);
+
+    const first = interiorTiles[0];
+    expect(getForestFloorDetails(first.x, first.y)).toEqual(first.details);
+  });
+
   it('generates deterministic bushes for some forest tiles', () => {
     const sampleTiles: Array<{
       x: number;
