@@ -1018,74 +1018,95 @@ function syncCelestialEvents(root, cycle) {
   root.clear();
   const events = cycle.visibleEvents ?? [];
   events.forEach((event, index) => {
-    const theta = cycle.yearProgress * Math.PI * 2 + index * 0.42 - 0.6;
-    const phi = 0.42 + (index % 3) * 0.06;
-    const position = createSkyPosition(theta, phi, SKY_RADIUS - 6);
+    const position = createSkyAltitudePosition(
+      event.azimuth,
+      event.altitude,
+      SKY_RADIUS - 6 - Math.min(1.2, index * 0.08)
+    );
+    const horizonFade = smoothstep(-1.4, 6, position.y);
 
     if (event.type === 'meteor-shower') {
-      for (let streak = 0; streak < 3; streak += 1) {
-        const geometry = new THREE.BufferGeometry().setFromPoints([
-          position.clone().add(new THREE.Vector3(streak * 0.3, streak * 0.12, 0)),
-          position.clone().add(new THREE.Vector3(1.4 + streak * 0.3, -0.5 + streak * 0.12, 0)),
-        ]);
-        root.add(
-          new THREE.Line(
-            geometry,
-            new THREE.LineBasicMaterial({
-              color: '#eef6ff',
-              transparent: true,
-              opacity: 0.26 + event.intensity * 0.32,
-              depthTest: true,
-            })
-          )
+      const streakCount = Math.max(2, Math.round(2 + event.intensity * 3));
+      for (let streak = 0; streak < streakCount; streak += 1) {
+        const offset = new THREE.Vector3(
+          streak * 0.24,
+          streak * 0.1,
+          -streak * 0.06
         );
+        const geometry = new THREE.BufferGeometry().setFromPoints([
+          position.clone().add(offset),
+          position.clone().add(
+            new THREE.Vector3(
+              event.trailLength + streak * 0.28,
+              -0.34 - streak * 0.12,
+              0.12 * streak
+            )
+          ),
+        ]);
+        const line = new THREE.Line(
+          geometry,
+          new THREE.LineBasicMaterial({
+            color: event.color,
+            transparent: true,
+            opacity: (0.18 + event.intensity * 0.34) * horizonFade,
+            depthTest: true,
+          })
+        );
+        line.visible = line.material.opacity > 0.015;
+        root.add(line);
       }
       return;
     }
 
     const sprite = new THREE.Sprite(
       new THREE.SpriteMaterial({
-        color: event.type === 'planet' ? '#ffd7a6' : '#d8f5ff',
+        color: event.color,
         transparent: true,
-        opacity: 0.34 + event.intensity * 0.42,
+        opacity: (0.26 + event.intensity * 0.42) * horizonFade,
         depthWrite: false,
         depthTest: true,
       })
     );
     sprite.position.copy(position);
-    const scale = event.type === 'planet' ? 0.72 : 0.48;
+    const scale = event.size * (event.type === 'planet' ? 1 : 0.92);
     sprite.scale.set(scale, scale, 1);
-    sprite.material.opacity *= smoothstep(-1.4, 6, position.y);
     sprite.visible = sprite.material.opacity > 0.015;
     root.add(sprite);
 
     if (event.type === 'comet') {
       const tail = new THREE.BufferGeometry().setFromPoints([
-        position.clone().add(new THREE.Vector3(-1.2, -0.2, 0)),
+        position.clone().add(
+          new THREE.Vector3(-event.trailLength, -event.trailLength * 0.16, 0)
+        ),
         position.clone(),
       ]);
-      root.add(
-        new THREE.Line(
-          tail,
-          new THREE.LineBasicMaterial({
-            color: '#d8f5ff',
-            transparent: true,
-            opacity: 0.24 + event.intensity * 0.3,
-            depthTest: true,
-          })
-        )
+      const line = new THREE.Line(
+        tail,
+        new THREE.LineBasicMaterial({
+          color: event.color,
+          transparent: true,
+          opacity: (0.16 + event.intensity * 0.28) * horizonFade,
+          depthTest: true,
+        })
       );
+      line.visible = line.material.opacity > 0.015;
+      root.add(line);
     }
   });
 }
 
 function syncMilkyWayBelt(root, cycle) {
   root.clear();
+  const belt = cycle.milkyWay;
+  if (!belt) {
+    return;
+  }
   const points = [];
   for (let index = 0; index <= 72; index += 1) {
-    const azimuth =
-      (index / 72) * Math.PI * 2 + cycle.yearProgress * Math.PI * 2 * 0.16;
-    const phi = 1.05 + Math.sin(azimuth * 2.4 + cycle.yearProgress * Math.PI * 2) * 0.14;
+    const azimuth = (index / 72) * Math.PI * 2 + belt.azimuthOffset;
+    const phi =
+      belt.inclination +
+      Math.sin(azimuth * 2.4 + cycle.yearProgress * Math.PI * 2) * belt.width;
     points.push(createSkyPosition(azimuth, phi, SKY_RADIUS - 5.5));
   }
 
@@ -1095,11 +1116,16 @@ function syncMilkyWayBelt(root, cycle) {
       new THREE.LineBasicMaterial({
         color: '#7f9fca',
         transparent: true,
-        opacity: 0.02 + cycle.starsOpacity * 0.16,
+        opacity: belt.opacity,
         depthTest: false,
       })
     )
   );
+}
+
+function createSkyAltitudePosition(azimuth, altitude, radius) {
+  const phi = ((1 - altitude) * Math.PI) / 2;
+  return createSkyPosition(azimuth, phi, radius);
 }
 
 function createMoonSprite() {

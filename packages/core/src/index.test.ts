@@ -179,11 +179,48 @@ describe('core utilities', () => {
   it('exposes periodic planets, meteor showers, and comets', () => {
     const events = getCelestialEventsForDay(0, {
       yearLengthDays: DEFAULT_YEAR_LENGTH_DAYS,
+      dayProgress: 0.25,
+      observerLatitudeDegrees: 24,
+      solarDeclination: 0.12,
+      sunriseAzimuth: 0.08,
+      sunsetAzimuth: Math.PI - 0.08,
     });
 
     expect(events.some((event) => event.type === 'planet')).toBe(true);
     expect(events.some((event) => event.type === 'meteor-shower')).toBe(true);
     expect(events.some((event) => event.type === 'comet')).toBe(true);
+    expect(events[0]).toEqual(
+      expect.objectContaining({
+        azimuth: expect.any(Number),
+        altitude: expect.any(Number),
+        color: expect.any(String),
+        size: expect.any(Number),
+        trailLength: expect.any(Number),
+      })
+    );
+  });
+
+  it('exposes a faint Milky Way belt state that responds to season and latitude', () => {
+    const equatorial = getDaylightCycleState(DEFAULT_DAY_LENGTH_MS * 5, {
+      observerLatitudeDegrees: 0,
+      yearLengthDays: DEFAULT_YEAR_LENGTH_DAYS,
+    });
+    const northern = getDaylightCycleState(
+      DEFAULT_DAY_LENGTH_MS * Math.floor(DEFAULT_YEAR_LENGTH_DAYS * 0.25),
+      {
+        observerLatitudeDegrees: 55,
+        yearLengthDays: DEFAULT_YEAR_LENGTH_DAYS,
+      }
+    );
+
+    expect(equatorial.milkyWay.opacity).toBeGreaterThanOrEqual(0);
+    expect(equatorial.milkyWay.opacity).toBeLessThanOrEqual(1);
+    expect(northern.milkyWay.azimuthOffset).not.toBe(
+      equatorial.milkyWay.azimuthOffset
+    );
+    expect(northern.milkyWay.inclination).not.toBe(
+      equatorial.milkyWay.inclination
+    );
   });
 
   it('exposes tile-definition lookup through world state', () => {

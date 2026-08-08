@@ -3,7 +3,7 @@ import type { getDaylightCycleState } from '@bworlds/core';
 type DaylightCycleLike = ReturnType<typeof getDaylightCycleState>;
 
 export type TimePreset = 'dawn' | 'noon' | 'dusk' | 'midnight';
-export type InspectorTab = 'timekeeper' | 'model';
+export type InspectorTab = 'timekeeper' | 'model' | 'compass';
 
 export function getTimePresetProgress(
   cycle: DaylightCycleLike,
@@ -22,5 +22,8 @@ export function getTimePresetProgress(
 }
 
 export function getNextInspectorTab(tabId: string | undefined): InspectorTab {
-  return tabId === 'model' ? 'model' : 'timekeeper';
+  if (tabId === 'model' || tabId === 'compass') {
+    return tabId;
+  }
+  return 'timekeeper';
 }

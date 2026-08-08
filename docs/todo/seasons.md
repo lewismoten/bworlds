@@ -60,5 +60,10 @@ add a outer globe of stars in the sky that appear at night with procedurally gen
 - [x] The Time Keeper and Celestrial Model should appear as tabs that let me see one or the other. The celestial model should allow me to also change the seasons or increment days.
 - [x] The arrows should appear at the top of the time keeper rings
 - [x] The sunrise/sunset change should be aligned with the arrow when I click sunrise/sunset
-- [ ] A tab should appear for Comapss where a need is displayed as I rotate the camera. The needle should ease to the new position and take a bit to stableize and focus on north.
-- [ ] 
+- [x] A tab should appear for Comapss where a need is displayed as I rotate the camera. The needle should ease to the new position and take a bit to stableize and focus on north.
+- [x] The background color behind the constellations on the cellestial dial is uneven. Just make it a solid color, and show a light divider between each one. The light dividers may be equaldistant from each other to indicate the change of the months.
+- [x] The tabs should dictate which panel is visible - time keeper, celestial model, or compass
+- [x] Celestial model should show a path of the sun, moon, and planets
+- [x] The constellations disappear from the celestial model.
+- [x] Show -1d and -1h on the celestial model
+- [x] The arrows on teh time keeper are still on the left side instead of at the top of the rings in the center.

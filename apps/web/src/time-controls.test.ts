@@ -19,6 +19,7 @@ describe('time controls', () => {
   });
 
   it('normalizes the inspector tab id to a supported tab', () => {
+    expect(getNextInspectorTab('compass')).toBe('compass');
     expect(getNextInspectorTab('model')).toBe('model');
     expect(getNextInspectorTab('timekeeper')).toBe('timekeeper');
     expect(getNextInspectorTab('unknown')).toBe('timekeeper');

@@ -21,6 +21,7 @@ import type { WorldEnvironmentLike } from '@bworlds/plugin-api';
 import './styles.css';
 import { drawTimeWheel, getCelestialDateLabel } from './timekeeper.ts';
 import { createCelestialPreviewRenderer } from './celestial-preview.ts';
+import { drawCompassDial, easeAngle } from './compass.ts';
 import {
   getNextInspectorTab,
   getTimePresetProgress,
@@ -93,6 +94,16 @@ root.innerHTML = `
               >
                 Model
               </button>
+              <button
+                id="tab-compass"
+                class="inspector-tab"
+                type="button"
+                role="tab"
+                aria-selected="false"
+                aria-controls="panel-compass"
+              >
+                Compass
+              </button>
             </div>
           </div>
           <section id="panel-timekeeper" class="inspector-panel" role="tabpanel">
@@ -132,9 +143,22 @@ root.innerHTML = `
               <button id="model-plus-season" type="button">Next Season</button>
             </div>
             <div class="time-skip-controls">
+              <button id="model-minus-day" type="button">-1d</button>
               <button id="model-plus-day" type="button">+1d</button>
+              <button id="model-minus-hour" type="button">-1h</button>
               <button id="model-plus-hour" type="button">+1h</button>
             </div>
+          </section>
+          <section
+            id="panel-compass"
+            class="inspector-panel is-hidden"
+            role="tabpanel"
+            aria-hidden="true"
+          >
+            <canvas id="compass-dial" class="compass-dial" width="320" height="320"></canvas>
+            <p class="inspector-note">
+              The needle eases into place as you turn, then settles back onto north.
+            </p>
           </section>
         </div>
         <div class="card">
@@ -170,6 +194,8 @@ const timeWheelCanvas =
   document.querySelector<HTMLCanvasElement>('#time-wheel');
 const celestialPreviewHost =
   document.querySelector<HTMLElement>('#celestial-preview');
+const compassDialCanvas =
+  document.querySelector<HTMLCanvasElement>('#compass-dial');
 const status = document.querySelector<HTMLElement>('#status');
 const toggleButton = document.querySelector<HTMLButtonElement>('#toggle-view');
 const actionButton = document.querySelector<HTMLButtonElement>('#action');
@@ -193,8 +219,12 @@ const plusSeasonButton =
   document.querySelector<HTMLButtonElement>('#time-plus-season');
 const modelPlusDayButton =
   document.querySelector<HTMLButtonElement>('#model-plus-day');
+const modelMinusDayButton =
+  document.querySelector<HTMLButtonElement>('#model-minus-day');
 const modelPlusHourButton =
   document.querySelector<HTMLButtonElement>('#model-plus-hour');
+const modelMinusHourButton =
+  document.querySelector<HTMLButtonElement>('#model-minus-hour');
 const modelMinusSeasonButton =
   document.querySelector<HTMLButtonElement>('#model-minus-season');
 const modelPlusSeasonButton =
@@ -207,6 +237,7 @@ const inspectorTabButtons = Array.from(
 const inspectorPanels = {
   timekeeper: document.querySelector<HTMLElement>('#panel-timekeeper'),
   model: document.querySelector<HTMLElement>('#panel-model'),
+  compass: document.querySelector<HTMLElement>('#panel-compass'),
 };
 let lastSavedSnapshot = '';
 
@@ -255,6 +286,10 @@ const dialState = {
   sunriseProgress: 0,
   sunsetProgress: 0,
   daylightDuration: 0,
+  initialized: false,
+};
+const compassState = {
+  angle: 0,
   initialized: false,
 };
 const MOON_PHASE_NAMES = [
@@ -328,6 +363,13 @@ function resizeCanvas() {
   const rect = viewport2d.getBoundingClientRect();
   viewport2d.width = Math.floor(rect.width * ratio);
   viewport2d.height = Math.floor(rect.height * ratio);
+  if (compassDialCanvas) {
+    const compassSize = Math.floor(320 * ratio);
+    compassDialCanvas.width = compassSize;
+    compassDialCanvas.height = compassSize;
+    compassDialCanvas.style.width = '100%';
+    compassDialCanvas.style.maxWidth = '320px';
+  }
   renderer3d.resize(rect.width, rect.height, ratio);
   celestialPreview.resize();
 }
@@ -822,6 +864,10 @@ function render() {
 
   drawTimeWheel(timeWheelCanvas, displayCycle);
   celestialPreview.render(displayCycle, environment, state.player.facing);
+  drawCompassDial(
+    compassDialCanvas,
+    updateDisplayedCompass(state.player.facing)
+  );
   updateStatus();
 }
 
@@ -912,6 +958,17 @@ function easeWrappedProgress(current: number, target: number, factor: number) {
   return ((next % 1) + 1) % 1;
 }
 
+function updateDisplayedCompass(targetAngle: number) {
+  if (!compassState.initialized) {
+    compassState.angle = targetAngle;
+    compassState.initialized = true;
+    return compassState.angle;
+  }
+
+  compassState.angle = easeAngle(compassState.angle, targetAngle, 0.12);
+  return compassState.angle;
+}
+
 function loop(timestamp) {
   const delta =
     lastFrame === 0 ? 16.67 : Math.min(timestamp - lastFrame, 33.34);
@@ -989,7 +1046,9 @@ plusDayButton?.addEventListener('click', () => skipTimeByHours(24));
 minusSeasonButton?.addEventListener('click', () => skipSeasonByCount(-1));
 plusSeasonButton?.addEventListener('click', () => skipSeasonByCount(1));
 modelPlusDayButton?.addEventListener('click', () => skipTimeByHours(24));
+modelMinusDayButton?.addEventListener('click', () => skipTimeByHours(-24));
 modelPlusHourButton?.addEventListener('click', () => skipTimeByHours(1));
+modelMinusHourButton?.addEventListener('click', () => skipTimeByHours(-1));
 modelMinusSeasonButton?.addEventListener('click', () => skipSeasonByCount(-1));
 modelPlusSeasonButton?.addEventListener('click', () => skipSeasonByCount(1));
 freezeTimeButton?.addEventListener('click', toggleTimeFreeze);
@@ -1061,7 +1120,8 @@ function loadSession() {
     if (
       typeof parsed?.inspectorTab !== 'undefined' &&
       parsed.inspectorTab !== 'timekeeper' &&
-      parsed.inspectorTab !== 'model'
+      parsed.inspectorTab !== 'model' &&
+      parsed.inspectorTab !== 'compass'
     ) {
       return null;
     }

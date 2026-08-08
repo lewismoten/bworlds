@@ -82,6 +82,8 @@ export function createCelestialPreviewRenderer(host: HTMLElement | null) {
   root.add(eventRoot);
   const beltRoot = new THREE.Group();
   root.add(beltRoot);
+  const orbitRoot = new THREE.Group();
+  root.add(orbitRoot);
 
   const sun = new THREE.Mesh(
     new THREE.SphereGeometry(0.95, 24, 24),
@@ -191,12 +193,14 @@ export function createCelestialPreviewRenderer(host: HTMLElement | null) {
     syncPreviewConstellations(constellationRoot, cycle);
     syncPreviewEvents(eventRoot, cycle);
     syncMilkyWayBelt(beltRoot, cycle);
+    syncPreviewOrbits(orbitRoot, cycle);
 
     const skyOpacity = 0.06 + cycle.starsOpacity * 0.12;
     (skyShell.material as THREE.MeshBasicMaterial).opacity = skyOpacity;
-    constellationRoot.visible = cycle.starsOpacity > 0.02;
+    constellationRoot.visible = true;
     beltRoot.visible = cycle.starsOpacity > 0.02;
     eventRoot.visible = true;
+    orbitRoot.visible = true;
 
     renderer.render(scene, camera);
   }
@@ -254,7 +258,7 @@ function syncPreviewConstellations(root: THREE.Group, cycle: DaylightCycleLike) 
         new THREE.LineBasicMaterial({
           color: '#86aef5',
           transparent: true,
-          opacity: 0.1 + cycle.starsOpacity * 0.28,
+          opacity: 0.14 + cycle.starsOpacity * 0.26,
         })
       );
       root.add(line);
@@ -266,7 +270,7 @@ function syncPreviewConstellations(root: THREE.Group, cycle: DaylightCycleLike) 
         new THREE.SpriteMaterial({
           color: '#f3f8ff',
           transparent: true,
-          opacity: (0.22 + star.brightness * 0.5) * cycle.starsOpacity,
+          opacity: 0.12 + (0.18 + star.brightness * 0.44) * cycle.starsOpacity,
           depthWrite: false,
         })
       );
@@ -282,19 +286,16 @@ function syncPreviewEvents(root: THREE.Group, cycle: DaylightCycleLike) {
   root.clear();
   const events = cycle.visibleEvents ?? [];
   events.forEach((event, index) => {
-    const azimuth = cycle.yearProgress * Math.PI * 2 + event.progress * Math.PI * 2;
-    const altitude = 0.22 + Math.sin(event.progress * Math.PI * 2 + index) * 0.28;
-    const point = createPreviewPoint(azimuth, 0.9 - altitude * 0.35, 10.6);
+    const point = createPreviewAltitudePoint(
+      event.azimuth,
+      event.altitude,
+      10.4 - Math.min(1, index * 0.06)
+    );
 
     const mesh = new THREE.Mesh(
-      new THREE.SphereGeometry(event.type === 'planet' ? 0.28 : 0.2, 12, 12),
+      new THREE.SphereGeometry(Math.max(0.16, event.size * 0.45), 12, 12),
       new THREE.MeshBasicMaterial({
-        color:
-          event.type === 'planet'
-            ? '#f9d39b'
-            : event.type === 'comet'
-              ? '#dff5ff'
-              : '#f0f6ff',
+        color: event.color,
         transparent: true,
         opacity: 0.34 + event.intensity * 0.38,
       })
@@ -306,13 +307,35 @@ function syncPreviewEvents(root: THREE.Group, cycle: DaylightCycleLike) {
       root.add(
         new THREE.Line(
           new THREE.BufferGeometry().setFromPoints([
-            point.clone().add(new THREE.Vector3(-0.9, -0.1, 0)),
+            point.clone().add(
+              new THREE.Vector3(-event.trailLength * 0.42, -0.08, 0)
+            ),
             point,
           ]),
           new THREE.LineBasicMaterial({
-            color: '#dff5ff',
+            color: event.color,
             transparent: true,
             opacity: 0.2 + event.intensity * 0.24,
+          })
+        )
+      );
+    }
+
+    if (event.type === 'meteor-shower') {
+      root.add(
+        new THREE.Line(
+          new THREE.BufferGeometry().setFromPoints([
+            point.clone().add(
+              new THREE.Vector3(event.trailLength * 0.2, 0.12, -0.08)
+            ),
+            point.clone().add(
+              new THREE.Vector3(-event.trailLength * 0.22, -0.2, 0.08)
+            ),
+          ]),
+          new THREE.LineBasicMaterial({
+            color: event.color,
+            transparent: true,
+            opacity: 0.18 + event.intensity * 0.24,
           })
         )
       );
@@ -322,11 +345,18 @@ function syncPreviewEvents(root: THREE.Group, cycle: DaylightCycleLike) {
 
 function syncMilkyWayBelt(root: THREE.Group, cycle: DaylightCycleLike) {
   root.clear();
+  const belt = cycle.milkyWay;
+  if (!belt) {
+    return;
+  }
   const points: THREE.Vector3[] = [];
   for (let index = 0; index <= 60; index += 1) {
-    const azimuth = (index / 60) * Math.PI * 2 + cycle.yearProgress * Math.PI * 2 * 0.2;
-    const latitudeWave = 0.18 * Math.sin(azimuth * 2 + cycle.yearProgress * Math.PI * 2);
-    points.push(createPreviewPoint(azimuth, 1.08 + latitudeWave, 11.8));
+    const azimuth = (index / 60) * Math.PI * 2 + belt.azimuthOffset;
+    const latitudeWave =
+      Math.sin(azimuth * 2 + cycle.yearProgress * Math.PI * 2) * belt.width;
+    points.push(
+      createPreviewPoint(azimuth, belt.inclination + latitudeWave, 11.8)
+    );
   }
 
   root.add(
@@ -335,10 +365,51 @@ function syncMilkyWayBelt(root: THREE.Group, cycle: DaylightCycleLike) {
       new THREE.LineBasicMaterial({
         color: '#7da0d5',
         transparent: true,
-        opacity: 0.04 + cycle.starsOpacity * 0.12,
+        opacity: belt.opacity,
       })
     )
   );
+}
+
+function syncPreviewOrbits(root: THREE.Group, cycle: DaylightCycleLike) {
+  root.clear();
+
+  root.add(
+    buildPreviewArc(
+      cycle.sunriseAzimuth,
+      cycle.sunsetAzimuth,
+      0.04,
+      10,
+      '#ffbf69',
+      0.34
+    )
+  );
+  root.add(
+    buildPreviewArc(
+      cycle.moonAzimuth - Math.PI * 0.82,
+      cycle.moonAzimuth + Math.PI * 0.82,
+      -cycle.moonAltitude * 0.08,
+      10.8,
+      '#9ec5ff',
+      0.24
+    )
+  );
+
+  (cycle.visibleEvents ?? []).forEach((event) => {
+    if (event.type !== 'planet') {
+      return;
+    }
+    root.add(
+      buildPreviewArc(
+        event.azimuth - 0.44,
+        event.azimuth + 0.44,
+        -event.altitude * 0.08,
+        10.2,
+        event.color,
+        0.18
+      )
+    );
+  });
 }
 
 function createPreviewPoint(azimuth: number, phi: number, radius: number) {
@@ -347,6 +418,44 @@ function createPreviewPoint(azimuth: number, phi: number, radius: number) {
     Math.cos(azimuth) * sinPhi * radius,
     Math.cos(phi) * radius,
     Math.sin(azimuth) * sinPhi * radius
+  );
+}
+
+function createPreviewAltitudePoint(
+  azimuth: number,
+  altitude: number,
+  radius: number
+) {
+  const phi = ((1 - altitude) * Math.PI) / 2;
+  return createPreviewPoint(azimuth, phi, radius);
+}
+
+function buildPreviewArc(
+  startAzimuth: number,
+  endAzimuth: number,
+  altitude: number,
+  radius: number,
+  color: string,
+  opacity: number
+) {
+  const points: THREE.Vector3[] = [];
+  for (let index = 0; index <= 24; index += 1) {
+    const progress = index / 24;
+    points.push(
+      createPreviewAltitudePoint(
+        startAzimuth + (endAzimuth - startAzimuth) * progress,
+        altitude,
+        radius
+      )
+    );
+  }
+  return new THREE.Line(
+    new THREE.BufferGeometry().setFromPoints(points),
+    new THREE.LineBasicMaterial({
+      color,
+      transparent: true,
+      opacity,
+    })
   );
 }
 

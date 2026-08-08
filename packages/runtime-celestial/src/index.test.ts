@@ -21,7 +21,21 @@ describe('runtime celestial', () => {
         celestial: expect.objectContaining({
           activeConstellationIndex: expect.any(Number),
           dateLabel: expect.stringContaining('/'),
-          visibleEvents: expect.any(Array),
+          visibleEvents: expect.arrayContaining([
+            expect.objectContaining({
+              azimuth: expect.any(Number),
+              altitude: expect.any(Number),
+              color: expect.any(String),
+              size: expect.any(Number),
+              trailLength: expect.any(Number),
+            }),
+          ]),
+          milkyWay: expect.objectContaining({
+            azimuthOffset: expect.any(Number),
+            inclination: expect.any(Number),
+            width: expect.any(Number),
+            opacity: expect.any(Number),
+          }),
         }),
       })
     );

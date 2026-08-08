@@ -1,7 +1,6 @@
 import {
   DEFAULT_CONSTELLATION_COUNT,
   DEFAULT_YEAR_LENGTH_DAYS,
-  generateConstellations,
   getDaylightCycleState,
   toGps,
 } from '@bworlds/core';
@@ -23,9 +22,6 @@ export function createCelestialRuntimePlugin(): RuntimePlugin {
         seasonDaylightAmplitude: 0.41,
         observerLatitudeDegrees: latitude,
       };
-      const constellations = generateConstellations(CELESTIAL_SEED, {
-        count: cycle.constellationCount,
-      });
       const resolvedTimeMs = typeof timeMs === 'number' ? timeMs : 0;
       const celestialState = getDaylightCycleState(resolvedTimeMs, cycle);
 
@@ -51,10 +47,11 @@ export function createCelestialRuntimePlugin(): RuntimePlugin {
           density: 1.15,
         },
         celestial: {
-          constellations,
+          constellations: celestialState.constellations,
           activeConstellationIndex: celestialState.activeConstellationIndex,
           dateLabel: celestialState.calendar.label,
           visibleEvents: celestialState.visibleEvents,
+          milkyWay: celestialState.milkyWay,
         },
       };
     },

@@ -150,6 +150,18 @@ export interface WorldEnvironmentCelestialEventLike {
   name: string;
   progress: number;
   intensity: number;
+  azimuth: number;
+  altitude: number;
+  color: Color;
+  size: number;
+  trailLength: number;
+}
+
+export interface WorldEnvironmentMilkyWayLike {
+  azimuthOffset: number;
+  inclination: number;
+  width: number;
+  opacity: number;
 }
 
 export interface WorldEnvironmentCelestialLike {
@@ -157,6 +169,7 @@ export interface WorldEnvironmentCelestialLike {
   activeConstellationIndex?: number;
   dateLabel?: string;
   visibleEvents?: WorldEnvironmentCelestialEventLike[];
+  milkyWay?: WorldEnvironmentMilkyWayLike;
 }
 
 export interface WorldEnvironmentLike {

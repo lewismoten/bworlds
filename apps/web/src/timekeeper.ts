@@ -244,27 +244,46 @@ function drawConstellationRing(
 ) {
   const segmentSize = (Math.PI * 2) / Math.max(1, ringEntries.length);
 
-  ringEntries.forEach((entry) => {
-    const centerAngle = entry.angle;
-    const startAngle = centerAngle - segmentSize * 0.5;
-    const endAngle = centerAngle + segmentSize * 0.5;
-    context.fillStyle = entry.isActive
-      ? 'rgba(215, 237, 255, 0.26)'
-      : 'rgba(73, 102, 145, 0.36)';
+  ringEntries.forEach((entry, index) => {
+    const segmentCenter = (index / ringEntries.length) * Math.PI * 2 - Math.PI / 2;
+    const startAngle = segmentCenter - segmentSize * 0.5;
+    const endAngle = segmentCenter + segmentSize * 0.5;
+    context.fillStyle = 'rgba(39, 61, 92, 0.72)';
     context.beginPath();
     context.arc(0, 0, outerRadius, startAngle, endAngle);
     context.arc(0, 0, innerRadius, endAngle, startAngle, true);
     context.closePath();
     context.fill();
 
-    context.strokeStyle = 'rgba(183, 214, 255, 0.22)';
+    if (entry.isActive) {
+      context.strokeStyle = 'rgba(220, 238, 255, 0.62)';
+      context.lineWidth = 2.4;
+      context.beginPath();
+      context.arc(
+        0,
+        0,
+        outerRadius - 4,
+        startAngle + 0.05,
+        endAngle - 0.05
+      );
+      context.stroke();
+    }
+
+    context.strokeStyle = 'rgba(183, 214, 255, 0.28)';
     context.lineWidth = 1.2;
     context.beginPath();
-    context.arc(0, 0, outerRadius, startAngle, endAngle);
+    context.moveTo(Math.cos(startAngle) * innerRadius, Math.sin(startAngle) * innerRadius);
+    context.lineTo(Math.cos(startAngle) * outerRadius, Math.sin(startAngle) * outerRadius);
     context.stroke();
+    if (index === ringEntries.length - 1) {
+      context.beginPath();
+      context.moveTo(Math.cos(endAngle) * innerRadius, Math.sin(endAngle) * innerRadius);
+      context.lineTo(Math.cos(endAngle) * outerRadius, Math.sin(endAngle) * outerRadius);
+      context.stroke();
+    }
 
     context.save();
-    context.rotate(centerAngle);
+    context.rotate(entry.angle);
     context.translate(0, -((innerRadius + outerRadius) * 0.5));
     drawConstellationGlyph(
       context,
@@ -409,18 +428,17 @@ function drawTopMarker(
   pointDown = false
 ) {
   context.save();
-  context.rotate(-Math.PI / 2);
   context.translate(0, -radius);
   context.fillStyle = color;
   context.beginPath();
   if (pointDown) {
-    context.moveTo(0, 8);
-    context.lineTo(7, -6);
-    context.lineTo(-7, -6);
+    context.moveTo(0, 10);
+    context.lineTo(7, -4);
+    context.lineTo(-7, -4);
   } else {
-    context.moveTo(0, -6);
-    context.lineTo(7, 8);
-    context.lineTo(-7, 8);
+    context.moveTo(0, -8);
+    context.lineTo(7, 6);
+    context.lineTo(-7, 6);
   }
   context.closePath();
   context.fill();
