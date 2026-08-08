@@ -29,6 +29,7 @@ export const DEFAULT_ROUTE_TERMINAL_KINDS = new Set<RouteTerminalTileKind>([
   'town',
   'cave',
   'dungeon',
+  'tower',
   'quarry',
   'lighthouse',
   'ship',

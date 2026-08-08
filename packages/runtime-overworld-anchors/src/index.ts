@@ -18,6 +18,7 @@ type NamedPoiAnchor = PoiAnchorLike & { name: string };
 type PoiType =
   | 'cave'
   | 'dungeon'
+  | 'tower'
   | 'quarry'
   | 'lighthouse'
   | 'ship'
@@ -37,6 +38,9 @@ const FOREST_CLUSTER_RADIUS = 2;
 const OCEAN_CONTINENT_THRESHOLD = 0.38;
 const LAND_CONTINENT_THRESHOLD = 0.42;
 const SHIP_CONTINENT_MAX = 0.74;
+const TOWER_ELEVATION_MIN = 0.44;
+const TOWER_ELEVATION_MAX = 0.78;
+const TOWER_MOISTURE_MAX = 0.62;
 const OBSERVATORY_ELEVATION_MIN = 0.78;
 const STATION_ELEVATION_MAX = 0.54;
 const STATION_ROAD_SIGNAL_MIN = 0.42;
@@ -232,6 +236,28 @@ const POI_SPECS: Record<PoiType, OverworldCellAnchorSpec<NamedPoiAnchor>> = {
         terrain.elevation < 0.82 &&
         terrain.riverSignal < 0.78 &&
         hasDenseForestCluster(x, y, sampleTerrainSignals)
+      );
+    },
+  }),
+  tower: createGeneratedPoiOverworldCellAnchorSpec({
+    id: 'tower',
+    poiType: 'tower',
+    cellSize: 20,
+    chanceKey: 'tower-anchor',
+    offsetXKey: 'tower-anchor-x',
+    offsetYKey: 'tower-anchor-y',
+    threshold: 0.76,
+    priority: 24,
+    isSuitableTerrain({ terrain, x, y, sampleTerrainSignals }) {
+      return (
+        terrain.continent > 0.5 &&
+        terrain.continent < 0.88 &&
+        terrain.elevation >= TOWER_ELEVATION_MIN &&
+        terrain.elevation <= TOWER_ELEVATION_MAX &&
+        terrain.moisture <= TOWER_MOISTURE_MAX &&
+        terrain.riverSignal < 0.76 &&
+        !hasNearbyOceanTerrain(x, y, sampleTerrainSignals, 2) &&
+        hasNearbyMountainTerrain(x, y, sampleTerrainSignals, 2)
       );
     },
   }),

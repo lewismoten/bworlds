@@ -8,6 +8,7 @@ import { createOverworldCompositionPlugin } from '@bworlds/map-overworld';
 import { createQuarryMapPlugin } from '@bworlds/map-quarry';
 import { createShipMapPlugin } from '@bworlds/map-ship';
 import { createStationMapPlugin } from '@bworlds/map-station';
+import { createTowerMapPlugin } from '@bworlds/map-tower';
 import { createTrainMapPlugin } from '@bworlds/map-train';
 import { createTownMapPlugin } from '@bworlds/map-town';
 import type {
@@ -53,6 +54,7 @@ import { createRouteTilePlugin } from '@bworlds/tile-route';
 import { createShipTilePlugin } from '@bworlds/tile-ship';
 import { createSignTilePlugin } from '@bworlds/tile-sign';
 import { createStationTilePlugin } from '@bworlds/tile-station';
+import { createTowerTilePlugin } from '@bworlds/tile-tower';
 import { createTownTilePlugin } from '@bworlds/tile-town';
 import { createWaterTilePlugin } from '@bworlds/tile-water';
 
@@ -83,28 +85,32 @@ export function createDefaultMapPlugins(): RuntimePlugin[] {
       order: { priority: 34 },
     },
     {
-      create: createQuarryMapPlugin,
-      order: { priority: 35 },
+      create: createTowerMapPlugin,
+      order: { priority: 35.5 },
     },
     {
-      create: createLighthouseMapPlugin,
+      create: createQuarryMapPlugin,
       order: { priority: 36 },
     },
     {
-      create: createShipMapPlugin,
+      create: createLighthouseMapPlugin,
       order: { priority: 37 },
     },
     {
-      create: createObservatoryMapPlugin,
+      create: createShipMapPlugin,
       order: { priority: 38 },
     },
     {
-      create: createStationMapPlugin,
+      create: createObservatoryMapPlugin,
       order: { priority: 39 },
     },
     {
+      create: createStationMapPlugin,
+      order: { priority: 40 },
+    },
+    {
       create: createTrainMapPlugin,
-      order: { priority: 39.5 },
+      order: { priority: 40.5 },
     },
     {
       create: createOverworldCompositionPlugin,
@@ -221,6 +227,10 @@ export function createDefaultTilePlugins(): RuntimePlugin[] {
     {
       create: createQuarryTilePlugin,
       order: { priority: 45 },
+    },
+    {
+      create: createTowerTilePlugin,
+      order: { priority: 46 },
     },
     {
       create: createLighthouseTilePlugin,

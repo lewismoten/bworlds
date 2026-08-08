@@ -157,6 +157,7 @@ describe('world generator', () => {
     expect(registry.getTilePlugin('town')?.kind).toBe('town');
     expect(registry.getTilePlugin('quarry')?.kind).toBe('quarry');
     expect(registry.getTilePlugin('lighthouse')?.kind).toBe('lighthouse');
+    expect(registry.getTilePlugin('tower')?.kind).toBe('tower');
   });
 
   it('keeps the default celestial day length when the frontier overlay is enabled', () => {
@@ -515,6 +516,27 @@ describe('world generator', () => {
     expect(quarryMap.getTile(0, 4).kind).toBe('road');
   });
 
+  it('creates tower maps through the registered map plugin path', () => {
+    const generator = createGenerator();
+    const towerMap = generator.getMap({
+      id: 'tower:5:4:1',
+      label: 'Test Tower',
+      type: 'tower',
+      depth: 1,
+      origin: { x: 5, y: 4 },
+    });
+
+    expect(towerMap.getTile(0, 0).kind).toBe('tower');
+    expect(towerMap.getTile(0, 1).note).toContain('shoved');
+    expect(towerMap.getAction(0, -5)).toMatchObject({
+      type: 'deepen',
+      context: {
+        type: 'tower',
+        depth: 2,
+      },
+    });
+  });
+
   it('creates lighthouse maps through the registered map plugin path', () => {
     const generator = createGenerator();
     const lighthouseMap = generator.getMap({
@@ -714,6 +736,54 @@ describe('world generator', () => {
     expect(lighthouseTile.poi?.name).toMatch(
       /\b(Beacon|Light|Watch|Lantern|Signal|Point)\b/
     );
+  });
+
+  it('creates tower points of interest somewhere near the origin', () => {
+    const registry = createDefaultPluginRegistry();
+    let towerAnchor: { x: number; y: number } | null = null;
+    let towerSeed = '';
+
+    for (let seedIndex = 0; seedIndex < 24 && !towerAnchor; seedIndex += 1) {
+      towerSeed = `tower-worldgen-spec:${seedIndex}`;
+      const sampleTerrainSignals = createOverworldTerrainSignalSampler(towerSeed);
+      for (let y = -320; y <= 320 && !towerAnchor; y += 32) {
+        for (let x = -320; x <= 320; x += 32) {
+          const anchors = registry.resolveOverworldAnchors({
+            seed: towerSeed,
+            x,
+            y,
+            sampleTerrainSignals,
+          });
+          const found = anchors.poiAnchors.find((anchor) => anchor.type === 'tower');
+          if (found) {
+            towerAnchor = { x: found.x, y: found.y };
+            break;
+          }
+        }
+      }
+    }
+
+    expect(towerAnchor).not.toBeNull();
+    const generator = createWorldGenerator({
+      seed: towerSeed,
+      plugins: registry,
+    });
+
+    let towerTile = generator.sampleOverworld(towerAnchor!.x, towerAnchor!.y);
+    if (towerTile.poi?.type !== 'tower') {
+      for (let offsetY = -2; offsetY <= 2 && towerTile.poi?.type !== 'tower'; offsetY += 1) {
+        for (let offsetX = -2; offsetX <= 2 && towerTile.poi?.type !== 'tower'; offsetX += 1) {
+          towerTile = generator.sampleOverworld(
+            towerAnchor!.x + offsetX,
+            towerAnchor!.y + offsetY
+          );
+        }
+      }
+    }
+
+    expect(towerTile.poi?.type).toBe('tower');
+    expect(towerTile.poi?.name).toEqual(expect.any(String));
+    expect((towerTile.poi?.name ?? '').length).toBeGreaterThan(0);
   });
 
   it('creates a starter ship point of interest at the lighthouse dock', () => {

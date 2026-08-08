@@ -233,6 +233,58 @@ describe('runtime overworld anchors', () => {
     });
   });
 
+  it('places tower anchors on elevated dry ground near mountain ridges', () => {
+    const sampleTerrainSignals = (x: number, y: number): OverworldSignals => {
+      if (Math.abs(x) <= 1 && Math.abs(y) <= 1) {
+        return {
+          continent: 0.68,
+          elevation: 0.84,
+          moisture: 0.34,
+          riverSignal: 0.18,
+          roadSignal: 0.22,
+        };
+      }
+      return {
+        continent: 0.68,
+        elevation: 0.58,
+        moisture: 0.4,
+        riverSignal: 0.18,
+        roadSignal: 0.22,
+      };
+    };
+    let anchors: OverworldAnchorSet = {
+      townAnchors: [],
+      bridgeAnchors: [],
+      poiAnchors: [],
+    };
+
+    for (let seedIndex = 0; seedIndex < 16; seedIndex += 1) {
+      anchors =
+        (plugin.resolveOverworldAnchors?.(
+          createAnchorPayload({
+            seed: `tower-ridge-spec:${seedIndex}`,
+            x: 0,
+            y: 0,
+            sampleTerrainSignals,
+          })
+        ) as OverworldAnchorSet) ?? anchors;
+      if ((anchors.poiAnchors ?? []).some((anchor) => anchor.type === 'tower')) {
+        break;
+      }
+    }
+
+    const towers = (anchors.poiAnchors ?? []).filter(
+      (anchor) => anchor.type === 'tower'
+    );
+    expect(towers.length).toBeGreaterThan(0);
+    towers.forEach((anchor) => {
+      const terrain = sampleTerrainSignals(anchor.x, anchor.y);
+      expect(terrain.elevation).toBeGreaterThanOrEqual(0.44);
+      expect(terrain.elevation).toBeLessThanOrEqual(0.78);
+      expect(terrain.moisture).toBeLessThanOrEqual(0.62);
+    });
+  });
+
   it('places lighthouse anchors on coastal land within two tiles of the ocean', () => {
     const sampleTerrainSignals = (x: number, y: number): OverworldSignals => {
       if (x >= 2) {
