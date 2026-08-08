@@ -20,6 +20,10 @@ import {
   parseSavedInventoryProfile,
   type SavedInventoryProfile,
 } from './inventory-storage.ts';
+import {
+  parseSavedWorldMapProfile,
+  type SavedWorldMapProfile,
+} from './world-map-storage.ts';
 
 type SessionViewMode = '2d' | '3d' | 'text';
 
@@ -38,6 +42,7 @@ type SessionWorldContext = {
 export type SavedSession = {
   characterProfile?: SavedCharacterProfile;
   inventoryProfile?: SavedInventoryProfile;
+  worldMapProfile?: SavedWorldMapProfile;
   player: {
     x: number;
     y: number;
@@ -69,6 +74,7 @@ export type SavedSession = {
 export type SessionSnapshot = {
   characterProfile?: SavedCharacterProfile;
   inventoryProfile?: SavedInventoryProfile;
+  worldMapProfile?: SavedWorldMapProfile;
   player: {
     x: number;
     y: number;
@@ -135,6 +141,12 @@ export function parseSavedSession(raw: string | null): SavedSession | null {
     if (
       typeof parsed?.inventoryProfile !== 'undefined' &&
       parseSavedInventoryProfile(JSON.stringify(parsed.inventoryProfile)) === null
+    ) {
+      return null;
+    }
+    if (
+      typeof parsed?.worldMapProfile !== 'undefined' &&
+      parseSavedWorldMapProfile(JSON.stringify(parsed.worldMapProfile)) === null
     ) {
       return null;
     }
@@ -274,6 +286,11 @@ export function parseSavedSession(raw: string | null): SavedSession | null {
     if (typeof parsed?.inventoryProfile !== 'undefined') {
       parsed.inventoryProfile = parseSavedInventoryProfile(
         JSON.stringify(parsed.inventoryProfile)
+      );
+    }
+    if (typeof parsed?.worldMapProfile !== 'undefined') {
+      parsed.worldMapProfile = parseSavedWorldMapProfile(
+        JSON.stringify(parsed.worldMapProfile)
       );
     }
     if (typeof parsed?.inventory !== 'undefined') {

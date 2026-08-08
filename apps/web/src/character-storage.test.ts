@@ -19,15 +19,6 @@ describe('character storage', () => {
       playerLevel: 5,
       playerProfession: 'guard',
       completedQuestIds: ['tower:1', 'cave:2'],
-      playerPlacedPois: [
-        {
-          x: 3,
-          y: 2,
-          kind: 'observatory',
-          note: 'A newly raised observatory opens its dome to the sky above.',
-          poi: { type: 'observatory', name: 'Spec Dome' },
-        },
-      ],
     });
 
     expect(parseSavedCharacterProfile(raw)).toEqual(
@@ -36,11 +27,6 @@ describe('character storage', () => {
         playerLevel: 5,
         playerProfession: 'guard',
         completedQuestIds: ['tower:1', 'cave:2'],
-        playerPlacedPois: [
-          expect.objectContaining({
-            kind: 'observatory',
-          }),
-        ],
       })
     );
   });
@@ -91,7 +77,6 @@ describe('character storage', () => {
       worldSeed: 'adapter-seed',
       playerLevel: 3,
       completedQuestIds: [],
-      playerPlacedPois: [],
     });
 
     expect(storage.loadProfile()).toEqual(

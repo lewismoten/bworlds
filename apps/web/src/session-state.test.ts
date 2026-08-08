@@ -33,6 +33,17 @@ describe('session state', () => {
           { id: 'rope', quantity: 2, label: 'Coil of Rope', kind: 'gear' },
         ],
       },
+      worldMapProfile: {
+        playerPlacedPois: [
+          {
+            x: 4,
+            y: 5,
+            kind: 'town',
+            note: 'A newly founded settlement takes shape here.',
+            poi: { type: 'town', name: 'Spec Town' },
+          },
+        ],
+      },
       player: {
         x: 12.5,
         y: -4.25,
@@ -78,6 +89,13 @@ describe('session state', () => {
           items: [
             expect.objectContaining({
               id: 'rope',
+            }),
+          ],
+        }),
+        worldMapProfile: expect.objectContaining({
+          playerPlacedPois: [
+            expect.objectContaining({
+              kind: 'town',
             }),
           ],
         }),
@@ -313,6 +331,17 @@ describe('session state', () => {
           inventoryProfile: {
             items: [{ id: 'torch', quantity: 2.2, label: 'Torch' }],
           },
+          worldMapProfile: {
+            playerPlacedPois: [
+              {
+                x: 6,
+                y: 7,
+                kind: 'observatory',
+                note: 'A newly raised observatory opens its dome to the sky above.',
+                poi: { type: 'observatory', name: 'Skyglass' },
+              },
+            ],
+          },
         })
       )
     ).toEqual(
@@ -325,6 +354,13 @@ describe('session state', () => {
         }),
         inventoryProfile: expect.objectContaining({
           items: [{ id: 'torch', quantity: 2, label: 'Torch' }],
+        }),
+        worldMapProfile: expect.objectContaining({
+          playerPlacedPois: [
+            expect.objectContaining({
+              kind: 'observatory',
+            }),
+          ],
         }),
       })
     );

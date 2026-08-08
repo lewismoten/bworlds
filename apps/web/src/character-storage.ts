@@ -43,7 +43,6 @@ export type CharacterProfileSnapshot = {
   playerLevel: number;
   playerProfession?: string;
   completedQuestIds: string[];
-  playerPlacedPois: PlayerPlacedPoiLike[];
 };
 
 export type CharacterStorageLike = {

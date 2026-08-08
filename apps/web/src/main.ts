@@ -49,6 +49,12 @@ import {
   type InventoryProfileSnapshot,
 } from './inventory-storage.ts';
 import {
+  createLocalWorldMapStorage,
+  serializeWorldMapProfile,
+  type SavedWorldMapProfile,
+  type WorldMapProfileSnapshot,
+} from './world-map-storage.ts';
+import {
   parseSavedSession,
   serializeSessionSnapshot,
 } from './session-state.ts';
@@ -185,6 +191,7 @@ type PerformanceWithMemory = Performance & {
 const SESSION_STORAGE_KEY = 'bworlds:session';
 const CHARACTER_STORAGE_KEY = 'bworlds:character';
 const INVENTORY_STORAGE_KEY = 'bworlds:inventory';
+const WORLD_MAP_STORAGE_KEY = 'bworlds:world-map';
 const DEFAULT_WORLD_SEED = 'bworlds-alpha';
 const builtinPackCatalog = createBuiltinContentPackCatalog();
 const builtinPackManifests = builtinPackCatalog.list();
@@ -684,6 +691,7 @@ const inspectorPanels = {
 let lastSavedSnapshot = '';
 let lastSavedCharacterSnapshot = '';
 let lastSavedInventorySnapshot = '';
+let lastSavedWorldMapSnapshot = '';
 const characterStorage = createLocalCharacterStorage(
   window.localStorage,
   CHARACTER_STORAGE_KEY
@@ -692,10 +700,15 @@ const inventoryStorage = createLocalInventoryStorage(
   window.localStorage,
   INVENTORY_STORAGE_KEY
 );
+const worldMapStorage = createLocalWorldMapStorage(
+  window.localStorage,
+  WORLD_MAP_STORAGE_KEY
+);
 
 const savedSession = loadSession();
 const savedCharacterProfile = loadCharacterProfile(savedSession);
 const savedInventoryProfile = loadInventoryProfile(savedSession);
+const savedWorldMapProfile = loadWorldMapProfile(savedSession);
 let currentWorldSeed = normalizeWorldSeed(
   savedCharacterProfile?.worldSeed ?? savedSession?.worldSeed,
   DEFAULT_WORLD_SEED
@@ -718,7 +731,11 @@ state.playerProfession = savedCharacterProfile?.playerProfession;
 state.completedQuestIds = [...(savedCharacterProfile?.completedQuestIds ?? [])];
 state.inventory = [...(savedInventoryProfile?.items ?? savedSession?.inventory ?? [])];
 syncPlayerPlacedPoisIntoState(
-  savedCharacterProfile?.playerPlacedPois ?? savedSession?.playerPlacedPois ?? []
+  savedWorldMapProfile?.playerPlacedPois ??
+    savedSession?.worldMapProfile?.playerPlacedPois ??
+    savedCharacterProfile?.playerPlacedPois ??
+    savedSession?.playerPlacedPois ??
+    []
 );
 const timeState = {
   offsetMs: savedSession?.timeOffsetMs ?? 0,
@@ -3013,9 +3030,16 @@ function saveSession(): void {
       inventoryStorage.saveProfile(inventoryProfile);
       lastSavedInventorySnapshot = serializedInventoryProfile;
     }
+    const worldMapProfile = buildWorldMapProfileSnapshot();
+    const serializedWorldMapProfile = serializeWorldMapProfile(worldMapProfile);
+    if (serializedWorldMapProfile !== lastSavedWorldMapSnapshot) {
+      worldMapStorage.saveProfile(worldMapProfile);
+      lastSavedWorldMapSnapshot = serializedWorldMapProfile;
+    }
     const snapshot = serializeSessionSnapshot({
       characterProfile,
       inventoryProfile,
+      worldMapProfile,
       player: {
         x: state.player.x,
         y: state.player.y,
@@ -3074,7 +3098,6 @@ function buildCharacterProfileSnapshot(): CharacterProfileSnapshot {
     playerLevel: normalizePlayerLevel(state.playerLevel),
     playerProfession: state.playerProfession,
     completedQuestIds: [...(state.completedQuestIds ?? [])],
-    playerPlacedPois: getSavedPlayerPlacedPois(),
   };
 }
 
@@ -3092,7 +3115,6 @@ function getLegacyCharacterProfile(
     playerLevel: session.playerLevel,
     playerProfession: session.playerProfession,
     completedQuestIds: session.completedQuestIds,
-    playerPlacedPois: session.playerPlacedPois,
   };
 }
 
@@ -3114,7 +3136,6 @@ function loadCharacterProfile(
     playerLevel: normalizePlayerLevel(profile.playerLevel),
     playerProfession: profile.playerProfession,
     completedQuestIds: [...(profile.completedQuestIds ?? [])],
-    playerPlacedPois: profile.playerPlacedPois ?? [],
   });
   return profile;
 }
@@ -3122,6 +3143,12 @@ function loadCharacterProfile(
 function buildInventoryProfileSnapshot(): InventoryProfileSnapshot {
   return {
     items: [...(state.inventory ?? [])],
+  };
+}
+
+function buildWorldMapProfileSnapshot(): WorldMapProfileSnapshot {
+  return {
+    playerPlacedPois: getSavedPlayerPlacedPois(),
   };
 }
 
@@ -3148,6 +3175,37 @@ function loadInventoryProfile(
   }
   lastSavedInventorySnapshot = serializeInventoryProfile({
     items: [...(profile.items ?? [])],
+  });
+  return profile;
+}
+
+function getLegacyWorldMapProfile(
+  session: ReturnType<typeof parseSavedSession>,
+  characterProfile: SavedCharacterProfile | null
+): SavedWorldMapProfile | null {
+  if (!session && !characterProfile) {
+    return null;
+  }
+  return {
+    playerPlacedPois:
+      session?.playerPlacedPois ??
+      characterProfile?.playerPlacedPois ??
+      [],
+  };
+}
+
+function loadWorldMapProfile(
+  session: ReturnType<typeof parseSavedSession>
+): SavedWorldMapProfile | null {
+  const profile =
+    worldMapStorage.loadProfile() ??
+    session?.worldMapProfile ??
+    getLegacyWorldMapProfile(session, savedCharacterProfile);
+  if (!profile) {
+    return null;
+  }
+  lastSavedWorldMapSnapshot = serializeWorldMapProfile({
+    playerPlacedPois: profile.playerPlacedPois ?? [],
   });
   return profile;
 }
