@@ -5,6 +5,7 @@ import {
   applyObjectDistanceFade,
   clampCameraPitch,
   DEFAULT_CAMERA_PITCH,
+  getRecentCountStats,
   getRecentDurationStats,
   getRenderChurnStats,
   buildPendingWorldBuildQueue,
@@ -25,6 +26,7 @@ import {
   getVisibleWorldTileBuildOrder,
   pickCornerBoundaryProfile,
   prepareObjectForDistanceFade,
+  recordRecentCountMetric,
   recordRecentMetric,
   recordRecentDurationMetric,
   shouldProcessPendingWorldBuildEntry,
@@ -134,6 +136,7 @@ describe('render3d visibility helpers', () => {
           tileBuilds: [450, 900],
           lodChecks: [900],
           lodReplacements: [100, 450],
+          pendingFlushCounts: [],
           tileBuildDurations: [],
         },
         950
@@ -152,6 +155,7 @@ describe('render3d visibility helpers', () => {
           tileBuilds: [450, 900],
           lodChecks: [900],
           lodReplacements: [100, 450],
+          pendingFlushCounts: [],
           tileBuildDurations: [],
         },
         1505
@@ -192,6 +196,31 @@ describe('render3d visibility helpers', () => {
         maxPendingBuildTiles: 4,
       })
     ).toBe(false);
+  });
+
+  it('tracks recent pending flush sizes with rolling average and max stats', () => {
+    const samples = [
+      { nowMs: 100, count: 2 },
+      { nowMs: 450, count: 4 },
+    ];
+
+    recordRecentCountMetric(samples, { nowMs: 900, count: 6 });
+    expect(getRecentCountStats(samples, 950)).toEqual({
+      averageCount: 4,
+      maxCount: 6,
+    });
+
+    expect(getRecentCountStats(samples, 1405)).toEqual({
+      averageCount: 5,
+      maxCount: 6,
+    });
+
+    recordRecentCountMetric(samples, { nowMs: 2405, count: 3 });
+    expect(samples).toEqual([{ nowMs: 2405, count: 3 }]);
+    expect(getRecentCountStats(samples, 2600)).toEqual({
+      averageCount: 3,
+      maxCount: 3,
+    });
   });
 
   it('rebuilds the pending world-build queue without visible or duplicate tile requests', () => {

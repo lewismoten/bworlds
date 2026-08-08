@@ -266,7 +266,7 @@ This is about **8.25 MB inclusive** in this sample.
 
 This represents about **6.86 MB inclusive**.
 
-* [ ] Review how much world-building work is processed during one flush.
+* [x] Review how much world-building work is processed during one flush.
 * [x] Put a strict frame-time budget on pending world builds.
 * [x] Limit how many tiles may be constructed per frame.
 * [x] Prioritize visible tiles.

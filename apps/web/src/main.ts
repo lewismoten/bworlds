@@ -2533,6 +2533,8 @@ function render(): FrameLoopActivityLike {
       visibleTileCount: rendererStats.visibleTileCount,
       visibleTreeCount: rendererStats.visibleTreeCount,
       pendingTileCount: rendererStats.pendingTileCount,
+      averagePendingFlushTiles: rendererStats.averagePendingFlushTiles,
+      maxPendingFlushTiles: rendererStats.maxPendingFlushTiles,
       averageTileBuildMs: rendererStats.averageTileBuildMs,
       maxTileBuildMs: rendererStats.maxTileBuildMs,
       tileNodeBuildsPerSecond: rendererStats.tileNodeBuildsPerSecond,

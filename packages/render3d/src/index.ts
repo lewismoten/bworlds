@@ -63,6 +63,8 @@ type Render3DController = {
     visibleTileCount: number;
     visibleTreeCount: number;
     pendingTileCount: number;
+    averagePendingFlushTiles: number;
+    maxPendingFlushTiles: number;
     averageTileBuildMs: number;
     maxTileBuildMs: number;
     tileNodeBuildsPerSecond: number;
@@ -154,11 +156,17 @@ type RecentDurationSample = {
   durationMs: number;
 };
 
+type RecentCountSample = {
+  nowMs: number;
+  count: number;
+};
+
 type RenderChurnMetrics = {
   tileNodeBuilds: number[];
   tileBuilds: number[];
   lodChecks: number[];
   lodReplacements: number[];
+  pendingFlushCounts: RecentCountSample[];
   tileBuildDurations: RecentDurationSample[];
 };
 
@@ -310,6 +318,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     tileBuilds: [] as number[],
     lodChecks: [] as number[],
     lodReplacements: [] as number[],
+    pendingFlushCounts: [] as RecentCountSample[],
     tileBuildDurations: [] as RecentDurationSample[],
   } satisfies RenderChurnMetrics;
 
@@ -528,6 +537,10 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     }
 
     if (processedEntryCount > 0) {
+      recordRecentCountMetric(renderChurnMetrics.pendingFlushCounts, {
+        nowMs,
+        count: processedEntryCount,
+      });
       pendingWorldBuild.queue.splice(0, processedEntryCount);
       if (pendingWorldBuild.queue.length === 0) {
         lastLodSyncPlayerPosition = null;
@@ -626,6 +639,10 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       renderChurnMetrics.tileBuildDurations,
       nowMs
     );
+    const recentPendingFlushStats = getRecentCountStats(
+      renderChurnMetrics.pendingFlushCounts,
+      nowMs
+    );
     const renderChurnStats = getRenderChurnStats(renderChurnMetrics, nowMs);
     return {
       drawCalls: renderer.info.render.calls,
@@ -636,6 +653,8 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       visibleTileCount: visibleTileNodes.size,
       visibleTreeCount: sceneResourceStats.treeCount,
       pendingTileCount: pendingWorldBuild.queue.length,
+      averagePendingFlushTiles: recentPendingFlushStats.averageCount,
+      maxPendingFlushTiles: recentPendingFlushStats.maxCount,
       averageTileBuildMs: recentTileBuildStats.averageMs,
       maxTileBuildMs: recentTileBuildStats.maxMs,
       tileNodeBuildsPerSecond: renderChurnStats.tileNodeBuildsPerSecond,
@@ -1815,6 +1834,44 @@ export function getRecentDurationStats(
   };
 }
 
+export function recordRecentCountMetric(
+  samples: RecentCountSample[],
+  sample: RecentCountSample,
+  windowMs = 1000
+): void {
+  samples.push(sample);
+  pruneRecentCountSamples(samples, sample.nowMs, windowMs);
+}
+
+export function getRecentCountStats(
+  samples: RecentCountSample[],
+  nowMs: number,
+  windowMs = 1000
+): {
+  averageCount: number;
+  maxCount: number;
+} {
+  pruneRecentCountSamples(samples, nowMs, windowMs);
+  if (samples.length === 0) {
+    return {
+      averageCount: 0,
+      maxCount: 0,
+    };
+  }
+
+  let totalCount = 0;
+  let maxCount = 0;
+  for (const sample of samples) {
+    totalCount += sample.count;
+    maxCount = Math.max(maxCount, sample.count);
+  }
+
+  return {
+    averageCount: totalCount / samples.length,
+    maxCount,
+  };
+}
+
 export function getRenderChurnStats(
   metrics: RenderChurnMetrics,
   nowMs: number,
@@ -1903,6 +1960,21 @@ function pruneRecentMetricTimestamps(
 
 function pruneRecentDurationSamples(
   samples: RecentDurationSample[],
+  nowMs: number,
+  windowMs: number
+): void {
+  const minimumTime = nowMs - windowMs;
+  let removeCount = 0;
+  while (removeCount < samples.length && samples[removeCount]!.nowMs < minimumTime) {
+    removeCount += 1;
+  }
+  if (removeCount > 0) {
+    samples.splice(0, removeCount);
+  }
+}
+
+function pruneRecentCountSamples(
+  samples: RecentCountSample[],
   nowMs: number,
   windowMs: number
 ): void {

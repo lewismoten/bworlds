@@ -13,6 +13,8 @@ export type DebugSnapshot = {
   visibleTileCount: number;
   visibleTreeCount: number;
   pendingTileCount: number;
+  averagePendingFlushTiles: number;
+  maxPendingFlushTiles: number;
   averageTileBuildMs: number;
   maxTileBuildMs: number;
   tileNodeBuildsPerSecond: number;
@@ -79,6 +81,8 @@ export function getDebugSignature(snapshot: DebugSnapshot): string {
     snapshot.visibleTileCount,
     snapshot.visibleTreeCount,
     snapshot.pendingTileCount,
+    snapshot.averagePendingFlushTiles.toFixed(2),
+    snapshot.maxPendingFlushTiles.toFixed(0),
     snapshot.averageTileBuildMs.toFixed(2),
     snapshot.maxTileBuildMs.toFixed(2),
     snapshot.tileNodeBuildsPerSecond,
@@ -179,6 +183,8 @@ export function buildDebugMarkup(snapshot: DebugSnapshot): string {
     <div><dt>Visible Tiles</dt><dd>${snapshot.visibleTileCount}</dd></div>
     <div><dt>Visible Trees</dt><dd>${snapshot.visibleTreeCount}</dd></div>
     <div><dt>Pending Tiles</dt><dd>${snapshot.pendingTileCount}</dd></div>
+    <div><dt>Avg Flush Tiles</dt><dd>${snapshot.averagePendingFlushTiles.toFixed(2)}</dd></div>
+    <div><dt>Max Flush Tiles</dt><dd>${snapshot.maxPendingFlushTiles}</dd></div>
     <div><dt>Avg Tile Build</dt><dd>${snapshot.averageTileBuildMs.toFixed(2)} ms</dd></div>
     <div><dt>Max Tile Build</dt><dd>${snapshot.maxTileBuildMs.toFixed(2)} ms</dd></div>
     <div><dt>Tile Nodes/s</dt><dd>${snapshot.tileNodeBuildsPerSecond}</dd></div>

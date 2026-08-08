@@ -36,6 +36,8 @@ describe('debug panel', () => {
       visibleTileCount: 112,
       visibleTreeCount: 27,
       pendingTileCount: 6,
+      averagePendingFlushTiles: 3.5,
+      maxPendingFlushTiles: 5,
       averageTileBuildMs: 2.45,
       maxTileBuildMs: 6.75,
       tileNodeBuildsPerSecond: 17,
@@ -79,6 +81,8 @@ describe('debug panel', () => {
     expect(buildDebugMarkup(snapshot)).toContain('GPU Geometries');
     expect(buildDebugMarkup(snapshot)).toContain('Scene Roots');
     expect(buildDebugMarkup(snapshot)).toContain('Visible Trees');
+    expect(buildDebugMarkup(snapshot)).toContain('Avg Flush Tiles');
+    expect(buildDebugMarkup(snapshot)).toContain('Max Flush Tiles');
     expect(buildDebugMarkup(snapshot)).toContain('Avg Tile Build');
     expect(buildDebugMarkup(snapshot)).toContain('Max Tile Build');
     expect(buildDebugMarkup(snapshot)).toContain('Tile Nodes/s');
