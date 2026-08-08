@@ -15,6 +15,16 @@ export type DockBoatRoute = {
   stops: DockRouteStop[];
 };
 
+export type DockBoatPlacement = {
+  x: number;
+  y: number;
+  progress: number;
+  direction: 'forward';
+  boatName: string;
+  from: string;
+  to: string;
+};
+
 type DockCluster = {
   state: WorldStateLike;
   key: string;
@@ -30,6 +40,18 @@ type DockEdge = {
   to: string;
   distance: number;
   pathKeys: Set<string>;
+  pathPoints: Point[];
+};
+
+type DockRouteSegment = {
+  from: DockRouteStop;
+  to: DockRouteStop;
+  path: Point[];
+};
+
+type DockRouteGeometry = {
+  points: Point[];
+  segments: DockRouteSegment[];
 };
 
 const DEFAULT_SEARCH_RADIUS = 72;
@@ -37,7 +59,12 @@ const MIN_ROUTE_DISTANCE = 20;
 const MAX_ROUTE_DISTANCE = 60;
 const MAX_ROUTE_STOPS = 5;
 const DOCK_STOP_SEARCH_RADIUS = 12;
+const PADDLE_BOAT_TIME_BUCKET_MS = 2_000;
 const routeCache = new WeakMap<WorldStateLike, Map<string, DockBoatRoute | null>>();
+const routeGeometryCache = new WeakMap<
+  WorldStateLike,
+  Map<string, DockRouteGeometry | null>
+>();
 
 export function resolveDockBoatRoute(
   state: WorldStateLike,
@@ -67,6 +94,44 @@ export function resolveDockBoatRoute(
   const route = buildDockBoatRoute(clusters, cluster.key);
   stateCache.set(cacheKey, route);
   return route;
+}
+
+export function getDockBoatPlacements(
+  state: WorldStateLike,
+  timeMs: number,
+  centerX: number,
+  centerY: number,
+  searchRadius = DEFAULT_SEARCH_RADIUS
+): DockBoatPlacement[] {
+  if (state.getCurrentContext().type !== 'overworld') {
+    return [];
+  }
+
+  const clusters = collectDockClusters(state, centerX, centerY, searchRadius);
+  const placements: DockBoatPlacement[] = [];
+  const seenRoutes = new Set<string>();
+
+  for (const cluster of clusters) {
+    const route = resolveDockBoatRoute(state, cluster.anchorX, cluster.anchorY, searchRadius);
+    if (!route) {
+      continue;
+    }
+    const routeKey = getCanonicalRouteKey(route);
+    if (seenRoutes.has(routeKey)) {
+      continue;
+    }
+    seenRoutes.add(routeKey);
+    const placement = resolveDockBoatPlacement(state, timeMs, route);
+    if (placement) {
+      placements.push(placement);
+    }
+  }
+
+  return placements.sort((left, right) =>
+    left.y - right.y ||
+    left.x - right.x ||
+    left.boatName.localeCompare(right.boatName)
+  );
 }
 
 function buildDockBoatRoute(
@@ -219,6 +284,7 @@ function collectDockEdges(
         to: right.key,
         distance: path.distance,
         pathKeys: path.pathKeys,
+        pathPoints: path.pathPoints,
       });
     }
   }
@@ -229,9 +295,15 @@ function findOceanRouteBetweenClusters(
   state: WorldStateLike,
   from: DockCluster,
   to: DockCluster
-): { distance: number; pathKeys: Set<string> } | null {
+): { distance: number; pathKeys: Set<string>; pathPoints: Point[] } | null {
   const blocked = new Set<string>();
-  const queue: Array<{ x: number; y: number; distance: number; path: string[] }> = [];
+  const queue: Array<{
+    x: number;
+    y: number;
+    distance: number;
+    pathKeys: string[];
+    pathPoints: Point[];
+  }> = [];
   const sourceKeys = new Set(from.tiles.map((tile) => toPointKey(tile.x, tile.y)));
   const targetKeys = new Set(to.tiles.map((tile) => toPointKey(tile.x, tile.y)));
 
@@ -240,7 +312,8 @@ function findOceanRouteBetweenClusters(
       x: edgeTile.x,
       y: edgeTile.y,
       distance: 0,
-      path: [],
+      pathKeys: [],
+      pathPoints: [],
     });
     blocked.add(toPointKey(edgeTile.x, edgeTile.y));
   }
@@ -254,7 +327,8 @@ function findOceanRouteBetweenClusters(
     if (current.distance >= MIN_ROUTE_DISTANCE && targetKeys.has(currentKey)) {
       return {
         distance: current.distance,
-        pathKeys: new Set(current.path),
+        pathKeys: new Set(current.pathKeys),
+        pathPoints: current.pathPoints,
       };
     }
 
@@ -273,13 +347,15 @@ function findOceanRouteBetweenClusters(
         continue;
       }
       blocked.add(neighborKey);
+      const reachesTarget = targetKeys.has(neighborKey);
       queue.push({
         x: neighbor.x,
         y: neighbor.y,
         distance: current.distance + 1,
-        path: targetKeys.has(neighborKey)
-          ? current.path
-          : [...current.path, neighborKey],
+        pathKeys: reachesTarget ? current.pathKeys : [...current.pathKeys, neighborKey],
+        pathPoints: reachesTarget
+          ? current.pathPoints
+          : [...current.pathPoints, { x: neighbor.x, y: neighbor.y }],
       });
     }
   }
@@ -414,4 +490,116 @@ function generateBoatRouteName(anchorX: number, anchorY: number): string {
     suffixes[Math.floor(hash2D('dock-route-suffix', anchorX, anchorY) * suffixes.length)] ??
     suffixes[0]!;
   return `${prefix} ${suffix}`;
+}
+
+function resolveDockBoatPlacement(
+  state: WorldStateLike,
+  timeMs: number,
+  route: DockBoatRoute
+): DockBoatPlacement | null {
+  const geometry = getDockBoatRouteGeometry(state, route);
+  if (!geometry || geometry.points.length === 0 || geometry.segments.length === 0) {
+    return null;
+  }
+
+  const loopDurationMs =
+    Math.max(12, Math.min(30, Math.round(geometry.points.length / 4))) * 60 * 1000;
+  const phaseOffset =
+    hash2D(
+      `dock-boat-phase:${route.boatName}`,
+      route.stops[0]?.x ?? 0,
+      route.stops[0]?.y ?? 0
+    ) * loopDurationMs;
+  const timeBucketStart = Math.floor(timeMs / PADDLE_BOAT_TIME_BUCKET_MS) *
+    PADDLE_BOAT_TIME_BUCKET_MS;
+  const loopProgress =
+    ((((timeBucketStart + phaseOffset) % loopDurationMs) + loopDurationMs) %
+      loopDurationMs) /
+    loopDurationMs;
+  const pointIndex = Math.min(
+    geometry.points.length - 1,
+    Math.floor(loopProgress * geometry.points.length)
+  );
+  const point = geometry.points[pointIndex];
+  if (!point) {
+    return null;
+  }
+
+  let remainingIndex = pointIndex;
+  let activeSegment = geometry.segments[0]!;
+  for (const segment of geometry.segments) {
+    if (remainingIndex < segment.path.length) {
+      activeSegment = segment;
+      break;
+    }
+    remainingIndex -= segment.path.length;
+  }
+
+  return {
+    x: point.x,
+    y: point.y,
+    progress: loopProgress,
+    direction: 'forward',
+    boatName: route.boatName,
+    from: activeSegment.from.name,
+    to: activeSegment.to.name,
+  };
+}
+
+function getDockBoatRouteGeometry(
+  state: WorldStateLike,
+  route: DockBoatRoute
+): DockRouteGeometry | null {
+  let stateCache = routeGeometryCache.get(state);
+  if (!stateCache) {
+    stateCache = new Map();
+    routeGeometryCache.set(state, stateCache);
+  }
+  const routeKey = getCanonicalRouteKey(route);
+  if (stateCache.has(routeKey)) {
+    return stateCache.get(routeKey) ?? null;
+  }
+
+  const segments: DockRouteSegment[] = [];
+  for (let index = 0; index < route.stops.length; index += 1) {
+    const from = route.stops[index]!;
+    const to = route.stops[(index + 1) % route.stops.length];
+    if (!to) {
+      continue;
+    }
+    const fromCluster = getDockClusterFromTile(state, from.x, from.y);
+    const toCluster = getDockClusterFromTile(state, to.x, to.y);
+    const path = findOceanRouteBetweenClusters(state, fromCluster, toCluster);
+    if (!path || path.pathPoints.length === 0) {
+      stateCache.set(routeKey, null);
+      return null;
+    }
+    segments.push({
+      from,
+      to,
+      path: path.pathPoints,
+    });
+  }
+
+  const geometry = {
+    segments,
+    points: segments.flatMap((segment) => segment.path),
+  };
+  stateCache.set(routeKey, geometry);
+  return geometry;
+}
+
+function getCanonicalRouteKey(route: DockBoatRoute): string {
+  const stopKeys = route.stops.map((stop) => `${stop.x}:${stop.y}`);
+  if (stopKeys.length === 0) {
+    return route.boatName;
+  }
+  const forwardRotations = stopKeys.map((_, index) =>
+    [...stopKeys.slice(index), ...stopKeys.slice(0, index)].join('|')
+  );
+  const reversed = [...stopKeys].reverse();
+  const reverseRotations = reversed.map((_, index) =>
+    [...reversed.slice(index), ...reversed.slice(0, index)].join('|')
+  );
+  return [...forwardRotations, ...reverseRotations].sort()[0] ?? route.boatName;
 }

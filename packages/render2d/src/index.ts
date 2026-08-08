@@ -46,6 +46,10 @@ type ReliefTile = {
     direction?: 'forward' | 'backward';
     progress?: number;
   };
+  boat?: {
+    direction?: 'forward';
+    progress?: number;
+  };
 };
 
 export function render2D(
@@ -96,6 +100,7 @@ export function render2D(
 
       drawReliefOverlay(context, tile, drawX, drawY, tileSize);
       drawTrainOverlay(context, tile, drawX, drawY, tileSize);
+      drawBoatOverlay(context, tile, drawX, drawY, tileSize);
     }
   }
 
@@ -284,6 +289,45 @@ function drawTrainOverlay(
     bodyY - bodyHeight * 0.9,
     Math.max(2, tileSize * 0.12),
     Math.max(2, tileSize * 0.12)
+  );
+}
+
+function drawBoatOverlay(
+  context: CanvasRenderingContext2D,
+  tile: ReliefTile,
+  drawX: number,
+  drawY: number,
+  tileSize: number
+) {
+  if (
+    (tile.kind !== 'ocean' && tile.kind !== 'bridge' && tile.kind !== 'dock') ||
+    !tile.boat
+  ) {
+    return;
+  }
+
+  const hullWidth = Math.max(5, tileSize * 0.46);
+  const hullHeight = Math.max(3, tileSize * 0.18);
+  const hullX = drawX + (tileSize - hullWidth) * 0.5;
+  const hullY = drawY + tileSize * 0.52;
+  const wheelSize = Math.max(2, tileSize * 0.12);
+
+  context.fillStyle = '#5b3a29';
+  context.fillRect(hullX, hullY, hullWidth, hullHeight);
+  context.fillStyle = '#b45309';
+  context.fillRect(
+    hullX + hullWidth * 0.32,
+    hullY - hullHeight * 0.8,
+    hullWidth * 0.34,
+    hullHeight * 0.8
+  );
+  context.fillStyle = '#e2e8f0';
+  context.fillRect(hullX - wheelSize * 0.25, hullY + hullHeight * 0.15, wheelSize, wheelSize);
+  context.fillRect(
+    hullX + hullWidth - wheelSize * 0.75,
+    hullY + hullHeight * 0.15,
+    wheelSize,
+    wheelSize
   );
 }
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { resolveDockBoatRoute } from './index.ts';
+import { getDockBoatPlacements, resolveDockBoatRoute } from './index.ts';
 
 function createCircularDockRouteState() {
   const dockTiles = new Set([
@@ -83,6 +83,28 @@ describe('dock route support', () => {
     const state = createCircularDockRouteState();
 
     expect(resolveDockBoatRoute(state as never, 8, 8)).toBeNull();
+  });
+
+  it('resolves deterministic paddle-boat placements along the route water tiles', () => {
+    const state = createCircularDockRouteState();
+
+    const first = getDockBoatPlacements(state as never, 0, 0, 0);
+    const second = getDockBoatPlacements(state as never, 1_500, 0, 0);
+
+    expect(first).toEqual(second);
+    expect(first.length).toBeGreaterThan(0);
+    expect(first[0]).toEqual(
+      expect.objectContaining({
+        x: expect.any(Number),
+        y: expect.any(Number),
+        boatName: expect.any(String),
+        from: expect.any(String),
+        to: expect.any(String),
+      })
+    );
+    expect(state.getCurrentTile(first[0]!.x, first[0]!.y).kind).toMatch(
+      /^(ocean|bridge)$/
+    );
   });
 
   it('rejects docks that are too close together for a route circuit', () => {

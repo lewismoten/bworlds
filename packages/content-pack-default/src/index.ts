@@ -31,6 +31,7 @@ import { createCelestialRuntimePlugin } from '@bworlds/runtime-celestial';
 import { createCelestialPhenomenaRuntimePlugin } from '@bworlds/runtime-celestial-phenomena';
 import { createCelestialSystemRuntimePlugin } from '@bworlds/runtime-celestial-system';
 import { createDepthFlavorRuntimePlugin } from '@bworlds/runtime-depth-flavor';
+import { createDockTrafficRuntimePlugin } from '@bworlds/runtime-dock-traffic';
 import { createOverworldAnchorsRuntimePlugin } from '@bworlds/runtime-overworld-anchors';
 import { createOverworldReliefRuntimePlugin } from '@bworlds/runtime-overworld-relief';
 import { createPlayerPoiRuntimePlugin } from '@bworlds/runtime-player-poi';
@@ -153,10 +154,21 @@ export function createDefaultRuntimePlugins(): RuntimePlugin[] {
       },
     },
     {
+      create: createDockTrafficRuntimePlugin,
+      order: {
+        priority: 17,
+        after: ['runtime-overworld-anchors'],
+      },
+    },
+    {
       create: createOverworldReliefRuntimePlugin,
       order: {
         priority: 18,
-        after: ['runtime-overworld-anchors', 'runtime-rail-network'],
+        after: [
+          'runtime-overworld-anchors',
+          'runtime-rail-network',
+          'runtime-dock-traffic',
+        ],
       },
     },
     {

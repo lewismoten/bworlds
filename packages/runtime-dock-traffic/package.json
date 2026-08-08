@@ -1,0 +1,12 @@
+{
+  "name": "@bworlds/runtime-dock-traffic",
+  "version": "0.1.0",
+  "type": "module",
+  "dependencies": {
+    "@bworlds/dock-route-support": "0.1.0",
+    "@bworlds/plugin-api": "0.1.0"
+  },
+  "exports": {
+    ".": "./src/index.ts"
+  }
+}
