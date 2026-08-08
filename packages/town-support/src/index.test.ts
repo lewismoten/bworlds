@@ -421,6 +421,71 @@ describe('town support', () => {
     ).toBe(true);
   });
 
+  it('surfaces puzzle and survival quest offers from generated town schedules', () => {
+    const townSamples: Array<[number, number]> = [
+      [3, 7],
+      [10, -4],
+      [25, 9],
+      [48, -16],
+      [120, -80],
+    ];
+    let puzzleStates: ReturnType<typeof getTownNpcQuestStates> = [];
+    let survivalStates: ReturnType<typeof getTownNpcQuestStates> = [];
+
+    outerPuzzle: for (const [x, y] of townSamples) {
+      for (let minute = 0; minute < 24 * 60; minute += 30) {
+        puzzleStates = getTownNpcQuestStates(
+          x,
+          y,
+          DEFAULT_DAY_LENGTH_MS * (minute / (24 * 60)),
+          {
+            level: 4,
+            profession: 'scholar',
+          }
+        );
+        if (
+          puzzleStates.some((entry) =>
+            entry.offers.some((offer) => offer.type === 'puzzle')
+          )
+        ) {
+          break outerPuzzle;
+        }
+      }
+    }
+
+    outerSurvival: for (const [x, y] of townSamples) {
+      for (let minute = 0; minute < 24 * 60; minute += 30) {
+        survivalStates = getTownNpcQuestStates(
+          x,
+          y,
+          DEFAULT_DAY_LENGTH_MS * (minute / (24 * 60)),
+          {
+            level: 5,
+            profession: 'healer',
+          }
+        );
+        if (
+          survivalStates.some((entry) =>
+            entry.offers.some((offer) => offer.type === 'survival')
+          )
+        ) {
+          break outerSurvival;
+        }
+      }
+    }
+
+    expect(
+      puzzleStates.some((entry) =>
+        entry.offers.some((offer) => offer.type === 'puzzle')
+      )
+    ).toBe(true);
+    expect(
+      survivalStates.some((entry) =>
+        entry.offers.some((offer) => offer.type === 'survival')
+      )
+    ).toBe(true);
+  });
+
   it('surfaces challenge and destruction quest offers from generated town schedules', () => {
     const townSamples: Array<[number, number]> = [
       [3, 7],

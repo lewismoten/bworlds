@@ -77,7 +77,9 @@ export function getDefaultQuestPlugins(): QuestTypePlugin[] {
     createEscortQuestPlugin(),
     createTrackingQuestPlugin(),
     createExplorationQuestPlugin(),
+    createPuzzleQuestPlugin(),
     createTimedQuestPlugin(),
+    createSurvivalQuestPlugin(),
     createDiplomacyQuestPlugin(),
     createChoiceQuestPlugin(),
     createFactionQuestPlugin(),
@@ -486,6 +488,52 @@ function createExplorationQuestPlugin(): QuestTypePlugin {
   });
 }
 
+function createPuzzleQuestPlugin(): QuestTypePlugin {
+  return createQuestTypePlugin('puzzle', (context) => {
+    if (
+      context.playerLevel < 2 ||
+      context.playerLevel > 14 ||
+      context.npcState !== 'working' ||
+      !(
+        context.professionFamily === 'school' ||
+        context.professionFamily === 'temple' ||
+        context.professionFamily === 'workshop' ||
+        context.professionFamily === 'town-hall'
+      )
+    ) {
+      return null;
+    }
+
+    const challenge =
+      context.professionFamily === 'school'
+        ? 'decode the classroom cipher board'
+        : context.professionFamily === 'temple'
+          ? 'align the shrine mirrors in the right order'
+          : context.professionFamily === 'workshop'
+            ? 'reset a jammed gear puzzle in the yard crane'
+            : 'sort out the archive locks on an old civic chest';
+    const questId = `${context.townKey}:${context.npcId}:puzzle:${context.professionFamily}`;
+    if (context.completedQuestIds.has(questId)) {
+      return null;
+    }
+
+    const professionHint =
+      context.playerProfession === 'scholar' || context.playerProfession === 'smith'
+        ? ' Your habit of studying patterns should help solve it cleanly.'
+        : '';
+
+    return {
+      id: questId,
+      type: 'puzzle',
+      title: 'Locked Pattern',
+      summary: `${context.npcName} needs someone to ${challenge}.${professionHint}`,
+      availability: 'work',
+      sourceNpcId: context.npcId,
+      sourceNpcName: context.npcName,
+    };
+  });
+}
+
 function createTimedQuestPlugin(): QuestTypePlugin {
   return createQuestTypePlugin('timed', (context) => {
     if (
@@ -529,6 +577,63 @@ function createTimedQuestPlugin(): QuestTypePlugin {
       summary: `${context.npcName} needs someone to ${objective} ${deadline}.${professionHint}`,
       availability:
         context.npcState === 'working' ? 'work' : 'travel',
+      sourceNpcId: context.npcId,
+      sourceNpcName: context.npcName,
+    };
+  });
+}
+
+function createSurvivalQuestPlugin(): QuestTypePlugin {
+  return createQuestTypePlugin('survival', (context) => {
+    if (
+      context.playerLevel < 3 ||
+      !(
+        context.npcState === 'working' ||
+        context.npcState === 'commuting-home'
+      ) ||
+      !(
+        context.professionFamily === 'inn' ||
+        context.professionFamily === 'stable' ||
+        context.professionFamily === 'temple' ||
+        context.professionFamily === 'town-hall'
+      )
+    ) {
+      return null;
+    }
+
+    const seasonLabel = getSeasonLabel(context.yearProgress);
+    const ordeal =
+      context.professionFamily === 'temple'
+        ? seasonLabel === 'Winter'
+          ? 'carry relief supplies through the cold to the outlying shrine'
+          : 'keep a lantern watch until the vulnerable travelers are settled'
+        : context.professionFamily === 'stable'
+          ? seasonLabel === 'Winter'
+            ? 'get stranded pack animals to shelter before the frost deepens'
+            : 'guide a weary trail party to safe stables before nightfall'
+          : context.professionFamily === 'town-hall'
+            ? seasonLabel === 'Winter'
+              ? 'hold the roadside shelter through the storm front'
+              : 'reach the emergency cache and return with it safely'
+            : seasonLabel === 'Winter'
+              ? 'keep the wayhouse fire going until dawn'
+              : 'escort exhausted guests to shelter and hold out until sunrise';
+    const questId = `${context.townKey}:${context.npcId}:survival:${context.professionFamily}:${seasonLabel}:${context.npcState}`;
+    if (context.completedQuestIds.has(questId)) {
+      return null;
+    }
+
+    const professionHint =
+      context.playerProfession === 'guard' || context.playerProfession === 'healer'
+        ? ' Your steady nerves should help everyone make it through.'
+        : '';
+
+    return {
+      id: questId,
+      type: 'survival',
+      title: `${seasonLabel} Hardship`,
+      summary: `${context.npcName} needs help to ${ordeal}.${professionHint}`,
+      availability: context.npcState === 'working' ? 'work' : 'travel',
       sourceNpcId: context.npcId,
       sourceNpcName: context.npcName,
     };

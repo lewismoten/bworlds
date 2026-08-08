@@ -11,7 +11,9 @@ describe('quest support', () => {
       'escort',
       'tracking',
       'exploration',
+      'puzzle',
       'timed',
+      'survival',
       'diplomacy',
       'choice',
       'faction',
@@ -284,6 +286,44 @@ describe('quest support', () => {
     expect(overleveled.some((offer) => offer.type === 'exploration')).toBe(false);
   });
 
+  it('offers puzzle quests for pattern-solving professions and civic mechanisms', () => {
+    const puzzle = getDefaultQuestRegistry().getOffers({
+      npcId: 'npc:teacher',
+      npcName: 'Iris Juniper',
+      townKey: '3:7',
+      dayProgress: 0.44,
+      yearProgress: 0.52,
+      playerLevel: 4,
+      playerProfession: 'scholar',
+      completedQuestIds: new Set<string>(),
+      npcState: 'working',
+      profession: 'teacher',
+      professionFamily: 'school',
+      residenceBuildingId: 'home',
+      workplaceBuildingId: 'school',
+    });
+    const overleveled = getDefaultQuestRegistry().getOffers({
+      npcId: 'npc:teacher',
+      npcName: 'Iris Juniper',
+      townKey: '3:7',
+      dayProgress: 0.44,
+      yearProgress: 0.52,
+      playerLevel: 18,
+      completedQuestIds: new Set<string>(),
+      npcState: 'working',
+      profession: 'teacher',
+      professionFamily: 'school',
+      residenceBuildingId: 'home',
+      workplaceBuildingId: 'school',
+    });
+
+    expect(puzzle.some((offer) => offer.type === 'puzzle')).toBe(true);
+    expect(
+      puzzle.some((offer) => offer.summary.includes('studying patterns'))
+    ).toBe(true);
+    expect(overleveled.some((offer) => offer.type === 'puzzle')).toBe(false);
+  });
+
   it('offers timed quests for rush jobs and favors fast-delivery professions', () => {
     const timed = getDefaultQuestRegistry().getOffers({
       npcId: 'npc:merchant',
@@ -318,6 +358,44 @@ describe('quest support', () => {
     expect(timed.some((offer) => offer.type === 'timed')).toBe(true);
     expect(timed.some((offer) => offer.summary.includes('quick feet'))).toBe(true);
     expect(overleveled.some((offer) => offer.type === 'timed')).toBe(false);
+  });
+
+  it('offers survival quests for sheltered routes and hardship watches', () => {
+    const survival = getDefaultQuestRegistry().getOffers({
+      npcId: 'npc:innkeeper',
+      npcName: 'June Briar',
+      townKey: '3:7',
+      dayProgress: 0.82,
+      yearProgress: 0.88,
+      playerLevel: 5,
+      playerProfession: 'healer',
+      completedQuestIds: new Set<string>(),
+      npcState: 'working',
+      profession: 'innkeeper',
+      professionFamily: 'inn',
+      residenceBuildingId: 'home',
+      workplaceBuildingId: 'inn',
+    });
+    const underleveled = getDefaultQuestRegistry().getOffers({
+      npcId: 'npc:innkeeper',
+      npcName: 'June Briar',
+      townKey: '3:7',
+      dayProgress: 0.82,
+      yearProgress: 0.88,
+      playerLevel: 1,
+      completedQuestIds: new Set<string>(),
+      npcState: 'working',
+      profession: 'innkeeper',
+      professionFamily: 'inn',
+      residenceBuildingId: 'home',
+      workplaceBuildingId: 'inn',
+    });
+
+    expect(survival.some((offer) => offer.type === 'survival')).toBe(true);
+    expect(
+      survival.some((offer) => offer.summary.includes('steady nerves'))
+    ).toBe(true);
+    expect(underleveled.some((offer) => offer.type === 'survival')).toBe(false);
   });
 
   it('offers activation quests for staffed civic, temple, and workshop systems', () => {
