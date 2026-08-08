@@ -49,6 +49,7 @@ import {
   type InventoryProfileSnapshot,
 } from './inventory-storage.ts';
 import {
+  formatWorldMapPoiPublishPrompt,
   createWorldMapStorageCoordinator,
   createLocalWorldMapStorage,
   normalizePreferredWorldMapServerIds,
@@ -1768,8 +1769,26 @@ function handleBuildPoi(): void {
     return;
   }
 
+  const publishTargets = worldMapStorage.getPreferredPoiPublishTargets?.() ?? [];
+  const publishPrompt = formatWorldMapPoiPublishPrompt(
+    built.poi.name,
+    publishTargets
+  );
+  let publishedServerIds: string[] = [];
+  if (
+    publishPrompt &&
+    typeof window.confirm === 'function' &&
+    window.confirm(publishPrompt)
+  ) {
+    publishedServerIds = worldMapStorage.publishPoiToPreferredServers?.(built) ?? [];
+  }
+
   saveSession();
-  showHmrNotice(`Built ${built.poi.name}.`);
+  const publishSummary =
+    publishedServerIds.length > 0
+      ? ` Published to ${publishedServerIds.join(', ')}.`
+      : '';
+  showHmrNotice(`Built ${built.poi.name}.${publishSummary}`);
   requestRender();
 }
 

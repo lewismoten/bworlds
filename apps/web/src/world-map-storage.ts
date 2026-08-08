@@ -18,11 +18,20 @@ export type WorldMapStorageLike = {
   saveProfile(profile: WorldMapProfileSnapshot): void;
   clearProfile(): void;
   getPreferredServerIds?(): string[];
+  getPreferredPoiPublishTargets?(): WorldMapPoiPublishTarget[];
+  publishPoiToPreferredServers?(poi: PlayerPlacedPoiLike): string[];
 };
 
 export type WorldMapStorageProviderLike = {
   id: string;
   storage: WorldMapStorageLike;
+  label?: string;
+  supportsPoiPublishing?: boolean;
+};
+
+export type WorldMapPoiPublishTarget = {
+  id: string;
+  label: string;
 };
 
 export type StorageLike = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>;
@@ -82,6 +91,21 @@ export function createLocalWorldMapStorage(
     clearProfile() {
       storage.removeItem(key);
     },
+  };
+}
+
+export function appendWorldMapPoi(
+  profile: SavedWorldMapProfile | null,
+  poi: PlayerPlacedPoiLike
+): WorldMapProfileSnapshot {
+  const existingPois = profile?.playerPlacedPois ?? [];
+  const nextPois = existingPois.filter(
+    (entry) => !(entry.x === poi.x && entry.y === poi.y)
+  );
+  nextPois.push(poi);
+  return {
+    playerPlacedPois: nextPois,
+    preferredServerIds: [...(profile?.preferredServerIds ?? [])],
   };
 }
 
@@ -187,6 +211,19 @@ export function createWorldMapStorageCoordinator({
       settingsStorage.loadProfile()?.preferredServerIds ?? availableServerIds,
       availableServerIds
     );
+  const getPreferredPoiPublishTargets = () => {
+    const providerById = new Map(providers.map((provider) => [provider.id, provider] as const));
+    return getPreferredServerIds()
+      .map((serverId) => providerById.get(serverId))
+      .filter(
+        (provider): provider is WorldMapStorageProviderLike =>
+          Boolean(provider?.supportsPoiPublishing)
+      )
+      .map((provider) => ({
+        id: provider.id,
+        label: provider.label ?? provider.id,
+      }));
+  };
 
   return {
     loadProfile() {
@@ -211,5 +248,35 @@ export function createWorldMapStorageCoordinator({
       settingsStorage.clearProfile();
     },
     getPreferredServerIds,
+    getPreferredPoiPublishTargets,
+    publishPoiToPreferredServers(poi) {
+      const targets = getPreferredPoiPublishTargets();
+      const providerById = new Map(providers.map((provider) => [provider.id, provider] as const));
+      targets.forEach((target) => {
+        const provider = providerById.get(target.id);
+        if (!provider) {
+          return;
+        }
+        provider.storage.saveProfile(
+          appendWorldMapPoi(provider.storage.loadProfile(), poi)
+        );
+      });
+      return targets.map((target) => target.id);
+    },
   };
+}
+
+export function formatWorldMapPoiPublishPrompt(
+  poiName: string,
+  targets: ReadonlyArray<WorldMapPoiPublishTarget>
+): string | null {
+  if (targets.length === 0) {
+    return null;
+  }
+  const labels = targets.map((target) => target.label);
+  if (labels.length === 1) {
+    return `Also publish ${poiName} to ${labels[0]}?`;
+  }
+  const lastLabel = labels[labels.length - 1];
+  return `Also publish ${poiName} to ${labels.slice(0, -1).join(', ')} and ${lastLabel}?`;
 }

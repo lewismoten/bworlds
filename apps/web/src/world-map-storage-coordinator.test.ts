@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
+  appendWorldMapPoi,
   createLocalWorldMapStorage,
   createWorldMapStorageCoordinator,
+  formatWorldMapPoiPublishPrompt,
   mergeWorldMapProfilesByPreference,
   normalizePreferredWorldMapServerIds,
   parsePreferredWorldMapServerIds,
@@ -155,8 +157,122 @@ describe('world map storage coordinator', () => {
     });
   });
 
+  it('lists only preferred servers that support poi publishing', () => {
+    const settingsStorage = createMemoryWorldMapStorage('settings');
+    settingsStorage.saveProfile({
+      playerPlacedPois: [],
+      preferredServerIds: ['guild', 'friends', 'local'],
+    });
+    const coordinator = createWorldMapStorageCoordinator({
+      settingsStorage,
+      providers: [
+        { id: 'local', label: 'Local Play', storage: createMemoryWorldMapStorage('local') },
+        {
+          id: 'guild',
+          label: 'Guild Atlas',
+          storage: createMemoryWorldMapStorage('guild'),
+          supportsPoiPublishing: true,
+        },
+        {
+          id: 'friends',
+          label: 'Friends Realm',
+          storage: createMemoryWorldMapStorage('friends'),
+          supportsPoiPublishing: true,
+        },
+      ],
+    });
+
+    expect(coordinator.getPreferredPoiPublishTargets?.()).toEqual([
+      { id: 'guild', label: 'Guild Atlas' },
+      { id: 'friends', label: 'Friends Realm' },
+    ]);
+  });
+
+  it('publishes a built poi to preferred publishing servers in order', () => {
+    const settingsStorage = createMemoryWorldMapStorage('settings');
+    settingsStorage.saveProfile({
+      playerPlacedPois: [],
+      preferredServerIds: ['guild', 'local', 'friends'],
+    });
+    const guildStorage = createMemoryWorldMapStorage('guild');
+    const friendsStorage = createMemoryWorldMapStorage('friends');
+    const coordinator = createWorldMapStorageCoordinator({
+      settingsStorage,
+      providers: [
+        {
+          id: 'guild',
+          label: 'Guild Atlas',
+          storage: guildStorage,
+          supportsPoiPublishing: true,
+        },
+        {
+          id: 'local',
+          label: 'Local Play',
+          storage: createMemoryWorldMapStorage('local'),
+        },
+        {
+          id: 'friends',
+          label: 'Friends Realm',
+          storage: friendsStorage,
+          supportsPoiPublishing: true,
+        },
+      ],
+    });
+
+    const poi = {
+      x: 7,
+      y: 4,
+      kind: 'town' as const,
+      note: 'A shared frontier town rises here.',
+      poi: { type: 'town' as const, name: 'Northpass' },
+    };
+
+    expect(coordinator.publishPoiToPreferredServers?.(poi)).toEqual(['guild', 'friends']);
+    expect(guildStorage.loadProfile()?.playerPlacedPois).toEqual([poi]);
+    expect(friendsStorage.loadProfile()?.playerPlacedPois).toEqual([poi]);
+  });
+
   it('rejects malformed preferred world-map server ids', () => {
     expect(parsePreferredWorldMapServerIds(['local', 4])).toBeNull();
     expect(parsePreferredWorldMapServerIds('local')).toBeNull();
+  });
+
+  it('replaces an older poi entry when publishing the same world cell again', () => {
+    const originalPoi = {
+      x: 3,
+      y: 9,
+      kind: 'quarry' as const,
+      note: 'An older quarry sits here.',
+      poi: { type: 'quarry' as const, name: 'Old Quarry' },
+    };
+    const replacementPoi = {
+      x: 3,
+      y: 9,
+      kind: 'town' as const,
+      note: 'A newer settlement replaces the quarry.',
+      poi: { type: 'town' as const, name: 'New Quarry Town' },
+    };
+
+    expect(
+      appendWorldMapPoi(
+        {
+          playerPlacedPois: [originalPoi],
+          preferredServerIds: ['guild'],
+        },
+        replacementPoi
+      )
+    ).toEqual({
+      playerPlacedPois: [replacementPoi],
+      preferredServerIds: ['guild'],
+    });
+  });
+
+  it('formats a publish prompt from the available world-map server labels', () => {
+    expect(
+      formatWorldMapPoiPublishPrompt('Northpass', [
+        { id: 'guild', label: 'Guild Atlas' },
+        { id: 'friends', label: 'Friends Realm' },
+      ])
+    ).toBe('Also publish Northpass to Guild Atlas and Friends Realm?');
   });
 });
