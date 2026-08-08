@@ -75,6 +75,10 @@ import {
   getTimePresetProgress,
 } from './time-controls.ts';
 
+type CelestialEnvironmentOverrides = Parameters<
+  typeof applyCelestialEnvironmentOverrides
+>[1];
+
 const STORAGE_KEY = 'bworlds:session';
 const builtinPackCatalog = createBuiltinContentPackCatalog();
 const builtinPackManifests = builtinPackCatalog.list();
@@ -803,7 +807,7 @@ function getCurrentEnvironment(
 function getCurrentCycle(environment: WorldEnvironmentLike = getCurrentEnvironment()) {
   return applyCelestialEnvironmentOverrides(
     getDaylightCycleState(getCurrentWorldTimeMs(), environment.cycle ?? {}),
-    (environment.celestial ?? {}) as any
+    (environment.celestial ?? {}) as CelestialEnvironmentOverrides
   );
 }
 

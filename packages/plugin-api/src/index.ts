@@ -172,21 +172,21 @@ export class PluginRegistry implements PluginRegistryLike {
 
   canOccupy3D(payload: CanOccupy3DContext): boolean | void {
     const tilePlugin = this.getTilePlugin(payload.tile.kind);
-    return attemptCall(tilePlugin?.canOccupy3D, payload);
+    return attemptCall(tilePlugin?.canOccupy3D, payload) ?? undefined;
   }
 
   getSurfaceProfile3D(
     payload: SurfaceProfile3DContext
   ): void | SurfaceProfile3D {
     const tilePlugin = this.getTilePlugin(payload.tile.kind);
-    return attemptCall(tilePlugin?.getSurfaceProfile3D, payload);
+    return attemptCall(tilePlugin?.getSurfaceProfile3D, payload) ?? undefined;
   }
 
   getTraversalProfile3D(
     payload: TraversalProfile3DContext
   ): void | TraversalProfile3D {
     const tilePlugin = this.getTilePlugin(payload.tile.kind);
-    return attemptCall(tilePlugin?.getTraversalProfile3D, payload);
+    return attemptCall(tilePlugin?.getTraversalProfile3D, payload) ?? undefined;
   }
 
   paint2DOverlay(payload: Paint2DOverlayContext): boolean | void {
@@ -196,7 +196,7 @@ export class PluginRegistry implements PluginRegistryLike {
 
   resolveFloorKind3D(payload: ResolveFloorKind3DContext): void | Kind {
     const tilePlugin = this.getTilePlugin(payload.tile.kind);
-    return attemptCall(tilePlugin?.resolveFloorKind3D, payload);
+    return attemptCall(tilePlugin?.resolveFloorKind3D, payload) ?? undefined;
   }
 
   resolveWorldEnvironment(
@@ -244,7 +244,7 @@ export class PluginRegistry implements PluginRegistryLike {
 
   createWorldAction(payload: CreateWorldActionContext): void | WorldActionLike {
     const tilePlugin = this.getTilePlugin(payload.tile.kind);
-    return attemptCall(tilePlugin?.createWorldAction, payload);
+    return attemptCall(tilePlugin?.createWorldAction, payload) ?? undefined;
   }
 
   decorateOverworldTile(payload: DecorateOverworldTileContext): TileLike {
@@ -371,10 +371,10 @@ export function createPluginPackCatalog(
     listSelected(packIds = normalizedDefaultPackIds) {
       return selectPluginPackManifests(packIds, packDefinitions);
     },
-    resolve(packId) {
+    resolve(packId: string) {
       return resolvePluginPackDefinition(packId, packDefinitions);
     },
-    createRegistry(packIds = normalizedDefaultPackIds) {
+    createRegistry(packIds: string[] = normalizedDefaultPackIds) {
       return createPluginRegistryFromPackDefinitions(packIds, packDefinitions);
     },
   };

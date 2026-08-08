@@ -72,6 +72,8 @@ const CONSTELLATION_FIGURES = [
 const PLANET_NAMES = ['Aurel', 'Brink', 'Cael', 'Damar', 'Vela'];
 const METEOR_SHOWER_NAMES = ['Silver Wake', 'Ember Rain', 'Northfall'];
 const COMET_NAMES = ['White Lantern', 'Pilgrim Tail'];
+const PLANET_NAME_SET: ReadonlySet<string> = new Set(PLANET_NAMES);
+const COMET_NAME_SET: ReadonlySet<string> = new Set(COMET_NAMES);
 const PLANET_SKY_PROFILES = [
   {
     orbitLengthDays: 11,
@@ -1264,10 +1266,10 @@ export function getOrreryBodies({
       event.type === 'planet'
         ? 3.6 + getPlanetSkyProfileIndex(event.name, unknownPlanetIndex) * 0.75
         : 8.1 + getCometOrreryProfileIndex(event.name, unknownCometIndex) * 0.95;
-    if (event.type === 'planet' && !PLANET_NAMES.includes(event.name as any)) {
+    if (event.type === 'planet' && !PLANET_NAME_SET.has(event.name)) {
       unknownPlanetIndex += 1;
     }
-    if (event.type === 'comet' && !COMET_NAMES.includes(event.name as any)) {
+    if (event.type === 'comet' && !COMET_NAME_SET.has(event.name)) {
       unknownCometIndex += 1;
     }
     bodies.push({

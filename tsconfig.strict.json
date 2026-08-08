@@ -8,6 +8,7 @@
     "apps/web/src/session-state.ts",
     "apps/web/src/time-controls.ts",
     "packages/core/src/index.ts",
+    "packages/plugin-api/src/index.ts",
     "packages/plugin-api/src/types.ts",
     "packages/plugin-api/src/utils.ts"
   ]
