@@ -2,6 +2,7 @@ type ViewModeLike = '2d' | '3d' | 'text';
 type SurfaceKind = string;
 type SoundEffectKind = 'footstep' | 'jump' | 'landing' | 'blocked';
 type SoundWaveform = OscillatorType;
+type SoundPosition = { x: number; y: number };
 type SurfaceAudioFamily =
   | 'default'
   | 'road'
@@ -19,6 +20,8 @@ export type ProceduralSoundEffect = {
   durationMs: number;
   volume: number;
   waveform: SoundWaveform;
+  emitter?: SoundPosition;
+  listener?: SoundPosition;
 };
 
 export type SoundEffectSink = {
@@ -28,14 +31,26 @@ export type SoundEffectSink = {
 
 export type SoundEffectController = {
   resume(): void;
-  triggerJump(options: { nowMs: number; tileKind?: SurfaceKind }): void;
-  triggerBlockedMovement(options: { nowMs: number; tileKind?: SurfaceKind }): void;
+  triggerJump(options: {
+    nowMs: number;
+    tileKind?: SurfaceKind;
+    emitter?: SoundPosition;
+    listener?: SoundPosition;
+  }): void;
+  triggerBlockedMovement(options: {
+    nowMs: number;
+    tileKind?: SurfaceKind;
+    emitter?: SoundPosition;
+    listener?: SoundPosition;
+  }): void;
   update(options: {
     nowMs: number;
     walking: boolean;
     isJumping: boolean;
     viewMode: ViewModeLike;
     tileKind?: SurfaceKind;
+    emitter?: SoundPosition;
+    listener?: SoundPosition;
   }): void;
 };
 
@@ -151,6 +166,22 @@ export function getSurfaceAudioProfile(
   return SURFACE_AUDIO_PROFILES[getSurfaceAudioFamily(tileKind)];
 }
 
+export function getSoundSpatialMix(
+  emitter?: SoundPosition,
+  listener?: SoundPosition
+): { gainMultiplier: number; pan: number } {
+  if (!emitter || !listener) {
+    return { gainMultiplier: 1, pan: 0 };
+  }
+  const deltaX = emitter.x - listener.x;
+  const deltaY = emitter.y - listener.y;
+  const distance = Math.hypot(deltaX, deltaY);
+  return {
+    gainMultiplier: 1 / (1 + distance * 0.85),
+    pan: clampValue(deltaX / 2.8, -1, 1),
+  };
+}
+
 export function createSoundEffectController(
   sink: SoundEffectSink
 ): SoundEffectController {
@@ -160,7 +191,13 @@ export function createSoundEffectController(
   let previousJumping = false;
   let footstepVariant = 0;
 
-  function play(kind: SoundEffectKind, nowMs: number, tileKind?: SurfaceKind) {
+  function play(
+    kind: SoundEffectKind,
+    nowMs: number,
+    tileKind?: SurfaceKind,
+    emitter?: SoundPosition,
+    listener?: SoundPosition
+  ) {
     const profile = getSurfaceAudioProfile(tileKind);
     const variantOffset = footstepVariant % 2 === 0 ? -8 : 6;
     footstepVariant += 1;
@@ -186,6 +223,8 @@ export function createSoundEffectController(
             ? profile.landingVolume
             : profile.footstepVolume,
       waveform: kind === 'blocked' ? 'sawtooth' : profile.waveform,
+      emitter,
+      listener,
     });
   }
 
@@ -193,14 +232,14 @@ export function createSoundEffectController(
     resume() {
       sink.resume?.();
     },
-    triggerJump({ nowMs, tileKind }) {
+    triggerJump({ nowMs, tileKind, emitter, listener }) {
       if (nowMs - lastJumpAtMs < 120) {
         return;
       }
       lastJumpAtMs = nowMs;
-      play('jump', nowMs, tileKind);
+      play('jump', nowMs, tileKind, emitter, listener);
     },
-    triggerBlockedMovement({ nowMs, tileKind }) {
+    triggerBlockedMovement({ nowMs, tileKind, emitter, listener }) {
       if (!shouldPlayBlockedMovementSound(tileKind)) {
         return;
       }
@@ -208,9 +247,9 @@ export function createSoundEffectController(
         return;
       }
       lastBlockedAtMs = nowMs;
-      play('blocked', nowMs, tileKind);
+      play('blocked', nowMs, tileKind, emitter, listener);
     },
-    update({ nowMs, walking, isJumping, viewMode, tileKind }) {
+    update({ nowMs, walking, isJumping, viewMode, tileKind, emitter, listener }) {
       if (viewMode !== '3d') {
         previousJumping = isJumping;
         return;
@@ -222,7 +261,7 @@ export function createSoundEffectController(
       }
 
       if (previousJumping && !isJumping) {
-        play('landing', nowMs, tileKind);
+        play('landing', nowMs, tileKind, emitter, listener);
       }
       previousJumping = isJumping;
 
@@ -235,7 +274,7 @@ export function createSoundEffectController(
         return;
       }
       lastFootstepAtMs = nowMs;
-      play('footstep', nowMs, tileKind);
+      play('footstep', nowMs, tileKind, emitter, listener);
     },
   };
 }
@@ -280,10 +319,14 @@ export function createWebAudioSoundEffectSink(): SoundEffectSink {
       if (!context) {
         return;
       }
+      const spatialMix = getSoundSpatialMix(effect.emitter, effect.listener);
       const startAt = context.currentTime;
       const durationSeconds = effect.durationMs / 1000;
       const oscillator = context.createOscillator();
       const gain = context.createGain();
+      const panner = typeof context.createStereoPanner === 'function'
+        ? context.createStereoPanner()
+        : null;
       oscillator.type = effect.waveform;
       oscillator.frequency.setValueAtTime(effect.frequency, startAt);
       if (effect.kind === 'jump') {
@@ -300,7 +343,7 @@ export function createWebAudioSoundEffectSink(): SoundEffectSink {
       }
       gain.gain.setValueAtTime(0.0001, startAt);
       gain.gain.exponentialRampToValueAtTime(
-        effect.volume,
+        effect.volume * spatialMix.gainMultiplier,
         startAt + durationSeconds * 0.2
       );
       gain.gain.exponentialRampToValueAtTime(
@@ -308,9 +351,19 @@ export function createWebAudioSoundEffectSink(): SoundEffectSink {
         startAt + durationSeconds
       );
       oscillator.connect(gain);
-      gain.connect(context.destination);
+      if (panner) {
+        panner.pan.setValueAtTime(spatialMix.pan, startAt);
+        gain.connect(panner);
+        panner.connect(context.destination);
+      } else {
+        gain.connect(context.destination);
+      }
       oscillator.start(startAt);
       oscillator.stop(startAt + durationSeconds);
     },
   };
+}
+
+function clampValue(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, value));
 }

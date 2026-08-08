@@ -3,6 +3,7 @@ import {
   createSoundEffectController,
   getSurfaceAudioFamily,
   getSurfaceAudioProfile,
+  getSoundSpatialMix,
   shouldPlayBlockedMovementSound,
   type ProceduralSoundEffect,
 } from './sound-effects.ts';
@@ -122,6 +123,24 @@ describe('sound effects', () => {
     );
   });
 
+  it('computes quieter and panned mixes for distant off-center emitters', () => {
+    expect(
+      getSoundSpatialMix({ x: 3, y: 0 }, { x: 0, y: 0 })
+    ).toEqual({
+      gainMultiplier: expect.closeTo(1 / (1 + 3 * 0.85), 6),
+      pan: 1,
+    });
+    expect(
+      getSoundSpatialMix({ x: -0.7, y: 0.2 }, { x: 0, y: 0 })
+    ).toEqual({
+      gainMultiplier: expect.closeTo(
+        1 / (1 + Math.hypot(0.7, 0.2) * 0.85),
+        6
+      ),
+      pan: expect.closeTo(-0.25, 6),
+    });
+  });
+
   it('maps walkable tiles into distinct surface families for footsteps', () => {
     expect(getSurfaceAudioFamily('road')).toBe('road');
     expect(getSurfaceAudioFamily('bridge')).toBe('bridge');
@@ -171,5 +190,45 @@ describe('sound effects', () => {
     expect(shouldPlayBlockedMovementSound('forest')).toBe(true);
     expect(shouldPlayBlockedMovementSound('road')).toBe(false);
     expect(shouldPlayBlockedMovementSound(undefined)).toBe(false);
+  });
+
+  it('attaches listener and emitter positions to scheduled movement sounds', () => {
+    const played: ProceduralSoundEffect[] = [];
+    const controller = createSoundEffectController({
+      play(effect) {
+        played.push(effect);
+      },
+    });
+
+    controller.triggerBlockedMovement({
+      nowMs: 10,
+      tileKind: 'forest',
+      emitter: { x: 1, y: 0 },
+      listener: { x: 0, y: 0 },
+    });
+    controller.update({
+      nowMs: 300,
+      walking: true,
+      isJumping: false,
+      viewMode: '3d',
+      tileKind: 'road',
+      emitter: { x: 0, y: 0 },
+      listener: { x: 0, y: 0 },
+    });
+
+    expect(played[0]).toEqual(
+      expect.objectContaining({
+        kind: 'blocked',
+        emitter: { x: 1, y: 0 },
+        listener: { x: 0, y: 0 },
+      })
+    );
+    expect(played[1]).toEqual(
+      expect.objectContaining({
+        kind: 'footstep',
+        emitter: { x: 0, y: 0 },
+        listener: { x: 0, y: 0 },
+      })
+    );
   });
 });

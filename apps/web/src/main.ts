@@ -1371,6 +1371,11 @@ function attemptMove(stepX: number, stepY: number): void {
   soundEffects.triggerBlockedMovement({
     nowMs: performance.now(),
     tileKind: blockedTileKind,
+    emitter: {
+      x: snapWorldCoordinate(nextX),
+      y: snapWorldCoordinate(nextY),
+    },
+    listener: { x: state.player.x, y: state.player.y },
   });
 }
 
@@ -1629,6 +1634,8 @@ function jump(): void {
   soundEffects.triggerJump({
     nowMs: performance.now(),
     tileKind: state.getCurrentTile().kind,
+    emitter: { x: state.player.x, y: state.player.y },
+    listener: { x: state.player.x, y: state.player.y },
   });
   motion.isJumping = true;
   motion.jumpHeight = 0;
@@ -1749,6 +1756,8 @@ function updateMovement(deltaMs: number): void {
     isJumping: motion.isJumping,
     viewMode: state.viewMode,
     tileKind: state.getCurrentTile().kind,
+    emitter: { x: state.player.x, y: state.player.y },
+    listener: { x: state.player.x, y: state.player.y },
   });
 
   if (
