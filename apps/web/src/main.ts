@@ -83,7 +83,10 @@ import {
   getHmrNoticeVisibleUntil,
   shouldShowHmrNotice,
 } from './hmr-notice.ts';
-import { restore3dViewportKeyboardFocus } from './viewport-focus.ts';
+import {
+  restore3dViewportKeyboardFocus,
+  shouldRestore3dViewportKeyboardFocusOnPointerDown,
+} from './viewport-focus.ts';
 import {
   buildSextantMarkup,
   buildEventSummaryMarkup,
@@ -2485,11 +2488,27 @@ root.querySelectorAll<HTMLButtonElement>('[data-time-preset]').forEach((button) 
   });
 });
 
-viewport3d?.addEventListener('pointerdown', (event) => {
-  if (state.viewMode !== '3d' || event.button !== 0) {
+viewportStage?.addEventListener('pointerdown', (event) => {
+  if (
+    !shouldRestore3dViewportKeyboardFocusOnPointerDown(
+      state.viewMode,
+      event.button
+    )
+  ) {
     return;
   }
   restore3dViewportKeyboardFocus(state.viewMode, viewport3d);
+});
+
+viewport3d?.addEventListener('pointerdown', (event) => {
+  if (
+    !shouldRestore3dViewportKeyboardFocusOnPointerDown(
+      state.viewMode,
+      event.button
+    )
+  ) {
+    return;
+  }
   mouseLookState.dragging = true;
   mouseLookState.pointerId = event.pointerId;
   mouseLookState.startPointerX = event.clientX;
@@ -2534,6 +2553,7 @@ const releaseMouseLook = (event: PointerEvent) => {
     viewport3d.releasePointerCapture(event.pointerId);
   }
   viewportStage?.classList.remove('is-mouse-looking');
+  restore3dViewportKeyboardFocus(state.viewMode, viewport3d);
   saveSession();
   requestRender();
 };

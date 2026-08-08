@@ -1,7 +1,25 @@
 import { describe, expect, it, vi } from 'vitest';
-import { restore3dViewportKeyboardFocus } from './viewport-focus.ts';
+import {
+  restore3dViewportKeyboardFocus,
+  shouldRestore3dViewportKeyboardFocusOnPointerDown,
+} from './viewport-focus.ts';
 
 describe('viewport keyboard focus', () => {
+  it('restores keyboard focus for primary pointer presses in 3d mode', () => {
+    expect(shouldRestore3dViewportKeyboardFocusOnPointerDown('3d', 0)).toBe(
+      true
+    );
+    expect(shouldRestore3dViewportKeyboardFocusOnPointerDown('2d', 0)).toBe(
+      false
+    );
+    expect(shouldRestore3dViewportKeyboardFocusOnPointerDown('text', 0)).toBe(
+      false
+    );
+    expect(shouldRestore3dViewportKeyboardFocusOnPointerDown('3d', 1)).toBe(
+      false
+    );
+  });
+
   it('focuses the 3d viewport host when 3d mode becomes active', () => {
     const viewport = {
       focus: vi.fn(),

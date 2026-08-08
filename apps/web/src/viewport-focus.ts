@@ -6,6 +6,13 @@ type ViewportHostLike = {
   focus: (options?: FocusOptions) => void;
 } | null | undefined;
 
+export function shouldRestore3dViewportKeyboardFocusOnPointerDown(
+  viewMode: '2d' | '3d' | 'text',
+  button: number
+): boolean {
+  return viewMode === '3d' && button === 0;
+}
+
 export function restore3dViewportKeyboardFocus(
   viewMode: '2d' | '3d' | 'text',
   viewport: ViewportHostLike
