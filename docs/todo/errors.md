@@ -63,9 +63,9 @@ material.clone()
 * [ ] Review whether every child mesh really requires independent distance fading.
 * [ ] Apply fading at the tile/group level where possible.
 * [ ] Avoid traversing every descendant just to clone its material.
-* [ ] Cache traversal results for static models.
-* [ ] Mark objects that have already been prepared for fading.
-* [ ] Prevent the same object from being prepared multiple times.
+* [x] Cache traversal results for static models.
+* [x] Mark objects that have already been prepared for fading.
+* [x] Prevent the same object from being prepared multiple times.
 * [x] Avoid cloning materials when a material has already been converted to a fade-capable variant.
 * [ ] Determine whether fading can occur using dithering rather than transparency.
 * [ ] Consider LOD switching without fades for sufficiently distant objects.

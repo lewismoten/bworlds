@@ -212,6 +212,7 @@ const FALLBACK_TILE_DEFINITION = {
   walkable: true,
   wallHeight: 0,
 };
+const distanceFadeTargetCache = new WeakMap<THREE.Object3D, DistanceFadeTargets>();
 
 export function create3DRenderer(host: HTMLElement): Render3DController {
   const renderer = new THREE.WebGLRenderer({
@@ -1596,12 +1597,12 @@ export function pickCornerBoundaryProfile<
 
 export function prepareObjectForDistanceFade(root: THREE.Object3D): void {
   const fadeMaterialCache = new WeakMap<THREE.Material, THREE.Material>();
-  root.traverse((child) => {
+  const targets = getDistanceFadeTargets(root);
+  targets.allNodes.forEach((child) => {
     child.userData.distanceFadeBaseVisible ??= child.visible;
-    const renderable = child as THREE.Object3D & {
-      material?: THREE.Material | THREE.Material[];
-    };
-    if (!renderable.material || child.userData.distanceFadePrepared) {
+  });
+  targets.renderableNodes.forEach((renderable) => {
+    if (renderable.userData.distanceFadePrepared) {
       return;
     }
 
@@ -1610,7 +1611,7 @@ export function prepareObjectForDistanceFade(root: THREE.Object3D): void {
           getDistanceFadeMaterialVariant(material, fadeMaterialCache)
         )
       : getDistanceFadeMaterialVariant(renderable.material, fadeMaterialCache);
-    child.userData.distanceFadePrepared = true;
+    renderable.userData.distanceFadePrepared = true;
 
     for (const material of getObjectMaterials(renderable)) {
       material.userData.distanceFadeBaseOpacity ??= material.opacity;
@@ -1624,16 +1625,12 @@ export function applyObjectDistanceFade(
   root: THREE.Object3D,
   opacity: number
 ): void {
-  root.traverse((child) => {
+  const targets = getDistanceFadeTargets(root);
+  targets.allNodes.forEach((child) => {
     const baseVisible = child.userData.distanceFadeBaseVisible ?? true;
     child.visible = baseVisible && opacity > MIN_MODEL_VISIBILITY_OPACITY;
-    const renderable = child as THREE.Object3D & {
-      material?: THREE.Material | THREE.Material[];
-    };
-    if (!renderable.material) {
-      return;
-    }
-
+  });
+  targets.renderableNodes.forEach((renderable) => {
     for (const material of getObjectMaterials(renderable)) {
       const baseOpacity = material.userData.distanceFadeBaseOpacity ?? material.opacity;
       const baseTransparent =
@@ -1659,6 +1656,36 @@ function getDistanceFadeMaterialVariant(
   const clone = material.clone();
   cache.set(material, clone);
   return clone;
+}
+
+function getDistanceFadeTargets(root: THREE.Object3D): DistanceFadeTargets {
+  const cached = distanceFadeTargetCache.get(root);
+  if (cached) {
+    return cached;
+  }
+
+  const allNodes: THREE.Object3D[] = [];
+  const renderableNodes: Array<
+    THREE.Object3D & { material: THREE.Material | THREE.Material[] }
+  > = [];
+
+  root.traverse((child) => {
+    allNodes.push(child);
+    const renderable = child as THREE.Object3D & {
+      material?: THREE.Material | THREE.Material[];
+    };
+    if (renderable.material) {
+      renderableNodes.push(
+        renderable as THREE.Object3D & {
+          material: THREE.Material | THREE.Material[];
+        }
+      );
+    }
+  });
+
+  const targets = { allNodes, renderableNodes };
+  distanceFadeTargetCache.set(root, targets);
+  return targets;
 }
 
 function getObjectMaterials(
@@ -1742,6 +1769,13 @@ export function collectSceneResourceStats(
     treeMaterialRefCount,
   };
 }
+
+type DistanceFadeTargets = {
+  allNodes: THREE.Object3D[];
+  renderableNodes: Array<
+    THREE.Object3D & { material: THREE.Material | THREE.Material[] }
+  >;
+};
 
 function collectTaggedTreeStats(
   root: Pick<THREE.Object3D, 'traverse'>

@@ -312,6 +312,20 @@ describe('render3d visibility helpers', () => {
     expect(child.material.depthWrite).toBe(false);
   });
 
+  it('reuses cached fade target traversal when applying opacity updates', () => {
+    const sourceMaterial = createMockMaterial();
+    const child = createMockObject3D(sourceMaterial);
+    const root = createMockObject3D(undefined, [child]);
+    const originalTraverse = root.traverse;
+    root.traverse = vi.fn((callback) => originalTraverse(callback));
+
+    prepareObjectForDistanceFade(root as never);
+    applyObjectDistanceFade(root as never, 0.5);
+    applyObjectDistanceFade(root as never, 0.25);
+
+    expect(root.traverse).toHaveBeenCalledTimes(1);
+  });
+
   it('clamps camera pitch to a playable range', () => {
     expect(clampCameraPitch(DEFAULT_CAMERA_PITCH)).toBe(DEFAULT_CAMERA_PITCH);
     expect(clampCameraPitch(-5)).toBe(-1.1);
