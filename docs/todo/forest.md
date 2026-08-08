@@ -1,0 +1,15 @@
+- [ ] Add a mushroom ring or stone ring in the middle of large forests
+- [ ] Trees in the middle of large forest may have an occasional stump or fallen tree.
+- [ ] A large forest may have a very large and tall tree deep inside, that is a woodland town of its own. There are a few types - inabitants live (a) inside the hollowed trunk/bark of the tree, (b) high above the other trees in the branches, (c) underneath the tree roots, or (d) a combination where different town maps lead to each level.
+- [ ] Improve the branch generation to make trees
+- [ ] Add pine trees
+- [ ] Add bushes
+- [ ] Sometimes show a stump
+- [ ] Sometimes show a fallen tree
+- [ ] Consider a forest near a river can have a fallen tree across the river to form a bridge without a path/road leading to it
+- [ ] A forest may have a meadow with flowers
+- [ ] A tree may have a hollow
+- [ ] Birds can fly over trees
+- [ ] An owl may live in the hollow of a tree
+- [ ] A tree may have two pairs of initials carved into it with a heart (LM + FG)
+- [ ] A path may be through the woods without any markings other than there are no trees (or perhaps breadcrumbs)

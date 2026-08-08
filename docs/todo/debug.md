@@ -1,0 +1,4 @@
+- [ ] Show a tab where statistics can be displayed such as FPS, objects, memory, CPU, GPU, etc.
+- [ ] Show/Edit world seed
+- [ ] Show GPS coordinates
+- [ ] Show tile x/y position

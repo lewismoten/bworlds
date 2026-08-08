@@ -1,0 +1,8 @@
+- [ ] Add procedural weather conditions - Heavy Rain, Light Rain, Fog, Wind, Clouds, Snow, Hail. 
+- [ ] Change frequency/duration of weather based on time of year and region.
+- [ ] Add atmospheric effects to indicate possible weather conditions. (Red light at dawn, sailers warn, red light at night, sailors delight)
+- [ ] Add wind effects to different POI
+  - [ ] Tree foliage & sound
+  - [ ] Any POI that has a flag or banner (town & dungeon)
+- [ ] Weather fronts are procedurally generated
+- [ ] A seven day forecast can be displayed for the area ( this can be handy for fishing / gardening later )

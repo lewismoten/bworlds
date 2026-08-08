@@ -1,0 +1,60 @@
+- [ ] Towns have levels that determine the population and number of residential and professional buildings.
+- [ ] All buildings in a town have roads that run past them.
+- [ ] All buildings in a town have a sidewalk, path, etc. that lead to the road
+- [ ] Some buildings have fences with an opening leading to the entrance
+
+
+- [ ] Towns can become a simulation game of their own to level up the town, and various progressions can depend on prior progressions
+  - [ ] Progression example: clear nearby wolves, establish logging camp, gather timber, build sawmill, recruit carpenter, build houses, population increases, unlock marketplace, attract traveling merchants
+  - [ ] Inn - unlocks resting, travelers, rumors, quests
+  - [ ] Blacksmith - unlocks repair, weapons, smithing
+  - [ ] Market - unlocks player/npc trading
+  - [ ] Stable - unlocks mounts and travel
+  - [ ] Barracks - unlocks guards and defense quests
+  - [ ] Town Hall - unlocks governance and town projects
+  - [ ] Library - unlocks lore, research, recipes
+  - [ ] Temple - unlocks healing, blessings, resurrection
+  - [ ] Farm - unlocks food production
+  - [ ] Warehouse - increased town storage
+  - [ ] Tavern - social activities and NPC recruitment
+  - [ ] Harbor - Fishing, shpping, sea travel (must build dock nearby in overworld)
+  - [ ] Guild Hall - guild services
+  - [ ] School - Profession advancement
+  - [ ] Arena - PvP, tournaments, spectator events
+  - [ ] Bank - Currency/Item storage
+  - [ ] Workshop - advanced crafting
+  - [ ] Building tiers - Forge, blacksmith shop, smithing guild, royal foundry
+  - [ ] Recruit NPC's from other locations to work at businesses in your town
+  - [ ] As NPC levels up, they can train apprentices
+  - [ ] Construction — place new buildings, expand existing ones, repair ruins, upgrade materials, add floors, walls, roads, bridges, lighting, wells, docks, gates, farms, storage, workshops.
+  - [ ] Infrastructure — roads, water, sewage, power/magic, irrigation, transportation, warehouses, town portals, stables, signage, communications.
+  - [ ] Resource gathering — logging camps, mines, quarries, farms, fisheries, hunting grounds, herb gardens.
+  - [ ] Processing — sawmills, smelters, mills, tanneries, kitchens, breweries, refineries.
+  - [ ] Crafting professions — blacksmith, carpenter, tailor, alchemist, jeweler, cook, engineer, enchanter, mason, leatherworker.
+  - [ ] Service professions — merchant, banker, innkeeper, healer, trainer, stablemaster, auctioneer, courier, barber, repair NPC.
+  - [ ] Population growth — attract settlers, provide housing, recruit specialists, improve safety, provide food, create jobs.
+  - [ ] NPC recruitment — convince named NPCs to move into town, rescue them, hire them, earn their loyalty, or meet prerequisites for their arrival.
+  - [ ] NPC advancement — apprentice becomes master smith, healer opens a clinic, merchant expands inventory, guard becomes captain.
+  - [ ] Commerce — markets, shops, trade posts, auction houses, caravans, merchant routes, taxation, imports and exports.
+  - [ ] Town economy — prices, wages, upkeep, taxes, production bonuses, shortages, surpluses, regional specialties.
+  - [ ] Quests — construction quests, gathering quests, recruitment quests, defense quests, exploration quests, political quests, trade quests, profession quests.
+  - [ ] Defense — guards, militia, towers, walls, gates, patrols, traps, warning systems, barracks.
+  - [ ] Threat removal — eliminate nearby monsters, bandits, infestations, curses, enemy camps, dangerous terrain.
+  - [ ] Territory control — secure nearby mines, forests, farms, roads, bridges, ruins, ports, watchtowers.
+  - [ ] Transportation — unlock roads, boats, mounts, carts, airships, teleportation, fast-travel points.
+  - [ ] Government — elect or appoint leaders, establish laws, taxation, permits, town policies, courts, councils.
+  - [ ] Faction relationships — alliances, reputation, diplomatic missions, rival towns, guild relationships.
+  - [ ] Religion/culture — temples, shrines, monuments, festivals, theaters, libraries, museums, schools.
+  - [ ] Entertainment — taverns, arenas, gambling, races, fishing contests, festivals, minigames.
+  - [ ] Player housing — homes, guild halls, plots, decoration, storage, workshops.
+  - [ ] Guild features — guild headquarters, guild banks, crafting bonuses, guild quests, recruitment halls.
+  - [ ] Knowledge — libraries, universities, research facilities, maps, discovered recipes, technology/magic advancement.
+  - [ ] Health and welfare — clinics, hospitals, herbalists, sanitation, food supply, shelters.
+  - [ ] Prestige — statues, fountains, landmarks, decorative improvements, town banners, architecture.
+  - [ ] Regional influence — town reputation affects surrounding settlements, NPC traffic, trade routes, available quests, political power.
+  - [ ] World events — invasions, fires, storms, plagues, shortages, festivals, monster attacks, migrations.
+  - [ ] Maintenance — repair structures, replenish supplies, pay guards, keep roads usable, maintain defenses.
+  - [ ] town projects can require both players and NPC's to assist in materials: stone, timber, iron, gold, bandits (safety)
+  - [ ] As town improves, safety around town on world map increases, in that lower level chance encounters are closer to town, and higher level chance encounters are further away
+  - [ ] procedurally generated towns are at varrying states of progression to begin with. 
+  - [ ] A new player would be offered to start at or near a town that is most preferable for new low-level players

@@ -1,0 +1,2 @@
+- [ ] Allow two or more cave entrances along the same mountain pass within a certain distance of eachother to act as a tunnel between each other, leading to the same cave system.
+- [ ] Generate a tileable cave system for caves with stalagtights, stalagmites, glowing mushrooms, pools of water, occasional obstacles, rope bridges, etc.
