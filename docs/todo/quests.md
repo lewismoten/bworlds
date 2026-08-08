@@ -23,7 +23,7 @@ Quests may include:
 - [X] Diplomacy quest — negotiate, persuade, mediate, recruit, intimidate, or resolve a dispute.
 - [X] Choice / moral quest — make a decision that changes relationships, rewards, factions, or story outcomes.
 - [X] Faction quest — perform work to gain reputation or advance within an organization.
-- [ ] Companion quest — resolve a party member's personal storyline.
+- [X] Companion quest — resolve a party member's personal storyline.
 - [X] Revenge quest — pursue someone responsible for an earlier event.
 - [X] Recovery quest — reclaim stolen property, territory, equipment, or something lost.
 - [X] Activation quest — turn on generators, shrines, portals, towers, switches, etc.

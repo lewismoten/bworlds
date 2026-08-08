@@ -79,6 +79,7 @@ export function getDefaultQuestPlugins(): QuestTypePlugin[] {
     createStealthQuestPlugin(),
     createAssassinationQuestPlugin(),
     createCaptureQuestPlugin(),
+    createCompanionQuestPlugin(),
     createEscortQuestPlugin(),
     createRescueQuestPlugin(),
     createTrackingQuestPlugin(),
@@ -444,6 +445,58 @@ function createCaptureQuestPlugin(): QuestTypePlugin {
       title: `${seasonLabel} Bring Them In`,
       summary: `${context.npcName} needs someone to track down and capture ${target} rather than kill them.${professionHint}`,
       availability: 'work',
+      sourceNpcId: context.npcId,
+      sourceNpcName: context.npcName,
+    };
+  });
+}
+
+function createCompanionQuestPlugin(): QuestTypePlugin {
+  return createQuestTypePlugin('companion', (context) => {
+    if (
+      context.playerLevel < 6 ||
+      !(
+        context.npcState === 'home' ||
+        context.npcState === 'working'
+      ) ||
+      !(
+        context.professionFamily === 'inn' ||
+        context.professionFamily === 'stable' ||
+        context.professionFamily === 'school' ||
+        context.professionFamily === 'temple'
+      ) ||
+      !hasCompletedQuestTypes(context, companionQuestPrerequisites[context.professionFamily])
+    ) {
+      return null;
+    }
+
+    const questId = `${context.townKey}:${context.npcId}:companion:${context.professionFamily}`;
+    if (context.completedQuestIds.has(questId)) {
+      return null;
+    }
+
+    const storyline =
+      context.professionFamily === 'stable'
+        ? 'help untangle the trailhand feud that split their family and decide whether they are ready to ride beyond town'
+        : context.professionFamily === 'temple'
+          ? 'stand beside them while they settle an old vow that still keeps them tied to the shrine'
+          : context.professionFamily === 'school'
+            ? 'recover their mentor notes and help them choose whether to remain a teacher or follow their own calling'
+            : 'see through the caravan promise they never finished so they can finally speak honestly about leaving home';
+    const professionHint =
+      context.playerProfession === 'guard' ||
+      context.playerProfession === 'scout' ||
+      context.playerProfession === 'scholar' ||
+      context.playerProfession === 'healer'
+        ? ' They trust you enough now to share the personal part of the story.'
+        : '';
+
+    return {
+      id: questId,
+      type: 'companion',
+      title: 'A Trusted Bond',
+      summary: `${context.npcName} asks you to ${storyline}.${professionHint}`,
+      availability: context.npcState === 'home' ? 'home' : 'work',
       sourceNpcId: context.npcId,
       sourceNpcName: context.npcName,
     };
@@ -1375,4 +1428,24 @@ function getSeasonLabel(yearProgress: number): 'Spring' | 'Summer' | 'Autumn' | 
     return 'Autumn';
   }
   return 'Winter';
+}
+
+const companionQuestPrerequisites = {
+  inn: ['challenge', 'survival', 'delivery'],
+  stable: ['escort', 'tracking', 'rescue'],
+  school: ['training', 'puzzle', 'investigation'],
+  temple: ['rescue', 'survival', 'diplomacy'],
+} as const;
+
+function hasCompletedQuestTypes(
+  context: Pick<QuestOfferContext, 'townKey' | 'npcId' | 'completedQuestIds'>,
+  types: readonly string[]
+): boolean {
+  const prefixes = types.map((type) => `${context.townKey}:${context.npcId}:${type}:`);
+  for (const questId of context.completedQuestIds) {
+    if (prefixes.some((prefix) => questId.startsWith(prefix))) {
+      return true;
+    }
+  }
+  return false;
 }

@@ -13,6 +13,7 @@ describe('quest support', () => {
       'stealth',
       'assassination',
       'capture',
+      'companion',
       'escort',
       'rescue',
       'tracking',
@@ -281,6 +282,44 @@ describe('quest support', () => {
       capture.some((offer) => offer.summary.includes('bring them in breathing'))
     ).toBe(true);
     expect(underleveled.some((offer) => offer.type === 'capture')).toBe(false);
+  });
+
+  it('offers companion quests after the same npc has shared enough prior history', () => {
+    const companion = getDefaultQuestRegistry().getOffers({
+      npcId: 'npc:teacher',
+      npcName: 'Iris Juniper',
+      townKey: '3:7',
+      dayProgress: 0.76,
+      yearProgress: 0.32,
+      playerLevel: 7,
+      playerProfession: 'scholar',
+      completedQuestIds: new Set<string>(['3:7:npc:teacher:training:field-notes']),
+      npcState: 'working',
+      profession: 'teacher',
+      professionFamily: 'school',
+      residenceBuildingId: 'home',
+      workplaceBuildingId: 'school',
+    });
+    const locked = getDefaultQuestRegistry().getOffers({
+      npcId: 'npc:teacher',
+      npcName: 'Iris Juniper',
+      townKey: '3:7',
+      dayProgress: 0.76,
+      yearProgress: 0.32,
+      playerLevel: 7,
+      completedQuestIds: new Set<string>(),
+      npcState: 'working',
+      profession: 'teacher',
+      professionFamily: 'school',
+      residenceBuildingId: 'home',
+      workplaceBuildingId: 'school',
+    });
+
+    expect(companion.some((offer) => offer.type === 'companion')).toBe(true);
+    expect(
+      companion.some((offer) => offer.summary.includes('personal part of the story'))
+    ).toBe(true);
+    expect(locked.some((offer) => offer.type === 'companion')).toBe(false);
   });
 
   it('offers rescue quests for staffed civic, temple, and stable roles', () => {

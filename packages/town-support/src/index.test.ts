@@ -468,6 +468,72 @@ describe('town support', () => {
     ).toBe(true);
   });
 
+  it('surfaces companion quest offers after prior quests establish trust with the same npc', () => {
+    const townSamples: Array<[number, number]> = [
+      [3, 7],
+      [10, -4],
+      [25, 9],
+      [48, -16],
+      [120, -80],
+    ];
+    let companionStates: ReturnType<typeof getTownNpcQuestStates> = [];
+
+    outerCompanion: for (const [x, y] of townSamples) {
+      for (let minute = 0; minute < 24 * 60; minute += 30) {
+        const baseStates = getTownNpcQuestStates(
+          x,
+          y,
+          DEFAULT_DAY_LENGTH_MS * (minute / (24 * 60)),
+          {
+            level: 7,
+            profession: 'scholar',
+          }
+        );
+        const prerequisiteIds = baseStates
+          .flatMap((entry) => entry.offers)
+          .filter((offer) =>
+            offer.type === 'escort' ||
+            offer.type === 'tracking' ||
+            offer.type === 'rescue' ||
+            offer.type === 'training' ||
+            offer.type === 'puzzle' ||
+            offer.type === 'investigation' ||
+            offer.type === 'challenge' ||
+            offer.type === 'survival' ||
+            offer.type === 'delivery' ||
+            offer.type === 'diplomacy'
+          )
+          .map((offer) => offer.id);
+        if (prerequisiteIds.length === 0) {
+          continue;
+        }
+        companionStates = getTownNpcQuestStates(
+          x,
+          y,
+          DEFAULT_DAY_LENGTH_MS * (minute / (24 * 60)),
+          {
+            level: 7,
+            profession: 'scholar',
+            completedQuestIds: prerequisiteIds,
+          }
+        );
+        if (
+          companionStates.some((entry) =>
+            entry.offers.some((offer) => offer.type === 'companion')
+          )
+        ) {
+          break outerCompanion;
+        }
+      }
+    }
+
+    expect(
+      companionStates.some((entry) =>
+        entry.offers.some((offer) => offer.type === 'companion')
+      )
+    ).toBe(true);
+  });
+
   it('surfaces crafting and training quest offers from matching town professions', () => {
     const crafting = getTownNpcQuestStates(3, 7, DEFAULT_DAY_LENGTH_MS * 0.5, {
       level: 5,
