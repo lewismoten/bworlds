@@ -25,12 +25,16 @@ describe('debug panel', () => {
       visibilityRadius: 18,
       drawCalls: 42,
       triangles: 2048,
+      points: 96,
+      lines: 18,
       visibleTileCount: 112,
       pendingTileCount: 6,
       object3dCount: 318,
+      groupCount: 54,
       meshCount: 180,
       materialCount: 24,
       geometryCount: 61,
+      geometryMemoryCount: 63,
       textureCount: 7,
       programCount: 12,
       latitude: 32.1234,
@@ -47,6 +51,8 @@ describe('debug panel', () => {
     expect(buildDebugMarkup(snapshot)).toContain('Frame Target');
     expect(buildDebugMarkup(snapshot)).toContain('Perf Tier');
     expect(buildDebugMarkup(snapshot)).toContain('Level');
+    expect(buildDebugMarkup(snapshot)).toContain('GPU Points');
+    expect(buildDebugMarkup(snapshot)).toContain('GPU Geometries');
     expect(buildDebugMarkup(snapshot)).toContain('Materials');
     expect(buildDebugMarkup(snapshot)).toContain('Programs');
     expect(buildDebugMarkup(snapshot)).toContain('alpha');

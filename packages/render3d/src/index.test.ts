@@ -39,6 +39,7 @@ describe('render3d visibility helpers', () => {
 
     expect(collectSceneResourceStats(root as never)).toEqual({
       object3dCount: 4,
+      groupCount: 1,
       meshCount: 3,
       materialCount: 2,
       geometryCount: 2,
@@ -478,6 +479,7 @@ function createMockObject3D(
 ) {
   const node = {
     visible: true,
+    type: geometry ? 'Mesh' : 'Group',
     userData: {},
     material,
     geometry,

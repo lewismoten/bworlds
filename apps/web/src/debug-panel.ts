@@ -7,12 +7,16 @@ export type DebugSnapshot = {
   visibilityRadius: number;
   drawCalls: number;
   triangles: number;
+  points: number;
+  lines: number;
   visibleTileCount: number;
   pendingTileCount: number;
   object3dCount: number;
+  groupCount: number;
   meshCount: number;
   materialCount: number;
   geometryCount: number;
+  geometryMemoryCount: number;
   textureCount: number;
   programCount: number;
   latitude: number;
@@ -39,12 +43,16 @@ export function getDebugSignature(snapshot: DebugSnapshot): string {
     snapshot.visibilityRadius,
     snapshot.drawCalls,
     snapshot.triangles,
+    snapshot.points,
+    snapshot.lines,
     snapshot.visibleTileCount,
     snapshot.pendingTileCount,
     snapshot.object3dCount,
+    snapshot.groupCount,
     snapshot.meshCount,
     snapshot.materialCount,
     snapshot.geometryCount,
+    snapshot.geometryMemoryCount,
     snapshot.textureCount,
     snapshot.programCount,
     snapshot.latitude.toFixed(4),
@@ -100,12 +108,16 @@ export function buildDebugMarkup(snapshot: DebugSnapshot): string {
     <div><dt>Render Radius</dt><dd>${snapshot.visibilityRadius}</dd></div>
     <div><dt>GPU Draws</dt><dd>${snapshot.drawCalls}</dd></div>
     <div><dt>GPU Tris</dt><dd>${snapshot.triangles}</dd></div>
+    <div><dt>GPU Points</dt><dd>${snapshot.points}</dd></div>
+    <div><dt>GPU Lines</dt><dd>${snapshot.lines}</dd></div>
     <div><dt>Visible Tiles</dt><dd>${snapshot.visibleTileCount}</dd></div>
     <div><dt>Pending Tiles</dt><dd>${snapshot.pendingTileCount}</dd></div>
     <div><dt>Objects</dt><dd>${snapshot.object3dCount}</dd></div>
+    <div><dt>Groups</dt><dd>${snapshot.groupCount}</dd></div>
     <div><dt>Meshes</dt><dd>${snapshot.meshCount}</dd></div>
     <div><dt>Materials</dt><dd>${snapshot.materialCount}</dd></div>
     <div><dt>Geometries</dt><dd>${snapshot.geometryCount}</dd></div>
+    <div><dt>GPU Geometries</dt><dd>${snapshot.geometryMemoryCount}</dd></div>
     <div><dt>Textures</dt><dd>${snapshot.textureCount}</dd></div>
     <div><dt>Programs</dt><dd>${snapshot.programCount}</dd></div>
     <div><dt>Heap</dt><dd>${heapLabel}</dd></div>

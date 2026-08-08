@@ -463,19 +463,19 @@ That will distinguish **expensive startup/build allocation** from **ongoing allo
 
 I would add a little developer overlay now.
 
-* [ ] Display `renderer.info.render.calls`.
-* [ ] Display `renderer.info.render.triangles`.
-* [ ] Display `renderer.info.render.points`.
-* [ ] Display `renderer.info.render.lines`.
-* [ ] Display `renderer.info.memory.geometries`.
+* [x] Display `renderer.info.render.calls`.
+* [x] Display `renderer.info.render.triangles`.
+* [x] Display `renderer.info.render.points`.
+* [x] Display `renderer.info.render.lines`.
+* [x] Display `renderer.info.memory.geometries`.
 * [x] Display `renderer.info.memory.textures`.
 * [x] Display `renderer.info.programs?.length`.
 * [x] Count active `Object3D`s recursively.
 * [x] Count `Mesh` objects.
-* [ ] Count `Group` objects.
+* [x] Count `Group` objects.
 * [x] Count unique material identities.
 * [x] Count unique geometry identities.
-* [ ] Count visible tiles.
+* [x] Count visible tiles.
 * [ ] Count visible trees.
 * [ ] Calculate meshes per visible tree.
 * [ ] Calculate materials per visible tree.

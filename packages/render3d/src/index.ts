@@ -55,12 +55,16 @@ type Render3DController = {
   getStats(): {
     drawCalls: number;
     triangles: number;
+    points: number;
+    lines: number;
     visibleTileCount: number;
     pendingTileCount: number;
     object3dCount: number;
+    groupCount: number;
     meshCount: number;
     materialCount: number;
     geometryCount: number;
+    geometryMemoryCount: number;
     textureCount: number;
     programCount: number;
   };
@@ -115,6 +119,7 @@ type TileBuildCache = {
 
 type SceneResourceStats = {
   object3dCount: number;
+  groupCount: number;
   meshCount: number;
   materialCount: number;
   geometryCount: number;
@@ -496,12 +501,16 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     return {
       drawCalls: renderer.info.render.calls,
       triangles: renderer.info.render.triangles,
+      points: renderer.info.render.points,
+      lines: renderer.info.render.lines,
       visibleTileCount: visibleTileNodes.size,
       pendingTileCount: pendingWorldBuild.queue.length,
       object3dCount: sceneResourceStats.object3dCount,
+      groupCount: sceneResourceStats.groupCount,
       meshCount: sceneResourceStats.meshCount,
       materialCount: sceneResourceStats.materialCount,
       geometryCount: sceneResourceStats.geometryCount,
+      geometryMemoryCount: renderer.info.memory.geometries,
       textureCount: renderer.info.memory.textures,
       programCount: rendererInfo.programs?.length ?? 0,
     };
@@ -1464,12 +1473,16 @@ export function collectSceneResourceStats(
   root: Pick<THREE.Object3D, 'traverse'>
 ): SceneResourceStats {
   let object3dCount = 0;
+  let groupCount = 0;
   let meshCount = 0;
   const materials = new Set<THREE.Material>();
   const geometries = new Set<unknown>();
 
   root.traverse((child) => {
     object3dCount += 1;
+    if ((child as THREE.Object3D).type === 'Group') {
+      groupCount += 1;
+    }
 
     const renderable = child as THREE.Object3D & {
       geometry?: unknown;
@@ -1490,6 +1503,7 @@ export function collectSceneResourceStats(
 
   return {
     object3dCount,
+    groupCount,
     meshCount,
     materialCount: materials.size,
     geometryCount: geometries.size,
