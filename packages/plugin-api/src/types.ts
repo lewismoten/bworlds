@@ -484,6 +484,7 @@ export interface Paint2DOverlayContext {
 
 export interface Create3DModelContext extends TileCoordinate {
   three: ThreeHostLike;
+  detailLevel?: 'full' | 'low';
 }
 
 export interface Sync3DModelContext extends TileCoordinate {

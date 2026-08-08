@@ -191,9 +191,19 @@ export function createForestTilePlugin(): RuntimePlugin {
         }
         return true;
       }),
-      create3DModel({ three, tileX, tileY }: Create3DModelContext) {
+      create3DModel({
+        three,
+        tileX,
+        tileY,
+        detailLevel = 'full',
+      }: Create3DModelContext) {
         const group = new three.Group();
-        const descriptors = getForestTreeDescriptors(tileX, tileY);
+        const descriptors =
+          detailLevel === 'low'
+            ? getForestTreeDescriptors(tileX, tileY).filter(
+                (_descriptor, index) => index % 2 === 0
+              )
+            : getForestTreeDescriptors(tileX, tileY);
         const geometry = getTreeGeometry(three);
 
         for (const descriptor of descriptors) {
@@ -206,6 +216,18 @@ export function createForestTilePlugin(): RuntimePlugin {
           trunk.position.y = descriptor.trunkHeight * 0.5;
           trunk.scale.y = descriptor.trunkHeight;
           tree.add(trunk);
+
+          if (detailLevel === 'low') {
+            const canopy = new three.Mesh(
+              geometry.foliage,
+              style.foliageMaterial
+            );
+            canopy.position.set(0, descriptor.trunkHeight * 0.9, 0);
+            canopy.scale.set(0.84, 0.72, 0.84);
+            tree.add(canopy);
+            group.add(tree);
+            continue;
+          }
 
           for (const branch of descriptor.branches) {
             const limb = new three.Mesh(geometry.branch, style.trunkMaterial);

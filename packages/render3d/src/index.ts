@@ -69,6 +69,7 @@ type DynamicTileNode = {
   modelRoot?: THREE.Object3D | null;
   modelVisibilityOpacity?: number;
   distanceFadeEligible?: boolean;
+  detailLevel?: 'full' | 'low';
   sync3DModel?: NonNullable<TilePlugin['sync3DModel']>;
 };
 type ConstellationStarLike = NonNullable<
@@ -84,6 +85,7 @@ const CHUNK_RADIUS = 18;
 const NEAR_VISIBLE_RADIUS = 6;
 const FACING_BUCKETS = 12;
 const WORLD_SYNC_BATCH_SIZE = 28;
+const LOW_DETAIL_MODEL_DISTANCE = 6.5;
 const FAR_MODEL_FULL_VISIBILITY_DISTANCE = 8;
 const FAR_MODEL_REVEAL_DISTANCE_VARIANCE = 8;
 const FAR_MODEL_FADE_DISTANCE = 1.75;
@@ -228,7 +230,13 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     };
   }
 
-  function buildTileNode(state, registry, x, y): DynamicTileNode {
+  function buildTileNode(
+    state,
+    registry,
+    x,
+    y,
+    detailLevel: 'full' | 'low' = 'full'
+  ): DynamicTileNode {
     const tileNode = new THREE.Group();
     const tile = state.getCurrentTile(x, y);
     const definition = getTileDefinitionFromRegistry(tile.kind);
@@ -249,6 +257,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       tile,
       tileX: x,
       tileY: y,
+      detailLevel,
     });
 
     if (pluginModel) {
@@ -287,6 +296,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       modelVisibilityOpacity: 1,
       distanceFadeEligible:
         Boolean(pluginModel) && definition.walkable && !isWaterKind(tile.kind),
+      detailLevel,
       sync3DModel: tilePlugin?.sync3DModel,
     };
   }
@@ -352,7 +362,15 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       if (visibleTileNodes.has(entry.key)) {
         continue;
       }
-      const tileNode = buildTileNode(state, registry, entry.x, entry.y);
+      const tileNode = buildTileNode(
+        state,
+        registry,
+        entry.x,
+        entry.y,
+        getTileModelDetailLevel(
+          Math.hypot(entry.x - state.player.x, entry.y - state.player.y)
+        )
+      );
       visibleTileNodes.set(entry.key, tileNode);
       worldRoot.add(tileNode.node);
     }
@@ -393,6 +411,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       options.timeMs ?? performance.now(),
       environment
     );
+    syncTileModelDetailLevels(state, getActivePluginRegistry());
     updateFarLandModelVisibility([...visibleTileNodes.values()], state);
     syncDynamicTileNodes([...visibleTileNodes.values()], {
       three: THREE,
@@ -434,6 +453,36 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       visibleTileCount: visibleTileNodes.size,
       pendingTileCount: pendingWorldBuild.queue.length,
     };
+  }
+
+  function syncTileModelDetailLevels(
+    state: Render3DState,
+    registry: ReturnType<typeof getActivePluginRegistry>
+  ): void {
+    for (const [key, entry] of visibleTileNodes.entries()) {
+      if (!entry.modelRoot) {
+        continue;
+      }
+      const distance = Math.hypot(
+        entry.tileX - state.player.x,
+        entry.tileY - state.player.y
+      );
+      const desiredDetailLevel = getTileModelDetailLevel(distance);
+      if ((entry.detailLevel ?? 'full') === desiredDetailLevel) {
+        continue;
+      }
+
+      const nextEntry = buildTileNode(
+        state,
+        registry,
+        entry.tileX,
+        entry.tileY,
+        desiredDetailLevel
+      );
+      visibleTileNodes.set(key, nextEntry);
+      worldRoot.remove(entry.node);
+      worldRoot.add(nextEntry.node);
+    }
   }
 
   function getTileSurfaceProfile(state, tile, tileX, tileY) {
@@ -1147,6 +1196,13 @@ export function getFarLandModelOpacity(
 
   const fadeProgress = (distance - revealDistance) / Math.max(0.001, fadeDistance);
   return clamp01(1 - fadeProgress);
+}
+
+export function getTileModelDetailLevel(
+  distance: number,
+  lowDetailDistance = LOW_DETAIL_MODEL_DISTANCE
+): 'full' | 'low' {
+  return distance >= lowDetailDistance ? 'low' : 'full';
 }
 
 function updateFarLandModelVisibility(

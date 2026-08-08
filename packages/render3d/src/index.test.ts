@@ -8,6 +8,7 @@ import {
   getSkyConstellationSignature,
   getSkyEventSignature,
   getSkyMilkyWaySignature,
+  getTileModelDetailLevel,
   getVisibleWorldTileBuildOrder,
   syncDynamicTileNodes,
   shouldRenderWorldTile,
@@ -97,6 +98,13 @@ describe('render3d visibility helpers', () => {
         sample: () => 0,
       })
     ).toBe(0.5);
+  });
+
+  it('switches to low-detail models beyond the lod distance', () => {
+    expect(getTileModelDetailLevel(3)).toBe('full');
+    expect(getTileModelDetailLevel(6.49)).toBe('full');
+    expect(getTileModelDetailLevel(6.5)).toBe('low');
+    expect(getTileModelDetailLevel(10)).toBe('low');
   });
 
   it('uses coarse sky signatures so tiny celestial drift does not rebuild sky layers', () => {

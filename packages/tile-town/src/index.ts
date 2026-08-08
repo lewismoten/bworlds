@@ -206,6 +206,7 @@ export function createTownTilePlugin(): RuntimePlugin {
       tile,
       tileX,
       tileY,
+      detailLevel = 'full',
     }: Create3DModelContext & { tile: TileLike }) {
       const style = getTownStyle(three, tileX, tileY);
       const descriptors = getTownDescriptors(tileX, tileY);
@@ -226,6 +227,11 @@ export function createTownTilePlugin(): RuntimePlugin {
         );
         body.position.y = descriptor.height * 0.5;
         building.add(body);
+
+        if (detailLevel === 'low') {
+          group.add(building);
+          continue;
+        }
 
         const roof = new three.Mesh(
           new three.ConeGeometry(
@@ -272,6 +278,10 @@ export function createTownTilePlugin(): RuntimePlugin {
         }
 
         group.add(building);
+      }
+
+      if (detailLevel === 'low') {
+        return group;
       }
 
       if (tile.poi?.name) {
