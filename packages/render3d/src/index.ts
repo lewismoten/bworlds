@@ -19,6 +19,10 @@ import {
   type SurfaceBoundaryRole3D,
 } from '@bworlds/plugin-api';
 
+type CelestialEnvironmentOverrides = Parameters<
+  typeof applyCelestialEnvironmentOverrides
+>[1];
+
 const TILE_SIZE = 1;
 const CHUNK_RADIUS = 18;
 const NEAR_VISIBLE_RADIUS = 6;
@@ -814,7 +818,7 @@ export function create3DRenderer(host) {
   function updateSkyAndLights(worldX, worldY, timeMs, environment) {
     const cycle = applyCelestialEnvironmentOverrides(
       getDaylightCycleState(timeMs, environment.cycle ?? {}),
-      (environment.celestial ?? {}) as any
+      (environment.celestial ?? {}) as CelestialEnvironmentOverrides
     );
     const dayBlend = cycle.daylight;
     const twilightBlend = Math.max(0, 1 - Math.abs(cycle.daylight - 0.5) * 2);
