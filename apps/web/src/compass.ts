@@ -5,6 +5,10 @@ export function easeAngle(current: number, target: number, factor: number) {
   return current + delta * factor;
 }
 
+export function getCompassNeedleRotation(facingAngle: number) {
+  return facingAngle + Math.PI / 2;
+}
+
 export function drawCompassDial(
   canvas: HTMLCanvasElement | null,
   facingAngle: number
@@ -77,7 +81,7 @@ export function drawCompassDial(
   });
 
   context.save();
-  context.rotate(facingAngle - Math.PI / 2);
+  context.rotate(getCompassNeedleRotation(facingAngle));
   context.fillStyle = '#d54343';
   context.beginPath();
   context.moveTo(0, -radius + 24);

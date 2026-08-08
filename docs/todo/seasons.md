@@ -77,3 +77,4 @@ add a outer globe of stars in the sky that appear at night with procedurally gen
 - [x] Clicking the Trimekeeper/Model/Compass tabs should hide all aother content except the selected content
 - [x] The compass should have four buttons to make me face North, East, West, or South
 - [x] The compass needle should be red/black. Red should point north.
+- [x] When I click the "North" button, the compass red needle should be on "N" at the top.
