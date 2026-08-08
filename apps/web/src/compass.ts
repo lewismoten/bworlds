@@ -137,6 +137,21 @@ export function getCompassWobbleBoost(current: number, target: number) {
   return Math.sign(delta) * Math.min(0.34, Math.abs(delta) * 0.16);
 }
 
+export function advanceDisplayedCompassHeading(
+  currentHeadingAngle: number | null,
+  targetHeadingAngle: number | null,
+  draggingHeading: boolean,
+  factor = 0.22
+) {
+  if (typeof targetHeadingAngle !== 'number') {
+    return null;
+  }
+  if (draggingHeading || typeof currentHeadingAngle !== 'number') {
+    return targetHeadingAngle;
+  }
+  return easeAngle(currentHeadingAngle, targetHeadingAngle, factor);
+}
+
 export function advanceCompassState(
   state: {
     angle: number;

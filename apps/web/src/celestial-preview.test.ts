@@ -86,6 +86,8 @@ describe('celestial preview helpers', () => {
     expect(midnight.emissiveIntensity).toBeGreaterThan(noon.emissiveIntensity);
     expect(noon.sunFillIntensity).toBeGreaterThan(midnight.sunFillIntensity);
     expect(noon.bounceFillIntensity).toBeGreaterThan(midnight.bounceFillIntensity);
+    expect(noon.sunGlowOpacity).toBeGreaterThan(midnight.sunGlowOpacity);
+    expect(midnight.moonEmissiveIntensity).toBeGreaterThan(noon.moonEmissiveIntensity);
     expect(noon.glowOpacity).toBeGreaterThan(midnight.glowOpacity);
   });
 
@@ -101,8 +103,10 @@ describe('celestial preview helpers', () => {
 
     expect(daylightShadow.sunCastShadow).toBe(true);
     expect(daylightShadow.cameraExtent).toBeGreaterThanOrEqual(13);
-    expect(daylightShadow.mapSize).toBeGreaterThanOrEqual(1280);
+    expect(daylightShadow.mapSize).toBeGreaterThanOrEqual(1536);
     expect(daylightShadow.bias).toBeLessThan(0);
+    expect(daylightShadow.normalBias).toBeGreaterThan(0);
+    expect(daylightShadow.radius).toBeGreaterThan(2);
     expect(nightShadow.sunCastShadow).toBe(false);
   });
 

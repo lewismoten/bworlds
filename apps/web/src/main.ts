@@ -34,6 +34,7 @@ import {
   serializeSessionSnapshot,
 } from './session-state.ts';
 import {
+  advanceDisplayedCompassHeading,
   advanceCompassState,
   drawCompassDial,
   easeAngle,
@@ -438,6 +439,12 @@ const compassState = {
   initialized: false,
 };
 const compassHeadingState = {
+  angle:
+    typeof savedSession?.compassHeadingAngle === 'number'
+      ? savedSession.compassHeadingAngle
+      : null,
+};
+const compassHeadingVisualState = {
   angle:
     typeof savedSession?.compassHeadingAngle === 'number'
       ? savedSession.compassHeadingAngle
@@ -1180,7 +1187,10 @@ function render() {
   drawCompassDial(
     compassDialCanvas,
     updateDisplayedCompass(state.player.facing),
-    compassHeadingState.angle
+    updateDisplayedCompassHeading(
+      compassHeadingState.angle,
+      compassDialPointerState.draggingMode === 'heading-bug'
+    )
   );
   updateStatus();
 }
@@ -1382,6 +1392,18 @@ function updateDisplayedCompass(targetAngle: number) {
   return compassState.angle;
 }
 
+function updateDisplayedCompassHeading(
+  targetHeadingAngle: number | null,
+  draggingHeading: boolean
+) {
+  compassHeadingVisualState.angle = advanceDisplayedCompassHeading(
+    compassHeadingVisualState.angle,
+    targetHeadingAngle,
+    draggingHeading
+  );
+  return compassHeadingVisualState.angle;
+}
+
 function faceDirection(angle: number) {
   if (compassState.initialized) {
     compassState.velocity += getCompassWobbleBoost(compassState.angle, angle);
@@ -1514,7 +1536,10 @@ compassDialCanvas?.addEventListener('pointerdown', (event) => {
   compassDialPointerState.startPointerAngle = angle;
   compassDialPointerState.draggedHeading = false;
   compassDialCanvas.setPointerCapture(event.pointerId);
-  if (interactionMode === 'heading-bug') {
+  if (
+    interactionMode === 'heading-bug' &&
+    typeof compassHeadingState.angle !== 'number'
+  ) {
     compassHeadingState.angle = angle;
     render();
   }
