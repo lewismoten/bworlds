@@ -608,6 +608,19 @@ export function createForestTilePlugin(): RuntimePlugin {
 
         for (const descriptor of descriptors) {
           const style = getTreeStyle(three, tileX, tileY, descriptor.variety);
+          if (detailLevel === 'low') {
+            addLowDetailForestTreeMeshes(
+              three,
+              group,
+              geometry,
+              style,
+              tileX,
+              tileY,
+              descriptor
+            );
+            continue;
+          }
+
           const tree = new three.Group();
           tree.position.set(tileX + descriptor.x, 0, tileY + descriptor.y);
           tree.scale.setScalar(descriptor.scale);
@@ -621,27 +634,6 @@ export function createForestTilePlugin(): RuntimePlugin {
           trunk.position.y = descriptor.trunkHeight * 0.5;
           trunk.scale.y = descriptor.trunkHeight;
           tree.add(trunk);
-
-          if (detailLevel === 'low') {
-            const canopy = new three.Mesh(
-              geometry.foliage,
-              style.foliageMaterial
-            );
-            canopy.position.set(
-              0,
-              descriptor.trunkHeight * (descriptor.form === 'pine' ? 0.74 : 0.9),
-              0
-            );
-            canopy.scale.set(
-              descriptor.form === 'pine' ? 0.54 : 0.84,
-              descriptor.form === 'pine' ? 1.18 : 0.72,
-              descriptor.form === 'pine' ? 0.54 : 0.84
-            );
-            tagForestFoliageWind(canopy, tileX, tileY, descriptor.variety, 0);
-            tree.add(canopy);
-            group.add(tree);
-            continue;
-          }
 
           for (const branch of descriptor.branches) {
             const limb = new three.Mesh(geometry.branch, style.trunkMaterial);
@@ -1314,6 +1306,55 @@ function getForestFireflies(three: ThreeHostLike, tileX: number, tileY: number) 
   };
 
   return [points];
+}
+
+function addLowDetailForestTreeMeshes(
+  three: ThreeHostLike,
+  group: ThreeObject3DLike,
+  geometry: TreeGeometry,
+  style: ForestTreeStyle,
+  tileX: number,
+  tileY: number,
+  descriptor: ForestTreeDescriptor
+) {
+  const trunk = new three.Mesh(geometry.trunk, style.trunkMaterial);
+  trunk.position.set(
+    tileX + descriptor.x,
+    descriptor.trunkHeight * descriptor.scale * 0.5,
+    tileY + descriptor.y
+  );
+  trunk.scale.set(
+    descriptor.scale,
+    descriptor.trunkHeight * descriptor.scale,
+    descriptor.scale
+  );
+  trunk.userData = {
+    ...(trunk.userData ?? {}),
+    [TREE_FORM_KEY]: descriptor.form,
+    [RENDER_STATS_CATEGORY_KEY]: 'tree',
+  };
+  group.add(trunk);
+
+  const canopy = new three.Mesh(geometry.foliage, style.foliageMaterial);
+  canopy.position.set(
+    tileX + descriptor.x,
+    descriptor.trunkHeight *
+      descriptor.scale *
+      (descriptor.form === 'pine' ? 0.74 : 0.9),
+    tileY + descriptor.y
+  );
+  canopy.scale.set(
+    descriptor.scale * (descriptor.form === 'pine' ? 0.54 : 0.84),
+    descriptor.scale * (descriptor.form === 'pine' ? 1.18 : 0.72),
+    descriptor.scale * (descriptor.form === 'pine' ? 0.54 : 0.84)
+  );
+  canopy.userData = {
+    ...(canopy.userData ?? {}),
+    [TREE_FORM_KEY]: descriptor.form,
+    [RENDER_STATS_CATEGORY_KEY]: 'tree',
+  };
+  tagForestFoliageWind(canopy, tileX, tileY, descriptor.variety, 0);
+  group.add(canopy);
 }
 
 function createForestFloorDetailDescriptor(

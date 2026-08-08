@@ -529,7 +529,10 @@ describe('tile forest', () => {
 
     expect(lowModel.children.length).toBeLessThan(fullModel.children.length);
     expect(
-      lowModel.children.every((tree) => tree.children.length <= 2)
+      lowModel.children.every((node) => node.children.length === 0)
+    ).toBe(true);
+    expect(
+      lowModel.children.every((node) => node.userData?.renderStatKind === 'tree')
     ).toBe(true);
   });
 
@@ -597,8 +600,49 @@ describe('tile forest', () => {
       fullPines.some((tree) => tree.children.length > 3)
     ).toBe(true);
     expect(
-      lowPines.every((tree) => tree.children.length <= 2)
+      lowPines.every((tree) => tree.children.length === 0)
     ).toBe(true);
+  });
+
+  it('flattens low-detail tree meshes instead of creating one group per tree', () => {
+    const plugin = createForestTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'forest');
+    const state = {
+      player: { x: 0, y: 0, facing: 0 },
+      getCurrentContext() {
+        return { id: 'overworld', type: 'overworld', depth: 0 };
+      },
+      getCurrentTile() {
+        return { kind: 'forest' };
+      },
+      getTileDefinition() {
+        return {
+          name: 'Forest',
+          color: '#000000',
+          miniColor: '#111111',
+          walkable: true,
+          wallHeight: 0.38,
+        };
+      },
+    };
+
+    const lowModel = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'forest' },
+      tileX: 8,
+      tileY: 6,
+      detailLevel: 'low',
+    }) as FakeGroup;
+
+    const groupedTrees = lowModel.children.filter((child) => child instanceof FakeGroup);
+    const taggedTreeMeshes = lowModel.children.filter(
+      (child) => child.userData?.renderStatKind === 'tree'
+    );
+
+    expect(groupedTrees.length).toBe(0);
+    expect(taggedTreeMeshes.length).toBeGreaterThan(0);
+    expect(taggedTreeMeshes.length % 2).toBe(0);
   });
 
   it('generates an occasional mushroom or stone ring for large forests', () => {
