@@ -68,6 +68,28 @@ describe('core utilities', () => {
     expect(left[0].connections.length).toBeGreaterThanOrEqual(4);
   });
 
+  it('limits repeated constellation prefixes and suffixes while allowing figure-style names', () => {
+    const constellations = generateConstellations('repeat-spec', { count: 12 });
+    const prefixCounts = new Map<string, number>();
+    const suffixCounts = new Map<string, number>();
+    let figureNames = 0;
+
+    constellations.forEach(({ name }) => {
+      if (name.startsWith('The ') || name.includes("'s ")) {
+        figureNames += 1;
+        return;
+      }
+
+      const [prefix, suffix] = name.split(' ');
+      prefixCounts.set(prefix, (prefixCounts.get(prefix) ?? 0) + 1);
+      suffixCounts.set(suffix, (suffixCounts.get(suffix) ?? 0) + 1);
+    });
+
+    expect(Math.max(...prefixCounts.values())).toBeLessThanOrEqual(2);
+    expect(Math.max(...suffixCounts.values())).toBeLessThanOrEqual(2);
+    expect(figureNames).toBeGreaterThan(0);
+  });
+
   it('shifts sunrise and daylight length across the seasonal year', () => {
     const winter = getDaylightCycleState(
       DEFAULT_DAY_LENGTH_MS * Math.floor(DEFAULT_YEAR_LENGTH_DAYS * 0.75),
@@ -89,6 +111,17 @@ describe('core utilities', () => {
     expect(summer.sunriseProgress).toBeLessThan(winter.sunriseProgress);
     expect(summer.sunsetProgress).toBeGreaterThan(winter.sunsetProgress);
     expect(summer.activeConstellation.name).not.toBe(winter.activeConstellation.name);
+  });
+
+  it('adjusts meridian height based on observer latitude', () => {
+    const equatorNoon = getDaylightCycleState(DEFAULT_DAY_LENGTH_MS * 0.5, {
+      observerLatitudeDegrees: 0,
+    });
+    const northernNoon = getDaylightCycleState(DEFAULT_DAY_LENGTH_MS * 0.5, {
+      observerLatitudeDegrees: 60,
+    });
+
+    expect(equatorNoon.sunAltitude).toBeGreaterThan(northernNoon.sunAltitude);
   });
 
   it('provides shared world-clock helpers for offset and preset time changes', () => {

@@ -105,6 +105,7 @@ export interface WorldEnvironmentCycleLike {
   constellationCount?: number;
   constellationSeed?: string;
   seasonDaylightAmplitude?: number;
+  observerLatitudeDegrees?: number;
 }
 
 export interface WorldEnvironmentSkyLike {

@@ -23,20 +23,20 @@ add a outer globe of stars in the sky that appear at night with procedurally gen
 - [x] Amount of daylight/night time on time keeper does not appear to change based on the time of year
 - [x] Sun is not visible at dawn
 - [x] Night sky should still be visible when facing west just before dawn, and be able to watch the sun light chase it away as the sun rises
-- [ ] Stars are appearing in front of the land when they are below the horizon.
-- [ ] As stars get close to the horizon, they should probably fade
-- [ ] Stars should be different sizes/brightnesses
-- [ ] Constellations should appear with a faded blue line between the connected stars in the sky
-- [ ] There should not be more than 2 of the same suffixes chosen for constellations
-- [ ] There should not be more than 2 of the same prefixes chosen for constellations
-- [ ] Some constallations can be nounce, mainly describing simple things like a tree, animal, giant, a persons name and a part of a body ("Andre's Arm"),
-- [ ] date/time in upper left corner can not be seen. it is clipped.
-- [ ] The celestial ring should actually rotatate rather than highlight the constellation name.
-- [ ] Constellations should be drawn on the cellestial ring.
-- [ ] An arrow or marker of some kind should point to the current time of day and constellation as they rotate.
-- [ ] An moon ring should appear between the day/night cycle, and the celestrial ring, which would show the phase of the moon, and rotate accordingly. Their could be simply four phases, eight, or 16
-- [ ] Dawn should change to sunrise, and the sun should be rising on the horizon in the east
-- [ ] West should change to sunset, and the sun shold be setting on the horizon in the west
-- [ ] Noon should be the sun at meridian at its highest point based on the season/tilt of the planet
-- [ ] Based on current GPS coordinates, the celestial bodies may appear upside down, and the tilt of the plannet is different. the sun at meridian may appear overhead or not.
-- [ ] The moon should appear with its own traveling path across the sky, using earth as a reference of how a moon travels. The moon may be visible during the day (not as bright), if the planet does not block it.
+- [x] Stars are appearing in front of the land when they are below the horizon.
+- [x] As stars get close to the horizon, they should probably fade
+- [x] Stars should be different sizes/brightnesses
+- [x] Constellations should appear with a faded blue line between the connected stars in the sky
+- [x] There should not be more than 2 of the same suffixes chosen for constellations
+- [x] There should not be more than 2 of the same prefixes chosen for constellations
+- [x] Some constallations can be nounce, mainly describing simple things like a tree, animal, giant, a persons name and a part of a body ("Andre's Arm"),
+- [x] date/time in upper left corner can not be seen. it is clipped.
+- [x] The celestial ring should actually rotatate rather than highlight the constellation name.
+- [x] Constellations should be drawn on the cellestial ring.
+- [x] An arrow or marker of some kind should point to the current time of day and constellation as they rotate.
+- [x] An moon ring should appear between the day/night cycle, and the celestrial ring, which would show the phase of the moon, and rotate accordingly. Their could be simply four phases, eight, or 16
+- [x] Dawn should change to sunrise, and the sun should be rising on the horizon in the east
+- [x] West should change to sunset, and the sun shold be setting on the horizon in the west
+- [x] Noon should be the sun at meridian at its highest point based on the season/tilt of the planet
+- [x] Based on current GPS coordinates, the celestial bodies may appear upside down, and the tilt of the plannet is different. the sun at meridian may appear overhead or not.
+- [x] The moon should appear with its own traveling path across the sky, using earth as a reference of how a moon travels. The moon may be visible during the day (not as bright), if the planet does not block it.

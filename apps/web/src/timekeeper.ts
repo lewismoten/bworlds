@@ -28,8 +28,11 @@ export function drawTimeWheel(canvas: HTMLCanvasElement | null, cycle: DaylightC
   const outerRadius = Math.min(width, height) * 0.36;
   const constellationOuterRadius = outerRadius * 1.45;
   const constellationInnerRadius = outerRadius * 1.13;
+  const moonOuterRadius = outerRadius * 1.03;
+  const moonInnerRadius = outerRadius * 0.84;
   const innerRadius = outerRadius * 0.56;
   const wheelRotation = -cycle.dayProgress * Math.PI * 2;
+  const seasonRotation = -cycle.yearProgress * Math.PI * 2;
   const ringEntries = getTimeWheelConstellationEntries(cycle);
   const windowGradient = context.createLinearGradient(0, -outerRadius, 0, outerRadius);
   windowGradient.addColorStop(0, '#9fe1ff');
@@ -50,6 +53,7 @@ export function drawTimeWheel(canvas: HTMLCanvasElement | null, cycle: DaylightC
   context.fill();
 
   context.save();
+  context.rotate(seasonRotation);
   drawConstellationRing(
     context,
     ringEntries,
@@ -59,6 +63,16 @@ export function drawTimeWheel(canvas: HTMLCanvasElement | null, cycle: DaylightC
   );
   context.restore();
 
+  drawRingMarker(context, -Math.PI / 2, constellationOuterRadius + 8, '#f6f8ea');
+
+  context.save();
+  context.rotate(cycle.moonPhaseIndex / Math.max(1, cycle.constellations.length) * Math.PI * 2);
+  drawMoonRing(context, cycle, moonInnerRadius, moonOuterRadius);
+  context.restore();
+
+  drawRingMarker(context, -Math.PI / 2, moonOuterRadius + 6, '#dce9ff');
+
+  context.save();
   context.rotate(wheelRotation);
 
   drawDaylightRing(context, cycle, outerRadius, innerRadius);
@@ -76,7 +90,7 @@ export function drawTimeWheel(canvas: HTMLCanvasElement | null, cycle: DaylightC
     context.stroke();
   }
 
-  const sunAngle = cycle.sunriseAzimuth - Math.PI / 2;
+  const sunAngle = -Math.PI / 2;
   context.fillStyle = '#ffcf6b';
   context.beginPath();
   context.arc(
@@ -98,7 +112,7 @@ export function drawTimeWheel(canvas: HTMLCanvasElement | null, cycle: DaylightC
   );
   context.fill();
 
-  const moonAngle = cycle.sunsetAzimuth - Math.PI / 2;
+  const moonAngle = Math.PI / 2;
   context.fillStyle = '#d9e8ff';
   context.beginPath();
   context.arc(
@@ -121,6 +135,8 @@ export function drawTimeWheel(canvas: HTMLCanvasElement | null, cycle: DaylightC
   context.fill();
 
   context.restore();
+
+  drawRingMarker(context, -Math.PI / 2, outerRadius + 10, '#ffcf6b');
 
   context.fillStyle = '#081019';
   context.beginPath();
@@ -205,26 +221,19 @@ function drawConstellationRing(
     context.rotate(centerAngle);
     context.translate(0, -((innerRadius + outerRadius) * 0.5));
     context.fillStyle = entry.isActive ? '#f5fbff' : 'rgba(206, 220, 235, 0.86)';
-    context.font = entry.isActive ? '600 11px Trebuchet MS' : '10px Trebuchet MS';
+    context.font = entry.isActive ? '600 10px Trebuchet MS' : '10px Trebuchet MS';
     context.textAlign = 'center';
-    context.fillText(entry.name, 0, -4);
-
-    if (entry.isActive) {
-      context.fillStyle = '#ffcf6b';
-      context.beginPath();
-      context.arc(0, 12, 4, 0, Math.PI * 2);
-      context.fill();
-    }
+    context.fillText(entry.name, 0, -18);
+    drawConstellationGlyph(
+      context,
+      cycle.constellations[entry.index],
+      0,
+      4,
+      outerRadius - innerRadius - 8,
+      22
+    );
     context.restore();
   });
-
-  const activeAngle = (cycle.activeConstellation?.daylightBias ?? 0) * 0 + cycle.sunriseAzimuth - Math.PI / 2;
-  context.strokeStyle = 'rgba(255, 208, 112, 0.4)';
-  context.lineWidth = 2;
-  context.beginPath();
-  context.moveTo(Math.cos(activeAngle) * innerRadius, Math.sin(activeAngle) * innerRadius);
-  context.lineTo(Math.cos(activeAngle) * outerRadius, Math.sin(activeAngle) * outerRadius);
-  context.stroke();
 }
 
 function drawDaylightRing(
@@ -255,6 +264,113 @@ function drawDaylightRing(
   context.arc(0, 0, innerRadius, duskAngle, dawnAngle, true);
   context.closePath();
   context.fill();
+}
+
+function drawMoonRing(
+  context: CanvasRenderingContext2D,
+  cycle: DaylightCycleLike,
+  innerRadius: number,
+  outerRadius: number
+) {
+  context.fillStyle = 'rgba(25, 42, 76, 0.5)';
+  context.beginPath();
+  context.arc(0, 0, outerRadius, 0, Math.PI * 2);
+  context.arc(0, 0, innerRadius, Math.PI * 2, 0, true);
+  context.closePath();
+  context.fill();
+
+  for (let phase = 0; phase < 8; phase += 1) {
+    const angle = (phase / 8) * Math.PI * 2 - Math.PI / 2;
+    const radius = (innerRadius + outerRadius) * 0.5;
+    const x = Math.cos(angle) * radius;
+    const y = Math.sin(angle) * radius;
+    drawMoonPhaseGlyph(
+      context,
+      x,
+      y,
+      7,
+      phase,
+      phase === cycle.moonPhaseIndex
+    );
+  }
+}
+
+function drawMoonPhaseGlyph(
+  context: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  radius: number,
+  phase: number,
+  isActive: boolean
+) {
+  context.fillStyle = isActive ? '#f2f7ff' : 'rgba(214, 228, 248, 0.86)';
+  context.beginPath();
+  context.arc(x, y, radius, 0, Math.PI * 2);
+  context.fill();
+  context.fillStyle = '#09111a';
+  const illumination = [0, 0.25, 0.5, 0.75, 1, 0.75, 0.5, 0.25][phase];
+  const direction = phase < 4 ? 1 : -1;
+  context.beginPath();
+  context.arc(x + (1 - illumination) * radius * direction * 0.75, y, radius - 1, 0, Math.PI * 2);
+  context.fill();
+}
+
+function drawConstellationGlyph(
+  context: CanvasRenderingContext2D,
+  constellation: DaylightCycleLike['constellations'][number],
+  centerX: number,
+  centerY: number,
+  width: number,
+  height: number
+) {
+  if (!constellation) {
+    return;
+  }
+
+  context.strokeStyle = 'rgba(171, 205, 255, 0.48)';
+  context.lineWidth = 1;
+  constellation.connections.forEach(([startIndex, endIndex]) => {
+    const start = constellation.stars[startIndex];
+    const end = constellation.stars[endIndex];
+    if (!start || !end) {
+      return;
+    }
+    context.beginPath();
+    context.moveTo(centerX + (start.x - 0.5) * width, centerY + (start.y - 0.5) * height);
+    context.lineTo(centerX + (end.x - 0.5) * width, centerY + (end.y - 0.5) * height);
+    context.stroke();
+  });
+  constellation.stars.forEach((star) => {
+    context.fillStyle = `rgba(243, 249, 255, ${0.5 + star.brightness * 0.45})`;
+    context.beginPath();
+    context.arc(
+      centerX + (star.x - 0.5) * width,
+      centerY + (star.y - 0.5) * height,
+      0.9 + star.brightness * 1.1,
+      0,
+      Math.PI * 2
+    );
+    context.fill();
+  });
+}
+
+function drawRingMarker(
+  context: CanvasRenderingContext2D,
+  angle: number,
+  radius: number,
+  color: string
+) {
+  context.save();
+  context.rotate(angle);
+  context.translate(0, -radius);
+  context.fillStyle = color;
+  context.beginPath();
+  context.moveTo(0, -6);
+  context.lineTo(7, 8);
+  context.lineTo(-7, 8);
+  context.closePath();
+  context.fill();
+  context.restore();
 }
 
 function formatCycleTime(dayProgress: number) {

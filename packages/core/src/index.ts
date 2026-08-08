@@ -8,7 +8,7 @@ export const HALF_WORLD_TILES = WORLD_TILES_WIDE / 2;
 export const DEFAULT_DAY_LENGTH_MS = 240000;
 export const DEFAULT_YEAR_LENGTH_DAYS = 64;
 export const DEFAULT_CONSTELLATION_COUNT = 8;
-export const DEFAULT_SEASON_DAYLIGHT_AMPLITUDE = 0.18;
+export const DEFAULT_SEASON_DAYLIGHT_AMPLITUDE = 0.41;
 export const MOON_PHASE_NAMES = [
   'New Moon',
   'Waxing Crescent',
@@ -54,6 +54,20 @@ const CONSTELLATION_SUFFIXES = [
   'Thread',
   'Veil',
   'Wake',
+];
+const CONSTELLATION_FIGURES = [
+  'The Stag',
+  'The Cedar',
+  'The Giant',
+  'The Heron',
+  'The Lantern',
+  'The Mariner',
+  'The Orchard',
+  'The Serpent',
+  "Andre's Arm",
+  "Mira's Crown",
+  'The Open Hand',
+  'The Wolf',
 ];
 const PLANET_NAMES = ['Aurel', 'Brink', 'Cael', 'Damar'];
 const METEOR_SHOWER_NAMES = ['Silver Wake', 'Ember Rain', 'Northfall'];
@@ -119,6 +133,7 @@ export function getDaylightCycleState(
     constellationCount?: number;
     constellationSeed?: string;
     seasonDaylightAmplitude?: number;
+    observerLatitudeDegrees?: number;
   } = {}
 ) {
   const dayLengthMs = options.dayLengthMs ?? DEFAULT_DAY_LENGTH_MS;
@@ -134,24 +149,69 @@ export function getDaylightCycleState(
   const constellationSeed = options.constellationSeed ?? 'bworlds-celestial';
   const seasonDaylightAmplitude =
     options.seasonDaylightAmplitude ?? DEFAULT_SEASON_DAYLIGHT_AMPLITUDE;
+  const observerLatitudeDegrees = clamp(
+    options.observerLatitudeDegrees ?? 0,
+    -90,
+    90
+  );
   const yearProgress = fract(dayNumber / yearLengthDays);
   const seasonAngle = yearProgress * Math.PI * 2;
   const solarDeclination = Math.sin(seasonAngle) * seasonDaylightAmplitude;
+  const latitudeRadians = (observerLatitudeDegrees / 180) * Math.PI;
+  const hourAngle = dayProgress * Math.PI * 2 - Math.PI;
+  const sunAltitudeAngle = Math.asin(
+    clamp(
+      Math.sin(latitudeRadians) * Math.sin(solarDeclination) +
+        Math.cos(latitudeRadians) *
+          Math.cos(solarDeclination) *
+          Math.cos(hourAngle),
+      -1,
+      1
+    )
+  );
   const sunAngle = dayProgress * Math.PI * 2 - Math.PI / 2;
-  const sunAltitude = Math.sin(sunAngle) + solarDeclination;
-  const daylightDuration = clamp(0.5 + solarDeclination * 0.95, 0.32, 0.68);
+  const sunAltitude = sunAltitudeAngle / (Math.PI / 2);
+  const sunriseOffset = clamp(
+    Math.sin(solarDeclination) * Math.cos(latitudeRadians),
+    -0.92,
+    0.92
+  );
+  const daylightDuration = clamp(0.5 + sunriseOffset * 0.36, 0.22, 0.78);
   const sunriseProgress = 0.5 - daylightDuration * 0.5;
   const sunsetProgress = 0.5 + daylightDuration * 0.5;
-  const sunAzimuth = normalizeAngle((dayProgress - sunriseProgress) * Math.PI);
-  const moonAngle = sunAngle + Math.PI;
-  const moonAltitude = Math.sin(moonAngle);
-  const moonAzimuth = normalizeAngle(sunAzimuth + Math.PI);
+  const sunriseAzimuth = sunriseOffset * 0.8;
+  const sunsetAzimuth = Math.PI - sunriseOffset * 0.8;
+  const daylightProgress = clamp(
+    (dayProgress - sunriseProgress) / Math.max(0.0001, daylightDuration),
+    0,
+    1
+  );
+  const sunAzimuth = normalizeAngle(
+    lerp(sunriseAzimuth, sunsetAzimuth, daylightProgress)
+  );
+  const moonOrbitProgress = fract(
+    dayProgress + dayNumber / 29.5 + 0.12 + Math.sin(seasonAngle * 1.7) * 0.02
+  );
+  const moonHourAngle = moonOrbitProgress * Math.PI * 2 - Math.PI;
+  const moonDeclination =
+    -solarDeclination * 0.55 + Math.sin((dayNumber / 17) * Math.PI * 2) * 0.12;
+  const moonAltitudeAngle = Math.asin(
+    clamp(
+      Math.sin(latitudeRadians) * Math.sin(moonDeclination) +
+        Math.cos(latitudeRadians) * Math.cos(moonDeclination) * Math.cos(moonHourAngle),
+      -1,
+      1
+    )
+  );
+  const moonAngle = moonOrbitProgress * Math.PI * 2 - Math.PI / 2;
+  const moonAltitude = moonAltitudeAngle / (Math.PI / 2);
+  const moonAzimuth = normalizeAngle(
+    lerp(sunriseAzimuth, sunsetAzimuth, clamp(moonOrbitProgress, 0, 1)) + Math.PI
+  );
   const daylight = smoothstep(-0.16, 0.2, sunAltitude);
   const twilight = smoothstep(-0.28, 0.16, sunAltitude);
   const night = 1 - twilight;
   const starsOpacity = smoothstep(0.08, 0.82, night);
-  const sunriseAzimuth = solarDeclination * 0.8;
-  const sunsetAzimuth = Math.PI - solarDeclination * 0.8;
   const moonPhaseIndex =
     ((dayNumber % MOON_PHASE_NAMES.length) + MOON_PHASE_NAMES.length) %
     MOON_PHASE_NAMES.length;
@@ -189,6 +249,7 @@ export function getDaylightCycleState(
     dayProgress,
     yearLengthDays,
     yearProgress,
+    observerLatitudeDegrees,
     seasonDay,
     seasonLengthDays,
     sunAngle,
@@ -306,6 +367,9 @@ export function generateConstellations(
 ): ConstellationLike[] {
   const count = Math.max(1, Math.floor(options.count ?? DEFAULT_CONSTELLATION_COUNT));
   const usedNames = new Set<string>();
+  const prefixCounts = new Map<string, number>();
+  const suffixCounts = new Map<string, number>();
+  const figureCounts = new Map<string, number>();
 
   return Array.from({ length: count }, (_, index) => {
     const starCount = 5 + Math.floor(hash2D(`${seed}:stars`, index, count) * 4);
@@ -327,7 +391,13 @@ export function generateConstellations(
       connections.push([0, Math.floor(stars.length / 2)]);
     }
 
-    let name = createConstellationName(seed, index);
+    let name = createConstellationName(
+      seed,
+      index,
+      prefixCounts,
+      suffixCounts,
+      figureCounts
+    );
     while (usedNames.has(name)) {
       name = `${name} ${index + 1}`;
     }
@@ -343,16 +413,53 @@ export function generateConstellations(
   });
 }
 
-export function createConstellationName(seed, index) {
-  const prefix = pickFrom(
+export function createConstellationName(
+  seed,
+  index,
+  prefixCounts = new Map<string, number>(),
+  suffixCounts = new Map<string, number>(),
+  figureCounts = new Map<string, number>()
+) {
+  const useFigure = hash2D(`${seed}:constellation-form`, index, 0) < 0.28;
+  if (useFigure) {
+    const figure = pickLimitedNamePart(
+      CONSTELLATION_FIGURES,
+      figureCounts,
+      2,
+      hash2D(`${seed}:constellation-figure`, index, 0)
+    );
+    return figure;
+  }
+
+  const prefix = pickLimitedNamePart(
     CONSTELLATION_PREFIXES,
+    prefixCounts,
+    2,
     hash2D(`${seed}:constellation-prefix`, index, 0)
   );
-  const suffix = pickFrom(
+  const suffix = pickLimitedNamePart(
     CONSTELLATION_SUFFIXES,
+    suffixCounts,
+    2,
     hash2D(`${seed}:constellation-suffix`, 0, index)
   );
   return `${prefix} ${suffix}`;
+}
+
+function pickLimitedNamePart(parts, counts, maxCount, seedValue) {
+  const startIndex = Math.floor(seedValue * parts.length) % parts.length;
+  for (let offset = 0; offset < parts.length; offset += 1) {
+    const candidate = parts[(startIndex + offset) % parts.length];
+    const currentCount = counts.get(candidate) ?? 0;
+    if (currentCount < maxCount) {
+      counts.set(candidate, currentCount + 1);
+      return candidate;
+    }
+  }
+
+  const fallback = parts[startIndex];
+  counts.set(fallback, (counts.get(fallback) ?? 0) + 1);
+  return fallback;
 }
 
 export function createCelestialRing(

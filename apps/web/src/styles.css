@@ -122,6 +122,41 @@ button:hover {
   background: #02060b;
 }
 
+.viewport-hud {
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  z-index: 2;
+  max-width: min(18rem, calc(100% - 2rem));
+  padding: 0.7rem 0.9rem;
+  border-radius: 16px;
+  background: rgba(8, 16, 25, 0.62);
+  border: 1px solid rgba(180, 214, 255, 0.18);
+  backdrop-filter: blur(10px);
+  color: #f3f8fc;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.22);
+}
+
+.viewport-hud-label {
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.viewport-hud-date {
+  margin-top: 0.2rem;
+  color: #d9e8f4;
+  font-size: 0.92rem;
+  line-height: 1.25;
+}
+
+.viewport-hud-meta {
+  margin-top: 0.18rem;
+  color: #9bb3c6;
+  font-size: 0.78rem;
+  line-height: 1.25;
+}
+
 #viewport-2d,
 .viewport-3d {
   position: absolute;
@@ -282,5 +317,11 @@ ul {
 
   .time-skip-controls {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .viewport-hud {
+    top: 0.7rem;
+    left: 0.7rem;
+    max-width: calc(100% - 1.4rem);
   }
 }

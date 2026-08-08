@@ -8,6 +8,7 @@ import {
 import {
   getDaylightCycleState,
   hash2D,
+  smoothstep,
 } from '@bworlds/core';
 import { isWaterKind } from '@bworlds/tile-support';
 import {
@@ -807,13 +808,12 @@ export function create3DRenderer(host) {
     moonLight.intensity = cycle.night * (0.1 + cycle.moonIllumination * 0.24);
 
     skyRoot.position.set(worldX, 0, worldY);
-    stars.material.opacity = cycle.starsOpacity;
-    stars.visible = cycle.starsOpacity > 0.02;
-    stars.material.size = 0.44 * Math.max(0.75, Math.min(2.4, starDensity));
+    skyRoot.rotation.z = (-cycle.observerLatitudeDegrees / 180) * Math.PI * 0.5;
+    syncStarField(stars, cycle, starDensity);
     syncConstellationSky(constellationRoot, cycle);
     syncCelestialEvents(eventRoot, cycle);
-    constellationRoot.visible = cycle.starsOpacity > 0.04;
-    eventRoot.visible = cycle.starsOpacity > 0.08;
+    constellationRoot.visible = cycle.starsOpacity > 0.02;
+    eventRoot.visible = cycle.starsOpacity > 0.05;
 
     sunSprite.position.set(
       sunOrbitX * 1.45,
@@ -828,7 +828,11 @@ export function create3DRenderer(host) {
 
     moonSprite.position.set(moonOrbitX * 1.7, 16 + Math.max(0, cycle.moonAltitude) * 14, moonOrbitZ * 1.7);
     moonSprite.material.opacity =
-      Math.max(0, cycle.night * 0.85 + cycle.moonIllumination * 0.15);
+      Math.max(
+        0,
+        (cycle.night * 0.82 + (cycle.moonAltitude > -0.08 ? 0.16 : 0)) *
+          (0.22 + cycle.moonIllumination * 0.78)
+      );
     moonSprite.visible = moonSprite.material.opacity > 0.03;
 
     if (lastMoonPhaseIndex !== cycle.moonPhaseIndex) {
@@ -859,31 +863,56 @@ function applyShadowSettings(node, options) {
 }
 
 function createStarField() {
-  const geometry = new THREE.BufferGeometry();
-  const positions = new Float32Array(720 * 3);
+  const root = new THREE.Group();
 
-  for (let index = 0; index < 720; index += 1) {
-    const theta = hash2D('star-theta', index, 0) * Math.PI * 2;
-    const phi = hash2D('star-phi', 0, index) * Math.PI * 0.55;
-    const radius = SKY_RADIUS + hash2D('star-radius', index, index) * 4;
-    const sinPhi = Math.sin(phi);
-    positions[index * 3] = Math.cos(theta) * sinPhi * radius;
-    positions[index * 3 + 1] = Math.cos(phi) * radius;
-    positions[index * 3 + 2] = Math.sin(theta) * sinPhi * radius;
+  for (let index = 0; index < 360; index += 1) {
+    const sprite = new THREE.Sprite(
+      new THREE.SpriteMaterial({
+        color: '#eef6ff',
+        transparent: true,
+        opacity: 0,
+        depthWrite: false,
+        depthTest: true,
+        fog: false,
+      })
+    );
+    sprite.userData = {
+      theta: hash2D('star-theta', index, 0) * Math.PI * 2,
+      phi: hash2D('star-phi', 0, index) * Math.PI * 0.88 + 0.16,
+      radius: SKY_RADIUS + hash2D('star-radius', index, index) * 4,
+      brightness: 0.25 + hash2D('star-brightness', index, 3) * 0.75,
+      scale: 0.14 + hash2D('star-scale', 7, index) * 0.46,
+    };
+    root.add(sprite);
   }
 
-  geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-  const material = new THREE.PointsMaterial({
-    color: '#eef6ff',
-    size: 0.44,
-    transparent: true,
-    opacity: 0,
-    depthWrite: false,
-    depthTest: false,
-    sizeAttenuation: true,
-    fog: false,
+  return root;
+}
+
+function syncStarField(root, cycle, starDensity) {
+  const seasonalRotation = cycle.yearProgress * Math.PI * 2;
+  root.children.forEach((child, index) => {
+    if (!(child instanceof THREE.Sprite)) {
+      return;
+    }
+    const theta =
+      child.userData.theta +
+      seasonalRotation +
+      hash2D('star-drift', index, cycle.activeConstellationIndex ?? 0) * 0.08;
+    const position = createSkyPosition(theta, child.userData.phi, child.userData.radius);
+    child.position.copy(position);
+
+    const horizonFade = smoothstep(-1.8, 5.4, position.y);
+    const opacity =
+      cycle.starsOpacity *
+      child.userData.brightness *
+      horizonFade *
+      Math.max(0.72, Math.min(1.6, starDensity));
+    child.material.opacity = opacity;
+    child.visible = opacity > 0.015;
+    const scale = child.userData.scale * Math.max(0.75, Math.min(1.8, starDensity));
+    child.scale.set(scale, scale, 1);
   });
-  return new THREE.Points(geometry, material);
 }
 
 function syncConstellationSky(root, cycle) {
@@ -924,26 +953,40 @@ function syncConstellationSky(root, cycle) {
         new THREE.LineBasicMaterial({
           color: '#b9d4ff',
           transparent: true,
-          opacity: 0.24 + cycle.starsOpacity * 0.42,
-          depthTest: false,
+          opacity: 0.18 + cycle.starsOpacity * 0.34,
+          depthTest: true,
         })
       );
+      const horizonFade = smoothstep(
+        -1.6,
+        5.8,
+        Math.min(
+          createConstellationPoint(anchor, start).y,
+          createConstellationPoint(anchor, end).y
+        )
+      );
+      line.material.opacity *= horizonFade;
+      line.visible = line.material.opacity > 0.015;
       root.add(line);
     });
 
     constellation.stars.forEach((star) => {
+      const point = createConstellationPoint(anchor, star);
+      const horizonFade = smoothstep(-1.6, 5.8, point.y);
       const sprite = new THREE.Sprite(
         new THREE.SpriteMaterial({
           color: '#f5fbff',
           transparent: true,
-          opacity: 0.38 + star.brightness * cycle.starsOpacity * 0.62,
+          opacity:
+            (0.28 + star.brightness * cycle.starsOpacity * 0.56) * horizonFade,
           depthWrite: false,
-          depthTest: false,
+          depthTest: true,
         })
       );
-      sprite.position.copy(createConstellationPoint(anchor, star));
+      sprite.position.copy(point);
       const scale = 0.34 + star.brightness * 0.34;
       sprite.scale.set(scale, scale, 1);
+      sprite.visible = sprite.material.opacity > 0.015;
       root.add(sprite);
     });
   });
@@ -987,7 +1030,7 @@ function syncCelestialEvents(root, cycle) {
               color: '#eef6ff',
               transparent: true,
               opacity: 0.26 + event.intensity * 0.32,
-              depthTest: false,
+              depthTest: true,
             })
           )
         );
@@ -1001,12 +1044,14 @@ function syncCelestialEvents(root, cycle) {
         transparent: true,
         opacity: 0.34 + event.intensity * 0.42,
         depthWrite: false,
-        depthTest: false,
+        depthTest: true,
       })
     );
     sprite.position.copy(position);
     const scale = event.type === 'planet' ? 0.72 : 0.48;
     sprite.scale.set(scale, scale, 1);
+    sprite.material.opacity *= smoothstep(-1.4, 6, position.y);
+    sprite.visible = sprite.material.opacity > 0.015;
     root.add(sprite);
 
     if (event.type === 'comet') {
@@ -1021,7 +1066,7 @@ function syncCelestialEvents(root, cycle) {
             color: '#d8f5ff',
             transparent: true,
             opacity: 0.24 + event.intensity * 0.3,
-            depthTest: false,
+            depthTest: true,
           })
         )
       );

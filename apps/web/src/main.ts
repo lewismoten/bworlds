@@ -56,6 +56,7 @@ root.innerHTML = `
             class="viewport-3d is-hidden"
             aria-hidden="true"
           ></div>
+          <div id="viewport-hud" class="viewport-hud"></div>
         </div>
       </div>
       <aside class="sidebar">
@@ -80,9 +81,9 @@ root.innerHTML = `
             <button id="time-plus-season" type="button">Next Season</button>
           </div>
           <div class="time-presets">
-            <button data-time-preset="dawn" type="button">Dawn</button>
+            <button data-time-preset="dawn" type="button">Sunrise</button>
             <button data-time-preset="noon" type="button">Noon</button>
-            <button data-time-preset="dusk" type="button">Dusk</button>
+            <button data-time-preset="dusk" type="button">Sunset</button>
             <button data-time-preset="midnight" type="button">Midnight</button>
           </div>
         </div>
@@ -113,6 +114,7 @@ root.innerHTML = `
 
 const viewport2d = document.querySelector<HTMLCanvasElement>('#viewport-2d');
 const viewport3d = document.querySelector<HTMLElement>('#viewport-3d');
+const viewportHud = document.querySelector<HTMLElement>('#viewport-hud');
 const atlasCanvas = document.querySelector<HTMLCanvasElement>('#atlas');
 const timeWheelCanvas =
   document.querySelector<HTMLCanvasElement>('#time-wheel');
@@ -219,6 +221,14 @@ function updateStatus() {
     <div><dt>Depth</dt><dd>${context.depth}</dd></div>
     <div><dt>Hint</dt><dd>${tile.note ?? 'Explore the frontier.'}</dd></div>
   `;
+
+  if (viewportHud) {
+    viewportHud.innerHTML = `
+      <div class="viewport-hud-label">${formatCycleTime(cycle.dayProgress)}</div>
+      <div class="viewport-hud-date">${getCelestialDateLabel(cycle)}</div>
+      <div class="viewport-hud-meta">${cycle.activeConstellation.name} • ${cycle.moonPhaseName}</div>
+    `;
+  }
 }
 
 function resizeCanvas() {

@@ -3,6 +3,7 @@ import {
   DEFAULT_YEAR_LENGTH_DAYS,
   generateConstellations,
   getDaylightCycleState,
+  toGps,
 } from '@bworlds/core';
 import { createRuntimePlugin } from '@bworlds/plugin-api';
 import type { RuntimePlugin } from '@bworlds/plugin-api';
@@ -11,14 +12,16 @@ const CELESTIAL_SEED = 'bworlds-celestial';
 
 export function createCelestialRuntimePlugin(): RuntimePlugin {
   return createRuntimePlugin('runtime-celestial', {
-    resolveWorldEnvironment({ timeMs }) {
+    resolveWorldEnvironment({ timeMs, state }) {
+      const latitude = toGps(state?.player?.x ?? 0, state?.player?.y ?? 0).latitude;
       const cycle = {
         dayLengthMs: 300000,
         offsetMs: 45000,
         yearLengthDays: DEFAULT_YEAR_LENGTH_DAYS,
         constellationCount: DEFAULT_CONSTELLATION_COUNT,
         constellationSeed: CELESTIAL_SEED,
-        seasonDaylightAmplitude: 0.18,
+        seasonDaylightAmplitude: 0.41,
+        observerLatitudeDegrees: latitude,
       };
       const constellations = generateConstellations(CELESTIAL_SEED, {
         count: cycle.constellationCount,
