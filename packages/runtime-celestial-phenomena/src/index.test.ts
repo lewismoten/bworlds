@@ -4,23 +4,58 @@ import type { WorldEnvironmentLike } from '@bworlds/plugin-api';
 import { createCelestialPhenomenaRuntimePlugin } from './index.ts';
 
 const NIGHT_SAMPLE_OFFSET_MS = 210000;
+const plugin = createCelestialPhenomenaRuntimePlugin();
+type CelestialPhenomenaPayload = Parameters<
+  NonNullable<typeof plugin.resolveWorldEnvironment>
+>[0];
+
+function createCelestialPhenomenaPayload(
+  overrides: Partial<CelestialPhenomenaPayload> = {}
+): CelestialPhenomenaPayload {
+  return {
+    state: {
+      player: {
+        x: 0,
+        y: 0,
+        facing: 0,
+      },
+      getCurrentContext() {
+        return { id: 'overworld', type: 'overworld', depth: 0 };
+      },
+      getCurrentTile() {
+        return { kind: 'plains' };
+      },
+      getTileDefinition() {
+        return {
+          name: 'Plains',
+          color: '#84cc16',
+          miniColor: '#65a30d',
+          walkable: true,
+          wallHeight: 0,
+        };
+      },
+    },
+    timeMs: NIGHT_SAMPLE_OFFSET_MS,
+    ...overrides,
+  };
+}
 
 describe('runtime celestial phenomena', () => {
   it('adds latitude-sensitive aurora data on qualifying nights', () => {
-    const plugin = createCelestialPhenomenaRuntimePlugin();
-    const state = {
-      player: {
-        x: 0,
-        y: -50000,
-      },
-    } as any;
     let environment: WorldEnvironmentLike | undefined;
 
     for (let day = 0; day < 160 && !environment?.celestial?.auroraBands?.length; day += 1) {
-      environment = plugin.resolveWorldEnvironment?.({
-        state,
+      environment = plugin.resolveWorldEnvironment?.(createCelestialPhenomenaPayload({
+        state: {
+          ...createCelestialPhenomenaPayload().state,
+          player: {
+            x: 0,
+            y: -50000,
+            facing: 0,
+          },
+        },
         timeMs: day * DEFAULT_DAY_LENGTH_MS + NIGHT_SAMPLE_OFFSET_MS,
-      }) as WorldEnvironmentLike | undefined;
+      })) as WorldEnvironmentLike | undefined;
     }
 
     expect(environment?.celestial?.auroraBands).toEqual(
@@ -36,13 +71,6 @@ describe('runtime celestial phenomena', () => {
   });
 
   it('adds transient meteor showers or visiting comets on eligible nights', () => {
-    const plugin = createCelestialPhenomenaRuntimePlugin();
-    const state = {
-      player: {
-        x: 0,
-        y: 40,
-      },
-    } as any;
     let environment: WorldEnvironmentLike | undefined;
 
     for (
@@ -53,10 +81,17 @@ describe('runtime celestial phenomena', () => {
       );
       day += 1
     ) {
-      environment = plugin.resolveWorldEnvironment?.({
-        state,
+      environment = plugin.resolveWorldEnvironment?.(createCelestialPhenomenaPayload({
+        state: {
+          ...createCelestialPhenomenaPayload().state,
+          player: {
+            x: 0,
+            y: 40,
+            facing: 0,
+          },
+        },
         timeMs: day * DEFAULT_DAY_LENGTH_MS + NIGHT_SAMPLE_OFFSET_MS,
-      }) as WorldEnvironmentLike | undefined;
+      })) as WorldEnvironmentLike | undefined;
     }
 
     expect(environment?.celestial?.visibleEventsAppend).toEqual(
@@ -71,7 +106,6 @@ describe('runtime celestial phenomena', () => {
   });
 
   it('maps natural transient events through observer-aware sky positions', () => {
-    const plugin = createCelestialPhenomenaRuntimePlugin();
     let equatorialEnvironment: WorldEnvironmentLike | undefined;
     let northernEnvironment: WorldEnvironmentLike | undefined;
     let matchedEquatorialEvent:
@@ -82,24 +116,32 @@ describe('runtime celestial phenomena', () => {
       | undefined;
 
     for (let day = 0; day < 192 && !matchedEquatorialEvent; day += 1) {
-      equatorialEnvironment = plugin.resolveWorldEnvironment?.({
-        state: {
-          player: {
-            x: 0,
-            y: 0,
+      equatorialEnvironment = plugin.resolveWorldEnvironment?.(
+        createCelestialPhenomenaPayload({
+          state: {
+            ...createCelestialPhenomenaPayload().state,
+            player: {
+              x: 0,
+              y: 0,
+              facing: 0,
+            },
           },
-        } as any,
-        timeMs: day * DEFAULT_DAY_LENGTH_MS + NIGHT_SAMPLE_OFFSET_MS,
-      }) as WorldEnvironmentLike | undefined;
-      northernEnvironment = plugin.resolveWorldEnvironment?.({
-        state: {
-          player: {
-            x: 0,
-            y: -50000,
+          timeMs: day * DEFAULT_DAY_LENGTH_MS + NIGHT_SAMPLE_OFFSET_MS,
+        })
+      ) as WorldEnvironmentLike | undefined;
+      northernEnvironment = plugin.resolveWorldEnvironment?.(
+        createCelestialPhenomenaPayload({
+          state: {
+            ...createCelestialPhenomenaPayload().state,
+            player: {
+              x: 0,
+              y: -50000,
+              facing: 0,
+            },
           },
-        } as any,
-        timeMs: day * DEFAULT_DAY_LENGTH_MS + NIGHT_SAMPLE_OFFSET_MS,
-      }) as WorldEnvironmentLike | undefined;
+          timeMs: day * DEFAULT_DAY_LENGTH_MS + NIGHT_SAMPLE_OFFSET_MS,
+        })
+      ) as WorldEnvironmentLike | undefined;
 
       for (const event of equatorialEnvironment?.celestial?.visibleEventsAppend ?? []) {
         const match = (northernEnvironment?.celestial?.visibleEventsAppend ?? []).find(
@@ -126,18 +168,21 @@ describe('runtime celestial phenomena', () => {
   });
 
   it('can force an aurora regardless of latitude and time of day', () => {
-    const plugin = createCelestialPhenomenaRuntimePlugin();
-    const environment = plugin.resolveWorldEnvironment?.({
-      state: {
-        player: {
-          x: 0,
-          y: 0,
-          facing: Math.PI / 3,
-        },
-        celestialEventMode: 'aurora',
-      } as any,
-      timeMs: 0,
-    }) as WorldEnvironmentLike | undefined;
+    const forcedAuroraState = {
+      ...createCelestialPhenomenaPayload().state,
+      player: {
+        x: 0,
+        y: 0,
+        facing: Math.PI / 3,
+      },
+      celestialEventMode: 'aurora',
+    };
+    const environment = plugin.resolveWorldEnvironment?.(
+      createCelestialPhenomenaPayload({
+        state: forcedAuroraState,
+        timeMs: 0,
+      })
+    ) as WorldEnvironmentLike | undefined;
 
     expect(environment?.celestial?.auroraBands).toEqual(
       expect.arrayContaining([
@@ -162,18 +207,21 @@ describe('runtime celestial phenomena', () => {
   });
 
   it('can force a meteor shower regardless of time of day', () => {
-    const plugin = createCelestialPhenomenaRuntimePlugin();
-    const environment = plugin.resolveWorldEnvironment?.({
-      state: {
-        player: {
-          x: 0,
-          y: 0,
-          facing: Math.PI / 4,
-        },
-        celestialEventMode: 'meteor-shower',
-      } as any,
-      timeMs: 0,
-    }) as WorldEnvironmentLike | undefined;
+    const forcedMeteorState = {
+      ...createCelestialPhenomenaPayload().state,
+      player: {
+        x: 0,
+        y: 0,
+        facing: Math.PI / 4,
+      },
+      celestialEventMode: 'meteor-shower',
+    };
+    const environment = plugin.resolveWorldEnvironment?.(
+      createCelestialPhenomenaPayload({
+        state: forcedMeteorState,
+        timeMs: 0,
+      })
+    ) as WorldEnvironmentLike | undefined;
 
     expect(environment?.celestial?.visibleEventsAppend).toEqual(
       expect.arrayContaining([
@@ -206,18 +254,21 @@ describe('runtime celestial phenomena', () => {
   });
 
   it('can force a comet into a bright high-altitude pass', () => {
-    const plugin = createCelestialPhenomenaRuntimePlugin();
-    const environment = plugin.resolveWorldEnvironment?.({
-      state: {
-        player: {
-          x: 0,
-          y: 0,
-          facing: Math.PI / 6,
-        },
-        celestialEventMode: 'comet',
-      } as any,
-      timeMs: 0,
-    }) as WorldEnvironmentLike | undefined;
+    const forcedCometState = {
+      ...createCelestialPhenomenaPayload().state,
+      player: {
+        x: 0,
+        y: 0,
+        facing: Math.PI / 6,
+      },
+      celestialEventMode: 'comet',
+    };
+    const environment = plugin.resolveWorldEnvironment?.(
+      createCelestialPhenomenaPayload({
+        state: forcedCometState,
+        timeMs: 0,
+      })
+    ) as WorldEnvironmentLike | undefined;
 
     expect(environment?.celestial?.visibleEventsAppend).toEqual(
       expect.arrayContaining([

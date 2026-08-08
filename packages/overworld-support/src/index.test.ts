@@ -11,6 +11,121 @@ import {
   createOverworldTerrainSignalSampler,
   isNearOverworldLand,
 } from './index.ts';
+import type { PluginRegistryLike } from '@bworlds/plugin-api';
+
+type GenerationContextPayload = Parameters<typeof createOverworldGenerationContext>[0];
+type ComposeOverworldTilePayload = Parameters<typeof composeOverworldTileFromPlugins>[0];
+type ResolveOverworldAnchorsPayload = Parameters<
+  ReturnType<typeof createOverworldAnchorResolver>
+>[0];
+
+function createTestPluginRegistry(
+  overrides: Partial<PluginRegistryLike> = {}
+): PluginRegistryLike {
+  return {
+    getTilePlugin() {
+      return null;
+    },
+    getTileDefinition() {
+      return null;
+    },
+    getDefaultTileKind(fallback = 'plains') {
+      return fallback;
+    },
+    getDefaultTileDefinition(fallback = null) {
+      return fallback;
+    },
+    resolveTileDefinition(_kind, fallback = null) {
+      return fallback;
+    },
+    listTileDefinitions() {
+      return [];
+    },
+    listResolvedTileDefinitions(fallbackEntries = []) {
+      return fallbackEntries;
+    },
+    classifyTerrainTile() {
+      return null;
+    },
+    classifyOverworldTile() {
+      return undefined;
+    },
+    canOccupy3D() {
+      return undefined;
+    },
+    getSurfaceProfile3D() {
+      return undefined;
+    },
+    getTraversalProfile3D() {
+      return undefined;
+    },
+    paint2DOverlay() {
+      return undefined;
+    },
+    resolveFloorKind3D() {
+      return undefined;
+    },
+    resolveWorldEnvironment() {
+      return {};
+    },
+    createWorldAction() {
+      return undefined;
+    },
+    decorateOverworldTile(payload) {
+      return payload.tile;
+    },
+    decorateTownTile(payload) {
+      return payload.tile;
+    },
+    decorateBuildingTile(payload) {
+      return payload.tile;
+    },
+    decorateDepthTile(payload) {
+      return payload.tile;
+    },
+    createMap() {
+      return null;
+    },
+    resolveOverworldTile() {
+      return null;
+    },
+    resolveOverworldAnchors() {
+      return {
+        townAnchors: [],
+        bridgeAnchors: [],
+        poiAnchors: [],
+      };
+    },
+    ...overrides,
+  };
+}
+
+function createGenerationContextPayload(
+  overrides: Partial<GenerationContextPayload> = {}
+): GenerationContextPayload {
+  return {
+    seed: 'spec-seed',
+    x: 8,
+    y: -3,
+    tile: { kind: 'plains' },
+    sampleTerrainSignals: createOverworldTerrainSignalSampler('spec-seed'),
+    plugins: createTestPluginRegistry(),
+    ...overrides,
+  };
+}
+
+function createComposeOverworldTilePayload(
+  overrides: Partial<ComposeOverworldTilePayload> = {}
+): ComposeOverworldTilePayload {
+  return {
+    seed: 'spec-seed',
+    x: 4,
+    y: 7,
+    sampleTerrainSignals: createOverworldTerrainSignalSampler('spec-seed'),
+    plugins: createTestPluginRegistry(),
+    ...overrides,
+  };
+}
 
 describe('overworld support', () => {
   it('creates deterministic terrain signal samplers from a seed', () => {
@@ -67,21 +182,18 @@ describe('overworld support', () => {
 
   it('builds reusable overworld generation contexts from shared samplers and plugins', () => {
     const sampleTerrainSignals = createOverworldTerrainSignalSampler('spec-seed');
-    const context = createOverworldGenerationContext({
-      seed: 'spec-seed',
-      x: 8,
-      y: -3,
-      tile: { kind: 'plains' },
+    const context = createOverworldGenerationContext(createGenerationContextPayload({
       sampleTerrainSignals,
-      plugins: {
+      plugins: createTestPluginRegistry({
         resolveOverworldAnchors() {
           return {
             townAnchors: [{ x: 10, y: -2, name: 'Spec Town' }],
             bridgeAnchors: [{ x: 6, y: -4 }],
+            poiAnchors: [],
           };
         },
-      } as any,
-    });
+      }),
+    }));
 
     expect(context.tile.kind).toBe('plains');
     expect(context.signals).toEqual(sampleTerrainSignals(8, -3));
@@ -233,18 +345,14 @@ describe('overworld support', () => {
       },
     });
 
-    const first = resolver({
+    const payload: ResolveOverworldAnchorsPayload = {
       seed: 'spec-seed',
       x: 0,
       y: 0,
       sampleTerrainSignals,
-    } as any);
-    const second = resolver({
-      seed: 'spec-seed',
-      x: 0,
-      y: 0,
-      sampleTerrainSignals,
-    } as any);
+    };
+    const first = resolver(payload);
+    const second = resolver(payload);
 
     expect(first).toEqual(second);
     expect(first.townAnchors.length).toBeGreaterThan(0);
@@ -255,12 +363,9 @@ describe('overworld support', () => {
   it('composes overworld tiles through the shared plugin pipeline', () => {
     const sampleTerrainSignals = createOverworldTerrainSignalSampler('spec-seed');
     const calls: string[] = [];
-    const tile = composeOverworldTileFromPlugins({
-      seed: 'spec-seed',
-      x: 4,
-      y: 7,
+    const tile = composeOverworldTileFromPlugins(createComposeOverworldTilePayload({
       sampleTerrainSignals,
-      plugins: {
+      plugins: createTestPluginRegistry({
         resolveOverworldTile() {
           calls.push('resolve');
           return null;
@@ -286,8 +391,8 @@ describe('overworld support', () => {
           context.tile.note = 'decorated';
           return context.tile;
         },
-      } as any,
-    });
+      }),
+    }));
 
     expect(tile).toEqual({
       kind: 'bridge',
@@ -304,12 +409,9 @@ describe('overworld support', () => {
 
   it('uses the plugin-owned default tile kind as the initial overworld tile', () => {
     const sampleTerrainSignals = createOverworldTerrainSignalSampler('spec-seed');
-    const tile = composeOverworldTileFromPlugins({
-      seed: 'spec-seed',
-      x: 4,
-      y: 7,
+    const tile = composeOverworldTileFromPlugins(createComposeOverworldTilePayload({
       sampleTerrainSignals,
-      plugins: {
+      plugins: createTestPluginRegistry({
         getDefaultTileKind() {
           return 'ashlands';
         },
@@ -332,20 +434,19 @@ describe('overworld support', () => {
         decorateOverworldTile(context) {
           return context.tile;
         },
-      } as any,
-    });
+      }),
+    }));
 
     expect(tile).toEqual({ kind: 'ashlands' });
   });
 
   it('short-circuits the plugin pipeline when a curated tile is resolved', () => {
     const sampleTerrainSignals = createOverworldTerrainSignalSampler('spec-seed');
-    const tile = composeOverworldTileFromPlugins({
-      seed: 'spec-seed',
+    const tile = composeOverworldTileFromPlugins(createComposeOverworldTilePayload({
       x: 0,
       y: 0,
       sampleTerrainSignals,
-      plugins: {
+      plugins: createTestPluginRegistry({
         resolveOverworldTile() {
           return { kind: 'town', note: 'curated' };
         },
@@ -361,8 +462,8 @@ describe('overworld support', () => {
         decorateOverworldTile() {
           throw new Error('should not decorate');
         },
-      } as any,
-    });
+      }),
+    }));
 
     expect(tile).toEqual({
       kind: 'town',
