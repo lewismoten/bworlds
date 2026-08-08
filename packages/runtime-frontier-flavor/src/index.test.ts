@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { createFrontierFlavorRuntimePlugin } from './index.ts';
+import {
+  createFrontierFlavorRuntimePlugin,
+  resolveFrontierSkyProfile,
+} from './index.ts';
 import type { OverworldSignals } from '@bworlds/plugin-api';
 
 type FrontierTestTile = {
@@ -65,11 +68,22 @@ describe('runtime frontier flavor', () => {
   it('provides a shared overworld environment profile', () => {
     expect(plugin.resolveWorldEnvironment?.(createFrontierEnvironmentPayload())).toEqual(
       expect.objectContaining({
+        sky: expect.objectContaining({
+          dawnColor: expect.any(String),
+          duskColor: expect.any(String),
+          fogDawnColor: expect.any(String),
+          fogDuskColor: expect.any(String),
+        }),
         stars: expect.objectContaining({
           density: 1,
         }),
       })
     );
+  });
+
+  it('resolves deterministic red-sky omen palettes by region', () => {
+    expect(resolveFrontierSkyProfile(0, 0)).toEqual(resolveFrontierSkyProfile(0, 0));
+    expect(resolveFrontierSkyProfile(0, 0)).not.toEqual(resolveFrontierSkyProfile(96, 96));
   });
 
   it('adds regional flavor metadata and plains notes', () => {

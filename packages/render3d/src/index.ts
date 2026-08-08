@@ -979,16 +979,17 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     const lighting = environment.lighting ?? {};
     const starDensity = environment.stars?.density ?? 1;
     const daySkyColor = new THREE.Color(sky.dayColor ?? SKY_DAY_COLOR);
-    const sunsetSkyColor = new THREE.Color(sky.sunsetColor ?? SKY_SUNSET_COLOR);
+    const twilightPalette = getTwilightSkyPalette(sky, cycle);
+    const sunsetSkyColor = new THREE.Color(twilightPalette.skyColor);
     const nightSkyColor = new THREE.Color(sky.nightColor ?? SKY_NIGHT_COLOR);
-    const dayFogColor = new THREE.Color(sky.fogDayColor ?? FOG_DAY_COLOR);
+    const twilightFogColor = new THREE.Color(twilightPalette.fogColor);
     const nightFogColor = new THREE.Color(sky.fogNightColor ?? FOG_NIGHT_COLOR);
 
     scene.background
       .copy(nightSkyColor)
       .lerp(sunsetSkyColor, cycle.twilight)
       .lerp(daySkyColor, dayBlend);
-    scene.fog.color.copy(nightFogColor).lerp(dayFogColor, cycle.twilight);
+    scene.fog.color.copy(nightFogColor).lerp(twilightFogColor, cycle.twilight);
 
     ambientLight.intensity = 0.2 + cycle.twilight * 0.75 + dayBlend * 0.45;
     ambientLight.color
@@ -1337,6 +1338,28 @@ export function getSkyAuroraSignature(cycle: SkySignatureCycle): string {
       ].join(':')
     )
     .join('|');
+}
+
+export function getTwilightSkyPalette(
+  sky: {
+    dawnColor?: string;
+    duskColor?: string;
+    sunsetColor?: string;
+    fogDawnColor?: string;
+    fogDuskColor?: string;
+    fogDayColor?: string;
+  },
+  cycle: { dayProgress: number }
+) {
+  const dawnSide = cycle.dayProgress < 0.5;
+  return {
+    skyColor: dawnSide
+      ? sky.dawnColor ?? sky.sunsetColor ?? SKY_SUNSET_COLOR
+      : sky.duskColor ?? sky.sunsetColor ?? SKY_SUNSET_COLOR,
+    fogColor: dawnSide
+      ? sky.fogDawnColor ?? sky.fogDayColor ?? FOG_DAY_COLOR
+      : sky.fogDuskColor ?? sky.fogDayColor ?? FOG_DAY_COLOR,
+  };
 }
 
 export function getVisibleWorldTileBuildOrder({

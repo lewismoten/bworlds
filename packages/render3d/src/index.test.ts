@@ -8,6 +8,7 @@ import {
   getSkyConstellationSignature,
   getSkyEventSignature,
   getSkyMilkyWaySignature,
+  getTwilightSkyPalette,
   getTileModelDetailLevel,
   getVisibleWorldTileBuildOrder,
   syncDynamicTileNodes,
@@ -191,6 +192,42 @@ describe('render3d visibility helpers', () => {
       getSkyConstellationSignature(baseCycle)
     );
     expect(getSkyEventSignature(farCycle)).not.toBe(getSkyEventSignature(baseCycle));
+  });
+
+  it('selects distinct dawn and dusk twilight palettes by time of day', () => {
+    expect(
+      getTwilightSkyPalette(
+        {
+          dawnColor: '#dawn',
+          duskColor: '#dusk',
+          sunsetColor: '#fallback',
+          fogDawnColor: '#fog-dawn',
+          fogDuskColor: '#fog-dusk',
+          fogDayColor: '#fog-day',
+        },
+        { dayProgress: 0.2 }
+      )
+    ).toEqual({
+      skyColor: '#dawn',
+      fogColor: '#fog-dawn',
+    });
+
+    expect(
+      getTwilightSkyPalette(
+        {
+          dawnColor: '#dawn',
+          duskColor: '#dusk',
+          sunsetColor: '#fallback',
+          fogDawnColor: '#fog-dawn',
+          fogDuskColor: '#fog-dusk',
+          fogDayColor: '#fog-day',
+        },
+        { dayProgress: 0.8 }
+      )
+    ).toEqual({
+      skyColor: '#dusk',
+      fogColor: '#fog-dusk',
+    });
   });
 
   it('syncs dynamic visible tile nodes through tile plugin hooks', () => {

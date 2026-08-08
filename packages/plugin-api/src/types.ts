@@ -146,9 +146,13 @@ export interface WorldEnvironmentCycleLike {
 
 export interface WorldEnvironmentSkyLike {
   dayColor?: Color;
+  dawnColor?: Color;
+  duskColor?: Color;
   sunsetColor?: Color;
   nightColor?: Color;
   fogDayColor?: Color;
+  fogDawnColor?: Color;
+  fogDuskColor?: Color;
   fogNightColor?: Color;
 }
 

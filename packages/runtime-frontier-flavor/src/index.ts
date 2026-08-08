@@ -7,13 +7,21 @@ const LAND_DESCRIPTORS = ['frontier', 'wilds', 'marches', 'reach', 'expanse'];
 
 export function createFrontierFlavorRuntimePlugin(): RuntimePlugin {
   return createRuntimePlugin('runtime-frontier-flavor', {
-    resolveWorldEnvironment() {
+    resolveWorldEnvironment({ state }) {
+      const skyProfile = resolveFrontierSkyProfile(
+        state?.player?.x ?? 0,
+        state?.player?.y ?? 0
+      );
       return {
         sky: {
           dayColor: '#9ed8ff',
           sunsetColor: '#f2a06a',
+          dawnColor: skyProfile.dawnColor,
+          duskColor: skyProfile.duskColor,
           nightColor: '#06111f',
           fogDayColor: '#9ed8ff',
+          fogDawnColor: skyProfile.fogDawnColor,
+          fogDuskColor: skyProfile.fogDuskColor,
           fogNightColor: '#0a1524',
         },
         lighting: {
@@ -50,4 +58,38 @@ export function createFrontierFlavorRuntimePlugin(): RuntimePlugin {
       }
     },
   });
+}
+
+export function resolveFrontierSkyProfile(playerX: number, playerY: number) {
+  const regionX = Math.floor(playerX / 24);
+  const regionY = Math.floor(playerY / 24);
+  const warningSignal = hash2D('frontier-weather-warning', regionX, regionY);
+  const delightSignal = hash2D('frontier-weather-delight', regionX, regionY);
+
+  return {
+    dawnColor:
+      warningSignal > 0.64
+        ? pickFrontierWarningColor(warningSignal)
+        : '#f2a06a',
+    duskColor:
+      delightSignal > 0.58
+        ? pickFrontierDelightColor(delightSignal)
+        : '#f2a06a',
+    fogDawnColor:
+      warningSignal > 0.64
+        ? '#dba27d'
+        : '#9ed8ff',
+    fogDuskColor:
+      delightSignal > 0.58
+        ? '#e3b18a'
+        : '#9ed8ff',
+  };
+}
+
+function pickFrontierWarningColor(signal: number) {
+  return signal > 0.82 ? '#ff7c5c' : '#f68f63';
+}
+
+function pickFrontierDelightColor(signal: number) {
+  return signal > 0.8 ? '#ff9a68' : '#f2a06a';
 }
