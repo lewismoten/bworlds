@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
   restore3dViewportKeyboardFocus,
+  restore3dViewportKeyboardFocusOnPointerDown,
   shouldRestore3dViewportKeyboardFocusOnPointerDown,
 } from './viewport-focus.ts';
 
@@ -26,6 +27,17 @@ describe('viewport keyboard focus', () => {
     };
 
     expect(restore3dViewportKeyboardFocus('3d', viewport)).toBe(true);
+    expect(viewport.focus).toHaveBeenCalledWith({ preventScroll: true });
+  });
+
+  it('restores focus directly from primary 3d viewport pointer presses', () => {
+    const viewport = {
+      focus: vi.fn(),
+    };
+
+    expect(
+      restore3dViewportKeyboardFocusOnPointerDown('3d', 0, viewport)
+    ).toBe(true);
     expect(viewport.focus).toHaveBeenCalledWith({ preventScroll: true });
   });
 
@@ -57,6 +69,20 @@ describe('viewport keyboard focus', () => {
     expect(restore3dViewportKeyboardFocus('2d', viewport)).toBe(false);
     expect(restore3dViewportKeyboardFocus('text', viewport)).toBe(false);
     expect(restore3dViewportKeyboardFocus('3d', null)).toBe(false);
+    expect(viewport.focus).not.toHaveBeenCalled();
+  });
+
+  it('ignores non-primary pointer presses when restoring focus from pointer events', () => {
+    const viewport = {
+      focus: vi.fn(),
+    };
+
+    expect(
+      restore3dViewportKeyboardFocusOnPointerDown('3d', 1, viewport)
+    ).toBe(false);
+    expect(
+      restore3dViewportKeyboardFocusOnPointerDown('2d', 0, viewport)
+    ).toBe(false);
     expect(viewport.focus).not.toHaveBeenCalled();
   });
 });

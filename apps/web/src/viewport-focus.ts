@@ -13,6 +13,18 @@ export function shouldRestore3dViewportKeyboardFocusOnPointerDown(
   return viewMode === '3d' && button === 0;
 }
 
+export function restore3dViewportKeyboardFocusOnPointerDown(
+  viewMode: '2d' | '3d' | 'text',
+  button: number,
+  viewport: ViewportHostLike
+): boolean {
+  if (!shouldRestore3dViewportKeyboardFocusOnPointerDown(viewMode, button)) {
+    return false;
+  }
+
+  return restore3dViewportKeyboardFocus(viewMode, viewport);
+}
+
 export function restore3dViewportKeyboardFocus(
   viewMode: '2d' | '3d' | 'text',
   viewport: ViewportHostLike

@@ -91,6 +91,7 @@ import {
 } from './hmr-notice.ts';
 import {
   restore3dViewportKeyboardFocus,
+  restore3dViewportKeyboardFocusOnPointerDown,
   shouldRestore3dViewportKeyboardFocusOnPointerDown,
 } from './viewport-focus.ts';
 import {
@@ -2722,12 +2723,12 @@ viewportStage?.addEventListener('pointerdown', (event) => {
 });
 
 viewport3d?.addEventListener('pointerdown', (event) => {
-  if (
-    !shouldRestore3dViewportKeyboardFocusOnPointerDown(
-      state.viewMode,
-      event.button
-    )
-  ) {
+  const activated = restore3dViewportKeyboardFocusOnPointerDown(
+    state.viewMode,
+    event.button,
+    viewport3d
+  );
+  if (!activated) {
     return;
   }
   mouseLookState.dragging = true;
