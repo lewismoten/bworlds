@@ -123,6 +123,7 @@ describe('debug panel', () => {
     expect(buildDebugMarkup(snapshot)).toContain('Worst Frame');
     expect(buildDebugMarkup(snapshot)).toContain('Points Nodes');
     expect(buildDebugMarkup(snapshot)).toContain('Sprites');
+    expect(buildDebugMarkup(snapshot)).toContain('Active Objects');
     expect(buildDebugMarkup(snapshot)).toContain('Three.js Objects');
     expect(buildDebugMarkup(snapshot)).toContain('Visible Meshes');
     expect(buildDebugMarkup(snapshot)).toContain('Particles');

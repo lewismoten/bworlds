@@ -762,7 +762,7 @@ A barrel should not get the same budget as a cathedral.
 
 # Performance HUD
 
-* [ ] Show active objects.
+* [X] Show active objects.
 * [X] Show visible meshes.
 * [X] Show triangles.
 * [X] Show vertices.
