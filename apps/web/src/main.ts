@@ -179,9 +179,7 @@ import { getNearbyOverworldQueryState } from './nearby-overworld-query.ts';
 import {
   buildSextantMarkup,
   buildEventSummaryMarkup,
-  buildStatusMarkup,
   buildTextViewportMarkup,
-  buildViewportHudMarkup,
   getCompassMiniSignature,
   getDetailLabels,
   getEventSummarySignature,
@@ -192,6 +190,10 @@ import {
   getTimekeeperMiniSignature,
   getViewportHudSignature,
 } from './ui-signatures.ts';
+import {
+  createStatusView,
+  createViewportHudView,
+} from './status-view.ts';
 import {
   cycleViewMode,
   getNextCompassDisplayMode,
@@ -636,6 +638,7 @@ const viewportStage = document.querySelector<HTMLElement>('#viewport-stage');
 const viewport3d = document.querySelector<HTMLElement>('#viewport-3d');
 const viewportText = document.querySelector<HTMLElement>('#viewport-text');
 const viewportHud = document.querySelector<HTMLElement>('#viewport-hud');
+const viewportHudView = viewportHud ? createViewportHudView(viewportHud) : null;
 const viewportTimekeeperMini =
   document.querySelector<HTMLCanvasElement>('#viewport-timekeeper-mini');
 const viewportCompassMini =
@@ -661,6 +664,7 @@ const faceSouthButton =
 const faceWestButton =
   document.querySelector<HTMLButtonElement>('#face-west');
 const status = document.querySelector<HTMLElement>('#status');
+const statusView = status ? createStatusView(status) : null;
 const toggleButton = document.querySelector<HTMLButtonElement>('#toggle-view');
 const toggleTimekeeperDisplayButton =
   document.querySelector<HTMLButtonElement>('#toggle-timekeeper-display');
@@ -1028,7 +1032,9 @@ const celestialEventModeState = {
 };
 const uiRenderState = {
   lastStatusSignature: '',
+  lastStatusUpdateNowMs: Number.NEGATIVE_INFINITY,
   lastViewportHudSignature: '',
+  lastViewportHudUpdateNowMs: Number.NEGATIVE_INFINITY,
   lastEventSummarySignature: '',
   lastTextViewportSignature: '',
   lastSextantSignature: '',
@@ -1039,6 +1045,7 @@ const uiRenderState = {
   lastCompassMiniSignature: '',
   lastMinimapMiniSignature: '',
 };
+const STATUS_DOM_UPDATE_INTERVAL_MS = 250;
 const hmrNoticeState = {
   message: '',
   visibleUntilMs: null as number | null,
@@ -1125,6 +1132,7 @@ function updateStatus(
   environment: WorldEnvironmentLike = getCurrentEnvironment(),
   cycle = getCurrentCycle(environment)
 ) {
+  const nowMs = performance.now();
   const tile = spatial.tile;
   const definition = registry.resolveTileDefinition(
     tile.kind,
@@ -1182,8 +1190,12 @@ function updateStatus(
     depth: context.depth,
     hint,
   });
-  if (statusSignature !== uiRenderState.lastStatusSignature) {
-    status.innerHTML = buildStatusMarkup({
+  if (
+    statusView &&
+    statusSignature !== uiRenderState.lastStatusSignature &&
+    nowMs - uiRenderState.lastStatusUpdateNowMs >= STATUS_DOM_UPDATE_INTERVAL_MS
+  ) {
+    statusView.update({
       viewMode: state.viewMode,
       playerLevel,
       contextLabel: context.label,
@@ -1209,9 +1221,10 @@ function updateStatus(
       hint,
     });
     uiRenderState.lastStatusSignature = statusSignature;
+    uiRenderState.lastStatusUpdateNowMs = nowMs;
   }
 
-  if (viewportHud) {
+  if (viewportHudView) {
     const showViewportCompass = isInspectorSectionVisible(
       activeInspectorTab,
       'viewport-compass'
@@ -1227,8 +1240,12 @@ function updateStatus(
       showCompass: showViewportCompass,
       interactionPrompt,
     });
-    if (viewportHudSignature !== uiRenderState.lastViewportHudSignature) {
-      viewportHud.innerHTML = buildViewportHudMarkup({
+    if (
+      viewportHudSignature !== uiRenderState.lastViewportHudSignature &&
+      nowMs - uiRenderState.lastViewportHudUpdateNowMs >=
+        STATUS_DOM_UPDATE_INTERVAL_MS
+    ) {
+      viewportHudView.update({
         timekeeperDisplayMode: activeTimekeeperDisplayMode,
         compassDisplayMode: activeCompassDisplayMode,
         timeLabel,
@@ -1237,9 +1254,9 @@ function updateStatus(
         headingLabel,
         showCompass: showViewportCompass,
         interactionPrompt,
-        compassMarkup: renderCompass(facing),
       });
       uiRenderState.lastViewportHudSignature = viewportHudSignature;
+      uiRenderState.lastViewportHudUpdateNowMs = nowMs;
     }
   }
 
