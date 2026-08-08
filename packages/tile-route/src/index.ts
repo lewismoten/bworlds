@@ -49,6 +49,7 @@ const COASTAL_LAND_CONTINENT_THRESHOLD = 0.42;
 const OCEAN_CONTINENT_THRESHOLD = 0.38;
 const MAX_DOCK_LENGTH = 3;
 const LONG_DOCK_BOAT_LENGTH = 3;
+const FOREST_LOG_BRIDGE_KEY = 'forestLogBridge';
 type RoadStyleType = 'footpath' | 'cobble' | 'brick';
 type BridgeTextureType = 'wood' | 'stone' | 'metal' | 'drawbridge' | 'roof' | 'roof-stone';
 type BridgeTextureLayer = 'deck' | 'rail' | 'cover' | 'pillar';
@@ -155,6 +156,13 @@ export function createRouteTilePlugin(): RuntimePlugin {
                 : connectedRoadKind === 'dock'
                   ? 'A dock reaches out from the nearby coast.'
                   : 'A road runs between nearby landmarks.'),
+          };
+        }
+
+        if (classifyForestRiverLogBridge(context)) {
+          return {
+            kind: 'bridge',
+            note: 'A fallen tree spans the river between the woods.',
           };
         }
 
@@ -362,6 +370,61 @@ function classifyNoiseRoad({
   }
 
   return 'road';
+}
+
+function classifyForestRiverLogBridge({
+  x,
+  y,
+  tile,
+  signals,
+  sampleTerrainSignals,
+}: ClassifyOverworldTileContext) {
+  if (!sampleTerrainSignals || tile.kind !== 'river') {
+    return false;
+  }
+  if (signals.roadSignal >= 0.56) {
+    return false;
+  }
+
+  const north = sampleTerrainSignals(x, y - 1);
+  const east = sampleTerrainSignals(x + 1, y);
+  const south = sampleTerrainSignals(x, y + 1);
+  const west = sampleTerrainSignals(x - 1, y);
+  const candidates: Array<'ew' | 'ns'> = [];
+
+  if (
+    isForestLikeBankSignal(north) &&
+    isForestLikeBankSignal(south) &&
+    north.roadSignal < 0.5 &&
+    south.roadSignal < 0.5
+  ) {
+    candidates.push('ns');
+  }
+  if (
+    isForestLikeBankSignal(east) &&
+    isForestLikeBankSignal(west) &&
+    east.roadSignal < 0.5 &&
+    west.roadSignal < 0.5
+  ) {
+    candidates.push('ew');
+  }
+
+  if (candidates.length === 0) {
+    return false;
+  }
+
+  const threshold = candidates.length > 1 ? 0.92 : 0.88;
+  return hash2D('forest-river-log-bridge', x, y) >= threshold;
+}
+
+function isForestLikeBankSignal(signal: ClassifyOverworldTileContext['signals']) {
+  return (
+    signal.continent > 0.42 &&
+    signal.continent < 0.9 &&
+    signal.elevation < 0.74 &&
+    signal.riverSignal < 0.86 &&
+    signal.moisture >= 0.56
+  );
 }
 
 function classifyPoiDock({
@@ -918,6 +981,11 @@ function createBridgeGroup(
   tileX: number,
   tileY: number
 ) {
+  const forestLogAxis = getForestLogBridgeAxis(state, tileX, tileY);
+  if (forestLogAxis) {
+    return createForestLogBridgeGroup(three, tileX, tileY, forestLogAxis);
+  }
+
   const info = getBridgeClusterInfo(state, tileX, tileY);
   const style = getBridgeStyle(
     three,
@@ -963,6 +1031,57 @@ function createBridgeGroup(
   if (info.length > 1 && style.pillarSpacing > 0) {
     addBridgePillars(three, group, style, alongX, info, deckWidth);
   }
+
+  return group;
+}
+
+function createForestLogBridgeGroup(
+  three: ThreeHostLike,
+  tileX: number,
+  tileY: number,
+  axis: 'ew' | 'ns'
+) {
+  const group = new three.Group();
+  group.position.set(tileX, 0, tileY);
+
+  const trunk = new three.Mesh(
+    new three.CylinderGeometry(0.08, 0.1, 1.08, 7),
+    new three.MeshStandardMaterial({
+      color: '#5b3a22',
+      roughness: 0.94,
+      metalness: 0.02,
+    })
+  );
+  trunk.position.y = -0.02;
+  trunk.rotation.z = Math.PI * 0.5;
+  if (axis === 'ns') {
+    trunk.rotation.x = Math.PI * 0.5;
+    trunk.rotation.z = 0;
+  }
+  trunk.userData = {
+    ...(trunk.userData ?? {}),
+    [FOREST_LOG_BRIDGE_KEY]: axis,
+  };
+  group.add(trunk);
+
+  const supportOffsets =
+    axis === 'ew' ? [-0.42, 0.42].map((x) => ({ x, z: 0 })) : [-0.42, 0.42].map((z) => ({ x: 0, z }));
+  supportOffsets.forEach((offset) => {
+    const support = new three.Mesh(
+      new three.CylinderGeometry(0.04, 0.05, 0.18, 6),
+      new three.MeshStandardMaterial({
+        color: '#3f2a18',
+        roughness: 0.96,
+        metalness: 0.02,
+      })
+    );
+    support.position.set(offset.x, -0.12, offset.z);
+    support.userData = {
+      ...(support.userData ?? {}),
+      [FOREST_LOG_BRIDGE_KEY]: axis,
+    };
+    group.add(support);
+  });
 
   return group;
 }
@@ -1046,7 +1165,7 @@ function getBridgeAxis(
   if ((north || south) && !(west || east)) {
     return 'ns';
   }
-  return null;
+  return getForestLogBridgeAxis(state, tileX, tileY);
 }
 
 function isBridgeTravelKind(kind: Kind): boolean {
@@ -1056,6 +1175,43 @@ function isBridgeTravelKind(kind: Kind): boolean {
     kind === 'road' ||
     isRouteTerminalKind(kind)
   );
+}
+
+function getForestLogBridgeAxis(
+  state: WorldStateLike,
+  tileX: number,
+  tileY: number
+): 'ew' | 'ns' | null {
+  if (state.getCurrentTile(tileX, tileY).kind !== 'bridge') {
+    return null;
+  }
+  const hasTravelNeighbors =
+    isBridgeTravelKind(state.getCurrentTile(tileX - 1, tileY).kind) ||
+    isBridgeTravelKind(state.getCurrentTile(tileX + 1, tileY).kind) ||
+    isBridgeTravelKind(state.getCurrentTile(tileX, tileY - 1).kind) ||
+    isBridgeTravelKind(state.getCurrentTile(tileX, tileY + 1).kind);
+  if (hasTravelNeighbors) {
+    return null;
+  }
+
+  const northForest = state.getCurrentTile(tileX, tileY - 1).kind === 'forest';
+  const eastForest = state.getCurrentTile(tileX + 1, tileY).kind === 'forest';
+  const southForest = state.getCurrentTile(tileX, tileY + 1).kind === 'forest';
+  const westForest = state.getCurrentTile(tileX - 1, tileY).kind === 'forest';
+
+  if (northForest && southForest && !(eastForest && westForest)) {
+    return 'ns';
+  }
+  if (eastForest && westForest && !(northForest && southForest)) {
+    return 'ew';
+  }
+  if (northForest && southForest) {
+    return hash2D('forest-log-axis', tileX, tileY) > 0.5 ? 'ns' : 'ew';
+  }
+  if (eastForest && westForest) {
+    return hash2D('forest-log-axis', tileX, tileY) > 0.5 ? 'ew' : 'ns';
+  }
+  return null;
 }
 
 function getDockAxis(

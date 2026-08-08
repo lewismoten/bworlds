@@ -55,6 +55,7 @@ const fakeThree = {
 
 const plugin = createRouteTilePlugin();
 const roadTile = plugin.tiles?.find((tile) => tile.kind === 'road');
+const bridgeTile = plugin.tiles?.find((tile) => tile.kind === 'bridge');
 const dockTile = plugin.tiles?.find((tile) => tile.kind === 'dock');
 const classifier = roadTile?.classifyOverworldTile;
 const resolver = roadTile?.resolveFloorKind3D;
@@ -156,6 +157,35 @@ function createDockModelState() {
         color: '#000000',
         miniColor: '#111111',
         walkable: true,
+        wallHeight: 0,
+      };
+    },
+  };
+}
+
+function createForestLogBridgeState() {
+  return {
+    player: { x: 0, y: 0, facing: 0 },
+    getCurrentContext() {
+      return { id: 'overworld', depth: 0, type: 'overworld' as const };
+    },
+    getCurrentTile(x: number, y: number) {
+      const key = `${x}:${y}`;
+      const kinds: Record<string, string> = {
+        '0:0': 'bridge',
+        '0:-1': 'forest',
+        '0:1': 'forest',
+        '-1:0': 'river',
+        '1:0': 'river',
+      };
+      return { kind: kinds[key] ?? 'plains' };
+    },
+    getTileDefinition(kind: string) {
+      return {
+        name: kind,
+        color: '#000000',
+        miniColor: '#111111',
+        walkable: kind !== 'river',
         wallHeight: 0,
       };
     },
@@ -316,8 +346,104 @@ describe('tile route', () => {
     ).toBeNull();
   });
 
+  it('creates isolated fallen-log bridges across forest-banked rivers', () => {
+    let result: ReturnType<NonNullable<typeof classifier>> = null;
+
+    for (let y = 0; y < 20 && !result; y += 1) {
+      for (let x = 0; x < 20; x += 1) {
+        result = classifier?.(
+          createRouteClassifierPayload({
+            x,
+            y,
+            tile: { kind: 'river' },
+            signals: {
+              continent: 0.6,
+              elevation: 0.22,
+              moisture: 0.62,
+              riverSignal: 0.86,
+              roadSignal: 0.18,
+            },
+            sampleTerrainSignals(sampleX: number, sampleY: number) {
+              if (sampleX === x && Math.abs(sampleY - y) === 1) {
+                return {
+                  continent: 0.66,
+                  elevation: 0.3,
+                  moisture: 0.78,
+                  riverSignal: 0.18,
+                  roadSignal: 0.22,
+                };
+              }
+              if (Math.abs(sampleX - x) === 1 && sampleY === y) {
+                return {
+                  continent: 0.58,
+                  elevation: 0.18,
+                  moisture: 0.64,
+                  riverSignal: 0.88,
+                  roadSignal: 0.12,
+                };
+              }
+              return {
+                continent: 0.58,
+                elevation: 0.24,
+                moisture: 0.48,
+                riverSignal: 0.16,
+                roadSignal: 0.18,
+              };
+            },
+            townAnchors: [],
+            bridgeAnchors: [],
+            poiAnchors: [],
+          })
+        ) ?? null;
+        if (result) {
+          break;
+        }
+      }
+    }
+
+    expect(result).toEqual(
+      expect.objectContaining({
+        kind: 'bridge',
+        note: expect.stringContaining('fallen tree'),
+      })
+    );
+  });
+
   it('resolves the 3D road floor kind from dominant neighboring terrain', () => {
     expect(resolver?.(createRouteFloorPayload())).toBe('plains');
+  });
+
+  it('renders isolated forest bridges as fallen logs with the matching traversal axis', () => {
+    const state = createForestLogBridgeState();
+    const profile = bridgeTile?.getTraversalProfile3D?.({
+      state: state as never,
+      tile: { kind: 'bridge' } as never,
+      tileX: 0,
+      tileY: 0,
+    });
+    const model = bridgeTile?.create3DModel?.({
+      three: fakeThree as never,
+      state: state as never,
+      tile: { kind: 'bridge' } as never,
+      tileX: 0,
+      tileY: 0,
+    }) as FakeGroup;
+
+    expect(profile).toEqual(
+      expect.objectContaining({
+        slideAxis: 'ns',
+      })
+    );
+
+    const markers = new Set<string>();
+    model.traverse((node) => {
+      const marker = node.userData?.forestLogBridge;
+      if (typeof marker === 'string') {
+        markers.add(marker);
+      }
+    });
+
+    expect(markers.has('ns')).toBe(true);
   });
 
   it('renders multiple boats across long dock clusters', () => {
