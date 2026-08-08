@@ -39,26 +39,26 @@ export interface CompassState {
   initialized: boolean;
 }
 
-export function easeAngle(current: number, target: number, factor: number) {
+export function easeAngle(current: number, target: number, factor: number): number {
   let delta = getCompassDelta(current, target);
   return current + delta * factor;
 }
 
-export function getCompassNeedleRotation(facingAngle: number) {
+export function getCompassNeedleRotation(facingAngle: number): number {
   return facingAngle + Math.PI / 2;
 }
 
-export function getCompassBezelRotation(headingAngle: number) {
+export function getCompassBezelRotation(headingAngle: number): number {
   return headingAngle + Math.PI / 2;
 }
 
-export function getCompassHeadingDegrees(headingAngle: number) {
+export function getCompassHeadingDegrees(headingAngle: number): number {
   return Math.round(
     (((headingAngle + Math.PI / 2) * 180) / Math.PI + 360) % 360
   );
 }
 
-export function formatCompassHeading(headingAngle: number | null) {
+export function formatCompassHeading(headingAngle: number | null): string {
   if (typeof headingAngle !== 'number') {
     return 'No heading set';
   }
@@ -117,7 +117,7 @@ export function shouldToggleCompassHeading(
   currentHeadingAngle: number | null,
   nextHeadingAngle: number,
   thresholdRadians = Math.PI / 24
-) {
+): boolean {
   if (typeof currentHeadingAngle !== 'number') {
     return false;
   }
@@ -128,7 +128,7 @@ export function isCompassHeadingDragSignificant(
   startHeadingAngle: number,
   nextHeadingAngle: number,
   thresholdRadians = Math.PI / 90
-) {
+): boolean {
   return Math.abs(getCompassDelta(startHeadingAngle, nextHeadingAngle)) > thresholdRadians;
 }
 
@@ -149,7 +149,7 @@ export function resolveCompassHeadingRelease(
   startHeadingAngle: number | null,
   nextHeadingAngle: number,
   draggedHeading: boolean
-) {
+): number | null {
   return !draggedHeading && shouldToggleCompassHeading(startHeadingAngle, nextHeadingAngle)
     ? null
     : nextHeadingAngle;
@@ -166,14 +166,14 @@ export function getCompassPalette(): CompassPalette {
   };
 }
 
-export function getCompassDelta(current: number, target: number) {
+export function getCompassDelta(current: number, target: number): number {
   let delta = target - current;
   while (delta > Math.PI) delta -= Math.PI * 2;
   while (delta < -Math.PI) delta += Math.PI * 2;
   return delta;
 }
 
-export function getCompassWobbleBoost(current: number, target: number) {
+export function getCompassWobbleBoost(current: number, target: number): number {
   const delta = getCompassDelta(current, target);
   return Math.sign(delta) * Math.min(0.34, Math.abs(delta) * 0.16);
 }
@@ -183,7 +183,7 @@ export function advanceDisplayedCompassHeading(
   targetHeadingAngle: number | null,
   draggingHeading: boolean,
   factor = 0.22
-) {
+): number | null {
   if (typeof targetHeadingAngle !== 'number') {
     return null;
   }
@@ -225,11 +225,11 @@ export function getCompassDialFacingAngle(
   pointY: number,
   centerX: number,
   centerY: number
-) {
+): number {
   return Math.atan2(pointY - centerY, pointX - centerX);
 }
 
-export function getCompassDialRadius(width: number, height: number) {
+export function getCompassDialRadius(width: number, height: number): number {
   return Math.min(width, height) * 0.38;
 }
 
@@ -251,7 +251,7 @@ export function drawCompassDial(
   canvas: HTMLCanvasElement | null,
   facingAngle: number,
   headingAngle: number | null = facingAngle
-) {
+): void {
   const context = canvas?.getContext('2d');
   if (!canvas || !context) {
     return;

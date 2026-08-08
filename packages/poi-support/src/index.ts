@@ -9,6 +9,7 @@ import type {
   PoiAnchorLike,
   PluginName,
   PointOfInterestType,
+  RuntimePlugin,
   Seed,
   TileLike,
   TilePlugin,
@@ -28,11 +29,95 @@ export const DEFAULT_LAND_POI_BLOCKED_KINDS = new Set([
   'mountain',
 ]) satisfies Set<Kind>;
 
+interface PoiWorldActionOptions {
+  facing?: number;
+  spawn?: { x: number; y: number };
+}
+
+interface GeneratedPoiTileOptions {
+  kind: Kind;
+  note: string;
+  poiType: PointOfInterestType;
+  seed: Seed;
+  tile?: TileLike | null;
+  x: number;
+  y: number;
+}
+
+interface AnchoredPoiTileOptions {
+  kind: Kind;
+  note: string;
+  poiType: PointOfInterestType;
+  seed: Seed;
+  tile?: TileLike | null;
+  anchor: PoiAnchorLike;
+}
+
+interface ChanceBasedLandPoiClassifierOptions {
+  kind: Kind;
+  poiType: PointOfInterestType;
+  note: string;
+  threshold: number;
+  chanceKey?: string;
+  getChance?(context: ClassifyOverworldTileContext): number | undefined;
+  blockedKinds?: ReadonlySet<Kind>;
+}
+
+interface EnterablePoiTilePluginOptions {
+  pluginName: PluginName;
+  kind: Kind;
+  definition: NonNullable<TilePlugin['definition']>;
+  classifyPoi(context: ClassifyOverworldTileContext): TileLike | null;
+  traversalProfile?: Partial<TraversalProfile3D>;
+  worldAction?: PoiWorldActionOptions;
+  paint2D?: TilePlugin['paint2D'];
+  create3DModel?: TilePlugin['create3DModel'];
+  canOccupy3D?: TilePlugin['canOccupy3D'];
+  getSurfaceProfile3D?: TilePlugin['getSurfaceProfile3D'];
+  getTraversalProfile3D?: TilePlugin['getTraversalProfile3D'];
+  createWorldAction?: TilePlugin['createWorldAction'];
+}
+
+interface ChanceBasedEnterablePoiTilePluginOptions
+  extends Omit<EnterablePoiTilePluginOptions, 'classifyPoi'> {
+  poiType?: PointOfInterestType;
+  note: string;
+  threshold: number;
+  chanceKey?: string;
+  getChance?(context: ClassifyOverworldTileContext): number | undefined;
+  blockedKinds?: ReadonlySet<Kind>;
+  classifyOverworldTile?: (
+    context: ClassifyOverworldTileContext
+  ) => TileLike | null;
+}
+
+interface AnchoredLandPoiClassifierOptions {
+  kind: Kind;
+  poiType?: PointOfInterestType;
+  note: string;
+  blockedKinds?: ReadonlySet<Kind>;
+  maxDistance?: number;
+  createPoi?(
+    context: ClassifyOverworldTileContext,
+    anchor: PoiAnchorLike
+  ): TileLike;
+}
+
+interface AnchoredEnterablePoiTilePluginOptions
+  extends Omit<EnterablePoiTilePluginOptions, 'classifyPoi'>,
+    AnchoredLandPoiClassifierOptions {
+  classifyOverworldTile?: (
+    context: ClassifyOverworldTileContext
+  ) => TileLike | null;
+}
+
+type LandmarkFacingScore = CardinalDirectionLike & { score: number };
+
 export function canPlaceLandPoi(
   nearLand: boolean,
   tileKind: Kind,
   blockedKinds: ReadonlySet<Kind> = DEFAULT_LAND_POI_BLOCKED_KINDS
-) {
+): boolean {
   return nearLand && !blockedKinds.has(tileKind);
 }
 
@@ -44,15 +129,7 @@ export function createGeneratedPoiTile({
   tile,
   x,
   y,
-}: {
-  kind: Kind;
-  note: string;
-  poiType: PointOfInterestType;
-  seed: Seed;
-  tile?: TileLike | null;
-  x: number;
-  y: number;
-}) {
+}: GeneratedPoiTileOptions): TileLike {
   return {
     kind,
     poi: {
@@ -70,14 +147,7 @@ export function createAnchoredPoiTile({
   seed,
   tile,
   anchor,
-}: {
-  kind: Kind;
-  note: string;
-  poiType: PointOfInterestType;
-  seed: Seed;
-  tile?: TileLike | null;
-  anchor: PoiAnchorLike;
-}) {
+}: AnchoredPoiTileOptions): TileLike {
   return {
     kind,
     poi: createNamedPoi(seed, poiType, anchor.x, anchor.y, anchor.name ?? tile?.poi?.name),
@@ -85,18 +155,12 @@ export function createAnchoredPoiTile({
   };
 }
 
-export function createChanceBasedLandPoiClassifier(options: {
-  kind: Kind;
-  poiType: PointOfInterestType;
-  note: string;
-  threshold: number;
-  chanceKey?: string;
-  getChance?(context: ClassifyOverworldTileContext): number | undefined;
-  blockedKinds?: ReadonlySet<Kind>;
-}) {
+export function createChanceBasedLandPoiClassifier(
+  options: ChanceBasedLandPoiClassifierOptions
+): (context: ClassifyOverworldTileContext) => TileLike | null {
   return function classifyChanceBasedLandPoi(
     context: ClassifyOverworldTileContext
-  ) {
+  ): TileLike | null {
     const { nearLand, tile, seed, x, y } = context;
     if (!canPlaceLandPoi(nearLand, tile.kind, options.blockedKinds)) {
       return null;
@@ -121,31 +185,9 @@ export function createChanceBasedLandPoiClassifier(options: {
   };
 }
 
-export function createChanceBasedEnterablePoiTilePlugin(options: {
-  pluginName: PluginName;
-  kind: Kind;
-  definition: NonNullable<TilePlugin['definition']>;
-  poiType?: PointOfInterestType;
-  note: string;
-  threshold: number;
-  chanceKey?: string;
-  getChance?(context: ClassifyOverworldTileContext): number | undefined;
-  blockedKinds?: ReadonlySet<Kind>;
-  traversalProfile?: Partial<TraversalProfile3D>;
-  worldAction?: {
-    facing?: number;
-    spawn?: { x: number; y: number };
-  };
-  classifyOverworldTile?: (
-    context: ClassifyOverworldTileContext
-  ) => TileLike | null;
-  paint2D?: TilePlugin['paint2D'];
-  create3DModel?: TilePlugin['create3DModel'];
-  canOccupy3D?: TilePlugin['canOccupy3D'];
-  getSurfaceProfile3D?: TilePlugin['getSurfaceProfile3D'];
-  getTraversalProfile3D?: TilePlugin['getTraversalProfile3D'];
-  createWorldAction?: TilePlugin['createWorldAction'];
-}) {
+export function createChanceBasedEnterablePoiTilePlugin(
+  options: ChanceBasedEnterablePoiTilePluginOptions
+): RuntimePlugin {
   const kind = options.kind;
   const poiType = options.poiType ?? kind;
   return createEnterablePoiTilePlugin({
@@ -164,33 +206,9 @@ export function createChanceBasedEnterablePoiTilePlugin(options: {
   });
 }
 
-export function createAnchoredEnterablePoiTilePlugin(options: {
-  pluginName: PluginName;
-  kind: Kind;
-  definition: NonNullable<TilePlugin['definition']>;
-  poiType?: PointOfInterestType;
-  note: string;
-  blockedKinds?: ReadonlySet<Kind>;
-  maxDistance?: number;
-  createPoi?(
-    context: ClassifyOverworldTileContext,
-    anchor: PoiAnchorLike
-  ): TileLike;
-  traversalProfile?: Partial<TraversalProfile3D>;
-  worldAction?: {
-    facing?: number;
-    spawn?: { x: number; y: number };
-  };
-  classifyOverworldTile?: (
-    context: ClassifyOverworldTileContext
-  ) => TileLike | null;
-  paint2D?: TilePlugin['paint2D'];
-  create3DModel?: TilePlugin['create3DModel'];
-  canOccupy3D?: TilePlugin['canOccupy3D'];
-  getSurfaceProfile3D?: TilePlugin['getSurfaceProfile3D'];
-  getTraversalProfile3D?: TilePlugin['getTraversalProfile3D'];
-  createWorldAction?: TilePlugin['createWorldAction'];
-}) {
+export function createAnchoredEnterablePoiTilePlugin(
+  options: AnchoredEnterablePoiTilePluginOptions
+): RuntimePlugin {
   const kind = options.kind;
   const poiType = options.poiType ?? kind;
   return createEnterablePoiTilePlugin({
@@ -208,23 +226,9 @@ export function createAnchoredEnterablePoiTilePlugin(options: {
   });
 }
 
-export function createEnterablePoiTilePlugin(options: {
-  pluginName: PluginName;
-  kind: Kind;
-  definition: NonNullable<TilePlugin['definition']>;
-  classifyPoi(context: ClassifyOverworldTileContext): TileLike | null;
-  traversalProfile?: Partial<TraversalProfile3D>;
-  worldAction?: {
-    facing?: number;
-    spawn?: { x: number; y: number };
-  };
-  paint2D?: TilePlugin['paint2D'];
-  create3DModel?: TilePlugin['create3DModel'];
-  canOccupy3D?: TilePlugin['canOccupy3D'];
-  getSurfaceProfile3D?: TilePlugin['getSurfaceProfile3D'];
-  getTraversalProfile3D?: TilePlugin['getTraversalProfile3D'];
-  createWorldAction?: TilePlugin['createWorldAction'];
-}) {
+export function createEnterablePoiTilePlugin(
+  options: EnterablePoiTilePluginOptions
+): RuntimePlugin {
   const enterablePoiFeatures = createEnterablePoiTileFeatures({
     traversalProfile: options.traversalProfile,
     worldAction: options.worldAction,
@@ -256,7 +260,7 @@ export function findPoiAnchor(
   context: ClassifyOverworldTileContext,
   poiType: PointOfInterestType,
   maxDistance = 0.55
-) {
+): PoiAnchorLike | undefined {
   return (context.poiAnchors ?? []).find(
     (anchor) =>
       anchor.type === poiType &&
@@ -264,20 +268,12 @@ export function findPoiAnchor(
   );
 }
 
-export function createAnchoredLandPoiClassifier(options: {
-  kind: Kind;
-  poiType?: PointOfInterestType;
-  note: string;
-  blockedKinds?: ReadonlySet<Kind>;
-  maxDistance?: number;
-  createPoi?(
-    context: ClassifyOverworldTileContext,
-    anchor: PoiAnchorLike
-  ): TileLike;
-}) {
+export function createAnchoredLandPoiClassifier(
+  options: AnchoredLandPoiClassifierOptions
+): (context: ClassifyOverworldTileContext) => TileLike | null {
   return function classifyAnchoredLandPoi(
     context: ClassifyOverworldTileContext
-  ) {
+  ): TileLike | null {
     const poiType = options.poiType ?? options.kind;
     if (
       !canPlaceLandPoi(
@@ -311,10 +307,7 @@ export function createAnchoredLandPoiClassifier(options: {
 
 export function createPoiWorldAction(
   { x, y, tile }: CreateWorldActionContext,
-  options: {
-    facing?: number;
-    spawn?: { x: number; y: number };
-  } = {}
+  options: PoiWorldActionOptions = {}
 ): WorldActionLike | null {
   if (!tile.poi) return null;
 
@@ -335,10 +328,7 @@ export function createPoiWorldAction(
 export function createEnterablePoiTileFeatures(
   options: {
     traversalProfile?: Partial<TraversalProfile3D>;
-    worldAction?: {
-      facing?: number;
-      spawn?: { x: number; y: number };
-    };
+    worldAction?: PoiWorldActionOptions;
   } = {}
 ): Pick<TilePlugin, 'getTraversalProfile3D' | 'createWorldAction'> {
   return {
@@ -355,7 +345,7 @@ export function resolvePlacementChance(
   context: ClassifyOverworldTileContext,
   chanceKey?: string,
   getChance?: ((context: ClassifyOverworldTileContext) => number | undefined) | null
-) {
+): number {
   if (typeof getChance === 'function') {
     const chance = getChance(context);
     if (typeof chance === 'number') {
@@ -405,7 +395,7 @@ export function getNearestAccessibleRouteDistance(
   tileY: number,
   direction: CardinalDirectionLike,
   maxDistance = 5
-) {
+): number {
   for (let distance = 1; distance <= maxDistance; distance += 1) {
     const tile = state.getCurrentTile(
       tileX + direction.dx * distance,
@@ -434,7 +424,7 @@ export function pickPreferredLandmarkFacing({
   tileY: number;
   seedKey: string;
   preferLandFacing?: boolean;
-}) {
+}): LandmarkFacingScore {
   return CARDINAL_DIRECTIONS.map((direction) => {
     const adjacentTile = state.getCurrentTile(
       tileX + direction.dx,

@@ -44,7 +44,7 @@ type EventSummarySignatureOptions = {
   detailLabels: string[];
 };
 
-export function getStatusSignature(options: StatusSignatureOptions) {
+export function getStatusSignature(options: StatusSignatureOptions): string {
   return [
     options.viewMode,
     options.contextLabel,
@@ -69,7 +69,9 @@ export function getStatusSignature(options: StatusSignatureOptions) {
   ].join('|');
 }
 
-export function getViewportHudSignature(options: ViewportHudSignatureOptions) {
+export function getViewportHudSignature(
+  options: ViewportHudSignatureOptions
+): string {
   return [
     options.timeLabel,
     options.facing,
@@ -78,7 +80,9 @@ export function getViewportHudSignature(options: ViewportHudSignatureOptions) {
   ].join('|');
 }
 
-export function getEventSummarySignature(options: EventSummarySignatureOptions) {
+export function getEventSummarySignature(
+  options: EventSummarySignatureOptions
+): string {
   return [
     options.modeLabel,
     options.activeEventsLabel,
@@ -86,11 +90,11 @@ export function getEventSummarySignature(options: EventSummarySignatureOptions) 
   ].join('|');
 }
 
-export function getDetailLabels(details: EventDetail[]) {
+export function getDetailLabels(details: EventDetail[]): string[] {
   return details.map((detail) => `${detail.kind}:${detail.label}`);
 }
 
-export function buildStatusMarkup(options: StatusSignatureOptions) {
+export function buildStatusMarkup(options: StatusSignatureOptions): string {
   return `
     <div><dt>View</dt><dd>${options.viewMode.toUpperCase()}</dd></div>
     <div><dt>Place</dt><dd>${options.contextLabel}</dd></div>
@@ -116,7 +120,7 @@ export function buildViewportHudMarkup(
   options: ViewportHudSignatureOptions & {
     compassMarkup: string;
   }
-) {
+): string {
   return `
       <div class="viewport-hud-label">${options.timeLabel}</div>
       <div class="viewport-hud-meta">Facing ${options.facing}</div>
@@ -135,7 +139,7 @@ export function buildEventSummaryMarkup(
     activeEventsLabel: string;
     details: EventDetail[];
   }
-) {
+): string {
   return `
       <div class="event-summary-label">Mode: ${options.modeLabel}</div>
       <div class="event-summary-active">${options.activeEventsLabel}</div>

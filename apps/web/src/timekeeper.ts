@@ -1,8 +1,54 @@
 import type { getDaylightCycleState } from '@bworlds/core';
 
 type DaylightCycleLike = ReturnType<typeof getDaylightCycleState>;
+type TimeWheelConstellationEntry = {
+  name: string;
+  index: number;
+  angle: number;
+  isActive: boolean;
+};
+type DaylightRingLayout = {
+  dawnAngle: number;
+  duskAngle: number;
+  dayCenterAngle: number;
+  nightCenterAngle: number;
+};
+type DisplayedDaylightAnchors = {
+  dayProgress: number;
+  sunriseProgress: number;
+  sunsetProgress: number;
+};
+type StabilizedDaylightAnchors = Pick<
+  DisplayedDaylightAnchors,
+  'sunriseProgress' | 'sunsetProgress'
+>;
+type RingStar = {
+  angle: number;
+  radius: number;
+  size: number;
+  color: string;
+};
+type CelestialRingStar = {
+  x: number;
+  y: number;
+  size: number;
+  color: string;
+};
+type TimeWheelWindowLayout = {
+  timeY: number;
+  constellationGlyphX: number;
+  constellationGlyphY: number;
+  constellationNameX: number;
+  constellationNameY: number;
+  moonPhaseSymbolX: number;
+  moonPhaseSymbolY: number;
+  moonPhaseLabelX: number;
+  moonPhaseLabelY: number;
+};
 
-export function getTimeWheelConstellationEntries(cycle: DaylightCycleLike) {
+export function getTimeWheelConstellationEntries(
+  cycle: DaylightCycleLike
+): TimeWheelConstellationEntry[] {
   const ring = cycle.celestialRing ?? [];
   return ring.map((entry, index) => ({
     name: entry.name,
@@ -12,15 +58,15 @@ export function getTimeWheelConstellationEntries(cycle: DaylightCycleLike) {
   }));
 }
 
-export function getCelestialDateLabel(cycle: DaylightCycleLike) {
+export function getCelestialDateLabel(cycle: DaylightCycleLike): string {
   return cycle.calendar?.label ?? `${cycle.activeConstellation?.name ?? 'Unknown'} / ${cycle.moonPhaseName}`;
 }
 
-export function getMoonPhaseSymbol(phaseIndex: number) {
+export function getMoonPhaseSymbol(phaseIndex: number): string {
   return ['●', '◔', '◑', '◕', '○', '◕', '◑', '◔'][phaseIndex] ?? '●';
 }
 
-export function getMoonPhaseLabel(phaseIndex: number) {
+export function getMoonPhaseLabel(phaseIndex: number): string {
   if (phaseIndex === 0) {
     return 'New';
   }
@@ -33,26 +79,28 @@ export function getMoonPhaseLabel(phaseIndex: number) {
   return 'Waning';
 }
 
-export function getMoonOrbitProgress(cycle: DaylightCycleLike) {
+export function getMoonOrbitProgress(cycle: DaylightCycleLike): number {
   return ((cycle.moonAngle + Math.PI / 2) / (Math.PI * 2) + 1) % 1;
 }
 
-export function getMoonMidnightOrbitProgress(cycle: DaylightCycleLike) {
+export function getMoonMidnightOrbitProgress(cycle: DaylightCycleLike): number {
   if (typeof cycle.moonMidnightOrbitProgress === 'number') {
     return cycle.moonMidnightOrbitProgress;
   }
   return getMoonOrbitProgress(cycle);
 }
 
-export function getDialAngle(progress: number, referenceProgress: number) {
+export function getDialAngle(progress: number, referenceProgress: number): number {
   return (progress - referenceProgress) * Math.PI * 2 - Math.PI / 2;
 }
 
-export function getDialRadialRotation(angle: number) {
+export function getDialRadialRotation(angle: number): number {
   return angle + Math.PI / 2;
 }
 
-export function getDaylightRingLayout(cycle: DaylightCycleLike) {
+export function getDaylightRingLayout(
+  cycle: DaylightCycleLike
+): DaylightRingLayout {
   const dawnAngle = getDialAngle(cycle.sunriseProgress, cycle.dayProgress);
   const duskAngle = getDialAngle(cycle.sunsetProgress, cycle.dayProgress);
   return {
@@ -74,13 +122,9 @@ export function stabilizeDisplayedDaylightAnchors(
     DaylightCycleLike,
     'dayProgress' | 'sunriseProgress' | 'sunsetProgress'
   >,
-  displayed: {
-    dayProgress: number;
-    sunriseProgress: number;
-    sunsetProgress: number;
-  },
+  displayed: DisplayedDaylightAnchors,
   threshold = 0.0005
-) {
+): StabilizedDaylightAnchors {
   const sunriseAligned =
     Math.abs(getWrappedProgressDelta(cycle.dayProgress, cycle.sunriseProgress)) <=
     threshold;
@@ -104,7 +148,7 @@ export function getNightRingStars(
   dawnAngle: number,
   duskAngle: number,
   count = 36
-) {
+): RingStar[] {
   const baseRadius = (innerRadius + outerRadius) * 0.5;
   const nightStart = duskAngle;
   const nightEnd = dawnAngle + Math.PI * 2;
@@ -130,7 +174,7 @@ export function getCelestialRingStars(
   innerRadius: number,
   outerRadius: number,
   count = 28
-) {
+): CelestialRingStar[] {
   const span = outerRadius - innerRadius;
   return Array.from({ length: count }, (_, starIndex) => {
     const angle = pseudoRandom(starIndex * 9.13, 0.47) * Math.PI * 2;
@@ -150,7 +194,10 @@ export function getCelestialRingStars(
   });
 }
 
-export function getTimeWheelWindowLayout(daylightInnerRadius: number, windowWidth: number) {
+export function getTimeWheelWindowLayout(
+  daylightInnerRadius: number,
+  windowWidth: number
+): TimeWheelWindowLayout {
   return {
     timeY: daylightInnerRadius * -0.09,
     constellationGlyphX: -windowWidth * 0.29,
@@ -164,7 +211,10 @@ export function getTimeWheelWindowLayout(daylightInnerRadius: number, windowWidt
   };
 }
 
-export function drawTimeWheel(canvas: HTMLCanvasElement | null, cycle: DaylightCycleLike) {
+export function drawTimeWheel(
+  canvas: HTMLCanvasElement | null,
+  cycle: DaylightCycleLike
+): void {
   const context = canvas?.getContext('2d');
   if (!canvas || !context) {
     return;
