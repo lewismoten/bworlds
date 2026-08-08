@@ -8,7 +8,7 @@
 - [X] Add a train station as a point of interest
 - [ ] Add different train cars that you can walk through
 - [X] Show trains traveling on the world overview map
-- [ ] Give trains audio for whistel and steam engine movement
+- [X] Give trains audio for whistel and steam engine movement
 
 # Water Travel
 - [ ] Add the ability to use a canoe to travel on rivers and along shores within 2-3 tiles of the ocean

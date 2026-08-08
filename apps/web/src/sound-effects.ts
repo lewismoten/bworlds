@@ -8,7 +8,9 @@ type SoundEffectKind =
   | 'open'
   | 'close'
   | 'wind'
-  | 'advancement';
+  | 'advancement'
+  | 'train-engine'
+  | 'train-whistle';
 type SoundWaveform = OscillatorType;
 type SoundPosition = { x: number; y: number };
 type SurfaceAudioFamily =
@@ -73,6 +75,13 @@ export type SoundEffectController = {
     weatherKind?: string;
     weatherIntensity?: number;
     windStrength?: number;
+    nearbyTrain?:
+      | {
+          progress?: number;
+          emitter?: SoundPosition;
+          listener?: SoundPosition;
+        }
+      | null;
     emitter?: SoundPosition;
     listener?: SoundPosition;
   }): void;
@@ -215,6 +224,8 @@ export function createSoundEffectController(
   let lastInteractionAtMs = -Infinity;
   let lastWindAtMs = -Infinity;
   let lastProgressionAtMs = -Infinity;
+  let lastTrainEngineAtMs = -Infinity;
+  let lastTrainWhistleAtMs = -Infinity;
   let previousJumping = false;
   let footstepVariant = 0;
 
@@ -238,6 +249,10 @@ export function createSoundEffectController(
             ? 190 + (tileKind === 'forest' ? 16 : 0) + variantOffset * 0.4
           : kind === 'advancement'
             ? resolveAdvancementFrequency()
+          : kind === 'train-engine'
+            ? 74 + variantOffset * 0.35
+          : kind === 'train-whistle'
+            ? 356 + variantOffset * 0.6
           : kind === 'open'
             ? resolveInteractionFrequency('open', tileKind, profile, variantOffset)
           : kind === 'close'
@@ -254,6 +269,10 @@ export function createSoundEffectController(
             ? 680
           : kind === 'advancement'
             ? 260
+          : kind === 'train-engine'
+            ? 420
+          : kind === 'train-whistle'
+            ? 880
           : kind === 'landing'
             ? 120
             : kind === 'blocked'
@@ -268,6 +287,10 @@ export function createSoundEffectController(
             ? 0.018
           : kind === 'advancement'
             ? 0.052
+          : kind === 'train-engine'
+            ? 0.03
+          : kind === 'train-whistle'
+            ? 0.042
           : kind === 'open' || kind === 'close'
             ? profile.landingVolume * 0.8
           : kind === 'blocked'
@@ -282,6 +305,10 @@ export function createSoundEffectController(
             ? 'triangle'
           : kind === 'advancement'
             ? 'sine'
+          : kind === 'train-engine'
+            ? 'sawtooth'
+          : kind === 'train-whistle'
+            ? 'square'
           : kind === 'open' || kind === 'close'
             ? resolveInteractionWaveform(tileKind, profile.waveform)
             : profile.waveform,
@@ -343,12 +370,43 @@ export function createSoundEffectController(
       weatherKind,
       weatherIntensity,
       windStrength,
+      nearbyTrain,
       emitter,
       listener,
     }) {
       if (viewMode !== '3d') {
         previousJumping = isJumping;
         return;
+      }
+
+      if (
+        nearbyTrain &&
+        nearbyTrain.emitter &&
+        nowMs - lastTrainEngineAtMs >= getTrainEngineCadenceMs()
+      ) {
+        lastTrainEngineAtMs = nowMs;
+        play(
+          'train-engine',
+          nowMs,
+          'rail',
+          nearbyTrain.emitter,
+          nearbyTrain.listener ?? listener
+        );
+      }
+      if (
+        nearbyTrain &&
+        nearbyTrain.emitter &&
+        shouldPlayTrainWhistle(nearbyTrain.progress) &&
+        nowMs - lastTrainWhistleAtMs >= 9000
+      ) {
+        lastTrainWhistleAtMs = nowMs;
+        play(
+          'train-whistle',
+          nowMs,
+          'rail',
+          nearbyTrain.emitter,
+          nearbyTrain.listener ?? listener
+        );
       }
 
       if (
@@ -403,6 +461,17 @@ export function shouldPlayForestWindSound(
 
 export function getForestWindCadenceMs(windStrength: number): number {
   return Math.round(clampValue(2600 - windStrength * 1200, 1200, 2600));
+}
+
+export function getTrainEngineCadenceMs(): number {
+  return 720;
+}
+
+export function shouldPlayTrainWhistle(progress: number | undefined): boolean {
+  if (typeof progress !== 'number') {
+    return false;
+  }
+  return progress <= 0.08 || progress >= 0.92;
 }
 
 function resolveInteractionFrequency(
@@ -504,6 +573,18 @@ export function createWebAudioSoundEffectSink(): SoundEffectSink {
         oscillator.frequency.exponentialRampToValueAtTime(
           effect.frequency * 1.5,
           startAt + durationSeconds * 0.55
+        );
+      }
+      if (effect.kind === 'train-engine') {
+        oscillator.frequency.exponentialRampToValueAtTime(
+          Math.max(48, effect.frequency * 0.82),
+          startAt + durationSeconds
+        );
+      }
+      if (effect.kind === 'train-whistle') {
+        oscillator.frequency.exponentialRampToValueAtTime(
+          effect.frequency * 1.28,
+          startAt + durationSeconds * 0.72
         );
       }
       gain.gain.setValueAtTime(0.0001, startAt);

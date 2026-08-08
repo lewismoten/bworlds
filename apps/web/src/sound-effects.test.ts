@@ -5,8 +5,10 @@ import {
   getSurfaceAudioFamily,
   getSurfaceAudioProfile,
   getSoundSpatialMix,
+  getTrainEngineCadenceMs,
   shouldPlayBlockedMovementSound,
   shouldPlayForestWindSound,
+  shouldPlayTrainWhistle,
   type ProceduralSoundEffect,
 } from './sound-effects.ts';
 
@@ -292,6 +294,60 @@ describe('sound effects', () => {
     expect(shouldPlayForestWindSound('forest', 'clouds', 0.45)).toBe(true);
     expect(shouldPlayForestWindSound('forest', 'clouds', 0.1)).toBe(false);
     expect(shouldPlayForestWindSound('road', 'wind', 0.9)).toBe(false);
+  });
+
+  it('plays train engine pulses and whistles for nearby active rail traffic', () => {
+    const played: ProceduralSoundEffect[] = [];
+    const controller = createSoundEffectController({
+      play(effect) {
+        played.push(effect);
+      },
+    });
+
+    controller.update({
+      nowMs: 0,
+      walking: false,
+      isJumping: false,
+      viewMode: '3d',
+      tileKind: 'plains',
+      nearbyTrain: {
+        progress: 0.04,
+        emitter: { x: 3, y: 0 },
+        listener: { x: 0, y: 0 },
+      },
+      listener: { x: 0, y: 0 },
+    });
+    controller.update({
+      nowMs: getTrainEngineCadenceMs() + 10,
+      walking: false,
+      isJumping: false,
+      viewMode: '3d',
+      tileKind: 'plains',
+      nearbyTrain: {
+        progress: 0.5,
+        emitter: { x: 3, y: 0 },
+        listener: { x: 0, y: 0 },
+      },
+      listener: { x: 0, y: 0 },
+    });
+
+    expect(played.map((effect) => effect.kind)).toEqual([
+      'train-engine',
+      'train-whistle',
+      'train-engine',
+    ]);
+    expect(played[0]?.waveform).toBe('sawtooth');
+    expect(played[1]?.waveform).toBe('square');
+    expect((played[1]?.frequency ?? 0) > (played[0]?.frequency ?? 0)).toBe(
+      true
+    );
+  });
+
+  it('only whistles when trains are near station approach progress', () => {
+    expect(shouldPlayTrainWhistle(0.02)).toBe(true);
+    expect(shouldPlayTrainWhistle(0.5)).toBe(false);
+    expect(shouldPlayTrainWhistle(0.98)).toBe(true);
+    expect(shouldPlayTrainWhistle(undefined)).toBe(false);
   });
 
   it('attaches listener and emitter positions to scheduled movement sounds', () => {

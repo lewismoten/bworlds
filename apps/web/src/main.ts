@@ -767,6 +767,15 @@ const nearbyPoiMusicState = {
     emitter: { x: number; y: number };
   },
 };
+const nearbyTrainAudioState = {
+  cacheKey: '',
+  profile: null as
+    | null
+    | {
+        progress?: number;
+        emitter: { x: number; y: number };
+      },
+};
 const MOON_PHASE_NAMES = [
   'New Moon',
   'Waxing Crescent',
@@ -1467,6 +1476,65 @@ function getNearbyPoiMusicProfile() {
   return nearbyPoiMusicState.profile;
 }
 
+function getNearbyTrainAudioProfile() {
+  const context = state.getCurrentContext();
+  if (context.type !== 'overworld') {
+    nearbyTrainAudioState.cacheKey = `${context.id}:${snapWorldCoordinate(state.player.x)}:${snapWorldCoordinate(state.player.y)}`;
+    nearbyTrainAudioState.profile = null;
+    return null;
+  }
+
+  const centerX = snapWorldCoordinate(state.player.x);
+  const centerY = snapWorldCoordinate(state.player.y);
+  const trainTimeBucket = Math.floor((state.timeMs ?? 0) / 2000);
+  const cacheKey = `${context.id}:${centerX}:${centerY}:${trainTimeBucket}`;
+  if (nearbyTrainAudioState.cacheKey === cacheKey) {
+    return nearbyTrainAudioState.profile;
+  }
+
+  const searchRadius = 8;
+  let best:
+    | null
+    | {
+        distance: number;
+        progress?: number;
+        emitter: { x: number; y: number };
+      } = null;
+
+  for (let y = centerY - searchRadius; y <= centerY + searchRadius; y += 1) {
+    for (let x = centerX - searchRadius; x <= centerX + searchRadius; x += 1) {
+      const tile = state.getCurrentTile(x, y) as {
+        train?: {
+          progress?: number;
+          x: number;
+          y: number;
+        };
+      };
+      if (!tile.train) {
+        continue;
+      }
+      const distance = Math.hypot(state.player.x - x, state.player.y - y);
+      if (best && distance >= best.distance) {
+        continue;
+      }
+      best = {
+        distance,
+        progress: tile.train.progress,
+        emitter: { x, y },
+      };
+    }
+  }
+
+  nearbyTrainAudioState.cacheKey = cacheKey;
+  nearbyTrainAudioState.profile = best
+    ? {
+        progress: best.progress,
+        emitter: best.emitter,
+      }
+    : null;
+  return nearbyTrainAudioState.profile;
+}
+
 function attemptMove(stepX: number, stepY: number): void {
   const nextX = state.player.x + stepX;
   const nextY = state.player.y + stepY;
@@ -1819,6 +1887,7 @@ function jump(): void {
 }
 
 function updateMovement(deltaMs: number): void {
+  state.timeMs = getCurrentWorldTimeMs();
   const nowMs = performance.now();
   const previousX = state.player.x;
   const previousY = state.player.y;
@@ -1923,6 +1992,7 @@ function updateMovement(deltaMs: number): void {
     }
   }
 
+  const nearbyTrainAudio = getNearbyTrainAudioProfile();
   soundEffects.update({
     nowMs,
     walking,
@@ -1932,6 +2002,12 @@ function updateMovement(deltaMs: number): void {
     weatherKind: latestEnvironment.weather?.current?.kind,
     weatherIntensity: latestEnvironment.weather?.current?.intensity,
     windStrength: latestEnvironment.weather?.current?.windStrength,
+    nearbyTrain: nearbyTrainAudio
+      ? {
+          ...nearbyTrainAudio,
+          listener: { x: state.player.x, y: state.player.y },
+        }
+      : null,
     emitter: { x: state.player.x, y: state.player.y },
     listener: { x: state.player.x, y: state.player.y },
   });
