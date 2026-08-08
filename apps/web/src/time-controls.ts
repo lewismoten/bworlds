@@ -3,9 +3,10 @@ import type { getDaylightCycleState } from '@bworlds/core';
 type DaylightCycleLike = ReturnType<typeof getDaylightCycleState>;
 
 export type TimePreset = 'dawn' | 'noon' | 'dusk' | 'midnight';
-export type InspectorTab = 'timekeeper' | 'model' | 'compass';
+export type InspectorTab = 'timekeeper' | 'model' | 'events' | 'compass';
 export type InspectorSection = InspectorTab | 'viewport-compass';
 export type ModelPreviewMode = 'world' | 'solar-system' | 'split';
+export type CelestialEventMode = 'auto' | 'aurora' | 'meteor-shower' | 'comet';
 
 export function getTimePresetProgress(
   cycle: DaylightCycleLike,
@@ -24,7 +25,7 @@ export function getTimePresetProgress(
 }
 
 export function getNextInspectorTab(tabId: string | undefined): InspectorTab {
-  if (tabId === 'model' || tabId === 'compass') {
+  if (tabId === 'model' || tabId === 'events' || tabId === 'compass') {
     return tabId;
   }
   return 'timekeeper';
@@ -37,6 +38,19 @@ export function getNextModelPreviewMode(
     return modeId;
   }
   return 'split';
+}
+
+export function getNextCelestialEventMode(
+  modeId: string | undefined
+): CelestialEventMode {
+  if (
+    modeId === 'aurora' ||
+    modeId === 'meteor-shower' ||
+    modeId === 'comet'
+  ) {
+    return modeId;
+  }
+  return 'auto';
 }
 
 export function isInspectorSectionVisible(

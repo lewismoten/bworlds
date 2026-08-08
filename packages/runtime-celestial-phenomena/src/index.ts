@@ -17,38 +17,67 @@ const AURORA_COLORS = [
   ['#9dff8f', '#6cf4d4'],
 ] as const;
 
+export type CelestialEventMode = 'auto' | 'aurora' | 'meteor-shower' | 'comet';
+
 export function createCelestialPhenomenaRuntimePlugin(): RuntimePlugin {
   return createRuntimePlugin('runtime-celestial-phenomena', {
     resolveWorldEnvironment({ timeMs, state }) {
       const cycle = resolveCelestialCycleConfig(state);
       const resolvedTimeMs = typeof timeMs === 'number' ? timeMs : 0;
       const celestialState = getDaylightCycleState(resolvedTimeMs, cycle);
+      const forcedMode = getForcedCelestialEventMode(state);
       const transientEvents = [
-        ...buildTransientMeteorEvents(celestialState, resolvedTimeMs),
-        ...buildVisitingCometEvents(celestialState, resolvedTimeMs),
+        ...buildTransientMeteorEvents(
+          celestialState,
+          resolvedTimeMs,
+          forcedMode === 'meteor-shower'
+        ),
+        ...buildVisitingCometEvents(
+          celestialState,
+          resolvedTimeMs,
+          forcedMode === 'comet'
+        ),
       ];
+      const auroraBands = buildAuroraBands(
+        celestialState,
+        resolvedTimeMs,
+        forcedMode === 'aurora'
+      );
 
       return {
         celestial: {
           visibleEventsAppend: transientEvents,
-          auroraBands: buildAuroraBands(celestialState, resolvedTimeMs),
-          deriveOrreryFromVisibleEvents: transientEvents.length > 0,
+          auroraBands,
+          deriveOrreryFromVisibleEvents:
+            transientEvents.length > 0 || auroraBands.length > 0,
         },
       };
     },
   });
 }
 
+function getForcedCelestialEventMode(state: unknown): CelestialEventMode {
+  const mode = (state as { celestialEventMode?: string } | null)?.celestialEventMode;
+  if (mode === 'aurora' || mode === 'meteor-shower' || mode === 'comet') {
+    return mode;
+  }
+  return 'auto';
+}
+
 function buildAuroraBands(
   cycle: ReturnType<typeof getDaylightCycleState>,
-  timeMs: number
+  timeMs: number,
+  forced = false
 ): AuroraBandLike[] {
   const latitudeFactor = clamp(
     (Math.abs(cycle.observerLatitudeDegrees) - 34) / 26,
     0,
     1
   );
-  if (latitudeFactor <= 0.08 || cycle.night <= 0.35) {
+  const effectiveLatitudeFactor = forced
+    ? Math.max(latitudeFactor, 0.34)
+    : latitudeFactor;
+  if ((!forced && latitudeFactor <= 0.08) || (!forced && cycle.night <= 0.35)) {
     return [];
   }
 
@@ -57,11 +86,13 @@ function buildAuroraBands(
     cycle.dayNumber,
     cycle.observerLatitudeDegrees >= 0 ? 1 : 0
   );
-  if (dayChance < 0.7) {
+  if (!forced && dayChance < 0.7) {
     return [];
   }
 
-  const baseIntensity = latitudeFactor * cycle.night * (0.58 + dayChance * 0.42);
+  const baseNightFactor = forced ? Math.max(cycle.night, 0.75) : cycle.night;
+  const baseIntensity =
+    effectiveLatitudeFactor * baseNightFactor * (0.58 + dayChance * 0.42);
   const bandCount = dayChance > 0.86 ? 2 : 1;
   const hemisphereAzimuth = cycle.observerLatitudeDegrees >= 0 ? -Math.PI / 2 : Math.PI / 2;
   return Array.from({ length: bandCount }, (_, index) => {
@@ -69,9 +100,9 @@ function buildAuroraBands(
     return {
       id: `aurora-${cycle.dayNumber}-${index}`,
       azimuthCenter: hemisphereAzimuth + (index - (bandCount - 1) * 0.5) * 0.34,
-      span: 0.82 + latitudeFactor * 0.36 + index * 0.08,
+      span: 0.82 + effectiveLatitudeFactor * 0.36 + index * 0.08,
       altitude: 0.3 + index * 0.06,
-      height: 0.18 + latitudeFactor * 0.08,
+      height: 0.18 + effectiveLatitudeFactor * 0.08,
       intensity: clamp(baseIntensity * (1 - index * 0.14), 0, 1),
       wavePhase: fract(timeMs / 18000 + index * 0.23),
       colorA: colors[0],
@@ -82,9 +113,13 @@ function buildAuroraBands(
 
 function buildTransientMeteorEvents(
   cycle: ReturnType<typeof getDaylightCycleState>,
-  timeMs: number
+  timeMs: number,
+  forced = false
 ): CelestialEventLike[] {
-  if (cycle.night <= 0.45 || hash2D('meteor-burst-day', cycle.dayNumber, 0) < 0.93) {
+  if (
+    (!forced && cycle.night <= 0.45) ||
+    (!forced && hash2D('meteor-burst-day', cycle.dayNumber, 0) < 0.93)
+  ) {
     return [];
   }
 
@@ -100,7 +135,7 @@ function buildTransientMeteorEvents(
       name: 'Northfall Burst',
       progress,
       intensity,
-      visibility: getTransientVisibility(cycle, altitude, intensity, true),
+      visibility: getTransientVisibility(cycle, altitude, intensity, true, forced),
       azimuth,
       altitude,
       color: '#dff4ff',
@@ -112,19 +147,24 @@ function buildTransientMeteorEvents(
 
 function buildVisitingCometEvents(
   cycle: ReturnType<typeof getDaylightCycleState>,
-  timeMs: number
+  timeMs: number,
+  forced = false
 ): CelestialEventLike[] {
   const visitLengthDays = 4;
   const cycleLengthDays = 96;
   const cycleDay =
     ((cycle.dayNumber % cycleLengthDays) + cycleLengthDays) % cycleLengthDays;
-  if (cycleDay >= visitLengthDays || hash2D('visiting-comet-day', cycle.dayNumber, 0) < 0.82) {
+  if (
+    (!forced && cycleDay >= visitLengthDays) ||
+    (!forced && hash2D('visiting-comet-day', cycle.dayNumber, 0) < 0.82)
+  ) {
     return [];
   }
 
   const phaseOffset = 0.41 + hash2D('visiting-comet-offset', cycle.dayNumber, 0) * 0.12;
   const progress = getCometOrbitProgress(
-    cycleDay + cycle.dayProgress + fract(timeMs / 120000) * 0.2,
+    (forced ? cycle.dayProgress * visitLengthDays : cycleDay + cycle.dayProgress) +
+      fract(timeMs / 120000) * 0.2,
     visitLengthDays + 3,
     phaseOffset,
     0.6
@@ -138,7 +178,7 @@ function buildVisitingCometEvents(
       name: 'Pilgrim Guest',
       progress,
       intensity,
-      visibility: getTransientVisibility(cycle, altitude, intensity, false),
+      visibility: getTransientVisibility(cycle, altitude, intensity, false, forced),
       azimuth,
       altitude,
       color: '#dff6ff',
@@ -152,9 +192,13 @@ function getTransientVisibility(
   cycle: ReturnType<typeof getDaylightCycleState>,
   altitude: number,
   intensity: number,
-  stronglyNightBound: boolean
+  stronglyNightBound: boolean,
+  forced = false
 ) {
   const horizonVisibility = smoothstep(-0.12, 0.18, altitude);
+  if (forced) {
+    return clamp((0.72 + intensity * 0.28) * Math.max(horizonVisibility, 0.72), 0, 1);
+  }
   const nightVisibility = stronglyNightBound
     ? cycle.night * cycle.starsOpacity
     : 0.22 + cycle.night * 0.78;

@@ -387,7 +387,11 @@ function syncPreviewPlanetTexture(
   }
 ) {
   const material = world.material as THREE.MeshStandardMaterial;
-  if (!overworldSampler || overworldSampler === textureState.lastSampler) {
+  if (
+    !overworldSampler ||
+    typeof overworldSampler.sampleOverworld !== 'function' ||
+    overworldSampler === textureState.lastSampler
+  ) {
     return;
   }
   const canvas = document.createElement('canvas');

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_DAY_LENGTH_MS, getDaylightCycleState } from '@bworlds/core';
 import {
+  getNextCelestialEventMode,
   getNextInspectorTab,
   getNextModelPreviewMode,
   getTimePresetProgress,
@@ -26,6 +27,7 @@ describe('time controls', () => {
 
   it('normalizes the inspector tab id to a supported tab', () => {
     expect(getNextInspectorTab('compass')).toBe('compass');
+    expect(getNextInspectorTab('events')).toBe('events');
     expect(getNextInspectorTab('model')).toBe('model');
     expect(getNextInspectorTab('timekeeper')).toBe('timekeeper');
     expect(getNextInspectorTab('unknown')).toBe('timekeeper');
@@ -38,9 +40,18 @@ describe('time controls', () => {
     expect(getNextModelPreviewMode('unknown')).toBe('split');
   });
 
+  it('normalizes the celestial event mode to a supported override', () => {
+    expect(getNextCelestialEventMode('auto')).toBe('auto');
+    expect(getNextCelestialEventMode('aurora')).toBe('aurora');
+    expect(getNextCelestialEventMode('meteor-shower')).toBe('meteor-shower');
+    expect(getNextCelestialEventMode('comet')).toBe('comet');
+    expect(getNextCelestialEventMode('unknown')).toBe('auto');
+  });
+
   it('shows only the active inspector section and reserves the viewport compass for compass mode', () => {
     expect(isInspectorSectionVisible('timekeeper', 'timekeeper')).toBe(true);
     expect(isInspectorSectionVisible('timekeeper', 'model')).toBe(false);
+    expect(isInspectorSectionVisible('timekeeper', 'events')).toBe(false);
     expect(isInspectorSectionVisible('timekeeper', 'compass')).toBe(false);
     expect(isInspectorSectionVisible('timekeeper', 'viewport-compass')).toBe(false);
     expect(isInspectorSectionVisible('compass', 'viewport-compass')).toBe(true);

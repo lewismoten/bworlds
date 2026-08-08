@@ -124,4 +124,6 @@ add a outer globe of stars in the sky that appear at night with procedurally gen
 - [x] There appears to be two suns in the celestial model. There is a bunch of "junk" below the planet, appearing to be a black hold swallowing a few planets.
 - [x] Add a separate side-window 3D solar system model that reflects the current sun, moon, planets, constellations, and Milky Way layout.
 - [x] the side-window 3d solar system is hard to see anything and small, as well as the world model. If two models are needed, then there should be a way to toggle which one is currently active/visible.
-- [x] As I drag the heading with the mouse, update the arrow and text to follow my mouse.
+- [ ] As I drag the heading with the mouse, update the arrow and text to follow my mouse.
+- [x] Add a tab to instantly trigger celestial events provided by the celestial plugins such as auroras, meteor showers, comets, etc. regardless of where the player is and time of day.
+- [ ] Save time/frozen state so refreshing will resume where i left off.

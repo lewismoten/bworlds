@@ -66,4 +66,51 @@ describe('runtime celestial phenomena', () => {
     );
     expect(environment?.celestial?.deriveOrreryFromVisibleEvents).toBe(true);
   });
+
+  it('can force an aurora regardless of latitude and time of day', () => {
+    const plugin = createCelestialPhenomenaRuntimePlugin();
+    const environment = plugin.resolveWorldEnvironment?.({
+      state: {
+        player: {
+          x: 0,
+          y: 0,
+        },
+        celestialEventMode: 'aurora',
+      } as any,
+      timeMs: 0,
+    }) as WorldEnvironmentLike | undefined;
+
+    expect(environment?.celestial?.auroraBands).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          intensity: expect.any(Number),
+          colorA: expect.any(String),
+          colorB: expect.any(String),
+        }),
+      ])
+    );
+  });
+
+  it('can force a meteor shower regardless of time of day', () => {
+    const plugin = createCelestialPhenomenaRuntimePlugin();
+    const environment = plugin.resolveWorldEnvironment?.({
+      state: {
+        player: {
+          x: 0,
+          y: 0,
+        },
+        celestialEventMode: 'meteor-shower',
+      } as any,
+      timeMs: 0,
+    }) as WorldEnvironmentLike | undefined;
+
+    expect(environment?.celestial?.visibleEventsAppend).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          type: 'meteor-shower',
+          visibility: expect.any(Number),
+        }),
+      ])
+    );
+  });
 });

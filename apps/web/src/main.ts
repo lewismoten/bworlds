@@ -41,6 +41,7 @@ import {
   shouldToggleCompassHeading,
 } from './compass.ts';
 import {
+  getNextCelestialEventMode,
   getNextInspectorTab,
   getNextModelPreviewMode,
   isInspectorSectionVisible,
@@ -114,6 +115,16 @@ root.innerHTML = `
                 aria-controls="panel-model"
               >
                 Model
+              </button>
+              <button
+                id="tab-events"
+                class="inspector-tab"
+                type="button"
+                role="tab"
+                aria-selected="false"
+                aria-controls="panel-events"
+              >
+                Events
               </button>
               <button
                 id="tab-compass"
@@ -203,6 +214,32 @@ root.innerHTML = `
               <button id="model-minus-hour" type="button">-1h</button>
               <button id="model-plus-hour" type="button">+1h</button>
             </div>
+          </section>
+          <section
+            id="panel-events"
+            class="inspector-panel is-hidden"
+            role="tabpanel"
+            aria-hidden="true"
+            hidden
+          >
+            <div class="event-mode-grid">
+              <button id="event-mode-auto" class="event-mode-button is-active" type="button">
+                Auto
+              </button>
+              <button id="event-mode-aurora" class="event-mode-button" type="button">
+                Aurora
+              </button>
+              <button id="event-mode-meteor-shower" class="event-mode-button" type="button">
+                Meteor Shower
+              </button>
+              <button id="event-mode-comet" class="event-mode-button" type="button">
+                Comet
+              </button>
+            </div>
+            <div id="event-summary" class="event-summary" aria-live="polite"></div>
+            <p class="inspector-note">
+              Trigger celestial plugin events instantly, even when the sky would not naturally show them.
+            </p>
           </section>
           <section
             id="panel-compass"
@@ -307,12 +344,22 @@ const modelPreviewSolarButton =
   document.querySelector<HTMLButtonElement>('#model-preview-solar');
 const modelPreviewSplitButton =
   document.querySelector<HTMLButtonElement>('#model-preview-split');
+const eventModeAutoButton =
+  document.querySelector<HTMLButtonElement>('#event-mode-auto');
+const eventModeAuroraButton =
+  document.querySelector<HTMLButtonElement>('#event-mode-aurora');
+const eventModeMeteorButton =
+  document.querySelector<HTMLButtonElement>('#event-mode-meteor-shower');
+const eventModeCometButton =
+  document.querySelector<HTMLButtonElement>('#event-mode-comet');
 const modelPreviewGrid =
   document.querySelector<HTMLElement>('.model-preview-grid');
 const modelPreviewWorldCard =
   document.querySelector<HTMLElement>('#model-preview-card-world');
 const modelPreviewSolarCard =
   document.querySelector<HTMLElement>('#model-preview-card-solar');
+const eventSummary =
+  document.querySelector<HTMLElement>('#event-summary');
 const freezeTimeButton =
   document.querySelector<HTMLButtonElement>('#time-freeze-toggle');
 const celestialToolsCard =
@@ -326,6 +373,7 @@ const sidebarCards = Array.from(
 const inspectorPanels = {
   timekeeper: document.querySelector<HTMLElement>('#panel-timekeeper'),
   model: document.querySelector<HTMLElement>('#panel-model'),
+  events: document.querySelector<HTMLElement>('#panel-events'),
   compass: document.querySelector<HTMLElement>('#panel-compass'),
 };
 let lastSavedSnapshot = '';
@@ -413,6 +461,12 @@ const celestialPreview = createCelestialPreviewRenderer(celestialPreviewHost);
 const solarSystemPreview = createSolarSystemPreviewRenderer(solarSystemPreviewHost);
 let activeInspectorTab = getNextInspectorTab(savedSession?.inspectorTab);
 let activeModelPreviewMode = getNextModelPreviewMode(savedSession?.modelPreviewMode);
+const celestialEventModeState = {
+  mode: getNextCelestialEventMode(savedSession?.celestialEventMode),
+};
+
+(state as typeof state & { celestialEventMode?: string }).celestialEventMode =
+  celestialEventModeState.mode;
 
 const keys = new Set();
 
@@ -447,6 +501,8 @@ function updateStatus() {
     <div><dt>Cycle</dt><dd>${timeState.frozen ? 'Frozen' : 'Running'}</dd></div>
     <div><dt>Season</dt><dd>${cycle.activeConstellation.name}</dd></div>
     <div><dt>Moon</dt><dd>${cycle.moonPhaseName}</dd></div>
+    <div><dt>Event Mode</dt><dd>${formatCelestialEventModeLabel(celestialEventModeState.mode)}</dd></div>
+    <div><dt>Events</dt><dd>${describeActiveCelestialEvents(cycle)}</dd></div>
     <div><dt>Sunrise</dt><dd>${cardinalFromAngle(cycle.sunriseAzimuth)}</dd></div>
     <div><dt>Depth</dt><dd>${context.depth}</dd></div>
     <div><dt>Hint</dt><dd>${tile.note ?? 'Explore the frontier.'}</dd></div>
@@ -463,6 +519,7 @@ function updateStatus() {
       <div class="viewport-hud-meta">${cycle.activeConstellation.name} • ${cycle.moonPhaseName}</div>
       <div class="viewport-hud-meta">Facing ${facing}</div>
       <div class="viewport-hud-meta">${formatCompassHeading(compassHeadingState.angle)}</div>
+      <div class="viewport-hud-meta">${describeActiveCelestialEvents(cycle)}</div>
       ${
         showViewportCompass
           ? `<div class="viewport-hud-compass">${renderCompass(facing)}</div>`
@@ -522,11 +579,39 @@ function updateModelPreviewModeUi() {
   }
 }
 
+function updateCelestialEventModeUi() {
+  eventModeAutoButton?.classList.toggle(
+    'is-active',
+    celestialEventModeState.mode === 'auto'
+  );
+  eventModeAuroraButton?.classList.toggle(
+    'is-active',
+    celestialEventModeState.mode === 'aurora'
+  );
+  eventModeMeteorButton?.classList.toggle(
+    'is-active',
+    celestialEventModeState.mode === 'meteor-shower'
+  );
+  eventModeCometButton?.classList.toggle(
+    'is-active',
+    celestialEventModeState.mode === 'comet'
+  );
+}
+
 function setModelPreviewMode(mode: 'world' | 'solar-system' | 'split') {
   activeModelPreviewMode = mode;
   updateModelPreviewModeUi();
   saveSession();
   resizeCanvas();
+  render();
+}
+
+function setCelestialEventMode(modeId: string | undefined) {
+  celestialEventModeState.mode = getNextCelestialEventMode(modeId);
+  (state as typeof state & { celestialEventMode?: string }).celestialEventMode =
+    celestialEventModeState.mode;
+  updateCelestialEventModeUi();
+  saveSession();
   render();
 }
 
@@ -594,6 +679,8 @@ function rebuildRuntime(nextPackIds: string[]) {
     viewMode: state.viewMode,
   });
   ({ contentPacks: activePacks, generator, registry, state } = runtime);
+  (state as typeof state & { celestialEventMode?: string }).celestialEventMode =
+    celestialEventModeState.mode;
   activePackIds = normalizedPackIds;
   drawAtlas(atlasCanvas.getContext('2d'));
   renderContentPackControls();
@@ -825,7 +912,7 @@ function setInspectorTab(tabId: string | undefined) {
   Object.entries(inspectorPanels).forEach(([panelId, panel]) => {
     const isActive = isInspectorSectionVisible(
       activeInspectorTab,
-      panelId as 'timekeeper' | 'model' | 'compass'
+      panelId as 'timekeeper' | 'model' | 'events' | 'compass'
     );
     panel?.classList.toggle('is-hidden', !isActive);
     panel?.setAttribute('aria-hidden', String(!isActive));
@@ -853,6 +940,13 @@ function setInspectorTab(tabId: string | undefined) {
   );
   if (celestialPreviewHost) {
     celestialPreviewHost.hidden = !isInspectorSectionVisible(activeInspectorTab, 'model');
+  }
+  eventSummary?.classList.toggle(
+    'is-hidden',
+    !isInspectorSectionVisible(activeInspectorTab, 'events')
+  );
+  if (eventSummary) {
+    eventSummary.hidden = !isInspectorSectionVisible(activeInspectorTab, 'events');
   }
   compassDialCanvas?.classList.toggle(
     'is-hidden',
@@ -1061,6 +1155,12 @@ function render() {
   drawTimeWheel(timeWheelCanvas, displayCycle);
   celestialPreview.render(displayCycle, environment, state.player.facing, generator);
   solarSystemPreview.render(displayCycle);
+  if (eventSummary) {
+    eventSummary.innerHTML = `
+      <div class="event-summary-label">Mode: ${formatCelestialEventModeLabel(celestialEventModeState.mode)}</div>
+      <div class="event-summary-active">${describeActiveCelestialEvents(displayCycle)}</div>
+    `;
+  }
   drawCompassDial(
     compassDialCanvas,
     updateDisplayedCompass(state.player.facing),
@@ -1088,6 +1188,47 @@ function renderCompass(facing: string) {
         : `<span>${direction}</span>`
     )
     .join('');
+}
+
+function formatCelestialEventModeLabel(mode: string) {
+  if (mode === 'aurora') {
+    return 'Aurora';
+  }
+  if (mode === 'meteor-shower') {
+    return 'Meteor Shower';
+  }
+  if (mode === 'comet') {
+    return 'Comet';
+  }
+  return 'Auto';
+}
+
+function describeActiveCelestialEvents(
+  cycle: ReturnType<typeof getDaylightCycleState> & {
+    auroraBands?: Array<{ intensity: number }>;
+    visibleEvents?: Array<{ type?: string; visibility?: number }>;
+  }
+) {
+  const activeEvents: string[] = [];
+  if ((cycle.auroraBands ?? []).some((band) => band.intensity > 0.03)) {
+    activeEvents.push('Aurora active');
+  }
+  if (
+    (cycle.visibleEvents ?? []).some(
+      (event) =>
+        event.type === 'meteor-shower' && (event.visibility ?? 0) > 0.03
+    )
+  ) {
+    activeEvents.push('Meteor shower visible');
+  }
+  if (
+    (cycle.visibleEvents ?? []).some(
+      (event) => event.type === 'comet' && (event.visibility ?? 0) > 0.03
+    )
+  ) {
+    activeEvents.push('Comet visible');
+  }
+  return activeEvents.length > 0 ? activeEvents.join(' • ') : 'No active events';
 }
 
 function updateDisplayedCycle(cycle: ReturnType<typeof getDaylightCycleState>) {
@@ -1260,6 +1401,10 @@ modelPlusSeasonButton?.addEventListener('click', () => skipSeasonByCount(1));
 modelPreviewWorldButton?.addEventListener('click', () => setModelPreviewMode('world'));
 modelPreviewSolarButton?.addEventListener('click', () => setModelPreviewMode('solar-system'));
 modelPreviewSplitButton?.addEventListener('click', () => setModelPreviewMode('split'));
+eventModeAutoButton?.addEventListener('click', () => setCelestialEventMode('auto'));
+eventModeAuroraButton?.addEventListener('click', () => setCelestialEventMode('aurora'));
+eventModeMeteorButton?.addEventListener('click', () => setCelestialEventMode('meteor-shower'));
+eventModeCometButton?.addEventListener('click', () => setCelestialEventMode('comet'));
 freezeTimeButton?.addEventListener('click', toggleTimeFreeze);
 inspectorTabButtons.forEach((button) => {
   button.addEventListener('click', () => {
@@ -1389,6 +1534,7 @@ viewport2d.classList.toggle('is-hidden', state.viewMode !== '2d');
 viewport3d.classList.toggle('is-hidden', state.viewMode !== '3d');
 setInspectorTab(activeInspectorTab);
 updateModelPreviewModeUi();
+updateCelestialEventModeUi();
 render();
 requestAnimationFrame(loop);
 
@@ -1408,6 +1554,7 @@ function saveSession() {
       frozenWorldTimeMs: timeState.frozenWorldTimeMs,
       inspectorTab: activeInspectorTab,
       modelPreviewMode: activeModelPreviewMode,
+      celestialEventMode: celestialEventModeState.mode,
       compassHeadingAngle: compassHeadingState.angle,
     });
     if (snapshot === lastSavedSnapshot) return;
@@ -1437,6 +1584,7 @@ function loadSession() {
       typeof parsed?.inspectorTab !== 'undefined' &&
       parsed.inspectorTab !== 'timekeeper' &&
       parsed.inspectorTab !== 'model' &&
+      parsed.inspectorTab !== 'events' &&
       parsed.inspectorTab !== 'compass'
     ) {
       return null;
@@ -1446,6 +1594,15 @@ function loadSession() {
       parsed.modelPreviewMode !== 'world' &&
       parsed.modelPreviewMode !== 'solar-system' &&
       parsed.modelPreviewMode !== 'split'
+    ) {
+      return null;
+    }
+    if (
+      typeof parsed?.celestialEventMode !== 'undefined' &&
+      parsed.celestialEventMode !== 'auto' &&
+      parsed.celestialEventMode !== 'aurora' &&
+      parsed.celestialEventMode !== 'meteor-shower' &&
+      parsed.celestialEventMode !== 'comet'
     ) {
       return null;
     }
