@@ -68,7 +68,7 @@ That gives you something you can save from a slow scene, attach to a bug report,
 * [x] Include vertices where calculable.
 * [x] Include points.
 * [x] Include lines.
-* [ ] Include visible object count.
+* [x] Include visible object count.
 * [ ] Include culled object count where available.
 * [x] Include visible mesh count.
 * [ ] Include visible instanced-mesh count.
@@ -96,7 +96,7 @@ That gives you something you can save from a slow scene, attach to a bug report,
 * [ ] Include average hierarchy depth.
 * [ ] Include empty groups.
 * [ ] Include one-child groups.
-* [ ] Include invisible objects.
+* [x] Include invisible objects.
 * [ ] Include objects with `matrixAutoUpdate = true`.
 * [ ] Include static objects still updating transforms.
 * [ ] Include scene objects belonging to unloaded tiles if detected.

@@ -2742,6 +2742,8 @@ function render(): FrameLoopActivityLike {
       lodChecksPerSecond: rendererStats.lodChecksPerSecond,
       lodReplacementsPerSecond: rendererStats.lodReplacementsPerSecond,
       object3dCount: rendererStats.object3dCount,
+      visibleObjectCount: rendererStats.visibleObjectCount,
+      invisibleObjectCount: rendererStats.invisibleObjectCount,
       groupCount: rendererStats.groupCount,
       meshCount: rendererStats.meshCount,
       visibleMeshCount: rendererStats.visibleMeshCount,

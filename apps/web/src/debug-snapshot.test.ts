@@ -123,6 +123,8 @@ describe('debug snapshot', () => {
         lodChecksPerSecond: 5,
         lodReplacementsPerSecond: 3,
         object3dCount: 318,
+        visibleObjectCount: 301,
+        invisibleObjectCount: 17,
         groupCount: 54,
         meshCount: 180,
         visibleMeshCount: 164,
@@ -279,6 +281,8 @@ describe('debug snapshot', () => {
     });
     expect(result.sceneGraph).toMatchObject({
       object3dCount: 318,
+      visibleObjectCount: 301,
+      invisibleObjectCount: 17,
       groupCount: 54,
       meshCount: 180,
       pointsCount: 5,

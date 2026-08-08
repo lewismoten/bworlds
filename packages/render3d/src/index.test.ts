@@ -65,6 +65,8 @@ describe('render3d visibility helpers', () => {
 
     expect(collectSceneResourceStats(root as never)).toEqual({
       object3dCount: 4,
+      visibleObjectCount: 4,
+      invisibleObjectCount: 0,
       groupCount: 1,
       meshCount: 3,
       visibleMeshCount: 3,
@@ -140,6 +142,8 @@ describe('render3d visibility helpers', () => {
 
     expect(collectSceneResourceStats(root as never)).toEqual({
       object3dCount: 9,
+      visibleObjectCount: 8,
+      invisibleObjectCount: 1,
       groupCount: 1,
       meshCount: 2,
       visibleMeshCount: 1,
@@ -188,6 +192,8 @@ describe('render3d visibility helpers', () => {
 
     expect(collectSceneResourceStats(root as never)).toEqual({
       object3dCount: 3,
+      visibleObjectCount: 2,
+      invisibleObjectCount: 1,
       groupCount: 1,
       meshCount: 2,
       visibleMeshCount: 1,
@@ -260,6 +266,8 @@ describe('render3d visibility helpers', () => {
 
     expect(collectSceneResourceStats(root as never)).toEqual({
       object3dCount: 4,
+      visibleObjectCount: 4,
+      invisibleObjectCount: 0,
       groupCount: 2,
       meshCount: 2,
       visibleMeshCount: 2,

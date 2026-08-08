@@ -28,6 +28,8 @@ export type DebugSnapshot = {
   lodChecksPerSecond: number;
   lodReplacementsPerSecond: number;
   object3dCount: number;
+  visibleObjectCount?: number;
+  invisibleObjectCount?: number;
   groupCount: number;
   meshCount: number;
   visibleMeshCount: number;

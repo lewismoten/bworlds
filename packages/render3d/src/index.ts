@@ -72,6 +72,8 @@ type Render3DController = {
     lodChecksPerSecond: number;
     lodReplacementsPerSecond: number;
     object3dCount: number;
+    visibleObjectCount: number;
+    invisibleObjectCount: number;
     groupCount: number;
     meshCount: number;
     visibleMeshCount: number;
@@ -146,6 +148,8 @@ type TileBuildCache = {
 
 type SceneResourceStats = {
   object3dCount: number;
+  visibleObjectCount: number;
+  invisibleObjectCount: number;
   groupCount: number;
   meshCount: number;
   visibleMeshCount: number;
@@ -751,6 +755,8 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       lodChecksPerSecond: renderChurnStats.lodChecksPerSecond,
       lodReplacementsPerSecond: renderChurnStats.lodReplacementsPerSecond,
       object3dCount: sceneResourceStats.object3dCount,
+      visibleObjectCount: sceneResourceStats.visibleObjectCount,
+      invisibleObjectCount: sceneResourceStats.invisibleObjectCount,
       groupCount: sceneResourceStats.groupCount,
       meshCount: sceneResourceStats.meshCount,
       visibleMeshCount: sceneResourceStats.visibleMeshCount,
@@ -1962,6 +1968,8 @@ export function collectSceneResourceStats(
   root: Pick<THREE.Object3D, 'traverse'>
 ): SceneResourceStats {
   let object3dCount = 0;
+  let visibleObjectCount = 0;
+  let invisibleObjectCount = 0;
   let groupCount = 0;
   let meshCount = 0;
   let visibleMeshCount = 0;
@@ -1985,6 +1993,11 @@ export function collectSceneResourceStats(
 
   root.traverse((child) => {
     object3dCount += 1;
+    if ((child as THREE.Object3D).visible !== false) {
+      visibleObjectCount += 1;
+    } else {
+      invisibleObjectCount += 1;
+    }
     if ((child as THREE.Object3D).type === 'Group') {
       groupCount += 1;
     }
@@ -2052,6 +2065,8 @@ export function collectSceneResourceStats(
 
   return {
     object3dCount,
+    visibleObjectCount,
+    invisibleObjectCount,
     groupCount,
     meshCount,
     visibleMeshCount,

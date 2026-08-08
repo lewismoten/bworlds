@@ -127,6 +127,8 @@ export type DebugSnapshotExport = {
   };
   sceneGraph: {
     object3dCount: number;
+    visibleObjectCount: number;
+    invisibleObjectCount: number;
     groupCount: number;
     meshCount: number;
     spriteCount: number;
@@ -250,6 +252,18 @@ export function buildDebugSnapshotExport(
     },
     sceneGraph: {
       object3dCount: options.snapshot.object3dCount,
+      visibleObjectCount:
+        options.snapshot.visibleObjectCount ??
+        Math.max(
+          0,
+          options.snapshot.object3dCount - (options.snapshot.invisibleObjectCount ?? 0)
+        ),
+      invisibleObjectCount:
+        options.snapshot.invisibleObjectCount ??
+        Math.max(
+          0,
+          options.snapshot.object3dCount - (options.snapshot.visibleObjectCount ?? 0)
+        ),
       groupCount: options.snapshot.groupCount,
       meshCount: options.snapshot.meshCount,
       spriteCount: options.snapshot.spriteCount,
