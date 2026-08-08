@@ -1,5 +1,6 @@
 import { resolveDockBoatRoute } from '@bworlds/dock-route-support';
 import { hash2D } from '@bworlds/core';
+import { findNearestBoatLaunchPoint } from '@bworlds/map-boat';
 import { createPlainsBackedTilePainter } from '@bworlds/paint-support';
 import { createTilePlugin } from '@bworlds/plugin-api';
 import {
@@ -294,22 +295,43 @@ export function createRouteTilePlugin(): RuntimePlugin {
         }
         const route = resolveDockBoatRoute(context.state, context.x, context.y);
         const destination = route?.stops[1];
-        if (!route || !destination) {
+        if (route && destination) {
+          return {
+            type: 'enter',
+            context: {
+              id: `dock-route-ship:${context.x}:${context.y}`,
+              label: route.boatName,
+              type: 'ship',
+              depth: 1,
+              origin: { x: context.x, y: context.y },
+              destination: { x: destination.x, y: destination.y },
+              routeBoatName: route.boatName,
+              routeStops: route.stops,
+            },
+            spawn: { x: 0, y: 4 },
+            facing: 0,
+          };
+        }
+        const launch = findNearestBoatLaunchPoint({
+          x: context.x,
+          y: context.y,
+          sampleTile: (sampleX, sampleY) =>
+            context.state!.getCurrentTile(sampleX, sampleY),
+          state: context.state,
+        });
+        if (!launch) {
           return null;
         }
         return {
           type: 'enter',
           context: {
-            id: `dock-route-ship:${context.x}:${context.y}`,
-            label: route.boatName,
-            type: 'ship',
+            id: `boat:${context.x}:${context.y}`,
+            label: 'Paddle Boat',
+            type: 'boat',
             depth: 1,
             origin: { x: context.x, y: context.y },
-            destination: { x: destination.x, y: destination.y },
-            routeBoatName: route.boatName,
-            routeStops: route.stops,
           },
-          spawn: { x: 0, y: 4 },
+          spawn: { x: launch.x - context.x, y: launch.y - context.y },
           facing: 0,
         };
       },
@@ -1729,11 +1751,14 @@ function createDockBoat(
   if (side === null) {
     return null;
   }
+  const route = resolveDockBoatRoute(state, tileX, tileY);
+  const paddleBoat = !route;
 
   const group = new three.Group();
   group.userData = {
     dockBoat: true,
     dockBoatClusterLength: info.length,
+    dockPaddleBoat: paddleBoat,
   };
   const hullLength = 0.42 + hash2D('dock-boat-length', tileX, tileY) * 0.12;
   const hullWidth = 0.18 + hash2D('dock-boat-width', tileX, tileY) * 0.04;
@@ -1755,7 +1780,17 @@ function createDockBoat(
   }
   group.add(prow);
 
-  if (hash2D('dock-boat-sail', tileX, tileY) > 0.48) {
+  if (paddleBoat) {
+    addDockPaddleBoatDetails(
+      three,
+      group,
+      style,
+      alongX,
+      side,
+      hullLength,
+      hullWidth
+    );
+  } else if (hash2D('dock-boat-sail', tileX, tileY) > 0.48) {
     const mast = new three.Mesh(
       new three.BoxGeometry(0.03, 0.34, 0.03),
       style.trimMaterial
@@ -1785,6 +1820,55 @@ function createDockBoat(
     group.rotation.y += Math.PI;
   }
   return group;
+}
+
+function addDockPaddleBoatDetails(
+  three: ThreeHostLike,
+  group: BridgeGroupLike,
+  style: DockStyle,
+  alongX: boolean,
+  side: -1 | 1,
+  hullLength: number,
+  hullWidth: number
+) {
+  for (const lateral of [-1, 1] as const) {
+    const wheel = new three.Mesh(
+      new three.CylinderGeometry(0.09, 0.09, 0.04, 10),
+      style.trimMaterial
+    );
+    wheel.rotation.x = Math.PI * 0.5;
+    if (alongX) {
+      wheel.position.set(0, -0.03, lateral * (hullWidth * 0.65));
+    } else {
+      wheel.position.set(lateral * (hullWidth * 0.65), -0.03, 0);
+      wheel.rotation.z = Math.PI * 0.5;
+    }
+    group.add(wheel);
+  }
+
+  const cabin = new three.Mesh(
+    new three.BoxGeometry(alongX ? hullLength * 0.48 : hullWidth * 0.72, 0.14, alongX ? hullWidth * 0.72 : hullLength * 0.48),
+    style.deckMaterial
+  );
+  cabin.position.y = 0.05;
+  group.add(cabin);
+
+  const ramp = new three.Mesh(
+    new three.BoxGeometry(alongX ? 0.18 : hullWidth * 0.66, 0.03, alongX ? hullWidth * 0.66 : 0.18),
+    style.deckMaterial
+  );
+  ramp.userData = {
+    ...(ramp.userData ?? {}),
+    dockPaddleBoatRampLowered: true,
+  };
+  if (alongX) {
+    ramp.position.set(side > 0 ? hullLength * 0.38 : -hullLength * 0.38, -0.09, 0);
+    ramp.rotation.z = side > 0 ? -0.42 : 0.42;
+  } else {
+    ramp.position.set(0, -0.09, side > 0 ? hullLength * 0.38 : -hullLength * 0.38);
+    ramp.rotation.x = side > 0 ? 0.42 : -0.42;
+  }
+  group.add(ramp);
 }
 
 function addBridgeParapets(

@@ -617,6 +617,33 @@ describe('tile route', () => {
     expect(longDockBoatMarkers).toEqual([4, 4]);
   });
 
+  it('renders lowered paddle-boat boarding ramps on non-route docks', () => {
+    const state = createDockModelState();
+    const model = dockTile?.create3DModel?.({
+      three: fakeThree as never,
+      state: state as never,
+      tile: { kind: 'dock' } as never,
+      tileX: 2,
+      tileY: 0,
+    }) as FakeGroup;
+
+    const paddleBoatMarkers: Array<Record<string, unknown>> = [];
+    model.traverse((node) => {
+      if (node.userData?.dockPaddleBoat || node.userData?.dockPaddleBoatRampLowered) {
+        paddleBoatMarkers.push(node.userData);
+      }
+    });
+
+    expect(
+      paddleBoatMarkers.some((marker) => marker.dockPaddleBoat === true)
+    ).toBe(true);
+    expect(
+      paddleBoatMarkers.some(
+        (marker) => marker.dockPaddleBoatRampLowered === true
+      )
+    ).toBe(true);
+  });
+
   it('renders a dock route sign with the boat name and destination stops', () => {
     const state = createRoutedDockModelState();
     const model = dockTile?.create3DModel?.({
@@ -667,6 +694,28 @@ describe('tile route', () => {
           ],
         }),
         spawn: { x: 0, y: 4 },
+      })
+    );
+  });
+
+  it('creates a boardable paddle-boat action from docks without a route ship', () => {
+    const state = createDockModelState();
+    const action = dockTile?.createWorldAction?.({
+      seed: 'spec',
+      x: 0,
+      y: 0,
+      tile: { kind: 'dock' } as never,
+      state: state as never,
+    });
+
+    expect(action).toEqual(
+      expect.objectContaining({
+        type: 'enter',
+        context: expect.objectContaining({
+          type: 'boat',
+          label: 'Paddle Boat',
+        }),
+        spawn: { x: 0, y: 0 },
       })
     );
   });
