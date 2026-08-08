@@ -6,45 +6,45 @@ That gives you something you can save from a slow scene, attach to a bug report,
 
 ## Download Debug Snapshot
 
-* [ ] Add a `Download Debug Snapshot` button to the debug panel.
-* [ ] Export the snapshot as JSON.
-* [ ] Include timestamp.
-* [ ] Include game version.
-* [ ] Include git commit/build identifier when available.
-* [ ] Include world seed.
-* [ ] Include current level/map identifier.
-* [ ] Include player grid/world position.
-* [ ] Include current renderer mode: text, 2D, or 3D.
-* [ ] Include active content packs.
-* [ ] Include enabled plugins.
-* [ ] Include graphics-quality settings.
-* [ ] Include render radius.
-* [ ] Include device/browser information.
+* [x] Add a `Download Debug Snapshot` button to the debug panel.
+* [x] Export the snapshot as JSON.
+* [x] Include timestamp.
+* [x] Include game version.
+* [x] Include git commit/build identifier when available.
+* [x] Include world seed.
+* [x] Include current level/map identifier.
+* [x] Include player grid/world position.
+* [x] Include current renderer mode: text, 2D, or 3D.
+* [x] Include active content packs.
+* [x] Include enabled plugins.
+* [x] Include graphics-quality settings.
+* [x] Include render radius.
+* [x] Include device/browser information.
 * [ ] Include WebGL/WebGPU capabilities.
-* [ ] Include hardware concurrency and available device-memory hints where exposed.
-* [ ] Include active performance-budget configuration.
+* [x] Include hardware concurrency and available device-memory hints where exposed.
+* [x] Include active performance-budget configuration.
 * [ ] Include soft and hard caps alongside actual values.
-* [ ] Generate a descriptive filename such as `bworlds-debug-20260808-151120.json`.
+* [x] Generate a descriptive filename such as `bworlds-debug-20260808-151120.json`.
 
 # Snapshot Summary
 
-* [ ] Include current FPS.
-* [ ] Include average FPS over a recent window.
+* [x] Include current FPS.
+* [x] Include average FPS over a recent window.
 * [ ] Include minimum FPS.
 * [ ] Include frame-time average.
 * [ ] Include P50 frame time.
 * [ ] Include P95 frame time.
 * [ ] Include P99 frame time.
-* [ ] Include worst recent frame.
-* [ ] Include target frame time.
-* [ ] Include current performance tier.
+* [x] Include worst recent frame.
+* [x] Include target frame time.
+* [x] Include current performance tier.
 * [ ] Include number of frames exceeding 16.7 ms.
 * [ ] Include number of frames exceeding 33.3 ms.
 * [ ] Include number of frames exceeding 50 ms.
 
 # CPU Timing Breakdown
 
-* [ ] Include total CPU frame time.
+* [x] Include total CPU frame time.
 * [ ] Include world simulation time.
 * [ ] Include AI time.
 * [ ] Include animation time.
@@ -63,14 +63,14 @@ That gives you something you can save from a slow scene, attach to a bug report,
 
 # GPU and Rendering Summary
 
-* [ ] Include draw calls.
-* [ ] Include triangles.
-* [ ] Include vertices where calculable.
-* [ ] Include points.
-* [ ] Include lines.
+* [x] Include draw calls.
+* [x] Include triangles.
+* [x] Include vertices where calculable.
+* [x] Include points.
+* [x] Include lines.
 * [ ] Include visible object count.
 * [ ] Include culled object count where available.
-* [ ] Include visible mesh count.
+* [x] Include visible mesh count.
 * [ ] Include visible instanced-mesh count.
 * [ ] Include total rendered instances.
 * [ ] Include transparent draw count.
@@ -83,15 +83,15 @@ That gives you something you can save from a slow scene, attach to a bug report,
 
 # Three.js Scene Graph
 
-* [ ] Include total `Object3D` count.
-* [ ] Include `Group` count.
-* [ ] Include `Mesh` count.
+* [x] Include total `Object3D` count.
+* [x] Include `Group` count.
+* [x] Include `Mesh` count.
 * [ ] Include `InstancedMesh` count.
-* [ ] Include `Sprite` count.
-* [ ] Include `Points` node count.
+* [x] Include `Sprite` count.
+* [x] Include `Points` node count.
 * [ ] Include line-object count.
 * [ ] Include camera count.
-* [ ] Include light count.
+* [x] Include light count.
 * [ ] Include maximum hierarchy depth.
 * [ ] Include average hierarchy depth.
 * [ ] Include empty groups.
@@ -104,7 +104,7 @@ That gives you something you can save from a slow scene, attach to a bug report,
 # Materials
 
 * [ ] Include total material references.
-* [ ] Include unique material instances.
+* [x] Include unique material instances.
 * [ ] Include shared material instances.
 * [ ] Include cloned-material count where trackable.
 * [ ] Include transparent materials.

@@ -1,0 +1,198 @@
+import { describe, expect, it } from 'vitest';
+import {
+  buildDebugSnapshotExport,
+  formatDebugSnapshotFilename,
+} from './debug-snapshot.ts';
+
+describe('debug snapshot', () => {
+  it('builds a structured export from the current debug snapshot and history', () => {
+    const timestamp = new Date('2026-08-08T15:11:20.000Z');
+    const result = buildDebugSnapshotExport({
+      timestamp,
+      gameVersion: '0.1.0',
+      buildId: 'abc1234',
+      worldSeed: 'alpha',
+      context: {
+        id: 'town:3:7',
+        type: 'town',
+        label: 'Town',
+        depth: 1,
+      },
+      player: {
+        gridX: 14,
+        gridY: -9,
+        worldX: 14.25,
+        worldY: -8.6,
+        facing: 90,
+      },
+      rendererMode: '3d',
+      activeContentPacks: [{ id: 'default-content-pack', name: 'Default Pack' }],
+      enabledPlugins: ['tile-forest', 'map-town'],
+      graphicsQuality: {
+        level: 'Reduced',
+        limiters: 'Target FPS reduced to 30',
+        renderRadius: 14,
+        targetFps: 30,
+        performanceTier: 'reduced',
+      },
+      device: {
+        userAgent: 'TestBrowser/1.0',
+        language: 'en-US',
+        platform: 'MacIntel',
+        hardwareConcurrency: 8,
+        deviceMemoryGb: 16,
+      },
+      performanceBudget: {
+        currentFrameMs: 22.4,
+        smoothedFrameMs: 24.1,
+        targetFps: 30,
+        visibilityRadius: 14,
+        pendingBuildBudgetMs: 2.25,
+        maxPendingBuildTiles: 4,
+      },
+      snapshot: {
+        fps: 44.6,
+        averageFps: 46.2,
+        frameMs: 22.4,
+        worstRecentFrameMs: 31.8,
+        targetFps: 30,
+        performanceTier: 'reduced',
+        renderQualityLevel: 'Reduced',
+        renderQualityLimiters: 'Target FPS reduced to 30',
+        playerLevel: 5,
+        visibilityRadius: 14,
+        drawCalls: 420,
+        triangles: 120000,
+        points: 90,
+        lines: 12,
+        sceneChildCount: 8,
+        visibleTileCount: 112,
+        visibleTreeCount: 24,
+        loadedChunkCount: 112,
+        chunkGenerationQueueSize: 6,
+        pendingTileCount: 6,
+        averagePendingFlushTiles: 3,
+        maxPendingFlushTiles: 5,
+        averageTileBuildMs: 2.4,
+        maxTileBuildMs: 6.8,
+        tileNodeBuildsPerSecond: 14,
+        tileBuildsPerSecond: 11,
+        lodChecksPerSecond: 5,
+        lodReplacementsPerSecond: 3,
+        object3dCount: 318,
+        groupCount: 54,
+        meshCount: 180,
+        visibleMeshCount: 164,
+        pointsCount: 5,
+        activeParticleCount: 90,
+        spriteCount: 9,
+        lightCount: 12,
+        dynamicLightCount: 4,
+        shadowLightCount: 2,
+        activeNpcCount: 19,
+        fullSimulationEntityCount: 21,
+        reducedSimulationEntityCount: 2,
+        activeAudioSourceCount: 6,
+        materialCount: 24,
+        geometryCount: 61,
+        vertexCount: 14432,
+        geometryMemoryCount: 63,
+        treeObjectCount: 216,
+        treeMeshCount: 135,
+        treeMaterialRefCount: 135,
+        visibleTileKindSummary: 'forest:48, plains:32',
+        textureCount: 7,
+        textureMemoryEstimateMb: 12.5,
+        programCount: 12,
+        latitude: 32.1234,
+        longitude: -81.5678,
+        gridX: 14,
+        gridY: -9,
+        worldSeed: 'alpha',
+        heapUsedMb: 48.4,
+        heapLimitMb: 128,
+        resourceWarnings: [],
+      },
+      history: [
+        {
+          nowMs: 1000,
+          fps: 48,
+          frameMs: 20.8,
+          drawCalls: 405,
+          triangles: 118000,
+          objectCount: 310,
+          materialCount: 24,
+          geometryCount: 60,
+          heapUsedMb: 47.9,
+          tileBuildsPerSecond: 12,
+          lodReplacementsPerSecond: 2,
+          visibleTileCount: 110,
+          visibleTreeCount: 25,
+          activeLightCount: 11,
+          generationQueueSize: 4,
+        },
+        {
+          nowMs: 2000,
+          fps: 44.6,
+          frameMs: 22.4,
+          drawCalls: 420,
+          triangles: 120000,
+          objectCount: 318,
+          materialCount: 24,
+          geometryCount: 61,
+          heapUsedMb: 48.4,
+          tileBuildsPerSecond: 11,
+          lodReplacementsPerSecond: 3,
+          visibleTileCount: 112,
+          visibleTreeCount: 24,
+          activeLightCount: 12,
+          generationQueueSize: 6,
+        },
+      ],
+    });
+
+    expect(result.metadata.timestamp).toBe('2026-08-08T15:11:20.000Z');
+    expect(result.metadata.gameVersion).toBe('0.1.0');
+    expect(result.metadata.buildId).toBe('abc1234');
+    expect(result.metadata.context.id).toBe('town:3:7');
+    expect(result.metadata.activeContentPacks[0]?.id).toBe('default-content-pack');
+    expect(result.metadata.enabledPlugins).toEqual(['tile-forest', 'map-town']);
+    expect(result.summary).toMatchObject({
+      currentFps: 44.6,
+      averageFps: 46.2,
+      targetFrameMs: 1000 / 30,
+      performanceTier: 'reduced',
+      cpuFrameMs: 22.4,
+    });
+    expect(result.rendering).toMatchObject({
+      drawCalls: 420,
+      triangles: 120000,
+      vertices: 14432,
+      visibleMeshCount: 164,
+    });
+    expect(result.sceneGraph).toMatchObject({
+      object3dCount: 318,
+      groupCount: 54,
+      meshCount: 180,
+      pointsCount: 5,
+      lightCount: 12,
+    });
+    expect(result.resources).toMatchObject({
+      uniqueMaterialCount: 24,
+      geometryCount: 61,
+      textureCount: 7,
+      textureMemoryEstimateMb: 12.5,
+      geometryMemoryCount: 63,
+    });
+    expect(result.history).toEqual([
+      expect.objectContaining({ t: -1, fps: 48, generationQueueSize: 4 }),
+      expect.objectContaining({ t: 0, fps: 44.6, generationQueueSize: 6 }),
+    ]);
+  });
+
+  it('formats debug snapshot filenames with a stable timestamp pattern', () => {
+    expect(
+      formatDebugSnapshotFilename(new Date('2026-08-08T15:11:20.000Z'))
+    ).toBe('bworlds-debug-20260808-151120.json');
+  });
+});

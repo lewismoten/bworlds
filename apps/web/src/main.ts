@@ -1,4 +1,5 @@
 import { drawAtlas } from '@bworlds/atlas';
+import appPackage from '../package.json';
 import {
   advanceWorldTimeOffsetByHours,
   advanceWorldTimeOffsetBySeasons,
@@ -91,6 +92,7 @@ import {
 } from './head-bob.ts';
 import {
   buildDebugMarkup,
+  type DebugSnapshot,
   getHeapGrowthWarning,
   getIdleAllocationWarning,
   getMaterialGrowthWarning,
@@ -107,6 +109,10 @@ import {
   getDebugSignature,
   normalizeWorldSeed,
 } from './debug-panel.ts';
+import {
+  buildDebugSnapshotExport,
+  formatDebugSnapshotFilename,
+} from './debug-snapshot.ts';
 import {
   findRandomTileDestination,
   listTileTeleportOptions,
@@ -582,6 +588,9 @@ root.innerHTML = `
             <div class="time-skip-controls">
               <button id="debug-level-down" type="button">Level -</button>
               <button id="debug-level-up" type="button">Level +</button>
+              <button id="debug-download-snapshot" type="button">
+                Download Debug Snapshot
+              </button>
             </div>
             <dl id="debug-summary" class="debug-summary"></dl>
             <p class="inspector-note">
@@ -732,6 +741,8 @@ const debugLevelDownButton =
   document.querySelector<HTMLButtonElement>('#debug-level-down');
 const debugLevelUpButton =
   document.querySelector<HTMLButtonElement>('#debug-level-up');
+const debugDownloadSnapshotButton =
+  document.querySelector<HTMLButtonElement>('#debug-download-snapshot');
 const freezeTimeButton =
   document.querySelector<HTMLButtonElement>('#time-freeze-toggle');
 const celestialToolsCard =
@@ -1027,6 +1038,9 @@ const hmrNoticeState = {
 const pageVisibilityState = {
   hidden: typeof document !== 'undefined' ? document.hidden : false,
 };
+const debugSnapshotState = {
+  latestSnapshot: null as DebugSnapshot | null,
+};
 const debugResourceTrendState = {
   materialSamples: [] as Array<{
     nowMs: number;
@@ -1067,6 +1081,9 @@ const debugResourceTrendState = {
 const renderBudgetState = {
   ...DEFAULT_RENDER_BUDGET_STATE,
 };
+const APP_VERSION = appPackage.version;
+const BUILD_ID =
+  (import.meta.env as Record<string, string | undefined>).VITE_GIT_COMMIT ?? null;
 let latestEnvironment: WorldEnvironmentLike = getCurrentEnvironment();
 
 (state as typeof state & { celestialEventMode?: string }).celestialEventMode =
@@ -1592,6 +1609,79 @@ function loadSavedWorldSeed(): void {
   }
   const parsed = parseSavedSession(window.localStorage.getItem(SESSION_STORAGE_KEY));
   applyWorldSeed(parsed?.worldSeed ?? DEFAULT_WORLD_SEED);
+}
+
+function downloadCurrentDebugSnapshot(): void {
+  const latestSnapshot = debugSnapshotState.latestSnapshot;
+  if (!latestSnapshot) {
+    return;
+  }
+
+  const timestamp = new Date();
+  const currentContext = state.getCurrentContext();
+  const pendingWorldBuildBudget = getPendingWorldBuildBudget(renderBudgetState);
+  const exportPayload = buildDebugSnapshotExport({
+    timestamp,
+    gameVersion: APP_VERSION,
+    buildId: BUILD_ID,
+    worldSeed: currentWorldSeed,
+    context: {
+      id: currentContext.id,
+      type: currentContext.type,
+      label: currentContext.label,
+      depth: currentContext.depth,
+    },
+    player: {
+      gridX: snapWorldCoordinate(state.player.x),
+      gridY: snapWorldCoordinate(state.player.y),
+      worldX: state.player.x,
+      worldY: state.player.y,
+      facing: state.player.facing,
+    },
+    rendererMode: state.viewMode,
+    activeContentPacks: activePacks.map((pack) => ({
+      id: pack.id,
+      name: pack.name,
+    })),
+    enabledPlugins: registry.plugins.map((plugin) => plugin.name),
+    graphicsQuality: {
+      level: latestSnapshot.renderQualityLevel,
+      limiters: latestSnapshot.renderQualityLimiters,
+      renderRadius: latestSnapshot.visibilityRadius,
+      targetFps: latestSnapshot.targetFps,
+      performanceTier: latestSnapshot.performanceTier,
+    },
+    device: {
+      userAgent: navigator.userAgent,
+      language: navigator.language,
+      platform:
+        (navigator as Navigator & {
+          userAgentData?: { platform?: string };
+        }).userAgentData?.platform ?? navigator.platform,
+      hardwareConcurrency: navigator.hardwareConcurrency,
+      deviceMemoryGb:
+        (navigator as Navigator & { deviceMemory?: number }).deviceMemory ?? null,
+    },
+    performanceBudget: {
+      currentFrameMs: renderBudgetState.currentFrameMs,
+      smoothedFrameMs: renderBudgetState.smoothedFrameMs,
+      targetFps: renderBudgetState.targetFps,
+      visibilityRadius: renderBudgetState.visibilityRadius,
+      pendingBuildBudgetMs: pendingWorldBuildBudget.pendingBuildBudgetMs,
+      maxPendingBuildTiles: pendingWorldBuildBudget.maxPendingBuildTiles,
+    },
+    snapshot: latestSnapshot,
+    history: debugResourceTrendState.performanceSamples,
+  });
+  const blob = new Blob([`${JSON.stringify(exportPayload, null, 2)}\n`], {
+    type: 'application/json',
+  });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = formatDebugSnapshotFilename(timestamp);
+  anchor.click();
+  URL.revokeObjectURL(url);
 }
 
 function canLandOnOverworldTile(x: number, y: number): boolean {
@@ -2713,6 +2803,7 @@ function render(): FrameLoopActivityLike {
       activeLightCount: debugSnapshot.lightCount,
       generationQueueSize: debugSnapshot.chunkGenerationQueueSize,
     });
+    debugSnapshotState.latestSnapshot = { ...debugSnapshot };
     const debugSignature = getDebugSignature(debugSnapshot);
     if (debugSignature !== uiRenderState.lastDebugSignature) {
       debugSummary.innerHTML = buildDebugMarkup(debugSnapshot);
@@ -3198,6 +3289,7 @@ debugLevelDownButton?.addEventListener('click', () => {
 debugLevelUpButton?.addEventListener('click', () => {
   setPlayerLevel(normalizePlayerLevel(state.playerLevel) + 1);
 });
+debugDownloadSnapshotButton?.addEventListener('click', downloadCurrentDebugSnapshot);
 debugSeedInput?.addEventListener('keydown', (event) => {
   if (event.key === 'Enter') {
     applyWorldSeed(debugSeedInput.value);
