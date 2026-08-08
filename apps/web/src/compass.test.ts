@@ -6,6 +6,7 @@ import {
   getCompassDialFacingAngle,
   getCompassDialInteractionMode,
   getCompassNeedleRotation,
+  getCompassPalette,
   getCompassWobbleBoost,
 } from './compass.ts';
 
@@ -54,5 +55,12 @@ describe('compass helpers', () => {
     expect(getCompassDialInteractionMode(50, 10, 50, 50, 40)).toBe('heading-bug');
     expect(getCompassDialInteractionMode(50, 40, 50, 50, 40)).toBe('facing');
     expect(getCompassDialInteractionMode(50, -5, 50, 50, 40)).toBe('none');
+  });
+
+  it('uses a red north label and a light south needle for contrast', () => {
+    const palette = getCompassPalette();
+
+    expect(palette.northLabel).toBe('#d54343');
+    expect(palette.southNeedle).toBe('#f4f8ff');
   });
 });

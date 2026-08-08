@@ -30,8 +30,9 @@ export function createCelestialPhenomenaRuntimePlugin(): RuntimePlugin {
 
       return {
         celestial: {
-          visibleEvents: [...celestialState.visibleEvents, ...transientEvents],
+          visibleEventsAppend: transientEvents,
           auroraBands: buildAuroraBands(celestialState, resolvedTimeMs),
+          deriveOrreryFromVisibleEvents: transientEvents.length > 0,
         },
       };
     },

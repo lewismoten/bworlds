@@ -19,6 +19,7 @@ import {
 } from '@bworlds/plugin-api';
 import { createCelestialRuntimePlugin } from '@bworlds/runtime-celestial';
 import { createCelestialPhenomenaRuntimePlugin } from '@bworlds/runtime-celestial-phenomena';
+import { createCelestialSystemRuntimePlugin } from '@bworlds/runtime-celestial-system';
 import { createDepthFlavorRuntimePlugin } from '@bworlds/runtime-depth-flavor';
 import { createOverworldAnchorsRuntimePlugin } from '@bworlds/runtime-overworld-anchors';
 import { createStartRegionRuntimePlugin } from '@bworlds/runtime-start-region';
@@ -68,6 +69,10 @@ export function createDefaultRuntimePlugins() {
     {
       create: createCelestialPhenomenaRuntimePlugin,
       order: { priority: 2, after: ['runtime-celestial'] },
+    },
+    {
+      create: createCelestialSystemRuntimePlugin,
+      order: { priority: 3, after: ['runtime-celestial-phenomena'] },
     },
     {
       create: createStartRegionRuntimePlugin,

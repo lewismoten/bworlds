@@ -108,8 +108,15 @@ add a outer globe of stars in the sky that appear at night with procedurally gen
 - [x] Add a plugin to generate animated aurora's at night occasionally which may appear the further north you go.
 - [x] Add a plugin to generate animated meteor showers at night occasionally
 - [x] Add a plugin to generate visiting commets that may appear briefly, or rarely last for days.
-- [ ] Add a plugin to handle planets in the same solar system.
-- [ ] The mdoel and compass are no longer rendering content
+- [x] Add a plugin to handle planets in the same solar system.
+- [x] The mdoel and compass are no longer rendering content
 - [x] The texture in celestial model can not be seen on the planet as it's too dark. the sun should at least emit light to brighten the planet, but even the dark side should be a little brighter.
 - [x] in the celestrial model, the edges of the milky way do not line up.
 - [x] the compass does not have a bevel that I can adjust so that i can keep a constant heading.
+- [x] Since the compass background is black, the south needle should be white, or have a white outline.
+- [x] The "N" on the compass should be red.
+- [ ] When I click the bezel of the compass to set a heading, the arrow appears there, but a different bezel is highlighted about 90 degrees off.
+- [ ] Clicking the bezel should show the degrees that it is at.
+- [ ] Clicking the same bezel should toggle the arrow off.
+- [ ] In the celestial model, the planet is still very dark. it may need some emissive light or omnidirectional light applied. 
+- [ ] In the celestial model, the sun is not emitting light onto the planet and casing shadows on the moon

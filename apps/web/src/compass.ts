@@ -11,6 +11,17 @@ export function getCompassBezelRotation(headingAngle: number) {
   return headingAngle + Math.PI / 2;
 }
 
+export function getCompassPalette() {
+  return {
+    northLabel: '#d54343',
+    cardinalLabel: '#dbe9ff',
+    bezelMarker: '#55d6be',
+    northNeedle: '#d54343',
+    southNeedle: '#f4f8ff',
+    southNeedleOutline: '#0b1016',
+  };
+}
+
 export function getCompassDelta(current: number, target: number) {
   let delta = target - current;
   while (delta > Math.PI) delta -= Math.PI * 2;
@@ -96,6 +107,7 @@ export function drawCompassDial(
   const centerY = height / 2;
   const radius = getCompassDialRadius(width, height);
   const bezelRadius = radius * 1.08;
+  const palette = getCompassPalette();
 
   context.clearRect(0, 0, width, height);
   context.save();
@@ -148,10 +160,10 @@ export function drawCompassDial(
   }
 
   const labels = [
-    { label: 'N', angle: -Math.PI / 2, color: '#55d6be' },
-    { label: 'E', angle: 0, color: '#dbe9ff' },
-    { label: 'S', angle: Math.PI / 2, color: '#dbe9ff' },
-    { label: 'W', angle: Math.PI, color: '#dbe9ff' },
+    { label: 'N', angle: -Math.PI / 2, color: palette.northLabel },
+    { label: 'E', angle: 0, color: palette.cardinalLabel },
+    { label: 'S', angle: Math.PI / 2, color: palette.cardinalLabel },
+    { label: 'W', angle: Math.PI, color: palette.cardinalLabel },
   ];
 
   context.font = '600 16px Trebuchet MS';
@@ -173,7 +185,7 @@ export function drawCompassDial(
   context.beginPath();
   context.arc(0, 0, bezelRadius, -0.24, 0.24);
   context.stroke();
-  context.fillStyle = '#55d6be';
+  context.fillStyle = palette.bezelMarker;
   context.beginPath();
   context.moveTo(0, -bezelRadius - 8);
   context.lineTo(10, -bezelRadius + 5);
@@ -184,7 +196,7 @@ export function drawCompassDial(
 
   context.save();
   context.rotate(getCompassNeedleRotation(facingAngle));
-  context.fillStyle = '#d54343';
+  context.fillStyle = palette.northNeedle;
   context.beginPath();
   context.moveTo(0, -radius + 24);
   context.lineTo(10, 10);
@@ -193,7 +205,7 @@ export function drawCompassDial(
   context.closePath();
   context.fill();
 
-  context.fillStyle = '#0b1016';
+  context.fillStyle = palette.southNeedle;
   context.beginPath();
   context.moveTo(0, radius - 24);
   context.lineTo(8, -6);
@@ -201,6 +213,9 @@ export function drawCompassDial(
   context.lineTo(-8, -6);
   context.closePath();
   context.fill();
+  context.strokeStyle = palette.southNeedleOutline;
+  context.lineWidth = 1.6;
+  context.stroke();
   context.restore();
 
   context.fillStyle = '#dce8f5';

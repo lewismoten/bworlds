@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  createDefaultRuntimePlugins,
   getDefaultTileDefinition,
   listDefaultTileDefinitions,
 } from './index.ts';
@@ -38,6 +39,18 @@ describe('default content pack tile definitions', () => {
       expect.objectContaining({
         name: 'Plains',
       })
+    );
+  });
+
+  it('registers celestial runtime plugins in layered order', () => {
+    const plugins = createDefaultRuntimePlugins();
+
+    expect(plugins.map((plugin) => plugin.name)).toEqual(
+      expect.arrayContaining([
+        'runtime-celestial',
+        'runtime-celestial-phenomena',
+        'runtime-celestial-system',
+      ])
     );
   });
 });

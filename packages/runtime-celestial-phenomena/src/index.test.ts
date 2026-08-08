@@ -44,7 +44,10 @@ describe('runtime celestial phenomena', () => {
 
     for (
       let day = 0;
-      day < 192 && !(environment?.celestial?.visibleEvents ?? []).some((event) => event.visibility > 0);
+      day < 192 &&
+      !(environment?.celestial?.visibleEventsAppend ?? []).some(
+        (event) => event.visibility > 0
+      );
       day += 1
     ) {
       environment = plugin.resolveWorldEnvironment?.({
@@ -53,7 +56,7 @@ describe('runtime celestial phenomena', () => {
       }) as WorldEnvironmentLike | undefined;
     }
 
-    expect(environment?.celestial?.visibleEvents).toEqual(
+    expect(environment?.celestial?.visibleEventsAppend).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           type: expect.stringMatching(/meteor-shower|comet/),
@@ -61,5 +64,6 @@ describe('runtime celestial phenomena', () => {
         }),
       ])
     );
+    expect(environment?.celestial?.deriveOrreryFromVisibleEvents).toBe(true);
   });
 });

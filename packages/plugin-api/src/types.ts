@@ -196,9 +196,12 @@ export interface WorldEnvironmentCelestialLike {
   activeConstellationIndex?: number;
   dateLabel?: string;
   visibleEvents?: WorldEnvironmentCelestialEventLike[];
+  visibleEventsAppend?: WorldEnvironmentCelestialEventLike[];
+  removeVisibleEventTypes?: Array<WorldEnvironmentCelestialEventLike['type']>;
   milkyWay?: WorldEnvironmentMilkyWayLike;
   auroraBands?: WorldEnvironmentAuroraBandLike[];
   orreryBodies?: WorldEnvironmentOrreryBodyLike[];
+  deriveOrreryFromVisibleEvents?: boolean;
 }
 
 export interface WorldEnvironmentLike {

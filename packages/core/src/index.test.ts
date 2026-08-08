@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  applyCelestialEnvironmentOverrides,
   advanceWorldTimeOffsetByHours,
   advanceWorldTimeOffsetBySeasons,
   alignWorldTimeOffsetToDayProgress,
@@ -355,6 +356,42 @@ describe('core utilities', () => {
     ).toBe(true);
     expect(
       bodies.some((body) => body.type === 'comet' && body.orbitEccentricity >= 0.4)
+    ).toBe(true);
+  });
+
+  it('can remove and append celestial events before regenerating orrery bodies', () => {
+    const cycle = getDaylightCycleState(210000, {
+      observerLatitudeDegrees: 24,
+    });
+    const overrides = applyCelestialEnvironmentOverrides(cycle, {
+      removeVisibleEventTypes: ['planet'],
+      visibleEventsAppend: [
+        {
+          type: 'planet',
+          name: 'Vela',
+          progress: 0.42,
+          intensity: 0.66,
+          visibility: 0.8,
+          azimuth: 1.2,
+          altitude: 0.34,
+          color: '#9fd0ff',
+          size: 0.84,
+          trailLength: 0,
+        },
+      ],
+      deriveOrreryFromVisibleEvents: true,
+    });
+
+    expect(overrides.visibleEvents.some((event) => event.name === 'Vela')).toBe(true);
+    expect(
+      overrides.visibleEvents.some(
+        (event) => event.type === 'planet' && event.name !== 'Vela'
+      )
+    ).toBe(false);
+    expect(
+      overrides.orreryBodies.some(
+        (body) => body.type === 'planet' && body.id === 'planet:Vela'
+      )
     ).toBe(true);
   });
 

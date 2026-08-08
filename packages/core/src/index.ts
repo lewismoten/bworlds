@@ -491,20 +491,42 @@ export function applyCelestialEnvironmentOverrides(
     constellations?: ConstellationLike[];
     activeConstellationIndex?: number;
     visibleEvents?: CelestialEventLike[];
+    visibleEventsAppend?: CelestialEventLike[];
+    removeVisibleEventTypes?: Array<CelestialEventLike['type']>;
     milkyWay?: MilkyWayBeltLike;
     auroraBands?: AuroraBandLike[];
     orreryBodies?: OrreryBodyLike[];
+    deriveOrreryFromVisibleEvents?: boolean;
   } = {}
 ) {
+  const visibleEventsBase = overrides.visibleEvents ?? cycle.visibleEvents;
+  const visibleEventsFiltered =
+    (overrides.removeVisibleEventTypes?.length ?? 0) > 0
+      ? visibleEventsBase.filter(
+          (event) => !overrides.removeVisibleEventTypes?.includes(event.type)
+        )
+      : visibleEventsBase;
+  const visibleEvents = [
+    ...visibleEventsFiltered,
+    ...(overrides.visibleEventsAppend ?? []),
+  ];
+  const derivedOrreryBodies = overrides.deriveOrreryFromVisibleEvents
+    ? getOrreryBodies({
+        moonAngle: cycle.moonAngle,
+        moonIllumination: cycle.moonIllumination,
+        visibleEvents,
+      })
+    : null;
   return {
     ...cycle,
     constellations: overrides.constellations ?? cycle.constellations,
     activeConstellationIndex:
       overrides.activeConstellationIndex ?? cycle.activeConstellationIndex,
-    visibleEvents: overrides.visibleEvents ?? cycle.visibleEvents,
+    visibleEvents,
     milkyWay: overrides.milkyWay ?? cycle.milkyWay,
     auroraBands: overrides.auroraBands ?? cycle.auroraBands ?? [],
-    orreryBodies: overrides.orreryBodies ?? cycle.orreryBodies,
+    orreryBodies:
+      overrides.orreryBodies ?? derivedOrreryBodies ?? cycle.orreryBodies,
   };
 }
 
