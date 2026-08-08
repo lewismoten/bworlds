@@ -76,6 +76,8 @@ type Render3DController = {
     meshCount: number;
     visibleMeshCount: number;
     pointsCount: number;
+    activeParticleSystemCount: number;
+    activeParticleCount: number;
     spriteCount: number;
     lightCount: number;
     dynamicLightCount: number;
@@ -147,6 +149,8 @@ type SceneResourceStats = {
   meshCount: number;
   visibleMeshCount: number;
   pointsCount: number;
+  activeParticleSystemCount: number;
+  activeParticleCount: number;
   spriteCount: number;
   lightCount: number;
   dynamicLightCount: number;
@@ -740,6 +744,8 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       meshCount: sceneResourceStats.meshCount,
       visibleMeshCount: sceneResourceStats.visibleMeshCount,
       pointsCount: sceneResourceStats.pointsCount,
+      activeParticleSystemCount: sceneResourceStats.activeParticleSystemCount,
+      activeParticleCount: sceneResourceStats.activeParticleCount,
       spriteCount: sceneResourceStats.spriteCount,
       lightCount: sceneResourceStats.lightCount,
       dynamicLightCount: sceneResourceStats.dynamicLightCount,
@@ -1937,6 +1943,8 @@ export function collectSceneResourceStats(
   let meshCount = 0;
   let visibleMeshCount = 0;
   let pointsCount = 0;
+  let activeParticleSystemCount = 0;
+  let activeParticleCount = 0;
   let spriteCount = 0;
   let lightCount = 0;
   let dynamicLightCount = 0;
@@ -1958,6 +1966,12 @@ export function collectSceneResourceStats(
     }
     if ((child as THREE.Object3D).type === 'Points') {
       pointsCount += 1;
+      if ((child as THREE.Object3D).visible !== false) {
+        activeParticleSystemCount += 1;
+        activeParticleCount += getGeometryVertexCount(
+          (child as THREE.Object3D & { geometry?: unknown }).geometry
+        );
+      }
     }
     if ((child as THREE.Object3D).type === 'Sprite') {
       spriteCount += 1;
@@ -2015,6 +2029,8 @@ export function collectSceneResourceStats(
     meshCount,
     visibleMeshCount,
     pointsCount,
+    activeParticleSystemCount,
+    activeParticleCount,
     spriteCount,
     lightCount,
     dynamicLightCount,

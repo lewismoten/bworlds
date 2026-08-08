@@ -68,6 +68,8 @@ describe('render3d visibility helpers', () => {
       meshCount: 3,
       visibleMeshCount: 3,
       pointsCount: 0,
+      activeParticleSystemCount: 0,
+      activeParticleCount: 0,
       spriteCount: 0,
       lightCount: 0,
       dynamicLightCount: 0,
@@ -138,11 +140,60 @@ describe('render3d visibility helpers', () => {
       meshCount: 2,
       visibleMeshCount: 1,
       pointsCount: 1,
+      activeParticleSystemCount: 1,
+      activeParticleCount: 0,
       spriteCount: 1,
       lightCount: 2,
       dynamicLightCount: 1,
       shadowLightCount: 1,
       vertexCount: 14,
+      materialCount: 2,
+      geometryCount: 2,
+      textureMemoryEstimateBytes: 0,
+      treeCount: 0,
+      treeObjectCount: 0,
+      treeMeshCount: 0,
+      treeMaterialRefCount: 0,
+    });
+  });
+
+  it('counts only visible point clouds as active particle systems and sums their particles', () => {
+    const root = createMockObject3D(undefined, [
+      createMockObject3D(
+        createMockMaterial(),
+        [],
+        createMockStatGeometry('visible-particles', 18),
+        {},
+        'Points',
+        false,
+        false,
+        true
+      ),
+      createMockObject3D(
+        createMockMaterial(),
+        [],
+        createMockStatGeometry('hidden-particles', 7),
+        {},
+        'Points',
+        false,
+        false,
+        false
+      ),
+    ]);
+
+    expect(collectSceneResourceStats(root as never)).toEqual({
+      object3dCount: 3,
+      groupCount: 1,
+      meshCount: 2,
+      visibleMeshCount: 1,
+      pointsCount: 2,
+      activeParticleSystemCount: 1,
+      activeParticleCount: 18,
+      spriteCount: 0,
+      lightCount: 0,
+      dynamicLightCount: 0,
+      shadowLightCount: 0,
+      vertexCount: 25,
       materialCount: 2,
       geometryCount: 2,
       textureMemoryEstimateBytes: 0,
@@ -207,6 +258,8 @@ describe('render3d visibility helpers', () => {
       meshCount: 2,
       visibleMeshCount: 2,
       pointsCount: 0,
+      activeParticleSystemCount: 0,
+      activeParticleCount: 0,
       spriteCount: 0,
       lightCount: 0,
       dynamicLightCount: 0,

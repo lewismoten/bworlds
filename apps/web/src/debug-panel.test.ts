@@ -62,6 +62,7 @@ describe('debug panel', () => {
       meshCount: 180,
       visibleMeshCount: 164,
       pointsCount: 5,
+      activeParticleSystemCount: 4,
       activeParticleCount: 96,
       spriteCount: 9,
       lightCount: 12,
@@ -130,6 +131,7 @@ describe('debug panel', () => {
     expect(buildDebugMarkup(snapshot)).toContain('Three.js Objects');
     expect(buildDebugMarkup(snapshot)).toContain('Visible Meshes');
     expect(buildDebugMarkup(snapshot)).toContain('Particles');
+    expect(buildDebugMarkup(snapshot)).toContain('Particle Systems');
     expect(buildDebugMarkup(snapshot)).toContain('Active Dynamic Lights');
     expect(buildDebugMarkup(snapshot)).toContain('Shadow Lights');
     expect(buildDebugMarkup(snapshot)).toContain('Active NPCs');

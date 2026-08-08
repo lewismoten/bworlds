@@ -32,6 +32,7 @@ export type DebugSnapshot = {
   meshCount: number;
   visibleMeshCount: number;
   pointsCount: number;
+  activeParticleSystemCount?: number;
   activeParticleCount: number;
   spriteCount: number;
   lightCount: number;
@@ -141,6 +142,7 @@ export function getDebugSignature(snapshot: DebugSnapshot): string {
     snapshot.meshCount,
     snapshot.visibleMeshCount,
     snapshot.pointsCount,
+    snapshot.activeParticleSystemCount ?? snapshot.pointsCount,
     snapshot.activeParticleCount,
     snapshot.spriteCount,
     snapshot.lightCount,
@@ -262,6 +264,7 @@ export function buildDebugMarkup(snapshot: DebugSnapshot): string {
     <div><dt>Visible Meshes</dt><dd>${snapshot.visibleMeshCount}</dd></div>
     <div><dt>Mesh Nodes</dt><dd>${snapshot.meshCount}</dd></div>
     <div><dt>Particles</dt><dd>${snapshot.activeParticleCount}</dd></div>
+    <div><dt>Particle Systems</dt><dd>${snapshot.activeParticleSystemCount ?? snapshot.pointsCount}</dd></div>
     <div><dt>Points Nodes</dt><dd>${snapshot.pointsCount}</dd></div>
     <div><dt>Sprites</dt><dd>${snapshot.spriteCount}</dd></div>
     <div><dt>Active Dynamic Lights</dt><dd>${snapshot.dynamicLightCount}</dd></div>
