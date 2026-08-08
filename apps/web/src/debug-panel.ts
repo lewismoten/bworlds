@@ -60,6 +60,11 @@ export type RendererChurnSample = {
   playerY: number;
 };
 
+export type HeapUsageSample = {
+  nowMs: number;
+  heapUsedMb: number;
+};
+
 export function normalizeWorldSeed(seed: string | undefined, fallback: string): string {
   const trimmed = seed?.trim();
   return trimmed ? trimmed : fallback;
@@ -215,16 +220,16 @@ export function buildDebugMarkup(snapshot: DebugSnapshot): string {
   `;
 }
 
-export function recordMaterialGrowthSample(
-  samples: MaterialGrowthSample[],
-  sample: MaterialGrowthSample,
+function recordRollingSample<T extends { nowMs: number }>(
+  samples: T[],
+  sample: T,
   {
-    sampleIntervalMs = 500,
-    historyWindowMs = 8000,
+    sampleIntervalMs,
+    historyWindowMs,
   }: {
-    sampleIntervalMs?: number;
-    historyWindowMs?: number;
-  } = {}
+    sampleIntervalMs: number;
+    historyWindowMs: number;
+  }
 ): void {
   const lastSample = samples[samples.length - 1];
   if (!lastSample || sample.nowMs - lastSample.nowMs >= sampleIntervalMs) {
@@ -243,6 +248,23 @@ export function recordMaterialGrowthSample(
   }
 }
 
+export function recordMaterialGrowthSample(
+  samples: MaterialGrowthSample[],
+  sample: MaterialGrowthSample,
+  {
+    sampleIntervalMs = 500,
+    historyWindowMs = 8000,
+  }: {
+    sampleIntervalMs?: number;
+    historyWindowMs?: number;
+  } = {}
+): void {
+  recordRollingSample(samples, sample, {
+    sampleIntervalMs,
+    historyWindowMs,
+  });
+}
+
 export function recordRendererChurnSample(
   samples: RendererChurnSample[],
   sample: RendererChurnSample,
@@ -254,21 +276,27 @@ export function recordRendererChurnSample(
     historyWindowMs?: number;
   } = {}
 ): void {
-  const lastSample = samples[samples.length - 1];
-  if (!lastSample || sample.nowMs - lastSample.nowMs >= sampleIntervalMs) {
-    samples.push(sample);
-  } else {
-    samples[samples.length - 1] = sample;
-  }
+  recordRollingSample(samples, sample, {
+    sampleIntervalMs,
+    historyWindowMs,
+  });
+}
 
-  const minimumTime = sample.nowMs - historyWindowMs;
-  let removeCount = 0;
-  while (removeCount < samples.length && samples[removeCount].nowMs < minimumTime) {
-    removeCount += 1;
-  }
-  if (removeCount > 0) {
-    samples.splice(0, removeCount);
-  }
+export function recordHeapUsageSample(
+  samples: HeapUsageSample[],
+  sample: HeapUsageSample,
+  {
+    sampleIntervalMs = 1000,
+    historyWindowMs = 12000,
+  }: {
+    sampleIntervalMs?: number;
+    historyWindowMs?: number;
+  } = {}
+): void {
+  recordRollingSample(samples, sample, {
+    sampleIntervalMs,
+    historyWindowMs,
+  });
 }
 
 export function getMaterialGrowthWarning(
@@ -391,6 +419,63 @@ export function getPerformanceWarnings(
   }
 
   return warnings;
+}
+
+export function getWorkQueueWarnings(
+  snapshot: Pick<DebugSnapshot, 'pendingTileCount' | 'averagePendingFlushTiles' | 'maxPendingFlushTiles'>,
+  {
+    maxPendingTileCount = 48,
+    minimumAverageFlushTiles = 1,
+  }: {
+    maxPendingTileCount?: number;
+    minimumAverageFlushTiles?: number;
+  } = {}
+): string[] {
+  if (
+    snapshot.pendingTileCount <= maxPendingTileCount ||
+    snapshot.averagePendingFlushTiles < minimumAverageFlushTiles
+  ) {
+    return [];
+  }
+
+  return [
+    `Pending tile queue is backing up (${snapshot.pendingTileCount} queued, avg flush ${snapshot.averagePendingFlushTiles.toFixed(1)}, max flush ${snapshot.maxPendingFlushTiles}).`,
+  ];
+}
+
+export function getHeapGrowthWarning(
+  samples: HeapUsageSample[],
+  {
+    minimumSampleCount = 4,
+    minimumHeapIncreaseMb = 24,
+  }: {
+    minimumSampleCount?: number;
+    minimumHeapIncreaseMb?: number;
+  } = {}
+): string | null {
+  if (samples.length < minimumSampleCount) {
+    return null;
+  }
+
+  const recentSamples = samples.slice(-minimumSampleCount);
+  const firstSample = recentSamples[0];
+  const lastSample = recentSamples[recentSamples.length - 1];
+  if (!firstSample || !lastSample) {
+    return null;
+  }
+
+  const heapIncreaseMb = lastSample.heapUsedMb - firstSample.heapUsedMb;
+  if (heapIncreaseMb < minimumHeapIncreaseMb) {
+    return null;
+  }
+
+  for (let index = 1; index < recentSamples.length; index += 1) {
+    if (recentSamples[index]!.heapUsedMb <= recentSamples[index - 1]!.heapUsedMb) {
+      return null;
+    }
+  }
+
+  return `Heap usage keeps climbing (${firstSample.heapUsedMb.toFixed(1)} -> ${lastSample.heapUsedMb.toFixed(1)} MB).`;
 }
 
 export function getStationaryTileBuildWarning(

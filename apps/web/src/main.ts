@@ -91,11 +91,14 @@ import {
 } from './head-bob.ts';
 import {
   buildDebugMarkup,
+  getHeapGrowthWarning,
   getMaterialGrowthWarning,
   getPerformanceWarnings,
   getSceneBudgetWarnings,
   getStationaryTileBuildWarning,
+  getWorkQueueWarnings,
   resolvePerformanceTier,
+  recordHeapUsageSample,
   recordMaterialGrowthSample,
   recordRendererChurnSample,
   getDebugSignature,
@@ -1029,6 +1032,10 @@ const debugResourceTrendState = {
     tileNodeBuildsPerSecond: number;
     playerX: number;
     playerY: number;
+  }>,
+  heapSamples: [] as Array<{
+    nowMs: number;
+    heapUsedMb: number;
   }>,
 };
 const renderBudgetState = {
@@ -2546,6 +2553,16 @@ function render(): FrameLoopActivityLike {
       playerX: spatial.playerX,
       playerY: spatial.playerY,
     });
+    const heapUsedMb =
+      typeof performanceStats.memory?.usedJSHeapSize === 'number'
+        ? performanceStats.memory.usedJSHeapSize / (1024 * 1024)
+        : null;
+    if (heapUsedMb !== null) {
+      recordHeapUsageSample(debugResourceTrendState.heapSamples, {
+        nowMs,
+        heapUsedMb,
+      });
+    }
     const debugSnapshot = {
       fps: 1000 / Math.max(1, renderBudgetState.smoothedFrameMs),
       frameMs: renderBudgetState.smoothedFrameMs,
@@ -2589,10 +2606,7 @@ function render(): FrameLoopActivityLike {
       gridX,
       gridY,
       worldSeed: currentWorldSeed,
-      heapUsedMb:
-        typeof performanceStats.memory?.usedJSHeapSize === 'number'
-          ? performanceStats.memory.usedJSHeapSize / (1024 * 1024)
-          : null,
+      heapUsedMb,
       heapLimitMb:
         typeof performanceStats.memory?.jsHeapSizeLimit === 'number'
           ? performanceStats.memory.jsHeapSizeLimit / (1024 * 1024)
@@ -2605,10 +2619,15 @@ function render(): FrameLoopActivityLike {
     const stationaryTileBuildWarning = getStationaryTileBuildWarning(
       debugResourceTrendState.rendererChurnSamples
     );
+    const heapGrowthWarning = getHeapGrowthWarning(
+      debugResourceTrendState.heapSamples
+    );
     debugSnapshot.resourceWarnings = [
       ...getPerformanceWarnings(debugSnapshot),
+      ...getWorkQueueWarnings(debugSnapshot),
       ...getSceneBudgetWarnings(debugSnapshot),
       ...(materialGrowthWarning ? [materialGrowthWarning] : []),
+      ...(heapGrowthWarning ? [heapGrowthWarning] : []),
       ...(stationaryTileBuildWarning ? [stationaryTileBuildWarning] : []),
     ];
     const debugSignature = getDebugSignature(debugSnapshot);

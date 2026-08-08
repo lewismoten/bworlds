@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   buildDebugMarkup,
+  getHeapGrowthWarning,
   formatPerformanceTierLabel,
   getMaterialGrowthWarning,
   getPerformanceWarnings,
@@ -8,7 +9,9 @@ import {
   getStationaryTileBuildWarning,
   getDebugSignature,
   getTargetFrameMs,
+  getWorkQueueWarnings,
   normalizeWorldSeed,
+  recordHeapUsageSample,
   recordMaterialGrowthSample,
   recordRendererChurnSample,
   resolvePerformanceTier,
@@ -178,6 +181,67 @@ describe('debug panel', () => {
     ).toBeNull();
   });
 
+  it('records heap samples on a rolling history and warns on sustained growth', () => {
+    const samples: Array<{
+      nowMs: number;
+      heapUsedMb: number;
+    }> = [];
+
+    recordHeapUsageSample(samples, {
+      nowMs: 0,
+      heapUsedMb: 120,
+    });
+    recordHeapUsageSample(samples, {
+      nowMs: 400,
+      heapUsedMb: 126,
+    });
+    expect(samples).toHaveLength(1);
+    expect(samples[0]?.heapUsedMb).toBe(126);
+
+    recordHeapUsageSample(samples, {
+      nowMs: 1500,
+      heapUsedMb: 138,
+    });
+    recordHeapUsageSample(samples, {
+      nowMs: 3000,
+      heapUsedMb: 151,
+    });
+    recordHeapUsageSample(samples, {
+      nowMs: 4500,
+      heapUsedMb: 164,
+    });
+
+    expect(getHeapGrowthWarning(samples)).toBe(
+      'Heap usage keeps climbing (126.0 -> 164.0 MB).'
+    );
+
+    recordHeapUsageSample(samples, {
+      nowMs: 18000,
+      heapUsedMb: 150,
+    });
+    expect(samples).toHaveLength(1);
+  });
+
+  it('avoids heap growth warnings when the increase is too small or non-monotonic', () => {
+    expect(
+      getHeapGrowthWarning([
+        { nowMs: 0, heapUsedMb: 120 },
+        { nowMs: 1000, heapUsedMb: 128 },
+        { nowMs: 2000, heapUsedMb: 133 },
+        { nowMs: 3000, heapUsedMb: 141 },
+      ])
+    ).toBeNull();
+
+    expect(
+      getHeapGrowthWarning([
+        { nowMs: 0, heapUsedMb: 120 },
+        { nowMs: 1000, heapUsedMb: 138 },
+        { nowMs: 2000, heapUsedMb: 134 },
+        { nowMs: 3000, heapUsedMb: 149 },
+      ])
+    ).toBeNull();
+  });
+
   it('warns when tile nodes keep rebuilding while the player is nearly stationary', () => {
     const samples: Array<{
       nowMs: number;
@@ -291,6 +355,26 @@ describe('debug panel', () => {
         drawCalls: 1150,
         object3dCount: 2200,
         programCount: 32,
+      })
+    ).toEqual([]);
+  });
+
+  it('warns when the pending tile queue backs up faster than it is draining', () => {
+    expect(
+      getWorkQueueWarnings({
+        pendingTileCount: 63,
+        averagePendingFlushTiles: 2.4,
+        maxPendingFlushTiles: 5,
+      })
+    ).toEqual([
+      'Pending tile queue is backing up (63 queued, avg flush 2.4, max flush 5).',
+    ]);
+
+    expect(
+      getWorkQueueWarnings({
+        pendingTileCount: 18,
+        averagePendingFlushTiles: 2.4,
+        maxPendingFlushTiles: 5,
       })
     ).toEqual([]);
   });
