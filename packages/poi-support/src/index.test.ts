@@ -11,13 +11,42 @@ import {
   createGeneratedPoiTile,
   createPoiWorldAction,
   getPoiLightActivation,
+  getPoiWindActivation,
   getNearestAccessibleRouteDistance,
   markPoiLightEmitter,
+  markPoiWindResponder,
   pickPreferredLandmarkFacing,
   resolvePlacementChance,
   syncPoiLightEmitters,
+  syncPoiWindResponders,
 } from './index.ts';
 import type { ClassifyOverworldTileContext, WorldStateLike } from '@bworlds/plugin-api';
+
+function createWindEnvironment(windStrength: number) {
+  return {
+    weather: {
+      current: {
+        kind: 'wind' as const,
+        label: 'Wind',
+        intensity: windStrength,
+        cloudCover: 0.2,
+        windStrength,
+        precipitation: 0,
+        visibility: 0.9,
+        temperature: 68,
+        front: {
+          id: 'front-spec',
+          kind: 'warm' as const,
+          intensity: windStrength,
+          humidityShift: 0.1,
+          temperatureShift: 0.05,
+          windDirectionDegrees: 90,
+          speed: windStrength,
+        },
+      },
+    },
+  };
+}
 
 function createPoiClassifierPayload(
   overrides: Partial<ClassifyOverworldTileContext> = {}
@@ -546,6 +575,65 @@ describe('poi support', () => {
     expect(emissiveMesh.material?.emissiveIntensity).toBeCloseTo(1.25, 6);
     expect(pointLight.intensity).toBeCloseTo(0.9, 6);
     expect(pointLight.visible).toBe(true);
+  });
+
+  it('syncs tagged poi wind responders from weather strength over time', () => {
+    const banner = markPoiWindResponder(
+      {
+        userData: {},
+        visible: true,
+        position: { x: 0, y: 0, z: 0, set() { return this; } },
+        rotation: { x: 0, y: 0, z: 0 },
+        scale: {
+          x: 1,
+          y: 1,
+          z: 1,
+          set() { return this; },
+          setScalar() { return this; },
+        },
+        add() { return this; },
+      },
+      {
+        axis: 'z',
+        baseRotation: 0.1,
+        idleAmplitude: 0.01,
+        windAmplitude: 0.08,
+        gustAmplitude: 0.04,
+        speed: 2,
+        gustSpeed: 4,
+        phase: 0.5,
+        gustPhase: 0.25,
+      }
+    );
+    const root = {
+      position: { x: 0, y: 0, z: 0, set() { return this; } },
+      rotation: { x: 0, y: 0, z: 0 },
+      scale: {
+        x: 1,
+        y: 1,
+        z: 1,
+        set() { return this; },
+        setScalar() { return this; },
+      },
+      add() { return this; },
+      traverse(visit: (node: typeof banner) => void) {
+        visit(banner);
+      },
+    };
+
+    const calmEnvironment = createWindEnvironment(0.05);
+    const windyEnvironment = createWindEnvironment(0.95);
+
+    syncPoiWindResponders(root, calmEnvironment, 1000);
+    const calmRotation = banner.rotation.z;
+    syncPoiWindResponders(root, windyEnvironment, 1000);
+    const windyRotation = banner.rotation.z;
+
+    expect(getPoiWindActivation(calmEnvironment)).toBeCloseTo(0.05, 6);
+    expect(getPoiWindActivation({})).toBeCloseTo(0.16, 6);
+    expect(Math.abs(windyRotation - 0.1)).toBeGreaterThan(
+      Math.abs(calmRotation - 0.1)
+    );
   });
 
   it('finds reachable route distances for a facing direction', () => {

@@ -2,8 +2,10 @@ import { hash2D } from '@bworlds/core';
 import {
   createAnchoredEnterablePoiTilePlugin,
   markPoiLightEmitter,
+  markPoiWindResponder,
   pickPreferredLandmarkFacing,
   syncPoiLightEmitters,
+  syncPoiWindResponders,
 } from '@bworlds/poi-support';
 import {
   createRegionalMaterialResolver,
@@ -26,6 +28,7 @@ import type {
 
 const TILE_PIXEL_SIZE = 16;
 const DUNGEON_BEACON_KEY = 'dungeonBeacon';
+const DUNGEON_BANNER_KEY = 'dungeonBanner';
 
 export function createDungeonTilePlugin(): RuntimePlugin {
   return createAnchoredEnterablePoiTilePlugin({
@@ -198,13 +201,23 @@ export function createDungeonTilePlugin(): RuntimePlugin {
             createDungeonBeacon(three, group, beacon, style);
           }
         );
+        getDungeonBannerDescriptors(tileX, tileY, baseWidth, baseDepth).forEach(
+          (banner, index) => {
+            group.add(createDungeonBanner(three, banner, style, tileX, tileY, index));
+          }
+        );
       }
 
       return group;
     },
-    sync3DModel({ model, cycle }) {
+    sync3DModel({ model, cycle, environment, timeMs = 0 }) {
       if (model && typeof model === 'object') {
         syncPoiLightEmitters(model as Parameters<typeof syncPoiLightEmitters>[0], cycle);
+        syncPoiWindResponders(
+          model as Parameters<typeof syncPoiWindResponders>[0],
+          environment,
+          timeMs
+        );
       }
     },
   });
@@ -421,6 +434,112 @@ function createDungeonBeacon(
   parent.add(pointLight);
 }
 
+function createDungeonBanner(
+  three: ThreeHostLike,
+  descriptor: DungeonBannerDescriptor,
+  style: DungeonStyle,
+  tileX: number,
+  tileY: number,
+  index: number
+) {
+  const banner = new three.Group();
+  banner.position.set(descriptor.x, descriptor.y, descriptor.z);
+  banner.rotation.y = descriptor.rotationY;
+
+  const pole = new three.Mesh(
+    new three.CylinderGeometry(0.018, 0.022, descriptor.height, 5),
+    style.trimMaterial
+  );
+  pole.position.y = descriptor.height * 0.5;
+  banner.add(pole);
+
+  const crossbar = new three.Mesh(
+    new three.BoxGeometry(descriptor.width * 0.88, 0.028, 0.028),
+    style.trimMaterial
+  );
+  crossbar.position.set(descriptor.width * 0.46, descriptor.height - 0.03, 0);
+  banner.add(crossbar);
+
+  const cloth = markPoiWindResponder(
+    new three.Mesh(
+      new three.PlaneGeometry(descriptor.width, descriptor.length),
+      new three.MeshStandardMaterial({
+        color: descriptor.color,
+        emissive: descriptor.color,
+        emissiveIntensity: 0.03,
+        roughness: 0.86,
+        metalness: 0.02,
+        side: three.DoubleSide,
+      })
+    ),
+    {
+      axis: 'z',
+      baseRotation: descriptor.baseRotation,
+      idleAmplitude: 0.016,
+      windAmplitude: 0.12,
+      gustAmplitude: 0.045,
+      speed: 1.2 + hash2D('dungeon-banner-speed', tileX + index, tileY) * 0.8,
+      gustSpeed: 1.9 + hash2D('dungeon-banner-gust-speed', tileX, tileY + index) * 0.9,
+      phase: hash2D('dungeon-banner-phase', tileX + index, tileY - index) * Math.PI * 2,
+      gustPhase:
+        hash2D('dungeon-banner-gust-phase', tileX - index, tileY + index) *
+        Math.PI *
+        2,
+    }
+  );
+  cloth.position.set(
+    descriptor.width * 0.48,
+    descriptor.height - descriptor.length * 0.5,
+    0
+  );
+  cloth.userData = {
+    ...(cloth.userData ?? {}),
+    [DUNGEON_BANNER_KEY]: descriptor.label,
+  };
+  banner.add(cloth);
+  return banner;
+}
+
+function getDungeonBannerDescriptors(
+  tileX: number,
+  tileY: number,
+  baseWidth: number,
+  baseDepth: number
+): DungeonBannerDescriptor[] {
+  const color = pickThresholdColor(
+    hash2D('dungeon-banner-color', tileX, tileY),
+    0.5,
+    '#7c3aed',
+    '#b91c1c'
+  );
+  return [
+    {
+      label: 'gate-left',
+      x: tileX - baseWidth * 0.16,
+      y: 0,
+      z: tileY + baseDepth * 0.46,
+      width: 0.16,
+      length: 0.24,
+      height: 0.96,
+      rotationY: 0,
+      baseRotation: -0.02,
+      color,
+    },
+    {
+      label: 'gate-right',
+      x: tileX + baseWidth * 0.16,
+      y: 0,
+      z: tileY + baseDepth * 0.46,
+      width: 0.16,
+      length: 0.26,
+      height: 1,
+      rotationY: 0,
+      baseRotation: 0.02,
+      color,
+    },
+  ];
+}
+
 function paintDungeonStoneTexture(
   context: CanvasRenderingContext2D,
   canvas: HTMLCanvasElement,
@@ -520,4 +639,17 @@ interface DungeonBeaconDescriptor {
   pointLightDistance: number;
   pointLightDecay: number;
   label: string;
+}
+
+interface DungeonBannerDescriptor {
+  label: string;
+  x: number;
+  y: number;
+  z: number;
+  width: number;
+  length: number;
+  height: number;
+  rotationY: number;
+  baseRotation: number;
+  color: string;
 }

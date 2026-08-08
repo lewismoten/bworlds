@@ -17,6 +17,7 @@ import type {
   ThreeObject3DLike,
   TraversalProfile3D,
   ViewMode,
+  WorldEnvironmentLike,
   WorldActionLike,
   WorldStateLike,
 } from '@bworlds/plugin-api';
@@ -134,7 +135,20 @@ type PoiLightTaggedObject = ThreeObject3DLike & {
   intensity?: number;
   material?: PoiLightMaterialLike | PoiLightMaterialLike[];
 };
+type PoiWindAxis = 'x' | 'y' | 'z';
+type PoiWindResponderOptions = {
+  axis?: PoiWindAxis;
+  baseRotation?: number;
+  idleAmplitude?: number;
+  windAmplitude?: number;
+  gustAmplitude?: number;
+  speed?: number;
+  gustSpeed?: number;
+  phase?: number;
+  gustPhase?: number;
+};
 const POI_LIGHT_EMITTER_KEY = 'poiNightLightEmitter';
+const POI_WIND_RESPONDER_KEY = 'poiWindResponder';
 
 export function getPoiLightActivation(cycle: PoiLightCycleLike): number {
   return clamp(
@@ -186,6 +200,65 @@ export function syncPoiLightEmitters(
     materials.forEach((material) => {
       material.emissiveIntensity = intensity;
     });
+  };
+
+  if (typeof root.traverse === 'function') {
+    root.traverse((node) => {
+      visit(node);
+    });
+    return;
+  }
+
+  visit(root);
+}
+
+export function markPoiWindResponder<TObject extends ThreeObject3DLike>(
+  target: TObject,
+  options: PoiWindResponderOptions = {}
+): TObject {
+  target.userData = {
+    ...(target.userData ?? {}),
+    [POI_WIND_RESPONDER_KEY]: {
+      axis: options.axis ?? 'z',
+      baseRotation: options.baseRotation ?? 0,
+      idleAmplitude: options.idleAmplitude ?? 0.02,
+      windAmplitude: options.windAmplitude ?? 0.14,
+      gustAmplitude: options.gustAmplitude ?? 0.06,
+      speed: options.speed ?? 1,
+      gustSpeed: options.gustSpeed ?? 2.2,
+      phase: options.phase ?? 0,
+      gustPhase: options.gustPhase ?? 0,
+    } satisfies Required<PoiWindResponderOptions>,
+  };
+  return target;
+}
+
+export function getPoiWindActivation(environment: WorldEnvironmentLike): number {
+  return clamp(environment.weather?.current?.windStrength ?? 0.16, 0, 1);
+}
+
+export function syncPoiWindResponders(
+  root: ThreeObject3DLike,
+  environment: WorldEnvironmentLike,
+  timeMs = 0
+): void {
+  const activation = getPoiWindActivation(environment);
+  const elapsed = timeMs * 0.001;
+  const visit = (node: ThreeObject3DLike): void => {
+    const responder = node.userData?.[POI_WIND_RESPONDER_KEY] as
+      | Required<PoiWindResponderOptions>
+      | undefined;
+    if (!responder) {
+      return;
+    }
+
+    const axis = responder.axis;
+    const gust = Math.sin(elapsed * responder.gustSpeed + responder.gustPhase);
+    const sway = Math.sin(elapsed * responder.speed + responder.phase);
+    node.rotation[axis] =
+      responder.baseRotation +
+      sway * (responder.idleAmplitude + responder.windAmplitude * activation) +
+      gust * responder.gustAmplitude * activation;
   };
 
   if (typeof root.traverse === 'function') {

@@ -14,6 +14,32 @@ vi.mock('@bworlds/three-support', () => ({
 
 import { createDungeonTilePlugin } from './index.ts';
 
+function createWindEnvironment(windStrength: number) {
+  return {
+    weather: {
+      current: {
+        kind: 'wind' as const,
+        label: 'Wind',
+        intensity: windStrength,
+        cloudCover: 0.18,
+        windStrength,
+        precipitation: 0,
+        visibility: 0.88,
+        temperature: 58,
+        front: {
+          id: 'front-dungeon',
+          kind: 'cold' as const,
+          intensity: windStrength,
+          humidityShift: 0.08,
+          temperatureShift: -0.06,
+          windDirectionDegrees: 120,
+          speed: windStrength,
+        },
+      },
+    },
+  };
+}
+
 class FakeGeometry {
   constructor(..._args: number[]) {}
 }
@@ -219,5 +245,81 @@ describe('tile dungeon', () => {
     ).toBe(true);
     expect(pointLights.some((light) => light.intensity >= 0.9)).toBe(true);
     expect(pointLights.every((light) => light.visible === true)).toBe(true);
+  });
+
+  it('adds windy banners to full-detail dungeon models and sways them with weather strength', () => {
+    const plugin = createDungeonTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'dungeon');
+    const state = createDungeonState();
+
+    const fullModel = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'dungeon' },
+      tileX: 5,
+      tileY: 4,
+      detailLevel: 'full',
+    }) as FakeGroup;
+    const lowModel = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'dungeon' },
+      tileX: 5,
+      tileY: 4,
+      detailLevel: 'low',
+    }) as FakeGroup;
+
+    const fullBanners: FakeMesh[] = [];
+    fullModel.traverse((node) => {
+      if (node instanceof FakeMesh && typeof node.userData?.dungeonBanner === 'string') {
+        fullBanners.push(node);
+      }
+    });
+
+    const lowBanners: FakeMesh[] = [];
+    lowModel.traverse((node) => {
+      if (node instanceof FakeMesh && typeof node.userData?.dungeonBanner === 'string') {
+        lowBanners.push(node);
+      }
+    });
+
+    expect(fullBanners.length).toBeGreaterThan(0);
+    expect(lowBanners.length).toBe(0);
+
+    tile?.sync3DModel?.({
+      three: fakeThree as never,
+      state: {} as never,
+      tile: { kind: 'dungeon' },
+      tileX: 5,
+      tileY: 4,
+      model: fullModel,
+      timeMs: 1000,
+      cycle: { daylight: 1, twilight: 0, night: 0 },
+      environment: createWindEnvironment(0.08),
+    });
+    const baseRotation =
+      typeof fullBanners[0]?.userData?.poiWindResponder === 'object' &&
+      fullBanners[0]?.userData?.poiWindResponder &&
+      'baseRotation' in fullBanners[0].userData.poiWindResponder
+        ? Number(fullBanners[0].userData.poiWindResponder.baseRotation)
+        : 0;
+    const calmRotation = fullBanners[0]?.rotation.z ?? 0;
+
+    tile?.sync3DModel?.({
+      three: fakeThree as never,
+      state: {} as never,
+      tile: { kind: 'dungeon' },
+      tileX: 5,
+      tileY: 4,
+      model: fullModel,
+      timeMs: 1000,
+      cycle: { daylight: 1, twilight: 0, night: 0 },
+      environment: createWindEnvironment(0.92),
+    });
+    const windyRotation = fullBanners[0]?.rotation.z ?? 0;
+
+    expect(Math.abs(windyRotation - baseRotation)).toBeGreaterThan(
+      Math.abs(calmRotation - baseRotation)
+    );
   });
 });

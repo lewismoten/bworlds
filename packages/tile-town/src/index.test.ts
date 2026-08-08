@@ -43,6 +43,32 @@ import {
   getTownNightLightIntensity,
 } from './index.ts';
 
+function createWindEnvironment(windStrength: number) {
+  return {
+    weather: {
+      current: {
+        kind: 'wind' as const,
+        label: 'Wind',
+        intensity: windStrength,
+        cloudCover: 0.2,
+        windStrength,
+        precipitation: 0,
+        visibility: 0.9,
+        temperature: 66,
+        front: {
+          id: 'front-town',
+          kind: 'warm' as const,
+          intensity: windStrength,
+          humidityShift: 0.1,
+          temperatureShift: 0.05,
+          windDirectionDegrees: 90,
+          speed: windStrength,
+        },
+      },
+    },
+  };
+}
+
 class FakeGeometry {
   constructor(..._args: number[]) {}
 }
@@ -109,6 +135,9 @@ const fakeThree = {
   MeshStandardMaterial: FakeMaterial,
   BoxGeometry: FakeGeometry,
   ConeGeometry: FakeGeometry,
+  CylinderGeometry: FakeGeometry,
+  PlaneGeometry: FakeGeometry,
+  DoubleSide: 2,
 } as const;
 
 describe('tile town', () => {
@@ -235,5 +264,98 @@ describe('tile town', () => {
 
     expect(lights.every((light) => light.intensity >= 0.9)).toBe(true);
     expect(lights.every((light) => light.visible === true)).toBe(true);
+  });
+
+  it('adds windy banners to full-detail town models and sways them with weather strength', () => {
+    const plugin = createTownTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'town');
+    const state = {
+      player: { x: 0, y: 0, facing: 0 },
+      getCurrentContext() {
+        return { id: 'overworld', type: 'overworld', depth: 0 };
+      },
+      getCurrentTile() {
+        return { kind: 'town' };
+      },
+      getTileDefinition() {
+        return {
+          name: 'Town',
+          color: '#000000',
+          miniColor: '#111111',
+          walkable: true,
+          wallHeight: 0.5,
+        };
+      },
+    };
+
+    const fullModel = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'town', poi: { type: 'town', name: 'Oakcross' } } as never,
+      tileX: 3,
+      tileY: 7,
+      detailLevel: 'full',
+    }) as FakeGroup;
+    const lowModel = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'town', poi: { type: 'town', name: 'Oakcross' } } as never,
+      tileX: 3,
+      tileY: 7,
+      detailLevel: 'low',
+    }) as FakeGroup;
+
+    const fullBanners: FakeMesh[] = [];
+    fullModel.traverse((node) => {
+      if (node instanceof FakeMesh && typeof node.userData?.townBanner === 'number') {
+        fullBanners.push(node);
+      }
+    });
+
+    const lowBanners: FakeMesh[] = [];
+    lowModel.traverse((node) => {
+      if (node instanceof FakeMesh && typeof node.userData?.townBanner === 'number') {
+        lowBanners.push(node);
+      }
+    });
+
+    expect(fullBanners.length).toBeGreaterThan(0);
+    expect(lowBanners.length).toBe(0);
+
+    tile?.sync3DModel?.({
+      three: fakeThree as never,
+      state: {} as never,
+      tile: { kind: 'town' },
+      tileX: 3,
+      tileY: 7,
+      model: fullModel,
+      timeMs: 1000,
+      cycle: { daylight: 1, twilight: 0, night: 0 },
+      environment: createWindEnvironment(0.1),
+    });
+    const baseRotation =
+      typeof fullBanners[0]?.userData?.poiWindResponder === 'object' &&
+      fullBanners[0]?.userData?.poiWindResponder &&
+      'baseRotation' in fullBanners[0].userData.poiWindResponder
+        ? Number(fullBanners[0].userData.poiWindResponder.baseRotation)
+        : 0;
+    const calmRotation = fullBanners[0]?.rotation.z ?? 0;
+
+    tile?.sync3DModel?.({
+      three: fakeThree as never,
+      state: {} as never,
+      tile: { kind: 'town' },
+      tileX: 3,
+      tileY: 7,
+      model: fullModel,
+      timeMs: 1000,
+      cycle: { daylight: 1, twilight: 0, night: 0 },
+      environment: createWindEnvironment(0.95),
+    });
+    const windyRotation = fullBanners[0]?.rotation.z ?? 0;
+
+    expect(Math.abs(windyRotation - baseRotation)).toBeGreaterThan(
+      Math.abs(calmRotation - baseRotation)
+    );
   });
 });

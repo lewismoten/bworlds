@@ -2,7 +2,9 @@ import { hash2D } from '@bworlds/core';
 import {
   createAnchoredEnterablePoiTilePlugin,
   markPoiLightEmitter,
+  markPoiWindResponder,
   syncPoiLightEmitters,
+  syncPoiWindResponders,
 } from '@bworlds/poi-support';
 import {
   createCoordinateValueResolver,
@@ -30,6 +32,7 @@ import type {
 
 const TOWN_REGION_SIZE = 18;
 const LARGE_TOWN_BUILDING_COUNT = 6;
+const TOWN_BANNER_KEY = 'townBanner';
 const signLabelCache = new Map<string, ThreeTextureLike>();
 const townStyleCache = new Map<string, TownStyleBlueprint>();
 const townDescriptorCache = new Map<string, TownDescriptor[]>();
@@ -288,14 +291,22 @@ export function createTownTilePlugin(): RuntimePlugin {
       if (tile.poi?.name) {
         group.add(createTownNameSign(three, tile.poi.name, tileX, tileY, style));
       }
+      createTownBannerDescriptors(tileX, tileY).forEach((banner, index) => {
+        group.add(createTownBanner(three, banner, style, tileX, tileY, index));
+      });
       createTownNightLights(three, descriptors).forEach((light) => {
         group.add(light);
       });
       return group;
     },
-    sync3DModel({ model, cycle }) {
+    sync3DModel({ model, cycle, environment, timeMs = 0 }) {
       if (model && typeof model === 'object') {
         syncPoiLightEmitters(model as Parameters<typeof syncPoiLightEmitters>[0], cycle);
+        syncPoiWindResponders(
+          model as Parameters<typeof syncPoiWindResponders>[0],
+          environment,
+          timeMs
+        );
       }
     },
   });
@@ -436,6 +447,91 @@ function createTownLabelSprite(
   });
 }
 
+function createTownBanner(
+  three: ThreeHostLike,
+  descriptor: TownBannerDescriptor,
+  style: TownStyle,
+  tileX: number,
+  tileY: number,
+  index: number
+) {
+  const banner = new three.Group();
+  banner.position.set(tileX + descriptor.x, descriptor.y, tileY + descriptor.z);
+  banner.rotation.y = descriptor.rotationY;
+
+  const pole = new three.Mesh(
+    new three.CylinderGeometry(0.018, 0.02, descriptor.height, 5),
+    style.trimMaterial
+  );
+  pole.position.y = descriptor.height * 0.5;
+  banner.add(pole);
+
+  const crossbar = new three.Mesh(
+    new three.BoxGeometry(descriptor.width * 0.9, 0.025, 0.025),
+    style.trimMaterial
+  );
+  crossbar.position.set(descriptor.width * 0.45, descriptor.height - 0.04, 0);
+  banner.add(crossbar);
+
+  const cloth = markPoiWindResponder(
+    new three.Mesh(
+      new three.PlaneGeometry(descriptor.width, descriptor.length),
+      new three.MeshStandardMaterial({
+        color: descriptor.color,
+        emissive: descriptor.color,
+        emissiveIntensity: 0.04,
+        roughness: 0.84,
+        metalness: 0.02,
+        side: three.DoubleSide,
+      })
+    ),
+    {
+      axis: 'z',
+      baseRotation: descriptor.baseRotation,
+      idleAmplitude: 0.018,
+      windAmplitude: 0.13,
+      gustAmplitude: 0.05,
+      speed: 1.3 + hash2D('town-banner-speed', tileX + index, tileY) * 0.7,
+      gustSpeed: 2 + hash2D('town-banner-gust-speed', tileX, tileY + index) * 0.8,
+      phase: hash2D('town-banner-phase', tileX + index, tileY - index) * Math.PI * 2,
+      gustPhase:
+        hash2D('town-banner-gust-phase', tileX - index, tileY + index) *
+        Math.PI *
+        2,
+    }
+  );
+  cloth.position.set(descriptor.width * 0.48, descriptor.height - descriptor.length * 0.5, 0);
+  cloth.userData = {
+    ...(cloth.userData ?? {}),
+    [TOWN_BANNER_KEY]: index,
+  };
+  banner.add(cloth);
+  return banner;
+}
+
+function createTownBannerDescriptors(
+  tileX: number,
+  tileY: number
+): TownBannerDescriptor[] {
+  const palette = ['#fb7185', '#f59e0b', '#38bdf8', '#34d399'];
+  const count = 1 + Math.floor(hash2D('town-banner-count', tileX, tileY) * 2);
+  return Array.from({ length: count }, (_, index) => ({
+    x: -0.38 + index * 0.28,
+    y: 0,
+    z: 0.32 - index * 0.16,
+    width: 0.14 + hash2D('town-banner-width', tileX + index, tileY) * 0.05,
+    length: 0.22 + hash2D('town-banner-length', tileX, tileY + index) * 0.07,
+    height: 0.82 + hash2D('town-banner-height', tileX - index, tileY) * 0.18,
+    rotationY:
+      hash2D('town-banner-rotation', tileX + index, tileY - index) * 0.45 - 0.22,
+    baseRotation: 0.03 + hash2D('town-banner-base-rotation', tileX, tileY + index) * 0.03,
+    color:
+      palette[
+        Math.floor(hash2D('town-banner-color', tileX + index, tileY + index) * palette.length)
+      ] ?? palette[0],
+  }));
+}
+
 function getTownLabelTexture(
   three: ThreeHostLike,
   name: string,
@@ -563,4 +659,16 @@ interface TownDescriptor {
   roofRadius: number;
   roofHeight: number;
   windows: TownWindow[];
+}
+
+interface TownBannerDescriptor {
+  x: number;
+  y: number;
+  z: number;
+  width: number;
+  length: number;
+  height: number;
+  rotationY: number;
+  baseRotation: number;
+  color: string;
 }
