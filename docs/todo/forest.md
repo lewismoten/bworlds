@@ -620,7 +620,7 @@ This probably deserves several interchangeable strategies.
 * [x] Generate webs on abandoned/dead trees more frequently.
 * [ ] Add dew or rain glint where appropriate.
 * [ ] Allow webs to be disturbed or destroyed.
-* [ ] Generate spiders where appropriate.
+* [x] Generate spiders where appropriate.
 
 # Beaver Damage
 

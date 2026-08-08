@@ -40,6 +40,7 @@ const CARVING_KEY = 'forestCarving';
 const MEADOW_KEY = 'forestMeadow';
 const BIRD_KEY = 'forestBird';
 const WEB_KEY = 'forestWeb';
+const SPIDER_KEY = 'forestSpider';
 const TRAIL_KEY = 'forestTrail';
 const TREE_FORM_KEY = 'forestTreeForm';
 const TREE_FOLIAGE_KEY = 'forestTreeFoliage';
@@ -65,6 +66,7 @@ const treeStyleCache = new Map<string, ForestTreeStyle>();
 const forestTrailCache = new Map<string, ForestTrailDescriptor | null>();
 const forestFireflyCache = new Map<string, ForestFireflyDescriptor[]>();
 const forestWebCache = new Map<string, ForestWebDescriptor[]>();
+const forestSpiderCache = new Map<string, ForestSpiderDescriptor[]>();
 const resolveForestTrailDescriptor = createCoordinateValueResolver(
   forestTrailCache,
   ({ tileX, tileY }) => {
@@ -593,6 +595,54 @@ const resolveForestWebDescriptors = createCoordinateValueResolver(
     return webs;
   }
 );
+const resolveForestSpiderDescriptors = createCoordinateValueResolver(
+  forestSpiderCache,
+  ({ tileX, tileY }) => {
+    const webs = resolveForestWebDescriptors(tileX, tileY);
+    const spiders: ForestSpiderDescriptor[] = [];
+
+    webs.forEach((web, webIndex) => {
+      const chance = hash2D('forest-spider-web', tileX * 59 + webIndex, tileY * 61);
+      if (chance < (web.kind === 'deadwood' ? 0.26 : 0.42)) {
+        return;
+      }
+
+      const count = web.kind === 'deadwood' && chance > 0.82 ? 2 : 1;
+      for (let spiderIndex = 0; spiderIndex < count; spiderIndex += 1) {
+        const angle =
+          hash2D(
+            'forest-spider-angle',
+            tileX * 67 + webIndex * 7 + spiderIndex,
+            tileY * 71 - webIndex * 5 - spiderIndex
+          ) *
+          Math.PI *
+          2;
+        const distance =
+          web.radius *
+          (0.12 +
+            hash2D(
+              'forest-spider-distance',
+              tileX + webIndex + spiderIndex,
+              tileY - webIndex - spiderIndex
+            ) *
+              0.54);
+        spiders.push({
+          webKind: web.kind,
+          x: web.x + Math.cos(angle) * distance,
+          y:
+            web.y +
+            Math.sin(angle * 1.3) * web.radius * 0.08 +
+            spiderIndex * 0.006,
+          z: web.z + Math.sin(angle) * distance,
+          bodyScale: 0.018 + hash2D('forest-spider-size', webIndex, spiderIndex) * 0.01,
+          legSpan: 0.032 + hash2D('forest-spider-legs', webIndex, spiderIndex) * 0.016,
+        });
+      }
+    });
+
+    return spiders;
+  }
+);
 const treeGeometryCache = new WeakMap<
   object,
   {
@@ -960,6 +1010,17 @@ export function createForestTilePlugin(): RuntimePlugin {
               getForestWebs(tileX, tileY)
             );
           }
+          if (renderCloseDetails) {
+            addForestSpiderInstances(
+              three,
+              group,
+              geometry,
+              floorDetailStyle,
+              tileX,
+              tileY,
+              getForestSpiders(tileX, tileY)
+            );
+          }
           const trail = getForestTrail(tileX, tileY);
           if (trail) {
             addForestBreadcrumbInstances(
@@ -1159,6 +1220,13 @@ export function getForestWebs(
   return resolveForestWebDescriptors(tileX, tileY);
 }
 
+export function getForestSpiders(
+  tileX: number,
+  tileY: number
+): ForestSpiderDescriptor[] {
+  return resolveForestSpiderDescriptors(tileX, tileY);
+}
+
 export function getForestTrail(
   tileX: number,
   tileY: number
@@ -1325,6 +1393,14 @@ function getTreeStyle(
         color: '#f6e6a0',
         roughness: 0.82,
         metalness: 0.02,
+      }),
+      spiderMaterial: new three.MeshStandardMaterial({
+        color: tintHexColor(
+          '#2c211d',
+          0.9 + hash2D('tree-spider-body-tint', styleSeedX, styleSeedY + variety) * 0.14
+        ),
+        roughness: 0.98,
+        metalness: 0.01,
       }),
       webMaterial: new three.MeshStandardMaterial({
         color: '#d9dfdf',
@@ -1840,6 +1916,82 @@ function addForestWebInstances(
   });
 
   group.add(webInstances);
+}
+
+function addForestSpiderInstances(
+  three: ThreeHostLike,
+  group: ThreeObject3DLike,
+  geometry: TreeGeometry,
+  style: ForestTreeStyle,
+  tileX: number,
+  tileY: number,
+  spiders: ForestSpiderDescriptor[]
+) {
+  if (spiders.length === 0) {
+    return;
+  }
+
+  const bodyInstances = new three.InstancedMesh(
+    geometry.foliage,
+    style.spiderMaterial,
+    spiders.length
+  );
+  bodyInstances.userData = {
+    ...(bodyInstances.userData ?? {}),
+    [SPIDER_KEY]: 'body',
+  };
+  spiders.forEach((spider, index) => {
+    bodyInstances.setMatrixAt(
+      index,
+      createLowDetailTreeMatrix(
+        three,
+        tileX + spider.x,
+        spider.y,
+        tileY + spider.z,
+        spider.bodyScale,
+        spider.bodyScale * 0.8,
+        spider.bodyScale * 1.1
+      )
+    );
+  });
+  group.add(bodyInstances);
+
+  const legInstances = new three.InstancedMesh(
+    geometry.branch,
+    style.spiderMaterial,
+    spiders.length * 2
+  );
+  legInstances.userData = {
+    ...(legInstances.userData ?? {}),
+    [SPIDER_KEY]: 'legs',
+  };
+  spiders.forEach((spider, index) => {
+    legInstances.setMatrixAt(
+      index * 2,
+      createLowDetailTreeMatrix(
+        three,
+        tileX + spider.x - spider.legSpan * 0.24,
+        spider.y,
+        tileY + spider.z,
+        0.08,
+        spider.bodyScale * 0.45,
+        spider.legSpan
+      )
+    );
+    legInstances.setMatrixAt(
+      index * 2 + 1,
+      createLowDetailTreeMatrix(
+        three,
+        tileX + spider.x + spider.legSpan * 0.24,
+        spider.y,
+        tileY + spider.z,
+        0.08,
+        spider.bodyScale * 0.45,
+        spider.legSpan
+      )
+    );
+  });
+  group.add(legInstances);
 }
 
 function createForestFloorDetailDescriptor(
@@ -2406,6 +2558,7 @@ interface ForestTreeStyle {
   hollowMaterial: ThreeMaterialLike;
   owlBodyMaterial: ThreeMaterialLike;
   owlEyeMaterial: ThreeMaterialLike;
+  spiderMaterial: ThreeMaterialLike;
   webMaterial: ThreeMaterialLike;
   carvingMaterial: ThreeMaterialLike;
   meadowGrassMaterial: ThreeMaterialLike;
@@ -2462,6 +2615,15 @@ interface ForestWebDescriptor {
   z: number;
   radius: number;
   strandCount: number;
+}
+
+interface ForestSpiderDescriptor {
+  webKind: 'hollow' | 'deadwood';
+  x: number;
+  y: number;
+  z: number;
+  bodyScale: number;
+  legSpan: number;
 }
 
 interface ForestTreeDescriptor {
