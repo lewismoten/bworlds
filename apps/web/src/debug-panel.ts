@@ -14,6 +14,7 @@ export type DebugSnapshot = {
   sceneChildCount: number;
   visibleTileCount: number;
   visibleTreeCount: number;
+  loadedChunkCount: number;
   chunkGenerationQueueSize: number;
   pendingTileCount: number;
   averagePendingFlushTiles: number;
@@ -101,6 +102,7 @@ export function getDebugSignature(snapshot: DebugSnapshot): string {
     snapshot.sceneChildCount,
     snapshot.visibleTileCount,
     snapshot.visibleTreeCount,
+    snapshot.loadedChunkCount,
     snapshot.chunkGenerationQueueSize,
     snapshot.pendingTileCount,
     snapshot.averagePendingFlushTiles.toFixed(2),
@@ -215,6 +217,7 @@ export function buildDebugMarkup(snapshot: DebugSnapshot): string {
     <div><dt>Scene Roots</dt><dd>${snapshot.sceneChildCount}</dd></div>
     <div><dt>Visible Tiles</dt><dd>${snapshot.visibleTileCount}</dd></div>
     <div><dt>Visible Trees</dt><dd>${snapshot.visibleTreeCount}</dd></div>
+    <div><dt>Loaded Chunks</dt><dd>${snapshot.loadedChunkCount}</dd></div>
     <div><dt>Chunk Queue</dt><dd>${snapshot.chunkGenerationQueueSize}</dd></div>
     <div><dt>Pending Tiles</dt><dd>${snapshot.pendingTileCount}</dd></div>
     <div><dt>Avg Flush Tiles</dt><dd>${snapshot.averagePendingFlushTiles.toFixed(2)}</dd></div>

@@ -43,6 +43,7 @@ describe('debug panel', () => {
       sceneChildCount: 7,
       visibleTileCount: 112,
       visibleTreeCount: 27,
+      loadedChunkCount: 112,
       chunkGenerationQueueSize: 6,
       pendingTileCount: 6,
       averagePendingFlushTiles: 3.5,
@@ -104,6 +105,7 @@ describe('debug panel', () => {
     expect(buildDebugMarkup(snapshot)).toContain('GPU Geometries');
     expect(buildDebugMarkup(snapshot)).toContain('Scene Roots');
     expect(buildDebugMarkup(snapshot)).toContain('Visible Trees');
+    expect(buildDebugMarkup(snapshot)).toContain('Loaded Chunks');
     expect(buildDebugMarkup(snapshot)).toContain('Chunk Queue');
     expect(buildDebugMarkup(snapshot)).toContain('Avg Flush Tiles');
     expect(buildDebugMarkup(snapshot)).toContain('Max Flush Tiles');

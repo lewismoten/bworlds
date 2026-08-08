@@ -2596,6 +2596,9 @@ function render(): FrameLoopActivityLike {
       sceneChildCount: rendererStats.sceneChildCount,
       visibleTileCount: rendererStats.visibleTileCount,
       visibleTreeCount: rendererStats.visibleTreeCount,
+      // The current renderer streams world nodes at tile granularity, so loaded
+      // tile nodes are the active chunk unit until coarser chunk objects exist.
+      loadedChunkCount: rendererStats.visibleTileCount,
       chunkGenerationQueueSize: rendererStats.pendingTileCount,
       pendingTileCount: rendererStats.pendingTileCount,
       averagePendingFlushTiles: rendererStats.averagePendingFlushTiles,
