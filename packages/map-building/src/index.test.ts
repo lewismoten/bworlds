@@ -47,16 +47,21 @@ describe('map building', () => {
     const { map } = createBuildingMap();
     const counter = map.getTile(0, -2, {
       timeMs: DEFAULT_DAY_LENGTH_MS * 0.5,
+      playerLevel: 2,
+      playerProfession: 'courier',
     } as never) as {
       kind: string;
       note?: string;
       services?: Array<{ label: string }>;
       npcs?: string[];
+      questOffers?: Array<{ title: string }>;
     };
 
     expect(counter.kind).toBe('shop');
     expect(counter.services?.length ?? 0).toBeGreaterThan(0);
     expect(counter.npcs?.length ?? 0).toBeGreaterThan(0);
+    expect(counter.questOffers?.length ?? 0).toBeGreaterThan(0);
+    expect(counter.note).toContain('Quest offers:');
     expect(counter.note).toContain('can help here with');
   });
 

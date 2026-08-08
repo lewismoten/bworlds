@@ -7,4 +7,4 @@
 - [X] Working NPC's are designated to a building in town that they work at that is related to their profession
 - [X] NPC's can walk from their home to their profession and back based on the time of day and their type of profession
 - [X] If the profession supports it, NPC's at their business may buy/sell items, train/revive players, provide quests, etc.
-- [ ] NPC's may offer quests to players based on the time of day, time of year, player level, profession, prior quests completed, if they are home, at work, walking around town, etc.
+- [X] NPC's may offer quests to players based on the time of day, time of year, player level, profession, prior quests completed, if they are home, at work, walking around town, etc.

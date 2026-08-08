@@ -10,8 +10,10 @@ import {
   getTownBuildingLabel,
   getTownBuildings,
   getTownNpcPlacements,
+  getTownNpcQuestStates,
   getTownProfile,
 } from '@bworlds/town-support';
+import type { QuestOffer } from '@bworlds/quest-support';
 import type { TownBuilding, TownBuildingRole } from '@bworlds/town-support';
 import type {
   CreateMapContext,
@@ -33,6 +35,7 @@ type TownTile = TileLike & {
     present?: string[];
   };
   npcs?: string[];
+  questOffers?: QuestOffer[];
 };
 
 type TownContext = WorldContextLike & {
@@ -75,6 +78,7 @@ function createTownMap(
   );
   let activePlacementTimeMs = Number.NaN;
   let activeNpcPlacements = new Map<string, string[]>();
+  let activeNpcQuestOffers = new Map<string, QuestOffer[]>();
 
   const getTile = createDecoratedMapTileGetter<TownTile, TownContext>({
     context,
@@ -90,6 +94,12 @@ function createTownMap(
       if (resolvedTimeMs !== activePlacementTimeMs) {
         activePlacementTimeMs = resolvedTimeMs;
         activeNpcPlacements = new Map<string, string[]>();
+        activeNpcQuestOffers = new Map<string, QuestOffer[]>();
+        const profile = {
+          level: state?.playerLevel,
+          profession: state?.playerProfession,
+          completedQuestIds: state?.completedQuestIds,
+        };
         for (const placement of getTownNpcPlacements(
           context.origin.x,
           context.origin.y,
@@ -99,6 +109,20 @@ function createTownMap(
           const current = activeNpcPlacements.get(placementKey) ?? [];
           current.push(placement.name);
           activeNpcPlacements.set(placementKey, current);
+        }
+        for (const questState of getTownNpcQuestStates(
+          context.origin.x,
+          context.origin.y,
+          resolvedTimeMs,
+          profile
+        )) {
+          if (questState.offers.length === 0) {
+            continue;
+          }
+          const placementKey = `${questState.x}:${questState.y}`;
+          const current = activeNpcQuestOffers.get(placementKey) ?? [];
+          current.push(...questState.offers);
+          activeNpcQuestOffers.set(placementKey, current);
         }
       }
 
@@ -118,9 +142,15 @@ function createTownMap(
                 context.origin.x,
                 context.origin.y,
                 buildingSummaries.get(`${x}:${y}`)?.id ?? '',
-                resolvedTimeMs
+                resolvedTimeMs,
+                {
+                  level: state?.playerLevel,
+                  profession: state?.playerProfession,
+                  completedQuestIds: state?.completedQuestIds,
+                }
               )
             : undefined,
+        tileQuestOffers: activeNpcQuestOffers.get(`${x}:${y}`) ?? [],
       });
       if (localX === cx && localY === cy) {
         tile = {
@@ -185,7 +215,9 @@ export function resolveTownTile(options: {
   presentNpcNames?: string[];
   serviceState?: {
     availableServices: Array<{ kind: string; label: string }>;
+    availableQuestOffers?: QuestOffer[];
   };
+  tileQuestOffers?: QuestOffer[];
 }): TownTile {
   const offsetX = options.localX - options.centerX;
   const offsetY = options.localY - options.centerY;
@@ -216,6 +248,12 @@ export function resolveTownTile(options: {
             .map((service) => service.label)
             .join(', ')}.`
         : '';
+    const questOffers =
+      options.serviceState?.availableQuestOffers?.length
+        ? ` Quest offers: ${options.serviceState.availableQuestOffers
+            .map((offer) => offer.title)
+            .join(', ')}.`
+        : '';
     return {
       kind: 'shop',
       building: {
@@ -227,14 +265,15 @@ export function resolveTownTile(options: {
         present: [...(options.presentNpcNames ?? [])],
       },
       npcs: [...(options.presentNpcNames ?? [])],
+      questOffers: [...(options.serviceState?.availableQuestOffers ?? [])],
       note:
         building.role === 'professional'
-          ? `A ${buildingLabel} stands near the square.${occupants}${services}${
+          ? `A ${buildingLabel} stands near the square.${occupants}${services}${questOffers}${
               options.presentNpcNames?.length
                 ? ` Present: ${options.presentNpcNames.join(', ')}.`
                 : ''
             }`
-          : `A residential home lines the town lane.${occupants}${
+          : `A residential home lines the town lane.${occupants}${questOffers}${
               options.presentNpcNames?.length
                 ? ` Present: ${options.presentNpcNames.join(', ')}.`
                 : ''
@@ -259,7 +298,14 @@ export function resolveTownTile(options: {
       ? {
           kind: 'road',
           npcs: [...options.presentNpcNames],
-          note: `Townfolk pass by here. Present: ${options.presentNpcNames.join(', ')}.`,
+          questOffers: [...(options.tileQuestOffers ?? [])],
+          note: `Townfolk pass by here.${
+            options.tileQuestOffers?.length
+              ? ` Quest offers: ${options.tileQuestOffers
+                  .map((offer) => offer.title)
+                  .join(', ')}.`
+              : ''
+          } Present: ${options.presentNpcNames.join(', ')}.`,
         }
       : { kind: 'road' };
   }

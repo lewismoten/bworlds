@@ -278,6 +278,8 @@ describe('map town', () => {
 
     const tile = map.getTile(workplace.x, workplace.y, {
       timeMs: DEFAULT_DAY_LENGTH_MS * 0.5,
+      playerLevel: 2,
+      playerProfession: 'courier',
     } as never);
     const action = map.getAction?.(workplace.x, workplace.y) as
       | {
@@ -287,6 +289,7 @@ describe('map town', () => {
       | undefined;
 
     expect(tile.note).toContain('Services:');
+    expect(tile.note).toContain('Quest offers:');
     expect(action).toMatchObject({
       type: 'enter',
       context: {
@@ -295,5 +298,50 @@ describe('map town', () => {
         professionFamily: workplace.professionFamily,
       },
     });
+  });
+
+  it('shows quest offers for commuting npcs on town roads when player progress matches', () => {
+    const map = createTownMap();
+    let commuteSample:
+      | { x: number; y: number; timeMs: number }
+      | null = null;
+
+    for (let minute = 0; minute < 24 * 60; minute += 15) {
+      const timeMs = DEFAULT_DAY_LENGTH_MS * (minute / (24 * 60));
+      for (let y = -12; y <= 12; y += 1) {
+        for (let x = -12; x <= 12; x += 1) {
+          const tile = map.getTile(x, y, {
+            timeMs,
+            playerLevel: 4,
+            playerProfession: 'guard',
+          } as never) as { kind: string; questOffers?: Array<{ type: string }> };
+          if (
+            tile.kind === 'road' &&
+            tile.questOffers?.some((offer) => offer.type === 'escort')
+          ) {
+            commuteSample = { x, y, timeMs };
+            break;
+          }
+        }
+        if (commuteSample) {
+          break;
+        }
+      }
+      if (commuteSample) {
+        break;
+      }
+    }
+
+    if (!commuteSample) {
+      throw new Error('Expected a commuting escort quest offer in the deterministic town schedule.');
+    }
+
+    const roadTile = map.getTile(commuteSample.x, commuteSample.y, {
+      timeMs: commuteSample.timeMs,
+      playerLevel: 4,
+      playerProfession: 'guard',
+    } as never);
+
+    expect(roadTile.note).toContain('Quest offers:');
   });
 });

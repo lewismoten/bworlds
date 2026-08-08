@@ -1,4 +1,9 @@
 import { getDaylightCycleState, hash2D } from '@bworlds/core';
+import {
+  getDefaultQuestRegistry,
+  type QuestOffer,
+  type QuestPlayerProfile,
+} from '@bworlds/quest-support';
 
 export type TownLevel = 1 | 2 | 3 | 4;
 export type TownBuildingRole = 'residential' | 'professional';
@@ -87,6 +92,16 @@ export type TownBuildingServiceState = {
   buildingId: string;
   presentNpcNames: string[];
   availableServices: TownServiceOffer[];
+  availableQuestOffers: QuestOffer[];
+};
+
+export type TownNpcQuestState = {
+  npcId: string;
+  name: string;
+  x: number;
+  y: number;
+  state: TownNpcRoutineState;
+  offers: QuestOffer[];
 };
 
 type TownStructure = Omit<TownProfile, 'population'>;
@@ -215,6 +230,7 @@ const buildingCache = new Map<string, TownBuilding[]>();
 const npcCache = new Map<string, TownNpc[]>();
 const placementCache = new Map<string, TownNpcPlacement[]>();
 const serviceStateCache = new Map<string, TownBuildingServiceState>();
+const questStateCache = new Map<string, TownNpcQuestState[]>();
 const townProfileCache = new Map<string, TownProfile>();
 
 function getTownCacheKey(tileX: number, tileY: number): string {
@@ -652,6 +668,15 @@ function getTownProfessionServiceOffers(
   }
 }
 
+function getQuestProfileKey(profile: QuestPlayerProfile | undefined): string {
+  const completed = [...(profile?.completedQuestIds ?? [])].sort().join(',');
+  return [
+    profile?.level ?? 1,
+    profile?.profession ?? 'any',
+    completed,
+  ].join('|');
+}
+
 export function getTownBuildingId(
   tileX: number,
   tileY: number,
@@ -860,15 +885,77 @@ export function getTownNpcPlacements(
   return placements;
 }
 
+export function getTownNpcQuestStates(
+  tileX: number,
+  tileY: number,
+  timeMs = 0,
+  profile: QuestPlayerProfile = {}
+): TownNpcQuestState[] {
+  const cycle = getDaylightCycleState(timeMs);
+  const minuteOfDay = Math.floor(cycle.dayProgress * 24 * 60) % (24 * 60);
+  const cacheKey = `${getTownCacheKey(tileX, tileY)}:${minuteOfDay}:${getQuestProfileKey(profile)}`;
+  const cached = questStateCache.get(cacheKey);
+  if (cached) {
+    return cached;
+  }
+
+  const placements = getTownNpcPlacements(tileX, tileY, timeMs);
+  const npcs = new Map(getTownNpcs(tileX, tileY).map((npc) => [npc.id, npc]));
+  const buildings = new Map(
+    getTownBuildings(tileX, tileY).map((building) => [building.id, building])
+  );
+  const registry = getDefaultQuestRegistry();
+  const completedQuestIds = new Set(profile.completedQuestIds ?? []);
+  const playerLevel = Math.max(1, profile.level ?? 1);
+  const townKey = `${tileX}:${tileY}`;
+
+  const questStates = placements.map((placement) => {
+    const npc = npcs.get(placement.npcId);
+    const workplace = npc?.workplaceBuildingId
+      ? buildings.get(npc.workplaceBuildingId)
+      : null;
+    const offers = npc
+      ? registry.getOffers({
+          npcId: npc.id,
+          npcName: npc.name,
+          townKey,
+          dayProgress: cycle.dayProgress,
+          yearProgress: cycle.yearProgress,
+          playerLevel,
+          playerProfession: profile.profession,
+          completedQuestIds,
+          npcState: placement.state,
+          profession: npc.profession,
+          professionFamily: npc.workplaceProfessionFamily,
+          residenceBuildingId: npc.residenceBuildingId,
+          workplaceBuildingId: npc.workplaceBuildingId,
+        })
+      : [];
+
+    return {
+      npcId: placement.npcId,
+      name: placement.name,
+      x: placement.x,
+      y: placement.y,
+      state: placement.state,
+      offers,
+    };
+  });
+
+  questStateCache.set(cacheKey, questStates);
+  return questStates;
+}
+
 export function getTownBuildingServiceState(
   tileX: number,
   tileY: number,
   buildingId: string,
-  timeMs = 0
+  timeMs = 0,
+  profile: QuestPlayerProfile = {}
 ): TownBuildingServiceState {
   const cycle = getDaylightCycleState(timeMs);
   const minuteOfDay = Math.floor(cycle.dayProgress * 24 * 60) % (24 * 60);
-  const cacheKey = `${getTownCacheKey(tileX, tileY)}:${buildingId}:${minuteOfDay}`;
+  const cacheKey = `${getTownCacheKey(tileX, tileY)}:${buildingId}:${minuteOfDay}:${getQuestProfileKey(profile)}`;
   const cached = serviceStateCache.get(cacheKey);
   if (cached) {
     return cached;
@@ -883,12 +970,14 @@ export function getTownBuildingServiceState(
       buildingId,
       presentNpcNames: [],
       availableServices: [],
+      availableQuestOffers: [],
     };
     serviceStateCache.set(cacheKey, emptyState);
     return emptyState;
   }
 
   const placements = getTownNpcPlacements(tileX, tileY, timeMs);
+  const questStates = getTownNpcQuestStates(tileX, tileY, timeMs, profile);
   const presentNpcNames = placements
     .filter((placement) => placement.x === building.x && placement.y === building.y)
     .map((placement) => placement.name);
@@ -896,11 +985,15 @@ export function getTownBuildingServiceState(
     building.role === 'professional' && presentNpcNames.length > 0
       ? getTownProfessionServiceOffers(building.professionFamily)
       : [];
+  const availableQuestOffers = questStates
+    .filter((questState) => questState.x === building.x && questState.y === building.y)
+    .flatMap((questState) => questState.offers);
 
   const state = {
     buildingId,
     presentNpcNames,
     availableServices,
+    availableQuestOffers,
   };
   serviceStateCache.set(cacheKey, state);
   return state;

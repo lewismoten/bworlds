@@ -7,6 +7,7 @@ import {
   getTownBuildingLabel,
   getTownBuildingServiceState,
 } from '@bworlds/town-support';
+import type { QuestOffer } from '@bworlds/quest-support';
 import type {
   CreateMapContext,
   RuntimePlugin,
@@ -51,7 +52,7 @@ function createBuildingMap(
         tile = { kind: 'door', note: 'Press X to leave.' };
       }
       if (y === -2 && Math.abs(x) <= 1) {
-        tile = resolveBuildingCounterTile(context, state?.timeMs);
+        tile = resolveBuildingCounterTile(context, state);
       }
       return tile;
     },
@@ -76,7 +77,12 @@ function createBuildingMap(
 
 function resolveBuildingCounterTile(
   context: BuildingContext,
-  timeMs = 0
+  state?: {
+    timeMs?: number;
+    playerLevel?: number;
+    playerProfession?: string;
+    completedQuestIds?: string[];
+  }
 ): BuildingTile {
   if (!context.townBuildingId || !context.origin) {
     return { kind: 'shop', note: 'A service counter waits inside the building.' };
@@ -91,7 +97,12 @@ function resolveBuildingCounterTile(
     context.origin.x,
     context.origin.y,
     context.townBuildingId,
-    timeMs
+    state?.timeMs ?? 0,
+    {
+      level: state?.playerLevel,
+      profession: state?.playerProfession,
+      completedQuestIds: state?.completedQuestIds,
+    }
   );
 
   if (buildingRole !== 'professional') {
@@ -99,8 +110,15 @@ function resolveBuildingCounterTile(
       kind: 'shop',
       note:
         serviceState.presentNpcNames.length > 0
-          ? `${serviceState.presentNpcNames.join(', ')} are home right now.`
+          ? `${serviceState.presentNpcNames.join(', ')} are home right now.${
+              serviceState.availableQuestOffers.length > 0
+                ? ` Quest offers: ${serviceState.availableQuestOffers
+                    .map((offer) => offer.title)
+                    .join(', ')}.`
+                : ''
+            }`
           : 'The house is quiet right now.',
+      questOffers: serviceState.availableQuestOffers,
     };
   }
 
@@ -114,8 +132,15 @@ function resolveBuildingCounterTile(
   const serviceLabels = serviceState.availableServices.map((service) => service.label);
   return {
     kind: 'shop',
-    note: `${serviceState.presentNpcNames.join(', ')} can help here with ${serviceLabels.join(', ')}.`,
+    note: `${serviceState.presentNpcNames.join(', ')} can help here with ${serviceLabels.join(', ')}.${
+      serviceState.availableQuestOffers.length > 0
+        ? ` Quest offers: ${serviceState.availableQuestOffers
+            .map((offer) => offer.title)
+            .join(', ')}.`
+        : ''
+    }`,
     services: serviceState.availableServices,
     npcs: serviceState.presentNpcNames,
+    questOffers: serviceState.availableQuestOffers,
   };
 }

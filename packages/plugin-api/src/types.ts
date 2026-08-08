@@ -316,6 +316,9 @@ export interface WorldEnvironmentLike {
 export interface WorldStateLike {
   player: RuntimePlayerLike;
   timeMs?: number;
+  playerLevel?: number;
+  playerProfession?: string;
+  completedQuestIds?: string[];
   viewMode?: ViewMode;
   getCurrentContext(): WorldContextLike;
   getCurrentMap?(): WorldMapLike;

@@ -5,6 +5,7 @@ import {
   getTownBuildings,
   getTownBuildingServiceState,
   getTownNpcPlacements,
+  getTownNpcQuestStates,
   getTownNpcs,
   getTownProfile,
 } from './index.ts';
@@ -196,6 +197,34 @@ describe('town support', () => {
     expect(middayServices.availableServices.length).toBeGreaterThan(0);
     expect(midnightServices.presentNpcNames).toHaveLength(0);
     expect(midnightServices.availableServices).toHaveLength(0);
+  });
+
+  it('generates npc quest offers from home, work, and commute states using player progress', () => {
+    const daytimeWork = getTownNpcQuestStates(3, 7, DEFAULT_DAY_LENGTH_MS * 0.5, {
+      level: 2,
+      profession: 'courier',
+    });
+    const nighttimeHome = getTownNpcQuestStates(3, 7, DEFAULT_DAY_LENGTH_MS * 0.92, {
+      level: 1,
+    });
+    const followUp = getTownNpcQuestStates(3, 7, DEFAULT_DAY_LENGTH_MS * 0.5, {
+      level: 6,
+      profession: 'scholar',
+      completedQuestIds: daytimeWork
+        .flatMap((entry) => entry.offers)
+        .filter((offer) => offer.type === 'delivery')
+        .map((offer) => offer.id),
+    });
+
+    expect(
+      daytimeWork.some((entry) => entry.offers.some((offer) => offer.type === 'delivery'))
+    ).toBe(true);
+    expect(
+      nighttimeHome.some((entry) => entry.offers.some((offer) => offer.type === 'collection'))
+    ).toBe(true);
+    expect(
+      followUp.some((entry) => entry.offers.some((offer) => offer.type === 'investigation'))
+    ).toBe(true);
   });
 
   it('scales building counts upward for at least some higher-level towns', () => {
