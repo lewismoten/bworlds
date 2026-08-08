@@ -60,6 +60,8 @@ type Render3DController = {
     visibleTileCount: number;
     visibleTreeCount: number;
     pendingTileCount: number;
+    tileBuildsPerSecond: number;
+    lodReplacementsPerSecond: number;
     object3dCount: number;
     groupCount: number;
     meshCount: number;
@@ -264,6 +266,10 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     facingBucket: '',
     queue: [] as Array<{ key: string; x: number; y: number }>,
   };
+  const renderChurnMetrics = {
+    tileBuilds: [] as number[],
+    lodReplacements: [] as number[],
+  };
 
   function resize(width, height, pixelRatio = window.devicePixelRatio || 1) {
     const safeWidth = Math.max(1, Math.floor(width));
@@ -394,7 +400,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     lastChunkRadius = chunkRadius;
   }
 
-  function flushPendingWorldBuild(state) {
+  function flushPendingWorldBuild(state, nowMs: number) {
     if (pendingWorldBuild.queue.length === 0) {
       return;
     }
@@ -425,6 +431,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       );
       visibleTileNodes.set(entry.key, tileNode);
       worldRoot.add(tileNode.node);
+      recordRecentMetric(renderChurnMetrics.tileBuilds, nowMs);
     }
   }
 
@@ -444,7 +451,8 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     ) {
       syncVisibleWorld(state, chunkRadius);
     }
-    flushPendingWorldBuild(state);
+    const frameNowMs = options.timeMs ?? performance.now();
+    flushPendingWorldBuild(state, frameNowMs);
     syncWorldCurvature(visibleTileNodes.values(), state);
 
     camera.position.set(
@@ -461,10 +469,10 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     const cycle = updateSkyAndLights(
       state.player.x * TILE_SIZE,
       state.player.y * TILE_SIZE,
-      options.timeMs ?? performance.now(),
+      frameNowMs,
       environment
     );
-    syncTileModelDetailLevels(state, getActivePluginRegistry());
+    syncTileModelDetailLevels(state, getActivePluginRegistry(), frameNowMs);
     updateFarLandModelVisibility(visibleTileNodes.values(), state);
     syncDynamicTileNodes(visibleTileNodes.values(), {
       three: THREE,
@@ -504,6 +512,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     const rendererInfo = renderer.info as THREE.WebGLInfo & {
       programs?: ArrayLike<unknown>;
     };
+    const nowMs = performance.now();
     return {
       drawCalls: renderer.info.render.calls,
       triangles: renderer.info.render.triangles,
@@ -512,6 +521,11 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       visibleTileCount: visibleTileNodes.size,
       visibleTreeCount: sceneResourceStats.treeCount,
       pendingTileCount: pendingWorldBuild.queue.length,
+      tileBuildsPerSecond: countRecentMetricEvents(renderChurnMetrics.tileBuilds, nowMs),
+      lodReplacementsPerSecond: countRecentMetricEvents(
+        renderChurnMetrics.lodReplacements,
+        nowMs
+      ),
       object3dCount: sceneResourceStats.object3dCount,
       groupCount: sceneResourceStats.groupCount,
       meshCount: sceneResourceStats.meshCount,
@@ -527,7 +541,8 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
 
   function syncTileModelDetailLevels(
     state: Render3DState,
-    registry: ReturnType<typeof getActivePluginRegistry>
+    registry: ReturnType<typeof getActivePluginRegistry>,
+    nowMs: number
   ): void {
     for (const [key, entry] of visibleTileNodes.entries()) {
       if (!entry.modelRoot) {
@@ -552,6 +567,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       visibleTileNodes.set(key, nextEntry);
       worldRoot.remove(entry.node);
       worldRoot.add(nextEntry.node);
+      recordRecentMetric(renderChurnMetrics.lodReplacements, nowMs);
     }
   }
 
@@ -1560,6 +1576,39 @@ function collectTaggedTreeStats(
 
 function clamp01(value: number): number {
   return Math.max(0, Math.min(1, value));
+}
+
+export function recordRecentMetric(
+  timestamps: number[],
+  nowMs: number,
+  windowMs = 1000
+): void {
+  timestamps.push(nowMs);
+  pruneRecentMetricTimestamps(timestamps, nowMs, windowMs);
+}
+
+export function countRecentMetricEvents(
+  timestamps: number[],
+  nowMs: number,
+  windowMs = 1000
+): number {
+  pruneRecentMetricTimestamps(timestamps, nowMs, windowMs);
+  return timestamps.length;
+}
+
+function pruneRecentMetricTimestamps(
+  timestamps: number[],
+  nowMs: number,
+  windowMs: number
+): void {
+  const minimumTime = nowMs - windowMs;
+  let removeCount = 0;
+  while (removeCount < timestamps.length && timestamps[removeCount] < minimumTime) {
+    removeCount += 1;
+  }
+  if (removeCount > 0) {
+    timestamps.splice(0, removeCount);
+  }
 }
 
 export function getSkyConstellationSignature(cycle: SkySignatureCycle): string {

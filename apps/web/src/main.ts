@@ -2497,6 +2497,8 @@ function render(): FrameLoopActivityLike {
       visibleTileCount: rendererStats.visibleTileCount,
       visibleTreeCount: rendererStats.visibleTreeCount,
       pendingTileCount: rendererStats.pendingTileCount,
+      tileBuildsPerSecond: rendererStats.tileBuildsPerSecond,
+      lodReplacementsPerSecond: rendererStats.lodReplacementsPerSecond,
       object3dCount: rendererStats.object3dCount,
       groupCount: rendererStats.groupCount,
       meshCount: rendererStats.meshCount,

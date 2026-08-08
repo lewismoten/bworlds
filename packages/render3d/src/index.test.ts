@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
   collectSceneResourceStats,
+  countRecentMetricEvents,
   applyObjectDistanceFade,
   clampCameraPitch,
   DEFAULT_CAMERA_PITCH,
@@ -19,6 +20,7 @@ import {
   getVisibleWorldTileBuildOrder,
   pickCornerBoundaryProfile,
   prepareObjectForDistanceFade,
+  recordRecentMetric,
   syncDynamicTileNodes,
   shouldRenderWorldTile,
 } from './index.ts';
@@ -49,6 +51,19 @@ describe('render3d visibility helpers', () => {
       treeMeshCount: 1,
       treeMaterialRefCount: 1,
     });
+  });
+
+  it('tracks recent tile-build and lod churn with a rolling one-second window', () => {
+    const timestamps = [100, 450];
+
+    recordRecentMetric(timestamps, 900);
+    expect(timestamps).toEqual([100, 450, 900]);
+    expect(countRecentMetricEvents(timestamps, 950)).toBe(3);
+    expect(countRecentMetricEvents(timestamps, 1405)).toBe(2);
+
+    recordRecentMetric(timestamps, 2405);
+    expect(timestamps).toEqual([2405]);
+    expect(countRecentMetricEvents(timestamps, 2600)).toBe(1);
   });
 
   it('reuses one faded material clone per source material within a model root', () => {

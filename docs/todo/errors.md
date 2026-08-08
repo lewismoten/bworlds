@@ -480,8 +480,8 @@ I would add a little developer overlay now.
 * [x] Calculate meshes per visible tree.
 * [x] Calculate materials per visible tree.
 * [x] Calculate objects per visible tile.
-* [ ] Track tile builds per second.
-* [ ] Track LOD replacements per second.
+* [x] Track tile builds per second.
+* [x] Track LOD replacements per second.
 
 ---
 

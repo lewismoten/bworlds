@@ -12,6 +12,8 @@ export type DebugSnapshot = {
   visibleTileCount: number;
   visibleTreeCount: number;
   pendingTileCount: number;
+  tileBuildsPerSecond: number;
+  lodReplacementsPerSecond: number;
   object3dCount: number;
   groupCount: number;
   meshCount: number;
@@ -51,6 +53,8 @@ export function getDebugSignature(snapshot: DebugSnapshot): string {
     snapshot.visibleTileCount,
     snapshot.visibleTreeCount,
     snapshot.pendingTileCount,
+    snapshot.tileBuildsPerSecond,
+    snapshot.lodReplacementsPerSecond,
     snapshot.object3dCount,
     snapshot.groupCount,
     snapshot.meshCount,
@@ -131,6 +135,8 @@ export function buildDebugMarkup(snapshot: DebugSnapshot): string {
     <div><dt>Visible Tiles</dt><dd>${snapshot.visibleTileCount}</dd></div>
     <div><dt>Visible Trees</dt><dd>${snapshot.visibleTreeCount}</dd></div>
     <div><dt>Pending Tiles</dt><dd>${snapshot.pendingTileCount}</dd></div>
+    <div><dt>Tile Builds/s</dt><dd>${snapshot.tileBuildsPerSecond}</dd></div>
+    <div><dt>LOD Swaps/s</dt><dd>${snapshot.lodReplacementsPerSecond}</dd></div>
     <div><dt>Objects</dt><dd>${snapshot.object3dCount}</dd></div>
     <div><dt>Objects / Tile</dt><dd>${objectsPerVisibleTile}</dd></div>
     <div><dt>Groups</dt><dd>${snapshot.groupCount}</dd></div>
