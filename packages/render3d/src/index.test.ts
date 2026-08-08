@@ -21,6 +21,7 @@ import {
   pickCornerBoundaryProfile,
   prepareObjectForDistanceFade,
   recordRecentMetric,
+  summarizeVisibleTileKinds,
   syncDynamicTileNodes,
   shouldRenderWorldTile,
 } from './index.ts';
@@ -89,6 +90,21 @@ describe('render3d visibility helpers', () => {
     recordRecentMetric(timestamps, 2405);
     expect(timestamps).toEqual([2405]);
     expect(countRecentMetricEvents(timestamps, 2600)).toBe(1);
+  });
+
+  it('summarizes the most common visible tile kinds for the debug overlay', () => {
+    expect(
+      summarizeVisibleTileKinds([
+        { tile: { kind: 'forest' } },
+        { tile: { kind: 'plains' } },
+        { tile: { kind: 'forest' } },
+        { tile: { kind: 'river' } },
+        { tile: { kind: 'plains' } },
+        { tile: { kind: 'forest' } },
+      ])
+    ).toBe('forest:3, plains:2, river:1');
+
+    expect(summarizeVisibleTileKinds([], 4)).toBe('');
   });
 
   it('reuses one faded material clone per source material within a model root', () => {

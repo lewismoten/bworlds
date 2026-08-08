@@ -73,6 +73,7 @@ type Render3DController = {
     geometryMemoryCount: number;
     treeMeshCount: number;
     treeMaterialRefCount: number;
+    visibleTileKindSummary: string;
     textureCount: number;
     programCount: number;
   };
@@ -543,6 +544,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       geometryMemoryCount: renderer.info.memory.geometries,
       treeMeshCount: sceneResourceStats.treeMeshCount,
       treeMaterialRefCount: sceneResourceStats.treeMaterialRefCount,
+      visibleTileKindSummary: summarizeVisibleTileKinds(visibleTileNodes.values()),
       textureCount: renderer.info.memory.textures,
       programCount: rendererInfo.programs?.length ?? 0,
     };
@@ -1633,6 +1635,31 @@ function pruneRecentMetricTimestamps(
   if (removeCount > 0) {
     timestamps.splice(0, removeCount);
   }
+}
+
+export function summarizeVisibleTileKinds(
+  entries: Iterable<{
+    tile: {
+      kind: string;
+    };
+  }>,
+  limit = 4
+): string {
+  const counts = new Map<string, number>();
+  for (const entry of entries) {
+    counts.set(entry.tile.kind, (counts.get(entry.tile.kind) ?? 0) + 1);
+  }
+
+  return [...counts.entries()]
+    .sort((left, right) => {
+      if (right[1] !== left[1]) {
+        return right[1] - left[1];
+      }
+      return left[0].localeCompare(right[0]);
+    })
+    .slice(0, limit)
+    .map(([kind, count]) => `${kind}:${count}`)
+    .join(', ');
 }
 
 export function getSkyConstellationSignature(cycle: SkySignatureCycle): string {

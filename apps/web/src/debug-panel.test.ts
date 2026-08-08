@@ -45,6 +45,7 @@ describe('debug panel', () => {
       geometryMemoryCount: 63,
       treeMeshCount: 135,
       treeMaterialRefCount: 135,
+      visibleTileKindSummary: 'forest:48, plains:32, river:12, town:4',
       textureCount: 7,
       programCount: 12,
       latitude: 32.1234,
@@ -73,6 +74,7 @@ describe('debug panel', () => {
     expect(buildDebugMarkup(snapshot)).toContain('Meshes / Tree');
     expect(buildDebugMarkup(snapshot)).toContain('Objects / Tile');
     expect(buildDebugMarkup(snapshot)).toContain('Materials');
+    expect(buildDebugMarkup(snapshot)).toContain('Tile Kinds');
     expect(buildDebugMarkup(snapshot)).toContain('Programs');
     expect(buildDebugMarkup(snapshot)).toContain('Warning');
     expect(buildDebugMarkup(snapshot)).toContain('alpha');

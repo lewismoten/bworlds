@@ -25,6 +25,7 @@ export type DebugSnapshot = {
   geometryMemoryCount: number;
   treeMeshCount: number;
   treeMaterialRefCount: number;
+  visibleTileKindSummary: string;
   textureCount: number;
   programCount: number;
   latitude: number;
@@ -77,6 +78,7 @@ export function getDebugSignature(snapshot: DebugSnapshot): string {
     snapshot.geometryMemoryCount,
     snapshot.treeMeshCount,
     snapshot.treeMaterialRefCount,
+    snapshot.visibleTileKindSummary,
     snapshot.textureCount,
     snapshot.programCount,
     snapshot.latitude.toFixed(4),
@@ -165,6 +167,7 @@ export function buildDebugMarkup(snapshot: DebugSnapshot): string {
     <div><dt>Meshes / Tree</dt><dd>${meshesPerVisibleTree}</dd></div>
     <div><dt>Materials</dt><dd>${snapshot.materialCount}</dd></div>
     <div><dt>Materials / Tree</dt><dd>${materialsPerVisibleTree}</dd></div>
+    <div><dt>Tile Kinds</dt><dd>${snapshot.visibleTileKindSummary || 'None'}</dd></div>
     <div><dt>Geometries</dt><dd>${snapshot.geometryCount}</dd></div>
     <div><dt>GPU Geometries</dt><dd>${snapshot.geometryMemoryCount}</dd></div>
     <div><dt>Textures</dt><dd>${snapshot.textureCount}</dd></div>
