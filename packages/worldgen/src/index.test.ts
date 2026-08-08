@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_DAY_LENGTH_MS, normalizeAngle } from '@bworlds/core';
+import { getTrainBoardingSpawn } from '@bworlds/map-train';
 import { createOverworldTerrainSignalSampler } from '@bworlds/overworld-support';
 import { getActivePluginRegistry } from '@bworlds/plugin-api';
 import { buildPlayerPoi } from '@bworlds/runtime-player-poi';
@@ -525,6 +526,28 @@ describe('world generator', () => {
     expect(shipMap.getTile(0, 0).kind).toBe('ship');
     expect(shipMap.getTile(0, 5).kind).toBe('door');
     expect(shipMap.getTile(0, -3).kind).toBe('interior');
+  });
+
+  it('creates train maps through the registered map plugin path', () => {
+    const generator = createGenerator();
+    const trainContext = {
+      id: 'train:5:4:1',
+      label: 'Test Train',
+      type: 'train',
+      depth: 2,
+      origin: { x: 5, y: 4 },
+      lineName: 'Copper Lantern Line',
+      fromStation: 'Copper Lantern Station',
+      toStation: 'Frost Junction',
+    } as const;
+    const trainMap = generator.getMap(trainContext);
+    const boardingSpawn = getTrainBoardingSpawn('spec', trainContext);
+
+    expect(trainMap.getTile(0, boardingSpawn.y).kind).toBe('interior');
+    expect(trainMap.getTile(0, 0).note).toMatch(/engine|coach|dining|mail|sleeper/i);
+    expect(trainMap.getExit?.(0, boardingSpawn.y + 2)).toEqual(
+      expect.objectContaining({})
+    );
   });
 
   it('creates quarry points of interest somewhere near the origin', () => {

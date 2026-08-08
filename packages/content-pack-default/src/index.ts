@@ -6,6 +6,7 @@ import { createOverworldCompositionPlugin } from '@bworlds/map-overworld';
 import { createQuarryMapPlugin } from '@bworlds/map-quarry';
 import { createShipMapPlugin } from '@bworlds/map-ship';
 import { createStationMapPlugin } from '@bworlds/map-station';
+import { createTrainMapPlugin } from '@bworlds/map-train';
 import { createTownMapPlugin } from '@bworlds/map-town';
 import type {
   Kind,
@@ -89,6 +90,10 @@ export function createDefaultMapPlugins(): RuntimePlugin[] {
     {
       create: createStationMapPlugin,
       order: { priority: 39 },
+    },
+    {
+      create: createTrainMapPlugin,
+      order: { priority: 39.5 },
     },
     {
       create: createOverworldCompositionPlugin,

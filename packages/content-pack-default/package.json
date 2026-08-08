@@ -11,6 +11,7 @@
     "@bworlds/map-quarry": "0.1.0",
     "@bworlds/map-ship": "0.1.0",
     "@bworlds/map-station": "0.1.0",
+    "@bworlds/map-train": "0.1.0",
     "@bworlds/map-town": "0.1.0",
     "@bworlds/plugin-api": "0.1.0",
     "@bworlds/runtime-celestial": "0.1.0",

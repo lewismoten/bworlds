@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { createStationMapPlugin } from './index.ts';
+import {
+  createStationMapPlugin,
+  findBoardableTrainService,
+} from './index.ts';
 
 describe('map station', () => {
   it('creates a station interior with a central hall and exit back outside', () => {
@@ -36,5 +39,54 @@ describe('map station', () => {
         spawn: { x: 4, y: 9 },
       })
     );
+  });
+
+  it('finds only trains that are actually approaching the current station platform', () => {
+    expect(
+      findBoardableTrainService(
+        [
+          {
+            x: 0,
+            y: 0,
+            progress: 0.12,
+            direction: 'forward',
+            lineName: 'Copper Lantern Line',
+            from: 'Copper Lantern Station',
+            to: 'Frost Junction',
+          },
+          {
+            x: 3,
+            y: 2,
+            progress: 0.41,
+            direction: 'forward',
+            lineName: 'Far Line',
+            from: 'Elsewhere Depot',
+            to: 'Another Terminal',
+          },
+        ],
+        'Copper Lantern Station'
+      )
+    ).toEqual(
+      expect.objectContaining({
+        lineName: 'Copper Lantern Line',
+      })
+    );
+
+    expect(
+      findBoardableTrainService(
+        [
+          {
+            x: 0,
+            y: 0,
+            progress: 0.42,
+            direction: 'forward',
+            lineName: 'Copper Lantern Line',
+            from: 'Copper Lantern Station',
+            to: 'Frost Junction',
+          },
+        ],
+        'Copper Lantern Station'
+      )
+    ).toBeNull();
   });
 });
