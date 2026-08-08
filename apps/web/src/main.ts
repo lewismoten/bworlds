@@ -2458,7 +2458,7 @@ import.meta.hot?.on('vite:afterUpdate', () => {
   showHmrNotice(getHmrNoticeText('after-update'));
 });
 
-document.addEventListener('keydown', (event) => {
+window.addEventListener('keydown', (event) => {
   if (isEditableKeyboardTarget(event.target)) {
     return;
   }
@@ -2494,7 +2494,7 @@ document.addEventListener('keydown', (event) => {
   }
 }, true);
 
-document.addEventListener('keyup', (event) => {
+window.addEventListener('keyup', (event) => {
   if (isEditableKeyboardTarget(event.target)) {
     return;
   }
