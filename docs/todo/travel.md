@@ -7,7 +7,7 @@
 - [X] Add train tracks with brazier curves that connect points
 - [X] Add a train station as a point of interest
 - [ ] Add different train cars that you can walk through
-- [ ] Show trains traveling on the world overview map
+- [X] Show trains traveling on the world overview map
 - [ ] Give trains audio for whistel and steam engine movement
 
 # Water Travel

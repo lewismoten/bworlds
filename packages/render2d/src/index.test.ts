@@ -152,6 +152,65 @@ describe('render2D night sky overlay', () => {
     expect(calls).not.toContain('star');
   });
 
+  it('draws train markers on rail tiles that carry active train traffic', () => {
+    const calls: string[] = [];
+    const context = {
+      fillStyle: '',
+      strokeStyle: '',
+      lineWidth: 1,
+      imageSmoothingEnabled: false,
+      save() {},
+      restore() {},
+      translate() {},
+      rotate() {},
+      clearRect() {},
+      beginPath() {},
+      closePath() {},
+      moveTo() {},
+      lineTo() {},
+      stroke() {},
+      fill() {},
+      arc() {},
+      bezierCurveTo() {},
+      createLinearGradient() {
+        return { addColorStop() {} };
+      },
+      fillRect(_x: number, _y: number, width: number, height: number) {
+        if (width < 20 && height < 20) {
+          calls.push('train');
+        } else {
+          calls.push('tile');
+        }
+      },
+    } as unknown as Render2DContext;
+
+    const state: Render2DState = {
+      player: { x: 0, y: 0, facing: 0 },
+      getCurrentTile(x: number, y: number) {
+        if (x === 0 && y === 0) {
+          return {
+            kind: 'rail',
+            train: {
+              x: 0,
+              y: 0,
+              direction: 'forward',
+              progress: 0.4,
+            },
+          };
+        }
+        return { kind: 'plains' };
+      },
+    };
+
+    render2D(context, state, {
+      width: 100,
+      height: 100,
+      rotation: 0,
+    });
+
+    expect(calls).toContain('train');
+  });
+
   it('builds an ascii text viewport grid with a centered player marker', () => {
     const state = {
       player: { x: 0, y: 0, facing: 0 },

@@ -599,6 +599,8 @@ interface DecoratedSeedTile extends SeededPoint {
 }
 export interface DecorateOverworldTileContext extends DecoratedSeedTile {
   signals: OverworldSignals;
+  state?: WorldStateLike;
+  sampleTerrainSignals?: SampleTerrainSignalsLike;
 }
 
 interface DecoratedContext extends DecoratedSeedTile {

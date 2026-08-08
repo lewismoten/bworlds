@@ -567,8 +567,22 @@ describe('overworld support', () => {
   it('composes overworld tiles through the shared plugin pipeline', () => {
     const sampleTerrainSignals = createOverworldTerrainSignalSampler('spec-seed');
     const calls: string[] = [];
+    const state = {
+      timeMs: 1234,
+      player: { x: 0, y: 0, facing: 0 },
+      getCurrentContext() {
+        return { id: 'overworld', type: 'overworld', depth: 0 };
+      },
+      getCurrentTile() {
+        return { kind: 'plains' };
+      },
+      getTileDefinition() {
+        return null;
+      },
+    };
     const tile = composeOverworldTileFromPlugins(createComposeOverworldTilePayload({
       sampleTerrainSignals,
+      state,
       plugins: createTestPluginRegistry({
         resolveOverworldTile() {
           calls.push('resolve');
@@ -592,6 +606,10 @@ describe('overworld support', () => {
         },
         decorateOverworldTile(context) {
           calls.push(`decorate:${context.tile.kind}`);
+          calls.push(`time:${context.state?.timeMs ?? 'none'}`);
+          calls.push(
+            `sampler:${typeof context.sampleTerrainSignals === 'function' ? 'yes' : 'no'}`
+          );
           context.tile.note = 'decorated';
           return context.tile;
         },
@@ -608,6 +626,8 @@ describe('overworld support', () => {
       'terrain:plains',
       'overworld:river',
       'decorate:bridge',
+      'time:1234',
+      'sampler:yes',
     ]);
   });
 

@@ -42,6 +42,10 @@ export type TextViewportGrid = {
 type ReliefTile = {
   kind: string;
   surfaceHeight?: unknown;
+  train?: {
+    direction?: 'forward' | 'backward';
+    progress?: number;
+  };
 };
 
 export function render2D(
@@ -91,6 +95,7 @@ export function render2D(
       }
 
       drawReliefOverlay(context, tile, drawX, drawY, tileSize);
+      drawTrainOverlay(context, tile, drawX, drawY, tileSize);
     }
   }
 
@@ -247,12 +252,48 @@ function drawReliefOverlay(
   );
 }
 
+function drawTrainOverlay(
+  context: CanvasRenderingContext2D,
+  tile: ReliefTile,
+  drawX: number,
+  drawY: number,
+  tileSize: number
+) {
+  if (tile.kind !== 'rail' || !tile.train) {
+    return;
+  }
+
+  const bodyWidth = Math.max(4, tileSize * 0.42);
+  const bodyHeight = Math.max(3, tileSize * 0.22);
+  const bodyX = drawX + (tileSize - bodyWidth) * 0.5;
+  const bodyY = drawY + tileSize * 0.46;
+  const directionOffset = tile.train.direction === 'backward' ? -1 : 1;
+
+  context.fillStyle = '#1f2937';
+  context.fillRect(bodyX, bodyY, bodyWidth, bodyHeight);
+  context.fillStyle = '#d97706';
+  context.fillRect(
+    bodyX + bodyWidth * 0.18,
+    bodyY - bodyHeight * 0.55,
+    bodyWidth * 0.4,
+    bodyHeight * 0.55
+  );
+  context.fillStyle = 'rgba(226,232,240,0.72)';
+  context.fillRect(
+    bodyX + bodyWidth * (directionOffset > 0 ? 0.68 : 0.08),
+    bodyY - bodyHeight * 0.9,
+    Math.max(2, tileSize * 0.12),
+    Math.max(2, tileSize * 0.12)
+  );
+}
+
 const ASCII_TILE_GLYPHS: Record<string, string> = {
   plains: '.',
   floor: '.',
   interior: '.',
   shore: ',',
   road: '=',
+  rail: '=',
   river: '~',
   ocean: '~',
   bridge: '#',

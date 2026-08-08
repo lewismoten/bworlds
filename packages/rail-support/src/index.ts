@@ -14,6 +14,15 @@ export type RailConnection = {
   to: StationAnchorLike;
   points: Array<{ x: number; y: number }>;
 };
+export type RailTrainPlacement = {
+  x: number;
+  y: number;
+  progress: number;
+  direction: 'forward' | 'backward';
+  lineName: string;
+  from: string;
+  to: string;
+};
 
 const STATION_CELL_SIZE = 24;
 const STATION_SCAN_RADIUS_CELLS = 4;
@@ -28,6 +37,7 @@ const RAIL_SAMPLE_SEGMENTS = 20;
 
 const anchorPlugin = createOverworldAnchorsRuntimePlugin();
 const railRegionCache = new Map<string, Map<string, TileLike>>();
+const railTrainCache = new Map<string, RailTrainPlacement[]>();
 
 export function resolveRailTile({
   seed,
@@ -158,6 +168,43 @@ export function buildRailConnections({
   }
 
   return connections;
+}
+
+export function getRailTrainPlacements({
+  seed,
+  timeMs,
+  x,
+  y,
+  sampleTerrainSignals,
+}: {
+  seed: Seed;
+  timeMs: number;
+  x: number;
+  y: number;
+  sampleTerrainSignals: SampleTerrainSignalsLike;
+}): RailTrainPlacement[] {
+  const regionX = Math.floor(x / STATION_CELL_SIZE);
+  const regionY = Math.floor(y / STATION_CELL_SIZE);
+  const timeBucket = Math.floor(timeMs / 2000);
+  const cacheKey = `${seed}:${regionX}:${regionY}:${timeBucket}`;
+  if (railTrainCache.has(cacheKey)) {
+    return railTrainCache.get(cacheKey) ?? [];
+  }
+
+  const stations = collectNearbyStationAnchors(seed, x, y, sampleTerrainSignals);
+  const connections = buildRailConnections({
+    seed,
+    stationAnchors: stations,
+    sampleTerrainSignals,
+  });
+  const placements = connections
+    .map((connection, index) =>
+      resolveRailTrainPlacement(seed, timeMs, connection, index)
+    )
+    .filter((placement): placement is RailTrainPlacement => placement !== null);
+
+  railTrainCache.set(cacheKey, placements);
+  return placements;
 }
 
 export function buildRailCurvePoints(
@@ -363,4 +410,43 @@ function buildRailRegionTileMap({
   }
 
   return tileMap;
+}
+
+function resolveRailTrainPlacement(
+  seed: Seed,
+  timeMs: number,
+  connection: RailConnection,
+  index: number
+): RailTrainPlacement | null {
+  if (connection.points.length < 3) {
+    return null;
+  }
+
+  const routeLength = connection.points.length - 1;
+  const dwelllessDurationMs =
+    Math.max(6, Math.min(18, Math.round(routeLength / 3))) * 60 * 1000;
+  const phaseOffset = hash2D(`${seed}:rail-train-phase`, index, routeLength);
+  const loopProgress = ((timeMs + dwelllessDurationMs * phaseOffset) % dwelllessDurationMs) /
+    dwelllessDurationMs;
+  const triangularProgress =
+    loopProgress <= 0.5 ? loopProgress * 2 : (1 - loopProgress) * 2;
+  const direction = loopProgress <= 0.5 ? 'forward' : 'backward';
+  const pointIndex = Math.min(
+    routeLength - 1,
+    Math.max(1, Math.round(triangularProgress * routeLength))
+  );
+  const point = connection.points[pointIndex];
+  if (!point) {
+    return null;
+  }
+
+  return {
+    x: point.x,
+    y: point.y,
+    progress: triangularProgress,
+    direction,
+    lineName: `${connection.from.name} Line`,
+    from: connection.from.name,
+    to: connection.to.name,
+  };
 }

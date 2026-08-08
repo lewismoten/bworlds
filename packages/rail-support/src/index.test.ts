@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   buildRailConnections,
   buildRailCurvePoints,
+  getRailTrainPlacements,
   type StationAnchorLike,
 } from './index.ts';
 
@@ -75,5 +76,47 @@ describe('rail support', () => {
     });
 
     expect(blocked).toEqual([]);
+  });
+
+  it('creates deterministic train placements that move along rail connections over time', () => {
+    const first = getRailTrainPlacements({
+      seed: 'spec-seed',
+      timeMs: 0,
+      x: 24,
+      y: 8,
+      sampleTerrainSignals,
+    });
+    const second = getRailTrainPlacements({
+      seed: 'spec-seed',
+      timeMs: 0,
+      x: 24,
+      y: 8,
+      sampleTerrainSignals,
+    });
+    let foundMovement = false;
+    for (let minute = 2; minute <= 24 && !foundMovement; minute += 2) {
+      const later = getRailTrainPlacements({
+        seed: 'spec-seed',
+        timeMs: minute * 60 * 1000,
+        x: 24,
+        y: 8,
+        sampleTerrainSignals,
+      });
+      foundMovement =
+        later[0]?.x !== first[0]?.x ||
+        later[0]?.y !== first[0]?.y ||
+        later[0]?.progress !== first[0]?.progress ||
+        later[0]?.direction !== first[0]?.direction;
+    }
+
+    expect(second).toEqual(first);
+    expect(first.length).toBeGreaterThan(0);
+    expect(first[0]).toEqual(
+      expect.objectContaining({
+        lineName: expect.stringContaining('Line'),
+        direction: expect.stringMatching(/forward|backward/),
+      })
+    );
+    expect(foundMovement).toBe(true);
   });
 });

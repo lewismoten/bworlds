@@ -1214,5 +1214,7 @@ export function composeOverworldTileFromPlugins({
     y,
     signals: generationContext.signals,
     tile,
+    state,
+    sampleTerrainSignals,
   });
 }
