@@ -1549,7 +1549,7 @@ describe('tile forest', () => {
       tileY: 6,
       model,
       timeMs: 0,
-      cycle: { daylight: 1, twilight: 0, night: 0 },
+      cycle: { daylight: 1, twilight: 0, night: 0, yearProgress: 0.5 },
       environment: {},
     });
 
@@ -1568,7 +1568,7 @@ describe('tile forest', () => {
       tileY: 6,
       model,
       timeMs: 1200,
-      cycle: { daylight: 0, twilight: 0, night: 1 },
+      cycle: { daylight: 0, twilight: 0, night: 1, yearProgress: 0.5 },
       environment: {},
     });
 
@@ -1584,6 +1584,49 @@ describe('tile forest', () => {
           | FakeFloat32BufferAttribute
           | undefined
       )?.needsUpdate
+    ).toBe(true);
+  });
+
+  it('keeps fireflies hidden at night outside their warm-season window', () => {
+    const plugin = createForestTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'forest');
+    const state = createForestTestState(8, 6);
+
+    const model = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'forest' },
+      tileX: 8,
+      tileY: 6,
+      detailLevel: 'full',
+    }) as FakeGroup;
+
+    const fireflyPoints: FakePoints[] = [];
+    model.traverse((node) => {
+      if (node instanceof FakePoints && node.userData?.forestFirefly) {
+        fireflyPoints.push(node);
+      }
+    });
+
+    expect(fireflyPoints).toHaveLength(1);
+
+    tile?.sync3DModel?.({
+      three: fakeThree as never,
+      state: {} as never,
+      tile: { kind: 'forest' },
+      tileX: 8,
+      tileY: 6,
+      model,
+      timeMs: 1200,
+      cycle: { daylight: 0, twilight: 0, night: 1, yearProgress: 0.05 },
+      environment: {},
+    });
+
+    expect(fireflyPoints.every((points) => points.visible === false)).toBe(true);
+    expect(
+      fireflyPoints.every(
+        (points) => ((points.material as FakeMaterial)?.opacity ?? 0) <= 0.01
+      )
     ).toBe(true);
   });
 

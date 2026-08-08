@@ -50,6 +50,9 @@ const MAX_FOREST_FIREFLIES = 3;
 const FOREST_CLOSE_DETAIL_DISTANCE = 2.5;
 const FOREST_CLOSE_DETAIL_DISTANCE_SQUARED =
   FOREST_CLOSE_DETAIL_DISTANCE * FOREST_CLOSE_DETAIL_DISTANCE;
+const FIREFLY_SEASON_START = 0.18;
+const FIREFLY_SEASON_PEAK = 0.5;
+const FIREFLY_SEASON_END = 0.82;
 
 const treeDescriptorCache = new Map<string, ForestTreeDescriptor[]>();
 const treeStyleCache = new Map<string, ForestTreeStyle>();
@@ -937,7 +940,11 @@ export function createForestTilePlugin(): RuntimePlugin {
         if (!model || typeof model !== 'object') {
           return;
         }
-        syncForestFireflies(model as ThreeObject3DLike, cycle, timeMs);
+        syncForestFireflies(
+          model as ThreeObject3DLike,
+          cycle,
+          timeMs
+        );
         syncPoiWindResponders(model as ThreeObject3DLike, environment, timeMs);
         syncForestBirds(model as ThreeObject3DLike, timeMs);
       },
@@ -1832,10 +1839,17 @@ function createForestMeadowDescriptor(
 
 function syncForestFireflies(
   root: ThreeObject3DLike,
-  cycle: { daylight: number; twilight: number; night: number },
+  cycle: {
+    daylight: number;
+    twilight: number;
+    night: number;
+    yearProgress?: number;
+  },
   timeMs: number
 ) {
-  const activation = getPoiLightActivation(cycle);
+  const activation =
+    getPoiLightActivation(cycle) *
+    getForestFireflySeasonalActivation(cycle.yearProgress);
   root.traverse?.((node) => {
     const firefly = node.userData?.[FIREFLY_KEY] as
       | {
@@ -1885,6 +1899,35 @@ function syncForestFireflies(
       });
     }
   });
+}
+
+function getForestFireflySeasonalActivation(yearProgress?: number) {
+  if (typeof yearProgress !== 'number') {
+    return 1;
+  }
+
+  if (
+    yearProgress <= FIREFLY_SEASON_START ||
+    yearProgress >= FIREFLY_SEASON_END
+  ) {
+    return 0;
+  }
+
+  if (yearProgress <= FIREFLY_SEASON_PEAK) {
+    return clampForestUnit(
+      (yearProgress - FIREFLY_SEASON_START) /
+        Math.max(0.001, FIREFLY_SEASON_PEAK - FIREFLY_SEASON_START)
+    );
+  }
+
+  return clampForestUnit(
+    (FIREFLY_SEASON_END - yearProgress) /
+      Math.max(0.001, FIREFLY_SEASON_END - FIREFLY_SEASON_PEAK)
+  );
+}
+
+function clampForestUnit(value: number) {
+  return Math.max(0, Math.min(1, value));
 }
 
 function syncForestBirds(root: ThreeObject3DLike, timeMs: number) {

@@ -598,6 +598,8 @@ export interface Sync3DModelContext extends TileCoordinate {
     night: number;
     isNight?: boolean;
     moonIllumination?: number;
+    yearProgress?: number;
+    activeConstellationIndex?: number;
   };
   environment: WorldEnvironmentLike;
 }

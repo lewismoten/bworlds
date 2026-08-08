@@ -320,7 +320,7 @@ These reinforce the material/program concern.
 * [ ] Animate them in a shader where practical.
 * [x] Cap the number of visible fireflies.
 * [ ] Scale density based on camera distance.
-* [ ] Disable fireflies outside appropriate times/seasons.
+* [x] Disable fireflies outside appropriate times/seasons.
 * [x] Avoid recalculating deterministic firefly populations every frame.
 * [x] Share firefly materials.
 * [x] Avoid one light source per firefly.
