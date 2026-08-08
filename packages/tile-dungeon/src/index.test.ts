@@ -322,4 +322,53 @@ describe('tile dungeon', () => {
       Math.abs(calmRotation - baseRotation)
     );
   });
+
+  it('recreates dungeon regional styles after bounded cache eviction churn', () => {
+    const plugin = createDungeonTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'dungeon');
+    const state = createDungeonState();
+
+    const firstModel = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'dungeon' },
+      tileX: 5,
+      tileY: 4,
+      detailLevel: 'low',
+    }) as FakeGroup;
+
+    const firstBase = firstModel.children.find((child) => child instanceof FakeMesh) as
+      | FakeMesh
+      | undefined;
+    const firstMaterial = firstBase?.material;
+
+    for (let index = 0; index < 96; index += 1) {
+      tile?.create3DModel?.({
+        three: fakeThree as never,
+        state,
+        tile: { kind: 'dungeon' },
+        tileX: index * 18,
+        tileY: 0,
+        detailLevel: 'low',
+      });
+    }
+
+    const secondModel = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'dungeon' },
+      tileX: 5,
+      tileY: 4,
+      detailLevel: 'low',
+    }) as FakeGroup;
+
+    const secondBase = secondModel.children.find((child) => child instanceof FakeMesh) as
+      | FakeMesh
+      | undefined;
+    const secondMaterial = secondBase?.material;
+
+    expect(firstMaterial).toBeDefined();
+    expect(secondMaterial).toBeDefined();
+    expect(secondMaterial).not.toBe(firstMaterial);
+  });
 });

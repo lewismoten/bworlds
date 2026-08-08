@@ -1,3 +1,4 @@
+import { createBoundedCache } from '@bworlds/cache-support';
 import { hash2D } from '@bworlds/core';
 import {
   createAnchoredEnterablePoiTilePlugin,
@@ -29,6 +30,7 @@ import type {
 const TILE_PIXEL_SIZE = 16;
 const DUNGEON_BEACON_KEY = 'dungeonBeacon';
 const DUNGEON_BANNER_KEY = 'dungeonBanner';
+const DUNGEON_STYLE_CACHE_LIMIT = 96;
 
 export function createDungeonTilePlugin(): RuntimePlugin {
   return createAnchoredEnterablePoiTilePlugin({
@@ -286,7 +288,9 @@ function getDungeonEntranceDirection(
   });
 }
 
-const dungeonStyleCache = new Map<string, DungeonStyleBlueprint>();
+const dungeonStyleCache = createBoundedCache<string, DungeonStyleBlueprint>(
+  DUNGEON_STYLE_CACHE_LIMIT
+);
 const resolveDungeonStyle = createRegionalMaterialResolver(
   dungeonStyleCache,
   18,
