@@ -65,6 +65,7 @@ describe('debug panel', () => {
       activeAudioSourceCount: 6,
       materialCount: 24,
       geometryCount: 61,
+      vertexCount: 14432,
       geometryMemoryCount: 63,
       treeObjectCount: 216,
       treeMeshCount: 135,
@@ -93,6 +94,7 @@ describe('debug panel', () => {
     expect(buildDebugMarkup(snapshot)).toContain('Level');
     expect(buildDebugMarkup(snapshot)).toContain('GPU Points');
     expect(buildDebugMarkup(snapshot)).toContain('Geometry Count');
+    expect(buildDebugMarkup(snapshot)).toContain('Vertex Count');
     expect(buildDebugMarkup(snapshot)).toContain('Texture Count');
     expect(buildDebugMarkup(snapshot)).toContain('JavaScript Heap');
     expect(buildDebugMarkup(snapshot)).toContain('GPU Geometries');

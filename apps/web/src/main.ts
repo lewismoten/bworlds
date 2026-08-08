@@ -2608,6 +2608,7 @@ function render(): FrameLoopActivityLike {
         soundEffects.getActiveSourceCount() + musicController.getActiveSourceCount(),
       materialCount: rendererStats.materialCount,
       geometryCount: rendererStats.geometryCount,
+      vertexCount: rendererStats.vertexCount,
       geometryMemoryCount: rendererStats.geometryMemoryCount,
       treeObjectCount: rendererStats.treeObjectCount,
       treeMeshCount: rendererStats.treeMeshCount,

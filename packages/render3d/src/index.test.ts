@@ -50,8 +50,8 @@ describe('render3d visibility helpers', () => {
   it('collects unique scene material and geometry counts for debug diagnostics', () => {
     const sharedMaterial = createMockMaterial();
     const otherMaterial = createMockMaterial();
-    const sharedGeometry = { id: 'shared-geometry' };
-    const otherGeometry = { id: 'other-geometry' };
+    const sharedGeometry = createMockStatGeometry('shared-geometry', 24);
+    const otherGeometry = createMockStatGeometry('other-geometry', 12);
     const root = createMockObject3D(undefined, [
       createMockObject3D(sharedMaterial, [], sharedGeometry, {
         renderStatKind: 'tree',
@@ -70,6 +70,7 @@ describe('render3d visibility helpers', () => {
       lightCount: 0,
       dynamicLightCount: 0,
       shadowLightCount: 0,
+      vertexCount: 36,
       materialCount: 2,
       geometryCount: 2,
       treeCount: 1,
@@ -82,8 +83,8 @@ describe('render3d visibility helpers', () => {
   it('disposes only tile-owned materials and geometries when removing a tile node', () => {
     const sharedMaterial = createMockMaterial();
     const otherMaterial = createMockMaterial();
-    const sharedGeometry = createMockGeometry();
-    const otherGeometry = createMockGeometry();
+    const sharedGeometry = createMockGeometry(18);
+    const otherGeometry = createMockGeometry(12);
     const root = createMockObject3D(undefined, [
       createMockObject3D(sharedMaterial, [], sharedGeometry),
       createMockObject3D([sharedMaterial, otherMaterial], [], otherGeometry),
@@ -111,8 +112,17 @@ describe('render3d visibility helpers', () => {
 
   it('records additional object-type counts for points, sprites, visible meshes, dynamic lights, and shadow lights', () => {
     const root = createMockObject3D(undefined, [
-      createMockObject3D({}, [], { id: 'visible-geometry' }, {}, 'Mesh'),
-      createMockObject3D({}, [], { id: 'hidden-geometry' }, {}, 'Mesh', false, false, false),
+      createMockObject3D({}, [], createMockStatGeometry('visible-geometry', 8), {}, 'Mesh'),
+      createMockObject3D(
+        {},
+        [],
+        createMockStatGeometry('hidden-geometry', 6),
+        {},
+        'Mesh',
+        false,
+        false,
+        false
+      ),
       createMockObject3D(undefined, [], undefined, {}, 'Points'),
       createMockObject3D(undefined, [], undefined, {}, 'Sprite'),
       createMockObject3D(undefined, [], undefined, {}, 'PointLight', true, true),
@@ -129,6 +139,7 @@ describe('render3d visibility helpers', () => {
       lightCount: 2,
       dynamicLightCount: 1,
       shadowLightCount: 1,
+      vertexCount: 14,
       materialCount: 2,
       geometryCount: 2,
       treeCount: 0,
@@ -171,8 +182,16 @@ describe('render3d visibility helpers', () => {
   });
 
   it('counts descendant objects inside tagged tree roots for per-tree budget diagnostics', () => {
-    const branch = createMockObject3D({}, [], { id: 'branch-geometry' });
-    const canopy = createMockObject3D({}, [], { id: 'canopy-geometry' });
+    const branch = createMockObject3D(
+      {},
+      [],
+      createMockStatGeometry('branch-geometry', 10)
+    );
+    const canopy = createMockObject3D(
+      {},
+      [],
+      createMockStatGeometry('canopy-geometry', 16)
+    );
     const treeRoot = createMockObject3D(undefined, [branch, canopy], undefined, {
       renderStatKind: 'tree',
     });
@@ -188,6 +207,7 @@ describe('render3d visibility helpers', () => {
       lightCount: 0,
       dynamicLightCount: 0,
       shadowLightCount: 0,
+      vertexCount: 26,
       materialCount: 2,
       geometryCount: 2,
       treeCount: 1,
@@ -929,10 +949,29 @@ function createMockMaterial(
   };
 }
 
-function createMockGeometry() {
+function createMockGeometry(vertexCount = 0) {
   return {
+    attributes:
+      vertexCount > 0
+        ? {
+            position: {
+              count: vertexCount,
+            },
+          }
+        : undefined,
     userData: {},
     dispose: vi.fn(),
+  };
+}
+
+function createMockStatGeometry(id: string, vertexCount: number) {
+  return {
+    id,
+    attributes: {
+      position: {
+        count: vertexCount,
+      },
+    },
   };
 }
 

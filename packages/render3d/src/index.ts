@@ -80,6 +80,7 @@ type Render3DController = {
     lightCount: number;
     dynamicLightCount: number;
     shadowLightCount: number;
+    vertexCount: number;
     materialCount: number;
     geometryCount: number;
     geometryMemoryCount: number;
@@ -149,6 +150,7 @@ type SceneResourceStats = {
   lightCount: number;
   dynamicLightCount: number;
   shadowLightCount: number;
+  vertexCount: number;
   materialCount: number;
   geometryCount: number;
   treeCount: number;
@@ -740,6 +742,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       lightCount: sceneResourceStats.lightCount,
       dynamicLightCount: sceneResourceStats.dynamicLightCount,
       shadowLightCount: sceneResourceStats.shadowLightCount,
+      vertexCount: sceneResourceStats.vertexCount,
       materialCount: sceneResourceStats.materialCount,
       geometryCount: sceneResourceStats.geometryCount,
       geometryMemoryCount: renderer.info.memory.geometries,
@@ -1935,6 +1938,7 @@ export function collectSceneResourceStats(
   let lightCount = 0;
   let dynamicLightCount = 0;
   let shadowLightCount = 0;
+  let vertexCount = 0;
   let treeCount = 0;
   let treeObjectCount = 0;
   let treeMeshCount = 0;
@@ -1975,7 +1979,10 @@ export function collectSceneResourceStats(
       material?: THREE.Material | THREE.Material[];
     };
     if (renderable.geometry) {
-      geometries.add(renderable.geometry);
+      if (!geometries.has(renderable.geometry)) {
+        geometries.add(renderable.geometry);
+        vertexCount += getGeometryVertexCount(renderable.geometry);
+      }
     }
 
     const childMaterials = getObjectMaterials(renderable);
@@ -2000,6 +2007,7 @@ export function collectSceneResourceStats(
     lightCount,
     dynamicLightCount,
     shadowLightCount,
+    vertexCount,
     materialCount: materials.size,
     geometryCount: geometries.size,
     treeCount,
@@ -2015,6 +2023,31 @@ function isDynamicLightType(type: string): boolean {
     type === 'SpotLight' ||
     type === 'RectAreaLight'
   );
+}
+
+function getGeometryVertexCount(geometry: unknown): number {
+  const positionAttribute = (
+    geometry as {
+      attributes?: {
+        position?: {
+          count?: unknown;
+          array?: ArrayLike<unknown>;
+          itemSize?: unknown;
+        };
+      };
+    }
+  )?.attributes?.position;
+  if (typeof positionAttribute?.count === 'number') {
+    return positionAttribute.count;
+  }
+  const itemSize =
+    typeof positionAttribute?.itemSize === 'number' && positionAttribute.itemSize > 0
+      ? positionAttribute.itemSize
+      : 3;
+  if (typeof positionAttribute?.array?.length === 'number') {
+    return Math.floor(positionAttribute.array.length / itemSize);
+  }
+  return 0;
 }
 
 type DistanceFadeTargets = {

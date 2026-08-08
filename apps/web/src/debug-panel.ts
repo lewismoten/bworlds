@@ -36,6 +36,7 @@ export type DebugSnapshot = {
   activeAudioSourceCount: number;
   materialCount: number;
   geometryCount: number;
+  vertexCount: number;
   geometryMemoryCount: number;
   treeObjectCount: number;
   treeMeshCount: number;
@@ -118,6 +119,7 @@ export function getDebugSignature(snapshot: DebugSnapshot): string {
     snapshot.activeAudioSourceCount,
     snapshot.materialCount,
     snapshot.geometryCount,
+    snapshot.vertexCount,
     snapshot.geometryMemoryCount,
     snapshot.treeObjectCount,
     snapshot.treeMeshCount,
@@ -232,6 +234,7 @@ export function buildDebugMarkup(snapshot: DebugSnapshot): string {
     <div><dt>Materials / Tree</dt><dd>${materialsPerVisibleTree}</dd></div>
     <div><dt>Tile Kinds</dt><dd>${snapshot.visibleTileKindSummary || 'None'}</dd></div>
     <div><dt>Geometry Count</dt><dd>${snapshot.geometryCount}</dd></div>
+    <div><dt>Vertex Count</dt><dd>${snapshot.vertexCount}</dd></div>
     <div><dt>GPU Geometries</dt><dd>${snapshot.geometryMemoryCount}</dd></div>
     <div><dt>Texture Count</dt><dd>${snapshot.textureCount}</dd></div>
     <div><dt>Programs</dt><dd>${snapshot.programCount}</dd></div>

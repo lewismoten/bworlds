@@ -914,7 +914,7 @@ I would actually put these into a developer performance panel.
 * [X] Three.js object count.
 * [X] Visible mesh count.
 * [X] Triangle count.
-* [ ] Vertex count.
+* [X] Vertex count.
 * [X] Draw-call count.
 * [X] Texture count.
 * [X] Geometry count.
