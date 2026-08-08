@@ -414,6 +414,11 @@ export interface ThreeMeshLike extends ThreeObject3DLike {
 
 export interface ThreeGroupLike extends ThreeObject3DLike {}
 
+export interface ThreePointsLike extends ThreeObject3DLike {
+  geometry?: ThreeBufferGeometryLike;
+  material?: ThreeMaterialLike;
+}
+
 export interface ThreePointLightLike extends ThreeObject3DLike {
   intensity: number;
 }
@@ -454,6 +459,13 @@ export interface ThreeHostLike {
     options?: Record<string, unknown>
   ) => ThreeMaterialLike;
   MeshStandardMaterial: new (
+    options?: Record<string, unknown>
+  ) => ThreeMaterialLike;
+  Points: new (
+    geometry?: ThreeBufferGeometryLike,
+    material?: ThreeMaterialLike
+  ) => ThreePointsLike;
+  PointsMaterial: new (
     options?: Record<string, unknown>
   ) => ThreeMaterialLike;
   PointLight: new (

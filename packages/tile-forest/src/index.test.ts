@@ -22,12 +22,21 @@ import {
 } from './index.ts';
 
 class FakeGeometry {
+  attributes: Record<string, unknown> = {};
   constructor(..._args: number[]) {}
+  setAttribute(name: string, attribute: unknown) {
+    this.attributes[name] = attribute;
+    return this;
+  }
 }
 
 class FakeMaterial {
+  opacity?: number;
   emissiveIntensity?: number;
   constructor(public options: Record<string, unknown> = {}) {
+    if (typeof options.opacity === 'number') {
+      this.opacity = options.opacity;
+    }
     if (typeof options.emissiveIntensity === 'number') {
       this.emissiveIntensity = options.emissiveIntensity;
     }
@@ -96,16 +105,35 @@ class FakePointLight extends FakeNode {
     super();
   }
 }
+class FakeFloat32BufferAttribute {
+  array: number[];
+  needsUpdate = false;
+  constructor(values: ArrayLike<number> | number[], public itemSize: number) {
+    this.array = Array.from(values);
+  }
+}
+class FakePoints extends FakeNode {
+  constructor(
+    public geometry?: FakeGeometry,
+    public material?: FakeMaterial | FakeMaterial[]
+  ) {
+    super();
+  }
+}
 
 const fakeThree = {
+  BufferGeometry: FakeGeometry,
   Group: FakeGroup,
   Mesh: FakeMesh,
+  Points: FakePoints,
   PointLight: FakePointLight,
   MeshStandardMaterial: FakeMaterial,
+  PointsMaterial: FakeMaterial,
   CanvasTexture: class {
     colorSpace = '';
     needsUpdate = false;
   },
+  Float32BufferAttribute: FakeFloat32BufferAttribute,
   CylinderGeometry: FakeGeometry,
   SphereGeometry: FakeGeometry,
 } as const;
@@ -1409,18 +1437,22 @@ describe('tile forest', () => {
     }) as FakeGroup;
 
     const fireflyLights: FakePointLight[] = [];
-    const fireflyGlows: FakeMesh[] = [];
+    const fireflyPoints: FakePoints[] = [];
     model.traverse((node) => {
       if (node instanceof FakePointLight && node.userData?.forestFireflyLight) {
         fireflyLights.push(node);
       }
-      if (node instanceof FakeMesh && node.userData?.poiNightLightEmitter) {
-        fireflyGlows.push(node);
+      if (node instanceof FakePoints && node.userData?.forestFirefly) {
+        fireflyPoints.push(node);
       }
     });
 
-    expect(fireflyLights.length).toBeGreaterThan(0);
-    expect(fireflyGlows.length).toBeGreaterThan(0);
+    expect(fireflyLights).toHaveLength(1);
+    expect(fireflyPoints).toHaveLength(1);
+    expect(
+      (fireflyPoints[0]?.geometry?.attributes.position as FakeFloat32BufferAttribute | undefined)
+        ?.array.length
+    ).toBeGreaterThan(0);
 
     tile?.sync3DModel?.({
       three: fakeThree as never,
@@ -1437,8 +1469,8 @@ describe('tile forest', () => {
     expect(fireflyLights.every((light) => light.intensity <= 0.01)).toBe(true);
     expect(fireflyLights.every((light) => light.visible === false)).toBe(true);
     expect(
-      fireflyGlows.every(
-        (mesh) => ((mesh.material as FakeMaterial)?.emissiveIntensity ?? 0) <= 0.01
+      fireflyPoints.every(
+        (points) => ((points.material as FakeMaterial)?.opacity ?? 0) <= 0.01
       )
     ).toBe(true);
 
@@ -1457,9 +1489,16 @@ describe('tile forest', () => {
     expect(fireflyLights.some((light) => light.intensity > 0.05)).toBe(true);
     expect(fireflyLights.some((light) => light.visible === true)).toBe(true);
     expect(
-      fireflyGlows.some(
-        (mesh) => ((mesh.material as FakeMaterial)?.emissiveIntensity ?? 0) > 0.1
+      fireflyPoints.some(
+        (points) => ((points.material as FakeMaterial)?.opacity ?? 0) > 0.1
       )
+    ).toBe(true);
+    expect(
+      (
+        fireflyPoints[0]?.geometry?.attributes.position as
+          | FakeFloat32BufferAttribute
+          | undefined
+      )?.needsUpdate
     ).toBe(true);
   });
 });

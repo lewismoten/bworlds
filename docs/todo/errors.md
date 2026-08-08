@@ -312,18 +312,18 @@ These reinforce the material/program concern.
 
 `getForestFireflies()` showed roughly **0.94 MB inclusive** on one path.
 
-* [ ] Review `getForestFireflies()` around `tile-forest/src/index.ts:1012`.
-* [ ] Avoid creating individual `Object3D`s for each firefly.
-* [ ] Use one `Points` object for many fireflies.
+* [x] Review `getForestFireflies()` around `tile-forest/src/index.ts:1012`.
+* [x] Avoid creating individual `Object3D`s for each firefly.
+* [x] Use one `Points` object for many fireflies.
 * [ ] Consider a GPU particle implementation.
-* [ ] Generate firefly positions in compact typed arrays.
+* [x] Generate firefly positions in compact typed arrays.
 * [ ] Animate them in a shader where practical.
 * [ ] Cap the number of visible fireflies.
 * [ ] Scale density based on camera distance.
 * [ ] Disable fireflies outside appropriate times/seasons.
 * [ ] Avoid recalculating deterministic firefly populations every frame.
-* [ ] Share firefly materials.
-* [ ] Avoid one light source per firefly.
+* [x] Share firefly materials.
+* [x] Avoid one light source per firefly.
 * [ ] Use emissive sprites/points rather than actual dynamic lights.
 
 ---
