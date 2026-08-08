@@ -15,6 +15,12 @@ import {
 import { render2D } from '@bworlds/render2d';
 import { create3DRenderer } from '@bworlds/render3d';
 import {
+  buildPlayerPoi,
+  listPlayerPlacedPois,
+  setPlayerPlacedPois,
+  type PlayerPlacedPoiLike,
+} from '@bworlds/runtime-player-poi';
+import {
   createBuiltinContentPackCatalog,
   createWorldRuntime,
 } from '@bworlds/worldgen';
@@ -100,6 +106,7 @@ type DisplayedCycle = ReturnType<typeof getDaylightCycleState> & {
 type FrameLoopActivityLike = ReturnType<typeof getFrameLoopActivity>;
 
 const STORAGE_KEY = 'bworlds:session';
+const WORLD_SEED = 'bworlds-alpha';
 const builtinPackCatalog = createBuiltinContentPackCatalog();
 const builtinPackManifests = builtinPackCatalog.list();
 const REQUIRED_PACK_ID = 'default-content-pack';
@@ -129,6 +136,17 @@ root.innerHTML = `
         <button id="action" type="button">Interact</button>
         <button id="jump-random" type="button">Random Plains</button>
         <button id="jump-home" type="button">Go Home</button>
+        <div class="build-controls">
+          <select id="build-poi-kind" aria-label="Build point of interest">
+            <option value="town">Build Town</option>
+            <option value="cave">Build Cave</option>
+            <option value="dungeon">Build Dungeon</option>
+            <option value="quarry">Build Quarry</option>
+            <option value="lighthouse">Build Lighthouse</option>
+            <option value="ship">Build Ship</option>
+          </select>
+          <button id="build-poi" type="button">Build Here</button>
+        </div>
       </div>
     </section>
     <section class="dashboard">
@@ -364,6 +382,10 @@ const faceWestButton =
 const status = document.querySelector<HTMLElement>('#status');
 const toggleButton = document.querySelector<HTMLButtonElement>('#toggle-view');
 const actionButton = document.querySelector<HTMLButtonElement>('#action');
+const buildPoiButton =
+  document.querySelector<HTMLButtonElement>('#build-poi');
+const buildPoiKindSelect =
+  document.querySelector<HTMLSelectElement>('#build-poi-kind');
 const contentPackForm =
   document.querySelector<HTMLFormElement>('#content-pack-form');
 const randomJumpButton =
@@ -437,13 +459,14 @@ let lastSavedSnapshot = '';
 const savedSession = loadSession();
 let activePackIds = normalizeSelectedPackIds(savedSession?.packIds);
 let runtime = createWorldRuntime({
-  seed: 'bworlds-alpha',
+  seed: WORLD_SEED,
   packIds: activePackIds,
   player: savedSession?.player,
   stack: savedSession?.stack,
   viewMode: savedSession?.viewMode,
 });
 let { contentPacks: activePacks, generator, registry, state } = runtime;
+syncPlayerPlacedPoisIntoState(savedSession?.playerPlacedPois ?? []);
 const timeState = {
   offsetMs: savedSession?.timeOffsetMs ?? 0,
   frozen: savedSession?.timeFrozen ?? false,
@@ -784,8 +807,9 @@ function normalizeSelectedPackIds(packIds?: unknown): string[] {
 
 function rebuildRuntime(nextPackIds: string[]): void {
   const normalizedPackIds = normalizeSelectedPackIds(nextPackIds);
+  const placedPois = getSavedPlayerPlacedPois();
   runtime = createWorldRuntime({
-    seed: 'bworlds-alpha',
+    seed: WORLD_SEED,
     packIds: normalizedPackIds,
     player: {
       x: state.player.x,
@@ -796,6 +820,7 @@ function rebuildRuntime(nextPackIds: string[]): void {
     viewMode: state.viewMode,
   });
   ({ contentPacks: activePacks, generator, registry, state } = runtime);
+  syncPlayerPlacedPoisIntoState(placedPois);
   (state as typeof state & { celestialEventMode?: string }).celestialEventMode =
     celestialEventModeState.mode;
   activePackIds = normalizedPackIds;
@@ -902,6 +927,39 @@ function handleInteraction(): void {
   if (state.interact()) {
     saveSession();
   }
+}
+
+function getSavedPlayerPlacedPois(): PlayerPlacedPoiLike[] {
+  return listPlayerPlacedPois(state);
+}
+
+function syncPlayerPlacedPoisIntoState(pois: PlayerPlacedPoiLike[]): void {
+  setPlayerPlacedPois(state, pois);
+  (state as typeof state & { overworldTileRevision?: number }).overworldTileRevision = 0;
+}
+
+function handleBuildPoi(): void {
+  const selectedKind = buildPoiKindSelect?.value;
+  if (
+    selectedKind !== 'town' &&
+    selectedKind !== 'cave' &&
+    selectedKind !== 'dungeon' &&
+    selectedKind !== 'quarry' &&
+    selectedKind !== 'lighthouse' &&
+    selectedKind !== 'ship'
+  ) {
+    return;
+  }
+
+  const built = buildPlayerPoi(state, WORLD_SEED, selectedKind);
+  if (!built) {
+    showHmrNotice('Unable to build here. Move to an open overworld tile without an existing point of interest.');
+    return;
+  }
+
+  saveSession();
+  showHmrNotice(`Built ${built.poi.name}.`);
+  requestRender();
 }
 
 function resetMotionState(): void {
@@ -1658,6 +1716,7 @@ window.addEventListener('keyup', (event) => {
 
 toggleButton.addEventListener('click', toggleView);
 actionButton.addEventListener('click', handleInteraction);
+buildPoiButton?.addEventListener('click', handleBuildPoi);
 contentPackForm?.addEventListener('change', () => {
   const selectedPackIds = builtinPackManifests
     .filter((pack) => {
@@ -1853,6 +1912,7 @@ function saveSession(): void {
       modelPreviewMode: activeModelPreviewMode,
       celestialEventMode: celestialEventModeState.mode,
       compassHeadingAngle: compassHeadingState.angle,
+      playerPlacedPois: getSavedPlayerPlacedPois(),
     });
     if (snapshot === lastSavedSnapshot) return;
     window.localStorage.setItem(STORAGE_KEY, snapshot);

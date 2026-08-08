@@ -405,8 +405,8 @@ type CoreWorldActionLike = {
 };
 
 type CoreWorldMapLike = {
-  getTile(x: number, y: number): CoreWorldTileLike;
-  getAction?(x: number, y: number): unknown;
+  getTile(x: number, y: number, state?: CoreWorldStateLike): CoreWorldTileLike;
+  getAction?(x: number, y: number, state?: CoreWorldStateLike): unknown;
   getExit?(x?: number, y?: number): unknown;
 };
 
@@ -1671,7 +1671,8 @@ export function createWorldState({
     getCurrentTile(this: CoreWorldStateLike, x = this.player.x, y = this.player.y) {
       return this.getCurrentMap().getTile(
         snapWorldCoordinate(x),
-        snapWorldCoordinate(y)
+        snapWorldCoordinate(y),
+        this
       );
     },
     getTileDefinition(kind: CoreWorldTileKind) {

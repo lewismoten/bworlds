@@ -14,6 +14,7 @@
     "@bworlds/runtime-celestial": "0.1.0",
     "@bworlds/runtime-depth-flavor": "0.1.0",
     "@bworlds/runtime-overworld-anchors": "0.1.0",
+    "@bworlds/runtime-player-poi": "0.1.0",
     "@bworlds/runtime-start-region": "0.1.0",
     "@bworlds/runtime-wayfinding": "0.1.0",
     "@bworlds/tile-cave": "0.1.0",

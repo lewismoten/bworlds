@@ -27,6 +27,7 @@ import { createCelestialPhenomenaRuntimePlugin } from '@bworlds/runtime-celestia
 import { createCelestialSystemRuntimePlugin } from '@bworlds/runtime-celestial-system';
 import { createDepthFlavorRuntimePlugin } from '@bworlds/runtime-depth-flavor';
 import { createOverworldAnchorsRuntimePlugin } from '@bworlds/runtime-overworld-anchors';
+import { createPlayerPoiRuntimePlugin } from '@bworlds/runtime-player-poi';
 import { createStartRegionRuntimePlugin } from '@bworlds/runtime-start-region';
 import { createWayfindingRuntimePlugin } from '@bworlds/runtime-wayfinding';
 import { createCaveTilePlugin } from '@bworlds/tile-cave';
@@ -95,6 +96,10 @@ export function createDefaultRuntimePlugins(): RuntimePlugin[] {
       order: { priority: 3, after: ['runtime-celestial-phenomena'] },
     },
     {
+      create: createPlayerPoiRuntimePlugin,
+      order: { priority: 4 },
+    },
+    {
       create: createStartRegionRuntimePlugin,
       order: { priority: 5 },
     },
@@ -106,7 +111,7 @@ export function createDefaultRuntimePlugins(): RuntimePlugin[] {
       create: createOverworldAnchorsRuntimePlugin,
       order: {
         priority: 15,
-        after: ['runtime-start-region'],
+        after: ['runtime-start-region', 'runtime-player-poi'],
       },
     },
     {

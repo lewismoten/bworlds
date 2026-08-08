@@ -14,6 +14,7 @@
     "@bworlds/plugin-api": "0.1.0",
     "@bworlds/render2d": "0.1.0",
     "@bworlds/render3d": "0.1.0",
+    "@bworlds/runtime-player-poi": "0.1.0",
     "@bworlds/worldgen": "0.1.0",
     "three": "^0.179.1"
   }

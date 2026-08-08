@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { DEFAULT_DAY_LENGTH_MS, normalizeAngle } from '@bworlds/core';
 import { createOverworldTerrainSignalSampler } from '@bworlds/overworld-support';
 import { getActivePluginRegistry } from '@bworlds/plugin-api';
+import { buildPlayerPoi } from '@bworlds/runtime-player-poi';
 import {
   createBuiltinContentPackCatalog,
   createDefaultPluginRegistry,
@@ -539,6 +540,39 @@ describe('world generator', () => {
     expect(shipTile.poi?.name).toMatch(
       /\b(Mariner|Brig|Galleon|Hulk|Harbor|Mast)\b/
     );
+  });
+
+  it('lets the player build and enter a new poi anywhere on an open overworld tile', () => {
+    const runtime = createWorldRuntime({
+      seed: 'spec',
+      activateRegistry: false,
+    });
+    const state = runtime.state;
+
+    state.player.x = 0;
+    state.player.y = 0;
+    state.player.facing = 0;
+
+    const built = buildPlayerPoi(state, 'spec', 'town');
+
+    expect(built).toEqual(
+      expect.objectContaining({
+        kind: 'town',
+        poi: expect.objectContaining({
+          type: 'town',
+        }),
+      })
+    );
+    expect(state.getCurrentTile(0, 0)).toEqual(
+      expect.objectContaining({
+        kind: 'town',
+        poi: expect.objectContaining({
+          type: 'town',
+        }),
+      })
+    );
+    expect(state.interact()).toBe(true);
+    expect(state.getCurrentContext().type).toBe('town');
   });
 
   it('creates starter docks beside the lighthouse instead of bridge-like coastal crossings', () => {

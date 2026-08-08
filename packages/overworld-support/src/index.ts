@@ -15,6 +15,7 @@ import type {
   ResolveOverworldAnchorsContext,
   Seed,
   TileLike,
+  WorldStateLike,
 } from '@bworlds/plugin-api';
 
 export type OverworldTerrainSignalSampler = (
@@ -612,6 +613,7 @@ export function createOverworldGenerationContext({
   tile,
   plugins,
   sampleTerrainSignals,
+  state,
 }: {
   seed: Seed;
   x: number;
@@ -619,6 +621,7 @@ export function createOverworldGenerationContext({
   tile: ClassifyOverworldTileContext['tile'];
   plugins: PluginRegistryLike;
   sampleTerrainSignals: OverworldTerrainSignalSampler;
+  state?: WorldStateLike;
 }): ClassifyOverworldTileContext {
   const signals = sampleTerrainSignals(x, y);
   const anchors = plugins.resolveOverworldAnchors({
@@ -626,6 +629,7 @@ export function createOverworldGenerationContext({
     x,
     y,
     sampleTerrainSignals,
+    state,
   });
   const placementChances = {
     town: getOverworldPlacementChance(seed, 'town', x, y),
@@ -666,6 +670,7 @@ export function composeOverworldTileFromPlugins({
   plugins,
   sampleTerrainSignals,
   initialTile,
+  state,
 }: {
   seed: Seed;
   x: number;
@@ -673,12 +678,14 @@ export function composeOverworldTileFromPlugins({
   plugins: PluginRegistryLike;
   sampleTerrainSignals: OverworldTerrainSignalSampler;
   initialTile?: TileLike;
+  state?: WorldStateLike;
 }): TileLike {
   const curatedTile = plugins.resolveOverworldTile({
     seed,
     x,
     y,
     sampleTerrainSignals,
+    state,
   });
   if (curatedTile) {
     return curatedTile;
@@ -695,6 +702,7 @@ export function composeOverworldTileFromPlugins({
     tile: startingTile,
     plugins,
     sampleTerrainSignals,
+    state,
   });
 
   let tile = plugins.classifyTerrainTile(generationContext) ?? startingTile;

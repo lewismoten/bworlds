@@ -9,6 +9,7 @@ import type {
   RuntimePlugin,
   Seed,
   TileLike,
+  WorldStateLike,
   WorldMapLike,
 } from '@bworlds/plugin-api';
 
@@ -33,8 +34,13 @@ function createOverworldMap(
   const cache = new Map<string, OverworldTile>();
   const sampleTerrainSignals = createOverworldTerrainSignalSampler(seed);
   const defaultTileKind = plugins.getDefaultTileKind();
+  let activeRevision = -1;
 
-  function classifyTile(x: number, y: number): OverworldTile {
+  function classifyTile(
+    x: number,
+    y: number,
+    state?: WorldStateLike
+  ): OverworldTile {
     return composeOverworldTileFromPlugins({
       seed,
       x,
@@ -42,19 +48,33 @@ function createOverworldMap(
       sampleTerrainSignals,
       plugins,
       initialTile: { kind: defaultTileKind },
+      state,
     });
   }
 
-  function getTile(x: number, y: number) {
+  function getTile(x: number, y: number, state?: WorldStateLike) {
+    const nextRevision =
+      typeof (state as { overworldTileRevision?: unknown } | undefined)
+        ?.overworldTileRevision === 'number'
+        ? ((state as { overworldTileRevision?: number }).overworldTileRevision ?? 0)
+        : 0;
+    if (nextRevision !== activeRevision) {
+      cache.clear();
+      activeRevision = nextRevision;
+    }
     const key = `${x}:${y}`;
     if (!cache.has(key)) {
-      cache.set(key, classifyTile(x, y));
+      cache.set(key, classifyTile(x, y, state));
     }
     return cache.get(key) ?? { kind: defaultTileKind };
   }
 
-  function getAction(x: number, y: number, state?: { player?: { facing?: number } }) {
-    const tile = getTile(x, y);
+  function getAction(
+    x: number,
+    y: number,
+    state?: WorldStateLike & { player?: { facing?: number } }
+  ) {
+    const tile = getTile(x, y, state);
     const action =
       plugins.createWorldAction({
         seed,

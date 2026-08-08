@@ -3,6 +3,10 @@ import type {
   InspectorTab,
   ModelPreviewMode,
 } from './time-controls.ts';
+import {
+  parsePlayerPlacedPois,
+  type PlayerPlacedPoiLike,
+} from '@bworlds/runtime-player-poi';
 
 type SessionViewMode = '2d' | '3d';
 
@@ -34,6 +38,7 @@ export type SavedSession = {
   modelPreviewMode?: ModelPreviewMode;
   celestialEventMode?: CelestialEventMode;
   compassHeadingAngle?: number | null;
+  playerPlacedPois?: PlayerPlacedPoiLike[];
 };
 
 export type SessionSnapshot = {
@@ -52,6 +57,7 @@ export type SessionSnapshot = {
   modelPreviewMode: ModelPreviewMode;
   celestialEventMode: CelestialEventMode;
   compassHeadingAngle: number | null;
+  playerPlacedPois: PlayerPlacedPoiLike[];
 };
 
 export function serializeSessionSnapshot(snapshot: SessionSnapshot): string {
@@ -126,6 +132,15 @@ export function parseSavedSession(raw: string | null): SavedSession | null {
       typeof parsed.compassHeadingAngle !== 'number'
     ) {
       return null;
+    }
+    if (
+      typeof parsed?.playerPlacedPois !== 'undefined' &&
+      parsePlayerPlacedPois(parsed.playerPlacedPois) === null
+    ) {
+      return null;
+    }
+    if (typeof parsed?.playerPlacedPois !== 'undefined') {
+      parsed.playerPlacedPois = parsePlayerPlacedPois(parsed.playerPlacedPois);
     }
     return parsed as SavedSession;
   } catch {

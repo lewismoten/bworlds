@@ -89,6 +89,34 @@ h1 {
   flex-wrap: wrap;
 }
 
+.build-controls {
+  display: inline-flex;
+  gap: 0.55rem;
+  align-items: center;
+  padding: 0.2rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: rgba(6, 13, 21, 0.45);
+}
+
+.build-controls select {
+  appearance: none;
+  min-width: 9.5rem;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  padding: 0.65rem 0.85rem;
+  font: inherit;
+}
+
+.build-controls select:focus {
+  outline: none;
+}
+
+.build-controls button {
+  padding-inline: 1rem;
+}
+
 button {
   appearance: none;
   border: 1px solid var(--border);

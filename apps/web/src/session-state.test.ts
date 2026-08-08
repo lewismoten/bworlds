@@ -19,6 +19,15 @@ describe('session state', () => {
       modelPreviewMode: 'split',
       celestialEventMode: 'aurora',
       compassHeadingAngle: -Math.PI / 2,
+      playerPlacedPois: [
+        {
+          x: 4,
+          y: 5,
+          kind: 'town',
+          note: 'A newly founded settlement takes shape here.',
+          poi: { type: 'town', name: 'Spec Town' },
+        },
+      ],
     });
 
     expect(parseSavedSession(raw)).toEqual(
@@ -28,6 +37,11 @@ describe('session state', () => {
         frozenWorldTimeMs: 123456,
         inspectorTab: 'compass',
         compassHeadingAngle: -Math.PI / 2,
+        playerPlacedPois: [
+          expect.objectContaining({
+            kind: 'town',
+          }),
+        ],
       })
     );
   });
@@ -71,6 +85,16 @@ describe('session state', () => {
           player: { x: 0, y: 0, facing: 0 },
           stack: [{ id: 'overworld', depth: 0 }],
           compassHeadingAngle: 'north',
+        })
+      )
+    ).toBeNull();
+
+    expect(
+      parseSavedSession(
+        JSON.stringify({
+          player: { x: 0, y: 0, facing: 0 },
+          stack: [{ id: 'overworld', depth: 0 }],
+          playerPlacedPois: [{ x: 1 }],
         })
       )
     ).toBeNull();

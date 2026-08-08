@@ -540,8 +540,12 @@ export interface SampleTerrainSignalsLike {
 interface SeededPointTerrainSignalSamples extends SeededPoint {
   sampleTerrainSignals: SampleTerrainSignalsLike;
 }
-export interface ResolveOverworldTileContext extends SeededPointTerrainSignalSamples {}
-export interface ResolveOverworldAnchorsContext extends SeededPointTerrainSignalSamples {}
+export interface ResolveOverworldTileContext extends SeededPointTerrainSignalSamples {
+  state?: WorldStateLike;
+}
+export interface ResolveOverworldAnchorsContext extends SeededPointTerrainSignalSamples {
+  state?: WorldStateLike;
+}
 
 export type OverworldAnchors = {
   townAnchors: OverworldAnchorLike[];
@@ -550,7 +554,7 @@ export type OverworldAnchors = {
 };
 
 export interface WorldMapLike {
-  getTile(x: number, y: number): TileLike;
+  getTile(x: number, y: number, state?: WorldStateLike): TileLike;
   getAction?(x: number, y: number, state?: WorldStateLike): unknown;
   getExit?(x?: number, y?: number): unknown;
 }
