@@ -30,7 +30,11 @@ export function getInteractionPrompt(state: PromptState): string {
 
 function buildActionPrompt(tile: TileLike, action: WorldActionLike): string {
   if (action.type === 'deepen') {
-    return 'Press Enter to go deeper';
+    const destinationLabel =
+      (typeof action.context?.label === 'string' && action.context.label) ||
+      tile.poi?.name ||
+      describeTile(tile);
+    return `Press Enter to descend into ${destinationLabel}`;
   }
   if (action.type !== 'enter') {
     return '';
@@ -42,9 +46,6 @@ function buildActionPrompt(tile: TileLike, action: WorldActionLike): string {
     describeTile(tile);
   if (tile.kind === 'npc' || tile.poi?.type === 'npc') {
     return `Press Enter to talk to ${destinationLabel}`;
-  }
-  if (tile.kind === 'door') {
-    return `Press Enter to enter ${destinationLabel}`;
   }
   return `Press Enter to enter ${destinationLabel}`;
 }
