@@ -52,6 +52,7 @@ export function createCelestialRuntimePlugin(): RuntimePlugin {
           dateLabel: celestialState.calendar.label,
           visibleEvents: celestialState.visibleEvents,
           milkyWay: celestialState.milkyWay,
+          orreryBodies: celestialState.orreryBodies,
         },
       };
     },

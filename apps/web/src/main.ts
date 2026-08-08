@@ -22,6 +22,7 @@ import './styles.css';
 import {
   drawTimeWheel,
   getCelestialDateLabel,
+  getMoonMidnightOrbitProgress,
   getMoonOrbitProgress,
 } from './timekeeper.ts';
 import { createCelestialPreviewRenderer } from './celestial-preview.ts';
@@ -930,7 +931,7 @@ function updateDisplayedCycle(cycle: ReturnType<typeof getDaylightCycleState>) {
   if (!dialState.initialized) {
     dialState.dayProgress = cycle.dayProgress;
     dialState.yearProgress = cycle.yearProgress;
-    dialState.moonPhaseProgress = getMoonOrbitProgress(cycle);
+    dialState.moonPhaseProgress = getMoonMidnightOrbitProgress(cycle);
     dialState.sunriseProgress = cycle.sunriseProgress;
     dialState.sunsetProgress = cycle.sunsetProgress;
     dialState.daylightDuration = cycle.daylightDuration;
@@ -948,7 +949,7 @@ function updateDisplayedCycle(cycle: ReturnType<typeof getDaylightCycleState>) {
     );
     dialState.moonPhaseProgress = easeWrappedProgress(
       dialState.moonPhaseProgress,
-      getMoonOrbitProgress(cycle),
+      getMoonMidnightOrbitProgress(cycle),
       0.18
     );
     dialState.sunriseProgress = easeWrappedProgress(
@@ -973,7 +974,8 @@ function updateDisplayedCycle(cycle: ReturnType<typeof getDaylightCycleState>) {
     ...cycle,
     dayProgress: dialState.dayProgress,
     yearProgress: dialState.yearProgress,
-    moonAngle: dialState.moonPhaseProgress * Math.PI * 2 - Math.PI / 2,
+    moonMidnightAngle: dialState.moonPhaseProgress * Math.PI * 2 - Math.PI / 2,
+    moonMidnightOrbitProgress: dialState.moonPhaseProgress,
     sunriseProgress: dialState.sunriseProgress,
     sunsetProgress: dialState.sunsetProgress,
     daylightDuration: dialState.daylightDuration,

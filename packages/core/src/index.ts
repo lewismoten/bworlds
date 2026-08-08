@@ -115,6 +115,16 @@ export interface MilkyWayBeltLike {
   opacity: number;
 }
 
+export interface OrreryBodyLike {
+  id: string;
+  type: 'sun' | 'moon' | 'planet' | 'comet';
+  orbitRadius: number;
+  angle: number;
+  color: string;
+  size: number;
+  trailLength: number;
+}
+
 export interface CelestialRingEntryLike {
   constellationIndex: number;
   name: string;
@@ -207,6 +217,9 @@ export function getDaylightCycleState(
   const moonOrbitProgress = fract(
     dayProgress + dayNumber / 29.5 + 0.12 + Math.sin(seasonAngle * 1.7) * 0.02
   );
+  const moonMidnightOrbitProgress = fract(
+    dayNumber / 29.5 + 0.12 + Math.sin(seasonAngle * 1.7) * 0.02
+  );
   const moonHourAngle = moonOrbitProgress * Math.PI * 2 - Math.PI;
   const moonDeclination =
     -solarDeclination * 0.55 + Math.sin((dayNumber / 17) * Math.PI * 2) * 0.12;
@@ -219,6 +232,7 @@ export function getDaylightCycleState(
     )
   );
   const moonAngle = moonOrbitProgress * Math.PI * 2 - Math.PI / 2;
+  const moonMidnightAngle = moonMidnightOrbitProgress * Math.PI * 2 - Math.PI / 2;
   const moonAltitude = moonAltitudeAngle / (Math.PI / 2);
   const moonAzimuth = normalizeAngle(
     lerp(sunriseAzimuth, sunsetAzimuth, clamp(moonOrbitProgress, 0, 1)) + Math.PI
@@ -266,6 +280,11 @@ export function getDaylightCycleState(
     observerLatitudeDegrees,
     starsOpacity,
   });
+  const orreryBodies = getOrreryBodies({
+    moonAngle,
+    moonIllumination,
+    visibleEvents,
+  });
 
   return {
     dayLengthMs,
@@ -282,8 +301,10 @@ export function getDaylightCycleState(
     sunAltitude,
     solarDeclination,
     moonAngle,
+    moonMidnightAngle,
     moonAzimuth,
     moonAltitude,
+    moonMidnightOrbitProgress,
     sunriseProgress,
     sunriseAzimuth,
     sunsetProgress,
@@ -303,6 +324,7 @@ export function getDaylightCycleState(
     calendar,
     visibleEvents,
     milkyWay,
+    orreryBodies,
     isNight: daylight < 0.22,
   };
 }
@@ -730,6 +752,60 @@ export function getMilkyWayBeltState({
   };
 }
 
+export function getOrreryBodies({
+  moonAngle,
+  moonIllumination,
+  visibleEvents,
+}: {
+  moonAngle: number;
+  moonIllumination: number;
+  visibleEvents: CelestialEventLike[];
+}): OrreryBodyLike[] {
+  const bodies: OrreryBodyLike[] = [
+    {
+      id: 'sun',
+      type: 'sun',
+      orbitRadius: 0,
+      angle: 0,
+      color: '#ffd06e',
+      size: 0.92,
+      trailLength: 0,
+    },
+    {
+      id: 'moon',
+      type: 'moon',
+      orbitRadius: 2.6,
+      angle: normalizeTurns((moonAngle + Math.PI / 2) / (Math.PI * 2)),
+      color: '#dce8ff',
+      size: 0.42 + moonIllumination * 0.16,
+      trailLength: 0,
+    },
+  ];
+
+  let orbitIndex = 0;
+  visibleEvents.forEach((event) => {
+    if (event.type === 'meteor-shower') {
+      return;
+    }
+
+    orbitIndex += 1;
+    bodies.push({
+      id: `${event.type}:${event.name}`,
+      type: event.type === 'planet' ? 'planet' : 'comet',
+      orbitRadius: 3.6 + orbitIndex * 0.75,
+      angle: normalizeTurns(event.progress),
+      color: event.color,
+      size: Math.max(
+        0.24,
+        event.size * (event.type === 'planet' ? 0.5 : 0.42)
+      ),
+      trailLength: event.trailLength,
+    });
+  });
+
+  return bodies;
+}
+
 function getOrbitState({
   orbitProgress,
   observerLatitudeDegrees,
@@ -773,6 +849,10 @@ export function hash2D(seed, x, y) {
     hash = Math.imul(hash, 16777619);
   }
   return (hash >>> 0) / 4294967295;
+}
+
+function normalizeTurns(value: number) {
+  return ((value % 1) + 1) % 1;
 }
 
 export function valueNoise2D(seed, x, y) {

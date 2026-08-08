@@ -84,3 +84,8 @@ add a outer globe of stars in the sky that appear at night with procedurally gen
 - [x] Model is still open when Time keeper or Compass is selected
 - [x] Time Keeper is still open when Model or compass is selected
 - [x] Compass is still open when time keeper or model is selected
+- [x] Day/night cycle should eventually blend into a blue sky at noon
+- [x] Day/night cycle should have stars scattered more randomly and faintly on night cycle.
+- [x] Day/Night cycle should blend between daylight/night time, but have a distinct black mark on the edge separarating sunrise/sunset
+- [x] Moon ring seems to move with day as the hour changes. It should be based on the phase of the moon observed at midnight each day.
+- [x] It seems that the sun and moon are on the wrong ends of the day/night ring

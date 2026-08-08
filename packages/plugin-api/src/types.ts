@@ -164,12 +164,23 @@ export interface WorldEnvironmentMilkyWayLike {
   opacity: number;
 }
 
+export interface WorldEnvironmentOrreryBodyLike {
+  id: Identity;
+  type: 'sun' | 'moon' | 'planet' | 'comet';
+  orbitRadius: number;
+  angle: number;
+  color: Color;
+  size: number;
+  trailLength: number;
+}
+
 export interface WorldEnvironmentCelestialLike {
   constellations?: WorldEnvironmentConstellationLike[];
   activeConstellationIndex?: number;
   dateLabel?: string;
   visibleEvents?: WorldEnvironmentCelestialEventLike[];
   milkyWay?: WorldEnvironmentMilkyWayLike;
+  orreryBodies?: WorldEnvironmentOrreryBodyLike[];
 }
 
 export interface WorldEnvironmentLike {

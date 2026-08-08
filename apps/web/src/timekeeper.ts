@@ -24,6 +24,13 @@ export function getMoonOrbitProgress(cycle: DaylightCycleLike) {
   return ((cycle.moonAngle + Math.PI / 2) / (Math.PI * 2) + 1) % 1;
 }
 
+export function getMoonMidnightOrbitProgress(cycle: DaylightCycleLike) {
+  if (typeof cycle.moonMidnightOrbitProgress === 'number') {
+    return cycle.moonMidnightOrbitProgress;
+  }
+  return getMoonOrbitProgress(cycle);
+}
+
 export function drawTimeWheel(canvas: HTMLCanvasElement | null, cycle: DaylightCycleLike) {
   const context = canvas?.getContext('2d');
   if (!canvas || !context) {
@@ -86,7 +93,7 @@ export function drawTimeWheel(canvas: HTMLCanvasElement | null, cycle: DaylightC
   drawTopMarker(context, constellationOuterRadius + 10, '#f6f8ea');
 
   context.save();
-  context.rotate(-getMoonOrbitProgress(cycle) * Math.PI * 2);
+  context.rotate(-getMoonMidnightOrbitProgress(cycle) * Math.PI * 2);
   drawMoonRing(context, cycle, moonInnerRadius, moonOuterRadius);
   context.restore();
 
@@ -110,7 +117,8 @@ export function drawTimeWheel(canvas: HTMLCanvasElement | null, cycle: DaylightC
     context.stroke();
   }
 
-  const sunAngle = -Math.PI / 2;
+  const dayCenterProgress = (cycle.sunriseProgress + cycle.daylightDuration * 0.5) % 1;
+  const sunAngle = dayCenterProgress * Math.PI * 2 - Math.PI / 2;
   context.fillStyle = '#ffcf6b';
   context.beginPath();
   context.arc(
@@ -132,7 +140,9 @@ export function drawTimeWheel(canvas: HTMLCanvasElement | null, cycle: DaylightC
   );
   context.fill();
 
-  const moonAngle = Math.PI / 2;
+  const moonCenterProgress =
+    (cycle.sunsetProgress + (1 - cycle.daylightDuration) * 0.5) % 1;
+  const moonAngle = moonCenterProgress * Math.PI * 2 - Math.PI / 2;
   context.fillStyle = '#d9e8ff';
   context.beginPath();
   context.arc(
@@ -322,8 +332,9 @@ function drawDaylightRing(
   const duskAngle = cycle.sunsetProgress * Math.PI * 2 - Math.PI / 2;
   drawNightRingStars(context, cycle, innerRadius, outerRadius, dawnAngle, duskAngle);
   const daylightGradient = context.createLinearGradient(0, -outerRadius, 0, outerRadius);
-  daylightGradient.addColorStop(0, '#9fe1ff');
-  daylightGradient.addColorStop(0.5, '#ffe3a2');
+  daylightGradient.addColorStop(0, '#84ceff');
+  daylightGradient.addColorStop(0.35, '#b9e4ff');
+  daylightGradient.addColorStop(0.65, '#ffe3a2');
   daylightGradient.addColorStop(1, '#f39a63');
   context.fillStyle = daylightGradient;
   context.beginPath();
@@ -331,10 +342,13 @@ function drawDaylightRing(
   context.arc(0, 0, innerRadius, duskAngle, dawnAngle, true);
   context.closePath();
   context.fill();
+  drawNoonSkyBlend(context, cycle, innerRadius, outerRadius);
   drawDayRingClouds(context, cycle, innerRadius, outerRadius, dawnAngle, duskAngle);
 
   drawDayNightDividerGlow(context, outerRadius, innerRadius, dawnAngle, '#ffe6b8');
   drawDayNightDividerGlow(context, outerRadius, innerRadius, duskAngle, '#f7b98a');
+  drawDayNightDividerMark(context, outerRadius, innerRadius, dawnAngle);
+  drawDayNightDividerMark(context, outerRadius, innerRadius, duskAngle);
 
   const nightCenterProgress =
     (cycle.sunsetProgress + (1 - cycle.daylightDuration) * 0.5) % 1;
@@ -354,7 +368,8 @@ function drawDaylightRing(
     }
   );
 
-  const dayCenterProgress = (cycle.sunriseProgress + cycle.daylightDuration * 0.5) % 1;
+  const dayCenterProgress =
+    (cycle.sunriseProgress + cycle.daylightDuration * 0.5) % 1;
   const dayCenterAngle = dayCenterProgress * Math.PI * 2 - Math.PI / 2;
   const sunRadius = (innerRadius + outerRadius) * 0.5;
   const sunX = Math.cos(dayCenterAngle) * sunRadius;
@@ -545,6 +560,23 @@ function drawDayNightDividerGlow(
   context.restore();
 }
 
+function drawDayNightDividerMark(
+  context: CanvasRenderingContext2D,
+  outerRadius: number,
+  innerRadius: number,
+  angle: number
+) {
+  context.save();
+  context.rotate(angle);
+  context.strokeStyle = 'rgba(4, 8, 14, 0.9)';
+  context.lineWidth = 2.4;
+  context.beginPath();
+  context.moveTo(0, -outerRadius + 2);
+  context.lineTo(0, -innerRadius - 2);
+  context.stroke();
+  context.restore();
+}
+
 function drawNightRingStars(
   context: CanvasRenderingContext2D,
   cycle: DaylightCycleLike,
@@ -553,21 +585,22 @@ function drawNightRingStars(
   dawnAngle: number,
   duskAngle: number
 ) {
-  const radius = (innerRadius + outerRadius) * 0.5;
+  const baseRadius = (innerRadius + outerRadius) * 0.5;
   const nightStart = duskAngle;
   const nightEnd = dawnAngle + Math.PI * 2;
 
-  for (let starIndex = 0; starIndex < 20; starIndex += 1) {
-    const progress = starIndex / 20;
+  for (let starIndex = 0; starIndex < 36; starIndex += 1) {
+    const progress = pseudoRandom(starIndex * 17.37, 0.23);
     const angle = nightStart + (nightEnd - nightStart) * progress;
-    const radialJitter = ((starIndex % 4) - 1.5) * 2.2;
-    const x = Math.cos(angle) * (radius + radialJitter);
-    const y = Math.sin(angle) * (radius + radialJitter);
-    const size = 0.8 + (starIndex % 3) * 0.45;
+    const radialJitter = (pseudoRandom(starIndex * 2.91, 0.61) - 0.5) * 9;
+    const x = Math.cos(angle) * (baseRadius + radialJitter);
+    const y = Math.sin(angle) * (baseRadius + radialJitter);
+    const size = 0.22 + pseudoRandom(starIndex * 8.4, 0.42) * 0.95;
+    const opacity = 0.12 + pseudoRandom(starIndex * 5.17, 0.12) * 0.22;
     context.fillStyle =
-      starIndex % 5 === 0
-        ? 'rgba(255, 241, 196, 0.72)'
-        : 'rgba(235, 244, 255, 0.66)';
+      starIndex % 6 === 0
+        ? `rgba(255, 241, 196, ${opacity})`
+        : `rgba(235, 244, 255, ${opacity})`;
     context.beginPath();
     context.arc(x, y, size, 0, Math.PI * 2);
     context.fill();
@@ -599,6 +632,43 @@ function drawDayRingClouds(
     context.fill();
     context.restore();
   });
+}
+
+function drawNoonSkyBlend(
+  context: CanvasRenderingContext2D,
+  cycle: DaylightCycleLike,
+  innerRadius: number,
+  outerRadius: number
+) {
+  const dayCenterProgress = (cycle.sunriseProgress + cycle.daylightDuration * 0.5) % 1;
+  const dayCenterAngle = dayCenterProgress * Math.PI * 2 - Math.PI / 2;
+  const centerRadius = (innerRadius + outerRadius) * 0.5;
+  const centerX = Math.cos(dayCenterAngle) * centerRadius;
+  const centerY = Math.sin(dayCenterAngle) * centerRadius;
+  const skyBlend = context.createRadialGradient(
+    centerX,
+    centerY,
+    2,
+    centerX,
+    centerY,
+    Math.max(24, outerRadius - innerRadius + 18)
+  );
+  skyBlend.addColorStop(0, 'rgba(132, 206, 255, 0.44)');
+  skyBlend.addColorStop(0.4, 'rgba(132, 206, 255, 0.28)');
+  skyBlend.addColorStop(0.72, 'rgba(132, 206, 255, 0.12)');
+  skyBlend.addColorStop(1, 'rgba(132, 206, 255, 0)');
+  context.save();
+  context.fillStyle = skyBlend;
+  context.beginPath();
+  context.arc(0, 0, outerRadius, 0, Math.PI * 2);
+  context.arc(0, 0, innerRadius, Math.PI * 2, 0, true);
+  context.closePath();
+  context.fill();
+  context.restore();
+}
+
+function pseudoRandom(seed: number, offset: number) {
+  return ((Math.sin(seed + offset) + 1) * 0.5) % 1;
 }
 
 function formatCycleTime(dayProgress: number) {

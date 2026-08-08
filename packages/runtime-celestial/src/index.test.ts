@@ -36,6 +36,14 @@ describe('runtime celestial', () => {
             width: expect.any(Number),
             opacity: expect.any(Number),
           }),
+          orreryBodies: expect.arrayContaining([
+            expect.objectContaining({
+              id: expect.any(String),
+              type: expect.stringMatching(/sun|moon|planet|comet/),
+              orbitRadius: expect.any(Number),
+              angle: expect.any(Number),
+            }),
+          ]),
         }),
       })
     );

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { getDaylightCycleState } from '@bworlds/core';
 import {
   getCelestialDateLabel,
+  getMoonMidnightOrbitProgress,
   getMoonOrbitProgress,
   getMoonPhaseSymbol,
   getTimeWheelConstellationEntries,
@@ -33,5 +34,14 @@ describe('timekeeper helpers', () => {
 
     expect(progress).toBeGreaterThanOrEqual(0);
     expect(progress).toBeLessThan(1);
+  });
+
+  it('keeps the moon ring progress stable across hours within the same day', () => {
+    const midnight = getDaylightCycleState(0);
+    const noon = getDaylightCycleState(120000);
+
+    expect(getMoonMidnightOrbitProgress(noon)).toBe(
+      getMoonMidnightOrbitProgress(midnight)
+    );
   });
 });

@@ -12,6 +12,7 @@ import {
   generateConstellations,
   getCelestialEventsForDay,
   getDaylightCycleState,
+  getOrreryBodies,
   getWorldDaylightCycle,
   getWorldTimeMs,
   hash2D,
@@ -54,6 +55,7 @@ describe('core utilities', () => {
     expect(noon.dayProgress).toBe(0.5);
     expect(noon.daylight).toBeGreaterThan(0.95);
     expect(noon.isNight).toBe(false);
+    expect(noon.moonMidnightOrbitProgress).toBe(midnight.moonMidnightOrbitProgress);
     expect(nextDay.dayNumber).toBe(1);
     expect(nextDay.moonPhaseName).toBe('Waxing Crescent');
   });
@@ -221,6 +223,27 @@ describe('core utilities', () => {
     expect(northern.milkyWay.inclination).not.toBe(
       equatorial.milkyWay.inclination
     );
+  });
+
+  it('builds shared orrery bodies from the moon and visible orbital events', () => {
+    const cycle = getDaylightCycleState(0, {
+      observerLatitudeDegrees: 18,
+    });
+    const bodies = getOrreryBodies({
+      moonAngle: cycle.moonAngle,
+      moonIllumination: cycle.moonIllumination,
+      visibleEvents: cycle.visibleEvents,
+    });
+
+    expect(bodies[0]).toEqual(
+      expect.objectContaining({
+        type: 'sun',
+        orbitRadius: 0,
+      })
+    );
+    expect(bodies.some((body) => body.type === 'moon')).toBe(true);
+    expect(bodies.some((body) => body.type === 'planet')).toBe(true);
+    expect(bodies.every((body) => body.angle >= 0 && body.angle < 1)).toBe(true);
   });
 
   it('exposes tile-definition lookup through world state', () => {

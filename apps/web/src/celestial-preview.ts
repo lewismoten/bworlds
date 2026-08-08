@@ -1,7 +1,6 @@
 import * as THREE from 'three';
 import type { WorldEnvironmentLike } from '@bworlds/plugin-api';
-import type { getDaylightCycleState } from '@bworlds/core';
-import { getOrreryBodies } from './celestial-preview-model.ts';
+import type { OrreryBodyLike, getDaylightCycleState } from '@bworlds/core';
 
 type DaylightCycleLike = ReturnType<typeof getDaylightCycleState>;
 
@@ -419,7 +418,7 @@ function syncPreviewOrbits(root: THREE.Group, cycle: DaylightCycleLike) {
 
 function syncPreviewOrrery(root: THREE.Group, cycle: DaylightCycleLike) {
   root.clear();
-  const bodies = getOrreryBodies(cycle);
+  const bodies = cycle.orreryBodies ?? [];
   root.position.set(0, -7.8, 0);
   root.rotation.x = -Math.PI * 0.42;
   root.rotation.z = cycle.solarDeclination * 0.08;
