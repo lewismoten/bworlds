@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_DAY_LENGTH_MS, normalizeAngle } from '@bworlds/core';
+import { findNearestBoatLaunchPoint } from '@bworlds/map-boat';
 import { findNearestCanoeLaunchPoint } from '@bworlds/map-canoe';
 import { getTrainBoardingSpawn } from '@bworlds/map-train';
 import { createOverworldTerrainSignalSampler } from '@bworlds/overworld-support';
@@ -321,7 +322,8 @@ describe('world generator', () => {
         if (
           candidateAction?.type === 'enter' &&
           candidateAction.context?.type &&
-          candidateAction.context.type !== 'canoe'
+          candidateAction.context.type !== 'canoe' &&
+          candidateAction.context.type !== 'boat'
         ) {
           poiLocation = { x, y };
           action = candidateAction;
@@ -599,6 +601,60 @@ describe('world generator', () => {
     expect(state.tryExit()).toBe(true);
     expect(state.getCurrentContext().type).toBe('overworld');
     expect(state.getTileDefinition(state.getCurrentTile().kind).walkable).toBe(true);
+  });
+
+  it('lets the player launch a boat from the coast and travel the open ocean', () => {
+    const runtime = createWorldRuntime({
+      seed: 'spec',
+      activateRegistry: false,
+    });
+    const state = runtime.state;
+    let launchSite: { x: number; y: number } | null = null;
+
+    for (let y = -120; y <= 120 && !launchSite; y += 1) {
+      for (let x = -120; x <= 120; x += 1) {
+        const launch = findNearestBoatLaunchPoint({
+          x,
+          y,
+          sampleTile: (sampleX, sampleY) =>
+            state.getCurrentMap().getTile(sampleX, sampleY, state),
+          state,
+        });
+        const action = state.getCurrentMap().getAction?.(x, y, state) as
+          | WorldActionLike
+          | null
+          | undefined;
+        if (launch && action?.context?.type === 'boat') {
+          launchSite = { x, y };
+          break;
+        }
+      }
+    }
+
+    if (!launchSite) {
+      throw new Error('Expected to find a boat launch site near the origin band.');
+    }
+
+    state.player.x = launchSite.x;
+    state.player.y = launchSite.y;
+    state.player.facing = 0.2;
+
+    expect(state.interact()).toBe(true);
+    expect(state.getCurrentContext().type).toBe('boat');
+    expect(['shore', 'dock', 'ocean']).toContain(state.getCurrentTile().kind);
+
+    let deepOceanPoint: { x: number; y: number } | null = null;
+    for (let y = -20; y <= 20 && !deepOceanPoint; y += 1) {
+      for (let x = -20; x <= 20; x += 1) {
+        if (state.getCurrentTile(x, y).kind === 'ocean') {
+          deepOceanPoint = { x, y };
+          break;
+        }
+      }
+    }
+
+    expect(deepOceanPoint).not.toBeNull();
+    expect(state.canWalk(deepOceanPoint!.x, deepOceanPoint!.y)).toBe(true);
   });
 
   it('creates quarry points of interest somewhere near the origin', () => {

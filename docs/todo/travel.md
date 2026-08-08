@@ -12,7 +12,7 @@
 
 # Water Travel
 - [X] Add the ability to use a canoe to travel on rivers and along shores within 2-3 tiles of the ocean
-- [ ] Add the ability to use a boat to travel the ocean
+- [X] Add the ability to use a boat to travel the ocean
 - [ ] Add paddle boats that lower the front to board them at docks
 - [ ] Show paddle boats traveling on the ocean
 - [ ] Add colliape sounds for paddle boats, but make sure it's public domain music, or something randomly made up

@@ -1,3 +1,8 @@
+import {
+  type BoatContext,
+  findNearestBoatLaunchPoint,
+  isBoatLaunchableLandTile,
+} from '@bworlds/map-boat';
 import { type CanoeContext, findNearestCanoeLaunchPoint } from '@bworlds/map-canoe';
 import { normalizeAngle } from '@bworlds/core';
 import { createContextMapPlugin, createEnterMapAction } from '@bworlds/map-support';
@@ -85,6 +90,10 @@ function createOverworldMap(
         state,
       }) ?? null;
     if (!action) {
+      const boatAction = resolveBoatAction(x, y, state);
+      if (boatAction) {
+        return boatAction;
+      }
       const canoeAction = resolveCanoeAction(x, y, state);
       if (canoeAction) {
         return canoeAction;
@@ -130,6 +139,53 @@ function createOverworldMap(
       id: `canoe:${x}:${y}`,
       label: 'Canoe',
       type: 'canoe',
+      depth: 1,
+      origin: { x, y },
+    };
+
+    return createEnterMapAction({
+      context,
+      spawn: {
+        x: launch.x - x,
+        y: launch.y - y,
+      },
+      facing: state?.player?.facing ?? 0,
+    });
+  }
+
+  function resolveBoatAction(
+    x: number,
+    y: number,
+    state?: WorldStateLike & { player?: { facing?: number } }
+  ) {
+    if (
+      !isBoatLaunchableLandTile({
+        x,
+        y,
+        sampleTile: getTile,
+        isWalkable(kind) {
+          return Boolean(plugins.getTileDefinition(kind)?.walkable);
+        },
+        state,
+      })
+    ) {
+      return null;
+    }
+
+    const launch = findNearestBoatLaunchPoint({
+      x,
+      y,
+      sampleTile: getTile,
+      state,
+    });
+    if (!launch) {
+      return null;
+    }
+
+    const context: BoatContext = {
+      id: `boat:${x}:${y}`,
+      label: 'Boat',
+      type: 'boat',
       depth: 1,
       origin: { x, y },
     };

@@ -4,6 +4,7 @@
   "type": "module",
   "dependencies": {
     "@bworlds/core": "0.1.0",
+    "@bworlds/map-boat": "0.1.0",
     "@bworlds/map-canoe": "0.1.0",
     "@bworlds/map-support": "0.1.0",
     "@bworlds/overworld-support": "0.1.0",
