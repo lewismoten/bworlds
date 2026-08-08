@@ -1,8 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import {
+  assembleTreasureMapFragments,
   createTreasureMap,
+  createTreasureMapFragmentInventoryItem,
   createTreasureMapInventoryItem,
   renderTreasureMapRows,
+  splitTreasureMapIntoFragments,
 } from './index.ts';
 
 describe('treasure map support', () => {
@@ -81,6 +84,76 @@ describe('treasure map support', () => {
         id: 'treasure:one',
         kind: 'treasure-map',
         treasureMap: map,
+      })
+    );
+  });
+
+  it('splits a treasure map into deterministic fragments and reassembles them in any order', () => {
+    const map = createTreasureMap({
+      seed: 'treasure-seed',
+      digSite: { x: 22, y: -3 },
+      sampleOverworld(x, y) {
+        if (x < 20) {
+          return { kind: 'forest' };
+        }
+        if (y < -3) {
+          return { kind: 'mountain' };
+        }
+        return { kind: 'plains' };
+      },
+      width: 15,
+      height: 11,
+    });
+
+    const fragments = splitTreasureMapIntoFragments(map, 3);
+    const assembly = assembleTreasureMapFragments([
+      fragments[2],
+      fragments[0],
+      fragments[1],
+    ]);
+
+    expect(fragments).toHaveLength(3);
+    expect(fragments.map((fragment) => fragment.rows.length)).toEqual([4, 4, 3]);
+    expect(fragments.filter((fragment) => fragment.gpsLabel)).toHaveLength(1);
+    expect(assembly).toEqual({
+      complete: true,
+      mapId: expect.any(String),
+      fragmentCount: 3,
+      recoveredRows: map.rows,
+      missingFragmentIndices: [],
+      gpsLabel: map.gpsLabel,
+    });
+  });
+
+  it('reports missing fragments and preserves fragment payloads on inventory items', () => {
+    const map = createTreasureMap({
+      seed: 'treasure-seed',
+      digSite: { x: 5, y: 12 },
+      sampleOverworld() {
+        return { kind: 'plains' };
+      },
+    });
+    const fragments = splitTreasureMapIntoFragments(map, 4);
+    const item = createTreasureMapFragmentInventoryItem({
+      id: 'treasure:fragment:1',
+      fragment: fragments[1],
+    });
+    const assembly = assembleTreasureMapFragments([
+      fragments[3],
+      fragments[1],
+    ]);
+
+    expect(assembly.complete).toBe(false);
+    expect(assembly.missingFragmentIndices).toEqual([0, 2]);
+    expect(assembly.recoveredRows).toEqual([
+      ...fragments[1].rows,
+      ...fragments[3].rows,
+    ]);
+    expect(item).toEqual(
+      expect.objectContaining({
+        id: 'treasure:fragment:1',
+        kind: 'treasure-map-fragment',
+        treasureMapFragment: fragments[1],
       })
     );
   });

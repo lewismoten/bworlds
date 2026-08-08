@@ -30,6 +30,18 @@ export type TreasureMapDocument = {
 
 export type TreasureMapSampler = (x: number, y: number) => { kind?: string };
 
+export type TreasureMapFragment = {
+  mapId: string;
+  title: string;
+  fragmentIndex: number;
+  fragmentCount: number;
+  rowStart: number;
+  rowEnd: number;
+  rows: string[];
+  width: number;
+  gpsLabel?: string;
+};
+
 const WATER_KINDS = new Set(['ocean', 'river']);
 const FOREST_KINDS = new Set(['forest']);
 const HILL_KINDS = new Set(['mountain', 'hill', 'quarry']);
@@ -146,6 +158,117 @@ export function createTreasureMapInventoryItem({
   };
 }
 
+export function splitTreasureMapIntoFragments(
+  map: TreasureMapDocument,
+  fragmentCount = 3
+): TreasureMapFragment[] {
+  const safeFragmentCount = Math.max(
+    2,
+    Math.min(fragmentCount, map.height)
+  );
+  const boundaries = createFragmentRowBoundaries(map.height, safeFragmentCount);
+  const gpsFragmentIndex = pickGpsFragmentIndex(map.seed, safeFragmentCount);
+
+  return boundaries.map(([rowStart, rowEnd], fragmentIndex) => ({
+    mapId: createTreasureMapId(map),
+    title: `${map.title} Fragment ${fragmentIndex + 1}/${safeFragmentCount}`,
+    fragmentIndex,
+    fragmentCount: safeFragmentCount,
+    rowStart,
+    rowEnd,
+    rows: map.rows.slice(rowStart, rowEnd + 1),
+    width: map.width,
+    gpsLabel: fragmentIndex === gpsFragmentIndex ? map.gpsLabel : undefined,
+  }));
+}
+
+export function assembleTreasureMapFragments(
+  fragments: TreasureMapFragment[]
+): {
+  complete: boolean;
+  mapId: string | null;
+  fragmentCount: number;
+  recoveredRows: string[];
+  missingFragmentIndices: number[];
+  gpsLabel: string | null;
+} {
+  if (fragments.length === 0) {
+    return {
+      complete: false,
+      mapId: null,
+      fragmentCount: 0,
+      recoveredRows: [],
+      missingFragmentIndices: [],
+      gpsLabel: null,
+    };
+  }
+
+  const [first] = fragments;
+  const mapId = first.mapId;
+  const fragmentCount = first.fragmentCount;
+  const ordered = new Map<number, TreasureMapFragment>();
+
+  for (const fragment of fragments) {
+    if (
+      fragment.mapId !== mapId ||
+      fragment.fragmentCount !== fragmentCount
+    ) {
+      return {
+        complete: false,
+        mapId,
+        fragmentCount,
+        recoveredRows: [],
+        missingFragmentIndices: [],
+        gpsLabel: null,
+      };
+    }
+    if (!ordered.has(fragment.fragmentIndex)) {
+      ordered.set(fragment.fragmentIndex, fragment);
+    }
+  }
+
+  const missingFragmentIndices: number[] = [];
+  const recoveredRows: string[] = [];
+  let gpsLabel: string | null = null;
+
+  for (let fragmentIndex = 0; fragmentIndex < fragmentCount; fragmentIndex += 1) {
+    const fragment = ordered.get(fragmentIndex);
+    if (!fragment) {
+      missingFragmentIndices.push(fragmentIndex);
+      continue;
+    }
+    recoveredRows.push(...fragment.rows);
+    gpsLabel ??= fragment.gpsLabel ?? null;
+  }
+
+  return {
+    complete: missingFragmentIndices.length === 0,
+    mapId,
+    fragmentCount,
+    recoveredRows,
+    missingFragmentIndices,
+    gpsLabel,
+  };
+}
+
+export function createTreasureMapFragmentInventoryItem({
+  id,
+  quantity = 1,
+  fragment,
+}: {
+  id: string;
+  quantity?: number;
+  fragment: TreasureMapFragment;
+}): InventoryItemLike {
+  return {
+    id,
+    quantity,
+    label: fragment.title,
+    kind: 'treasure-map-fragment',
+    treasureMapFragment: fragment,
+  };
+}
+
 function resolveTreasureGlyph({
   seed,
   terrain,
@@ -188,6 +311,36 @@ function formatGps(point: Point): string {
   return `${point.y >= 0 ? 'N' : 'S'}${Math.abs(point.y)} ${point.x >= 0 ? 'E' : 'W'}${Math.abs(
     point.x
   )}`;
+}
+
+function createTreasureMapId(map: TreasureMapDocument): string {
+  return `${map.seed}:${map.digSite.x}:${map.digSite.y}:${map.width}:${map.height}`;
+}
+
+function pickGpsFragmentIndex(seed: string, fragmentCount: number): number {
+  return Math.min(
+    fragmentCount - 1,
+    Math.floor(hash2D(`${seed}:treasure-map-gps-fragment`, fragmentCount, 0) * fragmentCount)
+  );
+}
+
+function createFragmentRowBoundaries(
+  rowCount: number,
+  fragmentCount: number
+): Array<[number, number]> {
+  const boundaries: Array<[number, number]> = [];
+  let rowStart = 0;
+
+  for (let fragmentIndex = 0; fragmentIndex < fragmentCount; fragmentIndex += 1) {
+    const remainingRows = rowCount - rowStart;
+    const remainingFragments = fragmentCount - fragmentIndex;
+    const size = Math.ceil(remainingRows / remainingFragments);
+    const rowEnd = rowStart + size - 1;
+    boundaries.push([rowStart, rowEnd]);
+    rowStart = rowEnd + 1;
+  }
+
+  return boundaries;
 }
 
 function pickMapEdge(seed: string, digSite: Point): 'north' | 'east' | 'south' | 'west' {

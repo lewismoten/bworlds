@@ -120,6 +120,7 @@ import {
   restore3dViewportKeyboardFocusOnPointerDown,
   shouldRestore3dViewportKeyboardFocusOnPointerDown,
 } from './viewport-focus.ts';
+import { attemptAutoEnterOverworldPoi } from './overworld-auto-enter.ts';
 import {
   createSoundEffectController,
   createWebAudioSoundEffectSink,
@@ -1499,6 +1500,7 @@ function canMoveTo(nextX: number, nextY: number): boolean {
 function commitMove(nextX: number, nextY: number): void {
   state.player.x = nextX;
   state.player.y = nextY;
+  attemptAutoEnterOverworldPoi(state);
   saveSession();
 }
 
