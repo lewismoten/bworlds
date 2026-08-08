@@ -93,6 +93,11 @@ type Render3DController = {
     activeParticleCount: number;
     spriteCount: number;
     lightCount: number;
+    ambientLightCount: number;
+    directionalLightCount: number;
+    pointLightCount: number;
+    spotLightCount: number;
+    hemisphereLightCount: number;
     dynamicLightCount: number;
     shadowLightCount: number;
     vertexCount: number;
@@ -190,6 +195,11 @@ type SceneResourceStats = {
   activeParticleCount: number;
   spriteCount: number;
   lightCount: number;
+  ambientLightCount: number;
+  directionalLightCount: number;
+  pointLightCount: number;
+  spotLightCount: number;
+  hemisphereLightCount: number;
   dynamicLightCount: number;
   shadowLightCount: number;
   vertexCount: number;
@@ -588,17 +598,27 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     }
     const registry = getActivePluginRegistry();
     const flushStartMs = performance.now();
-    const maxPendingBuildTiles = Math.max(
-      1,
-      Math.min(
-        WORLD_SYNC_BATCH_SIZE,
-        Math.floor(options.maxPendingBuildTiles ?? WORLD_SYNC_BATCH_SIZE)
-      )
+    const recentTileBuildStats = getRecentDurationStats(
+      renderChurnMetrics.tileBuildDurations,
+      nowMs
     );
-    const pendingBuildBudgetMs = Math.max(
-      0.25,
-      options.pendingBuildBudgetMs ?? DEFAULT_PENDING_WORLD_BUILD_BUDGET_MS
-    );
+    const effectivePendingWorldBuildBudget = getEffectivePendingWorldBuildBudget({
+      pendingBuildBudgetMs: Math.max(
+        0.25,
+        options.pendingBuildBudgetMs ?? DEFAULT_PENDING_WORLD_BUILD_BUDGET_MS
+      ),
+      maxPendingBuildTiles: Math.max(
+        1,
+        Math.min(
+          WORLD_SYNC_BATCH_SIZE,
+          Math.floor(options.maxPendingBuildTiles ?? WORLD_SYNC_BATCH_SIZE)
+        )
+      ),
+      pendingQueueLength: pendingWorldBuild.queue.length,
+      visibleTileCount: visibleTileNodes.size,
+      recentTileBuildAverageMs: recentTileBuildStats.averageMs,
+      recentTileBuildMaxMs: recentTileBuildStats.maxMs,
+    });
     let processedEntryCount = 0;
 
     while (
@@ -607,10 +627,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
         flushStartMs,
         performance.now(),
         processedEntryCount,
-        {
-          pendingBuildBudgetMs,
-          maxPendingBuildTiles,
-        }
+        effectivePendingWorldBuildBudget
       )
     ) {
       const entry = pendingWorldBuild.queue[processedEntryCount];
@@ -820,6 +837,11 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       activeParticleCount: sceneResourceStats.activeParticleCount,
       spriteCount: sceneResourceStats.spriteCount,
       lightCount: sceneResourceStats.lightCount,
+      ambientLightCount: sceneResourceStats.ambientLightCount,
+      directionalLightCount: sceneResourceStats.directionalLightCount,
+      pointLightCount: sceneResourceStats.pointLightCount,
+      spotLightCount: sceneResourceStats.spotLightCount,
+      hemisphereLightCount: sceneResourceStats.hemisphereLightCount,
       dynamicLightCount: sceneResourceStats.dynamicLightCount,
       shadowLightCount: sceneResourceStats.shadowLightCount,
       vertexCount: sceneResourceStats.vertexCount,
@@ -2066,6 +2088,11 @@ export function collectSceneResourceStats(
   let activeParticleCount = 0;
   let spriteCount = 0;
   let lightCount = 0;
+  let ambientLightCount = 0;
+  let directionalLightCount = 0;
+  let pointLightCount = 0;
+  let spotLightCount = 0;
+  let hemisphereLightCount = 0;
   let dynamicLightCount = 0;
   let shadowLightCount = 0;
   let vertexCount = 0;
@@ -2130,6 +2157,21 @@ export function collectSceneResourceStats(
     }
     if ((child as THREE.Object3D).isLight) {
       lightCount += 1;
+      if (isAmbientLightType((child as THREE.Object3D).type)) {
+        ambientLightCount += 1;
+      }
+      if ((child as THREE.Object3D).type === 'DirectionalLight') {
+        directionalLightCount += 1;
+      }
+      if ((child as THREE.Object3D).type === 'PointLight') {
+        pointLightCount += 1;
+      }
+      if ((child as THREE.Object3D).type === 'SpotLight') {
+        spotLightCount += 1;
+      }
+      if ((child as THREE.Object3D).type === 'HemisphereLight') {
+        hemisphereLightCount += 1;
+      }
       if (isDynamicLightType((child as THREE.Object3D).type)) {
         dynamicLightCount += 1;
       }
@@ -2200,6 +2242,11 @@ export function collectSceneResourceStats(
     activeParticleCount,
     spriteCount,
     lightCount,
+    ambientLightCount,
+    directionalLightCount,
+    pointLightCount,
+    spotLightCount,
+    hemisphereLightCount,
     dynamicLightCount,
     shadowLightCount,
     vertexCount,
@@ -2230,6 +2277,10 @@ function isDynamicLightType(type: string): boolean {
     type === 'SpotLight' ||
     type === 'RectAreaLight'
   );
+}
+
+function isAmbientLightType(type: string): boolean {
+  return type === 'AmbientLight';
 }
 
 function isLineObjectType(type: string): boolean {
@@ -2666,6 +2717,49 @@ export function shouldProcessPendingWorldBuildEntry(
     return true;
   }
   return currentMs - flushStartMs < pendingBuildBudgetMs;
+}
+
+export function getEffectivePendingWorldBuildBudget({
+  pendingBuildBudgetMs,
+  maxPendingBuildTiles,
+  pendingQueueLength,
+  visibleTileCount,
+  recentTileBuildAverageMs = 0,
+  recentTileBuildMaxMs = 0,
+}: {
+  pendingBuildBudgetMs: number;
+  maxPendingBuildTiles: number;
+  pendingQueueLength: number;
+  visibleTileCount: number;
+  recentTileBuildAverageMs?: number;
+  recentTileBuildMaxMs?: number;
+}): {
+  pendingBuildBudgetMs: number;
+  maxPendingBuildTiles: number;
+} {
+  let nextBudgetMs = Math.max(0.25, pendingBuildBudgetMs);
+  let nextMaxPendingBuildTiles = Math.max(1, Math.floor(maxPendingBuildTiles));
+
+  if (visibleTileCount === 0 && pendingQueueLength > 1) {
+    nextBudgetMs = Math.min(nextBudgetMs, 0.75);
+    nextMaxPendingBuildTiles = 1;
+  }
+
+  if (
+    recentTileBuildAverageMs >= nextBudgetMs * 0.5 ||
+    recentTileBuildMaxMs >= nextBudgetMs
+  ) {
+    nextBudgetMs = Math.min(
+      nextBudgetMs,
+      Math.max(0.25, recentTileBuildAverageMs || recentTileBuildMaxMs || nextBudgetMs)
+    );
+    nextMaxPendingBuildTiles = 1;
+  }
+
+  return {
+    pendingBuildBudgetMs: nextBudgetMs,
+    maxPendingBuildTiles: nextMaxPendingBuildTiles,
+  };
 }
 
 function pruneRecentMetricTimestamps(

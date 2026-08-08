@@ -98,10 +98,7 @@ function createOverworldMap(
       activeRevision = nextRevision;
     }
     const key = `${x}:${y}`;
-    if (!cache.has(key)) {
-      cache.set(key, classifyTile(x, y, state));
-    }
-    return cache.get(key) ?? { kind: defaultTileKind };
+    return cache.getOrCreate(key, () => classifyTile(x, y, state));
   }
 
   function getAction(

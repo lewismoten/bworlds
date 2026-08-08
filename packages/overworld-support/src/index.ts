@@ -126,58 +126,53 @@ export function createOverworldTerrainSignalSampler(
 
   return function sampleTerrainSignals(x: number, y: number): OverworldSignals {
     const signalKey = `${x}:${y}`;
-    const cachedSignals = signalCache.get(signalKey);
-    if (cachedSignals) {
-      return cachedSignals;
-    }
-
-    const scaledX = x / 160;
-    const scaledY = y / 160;
-    const continent = octaveNoise2D(`${seed}:continent`, scaledX, scaledY, {
-      octaves: 5,
-      persistence: 0.55,
-    });
-    const elevation = octaveNoise2D(`${seed}:elevation`, x / 45, y / 45, {
-      octaves: 4,
-      persistence: 0.5,
-    });
-    const moisture = octaveNoise2D(`${seed}:moisture`, x / 65, y / 65, {
-      octaves: 4,
-      persistence: 0.6,
-    });
-    const baseRiverSignal = ridgedNoise2D(`${seed}:river`, x / 75, y / 75, {
-      octaves: 3,
-      persistence: 0.52,
-    });
-    const riverPathSignal = sampleRiverControlPathSignal(
-      seed,
-      x,
-      y,
-      riverControlPointCache,
-      riverCurvePointCache,
-      riverForkPathCache
-    );
-    const riverPathWeight =
-      continent > 0.42 && continent < 0.9 && elevation < 0.68 ? 1 : 0.45;
-    const riverSignal = Math.max(
-      baseRiverSignal * 0.78,
-      Math.min(
-        1,
-        baseRiverSignal * 0.28 + riverPathSignal * 0.92 * riverPathWeight
-      )
-    );
-    const signals = {
-      continent,
-      elevation,
-      moisture,
-      riverSignal,
-      roadSignal: ridgedNoise2D(`${seed}:road`, x / 42, y / 42, {
-        octaves: 2,
+    return signalCache.getOrCreate(signalKey, () => {
+      const scaledX = x / 160;
+      const scaledY = y / 160;
+      const continent = octaveNoise2D(`${seed}:continent`, scaledX, scaledY, {
+        octaves: 5,
+        persistence: 0.55,
+      });
+      const elevation = octaveNoise2D(`${seed}:elevation`, x / 45, y / 45, {
+        octaves: 4,
+        persistence: 0.5,
+      });
+      const moisture = octaveNoise2D(`${seed}:moisture`, x / 65, y / 65, {
+        octaves: 4,
         persistence: 0.6,
-      }),
-    };
-    signalCache.set(signalKey, signals);
-    return signals;
+      });
+      const baseRiverSignal = ridgedNoise2D(`${seed}:river`, x / 75, y / 75, {
+        octaves: 3,
+        persistence: 0.52,
+      });
+      const riverPathSignal = sampleRiverControlPathSignal(
+        seed,
+        x,
+        y,
+        riverControlPointCache,
+        riverCurvePointCache,
+        riverForkPathCache
+      );
+      const riverPathWeight =
+        continent > 0.42 && continent < 0.9 && elevation < 0.68 ? 1 : 0.45;
+      const riverSignal = Math.max(
+        baseRiverSignal * 0.78,
+        Math.min(
+          1,
+          baseRiverSignal * 0.28 + riverPathSignal * 0.92 * riverPathWeight
+        )
+      );
+      return {
+        continent,
+        elevation,
+        moisture,
+        riverSignal,
+        roadSignal: ridgedNoise2D(`${seed}:road`, x / 42, y / 42, {
+          octaves: 2,
+          persistence: 0.6,
+        }),
+      };
+    });
   };
 }
 
@@ -954,6 +949,10 @@ export function createOverworldAnchorResolver<
     string,
     OverworldCellAnchorEvaluation
   >(OVERWORLD_ANCHOR_EVALUATION_CACHE_LIMIT);
+  const nearbyAnchorCollectionCache = createBoundedCache<
+    string,
+    OverworldAnchorLike[]
+  >(OVERWORLD_ANCHOR_CACHE_LIMIT * 2);
   const poiCaches = Object.fromEntries(
     Object.keys(options.poi?.specs ?? {}).map((poiType) => [
       poiType,
@@ -967,35 +966,50 @@ export function createOverworldAnchorResolver<
     y,
     sampleTerrainSignals,
   }: ResolveOverworldAnchorsContext): OverworldAnchorSet {
+    const sampleCollection = <TAnchor extends OverworldAnchorLike>(
+      spec: OverworldCellAnchorSpec<TAnchor>,
+      cache: CacheLike<string, TAnchor | null>,
+      options: OverworldAnchorCollectionOptions<TAnchor>
+    ): TAnchor[] => {
+      const radius = options.radius ?? 2;
+      const minSpacing = options.minSpacing ?? 0;
+      const conflictSpecs = options.conflictSpecs ?? [spec];
+      const blockingAnchors = options.blockingAnchors ?? [];
+      const key = createNearbyAnchorCollectionCacheKey({
+        seed,
+        x,
+        y,
+        spec,
+        radius,
+        minSpacing,
+        conflictSpecs,
+        blockingAnchors,
+      });
+
+      return nearbyAnchorCollectionCache.getOrCreate(
+        key,
+        () =>
+          collectNearbyOverworldCellAnchors({
+            seed,
+            x,
+            y,
+            spec,
+            sampleTerrainSignals,
+            cache,
+            radius,
+            minSpacing,
+            blockingAnchors,
+            conflictSpecs,
+            evaluationCache: anchorEvaluationCache,
+          }) as OverworldAnchorLike[]
+      ) as TAnchor[];
+    };
+
     const townAnchors = options.town
-      ? collectNearbyOverworldCellAnchors({
-          seed,
-          x,
-          y,
-          spec: options.town.spec,
-          sampleTerrainSignals,
-          cache: townCache,
-          radius: options.town.radius,
-          minSpacing: options.town.minSpacing,
-          blockingAnchors: options.town.blockingAnchors,
-          conflictSpecs: options.town.conflictSpecs,
-          evaluationCache: anchorEvaluationCache,
-        })
+      ? sampleCollection(options.town.spec, townCache, options.town)
       : [];
     const bridgeAnchors = options.bridge
-      ? collectNearbyOverworldCellAnchors({
-          seed,
-          x,
-          y,
-          spec: options.bridge.spec,
-          sampleTerrainSignals,
-          cache: bridgeCache,
-          radius: options.bridge.radius,
-          minSpacing: options.bridge.minSpacing,
-          blockingAnchors: options.bridge.blockingAnchors,
-          conflictSpecs: options.bridge.conflictSpecs,
-          evaluationCache: anchorEvaluationCache,
-        })
+      ? sampleCollection(options.bridge.spec, bridgeCache, options.bridge)
       : [];
     const poiAnchors = options.poi
       ? collectNearbyOverworldPoiAnchors({
@@ -1026,6 +1040,36 @@ export function createOverworldAnchorResolver<
       poiAnchors,
     };
   };
+}
+
+function createNearbyAnchorCollectionCacheKey({
+  seed,
+  x,
+  y,
+  spec,
+  radius,
+  minSpacing,
+  conflictSpecs,
+  blockingAnchors,
+}: {
+  seed: Seed;
+  x: number;
+  y: number;
+  spec: OverworldCellAnchorSpec;
+  radius: number;
+  minSpacing: number;
+  conflictSpecs: OverworldCellAnchorSpec[];
+  blockingAnchors: Array<Pick<OverworldAnchorLike, 'x' | 'y'>>;
+}) {
+  const cellX = Math.floor(x / spec.cellSize);
+  const cellY = Math.floor(y / spec.cellSize);
+  let key =
+    `${seed}:${spec.id}:${cellX}:${cellY}:${radius}:${minSpacing}:` +
+    `${conflictSpecs.map((entry) => entry.id).join(',')}`;
+  for (const anchor of blockingAnchors) {
+    key += `:${anchor.x},${anchor.y}`;
+  }
+  return key;
 }
 
 export function resolveOverworldCellAnchor<

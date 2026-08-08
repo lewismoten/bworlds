@@ -148,6 +148,11 @@ describe('debug snapshot', () => {
         spriteCount: 9,
         cameraCount: 1,
         lightCount: 12,
+        ambientLightCount: 1,
+        directionalLightCount: 3,
+        pointLightCount: 5,
+        spotLightCount: 2,
+        hemisphereLightCount: 1,
         dynamicLightCount: 4,
         shadowLightCount: 2,
         activeNpcCount: 19,
@@ -360,6 +365,11 @@ describe('debug snapshot', () => {
     });
     expect(result.lighting).toMatchObject({
       currentlyActiveLights: 12,
+      ambientLightCount: 1,
+      directionalLightCount: 3,
+      pointLightCount: 5,
+      spotLightCount: 2,
+      hemisphereLightCount: 1,
       shadowCastingLights: 2,
     });
     expect(result.world).toMatchObject({

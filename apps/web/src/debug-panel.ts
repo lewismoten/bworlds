@@ -53,6 +53,11 @@ export type DebugSnapshot = {
   activeParticleCount: number;
   spriteCount: number;
   lightCount: number;
+  ambientLightCount?: number;
+  directionalLightCount?: number;
+  pointLightCount?: number;
+  spotLightCount?: number;
+  hemisphereLightCount?: number;
   dynamicLightCount: number;
   shadowLightCount: number;
   activeNpcCount: number;

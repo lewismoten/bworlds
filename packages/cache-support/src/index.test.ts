@@ -35,4 +35,36 @@ describe('cache support', () => {
     expect(cache.has('alpha')).toBe(false);
     expect(cache.get('beta')).toBeUndefined();
   });
+
+  it('peeks without updating recency', () => {
+    const cache = createBoundedCache<string, number>(2);
+
+    cache.set('alpha', 1);
+    cache.set('beta', 2);
+    expect(cache.peek('alpha')).toBe(1);
+    cache.set('gamma', 3);
+
+    expect(cache.has('alpha')).toBe(false);
+    expect(cache.has('beta')).toBe(true);
+    expect(cache.has('gamma')).toBe(true);
+  });
+
+  it('creates values only once through getOrCreate and preserves null entries', () => {
+    const cache = createBoundedCache<string, string | null>(2);
+    let calls = 0;
+
+    const first = cache.getOrCreate('alpha', () => {
+      calls += 1;
+      return null;
+    });
+    const second = cache.getOrCreate('alpha', () => {
+      calls += 1;
+      return 'unexpected';
+    });
+
+    expect(first).toBeNull();
+    expect(second).toBeNull();
+    expect(cache.has('alpha')).toBe(true);
+    expect(calls).toBe(1);
+  });
 });

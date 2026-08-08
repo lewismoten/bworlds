@@ -1549,13 +1549,45 @@ export function getOrbitalSkyPosition({
 }
 
 export function hash2D(seed: string | number, x: number, y: number): number {
-  let hash = 2166136261;
-  const input = `${seed}:${x}:${y}`;
-  for (let index = 0; index < input.length; index += 1) {
-    hash ^= input.charCodeAt(index);
-    hash = Math.imul(hash, 16777619);
-  }
+  let hash = getCachedHashSeed(seed);
+  hash = mixHashCharacter(hash, 58);
+  hash = mixHashString(hash, x);
+  hash = mixHashCharacter(hash, 58);
+  hash = mixHashString(hash, y);
   return (hash >>> 0) / 4294967295;
+}
+
+const HASH_2D_SEED_CACHE_LIMIT = 4096;
+const hash2dSeedCache = new Map<string | number, number>();
+
+function getCachedHashSeed(seed: string | number): number {
+  const cached = hash2dSeedCache.get(seed);
+  if (cached !== undefined) {
+    return cached;
+  }
+  let hash = 2166136261;
+  hash = mixHashString(hash, seed);
+  hash2dSeedCache.set(seed, hash);
+  if (hash2dSeedCache.size > HASH_2D_SEED_CACHE_LIMIT) {
+    const oldest = hash2dSeedCache.keys().next().value;
+    if (oldest !== undefined) {
+      hash2dSeedCache.delete(oldest);
+    }
+  }
+  return hash;
+}
+
+function mixHashString(hash: number, value: string | number): number {
+  const text = String(value);
+  for (let index = 0; index < text.length; index += 1) {
+    hash = mixHashCharacter(hash, text.charCodeAt(index));
+  }
+  return hash;
+}
+
+function mixHashCharacter(hash: number, charCode: number): number {
+  hash ^= charCode;
+  return Math.imul(hash, 16777619);
 }
 
 function normalizeTurns(value: number): number {

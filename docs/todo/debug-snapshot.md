@@ -172,11 +172,11 @@ That gives you something you can save from a slow scene, attach to a bug report,
 
 # Lighting and Shadows
 
-* [ ] Include ambient-light count.
-* [ ] Include directional-light count.
-* [ ] Include point-light count.
-* [ ] Include spot-light count.
-* [ ] Include hemisphere-light count.
+* [x] Include ambient-light count.
+* [x] Include directional-light count.
+* [x] Include point-light count.
+* [x] Include spot-light count.
+* [x] Include hemisphere-light count.
 * [x] Include currently active lights.
 * [ ] Include culled/inactive lights.
 * [x] Include shadow-casting lights.

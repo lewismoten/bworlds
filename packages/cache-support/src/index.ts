@@ -6,6 +6,8 @@ export type CacheLike<Key, Value> = {
 };
 
 export type BoundedCache<Key, Value> = CacheLike<Key, Value> & {
+  peek(key: Key): Value | undefined;
+  getOrCreate(key: Key, create: () => Value): Value;
   size(): number;
 };
 
@@ -30,6 +32,9 @@ export function createBoundedCache<Key, Value>(
       }
       return value;
     },
+    peek(key) {
+      return entries.get(key);
+    },
     has(key) {
       return entries.has(key);
     },
@@ -45,6 +50,15 @@ export function createBoundedCache<Key, Value>(
         }
         entries.delete(oldestKey);
       }
+    },
+    getOrCreate(key, create) {
+      const cached = this.get(key);
+      if (cached !== undefined) {
+        return cached;
+      }
+      const value = create();
+      this.set(key, value);
+      return value;
     },
     size() {
       return entries.size;

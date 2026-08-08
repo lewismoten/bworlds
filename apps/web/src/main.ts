@@ -1742,6 +1742,11 @@ function collectCurrentDebugSnapshot(
     activeParticleCount: rendererStats.activeParticleCount,
     spriteCount: rendererStats.spriteCount,
     lightCount: rendererStats.lightCount,
+    ambientLightCount: rendererStats.ambientLightCount,
+    directionalLightCount: rendererStats.directionalLightCount,
+    pointLightCount: rendererStats.pointLightCount,
+    spotLightCount: rendererStats.spotLightCount,
+    hemisphereLightCount: rendererStats.hemisphereLightCount,
     dynamicLightCount: rendererStats.dynamicLightCount,
     shadowLightCount: rendererStats.shadowLightCount,
     activeNpcCount: worldStats.activeNpcCount,
@@ -1993,8 +1998,9 @@ function getNearbyPoiMusicProfile() {
 
   const { centerX, centerY, contextId } = queryState;
   const cacheKey = `${currentWorldSeed}:${contextId}:${centerX}:${centerY}`;
-  if (nearbyPoiMusicState.cache.has(cacheKey)) {
-    nearbyPoiMusicState.profile = nearbyPoiMusicState.cache.get(cacheKey) ?? null;
+  const cachedProfile = nearbyPoiMusicState.cache.get(cacheKey);
+  if (cachedProfile !== undefined) {
+    nearbyPoiMusicState.profile = cachedProfile ?? null;
     return nearbyPoiMusicState.profile;
   }
 
@@ -2067,8 +2073,9 @@ function getNearbyTrainAudioProfile() {
   const { centerX, centerY, contextId } = queryState;
   const trainTimeBucket = Math.floor((state.timeMs ?? 0) / 2000);
   const cacheKey = `${currentWorldSeed}:${contextId}:${centerX}:${centerY}:${trainTimeBucket}`;
-  if (nearbyTrainAudioState.cache.has(cacheKey)) {
-    nearbyTrainAudioState.profile = nearbyTrainAudioState.cache.get(cacheKey) ?? null;
+  const cachedProfile = nearbyTrainAudioState.cache.get(cacheKey);
+  if (cachedProfile !== undefined) {
+    nearbyTrainAudioState.profile = cachedProfile ?? null;
     return nearbyTrainAudioState.profile;
   }
 
@@ -2104,9 +2111,9 @@ function getNearbyPaddleBoatAudioProfile() {
   const { centerX, centerY, contextId } = queryState;
   const boatTimeBucket = Math.floor((state.timeMs ?? 0) / 2000);
   const cacheKey = `${currentWorldSeed}:${contextId}:${centerX}:${centerY}:${boatTimeBucket}`;
-  if (nearbyPaddleBoatAudioState.cache.has(cacheKey)) {
-    nearbyPaddleBoatAudioState.profile =
-      nearbyPaddleBoatAudioState.cache.get(cacheKey) ?? null;
+  const cachedProfile = nearbyPaddleBoatAudioState.cache.get(cacheKey);
+  if (cachedProfile !== undefined) {
+    nearbyPaddleBoatAudioState.profile = cachedProfile ?? null;
     return nearbyPaddleBoatAudioState.profile;
   }
 

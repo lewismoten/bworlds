@@ -161,6 +161,11 @@ export type DebugSnapshotExport = {
   };
   lighting: {
     currentlyActiveLights: number;
+    ambientLightCount: number;
+    directionalLightCount: number;
+    pointLightCount: number;
+    spotLightCount: number;
+    hemisphereLightCount: number;
     shadowCastingLights: number;
   };
   world: {
@@ -355,6 +360,11 @@ export function buildDebugSnapshotExport(
     },
     lighting: {
       currentlyActiveLights: options.snapshot.lightCount,
+      ambientLightCount: options.snapshot.ambientLightCount ?? 0,
+      directionalLightCount: options.snapshot.directionalLightCount ?? 0,
+      pointLightCount: options.snapshot.pointLightCount ?? 0,
+      spotLightCount: options.snapshot.spotLightCount ?? 0,
+      hemisphereLightCount: options.snapshot.hemisphereLightCount ?? 0,
       shadowCastingLights: options.snapshot.shadowLightCount,
     },
     world: {
