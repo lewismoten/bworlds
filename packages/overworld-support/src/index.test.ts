@@ -4,6 +4,7 @@ import {
   composeOverworldTileFromPlugins,
   createCachedOverworldTileResolver,
   createOverworldAnchorResolver,
+  createRiverControlPoints,
   createOverworldGenerationContext,
   createGeneratedNamedOverworldCellAnchorSpec,
   createGeneratedPoiOverworldCellAnchorSpec,
@@ -134,6 +135,34 @@ describe('overworld support', () => {
 
     expect(sampleA(12, -9)).toEqual(sampleB(12, -9));
     expect(sampleA(12, -9)).not.toEqual(sampleA(13, -9));
+  });
+
+  it('creates deterministic river control points with 2-10 tile spacing', () => {
+    const points = createRiverControlPoints('spec-seed', 1, -2);
+
+    expect(points.length).toBeGreaterThanOrEqual(2);
+    expect(points.length).toBeLessThanOrEqual(5);
+    for (let index = 1; index < points.length; index += 1) {
+      const previous = points[index - 1];
+      const current = points[index];
+      const distance = Math.hypot(current.x - previous.x, current.y - previous.y);
+      expect(distance).toBeGreaterThanOrEqual(2);
+      expect(distance).toBeLessThanOrEqual(10);
+    }
+  });
+
+  it('raises river signals near river control path segments', () => {
+    const sampleTerrainSignals = createOverworldTerrainSignalSampler('spec-seed');
+    const points = createRiverControlPoints('spec-seed', 0, 0);
+    const midpoint = {
+      x: Math.round((points[0].x + points[1].x) * 0.5),
+      y: Math.round((points[0].y + points[1].y) * 0.5),
+    };
+    const nearSignal = sampleTerrainSignals(midpoint.x, midpoint.y).riverSignal;
+    const farSignal = sampleTerrainSignals(midpoint.x + 12, midpoint.y + 12).riverSignal;
+
+    expect(nearSignal).toBeGreaterThan(farSignal);
+    expect(nearSignal - farSignal).toBeGreaterThan(0.08);
   });
 
   it('creates cached overworld tile resolvers for curated runtime overlays', () => {

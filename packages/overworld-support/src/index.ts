@@ -1,4 +1,5 @@
 import {
+  clamp,
   generatePoiName,
   hash2D,
   octaveNoise2D,
@@ -22,6 +23,17 @@ export type OverworldTerrainSignalSampler = (
   x: number,
   y: number
 ) => OverworldSignals;
+
+export type RiverControlPoint = {
+  x: number;
+  y: number;
+};
+
+const RIVER_CONTROL_CELL_SIZE = 24;
+const RIVER_MIN_CONTROL_STEP = 2;
+const RIVER_MAX_CONTROL_STEP = 10;
+const RIVER_MAX_CONTROL_POINTS = 5;
+const RIVER_SEGMENT_FALLOFF = 2.35;
 
 export interface OverworldCellAnchorSpec<
   TAnchor extends OverworldAnchorLike = OverworldAnchorLike,
@@ -67,32 +79,196 @@ export type GeneratedNamedPoiAnchor = PoiAnchorLike & { name: string };
 export function createOverworldTerrainSignalSampler(
   seed: Seed
 ): OverworldTerrainSignalSampler {
+  const riverControlPointCache = new Map<string, RiverControlPoint[]>();
+
   return function sampleTerrainSignals(x: number, y: number): OverworldSignals {
     const scaledX = x / 160;
     const scaledY = y / 160;
+    const continent = octaveNoise2D(`${seed}:continent`, scaledX, scaledY, {
+      octaves: 5,
+      persistence: 0.55,
+    });
+    const elevation = octaveNoise2D(`${seed}:elevation`, x / 45, y / 45, {
+      octaves: 4,
+      persistence: 0.5,
+    });
+    const moisture = octaveNoise2D(`${seed}:moisture`, x / 65, y / 65, {
+      octaves: 4,
+      persistence: 0.6,
+    });
+    const baseRiverSignal = ridgedNoise2D(`${seed}:river`, x / 75, y / 75, {
+      octaves: 3,
+      persistence: 0.52,
+    });
+    const riverPathSignal = sampleRiverControlPathSignal(
+      seed,
+      x,
+      y,
+      riverControlPointCache
+    );
+    const riverPathWeight =
+      continent > 0.42 && continent < 0.9 && elevation < 0.68 ? 1 : 0.45;
+    const riverSignal = Math.max(
+      baseRiverSignal * 0.78,
+      Math.min(
+        1,
+        baseRiverSignal * 0.28 + riverPathSignal * 0.92 * riverPathWeight
+      )
+    );
+
     return {
-      continent: octaveNoise2D(`${seed}:continent`, scaledX, scaledY, {
-        octaves: 5,
-        persistence: 0.55,
-      }),
-      elevation: octaveNoise2D(`${seed}:elevation`, x / 45, y / 45, {
-        octaves: 4,
-        persistence: 0.5,
-      }),
-      moisture: octaveNoise2D(`${seed}:moisture`, x / 65, y / 65, {
-        octaves: 4,
-        persistence: 0.6,
-      }),
-      riverSignal: ridgedNoise2D(`${seed}:river`, x / 75, y / 75, {
-        octaves: 3,
-        persistence: 0.52,
-      }),
+      continent,
+      elevation,
+      moisture,
+      riverSignal,
       roadSignal: ridgedNoise2D(`${seed}:road`, x / 42, y / 42, {
         octaves: 2,
         persistence: 0.6,
       }),
     };
   };
+}
+
+export function createRiverControlPoints(
+  seed: Seed,
+  cellX: number,
+  cellY: number
+): RiverControlPoint[] {
+  const cellOriginX = cellX * RIVER_CONTROL_CELL_SIZE;
+  const cellOriginY = cellY * RIVER_CONTROL_CELL_SIZE;
+  const padding = RIVER_MAX_CONTROL_STEP + 1;
+  const minX = cellOriginX - padding;
+  const maxX = cellOriginX + RIVER_CONTROL_CELL_SIZE + padding;
+  const minY = cellOriginY - padding;
+  const maxY = cellOriginY + RIVER_CONTROL_CELL_SIZE + padding;
+  const pointCount =
+    2 +
+    Math.floor(
+      hash2D(`${seed}:river-control-point-count`, cellX, cellY) *
+        (RIVER_MAX_CONTROL_POINTS - 1)
+    );
+  const startX =
+    cellOriginX +
+    hash2D(`${seed}:river-control-start-x`, cellX, cellY) *
+      RIVER_CONTROL_CELL_SIZE;
+  const startY =
+    cellOriginY +
+    hash2D(`${seed}:river-control-start-y`, cellX, cellY) *
+      RIVER_CONTROL_CELL_SIZE;
+  const points: RiverControlPoint[] = [
+    {
+      x: startX,
+      y: startY,
+    },
+  ];
+
+  let previousAngle =
+    hash2D(`${seed}:river-control-angle`, cellX, cellY) * Math.PI * 2;
+
+  for (let index = 1; index < pointCount; index += 1) {
+    const distance =
+      RIVER_MIN_CONTROL_STEP +
+      Math.floor(
+        hash2D(`${seed}:river-control-distance:${index}`, cellX, cellY) *
+          (RIVER_MAX_CONTROL_STEP - RIVER_MIN_CONTROL_STEP + 1)
+      );
+    const angleDelta =
+      (hash2D(`${seed}:river-control-angle-delta:${index}`, cellX, cellY) - 0.5) *
+      (Math.PI * 0.92);
+    const angle = previousAngle + angleDelta;
+    const priorPoint = points[index - 1];
+    const nextX = clamp(
+      priorPoint.x + Math.cos(angle) * distance,
+      minX,
+      maxX
+    );
+    const nextY = clamp(
+      priorPoint.y + Math.sin(angle) * distance,
+      minY,
+      maxY
+    );
+    points.push({
+      x: nextX,
+      y: nextY,
+    });
+    previousAngle = angle;
+  }
+
+  return points;
+}
+
+function sampleRiverControlPathSignal(
+  seed: Seed,
+  x: number,
+  y: number,
+  cache: Map<string, RiverControlPoint[]>
+): number {
+  const cellX = Math.floor(x / RIVER_CONTROL_CELL_SIZE);
+  const cellY = Math.floor(y / RIVER_CONTROL_CELL_SIZE);
+  let strongestSignal = 0;
+
+  for (let offsetY = -1; offsetY <= 1; offsetY += 1) {
+    for (let offsetX = -1; offsetX <= 1; offsetX += 1) {
+      const points = getCachedRiverControlPoints(
+        seed,
+        cellX + offsetX,
+        cellY + offsetY,
+        cache
+      );
+      for (let index = 1; index < points.length; index += 1) {
+        const segmentDistance = getDistanceToLineSegment(
+          x,
+          y,
+          points[index - 1],
+          points[index]
+        );
+        const segmentSignal = Math.max(
+          0,
+          1 - segmentDistance / RIVER_SEGMENT_FALLOFF
+        );
+        if (segmentSignal > strongestSignal) {
+          strongestSignal = segmentSignal;
+        }
+      }
+    }
+  }
+
+  return strongestSignal;
+}
+
+function getCachedRiverControlPoints(
+  seed: Seed,
+  cellX: number,
+  cellY: number,
+  cache: Map<string, RiverControlPoint[]>
+): RiverControlPoint[] {
+  const key = `${seed}:${cellX}:${cellY}`;
+  if (!cache.has(key)) {
+    cache.set(key, createRiverControlPoints(seed, cellX, cellY));
+  }
+  return cache.get(key) ?? [];
+}
+
+function getDistanceToLineSegment(
+  x: number,
+  y: number,
+  start: RiverControlPoint,
+  end: RiverControlPoint
+): number {
+  const deltaX = end.x - start.x;
+  const deltaY = end.y - start.y;
+  const squaredLength = deltaX * deltaX + deltaY * deltaY;
+  if (squaredLength === 0) {
+    return Math.hypot(x - start.x, y - start.y);
+  }
+  const projection = clamp(
+    ((x - start.x) * deltaX + (y - start.y) * deltaY) / squaredLength,
+    0,
+    1
+  );
+  const closestX = start.x + deltaX * projection;
+  const closestY = start.y + deltaY * projection;
+  return Math.hypot(x - closestX, y - closestY);
 }
 
 export function isNearOverworldLand(signals: OverworldSignals): boolean {
