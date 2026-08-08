@@ -603,14 +603,14 @@ This probably deserves several interchangeable strategies.
 
 # Fireflies
 
-* [ ] Generate fireflies around suitable trees.
+* [x] Generate fireflies around suitable trees.
 * [x] Restrict them primarily to appropriate evening/night conditions.
-* [ ] Favor warm and humid environments.
+* [x] Favor warm and humid environments.
 * [x] Animate independently.
 * [x] Vary glow timing.
 * [x] Avoid synchronized flashing unless representing a species that does so.
 * [x] Reduce firefly rendering at distance.
-* [ ] Allow fireflies to cluster around certain vegetation.
+* [x] Allow fireflies to cluster around certain vegetation.
 
 # Spider Webs
 

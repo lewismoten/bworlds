@@ -488,6 +488,11 @@ const resolveForestBirdDescriptors = createCoordinateValueResolver(
 const resolveForestFireflyDescriptors = createCoordinateValueResolver(
   forestFireflyCache,
   ({ tileX, tileY }) => {
+    const trees = resolveForestTreeDescriptors(tileX, tileY);
+    const bushes = resolveForestBushDescriptors(tileX, tileY);
+    const meadows = resolveForestMeadowDescriptors(tileX, tileY);
+    const anchors = getForestFireflyHabitatAnchors(trees, bushes, meadows);
+    const humidAnchors = anchors.filter((anchor) => anchor.habitatKind !== 'tree');
     const count = Math.min(
       MAX_FOREST_FIREFLIES,
       2 + Math.floor(hash2D('forest-firefly-count', tileX, tileY) * 2)
@@ -495,13 +500,36 @@ const resolveForestFireflyDescriptors = createCoordinateValueResolver(
     const fireflies: ForestFireflyDescriptor[] = [];
 
     for (let index = 0; index < count; index += 1) {
+      const anchorPool =
+        index === 0 && humidAnchors.length > 0 ? humidAnchors : anchors;
+      const anchor = pickForestFireflyHabitatAnchor(anchorPool, tileX, tileY, index);
+      const orbitAngle =
+        hash2D('forest-firefly-orbit-angle', tileX * 13 + index, tileY * 17) *
+        Math.PI *
+        2;
+      const orbitDistance =
+        anchor.radius *
+        (0.2 +
+          hash2D('forest-firefly-orbit-distance', tileX + index, tileY - index) *
+            0.8);
+      const canopyBias = hash2D(
+        'forest-firefly-canopy-bias',
+        tileX - index,
+        tileY + index
+      );
       fireflies.push({
         phase: hash2D('forest-firefly-phase', tileX * 17 + index, tileY * 13),
         drift: hash2D('forest-firefly-drift', tileX + index, tileY - index),
-        baseX: (hash2D('forest-firefly-x', tileX + index, tileY) - 0.5) * 0.56,
-        baseZ: (hash2D('forest-firefly-z', tileX, tileY + index) - 0.5) * 0.56,
+        habitatKind: anchor.habitatKind,
+        anchorX: anchor.x,
+        anchorZ: anchor.z,
+        anchorRadius: anchor.radius,
+        baseX: clampToTile(anchor.x + Math.cos(orbitAngle) * orbitDistance),
+        baseZ: clampToTile(anchor.z + Math.sin(orbitAngle) * orbitDistance),
         baseY:
-          0.32 + hash2D('forest-firefly-y', tileX - index, tileY + index) * 0.34,
+          anchor.height +
+          (canopyBias - 0.5) *
+            (anchor.habitatKind === 'tree' ? 0.12 : 0.08),
       });
     }
 
@@ -1329,6 +1357,88 @@ function getForestVisibleFireflyDescriptors(
         ? Math.min(descriptors.length, 2)
         : 1;
   return descriptors.slice(0, visibleCount);
+}
+
+function getForestFireflyHabitatAnchors(
+  trees: ForestTreeDescriptor[],
+  bushes: ForestBushDescriptor[],
+  meadows: ForestMeadowDescriptor[]
+): ForestFireflyHabitatAnchor[] {
+  const anchors: ForestFireflyHabitatAnchor[] = trees.map((tree, index) => ({
+    habitatKind: 'tree',
+    x: tree.x,
+    z: tree.y,
+    radius: Math.min(0.16, tree.radius * (tree.form === 'broadleaf' ? 0.95 : 0.68)),
+    height:
+      tree.trunkHeight * (tree.form === 'broadleaf' ? 0.74 : 0.68) +
+      tree.scale * 0.02,
+    weight:
+      (tree.form === 'broadleaf' ? 1.2 : 0.72) +
+      Math.min(0.2, tree.scale * 0.1) +
+      index * 0.0001,
+  }));
+
+  bushes.forEach((bush, index) => {
+    anchors.push({
+      habitatKind: 'bush',
+      x: bush.x,
+      z: bush.y,
+      radius: Math.min(0.14, Math.max(bush.width, bush.depth) * 0.46),
+      height: 0.18 + bush.height * 0.55,
+      weight: 1.34 + index * 0.0001,
+    });
+  });
+
+  meadows.forEach((meadow, index) => {
+    anchors.push({
+      habitatKind: 'meadow',
+      x: meadow.x,
+      z: meadow.y,
+      radius: Math.min(0.16, Math.max(meadow.radiusX, meadow.radiusY) * 0.54),
+      height: 0.16,
+      weight: 1.18 + index * 0.0001,
+    });
+  });
+
+  if (anchors.length > 0) {
+    return anchors;
+  }
+
+  return [
+    {
+      habitatKind: 'tree',
+      x: 0,
+      z: 0,
+      radius: 0.12,
+      height: 0.42,
+      weight: 1,
+    },
+  ];
+}
+
+function pickForestFireflyHabitatAnchor(
+  anchors: ForestFireflyHabitatAnchor[],
+  tileX: number,
+  tileY: number,
+  fireflyIndex: number
+) {
+  let selectedAnchor = anchors[0]!;
+  let selectedScore = -1;
+
+  anchors.forEach((anchor, anchorIndex) => {
+    const score =
+      hash2D(
+        'forest-firefly-anchor',
+        tileX * 29 + fireflyIndex * 11 + anchorIndex,
+        tileY * 31 - fireflyIndex * 13 - anchorIndex
+      ) * anchor.weight;
+    if (score > selectedScore) {
+      selectedAnchor = anchor;
+      selectedScore = score;
+    }
+  });
+
+  return selectedAnchor;
 }
 
 function shouldRenderForestCloseDetails(
@@ -2188,9 +2298,22 @@ interface ForestFoliageDescriptor {
 interface ForestFireflyDescriptor {
   phase: number;
   drift: number;
+  habitatKind: 'tree' | 'bush' | 'meadow';
+  anchorX: number;
+  anchorZ: number;
+  anchorRadius: number;
   baseX: number;
   baseY: number;
   baseZ: number;
+}
+
+interface ForestFireflyHabitatAnchor {
+  habitatKind: 'tree' | 'bush' | 'meadow';
+  x: number;
+  z: number;
+  radius: number;
+  height: number;
+  weight: number;
 }
 
 interface ForestTreeDescriptor {

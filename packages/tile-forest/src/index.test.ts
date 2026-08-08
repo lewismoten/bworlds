@@ -1864,4 +1864,44 @@ describe('tile forest', () => {
       )
     ).toBe(true);
   });
+
+  it('clusters fireflies around cached vegetation habitat anchors', () => {
+    const descriptors = getForestFireflyDescriptors(8, 6);
+
+    expect(descriptors.length).toBeGreaterThan(0);
+    expect(
+      descriptors.every((descriptor) => {
+        const distance = Math.hypot(
+          descriptor.baseX - descriptor.anchorX,
+          descriptor.baseZ - descriptor.anchorZ
+        );
+        return (
+          ['tree', 'bush', 'meadow'].includes(descriptor.habitatKind) &&
+          distance <= descriptor.anchorRadius + 0.0001
+        );
+      })
+    ).toBe(true);
+  });
+
+  it('prefers humid vegetation anchors for the lead firefly when available', () => {
+    let humidTile: { x: number; y: number } | null = null;
+    for (let tileY = 0; tileY < 24 && !humidTile; tileY += 1) {
+      for (let tileX = 0; tileX < 24; tileX += 1) {
+        if (
+          (getForestBushes(tileX, tileY).length > 0 ||
+            getForestMeadows(tileX, tileY).length > 0) &&
+          getForestFireflyDescriptors(tileX, tileY).length > 0
+        ) {
+          humidTile = { x: tileX, y: tileY };
+          break;
+        }
+      }
+    }
+
+    expect(humidTile).not.toBeNull();
+
+    const [leadFirefly] = getForestFireflyDescriptors(humidTile!.x, humidTile!.y);
+    expect(leadFirefly).toBeDefined();
+    expect(leadFirefly?.habitatKind).not.toBe('tree');
+  });
 });
