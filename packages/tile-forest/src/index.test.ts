@@ -2891,6 +2891,40 @@ describe('tile forest', () => {
     expect(positionCount).toBe(particleCount * 3);
   });
 
+  it('reuses a shared particle material across forest firefly clouds', () => {
+    const plugin = createForestTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'forest');
+    const state = createForestTestState(8, 6);
+
+    const firstModel = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'forest' },
+      tileX: 8,
+      tileY: 6,
+      detailLevel: 'full',
+    }) as FakeGroup;
+    const secondModel = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'forest' },
+      tileX: 9,
+      tileY: 6,
+      detailLevel: 'full',
+    }) as FakeGroup;
+
+    const firstPoints = firstModel.children.find(
+      (node) => node instanceof FakePoints && node.userData?.forestFirefly
+    ) as FakePoints | undefined;
+    const secondPoints = secondModel.children.find(
+      (node) => node instanceof FakePoints && node.userData?.forestFirefly
+    ) as FakePoints | undefined;
+
+    expect(firstPoints).toBeDefined();
+    expect(secondPoints).toBeDefined();
+    expect(firstPoints?.material).toBe(secondPoints?.material);
+  });
+
   it('scales firefly particle density down for farther close-detail forest tiles', () => {
     const plugin = createForestTilePlugin();
     const tile = plugin.tiles?.find((entry) => entry.kind === 'forest');

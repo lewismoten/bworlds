@@ -82,6 +82,7 @@ const forestTrailCache = createBoundedCache<string, ForestTrailDescriptor | null
 const forestFireflyCache = createBoundedCache<string, ForestFireflyDescriptor[]>(
   FOREST_COORDINATE_CACHE_LIMIT
 );
+const forestFireflyMaterialCache = new WeakMap<ThreeHostLike, ThreeMaterialLike>();
 const forestWebCache = createBoundedCache<string, ForestWebDescriptor[]>(
   FOREST_COORDINATE_CACHE_LIMIT
 );
@@ -1729,13 +1730,7 @@ function createForestFireflyParticleCloud(
 
   const points = new three.Points(
     geometry,
-    new three.PointsMaterial({
-      color: '#d9ff8a',
-      size: 0.085,
-      transparent: true,
-      opacity: 0,
-      depthWrite: false,
-    })
+    getSharedForestFireflyMaterial(three)
   );
 
   points.userData = {
@@ -1748,6 +1743,23 @@ function createForestFireflyParticleCloud(
   };
 
   return points;
+}
+
+function getSharedForestFireflyMaterial(three: ThreeHostLike) {
+  const cachedMaterial = forestFireflyMaterialCache.get(three);
+  if (cachedMaterial) {
+    return cachedMaterial;
+  }
+
+  const material = new three.PointsMaterial({
+    color: '#d9ff8a',
+    size: 0.085,
+    transparent: true,
+    opacity: 0,
+    depthWrite: false,
+  });
+  forestFireflyMaterialCache.set(three, material);
+  return material;
 }
 
 function getForestFireflyHabitatAnchors(
