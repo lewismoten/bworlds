@@ -108,6 +108,31 @@ describe('dock route support', () => {
     );
   });
 
+  it('keeps dock routes deterministic after bounded route-cache eviction churn', () => {
+    const state = createCircularDockRouteState();
+    const baselineRoute = resolveDockBoatRoute(state as never, 0, 0);
+    const baselinePlacements = getDockBoatPlacements(state as never, 0, 0, 0);
+
+    for (let index = 0; index < 600; index += 1) {
+      resolveDockBoatRoute(
+        state as never,
+        index % 2 === 0 ? 0 : 23,
+        index % 3 === 0 ? 0 : 22
+      );
+      getDockBoatPlacements(
+        state as never,
+        index * 2_000,
+        (index % 120) - 60,
+        Math.floor(index / 12) - 25
+      );
+    }
+
+    expect(resolveDockBoatRoute(state as never, 0, 0)).toEqual(baselineRoute);
+    expect(getDockBoatPlacements(state as never, 0, 0, 0)).toEqual(
+      baselinePlacements
+    );
+  });
+
   it('reports arrival and departure whistle windows near dock approaches', () => {
     const state = createCircularDockRouteState();
     let departurePlacement:

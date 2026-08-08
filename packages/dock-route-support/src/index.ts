@@ -1,3 +1,7 @@
+import {
+  createBoundedCache,
+  type CacheLike,
+} from '@bworlds/cache-support';
 import { hash2D } from '@bworlds/core';
 import type { WorldStateLike } from '@bworlds/plugin-api';
 
@@ -63,10 +67,14 @@ const MAX_ROUTE_STOPS = 5;
 const DOCK_STOP_SEARCH_RADIUS = 12;
 const PADDLE_BOAT_TIME_BUCKET_MS = 2_000;
 const DOCK_WHISTLE_WINDOW = 0.08;
-const routeCache = new WeakMap<WorldStateLike, Map<string, DockBoatRoute | null>>();
+const DOCK_ROUTE_CACHE_LIMIT = 256;
+const routeCache = new WeakMap<
+  WorldStateLike,
+  CacheLike<string, DockBoatRoute | null>
+>();
 const routeGeometryCache = new WeakMap<
   WorldStateLike,
-  Map<string, DockRouteGeometry | null>
+  CacheLike<string, DockRouteGeometry | null>
 >();
 
 export function resolveDockBoatRoute(
@@ -86,7 +94,9 @@ export function resolveDockBoatRoute(
   const cacheKey = `${state.getCurrentContext().id}:${cluster.key}:${searchRadius}`;
   let stateCache = routeCache.get(state);
   if (!stateCache) {
-    stateCache = new Map();
+    stateCache = createBoundedCache<string, DockBoatRoute | null>(
+      DOCK_ROUTE_CACHE_LIMIT
+    );
     routeCache.set(state, stateCache);
   }
   if (stateCache.has(cacheKey)) {
@@ -563,7 +573,9 @@ function getDockBoatRouteGeometry(
 ): DockRouteGeometry | null {
   let stateCache = routeGeometryCache.get(state);
   if (!stateCache) {
-    stateCache = new Map();
+    stateCache = createBoundedCache<string, DockRouteGeometry | null>(
+      DOCK_ROUTE_CACHE_LIMIT
+    );
     routeGeometryCache.set(state, stateCache);
   }
   const routeKey = getCanonicalRouteKey(route);
