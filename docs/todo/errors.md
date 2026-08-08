@@ -319,7 +319,7 @@ These reinforce the material/program concern.
 * [x] Generate firefly positions in compact typed arrays.
 * [ ] Animate them in a shader where practical.
 * [x] Cap the number of visible fireflies.
-* [ ] Scale density based on camera distance.
+* [x] Scale density based on camera distance.
 * [x] Disable fireflies outside appropriate times/seasons.
 * [x] Avoid recalculating deterministic firefly populations every frame.
 * [x] Share firefly materials.

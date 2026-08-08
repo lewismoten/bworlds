@@ -50,6 +50,12 @@ const MAX_FOREST_FIREFLIES = 3;
 const FOREST_CLOSE_DETAIL_DISTANCE = 2.5;
 const FOREST_CLOSE_DETAIL_DISTANCE_SQUARED =
   FOREST_CLOSE_DETAIL_DISTANCE * FOREST_CLOSE_DETAIL_DISTANCE;
+const FOREST_FIREFLY_FULL_DISTANCE = 1.1;
+const FOREST_FIREFLY_FULL_DISTANCE_SQUARED =
+  FOREST_FIREFLY_FULL_DISTANCE * FOREST_FIREFLY_FULL_DISTANCE;
+const FOREST_FIREFLY_MEDIUM_DISTANCE = 1.8;
+const FOREST_FIREFLY_MEDIUM_DISTANCE_SQUARED =
+  FOREST_FIREFLY_MEDIUM_DISTANCE * FOREST_FIREFLY_MEDIUM_DISTANCE;
 const FIREFLY_SEASON_START = 0.18;
 const FIREFLY_SEASON_PEAK = 0.5;
 const FIREFLY_SEASON_END = 0.82;
@@ -928,7 +934,7 @@ export function createForestTilePlugin(): RuntimePlugin {
           }
 
           if (renderCloseDetails) {
-            for (const firefly of getForestFireflies(three, tileX, tileY)) {
+            for (const firefly of getForestFireflies(three, state, tileX, tileY)) {
               group.add(firefly);
             }
           }
@@ -1268,8 +1274,13 @@ function getTreeStyle(
   return treeStyleCache.get(key)!;
 }
 
-function getForestFireflies(three: ThreeHostLike, tileX: number, tileY: number) {
-  const descriptors = getForestFireflyDescriptors(tileX, tileY);
+function getForestFireflies(
+  three: ThreeHostLike,
+  state: Create3DModelContext['state'],
+  tileX: number,
+  tileY: number
+) {
+  const descriptors = getForestVisibleFireflyDescriptors(state, tileX, tileY);
   const positions = new Array<number>(descriptors.length * 3).fill(0);
 
   const geometry = new three.BufferGeometry();
@@ -1299,6 +1310,29 @@ function getForestFireflies(three: ThreeHostLike, tileX: number, tileY: number) 
   };
 
   return [points];
+}
+
+function getForestVisibleFireflyDescriptors(
+  state: Create3DModelContext['state'],
+  tileX: number,
+  tileY: number
+) {
+  const descriptors = getForestFireflyDescriptors(tileX, tileY);
+  const player = state?.player;
+  if (!player || descriptors.length <= 1) {
+    return descriptors;
+  }
+
+  const dx = tileX - player.x;
+  const dy = tileY - player.y;
+  const distanceSquared = dx * dx + dy * dy;
+  const visibleCount =
+    distanceSquared <= FOREST_FIREFLY_FULL_DISTANCE_SQUARED
+      ? descriptors.length
+      : distanceSquared <= FOREST_FIREFLY_MEDIUM_DISTANCE_SQUARED
+        ? Math.min(descriptors.length, 2)
+        : 1;
+  return descriptors.slice(0, visibleCount);
 }
 
 function shouldRenderForestCloseDetails(

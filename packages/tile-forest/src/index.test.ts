@@ -1670,6 +1670,55 @@ describe('tile forest', () => {
     expect(lowFireflyCount).toBe(0);
   });
 
+  it('scales firefly particle density down for farther close-detail forest tiles', () => {
+    const plugin = createForestTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'forest');
+    const nearState = createForestTestState(8, 6);
+    const midState = createForestTestState(6.3, 6);
+
+    const nearModel = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state: nearState,
+      tile: { kind: 'forest' },
+      tileX: 8,
+      tileY: 6,
+      detailLevel: 'full',
+    }) as FakeGroup;
+    const midModel = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state: midState,
+      tile: { kind: 'forest' },
+      tileX: 8,
+      tileY: 6,
+      detailLevel: 'full',
+    }) as FakeGroup;
+
+    const nearPoints = nearModel.children.find(
+      (node) => node instanceof FakePoints && node.userData?.forestFirefly
+    ) as FakePoints | undefined;
+    const midPoints = midModel.children.find(
+      (node) => node instanceof FakePoints && node.userData?.forestFirefly
+    ) as FakePoints | undefined;
+
+    const nearCount =
+      (
+        nearPoints?.geometry?.attributes.position as
+          | FakeFloat32BufferAttribute
+          | undefined
+      )?.array.length ?? 0;
+    const midCount =
+      (
+        midPoints?.geometry?.attributes.position as
+          | FakeFloat32BufferAttribute
+          | undefined
+      )?.array.length ?? 0;
+
+    expect(nearPoints).toBeDefined();
+    expect(midPoints).toBeDefined();
+    expect(nearCount).toBeGreaterThan(midCount);
+    expect(midCount).toBeGreaterThan(0);
+  });
+
   it('skips close-only wildlife and decorative forest details when the player is far away', () => {
     const plugin = createForestTilePlugin();
     const tile = plugin.tiles?.find((entry) => entry.kind === 'forest');
