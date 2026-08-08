@@ -20,40 +20,40 @@ export const MOON_PHASE_NAMES = [
   'Waning Crescent',
 ] as const;
 const CONSTELLATION_PREFIXES = [
-  'Aster',
-  'Briar',
+  'Astral',
+  'Aurora',
+  'Celest',
   'Cinder',
+  'Comet',
+  'Crown',
   'Dawn',
   'Ember',
-  'Frost',
-  'Gale',
-  'Harbor',
-  'Ivory',
-  'Juniper',
-  'Kestrel',
+  'Ether',
   'Lumen',
-  'Morrow',
-  'North',
-  'Opal',
-  'Pyre',
+  'Moon',
+  'Nebula',
+  'Nova',
+  'Solstice',
+  'Star',
+  'Zephyr',
 ];
 const CONSTELLATION_SUFFIXES = [
-  'Arc',
-  'Bloom',
+  'Arch',
+  'Beacon',
   'Crown',
   'Drift',
-  'Ember',
-  'Flare',
-  'Grove',
-  'Hearth',
-  'Isle',
-  'Jewel',
-  'Keep',
+  'Gate',
+  'Halo',
+  'Harp',
   'Lantern',
-  'March',
-  'Needle',
+  'Mantle',
   'Omen',
-  'Vale',
+  'Pillar',
+  'Sail',
+  'Spire',
+  'Thread',
+  'Veil',
+  'Wake',
 ];
 const PLANET_NAMES = ['Aurel', 'Brink', 'Cael', 'Damar'];
 const METEOR_SHOWER_NAMES = ['Silver Wake', 'Ember Rain', 'Northfall'];
@@ -85,6 +85,12 @@ export interface CelestialEventLike {
   name: string;
   progress: number;
   intensity: number;
+}
+
+export interface CelestialRingEntryLike {
+  constellationIndex: number;
+  name: string;
+  sunriseAzimuth: number;
 }
 
 export function fract(value) {
@@ -133,14 +139,19 @@ export function getDaylightCycleState(
   const solarDeclination = Math.sin(seasonAngle) * seasonDaylightAmplitude;
   const sunAngle = dayProgress * Math.PI * 2 - Math.PI / 2;
   const sunAltitude = Math.sin(sunAngle) + solarDeclination;
+  const daylightDuration = clamp(0.5 + solarDeclination * 0.95, 0.32, 0.68);
+  const sunriseProgress = 0.5 - daylightDuration * 0.5;
+  const sunsetProgress = 0.5 + daylightDuration * 0.5;
+  const sunAzimuth = normalizeAngle((dayProgress - sunriseProgress) * Math.PI);
   const moonAngle = sunAngle + Math.PI;
   const moonAltitude = Math.sin(moonAngle);
+  const moonAzimuth = normalizeAngle(sunAzimuth + Math.PI);
   const daylight = smoothstep(-0.16, 0.2, sunAltitude);
   const twilight = smoothstep(-0.28, 0.16, sunAltitude);
   const night = 1 - twilight;
   const starsOpacity = smoothstep(0.08, 0.82, night);
-  const sunriseAzimuth = Math.PI / 2 + solarDeclination * 0.8;
-  const sunsetAzimuth = Math.PI * 1.5 - solarDeclination * 0.8;
+  const sunriseAzimuth = solarDeclination * 0.8;
+  const sunsetAzimuth = Math.PI - solarDeclination * 0.8;
   const moonPhaseIndex =
     ((dayNumber % MOON_PHASE_NAMES.length) + MOON_PHASE_NAMES.length) %
     MOON_PHASE_NAMES.length;
@@ -169,6 +180,7 @@ export function getDaylightCycleState(
     yearLengthDays,
   });
   const calendar = formatCelestialDate(activeConstellation?.name ?? 'Unknown', moonPhaseName);
+  const celestialRing = createCelestialRing(constellations);
 
   return {
     dayLengthMs,
@@ -180,12 +192,17 @@ export function getDaylightCycleState(
     seasonDay,
     seasonLengthDays,
     sunAngle,
+    sunAzimuth,
     sunAltitude,
     solarDeclination,
     moonAngle,
+    moonAzimuth,
     moonAltitude,
+    sunriseProgress,
     sunriseAzimuth,
+    sunsetProgress,
     sunsetAzimuth,
+    daylightDuration,
     daylight,
     twilight,
     night,
@@ -196,6 +213,7 @@ export function getDaylightCycleState(
     constellations,
     activeConstellationIndex,
     activeConstellation,
+    celestialRing,
     calendar,
     visibleEvents,
     isNight: daylight < 0.22,
@@ -335,6 +353,17 @@ export function createConstellationName(seed, index) {
     hash2D(`${seed}:constellation-suffix`, 0, index)
   );
   return `${prefix} ${suffix}`;
+}
+
+export function createCelestialRing(
+  constellations: ConstellationLike[]
+): CelestialRingEntryLike[] {
+  const count = Math.max(1, constellations.length);
+  return constellations.map((constellation, index) => ({
+    constellationIndex: index,
+    name: constellation.name,
+    sunriseAzimuth: normalizeAngle((index / count) * Math.PI * 2),
+  }));
 }
 
 export function formatCelestialDate(constellationName, moonPhaseName): CelestialCalendarLike {

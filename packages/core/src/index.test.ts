@@ -50,6 +50,7 @@ describe('core utilities', () => {
     expect(midnight.dayProgress).toBe(0);
     expect(midnight.isNight).toBe(true);
     expect(midnight.moonPhaseName).toBe('New Moon');
+    expect(midnight.sunriseAzimuth).toBeCloseTo(0, 5);
     expect(noon.dayProgress).toBe(0.5);
     expect(noon.daylight).toBeGreaterThan(0.95);
     expect(noon.isNight).toBe(false);
@@ -84,7 +85,9 @@ describe('core utilities', () => {
     );
 
     expect(summer.sunriseAzimuth).toBeGreaterThan(winter.sunriseAzimuth);
-    expect(summer.daylight).toBeGreaterThanOrEqual(winter.daylight);
+    expect(summer.daylightDuration).toBeGreaterThan(winter.daylightDuration);
+    expect(summer.sunriseProgress).toBeLessThan(winter.sunriseProgress);
+    expect(summer.sunsetProgress).toBeGreaterThan(winter.sunsetProgress);
     expect(summer.activeConstellation.name).not.toBe(winter.activeConstellation.name);
   });
 

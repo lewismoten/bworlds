@@ -3,7 +3,6 @@ import {
   advanceWorldTimeOffsetByHours,
   advanceWorldTimeOffsetBySeasons,
   alignWorldTimeOffsetToDayProgress,
-  getWorldDaylightCycle,
   getWorldTimeMs,
   getDaylightCycleState,
   HALF_WORLD_TILES,
@@ -66,7 +65,7 @@ root.innerHTML = `
         </div>
         <div class="card">
           <h2>Timekeeper</h2>
-          <canvas id="time-wheel" width="240" height="240"></canvas>
+          <canvas id="time-wheel" width="320" height="320"></canvas>
           <div class="time-toggle-row">
             <button id="time-freeze-toggle" type="button">Freeze Time</button>
           </div>

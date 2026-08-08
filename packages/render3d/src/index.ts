@@ -91,6 +91,9 @@ export function create3DRenderer(host) {
   const eventRoot = new THREE.Group();
   skyRoot.add(eventRoot);
 
+  const sunSprite = createSunSprite();
+  skyRoot.add(sunSprite);
+
   const moonSprite = createMoonSprite();
   skyRoot.add(moonSprite);
 
@@ -777,9 +780,9 @@ export function create3DRenderer(host) {
 
     const sunHeight = Math.max(-0.2, cycle.sunAltitude);
     const sunDistance = 18;
-    const sunOrbitX = Math.cos(cycle.sunAngle) * sunDistance;
+    const sunOrbitX = Math.cos(cycle.sunAzimuth) * sunDistance;
     const sunOrbitY = 5 + Math.max(0, sunHeight) * 18;
-    const sunOrbitZ = Math.sin(cycle.sunAngle) * sunDistance * 0.65;
+    const sunOrbitZ = Math.sin(cycle.sunAzimuth) * sunDistance * 0.65;
     sunLight.position.set(worldX - sunOrbitX, sunOrbitY, worldY - sunOrbitZ);
     sunTarget.position.set(worldX, 0, worldY);
     sunLight.intensity = dayBlend * 1.75 + twilightBlend * 0.25;
@@ -795,9 +798,9 @@ export function create3DRenderer(host) {
       shadowStrength * (lighting.shadowStrength ?? 1) > 0.08;
 
     const moonDistance = 22;
-    const moonOrbitX = Math.cos(cycle.moonAngle) * moonDistance;
+    const moonOrbitX = Math.cos(cycle.moonAzimuth) * moonDistance;
     const moonOrbitY = 6 + Math.max(0, cycle.moonAltitude) * 12;
-    const moonOrbitZ = Math.sin(cycle.moonAngle) * moonDistance * 0.7;
+    const moonOrbitZ = Math.sin(cycle.moonAzimuth) * moonDistance * 0.7;
     moonLight.position.set(worldX - moonOrbitX, moonOrbitY, worldY - moonOrbitZ);
     moonTarget.position.set(worldX, 0, worldY);
     moonLight.color.set(lighting.moonColor ?? '#9ec5ff');
@@ -806,11 +809,22 @@ export function create3DRenderer(host) {
     skyRoot.position.set(worldX, 0, worldY);
     stars.material.opacity = cycle.starsOpacity;
     stars.visible = cycle.starsOpacity > 0.02;
-    stars.material.size = 0.18 * Math.max(0.6, Math.min(2, starDensity));
+    stars.material.size = 0.44 * Math.max(0.75, Math.min(2.4, starDensity));
     syncConstellationSky(constellationRoot, cycle);
     syncCelestialEvents(eventRoot, cycle);
     constellationRoot.visible = cycle.starsOpacity > 0.04;
     eventRoot.visible = cycle.starsOpacity > 0.08;
+
+    sunSprite.position.set(
+      sunOrbitX * 1.45,
+      14 + Math.max(-0.12, cycle.sunAltitude) * 15,
+      sunOrbitZ * 1.45
+    );
+    sunSprite.material.opacity = Math.max(
+      0,
+      Math.min(0.92, cycle.twilight * 0.72 + dayBlend * 0.32)
+    );
+    sunSprite.visible = sunSprite.material.opacity > 0.03;
 
     moonSprite.position.set(moonOrbitX * 1.7, 16 + Math.max(0, cycle.moonAltitude) * 14, moonOrbitZ * 1.7);
     moonSprite.material.opacity =
@@ -861,11 +875,13 @@ function createStarField() {
   geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
   const material = new THREE.PointsMaterial({
     color: '#eef6ff',
-    size: 0.18,
+    size: 0.44,
     transparent: true,
     opacity: 0,
     depthWrite: false,
+    depthTest: false,
     sizeAttenuation: true,
+    fog: false,
   });
   return new THREE.Points(geometry, material);
 }
@@ -886,8 +902,11 @@ function syncConstellationSky(root, cycle) {
 
   focusIndices.forEach((constellationIndex, slotIndex) => {
     const constellation = constellations[constellationIndex];
-    const slotTheta = ((slotIndex - 1) * 0.6) + cycle.yearProgress * Math.PI * 2;
-    const slotPhi = 0.5 + (slotIndex - 1) * 0.08;
+    const slotTheta =
+      cycle.sunriseAzimuth +
+      (slotIndex - 1) * 0.82 +
+      (cycle.dayProgress - cycle.sunriseProgress) * 0.16;
+    const slotPhi = 1.18 + (slotIndex - 1) * 0.08;
     const anchor = createSkyPosition(slotTheta, slotPhi, SKY_RADIUS - 4);
 
     constellation.connections.forEach(([startIndex, endIndex]) => {
@@ -905,7 +924,8 @@ function syncConstellationSky(root, cycle) {
         new THREE.LineBasicMaterial({
           color: '#b9d4ff',
           transparent: true,
-          opacity: 0.12 + cycle.starsOpacity * 0.28,
+          opacity: 0.24 + cycle.starsOpacity * 0.42,
+          depthTest: false,
         })
       );
       root.add(line);
@@ -916,12 +936,13 @@ function syncConstellationSky(root, cycle) {
         new THREE.SpriteMaterial({
           color: '#f5fbff',
           transparent: true,
-          opacity: 0.24 + star.brightness * cycle.starsOpacity * 0.6,
+          opacity: 0.38 + star.brightness * cycle.starsOpacity * 0.62,
           depthWrite: false,
+          depthTest: false,
         })
       );
       sprite.position.copy(createConstellationPoint(anchor, star));
-      const scale = 0.18 + star.brightness * 0.22;
+      const scale = 0.34 + star.brightness * 0.34;
       sprite.scale.set(scale, scale, 1);
       root.add(sprite);
     });
@@ -965,7 +986,8 @@ function syncCelestialEvents(root, cycle) {
             new THREE.LineBasicMaterial({
               color: '#eef6ff',
               transparent: true,
-              opacity: 0.16 + event.intensity * 0.24,
+              opacity: 0.26 + event.intensity * 0.32,
+              depthTest: false,
             })
           )
         );
@@ -977,12 +999,13 @@ function syncCelestialEvents(root, cycle) {
       new THREE.SpriteMaterial({
         color: event.type === 'planet' ? '#ffd7a6' : '#d8f5ff',
         transparent: true,
-        opacity: 0.24 + event.intensity * 0.35,
+        opacity: 0.34 + event.intensity * 0.42,
         depthWrite: false,
+        depthTest: false,
       })
     );
     sprite.position.copy(position);
-    const scale = event.type === 'planet' ? 0.45 : 0.34;
+    const scale = event.type === 'planet' ? 0.72 : 0.48;
     sprite.scale.set(scale, scale, 1);
     root.add(sprite);
 
@@ -997,7 +1020,8 @@ function syncCelestialEvents(root, cycle) {
           new THREE.LineBasicMaterial({
             color: '#d8f5ff',
             transparent: true,
-            opacity: 0.18 + event.intensity * 0.28,
+            opacity: 0.24 + event.intensity * 0.3,
+            depthTest: false,
           })
         )
       );
@@ -1019,6 +1043,44 @@ function createMoonSprite() {
   const sprite = new THREE.Sprite(material);
   sprite.scale.set(3.2, 3.2, 1);
   return sprite;
+}
+
+function createSunSprite() {
+  const texture = new THREE.CanvasTexture(buildSunCanvas());
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.needsUpdate = true;
+  const material = new THREE.SpriteMaterial({
+    map: texture,
+    transparent: true,
+    depthWrite: false,
+    depthTest: false,
+    opacity: 0,
+    color: '#ffffff',
+  });
+  const sprite = new THREE.Sprite(material);
+  sprite.scale.set(4.4, 4.4, 1);
+  return sprite;
+}
+
+function buildSunCanvas() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 128;
+  canvas.height = 128;
+  const context = canvas.getContext('2d');
+  if (!context) {
+    throw new Error('Unable to create sun canvas.');
+  }
+  const center = canvas.width / 2;
+  const glow = context.createRadialGradient(center, center, 4, center, center, 54);
+  glow.addColorStop(0, 'rgba(255, 247, 200, 1)');
+  glow.addColorStop(0.25, 'rgba(255, 217, 125, 0.96)');
+  glow.addColorStop(0.55, 'rgba(255, 176, 88, 0.45)');
+  glow.addColorStop(1, 'rgba(255, 176, 88, 0)');
+  context.fillStyle = glow;
+  context.beginPath();
+  context.arc(center, center, 54, 0, Math.PI * 2);
+  context.fill();
+  return canvas;
 }
 
 function updateMoonPhaseTexture(texture, phaseIndex, illumination) {
