@@ -265,9 +265,9 @@ Given how important trees currently are, I would definitely include a specialize
 
 # Particles
 
-* [ ] Include active particle systems.
-* [ ] Include active particles.
-* [ ] Include maximum particles during sampling window.
+* [x] Include active particle systems.
+* [x] Include active particles.
+* [x] Include maximum particles during sampling window.
 * [ ] Include particle emitters by plugin.
 * [ ] Include transparent particle count.
 * [ ] Include particle draw calls.

@@ -99,6 +99,8 @@ export type PerformanceHistorySample = {
   visibleTileCount: number;
   visibleTreeCount: number;
   activeLightCount: number;
+  activeParticleSystemCount?: number;
+  activeParticleCount?: number;
   generationQueueSize: number;
 };
 

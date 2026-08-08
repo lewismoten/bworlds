@@ -84,6 +84,7 @@ describe('debug snapshot', () => {
         meshCount: 180,
         visibleMeshCount: 164,
         pointsCount: 5,
+        activeParticleSystemCount: 4,
         activeParticleCount: 90,
         spriteCount: 9,
         lightCount: 12,
@@ -129,6 +130,8 @@ describe('debug snapshot', () => {
           visibleTileCount: 110,
           visibleTreeCount: 25,
           activeLightCount: 11,
+          activeParticleSystemCount: 3,
+          activeParticleCount: 72,
           generationQueueSize: 4,
         },
         {
@@ -146,6 +149,8 @@ describe('debug snapshot', () => {
           visibleTileCount: 112,
           visibleTreeCount: 24,
           activeLightCount: 12,
+          activeParticleSystemCount: 4,
+          activeParticleCount: 96,
           generationQueueSize: 6,
         },
       ],
@@ -177,6 +182,11 @@ describe('debug snapshot', () => {
       pointsCount: 5,
       lightCount: 12,
     });
+    expect(result.particles).toMatchObject({
+      activeParticleSystems: 4,
+      activeParticles: 90,
+      maxParticlesDuringSamplingWindow: 96,
+    });
     expect(result.resources).toMatchObject({
       uniqueMaterialCount: 24,
       geometryCount: 61,
@@ -185,8 +195,20 @@ describe('debug snapshot', () => {
       geometryMemoryCount: 63,
     });
     expect(result.history).toEqual([
-      expect.objectContaining({ t: -1, fps: 48, generationQueueSize: 4 }),
-      expect.objectContaining({ t: 0, fps: 44.6, generationQueueSize: 6 }),
+      expect.objectContaining({
+        t: -1,
+        fps: 48,
+        activeParticleSystemCount: 3,
+        activeParticleCount: 72,
+        generationQueueSize: 4,
+      }),
+      expect.objectContaining({
+        t: 0,
+        fps: 44.6,
+        activeParticleSystemCount: 4,
+        activeParticleCount: 96,
+        generationQueueSize: 6,
+      }),
     ]);
   });
 

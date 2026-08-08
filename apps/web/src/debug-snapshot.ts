@@ -99,6 +99,11 @@ export type DebugSnapshotExport = {
     pointsCount: number;
     lightCount: number;
   };
+  particles: {
+    activeParticleSystems: number;
+    activeParticles: number;
+    maxParticlesDuringSamplingWindow: number;
+  };
   resources: {
     uniqueMaterialCount: number;
     geometryCount: number;
@@ -121,6 +126,8 @@ export type DebugSnapshotExport = {
     visibleTileCount: number;
     visibleTreeCount: number;
     activeLightCount: number;
+    activeParticleSystemCount: number;
+    activeParticleCount: number;
     generationQueueSize: number;
   }>;
 };
@@ -176,6 +183,15 @@ export function buildDebugSnapshotExport(
       textureMemoryEstimateMb: options.snapshot.textureMemoryEstimateMb,
       geometryMemoryCount: options.snapshot.geometryMemoryCount,
     },
+    particles: {
+      activeParticleSystems:
+        options.snapshot.activeParticleSystemCount ?? options.snapshot.pointsCount,
+      activeParticles: options.snapshot.activeParticleCount,
+      maxParticlesDuringSamplingWindow: Math.max(
+        options.snapshot.activeParticleCount,
+        ...options.history.map((sample) => sample.activeParticleCount ?? 0)
+      ),
+    },
     history: options.history.map((sample) => ({
       t: roundTenths((sample.nowMs - latestHistoryTime) / 1000),
       fps: sample.fps,
@@ -191,6 +207,8 @@ export function buildDebugSnapshotExport(
       visibleTileCount: sample.visibleTileCount,
       visibleTreeCount: sample.visibleTreeCount,
       activeLightCount: sample.activeLightCount,
+      activeParticleSystemCount: sample.activeParticleSystemCount ?? 0,
+      activeParticleCount: sample.activeParticleCount ?? 0,
       generationQueueSize: sample.generationQueueSize,
     })),
   };

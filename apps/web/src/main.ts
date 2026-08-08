@@ -1075,6 +1075,8 @@ const debugResourceTrendState = {
     visibleTileCount: number;
     visibleTreeCount: number;
     activeLightCount: number;
+    activeParticleSystemCount?: number;
+    activeParticleCount?: number;
     generationQueueSize: number;
   }>,
 };
@@ -2801,6 +2803,8 @@ function render(): FrameLoopActivityLike {
       visibleTileCount: debugSnapshot.visibleTileCount,
       visibleTreeCount: debugSnapshot.visibleTreeCount,
       activeLightCount: debugSnapshot.lightCount,
+      activeParticleSystemCount: debugSnapshot.activeParticleSystemCount,
+      activeParticleCount: debugSnapshot.activeParticleCount,
       generationQueueSize: debugSnapshot.chunkGenerationQueueSize,
     });
     debugSnapshotState.latestSnapshot = { ...debugSnapshot };
