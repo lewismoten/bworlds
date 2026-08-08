@@ -2266,6 +2266,7 @@ function render(): FrameLoopActivityLike {
     tileKind: currentTile.kind,
     contextType: context.type,
     dayProgress: actualCycle.dayProgress,
+    yearProgress: actualCycle.yearProgress,
     weatherKind: environment.weather?.current?.kind,
     weatherIntensity: environment.weather?.current?.intensity,
     clusterX: musicClusterX,

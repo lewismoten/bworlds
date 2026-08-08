@@ -52,7 +52,10 @@ describe('procedural music', () => {
   });
 
   it('softens nighttime arrangements by lowering percussion density and extending softer layers', () => {
-    const arrangement = resolveMusicArrangement({ dayProgress: 0.9 });
+    const arrangement = resolveMusicArrangement({
+      dayProgress: 0.9,
+      yearProgress: 0.5,
+    });
 
     expect(arrangement.roleProfiles.percussion).toEqual(
       expect.objectContaining({
@@ -63,6 +66,27 @@ describe('procedural music', () => {
     expect(arrangement.roleProfiles.harmony.releaseMultiplier).toBeGreaterThan(1);
     expect(arrangement.roleProfiles.harmony.volumeMultiplier).toBeLessThan(1);
     expect(arrangement.roleProfiles.lead.durationMultiplier).toBeGreaterThan(1);
+  });
+
+  it('gives winter arrangements a higher, sparser, bell-like profile', () => {
+    const arrangement = resolveMusicArrangement({
+      dayProgress: 0.5,
+      yearProgress: 0,
+    });
+
+    expect(arrangement.roleProfiles.lead).toEqual(
+      expect.objectContaining({
+        octaveShiftSemitones: 12,
+        waveformOverride: 'triangle',
+      })
+    );
+    expect(arrangement.roleProfiles.harmony.skipEvery).toBe(2);
+    expect(arrangement.roleProfiles.percussion).toEqual(
+      expect.objectContaining({
+        skipEvery: 4,
+        waveformOverride: 'triangle',
+      })
+    );
   });
 
   it('builds stable region signatures for cluster-level theme variation', () => {
@@ -134,6 +158,7 @@ describe('procedural music', () => {
       tileKind: 'town',
       contextType: 'town',
       dayProgress: 0.5,
+      yearProgress: 0.5,
       clusterX: 0,
       clusterY: 0,
     });
@@ -142,6 +167,7 @@ describe('procedural music', () => {
       tileKind: 'town',
       contextType: 'town',
       dayProgress: 0.9,
+      yearProgress: 0.5,
       clusterX: 0,
       clusterY: 0,
     });
@@ -158,6 +184,35 @@ describe('procedural music', () => {
     expect((nightHarmony?.releaseMs ?? 0) / (dayHarmony?.releaseMs ?? 1)).toBeGreaterThan(
       1.5
     );
+  });
+
+  it('pushes winter lead lines into a brighter higher register during scheduling', () => {
+    const summerScheduled = scheduleProceduralMusicNotes({
+      nowMs: 0,
+      tileKind: 'forest',
+      contextType: 'overworld',
+      dayProgress: 0.5,
+      yearProgress: 0.5,
+      clusterX: 0,
+      clusterY: 0,
+    });
+    const winterScheduled = scheduleProceduralMusicNotes({
+      nowMs: 0,
+      tileKind: 'forest',
+      contextType: 'overworld',
+      dayProgress: 0.5,
+      yearProgress: 0,
+      clusterX: 0,
+      clusterY: 0,
+    });
+
+    const summerLead = summerScheduled.notes.find((note) => note.role === 'lead');
+    const winterLead = winterScheduled.notes.find((note) => note.role === 'lead');
+
+    expect(summerLead).toEqual(expect.objectContaining({ role: 'lead' }));
+    expect(winterLead).toEqual(expect.objectContaining({ role: 'lead' }));
+    expect(winterLead?.waveform).toBe('triangle');
+    expect((winterLead?.frequency ?? 0) / (summerLead?.frequency ?? 1)).toBeGreaterThan(1.9);
   });
 
   it('applies softer panning and falloff for nearby ambient music emitters', () => {
@@ -269,6 +324,7 @@ describe('procedural music', () => {
       tileKind: 'plains' as const,
       contextType: 'overworld' as const,
       dayProgress: 0.5,
+      yearProgress: 0.25,
       weatherKind: 'fog' as const,
       weatherIntensity: 0.35,
       clusterX: 1,
@@ -290,6 +346,12 @@ describe('procedural music', () => {
       getMusicUpdateSignature({
         ...base,
         clusterX: base.clusterX + 1,
+      })
+    ).not.toEqual(getMusicUpdateSignature(base));
+    expect(
+      getMusicUpdateSignature({
+        ...base,
+        yearProgress: 0.75,
       })
     ).not.toEqual(getMusicUpdateSignature(base));
   });

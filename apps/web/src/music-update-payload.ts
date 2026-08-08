@@ -10,6 +10,7 @@ type MusicUpdatePayloadInput = {
   weatherKind?: MusicUpdateOptions['weatherKind'];
   weatherIntensity?: MusicUpdateOptions['weatherIntensity'];
   dayProgress: number;
+  yearProgress?: number;
   clusterX: number;
   clusterY: number;
   emitterX: number;
@@ -27,6 +28,7 @@ export function createMusicUpdatePayloadBuilder(): (
   const payload: MusicUpdateOptions = {
     nowMs: 0,
     dayProgress: 0,
+    yearProgress: 0,
     clusterX: 0,
     clusterY: 0,
     emitter: { x: 0, y: 0 },
@@ -48,6 +50,7 @@ export function createMusicUpdatePayloadBuilder(): (
     payload.weatherKind = input.weatherKind;
     payload.weatherIntensity = input.weatherIntensity;
     payload.dayProgress = input.dayProgress;
+    payload.yearProgress = input.yearProgress ?? 0;
     payload.clusterX = input.clusterX;
     payload.clusterY = input.clusterY;
     if (payload.emitter) {

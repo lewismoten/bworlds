@@ -55,6 +55,8 @@ type MusicArrangementRoleProfile = {
   harmonicGainMultiplier: number;
   pulseRateMultiplier: number;
   brightnessMultiplier: number;
+  octaveShiftSemitones?: number;
+  waveformOverride?: MusicWaveform;
   skipEvery?: number;
 };
 
@@ -119,6 +121,7 @@ export type MusicUpdateOptions = {
   weatherKind?: WeatherKind;
   weatherIntensity?: number;
   dayProgress: number;
+  yearProgress?: number;
   clusterX?: number;
   clusterY?: number;
   emitter?: MusicPosition;
@@ -263,16 +266,64 @@ export function resolveMusicMood(options: {
 
 export function resolveMusicArrangement(options: {
   dayProgress: number;
+  yearProgress?: number;
   weatherKind?: WeatherKind;
   weatherIntensity?: number;
 }): MusicArrangement {
   const dayProgress = normalizeWrappedProgress(options.dayProgress);
+  const season = resolveSeason(options.yearProgress ?? 0);
   const atNight = dayProgress < 0.2 || dayProgress > 0.8;
   const atDawnOrDusk =
     (dayProgress >= 0.18 && dayProgress <= 0.3) ||
     (dayProgress >= 0.7 && dayProgress <= 0.82);
   const heavyWeather =
     options.weatherKind === 'heavy-rain' || (options.weatherIntensity ?? 0) >= 0.85;
+
+  if (season === 'winter') {
+    return {
+      roleProfiles: {
+        lead: {
+          volumeMultiplier: 0.92,
+          durationMultiplier: 1.16,
+          releaseMultiplier: 1.55,
+          harmonicGainMultiplier: 1.32,
+          pulseRateMultiplier: 0.72,
+          brightnessMultiplier: 1.08,
+          octaveShiftSemitones: 12,
+          waveformOverride: 'triangle',
+        },
+        harmony: {
+          volumeMultiplier: 0.68,
+          durationMultiplier: 1.34,
+          releaseMultiplier: 1.8,
+          harmonicGainMultiplier: 1.4,
+          pulseRateMultiplier: 0.62,
+          brightnessMultiplier: 1.06,
+          octaveShiftSemitones: 12,
+          waveformOverride: 'sine',
+          skipEvery: 2,
+        },
+        bass: {
+          volumeMultiplier: 0.82,
+          durationMultiplier: 1.12,
+          releaseMultiplier: 1.24,
+          harmonicGainMultiplier: 0.96,
+          pulseRateMultiplier: 0.82,
+          brightnessMultiplier: 0.94,
+        },
+        percussion: {
+          volumeMultiplier: 0.32,
+          durationMultiplier: 0.88,
+          releaseMultiplier: 1.22,
+          harmonicGainMultiplier: 1.24,
+          pulseRateMultiplier: 0.56,
+          brightnessMultiplier: 1.02,
+          waveformOverride: 'triangle',
+          skipEvery: 4,
+        },
+      },
+    };
+  }
 
   if (atNight) {
     return {
@@ -417,6 +468,7 @@ export function scheduleProceduralMusicNotes(
       tileKind: options.tileKind,
       contextType: options.contextType,
       dayProgress: options.dayProgress,
+      yearProgress: options.yearProgress,
       weatherKind: options.weatherKind,
       weatherIntensity: options.weatherIntensity,
       clusterX: options.clusterX,
@@ -480,6 +532,7 @@ export function createMusicController(sink: MusicSink): MusicController {
           contextType: options.nearbyPoi.contextType,
           poiType: options.nearbyPoi.poiType,
           dayProgress: options.dayProgress,
+          yearProgress: options.yearProgress,
           weatherKind: options.weatherKind,
           weatherIntensity: options.weatherIntensity,
           clusterX: options.nearbyPoi.clusterX,
@@ -513,6 +566,7 @@ export function getMusicUpdateSignature(options: MusicUpdateOptions): MusicUpdat
       options.tileKind ?? '',
       options.contextType ?? '',
       Math.round(options.dayProgress * 96),
+      Math.round((options.yearProgress ?? 0) * 96),
       options.weatherKind ?? '',
       Math.round((options.weatherIntensity ?? 0) * 10),
       options.clusterX ?? 0,
@@ -524,6 +578,7 @@ export function getMusicUpdateSignature(options: MusicUpdateOptions): MusicUpdat
           options.nearbyPoi.contextType ?? '',
           options.nearbyPoi.poiType ?? '',
           Math.round(options.dayProgress * 96),
+          Math.round((options.yearProgress ?? 0) * 96),
           options.weatherKind ?? '',
           Math.round((options.weatherIntensity ?? 0) * 10),
           options.nearbyPoi.clusterX ?? 0,
@@ -729,7 +784,10 @@ function createThemeNote(options: {
       arrangementProfile.durationMultiplier,
     frequency:
       options.theme.rootHz *
-      Math.pow(2, (semitones + octaveBoost) / 12) *
+      Math.pow(
+        2,
+        (semitones + octaveBoost + (arrangementProfile.octaveShiftSemitones ?? 0)) / 12
+      ) *
       options.mood.brightness *
       arrangementProfile.brightnessMultiplier *
       (role === 'bass'
@@ -750,7 +808,7 @@ function createThemeNote(options: {
           : role === 'percussion'
             ? 0.52
             : 1),
-    waveform: instrument.waveform,
+    waveform: arrangementProfile.waveformOverride ?? instrument.waveform,
     attackMs: instrument.attackMs,
     releaseMs: instrument.releaseMs * arrangementProfile.releaseMultiplier,
     detuneCents: instrument.detuneCents,
@@ -770,6 +828,7 @@ function scheduleThemeLayerNotes(
     weatherKind?: WeatherKind;
     weatherIntensity?: number;
     dayProgress: number;
+    yearProgress?: number;
     clusterX?: number;
     clusterY?: number;
     emitter?: MusicPosition;
@@ -796,6 +855,7 @@ function scheduleThemeLayerNotes(
   });
   const arrangement = resolveMusicArrangement({
     dayProgress: options.dayProgress,
+    yearProgress: options.yearProgress,
     weatherKind: options.weatherKind,
     weatherIntensity: options.weatherIntensity,
   });
@@ -960,6 +1020,22 @@ function resolveInstrumentSemitones(
 
 function normalizeWrappedProgress(value: number): number {
   return ((value % 1) + 1) % 1;
+}
+
+function resolveSeason(
+  yearProgress: number
+): 'winter' | 'spring' | 'summer' | 'autumn' {
+  const normalizedYearProgress = normalizeWrappedProgress(yearProgress);
+  if (normalizedYearProgress < 0.125 || normalizedYearProgress >= 0.875) {
+    return 'winter';
+  }
+  if (normalizedYearProgress < 0.375) {
+    return 'spring';
+  }
+  if (normalizedYearProgress < 0.625) {
+    return 'summer';
+  }
+  return 'autumn';
 }
 
 function clamp(value: number, min: number, max: number): number {
