@@ -171,6 +171,8 @@ export interface WorldEnvironmentOrreryBodyLike {
   angle: number;
   orbitTilt: number;
   orbitHeight: number;
+  orbitEccentricity: number;
+  orbitRotation: number;
   color: Color;
   size: number;
   trailLength: number;

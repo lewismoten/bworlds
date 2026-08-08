@@ -241,6 +241,8 @@ describe('core utilities', () => {
         orbitRadius: 0,
         orbitTilt: 0,
         orbitHeight: 0,
+        orbitEccentricity: 0,
+        orbitRotation: 0,
       })
     );
     expect(bodies.some((body) => body.type === 'moon')).toBe(true);
@@ -250,8 +252,16 @@ describe('core utilities', () => {
       bodies.every(
         (body) =>
           typeof body.orbitTilt === 'number' &&
-          typeof body.orbitHeight === 'number'
+          typeof body.orbitHeight === 'number' &&
+          typeof body.orbitEccentricity === 'number' &&
+          typeof body.orbitRotation === 'number'
       )
+    ).toBe(true);
+    expect(
+      bodies.some((body) => body.type === 'planet' && body.orbitEccentricity > 0)
+    ).toBe(true);
+    expect(
+      bodies.some((body) => body.type === 'comet' && body.orbitEccentricity >= 0.4)
     ).toBe(true);
   });
 

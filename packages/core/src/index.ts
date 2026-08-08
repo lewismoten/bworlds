@@ -72,6 +72,88 @@ const CONSTELLATION_FIGURES = [
 const PLANET_NAMES = ['Aurel', 'Brink', 'Cael', 'Damar'];
 const METEOR_SHOWER_NAMES = ['Silver Wake', 'Ember Rain', 'Northfall'];
 const COMET_NAMES = ['White Lantern', 'Pilgrim Tail'];
+const PLANET_SKY_PROFILES = [
+  {
+    orbitLengthDays: 11,
+    declinationFactor: 0.18,
+    declinationWaveDays: 15,
+    declinationWaveAmplitude: 0.05,
+    azimuthShift: 0.08,
+    intensityBase: 0.42,
+    intensitySwing: 0.34,
+    color: '#ffd7a6',
+    size: 0.52,
+    orbitTilt: 0.16,
+    orbitEccentricity: 0.06,
+    orbitRotation: 0.12,
+  },
+  {
+    orbitLengthDays: 17,
+    declinationFactor: 0.26,
+    declinationWaveDays: 21,
+    declinationWaveAmplitude: 0.08,
+    azimuthShift: 0.34,
+    intensityBase: 0.38,
+    intensitySwing: 0.36,
+    color: '#f7b8d7',
+    size: 0.6,
+    orbitTilt: 0.24,
+    orbitEccentricity: 0.11,
+    orbitRotation: 0.58,
+  },
+  {
+    orbitLengthDays: 24,
+    declinationFactor: 0.34,
+    declinationWaveDays: 30,
+    declinationWaveAmplitude: 0.12,
+    azimuthShift: 0.56,
+    intensityBase: 0.36,
+    intensitySwing: 0.38,
+    color: '#b8efff',
+    size: 0.68,
+    orbitTilt: -0.21,
+    orbitEccentricity: 0.18,
+    orbitRotation: 1.04,
+  },
+  {
+    orbitLengthDays: 33,
+    declinationFactor: 0.44,
+    declinationWaveDays: 38,
+    declinationWaveAmplitude: 0.16,
+    azimuthShift: 0.82,
+    intensityBase: 0.34,
+    intensitySwing: 0.42,
+    color: '#ffe08c',
+    size: 0.76,
+    orbitTilt: 0.31,
+    orbitEccentricity: 0.24,
+    orbitRotation: 1.52,
+  },
+] as const;
+const COMET_ORRERY_PROFILES = [
+  {
+    orbitTilt: 0.46,
+    orbitEccentricity: 0.42,
+    orbitRotation: 0.88,
+  },
+  {
+    orbitTilt: -0.38,
+    orbitEccentricity: 0.56,
+    orbitRotation: 1.74,
+  },
+] as const;
+
+function getPlanetSkyProfile(name: string, fallbackIndex = 0) {
+  const index = PLANET_NAMES.indexOf(name);
+  const resolvedIndex = index >= 0 ? index : fallbackIndex;
+  return PLANET_SKY_PROFILES[resolvedIndex % PLANET_SKY_PROFILES.length];
+}
+
+function getCometOrreryProfile(name: string, fallbackIndex = 0) {
+  const index = COMET_NAMES.indexOf(name);
+  const resolvedIndex = index >= 0 ? index : fallbackIndex;
+  return COMET_ORRERY_PROFILES[resolvedIndex % COMET_ORRERY_PROFILES.length];
+}
 
 export interface ConstellationStarLike {
   id: string;
@@ -122,6 +204,8 @@ export interface OrreryBodyLike {
   angle: number;
   orbitTilt: number;
   orbitHeight: number;
+  orbitEccentricity: number;
+  orbitRotation: number;
   color: string;
   size: number;
   trailLength: number;
@@ -644,27 +728,31 @@ export function getCelestialEventsForDay(
   const events: CelestialEventLike[] = [];
 
   PLANET_NAMES.forEach((name, index) => {
-    const orbitLength = 9 + index * 4;
+    const profile = getPlanetSkyProfile(name, index);
+    const orbitLength = profile.orbitLengthDays;
     const orbitProgress = fract(dayNumber / orbitLength + dayProgress / orbitLength);
     const orbitState = getOrbitState({
       orbitProgress,
       observerLatitudeDegrees,
       declination:
-        solarDeclination * (0.22 + index * 0.08) +
-        Math.sin((dayNumber / (orbitLength + 3)) * Math.PI * 2) * (0.08 + index * 0.02),
+        solarDeclination * profile.declinationFactor +
+        Math.sin((dayNumber / profile.declinationWaveDays) * Math.PI * 2) *
+          profile.declinationWaveAmplitude,
       sunriseAzimuth,
       sunsetAzimuth,
-      azimuthShift: index * 0.26,
+      azimuthShift: profile.azimuthShift,
     });
     events.push({
       type: 'planet',
       name,
       progress: orbitProgress,
-      intensity: 0.35 + hash2D('planet-intensity', index, dayNumber % orbitLength) * 0.45,
+      intensity:
+        profile.intensityBase +
+        hash2D('planet-intensity', index, dayNumber % orbitLength) * profile.intensitySwing,
       azimuth: orbitState.azimuth,
       altitude: orbitState.altitude,
-      color: ['#ffd7a6', '#f7b8d7', '#b8efff', '#ffe08c'][index % 4],
-      size: 0.52 + index * 0.08,
+      color: profile.color,
+      size: profile.size,
       trailLength: 0,
     });
   });
@@ -771,6 +859,8 @@ export function getOrreryBodies({
       angle: 0,
       orbitTilt: 0,
       orbitHeight: 0,
+      orbitEccentricity: 0,
+      orbitRotation: 0,
       color: '#ffd06e',
       size: 0.92,
       trailLength: 0,
@@ -782,6 +872,8 @@ export function getOrreryBodies({
       angle: normalizeTurns((moonAngle + Math.PI / 2) / (Math.PI * 2)),
       orbitTilt: 0.34,
       orbitHeight: -0.12,
+      orbitEccentricity: 0.08,
+      orbitRotation: 0.36,
       color: '#dce8ff',
       size: 0.42 + moonIllumination * 0.16,
       trailLength: 0,
@@ -795,15 +887,20 @@ export function getOrreryBodies({
     }
 
     orbitIndex += 1;
+    const orbitProfile =
+      event.type === 'planet'
+        ? getPlanetSkyProfile(event.name, orbitIndex - 1)
+        : getCometOrreryProfile(event.name, orbitIndex - 1);
     bodies.push({
       id: `${event.type}:${event.name}`,
       type: event.type === 'planet' ? 'planet' : 'comet',
       orbitRadius: 3.6 + orbitIndex * 0.75,
       angle: normalizeTurns(event.progress),
       orbitTilt:
-        (event.type === 'planet' ? 0.18 : 0.28) +
-        (orbitIndex % 2 === 0 ? 1 : -1) * 0.08,
+        orbitProfile.orbitTilt + (event.type === 'planet' ? 0 : (orbitIndex % 2 === 0 ? 0.04 : -0.04)),
       orbitHeight: event.altitude * 0.35,
+      orbitEccentricity: orbitProfile.orbitEccentricity,
+      orbitRotation: orbitProfile.orbitRotation,
       color: event.color,
       size: Math.max(
         0.24,

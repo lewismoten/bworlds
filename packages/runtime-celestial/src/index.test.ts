@@ -44,6 +44,8 @@ describe('runtime celestial', () => {
               angle: expect.any(Number),
               orbitTilt: expect.any(Number),
               orbitHeight: expect.any(Number),
+              orbitEccentricity: expect.any(Number),
+              orbitRotation: expect.any(Number),
             }),
           ]),
         }),

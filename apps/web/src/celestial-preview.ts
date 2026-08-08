@@ -461,7 +461,13 @@ function syncPreviewOrrery(root: THREE.Group, cycle: DaylightCycleLike) {
     if (body.orbitRadius > 0) {
       const orbitRing = new THREE.LineLoop(
         new THREE.BufferGeometry().setFromPoints(
-          createOrreryRingPoints(body.orbitRadius, body.orbitTilt, body.orbitHeight)
+          createOrreryRingPoints(
+            body.orbitRadius,
+            body.orbitTilt,
+            body.orbitHeight,
+            body.orbitEccentricity,
+            body.orbitRotation
+          )
         ),
         new THREE.LineBasicMaterial({
           color: body.type === 'moon' ? '#708fbb' : '#4b617a',
@@ -570,7 +576,9 @@ function buildPreviewArc(
 function createOrreryRingPoints(
   radius: number,
   orbitTilt: number,
-  orbitHeight: number
+  orbitHeight: number,
+  orbitEccentricity = 0,
+  orbitRotation = 0
 ) {
   const points: THREE.Vector3[] = [];
   for (let index = 0; index <= 40; index += 1) {
@@ -581,6 +589,8 @@ function createOrreryRingPoints(
           orbitRadius: radius,
           orbitTilt,
           orbitHeight,
+          orbitEccentricity,
+          orbitRotation,
         } as OrreryBodyLike,
         angle
       )
@@ -590,13 +600,22 @@ function createOrreryRingPoints(
 }
 
 function createOrreryPosition(
-  body: Pick<OrreryBodyLike, 'orbitRadius' | 'orbitTilt' | 'orbitHeight'>,
+  body: Pick<
+    OrreryBodyLike,
+    'orbitRadius' | 'orbitTilt' | 'orbitHeight' | 'orbitEccentricity' | 'orbitRotation'
+  >,
   angle: number
 ) {
+  const minorRadius = body.orbitRadius * (1 - clamp(body.orbitEccentricity, 0, 0.82));
+  const localX = Math.cos(angle) * body.orbitRadius;
+  const localY = Math.sin(angle) * minorRadius;
+  const rotation = body.orbitRotation ?? 0;
+  const rotatedX = localX * Math.cos(rotation) - localY * Math.sin(rotation);
+  const rotatedY = localX * Math.sin(rotation) + localY * Math.cos(rotation);
   return new THREE.Vector3(
-    Math.cos(angle) * body.orbitRadius,
-    Math.sin(angle) * body.orbitRadius * Math.cos(body.orbitTilt) + body.orbitHeight,
-    Math.sin(angle) * body.orbitRadius * Math.sin(body.orbitTilt) +
+    rotatedX,
+    rotatedY * Math.cos(body.orbitTilt) + body.orbitHeight,
+    rotatedY * Math.sin(body.orbitTilt) +
       0.12 +
       body.orbitRadius * 0.01
   );

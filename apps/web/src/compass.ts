@@ -1,12 +1,62 @@
 export function easeAngle(current: number, target: number, factor: number) {
-  let delta = target - current;
-  while (delta > Math.PI) delta -= Math.PI * 2;
-  while (delta < -Math.PI) delta += Math.PI * 2;
+  let delta = getCompassDelta(current, target);
   return current + delta * factor;
 }
 
 export function getCompassNeedleRotation(facingAngle: number) {
   return facingAngle + Math.PI / 2;
+}
+
+export function getCompassDelta(current: number, target: number) {
+  let delta = target - current;
+  while (delta > Math.PI) delta -= Math.PI * 2;
+  while (delta < -Math.PI) delta += Math.PI * 2;
+  return delta;
+}
+
+export function getCompassWobbleBoost(current: number, target: number) {
+  const delta = getCompassDelta(current, target);
+  return Math.sign(delta) * Math.min(0.34, Math.abs(delta) * 0.16);
+}
+
+export function advanceCompassState(
+  state: {
+    angle: number;
+    velocity: number;
+    initialized: boolean;
+  },
+  target: number
+) {
+  if (!state.initialized) {
+    return {
+      angle: target,
+      velocity: 0,
+      initialized: true,
+    };
+  }
+
+  const delta = getCompassDelta(state.angle, target);
+  let velocity = state.velocity + delta * 0.082;
+  velocity *= 0.76;
+  let angle = state.angle + velocity;
+  angle = easeAngle(angle, target, 0.07);
+  if (Math.abs(delta) < 0.012 && Math.abs(velocity) < 0.003) {
+    velocity *= 0.6;
+  }
+  return {
+    angle,
+    velocity,
+    initialized: true,
+  };
+}
+
+export function getCompassDialFacingAngle(
+  pointX: number,
+  pointY: number,
+  centerX: number,
+  centerY: number
+) {
+  return Math.atan2(pointY - centerY, pointX - centerX);
 }
 
 export function drawCompassDial(
@@ -103,6 +153,6 @@ export function drawCompassDial(
 
   context.fillStyle = '#dce8f5';
   context.font = '600 14px Trebuchet MS';
-  context.fillText('North settles at the top', 0, radius + 28);
+  context.fillText('Click the dial or use the cardinal buttons', 0, radius + 28);
   context.restore();
 }

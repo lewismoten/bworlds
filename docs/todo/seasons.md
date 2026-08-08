@@ -99,4 +99,5 @@ add a outer globe of stars in the sky that appear at night with procedurally gen
 - [x] Moon phase should just be Waxing/Wanning/Full/New
 - [x] When time keeper is selected, I still see compass
 - [x] When time keeper is selected, I still see buttons to navigate the celestial model
-- [ ] When i click model, i'm still seeing time keeper and compass
+- [x] The compass needle can wobble back and forth a few times, especially if we clicked on of the cardinal buttons to jump between directions.
+- [x] The compass can have a compass dial that can be modified to help set an orientation to move in.

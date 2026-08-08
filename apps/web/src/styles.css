@@ -280,6 +280,7 @@ button:hover {
   max-width: 320px;
   margin: 0 auto;
   display: block;
+  cursor: pointer;
 }
 
 .pack-form {

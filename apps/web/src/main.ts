@@ -26,7 +26,13 @@ import {
   getMoonOrbitProgress,
 } from './timekeeper.ts';
 import { createCelestialPreviewRenderer } from './celestial-preview.ts';
-import { drawCompassDial, easeAngle } from './compass.ts';
+import {
+  advanceCompassState,
+  drawCompassDial,
+  easeAngle,
+  getCompassDialFacingAngle,
+  getCompassWobbleBoost,
+} from './compass.ts';
 import {
   getNextInspectorTab,
   isInspectorSectionVisible,
@@ -139,6 +145,7 @@ root.innerHTML = `
             class="inspector-panel is-hidden"
             role="tabpanel"
             aria-hidden="true"
+            hidden
           >
             <div id="celestial-preview" class="celestial-preview"></div>
             <p class="inspector-note">
@@ -160,6 +167,7 @@ root.innerHTML = `
             class="inspector-panel is-hidden"
             role="tabpanel"
             aria-hidden="true"
+            hidden
           >
             <canvas id="compass-dial" class="compass-dial" width="320" height="320"></canvas>
             <p class="inspector-note">
@@ -704,6 +712,9 @@ function setInspectorTab(tabId: string | undefined) {
     );
     panel?.classList.toggle('is-hidden', !isActive);
     panel?.setAttribute('aria-hidden', String(!isActive));
+    if (panel) {
+      panel.hidden = !isActive;
+    }
   });
   sidebarCards.forEach((card) => {
     if (card === celestialToolsCard) {
@@ -716,14 +727,23 @@ function setInspectorTab(tabId: string | undefined) {
     'is-hidden',
     !isInspectorSectionVisible(activeInspectorTab, 'timekeeper')
   );
+  if (timeWheelCanvas) {
+    timeWheelCanvas.hidden = !isInspectorSectionVisible(activeInspectorTab, 'timekeeper');
+  }
   celestialPreviewHost?.classList.toggle(
     'is-hidden',
     !isInspectorSectionVisible(activeInspectorTab, 'model')
   );
+  if (celestialPreviewHost) {
+    celestialPreviewHost.hidden = !isInspectorSectionVisible(activeInspectorTab, 'model');
+  }
   compassDialCanvas?.classList.toggle(
     'is-hidden',
     !isInspectorSectionVisible(activeInspectorTab, 'compass')
   );
+  if (compassDialCanvas) {
+    compassDialCanvas.hidden = !isInspectorSectionVisible(activeInspectorTab, 'compass');
+  }
   saveSession();
 }
 
@@ -1017,23 +1037,17 @@ function easeWrappedProgress(current: number, target: number, factor: number) {
 }
 
 function updateDisplayedCompass(targetAngle: number) {
-  if (!compassState.initialized) {
-    compassState.angle = targetAngle;
-    compassState.initialized = true;
-    return compassState.angle;
-  }
-
-  let delta = targetAngle - compassState.angle;
-  while (delta > Math.PI) delta -= Math.PI * 2;
-  while (delta < -Math.PI) delta += Math.PI * 2;
-  compassState.velocity += delta * 0.08;
-  compassState.velocity *= 0.74;
-  compassState.angle += compassState.velocity;
-  compassState.angle = easeAngle(compassState.angle, targetAngle, 0.08);
+  const next = advanceCompassState(compassState, targetAngle);
+  compassState.angle = next.angle;
+  compassState.velocity = next.velocity;
+  compassState.initialized = next.initialized;
   return compassState.angle;
 }
 
 function faceDirection(angle: number) {
+  if (compassState.initialized) {
+    compassState.velocity += getCompassWobbleBoost(compassState.angle, angle);
+  }
   state.player.facing = normalizeAngle(angle);
   saveSession();
   render();
@@ -1131,6 +1145,17 @@ faceNorthButton?.addEventListener('click', () => faceDirection(-Math.PI / 2));
 faceEastButton?.addEventListener('click', () => faceDirection(0));
 faceSouthButton?.addEventListener('click', () => faceDirection(Math.PI / 2));
 faceWestButton?.addEventListener('click', () => faceDirection(Math.PI));
+compassDialCanvas?.addEventListener('click', (event) => {
+  const rect = compassDialCanvas.getBoundingClientRect();
+  faceDirection(
+    getCompassDialFacingAngle(
+      event.clientX - rect.left,
+      event.clientY - rect.top,
+      rect.width / 2,
+      rect.height / 2
+    )
+  );
+});
 root.querySelectorAll<HTMLButtonElement>('[data-time-preset]').forEach((button) => {
   button.addEventListener('click', () => {
     const preset = button.dataset.timePreset;
