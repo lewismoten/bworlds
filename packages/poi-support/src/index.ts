@@ -4,12 +4,16 @@ import type {
   ClassifyOverworldTileContext,
   CardinalDirectionLike,
   CreateWorldActionContext,
+  Kind,
   PoiLike,
   PoiAnchorLike,
+  PluginName,
+  PointOfInterestType,
   Seed,
   TileLike,
   TilePlugin,
   TraversalProfile3D,
+  ViewMode,
   WorldActionLike,
   WorldStateLike,
 } from '@bworlds/plugin-api';
@@ -22,12 +26,12 @@ export const DEFAULT_LAND_POI_BLOCKED_KINDS = new Set([
   'river',
   'ocean',
   'mountain',
-]);
+]) satisfies Set<Kind>;
 
 export function canPlaceLandPoi(
   nearLand: boolean,
-  tileKind: string,
-  blockedKinds: ReadonlySet<string> = DEFAULT_LAND_POI_BLOCKED_KINDS
+  tileKind: Kind,
+  blockedKinds: ReadonlySet<Kind> = DEFAULT_LAND_POI_BLOCKED_KINDS
 ) {
   return nearLand && !blockedKinds.has(tileKind);
 }
@@ -41,9 +45,9 @@ export function createGeneratedPoiTile({
   x,
   y,
 }: {
-  kind: string;
+  kind: Kind;
   note: string;
-  poiType: string;
+  poiType: PointOfInterestType;
   seed: Seed;
   tile?: TileLike | null;
   x: number;
@@ -67,9 +71,9 @@ export function createAnchoredPoiTile({
   tile,
   anchor,
 }: {
-  kind: string;
+  kind: Kind;
   note: string;
-  poiType: string;
+  poiType: PointOfInterestType;
   seed: Seed;
   tile?: TileLike | null;
   anchor: PoiAnchorLike;
@@ -82,13 +86,13 @@ export function createAnchoredPoiTile({
 }
 
 export function createChanceBasedLandPoiClassifier(options: {
-  kind: string;
-  poiType: string;
+  kind: Kind;
+  poiType: PointOfInterestType;
   note: string;
   threshold: number;
   chanceKey?: string;
   getChance?(context: ClassifyOverworldTileContext): number | undefined;
-  blockedKinds?: ReadonlySet<string>;
+  blockedKinds?: ReadonlySet<Kind>;
 }) {
   return function classifyChanceBasedLandPoi(
     context: ClassifyOverworldTileContext
@@ -118,15 +122,15 @@ export function createChanceBasedLandPoiClassifier(options: {
 }
 
 export function createChanceBasedEnterablePoiTilePlugin(options: {
-  pluginName: string;
-  kind: string;
+  pluginName: PluginName;
+  kind: Kind;
   definition: NonNullable<TilePlugin['definition']>;
-  poiType?: string;
+  poiType?: PointOfInterestType;
   note: string;
   threshold: number;
   chanceKey?: string;
   getChance?(context: ClassifyOverworldTileContext): number | undefined;
-  blockedKinds?: ReadonlySet<string>;
+  blockedKinds?: ReadonlySet<Kind>;
   traversalProfile?: Partial<TraversalProfile3D>;
   worldAction?: {
     facing?: number;
@@ -161,12 +165,12 @@ export function createChanceBasedEnterablePoiTilePlugin(options: {
 }
 
 export function createAnchoredEnterablePoiTilePlugin(options: {
-  pluginName: string;
-  kind: string;
+  pluginName: PluginName;
+  kind: Kind;
   definition: NonNullable<TilePlugin['definition']>;
-  poiType?: string;
+  poiType?: PointOfInterestType;
   note: string;
-  blockedKinds?: ReadonlySet<string>;
+  blockedKinds?: ReadonlySet<Kind>;
   maxDistance?: number;
   createPoi?(
     context: ClassifyOverworldTileContext,
@@ -205,8 +209,8 @@ export function createAnchoredEnterablePoiTilePlugin(options: {
 }
 
 export function createEnterablePoiTilePlugin(options: {
-  pluginName: string;
-  kind: string;
+  pluginName: PluginName;
+  kind: Kind;
   definition: NonNullable<TilePlugin['definition']>;
   classifyPoi(context: ClassifyOverworldTileContext): TileLike | null;
   traversalProfile?: Partial<TraversalProfile3D>;
@@ -250,7 +254,7 @@ export function createEnterablePoiTilePlugin(options: {
 
 export function findPoiAnchor(
   context: ClassifyOverworldTileContext,
-  poiType: string,
+  poiType: PointOfInterestType,
   maxDistance = 0.55
 ) {
   return (context.poiAnchors ?? []).find(
@@ -261,10 +265,10 @@ export function findPoiAnchor(
 }
 
 export function createAnchoredLandPoiClassifier(options: {
-  kind: string;
-  poiType?: string;
+  kind: Kind;
+  poiType?: PointOfInterestType;
   note: string;
-  blockedKinds?: ReadonlySet<string>;
+  blockedKinds?: ReadonlySet<Kind>;
   maxDistance?: number;
   createPoi?(
     context: ClassifyOverworldTileContext,
@@ -377,7 +381,7 @@ export function resolvePlacementChance(
 
 export function createNamedPoi(
   seed: Seed,
-  poiType: string,
+  poiType: PointOfInterestType,
   x: number,
   y: number,
   name?: string
@@ -450,7 +454,7 @@ export function pickPreferredLandmarkFacing({
 
     return {
       ...direction,
-      score:
+        score:
         (routeDistance === 1 ? 8 : 0) +
         (routeDistance > 1 && Number.isFinite(routeDistance)
           ? Math.max(0, 6 - routeDistance)

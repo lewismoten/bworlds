@@ -25,6 +25,7 @@ import {
   type RuntimePlayerLike,
   type Seed,
   type TileLike,
+  type ViewMode,
   type WorldContextLike,
   type WorldMapLike,
   type WorldStateLike,
@@ -152,7 +153,7 @@ export function createWorldRuntime({
   packDefinitions?: PluginPackDefinitionLike[];
   player?: Partial<RuntimePlayerLike>;
   stack?: WorldContextLike[];
-  viewMode?: string;
+  viewMode?: ViewMode;
   activateRegistry?: boolean;
 } = {}): {
   contentPacks: PluginPackManifestLike[];
@@ -160,7 +161,7 @@ export function createWorldRuntime({
   registry: PluginRegistry;
   state: WorldStateLike & {
     stack: WorldContextLike[];
-    viewMode: string;
+    viewMode: ViewMode;
   };
 } {
   const packCatalog = createPluginPackCatalog(packDefinitions, packIds);
@@ -184,7 +185,7 @@ export function createWorldRuntime({
     },
   }) as WorldStateLike & {
     stack: WorldContextLike[];
-    viewMode: string;
+    viewMode: ViewMode;
   };
 
   if (viewMode === '2d' || viewMode === '3d') {

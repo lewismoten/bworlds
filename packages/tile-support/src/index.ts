@@ -1,6 +1,8 @@
 import type {
   ClassifyOverworldTileContext,
   CrossingTileKind,
+  Kind,
+  KnownTileKind,
   OverworldAnchorLike,
   ResolveFloorKind3DContext,
   RouteTerminalTileKind,
@@ -42,28 +44,28 @@ export const DEFAULT_WATER_OR_CROSSING_KINDS = new Set<
 ]);
 
 export function isRouteTerminalKind(
-  kind: string,
+  kind: Kind,
   terminalKinds: ReadonlySet<RouteTerminalTileKind> = DEFAULT_ROUTE_TERMINAL_KINDS
 ) {
   return terminalKinds.has(kind as RouteTerminalTileKind);
 }
 
 export function isBridgeWaterKind(
-  kind: string,
+  kind: Kind,
   waterKinds: ReadonlySet<WaterTileKind> = DEFAULT_BRIDGE_WATER_KINDS
 ) {
   return waterKinds.has(kind as WaterTileKind);
 }
 
 export function isWaterKind(
-  kind: string,
+  kind: Kind,
   waterKinds: ReadonlySet<WaterTileKind> = DEFAULT_WATER_KINDS
 ) {
   return waterKinds.has(kind as WaterTileKind);
 }
 
 export function isWaterOrCrossingKind(
-  kind: string,
+  kind: Kind,
   kinds: ReadonlySet<WaterTileKind | CrossingTileKind> = DEFAULT_WATER_OR_CROSSING_KINDS
 ) {
   return kinds.has(kind as WaterTileKind | CrossingTileKind);
@@ -340,10 +342,10 @@ export function createBoundarySurfaceProfile({
 export function resolveDominantNeighborFloorKind3D(
   context: ResolveFloorKind3DContext,
   options: {
-    isExcludedKind?: (kind: string) => boolean;
+    isExcludedKind?: (kind: Kind) => boolean;
   } = {}
 ) {
-  const candidates = new Map<string, number>();
+  const candidates = new Map<Kind, number>();
 
   for (let y = context.tileY - 1; y <= context.tileY + 1; y += 1) {
     for (let x = context.tileX - 1; x <= context.tileX + 1; x += 1) {
@@ -363,19 +365,19 @@ export function resolveDominantNeighborFloorKind3D(
 }
 
 export function createThresholdTerrainClassifier(options: {
-  kind: string;
+  kind: KnownTileKind;
   threshold: number;
   getSignal(context: ClassifyOverworldTileContext): number;
   comparator?: 'gt' | 'gte' | 'lt' | 'lte';
-  allowedBaseKinds?: readonly string[];
-  blockedKinds?: readonly string[];
+  allowedBaseKinds?: readonly Kind[];
+  blockedKinds?: readonly Kind[];
   createTile?(
     context: ClassifyOverworldTileContext
   ): TileLike | null;
 }) {
   const comparator = options.comparator ?? 'gt';
-  const allowedBaseKinds = options.allowedBaseKinds ?? ['plains'];
-  const blockedKinds = new Set(options.blockedKinds ?? []);
+  const allowedBaseKinds: readonly Kind[] = options.allowedBaseKinds ?? ['plains'];
+  const blockedKinds = new Set<Kind>(options.blockedKinds ?? []);
 
   return function classifyThresholdTerrainTile(
     context: ClassifyOverworldTileContext
