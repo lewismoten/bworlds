@@ -5,11 +5,14 @@ import {
   buildEventSummaryMarkup,
   buildStatusMarkup,
   buildViewportHudMarkup,
+  getCompassMiniSignature,
   getDetailLabels,
   getEventSummarySignature,
+  getMinimapMiniSignature,
   getSextantSignature,
   getStatusSignature,
   getTextViewportSignature,
+  getTimekeeperMiniSignature,
   getViewportHudSignature,
 } from './ui-signatures.ts';
 import type { EventDetail } from './ui-signatures.ts';
@@ -160,5 +163,63 @@ describe('ui signature helpers', () => {
     expect(getTextViewportSignature(grid)).toBe(getTextViewportSignature(grid));
     expect(buildTextViewportMarkup(grid)).toContain('viewport-text-cell');
     expect(buildTextViewportMarkup(grid)).toContain('data-kind="river"');
+  });
+
+  it('builds stable signatures for mini viewport canvases', () => {
+    const timekeeper = {
+      width: 156,
+      height: 156,
+      dayProgress: 0.25,
+      yearProgress: 0.5,
+      moonAngle: 1.25,
+      moonMidnightAngle: 0.8,
+      sunriseAzimuth: 0.1,
+      sunsetAzimuth: 3.2,
+      daylightDuration: 0.55,
+    };
+    const compass = {
+      width: 156,
+      height: 156,
+      facingAngle: 1.5,
+      headingAngle: 1.7,
+    };
+    const minimap = {
+      width: 192,
+      height: 192,
+      playerX: 12.5,
+      playerY: -6.25,
+      facingAngle: 0.4,
+      zoom: 1.25,
+    };
+
+    expect(getTimekeeperMiniSignature(timekeeper)).toBe(
+      getTimekeeperMiniSignature({ ...timekeeper })
+    );
+    expect(
+      getTimekeeperMiniSignature({
+        ...timekeeper,
+        dayProgress: timekeeper.dayProgress + 0.1,
+      })
+    ).not.toBe(getTimekeeperMiniSignature(timekeeper));
+
+    expect(getCompassMiniSignature(compass)).toBe(
+      getCompassMiniSignature({ ...compass })
+    );
+    expect(
+      getCompassMiniSignature({
+        ...compass,
+        headingAngle: compass.headingAngle + 0.2,
+      })
+    ).not.toBe(getCompassMiniSignature(compass));
+
+    expect(getMinimapMiniSignature(minimap)).toBe(
+      getMinimapMiniSignature({ ...minimap })
+    );
+    expect(
+      getMinimapMiniSignature({
+        ...minimap,
+        playerX: minimap.playerX + 1,
+      })
+    ).not.toBe(getMinimapMiniSignature(minimap));
   });
 });

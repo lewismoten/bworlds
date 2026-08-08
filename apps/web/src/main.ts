@@ -143,11 +143,14 @@ import {
   buildStatusMarkup,
   buildTextViewportMarkup,
   buildViewportHudMarkup,
+  getCompassMiniSignature,
   getDetailLabels,
   getEventSummarySignature,
+  getMinimapMiniSignature,
   getSextantSignature,
   getStatusSignature,
   getTextViewportSignature,
+  getTimekeeperMiniSignature,
   getViewportHudSignature,
 } from './ui-signatures.ts';
 import {
@@ -932,6 +935,9 @@ const uiRenderState = {
   lastTextViewportSignature: '',
   lastSextantSignature: '',
   lastDebugSignature: '',
+  lastTimekeeperMiniSignature: '',
+  lastCompassMiniSignature: '',
+  lastMinimapMiniSignature: '',
 };
 const hmrNoticeState = {
   message: '',
@@ -2265,39 +2271,80 @@ function render(): FrameLoopActivityLike {
     activeTimekeeperDisplayMode === 'graphical' &&
     !viewportTimekeeperMini.hidden
   ) {
-    drawTimeWheel(viewportTimekeeperMini, displayCycle);
+    const timekeeperMiniSignature = getTimekeeperMiniSignature({
+      width: viewportTimekeeperMini.width,
+      height: viewportTimekeeperMini.height,
+      dayProgress: displayCycle.dayProgress,
+      yearProgress: displayCycle.yearProgress,
+      moonAngle: displayCycle.moonAngle,
+      moonMidnightAngle: displayCycle.moonMidnightAngle,
+      sunriseAzimuth: displayCycle.sunriseAzimuth,
+      sunsetAzimuth: displayCycle.sunsetAzimuth,
+      daylightDuration: displayCycle.daylightDuration,
+    });
+    if (timekeeperMiniSignature !== uiRenderState.lastTimekeeperMiniSignature) {
+      drawTimeWheel(viewportTimekeeperMini, displayCycle);
+      uiRenderState.lastTimekeeperMiniSignature = timekeeperMiniSignature;
+    }
   }
   if (
     viewportCompassMini &&
     activeCompassDisplayMode === 'graphical' &&
     !viewportCompassMini.hidden
   ) {
-    drawCompassDial(
-      viewportCompassMini,
-      updateDisplayedCompass(state.player.facing),
-      updateDisplayedCompassHeading(
-        compassHeadingState.angle,
-        compassDialPointerState.draggingMode === 'heading-bug'
-      )
+    const displayedFacingAngle = updateDisplayedCompass(state.player.facing);
+    const displayedHeadingAngle = updateDisplayedCompassHeading(
+      compassHeadingState.angle,
+      compassDialPointerState.draggingMode === 'heading-bug'
     );
+    const compassMiniSignature = getCompassMiniSignature({
+      width: viewportCompassMini.width,
+      height: viewportCompassMini.height,
+      facingAngle: displayedFacingAngle,
+      headingAngle: displayedHeadingAngle,
+    });
+    if (compassMiniSignature !== uiRenderState.lastCompassMiniSignature) {
+      drawCompassDial(
+        viewportCompassMini,
+        displayedFacingAngle,
+        displayedHeadingAngle
+      );
+      uiRenderState.lastCompassMiniSignature = compassMiniSignature;
+    }
   }
   if (
     viewportMinimapMini &&
     activeMinimapDisplayMode === 'graphical' &&
     !viewportMinimapMini.hidden
   ) {
-    const minimapContext = viewportMinimapMini.getContext('2d');
-    if (minimapContext) {
-      minimapContext.imageSmoothingEnabled = false;
-      minimapContext.clearRect(0, 0, viewportMinimapMini.width, viewportMinimapMini.height);
-      render2D(minimapContext, state, {
-        width: viewportMinimapMini.width,
-        height: viewportMinimapMini.height,
-        rotation: 0,
-        facingAngle: state.player.facing,
-        zoom: minimapZoom,
-        showTimeOverlay: false,
-      });
+    const minimapMiniSignature = getMinimapMiniSignature({
+      width: viewportMinimapMini.width,
+      height: viewportMinimapMini.height,
+      playerX: state.player.x,
+      playerY: state.player.y,
+      facingAngle: state.player.facing,
+      zoom: minimapZoom,
+    });
+    if (minimapMiniSignature !== uiRenderState.lastMinimapMiniSignature) {
+      const minimapContext = viewportMinimapMini.getContext('2d');
+      if (minimapContext) {
+        minimapContext.imageSmoothingEnabled = false;
+        minimapContext.clearRect(
+          0,
+          0,
+          viewportMinimapMini.width,
+          viewportMinimapMini.height
+        );
+        render2D(minimapContext, state, {
+          width: viewportMinimapMini.width,
+          height: viewportMinimapMini.height,
+          rotation: 0,
+          facingAngle: state.player.facing,
+          zoom: minimapZoom,
+          showTimeOverlay: false,
+        });
+        uiRenderState.lastMinimapMiniSignature = minimapMiniSignature;
+      }
     }
   }
   celestialPreview.render(displayCycle, environment, state.player.facing, generator);

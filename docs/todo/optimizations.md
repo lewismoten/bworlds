@@ -135,7 +135,7 @@ Not everything needs 60 updates per second.
 * [ ] Update day/night calculations incrementally.
 * [ ] Update expensive pathfinding only when paths actually change.
 * [ ] Update UI only when displayed values change.
-* [ ] Update minimaps only when necessary.
+* [X] Update minimaps only when necessary.
 * [ ] Avoid recalculating unchanged procedural systems.
 
 You might eventually have:

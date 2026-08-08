@@ -64,6 +64,34 @@ type SextantSignatureOptions = {
   gridY: number;
 };
 
+type TimekeeperMiniSignatureOptions = {
+  width: number;
+  height: number;
+  dayProgress: number;
+  yearProgress: number;
+  moonAngle: number;
+  moonMidnightAngle: number;
+  sunriseAzimuth: number;
+  sunsetAzimuth: number;
+  daylightDuration: number;
+};
+
+type CompassMiniSignatureOptions = {
+  width: number;
+  height: number;
+  facingAngle: number;
+  headingAngle: number;
+};
+
+type MinimapMiniSignatureOptions = {
+  width: number;
+  height: number;
+  playerX: number;
+  playerY: number;
+  facingAngle: number;
+  zoom: number;
+};
+
 export function getStatusSignature(options: StatusSignatureOptions): string {
   return [
     options.viewMode,
@@ -123,6 +151,46 @@ export function getSextantSignature(options: SextantSignatureOptions): string {
     options.longitude.toFixed(4),
     options.gridX,
     options.gridY,
+  ].join('|');
+}
+
+export function getTimekeeperMiniSignature(
+  options: TimekeeperMiniSignatureOptions
+): string {
+  return [
+    options.width,
+    options.height,
+    options.dayProgress.toFixed(4),
+    options.yearProgress.toFixed(4),
+    options.moonAngle.toFixed(4),
+    options.moonMidnightAngle.toFixed(4),
+    options.sunriseAzimuth.toFixed(4),
+    options.sunsetAzimuth.toFixed(4),
+    options.daylightDuration.toFixed(4),
+  ].join('|');
+}
+
+export function getCompassMiniSignature(
+  options: CompassMiniSignatureOptions
+): string {
+  return [
+    options.width,
+    options.height,
+    options.facingAngle.toFixed(4),
+    options.headingAngle.toFixed(4),
+  ].join('|');
+}
+
+export function getMinimapMiniSignature(
+  options: MinimapMiniSignatureOptions
+): string {
+  return [
+    options.width,
+    options.height,
+    options.playerX.toFixed(2),
+    options.playerY.toFixed(2),
+    options.facingAngle.toFixed(4),
+    options.zoom.toFixed(2),
   ].join('|');
 }
 
