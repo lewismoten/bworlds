@@ -5,7 +5,7 @@ type MusicPosition = { x: number; y: number };
 type TileKind = string;
 type ContextType = string;
 type WeatherKind = string;
-type InstrumentRole = 'lead' | 'bass' | 'pulse';
+type InstrumentRole = 'lead' | 'harmony' | 'bass' | 'percussion';
 
 type MusicRegionThemeId =
   | 'frontier-plains'
@@ -552,12 +552,11 @@ function createThemeNote(options: {
 }): ProceduralMusicNote {
   const role = selectInstrumentRole(options.stepIndex);
   const instrument = options.instrumentBank.instruments[role];
-  const patternIndex =
-    options.theme.stepPattern[
-      options.stepIndex % options.theme.stepPattern.length
-    ] ?? 0;
-  const scaleIndex = patternIndex % options.theme.scale.length;
-  const semitones = options.theme.scale[scaleIndex] ?? 0;
+  const semitones = resolveInstrumentSemitones(
+    options.theme,
+    role,
+    options.stepIndex
+  );
   const octaveBoost =
     hash2D(
       `${options.theme.id}:octave`,
@@ -573,16 +572,34 @@ function createThemeNote(options: {
     startMs: options.startMs,
     durationMs:
       options.theme.noteDurationMs *
-      (role === 'bass' ? 1.05 : role === 'pulse' ? 0.72 : 0.92),
+      (role === 'bass'
+        ? 1.08
+        : role === 'harmony'
+          ? 1.18
+          : role === 'percussion'
+            ? 0.34
+            : 0.92),
     frequency:
       options.theme.rootHz *
       Math.pow(2, (semitones + octaveBoost) / 12) *
       options.mood.brightness *
-      (role === 'bass' ? 0.5 : role === 'pulse' ? 1.02 : 1),
+      (role === 'bass'
+        ? 0.5
+        : role === 'harmony'
+          ? 0.76
+          : role === 'percussion'
+            ? 1.9
+            : 1),
     volume:
       options.theme.baseVolume *
       options.mood.volumeMultiplier *
-      (role === 'bass' ? 0.86 : role === 'pulse' ? 0.68 : 1),
+      (role === 'bass'
+        ? 0.86
+        : role === 'harmony'
+          ? 0.72
+          : role === 'percussion'
+            ? 0.52
+            : 1),
     waveform: instrument.waveform,
     attackMs: instrument.attackMs,
     releaseMs: instrument.releaseMs,
@@ -685,8 +702,9 @@ export function createProceduralInstrumentBank(
     themeId: theme.id,
     instruments: {
       lead: createProceduralInstrument(theme, 'lead', clusterX, clusterY),
+      harmony: createProceduralInstrument(theme, 'harmony', clusterX, clusterY),
       bass: createProceduralInstrument(theme, 'bass', clusterX, clusterY),
-      pulse: createProceduralInstrument(theme, 'pulse', clusterX, clusterY),
+      percussion: createProceduralInstrument(theme, 'percussion', clusterX, clusterY),
     },
   };
 }
@@ -700,16 +718,19 @@ function createProceduralInstrument(
   const seedKey = `${theme.id}:${role}`;
   const waveformOptions: Record<InstrumentRole, MusicWaveform[]> = {
     lead: ['triangle', 'sine', 'sawtooth'],
+    harmony: ['triangle', 'sawtooth', 'square'],
     bass: ['sine', 'triangle', 'square'],
-    pulse: ['square', 'triangle', 'sawtooth'],
+    percussion: ['square', 'sawtooth', 'triangle'],
   };
   const waveformList = waveformOptions[role];
   const waveform =
     waveformList[
       Math.floor(hash2D(`${seedKey}:waveform`, clusterX, clusterY) * waveformList.length)
     ] ?? waveformList[0];
-  const attackMsBase = role === 'lead' ? 28 : role === 'bass' ? 36 : 14;
-  const releaseMsBase = role === 'lead' ? 130 : role === 'bass' ? 180 : 90;
+  const attackMsBase =
+    role === 'lead' ? 28 : role === 'bass' ? 36 : role === 'harmony' ? 52 : 8;
+  const releaseMsBase =
+    role === 'lead' ? 130 : role === 'bass' ? 180 : role === 'harmony' ? 220 : 48;
   return {
     id: `${theme.id}:${role}:${clusterX}:${clusterY}`,
     role,
@@ -719,25 +740,57 @@ function createProceduralInstrument(
       releaseMsBase + Math.round(hash2D(`${seedKey}:release`, clusterX, clusterY) * 40),
     detuneCents:
       (hash2D(`${seedKey}:detune`, clusterX, clusterY) - 0.5) *
-      (role === 'pulse' ? 8 : 16),
+      (role === 'percussion' ? 10 : 16),
     harmonicGain:
       0.12 +
-      hash2D(`${seedKey}:harmonics`, clusterX, clusterY) * (role === 'bass' ? 0.16 : 0.28),
+      hash2D(`${seedKey}:harmonics`, clusterX, clusterY) *
+        (role === 'bass' ? 0.16 : role === 'percussion' ? 0.08 : 0.28),
     pulseRate:
-      0.6 + hash2D(`${seedKey}:pulse`, clusterX, clusterY) * (role === 'pulse' ? 2.4 : 1.4),
+      0.6 +
+      hash2D(`${seedKey}:pulse`, clusterX, clusterY) *
+        (role === 'percussion' ? 3.2 : role === 'harmony' ? 1.1 : 1.4),
     brightness:
       0.82 + hash2D(`${seedKey}:brightness`, clusterX, clusterY) * 0.34,
   };
 }
 
 function selectInstrumentRole(stepIndex: number): InstrumentRole {
-  if (stepIndex % 4 === 0) {
+  const phase = stepIndex % 8;
+  if (phase === 0 || phase === 4) {
     return 'bass';
   }
-  if (stepIndex % 2 === 1) {
-    return 'pulse';
+  if (phase === 1 || phase === 5) {
+    return 'harmony';
   }
-  return 'lead';
+  if (phase === 2 || phase === 6) {
+    return 'lead';
+  }
+  return 'percussion';
+}
+
+function resolveInstrumentSemitones(
+  theme: MusicRegionTheme,
+  role: InstrumentRole,
+  stepIndex: number
+): number {
+  const patternIndex =
+    theme.stepPattern[stepIndex % theme.stepPattern.length] ?? 0;
+  const scaleIndex = patternIndex % theme.scale.length;
+  const leadSemitones = theme.scale[scaleIndex] ?? 0;
+
+  if (role === 'bass') {
+    return theme.scale[0] ?? 0;
+  }
+  if (role === 'harmony') {
+    const harmonyIndex =
+      (patternIndex + 2 + Math.floor(stepIndex / theme.stepPattern.length)) %
+      theme.scale.length;
+    return theme.scale[harmonyIndex] ?? leadSemitones;
+  }
+  if (role === 'percussion') {
+    return [0, 7, 12, 3][stepIndex % 4] ?? 0;
+  }
+  return leadSemitones;
 }
 
 function normalizeWrappedProgress(value: number): number {

@@ -132,7 +132,7 @@ describe('procedural music', () => {
     });
   });
 
-  it('builds deterministic instrument banks with lead, bass, and pulse voices per cluster', () => {
+  it('builds deterministic instrument banks with melody, harmony, bass, and percussion voices per cluster', () => {
     const theme = resolveMusicTheme('forest', 'overworld');
     const bank = createProceduralInstrumentBank(theme, 2, -1);
 
@@ -143,16 +143,22 @@ describe('procedural music', () => {
         role: 'lead',
       })
     );
+    expect(bank.instruments.harmony).toEqual(
+      expect.objectContaining({
+        id: 'deep-forest:harmony:2:-1',
+        role: 'harmony',
+      })
+    );
     expect(bank.instruments.bass).toEqual(
       expect.objectContaining({
         id: 'deep-forest:bass:2:-1',
         role: 'bass',
       })
     );
-    expect(bank.instruments.pulse).toEqual(
+    expect(bank.instruments.percussion).toEqual(
       expect.objectContaining({
-        id: 'deep-forest:pulse:2:-1',
-        role: 'pulse',
+        id: 'deep-forest:percussion:2:-1',
+        role: 'percussion',
       })
     );
   });
@@ -177,7 +183,8 @@ describe('procedural music', () => {
     expect(played.length).toBeGreaterThan(1);
     expect(played[0]?.themeId).toBe('town-square');
     expect(played.some((note) => note.role === 'lead')).toBe(true);
-    expect(played.some((note) => note.role === 'pulse')).toBe(true);
+    expect(played.some((note) => note.role === 'harmony')).toBe(true);
+    expect(played.some((note) => note.role === 'percussion')).toBe(true);
   });
 
   it('layers poi notes over ambient music when a nearby poi mix is present', () => {
