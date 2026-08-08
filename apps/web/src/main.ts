@@ -783,6 +783,7 @@ const nearbyPaddleBoatAudioState = {
     | null
     | {
         progress?: number;
+        whistlePhase?: 'arrival' | 'departure';
         emitter: { x: number; y: number };
       },
 };
@@ -1548,10 +1549,16 @@ function getNearbyPaddleBoatAudioProfile() {
       return tile.boat as
         | {
             progress?: number;
+            whistlePhase?: 'arrival' | 'departure';
             x: number;
             y: number;
           }
         | undefined;
+    },
+    mapProfile(traffic) {
+      return {
+        whistlePhase: traffic.whistlePhase,
+      };
     },
   });
 

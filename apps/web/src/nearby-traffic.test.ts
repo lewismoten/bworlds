@@ -48,4 +48,40 @@ describe('nearby traffic', () => {
 
     expect(profile).toBeNull();
   });
+
+  it('can carry extra profile data from the selected traffic source', () => {
+    const profile = findNearestTrafficProfile({
+      state: {
+        player: { x: 0, y: 0 },
+        getCurrentTile(x: number, y: number) {
+          if (x === 1 && y === 0) {
+            return { boat: { x, y, progress: 0.1, whistlePhase: 'departure' } };
+          }
+          return { kind: 'plains' };
+        },
+      },
+      centerX: 0,
+      centerY: 0,
+      searchRadius: 2,
+      selectTraffic(tile) {
+        return tile.boat as
+          | {
+              x: number;
+              y: number;
+              progress?: number;
+              whistlePhase?: string;
+            }
+          | undefined;
+      },
+      mapProfile(traffic) {
+        return { whistlePhase: traffic.whistlePhase };
+      },
+    });
+
+    expect(profile).toEqual({
+      progress: 0.1,
+      emitter: { x: 1, y: 0 },
+      whistlePhase: 'departure',
+    });
+  });
 });

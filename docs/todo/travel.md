@@ -16,7 +16,7 @@
 - [X] Add paddle boats that lower the front to board them at docks
 - [X] Show paddle boats traveling on the ocean
 - [X] Add colliape sounds for paddle boats, but make sure it's public domain music, or something randomly made up
-- [ ] Add steam whistles to steam boats to indicate arrival and leaving
+- [X] Add steam whistles to steam boats to indicate arrival and leaving
 
 # Air Travel
 - [ ] Add the ability to ride or pilot a plane

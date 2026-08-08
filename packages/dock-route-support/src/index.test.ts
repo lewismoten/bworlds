@@ -98,12 +98,47 @@ describe('dock route support', () => {
         x: expect.any(Number),
         y: expect.any(Number),
         boatName: expect.any(String),
+        segmentProgress: expect.any(Number),
         from: expect.any(String),
         to: expect.any(String),
       })
     );
     expect(state.getCurrentTile(first[0]!.x, first[0]!.y).kind).toMatch(
       /^(ocean|bridge)$/
+    );
+  });
+
+  it('reports arrival and departure whistle windows near dock approaches', () => {
+    const state = createCircularDockRouteState();
+    let departurePlacement:
+      | ReturnType<typeof getDockBoatPlacements>[number]
+      | undefined;
+    let arrivalPlacement:
+      | ReturnType<typeof getDockBoatPlacements>[number]
+      | undefined;
+
+    for (let timeMs = 0; timeMs <= 30 * 60 * 1000; timeMs += 2_000) {
+      const placements = getDockBoatPlacements(state as never, timeMs, 0, 0);
+      departurePlacement ??= placements.find(
+        (placement) => placement.whistlePhase === 'departure'
+      );
+      arrivalPlacement ??= placements.find(
+        (placement) => placement.whistlePhase === 'arrival'
+      );
+      if (departurePlacement && arrivalPlacement) {
+        break;
+      }
+    }
+
+    expect(departurePlacement).toEqual(
+      expect.objectContaining({
+        whistlePhase: 'departure',
+      })
+    );
+    expect(arrivalPlacement).toEqual(
+      expect.objectContaining({
+        whistlePhase: 'arrival',
+      })
     );
   });
 

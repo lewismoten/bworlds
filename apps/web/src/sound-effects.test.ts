@@ -7,9 +7,11 @@ import {
   getSurfaceAudioProfile,
   getSoundSpatialMix,
   resolvePaddleBoatCalliopeFrequency,
+  resolveSteamWhistleFrequency,
   getTrainEngineCadenceMs,
   shouldPlayBlockedMovementSound,
   shouldPlayForestWindSound,
+  shouldPlaySteamWhistle,
   shouldPlayTrainWhistle,
   type ProceduralSoundEffect,
 } from './sound-effects.ts';
@@ -413,6 +415,71 @@ describe('sound effects', () => {
     expect(resolvePaddleBoatCalliopeFrequency(0.26)).toBeCloseTo(523.25, 2);
     expect(resolvePaddleBoatCalliopeFrequency(0.63)).toBeCloseTo(587.33, 2);
     expect(resolvePaddleBoatCalliopeFrequency(undefined)).toBeCloseTo(392, 2);
+  });
+
+  it('plays one steam whistle per arrival or departure event window', () => {
+    const played: ProceduralSoundEffect[] = [];
+    const controller = createSoundEffectController({
+      play(effect) {
+        played.push(effect);
+      },
+    });
+
+    controller.update({
+      nowMs: 0,
+      walking: false,
+      isJumping: false,
+      viewMode: '3d',
+      tileKind: 'dock',
+      nearbyPaddleBoat: {
+        progress: 0.04,
+        whistlePhase: 'departure',
+        emitter: { x: 1, y: 0 },
+        listener: { x: 0, y: 0 },
+      },
+      listener: { x: 0, y: 0 },
+    });
+    controller.update({
+      nowMs: 400,
+      walking: false,
+      isJumping: false,
+      viewMode: '3d',
+      tileKind: 'dock',
+      nearbyPaddleBoat: {
+        progress: 0.05,
+        whistlePhase: 'departure',
+        emitter: { x: 1, y: 0 },
+        listener: { x: 0, y: 0 },
+      },
+      listener: { x: 0, y: 0 },
+    });
+    controller.update({
+      nowMs: 1800,
+      walking: false,
+      isJumping: false,
+      viewMode: '3d',
+      tileKind: 'dock',
+      nearbyPaddleBoat: {
+        progress: 0.96,
+        whistlePhase: 'arrival',
+        emitter: { x: 1, y: 0 },
+        listener: { x: 0, y: 0 },
+      },
+      listener: { x: 0, y: 0 },
+    });
+
+    expect(played.filter((effect) => effect.kind === 'steam-whistle')).toEqual([
+      expect.objectContaining({ kind: 'steam-whistle', frequency: 370 }),
+      expect.objectContaining({ kind: 'steam-whistle', frequency: 294 }),
+    ]);
+  });
+
+  it('only whistles for explicit arrival or departure phases', () => {
+    expect(shouldPlaySteamWhistle('arrival')).toBe(true);
+    expect(shouldPlaySteamWhistle('departure')).toBe(true);
+    expect(shouldPlaySteamWhistle(undefined)).toBe(false);
+    expect(resolveSteamWhistleFrequency('arrival')).toBe(294);
+    expect(resolveSteamWhistleFrequency('departure')).toBe(370);
   });
 
   it('attaches listener and emitter positions to scheduled movement sounds', () => {

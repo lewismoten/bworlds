@@ -77,6 +77,7 @@ describe('runtime dock traffic', () => {
           x: placement!.x,
           y: placement!.y,
           boatName: expect.any(String),
+          segmentProgress: expect.any(Number),
         }),
       })
     );
@@ -103,5 +104,35 @@ describe('runtime dock traffic', () => {
     } as never);
 
     expect(second).toEqual(first);
+  });
+
+  it('does not recurse when overworld tile sampling re-enters dock-traffic decoration', () => {
+    const plugin = createDockTrafficRuntimePlugin();
+    const baseState = createCircularDockRouteState();
+    const state = {
+      ...baseState,
+      getCurrentTile(x: number, y: number) {
+        const baseTile = baseState.getCurrentTile(x, y);
+        return (
+          plugin.decorateOverworldTile?.({
+            seed: 'spec-seed',
+            x,
+            y,
+            tile: { kind: baseTile.kind },
+            state: state as never,
+          } as never) ?? baseTile
+        );
+      },
+    };
+
+    expect(() =>
+      plugin.decorateOverworldTile?.({
+        seed: 'spec-seed',
+        x: 23,
+        y: 5,
+        tile: { kind: 'ocean' },
+        state: state as never,
+      } as never)
+    ).not.toThrow();
   });
 });

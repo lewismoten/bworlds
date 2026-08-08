@@ -8,6 +8,7 @@ const TIME_BUCKET_MS = 2_000;
 
 export function createDockTrafficRuntimePlugin(): RuntimePlugin {
   const cache = new Map<string, ReturnType<typeof getDockBoatPlacements>>();
+  let resolvingPlacements = false;
 
   return createRuntimePlugin('runtime-dock-traffic', {
     decorateOverworldTile({ seed, x, y, tile, state }) {
@@ -15,6 +16,9 @@ export function createDockTrafficRuntimePlugin(): RuntimePlugin {
         (tile.kind !== 'ocean' && tile.kind !== 'bridge' && tile.kind !== 'dock') ||
         typeof state?.timeMs !== 'number'
       ) {
+        return tile;
+      }
+      if (resolvingPlacements) {
         return tile;
       }
 
@@ -25,16 +29,21 @@ export function createDockTrafficRuntimePlugin(): RuntimePlugin {
       const cacheKey = `${seed}:${contextId}:${regionX}:${regionY}:${timeBucket}`;
 
       if (!cache.has(cacheKey)) {
-        cache.set(
-          cacheKey,
-          getDockBoatPlacements(
-            state,
-            state.timeMs,
-            regionX * REGION_SIZE,
-            regionY * REGION_SIZE,
-            SEARCH_RADIUS
-          )
-        );
+        resolvingPlacements = true;
+        try {
+          cache.set(
+            cacheKey,
+            getDockBoatPlacements(
+              state,
+              state.timeMs,
+              regionX * REGION_SIZE,
+              regionY * REGION_SIZE,
+              SEARCH_RADIUS
+            )
+          );
+        } finally {
+          resolvingPlacements = false;
+        }
       }
 
       const boat = cache.get(cacheKey)?.find((placement) => placement.x === x && placement.y === y);

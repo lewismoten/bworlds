@@ -11,7 +11,8 @@ type SoundEffectKind =
   | 'advancement'
   | 'train-engine'
   | 'train-whistle'
-  | 'paddle-calliope';
+  | 'paddle-calliope'
+  | 'steam-whistle';
 type SoundWaveform = OscillatorType;
 type SoundPosition = { x: number; y: number };
 type SurfaceAudioFamily =
@@ -86,6 +87,7 @@ export type SoundEffectController = {
     nearbyPaddleBoat?:
       | {
           progress?: number;
+          whistlePhase?: 'arrival' | 'departure';
           emitter?: SoundPosition;
           listener?: SoundPosition;
         }
@@ -235,6 +237,8 @@ export function createSoundEffectController(
   let lastTrainEngineAtMs = -Infinity;
   let lastTrainWhistleAtMs = -Infinity;
   let lastPaddleCalliopeAtMs = -Infinity;
+  let lastSteamWhistleAtMs = -Infinity;
+  let lastSteamWhistleSignature = '';
   let previousJumping = false;
   let footstepVariant = 0;
 
@@ -264,6 +268,8 @@ export function createSoundEffectController(
             ? 356 + variantOffset * 0.6
           : kind === 'paddle-calliope'
             ? resolvePaddleBoatCalliopeFrequency(undefined)
+          : kind === 'steam-whistle'
+            ? resolveSteamWhistleFrequency()
           : kind === 'open'
             ? resolveInteractionFrequency('open', tileKind, profile, variantOffset)
           : kind === 'close'
@@ -286,6 +292,8 @@ export function createSoundEffectController(
             ? 880
           : kind === 'paddle-calliope'
             ? 1180
+          : kind === 'steam-whistle'
+            ? 1050
           : kind === 'landing'
             ? 120
             : kind === 'blocked'
@@ -306,6 +314,8 @@ export function createSoundEffectController(
             ? 0.042
           : kind === 'paddle-calliope'
             ? 0.034
+          : kind === 'steam-whistle'
+            ? 0.048
           : kind === 'open' || kind === 'close'
             ? profile.landingVolume * 0.8
           : kind === 'blocked'
@@ -326,6 +336,8 @@ export function createSoundEffectController(
             ? 'square'
           : kind === 'paddle-calliope'
             ? 'triangle'
+          : kind === 'steam-whistle'
+            ? 'square'
           : kind === 'open' || kind === 'close'
             ? resolveInteractionWaveform(tileKind, profile.waveform)
             : profile.waveform,
@@ -443,6 +455,31 @@ export function createSoundEffectController(
           listener: nearbyPaddleBoat.listener ?? listener,
         });
       }
+      if (
+        nearbyPaddleBoat?.emitter &&
+        shouldPlaySteamWhistle(nearbyPaddleBoat.whistlePhase)
+      ) {
+        const whistleSignature = `${nearbyPaddleBoat.emitter.x}:${nearbyPaddleBoat.emitter.y}:${nearbyPaddleBoat.whistlePhase}`;
+        if (
+          whistleSignature !== lastSteamWhistleSignature &&
+          nowMs - lastSteamWhistleAtMs >= 1200
+        ) {
+          lastSteamWhistleSignature = whistleSignature;
+          lastSteamWhistleAtMs = nowMs;
+          sink.play({
+            kind: 'steam-whistle',
+            nowMs,
+            frequency: resolveSteamWhistleFrequency(nearbyPaddleBoat.whistlePhase),
+            durationMs: 1050,
+            volume: 0.048,
+            waveform: 'square',
+            emitter: nearbyPaddleBoat.emitter,
+            listener: nearbyPaddleBoat.listener ?? listener,
+          });
+        }
+      } else {
+        lastSteamWhistleSignature = '';
+      }
 
       if (
         shouldPlayForestWindSound(tileKind, weatherKind, windStrength) &&
@@ -526,6 +563,18 @@ export function resolvePaddleBoatCalliopeFrequency(
     Math.floor(normalized * melody.length)
   );
   return melody[index] ?? melody[0] ?? 392;
+}
+
+export function shouldPlaySteamWhistle(
+  whistlePhase: 'arrival' | 'departure' | undefined
+): boolean {
+  return whistlePhase === 'arrival' || whistlePhase === 'departure';
+}
+
+export function resolveSteamWhistleFrequency(
+  whistlePhase?: 'arrival' | 'departure'
+): number {
+  return whistlePhase === 'arrival' ? 294 : 370;
 }
 
 function resolveInteractionFrequency(
@@ -649,6 +698,16 @@ export function createWebAudioSoundEffectSink(): SoundEffectSink {
         oscillator.frequency.linearRampToValueAtTime(
           effect.frequency * 0.94,
           startAt + durationSeconds * 0.88
+        );
+      }
+      if (effect.kind === 'steam-whistle') {
+        oscillator.frequency.exponentialRampToValueAtTime(
+          effect.frequency * 1.22,
+          startAt + durationSeconds * 0.22
+        );
+        oscillator.frequency.exponentialRampToValueAtTime(
+          effect.frequency * 0.92,
+          startAt + durationSeconds
         );
       }
       gain.gain.setValueAtTime(0.0001, startAt);

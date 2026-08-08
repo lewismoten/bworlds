@@ -19,10 +19,12 @@ export type DockBoatPlacement = {
   x: number;
   y: number;
   progress: number;
+  segmentProgress: number;
   direction: 'forward';
   boatName: string;
   from: string;
   to: string;
+  whistlePhase?: 'arrival' | 'departure';
 };
 
 type DockCluster = {
@@ -60,6 +62,7 @@ const MAX_ROUTE_DISTANCE = 60;
 const MAX_ROUTE_STOPS = 5;
 const DOCK_STOP_SEARCH_RADIUS = 12;
 const PADDLE_BOAT_TIME_BUCKET_MS = 2_000;
+const DOCK_WHISTLE_WINDOW = 0.08;
 const routeCache = new WeakMap<WorldStateLike, Map<string, DockBoatRoute | null>>();
 const routeGeometryCache = new WeakMap<
   WorldStateLike,
@@ -527,22 +530,30 @@ function resolveDockBoatPlacement(
 
   let remainingIndex = pointIndex;
   let activeSegment = geometry.segments[0]!;
+  let segmentIndex = 0;
   for (const segment of geometry.segments) {
     if (remainingIndex < segment.path.length) {
       activeSegment = segment;
       break;
     }
     remainingIndex -= segment.path.length;
+    segmentIndex += 1;
   }
+
+  const segmentLength = Math.max(1, activeSegment.path.length);
+  const segmentProgress = remainingIndex / segmentLength;
+  const whistlePhase = resolveDockBoatWhistlePhase(segmentProgress);
 
   return {
     x: point.x,
     y: point.y,
     progress: loopProgress,
+    segmentProgress,
     direction: 'forward',
     boatName: route.boatName,
     from: activeSegment.from.name,
     to: activeSegment.to.name,
+    whistlePhase,
   };
 }
 
@@ -602,4 +613,16 @@ function getCanonicalRouteKey(route: DockBoatRoute): string {
     [...reversed.slice(index), ...reversed.slice(0, index)].join('|')
   );
   return [...forwardRotations, ...reverseRotations].sort()[0] ?? route.boatName;
+}
+
+function resolveDockBoatWhistlePhase(
+  segmentProgress: number
+): 'arrival' | 'departure' | undefined {
+  if (segmentProgress <= DOCK_WHISTLE_WINDOW) {
+    return 'departure';
+  }
+  if (segmentProgress >= 1 - DOCK_WHISTLE_WINDOW) {
+    return 'arrival';
+  }
+  return undefined;
 }
