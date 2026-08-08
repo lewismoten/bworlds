@@ -1,13 +1,16 @@
 import type {
   ClassifyOverworldTileContext,
+  CrossingTileKind,
   OverworldAnchorLike,
   ResolveFloorKind3DContext,
+  RouteTerminalTileKind,
   SurfaceBoundaryRole3D,
   SurfaceBoundaryTransition3D,
   SurfaceProfile3D,
   TileLike,
   TilePlugin,
   TraversalProfile3D,
+  WaterTileKind,
 } from '@bworlds/plugin-api';
 
 export function createRouteTraversalProfile(
@@ -19,46 +22,51 @@ export function createRouteTraversalProfile(
   };
 }
 
-export const DEFAULT_ROUTE_TERMINAL_KINDS = new Set([
+export const DEFAULT_ROUTE_TERMINAL_KINDS = new Set<RouteTerminalTileKind>([
   'sign',
   'town',
   'cave',
   'dungeon',
 ]);
 
-export const DEFAULT_BRIDGE_WATER_KINDS = new Set(['river', 'ocean']);
-export const DEFAULT_WATER_KINDS = new Set(['river', 'ocean']);
-export const DEFAULT_WATER_OR_CROSSING_KINDS = new Set([
+export const DEFAULT_BRIDGE_WATER_KINDS = new Set<WaterTileKind>([
+  'river',
+  'ocean',
+]);
+export const DEFAULT_WATER_KINDS = new Set<WaterTileKind>(['river', 'ocean']);
+export const DEFAULT_WATER_OR_CROSSING_KINDS = new Set<
+  WaterTileKind | CrossingTileKind
+>([
   ...DEFAULT_WATER_KINDS,
   'bridge',
 ]);
 
 export function isRouteTerminalKind(
   kind: string,
-  terminalKinds: ReadonlySet<string> = DEFAULT_ROUTE_TERMINAL_KINDS
+  terminalKinds: ReadonlySet<RouteTerminalTileKind> = DEFAULT_ROUTE_TERMINAL_KINDS
 ) {
-  return terminalKinds.has(kind);
+  return terminalKinds.has(kind as RouteTerminalTileKind);
 }
 
 export function isBridgeWaterKind(
   kind: string,
-  waterKinds: ReadonlySet<string> = DEFAULT_BRIDGE_WATER_KINDS
+  waterKinds: ReadonlySet<WaterTileKind> = DEFAULT_BRIDGE_WATER_KINDS
 ) {
-  return waterKinds.has(kind);
+  return waterKinds.has(kind as WaterTileKind);
 }
 
 export function isWaterKind(
   kind: string,
-  waterKinds: ReadonlySet<string> = DEFAULT_WATER_KINDS
+  waterKinds: ReadonlySet<WaterTileKind> = DEFAULT_WATER_KINDS
 ) {
-  return waterKinds.has(kind);
+  return waterKinds.has(kind as WaterTileKind);
 }
 
 export function isWaterOrCrossingKind(
   kind: string,
-  kinds: ReadonlySet<string> = DEFAULT_WATER_OR_CROSSING_KINDS
+  kinds: ReadonlySet<WaterTileKind | CrossingTileKind> = DEFAULT_WATER_OR_CROSSING_KINDS
 ) {
-  return kinds.has(kind);
+  return kinds.has(kind as WaterTileKind | CrossingTileKind);
 }
 
 export function distanceToLineSegment(

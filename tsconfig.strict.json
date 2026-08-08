@@ -1,0 +1,13 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "strict": true,
+    "noImplicitAny": true
+  },
+  "include": [
+    "apps/web/src/session-state.ts",
+    "apps/web/src/time-controls.ts",
+    "packages/plugin-api/src/types.ts",
+    "packages/plugin-api/src/utils.ts"
+  ]
+}

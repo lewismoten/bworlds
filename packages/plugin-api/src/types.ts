@@ -1,4 +1,22 @@
-export type Kind = string;
+export type WaterTileKind = 'ocean' | 'river';
+export type CrossingTileKind = 'bridge';
+export type RouteTerminalTileKind = 'sign' | 'town' | 'cave' | 'dungeon';
+export type KnownTileKind =
+  | 'unknown'
+  | 'plains'
+  | 'shore'
+  | 'mountain'
+  | 'forest'
+  | 'interior'
+  | 'floor'
+  | 'wall'
+  | 'door'
+  | 'road'
+  | 'ruins'
+  | WaterTileKind
+  | CrossingTileKind
+  | RouteTerminalTileKind;
+export type Kind = KnownTileKind | (string & {});
 export type Identity = string;
 export type PluginName = string;
 export type PointOfInterestName = string;
@@ -19,6 +37,12 @@ export type FacingAngle = number;
 export type ViewMode = '2d' | '3d';
 export type Color = string;
 export type Seed = string | number;
+export type WorldContextType =
+  | 'overworld'
+  | 'town'
+  | 'building'
+  | 'depth'
+  | (string & {});
 
 type PluginDescription = string;
 type PluginTag = string;
@@ -90,7 +114,7 @@ export interface WorldContextLike {
   depth: number;
   origin?: Point;
   label?: string;
-  type?: string;
+  type?: WorldContextType;
   [key: string]: unknown;
 }
 

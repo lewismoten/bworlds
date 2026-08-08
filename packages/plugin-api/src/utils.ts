@@ -14,10 +14,10 @@ export const isCallable = (
   value: unknown
 ): value is (...args: unknown[]) => unknown => typeof value === 'function';
 
-export const attemptCall = <T extends (...args: any[]) => any>(
-  value: T,
-  ...args: Parameters<T>
-): ReturnType<T> => (isCallable(value) ? value(...args) : void 0);
+export const attemptCall = <TArgs extends unknown[], TResult>(
+  value: ((...args: TArgs) => TResult) | null | undefined,
+  ...args: TArgs
+): TResult | void => (isCallable(value) ? value(...args) : void 0);
 
 export function withPluginOrder<T extends RuntimePlugin>(
   plugin: T,

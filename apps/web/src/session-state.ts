@@ -1,4 +1,22 @@
-import type { WorldContextLike } from '@bworlds/plugin-api';
+import type {
+  CelestialEventMode,
+  InspectorTab,
+  ModelPreviewMode,
+} from './time-controls.ts';
+
+type SessionViewMode = '2d' | '3d';
+
+type SessionWorldContext = {
+  id: string;
+  depth: number;
+  origin?: {
+    x: number;
+    y: number;
+  };
+  label?: string;
+  type?: string;
+  [key: string]: unknown;
+};
 
 export type SavedSession = {
   player: {
@@ -7,14 +25,14 @@ export type SavedSession = {
     facing: number;
   };
   packIds?: string[];
-  stack: WorldContextLike[];
-  viewMode?: string;
+  stack: SessionWorldContext[];
+  viewMode?: SessionViewMode;
   timeOffsetMs?: number;
   timeFrozen?: boolean;
   frozenWorldTimeMs?: number | null;
-  inspectorTab?: string;
-  modelPreviewMode?: string;
-  celestialEventMode?: string;
+  inspectorTab?: InspectorTab;
+  modelPreviewMode?: ModelPreviewMode;
+  celestialEventMode?: CelestialEventMode;
   compassHeadingAngle?: number | null;
 };
 
@@ -25,14 +43,14 @@ export type SessionSnapshot = {
     facing: number;
   };
   packIds: string[];
-  stack: WorldContextLike[];
-  viewMode: string;
+  stack: SessionWorldContext[];
+  viewMode: SessionViewMode;
   timeOffsetMs: number;
   timeFrozen: boolean;
   frozenWorldTimeMs: number | null;
-  inspectorTab: string;
-  modelPreviewMode: string;
-  celestialEventMode: string;
+  inspectorTab: InspectorTab;
+  modelPreviewMode: ModelPreviewMode;
+  celestialEventMode: CelestialEventMode;
   compassHeadingAngle: number | null;
 };
 

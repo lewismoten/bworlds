@@ -1,6 +1,7 @@
-import type { getDaylightCycleState } from '@bworlds/core';
-
-type DaylightCycleLike = ReturnType<typeof getDaylightCycleState>;
+type DaylightCycleLike = {
+  sunriseProgress: number;
+  sunsetProgress: number;
+};
 
 export type TimePreset = 'dawn' | 'noon' | 'dusk' | 'midnight';
 export type InspectorTab = 'timekeeper' | 'model' | 'events' | 'compass';
