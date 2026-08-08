@@ -239,7 +239,7 @@ There are two important paths through `buildTileNode()`:
 
 * [x] Warn if tiles rebuild while the camera/player is stationary.
 
-* [ ] Ensure rebuilt tile nodes release old resources.
+* [x] Ensure rebuilt tile nodes release old resources.
 
 ---
 

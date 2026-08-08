@@ -450,6 +450,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
         continue;
       }
       worldRoot.remove(tileNode.node);
+      disposeObject3DResources(tileNode.node);
       visibleTileNodes.delete(key);
     }
 
@@ -756,6 +757,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       );
       visibleTileNodes.set(key, nextEntry);
       worldRoot.remove(entry.node);
+      disposeObject3DResources(entry.node);
       worldRoot.add(nextEntry.node);
       recordRecentMetric(renderChurnMetrics.lodReplacements, nowMs);
     }
@@ -1805,6 +1807,33 @@ function getObjectMaterials(
     return [];
   }
   return Array.isArray(node.material) ? node.material : [node.material];
+}
+
+export function disposeObject3DResources(
+  root: Pick<THREE.Object3D, 'traverse'>
+): void {
+  const disposedMaterials = new Set<unknown>();
+  const disposedGeometries = new Set<unknown>();
+
+  root.traverse((child) => {
+    const renderable = child as THREE.Object3D & {
+      geometry?: { dispose?: () => void };
+      material?: THREE.Material | THREE.Material[];
+    };
+
+    if (renderable.geometry && !disposedGeometries.has(renderable.geometry)) {
+      disposedGeometries.add(renderable.geometry);
+      renderable.geometry.dispose?.();
+    }
+
+    for (const material of getObjectMaterials(renderable)) {
+      if (disposedMaterials.has(material)) {
+        continue;
+      }
+      disposedMaterials.add(material);
+      (material as THREE.Material & { dispose?: () => void }).dispose?.();
+    }
+  });
 }
 
 export function collectSceneResourceStats(

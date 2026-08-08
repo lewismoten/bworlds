@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   collectSceneResourceStats,
   countRecentMetricEvents,
+  disposeObject3DResources,
   applyObjectDistanceFade,
   clampCameraPitch,
   DEFAULT_CAMERA_PITCH,
@@ -70,6 +71,24 @@ describe('render3d visibility helpers', () => {
       treeMeshCount: 1,
       treeMaterialRefCount: 1,
     });
+  });
+
+  it('disposes unique materials and geometries when removing a tile node', () => {
+    const sharedMaterial = createMockMaterial();
+    const otherMaterial = createMockMaterial();
+    const sharedGeometry = createMockGeometry();
+    const otherGeometry = createMockGeometry();
+    const root = createMockObject3D(undefined, [
+      createMockObject3D(sharedMaterial, [], sharedGeometry),
+      createMockObject3D([sharedMaterial, otherMaterial], [], otherGeometry),
+    ]);
+
+    disposeObject3DResources(root as never);
+
+    expect(sharedMaterial.dispose).toHaveBeenCalledTimes(1);
+    expect(otherMaterial.dispose).toHaveBeenCalledTimes(1);
+    expect(sharedGeometry.dispose).toHaveBeenCalledTimes(1);
+    expect(otherGeometry.dispose).toHaveBeenCalledTimes(1);
   });
 
   it('records additional object-type counts for points, sprites, and lights', () => {
@@ -846,6 +865,13 @@ function createMockMaterial(
     depthWrite: overrides.depthWrite ?? true,
     userData: {},
     clone: vi.fn(() => ({ ...clone, userData: {} })),
+    dispose: vi.fn(),
+  };
+}
+
+function createMockGeometry() {
+  return {
+    dispose: vi.fn(),
   };
 }
 
