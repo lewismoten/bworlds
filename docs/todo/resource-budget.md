@@ -763,21 +763,21 @@ A barrel should not get the same budget as a cathedral.
 # Performance HUD
 
 * [ ] Show active objects.
-* [ ] Show visible meshes.
-* [ ] Show triangles.
-* [ ] Show vertices.
-* [ ] Show draw calls.
-* [ ] Show materials.
-* [ ] Show textures.
+* [X] Show visible meshes.
+* [X] Show triangles.
+* [X] Show vertices.
+* [X] Show draw calls.
+* [X] Show materials.
+* [X] Show textures.
 * [ ] Show estimated texture memory.
-* [ ] Show geometry memory.
-* [ ] Show shader programs.
-* [ ] Show lights.
-* [ ] Show shadow lights.
-* [ ] Show particles.
+* [X] Show geometry memory.
+* [X] Show shader programs.
+* [X] Show lights.
+* [X] Show shadow lights.
+* [X] Show particles.
 * [ ] Show skeletons.
 * [ ] Show bones currently animated.
-* [ ] Show audio voices.
+* [X] Show audio voices.
 * [X] Show loaded chunks.
 * [X] Show model generation queue size.
 * [X] Show active render quality level.
