@@ -2549,6 +2549,7 @@ updateTimekeeperDisplayModeUi();
 updateCompassDisplayModeUi();
 updateMinimapDisplayModeUi();
 updateCelestialEventModeUi();
+restore3dViewportKeyboardFocus(state.viewMode, viewport3d);
 requestRender();
 
 function saveSession(): void {

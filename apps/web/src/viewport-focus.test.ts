@@ -20,6 +20,17 @@ describe('viewport keyboard focus', () => {
     expect(viewport.focus).toHaveBeenCalledWith({ preventScroll: true });
   });
 
+  it('can restore focus repeatedly after reloads or ui interactions', () => {
+    const viewport = {
+      focus: vi.fn(),
+    };
+
+    expect(restore3dViewportKeyboardFocus('3d', viewport)).toBe(true);
+    expect(restore3dViewportKeyboardFocus('3d', viewport)).toBe(true);
+    expect(viewport.focus).toHaveBeenNthCalledWith(1, { preventScroll: true });
+    expect(viewport.focus).toHaveBeenNthCalledWith(2, { preventScroll: true });
+  });
+
   it('does not steal focus outside 3d mode', () => {
     const viewport = {
       focus: vi.fn(),
