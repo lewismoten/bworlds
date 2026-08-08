@@ -26,22 +26,26 @@ export function createCelestialPhenomenaRuntimePlugin(): RuntimePlugin {
       const resolvedTimeMs = typeof timeMs === 'number' ? timeMs : 0;
       const celestialState = getDaylightCycleState(resolvedTimeMs, cycle);
       const forcedMode = getForcedCelestialEventMode(state);
+      const forcedFacingAngle = getForcedFacingAngle(state);
       const transientEvents = [
         ...buildTransientMeteorEvents(
           celestialState,
           resolvedTimeMs,
-          forcedMode === 'meteor-shower'
+          forcedMode === 'meteor-shower',
+          forcedFacingAngle
         ),
         ...buildVisitingCometEvents(
           celestialState,
           resolvedTimeMs,
-          forcedMode === 'comet'
+          forcedMode === 'comet',
+          forcedFacingAngle
         ),
       ];
       const auroraBands = buildAuroraBands(
         celestialState,
         resolvedTimeMs,
-        forcedMode === 'aurora'
+        forcedMode === 'aurora',
+        forcedFacingAngle
       );
 
       return {
@@ -64,10 +68,16 @@ function getForcedCelestialEventMode(state: unknown): CelestialEventMode {
   return 'auto';
 }
 
+function getForcedFacingAngle(state: unknown) {
+  const angle = (state as { player?: { facing?: unknown } } | null)?.player?.facing;
+  return typeof angle === 'number' ? angle : 0;
+}
+
 function buildAuroraBands(
   cycle: ReturnType<typeof getDaylightCycleState>,
   timeMs: number,
-  forced = false
+  forced = false,
+  facingAngle = 0
 ): AuroraBandLike[] {
   const latitudeFactor = clamp(
     (Math.abs(cycle.observerLatitudeDegrees) - 34) / 26,
@@ -75,7 +85,7 @@ function buildAuroraBands(
     1
   );
   const effectiveLatitudeFactor = forced
-    ? Math.max(latitudeFactor, 0.34)
+    ? Math.max(latitudeFactor, 0.88)
     : latitudeFactor;
   if ((!forced && latitudeFactor <= 0.08) || (!forced && cycle.night <= 0.35)) {
     return [];
@@ -90,20 +100,34 @@ function buildAuroraBands(
     return [];
   }
 
-  const baseNightFactor = forced ? Math.max(cycle.night, 0.75) : cycle.night;
+  const baseNightFactor = forced ? Math.max(cycle.night, 0.95) : cycle.night;
   const baseIntensity =
     effectiveLatitudeFactor * baseNightFactor * (0.58 + dayChance * 0.42);
-  const bandCount = dayChance > 0.86 ? 2 : 1;
-  const hemisphereAzimuth = cycle.observerLatitudeDegrees >= 0 ? -Math.PI / 2 : Math.PI / 2;
+  const bandCount = forced ? 3 : dayChance > 0.86 ? 2 : 1;
+  const hemisphereAzimuth = forced
+    ? facingAngle
+    : cycle.observerLatitudeDegrees >= 0
+      ? -Math.PI / 2
+      : Math.PI / 2;
   return Array.from({ length: bandCount }, (_, index) => {
     const colors = AURORA_COLORS[index % AURORA_COLORS.length];
     return {
       id: `aurora-${cycle.dayNumber}-${index}`,
       azimuthCenter: hemisphereAzimuth + (index - (bandCount - 1) * 0.5) * 0.34,
-      span: 0.82 + effectiveLatitudeFactor * 0.36 + index * 0.08,
-      altitude: 0.3 + index * 0.06,
-      height: 0.18 + effectiveLatitudeFactor * 0.08,
-      intensity: clamp(baseIntensity * (1 - index * 0.14), 0, 1),
+      span: forced
+        ? 1.22 + effectiveLatitudeFactor * 0.34 + index * 0.12
+        : 0.82 + effectiveLatitudeFactor * 0.36 + index * 0.08,
+      altitude: forced ? 0.34 + index * 0.05 : 0.3 + index * 0.06,
+      height: forced
+        ? 0.26 + effectiveLatitudeFactor * 0.1
+        : 0.18 + effectiveLatitudeFactor * 0.08,
+      intensity: clamp(
+        forced
+          ? Math.max(0.72, baseIntensity * 1.8) * (1 - index * 0.08)
+          : baseIntensity * (1 - index * 0.14),
+        0,
+        1
+      ),
       wavePhase: fract(timeMs / 18000 + index * 0.23),
       colorA: colors[0],
       colorB: colors[1],
@@ -114,7 +138,8 @@ function buildAuroraBands(
 function buildTransientMeteorEvents(
   cycle: ReturnType<typeof getDaylightCycleState>,
   timeMs: number,
-  forced = false
+  forced = false,
+  facingAngle = 0
 ): CelestialEventLike[] {
   if (
     (!forced && cycle.night <= 0.45) ||
@@ -124,12 +149,20 @@ function buildTransientMeteorEvents(
   }
 
   const burstPhase = fract(timeMs / 40000);
-  const count = 3 + Math.floor(hash2D('meteor-burst-count', cycle.dayNumber, 0) * 2);
+  const count = forced
+    ? 7
+    : 3 + Math.floor(hash2D('meteor-burst-count', cycle.dayNumber, 0) * 2);
   return Array.from({ length: count }, (_, index) => {
     const progress = fract(burstPhase + index * 0.19);
-    const azimuth = cycle.sunsetAzimuth + 0.45 + index * 0.11;
-    const altitude = 0.34 + Math.sin(progress * Math.PI * 2 + index) * 0.18;
-    const intensity = clamp(0.55 + Math.sin(progress * Math.PI * 2) * 0.24, 0.35, 0.9);
+    const azimuth = forced
+      ? facingAngle - 0.42 + index * 0.14
+      : cycle.sunsetAzimuth + 0.45 + index * 0.11;
+    const altitude = forced
+      ? 0.58 + Math.sin(progress * Math.PI * 2 + index * 0.4) * 0.18
+      : 0.34 + Math.sin(progress * Math.PI * 2 + index) * 0.18;
+    const intensity = forced
+      ? clamp(0.82 + Math.sin(progress * Math.PI * 2) * 0.14, 0.72, 1)
+      : clamp(0.55 + Math.sin(progress * Math.PI * 2) * 0.24, 0.35, 0.9);
     return {
       type: 'meteor-shower',
       name: 'Northfall Burst',
@@ -139,8 +172,8 @@ function buildTransientMeteorEvents(
       azimuth,
       altitude,
       color: '#dff4ff',
-      size: 0.3,
-      trailLength: 2.4 + index * 0.18,
+      size: forced ? 0.38 : 0.3,
+      trailLength: forced ? 3.4 + index * 0.22 : 2.4 + index * 0.18,
     };
   });
 }
@@ -148,7 +181,8 @@ function buildTransientMeteorEvents(
 function buildVisitingCometEvents(
   cycle: ReturnType<typeof getDaylightCycleState>,
   timeMs: number,
-  forced = false
+  forced = false,
+  facingAngle = 0
 ): CelestialEventLike[] {
   const visitLengthDays = 4;
   const cycleLengthDays = 96;
@@ -169,9 +203,13 @@ function buildVisitingCometEvents(
     phaseOffset,
     0.6
   );
-  const azimuth = cycle.sunriseAzimuth + Math.PI * 0.8 + Math.sin(progress * Math.PI * 2) * 0.72;
-  const altitude = 0.22 + Math.cos(progress * Math.PI * 2) * 0.2;
-  const intensity = clamp(1 - cycleDay / visitLengthDays, 0.28, 1);
+  const azimuth = forced
+    ? facingAngle + Math.sin(progress * Math.PI * 2) * 0.18
+    : cycle.sunriseAzimuth + Math.PI * 0.8 + Math.sin(progress * Math.PI * 2) * 0.72;
+  const altitude = forced
+    ? 0.62 + Math.cos(progress * Math.PI * 2) * 0.08
+    : 0.22 + Math.cos(progress * Math.PI * 2) * 0.2;
+  const intensity = forced ? 1 : clamp(1 - cycleDay / visitLengthDays, 0.28, 1);
   return [
     {
       type: 'comet',
@@ -182,8 +220,8 @@ function buildVisitingCometEvents(
       azimuth,
       altitude,
       color: '#dff6ff',
-      size: 0.48,
-      trailLength: 2.8,
+      size: forced ? 0.62 : 0.48,
+      trailLength: forced ? 3.8 : 2.8,
     },
   ];
 }

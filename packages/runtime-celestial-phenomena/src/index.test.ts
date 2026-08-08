@@ -74,6 +74,7 @@ describe('runtime celestial phenomena', () => {
         player: {
           x: 0,
           y: 0,
+          facing: Math.PI / 3,
         },
         celestialEventMode: 'aurora',
       } as any,
@@ -89,6 +90,12 @@ describe('runtime celestial phenomena', () => {
         }),
       ])
     );
+    expect(environment?.celestial?.auroraBands).toHaveLength(3);
+    expect(
+      (environment?.celestial?.auroraBands ?? []).every(
+        (band) => band.intensity >= 0.6 && band.span > 1
+      )
+    ).toBe(true);
   });
 
   it('can force a meteor shower regardless of time of day', () => {
@@ -98,6 +105,7 @@ describe('runtime celestial phenomena', () => {
         player: {
           x: 0,
           y: 0,
+          facing: Math.PI / 4,
         },
         celestialEventMode: 'meteor-shower',
       } as any,
@@ -111,6 +119,51 @@ describe('runtime celestial phenomena', () => {
           visibility: expect.any(Number),
         }),
       ])
+    );
+    expect(environment?.celestial?.visibleEventsAppend).toHaveLength(7);
+    expect(
+      (environment?.celestial?.visibleEventsAppend ?? []).every(
+        (event) =>
+          event.type === 'meteor-shower' &&
+          event.visibility >= 0.72 &&
+          event.altitude >= 0.35 &&
+          event.trailLength >= 3.4
+      )
+    ).toBe(true);
+  });
+
+  it('can force a comet into a bright high-altitude pass', () => {
+    const plugin = createCelestialPhenomenaRuntimePlugin();
+    const environment = plugin.resolveWorldEnvironment?.({
+      state: {
+        player: {
+          x: 0,
+          y: 0,
+          facing: Math.PI / 6,
+        },
+        celestialEventMode: 'comet',
+      } as any,
+      timeMs: 0,
+    }) as WorldEnvironmentLike | undefined;
+
+    expect(environment?.celestial?.visibleEventsAppend).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          type: 'comet',
+          visibility: expect.any(Number),
+        }),
+      ])
+    );
+    expect(environment?.celestial?.visibleEventsAppend?.[0]).toEqual(
+      expect.objectContaining({
+        type: 'comet',
+        intensity: 1,
+        size: 0.62,
+        trailLength: 3.8,
+      })
+    );
+    expect((environment?.celestial?.visibleEventsAppend?.[0]?.altitude ?? 0)).toBeGreaterThan(
+      0.5
     );
   });
 });
