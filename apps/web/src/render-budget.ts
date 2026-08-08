@@ -1,7 +1,11 @@
 export type RenderBudgetState = {
+  currentFrameMs: number;
   smoothedFrameMs: number;
+  recentFrameMs: number[];
   visibilityRadius: number;
   targetFps: 60 | 30;
+  averageFps: number;
+  worstRecentFrameMs: number;
 };
 
 export type PendingWorldBuildBudget = {
@@ -14,12 +18,17 @@ export const REDUCED_VISIBILITY_RADIUS = 14;
 export const MIN_VISIBILITY_RADIUS = 10;
 
 export const DEFAULT_RENDER_BUDGET_STATE: RenderBudgetState = {
+  currentFrameMs: 16.67,
   smoothedFrameMs: 16.67,
+  recentFrameMs: [16.67],
   visibilityRadius: DEFAULT_VISIBILITY_RADIUS,
   targetFps: 60,
+  averageFps: 60,
+  worstRecentFrameMs: 16.67,
 };
 
 const FRAME_SMOOTHING = 0.14;
+const RECENT_FRAME_WINDOW_SIZE = 60;
 const LOW_FPS_FRAME_MS = 1000 / 42;
 const CRITICAL_FPS_FRAME_MS = 1000 / 28;
 const RECOVERED_FPS_FRAME_MS = 1000 / 54;
@@ -37,8 +46,12 @@ export function advanceRenderBudgetState(
   if (!active3d) {
     return {
       ...state,
+      currentFrameMs: 16.67,
+      recentFrameMs: [16.67],
       visibilityRadius: DEFAULT_VISIBILITY_RADIUS,
       targetFps: 60,
+      averageFps: 60,
+      worstRecentFrameMs: 16.67,
     };
   }
 
@@ -46,6 +59,17 @@ export function advanceRenderBudgetState(
   const smoothedFrameMs =
     state.smoothedFrameMs +
     (clampedDeltaMs - state.smoothedFrameMs) * FRAME_SMOOTHING;
+  const recentFrameMs = [...state.recentFrameMs, clampedDeltaMs].slice(
+    -RECENT_FRAME_WINDOW_SIZE
+  );
+  const averageFrameMs =
+    recentFrameMs.reduce((total, frameMs) => total + frameMs, 0) /
+    recentFrameMs.length;
+  const averageFps = 1000 / Math.max(1, averageFrameMs);
+  const worstRecentFrameMs = recentFrameMs.reduce(
+    (worst, frameMs) => Math.max(worst, frameMs),
+    clampedDeltaMs
+  );
 
   let visibilityRadius = state.visibilityRadius;
   let targetFps = state.targetFps;
@@ -61,9 +85,13 @@ export function advanceRenderBudgetState(
   }
 
   return {
+    currentFrameMs: clampedDeltaMs,
     smoothedFrameMs,
+    recentFrameMs,
     visibilityRadius,
     targetFps,
+    averageFps,
+    worstRecentFrameMs,
   };
 }
 

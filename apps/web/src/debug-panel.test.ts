@@ -29,7 +29,9 @@ describe('debug panel', () => {
   it('builds stable signatures and markup for debug snapshots', () => {
     const snapshot = {
       fps: 58.2,
+      averageFps: 56.4,
       frameMs: 17.2,
+      worstRecentFrameMs: 28.6,
       targetFps: 60 as const,
       performanceTier: 'healthy' as const,
       playerLevel: 4,
@@ -82,6 +84,7 @@ describe('debug panel', () => {
 
     expect(getDebugSignature(snapshot)).toBe(getDebugSignature({ ...snapshot }));
     expect(buildDebugMarkup(snapshot)).toContain('GPU Draws');
+    expect(buildDebugMarkup(snapshot)).toContain('Avg FPS');
     expect(buildDebugMarkup(snapshot)).toContain('Frame Target');
     expect(buildDebugMarkup(snapshot)).toContain('Perf Tier');
     expect(buildDebugMarkup(snapshot)).toContain('Level');
@@ -97,6 +100,7 @@ describe('debug panel', () => {
     expect(buildDebugMarkup(snapshot)).toContain('Tile Builds/s');
     expect(buildDebugMarkup(snapshot)).toContain('LOD Checks/s');
     expect(buildDebugMarkup(snapshot)).toContain('LOD Swaps/s');
+    expect(buildDebugMarkup(snapshot)).toContain('Worst Frame');
     expect(buildDebugMarkup(snapshot)).toContain('Points Nodes');
     expect(buildDebugMarkup(snapshot)).toContain('Sprites');
     expect(buildDebugMarkup(snapshot)).toContain('Lights');

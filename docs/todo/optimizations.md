@@ -903,10 +903,10 @@ Don't only profile an empty field.
 
 I would actually put these into a developer performance panel.
 
-* [ ] Current FPS.
-* [ ] Average FPS.
-* [ ] Worst recent frame time.
-* [ ] CPU frame time.
+* [X] Current FPS.
+* [X] Average FPS.
+* [X] Worst recent frame time.
+* [X] CPU frame time.
 * [ ] GPU frame time where available.
 * [ ] JavaScript heap usage.
 * [ ] Allocation rate.

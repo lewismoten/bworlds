@@ -2570,8 +2570,10 @@ function render(): FrameLoopActivityLike {
       });
     }
     const debugSnapshot = {
-      fps: 1000 / Math.max(1, renderBudgetState.smoothedFrameMs),
-      frameMs: renderBudgetState.smoothedFrameMs,
+      fps: 1000 / Math.max(1, renderBudgetState.currentFrameMs),
+      averageFps: renderBudgetState.averageFps,
+      frameMs: renderBudgetState.currentFrameMs,
+      worstRecentFrameMs: renderBudgetState.worstRecentFrameMs,
       targetFps: renderBudgetState.targetFps,
       performanceTier: resolvePerformanceTier(renderBudgetState.smoothedFrameMs),
       playerLevel: normalizePlayerLevel(state.playerLevel),

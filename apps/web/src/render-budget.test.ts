@@ -21,6 +21,9 @@ describe('render budget', () => {
 
     expect(state.visibilityRadius).toBe(DEFAULT_VISIBILITY_RADIUS);
     expect(state.targetFps).toBe(60);
+    expect(state.currentFrameMs).toBeCloseTo(16.67, 2);
+    expect(state.averageFps).toBeCloseTo(60, 0);
+    expect(state.worstRecentFrameMs).toBeCloseTo(16.67, 2);
   });
 
   it('reduces visibility radius in stages as frame times degrade and lowers the target fps', () => {
@@ -42,13 +45,18 @@ describe('render budget', () => {
     }
     expect(state.visibilityRadius).toBe(MIN_VISIBILITY_RADIUS);
     expect(state.targetFps).toBe(30);
+    expect(state.worstRecentFrameMs).toBe(40);
   });
 
   it('recovers the full radius and 60 fps target after healthy frames or when leaving 3d', () => {
     let state: RenderBudgetState = {
+      currentFrameMs: 38,
       smoothedFrameMs: 38,
+      recentFrameMs: [38, 36, 34],
       visibilityRadius: MIN_VISIBILITY_RADIUS,
       targetFps: 30,
+      averageFps: 1000 / 36,
+      worstRecentFrameMs: 38,
     };
 
     for (let index = 0; index < 24; index += 1) {
@@ -66,6 +74,24 @@ describe('render budget', () => {
     });
     expect(state.visibilityRadius).toBe(DEFAULT_VISIBILITY_RADIUS);
     expect(state.targetFps).toBe(60);
+    expect(state.averageFps).toBe(60);
+    expect(state.worstRecentFrameMs).toBeCloseTo(16.67, 2);
+  });
+
+  it('tracks a rolling average fps and worst recent frame time over the recent window', () => {
+    let state = DEFAULT_RENDER_BUDGET_STATE;
+
+    for (let index = 0; index < 70; index += 1) {
+      state = advanceRenderBudgetState(state, {
+        deltaMs: index === 5 ? 45 : 20,
+        active3d: true,
+      });
+    }
+
+    expect(state.recentFrameMs).toHaveLength(60);
+    expect(state.currentFrameMs).toBe(20);
+    expect(state.averageFps).toBeCloseTo(50, 0);
+    expect(state.worstRecentFrameMs).toBe(20);
   });
 
   it('allocates more pending world-build time when frames are healthy and less when under pressure', () => {

@@ -1,6 +1,8 @@
 export type DebugSnapshot = {
   fps: number;
+  averageFps: number;
   frameMs: number;
+  worstRecentFrameMs: number;
   targetFps: 60 | 30;
   performanceTier: 'healthy' | 'reduced' | 'critical';
   playerLevel: number;
@@ -77,7 +79,9 @@ export function normalizeWorldSeed(seed: string | undefined, fallback: string): 
 export function getDebugSignature(snapshot: DebugSnapshot): string {
   return [
     snapshot.fps.toFixed(1),
+    snapshot.averageFps.toFixed(1),
     snapshot.frameMs.toFixed(1),
+    snapshot.worstRecentFrameMs.toFixed(1),
     snapshot.targetFps,
     snapshot.performanceTier,
     snapshot.playerLevel,
@@ -181,7 +185,9 @@ export function buildDebugMarkup(snapshot: DebugSnapshot): string {
     : '';
   return `
     <div><dt>FPS</dt><dd>${snapshot.fps.toFixed(1)}</dd></div>
+    <div><dt>Avg FPS</dt><dd>${snapshot.averageFps.toFixed(1)}</dd></div>
     <div><dt>CPU Frame</dt><dd>${snapshot.frameMs.toFixed(1)} ms</dd></div>
+    <div><dt>Worst Frame</dt><dd>${snapshot.worstRecentFrameMs.toFixed(1)} ms</dd></div>
     <div><dt>Frame Target</dt><dd>${snapshot.targetFps} FPS / ${targetFrameMs.toFixed(1)} ms</dd></div>
     <div><dt>Perf Tier</dt><dd>${formatPerformanceTierLabel(snapshot.performanceTier)}</dd></div>
     <div><dt>Level</dt><dd>${snapshot.playerLevel}</dd></div>
