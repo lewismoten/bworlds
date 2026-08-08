@@ -248,10 +248,125 @@ export interface WorldStateLike {
   tryExit?(): boolean;
 }
 
-export type ThreeHostLike = Record<string, any>;
-export type ThreeGeometryLike = unknown;
-export type ThreeMaterialLike = unknown;
-export type ThreeTextureLike = unknown;
+export interface ThreeCoordinateLike {
+  x: number;
+  y: number;
+  z: number;
+}
+
+export interface ThreeVectorLike extends ThreeCoordinateLike {
+  set(x: number, y: number, z: number): this;
+}
+
+export interface ThreeVector3Like extends ThreeVectorLike {
+  setY(y: number): this;
+  subVectors(left: ThreeCoordinateLike, right: ThreeCoordinateLike): this;
+  normalize(): this;
+  addScaledVector(vector: ThreeCoordinateLike, scalar: number): this;
+  clone(): ThreeVector3Like;
+  distanceTo(other: ThreeCoordinateLike): number;
+}
+
+export interface ThreeEulerLike {
+  x: number;
+  y: number;
+  z: number;
+}
+
+export interface ThreeScaleLike extends ThreeVectorLike {
+  setScalar(scalar: number): this;
+}
+
+export interface ThreeObject3DLike {
+  position: ThreeVectorLike;
+  rotation: ThreeEulerLike;
+  scale: ThreeScaleLike;
+  add(...children: ThreeObject3DLike[]): this;
+}
+
+export type ThreeGeometryLike = object;
+
+export interface ThreeBufferGeometryLike extends ThreeGeometryLike {
+  computeVertexNormals(): void;
+  setAttribute(name: string, attribute: unknown): this;
+  setIndex(index: unknown): this;
+}
+
+export interface ThreeTextureRepeatLike {
+  set(x: number, y: number): void;
+}
+
+export interface ThreeTextureLike {
+  colorSpace?: unknown;
+  magFilter?: unknown;
+  minFilter?: unknown;
+  generateMipmaps?: boolean;
+  needsUpdate?: boolean;
+  wrapS?: unknown;
+  wrapT?: unknown;
+  repeat?: ThreeTextureRepeatLike;
+}
+
+export type ThreeMaterialLike = object;
+
+export interface ThreeMeshLike extends ThreeObject3DLike {
+  material?: ThreeMaterialLike;
+}
+
+export interface ThreeGroupLike extends ThreeObject3DLike {}
+
+export interface ThreeQuadraticBezierCurve3Like {
+  getPoints(segments: number): ThreeVector3Like[];
+}
+
+export interface ThreeCubicBezierCurve3Like {
+  getPoints(segments: number): ThreeVector3Like[];
+}
+
+type ThreeGeometryConstructorLike = new (...args: number[]) => ThreeGeometryLike;
+
+export interface ThreeHostLike {
+  BufferGeometry: new () => ThreeBufferGeometryLike;
+  BoxGeometry: ThreeGeometryConstructorLike;
+  CanvasTexture: new (canvas: HTMLCanvasElement) => ThreeTextureLike;
+  CircleGeometry: ThreeGeometryConstructorLike;
+  ConeGeometry: ThreeGeometryConstructorLike;
+  CubicBezierCurve3: new (
+    start: ThreeCoordinateLike,
+    controlA: ThreeCoordinateLike,
+    controlB: ThreeCoordinateLike,
+    end: ThreeCoordinateLike
+  ) => ThreeCubicBezierCurve3Like;
+  CylinderGeometry: ThreeGeometryConstructorLike;
+  Float32BufferAttribute: new (
+    values: ArrayLike<number> | number[],
+    itemSize: number
+  ) => unknown;
+  Group: new () => ThreeGroupLike;
+  Mesh: new (
+    geometry?: ThreeGeometryLike,
+    material?: ThreeMaterialLike
+  ) => ThreeMeshLike;
+  MeshBasicMaterial: new (
+    options?: Record<string, unknown>
+  ) => ThreeMaterialLike;
+  MeshStandardMaterial: new (
+    options?: Record<string, unknown>
+  ) => ThreeMaterialLike;
+  PlaneGeometry: ThreeGeometryConstructorLike;
+  QuadraticBezierCurve3: new (
+    start: ThreeCoordinateLike,
+    control: ThreeCoordinateLike,
+    end: ThreeCoordinateLike
+  ) => ThreeQuadraticBezierCurve3Like;
+  SphereGeometry: ThreeGeometryConstructorLike;
+  TorusGeometry: ThreeGeometryConstructorLike;
+  Vector3: new (x?: number, y?: number, z?: number) => ThreeVector3Like;
+  DoubleSide: unknown;
+  NearestFilter: unknown;
+  RepeatWrapping: unknown;
+  SRGBColorSpace: unknown;
+}
 
 export interface CardinalDirectionLike {
   dx: WorldX;

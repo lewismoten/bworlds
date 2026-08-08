@@ -89,11 +89,14 @@ export function createCoordinateValueResolver<T>(
   };
 }
 
-export function createRegionalMaterialResolver<TMaterial>(
+export function createRegionalMaterialResolver<
+  TMaterial,
+  THost extends object = ThreeHostLike,
+>(
   cache: Map<
     string,
     {
-      createMaterials(three: ThreeHostLike): TMaterial;
+      createMaterials(three: THost): TMaterial;
     }
   >,
   regionSize: number,
@@ -104,7 +107,7 @@ export function createRegionalMaterialResolver<TMaterial>(
     tileX: number;
     tileY: number;
   }) => {
-    createMaterials(three: ThreeHostLike): TMaterial;
+    createMaterials(three: THost): TMaterial;
   }
 ) {
   const resolveBlueprint = createRegionalValueResolver(
@@ -114,7 +117,7 @@ export function createRegionalMaterialResolver<TMaterial>(
   );
 
   return function resolveRegionalMaterial(
-    three: ThreeHostLike,
+    three: THost,
     tileX: number,
     tileY: number
   ): TMaterial {

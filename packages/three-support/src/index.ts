@@ -1,10 +1,32 @@
 import type {
+  ThreeBufferGeometryLike,
   ThreeGeometryLike,
   ThreeHostLike,
   ThreeMaterialLike,
+  ThreeMeshLike,
   ThreeTextureLike,
 } from '@bworlds/plugin-api';
 import { hash2D } from '@bworlds/core';
+
+type TextureHostLike<TTexture> = {
+  CanvasTexture: new (canvas: HTMLCanvasElement) => TTexture;
+  SRGBColorSpace: unknown;
+  NearestFilter: unknown;
+  RepeatWrapping: unknown;
+};
+
+type StandardMaterialHostLike<TTexture, TMaterial> = TextureHostLike<TTexture> & {
+  MeshStandardMaterial: new (options?: Record<string, unknown>) => TMaterial;
+};
+
+type BasicMaterialHostLike<TMaterial> = {
+  MeshBasicMaterial: new (options?: Record<string, unknown>) => TMaterial;
+};
+
+type PlaneMeshHostLike<TMaterial, TMesh> = BasicMaterialHostLike<TMaterial> & {
+  PlaneGeometry: new (width: number, height: number) => ThreeGeometryLike;
+  Mesh: new (geometry?: ThreeGeometryLike, material?: TMaterial) => TMesh;
+};
 
 const mountainTerrainMaterialCache = new WeakMap<
   object,
@@ -14,15 +36,15 @@ const mountainTerrainMaterialCache = new WeakMap<
   }
 >();
 
-export function createCanvasTexture(
-  three: ThreeHostLike,
+export function createCanvasTexture<TTexture extends ThreeTextureLike>(
+  three: TextureHostLike<TTexture>,
   canvas: HTMLCanvasElement,
   options: {
     repeatX?: number;
     repeatY?: number;
     wrap?: boolean;
   } = {}
-): ThreeTextureLike {
+): TTexture {
   const texture = new three.CanvasTexture(canvas);
   texture.colorSpace = three.SRGBColorSpace;
   texture.magFilter = three.NearestFilter;
@@ -46,8 +68,8 @@ export function createCanvasTexture(
   return texture;
 }
 
-export function createPaintedCanvasTexture(
-  three: ThreeHostLike,
+export function createPaintedCanvasTexture<TTexture extends ThreeTextureLike>(
+  three: TextureHostLike<TTexture>,
   options: {
     width: number;
     height: number;
@@ -59,7 +81,7 @@ export function createPaintedCanvasTexture(
       canvas: HTMLCanvasElement
     ) => void;
   }
-): ThreeTextureLike {
+): TTexture {
   const canvas = document.createElement('canvas');
   canvas.width = options.width;
   canvas.height = options.height;
@@ -79,7 +101,7 @@ export function createPaintedCanvasTexture(
 export function getOrCreatePaintedCanvasTexture(
   cache: Map<string, ThreeTextureLike>,
   key: string,
-  three: ThreeHostLike,
+  three: TextureHostLike<ThreeTextureLike>,
   options: {
     width: number;
     height: number;
@@ -99,7 +121,7 @@ export function getOrCreatePaintedCanvasTexture(
 }
 
 export function createPaintedStandardMaterial(
-  three: ThreeHostLike,
+  three: StandardMaterialHostLike<ThreeTextureLike, ThreeMaterialLike>,
   options: {
     color?: string;
     roughness?: number;
@@ -135,7 +157,7 @@ export function createPaintedStandardMaterial(
 }
 
 export function createBasicMaterial(
-  three: ThreeHostLike,
+  three: BasicMaterialHostLike<ThreeMaterialLike>,
   options: {
     color?: string;
     map?: ThreeTextureLike;
@@ -154,7 +176,7 @@ export function createBasicMaterial(
 }
 
 export function createTexturedPlaneMesh(
-  three: ThreeHostLike,
+  three: PlaneMeshHostLike<ThreeMaterialLike, ThreeMeshLike>,
   options: {
     width: number;
     height: number;
@@ -225,7 +247,7 @@ export function createRibbonMesh(
     yOffset?: number;
   } = {}
 ) {
-  const geometry = new three.BufferGeometry();
+  const geometry: ThreeBufferGeometryLike = new three.BufferGeometry();
   const positions: number[] = [];
   const uvs: number[] = [];
   const indices: number[] = [];

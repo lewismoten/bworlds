@@ -190,13 +190,33 @@ describe('three support', () => {
     }
 
     class FakeMesh {
-      geometry: unknown;
-      material: unknown;
+      geometry: object | undefined;
+      material: object | undefined;
+      position = {
+        x: 0,
+        y: 0,
+        z: 0,
+        set: vi.fn(() => this.position),
+      };
+      rotation = {
+        x: 0,
+        y: 0,
+        z: 0,
+      };
+      scale = {
+        x: 1,
+        y: 1,
+        z: 1,
+        set: vi.fn(() => this.scale),
+        setScalar: vi.fn(() => this.scale),
+      };
 
-      constructor(geometry: unknown, material: unknown) {
+      constructor(geometry: object | undefined, material: object | undefined) {
         this.geometry = geometry;
         this.material = material;
       }
+
+      add = vi.fn(() => this);
     }
 
     const texture = { id: 'label-texture' };
