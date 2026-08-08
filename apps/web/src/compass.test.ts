@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest';
 import {
   advanceCompassState,
   easeAngle,
+  getCompassBezelRotation,
   getCompassDialFacingAngle,
+  getCompassDialInteractionMode,
   getCompassNeedleRotation,
   getCompassWobbleBoost,
 } from './compass.ts';
@@ -20,6 +22,7 @@ describe('compass helpers', () => {
     expect(getCompassNeedleRotation(-Math.PI / 2)).toBeCloseTo(0);
     expect(getCompassNeedleRotation(0)).toBeCloseTo(Math.PI / 2);
     expect(getCompassNeedleRotation(Math.PI / 2)).toBeCloseTo(Math.PI);
+    expect(getCompassBezelRotation(-Math.PI / 2)).toBeCloseTo(0);
   });
 
   it('adds a wobble impulse when the heading snaps to a distant direction', () => {
@@ -45,5 +48,11 @@ describe('compass helpers', () => {
     expect(getCompassDialFacingAngle(100, 0, 50, 50)).toBeCloseTo(-Math.PI / 4);
     expect(getCompassDialFacingAngle(50, 0, 50, 50)).toBeCloseTo(-Math.PI / 2);
     expect(getCompassDialFacingAngle(100, 50, 50, 50)).toBeCloseTo(0);
+  });
+
+  it('treats outer-rim clicks as heading-bezel adjustments', () => {
+    expect(getCompassDialInteractionMode(50, 10, 50, 50, 40)).toBe('heading-bug');
+    expect(getCompassDialInteractionMode(50, 40, 50, 50, 40)).toBe('facing');
+    expect(getCompassDialInteractionMode(50, -5, 50, 50, 40)).toBe('none');
   });
 });

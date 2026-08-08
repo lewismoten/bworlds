@@ -313,6 +313,9 @@ describe('core utilities', () => {
     expect(samples.every((sample) => sample.opacity >= 0 && sample.opacity <= 1)).toBe(
       true
     );
+    expect(samples[0]?.centerPhi).toBeCloseTo(samples[samples.length - 1]?.centerPhi ?? 0, 6);
+    expect(samples[0]?.innerPhi).toBeCloseTo(samples[samples.length - 1]?.innerPhi ?? 0, 6);
+    expect(samples[0]?.outerPhi).toBeCloseTo(samples[samples.length - 1]?.outerPhi ?? 0, 6);
   });
 
   it('builds shared orrery bodies from the moon and visible orbital events', () => {

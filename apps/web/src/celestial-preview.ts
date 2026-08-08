@@ -63,9 +63,17 @@ export function createCelestialPreviewRenderer(host: HTMLElement | null) {
   const rim = new THREE.DirectionalLight('#ffdca8', 1);
   rim.position.set(12, 16, 10);
   scene.add(rim);
+  const sunLight = new THREE.DirectionalLight('#ffe2ad', 1.2);
+  scene.add(sunLight);
+  const nightFill = new THREE.DirectionalLight('#8ebcff', 0.45);
+  scene.add(nightFill);
 
   const root = new THREE.Group();
   scene.add(root);
+  const lightTarget = new THREE.Object3D();
+  root.add(lightTarget);
+  sunLight.target = lightTarget;
+  nightFill.target = lightTarget;
   const rotationState = {
     yaw: 0,
     pitch: 0,
@@ -224,6 +232,19 @@ export function createCelestialPreviewRenderer(host: HTMLElement | null) {
       10.8,
       '#dce8ff'
     );
+    const lighting = getPreviewLightingProfile(cycle);
+    ambient.intensity = lighting.ambientIntensity;
+    rim.intensity = lighting.rimIntensity;
+    const sunX = Math.cos(cycle.sunAzimuth) * 13.5;
+    const sunY = 5.8 + Math.max(-0.1, cycle.sunAltitude) * 11;
+    const sunZ = Math.sin(cycle.sunAzimuth) * 13.5;
+    sunLight.position.set(sunX, sunY, sunZ);
+    sunLight.intensity = lighting.sunIntensity;
+    nightFill.position.set(-sunX * 0.72, 6.5 + cycle.night * 2.8, -sunZ * 0.72);
+    nightFill.intensity = lighting.nightFillIntensity;
+    const worldMaterial = world.material as THREE.MeshStandardMaterial;
+    worldMaterial.emissiveIntensity = lighting.emissiveIntensity;
+    (worldGlow.material as THREE.MeshBasicMaterial).opacity = lighting.glowOpacity;
     moon.material.opacity = Math.max(
       0.24,
       (cycle.night * 0.8 + (cycle.moonAltitude > -0.08 ? 0.18 : 0)) *
@@ -267,6 +288,19 @@ export function getPlanetSurfaceColor(kind: string | undefined) {
     return '#1a3d68';
   }
   return PLANET_SURFACE_COLORS[kind] ?? '#6b7c59';
+}
+
+export function getPreviewLightingProfile(
+  cycle: Pick<DaylightCycleLike, 'daylight' | 'night' | 'starsOpacity'>
+) {
+  return {
+    ambientIntensity: 0.86 + cycle.daylight * 0.34 + cycle.night * 0.08,
+    rimIntensity: 0.72 + cycle.daylight * 0.56,
+    sunIntensity: 0.58 + cycle.daylight * 1.42,
+    nightFillIntensity: 0.18 + cycle.night * 0.28,
+    emissiveIntensity: 0.32 + cycle.night * 0.16,
+    glowOpacity: 0.07 + cycle.daylight * 0.06 + cycle.starsOpacity * 0.02,
+  };
 }
 
 export function buildPlanetTextureGrid(

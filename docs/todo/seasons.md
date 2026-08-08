@@ -110,5 +110,6 @@ add a outer globe of stars in the sky that appear at night with procedurally gen
 - [x] Add a plugin to generate visiting commets that may appear briefly, or rarely last for days.
 - [ ] Add a plugin to handle planets in the same solar system.
 - [ ] The mdoel and compass are no longer rendering content
-- [ ] The texture in celestial model can not be seen on the planet as it's too dark. the sun should at least emit light to brighten the planet, but even the dark side should be a little brighter.
-- [ ] in the celestrial model, the edges of the milky way do not line up.
+- [x] The texture in celestial model can not be seen on the planet as it's too dark. the sun should at least emit light to brighten the planet, but even the dark side should be a little brighter.
+- [x] in the celestrial model, the edges of the milky way do not line up.
+- [x] the compass does not have a bevel that I can adjust so that i can keep a constant heading.

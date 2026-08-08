@@ -32,6 +32,8 @@ import {
   drawCompassDial,
   easeAngle,
   getCompassDialFacingAngle,
+  getCompassDialInteractionMode,
+  getCompassDialRadius,
   getCompassWobbleBoost,
 } from './compass.ts';
 import {
@@ -326,6 +328,12 @@ const compassState = {
   angle: 0,
   velocity: 0,
   initialized: false,
+};
+const compassHeadingState = {
+  angle:
+    typeof savedSession?.compassHeadingAngle === 'number'
+      ? savedSession.compassHeadingAngle
+      : state.player.facing,
 };
 const MOON_PHASE_NAMES = [
   'New Moon',
@@ -949,7 +957,8 @@ function render() {
   celestialPreview.render(displayCycle, environment, state.player.facing, generator);
   drawCompassDial(
     compassDialCanvas,
-    updateDisplayedCompass(state.player.facing)
+    updateDisplayedCompass(state.player.facing),
+    compassHeadingState.angle
   );
   updateStatus();
 }
@@ -1154,14 +1163,28 @@ faceSouthButton?.addEventListener('click', () => faceDirection(Math.PI / 2));
 faceWestButton?.addEventListener('click', () => faceDirection(Math.PI));
 compassDialCanvas?.addEventListener('click', (event) => {
   const rect = compassDialCanvas.getBoundingClientRect();
-  faceDirection(
-    getCompassDialFacingAngle(
-      event.clientX - rect.left,
-      event.clientY - rect.top,
-      rect.width / 2,
-      rect.height / 2
-    )
+  const pointX = event.clientX - rect.left;
+  const pointY = event.clientY - rect.top;
+  const centerX = rect.width / 2;
+  const centerY = rect.height / 2;
+  const radius = getCompassDialRadius(rect.width, rect.height);
+  const angle = getCompassDialFacingAngle(pointX, pointY, centerX, centerY);
+  const interactionMode = getCompassDialInteractionMode(
+    pointX,
+    pointY,
+    centerX,
+    centerY,
+    radius
   );
+  if (interactionMode === 'heading-bug') {
+    compassHeadingState.angle = angle;
+    saveSession();
+    render();
+    return;
+  }
+  if (interactionMode === 'facing') {
+    faceDirection(angle);
+  }
 });
 root.querySelectorAll<HTMLButtonElement>('[data-time-preset]').forEach((button) => {
   button.addEventListener('click', () => {
@@ -1199,6 +1222,7 @@ function saveSession() {
       timeFrozen: timeState.frozen,
       frozenWorldTimeMs: timeState.frozenWorldTimeMs,
       inspectorTab: activeInspectorTab,
+      compassHeadingAngle: compassHeadingState.angle,
     });
     if (snapshot === lastSavedSnapshot) return;
     window.localStorage.setItem(STORAGE_KEY, snapshot);

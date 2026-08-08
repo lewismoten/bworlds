@@ -1028,7 +1028,11 @@ export function getMilkyWayBandSamples(
     const progress = index / resolvedSampleCount;
     const azimuth = progress * Math.PI * 2 + belt.azimuthOffset;
     const latitudeWave =
-      Math.sin(azimuth * 2.4 + yearProgress * Math.PI * 2) * belt.width;
+      Math.sin(
+        progress * Math.PI * 2 * 3 +
+          belt.azimuthOffset * 1.2 +
+          yearProgress * Math.PI * 2
+      ) * belt.width;
     const centerPhi = belt.inclination + latitudeWave;
     const edgeFade = Math.cos(progress * Math.PI * 2 - Math.PI / 2) * 0.08;
     return {

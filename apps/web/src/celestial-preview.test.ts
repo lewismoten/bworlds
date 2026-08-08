@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   buildPlanetTextureGrid,
   getPreviewAuroraBandPath,
+  getPreviewLightingProfile,
   getPreviewSunOrbitSpec,
   getPlanetSurfaceColor,
 } from './celestial-preview.ts';
@@ -60,5 +61,23 @@ describe('celestial preview helpers', () => {
       })
     );
     expect(points[10].y).not.toBeCloseTo(points[0].y, 4);
+  });
+
+  it('keeps the preview planet readable at night while still brightening in daylight', () => {
+    const noon = getPreviewLightingProfile({
+      daylight: 1,
+      night: 0,
+      starsOpacity: 0,
+    } as any);
+    const midnight = getPreviewLightingProfile({
+      daylight: 0,
+      night: 1,
+      starsOpacity: 1,
+    } as any);
+
+    expect(noon.sunIntensity).toBeGreaterThan(midnight.sunIntensity);
+    expect(midnight.ambientIntensity).toBeGreaterThan(0.8);
+    expect(midnight.emissiveIntensity).toBeGreaterThan(noon.emissiveIntensity);
+    expect(noon.glowOpacity).toBeGreaterThan(midnight.glowOpacity);
   });
 });

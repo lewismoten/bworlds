@@ -7,6 +7,10 @@ export function getCompassNeedleRotation(facingAngle: number) {
   return facingAngle + Math.PI / 2;
 }
 
+export function getCompassBezelRotation(headingAngle: number) {
+  return headingAngle + Math.PI / 2;
+}
+
 export function getCompassDelta(current: number, target: number) {
   let delta = target - current;
   while (delta > Math.PI) delta -= Math.PI * 2;
@@ -59,9 +63,28 @@ export function getCompassDialFacingAngle(
   return Math.atan2(pointY - centerY, pointX - centerX);
 }
 
+export function getCompassDialRadius(width: number, height: number) {
+  return Math.min(width, height) * 0.38;
+}
+
+export function getCompassDialInteractionMode(
+  pointX: number,
+  pointY: number,
+  centerX: number,
+  centerY: number,
+  radius: number
+) {
+  const distance = Math.hypot(pointX - centerX, pointY - centerY);
+  if (distance > radius * 1.18) {
+    return 'none';
+  }
+  return distance >= radius * 0.74 ? 'heading-bug' : 'facing';
+}
+
 export function drawCompassDial(
   canvas: HTMLCanvasElement | null,
-  facingAngle: number
+  facingAngle: number,
+  headingAngle = facingAngle
 ) {
   const context = canvas?.getContext('2d');
   if (!canvas || !context) {
@@ -71,7 +94,8 @@ export function drawCompassDial(
   const { width, height } = canvas;
   const centerX = width / 2;
   const centerY = height / 2;
-  const radius = Math.min(width, height) * 0.38;
+  const radius = getCompassDialRadius(width, height);
+  const bezelRadius = radius * 1.08;
 
   context.clearRect(0, 0, width, height);
   context.save();
@@ -89,6 +113,18 @@ export function drawCompassDial(
   context.beginPath();
   context.arc(0, 0, radius, 0, Math.PI * 2);
   context.fill();
+
+  context.lineWidth = 8;
+  context.strokeStyle = 'rgba(36, 59, 78, 0.92)';
+  context.beginPath();
+  context.arc(0, 0, bezelRadius, 0, Math.PI * 2);
+  context.stroke();
+
+  context.lineWidth = 2;
+  context.strokeStyle = 'rgba(148, 190, 222, 0.32)';
+  context.beginPath();
+  context.arc(0, 0, bezelRadius, 0, Math.PI * 2);
+  context.stroke();
 
   context.lineWidth = 2;
   context.strokeStyle = 'rgba(171, 205, 255, 0.28)';
@@ -131,6 +167,22 @@ export function drawCompassDial(
   });
 
   context.save();
+  context.rotate(getCompassBezelRotation(headingAngle));
+  context.strokeStyle = 'rgba(85, 214, 190, 0.38)';
+  context.lineWidth = 5;
+  context.beginPath();
+  context.arc(0, 0, bezelRadius, -0.24, 0.24);
+  context.stroke();
+  context.fillStyle = '#55d6be';
+  context.beginPath();
+  context.moveTo(0, -bezelRadius - 8);
+  context.lineTo(10, -bezelRadius + 5);
+  context.lineTo(-10, -bezelRadius + 5);
+  context.closePath();
+  context.fill();
+  context.restore();
+
+  context.save();
   context.rotate(getCompassNeedleRotation(facingAngle));
   context.fillStyle = '#d54343';
   context.beginPath();
@@ -153,6 +205,6 @@ export function drawCompassDial(
 
   context.fillStyle = '#dce8f5';
   context.font = '600 14px Trebuchet MS';
-  context.fillText('Click the dial or use the cardinal buttons', 0, radius + 28);
+  context.fillText('Click center to face, outer bezel to mark a heading', 0, radius + 28);
   context.restore();
 }
