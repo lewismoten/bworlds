@@ -3,8 +3,10 @@ import {
   brightenPreviewSurfaceColor,
   buildPlanetTextureGrid,
   getPreviewAuroraBandPath,
+  getPreviewBodyPosition,
   getPreviewFacingArrowState,
   getPreviewLightingProfile,
+  getPreviewLightRigState,
   getPreviewRootPitch,
   getPreviewShadowProfile,
   getPreviewSunOrbitSpec,
@@ -110,6 +112,17 @@ describe('celestial preview helpers', () => {
     expect(nightShadow.sunCastShadow).toBe(false);
   });
 
+  it('positions the preview sun rig and keeps the moon inside a generous shadow volume', () => {
+    const cycle = getDaylightCycleState(120000);
+    const rig = getPreviewLightRigState(cycle);
+
+    expect(rig.sun.y).toBeGreaterThan(0);
+    expect(rig.lighting.sunIntensity).toBeGreaterThan(1);
+    expect(Math.abs(rig.moon.x)).toBeLessThanOrEqual(10.8);
+    expect(Math.abs(rig.moon.y)).toBeLessThanOrEqual(10.8);
+    expect(rig.shadowProfile.cameraExtent).toBeGreaterThanOrEqual(14);
+  });
+
   it('uses the planet texture itself as a low-level emissive fill source', () => {
     const grid = buildPlanetTextureGrid(
       () => ({ kind: 'forest' }),
@@ -118,6 +131,17 @@ describe('celestial preview helpers', () => {
     );
 
     expect(grid[0][0]).toBe(brightenPreviewSurfaceColor('#3e6a43'));
+  });
+
+  it('maps body azimuth and altitude into stable preview coordinates', () => {
+    const east = getPreviewBodyPosition(0, 0.25, 9.8);
+    const north = getPreviewBodyPosition(-Math.PI / 2, 0.1, 10.8);
+
+    expect(east.x).toBeCloseTo(9.8, 6);
+    expect(Math.abs(east.z)).toBeLessThan(0.001);
+    expect(Math.abs(north.x)).toBeLessThan(0.001);
+    expect(north.z).toBeLessThan(0);
+    expect(north.y).toBeCloseTo(0.52, 6);
   });
 
   it('moves the facing marker without rotating the whole preview root by player heading', () => {

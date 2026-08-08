@@ -14,6 +14,12 @@ type OverworldSamplerLike = {
   };
 };
 
+type PreviewPoint3D = {
+  x: number;
+  y: number;
+  z: number;
+};
+
 const PLANET_SURFACE_COLORS: Record<string, string> = {
   ocean: '#1a3d68',
   water: '#1a3d68',
@@ -242,29 +248,21 @@ export function createCelestialPreviewRenderer(host: HTMLElement | null) {
     syncPreviewPlanetTexture(world, overworldSampler, planetTextureState);
     syncPreviewFacingArrow(facingArrow, facingAngle);
 
-    updateBodyPosition(
-      sun,
-      cycle.sunAzimuth,
-      cycle.sunAltitude,
-      9.8,
-      '#ffd06e'
-    );
+    const sunBody = getPreviewBodyPosition(cycle.sunAzimuth, cycle.sunAltitude, 9.8);
+    sun.position.set(sunBody.x, sunBody.y, sunBody.z);
+    (sun.material as THREE.MeshBasicMaterial).color.set('#ffd06e');
     sunGlow.position.copy(sun.position);
-    updateBodyPosition(
-      moon,
-      cycle.moonAzimuth,
-      cycle.moonAltitude,
-      10.8,
-      '#dce8ff'
-    );
-    const lighting = getPreviewLightingProfile(cycle);
-    const shadowProfile = getPreviewShadowProfile(cycle);
+    const moonBody = getPreviewBodyPosition(cycle.moonAzimuth, cycle.moonAltitude, 10.8);
+    moon.position.set(moonBody.x, moonBody.y, moonBody.z);
+    (moon.material as THREE.MeshStandardMaterial).color.set('#dce8ff');
+    const lightRig = getPreviewLightRigState(cycle);
+    const { lighting, shadowProfile } = lightRig;
     ambient.intensity = lighting.ambientIntensity;
     hemisphere.intensity = lighting.hemisphereIntensity;
     rim.intensity = lighting.rimIntensity;
-    const sunX = Math.cos(cycle.sunAzimuth) * 13.5;
-    const sunY = 5.8 + Math.max(-0.1, cycle.sunAltitude) * 11;
-    const sunZ = Math.sin(cycle.sunAzimuth) * 13.5;
+    const sunX = lightRig.sun.x;
+    const sunY = lightRig.sun.y;
+    const sunZ = lightRig.sun.z;
     sunLight.position.set(sunX, sunY, sunZ);
     sunLight.intensity = lighting.sunIntensity;
     sunLight.castShadow = shadowProfile.sunCastShadow;
@@ -286,7 +284,7 @@ export function createCelestialPreviewRenderer(host: HTMLElement | null) {
     sunFill.castShadow = false;
     nightFill.position.set(-sunX * 0.72, 6.5 + cycle.night * 2.8, -sunZ * 0.72);
     nightFill.intensity = lighting.nightFillIntensity;
-    bounceFill.position.set(-sunX * 0.52, 2.8 + cycle.daylight * 1.8, -sunZ * 0.52);
+    bounceFill.position.set(lightRig.bounce.x, lightRig.bounce.y, lightRig.bounce.z);
     bounceFill.intensity = lighting.bounceFillIntensity;
     const worldMaterial = world.material as THREE.MeshStandardMaterial;
     worldMaterial.emissiveIntensity = lighting.emissiveIntensity;
@@ -375,6 +373,18 @@ export function getPreviewRootPitch(
   return (-observerLatitudeDegrees / 180) * Math.PI * 0.45 + dragPitch;
 }
 
+export function getPreviewBodyPosition(
+  azimuth: number,
+  altitude: number,
+  radius: number
+): PreviewPoint3D {
+  return {
+    x: Math.cos(azimuth) * radius,
+    y: altitude * 5.2,
+    z: Math.sin(azimuth) * radius,
+  };
+}
+
 export function getPreviewFacingArrowState(facingAngle: number) {
   const radius = 4.55;
   return {
@@ -395,6 +405,37 @@ export function getPreviewShadowProfile(
     bias: cycle.sunAltitude > 0.12 ? -0.00018 : -0.0003,
     normalBias: cycle.sunAltitude > 0.12 ? 0.016 : 0.028,
     radius: cycle.daylight > 0.3 ? 2.6 : 2.2,
+  };
+}
+
+export function getPreviewLightRigState(
+  cycle: Pick<
+    DaylightCycleLike,
+    | 'daylight'
+    | 'night'
+    | 'starsOpacity'
+    | 'sunAzimuth'
+    | 'sunAltitude'
+    | 'moonAzimuth'
+    | 'moonAltitude'
+  >
+) {
+  const lighting = getPreviewLightingProfile(cycle);
+  const shadowProfile = getPreviewShadowProfile(cycle);
+  const sun = getPreviewBodyPosition(cycle.sunAzimuth, cycle.sunAltitude, 13.5);
+  sun.y = 5.8 + Math.max(-0.1, cycle.sunAltitude) * 11;
+  const moon = getPreviewBodyPosition(cycle.moonAzimuth, cycle.moonAltitude, 10.8);
+  const bounce = {
+    x: -sun.x * 0.52,
+    y: 2.8 + cycle.daylight * 1.8,
+    z: -sun.z * 0.52,
+  };
+  return {
+    sun,
+    moon,
+    bounce,
+    lighting,
+    shadowProfile,
   };
 }
 
@@ -476,21 +517,6 @@ function syncPreviewFacingArrow(mesh: THREE.Mesh, facingAngle: number) {
   mesh.rotation.x = Math.PI / 2;
   mesh.rotation.y = state.rotationY;
   mesh.rotation.z = 0;
-}
-
-function updateBodyPosition(
-  mesh: THREE.Mesh,
-  azimuth: number,
-  altitude: number,
-  radius: number,
-  color: string
-) {
-  mesh.position.set(
-    Math.cos(azimuth) * radius,
-    altitude * 5.2,
-    Math.sin(azimuth) * radius
-  );
-  (mesh.material as THREE.MeshBasicMaterial).color.set(color);
 }
 
 function syncPreviewConstellations(root: THREE.Group, cycle: DaylightCycleLike) {
