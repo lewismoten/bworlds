@@ -2,6 +2,7 @@ import { createBoatMapPlugin } from '@bworlds/map-boat';
 import { createBuildingMapPlugin } from '@bworlds/map-building';
 import { createCanoeMapPlugin } from '@bworlds/map-canoe';
 import { createDepthMapPlugin } from '@bworlds/map-depth';
+import { createGliderMapPlugin } from '@bworlds/map-glider';
 import { createLighthouseMapPlugin } from '@bworlds/map-lighthouse';
 import { createObservatoryMapPlugin } from '@bworlds/map-observatory';
 import { createOverworldCompositionPlugin } from '@bworlds/map-overworld';
@@ -75,6 +76,10 @@ export function createDefaultMapPlugins(): RuntimePlugin[] {
     {
       create: createDepthMapPlugin,
       order: { priority: 30 },
+    },
+    {
+      create: createGliderMapPlugin,
+      order: { priority: 32.5 },
     },
     {
       create: createBoatMapPlugin,

@@ -23,4 +23,4 @@
 - [ ] Add the ability to ride or pilot a blimp
 - [ ] Add the ability to ride or pilot a baloon
 - [ ] Add the ability to ride or pilot a tall ship with propellers
-- [ ] Add the ability to use a glider
+- [X] Add the ability to use a glider

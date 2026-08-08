@@ -4,6 +4,11 @@ import {
   isBoatLaunchableLandTile,
 } from '@bworlds/map-boat';
 import { type CanoeContext, findNearestCanoeLaunchPoint } from '@bworlds/map-canoe';
+import {
+  type GliderContext,
+  findGliderLandingPoint,
+  isGliderLaunchableLandTile,
+} from '@bworlds/map-glider';
 import { normalizeAngle } from '@bworlds/core';
 import { createContextMapPlugin, createEnterMapAction } from '@bworlds/map-support';
 import {
@@ -97,6 +102,10 @@ function createOverworldMap(
       const canoeAction = resolveCanoeAction(x, y, state);
       if (canoeAction) {
         return canoeAction;
+      }
+      const gliderAction = resolveGliderAction(x, y, state);
+      if (gliderAction) {
+        return gliderAction;
       }
     }
     if (
@@ -197,6 +206,56 @@ function createOverworldMap(
         y: launch.y - y,
       },
       facing: state?.player?.facing ?? 0,
+    });
+  }
+
+  function resolveGliderAction(
+    x: number,
+    y: number,
+    state?: WorldStateLike & { player?: { facing?: number } }
+  ) {
+    if (
+      !isGliderLaunchableLandTile({
+        x,
+        y,
+        sampleTile: getTile,
+        isWalkable(kind) {
+          return Boolean(plugins.getTileDefinition(kind)?.walkable);
+        },
+        state,
+      })
+    ) {
+      return null;
+    }
+
+    const facing = state?.player?.facing ?? 0;
+    const landing = findGliderLandingPoint({
+      x,
+      y,
+      facing,
+      sampleTile: getTile,
+      isWalkable(kind) {
+        return Boolean(plugins.getTileDefinition(kind)?.walkable);
+      },
+      state,
+    });
+    if (!landing) {
+      return null;
+    }
+
+    const context: GliderContext = {
+      id: `glider:${x}:${y}:${landing.x}:${landing.y}`,
+      label: 'Glider',
+      type: 'glider',
+      depth: 1,
+      origin: { x, y },
+      destination: landing,
+    };
+
+    return createEnterMapAction({
+      context,
+      spawn: { x: 0, y: 1 },
+      facing,
     });
   }
 }
