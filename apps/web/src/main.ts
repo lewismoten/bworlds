@@ -2510,6 +2510,7 @@ function render(): FrameLoopActivityLike {
       triangles: rendererStats.triangles,
       points: rendererStats.points,
       lines: rendererStats.lines,
+      sceneChildCount: rendererStats.sceneChildCount,
       visibleTileCount: rendererStats.visibleTileCount,
       visibleTreeCount: rendererStats.visibleTreeCount,
       pendingTileCount: rendererStats.pendingTileCount,

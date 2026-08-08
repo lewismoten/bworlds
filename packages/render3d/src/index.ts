@@ -57,6 +57,7 @@ type Render3DController = {
     triangles: number;
     points: number;
     lines: number;
+    sceneChildCount: number;
     visibleTileCount: number;
     visibleTreeCount: number;
     pendingTileCount: number;
@@ -543,6 +544,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       triangles: renderer.info.render.triangles,
       points: renderer.info.render.points,
       lines: renderer.info.render.lines,
+      sceneChildCount: scene.children.length,
       visibleTileCount: visibleTileNodes.size,
       visibleTreeCount: sceneResourceStats.treeCount,
       pendingTileCount: pendingWorldBuild.queue.length,

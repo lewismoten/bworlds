@@ -29,6 +29,7 @@ describe('debug panel', () => {
       triangles: 2048,
       points: 96,
       lines: 18,
+      sceneChildCount: 7,
       visibleTileCount: 112,
       visibleTreeCount: 27,
       pendingTileCount: 6,
@@ -67,6 +68,7 @@ describe('debug panel', () => {
     expect(buildDebugMarkup(snapshot)).toContain('Level');
     expect(buildDebugMarkup(snapshot)).toContain('GPU Points');
     expect(buildDebugMarkup(snapshot)).toContain('GPU Geometries');
+    expect(buildDebugMarkup(snapshot)).toContain('Scene Roots');
     expect(buildDebugMarkup(snapshot)).toContain('Visible Trees');
     expect(buildDebugMarkup(snapshot)).toContain('Avg Tile Build');
     expect(buildDebugMarkup(snapshot)).toContain('Max Tile Build');

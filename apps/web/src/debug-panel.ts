@@ -9,6 +9,7 @@ export type DebugSnapshot = {
   triangles: number;
   points: number;
   lines: number;
+  sceneChildCount: number;
   visibleTileCount: number;
   visibleTreeCount: number;
   pendingTileCount: number;
@@ -64,6 +65,7 @@ export function getDebugSignature(snapshot: DebugSnapshot): string {
     snapshot.triangles,
     snapshot.points,
     snapshot.lines,
+    snapshot.sceneChildCount,
     snapshot.visibleTileCount,
     snapshot.visibleTreeCount,
     snapshot.pendingTileCount,
@@ -156,6 +158,7 @@ export function buildDebugMarkup(snapshot: DebugSnapshot): string {
     <div><dt>GPU Tris</dt><dd>${snapshot.triangles}</dd></div>
     <div><dt>GPU Points</dt><dd>${snapshot.points}</dd></div>
     <div><dt>GPU Lines</dt><dd>${snapshot.lines}</dd></div>
+    <div><dt>Scene Roots</dt><dd>${snapshot.sceneChildCount}</dd></div>
     <div><dt>Visible Tiles</dt><dd>${snapshot.visibleTileCount}</dd></div>
     <div><dt>Visible Trees</dt><dd>${snapshot.visibleTreeCount}</dd></div>
     <div><dt>Pending Tiles</dt><dd>${snapshot.pendingTileCount}</dd></div>
