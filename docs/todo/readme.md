@@ -1,14 +1,12 @@
-- [ ] space out all POI a minimum distance from anything else
-- [ ] dungeons should be in the middle of forests
-- [ ] caves should be next to mountains
+# High Priority
+
+- [ ] [Seasons](./seasons.md)
+
+# Other Tasks
+- [ ] [POI](./poi.md)
+
 - [ ] towns, dungeons, other POI should emit light as the sun goes down
-- [ ] The season should affect the amount of day/night in a given day
-- [ ] The season should also apepar as constallations on the "Timekeeper" as the outer ring
-- [ ] I should be able to set and freeze the season
 - [ ] The moon should be able to eclipse the sun and affect the daylight
-- [ ] Constallations are procedurally generated and named
-- [ ] The "date" should include the constallation and moon phase
-- [ ] Commets and planets should have their own cycles, appearing in the sky of stars sometimes
 - [ ] When walking into a town, dungeon, or other point of interest, it can take you to separate instance of that POI.
 - [ ] When exiting a point of interest, you should appear at the entrance of the POI, facing away from the entrance.
 - [ ] Towns have levels that determine the population and number of residential and professional buildings.
