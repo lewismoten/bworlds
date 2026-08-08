@@ -309,6 +309,33 @@ describe('town support', () => {
     ).toBe(true);
   });
 
+  it('surfaces kill quest offers from generated town schedules', () => {
+    let killStates: ReturnType<typeof getTownNpcQuestStates> = [];
+
+    outerKill: for (let x = -4; x <= 12; x += 1) {
+      for (let y = -4; y <= 12; y += 1) {
+        for (let minute = 9 * 60; minute <= 16 * 60; minute += 30) {
+          killStates = getTownNpcQuestStates(
+            x,
+            y,
+            DEFAULT_DAY_LENGTH_MS * (minute / (24 * 60)),
+            {
+              level: 6,
+              profession: 'guard',
+            }
+          );
+          if (killStates.some((entry) => entry.offers.some((offer) => offer.type === 'kill'))) {
+            break outerKill;
+          }
+        }
+      }
+    }
+
+    expect(
+      killStates.some((entry) => entry.offers.some((offer) => offer.type === 'kill'))
+    ).toBe(true);
+  });
+
   it('surfaces crafting and training quest offers from matching town professions', () => {
     const crafting = getTownNpcQuestStates(3, 7, DEFAULT_DAY_LENGTH_MS * 0.5, {
       level: 5,

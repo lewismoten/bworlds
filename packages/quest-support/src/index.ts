@@ -74,6 +74,7 @@ export function getDefaultQuestPlugins(): QuestTypePlugin[] {
   const plugins = [
     createDeliveryQuestPlugin(),
     createHomeNeedQuestPlugin(),
+    createKillQuestPlugin(),
     createEscortQuestPlugin(),
     createRescueQuestPlugin(),
     createTrackingQuestPlugin(),
@@ -178,6 +179,61 @@ function createHomeNeedQuestPlugin(): QuestTypePlugin {
       title: `${seasonLabel} Household Need`,
       summary: `${context.npcName} asks for ${task} while they are home for the evening.`,
       availability: 'home',
+      sourceNpcId: context.npcId,
+      sourceNpcName: context.npcName,
+    };
+  });
+}
+
+function createKillQuestPlugin(): QuestTypePlugin {
+  return createQuestTypePlugin('kill', (context) => {
+    if (
+      context.playerLevel < 4 ||
+      context.playerLevel > 18 ||
+      context.npcState !== 'working' ||
+      !(
+        context.professionFamily === 'town-hall' ||
+        context.professionFamily === 'stable' ||
+        context.professionFamily === 'market' ||
+        context.professionFamily === 'temple'
+      )
+    ) {
+      return null;
+    }
+
+    const seasonLabel = getSeasonLabel(context.yearProgress);
+    const threat =
+      context.professionFamily === 'stable'
+        ? seasonLabel === 'Winter'
+          ? 'bring down the frost wolves stalking the hitch pens'
+          : 'cull the river drakes harrying the trail horses'
+        : context.professionFamily === 'temple'
+          ? seasonLabel === 'Winter'
+            ? 'clear out the graveyard wights before the vigil bells'
+            : 'strike down the shrine raiders preying on pilgrims'
+          : context.professionFamily === 'market'
+            ? seasonLabel === 'Winter'
+              ? 'drive off the cellar vermin ruining winter stores'
+              : 'eliminate the bandits raiding the outer caravans'
+            : seasonLabel === 'Winter'
+              ? 'cut down the ice fiends blocking the hill road'
+              : 'defeat the raiders gathering near the town watch posts';
+    const questId = `${context.townKey}:${context.npcId}:kill:${context.professionFamily}:${seasonLabel}`;
+    if (context.completedQuestIds.has(questId)) {
+      return null;
+    }
+
+    const professionHint =
+      context.playerProfession === 'guard' || context.playerProfession === 'scout'
+        ? ' Your combat patrol experience makes you the right hunter for it.'
+        : '';
+
+    return {
+      id: questId,
+      type: 'kill',
+      title: `${seasonLabel} Hunt Order`,
+      summary: `${context.npcName} needs someone to ${threat}.${professionHint}`,
+      availability: 'work',
       sourceNpcId: context.npcId,
       sourceNpcName: context.npcName,
     };

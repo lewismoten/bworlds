@@ -8,6 +8,7 @@ describe('quest support', () => {
     expect(plugins.map((plugin) => plugin.type)).toEqual([
       'delivery',
       'collection',
+      'kill',
       'escort',
       'rescue',
       'tracking',
@@ -84,6 +85,44 @@ describe('quest support', () => {
     expect(homeOffers.some((offer) => offer.type === 'collection')).toBe(true);
     expect(homeOffers.some((offer) => offer.title.includes('Winter'))).toBe(true);
     expect(commuteOffers.some((offer) => offer.type === 'escort')).toBe(true);
+  });
+
+  it('offers kill quests for staffed professions that can post local hunt orders', () => {
+    const kill = getDefaultQuestRegistry().getOffers({
+      npcId: 'npc:warden',
+      npcName: 'Della Norwood',
+      townKey: '3:7',
+      dayProgress: 0.46,
+      yearProgress: 0.62,
+      playerLevel: 6,
+      playerProfession: 'guard',
+      completedQuestIds: new Set<string>(),
+      npcState: 'working',
+      profession: 'warden',
+      professionFamily: 'town-hall',
+      residenceBuildingId: 'home',
+      workplaceBuildingId: 'hall',
+    });
+    const underleveled = getDefaultQuestRegistry().getOffers({
+      npcId: 'npc:warden',
+      npcName: 'Della Norwood',
+      townKey: '3:7',
+      dayProgress: 0.46,
+      yearProgress: 0.62,
+      playerLevel: 2,
+      completedQuestIds: new Set<string>(),
+      npcState: 'working',
+      profession: 'warden',
+      professionFamily: 'town-hall',
+      residenceBuildingId: 'home',
+      workplaceBuildingId: 'hall',
+    });
+
+    expect(kill.some((offer) => offer.type === 'kill')).toBe(true);
+    expect(
+      kill.some((offer) => offer.summary.includes('combat patrol experience'))
+    ).toBe(true);
+    expect(underleveled.some((offer) => offer.type === 'kill')).toBe(false);
   });
 
   it('offers rescue quests for staffed civic, temple, and stable roles', () => {

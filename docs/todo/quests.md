@@ -4,7 +4,7 @@ Quests should be setup as indivual plugins for each type, and support procedural
 Quests may include:
 
 - [X] Fetch quest — retrieve an item and bring it back.
-- [ ] Kill quest — defeat a certain enemy, boss, or number of enemies.
+- [X] Kill quest — defeat a certain enemy, boss, or number of enemies.
 - [X] Escort quest — protect an NPC while traveling somewhere.
 - [X] Delivery quest — carry an item or message to another person or place.
 - [X] Rescue quest — find and save an NPC, prisoner, animal, etc.
