@@ -43,6 +43,7 @@ describe('session state', () => {
             poi: { type: 'town', name: 'Spec Town' },
           },
         ],
+        preferredServerIds: ['guild', 'local'],
       },
       player: {
         x: 12.5,
@@ -93,6 +94,7 @@ describe('session state', () => {
           ],
         }),
         worldMapProfile: expect.objectContaining({
+          preferredServerIds: ['guild', 'local'],
           playerPlacedPois: [
             expect.objectContaining({
               kind: 'town',

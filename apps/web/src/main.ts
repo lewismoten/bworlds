@@ -49,7 +49,9 @@ import {
   type InventoryProfileSnapshot,
 } from './inventory-storage.ts';
 import {
+  createWorldMapStorageCoordinator,
   createLocalWorldMapStorage,
+  normalizePreferredWorldMapServerIds,
   serializeWorldMapProfile,
   type SavedWorldMapProfile,
   type WorldMapProfileSnapshot,
@@ -700,15 +702,27 @@ const inventoryStorage = createLocalInventoryStorage(
   window.localStorage,
   INVENTORY_STORAGE_KEY
 );
-const worldMapStorage = createLocalWorldMapStorage(
+const localWorldMapStorage = createLocalWorldMapStorage(
   window.localStorage,
   WORLD_MAP_STORAGE_KEY
 );
+const worldMapStorage = createWorldMapStorageCoordinator({
+  settingsStorage: localWorldMapStorage,
+  providers: [{ id: 'local', storage: localWorldMapStorage }],
+});
 
 const savedSession = loadSession();
 const savedCharacterProfile = loadCharacterProfile(savedSession);
 const savedInventoryProfile = loadInventoryProfile(savedSession);
 const savedWorldMapProfile = loadWorldMapProfile(savedSession);
+const worldMapServerPreferenceState = {
+  preferredServerIds: normalizePreferredWorldMapServerIds(
+    savedWorldMapProfile?.preferredServerIds ??
+      worldMapStorage.getPreferredServerIds?.() ??
+      ['local'],
+    worldMapStorage.getPreferredServerIds?.() ?? ['local']
+  ),
+};
 let currentWorldSeed = normalizeWorldSeed(
   savedCharacterProfile?.worldSeed ?? savedSession?.worldSeed,
   DEFAULT_WORLD_SEED
@@ -3149,6 +3163,7 @@ function buildInventoryProfileSnapshot(): InventoryProfileSnapshot {
 function buildWorldMapProfileSnapshot(): WorldMapProfileSnapshot {
   return {
     playerPlacedPois: getSavedPlayerPlacedPois(),
+    preferredServerIds: [...worldMapServerPreferenceState.preferredServerIds],
   };
 }
 
@@ -3191,6 +3206,7 @@ function getLegacyWorldMapProfile(
       session?.playerPlacedPois ??
       characterProfile?.playerPlacedPois ??
       [],
+    preferredServerIds: ['local'],
   };
 }
 
@@ -3206,6 +3222,10 @@ function loadWorldMapProfile(
   }
   lastSavedWorldMapSnapshot = serializeWorldMapProfile({
     playerPlacedPois: profile.playerPlacedPois ?? [],
+    preferredServerIds:
+      profile.preferredServerIds ??
+      worldMapStorage.getPreferredServerIds?.() ??
+      ['local'],
   });
   return profile;
 }

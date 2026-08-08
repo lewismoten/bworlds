@@ -17,6 +17,7 @@ describe('world map storage', () => {
           poi: { type: 'observatory', name: 'Spec Dome' },
         },
       ],
+      preferredServerIds: ['local'],
     });
 
     expect(parseSavedWorldMapProfile(raw)).toEqual({
@@ -29,6 +30,7 @@ describe('world map storage', () => {
           poi: { type: 'observatory', name: 'Spec Dome' },
         },
       ],
+      preferredServerIds: ['local'],
     });
   });
 
@@ -69,6 +71,7 @@ describe('world map storage', () => {
           poi: { type: 'town', name: 'Newford' },
         },
       ],
+      preferredServerIds: ['local'],
     });
 
     expect(storage.loadProfile()).toEqual({
@@ -81,6 +84,7 @@ describe('world map storage', () => {
           poi: { type: 'town', name: 'Newford' },
         },
       ],
+      preferredServerIds: ['local'],
     });
 
     storage.clearProfile();
