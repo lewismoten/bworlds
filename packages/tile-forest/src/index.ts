@@ -31,7 +31,6 @@ const TILE_PIXEL_SIZE = 16;
 const TREE_FOLIAGE_COLOR = '#163b20';
 const TREE_BARK_COLOR = '#4a2f1b';
 const FIREFLY_KEY = 'forestFirefly';
-const FIREFLY_LIGHT_KEY = 'forestFireflyLight';
 const FLOOR_DETAIL_KEY = 'forestFloorDetail';
 const BUSH_KEY = 'forestBush';
 const LANDMARK_KEY = 'forestLandmark';
@@ -46,10 +45,12 @@ const TREE_FOLIAGE_KEY = 'forestTreeFoliage';
 const RENDER_STATS_CATEGORY_KEY = 'renderStatKind';
 const TREE_CLUSTER_SIZE = 4;
 const TREE_REGION_SIZE = 14;
+const MAX_FOREST_FIREFLIES = 3;
 
 const treeDescriptorCache = new Map<string, ForestTreeDescriptor[]>();
 const treeStyleCache = new Map<string, ForestTreeStyle>();
 const forestTrailCache = new Map<string, ForestTrailDescriptor | null>();
+const forestFireflyCache = new Map<string, ForestFireflyDescriptor[]>();
 const resolveForestTrailDescriptor = createCoordinateValueResolver(
   forestTrailCache,
   ({ tileX, tileY }) => {
@@ -470,6 +471,29 @@ const resolveForestBirdDescriptors = createCoordinateValueResolver(
     }
 
     return birds;
+  }
+);
+const resolveForestFireflyDescriptors = createCoordinateValueResolver(
+  forestFireflyCache,
+  ({ tileX, tileY }) => {
+    const count = Math.min(
+      MAX_FOREST_FIREFLIES,
+      2 + Math.floor(hash2D('forest-firefly-count', tileX, tileY) * 2)
+    );
+    const fireflies: ForestFireflyDescriptor[] = [];
+
+    for (let index = 0; index < count; index += 1) {
+      fireflies.push({
+        phase: hash2D('forest-firefly-phase', tileX * 17 + index, tileY * 13),
+        drift: hash2D('forest-firefly-drift', tileX + index, tileY - index),
+        baseX: (hash2D('forest-firefly-x', tileX + index, tileY) - 0.5) * 0.56,
+        baseZ: (hash2D('forest-firefly-z', tileX, tileY + index) - 0.5) * 0.56,
+        baseY:
+          0.32 + hash2D('forest-firefly-y', tileX - index, tileY + index) * 0.34,
+      });
+    }
+
+    return fireflies;
   }
 );
 const treeGeometryCache = new WeakMap<
@@ -1035,6 +1059,13 @@ export function getForestBirds(
   return resolveForestBirdDescriptors(tileX, tileY);
 }
 
+export function getForestFireflyDescriptors(
+  tileX: number,
+  tileY: number
+): ForestFireflyDescriptor[] {
+  return resolveForestFireflyDescriptors(tileX, tileY);
+}
+
 export function getForestTrail(
   tileX: number,
   tileY: number
@@ -1253,19 +1284,8 @@ function getTreeStyle(
 }
 
 function getForestFireflies(three: ThreeHostLike, tileX: number, tileY: number) {
-  const count = 2 + Math.floor(hash2D('forest-firefly-count', tileX, tileY) * 2);
-  const positions = new Array<number>(count * 3).fill(0);
-  const descriptors: ForestFireflyDescriptor[] = [];
-
-  for (let index = 0; index < count; index += 1) {
-    descriptors.push({
-      phase: hash2D('forest-firefly-phase', tileX * 17 + index, tileY * 13),
-      drift: hash2D('forest-firefly-drift', tileX + index, tileY - index),
-      baseX: (hash2D('forest-firefly-x', tileX + index, tileY) - 0.5) * 0.56,
-      baseZ: (hash2D('forest-firefly-z', tileX, tileY + index) - 0.5) * 0.56,
-      baseY: 0.32 + hash2D('forest-firefly-y', tileX - index, tileY + index) * 0.34,
-    });
-  }
+  const descriptors = getForestFireflyDescriptors(tileX, tileY);
+  const positions = new Array<number>(descriptors.length * 3).fill(0);
 
   const geometry = new three.BufferGeometry();
   const positionAttribute = new three.Float32BufferAttribute(positions, 3) as {
@@ -1284,30 +1304,16 @@ function getForestFireflies(three: ThreeHostLike, tileX: number, tileY: number) 
       depthWrite: false,
     })
   );
-  const light = markPoiLightEmitter(
-    new three.PointLight('#d9ff8a', 0, 1.9, 2.1),
-    {
-      kind: 'point-light',
-      nightIntensity: 0.22,
-      visibleThreshold: 0.02,
-    }
-  );
-  light.userData = {
-    ...(light.userData ?? {}),
-    [FIREFLY_LIGHT_KEY]: true,
-  };
-  light.visible = false;
 
   points.userData = {
     ...(points.userData ?? {}),
     [FIREFLY_KEY]: {
       descriptors,
       positionAttribute,
-      light,
     },
   };
 
-  return [points, light];
+  return [points];
 }
 
 function createForestFloorDetailDescriptor(
@@ -1597,7 +1603,6 @@ function syncForestFireflies(
             array: ArrayLike<number> & { [index: number]: number };
             needsUpdate?: boolean;
           };
-          light?: ThreeObject3DLike;
         }
       | undefined;
     if (!firefly) {
@@ -1605,9 +1610,6 @@ function syncForestFireflies(
     }
     node.visible = activation > 0.08;
     let leadPulse = 0;
-    let leadX = 0;
-    let leadY = 0;
-    let leadZ = 0;
 
     firefly.descriptors.forEach((descriptor, index) => {
       const flutter =
@@ -1625,9 +1627,6 @@ function syncForestFireflies(
       firefly.positionAttribute.array[offset + 2] = z;
       if (index === 0) {
         leadPulse = pulse;
-        leadX = x;
-        leadY = y;
-        leadZ = z;
       }
     });
     firefly.positionAttribute.needsUpdate = true;
@@ -1643,15 +1642,6 @@ function syncForestFireflies(
         (material as ThreeMaterialLike & { opacity?: number }).opacity =
           activation * (0.28 + leadPulse * 0.64);
       });
-    }
-
-    const taggedLight = firefly.light as
-      | (ThreeObject3DLike & { intensity?: number })
-      | undefined;
-    if (taggedLight && typeof taggedLight.intensity === 'number') {
-      taggedLight.position.set(leadX, leadY, leadZ);
-      taggedLight.intensity = activation * leadPulse * 0.22;
-      taggedLight.visible = taggedLight.intensity > 0.02;
     }
   });
 }

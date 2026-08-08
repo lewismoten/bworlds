@@ -10,6 +10,7 @@ import {
   createForestTilePlugin,
   getForestBirds,
   getForestBushes,
+  getForestFireflyDescriptors,
   getForestTreeBranchProfiles,
   getForestCarvings,
   getForestFloorDetails,
@@ -1436,18 +1437,13 @@ describe('tile forest', () => {
       detailLevel: 'full',
     }) as FakeGroup;
 
-    const fireflyLights: FakePointLight[] = [];
     const fireflyPoints: FakePoints[] = [];
     model.traverse((node) => {
-      if (node instanceof FakePointLight && node.userData?.forestFireflyLight) {
-        fireflyLights.push(node);
-      }
       if (node instanceof FakePoints && node.userData?.forestFirefly) {
         fireflyPoints.push(node);
       }
     });
 
-    expect(fireflyLights).toHaveLength(1);
     expect(fireflyPoints).toHaveLength(1);
     expect(
       (fireflyPoints[0]?.geometry?.attributes.position as FakeFloat32BufferAttribute | undefined)
@@ -1466,8 +1462,7 @@ describe('tile forest', () => {
       environment: {},
     });
 
-    expect(fireflyLights.every((light) => light.intensity <= 0.01)).toBe(true);
-    expect(fireflyLights.every((light) => light.visible === false)).toBe(true);
+    expect(fireflyPoints.every((points) => points.visible === false)).toBe(true);
     expect(
       fireflyPoints.every(
         (points) => ((points.material as FakeMaterial)?.opacity ?? 0) <= 0.01
@@ -1486,8 +1481,7 @@ describe('tile forest', () => {
       environment: {},
     });
 
-    expect(fireflyLights.some((light) => light.intensity > 0.05)).toBe(true);
-    expect(fireflyLights.some((light) => light.visible === true)).toBe(true);
+    expect(fireflyPoints.some((points) => points.visible === true)).toBe(true);
     expect(
       fireflyPoints.some(
         (points) => ((points.material as FakeMaterial)?.opacity ?? 0) > 0.1
@@ -1499,6 +1493,23 @@ describe('tile forest', () => {
           | FakeFloat32BufferAttribute
           | undefined
       )?.needsUpdate
+    ).toBe(true);
+  });
+
+  it('caches deterministic firefly descriptors and keeps their count capped', () => {
+    const first = getForestFireflyDescriptors(8, 6);
+    const second = getForestFireflyDescriptors(8, 6);
+
+    expect(second).toBe(first);
+    expect(first.length).toBeLessThanOrEqual(3);
+    expect(
+      first.every(
+        (descriptor) =>
+          descriptor.baseX >= -0.28 &&
+          descriptor.baseX <= 0.28 &&
+          descriptor.baseZ >= -0.28 &&
+          descriptor.baseZ <= 0.28
+      )
     ).toBe(true);
   });
 });

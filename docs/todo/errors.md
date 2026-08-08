@@ -318,13 +318,13 @@ These reinforce the material/program concern.
 * [ ] Consider a GPU particle implementation.
 * [x] Generate firefly positions in compact typed arrays.
 * [ ] Animate them in a shader where practical.
-* [ ] Cap the number of visible fireflies.
+* [x] Cap the number of visible fireflies.
 * [ ] Scale density based on camera distance.
 * [ ] Disable fireflies outside appropriate times/seasons.
-* [ ] Avoid recalculating deterministic firefly populations every frame.
+* [x] Avoid recalculating deterministic firefly populations every frame.
 * [x] Share firefly materials.
 * [x] Avoid one light source per firefly.
-* [ ] Use emissive sprites/points rather than actual dynamic lights.
+* [x] Use emissive sprites/points rather than actual dynamic lights.
 
 ---
 
