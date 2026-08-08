@@ -54,6 +54,11 @@ type MusicSchedulerState = {
   regionSignature: string;
 };
 
+type MusicUpdateSignatureState = {
+  ambient: string;
+  poi: string;
+};
+
 export type ProceduralMusicNote = {
   themeId: MusicRegionThemeId;
   instrumentId: string;
@@ -167,6 +172,7 @@ const THEME_LIBRARY: Record<MusicRegionThemeId, MusicRegionTheme> = {
 };
 
 const LOOKAHEAD_MS = 900;
+const MUSIC_SCHEDULE_LEAD_MS = 240;
 
 export function resolveMusicTheme(
   tileKind?: TileKind,
@@ -281,12 +287,23 @@ export function scheduleProceduralMusicNotes(
 export function createMusicController(sink: MusicSink): MusicController {
   let ambientSchedulerState: MusicSchedulerState | undefined;
   let poiSchedulerState: MusicSchedulerState | undefined;
+  let lastUpdateSignature: MusicUpdateSignatureState | undefined;
+  let nextUpdateAtMs = 0;
 
   return {
     resume() {
       sink.resume?.();
     },
     update(options) {
+      const updateSignature = getMusicUpdateSignature(options);
+      const signatureChanged =
+        !lastUpdateSignature ||
+        lastUpdateSignature.ambient !== updateSignature.ambient ||
+        lastUpdateSignature.poi !== updateSignature.poi;
+      if (!signatureChanged && options.nowMs < nextUpdateAtMs) {
+        return;
+      }
+
       const poiMix = clamp(options.nearbyPoi?.mix ?? 0, 0, 1);
       const gains = resolvePoiMusicBlendGains(poiMix);
       const ambientScheduled = scheduleThemeLayerNotes(
@@ -303,6 +320,11 @@ export function createMusicController(sink: MusicSink): MusicController {
 
       if (!options.nearbyPoi || poiMix <= 0.001) {
         poiSchedulerState = undefined;
+        lastUpdateSignature = updateSignature;
+        nextUpdateAtMs = Math.max(
+          options.nowMs,
+          ambientScheduled.state.nextNoteAtMs - MUSIC_SCHEDULE_LEAD_MS
+        );
         return;
       }
 
@@ -328,7 +350,42 @@ export function createMusicController(sink: MusicSink): MusicController {
       poiScheduled.notes.forEach((note) => {
         sink.play(note);
       });
+      lastUpdateSignature = updateSignature;
+      nextUpdateAtMs = Math.max(
+        options.nowMs,
+        Math.min(
+          ambientScheduled.state.nextNoteAtMs,
+          poiScheduled.state.nextNoteAtMs
+        ) - MUSIC_SCHEDULE_LEAD_MS
+      );
     },
+  };
+}
+
+export function getMusicUpdateSignature(options: MusicUpdateOptions): MusicUpdateSignatureState {
+  return {
+    ambient: [
+      options.tileKind ?? '',
+      options.contextType ?? '',
+      Math.round(options.dayProgress * 96),
+      options.weatherKind ?? '',
+      Math.round((options.weatherIntensity ?? 0) * 10),
+      options.clusterX ?? 0,
+      options.clusterY ?? 0,
+    ].join('|'),
+    poi: options.nearbyPoi
+      ? [
+          options.nearbyPoi.tileKind ?? '',
+          options.nearbyPoi.contextType ?? '',
+          options.nearbyPoi.poiType ?? '',
+          Math.round(options.dayProgress * 96),
+          options.weatherKind ?? '',
+          Math.round((options.weatherIntensity ?? 0) * 10),
+          options.nearbyPoi.clusterX ?? 0,
+          options.nearbyPoi.clusterY ?? 0,
+          Math.round(clamp(options.nearbyPoi.mix ?? 0, 0, 1) * 100),
+        ].join('|')
+      : '',
   };
 }
 

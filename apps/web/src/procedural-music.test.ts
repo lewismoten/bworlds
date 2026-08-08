@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   createProceduralInstrumentBank,
   createMusicController,
+  getMusicUpdateSignature,
   getMusicRegionSignature,
   getMusicSpatialMix,
   resolvePoiMusicBlendGains,
@@ -206,5 +207,108 @@ describe('procedural music', () => {
 
     expect(played.some((note) => note.themeId === 'frontier-plains')).toBe(true);
     expect(played.some((note) => note.themeId === 'town-square')).toBe(true);
+  });
+
+  it('builds stable update signatures for throttled music scheduling', () => {
+    const base = {
+      nowMs: 0,
+      tileKind: 'plains' as const,
+      contextType: 'overworld' as const,
+      dayProgress: 0.5,
+      weatherKind: 'fog' as const,
+      weatherIntensity: 0.35,
+      clusterX: 1,
+      clusterY: -2,
+      nearbyPoi: {
+        tileKind: 'town' as const,
+        poiType: 'town',
+        contextType: 'town' as const,
+        mix: 0.75,
+        clusterX: 0,
+        clusterY: 0,
+      },
+    };
+
+    expect(getMusicUpdateSignature(base)).toEqual(
+      getMusicUpdateSignature({ ...base })
+    );
+    expect(
+      getMusicUpdateSignature({
+        ...base,
+        clusterX: base.clusterX + 1,
+      })
+    ).not.toEqual(getMusicUpdateSignature(base));
+  });
+
+  it('skips redundant per-frame scheduling updates until the next note horizon approaches', () => {
+    const played: ProceduralMusicNote[] = [];
+    const controller = createMusicController({
+      play(note) {
+        played.push(note);
+      },
+    });
+
+    controller.update({
+      nowMs: 0,
+      tileKind: 'town',
+      contextType: 'town',
+      dayProgress: 0.45,
+      clusterX: 0,
+      clusterY: 0,
+    });
+    const initialCount = played.length;
+
+    controller.update({
+      nowMs: 16,
+      tileKind: 'town',
+      contextType: 'town',
+      dayProgress: 0.45,
+      clusterX: 0,
+      clusterY: 0,
+    });
+
+    expect(played.length).toBe(initialCount);
+
+    controller.update({
+      nowMs: 980,
+      tileKind: 'town',
+      contextType: 'town',
+      dayProgress: 0.45,
+      clusterX: 0,
+      clusterY: 0,
+    });
+
+    expect(played.length).toBeGreaterThan(initialCount);
+  });
+
+  it('reschedules immediately when the music state changes before the next horizon', () => {
+    const played: ProceduralMusicNote[] = [];
+    const controller = createMusicController({
+      play(note) {
+        played.push(note);
+      },
+    });
+
+    controller.update({
+      nowMs: 0,
+      tileKind: 'plains',
+      contextType: 'overworld',
+      dayProgress: 0.5,
+      clusterX: 0,
+      clusterY: 0,
+    });
+    const initialCount = played.length;
+
+    controller.update({
+      nowMs: 16,
+      tileKind: 'forest',
+      contextType: 'overworld',
+      dayProgress: 0.5,
+      clusterX: 2,
+      clusterY: 1,
+    });
+
+    expect(played.length).toBeGreaterThan(initialCount);
+    expect(played.some((note) => note.themeId === 'deep-forest')).toBe(true);
   });
 });
