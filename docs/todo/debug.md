@@ -2,3 +2,5 @@
 - [ ] Show/Edit world seed
 - [ ] Show GPS coordinates
 - [ ] Show tile x/y position
+- [ ] Display the world seed and allow it to be changed.
+- [ ] Save/load the world seed
