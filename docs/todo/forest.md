@@ -3,7 +3,7 @@
 - [ ] A large forest may have a very large and tall tree deep inside, that is a woodland town of its own. There are a few types - inabitants live (a) inside the hollowed trunk/bark of the tree, (b) high above the other trees in the branches, (c) underneath the tree roots, or (d) a combination where different town maps lead to each level.
 - [ ] Improve the branch generation to make trees
 - [ ] Add pine trees
-- [ ] Add bushes
+- [X] Add bushes
 - [X] Sometimes show a stump
 - [X] Sometimes show a fallen tree
 - [ ] Consider a forest near a river can have a fallen tree across the river to form a bridge without a path/road leading to it

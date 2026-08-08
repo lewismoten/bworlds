@@ -8,6 +8,7 @@ vi.mock('@bworlds/three-support', () => ({
 
 import {
   createForestTilePlugin,
+  getForestBushes,
   getForestFloorDetails,
   getForestLandmark,
 } from './index.ts';
@@ -132,6 +133,35 @@ describe('tile forest', () => {
 
     const first = sampleTiles[0];
     expect(getForestFloorDetails(first.x, first.y)).toEqual(first.details);
+  });
+
+  it('generates deterministic bushes for some forest tiles', () => {
+    const sampleTiles: Array<{
+      x: number;
+      y: number;
+      bushes: ReturnType<typeof getForestBushes>;
+    }> = [];
+
+    for (let tileY = 0; tileY < 18; tileY += 1) {
+      for (let tileX = 0; tileX < 18; tileX += 1) {
+        const bushes = getForestBushes(tileX, tileY);
+        if (bushes.length > 0) {
+          sampleTiles.push({ x: tileX, y: tileY, bushes });
+        }
+      }
+    }
+
+    expect(sampleTiles.length).toBeGreaterThan(0);
+    expect(
+      sampleTiles.some(({ bushes }) =>
+        bushes.every(
+          (bush) => bush.height > 0.1 && bush.width > 0.2 && bush.depth > 0.2
+        )
+      )
+    ).toBe(true);
+
+    const first = sampleTiles[0];
+    expect(getForestBushes(first.x, first.y)).toEqual(first.bushes);
   });
 
   it('creates a lower-detail distant forest model', () => {
@@ -347,6 +377,75 @@ describe('tile forest', () => {
 
     expect(fullLandmarks.size).toBeGreaterThan(0);
     expect(lowLandmarks.size).toBe(0);
+  });
+
+  it('renders bushes only in full-detail forest models', () => {
+    const plugin = createForestTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'forest');
+    const state = {
+      player: { x: 0, y: 0, facing: 0 },
+      getCurrentContext() {
+        return { id: 'overworld', type: 'overworld', depth: 0 };
+      },
+      getCurrentTile() {
+        return { kind: 'forest' };
+      },
+      getTileDefinition() {
+        return {
+          name: 'Forest',
+          color: '#000000',
+          miniColor: '#111111',
+          walkable: true,
+          wallHeight: 0.38,
+        };
+      },
+    };
+
+    let targetTile: { x: number; y: number } | null = null;
+    for (let tileY = 0; tileY < 18 && !targetTile; tileY += 1) {
+      for (let tileX = 0; tileX < 18; tileX += 1) {
+        if (getForestBushes(tileX, tileY).length > 0) {
+          targetTile = { x: tileX, y: tileY };
+          break;
+        }
+      }
+    }
+
+    expect(targetTile).not.toBeNull();
+
+    const fullModel = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'forest' },
+      tileX: targetTile!.x,
+      tileY: targetTile!.y,
+      detailLevel: 'full',
+    }) as FakeGroup;
+    const lowModel = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'forest' },
+      tileX: targetTile!.x,
+      tileY: targetTile!.y,
+      detailLevel: 'low',
+    }) as FakeGroup;
+
+    let fullBushCount = 0;
+    fullModel.traverse((node) => {
+      if (node.userData?.forestBush) {
+        fullBushCount += 1;
+      }
+    });
+
+    let lowBushCount = 0;
+    lowModel.traverse((node) => {
+      if (node.userData?.forestBush) {
+        lowBushCount += 1;
+      }
+    });
+
+    expect(fullBushCount).toBeGreaterThan(0);
+    expect(lowBushCount).toBe(0);
   });
 
   it('shows fireflies only after dark', () => {

@@ -27,6 +27,7 @@ const TREE_BARK_COLOR = '#4a2f1b';
 const FIREFLY_KEY = 'forestFirefly';
 const FIREFLY_LIGHT_KEY = 'forestFireflyLight';
 const FLOOR_DETAIL_KEY = 'forestFloorDetail';
+const BUSH_KEY = 'forestBush';
 const LANDMARK_KEY = 'forestLandmark';
 const TREE_CLUSTER_SIZE = 4;
 const TREE_REGION_SIZE = 14;
@@ -173,6 +174,33 @@ const resolveForestFloorDetailDescriptors = createCoordinateValueResolver(
     }
 
     return details;
+  }
+);
+const forestBushCache = new Map<string, ForestBushDescriptor[]>();
+const resolveForestBushDescriptors = createCoordinateValueResolver(
+  forestBushCache,
+  ({ tileX, tileY }) => {
+    const trees = resolveForestTreeDescriptors(tileX, tileY);
+    const floorDetails = resolveForestFloorDetailDescriptors(tileX, tileY);
+    const landmark = getForestLandmark(tileX, tileY);
+    const count = Math.floor(hash2D('forest-bush-count', tileX, tileY) * 3);
+    const bushes: ForestBushDescriptor[] = [];
+
+    for (let index = 0; index < count; index += 1) {
+      const bush = createForestBushDescriptor(
+        tileX,
+        tileY,
+        index,
+        trees,
+        floorDetails,
+        landmark
+      );
+      if (bush) {
+        bushes.push(bush);
+      }
+    }
+
+    return bushes;
   }
 );
 const treeGeometryCache = new WeakMap<
@@ -343,6 +371,19 @@ export function createForestTilePlugin(): RuntimePlugin {
               floorDetailStyle
             );
           }
+          for (const bush of getForestBushes(tileX, tileY)) {
+            const shrub = new three.Mesh(
+              geometry.foliage,
+              floorDetailStyle.foliageMaterial
+            );
+            shrub.position.set(tileX + bush.x, bush.height, tileY + bush.y);
+            shrub.scale.set(bush.width, bush.height, bush.depth);
+            shrub.userData = {
+              ...(shrub.userData ?? {}),
+              [BUSH_KEY]: true,
+            };
+            group.add(shrub);
+          }
           for (const detail of getForestFloorDetails(tileX, tileY)) {
             if (detail.kind === 'stump') {
               const stump = new three.Mesh(
@@ -444,6 +485,13 @@ export function getForestLandmark(
   tileY: number
 ): ForestLandmarkDescriptor | null {
   return resolveForestLandmarkDescriptor(tileX, tileY);
+}
+
+export function getForestBushes(
+  tileX: number,
+  tileY: number
+): ForestBushDescriptor[] {
+  return resolveForestBushDescriptors(tileX, tileY);
 }
 
 function getForestGroveCenter(tileX: number, tileY: number) {
@@ -682,6 +730,59 @@ function createForestFloorDetailDescriptor(
       radius: 0.34 + hash2D(seed, 4, 0) * 0.12,
       length: 0.42 + hash2D(seed, 5, 0) * 0.24,
       height: 0.12,
+    };
+  }
+
+  return null;
+}
+
+function createForestBushDescriptor(
+  tileX: number,
+  tileY: number,
+  bushIndex: number,
+  trees: ForestTreeDescriptor[],
+  floorDetails: ForestFloorDetailDescriptor[],
+  landmark: ForestLandmarkDescriptor | null
+): ForestBushDescriptor | null {
+  const maxAttempts = 4;
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    const seed = `forest-bush:${tileX}:${tileY}:${bushIndex}:${attempt}`;
+    const x = clampToTile((hash2D(seed, 1, 0) - 0.5) * 0.6);
+    const y = clampToTile((hash2D(seed, 2, 0) - 0.5) * 0.6);
+    const width = 0.26 + hash2D(seed, 3, 0) * 0.12;
+    const depth = 0.24 + hash2D(seed, 4, 0) * 0.12;
+    const height = 0.14 + hash2D(seed, 5, 0) * 0.1;
+    const bushRadius = Math.max(width, depth) * 0.42;
+    const nearTree = trees.some((tree) => {
+      const distance = Math.hypot(x - tree.x, y - tree.y);
+      return distance < tree.radius + bushRadius;
+    });
+    if (nearTree) {
+      continue;
+    }
+
+    const nearFloorDetail = floorDetails.some((detail) => {
+      const distance = Math.hypot(x - detail.x, y - detail.y);
+      const detailRadius = (detail.length ?? detail.radius) * 0.3;
+      return distance < detailRadius + bushRadius + 0.04;
+    });
+    if (nearFloorDetail) {
+      continue;
+    }
+
+    if (landmark) {
+      const distanceFromLandmark = Math.hypot(x - landmark.x, y - landmark.y);
+      if (distanceFromLandmark < landmark.ringRadius + bushRadius + 0.05) {
+        continue;
+      }
+    }
+
+    return {
+      x,
+      y,
+      width,
+      depth,
+      height,
     };
   }
 
@@ -959,4 +1060,12 @@ interface ForestLandmarkDescriptor {
   ringRadius: number;
   memberCount: number;
   scale: number;
+}
+
+interface ForestBushDescriptor {
+  x: number;
+  y: number;
+  width: number;
+  depth: number;
+  height: number;
 }
