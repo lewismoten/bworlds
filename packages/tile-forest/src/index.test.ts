@@ -465,6 +465,27 @@ describe('tile forest', () => {
         )
       )
     ).toBe(true);
+    expect(
+      sampleTiles.every(({ carvings }) =>
+        carvings.every(
+          (carving) =>
+            carving.age >= 0 &&
+            carving.age <= 1 &&
+            carving.barkCoverage >= 0 &&
+            carving.barkCoverage <= 1
+        )
+      )
+    ).toBe(true);
+    expect(
+      sampleTiles.some(({ carvings }) =>
+        carvings.some((carving) => carving.age >= 0.8)
+      )
+    ).toBe(true);
+    expect(
+      sampleTiles.some(({ carvings }) =>
+        carvings.some((carving) => carving.barkCoverage >= 0.45)
+      )
+    ).toBe(true);
 
     const first = sampleTiles[0];
     expect(getForestCarvings(first.x, first.y)).toEqual(first.carvings);
@@ -1599,11 +1620,23 @@ describe('tile forest', () => {
 
     let fullCarvingCount = 0;
     const fullLabels = new Set<string>();
+    const fullAges: number[] = [];
+    const fullBarkCoverage: number[] = [];
+    const fullScales: number[] = [];
     fullModel.traverse((node) => {
       const carving = node.userData?.forestCarving;
       if (typeof carving === 'string') {
         fullCarvingCount += 1;
         fullLabels.add(carving);
+      }
+      if (typeof node.userData?.forestCarvingAge === 'number') {
+        fullAges.push(node.userData.forestCarvingAge);
+      }
+      if (typeof node.userData?.forestCarvingBarkCoverage === 'number') {
+        fullBarkCoverage.push(node.userData.forestCarvingBarkCoverage);
+      }
+      if (typeof node.userData?.forestCarvingAge === 'number' && node.scale?.x) {
+        fullScales.push(node.scale.x);
       }
     });
 
@@ -1630,6 +1663,9 @@ describe('tile forest', () => {
       )
     ).toBe(true);
     expect(lowCarvingCount).toBe(0);
+    expect(fullAges.length).toBeGreaterThan(0);
+    expect(fullBarkCoverage.length).toBeGreaterThan(0);
+    expect(Math.min(...fullScales)).toBeLessThan(Math.max(...fullScales));
 
     let datedTile: { x: number; y: number } | null = null;
     for (let tileY = 0; tileY < 18 && !datedTile; tileY += 1) {
@@ -1788,6 +1824,46 @@ describe('tile forest', () => {
     });
 
     expect(clueLabels.size).toBeGreaterThan(0);
+
+    let agedTile: { x: number; y: number } | null = null;
+    for (let tileY = 0; tileY < 32 && !agedTile; tileY += 1) {
+      for (let tileX = 0; tileX < 32; tileX += 1) {
+        if (
+          getForestCarvings(tileX, tileY).some(
+            (carving) => carving.age >= 0.8 && carving.barkCoverage >= 0.45
+          )
+        ) {
+          agedTile = { x: tileX, y: tileY };
+          break;
+        }
+      }
+    }
+
+    expect(agedTile).not.toBeNull();
+    state.player.x = agedTile!.x;
+    state.player.y = agedTile!.y;
+    const agedModel = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'forest' },
+      tileX: agedTile!.x,
+      tileY: agedTile!.y,
+      detailLevel: 'full',
+    }) as FakeGroup;
+
+    const agedRenderAges: number[] = [];
+    const agedRenderCoverage: number[] = [];
+    agedModel.traverse((node) => {
+      if (typeof node.userData?.forestCarvingAge === 'number') {
+        agedRenderAges.push(node.userData.forestCarvingAge);
+      }
+      if (typeof node.userData?.forestCarvingBarkCoverage === 'number') {
+        agedRenderCoverage.push(node.userData.forestCarvingBarkCoverage);
+      }
+    });
+
+    expect(agedRenderAges.some((age) => age >= 0.8)).toBe(true);
+    expect(agedRenderCoverage.some((coverage) => coverage >= 0.45)).toBe(true);
   });
 
   it('renders flower meadows only in full-detail forest models', () => {

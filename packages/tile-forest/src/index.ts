@@ -469,6 +469,9 @@ const resolveForestCarvingDescriptors = createCoordinateValueResolver(
           tree.trunkHeight *
           (0.44 + hash2D('forest-carving-height', treeIndex, tileY) * 0.14),
         scale: 0.018 + hash2D('forest-carving-scale', tileX + treeIndex, tileY) * 0.006,
+        age: resolveForestCarvingAge(motif, tileX, tileY, treeIndex),
+        barkCoverage: resolveForestCarvingBarkCoverage(motif, tileX, tileY, treeIndex),
+        markerSeed: `forest-carving:${tileX}:${tileY}:${treeIndex}`,
         motif,
         text: getForestCarvingText(motif, tileX, tileY, treeIndex),
       });
@@ -1001,10 +1004,14 @@ export function createForestTilePlugin(): RuntimePlugin {
                   carving.height + marker.y * carving.scale,
                   tileY + treeDescriptor.y + marker.x * carving.scale
                 );
-                notch.scale.setScalar(carving.scale);
+                notch.scale.setScalar(
+                  carving.scale * (0.94 - carving.age * 0.16 - carving.barkCoverage * 0.08)
+                );
                 notch.userData = {
                   ...(notch.userData ?? {}),
                   [CARVING_KEY]: carving.text,
+                  forestCarvingAge: carving.age,
+                  forestCarvingBarkCoverage: carving.barkCoverage,
                 };
                 group.add(notch);
               }
@@ -2504,11 +2511,31 @@ function createForestLandmarkMeshes(
 
 function getForestCarvingMarkers(carving: ForestCarvingDescriptor) {
   const glyphs = getForestCarvingGlyphs(carving.text);
+  const weathering = 0.18 + carving.age * 0.42;
+  const obscuredThreshold = carving.barkCoverage * 0.72 + carving.age * 0.08;
 
-  return glyphs.map((marker) => ({
-    x: marker.x * carving.scale * 1.25,
-    y: marker.y * carving.scale * 1.7,
-  }));
+  return glyphs
+    .filter(
+      (_marker, index) =>
+        hash2D(`${carving.markerSeed}:visible`, index, 0) >= obscuredThreshold
+    )
+    .map((marker, index) => {
+      const jitterX =
+        (hash2D(`${carving.markerSeed}:jitter-x`, index, 0) - 0.5) *
+        carving.scale *
+        weathering *
+        0.8;
+      const jitterY =
+        (hash2D(`${carving.markerSeed}:jitter-y`, index, 0) - 0.5) *
+        carving.scale *
+        weathering *
+        0.45;
+
+      return {
+        x: marker.x * carving.scale * 1.25 + jitterX,
+        y: marker.y * carving.scale * (1.7 - weathering * 0.24) + jitterY,
+      };
+    });
 }
 
 function getForestCarvingGlyphs(text: string) {
@@ -2608,6 +2635,43 @@ function getForestCarvingText(
   }
 
   return motif === 'heart' ? 'LM*FG' : 'LM+FG';
+}
+
+function resolveForestCarvingAge(
+  motif: ForestCarvingDescriptor['motif'],
+  tileX: number,
+  tileY: number,
+  treeIndex: number
+) {
+  const baseAge = hash2D('forest-carving-age', tileX * 17 + treeIndex, tileY * 19);
+  if (motif === 'historical-inscription') {
+    return 0.78 + baseAge * 0.22;
+  }
+  if (motif === 'date' || motif === 'treasure-map-clue') {
+    return 0.56 + baseAge * 0.38;
+  }
+  if (motif === 'quest-hint' || motif === 'traveler-mark' || motif === 'arrow') {
+    return 0.18 + baseAge * 0.52;
+  }
+  if (motif === 'warning' || motif === 'guild' || motif === 'religious') {
+    return 0.34 + baseAge * 0.46;
+  }
+  return 0.24 + baseAge * 0.64;
+}
+
+function resolveForestCarvingBarkCoverage(
+  motif: ForestCarvingDescriptor['motif'],
+  tileX: number,
+  tileY: number,
+  treeIndex: number
+) {
+  const age = resolveForestCarvingAge(motif, tileX, tileY, treeIndex);
+  const baseCoverage = hash2D(
+    'forest-carving-bark-coverage',
+    tileX * 23 + treeIndex,
+    tileY * 29
+  );
+  return Math.min(0.92, Math.max(0.04, age * 0.58 + baseCoverage * 0.34 - 0.06));
 }
 
 function createForestCarvingInspectAction({
@@ -3298,6 +3362,9 @@ interface ForestCarvingDescriptor {
   sideOffset: -1 | 1;
   height: number;
   scale: number;
+  age: number;
+  barkCoverage: number;
+  markerSeed: string;
   motif:
     | 'initials'
     | 'heart'

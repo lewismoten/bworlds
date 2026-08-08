@@ -650,8 +650,8 @@ This probably deserves several interchangeable strategies.
 * [X] Generate historical inscriptions.
 * [X] Allow players to inspect carvings.
 * [ ] Allow new player-created carvings if desirable.
-* [ ] Age carvings visually.
-* [ ] Allow bark growth to partially obscure old carvings.
+* [X] Age carvings visually.
+* [X] Allow bark growth to partially obscure old carvings.
 * [ ] Preserve important quest carvings deterministically.
 
 # Items Attached to Trees
