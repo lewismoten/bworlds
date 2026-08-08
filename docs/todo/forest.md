@@ -630,7 +630,7 @@ This probably deserves several interchangeable strategies.
 * [x] Generate nearly felled trees.
 * [x] Generate felled beaver-cut trees.
 * [x] Generate stripped branches.
-* [ ] Associate damage with nearby beaver populations.
+* [x] Associate damage with nearby beaver populations.
 * [x] Avoid beaver damage far from suitable habitat.
 
 # Tree Carvings

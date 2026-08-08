@@ -8,6 +8,7 @@ vi.mock('@bworlds/three-support', () => ({
 
 import {
   getForestBeaverDamage,
+  getForestBeaverPopulation,
   createForestTilePlugin,
   getForestBirds,
   getForestBushes,
@@ -627,17 +628,38 @@ describe('tile forest', () => {
     expect(getForestSpiders(first.x, first.y)).toBe(first.spiders);
   });
 
-  it('generates beaver damage only for forest tiles near river habitat', () => {
-    const rivers = {
-      '8:5': { kind: 'river' },
-      '9:5': { kind: 'river' },
-      '8:4': { kind: 'river' },
-    };
-    const wetState = createForestTestState(8, 6, rivers);
-    const dryState = createForestTestState(8, 6);
+  it('generates beaver damage only for some forest tiles near active river beaver habitat', () => {
+    let targetTile: { x: number; y: number; rivers: Record<string, { kind: string }> } | null =
+      null;
+    for (let tileY = 0; tileY < 24 && !targetTile; tileY += 1) {
+      for (let tileX = 0; tileX < 24; tileX += 1) {
+        const rivers = {
+          [`${tileX}:${tileY - 1}`]: { kind: 'river' },
+          [`${tileX + 1}:${tileY - 1}`]: { kind: 'river' },
+          [`${tileX}:${tileY - 2}`]: { kind: 'river' },
+        };
+        const state = createForestTestState(tileX, tileY, rivers);
+        if (
+          getForestBeaverPopulation(state as never, tileX, tileY) &&
+          getForestBeaverDamage(state as never, tileX, tileY).length > 0
+        ) {
+          targetTile = { x: tileX, y: tileY, rivers };
+          break;
+        }
+      }
+    }
 
-    const wetDamage = getForestBeaverDamage(wetState as never, 8, 6);
-    const dryDamage = getForestBeaverDamage(dryState as never, 8, 6);
+    expect(targetTile).not.toBeNull();
+
+    const wetState = createForestTestState(
+      targetTile!.x,
+      targetTile!.y,
+      targetTile!.rivers
+    );
+    const dryState = createForestTestState(targetTile!.x, targetTile!.y);
+
+    const wetDamage = getForestBeaverDamage(wetState as never, targetTile!.x, targetTile!.y);
+    const dryDamage = getForestBeaverDamage(dryState as never, targetTile!.x, targetTile!.y);
 
     expect(wetDamage.length).toBeGreaterThan(0);
     expect(dryDamage).toHaveLength(0);
@@ -651,9 +673,6 @@ describe('tile forest', () => {
       )
     ).toBe(true);
     expect(
-      wetDamage.some((damage) => damage.severity === 'near-felled')
-    ).toBe(true);
-    expect(
       wetDamage.every(
         (damage) =>
           damage.chewHeight > 0.07 &&
@@ -663,6 +682,48 @@ describe('tile forest', () => {
           Math.abs(damage.leanDirection) === 1
       )
     ).toBe(true);
+  });
+
+  it('generates beaver populations only for some river-adjacent forest tiles', () => {
+    let activeTile: { x: number; y: number; rivers: Record<string, { kind: string }> } | null =
+      null;
+    for (let tileY = 0; tileY < 24 && !activeTile; tileY += 1) {
+      for (let tileX = 0; tileX < 24; tileX += 1) {
+        const rivers = {
+          [`${tileX}:${tileY - 1}`]: { kind: 'river' },
+          [`${tileX + 1}:${tileY - 1}`]: { kind: 'river' },
+          [`${tileX}:${tileY - 2}`]: { kind: 'river' },
+        };
+        const state = createForestTestState(tileX, tileY, rivers);
+        if (getForestBeaverPopulation(state as never, tileX, tileY)) {
+          activeTile = { x: tileX, y: tileY, rivers };
+          break;
+        }
+      }
+    }
+
+    expect(activeTile).not.toBeNull();
+
+    const activeState = createForestTestState(
+      activeTile!.x,
+      activeTile!.y,
+      activeTile!.rivers
+    );
+    const dryState = createForestTestState(activeTile!.x, activeTile!.y);
+    const population = getForestBeaverPopulation(
+      activeState as never,
+      activeTile!.x,
+      activeTile!.y
+    );
+
+    expect(population).not.toBeNull();
+    expect(['lodge-sign', 'resident-pair', 'active-colony']).toContain(
+      population?.density
+    );
+    expect((population?.activity ?? 0)).toBeGreaterThan(0.4);
+    expect(
+      getForestBeaverPopulation(dryState as never, activeTile!.x, activeTile!.y)
+    ).toBeNull();
   });
 
   it('creates a lower-detail distant forest model', () => {
@@ -1763,48 +1824,69 @@ describe('tile forest', () => {
     expect(countTaggedNodes(lowModel, 'forestWeb')).toBe(0);
   });
 
-  it('renders beaver damage only near river habitat in full-detail close forest models', () => {
+  it('renders beaver damage only near river habitat with a nearby beaver population in full-detail close forest models', () => {
     const plugin = createForestTilePlugin();
     const tile = plugin.tiles?.find((entry) => entry.kind === 'forest');
-    const rivers = {
-      '8:5': { kind: 'river' },
-      '9:5': { kind: 'river' },
-      '8:4': { kind: 'river' },
-    };
-    const wetState = createForestTestState(8, 6, rivers);
-    const dryState = createForestTestState(8, 6);
-    const farState = createForestTestState(-100, -100, rivers);
+    let targetTile: { x: number; y: number; rivers: Record<string, { kind: string }> } | null =
+      null;
+    for (let tileY = 0; tileY < 24 && !targetTile; tileY += 1) {
+      for (let tileX = 0; tileX < 24; tileX += 1) {
+        const rivers = {
+          [`${tileX}:${tileY - 1}`]: { kind: 'river' },
+          [`${tileX + 1}:${tileY - 1}`]: { kind: 'river' },
+          [`${tileX}:${tileY - 2}`]: { kind: 'river' },
+        };
+        const state = createForestTestState(tileX, tileY, rivers);
+        if (
+          getForestBeaverPopulation(state as never, tileX, tileY) &&
+          getForestBeaverDamage(state as never, tileX, tileY).length > 0
+        ) {
+          targetTile = { x: tileX, y: tileY, rivers };
+          break;
+        }
+      }
+    }
+
+    expect(targetTile).not.toBeNull();
+
+    const wetState = createForestTestState(
+      targetTile!.x,
+      targetTile!.y,
+      targetTile!.rivers
+    );
+    const dryState = createForestTestState(targetTile!.x, targetTile!.y);
+    const farState = createForestTestState(-100, -100, targetTile!.rivers);
 
     const wetModel = tile?.create3DModel?.({
       three: fakeThree as never,
       state: wetState,
       tile: { kind: 'forest' },
-      tileX: 8,
-      tileY: 6,
+      tileX: targetTile!.x,
+      tileY: targetTile!.y,
       detailLevel: 'full',
     }) as FakeGroup;
     const dryModel = tile?.create3DModel?.({
       three: fakeThree as never,
       state: dryState,
       tile: { kind: 'forest' },
-      tileX: 8,
-      tileY: 6,
+      tileX: targetTile!.x,
+      tileY: targetTile!.y,
       detailLevel: 'full',
     }) as FakeGroup;
     const farModel = tile?.create3DModel?.({
       three: fakeThree as never,
       state: farState,
       tile: { kind: 'forest' },
-      tileX: 8,
-      tileY: 6,
+      tileX: targetTile!.x,
+      tileY: targetTile!.y,
       detailLevel: 'full',
     }) as FakeGroup;
     const lowModel = tile?.create3DModel?.({
       three: fakeThree as never,
       state: wetState,
       tile: { kind: 'forest' },
-      tileX: 8,
-      tileY: 6,
+      tileX: targetTile!.x,
+      tileY: targetTile!.y,
       detailLevel: 'low',
     }) as FakeGroup;
 
@@ -1830,12 +1912,61 @@ describe('tile forest', () => {
     expect(countTaggedNodes(wetModel, 'forestBeaverDamage')).toBeGreaterThan(0);
     expect(countTaggedValue(wetModel, 'forestBeaverDamage', 'chew')).toBeGreaterThan(0);
     expect(countTaggedValue(wetModel, 'forestBeaverDamage', 'debris')).toBeGreaterThan(0);
-    expect(
-      countTaggedValue(wetModel, 'forestBeaverDamage', 'near-felled')
-    ).toBeGreaterThan(0);
     expect(countTaggedNodes(dryModel, 'forestBeaverDamage')).toBe(0);
     expect(countTaggedNodes(farModel, 'forestBeaverDamage')).toBe(0);
     expect(countTaggedNodes(lowModel, 'forestBeaverDamage')).toBe(0);
+  });
+
+  it('renders near-felled beaver-cut trees for some river-adjacent forest tiles', () => {
+    const plugin = createForestTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'forest');
+
+    let targetTile: { x: number; y: number; rivers: Record<string, { kind: string }> } | null =
+      null;
+
+    for (let tileY = 0; tileY < 24 && !targetTile; tileY += 1) {
+      for (let tileX = 0; tileX < 24; tileX += 1) {
+        const rivers = {
+          [`${tileX}:${tileY - 1}`]: { kind: 'river' },
+          [`${tileX + 1}:${tileY - 1}`]: { kind: 'river' },
+          [`${tileX}:${tileY - 2}`]: { kind: 'river' },
+        };
+        const state = createForestTestState(tileX, tileY, rivers);
+        if (
+          getForestBeaverDamage(state as never, tileX, tileY).some(
+            (damage) => damage.severity === 'near-felled'
+          )
+        ) {
+          targetTile = { x: tileX, y: tileY, rivers };
+          break;
+        }
+      }
+    }
+
+    expect(targetTile).not.toBeNull();
+
+    const state = createForestTestState(
+      targetTile!.x,
+      targetTile!.y,
+      targetTile!.rivers
+    );
+    const model = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'forest' },
+      tileX: targetTile!.x,
+      tileY: targetTile!.y,
+      detailLevel: 'full',
+    }) as FakeGroup;
+
+    let nearFelledCount = 0;
+    model.traverse((node) => {
+      if (node.userData?.forestBeaverDamage === 'near-felled') {
+        nearFelledCount += 1;
+      }
+    });
+
+    expect(nearFelledCount).toBeGreaterThan(0);
   });
 
   it('renders felled beaver-cut trees for some river-adjacent forest tiles', () => {

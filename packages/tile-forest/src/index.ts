@@ -70,6 +70,7 @@ const forestFireflyCache = new Map<string, ForestFireflyDescriptor[]>();
 const forestWebCache = new Map<string, ForestWebDescriptor[]>();
 const forestSpiderCache = new Map<string, ForestSpiderDescriptor[]>();
 const forestBeaverDamageCache = new Map<string, ForestBeaverDamageDescriptor[]>();
+const forestBeaverPopulationCache = new Map<string, ForestBeaverPopulationDescriptor | null>();
 const resolveForestTrailDescriptor = createCoordinateValueResolver(
   forestTrailCache,
   ({ tileX, tileY }) => {
@@ -1283,10 +1284,11 @@ export function getForestBeaverDamage(
   tileX: number,
   tileY: number
 ): ForestBeaverDamageDescriptor[] {
-  const habitatSignature = getForestBeaverHabitatSignature(state, tileX, tileY);
+  const beaverPopulation = getForestBeaverPopulation(state, tileX, tileY);
+  const habitatSignature = beaverPopulation?.habitatSignature ?? 'dry';
   const cacheKey = `${tileX}:${tileY}:${habitatSignature}`;
   if (!forestBeaverDamageCache.has(cacheKey)) {
-    if (!habitatSignature.includes('river')) {
+    if (!beaverPopulation || !habitatSignature.includes('river')) {
       forestBeaverDamageCache.set(cacheKey, []);
     } else {
       const trees = resolveForestTreeDescriptors(tileX, tileY);
@@ -1332,6 +1334,34 @@ export function getForestBeaverDamage(
   }
 
   return forestBeaverDamageCache.get(cacheKey)!;
+}
+
+export function getForestBeaverPopulation(
+  state: Create3DModelContext['state'],
+  tileX: number,
+  tileY: number
+): ForestBeaverPopulationDescriptor | null {
+  const habitatSignature = getForestBeaverHabitatSignature(state, tileX, tileY);
+  const cacheKey = `${tileX}:${tileY}:${habitatSignature}`;
+  if (!forestBeaverPopulationCache.has(cacheKey)) {
+    if (!habitatSignature.includes('river')) {
+      forestBeaverPopulationCache.set(cacheKey, null);
+    } else {
+      const chance = hash2D('forest-beaver-population', tileX * 83, tileY * 89);
+      if (chance < 0.38) {
+        forestBeaverPopulationCache.set(cacheKey, null);
+      } else {
+        forestBeaverPopulationCache.set(cacheKey, {
+          habitatSignature,
+          density:
+            chance > 0.82 ? 'active-colony' : chance > 0.58 ? 'resident-pair' : 'lodge-sign',
+          activity: 0.42 + chance * 0.58,
+        });
+      }
+    }
+  }
+
+  return forestBeaverPopulationCache.get(cacheKey) ?? null;
 }
 
 export function getForestTrail(
@@ -2971,6 +3001,12 @@ interface ForestBeaverDamageDescriptor {
   severity: 'partial' | 'deep' | 'near-felled' | 'felled';
   strippedBranchCount: number;
   leanDirection: -1 | 1;
+}
+
+interface ForestBeaverPopulationDescriptor {
+  habitatSignature: string;
+  density: 'lodge-sign' | 'resident-pair' | 'active-colony';
+  activity: number;
 }
 
 interface ForestTreeDescriptor {
