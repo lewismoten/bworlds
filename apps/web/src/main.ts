@@ -143,6 +143,7 @@ import { createMusicUpdatePayloadBuilder } from './music-update-payload.ts';
 import { createDebouncedPersistence } from './debounced-persistence.ts';
 import { createBoundedCache } from './bounded-cache.ts';
 import { getPlayerSpatialSummary } from './player-spatial-summary.ts';
+import { resolveCompassFrameState } from './compass-frame-state.ts';
 import {
   buildSextantMarkup,
   buildEventSummaryMarkup,
@@ -2350,31 +2351,6 @@ function render(): FrameLoopActivityLike {
     }
   }
   if (
-    viewportCompassMini &&
-    activeCompassDisplayMode === 'graphical' &&
-    !viewportCompassMini.hidden
-  ) {
-    const displayedFacingAngle = updateDisplayedCompass(state.player.facing);
-    const displayedHeadingAngle = updateDisplayedCompassHeading(
-      compassHeadingState.angle,
-      compassDialPointerState.draggingMode === 'heading-bug'
-    );
-    const compassMiniSignature = getCompassMiniSignature({
-      width: viewportCompassMini.width,
-      height: viewportCompassMini.height,
-      facingAngle: displayedFacingAngle,
-      headingAngle: displayedHeadingAngle,
-    });
-    if (compassMiniSignature !== uiRenderState.lastCompassMiniSignature) {
-      drawCompassDial(
-        viewportCompassMini,
-        displayedFacingAngle,
-        displayedHeadingAngle
-      );
-      uiRenderState.lastCompassMiniSignature = compassMiniSignature;
-    }
-  }
-  if (
     viewportMinimapMini &&
     activeMinimapDisplayMode === 'graphical' &&
     !viewportMinimapMini.hidden
@@ -2411,6 +2387,40 @@ function render(): FrameLoopActivityLike {
   }
   celestialPreview.render(displayCycle, environment, state.player.facing, generator);
   solarSystemPreview.render(displayCycle);
+  const compassFrameState = resolveCompassFrameState({
+    miniVisible:
+      Boolean(viewportCompassMini) &&
+      activeCompassDisplayMode === 'graphical' &&
+      !viewportCompassMini.hidden,
+    fullVisible: Boolean(compassDialCanvas) && !compassDialCanvas?.hidden,
+    resolveFacingAngle: () => updateDisplayedCompass(spatial.facing),
+    resolveHeadingAngle: () =>
+      updateDisplayedCompassHeading(
+        compassHeadingState.angle,
+        compassDialPointerState.draggingMode === 'heading-bug'
+      ),
+  });
+  if (
+    viewportCompassMini &&
+    activeCompassDisplayMode === 'graphical' &&
+    !viewportCompassMini.hidden &&
+    compassFrameState
+  ) {
+    const compassMiniSignature = getCompassMiniSignature({
+      width: viewportCompassMini.width,
+      height: viewportCompassMini.height,
+      facingAngle: compassFrameState.displayedFacingAngle,
+      headingAngle: compassFrameState.displayedHeadingAngle,
+    });
+    if (compassMiniSignature !== uiRenderState.lastCompassMiniSignature) {
+      drawCompassDial(
+        viewportCompassMini,
+        compassFrameState.displayedFacingAngle,
+        compassFrameState.displayedHeadingAngle
+      );
+      uiRenderState.lastCompassMiniSignature = compassMiniSignature;
+    }
+  }
   const eventsInspectorVisible = isInspectorSectionVisible(activeInspectorTab, 'events');
   const sextantInspectorVisible = isInspectorSectionVisible(activeInspectorTab, 'sextant');
   const debugInspectorVisible = isInspectorSectionVisible(activeInspectorTab, 'debug');
@@ -2433,23 +2443,18 @@ function render(): FrameLoopActivityLike {
     }
   }
   syncHmrNotice(nowMs);
-  if (compassDialCanvas && !compassDialCanvas.hidden) {
-    const displayedFacingAngle = updateDisplayedCompass(spatial.facing);
-    const displayedHeadingAngle = updateDisplayedCompassHeading(
-      compassHeadingState.angle,
-      compassDialPointerState.draggingMode === 'heading-bug'
-    );
+  if (compassDialCanvas && !compassDialCanvas.hidden && compassFrameState) {
     const compassSignature = getCompassMiniSignature({
       width: compassDialCanvas.width,
       height: compassDialCanvas.height,
-      facingAngle: displayedFacingAngle,
-      headingAngle: displayedHeadingAngle,
+      facingAngle: compassFrameState.displayedFacingAngle,
+      headingAngle: compassFrameState.displayedHeadingAngle,
     });
     if (compassSignature !== uiRenderState.lastCompassSignature) {
       drawCompassDial(
         compassDialCanvas,
-        displayedFacingAngle,
-        displayedHeadingAngle
+        compassFrameState.displayedFacingAngle,
+        compassFrameState.displayedHeadingAngle
       );
       uiRenderState.lastCompassSignature = compassSignature;
     }
