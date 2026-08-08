@@ -4,6 +4,7 @@ import {
   getNextCompassDisplayMode,
   getNextCelestialEventMode,
   getNextInspectorTab,
+  getNextMinimapDisplayMode,
   getNextModelPreviewMode,
   getNextTimekeeperDisplayMode,
   getTimePresetProgress,
@@ -55,6 +56,12 @@ describe('time controls', () => {
     expect(getNextCompassDisplayMode('letters')).toBe('letters');
     expect(getNextCompassDisplayMode('graphical')).toBe('graphical');
     expect(getNextCompassDisplayMode('unknown')).toBe('letters');
+  });
+
+  it('normalizes the viewport minimap mode to a supported display', () => {
+    expect(getNextMinimapDisplayMode('hidden')).toBe('hidden');
+    expect(getNextMinimapDisplayMode('graphical')).toBe('graphical');
+    expect(getNextMinimapDisplayMode('unknown')).toBe('hidden');
   });
 
   it('normalizes the celestial event mode to a supported override', () => {

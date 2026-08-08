@@ -15,6 +15,8 @@ describe('session state', () => {
       viewMode: '3d',
       timekeeperDisplayMode: 'graphical',
       compassDisplayMode: 'graphical',
+      minimapDisplayMode: 'graphical',
+      minimapZoom: 1.4,
       timeOffsetMs: 42000,
       timeFrozen: true,
       frozenWorldTimeMs: 123456,
@@ -38,6 +40,8 @@ describe('session state', () => {
         timeOffsetMs: 42000,
         timekeeperDisplayMode: 'graphical',
         compassDisplayMode: 'graphical',
+        minimapDisplayMode: 'graphical',
+        minimapZoom: 1.4,
         timeFrozen: true,
         frozenWorldTimeMs: 123456,
         inspectorTab: 'compass',
@@ -68,6 +72,16 @@ describe('session state', () => {
           player: { x: 0, y: 0, facing: 0 },
           stack: [{ id: 'overworld', depth: 0 }],
           compassDisplayMode: 'dial',
+        })
+      )
+    ).toBeNull();
+
+    expect(
+      parseSavedSession(
+        JSON.stringify({
+          player: { x: 0, y: 0, facing: 0 },
+          stack: [{ id: 'overworld', depth: 0 }],
+          minimapDisplayMode: 'radar',
         })
       )
     ).toBeNull();
@@ -152,6 +166,8 @@ describe('session state', () => {
       viewMode: '2d',
       timekeeperDisplayMode: 'time-date',
       compassDisplayMode: 'letters',
+      minimapDisplayMode: 'hidden',
+      minimapZoom: 1,
       timeOffsetMs: savedOffsetMs,
       timeFrozen: false,
       frozenWorldTimeMs: null,

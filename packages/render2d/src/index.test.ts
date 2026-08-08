@@ -10,6 +10,7 @@ vi.mock('@bworlds/atlas', () => ({
 
 import {
   createViewportTileSampler,
+  getViewportTileSize,
   getRiverOverlayConnections,
   render2D,
 } from './index';
@@ -87,6 +88,12 @@ describe('getRiverOverlayConnections', () => {
 });
 
 describe('render2D night sky overlay', () => {
+  it('scales tile size with viewport zoom', () => {
+    expect(getViewportTileSize({ width: 220, height: 220, zoom: 1 })).toBe(14);
+    expect(getViewportTileSize({ width: 440, height: 440, zoom: 1 })).toBe(20);
+    expect(getViewportTileSize({ width: 440, height: 440, zoom: 1.5 })).toBe(30);
+  });
+
   it('applies night shading without painting sky stars over the 2d map', () => {
     const calls: string[] = [];
     const context = {

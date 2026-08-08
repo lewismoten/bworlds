@@ -12,8 +12,11 @@ export interface Render2DViewport {
   width: number;
   height: number;
   rotation?: number;
+  facingAngle?: number;
+  zoom?: number;
   timeMs?: number;
   environment?: WorldEnvironmentLike;
+  showTimeOverlay?: boolean;
 }
 
 type TileSampler = (worldX: number, worldY: number) => TileLike;
@@ -28,10 +31,7 @@ export function render2D(
   viewport: Render2DViewport
 ) {
   const tileAt = createViewportTileSampler(state);
-  const tileSize = Math.max(
-    14,
-    Math.floor(Math.min(viewport.width, viewport.height) / 22)
-  );
+  const tileSize = getViewportTileSize(viewport);
   const diagonal = Math.ceil(
     Math.hypot(viewport.width, viewport.height) / tileSize / 2
   );
@@ -81,10 +81,11 @@ export function render2D(
     context,
     centerX + tileSize / 2,
     centerY + tileSize / 2,
-    tileSize
+    tileSize,
+    viewport.facingAngle
   );
 
-  if (typeof viewport.timeMs === 'number') {
+  if (viewport.showTimeOverlay !== false && typeof viewport.timeMs === 'number') {
     drawTimeOfDayOverlay(
       context,
       viewport,
@@ -92,6 +93,14 @@ export function render2D(
       viewport.environment ?? {}
     );
   }
+}
+
+export function getViewportTileSize(viewport: Render2DViewport) {
+  const zoom = viewport.zoom ?? 1;
+  return Math.max(
+    14,
+    Math.floor((Math.min(viewport.width, viewport.height) / 22) * zoom)
+  );
 }
 
 const RIVER_OVERLAY_NETWORK_KINDS = new Set(['river', 'bridge', 'ocean']);
@@ -329,11 +338,12 @@ function drawFacingMarker(
   context: CanvasRenderingContext2D,
   centerX: number,
   centerY: number,
-  tileSize: number
+  tileSize: number,
+  facingAngle = -Math.PI / 2
 ) {
   context.save();
   context.translate(centerX, centerY);
-  context.rotate(-Math.PI / 2);
+  context.rotate(facingAngle);
 
   context.fillStyle = '#ffbf69';
   context.beginPath();

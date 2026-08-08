@@ -4,6 +4,7 @@ import {
   advanceWorldTimeOffsetBySeasons,
   applyCelestialEnvironmentOverrides,
   alignWorldTimeOffsetToDayProgress,
+  clamp,
   getWorldTimeMs,
   getDaylightCycleState,
   HALF_WORLD_TILES,
@@ -76,6 +77,7 @@ import {
   getNextCompassDisplayMode,
   getNextCelestialEventMode,
   getNextInspectorTab,
+  getNextMinimapDisplayMode,
   getNextModelPreviewMode,
   getNextTimekeeperDisplayMode,
   isInspectorSectionVisible,
@@ -88,6 +90,7 @@ type CelestialEnvironmentOverrides = Parameters<
 >[1];
 type CardinalFacing = ReturnType<typeof cardinalFromAngle>;
 type CompassDisplayMode = ReturnType<typeof getNextCompassDisplayMode>;
+type MinimapDisplayMode = ReturnType<typeof getNextMinimapDisplayMode>;
 type ModelPreviewMode = ReturnType<typeof getNextModelPreviewMode>;
 type TimekeeperDisplayMode = ReturnType<typeof getNextTimekeeperDisplayMode>;
 type CelestialEventMode = ReturnType<typeof getNextCelestialEventMode>;
@@ -142,6 +145,9 @@ root.innerHTML = `
         <button id="jump-home" type="button">Go Home</button>
         <button id="toggle-timekeeper-display" type="button">HUD Time: Time + Date</button>
         <button id="toggle-compass-display" type="button">HUD Compass: Letters</button>
+        <button id="toggle-minimap-display" type="button">Mini Map: Hidden</button>
+        <button id="zoom-out-minimap" type="button">Map -</button>
+        <button id="zoom-in-minimap" type="button">Map +</button>
         <div class="build-controls">
           <select id="build-poi-kind" aria-label="Build point of interest">
             <option value="town">Build Town</option>
@@ -178,6 +184,14 @@ root.innerHTML = `
             class="viewport-compass-mini is-hidden"
             width="180"
             height="180"
+            aria-hidden="true"
+            hidden
+          ></canvas>
+          <canvas
+            id="viewport-minimap-mini"
+            class="viewport-minimap-mini is-hidden"
+            width="220"
+            height="220"
             aria-hidden="true"
             hidden
           ></canvas>
@@ -391,6 +405,8 @@ const viewportTimekeeperMini =
   document.querySelector<HTMLCanvasElement>('#viewport-timekeeper-mini');
 const viewportCompassMini =
   document.querySelector<HTMLCanvasElement>('#viewport-compass-mini');
+const viewportMinimapMini =
+  document.querySelector<HTMLCanvasElement>('#viewport-minimap-mini');
 const hmrNotice = document.querySelector<HTMLElement>('#hmr-notice');
 const atlasCanvas = document.querySelector<HTMLCanvasElement>('#atlas');
 const timeWheelCanvas =
@@ -415,6 +431,12 @@ const toggleTimekeeperDisplayButton =
   document.querySelector<HTMLButtonElement>('#toggle-timekeeper-display');
 const toggleCompassDisplayButton =
   document.querySelector<HTMLButtonElement>('#toggle-compass-display');
+const toggleMinimapDisplayButton =
+  document.querySelector<HTMLButtonElement>('#toggle-minimap-display');
+const zoomOutMinimapButton =
+  document.querySelector<HTMLButtonElement>('#zoom-out-minimap');
+const zoomInMinimapButton =
+  document.querySelector<HTMLButtonElement>('#zoom-in-minimap');
 const actionButton = document.querySelector<HTMLButtonElement>('#action');
 const buildPoiButton =
   document.querySelector<HTMLButtonElement>('#build-poi');
@@ -592,6 +614,10 @@ let activeTimekeeperDisplayMode = getNextTimekeeperDisplayMode(
 let activeCompassDisplayMode = getNextCompassDisplayMode(
   savedSession?.compassDisplayMode
 );
+let activeMinimapDisplayMode = getNextMinimapDisplayMode(
+  savedSession?.minimapDisplayMode
+);
+let minimapZoom = clamp(savedSession?.minimapZoom ?? 1, 0.7, 2);
 const celestialEventModeState = {
   mode: getNextCelestialEventMode(savedSession?.celestialEventMode),
 };
@@ -615,6 +641,7 @@ updateContentPackLabel();
 updateFreezeTimeButton();
 updateTimekeeperDisplayModeUi();
 updateCompassDisplayModeUi();
+updateMinimapDisplayModeUi();
 
 function updateStatus(
   environment: WorldEnvironmentLike = getCurrentEnvironment(),
@@ -730,6 +757,12 @@ function updateStatus(
     viewportCompassMini.classList.toggle('is-hidden', !showGraphicCompass);
     viewportCompassMini.hidden = !showGraphicCompass;
   }
+  if (viewportMinimapMini) {
+    const showMinimap =
+      state.viewMode === '3d' && activeMinimapDisplayMode === 'graphical';
+    viewportMinimapMini.classList.toggle('is-hidden', !showMinimap);
+    viewportMinimapMini.hidden = !showMinimap;
+  }
 }
 
 function resizeCanvas(): void {
@@ -824,6 +857,28 @@ function updateCompassDisplayModeUi(): void {
   }
 }
 
+function formatMinimapDisplayModeLabel(mode: MinimapDisplayMode): string {
+  return mode === 'graphical' ? 'Visible' : 'Hidden';
+}
+
+function cycleMinimapDisplayMode(mode: MinimapDisplayMode): MinimapDisplayMode {
+  return mode === 'hidden' ? 'graphical' : 'hidden';
+}
+
+function updateMinimapDisplayModeUi(): void {
+  if (toggleMinimapDisplayButton) {
+    toggleMinimapDisplayButton.textContent = `Mini Map: ${formatMinimapDisplayModeLabel(
+      activeMinimapDisplayMode
+    )}`;
+  }
+  if (zoomOutMinimapButton) {
+    zoomOutMinimapButton.disabled = activeMinimapDisplayMode === 'hidden' || minimapZoom <= 0.7;
+  }
+  if (zoomInMinimapButton) {
+    zoomInMinimapButton.disabled = activeMinimapDisplayMode === 'hidden' || minimapZoom >= 2;
+  }
+}
+
 function updateCelestialEventModeUi(): void {
   eventModeAutoButton?.classList.toggle(
     'is-active',
@@ -865,6 +920,20 @@ function setTimekeeperDisplayMode(modeId: string | undefined): void {
 function setCompassDisplayMode(modeId: string | undefined): void {
   activeCompassDisplayMode = getNextCompassDisplayMode(modeId);
   updateCompassDisplayModeUi();
+  saveSession();
+  requestRender();
+}
+
+function setMinimapDisplayMode(modeId: string | undefined): void {
+  activeMinimapDisplayMode = getNextMinimapDisplayMode(modeId);
+  updateMinimapDisplayModeUi();
+  saveSession();
+  requestRender();
+}
+
+function adjustMinimapZoom(delta: number): void {
+  minimapZoom = clamp(Math.round((minimapZoom + delta) * 10) / 10, 0.7, 2);
+  updateMinimapDisplayModeUi();
   saveSession();
   requestRender();
 }
@@ -1480,6 +1549,25 @@ function render(): FrameLoopActivityLike {
       )
     );
   }
+  if (
+    viewportMinimapMini &&
+    activeMinimapDisplayMode === 'graphical' &&
+    !viewportMinimapMini.hidden
+  ) {
+    const minimapContext = viewportMinimapMini.getContext('2d');
+    if (minimapContext) {
+      minimapContext.imageSmoothingEnabled = false;
+      minimapContext.clearRect(0, 0, viewportMinimapMini.width, viewportMinimapMini.height);
+      render2D(minimapContext, state, {
+        width: viewportMinimapMini.width,
+        height: viewportMinimapMini.height,
+        rotation: 0,
+        facingAngle: state.player.facing,
+        zoom: minimapZoom,
+        showTimeOverlay: false,
+      });
+    }
+  }
   celestialPreview.render(displayCycle, environment, state.player.facing, generator);
   solarSystemPreview.render(displayCycle);
   if (eventSummary) {
@@ -1926,6 +2014,11 @@ toggleTimekeeperDisplayButton?.addEventListener('click', () => {
 toggleCompassDisplayButton?.addEventListener('click', () => {
   setCompassDisplayMode(cycleCompassDisplayMode(activeCompassDisplayMode));
 });
+toggleMinimapDisplayButton?.addEventListener('click', () => {
+  setMinimapDisplayMode(cycleMinimapDisplayMode(activeMinimapDisplayMode));
+});
+zoomOutMinimapButton?.addEventListener('click', () => adjustMinimapZoom(-0.1));
+zoomInMinimapButton?.addEventListener('click', () => adjustMinimapZoom(0.1));
 freezeTimeButton?.addEventListener('click', toggleTimeFreeze);
 inspectorTabButtons.forEach((button) => {
   button.addEventListener('click', () => {
@@ -2064,6 +2157,7 @@ setInspectorTab(activeInspectorTab);
 updateModelPreviewModeUi();
 updateTimekeeperDisplayModeUi();
 updateCompassDisplayModeUi();
+updateMinimapDisplayModeUi();
 updateCelestialEventModeUi();
 requestRender();
 
@@ -2080,6 +2174,8 @@ function saveSession(): void {
       viewMode: state.viewMode,
       timekeeperDisplayMode: activeTimekeeperDisplayMode,
       compassDisplayMode: activeCompassDisplayMode,
+      minimapDisplayMode: activeMinimapDisplayMode,
+      minimapZoom,
       timeOffsetMs: timeState.offsetMs,
       timeFrozen: timeState.frozen,
       frozenWorldTimeMs: timeState.frozenWorldTimeMs,

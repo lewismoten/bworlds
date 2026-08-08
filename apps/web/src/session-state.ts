@@ -2,6 +2,7 @@ import type {
   CompassDisplayMode,
   CelestialEventMode,
   InspectorTab,
+  MinimapDisplayMode,
   ModelPreviewMode,
   TimekeeperDisplayMode,
 } from './time-controls.ts';
@@ -35,6 +36,8 @@ export type SavedSession = {
   viewMode?: SessionViewMode;
   timekeeperDisplayMode?: TimekeeperDisplayMode;
   compassDisplayMode?: CompassDisplayMode;
+  minimapDisplayMode?: MinimapDisplayMode;
+  minimapZoom?: number;
   timeOffsetMs?: number;
   timeFrozen?: boolean;
   frozenWorldTimeMs?: number | null;
@@ -56,6 +59,8 @@ export type SessionSnapshot = {
   viewMode: SessionViewMode;
   timekeeperDisplayMode: TimekeeperDisplayMode;
   compassDisplayMode: CompassDisplayMode;
+  minimapDisplayMode: MinimapDisplayMode;
+  minimapZoom: number;
   timeOffsetMs: number;
   timeFrozen: boolean;
   frozenWorldTimeMs: number | null;
@@ -101,6 +106,19 @@ export function parseSavedSession(raw: string | null): SavedSession | null {
       parsed.compassDisplayMode !== 'hidden' &&
       parsed.compassDisplayMode !== 'letters' &&
       parsed.compassDisplayMode !== 'graphical'
+    ) {
+      return null;
+    }
+    if (
+      typeof parsed?.minimapDisplayMode !== 'undefined' &&
+      parsed.minimapDisplayMode !== 'hidden' &&
+      parsed.minimapDisplayMode !== 'graphical'
+    ) {
+      return null;
+    }
+    if (
+      typeof parsed?.minimapZoom !== 'undefined' &&
+      typeof parsed.minimapZoom !== 'number'
     ) {
       return null;
     }
