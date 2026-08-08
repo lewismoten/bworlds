@@ -14,6 +14,7 @@ import {
   getPreviewSunShadowCoverageState,
   getPreviewSunOrbitSpec,
   getPlanetSurfaceColor,
+  resolvePreviewSampler,
 } from './celestial-preview.ts';
 import { DEFAULT_DAY_LENGTH_MS, getDaylightCycleState } from '@bworlds/core';
 
@@ -83,6 +84,28 @@ describe('celestial preview helpers', () => {
     }, 2, 1);
 
     expect(grid).toEqual([['#35547a', '#35547a']]);
+  });
+
+  it('binds legacy-style sampler methods before building the preview texture', () => {
+    const sampler = {
+      getMap() {
+        return {
+          getTile(x: number, y: number) {
+            return { kind: x >= 0 && y >= 0 ? 'plains' : 'water' };
+          },
+        };
+      },
+      sampleOverworld(x: number, y: number) {
+        return this.getMap().getTile(x, y);
+      },
+    };
+
+    const sampleOverworld = resolvePreviewSampler(sampler);
+
+    expect(sampleOverworld).not.toBeNull();
+    expect(buildPlanetTextureGrid(sampleOverworld!, 2, 1)).toEqual([
+      ['#35547a', '#7fa569'],
+    ]);
   });
 
   it('describes a full sun orbit plus the daylight arc for the preview model', () => {

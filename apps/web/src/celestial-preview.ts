@@ -6,6 +6,10 @@ import {
   type OrreryBodyLike,
   type getDaylightCycleState,
 } from '@bworlds/core';
+import {
+  compactThreeMaterialOptions,
+  resolveThreeColor,
+} from './three-material-options.ts';
 
 type DaylightCycleLike = ReturnType<typeof getDaylightCycleState>;
 type OverworldSamplerLike = {
@@ -752,9 +756,9 @@ function syncPreviewPlanetTexture(
   }
 ) {
   const material = world.material as THREE.MeshStandardMaterial;
+  const sampleOverworld = resolvePreviewSampler(overworldSampler);
   if (
-    !overworldSampler ||
-    typeof overworldSampler.sampleOverworld !== 'function' ||
+    !sampleOverworld ||
     overworldSampler === textureState.lastSampler
   ) {
     return;
@@ -767,7 +771,7 @@ function syncPreviewPlanetTexture(
     return;
   }
   const grid = buildPlanetTextureGrid(
-    (x, y) => overworldSampler.sampleOverworld(x, y),
+    sampleOverworld,
     canvas.width,
     canvas.height
   );
@@ -785,6 +789,15 @@ function syncPreviewPlanetTexture(
   material.emissiveMap = texture;
   material.needsUpdate = true;
   textureState.lastSampler = overworldSampler;
+}
+
+export function resolvePreviewSampler(
+  overworldSampler: OverworldSamplerLike | null
+): OverworldSamplerLike['sampleOverworld'] | null {
+  if (!overworldSampler || typeof overworldSampler.sampleOverworld !== 'function') {
+    return null;
+  }
+  return overworldSampler.sampleOverworld.bind(overworldSampler);
 }
 
 function samplePreviewOverworldKind(
@@ -948,11 +961,11 @@ function syncPreviewEvents(root: THREE.Group, cycle: DaylightCycleLike): void {
 
     const mesh = new THREE.Mesh(
       new THREE.SphereGeometry(Math.max(0.16, event.size * 0.45), 12, 12),
-      new THREE.MeshBasicMaterial({
-        color: event.color,
+      new THREE.MeshBasicMaterial(compactThreeMaterialOptions({
+        color: resolveThreeColor(event.color, '#dff4ff'),
         transparent: true,
         opacity: (0.34 + event.intensity * 0.38) * event.visibility,
-      })
+      }))
     );
     mesh.position.copy(point);
     mesh.visible = (mesh.material as THREE.MeshBasicMaterial).opacity > 0.015;
@@ -967,7 +980,7 @@ function syncPreviewEvents(root: THREE.Group, cycle: DaylightCycleLike): void {
           point,
         ]),
         new THREE.LineBasicMaterial({
-          color: event.color,
+          color: resolveThreeColor(event.color, '#dff4ff'),
           transparent: true,
           opacity: (0.2 + event.intensity * 0.24) * event.visibility,
         })
@@ -997,7 +1010,7 @@ function syncPreviewEvents(root: THREE.Group, cycle: DaylightCycleLike): void {
             ),
           ]),
           new THREE.LineBasicMaterial({
-            color: event.color,
+            color: resolveThreeColor(event.color, '#dff4ff'),
             transparent: true,
             opacity:
               (0.14 + event.intensity * 0.18) *
@@ -1019,7 +1032,7 @@ function syncPreviewEvents(root: THREE.Group, cycle: DaylightCycleLike): void {
           ),
         ]),
         new THREE.LineBasicMaterial({
-          color: event.color,
+          color: resolveThreeColor(event.color, '#dff4ff'),
           transparent: true,
           opacity: (0.18 + event.intensity * 0.24) * event.visibility,
         })
@@ -1370,11 +1383,11 @@ function syncPreviewOrrery(root: THREE.Group, cycle: DaylightCycleLike): void {
             body.orbitRotation
           )
         ),
-        new THREE.LineBasicMaterial({
-          color: body.type === 'moon' ? '#708fbb' : '#4b617a',
-          transparent: true,
-          opacity: body.type === 'moon' ? 0.28 : 0.2,
-        })
+      new THREE.LineBasicMaterial({
+        color: body.type === 'moon' ? '#708fbb' : '#4b617a',
+        transparent: true,
+        opacity: body.type === 'moon' ? 0.28 : 0.2,
+      })
       );
       root.add(orbitRing);
     }
@@ -1383,11 +1396,11 @@ function syncPreviewOrrery(root: THREE.Group, cycle: DaylightCycleLike): void {
     const position = createOrreryPosition(body, angle);
     const marker = new THREE.Mesh(
       new THREE.SphereGeometry(body.size, 14, 14),
-      new THREE.MeshBasicMaterial({
-        color: body.color,
+      new THREE.MeshBasicMaterial(compactThreeMaterialOptions({
+        color: resolveThreeColor(body.color, '#8fb7de'),
         transparent: true,
         opacity: body.type === 'sun' ? 1 : 0.92,
-      })
+      }))
     );
     marker.position.copy(position);
     root.add(marker);
@@ -1395,11 +1408,11 @@ function syncPreviewOrrery(root: THREE.Group, cycle: DaylightCycleLike): void {
     if (body.type === 'sun') {
       const glow = new THREE.Mesh(
         new THREE.SphereGeometry(body.size * 1.9, 14, 14),
-        new THREE.MeshBasicMaterial({
-          color: body.color,
+        new THREE.MeshBasicMaterial(compactThreeMaterialOptions({
+          color: resolveThreeColor(body.color, '#8fb7de'),
           transparent: true,
           opacity: 0.18,
-        })
+        }))
       );
       glow.position.copy(position);
       root.add(glow);
@@ -1417,7 +1430,7 @@ function syncPreviewOrrery(root: THREE.Group, cycle: DaylightCycleLike): void {
             position,
           ]),
           new THREE.LineBasicMaterial({
-            color: body.color,
+            color: resolveThreeColor(body.color, '#8fb7de'),
             transparent: true,
             opacity: 0.34,
           })
@@ -1553,12 +1566,12 @@ function createOrreryLabel(
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
   const sprite = new THREE.Sprite(
-    new THREE.SpriteMaterial({
+    new THREE.SpriteMaterial(compactThreeMaterialOptions({
       map: texture,
       transparent: true,
       depthWrite: false,
       opacity: 0.82,
-    })
+    }))
   );
   sprite.position.copy(position.clone().add(new THREE.Vector3(0, 0.72, 0)));
   sprite.scale.set(2.8, 0.72, 1);

@@ -4,6 +4,10 @@ import {
   type OrreryBodyLike,
   type getDaylightCycleState,
 } from '@bworlds/core';
+import {
+  compactThreeMaterialOptions,
+  resolveThreeColor,
+} from './three-material-options.ts';
 
 type DaylightCycleLike = ReturnType<typeof getDaylightCycleState>;
 type SolarSystemSceneSignatures = {
@@ -370,11 +374,11 @@ function syncSolarSystemBodies(
     const position = createSolarSystemBodyPosition(body);
     const marker = new THREE.Mesh(
       new THREE.SphereGeometry(getSolarSystemBodyScale(body), 18, 18),
-      new THREE.MeshBasicMaterial({
-        color: body.color,
+      new THREE.MeshBasicMaterial(compactThreeMaterialOptions({
+        color: resolveThreeColor(body.color, '#8fb7de'),
         transparent: true,
         opacity: body.type === 'sun' ? 1 : 0.94,
-      })
+      }))
     );
     marker.position.copy(position);
     root.add(marker);
@@ -383,11 +387,11 @@ function syncSolarSystemBodies(
       sunLight.position.copy(position);
       const glow = new THREE.Mesh(
         new THREE.SphereGeometry(getSolarSystemBodyScale(body) * 1.9, 18, 18),
-        new THREE.MeshBasicMaterial({
-          color: body.color,
+        new THREE.MeshBasicMaterial(compactThreeMaterialOptions({
+          color: resolveThreeColor(body.color, '#8fb7de'),
           transparent: true,
           opacity: 0.22,
-        })
+        }))
       );
       glow.position.copy(position);
       root.add(glow);
@@ -403,7 +407,7 @@ function syncSolarSystemBodies(
             position,
           ]),
           new THREE.LineBasicMaterial({
-            color: body.color,
+            color: resolveThreeColor(body.color, '#8fb7de'),
             transparent: true,
             opacity: 0.36,
           })
@@ -524,8 +528,8 @@ function syncSolarSystemEvents(root: THREE.Group, cycle: DaylightCycleLike): voi
   const markers = getSolarSystemEventMarkerStates(cycle);
   markers.forEach((marker, index) => {
     const glow = new THREE.Sprite(
-      new THREE.SpriteMaterial({
-        color: marker.color,
+      new THREE.SpriteMaterial(compactThreeMaterialOptions({
+        color: resolveThreeColor(marker.color, '#dff4ff'),
         transparent: true,
         opacity:
           marker.type === 'aurora'
@@ -533,7 +537,7 @@ function syncSolarSystemEvents(root: THREE.Group, cycle: DaylightCycleLike): voi
             : 0.26 + marker.intensity * 0.46,
         depthWrite: false,
         blending: THREE.AdditiveBlending,
-      })
+      }))
     );
     glow.position.copy(marker.position);
     const scale =
@@ -574,7 +578,7 @@ function syncSolarSystemEvents(root: THREE.Group, cycle: DaylightCycleLike): voi
         marker.position,
       ]),
       new THREE.LineBasicMaterial({
-        color: marker.color,
+        color: resolveThreeColor(marker.color, '#dff4ff'),
         transparent: true,
         opacity: 0.24 + marker.intensity * 0.42,
       })
@@ -667,12 +671,12 @@ function createTextSprite(text: string, position: THREE.Vector3): THREE.Object3D
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
   const sprite = new THREE.Sprite(
-    new THREE.SpriteMaterial({
+    new THREE.SpriteMaterial(compactThreeMaterialOptions({
       map: texture,
       transparent: true,
       depthWrite: false,
       opacity: 0.82,
-    })
+    }))
   );
   sprite.position.copy(position);
   sprite.scale.set(5.6, 1.15, 1);
