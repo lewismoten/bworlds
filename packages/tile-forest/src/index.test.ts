@@ -7,6 +7,7 @@ vi.mock('@bworlds/three-support', () => ({
 }));
 
 import {
+  getForestBeaverDamage,
   createForestTilePlugin,
   getForestBirds,
   getForestBushes,
@@ -168,14 +169,18 @@ const fakeThree = {
   SphereGeometry: FakeGeometry,
 } as const;
 
-function createForestTestState(playerX = 0, playerY = 0) {
+function createForestTestState(
+  playerX = 0,
+  playerY = 0,
+  tiles: Record<string, { kind: string }> = {}
+) {
   return {
     player: { x: playerX, y: playerY, facing: 0 },
     getCurrentContext() {
       return { id: 'overworld', type: 'overworld', depth: 0 };
     },
-    getCurrentTile() {
-      return { kind: 'forest' };
+    getCurrentTile(x = playerX, y = playerY) {
+      return tiles[`${x}:${y}`] ?? { kind: 'forest' };
     },
     getTileDefinition() {
       return {
@@ -620,6 +625,36 @@ describe('tile forest', () => {
 
     const first = sampleTiles[0];
     expect(getForestSpiders(first.x, first.y)).toBe(first.spiders);
+  });
+
+  it('generates beaver damage only for forest tiles near river habitat', () => {
+    const rivers = {
+      '8:5': { kind: 'river' },
+      '9:5': { kind: 'river' },
+      '8:4': { kind: 'river' },
+    };
+    const wetState = createForestTestState(8, 6, rivers);
+    const dryState = createForestTestState(8, 6);
+
+    const wetDamage = getForestBeaverDamage(wetState as never, 8, 6);
+    const dryDamage = getForestBeaverDamage(dryState as never, 8, 6);
+
+    expect(wetDamage.length).toBeGreaterThan(0);
+    expect(dryDamage).toHaveLength(0);
+    expect(
+      wetDamage.some(
+        (damage) =>
+          damage.severity === 'partial' || damage.severity === 'deep'
+      )
+    ).toBe(true);
+    expect(
+      wetDamage.every(
+        (damage) =>
+          damage.chewHeight > 0.07 &&
+          damage.chewRadiusScale > 0.8 &&
+          damage.coneScale > 0.5
+      )
+    ).toBe(true);
   });
 
   it('creates a lower-detail distant forest model', () => {
@@ -1718,6 +1753,67 @@ describe('tile forest', () => {
     expect(nearWebInstances[0]?.count).toBeGreaterThan(0);
     expect(countTaggedNodes(farModel, 'forestWeb')).toBe(0);
     expect(countTaggedNodes(lowModel, 'forestWeb')).toBe(0);
+  });
+
+  it('renders beaver damage only near river habitat in full-detail close forest models', () => {
+    const plugin = createForestTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'forest');
+    const rivers = {
+      '8:5': { kind: 'river' },
+      '9:5': { kind: 'river' },
+      '8:4': { kind: 'river' },
+    };
+    const wetState = createForestTestState(8, 6, rivers);
+    const dryState = createForestTestState(8, 6);
+    const farState = createForestTestState(-100, -100, rivers);
+
+    const wetModel = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state: wetState,
+      tile: { kind: 'forest' },
+      tileX: 8,
+      tileY: 6,
+      detailLevel: 'full',
+    }) as FakeGroup;
+    const dryModel = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state: dryState,
+      tile: { kind: 'forest' },
+      tileX: 8,
+      tileY: 6,
+      detailLevel: 'full',
+    }) as FakeGroup;
+    const farModel = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state: farState,
+      tile: { kind: 'forest' },
+      tileX: 8,
+      tileY: 6,
+      detailLevel: 'full',
+    }) as FakeGroup;
+    const lowModel = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state: wetState,
+      tile: { kind: 'forest' },
+      tileX: 8,
+      tileY: 6,
+      detailLevel: 'low',
+    }) as FakeGroup;
+
+    const countTaggedNodes = (model: FakeGroup, key: string) => {
+      let count = 0;
+      model.traverse((node) => {
+        if (node.userData?.[key]) {
+          count += 1;
+        }
+      });
+      return count;
+    };
+
+    expect(countTaggedNodes(wetModel, 'forestBeaverDamage')).toBeGreaterThan(0);
+    expect(countTaggedNodes(dryModel, 'forestBeaverDamage')).toBe(0);
+    expect(countTaggedNodes(farModel, 'forestBeaverDamage')).toBe(0);
+    expect(countTaggedNodes(lowModel, 'forestBeaverDamage')).toBe(0);
   });
 
   it('adds dew or rain glint to forest webs when conditions are damp', () => {

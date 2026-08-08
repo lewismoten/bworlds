@@ -42,6 +42,7 @@ const MEADOW_KEY = 'forestMeadow';
 const BIRD_KEY = 'forestBird';
 const WEB_KEY = 'forestWeb';
 const SPIDER_KEY = 'forestSpider';
+const BEAVER_DAMAGE_KEY = 'forestBeaverDamage';
 const TRAIL_KEY = 'forestTrail';
 const TREE_FORM_KEY = 'forestTreeForm';
 const TREE_FOLIAGE_KEY = 'forestTreeFoliage';
@@ -68,6 +69,7 @@ const forestTrailCache = new Map<string, ForestTrailDescriptor | null>();
 const forestFireflyCache = new Map<string, ForestFireflyDescriptor[]>();
 const forestWebCache = new Map<string, ForestWebDescriptor[]>();
 const forestSpiderCache = new Map<string, ForestSpiderDescriptor[]>();
+const forestBeaverDamageCache = new Map<string, ForestBeaverDamageDescriptor[]>();
 const resolveForestTrailDescriptor = createCoordinateValueResolver(
   forestTrailCache,
   ({ tileX, tileY }) => {
@@ -1057,6 +1059,18 @@ export function createForestTilePlugin(): RuntimePlugin {
               getForestSpiders(tileX, tileY)
             );
           }
+          if (renderCloseDetails) {
+            addForestBeaverDamageInstances(
+              three,
+              group,
+              geometry,
+              floorDetailStyle,
+              tileX,
+              tileY,
+              descriptors,
+              getForestBeaverDamage(state, tileX, tileY)
+            );
+          }
           const trail = getForestTrail(tileX, tileY);
           if (trail) {
             addForestBreadcrumbInstances(
@@ -1262,6 +1276,50 @@ export function getForestSpiders(
   tileY: number
 ): ForestSpiderDescriptor[] {
   return resolveForestSpiderDescriptors(tileX, tileY);
+}
+
+export function getForestBeaverDamage(
+  state: Create3DModelContext['state'],
+  tileX: number,
+  tileY: number
+): ForestBeaverDamageDescriptor[] {
+  const habitatSignature = getForestBeaverHabitatSignature(state, tileX, tileY);
+  const cacheKey = `${tileX}:${tileY}:${habitatSignature}`;
+  if (!forestBeaverDamageCache.has(cacheKey)) {
+    if (!habitatSignature.includes('river')) {
+      forestBeaverDamageCache.set(cacheKey, []);
+    } else {
+      const trees = resolveForestTreeDescriptors(tileX, tileY);
+      const damages: ForestBeaverDamageDescriptor[] = [];
+
+      trees.forEach((tree, treeIndex) => {
+        const chance = hash2D(
+          'forest-beaver-damage',
+          tileX * 73 + treeIndex,
+          tileY * 79
+        );
+        if (chance < 0.72) {
+          return;
+        }
+
+        damages.push({
+          treeIndex,
+          chewHeight:
+            0.08 + hash2D('forest-beaver-chew-height', treeIndex, tileY) * 0.05,
+          chewRadiusScale:
+            0.82 + hash2D('forest-beaver-chew-radius', tileX, treeIndex) * 0.14,
+          coneScale:
+            0.55 + hash2D('forest-beaver-cone', tileX + treeIndex, tileY) * 0.18,
+          severity: chance > 0.9 ? 'deep' : 'partial',
+          strippedBranchCount: chance > 0.84 ? 2 : 1,
+        });
+      });
+
+      forestBeaverDamageCache.set(cacheKey, damages);
+    }
+  }
+
+  return forestBeaverDamageCache.get(cacheKey)!;
 }
 
 export function getForestTrail(
@@ -2031,6 +2089,96 @@ function addForestSpiderInstances(
   group.add(legInstances);
 }
 
+function addForestBeaverDamageInstances(
+  three: ThreeHostLike,
+  group: ThreeObject3DLike,
+  geometry: TreeGeometry,
+  style: ForestTreeStyle,
+  tileX: number,
+  tileY: number,
+  trees: ForestTreeDescriptor[],
+  damages: ForestBeaverDamageDescriptor[]
+) {
+  if (damages.length === 0) {
+    return;
+  }
+
+  const chewInstances = new three.InstancedMesh(
+    geometry.trunk,
+    style.carvingMaterial,
+    damages.length
+  );
+  chewInstances.userData = {
+    ...(chewInstances.userData ?? {}),
+    [BEAVER_DAMAGE_KEY]: 'chew',
+  };
+
+  const branchDebrisCount = damages.reduce(
+    (sum, damage) => sum + damage.strippedBranchCount,
+    0
+  );
+  const debrisInstances = new three.InstancedMesh(
+    geometry.branch,
+    style.trunkMaterial,
+    branchDebrisCount
+  );
+  debrisInstances.userData = {
+    ...(debrisInstances.userData ?? {}),
+    [BEAVER_DAMAGE_KEY]: 'debris',
+  };
+
+  let debrisIndex = 0;
+  damages.forEach((damage, index) => {
+    const tree = trees[damage.treeIndex];
+    if (!tree) {
+      return;
+    }
+
+    const chewRadius = tree.radius * damage.chewRadiusScale;
+    const chewHeight =
+      damage.chewHeight * (damage.severity === 'deep' ? 1.18 : 1);
+    chewInstances.setMatrixAt(
+      index,
+      createLowDetailTreeMatrix(
+        three,
+        tileX + tree.x,
+        chewHeight * 0.5,
+        tileY + tree.y,
+        chewRadius,
+        chewHeight,
+        chewRadius * damage.coneScale
+      )
+    );
+
+    for (let branchIndex = 0; branchIndex < damage.strippedBranchCount; branchIndex += 1) {
+      const angle =
+        hash2D('forest-beaver-debris-angle', damage.treeIndex, branchIndex) *
+        Math.PI *
+        2;
+      const distance =
+        tree.radius * (0.65 + hash2D('forest-beaver-debris-distance', index, branchIndex) * 0.28);
+      const length =
+        0.12 + hash2D('forest-beaver-debris-length', damage.treeIndex, branchIndex) * 0.08;
+      debrisInstances.setMatrixAt(
+        debrisIndex,
+        createLowDetailTreeMatrix(
+          three,
+          tileX + tree.x + Math.cos(angle) * distance,
+          0.05,
+          tileY + tree.y + Math.sin(angle) * distance,
+          0.12,
+          length,
+          0.12
+        )
+      );
+      debrisIndex += 1;
+    }
+  });
+
+  group.add(chewInstances);
+  group.add(debrisInstances);
+}
+
 function createForestFloorDetailDescriptor(
   kind: ForestFloorDetailDescriptor['kind'],
   tileX: number,
@@ -2410,6 +2558,44 @@ function syncForestWebGlint(
   });
 }
 
+function getForestBeaverHabitatSignature(
+  state: Create3DModelContext['state'],
+  tileX: number,
+  tileY: number
+) {
+  if (!state || typeof state.getCurrentTile !== 'function') {
+    return 'dry';
+  }
+
+  const offsets = [
+    [-1, 0],
+    [1, 0],
+    [0, -1],
+    [0, 1],
+    [-1, -1],
+    [1, -1],
+    [1, 1],
+    [-1, 1],
+    [-2, 0],
+    [2, 0],
+    [0, -2],
+    [0, 2],
+  ] as const;
+  const nearbyWaterways = offsets.filter(([offsetX, offsetY]) => {
+    const kind = state.getCurrentTile(tileX + offsetX, tileY + offsetY)?.kind;
+    return kind === 'river';
+  });
+
+  if (nearbyWaterways.length === 0) {
+    return 'dry';
+  }
+
+  return nearbyWaterways
+    .map(([offsetX, offsetY]) => `${offsetX},${offsetY}:river`)
+    .sort()
+    .join('|');
+}
+
 function getForestFireflySeasonalActivation(yearProgress?: number) {
   if (typeof yearProgress !== 'number') {
     return 1;
@@ -2703,6 +2889,15 @@ interface ForestSpiderDescriptor {
   z: number;
   bodyScale: number;
   legSpan: number;
+}
+
+interface ForestBeaverDamageDescriptor {
+  treeIndex: number;
+  chewHeight: number;
+  chewRadiusScale: number;
+  coneScale: number;
+  severity: 'partial' | 'deep';
+  strippedBranchCount: number;
 }
 
 interface ForestTreeDescriptor {

@@ -624,14 +624,14 @@ This probably deserves several interchangeable strategies.
 
 # Beaver Damage
 
-* [ ] Generate beaver-chewed trunks near suitable waterways.
-* [ ] Generate characteristic cone-shaped chew marks.
-* [ ] Generate partial chewing.
+* [x] Generate beaver-chewed trunks near suitable waterways.
+* [x] Generate characteristic cone-shaped chew marks.
+* [x] Generate partial chewing.
 * [ ] Generate nearly felled trees.
 * [ ] Generate felled beaver-cut trees.
 * [ ] Generate stripped branches.
 * [ ] Associate damage with nearby beaver populations.
-* [ ] Avoid beaver damage far from suitable habitat.
+* [x] Avoid beaver damage far from suitable habitat.
 
 # Tree Carvings
 
