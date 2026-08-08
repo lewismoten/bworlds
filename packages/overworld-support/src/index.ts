@@ -298,7 +298,7 @@ export function createRiverForkPath(
   cellY: number,
   controlPoints: RiverControlPoint[]
 ): RiverForkPath | null {
-  if (controlPoints.length < 3) {
+  if (controlPoints.length < 4) {
     return null;
   }
   if (
@@ -312,13 +312,24 @@ export function createRiverForkPath(
     1 +
     Math.floor(
       hash2D(`${seed}:river-fork-trunk-start`, cellX, cellY) *
-        (controlPoints.length - 2)
+        Math.max(1, controlPoints.length - 3)
     );
-  const trunkEndIndex = Math.min(trunkStartIndex + 1, controlPoints.length - 1);
+  const maxAdditionalSpan = Math.max(
+    0,
+    controlPoints.length - trunkStartIndex - 3
+  );
+  const trunkEndIndex = Math.min(
+    controlPoints.length - 1,
+    trunkStartIndex +
+      2 +
+      Math.floor(
+        hash2D(`${seed}:river-fork-trunk-span`, cellX, cellY) *
+          (maxAdditionalSpan + 1)
+      )
+  );
   const pivot = controlPoints[trunkStartIndex];
-  const next = controlPoints[trunkEndIndex];
-  const previous = controlPoints[Math.max(0, trunkStartIndex - 1)];
-  const baseAngle = Math.atan2(next.y - previous.y, next.x - previous.x);
+  const merge = controlPoints[trunkEndIndex];
+  const baseAngle = Math.atan2(merge.y - pivot.y, merge.x - pivot.x);
   const angleSign =
     hash2D(`${seed}:river-fork-angle-sign`, cellX, cellY) >= 0.5 ? 1 : -1;
   const angleDelta =
@@ -327,11 +338,11 @@ export function createRiverForkPath(
     RIVER_FORK_MAX_ANGLE_DELTA *
     angleSign;
   const branchAngle = baseAngle + angleDelta;
-  const pointCount =
-    RIVER_FORK_MIN_POINTS +
+  const branchStepCount =
+    2 +
     Math.floor(
       hash2D(`${seed}:river-fork-point-count`, cellX, cellY) *
-        (RIVER_FORK_MAX_POINTS - RIVER_FORK_MIN_POINTS + 1)
+        Math.max(1, RIVER_FORK_MAX_POINTS - RIVER_FORK_MIN_POINTS)
     );
   const points: RiverControlPoint[] = [pivot];
   const padding = RIVER_MAX_CONTROL_STEP + 1;
@@ -339,34 +350,92 @@ export function createRiverForkPath(
   const maxX = (cellX + 1) * RIVER_CONTROL_CELL_SIZE + padding;
   const minY = cellY * RIVER_CONTROL_CELL_SIZE - padding;
   const maxY = (cellY + 1) * RIVER_CONTROL_CELL_SIZE + padding;
+  const trunkDistance = Math.hypot(merge.x - pivot.x, merge.y - pivot.y);
+  const branchStepDistance = clamp(
+    trunkDistance * 0.32,
+    RIVER_MIN_CONTROL_STEP,
+    RIVER_MAX_CONTROL_STEP
+  );
+  const rejoinStepDistance = clamp(
+    trunkDistance * 0.28,
+    RIVER_MIN_CONTROL_STEP,
+    RIVER_MAX_CONTROL_STEP
+  );
+  const firstStepAngle = clampAngleToRange(
+    branchAngle,
+    baseAngle - RIVER_FORK_MAX_ANGLE_DELTA,
+    baseAngle + RIVER_FORK_MAX_ANGLE_DELTA
+  );
+  const lastStepAngle = clampAngleToRange(
+    branchAngle,
+    baseAngle - RIVER_FORK_MAX_ANGLE_DELTA,
+    baseAngle + RIVER_FORK_MAX_ANGLE_DELTA
+  );
+  const branchStart = {
+    x: clamp(
+      pivot.x + Math.cos(firstStepAngle) * branchStepDistance,
+      minX,
+      maxX
+    ),
+    y: clamp(
+      pivot.y + Math.sin(firstStepAngle) * branchStepDistance,
+      minY,
+      maxY
+    ),
+  };
+  points.push(branchStart);
 
-  for (let index = 1; index < pointCount; index += 1) {
-    const distance =
-      RIVER_MIN_CONTROL_STEP +
-      Math.floor(
-        hash2D(`${seed}:river-fork-distance:${index}`, cellX, cellY) *
-          (RIVER_MAX_CONTROL_STEP - RIVER_MIN_CONTROL_STEP + 1)
-      );
-    const sway =
-      (hash2D(`${seed}:river-fork-sway:${index}`, cellX, cellY) - 0.5) *
-      (Math.PI / 10);
-    const stepAngle = clampAngleToRange(
-      branchAngle + sway,
-      baseAngle - RIVER_FORK_MAX_ANGLE_DELTA,
-      baseAngle + RIVER_FORK_MAX_ANGLE_DELTA
-    );
-    const priorPoint = points[index - 1];
-    points.push({
-      x: clamp(priorPoint.x + Math.cos(stepAngle) * distance, minX, maxX),
-      y: clamp(priorPoint.y + Math.sin(stepAngle) * distance, minY, maxY),
-    });
+  if (branchStepCount > 2) {
+    const branchApproach = {
+      x: clamp(
+        merge.x - Math.cos(lastStepAngle) * rejoinStepDistance,
+        minX,
+        maxX
+      ),
+      y: clamp(
+        merge.y - Math.sin(lastStepAngle) * rejoinStepDistance,
+        minY,
+        maxY
+      ),
+    };
+    if (branchStepCount > 3) {
+      const midT = 0.5;
+      const swayDistance =
+        (hash2D(`${seed}:river-fork-mid-sway`, cellX, cellY) - 0.5) *
+        trunkDistance *
+        0.18;
+      points.push({
+        x: clamp(
+          pivot.x +
+            (merge.x - pivot.x) * midT +
+            Math.cos(branchAngle) * swayDistance,
+          minX,
+          maxX
+        ),
+        y: clamp(
+          pivot.y +
+            (merge.y - pivot.y) * midT +
+            Math.sin(branchAngle) * swayDistance,
+          minY,
+          maxY
+        ),
+      });
+    }
+    points.push(branchApproach);
+  }
+  points.push(merge);
+
+  const curvePoints = createRiverCurvePoints(points);
+  if (curvePoints.length >= 4) {
+    curvePoints[1] = points[1];
+    curvePoints[curvePoints.length - 2] = points[points.length - 2];
   }
 
   return {
     trunkStartIndex,
     trunkEndIndex,
     trunkAngle: baseAngle,
-    points: createRiverCurvePoints(points),
+    points: curvePoints,
   };
 }
 

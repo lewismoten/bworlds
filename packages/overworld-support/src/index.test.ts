@@ -27,6 +27,30 @@ function normalizeAngleDelta(delta: number): number {
   return normalized;
 }
 
+function getDistanceToSegment(
+  point: { x: number; y: number },
+  start: { x: number; y: number },
+  end: { x: number; y: number }
+): number {
+  const deltaX = end.x - start.x;
+  const deltaY = end.y - start.y;
+  const squaredLength = deltaX * deltaX + deltaY * deltaY;
+  if (squaredLength === 0) {
+    return Math.hypot(point.x - start.x, point.y - start.y);
+  }
+  const projection = Math.max(
+    0,
+    Math.min(
+      1,
+      ((point.x - start.x) * deltaX + (point.y - start.y) * deltaY) /
+        squaredLength
+    )
+  );
+  const closestX = start.x + deltaX * projection;
+  const closestY = start.y + deltaY * projection;
+  return Math.hypot(point.x - closestX, point.y - closestY);
+}
+
 type GenerationContextPayload = Parameters<typeof createOverworldGenerationContext>[0];
 type ComposeOverworldTilePayload = Parameters<typeof composeOverworldTileFromPlugins>[0];
 type ResolveOverworldAnchorsPayload = Parameters<
@@ -215,11 +239,23 @@ describe('overworld support', () => {
     expect(fork?.points[0]).toEqual(
       forkSeedCell!.controlPoints[fork!.trunkStartIndex]
     );
+    expect(fork?.points.at(-1)).toEqual(
+      forkSeedCell!.controlPoints[fork!.trunkEndIndex]
+    );
     expect(fork?.points.length ?? 0).toBeGreaterThanOrEqual(2);
     expect(fork?.points[1]).not.toEqual(fork?.points[0]);
+    const trunkStart = forkSeedCell!.controlPoints[fork!.trunkStartIndex];
+    const trunkEnd = forkSeedCell!.controlPoints[fork!.trunkEndIndex];
+    const maxOffset = Math.max(
+      ...fork!.points.slice(1, -1).map((point) =>
+        getDistanceToSegment(point, trunkStart, trunkEnd)
+      ),
+      0
+    );
+    expect(maxOffset).toBeGreaterThan(0.4);
   });
 
-  it('keeps fork branch segments within 45 degrees of the trunk heading', () => {
+  it('keeps fork join segments within 45 degrees of the trunk heading', () => {
     let forkSeedCell:
       | { seed: string; cellX: number; cellY: number; controlPoints: { x: number; y: number }[] }
       | undefined;
@@ -243,9 +279,12 @@ describe('overworld support', () => {
       forkSeedCell!.controlPoints
     );
 
-    for (let index = 1; index < (fork?.points.length ?? 0); index += 1) {
-      const start = fork!.points[index - 1];
-      const end = fork!.points[index];
+    const joinSegments = [
+      [fork!.points[0], fork!.points[1]],
+      [fork!.points[fork!.points.length - 2], fork!.points[fork!.points.length - 1]],
+    ] as const;
+
+    for (const [start, end] of joinSegments) {
       const segmentAngle = Math.atan2(end.y - start.y, end.x - start.x);
       const delta = Math.abs(
         normalizeAngleDelta(segmentAngle - fork!.trunkAngle)
