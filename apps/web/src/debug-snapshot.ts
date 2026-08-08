@@ -193,6 +193,7 @@ export type DebugSnapshotExport = {
     materialTypes: string;
     materialsCreatedDuringSamplingWindow: number;
     materialsDisposedDuringSamplingWindow: number;
+    peakMaterialCount: number;
     geometryCount: number;
     textureCount: number;
     textureMemoryEstimateMb: number;
@@ -330,6 +331,7 @@ export function buildDebugSnapshotExport(
         options.snapshot.materialsCreatedDuringSamplingWindow ?? 0,
       materialsDisposedDuringSamplingWindow:
         options.snapshot.materialsDisposedDuringSamplingWindow ?? 0,
+      peakMaterialCount: options.snapshot.peakMaterialCount ?? 0,
       geometryCount: options.snapshot.geometryCount,
       textureCount: options.snapshot.textureCount,
       textureMemoryEstimateMb: options.snapshot.textureMemoryEstimateMb,

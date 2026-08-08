@@ -1829,6 +1829,11 @@ function collectCurrentDebugSnapshot(
     });
   }
 
+  debugSnapshot.peakMaterialCount = Math.max(
+    debugSnapshot.materialCount,
+    ...debugResourceTrendState.materialSamples.map((sample) => sample.materialCount)
+  );
+
   debugSnapshotState.latestSnapshot = { ...debugSnapshot };
   return debugSnapshot;
 }

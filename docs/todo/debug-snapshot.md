@@ -115,7 +115,7 @@ That gives you something you can save from a slow scene, attach to a bug report,
 * [x] Include materials by type.
 * [x] Include materials created during the sampling window.
 * [x] Include materials disposed during the sampling window.
-* [ ] Include peak material count.
+* [x] Include peak material count.
 * [ ] Include material-cache hit rate.
 * [ ] Include material-cache miss rate.
 * [ ] Include estimated material usage by plugin.
