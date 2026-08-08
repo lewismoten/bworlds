@@ -10,7 +10,8 @@ type SoundEffectKind =
   | 'wind'
   | 'advancement'
   | 'train-engine'
-  | 'train-whistle';
+  | 'train-whistle'
+  | 'paddle-calliope';
 type SoundWaveform = OscillatorType;
 type SoundPosition = { x: number; y: number };
 type SurfaceAudioFamily =
@@ -76,6 +77,13 @@ export type SoundEffectController = {
     weatherIntensity?: number;
     windStrength?: number;
     nearbyTrain?:
+      | {
+          progress?: number;
+          emitter?: SoundPosition;
+          listener?: SoundPosition;
+        }
+      | null;
+    nearbyPaddleBoat?:
       | {
           progress?: number;
           emitter?: SoundPosition;
@@ -226,6 +234,7 @@ export function createSoundEffectController(
   let lastProgressionAtMs = -Infinity;
   let lastTrainEngineAtMs = -Infinity;
   let lastTrainWhistleAtMs = -Infinity;
+  let lastPaddleCalliopeAtMs = -Infinity;
   let previousJumping = false;
   let footstepVariant = 0;
 
@@ -253,6 +262,8 @@ export function createSoundEffectController(
             ? 74 + variantOffset * 0.35
           : kind === 'train-whistle'
             ? 356 + variantOffset * 0.6
+          : kind === 'paddle-calliope'
+            ? resolvePaddleBoatCalliopeFrequency(undefined)
           : kind === 'open'
             ? resolveInteractionFrequency('open', tileKind, profile, variantOffset)
           : kind === 'close'
@@ -273,6 +284,8 @@ export function createSoundEffectController(
             ? 420
           : kind === 'train-whistle'
             ? 880
+          : kind === 'paddle-calliope'
+            ? 1180
           : kind === 'landing'
             ? 120
             : kind === 'blocked'
@@ -291,6 +304,8 @@ export function createSoundEffectController(
             ? 0.03
           : kind === 'train-whistle'
             ? 0.042
+          : kind === 'paddle-calliope'
+            ? 0.034
           : kind === 'open' || kind === 'close'
             ? profile.landingVolume * 0.8
           : kind === 'blocked'
@@ -309,6 +324,8 @@ export function createSoundEffectController(
             ? 'sawtooth'
           : kind === 'train-whistle'
             ? 'square'
+          : kind === 'paddle-calliope'
+            ? 'triangle'
           : kind === 'open' || kind === 'close'
             ? resolveInteractionWaveform(tileKind, profile.waveform)
             : profile.waveform,
@@ -371,6 +388,7 @@ export function createSoundEffectController(
       weatherIntensity,
       windStrength,
       nearbyTrain,
+      nearbyPaddleBoat,
       emitter,
       listener,
     }) {
@@ -407,6 +425,23 @@ export function createSoundEffectController(
           nearbyTrain.emitter,
           nearbyTrain.listener ?? listener
         );
+      }
+      if (
+        nearbyPaddleBoat &&
+        nearbyPaddleBoat.emitter &&
+        nowMs - lastPaddleCalliopeAtMs >= getPaddleBoatCalliopeCadenceMs()
+      ) {
+        lastPaddleCalliopeAtMs = nowMs;
+        sink.play({
+          kind: 'paddle-calliope',
+          nowMs,
+          frequency: resolvePaddleBoatCalliopeFrequency(nearbyPaddleBoat.progress),
+          durationMs: 1180,
+          volume: 0.034,
+          waveform: 'triangle',
+          emitter: nearbyPaddleBoat.emitter,
+          listener: nearbyPaddleBoat.listener ?? listener,
+        });
       }
 
       if (
@@ -472,6 +507,25 @@ export function shouldPlayTrainWhistle(progress: number | undefined): boolean {
     return false;
   }
   return progress <= 0.08 || progress >= 0.92;
+}
+
+export function getPaddleBoatCalliopeCadenceMs(): number {
+  return 2600;
+}
+
+export function resolvePaddleBoatCalliopeFrequency(
+  progress: number | undefined
+): number {
+  const melody = [392, 440, 523.25, 587.33, 659.25, 587.33, 523.25, 440];
+  if (typeof progress !== 'number') {
+    return melody[0] ?? 392;
+  }
+  const normalized = ((progress % 1) + 1) % 1;
+  const index = Math.min(
+    melody.length - 1,
+    Math.floor(normalized * melody.length)
+  );
+  return melody[index] ?? melody[0] ?? 392;
 }
 
 function resolveInteractionFrequency(
@@ -585,6 +639,16 @@ export function createWebAudioSoundEffectSink(): SoundEffectSink {
         oscillator.frequency.exponentialRampToValueAtTime(
           effect.frequency * 1.28,
           startAt + durationSeconds * 0.72
+        );
+      }
+      if (effect.kind === 'paddle-calliope') {
+        oscillator.frequency.linearRampToValueAtTime(
+          effect.frequency * 1.08,
+          startAt + durationSeconds * 0.32
+        );
+        oscillator.frequency.linearRampToValueAtTime(
+          effect.frequency * 0.94,
+          startAt + durationSeconds * 0.88
         );
       }
       gain.gain.setValueAtTime(0.0001, startAt);

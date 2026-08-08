@@ -99,6 +99,7 @@ import {
   createWebAudioSoundEffectSink,
   shouldPlayBlockedMovementSound,
 } from './sound-effects.ts';
+import { findNearestTrafficProfile } from './nearby-traffic.ts';
 import {
   getPlayerLevelChange,
   normalizePlayerLevel,
@@ -768,6 +769,15 @@ const nearbyPoiMusicState = {
   },
 };
 const nearbyTrainAudioState = {
+  cacheKey: '',
+  profile: null as
+    | null
+    | {
+        progress?: number;
+        emitter: { x: number; y: number };
+      },
+};
+const nearbyPaddleBoatAudioState = {
   cacheKey: '',
   profile: null as
     | null
@@ -1492,47 +1502,62 @@ function getNearbyTrainAudioProfile() {
     return nearbyTrainAudioState.profile;
   }
 
-  const searchRadius = 8;
-  let best:
-    | null
-    | {
-        distance: number;
-        progress?: number;
-        emitter: { x: number; y: number };
-      } = null;
-
-  for (let y = centerY - searchRadius; y <= centerY + searchRadius; y += 1) {
-    for (let x = centerX - searchRadius; x <= centerX + searchRadius; x += 1) {
-      const tile = state.getCurrentTile(x, y) as {
-        train?: {
-          progress?: number;
-          x: number;
-          y: number;
-        };
-      };
-      if (!tile.train) {
-        continue;
-      }
-      const distance = Math.hypot(state.player.x - x, state.player.y - y);
-      if (best && distance >= best.distance) {
-        continue;
-      }
-      best = {
-        distance,
-        progress: tile.train.progress,
-        emitter: { x, y },
-      };
-    }
-  }
+  const best = findNearestTrafficProfile({
+    state,
+    centerX,
+    centerY,
+    searchRadius: 8,
+    selectTraffic(tile) {
+      return tile.train as
+        | {
+            progress?: number;
+            x: number;
+            y: number;
+          }
+        | undefined;
+    },
+  });
 
   nearbyTrainAudioState.cacheKey = cacheKey;
-  nearbyTrainAudioState.profile = best
-    ? {
-        progress: best.progress,
-        emitter: best.emitter,
-      }
-    : null;
+  nearbyTrainAudioState.profile = best;
   return nearbyTrainAudioState.profile;
+}
+
+function getNearbyPaddleBoatAudioProfile() {
+  const context = state.getCurrentContext();
+  if (context.type !== 'overworld') {
+    nearbyPaddleBoatAudioState.cacheKey = `${context.id}:${snapWorldCoordinate(state.player.x)}:${snapWorldCoordinate(state.player.y)}`;
+    nearbyPaddleBoatAudioState.profile = null;
+    return null;
+  }
+
+  const centerX = snapWorldCoordinate(state.player.x);
+  const centerY = snapWorldCoordinate(state.player.y);
+  const boatTimeBucket = Math.floor((state.timeMs ?? 0) / 2000);
+  const cacheKey = `${context.id}:${centerX}:${centerY}:${boatTimeBucket}`;
+  if (nearbyPaddleBoatAudioState.cacheKey === cacheKey) {
+    return nearbyPaddleBoatAudioState.profile;
+  }
+
+  const best = findNearestTrafficProfile({
+    state,
+    centerX,
+    centerY,
+    searchRadius: 8,
+    selectTraffic(tile) {
+      return tile.boat as
+        | {
+            progress?: number;
+            x: number;
+            y: number;
+          }
+        | undefined;
+    },
+  });
+
+  nearbyPaddleBoatAudioState.cacheKey = cacheKey;
+  nearbyPaddleBoatAudioState.profile = best;
+  return nearbyPaddleBoatAudioState.profile;
 }
 
 function attemptMove(stepX: number, stepY: number): void {
@@ -1993,6 +2018,7 @@ function updateMovement(deltaMs: number): void {
   }
 
   const nearbyTrainAudio = getNearbyTrainAudioProfile();
+  const nearbyPaddleBoatAudio = getNearbyPaddleBoatAudioProfile();
   soundEffects.update({
     nowMs,
     walking,
@@ -2005,6 +2031,12 @@ function updateMovement(deltaMs: number): void {
     nearbyTrain: nearbyTrainAudio
       ? {
           ...nearbyTrainAudio,
+          listener: { x: state.player.x, y: state.player.y },
+        }
+      : null,
+    nearbyPaddleBoat: nearbyPaddleBoatAudio
+      ? {
+          ...nearbyPaddleBoatAudio,
           listener: { x: state.player.x, y: state.player.y },
         }
       : null,

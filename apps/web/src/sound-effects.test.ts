@@ -2,9 +2,11 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   createSoundEffectController,
   getForestWindCadenceMs,
+  getPaddleBoatCalliopeCadenceMs,
   getSurfaceAudioFamily,
   getSurfaceAudioProfile,
   getSoundSpatialMix,
+  resolvePaddleBoatCalliopeFrequency,
   getTrainEngineCadenceMs,
   shouldPlayBlockedMovementSound,
   shouldPlayForestWindSound,
@@ -348,6 +350,69 @@ describe('sound effects', () => {
     expect(shouldPlayTrainWhistle(0.5)).toBe(false);
     expect(shouldPlayTrainWhistle(0.98)).toBe(true);
     expect(shouldPlayTrainWhistle(undefined)).toBe(false);
+  });
+
+  it('plays a debounced made-up calliope motif for nearby paddle boats', () => {
+    const played: ProceduralSoundEffect[] = [];
+    const controller = createSoundEffectController({
+      play(effect) {
+        played.push(effect);
+      },
+    });
+
+    controller.update({
+      nowMs: 0,
+      walking: false,
+      isJumping: false,
+      viewMode: '3d',
+      tileKind: 'shore',
+      nearbyPaddleBoat: {
+        progress: 0.18,
+        emitter: { x: 2, y: 0 },
+        listener: { x: 0, y: 0 },
+      },
+      listener: { x: 0, y: 0 },
+    });
+    controller.update({
+      nowMs: 900,
+      walking: false,
+      isJumping: false,
+      viewMode: '3d',
+      tileKind: 'shore',
+      nearbyPaddleBoat: {
+        progress: 0.42,
+        emitter: { x: 2, y: 0 },
+        listener: { x: 0, y: 0 },
+      },
+      listener: { x: 0, y: 0 },
+    });
+    controller.update({
+      nowMs: getPaddleBoatCalliopeCadenceMs() + 10,
+      walking: false,
+      isJumping: false,
+      viewMode: '3d',
+      tileKind: 'shore',
+      nearbyPaddleBoat: {
+        progress: 0.42,
+        emitter: { x: 2, y: 0 },
+        listener: { x: 0, y: 0 },
+      },
+      listener: { x: 0, y: 0 },
+    });
+
+    expect(played.map((effect) => effect.kind)).toEqual([
+      'paddle-calliope',
+      'paddle-calliope',
+    ]);
+    expect(played[0]?.waveform).toBe('triangle');
+    expect((played[1]?.frequency ?? 0) > (played[0]?.frequency ?? 0)).toBe(true);
+  });
+
+  it('maps paddle-boat progress into a stable calliope melody step', () => {
+    expect(resolvePaddleBoatCalliopeFrequency(0)).toBeCloseTo(392, 2);
+    expect(resolvePaddleBoatCalliopeFrequency(0.26)).toBeCloseTo(523.25, 2);
+    expect(resolvePaddleBoatCalliopeFrequency(0.63)).toBeCloseTo(587.33, 2);
+    expect(resolvePaddleBoatCalliopeFrequency(undefined)).toBeCloseTo(392, 2);
   });
 
   it('attaches listener and emitter positions to scheduled movement sounds', () => {
