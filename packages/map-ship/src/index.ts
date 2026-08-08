@@ -14,6 +14,8 @@ import type {
 type Point = { x: number; y: number };
 type ShipContext = WorldContextLike & {
   origin: Point;
+  destination?: Point;
+  routeBoatName?: string;
 };
 
 export function createShipMapPlugin(): RuntimePlugin {
@@ -45,6 +47,9 @@ function createShipMap(
       return {
         kind: 'ship',
         note:
+          typeof context.routeBoatName === 'string'
+            ? `${context.routeBoatName} is underway to the next dock stop.`
+            :
           variant === 'tall-ship'
             ? 'The captain\'s deck rises above neatly kept cargo.'
             : 'Broken beams and soaked cargo list through the ruined hold.',
@@ -83,7 +88,9 @@ function createShipMap(
 
   function getExit(x?: number, y?: number) {
     if (x === 0 && y === 5) {
-      return createExitMapAction({ x: context.origin.x, y: context.origin.y });
+      return createExitMapAction(
+        context.destination ?? { x: context.origin.x, y: context.origin.y }
+      );
     }
     return null;
   }

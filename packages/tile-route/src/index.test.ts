@@ -642,4 +642,27 @@ describe('tile route', () => {
       })
     );
   });
+
+  it('creates a boardable ship action from docks on a valid route', () => {
+    const state = createRoutedDockModelState();
+    const action = dockTile?.createWorldAction?.({
+      seed: 'spec',
+      x: 0,
+      y: 0,
+      tile: { kind: 'dock' } as never,
+      state: state as never,
+    });
+
+    expect(action).toEqual(
+      expect.objectContaining({
+        type: 'enter',
+        context: expect.objectContaining({
+          type: 'ship',
+          label: expect.any(String),
+          destination: { x: 11, y: 22 },
+        }),
+        spawn: { x: 0, y: 4 },
+      })
+    );
+  });
 });

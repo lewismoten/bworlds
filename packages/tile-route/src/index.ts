@@ -27,6 +27,7 @@ import {
 import type {
   ClassifyOverworldTileContext,
   Kind,
+  CreateWorldActionContext,
   Create3DModelContext,
   Paint2DContext,
   SurfaceProfile3D,
@@ -286,6 +287,31 @@ export function createRouteTilePlugin(): RuntimePlugin {
       },
       create3DModel({ three, state, tileX, tileY }: Create3DModelContext) {
         return createDockGroup(three, state, tileX, tileY);
+      },
+      createWorldAction(context: CreateWorldActionContext) {
+        if (!context.state) {
+          return null;
+        }
+        const route = resolveDockBoatRoute(context.state, context.x, context.y);
+        const destination = route?.stops[1];
+        if (!route || !destination) {
+          return null;
+        }
+        return {
+          type: 'enter',
+          context: {
+            id: `dock-route-ship:${context.x}:${context.y}`,
+            label: route.boatName,
+            type: 'ship',
+            depth: 1,
+            origin: { x: context.x, y: context.y },
+            destination: { x: destination.x, y: destination.y },
+            routeBoatName: route.boatName,
+            routeStops: route.stops,
+          },
+          spawn: { x: 0, y: 4 },
+          facing: 0,
+        };
       },
     },
   ]);

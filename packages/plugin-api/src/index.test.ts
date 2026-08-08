@@ -499,6 +499,7 @@ describe('plugin registry', () => {
         x: 4,
         y: 5,
         tile,
+        state,
       })
     ).toEqual(
       expect.objectContaining({

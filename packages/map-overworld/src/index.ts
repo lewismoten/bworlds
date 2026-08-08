@@ -81,6 +81,7 @@ function createOverworldMap(
         x,
         y,
         tile,
+        state,
       }) ?? null;
     if (
       action &&

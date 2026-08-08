@@ -687,6 +687,7 @@ export interface CreateMapContext {
 
 export interface CreateWorldActionContext extends SeededPoint {
   tile: TileLike;
+  state?: WorldStateLike;
 }
 
 export interface TilePlugin extends Pick<TileLike, 'kind'> {
