@@ -77,6 +77,8 @@ export function getDefaultQuestPlugins(): QuestTypePlugin[] {
     createEscortQuestPlugin(),
     createTrackingQuestPlugin(),
     createTimedQuestPlugin(),
+    createDiplomacyQuestPlugin(),
+    createChoiceQuestPlugin(),
     createFetchQuestPlugin(),
     createRecoveryQuestPlugin(),
     createCraftingQuestPlugin(),
@@ -475,6 +477,96 @@ function createTimedQuestPlugin(): QuestTypePlugin {
       summary: `${context.npcName} needs someone to ${objective} ${deadline}.${professionHint}`,
       availability:
         context.npcState === 'working' ? 'work' : 'travel',
+      sourceNpcId: context.npcId,
+      sourceNpcName: context.npcName,
+    };
+  });
+}
+
+function createDiplomacyQuestPlugin(): QuestTypePlugin {
+  return createQuestTypePlugin('diplomacy', (context) => {
+    if (
+      context.playerLevel < 4 ||
+      !(
+        context.npcState === 'working' ||
+        context.npcState === 'home'
+      ) ||
+      !(
+        context.professionFamily === 'town-hall' ||
+        context.professionFamily === 'temple' ||
+        context.professionFamily === 'market'
+      )
+    ) {
+      return null;
+    }
+
+    const dispute =
+      context.professionFamily === 'town-hall'
+        ? 'boundary dispute'
+        : context.professionFamily === 'temple'
+          ? 'festival grievance'
+          : 'trade disagreement';
+    const questId = `${context.townKey}:${context.npcId}:diplomacy:${dispute.replaceAll(' ', '-')}`;
+    if (context.completedQuestIds.has(questId)) {
+      return null;
+    }
+
+    const professionHint =
+      context.playerProfession === 'scholar' ||
+      context.playerProfession === 'merchant'
+        ? ' Your calm words may keep tempers from flaring.'
+        : '';
+
+    return {
+      id: questId,
+      type: 'diplomacy',
+      title: 'Common Ground',
+      summary: `${context.npcName} wants help settling a ${dispute} before it turns the town against itself.${professionHint}`,
+      availability: context.npcState === 'working' ? 'work' : 'home',
+      sourceNpcId: context.npcId,
+      sourceNpcName: context.npcName,
+    };
+  });
+}
+
+function createChoiceQuestPlugin(): QuestTypePlugin {
+  return createQuestTypePlugin('choice', (context) => {
+    if (
+      context.playerLevel < 5 ||
+      context.npcState !== 'working' ||
+      !(
+        context.professionFamily === 'town-hall' ||
+        context.professionFamily === 'market' ||
+        context.professionFamily === 'temple'
+      )
+    ) {
+      return null;
+    }
+
+    const dilemma =
+      context.professionFamily === 'town-hall'
+        ? 'whether scarce funds should repair roads or store grain'
+        : context.professionFamily === 'temple'
+          ? 'whether offerings should aid travelers or local families first'
+          : 'whether to honor a late caravan or reward the local stallholders';
+    const questId = `${context.townKey}:${context.npcId}:choice:${context.professionFamily}`;
+    if (context.completedQuestIds.has(questId)) {
+      return null;
+    }
+
+    const professionHint =
+      context.playerProfession === 'guard'
+        ? ' Your decision may influence town safety.'
+        : context.playerProfession === 'merchant'
+          ? ' Your decision may influence future trade.'
+          : '';
+
+    return {
+      id: questId,
+      type: 'choice',
+      title: 'A Hard Decision',
+      summary: `${context.npcName} asks you to weigh ${dilemma}.${professionHint}`,
+      availability: 'work',
       sourceNpcId: context.npcId,
       sourceNpcName: context.npcName,
     };

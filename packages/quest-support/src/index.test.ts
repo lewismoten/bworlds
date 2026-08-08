@@ -11,6 +11,8 @@ describe('quest support', () => {
       'escort',
       'tracking',
       'timed',
+      'diplomacy',
+      'choice',
       'fetch',
       'recovery',
       'crafting',
@@ -272,5 +274,64 @@ describe('quest support', () => {
     expect(timed.some((offer) => offer.type === 'timed')).toBe(true);
     expect(timed.some((offer) => offer.summary.includes('quick feet'))).toBe(true);
     expect(overleveled.some((offer) => offer.type === 'timed')).toBe(false);
+  });
+
+  it('offers diplomacy quests for civic and social disputes', () => {
+    const diplomacy = getDefaultQuestRegistry().getOffers({
+      npcId: 'npc:steward',
+      npcName: 'Della Norwood',
+      townKey: '3:7',
+      dayProgress: 0.48,
+      yearProgress: 0.58,
+      playerLevel: 5,
+      playerProfession: 'merchant',
+      completedQuestIds: new Set<string>(),
+      npcState: 'working',
+      profession: 'steward',
+      professionFamily: 'town-hall',
+      residenceBuildingId: 'home',
+      workplaceBuildingId: 'hall',
+    });
+
+    expect(diplomacy.some((offer) => offer.type === 'diplomacy')).toBe(true);
+    expect(
+      diplomacy.some((offer) => offer.summary.includes('calm words'))
+    ).toBe(true);
+  });
+
+  it('offers choice quests where player judgment changes the outcome', () => {
+    const choice = getDefaultQuestRegistry().getOffers({
+      npcId: 'npc:clerk',
+      npcName: 'Petra Dunley',
+      townKey: '3:7',
+      dayProgress: 0.5,
+      yearProgress: 0.22,
+      playerLevel: 6,
+      playerProfession: 'guard',
+      completedQuestIds: new Set<string>(),
+      npcState: 'working',
+      profession: 'clerk',
+      professionFamily: 'town-hall',
+      residenceBuildingId: 'home',
+      workplaceBuildingId: 'hall',
+    });
+    const underleveled = getDefaultQuestRegistry().getOffers({
+      npcId: 'npc:clerk',
+      npcName: 'Petra Dunley',
+      townKey: '3:7',
+      dayProgress: 0.5,
+      yearProgress: 0.22,
+      playerLevel: 2,
+      completedQuestIds: new Set<string>(),
+      npcState: 'working',
+      profession: 'clerk',
+      professionFamily: 'town-hall',
+      residenceBuildingId: 'home',
+      workplaceBuildingId: 'hall',
+    });
+
+    expect(choice.some((offer) => offer.type === 'choice')).toBe(true);
+    expect(choice.some((offer) => offer.summary.includes('town safety'))).toBe(true);
+    expect(underleveled.some((offer) => offer.type === 'choice')).toBe(false);
   });
 });

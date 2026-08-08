@@ -356,6 +356,59 @@ describe('town support', () => {
     ).toBe(true);
   });
 
+  it('surfaces diplomacy and choice quests from generated town schedules', () => {
+    const townSamples: Array<[number, number]> = [
+      [3, 7],
+      [10, -4],
+      [25, 9],
+      [48, -16],
+      [120, -80],
+    ];
+    let diplomacyStates: ReturnType<typeof getTownNpcQuestStates> = [];
+    let choiceStates: ReturnType<typeof getTownNpcQuestStates> = [];
+
+    outerDiplomacy: for (const [x, y] of townSamples) {
+      for (let minute = 0; minute < 24 * 60; minute += 30) {
+        diplomacyStates = getTownNpcQuestStates(
+          x,
+          y,
+          DEFAULT_DAY_LENGTH_MS * (minute / (24 * 60)),
+          {
+            level: 5,
+            profession: 'merchant',
+          }
+        );
+        if (diplomacyStates.some((entry) => entry.offers.some((offer) => offer.type === 'diplomacy'))) {
+          break outerDiplomacy;
+        }
+      }
+    }
+
+    outerChoice: for (const [x, y] of townSamples) {
+      for (let minute = 0; minute < 24 * 60; minute += 30) {
+        choiceStates = getTownNpcQuestStates(
+          x,
+          y,
+          DEFAULT_DAY_LENGTH_MS * (minute / (24 * 60)),
+          {
+            level: 6,
+            profession: 'guard',
+          }
+        );
+        if (choiceStates.some((entry) => entry.offers.some((offer) => offer.type === 'choice'))) {
+          break outerChoice;
+        }
+      }
+    }
+
+    expect(
+      diplomacyStates.some((entry) => entry.offers.some((offer) => offer.type === 'diplomacy'))
+    ).toBe(true);
+    expect(
+      choiceStates.some((entry) => entry.offers.some((offer) => offer.type === 'choice'))
+    ).toBe(true);
+  });
+
   it('scales building counts upward for at least some higher-level towns', () => {
     const signatures = new Set(
       [

@@ -20,8 +20,8 @@ Quests may include:
 - [ ] Capture quest — capture rather than kill a target.
 - [X] Follow / track quest — trail an NPC, footprints, creature, signal, or other clue.
 - [X] Race / timed quest — complete an objective before a deadline or another participant.
-- [ ] Diplomacy quest — negotiate, persuade, mediate, recruit, intimidate, or resolve a dispute.
-- [ ] Choice / moral quest — make a decision that changes relationships, rewards, factions, or story outcomes.
+- [X] Diplomacy quest — negotiate, persuade, mediate, recruit, intimidate, or resolve a dispute.
+- [X] Choice / moral quest — make a decision that changes relationships, rewards, factions, or story outcomes.
 - [ ] Faction quest — perform work to gain reputation or advance within an organization.
 - [ ] Companion quest — resolve a party member's personal storyline.
 - [ ] Revenge quest — pursue someone responsible for an earlier event.
