@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  createProceduralInstrumentBank,
   createMusicController,
   getMusicRegionSignature,
   getMusicSpatialMix,
@@ -71,7 +72,8 @@ describe('procedural music', () => {
     expect(scheduled.notes[0]).toEqual(
       expect.objectContaining({
         themeId: 'deep-forest',
-        waveform: 'sine',
+        instrumentId: expect.stringContaining('deep-forest'),
+        role: 'bass',
       })
     );
     expect(scheduled.state.regionSignature).toBe('deep-forest:overworld:1:2');
@@ -113,6 +115,31 @@ describe('procedural music', () => {
     });
   });
 
+  it('builds deterministic instrument banks with lead, bass, and pulse voices per cluster', () => {
+    const theme = resolveMusicTheme('forest', 'overworld');
+    const bank = createProceduralInstrumentBank(theme, 2, -1);
+
+    expect(bank.themeId).toBe('deep-forest');
+    expect(bank.instruments.lead).toEqual(
+      expect.objectContaining({
+        id: 'deep-forest:lead:2:-1',
+        role: 'lead',
+      })
+    );
+    expect(bank.instruments.bass).toEqual(
+      expect.objectContaining({
+        id: 'deep-forest:bass:2:-1',
+        role: 'bass',
+      })
+    );
+    expect(bank.instruments.pulse).toEqual(
+      expect.objectContaining({
+        id: 'deep-forest:pulse:2:-1',
+        role: 'pulse',
+      })
+    );
+  });
+
   it('emits scheduled notes through the controller sink', () => {
     const played: ProceduralMusicNote[] = [];
     const controller = createMusicController({
@@ -132,5 +159,7 @@ describe('procedural music', () => {
 
     expect(played.length).toBeGreaterThan(1);
     expect(played[0]?.themeId).toBe('town-square');
+    expect(played.some((note) => note.role === 'lead')).toBe(true);
+    expect(played.some((note) => note.role === 'pulse')).toBe(true);
   });
 });

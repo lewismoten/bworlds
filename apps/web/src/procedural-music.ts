@@ -5,6 +5,7 @@ type MusicPosition = { x: number; y: number };
 type TileKind = string;
 type ContextType = string;
 type WeatherKind = string;
+type InstrumentRole = 'lead' | 'bass' | 'pulse';
 
 type MusicRegionThemeId =
   | 'frontier-plains'
@@ -19,10 +20,26 @@ type MusicRegionTheme = {
   id: MusicRegionThemeId;
   rootHz: number;
   scale: number[];
-  waveform: MusicWaveform;
   noteDurationMs: number;
   baseVolume: number;
   stepPattern: number[];
+};
+
+export type ProceduralInstrument = {
+  id: string;
+  role: InstrumentRole;
+  waveform: MusicWaveform;
+  attackMs: number;
+  releaseMs: number;
+  detuneCents: number;
+  harmonicGain: number;
+  pulseRate: number;
+  brightness: number;
+};
+
+export type ProceduralInstrumentBank = {
+  themeId: MusicRegionThemeId;
+  instruments: Record<InstrumentRole, ProceduralInstrument>;
 };
 
 type MusicMood = {
@@ -39,11 +56,18 @@ type MusicSchedulerState = {
 
 export type ProceduralMusicNote = {
   themeId: MusicRegionThemeId;
+  instrumentId: string;
+  role: InstrumentRole;
   startMs: number;
   durationMs: number;
   frequency: number;
   volume: number;
   waveform: MusicWaveform;
+  attackMs: number;
+  releaseMs: number;
+  detuneCents: number;
+  harmonicGain: number;
+  pulseRate: number;
   emitter?: MusicPosition;
   listener?: MusicPosition;
 };
@@ -76,7 +100,6 @@ const THEME_LIBRARY: Record<MusicRegionThemeId, MusicRegionTheme> = {
     id: 'frontier-plains',
     rootHz: 196,
     scale: [0, 3, 5, 7, 10, 12],
-    waveform: 'triangle',
     noteDurationMs: 360,
     baseVolume: 0.028,
     stepPattern: [0, 2, 4, 2, 5, 4, 2, 0],
@@ -85,7 +108,6 @@ const THEME_LIBRARY: Record<MusicRegionThemeId, MusicRegionTheme> = {
     id: 'deep-forest',
     rootHz: 174.61,
     scale: [0, 2, 3, 7, 8, 10, 12],
-    waveform: 'sine',
     noteDurationMs: 440,
     baseVolume: 0.026,
     stepPattern: [0, 2, 3, 5, 3, 2, 1, 0],
@@ -94,7 +116,6 @@ const THEME_LIBRARY: Record<MusicRegionThemeId, MusicRegionTheme> = {
     id: 'coastal-shore',
     rootHz: 220,
     scale: [0, 2, 5, 7, 9, 12],
-    waveform: 'triangle',
     noteDurationMs: 420,
     baseVolume: 0.027,
     stepPattern: [0, 2, 4, 5, 4, 2, 0, 2],
@@ -103,7 +124,6 @@ const THEME_LIBRARY: Record<MusicRegionThemeId, MusicRegionTheme> = {
     id: 'town-square',
     rootHz: 246.94,
     scale: [0, 2, 4, 7, 9, 12],
-    waveform: 'square',
     noteDurationMs: 300,
     baseVolume: 0.024,
     stepPattern: [0, 2, 4, 5, 4, 2, 5, 4],
@@ -112,7 +132,6 @@ const THEME_LIBRARY: Record<MusicRegionThemeId, MusicRegionTheme> = {
     id: 'ridge-pass',
     rootHz: 185,
     scale: [0, 3, 5, 6, 10, 12],
-    waveform: 'sawtooth',
     noteDurationMs: 380,
     baseVolume: 0.024,
     stepPattern: [0, 1, 3, 4, 3, 1, 0, 4],
@@ -121,7 +140,6 @@ const THEME_LIBRARY: Record<MusicRegionThemeId, MusicRegionTheme> = {
     id: 'cavern-echo',
     rootHz: 130.81,
     scale: [0, 3, 5, 7, 8, 12],
-    waveform: 'sine',
     noteDurationMs: 520,
     baseVolume: 0.03,
     stepPattern: [0, 2, 4, 2, 5, 2, 1, 0],
@@ -130,7 +148,6 @@ const THEME_LIBRARY: Record<MusicRegionThemeId, MusicRegionTheme> = {
     id: 'interior-hall',
     rootHz: 233.08,
     scale: [0, 2, 4, 7, 11, 12],
-    waveform: 'triangle',
     noteDurationMs: 340,
     baseVolume: 0.022,
     stepPattern: [0, 2, 4, 2, 5, 4, 2, 1],
@@ -215,6 +232,11 @@ export function scheduleProceduralMusicNotes(
   previousState?: MusicSchedulerState
 ): { notes: ProceduralMusicNote[]; state: MusicSchedulerState } {
   const theme = resolveMusicTheme(options.tileKind, options.contextType);
+  const instrumentBank = createProceduralInstrumentBank(
+    theme,
+    options.clusterX ?? 0,
+    options.clusterY ?? 0
+  );
   const mood = resolveMusicMood({
     dayProgress: options.dayProgress,
     weatherKind: options.weatherKind,
@@ -235,6 +257,7 @@ export function scheduleProceduralMusicNotes(
     const note = createThemeNote({
       startMs: nextNoteAtMs,
       theme,
+      instrumentBank,
       mood,
       stepIndex,
       clusterX,
@@ -311,8 +334,10 @@ export function createWebAudioMusicSink(): MusicSink {
       }
       const nowMs = performance.now();
       const spatial = getMusicSpatialMix(note.emitter, note.listener);
-      const oscillator = context.createOscillator();
+  const oscillator = context.createOscillator();
+      const harmonicOscillator = context.createOscillator();
       const gain = context.createGain();
+      const harmonicGain = context.createGain();
       const panner = typeof context.createStereoPanner === 'function'
         ? (context.createStereoPanner() as StereoPannerNodeLike)
         : null;
@@ -321,31 +346,62 @@ export function createWebAudioMusicSink(): MusicSink {
 
       oscillator.type = note.waveform;
       oscillator.frequency.setValueAtTime(note.frequency, startAt);
+      oscillator.detune.setValueAtTime(note.detuneCents, startAt);
+      harmonicOscillator.type = note.waveform;
+      harmonicOscillator.frequency.setValueAtTime(note.frequency * 2, startAt);
+      harmonicOscillator.detune.setValueAtTime(note.detuneCents * 0.5, startAt);
       oscillator.frequency.exponentialRampToValueAtTime(
-        note.frequency * 0.985,
+        note.frequency * (0.985 + note.pulseRate * 0.002),
+        startAt + durationSeconds
+      );
+      harmonicOscillator.frequency.exponentialRampToValueAtTime(
+        note.frequency * 2 * (0.992 + note.pulseRate * 0.001),
         startAt + durationSeconds
       );
       gain.gain.setValueAtTime(0.0001, startAt);
+      harmonicGain.gain.setValueAtTime(0.0001, startAt);
+      const sustainVolume = note.volume * spatial.gainMultiplier;
       gain.gain.exponentialRampToValueAtTime(
-        note.volume * spatial.gainMultiplier,
-        startAt + durationSeconds * 0.12
+        sustainVolume,
+        startAt + note.attackMs / 1000
+      );
+      harmonicGain.gain.exponentialRampToValueAtTime(
+        sustainVolume * note.harmonicGain,
+        startAt + note.attackMs / 1000
+      );
+      gain.gain.exponentialRampToValueAtTime(
+        sustainVolume * 0.74,
+        startAt + Math.max(durationSeconds - note.releaseMs / 1000, note.attackMs / 1000)
+      );
+      harmonicGain.gain.exponentialRampToValueAtTime(
+        sustainVolume * note.harmonicGain * 0.68,
+        startAt + Math.max(durationSeconds - note.releaseMs / 1000, note.attackMs / 1000)
       );
       gain.gain.exponentialRampToValueAtTime(
         0.0001,
         startAt + durationSeconds
       );
+      harmonicGain.gain.exponentialRampToValueAtTime(
+        0.0001,
+        startAt + durationSeconds
+      );
 
       oscillator.connect(gain);
+      harmonicOscillator.connect(harmonicGain);
       if (panner) {
         panner.pan.setValueAtTime(spatial.pan, startAt);
         gain.connect(panner);
+        harmonicGain.connect(panner);
         panner.connect(context.destination);
       } else {
         gain.connect(context.destination);
+        harmonicGain.connect(context.destination);
       }
 
       oscillator.start(startAt);
+      harmonicOscillator.start(startAt);
       oscillator.stop(startAt + durationSeconds);
+      harmonicOscillator.stop(startAt + durationSeconds);
     },
   };
 }
@@ -369,6 +425,7 @@ export function getMusicSpatialMix(
 function createThemeNote(options: {
   startMs: number;
   theme: MusicRegionTheme;
+  instrumentBank: ProceduralInstrumentBank;
   mood: MusicMood;
   stepIndex: number;
   clusterX: number;
@@ -376,6 +433,8 @@ function createThemeNote(options: {
   emitter?: MusicPosition;
   listener?: MusicPosition;
 }): ProceduralMusicNote {
+  const role = selectInstrumentRole(options.stepIndex);
+  const instrument = options.instrumentBank.instruments[role];
   const patternIndex =
     options.theme.stepPattern[
       options.stepIndex % options.theme.stepPattern.length
@@ -392,17 +451,94 @@ function createThemeNote(options: {
       : 0;
   return {
     themeId: options.theme.id,
+    instrumentId: instrument.id,
+    role,
     startMs: options.startMs,
-    durationMs: options.theme.noteDurationMs * 0.92,
+    durationMs:
+      options.theme.noteDurationMs *
+      (role === 'bass' ? 1.05 : role === 'pulse' ? 0.72 : 0.92),
     frequency:
       options.theme.rootHz *
       Math.pow(2, (semitones + octaveBoost) / 12) *
-      options.mood.brightness,
-    volume: options.theme.baseVolume * options.mood.volumeMultiplier,
-    waveform: options.theme.waveform,
+      options.mood.brightness *
+      (role === 'bass' ? 0.5 : role === 'pulse' ? 1.02 : 1),
+    volume:
+      options.theme.baseVolume *
+      options.mood.volumeMultiplier *
+      (role === 'bass' ? 0.86 : role === 'pulse' ? 0.68 : 1),
+    waveform: instrument.waveform,
+    attackMs: instrument.attackMs,
+    releaseMs: instrument.releaseMs,
+    detuneCents: instrument.detuneCents,
+    harmonicGain: instrument.harmonicGain,
+    pulseRate: instrument.pulseRate,
     emitter: options.emitter,
     listener: options.listener,
   };
+}
+
+export function createProceduralInstrumentBank(
+  theme: MusicRegionTheme,
+  clusterX: number,
+  clusterY: number
+): ProceduralInstrumentBank {
+  return {
+    themeId: theme.id,
+    instruments: {
+      lead: createProceduralInstrument(theme, 'lead', clusterX, clusterY),
+      bass: createProceduralInstrument(theme, 'bass', clusterX, clusterY),
+      pulse: createProceduralInstrument(theme, 'pulse', clusterX, clusterY),
+    },
+  };
+}
+
+function createProceduralInstrument(
+  theme: MusicRegionTheme,
+  role: InstrumentRole,
+  clusterX: number,
+  clusterY: number
+): ProceduralInstrument {
+  const seedKey = `${theme.id}:${role}`;
+  const waveformOptions: Record<InstrumentRole, MusicWaveform[]> = {
+    lead: ['triangle', 'sine', 'sawtooth'],
+    bass: ['sine', 'triangle', 'square'],
+    pulse: ['square', 'triangle', 'sawtooth'],
+  };
+  const waveformList = waveformOptions[role];
+  const waveform =
+    waveformList[
+      Math.floor(hash2D(`${seedKey}:waveform`, clusterX, clusterY) * waveformList.length)
+    ] ?? waveformList[0];
+  const attackMsBase = role === 'lead' ? 28 : role === 'bass' ? 36 : 14;
+  const releaseMsBase = role === 'lead' ? 130 : role === 'bass' ? 180 : 90;
+  return {
+    id: `${theme.id}:${role}:${clusterX}:${clusterY}`,
+    role,
+    waveform,
+    attackMs: attackMsBase + Math.round(hash2D(`${seedKey}:attack`, clusterX, clusterY) * 24),
+    releaseMs:
+      releaseMsBase + Math.round(hash2D(`${seedKey}:release`, clusterX, clusterY) * 40),
+    detuneCents:
+      (hash2D(`${seedKey}:detune`, clusterX, clusterY) - 0.5) *
+      (role === 'pulse' ? 8 : 16),
+    harmonicGain:
+      0.12 +
+      hash2D(`${seedKey}:harmonics`, clusterX, clusterY) * (role === 'bass' ? 0.16 : 0.28),
+    pulseRate:
+      0.6 + hash2D(`${seedKey}:pulse`, clusterX, clusterY) * (role === 'pulse' ? 2.4 : 1.4),
+    brightness:
+      0.82 + hash2D(`${seedKey}:brightness`, clusterX, clusterY) * 0.34,
+  };
+}
+
+function selectInstrumentRole(stepIndex: number): InstrumentRole {
+  if (stepIndex % 4 === 0) {
+    return 'bass';
+  }
+  if (stepIndex % 2 === 1) {
+    return 'pulse';
+  }
+  return 'lead';
 }
 
 function normalizeWrappedProgress(value: number): number {
