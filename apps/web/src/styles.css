@@ -274,10 +274,10 @@ button:hover {
 }
 
 #viewport-2d,
+.viewport-text,
 .viewport-3d {
   position: absolute;
   inset: 0;
-  touch-action: none;
 }
 
 #viewport-2d {
@@ -285,6 +285,40 @@ button:hover {
   height: 100%;
   display: block;
   background: #02060b;
+}
+
+.viewport-text {
+  display: grid;
+  align-content: center;
+  justify-content: center;
+  gap: 0.08rem;
+  padding: 1.25rem;
+  background:
+    radial-gradient(circle at top left, rgba(85, 214, 190, 0.08), transparent 28%),
+    linear-gradient(180deg, rgba(3, 8, 14, 0.98), rgba(8, 16, 25, 0.98));
+  font-family: 'Courier New', Courier, monospace;
+  font-size: clamp(0.7rem, 1.4vw, 1rem);
+  line-height: 1;
+  letter-spacing: 0.08em;
+  user-select: none;
+}
+
+.viewport-text-row {
+  display: flex;
+  gap: 0.22em;
+  white-space: nowrap;
+}
+
+.viewport-text-cell {
+  display: inline-block;
+  min-width: 0.72em;
+  text-align: center;
+  text-shadow: 0 0 10px rgba(8, 16, 25, 0.75);
+}
+
+.viewport-3d,
+.viewport-text {
+  touch-action: none;
 }
 
 .viewport-3d canvas {

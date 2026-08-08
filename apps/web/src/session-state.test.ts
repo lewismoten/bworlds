@@ -57,6 +57,22 @@ describe('session state', () => {
     );
   });
 
+  it('accepts the ascii text viewport mode in saved sessions', () => {
+    expect(
+      parseSavedSession(
+        JSON.stringify({
+          player: { x: 0, y: 0, facing: 0 },
+          stack: [{ id: 'overworld', depth: 0 }],
+          viewMode: 'text',
+        })
+      )
+    ).toEqual(
+      expect.objectContaining({
+        viewMode: 'text',
+      })
+    );
+  });
+
   it('rejects invalid persisted inspector tabs and event modes', () => {
     expect(
       parseSavedSession(

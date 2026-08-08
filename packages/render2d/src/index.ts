@@ -2,11 +2,13 @@ import { drawTileSprite, getTileVariantIndex } from '@bworlds/atlas';
 import { getDaylightCycleState } from '@bworlds/core';
 import type {
   TileLike,
+  TileDefinitionLike,
   WorldEnvironmentLike,
   WorldStateLike,
 } from '@bworlds/plugin-api';
 
-type Render2DState = Pick<WorldStateLike, 'player' | 'getCurrentTile'>;
+type Render2DState = Pick<WorldStateLike, 'player' | 'getCurrentTile'> &
+  Partial<Pick<WorldStateLike, 'getTileDefinition'>>;
 
 export interface Render2DViewport {
   width: number;
@@ -23,6 +25,18 @@ type TileSampler = (worldX: number, worldY: number) => TileLike;
 type Point2D = {
   x: number;
   y: number;
+};
+export type TextViewportCell = {
+  glyph: string;
+  color: string;
+  kind: string;
+  worldX: number;
+  worldY: number;
+};
+export type TextViewportGrid = {
+  rows: TextViewportCell[][];
+  centerColumn: number;
+  centerRow: number;
 };
 
 export function render2D(
@@ -115,6 +129,97 @@ export function createViewportTileSampler(state: Render2DState): TileSampler {
     return tileCache.get(key) ?? { kind: 'unknown' };
   };
 }
+
+export function buildTextViewportGrid(
+  state: Render2DState,
+  options: { columns: number; rows: number }
+): TextViewportGrid {
+  const tileAt = createViewportTileSampler(state);
+  const columns = Math.max(1, Math.floor(options.columns));
+  const rows = Math.max(1, Math.floor(options.rows));
+  const centerColumn = Math.floor(columns / 2);
+  const centerRow = Math.floor(rows / 2);
+  const anchorX = Math.round(state.player.x);
+  const anchorY = Math.round(state.player.y);
+  const gridRows: TextViewportCell[][] = [];
+
+  for (let rowIndex = 0; rowIndex < rows; rowIndex += 1) {
+    const row: TextViewportCell[] = [];
+    const worldY = anchorY + (rowIndex - centerRow);
+    for (let columnIndex = 0; columnIndex < columns; columnIndex += 1) {
+      const worldX = anchorX + (columnIndex - centerColumn);
+      const tile = tileAt(worldX, worldY);
+      const isPlayer = rowIndex === centerRow && columnIndex === centerColumn;
+      row.push({
+        glyph: isPlayer
+          ? '@'
+          : getTextViewportGlyph(tile.kind, resolveTileName(state, tile.kind)),
+        color: isPlayer ? '#ffbf69' : resolveTileColor(state, tile.kind),
+        kind: tile.kind,
+        worldX,
+        worldY,
+      });
+    }
+    gridRows.push(row);
+  }
+
+  return {
+    rows: gridRows,
+    centerColumn,
+    centerRow,
+  };
+}
+
+export function getTextViewportGlyph(kind: string, tileName?: string): string {
+  const fallbackGlyph = tileName?.trim().charAt(0) || kind.trim().charAt(0) || '?';
+  const glyph = ASCII_TILE_GLYPHS[kind] ?? fallbackGlyph;
+  return glyph.toUpperCase();
+}
+
+function resolveTileDefinition(
+  state: Render2DState,
+  kind: string
+): TileDefinitionLike | null {
+  if (typeof state.getTileDefinition !== 'function') {
+    return null;
+  }
+  return state.getTileDefinition(kind) ?? null;
+}
+
+function resolveTileName(state: Render2DState, kind: string): string | undefined {
+  return resolveTileDefinition(state, kind)?.name;
+}
+
+function resolveTileColor(state: Render2DState, kind: string): string {
+  const definition = resolveTileDefinition(state, kind);
+  return definition?.miniColor ?? definition?.color ?? '#d9e8f4';
+}
+
+const ASCII_TILE_GLYPHS: Record<string, string> = {
+  plains: '.',
+  floor: '.',
+  interior: '.',
+  shore: ',',
+  road: '=',
+  river: '~',
+  ocean: '~',
+  bridge: '#',
+  dock: '#',
+  mountain: '^',
+  forest: 'T',
+  wall: '#',
+  door: '+',
+  town: 'T',
+  cave: 'C',
+  dungeon: 'D',
+  sign: '!',
+  ruins: 'R',
+  quarry: 'Q',
+  lighthouse: 'L',
+  ship: 'S',
+  observatory: 'O',
+  unknown: '?',
+};
 
 export interface RiverOverlayDirection {
   id:

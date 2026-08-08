@@ -13,7 +13,7 @@ import {
   snapWorldCoordinate,
   toGps,
 } from '@bworlds/core';
-import { render2D } from '@bworlds/render2d';
+import { buildTextViewportGrid, render2D } from '@bworlds/render2d';
 import { clampCameraPitch, create3DRenderer, DEFAULT_CAMERA_PITCH } from '@bworlds/render3d';
 import {
   buildPlayerPoi,
@@ -68,19 +68,24 @@ import {
 import {
   buildEventSummaryMarkup,
   buildStatusMarkup,
+  buildTextViewportMarkup,
   buildViewportHudMarkup,
   getDetailLabels,
   getEventSummarySignature,
   getStatusSignature,
+  getTextViewportSignature,
   getViewportHudSignature,
 } from './ui-signatures.ts';
 import {
+  cycleViewMode,
   getNextCompassDisplayMode,
   getNextCelestialEventMode,
   getNextInspectorTab,
   getNextMinimapDisplayMode,
   getNextModelPreviewMode,
   getNextTimekeeperDisplayMode,
+  getNextViewMode,
+  getViewModeToggleLabel,
   isInspectorSectionVisible,
   isModelPreviewVisible,
   getTimePresetProgress,
@@ -171,6 +176,12 @@ root.innerHTML = `
             id="viewport-3d"
             class="viewport-3d is-hidden"
             aria-hidden="true"
+          ></div>
+          <div
+            id="viewport-text"
+            class="viewport-text is-hidden"
+            aria-hidden="true"
+            hidden
           ></div>
           <canvas
             id="viewport-timekeeper-mini"
@@ -402,6 +413,7 @@ root.innerHTML = `
 const viewport2d = document.querySelector<HTMLCanvasElement>('#viewport-2d');
 const viewportStage = document.querySelector<HTMLElement>('#viewport-stage');
 const viewport3d = document.querySelector<HTMLElement>('#viewport-3d');
+const viewportText = document.querySelector<HTMLElement>('#viewport-text');
 const viewportHud = document.querySelector<HTMLElement>('#viewport-hud');
 const viewportTimekeeperMini =
   document.querySelector<HTMLCanvasElement>('#viewport-timekeeper-mini');
@@ -523,7 +535,7 @@ let runtime = createWorldRuntime({
   packIds: activePackIds,
   player: savedSession?.player,
   stack: savedSession?.stack,
-  viewMode: savedSession?.viewMode,
+  viewMode: getNextViewMode(savedSession?.viewMode),
 });
 let { contentPacks: activePacks, generator, registry, state } = runtime;
 syncPlayerPlacedPoisIntoState(savedSession?.playerPlacedPois ?? []);
@@ -639,6 +651,7 @@ const uiRenderState = {
   lastStatusSignature: '',
   lastViewportHudSignature: '',
   lastEventSummarySignature: '',
+  lastTextViewportSignature: '',
 };
 const hmrNoticeState = {
   message: '',
@@ -653,9 +666,16 @@ const keys = new Set<string>();
 renderContentPackControls();
 updateContentPackLabel();
 updateFreezeTimeButton();
+updateViewModeUi();
 updateTimekeeperDisplayModeUi();
 updateCompassDisplayModeUi();
 updateMinimapDisplayModeUi();
+
+function updateViewModeUi(): void {
+  if (toggleButton) {
+    toggleButton.textContent = getViewModeToggleLabel(state.viewMode);
+  }
+}
 
 function updateStatus(
   environment: WorldEnvironmentLike = getCurrentEnvironment(),
@@ -967,13 +987,24 @@ function toggleView(): void {
     mouseLookState.pointerId = -1;
     viewportStage?.classList.remove('is-mouse-looking');
   }
-  state.viewMode = state.viewMode === '2d' ? '3d' : '2d';
-  toggleButton.textContent =
-    state.viewMode === '2d' ? 'Switch to 3D' : 'Switch to 2D';
-  viewport2d.classList.toggle('is-hidden', state.viewMode !== '2d');
-  viewport3d.classList.toggle('is-hidden', state.viewMode !== '3d');
+  state.viewMode = cycleViewMode(state.viewMode);
+  syncViewportModeUi();
   saveSession();
   requestRender();
+}
+
+function syncViewportModeUi(): void {
+  viewport2d.classList.toggle('is-hidden', state.viewMode !== '2d');
+  viewport3d.classList.toggle('is-hidden', state.viewMode !== '3d');
+  viewportText?.classList.toggle('is-hidden', state.viewMode !== 'text');
+  if (viewport3d) {
+    viewport3d.setAttribute('aria-hidden', String(state.viewMode !== '3d'));
+  }
+  if (viewportText) {
+    viewportText.hidden = state.viewMode !== 'text';
+    viewportText.setAttribute('aria-hidden', String(state.viewMode !== 'text'));
+  }
+  updateViewModeUi();
 }
 
 function updateContentPackLabel(): void {
@@ -1409,30 +1440,7 @@ function updateMovement(deltaMs: number): void {
     y: Math.sin(state.player.facing + Math.PI / 2),
   };
 
-  if (state.viewMode === '2d') {
-    if ((keys.has('ArrowLeft') || keys.has('a')) && !shiftHeld) {
-      state.player.facing = normalizeAngle(state.player.facing - turnSpeed);
-    }
-    if ((keys.has('ArrowRight') || keys.has('d')) && !shiftHeld) {
-      state.player.facing = normalizeAngle(state.player.facing + turnSpeed);
-    }
-    if (keys.has('ArrowUp') || keys.has('w')) {
-      moveX += forward.x;
-      moveY += forward.y;
-    }
-    if (keys.has('ArrowDown') || keys.has('s')) {
-      moveX -= forward.x;
-      moveY -= forward.y;
-    }
-    if ((keys.has('ArrowLeft') || keys.has('a')) && shiftHeld) {
-      moveX -= strafe.x;
-      moveY -= strafe.y;
-    }
-    if ((keys.has('ArrowRight') || keys.has('d')) && shiftHeld) {
-      moveX += strafe.x;
-      moveY += strafe.y;
-    }
-  } else {
+  if (state.viewMode !== '3d') {
     if ((keys.has('ArrowLeft') || keys.has('a')) && !shiftHeld) {
       state.player.facing = normalizeAngle(state.player.facing - turnSpeed);
     }
@@ -1539,6 +1547,17 @@ function render(): FrameLoopActivityLike {
       timeMs,
       environment,
     });
+  } else if (state.viewMode === 'text') {
+    if (!viewportText) return;
+    const grid = buildTextViewportGrid(state, {
+      columns: 29,
+      rows: 19,
+    });
+    const textViewportSignature = getTextViewportSignature(grid);
+    if (textViewportSignature !== uiRenderState.lastTextViewportSignature) {
+      viewportText.innerHTML = buildTextViewportMarkup(grid);
+      uiRenderState.lastTextViewportSignature = textViewportSignature;
+    }
   } else {
     renderer3d.render(state, {
       jumpHeight: motion.jumpHeight,
@@ -2227,8 +2246,7 @@ viewport3d?.addEventListener('pointerup', releaseMouseLook);
 viewport3d?.addEventListener('pointercancel', releaseMouseLook);
 
 resizeCanvas();
-viewport2d.classList.toggle('is-hidden', state.viewMode !== '2d');
-viewport3d.classList.toggle('is-hidden', state.viewMode !== '3d');
+syncViewportModeUi();
 setInspectorTab(activeInspectorTab);
 updateModelPreviewModeUi();
 updateTimekeeperDisplayModeUi();

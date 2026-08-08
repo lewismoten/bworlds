@@ -122,6 +122,16 @@ describe('world generator', () => {
     );
   });
 
+  it('restores the text view mode when requested by the runtime bootstrap', () => {
+    const runtime = createWorldRuntime({
+      seed: 'spec',
+      viewMode: 'text',
+      activateRegistry: false,
+    });
+
+    expect(runtime.state.viewMode).toBe('text');
+  });
+
   it('lists caller-supplied content pack manifests', () => {
     expect(listContentPacks([customPackDefinition])).toEqual([
       customPackDefinition.manifest,

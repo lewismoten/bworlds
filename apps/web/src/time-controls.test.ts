@@ -1,13 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_DAY_LENGTH_MS, getDaylightCycleState } from '@bworlds/core';
 import {
+  cycleViewMode,
   getNextCompassDisplayMode,
   getNextCelestialEventMode,
   getNextInspectorTab,
   getNextMinimapDisplayMode,
   getNextModelPreviewMode,
   getNextTimekeeperDisplayMode,
+  getNextViewMode,
   getTimePresetProgress,
+  getViewModeToggleLabel,
   isInspectorSectionVisible,
   isModelPreviewVisible,
 } from './time-controls.ts';
@@ -41,6 +44,19 @@ describe('time controls', () => {
     expect(getNextModelPreviewMode('solar-system')).toBe('solar-system');
     expect(getNextModelPreviewMode('split')).toBe('split');
     expect(getNextModelPreviewMode('unknown')).toBe('split');
+  });
+
+  it('normalizes and cycles the viewport view mode with next-mode labels', () => {
+    expect(getNextViewMode('2d')).toBe('2d');
+    expect(getNextViewMode('3d')).toBe('3d');
+    expect(getNextViewMode('text')).toBe('text');
+    expect(getNextViewMode('unknown')).toBe('2d');
+    expect(cycleViewMode('2d')).toBe('3d');
+    expect(cycleViewMode('3d')).toBe('text');
+    expect(cycleViewMode('text')).toBe('2d');
+    expect(getViewModeToggleLabel('2d')).toBe('Switch to 3D');
+    expect(getViewModeToggleLabel('3d')).toBe('Switch to Text');
+    expect(getViewModeToggleLabel('text')).toBe('Switch to 2D');
   });
 
   it('normalizes the viewport timekeeper mode to a supported display', () => {

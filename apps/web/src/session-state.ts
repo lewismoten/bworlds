@@ -11,7 +11,7 @@ import {
   type PlayerPlacedPoiLike,
 } from '@bworlds/runtime-player-poi';
 
-type SessionViewMode = '2d' | '3d';
+type SessionViewMode = '2d' | '3d' | 'text';
 
 type SessionWorldContext = {
   id: string;
@@ -92,6 +92,14 @@ export function parseSavedSession(raw: string | null): SavedSession | null {
       return null;
     }
     if (!Array.isArray(parsed?.stack) || parsed.stack.length === 0) {
+      return null;
+    }
+    if (
+      typeof parsed?.viewMode !== 'undefined' &&
+      parsed.viewMode !== '2d' &&
+      parsed.viewMode !== '3d' &&
+      parsed.viewMode !== 'text'
+    ) {
       return null;
     }
     if (

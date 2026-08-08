@@ -191,7 +191,7 @@ export function createWorldRuntime({
     viewMode: ViewMode;
   };
 
-  if (viewMode === '2d' || viewMode === '3d') {
+  if (viewMode === '2d' || viewMode === '3d' || viewMode === 'text') {
     state.viewMode = viewMode;
   }
   if (Array.isArray(stack) && stack.length > 0) {

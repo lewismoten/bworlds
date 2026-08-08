@@ -17,6 +17,7 @@ import {
   getActivePluginRegistry,
   type TileLike,
   type TilePlugin,
+  type ViewMode,
   type WorldEnvironmentLike,
   type SurfaceBoundaryRole3D,
   type TileDefinitionLike,
@@ -37,7 +38,7 @@ type SkySignatureCycle = Pick<
   | 'auroraBands'
 >;
 type Render3DState = WorldStateLike & {
-  viewMode?: '2d' | '3d';
+  viewMode?: ViewMode;
 };
 type Render3DOptions = {
   jumpHeight?: number;

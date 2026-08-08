@@ -1,3 +1,5 @@
+import type { ViewMode } from '@bworlds/plugin-api';
+
 type DaylightCycleLike = {
   sunriseProgress: number;
   sunsetProgress: number;
@@ -20,6 +22,28 @@ export type CelestialEventMode =
   | 'meteor-shower'
   | 'comet'
   | 'eclipse';
+
+export function getNextViewMode(modeId: string | undefined): ViewMode {
+  if (modeId === '3d' || modeId === 'text') {
+    return modeId;
+  }
+  return '2d';
+}
+
+export function cycleViewMode(mode: ViewMode): ViewMode {
+  if (mode === '2d') {
+    return '3d';
+  }
+  if (mode === '3d') {
+    return 'text';
+  }
+  return '2d';
+}
+
+export function getViewModeToggleLabel(mode: ViewMode): string {
+  const nextMode = cycleViewMode(mode);
+  return `Switch to ${nextMode === 'text' ? 'Text' : nextMode.toUpperCase()}`;
+}
 
 export function getTimePresetProgress(
   cycle: DaylightCycleLike,

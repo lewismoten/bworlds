@@ -1,4 +1,5 @@
 import type { ViewMode } from '@bworlds/plugin-api';
+import type { TextViewportGrid } from '@bworlds/render2d';
 import type {
   CompassDisplayMode,
   TimekeeperDisplayMode,
@@ -103,6 +104,26 @@ export function getEventSummarySignature(
 
 export function getDetailLabels(details: EventDetail[]): string[] {
   return details.map((detail) => `${detail.kind}:${detail.label}`);
+}
+
+export function getTextViewportSignature(grid: TextViewportGrid): string {
+  return grid.rows
+    .map((row) => row.map((cell) => `${cell.glyph}${cell.color}`).join(''))
+    .join('|');
+}
+
+export function buildTextViewportMarkup(grid: TextViewportGrid): string {
+  return grid.rows
+    .map(
+      (row) =>
+        `<div class="viewport-text-row">${row
+          .map(
+            (cell) =>
+              `<span class="viewport-text-cell" style="color:${cell.color}" data-kind="${cell.kind}">${cell.glyph}</span>`
+          )
+          .join('')}</div>`
+    )
+    .join('');
 }
 
 export function buildStatusMarkup(options: StatusSignatureOptions): string {

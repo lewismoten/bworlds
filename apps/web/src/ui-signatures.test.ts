@@ -1,11 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import {
+  buildTextViewportMarkup,
   buildEventSummaryMarkup,
   buildStatusMarkup,
   buildViewportHudMarkup,
   getDetailLabels,
   getEventSummarySignature,
   getStatusSignature,
+  getTextViewportSignature,
   getViewportHudSignature,
 } from './ui-signatures.ts';
 import type { EventDetail } from './ui-signatures.ts';
@@ -102,5 +104,26 @@ describe('ui signature helpers', () => {
         details,
       })
     ).toContain('event-summary-chip-aurora');
+  });
+
+  it('builds stable signatures and markup for ascii text viewport content', () => {
+    const grid = {
+      rows: [
+        [
+          { glyph: '.', color: '#84cc16', kind: 'plains', worldX: 0, worldY: 0 },
+          { glyph: '~', color: '#38bdf8', kind: 'river', worldX: 1, worldY: 0 },
+        ],
+        [
+          { glyph: '@', color: '#ffbf69', kind: 'player', worldX: 0, worldY: 1 },
+          { glyph: '^', color: '#cbd5e1', kind: 'mountain', worldX: 1, worldY: 1 },
+        ],
+      ],
+      centerColumn: 0,
+      centerRow: 1,
+    };
+
+    expect(getTextViewportSignature(grid)).toBe(getTextViewportSignature(grid));
+    expect(buildTextViewportMarkup(grid)).toContain('viewport-text-cell');
+    expect(buildTextViewportMarkup(grid)).toContain('data-kind="river"');
   });
 });

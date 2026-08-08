@@ -9,7 +9,9 @@ vi.mock('@bworlds/atlas', () => ({
 }));
 
 import {
+  buildTextViewportGrid,
   createViewportTileSampler,
+  getTextViewportGlyph,
   getViewportTileSize,
   getRiverOverlayConnections,
   render2D,
@@ -147,5 +149,64 @@ describe('render2D night sky overlay', () => {
 
     expect(calls.indexOf('overlay')).toBeGreaterThanOrEqual(0);
     expect(calls).not.toContain('star');
+  });
+
+  it('builds an ascii text viewport grid with a centered player marker', () => {
+    const state = {
+      player: { x: 0, y: 0, facing: 0 },
+      getCurrentTile(x: number, y: number) {
+        if (x === 1 && y === 0) {
+          return { kind: 'river' };
+        }
+        return { kind: 'plains' };
+      },
+      getTileDefinition(kind: string) {
+        if (kind === 'river') {
+          return {
+            name: 'River',
+            color: '#38bdf8',
+            miniColor: '#38bdf8',
+            walkable: true,
+            wallHeight: 0,
+          };
+        }
+        return {
+          name: 'Plains',
+          color: '#84cc16',
+          miniColor: '#84cc16',
+          walkable: true,
+          wallHeight: 0,
+        };
+      },
+    };
+
+    const grid = buildTextViewportGrid(state, {
+      columns: 5,
+      rows: 3,
+    });
+
+    expect(grid.rows).toHaveLength(3);
+    expect(grid.rows[1][2]).toEqual(
+      expect.objectContaining({
+        glyph: '@',
+        color: '#ffbf69',
+        worldX: 0,
+        worldY: 0,
+      })
+    );
+    expect(grid.rows[1][3]).toEqual(
+      expect.objectContaining({
+        glyph: '~',
+        color: '#38bdf8',
+        worldX: 1,
+        worldY: 0,
+      })
+    );
+  });
+
+  it('uses tuned ascii glyphs with a name fallback for unmapped kinds', () => {
+    expect(getTextViewportGlyph('mountain', 'Mountain')).toBe('^');
+    expect(getTextViewportGlyph('custom-obelisk', 'obelisk')).toBe('O');
+    expect(getTextViewportGlyph('', '')).toBe('?');
   });
 });
