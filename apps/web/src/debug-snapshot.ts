@@ -184,6 +184,7 @@ export type DebugSnapshotExport = {
     totalMaterialReferences: number;
     uniqueMaterialCount: number;
     sharedMaterialCount: number;
+    clonedMaterialCount: number;
     transparentMaterialCount: number;
     alphaTestMaterialCount: number;
     doubleSidedMaterialCount: number;
@@ -311,6 +312,7 @@ export function buildDebugSnapshotExport(
       totalMaterialReferences: options.snapshot.materialRefCount ?? 0,
       uniqueMaterialCount: options.snapshot.materialCount,
       sharedMaterialCount: options.snapshot.sharedMaterialCount ?? 0,
+      clonedMaterialCount: options.snapshot.clonedMaterialCount ?? 0,
       transparentMaterialCount: options.snapshot.transparentMaterialCount ?? 0,
       alphaTestMaterialCount: options.snapshot.alphaTestMaterialCount ?? 0,
       doubleSidedMaterialCount:

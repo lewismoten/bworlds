@@ -100,6 +100,7 @@ describe('render3d visibility helpers', () => {
       materialRefCount: 4,
       materialCount: 2,
       sharedMaterialCount: 2,
+      clonedMaterialCount: 0,
       transparentMaterialCount: 2,
       alphaTestMaterialCount: 1,
       doubleSidedMaterialCount: 1,
@@ -202,6 +203,7 @@ describe('render3d visibility helpers', () => {
       materialRefCount: 3,
       materialCount: 3,
       sharedMaterialCount: 0,
+      clonedMaterialCount: 0,
       transparentMaterialCount: 0,
       alphaTestMaterialCount: 0,
       doubleSidedMaterialCount: 0,
@@ -267,6 +269,7 @@ describe('render3d visibility helpers', () => {
       materialRefCount: 2,
       materialCount: 2,
       sharedMaterialCount: 0,
+      clonedMaterialCount: 0,
       transparentMaterialCount: 0,
       alphaTestMaterialCount: 0,
       doubleSidedMaterialCount: 0,
@@ -356,6 +359,7 @@ describe('render3d visibility helpers', () => {
       materialRefCount: 2,
       materialCount: 2,
       sharedMaterialCount: 0,
+      clonedMaterialCount: 0,
       transparentMaterialCount: 0,
       alphaTestMaterialCount: 0,
       doubleSidedMaterialCount: 0,
@@ -415,6 +419,7 @@ describe('render3d visibility helpers', () => {
       materialRefCount: 2,
       materialCount: 2,
       sharedMaterialCount: 0,
+      clonedMaterialCount: 0,
       transparentMaterialCount: 0,
       alphaTestMaterialCount: 0,
       doubleSidedMaterialCount: 0,
@@ -506,6 +511,7 @@ describe('render3d visibility helpers', () => {
       materialRefCount: 2,
       materialCount: 2,
       sharedMaterialCount: 0,
+      clonedMaterialCount: 0,
       transparentMaterialCount: 0,
       alphaTestMaterialCount: 0,
       doubleSidedMaterialCount: 0,
@@ -695,6 +701,7 @@ describe('render3d visibility helpers', () => {
     expect(sourceMaterial.clone).toHaveBeenCalledTimes(1);
     expect(childA.material).toBe(childB.material);
     expect(childA.material).not.toBe(sourceMaterial);
+    expect(collectSceneResourceStats(root as never).clonedMaterialCount).toBe(1);
   });
 
   it('applies distance fade opacity to prepared materials without dropping baseline flags', () => {

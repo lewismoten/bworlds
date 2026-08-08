@@ -1752,6 +1752,7 @@ function collectCurrentDebugSnapshot(
     materialRefCount: rendererStats.materialRefCount,
     materialCount: rendererStats.materialCount,
     sharedMaterialCount: rendererStats.sharedMaterialCount,
+    clonedMaterialCount: rendererStats.clonedMaterialCount,
     transparentMaterialCount: rendererStats.transparentMaterialCount,
     alphaTestMaterialCount: rendererStats.alphaTestMaterialCount,
     doubleSidedMaterialCount: rendererStats.doubleSidedMaterialCount,

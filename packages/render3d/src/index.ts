@@ -99,6 +99,7 @@ type Render3DController = {
     materialRefCount: number;
     materialCount: number;
     sharedMaterialCount: number;
+    clonedMaterialCount: number;
     transparentMaterialCount: number;
     alphaTestMaterialCount: number;
     doubleSidedMaterialCount: number;
@@ -190,6 +191,7 @@ type SceneResourceStats = {
   materialRefCount: number;
   materialCount: number;
   sharedMaterialCount: number;
+  clonedMaterialCount: number;
   transparentMaterialCount: number;
   alphaTestMaterialCount: number;
   doubleSidedMaterialCount: number;
@@ -812,6 +814,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       materialRefCount: sceneResourceStats.materialRefCount,
       materialCount: sceneResourceStats.materialCount,
       sharedMaterialCount: sceneResourceStats.sharedMaterialCount,
+      clonedMaterialCount: sceneResourceStats.clonedMaterialCount,
       transparentMaterialCount: sceneResourceStats.transparentMaterialCount,
       alphaTestMaterialCount: sceneResourceStats.alphaTestMaterialCount,
       doubleSidedMaterialCount: sceneResourceStats.doubleSidedMaterialCount,
@@ -1896,6 +1899,10 @@ function getDistanceFadeMaterialVariant(
   }
 
   const clone = material.clone();
+  clone.userData = {
+    ...(clone.userData ?? {}),
+    [TRACKABLE_CLONED_MATERIAL_KEY]: true,
+  };
   markOwnedMaterial(clone);
   cache.set(material, clone);
   return clone;
@@ -2174,6 +2181,7 @@ export function collectSceneResourceStats(
     materialRefCount,
     materialCount: materials.size,
     sharedMaterialCount: Math.max(0, materialRefCount - materials.size),
+    clonedMaterialCount: countMaterialsMatching(materials, isTrackableClonedMaterial),
     transparentMaterialCount: countMaterialsMatching(materials, isTransparentMaterial),
     alphaTestMaterialCount: countMaterialsMatching(materials, usesAlphaTest),
     doubleSidedMaterialCount: countMaterialsMatching(materials, isDoubleSidedMaterial),
@@ -2210,6 +2218,7 @@ const DYNAMIC_TRANSFORM_USER_DATA_KEYS = new Set([
   'observatoryTelescope',
   'forestFirefly',
 ]);
+const TRACKABLE_CLONED_MATERIAL_KEY = 'renderStatsMaterialClone';
 
 function isLikelyStaticTransformObject(
   object: THREE.Object3D & { userData?: Record<string, unknown> }
@@ -2264,6 +2273,14 @@ function countMaterialsMatching(
     }
   }
   return count;
+}
+
+function isTrackableClonedMaterial(material: THREE.Material): boolean {
+  return (
+    (material.userData as Record<string, unknown> | undefined)?.[
+      TRACKABLE_CLONED_MATERIAL_KEY
+    ] === true
+  );
 }
 
 function isTransparentMaterial(material: THREE.Material): boolean {

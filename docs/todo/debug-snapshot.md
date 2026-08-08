@@ -106,7 +106,7 @@ That gives you something you can save from a slow scene, attach to a bug report,
 * [x] Include total material references.
 * [x] Include unique material instances.
 * [x] Include shared material instances.
-* [ ] Include cloned-material count where trackable.
+* [x] Include cloned-material count where trackable.
 * [x] Include transparent materials.
 * [x] Include materials using alpha testing.
 * [x] Include double-sided materials.

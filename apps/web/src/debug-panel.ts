@@ -62,6 +62,7 @@ export type DebugSnapshot = {
   materialRefCount?: number;
   materialCount: number;
   sharedMaterialCount?: number;
+  clonedMaterialCount?: number;
   transparentMaterialCount?: number;
   alphaTestMaterialCount?: number;
   doubleSidedMaterialCount?: number;
