@@ -23,6 +23,7 @@ const TILE_SIZE = 1;
 const CHUNK_RADIUS = 18;
 const NEAR_VISIBLE_RADIUS = 6;
 const FACING_BUCKETS = 12;
+const WORLD_SYNC_BATCH_SIZE = 28;
 const FLOOR_THICKNESS = 0.03;
 const WATER_FLOOR_THICKNESS = 0.28;
 const RIVER_WALL_THICKNESS = 0.05;
@@ -132,6 +133,12 @@ export function create3DRenderer(host) {
   let lastSkyEventSignature = '';
   let lastSkyMilkyWaySignature = '';
   let lastSkyAuroraSignature = '';
+  let pendingWorldBuild = {
+    contextId: '',
+    centerKey: '',
+    facingBucket: '',
+    queue: [] as Array<{ key: string; x: number; y: number }>,
+  };
 
   function resize(width, height, pixelRatio = window.devicePixelRatio || 1) {
     const safeWidth = Math.max(1, Math.floor(width));
@@ -145,6 +152,12 @@ export function create3DRenderer(host) {
   function clearWorld() {
     worldRoot.clear();
     visibleTileNodes.clear();
+    pendingWorldBuild = {
+      contextId: '',
+      centerKey: '',
+      facingBucket: '',
+      queue: [],
+    };
   }
 
   function buildTileNode(state, registry, x, y) {
@@ -196,38 +209,20 @@ export function create3DRenderer(host) {
   }
 
   function syncVisibleWorld(state) {
-    const registry = getActivePluginRegistry();
     const context = state.getCurrentContext();
     const centerX = Math.round(state.player.x);
     const centerY = Math.round(state.player.y);
     const facingBucket = getFacingVisibilityBucket(state.player.facing);
     const nextVisibleKeys = new Set();
+    const nextQueue = getVisibleWorldTileBuildOrder({
+      playerTileX: centerX,
+      playerTileY: centerY,
+      facingAngle: state.player.facing,
+      chunkRadius: CHUNK_RADIUS,
+    });
 
-    for (let y = centerY - CHUNK_RADIUS; y <= centerY + CHUNK_RADIUS; y += 1) {
-      for (
-        let x = centerX - CHUNK_RADIUS;
-        x <= centerX + CHUNK_RADIUS;
-        x += 1
-      ) {
-        if (
-          !shouldRenderWorldTile({
-            playerTileX: centerX,
-            playerTileY: centerY,
-            tileX: x,
-            tileY: y,
-            facingAngle: state.player.facing,
-          })
-        ) {
-          continue;
-        }
-        const key = `${x}:${y}`;
-        nextVisibleKeys.add(key);
-        if (!visibleTileNodes.has(key)) {
-          const tileNode = buildTileNode(state, registry, x, y);
-          visibleTileNodes.set(key, tileNode);
-          worldRoot.add(tileNode);
-        }
-      }
+    for (const entry of nextQueue) {
+      nextVisibleKeys.add(entry.key);
     }
 
     for (const [key, tileNode] of visibleTileNodes.entries()) {
@@ -238,9 +233,42 @@ export function create3DRenderer(host) {
       visibleTileNodes.delete(key);
     }
 
+    pendingWorldBuild = {
+      contextId: context.id,
+      centerKey: `${centerX}:${centerY}`,
+      facingBucket: String(facingBucket),
+      queue: nextQueue.filter((entry) => !visibleTileNodes.has(entry.key)),
+    };
+
     lastCenterKey = `${centerX}:${centerY}`;
     lastContextKey = context.id;
     lastFacingBucket = String(facingBucket);
+  }
+
+  function flushPendingWorldBuild(state) {
+    if (pendingWorldBuild.queue.length === 0) {
+      return;
+    }
+    const context = state.getCurrentContext();
+    const centerKey = `${Math.round(state.player.x)}:${Math.round(state.player.y)}`;
+    const facingBucket = String(getFacingVisibilityBucket(state.player.facing));
+    if (
+      pendingWorldBuild.contextId !== context.id ||
+      pendingWorldBuild.centerKey !== centerKey ||
+      pendingWorldBuild.facingBucket !== facingBucket
+    ) {
+      return;
+    }
+    const registry = getActivePluginRegistry();
+    const batch = pendingWorldBuild.queue.splice(0, WORLD_SYNC_BATCH_SIZE);
+    for (const entry of batch) {
+      if (visibleTileNodes.has(entry.key)) {
+        continue;
+      }
+      const tileNode = buildTileNode(state, registry, entry.x, entry.y);
+      visibleTileNodes.set(entry.key, tileNode);
+      worldRoot.add(tileNode);
+    }
   }
 
   function render(
@@ -264,6 +292,7 @@ export function create3DRenderer(host) {
     ) {
       syncVisibleWorld(state);
     }
+    flushPendingWorldBuild(state);
 
     camera.position.set(
       state.player.x * TILE_SIZE,
@@ -971,6 +1000,65 @@ export function getSkyAuroraSignature(cycle) {
       ].join(':')
     )
     .join('|');
+}
+
+export function getVisibleWorldTileBuildOrder({
+  playerTileX,
+  playerTileY,
+  facingAngle,
+  chunkRadius = CHUNK_RADIUS,
+}) {
+  const entries: Array<{
+    key: string;
+    x: number;
+    y: number;
+    distance: number;
+    facingDot: number;
+  }> = [];
+  for (let y = playerTileY - chunkRadius; y <= playerTileY + chunkRadius; y += 1) {
+    for (let x = playerTileX - chunkRadius; x <= playerTileX + chunkRadius; x += 1) {
+      if (
+        !shouldRenderWorldTile({
+          playerTileX,
+          playerTileY,
+          tileX: x,
+          tileY: y,
+          facingAngle,
+          chunkRadius,
+        })
+      ) {
+        continue;
+      }
+      const deltaX = x - playerTileX;
+      const deltaY = y - playerTileY;
+      const distance = Math.hypot(deltaX, deltaY);
+      const facingDot =
+        distance === 0
+          ? 1
+          : Math.cos(facingAngle) * (deltaX / distance) +
+            Math.sin(facingAngle) * (deltaY / distance);
+      entries.push({
+        key: `${x}:${y}`,
+        x,
+        y,
+        distance,
+        facingDot,
+      });
+    }
+  }
+  entries.sort((left, right) => {
+    if (Math.abs(left.distance - right.distance) > 0.001) {
+      return left.distance - right.distance;
+    }
+    if (Math.abs(left.facingDot - right.facingDot) > 0.0001) {
+      return right.facingDot - left.facingDot;
+    }
+    if (left.y !== right.y) {
+      return left.y - right.y;
+    }
+    return left.x - right.x;
+  });
+  return entries.map(({ key, x, y }) => ({ key, x, y }));
 }
 
 export function shouldRenderWorldTile({

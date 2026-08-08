@@ -5,6 +5,7 @@ import {
   getSkyConstellationSignature,
   getSkyEventSignature,
   getSkyMilkyWaySignature,
+  getVisibleWorldTileBuildOrder,
   shouldRenderWorldTile,
 } from './index.ts';
 
@@ -47,6 +48,23 @@ describe('render3d visibility helpers', () => {
     expect(getFacingVisibilityBucket(0)).not.toBe(
       getFacingVisibilityBucket(Math.PI / 2)
     );
+  });
+
+  it('prioritizes nearby and forward-facing tiles in the incremental build order', () => {
+    const buildOrder = getVisibleWorldTileBuildOrder({
+      playerTileX: 0,
+      playerTileY: 0,
+      facingAngle: 0,
+      chunkRadius: 4,
+    });
+    const firstKeys = buildOrder.slice(0, 6).map((entry) => entry.key);
+    const frontIndex = buildOrder.findIndex((entry) => entry.key === '4:0');
+    const rearIndex = buildOrder.findIndex((entry) => entry.key === '-4:0');
+
+    expect(firstKeys).toContain('0:0');
+    expect(firstKeys).toContain('1:0');
+    expect(frontIndex).toBeGreaterThanOrEqual(0);
+    expect(rearIndex).toBeGreaterThan(frontIndex);
   });
 
   it('uses coarse sky signatures so tiny celestial drift does not rebuild sky layers', () => {
