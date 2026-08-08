@@ -239,11 +239,20 @@ describe('core utilities', () => {
       expect.objectContaining({
         type: 'sun',
         orbitRadius: 0,
+        orbitTilt: 0,
+        orbitHeight: 0,
       })
     );
     expect(bodies.some((body) => body.type === 'moon')).toBe(true);
     expect(bodies.some((body) => body.type === 'planet')).toBe(true);
     expect(bodies.every((body) => body.angle >= 0 && body.angle < 1)).toBe(true);
+    expect(
+      bodies.every(
+        (body) =>
+          typeof body.orbitTilt === 'number' &&
+          typeof body.orbitHeight === 'number'
+      )
+    ).toBe(true);
   });
 
   it('exposes tile-definition lookup through world state', () => {

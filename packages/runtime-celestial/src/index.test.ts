@@ -42,6 +42,8 @@ describe('runtime celestial', () => {
               type: expect.stringMatching(/sun|moon|planet|comet/),
               orbitRadius: expect.any(Number),
               angle: expect.any(Number),
+              orbitTilt: expect.any(Number),
+              orbitHeight: expect.any(Number),
             }),
           ]),
         }),

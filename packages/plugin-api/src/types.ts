@@ -169,6 +169,8 @@ export interface WorldEnvironmentOrreryBodyLike {
   type: 'sun' | 'moon' | 'planet' | 'comet';
   orbitRadius: number;
   angle: number;
+  orbitTilt: number;
+  orbitHeight: number;
   color: Color;
   size: number;
   trailLength: number;

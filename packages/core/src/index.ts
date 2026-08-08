@@ -120,6 +120,8 @@ export interface OrreryBodyLike {
   type: 'sun' | 'moon' | 'planet' | 'comet';
   orbitRadius: number;
   angle: number;
+  orbitTilt: number;
+  orbitHeight: number;
   color: string;
   size: number;
   trailLength: number;
@@ -767,6 +769,8 @@ export function getOrreryBodies({
       type: 'sun',
       orbitRadius: 0,
       angle: 0,
+      orbitTilt: 0,
+      orbitHeight: 0,
       color: '#ffd06e',
       size: 0.92,
       trailLength: 0,
@@ -776,6 +780,8 @@ export function getOrreryBodies({
       type: 'moon',
       orbitRadius: 2.6,
       angle: normalizeTurns((moonAngle + Math.PI / 2) / (Math.PI * 2)),
+      orbitTilt: 0.34,
+      orbitHeight: -0.12,
       color: '#dce8ff',
       size: 0.42 + moonIllumination * 0.16,
       trailLength: 0,
@@ -794,6 +800,10 @@ export function getOrreryBodies({
       type: event.type === 'planet' ? 'planet' : 'comet',
       orbitRadius: 3.6 + orbitIndex * 0.75,
       angle: normalizeTurns(event.progress),
+      orbitTilt:
+        (event.type === 'planet' ? 0.18 : 0.28) +
+        (orbitIndex % 2 === 0 ? 1 : -1) * 0.08,
+      orbitHeight: event.altitude * 0.35,
       color: event.color,
       size: Math.max(
         0.24,
