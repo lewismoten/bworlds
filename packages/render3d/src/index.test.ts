@@ -32,6 +32,7 @@ import {
   recordRecentMetric,
   recordRecentDurationMetric,
   shouldProcessPendingWorldBuildEntry,
+  shouldEvaluateTileModelDetailLevel,
   shouldSyncTileModelDetailLevels,
   summarizeVisibleTileKinds,
   syncDynamicTileNodes,
@@ -508,6 +509,13 @@ describe('render3d visibility helpers', () => {
     expect(getTileModelDetailLevelWithHysteresis('low', 40)).toBe('low');
     expect(getTileModelDetailLevelWithHysteresis('low', 35.99)).toBe('full');
     expect(getTileModelDetailLevelWithHysteresis(undefined, 42.25)).toBe('low');
+  });
+
+  it('skips obviously distant low-detail chunks during lod reevaluation', () => {
+    expect(shouldEvaluateTileModelDetailLevel('full', 100)).toBe(true);
+    expect(shouldEvaluateTileModelDetailLevel(undefined, 100)).toBe(true);
+    expect(shouldEvaluateTileModelDetailLevel('low', 100)).toBe(false);
+    expect(shouldEvaluateTileModelDetailLevel('low', 36)).toBe(true);
   });
 
   it('uses low detail for non-near pending builds while the queue is still draining', () => {

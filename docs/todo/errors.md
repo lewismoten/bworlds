@@ -252,7 +252,7 @@ This is about **8.25 MB inclusive** in this sample.
 * [x] Reevaluate LOD only after meaningful camera movement.
 * [x] Bucket LOD checks across several frames.
 * [x] Use squared distance for LOD thresholds.
-* [ ] Cull obviously distant chunks before per-tile LOD checks.
+* [x] Cull obviously distant chunks before per-tile LOD checks.
 * [x] Add hysteresis between LOD boundaries.
 * [x] Prevent trees from repeatedly switching between two LODs near a boundary.
 * [x] Cache each object's current LOD.

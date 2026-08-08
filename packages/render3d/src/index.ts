@@ -727,12 +727,21 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       if (!entry.modelRoot) {
         continue;
       }
-      recordRecentMetric(renderChurnMetrics.lodChecks, nowMs);
       const dx = entry.tileX - state.player.x;
       const dy = entry.tileY - state.player.y;
+      const distanceSquared = dx * dx + dy * dy;
+      if (
+        !shouldEvaluateTileModelDetailLevel(
+          entry.detailLevel,
+          distanceSquared
+        )
+      ) {
+        continue;
+      }
+      recordRecentMetric(renderChurnMetrics.lodChecks, nowMs);
       const desiredDetailLevel = getTileModelDetailLevelWithHysteresis(
         entry.detailLevel,
-        dx * dx + dy * dy
+        distanceSquared
       );
       if ((entry.detailLevel ?? 'full') === desiredDetailLevel) {
         continue;
@@ -1535,6 +1544,18 @@ export function getTileModelDetailLevelWithHysteresis(
   }
 
   return distanceSquared >= lowDetailEnterDistanceSquared ? 'low' : 'full';
+}
+
+export function shouldEvaluateTileModelDetailLevel(
+  currentDetailLevel: 'full' | 'low' | undefined,
+  distanceSquared: number,
+  lowDetailExitDistanceSquared = LOW_DETAIL_EXIT_DISTANCE_SQUARED
+): boolean {
+  if (currentDetailLevel !== 'low') {
+    return true;
+  }
+
+  return distanceSquared <= lowDetailExitDistanceSquared;
 }
 
 export function getPendingWorldBuildDetailLevel(
