@@ -1,4 +1,4 @@
-import { hash2D } from '@bworlds/core';
+import { getDaylightCycleState, hash2D } from '@bworlds/core';
 
 export type TownLevel = 1 | 2 | 3 | 4;
 export type TownBuildingRole = 'residential' | 'professional';
@@ -54,6 +54,20 @@ export type TownNpc = {
   profession?: string;
   workplaceBuildingId?: string;
   workplaceProfessionFamily?: TownProfessionFamily;
+};
+
+export type TownNpcRoutineState =
+  | 'home'
+  | 'commuting-to-work'
+  | 'working'
+  | 'commuting-home';
+
+export type TownNpcPlacement = {
+  npcId: string;
+  name: string;
+  x: number;
+  y: number;
+  state: TownNpcRoutineState;
 };
 
 type TownStructure = Omit<TownProfile, 'population'>;
@@ -180,6 +194,7 @@ const LAST_NAMES = [
 
 const buildingCache = new Map<string, TownBuilding[]>();
 const npcCache = new Map<string, TownNpc[]>();
+const placementCache = new Map<string, TownNpcPlacement[]>();
 const townProfileCache = new Map<string, TownProfile>();
 
 function getTownCacheKey(tileX: number, tileY: number): string {
@@ -444,6 +459,61 @@ function assignNpcJobs(tileX: number, tileY: number, npcs: TownNpcDraft[], build
   }
 }
 
+function getWorkWindow(family: TownProfessionFamily | undefined): {
+  startHour: number;
+  endHour: number;
+} {
+  switch (family) {
+    case 'inn':
+      return { startHour: 6, endHour: 22 };
+    case 'market':
+      return { startHour: 7, endHour: 16 };
+    case 'temple':
+      return { startHour: 6, endHour: 18 };
+    case 'stable':
+      return { startHour: 5, endHour: 19 };
+    case 'school':
+      return { startHour: 8, endHour: 15 };
+    case 'town-hall':
+      return { startHour: 9, endHour: 17 };
+    case 'smithy':
+    case 'workshop':
+    default:
+      return { startHour: 8, endHour: 17 };
+  }
+}
+
+function getCommuteRoute(home: TownBuilding, workplace: TownBuilding) {
+  const homeApproachY = home.y > 0 ? home.y - 1 : home.y + 1;
+  const homeFrontageY = home.y > 0 ? home.y - 2 : home.y + 2;
+  const workApproachY = workplace.y > 0 ? workplace.y - 1 : workplace.y + 1;
+  const workFrontageY = workplace.y > 0 ? workplace.y - 2 : workplace.y + 2;
+
+  return [
+    { x: home.x, y: home.y },
+    { x: home.x, y: homeApproachY },
+    { x: home.x, y: homeFrontageY },
+    { x: 0, y: homeFrontageY },
+    { x: 0, y: 0 },
+    { x: 0, y: workFrontageY },
+    { x: workplace.x, y: workFrontageY },
+    { x: workplace.x, y: workApproachY },
+    { x: workplace.x, y: workplace.y },
+  ];
+}
+
+function getRouteWaypoint(
+  waypoints: Array<{ x: number; y: number }>,
+  progress: number
+): { x: number; y: number } {
+  const maxIndex = waypoints.length - 1;
+  const waypointIndex = Math.min(
+    maxIndex,
+    Math.max(0, Math.floor(progress * maxIndex))
+  );
+  return waypoints[waypointIndex] ?? waypoints[0] ?? { x: 0, y: 0 };
+}
+
 export function getTownBuildingId(
   tileX: number,
   tileY: number,
@@ -559,6 +629,97 @@ export function getTownNpcs(tileX: number, tileY: number): TownNpc[] {
 
   npcCache.set(cacheKey, npcs);
   return npcs;
+}
+
+export function getTownNpcPlacements(
+  tileX: number,
+  tileY: number,
+  timeMs = 0
+): TownNpcPlacement[] {
+  const cycle = getDaylightCycleState(timeMs);
+  const minuteOfDay = Math.floor(cycle.dayProgress * 24 * 60) % (24 * 60);
+  const cacheKey = `${getTownCacheKey(tileX, tileY)}:${minuteOfDay}`;
+  const cached = placementCache.get(cacheKey);
+  if (cached) {
+    return cached;
+  }
+
+  const npcs = getTownNpcs(tileX, tileY);
+  const buildings = new Map(
+    getTownBuildings(tileX, tileY).map((building) => [building.id, building])
+  );
+
+  const placements = npcs.map((npc) => {
+    const home = buildings.get(npc.residenceBuildingId);
+    const workplace = npc.workplaceBuildingId
+      ? buildings.get(npc.workplaceBuildingId)
+      : null;
+
+    if (!home || !workplace || npc.professionStatus !== 'working') {
+      return {
+        npcId: npc.id,
+        name: npc.name,
+        x: home?.x ?? 0,
+        y: home?.y ?? 0,
+        state: 'home' as const,
+      };
+    }
+
+    const workWindow = getWorkWindow(npc.workplaceProfessionFamily);
+    const workStartMinute = workWindow.startHour * 60;
+    const workEndMinute = workWindow.endHour * 60;
+    const commuteDurationMinutes = 60;
+    const commuteToWorkStart = Math.max(0, workStartMinute - commuteDurationMinutes);
+    const commuteHomeEnd = Math.min(24 * 60, workEndMinute + commuteDurationMinutes);
+    const route = getCommuteRoute(home, workplace);
+
+    if (minuteOfDay < commuteToWorkStart || minuteOfDay >= commuteHomeEnd) {
+      return {
+        npcId: npc.id,
+        name: npc.name,
+        x: home.x,
+        y: home.y,
+        state: 'home' as const,
+      };
+    }
+
+    if (minuteOfDay < workStartMinute) {
+      const progress =
+        (minuteOfDay - commuteToWorkStart) / Math.max(1, commuteDurationMinutes);
+      const point = getRouteWaypoint(route, progress);
+      return {
+        npcId: npc.id,
+        name: npc.name,
+        x: point.x,
+        y: point.y,
+        state: 'commuting-to-work' as const,
+      };
+    }
+
+    if (minuteOfDay < workEndMinute) {
+      return {
+        npcId: npc.id,
+        name: npc.name,
+        x: workplace.x,
+        y: workplace.y,
+        state: 'working' as const,
+      };
+    }
+
+    const progress =
+      (minuteOfDay - workEndMinute) / Math.max(1, commuteDurationMinutes);
+    const point = getRouteWaypoint([...route].reverse(), progress);
+    return {
+      npcId: npc.id,
+      name: npc.name,
+      x: point.x,
+      y: point.y,
+      state: 'commuting-home' as const,
+    };
+  });
+
+  placementCache.set(cacheKey, placements);
+  return placements;
 }
 
 export function getTownBuildingLabel(

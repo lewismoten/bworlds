@@ -477,6 +477,7 @@ type CoreWorldGeneratorLike = {
 type CoreWorldStateLike = {
   generator: CoreWorldGeneratorLike;
   player: FacingPositionLike & { facing: number };
+  timeMs?: number;
   stack: CoreWorldContextLike[];
   viewMode: '2d';
   getCurrentContext(): CoreWorldContextLike;

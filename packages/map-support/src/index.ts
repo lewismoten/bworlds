@@ -6,6 +6,7 @@ import type {
   RuntimePlugin,
   Point,
   TileLike,
+  WorldStateLike,
   WorldActionLike,
   WorldContextLike,
   WorldContextType,
@@ -102,16 +103,16 @@ export function createDecoratedMapTileGetter<
 }: {
   context: TContext;
   seed: CreateMapContext['seed'];
-  resolveTile(x: number, y: number): TTile;
+  resolveTile(x: number, y: number, state?: WorldStateLike): TTile;
   decorateTile(payload: DecoratedTileContext): TileLike;
-}): (x: number, y: number) => TTile {
-  return function getTile(x: number, y: number): TTile {
+}): (x: number, y: number, state?: WorldStateLike) => TTile {
+  return function getTile(x: number, y: number, state?: WorldStateLike): TTile {
     return decorateTile({
       context,
       seed,
       x,
       y,
-      tile: resolveTile(x, y),
+      tile: resolveTile(x, y, state),
     }) as TTile;
   };
 }

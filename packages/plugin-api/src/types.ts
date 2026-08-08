@@ -315,6 +315,7 @@ export interface WorldEnvironmentLike {
 
 export interface WorldStateLike {
   player: RuntimePlayerLike;
+  timeMs?: number;
   viewMode?: ViewMode;
   getCurrentContext(): WorldContextLike;
   getCurrentMap?(): WorldMapLike;

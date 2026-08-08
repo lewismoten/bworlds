@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
+import { DEFAULT_DAY_LENGTH_MS } from '@bworlds/core';
 import type { CreateMapContext } from '@bworlds/plugin-api';
 import {
   getTownBuildingPlots,
   getTownBuildings,
+  getTownNpcPlacements,
   getTownNpcs,
   getTownProfile,
 } from '@bworlds/town-support';
@@ -202,5 +204,65 @@ describe('map town', () => {
     expect(residentName).toBeTruthy();
     expect(residenceTile.note).toContain('Residents:');
     expect(workplaceTile.note).toContain('Workers:');
+  });
+
+  it('shows commuting town npcs on road tiles and workers at their jobs by time of day', () => {
+    const map = createTownMap();
+    const middayState = {
+      timeMs: DEFAULT_DAY_LENGTH_MS * 0.5,
+    } as const;
+    const workplace = getTownBuildings(TOWN_ORIGIN.x, TOWN_ORIGIN.y).find(
+      (building) => building.role === 'professional'
+    );
+
+    if (!workplace) {
+      throw new Error('Expected at least one professional building in town.');
+    }
+
+    const workingTile = map.getTile(workplace.x, workplace.y, middayState as never);
+    expect(
+      ((workingTile.building as { present?: string[] } | undefined)?.present?.length ?? 0)
+    ).toBeGreaterThan(0);
+    expect(workingTile.note).toContain('Present:');
+
+    let commuteSample:
+      | { x: number; y: number; name: string; timeMs: number }
+      | null = null;
+    for (let minute = 0; minute < 24 * 60; minute += 15) {
+      const timeMs = DEFAULT_DAY_LENGTH_MS * (minute / (24 * 60));
+      const placement = getTownNpcPlacements(
+        TOWN_ORIGIN.x,
+        TOWN_ORIGIN.y,
+        timeMs
+      ).find(
+        (entry) =>
+          (entry.state === 'commuting-to-work' ||
+            entry.state === 'commuting-home') &&
+          map.getTile(entry.x, entry.y, { timeMs } as never).kind === 'road'
+      );
+      if (placement) {
+        commuteSample = {
+          x: placement.x,
+          y: placement.y,
+          name: placement.name,
+          timeMs,
+        };
+        break;
+      }
+    }
+
+    if (!commuteSample) {
+      throw new Error('Expected at least one commuting npc in the deterministic schedule.');
+    }
+
+    const commuteTile = map.getTile(
+      commuteSample.x,
+      commuteSample.y,
+      { timeMs: commuteSample.timeMs } as never
+    );
+
+    expect(commuteTile.kind).toBe('road');
+    expect(commuteTile.npcs).toContain(commuteSample.name);
+    expect(commuteTile.note).toContain('Present:');
   });
 });

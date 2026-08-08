@@ -8,6 +8,7 @@ import {
 import {
   getTownBuildingLabel,
   getTownBuildings,
+  getTownNpcPlacements,
   getTownProfile,
 } from '@bworlds/town-support';
 import type { TownBuilding, TownBuildingRole } from '@bworlds/town-support';
@@ -28,7 +29,9 @@ type TownTile = TileLike & {
     professionFamily?: TownBuilding['professionFamily'];
     residents?: string[];
     workers?: string[];
+    present?: string[];
   };
+  npcs?: string[];
 };
 
 type TownContext = WorldContextLike & {
@@ -69,15 +72,33 @@ function createTownMap(
       building,
     ])
   );
+  let activePlacementTimeMs = Number.NaN;
+  let activeNpcPlacements = new Map<string, string[]>();
 
   const getTile = createDecoratedMapTileGetter<TownTile, TownContext>({
     context,
     seed,
-    resolveTile(x: number, y: number) {
+    resolveTile(x: number, y: number, state) {
       const localX = x + cx;
       const localY = y + cy;
       if (localX < 0 || localY < 0 || localX >= width || localY >= height) {
         return { kind: 'forest' };
+      }
+      const resolvedTimeMs =
+        typeof state?.timeMs === 'number' ? state.timeMs : 0;
+      if (resolvedTimeMs !== activePlacementTimeMs) {
+        activePlacementTimeMs = resolvedTimeMs;
+        activeNpcPlacements = new Map<string, string[]>();
+        for (const placement of getTownNpcPlacements(
+          context.origin.x,
+          context.origin.y,
+          resolvedTimeMs
+        )) {
+          const placementKey = `${placement.x}:${placement.y}`;
+          const current = activeNpcPlacements.get(placementKey) ?? [];
+          current.push(placement.name);
+          activeNpcPlacements.set(placementKey, current);
+        }
       }
 
       let tile = resolveTownTile({
@@ -89,6 +110,7 @@ function createTownMap(
         centerX: cx,
         centerY: cy,
         buildingSummaries,
+        presentNpcNames: activeNpcPlacements.get(`${x}:${y}`) ?? [],
       });
       if (localX === cx && localY === cy) {
         tile = {
@@ -138,6 +160,7 @@ export function resolveTownTile(options: {
   centerX: number;
   centerY: number;
   buildingSummaries?: Map<string, TownBuilding>;
+  presentNpcNames?: string[];
 }): TownTile {
   const offsetX = options.localX - options.centerX;
   const offsetY = options.localY - options.centerY;
@@ -170,11 +193,21 @@ export function resolveTownTile(options: {
         professionFamily: building.professionFamily,
         residents: [...building.residentNpcIds],
         workers: [...building.workerNpcIds],
+        present: [...(options.presentNpcNames ?? [])],
       },
+      npcs: [...(options.presentNpcNames ?? [])],
       note:
         building.role === 'professional'
-          ? `A ${buildingLabel} stands near the square.${occupants}`
-          : `A residential home lines the town lane.${occupants}`,
+          ? `A ${buildingLabel} stands near the square.${occupants}${
+              options.presentNpcNames?.length
+                ? ` Present: ${options.presentNpcNames.join(', ')}.`
+                : ''
+            }`
+          : `A residential home lines the town lane.${occupants}${
+              options.presentNpcNames?.length
+                ? ` Present: ${options.presentNpcNames.join(', ')}.`
+                : ''
+            }`,
     };
   }
 
@@ -191,7 +224,13 @@ export function resolveTownTile(options: {
     isTownApproachPath(offsetX, offsetY) ||
     isTownConnectorRoad(offsetX, offsetY)
   ) {
-    return { kind: 'road' };
+    return options.presentNpcNames?.length
+      ? {
+          kind: 'road',
+          npcs: [...options.presentNpcNames],
+          note: `Townfolk pass by here. Present: ${options.presentNpcNames.join(', ')}.`,
+        }
+      : { kind: 'road' };
   }
 
   return { kind: 'plains' };

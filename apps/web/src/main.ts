@@ -1907,6 +1907,7 @@ function updateMovement(deltaMs: number): void {
 function render(): FrameLoopActivityLike {
   const nowMs = performance.now();
   const timeMs = getCurrentWorldTimeMs();
+  state.timeMs = timeMs;
   const environment = getCurrentEnvironment(timeMs);
   latestEnvironment = environment;
   const actualCycle = applyCelestialEnvironmentOverrides(
