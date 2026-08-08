@@ -213,6 +213,17 @@ export interface WorldEnvironmentAuroraBandLike {
   colorB: Color;
 }
 
+export interface WorldEnvironmentSolarEclipseLike {
+  active: boolean;
+  coverage: number;
+  totality: number;
+  daylightReduction: number;
+  moonAzimuth: number;
+  moonAltitude: number;
+  shadowOffsetX: number;
+  shadowOffsetY: number;
+}
+
 export interface WorldEnvironmentOrreryBodyLike {
   id: Identity;
   type: 'sun' | 'moon' | 'planet' | 'comet';
@@ -236,6 +247,7 @@ export interface WorldEnvironmentCelestialLike {
   removeVisibleEventTypes?: Array<WorldEnvironmentCelestialEventLike['type']>;
   milkyWay?: WorldEnvironmentMilkyWayLike;
   auroraBands?: WorldEnvironmentAuroraBandLike[];
+  solarEclipse?: WorldEnvironmentSolarEclipseLike;
   orreryBodies?: WorldEnvironmentOrreryBodyLike[];
   deriveOrreryFromVisibleEvents?: boolean;
 }

@@ -7,7 +7,12 @@ export type TimePreset = 'dawn' | 'noon' | 'dusk' | 'midnight';
 export type InspectorTab = 'timekeeper' | 'model' | 'events' | 'compass';
 export type InspectorSection = InspectorTab | 'viewport-compass';
 export type ModelPreviewMode = 'world' | 'solar-system' | 'split';
-export type CelestialEventMode = 'auto' | 'aurora' | 'meteor-shower' | 'comet';
+export type CelestialEventMode =
+  | 'auto'
+  | 'aurora'
+  | 'meteor-shower'
+  | 'comet'
+  | 'eclipse';
 
 export function getTimePresetProgress(
   cycle: DaylightCycleLike,
@@ -47,7 +52,8 @@ export function getNextCelestialEventMode(
   if (
     modeId === 'aurora' ||
     modeId === 'meteor-shower' ||
-    modeId === 'comet'
+    modeId === 'comet' ||
+    modeId === 'eclipse'
   ) {
     return modeId;
   }

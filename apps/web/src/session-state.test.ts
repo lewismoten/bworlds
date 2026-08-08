@@ -67,6 +67,20 @@ describe('session state', () => {
         })
       )
     ).toBeNull();
+
+    expect(
+      parseSavedSession(
+        JSON.stringify({
+          player: { x: 0, y: 0, facing: 0 },
+          stack: [{ id: 'overworld', depth: 0 }],
+          celestialEventMode: 'eclipse',
+        })
+      )
+    ).toEqual(
+      expect.objectContaining({
+        celestialEventMode: 'eclipse',
+      })
+    );
   });
 
   it('rejects malformed frozen time and heading values', () => {

@@ -320,6 +320,17 @@ export interface OrreryBodyLike {
   trailLength: number;
 }
 
+export interface SolarEclipseLike {
+  active: boolean;
+  coverage: number;
+  totality: number;
+  daylightReduction: number;
+  moonAzimuth: number;
+  moonAltitude: number;
+  shadowOffsetX: number;
+  shadowOffsetY: number;
+}
+
 export interface CelestialRingEntryLike {
   constellationIndex: number;
   name: string;
@@ -586,10 +597,27 @@ export function getDaylightCycleState(
   const moonAzimuth = normalizeAngle(
     lerp(sunriseAzimuth, sunsetAzimuth, clamp(moonOrbitProgress, 0, 1)) + Math.PI
   );
-  const daylight = smoothstep(-0.16, 0.2, sunAltitude);
-  const twilight = smoothstep(-0.28, 0.16, sunAltitude);
-  const night = 1 - twilight;
-  const starsOpacity = smoothstep(0.08, 0.82, night);
+  const solarEclipse = getSolarEclipseState({
+    dayNumber,
+    dayProgress,
+    yearProgress,
+    sunAngle,
+    sunAzimuth,
+    sunAltitude,
+    moonAngle,
+    moonIlluminationHint:
+      1 - Math.min(1, Math.abs(normalizeAngle(moonAngle - sunAngle)) / Math.PI),
+  });
+  const rawDaylight = smoothstep(-0.16, 0.2, sunAltitude);
+  const rawTwilight = smoothstep(-0.28, 0.16, sunAltitude);
+  const daylight = getEclipseAdjustedDaylight(rawDaylight, solarEclipse);
+  const twilight = getEclipseAdjustedTwilight(rawTwilight, solarEclipse);
+  const night = clamp(1 - twilight + solarEclipse.daylightReduction * 0.28, 0, 1);
+  const starsOpacity = smoothstep(
+    0.08,
+    0.82,
+    Math.max(night, solarEclipse.coverage * 0.72)
+  );
   const moonPhaseIndex =
     ((dayNumber % MOON_PHASE_NAMES.length) + MOON_PHASE_NAMES.length) %
     MOON_PHASE_NAMES.length;
@@ -663,6 +691,8 @@ export function getDaylightCycleState(
     sunsetProgress,
     sunsetAzimuth,
     daylightDuration,
+    rawDaylight,
+    rawTwilight,
     daylight,
     twilight,
     night,
@@ -670,6 +700,7 @@ export function getDaylightCycleState(
     moonPhaseIndex,
     moonPhaseName,
     moonIllumination,
+    solarEclipse,
     constellations,
     activeConstellationIndex,
     activeConstellation,
@@ -695,6 +726,7 @@ export function applyCelestialEnvironmentOverrides(
     auroraBands?: AuroraBandLike[];
     orreryBodies?: OrreryBodyLike[];
     deriveOrreryFromVisibleEvents?: boolean;
+    solarEclipse?: SolarEclipseLike;
   } = {}
 ) {
   const visibleEventsBase = overrides.visibleEvents ?? cycle.visibleEvents;
@@ -715,17 +747,116 @@ export function applyCelestialEnvironmentOverrides(
         visibleEvents,
       })
     : null;
+  const solarEclipse = overrides.solarEclipse ?? cycle.solarEclipse;
+  const rawDaylight = cycle.rawDaylight ?? cycle.daylight;
+  const rawTwilight = cycle.rawTwilight ?? cycle.twilight;
+  const daylight =
+    overrides.solarEclipse != null
+      ? getEclipseAdjustedDaylight(rawDaylight, solarEclipse)
+      : cycle.daylight;
+  const twilight =
+    overrides.solarEclipse != null
+      ? getEclipseAdjustedTwilight(rawTwilight, solarEclipse)
+      : cycle.twilight;
+  const night =
+    overrides.solarEclipse != null
+      ? clamp(1 - twilight + solarEclipse.daylightReduction * 0.28, 0, 1)
+      : cycle.night;
+  const starsOpacity =
+    overrides.solarEclipse != null
+      ? smoothstep(0.08, 0.82, Math.max(night, solarEclipse.coverage * 0.72))
+      : cycle.starsOpacity;
   return {
     ...cycle,
     constellations: overrides.constellations ?? cycle.constellations,
     activeConstellationIndex:
       overrides.activeConstellationIndex ?? cycle.activeConstellationIndex,
+    rawDaylight,
+    rawTwilight,
+    daylight,
+    twilight,
+    night,
+    starsOpacity,
+    solarEclipse,
     visibleEvents,
     milkyWay: overrides.milkyWay ?? cycle.milkyWay,
     auroraBands: overrides.auroraBands ?? cycle.auroraBands ?? [],
     orreryBodies:
       overrides.orreryBodies ?? derivedOrreryBodies ?? cycle.orreryBodies,
+    isNight: daylight < 0.22,
   };
+}
+
+export function getSolarEclipseState({
+  dayNumber,
+  dayProgress,
+  yearProgress,
+  sunAngle,
+  sunAzimuth,
+  sunAltitude,
+  moonAngle,
+  moonIlluminationHint = 0,
+}: {
+  dayNumber: number;
+  dayProgress: number;
+  yearProgress: number;
+  sunAngle: number;
+  sunAzimuth: number;
+  sunAltitude: number;
+  moonAngle: number;
+  moonIlluminationHint?: number;
+}): SolarEclipseLike {
+  const phaseDelta = normalizeAngle(moonAngle - sunAngle);
+  const phaseAlignment = 1 - smoothstep(0.06, 0.18, Math.abs(phaseDelta));
+  const nodePhase = (dayNumber + dayProgress) / 173.3 + yearProgress * 0.12 + 0.17;
+  const nodeOffset = Math.sin(nodePhase * Math.PI * 2);
+  const nodeAlignment = 1 - smoothstep(0.16, 0.52, Math.abs(nodeOffset));
+  const daylightFactor = smoothstep(-0.04, 0.26, sunAltitude);
+  const coverage = clamp(
+    phaseAlignment *
+      nodeAlignment *
+      daylightFactor *
+      (0.72 + moonIlluminationHint * 0.28),
+    0,
+    1
+  );
+  const totality = smoothstep(0.82, 0.98, coverage);
+  const daylightReduction = coverage * (0.55 + totality * 0.35);
+  const trackX = clamp(phaseDelta / 0.1, -1, 1);
+  const trackY = clamp(nodeOffset * 0.68, -1, 1);
+
+  return {
+    active: coverage > 0.03,
+    coverage,
+    totality,
+    daylightReduction,
+    moonAzimuth: normalizeAngle(sunAzimuth + trackX * 0.06 + trackY * 0.018),
+    moonAltitude: clamp(sunAltitude + trackY * 0.08, -1, 1),
+    shadowOffsetX: trackX,
+    shadowOffsetY: trackY,
+  };
+}
+
+function getEclipseAdjustedDaylight(
+  daylight: number,
+  solarEclipse: SolarEclipseLike
+) {
+  return clamp(
+    daylight * (1 - solarEclipse.daylightReduction),
+    0,
+    1
+  );
+}
+
+function getEclipseAdjustedTwilight(
+  twilight: number,
+  solarEclipse: SolarEclipseLike
+) {
+  return clamp(
+    twilight - solarEclipse.daylightReduction * 0.34,
+    0,
+    1
+  );
 }
 
 export function getWorldTimeMs(

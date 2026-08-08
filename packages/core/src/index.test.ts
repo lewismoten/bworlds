@@ -15,6 +15,7 @@ import {
   getCelestialEventsForDay,
   getCometOrbitProgress,
   getDaylightCycleState,
+  getSolarEclipseState,
   getMilkyWayBandSamples,
   getOrbitalSkyPosition,
   getOrreryBodies,
@@ -64,6 +65,36 @@ describe('core utilities', () => {
     expect(noon.moonMidnightOrbitProgress).toBe(midnight.moonMidnightOrbitProgress);
     expect(nextDay.dayNumber).toBe(1);
     expect(nextDay.moonPhaseName).toBe('Waxing Crescent');
+    expect(midnight.solarEclipse).toEqual(
+      expect.objectContaining({
+        active: expect.any(Boolean),
+        coverage: expect.any(Number),
+      })
+    );
+  });
+
+  it('produces occasional daytime solar eclipses that briefly dim the world', () => {
+    let eclipseCycle: ReturnType<typeof getDaylightCycleState> | null = null;
+
+    for (let day = 0; day < 512 && !eclipseCycle; day += 1) {
+      for (let step = 0; step < 96; step += 1) {
+        const cycle = getDaylightCycleState(
+          day * DEFAULT_DAY_LENGTH_MS + (step / 96) * DEFAULT_DAY_LENGTH_MS
+        );
+        if (cycle.solarEclipse.active && cycle.sunAltitude > 0.1) {
+          eclipseCycle = cycle;
+          break;
+        }
+      }
+    }
+
+    expect(eclipseCycle).toBeTruthy();
+    expect(eclipseCycle?.solarEclipse.coverage).toBeGreaterThan(0.03);
+    expect(eclipseCycle?.daylight).toBeLessThan(0.9);
+    expect(eclipseCycle?.solarEclipse.moonAzimuth).toBeCloseTo(
+      eclipseCycle?.sunAzimuth ?? 0,
+      1
+    );
   });
 
   it('generates deterministic procedural constellations with names and links', () => {
@@ -166,6 +197,23 @@ describe('core utilities', () => {
 
     expect(equatorial.altitude).toBeGreaterThan(northern.altitude);
     expect(equatorial.azimuth).toBeCloseTo(northern.azimuth, 6);
+  });
+
+  it('builds eclipse shadow geometry from sun and moon alignment', () => {
+    const eclipse = getSolarEclipseState({
+      dayNumber: 144,
+      dayProgress: 0.1,
+      yearProgress: 0,
+      sunAngle: 0.1,
+      sunAzimuth: 1.4,
+      sunAltitude: 0.7,
+      moonAngle: 0.12,
+      moonIlluminationHint: 1,
+    });
+
+    expect(eclipse.coverage).toBeGreaterThan(0.1);
+    expect(eclipse.daylightReduction).toBeGreaterThan(0.05);
+    expect(eclipse.moonAzimuth).toBeCloseTo(1.4, 1);
   });
 
   it('provides shared world-clock helpers for offset and preset time changes', () => {

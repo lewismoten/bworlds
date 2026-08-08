@@ -75,6 +75,7 @@ export function createCelestialRuntimePlugin(): RuntimePlugin {
           dateLabel: celestialState.calendar.label,
           visibleEvents: celestialState.visibleEvents,
           milkyWay: celestialState.milkyWay,
+          solarEclipse: celestialState.solarEclipse,
           orreryBodies: celestialState.orreryBodies,
         },
       };

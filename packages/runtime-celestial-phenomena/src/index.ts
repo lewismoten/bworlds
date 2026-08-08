@@ -3,8 +3,10 @@ import {
   fract,
   getCometOrbitProgress,
   getDaylightCycleState,
+  getSolarEclipseState,
   getOrbitalSkyPosition,
   hash2D,
+  normalizeAngle,
   smoothstep,
   type AuroraBandLike,
   type CelestialEventLike,
@@ -20,7 +22,12 @@ const AURORA_COLORS = [
   ['#c7ff8c', '#49e8ff'],
 ] as const;
 
-export type CelestialEventMode = 'auto' | 'aurora' | 'meteor-shower' | 'comet';
+export type CelestialEventMode =
+  | 'auto'
+  | 'aurora'
+  | 'meteor-shower'
+  | 'comet'
+  | 'eclipse';
 
 export function createCelestialPhenomenaRuntimePlugin(): RuntimePlugin {
   return createRuntimePlugin('runtime-celestial-phenomena', {
@@ -50,11 +57,16 @@ export function createCelestialPhenomenaRuntimePlugin(): RuntimePlugin {
         forcedMode === 'aurora',
         forcedFacingAngle
       );
+      const solarEclipse =
+        forcedMode === 'eclipse'
+          ? buildForcedSolarEclipse(celestialState, resolvedTimeMs)
+          : celestialState.solarEclipse;
 
       return {
         celestial: {
           visibleEventsAppend: transientEvents,
           auroraBands,
+          solarEclipse,
           deriveOrreryFromVisibleEvents:
             transientEvents.length > 0 || auroraBands.length > 0,
         },
@@ -65,10 +77,45 @@ export function createCelestialPhenomenaRuntimePlugin(): RuntimePlugin {
 
 function getForcedCelestialEventMode(state: unknown): CelestialEventMode {
   const mode = (state as { celestialEventMode?: string } | null)?.celestialEventMode;
-  if (mode === 'aurora' || mode === 'meteor-shower' || mode === 'comet') {
+  if (
+    mode === 'aurora' ||
+    mode === 'meteor-shower' ||
+    mode === 'comet' ||
+    mode === 'eclipse'
+  ) {
     return mode;
   }
   return 'auto';
+}
+
+function buildForcedSolarEclipse(
+  cycle: ReturnType<typeof getDaylightCycleState>,
+  timeMs: number
+) {
+  const sweep = Math.sin(timeMs / 22000);
+  const offsetScale = 0.18;
+  const coverage = 0.88 + Math.cos(timeMs / 16000) * 0.08;
+  const totality = clamp(0.7 + Math.cos(timeMs / 16000) * 0.18, 0.55, 1);
+  return {
+    ...getSolarEclipseState({
+      dayNumber: cycle.dayNumber,
+      dayProgress: cycle.dayProgress,
+      yearProgress: cycle.yearProgress,
+      sunAngle: cycle.sunAngle,
+      sunAzimuth: cycle.sunAzimuth,
+      sunAltitude: Math.max(cycle.sunAltitude, 0.35),
+      moonAngle: cycle.sunAngle + sweep * 0.02,
+      moonIlluminationHint: 1,
+    }),
+    active: true,
+    coverage: clamp(coverage, 0, 1),
+    totality,
+    daylightReduction: clamp(coverage * (0.62 + totality * 0.28), 0, 1),
+    moonAzimuth: normalizeAngle(cycle.sunAzimuth + sweep * offsetScale * 0.08),
+    moonAltitude: clamp(Math.max(cycle.sunAltitude, 0.35) + sweep * offsetScale, -1, 1),
+    shadowOffsetX: sweep * offsetScale,
+    shadowOffsetY: Math.cos(timeMs / 22000) * offsetScale * 0.75,
+  };
 }
 
 function getForcedFacingAngle(state: unknown): number {

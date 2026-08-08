@@ -4,6 +4,7 @@ export type EventDetailKind =
   | 'aurora'
   | 'meteor-shower'
   | 'comet'
+  | 'eclipse'
   | 'planet'
   | 'none';
 export type EventDetail = { kind: EventDetailKind; label: string };

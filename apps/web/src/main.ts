@@ -309,6 +309,9 @@ root.innerHTML = `
               <button id="event-mode-comet" class="event-mode-button" type="button">
                 Comet
               </button>
+              <button id="event-mode-eclipse" class="event-mode-button" type="button">
+                Eclipse
+              </button>
             </div>
             <div id="event-summary" class="event-summary" aria-live="polite"></div>
             <p class="inspector-note">
@@ -431,6 +434,8 @@ const eventModeMeteorButton =
   document.querySelector<HTMLButtonElement>('#event-mode-meteor-shower');
 const eventModeCometButton =
   document.querySelector<HTMLButtonElement>('#event-mode-comet');
+const eventModeEclipseButton =
+  document.querySelector<HTMLButtonElement>('#event-mode-eclipse');
 const modelPreviewGrid =
   document.querySelector<HTMLElement>('.model-preview-grid');
 const modelPreviewWorldCard =
@@ -736,6 +741,10 @@ function updateCelestialEventModeUi(): void {
   eventModeCometButton?.classList.toggle(
     'is-active',
     celestialEventModeState.mode === 'comet'
+  );
+  eventModeEclipseButton?.classList.toggle(
+    'is-active',
+    celestialEventModeState.mode === 'eclipse'
   );
 }
 
@@ -1458,6 +1467,9 @@ function formatCelestialEventModeLabel(mode: CelestialEventMode): string {
   if (mode === 'comet') {
     return 'Comet';
   }
+  if (mode === 'eclipse') {
+    return 'Eclipse';
+  }
   return 'Auto';
 }
 
@@ -1465,6 +1477,7 @@ function describeActiveCelestialEvents(
   cycle: ReturnType<typeof getDaylightCycleState> & {
     auroraBands?: Array<{ intensity: number }>;
     visibleEvents?: Array<{ type?: string; visibility?: number }>;
+    solarEclipse?: { active?: boolean; coverage?: number };
   }
 ) {
   const activeEvents: string[] = [];
@@ -1480,6 +1493,12 @@ function describeActiveCelestialEvents(
     activeEvents.push('Meteor shower visible');
   }
   if (
+    (cycle.solarEclipse?.active ?? false) &&
+    (cycle.solarEclipse?.coverage ?? 0) > 0.03
+  ) {
+    activeEvents.push('Solar eclipse active');
+  }
+  if (
     (cycle.visibleEvents ?? []).some(
       (event) => event.type === 'comet' && (event.visibility ?? 0) > 0.03
     )
@@ -1493,10 +1512,11 @@ function getActiveCelestialEventDetails(
   cycle: ReturnType<typeof getDaylightCycleState> & {
     auroraBands?: Array<{ intensity: number }>;
     visibleEvents?: Array<{ type?: string; visibility?: number }>;
+    solarEclipse?: { active?: boolean; coverage?: number };
   }
 ) {
   const details: Array<{
-    kind: 'aurora' | 'meteor-shower' | 'comet' | 'none';
+    kind: 'aurora' | 'meteor-shower' | 'comet' | 'eclipse' | 'none';
     label: string;
   }> = [];
 
@@ -1510,6 +1530,9 @@ function getActiveCelestialEventDetails(
   const cometCount = (cycle.visibleEvents ?? []).filter(
     (event) => event.type === 'comet' && (event.visibility ?? 0) > 0.03
   ).length;
+  const eclipseCoverage = cycle.solarEclipse?.active
+    ? cycle.solarEclipse.coverage ?? 0
+    : 0;
 
   if (auroraCount > 0) {
     details.push({
@@ -1527,6 +1550,12 @@ function getActiveCelestialEventDetails(
     details.push({
       kind: 'comet',
       label: `${cometCount} comet trail${cometCount === 1 ? '' : 's'}`,
+    });
+  }
+  if (eclipseCoverage > 0.03) {
+    details.push({
+      kind: 'eclipse',
+      label: `Eclipse ${(eclipseCoverage * 100).toFixed(0)}%`,
     });
   }
 
@@ -1756,6 +1785,7 @@ eventModeAutoButton?.addEventListener('click', () => setCelestialEventMode('auto
 eventModeAuroraButton?.addEventListener('click', () => setCelestialEventMode('aurora'));
 eventModeMeteorButton?.addEventListener('click', () => setCelestialEventMode('meteor-shower'));
 eventModeCometButton?.addEventListener('click', () => setCelestialEventMode('comet'));
+eventModeEclipseButton?.addEventListener('click', () => setCelestialEventMode('eclipse'));
 freezeTimeButton?.addEventListener('click', toggleTimeFreeze);
 inspectorTabButtons.forEach((button) => {
   button.addEventListener('click', () => {

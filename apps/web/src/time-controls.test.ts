@@ -45,6 +45,7 @@ describe('time controls', () => {
     expect(getNextCelestialEventMode('aurora')).toBe('aurora');
     expect(getNextCelestialEventMode('meteor-shower')).toBe('meteor-shower');
     expect(getNextCelestialEventMode('comet')).toBe('comet');
+    expect(getNextCelestialEventMode('eclipse')).toBe('eclipse');
     expect(getNextCelestialEventMode('unknown')).toBe('auto');
   });
 

@@ -103,7 +103,8 @@ export function parseSavedSession(raw: string | null): SavedSession | null {
       parsed.celestialEventMode !== 'auto' &&
       parsed.celestialEventMode !== 'aurora' &&
       parsed.celestialEventMode !== 'meteor-shower' &&
-      parsed.celestialEventMode !== 'comet'
+      parsed.celestialEventMode !== 'comet' &&
+      parsed.celestialEventMode !== 'eclipse'
     ) {
       return null;
     }

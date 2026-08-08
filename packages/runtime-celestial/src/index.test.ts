@@ -62,6 +62,12 @@ describe('runtime celestial', () => {
         celestial: expect.objectContaining({
           activeConstellationIndex: expect.any(Number),
           dateLabel: expect.stringContaining('/'),
+          solarEclipse: expect.objectContaining({
+            active: expect.any(Boolean),
+            coverage: expect.any(Number),
+            moonAzimuth: expect.any(Number),
+            moonAltitude: expect.any(Number),
+          }),
           visibleEvents: expect.arrayContaining([
             expect.objectContaining({
               visibility: expect.any(Number),

@@ -139,6 +139,34 @@ describe('celestial preview helpers', () => {
     expect(noon.glowOpacity).toBeGreaterThan(midnight.glowOpacity);
   });
 
+  it('dims preview sunlight during a solar eclipse without collapsing ambient fill', () => {
+    const clearDay = getPreviewLightingProfile(makePreviewLightingCycle({
+      daylight: 0.9,
+      night: 0.02,
+      starsOpacity: 0.04,
+    }));
+    const eclipseDay = getPreviewLightingProfile(makePreviewLightingCycle({
+      daylight: 0.42,
+      night: 0.22,
+      starsOpacity: 0.28,
+      solarEclipse: {
+        active: true,
+        coverage: 0.9,
+        totality: 0.82,
+        daylightReduction: 0.72,
+        moonAzimuth: 0,
+        moonAltitude: 0.5,
+        shadowOffsetX: 0,
+        shadowOffsetY: 0,
+      },
+    }));
+
+    expect(eclipseDay.sunIntensity).toBeLessThan(clearDay.sunIntensity);
+    expect(eclipseDay.sunFillIntensity).toBeLessThan(clearDay.sunFillIntensity);
+    expect(eclipseDay.ambientIntensity).toBeGreaterThan(1);
+    expect(eclipseDay.sunGlowOpacity).toBeLessThan(clearDay.sunGlowOpacity);
+  });
+
   it('keeps preview shadows active when the sun is above or near the horizon', () => {
     const daylightShadow = getPreviewShadowProfile(makePreviewShadowCycle({
       daylight: 0.4,

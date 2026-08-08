@@ -290,4 +290,32 @@ describe('runtime celestial phenomena', () => {
       0.5
     );
   });
+
+  it('can force a solar eclipse that darkens daylight and aligns the moon with the sun', () => {
+    const forcedEclipseState = {
+      ...createCelestialPhenomenaPayload().state,
+      player: {
+        x: 0,
+        y: 0,
+        facing: 0,
+      },
+      celestialEventMode: 'eclipse',
+    };
+    const environment = plugin.resolveWorldEnvironment?.(
+      createCelestialPhenomenaPayload({
+        state: forcedEclipseState,
+        timeMs: DEFAULT_DAY_LENGTH_MS / 2,
+      })
+    ) as WorldEnvironmentLike | undefined;
+
+    expect(environment?.celestial?.solarEclipse).toEqual(
+      expect.objectContaining({
+        active: true,
+        coverage: expect.any(Number),
+        daylightReduction: expect.any(Number),
+      })
+    );
+    expect(environment?.celestial?.solarEclipse?.coverage ?? 0).toBeGreaterThan(0.75);
+    expect(environment?.celestial?.solarEclipse?.daylightReduction ?? 0).toBeGreaterThan(0.5);
+  });
 });

@@ -912,7 +912,9 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     const sunOrbitZ = Math.sin(cycle.sunAzimuth) * sunDistance * 0.65;
     sunLight.position.set(worldX - sunOrbitX, sunOrbitY, worldY - sunOrbitZ);
     sunTarget.position.set(worldX, 0, worldY);
-    sunLight.intensity = dayBlend * 1.75 + twilightBlend * 0.25;
+    sunLight.intensity =
+      (dayBlend * 1.75 + twilightBlend * 0.25) *
+      (1 - (cycle.solarEclipse?.daylightReduction ?? 0) * 0.6);
     sunLight.color
       .set('#ffb06e')
       .lerp(
@@ -924,14 +926,20 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     sunLight.castShadow =
       shadowStrength * (lighting.shadowStrength ?? 1) > 0.08;
 
+    const displayedMoonAzimuth =
+      cycle.solarEclipse?.active ? cycle.solarEclipse.moonAzimuth : cycle.moonAzimuth;
+    const displayedMoonAltitude =
+      cycle.solarEclipse?.active ? cycle.solarEclipse.moonAltitude : cycle.moonAltitude;
     const moonDistance = 22;
-    const moonOrbitX = Math.cos(cycle.moonAzimuth) * moonDistance;
-    const moonOrbitY = 6 + Math.max(0, cycle.moonAltitude) * 12;
-    const moonOrbitZ = Math.sin(cycle.moonAzimuth) * moonDistance * 0.7;
+    const moonOrbitX = Math.cos(displayedMoonAzimuth) * moonDistance;
+    const moonOrbitY = 6 + Math.max(0, displayedMoonAltitude) * 12;
+    const moonOrbitZ = Math.sin(displayedMoonAzimuth) * moonDistance * 0.7;
     moonLight.position.set(worldX - moonOrbitX, moonOrbitY, worldY - moonOrbitZ);
     moonTarget.position.set(worldX, 0, worldY);
     moonLight.color.set(lighting.moonColor ?? '#9ec5ff');
-    moonLight.intensity = cycle.night * (0.1 + cycle.moonIllumination * 0.24);
+    moonLight.intensity =
+      cycle.night * (0.1 + cycle.moonIllumination * 0.24) +
+      (cycle.solarEclipse?.coverage ?? 0) * 0.04;
 
     skyRoot.position.set(worldX, 0, worldY);
     skyRoot.rotation.z = (-cycle.observerLatitudeDegrees / 180) * Math.PI * 0.5;
@@ -972,17 +980,25 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     );
     sunSprite.material.opacity = Math.max(
       0,
-      Math.min(0.92, cycle.twilight * 0.72 + dayBlend * 0.32)
+      Math.min(
+        0.92,
+        (cycle.twilight * 0.72 + dayBlend * 0.32) *
+          (1 - (cycle.solarEclipse?.totality ?? 0) * 0.28)
+      )
     );
     sunSprite.visible = sunSprite.material.opacity > 0.03;
 
-    moonSprite.position.set(moonOrbitX * 1.7, 16 + Math.max(0, cycle.moonAltitude) * 14, moonOrbitZ * 1.7);
+    moonSprite.position.set(
+      moonOrbitX * 1.7,
+      16 + Math.max(0, displayedMoonAltitude) * 14,
+      moonOrbitZ * 1.7
+    );
     moonSprite.material.opacity =
       Math.max(
         0,
-        (cycle.night * 0.82 + (cycle.moonAltitude > -0.08 ? 0.16 : 0)) *
+        (cycle.night * 0.82 + (displayedMoonAltitude > -0.08 ? 0.16 : 0)) *
           (0.22 + cycle.moonIllumination * 0.78)
-      );
+      ) + (cycle.solarEclipse?.coverage ?? 0) * 0.46;
     moonSprite.visible = moonSprite.material.opacity > 0.03;
 
     if (lastMoonPhaseIndex !== cycle.moonPhaseIndex) {

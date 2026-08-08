@@ -23,7 +23,9 @@ type PreviewPoint3D = {
 type PreviewLightingCycleLike = Pick<
   DaylightCycleLike,
   'daylight' | 'night' | 'starsOpacity'
->;
+> & {
+  solarEclipse?: DaylightCycleLike['solarEclipse'];
+};
 type PreviewLightingProfile = {
   ambientIntensity: number;
   hemisphereIntensity: number;
@@ -347,7 +349,12 @@ export function createCelestialPreviewRenderer(
     sun.position.set(sunBody.x, sunBody.y, sunBody.z);
     (sun.material as THREE.MeshBasicMaterial).color.set('#ffd06e');
     sunGlow.position.copy(sun.position);
-    const moonBody = getPreviewBodyPosition(cycle.moonAzimuth, cycle.moonAltitude, 10.8);
+    const displayedMoon = getDisplayedPreviewMoonPosition(cycle);
+    const moonBody = getPreviewBodyPosition(
+      displayedMoon.azimuth,
+      displayedMoon.altitude,
+      10.8
+    );
     moon.position.set(moonBody.x, moonBody.y, moonBody.z);
     (moon.material as THREE.MeshStandardMaterial).color.set('#dce8ff');
     const lightRig = getPreviewLightRigState(cycle);
@@ -391,9 +398,9 @@ export function createCelestialPreviewRenderer(
     (sunGlow.material as THREE.MeshBasicMaterial).opacity = lighting.sunGlowOpacity;
     moon.material.opacity = Math.max(
       0.24,
-      (cycle.night * 0.8 + (cycle.moonAltitude > -0.08 ? 0.18 : 0)) *
+      (cycle.night * 0.8 + (displayedMoon.altitude > -0.08 ? 0.18 : 0)) *
         (0.24 + cycle.moonIllumination * 0.76)
-    );
+    ) + (cycle.solarEclipse?.coverage ?? 0) * 0.44;
     moon.material.transparent = true;
 
     const signatures = getCelestialPreviewSceneSignatures(cycle);
@@ -470,17 +477,20 @@ export function brightenPreviewSurfaceColor(
 export function getPreviewLightingProfile(
   cycle: PreviewLightingCycleLike
 ): PreviewLightingProfile {
+  const eclipseDim = cycle.solarEclipse?.daylightReduction ?? 0;
   return {
     ambientIntensity: 1.08 + cycle.daylight * 0.46 + cycle.night * 0.16,
     hemisphereIntensity: 0.56 + cycle.daylight * 0.4 + cycle.night * 0.12,
     rimIntensity: 0.96 + cycle.daylight * 0.72,
-    sunIntensity: 1.18 + cycle.daylight * 1.88,
-    sunFillIntensity: 0.38 + cycle.daylight * 0.96,
+    sunIntensity: (1.18 + cycle.daylight * 1.88) * (1 - eclipseDim * 0.62),
+    sunFillIntensity: (0.38 + cycle.daylight * 0.96) * (1 - eclipseDim * 0.48),
     bounceFillIntensity: 0.24 + cycle.daylight * 0.48 + cycle.night * 0.08,
     nightFillIntensity: 0.34 + cycle.night * 0.38,
     emissiveIntensity: 0.52 + cycle.night * 0.28,
     moonEmissiveIntensity: 0.02 + cycle.night * 0.06,
-    sunGlowOpacity: 0.14 + cycle.daylight * 0.14 + cycle.starsOpacity * 0.02,
+    sunGlowOpacity:
+      (0.14 + cycle.daylight * 0.14 + cycle.starsOpacity * 0.02) *
+      (1 - (cycle.solarEclipse?.totality ?? 0) * 0.3),
     glowOpacity: 0.07 + cycle.daylight * 0.06 + cycle.starsOpacity * 0.02,
   };
 }
@@ -610,7 +620,12 @@ export function getCelestialPreviewSceneSignatures(
 export function getPreviewSunShadowCoverageState(
   cycle: Pick<
     DaylightCycleLike,
-    'daylight' | 'sunAltitude' | 'sunAzimuth' | 'moonAltitude' | 'moonAzimuth'
+    | 'daylight'
+    | 'sunAltitude'
+    | 'sunAzimuth'
+    | 'moonAltitude'
+    | 'moonAzimuth'
+    | 'solarEclipse'
   >
 ): PreviewSunShadowCoverageState {
   const shadowProfile = getPreviewShadowProfile(cycle);
@@ -622,8 +637,14 @@ export function getPreviewSunShadowCoverageState(
     sunAltitude: cycle.sunAltitude,
     moonAzimuth: cycle.moonAzimuth,
     moonAltitude: cycle.moonAltitude,
+    solarEclipse: cycle.solarEclipse,
   }).sun;
-  const moon = getPreviewBodyPosition(cycle.moonAzimuth, cycle.moonAltitude, 10.8);
+  const displayedMoon = getDisplayedPreviewMoonPosition(cycle);
+  const moon = getPreviewBodyPosition(
+    displayedMoon.azimuth,
+    displayedMoon.altitude,
+    10.8
+  );
   const world = { x: 0, y: 0, z: 0 };
   const frustum = describeDirectionalShadowFrustum(
     lightPosition,
@@ -649,13 +670,19 @@ export function getPreviewLightRigState(
     | 'sunAltitude'
     | 'moonAzimuth'
     | 'moonAltitude'
+    | 'solarEclipse'
   >
 ): PreviewLightRigState {
   const lighting = getPreviewLightingProfile(cycle);
   const shadowProfile = getPreviewShadowProfile(cycle);
   const sun = getPreviewBodyPosition(cycle.sunAzimuth, cycle.sunAltitude, 13.5);
   sun.y = 5.8 + Math.max(-0.1, cycle.sunAltitude) * 11;
-  const moon = getPreviewBodyPosition(cycle.moonAzimuth, cycle.moonAltitude, 10.8);
+  const displayedMoon = getDisplayedPreviewMoonPosition(cycle);
+  const moon = getPreviewBodyPosition(
+    displayedMoon.azimuth,
+    displayedMoon.altitude,
+    10.8
+  );
   const bounce = {
     x: -sun.x * 0.52,
     y: 2.8 + cycle.daylight * 1.8,
@@ -667,6 +694,22 @@ export function getPreviewLightRigState(
     bounce,
     lighting,
     shadowProfile,
+  };
+}
+
+function getDisplayedPreviewMoonPosition(
+  cycle: Pick<
+    DaylightCycleLike,
+    'moonAzimuth' | 'moonAltitude' | 'solarEclipse'
+  >
+) {
+  return {
+    azimuth: cycle.solarEclipse?.active
+      ? cycle.solarEclipse.moonAzimuth
+      : cycle.moonAzimuth,
+    altitude: cycle.solarEclipse?.active
+      ? cycle.solarEclipse.moonAltitude
+      : cycle.moonAltitude,
   };
 }
 
