@@ -127,6 +127,7 @@ import {
   createWebAudioSoundEffectSink,
   shouldPlayBlockedMovementSound,
 } from './sound-effects.ts';
+import { shouldResolve3dSoundContext } from './sound-update-context.ts';
 import { createSoundUpdatePayloadBuilder } from './sound-update-payload.ts';
 import { findNearestTrafficProfile } from './nearby-traffic.ts';
 import {
@@ -2198,17 +2199,28 @@ function updateMovement(deltaMs: number): void {
     }
   }
 
-  const nearbyTrainAudio = getNearbyTrainAudioProfile();
-  const nearbyPaddleBoatAudio = getNearbyPaddleBoatAudioProfile();
+  const shouldResolveSoundContext = shouldResolve3dSoundContext(state.viewMode);
+  const currentTileKind = shouldResolveSoundContext
+    ? state.getCurrentTile().kind
+    : undefined;
+  const currentWeather = shouldResolveSoundContext
+    ? latestEnvironment.weather?.current
+    : undefined;
+  const nearbyTrainAudio = shouldResolveSoundContext
+    ? getNearbyTrainAudioProfile()
+    : null;
+  const nearbyPaddleBoatAudio = shouldResolveSoundContext
+    ? getNearbyPaddleBoatAudioProfile()
+    : null;
   soundEffects.update(buildSoundUpdatePayload({
     nowMs,
     walking,
     isJumping: motion.isJumping,
     viewMode: state.viewMode,
-    tileKind: state.getCurrentTile().kind,
-    weatherKind: latestEnvironment.weather?.current?.kind,
-    weatherIntensity: latestEnvironment.weather?.current?.intensity,
-    windStrength: latestEnvironment.weather?.current?.windStrength,
+    tileKind: currentTileKind,
+    weatherKind: currentWeather?.kind,
+    weatherIntensity: currentWeather?.intensity,
+    windStrength: currentWeather?.windStrength,
     nearbyTrain: nearbyTrainAudio,
     nearbyPaddleBoat: nearbyPaddleBoatAudio,
     emitterX: state.player.x,
