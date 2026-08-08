@@ -1,11 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import {
   advanceWorldTimeOffsetByHours,
+  advanceWorldTimeOffsetBySeasons,
   alignWorldTimeOffsetToDayProgress,
   cardinalFromAngle,
   createPlayer,
   createWorldState,
   DEFAULT_DAY_LENGTH_MS,
+  DEFAULT_YEAR_LENGTH_DAYS,
+  formatCelestialDate,
+  generateConstellations,
+  getCelestialEventsForDay,
   getDaylightCycleState,
   getWorldDaylightCycle,
   getWorldTimeMs,
@@ -52,6 +57,37 @@ describe('core utilities', () => {
     expect(nextDay.moonPhaseName).toBe('Waxing Crescent');
   });
 
+  it('generates deterministic procedural constellations with names and links', () => {
+    const left = generateConstellations('spec-seed');
+    const right = generateConstellations('spec-seed');
+
+    expect(left).toEqual(right);
+    expect(left[0].name).toMatch(/\w+ \w+/);
+    expect(left[0].stars.length).toBeGreaterThanOrEqual(5);
+    expect(left[0].connections.length).toBeGreaterThanOrEqual(4);
+  });
+
+  it('shifts sunrise and daylight length across the seasonal year', () => {
+    const winter = getDaylightCycleState(
+      DEFAULT_DAY_LENGTH_MS * Math.floor(DEFAULT_YEAR_LENGTH_DAYS * 0.75),
+      {
+        dayLengthMs: DEFAULT_DAY_LENGTH_MS,
+        yearLengthDays: DEFAULT_YEAR_LENGTH_DAYS,
+      }
+    );
+    const summer = getDaylightCycleState(
+      DEFAULT_DAY_LENGTH_MS * Math.floor(DEFAULT_YEAR_LENGTH_DAYS * 0.25),
+      {
+        dayLengthMs: DEFAULT_DAY_LENGTH_MS,
+        yearLengthDays: DEFAULT_YEAR_LENGTH_DAYS,
+      }
+    );
+
+    expect(summer.sunriseAzimuth).toBeGreaterThan(winter.sunriseAzimuth);
+    expect(summer.daylight).toBeGreaterThanOrEqual(winter.daylight);
+    expect(summer.activeConstellation.name).not.toBe(winter.activeConstellation.name);
+  });
+
   it('provides shared world-clock helpers for offset and preset time changes', () => {
     expect(getWorldTimeMs(1000, { timeOffsetMs: 250 })).toBe(1250);
 
@@ -73,6 +109,31 @@ describe('core utilities', () => {
       { dayLengthMs: DEFAULT_DAY_LENGTH_MS }
     );
     expect(presetOffset).toBe(DEFAULT_DAY_LENGTH_MS / 2);
+    expect(
+      advanceWorldTimeOffsetBySeasons(0, 1, {
+        dayLengthMs: DEFAULT_DAY_LENGTH_MS,
+        yearLengthDays: DEFAULT_YEAR_LENGTH_DAYS,
+        constellationCount: 8,
+      })
+    ).toBe(DEFAULT_DAY_LENGTH_MS * 8);
+  });
+
+  it('builds a celestial date label from the constellation month and moon week', () => {
+    expect(formatCelestialDate('Dawn Crown', 'Full Moon')).toEqual({
+      month: 'Dawn Crown',
+      week: 'Full Moon',
+      label: 'Dawn Crown / Full Moon',
+    });
+  });
+
+  it('exposes periodic planets, meteor showers, and comets', () => {
+    const events = getCelestialEventsForDay(0, {
+      yearLengthDays: DEFAULT_YEAR_LENGTH_DAYS,
+    });
+
+    expect(events.some((event) => event.type === 'planet')).toBe(true);
+    expect(events.some((event) => event.type === 'meteor-shower')).toBe(true);
+    expect(events.some((event) => event.type === 'comet')).toBe(true);
   });
 
   it('exposes tile-definition lookup through world state', () => {

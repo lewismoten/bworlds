@@ -6,6 +6,9 @@ export const WORLD_TILES_WIDE = Math.floor(
 );
 export const HALF_WORLD_TILES = WORLD_TILES_WIDE / 2;
 export const DEFAULT_DAY_LENGTH_MS = 240000;
+export const DEFAULT_YEAR_LENGTH_DAYS = 64;
+export const DEFAULT_CONSTELLATION_COUNT = 8;
+export const DEFAULT_SEASON_DAYLIGHT_AMPLITUDE = 0.18;
 export const MOON_PHASE_NAMES = [
   'New Moon',
   'Waxing Crescent',
@@ -16,6 +19,73 @@ export const MOON_PHASE_NAMES = [
   'Last Quarter',
   'Waning Crescent',
 ] as const;
+const CONSTELLATION_PREFIXES = [
+  'Aster',
+  'Briar',
+  'Cinder',
+  'Dawn',
+  'Ember',
+  'Frost',
+  'Gale',
+  'Harbor',
+  'Ivory',
+  'Juniper',
+  'Kestrel',
+  'Lumen',
+  'Morrow',
+  'North',
+  'Opal',
+  'Pyre',
+];
+const CONSTELLATION_SUFFIXES = [
+  'Arc',
+  'Bloom',
+  'Crown',
+  'Drift',
+  'Ember',
+  'Flare',
+  'Grove',
+  'Hearth',
+  'Isle',
+  'Jewel',
+  'Keep',
+  'Lantern',
+  'March',
+  'Needle',
+  'Omen',
+  'Vale',
+];
+const PLANET_NAMES = ['Aurel', 'Brink', 'Cael', 'Damar'];
+const METEOR_SHOWER_NAMES = ['Silver Wake', 'Ember Rain', 'Northfall'];
+const COMET_NAMES = ['White Lantern', 'Pilgrim Tail'];
+
+export interface ConstellationStarLike {
+  id: string;
+  x: number;
+  y: number;
+  brightness: number;
+}
+
+export interface ConstellationLike {
+  id: string;
+  name: string;
+  stars: ConstellationStarLike[];
+  connections: Array<[number, number]>;
+  daylightBias: number;
+}
+
+export interface CelestialCalendarLike {
+  month: string;
+  week: string;
+  label: string;
+}
+
+export interface CelestialEventLike {
+  type: 'planet' | 'meteor-shower' | 'comet';
+  name: string;
+  progress: number;
+  intensity: number;
+}
 
 export function fract(value) {
   return value - Math.floor(value);
@@ -39,6 +109,10 @@ export function getDaylightCycleState(
   options: {
     dayLengthMs?: number;
     offsetMs?: number;
+    yearLengthDays?: number;
+    constellationCount?: number;
+    constellationSeed?: string;
+    seasonDaylightAmplitude?: number;
   } = {}
 ) {
   const dayLengthMs = options.dayLengthMs ?? DEFAULT_DAY_LENGTH_MS;
@@ -46,14 +120,27 @@ export function getDaylightCycleState(
   const cycleTime = timeMs + offsetMs;
   const dayProgress = fract(cycleTime / dayLengthMs);
   const dayNumber = Math.floor(cycleTime / dayLengthMs);
+  const yearLengthDays = Math.max(1, options.yearLengthDays ?? DEFAULT_YEAR_LENGTH_DAYS);
+  const constellationCount = Math.max(
+    1,
+    Math.floor(options.constellationCount ?? DEFAULT_CONSTELLATION_COUNT)
+  );
+  const constellationSeed = options.constellationSeed ?? 'bworlds-celestial';
+  const seasonDaylightAmplitude =
+    options.seasonDaylightAmplitude ?? DEFAULT_SEASON_DAYLIGHT_AMPLITUDE;
+  const yearProgress = fract(dayNumber / yearLengthDays);
+  const seasonAngle = yearProgress * Math.PI * 2;
+  const solarDeclination = Math.sin(seasonAngle) * seasonDaylightAmplitude;
   const sunAngle = dayProgress * Math.PI * 2 - Math.PI / 2;
-  const sunAltitude = Math.sin(sunAngle);
+  const sunAltitude = Math.sin(sunAngle) + solarDeclination;
   const moonAngle = sunAngle + Math.PI;
   const moonAltitude = Math.sin(moonAngle);
   const daylight = smoothstep(-0.16, 0.2, sunAltitude);
   const twilight = smoothstep(-0.28, 0.16, sunAltitude);
   const night = 1 - twilight;
   const starsOpacity = smoothstep(0.08, 0.82, night);
+  const sunriseAzimuth = Math.PI / 2 + solarDeclination * 0.8;
+  const sunsetAzimuth = Math.PI * 1.5 - solarDeclination * 0.8;
   const moonPhaseIndex =
     ((dayNumber % MOON_PHASE_NAMES.length) + MOON_PHASE_NAMES.length) %
     MOON_PHASE_NAMES.length;
@@ -68,16 +155,37 @@ export function getDaylightCycleState(
     0.5,
     0.25,
   ][moonPhaseIndex];
+  const constellations = generateConstellations(constellationSeed, {
+    count: constellationCount,
+  });
+  const activeConstellationIndex =
+    ((Math.floor(yearProgress * constellationCount) % constellationCount) +
+      constellationCount) %
+    constellationCount;
+  const activeConstellation = constellations[activeConstellationIndex];
+  const seasonLengthDays = Math.max(1, yearLengthDays / constellationCount);
+  const seasonDay = ((dayNumber % yearLengthDays) + yearLengthDays) % yearLengthDays;
+  const visibleEvents = getCelestialEventsForDay(dayNumber, {
+    yearLengthDays,
+  });
+  const calendar = formatCelestialDate(activeConstellation?.name ?? 'Unknown', moonPhaseName);
 
   return {
     dayLengthMs,
     cycleTime,
     dayNumber,
     dayProgress,
+    yearLengthDays,
+    yearProgress,
+    seasonDay,
+    seasonLengthDays,
     sunAngle,
     sunAltitude,
+    solarDeclination,
     moonAngle,
     moonAltitude,
+    sunriseAzimuth,
+    sunsetAzimuth,
     daylight,
     twilight,
     night,
@@ -85,6 +193,11 @@ export function getDaylightCycleState(
     moonPhaseIndex,
     moonPhaseName,
     moonIllumination,
+    constellations,
+    activeConstellationIndex,
+    activeConstellation,
+    calendar,
+    visibleEvents,
     isNight: daylight < 0.22,
   };
 }
@@ -146,6 +259,139 @@ export function alignWorldTimeOffsetToDayProgress(
     deltaMs += cycle.dayLengthMs;
   }
   return currentOffsetMs + deltaMs;
+}
+
+export function advanceWorldTimeOffsetBySeasons(
+  currentOffsetMs,
+  seasons,
+  options: {
+    dayLengthMs?: number;
+    yearLengthDays?: number;
+    constellationCount?: number;
+  } = {}
+) {
+  const dayLengthMs = options.dayLengthMs ?? DEFAULT_DAY_LENGTH_MS;
+  const yearLengthDays = options.yearLengthDays ?? DEFAULT_YEAR_LENGTH_DAYS;
+  const constellationCount = Math.max(
+    1,
+    Math.floor(options.constellationCount ?? DEFAULT_CONSTELLATION_COUNT)
+  );
+  const seasonLengthDays = yearLengthDays / constellationCount;
+  return currentOffsetMs + seasons * seasonLengthDays * dayLengthMs;
+}
+
+export function generateConstellations(
+  seed,
+  options: {
+    count?: number;
+  } = {}
+): ConstellationLike[] {
+  const count = Math.max(1, Math.floor(options.count ?? DEFAULT_CONSTELLATION_COUNT));
+  const usedNames = new Set<string>();
+
+  return Array.from({ length: count }, (_, index) => {
+    const starCount = 5 + Math.floor(hash2D(`${seed}:stars`, index, count) * 4);
+    const stars = Array.from({ length: starCount }, (_, starIndex) => {
+      const radial = 0.18 + hash2D(`${seed}:r`, index, starIndex) * 0.22;
+      const angle =
+        (starIndex / starCount) * Math.PI * 2 +
+        hash2D(`${seed}:theta`, index, starIndex) * 0.9;
+      return {
+        id: `${index}:${starIndex}`,
+        x: 0.5 + Math.cos(angle) * radial,
+        y: 0.5 + Math.sin(angle) * radial * (0.7 + hash2D(`${seed}:stretch`, index, starIndex) * 0.6),
+        brightness: 0.45 + hash2D(`${seed}:b`, index, starIndex) * 0.55,
+      };
+    }).sort((left, right) => left.x - right.x);
+
+    const connections = stars.slice(1).map((_, starIndex) => [starIndex, starIndex + 1] as [number, number]);
+    if (stars.length > 4) {
+      connections.push([0, Math.floor(stars.length / 2)]);
+    }
+
+    let name = createConstellationName(seed, index);
+    while (usedNames.has(name)) {
+      name = `${name} ${index + 1}`;
+    }
+    usedNames.add(name);
+
+    return {
+      id: `constellation-${index + 1}`,
+      name,
+      stars,
+      connections,
+      daylightBias: -0.12 + hash2D(`${seed}:bias`, index, count) * 0.24,
+    };
+  });
+}
+
+export function createConstellationName(seed, index) {
+  const prefix = pickFrom(
+    CONSTELLATION_PREFIXES,
+    hash2D(`${seed}:constellation-prefix`, index, 0)
+  );
+  const suffix = pickFrom(
+    CONSTELLATION_SUFFIXES,
+    hash2D(`${seed}:constellation-suffix`, 0, index)
+  );
+  return `${prefix} ${suffix}`;
+}
+
+export function formatCelestialDate(constellationName, moonPhaseName): CelestialCalendarLike {
+  return {
+    month: constellationName,
+    week: moonPhaseName,
+    label: `${constellationName} / ${moonPhaseName}`,
+  };
+}
+
+export function getCelestialEventsForDay(
+  dayNumber,
+  options: {
+    yearLengthDays?: number;
+  } = {}
+): CelestialEventLike[] {
+  const yearLengthDays = options.yearLengthDays ?? DEFAULT_YEAR_LENGTH_DAYS;
+  const events: CelestialEventLike[] = [];
+
+  PLANET_NAMES.forEach((name, index) => {
+    const orbitLength = 9 + index * 4;
+    events.push({
+      type: 'planet',
+      name,
+      progress: fract(dayNumber / orbitLength + hash2D('planet-progress', index, dayNumber)),
+      intensity: 0.35 + hash2D('planet-intensity', index, dayNumber % orbitLength) * 0.45,
+    });
+  });
+
+  METEOR_SHOWER_NAMES.forEach((name, index) => {
+    const seasonStart = Math.floor((yearLengthDays / METEOR_SHOWER_NAMES.length) * index);
+    const peakOffset = ((dayNumber - seasonStart) % yearLengthDays + yearLengthDays) % yearLengthDays;
+    if (peakOffset <= 4 || peakOffset >= yearLengthDays - 4) {
+      const distance = Math.min(peakOffset, yearLengthDays - peakOffset);
+      events.push({
+        type: 'meteor-shower',
+        name,
+        progress: distance / 4,
+        intensity: 1 - distance / 4,
+      });
+    }
+  });
+
+  COMET_NAMES.forEach((name, index) => {
+    const cycleLength = 20 + index * 12;
+    const cycleDay = ((dayNumber % cycleLength) + cycleLength) % cycleLength;
+    if (cycleDay <= 3) {
+      events.push({
+        type: 'comet',
+        name,
+        progress: cycleDay / 3,
+        intensity: 1 - cycleDay / 3,
+      });
+    }
+  });
+
+  return events;
 }
 
 export function hash2D(seed, x, y) {

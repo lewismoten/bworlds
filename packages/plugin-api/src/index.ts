@@ -231,6 +231,12 @@ export class PluginRegistry implements PluginRegistryLike {
           ...resolved.stars,
         };
       }
+      if (resolved.celestial) {
+        merged.celestial = {
+          ...(merged.celestial ?? {}),
+          ...resolved.celestial,
+        };
+      }
     }
 
     return merged;

@@ -101,6 +101,10 @@ export interface RuntimePlayerLike extends Point {
 export interface WorldEnvironmentCycleLike {
   dayLengthMs?: number;
   offsetMs?: number;
+  yearLengthDays?: number;
+  constellationCount?: number;
+  constellationSeed?: string;
+  seasonDaylightAmplitude?: number;
 }
 
 export interface WorldEnvironmentSkyLike {
@@ -125,11 +129,41 @@ export interface WorldEnvironmentStarsLike {
   density?: number;
 }
 
+export interface WorldEnvironmentConstellationStarLike {
+  id?: Identity;
+  x: number;
+  y: number;
+  brightness?: number;
+}
+
+export interface WorldEnvironmentConstellationLike {
+  id?: Identity;
+  name: string;
+  stars: WorldEnvironmentConstellationStarLike[];
+  connections: Array<[number, number]>;
+  daylightBias?: number;
+}
+
+export interface WorldEnvironmentCelestialEventLike {
+  type: 'planet' | 'meteor-shower' | 'comet';
+  name: string;
+  progress: number;
+  intensity: number;
+}
+
+export interface WorldEnvironmentCelestialLike {
+  constellations?: WorldEnvironmentConstellationLike[];
+  activeConstellationIndex?: number;
+  dateLabel?: string;
+  visibleEvents?: WorldEnvironmentCelestialEventLike[];
+}
+
 export interface WorldEnvironmentLike {
   cycle?: WorldEnvironmentCycleLike;
   sky?: WorldEnvironmentSkyLike;
   lighting?: WorldEnvironmentLightingLike;
   stars?: WorldEnvironmentStarsLike;
+  celestial?: WorldEnvironmentCelestialLike;
 }
 
 export interface WorldStateLike {

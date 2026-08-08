@@ -85,6 +85,12 @@ export function create3DRenderer(host) {
   const stars = createStarField();
   skyRoot.add(stars);
 
+  const constellationRoot = new THREE.Group();
+  skyRoot.add(constellationRoot);
+
+  const eventRoot = new THREE.Group();
+  skyRoot.add(eventRoot);
+
   const moonSprite = createMoonSprite();
   skyRoot.add(moonSprite);
 
@@ -801,6 +807,10 @@ export function create3DRenderer(host) {
     stars.material.opacity = cycle.starsOpacity;
     stars.visible = cycle.starsOpacity > 0.02;
     stars.material.size = 0.18 * Math.max(0.6, Math.min(2, starDensity));
+    syncConstellationSky(constellationRoot, cycle);
+    syncCelestialEvents(eventRoot, cycle);
+    constellationRoot.visible = cycle.starsOpacity > 0.04;
+    eventRoot.visible = cycle.starsOpacity > 0.08;
 
     moonSprite.position.set(moonOrbitX * 1.7, 16 + Math.max(0, cycle.moonAltitude) * 14, moonOrbitZ * 1.7);
     moonSprite.material.opacity =
@@ -858,6 +868,141 @@ function createStarField() {
     sizeAttenuation: true,
   });
   return new THREE.Points(geometry, material);
+}
+
+function syncConstellationSky(root, cycle) {
+  root.clear();
+  const constellations = cycle.constellations ?? [];
+  if (constellations.length === 0) {
+    return;
+  }
+
+  const activeIndex = cycle.activeConstellationIndex ?? 0;
+  const focusIndices = [
+    (activeIndex + constellations.length - 1) % constellations.length,
+    activeIndex,
+    (activeIndex + 1) % constellations.length,
+  ];
+
+  focusIndices.forEach((constellationIndex, slotIndex) => {
+    const constellation = constellations[constellationIndex];
+    const slotTheta = ((slotIndex - 1) * 0.6) + cycle.yearProgress * Math.PI * 2;
+    const slotPhi = 0.5 + (slotIndex - 1) * 0.08;
+    const anchor = createSkyPosition(slotTheta, slotPhi, SKY_RADIUS - 4);
+
+    constellation.connections.forEach(([startIndex, endIndex]) => {
+      const start = constellation.stars[startIndex];
+      const end = constellation.stars[endIndex];
+      if (!start || !end) {
+        return;
+      }
+      const geometry = new THREE.BufferGeometry().setFromPoints([
+        createConstellationPoint(anchor, start),
+        createConstellationPoint(anchor, end),
+      ]);
+      const line = new THREE.Line(
+        geometry,
+        new THREE.LineBasicMaterial({
+          color: '#b9d4ff',
+          transparent: true,
+          opacity: 0.12 + cycle.starsOpacity * 0.28,
+        })
+      );
+      root.add(line);
+    });
+
+    constellation.stars.forEach((star) => {
+      const sprite = new THREE.Sprite(
+        new THREE.SpriteMaterial({
+          color: '#f5fbff',
+          transparent: true,
+          opacity: 0.24 + star.brightness * cycle.starsOpacity * 0.6,
+          depthWrite: false,
+        })
+      );
+      sprite.position.copy(createConstellationPoint(anchor, star));
+      const scale = 0.18 + star.brightness * 0.22;
+      sprite.scale.set(scale, scale, 1);
+      root.add(sprite);
+    });
+  });
+}
+
+function createConstellationPoint(anchor, star) {
+  return new THREE.Vector3(
+    anchor.x + (star.x - 0.5) * 10,
+    anchor.y + (0.5 - star.y) * 6,
+    anchor.z
+  );
+}
+
+function createSkyPosition(theta, phi, radius) {
+  const sinPhi = Math.sin(phi);
+  return new THREE.Vector3(
+    Math.cos(theta) * sinPhi * radius,
+    Math.cos(phi) * radius,
+    Math.sin(theta) * sinPhi * radius
+  );
+}
+
+function syncCelestialEvents(root, cycle) {
+  root.clear();
+  const events = cycle.visibleEvents ?? [];
+  events.forEach((event, index) => {
+    const theta = cycle.yearProgress * Math.PI * 2 + index * 0.42 - 0.6;
+    const phi = 0.42 + (index % 3) * 0.06;
+    const position = createSkyPosition(theta, phi, SKY_RADIUS - 6);
+
+    if (event.type === 'meteor-shower') {
+      for (let streak = 0; streak < 3; streak += 1) {
+        const geometry = new THREE.BufferGeometry().setFromPoints([
+          position.clone().add(new THREE.Vector3(streak * 0.3, streak * 0.12, 0)),
+          position.clone().add(new THREE.Vector3(1.4 + streak * 0.3, -0.5 + streak * 0.12, 0)),
+        ]);
+        root.add(
+          new THREE.Line(
+            geometry,
+            new THREE.LineBasicMaterial({
+              color: '#eef6ff',
+              transparent: true,
+              opacity: 0.16 + event.intensity * 0.24,
+            })
+          )
+        );
+      }
+      return;
+    }
+
+    const sprite = new THREE.Sprite(
+      new THREE.SpriteMaterial({
+        color: event.type === 'planet' ? '#ffd7a6' : '#d8f5ff',
+        transparent: true,
+        opacity: 0.24 + event.intensity * 0.35,
+        depthWrite: false,
+      })
+    );
+    sprite.position.copy(position);
+    const scale = event.type === 'planet' ? 0.45 : 0.34;
+    sprite.scale.set(scale, scale, 1);
+    root.add(sprite);
+
+    if (event.type === 'comet') {
+      const tail = new THREE.BufferGeometry().setFromPoints([
+        position.clone().add(new THREE.Vector3(-1.2, -0.2, 0)),
+        position.clone(),
+      ]);
+      root.add(
+        new THREE.Line(
+          tail,
+          new THREE.LineBasicMaterial({
+            color: '#d8f5ff',
+            transparent: true,
+            opacity: 0.18 + event.intensity * 0.28,
+          })
+        )
+      );
+    }
+  });
 }
 
 function createMoonSprite() {

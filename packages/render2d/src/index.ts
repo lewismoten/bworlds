@@ -275,6 +275,9 @@ function drawTimeOfDayOverlay(context, viewport, timeMs, environment) {
       const size = 1 + Math.floor(hash2D('ui-star-s', index, cycle.dayNumber) * 2);
       context.fillRect(px, py, size, size);
     }
+
+    drawConstellationOverlay(context, viewport, cycle);
+    drawCelestialEventsOverlay(context, viewport, cycle);
   }
 
   const nightAlpha = cycle.night * 0.54;
@@ -293,4 +296,89 @@ function drawTimeOfDayOverlay(context, viewport, timeMs, environment) {
   }
 
   context.restore();
+}
+
+function drawConstellationOverlay(context, viewport, cycle) {
+  const constellations = cycle.constellations ?? [];
+  if (constellations.length === 0) {
+    return;
+  }
+
+  const visibleIndices = [
+    cycle.activeConstellationIndex,
+    (cycle.activeConstellationIndex + 1) % constellations.length,
+    (cycle.activeConstellationIndex + constellations.length - 1) % constellations.length,
+  ];
+  const spanWidth = viewport.width / Math.max(1, visibleIndices.length);
+
+  visibleIndices.forEach((constellationIndex, slotIndex) => {
+    const constellation = constellations[constellationIndex];
+    const originX = spanWidth * slotIndex + spanWidth * 0.15;
+    const originY = viewport.height * 0.1;
+    const width = spanWidth * 0.7;
+    const height = viewport.height * 0.26;
+
+    context.strokeStyle = `rgba(190, 215, 255, ${0.09 + cycle.starsOpacity * 0.22})`;
+    context.lineWidth = 1;
+    constellation.connections.forEach(([startIndex, endIndex]) => {
+      const start = constellation.stars[startIndex];
+      const end = constellation.stars[endIndex];
+      if (!start || !end) {
+        return;
+      }
+      context.beginPath();
+      context.moveTo(originX + start.x * width, originY + start.y * height);
+      context.lineTo(originX + end.x * width, originY + end.y * height);
+      context.stroke();
+    });
+
+    constellation.stars.forEach((star) => {
+      const alpha = 0.28 + star.brightness * cycle.starsOpacity * 0.62;
+      const radius = 0.8 + star.brightness * 1.4;
+      context.fillStyle = `rgba(245, 250, 255, ${alpha})`;
+      context.beginPath();
+      context.arc(originX + star.x * width, originY + star.y * height, radius, 0, Math.PI * 2);
+      context.fill();
+    });
+  });
+}
+
+function drawCelestialEventsOverlay(context, viewport, cycle) {
+  const events = cycle.visibleEvents ?? [];
+  if (events.length === 0) {
+    return;
+  }
+
+  events.forEach((event, index) => {
+    const x = viewport.width * (0.18 + index * 0.21);
+    const y = viewport.height * (0.14 + (index % 2) * 0.07);
+    if (event.type === 'planet') {
+      context.fillStyle = `rgba(255, 214, 162, ${0.3 + event.intensity * 0.45})`;
+      context.beginPath();
+      context.arc(x, y, 2.2 + event.intensity * 1.5, 0, Math.PI * 2);
+      context.fill();
+      return;
+    }
+
+    if (event.type === 'comet') {
+      context.strokeStyle = `rgba(195, 232, 255, ${0.26 + event.intensity * 0.4})`;
+      context.lineWidth = 1.5;
+      context.beginPath();
+      context.moveTo(x - 14, y + 5);
+      context.lineTo(x, y);
+      context.stroke();
+      context.fillStyle = `rgba(255,255,255,${0.4 + event.intensity * 0.4})`;
+      context.fillRect(x - 1, y - 1, 3, 3);
+      return;
+    }
+
+    context.strokeStyle = `rgba(228, 241, 255, ${0.12 + event.intensity * 0.25})`;
+    context.lineWidth = 1;
+    for (let streak = 0; streak < 3; streak += 1) {
+      context.beginPath();
+      context.moveTo(x + streak * 8, y - streak * 4);
+      context.lineTo(x + 10 + streak * 8, y + 6 - streak * 4);
+      context.stroke();
+    }
+  });
 }

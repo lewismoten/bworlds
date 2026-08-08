@@ -228,6 +228,7 @@ describe('plugin registry', () => {
         return {
           lighting: { sunColor: '#fedcba', shadowStrength: 0.8 },
           stars: { density: 1.4 },
+          celestial: { dateLabel: 'Dawn Crown / Full Moon' },
         };
       },
     });
@@ -242,6 +243,7 @@ describe('plugin registry', () => {
       sky: { dayColor: '#abcdef' },
       lighting: { sunColor: '#fedcba', shadowStrength: 0.8 },
       stars: { density: 1.4 },
+      celestial: { dateLabel: 'Dawn Crown / Full Moon' },
     });
   });
 
