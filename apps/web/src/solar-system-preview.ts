@@ -6,13 +6,32 @@ import {
 } from '@bworlds/core';
 
 type DaylightCycleLike = ReturnType<typeof getDaylightCycleState>;
+type SolarSystemSceneSignatures = {
+  stars: string;
+  orbits: string;
+  bodies: string;
+  shell: string;
+  events: string;
+  labels: string;
+};
+type SolarSystemPreviewController = {
+  resize(): void;
+  render(cycle?: DaylightCycleLike): void;
+  isInteracting(): boolean;
+};
+type SolarSystemEventMarkerState = ReturnType<
+  typeof getSolarSystemEventMarkerStates
+>[number];
+type ConstellationStarLike = NonNullable<
+  NonNullable<DaylightCycleLike['constellations']>[number]
+>['stars'][number];
 
 export function createSolarSystemPreviewRenderer(
   host: HTMLElement | null,
   options: {
     onRenderRequested?: () => void;
   } = {}
-) {
+): SolarSystemPreviewController {
   if (!host) {
     return {
       resize() {},
@@ -230,14 +249,9 @@ export function getSolarSystemEventMarkerStates(
   return markers;
 }
 
-export function getSolarSystemSceneSignatures(cycle: DaylightCycleLike): {
-  stars: string;
-  orbits: string;
-  bodies: string;
-  shell: string;
-  events: string;
-  labels: string;
-} {
+export function getSolarSystemSceneSignatures(
+  cycle: DaylightCycleLike
+): SolarSystemSceneSignatures {
   return {
     stars: [
       Math.round((cycle.yearProgress ?? 0) * 24),
@@ -297,7 +311,7 @@ export function getSolarSystemSceneSignatures(cycle: DaylightCycleLike): {
   };
 }
 
-function syncBackgroundStars(root: THREE.Group, cycle: DaylightCycleLike) {
+function syncBackgroundStars(root: THREE.Group, cycle: DaylightCycleLike): void {
   root.clear();
   const starCount = 56;
   for (let index = 0; index < starCount; index += 1) {
@@ -321,7 +335,10 @@ function syncBackgroundStars(root: THREE.Group, cycle: DaylightCycleLike) {
   }
 }
 
-function syncSolarSystemOrbits(root: THREE.Group, cycle: DaylightCycleLike) {
+function syncSolarSystemOrbits(
+  root: THREE.Group,
+  cycle: DaylightCycleLike
+): void {
   root.clear();
   const bodies = cycle.orreryBodies ?? [];
   bodies.forEach((body) => {
@@ -396,7 +413,7 @@ function syncSolarSystemBodies(
   });
 }
 
-function syncSolarSystemShell(root: THREE.Group, cycle: DaylightCycleLike) {
+function syncSolarSystemShell(root: THREE.Group, cycle: DaylightCycleLike): void {
   root.clear();
   root.position.set(0, 0, 0);
   const shellRadius = 15.4;
@@ -491,7 +508,7 @@ function syncSolarSystemShell(root: THREE.Group, cycle: DaylightCycleLike) {
   });
 }
 
-function syncSolarSystemLabels(root: THREE.Group, cycle: DaylightCycleLike) {
+function syncSolarSystemLabels(root: THREE.Group, cycle: DaylightCycleLike): void {
   root.clear();
   const topBodies = (cycle.orreryBodies ?? []).filter((body) => body.type !== 'moon').slice(0, 4);
   topBodies.forEach((body, index) => {
@@ -502,7 +519,7 @@ function syncSolarSystemLabels(root: THREE.Group, cycle: DaylightCycleLike) {
   });
 }
 
-function syncSolarSystemEvents(root: THREE.Group, cycle: DaylightCycleLike) {
+function syncSolarSystemEvents(root: THREE.Group, cycle: DaylightCycleLike): void {
   root.clear();
   const markers = getSolarSystemEventMarkerStates(cycle);
   markers.forEach((marker, index) => {
@@ -566,7 +583,7 @@ function syncSolarSystemEvents(root: THREE.Group, cycle: DaylightCycleLike) {
   });
 }
 
-function createSolarSystemOrbitRing(body: OrreryBodyLike) {
+function createSolarSystemOrbitRing(body: OrreryBodyLike): THREE.Vector3[] {
   const points: THREE.Vector3[] = [];
   for (let index = 0; index <= 56; index += 1) {
     const angle = (index / 56) * Math.PI * 2;
@@ -575,7 +592,10 @@ function createSolarSystemOrbitRing(body: OrreryBodyLike) {
   return points;
 }
 
-function createSolarSystemBodyPosition(body: OrreryBodyLike, angle = body.angle * Math.PI * 2 - Math.PI / 2) {
+function createSolarSystemBodyPosition(
+  body: OrreryBodyLike,
+  angle = body.angle * Math.PI * 2 - Math.PI / 2
+): THREE.Vector3 {
   const orbitRadius = body.orbitRadius * 1.36;
   const minorRadius = orbitRadius * (1 - clamp(body.orbitEccentricity, 0, 0.82));
   const localX = Math.cos(angle) * orbitRadius;
@@ -590,7 +610,11 @@ function createSolarSystemBodyPosition(body: OrreryBodyLike, angle = body.angle 
   );
 }
 
-function createShellPoint(azimuth: number, phi: number, radius: number) {
+function createShellPoint(
+  azimuth: number,
+  phi: number,
+  radius: number
+): THREE.Vector3 {
   const sinPhi = Math.sin(phi);
   return new THREE.Vector3(
     Math.cos(azimuth) * sinPhi * radius,
@@ -610,8 +634,8 @@ function createShellAltitudePoint(
 
 function createShellConstellationPoint(
   anchor: THREE.Vector3,
-  star: DaylightCycleLike['constellations'][number]['stars'][number]
-) {
+  star: ConstellationStarLike
+): THREE.Vector3 {
   return new THREE.Vector3(
     anchor.x + (star.x - 0.5) * 2.6,
     anchor.y + (0.5 - star.y) * 1.8,
@@ -619,7 +643,7 @@ function createShellConstellationPoint(
   );
 }
 
-function createTextSprite(text: string, position: THREE.Vector3) {
+function createTextSprite(text: string, position: THREE.Vector3): THREE.Object3D {
   const canvas = document.createElement('canvas');
   canvas.width = 180;
   canvas.height = 38;
@@ -655,7 +679,7 @@ function createTextSprite(text: string, position: THREE.Vector3) {
   return sprite;
 }
 
-function formatSolarSystemLabel(body: OrreryBodyLike) {
+function formatSolarSystemLabel(body: OrreryBodyLike): string {
   if (body.id === 'sun') {
     return 'Sun';
   }
@@ -666,7 +690,7 @@ function formatSolarSystemLabel(body: OrreryBodyLike) {
   return name ?? body.id;
 }
 
-function getSolarSystemBodyScale(body: OrreryBodyLike) {
+function getSolarSystemBodyScale(body: OrreryBodyLike): number {
   if (body.type === 'sun') {
     return body.size * 1.08;
   }
@@ -676,6 +700,6 @@ function getSolarSystemBodyScale(body: OrreryBodyLike) {
   return Math.max(0.16, body.size * 0.68);
 }
 
-function clamp(value: number, min: number, max: number) {
+function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }

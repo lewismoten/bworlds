@@ -756,7 +756,10 @@ function samplePreviewOverworldKind(
   }
 }
 
-function syncPreviewFacingArrow(mesh: THREE.Mesh, facingAngle: number) {
+function syncPreviewFacingArrow(
+  mesh: THREE.Mesh,
+  facingAngle: number
+): void {
   const state = getPreviewFacingArrowState(facingAngle);
   mesh.position.set(state.x, state.y, state.z);
   mesh.rotation.x = Math.PI / 2;
@@ -764,7 +767,10 @@ function syncPreviewFacingArrow(mesh: THREE.Mesh, facingAngle: number) {
   mesh.rotation.z = 0;
 }
 
-function syncPreviewConstellations(root: THREE.Group, cycle: DaylightCycleLike) {
+function syncPreviewConstellations(
+  root: THREE.Group,
+  cycle: DaylightCycleLike
+): void {
   root.clear();
   const ring = cycle.celestialRing ?? [];
   const constellations = cycle.constellations ?? [];
@@ -866,7 +872,7 @@ function isPointInsideDirectionalShadowFrustum(
   );
 }
 
-function dotVector(a: PreviewPoint3D, b: PreviewPoint3D) {
+function dotVector(a: PreviewPoint3D, b: PreviewPoint3D): number {
   return a.x * b.x + a.y * b.y + a.z * b.z;
 }
 
@@ -887,7 +893,7 @@ function normalizeVector(vector: PreviewPoint3D): PreviewPoint3D {
   };
 }
 
-function syncPreviewEvents(root: THREE.Group, cycle: DaylightCycleLike) {
+function syncPreviewEvents(root: THREE.Group, cycle: DaylightCycleLike): void {
   root.clear();
   const events = cycle.visibleEvents ?? [];
   events.forEach((event, index) => {
@@ -981,7 +987,7 @@ function syncPreviewEvents(root: THREE.Group, cycle: DaylightCycleLike) {
   });
 }
 
-function syncMilkyWayBelt(root: THREE.Group, cycle: DaylightCycleLike) {
+function syncMilkyWayBelt(root: THREE.Group, cycle: DaylightCycleLike): void {
   root.clear();
   const belt = cycle.milkyWay;
   if (!belt) {
@@ -1038,7 +1044,7 @@ function syncMilkyWayBelt(root: THREE.Group, cycle: DaylightCycleLike) {
   );
 }
 
-function syncPreviewAuroras(root: THREE.Group, cycle: DaylightCycleLike) {
+function syncPreviewAuroras(root: THREE.Group, cycle: DaylightCycleLike): void {
   root.clear();
   const bands = cycle.auroraBands ?? [];
   bands.forEach((band) => {
@@ -1216,7 +1222,7 @@ function syncPreviewAuroras(root: THREE.Group, cycle: DaylightCycleLike) {
   });
 }
 
-function syncPreviewOrbits(root: THREE.Group, cycle: DaylightCycleLike) {
+function syncPreviewOrbits(root: THREE.Group, cycle: DaylightCycleLike): void {
   root.clear();
   const sunOrbit = getPreviewSunOrbitSpec(cycle);
 
@@ -1268,7 +1274,7 @@ function syncPreviewOrbits(root: THREE.Group, cycle: DaylightCycleLike) {
   });
 }
 
-function syncPreviewOrrery(root: THREE.Group, cycle: DaylightCycleLike) {
+function syncPreviewOrrery(root: THREE.Group, cycle: DaylightCycleLike): void {
   root.clear();
   const bodies = cycle.orreryBodies ?? [];
   root.position.set(0, -7.8, 0);
@@ -1378,7 +1384,11 @@ function syncPreviewOrrery(root: THREE.Group, cycle: DaylightCycleLike) {
   });
 }
 
-function createPreviewPoint(azimuth: number, phi: number, radius: number) {
+function createPreviewPoint(
+  azimuth: number,
+  phi: number,
+  radius: number
+): THREE.Vector3 {
   const sinPhi = Math.sin(phi);
   return new THREE.Vector3(
     Math.cos(azimuth) * sinPhi * radius,
@@ -1473,7 +1483,10 @@ function createOrreryPosition(
   );
 }
 
-function createOrreryLabel(body: OrreryBodyLike, position: THREE.Vector3) {
+function createOrreryLabel(
+  body: OrreryBodyLike,
+  position: THREE.Vector3
+): THREE.Object3D {
   const canvas = document.createElement('canvas');
   canvas.width = 160;
   canvas.height = 42;
@@ -1533,7 +1546,7 @@ export function getPreviewAuroraBandPath(
   });
 }
 
-function formatOrreryLabel(body: OrreryBodyLike) {
+function formatOrreryLabel(body: OrreryBodyLike): string {
   if (body.id === 'sun') {
     return 'Sun';
   }
@@ -1555,6 +1568,6 @@ function previewConstellationPoint(
   );
 }
 
-function clamp(value: number, min: number, max: number) {
+function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }

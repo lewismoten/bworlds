@@ -17,6 +17,7 @@ import {
   getActivePluginRegistry,
   type WorldEnvironmentLike,
   type SurfaceBoundaryRole3D,
+  type TileDefinitionLike,
   type WorldStateLike,
 } from '@bworlds/plugin-api';
 
@@ -45,6 +46,13 @@ type Render3DController = {
   canOccupy(state: Render3DState, nextX: number, nextY: number): boolean;
   render(state: Render3DState, options?: Render3DOptions): void;
   resize(width: number, height: number, pixelRatio?: number): void;
+};
+type ConstellationStarLike = NonNullable<
+  NonNullable<DaylightCycleState['constellations']>[number]
+>['stars'][number];
+type ShadowSettingsOptions = {
+  castShadow: boolean;
+  receiveShadow: boolean;
 };
 
 const TILE_SIZE = 1;
@@ -1110,7 +1118,10 @@ export function shouldRenderWorldTile({
   return facingDot >= rearCullDot;
 }
 
-function applyShadowSettings(node, options) {
+function applyShadowSettings(
+  node: THREE.Object3D,
+  options: ShadowSettingsOptions
+): void {
   node.traverse?.((child) => {
     if (child && child.isMesh) {
       child.castShadow = options.castShadow;
@@ -1119,7 +1130,7 @@ function applyShadowSettings(node, options) {
   });
 }
 
-function createStarField() {
+function createStarField(): THREE.Group {
   const root = new THREE.Group();
 
   for (let index = 0; index < 360; index += 1) {
@@ -1146,7 +1157,11 @@ function createStarField() {
   return root;
 }
 
-function syncStarField(root, cycle, starDensity) {
+function syncStarField(
+  root: THREE.Group,
+  cycle: DaylightCycleState,
+  starDensity: number
+): void {
   const seasonalRotation = cycle.yearProgress * Math.PI * 2;
   root.children.forEach((child, index) => {
     if (!(child instanceof THREE.Sprite)) {
@@ -1172,7 +1187,10 @@ function syncStarField(root, cycle, starDensity) {
   });
 }
 
-function syncConstellationSky(root, cycle) {
+function syncConstellationSky(
+  root: THREE.Group,
+  cycle: DaylightCycleState
+): void {
   root.clear();
   const constellations = cycle.constellations ?? [];
   if (constellations.length === 0) {
@@ -1249,7 +1267,10 @@ function syncConstellationSky(root, cycle) {
   });
 }
 
-function createConstellationPoint(anchor, star) {
+function createConstellationPoint(
+  anchor: THREE.Vector3,
+  star: ConstellationStarLike
+): THREE.Vector3 {
   return new THREE.Vector3(
     anchor.x + (star.x - 0.5) * 10,
     anchor.y + (0.5 - star.y) * 6,
@@ -1257,7 +1278,11 @@ function createConstellationPoint(anchor, star) {
   );
 }
 
-function createSkyPosition(theta, phi, radius) {
+function createSkyPosition(
+  theta: number,
+  phi: number,
+  radius: number
+): THREE.Vector3 {
   const sinPhi = Math.sin(phi);
   return new THREE.Vector3(
     Math.cos(theta) * sinPhi * radius,
@@ -1266,7 +1291,10 @@ function createSkyPosition(theta, phi, radius) {
   );
 }
 
-function syncCelestialEvents(root, cycle) {
+function syncCelestialEvents(
+  root: THREE.Group,
+  cycle: DaylightCycleState
+): void {
   root.clear();
   const events = cycle.visibleEvents ?? [];
   events.forEach((event, index) => {
@@ -1352,7 +1380,10 @@ function syncCelestialEvents(root, cycle) {
   });
 }
 
-function syncMilkyWayBelt(root, cycle) {
+function syncMilkyWayBelt(
+  root: THREE.Group,
+  cycle: DaylightCycleState
+): void {
   root.clear();
   const belt = cycle.milkyWay;
   if (!belt) {
@@ -1413,7 +1444,10 @@ function syncMilkyWayBelt(root, cycle) {
   );
 }
 
-function syncAuroraBands(root, cycle) {
+function syncAuroraBands(
+  root: THREE.Group,
+  cycle: DaylightCycleState
+): void {
   root.clear();
   const bands = cycle.auroraBands ?? [];
   bands.forEach((band) => {
@@ -1589,12 +1623,16 @@ function syncAuroraBands(root, cycle) {
   });
 }
 
-function createSkyAltitudePosition(azimuth, altitude, radius) {
+function createSkyAltitudePosition(
+  azimuth: number,
+  altitude: number,
+  radius: number
+): THREE.Vector3 {
   const phi = ((1 - altitude) * Math.PI) / 2;
   return createSkyPosition(azimuth, phi, radius);
 }
 
-function createMoonSprite() {
+function createMoonSprite(): THREE.Sprite {
   const texture = new THREE.CanvasTexture(buildMoonPhaseCanvas(4, 1));
   texture.colorSpace = THREE.SRGBColorSpace;
   texture.needsUpdate = true;
@@ -1610,7 +1648,7 @@ function createMoonSprite() {
   return sprite;
 }
 
-function createSunSprite() {
+function createSunSprite(): THREE.Sprite {
   const texture = new THREE.CanvasTexture(buildSunCanvas());
   texture.colorSpace = THREE.SRGBColorSpace;
   texture.needsUpdate = true;
@@ -1627,7 +1665,7 @@ function createSunSprite() {
   return sprite;
 }
 
-function buildSunCanvas() {
+function buildSunCanvas(): HTMLCanvasElement {
   const canvas = document.createElement('canvas');
   canvas.width = 128;
   canvas.height = 128;
@@ -1648,7 +1686,11 @@ function buildSunCanvas() {
   return canvas;
 }
 
-function updateMoonPhaseTexture(texture, phaseIndex, illumination) {
+function updateMoonPhaseTexture(
+  texture: THREE.Texture & { image: HTMLCanvasElement },
+  phaseIndex: number,
+  illumination: number
+): void {
   const canvas = texture.image;
   const context = canvas.getContext('2d');
   if (!context) {
@@ -1658,7 +1700,10 @@ function updateMoonPhaseTexture(texture, phaseIndex, illumination) {
   paintMoonPhaseCanvas(context, canvas, illumination, phaseDirection);
 }
 
-function buildMoonPhaseCanvas(phaseIndex, illumination) {
+function buildMoonPhaseCanvas(
+  phaseIndex: number,
+  illumination: number
+): HTMLCanvasElement {
   const canvas = document.createElement('canvas');
   canvas.width = 128;
   canvas.height = 128;
@@ -1671,7 +1716,12 @@ function buildMoonPhaseCanvas(phaseIndex, illumination) {
   return canvas;
 }
 
-function paintMoonPhaseCanvas(context, canvas, illumination, phaseDirection) {
+function paintMoonPhaseCanvas(
+  context: CanvasRenderingContext2D,
+  canvas: HTMLCanvasElement,
+  illumination: number,
+  phaseDirection: number
+): void {
   context.clearRect(0, 0, canvas.width, canvas.height);
   const center = canvas.width / 2;
   const radius = canvas.width * 0.34;
@@ -1706,7 +1756,7 @@ function paintMoonPhaseCanvas(context, canvas, illumination, phaseDirection) {
   }
 }
 
-function getTileDefinitionFromRegistry(kind) {
+function getTileDefinitionFromRegistry(kind: string): TileDefinitionLike {
   return getActivePluginRegistry().resolveTileDefinition(
     kind,
     FALLBACK_TILE_DEFINITION
