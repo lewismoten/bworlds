@@ -11,6 +11,7 @@ import {
   getRenderChurnStats,
   getSharedBoxGeometry,
   getSharedPlaneGeometry,
+  getWaterFloorBodyProfile,
   buildPendingWorldBuildQueue,
   getDecoratedTileSurfaceHeight,
   getBoundaryPriority,
@@ -136,6 +137,28 @@ describe('render3d visibility helpers', () => {
     expect(getSharedBoxGeometry(1, 0.03, 1)).not.toBe(
       getSharedBoxGeometry(1, 0.28, 1)
     );
+  });
+
+  it('identifies when water can use a single full-tile body mesh', () => {
+    expect(
+      getWaterFloorBodyProfile({ north: 0, east: 0, south: 0, west: 0 })
+    ).toEqual({
+      width: 1,
+      depth: 1,
+      centerX: 0,
+      centerZ: 0,
+      fillsTile: true,
+    });
+
+    expect(
+      getWaterFloorBodyProfile({ north: 0.1, east: 0.2, south: 0.1, west: 0 })
+    ).toEqual({
+      width: 0.8,
+      depth: 0.8,
+      centerX: -0.1,
+      centerZ: 0,
+      fillsTile: false,
+    });
   });
 
   it('counts descendant objects inside tagged tree roots for per-tree budget diagnostics', () => {

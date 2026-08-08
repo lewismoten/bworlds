@@ -226,6 +226,27 @@ const ownedDisposableMaterials = new WeakSet<object>();
 const sharedBoxGeometryCache = new Map<string, THREE.BoxGeometry>();
 const sharedPlaneGeometryCache = new Map<string, THREE.PlaneGeometry>();
 
+export function getWaterFloorBodyProfile(inset: {
+  north: number;
+  east: number;
+  south: number;
+  west: number;
+}) {
+  const width = Math.max(0.1, TILE_SIZE - inset.west - inset.east);
+  const depth = Math.max(0.1, TILE_SIZE - inset.north - inset.south);
+  return {
+    width,
+    depth,
+    centerX: (inset.west - inset.east) * 0.5,
+    centerZ: (inset.north - inset.south) * 0.5,
+    fillsTile:
+      inset.north === 0 &&
+      inset.east === 0 &&
+      inset.south === 0 &&
+      inset.west === 0,
+  };
+}
+
 export function create3DRenderer(host: HTMLElement): Render3DController {
   const renderer = new THREE.WebGLRenderer({
     antialias: true,
@@ -1070,11 +1091,23 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     buildCache: TileBuildCache | null
   ) {
     const material = getTileMaterial(kind, getTileVariantIndex(kind, tileX, tileY));
-    const inset = getWaterBodyInset(tileX, tileY, kind, buildCache);
-    const width = Math.max(0.1, TILE_SIZE - inset.west - inset.east);
-    const depth = Math.max(0.1, TILE_SIZE - inset.north - inset.south);
-    const centerX = (inset.west - inset.east) * 0.5;
-    const centerZ = (inset.north - inset.south) * 0.5;
+    const body = getWaterFloorBodyProfile(
+      getWaterBodyInset(tileX, tileY, kind, buildCache)
+    );
+
+    if (body.fillsTile) {
+      const floorMesh = new THREE.Mesh(
+        getSharedBoxGeometry(TILE_SIZE, WATER_FLOOR_THICKNESS, TILE_SIZE),
+        material
+      );
+      floorMesh.position.set(
+        tileX * TILE_SIZE,
+        surfaceHeight - WATER_FLOOR_THICKNESS * 0.5,
+        tileY * TILE_SIZE
+      );
+      floorMesh.receiveShadow = true;
+      return floorMesh;
+    }
 
     const group = new THREE.Group();
     group.position.set(tileX * TILE_SIZE, 0, tileY * TILE_SIZE);
@@ -1089,13 +1122,13 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     group.add(surfaceMesh);
 
     const bodyMesh = new THREE.Mesh(
-      getSharedBoxGeometry(width, WATER_FLOOR_THICKNESS, depth),
+      getSharedBoxGeometry(body.width, WATER_FLOOR_THICKNESS, body.depth),
       material
     );
     bodyMesh.position.set(
-      centerX,
+      body.centerX,
       surfaceHeight - WATER_FLOOR_THICKNESS * 0.5,
-      centerZ
+      body.centerZ
     );
     bodyMesh.receiveShadow = true;
     group.add(bodyMesh);
