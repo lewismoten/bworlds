@@ -1,30 +1,41 @@
 import { describe, expect, it } from 'vitest';
 import { createOverworldAnchorsRuntimePlugin } from './index.ts';
-import type { OverworldAnchorSet } from '@bworlds/plugin-api';
+import type { OverworldAnchorSet, OverworldSignals } from '@bworlds/plugin-api';
+
+const plugin = createOverworldAnchorsRuntimePlugin();
+type ResolveOverworldAnchorsPayload = Parameters<
+  NonNullable<typeof plugin.resolveOverworldAnchors>
+>[0];
+
+function createAnchorSignals(): OverworldSignals {
+  return {
+    continent: 0.6,
+    elevation: 0.3,
+    moisture: 0.4,
+    riverSignal: 0.84,
+    roadSignal: 0.45,
+  };
+}
+
+function createAnchorPayload(
+  overrides: Partial<ResolveOverworldAnchorsPayload> = {}
+): ResolveOverworldAnchorsPayload {
+  return {
+    seed: 'spec',
+    x: 10,
+    y: 12,
+    sampleTerrainSignals() {
+      return createAnchorSignals();
+    },
+    ...overrides,
+  };
+}
 
 describe('runtime overworld anchors', () => {
   it('returns deterministic nearby anchor sets for the same input', () => {
-    const plugin = createOverworldAnchorsRuntimePlugin();
-    const sampleTerrainSignals = () => ({
-      continent: 0.6,
-      elevation: 0.3,
-      moisture: 0.4,
-      riverSignal: 0.84,
-      roadSignal: 0.45,
-    });
-
-    const first = plugin.resolveOverworldAnchors?.({
-      seed: 'spec',
-      x: 10,
-      y: 12,
-      sampleTerrainSignals,
-    } as any);
-    const second = plugin.resolveOverworldAnchors?.({
-      seed: 'spec',
-      x: 10,
-      y: 12,
-      sampleTerrainSignals,
-    } as any);
+    const payload = createAnchorPayload();
+    const first = plugin.resolveOverworldAnchors?.(payload);
+    const second = plugin.resolveOverworldAnchors?.(payload);
 
     expect(first).toEqual(second);
     expect(first).toEqual(
@@ -37,21 +48,22 @@ describe('runtime overworld anchors', () => {
   });
 
   it('keeps generated poi anchors spaced away from each other', () => {
-    const plugin = createOverworldAnchorsRuntimePlugin();
-    const sampleTerrainSignals = () => ({
-      continent: 0.6,
-      elevation: 0.45,
-      moisture: 0.4,
-      riverSignal: 0.3,
-      roadSignal: 0.45,
-    });
-
-    const anchors = (plugin.resolveOverworldAnchors?.({
-      seed: 'spacing-spec',
-      x: 0,
-      y: 0,
-      sampleTerrainSignals,
-    } as any) ?? {
+    const anchors = (plugin.resolveOverworldAnchors?.(
+      createAnchorPayload({
+        seed: 'spacing-spec',
+        x: 0,
+        y: 0,
+        sampleTerrainSignals() {
+          return {
+            continent: 0.6,
+            elevation: 0.45,
+            moisture: 0.4,
+            riverSignal: 0.3,
+            roadSignal: 0.45,
+          };
+        },
+      })
+    ) ?? {
         townAnchors: [],
         bridgeAnchors: [],
         poiAnchors: [],

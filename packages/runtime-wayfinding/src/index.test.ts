@@ -6,33 +6,41 @@ type WayfindingTestTile = {
   note?: string;
 };
 
+const plugin = createWayfindingRuntimePlugin();
+type WayfindingDecorateTownPayload = Parameters<
+  NonNullable<typeof plugin.decorateTownTile>
+>[0];
+
+function createWayfindingDecorateTownPayload(
+  tile: WayfindingTestTile
+): WayfindingDecorateTownPayload {
+  return {
+    context: { id: 'town:test', type: 'town', depth: 1 },
+    x: 4,
+    y: 0,
+    seed: 'spec',
+    tile,
+  };
+}
+
 describe('runtime wayfinding', () => {
   it('decorates the town road at the expected market location', () => {
-    const plugin = createWayfindingRuntimePlugin();
     const tile: WayfindingTestTile = { kind: 'road' };
 
-    plugin.decorateTownTile?.({
-      context: { id: 'town:test', type: 'town', depth: 1 },
-      x: 4,
-      y: 0,
-      seed: 'spec',
-      tile,
-    } as any);
+    plugin.decorateTownTile?.(createWayfindingDecorateTownPayload(tile));
 
     expect(tile.note).toBe('The market is busy today.');
   });
 
   it('ignores unrelated town tiles', () => {
-    const plugin = createWayfindingRuntimePlugin();
     const tile: WayfindingTestTile = { kind: 'floor' };
 
     plugin.decorateTownTile?.({
-      context: { id: 'town:test', type: 'town', depth: 1 },
+      ...createWayfindingDecorateTownPayload(tile),
       x: 1,
       y: 1,
-      seed: 'spec',
       tile,
-    } as any);
+    });
 
     expect(tile.note).toBeUndefined();
   });
