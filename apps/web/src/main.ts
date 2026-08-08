@@ -19,7 +19,11 @@ import {
 } from '@bworlds/worldgen';
 import type { WorldEnvironmentLike } from '@bworlds/plugin-api';
 import './styles.css';
-import { drawTimeWheel, getCelestialDateLabel } from './timekeeper.ts';
+import {
+  drawTimeWheel,
+  getCelestialDateLabel,
+  getMoonOrbitProgress,
+} from './timekeeper.ts';
 import { createCelestialPreviewRenderer } from './celestial-preview.ts';
 import { drawCompassDial, easeAngle } from './compass.ts';
 import {
@@ -70,7 +74,7 @@ root.innerHTML = `
           <h2>Content Packs</h2>
           <form id="content-pack-form" class="pack-form"></form>
         </div>
-        <div class="card">
+        <div class="card" id="celestial-tools-card">
           <div class="inspector-header">
             <h2>Celestial Tools</h2>
             <div class="inspector-tabs" role="tablist" aria-label="Celestial tools">
@@ -159,6 +163,12 @@ root.innerHTML = `
             <p class="inspector-note">
               The needle eases into place as you turn, then settles back onto north.
             </p>
+            <div class="time-skip-controls">
+              <button id="face-north" type="button">North</button>
+              <button id="face-east" type="button">East</button>
+              <button id="face-south" type="button">South</button>
+              <button id="face-west" type="button">West</button>
+            </div>
           </section>
         </div>
         <div class="card">
@@ -196,6 +206,14 @@ const celestialPreviewHost =
   document.querySelector<HTMLElement>('#celestial-preview');
 const compassDialCanvas =
   document.querySelector<HTMLCanvasElement>('#compass-dial');
+const faceNorthButton =
+  document.querySelector<HTMLButtonElement>('#face-north');
+const faceEastButton =
+  document.querySelector<HTMLButtonElement>('#face-east');
+const faceSouthButton =
+  document.querySelector<HTMLButtonElement>('#face-south');
+const faceWestButton =
+  document.querySelector<HTMLButtonElement>('#face-west');
 const status = document.querySelector<HTMLElement>('#status');
 const toggleButton = document.querySelector<HTMLButtonElement>('#toggle-view');
 const actionButton = document.querySelector<HTMLButtonElement>('#action');
@@ -231,8 +249,13 @@ const modelPlusSeasonButton =
   document.querySelector<HTMLButtonElement>('#model-plus-season');
 const freezeTimeButton =
   document.querySelector<HTMLButtonElement>('#time-freeze-toggle');
+const celestialToolsCard =
+  document.querySelector<HTMLElement>('#celestial-tools-card');
 const inspectorTabButtons = Array.from(
   document.querySelectorAll<HTMLButtonElement>('.inspector-tab')
+);
+const sidebarCards = Array.from(
+  document.querySelectorAll<HTMLElement>('.sidebar > .card')
 );
 const inspectorPanels = {
   timekeeper: document.querySelector<HTMLElement>('#panel-timekeeper'),
@@ -290,6 +313,7 @@ const dialState = {
 };
 const compassState = {
   angle: 0,
+  velocity: 0,
   initialized: false,
 };
 const MOON_PHASE_NAMES = [
@@ -668,6 +692,13 @@ function setInspectorTab(tabId: string | undefined) {
     panel?.classList.toggle('is-hidden', !isActive);
     panel?.setAttribute('aria-hidden', String(!isActive));
   });
+  sidebarCards.forEach((card) => {
+    if (card === celestialToolsCard) {
+      card.classList.remove('is-hidden');
+      return;
+    }
+    card.classList.add('is-hidden');
+  });
   saveSession();
 }
 
@@ -896,7 +927,7 @@ function updateDisplayedCycle(cycle: ReturnType<typeof getDaylightCycleState>) {
   if (!dialState.initialized) {
     dialState.dayProgress = cycle.dayProgress;
     dialState.yearProgress = cycle.yearProgress;
-    dialState.moonPhaseProgress = cycle.moonPhaseIndex / 8;
+    dialState.moonPhaseProgress = getMoonOrbitProgress(cycle);
     dialState.sunriseProgress = cycle.sunriseProgress;
     dialState.sunsetProgress = cycle.sunsetProgress;
     dialState.daylightDuration = cycle.daylightDuration;
@@ -914,7 +945,7 @@ function updateDisplayedCycle(cycle: ReturnType<typeof getDaylightCycleState>) {
     );
     dialState.moonPhaseProgress = easeWrappedProgress(
       dialState.moonPhaseProgress,
-      cycle.moonPhaseIndex / 8,
+      getMoonOrbitProgress(cycle),
       0.18
     );
     dialState.sunriseProgress = easeWrappedProgress(
@@ -939,6 +970,7 @@ function updateDisplayedCycle(cycle: ReturnType<typeof getDaylightCycleState>) {
     ...cycle,
     dayProgress: dialState.dayProgress,
     yearProgress: dialState.yearProgress,
+    moonAngle: dialState.moonPhaseProgress * Math.PI * 2 - Math.PI / 2,
     sunriseProgress: dialState.sunriseProgress,
     sunsetProgress: dialState.sunsetProgress,
     daylightDuration: dialState.daylightDuration,
@@ -965,8 +997,20 @@ function updateDisplayedCompass(targetAngle: number) {
     return compassState.angle;
   }
 
-  compassState.angle = easeAngle(compassState.angle, targetAngle, 0.12);
+  let delta = targetAngle - compassState.angle;
+  while (delta > Math.PI) delta -= Math.PI * 2;
+  while (delta < -Math.PI) delta += Math.PI * 2;
+  compassState.velocity += delta * 0.08;
+  compassState.velocity *= 0.74;
+  compassState.angle += compassState.velocity;
+  compassState.angle = easeAngle(compassState.angle, targetAngle, 0.08);
   return compassState.angle;
+}
+
+function faceDirection(angle: number) {
+  state.player.facing = normalizeAngle(angle);
+  saveSession();
+  render();
 }
 
 function loop(timestamp) {
@@ -1057,6 +1101,10 @@ inspectorTabButtons.forEach((button) => {
     setInspectorTab(button.id.replace('tab-', ''));
   });
 });
+faceNorthButton?.addEventListener('click', () => faceDirection(-Math.PI / 2));
+faceEastButton?.addEventListener('click', () => faceDirection(0));
+faceSouthButton?.addEventListener('click', () => faceDirection(Math.PI / 2));
+faceWestButton?.addEventListener('click', () => faceDirection(Math.PI));
 root.querySelectorAll<HTMLButtonElement>('[data-time-preset]').forEach((button) => {
   button.addEventListener('click', () => {
     const preset = button.dataset.timePreset;

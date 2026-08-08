@@ -78,7 +78,7 @@ export function drawCompassDial(
 
   context.save();
   context.rotate(facingAngle - Math.PI / 2);
-  context.fillStyle = '#55d6be';
+  context.fillStyle = '#d54343';
   context.beginPath();
   context.moveTo(0, -radius + 24);
   context.lineTo(10, 10);
@@ -87,7 +87,7 @@ export function drawCompassDial(
   context.closePath();
   context.fill();
 
-  context.fillStyle = '#ffbf69';
+  context.fillStyle = '#0b1016';
   context.beginPath();
   context.moveTo(0, radius - 24);
   context.lineTo(8, -6);

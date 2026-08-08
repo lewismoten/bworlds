@@ -67,3 +67,13 @@ add a outer globe of stars in the sky that appear at night with procedurally gen
 - [x] The constellations disappear from the celestial model.
 - [x] Show -1d and -1h on the celestial model
 - [x] The arrows on teh time keeper are still on the left side instead of at the top of the rings in the center.
+- [x] The moon phase ring should move relative to where the moon is located, and the planets shadow relative to the sun.
+- [x] The moon phase ring should rotate smooethly and ease-in to position when jumping to different times.
+- [x] The down-arrow on the time keeper dial should have a black outline so it can be seen during the day
+- [x] The division between day time and night time on the day/night ring should fade between the two.
+- [x] The night time part of the day/night ring should have stars and a moon with the current phase
+- [x] The day time part of the day/night ring should have a blue sky, clouds, and a bright sun
+- [x] The compass should appear more wobbly as it changes and tries to orient back to the north position.
+- [x] Clicking the Trimekeeper/Model/Compass tabs should hide all aother content except the selected content
+- [x] The compass should have four buttons to make me face North, East, West, or South
+- [x] The compass needle should be red/black. Red should point north.
