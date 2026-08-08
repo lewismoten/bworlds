@@ -85,6 +85,7 @@ type Render3DController = {
     emptyGroupCount: number;
     oneChildGroupCount: number;
     matrixAutoUpdateCount: number;
+    staticMatrixAutoUpdateCount: number;
     pointsCount: number;
     lineObjectCount: number;
     cameraCount: number;
@@ -170,6 +171,7 @@ type SceneResourceStats = {
   emptyGroupCount: number;
   oneChildGroupCount: number;
   matrixAutoUpdateCount: number;
+  staticMatrixAutoUpdateCount: number;
   pointsCount: number;
   lineObjectCount: number;
   cameraCount: number;
@@ -786,6 +788,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       emptyGroupCount: sceneResourceStats.emptyGroupCount,
       oneChildGroupCount: sceneResourceStats.oneChildGroupCount,
       matrixAutoUpdateCount: sceneResourceStats.matrixAutoUpdateCount,
+      staticMatrixAutoUpdateCount: sceneResourceStats.staticMatrixAutoUpdateCount,
       pointsCount: sceneResourceStats.pointsCount,
       lineObjectCount: sceneResourceStats.lineObjectCount,
       cameraCount: sceneResourceStats.cameraCount,
@@ -2008,6 +2011,7 @@ export function collectSceneResourceStats(
   let emptyGroupCount = 0;
   let oneChildGroupCount = 0;
   let matrixAutoUpdateCount = 0;
+  let staticMatrixAutoUpdateCount = 0;
   let pointsCount = 0;
   let lineObjectCount = 0;
   let cameraCount = 0;
@@ -2038,6 +2042,9 @@ export function collectSceneResourceStats(
     }
     if ((child as THREE.Object3D & { matrixAutoUpdate?: boolean }).matrixAutoUpdate) {
       matrixAutoUpdateCount += 1;
+      if (isLikelyStaticTransformObject(child as THREE.Object3D)) {
+        staticMatrixAutoUpdateCount += 1;
+      }
     }
     if ((child as THREE.Object3D).type === 'Group') {
       groupCount += 1;
@@ -2136,6 +2143,7 @@ export function collectSceneResourceStats(
     emptyGroupCount,
     oneChildGroupCount,
     matrixAutoUpdateCount,
+    staticMatrixAutoUpdateCount,
     pointsCount,
     lineObjectCount,
     cameraCount,
@@ -2170,6 +2178,38 @@ function isLineObjectType(type: string): boolean {
 
 function isCameraObjectType(object: Pick<THREE.Object3D, 'type'> & { isCamera?: boolean }): boolean {
   return object.isCamera === true || object.type.endsWith('Camera');
+}
+
+const DYNAMIC_TRANSFORM_USER_DATA_KEYS = new Set([
+  'poiWindResponder',
+  'lighthouseBeamPivot',
+  'lighthouseBeam',
+  'observatoryDome',
+  'observatoryTelescope',
+  'forestFirefly',
+]);
+
+function isLikelyStaticTransformObject(
+  object: THREE.Object3D & { userData?: Record<string, unknown> }
+): boolean {
+  if (object.isLight || isCameraObjectType(object)) {
+    return false;
+  }
+  return !hasDynamicTransformUserData(object.userData);
+}
+
+function hasDynamicTransformUserData(
+  userData: Record<string, unknown> | undefined
+): boolean {
+  if (!userData) {
+    return false;
+  }
+  for (const key of DYNAMIC_TRANSFORM_USER_DATA_KEYS) {
+    if (key in userData) {
+      return true;
+    }
+  }
+  return false;
 }
 
 function traverseSceneGraphWithDepth(

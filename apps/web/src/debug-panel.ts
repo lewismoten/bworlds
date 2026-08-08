@@ -45,6 +45,7 @@ export type DebugSnapshot = {
   emptyGroupCount?: number;
   oneChildGroupCount?: number;
   matrixAutoUpdateCount?: number;
+  staticMatrixAutoUpdateCount?: number;
   pointsCount: number;
   lineObjectCount?: number;
   cameraCount?: number;

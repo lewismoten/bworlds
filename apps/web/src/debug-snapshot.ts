@@ -144,6 +144,7 @@ export type DebugSnapshotExport = {
     emptyGroupCount: number;
     oneChildGroupCount: number;
     matrixAutoUpdateCount: number;
+    staticMatrixAutoUpdateCount: number;
     spriteCount: number;
     pointsCount: number;
     lineObjectCount: number;
@@ -293,6 +294,8 @@ export function buildDebugSnapshotExport(
       emptyGroupCount: options.snapshot.emptyGroupCount ?? 0,
       oneChildGroupCount: options.snapshot.oneChildGroupCount ?? 0,
       matrixAutoUpdateCount: options.snapshot.matrixAutoUpdateCount ?? 0,
+      staticMatrixAutoUpdateCount:
+        options.snapshot.staticMatrixAutoUpdateCount ?? 0,
       spriteCount: options.snapshot.spriteCount,
       pointsCount: options.snapshot.pointsCount,
       lineObjectCount: options.snapshot.lineObjectCount ?? 0,

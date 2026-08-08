@@ -78,6 +78,7 @@ describe('render3d visibility helpers', () => {
       emptyGroupCount: 0,
       oneChildGroupCount: 0,
       matrixAutoUpdateCount: 0,
+      staticMatrixAutoUpdateCount: 0,
       pointsCount: 0,
       lineObjectCount: 0,
       cameraCount: 0,
@@ -174,6 +175,7 @@ describe('render3d visibility helpers', () => {
       emptyGroupCount: 0,
       oneChildGroupCount: 0,
       matrixAutoUpdateCount: 0,
+      staticMatrixAutoUpdateCount: 0,
       pointsCount: 1,
       lineObjectCount: 2,
       cameraCount: 1,
@@ -233,6 +235,7 @@ describe('render3d visibility helpers', () => {
       emptyGroupCount: 0,
       oneChildGroupCount: 0,
       matrixAutoUpdateCount: 0,
+      staticMatrixAutoUpdateCount: 0,
       pointsCount: 2,
       lineObjectCount: 0,
       cameraCount: 0,
@@ -316,6 +319,7 @@ describe('render3d visibility helpers', () => {
       emptyGroupCount: 0,
       oneChildGroupCount: 1,
       matrixAutoUpdateCount: 0,
+      staticMatrixAutoUpdateCount: 0,
       pointsCount: 0,
       lineObjectCount: 0,
       cameraCount: 0,
@@ -369,6 +373,7 @@ describe('render3d visibility helpers', () => {
       emptyGroupCount: 1,
       oneChildGroupCount: 3,
       matrixAutoUpdateCount: 0,
+      staticMatrixAutoUpdateCount: 0,
       pointsCount: 0,
       lineObjectCount: 0,
       cameraCount: 0,
@@ -389,7 +394,7 @@ describe('render3d visibility helpers', () => {
     });
   });
 
-  it('counts objects that keep matrixAutoUpdate enabled', () => {
+  it('counts static objects that keep matrixAutoUpdate enabled separately from tagged dynamic responders', () => {
     const staticLeaf = createMockObject3D(
       createMockMaterial(),
       [],
@@ -405,7 +410,11 @@ describe('render3d visibility helpers', () => {
       createMockMaterial(),
       [],
       createMockStatGeometry('matrix-animated-leaf', 6),
-      {},
+      {
+        poiWindResponder: {
+          axis: 'z',
+        },
+      },
       'Mesh',
       false,
       false,
@@ -450,6 +459,7 @@ describe('render3d visibility helpers', () => {
       emptyGroupCount: 0,
       oneChildGroupCount: 1,
       matrixAutoUpdateCount: 2,
+      staticMatrixAutoUpdateCount: 1,
       pointsCount: 0,
       lineObjectCount: 0,
       cameraCount: 0,

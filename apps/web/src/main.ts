@@ -118,6 +118,7 @@ import {
   buildDebugSnapshotExport,
   formatDebugSnapshotFilename,
 } from './debug-snapshot.ts';
+import { shouldCollectDebugSnapshot } from './debug-sampling.ts';
 import { collectGraphicsCapabilities } from './graphics-capabilities.ts';
 import {
   findRandomTileDestination,
@@ -1047,6 +1048,7 @@ const pageVisibilityState = {
 };
 const debugSnapshotState = {
   latestSnapshot: null as DebugSnapshot | null,
+  lastSampleNowMs: null as number | null,
 };
 const debugResourceTrendState = {
   materialSamples: [] as Array<{
@@ -1630,11 +1632,200 @@ function loadSavedWorldSeed(): void {
   applyWorldSeed(parsed?.worldSeed ?? DEFAULT_WORLD_SEED);
 }
 
-function downloadCurrentDebugSnapshot(): void {
-  const latestSnapshot = debugSnapshotState.latestSnapshot;
-  if (!latestSnapshot) {
-    return;
+function collectCurrentDebugSnapshot(
+  nowMs: number,
+  spatial: ReturnType<typeof getPlayerSpatialSummary>,
+  options: {
+    recordDiagnostics: boolean;
   }
+): DebugSnapshot {
+  const rendererStats = renderer3d.getStats();
+  const worldStats = getDebugWorldStats(
+    state as typeof state & {
+      activeCharacterIds?: string[];
+      characterRoster?: {
+        characters: Array<{
+          availability: 'active' | 'available' | 'dropped';
+        }>;
+      };
+    }
+  );
+  const performanceStats = performance as PerformanceWithMemory;
+  const devicePixelRatio = window.devicePixelRatio || 1;
+  const appliedRenderPixelRatio = Math.min(devicePixelRatio, 2);
+
+  if (options.recordDiagnostics) {
+    recordMaterialGrowthSample(debugResourceTrendState.materialSamples, {
+      nowMs,
+      materialCount: rendererStats.materialCount,
+      playerX: spatial.playerX,
+      playerY: spatial.playerY,
+    });
+    recordRendererChurnSample(debugResourceTrendState.rendererChurnSamples, {
+      nowMs,
+      tileNodeBuildsPerSecond: rendererStats.tileNodeBuildsPerSecond,
+      playerX: spatial.playerX,
+      playerY: spatial.playerY,
+    });
+  }
+
+  const heapUsedMb =
+    typeof performanceStats.memory?.usedJSHeapSize === 'number'
+      ? performanceStats.memory.usedJSHeapSize / (1024 * 1024)
+      : null;
+  if (options.recordDiagnostics && heapUsedMb !== null) {
+    recordHeapUsageSample(debugResourceTrendState.heapSamples, {
+      nowMs,
+      heapUsedMb,
+      playerX: spatial.playerX,
+      playerY: spatial.playerY,
+    });
+  }
+
+  const debugSnapshot: DebugSnapshot = {
+    fps: 1000 / Math.max(1, renderBudgetState.currentFrameMs),
+    averageFps: renderBudgetState.averageFps,
+    frameMs: renderBudgetState.currentFrameMs,
+    worstRecentFrameMs: renderBudgetState.worstRecentFrameMs,
+    targetFps: renderBudgetState.targetFps,
+    performanceTier: resolvePerformanceTier(renderBudgetState.smoothedFrameMs),
+    renderQualityLevel: formatRenderQualityLevel(
+      getRenderQualityLevel(renderBudgetState)
+    ),
+    renderQualityLimiters: getRenderQualityLimiters(renderBudgetState).join(', '),
+    playerLevel: normalizePlayerLevel(state.playerLevel),
+    visibilityRadius: renderBudgetState.visibilityRadius,
+    drawCalls: rendererStats.drawCalls,
+    triangles: rendererStats.triangles,
+    points: rendererStats.points,
+    lines: rendererStats.lines,
+    renderWidth: Math.max(1, Math.floor(viewport2d.width)),
+    renderHeight: Math.max(1, Math.floor(viewport2d.height)),
+    devicePixelRatio,
+    renderScale: getCurrentRenderScale(
+      appliedRenderPixelRatio,
+      devicePixelRatio
+    ),
+    sceneChildCount: rendererStats.sceneChildCount,
+    visibleTileCount: rendererStats.visibleTileCount,
+    visibleTreeCount: rendererStats.visibleTreeCount,
+    loadedChunkCount: rendererStats.visibleTileCount,
+    chunkGenerationQueueSize: rendererStats.pendingTileCount,
+    pendingTileCount: rendererStats.pendingTileCount,
+    averagePendingFlushTiles: rendererStats.averagePendingFlushTiles,
+    maxPendingFlushTiles: rendererStats.maxPendingFlushTiles,
+    averageTileBuildMs: rendererStats.averageTileBuildMs,
+    maxTileBuildMs: rendererStats.maxTileBuildMs,
+    tileNodeBuildsPerSecond: rendererStats.tileNodeBuildsPerSecond,
+    tileBuildsPerSecond: rendererStats.tileBuildsPerSecond,
+    lodChecksPerSecond: rendererStats.lodChecksPerSecond,
+    lodReplacementsPerSecond: rendererStats.lodReplacementsPerSecond,
+    object3dCount: rendererStats.object3dCount,
+    visibleObjectCount: rendererStats.visibleObjectCount,
+    invisibleObjectCount: rendererStats.invisibleObjectCount,
+    groupCount: rendererStats.groupCount,
+    meshCount: rendererStats.meshCount,
+    instancedMeshCount: rendererStats.instancedMeshCount,
+    visibleInstancedMeshCount: rendererStats.visibleInstancedMeshCount,
+    renderedInstanceCount: rendererStats.renderedInstanceCount,
+    visibleMeshCount: rendererStats.visibleMeshCount,
+    maxHierarchyDepth: rendererStats.maxHierarchyDepth,
+    averageHierarchyDepth: rendererStats.averageHierarchyDepth,
+    emptyGroupCount: rendererStats.emptyGroupCount,
+    oneChildGroupCount: rendererStats.oneChildGroupCount,
+    matrixAutoUpdateCount: rendererStats.matrixAutoUpdateCount,
+    staticMatrixAutoUpdateCount: rendererStats.staticMatrixAutoUpdateCount,
+    pointsCount: rendererStats.pointsCount,
+    lineObjectCount: rendererStats.lineObjectCount,
+    cameraCount: rendererStats.cameraCount,
+    activeParticleSystemCount: rendererStats.activeParticleSystemCount,
+    activeParticleCount: rendererStats.activeParticleCount,
+    spriteCount: rendererStats.spriteCount,
+    lightCount: rendererStats.lightCount,
+    dynamicLightCount: rendererStats.dynamicLightCount,
+    shadowLightCount: rendererStats.shadowLightCount,
+    activeNpcCount: worldStats.activeNpcCount,
+    fullSimulationEntityCount: worldStats.fullSimulationEntityCount,
+    reducedSimulationEntityCount: worldStats.reducedSimulationEntityCount,
+    activeAudioSourceCount:
+      soundEffects.getActiveSourceCount() + musicController.getActiveSourceCount(),
+    materialCount: rendererStats.materialCount,
+    geometryCount: rendererStats.geometryCount,
+    vertexCount: rendererStats.vertexCount,
+    geometryMemoryCount: rendererStats.geometryMemoryCount,
+    treeObjectCount: rendererStats.treeObjectCount,
+    treeMeshCount: rendererStats.treeMeshCount,
+    treeMaterialRefCount: rendererStats.treeMaterialRefCount,
+    visibleTileKindSummary: rendererStats.visibleTileKindSummary,
+    textureCount: rendererStats.textureCount,
+    textureMemoryEstimateMb: rendererStats.textureMemoryEstimateBytes / (1024 * 1024),
+    programCount: rendererStats.programCount,
+    latitude: spatial.gps.latitude,
+    longitude: spatial.gps.longitude,
+    gridX: spatial.gridX,
+    gridY: spatial.gridY,
+    worldSeed: currentWorldSeed,
+    heapUsedMb,
+    heapLimitMb:
+      typeof performanceStats.memory?.jsHeapSizeLimit === 'number'
+        ? performanceStats.memory.jsHeapSizeLimit / (1024 * 1024)
+        : null,
+    resourceWarnings: [],
+  };
+
+  const materialGrowthWarning = getMaterialGrowthWarning(
+    debugResourceTrendState.materialSamples
+  );
+  const stationaryTileBuildWarning = getStationaryTileBuildWarning(
+    debugResourceTrendState.rendererChurnSamples
+  );
+  const heapGrowthWarning = getHeapGrowthWarning(debugResourceTrendState.heapSamples);
+  const idleAllocationWarning = getIdleAllocationWarning(
+    debugResourceTrendState.heapSamples
+  );
+  debugSnapshot.resourceWarnings = [
+    ...getPerformanceWarnings(debugSnapshot),
+    ...getWorkQueueWarnings(debugSnapshot),
+    ...getUnloadedRegionWarnings(debugSnapshot),
+    ...getSceneBudgetWarnings(debugSnapshot),
+    ...(materialGrowthWarning ? [materialGrowthWarning] : []),
+    ...(heapGrowthWarning ? [heapGrowthWarning] : []),
+    ...(idleAllocationWarning ? [idleAllocationWarning] : []),
+    ...(stationaryTileBuildWarning ? [stationaryTileBuildWarning] : []),
+  ];
+
+  if (options.recordDiagnostics) {
+    recordPerformanceHistorySample(debugResourceTrendState.performanceSamples, {
+      nowMs,
+      fps: debugSnapshot.fps,
+      frameMs: debugSnapshot.frameMs,
+      drawCalls: debugSnapshot.drawCalls,
+      triangles: debugSnapshot.triangles,
+      objectCount: debugSnapshot.object3dCount,
+      materialCount: debugSnapshot.materialCount,
+      geometryCount: debugSnapshot.geometryCount,
+      heapUsedMb: debugSnapshot.heapUsedMb,
+      tileBuildsPerSecond: debugSnapshot.tileBuildsPerSecond,
+      lodReplacementsPerSecond: debugSnapshot.lodReplacementsPerSecond,
+      visibleTileCount: debugSnapshot.visibleTileCount,
+      visibleTreeCount: debugSnapshot.visibleTreeCount,
+      activeLightCount: debugSnapshot.lightCount,
+      activeParticleSystemCount: debugSnapshot.activeParticleSystemCount,
+      activeParticleCount: debugSnapshot.activeParticleCount,
+      generationQueueSize: debugSnapshot.chunkGenerationQueueSize,
+    });
+  }
+
+  debugSnapshotState.latestSnapshot = { ...debugSnapshot };
+  return debugSnapshot;
+}
+
+function downloadCurrentDebugSnapshot(): void {
+  const latestSnapshot = collectCurrentDebugSnapshot(
+    performance.now(),
+    getPlayerSpatialSummary(state),
+    { recordDiagnostics: false }
+  );
 
   const timestamp = new Date();
   const currentContext = state.getCurrentContext();
@@ -2681,181 +2872,21 @@ function render(): FrameLoopActivityLike {
       uiRenderState.lastSextantSignature = sextantSignature;
     }
   }
-  if (debugSummary && debugInspectorVisible && gps) {
-    const rendererStats = renderer3d.getStats();
-    const worldStats = getDebugWorldStats(
-      state as typeof state & {
-        activeCharacterIds?: string[];
-        characterRoster?: {
-          characters: Array<{
-            availability: 'active' | 'available' | 'dropped';
-          }>;
-        };
-      }
-    );
-    const performanceStats = performance as PerformanceWithMemory;
-    const devicePixelRatio = window.devicePixelRatio || 1;
-    const appliedRenderPixelRatio = Math.min(devicePixelRatio, 2);
-    recordMaterialGrowthSample(debugResourceTrendState.materialSamples, {
+  if (
+    shouldCollectDebugSnapshot({
+      debugInspectorVisible,
+      hasDebugSummary: Boolean(debugSummary),
+      hasGps: gps !== null,
       nowMs,
-      materialCount: rendererStats.materialCount,
-      playerX: spatial.playerX,
-      playerY: spatial.playerY,
+      lastSampleNowMs: debugSnapshotState.lastSampleNowMs,
+    })
+  ) {
+    const debugSnapshot = collectCurrentDebugSnapshot(nowMs, spatial, {
+      recordDiagnostics: true,
     });
-    recordRendererChurnSample(debugResourceTrendState.rendererChurnSamples, {
-      nowMs,
-      tileNodeBuildsPerSecond: rendererStats.tileNodeBuildsPerSecond,
-      playerX: spatial.playerX,
-      playerY: spatial.playerY,
-    });
-    const heapUsedMb =
-      typeof performanceStats.memory?.usedJSHeapSize === 'number'
-        ? performanceStats.memory.usedJSHeapSize / (1024 * 1024)
-        : null;
-    if (heapUsedMb !== null) {
-      recordHeapUsageSample(debugResourceTrendState.heapSamples, {
-        nowMs,
-        heapUsedMb,
-        playerX: spatial.playerX,
-        playerY: spatial.playerY,
-      });
-    }
-    const debugSnapshot = {
-      fps: 1000 / Math.max(1, renderBudgetState.currentFrameMs),
-      averageFps: renderBudgetState.averageFps,
-      frameMs: renderBudgetState.currentFrameMs,
-      worstRecentFrameMs: renderBudgetState.worstRecentFrameMs,
-      targetFps: renderBudgetState.targetFps,
-      performanceTier: resolvePerformanceTier(renderBudgetState.smoothedFrameMs),
-      renderQualityLevel: formatRenderQualityLevel(
-        getRenderQualityLevel(renderBudgetState)
-      ),
-      renderQualityLimiters: getRenderQualityLimiters(renderBudgetState).join(', '),
-      playerLevel: normalizePlayerLevel(state.playerLevel),
-      visibilityRadius: renderBudgetState.visibilityRadius,
-      drawCalls: rendererStats.drawCalls,
-      triangles: rendererStats.triangles,
-      points: rendererStats.points,
-      lines: rendererStats.lines,
-      renderWidth: Math.max(1, Math.floor(viewport2d.width)),
-      renderHeight: Math.max(1, Math.floor(viewport2d.height)),
-      devicePixelRatio,
-      renderScale: getCurrentRenderScale(
-        appliedRenderPixelRatio,
-        devicePixelRatio
-      ),
-      sceneChildCount: rendererStats.sceneChildCount,
-      visibleTileCount: rendererStats.visibleTileCount,
-      visibleTreeCount: rendererStats.visibleTreeCount,
-      // The current renderer streams world nodes at tile granularity, so loaded
-      // tile nodes are the active chunk unit until coarser chunk objects exist.
-      loadedChunkCount: rendererStats.visibleTileCount,
-      chunkGenerationQueueSize: rendererStats.pendingTileCount,
-      pendingTileCount: rendererStats.pendingTileCount,
-      averagePendingFlushTiles: rendererStats.averagePendingFlushTiles,
-      maxPendingFlushTiles: rendererStats.maxPendingFlushTiles,
-      averageTileBuildMs: rendererStats.averageTileBuildMs,
-      maxTileBuildMs: rendererStats.maxTileBuildMs,
-      tileNodeBuildsPerSecond: rendererStats.tileNodeBuildsPerSecond,
-      tileBuildsPerSecond: rendererStats.tileBuildsPerSecond,
-      lodChecksPerSecond: rendererStats.lodChecksPerSecond,
-      lodReplacementsPerSecond: rendererStats.lodReplacementsPerSecond,
-      object3dCount: rendererStats.object3dCount,
-      visibleObjectCount: rendererStats.visibleObjectCount,
-      invisibleObjectCount: rendererStats.invisibleObjectCount,
-      groupCount: rendererStats.groupCount,
-      meshCount: rendererStats.meshCount,
-      instancedMeshCount: rendererStats.instancedMeshCount,
-      visibleInstancedMeshCount: rendererStats.visibleInstancedMeshCount,
-      renderedInstanceCount: rendererStats.renderedInstanceCount,
-      visibleMeshCount: rendererStats.visibleMeshCount,
-      maxHierarchyDepth: rendererStats.maxHierarchyDepth,
-      averageHierarchyDepth: rendererStats.averageHierarchyDepth,
-      emptyGroupCount: rendererStats.emptyGroupCount,
-      oneChildGroupCount: rendererStats.oneChildGroupCount,
-      matrixAutoUpdateCount: rendererStats.matrixAutoUpdateCount,
-      pointsCount: rendererStats.pointsCount,
-      lineObjectCount: rendererStats.lineObjectCount,
-      cameraCount: rendererStats.cameraCount,
-      activeParticleSystemCount: rendererStats.activeParticleSystemCount,
-      activeParticleCount: rendererStats.activeParticleCount,
-      spriteCount: rendererStats.spriteCount,
-      lightCount: rendererStats.lightCount,
-      dynamicLightCount: rendererStats.dynamicLightCount,
-      shadowLightCount: rendererStats.shadowLightCount,
-      activeNpcCount: worldStats.activeNpcCount,
-      fullSimulationEntityCount: worldStats.fullSimulationEntityCount,
-      reducedSimulationEntityCount: worldStats.reducedSimulationEntityCount,
-      activeAudioSourceCount:
-        soundEffects.getActiveSourceCount() + musicController.getActiveSourceCount(),
-      materialCount: rendererStats.materialCount,
-      geometryCount: rendererStats.geometryCount,
-      vertexCount: rendererStats.vertexCount,
-      geometryMemoryCount: rendererStats.geometryMemoryCount,
-      treeObjectCount: rendererStats.treeObjectCount,
-      treeMeshCount: rendererStats.treeMeshCount,
-      treeMaterialRefCount: rendererStats.treeMaterialRefCount,
-      visibleTileKindSummary: rendererStats.visibleTileKindSummary,
-      textureCount: rendererStats.textureCount,
-      textureMemoryEstimateMb:
-        rendererStats.textureMemoryEstimateBytes / (1024 * 1024),
-      programCount: rendererStats.programCount,
-      latitude: gps.latitude,
-      longitude: gps.longitude,
-      gridX,
-      gridY,
-      worldSeed: currentWorldSeed,
-      heapUsedMb,
-      heapLimitMb:
-        typeof performanceStats.memory?.jsHeapSizeLimit === 'number'
-          ? performanceStats.memory.jsHeapSizeLimit / (1024 * 1024)
-          : null,
-      resourceWarnings: [],
-    };
-    const materialGrowthWarning = getMaterialGrowthWarning(
-      debugResourceTrendState.materialSamples
-    );
-    const stationaryTileBuildWarning = getStationaryTileBuildWarning(
-      debugResourceTrendState.rendererChurnSamples
-    );
-    const heapGrowthWarning = getHeapGrowthWarning(
-      debugResourceTrendState.heapSamples
-    );
-    const idleAllocationWarning = getIdleAllocationWarning(
-      debugResourceTrendState.heapSamples
-    );
-    debugSnapshot.resourceWarnings = [
-      ...getPerformanceWarnings(debugSnapshot),
-      ...getWorkQueueWarnings(debugSnapshot),
-      ...getUnloadedRegionWarnings(debugSnapshot),
-      ...getSceneBudgetWarnings(debugSnapshot),
-      ...(materialGrowthWarning ? [materialGrowthWarning] : []),
-      ...(heapGrowthWarning ? [heapGrowthWarning] : []),
-      ...(idleAllocationWarning ? [idleAllocationWarning] : []),
-      ...(stationaryTileBuildWarning ? [stationaryTileBuildWarning] : []),
-    ];
-    recordPerformanceHistorySample(debugResourceTrendState.performanceSamples, {
-      nowMs,
-      fps: debugSnapshot.fps,
-      frameMs: debugSnapshot.frameMs,
-      drawCalls: debugSnapshot.drawCalls,
-      triangles: debugSnapshot.triangles,
-      objectCount: debugSnapshot.object3dCount,
-      materialCount: debugSnapshot.materialCount,
-      geometryCount: debugSnapshot.geometryCount,
-      heapUsedMb: debugSnapshot.heapUsedMb,
-      tileBuildsPerSecond: debugSnapshot.tileBuildsPerSecond,
-      lodReplacementsPerSecond: debugSnapshot.lodReplacementsPerSecond,
-      visibleTileCount: debugSnapshot.visibleTileCount,
-      visibleTreeCount: debugSnapshot.visibleTreeCount,
-      activeLightCount: debugSnapshot.lightCount,
-      activeParticleSystemCount: debugSnapshot.activeParticleSystemCount,
-      activeParticleCount: debugSnapshot.activeParticleCount,
-      generationQueueSize: debugSnapshot.chunkGenerationQueueSize,
-    });
-    debugSnapshotState.latestSnapshot = { ...debugSnapshot };
+    debugSnapshotState.lastSampleNowMs = nowMs;
     const debugSignature = getDebugSignature(debugSnapshot);
-    if (debugSignature !== uiRenderState.lastDebugSignature) {
+    if (debugSummary && debugSignature !== uiRenderState.lastDebugSignature) {
       debugSummary.innerHTML = buildDebugMarkup(debugSnapshot);
       uiRenderState.lastDebugSignature = debugSignature;
     }
