@@ -20,6 +20,61 @@ type PoiType = 'cave' | 'dungeon';
 const TOWN_CELL_SIZE = 20;
 const BRIDGE_CELL_SIZE = 16;
 const MIN_POI_SPACING = 9;
+const MOUNTAIN_ELEVATION_THRESHOLD = 0.72;
+const FOREST_CONTINENT_MIN = 0.42;
+const FOREST_CONTINENT_MAX = 0.9;
+const FOREST_ELEVATION_MAX = 0.74;
+const FOREST_RIVER_MAX = 0.86;
+const FOREST_MOISTURE_MIN = 0.6;
+const FOREST_CLUSTER_RADIUS = 2;
+
+function hasAdjacentMountainTerrain(
+  x: number,
+  y: number,
+  sampleTerrainSignals: OverworldTerrainSignalSampler
+): boolean {
+  return (
+    sampleTerrainSignals(x + 1, y).elevation > MOUNTAIN_ELEVATION_THRESHOLD ||
+    sampleTerrainSignals(x - 1, y).elevation > MOUNTAIN_ELEVATION_THRESHOLD ||
+    sampleTerrainSignals(x, y + 1).elevation > MOUNTAIN_ELEVATION_THRESHOLD ||
+    sampleTerrainSignals(x, y - 1).elevation > MOUNTAIN_ELEVATION_THRESHOLD
+  );
+}
+
+function isForestLikeTerrain(terrain: {
+  continent: number;
+  elevation: number;
+  moisture: number;
+  riverSignal: number;
+}): boolean {
+  return (
+    terrain.continent > FOREST_CONTINENT_MIN &&
+    terrain.continent < FOREST_CONTINENT_MAX &&
+    terrain.elevation < FOREST_ELEVATION_MAX &&
+    terrain.riverSignal < FOREST_RIVER_MAX &&
+    terrain.moisture >= FOREST_MOISTURE_MIN
+  );
+}
+
+function hasDenseForestCluster(
+  x: number,
+  y: number,
+  sampleTerrainSignals: OverworldTerrainSignalSampler
+): boolean {
+  let forestLikeCount = 0;
+  let totalSamples = 0;
+
+  for (let sampleY = y - FOREST_CLUSTER_RADIUS; sampleY <= y + FOREST_CLUSTER_RADIUS; sampleY += 1) {
+    for (let sampleX = x - FOREST_CLUSTER_RADIUS; sampleX <= x + FOREST_CLUSTER_RADIUS; sampleX += 1) {
+      totalSamples += 1;
+      if (isForestLikeTerrain(sampleTerrainSignals(sampleX, sampleY))) {
+        forestLikeCount += 1;
+      }
+    }
+  }
+
+  return forestLikeCount >= Math.ceil(totalSamples * 0.68);
+}
 
 const TOWN_ANCHOR_SPEC: OverworldCellAnchorSpec<NamedPoint> =
   createGeneratedNamedOverworldCellAnchorSpec({
@@ -31,7 +86,7 @@ const TOWN_ANCHOR_SPEC: OverworldCellAnchorSpec<NamedPoint> =
     offsetYKey: 'town-anchor-y',
     threshold: 0.64,
     priority: 0,
-    isSuitableTerrain(terrain) {
+    isSuitableTerrain({ terrain }) {
       return (
         terrain.continent > 0.47 &&
         terrain.continent < 0.9 &&
@@ -49,7 +104,7 @@ const BRIDGE_ANCHOR_SPEC: OverworldCellAnchorSpec<OverworldAnchorLike> = {
   offsetYKey: 'bridge-anchor-y',
   threshold: 0.68,
   priority: 0,
-  isSuitableTerrain(terrain) {
+  isSuitableTerrain({ terrain }) {
     return (
       terrain.continent > 0.46 &&
       terrain.continent < 0.88 &&
@@ -72,12 +127,13 @@ const POI_SPECS: Record<PoiType, OverworldCellAnchorSpec<NamedPoiAnchor>> = {
     offsetYKey: 'cave-anchor-y',
     threshold: 0.74,
     priority: 10,
-    isSuitableTerrain(terrain) {
+    isSuitableTerrain({ terrain, x, y, sampleTerrainSignals }) {
       return (
         terrain.continent > 0.47 &&
         terrain.continent < 0.9 &&
         terrain.elevation < 0.78 &&
-        terrain.riverSignal < 0.8
+        terrain.riverSignal < 0.8 &&
+        hasAdjacentMountainTerrain(x, y, sampleTerrainSignals)
       );
     },
   }),
@@ -90,13 +146,14 @@ const POI_SPECS: Record<PoiType, OverworldCellAnchorSpec<NamedPoiAnchor>> = {
     offsetYKey: 'dungeon-anchor-y',
     threshold: 0.78,
     priority: 20,
-    isSuitableTerrain(terrain) {
+    isSuitableTerrain({ terrain, x, y, sampleTerrainSignals }) {
       return (
         terrain.continent > 0.5 &&
         terrain.continent < 0.88 &&
         terrain.elevation > 0.34 &&
         terrain.elevation < 0.82 &&
-        terrain.riverSignal < 0.78
+        terrain.riverSignal < 0.78 &&
+        hasDenseForestCluster(x, y, sampleTerrainSignals)
       );
     },
   }),

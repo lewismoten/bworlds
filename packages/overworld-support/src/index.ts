@@ -33,7 +33,12 @@ export interface OverworldCellAnchorSpec<
   threshold: number;
   offsetScale?: number;
   priority?: number;
-  isSuitableTerrain(terrain: OverworldSignals): boolean;
+  isSuitableTerrain(params: {
+    terrain: OverworldSignals;
+    x: number;
+    y: number;
+    sampleTerrainSignals: OverworldTerrainSignalSampler;
+  }): boolean;
   createAnchor(params: {
     seed: Seed;
     x: number;
@@ -498,7 +503,12 @@ export function resolveOverworldCellAnchor<
     const terrain = sampleTerrainSignals(candidate.x, candidate.y);
     const suitable =
       candidate.chance > spec.threshold &&
-      spec.isSuitableTerrain(terrain) &&
+      spec.isSuitableTerrain({
+        terrain,
+        x: candidate.x,
+        y: candidate.y,
+        sampleTerrainSignals,
+      }) &&
       !hasOverworldAnchorConflict(candidate, blockingAnchors, minSpacing) &&
       !hasHigherPriorityOverworldAnchorConflict({
         seed,
@@ -570,7 +580,12 @@ function hasHigherPriorityOverworldAnchorConflict({
         const terrain = sampleTerrainSignals(other.x, other.y);
         if (
           other.chance <= other.spec.threshold ||
-          !other.spec.isSuitableTerrain(terrain) ||
+          !other.spec.isSuitableTerrain({
+            terrain,
+            x: other.x,
+            y: other.y,
+            sampleTerrainSignals,
+          }) ||
           hasOverworldAnchorConflict(other, blockingAnchors, minSpacing)
         ) {
           continue;

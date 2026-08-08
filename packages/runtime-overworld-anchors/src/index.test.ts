@@ -17,6 +17,16 @@ function createAnchorSignals(): OverworldSignals {
   };
 }
 
+function createDenseForestSignals(): OverworldSignals {
+  return {
+    continent: 0.62,
+    elevation: 0.48,
+    moisture: 0.72,
+    riverSignal: 0.32,
+    roadSignal: 0.45,
+  };
+}
+
 function createAnchorPayload(
   overrides: Partial<ResolveOverworldAnchorsPayload> = {}
 ): ResolveOverworldAnchorsPayload {
@@ -77,5 +87,91 @@ describe('runtime overworld anchors', () => {
         ).toBeGreaterThanOrEqual(9);
       }
     }
+  });
+
+  it('only places cave anchors next to mountain-grade terrain', () => {
+    const sampleTerrainSignals = (x: number, y: number): OverworldSignals => {
+      if ((Math.abs(x) + Math.abs(y)) % 2 === 1) {
+        return {
+          continent: 0.64,
+          elevation: 0.84,
+          moisture: 0.4,
+          riverSignal: 0.2,
+          roadSignal: 0.3,
+        };
+      }
+      return {
+        continent: 0.64,
+        elevation: 0.56,
+        moisture: 0.4,
+        riverSignal: 0.2,
+        roadSignal: 0.3,
+      };
+    };
+    const anchors = plugin.resolveOverworldAnchors?.(
+      createAnchorPayload({
+        seed: 'cave-adjacency-spec',
+        x: 0,
+        y: 0,
+        sampleTerrainSignals,
+      })
+    ) as OverworldAnchorSet;
+
+    const caves = (anchors.poiAnchors ?? []).filter((anchor) => anchor.type === 'cave');
+    expect(caves.length).toBeGreaterThan(0);
+    caves.forEach((anchor) => {
+      const adjacentElevations = [
+        [anchor.x + 1, anchor.y],
+        [anchor.x - 1, anchor.y],
+        [anchor.x, anchor.y + 1],
+        [anchor.x, anchor.y - 1],
+      ].map(([x, y]) => sampleTerrainSignals(x, y).elevation);
+      expect(adjacentElevations.some((elevation) => elevation > 0.72)).toBe(true);
+    });
+  });
+
+  it('only places dungeon anchors inside dense forest-like terrain clusters', () => {
+    const sampleTerrainSignals = (
+      _x: number,
+      _y: number
+    ): OverworldSignals => createDenseForestSignals();
+    let anchors: OverworldAnchorSet = {
+      townAnchors: [],
+      bridgeAnchors: [],
+      poiAnchors: [],
+    };
+    for (let seedIndex = 0; seedIndex < 12; seedIndex += 1) {
+      anchors =
+        (plugin.resolveOverworldAnchors?.(
+          createAnchorPayload({
+            seed: `dungeon-forest-spec:${seedIndex}`,
+            x: 0,
+            y: 0,
+            sampleTerrainSignals,
+          })
+        ) as OverworldAnchorSet) ?? anchors;
+      if ((anchors.poiAnchors ?? []).some((anchor) => anchor.type === 'dungeon')) {
+        break;
+      }
+    }
+
+    const dungeons = (anchors.poiAnchors ?? []).filter(
+      (anchor) => anchor.type === 'dungeon'
+    );
+    expect(dungeons.length).toBeGreaterThan(0);
+    dungeons.forEach((anchor) => {
+      let forestLikeCount = 0;
+      let sampleCount = 0;
+      for (let sampleY = anchor.y - 2; sampleY <= anchor.y + 2; sampleY += 1) {
+        for (let sampleX = anchor.x - 2; sampleX <= anchor.x + 2; sampleX += 1) {
+          sampleCount += 1;
+          const terrain = sampleTerrainSignals(sampleX, sampleY);
+          if (terrain.moisture >= 0.6) {
+            forestLikeCount += 1;
+          }
+        }
+      }
+      expect(forestLikeCount).toBeGreaterThanOrEqual(Math.ceil(sampleCount * 0.68));
+    });
   });
 });
