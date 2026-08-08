@@ -294,4 +294,92 @@ describe('runtime overworld anchors', () => {
       expect(foundOcean).toBe(true);
     });
   });
+
+  it('places ship anchors on coastal land near open water with nearby land support', () => {
+    const sampleTerrainSignals = (x: number, y: number): OverworldSignals => {
+      const band = ((x % 4) + 4) % 4;
+      if (band === 1) {
+        return {
+          continent: 0.34,
+          elevation: 0.08,
+          moisture: 0.66,
+          riverSignal: 0.12,
+          roadSignal: 0.18,
+        };
+      }
+      if (band === 2) {
+        return {
+          continent: 0.2,
+          elevation: 0.04,
+          moisture: 0.72,
+          riverSignal: 0.08,
+          roadSignal: 0.12,
+        };
+      }
+      if (band === 3) {
+        return {
+          continent: 0.64,
+          elevation: 0.26,
+          moisture: 0.52,
+          riverSignal: 0.16,
+          roadSignal: 0.2,
+        };
+      }
+      return {
+        continent: 0.56,
+        elevation: 0.22,
+        moisture: 0.58,
+        riverSignal: 0.18,
+        roadSignal: 0.24,
+      };
+    };
+    let anchors: OverworldAnchorSet = {
+      townAnchors: [],
+      bridgeAnchors: [],
+      poiAnchors: [],
+    };
+
+    for (let seedIndex = 0; seedIndex < 16; seedIndex += 1) {
+      anchors =
+        (plugin.resolveOverworldAnchors?.(
+          createAnchorPayload({
+            seed: `ship-coast-spec:${seedIndex}`,
+            x: 0,
+            y: 0,
+            sampleTerrainSignals,
+          })
+        ) as OverworldAnchorSet) ?? anchors;
+      if ((anchors.poiAnchors ?? []).some((anchor) => anchor.type === 'ship')) {
+        break;
+      }
+    }
+
+    const ships = (anchors.poiAnchors ?? []).filter(
+      (anchor) => anchor.type === 'ship'
+    );
+    expect(ships.length).toBeGreaterThan(0);
+    ships.forEach((anchor) => {
+      expect(sampleTerrainSignals(anchor.x, anchor.y).continent).toBeGreaterThanOrEqual(0.42);
+      let foundOcean = false;
+      for (let offsetY = -2; offsetY <= 2; offsetY += 1) {
+        for (let offsetX = -2; offsetX <= 2; offsetX += 1) {
+          const distance = Math.abs(offsetX) + Math.abs(offsetY);
+          if (distance === 0 || distance > 2) {
+            continue;
+          }
+          if (sampleTerrainSignals(anchor.x + offsetX, anchor.y + offsetY).continent <= 0.38) {
+            foundOcean = true;
+          }
+        }
+      }
+      const adjacentLand = [
+        sampleTerrainSignals(anchor.x + 1, anchor.y).continent,
+        sampleTerrainSignals(anchor.x - 1, anchor.y).continent,
+        sampleTerrainSignals(anchor.x, anchor.y + 1).continent,
+        sampleTerrainSignals(anchor.x, anchor.y - 1).continent,
+      ].some((continent) => continent >= 0.42);
+      expect(foundOcean).toBe(true);
+      expect(adjacentLand).toBe(true);
+    });
+  });
 });

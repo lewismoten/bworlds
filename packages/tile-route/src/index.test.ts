@@ -230,6 +230,59 @@ describe('tile route', () => {
     );
   });
 
+  it('creates docks for coastal ship approaches', () => {
+    expect(
+      classifier?.(
+        createRouteClassifierPayload({
+          x: 12,
+          y: 4,
+          tile: { kind: 'shore' },
+          signals: {
+            continent: 0.38,
+            elevation: 0.18,
+            moisture: 0.6,
+            riverSignal: 0.08,
+            roadSignal: 0.94,
+          },
+          sampleTerrainSignals(sampleX: number, sampleY: number) {
+            if (sampleX === 11 && sampleY === 4) {
+              return {
+                continent: 0.58,
+                elevation: 0.24,
+                moisture: 0.52,
+                riverSignal: 0.1,
+                roadSignal: 0.52,
+              };
+            }
+            if (sampleX >= 13 && sampleY === 4) {
+              return {
+                continent: 0.24,
+                elevation: 0.08,
+                moisture: 0.66,
+                riverSignal: 0.08,
+                roadSignal: 0.16,
+              };
+            }
+            return {
+              continent: 0.44,
+              elevation: 0.18,
+              moisture: 0.54,
+              riverSignal: 0.08,
+              roadSignal: 0.18,
+            };
+          },
+          townAnchors: [],
+          bridgeAnchors: [],
+          poiAnchors: [{ x: 11, y: 4, type: 'ship', name: 'Harbor Mast' }],
+        })
+      )
+    ).toEqual(
+      expect.objectContaining({
+        kind: 'dock',
+      })
+    );
+  });
+
   it('rejects coast-parallel ocean spans as bridges', () => {
     expect(
       classifier?.(

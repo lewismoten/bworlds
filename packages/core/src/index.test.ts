@@ -226,6 +226,16 @@ describe('core utilities', () => {
     );
   });
 
+  it('generates deterministic ship point-of-interest names', () => {
+    const left = generatePoiName('ship-spec', 'ship', 14, -7);
+    const right = generatePoiName('ship-spec', 'ship', 14, -7);
+
+    expect(left).toBe(right);
+    expect(left).toMatch(
+      /\b(Mariner|Brig|Galleon|Hulk|Harbor|Mast)\b/
+    );
+  });
+
   it('exposes periodic planets, meteor showers, and comets', () => {
     const events = getCelestialEventsForDay(0, {
       yearLengthDays: DEFAULT_YEAR_LENGTH_DAYS,

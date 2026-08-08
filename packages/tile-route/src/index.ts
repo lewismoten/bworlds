@@ -382,7 +382,10 @@ function classifyPoiDock({
   }
 
   const anchors = (poiAnchors ?? []).filter(
-    (anchor) => anchor.type === 'lighthouse' || anchor.type === 'town'
+    (anchor) =>
+      anchor.type === 'lighthouse' ||
+      anchor.type === 'town' ||
+      anchor.type === 'ship'
   );
   for (const anchor of anchors) {
     for (const direction of [

@@ -328,7 +328,7 @@ export interface CelestialRingEntryLike {
 }
 
 export type PoiNameType =
-  | ('town' | 'cave' | 'dungeon' | 'ruins' | 'quarry' | 'lighthouse')
+  | ('town' | 'cave' | 'dungeon' | 'ruins' | 'quarry' | 'lighthouse' | 'ship')
   | (string & {});
 type CardinalDirection = 'N' | 'S' | 'E' | 'W';
 type CoreWorldContextType =
@@ -360,6 +360,7 @@ type CoreWorldTileKind =
   | 'dungeon'
   | 'quarry'
   | 'lighthouse'
+  | 'ship'
   | 'shop'
   | 'stairsUp'
   | 'stairsDown'
@@ -1589,6 +1590,11 @@ export function generatePoiName(
 
   if (type === 'lighthouse') {
     const nouns = ['Beacon', 'Light', 'Watch', 'Lantern', 'Signal', 'Point'];
+    return `${prefix} ${pickFrom(nouns, hash2D(`${stem}:noun`, x, y))}`;
+  }
+
+  if (type === 'ship') {
+    const nouns = ['Mariner', 'Brig', 'Galleon', 'Hulk', 'Harbor', 'Mast'];
     return `${prefix} ${pickFrom(nouns, hash2D(`${stem}:noun`, x, y))}`;
   }
 

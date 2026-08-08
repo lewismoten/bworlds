@@ -15,7 +15,7 @@ import type {
 
 type NamedPoint = OverworldAnchorLike & { name: string };
 type NamedPoiAnchor = PoiAnchorLike & { name: string };
-type PoiType = 'cave' | 'dungeon' | 'quarry' | 'lighthouse';
+type PoiType = 'cave' | 'dungeon' | 'quarry' | 'lighthouse' | 'ship';
 
 const TOWN_CELL_SIZE = 20;
 const BRIDGE_CELL_SIZE = 16;
@@ -29,6 +29,7 @@ const FOREST_MOISTURE_MIN = 0.6;
 const FOREST_CLUSTER_RADIUS = 2;
 const OCEAN_CONTINENT_THRESHOLD = 0.38;
 const LAND_CONTINENT_THRESHOLD = 0.42;
+const SHIP_CONTINENT_MAX = 0.74;
 
 function hasNearbyMountainTerrain(
   x: number,
@@ -241,6 +242,27 @@ const POI_SPECS: Record<PoiType, OverworldCellAnchorSpec<NamedPoiAnchor>> = {
         terrain.continent < 0.68 &&
         terrain.elevation < 0.62 &&
         terrain.riverSignal < 0.82 &&
+        hasNearbyOceanTerrain(x, y, sampleTerrainSignals, 2) &&
+        hasAdjacentLandNeighbor(x, y, sampleTerrainSignals)
+      );
+    },
+  }),
+  ship: createGeneratedPoiOverworldCellAnchorSpec({
+    id: 'ship',
+    poiType: 'ship',
+    cellSize: 20,
+    chanceKey: 'ship-anchor',
+    offsetXKey: 'ship-anchor-x',
+    offsetYKey: 'ship-anchor-y',
+    threshold: 0.72,
+    priority: 23,
+    isSuitableTerrain({ terrain, x, y, sampleTerrainSignals }) {
+      return (
+        terrain.continent >= LAND_CONTINENT_THRESHOLD &&
+        terrain.continent < SHIP_CONTINENT_MAX &&
+        terrain.elevation < 0.58 &&
+        terrain.riverSignal < 0.8 &&
+        terrain.moisture > 0.38 &&
         hasNearbyOceanTerrain(x, y, sampleTerrainSignals, 2) &&
         hasAdjacentLandNeighbor(x, y, sampleTerrainSignals)
       );

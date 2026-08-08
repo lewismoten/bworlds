@@ -58,8 +58,17 @@ const curatedSpawnTiles = new Map<string, TileLike>([
   ],
   ['7,0', { kind: 'dock', note: 'The dock begins at the coastal stones below the light.' }],
   ['8,0', { kind: 'dock', note: 'The dock stretches out above the rolling tide.' }],
+  [
+    '9,0',
+    {
+      kind: 'ship',
+      poi: { type: 'ship', name: 'Starter Ship' },
+      note: 'A moored ship rocks gently at the end of the dock.',
+    },
+  ],
   ['7,1', { kind: 'shore', note: 'Foamy surf washes onto the coast.' }],
   ['8,1', { kind: 'ocean', note: 'The sea rolls just beyond the beach.' }],
+  ['9,1', { kind: 'ocean', note: 'Deep water laps against the moored hull.' }],
 ]);
 
 export function createStartRegionRuntimePlugin(): RuntimePlugin {
@@ -101,6 +110,12 @@ function getCuratedTile({
       return {
         ...tile,
         poi: { ...tile.poi, name: generatePoiName(seed, 'lighthouse', 6, 0) },
+      };
+    }
+    if (tile.kind === 'ship' && tile.poi) {
+      return {
+        ...tile,
+        poi: { ...tile.poi, name: generatePoiName(seed, 'ship', 9, 0) },
       };
     }
 

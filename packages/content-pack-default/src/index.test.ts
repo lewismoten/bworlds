@@ -45,6 +45,11 @@ describe('default content pack tile definitions', () => {
         name: 'Lighthouse',
       })
     );
+    expect(getDefaultTileDefinition('ship')).toEqual(
+      expect.objectContaining({
+        name: 'Ship',
+      })
+    );
     expect(getDefaultTileDefinition('missing-kind')).toEqual(
       expect.objectContaining({
         name: 'Plains',

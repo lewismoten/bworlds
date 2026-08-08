@@ -286,7 +286,7 @@ describe('world generator', () => {
         }
       }
     }
-    expect(found?.poi?.type).toMatch(/town|dungeon|cave|quarry/);
+    expect(found?.poi?.type).toMatch(/town|dungeon|cave|quarry|ship/);
   });
 
   it('enters poi instances and exits back to the overworld facing away from the entrance', () => {
@@ -467,6 +467,21 @@ describe('world generator', () => {
     expect(lighthouseMap.getTile(3, 0).kind).toBe('floor');
   });
 
+  it('creates ship maps through the registered map plugin path', () => {
+    const generator = createGenerator();
+    const shipMap = generator.getMap({
+      id: 'ship:5:4:1',
+      label: 'Test Ship',
+      type: 'ship',
+      depth: 1,
+      origin: { x: 5, y: 4 },
+    });
+
+    expect(shipMap.getTile(0, 0).kind).toBe('ship');
+    expect(shipMap.getTile(0, 5).kind).toBe('door');
+    expect(shipMap.getTile(0, -3).kind).toBe('interior');
+  });
+
   it('creates quarry points of interest somewhere near the origin', () => {
     const registry = createDefaultPluginRegistry();
     let quarryAnchor: { x: number; y: number } | null = null;
@@ -513,6 +528,16 @@ describe('world generator', () => {
     expect(lighthouseTile.poi?.type).toBe('lighthouse');
     expect(lighthouseTile.poi?.name).toMatch(
       /\b(Beacon|Light|Watch|Lantern|Signal|Point)\b/
+    );
+  });
+
+  it('creates a starter ship point of interest at the lighthouse dock', () => {
+    const generator = createGenerator();
+    const shipTile = generator.sampleOverworld(9, 0);
+
+    expect(shipTile.poi?.type).toBe('ship');
+    expect(shipTile.poi?.name).toMatch(
+      /\b(Mariner|Brig|Galleon|Hulk|Harbor|Mast)\b/
     );
   });
 

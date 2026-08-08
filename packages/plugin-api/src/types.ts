@@ -6,7 +6,8 @@ export type RouteTerminalTileKind =
   | 'cave'
   | 'dungeon'
   | 'quarry'
-  | 'lighthouse';
+  | 'lighthouse'
+  | 'ship';
 export type KnownTileKind =
   | 'unknown'
   | 'plains'
@@ -21,6 +22,7 @@ export type KnownTileKind =
   | 'ruins'
   | 'quarry'
   | 'lighthouse'
+  | 'ship'
   | WaterTileKind
   | CrossingTileKind
   | RouteTerminalTileKind;
