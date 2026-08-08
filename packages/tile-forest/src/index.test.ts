@@ -655,6 +655,63 @@ describe('tile forest', () => {
     ).toBe(true);
   });
 
+  it('reuses pine family materials across distant forest regions', () => {
+    const plugin = createForestTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'forest');
+    const state = createForestTestState();
+    const pineTiles: Array<{ x: number; y: number }> = [];
+
+    for (let tileY = 0; tileY < 40 && pineTiles.length < 2; tileY += 1) {
+      for (let tileX = 0; tileX < 40 && pineTiles.length < 2; tileX += 1) {
+        if (getForestTreeForms(tileX, tileY).includes('pine')) {
+          pineTiles.push({ x: tileX, y: tileY });
+        }
+      }
+    }
+
+    expect(pineTiles).toHaveLength(2);
+
+    const firstModel = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'forest' },
+      tileX: pineTiles[0]!.x,
+      tileY: pineTiles[0]!.y,
+      detailLevel: 'full',
+    }) as FakeGroup;
+    const secondModel = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'forest' },
+      tileX: pineTiles[1]!.x,
+      tileY: pineTiles[1]!.y,
+      detailLevel: 'full',
+    }) as FakeGroup;
+
+    const firstPine = firstModel.children.find(
+      (child) => child.userData?.forestTreeForm === 'pine'
+    ) as FakeGroup | undefined;
+    const secondPine = secondModel.children.find(
+      (child) => child.userData?.forestTreeForm === 'pine'
+    ) as FakeGroup | undefined;
+
+    const firstTrunk = firstPine?.children.find(
+      (child) => child instanceof FakeMesh
+    ) as FakeMesh | undefined;
+    const secondTrunk = secondPine?.children.find(
+      (child) => child instanceof FakeMesh
+    ) as FakeMesh | undefined;
+    const firstFoliage = firstPine?.children.find(
+      (child) => child instanceof FakeMesh && child.userData?.forestTreeFoliage
+    ) as FakeMesh | undefined;
+    const secondFoliage = secondPine?.children.find(
+      (child) => child instanceof FakeMesh && child.userData?.forestTreeFoliage
+    ) as FakeMesh | undefined;
+
+    expect(firstTrunk?.material).toBe(secondTrunk?.material);
+    expect(firstFoliage?.material).toBe(secondFoliage?.material);
+  });
+
   it('instances low-detail tree trunks and canopies instead of creating one group per tree', () => {
     const plugin = createForestTilePlugin();
     const tile = plugin.tiles?.find((entry) => entry.kind === 'forest');

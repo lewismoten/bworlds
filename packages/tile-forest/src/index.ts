@@ -9,7 +9,6 @@ import {
 import { createTilePlugin } from '@bworlds/plugin-api';
 import {
   createCoordinateValueResolver,
-  createRegionKey,
   tintHexColor,
 } from '@bworlds/procedural-style';
 import { createThresholdTerrainClassifier } from '@bworlds/tile-support';
@@ -1137,35 +1136,32 @@ function getTreeStyle(
   tileY: number,
   variety: number
 ) {
-  const {
-    regionX,
-    regionY,
-    key: regionKey,
-  } = createRegionKey(tileX, tileY, TREE_REGION_SIZE);
-  const key = `${regionKey}:${variety}`;
+  const styleSeedX = 41 + variety * 17;
+  const styleSeedY = 73 + variety * 19;
+  const key = `tree-family:${variety}`;
 
   if (!treeStyleCache.has(key)) {
     const barkBase = tintHexColor(
       TREE_BARK_COLOR,
-      0.82 + hash2D('tree-bark-tint', regionX + variety, regionY) * 0.32
+      0.82 + hash2D('tree-bark-tint', styleSeedX + variety, styleSeedY) * 0.32
     );
     const foliageBase = tintHexColor(
       TREE_FOLIAGE_COLOR,
-      0.82 + hash2D('tree-foliage-tint', regionX, regionY + variety) * 0.34
+      0.82 + hash2D('tree-foliage-tint', styleSeedX, styleSeedY + variety) * 0.34
     );
 
     const barkTexture = createTreeBarkTexture(
       three,
       barkBase,
-      regionX,
-      regionY,
+      styleSeedX,
+      styleSeedY,
       variety
     );
     const foliageTexture = createTreeFoliageTexture(
       three,
       foliageBase,
-      regionX,
-      regionY,
+      styleSeedX,
+      styleSeedY,
       variety
     );
 
@@ -1186,7 +1182,7 @@ function getTreeStyle(
       stoneMaterial: new three.MeshStandardMaterial({
         color: tintHexColor(
           '#7f847a',
-          0.86 + hash2D('tree-stone-tint', regionX, regionY + variety) * 0.24
+          0.86 + hash2D('tree-stone-tint', styleSeedX, styleSeedY + variety) * 0.24
         ),
         roughness: 0.99,
         metalness: 0.01,
@@ -1195,7 +1191,7 @@ function getTreeStyle(
       mushroomCapMaterial: new three.MeshStandardMaterial({
         color: tintHexColor(
           '#c75442',
-          0.84 + hash2D('tree-mushroom-cap-tint', regionX + variety, regionY) * 0.28
+          0.84 + hash2D('tree-mushroom-cap-tint', styleSeedX + variety, styleSeedY) * 0.28
         ),
         roughness: 0.88,
         metalness: 0.01,
@@ -1204,7 +1200,7 @@ function getTreeStyle(
       mushroomStemMaterial: new three.MeshStandardMaterial({
         color: tintHexColor(
           '#ded6bb',
-          0.9 + hash2D('tree-mushroom-stem-tint', regionX, regionY + variety) * 0.14
+          0.9 + hash2D('tree-mushroom-stem-tint', styleSeedX, styleSeedY + variety) * 0.14
         ),
         roughness: 0.94,
         metalness: 0.01,
@@ -1217,7 +1213,7 @@ function getTreeStyle(
       owlBodyMaterial: new three.MeshStandardMaterial({
         color: tintHexColor(
           '#6b4d31',
-          0.92 + hash2D('tree-owl-body-tint', regionX, regionY + variety) * 0.18
+          0.92 + hash2D('tree-owl-body-tint', styleSeedX, styleSeedY + variety) * 0.18
         ),
         roughness: 0.98,
         metalness: 0.01,
@@ -1235,7 +1231,7 @@ function getTreeStyle(
       meadowGrassMaterial: new three.MeshStandardMaterial({
         color: tintHexColor(
           '#79a85a',
-          0.92 + hash2D('tree-meadow-grass-tint', regionX, regionY + variety) * 0.16
+          0.92 + hash2D('tree-meadow-grass-tint', styleSeedX, styleSeedY + variety) * 0.16
         ),
         roughness: 0.98,
         metalness: 0.01,
@@ -1258,7 +1254,7 @@ function getTreeStyle(
       breadcrumbMaterial: new three.MeshStandardMaterial({
         color: tintHexColor(
           '#e6d6a8',
-          0.92 + hash2D('tree-breadcrumb-tint', regionX + variety, regionY) * 0.12
+          0.92 + hash2D('tree-breadcrumb-tint', styleSeedX + variety, styleSeedY) * 0.12
         ),
         roughness: 0.98,
         metalness: 0.01,

@@ -105,7 +105,7 @@ That should be a major optimization target.
 * [ ] Instance foliage clusters.
 * [x] Instance fruit, flowers, rocks, and minor tree decorations.
 * [ ] Share geometries across procedural variants whenever the difference can be expressed with transforms.
-* [ ] Share materials across trees of the same visual family.
+* [x] Share materials across trees of the same visual family.
 * [ ] Use vertex color or instance color for variation rather than unique materials.
 * [ ] Avoid creating high-detail trees until they are close enough to require them.
 
@@ -298,7 +298,7 @@ These reinforce the material/program concern.
 * [ ] Count unique combinations of materials and shader defines.
 * [ ] Minimize different shader configurations.
 * [ ] Avoid creating different material feature sets for tiny visual differences.
-* [ ] Standardize forest materials where possible.
+* [x] Standardize forest materials where possible.
 * [ ] Standardize tree shadow settings.
 * [ ] Avoid toggling shader-defining material properties dynamically.
 * [ ] Prefer uniforms over shader defines for differences that do not require recompilation.
@@ -358,7 +358,7 @@ I would create a deliberate material-sharing design.
 * [ ] Express tree health variation through attributes/uniform parameters.
 * [ ] Express seasonal variation without cloning an entire material for each tree.
 * [ ] Keep the number of actual Three.js material objects dramatically smaller than the number of trees.
-* [ ] Cache material variants by meaningful key.
+* [x] Cache material variants by meaningful key.
 
 For example, prefer:
 
