@@ -910,12 +910,9 @@ describe('tile forest', () => {
       detailLevel: 'low',
     }) as FakeGroup;
 
-    let fullBushCount = 0;
-    fullModel.traverse((node) => {
-      if (node.userData?.forestBush) {
-        fullBushCount += 1;
-      }
-    });
+    const fullBushInstances = fullModel.children.filter(
+      (node) => node instanceof FakeInstancedMesh && node.userData?.forestBush
+    ) as FakeInstancedMesh[];
 
     let lowBushCount = 0;
     lowModel.traverse((node) => {
@@ -924,7 +921,8 @@ describe('tile forest', () => {
       }
     });
 
-    expect(fullBushCount).toBeGreaterThan(0);
+    expect(fullBushInstances.length).toBeGreaterThan(0);
+    expect(fullBushInstances.some((mesh) => mesh.count > 0)).toBe(true);
     expect(lowBushCount).toBe(0);
   });
 
@@ -1534,12 +1532,11 @@ describe('tile forest', () => {
       detailLevel: 'low',
     }) as FakeGroup;
 
-    let fullTrailCount = 0;
-    fullModel.traverse((node) => {
-      if (node.userData?.forestTrail === 'breadcrumb') {
-        fullTrailCount += 1;
-      }
-    });
+    const fullTrailInstances = fullModel.children.filter(
+      (node) =>
+        node instanceof FakeInstancedMesh &&
+        node.userData?.forestTrail === 'breadcrumb'
+    ) as FakeInstancedMesh[];
 
     let lowTrailCount = 0;
     lowModel.traverse((node) => {
@@ -1548,10 +1545,11 @@ describe('tile forest', () => {
       }
     });
 
-    expect(fullTrailCount).toBe(
+    expect(fullTrailInstances.length).toBe(1);
+    expect(fullTrailInstances[0]?.count).toBe(
       getForestTrail(targetTile!.x, targetTile!.y)?.breadcrumbs.length
     );
-    expect(fullTrailCount).toBeGreaterThan(0);
+    expect(fullTrailInstances[0]?.count).toBeGreaterThan(0);
     expect(lowTrailCount).toBe(0);
   });
 

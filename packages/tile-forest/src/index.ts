@@ -837,23 +837,15 @@ export function createForestTilePlugin(): RuntimePlugin {
           }
           const trail = getForestTrail(tileX, tileY);
           if (trail) {
-            for (const breadcrumb of trail.breadcrumbs) {
-              const crumb = new three.Mesh(
-                geometry.foliage,
-                floorDetailStyle.breadcrumbMaterial
-              );
-              crumb.position.set(tileX + breadcrumb.x, 0.03, tileY + breadcrumb.y);
-              crumb.scale.set(
-                breadcrumb.scale * 1.4,
-                breadcrumb.scale * 0.55,
-                breadcrumb.scale
-              );
-              crumb.userData = {
-                ...(crumb.userData ?? {}),
-                [TRAIL_KEY]: 'breadcrumb',
-              };
-              group.add(crumb);
-            }
+            addForestBreadcrumbInstances(
+              three,
+              group,
+              geometry,
+              floorDetailStyle,
+              tileX,
+              tileY,
+              trail
+            );
           }
           const landmark = getForestLandmark(tileX, tileY);
           if (landmark) {
@@ -866,19 +858,15 @@ export function createForestTilePlugin(): RuntimePlugin {
               floorDetailStyle
             );
           }
-          for (const bush of getForestBushes(tileX, tileY)) {
-            const shrub = new three.Mesh(
-              geometry.foliage,
-              floorDetailStyle.foliageMaterial
-            );
-            shrub.position.set(tileX + bush.x, bush.height, tileY + bush.y);
-            shrub.scale.set(bush.width, bush.height, bush.depth);
-            shrub.userData = {
-              ...(shrub.userData ?? {}),
-              [BUSH_KEY]: true,
-            };
-            group.add(shrub);
-          }
+          addForestBushInstances(
+            three,
+            group,
+            geometry,
+            floorDetailStyle,
+            tileX,
+            tileY,
+            getForestBushes(tileX, tileY)
+          );
           for (const detail of getForestFloorDetails(tileX, tileY)) {
             if (detail.kind === 'stump') {
               const stump = new three.Mesh(
@@ -1448,6 +1436,84 @@ function addForestMeadowFlowerInstances(
     });
     group.add(bloomInstances);
   }
+}
+
+function addForestBushInstances(
+  three: ThreeHostLike,
+  group: ThreeObject3DLike,
+  geometry: TreeGeometry,
+  style: ForestTreeStyle,
+  tileX: number,
+  tileY: number,
+  bushes: ForestBushDescriptor[]
+) {
+  if (bushes.length === 0) {
+    return;
+  }
+
+  const bushInstances = new three.InstancedMesh(
+    geometry.foliage,
+    style.foliageMaterial,
+    bushes.length
+  );
+  bushInstances.userData = {
+    ...(bushInstances.userData ?? {}),
+    [BUSH_KEY]: true,
+  };
+  bushes.forEach((bush, index) => {
+    bushInstances.setMatrixAt(
+      index,
+      createLowDetailTreeMatrix(
+        three,
+        tileX + bush.x,
+        bush.height,
+        tileY + bush.y,
+        bush.width,
+        bush.height,
+        bush.depth
+      )
+    );
+  });
+  group.add(bushInstances);
+}
+
+function addForestBreadcrumbInstances(
+  three: ThreeHostLike,
+  group: ThreeObject3DLike,
+  geometry: TreeGeometry,
+  style: ForestTreeStyle,
+  tileX: number,
+  tileY: number,
+  trail: ForestTrailDescriptor
+) {
+  if (trail.breadcrumbs.length === 0) {
+    return;
+  }
+
+  const breadcrumbInstances = new three.InstancedMesh(
+    geometry.foliage,
+    style.breadcrumbMaterial,
+    trail.breadcrumbs.length
+  );
+  breadcrumbInstances.userData = {
+    ...(breadcrumbInstances.userData ?? {}),
+    [TRAIL_KEY]: 'breadcrumb',
+  };
+  trail.breadcrumbs.forEach((breadcrumb, index) => {
+    breadcrumbInstances.setMatrixAt(
+      index,
+      createLowDetailTreeMatrix(
+        three,
+        tileX + breadcrumb.x,
+        0.03,
+        tileY + breadcrumb.y,
+        breadcrumb.scale * 1.4,
+        breadcrumb.scale * 0.55,
+        breadcrumb.scale
+      )
+    );
+  });
+  group.add(breadcrumbInstances);
 }
 
 function createForestFloorDetailDescriptor(

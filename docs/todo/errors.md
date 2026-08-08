@@ -97,7 +97,7 @@ That should be a major optimization target.
 * [ ] Determine whether trunks are separate meshes.
 * [x] Reduce the number of `Object3D` containers per tree.
 * [ ] Avoid creating a `Group` merely to contain one child.
-* [ ] Avoid creating individual meshes for details that can be merged.
+* [x] Avoid creating individual meshes for details that can be merged.
 * [ ] Merge static components where practical.
 * [x] Convert repeated forest components to `InstancedMesh`.
 * [x] Instance common trunk shapes.
