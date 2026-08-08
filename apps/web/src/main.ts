@@ -27,6 +27,7 @@ import {
   getMoonOrbitProgress,
 } from './timekeeper.ts';
 import { createCelestialPreviewRenderer } from './celestial-preview.ts';
+import { createSolarSystemPreviewRenderer } from './solar-system-preview.ts';
 import {
   advanceCompassState,
   drawCompassDial,
@@ -152,10 +153,20 @@ root.innerHTML = `
             aria-hidden="true"
             hidden
           >
-            <div id="celestial-preview" class="celestial-preview"></div>
-            <p class="inspector-note">
-              Drag to rotate the model. Seasonal and daily changes stay synced here too.
-            </p>
+            <div class="model-preview-grid">
+              <div class="model-preview-card">
+                <div id="celestial-preview" class="celestial-preview"></div>
+                <p class="inspector-note">
+                  Drag to rotate the world model. Seasonal and daily changes stay synced here too.
+                </p>
+              </div>
+              <div class="model-preview-card">
+                <div id="solar-system-preview" class="celestial-preview solar-system-preview"></div>
+                <p class="inspector-note">
+                  A separate orrery view tracks the sun, moon, planets, constellations, and Milky Way around the current sky state.
+                </p>
+              </div>
+            </div>
             <div class="time-skip-controls">
               <button id="model-minus-season" type="button">Prev Season</button>
               <button id="model-plus-season" type="button">Next Season</button>
@@ -219,6 +230,8 @@ const timeWheelCanvas =
   document.querySelector<HTMLCanvasElement>('#time-wheel');
 const celestialPreviewHost =
   document.querySelector<HTMLElement>('#celestial-preview');
+const solarSystemPreviewHost =
+  document.querySelector<HTMLElement>('#solar-system-preview');
 const compassDialCanvas =
   document.querySelector<HTMLCanvasElement>('#compass-dial');
 const faceNorthButton =
@@ -352,6 +365,7 @@ const MOON_PHASE_ILLUMINATIONS = [0, 0.25, 0.5, 0.75, 1, 0.75, 0.5, 0.25] as con
 drawAtlas(atlasCanvas.getContext('2d'));
 const renderer3d = create3DRenderer(viewport3d);
 const celestialPreview = createCelestialPreviewRenderer(celestialPreviewHost);
+const solarSystemPreview = createSolarSystemPreviewRenderer(solarSystemPreviewHost);
 let activeInspectorTab = getNextInspectorTab(savedSession?.inspectorTab);
 
 const keys = new Set();
@@ -426,6 +440,7 @@ function resizeCanvas() {
   }
   renderer3d.resize(rect.width, rect.height, ratio);
   celestialPreview.resize();
+  solarSystemPreview.resize();
 }
 
 function toggleView() {
@@ -958,6 +973,7 @@ function render() {
 
   drawTimeWheel(timeWheelCanvas, displayCycle);
   celestialPreview.render(displayCycle, environment, state.player.facing, generator);
+  solarSystemPreview.render(displayCycle);
   drawCompassDial(
     compassDialCanvas,
     updateDisplayedCompass(state.player.facing),
