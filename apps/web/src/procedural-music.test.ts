@@ -124,6 +124,36 @@ describe('procedural music', () => {
     expect(scheduled.state.nextNoteAtMs).toBeGreaterThan(1000);
   });
 
+  it('uses recurring rhythmic motifs instead of uniform note spacing', () => {
+    const scheduled = scheduleProceduralMusicNotes({
+      nowMs: 0,
+      tileKind: 'town',
+      contextType: 'town',
+      dayProgress: 0.5,
+      yearProgress: 0.5,
+      clusterX: 0,
+      clusterY: 0,
+    });
+    const deltas = scheduled.notes
+      .slice(1)
+      .map((note, index) => note.startMs - scheduled.notes[index]!.startMs);
+
+    expect(new Set(deltas.map((delta) => delta.toFixed(3))).size).toBeGreaterThan(1);
+
+    const repeated = scheduleProceduralMusicNotes({
+      nowMs: 0,
+      tileKind: 'town',
+      contextType: 'town',
+      dayProgress: 0.5,
+      yearProgress: 0.5,
+      clusterX: 0,
+      clusterY: 0,
+    });
+    expect(repeated.notes.map((note) => note.startMs)).toEqual(
+      scheduled.notes.map((note) => note.startMs)
+    );
+  });
+
   it('resets scheduling cleanly when the player moves into a new region cluster', () => {
     const first = scheduleProceduralMusicNotes({
       nowMs: 0,
@@ -500,6 +530,14 @@ describe('procedural music', () => {
       clusterY: 0,
     });
     const initialCount = played.length;
+    const initialSchedule = scheduleProceduralMusicNotes({
+      nowMs: 0,
+      tileKind: 'town',
+      contextType: 'town',
+      dayProgress: 0.45,
+      clusterX: 0,
+      clusterY: 0,
+    });
 
     controller.update({
       nowMs: 16,
@@ -513,7 +551,7 @@ describe('procedural music', () => {
     expect(played.length).toBe(initialCount);
 
     controller.update({
-      nowMs: 980,
+      nowMs: initialSchedule.state.nextNoteAtMs - 239,
       tileKind: 'town',
       contextType: 'town',
       dayProgress: 0.45,

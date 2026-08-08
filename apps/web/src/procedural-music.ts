@@ -44,6 +44,7 @@ type MusicRegionTheme = {
   noteDurationMs: number;
   baseVolume: number;
   stepPattern: number[];
+  rhythmPattern: number[];
 };
 
 export type ProceduralInstrument = {
@@ -168,6 +169,7 @@ const THEME_LIBRARY: Record<MusicRegionThemeId, MusicRegionTheme> = {
     noteDurationMs: 360,
     baseVolume: 0.028,
     stepPattern: [0, 2, 4, 2, 5, 4, 2, 0],
+    rhythmPattern: [1, 0.75, 1.25, 1, 1.5, 0.75, 1, 1.25],
   },
   'deep-forest': {
     id: 'deep-forest',
@@ -176,6 +178,7 @@ const THEME_LIBRARY: Record<MusicRegionThemeId, MusicRegionTheme> = {
     noteDurationMs: 440,
     baseVolume: 0.026,
     stepPattern: [0, 2, 3, 5, 3, 2, 1, 0],
+    rhythmPattern: [1.25, 0.75, 1, 1.25, 0.75, 1, 1.5, 0.75],
   },
   'coastal-shore': {
     id: 'coastal-shore',
@@ -184,6 +187,7 @@ const THEME_LIBRARY: Record<MusicRegionThemeId, MusicRegionTheme> = {
     noteDurationMs: 420,
     baseVolume: 0.027,
     stepPattern: [0, 2, 4, 5, 4, 2, 0, 2],
+    rhythmPattern: [1, 1.25, 0.75, 1, 1.25, 0.75, 1.5, 0.75],
   },
   'town-square': {
     id: 'town-square',
@@ -192,6 +196,7 @@ const THEME_LIBRARY: Record<MusicRegionThemeId, MusicRegionTheme> = {
     noteDurationMs: 300,
     baseVolume: 0.024,
     stepPattern: [0, 2, 4, 5, 4, 2, 5, 4],
+    rhythmPattern: [1, 0.5, 1, 0.5, 1.25, 0.75, 1, 1.5],
   },
   'ridge-pass': {
     id: 'ridge-pass',
@@ -200,6 +205,7 @@ const THEME_LIBRARY: Record<MusicRegionThemeId, MusicRegionTheme> = {
     noteDurationMs: 380,
     baseVolume: 0.024,
     stepPattern: [0, 1, 3, 4, 3, 1, 0, 4],
+    rhythmPattern: [1.5, 0.75, 1, 1.25, 0.75, 1, 1.25, 0.75],
   },
   'cavern-echo': {
     id: 'cavern-echo',
@@ -208,6 +214,7 @@ const THEME_LIBRARY: Record<MusicRegionThemeId, MusicRegionTheme> = {
     noteDurationMs: 520,
     baseVolume: 0.03,
     stepPattern: [0, 2, 4, 2, 5, 2, 1, 0],
+    rhythmPattern: [1.5, 1, 0.75, 1.25, 1, 0.75, 1.5, 0.75],
   },
   'interior-hall': {
     id: 'interior-hall',
@@ -216,6 +223,7 @@ const THEME_LIBRARY: Record<MusicRegionThemeId, MusicRegionTheme> = {
     noteDurationMs: 340,
     baseVolume: 0.022,
     stepPattern: [0, 2, 4, 2, 5, 4, 2, 1],
+    rhythmPattern: [1, 0.75, 1, 1.25, 0.75, 1, 1.25, 1],
   },
 };
 
@@ -948,7 +956,9 @@ function scheduleThemeLayerNotes(
         volume: note.volume * options.gainMultiplier,
       });
     }
-    nextNoteAtMs += theme.noteDurationMs / mood.tempoMultiplier;
+    nextNoteAtMs +=
+      (theme.noteDurationMs * resolveRhythmicMotifStepDuration(theme, stepIndex)) /
+      mood.tempoMultiplier;
     stepIndex += 1;
   }
 
@@ -1231,6 +1241,13 @@ function shouldRestAtThemeStep(
     hash2D(`${theme.id}:${role}:rest`, clusterX + stepIndex, clusterY) +
     (theme.stepPattern[phraseStep] ?? 0) * 0.013;
   return variation > 1 - restChance;
+}
+
+function resolveRhythmicMotifStepDuration(
+  theme: MusicRegionTheme,
+  stepIndex: number
+): number {
+  return theme.rhythmPattern[stepIndex % theme.rhythmPattern.length] ?? 1;
 }
 
 function normalizeWrappedProgress(value: number): number {
