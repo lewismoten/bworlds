@@ -27,6 +27,7 @@ import type {
   ThreeMaterialLike,
   ThreeMatrix4Like,
   ThreeObject3DLike,
+  ThreeTextureLike,
   WorldEnvironmentLike,
 } from '@bworlds/plugin-api';
 
@@ -83,6 +84,7 @@ const forestFireflyCache = createBoundedCache<string, ForestFireflyDescriptor[]>
   FOREST_COORDINATE_CACHE_LIMIT
 );
 const forestFireflyMaterialCache = new WeakMap<ThreeHostLike, ThreeMaterialLike>();
+const forestFireflyTextureCache = new WeakMap<ThreeHostLike, ThreeTextureLike>();
 const forestWebCache = createBoundedCache<string, ForestWebDescriptor[]>(
   FOREST_COORDINATE_CACHE_LIMIT
 );
@@ -1751,15 +1753,52 @@ function getSharedForestFireflyMaterial(three: ThreeHostLike) {
     return cachedMaterial;
   }
 
-  const material = new three.PointsMaterial({
+  const fireflyTexture = getSharedForestFireflyTexture(three);
+  const material = new three.PointsMaterial(compactMaterialOptions({
     color: '#d9ff8a',
-    size: 0.085,
+    map: fireflyTexture,
+    size: fireflyTexture ? 0.115 : 0.085,
     transparent: true,
     opacity: 0,
     depthWrite: false,
-  });
+    alphaTest: fireflyTexture ? 0.08 : undefined,
+  }));
   forestFireflyMaterialCache.set(three, material);
   return material;
+}
+
+function getSharedForestFireflyTexture(three: ThreeHostLike) {
+  const cachedTexture = forestFireflyTextureCache.get(three);
+  if (cachedTexture) {
+    return cachedTexture;
+  }
+
+  const texture = createPaintedCanvasTexture(three, {
+    width: 16,
+    height: 16,
+    wrap: false,
+    paint(context, canvas) {
+      const centerX = canvas.width / 2;
+      const centerY = canvas.height / 2;
+      const radius = canvas.width * 0.44;
+      const gradient = context.createRadialGradient(
+        centerX,
+        centerY,
+        0,
+        centerX,
+        centerY,
+        radius
+      );
+      gradient.addColorStop(0, 'rgba(255, 255, 214, 1)');
+      gradient.addColorStop(0.35, 'rgba(238, 255, 160, 0.95)');
+      gradient.addColorStop(0.7, 'rgba(205, 255, 136, 0.34)');
+      gradient.addColorStop(1, 'rgba(205, 255, 136, 0)');
+      context.fillStyle = gradient;
+      context.fillRect(0, 0, canvas.width, canvas.height);
+    },
+  });
+  forestFireflyTextureCache.set(three, texture);
+  return texture;
 }
 
 function getForestFireflyHabitatAnchors(
@@ -3095,6 +3134,12 @@ function getForestFireflySeasonalActivation(yearProgress?: number) {
     (FIREFLY_SEASON_END - yearProgress) /
       Math.max(0.001, FIREFLY_SEASON_END - FIREFLY_SEASON_PEAK)
   );
+}
+
+function compactMaterialOptions<T extends Record<string, unknown>>(options: T): T {
+  return Object.fromEntries(
+    Object.entries(options).filter(([, value]) => value !== undefined)
+  ) as T;
 }
 
 function clampForestUnit(value: number) {

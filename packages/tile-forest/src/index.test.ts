@@ -2923,6 +2923,15 @@ describe('tile forest', () => {
     expect(firstPoints).toBeDefined();
     expect(secondPoints).toBeDefined();
     expect(firstPoints?.material).toBe(secondPoints?.material);
+    expect((firstPoints?.material as FakeMaterial | undefined)?.options).toMatchObject({
+      map: expect.objectContaining({
+        colorSpace: '',
+        needsUpdate: false,
+      }),
+      alphaTest: 0.08,
+      transparent: true,
+      depthWrite: false,
+    });
   });
 
   it('scales firefly particle density down for farther close-detail forest tiles', () => {
