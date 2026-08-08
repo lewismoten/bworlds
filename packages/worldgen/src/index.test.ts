@@ -586,6 +586,45 @@ describe('world generator', () => {
     );
   });
 
+  it('creates station points of interest somewhere near the origin', () => {
+    const registry = createDefaultPluginRegistry();
+    let stationAnchor: { x: number; y: number } | null = null;
+    let stationSeed = '';
+
+    for (let seedIndex = 0; seedIndex < 24 && !stationAnchor; seedIndex += 1) {
+      stationSeed = `station-worldgen-spec:${seedIndex}`;
+      const sampleTerrainSignals = createOverworldTerrainSignalSampler(stationSeed);
+      for (let y = -320; y <= 320 && !stationAnchor; y += 32) {
+        for (let x = -320; x <= 320; x += 32) {
+          const anchors = registry.resolveOverworldAnchors({
+            seed: stationSeed,
+            x,
+            y,
+            sampleTerrainSignals,
+          });
+          const found = anchors.poiAnchors.find((anchor) => anchor.type === 'station');
+          if (found) {
+            stationAnchor = { x: found.x, y: found.y };
+            break;
+          }
+        }
+      }
+    }
+
+    expect(stationAnchor).not.toBeNull();
+    const generator = createWorldGenerator({
+      seed: stationSeed,
+      plugins: registry,
+    });
+
+    const stationTile = generator.sampleOverworld(stationAnchor!.x, stationAnchor!.y);
+
+    expect(stationTile.poi?.type).toBe('station');
+    expect(stationTile.poi?.name).toMatch(
+      /\b(Station|Depot|Platform|Junction|Terminal|Rail)\b/
+    );
+  });
+
   it('lets the player build and enter a new poi anywhere on an open overworld tile', () => {
     const runtime = createWorldRuntime({
       seed: 'spec',

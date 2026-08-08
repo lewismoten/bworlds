@@ -5,6 +5,7 @@ import { createObservatoryMapPlugin } from '@bworlds/map-observatory';
 import { createOverworldCompositionPlugin } from '@bworlds/map-overworld';
 import { createQuarryMapPlugin } from '@bworlds/map-quarry';
 import { createShipMapPlugin } from '@bworlds/map-ship';
+import { createStationMapPlugin } from '@bworlds/map-station';
 import { createTownMapPlugin } from '@bworlds/map-town';
 import type {
   Kind,
@@ -45,6 +46,7 @@ import { createQuarryTilePlugin } from '@bworlds/tile-quarry';
 import { createRouteTilePlugin } from '@bworlds/tile-route';
 import { createShipTilePlugin } from '@bworlds/tile-ship';
 import { createSignTilePlugin } from '@bworlds/tile-sign';
+import { createStationTilePlugin } from '@bworlds/tile-station';
 import { createTownTilePlugin } from '@bworlds/tile-town';
 import { createWaterTilePlugin } from '@bworlds/tile-water';
 
@@ -81,6 +83,10 @@ export function createDefaultMapPlugins(): RuntimePlugin[] {
     {
       create: createObservatoryMapPlugin,
       order: { priority: 38 },
+    },
+    {
+      create: createStationMapPlugin,
+      order: { priority: 39 },
     },
     {
       create: createOverworldCompositionPlugin,
@@ -191,6 +197,10 @@ export function createDefaultTilePlugins(): RuntimePlugin[] {
     {
       create: createObservatoryTilePlugin,
       order: { priority: 50 },
+    },
+    {
+      create: createStationTilePlugin,
+      order: { priority: 51 },
     },
     {
       create: createDungeonTilePlugin,

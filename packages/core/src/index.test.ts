@@ -294,6 +294,16 @@ describe('core utilities', () => {
     );
   });
 
+  it('generates deterministic station point-of-interest names', () => {
+    const left = generatePoiName('station-spec', 'station', 7, -14);
+    const right = generatePoiName('station-spec', 'station', 7, -14);
+
+    expect(left).toBe(right);
+    expect(left).toMatch(
+      /\b(Station|Depot|Platform|Junction|Terminal|Rail)\b/
+    );
+  });
+
   it('exposes periodic planets, meteor showers, and comets', () => {
     const events = getCelestialEventsForDay(0, {
       yearLengthDays: DEFAULT_YEAR_LENGTH_DAYS,

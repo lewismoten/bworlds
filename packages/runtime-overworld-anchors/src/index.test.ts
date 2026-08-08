@@ -442,4 +442,48 @@ describe('runtime overworld anchors', () => {
       expect(adjacentLand).toBe(true);
     });
   });
+
+  it('places station anchors on flatter inland terrain with stronger road signals', () => {
+    const sampleTerrainSignals = (x: number, y: number): OverworldSignals => {
+      const nearRoute = Math.abs(y) <= 1 || Math.abs(x) <= 1;
+      return {
+        continent: 0.68,
+        elevation: nearRoute ? 0.34 : 0.5,
+        moisture: 0.46,
+        riverSignal: 0.22,
+        roadSignal: nearRoute ? 0.58 : 0.18,
+      };
+    };
+    let anchors: OverworldAnchorSet = {
+      townAnchors: [],
+      bridgeAnchors: [],
+      poiAnchors: [],
+    };
+
+    for (let seedIndex = 0; seedIndex < 24; seedIndex += 1) {
+      anchors =
+        (plugin.resolveOverworldAnchors?.(
+          createAnchorPayload({
+            seed: `station-route-spec:${seedIndex}`,
+            x: 0,
+            y: 0,
+            sampleTerrainSignals,
+          })
+        ) as OverworldAnchorSet) ?? anchors;
+      if ((anchors.poiAnchors ?? []).some((anchor) => anchor.type === 'station')) {
+        break;
+      }
+    }
+
+    const stations = (anchors.poiAnchors ?? []).filter(
+      (anchor) => anchor.type === 'station'
+    );
+    expect(stations.length).toBeGreaterThan(0);
+    stations.forEach((anchor) => {
+      const terrain = sampleTerrainSignals(anchor.x, anchor.y);
+      expect(terrain.elevation).toBeLessThan(0.54);
+      expect(terrain.roadSignal).toBeGreaterThanOrEqual(0.42);
+      expect(terrain.riverSignal).toBeLessThan(0.72);
+    });
+  });
 });

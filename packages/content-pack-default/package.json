@@ -10,6 +10,7 @@
     "@bworlds/map-overworld": "0.1.0",
     "@bworlds/map-quarry": "0.1.0",
     "@bworlds/map-ship": "0.1.0",
+    "@bworlds/map-station": "0.1.0",
     "@bworlds/map-town": "0.1.0",
     "@bworlds/plugin-api": "0.1.0",
     "@bworlds/runtime-celestial": "0.1.0",
@@ -34,6 +35,7 @@
     "@bworlds/tile-route": "0.1.0",
     "@bworlds/tile-ship": "0.1.0",
     "@bworlds/tile-sign": "0.1.0",
+    "@bworlds/tile-station": "0.1.0",
     "@bworlds/tile-town": "0.1.0",
     "@bworlds/tile-water": "0.1.0"
   },

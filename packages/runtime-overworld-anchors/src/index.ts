@@ -21,7 +21,8 @@ type PoiType =
   | 'quarry'
   | 'lighthouse'
   | 'ship'
-  | 'observatory';
+  | 'observatory'
+  | 'station';
 
 const TOWN_CELL_SIZE = 20;
 const BRIDGE_CELL_SIZE = 16;
@@ -37,6 +38,8 @@ const OCEAN_CONTINENT_THRESHOLD = 0.38;
 const LAND_CONTINENT_THRESHOLD = 0.42;
 const SHIP_CONTINENT_MAX = 0.74;
 const OBSERVATORY_ELEVATION_MIN = 0.78;
+const STATION_ELEVATION_MAX = 0.54;
+const STATION_ROAD_SIGNAL_MIN = 0.42;
 
 function hasMountainSummitCluster(
   x: number,
@@ -309,6 +312,25 @@ const POI_SPECS: Record<PoiType, OverworldCellAnchorSpec<NamedPoiAnchor>> = {
         terrain.elevation >= OBSERVATORY_ELEVATION_MIN &&
         terrain.riverSignal < 0.72 &&
         hasMountainSummitCluster(x, y, sampleTerrainSignals)
+      );
+    },
+  }),
+  station: createGeneratedPoiOverworldCellAnchorSpec({
+    id: 'station',
+    poiType: 'station',
+    cellSize: 24,
+    chanceKey: 'station-anchor',
+    offsetXKey: 'station-anchor-x',
+    offsetYKey: 'station-anchor-y',
+    threshold: 0.76,
+    priority: 16,
+    isSuitableTerrain({ terrain }) {
+      return (
+        terrain.continent > 0.5 &&
+        terrain.continent < 0.9 &&
+        terrain.elevation < STATION_ELEVATION_MAX &&
+        terrain.riverSignal < 0.72 &&
+        terrain.roadSignal >= STATION_ROAD_SIGNAL_MIN
       );
     },
   }),

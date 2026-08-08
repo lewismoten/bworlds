@@ -1748,6 +1748,11 @@ export function generatePoiName(
     return `${prefix} ${pickFrom(nouns, hash2D(`${stem}:noun`, x, y))}`;
   }
 
+  if (type === 'station') {
+    const nouns = ['Station', 'Depot', 'Platform', 'Junction', 'Terminal', 'Rail'];
+    return `${prefix} ${pickFrom(nouns, hash2D(`${stem}:noun`, x, y))}`;
+  }
+
   return `${prefix}${suffix}`;
 }
 
