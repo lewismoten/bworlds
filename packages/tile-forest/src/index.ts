@@ -30,6 +30,7 @@ const FLOOR_DETAIL_KEY = 'forestFloorDetail';
 const BUSH_KEY = 'forestBush';
 const LANDMARK_KEY = 'forestLandmark';
 const HOLLOW_KEY = 'forestHollow';
+const OWL_KEY = 'forestOwl';
 const TREE_CLUSTER_SIZE = 4;
 const TREE_REGION_SIZE = 14;
 
@@ -237,6 +238,30 @@ const resolveForestHollowDescriptors = createCoordinateValueResolver(
     return hollows;
   }
 );
+const forestOwlCache = new Map<string, ForestOwlDescriptor[]>();
+const resolveForestOwlDescriptors = createCoordinateValueResolver(
+  forestOwlCache,
+  ({ tileX, tileY }) => {
+    const hollows = resolveForestHollowDescriptors(tileX, tileY);
+    const owls: ForestOwlDescriptor[] = [];
+
+    hollows.forEach((hollow, hollowIndex) => {
+      const chance = hash2D('forest-owl', tileX * 23 + hollowIndex, tileY * 29);
+      if (chance < 0.58) {
+        return;
+      }
+
+      owls.push({
+        hollowIndex,
+        bodyScale: 0.08 + hash2D('forest-owl-body', tileX + hollowIndex, tileY) * 0.03,
+        eyeSpread: 0.022 + hash2D('forest-owl-eye-spread', tileX, tileY + hollowIndex) * 0.012,
+        perchOffset: 0.01 + hash2D('forest-owl-perch', tileX - hollowIndex, tileY) * 0.02,
+      });
+    });
+
+    return owls;
+  }
+);
 const treeGeometryCache = new WeakMap<
   object,
   {
@@ -417,6 +442,69 @@ export function createForestTilePlugin(): RuntimePlugin {
             };
             group.add(hollowMesh);
           }
+          for (const owl of getForestOwls(tileX, tileY)) {
+            const hollow = hollows[owl.hollowIndex];
+            const treeDescriptor = hollow
+              ? descriptors[hollow.treeIndex]
+              : null;
+            if (!hollow || !treeDescriptor) {
+              continue;
+            }
+
+            const owlBody = new three.Mesh(
+              geometry.foliage,
+              floorDetailStyle.owlBodyMaterial
+            );
+            owlBody.position.set(
+              tileX +
+                treeDescriptor.x +
+                treeDescriptor.radius * 0.56 * hollow.sideOffset,
+              hollow.height - owl.perchOffset,
+              tileY + treeDescriptor.y + hollow.depth * 0.2
+            );
+            owlBody.scale.set(
+              owl.bodyScale,
+              owl.bodyScale * 1.18,
+              owl.bodyScale * 0.92
+            );
+            owlBody.userData = {
+              ...(owlBody.userData ?? {}),
+              [OWL_KEY]: true,
+            };
+            group.add(owlBody);
+
+            const leftEye = new three.Mesh(
+              geometry.foliage,
+              floorDetailStyle.owlEyeMaterial
+            );
+            leftEye.position.set(
+              owlBody.position.x + owl.eyeSpread * 0.5,
+              owlBody.position.y + owl.bodyScale * 0.16,
+              owlBody.position.z + owl.bodyScale * 0.68
+            );
+            leftEye.scale.setScalar(owl.bodyScale * 0.16);
+            leftEye.userData = {
+              ...(leftEye.userData ?? {}),
+              [OWL_KEY]: true,
+            };
+            group.add(leftEye);
+
+            const rightEye = new three.Mesh(
+              geometry.foliage,
+              floorDetailStyle.owlEyeMaterial
+            );
+            rightEye.position.set(
+              owlBody.position.x - owl.eyeSpread * 0.5,
+              owlBody.position.y + owl.bodyScale * 0.16,
+              owlBody.position.z + owl.bodyScale * 0.68
+            );
+            rightEye.scale.setScalar(owl.bodyScale * 0.16);
+            rightEye.userData = {
+              ...(rightEye.userData ?? {}),
+              [OWL_KEY]: true,
+            };
+            group.add(rightEye);
+          }
           const landmark = getForestLandmark(tileX, tileY);
           if (landmark) {
             createForestLandmarkMeshes(
@@ -558,6 +646,13 @@ export function getForestTreeHollows(
   return resolveForestHollowDescriptors(tileX, tileY);
 }
 
+export function getForestOwls(
+  tileX: number,
+  tileY: number
+): ForestOwlDescriptor[] {
+  return resolveForestOwlDescriptors(tileX, tileY);
+}
+
 function getForestGroveCenter(tileX: number, tileY: number) {
   return {
     x: (hash2D('forest-grove-center-x', tileX, tileY) - 0.5) * 0.36,
@@ -683,6 +778,19 @@ function getTreeStyle(
         color: '#120b07',
         roughness: 1,
         metalness: 0,
+      }),
+      owlBodyMaterial: new three.MeshStandardMaterial({
+        color: tintHexColor(
+          '#6b4d31',
+          0.92 + hash2D('tree-owl-body-tint', regionX, regionY + variety) * 0.18
+        ),
+        roughness: 0.98,
+        metalness: 0.01,
+      }),
+      owlEyeMaterial: new three.MeshStandardMaterial({
+        color: '#f6e6a0',
+        roughness: 0.82,
+        metalness: 0.02,
       }),
     });
   }
@@ -1081,6 +1189,8 @@ interface ForestTreeStyle {
   mushroomCapMaterial: ThreeMaterialLike;
   mushroomStemMaterial: ThreeMaterialLike;
   hollowMaterial: ThreeMaterialLike;
+  owlBodyMaterial: ThreeMaterialLike;
+  owlEyeMaterial: ThreeMaterialLike;
 }
 
 interface ForestBranchDescriptor {
@@ -1146,4 +1256,11 @@ interface ForestHollowDescriptor {
   height: number;
   scale: number;
   depth: number;
+}
+
+interface ForestOwlDescriptor {
+  hollowIndex: number;
+  bodyScale: number;
+  eyeSpread: number;
+  perchOffset: number;
 }
