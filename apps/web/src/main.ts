@@ -807,6 +807,7 @@ const hmrNoticeState = {
 const renderBudgetState = {
   ...DEFAULT_RENDER_BUDGET_STATE,
 };
+let latestEnvironment: WorldEnvironmentLike = getCurrentEnvironment();
 
 (state as typeof state & { celestialEventMode?: string }).celestialEventMode =
   celestialEventModeState.mode;
@@ -1887,6 +1888,9 @@ function updateMovement(deltaMs: number): void {
     isJumping: motion.isJumping,
     viewMode: state.viewMode,
     tileKind: state.getCurrentTile().kind,
+    weatherKind: latestEnvironment.weather?.current?.kind,
+    weatherIntensity: latestEnvironment.weather?.current?.intensity,
+    windStrength: latestEnvironment.weather?.current?.windStrength,
     emitter: { x: state.player.x, y: state.player.y },
     listener: { x: state.player.x, y: state.player.y },
   });
@@ -1904,6 +1908,7 @@ function render(): FrameLoopActivityLike {
   const nowMs = performance.now();
   const timeMs = getCurrentWorldTimeMs();
   const environment = getCurrentEnvironment(timeMs);
+  latestEnvironment = environment;
   const actualCycle = applyCelestialEnvironmentOverrides(
     getDaylightCycleState(timeMs, environment.cycle ?? {}),
     (environment.celestial ?? {}) as CelestialEnvironmentOverrides

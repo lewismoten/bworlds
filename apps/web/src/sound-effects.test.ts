@@ -1,10 +1,12 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
   createSoundEffectController,
+  getForestWindCadenceMs,
   getSurfaceAudioFamily,
   getSurfaceAudioProfile,
   getSoundSpatialMix,
   shouldPlayBlockedMovementSound,
+  shouldPlayForestWindSound,
   type ProceduralSoundEffect,
 } from './sound-effects.ts';
 
@@ -87,6 +89,46 @@ describe('sound effects', () => {
     });
 
     expect(play).not.toHaveBeenCalled();
+  });
+
+  it('plays a debounced forest wind rustle when windy weather moves through trees', () => {
+    const played: ProceduralSoundEffect[] = [];
+    const controller = createSoundEffectController({
+      play(effect) {
+        played.push(effect);
+      },
+    });
+
+    controller.update({
+      nowMs: 0,
+      walking: false,
+      isJumping: false,
+      viewMode: '3d',
+      tileKind: 'forest',
+      weatherKind: 'wind',
+      windStrength: 0.85,
+    });
+    controller.update({
+      nowMs: 800,
+      walking: false,
+      isJumping: false,
+      viewMode: '3d',
+      tileKind: 'forest',
+      weatherKind: 'wind',
+      windStrength: 0.85,
+    });
+    controller.update({
+      nowMs: getForestWindCadenceMs(0.85) + 20,
+      walking: false,
+      isJumping: false,
+      viewMode: '3d',
+      tileKind: 'forest',
+      weatherKind: 'wind',
+      windStrength: 0.85,
+    });
+
+    expect(played.map((effect) => effect.kind)).toEqual(['wind', 'wind']);
+    expect(played[0]?.waveform).toBe('triangle');
   });
 
   it('plays a debounced blocked-movement cue when walking into forest trees', () => {
@@ -221,6 +263,13 @@ describe('sound effects', () => {
     expect(shouldPlayBlockedMovementSound('forest')).toBe(true);
     expect(shouldPlayBlockedMovementSound('road')).toBe(false);
     expect(shouldPlayBlockedMovementSound(undefined)).toBe(false);
+  });
+
+  it('only schedules forest wind ambience for windy forest tiles', () => {
+    expect(shouldPlayForestWindSound('forest', 'wind', 0.2)).toBe(true);
+    expect(shouldPlayForestWindSound('forest', 'clouds', 0.45)).toBe(true);
+    expect(shouldPlayForestWindSound('forest', 'clouds', 0.1)).toBe(false);
+    expect(shouldPlayForestWindSound('road', 'wind', 0.9)).toBe(false);
   });
 
   it('attaches listener and emitter positions to scheduled movement sounds', () => {

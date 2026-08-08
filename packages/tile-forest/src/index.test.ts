@@ -811,6 +811,129 @@ describe('tile forest', () => {
     expect(lowBushCount).toBe(0);
   });
 
+  it('adds windy foliage to forest tree canopies and sways them with weather strength', () => {
+    const plugin = createForestTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'forest');
+    const state = {
+      player: { x: 0, y: 0, facing: 0 },
+      getCurrentContext() {
+        return { id: 'overworld', type: 'overworld', depth: 0 };
+      },
+      getCurrentTile() {
+        return { kind: 'forest' };
+      },
+      getTileDefinition() {
+        return {
+          name: 'Forest',
+          color: '#000000',
+          miniColor: '#111111',
+          walkable: true,
+          wallHeight: 0.38,
+        };
+      },
+    };
+
+    const model = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'forest' },
+      tileX: 8,
+      tileY: 6,
+      detailLevel: 'full',
+    }) as FakeGroup;
+
+    const foliageMeshes: FakeMesh[] = [];
+    model.traverse((node) => {
+      if (node instanceof FakeMesh && node.userData?.forestTreeFoliage) {
+        foliageMeshes.push(node);
+      }
+    });
+
+    expect(foliageMeshes.length).toBeGreaterThan(0);
+
+    tile?.sync3DModel?.({
+      three: fakeThree as never,
+      state: {} as never,
+      tile: { kind: 'forest' },
+      tileX: 8,
+      tileY: 6,
+      model,
+      timeMs: 1000,
+      cycle: { daylight: 1, twilight: 0, night: 0 },
+      environment: {
+        weather: {
+          current: {
+            kind: 'wind',
+            label: 'Wind',
+            intensity: 0.1,
+            windStrength: 0.1,
+            precipitation: 0,
+            cloudCover: 0.1,
+            temperature: 18,
+            visibility: 1,
+            front: {
+              id: 'calm-front',
+              kind: 'warm',
+              intensity: 0.1,
+              humidityShift: 0,
+              temperatureShift: 0,
+              windDirectionDegrees: 90,
+              speed: 0.1,
+            },
+          },
+          forecast: [],
+        },
+      },
+    });
+    const baseRotation =
+      typeof foliageMeshes[0]?.userData?.poiWindResponder === 'object' &&
+      foliageMeshes[0]?.userData?.poiWindResponder &&
+      'baseRotation' in foliageMeshes[0].userData.poiWindResponder
+        ? Number(foliageMeshes[0].userData.poiWindResponder.baseRotation)
+        : 0;
+    const calmRotation = foliageMeshes[0]?.rotation.z ?? 0;
+
+    tile?.sync3DModel?.({
+      three: fakeThree as never,
+      state: {} as never,
+      tile: { kind: 'forest' },
+      tileX: 8,
+      tileY: 6,
+      model,
+      timeMs: 1000,
+      cycle: { daylight: 1, twilight: 0, night: 0 },
+      environment: {
+        weather: {
+          current: {
+            kind: 'wind',
+            label: 'Wind',
+            intensity: 0.95,
+            windStrength: 0.95,
+            precipitation: 0,
+            cloudCover: 0.2,
+            temperature: 18,
+            visibility: 1,
+            front: {
+              id: 'windy-front',
+              kind: 'cold',
+              intensity: 0.95,
+              humidityShift: 0.08,
+              temperatureShift: -1,
+              windDirectionDegrees: 90,
+              speed: 0.95,
+            },
+          },
+          forecast: [],
+        },
+      },
+    });
+    const windyRotation = foliageMeshes[0]?.rotation.z ?? 0;
+
+    expect(Math.abs(windyRotation - baseRotation)).toBeGreaterThan(
+      Math.abs(calmRotation - baseRotation)
+    );
+  });
+
   it('renders tree hollows only in full-detail forest models', () => {
     const plugin = createForestTilePlugin();
     const tile = plugin.tiles?.find((entry) => entry.kind === 'forest');

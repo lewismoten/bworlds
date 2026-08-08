@@ -6,7 +6,8 @@ type SoundEffectKind =
   | 'landing'
   | 'blocked'
   | 'open'
-  | 'close';
+  | 'close'
+  | 'wind';
 type SoundWaveform = OscillatorType;
 type SoundPosition = { x: number; y: number };
 type SurfaceAudioFamily =
@@ -62,6 +63,9 @@ export type SoundEffectController = {
     isJumping: boolean;
     viewMode: ViewModeLike;
     tileKind?: SurfaceKind;
+    weatherKind?: string;
+    weatherIntensity?: number;
+    windStrength?: number;
     emitter?: SoundPosition;
     listener?: SoundPosition;
   }): void;
@@ -202,6 +206,7 @@ export function createSoundEffectController(
   let lastJumpAtMs = -Infinity;
   let lastBlockedAtMs = -Infinity;
   let lastInteractionAtMs = -Infinity;
+  let lastWindAtMs = -Infinity;
   let previousJumping = false;
   let footstepVariant = 0;
 
@@ -221,6 +226,8 @@ export function createSoundEffectController(
       frequency:
         kind === 'jump'
           ? profile.footstepFrequency + 72
+          : kind === 'wind'
+            ? 190 + (tileKind === 'forest' ? 16 : 0) + variantOffset * 0.4
           : kind === 'open'
             ? resolveInteractionFrequency('open', tileKind, profile, variantOffset)
           : kind === 'close'
@@ -233,6 +240,8 @@ export function createSoundEffectController(
       durationMs:
         kind === 'jump'
           ? 140
+          : kind === 'wind'
+            ? 680
           : kind === 'landing'
             ? 120
             : kind === 'blocked'
@@ -243,6 +252,8 @@ export function createSoundEffectController(
       volume:
         kind === 'jump'
           ? profile.footstepVolume * 1.2
+          : kind === 'wind'
+            ? 0.018
           : kind === 'open' || kind === 'close'
             ? profile.landingVolume * 0.8
           : kind === 'blocked'
@@ -253,6 +264,8 @@ export function createSoundEffectController(
       waveform:
         kind === 'blocked'
           ? 'sawtooth'
+          : kind === 'wind'
+            ? 'triangle'
           : kind === 'open' || kind === 'close'
             ? resolveInteractionWaveform(tileKind, profile.waveform)
             : profile.waveform,
@@ -289,10 +302,30 @@ export function createSoundEffectController(
       lastBlockedAtMs = nowMs;
       play('blocked', nowMs, tileKind, emitter, listener);
     },
-    update({ nowMs, walking, isJumping, viewMode, tileKind, emitter, listener }) {
+    update({
+      nowMs,
+      walking,
+      isJumping,
+      viewMode,
+      tileKind,
+      weatherKind,
+      weatherIntensity,
+      windStrength,
+      emitter,
+      listener,
+    }) {
       if (viewMode !== '3d') {
         previousJumping = isJumping;
         return;
+      }
+
+      if (
+        shouldPlayForestWindSound(tileKind, weatherKind, windStrength) &&
+        nowMs - lastWindAtMs >=
+          getForestWindCadenceMs(windStrength ?? weatherIntensity ?? 0)
+      ) {
+        lastWindAtMs = nowMs;
+        play('wind', nowMs, tileKind, emitter, listener);
       }
 
       if (!previousJumping && isJumping) {
@@ -323,6 +356,21 @@ export function shouldPlayBlockedMovementSound(
   tileKind: SurfaceKind | undefined
 ): boolean {
   return tileKind === 'forest';
+}
+
+export function shouldPlayForestWindSound(
+  tileKind: SurfaceKind | undefined,
+  weatherKind?: string,
+  windStrength?: number
+): boolean {
+  return (
+    tileKind === 'forest' &&
+    (weatherKind === 'wind' || (windStrength ?? 0) >= 0.3)
+  );
+}
+
+export function getForestWindCadenceMs(windStrength: number): number {
+  return Math.round(clampValue(2600 - windStrength * 1200, 1200, 2600));
 }
 
 function resolveInteractionFrequency(

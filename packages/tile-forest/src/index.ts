@@ -1,6 +1,11 @@
 import { hash2D, octaveNoise2D } from '@bworlds/core';
 import { createPlainsBackedTilePainter } from '@bworlds/paint-support';
-import { getPoiLightActivation, markPoiLightEmitter } from '@bworlds/poi-support';
+import {
+  getPoiLightActivation,
+  markPoiLightEmitter,
+  markPoiWindResponder,
+  syncPoiWindResponders,
+} from '@bworlds/poi-support';
 import { createTilePlugin } from '@bworlds/plugin-api';
 import {
   createCoordinateValueResolver,
@@ -36,6 +41,7 @@ const MEADOW_KEY = 'forestMeadow';
 const BIRD_KEY = 'forestBird';
 const TRAIL_KEY = 'forestTrail';
 const TREE_FORM_KEY = 'forestTreeForm';
+const TREE_FOLIAGE_KEY = 'forestTreeFoliage';
 const TREE_CLUSTER_SIZE = 4;
 const TREE_REGION_SIZE = 14;
 
@@ -604,6 +610,7 @@ export function createForestTilePlugin(): RuntimePlugin {
               descriptor.form === 'pine' ? 1.18 : 0.72,
               descriptor.form === 'pine' ? 0.54 : 0.84
             );
+            tagForestFoliageWind(canopy, tileX, tileY, descriptor.variety, 0);
             tree.add(canopy);
             group.add(tree);
             continue;
@@ -625,6 +632,13 @@ export function createForestTilePlugin(): RuntimePlugin {
             );
             foliage.position.set(clump.x, clump.y, clump.z);
             foliage.scale.set(clump.scaleX, clump.scaleY, clump.scaleZ);
+            tagForestFoliageWind(
+              foliage,
+              tileX,
+              tileY,
+              descriptor.variety,
+              clump.x + clump.y + clump.z
+            );
             tree.add(foliage);
           }
 
@@ -914,11 +928,12 @@ export function createForestTilePlugin(): RuntimePlugin {
 
         return group;
       },
-      sync3DModel({ model, cycle, timeMs = 0 }) {
+      sync3DModel({ model, cycle, timeMs = 0, environment }) {
         if (!model || typeof model !== 'object') {
           return;
         }
         syncForestFireflies(model as ThreeObject3DLike, cycle, timeMs);
+        syncPoiWindResponders(model as ThreeObject3DLike, environment, timeMs);
         syncForestBirds(model as ThreeObject3DLike, timeMs);
       },
       canOccupy3D({
@@ -1649,6 +1664,37 @@ function syncForestBirds(root: ThreeObject3DLike, timeMs: number) {
       birdNode.children![0].rotation.z = -0.35 - flap * 0.4;
       birdNode.children![1].rotation.z = 0.35 + flap * 0.4;
     }
+  });
+}
+
+function tagForestFoliageWind(
+  node: ThreeObject3DLike,
+  tileX: number,
+  tileY: number,
+  variety: number,
+  offsetSeed: number
+) {
+  node.userData = {
+    ...(node.userData ?? {}),
+    [TREE_FOLIAGE_KEY]: true,
+  };
+  return markPoiWindResponder(node, {
+    axis: 'z',
+    idleAmplitude: 0.012,
+    windAmplitude: 0.065 + hash2D('forest-foliage-wind', tileX + variety, tileY) * 0.035,
+    gustAmplitude:
+      0.024 + hash2D('forest-foliage-gust', tileX, tileY + variety) * 0.018,
+    speed: 0.75 + hash2D('forest-foliage-speed', tileX + offsetSeed, tileY) * 0.7,
+    gustSpeed:
+      1.6 + hash2D('forest-foliage-gust-speed', tileX, tileY + offsetSeed) * 0.8,
+    phase:
+      hash2D('forest-foliage-phase', tileX * 7 + variety, tileY + offsetSeed) *
+      Math.PI *
+      2,
+    gustPhase:
+      hash2D('forest-foliage-gust-phase', tileX + offsetSeed, tileY * 11 + variety) *
+      Math.PI *
+      2,
   });
 }
 
