@@ -346,6 +346,53 @@ export function getSceneBudgetWarnings(
   return warnings;
 }
 
+export function getPerformanceWarnings(
+  snapshot: Pick<DebugSnapshot, 'frameMs' | 'targetFps' | 'drawCalls' | 'object3dCount' | 'programCount'>,
+  {
+    maxFrameMs = 50,
+    maxDrawCallsAt60Fps = 900,
+    maxDrawCallsAt30Fps = 1200,
+    maxObject3dCount = 2400,
+    maxProgramCount = 48,
+  }: {
+    maxFrameMs?: number;
+    maxDrawCallsAt60Fps?: number;
+    maxDrawCallsAt30Fps?: number;
+    maxObject3dCount?: number;
+    maxProgramCount?: number;
+  } = {}
+): string[] {
+  const warnings: string[] = [];
+  const drawCallBudget =
+    snapshot.targetFps === 60 ? maxDrawCallsAt60Fps : maxDrawCallsAt30Fps;
+
+  if (snapshot.frameMs > maxFrameMs) {
+    warnings.push(
+      `Frame time is over budget (${snapshot.frameMs.toFixed(1)} ms > ${maxFrameMs.toFixed(1)} ms).`
+    );
+  }
+
+  if (snapshot.drawCalls > drawCallBudget) {
+    warnings.push(
+      `Draw calls exceed the target (${snapshot.drawCalls} > ${drawCallBudget}).`
+    );
+  }
+
+  if (snapshot.object3dCount > maxObject3dCount) {
+    warnings.push(
+      `Three.js object count is high (${snapshot.object3dCount} > ${maxObject3dCount}).`
+    );
+  }
+
+  if (snapshot.programCount > maxProgramCount) {
+    warnings.push(
+      `Shader program count is high (${snapshot.programCount} > ${maxProgramCount}).`
+    );
+  }
+
+  return warnings;
+}
+
 export function getStationaryTileBuildWarning(
   samples: RendererChurnSample[],
   {

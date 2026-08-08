@@ -3,6 +3,7 @@ import {
   buildDebugMarkup,
   formatPerformanceTierLabel,
   getMaterialGrowthWarning,
+  getPerformanceWarnings,
   getSceneBudgetWarnings,
   getStationaryTileBuildWarning,
   getDebugSignature,
@@ -263,6 +264,33 @@ describe('debug panel', () => {
         visibleTreeCount: 8,
         object3dCount: 120,
         treeObjectCount: 48,
+      })
+    ).toEqual([]);
+  });
+
+  it('warns when frame time, draw calls, object count, or program count exceed budgets', () => {
+    expect(
+      getPerformanceWarnings({
+        frameMs: 54.2,
+        targetFps: 60,
+        drawCalls: 980,
+        object3dCount: 2601,
+        programCount: 52,
+      })
+    ).toEqual([
+      'Frame time is over budget (54.2 ms > 50.0 ms).',
+      'Draw calls exceed the target (980 > 900).',
+      'Three.js object count is high (2601 > 2400).',
+      'Shader program count is high (52 > 48).',
+    ]);
+
+    expect(
+      getPerformanceWarnings({
+        frameMs: 24,
+        targetFps: 30,
+        drawCalls: 1150,
+        object3dCount: 2200,
+        programCount: 32,
       })
     ).toEqual([]);
   });

@@ -91,8 +91,9 @@ import {
 } from './head-bob.ts';
 import {
   buildDebugMarkup,
-  getSceneBudgetWarnings,
   getMaterialGrowthWarning,
+  getPerformanceWarnings,
+  getSceneBudgetWarnings,
   getStationaryTileBuildWarning,
   resolvePerformanceTier,
   recordMaterialGrowthSample,
@@ -2605,6 +2606,7 @@ function render(): FrameLoopActivityLike {
       debugResourceTrendState.rendererChurnSamples
     );
     debugSnapshot.resourceWarnings = [
+      ...getPerformanceWarnings(debugSnapshot),
       ...getSceneBudgetWarnings(debugSnapshot),
       ...(materialGrowthWarning ? [materialGrowthWarning] : []),
       ...(stationaryTileBuildWarning ? [stationaryTileBuildWarning] : []),
