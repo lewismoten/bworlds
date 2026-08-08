@@ -95,6 +95,7 @@ import {
 import {
   createMusicController,
   createWebAudioMusicSink,
+  resolvePoiMusicMix,
 } from './procedural-music.ts';
 import {
   buildSextantMarkup,
@@ -734,6 +735,18 @@ const mouseLookState = {
   startFacing: 0,
   startPitch: DEFAULT_CAMERA_PITCH,
 };
+const nearbyPoiMusicState = {
+  cacheKey: '',
+  profile: null as null | {
+    tileKind?: string;
+    poiType?: string;
+    contextType?: string;
+    mix: number;
+    clusterX: number;
+    clusterY: number;
+    emitter: { x: number; y: number };
+  },
+};
 const MOON_PHASE_NAMES = [
   'New Moon',
   'Waxing Crescent',
@@ -1333,6 +1346,79 @@ function getBridgeAxis(): 'ew' | 'ns' | null {
   return profile?.slideAxis ?? null;
 }
 
+function getNearbyPoiMusicProfile() {
+  const context = state.getCurrentContext();
+  if (context.type !== 'overworld') {
+    nearbyPoiMusicState.cacheKey = `${context.id}:${snapWorldCoordinate(state.player.x)}:${snapWorldCoordinate(state.player.y)}`;
+    nearbyPoiMusicState.profile = null;
+    return null;
+  }
+
+  const centerX = snapWorldCoordinate(state.player.x);
+  const centerY = snapWorldCoordinate(state.player.y);
+  const cacheKey = `${context.id}:${centerX}:${centerY}`;
+  if (nearbyPoiMusicState.cacheKey === cacheKey) {
+    return nearbyPoiMusicState.profile;
+  }
+
+  const searchRadius = 7;
+  let best:
+    | null
+    | {
+        tileKind?: string;
+        poiType?: string;
+        contextType?: string;
+        mix: number;
+        clusterX: number;
+        clusterY: number;
+        emitter: { x: number; y: number };
+        distance: number;
+      } = null;
+
+  for (let y = centerY - searchRadius; y <= centerY + searchRadius; y += 1) {
+    for (let x = centerX - searchRadius; x <= centerX + searchRadius; x += 1) {
+      const tile = state.getCurrentTile(x, y);
+      const poiType =
+        typeof tile.poi?.type === 'string' ? tile.poi.type : undefined;
+      if (!poiType) {
+        continue;
+      }
+      const distance = Math.hypot(state.player.x - x, state.player.y - y);
+      const mix = resolvePoiMusicMix(distance);
+      if (mix <= 0.001) {
+        continue;
+      }
+      if (best && distance >= best.distance) {
+        continue;
+      }
+      best = {
+        tileKind: tile.kind,
+        poiType,
+        contextType: poiType,
+        mix,
+        clusterX: Math.floor(x / 12),
+        clusterY: Math.floor(y / 12),
+        emitter: { x, y },
+        distance,
+      };
+    }
+  }
+
+  nearbyPoiMusicState.cacheKey = cacheKey;
+  nearbyPoiMusicState.profile = best
+    ? {
+        tileKind: best.tileKind,
+        poiType: best.poiType,
+        contextType: best.contextType,
+        mix: best.mix,
+        clusterX: best.clusterX,
+        clusterY: best.clusterY,
+        emitter: best.emitter,
+      }
+    : null;
+  return nearbyPoiMusicState.profile;
+}
+
 function attemptMove(stepX: number, stepY: number): void {
   const nextX = state.player.x + stepX;
   const nextY = state.player.y + stepY;
@@ -1787,6 +1873,7 @@ function render(): FrameLoopActivityLike {
   const currentTile = state.getCurrentTile();
   const musicClusterX = Math.floor(state.player.x / 12);
   const musicClusterY = Math.floor(state.player.y / 12);
+  const nearbyPoiMusic = getNearbyPoiMusicProfile();
   musicController.update({
     nowMs,
     tileKind: currentTile.kind,
@@ -1801,6 +1888,12 @@ function render(): FrameLoopActivityLike {
       y: musicClusterY * 12 + 6,
     },
     listener: { x: state.player.x, y: state.player.y },
+    nearbyPoi: nearbyPoiMusic
+      ? {
+          ...nearbyPoiMusic,
+          listener: { x: state.player.x, y: state.player.y },
+        }
+      : null,
   });
   if (state.viewMode === '2d') {
     const context = viewport2d?.getContext('2d');

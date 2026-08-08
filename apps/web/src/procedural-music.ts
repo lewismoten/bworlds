@@ -82,6 +82,17 @@ export type MusicController = {
   update(options: MusicUpdateOptions): void;
 };
 
+export type NearbyPoiMusicLike = {
+  tileKind?: TileKind;
+  poiType?: string;
+  contextType?: ContextType;
+  mix: number;
+  clusterX?: number;
+  clusterY?: number;
+  emitter?: MusicPosition;
+  listener?: MusicPosition;
+};
+
 export type MusicUpdateOptions = {
   nowMs: number;
   tileKind?: TileKind;
@@ -93,6 +104,7 @@ export type MusicUpdateOptions = {
   clusterY?: number;
   emitter?: MusicPosition;
   listener?: MusicPosition;
+  nearbyPoi?: NearbyPoiMusicLike | null;
 };
 
 const THEME_LIBRARY: Record<MusicRegionThemeId, MusicRegionTheme> = {
@@ -158,30 +170,47 @@ const LOOKAHEAD_MS = 900;
 
 export function resolveMusicTheme(
   tileKind?: TileKind,
-  contextType?: ContextType
+  contextType?: ContextType,
+  poiType?: string
 ): MusicRegionTheme {
-  if (contextType === 'cave' || contextType === 'dungeon') {
+  const resolvedKind = poiType ?? tileKind;
+  if (
+    contextType === 'cave' ||
+    contextType === 'dungeon' ||
+    resolvedKind === 'cave' ||
+    resolvedKind === 'dungeon'
+  ) {
     return THEME_LIBRARY['cavern-echo'];
   }
   if (
     contextType === 'building' ||
-    tileKind === 'floor' ||
-    tileKind === 'shop' ||
-    tileKind === 'stairsUp' ||
-    tileKind === 'stairsDown'
+    resolvedKind === 'floor' ||
+    resolvedKind === 'shop' ||
+    resolvedKind === 'stairsUp' ||
+    resolvedKind === 'stairsDown'
   ) {
     return THEME_LIBRARY['interior-hall'];
   }
-  if (contextType === 'town' || tileKind === 'town') {
+  if (contextType === 'town' || resolvedKind === 'town') {
     return THEME_LIBRARY['town-square'];
   }
-  if (tileKind === 'forest') {
+  if (resolvedKind === 'forest') {
     return THEME_LIBRARY['deep-forest'];
   }
-  if (tileKind === 'shore' || tileKind === 'dock' || tileKind === 'ocean') {
+  if (
+    resolvedKind === 'shore' ||
+    resolvedKind === 'dock' ||
+    resolvedKind === 'ocean' ||
+    resolvedKind === 'ship' ||
+    resolvedKind === 'lighthouse'
+  ) {
     return THEME_LIBRARY['coastal-shore'];
   }
-  if (tileKind === 'mountain' || tileKind === 'observatory') {
+  if (
+    resolvedKind === 'mountain' ||
+    resolvedKind === 'observatory' ||
+    resolvedKind === 'quarry'
+  ) {
     return THEME_LIBRARY['ridge-pass'];
   }
   return THEME_LIBRARY['frontier-plains'];
@@ -231,66 +260,72 @@ export function scheduleProceduralMusicNotes(
   options: MusicUpdateOptions,
   previousState?: MusicSchedulerState
 ): { notes: ProceduralMusicNote[]; state: MusicSchedulerState } {
-  const theme = resolveMusicTheme(options.tileKind, options.contextType);
-  const instrumentBank = createProceduralInstrumentBank(
-    theme,
-    options.clusterX ?? 0,
-    options.clusterY ?? 0
-  );
-  const mood = resolveMusicMood({
-    dayProgress: options.dayProgress,
-    weatherKind: options.weatherKind,
-    weatherIntensity: options.weatherIntensity,
-  });
-  const regionSignature = getMusicRegionSignature(options);
-  const clusterX = options.clusterX ?? 0;
-  const clusterY = options.clusterY ?? 0;
-  let stepIndex =
-    previousState?.regionSignature === regionSignature ? previousState.stepIndex : 0;
-  let nextNoteAtMs =
-    previousState?.regionSignature === regionSignature
-      ? Math.max(previousState.nextNoteAtMs, options.nowMs)
-      : options.nowMs;
-  const notes: ProceduralMusicNote[] = [];
-
-  while (nextNoteAtMs < options.nowMs + LOOKAHEAD_MS) {
-    const note = createThemeNote({
-      startMs: nextNoteAtMs,
-      theme,
-      instrumentBank,
-      mood,
-      stepIndex,
-      clusterX,
-      clusterY,
+  return scheduleThemeLayerNotes(
+    {
+      nowMs: options.nowMs,
+      tileKind: options.tileKind,
+      contextType: options.contextType,
+      dayProgress: options.dayProgress,
+      weatherKind: options.weatherKind,
+      weatherIntensity: options.weatherIntensity,
+      clusterX: options.clusterX,
+      clusterY: options.clusterY,
       emitter: options.emitter,
       listener: options.listener,
-    });
-    notes.push(note);
-    nextNoteAtMs += theme.noteDurationMs / mood.tempoMultiplier;
-    stepIndex += 1;
-  }
-
-  return {
-    notes,
-    state: {
-      nextNoteAtMs,
-      stepIndex,
-      regionSignature,
+      gainMultiplier: 1,
     },
-  };
+    previousState
+  );
 }
 
 export function createMusicController(sink: MusicSink): MusicController {
-  let schedulerState: MusicSchedulerState | undefined;
+  let ambientSchedulerState: MusicSchedulerState | undefined;
+  let poiSchedulerState: MusicSchedulerState | undefined;
 
   return {
     resume() {
       sink.resume?.();
     },
     update(options) {
-      const scheduled = scheduleProceduralMusicNotes(options, schedulerState);
-      schedulerState = scheduled.state;
-      scheduled.notes.forEach((note) => {
+      const poiMix = clamp(options.nearbyPoi?.mix ?? 0, 0, 1);
+      const gains = resolvePoiMusicBlendGains(poiMix);
+      const ambientScheduled = scheduleThemeLayerNotes(
+        {
+          ...options,
+          gainMultiplier: gains.ambientGain,
+        },
+        ambientSchedulerState
+      );
+      ambientSchedulerState = ambientScheduled.state;
+      ambientScheduled.notes.forEach((note) => {
+        sink.play(note);
+      });
+
+      if (!options.nearbyPoi || poiMix <= 0.001) {
+        poiSchedulerState = undefined;
+        return;
+      }
+
+      const poiScheduled = scheduleThemeLayerNotes(
+        {
+          nowMs: options.nowMs,
+          tileKind: options.nearbyPoi.tileKind,
+          contextType: options.nearbyPoi.contextType,
+          poiType: options.nearbyPoi.poiType,
+          dayProgress: options.dayProgress,
+          weatherKind: options.weatherKind,
+          weatherIntensity: options.weatherIntensity,
+          clusterX: options.nearbyPoi.clusterX,
+          clusterY: options.nearbyPoi.clusterY,
+          emitter: options.nearbyPoi.emitter,
+          listener: options.nearbyPoi.listener ?? options.listener,
+          gainMultiplier: gains.poiGain,
+          signaturePrefix: 'poi',
+        },
+        poiSchedulerState
+      );
+      poiSchedulerState = poiScheduled.state;
+      poiScheduled.notes.forEach((note) => {
         sink.play(note);
       });
     },
@@ -422,6 +457,31 @@ export function getMusicSpatialMix(
   };
 }
 
+export function resolvePoiMusicMix(
+  distance: number,
+  innerRadius = 1.5,
+  outerRadius = 7
+): number {
+  if (distance <= innerRadius) {
+    return 1;
+  }
+  if (distance >= outerRadius) {
+    return 0;
+  }
+  const normalized = (outerRadius - distance) / (outerRadius - innerRadius);
+  return clamp(normalized, 0, 1);
+}
+
+export function resolvePoiMusicBlendGains(
+  mix: number
+): { ambientGain: number; poiGain: number } {
+  const clampedMix = clamp(mix, 0, 1);
+  return {
+    ambientGain: Math.cos((clampedMix * Math.PI) / 2),
+    poiGain: Math.sin((clampedMix * Math.PI) / 2),
+  };
+}
+
 function createThemeNote(options: {
   startMs: number;
   theme: MusicRegionTheme;
@@ -474,6 +534,88 @@ function createThemeNote(options: {
     pulseRate: instrument.pulseRate,
     emitter: options.emitter,
     listener: options.listener,
+  };
+}
+
+function scheduleThemeLayerNotes(
+  options: {
+    nowMs: number;
+    tileKind?: TileKind;
+    contextType?: ContextType;
+    poiType?: string;
+    weatherKind?: WeatherKind;
+    weatherIntensity?: number;
+    dayProgress: number;
+    clusterX?: number;
+    clusterY?: number;
+    emitter?: MusicPosition;
+    listener?: MusicPosition;
+    gainMultiplier: number;
+    signaturePrefix?: string;
+  },
+  previousState?: MusicSchedulerState
+): { notes: ProceduralMusicNote[]; state: MusicSchedulerState } {
+  const theme = resolveMusicTheme(
+    options.tileKind,
+    options.contextType,
+    options.poiType
+  );
+  const instrumentBank = createProceduralInstrumentBank(
+    theme,
+    options.clusterX ?? 0,
+    options.clusterY ?? 0
+  );
+  const mood = resolveMusicMood({
+    dayProgress: options.dayProgress,
+    weatherKind: options.weatherKind,
+    weatherIntensity: options.weatherIntensity,
+  });
+  const regionSignature = [
+    options.signaturePrefix ?? 'ambient',
+    getMusicRegionSignature({
+      tileKind: options.tileKind ?? options.poiType,
+      contextType: options.contextType,
+      clusterX: options.clusterX,
+      clusterY: options.clusterY,
+    }),
+  ].join(':');
+  const clusterX = options.clusterX ?? 0;
+  const clusterY = options.clusterY ?? 0;
+  let stepIndex =
+    previousState?.regionSignature === regionSignature ? previousState.stepIndex : 0;
+  let nextNoteAtMs =
+    previousState?.regionSignature === regionSignature
+      ? Math.max(previousState.nextNoteAtMs, options.nowMs)
+      : options.nowMs;
+  const notes: ProceduralMusicNote[] = [];
+
+  while (nextNoteAtMs < options.nowMs + LOOKAHEAD_MS) {
+    const note = createThemeNote({
+      startMs: nextNoteAtMs,
+      theme,
+      instrumentBank,
+      mood,
+      stepIndex,
+      clusterX,
+      clusterY,
+      emitter: options.emitter,
+      listener: options.listener,
+    });
+    notes.push({
+      ...note,
+      volume: note.volume * options.gainMultiplier,
+    });
+    nextNoteAtMs += theme.noteDurationMs / mood.tempoMultiplier;
+    stepIndex += 1;
+  }
+
+  return {
+    notes,
+    state: {
+      nextNoteAtMs,
+      stepIndex,
+      regionSignature,
+    },
   };
 }
 

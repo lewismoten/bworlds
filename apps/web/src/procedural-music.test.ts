@@ -4,6 +4,8 @@ import {
   createMusicController,
   getMusicRegionSignature,
   getMusicSpatialMix,
+  resolvePoiMusicBlendGains,
+  resolvePoiMusicMix,
   resolveMusicMood,
   resolveMusicTheme,
   scheduleProceduralMusicNotes,
@@ -76,7 +78,9 @@ describe('procedural music', () => {
         role: 'bass',
       })
     );
-    expect(scheduled.state.regionSignature).toBe('deep-forest:overworld:1:2');
+    expect(scheduled.state.regionSignature).toBe(
+      'ambient:deep-forest:overworld:1:2'
+    );
     expect(scheduled.state.nextNoteAtMs).toBeGreaterThan(1000);
   });
 
@@ -102,7 +106,9 @@ describe('procedural music', () => {
     );
 
     expect(second.notes[0]?.themeId).toBe('deep-forest');
-    expect(second.state.regionSignature).toBe('deep-forest:overworld:2:1');
+    expect(second.state.regionSignature).toBe(
+      'ambient:deep-forest:overworld:2:1'
+    );
     expect(second.state.stepIndex).toBeGreaterThan(0);
   });
 
@@ -112,6 +118,16 @@ describe('procedural music', () => {
     ).toEqual({
       gainMultiplier: expect.closeTo(1 / (1 + 6 * 0.45), 6),
       pan: expect.closeTo(6 / 7, 6),
+    });
+  });
+
+  it('computes poi music mix and equal-power crossfade gains from distance', () => {
+    expect(resolvePoiMusicMix(0.5)).toBe(1);
+    expect(resolvePoiMusicMix(8)).toBe(0);
+    expect(resolvePoiMusicMix(4.25)).toBeCloseTo(0.5, 6);
+    expect(resolvePoiMusicBlendGains(0.5)).toEqual({
+      ambientGain: expect.closeTo(Math.cos(Math.PI / 4), 6),
+      poiGain: expect.closeTo(Math.sin(Math.PI / 4), 6),
     });
   });
 
@@ -161,5 +177,34 @@ describe('procedural music', () => {
     expect(played[0]?.themeId).toBe('town-square');
     expect(played.some((note) => note.role === 'lead')).toBe(true);
     expect(played.some((note) => note.role === 'pulse')).toBe(true);
+  });
+
+  it('layers poi notes over ambient music when a nearby poi mix is present', () => {
+    const played: ProceduralMusicNote[] = [];
+    const controller = createMusicController({
+      play(note) {
+        played.push(note);
+      },
+    });
+
+    controller.update({
+      nowMs: 0,
+      tileKind: 'plains',
+      contextType: 'overworld',
+      dayProgress: 0.5,
+      clusterX: 0,
+      clusterY: 0,
+      nearbyPoi: {
+        tileKind: 'town',
+        poiType: 'town',
+        contextType: 'town',
+        mix: 0.75,
+        clusterX: 0,
+        clusterY: 0,
+      },
+    });
+
+    expect(played.some((note) => note.themeId === 'frontier-plains')).toBe(true);
+    expect(played.some((note) => note.themeId === 'town-square')).toBe(true);
   });
 });
