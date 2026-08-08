@@ -1,6 +1,9 @@
+import { DEFAULT_DAY_LENGTH_MS } from '@bworlds/core';
 import { describe, expect, it } from 'vitest';
 import type { WorldEnvironmentLike } from '@bworlds/plugin-api';
 import { createCelestialPhenomenaRuntimePlugin } from './index.ts';
+
+const NIGHT_SAMPLE_OFFSET_MS = 210000;
 
 describe('runtime celestial phenomena', () => {
   it('adds latitude-sensitive aurora data on qualifying nights', () => {
@@ -16,7 +19,7 @@ describe('runtime celestial phenomena', () => {
     for (let day = 0; day < 160 && !environment?.celestial?.auroraBands?.length; day += 1) {
       environment = plugin.resolveWorldEnvironment?.({
         state,
-        timeMs: day * 300000 + 210000,
+        timeMs: day * DEFAULT_DAY_LENGTH_MS + NIGHT_SAMPLE_OFFSET_MS,
       }) as WorldEnvironmentLike | undefined;
     }
 
@@ -52,7 +55,7 @@ describe('runtime celestial phenomena', () => {
     ) {
       environment = plugin.resolveWorldEnvironment?.({
         state,
-        timeMs: day * 300000 + 210000,
+        timeMs: day * DEFAULT_DAY_LENGTH_MS + NIGHT_SAMPLE_OFFSET_MS,
       }) as WorldEnvironmentLike | undefined;
     }
 
@@ -86,7 +89,7 @@ describe('runtime celestial phenomena', () => {
             y: 0,
           },
         } as any,
-        timeMs: day * 300000 + 210000,
+        timeMs: day * DEFAULT_DAY_LENGTH_MS + NIGHT_SAMPLE_OFFSET_MS,
       }) as WorldEnvironmentLike | undefined;
       northernEnvironment = plugin.resolveWorldEnvironment?.({
         state: {
@@ -95,7 +98,7 @@ describe('runtime celestial phenomena', () => {
             y: -50000,
           },
         } as any,
-        timeMs: day * 300000 + 210000,
+        timeMs: day * DEFAULT_DAY_LENGTH_MS + NIGHT_SAMPLE_OFFSET_MS,
       }) as WorldEnvironmentLike | undefined;
 
       for (const event of equatorialEnvironment?.celestial?.visibleEventsAppend ?? []) {

@@ -1,3 +1,4 @@
+import { DEFAULT_DAY_LENGTH_MS } from '@bworlds/core';
 import { describe, expect, it, vi } from 'vitest';
 import type { TilePlugin } from './types';
 import {
@@ -217,7 +218,7 @@ describe('plugin registry', () => {
       name: 'runtime-sky',
       resolveWorldEnvironment() {
         return {
-          cycle: { dayLengthMs: 300000 },
+          cycle: { dayLengthMs: DEFAULT_DAY_LENGTH_MS },
           sky: { dayColor: '#abcdef' },
         };
       },
@@ -239,7 +240,7 @@ describe('plugin registry', () => {
         timeMs: 1000,
       })
     ).toEqual({
-      cycle: { dayLengthMs: 300000 },
+      cycle: { dayLengthMs: DEFAULT_DAY_LENGTH_MS },
       sky: { dayColor: '#abcdef' },
       lighting: { sunColor: '#fedcba', shadowStrength: 0.8 },
       stars: { density: 1.4 },
