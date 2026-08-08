@@ -25,6 +25,7 @@ import type {
   ThreeMaterialLike,
   ThreeMatrix4Like,
   ThreeObject3DLike,
+  WorldEnvironmentLike,
 } from '@bworlds/plugin-api';
 
 const TILE_PIXEL_SIZE = 16;
@@ -1102,6 +1103,7 @@ export function createForestTilePlugin(): RuntimePlugin {
         if (!model || typeof model !== 'object') {
           return;
         }
+        syncForestWebGlint(model as ThreeObject3DLike, cycle, environment);
         syncForestFireflies(
           model as ThreeObject3DLike,
           cycle,
@@ -2328,6 +2330,48 @@ function syncForestFireflies(
           activation * (0.28 + leadPulse * 0.64);
       });
     }
+  });
+}
+
+function syncForestWebGlint(
+  root: ThreeObject3DLike,
+  cycle: {
+    daylight: number;
+    twilight: number;
+    night: number;
+  },
+  environment: WorldEnvironmentLike
+) {
+  const weather = environment?.weather?.current;
+  const precipitation = weather?.precipitation ?? 0;
+  const cloudCover = weather?.cloudCover ?? 0;
+  const dewGlint = cycle.twilight * (0.45 + Math.max(0, cloudCover - precipitation) * 0.4);
+  const rainGlint = precipitation * (0.7 + cloudCover * 0.3);
+  const glint = Math.min(1, dewGlint + rainGlint + cycle.night * precipitation * 0.12);
+
+  root.traverse?.((node) => {
+    if (!node.userData?.[WEB_KEY]) {
+      return;
+    }
+
+    const taggedNode = node as ThreeObject3DLike & {
+      material?: ThreeMaterialLike | ThreeMaterialLike[];
+    };
+    if (!taggedNode.material) {
+      return;
+    }
+
+    const materials = Array.isArray(taggedNode.material)
+      ? taggedNode.material
+      : [taggedNode.material];
+    materials.forEach((material) => {
+      const shadedMaterial = material as ThreeMaterialLike & {
+        emissiveIntensity?: number;
+        opacity?: number;
+      };
+      shadedMaterial.emissiveIntensity = 0.02 + glint * 0.42;
+      shadedMaterial.opacity = 0.26 + glint * 0.58;
+    });
   });
 }
 

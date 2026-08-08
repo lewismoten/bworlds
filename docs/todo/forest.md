@@ -618,7 +618,7 @@ This probably deserves several interchangeable strategies.
 * [x] Generate webs inside hollows.
 * [x] Generate webs around dead branches.
 * [x] Generate webs on abandoned/dead trees more frequently.
-* [ ] Add dew or rain glint where appropriate.
+* [x] Add dew or rain glint where appropriate.
 * [ ] Allow webs to be disturbed or destroyed.
 * [x] Generate spiders where appropriate.
 

@@ -1712,6 +1712,116 @@ describe('tile forest', () => {
     expect(countTaggedNodes(lowModel, 'forestWeb')).toBe(0);
   });
 
+  it('adds dew or rain glint to forest webs when conditions are damp', () => {
+    const plugin = createForestTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'forest');
+
+    let targetTile: { x: number; y: number } | null = null;
+    for (let tileY = 0; tileY < 24 && !targetTile; tileY += 1) {
+      for (let tileX = 0; tileX < 24; tileX += 1) {
+        if (getForestWebs(tileX, tileY).length > 0) {
+          targetTile = { x: tileX, y: tileY };
+          break;
+        }
+      }
+    }
+
+    expect(targetTile).not.toBeNull();
+
+    const state = createForestTestState(targetTile!.x, targetTile!.y);
+    const model = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'forest' },
+      tileX: targetTile!.x,
+      tileY: targetTile!.y,
+      detailLevel: 'full',
+    }) as FakeGroup;
+
+    const webInstances = model.children.filter(
+      (node) => node instanceof FakeInstancedMesh && node.userData?.forestWeb
+    ) as FakeInstancedMesh[];
+    expect(webInstances).toHaveLength(1);
+
+    tile?.sync3DModel?.({
+      three: fakeThree as never,
+      state: {} as never,
+      tile: { kind: 'forest' },
+      tileX: targetTile!.x,
+      tileY: targetTile!.y,
+      model,
+      timeMs: 0,
+      cycle: { daylight: 1, twilight: 0, night: 0 },
+      environment: {
+        weather: {
+          current: {
+            kind: 'clear',
+            label: 'Clear',
+            intensity: 0.1,
+            windStrength: 0.1,
+            precipitation: 0,
+            cloudCover: 0.05,
+            temperature: 19,
+            visibility: 1,
+            front: {
+              id: 'clear-front',
+              kind: 'warm',
+              intensity: 0.1,
+              humidityShift: 0,
+              temperatureShift: 0,
+              windDirectionDegrees: 90,
+              speed: 0.1,
+            },
+          },
+          forecast: [],
+        },
+      },
+    });
+
+    const dryMaterial = webInstances[0]?.material as FakeMaterial | undefined;
+    const dryOpacity = dryMaterial?.opacity ?? 0;
+    const dryEmissive = dryMaterial?.emissiveIntensity ?? 0;
+
+    tile?.sync3DModel?.({
+      three: fakeThree as never,
+      state: {} as never,
+      tile: { kind: 'forest' },
+      tileX: targetTile!.x,
+      tileY: targetTile!.y,
+      model,
+      timeMs: 0,
+      cycle: { daylight: 0.1, twilight: 0.9, night: 0 },
+      environment: {
+        weather: {
+          current: {
+            kind: 'heavy-rain',
+            label: 'Rain',
+            intensity: 0.8,
+            windStrength: 0.2,
+            precipitation: 0.85,
+            cloudCover: 0.95,
+            temperature: 14,
+            visibility: 0.7,
+            front: {
+              id: 'rain-front',
+              kind: 'cold',
+              intensity: 0.8,
+              humidityShift: 0.25,
+              temperatureShift: -3,
+              windDirectionDegrees: 120,
+              speed: 0.3,
+            },
+          },
+          forecast: [],
+        },
+      },
+    });
+
+    const wetMaterial = webInstances[0]?.material as FakeMaterial | undefined;
+    expect((wetMaterial?.opacity ?? 0)).toBeGreaterThan(dryOpacity);
+    expect((wetMaterial?.emissiveIntensity ?? 0)).toBeGreaterThan(dryEmissive);
+  });
+
   it('renders spiders only in nearby full-detail forest models', () => {
     const plugin = createForestTilePlugin();
     const tile = plugin.tiles?.find((entry) => entry.kind === 'forest');
