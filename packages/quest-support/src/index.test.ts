@@ -1,7 +1,19 @@
 import { describe, expect, it } from 'vitest';
-import { getDefaultQuestRegistry } from './index.ts';
+import { getDefaultQuestPlugins, getDefaultQuestRegistry } from './index.ts';
 
 describe('quest support', () => {
+  it('registers individual quest type plugins in the shared registry', () => {
+    const plugins = getDefaultQuestPlugins();
+
+    expect(plugins.map((plugin) => plugin.type)).toEqual([
+      'delivery',
+      'collection',
+      'escort',
+      'investigation',
+    ]);
+    expect(getDefaultQuestRegistry().list()).toHaveLength(plugins.length);
+  });
+
   it('offers daytime delivery work for staffed market-style npcs', () => {
     const offers = getDefaultQuestRegistry().getOffers({
       npcId: 'npc:merchant',

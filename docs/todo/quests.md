@@ -5,12 +5,12 @@ Quests may include:
 
 - [ ] Fetch quest — retrieve an item and bring it back.
 - [ ] Kill quest — defeat a certain enemy, boss, or number of enemies.
-- [ ] Escort quest — protect an NPC while traveling somewhere.
-- [ ] Delivery quest — carry an item or message to another person or place.
+- [X] Escort quest — protect an NPC while traveling somewhere.
+- [X] Delivery quest — carry an item or message to another person or place.
 - [ ] Rescue quest — find and save an NPC, prisoner, animal, etc.
-- [ ] Search / investigation quest — gather clues, inspect locations, question NPCs, solve a mystery.
+- [X] Search / investigation quest — gather clues, inspect locations, question NPCs, solve a mystery.
 - [ ] Exploration quest — discover a location, map an area, reach a landmark, or uncover hidden places.
-- [ ] Collection quest — gather several items, ingredients, artifacts, or resources.
+- [X] Collection quest — gather several items, ingredients, artifacts, or resources.
 - [ ] Crafting quest — obtain materials and build, repair, cook, or forge something.
 - [ ] Puzzle quest — solve mechanisms, riddles, codes, environmental puzzles, or logic challenges.
 - [ ] Defense quest — protect a location or NPC against waves of enemies.
