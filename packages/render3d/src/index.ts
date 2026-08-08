@@ -1359,7 +1359,8 @@ export function pickCornerBoundaryProfile<
   return bestBoundary;
 }
 
-function prepareObjectForDistanceFade(root: THREE.Object3D): void {
+export function prepareObjectForDistanceFade(root: THREE.Object3D): void {
+  const fadeMaterialCache = new WeakMap<THREE.Material, THREE.Material>();
   root.traverse((child) => {
     child.userData.distanceFadeBaseVisible ??= child.visible;
     const renderable = child as THREE.Object3D & {
@@ -1370,8 +1371,10 @@ function prepareObjectForDistanceFade(root: THREE.Object3D): void {
     }
 
     renderable.material = Array.isArray(renderable.material)
-      ? renderable.material.map((material) => material.clone())
-      : renderable.material.clone();
+      ? renderable.material.map((material) =>
+          getDistanceFadeMaterialVariant(material, fadeMaterialCache)
+        )
+      : getDistanceFadeMaterialVariant(renderable.material, fadeMaterialCache);
     child.userData.distanceFadePrepared = true;
 
     for (const material of getObjectMaterials(renderable)) {
@@ -1382,7 +1385,10 @@ function prepareObjectForDistanceFade(root: THREE.Object3D): void {
   });
 }
 
-function applyObjectDistanceFade(root: THREE.Object3D, opacity: number): void {
+export function applyObjectDistanceFade(
+  root: THREE.Object3D,
+  opacity: number
+): void {
   root.traverse((child) => {
     const baseVisible = child.userData.distanceFadeBaseVisible ?? true;
     child.visible = baseVisible && opacity > MIN_MODEL_VISIBILITY_OPACITY;
@@ -1404,6 +1410,20 @@ function applyObjectDistanceFade(root: THREE.Object3D, opacity: number): void {
       material.depthWrite = baseDepthWrite && opacity >= 0.999;
     }
   });
+}
+
+function getDistanceFadeMaterialVariant(
+  material: THREE.Material,
+  cache: WeakMap<THREE.Material, THREE.Material>
+): THREE.Material {
+  const cached = cache.get(material);
+  if (cached) {
+    return cached;
+  }
+
+  const clone = material.clone();
+  cache.set(material, clone);
+  return clone;
 }
 
 function getObjectMaterials(

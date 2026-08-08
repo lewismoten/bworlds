@@ -58,3 +58,4 @@
   - [ ] As town improves, safety around town on world map increases, in that lower level chance encounters are closer to town, and higher level chance encounters are further away
   - [ ] procedurally generated towns are at varrying states of progression to begin with. 
   - [ ] A new player would be offered to start at or near a town that is most preferable for new low-level players
+- [ ] When inside a POI map, and teleporting to another POI, forget where you entered the existing POI - ie, I was inside a town, couldn't exit, and when I teleported, i was outside of another town.

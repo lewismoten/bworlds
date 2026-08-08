@@ -1,5 +1,6 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
+  applyObjectDistanceFade,
   clampCameraPitch,
   DEFAULT_CAMERA_PITCH,
   getDecoratedTileSurfaceHeight,
@@ -16,6 +17,7 @@ import {
   getTileModelDetailLevel,
   getVisibleWorldTileBuildOrder,
   pickCornerBoundaryProfile,
+  prepareObjectForDistanceFade,
   syncDynamicTileNodes,
   shouldRenderWorldTile,
 } from './index.ts';
@@ -23,6 +25,37 @@ import {
 type SkySignatureCycle = Parameters<typeof getSkyConstellationSignature>[0];
 
 describe('render3d visibility helpers', () => {
+  it('reuses one faded material clone per source material within a model root', () => {
+    const sourceMaterial = createMockMaterial();
+    const childA = createMockObject3D(sourceMaterial);
+    const childB = createMockObject3D(sourceMaterial);
+    const root = createMockObject3D(undefined, [childA, childB]);
+
+    prepareObjectForDistanceFade(root as never);
+
+    expect(sourceMaterial.clone).toHaveBeenCalledTimes(1);
+    expect(childA.material).toBe(childB.material);
+    expect(childA.material).not.toBe(sourceMaterial);
+  });
+
+  it('applies distance fade opacity to prepared materials without dropping baseline flags', () => {
+    const sourceMaterial = createMockMaterial({
+      opacity: 0.6,
+      transparent: false,
+      depthWrite: true,
+    });
+    const child = createMockObject3D(sourceMaterial);
+    const root = createMockObject3D(undefined, [child]);
+
+    prepareObjectForDistanceFade(root as never);
+    applyObjectDistanceFade(root as never, 0.5);
+
+    expect(child.visible).toBe(true);
+    expect(child.material.opacity).toBeCloseTo(0.3, 6);
+    expect(child.material.transparent).toBe(true);
+    expect(child.material.depthWrite).toBe(false);
+  });
+
   it('clamps camera pitch to a playable range', () => {
     expect(clampCameraPitch(DEFAULT_CAMERA_PITCH)).toBe(DEFAULT_CAMERA_PITCH);
     expect(clampCameraPitch(-5)).toBe(-1.1);
@@ -393,3 +426,46 @@ describe('render3d visibility helpers', () => {
     expect(calls).toBe(0);
   });
 });
+
+function createMockMaterial(
+  overrides: Partial<{
+    opacity: number;
+    transparent: boolean;
+    depthWrite: boolean;
+  }> = {}
+) {
+  const clone = {
+    opacity: overrides.opacity ?? 1,
+    transparent: overrides.transparent ?? false,
+    depthWrite: overrides.depthWrite ?? true,
+    userData: {},
+  };
+  return {
+    opacity: overrides.opacity ?? 1,
+    transparent: overrides.transparent ?? false,
+    depthWrite: overrides.depthWrite ?? true,
+    userData: {},
+    clone: vi.fn(() => ({ ...clone, userData: {} })),
+  };
+}
+
+function createMockObject3D(
+  material?: unknown,
+  children: Array<{
+    traverse: (callback: (child: unknown) => void) => void;
+  }> = []
+) {
+  const node = {
+    visible: true,
+    userData: {},
+    material,
+    children,
+    traverse(callback: (child: typeof node) => void) {
+      callback(node);
+      for (const child of children) {
+        child.traverse(callback as never);
+      }
+    },
+  };
+  return node;
+}
