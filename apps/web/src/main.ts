@@ -144,6 +144,7 @@ import { createDebouncedPersistence } from './debounced-persistence.ts';
 import { createBoundedCache } from './bounded-cache.ts';
 import { getPlayerSpatialSummary } from './player-spatial-summary.ts';
 import { resolveCompassFrameState } from './compass-frame-state.ts';
+import { getNearbyOverworldQueryState } from './nearby-overworld-query.ts';
 import {
   buildSextantMarkup,
   buildEventSummaryMarkup,
@@ -1576,16 +1577,15 @@ function getBridgeAxis(): 'ew' | 'ns' | null {
 }
 
 function getNearbyPoiMusicProfile() {
-  const context = state.getCurrentContext();
-  if (context.type !== 'overworld') {
+  const queryState = getNearbyOverworldQueryState(state);
+  if (!queryState) {
     nearbyPoiMusicState.cache.clear();
     nearbyPoiMusicState.profile = null;
     return null;
   }
 
-  const centerX = snapWorldCoordinate(state.player.x);
-  const centerY = snapWorldCoordinate(state.player.y);
-  const cacheKey = `${currentWorldSeed}:${context.id}:${centerX}:${centerY}`;
+  const { centerX, centerY, contextId } = queryState;
+  const cacheKey = `${currentWorldSeed}:${contextId}:${centerX}:${centerY}`;
   if (nearbyPoiMusicState.cache.has(cacheKey)) {
     nearbyPoiMusicState.profile = nearbyPoiMusicState.cache.get(cacheKey) ?? null;
     return nearbyPoiMusicState.profile;
@@ -1650,17 +1650,16 @@ function getNearbyPoiMusicProfile() {
 }
 
 function getNearbyTrainAudioProfile() {
-  const context = state.getCurrentContext();
-  if (context.type !== 'overworld') {
+  const queryState = getNearbyOverworldQueryState(state);
+  if (!queryState) {
     nearbyTrainAudioState.cache.clear();
     nearbyTrainAudioState.profile = null;
     return null;
   }
 
-  const centerX = snapWorldCoordinate(state.player.x);
-  const centerY = snapWorldCoordinate(state.player.y);
+  const { centerX, centerY, contextId } = queryState;
   const trainTimeBucket = Math.floor((state.timeMs ?? 0) / 2000);
-  const cacheKey = `${currentWorldSeed}:${context.id}:${centerX}:${centerY}:${trainTimeBucket}`;
+  const cacheKey = `${currentWorldSeed}:${contextId}:${centerX}:${centerY}:${trainTimeBucket}`;
   if (nearbyTrainAudioState.cache.has(cacheKey)) {
     nearbyTrainAudioState.profile = nearbyTrainAudioState.cache.get(cacheKey) ?? null;
     return nearbyTrainAudioState.profile;
@@ -1688,17 +1687,16 @@ function getNearbyTrainAudioProfile() {
 }
 
 function getNearbyPaddleBoatAudioProfile() {
-  const context = state.getCurrentContext();
-  if (context.type !== 'overworld') {
+  const queryState = getNearbyOverworldQueryState(state);
+  if (!queryState) {
     nearbyPaddleBoatAudioState.cache.clear();
     nearbyPaddleBoatAudioState.profile = null;
     return null;
   }
 
-  const centerX = snapWorldCoordinate(state.player.x);
-  const centerY = snapWorldCoordinate(state.player.y);
+  const { centerX, centerY, contextId } = queryState;
   const boatTimeBucket = Math.floor((state.timeMs ?? 0) / 2000);
-  const cacheKey = `${currentWorldSeed}:${context.id}:${centerX}:${centerY}:${boatTimeBucket}`;
+  const cacheKey = `${currentWorldSeed}:${contextId}:${centerX}:${centerY}:${boatTimeBucket}`;
   if (nearbyPaddleBoatAudioState.cache.has(cacheKey)) {
     nearbyPaddleBoatAudioState.profile =
       nearbyPaddleBoatAudioState.cache.get(cacheKey) ?? null;
