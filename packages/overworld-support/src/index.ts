@@ -34,6 +34,7 @@ const RIVER_MIN_CONTROL_STEP = 2;
 const RIVER_MAX_CONTROL_STEP = 10;
 const RIVER_MAX_CONTROL_POINTS = 5;
 const RIVER_SEGMENT_FALLOFF = 2.35;
+const RIVER_CURVE_SEGMENTS = 6;
 
 export interface OverworldCellAnchorSpec<
   TAnchor extends OverworldAnchorLike = OverworldAnchorLike,
@@ -80,6 +81,7 @@ export function createOverworldTerrainSignalSampler(
   seed: Seed
 ): OverworldTerrainSignalSampler {
   const riverControlPointCache = new Map<string, RiverControlPoint[]>();
+  const riverCurvePointCache = new Map<string, RiverControlPoint[]>();
 
   return function sampleTerrainSignals(x: number, y: number): OverworldSignals {
     const scaledX = x / 160;
@@ -104,7 +106,8 @@ export function createOverworldTerrainSignalSampler(
       seed,
       x,
       y,
-      riverControlPointCache
+      riverControlPointCache,
+      riverCurvePointCache
     );
     const riverPathWeight =
       continent > 0.42 && continent < 0.9 && elevation < 0.68 ? 1 : 0.45;
@@ -201,7 +204,8 @@ function sampleRiverControlPathSignal(
   seed: Seed,
   x: number,
   y: number,
-  cache: Map<string, RiverControlPoint[]>
+  controlPointCache: Map<string, RiverControlPoint[]>,
+  curvePointCache: Map<string, RiverControlPoint[]>
 ): number {
   const cellX = Math.floor(x / RIVER_CONTROL_CELL_SIZE);
   const cellY = Math.floor(y / RIVER_CONTROL_CELL_SIZE);
@@ -209,11 +213,12 @@ function sampleRiverControlPathSignal(
 
   for (let offsetY = -1; offsetY <= 1; offsetY += 1) {
     for (let offsetX = -1; offsetX <= 1; offsetX += 1) {
-      const points = getCachedRiverControlPoints(
+      const points = getCachedRiverCurvePoints(
         seed,
         cellX + offsetX,
         cellY + offsetY,
-        cache
+        controlPointCache,
+        curvePointCache
       );
       for (let index = 1; index < points.length; index += 1) {
         const segmentDistance = getDistanceToLineSegment(
@@ -236,6 +241,41 @@ function sampleRiverControlPathSignal(
   return strongestSignal;
 }
 
+export function createRiverCurvePoints(
+  controlPoints: RiverControlPoint[],
+  segmentsPerCurve = RIVER_CURVE_SEGMENTS
+): RiverControlPoint[] {
+  if (controlPoints.length <= 2) {
+    return [...controlPoints];
+  }
+
+  const curvePoints: RiverControlPoint[] = [controlPoints[0]];
+  for (let index = 0; index < controlPoints.length - 1; index += 1) {
+    const previous = controlPoints[Math.max(0, index - 1)];
+    const start = controlPoints[index];
+    const end = controlPoints[index + 1];
+    const next = controlPoints[Math.min(controlPoints.length - 1, index + 2)];
+    const controlA = {
+      x: start.x + ((end.x - previous.x) / 6),
+      y: start.y + ((end.y - previous.y) / 6),
+    };
+    const controlB = {
+      x: end.x - ((next.x - start.x) / 6),
+      y: end.y - ((next.y - start.y) / 6),
+    };
+    const segmentPoints = sampleCubicBezierPoints(
+      start,
+      controlA,
+      controlB,
+      end,
+      segmentsPerCurve
+    );
+    curvePoints.push(...segmentPoints.slice(1));
+  }
+
+  return curvePoints;
+}
+
 function getCachedRiverControlPoints(
   seed: Seed,
   cellX: number,
@@ -247,6 +287,25 @@ function getCachedRiverControlPoints(
     cache.set(key, createRiverControlPoints(seed, cellX, cellY));
   }
   return cache.get(key) ?? [];
+}
+
+function getCachedRiverCurvePoints(
+  seed: Seed,
+  cellX: number,
+  cellY: number,
+  controlPointCache: Map<string, RiverControlPoint[]>,
+  curvePointCache: Map<string, RiverControlPoint[]>
+): RiverControlPoint[] {
+  const key = `${seed}:${cellX}:${cellY}`;
+  if (!curvePointCache.has(key)) {
+    curvePointCache.set(
+      key,
+      createRiverCurvePoints(
+        getCachedRiverControlPoints(seed, cellX, cellY, controlPointCache)
+      )
+    );
+  }
+  return curvePointCache.get(key) ?? [];
 }
 
 function getDistanceToLineSegment(
@@ -269,6 +328,33 @@ function getDistanceToLineSegment(
   const closestX = start.x + deltaX * projection;
   const closestY = start.y + deltaY * projection;
   return Math.hypot(x - closestX, y - closestY);
+}
+
+function sampleCubicBezierPoints(
+  start: RiverControlPoint,
+  controlA: RiverControlPoint,
+  controlB: RiverControlPoint,
+  end: RiverControlPoint,
+  segments: number
+): RiverControlPoint[] {
+  const points: RiverControlPoint[] = [];
+  for (let index = 0; index <= segments; index += 1) {
+    const t = index / segments;
+    const inverseT = 1 - t;
+    points.push({
+      x:
+        inverseT * inverseT * inverseT * start.x +
+        3 * inverseT * inverseT * t * controlA.x +
+        3 * inverseT * t * t * controlB.x +
+        t * t * t * end.x,
+      y:
+        inverseT * inverseT * inverseT * start.y +
+        3 * inverseT * inverseT * t * controlA.y +
+        3 * inverseT * t * t * controlB.y +
+        t * t * t * end.y,
+    });
+  }
+  return points;
 }
 
 export function isNearOverworldLand(signals: OverworldSignals): boolean {

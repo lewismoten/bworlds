@@ -4,6 +4,7 @@ import {
   composeOverworldTileFromPlugins,
   createCachedOverworldTileResolver,
   createOverworldAnchorResolver,
+  createRiverCurvePoints,
   createRiverControlPoints,
   createOverworldGenerationContext,
   createGeneratedNamedOverworldCellAnchorSpec,
@@ -149,6 +150,23 @@ describe('overworld support', () => {
       expect(distance).toBeGreaterThanOrEqual(2);
       expect(distance).toBeLessThanOrEqual(10);
     }
+  });
+
+  it('connects river control points with sampled bezier curves', () => {
+    const controlPoints = [
+      { x: 0, y: 0 },
+      { x: 4, y: 0 },
+      { x: 6, y: 4 },
+      { x: 10, y: 4 },
+    ];
+    const curvePoints = createRiverCurvePoints(controlPoints, 4);
+    const middlePoint = curvePoints[2];
+
+    expect(curvePoints.length).toBeGreaterThan(controlPoints.length);
+    expect(curvePoints[0]).toEqual(controlPoints[0]);
+    expect(curvePoints.at(-1)).toEqual(controlPoints.at(-1));
+    expect(middlePoint.x).not.toBe(2);
+    expect(middlePoint.y).not.toBe(0);
   });
 
   it('raises river signals near river control path segments', () => {
