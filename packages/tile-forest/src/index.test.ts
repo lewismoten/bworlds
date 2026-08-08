@@ -1725,6 +1725,16 @@ describe('tile forest', () => {
 
     expect(fullFireflyPoints).toHaveLength(1);
     expect(lowFireflyCount).toBe(0);
+    expect(
+      fullModel.children.some(
+        (node) => node.userData?.forestFirefly && !(node instanceof FakePoints)
+      )
+    ).toBe(false);
+    expect(
+      fullModel.children.some(
+        (node) => node.userData?.forestFirefly && node instanceof FakePointLight
+      )
+    ).toBe(false);
   });
 
   it('scales firefly particle density down for farther close-detail forest tiles', () => {

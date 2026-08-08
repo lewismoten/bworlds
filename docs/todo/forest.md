@@ -594,7 +594,7 @@ This probably deserves several interchangeable strategies.
 * [ ] Generate wasps.
 * [ ] Generate butterflies around flowering trees.
 * [ ] Generate moths.
-* [ ] Generate fireflies.
+* [x] Generate fireflies.
 * [ ] Generate cicadas.
 * [ ] Make insect populations seasonal.
 * [ ] Make insects biome-dependent.
@@ -604,11 +604,11 @@ This probably deserves several interchangeable strategies.
 # Fireflies
 
 * [ ] Generate fireflies around suitable trees.
-* [ ] Restrict them primarily to appropriate evening/night conditions.
+* [x] Restrict them primarily to appropriate evening/night conditions.
 * [ ] Favor warm and humid environments.
-* [ ] Animate independently.
-* [ ] Vary glow timing.
-* [ ] Avoid synchronized flashing unless representing a species that does so.
+* [x] Animate independently.
+* [x] Vary glow timing.
+* [x] Avoid synchronized flashing unless representing a species that does so.
 * [x] Reduce firefly rendering at distance.
 * [ ] Allow fireflies to cluster around certain vegetation.
 
