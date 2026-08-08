@@ -641,10 +641,10 @@ This probably deserves several interchangeable strategies.
 * [x] Generate dates.
 * [x] Generate traveler markings.
 * [x] Generate directional arrows.
-* [ ] Generate symbols.
-* [ ] Generate religious markings.
-* [ ] Generate guild symbols.
-* [ ] Generate warning marks.
+* [X] Generate symbols.
+* [X] Generate religious markings.
+* [X] Generate guild symbols.
+* [X] Generate warning marks.
 * [ ] Generate quest hints.
 * [ ] Generate treasure-map clues.
 * [ ] Generate historical inscriptions.

@@ -350,7 +350,7 @@ describe('tile forest', () => {
     expect(getForestOwls(first.x, first.y)).toEqual(first.owls);
   });
 
-  it("generates deterministic lovers' initials, hearts, dates, traveler marks, and arrows for some forest trees", () => {
+  it("generates deterministic forest carvings for initials, hearts, dates, travel marks, symbols, and warnings", () => {
     const sampleTiles: Array<{
       x: number;
       y: number;
@@ -407,6 +407,34 @@ describe('tile forest', () => {
           (carving) =>
             carving.motif === 'arrow' &&
             (carving.text === '>' || carving.text === '<')
+        )
+      )
+    ).toBe(true);
+    expect(
+      sampleTiles.some(({ carvings }) =>
+        carvings.some(
+          (carving) => carving.motif === 'symbol' && carving.text === 'O'
+        )
+      )
+    ).toBe(true);
+    expect(
+      sampleTiles.some(({ carvings }) =>
+        carvings.some(
+          (carving) => carving.motif === 'religious' && carving.text === '+'
+        )
+      )
+    ).toBe(true);
+    expect(
+      sampleTiles.some(({ carvings }) =>
+        carvings.some(
+          (carving) => carving.motif === 'guild' && carving.text === 'G+'
+        )
+      )
+    ).toBe(true);
+    expect(
+      sampleTiles.some(({ carvings }) =>
+        carvings.some(
+          (carving) => carving.motif === 'warning' && carving.text === '!'
         )
       )
     ).toBe(true);
@@ -1461,7 +1489,7 @@ describe('tile forest', () => {
     expect(lowOwlCount).toBe(0);
   });
 
-  it("renders carving motifs only in full-detail forest models", () => {
+  it('renders full-detail forest carvings for textual and symbolic motifs', () => {
     const plugin = createForestTilePlugin();
     const tile = plugin.tiles?.find((entry) => entry.kind === 'forest');
     const state = createForestTestState();
@@ -1520,6 +1548,10 @@ describe('tile forest', () => {
         (label) =>
           label === 'LM+FG' ||
           label === 'LM*FG' ||
+          label === 'O' ||
+          label === '+' ||
+          label === 'G+' ||
+          label === '!' ||
           label === 'X' ||
           label === '>' ||
           label === '<'
@@ -1600,6 +1632,46 @@ describe('tile forest', () => {
     });
 
     expect(symbolLabels.size).toBeGreaterThan(0);
+
+    let extendedSymbolTile: { x: number; y: number } | null = null;
+    for (let tileY = 0; tileY < 18 && !extendedSymbolTile; tileY += 1) {
+      for (let tileX = 0; tileX < 18; tileX += 1) {
+        if (
+          getForestCarvings(tileX, tileY).some(
+            (carving) =>
+              carving.motif === 'symbol' ||
+              carving.motif === 'religious' ||
+              carving.motif === 'guild' ||
+              carving.motif === 'warning'
+          )
+        ) {
+          extendedSymbolTile = { x: tileX, y: tileY };
+          break;
+        }
+      }
+    }
+
+    expect(extendedSymbolTile).not.toBeNull();
+    state.player.x = extendedSymbolTile!.x;
+    state.player.y = extendedSymbolTile!.y;
+    const extendedSymbolModel = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'forest' },
+      tileX: extendedSymbolTile!.x,
+      tileY: extendedSymbolTile!.y,
+      detailLevel: 'full',
+    }) as FakeGroup;
+
+    const extendedSymbolLabels = new Set<string>();
+    extendedSymbolModel.traverse((node) => {
+      const carving = node.userData?.forestCarving;
+      if (typeof carving === 'string' && ['O', '+', 'G+', '!'].includes(carving)) {
+        extendedSymbolLabels.add(carving);
+      }
+    });
+
+    expect(extendedSymbolLabels.size).toBeGreaterThan(0);
   });
 
   it('renders flower meadows only in full-detail forest models', () => {
