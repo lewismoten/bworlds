@@ -81,6 +81,9 @@ export type DebugSnapshot = {
   geometryCount: number;
   sharedGeometryCount?: number;
   gpuGeometryCount?: number;
+  geometryBytes?: number;
+  vertexBufferBytes?: number;
+  indexBufferBytes?: number;
   vertexCount: number;
   geometryMemoryCount: number;
   treeObjectCount: number;

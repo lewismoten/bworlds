@@ -202,6 +202,9 @@ export type DebugSnapshotExport = {
     totalGeometryReferences: number;
     geometryCount: number;
     sharedGeometryCount: number;
+    totalGeometryBytes: number;
+    vertexBufferBytes: number;
+    indexBufferBytes: number;
     textureCount: number;
     textureMemoryEstimateMb: number;
     gpuGeometryCount: number;
@@ -342,6 +345,9 @@ export function buildDebugSnapshotExport(
       totalGeometryReferences: options.snapshot.geometryRefCount ?? 0,
       geometryCount: options.snapshot.geometryCount,
       sharedGeometryCount: options.snapshot.sharedGeometryCount ?? 0,
+      totalGeometryBytes: options.snapshot.geometryBytes ?? 0,
+      vertexBufferBytes: options.snapshot.vertexBufferBytes ?? 0,
+      indexBufferBytes: options.snapshot.indexBufferBytes ?? 0,
       textureCount: options.snapshot.textureCount,
       textureMemoryEstimateMb: options.snapshot.textureMemoryEstimateMb,
       gpuGeometryCount:

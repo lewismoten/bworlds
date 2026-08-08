@@ -116,6 +116,9 @@ type Render3DController = {
     materialsDisposedDuringSamplingWindow: number;
     geometryCount: number;
     sharedGeometryCount: number;
+    geometryBytes: number;
+    vertexBufferBytes: number;
+    indexBufferBytes: number;
     textureMemoryEstimateBytes: number;
     gpuGeometryCount: number;
     treeObjectCount: number;
@@ -220,6 +223,9 @@ type SceneResourceStats = {
   materialsDisposedDuringSamplingWindow: number;
   geometryCount: number;
   sharedGeometryCount: number;
+  geometryBytes: number;
+  vertexBufferBytes: number;
+  indexBufferBytes: number;
   textureMemoryEstimateBytes: number;
   treeCount: number;
   treeObjectCount: number;
@@ -870,6 +876,9 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       ),
       geometryCount: sceneResourceStats.geometryCount,
       sharedGeometryCount: sceneResourceStats.sharedGeometryCount,
+      geometryBytes: sceneResourceStats.geometryBytes,
+      vertexBufferBytes: sceneResourceStats.vertexBufferBytes,
+      indexBufferBytes: sceneResourceStats.indexBufferBytes,
       textureMemoryEstimateBytes: sceneResourceStats.textureMemoryEstimateBytes,
       gpuGeometryCount: renderer.info.memory.geometries,
       treeObjectCount: sceneResourceStats.treeObjectCount,
@@ -2104,6 +2113,9 @@ export function collectSceneResourceStats(
   let vertexCount = 0;
   let materialRefCount = 0;
   let geometryRefCount = 0;
+  let geometryBytes = 0;
+  let vertexBufferBytes = 0;
+  let indexBufferBytes = 0;
   let textureMemoryEstimateBytes = 0;
   let treeCount = 0;
   let treeObjectCount = 0;
@@ -2203,6 +2215,10 @@ export function collectSceneResourceStats(
       if (!geometries.has(renderable.geometry)) {
         geometries.add(renderable.geometry);
         vertexCount += getGeometryVertexCount(renderable.geometry);
+        const geometryMemory = getGeometryMemoryEstimate(renderable.geometry);
+        geometryBytes += geometryMemory.totalBytes;
+        vertexBufferBytes += geometryMemory.vertexBufferBytes;
+        indexBufferBytes += geometryMemory.indexBufferBytes;
       }
     }
 
@@ -2273,6 +2289,9 @@ export function collectSceneResourceStats(
     materialsDisposedDuringSamplingWindow: 0,
     geometryCount: geometries.size,
     sharedGeometryCount: Math.max(0, geometryRefCount - geometries.size),
+    geometryBytes,
+    vertexBufferBytes,
+    indexBufferBytes,
     textureMemoryEstimateBytes,
     treeCount,
     treeObjectCount,
@@ -2494,6 +2513,53 @@ function getGeometryVertexCount(geometry: unknown): number {
     return Math.floor(positionAttribute.array.length / itemSize);
   }
   return 0;
+}
+
+function getGeometryMemoryEstimate(geometry: unknown): {
+  totalBytes: number;
+  vertexBufferBytes: number;
+  indexBufferBytes: number;
+} {
+  const attributes = (
+    geometry as {
+      attributes?: Record<string, { array?: ArrayLike<unknown> & { byteLength?: number } }>;
+    }
+  )?.attributes;
+  let vertexBufferBytes = 0;
+
+  for (const attribute of Object.values(attributes ?? {})) {
+    vertexBufferBytes += getArrayLikeByteLength(attribute?.array);
+  }
+
+  const indexArray = (
+    geometry as {
+      index?: {
+        array?: ArrayLike<unknown> & { byteLength?: number };
+      };
+    }
+  )?.index?.array;
+  const indexBufferBytes = getArrayLikeByteLength(indexArray);
+
+  return {
+    totalBytes: vertexBufferBytes + indexBufferBytes,
+    vertexBufferBytes,
+    indexBufferBytes,
+  };
+}
+
+function getArrayLikeByteLength(
+  arrayLike: (ArrayLike<unknown> & { byteLength?: number }) | undefined
+): number {
+  if (!arrayLike) {
+    return 0;
+  }
+  if (typeof arrayLike.byteLength === 'number') {
+    return arrayLike.byteLength;
+  }
+  if (typeof arrayLike.length !== 'number') {
+    return 0;
+  }
+  return arrayLike.length * 4;
 }
 
 type DistanceFadeTargets = {

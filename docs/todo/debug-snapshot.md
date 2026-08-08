@@ -139,9 +139,9 @@ That gives you something you can save from a slow scene, attach to a bug report,
 * [x] Include unique geometry instances.
 * [x] Include GPU geometry count.
 * [x] Include shared geometry count.
-* [ ] Include total geometry bytes where calculable.
-* [ ] Include vertex-buffer bytes.
-* [ ] Include index-buffer bytes.
+* [x] Include total geometry bytes where calculable.
+* [x] Include vertex-buffer bytes.
+* [x] Include index-buffer bytes.
 * [ ] Include average vertices per geometry.
 * [ ] Include largest geometry by vertices.
 * [ ] Include largest geometry by memory.
