@@ -1,0 +1,13 @@
+{
+  "name": "@bworlds/runtime-rail-network",
+  "version": "0.1.0",
+  "type": "module",
+  "dependencies": {
+    "@bworlds/overworld-support": "0.1.0",
+    "@bworlds/plugin-api": "0.1.0",
+    "@bworlds/rail-support": "0.1.0"
+  },
+  "exports": {
+    ".": "./src/index.ts"
+  }
+}

@@ -1,0 +1,117 @@
+import { createPlainsBackedTilePainter } from '@bworlds/paint-support';
+import { createTilePlugin } from '@bworlds/plugin-api';
+import { createRouteTraversalProfile } from '@bworlds/tile-support';
+import { createBasicMaterial } from '@bworlds/three-support';
+import type {
+  Create3DModelContext,
+  Kind,
+  RuntimePlugin,
+  ThreeHostLike,
+} from '@bworlds/plugin-api';
+
+export function createRailTilePlugin(): RuntimePlugin {
+  return createTilePlugin('tile-rail', [
+    {
+      kind: 'rail',
+      definition: {
+        name: 'Rail Track',
+        color: '#7a4a28',
+        miniColor: '#b08968',
+        walkable: true,
+        wallHeight: 0,
+      },
+      getTraversalProfile3D() {
+        return createRouteTraversalProfile();
+      },
+      paint2D: createPlainsBackedTilePainter(({ context, x, y, fillRect }) => {
+        fillRect(context, x + 1, y + 5, 14, 2, '#5c3a21');
+        fillRect(context, x + 1, y + 9, 14, 2, '#5c3a21');
+        fillRect(context, x + 2, y + 6, 2, 4, '#c7b299');
+        fillRect(context, x + 6, y + 6, 2, 4, '#c7b299');
+        fillRect(context, x + 10, y + 6, 2, 4, '#c7b299');
+        return true;
+      }),
+      create3DModel({ three, state, tileX, tileY }: Create3DModelContext) {
+        if (state.getCurrentContext().type !== 'overworld') {
+          return null;
+        }
+        return createRailGroup(three, state, tileX, tileY);
+      },
+    },
+  ]);
+}
+
+function createRailGroup(
+  three: ThreeHostLike,
+  state: Create3DModelContext['state'],
+  tileX: number,
+  tileY: number
+) {
+  const group = new three.Group();
+  const sleeperMaterial = createBasicMaterial(three, { color: '#7c5836' });
+  const railMaterial = createBasicMaterial(three, { color: '#9ca3af' });
+  group.position.set(tileX, 0, tileY);
+
+  const horizontal = hasConnection(state, tileX, tileY, 'east') || hasConnection(state, tileX, tileY, 'west');
+  const vertical = hasConnection(state, tileX, tileY, 'north') || hasConnection(state, tileX, tileY, 'south');
+  const diagonalSlash =
+    hasConnection(state, tileX, tileY, 'northeast') ||
+    hasConnection(state, tileX, tileY, 'southwest');
+  const diagonalBackslash =
+    hasConnection(state, tileX, tileY, 'northwest') ||
+    hasConnection(state, tileX, tileY, 'southeast');
+  const rotation =
+    diagonalSlash && !horizontal && !vertical
+      ? -Math.PI / 4
+      : diagonalBackslash && !horizontal && !vertical
+        ? Math.PI / 4
+        : vertical && !horizontal
+          ? Math.PI / 2
+          : 0;
+
+  for (const offset of [-0.22, 0.22]) {
+    const rail = new three.Mesh(
+      new three.BoxGeometry(0.92, 0.05, 0.06),
+      railMaterial
+    );
+    rail.position.set(0, 0.08, offset);
+    rail.rotation.y = rotation;
+    group.add(rail);
+  }
+
+  for (const offset of [-0.32, -0.12, 0.08, 0.28]) {
+    const sleeper = new three.Mesh(
+      new three.BoxGeometry(0.14, 0.04, 0.56),
+      sleeperMaterial
+    );
+    sleeper.position.set(offset, 0.04, 0);
+    sleeper.rotation.y = rotation;
+    group.add(sleeper);
+  }
+
+  return group;
+}
+
+function hasConnection(
+  state: Create3DModelContext['state'],
+  tileX: number,
+  tileY: number,
+  direction: 'north' | 'east' | 'south' | 'west' | 'northeast' | 'southeast' | 'southwest' | 'northwest'
+) {
+  const offsets: Record<typeof direction, { dx: number; dy: number }> = {
+    north: { dx: 0, dy: -1 },
+    east: { dx: 1, dy: 0 },
+    south: { dx: 0, dy: 1 },
+    west: { dx: -1, dy: 0 },
+    northeast: { dx: 1, dy: -1 },
+    southeast: { dx: 1, dy: 1 },
+    southwest: { dx: -1, dy: 1 },
+    northwest: { dx: -1, dy: -1 },
+  };
+  const offset = offsets[direction];
+  return isRailNetworkKind(state.getCurrentTile(tileX + offset.dx, tileY + offset.dy).kind);
+}
+
+function isRailNetworkKind(kind: Kind): boolean {
+  return kind === 'rail' || kind === 'station';
+}

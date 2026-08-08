@@ -21,6 +21,7 @@ export type KnownTileKind =
   | 'wall'
   | 'door'
   | 'road'
+  | 'rail'
   | 'ruins'
   | 'quarry'
   | 'lighthouse'

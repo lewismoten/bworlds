@@ -31,9 +31,11 @@ import { createDepthFlavorRuntimePlugin } from '@bworlds/runtime-depth-flavor';
 import { createOverworldAnchorsRuntimePlugin } from '@bworlds/runtime-overworld-anchors';
 import { createOverworldReliefRuntimePlugin } from '@bworlds/runtime-overworld-relief';
 import { createPlayerPoiRuntimePlugin } from '@bworlds/runtime-player-poi';
+import { createRailNetworkRuntimePlugin } from '@bworlds/runtime-rail-network';
 import { createStartRegionRuntimePlugin } from '@bworlds/runtime-start-region';
 import { createWayfindingRuntimePlugin } from '@bworlds/runtime-wayfinding';
 import { createWeatherRuntimePlugin } from '@bworlds/runtime-weather';
+import { createRailTilePlugin } from '@bworlds/tile-rail';
 import { createCaveTilePlugin } from '@bworlds/tile-cave';
 import { createDungeonTilePlugin } from '@bworlds/tile-dungeon';
 import { createForestTilePlugin } from '@bworlds/tile-forest';
@@ -129,10 +131,17 @@ export function createDefaultRuntimePlugins(): RuntimePlugin[] {
       },
     },
     {
+      create: createRailNetworkRuntimePlugin,
+      order: {
+        priority: 16,
+        after: ['runtime-overworld-anchors'],
+      },
+    },
+    {
       create: createOverworldReliefRuntimePlugin,
       order: {
         priority: 18,
-        after: ['runtime-overworld-anchors'],
+        after: ['runtime-overworld-anchors', 'runtime-rail-network'],
       },
     },
     {
@@ -200,6 +209,10 @@ export function createDefaultTilePlugins(): RuntimePlugin[] {
     },
     {
       create: createStationTilePlugin,
+      order: { priority: 51 },
+    },
+    {
+      create: createRailTilePlugin,
       order: { priority: 51 },
     },
     {

@@ -11,6 +11,7 @@ const RELIEF_DISABLED_KINDS = new Set([
   'river',
   'bridge',
   'dock',
+  'rail',
   'mountain',
   'interior',
   'floor',

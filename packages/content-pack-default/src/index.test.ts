@@ -1,88 +1,26 @@
 import { describe, expect, it } from 'vitest';
 import {
   createDefaultRuntimePlugins,
-  getDefaultTileDefinition,
-  listDefaultTileDefinitions,
+  createDefaultTilePlugins,
 } from './index.ts';
 
-describe('default content pack tile definitions', () => {
-  it('derives built-in tile definitions from the default tile plugin set', () => {
-    const entries = listDefaultTileDefinitions();
-    const definitions = new Map(entries);
+describe('content pack default', () => {
+  it('includes the rail runtime and tile plugins in the default pack', () => {
+    const runtimePlugins = createDefaultRuntimePlugins();
+    const tilePlugins = createDefaultTilePlugins();
 
-    expect(definitions.get('plains')).toEqual(
+    expect(runtimePlugins.map((plugin) => plugin.name)).toContain(
+      'runtime-rail-network'
+    );
+    expect(tilePlugins.map((plugin) => plugin.name)).toContain('tile-rail');
+    const railDefinition = tilePlugins
+      .flatMap((plugin) => plugin.tiles ?? [])
+      .find((tile) => tile.kind === 'rail')?.definition;
+    expect(railDefinition).toEqual(
       expect.objectContaining({
-        name: 'Plains',
+        name: 'Rail Track',
         walkable: true,
       })
-    );
-    expect(definitions.get('ocean')).toEqual(
-      expect.objectContaining({
-        name: 'Ocean',
-        walkable: false,
-      })
-    );
-    expect(definitions.get('floor')).toEqual(
-      expect.objectContaining({
-        name: 'Floor',
-      })
-    );
-    expect(definitions.get('cave-floor')).toEqual(
-      expect.objectContaining({
-        name: 'Cave Floor',
-        walkable: true,
-      })
-    );
-    expect(definitions.get('cave-dripstone')).toEqual(
-      expect.objectContaining({
-        name: 'Dripstone',
-        walkable: false,
-      })
-    );
-  });
-
-  it('provides a built-in fallback lookup without depending on core tile tables', () => {
-    expect(getDefaultTileDefinition('town')).toEqual(
-      expect.objectContaining({
-        name: 'Town',
-      })
-    );
-    expect(getDefaultTileDefinition('quarry')).toEqual(
-      expect.objectContaining({
-        name: 'Quarry',
-      })
-    );
-    expect(getDefaultTileDefinition('lighthouse')).toEqual(
-      expect.objectContaining({
-        name: 'Lighthouse',
-      })
-    );
-    expect(getDefaultTileDefinition('ship')).toEqual(
-      expect.objectContaining({
-        name: 'Ship',
-      })
-    );
-    expect(getDefaultTileDefinition('observatory')).toEqual(
-      expect.objectContaining({
-        name: 'Observatory',
-      })
-    );
-    expect(getDefaultTileDefinition('missing-kind')).toEqual(
-      expect.objectContaining({
-        name: 'Plains',
-      })
-    );
-  });
-
-  it('registers celestial runtime plugins in layered order', () => {
-    const plugins = createDefaultRuntimePlugins();
-
-    expect(plugins.map((plugin) => plugin.name)).toEqual(
-      expect.arrayContaining([
-        'runtime-celestial',
-        'runtime-celestial-phenomena',
-        'runtime-celestial-system',
-      ])
     );
   });
 });

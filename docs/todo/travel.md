@@ -4,7 +4,7 @@
 - [X] A dock with a boat should have a sign indicating the name of the stops except its own. Each stop should indicate the closest POI to each dock. The sign should state the name of the boat.
 
 # Rail Travel
-- [ ] Add train tracks with brazier curves that connect points
+- [X] Add train tracks with brazier curves that connect points
 - [X] Add a train station as a point of interest
 - [ ] Add different train cars that you can walk through
 - [ ] Show trains traveling on the world overview map

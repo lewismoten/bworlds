@@ -29,6 +29,7 @@ describe('runtime overworld relief', () => {
   it('keeps rivers and mountains on explicit profiles instead of decorating relief', () => {
     expect(resolveOverworldReliefHeight(0.7, { kind: 'river' })).toBe(0);
     expect(resolveOverworldReliefHeight(0.7, { kind: 'mountain' })).toBe(0);
+    expect(resolveOverworldReliefHeight(0.7, { kind: 'rail' })).toBe(0);
   });
 
   it('stays deterministic through the runtime plugin hook', () => {
