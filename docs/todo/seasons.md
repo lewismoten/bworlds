@@ -138,4 +138,5 @@ add a outer globe of stars in the sky that appear at night with procedurally gen
 - [x] on day/night ring, the black bars are still not lined up with sunrise/sunset. they seem to be off by 90 degrees.
 - [x] Celestial Tools heading is pushing the tab buttons off the edge. Remove the "Celestial Tools" text, or place it above the tab buttons.
 - [x] I still do not see anything happening when i check off arora, meteor shower, or comet. I see this error: warmup.html:1 Unchecked runtime.lastError: Could not establish connection. Receiving end does not exist.
-- [ ] (index):1 Unchecked runtime.lastError: Could not establish connection. Receiving end does not exist.
+- [ ] aurora borealis should appear to be animated with different colors across the sky at random parts, and appear like ribbons, preferably as you look toward the closest north/south pole
+- [ ] meteor shower is still not showing lots of meteors (or any) in the sky

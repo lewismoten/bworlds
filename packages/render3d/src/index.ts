@@ -21,6 +21,8 @@ import {
 
 const TILE_SIZE = 1;
 const CHUNK_RADIUS = 18;
+const NEAR_VISIBLE_RADIUS = 6;
+const FACING_BUCKETS = 12;
 const FLOOR_THICKNESS = 0.03;
 const WATER_FLOOR_THICKNESS = 0.28;
 const RIVER_WALL_THICKNESS = 0.05;
@@ -125,6 +127,7 @@ export function create3DRenderer(host) {
   let lastMoonPhaseIndex = -1;
   let lastCenterKey = '';
   let lastContextKey = '';
+  let lastFacingBucket = '';
 
   function resize(width, height, pixelRatio = window.devicePixelRatio || 1) {
     const safeWidth = Math.max(1, Math.floor(width));
@@ -193,6 +196,7 @@ export function create3DRenderer(host) {
     const context = state.getCurrentContext();
     const centerX = Math.round(state.player.x);
     const centerY = Math.round(state.player.y);
+    const facingBucket = getFacingVisibilityBucket(state.player.facing);
     const nextVisibleKeys = new Set();
 
     for (let y = centerY - CHUNK_RADIUS; y <= centerY + CHUNK_RADIUS; y += 1) {
@@ -201,6 +205,17 @@ export function create3DRenderer(host) {
         x <= centerX + CHUNK_RADIUS;
         x += 1
       ) {
+        if (
+          !shouldRenderWorldTile({
+            playerTileX: centerX,
+            playerTileY: centerY,
+            tileX: x,
+            tileY: y,
+            facingAngle: state.player.facing,
+          })
+        ) {
+          continue;
+        }
         const key = `${x}:${y}`;
         nextVisibleKeys.add(key);
         if (!visibleTileNodes.has(key)) {
@@ -221,6 +236,7 @@ export function create3DRenderer(host) {
 
     lastCenterKey = `${centerX}:${centerY}`;
     lastContextKey = context.id;
+    lastFacingBucket = String(facingBucket);
   }
 
   function render(
@@ -233,10 +249,15 @@ export function create3DRenderer(host) {
   ) {
     const centerKey = `${Math.round(state.player.x)}:${Math.round(state.player.y)}`;
     const contextKey = state.getCurrentContext().id;
+    const facingBucket = String(getFacingVisibilityBucket(state.player.facing));
     if (contextKey !== lastContextKey) {
       clearWorld();
     }
-    if (centerKey !== lastCenterKey || contextKey !== lastContextKey) {
+    if (
+      centerKey !== lastCenterKey ||
+      contextKey !== lastContextKey ||
+      facingBucket !== lastFacingBucket
+    ) {
       syncVisibleWorld(state);
     }
 
@@ -870,6 +891,43 @@ export function create3DRenderer(host) {
     render,
     resize,
   };
+}
+
+export function getFacingVisibilityBucket(
+  facingAngle,
+  bucketCount = FACING_BUCKETS
+) {
+  const normalized =
+    ((facingAngle % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+  return Math.floor((normalized / (Math.PI * 2)) * bucketCount);
+}
+
+export function shouldRenderWorldTile({
+  playerTileX,
+  playerTileY,
+  tileX,
+  tileY,
+  facingAngle,
+  chunkRadius = CHUNK_RADIUS,
+  nearVisibleRadius = NEAR_VISIBLE_RADIUS,
+  rearCullDot = -0.2,
+}) {
+  const deltaX = tileX - playerTileX;
+  const deltaY = tileY - playerTileY;
+  const distance = Math.hypot(deltaX, deltaY);
+  if (distance > chunkRadius) {
+    return false;
+  }
+  if (distance <= nearVisibleRadius || distance === 0) {
+    return true;
+  }
+
+  const forwardX = Math.cos(facingAngle);
+  const forwardY = Math.sin(facingAngle);
+  const directionX = deltaX / distance;
+  const directionY = deltaY / distance;
+  const facingDot = forwardX * directionX + forwardY * directionY;
+  return facingDot >= rearCullDot;
 }
 
 function applyShadowSettings(node, options) {
