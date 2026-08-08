@@ -11,6 +11,27 @@ export function getCompassBezelRotation(headingAngle: number) {
   return headingAngle + Math.PI / 2;
 }
 
+export function formatCompassHeading(headingAngle: number | null) {
+  if (typeof headingAngle !== 'number') {
+    return 'No heading set';
+  }
+  const degrees = Math.round(
+    (((headingAngle + Math.PI / 2) * 180) / Math.PI + 360) % 360
+  );
+  return `Heading ${degrees.toString().padStart(3, '0')}°`;
+}
+
+export function shouldToggleCompassHeading(
+  currentHeadingAngle: number | null,
+  nextHeadingAngle: number,
+  thresholdRadians = Math.PI / 24
+) {
+  if (typeof currentHeadingAngle !== 'number') {
+    return false;
+  }
+  return Math.abs(getCompassDelta(currentHeadingAngle, nextHeadingAngle)) <= thresholdRadians;
+}
+
 export function getCompassPalette() {
   return {
     northLabel: '#d54343',
@@ -95,7 +116,7 @@ export function getCompassDialInteractionMode(
 export function drawCompassDial(
   canvas: HTMLCanvasElement | null,
   facingAngle: number,
-  headingAngle = facingAngle
+  headingAngle: number | null = facingAngle
 ) {
   const context = canvas?.getContext('2d');
   if (!canvas || !context) {
@@ -178,21 +199,23 @@ export function drawCompassDial(
     );
   });
 
-  context.save();
-  context.rotate(getCompassBezelRotation(headingAngle));
-  context.strokeStyle = 'rgba(85, 214, 190, 0.38)';
-  context.lineWidth = 5;
-  context.beginPath();
-  context.arc(0, 0, bezelRadius, -0.24, 0.24);
-  context.stroke();
-  context.fillStyle = palette.bezelMarker;
-  context.beginPath();
-  context.moveTo(0, -bezelRadius - 8);
-  context.lineTo(10, -bezelRadius + 5);
-  context.lineTo(-10, -bezelRadius + 5);
-  context.closePath();
-  context.fill();
-  context.restore();
+  if (typeof headingAngle === 'number') {
+    context.save();
+    context.rotate(getCompassBezelRotation(headingAngle));
+    context.strokeStyle = 'rgba(85, 214, 190, 0.38)';
+    context.lineWidth = 5;
+    context.beginPath();
+    context.arc(0, 0, bezelRadius, -Math.PI / 2 - 0.24, -Math.PI / 2 + 0.24);
+    context.stroke();
+    context.fillStyle = palette.bezelMarker;
+    context.beginPath();
+    context.moveTo(0, -bezelRadius - 8);
+    context.lineTo(10, -bezelRadius + 5);
+    context.lineTo(-10, -bezelRadius + 5);
+    context.closePath();
+    context.fill();
+    context.restore();
+  }
 
   context.save();
   context.rotate(getCompassNeedleRotation(facingAngle));
@@ -220,6 +243,13 @@ export function drawCompassDial(
 
   context.fillStyle = '#dce8f5';
   context.font = '600 14px Trebuchet MS';
-  context.fillText('Click center to face, outer bezel to mark a heading', 0, radius + 28);
+  context.fillText(formatCompassHeading(headingAngle), 0, radius + 18);
+  context.fillStyle = '#9bb3c6';
+  context.font = '600 12px Trebuchet MS';
+  context.fillText(
+    'Click center to face, outer bezel to mark or clear a heading',
+    0,
+    radius + 36
+  );
   context.restore();
 }

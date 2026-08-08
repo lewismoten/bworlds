@@ -31,10 +31,12 @@ import {
   advanceCompassState,
   drawCompassDial,
   easeAngle,
+  formatCompassHeading,
   getCompassDialFacingAngle,
   getCompassDialInteractionMode,
   getCompassDialRadius,
   getCompassWobbleBoost,
+  shouldToggleCompassHeading,
 } from './compass.ts';
 import {
   getNextInspectorTab,
@@ -333,7 +335,7 @@ const compassHeadingState = {
   angle:
     typeof savedSession?.compassHeadingAngle === 'number'
       ? savedSession.compassHeadingAngle
-      : state.player.facing,
+      : null,
 };
 const MOON_PHASE_NAMES = [
   'New Moon',
@@ -400,6 +402,7 @@ function updateStatus() {
       <div class="viewport-hud-date">${getCelestialDateLabel(cycle)}</div>
       <div class="viewport-hud-meta">${cycle.activeConstellation.name} • ${cycle.moonPhaseName}</div>
       <div class="viewport-hud-meta">Facing ${facing}</div>
+      <div class="viewport-hud-meta">${formatCompassHeading(compassHeadingState.angle)}</div>
       ${
         showViewportCompass
           ? `<div class="viewport-hud-compass">${renderCompass(facing)}</div>`
@@ -1177,7 +1180,12 @@ compassDialCanvas?.addEventListener('click', (event) => {
     radius
   );
   if (interactionMode === 'heading-bug') {
-    compassHeadingState.angle = angle;
+    compassHeadingState.angle = shouldToggleCompassHeading(
+      compassHeadingState.angle,
+      angle
+    )
+      ? null
+      : angle;
     saveSession();
     render();
     return;

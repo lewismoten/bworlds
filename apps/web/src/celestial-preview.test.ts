@@ -3,6 +3,7 @@ import {
   buildPlanetTextureGrid,
   getPreviewAuroraBandPath,
   getPreviewLightingProfile,
+  getPreviewShadowProfile,
   getPreviewSunOrbitSpec,
   getPlanetSurfaceColor,
 } from './celestial-preview.ts';
@@ -76,8 +77,24 @@ describe('celestial preview helpers', () => {
     } as any);
 
     expect(noon.sunIntensity).toBeGreaterThan(midnight.sunIntensity);
-    expect(midnight.ambientIntensity).toBeGreaterThan(0.8);
+    expect(midnight.ambientIntensity).toBeGreaterThan(0.95);
     expect(midnight.emissiveIntensity).toBeGreaterThan(noon.emissiveIntensity);
+    expect(noon.sunFillIntensity).toBeGreaterThan(midnight.sunFillIntensity);
     expect(noon.glowOpacity).toBeGreaterThan(midnight.glowOpacity);
+  });
+
+  it('keeps preview shadows active when the sun is above or near the horizon', () => {
+    expect(
+      getPreviewShadowProfile({
+        daylight: 0.4,
+        sunAltitude: 0.2,
+      } as any).sunCastShadow
+    ).toBe(true);
+    expect(
+      getPreviewShadowProfile({
+        daylight: 0,
+        sunAltitude: -0.2,
+      } as any).sunCastShadow
+    ).toBe(false);
   });
 });

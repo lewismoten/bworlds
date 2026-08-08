@@ -51,6 +51,8 @@ export function createCelestialPreviewRenderer(host: HTMLElement | null) {
   });
   renderer.setClearColor(0x000000, 0);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   host.appendChild(renderer.domElement);
 
   const scene = new THREE.Scene();
@@ -65,6 +67,8 @@ export function createCelestialPreviewRenderer(host: HTMLElement | null) {
   scene.add(rim);
   const sunLight = new THREE.DirectionalLight('#ffe2ad', 1.2);
   scene.add(sunLight);
+  const sunFill = new THREE.PointLight('#ffd38a', 0.8, 48, 1.6);
+  scene.add(sunFill);
   const nightFill = new THREE.DirectionalLight('#8ebcff', 0.45);
   scene.add(nightFill);
 
@@ -92,6 +96,8 @@ export function createCelestialPreviewRenderer(host: HTMLElement | null) {
       metalness: 0.02,
     })
   );
+  world.castShadow = true;
+  world.receiveShadow = true;
   root.add(world);
   const planetTextureState = {
     lastSampler: null as OverworldSamplerLike | null,
@@ -140,8 +146,15 @@ export function createCelestialPreviewRenderer(host: HTMLElement | null) {
 
   const moon = new THREE.Mesh(
     new THREE.SphereGeometry(0.55, 20, 20),
-    new THREE.MeshBasicMaterial({ color: '#dce8ff' })
+    new THREE.MeshStandardMaterial({
+      color: '#dce8ff',
+      emissive: '#203248',
+      roughness: 0.9,
+      metalness: 0.02,
+    })
   );
+  moon.castShadow = true;
+  moon.receiveShadow = true;
   root.add(moon);
 
   const facingArrow = new THREE.Mesh(
@@ -233,6 +246,7 @@ export function createCelestialPreviewRenderer(host: HTMLElement | null) {
       '#dce8ff'
     );
     const lighting = getPreviewLightingProfile(cycle);
+    const shadowProfile = getPreviewShadowProfile(cycle);
     ambient.intensity = lighting.ambientIntensity;
     rim.intensity = lighting.rimIntensity;
     const sunX = Math.cos(cycle.sunAzimuth) * 13.5;
@@ -240,10 +254,24 @@ export function createCelestialPreviewRenderer(host: HTMLElement | null) {
     const sunZ = Math.sin(cycle.sunAzimuth) * 13.5;
     sunLight.position.set(sunX, sunY, sunZ);
     sunLight.intensity = lighting.sunIntensity;
+    sunLight.castShadow = shadowProfile.sunCastShadow;
+    sunLight.shadow.mapSize.set(1024, 1024);
+    sunLight.shadow.bias = -0.0004;
+    sunLight.shadow.camera.near = 1;
+    sunLight.shadow.camera.far = 40;
+    sunLight.shadow.camera.left = -10;
+    sunLight.shadow.camera.right = 10;
+    sunLight.shadow.camera.top = 10;
+    sunLight.shadow.camera.bottom = -10;
+    sunFill.position.set(sunX, sunY, sunZ);
+    sunFill.intensity = lighting.sunFillIntensity;
+    sunFill.castShadow = false;
     nightFill.position.set(-sunX * 0.72, 6.5 + cycle.night * 2.8, -sunZ * 0.72);
     nightFill.intensity = lighting.nightFillIntensity;
     const worldMaterial = world.material as THREE.MeshStandardMaterial;
     worldMaterial.emissiveIntensity = lighting.emissiveIntensity;
+    const moonMaterial = moon.material as THREE.MeshStandardMaterial;
+    moonMaterial.emissiveIntensity = lighting.moonEmissiveIntensity;
     (worldGlow.material as THREE.MeshBasicMaterial).opacity = lighting.glowOpacity;
     moon.material.opacity = Math.max(
       0.24,
@@ -294,12 +322,22 @@ export function getPreviewLightingProfile(
   cycle: Pick<DaylightCycleLike, 'daylight' | 'night' | 'starsOpacity'>
 ) {
   return {
-    ambientIntensity: 0.86 + cycle.daylight * 0.34 + cycle.night * 0.08,
-    rimIntensity: 0.72 + cycle.daylight * 0.56,
-    sunIntensity: 0.58 + cycle.daylight * 1.42,
-    nightFillIntensity: 0.18 + cycle.night * 0.28,
-    emissiveIntensity: 0.32 + cycle.night * 0.16,
+    ambientIntensity: 1 + cycle.daylight * 0.42 + cycle.night * 0.12,
+    rimIntensity: 0.82 + cycle.daylight * 0.62,
+    sunIntensity: 0.72 + cycle.daylight * 1.58,
+    sunFillIntensity: 0.22 + cycle.daylight * 0.92,
+    nightFillIntensity: 0.26 + cycle.night * 0.34,
+    emissiveIntensity: 0.46 + cycle.night * 0.26,
+    moonEmissiveIntensity: 0.08 + cycle.night * 0.18,
     glowOpacity: 0.07 + cycle.daylight * 0.06 + cycle.starsOpacity * 0.02,
+  };
+}
+
+export function getPreviewShadowProfile(
+  cycle: Pick<DaylightCycleLike, 'daylight' | 'sunAltitude'>
+) {
+  return {
+    sunCastShadow: cycle.daylight > 0.04 || cycle.sunAltitude > -0.08,
   };
 }
 

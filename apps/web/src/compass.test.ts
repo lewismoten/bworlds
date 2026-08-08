@@ -2,12 +2,14 @@ import { describe, expect, it } from 'vitest';
 import {
   advanceCompassState,
   easeAngle,
+  formatCompassHeading,
   getCompassBezelRotation,
   getCompassDialFacingAngle,
   getCompassDialInteractionMode,
   getCompassNeedleRotation,
   getCompassPalette,
   getCompassWobbleBoost,
+  shouldToggleCompassHeading,
 } from './compass.ts';
 
 describe('compass helpers', () => {
@@ -62,5 +64,17 @@ describe('compass helpers', () => {
 
     expect(palette.northLabel).toBe('#d54343');
     expect(palette.southNeedle).toBe('#f4f8ff');
+  });
+
+  it('formats compass headings with north at zero degrees', () => {
+    expect(formatCompassHeading(-Math.PI / 2)).toBe('Heading 000°');
+    expect(formatCompassHeading(0)).toBe('Heading 090°');
+    expect(formatCompassHeading(null)).toBe('No heading set');
+  });
+
+  it('can toggle the heading bug off when clicking the same bezel again', () => {
+    expect(shouldToggleCompassHeading(0, 0.02)).toBe(true);
+    expect(shouldToggleCompassHeading(0, Math.PI / 2)).toBe(false);
+    expect(shouldToggleCompassHeading(null, 0)).toBe(false);
   });
 });

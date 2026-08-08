@@ -115,8 +115,8 @@ add a outer globe of stars in the sky that appear at night with procedurally gen
 - [x] the compass does not have a bevel that I can adjust so that i can keep a constant heading.
 - [x] Since the compass background is black, the south needle should be white, or have a white outline.
 - [x] The "N" on the compass should be red.
-- [ ] When I click the bezel of the compass to set a heading, the arrow appears there, but a different bezel is highlighted about 90 degrees off.
-- [ ] Clicking the bezel should show the degrees that it is at.
-- [ ] Clicking the same bezel should toggle the arrow off.
-- [ ] In the celestial model, the planet is still very dark. it may need some emissive light or omnidirectional light applied. 
-- [ ] In the celestial model, the sun is not emitting light onto the planet and casing shadows on the moon
+- [x] When I click the bezel of the compass to set a heading, the arrow appears there, but a different bezel is highlighted about 90 degrees off.
+- [x] Clicking the bezel should show the degrees that it is at.
+- [x] Clicking the same bezel should toggle the arrow off.
+- [x] In the celestial model, the planet is still very dark. it may need some emissive light or omnidirectional light applied. 
+- [x] In the celestial model, the sun is not emitting light onto the planet and casing shadows on the moon
