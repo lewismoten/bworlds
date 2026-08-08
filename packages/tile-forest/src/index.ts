@@ -104,6 +104,7 @@ const treeGeometryCache = new WeakMap<
     foliage: ThreeGeometryLike;
   }
 >();
+type TreeGeometry = NonNullable<ReturnType<typeof treeGeometryCache.get>>;
 
 export function createForestTilePlugin(): RuntimePlugin {
   return createTilePlugin('tile-forest', [
@@ -252,7 +253,7 @@ export function createForestTilePlugin(): RuntimePlugin {
   ]);
 }
 
-function getTreeGeometry(three: ThreeHostLike) {
+function getTreeGeometry(three: ThreeHostLike): TreeGeometry {
   if (!treeGeometryCache.has(three)) {
     treeGeometryCache.set(three, {
       trunk: new three.CylinderGeometry(0.075, 0.1, 1, 6),
@@ -263,11 +264,18 @@ function getTreeGeometry(three: ThreeHostLike) {
   return treeGeometryCache.get(three)!;
 }
 
-function getForestTreeDescriptors(tileX: number, tileY: number) {
+function getForestTreeDescriptors(
+  tileX: number,
+  tileY: number
+): ForestTreeDescriptor[] {
   return resolveForestTreeDescriptors(tileX, tileY);
 }
 
-function getTreeVarietyIndex(tileX: number, tileY: number, treeIndex: number) {
+function getTreeVarietyIndex(
+  tileX: number,
+  tileY: number,
+  treeIndex: number
+): number {
   const clusterX = Math.floor(tileX / TREE_CLUSTER_SIZE);
   const clusterY = Math.floor(tileY / TREE_CLUSTER_SIZE);
   const dominant = Math.floor(
@@ -361,7 +369,7 @@ function averageMoisture(
   return samples.reduce((sum, value) => sum + value, 0) / samples.length;
 }
 
-function clampToTile(value: number) {
+function clampToTile(value: number): number {
   return Math.max(-0.34, Math.min(0.34, value));
 }
 

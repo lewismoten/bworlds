@@ -1,4 +1,5 @@
 import { composeTilePainter } from '@bworlds/paint-support';
+import type { TilePainter2D } from '@bworlds/paint-support';
 import { createTilePlugin } from '@bworlds/plugin-api';
 import type { Paint2DContext, RuntimePlugin } from '@bworlds/plugin-api';
 
@@ -112,11 +113,13 @@ function paintFloorTile({
   return true;
 }
 
-function createFloorBackedInteriorPainter(overlayPainter: typeof paintDoorOverlay) {
+function createFloorBackedInteriorPainter(
+  overlayPainter: TilePainter2D
+): TilePainter2D {
   return composeTilePainter(paintFloorTile, overlayPainter);
 }
 
-function paintDoorOverlay(paint: Paint2DContext) {
+function paintDoorOverlay(paint: Paint2DContext): boolean {
   const { context, x, y, fillRect, motif } = paint;
   const doorX = 4 + motif.int(-1, 1);
   fillRect(context, x + doorX, y + 2, 8, 11, '#b45309');
@@ -125,7 +128,7 @@ function paintDoorOverlay(paint: Paint2DContext) {
   return true;
 }
 
-function paintStairsDownOverlay(paint: Paint2DContext) {
+function paintStairsDownOverlay(paint: Paint2DContext): boolean {
   const { context, x, y, fillRect, motif } = paint;
   const inset = motif.int(0, 1);
   for (let step = 0; step < 5; step += 1) {
@@ -141,7 +144,7 @@ function paintStairsDownOverlay(paint: Paint2DContext) {
   return true;
 }
 
-function paintStairsUpOverlay(paint: Paint2DContext) {
+function paintStairsUpOverlay(paint: Paint2DContext): boolean {
   const { context, x, y, fillRect, motif } = paint;
   const inset = motif.int(0, 1);
   for (let step = 0; step < 5; step += 1) {

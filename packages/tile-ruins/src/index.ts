@@ -284,7 +284,7 @@ function paintRuinsTexture(
   }
 }
 
-function withAlpha(hex: string, alpha: number) {
+function withAlpha(hex: string, alpha: number): string {
   const normalized = hex.replace('#', '');
   const red = Number.parseInt(normalized.slice(0, 2), 16);
   const green = Number.parseInt(normalized.slice(2, 4), 16);

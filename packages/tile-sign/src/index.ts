@@ -37,6 +37,7 @@ const LONG_ROAD_SIGN_THRESHOLD = 0.9975;
 const ROADSIDE_SIGN_THRESHOLD = 0.9992;
 const LONG_ROAD_MIN_SPAN = 8;
 const LONG_ROAD_POI_DISTANCE = 28;
+const DIRECTION_ARROWS = ['E', 'SE', 'S', 'SW', 'W', 'NW', 'N', 'NE'] as const;
 const signStyleCache = new Map<string, SignStyleBlueprint>();
 const resolveRegionalSignStyle = createRegionalMaterialResolver(
   signStyleCache,
@@ -275,7 +276,10 @@ function createSignPost(
   return post;
 }
 
-function createSecondaryPost(three: ThreeHostLike, style: SignStyle) {
+function createSecondaryPost(
+  three: ThreeHostLike,
+  style: SignStyle
+): ReturnType<typeof createSignPost> {
   const post = new three.Group();
   const mesh = new three.Mesh(
     new three.BoxGeometry(
@@ -456,10 +460,10 @@ function getRegionalSignStyle(
   return resolveRegionalSignStyle(three, tileX, tileY);
 }
 
-function arrowFromVector(dx: number, dy: number) {
+function arrowFromVector(dx: number, dy: number): SignArrow {
   const angle = Math.atan2(dy, dx);
   const octant = Math.round(angle / (Math.PI / 4) + 8) % 8;
-  return ['E', 'SE', 'S', 'SW', 'W', 'NW', 'N', 'NE'][octant];
+  return DIRECTION_ARROWS[octant];
 }
 
 interface NearbyPoi {
@@ -469,8 +473,10 @@ interface NearbyPoi {
   dy: number;
   distance: number;
   name: string;
-  arrow: string;
+  arrow: SignArrow;
 }
+
+type SignArrow = (typeof DIRECTION_ARROWS)[number];
 
 interface SignStyle {
   key: string;

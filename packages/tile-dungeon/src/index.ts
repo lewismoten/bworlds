@@ -189,7 +189,11 @@ function getDungeonTowerOffsets(
   }));
 }
 
-function getDungeonEntranceDirection(state, tileX: number, tileY: number) {
+function getDungeonEntranceDirection(
+  state: Create3DModelContext['state'],
+  tileX: number,
+  tileY: number
+): ReturnType<typeof pickPreferredLandmarkFacing> {
   return pickPreferredLandmarkFacing({
     state,
     tileX,
@@ -280,7 +284,11 @@ const resolveDungeonStyle = createRegionalMaterialResolver(
   }
 );
 
-function getDungeonStyle(three: ThreeHostLike, tileX: number, tileY: number) {
+function getDungeonStyle(
+  three: ThreeHostLike,
+  tileX: number,
+  tileY: number
+): DungeonStyle {
   return resolveDungeonStyle(three, tileX, tileY);
 }
 
@@ -337,7 +345,7 @@ function paintDungeonRoofTexture(
   }
 }
 
-function createDungeonBarTexture(three: ThreeHostLike) {
+function createDungeonBarTexture(three: ThreeHostLike): ThreeTextureLike {
   return createPaintedCanvasTexture(three, {
     width: 32,
     height: 64,

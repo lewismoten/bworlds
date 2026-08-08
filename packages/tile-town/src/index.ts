@@ -444,7 +444,7 @@ function paintTownRoofTexture(
   }
 }
 
-function getTownDescriptors(tileX: number, tileY: number) {
+function getTownDescriptors(tileX: number, tileY: number): TownDescriptor[] {
   return resolveTownDescriptors(tileX, tileY);
 }
 

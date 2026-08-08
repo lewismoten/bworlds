@@ -23,6 +23,14 @@ type DrawTileSpriteOptions = {
   worldY?: number;
   timeMs?: number;
 };
+type TileSpriteRegion = {
+  x: number;
+  y: number;
+};
+type VariantMotif = {
+  seed: number;
+  int(min: number, max: number): number;
+};
 
 export function drawAtlas(context: CanvasRenderingContext2D): void {
   const entries = getTileDefinitionEntries();
@@ -104,7 +112,7 @@ export function getTileSpriteRect(
   return getTileSpriteRegion(kind, variant);
 }
 
-function getTileSpriteRegion(kind: Kind, variant: number) {
+function getTileSpriteRegion(kind: Kind, variant: number): TileSpriteRegion {
   const kinds = getTileDefinitionEntries().map(([name]) => name);
   const index = Math.max(0, kinds.indexOf(kind));
   const kindColumn = index % KIND_COLUMNS;
@@ -246,7 +254,7 @@ function fillRect(
   context.fillRect(x, y, width, height);
 }
 
-function withAlpha(hex: string, alpha: number) {
+function withAlpha(hex: string, alpha: number): string {
   const normalized = hex.replace('#', '');
   const red = Number.parseInt(normalized.slice(0, 2), 16);
   const green = Number.parseInt(normalized.slice(2, 4), 16);
@@ -254,13 +262,13 @@ function withAlpha(hex: string, alpha: number) {
   return `rgba(${red}, ${green}, ${blue}, ${alpha})`;
 }
 
-function createVariantMotif(kind: Kind, variant: number) {
+function createVariantMotif(kind: Kind, variant: number): VariantMotif {
   const seed = Math.floor(
     hash2D(`atlas:${kind}`, variant, variant * 13) * 100000
   );
   return {
     seed,
-    int(min, max) {
+    int(min: number, max: number): number {
       const span = max - min + 1;
       const value = Math.floor(
         hash2D(`motif:${kind}:${variant}`, min, max) * span

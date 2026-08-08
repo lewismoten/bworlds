@@ -171,7 +171,7 @@ function getMountainPeakScale(
   return Math.min(2, scale);
 }
 
-function getMountainStyle(three: ThreeHostLike) {
+function getMountainStyle(three: ThreeHostLike): MountainStyle {
   if (!styleCache.has('default')) {
     const terrainMaterials = createMountainTerrainMaterials(three);
     styleCache.set('default', {

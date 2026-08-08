@@ -162,6 +162,17 @@ const PLANET_SKY_PROFILES = [
     orbitRotation: 1.96,
   },
 ] as const;
+type ConstellationConnectionStyle = 'arc' | 'zigzag' | 'fork' | 'kite';
+type ConstellationArchetypePoint = {
+  angle: number;
+  radial: number;
+};
+type ConstellationArchetype = {
+  points: readonly ConstellationArchetypePoint[];
+  verticalScale: number;
+  connectionStyle: ConstellationConnectionStyle;
+  rotation: number;
+};
 const COMET_ORRERY_PROFILES = [
   {
     orbitTilt: 0.46,
@@ -176,25 +187,27 @@ const COMET_ORRERY_PROFILES = [
     speedExponent: 0.58,
   },
 ] as const;
+type PlanetSkyProfile = (typeof PLANET_SKY_PROFILES)[number];
+type CometOrreryProfile = (typeof COMET_ORRERY_PROFILES)[number];
 
-function getPlanetSkyProfile(name: string, fallbackIndex = 0) {
+function getPlanetSkyProfile(name: string, fallbackIndex = 0): PlanetSkyProfile {
   const index = PLANET_NAMES.indexOf(name);
   const resolvedIndex = index >= 0 ? index : fallbackIndex;
   return PLANET_SKY_PROFILES[resolvedIndex % PLANET_SKY_PROFILES.length];
 }
 
-function getPlanetSkyProfileIndex(name: string, fallbackIndex = 0) {
+function getPlanetSkyProfileIndex(name: string, fallbackIndex = 0): number {
   const index = PLANET_NAMES.indexOf(name);
   return index >= 0 ? index : fallbackIndex % PLANET_SKY_PROFILES.length;
 }
 
-function getCometOrreryProfile(name: string, fallbackIndex = 0) {
+function getCometOrreryProfile(name: string, fallbackIndex = 0): CometOrreryProfile {
   const index = COMET_NAMES.indexOf(name);
   const resolvedIndex = index >= 0 ? index : fallbackIndex;
   return COMET_ORRERY_PROFILES[resolvedIndex % COMET_ORRERY_PROFILES.length];
 }
 
-function getCometOrreryProfileIndex(name: string, fallbackIndex = 0) {
+function getCometOrreryProfileIndex(name: string, fallbackIndex = 0): number {
   const index = COMET_NAMES.indexOf(name);
   return index >= 0 ? index : fallbackIndex % COMET_ORRERY_PROFILES.length;
 }
@@ -840,7 +853,7 @@ export function generateConstellations(
   });
 }
 
-function getConstellationArchetype(seed: string, index: number) {
+function getConstellationArchetype(seed: string, index: number): ConstellationArchetype {
   const baseArchetypes = [
     {
       points: [
@@ -900,8 +913,8 @@ function getConstellationArchetype(seed: string, index: number) {
 
 function buildConstellationConnections(
   starCount: number,
-  style: 'arc' | 'zigzag' | 'fork' | 'kite'
-) {
+  style: ConstellationConnectionStyle
+): [number, number][] {
   const chain = Array.from({ length: Math.max(0, starCount - 1) }, (_, starIndex) => [
     starIndex,
     starIndex + 1,
@@ -1380,7 +1393,7 @@ export function hash2D(seed: string | number, x: number, y: number): number {
   return (hash >>> 0) / 4294967295;
 }
 
-function normalizeTurns(value: number) {
+function normalizeTurns(value: number): number {
   return ((value % 1) + 1) % 1;
 }
 

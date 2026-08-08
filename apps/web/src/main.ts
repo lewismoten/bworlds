@@ -78,6 +78,26 @@ import {
 type CelestialEnvironmentOverrides = Parameters<
   typeof applyCelestialEnvironmentOverrides
 >[1];
+type CardinalFacing = ReturnType<typeof cardinalFromAngle>;
+type ModelPreviewMode = ReturnType<typeof getNextModelPreviewMode>;
+type CelestialEventMode = ReturnType<typeof getNextCelestialEventMode>;
+type InspectorTab = ReturnType<typeof getNextInspectorTab>;
+type WorldPoint = {
+  x: number;
+  y: number;
+};
+type DisplayedCycle = ReturnType<typeof getDaylightCycleState> & {
+  moonMidnightAngle: number;
+  moonMidnightOrbitProgress: number;
+  moonPhaseIndex: number;
+  moonPhaseName: string;
+  moonIllumination: number;
+  activeConstellationIndex: number;
+  activeConstellation:
+    | ReturnType<typeof getDaylightCycleState>['constellations'][number]
+    | undefined;
+};
+type FrameLoopActivityLike = ReturnType<typeof getFrameLoopActivity>;
 
 const STORAGE_KEY = 'bworlds:session';
 const builtinPackCatalog = createBuiltinContentPackCatalog();
@@ -626,7 +646,7 @@ function updateStatus(
   }
 }
 
-function resizeCanvas() {
+function resizeCanvas(): void {
   const ratio = Math.min(window.devicePixelRatio || 1, 2);
   const rect = viewport2d.getBoundingClientRect();
   viewport2d.width = Math.floor(rect.width * ratio);
@@ -643,7 +663,7 @@ function resizeCanvas() {
   solarSystemPreview.resize();
 }
 
-function updateModelPreviewModeUi() {
+function updateModelPreviewModeUi(): void {
   modelPreviewWorldButton?.classList.toggle(
     'is-active',
     activeModelPreviewMode === 'world'
@@ -676,7 +696,7 @@ function updateModelPreviewModeUi() {
   }
 }
 
-function updateCelestialEventModeUi() {
+function updateCelestialEventModeUi(): void {
   eventModeAutoButton?.classList.toggle(
     'is-active',
     celestialEventModeState.mode === 'auto'
@@ -695,7 +715,7 @@ function updateCelestialEventModeUi() {
   );
 }
 
-function setModelPreviewMode(mode: 'world' | 'solar-system' | 'split') {
+function setModelPreviewMode(mode: ModelPreviewMode): void {
   activeModelPreviewMode = mode;
   updateModelPreviewModeUi();
   saveSession();
@@ -703,7 +723,7 @@ function setModelPreviewMode(mode: 'world' | 'solar-system' | 'split') {
   requestRender();
 }
 
-function setCelestialEventMode(modeId: string | undefined) {
+function setCelestialEventMode(modeId: string | undefined): void {
   celestialEventModeState.mode = getNextCelestialEventMode(modeId);
   (state as typeof state & { celestialEventMode?: string }).celestialEventMode =
     celestialEventModeState.mode;
@@ -712,7 +732,7 @@ function setCelestialEventMode(modeId: string | undefined) {
   requestRender();
 }
 
-function toggleView() {
+function toggleView(): void {
   state.viewMode = state.viewMode === '2d' ? '3d' : '2d';
   toggleButton.textContent =
     state.viewMode === '2d' ? 'Switch to 3D' : 'Switch to 2D';
@@ -721,12 +741,12 @@ function toggleView() {
   saveSession();
 }
 
-function updateContentPackLabel() {
+function updateContentPackLabel(): void {
   if (!contentPackLabel) return;
   contentPackLabel.textContent = `Content Packs: ${activePacks.map((pack) => pack.name).join(' + ')}`;
 }
 
-function renderContentPackControls() {
+function renderContentPackControls(): void {
   if (!contentPackForm) return;
   contentPackForm.innerHTML = builtinPackManifests
     .map((pack) => {
@@ -762,7 +782,7 @@ function normalizeSelectedPackIds(packIds?: unknown): string[] {
   return unique.length > 0 ? unique : [REQUIRED_PACK_ID];
 }
 
-function rebuildRuntime(nextPackIds: string[]) {
+function rebuildRuntime(nextPackIds: string[]): void {
   const normalizedPackIds = normalizeSelectedPackIds(nextPackIds);
   runtime = createWorldRuntime({
     seed: 'bworlds-alpha',
@@ -786,7 +806,7 @@ function rebuildRuntime(nextPackIds: string[]) {
   requestRender();
 }
 
-function getCurrentWorldTimeMs() {
+function getCurrentWorldTimeMs(): number {
   if (timeState.frozen && typeof timeState.frozenWorldTimeMs === 'number') {
     return timeState.frozenWorldTimeMs;
   }
@@ -811,19 +831,19 @@ function getCurrentCycle(environment: WorldEnvironmentLike = getCurrentEnvironme
   );
 }
 
-function canMoveTo(nextX, nextY) {
+function canMoveTo(nextX: number, nextY: number): boolean {
   const canOccupy3d =
     state.viewMode !== '3d' || renderer3d.canOccupy(state, nextX, nextY);
   return state.canWalk(nextX, nextY) && canOccupy3d;
 }
 
-function commitMove(nextX, nextY) {
+function commitMove(nextX: number, nextY: number): void {
   state.player.x = nextX;
   state.player.y = nextY;
   saveSession();
 }
 
-function getBridgeAxis() {
+function getBridgeAxis(): 'ew' | 'ns' | null {
   const currentX = snapWorldCoordinate(state.player.x);
   const currentY = snapWorldCoordinate(state.player.y);
   const currentTile = state.getCurrentTile(currentX, currentY);
@@ -837,7 +857,7 @@ function getBridgeAxis() {
   return profile?.slideAxis ?? null;
 }
 
-function attemptMove(stepX, stepY) {
+function attemptMove(stepX: number, stepY: number): void {
   const nextX = state.player.x + stepX;
   const nextY = state.player.y + stepY;
   if (canMoveTo(nextX, nextY)) {
@@ -870,7 +890,7 @@ function attemptMove(stepX, stepY) {
   }
 }
 
-function forwardDelta() {
+function forwardDelta(): WorldPoint {
   const angle = state.player.facing;
   return {
     x: Math.cos(angle),
@@ -878,13 +898,13 @@ function forwardDelta() {
   };
 }
 
-function handleInteraction() {
+function handleInteraction(): void {
   if (state.interact()) {
     saveSession();
   }
 }
 
-function resetMotionState() {
+function resetMotionState(): void {
   motion.jumpHeight = 0;
   motion.isJumping = false;
   motion.spaceHeld = false;
@@ -894,7 +914,11 @@ function resetMotionState() {
   motion.longJumpActivated = false;
 }
 
-function travelToOverworld(x, y, facing = state.player.facing) {
+function travelToOverworld(
+  x: number,
+  y: number,
+  facing = state.player.facing
+): void {
   state.stack = [
     {
       id: 'overworld',
@@ -912,7 +936,7 @@ function travelToOverworld(x, y, facing = state.player.facing) {
   requestRender();
 }
 
-function findRandomPlainsLocation() {
+function findRandomPlainsLocation(): WorldPoint {
   for (let attempt = 0; attempt < 3000; attempt += 1) {
     const x = Math.floor((Math.random() * 2 - 1) * HALF_WORLD_TILES);
     const y = Math.floor((Math.random() * 2 - 1) * HALF_WORLD_TILES * 0.5);
@@ -938,16 +962,16 @@ function findRandomPlainsLocation() {
   return { x: 0, y: 0 };
 }
 
-function jumpToRandomPlains() {
+function jumpToRandomPlains(): void {
   const destination = findRandomPlainsLocation();
   travelToOverworld(destination.x, destination.y);
 }
 
-function jumpHome() {
+function jumpHome(): void {
   travelToOverworld(0, 0, 0);
 }
 
-function skipTimeByHours(hours: number) {
+function skipTimeByHours(hours: number): void {
   const environment = getCurrentEnvironment();
   const nextOffsetMs = advanceWorldTimeOffsetByHours(timeState.offsetMs, hours, {
     dayLengthMs: environment.cycle?.dayLengthMs,
@@ -962,7 +986,7 @@ function skipTimeByHours(hours: number) {
   requestRender();
 }
 
-function skipSeasonByCount(seasons: number) {
+function skipSeasonByCount(seasons: number): void {
   const environment = getCurrentEnvironment();
   const nextOffsetMs = advanceWorldTimeOffsetBySeasons(
     timeState.offsetMs,
@@ -979,7 +1003,9 @@ function skipSeasonByCount(seasons: number) {
   requestRender();
 }
 
-function jumpToTimePreset(preset: 'dawn' | 'noon' | 'dusk' | 'midnight') {
+function jumpToTimePreset(
+  preset: 'dawn' | 'noon' | 'dusk' | 'midnight'
+): void {
   const environment = getCurrentEnvironment();
   const cycle = getCurrentCycle(environment);
   const targetProgress = getTimePresetProgress(cycle, preset);
@@ -999,7 +1025,7 @@ function jumpToTimePreset(preset: 'dawn' | 'noon' | 'dusk' | 'midnight') {
   requestRender();
 }
 
-function setInspectorTab(tabId: string | undefined) {
+function setInspectorTab(tabId: string | undefined): void {
   activeInspectorTab = getNextInspectorTab(tabId);
   inspectorTabButtons.forEach((button) => {
     const isActive = button.id === `tab-${activeInspectorTab}`;
@@ -1055,7 +1081,7 @@ function setInspectorTab(tabId: string | undefined) {
   saveSession();
 }
 
-function updateFreezeTimeButton() {
+function updateFreezeTimeButton(): void {
   if (!freezeTimeButton) return;
   freezeTimeButton.textContent = timeState.frozen
     ? 'Resume Time'
@@ -1063,7 +1089,7 @@ function updateFreezeTimeButton() {
   freezeTimeButton.classList.toggle('is-active', timeState.frozen);
 }
 
-function toggleTimeFreeze() {
+function toggleTimeFreeze(): void {
   if (timeState.frozen) {
     const resumeFromWorldTime = getCurrentWorldTimeMs();
     timeState.offsetMs = resumeFromWorldTime - performance.now();
@@ -1079,7 +1105,7 @@ function toggleTimeFreeze() {
   requestRender();
 }
 
-function jump() {
+function jump(): void {
   if (state.viewMode !== '3d') return;
   if (motion.isJumping) return;
   motion.isJumping = true;
@@ -1090,7 +1116,7 @@ function jump() {
   requestRender();
 }
 
-function updateMovement(deltaMs) {
+function updateMovement(deltaMs: number): void {
   const previousX = state.player.x;
   const previousY = state.player.y;
   const previousFacing = state.player.facing;
@@ -1222,7 +1248,7 @@ function updateMovement(deltaMs) {
   }
 }
 
-function render() {
+function render(): FrameLoopActivityLike {
   const nowMs = performance.now();
   const timeMs = getCurrentWorldTimeMs();
   const environment = getCurrentEnvironment(timeMs);
@@ -1316,20 +1342,20 @@ function render() {
 let lastFrame = 0;
 let pendingFrameHandle = 0;
 
-function requestRender() {
+function requestRender(): void {
   if (pendingFrameHandle !== 0) {
     return;
   }
   pendingFrameHandle = requestAnimationFrame(loop);
 }
 
-function showHmrNotice(message: string, durationMs = 8000) {
+function showHmrNotice(message: string, durationMs = 8000): void {
   hmrNoticeState.message = message;
   hmrNoticeState.visibleUntilMs = getHmrNoticeVisibleUntil(performance.now(), durationMs);
   requestRender();
 }
 
-function syncHmrNotice(nowMs: number) {
+function syncHmrNotice(nowMs: number): void {
   if (!hmrNotice) {
     return;
   }
@@ -1344,7 +1370,7 @@ function syncHmrNotice(nowMs: number) {
   }
 }
 
-function formatCycleTime(dayProgress: number) {
+function formatCycleTime(dayProgress: number): string {
   const totalMinutes = Math.floor(dayProgress * 24 * 60);
   const hours = Math.floor(totalMinutes / 60)
     .toString()
@@ -1353,7 +1379,7 @@ function formatCycleTime(dayProgress: number) {
   return `${hours}:${minutes}`;
 }
 
-function renderCompass(facing: string) {
+function renderCompass(facing: CardinalFacing): string {
   return ['N', 'E', 'S', 'W']
     .map((direction) =>
       direction === facing
@@ -1363,7 +1389,7 @@ function renderCompass(facing: string) {
     .join('');
 }
 
-function formatCelestialEventModeLabel(mode: string) {
+function formatCelestialEventModeLabel(mode: CelestialEventMode): string {
   if (mode === 'aurora') {
     return 'Aurora';
   }
@@ -1455,7 +1481,9 @@ function getActiveCelestialEventDetails(
   return details;
 }
 
-function updateDisplayedCycle(cycle: ReturnType<typeof getDaylightCycleState>) {
+function updateDisplayedCycle(
+  cycle: ReturnType<typeof getDaylightCycleState>
+): DisplayedCycle {
   if (!dialState.initialized) {
     dialState.dayProgress = cycle.dayProgress;
     dialState.yearProgress = cycle.yearProgress;
@@ -1523,7 +1551,11 @@ function updateDisplayedCycle(cycle: ReturnType<typeof getDaylightCycleState>) {
   };
 }
 
-function easeWrappedProgress(current: number, target: number, factor: number) {
+function easeWrappedProgress(
+  current: number,
+  target: number,
+  factor: number
+): number {
   let delta = target - current;
   if (delta > 0.5) delta -= 1;
   if (delta < -0.5) delta += 1;
@@ -1531,7 +1563,7 @@ function easeWrappedProgress(current: number, target: number, factor: number) {
   return ((next % 1) + 1) % 1;
 }
 
-function updateDisplayedCompass(targetAngle: number) {
+function updateDisplayedCompass(targetAngle: number): number {
   const next = advanceCompassState(compassState, targetAngle);
   compassState.angle = next.angle;
   compassState.velocity = next.velocity;
@@ -1551,7 +1583,7 @@ function updateDisplayedCompassHeading(
   return compassHeadingVisualState.angle;
 }
 
-function faceDirection(angle: number) {
+function faceDirection(angle: number): void {
   if (compassState.initialized) {
     compassState.velocity += getCompassWobbleBoost(compassState.angle, angle);
   }
@@ -1560,7 +1592,7 @@ function faceDirection(angle: number) {
   requestRender();
 }
 
-function loop(timestamp) {
+function loop(timestamp: number): void {
   pendingFrameHandle = 0;
   const delta =
     lastFrame === 0 ? 16.67 : Math.min(timestamp - lastFrame, 33.34);
@@ -1803,7 +1835,7 @@ updateModelPreviewModeUi();
 updateCelestialEventModeUi();
 requestRender();
 
-function saveSession() {
+function saveSession(): void {
   try {
     const snapshot = serializeSessionSnapshot({
       player: {
@@ -1830,7 +1862,7 @@ function saveSession() {
   }
 }
 
-function loadSession() {
+function loadSession(): ReturnType<typeof parseSavedSession> {
   const raw = window.localStorage.getItem(STORAGE_KEY);
   const parsed = parseSavedSession(raw);
   if (!parsed) {

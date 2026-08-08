@@ -21,6 +21,7 @@ import type {
   Paint2DOverlayContext,
   RuntimePlugin,
   SurfaceProfile3D,
+  TileLike,
   ThreeHostLike,
   ThreeMaterialLike,
   WorldStateLike,
@@ -308,7 +309,9 @@ export function createWaterTilePlugin(): RuntimePlugin {
   );
 }
 
-function classifyRiverTile(context: ClassifyOverworldTileContext) {
+function classifyRiverTile(
+  context: ClassifyOverworldTileContext
+): TileLike | null {
   if (context.tile.kind !== 'plains') {
     return null;
   }
@@ -591,7 +594,7 @@ function getRiverConnections(
     );
 }
 
-function isRiverNetworkKind(kind: Kind) {
+function isRiverNetworkKind(kind: Kind): boolean {
   return isWaterOrCrossingKind(kind);
 }
 

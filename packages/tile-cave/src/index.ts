@@ -200,7 +200,11 @@ export function createCaveTilePlugin(): RuntimePlugin {
   });
 }
 
-function getCaveEntranceDirection(state, tileX: number, tileY: number) {
+function getCaveEntranceDirection(
+  state: Create3DModelContext['state'],
+  tileX: number,
+  tileY: number
+): ReturnType<typeof pickPreferredLandmarkFacing> {
   return pickPreferredLandmarkFacing({
     state,
     tileX,

@@ -498,7 +498,7 @@ function getRoadConnections(
     );
 }
 
-function isRoadNetworkKind(kind: Kind) {
+function isRoadNetworkKind(kind: Kind): boolean {
   return kind === 'road' || kind === 'bridge' || isRouteTerminalKind(kind);
 }
 
@@ -582,7 +582,11 @@ function createRoadRibbonMesh(
   });
 }
 
-function getRoadStyle(three: ThreeHostLike, tileX: number, tileY: number) {
+function getRoadStyle(
+  three: ThreeHostLike,
+  tileX: number,
+  tileY: number
+): RoadStyle {
   return resolveRoadStyle(three, tileX, tileY);
 }
 
@@ -746,7 +750,11 @@ function createBridgeGroup(
   return group;
 }
 
-function getBridgeAxis(state: WorldStateLike, tileX: number, tileY: number) {
+function getBridgeAxis(
+  state: WorldStateLike,
+  tileX: number,
+  tileY: number
+): BridgeClusterInfo['axis'] | null {
   const west = isBridgeTravelKind(state.getCurrentTile(tileX - 1, tileY).kind);
   const east = isBridgeTravelKind(state.getCurrentTile(tileX + 1, tileY).kind);
   const north = isBridgeTravelKind(state.getCurrentTile(tileX, tileY - 1).kind);
@@ -761,7 +769,7 @@ function getBridgeAxis(state: WorldStateLike, tileX: number, tileY: number) {
   return null;
 }
 
-function isBridgeTravelKind(kind: Kind) {
+function isBridgeTravelKind(kind: Kind): boolean {
   return kind === 'bridge' || kind === 'road' || isRouteTerminalKind(kind);
 }
 

@@ -71,7 +71,7 @@ function getForcedCelestialEventMode(state: unknown): CelestialEventMode {
   return 'auto';
 }
 
-function getForcedFacingAngle(state: unknown) {
+function getForcedFacingAngle(state: unknown): number {
   const angle = (state as { player?: { facing?: unknown } } | null)?.player?.facing;
   return typeof angle === 'number' ? angle : 0;
 }

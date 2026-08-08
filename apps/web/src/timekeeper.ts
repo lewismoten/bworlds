@@ -885,18 +885,18 @@ function drawNoonSkyBlend(
   context.restore();
 }
 
-function pseudoRandom(seed: number, offset: number) {
+function pseudoRandom(seed: number, offset: number): number {
   return ((Math.sin(seed + offset) + 1) * 0.5) % 1;
 }
 
-function getWrappedProgressDelta(current: number, target: number) {
+function getWrappedProgressDelta(current: number, target: number): number {
   let delta = target - current;
   if (delta > 0.5) delta -= 1;
   if (delta < -0.5) delta += 1;
   return delta;
 }
 
-function formatCycleTime(dayProgress: number) {
+function formatCycleTime(dayProgress: number): string {
   const totalMinutes = Math.floor(dayProgress * 24 * 60);
   const hours = Math.floor(totalMinutes / 60)
     .toString()

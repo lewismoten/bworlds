@@ -17,6 +17,10 @@ export interface Render2DViewport {
 }
 
 type TileSampler = (worldX: number, worldY: number) => TileLike;
+type Point2D = {
+  x: number;
+  y: number;
+};
 
 export function render2D(
   context: CanvasRenderingContext2D,
@@ -278,7 +282,13 @@ function drawRiverStroke(
   context.stroke();
 }
 
-function pointAt(x: number, y: number, size: number, px: number, py: number) {
+function pointAt(
+  x: number,
+  y: number,
+  size: number,
+  px: number,
+  py: number
+): Point2D {
   return {
     x: x + size * px,
     y: y + size * py,
