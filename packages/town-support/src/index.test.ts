@@ -421,6 +421,71 @@ describe('town support', () => {
     ).toBe(true);
   });
 
+  it('surfaces challenge and destruction quest offers from generated town schedules', () => {
+    const townSamples: Array<[number, number]> = [
+      [3, 7],
+      [10, -4],
+      [25, 9],
+      [48, -16],
+      [120, -80],
+    ];
+    let challengeStates: ReturnType<typeof getTownNpcQuestStates> = [];
+    let destructionStates: ReturnType<typeof getTownNpcQuestStates> = [];
+
+    outerChallenge: for (const [x, y] of townSamples) {
+      for (let minute = 0; minute < 24 * 60; minute += 30) {
+        challengeStates = getTownNpcQuestStates(
+          x,
+          y,
+          DEFAULT_DAY_LENGTH_MS * (minute / (24 * 60)),
+          {
+            level: 4,
+            profession: 'courier',
+          }
+        );
+        if (
+          challengeStates.some((entry) =>
+            entry.offers.some((offer) => offer.type === 'challenge')
+          )
+        ) {
+          break outerChallenge;
+        }
+      }
+    }
+
+    outerDestruction: for (const [x, y] of townSamples) {
+      for (let minute = 0; minute < 24 * 60; minute += 30) {
+        destructionStates = getTownNpcQuestStates(
+          x,
+          y,
+          DEFAULT_DAY_LENGTH_MS * (minute / (24 * 60)),
+          {
+            level: 5,
+            profession: 'guard',
+          }
+        );
+        if (
+          destructionStates.some((entry) =>
+            entry.offers.some((offer) => offer.type === 'destruction')
+          )
+        ) {
+          break outerDestruction;
+        }
+      }
+    }
+
+    expect(
+      challengeStates.some((entry) =>
+        entry.offers.some((offer) => offer.type === 'challenge')
+      )
+    ).toBe(true);
+    expect(
+      destructionStates.some((entry) =>
+        entry.offers.some((offer) => offer.type === 'destruction')
+      )
+    ).toBe(true);
+  });
+
   it('surfaces diplomacy and choice quests from generated town schedules', () => {
     const townSamples: Array<[number, number]> = [
       [3, 7],

@@ -81,8 +81,10 @@ export function getDefaultQuestPlugins(): QuestTypePlugin[] {
     createDiplomacyQuestPlugin(),
     createChoiceQuestPlugin(),
     createFactionQuestPlugin(),
+    createChallengeQuestPlugin(),
     createConstructionQuestPlugin(),
     createActivationQuestPlugin(),
+    createDestructionQuestPlugin(),
     createFetchQuestPlugin(),
     createRecoveryQuestPlugin(),
     createCraftingQuestPlugin(),
@@ -572,6 +574,100 @@ function createActivationQuestPlugin(): QuestTypePlugin {
       title: 'Set It in Motion',
       summary: `${context.npcName} needs someone to ${system} before the next town cycle begins.${professionHint}`,
       availability: context.npcState === 'working' ? 'work' : 'travel',
+      sourceNpcId: context.npcId,
+      sourceNpcName: context.npcName,
+    };
+  });
+}
+
+function createDestructionQuestPlugin(): QuestTypePlugin {
+  return createQuestTypePlugin('destruction', (context) => {
+    if (
+      context.playerLevel < 4 ||
+      context.npcState !== 'working' ||
+      !(
+        context.professionFamily === 'market' ||
+        context.professionFamily === 'smithy' ||
+        context.professionFamily === 'workshop' ||
+        context.professionFamily === 'town-hall'
+      )
+    ) {
+      return null;
+    }
+
+    const target =
+      context.professionFamily === 'town-hall'
+        ? 'tear down an unsafe roadside storehouse'
+        : context.professionFamily === 'workshop'
+          ? 'dismantle a jammed hauling frame'
+          : context.professionFamily === 'smithy'
+            ? 'break apart a ruined smelter rig'
+            : 'destroy spoiled contraband before it reaches the stalls';
+    const questId = `${context.townKey}:${context.npcId}:destruction:${context.professionFamily}`;
+    if (context.completedQuestIds.has(questId)) {
+      return null;
+    }
+
+    const professionHint =
+      context.playerProfession === 'smith' || context.playerProfession === 'guard'
+        ? ' Your experience with force and equipment should keep the work controlled.'
+        : '';
+
+    return {
+      id: questId,
+      type: 'destruction',
+      title: 'Controlled Demolition',
+      summary: `${context.npcName} needs help to ${target}.${professionHint}`,
+      availability: 'work',
+      sourceNpcId: context.npcId,
+      sourceNpcName: context.npcName,
+    };
+  });
+}
+
+function createChallengeQuestPlugin(): QuestTypePlugin {
+  return createQuestTypePlugin('challenge', (context) => {
+    if (
+      context.playerLevel < 3 ||
+      context.playerLevel > 18 ||
+      !(
+        context.npcState === 'working' ||
+        context.npcState === 'home'
+      ) ||
+      !(
+        context.professionFamily === 'inn' ||
+        context.professionFamily === 'school' ||
+        context.professionFamily === 'stable' ||
+        context.professionFamily === 'temple'
+      )
+    ) {
+      return null;
+    }
+
+    const event =
+      context.professionFamily === 'stable'
+        ? 'win the cart-yard handling trial'
+        : context.professionFamily === 'school'
+          ? 'complete the town puzzle board faster than the apprentices'
+          : context.professionFamily === 'temple'
+            ? 'finish the lantern court balance trial'
+            : 'take the inns common-room contest';
+    const questId = `${context.townKey}:${context.npcId}:challenge:${context.professionFamily}:${context.npcState}`;
+    if (context.completedQuestIds.has(questId)) {
+      return null;
+    }
+
+    const professionHint =
+      context.playerProfession === 'scout' || context.playerProfession === 'courier'
+        ? ' Your speed and control could give you the edge.'
+        : '';
+
+    return {
+      id: questId,
+      type: 'challenge',
+      title: 'Open Challenge',
+      summary: `${context.npcName} invites you to ${event} and earn local bragging rights.${professionHint}`,
+      availability: context.npcState === 'working' ? 'work' : 'home',
       sourceNpcId: context.npcId,
       sourceNpcName: context.npcName,
     };

@@ -15,8 +15,10 @@ describe('quest support', () => {
       'diplomacy',
       'choice',
       'faction',
+      'challenge',
       'construction',
       'activation',
+      'destruction',
       'fetch',
       'recovery',
       'crafting',
@@ -354,6 +356,82 @@ describe('quest support', () => {
       activation.some((offer) => offer.summary.includes('steady hands'))
     ).toBe(true);
     expect(underleveled.some((offer) => offer.type === 'activation')).toBe(false);
+  });
+
+  it('offers controlled destruction quests for sanctioned teardown work', () => {
+    const destruction = getDefaultQuestRegistry().getOffers({
+      npcId: 'npc:mason',
+      npcName: 'Petra Dunley',
+      townKey: '3:7',
+      dayProgress: 0.51,
+      yearProgress: 0.63,
+      playerLevel: 5,
+      playerProfession: 'guard',
+      completedQuestIds: new Set<string>(),
+      npcState: 'working',
+      profession: 'mason',
+      professionFamily: 'workshop',
+      residenceBuildingId: 'home',
+      workplaceBuildingId: 'workshop',
+    });
+    const underleveled = getDefaultQuestRegistry().getOffers({
+      npcId: 'npc:mason',
+      npcName: 'Petra Dunley',
+      townKey: '3:7',
+      dayProgress: 0.51,
+      yearProgress: 0.63,
+      playerLevel: 2,
+      completedQuestIds: new Set<string>(),
+      npcState: 'working',
+      profession: 'mason',
+      professionFamily: 'workshop',
+      residenceBuildingId: 'home',
+      workplaceBuildingId: 'workshop',
+    });
+
+    expect(destruction.some((offer) => offer.type === 'destruction')).toBe(true);
+    expect(
+      destruction.some((offer) => offer.summary.includes('force and equipment'))
+    ).toBe(true);
+    expect(underleveled.some((offer) => offer.type === 'destruction')).toBe(false);
+  });
+
+  it('offers challenge quests for local contests and trials', () => {
+    const challenge = getDefaultQuestRegistry().getOffers({
+      npcId: 'npc:innkeeper',
+      npcName: 'June Briar',
+      townKey: '3:7',
+      dayProgress: 0.9,
+      yearProgress: 0.41,
+      playerLevel: 4,
+      playerProfession: 'courier',
+      completedQuestIds: new Set<string>(),
+      npcState: 'home',
+      profession: 'innkeeper',
+      professionFamily: 'inn',
+      residenceBuildingId: 'home',
+      workplaceBuildingId: 'inn',
+    });
+    const overleveled = getDefaultQuestRegistry().getOffers({
+      npcId: 'npc:innkeeper',
+      npcName: 'June Briar',
+      townKey: '3:7',
+      dayProgress: 0.9,
+      yearProgress: 0.41,
+      playerLevel: 22,
+      completedQuestIds: new Set<string>(),
+      npcState: 'home',
+      profession: 'innkeeper',
+      professionFamily: 'inn',
+      residenceBuildingId: 'home',
+      workplaceBuildingId: 'inn',
+    });
+
+    expect(challenge.some((offer) => offer.type === 'challenge')).toBe(true);
+    expect(challenge.some((offer) => offer.summary.includes('speed and control'))).toBe(
+      true
+    );
+    expect(overleveled.some((offer) => offer.type === 'challenge')).toBe(false);
   });
 
   it('offers diplomacy quests for civic and social disputes', () => {

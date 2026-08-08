@@ -27,7 +27,7 @@ Quests may include:
 - [ ] Revenge quest — pursue someone responsible for an earlier event.
 - [X] Recovery quest — reclaim stolen property, territory, equipment, or something lost.
 - [X] Activation quest — turn on generators, shrines, portals, towers, switches, etc.
-- [ ] Destruction / sabotage quest — destroy an object, structure, supply line, machine, or enemy resource.
+- [X] Destruction / sabotage quest — destroy an object, structure, supply line, machine, or enemy resource.
 - [X] Construction / restoration quest — rebuild a town, repair equipment, establish an outpost, or improve a location.
 - [X] Training / tutorial quest — teach mechanics by having the player perform them.
-- [ ] Tournament / challenge quest — win a fight, contest, arena, card game, race, or series of trials.
+- [X] Tournament / challenge quest — win a fight, contest, arena, card game, race, or series of trials.
