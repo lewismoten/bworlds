@@ -219,6 +219,21 @@ button:hover {
   color: #55d6be;
 }
 
+.viewport-timekeeper-mini {
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  z-index: 2;
+  width: 9rem;
+  height: 9rem;
+  padding: 0.35rem;
+  border-radius: 18px;
+  background: rgba(8, 16, 25, 0.62);
+  border: 1px solid rgba(180, 214, 255, 0.18);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.22);
+}
+
 #viewport-2d,
 .viewport-3d {
   position: absolute;

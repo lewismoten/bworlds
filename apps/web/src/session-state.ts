@@ -2,6 +2,7 @@ import type {
   CelestialEventMode,
   InspectorTab,
   ModelPreviewMode,
+  TimekeeperDisplayMode,
 } from './time-controls.ts';
 import {
   parsePlayerPlacedPois,
@@ -31,6 +32,7 @@ export type SavedSession = {
   packIds?: string[];
   stack: SessionWorldContext[];
   viewMode?: SessionViewMode;
+  timekeeperDisplayMode?: TimekeeperDisplayMode;
   timeOffsetMs?: number;
   timeFrozen?: boolean;
   frozenWorldTimeMs?: number | null;
@@ -50,6 +52,7 @@ export type SessionSnapshot = {
   packIds: string[];
   stack: SessionWorldContext[];
   viewMode: SessionViewMode;
+  timekeeperDisplayMode: TimekeeperDisplayMode;
   timeOffsetMs: number;
   timeFrozen: boolean;
   frozenWorldTimeMs: number | null;
@@ -79,6 +82,15 @@ export function parseSavedSession(raw: string | null): SavedSession | null {
       return null;
     }
     if (!Array.isArray(parsed?.stack) || parsed.stack.length === 0) {
+      return null;
+    }
+    if (
+      typeof parsed?.timekeeperDisplayMode !== 'undefined' &&
+      parsed.timekeeperDisplayMode !== 'hidden' &&
+      parsed.timekeeperDisplayMode !== 'time' &&
+      parsed.timekeeperDisplayMode !== 'time-date' &&
+      parsed.timekeeperDisplayMode !== 'graphical'
+    ) {
       return null;
     }
     if (

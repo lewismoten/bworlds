@@ -1,4 +1,5 @@
 import type { ViewMode } from '@bworlds/plugin-api';
+import type { TimekeeperDisplayMode } from './time-controls.ts';
 
 export type EventDetailKind =
   | 'aurora'
@@ -33,7 +34,9 @@ type StatusSignatureOptions = {
 };
 
 type ViewportHudSignatureOptions = {
+  timekeeperDisplayMode: TimekeeperDisplayMode;
   timeLabel: string;
+  dateLabel: string;
   facing: string;
   headingLabel: string;
   showCompass: boolean;
@@ -74,7 +77,9 @@ export function getViewportHudSignature(
   options: ViewportHudSignatureOptions
 ): string {
   return [
+    options.timekeeperDisplayMode,
     options.timeLabel,
+    options.dateLabel,
     options.facing,
     options.headingLabel,
     options.showCompass ? '1' : '0',
@@ -122,8 +127,19 @@ export function buildViewportHudMarkup(
     compassMarkup: string;
   }
 ): string {
+  const showTime = options.timekeeperDisplayMode === 'time';
+  const showTimeDate = options.timekeeperDisplayMode === 'time-date';
   return `
-      <div class="viewport-hud-label">${options.timeLabel}</div>
+      ${
+        showTime || showTimeDate
+          ? `<div class="viewport-hud-label">${options.timeLabel}</div>`
+          : ''
+      }
+      ${
+        showTimeDate
+          ? `<div class="viewport-hud-date">${options.dateLabel}</div>`
+          : ''
+      }
       <div class="viewport-hud-meta">Facing ${options.facing}</div>
       <div class="viewport-hud-meta">${options.headingLabel}</div>
       ${

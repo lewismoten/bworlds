@@ -4,6 +4,7 @@ import {
   getNextCelestialEventMode,
   getNextInspectorTab,
   getNextModelPreviewMode,
+  getNextTimekeeperDisplayMode,
   getTimePresetProgress,
   isInspectorSectionVisible,
   isModelPreviewVisible,
@@ -38,6 +39,14 @@ describe('time controls', () => {
     expect(getNextModelPreviewMode('solar-system')).toBe('solar-system');
     expect(getNextModelPreviewMode('split')).toBe('split');
     expect(getNextModelPreviewMode('unknown')).toBe('split');
+  });
+
+  it('normalizes the viewport timekeeper mode to a supported display', () => {
+    expect(getNextTimekeeperDisplayMode('hidden')).toBe('hidden');
+    expect(getNextTimekeeperDisplayMode('time')).toBe('time');
+    expect(getNextTimekeeperDisplayMode('time-date')).toBe('time-date');
+    expect(getNextTimekeeperDisplayMode('graphical')).toBe('graphical');
+    expect(getNextTimekeeperDisplayMode('unknown')).toBe('time-date');
   });
 
   it('normalizes the celestial event mode to a supported override', () => {

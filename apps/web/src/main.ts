@@ -76,6 +76,7 @@ import {
   getNextCelestialEventMode,
   getNextInspectorTab,
   getNextModelPreviewMode,
+  getNextTimekeeperDisplayMode,
   isInspectorSectionVisible,
   isModelPreviewVisible,
   getTimePresetProgress,
@@ -86,6 +87,7 @@ type CelestialEnvironmentOverrides = Parameters<
 >[1];
 type CardinalFacing = ReturnType<typeof cardinalFromAngle>;
 type ModelPreviewMode = ReturnType<typeof getNextModelPreviewMode>;
+type TimekeeperDisplayMode = ReturnType<typeof getNextTimekeeperDisplayMode>;
 type CelestialEventMode = ReturnType<typeof getNextCelestialEventMode>;
 type InspectorTab = ReturnType<typeof getNextInspectorTab>;
 type WorldPoint = {
@@ -136,6 +138,7 @@ root.innerHTML = `
         <button id="action" type="button">Interact</button>
         <button id="jump-random" type="button">Random Plains</button>
         <button id="jump-home" type="button">Go Home</button>
+        <button id="toggle-timekeeper-display" type="button">HUD Time: Time + Date</button>
         <div class="build-controls">
           <select id="build-poi-kind" aria-label="Build point of interest">
             <option value="town">Build Town</option>
@@ -159,6 +162,14 @@ root.innerHTML = `
             class="viewport-3d is-hidden"
             aria-hidden="true"
           ></div>
+          <canvas
+            id="viewport-timekeeper-mini"
+            class="viewport-timekeeper-mini is-hidden"
+            width="180"
+            height="180"
+            aria-hidden="true"
+            hidden
+          ></canvas>
           <div id="viewport-hud" class="viewport-hud"></div>
         </div>
       </div>
@@ -365,6 +376,8 @@ root.innerHTML = `
 const viewport2d = document.querySelector<HTMLCanvasElement>('#viewport-2d');
 const viewport3d = document.querySelector<HTMLElement>('#viewport-3d');
 const viewportHud = document.querySelector<HTMLElement>('#viewport-hud');
+const viewportTimekeeperMini =
+  document.querySelector<HTMLCanvasElement>('#viewport-timekeeper-mini');
 const hmrNotice = document.querySelector<HTMLElement>('#hmr-notice');
 const atlasCanvas = document.querySelector<HTMLCanvasElement>('#atlas');
 const timeWheelCanvas =
@@ -385,6 +398,8 @@ const faceWestButton =
   document.querySelector<HTMLButtonElement>('#face-west');
 const status = document.querySelector<HTMLElement>('#status');
 const toggleButton = document.querySelector<HTMLButtonElement>('#toggle-view');
+const toggleTimekeeperDisplayButton =
+  document.querySelector<HTMLButtonElement>('#toggle-timekeeper-display');
 const actionButton = document.querySelector<HTMLButtonElement>('#action');
 const buildPoiButton =
   document.querySelector<HTMLButtonElement>('#build-poi');
@@ -556,6 +571,9 @@ const solarSystemPreview = createSolarSystemPreviewRenderer(solarSystemPreviewHo
 });
 let activeInspectorTab = getNextInspectorTab(savedSession?.inspectorTab);
 let activeModelPreviewMode = getNextModelPreviewMode(savedSession?.modelPreviewMode);
+let activeTimekeeperDisplayMode = getNextTimekeeperDisplayMode(
+  savedSession?.timekeeperDisplayMode
+);
 const celestialEventModeState = {
   mode: getNextCelestialEventMode(savedSession?.celestialEventMode),
 };
@@ -577,6 +595,7 @@ const keys = new Set<string>();
 renderContentPackControls();
 updateContentPackLabel();
 updateFreezeTimeButton();
+updateTimekeeperDisplayModeUi();
 
 function updateStatus(
   environment: WorldEnvironmentLike = getCurrentEnvironment(),
@@ -657,14 +676,18 @@ function updateStatus(
     );
     const headingLabel = formatCompassHeading(compassHeadingState.angle);
     const viewportHudSignature = getViewportHudSignature({
+      timekeeperDisplayMode: activeTimekeeperDisplayMode,
       timeLabel,
+      dateLabel,
       facing,
       headingLabel,
       showCompass: showViewportCompass,
     });
     if (viewportHudSignature !== uiRenderState.lastViewportHudSignature) {
       viewportHud.innerHTML = buildViewportHudMarkup({
+        timekeeperDisplayMode: activeTimekeeperDisplayMode,
         timeLabel,
+        dateLabel,
         facing,
         headingLabel,
         showCompass: showViewportCompass,
@@ -672,6 +695,12 @@ function updateStatus(
       });
       uiRenderState.lastViewportHudSignature = viewportHudSignature;
     }
+  }
+
+  if (viewportTimekeeperMini) {
+    const showGraphicTimekeeper = activeTimekeeperDisplayMode === 'graphical';
+    viewportTimekeeperMini.classList.toggle('is-hidden', !showGraphicTimekeeper);
+    viewportTimekeeperMini.hidden = !showGraphicTimekeeper;
   }
 }
 
@@ -725,6 +754,28 @@ function updateModelPreviewModeUi(): void {
   }
 }
 
+function formatTimekeeperDisplayModeLabel(mode: TimekeeperDisplayMode): string {
+  if (mode === 'hidden') return 'None';
+  if (mode === 'time') return 'Time';
+  if (mode === 'graphical') return 'Graphical';
+  return 'Time + Date';
+}
+
+function cycleTimekeeperDisplayMode(mode: TimekeeperDisplayMode): TimekeeperDisplayMode {
+  if (mode === 'hidden') return 'time';
+  if (mode === 'time') return 'time-date';
+  if (mode === 'time-date') return 'graphical';
+  return 'hidden';
+}
+
+function updateTimekeeperDisplayModeUi(): void {
+  if (toggleTimekeeperDisplayButton) {
+    toggleTimekeeperDisplayButton.textContent = `HUD Time: ${formatTimekeeperDisplayModeLabel(
+      activeTimekeeperDisplayMode
+    )}`;
+  }
+}
+
 function updateCelestialEventModeUi(): void {
   eventModeAutoButton?.classList.toggle(
     'is-active',
@@ -753,6 +804,13 @@ function setModelPreviewMode(mode: ModelPreviewMode): void {
   updateModelPreviewModeUi();
   saveSession();
   resizeCanvas();
+  requestRender();
+}
+
+function setTimekeeperDisplayMode(modeId: string | undefined): void {
+  activeTimekeeperDisplayMode = getNextTimekeeperDisplayMode(modeId);
+  updateTimekeeperDisplayModeUi();
+  saveSession();
   requestRender();
 }
 
@@ -1346,6 +1404,13 @@ function render(): FrameLoopActivityLike {
   }
 
   drawTimeWheel(timeWheelCanvas, displayCycle);
+  if (
+    viewportTimekeeperMini &&
+    activeTimekeeperDisplayMode === 'graphical' &&
+    !viewportTimekeeperMini.hidden
+  ) {
+    drawTimeWheel(viewportTimekeeperMini, displayCycle);
+  }
   celestialPreview.render(displayCycle, environment, state.player.facing, generator);
   solarSystemPreview.render(displayCycle);
   if (eventSummary) {
@@ -1786,6 +1851,9 @@ eventModeAuroraButton?.addEventListener('click', () => setCelestialEventMode('au
 eventModeMeteorButton?.addEventListener('click', () => setCelestialEventMode('meteor-shower'));
 eventModeCometButton?.addEventListener('click', () => setCelestialEventMode('comet'));
 eventModeEclipseButton?.addEventListener('click', () => setCelestialEventMode('eclipse'));
+toggleTimekeeperDisplayButton?.addEventListener('click', () => {
+  setTimekeeperDisplayMode(cycleTimekeeperDisplayMode(activeTimekeeperDisplayMode));
+});
 freezeTimeButton?.addEventListener('click', toggleTimeFreeze);
 inspectorTabButtons.forEach((button) => {
   button.addEventListener('click', () => {
@@ -1922,6 +1990,7 @@ viewport2d.classList.toggle('is-hidden', state.viewMode !== '2d');
 viewport3d.classList.toggle('is-hidden', state.viewMode !== '3d');
 setInspectorTab(activeInspectorTab);
 updateModelPreviewModeUi();
+updateTimekeeperDisplayModeUi();
 updateCelestialEventModeUi();
 requestRender();
 
@@ -1936,6 +2005,7 @@ function saveSession(): void {
       packIds: activePackIds,
       stack: state.stack,
       viewMode: state.viewMode,
+      timekeeperDisplayMode: activeTimekeeperDisplayMode,
       timeOffsetMs: timeState.offsetMs,
       timeFrozen: timeState.frozen,
       frozenWorldTimeMs: timeState.frozenWorldTimeMs,

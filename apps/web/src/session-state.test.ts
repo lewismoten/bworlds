@@ -13,6 +13,7 @@ describe('session state', () => {
       packIds: ['default-content-pack'],
       stack: [{ id: 'overworld', depth: 0 }],
       viewMode: '3d',
+      timekeeperDisplayMode: 'graphical',
       timeOffsetMs: 42000,
       timeFrozen: true,
       frozenWorldTimeMs: 123456,
@@ -34,6 +35,7 @@ describe('session state', () => {
     expect(parseSavedSession(raw)).toEqual(
       expect.objectContaining({
         timeOffsetMs: 42000,
+        timekeeperDisplayMode: 'graphical',
         timeFrozen: true,
         frozenWorldTimeMs: 123456,
         inspectorTab: 'compass',
@@ -48,6 +50,16 @@ describe('session state', () => {
   });
 
   it('rejects invalid persisted inspector tabs and event modes', () => {
+    expect(
+      parseSavedSession(
+        JSON.stringify({
+          player: { x: 0, y: 0, facing: 0 },
+          stack: [{ id: 'overworld', depth: 0 }],
+          timekeeperDisplayMode: 'analog',
+        })
+      )
+    ).toBeNull();
+
     expect(
       parseSavedSession(
         JSON.stringify({
@@ -126,6 +138,7 @@ describe('session state', () => {
       packIds: ['default-content-pack'],
       stack: [{ id: 'overworld', depth: 0 }],
       viewMode: '2d',
+      timekeeperDisplayMode: 'time-date',
       timeOffsetMs: savedOffsetMs,
       timeFrozen: false,
       frozenWorldTimeMs: null,

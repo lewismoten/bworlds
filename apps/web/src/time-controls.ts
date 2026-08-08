@@ -7,6 +7,11 @@ export type TimePreset = 'dawn' | 'noon' | 'dusk' | 'midnight';
 export type InspectorTab = 'timekeeper' | 'model' | 'events' | 'compass';
 export type InspectorSection = InspectorTab | 'viewport-compass';
 export type ModelPreviewMode = 'world' | 'solar-system' | 'split';
+export type TimekeeperDisplayMode =
+  | 'hidden'
+  | 'time'
+  | 'time-date'
+  | 'graphical';
 export type CelestialEventMode =
   | 'auto'
   | 'aurora'
@@ -44,6 +49,15 @@ export function getNextModelPreviewMode(
     return modeId;
   }
   return 'split';
+}
+
+export function getNextTimekeeperDisplayMode(
+  modeId: string | undefined
+): TimekeeperDisplayMode {
+  if (modeId === 'hidden' || modeId === 'time' || modeId === 'graphical') {
+    return modeId;
+  }
+  return 'time-date';
 }
 
 export function getNextCelestialEventMode(
