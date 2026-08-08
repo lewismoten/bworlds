@@ -130,6 +130,39 @@ describe('runtime weather', () => {
     expect(day.condition.label).toBeTruthy();
   });
 
+  it('keeps forecast day resolution deterministic after bounded cache eviction churn', () => {
+    const baseline = resolveForecastDay({
+      regionX: 1,
+      regionY: 1,
+      dayNumber: 7,
+      yearProgress: 0.2,
+      latitudeDegrees: 12,
+      label: 'Day 3',
+    });
+
+    for (let index = 0; index < 800; index += 1) {
+      resolveForecastDay({
+        regionX: index % 40,
+        regionY: Math.floor(index / 40),
+        dayNumber: index,
+        yearProgress: (index % 100) / 100,
+        latitudeDegrees: (index % 90) - 45,
+        label: `Day ${index + 1}`,
+      });
+    }
+
+    expect(
+      resolveForecastDay({
+        regionX: 1,
+        regionY: 1,
+        dayNumber: 7,
+        yearProgress: 0.2,
+        latitudeDegrees: 12,
+        label: 'Day 3',
+      })
+    ).toEqual(baseline);
+  });
+
   it('classifies frozen precipitation for cold, wet fronts', () => {
     const condition = resolveWeatherCondition({
       regionX: 0,

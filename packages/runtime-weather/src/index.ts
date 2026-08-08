@@ -1,3 +1,4 @@
+import { createBoundedCache } from '@bworlds/cache-support';
 import {
   clamp,
   fract,
@@ -32,7 +33,10 @@ const WEATHER_KIND_LABELS: Record<
   hail: 'Hail',
 };
 
-const forecastCache = new Map<string, WorldEnvironmentWeatherForecastDayLike>();
+const forecastCache = createBoundedCache<
+  string,
+  WorldEnvironmentWeatherForecastDayLike
+>(WEATHER_CACHE_LIMIT);
 
 type WeatherDaySeed = {
   regionX: number;
@@ -197,7 +201,7 @@ export function resolveForecastDay(options: {
     lowTemperature,
     condition: representative,
   };
-  setLimitedCache(forecastCache, key, day);
+  forecastCache.set(key, day);
   return day;
 }
 
@@ -500,15 +504,4 @@ function resolveWeatherLighting(condition: WorldEnvironmentWeatherConditionLike)
           : '#2d4934',
     shadowStrength: clamp(0.95 - cloudDimming, 0.22, 0.95),
   };
-}
-
-function setLimitedCache<T>(cache: Map<string, T>, key: string, value: T) {
-  cache.set(key, value);
-  if (cache.size <= WEATHER_CACHE_LIMIT) {
-    return;
-  }
-  const oldestKey = cache.keys().next().value;
-  if (typeof oldestKey === 'string') {
-    cache.delete(oldestKey);
-  }
 }
