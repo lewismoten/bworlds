@@ -1,0 +1,730 @@
+# Debug Snapshot
+
+Instead of trying to cram every metric into a live panel, keep the live panel focused on **quick health indicators**, then add a **“Download Debug Snapshot”** button that exports a structured JSON file with much deeper diagnostics.
+
+That gives you something you can save from a slow scene, attach to a bug report, compare between commits, or send back here for analysis.
+
+## Download Debug Snapshot
+
+* [ ] Add a `Download Debug Snapshot` button to the debug panel.
+* [ ] Export the snapshot as JSON.
+* [ ] Include timestamp.
+* [ ] Include game version.
+* [ ] Include git commit/build identifier when available.
+* [ ] Include world seed.
+* [ ] Include current level/map identifier.
+* [ ] Include player grid/world position.
+* [ ] Include current renderer mode: text, 2D, or 3D.
+* [ ] Include active content packs.
+* [ ] Include enabled plugins.
+* [ ] Include graphics-quality settings.
+* [ ] Include render radius.
+* [ ] Include device/browser information.
+* [ ] Include WebGL/WebGPU capabilities.
+* [ ] Include hardware concurrency and available device-memory hints where exposed.
+* [ ] Include active performance-budget configuration.
+* [ ] Include soft and hard caps alongside actual values.
+* [ ] Generate a descriptive filename such as `bworlds-debug-20260808-151120.json`.
+
+# Snapshot Summary
+
+* [ ] Include current FPS.
+* [ ] Include average FPS over a recent window.
+* [ ] Include minimum FPS.
+* [ ] Include frame-time average.
+* [ ] Include P50 frame time.
+* [ ] Include P95 frame time.
+* [ ] Include P99 frame time.
+* [ ] Include worst recent frame.
+* [ ] Include target frame time.
+* [ ] Include current performance tier.
+* [ ] Include number of frames exceeding 16.7 ms.
+* [ ] Include number of frames exceeding 33.3 ms.
+* [ ] Include number of frames exceeding 50 ms.
+
+# CPU Timing Breakdown
+
+* [ ] Include total CPU frame time.
+* [ ] Include world simulation time.
+* [ ] Include AI time.
+* [ ] Include animation time.
+* [ ] Include physics time.
+* [ ] Include pathfinding time.
+* [ ] Include procedural-generation time.
+* [ ] Include tile-build time.
+* [ ] Include LOD-management time.
+* [ ] Include render-preparation time.
+* [ ] Include Three.js render-call CPU time.
+* [ ] Include UI-update time.
+* [ ] Include audio-processing scheduling time where measurable.
+* [ ] Include network-processing time.
+* [ ] Include uncategorized frame time.
+* [ ] Include average and maximum time for each subsystem.
+
+# GPU and Rendering Summary
+
+* [ ] Include draw calls.
+* [ ] Include triangles.
+* [ ] Include vertices where calculable.
+* [ ] Include points.
+* [ ] Include lines.
+* [ ] Include visible object count.
+* [ ] Include culled object count where available.
+* [ ] Include visible mesh count.
+* [ ] Include visible instanced-mesh count.
+* [ ] Include total rendered instances.
+* [ ] Include transparent draw count.
+* [ ] Include shadow-pass draw count.
+* [ ] Include post-processing passes.
+* [ ] Include GPU frame timing when available.
+* [ ] Include render-resolution dimensions.
+* [ ] Include device pixel ratio.
+* [ ] Include render scale.
+
+# Three.js Scene Graph
+
+* [ ] Include total `Object3D` count.
+* [ ] Include `Group` count.
+* [ ] Include `Mesh` count.
+* [ ] Include `InstancedMesh` count.
+* [ ] Include `Sprite` count.
+* [ ] Include `Points` node count.
+* [ ] Include line-object count.
+* [ ] Include camera count.
+* [ ] Include light count.
+* [ ] Include maximum hierarchy depth.
+* [ ] Include average hierarchy depth.
+* [ ] Include empty groups.
+* [ ] Include one-child groups.
+* [ ] Include invisible objects.
+* [ ] Include objects with `matrixAutoUpdate = true`.
+* [ ] Include static objects still updating transforms.
+* [ ] Include scene objects belonging to unloaded tiles if detected.
+
+# Materials
+
+* [ ] Include total material references.
+* [ ] Include unique material instances.
+* [ ] Include shared material instances.
+* [ ] Include cloned-material count where trackable.
+* [ ] Include transparent materials.
+* [ ] Include materials using alpha testing.
+* [ ] Include double-sided materials.
+* [ ] Include materials receiving fog.
+* [ ] Include materials using custom shaders.
+* [ ] Include materials by type.
+* [ ] Include materials created during the sampling window.
+* [ ] Include materials disposed during the sampling window.
+* [ ] Include peak material count.
+* [ ] Include material-cache hit rate.
+* [ ] Include material-cache miss rate.
+* [ ] Include estimated material usage by plugin.
+* [ ] Include the highest-material-count models or tile types.
+
+# Shader Programs
+
+* [ ] Include current shader-program count.
+* [ ] Include total program compilations.
+* [ ] Include shader compilations during recent sampling window.
+* [ ] Include estimated shader compilation time.
+* [ ] Include shader cache hits.
+* [ ] Include shader cache misses.
+* [ ] Include program count by material family where possible.
+* [ ] Include program count by plugin where attributable.
+* [ ] Flag program counts that continue increasing in a stable scene.
+
+# Geometry
+
+* [ ] Include total geometry references.
+* [ ] Include unique geometry instances.
+* [ ] Include GPU geometry count.
+* [ ] Include shared geometry count.
+* [ ] Include total geometry bytes where calculable.
+* [ ] Include vertex-buffer bytes.
+* [ ] Include index-buffer bytes.
+* [ ] Include average vertices per geometry.
+* [ ] Include largest geometry by vertices.
+* [ ] Include largest geometry by memory.
+* [ ] Include geometries created during sampling period.
+* [ ] Include geometries disposed during sampling period.
+* [ ] Include geometry-cache hits.
+* [ ] Include geometry-cache misses.
+* [ ] Include geometry usage by plugin.
+* [ ] Include highest-geometry-cost models.
+
+# Textures
+
+* [ ] Include texture count.
+* [ ] Include texture dimensions.
+* [ ] Include largest texture width/height.
+* [ ] Include decoded texture-memory estimate.
+* [ ] Include estimated GPU texture memory.
+* [ ] Include mipmap-memory estimate.
+* [ ] Include compressed versus uncompressed texture count.
+* [ ] Include normal-map count.
+* [ ] Include displacement-map count.
+* [ ] Include environment-map count.
+* [ ] Include render-target texture count.
+* [ ] Include render-target memory estimate.
+* [ ] Include textures by plugin.
+* [ ] Include texture-cache hits and misses.
+* [ ] Include textures loaded and disposed during sampling window.
+
+# Lighting and Shadows
+
+* [ ] Include ambient-light count.
+* [ ] Include directional-light count.
+* [ ] Include point-light count.
+* [ ] Include spot-light count.
+* [ ] Include hemisphere-light count.
+* [ ] Include currently active lights.
+* [ ] Include culled/inactive lights.
+* [ ] Include shadow-casting lights.
+* [ ] Include shadow-map count.
+* [ ] Include each shadow-map resolution.
+* [ ] Include total shadow-map pixels.
+* [ ] Include shadow-render draw calls.
+* [ ] Include shadow-render CPU/GPU timing if measurable.
+* [ ] Include lights by plugin or model.
+* [ ] Include the highest-cost shadow lights.
+
+# World and Tile State
+
+* [ ] Include current map/level.
+* [ ] Include visible tile count.
+* [ ] Include loaded tile count.
+* [ ] Include active tile count.
+* [ ] Include dormant tile count.
+* [ ] Include pending tile-build count.
+* [ ] Include tile builds per second.
+* [ ] Include unique tile builds per second.
+* [ ] Include duplicate tile builds per second.
+* [ ] Include tile rebuilds per second.
+* [ ] Include average tile-build time.
+* [ ] Include worst tile-build time.
+* [ ] Include tile-cache hit/miss rate.
+* [ ] Include tile counts by kind.
+* [ ] Include rendering cost by tile kind.
+* [ ] Include build cost by tile kind.
+* [ ] Include memory estimate by tile kind.
+
+# LOD State
+
+* [ ] Include LOD0 model count.
+* [ ] Include LOD1 model count.
+* [ ] Include LOD2 model count.
+* [ ] Include LOD3 model count.
+* [ ] Include LOD checks per second.
+* [ ] Include LOD swaps per second.
+* [ ] Include LOD builds per second.
+* [ ] Include current LOD thresholds.
+* [ ] Include LOD cache hits and misses.
+* [ ] Include current objects participating in LOD crossfades.
+* [ ] Include crossfade duration.
+* [ ] Include material clones caused by LOD.
+* [ ] Include geometry created because of LOD changes.
+* [ ] Include LOD CPU time.
+* [ ] Include models bouncing repeatedly across LOD thresholds.
+
+# Tree Diagnostics
+
+Given how important trees currently are, I would definitely include a specialized section.
+
+* [ ] Include visible tree count.
+* [ ] Include loaded tree count.
+* [ ] Include tree count by species/family.
+* [ ] Include trees by LOD.
+* [ ] Include average objects per tree.
+* [ ] Include average meshes per tree.
+* [ ] Include average vertices per tree.
+* [ ] Include average triangles per tree.
+* [ ] Include average materials per tree.
+* [ ] Include average draw calls per tree.
+* [ ] Include trees using unique materials.
+* [ ] Include trees using shared materials.
+* [ ] Include trees using instancing.
+* [ ] Include tree generation calls.
+* [ ] Include average tree-generation time.
+* [ ] Include maximum tree-generation time.
+* [ ] Include active wind-responsive trees.
+* [ ] Include shadow-casting trees.
+* [ ] Include trees with active wildlife.
+* [ ] Include trees with particles.
+* [ ] Include tree cache hits/misses.
+* [ ] Include tree-generator budget violations.
+
+# Instancing
+
+* [ ] Include total `InstancedMesh` nodes.
+* [ ] Include total rendered instances.
+* [ ] Include instance counts by plugin.
+* [ ] Include instance counts by model category.
+* [ ] Include repeated meshes that are not currently instanced.
+* [ ] Include estimated potential draw-call savings from instancing.
+* [ ] Include percentage of eligible repeated geometry that uses instancing.
+
+# Particles
+
+* [ ] Include active particle systems.
+* [ ] Include active particles.
+* [ ] Include maximum particles during sampling window.
+* [ ] Include particle emitters by plugin.
+* [ ] Include transparent particle count.
+* [ ] Include particle draw calls.
+* [ ] Include particle simulation time.
+* [ ] Include particle systems beyond visible/audible range.
+* [ ] Include dropped particles due to budget limits.
+
+# Characters and Animation
+
+* [ ] Include visible character count.
+* [ ] Include fully simulated characters.
+* [ ] Include reduced-simulation characters.
+* [ ] Include dormant characters.
+* [ ] Include active animation mixers.
+* [ ] Include active skeletons.
+* [ ] Include total bones evaluated.
+* [ ] Include characters with IK enabled.
+* [ ] Include facial-animation count.
+* [ ] Include morph-target count.
+* [ ] Include animation update CPU time.
+* [ ] Include average bones per visible character.
+* [ ] Include characters by animation LOD.
+* [ ] Include characters whose animations are frozen due to distance.
+
+# AI and Pathfinding
+
+* [ ] Include active AI character count.
+* [ ] Include AI decisions per second.
+* [ ] Include perception checks per second.
+* [ ] Include raycasts used by AI.
+* [ ] Include pathfinding requests per second.
+* [ ] Include active pathfinding jobs.
+* [ ] Include queued pathfinding jobs.
+* [ ] Include average pathfinding duration.
+* [ ] Include maximum pathfinding duration.
+* [ ] Include cached path hits and misses.
+* [ ] Include AI CPU time by behavior category if practical.
+
+# Physics and Collision
+
+* [ ] Include active physics bodies.
+* [ ] Include sleeping physics bodies.
+* [ ] Include static colliders.
+* [ ] Include dynamic colliders.
+* [ ] Include collision queries per second.
+* [ ] Include broad-phase candidate count.
+* [ ] Include narrow-phase checks.
+* [ ] Include physics-step CPU time.
+* [ ] Include raycasts per second.
+* [ ] Include active ragdolls.
+* [ ] Include active debris objects.
+* [ ] Include objects exceeding collision-complexity budgets.
+
+# Audio
+
+* [ ] Include active Web Audio voices.
+* [ ] Include positional audio-source count.
+* [ ] Include ambient audio count.
+* [ ] Include procedural oscillator count.
+* [ ] Include audio buffers.
+* [ ] Include estimated audio-buffer memory.
+* [ ] Include currently active reverb/effect chains.
+* [ ] Include audio events per second.
+* [ ] Include sounds rejected because of voice limits.
+* [ ] Include sounds culled by distance.
+* [ ] Include music voices/instruments separately.
+* [ ] Include audio nodes created/disposed per second.
+
+# Heap and JavaScript Memory
+
+* [ ] Include current used heap.
+* [ ] Include total allocated heap if available.
+* [ ] Include browser heap limit.
+* [ ] Include configured game memory target.
+* [ ] Include peak heap during snapshot window.
+* [ ] Include heap delta over 10 seconds.
+* [ ] Include heap delta over 60 seconds.
+* [ ] Include estimated allocation rate where measurable.
+* [ ] Include GC events if observable.
+* [ ] Include longest observed GC pause.
+* [ ] Include world-cache size.
+* [ ] Include geometry-cache size.
+* [ ] Include texture-cache size.
+* [ ] Include model-cache size.
+* [ ] Include audio-cache size.
+* [ ] Include procedural-generation cache size.
+
+# Network State
+
+Since this is intended to become an MMORPG:
+
+* [ ] Include connection status.
+* [ ] Include current ping.
+* [ ] Include inbound bytes/sec.
+* [ ] Include outbound bytes/sec.
+* [ ] Include inbound messages/sec.
+* [ ] Include outbound messages/sec.
+* [ ] Include pending network messages.
+* [ ] Include dropped/late messages if tracked.
+* [ ] Include subscribed entity count.
+* [ ] Include nearby network-relevant entity count.
+* [ ] Include server tick rate where known.
+
+# Plugin Breakdown
+
+This could be one of the most useful portions of the entire file.
+
+For every plugin, include:
+
+* [ ] Plugin name.
+* [ ] Plugin version.
+* [ ] Content pack.
+* [ ] Models currently active.
+* [ ] Objects contributed.
+* [ ] Meshes contributed.
+* [ ] Vertices contributed.
+* [ ] Triangles contributed.
+* [ ] Draw calls contributed.
+* [ ] Geometries contributed.
+* [ ] Materials contributed.
+* [ ] Unique materials contributed.
+* [ ] Textures contributed.
+* [ ] Estimated GPU bytes.
+* [ ] Lights contributed.
+* [ ] Shadow lights contributed.
+* [ ] Particle systems contributed.
+* [ ] Audio sources contributed.
+* [ ] Generation calls.
+* [ ] Generation CPU time.
+* [ ] Average generation time.
+* [ ] Maximum generation time.
+* [ ] Cache hit/miss rate.
+* [ ] Soft-limit violations.
+* [ ] Hard-limit violations.
+* [ ] Dropped model parts.
+* [ ] Rejected models.
+
+Then analysis becomes much easier:
+
+```json
+{
+  "plugin": "tile-forest",
+  "objects": 4210,
+  "meshes": 3244,
+  "triangles": 18640,
+  "materials": 1278,
+  "drawCalls": 603,
+  "generationMs": 7.4
+}
+```
+
+Immediately you know where to look.
+
+# Resource-Budget Snapshot
+
+* [ ] Include every active soft limit.
+* [ ] Include every hard limit.
+* [ ] Include current utilization percentage.
+* [ ] Include highest utilization observed during sampling.
+* [ ] Include which limits caused quality reductions.
+* [ ] Include which optional features were dropped.
+* [ ] Include models automatically lowered to another LOD.
+* [ ] Include plugin requests rejected due to budget.
+* [ ] Include dynamic quality changes during sampling.
+
+For example:
+
+```json
+{
+  "drawCalls": {
+    "current": 1062,
+    "soft": 900,
+    "hard": 1400,
+    "status": "warning"
+  }
+}
+```
+
+# Recent Performance History
+
+Don't make the snapshot only represent **one instant**.
+
+That is probably the most important improvement I'd make.
+
+* [ ] Keep the previous 10–30 seconds of performance samples in a circular buffer.
+* [ ] Export that buffer with the snapshot.
+* [ ] Record FPS each sample.
+* [ ] Record CPU frame time.
+* [ ] Record GPU frame time where available.
+* [ ] Record draw calls.
+* [ ] Record triangles.
+* [ ] Record objects.
+* [ ] Record materials.
+* [ ] Record geometries.
+* [ ] Record heap.
+* [ ] Record tile builds.
+* [ ] Record LOD swaps.
+* [ ] Record visible tiles.
+* [ ] Record visible trees.
+* [ ] Record active lights.
+* [ ] Record generation queue size.
+
+For example:
+
+```json
+{
+  "history": [
+    {
+      "t": -3,
+      "fps": 52.1,
+      "frameMs": 19.2,
+      "drawCalls": 1021,
+      "heapMB": 78.2
+    },
+    {
+      "t": -2,
+      "fps": 47.8,
+      "frameMs": 20.9,
+      "drawCalls": 1054,
+      "heapMB": 79.1
+    },
+    {
+      "t": -1,
+      "fps": 45.7,
+      "frameMs": 21.9,
+      "drawCalls": 1062,
+      "heapMB": 80.0
+    }
+  ]
+}
+```
+
+That would let us tell whether the game is **stable, degrading, loading something, or periodically stuttering**.
+
+# Recent Events
+
+Also export a short diagnostic event log.
+
+* [ ] Tile generated.
+* [ ] Tile unloaded.
+* [ ] Tile rebuilt.
+* [ ] LOD changed.
+* [ ] Model rejected.
+* [ ] Plugin exceeded budget.
+* [ ] Texture loaded.
+* [ ] Geometry generated.
+* [ ] Material cloned.
+* [ ] Shader program compiled.
+* [ ] Chunk loaded.
+* [ ] Chunk unloaded.
+* [ ] Graphics quality changed.
+* [ ] Long frame detected.
+* [ ] Cache eviction occurred.
+* [ ] Large allocation detected where trackable.
+* [ ] Worker job exceeded expected time.
+
+Use a bounded circular buffer so it does not itself become a memory problem.
+
+# Top Offenders
+
+Have the snapshot automatically calculate rankings.
+
+* [ ] Top plugins by objects.
+* [ ] Top plugins by meshes.
+* [ ] Top plugins by triangles.
+* [ ] Top plugins by draw calls.
+* [ ] Top plugins by materials.
+* [ ] Top plugins by GPU memory.
+* [ ] Top plugins by CPU generation time.
+* [ ] Top model instances by triangles.
+* [ ] Top models by material count.
+* [ ] Top models by object count.
+* [ ] Top models by texture memory.
+* [ ] Top lights by shadow cost.
+* [ ] Top tile kinds by rendering cost.
+
+Then the JSON itself can tell you:
+
+```json
+{
+  "topOffenders": {
+    "materials": [
+      {
+        "plugin": "tile-forest",
+        "count": 1281
+      }
+    ]
+  }
+}
+```
+
+# Snapshot Modes
+
+I would actually support several buttons eventually:
+
+* [ ] **Download Debug Snapshot** — normal detailed JSON.
+* [ ] **Download Lightweight Snapshot** — metrics without expensive scene inspection.
+* [ ] **Download Performance Capture** — includes 30–60 seconds of history.
+* [ ] **Download Scene Inventory** — detailed object/material/geometry/plugin breakdown.
+* [ ] **Download Leak Comparison** — captures resource IDs/counts intended for comparison with another snapshot.
+
+You don't necessarily need all of those immediately. Start with one comprehensive snapshot and split them later if it becomes too expensive.
+
+# Snapshot Collection Performance
+
+Important: the debugging system itself shouldn't freeze the game.
+
+* [ ] Avoid recursively inspecting the entire scene during every frame.
+* [ ] Maintain cheap counters continuously.
+* [ ] Perform expensive inspection only when snapshot is requested.
+* [ ] Spread expensive snapshot analysis across frames if needed.
+* [ ] Reuse already-known plugin ownership metadata.
+* [ ] Avoid serializing raw vertices.
+* [ ] Avoid serializing complete textures.
+* [ ] Avoid serializing actual Three.js object graphs.
+* [ ] Export summaries and identifiers instead.
+* [ ] Avoid circular references.
+* [ ] Cap diagnostic arrays.
+* [ ] Cap event history.
+* [ ] Cap top-offender lists.
+
+The snapshot should be perhaps hundreds of KB or a few MB—not a 200 MB dump of your scene.
+
+# Don't Export Raw Model Data by Default
+
+I would specifically **not** include:
+
+* [ ] Full vertex arrays.
+* [ ] Full index buffers.
+* [ ] Texture pixel data.
+* [ ] Shader source for every material.
+* [ ] Full `Object3D.toJSON()` output.
+* [ ] Complete save-game/world data.
+* [ ] Complete network packet history.
+
+Instead include hashes/IDs and statistics:
+
+```json
+{
+  "geometryId": 782,
+  "vertices": 1244,
+  "triangles": 2180,
+  "bytes": 28192
+}
+```
+
+If later you need a particular problematic model, you can have a separate **Export Selected Model Debug Data** tool.
+
+# Compare Snapshots
+
+This would be extremely useful after you implement optimization changes.
+
+* [ ] Give every snapshot a schema version.
+* [ ] Keep field names stable.
+* [ ] Add snapshot ID.
+* [ ] Include game build ID.
+* [ ] Allow two snapshots to be compared.
+* [ ] Compare FPS.
+* [ ] Compare CPU time.
+* [ ] Compare draw calls.
+* [ ] Compare objects.
+* [ ] Compare meshes.
+* [ ] Compare materials.
+* [ ] Compare shader programs.
+* [ ] Compare geometries.
+* [ ] Compare memory.
+* [ ] Compare plugin costs.
+* [ ] Highlight regressions.
+* [ ] Highlight improvements.
+
+You could eventually produce:
+
+```text
+Before → After
+
+FPS             45.7 → 58.4     +27.8%
+Draw Calls      1062 → 714      -32.8%
+Materials       1550 → 143      -90.8%
+Programs         126 → 34       -73.0%
+Objects         7868 → 4980     -36.7%
+Heap            80MB → 67MB     -16.3%
+```
+
+That would be fantastic for validating optimization work.
+
+# Suggested High-Level JSON Shape
+
+I would aim for something like:
+
+```ts
+interface BWorldsDebugSnapshot {
+  schemaVersion: number;
+
+  meta: DebugMeta;
+  environment: EnvironmentInfo;
+  location: WorldLocation;
+
+  performance: PerformanceSnapshot;
+  history: PerformanceSample[];
+
+  world: WorldDebugInfo;
+  renderer: RendererDebugInfo;
+  scene: SceneDebugInfo;
+
+  materials: MaterialDebugInfo;
+  geometries: GeometryDebugInfo;
+  textures: TextureDebugInfo;
+  lighting: LightingDebugInfo;
+
+  lod: LodDebugInfo;
+  trees: TreeDebugInfo;
+
+  characters: CharacterDebugInfo;
+  ai: AiDebugInfo;
+  physics: PhysicsDebugInfo;
+  audio: AudioDebugInfo;
+  network: NetworkDebugInfo;
+
+  memory: MemoryDebugInfo;
+
+  plugins: PluginDebugInfo[];
+
+  budgets: BudgetDebugInfo;
+  violations: BudgetViolation[];
+
+  recentEvents: DebugEvent[];
+
+  topOffenders: DebugTopOffenders;
+}
+```
+
+And importantly, make everything optional:
+
+```ts
+interface BWorldsDebugSnapshot {
+  // ...
+  network?: NetworkDebugInfo;
+  physics?: PhysicsDebugInfo;
+  audio?: AudioDebugInfo;
+}
+```
+
+That lets **older plugins and partially implemented game systems still produce valid snapshots**, which fits well with the capability-based architecture you've been developing.
+
+The live panel can then stay fairly simple:
+
+```text
+FPS              45.7 ⚠
+Frame            21.9 ms ⚠
+Draws            1062 ⚠
+Objects          7868
+Materials        1550 ⚠
+Heap             80 MB
+
+[ Download Debug Snapshot ]
+```
+
+and the downloaded snapshot becomes the equivalent of a **black-box recorder for the game**.
+
+That is probably the design I'd favor: the HUD tells you *something is wrong*; the debug snapshot gives you enough information to determine **what, where, and which plugin caused it**.
