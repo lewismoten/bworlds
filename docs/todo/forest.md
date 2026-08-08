@@ -636,9 +636,9 @@ This probably deserves several interchangeable strategies.
 # Tree Carvings
 
 * [ ] Support persistent carvings.
-* [ ] Generate old lovers' initials.
-* [ ] Generate hearts.
-* [ ] Generate dates.
+* [x] Generate old lovers' initials.
+* [x] Generate hearts.
+* [x] Generate dates.
 * [ ] Generate traveler markings.
 * [ ] Generate directional arrows.
 * [ ] Generate symbols.

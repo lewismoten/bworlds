@@ -350,7 +350,7 @@ describe('tile forest', () => {
     expect(getForestOwls(first.x, first.y)).toEqual(first.owls);
   });
 
-  it('generates deterministic carved initials for some forest trees', () => {
+  it("generates deterministic lovers' initials, hearts, and dates for some forest trees", () => {
     const sampleTiles: Array<{
       x: number;
       y: number;
@@ -370,7 +370,27 @@ describe('tile forest', () => {
     expect(
       sampleTiles.some(({ carvings }) =>
         carvings.every(
-          (carving) => carving.text === 'LM+FG' && carving.height > 0.2 && carving.scale > 0.015
+          (carving) =>
+            carving.motif === 'initials' &&
+            carving.text === 'LM+FG' &&
+            carving.height > 0.2 &&
+            carving.scale > 0.015
+        )
+      )
+    ).toBe(true);
+    expect(
+      sampleTiles.some(({ carvings }) =>
+        carvings.some(
+          (carving) => carving.motif === 'heart' && carving.text === 'LM*FG'
+        )
+      )
+    ).toBe(true);
+    expect(
+      sampleTiles.some(({ carvings }) =>
+        carvings.some(
+          (carving) =>
+            carving.motif === 'date' &&
+            /^(18\d{2}|19\d{2})$/.test(carving.text)
         )
       )
     ).toBe(true);
@@ -1425,7 +1445,7 @@ describe('tile forest', () => {
     expect(lowOwlCount).toBe(0);
   });
 
-  it('renders carved initials only in full-detail forest models', () => {
+  it("renders carving motifs only in full-detail forest models", () => {
     const plugin = createForestTilePlugin();
     const tile = plugin.tiles?.find((entry) => entry.kind === 'forest');
     const state = createForestTestState();
@@ -1479,8 +1499,45 @@ describe('tile forest', () => {
     });
 
     expect(fullCarvingCount).toBeGreaterThan(0);
-    expect(fullLabels.has('LM+FG')).toBe(true);
+    expect([...fullLabels].some((label) => label === 'LM+FG' || label === 'LM*FG')).toBe(true);
     expect(lowCarvingCount).toBe(0);
+
+    let datedTile: { x: number; y: number } | null = null;
+    for (let tileY = 0; tileY < 18 && !datedTile; tileY += 1) {
+      for (let tileX = 0; tileX < 18; tileX += 1) {
+        if (
+          getForestCarvings(tileX, tileY).some(
+            (carving) => carving.motif === 'date'
+          )
+        ) {
+          datedTile = { x: tileX, y: tileY };
+          break;
+        }
+      }
+    }
+
+    expect(datedTile).not.toBeNull();
+    state.player.x = datedTile!.x;
+    state.player.y = datedTile!.y;
+
+    const datedModel = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'forest' },
+      tileX: datedTile!.x,
+      tileY: datedTile!.y,
+      detailLevel: 'full',
+    }) as FakeGroup;
+
+    let datedRenderCount = 0;
+    datedModel.traverse((node) => {
+      const carving = node.userData?.forestCarving;
+      if (typeof carving === 'string' && /^(18\d{2}|19\d{2})$/.test(carving)) {
+        datedRenderCount += 1;
+      }
+    });
+
+    expect(datedRenderCount).toBeGreaterThan(0);
   });
 
   it('renders flower meadows only in full-detail forest models', () => {
