@@ -7,11 +7,27 @@ type PromptState = Pick<
   player: { x: number; y: number };
 };
 
+type ResolvedPromptState = Pick<PromptState, 'getCurrentMap'> & {
+  player: { x: number; y: number };
+  tile: TileLike;
+  contextLabel: string;
+};
+
 export function getInteractionPrompt(state: PromptState): string {
-  const tile = state.getCurrentTile(state.player.x, state.player.y);
+  return getInteractionPromptFromResolvedState({
+    getCurrentMap: state.getCurrentMap,
+    player: state.player,
+    tile: state.getCurrentTile(state.player.x, state.player.y),
+    contextLabel: state.getCurrentContext().label,
+  });
+}
+
+export function getInteractionPromptFromResolvedState(
+  state: ResolvedPromptState
+): string {
   const map = state.getCurrentMap?.();
   const action =
-    (map?.getAction?.(state.player.x, state.player.y, state as WorldStateLike) as
+    (map?.getAction?.(state.player.x, state.player.y, state as unknown as WorldStateLike) as
       | WorldActionLike
       | null
       | undefined) ?? null;
@@ -20,10 +36,10 @@ export function getInteractionPrompt(state: PromptState): string {
     null;
 
   if (exit) {
-    return buildExitPrompt(tile, state.getCurrentContext().label);
+    return buildExitPrompt(state.tile, state.contextLabel);
   }
   if (action) {
-    return buildActionPrompt(tile, action);
+    return buildActionPrompt(state.tile, action);
   }
   return '';
 }

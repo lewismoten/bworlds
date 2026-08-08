@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { getInteractionPrompt } from './interaction-prompt.ts';
+import {
+  getInteractionPrompt,
+  getInteractionPromptFromResolvedState,
+} from './interaction-prompt.ts';
 
 describe('interaction prompt', () => {
   it('shows an enter prompt for enterable overworld poi tiles', () => {
@@ -157,5 +160,33 @@ describe('interaction prompt', () => {
     };
 
     expect(getInteractionPrompt(state as never)).toBe('');
+  });
+
+  it('can build a prompt from pre-resolved tile and context state', () => {
+    expect(
+      getInteractionPromptFromResolvedState({
+        player: { x: 4, y: 6 },
+        tile: { kind: 'town', poi: { type: 'town', name: 'Oakcross' } },
+        contextLabel: 'Overworld',
+        getCurrentMap() {
+          return {
+            getAction() {
+              return {
+                type: 'enter',
+                context: {
+                  id: 'town:4:6:0',
+                  label: 'Oakcross',
+                  type: 'town',
+                  depth: 1,
+                },
+              };
+            },
+            getExit() {
+              return null;
+            },
+          };
+        },
+      } as never)
+    ).toBe('Press Enter to enter Oakcross');
   });
 });
