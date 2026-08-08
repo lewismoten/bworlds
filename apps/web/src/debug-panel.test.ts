@@ -3,6 +3,7 @@ import {
   buildDebugMarkup,
   formatPerformanceTierLabel,
   getMaterialGrowthWarning,
+  getSceneBudgetWarnings,
   getDebugSignature,
   getTargetFrameMs,
   normalizeWorldSeed,
@@ -46,6 +47,7 @@ describe('debug panel', () => {
       materialCount: 24,
       geometryCount: 61,
       geometryMemoryCount: 63,
+      treeObjectCount: 216,
       treeMeshCount: 135,
       treeMaterialRefCount: 135,
       visibleTileKindSummary: 'forest:48, plains:32, river:12, town:4',
@@ -58,7 +60,10 @@ describe('debug panel', () => {
       worldSeed: 'alpha',
       heapUsedMb: 48.4,
       heapLimitMb: 128,
-      materialGrowthWarning: 'Material count keeps climbing while moving (24 -> 39).',
+      resourceWarnings: [
+        'Objects per visible tile is high (18.5 > 18).',
+        'Material count keeps climbing while moving (24 -> 39).',
+      ],
     };
 
     expect(getDebugSignature(snapshot)).toBe(getDebugSignature({ ...snapshot }));
@@ -77,12 +82,13 @@ describe('debug panel', () => {
     expect(buildDebugMarkup(snapshot)).toContain('Points Nodes');
     expect(buildDebugMarkup(snapshot)).toContain('Sprites');
     expect(buildDebugMarkup(snapshot)).toContain('Lights');
+    expect(buildDebugMarkup(snapshot)).toContain('Objects / Tree');
     expect(buildDebugMarkup(snapshot)).toContain('Meshes / Tree');
     expect(buildDebugMarkup(snapshot)).toContain('Objects / Tile');
     expect(buildDebugMarkup(snapshot)).toContain('Materials');
     expect(buildDebugMarkup(snapshot)).toContain('Tile Kinds');
     expect(buildDebugMarkup(snapshot)).toContain('Programs');
-    expect(buildDebugMarkup(snapshot)).toContain('Warning');
+    expect(buildDebugMarkup(snapshot)).toContain('Warnings');
     expect(buildDebugMarkup(snapshot)).toContain('alpha');
   });
 
@@ -159,6 +165,29 @@ describe('debug panel', () => {
         { nowMs: 1800, materialCount: 30, playerX: 4.2, playerY: 0 },
       ])
     ).toBeNull();
+  });
+
+  it('warns when object budgets per visible tile or tree are exceeded', () => {
+    expect(
+      getSceneBudgetWarnings({
+        visibleTileCount: 10,
+        visibleTreeCount: 5,
+        object3dCount: 220,
+        treeObjectCount: 42,
+      })
+    ).toEqual([
+      'Objects per visible tile is high (22.0 > 18).',
+      'Objects per tree is high (8.4 > 7).',
+    ]);
+
+    expect(
+      getSceneBudgetWarnings({
+        visibleTileCount: 12,
+        visibleTreeCount: 8,
+        object3dCount: 120,
+        treeObjectCount: 48,
+      })
+    ).toEqual([]);
   });
 
   it('derives frame budgets and performance tiers from frame time', () => {

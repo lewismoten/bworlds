@@ -26,6 +26,7 @@ export type DebugSnapshot = {
   materialCount: number;
   geometryCount: number;
   geometryMemoryCount: number;
+  treeObjectCount: number;
   treeMeshCount: number;
   treeMaterialRefCount: number;
   visibleTileKindSummary: string;
@@ -38,7 +39,7 @@ export type DebugSnapshot = {
   worldSeed: string;
   heapUsedMb: number | null;
   heapLimitMb: number | null;
-  materialGrowthWarning: string | null;
+  resourceWarnings: string[];
 };
 
 export type MaterialGrowthSample = {
@@ -82,6 +83,7 @@ export function getDebugSignature(snapshot: DebugSnapshot): string {
     snapshot.materialCount,
     snapshot.geometryCount,
     snapshot.geometryMemoryCount,
+    snapshot.treeObjectCount,
     snapshot.treeMeshCount,
     snapshot.treeMaterialRefCount,
     snapshot.visibleTileKindSummary,
@@ -94,7 +96,7 @@ export function getDebugSignature(snapshot: DebugSnapshot): string {
     snapshot.worldSeed,
     snapshot.heapUsedMb?.toFixed(1) ?? 'na',
     snapshot.heapLimitMb?.toFixed(1) ?? 'na',
-    snapshot.materialGrowthWarning ?? 'none',
+    snapshot.resourceWarnings.join('|') || 'none',
   ].join('|');
 }
 
@@ -140,12 +142,16 @@ export function buildDebugMarkup(snapshot: DebugSnapshot): string {
     snapshot.visibleTreeCount > 0
       ? (snapshot.treeMeshCount / snapshot.visibleTreeCount).toFixed(1)
       : '0.0';
+  const objectsPerVisibleTree =
+    snapshot.visibleTreeCount > 0
+      ? (snapshot.treeObjectCount / snapshot.visibleTreeCount).toFixed(1)
+      : '0.0';
   const materialsPerVisibleTree =
     snapshot.visibleTreeCount > 0
       ? (snapshot.treeMaterialRefCount / snapshot.visibleTreeCount).toFixed(1)
       : '0.0';
-  const warningMarkup = snapshot.materialGrowthWarning
-    ? `<div><dt>Warning</dt><dd>${snapshot.materialGrowthWarning}</dd></div>`
+  const warningMarkup = snapshot.resourceWarnings.length > 0
+    ? `<div><dt>Warnings</dt><dd>${snapshot.resourceWarnings.join(' | ')}</dd></div>`
     : '';
   return `
     <div><dt>FPS</dt><dd>${snapshot.fps.toFixed(1)}</dd></div>
@@ -173,6 +179,7 @@ export function buildDebugMarkup(snapshot: DebugSnapshot): string {
     <div><dt>Points Nodes</dt><dd>${snapshot.pointsCount}</dd></div>
     <div><dt>Sprites</dt><dd>${snapshot.spriteCount}</dd></div>
     <div><dt>Lights</dt><dd>${snapshot.lightCount}</dd></div>
+    <div><dt>Objects / Tree</dt><dd>${objectsPerVisibleTree}</dd></div>
     <div><dt>Meshes / Tree</dt><dd>${meshesPerVisibleTree}</dd></div>
     <div><dt>Materials</dt><dd>${snapshot.materialCount}</dd></div>
     <div><dt>Materials / Tree</dt><dd>${materialsPerVisibleTree}</dd></div>
@@ -260,4 +267,34 @@ export function getMaterialGrowthWarning(
   }
 
   return `Material count keeps climbing while moving (${firstSample.materialCount} -> ${lastSample.materialCount}).`;
+}
+
+export function getSceneBudgetWarnings(
+  snapshot: Pick<DebugSnapshot, 'visibleTileCount' | 'visibleTreeCount' | 'object3dCount' | 'treeObjectCount'>,
+  {
+    maxObjectsPerVisibleTile = 18,
+    maxObjectsPerTree = 7,
+  }: {
+    maxObjectsPerVisibleTile?: number;
+    maxObjectsPerTree?: number;
+  } = {}
+): string[] {
+  const warnings: string[] = [];
+  const objectsPerVisibleTile =
+    snapshot.visibleTileCount > 0 ? snapshot.object3dCount / snapshot.visibleTileCount : 0;
+  const objectsPerTree =
+    snapshot.visibleTreeCount > 0 ? snapshot.treeObjectCount / snapshot.visibleTreeCount : 0;
+
+  if (objectsPerVisibleTile > maxObjectsPerVisibleTile) {
+    warnings.push(
+      `Objects per visible tile is high (${objectsPerVisibleTile.toFixed(1)} > ${maxObjectsPerVisibleTile}).`
+    );
+  }
+  if (objectsPerTree > maxObjectsPerTree) {
+    warnings.push(
+      `Objects per tree is high (${objectsPerTree.toFixed(1)} > ${maxObjectsPerTree}).`
+    );
+  }
+
+  return warnings;
 }

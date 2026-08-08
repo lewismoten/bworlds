@@ -74,6 +74,7 @@ type Render3DController = {
     materialCount: number;
     geometryCount: number;
     geometryMemoryCount: number;
+    treeObjectCount: number;
     treeMeshCount: number;
     treeMaterialRefCount: number;
     visibleTileKindSummary: string;
@@ -139,6 +140,7 @@ type SceneResourceStats = {
   materialCount: number;
   geometryCount: number;
   treeCount: number;
+  treeObjectCount: number;
   treeMeshCount: number;
   treeMaterialRefCount: number;
 };
@@ -564,6 +566,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       materialCount: sceneResourceStats.materialCount,
       geometryCount: sceneResourceStats.geometryCount,
       geometryMemoryCount: renderer.info.memory.geometries,
+      treeObjectCount: sceneResourceStats.treeObjectCount,
       treeMeshCount: sceneResourceStats.treeMeshCount,
       treeMaterialRefCount: sceneResourceStats.treeMaterialRefCount,
       visibleTileKindSummary: summarizeVisibleTileKinds(visibleTileNodes.values()),
@@ -1537,6 +1540,7 @@ export function collectSceneResourceStats(
   let spriteCount = 0;
   let lightCount = 0;
   let treeCount = 0;
+  let treeObjectCount = 0;
   let treeMeshCount = 0;
   let treeMaterialRefCount = 0;
   const materials = new Set<THREE.Material>();
@@ -1559,6 +1563,7 @@ export function collectSceneResourceStats(
     if ((child as THREE.Object3D).userData?.renderStatKind === 'tree') {
       treeCount += 1;
       const treeStats = collectTaggedTreeStats(child as Pick<THREE.Object3D, 'traverse'>);
+      treeObjectCount += treeStats.objectCount;
       treeMeshCount += treeStats.meshCount;
       treeMaterialRefCount += treeStats.materialRefCount;
     }
@@ -1590,6 +1595,7 @@ export function collectSceneResourceStats(
     materialCount: materials.size,
     geometryCount: geometries.size,
     treeCount,
+    treeObjectCount,
     treeMeshCount,
     treeMaterialRefCount,
   };
@@ -1598,13 +1604,16 @@ export function collectSceneResourceStats(
 function collectTaggedTreeStats(
   root: Pick<THREE.Object3D, 'traverse'>
 ): {
+  objectCount: number;
   meshCount: number;
   materialRefCount: number;
 } {
+  let objectCount = 0;
   let meshCount = 0;
   let materialRefCount = 0;
 
   root.traverse((child) => {
+    objectCount += 1;
     const renderable = child as THREE.Object3D & {
       geometry?: unknown;
       material?: THREE.Material | THREE.Material[];
@@ -1617,6 +1626,7 @@ function collectTaggedTreeStats(
   });
 
   return {
+    objectCount,
     meshCount,
     materialRefCount,
   };

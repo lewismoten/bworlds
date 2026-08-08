@@ -91,6 +91,7 @@ import {
 } from './head-bob.ts';
 import {
   buildDebugMarkup,
+  getSceneBudgetWarnings,
   getMaterialGrowthWarning,
   resolvePerformanceTier,
   recordMaterialGrowthSample,
@@ -2527,6 +2528,7 @@ function render(): FrameLoopActivityLike {
       materialCount: rendererStats.materialCount,
       geometryCount: rendererStats.geometryCount,
       geometryMemoryCount: rendererStats.geometryMemoryCount,
+      treeObjectCount: rendererStats.treeObjectCount,
       treeMeshCount: rendererStats.treeMeshCount,
       treeMaterialRefCount: rendererStats.treeMaterialRefCount,
       visibleTileKindSummary: rendererStats.visibleTileKindSummary,
@@ -2545,10 +2547,15 @@ function render(): FrameLoopActivityLike {
         typeof performanceStats.memory?.jsHeapSizeLimit === 'number'
           ? performanceStats.memory.jsHeapSizeLimit / (1024 * 1024)
           : null,
-      materialGrowthWarning: getMaterialGrowthWarning(
-        debugResourceTrendState.materialSamples
-      ),
+      resourceWarnings: [],
     };
+    const materialGrowthWarning = getMaterialGrowthWarning(
+      debugResourceTrendState.materialSamples
+    );
+    debugSnapshot.resourceWarnings = [
+      ...getSceneBudgetWarnings(debugSnapshot),
+      ...(materialGrowthWarning ? [materialGrowthWarning] : []),
+    ];
     const debugSignature = getDebugSignature(debugSnapshot);
     if (debugSignature !== uiRenderState.lastDebugSignature) {
       debugSummary.innerHTML = buildDebugMarkup(debugSnapshot);

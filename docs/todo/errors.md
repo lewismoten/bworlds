@@ -168,8 +168,8 @@ with one sampled site around **4.1 MB**.
 * [x] Add a recursive Three.js object count to your debug panel.
 * [x] Record object counts by type: `Mesh`, `Group`, `Points`, `Sprite`, lights, etc.
 * [x] Record object counts by plugin/tile type.
-* [ ] Establish an object-count budget per visible tile.
-* [ ] Establish an object-count budget per tree.
+* [x] Establish an object-count budget per visible tile.
+* [x] Establish an object-count budget per tree.
 * [ ] Replace repeated individual meshes with instancing.
 * [ ] Flatten unnecessary `Group` hierarchies.
 * [ ] Avoid representing tiny details as individual `Object3D`s.

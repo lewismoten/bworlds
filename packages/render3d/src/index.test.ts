@@ -54,6 +54,7 @@ describe('render3d visibility helpers', () => {
       materialCount: 2,
       geometryCount: 2,
       treeCount: 1,
+      treeObjectCount: 1,
       treeMeshCount: 1,
       treeMaterialRefCount: 1,
     });
@@ -76,8 +77,33 @@ describe('render3d visibility helpers', () => {
       materialCount: 0,
       geometryCount: 0,
       treeCount: 0,
+      treeObjectCount: 0,
       treeMeshCount: 0,
       treeMaterialRefCount: 0,
+    });
+  });
+
+  it('counts descendant objects inside tagged tree roots for per-tree budget diagnostics', () => {
+    const branch = createMockObject3D({}, [], { id: 'branch-geometry' });
+    const canopy = createMockObject3D({}, [], { id: 'canopy-geometry' });
+    const treeRoot = createMockObject3D(undefined, [branch, canopy], undefined, {
+      renderStatKind: 'tree',
+    });
+    const root = createMockObject3D(undefined, [treeRoot]);
+
+    expect(collectSceneResourceStats(root as never)).toEqual({
+      object3dCount: 4,
+      groupCount: 2,
+      meshCount: 2,
+      pointsCount: 0,
+      spriteCount: 0,
+      lightCount: 0,
+      materialCount: 2,
+      geometryCount: 2,
+      treeCount: 1,
+      treeObjectCount: 3,
+      treeMeshCount: 2,
+      treeMaterialRefCount: 2,
     });
   });
 
