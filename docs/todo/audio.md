@@ -10,5 +10,5 @@
 - [x] add sound effects for walking over different types of roads, bridges, etc.
 - [x] Sound is played based on position of where it was emitted, and distance
 - [x] When items, doors, corpses are opened and closed
-- [ ] Combat sounds with different weapons / magic
+- [x] Combat sounds with different weapons / magic
 - [x] Skill advancement, level up, etc.

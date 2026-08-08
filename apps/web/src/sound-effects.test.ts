@@ -1,11 +1,17 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
   createSoundEffectController,
+  getCombatSoundCadenceMs,
+  getCombatSoundDurationMs,
+  getCombatSoundVolume,
   getForestWindCadenceMs,
   getPaddleBoatCalliopeCadenceMs,
   getSurfaceAudioFamily,
   getSurfaceAudioProfile,
   getSoundSpatialMix,
+  isMagicCombatStyle,
+  resolveCombatSoundFrequency,
+  resolveCombatSoundWaveform,
   resolvePaddleBoatCalliopeFrequency,
   resolveSteamWhistleFrequency,
   getTrainEngineCadenceMs,
@@ -154,6 +160,71 @@ describe('sound effects', () => {
       'blocked',
     ]);
     expect(played[0]?.waveform).toBe('sawtooth');
+  });
+
+  it('plays distinct combat sounds for weapon strikes and magic casts', () => {
+    const played: ProceduralSoundEffect[] = [];
+    const controller = createSoundEffectController({
+      play(effect) {
+        played.push(effect);
+      },
+    });
+
+    controller.triggerCombat({
+      nowMs: 100,
+      style: 'slash',
+      emitter: { x: 1, y: 0 },
+      listener: { x: 0, y: 0 },
+    });
+    controller.triggerCombat({
+      nowMs: 240,
+      style: 'fire',
+      emitter: { x: 2, y: 0 },
+      listener: { x: 0, y: 0 },
+    });
+
+    expect(played).toEqual([
+      expect.objectContaining({
+        kind: 'combat-weapon',
+        frequency: 210,
+        waveform: 'sawtooth',
+        emitter: { x: 1, y: 0 },
+      }),
+      expect.objectContaining({
+        kind: 'combat-magic',
+        frequency: 322,
+        waveform: 'sawtooth',
+        emitter: { x: 2, y: 0 },
+      }),
+    ]);
+  });
+
+  it('debounces repeated combat sounds by style and emitter position', () => {
+    const played: ProceduralSoundEffect[] = [];
+    const controller = createSoundEffectController({
+      play(effect) {
+        played.push(effect);
+      },
+    });
+
+    controller.triggerCombat({
+      nowMs: 100,
+      style: 'pierce',
+      emitter: { x: 0, y: 0 },
+    });
+    controller.triggerCombat({
+      nowMs: 150,
+      style: 'pierce',
+      emitter: { x: 0.2, y: 0.2 },
+    });
+    controller.triggerCombat({
+      nowMs: 210,
+      style: 'pierce',
+      emitter: { x: 0, y: 0 },
+    });
+
+    expect(played).toHaveLength(2);
+    expect(played.every((effect) => effect.kind === 'combat-weapon')).toBe(true);
   });
 
   it('plays reusable open and close interaction sounds for doors and exits', () => {
@@ -480,6 +551,18 @@ describe('sound effects', () => {
     expect(shouldPlaySteamWhistle(undefined)).toBe(false);
     expect(resolveSteamWhistleFrequency('arrival')).toBe(294);
     expect(resolveSteamWhistleFrequency('departure')).toBe(370);
+  });
+
+  it('maps combat styles to stable timing, volume, and waveform profiles', () => {
+    expect(isMagicCombatStyle('slash')).toBe(false);
+    expect(isMagicCombatStyle('arcane')).toBe(true);
+    expect(getCombatSoundCadenceMs('slash')).toBe(90);
+    expect(getCombatSoundCadenceMs('arcane')).toBe(140);
+    expect(getCombatSoundDurationMs('blunt')).toBe(180);
+    expect(getCombatSoundDurationMs('healing')).toBe(320);
+    expect(getCombatSoundVolume('bow')).toBeCloseTo(0.048, 6);
+    expect(resolveCombatSoundFrequency('frost')).toBe(196);
+    expect(resolveCombatSoundWaveform('healing')).toBe('sine');
   });
 
   it('attaches listener and emitter positions to scheduled movement sounds', () => {

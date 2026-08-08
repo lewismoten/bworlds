@@ -12,9 +12,20 @@ type SoundEffectKind =
   | 'train-engine'
   | 'train-whistle'
   | 'paddle-calliope'
-  | 'steam-whistle';
+  | 'steam-whistle'
+  | 'combat-weapon'
+  | 'combat-magic';
 type SoundWaveform = OscillatorType;
 type SoundPosition = { x: number; y: number };
+export type CombatSoundStyle =
+  | 'slash'
+  | 'pierce'
+  | 'blunt'
+  | 'bow'
+  | 'fire'
+  | 'frost'
+  | 'arcane'
+  | 'healing';
 type SurfaceAudioFamily =
   | 'default'
   | 'road'
@@ -65,6 +76,12 @@ export type SoundEffectController = {
   triggerBlockedMovement(options: {
     nowMs: number;
     tileKind?: SurfaceKind;
+    emitter?: SoundPosition;
+    listener?: SoundPosition;
+  }): void;
+  triggerCombat(options: {
+    nowMs: number;
+    style: CombatSoundStyle;
     emitter?: SoundPosition;
     listener?: SoundPosition;
   }): void;
@@ -231,6 +248,8 @@ export function createSoundEffectController(
   let lastFootstepAtMs = -Infinity;
   let lastJumpAtMs = -Infinity;
   let lastBlockedAtMs = -Infinity;
+  let lastCombatAtMs = -Infinity;
+  let lastCombatSignature = '';
   let lastInteractionAtMs = -Infinity;
   let lastWindAtMs = -Infinity;
   let lastProgressionAtMs = -Infinity;
@@ -270,6 +289,10 @@ export function createSoundEffectController(
             ? resolvePaddleBoatCalliopeFrequency(undefined)
           : kind === 'steam-whistle'
             ? resolveSteamWhistleFrequency()
+          : kind === 'combat-weapon'
+            ? 148 + variantOffset * 0.5
+          : kind === 'combat-magic'
+            ? 244 + variantOffset * 0.5
           : kind === 'open'
             ? resolveInteractionFrequency('open', tileKind, profile, variantOffset)
           : kind === 'close'
@@ -294,6 +317,10 @@ export function createSoundEffectController(
             ? 1180
           : kind === 'steam-whistle'
             ? 1050
+          : kind === 'combat-weapon'
+            ? 160
+          : kind === 'combat-magic'
+            ? 320
           : kind === 'landing'
             ? 120
             : kind === 'blocked'
@@ -316,6 +343,10 @@ export function createSoundEffectController(
             ? 0.034
           : kind === 'steam-whistle'
             ? 0.048
+          : kind === 'combat-weapon'
+            ? 0.056
+          : kind === 'combat-magic'
+            ? 0.05
           : kind === 'open' || kind === 'close'
             ? profile.landingVolume * 0.8
           : kind === 'blocked'
@@ -338,6 +369,10 @@ export function createSoundEffectController(
             ? 'triangle'
           : kind === 'steam-whistle'
             ? 'square'
+          : kind === 'combat-weapon'
+            ? 'sawtooth'
+          : kind === 'combat-magic'
+            ? 'triangle'
           : kind === 'open' || kind === 'close'
             ? resolveInteractionWaveform(tileKind, profile.waveform)
             : profile.waveform,
@@ -389,6 +424,28 @@ export function createSoundEffectController(
       }
       lastBlockedAtMs = nowMs;
       play('blocked', nowMs, tileKind, emitter, listener);
+    },
+    triggerCombat({ nowMs, style, emitter, listener }) {
+      const signature = `${style}:${Math.round(emitter?.x ?? 0)}:${Math.round(emitter?.y ?? 0)}`;
+      if (
+        signature === lastCombatSignature &&
+        nowMs - lastCombatAtMs < getCombatSoundCadenceMs(style)
+      ) {
+        return;
+      }
+      lastCombatAtMs = nowMs;
+      lastCombatSignature = signature;
+      const kind = isMagicCombatStyle(style) ? 'combat-magic' : 'combat-weapon';
+      sink.play({
+        kind,
+        nowMs,
+        frequency: resolveCombatSoundFrequency(style),
+        durationMs: getCombatSoundDurationMs(style),
+        volume: getCombatSoundVolume(style),
+        waveform: resolveCombatSoundWaveform(style),
+        emitter,
+        listener,
+      });
     },
     update({
       nowMs,
@@ -577,6 +634,103 @@ export function resolveSteamWhistleFrequency(
   return whistlePhase === 'arrival' ? 294 : 370;
 }
 
+export function isMagicCombatStyle(style: CombatSoundStyle): boolean {
+  return (
+    style === 'fire' ||
+    style === 'frost' ||
+    style === 'arcane' ||
+    style === 'healing'
+  );
+}
+
+export function getCombatSoundCadenceMs(style: CombatSoundStyle): number {
+  return isMagicCombatStyle(style) ? 140 : 90;
+}
+
+export function getCombatSoundDurationMs(style: CombatSoundStyle): number {
+  switch (style) {
+    case 'slash':
+      return 120;
+    case 'pierce':
+      return 105;
+    case 'blunt':
+      return 180;
+    case 'bow':
+      return 150;
+    case 'fire':
+      return 340;
+    case 'frost':
+      return 300;
+    case 'arcane':
+      return 360;
+    case 'healing':
+      return 320;
+  }
+}
+
+export function getCombatSoundVolume(style: CombatSoundStyle): number {
+  switch (style) {
+    case 'slash':
+    case 'pierce':
+      return 0.054;
+    case 'blunt':
+      return 0.062;
+    case 'bow':
+      return 0.048;
+    case 'fire':
+      return 0.056;
+    case 'frost':
+      return 0.05;
+    case 'arcane':
+      return 0.052;
+    case 'healing':
+      return 0.044;
+  }
+}
+
+export function resolveCombatSoundFrequency(style: CombatSoundStyle): number {
+  switch (style) {
+    case 'slash':
+      return 210;
+    case 'pierce':
+      return 286;
+    case 'blunt':
+      return 116;
+    case 'bow':
+      return 178;
+    case 'fire':
+      return 322;
+    case 'frost':
+      return 196;
+    case 'arcane':
+      return 262;
+    case 'healing':
+      return 238;
+  }
+}
+
+export function resolveCombatSoundWaveform(
+  style: CombatSoundStyle
+): SoundWaveform {
+  switch (style) {
+    case 'slash':
+      return 'sawtooth';
+    case 'pierce':
+    case 'bow':
+      return 'square';
+    case 'blunt':
+      return 'triangle';
+    case 'fire':
+      return 'sawtooth';
+    case 'frost':
+      return 'triangle';
+    case 'arcane':
+      return 'sine';
+    case 'healing':
+      return 'sine';
+  }
+}
+
 function resolveInteractionFrequency(
   event: 'open' | 'close',
   tileKind: SurfaceKind | undefined,
@@ -707,6 +861,22 @@ export function createWebAudioSoundEffectSink(): SoundEffectSink {
         );
         oscillator.frequency.exponentialRampToValueAtTime(
           effect.frequency * 0.92,
+          startAt + durationSeconds
+        );
+      }
+      if (effect.kind === 'combat-weapon') {
+        oscillator.frequency.exponentialRampToValueAtTime(
+          Math.max(60, effect.frequency * 0.64),
+          startAt + durationSeconds
+        );
+      }
+      if (effect.kind === 'combat-magic') {
+        oscillator.frequency.linearRampToValueAtTime(
+          effect.frequency * 1.18,
+          startAt + durationSeconds * 0.3
+        );
+        oscillator.frequency.linearRampToValueAtTime(
+          effect.frequency * 0.86,
           startAt + durationSeconds
         );
       }
