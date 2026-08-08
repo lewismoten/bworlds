@@ -646,7 +646,8 @@ describe('tile forest', () => {
         (damage) =>
           damage.severity === 'partial' ||
           damage.severity === 'deep' ||
-          damage.severity === 'near-felled'
+          damage.severity === 'near-felled' ||
+          damage.severity === 'felled'
       )
     ).toBe(true);
     expect(
@@ -1835,6 +1836,58 @@ describe('tile forest', () => {
     expect(countTaggedNodes(dryModel, 'forestBeaverDamage')).toBe(0);
     expect(countTaggedNodes(farModel, 'forestBeaverDamage')).toBe(0);
     expect(countTaggedNodes(lowModel, 'forestBeaverDamage')).toBe(0);
+  });
+
+  it('renders felled beaver-cut trees for some river-adjacent forest tiles', () => {
+    const plugin = createForestTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'forest');
+
+    let targetTile: { x: number; y: number; rivers: Record<string, { kind: string }> } | null =
+      null;
+
+    for (let tileY = 0; tileY < 24 && !targetTile; tileY += 1) {
+      for (let tileX = 0; tileX < 24; tileX += 1) {
+        const rivers = {
+          [`${tileX}:` + `${tileY - 1}`]: { kind: 'river' },
+          [`${tileX + 1}:` + `${tileY - 1}`]: { kind: 'river' },
+          [`${tileX}:` + `${tileY - 2}`]: { kind: 'river' },
+        };
+        const state = createForestTestState(tileX, tileY, rivers);
+        if (
+          getForestBeaverDamage(state as never, tileX, tileY).some(
+            (damage) => damage.severity === 'felled'
+          )
+        ) {
+          targetTile = { x: tileX, y: tileY, rivers };
+          break;
+        }
+      }
+    }
+
+    expect(targetTile).not.toBeNull();
+
+    const state = createForestTestState(
+      targetTile!.x,
+      targetTile!.y,
+      targetTile!.rivers
+    );
+    const model = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'forest' },
+      tileX: targetTile!.x,
+      tileY: targetTile!.y,
+      detailLevel: 'full',
+    }) as FakeGroup;
+
+    let felledCount = 0;
+    model.traverse((node) => {
+      if (node.userData?.forestBeaverDamage === 'felled') {
+        felledCount += 1;
+      }
+    });
+
+    expect(felledCount).toBeGreaterThan(0);
   });
 
   it('adds dew or rain glint to forest webs when conditions are damp', () => {

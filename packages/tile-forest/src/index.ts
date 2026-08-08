@@ -1311,8 +1311,15 @@ export function getForestBeaverDamage(
           coneScale:
             0.55 + hash2D('forest-beaver-cone', tileX + treeIndex, tileY) * 0.18,
           severity:
-            chance > 0.94 ? 'near-felled' : chance > 0.9 ? 'deep' : 'partial',
-          strippedBranchCount: chance > 0.9 ? 3 : chance > 0.84 ? 2 : 1,
+            chance > 0.975
+              ? 'felled'
+              : chance > 0.94
+                ? 'near-felled'
+                : chance > 0.9
+                  ? 'deep'
+                  : 'partial',
+          strippedBranchCount:
+            chance > 0.975 ? 4 : chance > 0.9 ? 3 : chance > 0.84 ? 2 : 1,
           leanDirection:
             hash2D('forest-beaver-lean-direction', tileX + treeIndex, tileY) > 0.5
               ? 1
@@ -2125,6 +2132,7 @@ function addForestBeaverDamageInstances(
   const nearFelledDamages = damages.filter(
     (damage) => damage.severity === 'near-felled'
   );
+  const felledDamages = damages.filter((damage) => damage.severity === 'felled');
   const debrisInstances = new three.InstancedMesh(
     geometry.branch,
     style.trunkMaterial,
@@ -2214,6 +2222,32 @@ function addForestBeaverDamageInstances(
       [BEAVER_DAMAGE_KEY]: 'near-felled',
     };
     group.add(leaningTrunk);
+  });
+
+  felledDamages.forEach((damage) => {
+    const tree = trees[damage.treeIndex];
+    if (!tree) {
+      return;
+    }
+
+    const felledTrunk = new three.Mesh(geometry.trunk, style.trunkMaterial);
+    felledTrunk.position.set(
+      tileX + tree.x + tree.radius * 0.82 * damage.leanDirection,
+      tree.radius * 0.46,
+      tileY + tree.y
+    );
+    felledTrunk.rotation.z = Math.PI / 2;
+    felledTrunk.rotation.y = damage.leanDirection > 0 ? 0.18 : -0.18;
+    felledTrunk.scale.set(
+      tree.radius * 0.82,
+      tree.trunkHeight * 0.96,
+      tree.radius * 0.82
+    );
+    felledTrunk.userData = {
+      ...(felledTrunk.userData ?? {}),
+      [BEAVER_DAMAGE_KEY]: 'felled',
+    };
+    group.add(felledTrunk);
   });
 }
 
@@ -2934,7 +2968,7 @@ interface ForestBeaverDamageDescriptor {
   chewHeight: number;
   chewRadiusScale: number;
   coneScale: number;
-  severity: 'partial' | 'deep' | 'near-felled';
+  severity: 'partial' | 'deep' | 'near-felled' | 'felled';
   strippedBranchCount: number;
   leanDirection: -1 | 1;
 }
