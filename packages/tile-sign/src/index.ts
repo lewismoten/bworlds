@@ -1,6 +1,11 @@
 import { hash2D } from '@bworlds/core';
 import { createPlainsBackedTilePainter } from '@bworlds/paint-support';
-import { canPlaceLandPoi, resolvePlacementChance } from '@bworlds/poi-support';
+import {
+  canPlaceLandPoi,
+  markPoiLightEmitter,
+  resolvePlacementChance,
+  syncPoiLightEmitters,
+} from '@bworlds/poi-support';
 import { createTilePlugin } from '@bworlds/plugin-api';
 import {
   createRegionalMaterialResolver,
@@ -236,8 +241,22 @@ export function createSignTilePlugin(): RuntimePlugin {
           mount.add(signArm);
         });
 
+        const lantern = createSignLantern(three, style);
+        lantern.position.set(
+          style.postThickness * (useSecondPost ? -0.8 : 0),
+          style.postHeight * 0.88,
+          style.postThickness * 1.2
+        );
+        group.add(lantern);
+
         group.position.set(tileX, 0, tileY);
         return group;
+      },
+      sync3DModel({ model, cycle }) {
+        if (!model || typeof model !== 'object') {
+          return;
+        }
+        syncPoiLightEmitters(model as Parameters<typeof syncPoiLightEmitters>[0], cycle);
       },
     },
   ]);
@@ -349,6 +368,67 @@ function createDirectionalPlacard(
   backPlane.position.set(width * 0.5 + armLength, 0, -depth * 0.65);
   backPlane.rotation.y = Math.PI;
   group.add(backPlane);
+
+  return group;
+}
+
+function createSignLantern(three: ThreeHostLike, style: SignStyle) {
+  const group = new three.Group();
+  const frame = new three.Mesh(
+    new three.BoxGeometry(
+      style.postThickness * 1.55,
+      style.postThickness * 1.9,
+      style.postThickness * 1.55
+    ),
+    style.trimMaterial
+  );
+  group.add(frame);
+
+  const glow = markPoiLightEmitter(
+    new three.Mesh(
+      new three.BoxGeometry(
+        style.postThickness * 1.05,
+        style.postThickness * 1.35,
+        style.postThickness * 1.05
+      ),
+      new three.MeshStandardMaterial({
+        color: '#f7d38a',
+        emissive: '#f7d38a',
+        emissiveIntensity: 0.04,
+        roughness: 0.52,
+        metalness: 0.02,
+      })
+    ),
+    {
+      kind: 'emissive-mesh',
+      dayIntensity: 0.04,
+      nightIntensity: 1.15,
+    }
+  );
+  group.add(glow);
+
+  const pointLight = markPoiLightEmitter(
+    new three.PointLight('#f7c97a', 0, 2.8, 1.8),
+    {
+      kind: 'point-light',
+      nightIntensity: 0.75,
+      visibleThreshold: 0.035,
+    }
+  );
+  pointLight.position.y = style.postThickness * 0.2;
+  pointLight.visible = false;
+  group.add(pointLight);
+
+  const cap = new three.Mesh(
+    new three.BoxGeometry(
+      style.postThickness * 1.85,
+      style.postThickness * 0.35,
+      style.postThickness * 1.85
+    ),
+    style.trimMaterial
+  );
+  cap.position.y = style.postThickness * 1.18;
+  group.add(cap);
 
   return group;
 }

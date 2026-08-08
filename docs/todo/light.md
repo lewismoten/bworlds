@@ -1,6 +1,6 @@
 Try to introduce light where possible for the night.
 
-- [ ] Sign POI may have lights at the top or hanging from them that light up at night.
+- [X] Sign POI may have lights at the top or hanging from them that light up at night.
 - [ ] Towns may emit their own light.
 - [ ] Larger towns may emit more light.
 - [ ] Strongholds can emit red light.

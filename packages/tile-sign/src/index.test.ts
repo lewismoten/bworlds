@@ -1,10 +1,147 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { createSignTilePlugin } from './index.ts';
 import type { OverworldSignals } from '@bworlds/plugin-api';
+
+vi.mock('@bworlds/three-support', () => ({
+  createPaintedCanvasTexture() {
+    return { colorSpace: '', needsUpdate: false };
+  },
+  getOrCreatePaintedCanvasTexture() {
+    return { colorSpace: '', needsUpdate: false };
+  },
+  createTexturedPlaneMesh() {
+    return {
+      position: {
+        x: 0,
+        y: 0,
+        z: 0,
+        set(x: number, y: number, z: number) {
+          this.x = x;
+          this.y = y;
+          this.z = z;
+          return this;
+        },
+      },
+      rotation: { x: 0, y: 0, z: 0 },
+      scale: {
+        x: 1,
+        y: 1,
+        z: 1,
+        set() {
+          return this;
+        },
+        setScalar() {
+          return this;
+        },
+      },
+      visible: true,
+      userData: {},
+      children: [],
+      add() {
+        return this;
+      },
+      traverse(visit: (child: unknown) => void) {
+        visit(this);
+      },
+    };
+  },
+}));
+
+class FakeGeometry {
+  constructor(..._args: number[]) {}
+}
+
+class FakeMaterial {
+  emissiveIntensity?: number;
+  opacity?: number;
+  constructor(public options: Record<string, unknown> = {}) {
+    if (typeof options.emissiveIntensity === 'number') {
+      this.emissiveIntensity = options.emissiveIntensity;
+    }
+    if (typeof options.opacity === 'number') {
+      this.opacity = options.opacity;
+    }
+  }
+}
+
+class FakeNode {
+  position = {
+    x: 0,
+    y: 0,
+    z: 0,
+    set: (x: number, y: number, z: number) => {
+      this.position.x = x;
+      this.position.y = y;
+      this.position.z = z;
+      return this.position;
+    },
+  };
+  rotation = { x: 0, y: 0, z: 0 };
+  scale = {
+    x: 1,
+    y: 1,
+    z: 1,
+    set: (x: number, y: number, z: number) => {
+      this.scale.x = x;
+      this.scale.y = y;
+      this.scale.z = z;
+      return this.scale;
+    },
+    setScalar: (value: number) => {
+      this.scale.x = value;
+      this.scale.y = value;
+      this.scale.z = value;
+      return this.scale;
+    },
+  };
+  userData?: Record<string, unknown>;
+  visible = true;
+  children: FakeNode[] = [];
+  add(...children: FakeNode[]) {
+    this.children.push(...children);
+    return this;
+  }
+  traverse(visit: (child: FakeNode) => void) {
+    visit(this);
+    this.children.forEach((child) => child.traverse(visit));
+  }
+}
+
+class FakeGroup extends FakeNode {}
+
+class FakeMesh extends FakeNode {
+  constructor(
+    public geometry?: object,
+    public material?: FakeMaterial | FakeMaterial[]
+  ) {
+    super();
+  }
+}
+
+class FakePointLight extends FakeNode {
+  constructor(
+    public color?: string,
+    public intensity = 0,
+    public distance?: number,
+    public decay?: number
+  ) {
+    super();
+  }
+}
+
+const fakeThree = {
+  Group: FakeGroup,
+  Mesh: FakeMesh,
+  PointLight: FakePointLight,
+  MeshStandardMaterial: FakeMaterial,
+  BoxGeometry: FakeGeometry,
+  ConeGeometry: FakeGeometry,
+} as const;
 
 const plugin = createSignTilePlugin();
 const classifier = plugin.tiles?.find((tile) => tile.kind === 'sign')
   ?.classifyOverworldTile;
+const signTile = plugin.tiles?.find((tile) => tile.kind === 'sign');
 type SignClassifierPayload = Parameters<NonNullable<typeof classifier>>[0];
 
 function createSignSignals(roadSignal = 0.2): OverworldSignals {
@@ -131,5 +268,81 @@ describe('tile sign', () => {
         note: expect.stringContaining('Longford'),
       })
     );
+  });
+
+  it('lights sign lanterns at night', () => {
+    const model = signTile?.create3DModel?.({
+      three: fakeThree as never,
+      state: {
+        player: { x: 0, y: 0, facing: 0 },
+        getCurrentContext() {
+          return { id: 'overworld', type: 'overworld', depth: 0 };
+        },
+        getCurrentTile(x: number, y: number) {
+          if (x === 9 && y === 8) {
+            return { kind: 'town', poi: { type: 'town', name: 'Oakcross' } };
+          }
+          return { kind: 'plains' };
+        },
+        getTileDefinition() {
+          return {
+            name: 'Plains',
+            color: '#000000',
+            miniColor: '#111111',
+            walkable: true,
+            wallHeight: 0,
+          };
+        },
+      },
+      tile: { kind: 'sign' },
+      tileX: 8,
+      tileY: 8,
+    }) as FakeGroup | undefined;
+
+    let glowMesh: FakeMesh | null = null;
+    let pointLight: FakePointLight | null = null;
+    model?.traverse((node) => {
+      if (node instanceof FakeMesh && node.userData?.poiNightLightEmitter) {
+        glowMesh = node;
+      }
+      if (node instanceof FakePointLight && node.userData?.poiNightLightEmitter) {
+        pointLight = node;
+      }
+    });
+
+    expect(glowMesh).not.toBeNull();
+    expect(pointLight).not.toBeNull();
+
+    signTile?.sync3DModel?.({
+      three: fakeThree as never,
+      state: {} as never,
+      tile: { kind: 'sign' },
+      tileX: 8,
+      tileY: 8,
+      model,
+      timeMs: 0,
+      cycle: { daylight: 1, twilight: 0, night: 0 },
+      environment: {},
+    });
+
+    expect((glowMesh?.material as FakeMaterial)?.emissiveIntensity ?? 0).toBeCloseTo(0.04, 6);
+    expect(pointLight?.intensity ?? 0).toBeCloseTo(0, 6);
+    expect(pointLight?.visible).toBe(false);
+
+    signTile?.sync3DModel?.({
+      three: fakeThree as never,
+      state: {} as never,
+      tile: { kind: 'sign' },
+      tileX: 8,
+      tileY: 8,
+      model,
+      timeMs: 0,
+      cycle: { daylight: 0, twilight: 0, night: 1 },
+      environment: {},
+    });
+
+    expect((glowMesh?.material as FakeMaterial)?.emissiveIntensity ?? 0).toBeGreaterThan(1);
+    expect(pointLight?.intensity ?? 0).toBeCloseTo(0.75, 6);
+    expect(pointLight?.visible).toBe(true);
   });
 });
