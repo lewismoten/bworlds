@@ -116,7 +116,7 @@ add a outer globe of stars in the sky that appear at night with procedurally gen
 - [x] Since the compass background is black, the south needle should be white, or have a white outline.
 - [x] The "N" on the compass should be red.
 - [ ] When I click the bezel of the compass to set a heading, the arrow appears there, but a different bezel is highlighted about 90 degrees off.
-- [ ] Clicking the bezel should show the degrees that it is at.
+- [x] Clicking the bezel should show the degrees that it is at.
 - [ ] Clicking the same bezel should toggle the arrow off.
 - [ ] In the celestial model, the planet is still very dark. it may need some emissive light or omnidirectional light applied. 
 - [ ] In the celestial model, the sun is not emitting light onto the planet and casing shadows on the moon
@@ -125,5 +125,7 @@ add a outer globe of stars in the sky that appear at night with procedurally gen
 - [x] Add a separate side-window 3D solar system model that reflects the current sun, moon, planets, constellations, and Milky Way layout.
 - [x] the side-window 3d solar system is hard to see anything and small, as well as the world model. If two models are needed, then there should be a way to toggle which one is currently active/visible.
 - [ ] As I drag the heading with the mouse, update the arrow and text to follow my mouse.
-- [x] Add a tab to instantly trigger celestial events provided by the celestial plugins such as auroras, meteor showers, comets, etc. regardless of where the player is and time of day.
+- [ ] Add a tab to instantly trigger celestial events provided by the celestial plugins such as auroras, meteor showers, comets, etc. regardless of where the player is and time of day.
 - [ ] Save time/frozen state so refreshing will resume where i left off.
+- [ ] Save active tab so refreshing will show correct tab open
+- [ ] Save compass heading in persisted state

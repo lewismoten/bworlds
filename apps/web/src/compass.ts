@@ -11,14 +11,31 @@ export function getCompassBezelRotation(headingAngle: number) {
   return headingAngle + Math.PI / 2;
 }
 
+export function getCompassHeadingDegrees(headingAngle: number) {
+  return Math.round(
+    (((headingAngle + Math.PI / 2) * 180) / Math.PI + 360) % 360
+  );
+}
+
 export function formatCompassHeading(headingAngle: number | null) {
   if (typeof headingAngle !== 'number') {
     return 'No heading set';
   }
-  const degrees = Math.round(
-    (((headingAngle + Math.PI / 2) * 180) / Math.PI + 360) % 360
-  );
+  const degrees = getCompassHeadingDegrees(headingAngle);
   return `Heading ${degrees.toString().padStart(3, '0')}°`;
+}
+
+export function getCompassHeadingLabelState(
+  headingAngle: number,
+  bezelRadius: number
+) {
+  const degrees = getCompassHeadingDegrees(headingAngle);
+  const labelRadius = bezelRadius + 28;
+  return {
+    degrees,
+    x: Math.cos(headingAngle) * labelRadius,
+    y: Math.sin(headingAngle) * labelRadius,
+  };
 }
 
 export function shouldToggleCompassHeading(
@@ -208,6 +225,7 @@ export function drawCompassDial(
   });
 
   if (typeof headingAngle === 'number') {
+    const headingLabel = getCompassHeadingLabelState(headingAngle, bezelRadius);
     context.save();
     context.rotate(getCompassBezelRotation(headingAngle));
     context.strokeStyle = 'rgba(85, 214, 190, 0.38)';
@@ -223,6 +241,21 @@ export function drawCompassDial(
     context.closePath();
     context.fill();
     context.restore();
+
+    context.fillStyle = 'rgba(8, 16, 25, 0.92)';
+    context.beginPath();
+    context.arc(headingLabel.x, headingLabel.y, 18, 0, Math.PI * 2);
+    context.fill();
+    context.strokeStyle = 'rgba(85, 214, 190, 0.55)';
+    context.lineWidth = 1.5;
+    context.stroke();
+    context.fillStyle = '#dce8f5';
+    context.font = '700 11px Trebuchet MS';
+    context.fillText(
+      `${headingLabel.degrees.toString().padStart(3, '0')}°`,
+      headingLabel.x,
+      headingLabel.y
+    );
   }
 
   context.save();

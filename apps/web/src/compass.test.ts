@@ -6,6 +6,8 @@ import {
   getCompassBezelRotation,
   getCompassDialFacingAngle,
   getCompassDialInteractionMode,
+  getCompassHeadingDegrees,
+  getCompassHeadingLabelState,
   getCompassNeedleRotation,
   getCompassPalette,
   getCompassWobbleBoost,
@@ -68,9 +70,23 @@ describe('compass helpers', () => {
   });
 
   it('formats compass headings with north at zero degrees', () => {
+    expect(getCompassHeadingDegrees(-Math.PI / 2)).toBe(0);
+    expect(getCompassHeadingDegrees(0)).toBe(90);
     expect(formatCompassHeading(-Math.PI / 2)).toBe('Heading 000°');
     expect(formatCompassHeading(0)).toBe('Heading 090°');
     expect(formatCompassHeading(null)).toBe('No heading set');
+  });
+
+  it('positions a degree chip near the selected bezel heading', () => {
+    const north = getCompassHeadingLabelState(-Math.PI / 2, 80);
+    const east = getCompassHeadingLabelState(0, 80);
+
+    expect(north.degrees).toBe(0);
+    expect(Math.abs(north.x)).toBeLessThan(0.001);
+    expect(north.y).toBeLessThan(-100);
+    expect(east.degrees).toBe(90);
+    expect(east.x).toBeGreaterThan(100);
+    expect(Math.abs(east.y)).toBeLessThan(0.001);
   });
 
   it('can toggle the heading bug off when clicking the same bezel again', () => {
