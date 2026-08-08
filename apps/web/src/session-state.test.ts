@@ -28,6 +28,11 @@ describe('session state', () => {
           },
         ],
       },
+      inventoryProfile: {
+        items: [
+          { id: 'rope', quantity: 2, label: 'Coil of Rope', kind: 'gear' },
+        ],
+      },
       player: {
         x: 12.5,
         y: -4.25,
@@ -51,6 +56,7 @@ describe('session state', () => {
       cameraPitch: -0.22,
       playerLevel: 4,
       completedQuestIds: ['tower:1'],
+      inventory: [{ id: 'rope', quantity: 2, label: 'Coil of Rope', kind: 'gear' }],
       playerPlacedPois: [
         {
           x: 4,
@@ -68,6 +74,13 @@ describe('session state', () => {
           playerProfession: 'guard',
           completedQuestIds: ['tower:1'],
         }),
+        inventoryProfile: expect.objectContaining({
+          items: [
+            expect.objectContaining({
+              id: 'rope',
+            }),
+          ],
+        }),
         timeOffsetMs: 42000,
         worldSeed: 'spec-seed',
         timekeeperDisplayMode: 'graphical',
@@ -80,6 +93,11 @@ describe('session state', () => {
         compassHeadingAngle: -Math.PI / 2,
         cameraPitch: -0.22,
         playerLevel: 4,
+        inventory: [
+          expect.objectContaining({
+            id: 'rope',
+          }),
+        ],
         playerPlacedPois: [
           expect.objectContaining({
             kind: 'town',
@@ -261,6 +279,16 @@ describe('session state', () => {
         JSON.stringify({
           player: { x: 0, y: 0, facing: 0 },
           stack: [{ id: 'overworld', depth: 0 }],
+          inventory: [{ id: 'rope', quantity: 0 }],
+        })
+      )
+    ).toBeNull();
+
+    expect(
+      parseSavedSession(
+        JSON.stringify({
+          player: { x: 0, y: 0, facing: 0 },
+          stack: [{ id: 'overworld', depth: 0 }],
           playerPlacedPois: [{ x: 1 }],
         })
       )
@@ -282,6 +310,9 @@ describe('session state', () => {
             completedQuestIds: ['quest:one'],
             playerPlacedPois: [],
           },
+          inventoryProfile: {
+            items: [{ id: 'torch', quantity: 2.2, label: 'Torch' }],
+          },
         })
       )
     ).toEqual(
@@ -291,6 +322,9 @@ describe('session state', () => {
           playerLevel: DEFAULT_PLAYER_LEVEL,
           playerProfession: 'courier',
           completedQuestIds: ['quest:one'],
+        }),
+        inventoryProfile: expect.objectContaining({
+          items: [{ id: 'torch', quantity: 2, label: 'Torch' }],
         }),
       })
     );
@@ -322,6 +356,7 @@ describe('session state', () => {
       cameraPitch: -0.08,
       playerLevel: 3,
       completedQuestIds: [],
+      inventory: [],
       playerPlacedPois: [],
     });
 

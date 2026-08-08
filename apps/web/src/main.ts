@@ -43,6 +43,12 @@ import {
   type CharacterProfileSnapshot,
 } from './character-storage.ts';
 import {
+  createLocalInventoryStorage,
+  serializeInventoryProfile,
+  type SavedInventoryProfile,
+  type InventoryProfileSnapshot,
+} from './inventory-storage.ts';
+import {
   parseSavedSession,
   serializeSessionSnapshot,
 } from './session-state.ts';
@@ -178,6 +184,7 @@ type PerformanceWithMemory = Performance & {
 
 const SESSION_STORAGE_KEY = 'bworlds:session';
 const CHARACTER_STORAGE_KEY = 'bworlds:character';
+const INVENTORY_STORAGE_KEY = 'bworlds:inventory';
 const DEFAULT_WORLD_SEED = 'bworlds-alpha';
 const builtinPackCatalog = createBuiltinContentPackCatalog();
 const builtinPackManifests = builtinPackCatalog.list();
@@ -676,13 +683,19 @@ const inspectorPanels = {
 };
 let lastSavedSnapshot = '';
 let lastSavedCharacterSnapshot = '';
+let lastSavedInventorySnapshot = '';
 const characterStorage = createLocalCharacterStorage(
   window.localStorage,
   CHARACTER_STORAGE_KEY
 );
+const inventoryStorage = createLocalInventoryStorage(
+  window.localStorage,
+  INVENTORY_STORAGE_KEY
+);
 
 const savedSession = loadSession();
 const savedCharacterProfile = loadCharacterProfile(savedSession);
+const savedInventoryProfile = loadInventoryProfile(savedSession);
 let currentWorldSeed = normalizeWorldSeed(
   savedCharacterProfile?.worldSeed ?? savedSession?.worldSeed,
   DEFAULT_WORLD_SEED
@@ -703,6 +716,7 @@ state.playerLevel = normalizePlayerLevel(
 );
 state.playerProfession = savedCharacterProfile?.playerProfession;
 state.completedQuestIds = [...(savedCharacterProfile?.completedQuestIds ?? [])];
+state.inventory = [...(savedInventoryProfile?.items ?? savedSession?.inventory ?? [])];
 syncPlayerPlacedPoisIntoState(
   savedCharacterProfile?.playerPlacedPois ?? savedSession?.playerPlacedPois ?? []
 );
@@ -2993,8 +3007,15 @@ function saveSession(): void {
       characterStorage.saveProfile(characterProfile);
       lastSavedCharacterSnapshot = serializedCharacterProfile;
     }
+    const inventoryProfile = buildInventoryProfileSnapshot();
+    const serializedInventoryProfile = serializeInventoryProfile(inventoryProfile);
+    if (serializedInventoryProfile !== lastSavedInventorySnapshot) {
+      inventoryStorage.saveProfile(inventoryProfile);
+      lastSavedInventorySnapshot = serializedInventoryProfile;
+    }
     const snapshot = serializeSessionSnapshot({
       characterProfile,
+      inventoryProfile,
       player: {
         x: state.player.x,
         y: state.player.y,
@@ -3019,6 +3040,7 @@ function saveSession(): void {
       playerLevel: normalizePlayerLevel(state.playerLevel),
       playerProfession: state.playerProfession,
       completedQuestIds: [...(state.completedQuestIds ?? [])],
+      inventory: [...(state.inventory ?? [])],
       playerPlacedPois: getSavedPlayerPlacedPois(),
     });
     if (snapshot === lastSavedSnapshot) return;
@@ -3093,6 +3115,39 @@ function loadCharacterProfile(
     playerProfession: profile.playerProfession,
     completedQuestIds: [...(profile.completedQuestIds ?? [])],
     playerPlacedPois: profile.playerPlacedPois ?? [],
+  });
+  return profile;
+}
+
+function buildInventoryProfileSnapshot(): InventoryProfileSnapshot {
+  return {
+    items: [...(state.inventory ?? [])],
+  };
+}
+
+function getLegacyInventoryProfile(
+  session: ReturnType<typeof parseSavedSession>
+): SavedInventoryProfile | null {
+  if (!session) {
+    return null;
+  }
+  return {
+    items: session.inventory,
+  };
+}
+
+function loadInventoryProfile(
+  session: ReturnType<typeof parseSavedSession>
+): SavedInventoryProfile | null {
+  const profile =
+    inventoryStorage.loadProfile() ??
+    session?.inventoryProfile ??
+    getLegacyInventoryProfile(session);
+  if (!profile) {
+    return null;
+  }
+  lastSavedInventorySnapshot = serializeInventoryProfile({
+    items: [...(profile.items ?? [])],
   });
   return profile;
 }

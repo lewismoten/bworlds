@@ -324,6 +324,7 @@ export interface WorldStateLike {
   playerLevel?: number;
   playerProfession?: string;
   completedQuestIds?: string[];
+  inventory?: InventoryItemLike[];
   viewMode?: ViewMode;
   getCurrentContext(): WorldContextLike;
   getCurrentMap?(): WorldMapLike;
@@ -332,6 +333,14 @@ export interface WorldStateLike {
   canWalk?(x: number, y: number): boolean;
   interact?(): boolean;
   tryExit?(): boolean;
+}
+
+export interface InventoryItemLike {
+  id: Identity;
+  quantity: number;
+  label?: string;
+  kind?: string;
+  [key: string]: unknown;
 }
 
 export interface ThreeCoordinateLike {

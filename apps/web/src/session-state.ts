@@ -15,6 +15,11 @@ import {
   parseSavedCharacterProfile,
   type SavedCharacterProfile,
 } from './character-storage.ts';
+import {
+  parseInventoryItems,
+  parseSavedInventoryProfile,
+  type SavedInventoryProfile,
+} from './inventory-storage.ts';
 
 type SessionViewMode = '2d' | '3d' | 'text';
 
@@ -32,6 +37,7 @@ type SessionWorldContext = {
 
 export type SavedSession = {
   characterProfile?: SavedCharacterProfile;
+  inventoryProfile?: SavedInventoryProfile;
   player: {
     x: number;
     y: number;
@@ -56,11 +62,13 @@ export type SavedSession = {
   playerLevel?: number;
   playerProfession?: string;
   completedQuestIds?: string[];
+  inventory?: import('@bworlds/plugin-api').InventoryItemLike[];
   playerPlacedPois?: PlayerPlacedPoiLike[];
 };
 
 export type SessionSnapshot = {
   characterProfile?: SavedCharacterProfile;
+  inventoryProfile?: SavedInventoryProfile;
   player: {
     x: number;
     y: number;
@@ -85,6 +93,7 @@ export type SessionSnapshot = {
   playerLevel: number;
   playerProfession?: string;
   completedQuestIds: string[];
+  inventory: import('@bworlds/plugin-api').InventoryItemLike[];
   playerPlacedPois: PlayerPlacedPoiLike[];
 };
 
@@ -120,6 +129,12 @@ export function parseSavedSession(raw: string | null): SavedSession | null {
     if (
       typeof parsed?.characterProfile !== 'undefined' &&
       parseSavedCharacterProfile(JSON.stringify(parsed.characterProfile)) === null
+    ) {
+      return null;
+    }
+    if (
+      typeof parsed?.inventoryProfile !== 'undefined' &&
+      parseSavedInventoryProfile(JSON.stringify(parsed.inventoryProfile)) === null
     ) {
       return null;
     }
@@ -240,6 +255,12 @@ export function parseSavedSession(raw: string | null): SavedSession | null {
       return null;
     }
     if (
+      typeof parsed?.inventory !== 'undefined' &&
+      parseInventoryItems(parsed.inventory) === null
+    ) {
+      return null;
+    }
+    if (
       typeof parsed?.playerPlacedPois !== 'undefined' &&
       parsePlayerPlacedPois(parsed.playerPlacedPois) === null
     ) {
@@ -249,6 +270,14 @@ export function parseSavedSession(raw: string | null): SavedSession | null {
       parsed.characterProfile = parseSavedCharacterProfile(
         JSON.stringify(parsed.characterProfile)
       );
+    }
+    if (typeof parsed?.inventoryProfile !== 'undefined') {
+      parsed.inventoryProfile = parseSavedInventoryProfile(
+        JSON.stringify(parsed.inventoryProfile)
+      );
+    }
+    if (typeof parsed?.inventory !== 'undefined') {
+      parsed.inventory = parseInventoryItems(parsed.inventory);
     }
     if (typeof parsed?.playerPlacedPois !== 'undefined') {
       parsed.playerPlacedPois = parsePlayerPlacedPois(parsed.playerPlacedPois);
