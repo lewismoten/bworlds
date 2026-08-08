@@ -271,7 +271,7 @@ This represents about **6.86 MB inclusive**.
 * [x] Limit how many tiles may be constructed per frame.
 * [x] Prioritize visible tiles.
 * [x] Prioritize tiles in the player's movement direction.
-* [ ] Delay decorative details until essential terrain is visible.
+* [x] Delay decorative details until essential terrain is visible.
 * [x] Cancel queued builds for tiles that leave the active area.
 * [x] Deduplicate pending build requests.
 * [x] Avoid rebuilding tiles already waiting in the queue.

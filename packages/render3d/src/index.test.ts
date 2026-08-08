@@ -21,6 +21,7 @@ import {
   getTwilightSkyPalette,
   getTileModelDetailLevel,
   getTileModelDetailLevelFromSquaredDistance,
+  getPendingWorldBuildDetailLevel,
   getVisibleWorldTileBuildOrder,
   pickCornerBoundaryProfile,
   prepareObjectForDistanceFade,
@@ -406,6 +407,13 @@ describe('render3d visibility helpers', () => {
     expect(getTileModelDetailLevelFromSquaredDistance(42.24)).toBe('full');
     expect(getTileModelDetailLevelFromSquaredDistance(42.25)).toBe('low');
     expect(getTileModelDetailLevelFromSquaredDistance(100)).toBe('low');
+  });
+
+  it('uses low detail for non-near pending builds while the queue is still draining', () => {
+    expect(getPendingWorldBuildDetailLevel('low', 4, 10)).toBe('low');
+    expect(getPendingWorldBuildDetailLevel('full', 4, 10)).toBe('full');
+    expect(getPendingWorldBuildDetailLevel('full', 16, 10)).toBe('low');
+    expect(getPendingWorldBuildDetailLevel('full', 16, 0)).toBe('full');
   });
 
   it('only rechecks tile lod after meaningful movement', () => {

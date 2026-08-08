@@ -171,6 +171,9 @@ const DEFAULT_PENDING_WORLD_BUILD_BUDGET_MS = 2.5;
 const LOW_DETAIL_MODEL_DISTANCE = 6.5;
 const LOW_DETAIL_MODEL_DISTANCE_SQUARED =
   LOW_DETAIL_MODEL_DISTANCE * LOW_DETAIL_MODEL_DISTANCE;
+const PENDING_BUILD_FULL_DETAIL_DISTANCE = 3;
+const PENDING_BUILD_FULL_DETAIL_DISTANCE_SQUARED =
+  PENDING_BUILD_FULL_DETAIL_DISTANCE * PENDING_BUILD_FULL_DETAIL_DISTANCE;
 const LOD_SYNC_MOVEMENT_DISTANCE = 0.18;
 const LOD_SYNC_MOVEMENT_DISTANCE_SQUARED =
   LOD_SYNC_MOVEMENT_DISTANCE * LOD_SYNC_MOVEMENT_DISTANCE;
@@ -500,13 +503,18 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       const buildStartMs = performance.now();
       const dx = entry.x - state.player.x;
       const dy = entry.y - state.player.y;
+      const desiredDetailLevel = getTileModelDetailLevelFromSquaredDistance(
+        dx * dx + dy * dy
+      );
       const tileNode = buildTileNode(
         state,
         registry,
         entry.x,
         entry.y,
-        getTileModelDetailLevelFromSquaredDistance(
-          dx * dx + dy * dy
+        getPendingWorldBuildDetailLevel(
+          desiredDetailLevel,
+          dx * dx + dy * dy,
+          pendingWorldBuild.queue.length - processedEntryCount
         )
       );
       const buildDurationMs = performance.now() - buildStartMs;
@@ -521,6 +529,9 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
 
     if (processedEntryCount > 0) {
       pendingWorldBuild.queue.splice(0, processedEntryCount);
+      if (pendingWorldBuild.queue.length === 0) {
+        lastLodSyncPlayerPosition = null;
+      }
     }
   }
 
@@ -1447,6 +1458,21 @@ export function getTileModelDetailLevelFromSquaredDistance(
   lowDetailDistanceSquared = LOW_DETAIL_MODEL_DISTANCE_SQUARED
 ): 'full' | 'low' {
   return distanceSquared >= lowDetailDistanceSquared ? 'low' : 'full';
+}
+
+export function getPendingWorldBuildDetailLevel(
+  desiredDetailLevel: 'full' | 'low',
+  distanceSquared: number,
+  remainingQueueLength: number,
+  fullDetailDistanceSquared = PENDING_BUILD_FULL_DETAIL_DISTANCE_SQUARED
+): 'full' | 'low' {
+  if (desiredDetailLevel === 'low') {
+    return 'low';
+  }
+  if (remainingQueueLength <= 0) {
+    return 'full';
+  }
+  return distanceSquared <= fullDetailDistanceSquared ? 'full' : 'low';
 }
 
 export function shouldSyncTileModelDetailLevels(
