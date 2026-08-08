@@ -96,6 +96,9 @@ const FAR_MODEL_FULL_VISIBILITY_DISTANCE = 8;
 const FAR_MODEL_REVEAL_DISTANCE_VARIANCE = 8;
 const FAR_MODEL_FADE_DISTANCE = 1.75;
 const MIN_MODEL_VISIBILITY_OPACITY = 0.015;
+const HORIZON_CURVATURE_FLAT_DISTANCE = 4;
+const HORIZON_CURVATURE_FAR_DISTANCE = CHUNK_RADIUS;
+const HORIZON_CURVATURE_MAX_DROP = 1.2;
 const FLOOR_THICKNESS = 0.03;
 const WATER_FLOOR_THICKNESS = 0.28;
 const RIVER_WALL_THICKNESS = 0.05;
@@ -401,6 +404,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       syncVisibleWorld(state, chunkRadius);
     }
     flushPendingWorldBuild(state);
+    syncWorldCurvature([...visibleTileNodes.values()], state);
 
     camera.position.set(
       state.player.x * TILE_SIZE,
@@ -1227,6 +1231,39 @@ export function getTileModelDetailLevel(
   lowDetailDistance = LOW_DETAIL_MODEL_DISTANCE
 ): 'full' | 'low' {
   return distance >= lowDetailDistance ? 'low' : 'full';
+}
+
+export function getWorldCurvatureOffset(
+  distance: number,
+  {
+    flatDistance = HORIZON_CURVATURE_FLAT_DISTANCE,
+    farDistance = HORIZON_CURVATURE_FAR_DISTANCE,
+    maxDrop = HORIZON_CURVATURE_MAX_DROP,
+  }: {
+    flatDistance?: number;
+    farDistance?: number;
+    maxDrop?: number;
+  } = {}
+): number {
+  if (distance <= flatDistance || maxDrop <= 0) {
+    return 0;
+  }
+  const usableDistance = Math.max(flatDistance + 0.001, farDistance);
+  const progress = clamp01((distance - flatDistance) / (usableDistance - flatDistance));
+  return -maxDrop * progress * progress;
+}
+
+function syncWorldCurvature(
+  entries: DynamicTileNode[],
+  state: Render3DState
+): void {
+  entries.forEach((entry) => {
+    const distance = Math.hypot(
+      entry.tileX - state.player.x,
+      entry.tileY - state.player.y
+    );
+    entry.node.position.y = getWorldCurvatureOffset(distance);
+  });
 }
 
 function updateFarLandModelVisibility(

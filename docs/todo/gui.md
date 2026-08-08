@@ -4,3 +4,4 @@
 - [X] I should be able to use the mouse to look up/down/left/right in 3d mode
 - [X] Add an ASCII text mode where 2D tiles are represetnted as single letters and colors.
 - [X] The button to swith to 3D, 2D, and Text should show what the next mode is.
+- [X] As I walk through the 3D view, make the world feel more like a sphere where the horizon is a gentle arc instead of a flat horizontal line

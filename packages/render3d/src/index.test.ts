@@ -5,6 +5,7 @@ import {
   getDecoratedTileSurfaceHeight,
   getFarLandModelOpacity,
   getFacingVisibilityBucket,
+  getWorldCurvatureOffset,
   getWeatherFogRange,
   getSkyAuroraSignature,
   getSkyConstellationSignature,
@@ -108,6 +109,14 @@ describe('render3d visibility helpers', () => {
     expect(getTileModelDetailLevel(6.49)).toBe('full');
     expect(getTileModelDetailLevel(6.5)).toBe('low');
     expect(getTileModelDetailLevel(10)).toBe('low');
+  });
+
+  it('keeps nearby terrain flat while bending the far horizon downward', () => {
+    expect(getWorldCurvatureOffset(0)).toBe(0);
+    expect(getWorldCurvatureOffset(4)).toBe(0);
+    expect(getWorldCurvatureOffset(11)).toBeLessThan(0);
+    expect(getWorldCurvatureOffset(18)).toBeCloseTo(-1.2, 6);
+    expect(getWorldCurvatureOffset(24)).toBeCloseTo(-1.2, 6);
   });
 
   it('uses coarse sky signatures so tiny celestial drift does not rebuild sky layers', () => {
