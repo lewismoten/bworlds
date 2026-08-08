@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  DEFAULT_MAX_ACTIVE_PLAYER_CHARACTERS,
   createPrimaryPlayerCharacterRoster,
   dropOffPlayerCharacter,
   ensurePlayerCharacterRoster,
@@ -166,6 +167,113 @@ describe('player character roster', () => {
         activeCharacterIds: ['player', 'npc:lyra'],
       })
     );
+  });
+
+  it('enforces a configurable active party size while keeping a larger roster', () => {
+    const roster = {
+      characters: [
+        {
+          id: 'player',
+          name: 'Player',
+          player: { x: 0, y: 0, facing: 0 },
+          stack: [{ id: 'overworld', depth: 0 }],
+          worldSeed: 'seed-a',
+          playerLevel: 3,
+          completedQuestIds: [],
+          availability: 'active' as const,
+        },
+        {
+          id: 'npc:lyra',
+          name: 'Lyra',
+          player: { x: 2, y: 2, facing: 0 },
+          stack: [{ id: 'overworld', depth: 0 }],
+          worldSeed: 'seed-a',
+          playerLevel: 2,
+          completedQuestIds: [],
+          availability: 'available' as const,
+        },
+        {
+          id: 'npc:orin',
+          name: 'Orin',
+          player: { x: 3, y: 1, facing: 0 },
+          stack: [{ id: 'overworld', depth: 0 }],
+          worldSeed: 'seed-a',
+          playerLevel: 2,
+          completedQuestIds: [],
+          availability: 'available' as const,
+        },
+      ],
+      activeCharacterIds: ['player'],
+    };
+
+    const activated = setActivePlayerCharacters(
+      roster,
+      ['player', 'npc:lyra', 'npc:orin'],
+      { maxActiveCharacterCount: 2 }
+    );
+
+    expect(activated.activeCharacterIds).toEqual(['player', 'npc:lyra']);
+    expect(activated.characters).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: 'npc:orin', availability: 'available' }),
+      ])
+    );
+    expect(activated.characters).toHaveLength(3);
+  });
+
+  it('keeps at least one playable character active when switching or dropping off party members', () => {
+    const roster = createPrimaryPlayerCharacterRoster({
+      player: { x: 1, y: 2, facing: 0.5 },
+      stack: [{ id: 'overworld', depth: 0 }],
+      worldSeed: 'seed-a',
+      playerLevel: 4,
+    });
+
+    expect(setActivePlayerCharacters(roster, [])).toEqual(roster);
+    expect(dropOffPlayerCharacter(roster, 'player')).toEqual(roster);
+  });
+
+  it('does not pick up more characters than the active party limit allows', () => {
+    const roster = {
+      characters: [
+        {
+          id: 'player',
+          name: 'Player',
+          player: { x: 0, y: 0, facing: 0 },
+          stack: [{ id: 'overworld', depth: 0 }],
+          worldSeed: 'seed-a',
+          playerLevel: 3,
+          completedQuestIds: [],
+          availability: 'active' as const,
+        },
+        {
+          id: 'npc:lyra',
+          name: 'Lyra',
+          player: { x: 2, y: 2, facing: 0 },
+          stack: [{ id: 'overworld', depth: 0 }],
+          worldSeed: 'seed-a',
+          playerLevel: 2,
+          completedQuestIds: [],
+          availability: 'active' as const,
+        },
+        {
+          id: 'npc:orin',
+          name: 'Orin',
+          player: { x: 4, y: 3, facing: 0 },
+          stack: [{ id: 'overworld', depth: 0 }],
+          worldSeed: 'seed-a',
+          playerLevel: 1,
+          completedQuestIds: [],
+          availability: 'dropped' as const,
+        },
+      ],
+      activeCharacterIds: ['player', 'npc:lyra'],
+    };
+
+    expect(pickUpPlayerCharacter(roster, 'npc:orin', { maxActiveCharacterCount: 2 })).toEqual(
+      roster
+    );
+    expect(DEFAULT_MAX_ACTIVE_PLAYER_CHARACTERS).toBeGreaterThan(1);
   });
 
   it('keeps the primary roster entry synced to the current active player state', () => {

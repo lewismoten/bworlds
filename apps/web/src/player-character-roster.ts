@@ -34,6 +34,8 @@ export type PlayerCharacterRosterSnapshot = {
   activeCharacterIds: string[];
 };
 
+export const DEFAULT_MAX_ACTIVE_PLAYER_CHARACTERS = 4;
+
 export function parsePlayerCharacterRoster(
   value: unknown
 ): PlayerCharacterRosterSnapshot | null {
@@ -170,19 +172,51 @@ export function ensurePlayerCharacterRoster(
   if (!roster || roster.characters.length === 0 || roster.activeCharacterIds.length === 0) {
     return createPrimaryPlayerCharacterRoster(fallback);
   }
-  return roster;
+  return normalizePlayerCharacterRoster(roster);
 }
 
 export function setActivePlayerCharacters(
   roster: PlayerCharacterRosterSnapshot,
-  activeCharacterIds: readonly string[]
+  activeCharacterIds: readonly string[],
+  options?: {
+    maxActiveCharacterCount?: number;
+  }
 ): PlayerCharacterRosterSnapshot {
-  const activeIdSet = new Set(activeCharacterIds);
+  const maxActiveCharacterCount = normalizeMaxActiveCharacterCount(
+    options?.maxActiveCharacterCount
+  );
+  const playableIds = new Set(
+    roster.characters
+      .filter((character) => character.availability !== 'dropped')
+      .map((character) => character.id)
+  );
+  const nextActiveCharacterIds = new Array<string>();
+  for (const characterId of activeCharacterIds) {
+    if (
+      !playableIds.has(characterId) ||
+      nextActiveCharacterIds.includes(characterId) ||
+      nextActiveCharacterIds.length >= maxActiveCharacterCount
+    ) {
+      continue;
+    }
+    nextActiveCharacterIds.push(characterId);
+  }
+  if (nextActiveCharacterIds.length === 0) {
+    const fallbackCharacterId = resolveFallbackActiveCharacterId(roster);
+    if (fallbackCharacterId) {
+      nextActiveCharacterIds.push(fallbackCharacterId);
+    }
+  }
+  const activeIdSet = new Set(nextActiveCharacterIds);
   return {
-    activeCharacterIds: [...activeCharacterIds],
+    activeCharacterIds: nextActiveCharacterIds,
     characters: roster.characters.map((character) => ({
       ...character,
-      availability: activeIdSet.has(character.id) ? 'active' : character.availability,
+      availability: activeIdSet.has(character.id)
+        ? 'active'
+        : character.availability === 'dropped'
+          ? 'dropped'
+          : 'available',
     })),
   };
 }
@@ -223,7 +257,13 @@ export function dropOffPlayerCharacter(
   roster: PlayerCharacterRosterSnapshot,
   characterId: string
 ): PlayerCharacterRosterSnapshot {
+  if (!roster.activeCharacterIds.includes(characterId)) {
+    return roster;
+  }
   const remainingActiveIds = roster.activeCharacterIds.filter((id) => id !== characterId);
+  if (remainingActiveIds.length === 0) {
+    return roster;
+  }
   return {
     activeCharacterIds: remainingActiveIds,
     characters: roster.characters.map((character) =>
@@ -239,8 +279,21 @@ export function dropOffPlayerCharacter(
 
 export function pickUpPlayerCharacter(
   roster: PlayerCharacterRosterSnapshot,
-  characterId: string
+  characterId: string,
+  options?: {
+    maxActiveCharacterCount?: number;
+  }
 ): PlayerCharacterRosterSnapshot {
+  const maxActiveCharacterCount = normalizeMaxActiveCharacterCount(
+    options?.maxActiveCharacterCount
+  );
+  const character = roster.characters.find((entry) => entry.id === characterId);
+  if (!character || roster.activeCharacterIds.includes(characterId)) {
+    return roster;
+  }
+  if (roster.activeCharacterIds.length >= maxActiveCharacterCount) {
+    return roster;
+  }
   const nextActiveIds = roster.activeCharacterIds.includes(characterId)
     ? roster.activeCharacterIds
     : [...roster.activeCharacterIds, characterId];
@@ -292,4 +345,37 @@ export function recruitNpcAsPlayerCharacter(
       },
     ],
   };
+}
+
+function normalizePlayerCharacterRoster(
+  roster: PlayerCharacterRosterSnapshot,
+  maxActiveCharacterCount = DEFAULT_MAX_ACTIVE_PLAYER_CHARACTERS
+): PlayerCharacterRosterSnapshot {
+  return setActivePlayerCharacters(roster, roster.activeCharacterIds, {
+    maxActiveCharacterCount,
+  });
+}
+
+function normalizeMaxActiveCharacterCount(value?: number): number {
+  if (!Number.isFinite(value) || (value ?? 0) < 1) {
+    return DEFAULT_MAX_ACTIVE_PLAYER_CHARACTERS;
+  }
+  return Math.max(1, Math.floor(value ?? DEFAULT_MAX_ACTIVE_PLAYER_CHARACTERS));
+}
+
+function resolveFallbackActiveCharacterId(
+  roster: PlayerCharacterRosterSnapshot
+): string | null {
+  const retainedActiveId = roster.activeCharacterIds.find((characterId) =>
+    roster.characters.some(
+      (character) =>
+        character.id === characterId && character.availability !== 'dropped'
+    )
+  );
+  if (retainedActiveId) {
+    return retainedActiveId;
+  }
+  return (
+    roster.characters.find((character) => character.availability !== 'dropped')?.id ?? null
+  );
 }
