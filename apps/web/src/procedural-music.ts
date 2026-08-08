@@ -48,6 +48,20 @@ type MusicMood = {
   volumeMultiplier: number;
 };
 
+type MusicArrangementRoleProfile = {
+  volumeMultiplier: number;
+  durationMultiplier: number;
+  releaseMultiplier: number;
+  harmonicGainMultiplier: number;
+  pulseRateMultiplier: number;
+  brightnessMultiplier: number;
+  skipEvery?: number;
+};
+
+type MusicArrangement = {
+  roleProfiles: Record<InstrumentRole, MusicArrangementRoleProfile>;
+};
+
 type MusicSchedulerState = {
   nextNoteAtMs: number;
   stepIndex: number;
@@ -244,6 +258,137 @@ export function resolveMusicMood(options: {
     brightness: atNight ? 0.78 : atDawnOrDusk ? 0.9 : 1.08 - rainPenalty,
     volumeMultiplier:
       options.weatherKind === 'heavy-rain' ? 0.82 : atNight ? 0.88 : 1,
+  };
+}
+
+export function resolveMusicArrangement(options: {
+  dayProgress: number;
+  weatherKind?: WeatherKind;
+  weatherIntensity?: number;
+}): MusicArrangement {
+  const dayProgress = normalizeWrappedProgress(options.dayProgress);
+  const atNight = dayProgress < 0.2 || dayProgress > 0.8;
+  const atDawnOrDusk =
+    (dayProgress >= 0.18 && dayProgress <= 0.3) ||
+    (dayProgress >= 0.7 && dayProgress <= 0.82);
+  const heavyWeather =
+    options.weatherKind === 'heavy-rain' || (options.weatherIntensity ?? 0) >= 0.85;
+
+  if (atNight) {
+    return {
+      roleProfiles: {
+        lead: {
+          volumeMultiplier: 0.9,
+          durationMultiplier: 1.08,
+          releaseMultiplier: 1.35,
+          harmonicGainMultiplier: 1.1,
+          pulseRateMultiplier: 0.92,
+          brightnessMultiplier: 0.92,
+        },
+        harmony: {
+          volumeMultiplier: 0.58,
+          durationMultiplier: 1.22,
+          releaseMultiplier: 1.7,
+          harmonicGainMultiplier: 1.16,
+          pulseRateMultiplier: 0.84,
+          brightnessMultiplier: 0.82,
+        },
+        bass: {
+          volumeMultiplier: 0.94,
+          durationMultiplier: 1.12,
+          releaseMultiplier: 1.28,
+          harmonicGainMultiplier: 1,
+          pulseRateMultiplier: 0.92,
+          brightnessMultiplier: 0.88,
+        },
+        percussion: {
+          volumeMultiplier: 0.22,
+          durationMultiplier: 0.92,
+          releaseMultiplier: 0.88,
+          harmonicGainMultiplier: 0.72,
+          pulseRateMultiplier: 0.76,
+          brightnessMultiplier: 0.76,
+          skipEvery: 2,
+        },
+      },
+    };
+  }
+
+  if (atDawnOrDusk || heavyWeather) {
+    return {
+      roleProfiles: {
+        lead: {
+          volumeMultiplier: 0.96,
+          durationMultiplier: 1.02,
+          releaseMultiplier: 1.08,
+          harmonicGainMultiplier: 1.04,
+          pulseRateMultiplier: 0.96,
+          brightnessMultiplier: 0.96,
+        },
+        harmony: {
+          volumeMultiplier: 0.84,
+          durationMultiplier: 1.12,
+          releaseMultiplier: 1.24,
+          harmonicGainMultiplier: 1.08,
+          pulseRateMultiplier: 0.92,
+          brightnessMultiplier: 0.9,
+        },
+        bass: {
+          volumeMultiplier: 0.92,
+          durationMultiplier: 1.06,
+          releaseMultiplier: 1.1,
+          harmonicGainMultiplier: 1,
+          pulseRateMultiplier: 0.96,
+          brightnessMultiplier: 0.94,
+        },
+        percussion: {
+          volumeMultiplier: 0.72,
+          durationMultiplier: 0.96,
+          releaseMultiplier: 0.94,
+          harmonicGainMultiplier: 0.88,
+          pulseRateMultiplier: 0.9,
+          brightnessMultiplier: 0.9,
+          skipEvery: heavyWeather ? 2 : undefined,
+        },
+      },
+    };
+  }
+
+  return {
+    roleProfiles: {
+      lead: {
+        volumeMultiplier: 1,
+        durationMultiplier: 1,
+        releaseMultiplier: 1,
+        harmonicGainMultiplier: 1,
+        pulseRateMultiplier: 1,
+        brightnessMultiplier: 1,
+      },
+      harmony: {
+        volumeMultiplier: 1,
+        durationMultiplier: 1,
+        releaseMultiplier: 1,
+        harmonicGainMultiplier: 1,
+        pulseRateMultiplier: 1,
+        brightnessMultiplier: 1,
+      },
+      bass: {
+        volumeMultiplier: 1,
+        durationMultiplier: 1,
+        releaseMultiplier: 1,
+        harmonicGainMultiplier: 1,
+        pulseRateMultiplier: 1,
+        brightnessMultiplier: 1,
+      },
+      percussion: {
+        volumeMultiplier: 1,
+        durationMultiplier: 1,
+        releaseMultiplier: 1,
+        harmonicGainMultiplier: 1,
+        pulseRateMultiplier: 1,
+        brightnessMultiplier: 1,
+      },
+    },
   };
 }
 
@@ -544,6 +689,7 @@ function createThemeNote(options: {
   theme: MusicRegionTheme;
   instrumentBank: ProceduralInstrumentBank;
   mood: MusicMood;
+  arrangement: MusicArrangement;
   stepIndex: number;
   clusterX: number;
   clusterY: number;
@@ -552,6 +698,7 @@ function createThemeNote(options: {
 }): ProceduralMusicNote {
   const role = selectInstrumentRole(options.stepIndex);
   const instrument = options.instrumentBank.instruments[role];
+  const arrangementProfile = options.arrangement.roleProfiles[role];
   const semitones = resolveInstrumentSemitones(
     options.theme,
     role,
@@ -578,11 +725,13 @@ function createThemeNote(options: {
           ? 1.18
           : role === 'percussion'
             ? 0.34
-            : 0.92),
+            : 0.92) *
+      arrangementProfile.durationMultiplier,
     frequency:
       options.theme.rootHz *
       Math.pow(2, (semitones + octaveBoost) / 12) *
       options.mood.brightness *
+      arrangementProfile.brightnessMultiplier *
       (role === 'bass'
         ? 0.5
         : role === 'harmony'
@@ -593,6 +742,7 @@ function createThemeNote(options: {
     volume:
       options.theme.baseVolume *
       options.mood.volumeMultiplier *
+      arrangementProfile.volumeMultiplier *
       (role === 'bass'
         ? 0.86
         : role === 'harmony'
@@ -602,10 +752,10 @@ function createThemeNote(options: {
             : 1),
     waveform: instrument.waveform,
     attackMs: instrument.attackMs,
-    releaseMs: instrument.releaseMs,
+    releaseMs: instrument.releaseMs * arrangementProfile.releaseMultiplier,
     detuneCents: instrument.detuneCents,
-    harmonicGain: instrument.harmonicGain,
-    pulseRate: instrument.pulseRate,
+    harmonicGain: instrument.harmonicGain * arrangementProfile.harmonicGainMultiplier,
+    pulseRate: instrument.pulseRate * arrangementProfile.pulseRateMultiplier,
     emitter: options.emitter,
     listener: options.listener,
   };
@@ -644,6 +794,11 @@ function scheduleThemeLayerNotes(
     weatherKind: options.weatherKind,
     weatherIntensity: options.weatherIntensity,
   });
+  const arrangement = resolveMusicArrangement({
+    dayProgress: options.dayProgress,
+    weatherKind: options.weatherKind,
+    weatherIntensity: options.weatherIntensity,
+  });
   const regionSignature = [
     options.signaturePrefix ?? 'ambient',
     getMusicRegionSignature({
@@ -664,21 +819,31 @@ function scheduleThemeLayerNotes(
   const notes: ProceduralMusicNote[] = [];
 
   while (nextNoteAtMs < options.nowMs + LOOKAHEAD_MS) {
+    const role = selectInstrumentRole(stepIndex);
+    const arrangementProfile = arrangement.roleProfiles[role];
+    const shouldSkipRole =
+      typeof arrangementProfile.skipEvery === 'number' &&
+      arrangementProfile.skipEvery > 1 &&
+      stepIndex % arrangementProfile.skipEvery === 0;
+
     const note = createThemeNote({
       startMs: nextNoteAtMs,
       theme,
       instrumentBank,
       mood,
+      arrangement,
       stepIndex,
       clusterX,
       clusterY,
       emitter: options.emitter,
       listener: options.listener,
     });
-    notes.push({
-      ...note,
-      volume: note.volume * options.gainMultiplier,
-    });
+    if (!shouldSkipRole) {
+      notes.push({
+        ...note,
+        volume: note.volume * options.gainMultiplier,
+      });
+    }
     nextNoteAtMs += theme.noteDurationMs / mood.tempoMultiplier;
     stepIndex += 1;
   }

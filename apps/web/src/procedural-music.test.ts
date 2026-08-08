@@ -7,6 +7,7 @@ import {
   getMusicSpatialMix,
   resolvePoiMusicBlendGains,
   resolvePoiMusicMix,
+  resolveMusicArrangement,
   resolveMusicMood,
   resolveMusicTheme,
   scheduleProceduralMusicNotes,
@@ -48,6 +49,20 @@ describe('procedural music', () => {
         volumeMultiplier: 0.82,
       })
     );
+  });
+
+  it('softens nighttime arrangements by lowering percussion density and extending softer layers', () => {
+    const arrangement = resolveMusicArrangement({ dayProgress: 0.9 });
+
+    expect(arrangement.roleProfiles.percussion).toEqual(
+      expect.objectContaining({
+        volumeMultiplier: 0.22,
+        skipEvery: 2,
+      })
+    );
+    expect(arrangement.roleProfiles.harmony.releaseMultiplier).toBeGreaterThan(1);
+    expect(arrangement.roleProfiles.harmony.volumeMultiplier).toBeLessThan(1);
+    expect(arrangement.roleProfiles.lead.durationMultiplier).toBeGreaterThan(1);
   });
 
   it('builds stable region signatures for cluster-level theme variation', () => {
@@ -111,6 +126,38 @@ describe('procedural music', () => {
       'ambient:deep-forest:overworld:2:1'
     );
     expect(second.state.stepIndex).toBeGreaterThan(0);
+  });
+
+  it('thins percussion and softens harmony in nighttime note scheduling', () => {
+    const dayScheduled = scheduleProceduralMusicNotes({
+      nowMs: 0,
+      tileKind: 'town',
+      contextType: 'town',
+      dayProgress: 0.5,
+      clusterX: 0,
+      clusterY: 0,
+    });
+    const nightScheduled = scheduleProceduralMusicNotes({
+      nowMs: 0,
+      tileKind: 'town',
+      contextType: 'town',
+      dayProgress: 0.9,
+      clusterX: 0,
+      clusterY: 0,
+    });
+
+    const dayPercussion = dayScheduled.notes.filter((note) => note.role === 'percussion');
+    const nightPercussion = nightScheduled.notes.filter((note) => note.role === 'percussion');
+    const dayHarmony = dayScheduled.notes.find((note) => note.role === 'harmony');
+    const nightHarmony = nightScheduled.notes.find((note) => note.role === 'harmony');
+
+    expect(dayPercussion.length).toBeGreaterThan(nightPercussion.length);
+    expect(nightHarmony).toEqual(expect.objectContaining({ role: 'harmony' }));
+    expect(dayHarmony).toEqual(expect.objectContaining({ role: 'harmony' }));
+    expect((nightHarmony?.volume ?? 0) / (dayHarmony?.volume ?? 1)).toBeLessThan(0.75);
+    expect((nightHarmony?.releaseMs ?? 0) / (dayHarmony?.releaseMs ?? 1)).toBeGreaterThan(
+      1.5
+    );
   });
 
   it('applies softer panning and falloff for nearby ambient music emitters', () => {

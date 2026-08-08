@@ -32,7 +32,7 @@
 - [ ] Every tile type (forest, ruins, plains) should have a music vocabulary (tempo, mode, instruments, melody range, rhythm density, preferred intervals)
 - [ ] Larger regions/bioms can influence the vocabulary
 - [ ] A region/biome may use a common four-note motif, but a town uses it slowly, battle theme is aggressive, kings castle ceremonially, ruins uses it in minor, etc.
-- [ ] Time of day may influence music - ie night time: removing/lowering percussion, slow melody, higher reverb, soft harmony
+- [x] Time of day may influence music - ie night time: removing/lowering percussion, slow melody, higher reverb, soft harmony
 - [ ] Seasons may influence music - ie winter: same motif, bells, sparser arrangement, higher register
 - [ ] Compat may influence music - ie same motif, faster rhythm, lower bass, strong percussion, changed harmony
 
