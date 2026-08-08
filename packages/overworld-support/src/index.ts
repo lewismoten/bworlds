@@ -317,30 +317,27 @@ export function createRiverCurvePoints(
     return [...controlPoints];
   }
 
-  const curvePoints: RiverControlPoint[] = [controlPoints[0]];
+  const curvePoints = new Array<RiverControlPoint>(
+    1 + (controlPoints.length - 1) * segmentsPerCurve
+  );
+  curvePoints[0] = controlPoints[0];
+  let nextPointIndex = 1;
   for (let index = 0; index < controlPoints.length - 1; index += 1) {
     const previous = controlPoints[Math.max(0, index - 1)];
     const start = controlPoints[index];
     const end = controlPoints[index + 1];
     const next = controlPoints[Math.min(controlPoints.length - 1, index + 2)];
-    const controlA = {
-      x: start.x + ((end.x - previous.x) / 6),
-      y: start.y + ((end.y - previous.y) / 6),
-    };
-    const controlB = {
-      x: end.x - ((next.x - start.x) / 6),
-      y: end.y - ((next.y - start.y) / 6),
-    };
-    const segmentPoints = sampleCubicBezierPoints(
+    nextPointIndex = appendCubicBezierPoints(
+      curvePoints,
+      nextPointIndex,
       start,
-      controlA,
-      controlB,
+      start.x + ((end.x - previous.x) / 6),
+      start.y + ((end.y - previous.y) / 6),
+      end.x - ((next.x - start.x) / 6),
+      end.y - ((next.y - start.y) / 6),
       end,
       segmentsPerCurve
     );
-    for (let pointIndex = 1; pointIndex < segmentPoints.length; pointIndex += 1) {
-      curvePoints.push(segmentPoints[pointIndex]);
-    }
   }
 
   return curvePoints;
@@ -590,31 +587,36 @@ function getDistanceToLineSegment(
   return Math.hypot(x - closestX, y - closestY);
 }
 
-function sampleCubicBezierPoints(
+function appendCubicBezierPoints(
+  points: RiverControlPoint[],
+  startIndex: number,
   start: RiverControlPoint,
-  controlA: RiverControlPoint,
-  controlB: RiverControlPoint,
+  controlAX: number,
+  controlAY: number,
+  controlBX: number,
+  controlBY: number,
   end: RiverControlPoint,
   segments: number
-): RiverControlPoint[] {
-  const points = new Array<RiverControlPoint>(segments + 1);
-  for (let index = 0; index <= segments; index += 1) {
+): number {
+  let nextIndex = startIndex;
+  for (let index = 1; index <= segments; index += 1) {
     const t = index / segments;
     const inverseT = 1 - t;
-    points[index] = {
+    points[nextIndex] = {
       x:
         inverseT * inverseT * inverseT * start.x +
-        3 * inverseT * inverseT * t * controlA.x +
-        3 * inverseT * t * t * controlB.x +
+        3 * inverseT * inverseT * t * controlAX +
+        3 * inverseT * t * t * controlBX +
         t * t * t * end.x,
       y:
         inverseT * inverseT * inverseT * start.y +
-        3 * inverseT * inverseT * t * controlA.y +
-        3 * inverseT * t * t * controlB.y +
+        3 * inverseT * inverseT * t * controlAY +
+        3 * inverseT * t * t * controlBY +
         t * t * t * end.y,
     };
+    nextIndex += 1;
   }
-  return points;
+  return nextIndex;
 }
 
 function clampAngleToRange(angle: number, min: number, max: number): number {

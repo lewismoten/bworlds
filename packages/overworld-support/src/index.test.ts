@@ -238,6 +238,28 @@ describe('overworld support', () => {
     expect(middlePoint.y).not.toBe(0);
   });
 
+  it('keeps bezier river sampling deterministic while preallocating the final curve buffer', () => {
+    const controlPoints = [
+      { x: 0, y: 0 },
+      { x: 4, y: 0 },
+      { x: 6, y: 4 },
+      { x: 10, y: 4 },
+    ];
+
+    expect(createRiverCurvePoints(controlPoints, 3)).toEqual([
+      { x: 0, y: 0 },
+      { x: 1.1111111111111112, y: -0.14814814814814814 },
+      { x: 2.6666666666666665, y: -0.2962962962962963 },
+      { x: 4, y: 0 },
+      { x: 4.740740740740741, y: 1.1851851851851851 },
+      { x: 5.2592592592592595, y: 2.814814814814815 },
+      { x: 6, y: 4 },
+      { x: 7.333333333333334, y: 4.296296296296297 },
+      { x: 8.88888888888889, y: 4.148148148148148 },
+      { x: 10, y: 4 },
+    ]);
+  });
+
   it('can generate strongly meandering river control paths', () => {
     let foundCurvyPath = false;
 
