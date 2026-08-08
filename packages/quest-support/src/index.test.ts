@@ -9,6 +9,8 @@ describe('quest support', () => {
       'delivery',
       'collection',
       'escort',
+      'tracking',
+      'timed',
       'fetch',
       'recovery',
       'crafting',
@@ -211,5 +213,64 @@ describe('quest support', () => {
     expect(
       recovery.some((offer) => offer.summary.includes('patrol experience'))
     ).toBe(true);
+  });
+
+  it('offers tracking quests for professions that can point players toward a trail', () => {
+    const tracking = getDefaultQuestRegistry().getOffers({
+      npcId: 'npc:stable',
+      npcName: 'Corin Oakley',
+      townKey: '3:7',
+      dayProgress: 0.35,
+      yearProgress: 0.55,
+      playerLevel: 4,
+      playerProfession: 'scout',
+      completedQuestIds: new Set<string>(),
+      npcState: 'commuting-home',
+      profession: 'stablehand',
+      professionFamily: 'stable',
+      residenceBuildingId: 'home',
+      workplaceBuildingId: 'stable',
+    });
+
+    expect(tracking.some((offer) => offer.type === 'tracking')).toBe(true);
+    expect(
+      tracking.some((offer) => offer.summary.includes('tracking experience'))
+    ).toBe(true);
+  });
+
+  it('offers timed quests for rush jobs and favors fast-delivery professions', () => {
+    const timed = getDefaultQuestRegistry().getOffers({
+      npcId: 'npc:merchant',
+      npcName: 'Nora Morrow',
+      townKey: '3:7',
+      dayProgress: 0.42,
+      yearProgress: 0.15,
+      playerLevel: 4,
+      playerProfession: 'courier',
+      completedQuestIds: new Set<string>(),
+      npcState: 'working',
+      profession: 'merchant',
+      professionFamily: 'market',
+      residenceBuildingId: 'home',
+      workplaceBuildingId: 'market',
+    });
+    const overleveled = getDefaultQuestRegistry().getOffers({
+      npcId: 'npc:merchant',
+      npcName: 'Nora Morrow',
+      townKey: '3:7',
+      dayProgress: 0.42,
+      yearProgress: 0.15,
+      playerLevel: 20,
+      completedQuestIds: new Set<string>(),
+      npcState: 'working',
+      profession: 'merchant',
+      professionFamily: 'market',
+      residenceBuildingId: 'home',
+      workplaceBuildingId: 'market',
+    });
+
+    expect(timed.some((offer) => offer.type === 'timed')).toBe(true);
+    expect(timed.some((offer) => offer.summary.includes('quick feet'))).toBe(true);
+    expect(overleveled.some((offer) => offer.type === 'timed')).toBe(false);
   });
 });

@@ -18,8 +18,8 @@ Quests may include:
 - [ ] Stealth / infiltration quest — enter an area without being detected, steal something, spy, or sabotage.
 - [ ] Assassination / bounty quest — locate and eliminate a specific target.
 - [ ] Capture quest — capture rather than kill a target.
-- [ ] Follow / track quest — trail an NPC, footprints, creature, signal, or other clue.
-- [ ] Race / timed quest — complete an objective before a deadline or another participant.
+- [X] Follow / track quest — trail an NPC, footprints, creature, signal, or other clue.
+- [X] Race / timed quest — complete an objective before a deadline or another participant.
 - [ ] Diplomacy quest — negotiate, persuade, mediate, recruit, intimidate, or resolve a dispute.
 - [ ] Choice / moral quest — make a decision that changes relationships, rewards, factions, or story outcomes.
 - [ ] Faction quest — perform work to gain reputation or advance within an organization.

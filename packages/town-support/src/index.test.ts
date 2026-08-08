@@ -303,6 +303,59 @@ describe('town support', () => {
     ).toBe(true);
   });
 
+  it('surfaces tracking and timed quest offers from generated town schedules', () => {
+    const townSamples: Array<[number, number]> = [
+      [3, 7],
+      [10, -4],
+      [25, 9],
+      [48, -16],
+      [120, -80],
+    ];
+    let trackingStates: ReturnType<typeof getTownNpcQuestStates> = [];
+    let timedStates: ReturnType<typeof getTownNpcQuestStates> = [];
+
+    outerTracking: for (const [x, y] of townSamples) {
+      for (let minute = 0; minute < 24 * 60; minute += 30) {
+        trackingStates = getTownNpcQuestStates(
+          x,
+          y,
+          DEFAULT_DAY_LENGTH_MS * (minute / (24 * 60)),
+          {
+            level: 4,
+            profession: 'scout',
+          }
+        );
+        if (trackingStates.some((entry) => entry.offers.some((offer) => offer.type === 'tracking'))) {
+          break outerTracking;
+        }
+      }
+    }
+
+    outerTimed: for (const [x, y] of townSamples) {
+      for (let minute = 0; minute < 24 * 60; minute += 30) {
+        timedStates = getTownNpcQuestStates(
+          x,
+          y,
+          DEFAULT_DAY_LENGTH_MS * (minute / (24 * 60)),
+          {
+            level: 4,
+            profession: 'courier',
+          }
+        );
+        if (timedStates.some((entry) => entry.offers.some((offer) => offer.type === 'timed'))) {
+          break outerTimed;
+        }
+      }
+    }
+
+    expect(
+      trackingStates.some((entry) => entry.offers.some((offer) => offer.type === 'tracking'))
+    ).toBe(true);
+    expect(
+      timedStates.some((entry) => entry.offers.some((offer) => offer.type === 'timed'))
+    ).toBe(true);
+  });
+
   it('scales building counts upward for at least some higher-level towns', () => {
     const signatures = new Set(
       [

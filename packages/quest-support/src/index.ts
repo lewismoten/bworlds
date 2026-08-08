@@ -75,6 +75,8 @@ export function getDefaultQuestPlugins(): QuestTypePlugin[] {
     createDeliveryQuestPlugin(),
     createHomeNeedQuestPlugin(),
     createEscortQuestPlugin(),
+    createTrackingQuestPlugin(),
+    createTimedQuestPlugin(),
     createFetchQuestPlugin(),
     createRecoveryQuestPlugin(),
     createCraftingQuestPlugin(),
@@ -377,6 +379,102 @@ function createRecoveryQuestPlugin(): QuestTypePlugin {
       title: `${seasonLabel} Lost Property`,
       summary: `${context.npcName} wants a missing ${lostAsset} reclaimed before it causes trouble for the town.${professionHint}`,
       availability: 'work',
+      sourceNpcId: context.npcId,
+      sourceNpcName: context.npcName,
+    };
+  });
+}
+
+function createTrackingQuestPlugin(): QuestTypePlugin {
+  return createQuestTypePlugin('tracking', (context) => {
+    if (
+      context.playerLevel < 3 ||
+      !(
+        context.npcState === 'commuting-to-work' ||
+        context.npcState === 'commuting-home' ||
+        context.npcState === 'working'
+      ) ||
+      !(
+        context.professionFamily === 'stable' ||
+        context.professionFamily === 'market' ||
+        context.professionFamily === 'town-hall'
+      )
+    ) {
+      return null;
+    }
+
+    const clue =
+      context.professionFamily === 'stable'
+        ? 'a missing trail horse'
+        : context.professionFamily === 'town-hall'
+          ? 'a survey courier'
+          : 'a delayed caravan runner';
+    const questId = `${context.townKey}:${context.npcId}:tracking:${clue.replaceAll(' ', '-')}:${context.npcState}`;
+    if (context.completedQuestIds.has(questId)) {
+      return null;
+    }
+
+    const professionHint =
+      context.playerProfession === 'guard' || context.playerProfession === 'scout'
+        ? ' Your tracking experience makes you the obvious choice.'
+        : '';
+
+    return {
+      id: questId,
+      type: 'tracking',
+      title: 'Lost Trail',
+      summary: `${context.npcName} needs help following the signs left by ${clue}.${professionHint}`,
+      availability:
+        context.npcState === 'working' ? 'work' : 'travel',
+      sourceNpcId: context.npcId,
+      sourceNpcName: context.npcName,
+    };
+  });
+}
+
+function createTimedQuestPlugin(): QuestTypePlugin {
+  return createQuestTypePlugin('timed', (context) => {
+    if (
+      context.playerLevel > 14 ||
+      !(
+        context.npcState === 'working' ||
+        context.npcState === 'commuting-to-work'
+      ) ||
+      !(
+        context.professionFamily === 'market' ||
+        context.professionFamily === 'inn' ||
+        context.professionFamily === 'town-hall'
+      )
+    ) {
+      return null;
+    }
+
+    const seasonLabel = getSeasonLabel(context.yearProgress);
+    const deadline =
+      context.dayProgress < 0.5 ? 'before noon' : 'before dusk';
+    const objective =
+      context.professionFamily === 'town-hall'
+        ? 'post a public notice'
+        : context.professionFamily === 'inn'
+          ? 'deliver a hot meal'
+          : 'close a market order';
+    const questId = `${context.townKey}:${context.npcId}:timed:${objective.replaceAll(' ', '-')}:${seasonLabel}`;
+    if (context.completedQuestIds.has(questId)) {
+      return null;
+    }
+
+    const professionHint =
+      context.playerProfession === 'courier' || context.playerProfession === 'merchant'
+        ? ' Your quick feet should give you an advantage.'
+        : '';
+
+    return {
+      id: questId,
+      type: 'timed',
+      title: `${seasonLabel} Rush Job`,
+      summary: `${context.npcName} needs someone to ${objective} ${deadline}.${professionHint}`,
+      availability:
+        context.npcState === 'working' ? 'work' : 'travel',
       sourceNpcId: context.npcId,
       sourceNpcName: context.npcName,
     };
