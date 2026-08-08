@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { DEFAULT_DAY_LENGTH_MS, getDaylightCycleState } from '@bworlds/core';
 import { parseSavedSession, serializeSessionSnapshot } from './session-state.ts';
 
 describe('session state', () => {
@@ -98,5 +99,37 @@ describe('session state', () => {
         })
       )
     ).toBeNull();
+  });
+
+  it('restores the same season and moon phase from the saved world time offset', () => {
+    const savedOffsetMs = DEFAULT_DAY_LENGTH_MS * 17.5;
+    const raw = serializeSessionSnapshot({
+      player: {
+        x: 0,
+        y: 0,
+        facing: 0,
+      },
+      packIds: ['default-content-pack'],
+      stack: [{ id: 'overworld', depth: 0 }],
+      viewMode: '2d',
+      timeOffsetMs: savedOffsetMs,
+      timeFrozen: false,
+      frozenWorldTimeMs: null,
+      inspectorTab: 'timekeeper',
+      modelPreviewMode: 'world',
+      celestialEventMode: 'auto',
+      compassHeadingAngle: null,
+      playerPlacedPois: [],
+    });
+
+    const parsed = parseSavedSession(raw);
+    const expectedCycle = getDaylightCycleState(savedOffsetMs);
+    const restoredCycle = getDaylightCycleState(parsed?.timeOffsetMs ?? 0);
+
+    expect(restoredCycle.activeConstellation.name).toBe(
+      expectedCycle.activeConstellation.name
+    );
+    expect(restoredCycle.moonPhaseName).toBe(expectedCycle.moonPhaseName);
+    expect(restoredCycle.dayProgress).toBe(expectedCycle.dayProgress);
   });
 });

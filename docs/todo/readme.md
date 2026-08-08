@@ -14,4 +14,4 @@ Create new packages in the monorepo when it makes sense. Create interaces for pl
 - [ ] [POI](./poi.md)
 
 - [ ] The moon should be able to eclipse the sun and affect the daylight briefly
-- [ ] Setup local storage to remember time of day, season, moon phase, if time is frozen, etc.
+- [X] Setup local storage to remember time of day, season, moon phase, if time is frozen, etc.
