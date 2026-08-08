@@ -34,6 +34,8 @@ describe('debug panel', () => {
       worstRecentFrameMs: 28.6,
       targetFps: 60 as const,
       performanceTier: 'healthy' as const,
+      renderQualityLevel: 'Full',
+      renderQualityLimiters: 'None',
       playerLevel: 4,
       visibilityRadius: 18,
       drawCalls: 42,
@@ -96,6 +98,8 @@ describe('debug panel', () => {
     expect(buildDebugMarkup(snapshot)).toContain('Avg FPS');
     expect(buildDebugMarkup(snapshot)).toContain('Frame Target');
     expect(buildDebugMarkup(snapshot)).toContain('Perf Tier');
+    expect(buildDebugMarkup(snapshot)).toContain('Render Quality');
+    expect(buildDebugMarkup(snapshot)).toContain('Quality Limiters');
     expect(buildDebugMarkup(snapshot)).toContain('Level');
     expect(buildDebugMarkup(snapshot)).toContain('GPU Points');
     expect(buildDebugMarkup(snapshot)).toContain('Geometry Count');

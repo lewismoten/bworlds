@@ -114,7 +114,10 @@ import { getDebugWorldStats } from './debug-world-stats.ts';
 import {
   advanceRenderBudgetState,
   DEFAULT_RENDER_BUDGET_STATE,
+  formatRenderQualityLevel,
   getPendingWorldBuildBudget,
+  getRenderQualityLevel,
+  getRenderQualityLimiters,
 } from './render-budget.ts';
 import { getMouseLookAngles } from './mouse-look.ts';
 import {
@@ -2587,6 +2590,10 @@ function render(): FrameLoopActivityLike {
       worstRecentFrameMs: renderBudgetState.worstRecentFrameMs,
       targetFps: renderBudgetState.targetFps,
       performanceTier: resolvePerformanceTier(renderBudgetState.smoothedFrameMs),
+      renderQualityLevel: formatRenderQualityLevel(
+        getRenderQualityLevel(renderBudgetState)
+      ),
+      renderQualityLimiters: getRenderQualityLimiters(renderBudgetState).join(', '),
       playerLevel: normalizePlayerLevel(state.playerLevel),
       visibilityRadius: renderBudgetState.visibilityRadius,
       drawCalls: rendererStats.drawCalls,

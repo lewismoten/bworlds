@@ -780,8 +780,8 @@ A barrel should not get the same budget as a cathedral.
 * [ ] Show audio voices.
 * [X] Show loaded chunks.
 * [ ] Show model generation queue size.
-* [ ] Show active render quality level.
-* [ ] Show which budget is currently limiting quality.
+* [X] Show active render quality level.
+* [X] Show which budget is currently limiting quality.
 
 # Per-Plugin Debugging
 

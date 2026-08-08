@@ -3,7 +3,10 @@ import {
   advanceRenderBudgetState,
   DEFAULT_RENDER_BUDGET_STATE,
   DEFAULT_VISIBILITY_RADIUS,
+  formatRenderQualityLevel,
   getPendingWorldBuildBudget,
+  getRenderQualityLevel,
+  getRenderQualityLimiters,
   MIN_VISIBILITY_RADIUS,
   REDUCED_VISIBILITY_RADIUS,
   type RenderBudgetState,
@@ -115,5 +118,61 @@ describe('render budget', () => {
     expect(criticalBudget.pendingBuildBudgetMs).toBeLessThan(
       reducedBudget.pendingBuildBudgetMs
     );
+  });
+
+  it('derives a stable render quality label from the current budget state', () => {
+    expect(formatRenderQualityLevel(getRenderQualityLevel(DEFAULT_RENDER_BUDGET_STATE))).toBe(
+      'Full'
+    );
+    expect(
+      formatRenderQualityLevel(
+        getRenderQualityLevel({
+          visibilityRadius: REDUCED_VISIBILITY_RADIUS,
+          targetFps: 30,
+        })
+      )
+    ).toBe('Reduced');
+    expect(
+      formatRenderQualityLevel(
+        getRenderQualityLevel({
+          visibilityRadius: MIN_VISIBILITY_RADIUS,
+          targetFps: 30,
+        })
+      )
+    ).toBe('Minimal');
+  });
+
+  it('lists the quality limiters that are currently constraining rendering', () => {
+    expect(
+      getRenderQualityLimiters({
+        smoothedFrameMs: 16.67,
+        visibilityRadius: DEFAULT_VISIBILITY_RADIUS,
+        targetFps: 60,
+      })
+    ).toEqual(['None']);
+
+    expect(
+      getRenderQualityLimiters({
+        smoothedFrameMs: 27,
+        visibilityRadius: REDUCED_VISIBILITY_RADIUS,
+        targetFps: 30,
+      })
+    ).toEqual([
+      'Target FPS reduced to 30',
+      `Visibility radius reduced to ${REDUCED_VISIBILITY_RADIUS}`,
+      'High frame pressure',
+    ]);
+
+    expect(
+      getRenderQualityLimiters({
+        smoothedFrameMs: 40,
+        visibilityRadius: MIN_VISIBILITY_RADIUS,
+        targetFps: 30,
+      })
+    ).toEqual([
+      'Target FPS reduced to 30',
+      `Visibility radius reduced to ${MIN_VISIBILITY_RADIUS}`,
+      'Critical frame pressure',
+    ]);
   });
 });

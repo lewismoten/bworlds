@@ -13,6 +13,8 @@ export type PendingWorldBuildBudget = {
   maxPendingBuildTiles: number;
 };
 
+export type RenderQualityLevel = 'full' | 'reduced' | 'minimal';
+
 export const DEFAULT_VISIBILITY_RADIUS = 18;
 export const REDUCED_VISIBILITY_RADIUS = 14;
 export const MIN_VISIBILITY_RADIUS = 10;
@@ -119,6 +121,52 @@ export function getPendingWorldBuildBudget(
     pendingBuildBudgetMs,
     maxPendingBuildTiles: overBudget ? 4 : 8,
   };
+}
+
+export function getRenderQualityLevel(
+  state: Pick<RenderBudgetState, 'visibilityRadius' | 'targetFps'>
+): RenderQualityLevel {
+  if (
+    state.visibilityRadius <= MIN_VISIBILITY_RADIUS &&
+    state.targetFps === 30
+  ) {
+    return 'minimal';
+  }
+  if (
+    state.visibilityRadius < DEFAULT_VISIBILITY_RADIUS ||
+    state.targetFps === 30
+  ) {
+    return 'reduced';
+  }
+  return 'full';
+}
+
+export function formatRenderQualityLevel(level: RenderQualityLevel): string {
+  if (level === 'minimal') {
+    return 'Minimal';
+  }
+  if (level === 'reduced') {
+    return 'Reduced';
+  }
+  return 'Full';
+}
+
+export function getRenderQualityLimiters(
+  state: Pick<RenderBudgetState, 'smoothedFrameMs' | 'visibilityRadius' | 'targetFps'>
+): string[] {
+  const limiters: string[] = [];
+  if (state.targetFps === 30) {
+    limiters.push('Target FPS reduced to 30');
+  }
+  if (state.visibilityRadius < DEFAULT_VISIBILITY_RADIUS) {
+    limiters.push(`Visibility radius reduced to ${state.visibilityRadius}`);
+  }
+  if (state.smoothedFrameMs >= CRITICAL_FPS_FRAME_MS) {
+    limiters.push('Critical frame pressure');
+  } else if (state.smoothedFrameMs >= LOW_FPS_FRAME_MS) {
+    limiters.push('High frame pressure');
+  }
+  return limiters.length > 0 ? limiters : ['None'];
 }
 
 function clamp(value: number, min: number, max: number): number {
