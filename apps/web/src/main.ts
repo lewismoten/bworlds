@@ -2771,6 +2771,7 @@ function render(): FrameLoopActivityLike {
       visibleMeshCount: rendererStats.visibleMeshCount,
       pointsCount: rendererStats.pointsCount,
       lineObjectCount: rendererStats.lineObjectCount,
+      cameraCount: rendererStats.cameraCount,
       activeParticleSystemCount: rendererStats.activeParticleSystemCount,
       activeParticleCount: rendererStats.activeParticleCount,
       spriteCount: rendererStats.spriteCount,

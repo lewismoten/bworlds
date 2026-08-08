@@ -82,6 +82,7 @@ type Render3DController = {
     visibleMeshCount: number;
     pointsCount: number;
     lineObjectCount: number;
+    cameraCount: number;
     activeParticleSystemCount: number;
     activeParticleCount: number;
     spriteCount: number;
@@ -161,6 +162,7 @@ type SceneResourceStats = {
   visibleMeshCount: number;
   pointsCount: number;
   lineObjectCount: number;
+  cameraCount: number;
   activeParticleSystemCount: number;
   activeParticleCount: number;
   spriteCount: number;
@@ -771,6 +773,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       visibleMeshCount: sceneResourceStats.visibleMeshCount,
       pointsCount: sceneResourceStats.pointsCount,
       lineObjectCount: sceneResourceStats.lineObjectCount,
+      cameraCount: sceneResourceStats.cameraCount,
       activeParticleSystemCount: sceneResourceStats.activeParticleSystemCount,
       activeParticleCount: sceneResourceStats.activeParticleCount,
       spriteCount: sceneResourceStats.spriteCount,
@@ -1987,6 +1990,7 @@ export function collectSceneResourceStats(
   let visibleMeshCount = 0;
   let pointsCount = 0;
   let lineObjectCount = 0;
+  let cameraCount = 0;
   let activeParticleSystemCount = 0;
   let activeParticleCount = 0;
   let spriteCount = 0;
@@ -2031,6 +2035,9 @@ export function collectSceneResourceStats(
     }
     if (isLineObjectType((child as THREE.Object3D).type)) {
       lineObjectCount += 1;
+    }
+    if (isCameraObjectType(child as THREE.Object3D)) {
+      cameraCount += 1;
     }
     if ((child as THREE.Object3D).type === 'Sprite') {
       spriteCount += 1;
@@ -2094,6 +2101,7 @@ export function collectSceneResourceStats(
     visibleMeshCount,
     pointsCount,
     lineObjectCount,
+    cameraCount,
     activeParticleSystemCount,
     activeParticleCount,
     spriteCount,
@@ -2121,6 +2129,10 @@ function isDynamicLightType(type: string): boolean {
 
 function isLineObjectType(type: string): boolean {
   return type === 'Line' || type === 'LineLoop' || type === 'LineSegments';
+}
+
+function isCameraObjectType(object: Pick<THREE.Object3D, 'type'> & { isCamera?: boolean }): boolean {
+  return object.isCamera === true || object.type.endsWith('Camera');
 }
 
 function getInstancedMeshCount(object: unknown): number {

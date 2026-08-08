@@ -90,7 +90,7 @@ That gives you something you can save from a slow scene, attach to a bug report,
 * [x] Include `Sprite` count.
 * [x] Include `Points` node count.
 * [x] Include line-object count.
-* [ ] Include camera count.
+* [x] Include camera count.
 * [x] Include light count.
 * [ ] Include maximum hierarchy depth.
 * [ ] Include average hierarchy depth.

@@ -140,6 +140,7 @@ describe('debug snapshot', () => {
         activeParticleSystemCount: 4,
         activeParticleCount: 90,
         spriteCount: 9,
+        cameraCount: 1,
         lightCount: 12,
         dynamicLightCount: 4,
         shadowLightCount: 2,
@@ -302,6 +303,7 @@ describe('debug snapshot', () => {
       renderedInstanceCount: 248,
       pointsCount: 5,
       lineObjectCount: 7,
+      cameraCount: 1,
       lightCount: 12,
     });
     expect(result.particles).toMatchObject({

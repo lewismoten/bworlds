@@ -142,6 +142,7 @@ export type DebugSnapshotExport = {
     spriteCount: number;
     pointsCount: number;
     lineObjectCount: number;
+    cameraCount: number;
     lightCount: number;
   };
   particles: {
@@ -285,6 +286,7 @@ export function buildDebugSnapshotExport(
       spriteCount: options.snapshot.spriteCount,
       pointsCount: options.snapshot.pointsCount,
       lineObjectCount: options.snapshot.lineObjectCount ?? 0,
+      cameraCount: options.snapshot.cameraCount ?? 0,
       lightCount: options.snapshot.lightCount,
     },
     resources: {

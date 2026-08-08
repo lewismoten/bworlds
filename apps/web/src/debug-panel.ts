@@ -42,6 +42,7 @@ export type DebugSnapshot = {
   visibleMeshCount: number;
   pointsCount: number;
   lineObjectCount?: number;
+  cameraCount?: number;
   activeParticleSystemCount?: number;
   activeParticleCount: number;
   spriteCount: number;
