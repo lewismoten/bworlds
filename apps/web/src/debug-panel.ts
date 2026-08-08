@@ -40,6 +40,10 @@ export type DebugSnapshot = {
   visibleInstancedMeshCount?: number;
   renderedInstanceCount?: number;
   visibleMeshCount: number;
+  maxHierarchyDepth?: number;
+  averageHierarchyDepth?: number;
+  emptyGroupCount?: number;
+  oneChildGroupCount?: number;
   pointsCount: number;
   lineObjectCount?: number;
   cameraCount?: number;

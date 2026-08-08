@@ -73,6 +73,10 @@ describe('render3d visibility helpers', () => {
       visibleInstancedMeshCount: 0,
       renderedInstanceCount: 0,
       visibleMeshCount: 3,
+      maxHierarchyDepth: 1,
+      averageHierarchyDepth: 0.75,
+      emptyGroupCount: 0,
+      oneChildGroupCount: 0,
       pointsCount: 0,
       lineObjectCount: 0,
       cameraCount: 0,
@@ -164,6 +168,10 @@ describe('render3d visibility helpers', () => {
       visibleInstancedMeshCount: 1,
       renderedInstanceCount: 24,
       visibleMeshCount: 2,
+      maxHierarchyDepth: 1,
+      averageHierarchyDepth: 10 / 11,
+      emptyGroupCount: 0,
+      oneChildGroupCount: 0,
       pointsCount: 1,
       lineObjectCount: 2,
       cameraCount: 1,
@@ -218,6 +226,10 @@ describe('render3d visibility helpers', () => {
       visibleInstancedMeshCount: 0,
       renderedInstanceCount: 0,
       visibleMeshCount: 1,
+      maxHierarchyDepth: 1,
+      averageHierarchyDepth: 2 / 3,
+      emptyGroupCount: 0,
+      oneChildGroupCount: 0,
       pointsCount: 2,
       lineObjectCount: 0,
       cameraCount: 0,
@@ -296,6 +308,10 @@ describe('render3d visibility helpers', () => {
       visibleInstancedMeshCount: 0,
       renderedInstanceCount: 0,
       visibleMeshCount: 2,
+      maxHierarchyDepth: 2,
+      averageHierarchyDepth: 1.25,
+      emptyGroupCount: 0,
+      oneChildGroupCount: 1,
       pointsCount: 0,
       lineObjectCount: 0,
       cameraCount: 0,
@@ -313,6 +329,58 @@ describe('render3d visibility helpers', () => {
       treeObjectCount: 3,
       treeMeshCount: 2,
       treeMaterialRefCount: 2,
+    });
+  });
+
+  it('tracks hierarchy depth plus empty and single-child groups', () => {
+    const emptyGroup = createMockObject3D();
+    const nestedMesh = createMockObject3D(
+      createMockMaterial(),
+      [],
+      createMockStatGeometry('nested-geometry', 3)
+    );
+    const oneChildGroup = createMockObject3D(undefined, [nestedMesh]);
+    const deepLeaf = createMockObject3D(
+      createMockMaterial(),
+      [],
+      createMockStatGeometry('deep-geometry', 5)
+    );
+    const deepBranch = createMockObject3D(undefined, [
+      createMockObject3D(undefined, [deepLeaf]),
+    ]);
+    const root = createMockObject3D(undefined, [emptyGroup, oneChildGroup, deepBranch]);
+
+    expect(collectSceneResourceStats(root as never)).toEqual({
+      object3dCount: 7,
+      visibleObjectCount: 7,
+      invisibleObjectCount: 0,
+      groupCount: 5,
+      meshCount: 2,
+      instancedMeshCount: 0,
+      visibleInstancedMeshCount: 0,
+      renderedInstanceCount: 0,
+      visibleMeshCount: 2,
+      maxHierarchyDepth: 3,
+      averageHierarchyDepth: 10 / 7,
+      emptyGroupCount: 1,
+      oneChildGroupCount: 3,
+      pointsCount: 0,
+      lineObjectCount: 0,
+      cameraCount: 0,
+      activeParticleSystemCount: 0,
+      activeParticleCount: 0,
+      spriteCount: 0,
+      lightCount: 0,
+      dynamicLightCount: 0,
+      shadowLightCount: 0,
+      vertexCount: 8,
+      materialCount: 2,
+      geometryCount: 2,
+      textureMemoryEstimateBytes: 0,
+      treeCount: 0,
+      treeObjectCount: 0,
+      treeMeshCount: 0,
+      treeMaterialRefCount: 0,
     });
   });
 

@@ -139,6 +139,10 @@ export type DebugSnapshotExport = {
     meshCount: number;
     instancedMeshCount: number;
     renderedInstanceCount: number;
+    maxHierarchyDepth: number;
+    averageHierarchyDepth: number;
+    emptyGroupCount: number;
+    oneChildGroupCount: number;
     spriteCount: number;
     pointsCount: number;
     lineObjectCount: number;
@@ -283,6 +287,10 @@ export function buildDebugSnapshotExport(
       meshCount: options.snapshot.meshCount,
       instancedMeshCount: options.snapshot.instancedMeshCount ?? 0,
       renderedInstanceCount: options.snapshot.renderedInstanceCount ?? 0,
+      maxHierarchyDepth: options.snapshot.maxHierarchyDepth ?? 0,
+      averageHierarchyDepth: options.snapshot.averageHierarchyDepth ?? 0,
+      emptyGroupCount: options.snapshot.emptyGroupCount ?? 0,
+      oneChildGroupCount: options.snapshot.oneChildGroupCount ?? 0,
       spriteCount: options.snapshot.spriteCount,
       pointsCount: options.snapshot.pointsCount,
       lineObjectCount: options.snapshot.lineObjectCount ?? 0,

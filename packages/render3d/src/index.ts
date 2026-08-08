@@ -80,6 +80,10 @@ type Render3DController = {
     visibleInstancedMeshCount: number;
     renderedInstanceCount: number;
     visibleMeshCount: number;
+    maxHierarchyDepth: number;
+    averageHierarchyDepth: number;
+    emptyGroupCount: number;
+    oneChildGroupCount: number;
     pointsCount: number;
     lineObjectCount: number;
     cameraCount: number;
@@ -160,6 +164,10 @@ type SceneResourceStats = {
   visibleInstancedMeshCount: number;
   renderedInstanceCount: number;
   visibleMeshCount: number;
+  maxHierarchyDepth: number;
+  averageHierarchyDepth: number;
+  emptyGroupCount: number;
+  oneChildGroupCount: number;
   pointsCount: number;
   lineObjectCount: number;
   cameraCount: number;
@@ -771,6 +779,10 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       visibleInstancedMeshCount: sceneResourceStats.visibleInstancedMeshCount,
       renderedInstanceCount: sceneResourceStats.renderedInstanceCount,
       visibleMeshCount: sceneResourceStats.visibleMeshCount,
+      maxHierarchyDepth: sceneResourceStats.maxHierarchyDepth,
+      averageHierarchyDepth: sceneResourceStats.averageHierarchyDepth,
+      emptyGroupCount: sceneResourceStats.emptyGroupCount,
+      oneChildGroupCount: sceneResourceStats.oneChildGroupCount,
       pointsCount: sceneResourceStats.pointsCount,
       lineObjectCount: sceneResourceStats.lineObjectCount,
       cameraCount: sceneResourceStats.cameraCount,
@@ -1977,7 +1989,7 @@ export function disposeObject3DResources(
 }
 
 export function collectSceneResourceStats(
-  root: Pick<THREE.Object3D, 'traverse'>
+  root: Pick<THREE.Object3D, 'traverse' | 'children' | 'type'>
 ): SceneResourceStats {
   let object3dCount = 0;
   let visibleObjectCount = 0;
@@ -1988,6 +2000,10 @@ export function collectSceneResourceStats(
   let visibleInstancedMeshCount = 0;
   let renderedInstanceCount = 0;
   let visibleMeshCount = 0;
+  let totalHierarchyDepth = 0;
+  let maxHierarchyDepth = 0;
+  let emptyGroupCount = 0;
+  let oneChildGroupCount = 0;
   let pointsCount = 0;
   let lineObjectCount = 0;
   let cameraCount = 0;
@@ -2007,8 +2023,10 @@ export function collectSceneResourceStats(
   const geometries = new Set<unknown>();
   const textures = new Set<unknown>();
 
-  root.traverse((child) => {
+  traverseSceneGraphWithDepth(root, (child, depth) => {
     object3dCount += 1;
+    totalHierarchyDepth += depth;
+    maxHierarchyDepth = Math.max(maxHierarchyDepth, depth);
     if ((child as THREE.Object3D).visible !== false) {
       visibleObjectCount += 1;
     } else {
@@ -2016,6 +2034,12 @@ export function collectSceneResourceStats(
     }
     if ((child as THREE.Object3D).type === 'Group') {
       groupCount += 1;
+      const childCount = getObjectChildCount(child);
+      if (childCount === 0) {
+        emptyGroupCount += 1;
+      } else if (childCount === 1) {
+        oneChildGroupCount += 1;
+      }
     }
     if ((child as THREE.Object3D).type === 'InstancedMesh') {
       instancedMeshCount += 1;
@@ -2099,6 +2123,11 @@ export function collectSceneResourceStats(
     visibleInstancedMeshCount,
     renderedInstanceCount,
     visibleMeshCount,
+    maxHierarchyDepth,
+    averageHierarchyDepth:
+      object3dCount > 0 ? totalHierarchyDepth / object3dCount : 0,
+    emptyGroupCount,
+    oneChildGroupCount,
     pointsCount,
     lineObjectCount,
     cameraCount,
@@ -2133,6 +2162,25 @@ function isLineObjectType(type: string): boolean {
 
 function isCameraObjectType(object: Pick<THREE.Object3D, 'type'> & { isCamera?: boolean }): boolean {
   return object.isCamera === true || object.type.endsWith('Camera');
+}
+
+function traverseSceneGraphWithDepth(
+  root: Pick<THREE.Object3D, 'children' | 'type'>,
+  callback: (child: THREE.Object3D, depth: number) => void
+): void {
+  const visit = (node: THREE.Object3D, depth: number) => {
+    callback(node, depth);
+    const children = ((node as unknown as { children?: unknown }).children ?? []) as unknown[];
+    for (const child of children) {
+      visit(child as THREE.Object3D, depth + 1);
+    }
+  };
+  visit(root as THREE.Object3D, 0);
+}
+
+function getObjectChildCount(object: unknown): number {
+  const children = (object as { children?: unknown })?.children;
+  return Array.isArray(children) ? children.length : 0;
 }
 
 function getInstancedMeshCount(object: unknown): number {

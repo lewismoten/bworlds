@@ -92,10 +92,10 @@ That gives you something you can save from a slow scene, attach to a bug report,
 * [x] Include line-object count.
 * [x] Include camera count.
 * [x] Include light count.
-* [ ] Include maximum hierarchy depth.
-* [ ] Include average hierarchy depth.
-* [ ] Include empty groups.
-* [ ] Include one-child groups.
+* [x] Include maximum hierarchy depth.
+* [x] Include average hierarchy depth.
+* [x] Include empty groups.
+* [x] Include one-child groups.
 * [x] Include invisible objects.
 * [ ] Include objects with `matrixAutoUpdate = true`.
 * [ ] Include static objects still updating transforms.
