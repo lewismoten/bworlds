@@ -22,12 +22,12 @@ Quests may include:
 - [X] Race / timed quest — complete an objective before a deadline or another participant.
 - [X] Diplomacy quest — negotiate, persuade, mediate, recruit, intimidate, or resolve a dispute.
 - [X] Choice / moral quest — make a decision that changes relationships, rewards, factions, or story outcomes.
-- [ ] Faction quest — perform work to gain reputation or advance within an organization.
+- [X] Faction quest — perform work to gain reputation or advance within an organization.
 - [ ] Companion quest — resolve a party member's personal storyline.
 - [ ] Revenge quest — pursue someone responsible for an earlier event.
 - [X] Recovery quest — reclaim stolen property, territory, equipment, or something lost.
 - [ ] Activation quest — turn on generators, shrines, portals, towers, switches, etc.
 - [ ] Destruction / sabotage quest — destroy an object, structure, supply line, machine, or enemy resource.
-- [ ] Construction / restoration quest — rebuild a town, repair equipment, establish an outpost, or improve a location.
+- [X] Construction / restoration quest — rebuild a town, repair equipment, establish an outpost, or improve a location.
 - [X] Training / tutorial quest — teach mechanics by having the player perform them.
 - [ ] Tournament / challenge quest — win a fight, contest, arena, card game, race, or series of trials.

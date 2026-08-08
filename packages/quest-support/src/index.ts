@@ -79,6 +79,8 @@ export function getDefaultQuestPlugins(): QuestTypePlugin[] {
     createTimedQuestPlugin(),
     createDiplomacyQuestPlugin(),
     createChoiceQuestPlugin(),
+    createFactionQuestPlugin(),
+    createConstructionQuestPlugin(),
     createFetchQuestPlugin(),
     createRecoveryQuestPlugin(),
     createCraftingQuestPlugin(),
@@ -567,6 +569,96 @@ function createChoiceQuestPlugin(): QuestTypePlugin {
       title: 'A Hard Decision',
       summary: `${context.npcName} asks you to weigh ${dilemma}.${professionHint}`,
       availability: 'work',
+      sourceNpcId: context.npcId,
+      sourceNpcName: context.npcName,
+    };
+  });
+}
+
+function createFactionQuestPlugin(): QuestTypePlugin {
+  return createQuestTypePlugin('faction', (context) => {
+    if (
+      context.playerLevel < 4 ||
+      context.npcState !== 'working' ||
+      !(
+        context.professionFamily === 'town-hall' ||
+        context.professionFamily === 'market' ||
+        context.professionFamily === 'temple'
+      )
+    ) {
+      return null;
+    }
+
+    const faction =
+      context.professionFamily === 'town-hall'
+        ? 'the town council'
+        : context.professionFamily === 'temple'
+          ? 'the lantern shrine'
+          : 'the merchants guild';
+    const questId = `${context.townKey}:${context.npcId}:faction:${context.professionFamily}`;
+    if (context.completedQuestIds.has(questId)) {
+      return null;
+    }
+
+    const professionHint =
+      context.playerProfession === 'merchant'
+        ? ' Your trade ties could open doors with them.'
+        : context.playerProfession === 'scholar'
+          ? ' Your reputation for careful records could earn trust.'
+          : '';
+
+    return {
+      id: questId,
+      type: 'faction',
+      title: 'Earn Their Trust',
+      summary: `${context.npcName} offers work that could improve your standing with ${faction}.${professionHint}`,
+      availability: 'work',
+      sourceNpcId: context.npcId,
+      sourceNpcName: context.npcName,
+    };
+  });
+}
+
+function createConstructionQuestPlugin(): QuestTypePlugin {
+  return createQuestTypePlugin('construction', (context) => {
+    if (
+      context.playerLevel < 3 ||
+      !(
+        context.npcState === 'working' ||
+        context.npcState === 'home'
+      ) ||
+      !(
+        context.professionFamily === 'smithy' ||
+        context.professionFamily === 'workshop' ||
+        context.professionFamily === 'town-hall'
+      )
+    ) {
+      return null;
+    }
+
+    const project =
+      context.professionFamily === 'smithy'
+        ? 'repair the town forge awning'
+        : context.professionFamily === 'town-hall'
+          ? 'shore up the square storehouse'
+          : 'rebuild a roadside work shed';
+    const questId = `${context.townKey}:${context.npcId}:construction:${context.professionFamily}`;
+    if (context.completedQuestIds.has(questId)) {
+      return null;
+    }
+
+    const professionHint =
+      context.playerProfession === 'carpenter' ||
+      context.playerProfession === 'smith'
+        ? ' Your trade skills should speed the work along.'
+        : '';
+
+    return {
+      id: questId,
+      type: 'construction',
+      title: 'Repair and Restore',
+      summary: `${context.npcName} needs help gathering supplies and labor to ${project}.${professionHint}`,
+      availability: context.npcState === 'working' ? 'work' : 'home',
       sourceNpcId: context.npcId,
       sourceNpcName: context.npcName,
     };

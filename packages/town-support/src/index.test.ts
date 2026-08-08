@@ -409,6 +409,59 @@ describe('town support', () => {
     ).toBe(true);
   });
 
+  it('surfaces faction and construction quests from generated town schedules', () => {
+    const townSamples: Array<[number, number]> = [
+      [3, 7],
+      [10, -4],
+      [25, 9],
+      [48, -16],
+      [120, -80],
+    ];
+    let factionStates: ReturnType<typeof getTownNpcQuestStates> = [];
+    let constructionStates: ReturnType<typeof getTownNpcQuestStates> = [];
+
+    outerFaction: for (const [x, y] of townSamples) {
+      for (let minute = 0; minute < 24 * 60; minute += 30) {
+        factionStates = getTownNpcQuestStates(
+          x,
+          y,
+          DEFAULT_DAY_LENGTH_MS * (minute / (24 * 60)),
+          {
+            level: 5,
+            profession: 'merchant',
+          }
+        );
+        if (factionStates.some((entry) => entry.offers.some((offer) => offer.type === 'faction'))) {
+          break outerFaction;
+        }
+      }
+    }
+
+    outerConstruction: for (const [x, y] of townSamples) {
+      for (let minute = 0; minute < 24 * 60; minute += 30) {
+        constructionStates = getTownNpcQuestStates(
+          x,
+          y,
+          DEFAULT_DAY_LENGTH_MS * (minute / (24 * 60)),
+          {
+            level: 4,
+            profession: 'smith',
+          }
+        );
+        if (constructionStates.some((entry) => entry.offers.some((offer) => offer.type === 'construction'))) {
+          break outerConstruction;
+        }
+      }
+    }
+
+    expect(
+      factionStates.some((entry) => entry.offers.some((offer) => offer.type === 'faction'))
+    ).toBe(true);
+    expect(
+      constructionStates.some((entry) => entry.offers.some((offer) => offer.type === 'construction'))
+    ).toBe(true);
+  });
+
   it('scales building counts upward for at least some higher-level towns', () => {
     const signatures = new Set(
       [

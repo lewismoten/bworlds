@@ -13,6 +13,8 @@ describe('quest support', () => {
       'timed',
       'diplomacy',
       'choice',
+      'faction',
+      'construction',
       'fetch',
       'recovery',
       'crafting',
@@ -333,5 +335,66 @@ describe('quest support', () => {
     expect(choice.some((offer) => offer.type === 'choice')).toBe(true);
     expect(choice.some((offer) => offer.summary.includes('town safety'))).toBe(true);
     expect(underleveled.some((offer) => offer.type === 'choice')).toBe(false);
+  });
+
+  it('offers faction quests for organizations that can grant standing', () => {
+    const faction = getDefaultQuestRegistry().getOffers({
+      npcId: 'npc:steward',
+      npcName: 'Della Norwood',
+      townKey: '3:7',
+      dayProgress: 0.5,
+      yearProgress: 0.34,
+      playerLevel: 5,
+      playerProfession: 'merchant',
+      completedQuestIds: new Set<string>(),
+      npcState: 'working',
+      profession: 'steward',
+      professionFamily: 'town-hall',
+      residenceBuildingId: 'home',
+      workplaceBuildingId: 'hall',
+    });
+
+    expect(faction.some((offer) => offer.type === 'faction')).toBe(true);
+    expect(
+      faction.some((offer) => offer.summary.includes('trade ties'))
+    ).toBe(true);
+  });
+
+  it('offers construction quests for civic and craft repairs', () => {
+    const construction = getDefaultQuestRegistry().getOffers({
+      npcId: 'npc:smith',
+      npcName: 'Bram Irongate',
+      townKey: '3:7',
+      dayProgress: 0.46,
+      yearProgress: 0.74,
+      playerLevel: 4,
+      playerProfession: 'smith',
+      completedQuestIds: new Set<string>(),
+      npcState: 'working',
+      profession: 'blacksmith',
+      professionFamily: 'smithy',
+      residenceBuildingId: 'home',
+      workplaceBuildingId: 'forge',
+    });
+    const underleveled = getDefaultQuestRegistry().getOffers({
+      npcId: 'npc:smith',
+      npcName: 'Bram Irongate',
+      townKey: '3:7',
+      dayProgress: 0.46,
+      yearProgress: 0.74,
+      playerLevel: 1,
+      completedQuestIds: new Set<string>(),
+      npcState: 'working',
+      profession: 'blacksmith',
+      professionFamily: 'smithy',
+      residenceBuildingId: 'home',
+      workplaceBuildingId: 'forge',
+    });
+
+    expect(construction.some((offer) => offer.type === 'construction')).toBe(true);
+    expect(
+      construction.some((offer) => offer.summary.includes('trade skills'))
+    ).toBe(true);
+    expect(underleveled.some((offer) => offer.type === 'construction')).toBe(false);
   });
 });
