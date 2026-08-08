@@ -127,6 +127,7 @@ import {
   createWebAudioSoundEffectSink,
   shouldPlayBlockedMovementSound,
 } from './sound-effects.ts';
+import { createSoundUpdatePayloadBuilder } from './sound-update-payload.ts';
 import { findNearestTrafficProfile } from './nearby-traffic.ts';
 import {
   getPlayerLevelChange,
@@ -936,6 +937,7 @@ const renderer3d = create3DRenderer(viewport3d);
 const soundEffects = createSoundEffectController(
   createWebAudioSoundEffectSink()
 );
+const buildSoundUpdatePayload = createSoundUpdatePayloadBuilder();
 const musicController = createMusicController(createWebAudioMusicSink());
 const buildMusicUpdatePayload = createMusicUpdatePayloadBuilder();
 const sessionPersistence = createDebouncedPersistence(flushSessionSave);
@@ -2198,7 +2200,7 @@ function updateMovement(deltaMs: number): void {
 
   const nearbyTrainAudio = getNearbyTrainAudioProfile();
   const nearbyPaddleBoatAudio = getNearbyPaddleBoatAudioProfile();
-  soundEffects.update({
+  soundEffects.update(buildSoundUpdatePayload({
     nowMs,
     walking,
     isJumping: motion.isJumping,
@@ -2207,21 +2209,13 @@ function updateMovement(deltaMs: number): void {
     weatherKind: latestEnvironment.weather?.current?.kind,
     weatherIntensity: latestEnvironment.weather?.current?.intensity,
     windStrength: latestEnvironment.weather?.current?.windStrength,
-    nearbyTrain: nearbyTrainAudio
-      ? {
-          ...nearbyTrainAudio,
-          listener: { x: state.player.x, y: state.player.y },
-        }
-      : null,
-    nearbyPaddleBoat: nearbyPaddleBoatAudio
-      ? {
-          ...nearbyPaddleBoatAudio,
-          listener: { x: state.player.x, y: state.player.y },
-        }
-      : null,
-    emitter: { x: state.player.x, y: state.player.y },
-    listener: { x: state.player.x, y: state.player.y },
-  });
+    nearbyTrain: nearbyTrainAudio,
+    nearbyPaddleBoat: nearbyPaddleBoatAudio,
+    emitterX: state.player.x,
+    emitterY: state.player.y,
+    listenerX: state.player.x,
+    listenerY: state.player.y,
+  }));
 
   if (
     previousX !== state.player.x ||
