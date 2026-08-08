@@ -189,7 +189,7 @@ with one sampled site around **4.1 MB**.
 * [ ] Consider combining floor tiles into chunk meshes.
 * [ ] Consider using one instanced floor geometry.
 * [ ] Avoid one `Object3D` per floor tile if thousands are visible.
-* [ ] Share floor geometry.
+* [x] Share floor geometry.
 * [ ] Share floor materials.
 * [ ] Use per-vertex or per-instance color for terrain variation.
 * [ ] Merge contiguous same-material floor regions.

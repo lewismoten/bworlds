@@ -9,6 +9,8 @@ import {
   getRecentCountStats,
   getRecentDurationStats,
   getRenderChurnStats,
+  getSharedBoxGeometry,
+  getSharedPlaneGeometry,
   buildPendingWorldBuildQueue,
   getDecoratedTileSurfaceHeight,
   getBoundaryPriority,
@@ -124,6 +126,16 @@ describe('render3d visibility helpers', () => {
       treeMeshCount: 0,
       treeMaterialRefCount: 0,
     });
+  });
+
+  it('reuses shared box and plane geometries for repeated tile shapes', () => {
+    expect(getSharedBoxGeometry(1, 0.03, 1)).toBe(
+      getSharedBoxGeometry(1, 0.03, 1)
+    );
+    expect(getSharedPlaneGeometry(1, 1)).toBe(getSharedPlaneGeometry(1, 1));
+    expect(getSharedBoxGeometry(1, 0.03, 1)).not.toBe(
+      getSharedBoxGeometry(1, 0.28, 1)
+    );
   });
 
   it('counts descendant objects inside tagged tree roots for per-tree budget diagnostics', () => {

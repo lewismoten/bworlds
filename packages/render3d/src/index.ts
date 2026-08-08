@@ -223,6 +223,8 @@ const FALLBACK_TILE_DEFINITION = {
 const distanceFadeTargetCache = new WeakMap<THREE.Object3D, DistanceFadeTargets>();
 const ownedDisposableGeometries = new WeakSet<object>();
 const ownedDisposableMaterials = new WeakSet<object>();
+const sharedBoxGeometryCache = new Map<string, THREE.BoxGeometry>();
+const sharedPlaneGeometryCache = new Map<string, THREE.PlaneGeometry>();
 
 export function create3DRenderer(host: HTMLElement): Render3DController {
   const renderer = new THREE.WebGLRenderer({
@@ -398,7 +400,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     } else if (!isWaterKind(tile.kind) && definition.wallHeight > 0.08) {
       const wallHeight = Math.max(definition.wallHeight * 1.9, 0.18);
       const wallMesh = new THREE.Mesh(
-        markOwnedGeometry(new THREE.BoxGeometry(TILE_SIZE, wallHeight, TILE_SIZE)),
+        getSharedBoxGeometry(TILE_SIZE, wallHeight, TILE_SIZE),
         getTileMaterial(tile.kind, variant)
       );
       wallMesh.position.set(
@@ -910,7 +912,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
           ? WATER_FLOOR_THICKNESS
           : FLOOR_THICKNESS;
       const floorMesh = new THREE.Mesh(
-        markOwnedGeometry(new THREE.BoxGeometry(TILE_SIZE, floorThickness, TILE_SIZE)),
+        getSharedBoxGeometry(TILE_SIZE, floorThickness, TILE_SIZE),
         material
       );
       floorMesh.position.set(
@@ -1048,7 +1050,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
         ? WATER_FLOOR_THICKNESS
         : FLOOR_THICKNESS;
     const floorMesh = new THREE.Mesh(
-      markOwnedGeometry(new THREE.BoxGeometry(TILE_SIZE, floorThickness, TILE_SIZE)),
+      getSharedBoxGeometry(TILE_SIZE, floorThickness, TILE_SIZE),
       getTileMaterial(kind, getTileVariantIndex(kind, tileX, tileY))
     );
     floorMesh.position.set(
@@ -1078,7 +1080,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     group.position.set(tileX * TILE_SIZE, 0, tileY * TILE_SIZE);
 
     const surfaceMesh = new THREE.Mesh(
-      markOwnedGeometry(new THREE.PlaneGeometry(TILE_SIZE, TILE_SIZE)),
+      getSharedPlaneGeometry(TILE_SIZE, TILE_SIZE),
       material
     );
     surfaceMesh.rotation.x = -Math.PI / 2;
@@ -1087,7 +1089,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     group.add(surfaceMesh);
 
     const bodyMesh = new THREE.Mesh(
-      markOwnedGeometry(new THREE.BoxGeometry(width, WATER_FLOOR_THICKNESS, depth)),
+      getSharedBoxGeometry(width, WATER_FLOOR_THICKNESS, depth),
       material
     );
     bodyMesh.position.set(
@@ -1105,15 +1107,11 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     const mesh =
       edge === 'north' || edge === 'south'
         ? new THREE.Mesh(
-            markOwnedGeometry(
-              new THREE.BoxGeometry(TILE_SIZE, wallHeight, RIVER_WALL_THICKNESS)
-            ),
+            getSharedBoxGeometry(TILE_SIZE, wallHeight, RIVER_WALL_THICKNESS),
             material
           )
         : new THREE.Mesh(
-            markOwnedGeometry(
-              new THREE.BoxGeometry(RIVER_WALL_THICKNESS, wallHeight, TILE_SIZE)
-            ),
+            getSharedBoxGeometry(RIVER_WALL_THICKNESS, wallHeight, TILE_SIZE),
             material
           );
 
@@ -1783,6 +1781,29 @@ function markOwnedGeometry<T extends object>(geometry: T): T {
 function markOwnedMaterial<T extends object>(material: T): T {
   ownedDisposableMaterials.add(material);
   return material;
+}
+
+export function getSharedBoxGeometry(
+  width: number,
+  height: number,
+  depth: number
+): THREE.BoxGeometry {
+  const key = `${width}:${height}:${depth}`;
+  if (!sharedBoxGeometryCache.has(key)) {
+    sharedBoxGeometryCache.set(key, new THREE.BoxGeometry(width, height, depth));
+  }
+  return sharedBoxGeometryCache.get(key)!;
+}
+
+export function getSharedPlaneGeometry(
+  width: number,
+  height: number
+): THREE.PlaneGeometry {
+  const key = `${width}:${height}`;
+  if (!sharedPlaneGeometryCache.has(key)) {
+    sharedPlaneGeometryCache.set(key, new THREE.PlaneGeometry(width, height));
+  }
+  return sharedPlaneGeometryCache.get(key)!;
 }
 
 function getDistanceFadeTargets(root: THREE.Object3D): DistanceFadeTargets {
