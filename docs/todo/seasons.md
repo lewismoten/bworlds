@@ -89,3 +89,11 @@ add a outer globe of stars in the sky that appear at night with procedurally gen
 - [x] Day/Night cycle should blend between daylight/night time, but have a distinct black mark on the edge separarating sunrise/sunset
 - [x] Moon ring seems to move with day as the hour changes. It should be based on the phase of the moon observed at midnight each day.
 - [x] It seems that the sun and moon are on the wrong ends of the day/night ring
+- [x] Noon appears to be yellow on the day/night ring, instead of a blue sky.
+- [x] The dividers/markers for dawn/dusk appear to be in the wrong position - maybe about 90 degrees.
+- [x] The day/night part on the ring seems to have a abrumpt contrast rather than fading from day to night
+- [x] The celestial ring may have a scattering of faint stars as well
+- [x] The moon appears to have a black circle over lapping it, and a lip of black hanging off the edge. It should appear only as a shadow on the moon itself without any overhang.
+- [x] Time needs to be a little higher in the center of the clock.
+- [x] Constellation displayed before name should move up a little to be centered-in-line with text, and a little more to the left.
+- [x] Moon phase should just be Waxing/Wanning/Full/New
