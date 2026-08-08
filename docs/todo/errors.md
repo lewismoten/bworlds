@@ -237,7 +237,7 @@ There are two important paths through `buildTileNode()`:
 
 * [x] Add counters for `buildTileNode()` calls per second.
 
-* [ ] Warn if tiles rebuild while the camera/player is stationary.
+* [x] Warn if tiles rebuild while the camera/player is stationary.
 
 * [ ] Ensure rebuilt tile nodes release old resources.
 
@@ -255,8 +255,8 @@ This is about **8.25 MB inclusive** in this sample.
 * [ ] Cull obviously distant chunks before per-tile LOD checks.
 * [ ] Add hysteresis between LOD boundaries.
 * [ ] Prevent trees from repeatedly switching between two LODs near a boundary.
-* [ ] Cache each object's current LOD.
-* [ ] Skip work if desired LOD equals current LOD.
+* [x] Cache each object's current LOD.
+* [x] Skip work if desired LOD equals current LOD.
 * [ ] Avoid rebuilding material/fade configuration during every LOD check.
 * [ ] Consider performing LOD at the forest-chunk level for sufficiently distant scenery.
 

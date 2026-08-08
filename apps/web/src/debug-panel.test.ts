@@ -4,10 +4,12 @@ import {
   formatPerformanceTierLabel,
   getMaterialGrowthWarning,
   getSceneBudgetWarnings,
+  getStationaryTileBuildWarning,
   getDebugSignature,
   getTargetFrameMs,
   normalizeWorldSeed,
   recordMaterialGrowthSample,
+  recordRendererChurnSample,
   resolvePerformanceTier,
 } from './debug-panel.ts';
 
@@ -167,6 +169,73 @@ describe('debug panel', () => {
         { nowMs: 600, materialCount: 24, playerX: 1.4, playerY: 0 },
         { nowMs: 1200, materialCount: 27, playerX: 2.6, playerY: 0 },
         { nowMs: 1800, materialCount: 30, playerX: 4.2, playerY: 0 },
+      ])
+    ).toBeNull();
+  });
+
+  it('warns when tile nodes keep rebuilding while the player is nearly stationary', () => {
+    const samples: Array<{
+      nowMs: number;
+      tileNodeBuildsPerSecond: number;
+      playerX: number;
+      playerY: number;
+    }> = [];
+
+    recordRendererChurnSample(samples, {
+      nowMs: 0,
+      tileNodeBuildsPerSecond: 6,
+      playerX: 10,
+      playerY: 4,
+    });
+    recordRendererChurnSample(samples, {
+      nowMs: 250,
+      tileNodeBuildsPerSecond: 7,
+      playerX: 10.1,
+      playerY: 4,
+    });
+    expect(samples).toHaveLength(1);
+    expect(samples[0]?.tileNodeBuildsPerSecond).toBe(7);
+
+    recordRendererChurnSample(samples, {
+      nowMs: 900,
+      tileNodeBuildsPerSecond: 6,
+      playerX: 10.2,
+      playerY: 4,
+    });
+    recordRendererChurnSample(samples, {
+      nowMs: 1800,
+      tileNodeBuildsPerSecond: 5,
+      playerX: 10.3,
+      playerY: 4.1,
+    });
+    recordRendererChurnSample(samples, {
+      nowMs: 2700,
+      tileNodeBuildsPerSecond: 8,
+      playerX: 10.4,
+      playerY: 4.1,
+    });
+
+    expect(getStationaryTileBuildWarning(samples)).toContain(
+      'Tile nodes keep rebuilding while stationary'
+    );
+  });
+
+  it('avoids tile rebuild warnings when the player is moving or build churn is low', () => {
+    expect(
+      getStationaryTileBuildWarning([
+        { nowMs: 0, tileNodeBuildsPerSecond: 3, playerX: 0, playerY: 0 },
+        { nowMs: 600, tileNodeBuildsPerSecond: 6, playerX: 0.2, playerY: 0.1 },
+        { nowMs: 1200, tileNodeBuildsPerSecond: 5, playerX: 0.4, playerY: 0.2 },
+        { nowMs: 1800, tileNodeBuildsPerSecond: 4, playerX: 0.6, playerY: 0.2 },
+      ])
+    ).toBeNull();
+
+    expect(
+      getStationaryTileBuildWarning([
+        { nowMs: 0, tileNodeBuildsPerSecond: 6, playerX: 0, playerY: 0 },
+        { nowMs: 600, tileNodeBuildsPerSecond: 6, playerX: 1.5, playerY: 0 },
+        { nowMs: 1200, tileNodeBuildsPerSecond: 5, playerX: 3.2, playerY: 0 },
+        { nowMs: 1800, tileNodeBuildsPerSecond: 4, playerX: 4.7, playerY: 0 },
       ])
     ).toBeNull();
   });

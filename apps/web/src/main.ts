@@ -93,8 +93,10 @@ import {
   buildDebugMarkup,
   getSceneBudgetWarnings,
   getMaterialGrowthWarning,
+  getStationaryTileBuildWarning,
   resolvePerformanceTier,
   recordMaterialGrowthSample,
+  recordRendererChurnSample,
   getDebugSignature,
   normalizeWorldSeed,
 } from './debug-panel.ts';
@@ -993,6 +995,12 @@ const debugResourceTrendState = {
   materialSamples: [] as Array<{
     nowMs: number;
     materialCount: number;
+    playerX: number;
+    playerY: number;
+  }>,
+  rendererChurnSamples: [] as Array<{
+    nowMs: number;
+    tileNodeBuildsPerSecond: number;
     playerX: number;
     playerY: number;
   }>,
@@ -2500,6 +2508,12 @@ function render(): FrameLoopActivityLike {
       playerX: spatial.playerX,
       playerY: spatial.playerY,
     });
+    recordRendererChurnSample(debugResourceTrendState.rendererChurnSamples, {
+      nowMs,
+      tileNodeBuildsPerSecond: rendererStats.tileNodeBuildsPerSecond,
+      playerX: spatial.playerX,
+      playerY: spatial.playerY,
+    });
     const debugSnapshot = {
       fps: 1000 / Math.max(1, renderBudgetState.smoothedFrameMs),
       frameMs: renderBudgetState.smoothedFrameMs,
@@ -2554,9 +2568,13 @@ function render(): FrameLoopActivityLike {
     const materialGrowthWarning = getMaterialGrowthWarning(
       debugResourceTrendState.materialSamples
     );
+    const stationaryTileBuildWarning = getStationaryTileBuildWarning(
+      debugResourceTrendState.rendererChurnSamples
+    );
     debugSnapshot.resourceWarnings = [
       ...getSceneBudgetWarnings(debugSnapshot),
       ...(materialGrowthWarning ? [materialGrowthWarning] : []),
+      ...(stationaryTileBuildWarning ? [stationaryTileBuildWarning] : []),
     ];
     const debugSignature = getDebugSignature(debugSnapshot);
     if (debugSignature !== uiRenderState.lastDebugSignature) {

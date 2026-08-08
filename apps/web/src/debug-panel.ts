@@ -51,6 +51,13 @@ export type MaterialGrowthSample = {
   playerY: number;
 };
 
+export type RendererChurnSample = {
+  nowMs: number;
+  tileNodeBuildsPerSecond: number;
+  playerX: number;
+  playerY: number;
+};
+
 export function normalizeWorldSeed(seed: string | undefined, fallback: string): string {
   const trimmed = seed?.trim();
   return trimmed ? trimmed : fallback;
@@ -230,6 +237,34 @@ export function recordMaterialGrowthSample(
   }
 }
 
+export function recordRendererChurnSample(
+  samples: RendererChurnSample[],
+  sample: RendererChurnSample,
+  {
+    sampleIntervalMs = 500,
+    historyWindowMs = 8000,
+  }: {
+    sampleIntervalMs?: number;
+    historyWindowMs?: number;
+  } = {}
+): void {
+  const lastSample = samples[samples.length - 1];
+  if (!lastSample || sample.nowMs - lastSample.nowMs >= sampleIntervalMs) {
+    samples.push(sample);
+  } else {
+    samples[samples.length - 1] = sample;
+  }
+
+  const minimumTime = sample.nowMs - historyWindowMs;
+  let removeCount = 0;
+  while (removeCount < samples.length && samples[removeCount].nowMs < minimumTime) {
+    removeCount += 1;
+  }
+  if (removeCount > 0) {
+    samples.splice(0, removeCount);
+  }
+}
+
 export function getMaterialGrowthWarning(
   samples: MaterialGrowthSample[],
   {
@@ -303,4 +338,52 @@ export function getSceneBudgetWarnings(
   }
 
   return warnings;
+}
+
+export function getStationaryTileBuildWarning(
+  samples: RendererChurnSample[],
+  {
+    minimumSampleCount = 4,
+    minimumBuildRate = 4,
+    minimumBuildTotal = 20,
+    maximumWalkDistance = 0.75,
+  }: {
+    minimumSampleCount?: number;
+    minimumBuildRate?: number;
+    minimumBuildTotal?: number;
+    maximumWalkDistance?: number;
+  } = {}
+): string | null {
+  if (samples.length < minimumSampleCount) {
+    return null;
+  }
+
+  const recentSamples = samples.slice(-minimumSampleCount);
+  const firstSample = recentSamples[0];
+  const lastSample = recentSamples[recentSamples.length - 1];
+  if (!firstSample || !lastSample) {
+    return null;
+  }
+
+  const walkedDistance = Math.hypot(
+    lastSample.playerX - firstSample.playerX,
+    lastSample.playerY - firstSample.playerY
+  );
+  if (walkedDistance > maximumWalkDistance) {
+    return null;
+  }
+
+  let buildTotal = 0;
+  for (const sample of recentSamples) {
+    if (sample.tileNodeBuildsPerSecond < minimumBuildRate) {
+      return null;
+    }
+    buildTotal += sample.tileNodeBuildsPerSecond;
+  }
+
+  if (buildTotal < minimumBuildTotal) {
+    return null;
+  }
+
+  return `Tile nodes keep rebuilding while stationary (${buildTotal} recent builds within ${walkedDistance.toFixed(2)} tiles).`;
 }
