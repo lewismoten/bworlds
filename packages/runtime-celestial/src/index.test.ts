@@ -5,6 +5,35 @@ import {
   resolveCelestialCycleConfig,
 } from './index.ts';
 
+const plugin = createCelestialRuntimePlugin();
+type CelestialEnvironmentPayload = Parameters<
+  NonNullable<typeof plugin.resolveWorldEnvironment>
+>[0];
+
+function createCelestialEnvironmentPayload(): CelestialEnvironmentPayload {
+  return {
+    state: {
+      player: { x: 0, y: 0, facing: 0 },
+      getCurrentContext() {
+        return { id: 'overworld', type: 'overworld', depth: 0 };
+      },
+      getCurrentTile() {
+        return { kind: 'plains' };
+      },
+      getTileDefinition() {
+        return {
+          name: 'Plains',
+          color: '#84cc16',
+          miniColor: '#65a30d',
+          walkable: true,
+          wallHeight: 0,
+        };
+      },
+    },
+    timeMs: 600000,
+  };
+}
+
 describe('runtime celestial', () => {
   it('configures a game day to last 42 minutes', () => {
     const cycle = resolveCelestialCycleConfig();
@@ -14,11 +43,9 @@ describe('runtime celestial', () => {
   });
 
   it('provides seasonal cycle metadata plus procedural constellations', () => {
-    const plugin = createCelestialRuntimePlugin();
-    const environment = plugin.resolveWorldEnvironment?.({
-      state: {} as any,
-      timeMs: 600000,
-    });
+    const environment = plugin.resolveWorldEnvironment?.(
+      createCelestialEnvironmentPayload()
+    );
 
     if (!environment) {
       throw new Error('Expected celestial environment metadata.');

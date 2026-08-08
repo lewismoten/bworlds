@@ -6,6 +6,39 @@ import {
 } from './index.ts';
 import { getDaylightCycleState } from '@bworlds/core';
 
+const plugin = createCelestialSystemRuntimePlugin();
+type CelestialSystemEnvironmentPayload = Parameters<
+  NonNullable<typeof plugin.resolveWorldEnvironment>
+>[0];
+
+function createCelestialSystemEnvironmentPayload(): CelestialSystemEnvironmentPayload {
+  return {
+    state: {
+      player: {
+        x: 0,
+        y: -18000,
+        facing: 0,
+      },
+      getCurrentContext() {
+        return { id: 'overworld', type: 'overworld', depth: 0 };
+      },
+      getCurrentTile() {
+        return { kind: 'plains' };
+      },
+      getTileDefinition() {
+        return {
+          name: 'Plains',
+          color: '#84cc16',
+          miniColor: '#65a30d',
+          walkable: true,
+          wallHeight: 0,
+        };
+      },
+    },
+    timeMs: 210000,
+  };
+}
+
 describe('runtime celestial system', () => {
   it('builds a stable set of solar-system planets with distinct names', () => {
     const cycle = getDaylightCycleState(210000, {
@@ -51,16 +84,9 @@ describe('runtime celestial system', () => {
   });
 
   it('replaces baseline planets with plugin-driven system planets and requests orrery regeneration', () => {
-    const plugin = createCelestialSystemRuntimePlugin();
-    const environment = plugin.resolveWorldEnvironment?.({
-      state: {
-        player: {
-          x: 0,
-          y: -18000,
-        },
-      } as any,
-      timeMs: 210000,
-    }) as WorldEnvironmentLike | undefined;
+    const environment = plugin.resolveWorldEnvironment?.(
+      createCelestialSystemEnvironmentPayload()
+    ) as WorldEnvironmentLike | undefined;
 
     expect(environment?.celestial?.removeVisibleEventTypes).toEqual(['planet']);
     expect(environment?.celestial?.visibleEventsAppend).toEqual(

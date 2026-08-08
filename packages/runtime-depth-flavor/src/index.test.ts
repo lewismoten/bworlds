@@ -6,21 +6,33 @@ type DepthTestTile = {
   note?: string;
 };
 
+const plugin = createDepthFlavorRuntimePlugin();
+type DecorateDepthPayload = Parameters<
+  NonNullable<typeof plugin.decorateDepthTile>
+>[0];
+
+function createDepthDecoratePayload(
+  tile: DepthTestTile,
+  overrides: Partial<DecorateDepthPayload> = {}
+): DecorateDepthPayload {
+  return {
+    context: { id: 'dungeon:test', type: 'dungeon', depth: 3 },
+    x: 0,
+    y: 0,
+    seed: 'spec',
+    tile,
+    ...overrides,
+  };
+}
+
 describe('runtime depth flavor', () => {
   it('adds ancient markings to at least one deterministic floor sample', () => {
-    const plugin = createDepthFlavorRuntimePlugin();
     let decorated = null as null | DepthTestTile;
 
     for (let y = -40; y <= 40 && !decorated; y += 1) {
       for (let x = -40; x <= 40; x += 1) {
         const tile: DepthTestTile = { kind: 'floor' };
-        plugin.decorateDepthTile?.({
-          context: { id: 'dungeon:test', type: 'dungeon', depth: 3 },
-          x,
-          y,
-          seed: 'spec',
-          tile,
-        } as any);
+        plugin.decorateDepthTile?.(createDepthDecoratePayload(tile, { x, y }));
         if (tile.note) {
           decorated = tile;
           break;
@@ -32,16 +44,13 @@ describe('runtime depth flavor', () => {
   });
 
   it('does not decorate non-floor tiles', () => {
-    const plugin = createDepthFlavorRuntimePlugin();
     const tile: DepthTestTile = { kind: 'wall' };
 
-    plugin.decorateDepthTile?.({
-      context: { id: 'dungeon:test', type: 'dungeon', depth: 2 },
-      x: 0,
-      y: 0,
-      seed: 'spec',
-      tile,
-    } as any);
+    plugin.decorateDepthTile?.(
+      createDepthDecoratePayload(tile, {
+        context: { id: 'dungeon:test', type: 'dungeon', depth: 2 },
+      })
+    );
 
     expect(tile.note).toBeUndefined();
   });

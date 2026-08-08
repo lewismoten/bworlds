@@ -1,6 +1,10 @@
 import { DEFAULT_DAY_LENGTH_MS } from '@bworlds/core';
 import { describe, expect, it, vi } from 'vitest';
-import type { TilePlugin } from './types';
+import type {
+  ClassifyOverworldTileContext,
+  ResolveWorldEnvironmentContext,
+  TilePlugin,
+} from './types';
 import {
   createFallbackTileDefinition,
   createPluginPackCatalog,
@@ -22,6 +26,46 @@ import {
   withOverworldTileClassifier,
   withPluginOrder,
 } from './index.ts';
+
+function createRegistryTestState(): ResolveWorldEnvironmentContext['state'] {
+  return {
+    player: { x: 0, y: 0, facing: 0 },
+    getCurrentContext() {
+      return { id: 'overworld', type: 'overworld', depth: 0 };
+    },
+    getCurrentTile() {
+      return { kind: 'plains' };
+    },
+    getTileDefinition() {
+      return {
+        name: 'Plains',
+        color: '#7fb069',
+        miniColor: '#95c779',
+        walkable: true,
+        wallHeight: 0,
+      };
+    },
+  };
+}
+
+function createClassifyOverworldPayload(): ClassifyOverworldTileContext {
+  return {
+    seed: 'spec',
+    x: 3,
+    y: 4,
+    tile: { kind: 'plains' },
+    nearLand: true,
+    signals: {
+      continent: 0.6,
+      elevation: 0.45,
+      moisture: 0.4,
+      riverSignal: 0.2,
+      roadSignal: 0.3,
+    },
+    townAnchors: [],
+    bridgeAnchors: [],
+  };
+}
 
 describe('plugin registry', () => {
   it('registers content packs in map, runtime, then tile order', () => {
@@ -188,24 +232,9 @@ describe('plugin registry', () => {
       },
       classifyOverworldTile
     );
-    const payload = {
-      seed: 'spec',
-      x: 3,
-      y: 4,
-      tile: { kind: 'plains' },
-      nearLand: true,
-      signals: {
-        continent: 0.6,
-        elevation: 0.45,
-        moisture: 0.4,
-        riverSignal: 0.2,
-        roadSignal: 0.3,
-      },
-      townAnchors: [],
-      bridgeAnchors: [],
-    };
+    const payload = createClassifyOverworldPayload();
 
-    expect(tile.classifyOverworldTile?.(payload as any)).toEqual({
+    expect(tile.classifyOverworldTile?.(payload)).toEqual({
       kind: 'ruins',
       note: 'Ancient stones rise from the field.',
     });
@@ -236,7 +265,7 @@ describe('plugin registry', () => {
 
     expect(
       registry.resolveWorldEnvironment({
-        state: {} as any,
+        state: createRegistryTestState(),
         timeMs: 1000,
       })
     ).toEqual({
