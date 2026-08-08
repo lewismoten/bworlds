@@ -110,6 +110,16 @@ describe('celestial preview helpers', () => {
     expect(nightShadow.sunCastShadow).toBe(false);
   });
 
+  it('uses the planet texture itself as a low-level emissive fill source', () => {
+    const grid = buildPlanetTextureGrid(
+      () => ({ kind: 'forest' }),
+      1,
+      1
+    );
+
+    expect(grid[0][0]).toBe(brightenPreviewSurfaceColor('#3e6a43'));
+  });
+
   it('moves the facing marker without rotating the whole preview root by player heading', () => {
     const east = getPreviewFacingArrowState(0);
     const north = getPreviewFacingArrowState(-Math.PI / 2);

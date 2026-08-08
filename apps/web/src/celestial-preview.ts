@@ -278,6 +278,9 @@ export function createCelestialPreviewRenderer(host: HTMLElement | null) {
     sunLight.shadow.camera.right = shadowProfile.cameraExtent;
     sunLight.shadow.camera.top = shadowProfile.cameraExtent;
     sunLight.shadow.camera.bottom = -shadowProfile.cameraExtent;
+    sunLight.shadow.camera.updateProjectionMatrix();
+    lightTarget.position.set(0, 0, 0);
+    lightTarget.updateMatrixWorld();
     sunFill.position.set(sunX, sunY, sunZ);
     sunFill.intensity = lighting.sunFillIntensity;
     sunFill.castShadow = false;
@@ -462,6 +465,7 @@ function syncPreviewPlanetTexture(
   texture.magFilter = THREE.NearestFilter;
   texture.minFilter = THREE.LinearFilter;
   material.map = texture;
+  material.emissiveMap = texture;
   material.needsUpdate = true;
   textureState.lastSampler = overworldSampler;
 }
