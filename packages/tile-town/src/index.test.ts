@@ -36,14 +36,24 @@ vi.mock('@bworlds/three-support', () => ({
   },
 }));
 
-import { createTownTilePlugin } from './index.ts';
+import {
+  createTownTilePlugin,
+  getTownNightLightCount,
+  getTownNightLightDistance,
+  getTownNightLightIntensity,
+} from './index.ts';
 
 class FakeGeometry {
   constructor(..._args: number[]) {}
 }
 
 class FakeMaterial {
-  constructor(public options: Record<string, unknown> = {}) {}
+  emissiveIntensity?: number;
+  constructor(public options: Record<string, unknown> = {}) {
+    if (typeof options.emissiveIntensity === 'number') {
+      this.emissiveIntensity = options.emissiveIntensity;
+    }
+  }
 }
 
 class FakeNode {
@@ -84,7 +94,7 @@ class FakeMesh extends FakeNode {
 class FakeLight extends FakeNode {
   constructor(
     public color?: string,
-    public intensity?: number,
+    public intensity = 0,
     public distance?: number,
     public decay?: number
   ) {
@@ -102,6 +112,15 @@ const fakeThree = {
 } as const;
 
 describe('tile town', () => {
+  it('scales town night lights with town size', () => {
+    expect(getTownNightLightCount(3)).toBe(1);
+    expect(getTownNightLightCount(6)).toBe(2);
+    expect(getTownNightLightIntensity(3)).toBeCloseTo(0.9, 6);
+    expect(getTownNightLightIntensity(6)).toBeCloseTo(1.2, 6);
+    expect(getTownNightLightDistance(3)).toBeCloseTo(3.8, 6);
+    expect(getTownNightLightDistance(6)).toBeCloseTo(4.8, 6);
+  });
+
   it('creates a lower-detail distant town model', () => {
     const plugin = createTownTilePlugin();
     const tile = plugin.tiles?.find((entry) => entry.kind === 'town');
@@ -145,5 +164,76 @@ describe('tile town', () => {
     expect(
       lowModel.children.every((building) => building.children.length === 1)
     ).toBe(true);
+  });
+
+  it('activates town night lights after dark', () => {
+    const plugin = createTownTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'town');
+    const state = {
+      player: { x: 0, y: 0, facing: 0 },
+      getCurrentContext() {
+        return { id: 'overworld', type: 'overworld', depth: 0 };
+      },
+      getCurrentTile() {
+        return { kind: 'town' };
+      },
+      getTileDefinition() {
+        return {
+          name: 'Town',
+          color: '#000000',
+          miniColor: '#111111',
+          walkable: true,
+          wallHeight: 0.5,
+        };
+      },
+    };
+
+    const model = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'town', poi: { type: 'town', name: 'Oakcross' } } as never,
+      tileX: 3,
+      tileY: 7,
+      detailLevel: 'full',
+    }) as FakeGroup;
+
+    const lights: FakeLight[] = [];
+    model.traverse((node) => {
+      if (node instanceof FakeLight && node.userData?.poiNightLightEmitter) {
+        lights.push(node);
+      }
+    });
+
+    expect(lights.length).toBeGreaterThan(0);
+
+    tile?.sync3DModel?.({
+      three: fakeThree as never,
+      state: {} as never,
+      tile: { kind: 'town' },
+      tileX: 3,
+      tileY: 7,
+      model,
+      timeMs: 0,
+      cycle: { daylight: 1, twilight: 0, night: 0 },
+      environment: {},
+    });
+
+    expect(lights.every((light) => light.intensity <= 0.01)).toBe(true);
+    expect(lights.every((light) => light.visible === false)).toBe(true);
+
+    tile?.sync3DModel?.({
+      three: fakeThree as never,
+      state: {} as never,
+      tile: { kind: 'town' },
+      tileX: 3,
+      tileY: 7,
+      model,
+      timeMs: 0,
+      cycle: { daylight: 0, twilight: 0, night: 1 },
+      environment: {},
+    });
+
+    expect(lights.every((light) => light.intensity >= 0.9)).toBe(true);
+    expect(lights.every((light) => light.visible === true)).toBe(true);
   });
 });

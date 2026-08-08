@@ -29,6 +29,7 @@ import type {
 } from '@bworlds/plugin-api';
 
 const TOWN_REGION_SIZE = 18;
+const LARGE_TOWN_BUILDING_COUNT = 6;
 const signLabelCache = new Map<string, ThreeTextureLike>();
 const townStyleCache = new Map<string, TownStyleBlueprint>();
 const townDescriptorCache = new Map<string, TownDescriptor[]>();
@@ -287,17 +288,9 @@ export function createTownTilePlugin(): RuntimePlugin {
       if (tile.poi?.name) {
         group.add(createTownNameSign(three, tile.poi.name, tileX, tileY, style));
       }
-      const lantern = markPoiLightEmitter(
-        new three.PointLight('#f7c97a', 0, 3.8, 1.8),
-        {
-          kind: 'point-light',
-          nightIntensity: 0.9,
-          visibleThreshold: 0.04,
-        }
-      );
-      lantern.position.set(tileX, 1.18, tileY);
-      lantern.visible = false;
-      group.add(lantern);
+      createTownNightLights(three, descriptors).forEach((light) => {
+        group.add(light);
+      });
       return group;
     },
     sync3DModel({ model, cycle }) {
@@ -306,6 +299,61 @@ export function createTownTilePlugin(): RuntimePlugin {
       }
     },
   });
+}
+
+function createTownNightLights(
+  three: ThreeHostLike,
+  descriptors: TownDescriptor[]
+) {
+  const buildingCount = descriptors.length;
+  const lightCount = getTownNightLightCount(buildingCount);
+  const lights = [];
+
+  for (let index = 0; index < lightCount; index += 1) {
+    const light = markPoiLightEmitter(
+      new three.PointLight(
+        '#f7c97a',
+        0,
+        getTownNightLightDistance(buildingCount),
+        1.8
+      ),
+      {
+        kind: 'point-light',
+        nightIntensity: getTownNightLightIntensity(buildingCount),
+        visibleThreshold: 0.04,
+      }
+    );
+
+    const placement =
+      descriptors[index % descriptors.length] ??
+      ({ x: 0, y: 0, width: 0, depth: 0, height: 0 } as TownDescriptor);
+    const lateralOffset = index % 2 === 0 ? 0.14 : -0.14;
+    const depthOffset = index < 2 ? 0.16 : -0.12;
+    light.position.set(
+      placement.x + lateralOffset,
+      1.18 + index * 0.02,
+      placement.y + depthOffset
+    );
+    light.visible = false;
+    lights.push(light);
+  }
+
+  return lights;
+}
+
+export function getTownNightLightCount(buildingCount: number): number {
+  if (buildingCount >= LARGE_TOWN_BUILDING_COUNT) {
+    return 2;
+  }
+  return 1;
+}
+
+export function getTownNightLightIntensity(buildingCount: number): number {
+  return buildingCount >= LARGE_TOWN_BUILDING_COUNT ? 1.2 : 0.9;
+}
+
+export function getTownNightLightDistance(buildingCount: number): number {
+  return buildingCount >= LARGE_TOWN_BUILDING_COUNT ? 4.8 : 3.8;
 }
 
 function createTownNameSign(
