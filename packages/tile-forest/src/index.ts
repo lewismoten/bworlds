@@ -42,6 +42,7 @@ const BIRD_KEY = 'forestBird';
 const TRAIL_KEY = 'forestTrail';
 const TREE_FORM_KEY = 'forestTreeForm';
 const TREE_FOLIAGE_KEY = 'forestTreeFoliage';
+const RENDER_STATS_CATEGORY_KEY = 'renderStatKind';
 const TREE_CLUSTER_SIZE = 4;
 const TREE_REGION_SIZE = 14;
 
@@ -588,6 +589,7 @@ export function createForestTilePlugin(): RuntimePlugin {
           tree.userData = {
             ...(tree.userData ?? {}),
             [TREE_FORM_KEY]: descriptor.form,
+            [RENDER_STATS_CATEGORY_KEY]: 'tree',
           };
 
           const trunk = new three.Mesh(geometry.trunk, style.trunkMaterial);

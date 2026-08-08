@@ -10,6 +10,7 @@ export type DebugSnapshot = {
   points: number;
   lines: number;
   visibleTileCount: number;
+  visibleTreeCount: number;
   pendingTileCount: number;
   object3dCount: number;
   groupCount: number;
@@ -17,6 +18,8 @@ export type DebugSnapshot = {
   materialCount: number;
   geometryCount: number;
   geometryMemoryCount: number;
+  treeMeshCount: number;
+  treeMaterialRefCount: number;
   textureCount: number;
   programCount: number;
   latitude: number;
@@ -46,6 +49,7 @@ export function getDebugSignature(snapshot: DebugSnapshot): string {
     snapshot.points,
     snapshot.lines,
     snapshot.visibleTileCount,
+    snapshot.visibleTreeCount,
     snapshot.pendingTileCount,
     snapshot.object3dCount,
     snapshot.groupCount,
@@ -53,6 +57,8 @@ export function getDebugSignature(snapshot: DebugSnapshot): string {
     snapshot.materialCount,
     snapshot.geometryCount,
     snapshot.geometryMemoryCount,
+    snapshot.treeMeshCount,
+    snapshot.treeMaterialRefCount,
     snapshot.textureCount,
     snapshot.programCount,
     snapshot.latitude.toFixed(4),
@@ -99,6 +105,18 @@ export function buildDebugMarkup(snapshot: DebugSnapshot): string {
       ? 'Unavailable'
       : `${snapshot.heapUsedMb.toFixed(1)} / ${(snapshot.heapLimitMb ?? 0).toFixed(1)} MB`;
   const targetFrameMs = getTargetFrameMs(snapshot.targetFps);
+  const objectsPerVisibleTile =
+    snapshot.visibleTileCount > 0
+      ? (snapshot.object3dCount / snapshot.visibleTileCount).toFixed(1)
+      : '0.0';
+  const meshesPerVisibleTree =
+    snapshot.visibleTreeCount > 0
+      ? (snapshot.treeMeshCount / snapshot.visibleTreeCount).toFixed(1)
+      : '0.0';
+  const materialsPerVisibleTree =
+    snapshot.visibleTreeCount > 0
+      ? (snapshot.treeMaterialRefCount / snapshot.visibleTreeCount).toFixed(1)
+      : '0.0';
   return `
     <div><dt>FPS</dt><dd>${snapshot.fps.toFixed(1)}</dd></div>
     <div><dt>CPU Frame</dt><dd>${snapshot.frameMs.toFixed(1)} ms</dd></div>
@@ -111,11 +129,15 @@ export function buildDebugMarkup(snapshot: DebugSnapshot): string {
     <div><dt>GPU Points</dt><dd>${snapshot.points}</dd></div>
     <div><dt>GPU Lines</dt><dd>${snapshot.lines}</dd></div>
     <div><dt>Visible Tiles</dt><dd>${snapshot.visibleTileCount}</dd></div>
+    <div><dt>Visible Trees</dt><dd>${snapshot.visibleTreeCount}</dd></div>
     <div><dt>Pending Tiles</dt><dd>${snapshot.pendingTileCount}</dd></div>
     <div><dt>Objects</dt><dd>${snapshot.object3dCount}</dd></div>
+    <div><dt>Objects / Tile</dt><dd>${objectsPerVisibleTile}</dd></div>
     <div><dt>Groups</dt><dd>${snapshot.groupCount}</dd></div>
     <div><dt>Meshes</dt><dd>${snapshot.meshCount}</dd></div>
+    <div><dt>Meshes / Tree</dt><dd>${meshesPerVisibleTree}</dd></div>
     <div><dt>Materials</dt><dd>${snapshot.materialCount}</dd></div>
+    <div><dt>Materials / Tree</dt><dd>${materialsPerVisibleTree}</dd></div>
     <div><dt>Geometries</dt><dd>${snapshot.geometryCount}</dd></div>
     <div><dt>GPU Geometries</dt><dd>${snapshot.geometryMemoryCount}</dd></div>
     <div><dt>Textures</dt><dd>${snapshot.textureCount}</dd></div>

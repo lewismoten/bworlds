@@ -58,6 +58,7 @@ type Render3DController = {
     points: number;
     lines: number;
     visibleTileCount: number;
+    visibleTreeCount: number;
     pendingTileCount: number;
     object3dCount: number;
     groupCount: number;
@@ -65,6 +66,8 @@ type Render3DController = {
     materialCount: number;
     geometryCount: number;
     geometryMemoryCount: number;
+    treeMeshCount: number;
+    treeMaterialRefCount: number;
     textureCount: number;
     programCount: number;
   };
@@ -123,6 +126,9 @@ type SceneResourceStats = {
   meshCount: number;
   materialCount: number;
   geometryCount: number;
+  treeCount: number;
+  treeMeshCount: number;
+  treeMaterialRefCount: number;
 };
 
 const TILE_SIZE = 1;
@@ -504,6 +510,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       points: renderer.info.render.points,
       lines: renderer.info.render.lines,
       visibleTileCount: visibleTileNodes.size,
+      visibleTreeCount: sceneResourceStats.treeCount,
       pendingTileCount: pendingWorldBuild.queue.length,
       object3dCount: sceneResourceStats.object3dCount,
       groupCount: sceneResourceStats.groupCount,
@@ -511,6 +518,8 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       materialCount: sceneResourceStats.materialCount,
       geometryCount: sceneResourceStats.geometryCount,
       geometryMemoryCount: renderer.info.memory.geometries,
+      treeMeshCount: sceneResourceStats.treeMeshCount,
+      treeMaterialRefCount: sceneResourceStats.treeMaterialRefCount,
       textureCount: renderer.info.memory.textures,
       programCount: rendererInfo.programs?.length ?? 0,
     };
@@ -1475,6 +1484,9 @@ export function collectSceneResourceStats(
   let object3dCount = 0;
   let groupCount = 0;
   let meshCount = 0;
+  let treeCount = 0;
+  let treeMeshCount = 0;
+  let treeMaterialRefCount = 0;
   const materials = new Set<THREE.Material>();
   const geometries = new Set<unknown>();
 
@@ -1482,6 +1494,12 @@ export function collectSceneResourceStats(
     object3dCount += 1;
     if ((child as THREE.Object3D).type === 'Group') {
       groupCount += 1;
+    }
+    if ((child as THREE.Object3D).userData?.renderStatKind === 'tree') {
+      treeCount += 1;
+      const treeStats = collectTaggedTreeStats(child as Pick<THREE.Object3D, 'traverse'>);
+      treeMeshCount += treeStats.meshCount;
+      treeMaterialRefCount += treeStats.materialRefCount;
     }
 
     const renderable = child as THREE.Object3D & {
@@ -1507,6 +1525,36 @@ export function collectSceneResourceStats(
     meshCount,
     materialCount: materials.size,
     geometryCount: geometries.size,
+    treeCount,
+    treeMeshCount,
+    treeMaterialRefCount,
+  };
+}
+
+function collectTaggedTreeStats(
+  root: Pick<THREE.Object3D, 'traverse'>
+): {
+  meshCount: number;
+  materialRefCount: number;
+} {
+  let meshCount = 0;
+  let materialRefCount = 0;
+
+  root.traverse((child) => {
+    const renderable = child as THREE.Object3D & {
+      geometry?: unknown;
+      material?: THREE.Material | THREE.Material[];
+    };
+    const childMaterials = getObjectMaterials(renderable);
+    if (childMaterials.length > 0 && renderable.geometry) {
+      meshCount += 1;
+      materialRefCount += childMaterials.length;
+    }
+  });
+
+  return {
+    meshCount,
+    materialRefCount,
   };
 }
 

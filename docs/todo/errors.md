@@ -476,10 +476,10 @@ I would add a little developer overlay now.
 * [x] Count unique material identities.
 * [x] Count unique geometry identities.
 * [x] Count visible tiles.
-* [ ] Count visible trees.
-* [ ] Calculate meshes per visible tree.
-* [ ] Calculate materials per visible tree.
-* [ ] Calculate objects per visible tile.
+* [x] Count visible trees.
+* [x] Calculate meshes per visible tree.
+* [x] Calculate materials per visible tree.
+* [x] Calculate objects per visible tile.
 * [ ] Track tile builds per second.
 * [ ] Track LOD replacements per second.
 

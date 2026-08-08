@@ -32,7 +32,9 @@ describe('render3d visibility helpers', () => {
     const sharedGeometry = { id: 'shared-geometry' };
     const otherGeometry = { id: 'other-geometry' };
     const root = createMockObject3D(undefined, [
-      createMockObject3D(sharedMaterial, [], sharedGeometry),
+      createMockObject3D(sharedMaterial, [], sharedGeometry, {
+        renderStatKind: 'tree',
+      }),
       createMockObject3D([sharedMaterial, otherMaterial], [], sharedGeometry),
       createMockObject3D(otherMaterial, [], otherGeometry),
     ]);
@@ -43,6 +45,9 @@ describe('render3d visibility helpers', () => {
       meshCount: 3,
       materialCount: 2,
       geometryCount: 2,
+      treeCount: 1,
+      treeMeshCount: 1,
+      treeMaterialRefCount: 1,
     });
   });
 
@@ -475,12 +480,13 @@ function createMockObject3D(
   children: Array<{
     traverse: (callback: (child: unknown) => void) => void;
   }> = [],
-  geometry?: unknown
+  geometry?: unknown,
+  userData: Record<string, unknown> = {}
 ) {
   const node = {
     visible: true,
     type: geometry ? 'Mesh' : 'Group',
-    userData: {},
+    userData,
     material,
     geometry,
     children,

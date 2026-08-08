@@ -28,6 +28,7 @@ describe('debug panel', () => {
       points: 96,
       lines: 18,
       visibleTileCount: 112,
+      visibleTreeCount: 27,
       pendingTileCount: 6,
       object3dCount: 318,
       groupCount: 54,
@@ -35,6 +36,8 @@ describe('debug panel', () => {
       materialCount: 24,
       geometryCount: 61,
       geometryMemoryCount: 63,
+      treeMeshCount: 135,
+      treeMaterialRefCount: 135,
       textureCount: 7,
       programCount: 12,
       latitude: 32.1234,
@@ -53,6 +56,9 @@ describe('debug panel', () => {
     expect(buildDebugMarkup(snapshot)).toContain('Level');
     expect(buildDebugMarkup(snapshot)).toContain('GPU Points');
     expect(buildDebugMarkup(snapshot)).toContain('GPU Geometries');
+    expect(buildDebugMarkup(snapshot)).toContain('Visible Trees');
+    expect(buildDebugMarkup(snapshot)).toContain('Meshes / Tree');
+    expect(buildDebugMarkup(snapshot)).toContain('Objects / Tile');
     expect(buildDebugMarkup(snapshot)).toContain('Materials');
     expect(buildDebugMarkup(snapshot)).toContain('Programs');
     expect(buildDebugMarkup(snapshot)).toContain('alpha');
