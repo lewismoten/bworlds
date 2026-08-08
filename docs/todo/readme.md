@@ -6,6 +6,8 @@ Continue to keep optimization and archtecture in mind to keep things running fas
 
 Consider what can be made into a plug-in architecture, and convert things over when it makes sense.
 
+Create new packages in the monorepo when it makes sense. Create interaces for plugin architecture.
+
 - [X] [Seasons](./seasons.md)
 
 # Other Tasks
