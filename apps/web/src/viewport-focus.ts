@@ -4,7 +4,6 @@ type FocusableLike = {
 
 type ViewportHostLike = {
   focus: (options?: FocusOptions) => void;
-  querySelector?: (selector: string) => FocusableLike;
 } | null | undefined;
 
 export function restore3dViewportKeyboardFocus(
@@ -15,7 +14,6 @@ export function restore3dViewportKeyboardFocus(
     return false;
   }
 
-  const focusTarget = viewport.querySelector?.('canvas') ?? viewport;
-  focusTarget.focus({ preventScroll: true });
+  viewport.focus({ preventScroll: true });
   return true;
 }
