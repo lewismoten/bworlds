@@ -80,7 +80,6 @@ export function drawTimeWheel(canvas: HTMLCanvasElement | null, cycle: DaylightC
   context.restore();
 
   drawTopMarker(context, constellationOuterRadius + 10, '#f6f8ea');
-  drawDownMarker(context, constellationInnerRadius - 6, '#d8eaff');
 
   context.save();
   context.rotate((cycle.moonPhaseIndex / 8) * Math.PI * 2);
@@ -155,7 +154,7 @@ export function drawTimeWheel(canvas: HTMLCanvasElement | null, cycle: DaylightC
   context.restore();
 
   drawTopMarker(context, daylightOuterRadius + 12, '#ffcf6b');
-  drawDownMarker(context, daylightOuterRadius - 2, '#f1d088');
+  drawTopMarker(context, daylightOuterRadius - 8, '#f1d088', true);
 
   context.fillStyle = '#081019';
   context.beginPath();
@@ -406,34 +405,23 @@ function drawConstellationGlyph(
 function drawTopMarker(
   context: CanvasRenderingContext2D,
   radius: number,
-  color: string
+  color: string,
+  pointDown = false
 ) {
   context.save();
   context.rotate(-Math.PI / 2);
   context.translate(0, -radius);
   context.fillStyle = color;
   context.beginPath();
-  context.moveTo(0, -6);
-  context.lineTo(7, 8);
-  context.lineTo(-7, 8);
-  context.closePath();
-  context.fill();
-  context.restore();
-}
-
-function drawDownMarker(
-  context: CanvasRenderingContext2D,
-  radius: number,
-  color: string
-) {
-  context.save();
-  context.rotate(-Math.PI / 2);
-  context.translate(0, -radius);
-  context.fillStyle = color;
-  context.beginPath();
-  context.moveTo(0, 8);
-  context.lineTo(6, -8);
-  context.lineTo(-6, -8);
+  if (pointDown) {
+    context.moveTo(0, 8);
+    context.lineTo(7, -6);
+    context.lineTo(-7, -6);
+  } else {
+    context.moveTo(0, -6);
+    context.lineTo(7, 8);
+    context.lineTo(-7, 8);
+  }
   context.closePath();
   context.fill();
   context.restore();

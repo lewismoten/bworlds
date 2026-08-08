@@ -7,11 +7,11 @@ export default defineConfig({
   },
   test: {
     environment: 'node',
-    include: ['packages/**/src/**/*.test.ts'],
+    include: ['packages/**/src/**/*.test.ts', 'apps/web/src/**/*.test.ts'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html'],
-      include: ['packages/**/src/**/*.ts'],
+      include: ['packages/**/src/**/*.ts', 'apps/web/src/**/*.ts'],
     },
   },
 });

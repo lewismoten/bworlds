@@ -1,0 +1,26 @@
+import type { getDaylightCycleState } from '@bworlds/core';
+
+type DaylightCycleLike = ReturnType<typeof getDaylightCycleState>;
+
+export type TimePreset = 'dawn' | 'noon' | 'dusk' | 'midnight';
+export type InspectorTab = 'timekeeper' | 'model';
+
+export function getTimePresetProgress(
+  cycle: DaylightCycleLike,
+  preset: TimePreset
+) {
+  if (preset === 'dawn') {
+    return cycle.sunriseProgress;
+  }
+  if (preset === 'dusk') {
+    return cycle.sunsetProgress;
+  }
+  if (preset === 'noon') {
+    return 0.5;
+  }
+  return 0;
+}
+
+export function getNextInspectorTab(tabId: string | undefined): InspectorTab {
+  return tabId === 'model' ? 'model' : 'timekeeper';
+}

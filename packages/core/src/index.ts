@@ -101,6 +101,18 @@ export interface CelestialEventLike {
   name: string;
   progress: number;
   intensity: number;
+  azimuth: number;
+  altitude: number;
+  color: string;
+  size: number;
+  trailLength: number;
+}
+
+export interface MilkyWayBeltLike {
+  azimuthOffset: number;
+  inclination: number;
+  width: number;
+  opacity: number;
 }
 
 export interface CelestialRingEntryLike {
@@ -241,9 +253,19 @@ export function getDaylightCycleState(
   const seasonDay = ((dayNumber % yearLengthDays) + yearLengthDays) % yearLengthDays;
   const visibleEvents = getCelestialEventsForDay(dayNumber, {
     yearLengthDays,
+    dayProgress,
+    observerLatitudeDegrees,
+    solarDeclination,
+    sunriseAzimuth,
+    sunsetAzimuth,
   });
   const calendar = formatCelestialDate(activeConstellation?.name ?? 'Unknown', moonPhaseName);
   const celestialRing = createCelestialRing(constellations);
+  const milkyWay = getMilkyWayBeltState({
+    yearProgress,
+    observerLatitudeDegrees,
+    starsOpacity,
+  });
 
   return {
     dayLengthMs,
@@ -280,6 +302,7 @@ export function getDaylightCycleState(
     celestialRing,
     calendar,
     visibleEvents,
+    milkyWay,
     isNight: daylight < 0.22,
   };
 }
@@ -581,18 +604,44 @@ export function getCelestialEventsForDay(
   dayNumber,
   options: {
     yearLengthDays?: number;
+    dayProgress?: number;
+    observerLatitudeDegrees?: number;
+    solarDeclination?: number;
+    sunriseAzimuth?: number;
+    sunsetAzimuth?: number;
   } = {}
 ): CelestialEventLike[] {
   const yearLengthDays = options.yearLengthDays ?? DEFAULT_YEAR_LENGTH_DAYS;
+  const dayProgress = options.dayProgress ?? 0;
+  const observerLatitudeDegrees = options.observerLatitudeDegrees ?? 0;
+  const solarDeclination = options.solarDeclination ?? 0;
+  const sunriseAzimuth = options.sunriseAzimuth ?? 0;
+  const sunsetAzimuth = options.sunsetAzimuth ?? Math.PI;
   const events: CelestialEventLike[] = [];
 
   PLANET_NAMES.forEach((name, index) => {
     const orbitLength = 9 + index * 4;
+    const orbitProgress = fract(dayNumber / orbitLength + dayProgress / orbitLength);
+    const orbitState = getOrbitState({
+      orbitProgress,
+      observerLatitudeDegrees,
+      declination:
+        solarDeclination * (0.22 + index * 0.08) +
+        Math.sin((dayNumber / (orbitLength + 3)) * Math.PI * 2) * (0.08 + index * 0.02),
+      sunriseAzimuth,
+      sunsetAzimuth,
+      azimuthShift: index * 0.26,
+    });
     events.push({
       type: 'planet',
       name,
-      progress: fract(dayNumber / orbitLength + hash2D('planet-progress', index, dayNumber)),
+      progress: orbitProgress,
       intensity: 0.35 + hash2D('planet-intensity', index, dayNumber % orbitLength) * 0.45,
+      azimuth: orbitState.azimuth,
+      altitude: orbitState.altitude,
+      color: ['#ffd7a6', '#f7b8d7', '#b8efff', '#ffe08c'][index % 4],
+      size: 0.52 + index * 0.08,
+      trailLength: 0,
     });
   });
 
@@ -601,11 +650,27 @@ export function getCelestialEventsForDay(
     const peakOffset = ((dayNumber - seasonStart) % yearLengthDays + yearLengthDays) % yearLengthDays;
     if (peakOffset <= 4 || peakOffset >= yearLengthDays - 4) {
       const distance = Math.min(peakOffset, yearLengthDays - peakOffset);
+      const progress = fract(dayProgress + index * 0.21);
+      const orbitState = getOrbitState({
+        orbitProgress: progress,
+        observerLatitudeDegrees,
+        declination:
+          solarDeclination * -0.35 +
+          Math.sin((dayNumber / (8 + index * 3)) * Math.PI * 2) * 0.12,
+        sunriseAzimuth,
+        sunsetAzimuth,
+        azimuthShift: -0.9 + index * 0.5,
+      });
       events.push({
         type: 'meteor-shower',
         name,
-        progress: distance / 4,
+        progress,
         intensity: 1 - distance / 4,
+        azimuth: orbitState.azimuth,
+        altitude: orbitState.altitude,
+        color: '#eef6ff',
+        size: 0.34,
+        trailLength: 1.6 + index * 0.2,
       });
     }
   });
@@ -614,16 +679,90 @@ export function getCelestialEventsForDay(
     const cycleLength = 20 + index * 12;
     const cycleDay = ((dayNumber % cycleLength) + cycleLength) % cycleLength;
     if (cycleDay <= 3) {
+      const progress = fract((cycleDay + dayProgress) / cycleLength + index * 0.18);
+      const orbitState = getOrbitState({
+        orbitProgress: progress,
+        observerLatitudeDegrees,
+        declination:
+          solarDeclination * -0.5 +
+          Math.cos((dayNumber / cycleLength) * Math.PI * 2) * 0.2,
+        sunriseAzimuth,
+        sunsetAzimuth,
+        azimuthShift: 1.1 - index * 0.38,
+      });
       events.push({
         type: 'comet',
         name,
-        progress: cycleDay / 3,
+        progress,
         intensity: 1 - cycleDay / 3,
+        azimuth: orbitState.azimuth,
+        altitude: orbitState.altitude,
+        color: '#dff5ff',
+        size: 0.42,
+        trailLength: 2.2 + index * 0.35,
       });
     }
   });
 
   return events;
+}
+
+export function getMilkyWayBeltState({
+  yearProgress,
+  observerLatitudeDegrees,
+  starsOpacity,
+}: {
+  yearProgress: number;
+  observerLatitudeDegrees?: number;
+  starsOpacity?: number;
+}): MilkyWayBeltLike {
+  const latitudeRadians = ((observerLatitudeDegrees ?? 0) / 180) * Math.PI;
+  return {
+    azimuthOffset:
+      yearProgress * Math.PI * 2 * 0.16 +
+      Math.sin(latitudeRadians) * 0.42,
+    inclination:
+      1.04 +
+      Math.cos(yearProgress * Math.PI * 2) * 0.12 +
+      Math.sin(latitudeRadians) * 0.18,
+    width: 0.22 + Math.abs(Math.sin(latitudeRadians)) * 0.06,
+    opacity: 0.03 + (starsOpacity ?? 0) * 0.16,
+  };
+}
+
+function getOrbitState({
+  orbitProgress,
+  observerLatitudeDegrees,
+  declination,
+  sunriseAzimuth,
+  sunsetAzimuth,
+  azimuthShift = 0,
+}: {
+  orbitProgress: number;
+  observerLatitudeDegrees: number;
+  declination: number;
+  sunriseAzimuth: number;
+  sunsetAzimuth: number;
+  azimuthShift?: number;
+}) {
+  const latitudeRadians = (observerLatitudeDegrees / 180) * Math.PI;
+  const hourAngle = orbitProgress * Math.PI * 2 - Math.PI;
+  const altitudeAngle = Math.asin(
+    clamp(
+      Math.sin(latitudeRadians) * Math.sin(declination) +
+        Math.cos(latitudeRadians) * Math.cos(declination) * Math.cos(hourAngle),
+      -1,
+      1
+    )
+  );
+  return {
+    altitude: altitudeAngle / (Math.PI / 2),
+    azimuth: normalizeAngle(
+      lerp(sunriseAzimuth, sunsetAzimuth, clamp(orbitProgress, 0, 1)) +
+        Math.PI * orbitProgress +
+        azimuthShift
+    ),
+  };
 }
 
 export function hash2D(seed, x, y) {

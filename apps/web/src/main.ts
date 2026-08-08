@@ -21,6 +21,10 @@ import type { WorldEnvironmentLike } from '@bworlds/plugin-api';
 import './styles.css';
 import { drawTimeWheel, getCelestialDateLabel } from './timekeeper.ts';
 import { createCelestialPreviewRenderer } from './celestial-preview.ts';
+import {
+  getNextInspectorTab,
+  getTimePresetProgress,
+} from './time-controls.ts';
 
 const STORAGE_KEY = 'bworlds:session';
 const builtinPackCatalog = createBuiltinContentPackCatalog();
@@ -66,31 +70,72 @@ root.innerHTML = `
           <form id="content-pack-form" class="pack-form"></form>
         </div>
         <div class="card">
-          <h2>Timekeeper</h2>
-          <canvas id="time-wheel" width="320" height="320"></canvas>
-          <div class="time-toggle-row">
-            <button id="time-freeze-toggle" type="button">Freeze Time</button>
+          <div class="inspector-header">
+            <h2>Celestial Tools</h2>
+            <div class="inspector-tabs" role="tablist" aria-label="Celestial tools">
+              <button
+                id="tab-timekeeper"
+                class="inspector-tab is-active"
+                type="button"
+                role="tab"
+                aria-selected="true"
+                aria-controls="panel-timekeeper"
+              >
+                Timekeeper
+              </button>
+              <button
+                id="tab-model"
+                class="inspector-tab"
+                type="button"
+                role="tab"
+                aria-selected="false"
+                aria-controls="panel-model"
+              >
+                Model
+              </button>
+            </div>
           </div>
-          <div class="time-skip-controls">
-            <button id="time-plus-hour" type="button">+1h</button>
-            <button id="time-plus-six" type="button">+6h</button>
-            <button id="time-plus-twelve" type="button">+12h</button>
-            <button id="time-plus-day" type="button">+1d</button>
-          </div>
-          <div class="time-skip-controls">
-            <button id="time-minus-season" type="button">Prev Season</button>
-            <button id="time-plus-season" type="button">Next Season</button>
-          </div>
-          <div class="time-presets">
-            <button data-time-preset="dawn" type="button">Sunrise</button>
-            <button data-time-preset="noon" type="button">Noon</button>
-            <button data-time-preset="dusk" type="button">Sunset</button>
-            <button data-time-preset="midnight" type="button">Midnight</button>
-          </div>
-        </div>
-        <div class="card">
-          <h2>Celestial Model</h2>
-          <div id="celestial-preview" class="celestial-preview"></div>
+          <section id="panel-timekeeper" class="inspector-panel" role="tabpanel">
+            <canvas id="time-wheel" width="320" height="320"></canvas>
+            <div class="time-toggle-row">
+              <button id="time-freeze-toggle" type="button">Freeze Time</button>
+            </div>
+            <div class="time-skip-controls">
+              <button id="time-plus-hour" type="button">+1h</button>
+              <button id="time-plus-six" type="button">+6h</button>
+              <button id="time-plus-twelve" type="button">+12h</button>
+              <button id="time-plus-day" type="button">+1d</button>
+            </div>
+            <div class="time-skip-controls">
+              <button id="time-minus-season" type="button">Prev Season</button>
+              <button id="time-plus-season" type="button">Next Season</button>
+            </div>
+            <div class="time-presets">
+              <button data-time-preset="dawn" type="button">Sunrise</button>
+              <button data-time-preset="noon" type="button">Noon</button>
+              <button data-time-preset="dusk" type="button">Sunset</button>
+              <button data-time-preset="midnight" type="button">Midnight</button>
+            </div>
+          </section>
+          <section
+            id="panel-model"
+            class="inspector-panel is-hidden"
+            role="tabpanel"
+            aria-hidden="true"
+          >
+            <div id="celestial-preview" class="celestial-preview"></div>
+            <p class="inspector-note">
+              Drag to rotate the model. Seasonal and daily changes stay synced here too.
+            </p>
+            <div class="time-skip-controls">
+              <button id="model-minus-season" type="button">Prev Season</button>
+              <button id="model-plus-season" type="button">Next Season</button>
+            </div>
+            <div class="time-skip-controls">
+              <button id="model-plus-day" type="button">+1d</button>
+              <button id="model-plus-hour" type="button">+1h</button>
+            </div>
+          </section>
         </div>
         <div class="card">
           <h2>Status</h2>
@@ -146,8 +191,23 @@ const minusSeasonButton =
   document.querySelector<HTMLButtonElement>('#time-minus-season');
 const plusSeasonButton =
   document.querySelector<HTMLButtonElement>('#time-plus-season');
+const modelPlusDayButton =
+  document.querySelector<HTMLButtonElement>('#model-plus-day');
+const modelPlusHourButton =
+  document.querySelector<HTMLButtonElement>('#model-plus-hour');
+const modelMinusSeasonButton =
+  document.querySelector<HTMLButtonElement>('#model-minus-season');
+const modelPlusSeasonButton =
+  document.querySelector<HTMLButtonElement>('#model-plus-season');
 const freezeTimeButton =
   document.querySelector<HTMLButtonElement>('#time-freeze-toggle');
+const inspectorTabButtons = Array.from(
+  document.querySelectorAll<HTMLButtonElement>('.inspector-tab')
+);
+const inspectorPanels = {
+  timekeeper: document.querySelector<HTMLElement>('#panel-timekeeper'),
+  model: document.querySelector<HTMLElement>('#panel-model'),
+};
 let lastSavedSnapshot = '';
 
 const savedSession = loadSession();
@@ -212,6 +272,7 @@ const MOON_PHASE_ILLUMINATIONS = [0, 0.25, 0.5, 0.75, 1, 0.75, 0.5, 0.25] as con
 drawAtlas(atlasCanvas.getContext('2d'));
 const renderer3d = create3DRenderer(viewport3d);
 const celestialPreview = createCelestialPreviewRenderer(celestialPreviewHost);
+let activeInspectorTab = getNextInspectorTab(savedSession?.inspectorTab);
 
 const keys = new Set();
 
@@ -535,13 +596,8 @@ function skipSeasonByCount(seasons: number) {
 
 function jumpToTimePreset(preset: 'dawn' | 'noon' | 'dusk' | 'midnight') {
   const environment = getCurrentEnvironment();
-  const presetProgress: Record<typeof preset, number> = {
-    dawn: 0.25,
-    noon: 0.5,
-    dusk: 0.75,
-    midnight: 0,
-  };
-  const targetProgress = presetProgress[preset];
+  const cycle = getCurrentCycle(environment);
+  const targetProgress = getTimePresetProgress(cycle, preset);
   const nextOffsetMs = alignWorldTimeOffsetToDayProgress(
     performance.now(),
     timeState.offsetMs,
@@ -556,6 +612,21 @@ function jumpToTimePreset(preset: 'dawn' | 'noon' | 'dusk' | 'midnight') {
   }
   saveSession();
   render();
+}
+
+function setInspectorTab(tabId: string | undefined) {
+  activeInspectorTab = getNextInspectorTab(tabId);
+  inspectorTabButtons.forEach((button) => {
+    const isActive = button.id === `tab-${activeInspectorTab}`;
+    button.classList.toggle('is-active', isActive);
+    button.setAttribute('aria-selected', String(isActive));
+  });
+  Object.entries(inspectorPanels).forEach(([panelId, panel]) => {
+    const isActive = panelId === activeInspectorTab;
+    panel?.classList.toggle('is-hidden', !isActive);
+    panel?.setAttribute('aria-hidden', String(!isActive));
+  });
+  saveSession();
 }
 
 function updateFreezeTimeButton() {
@@ -917,7 +988,16 @@ plusTwelveButton?.addEventListener('click', () => skipTimeByHours(12));
 plusDayButton?.addEventListener('click', () => skipTimeByHours(24));
 minusSeasonButton?.addEventListener('click', () => skipSeasonByCount(-1));
 plusSeasonButton?.addEventListener('click', () => skipSeasonByCount(1));
+modelPlusDayButton?.addEventListener('click', () => skipTimeByHours(24));
+modelPlusHourButton?.addEventListener('click', () => skipTimeByHours(1));
+modelMinusSeasonButton?.addEventListener('click', () => skipSeasonByCount(-1));
+modelPlusSeasonButton?.addEventListener('click', () => skipSeasonByCount(1));
 freezeTimeButton?.addEventListener('click', toggleTimeFreeze);
+inspectorTabButtons.forEach((button) => {
+  button.addEventListener('click', () => {
+    setInspectorTab(button.id.replace('tab-', ''));
+  });
+});
 root.querySelectorAll<HTMLButtonElement>('[data-time-preset]').forEach((button) => {
   button.addEventListener('click', () => {
     const preset = button.dataset.timePreset;
@@ -935,6 +1015,7 @@ root.querySelectorAll<HTMLButtonElement>('[data-time-preset]').forEach((button) 
 resizeCanvas();
 viewport2d.classList.toggle('is-hidden', state.viewMode !== '2d');
 viewport3d.classList.toggle('is-hidden', state.viewMode !== '3d');
+setInspectorTab(activeInspectorTab);
 render();
 requestAnimationFrame(loop);
 
@@ -952,6 +1033,7 @@ function saveSession() {
       timeOffsetMs: timeState.offsetMs,
       timeFrozen: timeState.frozen,
       frozenWorldTimeMs: timeState.frozenWorldTimeMs,
+      inspectorTab: activeInspectorTab,
     });
     if (snapshot === lastSavedSnapshot) return;
     window.localStorage.setItem(STORAGE_KEY, snapshot);
@@ -974,6 +1056,13 @@ function loadSession() {
       return null;
     }
     if (!Array.isArray(parsed?.stack) || parsed.stack.length === 0) {
+      return null;
+    }
+    if (
+      typeof parsed?.inspectorTab !== 'undefined' &&
+      parsed.inspectorTab !== 'timekeeper' &&
+      parsed.inspectorTab !== 'model'
+    ) {
       return null;
     }
     lastSavedSnapshot = raw;

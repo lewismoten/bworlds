@@ -34,6 +34,14 @@ export function createCelestialPreviewRenderer(host: HTMLElement | null) {
 
   const root = new THREE.Group();
   scene.add(root);
+  const rotationState = {
+    yaw: 0,
+    pitch: 0,
+    dragging: false,
+    pointerId: -1,
+    lastX: 0,
+    lastY: 0,
+  };
 
   const world = new THREE.Mesh(
     new THREE.SphereGeometry(2.8, 28, 28),
@@ -95,6 +103,48 @@ export function createCelestialPreviewRenderer(host: HTMLElement | null) {
   facingArrow.position.set(0, 3.8, 0);
   root.add(facingArrow);
 
+  host.addEventListener('pointerdown', (event) => {
+    rotationState.dragging = true;
+    rotationState.pointerId = event.pointerId;
+    rotationState.lastX = event.clientX;
+    rotationState.lastY = event.clientY;
+    host.classList.add('is-dragging');
+    host.setPointerCapture(event.pointerId);
+  });
+
+  host.addEventListener('pointermove', (event) => {
+    if (!rotationState.dragging || event.pointerId !== rotationState.pointerId) {
+      return;
+    }
+    const deltaX = event.clientX - rotationState.lastX;
+    const deltaY = event.clientY - rotationState.lastY;
+    rotationState.lastX = event.clientX;
+    rotationState.lastY = event.clientY;
+    rotationState.yaw += deltaX * 0.008;
+    rotationState.pitch = clamp(rotationState.pitch + deltaY * 0.006, -0.9, 0.9);
+  });
+
+  const releasePointer = (event: PointerEvent) => {
+    if (event.pointerId !== rotationState.pointerId) {
+      return;
+    }
+    rotationState.dragging = false;
+    rotationState.pointerId = -1;
+    host.classList.remove('is-dragging');
+    if (host.hasPointerCapture(event.pointerId)) {
+      host.releasePointerCapture(event.pointerId);
+    }
+  };
+
+  host.addEventListener('pointerup', releasePointer);
+  host.addEventListener('pointercancel', releasePointer);
+  host.addEventListener('pointerleave', (event) => {
+    if (!rotationState.dragging) {
+      return;
+    }
+    releasePointer(event);
+  });
+
   function resize() {
     const rect = host.getBoundingClientRect();
     const size = Math.max(180, Math.min(rect.width || 300, 360));
@@ -109,8 +159,10 @@ export function createCelestialPreviewRenderer(host: HTMLElement | null) {
     environment: WorldEnvironmentLike,
     facingAngle = 0
   ) {
-    root.rotation.y = facingAngle + Math.PI;
-    root.rotation.z = (-cycle.observerLatitudeDegrees / 180) * Math.PI * 0.45;
+    root.rotation.y = facingAngle + Math.PI + rotationState.yaw;
+    root.rotation.z =
+      (-cycle.observerLatitudeDegrees / 180) * Math.PI * 0.45 +
+      rotationState.pitch;
     world.rotation.y += 0.002;
     world.rotation.z = cycle.solarDeclination * 0.4;
     facingArrow.rotation.z = -facingAngle;
@@ -307,4 +359,8 @@ function previewConstellationPoint(
     anchor.y + (0.5 - star.y) * 1.5,
     anchor.z
   );
+}
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value));
 }

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { getDaylightCycleState } from '@bworlds/core';
 import {
   getCelestialDateLabel,
+  getMoonPhaseSymbol,
   getTimeWheelConstellationEntries,
 } from './timekeeper.ts';
 
@@ -18,5 +19,10 @@ describe('timekeeper helpers', () => {
     const cycle = getDaylightCycleState(0);
     expect(getCelestialDateLabel(cycle)).toContain(cycle.activeConstellation.name);
     expect(getCelestialDateLabel(cycle)).toContain(cycle.moonPhaseName);
+  });
+
+  it('provides symbols for the moon ring phases', () => {
+    expect(getMoonPhaseSymbol(0)).toBe('●');
+    expect(getMoonPhaseSymbol(4)).toBe('○');
   });
 });
