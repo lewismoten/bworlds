@@ -77,6 +77,7 @@ export function getDefaultQuestPlugins(): QuestTypePlugin[] {
     createKillQuestPlugin(),
     createDefenseQuestPlugin(),
     createStealthQuestPlugin(),
+    createAssassinationQuestPlugin(),
     createEscortQuestPlugin(),
     createRescueQuestPlugin(),
     createTrackingQuestPlugin(),
@@ -346,6 +347,54 @@ function createStealthQuestPlugin(): QuestTypePlugin {
       title: `${seasonLabel} Quiet Work`,
       summary: `${context.npcName} needs someone to ${objective}.${professionHint}`,
       availability: context.npcState === 'working' ? 'work' : 'travel',
+      sourceNpcId: context.npcId,
+      sourceNpcName: context.npcName,
+    };
+  });
+}
+
+function createAssassinationQuestPlugin(): QuestTypePlugin {
+  return createQuestTypePlugin('assassination', (context) => {
+    if (
+      context.playerLevel < 6 ||
+      context.playerLevel > 22 ||
+      context.npcState !== 'working' ||
+      !(
+        context.professionFamily === 'town-hall' ||
+        context.professionFamily === 'market' ||
+        context.professionFamily === 'stable' ||
+        context.professionFamily === 'temple'
+      )
+    ) {
+      return null;
+    }
+
+    const seasonLabel = getSeasonLabel(context.yearProgress);
+    const target =
+      context.professionFamily === 'stable'
+        ? 'a rogue handler hiding among the switchback camps'
+        : context.professionFamily === 'temple'
+          ? 'the cult knife behind the relic robberies'
+          : context.professionFamily === 'market'
+            ? 'the broker ordering caravan ambushes from the outer road'
+            : 'the raider captain coordinating strikes on the town watch';
+    const questId =
+      `${context.townKey}:${context.npcId}:assassination:${context.professionFamily}:${seasonLabel}`;
+    if (context.completedQuestIds.has(questId)) {
+      return null;
+    }
+
+    const professionHint =
+      context.playerProfession === 'guard' || context.playerProfession === 'scout'
+        ? ' Your pursuit skills make you a credible bounty hunter for the job.'
+        : '';
+
+    return {
+      id: questId,
+      type: 'assassination',
+      title: `${seasonLabel} Bounty Mark`,
+      summary: `${context.npcName} posts a bounty to locate and eliminate ${target}.${professionHint}`,
+      availability: 'work',
       sourceNpcId: context.npcId,
       sourceNpcName: context.npcName,
     };

@@ -16,7 +16,7 @@ Quests may include:
 - [X] Defense quest — protect a location or NPC against waves of enemies.
 - [X] Survival quest — endure for a period of time or reach safety under difficult conditions.
 - [X] Stealth / infiltration quest — enter an area without being detected, steal something, spy, or sabotage.
-- [ ] Assassination / bounty quest — locate and eliminate a specific target.
+- [X] Assassination / bounty quest — locate and eliminate a specific target.
 - [ ] Capture quest — capture rather than kill a target.
 - [X] Follow / track quest — trail an NPC, footprints, creature, signal, or other clue.
 - [X] Race / timed quest — complete an objective before a deadline or another participant.

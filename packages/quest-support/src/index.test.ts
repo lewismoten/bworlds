@@ -11,6 +11,7 @@ describe('quest support', () => {
       'kill',
       'defense',
       'stealth',
+      'assassination',
       'escort',
       'rescue',
       'tracking',
@@ -201,6 +202,46 @@ describe('quest support', () => {
       stealth.some((offer) => offer.summary.includes('quiet footwork'))
     ).toBe(true);
     expect(underleveled.some((offer) => offer.type === 'stealth')).toBe(false);
+  });
+
+  it('offers assassination quests as bounty work for dangerous named targets', () => {
+    const assassination = getDefaultQuestRegistry().getOffers({
+      npcId: 'npc:warden',
+      npcName: 'Della Norwood',
+      townKey: '3:7',
+      dayProgress: 0.54,
+      yearProgress: 0.4,
+      playerLevel: 8,
+      playerProfession: 'guard',
+      completedQuestIds: new Set<string>(),
+      npcState: 'working',
+      profession: 'warden',
+      professionFamily: 'town-hall',
+      residenceBuildingId: 'home',
+      workplaceBuildingId: 'hall',
+    });
+    const underleveled = getDefaultQuestRegistry().getOffers({
+      npcId: 'npc:warden',
+      npcName: 'Della Norwood',
+      townKey: '3:7',
+      dayProgress: 0.54,
+      yearProgress: 0.4,
+      playerLevel: 3,
+      completedQuestIds: new Set<string>(),
+      npcState: 'working',
+      profession: 'warden',
+      professionFamily: 'town-hall',
+      residenceBuildingId: 'home',
+      workplaceBuildingId: 'hall',
+    });
+
+    expect(assassination.some((offer) => offer.type === 'assassination')).toBe(true);
+    expect(
+      assassination.some((offer) => offer.summary.includes('credible bounty hunter'))
+    ).toBe(true);
+    expect(underleveled.some((offer) => offer.type === 'assassination')).toBe(
+      false
+    );
   });
 
   it('offers rescue quests for staffed civic, temple, and stable roles', () => {
