@@ -135,8 +135,6 @@ export function createCelestialPreviewRenderer(host: HTMLElement | null) {
   root.add(auroraRoot);
   const orbitRoot = new THREE.Group();
   root.add(orbitRoot);
-  const orreryRoot = new THREE.Group();
-  root.add(orreryRoot);
 
   const sun = new THREE.Mesh(
     new THREE.SphereGeometry(0.95, 24, 24),
@@ -222,14 +220,12 @@ export function createCelestialPreviewRenderer(host: HTMLElement | null) {
     facingAngle = 0,
     overworldSampler: OverworldSamplerLike | null = null
   ) {
-    root.rotation.y = facingAngle + Math.PI + rotationState.yaw;
-    root.rotation.z =
-      (-cycle.observerLatitudeDegrees / 180) * Math.PI * 0.45 +
-      rotationState.pitch;
+    root.rotation.y = Math.PI + rotationState.yaw;
+    root.rotation.z = getPreviewRootPitch(cycle.observerLatitudeDegrees, rotationState.pitch);
     world.rotation.y += 0.002;
     world.rotation.z = cycle.solarDeclination * 0.4;
     syncPreviewPlanetTexture(world, overworldSampler, planetTextureState);
-    facingArrow.rotation.z = -facingAngle;
+    syncPreviewFacingArrow(facingArrow, facingAngle);
 
     updateBodyPosition(
       sun,
@@ -285,7 +281,6 @@ export function createCelestialPreviewRenderer(host: HTMLElement | null) {
     syncMilkyWayBelt(beltRoot, cycle);
     syncPreviewAuroras(auroraRoot, cycle);
     syncPreviewOrbits(orbitRoot, cycle);
-    syncPreviewOrrery(orreryRoot, cycle);
 
     const skyOpacity = 0.06 + cycle.starsOpacity * 0.12;
     (skyShell.material as THREE.MeshBasicMaterial).opacity = skyOpacity;
@@ -298,7 +293,6 @@ export function createCelestialPreviewRenderer(host: HTMLElement | null) {
       (event) => event.visibility > 0.02
     );
     orbitRoot.visible = true;
-    orreryRoot.visible = true;
 
     renderer.render(scene, camera);
   }
@@ -330,6 +324,23 @@ export function getPreviewLightingProfile(
     emissiveIntensity: 0.46 + cycle.night * 0.26,
     moonEmissiveIntensity: 0.08 + cycle.night * 0.18,
     glowOpacity: 0.07 + cycle.daylight * 0.06 + cycle.starsOpacity * 0.02,
+  };
+}
+
+export function getPreviewRootPitch(
+  observerLatitudeDegrees: number,
+  dragPitch = 0
+) {
+  return (-observerLatitudeDegrees / 180) * Math.PI * 0.45 + dragPitch;
+}
+
+export function getPreviewFacingArrowState(facingAngle: number) {
+  const radius = 4.55;
+  return {
+    x: Math.cos(facingAngle) * radius,
+    y: 0.9,
+    z: Math.sin(facingAngle) * radius,
+    rotationY: -facingAngle + Math.PI / 2,
   };
 }
 
@@ -404,6 +415,14 @@ function syncPreviewPlanetTexture(
   material.map = texture;
   material.needsUpdate = true;
   textureState.lastSampler = overworldSampler;
+}
+
+function syncPreviewFacingArrow(mesh: THREE.Mesh, facingAngle: number) {
+  const state = getPreviewFacingArrowState(facingAngle);
+  mesh.position.set(state.x, state.y, state.z);
+  mesh.rotation.x = Math.PI / 2;
+  mesh.rotation.y = state.rotationY;
+  mesh.rotation.z = 0;
 }
 
 function updateBodyPosition(

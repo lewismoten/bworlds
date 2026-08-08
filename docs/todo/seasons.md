@@ -120,6 +120,7 @@ add a outer globe of stars in the sky that appear at night with procedurally gen
 - [ ] Clicking the same bezel should toggle the arrow off.
 - [ ] In the celestial model, the planet is still very dark. it may need some emissive light or omnidirectional light applied. 
 - [ ] In the celestial model, the sun is not emitting light onto the planet and casing shadows on the moon
-- [ ] The arrows shouldn't rotate the celestial model. instead, it should rotate the players orientation in the model.
-- [ ] There appears to be two suns in the celestial model. There is a bunch of "junk" below the planet, appearing to be a black hold swallowing a few planets.
+- [x] The arrows shouldn't rotate the celestial model. instead, it should rotate the players orientation in the model.
+- [x] There appears to be two suns in the celestial model. There is a bunch of "junk" below the planet, appearing to be a black hold swallowing a few planets.
 - [x] Add a separate side-window 3D solar system model that reflects the current sun, moon, planets, constellations, and Milky Way layout.
+- [ ] the side-window 3d solar system is hard to see anything and small, as well as the world model. If two models are needed, then there should be a way to toggle which one is currently active/visible.

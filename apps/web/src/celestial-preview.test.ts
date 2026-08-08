@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest';
 import {
   buildPlanetTextureGrid,
   getPreviewAuroraBandPath,
+  getPreviewFacingArrowState,
   getPreviewLightingProfile,
+  getPreviewRootPitch,
   getPreviewShadowProfile,
   getPreviewSunOrbitSpec,
   getPlanetSurfaceColor,
@@ -96,5 +98,19 @@ describe('celestial preview helpers', () => {
         sunAltitude: -0.2,
       } as any).sunCastShadow
     ).toBe(false);
+  });
+
+  it('moves the facing marker without rotating the whole preview root by player heading', () => {
+    const east = getPreviewFacingArrowState(0);
+    const north = getPreviewFacingArrowState(-Math.PI / 2);
+
+    expect(east.x).toBeGreaterThan(0);
+    expect(Math.abs(east.z)).toBeLessThan(0.001);
+    expect(Math.abs(north.x)).toBeLessThan(0.001);
+    expect(north.z).toBeLessThan(0);
+    expect(getPreviewRootPitch(24, 0.2)).toBeCloseTo(
+      (-24 / 180) * Math.PI * 0.45 + 0.2,
+      6
+    );
   });
 });
