@@ -27,6 +27,18 @@ describe('default content pack tile definitions', () => {
         name: 'Floor',
       })
     );
+    expect(definitions.get('cave-floor')).toEqual(
+      expect.objectContaining({
+        name: 'Cave Floor',
+        walkable: true,
+      })
+    );
+    expect(definitions.get('cave-dripstone')).toEqual(
+      expect.objectContaining({
+        name: 'Dripstone',
+        walkable: false,
+      })
+    );
   });
 
   it('provides a built-in fallback lookup without depending on core tile tables', () => {

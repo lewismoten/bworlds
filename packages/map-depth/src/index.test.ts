@@ -83,6 +83,42 @@ function createPlugins(): PluginRegistryLike {
 }
 
 describe('map depth', () => {
+  it('generates cave interiors with pools, rope bridges, and cave features', () => {
+    const map = plugin.createMap?.({
+      seed: 'cave-layout-spec',
+      plugins: createPlugins(),
+      context: {
+        id: 'cave-system:2,3|4,7',
+        label: 'Lantern Grotto',
+        type: 'cave',
+        depth: 1,
+        origin: { x: 2, y: 3 },
+        systemId: 'cave-system:2,3|4,7',
+        entrances: [
+          { x: 2, y: 3, name: 'South Mouth' },
+          { x: 4, y: 7, name: 'East Mouth' },
+        ],
+      },
+    });
+    expect(map).toBeDefined();
+    if (!map) {
+      throw new Error('expected cave depth map');
+    }
+
+    const featureKinds = new Set<string>();
+    for (let y = -13; y <= 13; y += 1) {
+      for (let x = -13; x <= 13; x += 1) {
+        featureKinds.add(map.getTile(x, y).kind);
+      }
+    }
+
+    expect(featureKinds.has('river')).toBe(true);
+    expect(featureKinds.has('bridge')).toBe(true);
+    expect(featureKinds.has('cave-mushrooms')).toBe(true);
+    expect(featureKinds.has('cave-dripstone')).toBe(true);
+    expect(featureKinds.has('cave-obstacle')).toBe(true);
+  });
+
   it('creates multiple overworld exits for shared cave systems', () => {
     const map = plugin.createMap?.({
       seed: 'spec',

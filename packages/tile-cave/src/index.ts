@@ -19,6 +19,7 @@ import type {
   PoiAnchorLike,
   RuntimePlugin,
   TileLike,
+  TilePlugin,
 } from '@bworlds/plugin-api';
 
 const TILE_PIXEL_SIZE = 16;
@@ -27,7 +28,7 @@ const CAVE_PASS_ELEVATION_THRESHOLD = 0.72;
 const CAVE_PASS_SAMPLE_COUNT = 5;
 
 export function createCaveTilePlugin(): RuntimePlugin {
-  return createEnterablePoiTilePlugin({
+  const basePlugin = createEnterablePoiTilePlugin({
     pluginName: 'tile-cave',
     kind: 'cave',
     definition: {
@@ -291,6 +292,11 @@ export function createCaveTilePlugin(): RuntimePlugin {
       }
     },
   });
+
+  return {
+    ...basePlugin,
+    tiles: [...(basePlugin.tiles ?? []), ...createCaveInteriorTiles()],
+  };
 }
 
 function getCaveEntranceDirection(
@@ -423,4 +429,243 @@ function normalizeCaveEntrances(
       y: entry.y,
       ...(typeof entry.name === 'string' ? { name: entry.name } : {}),
     }));
+}
+
+function createCaveInteriorTiles(): TilePlugin[] {
+  return [
+    {
+      kind: 'cave-floor',
+      definition: {
+        name: 'Cave Floor',
+        color: '#3a332d',
+        miniColor: '#5a5148',
+        walkable: true,
+        wallHeight: 0,
+      },
+      paint2D: paintCaveFloorTile,
+    },
+    {
+      kind: 'cave-wall',
+      definition: {
+        name: 'Cave Wall',
+        color: '#272320',
+        miniColor: '#3a332d',
+        walkable: false,
+        wallHeight: 1.05,
+      },
+      paint2D: paintCaveWallTile,
+    },
+    {
+      kind: 'cave-mushrooms',
+      definition: {
+        name: 'Glow Mushrooms',
+        color: '#2f3a30',
+        miniColor: '#58cfa0',
+        walkable: true,
+        wallHeight: 0,
+      },
+      paint2D: paintCaveMushroomTile,
+      create3DModel({ three, tileX, tileY }: Create3DModelContext) {
+        return createCaveMushroomGroup(three, tileX, tileY);
+      },
+    },
+    {
+      kind: 'cave-dripstone',
+      definition: {
+        name: 'Dripstone',
+        color: '#4a433c',
+        miniColor: '#6b6259',
+        walkable: false,
+        wallHeight: 0.78,
+      },
+      paint2D: paintCaveDripstoneTile,
+      create3DModel({ three, tileX, tileY }: Create3DModelContext) {
+        return createCaveDripstoneGroup(three, tileX, tileY);
+      },
+    },
+    {
+      kind: 'cave-obstacle',
+      definition: {
+        name: 'Fallen Rock',
+        color: '#4b4239',
+        miniColor: '#75685b',
+        walkable: false,
+        wallHeight: 0.58,
+      },
+      paint2D: paintCaveObstacleTile,
+      create3DModel({ three, tileX, tileY }: Create3DModelContext) {
+        return createCaveObstacleGroup(three, tileX, tileY);
+      },
+    },
+  ];
+}
+
+function paintCaveFloorTile({
+  context,
+  x,
+  y,
+  fillRect,
+  speckle,
+  motif,
+}: Paint2DContext) {
+  fillRect(context, x, y, TILE_PIXEL_SIZE, TILE_PIXEL_SIZE, '#453c35');
+  speckle(context, x, y, '#5d5247', 18, 0.22, motif);
+  fillRect(context, x, y + 12, TILE_PIXEL_SIZE, 2, '#332d28');
+  return true;
+}
+
+function paintCaveWallTile({
+  context,
+  x,
+  y,
+  fillRect,
+  speckle,
+  motif,
+}: Paint2DContext) {
+  fillRect(context, x, y, TILE_PIXEL_SIZE, TILE_PIXEL_SIZE, '#26211e');
+  for (let row = 1; row < TILE_PIXEL_SIZE; row += 4) {
+    fillRect(context, x, y + row, TILE_PIXEL_SIZE, 1, '#342d28');
+  }
+  speckle(context, x, y, '#4b423b', 16, 0.16, motif);
+  return true;
+}
+
+function paintCaveMushroomTile(paint: Paint2DContext) {
+  paintCaveFloorTile(paint);
+  const { context, x, y, fillRect, motif } = paint;
+  const capX = 4 + motif.int(0, 2);
+  const capY = 7 + motif.int(-1, 1);
+  fillRect(context, x + capX, y + capY, 3, 2, '#7ef7c0');
+  fillRect(context, x + capX + 5, y + capY - 2, 3, 2, '#a7fff0');
+  fillRect(context, x + capX + 1, y + capY + 2, 1, 2, '#d8fff6');
+  fillRect(context, x + capX + 6, y + capY, 1, 2, '#d8fff6');
+  return true;
+}
+
+function paintCaveDripstoneTile(paint: Paint2DContext) {
+  paintCaveFloorTile(paint);
+  const { context, x, y, fillRect, motif } = paint;
+  const apex = 7 + motif.int(-1, 1);
+  for (let row = 0; row < 5; row += 1) {
+    fillRect(context, x + apex - row, y + 10 - row * 2, row * 2 + 1, 2, '#7a7063');
+  }
+  return true;
+}
+
+function paintCaveObstacleTile(paint: Paint2DContext) {
+  paintCaveFloorTile(paint);
+  const { context, x, y, fillRect, motif } = paint;
+  fillRect(context, x + 4, y + 6, 8, 5, '#6c6157');
+  fillRect(context, x + 5 + motif.int(-1, 1), y + 4, 5, 3, '#8a7d70');
+  fillRect(context, x + 3, y + 10, 10, 2, '#564d46');
+  return true;
+}
+
+function createCaveMushroomGroup(
+  three: Create3DModelContext['three'],
+  tileX: number,
+  tileY: number
+) {
+  const group = new three.Group();
+  const capMaterial = new three.MeshStandardMaterial({
+    color: '#8fffd2',
+    emissive: '#64f2c3',
+    emissiveIntensity: 0.95,
+    roughness: 0.42,
+    metalness: 0.02,
+  });
+  const stemMaterial = new three.MeshStandardMaterial({
+    color: '#d7d2c8',
+    roughness: 0.88,
+    metalness: 0.01,
+  });
+  const count = 3 + Math.floor(hash2D('cave-mushroom-count', tileX, tileY) * 3);
+
+  for (let index = 0; index < count; index += 1) {
+    const stem = new three.Mesh(
+      new three.CylinderGeometry(0.025, 0.04, 0.12, 6),
+      stemMaterial
+    );
+    const cap = new three.Mesh(
+      new three.SphereGeometry(0.075, 8, 6),
+      capMaterial
+    );
+    const offsetX =
+      (hash2D('cave-mushroom-x', tileX * 11 + index, tileY) - 0.5) * 0.45;
+    const offsetZ =
+      (hash2D('cave-mushroom-z', tileX, tileY * 13 + index) - 0.5) * 0.45;
+    const height = 0.11 + hash2D('cave-mushroom-h', tileX + index, tileY) * 0.05;
+    stem.position.set(tileX + offsetX, height * 0.5, tileY + offsetZ);
+    cap.position.set(tileX + offsetX, height, tileY + offsetZ);
+    cap.scale.set(1.15, 0.7, 1.15);
+    group.add(stem);
+    group.add(cap);
+  }
+
+  return group;
+}
+
+function createCaveDripstoneGroup(
+  three: Create3DModelContext['three'],
+  tileX: number,
+  tileY: number
+) {
+  const { mountainMaterial } = createMountainTerrainMaterials(three);
+  const group = new three.Group();
+  const spireCount = 3 + Math.floor(hash2D('cave-dripstone-count', tileX, tileY) * 3);
+
+  for (let index = 0; index < spireCount; index += 1) {
+    const height = 0.45 + hash2D('cave-dripstone-height', tileX + index, tileY) * 0.38;
+    const spire = new three.Mesh(
+      new three.ConeGeometry(0.08, height, 5),
+      mountainMaterial
+    );
+    spire.position.set(
+      tileX + (hash2D('cave-dripstone-x', tileX * 17 + index, tileY) - 0.5) * 0.46,
+      height * 0.5,
+      tileY + (hash2D('cave-dripstone-z', tileX, tileY * 19 + index) - 0.5) * 0.46
+    );
+    group.add(spire);
+  }
+
+  const hanging = new three.Mesh(
+    new three.ConeGeometry(0.07, 0.28, 5),
+    mountainMaterial
+  );
+  hanging.position.set(
+    tileX + (hash2D('cave-dripstone-hang-x', tileX, tileY) - 0.5) * 0.3,
+    0.92,
+    tileY + (hash2D('cave-dripstone-hang-z', tileX, tileY) - 0.5) * 0.3
+  );
+  hanging.rotation.x = Math.PI;
+  group.add(hanging);
+
+  return group;
+}
+
+function createCaveObstacleGroup(
+  three: Create3DModelContext['three'],
+  tileX: number,
+  tileY: number
+) {
+  const { mountainMaterial } = createMountainTerrainMaterials(three);
+  const group = new three.Group();
+  const count = 2 + Math.floor(hash2D('cave-obstacle-count', tileX, tileY) * 3);
+
+  for (let index = 0; index < count; index += 1) {
+    const boulder = new three.Mesh(
+      new three.SphereGeometry(0.16, 7, 6),
+      mountainMaterial
+    );
+    const scale = 0.75 + hash2D('cave-obstacle-scale', tileX + index, tileY) * 0.5;
+    boulder.position.set(
+      tileX + (hash2D('cave-obstacle-x', tileX * 23 + index, tileY) - 0.5) * 0.34,
+      0.12 + index * 0.04,
+      tileY + (hash2D('cave-obstacle-z', tileX, tileY * 29 + index) - 0.5) * 0.3
+    );
+    boulder.scale.set(scale, 0.7 + scale * 0.35, scale);
+    group.add(boulder);
+  }
+
+  return group;
 }
