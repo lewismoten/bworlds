@@ -24,6 +24,65 @@ type PreviewLightingCycleLike = Pick<
   DaylightCycleLike,
   'daylight' | 'night' | 'starsOpacity'
 >;
+type PreviewLightingProfile = {
+  ambientIntensity: number;
+  hemisphereIntensity: number;
+  rimIntensity: number;
+  sunIntensity: number;
+  sunFillIntensity: number;
+  bounceFillIntensity: number;
+  nightFillIntensity: number;
+  emissiveIntensity: number;
+  moonEmissiveIntensity: number;
+  sunGlowOpacity: number;
+  glowOpacity: number;
+};
+type PreviewFacingArrowState = {
+  x: number;
+  y: number;
+  z: number;
+  rotationY: number;
+};
+type PreviewShadowProfile = {
+  sunCastShadow: boolean;
+  cameraExtent: number;
+  mapSize: number;
+  bias: number;
+  normalBias: number;
+  radius: number;
+};
+type PreviewPlanetLightBalance = {
+  daySideLight: number;
+  darkSideLight: number;
+  contrastRatio: number;
+};
+type CelestialPreviewSceneSignatures = {
+  constellations: string;
+  events: string;
+  milkyWay: string;
+  aurora: string;
+  orbits: string;
+};
+type PreviewSunShadowCoverageState = {
+  shadowProfile: PreviewShadowProfile;
+  worldWithinShadow: boolean;
+  moonWithinShadow: boolean;
+};
+type PreviewLightRigState = {
+  sun: PreviewPoint3D;
+  moon: PreviewPoint3D;
+  bounce: PreviewPoint3D;
+  lighting: PreviewLightingProfile;
+  shadowProfile: PreviewShadowProfile;
+};
+type PreviewSunOrbitSpec = {
+  radius: number;
+  altitude: number;
+  fullStartAzimuth: number;
+  fullEndAzimuth: number;
+  daylightStartAzimuth: number;
+  daylightEndAzimuth: number;
+};
 
 type PlanetSurfaceKind =
   | Kind
@@ -385,14 +444,19 @@ export function createCelestialPreviewRenderer(
   };
 }
 
-export function getPlanetSurfaceColor(kind: PlanetSurfaceKind | undefined) {
+export function getPlanetSurfaceColor(
+  kind: PlanetSurfaceKind | undefined
+): string {
   if (!kind) {
     return '#1a3d68';
   }
   return PLANET_SURFACE_COLORS[kind] ?? '#6b7c59';
 }
 
-export function brightenPreviewSurfaceColor(color: string, factor = 0.12) {
+export function brightenPreviewSurfaceColor(
+  color: string,
+  factor = 0.12
+): string {
   const red = Number.parseInt(color.slice(1, 3), 16);
   const green = Number.parseInt(color.slice(3, 5), 16);
   const blue = Number.parseInt(color.slice(5, 7), 16);
@@ -403,7 +467,9 @@ export function brightenPreviewSurfaceColor(color: string, factor = 0.12) {
   return `#${brighten(red)}${brighten(green)}${brighten(blue)}`;
 }
 
-export function getPreviewLightingProfile(cycle: PreviewLightingCycleLike) {
+export function getPreviewLightingProfile(
+  cycle: PreviewLightingCycleLike
+): PreviewLightingProfile {
   return {
     ambientIntensity: 1.08 + cycle.daylight * 0.46 + cycle.night * 0.16,
     hemisphereIntensity: 0.56 + cycle.daylight * 0.4 + cycle.night * 0.12,
@@ -422,7 +488,7 @@ export function getPreviewLightingProfile(cycle: PreviewLightingCycleLike) {
 export function getPreviewRootPitch(
   observerLatitudeDegrees: number,
   dragPitch = 0
-) {
+): number {
   return (-observerLatitudeDegrees / 180) * Math.PI * 0.45 + dragPitch;
 }
 
@@ -438,7 +504,9 @@ export function getPreviewBodyPosition(
   };
 }
 
-export function getPreviewFacingArrowState(facingAngle: number) {
+export function getPreviewFacingArrowState(
+  facingAngle: number
+): PreviewFacingArrowState {
   const radius = 4.55;
   return {
     x: Math.cos(facingAngle) * radius,
@@ -450,7 +518,7 @@ export function getPreviewFacingArrowState(facingAngle: number) {
 
 export function getPreviewShadowProfile(
   cycle: Pick<DaylightCycleLike, 'daylight' | 'sunAltitude'>
-) {
+): PreviewShadowProfile {
   return {
     sunCastShadow: cycle.daylight > 0.04 || cycle.sunAltitude > -0.08,
     cameraExtent: cycle.daylight > 0.4 ? 14 : 17,
@@ -461,7 +529,9 @@ export function getPreviewShadowProfile(
   };
 }
 
-export function getPreviewPlanetLightBalance(cycle: PreviewLightingCycleLike) {
+export function getPreviewPlanetLightBalance(
+  cycle: PreviewLightingCycleLike
+): PreviewPlanetLightBalance {
   const lighting = getPreviewLightingProfile(cycle);
   const daySideLight =
     lighting.ambientIntensity +
@@ -483,7 +553,9 @@ export function getPreviewPlanetLightBalance(cycle: PreviewLightingCycleLike) {
   };
 }
 
-export function getCelestialPreviewSceneSignatures(cycle: DaylightCycleLike) {
+export function getCelestialPreviewSceneSignatures(
+  cycle: DaylightCycleLike
+): CelestialPreviewSceneSignatures {
   return {
     constellations: [
       cycle.activeConstellationIndex ?? 0,
@@ -540,7 +612,7 @@ export function getPreviewSunShadowCoverageState(
     DaylightCycleLike,
     'daylight' | 'sunAltitude' | 'sunAzimuth' | 'moonAltitude' | 'moonAzimuth'
   >
-) {
+): PreviewSunShadowCoverageState {
   const shadowProfile = getPreviewShadowProfile(cycle);
   const lightPosition = getPreviewLightRigState({
     daylight: cycle.daylight,
@@ -578,7 +650,7 @@ export function getPreviewLightRigState(
     | 'moonAzimuth'
     | 'moonAltitude'
   >
-) {
+): PreviewLightRigState {
   const lighting = getPreviewLightingProfile(cycle);
   const shadowProfile = getPreviewShadowProfile(cycle);
   const sun = getPreviewBodyPosition(cycle.sunAzimuth, cycle.sunAltitude, 13.5);
@@ -602,7 +674,7 @@ export function buildPlanetTextureGrid(
   sampleOverworld: OverworldSamplerLike['sampleOverworld'],
   width = 64,
   height = 32
-) {
+): string[][] {
   return Array.from({ length: height }, (_, y) =>
     Array.from({ length: width }, (_, x) => {
       const longitude = x / width;
@@ -616,7 +688,9 @@ export function buildPlanetTextureGrid(
   );
 }
 
-export function getPreviewSunOrbitSpec(cycle: DaylightCycleLike) {
+export function getPreviewSunOrbitSpec(
+  cycle: DaylightCycleLike
+): PreviewSunOrbitSpec {
   return {
     radius: 10,
     altitude: 0.04,

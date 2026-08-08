@@ -230,7 +230,14 @@ export function getSolarSystemEventMarkerStates(
   return markers;
 }
 
-export function getSolarSystemSceneSignatures(cycle: DaylightCycleLike) {
+export function getSolarSystemSceneSignatures(cycle: DaylightCycleLike): {
+  stars: string;
+  orbits: string;
+  bodies: string;
+  shell: string;
+  events: string;
+  labels: string;
+} {
   return {
     stars: [
       Math.round((cycle.yearProgress ?? 0) * 24),

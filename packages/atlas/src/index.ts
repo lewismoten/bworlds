@@ -24,7 +24,7 @@ type DrawTileSpriteOptions = {
   timeMs?: number;
 };
 
-export function drawAtlas(context: CanvasRenderingContext2D) {
+export function drawAtlas(context: CanvasRenderingContext2D): void {
   const entries = getTileDefinitionEntries();
   context.clearRect(0, 0, 256, 256);
   context.font = '10px sans-serif';
@@ -47,7 +47,7 @@ export function drawTileSprite(
   y: number,
   size: number,
   options: DrawTileSpriteOptions = {}
-) {
+): void {
   const variant =
     options.variant ??
     getTileVariantIndex(kind, options.worldX ?? 0, options.worldY ?? 0);
@@ -80,7 +80,11 @@ export function drawTileSprite(
   });
 }
 
-export function getTileVariantIndex(kind: Kind, worldX: number, worldY: number) {
+export function getTileVariantIndex(
+  kind: Kind,
+  worldX: number,
+  worldY: number
+): number {
   const hash = hash2D(`tile-variant:${kind}`, worldX, worldY);
   return Math.floor(hash * VARIANTS_PER_TILE) % VARIANTS_PER_TILE;
 }
@@ -93,7 +97,10 @@ export function getTilePixelSize(): number {
   return TILE_PIXEL_SIZE;
 }
 
-export function getTileSpriteRect(kind: Kind, variant: number) {
+export function getTileSpriteRect(
+  kind: Kind,
+  variant: number
+): { x: number; y: number } {
   return getTileSpriteRegion(kind, variant);
 }
 

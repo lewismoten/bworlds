@@ -966,13 +966,13 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
 export function getFacingVisibilityBucket(
   facingAngle: number,
   bucketCount = FACING_BUCKETS
-) {
+): number {
   const normalized =
     ((facingAngle % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
   return Math.floor((normalized / (Math.PI * 2)) * bucketCount);
 }
 
-export function getSkyConstellationSignature(cycle: SkySignatureCycle) {
+export function getSkyConstellationSignature(cycle: SkySignatureCycle): string {
   return [
     cycle.activeConstellationIndex ?? 0,
     Math.round((cycle.yearProgress ?? 0) * 48),
@@ -980,7 +980,7 @@ export function getSkyConstellationSignature(cycle: SkySignatureCycle) {
   ].join('|');
 }
 
-export function getSkyEventSignature(cycle: SkySignatureCycle) {
+export function getSkyEventSignature(cycle: SkySignatureCycle): string {
   return (cycle.visibleEvents ?? [])
     .map((event) =>
       [
@@ -996,7 +996,7 @@ export function getSkyEventSignature(cycle: SkySignatureCycle) {
     .join('|');
 }
 
-export function getSkyMilkyWaySignature(cycle: SkySignatureCycle) {
+export function getSkyMilkyWaySignature(cycle: SkySignatureCycle): string {
   return cycle.milkyWay
     ? [
         Math.round((cycle.yearProgress ?? 0) * 48),
@@ -1008,7 +1008,7 @@ export function getSkyMilkyWaySignature(cycle: SkySignatureCycle) {
     : 'none';
 }
 
-export function getSkyAuroraSignature(cycle: SkySignatureCycle) {
+export function getSkyAuroraSignature(cycle: SkySignatureCycle): string {
   return (cycle.auroraBands ?? [])
     .map((band) =>
       [

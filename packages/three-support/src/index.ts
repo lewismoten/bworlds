@@ -322,7 +322,12 @@ export function createRibbonMesh(
   return new three.Mesh(geometry, material);
 }
 
-export function createMountainTerrainMaterials(three: ThreeHostLike) {
+export function createMountainTerrainMaterials(
+  three: ThreeHostLike
+): {
+  mountainMaterial: ThreeMaterialLike;
+  snowMaterial: ThreeMaterialLike;
+} {
   if (!mountainTerrainMaterialCache.has(three)) {
     const texture = createPaintedCanvasTexture(three, {
       width: 64,

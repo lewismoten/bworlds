@@ -54,7 +54,7 @@ export type SessionSnapshot = {
   compassHeadingAngle: number | null;
 };
 
-export function serializeSessionSnapshot(snapshot: SessionSnapshot) {
+export function serializeSessionSnapshot(snapshot: SessionSnapshot): string {
   return JSON.stringify(snapshot);
 }
 

@@ -449,19 +449,23 @@ type CoreWorldStateLike = {
   tryExit(): boolean;
 };
 
-export function fract(value: number) {
+export function fract(value: number): number {
   return value - Math.floor(value);
 }
 
-export function clamp(value: number, min: number, max: number) {
+export function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
 
-export function lerp(a: number, b: number, t: number) {
+export function lerp(a: number, b: number, t: number): number {
   return a + (b - a) * t;
 }
 
-export function smoothstep(edge0: number, edge1: number, value: number) {
+export function smoothstep(
+  edge0: number,
+  edge1: number,
+  value: number
+): number {
   const t = clamp((value - edge0) / (edge1 - edge0), 0, 1);
   return t * t * (3 - 2 * t);
 }
@@ -1366,7 +1370,7 @@ export function getOrbitalSkyPosition({
   };
 }
 
-export function hash2D(seed: string | number, x: number, y: number) {
+export function hash2D(seed: string | number, x: number, y: number): number {
   let hash = 2166136261;
   const input = `${seed}:${x}:${y}`;
   for (let index = 0; index < input.length; index += 1) {
@@ -1380,7 +1384,11 @@ function normalizeTurns(value: number) {
   return ((value % 1) + 1) % 1;
 }
 
-export function valueNoise2D(seed: string | number, x: number, y: number) {
+export function valueNoise2D(
+  seed: string | number,
+  x: number,
+  y: number
+): number {
   const x0 = Math.floor(x);
   const y0 = Math.floor(y);
   const x1 = x0 + 1;
@@ -1437,13 +1445,16 @@ export function ridgedNoise2D(
   return 1 - Math.abs(octaveNoise2D(seed, x, y, options) * 2 - 1);
 }
 
-export function wrapLongitude(longitude: number) {
+export function wrapLongitude(longitude: number): number {
   if (longitude > 180) return longitude - 360;
   if (longitude < -180) return longitude + 360;
   return longitude;
 }
 
-export function toGps(x: number, y: number) {
+export function toGps(
+  x: number,
+  y: number
+): { latitude: number; longitude: number } {
   const longitude = wrapLongitude((x / WORLD_TILES_WIDE) * 360);
   const latitude = clamp((-y / WORLD_TILES_WIDE) * 180, -90, 90);
   return {
@@ -1452,7 +1463,7 @@ export function toGps(x: number, y: number) {
   };
 }
 
-export function normalizeAngle(angle: number) {
+export function normalizeAngle(angle: number): number {
   const tau = Math.PI * 2;
   let next = angle % tau;
   if (next < 0) next += tau;
@@ -1471,7 +1482,16 @@ function pickFrom<T>(list: readonly T[], seedValue: number): T {
   return list[Math.floor(seedValue * list.length) % list.length];
 }
 
-export function getRegionalPoiNameStyle(seed: string | number, x: number, y: number) {
+export function getRegionalPoiNameStyle(
+  seed: string | number,
+  x: number,
+  y: number
+): {
+  regionX: number;
+  regionY: number;
+  prefixes: string[];
+  suffixes: string[];
+} {
   const regionX = Math.floor(x / 48);
   const regionY = Math.floor(y / 48);
   const prefixSets = [
@@ -1579,7 +1599,7 @@ export function createPlayer(
   };
 }
 
-export function snapWorldCoordinate(value: number) {
+export function snapWorldCoordinate(value: number): number {
   return Math.round(value);
 }
 

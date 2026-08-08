@@ -13,42 +13,16 @@ const ACTIVE_MOVEMENT_KEYS = new Set([
   'e',
 ]);
 
-export function hasActiveMovementInput(keys: Iterable<string>) {
-  for (const key of keys) {
-    if (ACTIVE_MOVEMENT_KEYS.has(key)) {
-      return true;
-    }
-  }
-  return false;
-}
+type FrameLoopCycleProgress = {
+  dayProgress: number;
+  yearProgress: number;
+  moonMidnightOrbitProgress?: number;
+  sunriseProgress: number;
+  sunsetProgress: number;
+  daylightDuration: number;
+};
 
-export function getWrappedProgressDelta(current: number, target: number) {
-  let delta = target - current;
-  if (delta > 0.5) delta -= 1;
-  if (delta < -0.5) delta += 1;
-  return delta;
-}
-
-export function isWrappedProgressAnimating(
-  current: number,
-  target: number,
-  threshold = 0.002
-) {
-  return Math.abs(getWrappedProgressDelta(current, target)) > threshold;
-}
-
-export function isAngleAnimating(
-  current: number | null,
-  target: number | null,
-  threshold = 0.01
-) {
-  if (typeof current !== 'number' || typeof target !== 'number') {
-    return false;
-  }
-  return Math.abs(getCompassDelta(current, target)) > threshold;
-}
-
-export function getFrameLoopActivity(options: {
+type FrameLoopActivityOptions = {
   nowMs?: number;
   timeFrozen: boolean;
   keys: Iterable<string>;
@@ -59,23 +33,60 @@ export function getFrameLoopActivity(options: {
   previewInteracting?: boolean;
   compassDragging?: boolean;
   hmrNoticeVisibleUntilMs?: number | null;
-  displayedCycle: {
-    dayProgress: number;
-    yearProgress: number;
-    moonMidnightOrbitProgress?: number;
-    sunriseProgress: number;
-    sunsetProgress: number;
-    daylightDuration: number;
-  };
-  actualCycle: {
-    dayProgress: number;
-    yearProgress: number;
-    moonMidnightOrbitProgress?: number;
-    sunriseProgress: number;
-    sunsetProgress: number;
-    daylightDuration: number;
-  };
-}) {
+  displayedCycle: FrameLoopCycleProgress;
+  actualCycle: FrameLoopCycleProgress;
+};
+
+type FrameLoopActivity = {
+  hasMovementInput: boolean;
+  isJumping: boolean;
+  isTimeRunning: boolean;
+  isCompassSettling: boolean;
+  isHeadingSettling: boolean;
+  isDialSettling: boolean;
+  previewInteracting: boolean;
+  compassDragging: boolean;
+  hmrNoticeVisible: boolean;
+};
+
+export function hasActiveMovementInput(keys: Iterable<string>): boolean {
+  for (const key of keys) {
+    if (ACTIVE_MOVEMENT_KEYS.has(key)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+export function getWrappedProgressDelta(current: number, target: number): number {
+  let delta = target - current;
+  if (delta > 0.5) delta -= 1;
+  if (delta < -0.5) delta += 1;
+  return delta;
+}
+
+export function isWrappedProgressAnimating(
+  current: number,
+  target: number,
+  threshold = 0.002
+): boolean {
+  return Math.abs(getWrappedProgressDelta(current, target)) > threshold;
+}
+
+export function isAngleAnimating(
+  current: number | null,
+  target: number | null,
+  threshold = 0.01
+): boolean {
+  if (typeof current !== 'number' || typeof target !== 'number') {
+    return false;
+  }
+  return Math.abs(getCompassDelta(current, target)) > threshold;
+}
+
+export function getFrameLoopActivity(
+  options: FrameLoopActivityOptions
+): FrameLoopActivity {
   const displayedMoonProgress = options.displayedCycle.moonMidnightOrbitProgress ?? 0;
   const actualMoonProgress = options.actualCycle.moonMidnightOrbitProgress ?? 0;
   const dialSettling =

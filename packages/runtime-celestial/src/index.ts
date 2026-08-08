@@ -11,7 +11,24 @@ import type { RuntimePlugin } from '@bworlds/plugin-api';
 const CELESTIAL_SEED = 'bworlds-celestial';
 export const CELESTIAL_DAY_LENGTH_MS = DEFAULT_DAY_LENGTH_MS;
 
-export function resolveCelestialCycleConfig(state?: { player?: { x?: number; y?: number } }) {
+type CelestialCycleConfigState = {
+  player?: {
+    x?: number;
+    y?: number;
+  };
+};
+
+export function resolveCelestialCycleConfig(
+  state?: CelestialCycleConfigState
+): {
+  dayLengthMs: number;
+  offsetMs: number;
+  yearLengthDays: number;
+  constellationCount: number;
+  constellationSeed: string;
+  seasonDaylightAmplitude: number;
+  observerLatitudeDegrees: number;
+} {
   const latitude = toGps(state?.player?.x ?? 0, state?.player?.y ?? 0).latitude;
   return {
     dayLengthMs: CELESTIAL_DAY_LENGTH_MS,
