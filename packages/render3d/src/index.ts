@@ -188,6 +188,7 @@ const LOD_SYNC_MOVEMENT_DISTANCE_SQUARED =
 const FAR_MODEL_FULL_VISIBILITY_DISTANCE = 8;
 const FAR_MODEL_REVEAL_DISTANCE_VARIANCE = 8;
 const FAR_MODEL_FADE_DISTANCE = 1.75;
+const MODEL_VISIBILITY_OPACITY_EPSILON = 0.0005;
 const MIN_MODEL_VISIBILITY_OPACITY = 0.015;
 const HORIZON_CURVATURE_FLAT_DISTANCE = 4;
 const HORIZON_CURVATURE_FAR_DISTANCE = CHUNK_RADIUS;
@@ -1543,7 +1544,7 @@ function syncWorldCurvature(
   }
 }
 
-function updateFarLandModelVisibility(
+export function updateFarLandModelVisibility(
   entries: Iterable<DynamicTileNode>,
   state: Render3DState
 ): void {
@@ -1558,6 +1559,12 @@ function updateFarLandModelVisibility(
       entry.tileY - state.player.y
     );
     const opacity = getFarLandModelOpacity(distance, entry.tileX, entry.tileY);
+    if (
+      Math.abs((entry.modelVisibilityOpacity ?? Number.NaN) - opacity) <=
+      MODEL_VISIBILITY_OPACITY_EPSILON
+    ) {
+      continue;
+    }
     entry.modelVisibilityOpacity = opacity;
     applyObjectDistanceFade(entry.modelRoot, opacity);
   }

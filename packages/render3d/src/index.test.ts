@@ -33,6 +33,7 @@ import {
   shouldSyncTileModelDetailLevels,
   summarizeVisibleTileKinds,
   syncDynamicTileNodes,
+  updateFarLandModelVisibility,
   shouldRenderWorldTile,
 } from './index.ts';
 
@@ -324,6 +325,53 @@ describe('render3d visibility helpers', () => {
     applyObjectDistanceFade(root as never, 0.25);
 
     expect(root.traverse).toHaveBeenCalledTimes(1);
+  });
+
+  it('skips far-land fade traversal when a tile opacity is unchanged', () => {
+    const sourceMaterial = createMockMaterial();
+    const child = createMockObject3D(sourceMaterial);
+    const root = createMockObject3D(undefined, [child]);
+    const originalTraverse = root.traverse;
+    root.traverse = vi.fn((callback) => originalTraverse(callback));
+
+    prepareObjectForDistanceFade(root as never);
+    root.traverse.mockClear();
+
+    updateFarLandModelVisibility(
+      [
+        {
+          key: '0:0',
+          tile: { kind: 'plains' },
+          tileX: 0,
+          tileY: 0,
+          node: {} as never,
+          model: root as never,
+          modelRoot: root as never,
+          modelVisibilityOpacity: 1,
+          distanceFadeEligible: true,
+        },
+      ],
+      {
+        player: { x: 0, y: 0, facing: 0 },
+        getCurrentContext() {
+          return { id: 'overworld', type: 'overworld', depth: 0 };
+        },
+        getCurrentTile() {
+          return { kind: 'plains' };
+        },
+        getTileDefinition() {
+          return {
+            name: 'Plains',
+            color: '#000000',
+            miniColor: '#111111',
+            walkable: true,
+            wallHeight: 0,
+          };
+        },
+      } as never
+    );
+
+    expect(root.traverse).not.toHaveBeenCalled();
   });
 
   it('clamps camera pitch to a playable range', () => {
