@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_DAY_LENGTH_MS, getDaylightCycleState } from '@bworlds/core';
 import {
+  getNextCompassDisplayMode,
   getNextCelestialEventMode,
   getNextInspectorTab,
   getNextModelPreviewMode,
@@ -47,6 +48,13 @@ describe('time controls', () => {
     expect(getNextTimekeeperDisplayMode('time-date')).toBe('time-date');
     expect(getNextTimekeeperDisplayMode('graphical')).toBe('graphical');
     expect(getNextTimekeeperDisplayMode('unknown')).toBe('time-date');
+  });
+
+  it('normalizes the viewport compass mode to a supported display', () => {
+    expect(getNextCompassDisplayMode('hidden')).toBe('hidden');
+    expect(getNextCompassDisplayMode('letters')).toBe('letters');
+    expect(getNextCompassDisplayMode('graphical')).toBe('graphical');
+    expect(getNextCompassDisplayMode('unknown')).toBe('letters');
   });
 
   it('normalizes the celestial event mode to a supported override', () => {

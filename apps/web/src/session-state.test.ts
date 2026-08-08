@@ -14,6 +14,7 @@ describe('session state', () => {
       stack: [{ id: 'overworld', depth: 0 }],
       viewMode: '3d',
       timekeeperDisplayMode: 'graphical',
+      compassDisplayMode: 'graphical',
       timeOffsetMs: 42000,
       timeFrozen: true,
       frozenWorldTimeMs: 123456,
@@ -36,6 +37,7 @@ describe('session state', () => {
       expect.objectContaining({
         timeOffsetMs: 42000,
         timekeeperDisplayMode: 'graphical',
+        compassDisplayMode: 'graphical',
         timeFrozen: true,
         frozenWorldTimeMs: 123456,
         inspectorTab: 'compass',
@@ -56,6 +58,16 @@ describe('session state', () => {
           player: { x: 0, y: 0, facing: 0 },
           stack: [{ id: 'overworld', depth: 0 }],
           timekeeperDisplayMode: 'analog',
+        })
+      )
+    ).toBeNull();
+
+    expect(
+      parseSavedSession(
+        JSON.stringify({
+          player: { x: 0, y: 0, facing: 0 },
+          stack: [{ id: 'overworld', depth: 0 }],
+          compassDisplayMode: 'dial',
         })
       )
     ).toBeNull();
@@ -139,6 +151,7 @@ describe('session state', () => {
       stack: [{ id: 'overworld', depth: 0 }],
       viewMode: '2d',
       timekeeperDisplayMode: 'time-date',
+      compassDisplayMode: 'letters',
       timeOffsetMs: savedOffsetMs,
       timeFrozen: false,
       frozenWorldTimeMs: null,

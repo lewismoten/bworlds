@@ -46,6 +46,7 @@ describe('ui signature helpers', () => {
   it('tracks viewport hud and event summary changes without needing DOM writes for stable content', () => {
     const hud = {
       timekeeperDisplayMode: 'time-date' as const,
+      compassDisplayMode: 'letters' as const,
       timeLabel: '06:00',
       dateLabel: 'Nova Crown / Waxing',
       facing: 'N',
@@ -87,6 +88,13 @@ describe('ui signature helpers', () => {
         compassMarkup: '<span>N</span>',
       })
     ).not.toContain('Nova Crown');
+    expect(
+      buildViewportHudMarkup({
+        ...hud,
+        compassDisplayMode: 'graphical',
+        compassMarkup: '<span>N</span>',
+      })
+    ).not.toContain('viewport-hud-compass');
     expect(
       buildEventSummaryMarkup({
         modeLabel: 'Aurora',

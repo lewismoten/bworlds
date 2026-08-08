@@ -73,6 +73,7 @@ import {
   getViewportHudSignature,
 } from './ui-signatures.ts';
 import {
+  getNextCompassDisplayMode,
   getNextCelestialEventMode,
   getNextInspectorTab,
   getNextModelPreviewMode,
@@ -86,6 +87,7 @@ type CelestialEnvironmentOverrides = Parameters<
   typeof applyCelestialEnvironmentOverrides
 >[1];
 type CardinalFacing = ReturnType<typeof cardinalFromAngle>;
+type CompassDisplayMode = ReturnType<typeof getNextCompassDisplayMode>;
 type ModelPreviewMode = ReturnType<typeof getNextModelPreviewMode>;
 type TimekeeperDisplayMode = ReturnType<typeof getNextTimekeeperDisplayMode>;
 type CelestialEventMode = ReturnType<typeof getNextCelestialEventMode>;
@@ -139,6 +141,7 @@ root.innerHTML = `
         <button id="jump-random" type="button">Random Plains</button>
         <button id="jump-home" type="button">Go Home</button>
         <button id="toggle-timekeeper-display" type="button">HUD Time: Time + Date</button>
+        <button id="toggle-compass-display" type="button">HUD Compass: Letters</button>
         <div class="build-controls">
           <select id="build-poi-kind" aria-label="Build point of interest">
             <option value="town">Build Town</option>
@@ -165,6 +168,14 @@ root.innerHTML = `
           <canvas
             id="viewport-timekeeper-mini"
             class="viewport-timekeeper-mini is-hidden"
+            width="180"
+            height="180"
+            aria-hidden="true"
+            hidden
+          ></canvas>
+          <canvas
+            id="viewport-compass-mini"
+            class="viewport-compass-mini is-hidden"
             width="180"
             height="180"
             aria-hidden="true"
@@ -378,6 +389,8 @@ const viewport3d = document.querySelector<HTMLElement>('#viewport-3d');
 const viewportHud = document.querySelector<HTMLElement>('#viewport-hud');
 const viewportTimekeeperMini =
   document.querySelector<HTMLCanvasElement>('#viewport-timekeeper-mini');
+const viewportCompassMini =
+  document.querySelector<HTMLCanvasElement>('#viewport-compass-mini');
 const hmrNotice = document.querySelector<HTMLElement>('#hmr-notice');
 const atlasCanvas = document.querySelector<HTMLCanvasElement>('#atlas');
 const timeWheelCanvas =
@@ -400,6 +413,8 @@ const status = document.querySelector<HTMLElement>('#status');
 const toggleButton = document.querySelector<HTMLButtonElement>('#toggle-view');
 const toggleTimekeeperDisplayButton =
   document.querySelector<HTMLButtonElement>('#toggle-timekeeper-display');
+const toggleCompassDisplayButton =
+  document.querySelector<HTMLButtonElement>('#toggle-compass-display');
 const actionButton = document.querySelector<HTMLButtonElement>('#action');
 const buildPoiButton =
   document.querySelector<HTMLButtonElement>('#build-poi');
@@ -574,6 +589,9 @@ let activeModelPreviewMode = getNextModelPreviewMode(savedSession?.modelPreviewM
 let activeTimekeeperDisplayMode = getNextTimekeeperDisplayMode(
   savedSession?.timekeeperDisplayMode
 );
+let activeCompassDisplayMode = getNextCompassDisplayMode(
+  savedSession?.compassDisplayMode
+);
 const celestialEventModeState = {
   mode: getNextCelestialEventMode(savedSession?.celestialEventMode),
 };
@@ -596,6 +614,7 @@ renderContentPackControls();
 updateContentPackLabel();
 updateFreezeTimeButton();
 updateTimekeeperDisplayModeUi();
+updateCompassDisplayModeUi();
 
 function updateStatus(
   environment: WorldEnvironmentLike = getCurrentEnvironment(),
@@ -677,6 +696,7 @@ function updateStatus(
     const headingLabel = formatCompassHeading(compassHeadingState.angle);
     const viewportHudSignature = getViewportHudSignature({
       timekeeperDisplayMode: activeTimekeeperDisplayMode,
+      compassDisplayMode: activeCompassDisplayMode,
       timeLabel,
       dateLabel,
       facing,
@@ -686,6 +706,7 @@ function updateStatus(
     if (viewportHudSignature !== uiRenderState.lastViewportHudSignature) {
       viewportHud.innerHTML = buildViewportHudMarkup({
         timekeeperDisplayMode: activeTimekeeperDisplayMode,
+        compassDisplayMode: activeCompassDisplayMode,
         timeLabel,
         dateLabel,
         facing,
@@ -701,6 +722,13 @@ function updateStatus(
     const showGraphicTimekeeper = activeTimekeeperDisplayMode === 'graphical';
     viewportTimekeeperMini.classList.toggle('is-hidden', !showGraphicTimekeeper);
     viewportTimekeeperMini.hidden = !showGraphicTimekeeper;
+  }
+  if (viewportCompassMini) {
+    const showGraphicCompass =
+      isInspectorSectionVisible(activeInspectorTab, 'viewport-compass') &&
+      activeCompassDisplayMode === 'graphical';
+    viewportCompassMini.classList.toggle('is-hidden', !showGraphicCompass);
+    viewportCompassMini.hidden = !showGraphicCompass;
   }
 }
 
@@ -776,6 +804,26 @@ function updateTimekeeperDisplayModeUi(): void {
   }
 }
 
+function formatCompassDisplayModeLabel(mode: CompassDisplayMode): string {
+  if (mode === 'hidden') return 'Hidden';
+  if (mode === 'graphical') return 'Graphical';
+  return 'Letters';
+}
+
+function cycleCompassDisplayMode(mode: CompassDisplayMode): CompassDisplayMode {
+  if (mode === 'hidden') return 'letters';
+  if (mode === 'letters') return 'graphical';
+  return 'hidden';
+}
+
+function updateCompassDisplayModeUi(): void {
+  if (toggleCompassDisplayButton) {
+    toggleCompassDisplayButton.textContent = `HUD Compass: ${formatCompassDisplayModeLabel(
+      activeCompassDisplayMode
+    )}`;
+  }
+}
+
 function updateCelestialEventModeUi(): void {
   eventModeAutoButton?.classList.toggle(
     'is-active',
@@ -810,6 +858,13 @@ function setModelPreviewMode(mode: ModelPreviewMode): void {
 function setTimekeeperDisplayMode(modeId: string | undefined): void {
   activeTimekeeperDisplayMode = getNextTimekeeperDisplayMode(modeId);
   updateTimekeeperDisplayModeUi();
+  saveSession();
+  requestRender();
+}
+
+function setCompassDisplayMode(modeId: string | undefined): void {
+  activeCompassDisplayMode = getNextCompassDisplayMode(modeId);
+  updateCompassDisplayModeUi();
   saveSession();
   requestRender();
 }
@@ -1411,6 +1466,20 @@ function render(): FrameLoopActivityLike {
   ) {
     drawTimeWheel(viewportTimekeeperMini, displayCycle);
   }
+  if (
+    viewportCompassMini &&
+    activeCompassDisplayMode === 'graphical' &&
+    !viewportCompassMini.hidden
+  ) {
+    drawCompassDial(
+      viewportCompassMini,
+      updateDisplayedCompass(state.player.facing),
+      updateDisplayedCompassHeading(
+        compassHeadingState.angle,
+        compassDialPointerState.draggingMode === 'heading-bug'
+      )
+    );
+  }
   celestialPreview.render(displayCycle, environment, state.player.facing, generator);
   solarSystemPreview.render(displayCycle);
   if (eventSummary) {
@@ -1854,6 +1923,9 @@ eventModeEclipseButton?.addEventListener('click', () => setCelestialEventMode('e
 toggleTimekeeperDisplayButton?.addEventListener('click', () => {
   setTimekeeperDisplayMode(cycleTimekeeperDisplayMode(activeTimekeeperDisplayMode));
 });
+toggleCompassDisplayButton?.addEventListener('click', () => {
+  setCompassDisplayMode(cycleCompassDisplayMode(activeCompassDisplayMode));
+});
 freezeTimeButton?.addEventListener('click', toggleTimeFreeze);
 inspectorTabButtons.forEach((button) => {
   button.addEventListener('click', () => {
@@ -1991,6 +2063,7 @@ viewport3d.classList.toggle('is-hidden', state.viewMode !== '3d');
 setInspectorTab(activeInspectorTab);
 updateModelPreviewModeUi();
 updateTimekeeperDisplayModeUi();
+updateCompassDisplayModeUi();
 updateCelestialEventModeUi();
 requestRender();
 
@@ -2006,6 +2079,7 @@ function saveSession(): void {
       stack: state.stack,
       viewMode: state.viewMode,
       timekeeperDisplayMode: activeTimekeeperDisplayMode,
+      compassDisplayMode: activeCompassDisplayMode,
       timeOffsetMs: timeState.offsetMs,
       timeFrozen: timeState.frozen,
       frozenWorldTimeMs: timeState.frozenWorldTimeMs,

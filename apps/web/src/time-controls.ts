@@ -12,6 +12,7 @@ export type TimekeeperDisplayMode =
   | 'time'
   | 'time-date'
   | 'graphical';
+export type CompassDisplayMode = 'hidden' | 'letters' | 'graphical';
 export type CelestialEventMode =
   | 'auto'
   | 'aurora'
@@ -58,6 +59,15 @@ export function getNextTimekeeperDisplayMode(
     return modeId;
   }
   return 'time-date';
+}
+
+export function getNextCompassDisplayMode(
+  modeId: string | undefined
+): CompassDisplayMode {
+  if (modeId === 'hidden' || modeId === 'graphical') {
+    return modeId;
+  }
+  return 'letters';
 }
 
 export function getNextCelestialEventMode(

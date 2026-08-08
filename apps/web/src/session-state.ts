@@ -1,4 +1,5 @@
 import type {
+  CompassDisplayMode,
   CelestialEventMode,
   InspectorTab,
   ModelPreviewMode,
@@ -33,6 +34,7 @@ export type SavedSession = {
   stack: SessionWorldContext[];
   viewMode?: SessionViewMode;
   timekeeperDisplayMode?: TimekeeperDisplayMode;
+  compassDisplayMode?: CompassDisplayMode;
   timeOffsetMs?: number;
   timeFrozen?: boolean;
   frozenWorldTimeMs?: number | null;
@@ -53,6 +55,7 @@ export type SessionSnapshot = {
   stack: SessionWorldContext[];
   viewMode: SessionViewMode;
   timekeeperDisplayMode: TimekeeperDisplayMode;
+  compassDisplayMode: CompassDisplayMode;
   timeOffsetMs: number;
   timeFrozen: boolean;
   frozenWorldTimeMs: number | null;
@@ -90,6 +93,14 @@ export function parseSavedSession(raw: string | null): SavedSession | null {
       parsed.timekeeperDisplayMode !== 'time' &&
       parsed.timekeeperDisplayMode !== 'time-date' &&
       parsed.timekeeperDisplayMode !== 'graphical'
+    ) {
+      return null;
+    }
+    if (
+      typeof parsed?.compassDisplayMode !== 'undefined' &&
+      parsed.compassDisplayMode !== 'hidden' &&
+      parsed.compassDisplayMode !== 'letters' &&
+      parsed.compassDisplayMode !== 'graphical'
     ) {
       return null;
     }
