@@ -428,3 +428,84 @@ describe('map overworld airship travel', () => {
     );
   });
 });
+
+describe('map overworld caching', () => {
+  it('keeps overworld tiles deterministic after bounded cache eviction churn', () => {
+    const plugin = createOverworldCompositionPlugin();
+    const map = plugin.createMap?.({
+      seed: 'cache-spec',
+      context: {
+        id: 'overworld',
+        label: 'Overworld',
+        type: 'overworld',
+        depth: 0,
+        origin: { x: 0, y: 0 },
+      },
+      plugins: {
+        getDefaultTileKind() {
+          return 'plains';
+        },
+        getTileDefinition(kind: string) {
+          return {
+            name: kind,
+            color: '#000',
+            miniColor: '#111',
+            walkable: !['mountain', 'ocean', 'river', 'wall'].includes(kind),
+            wallHeight: 0,
+          };
+        },
+        createWorldAction() {
+          return null;
+        },
+        classifyTerrainTile({ x, y }: { x: number; y: number }) {
+          if ((x + y) % 11 === 0) {
+            return { kind: 'forest' };
+          }
+          if (x % 7 === 0) {
+            return { kind: 'road' };
+          }
+          if (y % 5 === 0) {
+            return { kind: 'river' };
+          }
+          return { kind: 'plains' };
+        },
+        classifyOverworldTile({ tile }: { tile: { kind: string } }) {
+          return tile;
+        },
+        decorateOverworldTile({ tile }: { tile: { kind: string } }) {
+          return tile;
+        },
+        decorateTownTile({ tile }: { tile: { kind: string } }) {
+          return tile;
+        },
+        decorateBuildingTile({ tile }: { tile: { kind: string } }) {
+          return tile;
+        },
+        decorateDepthTile({ tile }: { tile: { kind: string } }) {
+          return tile;
+        },
+        resolveOverworldTile() {
+          return null;
+        },
+        resolveOverworldAnchors() {
+          return {
+            townAnchors: [],
+            bridgeAnchors: [],
+            poiAnchors: [],
+          };
+        },
+      } as never,
+    });
+    if (!map) {
+      throw new Error('Expected overworld map plugin to create an overworld map.');
+    }
+
+    const baseline = map.getTile(13, 17);
+
+    for (let index = 0; index < 9000; index += 1) {
+      map.getTile((index % 180) - 90, Math.floor(index / 180) - 25);
+    }
+
+    expect(map.getTile(13, 17)).toEqual(baseline);
+  });
+});

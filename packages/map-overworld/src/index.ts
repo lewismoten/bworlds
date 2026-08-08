@@ -1,3 +1,4 @@
+import { createBoundedCache } from '@bworlds/cache-support';
 import {
   type AirshipContext,
   findAirshipLandingPoint,
@@ -45,6 +46,7 @@ import type {
 } from '@bworlds/plugin-api';
 
 type OverworldTile = TileLike;
+const OVERWORLD_TILE_CACHE_LIMIT = 8192;
 
 export function createOverworldCompositionPlugin(): RuntimePlugin {
   return {
@@ -62,7 +64,9 @@ function createOverworldMap(
   seed: Seed,
   plugins: CreateMapContext['plugins']
 ): WorldMapLike {
-  const cache = new Map<string, OverworldTile>();
+  const cache = createBoundedCache<string, OverworldTile>(
+    OVERWORLD_TILE_CACHE_LIMIT
+  );
   const sampleTerrainSignals = createOverworldTerrainSignalSampler(seed);
   const defaultTileKind = plugins.getDefaultTileKind();
   let activeRevision = -1;
