@@ -937,7 +937,7 @@ I would actually put these into a developer performance panel.
 You could even have debug-mode warnings automatically trigger when thresholds are exceeded.
 
 * [X] Warn when draw calls exceed the target.
-* [ ] Warn when triangle count becomes excessive.
+* [X] Warn when triangle count becomes excessive.
 * [ ] Warn when too many shadow lights exist.
 * [ ] Warn when active audio sources exceed the budget.
 * [X] Warn when chunk-generation queues back up.

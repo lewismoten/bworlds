@@ -375,17 +375,24 @@ export function getSceneBudgetWarnings(
 }
 
 export function getPerformanceWarnings(
-  snapshot: Pick<DebugSnapshot, 'frameMs' | 'targetFps' | 'drawCalls' | 'object3dCount' | 'programCount'>,
+  snapshot: Pick<
+    DebugSnapshot,
+    'frameMs' | 'targetFps' | 'drawCalls' | 'triangles' | 'object3dCount' | 'programCount'
+  >,
   {
     maxFrameMs = 50,
     maxDrawCallsAt60Fps = 900,
     maxDrawCallsAt30Fps = 1200,
+    maxTrianglesAt60Fps = 450000,
+    maxTrianglesAt30Fps = 700000,
     maxObject3dCount = 2400,
     maxProgramCount = 48,
   }: {
     maxFrameMs?: number;
     maxDrawCallsAt60Fps?: number;
     maxDrawCallsAt30Fps?: number;
+    maxTrianglesAt60Fps?: number;
+    maxTrianglesAt30Fps?: number;
     maxObject3dCount?: number;
     maxProgramCount?: number;
   } = {}
@@ -393,6 +400,8 @@ export function getPerformanceWarnings(
   const warnings: string[] = [];
   const drawCallBudget =
     snapshot.targetFps === 60 ? maxDrawCallsAt60Fps : maxDrawCallsAt30Fps;
+  const triangleBudget =
+    snapshot.targetFps === 60 ? maxTrianglesAt60Fps : maxTrianglesAt30Fps;
 
   if (snapshot.frameMs > maxFrameMs) {
     warnings.push(
@@ -403,6 +412,12 @@ export function getPerformanceWarnings(
   if (snapshot.drawCalls > drawCallBudget) {
     warnings.push(
       `Draw calls exceed the target (${snapshot.drawCalls} > ${drawCallBudget}).`
+    );
+  }
+
+  if (snapshot.triangles > triangleBudget) {
+    warnings.push(
+      `Triangle count is high (${snapshot.triangles} > ${triangleBudget}).`
     );
   }
 
