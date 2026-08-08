@@ -1,3 +1,4 @@
+import { createBoundedCache } from '@bworlds/cache-support';
 import { resolveDockBoatRoute } from '@bworlds/dock-route-support';
 import { hash2D } from '@bworlds/core';
 import { findNearestBoatLaunchPoint } from '@bworlds/map-boat';
@@ -56,16 +57,31 @@ const MAX_DOCK_LENGTH = 3;
 const LONG_DOCK_BOAT_LENGTH = 3;
 const FOREST_LOG_BRIDGE_KEY = 'forestLogBridge';
 const MAX_RIVER_BRIDGE_SPAN = 4;
+const ROUTE_STYLE_CACHE_LIMIT = 192;
+const ROUTE_CLUSTER_CACHE_LIMIT = 768;
+const ROUTE_LABEL_CACHE_LIMIT = 256;
 type RoadStyleType = 'footpath' | 'cobble' | 'brick';
 type BridgeTextureType = 'wood' | 'stone' | 'metal' | 'drawbridge' | 'roof' | 'roof-stone';
 type BridgeTextureLayer = 'deck' | 'rail' | 'cover' | 'pillar';
 
-const bridgeStyleCache = new Map<string, BridgeStyle>();
-const bridgeClusterCache = new Map<string, BridgeClusterInfo>();
-const dockStyleCache = new Map<string, DockStyle>();
-const dockRouteLabelCache = new Map<string, ThreeTextureLike>();
-const dockClusterCache = new Map<string, DockClusterInfo>();
-const roadStyleCache = new Map<string, RoadStyleBlueprint>();
+const bridgeStyleCache = createBoundedCache<string, BridgeStyle>(
+  ROUTE_STYLE_CACHE_LIMIT
+);
+const bridgeClusterCache = createBoundedCache<string, BridgeClusterInfo>(
+  ROUTE_CLUSTER_CACHE_LIMIT
+);
+const dockStyleCache = createBoundedCache<string, DockStyle>(
+  ROUTE_STYLE_CACHE_LIMIT
+);
+const dockRouteLabelCache = createBoundedCache<string, ThreeTextureLike>(
+  ROUTE_LABEL_CACHE_LIMIT
+);
+const dockClusterCache = createBoundedCache<string, DockClusterInfo>(
+  ROUTE_CLUSTER_CACHE_LIMIT
+);
+const roadStyleCache = createBoundedCache<string, RoadStyleBlueprint>(
+  ROUTE_STYLE_CACHE_LIMIT
+);
 const resolveRoadStyle = createRegionalMaterialResolver(
   roadStyleCache,
   ROAD_REGION_SIZE,

@@ -670,6 +670,69 @@ describe('tile route', () => {
     );
   });
 
+  it('keeps deterministic dock and bridge visuals stable after bounded cache eviction churn', () => {
+    const dockState = createRoutedDockModelState();
+    const bridgeState = createForestLogBridgeState();
+    const captureDockSign = () => {
+      const model = dockTile?.create3DModel?.({
+        three: fakeThree as never,
+        state: dockState as never,
+        tile: { kind: 'dock' } as never,
+        tileX: 0,
+        tileY: 0,
+      }) as FakeGroup;
+      let signData: Record<string, unknown> | null = null;
+      model.traverse((node) => {
+        if (node.userData?.dockRouteSign) {
+          signData = node.userData;
+        }
+      });
+      return signData;
+    };
+    const captureBridgeMarkers = () => {
+      const model = bridgeTile?.create3DModel?.({
+        three: fakeThree as never,
+        state: bridgeState as never,
+        tile: { kind: 'bridge' } as never,
+        tileX: 0,
+        tileY: 0,
+      }) as FakeGroup;
+      const markers = new Set<string>();
+      model.traverse((node) => {
+        const marker = node.userData?.forestLogBridge;
+        if (typeof marker === 'string') {
+          markers.add(marker);
+        }
+      });
+      return [...markers].sort();
+    };
+
+    const baselineDockSign = captureDockSign();
+    const baselineBridgeMarkers = captureBridgeMarkers();
+
+    for (let index = 0; index < 1200; index += 1) {
+      const tileX = (index % 80) - 40;
+      const tileY = Math.floor(index / 80) - 10;
+      bridgeTile?.create3DModel?.({
+        three: fakeThree as never,
+        state: bridgeState as never,
+        tile: { kind: 'bridge' } as never,
+        tileX,
+        tileY,
+      });
+      dockTile?.create3DModel?.({
+        three: fakeThree as never,
+        state: dockState as never,
+        tile: { kind: 'dock' } as never,
+        tileX,
+        tileY,
+      });
+    }
+
+    expect(captureDockSign()).toEqual(baselineDockSign);
+    expect(captureBridgeMarkers()).toEqual(baselineBridgeMarkers);
+  });
+
   it('creates a boardable ship action from docks on a valid route', () => {
     const state = createRoutedDockModelState();
     const action = dockTile?.createWorldAction?.({

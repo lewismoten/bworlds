@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "type": "module",
   "dependencies": {
+    "@bworlds/cache-support": "0.1.0",
     "@bworlds/core": "0.1.0",
     "@bworlds/dock-route-support": "0.1.0",
     "@bworlds/map-boat": "0.1.0",
