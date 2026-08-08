@@ -5,6 +5,7 @@ type DaylightCycleLike = ReturnType<typeof getDaylightCycleState>;
 export type TimePreset = 'dawn' | 'noon' | 'dusk' | 'midnight';
 export type InspectorTab = 'timekeeper' | 'model' | 'compass';
 export type InspectorSection = InspectorTab | 'viewport-compass';
+export type ModelPreviewMode = 'world' | 'solar-system' | 'split';
 
 export function getTimePresetProgress(
   cycle: DaylightCycleLike,
@@ -29,6 +30,15 @@ export function getNextInspectorTab(tabId: string | undefined): InspectorTab {
   return 'timekeeper';
 }
 
+export function getNextModelPreviewMode(
+  modeId: string | undefined
+): ModelPreviewMode {
+  if (modeId === 'world' || modeId === 'solar-system') {
+    return modeId;
+  }
+  return 'split';
+}
+
 export function isInspectorSectionVisible(
   activeTab: InspectorTab,
   section: InspectorSection
@@ -37,4 +47,11 @@ export function isInspectorSectionVisible(
     return activeTab === 'compass';
   }
   return activeTab === section;
+}
+
+export function isModelPreviewVisible(
+  activeMode: ModelPreviewMode,
+  preview: 'world' | 'solar-system'
+) {
+  return activeMode === 'split' || activeMode === preview;
 }

@@ -41,7 +41,9 @@ import {
 } from './compass.ts';
 import {
   getNextInspectorTab,
+  getNextModelPreviewMode,
   isInspectorSectionVisible,
+  isModelPreviewVisible,
   getTimePresetProgress,
 } from './time-controls.ts';
 
@@ -153,14 +155,37 @@ root.innerHTML = `
             aria-hidden="true"
             hidden
           >
+            <div class="model-preview-mode-row" role="tablist" aria-label="Model preview mode">
+              <button
+                id="model-preview-world"
+                class="model-preview-mode-button is-active"
+                type="button"
+              >
+                World
+              </button>
+              <button
+                id="model-preview-solar"
+                class="model-preview-mode-button"
+                type="button"
+              >
+                Solar System
+              </button>
+              <button
+                id="model-preview-split"
+                class="model-preview-mode-button"
+                type="button"
+              >
+                Both
+              </button>
+            </div>
             <div class="model-preview-grid">
-              <div class="model-preview-card">
+              <div id="model-preview-card-world" class="model-preview-card">
                 <div id="celestial-preview" class="celestial-preview"></div>
                 <p class="inspector-note">
                   Drag to rotate the world model. Seasonal and daily changes stay synced here too.
                 </p>
               </div>
-              <div class="model-preview-card">
+              <div id="model-preview-card-solar" class="model-preview-card">
                 <div id="solar-system-preview" class="celestial-preview solar-system-preview"></div>
                 <p class="inspector-note">
                   A separate orrery view tracks the sun, moon, planets, constellations, and Milky Way around the current sky state.
@@ -275,6 +300,18 @@ const modelMinusSeasonButton =
   document.querySelector<HTMLButtonElement>('#model-minus-season');
 const modelPlusSeasonButton =
   document.querySelector<HTMLButtonElement>('#model-plus-season');
+const modelPreviewWorldButton =
+  document.querySelector<HTMLButtonElement>('#model-preview-world');
+const modelPreviewSolarButton =
+  document.querySelector<HTMLButtonElement>('#model-preview-solar');
+const modelPreviewSplitButton =
+  document.querySelector<HTMLButtonElement>('#model-preview-split');
+const modelPreviewGrid =
+  document.querySelector<HTMLElement>('.model-preview-grid');
+const modelPreviewWorldCard =
+  document.querySelector<HTMLElement>('#model-preview-card-world');
+const modelPreviewSolarCard =
+  document.querySelector<HTMLElement>('#model-preview-card-solar');
 const freezeTimeButton =
   document.querySelector<HTMLButtonElement>('#time-freeze-toggle');
 const celestialToolsCard =
@@ -367,6 +404,7 @@ const renderer3d = create3DRenderer(viewport3d);
 const celestialPreview = createCelestialPreviewRenderer(celestialPreviewHost);
 const solarSystemPreview = createSolarSystemPreviewRenderer(solarSystemPreviewHost);
 let activeInspectorTab = getNextInspectorTab(savedSession?.inspectorTab);
+let activeModelPreviewMode = getNextModelPreviewMode(savedSession?.modelPreviewMode);
 
 const keys = new Set();
 
@@ -441,6 +479,47 @@ function resizeCanvas() {
   renderer3d.resize(rect.width, rect.height, ratio);
   celestialPreview.resize();
   solarSystemPreview.resize();
+}
+
+function updateModelPreviewModeUi() {
+  modelPreviewWorldButton?.classList.toggle(
+    'is-active',
+    activeModelPreviewMode === 'world'
+  );
+  modelPreviewSolarButton?.classList.toggle(
+    'is-active',
+    activeModelPreviewMode === 'solar-system'
+  );
+  modelPreviewSplitButton?.classList.toggle(
+    'is-active',
+    activeModelPreviewMode === 'split'
+  );
+  modelPreviewGrid?.classList.toggle(
+    'is-world-focused',
+    activeModelPreviewMode === 'world'
+  );
+  modelPreviewGrid?.classList.toggle(
+    'is-solar-focused',
+    activeModelPreviewMode === 'solar-system'
+  );
+  const showWorld = isModelPreviewVisible(activeModelPreviewMode, 'world');
+  const showSolar = isModelPreviewVisible(activeModelPreviewMode, 'solar-system');
+  modelPreviewWorldCard?.classList.toggle('is-hidden', !showWorld);
+  modelPreviewSolarCard?.classList.toggle('is-hidden', !showSolar);
+  if (modelPreviewWorldCard) {
+    modelPreviewWorldCard.hidden = !showWorld;
+  }
+  if (modelPreviewSolarCard) {
+    modelPreviewSolarCard.hidden = !showSolar;
+  }
+}
+
+function setModelPreviewMode(mode: 'world' | 'solar-system' | 'split') {
+  activeModelPreviewMode = mode;
+  updateModelPreviewModeUi();
+  saveSession();
+  resizeCanvas();
+  render();
 }
 
 function toggleView() {
@@ -1170,6 +1249,9 @@ modelPlusHourButton?.addEventListener('click', () => skipTimeByHours(1));
 modelMinusHourButton?.addEventListener('click', () => skipTimeByHours(-1));
 modelMinusSeasonButton?.addEventListener('click', () => skipSeasonByCount(-1));
 modelPlusSeasonButton?.addEventListener('click', () => skipSeasonByCount(1));
+modelPreviewWorldButton?.addEventListener('click', () => setModelPreviewMode('world'));
+modelPreviewSolarButton?.addEventListener('click', () => setModelPreviewMode('solar-system'));
+modelPreviewSplitButton?.addEventListener('click', () => setModelPreviewMode('split'));
 freezeTimeButton?.addEventListener('click', toggleTimeFreeze);
 inspectorTabButtons.forEach((button) => {
   button.addEventListener('click', () => {
@@ -1228,6 +1310,7 @@ resizeCanvas();
 viewport2d.classList.toggle('is-hidden', state.viewMode !== '2d');
 viewport3d.classList.toggle('is-hidden', state.viewMode !== '3d');
 setInspectorTab(activeInspectorTab);
+updateModelPreviewModeUi();
 render();
 requestAnimationFrame(loop);
 
@@ -1246,6 +1329,7 @@ function saveSession() {
       timeFrozen: timeState.frozen,
       frozenWorldTimeMs: timeState.frozenWorldTimeMs,
       inspectorTab: activeInspectorTab,
+      modelPreviewMode: activeModelPreviewMode,
       compassHeadingAngle: compassHeadingState.angle,
     });
     if (snapshot === lastSavedSnapshot) return;
@@ -1276,6 +1360,14 @@ function loadSession() {
       parsed.inspectorTab !== 'timekeeper' &&
       parsed.inspectorTab !== 'model' &&
       parsed.inspectorTab !== 'compass'
+    ) {
+      return null;
+    }
+    if (
+      typeof parsed?.modelPreviewMode !== 'undefined' &&
+      parsed.modelPreviewMode !== 'world' &&
+      parsed.modelPreviewMode !== 'solar-system' &&
+      parsed.modelPreviewMode !== 'split'
     ) {
       return null;
     }

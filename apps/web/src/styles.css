@@ -258,6 +258,25 @@ button:hover {
   gap: 0.9rem;
 }
 
+.model-preview-mode-row {
+  display: inline-flex;
+  gap: 0.35rem;
+  padding: 0.25rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.model-preview-mode-button {
+  padding: 0.5rem 0.82rem;
+  font-size: 0.9rem;
+}
+
+.model-preview-mode-button.is-active {
+  border-color: rgba(85, 214, 190, 0.42);
+  background: linear-gradient(180deg, rgba(85, 214, 190, 0.24), rgba(85, 214, 190, 0.08));
+}
+
 .model-preview-card {
   display: grid;
   gap: 0.55rem;
@@ -418,6 +437,16 @@ ul {
   .model-preview-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     align-items: start;
+  }
+
+  .model-preview-grid.is-world-focused,
+  .model-preview-grid.is-solar-focused {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .model-preview-grid.is-world-focused .celestial-preview,
+  .model-preview-grid.is-solar-focused .celestial-preview {
+    aspect-ratio: 1.18;
   }
 }
 

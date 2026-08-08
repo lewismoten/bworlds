@@ -2,8 +2,10 @@ import { describe, expect, it } from 'vitest';
 import { DEFAULT_DAY_LENGTH_MS, getDaylightCycleState } from '@bworlds/core';
 import {
   getNextInspectorTab,
+  getNextModelPreviewMode,
   getTimePresetProgress,
   isInspectorSectionVisible,
+  isModelPreviewVisible,
 } from './time-controls.ts';
 
 describe('time controls', () => {
@@ -29,11 +31,26 @@ describe('time controls', () => {
     expect(getNextInspectorTab('unknown')).toBe('timekeeper');
   });
 
+  it('normalizes the model preview mode to a supported layout', () => {
+    expect(getNextModelPreviewMode('world')).toBe('world');
+    expect(getNextModelPreviewMode('solar-system')).toBe('solar-system');
+    expect(getNextModelPreviewMode('split')).toBe('split');
+    expect(getNextModelPreviewMode('unknown')).toBe('split');
+  });
+
   it('shows only the active inspector section and reserves the viewport compass for compass mode', () => {
     expect(isInspectorSectionVisible('timekeeper', 'timekeeper')).toBe(true);
     expect(isInspectorSectionVisible('timekeeper', 'model')).toBe(false);
     expect(isInspectorSectionVisible('timekeeper', 'compass')).toBe(false);
     expect(isInspectorSectionVisible('timekeeper', 'viewport-compass')).toBe(false);
     expect(isInspectorSectionVisible('compass', 'viewport-compass')).toBe(true);
+  });
+
+  it('can focus one model preview or show both together', () => {
+    expect(isModelPreviewVisible('split', 'world')).toBe(true);
+    expect(isModelPreviewVisible('split', 'solar-system')).toBe(true);
+    expect(isModelPreviewVisible('world', 'world')).toBe(true);
+    expect(isModelPreviewVisible('world', 'solar-system')).toBe(false);
+    expect(isModelPreviewVisible('solar-system', 'solar-system')).toBe(true);
   });
 });
