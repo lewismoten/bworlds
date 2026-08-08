@@ -409,6 +409,72 @@ describe('tile route', () => {
     );
   });
 
+  it('creates multi-tile bridge crossings across wider river spans', () => {
+    const sampleTerrainSignals = (sampleX: number, sampleY: number) => {
+      if (sampleY !== 0) {
+        return {
+          continent: 0.62,
+          elevation: 0.26,
+          moisture: 0.46,
+          riverSignal: 0.14,
+          roadSignal: 0.2,
+        };
+      }
+      if (sampleX === 0 || sampleX === 1) {
+        return {
+          continent: 0.61,
+          elevation: 0.18,
+          moisture: 0.55,
+          riverSignal: sampleX === 0 ? 0.88 : 0.86,
+          roadSignal: sampleX === 0 ? 0.95 : 0.94,
+        };
+      }
+      return {
+        continent: 0.64,
+        elevation: 0.24,
+        moisture: 0.42,
+        riverSignal: 0.18,
+        roadSignal: 0.96,
+      };
+    };
+
+    const leftBridge = classifier?.(
+      createRouteClassifierPayload({
+        x: 0,
+        y: 0,
+        tile: { kind: 'river' },
+        signals: sampleTerrainSignals(0, 0),
+        sampleTerrainSignals,
+        townAnchors: [],
+        bridgeAnchors: [],
+        poiAnchors: [],
+      })
+    );
+    const rightBridge = classifier?.(
+      createRouteClassifierPayload({
+        x: 1,
+        y: 0,
+        tile: { kind: 'river' },
+        signals: sampleTerrainSignals(1, 0),
+        sampleTerrainSignals,
+        townAnchors: [],
+        bridgeAnchors: [],
+        poiAnchors: [],
+      })
+    );
+
+    expect(leftBridge).toEqual(
+      expect.objectContaining({
+        kind: 'bridge',
+      })
+    );
+    expect(rightBridge).toEqual(
+      expect.objectContaining({
+        kind: 'bridge',
+      })
+    );
+  });
+
   it('resolves the 3D road floor kind from dominant neighboring terrain', () => {
     expect(resolver?.(createRouteFloorPayload())).toBe('plains');
   });

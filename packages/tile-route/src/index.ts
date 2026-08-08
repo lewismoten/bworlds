@@ -50,6 +50,7 @@ const OCEAN_CONTINENT_THRESHOLD = 0.38;
 const MAX_DOCK_LENGTH = 3;
 const LONG_DOCK_BOAT_LENGTH = 3;
 const FOREST_LOG_BRIDGE_KEY = 'forestLogBridge';
+const MAX_RIVER_BRIDGE_SPAN = 4;
 type RoadStyleType = 'footpath' | 'cobble' | 'brick';
 type BridgeTextureType = 'wood' | 'stone' | 'metal' | 'drawbridge' | 'roof' | 'roof-stone';
 type BridgeTextureLayer = 'deck' | 'rail' | 'cover' | 'pillar';
@@ -315,6 +316,7 @@ function classifyConnectedRoad({
       return canClassifyBridgeWaterTile({
         x,
         y,
+        tile,
         signals,
         sampleTerrainSignals,
       })
@@ -362,6 +364,7 @@ function classifyNoiseRoad({
     return canClassifyBridgeWaterTile({
       x,
       y,
+      tile,
       signals,
       sampleTerrainSignals,
     })
@@ -495,15 +498,34 @@ function classifyPoiDock({
 function canClassifyBridgeWaterTile({
   x,
   y,
+  tile,
   signals,
   sampleTerrainSignals,
 }: Pick<
   ClassifyOverworldTileContext,
-  'x' | 'y' | 'signals' | 'sampleTerrainSignals'
+  'x' | 'y' | 'tile' | 'signals' | 'sampleTerrainSignals'
 >) {
   if (!sampleTerrainSignals) {
     return false;
   }
+  const axis = getBridgeCrossingAxis(x, y, signals, sampleTerrainSignals);
+  if (!axis) {
+    return false;
+  }
+
+  if (tile.kind === 'river') {
+    return canClassifyRiverBridgeSpan(x, y, axis, sampleTerrainSignals);
+  }
+
+  return !hasParallelLandWithinBridgeSpan(x, y, axis, sampleTerrainSignals);
+}
+
+function getBridgeCrossingAxis(
+  x: number,
+  y: number,
+  signals: ClassifyOverworldTileContext['signals'],
+  sampleTerrainSignals: NonNullable<ClassifyOverworldTileContext['sampleTerrainSignals']>
+): 'ew' | 'ns' | null {
   const roadSignal = signals.roadSignal;
   const north = sampleTerrainSignals(x, y - 1).roadSignal;
   const east = sampleTerrainSignals(x + 1, y).roadSignal;
@@ -514,11 +536,80 @@ function canClassifyBridgeWaterTile({
   const verticalRidge =
     roadSignal >= east && roadSignal >= west && roadSignal > 0.91;
   if (horizontalRidge === verticalRidge) {
-    return false;
+    return null;
+  }
+  return horizontalRidge ? 'ew' : 'ns';
+}
+
+function canClassifyRiverBridgeSpan(
+  x: number,
+  y: number,
+  axis: 'ew' | 'ns',
+  sampleTerrainSignals: NonNullable<ClassifyOverworldTileContext['sampleTerrainSignals']>
+) {
+  const alongNegative =
+    axis === 'ew' ? { dx: -1, dy: 0 } : { dx: 0, dy: -1 };
+  const alongPositive =
+    axis === 'ew' ? { dx: 1, dy: 0 } : { dx: 0, dy: 1 };
+  let negativeSpan = 0;
+  let positiveSpan = 0;
+
+  while (
+    negativeSpan + positiveSpan + 1 < MAX_RIVER_BRIDGE_SPAN &&
+    isBridgeableRiverCrossingSignal(
+      sampleTerrainSignals(
+        x + alongNegative.dx * (negativeSpan + 1),
+        y + alongNegative.dy * (negativeSpan + 1)
+      )
+    )
+  ) {
+    negativeSpan += 1;
   }
 
-  const axis: 'ew' | 'ns' = horizontalRidge ? 'ew' : 'ns';
-  return !hasParallelLandWithinBridgeSpan(x, y, axis, sampleTerrainSignals);
+  while (
+    negativeSpan + positiveSpan + 1 < MAX_RIVER_BRIDGE_SPAN &&
+    isBridgeableRiverCrossingSignal(
+      sampleTerrainSignals(
+        x + alongPositive.dx * (positiveSpan + 1),
+        y + alongPositive.dy * (positiveSpan + 1)
+      )
+    )
+  ) {
+    positiveSpan += 1;
+  }
+
+  const negativeBank = sampleTerrainSignals(
+    x + alongNegative.dx * (negativeSpan + 1),
+    y + alongNegative.dy * (negativeSpan + 1)
+  );
+  const positiveBank = sampleTerrainSignals(
+    x + alongPositive.dx * (positiveSpan + 1),
+    y + alongPositive.dy * (positiveSpan + 1)
+  );
+
+  return (
+    isBridgeBankSignal(negativeBank) &&
+    isBridgeBankSignal(positiveBank)
+  );
+}
+
+function isBridgeableRiverCrossingSignal(
+  signal: ClassifyOverworldTileContext['signals']
+) {
+  return (
+    signal.continent > 0.42 &&
+    signal.continent < 0.9 &&
+    signal.roadSignal > 0.9 &&
+    signal.riverSignal >= 0.76
+  );
+}
+
+function isBridgeBankSignal(signal: ClassifyOverworldTileContext['signals']) {
+  return (
+    signal.continent > COASTAL_LAND_CONTINENT_THRESHOLD &&
+    signal.continent < 0.9 &&
+    signal.riverSignal < 0.74
+  );
 }
 
 function hasParallelLandWithinBridgeSpan(
