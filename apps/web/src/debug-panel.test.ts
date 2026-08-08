@@ -55,9 +55,12 @@ describe('debug panel', () => {
       object3dCount: 318,
       groupCount: 54,
       meshCount: 180,
+      visibleMeshCount: 164,
       pointsCount: 5,
+      activeParticleCount: 96,
       spriteCount: 9,
       lightCount: 12,
+      dynamicLightCount: 4,
       shadowLightCount: 2,
       activeAudioSourceCount: 6,
       materialCount: 24,
@@ -83,12 +86,15 @@ describe('debug panel', () => {
     };
 
     expect(getDebugSignature(snapshot)).toBe(getDebugSignature({ ...snapshot }));
-    expect(buildDebugMarkup(snapshot)).toContain('GPU Draws');
+    expect(buildDebugMarkup(snapshot)).toContain('Draw Calls');
     expect(buildDebugMarkup(snapshot)).toContain('Avg FPS');
     expect(buildDebugMarkup(snapshot)).toContain('Frame Target');
     expect(buildDebugMarkup(snapshot)).toContain('Perf Tier');
     expect(buildDebugMarkup(snapshot)).toContain('Level');
     expect(buildDebugMarkup(snapshot)).toContain('GPU Points');
+    expect(buildDebugMarkup(snapshot)).toContain('Geometry Count');
+    expect(buildDebugMarkup(snapshot)).toContain('Texture Count');
+    expect(buildDebugMarkup(snapshot)).toContain('JavaScript Heap');
     expect(buildDebugMarkup(snapshot)).toContain('GPU Geometries');
     expect(buildDebugMarkup(snapshot)).toContain('Scene Roots');
     expect(buildDebugMarkup(snapshot)).toContain('Visible Trees');
@@ -103,14 +109,18 @@ describe('debug panel', () => {
     expect(buildDebugMarkup(snapshot)).toContain('Worst Frame');
     expect(buildDebugMarkup(snapshot)).toContain('Points Nodes');
     expect(buildDebugMarkup(snapshot)).toContain('Sprites');
-    expect(buildDebugMarkup(snapshot)).toContain('Lights');
-    expect(buildDebugMarkup(snapshot)).toContain('Shadow Lights');
+    expect(buildDebugMarkup(snapshot)).toContain('Three.js Objects');
+    expect(buildDebugMarkup(snapshot)).toContain('Visible Meshes');
+    expect(buildDebugMarkup(snapshot)).toContain('Active Particles');
+    expect(buildDebugMarkup(snapshot)).toContain('Active Dynamic Lights');
+    expect(buildDebugMarkup(snapshot)).toContain('Active Shadow Lights');
     expect(buildDebugMarkup(snapshot)).toContain('Audio Sources');
     expect(buildDebugMarkup(snapshot)).toContain('Objects / Tree');
     expect(buildDebugMarkup(snapshot)).toContain('Meshes / Tree');
     expect(buildDebugMarkup(snapshot)).toContain('Objects / Tile');
-    expect(buildDebugMarkup(snapshot)).toContain('Materials');
+    expect(buildDebugMarkup(snapshot)).toContain('Material Count');
     expect(buildDebugMarkup(snapshot)).toContain('Tile Kinds');
+    expect(buildDebugMarkup(snapshot)).toContain('Triangle Count');
     expect(buildDebugMarkup(snapshot)).toContain('Programs');
     expect(buildDebugMarkup(snapshot)).toContain('Warnings');
     expect(buildDebugMarkup(snapshot)).toContain('alpha');

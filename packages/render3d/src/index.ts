@@ -74,9 +74,11 @@ type Render3DController = {
     object3dCount: number;
     groupCount: number;
     meshCount: number;
+    visibleMeshCount: number;
     pointsCount: number;
     spriteCount: number;
     lightCount: number;
+    dynamicLightCount: number;
     shadowLightCount: number;
     materialCount: number;
     geometryCount: number;
@@ -141,9 +143,11 @@ type SceneResourceStats = {
   object3dCount: number;
   groupCount: number;
   meshCount: number;
+  visibleMeshCount: number;
   pointsCount: number;
   spriteCount: number;
   lightCount: number;
+  dynamicLightCount: number;
   shadowLightCount: number;
   materialCount: number;
   geometryCount: number;
@@ -730,9 +734,11 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       object3dCount: sceneResourceStats.object3dCount,
       groupCount: sceneResourceStats.groupCount,
       meshCount: sceneResourceStats.meshCount,
+      visibleMeshCount: sceneResourceStats.visibleMeshCount,
       pointsCount: sceneResourceStats.pointsCount,
       spriteCount: sceneResourceStats.spriteCount,
       lightCount: sceneResourceStats.lightCount,
+      dynamicLightCount: sceneResourceStats.dynamicLightCount,
       shadowLightCount: sceneResourceStats.shadowLightCount,
       materialCount: sceneResourceStats.materialCount,
       geometryCount: sceneResourceStats.geometryCount,
@@ -1923,9 +1929,11 @@ export function collectSceneResourceStats(
   let object3dCount = 0;
   let groupCount = 0;
   let meshCount = 0;
+  let visibleMeshCount = 0;
   let pointsCount = 0;
   let spriteCount = 0;
   let lightCount = 0;
+  let dynamicLightCount = 0;
   let shadowLightCount = 0;
   let treeCount = 0;
   let treeObjectCount = 0;
@@ -1947,6 +1955,9 @@ export function collectSceneResourceStats(
     }
     if ((child as THREE.Object3D).isLight) {
       lightCount += 1;
+      if (isDynamicLightType((child as THREE.Object3D).type)) {
+        dynamicLightCount += 1;
+      }
       if ((child as THREE.Object3D & { castShadow?: boolean }).castShadow) {
         shadowLightCount += 1;
       }
@@ -1970,6 +1981,9 @@ export function collectSceneResourceStats(
     const childMaterials = getObjectMaterials(renderable);
     if (childMaterials.length > 0 && renderable.geometry) {
       meshCount += 1;
+      if (renderable.visible !== false) {
+        visibleMeshCount += 1;
+      }
     }
     for (const material of childMaterials) {
       materials.add(material);
@@ -1980,9 +1994,11 @@ export function collectSceneResourceStats(
     object3dCount,
     groupCount,
     meshCount,
+    visibleMeshCount,
     pointsCount,
     spriteCount,
     lightCount,
+    dynamicLightCount,
     shadowLightCount,
     materialCount: materials.size,
     geometryCount: geometries.size,
@@ -1991,6 +2007,14 @@ export function collectSceneResourceStats(
     treeMeshCount,
     treeMaterialRefCount,
   };
+}
+
+function isDynamicLightType(type: string): boolean {
+  return (
+    type === 'PointLight' ||
+    type === 'SpotLight' ||
+    type === 'RectAreaLight'
+  );
 }
 
 type DistanceFadeTargets = {

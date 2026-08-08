@@ -908,21 +908,21 @@ I would actually put these into a developer performance panel.
 * [X] Worst recent frame time.
 * [X] CPU frame time.
 * [ ] GPU frame time where available.
-* [ ] JavaScript heap usage.
+* [X] JavaScript heap usage.
 * [ ] Allocation rate.
 * [ ] Garbage-collection pauses.
-* [ ] Three.js object count.
-* [ ] Visible mesh count.
-* [ ] Triangle count.
+* [X] Three.js object count.
+* [X] Visible mesh count.
+* [X] Triangle count.
 * [ ] Vertex count.
-* [ ] Draw-call count.
-* [ ] Texture count.
-* [ ] Geometry count.
-* [ ] Material count.
-* [ ] Active dynamic-light count.
-* [ ] Active shadow-light count.
-* [ ] Active particle count.
-* [ ] Active audio-source count.
+* [X] Draw-call count.
+* [X] Texture count.
+* [X] Geometry count.
+* [X] Material count.
+* [X] Active dynamic-light count.
+* [X] Active shadow-light count.
+* [X] Active particle count.
+* [X] Active audio-source count.
 * [ ] Active NPC count.
 * [ ] Full-simulation entity count.
 * [ ] Reduced-simulation entity count.

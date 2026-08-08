@@ -26,9 +26,12 @@ export type DebugSnapshot = {
   object3dCount: number;
   groupCount: number;
   meshCount: number;
+  visibleMeshCount: number;
   pointsCount: number;
+  activeParticleCount: number;
   spriteCount: number;
   lightCount: number;
+  dynamicLightCount: number;
   shadowLightCount: number;
   activeAudioSourceCount: number;
   materialCount: number;
@@ -105,9 +108,12 @@ export function getDebugSignature(snapshot: DebugSnapshot): string {
     snapshot.object3dCount,
     snapshot.groupCount,
     snapshot.meshCount,
+    snapshot.visibleMeshCount,
     snapshot.pointsCount,
+    snapshot.activeParticleCount,
     snapshot.spriteCount,
     snapshot.lightCount,
+    snapshot.dynamicLightCount,
     snapshot.shadowLightCount,
     snapshot.activeAudioSourceCount,
     snapshot.materialCount,
@@ -192,8 +198,8 @@ export function buildDebugMarkup(snapshot: DebugSnapshot): string {
     <div><dt>Perf Tier</dt><dd>${formatPerformanceTierLabel(snapshot.performanceTier)}</dd></div>
     <div><dt>Level</dt><dd>${snapshot.playerLevel}</dd></div>
     <div><dt>Render Radius</dt><dd>${snapshot.visibilityRadius}</dd></div>
-    <div><dt>GPU Draws</dt><dd>${snapshot.drawCalls}</dd></div>
-    <div><dt>GPU Tris</dt><dd>${snapshot.triangles}</dd></div>
+    <div><dt>Draw Calls</dt><dd>${snapshot.drawCalls}</dd></div>
+    <div><dt>Triangle Count</dt><dd>${snapshot.triangles}</dd></div>
     <div><dt>GPU Points</dt><dd>${snapshot.points}</dd></div>
     <div><dt>GPU Lines</dt><dd>${snapshot.lines}</dd></div>
     <div><dt>Scene Roots</dt><dd>${snapshot.sceneChildCount}</dd></div>
@@ -208,25 +214,28 @@ export function buildDebugMarkup(snapshot: DebugSnapshot): string {
     <div><dt>Tile Builds/s</dt><dd>${snapshot.tileBuildsPerSecond}</dd></div>
     <div><dt>LOD Checks/s</dt><dd>${snapshot.lodChecksPerSecond}</dd></div>
     <div><dt>LOD Swaps/s</dt><dd>${snapshot.lodReplacementsPerSecond}</dd></div>
-    <div><dt>Objects</dt><dd>${snapshot.object3dCount}</dd></div>
+    <div><dt>Three.js Objects</dt><dd>${snapshot.object3dCount}</dd></div>
     <div><dt>Objects / Tile</dt><dd>${objectsPerVisibleTile}</dd></div>
     <div><dt>Groups</dt><dd>${snapshot.groupCount}</dd></div>
-    <div><dt>Meshes</dt><dd>${snapshot.meshCount}</dd></div>
+    <div><dt>Visible Meshes</dt><dd>${snapshot.visibleMeshCount}</dd></div>
+    <div><dt>Mesh Nodes</dt><dd>${snapshot.meshCount}</dd></div>
+    <div><dt>Active Particles</dt><dd>${snapshot.activeParticleCount}</dd></div>
     <div><dt>Points Nodes</dt><dd>${snapshot.pointsCount}</dd></div>
     <div><dt>Sprites</dt><dd>${snapshot.spriteCount}</dd></div>
-    <div><dt>Lights</dt><dd>${snapshot.lightCount}</dd></div>
-    <div><dt>Shadow Lights</dt><dd>${snapshot.shadowLightCount}</dd></div>
+    <div><dt>Active Dynamic Lights</dt><dd>${snapshot.dynamicLightCount}</dd></div>
+    <div><dt>Light Nodes</dt><dd>${snapshot.lightCount}</dd></div>
+    <div><dt>Active Shadow Lights</dt><dd>${snapshot.shadowLightCount}</dd></div>
     <div><dt>Audio Sources</dt><dd>${snapshot.activeAudioSourceCount}</dd></div>
     <div><dt>Objects / Tree</dt><dd>${objectsPerVisibleTree}</dd></div>
     <div><dt>Meshes / Tree</dt><dd>${meshesPerVisibleTree}</dd></div>
-    <div><dt>Materials</dt><dd>${snapshot.materialCount}</dd></div>
+    <div><dt>Material Count</dt><dd>${snapshot.materialCount}</dd></div>
     <div><dt>Materials / Tree</dt><dd>${materialsPerVisibleTree}</dd></div>
     <div><dt>Tile Kinds</dt><dd>${snapshot.visibleTileKindSummary || 'None'}</dd></div>
-    <div><dt>Geometries</dt><dd>${snapshot.geometryCount}</dd></div>
+    <div><dt>Geometry Count</dt><dd>${snapshot.geometryCount}</dd></div>
     <div><dt>GPU Geometries</dt><dd>${snapshot.geometryMemoryCount}</dd></div>
-    <div><dt>Textures</dt><dd>${snapshot.textureCount}</dd></div>
+    <div><dt>Texture Count</dt><dd>${snapshot.textureCount}</dd></div>
     <div><dt>Programs</dt><dd>${snapshot.programCount}</dd></div>
-    <div><dt>Heap</dt><dd>${heapLabel}</dd></div>
+    <div><dt>JavaScript Heap</dt><dd>${heapLabel}</dd></div>
     ${warningMarkup}
     <div><dt>GPS</dt><dd>${snapshot.latitude.toFixed(4)}, ${snapshot.longitude.toFixed(4)}</dd></div>
     <div><dt>Grid</dt><dd>${snapshot.gridX}, ${snapshot.gridY}</dd></div>
