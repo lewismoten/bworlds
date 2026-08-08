@@ -16,6 +16,7 @@ describe('debug panel', () => {
     const snapshot = {
       fps: 58.2,
       frameMs: 17.2,
+      playerLevel: 4,
       visibilityRadius: 18,
       drawCalls: 42,
       triangles: 2048,
@@ -32,6 +33,7 @@ describe('debug panel', () => {
 
     expect(getDebugSignature(snapshot)).toBe(getDebugSignature({ ...snapshot }));
     expect(buildDebugMarkup(snapshot)).toContain('GPU Draws');
+    expect(buildDebugMarkup(snapshot)).toContain('Level');
     expect(buildDebugMarkup(snapshot)).toContain('alpha');
   });
 });

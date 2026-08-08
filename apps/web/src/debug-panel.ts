@@ -1,6 +1,7 @@
 export type DebugSnapshot = {
   fps: number;
   frameMs: number;
+  playerLevel: number;
   visibilityRadius: number;
   drawCalls: number;
   triangles: number;
@@ -24,6 +25,7 @@ export function getDebugSignature(snapshot: DebugSnapshot): string {
   return [
     snapshot.fps.toFixed(1),
     snapshot.frameMs.toFixed(1),
+    snapshot.playerLevel,
     snapshot.visibilityRadius,
     snapshot.drawCalls,
     snapshot.triangles,
@@ -47,6 +49,7 @@ export function buildDebugMarkup(snapshot: DebugSnapshot): string {
   return `
     <div><dt>FPS</dt><dd>${snapshot.fps.toFixed(1)}</dd></div>
     <div><dt>CPU Frame</dt><dd>${snapshot.frameMs.toFixed(1)} ms</dd></div>
+    <div><dt>Level</dt><dd>${snapshot.playerLevel}</dd></div>
     <div><dt>Render Radius</dt><dd>${snapshot.visibilityRadius}</dd></div>
     <div><dt>GPU Draws</dt><dd>${snapshot.drawCalls}</dd></div>
     <div><dt>GPU Tris</dt><dd>${snapshot.triangles}</dd></div>

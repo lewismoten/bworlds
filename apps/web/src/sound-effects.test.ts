@@ -181,6 +181,28 @@ describe('sound effects', () => {
     );
   });
 
+  it('plays a debounced advancement chime when the player levels up', () => {
+    const played: ProceduralSoundEffect[] = [];
+    const controller = createSoundEffectController({
+      play(effect) {
+        played.push(effect);
+      },
+    });
+
+    controller.triggerProgression({ nowMs: 100, level: 2 });
+    controller.triggerProgression({ nowMs: 220, level: 3 });
+    controller.triggerProgression({ nowMs: 320, level: 6 });
+
+    expect(played.map((effect) => effect.kind)).toEqual([
+      'advancement',
+      'advancement',
+    ]);
+    expect(played[0]?.waveform).toBe('sine');
+    expect((played[1]?.frequency ?? 0) > (played[0]?.frequency ?? 0)).toBe(
+      true
+    );
+  });
+
   it('provides cave and bridge audio profiles for later surface-specific effects', () => {
     expect(getSurfaceAudioProfile('cave-floor')).toEqual(
       expect.objectContaining({

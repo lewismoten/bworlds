@@ -19,6 +19,7 @@ describe('ui signature helpers', () => {
   it('keeps identical status payloads on the same signature and changes when content changes', () => {
     const base = {
       viewMode: '3d' as ViewMode,
+      playerLevel: 3,
       contextLabel: 'Overworld',
       tileLabel: 'Grassland',
       facing: 'N',
@@ -47,6 +48,7 @@ describe('ui signature helpers', () => {
       getStatusSignature(base)
     );
     expect(buildStatusMarkup(base)).toContain('Grassland');
+    expect(buildStatusMarkup(base)).toContain('Level');
     expect(buildStatusMarkup(base)).toContain('Weather');
     expect(buildStatusMarkup(base)).toContain('Forecast');
   });

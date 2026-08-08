@@ -11,4 +11,4 @@
 - [x] Sound is played based on position of where it was emitted, and distance
 - [x] When items, doors, corpses are opened and closed
 - [ ] Combat sounds with different weapons / magic
-- [ ] Skill advancement, level up, etc.
+- [x] Skill advancement, level up, etc.

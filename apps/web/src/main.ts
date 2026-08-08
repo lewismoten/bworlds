@@ -100,6 +100,10 @@ import {
   shouldPlayBlockedMovementSound,
 } from './sound-effects.ts';
 import {
+  getPlayerLevelChange,
+  normalizePlayerLevel,
+} from './player-progression.ts';
+import {
   createMusicController,
   createWebAudioMusicSink,
   resolvePoiMusicMix,
@@ -491,6 +495,10 @@ root.innerHTML = `
               ></select>
               <button id="debug-teleport-tile" type="button">Jump To Tile</button>
             </div>
+            <div class="time-skip-controls">
+              <button id="debug-level-down" type="button">Level -</button>
+              <button id="debug-level-up" type="button">Level +</button>
+            </div>
             <dl id="debug-summary" class="debug-summary"></dl>
             <p class="inspector-note">
               Applied seeds are saved with the session and restored when you load it again.
@@ -636,6 +644,10 @@ const debugTileKindSelect =
   document.querySelector<HTMLSelectElement>('#debug-tile-kind');
 const debugTeleportTileButton =
   document.querySelector<HTMLButtonElement>('#debug-teleport-tile');
+const debugLevelDownButton =
+  document.querySelector<HTMLButtonElement>('#debug-level-down');
+const debugLevelUpButton =
+  document.querySelector<HTMLButtonElement>('#debug-level-up');
 const freezeTimeButton =
   document.querySelector<HTMLButtonElement>('#time-freeze-toggle');
 const celestialToolsCard =
@@ -667,6 +679,7 @@ let runtime = createWorldRuntime({
   viewMode: getNextViewMode(savedSession?.viewMode),
 });
 let { contentPacks: activePacks, generator, registry, state } = runtime;
+state.playerLevel = normalizePlayerLevel(savedSession?.playerLevel);
 syncPlayerPlacedPoisIntoState(savedSession?.playerPlacedPois ?? []);
 const timeState = {
   offsetMs: savedSession?.timeOffsetMs ?? 0,
@@ -858,9 +871,11 @@ function updateStatus(
   const eventsLabel = describeActiveCelestialEvents(cycle);
   const sunriseLabel = cardinalFromAngle(cycle.sunriseAzimuth);
   const tileLabel = definition?.name ?? tile.kind;
+  const playerLevel = normalizePlayerLevel(state.playerLevel);
   const hint = tile.note ?? 'Explore the frontier.';
   const statusSignature = getStatusSignature({
     viewMode: state.viewMode,
+    playerLevel,
     contextLabel: context.label,
     tileLabel,
     facing,
@@ -886,6 +901,7 @@ function updateStatus(
   if (statusSignature !== uiRenderState.lastStatusSignature) {
     status.innerHTML = buildStatusMarkup({
       viewMode: state.viewMode,
+      playerLevel,
       contextLabel: context.label,
       tileLabel,
       facing,
@@ -1214,6 +1230,7 @@ function normalizeSelectedPackIds(packIds?: unknown): string[] {
 function rebuildRuntime(nextPackIds: string[]): void {
   const normalizedPackIds = normalizeSelectedPackIds(nextPackIds);
   const placedPois = getSavedPlayerPlacedPois();
+  const playerLevel = normalizePlayerLevel(state.playerLevel);
   runtime = createWorldRuntime({
     seed: currentWorldSeed,
     packIds: normalizedPackIds,
@@ -1226,6 +1243,7 @@ function rebuildRuntime(nextPackIds: string[]): void {
     viewMode: state.viewMode,
   });
   ({ contentPacks: activePacks, generator, registry, state } = runtime);
+  state.playerLevel = playerLevel;
   syncPlayerPlacedPoisIntoState(placedPois);
   (state as typeof state & { celestialEventMode?: string }).celestialEventMode =
     celestialEventModeState.mode;
@@ -1234,6 +1252,28 @@ function rebuildRuntime(nextPackIds: string[]): void {
   renderContentPackControls();
   updateContentPackLabel();
   updateDebugTeleportOptions();
+  saveSession();
+  requestRender();
+}
+
+function setPlayerLevel(nextLevel: number): void {
+  const previousLevel = normalizePlayerLevel(state.playerLevel);
+  const normalizedLevel = normalizePlayerLevel(nextLevel);
+  const change = getPlayerLevelChange(previousLevel, normalizedLevel);
+  if (change === null) {
+    return;
+  }
+
+  state.playerLevel = normalizedLevel;
+  if (change === 'level-up') {
+    const position = { x: state.player.x, y: state.player.y };
+    soundEffects.triggerProgression({
+      nowMs: performance.now(),
+      level: normalizedLevel,
+      emitter: position,
+      listener: position,
+    });
+  }
   saveSession();
   requestRender();
 }
@@ -2073,6 +2113,7 @@ function render(): FrameLoopActivityLike {
     const debugSnapshot = {
       fps: 1000 / Math.max(1, renderBudgetState.smoothedFrameMs),
       frameMs: renderBudgetState.smoothedFrameMs,
+      playerLevel: normalizePlayerLevel(state.playerLevel),
       visibilityRadius: renderBudgetState.visibilityRadius,
       drawCalls: rendererStats.drawCalls,
       triangles: rendererStats.triangles,
@@ -2548,6 +2589,12 @@ debugApplySeedButton?.addEventListener('click', () => {
 });
 debugLoadSeedButton?.addEventListener('click', loadSavedWorldSeed);
 debugTeleportTileButton?.addEventListener('click', teleportToSelectedTileKind);
+debugLevelDownButton?.addEventListener('click', () => {
+  setPlayerLevel(normalizePlayerLevel(state.playerLevel) - 1);
+});
+debugLevelUpButton?.addEventListener('click', () => {
+  setPlayerLevel(normalizePlayerLevel(state.playerLevel) + 1);
+});
 debugSeedInput?.addEventListener('keydown', (event) => {
   if (event.key === 'Enter') {
     applyWorldSeed(debugSeedInput.value);
@@ -2818,6 +2865,7 @@ function saveSession(): void {
       compassHeadingAngle: compassHeadingState.angle,
       cameraPitch: mouseLookState.pitch,
       worldSeed: currentWorldSeed,
+      playerLevel: normalizePlayerLevel(state.playerLevel),
       playerPlacedPois: getSavedPlayerPlacedPois(),
     });
     if (snapshot === lastSavedSnapshot) return;

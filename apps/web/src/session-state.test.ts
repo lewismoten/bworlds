@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_DAY_LENGTH_MS, getDaylightCycleState } from '@bworlds/core';
+import { DEFAULT_PLAYER_LEVEL } from './player-progression.ts';
 import { parseSavedSession, serializeSessionSnapshot } from './session-state.ts';
 
 describe('session state', () => {
@@ -26,6 +27,7 @@ describe('session state', () => {
       celestialEventMode: 'aurora',
       compassHeadingAngle: -Math.PI / 2,
       cameraPitch: -0.22,
+      playerLevel: 4,
       playerPlacedPois: [
         {
           x: 4,
@@ -50,6 +52,7 @@ describe('session state', () => {
         inspectorTab: 'compass',
         compassHeadingAngle: -Math.PI / 2,
         cameraPitch: -0.22,
+        playerLevel: 4,
         playerPlacedPois: [
           expect.objectContaining({
             kind: 'town',
@@ -201,6 +204,16 @@ describe('session state', () => {
         JSON.stringify({
           player: { x: 0, y: 0, facing: 0 },
           stack: [{ id: 'overworld', depth: 0 }],
+          playerLevel: 'high',
+        })
+      )
+    ).toBeNull();
+
+    expect(
+      parseSavedSession(
+        JSON.stringify({
+          player: { x: 0, y: 0, facing: 0 },
+          stack: [{ id: 'overworld', depth: 0 }],
           playerPlacedPois: [{ x: 1 }],
         })
       )
@@ -231,6 +244,7 @@ describe('session state', () => {
       celestialEventMode: 'auto',
       compassHeadingAngle: null,
       cameraPitch: -0.08,
+      playerLevel: 3,
       playerPlacedPois: [],
     });
 
@@ -243,5 +257,21 @@ describe('session state', () => {
     );
     expect(restoredCycle.moonPhaseName).toBe(expectedCycle.moonPhaseName);
     expect(restoredCycle.dayProgress).toBe(expectedCycle.dayProgress);
+  });
+
+  it('normalizes saved player level values into the supported range', () => {
+    expect(
+      parseSavedSession(
+        JSON.stringify({
+          player: { x: 0, y: 0, facing: 0 },
+          stack: [{ id: 'overworld', depth: 0 }],
+          playerLevel: 0,
+        })
+      )
+    ).toEqual(
+      expect.objectContaining({
+        playerLevel: DEFAULT_PLAYER_LEVEL,
+      })
+    );
   });
 });

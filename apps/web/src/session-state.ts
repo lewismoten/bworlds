@@ -10,6 +10,7 @@ import {
   parsePlayerPlacedPois,
   type PlayerPlacedPoiLike,
 } from '@bworlds/runtime-player-poi';
+import { normalizePlayerLevel } from './player-progression.ts';
 
 type SessionViewMode = '2d' | '3d' | 'text';
 
@@ -47,6 +48,7 @@ export type SavedSession = {
   celestialEventMode?: CelestialEventMode;
   compassHeadingAngle?: number | null;
   cameraPitch?: number;
+  playerLevel?: number;
   playerPlacedPois?: PlayerPlacedPoiLike[];
 };
 
@@ -72,6 +74,7 @@ export type SessionSnapshot = {
   celestialEventMode: CelestialEventMode;
   compassHeadingAngle: number | null;
   cameraPitch: number;
+  playerLevel: number;
   playerPlacedPois: PlayerPlacedPoiLike[];
 };
 
@@ -202,6 +205,12 @@ export function parseSavedSession(raw: string | null): SavedSession | null {
       return null;
     }
     if (
+      typeof parsed?.playerLevel !== 'undefined' &&
+      typeof parsed.playerLevel !== 'number'
+    ) {
+      return null;
+    }
+    if (
       typeof parsed?.playerPlacedPois !== 'undefined' &&
       parsePlayerPlacedPois(parsed.playerPlacedPois) === null
     ) {
@@ -209,6 +218,9 @@ export function parseSavedSession(raw: string | null): SavedSession | null {
     }
     if (typeof parsed?.playerPlacedPois !== 'undefined') {
       parsed.playerPlacedPois = parsePlayerPlacedPois(parsed.playerPlacedPois);
+    }
+    if (typeof parsed?.playerLevel !== 'undefined') {
+      parsed.playerLevel = normalizePlayerLevel(parsed.playerLevel);
     }
     return parsed as SavedSession;
   } catch {

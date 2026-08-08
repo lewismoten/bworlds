@@ -7,7 +7,8 @@ type SoundEffectKind =
   | 'blocked'
   | 'open'
   | 'close'
-  | 'wind';
+  | 'wind'
+  | 'advancement';
 type SoundWaveform = OscillatorType;
 type SoundPosition = { x: number; y: number };
 type SurfaceAudioFamily =
@@ -38,6 +39,12 @@ export type SoundEffectSink = {
 
 export type SoundEffectController = {
   resume(): void;
+  triggerProgression(options: {
+    nowMs: number;
+    level?: number;
+    emitter?: SoundPosition;
+    listener?: SoundPosition;
+  }): void;
   triggerInteraction(options: {
     nowMs: number;
     event: 'open' | 'close';
@@ -207,6 +214,7 @@ export function createSoundEffectController(
   let lastBlockedAtMs = -Infinity;
   let lastInteractionAtMs = -Infinity;
   let lastWindAtMs = -Infinity;
+  let lastProgressionAtMs = -Infinity;
   let previousJumping = false;
   let footstepVariant = 0;
 
@@ -228,6 +236,8 @@ export function createSoundEffectController(
           ? profile.footstepFrequency + 72
           : kind === 'wind'
             ? 190 + (tileKind === 'forest' ? 16 : 0) + variantOffset * 0.4
+          : kind === 'advancement'
+            ? resolveAdvancementFrequency()
           : kind === 'open'
             ? resolveInteractionFrequency('open', tileKind, profile, variantOffset)
           : kind === 'close'
@@ -242,6 +252,8 @@ export function createSoundEffectController(
           ? 140
           : kind === 'wind'
             ? 680
+          : kind === 'advancement'
+            ? 260
           : kind === 'landing'
             ? 120
             : kind === 'blocked'
@@ -254,6 +266,8 @@ export function createSoundEffectController(
           ? profile.footstepVolume * 1.2
           : kind === 'wind'
             ? 0.018
+          : kind === 'advancement'
+            ? 0.052
           : kind === 'open' || kind === 'close'
             ? profile.landingVolume * 0.8
           : kind === 'blocked'
@@ -266,6 +280,8 @@ export function createSoundEffectController(
           ? 'sawtooth'
           : kind === 'wind'
             ? 'triangle'
+          : kind === 'advancement'
+            ? 'sine'
           : kind === 'open' || kind === 'close'
             ? resolveInteractionWaveform(tileKind, profile.waveform)
             : profile.waveform,
@@ -277,6 +293,22 @@ export function createSoundEffectController(
   return {
     resume() {
       sink.resume?.();
+    },
+    triggerProgression({ nowMs, level, emitter, listener }) {
+      if (nowMs - lastProgressionAtMs < 180) {
+        return;
+      }
+      lastProgressionAtMs = nowMs;
+      sink.play({
+        kind: 'advancement',
+        nowMs,
+        frequency: resolveAdvancementFrequency(level),
+        durationMs: 260,
+        volume: 0.052,
+        waveform: 'sine',
+        emitter,
+        listener,
+      });
     },
     triggerInteraction({ nowMs, event, tileKind, emitter, listener }) {
       if (nowMs - lastInteractionAtMs < 90) {
@@ -407,6 +439,11 @@ function resolveInteractionWaveform(
   return fallback;
 }
 
+function resolveAdvancementFrequency(level?: number): number {
+  const normalizedLevel = clampValue(Math.round(level ?? 1), 1, 99);
+  return 300 + Math.min(18, normalizedLevel - 1) * 12;
+}
+
 type AudioContextCtor = new () => AudioContext;
 
 export function createWebAudioSoundEffectSink(): SoundEffectSink {
@@ -461,6 +498,12 @@ export function createWebAudioSoundEffectSink(): SoundEffectSink {
         oscillator.frequency.exponentialRampToValueAtTime(
           Math.max(40, effect.frequency * 0.78),
           startAt + durationSeconds
+        );
+      }
+      if (effect.kind === 'advancement') {
+        oscillator.frequency.exponentialRampToValueAtTime(
+          effect.frequency * 1.5,
+          startAt + durationSeconds * 0.55
         );
       }
       gain.gain.setValueAtTime(0.0001, startAt);

@@ -16,6 +16,7 @@ export type EventDetail = { kind: EventDetailKind; label: string };
 
 type StatusSignatureOptions = {
   viewMode: ViewMode;
+  playerLevel: number;
   contextLabel: string;
   tileLabel: string;
   facing: string;
@@ -65,6 +66,7 @@ type SextantSignatureOptions = {
 export function getStatusSignature(options: StatusSignatureOptions): string {
   return [
     options.viewMode,
+    options.playerLevel,
     options.contextLabel,
     options.tileLabel,
     options.facing,
@@ -149,6 +151,7 @@ export function buildTextViewportMarkup(grid: TextViewportGrid): string {
 export function buildStatusMarkup(options: StatusSignatureOptions): string {
   return `
     <div><dt>View</dt><dd>${options.viewMode.toUpperCase()}</dd></div>
+    <div><dt>Level</dt><dd>${options.playerLevel}</dd></div>
     <div><dt>Place</dt><dd>${options.contextLabel}</dd></div>
     <div><dt>Tile</dt><dd>${options.tileLabel}</dd></div>
     <div><dt>Facing</dt><dd>${options.facing}</dd></div>
