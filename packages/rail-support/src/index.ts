@@ -243,15 +243,15 @@ export function buildRailCurvePoints(
     x: midpointX + perpendicularX * curveOffset * curveDirection,
     y: midpointY + perpendicularY * curveOffset * curveDirection,
   };
-  const sampled: Array<{ x: number; y: number }> = [];
+  const sampled = new Array<{ x: number; y: number }>(RAIL_SAMPLE_SEGMENTS + 1);
 
   for (let index = 0; index <= RAIL_SAMPLE_SEGMENTS; index += 1) {
     const t = index / RAIL_SAMPLE_SEGMENTS;
     const inverse = 1 - t;
-    sampled.push({
+    sampled[index] = {
       x: inverse * inverse * from.x + 2 * inverse * t * control.x + t * t * to.x,
       y: inverse * inverse * from.y + 2 * inverse * t * control.y + t * t * to.y,
-    });
+    };
   }
 
   return rasterizePath(sampled);
@@ -262,31 +262,30 @@ function rasterizePath(points: Array<{ x: number; y: number }>): Array<{ x: numb
     return [];
   }
 
-  const rounded = points.map((point) => ({
-    x: Math.round(point.x),
-    y: Math.round(point.y),
-  }));
-  const raster: Array<{ x: number; y: number }> = [rounded[0]!];
+  const raster: Array<{ x: number; y: number }> = [];
+  let previous = {
+    x: Math.round(points[0]!.x),
+    y: Math.round(points[0]!.y),
+  };
+  raster.push(previous);
 
-  for (let index = 1; index < rounded.length; index += 1) {
-    const segment = getLinePoints(raster[raster.length - 1]!, rounded[index]!);
-    for (const point of segment.slice(1)) {
-      const previous = raster[raster.length - 1]!;
-      if (previous.x === point.x && previous.y === point.y) {
-        continue;
-      }
-      raster.push(point);
-    }
+  for (let index = 1; index < points.length; index += 1) {
+    const next = {
+      x: Math.round(points[index]!.x),
+      y: Math.round(points[index]!.y),
+    };
+    appendLinePoints(raster, previous, next);
+    previous = next;
   }
 
   return raster;
 }
 
-function getLinePoints(
+function appendLinePoints(
+  points: Array<{ x: number; y: number }>,
   start: { x: number; y: number },
   end: { x: number; y: number }
-): Array<{ x: number; y: number }> {
-  const points: Array<{ x: number; y: number }> = [];
+) {
   let x = start.x;
   let y = start.y;
   const deltaX = Math.abs(end.x - start.x);
@@ -296,9 +295,20 @@ function getLinePoints(
   let error = deltaX - deltaY;
 
   while (true) {
-    points.push({ x, y });
     if (x === end.x && y === end.y) {
-      return points;
+      if (
+        points[points.length - 1]?.x !== x ||
+        points[points.length - 1]?.y !== y
+      ) {
+        points.push({ x, y });
+      }
+      return;
+    }
+    if (
+      points[points.length - 1]?.x !== x ||
+      points[points.length - 1]?.y !== y
+    ) {
+      points.push({ x, y });
     }
     const doubleError = error * 2;
     if (doubleError > -deltaY) {
@@ -325,7 +335,8 @@ function isRailPathSuitable(
   let routeFriendlyCount = 0;
   let sampleCount = 0;
 
-  for (const point of points.slice(1, -1)) {
+  for (let index = 1; index < points.length - 1; index += 1) {
+    const point = points[index]!;
     const terrain = sampleTerrainSignals(point.x, point.y);
     if (
       terrain.continent < MIN_RAIL_CONTINENT ||

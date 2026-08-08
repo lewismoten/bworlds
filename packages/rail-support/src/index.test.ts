@@ -29,6 +29,43 @@ describe('rail support', () => {
     expect(first.some((point) => point.y !== 0)).toBe(true);
   });
 
+  it('keeps the rasterized rail curve path stable after allocation-trimming refactors', () => {
+    const from = { x: 0, y: 0, type: 'station', name: 'Alpha Station' } as StationAnchorLike;
+    const to = { x: 28, y: 10, type: 'station', name: 'Beta Station' } as StationAnchorLike;
+
+    expect(buildRailCurvePoints('spec-seed', from, to)).toEqual([
+      { x: 0, y: 0 },
+      { x: 1, y: 0 },
+      { x: 2, y: 0 },
+      { x: 3, y: -0 },
+      { x: 4, y: -0 },
+      { x: 5, y: -0 },
+      { x: 6, y: -0 },
+      { x: 7, y: -0 },
+      { x: 8, y: -0 },
+      { x: 9, y: 0 },
+      { x: 10, y: 0 },
+      { x: 11, y: 1 },
+      { x: 12, y: 1 },
+      { x: 13, y: 1 },
+      { x: 14, y: 1 },
+      { x: 15, y: 2 },
+      { x: 16, y: 2 },
+      { x: 17, y: 2 },
+      { x: 18, y: 3 },
+      { x: 19, y: 4 },
+      { x: 20, y: 4 },
+      { x: 21, y: 4 },
+      { x: 22, y: 5 },
+      { x: 23, y: 6 },
+      { x: 24, y: 7 },
+      { x: 25, y: 7 },
+      { x: 26, y: 8 },
+      { x: 27, y: 9 },
+      { x: 28, y: 10 },
+    ]);
+  });
+
   it('connects nearby stations with at most two deterministic rail links each', () => {
     const stations = [
       { x: 0, y: 0, type: 'station', name: 'Alpha Station' },
