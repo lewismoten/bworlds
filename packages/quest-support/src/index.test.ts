@@ -12,6 +12,7 @@ describe('quest support', () => {
       'defense',
       'stealth',
       'assassination',
+      'capture',
       'escort',
       'rescue',
       'tracking',
@@ -242,6 +243,44 @@ describe('quest support', () => {
     expect(underleveled.some((offer) => offer.type === 'assassination')).toBe(
       false
     );
+  });
+
+  it('offers capture quests for nonlethal bounty targets that must be brought back alive', () => {
+    const capture = getDefaultQuestRegistry().getOffers({
+      npcId: 'npc:warden',
+      npcName: 'Della Norwood',
+      townKey: '3:7',
+      dayProgress: 0.58,
+      yearProgress: 0.44,
+      playerLevel: 8,
+      playerProfession: 'guard',
+      completedQuestIds: new Set<string>(),
+      npcState: 'working',
+      profession: 'warden',
+      professionFamily: 'town-hall',
+      residenceBuildingId: 'home',
+      workplaceBuildingId: 'hall',
+    });
+    const underleveled = getDefaultQuestRegistry().getOffers({
+      npcId: 'npc:warden',
+      npcName: 'Della Norwood',
+      townKey: '3:7',
+      dayProgress: 0.58,
+      yearProgress: 0.44,
+      playerLevel: 3,
+      completedQuestIds: new Set<string>(),
+      npcState: 'working',
+      profession: 'warden',
+      professionFamily: 'town-hall',
+      residenceBuildingId: 'home',
+      workplaceBuildingId: 'hall',
+    });
+
+    expect(capture.some((offer) => offer.type === 'capture')).toBe(true);
+    expect(
+      capture.some((offer) => offer.summary.includes('bring them in breathing'))
+    ).toBe(true);
+    expect(underleveled.some((offer) => offer.type === 'capture')).toBe(false);
   });
 
   it('offers rescue quests for staffed civic, temple, and stable roles', () => {

@@ -78,6 +78,7 @@ export function getDefaultQuestPlugins(): QuestTypePlugin[] {
     createDefenseQuestPlugin(),
     createStealthQuestPlugin(),
     createAssassinationQuestPlugin(),
+    createCaptureQuestPlugin(),
     createEscortQuestPlugin(),
     createRescueQuestPlugin(),
     createTrackingQuestPlugin(),
@@ -394,6 +395,54 @@ function createAssassinationQuestPlugin(): QuestTypePlugin {
       type: 'assassination',
       title: `${seasonLabel} Bounty Mark`,
       summary: `${context.npcName} posts a bounty to locate and eliminate ${target}.${professionHint}`,
+      availability: 'work',
+      sourceNpcId: context.npcId,
+      sourceNpcName: context.npcName,
+    };
+  });
+}
+
+function createCaptureQuestPlugin(): QuestTypePlugin {
+  return createQuestTypePlugin('capture', (context) => {
+    if (
+      context.playerLevel < 6 ||
+      context.playerLevel > 22 ||
+      context.npcState !== 'working' ||
+      !(
+        context.professionFamily === 'town-hall' ||
+        context.professionFamily === 'market' ||
+        context.professionFamily === 'stable' ||
+        context.professionFamily === 'temple'
+      )
+    ) {
+      return null;
+    }
+
+    const seasonLabel = getSeasonLabel(context.yearProgress);
+    const target =
+      context.professionFamily === 'stable'
+        ? 'a saboteur who keeps cutting loose the pack animals'
+        : context.professionFamily === 'temple'
+          ? 'the relic thief orchestrating the shrine break-ins'
+          : context.professionFamily === 'market'
+            ? 'the fence receiving stolen caravan goods'
+            : 'the raider scout feeding routes back to the camp';
+    const questId =
+      `${context.townKey}:${context.npcId}:capture:${context.professionFamily}:${seasonLabel}`;
+    if (context.completedQuestIds.has(questId)) {
+      return null;
+    }
+
+    const professionHint =
+      context.playerProfession === 'guard' || context.playerProfession === 'scout'
+        ? ' Your control in a live pursuit should help bring them in breathing.'
+        : '';
+
+    return {
+      id: questId,
+      type: 'capture',
+      title: `${seasonLabel} Bring Them In`,
+      summary: `${context.npcName} needs someone to track down and capture ${target} rather than kill them.${professionHint}`,
       availability: 'work',
       sourceNpcId: context.npcId,
       sourceNpcName: context.npcName,
