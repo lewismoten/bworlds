@@ -11,6 +11,15 @@ describe('bounded cache', () => {
     expect(cache.get('alpha')).toBeNull();
   });
 
+  it('stores explicit undefined values without treating them as missing', () => {
+    const cache = createBoundedCache<string, string | undefined>(2);
+
+    cache.set('alpha', undefined);
+
+    expect(cache.has('alpha')).toBe(true);
+    expect(cache.get('alpha')).toBeUndefined();
+  });
+
   it('evicts the least recently used key when over capacity', () => {
     const cache = createBoundedCache<string, number>(2);
 

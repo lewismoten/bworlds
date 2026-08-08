@@ -492,10 +492,13 @@ function getCachedRiverControlPoints(
   cache: CacheLike<string, RiverControlPoint[]>
 ): RiverControlPoint[] {
   const key = `${seed}:${cellX}:${cellY}`;
-  if (!cache.has(key)) {
-    cache.set(key, createRiverControlPoints(seed, cellX, cellY));
+  const cached = cache.get(key);
+  if (cached !== undefined) {
+    return cached;
   }
-  return cache.get(key) ?? [];
+  const points = createRiverControlPoints(seed, cellX, cellY);
+  cache.set(key, points);
+  return points;
 }
 
 function getCachedRiverCurvePoints(
@@ -506,15 +509,15 @@ function getCachedRiverCurvePoints(
   curvePointCache: CacheLike<string, RiverControlPoint[]>
 ): RiverControlPoint[] {
   const key = `${seed}:${cellX}:${cellY}`;
-  if (!curvePointCache.has(key)) {
-    curvePointCache.set(
-      key,
-      createRiverCurvePoints(
-        getCachedRiverControlPoints(seed, cellX, cellY, controlPointCache)
-      )
-    );
+  const cached = curvePointCache.get(key);
+  if (cached !== undefined) {
+    return cached;
   }
-  return curvePointCache.get(key) ?? [];
+  const points = createRiverCurvePoints(
+    getCachedRiverControlPoints(seed, cellX, cellY, controlPointCache)
+  );
+  curvePointCache.set(key, points);
+  return points;
 }
 
 function getCachedRiverForkPath(
@@ -654,10 +657,7 @@ export function createCachedOverworldTileResolver(
     y: number;
   }) {
     const key = `${seed}:${x}:${y}`;
-    if (!cache.has(key)) {
-      cache.set(key, resolveTile({ seed, x, y }));
-    }
-    return cache.get(key) ?? null;
+    return cache.getOrCreate(key, () => resolveTile({ seed, x, y }));
   };
 }
 
@@ -1225,24 +1225,26 @@ function getOverworldCellAnchorEvaluation<
   evaluationCache: CacheLike<string, OverworldCellAnchorEvaluation>;
 }): OverworldCellAnchorEvaluation<TAnchor> {
   const key = `${seed}:${spec.id}:${cellX}:${cellY}`;
-  if (!evaluationCache.has(key)) {
-    const candidate = createOverworldCellAnchorCandidate(seed, cellX, cellY, spec);
-    const terrain = sampleTerrainSignals(candidate.x, candidate.y);
-    evaluationCache.set(key, {
-      candidate,
-      terrain,
-      terrainSuitable:
-        candidate.chance > spec.threshold &&
-        spec.isSuitableTerrain({
-          terrain,
-          x: candidate.x,
-          y: candidate.y,
-          sampleTerrainSignals,
-        }),
-    });
+  const cached = evaluationCache.get(key);
+  if (cached !== undefined) {
+    return cached as OverworldCellAnchorEvaluation<TAnchor>;
   }
-
-  return evaluationCache.get(key) as OverworldCellAnchorEvaluation<TAnchor>;
+  const candidate = createOverworldCellAnchorCandidate(seed, cellX, cellY, spec);
+  const terrain = sampleTerrainSignals(candidate.x, candidate.y);
+  const evaluation = {
+    candidate,
+    terrain,
+    terrainSuitable:
+      candidate.chance > spec.threshold &&
+      spec.isSuitableTerrain({
+        terrain,
+        x: candidate.x,
+        y: candidate.y,
+        sampleTerrainSignals,
+      }),
+  };
+  evaluationCache.set(key, evaluation);
+  return evaluation as OverworldCellAnchorEvaluation<TAnchor>;
 }
 
 export function createOverworldGenerationContext({

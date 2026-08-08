@@ -954,10 +954,13 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
 
     function getTile(tileX: number, tileY: number): TileLike {
       const key = makeKey(tileX, tileY);
-      if (!tileCache.has(key)) {
-        tileCache.set(key, state.getCurrentTile(tileX, tileY));
+      const cached = tileCache.get(key);
+      if (cached !== undefined) {
+        return cached;
       }
-      return tileCache.get(key) as TileLike;
+      const tile = state.getCurrentTile(tileX, tileY);
+      tileCache.set(key, tile);
+      return tile;
     }
 
     function getSurfaceProfile(
@@ -966,13 +969,13 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       tile = getTile(tileX, tileY)
     ): TileSurfaceProfile {
       const key = makeKey(tileX, tileY);
-      if (!surfaceProfileCache.has(key)) {
-        surfaceProfileCache.set(
-          key,
-          getTileSurfaceProfile(state, tile, tileX, tileY)
-        );
+      const cached = surfaceProfileCache.get(key);
+      if (cached !== undefined) {
+        return cached;
       }
-      return surfaceProfileCache.get(key) as TileSurfaceProfile;
+      const surfaceProfile = getTileSurfaceProfile(state, tile, tileX, tileY);
+      surfaceProfileCache.set(key, surfaceProfile);
+      return surfaceProfile;
     }
 
     return {

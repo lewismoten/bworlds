@@ -11,38 +11,46 @@ export type BoundedCache<Key, Value> = CacheLike<Key, Value> & {
   size(): number;
 };
 
+type CacheEntry<Value> = {
+  value: Value;
+};
+
 export function createBoundedCache<Key, Value>(
   maxEntries = 32
 ): BoundedCache<Key, Value> {
   const limit = Math.max(1, Math.floor(maxEntries));
-  const entries = new Map<Key, Value>();
+  const entries = new Map<Key, CacheEntry<Value>>();
+
+  const lookup = (key: Key): CacheEntry<Value> | undefined => entries.get(key);
 
   return {
     clear() {
       entries.clear();
     },
     get(key) {
-      if (!entries.has(key)) {
+      const entry = lookup(key);
+      if (entry === undefined) {
         return undefined;
       }
-      const value = entries.get(key);
       entries.delete(key);
-      if (value !== undefined) {
-        entries.set(key, value);
-      }
-      return value;
+      entries.set(key, entry);
+      return entry.value;
     },
     peek(key) {
-      return entries.get(key);
+      return lookup(key)?.value;
     },
     has(key) {
       return entries.has(key);
     },
     set(key, value) {
-      if (entries.has(key)) {
+      const entry = lookup(key);
+      if (entry !== undefined) {
         entries.delete(key);
       }
-      entries.set(key, value);
+      entries.set(key, entry ?? { value });
+      if (entry !== undefined) {
+        entry.value = value;
+      }
       while (entries.size > limit) {
         const oldestKey = entries.keys().next().value;
         if (oldestKey === undefined) {
@@ -52,9 +60,11 @@ export function createBoundedCache<Key, Value>(
       }
     },
     getOrCreate(key, create) {
-      const cached = this.get(key);
-      if (cached !== undefined) {
-        return cached;
+      const entry = lookup(key);
+      if (entry !== undefined) {
+        entries.delete(key);
+        entries.set(key, entry);
+        return entry.value;
       }
       const value = create();
       this.set(key, value);

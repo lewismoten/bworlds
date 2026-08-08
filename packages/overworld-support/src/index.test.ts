@@ -405,6 +405,18 @@ describe('overworld support', () => {
     expect(calls).toBe(2);
   });
 
+  it('caches null overworld tile resolver results without recomputing them', () => {
+    let calls = 0;
+    const resolveTile = createCachedOverworldTileResolver(({ x }) => {
+      calls += 1;
+      return x === 0 ? null : { kind: 'plains' };
+    });
+
+    expect(resolveTile({ seed: 'spec', x: 0, y: 3 })).toBeNull();
+    expect(resolveTile({ seed: 'spec', x: 0, y: 3 })).toBeNull();
+    expect(calls).toBe(1);
+  });
+
   it('keeps cached overworld tile resolvers deterministic after bounded eviction churn', () => {
     let calls = 0;
     const resolveTile = createCachedOverworldTileResolver(({ seed, x, y }) => {

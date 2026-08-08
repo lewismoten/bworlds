@@ -11,6 +11,16 @@ describe('cache support', () => {
     expect(cache.get('alpha')).toBeNull();
   });
 
+  it('stores explicit undefined values without treating them as missing', () => {
+    const cache = createBoundedCache<string, string | undefined>(2);
+
+    cache.set('alpha', undefined);
+
+    expect(cache.has('alpha')).toBe(true);
+    expect(cache.peek('alpha')).toBeUndefined();
+    expect(cache.get('alpha')).toBeUndefined();
+  });
+
   it('evicts the least recently used key when over capacity', () => {
     const cache = createBoundedCache<string, number>(2);
 
@@ -64,6 +74,25 @@ describe('cache support', () => {
 
     expect(first).toBeNull();
     expect(second).toBeNull();
+    expect(cache.has('alpha')).toBe(true);
+    expect(calls).toBe(1);
+  });
+
+  it('does not recreate explicit undefined entries through getOrCreate', () => {
+    const cache = createBoundedCache<string, string | undefined>(2);
+    let calls = 0;
+
+    const first = cache.getOrCreate('alpha', () => {
+      calls += 1;
+      return undefined;
+    });
+    const second = cache.getOrCreate('alpha', () => {
+      calls += 1;
+      return 'unexpected';
+    });
+
+    expect(first).toBeUndefined();
+    expect(second).toBeUndefined();
     expect(cache.has('alpha')).toBe(true);
     expect(calls).toBe(1);
   });
