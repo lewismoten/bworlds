@@ -143,6 +143,7 @@ export type DebugSnapshotExport = {
     averageHierarchyDepth: number;
     emptyGroupCount: number;
     oneChildGroupCount: number;
+    matrixAutoUpdateCount: number;
     spriteCount: number;
     pointsCount: number;
     lineObjectCount: number;
@@ -291,6 +292,7 @@ export function buildDebugSnapshotExport(
       averageHierarchyDepth: options.snapshot.averageHierarchyDepth ?? 0,
       emptyGroupCount: options.snapshot.emptyGroupCount ?? 0,
       oneChildGroupCount: options.snapshot.oneChildGroupCount ?? 0,
+      matrixAutoUpdateCount: options.snapshot.matrixAutoUpdateCount ?? 0,
       spriteCount: options.snapshot.spriteCount,
       pointsCount: options.snapshot.pointsCount,
       lineObjectCount: options.snapshot.lineObjectCount ?? 0,

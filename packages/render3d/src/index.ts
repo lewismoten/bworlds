@@ -84,6 +84,7 @@ type Render3DController = {
     averageHierarchyDepth: number;
     emptyGroupCount: number;
     oneChildGroupCount: number;
+    matrixAutoUpdateCount: number;
     pointsCount: number;
     lineObjectCount: number;
     cameraCount: number;
@@ -168,6 +169,7 @@ type SceneResourceStats = {
   averageHierarchyDepth: number;
   emptyGroupCount: number;
   oneChildGroupCount: number;
+  matrixAutoUpdateCount: number;
   pointsCount: number;
   lineObjectCount: number;
   cameraCount: number;
@@ -783,6 +785,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       averageHierarchyDepth: sceneResourceStats.averageHierarchyDepth,
       emptyGroupCount: sceneResourceStats.emptyGroupCount,
       oneChildGroupCount: sceneResourceStats.oneChildGroupCount,
+      matrixAutoUpdateCount: sceneResourceStats.matrixAutoUpdateCount,
       pointsCount: sceneResourceStats.pointsCount,
       lineObjectCount: sceneResourceStats.lineObjectCount,
       cameraCount: sceneResourceStats.cameraCount,
@@ -2004,6 +2007,7 @@ export function collectSceneResourceStats(
   let maxHierarchyDepth = 0;
   let emptyGroupCount = 0;
   let oneChildGroupCount = 0;
+  let matrixAutoUpdateCount = 0;
   let pointsCount = 0;
   let lineObjectCount = 0;
   let cameraCount = 0;
@@ -2031,6 +2035,9 @@ export function collectSceneResourceStats(
       visibleObjectCount += 1;
     } else {
       invisibleObjectCount += 1;
+    }
+    if ((child as THREE.Object3D & { matrixAutoUpdate?: boolean }).matrixAutoUpdate) {
+      matrixAutoUpdateCount += 1;
     }
     if ((child as THREE.Object3D).type === 'Group') {
       groupCount += 1;
@@ -2128,6 +2135,7 @@ export function collectSceneResourceStats(
       object3dCount > 0 ? totalHierarchyDepth / object3dCount : 0,
     emptyGroupCount,
     oneChildGroupCount,
+    matrixAutoUpdateCount,
     pointsCount,
     lineObjectCount,
     cameraCount,

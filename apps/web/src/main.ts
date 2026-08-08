@@ -2773,6 +2773,7 @@ function render(): FrameLoopActivityLike {
       averageHierarchyDepth: rendererStats.averageHierarchyDepth,
       emptyGroupCount: rendererStats.emptyGroupCount,
       oneChildGroupCount: rendererStats.oneChildGroupCount,
+      matrixAutoUpdateCount: rendererStats.matrixAutoUpdateCount,
       pointsCount: rendererStats.pointsCount,
       lineObjectCount: rendererStats.lineObjectCount,
       cameraCount: rendererStats.cameraCount,

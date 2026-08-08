@@ -97,7 +97,7 @@ That gives you something you can save from a slow scene, attach to a bug report,
 * [x] Include empty groups.
 * [x] Include one-child groups.
 * [x] Include invisible objects.
-* [ ] Include objects with `matrixAutoUpdate = true`.
+* [x] Include objects with `matrixAutoUpdate = true`.
 * [ ] Include static objects still updating transforms.
 * [ ] Include scene objects belonging to unloaded tiles if detected.
 

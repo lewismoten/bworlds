@@ -44,6 +44,7 @@ export type DebugSnapshot = {
   averageHierarchyDepth?: number;
   emptyGroupCount?: number;
   oneChildGroupCount?: number;
+  matrixAutoUpdateCount?: number;
   pointsCount: number;
   lineObjectCount?: number;
   cameraCount?: number;

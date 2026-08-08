@@ -77,6 +77,7 @@ describe('render3d visibility helpers', () => {
       averageHierarchyDepth: 0.75,
       emptyGroupCount: 0,
       oneChildGroupCount: 0,
+      matrixAutoUpdateCount: 0,
       pointsCount: 0,
       lineObjectCount: 0,
       cameraCount: 0,
@@ -172,6 +173,7 @@ describe('render3d visibility helpers', () => {
       averageHierarchyDepth: 10 / 11,
       emptyGroupCount: 0,
       oneChildGroupCount: 0,
+      matrixAutoUpdateCount: 0,
       pointsCount: 1,
       lineObjectCount: 2,
       cameraCount: 1,
@@ -230,6 +232,7 @@ describe('render3d visibility helpers', () => {
       averageHierarchyDepth: 2 / 3,
       emptyGroupCount: 0,
       oneChildGroupCount: 0,
+      matrixAutoUpdateCount: 0,
       pointsCount: 2,
       lineObjectCount: 0,
       cameraCount: 0,
@@ -312,6 +315,7 @@ describe('render3d visibility helpers', () => {
       averageHierarchyDepth: 1.25,
       emptyGroupCount: 0,
       oneChildGroupCount: 1,
+      matrixAutoUpdateCount: 0,
       pointsCount: 0,
       lineObjectCount: 0,
       cameraCount: 0,
@@ -364,6 +368,7 @@ describe('render3d visibility helpers', () => {
       averageHierarchyDepth: 10 / 7,
       emptyGroupCount: 1,
       oneChildGroupCount: 3,
+      matrixAutoUpdateCount: 0,
       pointsCount: 0,
       lineObjectCount: 0,
       cameraCount: 0,
@@ -374,6 +379,87 @@ describe('render3d visibility helpers', () => {
       dynamicLightCount: 0,
       shadowLightCount: 0,
       vertexCount: 8,
+      materialCount: 2,
+      geometryCount: 2,
+      textureMemoryEstimateBytes: 0,
+      treeCount: 0,
+      treeObjectCount: 0,
+      treeMeshCount: 0,
+      treeMaterialRefCount: 0,
+    });
+  });
+
+  it('counts objects that keep matrixAutoUpdate enabled', () => {
+    const staticLeaf = createMockObject3D(
+      createMockMaterial(),
+      [],
+      createMockStatGeometry('matrix-static-leaf', 4),
+      {},
+      'Mesh',
+      false,
+      false,
+      true,
+      false
+    );
+    const animatedLeaf = createMockObject3D(
+      createMockMaterial(),
+      [],
+      createMockStatGeometry('matrix-animated-leaf', 6),
+      {},
+      'Mesh',
+      false,
+      false,
+      true,
+      true
+    );
+    const animatedGroup = createMockObject3D(
+      undefined,
+      [animatedLeaf],
+      undefined,
+      {},
+      'Group',
+      false,
+      false,
+      true,
+      true
+    );
+    const root = createMockObject3D(
+      undefined,
+      [staticLeaf, animatedGroup],
+      undefined,
+      {},
+      'Group',
+      false,
+      false,
+      true,
+      false
+    );
+
+    expect(collectSceneResourceStats(root as never)).toEqual({
+      object3dCount: 4,
+      visibleObjectCount: 4,
+      invisibleObjectCount: 0,
+      groupCount: 2,
+      meshCount: 2,
+      instancedMeshCount: 0,
+      visibleInstancedMeshCount: 0,
+      renderedInstanceCount: 0,
+      visibleMeshCount: 2,
+      maxHierarchyDepth: 2,
+      averageHierarchyDepth: 1,
+      emptyGroupCount: 0,
+      oneChildGroupCount: 1,
+      matrixAutoUpdateCount: 2,
+      pointsCount: 0,
+      lineObjectCount: 0,
+      cameraCount: 0,
+      activeParticleSystemCount: 0,
+      activeParticleCount: 0,
+      spriteCount: 0,
+      lightCount: 0,
+      dynamicLightCount: 0,
+      shadowLightCount: 0,
+      vertexCount: 10,
       materialCount: 2,
       geometryCount: 2,
       textureMemoryEstimateBytes: 0,
@@ -1172,13 +1258,15 @@ function createMockObject3D(
   type = geometry ? 'Mesh' : 'Group',
   isLight = false,
   castShadow = false,
-  visible = true
+  visible = true,
+  matrixAutoUpdate = false
 ) {
   const node = {
     visible,
     type,
     isLight,
     castShadow,
+    matrixAutoUpdate,
     userData,
     material,
     geometry,
