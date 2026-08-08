@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   clampCameraPitch,
   DEFAULT_CAMERA_PITCH,
+  getFarLandModelOpacity,
   getFacingVisibilityBucket,
   getSkyAuroraSignature,
   getSkyConstellationSignature,
@@ -76,6 +77,26 @@ describe('render3d visibility helpers', () => {
     expect(firstKeys).toContain('1:0');
     expect(frontIndex).toBeGreaterThanOrEqual(0);
     expect(rearIndex).toBeGreaterThan(frontIndex);
+  });
+
+  it('keeps nearby land models fully visible and thins far ones deterministically', () => {
+    expect(getFarLandModelOpacity(6, 12, 4)).toBe(1);
+    expect(
+      getFarLandModelOpacity(12.5, 12, 4, {
+        fullVisibilityDistance: 8,
+        revealDistanceVariance: 8,
+        fadeDistance: 2,
+        sample: () => 0,
+      })
+    ).toBe(0);
+    expect(
+      getFarLandModelOpacity(9, 12, 4, {
+        fullVisibilityDistance: 8,
+        revealDistanceVariance: 8,
+        fadeDistance: 2,
+        sample: () => 0,
+      })
+    ).toBe(0.5);
   });
 
   it('uses coarse sky signatures so tiny celestial drift does not rebuild sky layers', () => {
@@ -231,5 +252,56 @@ describe('render3d visibility helpers', () => {
         environmentId: '#06111f',
       },
     ]);
+  });
+
+  it('skips dynamic sync work for land models that are fully hidden by distance thinning', () => {
+    let calls = 0;
+    syncDynamicTileNodes(
+      [
+        {
+          key: '20:2',
+          tile: { kind: 'forest' },
+          tileX: 20,
+          tileY: 2,
+          node: {} as never,
+          model: { id: 'model-forest' },
+          modelRoot: null,
+          modelVisibilityOpacity: 0,
+          distanceFadeEligible: true,
+          sync3DModel() {
+            calls += 1;
+          },
+        },
+      ],
+      {
+        three: {} as never,
+        state: {
+          player: { x: 0, y: 0, facing: 0 },
+          getCurrentContext() {
+            return { id: 'overworld', type: 'overworld', depth: 0 };
+          },
+          getCurrentTile() {
+            return { kind: 'plains' };
+          },
+          getTileDefinition() {
+            return {
+              name: 'Plains',
+              color: '#000000',
+              miniColor: '#111111',
+              walkable: true,
+              wallHeight: 0,
+            };
+          },
+        },
+        cycle: {
+          daylight: 0,
+          twilight: 0.2,
+          night: 0.8,
+        },
+        environment: {},
+      }
+    );
+
+    expect(calls).toBe(0);
   });
 });

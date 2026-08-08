@@ -66,6 +66,9 @@ type DynamicTileNode = {
   tileY: number;
   node: THREE.Group;
   model: unknown;
+  modelRoot?: THREE.Object3D | null;
+  modelVisibilityOpacity?: number;
+  distanceFadeEligible?: boolean;
   sync3DModel?: NonNullable<TilePlugin['sync3DModel']>;
 };
 type ConstellationStarLike = NonNullable<
@@ -81,6 +84,10 @@ const CHUNK_RADIUS = 18;
 const NEAR_VISIBLE_RADIUS = 6;
 const FACING_BUCKETS = 12;
 const WORLD_SYNC_BATCH_SIZE = 28;
+const FAR_MODEL_FULL_VISIBILITY_DISTANCE = 8;
+const FAR_MODEL_REVEAL_DISTANCE_VARIANCE = 8;
+const FAR_MODEL_FADE_DISTANCE = 1.75;
+const MIN_MODEL_VISIBILITY_OPACITY = 0.015;
 const FLOOR_THICKNESS = 0.03;
 const WATER_FLOOR_THICKNESS = 0.28;
 const RIVER_WALL_THICKNESS = 0.05;
@@ -249,6 +256,9 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
         castShadow: true,
         receiveShadow: true,
       });
+      if (definition.walkable && !isWaterKind(tile.kind)) {
+        prepareObjectForDistanceFade(pluginModel);
+      }
       tileNode.add(pluginModel);
     } else if (!isWaterKind(tile.kind) && definition.wallHeight > 0.08) {
       const wallHeight = Math.max(definition.wallHeight * 1.9, 0.18);
@@ -273,6 +283,10 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       tileY: y,
       node: tileNode,
       model: pluginModel ?? tileNode,
+      modelRoot: pluginModel ?? null,
+      modelVisibilityOpacity: 1,
+      distanceFadeEligible:
+        Boolean(pluginModel) && definition.walkable && !isWaterKind(tile.kind),
       sync3DModel: tilePlugin?.sync3DModel,
     };
   }
@@ -379,6 +393,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       options.timeMs ?? performance.now(),
       environment
     );
+    updateFarLandModelVisibility([...visibleTileNodes.values()], state);
     syncDynamicTileNodes([...visibleTileNodes.values()], {
       three: THREE,
       state,
@@ -1085,6 +1100,9 @@ export function syncDynamicTileNodes(
   }
 ): void {
   entries.forEach((entry) => {
+    if ((entry.modelVisibilityOpacity ?? 1) <= MIN_MODEL_VISIBILITY_OPACITY) {
+      return;
+    }
     entry.sync3DModel?.({
       three,
       state,
@@ -1097,6 +1115,120 @@ export function syncDynamicTileNodes(
       environment,
     });
   });
+}
+
+export function getFarLandModelOpacity(
+  distance: number,
+  tileX: number,
+  tileY: number,
+  {
+    fullVisibilityDistance = FAR_MODEL_FULL_VISIBILITY_DISTANCE,
+    revealDistanceVariance = FAR_MODEL_REVEAL_DISTANCE_VARIANCE,
+    fadeDistance = FAR_MODEL_FADE_DISTANCE,
+    sample = hash2D,
+  }: {
+    fullVisibilityDistance?: number;
+    revealDistanceVariance?: number;
+    fadeDistance?: number;
+    sample?: typeof hash2D;
+  } = {}
+): number {
+  if (distance <= fullVisibilityDistance) {
+    return 1;
+  }
+
+  const revealDistance =
+    fullVisibilityDistance +
+    sample('render3d:land-model-reveal', tileX, tileY) *
+      revealDistanceVariance;
+  if (distance <= revealDistance) {
+    return 1;
+  }
+
+  const fadeProgress = (distance - revealDistance) / Math.max(0.001, fadeDistance);
+  return clamp01(1 - fadeProgress);
+}
+
+function updateFarLandModelVisibility(
+  entries: DynamicTileNode[],
+  state: Render3DState
+): void {
+  entries.forEach((entry) => {
+    if (!entry.distanceFadeEligible || !entry.modelRoot) {
+      entry.modelVisibilityOpacity = 1;
+      return;
+    }
+
+    const distance = Math.hypot(
+      entry.tileX - state.player.x,
+      entry.tileY - state.player.y
+    );
+    const opacity = getFarLandModelOpacity(distance, entry.tileX, entry.tileY);
+    entry.modelVisibilityOpacity = opacity;
+    applyObjectDistanceFade(entry.modelRoot, opacity);
+  });
+}
+
+function prepareObjectForDistanceFade(root: THREE.Object3D): void {
+  root.traverse((child) => {
+    child.userData.distanceFadeBaseVisible ??= child.visible;
+    const renderable = child as THREE.Object3D & {
+      material?: THREE.Material | THREE.Material[];
+    };
+    if (!renderable.material || child.userData.distanceFadePrepared) {
+      return;
+    }
+
+    renderable.material = Array.isArray(renderable.material)
+      ? renderable.material.map((material) => material.clone())
+      : renderable.material.clone();
+    child.userData.distanceFadePrepared = true;
+
+    for (const material of getObjectMaterials(renderable)) {
+      material.userData.distanceFadeBaseOpacity ??= material.opacity;
+      material.userData.distanceFadeBaseTransparent ??= material.transparent;
+      material.userData.distanceFadeBaseDepthWrite ??= material.depthWrite;
+    }
+  });
+}
+
+function applyObjectDistanceFade(root: THREE.Object3D, opacity: number): void {
+  root.traverse((child) => {
+    const baseVisible = child.userData.distanceFadeBaseVisible ?? true;
+    child.visible = baseVisible && opacity > MIN_MODEL_VISIBILITY_OPACITY;
+    const renderable = child as THREE.Object3D & {
+      material?: THREE.Material | THREE.Material[];
+    };
+    if (!renderable.material) {
+      return;
+    }
+
+    for (const material of getObjectMaterials(renderable)) {
+      const baseOpacity = material.userData.distanceFadeBaseOpacity ?? material.opacity;
+      const baseTransparent =
+        material.userData.distanceFadeBaseTransparent ?? material.transparent;
+      const baseDepthWrite =
+        material.userData.distanceFadeBaseDepthWrite ?? material.depthWrite;
+      material.opacity = baseOpacity * opacity;
+      material.transparent = baseTransparent || opacity < 0.999;
+      material.depthWrite = baseDepthWrite && opacity >= 0.999;
+    }
+  });
+}
+
+function getObjectMaterials(
+  node: THREE.Object3D & {
+    material?: THREE.Material | THREE.Material[];
+  }
+): THREE.Material[] {
+  if (!node.material) {
+    return [];
+  }
+  return Array.isArray(node.material) ? node.material : [node.material];
+}
+
+function clamp01(value: number): number {
+  return Math.max(0, Math.min(1, value));
 }
 
 export function getSkyConstellationSignature(cycle: SkySignatureCycle): string {
