@@ -1228,7 +1228,7 @@ function render() {
   const environment = getCurrentEnvironment(timeMs);
   const actualCycle = applyCelestialEnvironmentOverrides(
     getDaylightCycleState(timeMs, environment.cycle ?? {}),
-    (environment.celestial ?? {}) as any
+    (environment.celestial ?? {}) as CelestialEnvironmentOverrides
   );
   const displayCycle = updateDisplayedCycle(actualCycle);
   if (state.viewMode === '2d') {

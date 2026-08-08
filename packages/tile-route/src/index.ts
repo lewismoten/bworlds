@@ -406,7 +406,7 @@ function getRoadConnections(
   tileX: number,
   tileY: number
 ) {
-  const directions = [
+  const directions: RoadConnection[] = [
     {
       id: 'north',
       dx: 0,
@@ -497,11 +497,11 @@ function isRoadNetworkKind(kind: string) {
 }
 
 function createRoadCurve(
-  three: any,
+  three: ThreeHostLike,
   tileX: number,
   tileY: number,
-  start: any,
-  end: any
+  start: RoadConnection,
+  end: RoadConnection
 ) {
   const startPoint = new three.Vector3(
     start.edgeX,
@@ -1218,7 +1218,15 @@ type BridgeGroupLike = {
 };
 
 interface RoadConnection {
-  id: 'north' | 'east' | 'south' | 'west';
+  id:
+    | 'north'
+    | 'east'
+    | 'south'
+    | 'west'
+    | 'northeast'
+    | 'southeast'
+    | 'southwest'
+    | 'northwest';
   dx: number;
   dy: number;
   edgeX: number;
