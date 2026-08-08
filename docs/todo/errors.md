@@ -338,7 +338,7 @@ These reinforce the material/program concern.
 * [ ] Use shared identifiers or compact flags.
 * [ ] Group wind-responsive vegetation.
 * [ ] Favor shader-based wind over JavaScript object-by-object animation.
-* [ ] Avoid traversing the scene every frame looking for wind responders.
+* [x] Avoid traversing the scene every frame looking for wind responders.
 * [ ] Maintain a bounded registry of relevant nearby wind objects if CPU-side updates are necessary.
 * [ ] Remove wind responders when their chunks unload.
 

@@ -149,6 +149,14 @@ type PoiWindResponderOptions = {
 };
 const POI_LIGHT_EMITTER_KEY = 'poiNightLightEmitter';
 const POI_WIND_RESPONDER_KEY = 'poiWindResponder';
+const poiWindResponderCache = new WeakMap<
+  ThreeObject3DLike,
+  Array<
+    ThreeObject3DLike & {
+      userData: Record<string, unknown>;
+    }
+  >
+>();
 
 export function getPoiLightActivation(cycle: PoiLightCycleLike): number {
   return clamp(
@@ -244,14 +252,10 @@ export function syncPoiWindResponders(
 ): void {
   const activation = getPoiWindActivation(environment);
   const elapsed = timeMs * 0.001;
-  const visit = (node: ThreeObject3DLike): void => {
-    const responder = node.userData?.[POI_WIND_RESPONDER_KEY] as
-      | Required<PoiWindResponderOptions>
-      | undefined;
-    if (!responder) {
-      return;
-    }
-
+  const responders = getPoiWindResponderTargets(root);
+  responders.forEach((node) => {
+    const responder = node.userData[POI_WIND_RESPONDER_KEY] as
+      Required<PoiWindResponderOptions>;
     const axis = responder.axis;
     const gust = Math.sin(elapsed * responder.gustSpeed + responder.gustPhase);
     const sway = Math.sin(elapsed * responder.speed + responder.phase);
@@ -259,16 +263,41 @@ export function syncPoiWindResponders(
       responder.baseRotation +
       sway * (responder.idleAmplitude + responder.windAmplitude * activation) +
       gust * responder.gustAmplitude * activation;
+  });
+}
+
+function getPoiWindResponderTargets(root: ThreeObject3DLike) {
+  const cached = poiWindResponderCache.get(root);
+  if (cached) {
+    return cached;
+  }
+
+  const responders: Array<
+    ThreeObject3DLike & {
+      userData: Record<string, unknown>;
+    }
+  > = [];
+
+  const visit = (node: ThreeObject3DLike): void => {
+    if (node.userData?.[POI_WIND_RESPONDER_KEY]) {
+      responders.push(
+        node as ThreeObject3DLike & {
+          userData: Record<string, unknown>;
+        }
+      );
+    }
   };
 
   if (typeof root.traverse === 'function') {
     root.traverse((node) => {
       visit(node);
     });
-    return;
+  } else {
+    visit(root);
   }
 
-  visit(root);
+  poiWindResponderCache.set(root, responders);
+  return responders;
 }
 
 export function canPlaceLandPoi(

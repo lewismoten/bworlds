@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { vi } from 'vitest';
 import {
   CARDINAL_DIRECTIONS,
   createAnchoredPoiTile,
@@ -634,6 +635,48 @@ describe('poi support', () => {
     expect(Math.abs(windyRotation - 0.1)).toBeGreaterThan(
       Math.abs(calmRotation - 0.1)
     );
+  });
+
+  it('caches wind responder traversal targets across repeated syncs', () => {
+    const banner = markPoiWindResponder(
+      {
+        userData: {},
+        visible: true,
+        position: { x: 0, y: 0, z: 0, set() { return this; } },
+        rotation: { x: 0, y: 0, z: 0 },
+        scale: {
+          x: 1,
+          y: 1,
+          z: 1,
+          set() { return this; },
+          setScalar() { return this; },
+        },
+        add() { return this; },
+      },
+      {}
+    );
+    const root = {
+      userData: {},
+      position: { x: 0, y: 0, z: 0, set() { return this; } },
+      rotation: { x: 0, y: 0, z: 0 },
+      scale: {
+        x: 1,
+        y: 1,
+        z: 1,
+        set() { return this; },
+        setScalar() { return this; },
+      },
+      add() { return this; },
+      traverse: vi.fn((visit: (node: typeof banner) => void) => {
+        visit(banner);
+      }),
+    };
+
+    const environment = createWindEnvironment(0.4);
+    syncPoiWindResponders(root, environment, 1000);
+    syncPoiWindResponders(root, environment, 1400);
+
+    expect(root.traverse).toHaveBeenCalledTimes(1);
   });
 
   it('finds reachable route distances for a facing direction', () => {
