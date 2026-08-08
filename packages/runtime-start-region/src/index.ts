@@ -48,6 +48,14 @@ const curatedSpawnTiles = new Map<string, TileLike>([
   ['5,3', { kind: 'road', note: 'The road leads directly toward the nearby town.' }],
   ['4,4', { kind: 'river', note: 'The river arcs southeast toward the shore.' }],
   ['5,5', { kind: 'river', note: 'The river widens as it nears the sea.' }],
+  [
+    '6,0',
+    {
+      kind: 'lighthouse',
+      poi: { type: 'lighthouse', name: 'Starter Lighthouse' },
+      note: 'A lighthouse watches over the nearby shoals.',
+    },
+  ],
   ['7,0', { kind: 'shore', note: 'The grass gives way to a sandy shoreline.' }],
   ['8,0', { kind: 'ocean', note: 'Open water stretches beyond the shore.' }],
   ['7,1', { kind: 'shore', note: 'Foamy surf washes onto the coast.' }],
@@ -87,6 +95,12 @@ function getCuratedTile({
       return {
         ...tile,
         poi: { ...tile.poi, name: generatePoiName(seed, 'town', 5, 4) },
+      };
+    }
+    if (tile.kind === 'lighthouse' && tile.poi) {
+      return {
+        ...tile,
+        poi: { ...tile.poi, name: generatePoiName(seed, 'lighthouse', 6, 0) },
       };
     }
 

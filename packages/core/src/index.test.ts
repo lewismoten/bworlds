@@ -216,6 +216,16 @@ describe('core utilities', () => {
     );
   });
 
+  it('generates deterministic lighthouse point-of-interest names', () => {
+    const left = generatePoiName('lighthouse-spec', 'lighthouse', -22, 9);
+    const right = generatePoiName('lighthouse-spec', 'lighthouse', -22, 9);
+
+    expect(left).toBe(right);
+    expect(left).toMatch(
+      /\b(Beacon|Light|Watch|Lantern|Signal|Point)\b/
+    );
+  });
+
   it('exposes periodic planets, meteor showers, and comets', () => {
     const events = getCelestialEventsForDay(0, {
       yearLengthDays: DEFAULT_YEAR_LENGTH_DAYS,

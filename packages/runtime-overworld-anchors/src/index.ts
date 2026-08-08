@@ -15,7 +15,7 @@ import type {
 
 type NamedPoint = OverworldAnchorLike & { name: string };
 type NamedPoiAnchor = PoiAnchorLike & { name: string };
-type PoiType = 'cave' | 'dungeon' | 'quarry';
+type PoiType = 'cave' | 'dungeon' | 'quarry' | 'lighthouse';
 
 const TOWN_CELL_SIZE = 20;
 const BRIDGE_CELL_SIZE = 16;
@@ -27,6 +27,8 @@ const FOREST_ELEVATION_MAX = 0.74;
 const FOREST_RIVER_MAX = 0.86;
 const FOREST_MOISTURE_MIN = 0.6;
 const FOREST_CLUSTER_RADIUS = 2;
+const OCEAN_CONTINENT_THRESHOLD = 0.38;
+const LAND_CONTINENT_THRESHOLD = 0.42;
 
 function hasNearbyMountainTerrain(
   x: number,
@@ -83,6 +85,43 @@ function hasDenseForestCluster(
   }
 
   return forestLikeCount >= Math.ceil(totalSamples * 0.68);
+}
+
+function hasNearbyOceanTerrain(
+  x: number,
+  y: number,
+  sampleTerrainSignals: OverworldTerrainSignalSampler,
+  maxDistance = 2
+): boolean {
+  for (let offsetY = -maxDistance; offsetY <= maxDistance; offsetY += 1) {
+    for (let offsetX = -maxDistance; offsetX <= maxDistance; offsetX += 1) {
+      const distance = Math.abs(offsetX) + Math.abs(offsetY);
+      if (distance === 0 || distance > maxDistance) {
+        continue;
+      }
+      if (
+        sampleTerrainSignals(x + offsetX, y + offsetY).continent <=
+        OCEAN_CONTINENT_THRESHOLD
+      ) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+function hasAdjacentLandNeighbor(
+  x: number,
+  y: number,
+  sampleTerrainSignals: OverworldTerrainSignalSampler
+): boolean {
+  return (
+    sampleTerrainSignals(x + 1, y).continent >= LAND_CONTINENT_THRESHOLD ||
+    sampleTerrainSignals(x - 1, y).continent >= LAND_CONTINENT_THRESHOLD ||
+    sampleTerrainSignals(x, y + 1).continent >= LAND_CONTINENT_THRESHOLD ||
+    sampleTerrainSignals(x, y - 1).continent >= LAND_CONTINENT_THRESHOLD
+  );
 }
 
 const TOWN_ANCHOR_SPEC: OverworldCellAnchorSpec<NamedPoint> =
@@ -184,6 +223,26 @@ const POI_SPECS: Record<PoiType, OverworldCellAnchorSpec<NamedPoiAnchor>> = {
         terrain.moisture < 0.66 &&
         terrain.riverSignal < 0.78 &&
         hasNearbyMountainTerrain(x, y, sampleTerrainSignals, 2)
+      );
+    },
+  }),
+  lighthouse: createGeneratedPoiOverworldCellAnchorSpec({
+    id: 'lighthouse',
+    poiType: 'lighthouse',
+    cellSize: 20,
+    chanceKey: 'lighthouse-anchor',
+    offsetXKey: 'lighthouse-anchor-x',
+    offsetYKey: 'lighthouse-anchor-y',
+    threshold: 0.7,
+    priority: 25,
+    isSuitableTerrain({ terrain, x, y, sampleTerrainSignals }) {
+      return (
+        terrain.continent >= LAND_CONTINENT_THRESHOLD &&
+        terrain.continent < 0.68 &&
+        terrain.elevation < 0.62 &&
+        terrain.riverSignal < 0.82 &&
+        hasNearbyOceanTerrain(x, y, sampleTerrainSignals, 2) &&
+        hasAdjacentLandNeighbor(x, y, sampleTerrainSignals)
       );
     },
   }),

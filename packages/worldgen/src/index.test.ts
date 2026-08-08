@@ -142,6 +142,7 @@ describe('world generator', () => {
     );
     expect(registry.getTilePlugin('town')?.kind).toBe('town');
     expect(registry.getTilePlugin('quarry')?.kind).toBe('quarry');
+    expect(registry.getTilePlugin('lighthouse')?.kind).toBe('lighthouse');
   });
 
   it('keeps the default celestial day length when the frontier overlay is enabled', () => {
@@ -475,6 +476,21 @@ describe('world generator', () => {
     expect(quarryMap.getTile(0, 4).kind).toBe('road');
   });
 
+  it('creates lighthouse maps through the registered map plugin path', () => {
+    const generator = createGenerator();
+    const lighthouseMap = generator.getMap({
+      id: 'lighthouse:5:4:1',
+      label: 'Test Lighthouse',
+      type: 'lighthouse',
+      depth: 1,
+      origin: { x: 5, y: 4 },
+    });
+
+    expect(lighthouseMap.getTile(0, 0).kind).toBe('lighthouse');
+    expect(lighthouseMap.getTile(0, 4).kind).toBe('door');
+    expect(lighthouseMap.getTile(3, 0).kind).toBe('floor');
+  });
+
   it('creates quarry points of interest somewhere near the origin', () => {
     const registry = createDefaultPluginRegistry();
     let quarryAnchor: { x: number; y: number } | null = null;
@@ -511,6 +527,16 @@ describe('world generator', () => {
     expect(quarryTile.poi?.type).toBe('quarry');
     expect(quarryTile.poi?.name).toMatch(
       /\b(Quarry|Cut|Excavation|Pit|Works|Stone)\b/
+    );
+  });
+
+  it('creates lighthouse points of interest somewhere near the origin', () => {
+    const generator = createGenerator();
+    const lighthouseTile = generator.sampleOverworld(6, 0);
+
+    expect(lighthouseTile.poi?.type).toBe('lighthouse');
+    expect(lighthouseTile.poi?.name).toMatch(
+      /\b(Beacon|Light|Watch|Lantern|Signal|Point)\b/
     );
   });
 

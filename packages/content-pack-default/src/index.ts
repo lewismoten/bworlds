@@ -1,5 +1,6 @@
 import { createBuildingMapPlugin } from '@bworlds/map-building';
 import { createDepthMapPlugin } from '@bworlds/map-depth';
+import { createLighthouseMapPlugin } from '@bworlds/map-lighthouse';
 import { createOverworldCompositionPlugin } from '@bworlds/map-overworld';
 import { createQuarryMapPlugin } from '@bworlds/map-quarry';
 import { createTownMapPlugin } from '@bworlds/map-town';
@@ -31,6 +32,7 @@ import { createCaveTilePlugin } from '@bworlds/tile-cave';
 import { createDungeonTilePlugin } from '@bworlds/tile-dungeon';
 import { createForestTilePlugin } from '@bworlds/tile-forest';
 import { createInteriorTilePlugin } from '@bworlds/tile-interior';
+import { createLighthouseTilePlugin } from '@bworlds/tile-lighthouse';
 import { createMountainTilePlugin } from '@bworlds/tile-mountain';
 import { createPlainsTilePlugin } from '@bworlds/tile-plains';
 import { createQuarryTilePlugin } from '@bworlds/tile-quarry';
@@ -60,6 +62,10 @@ export function createDefaultMapPlugins(): RuntimePlugin[] {
     {
       create: createQuarryMapPlugin,
       order: { priority: 35 },
+    },
+    {
+      create: createLighthouseMapPlugin,
+      order: { priority: 36 },
     },
     {
       create: createOverworldCompositionPlugin,
@@ -136,6 +142,10 @@ export function createDefaultTilePlugins(): RuntimePlugin[] {
     {
       create: createQuarryTilePlugin,
       order: { priority: 45 },
+    },
+    {
+      create: createLighthouseTilePlugin,
+      order: { priority: 48 },
     },
     {
       create: createDungeonTilePlugin,

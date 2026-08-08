@@ -232,4 +232,66 @@ describe('runtime overworld anchors', () => {
       expect(foundMountain).toBe(true);
     });
   });
+
+  it('places lighthouse anchors on coastal land within two tiles of the ocean', () => {
+    const sampleTerrainSignals = (x: number, y: number): OverworldSignals => {
+      if (x >= 2) {
+        return {
+          continent: 0.2,
+          elevation: 0.1,
+          moisture: 0.7,
+          riverSignal: 0.1,
+          roadSignal: 0.2,
+        };
+      }
+      return {
+        continent: x >= 0 ? 0.46 : 0.6,
+        elevation: 0.26,
+        moisture: 0.58,
+        riverSignal: 0.12,
+        roadSignal: 0.22,
+      };
+    };
+    let anchors: OverworldAnchorSet = {
+      townAnchors: [],
+      bridgeAnchors: [],
+      poiAnchors: [],
+    };
+
+    for (let seedIndex = 0; seedIndex < 16; seedIndex += 1) {
+      anchors =
+        (plugin.resolveOverworldAnchors?.(
+          createAnchorPayload({
+            seed: `lighthouse-coast-spec:${seedIndex}`,
+            x: 0,
+            y: 0,
+            sampleTerrainSignals,
+          })
+        ) as OverworldAnchorSet) ?? anchors;
+      if ((anchors.poiAnchors ?? []).some((anchor) => anchor.type === 'lighthouse')) {
+        break;
+      }
+    }
+
+    const lighthouses = (anchors.poiAnchors ?? []).filter(
+      (anchor) => anchor.type === 'lighthouse'
+    );
+    expect(lighthouses.length).toBeGreaterThan(0);
+    lighthouses.forEach((anchor) => {
+      expect(sampleTerrainSignals(anchor.x, anchor.y).continent).toBeGreaterThanOrEqual(0.42);
+      let foundOcean = false;
+      for (let offsetY = -2; offsetY <= 2; offsetY += 1) {
+        for (let offsetX = -2; offsetX <= 2; offsetX += 1) {
+          const distance = Math.abs(offsetX) + Math.abs(offsetY);
+          if (distance === 0 || distance > 2) {
+            continue;
+          }
+          if (sampleTerrainSignals(anchor.x + offsetX, anchor.y + offsetY).continent <= 0.38) {
+            foundOcean = true;
+          }
+        }
+      }
+      expect(foundOcean).toBe(true);
+    });
+  });
 });

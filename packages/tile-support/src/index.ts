@@ -29,6 +29,8 @@ export const DEFAULT_ROUTE_TERMINAL_KINDS = new Set<RouteTerminalTileKind>([
   'town',
   'cave',
   'dungeon',
+  'quarry',
+  'lighthouse',
 ]);
 
 export const DEFAULT_BRIDGE_WATER_KINDS = new Set<WaterTileKind>([
