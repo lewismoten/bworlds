@@ -65,6 +65,9 @@ type Render3DController = {
     object3dCount: number;
     groupCount: number;
     meshCount: number;
+    pointsCount: number;
+    spriteCount: number;
+    lightCount: number;
     materialCount: number;
     geometryCount: number;
     geometryMemoryCount: number;
@@ -126,6 +129,9 @@ type SceneResourceStats = {
   object3dCount: number;
   groupCount: number;
   meshCount: number;
+  pointsCount: number;
+  spriteCount: number;
+  lightCount: number;
   materialCount: number;
   geometryCount: number;
   treeCount: number;
@@ -529,6 +535,9 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       object3dCount: sceneResourceStats.object3dCount,
       groupCount: sceneResourceStats.groupCount,
       meshCount: sceneResourceStats.meshCount,
+      pointsCount: sceneResourceStats.pointsCount,
+      spriteCount: sceneResourceStats.spriteCount,
+      lightCount: sceneResourceStats.lightCount,
       materialCount: sceneResourceStats.materialCount,
       geometryCount: sceneResourceStats.geometryCount,
       geometryMemoryCount: renderer.info.memory.geometries,
@@ -1500,6 +1509,9 @@ export function collectSceneResourceStats(
   let object3dCount = 0;
   let groupCount = 0;
   let meshCount = 0;
+  let pointsCount = 0;
+  let spriteCount = 0;
+  let lightCount = 0;
   let treeCount = 0;
   let treeMeshCount = 0;
   let treeMaterialRefCount = 0;
@@ -1510,6 +1522,15 @@ export function collectSceneResourceStats(
     object3dCount += 1;
     if ((child as THREE.Object3D).type === 'Group') {
       groupCount += 1;
+    }
+    if ((child as THREE.Object3D).type === 'Points') {
+      pointsCount += 1;
+    }
+    if ((child as THREE.Object3D).type === 'Sprite') {
+      spriteCount += 1;
+    }
+    if ((child as THREE.Object3D).isLight) {
+      lightCount += 1;
     }
     if ((child as THREE.Object3D).userData?.renderStatKind === 'tree') {
       treeCount += 1;
@@ -1539,6 +1560,9 @@ export function collectSceneResourceStats(
     object3dCount,
     groupCount,
     meshCount,
+    pointsCount,
+    spriteCount,
+    lightCount,
     materialCount: materials.size,
     geometryCount: geometries.size,
     treeCount,

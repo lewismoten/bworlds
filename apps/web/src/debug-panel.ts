@@ -17,6 +17,9 @@ export type DebugSnapshot = {
   object3dCount: number;
   groupCount: number;
   meshCount: number;
+  pointsCount: number;
+  spriteCount: number;
+  lightCount: number;
   materialCount: number;
   geometryCount: number;
   geometryMemoryCount: number;
@@ -66,6 +69,9 @@ export function getDebugSignature(snapshot: DebugSnapshot): string {
     snapshot.object3dCount,
     snapshot.groupCount,
     snapshot.meshCount,
+    snapshot.pointsCount,
+    snapshot.spriteCount,
+    snapshot.lightCount,
     snapshot.materialCount,
     snapshot.geometryCount,
     snapshot.geometryMemoryCount,
@@ -153,6 +159,9 @@ export function buildDebugMarkup(snapshot: DebugSnapshot): string {
     <div><dt>Objects / Tile</dt><dd>${objectsPerVisibleTile}</dd></div>
     <div><dt>Groups</dt><dd>${snapshot.groupCount}</dd></div>
     <div><dt>Meshes</dt><dd>${snapshot.meshCount}</dd></div>
+    <div><dt>Points Nodes</dt><dd>${snapshot.pointsCount}</dd></div>
+    <div><dt>Sprites</dt><dd>${snapshot.spriteCount}</dd></div>
+    <div><dt>Lights</dt><dd>${snapshot.lightCount}</dd></div>
     <div><dt>Meshes / Tree</dt><dd>${meshesPerVisibleTree}</dd></div>
     <div><dt>Materials</dt><dd>${snapshot.materialCount}</dd></div>
     <div><dt>Materials / Tree</dt><dd>${materialsPerVisibleTree}</dd></div>

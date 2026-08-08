@@ -45,11 +45,36 @@ describe('render3d visibility helpers', () => {
       object3dCount: 4,
       groupCount: 1,
       meshCount: 3,
+      pointsCount: 0,
+      spriteCount: 0,
+      lightCount: 0,
       materialCount: 2,
       geometryCount: 2,
       treeCount: 1,
       treeMeshCount: 1,
       treeMaterialRefCount: 1,
+    });
+  });
+
+  it('records additional object-type counts for points, sprites, and lights', () => {
+    const root = createMockObject3D(undefined, [
+      createMockObject3D(undefined, [], undefined, {}, 'Points'),
+      createMockObject3D(undefined, [], undefined, {}, 'Sprite'),
+      createMockObject3D(undefined, [], undefined, {}, 'PointLight', true),
+    ]);
+
+    expect(collectSceneResourceStats(root as never)).toEqual({
+      object3dCount: 4,
+      groupCount: 1,
+      meshCount: 0,
+      pointsCount: 1,
+      spriteCount: 1,
+      lightCount: 1,
+      materialCount: 0,
+      geometryCount: 0,
+      treeCount: 0,
+      treeMeshCount: 0,
+      treeMaterialRefCount: 0,
     });
   });
 
@@ -496,11 +521,14 @@ function createMockObject3D(
     traverse: (callback: (child: unknown) => void) => void;
   }> = [],
   geometry?: unknown,
-  userData: Record<string, unknown> = {}
+  userData: Record<string, unknown> = {},
+  type = geometry ? 'Mesh' : 'Group',
+  isLight = false
 ) {
   const node = {
     visible: true,
-    type: geometry ? 'Mesh' : 'Group',
+    type,
+    isLight,
     userData,
     material,
     geometry,

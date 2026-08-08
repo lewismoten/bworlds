@@ -166,7 +166,7 @@ with one sampled site around **4.1 MB**.
 
 * [ ] Measure total `scene.children` and descendant object count.
 * [ ] Add a recursive Three.js object count to your debug panel.
-* [ ] Record object counts by type: `Mesh`, `Group`, `Points`, `Sprite`, lights, etc.
+* [x] Record object counts by type: `Mesh`, `Group`, `Points`, `Sprite`, lights, etc.
 * [ ] Record object counts by plugin/tile type.
 * [ ] Establish an object-count budget per visible tile.
 * [ ] Establish an object-count budget per tree.

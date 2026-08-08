@@ -37,6 +37,9 @@ describe('debug panel', () => {
       object3dCount: 318,
       groupCount: 54,
       meshCount: 180,
+      pointsCount: 5,
+      spriteCount: 9,
+      lightCount: 12,
       materialCount: 24,
       geometryCount: 61,
       geometryMemoryCount: 63,
@@ -64,6 +67,9 @@ describe('debug panel', () => {
     expect(buildDebugMarkup(snapshot)).toContain('Visible Trees');
     expect(buildDebugMarkup(snapshot)).toContain('Tile Builds/s');
     expect(buildDebugMarkup(snapshot)).toContain('LOD Swaps/s');
+    expect(buildDebugMarkup(snapshot)).toContain('Points Nodes');
+    expect(buildDebugMarkup(snapshot)).toContain('Sprites');
+    expect(buildDebugMarkup(snapshot)).toContain('Lights');
     expect(buildDebugMarkup(snapshot)).toContain('Meshes / Tree');
     expect(buildDebugMarkup(snapshot)).toContain('Objects / Tile');
     expect(buildDebugMarkup(snapshot)).toContain('Materials');
