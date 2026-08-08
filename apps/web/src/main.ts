@@ -142,6 +142,7 @@ import {
 import { createMusicUpdatePayloadBuilder } from './music-update-payload.ts';
 import { createDebouncedPersistence } from './debounced-persistence.ts';
 import { createBoundedCache } from './bounded-cache.ts';
+import { getPlayerSpatialSummary } from './player-spatial-summary.ts';
 import {
   buildSextantMarkup,
   buildEventSummaryMarkup,
@@ -1012,19 +1013,20 @@ function updateViewModeUi(): void {
 }
 
 function updateStatus(
+  spatial = getPlayerSpatialSummary(state),
   environment: WorldEnvironmentLike = getCurrentEnvironment(),
   cycle = getCurrentCycle(environment)
 ) {
-  const tile = state.getCurrentTile();
+  const tile = spatial.tile;
   const definition = registry.resolveTileDefinition(
     tile.kind,
     state.getTileDefinition(tile.kind)
   );
-  const gps = toGps(state.player.x, state.player.y);
-  const context = state.getCurrentContext();
-  const facing = cardinalFromAngle(state.player.facing);
-  const gridX = snapWorldCoordinate(state.player.x);
-  const gridY = snapWorldCoordinate(state.player.y);
+  const gps = spatial.gps;
+  const context = spatial.context;
+  const facing = cardinalFromAngle(spatial.facing);
+  const gridX = spatial.gridX;
+  const gridY = spatial.gridY;
   const timeLabel = formatCycleTime(cycle.dayProgress);
   const dateLabel = getCelestialDateLabel(cycle);
   const cycleLabel = timeState.frozen ? 'Frozen' : 'Running';
@@ -1045,8 +1047,8 @@ function updateStatus(
     contextLabel: context.label,
     tileLabel,
     facing,
-    playerX: state.player.x,
-    playerY: state.player.y,
+    playerX: spatial.playerX,
+    playerY: spatial.playerY,
     gridX,
     gridY,
     latitude: gps.latitude,
@@ -1071,8 +1073,8 @@ function updateStatus(
       contextLabel: context.label,
       tileLabel,
       facing,
-      playerX: state.player.x,
-      playerY: state.player.y,
+      playerX: spatial.playerX,
+      playerY: spatial.playerY,
       gridX,
       gridY,
       latitude: gps.latitude,
@@ -2249,10 +2251,11 @@ function render(): FrameLoopActivityLike {
     (environment.celestial ?? {}) as CelestialEnvironmentOverrides
   );
   const displayCycle = updateDisplayedCycle(actualCycle);
-  const context = state.getCurrentContext();
-  const currentTile = state.getCurrentTile();
-  const musicClusterX = Math.floor(state.player.x / 12);
-  const musicClusterY = Math.floor(state.player.y / 12);
+  const spatial = getPlayerSpatialSummary(state);
+  const context = spatial.context;
+  const currentTile = spatial.tile;
+  const musicClusterX = Math.floor(spatial.playerX / 12);
+  const musicClusterY = Math.floor(spatial.playerY / 12);
   const nearbyPoiMusic = getNearbyPoiMusicProfile();
   musicController.update(buildMusicUpdatePayload({
     nowMs,
@@ -2265,8 +2268,8 @@ function render(): FrameLoopActivityLike {
     clusterY: musicClusterY,
     emitterX: musicClusterX * 12 + 6,
     emitterY: musicClusterY * 12 + 6,
-    listenerX: state.player.x,
-    listenerY: state.player.y,
+    listenerX: spatial.playerX,
+    listenerY: spatial.playerY,
     nearbyPoi: nearbyPoiMusic,
   }));
   if (state.viewMode === '2d') {
@@ -2374,9 +2377,9 @@ function render(): FrameLoopActivityLike {
     const minimapMiniSignature = getMinimapMiniSignature({
       width: viewportMinimapMini.width,
       height: viewportMinimapMini.height,
-      playerX: state.player.x,
-      playerY: state.player.y,
-      facingAngle: state.player.facing,
+      playerX: spatial.playerX,
+      playerY: spatial.playerY,
+      facingAngle: spatial.facing,
       zoom: minimapZoom,
     });
     if (minimapMiniSignature !== uiRenderState.lastMinimapMiniSignature) {
@@ -2393,7 +2396,7 @@ function render(): FrameLoopActivityLike {
           width: viewportMinimapMini.width,
           height: viewportMinimapMini.height,
           rotation: 0,
-          facingAngle: state.player.facing,
+          facingAngle: spatial.facing,
           zoom: minimapZoom,
           showTimeOverlay: false,
         });
@@ -2426,7 +2429,7 @@ function render(): FrameLoopActivityLike {
   }
   syncHmrNotice(nowMs);
   if (compassDialCanvas && !compassDialCanvas.hidden) {
-    const displayedFacingAngle = updateDisplayedCompass(state.player.facing);
+    const displayedFacingAngle = updateDisplayedCompass(spatial.facing);
     const displayedHeadingAngle = updateDisplayedCompassHeading(
       compassHeadingState.angle,
       compassDialPointerState.draggingMode === 'heading-bug'
@@ -2446,11 +2449,11 @@ function render(): FrameLoopActivityLike {
       uiRenderState.lastCompassSignature = compassSignature;
     }
   }
-  updateStatus(environment, displayCycle);
+  updateStatus(spatial, environment, displayCycle);
   const needsCoordinateSummary = sextantInspectorVisible || debugInspectorVisible;
-  const gps = needsCoordinateSummary ? toGps(state.player.x, state.player.y) : null;
-  const gridX = needsCoordinateSummary ? snapWorldCoordinate(state.player.x) : 0;
-  const gridY = needsCoordinateSummary ? snapWorldCoordinate(state.player.y) : 0;
+  const gps = needsCoordinateSummary ? spatial.gps : null;
+  const gridX = needsCoordinateSummary ? spatial.gridX : 0;
+  const gridY = needsCoordinateSummary ? spatial.gridY : 0;
   if (sextantSummary && sextantInspectorVisible && gps) {
     const sextantSignature = getSextantSignature({
       latitude: gps.latitude,
