@@ -92,6 +92,9 @@ export function create3DRenderer(host) {
   const eventRoot = new THREE.Group();
   skyRoot.add(eventRoot);
 
+  const milkyWayRoot = new THREE.Group();
+  skyRoot.add(milkyWayRoot);
+
   const sunSprite = createSunSprite();
   skyRoot.add(sunSprite);
 
@@ -812,8 +815,10 @@ export function create3DRenderer(host) {
     syncStarField(stars, cycle, starDensity);
     syncConstellationSky(constellationRoot, cycle);
     syncCelestialEvents(eventRoot, cycle);
+    syncMilkyWayBelt(milkyWayRoot, cycle);
     constellationRoot.visible = cycle.starsOpacity > 0.02;
     eventRoot.visible = cycle.starsOpacity > 0.05;
+    milkyWayRoot.visible = cycle.starsOpacity > 0.02;
 
     sunSprite.position.set(
       sunOrbitX * 1.45,
@@ -1072,6 +1077,29 @@ function syncCelestialEvents(root, cycle) {
       );
     }
   });
+}
+
+function syncMilkyWayBelt(root, cycle) {
+  root.clear();
+  const points = [];
+  for (let index = 0; index <= 72; index += 1) {
+    const azimuth =
+      (index / 72) * Math.PI * 2 + cycle.yearProgress * Math.PI * 2 * 0.16;
+    const phi = 1.05 + Math.sin(azimuth * 2.4 + cycle.yearProgress * Math.PI * 2) * 0.14;
+    points.push(createSkyPosition(azimuth, phi, SKY_RADIUS - 5.5));
+  }
+
+  root.add(
+    new THREE.LineLoop(
+      new THREE.BufferGeometry().setFromPoints(points),
+      new THREE.LineBasicMaterial({
+        color: '#7f9fca',
+        transparent: true,
+        opacity: 0.02 + cycle.starsOpacity * 0.16,
+        depthTest: false,
+      })
+    )
+  );
 }
 
 function createMoonSprite() {

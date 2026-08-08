@@ -20,6 +20,7 @@ import {
 import type { WorldEnvironmentLike } from '@bworlds/plugin-api';
 import './styles.css';
 import { drawTimeWheel, getCelestialDateLabel } from './timekeeper.ts';
+import { createCelestialPreviewRenderer } from './celestial-preview.ts';
 
 const STORAGE_KEY = 'bworlds:session';
 const builtinPackCatalog = createBuiltinContentPackCatalog();
@@ -88,6 +89,10 @@ root.innerHTML = `
           </div>
         </div>
         <div class="card">
+          <h2>Celestial Model</h2>
+          <div id="celestial-preview" class="celestial-preview"></div>
+        </div>
+        <div class="card">
           <h2>Status</h2>
           <dl id="status"></dl>
         </div>
@@ -118,6 +123,8 @@ const viewportHud = document.querySelector<HTMLElement>('#viewport-hud');
 const atlasCanvas = document.querySelector<HTMLCanvasElement>('#atlas');
 const timeWheelCanvas =
   document.querySelector<HTMLCanvasElement>('#time-wheel');
+const celestialPreviewHost =
+  document.querySelector<HTMLElement>('#celestial-preview');
 const status = document.querySelector<HTMLElement>('#status');
 const toggleButton = document.querySelector<HTMLButtonElement>('#toggle-view');
 const actionButton = document.querySelector<HTMLButtonElement>('#action');
@@ -181,8 +188,27 @@ const motion = {
   longJumpActivated: false,
 };
 
+const dialState = {
+  dayProgress: 0,
+  yearProgress: 0,
+  moonPhaseProgress: 0,
+  initialized: false,
+};
+const MOON_PHASE_NAMES = [
+  'New Moon',
+  'Waxing Crescent',
+  'First Quarter',
+  'Waxing Gibbous',
+  'Full Moon',
+  'Waning Gibbous',
+  'Last Quarter',
+  'Waning Crescent',
+] as const;
+const MOON_PHASE_ILLUMINATIONS = [0, 0.25, 0.5, 0.75, 1, 0.75, 0.5, 0.25] as const;
+
 drawAtlas(atlasCanvas.getContext('2d'));
 const renderer3d = create3DRenderer(viewport3d);
+const celestialPreview = createCelestialPreviewRenderer(celestialPreviewHost);
 
 const keys = new Set();
 
@@ -227,6 +253,8 @@ function updateStatus() {
       <div class="viewport-hud-label">${formatCycleTime(cycle.dayProgress)}</div>
       <div class="viewport-hud-date">${getCelestialDateLabel(cycle)}</div>
       <div class="viewport-hud-meta">${cycle.activeConstellation.name} • ${cycle.moonPhaseName}</div>
+      <div class="viewport-hud-meta">Facing ${facing}</div>
+      <div class="viewport-hud-compass">${renderCompass(facing)}</div>
     `;
   }
 }
@@ -237,6 +265,7 @@ function resizeCanvas() {
   viewport2d.width = Math.floor(rect.width * ratio);
   viewport2d.height = Math.floor(rect.height * ratio);
   renderer3d.resize(rect.width, rect.height, ratio);
+  celestialPreview.resize();
 }
 
 function toggleView() {
@@ -695,6 +724,8 @@ function updateMovement(deltaMs) {
 function render() {
   const timeMs = getCurrentWorldTimeMs();
   const environment = getCurrentEnvironment(timeMs);
+  const actualCycle = getDaylightCycleState(timeMs, environment.cycle ?? {});
+  const displayCycle = updateDisplayedCycle(actualCycle);
   if (state.viewMode === '2d') {
     const context = viewport2d?.getContext('2d');
     if (!context) return;
@@ -715,7 +746,8 @@ function render() {
     });
   }
 
-  drawTimeWheel(timeWheelCanvas, getDaylightCycleState(timeMs, environment.cycle ?? {}));
+  drawTimeWheel(timeWheelCanvas, displayCycle);
+  celestialPreview.render(displayCycle, environment, state.player.facing);
   updateStatus();
 }
 
@@ -728,6 +760,59 @@ function formatCycleTime(dayProgress: number) {
     .padStart(2, '0');
   const minutes = (totalMinutes % 60).toString().padStart(2, '0');
   return `${hours}:${minutes}`;
+}
+
+function renderCompass(facing: string) {
+  return ['N', 'E', 'S', 'W']
+    .map((direction) =>
+      direction === facing
+        ? `<span class="is-active">${direction}</span>`
+        : `<span>${direction}</span>`
+    )
+    .join('');
+}
+
+function updateDisplayedCycle(cycle: ReturnType<typeof getDaylightCycleState>) {
+  if (!dialState.initialized) {
+    dialState.dayProgress = cycle.dayProgress;
+    dialState.yearProgress = cycle.yearProgress;
+    dialState.moonPhaseProgress = cycle.moonPhaseIndex / 8;
+    dialState.initialized = true;
+  } else {
+    dialState.dayProgress = easeWrappedProgress(
+      dialState.dayProgress,
+      cycle.dayProgress,
+      0.16
+    );
+    dialState.yearProgress = easeWrappedProgress(
+      dialState.yearProgress,
+      cycle.yearProgress,
+      0.14
+    );
+    dialState.moonPhaseProgress = easeWrappedProgress(
+      dialState.moonPhaseProgress,
+      cycle.moonPhaseIndex / 8,
+      0.18
+    );
+  }
+
+  const moonPhaseIndex = Math.round((dialState.moonPhaseProgress % 1) * 8) % 8;
+  return {
+    ...cycle,
+    dayProgress: dialState.dayProgress,
+    yearProgress: dialState.yearProgress,
+    moonPhaseIndex,
+    moonPhaseName: MOON_PHASE_NAMES[moonPhaseIndex],
+    moonIllumination: MOON_PHASE_ILLUMINATIONS[moonPhaseIndex],
+  };
+}
+
+function easeWrappedProgress(current: number, target: number, factor: number) {
+  let delta = target - current;
+  if (delta > 0.5) delta -= 1;
+  if (delta < -0.5) delta += 1;
+  const next = current + delta * factor;
+  return ((next % 1) + 1) % 1;
 }
 
 function loop(timestamp) {

@@ -7,13 +7,17 @@ export function getTimeWheelConstellationEntries(cycle: DaylightCycleLike) {
   return ring.map((entry, index) => ({
     name: entry.name,
     index,
-    angle: entry.sunriseAzimuth - Math.PI / 2,
+    angle: entry.visualAzimuth - Math.PI / 2,
     isActive: index === cycle.activeConstellationIndex,
   }));
 }
 
 export function getCelestialDateLabel(cycle: DaylightCycleLike) {
   return cycle.calendar?.label ?? `${cycle.activeConstellation?.name ?? 'Unknown'} / ${cycle.moonPhaseName}`;
+}
+
+export function getMoonPhaseSymbol(phaseIndex: number) {
+  return ['●', '◔', '◑', '◕', '○', '◕', '◑', '◔'][phaseIndex] ?? '●';
 }
 
 export function drawTimeWheel(canvas: HTMLCanvasElement | null, cycle: DaylightCycleLike) {
@@ -63,14 +67,14 @@ export function drawTimeWheel(canvas: HTMLCanvasElement | null, cycle: DaylightC
   );
   context.restore();
 
-  drawRingMarker(context, -Math.PI / 2, constellationOuterRadius + 8, '#f6f8ea');
+  drawTopMarker(context, constellationOuterRadius + 10, '#f6f8ea');
 
   context.save();
-  context.rotate(cycle.moonPhaseIndex / Math.max(1, cycle.constellations.length) * Math.PI * 2);
+  context.rotate((cycle.moonPhaseIndex / 8) * Math.PI * 2);
   drawMoonRing(context, cycle, moonInnerRadius, moonOuterRadius);
   context.restore();
 
-  drawRingMarker(context, -Math.PI / 2, moonOuterRadius + 6, '#dce9ff');
+  drawTopMarker(context, moonOuterRadius + 8, '#dce9ff');
 
   context.save();
   context.rotate(wheelRotation);
@@ -136,16 +140,18 @@ export function drawTimeWheel(canvas: HTMLCanvasElement | null, cycle: DaylightC
 
   context.restore();
 
-  drawRingMarker(context, -Math.PI / 2, outerRadius + 10, '#ffcf6b');
+  drawTopMarker(context, outerRadius + 12, '#ffcf6b');
+  drawTransitionMarker(context, cycle.sunriseProgress, outerRadius + 6, '#f1d088');
+  drawTransitionMarker(context, cycle.sunsetProgress, outerRadius + 6, '#f39a63');
 
   context.fillStyle = '#081019';
   context.beginPath();
   context.arc(0, 0, innerRadius - 3, 0, Math.PI * 2);
   context.fill();
 
-  const windowWidth = innerRadius * 1.15;
-  const windowHeight = innerRadius * 0.52;
-  const windowY = -innerRadius * 0.2;
+  const windowWidth = innerRadius * 1.26;
+  const windowHeight = innerRadius * 0.72;
+  const windowY = -innerRadius * 0.12;
 
   context.save();
   context.beginPath();
@@ -182,10 +188,26 @@ export function drawTimeWheel(canvas: HTMLCanvasElement | null, cycle: DaylightC
   context.fillStyle = '#ecf4f7';
   context.font = '600 14px Trebuchet MS';
   context.textAlign = 'center';
-  context.fillText(formatCycleTime(cycle.dayProgress), 0, innerRadius * 0.12);
-  context.fillStyle = '#96afb8';
+  context.fillText(formatCycleTime(cycle.dayProgress), 0, innerRadius * 0.02);
+  drawConstellationGlyph(
+    context,
+    cycle.activeConstellation,
+    -windowWidth * 0.24,
+    innerRadius * 0.18,
+    28,
+    20,
+    cycle.activeConstellation?.symbolRotation ?? 0
+  );
+  context.fillStyle = '#dce8f5';
+  context.font = '600 11px Trebuchet MS';
+  context.textAlign = 'left';
+  context.fillText(cycle.activeConstellation?.name ?? 'Unknown', -windowWidth * 0.12, innerRadius * 0.2);
+  context.fillStyle = '#dfe9ff';
+  context.font = '600 12px Trebuchet MS';
+  context.fillText(getMoonPhaseSymbol(cycle.moonPhaseIndex), -windowWidth * 0.24, innerRadius * 0.39);
+  context.fillStyle = '#9fb4c7';
   context.font = '11px Trebuchet MS';
-  context.fillText(getCelestialDateLabel(cycle), 0, innerRadius * 0.32);
+  context.fillText(cycle.moonPhaseName, -windowWidth * 0.12, innerRadius * 0.39);
   context.restore();
 }
 
@@ -220,17 +242,14 @@ function drawConstellationRing(
     context.save();
     context.rotate(centerAngle);
     context.translate(0, -((innerRadius + outerRadius) * 0.5));
-    context.fillStyle = entry.isActive ? '#f5fbff' : 'rgba(206, 220, 235, 0.86)';
-    context.font = entry.isActive ? '600 10px Trebuchet MS' : '10px Trebuchet MS';
-    context.textAlign = 'center';
-    context.fillText(entry.name, 0, -18);
     drawConstellationGlyph(
       context,
       cycle.constellations[entry.index],
       0,
-      4,
-      outerRadius - innerRadius - 8,
-      22
+      1,
+      outerRadius - innerRadius - 10,
+      20,
+      cycle.constellations[entry.index]?.symbolRotation ?? 0
     );
     context.restore();
   });
@@ -321,12 +340,16 @@ function drawConstellationGlyph(
   centerX: number,
   centerY: number,
   width: number,
-  height: number
+  height: number,
+  rotation = 0
 ) {
   if (!constellation) {
     return;
   }
 
+  context.save();
+  context.translate(centerX, centerY);
+  context.rotate(rotation);
   context.strokeStyle = 'rgba(171, 205, 255, 0.48)';
   context.lineWidth = 1;
   constellation.connections.forEach(([startIndex, endIndex]) => {
@@ -336,38 +359,58 @@ function drawConstellationGlyph(
       return;
     }
     context.beginPath();
-    context.moveTo(centerX + (start.x - 0.5) * width, centerY + (start.y - 0.5) * height);
-    context.lineTo(centerX + (end.x - 0.5) * width, centerY + (end.y - 0.5) * height);
+    context.moveTo((start.x - 0.5) * width, (start.y - 0.5) * height);
+    context.lineTo((end.x - 0.5) * width, (end.y - 0.5) * height);
     context.stroke();
   });
   constellation.stars.forEach((star) => {
     context.fillStyle = `rgba(243, 249, 255, ${0.5 + star.brightness * 0.45})`;
     context.beginPath();
     context.arc(
-      centerX + (star.x - 0.5) * width,
-      centerY + (star.y - 0.5) * height,
+      (star.x - 0.5) * width,
+      (star.y - 0.5) * height,
       0.9 + star.brightness * 1.1,
       0,
       Math.PI * 2
     );
     context.fill();
   });
+  context.restore();
 }
 
-function drawRingMarker(
+function drawTopMarker(
   context: CanvasRenderingContext2D,
-  angle: number,
   radius: number,
   color: string
 ) {
   context.save();
-  context.rotate(angle);
+  context.rotate(-Math.PI / 2);
   context.translate(0, -radius);
   context.fillStyle = color;
   context.beginPath();
   context.moveTo(0, -6);
   context.lineTo(7, 8);
   context.lineTo(-7, 8);
+  context.closePath();
+  context.fill();
+  context.restore();
+}
+
+function drawTransitionMarker(
+  context: CanvasRenderingContext2D,
+  progress: number,
+  radius: number,
+  color: string
+) {
+  const angle = progress * Math.PI * 2 - Math.PI / 2;
+  context.save();
+  context.rotate(angle);
+  context.translate(0, -radius);
+  context.fillStyle = color;
+  context.beginPath();
+  context.moveTo(0, 8);
+  context.lineTo(5, -6);
+  context.lineTo(-5, -6);
   context.closePath();
   context.fill();
   context.restore();

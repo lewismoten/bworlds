@@ -157,6 +157,25 @@ button:hover {
   line-height: 1.25;
 }
 
+.viewport-hud-compass {
+  display: inline-flex;
+  gap: 0.45rem;
+  margin-top: 0.42rem;
+  color: #9bb3c6;
+  font-size: 0.72rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.viewport-hud-compass span {
+  opacity: 0.45;
+}
+
+.viewport-hud-compass .is-active {
+  opacity: 1;
+  color: #55d6be;
+}
+
 #viewport-2d,
 .viewport-3d {
   position: absolute;
@@ -193,6 +212,23 @@ button:hover {
 .card h2 {
   margin: 0 0 0.8rem;
   font-size: 1rem;
+}
+
+.celestial-preview {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 18px;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 50% 45%, rgba(159, 225, 255, 0.08), transparent 38%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(2, 6, 11, 0.3));
+  border: 1px solid rgba(171, 205, 255, 0.12);
+}
+
+.celestial-preview canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
 }
 
 .pack-form {

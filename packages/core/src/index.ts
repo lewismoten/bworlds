@@ -86,6 +86,8 @@ export interface ConstellationLike {
   stars: ConstellationStarLike[];
   connections: Array<[number, number]>;
   daylightBias: number;
+  symbolRotation: number;
+  ringJitter: number;
 }
 
 export interface CelestialCalendarLike {
@@ -105,6 +107,7 @@ export interface CelestialRingEntryLike {
   constellationIndex: number;
   name: string;
   sunriseAzimuth: number;
+  visualAzimuth: number;
 }
 
 export function fract(value) {
@@ -409,6 +412,8 @@ export function generateConstellations(
       stars,
       connections,
       daylightBias: -0.12 + hash2D(`${seed}:bias`, index, count) * 0.24,
+      symbolRotation: hash2D(`${seed}:symbol-rotation`, index, count) * Math.PI * 2,
+      ringJitter: (hash2D(`${seed}:ring-jitter`, index, count) * 2 - 1) * 0.28,
     };
   });
 }
@@ -470,6 +475,9 @@ export function createCelestialRing(
     constellationIndex: index,
     name: constellation.name,
     sunriseAzimuth: normalizeAngle((index / count) * Math.PI * 2),
+    visualAzimuth: normalizeAngle(
+      (index / count) * Math.PI * 2 + constellation.ringJitter
+    ),
   }));
 }
 
