@@ -487,9 +487,10 @@ renderContentPackControls();
 updateContentPackLabel();
 updateFreezeTimeButton();
 
-function updateStatus() {
-  const environment = getCurrentEnvironment();
-  const cycle = getCurrentCycle(environment);
+function updateStatus(
+  environment: WorldEnvironmentLike = getCurrentEnvironment(),
+  cycle = getCurrentCycle(environment)
+) {
   const tile = state.getCurrentTile();
   const definition = registry.resolveTileDefinition(
     tile.kind,
@@ -1191,7 +1192,7 @@ function render() {
       compassDialPointerState.draggingMode === 'heading-bug'
     )
   );
-  updateStatus();
+  updateStatus(environment, displayCycle);
 }
 
 let lastFrame = 0;

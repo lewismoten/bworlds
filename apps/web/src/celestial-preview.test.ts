@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   brightenPreviewSurfaceColor,
   buildPlanetTextureGrid,
+  getCelestialPreviewSceneSignatures,
   getPreviewAuroraBandPath,
   getPreviewBodyPosition,
   getPreviewFacingArrowState,
@@ -192,6 +193,35 @@ describe('celestial preview helpers', () => {
     expect(getPreviewRootPitch(24, 0.2)).toBeCloseTo(
       (-24 / 180) * Math.PI * 0.45 + 0.2,
       6
+    );
+  });
+
+  it('uses coarse preview signatures so tiny celestial drifts do not rebuild every layer', () => {
+    const cycle = getDaylightCycleState(120000, {
+      observerLatitudeDegrees: 24,
+    });
+    const nearCycle = {
+      ...cycle,
+      yearProgress: cycle.yearProgress + 0.0002,
+      visibleEvents: (cycle.visibleEvents ?? []).map((event) => ({
+        ...event,
+        azimuth: event.azimuth + 0.002,
+      })),
+      auroraBands: (cycle.auroraBands ?? []).map((band) => ({
+        ...band,
+        wavePhase: band.wavePhase + 0.01,
+      })),
+    } as any;
+    const farCycle = {
+      ...cycle,
+      yearProgress: cycle.yearProgress + 0.04,
+    } as any;
+
+    expect(getCelestialPreviewSceneSignatures(nearCycle)).toEqual(
+      getCelestialPreviewSceneSignatures(cycle as any)
+    );
+    expect(getCelestialPreviewSceneSignatures(farCycle).constellations).not.toBe(
+      getCelestialPreviewSceneSignatures(cycle as any).constellations
     );
   });
 });

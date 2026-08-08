@@ -128,6 +128,10 @@ export function create3DRenderer(host) {
   let lastCenterKey = '';
   let lastContextKey = '';
   let lastFacingBucket = '';
+  let lastSkyConstellationSignature = '';
+  let lastSkyEventSignature = '';
+  let lastSkyMilkyWaySignature = '';
+  let lastSkyAuroraSignature = '';
 
   function resize(width, height, pixelRatio = window.devicePixelRatio || 1) {
     const safeWidth = Math.max(1, Math.floor(width));
@@ -842,10 +846,26 @@ export function create3DRenderer(host) {
     skyRoot.position.set(worldX, 0, worldY);
     skyRoot.rotation.z = (-cycle.observerLatitudeDegrees / 180) * Math.PI * 0.5;
     syncStarField(stars, cycle, starDensity);
-    syncConstellationSky(constellationRoot, cycle);
-    syncCelestialEvents(eventRoot, cycle);
-    syncMilkyWayBelt(milkyWayRoot, cycle);
-    syncAuroraBands(auroraRoot, cycle);
+    const constellationSignature = getSkyConstellationSignature(cycle);
+    const eventSignature = getSkyEventSignature(cycle);
+    const milkyWaySignature = getSkyMilkyWaySignature(cycle);
+    const auroraSignature = getSkyAuroraSignature(cycle);
+    if (constellationSignature !== lastSkyConstellationSignature) {
+      syncConstellationSky(constellationRoot, cycle);
+      lastSkyConstellationSignature = constellationSignature;
+    }
+    if (eventSignature !== lastSkyEventSignature) {
+      syncCelestialEvents(eventRoot, cycle);
+      lastSkyEventSignature = eventSignature;
+    }
+    if (milkyWaySignature !== lastSkyMilkyWaySignature) {
+      syncMilkyWayBelt(milkyWayRoot, cycle);
+      lastSkyMilkyWaySignature = milkyWaySignature;
+    }
+    if (auroraSignature !== lastSkyAuroraSignature) {
+      syncAuroraBands(auroraRoot, cycle);
+      lastSkyAuroraSignature = auroraSignature;
+    }
     constellationRoot.visible = cycle.starsOpacity > 0.02;
     eventRoot.visible = (cycle.visibleEvents ?? []).some(
       (event) => event.visibility > 0.02
@@ -900,6 +920,57 @@ export function getFacingVisibilityBucket(
   const normalized =
     ((facingAngle % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
   return Math.floor((normalized / (Math.PI * 2)) * bucketCount);
+}
+
+export function getSkyConstellationSignature(cycle) {
+  return [
+    cycle.activeConstellationIndex ?? 0,
+    Math.round((cycle.yearProgress ?? 0) * 48),
+    Math.round((cycle.starsOpacity ?? 0) * 10),
+  ].join('|');
+}
+
+export function getSkyEventSignature(cycle) {
+  return (cycle.visibleEvents ?? [])
+    .map((event) =>
+      [
+        event.type,
+        event.name,
+        Math.round((event.azimuth ?? 0) * 10),
+        Math.round((event.altitude ?? 0) * 10),
+        Math.round((event.visibility ?? 0) * 10),
+        Math.round((event.intensity ?? 0) * 10),
+        Math.round((event.trailLength ?? 0) * 10),
+      ].join(':')
+    )
+    .join('|');
+}
+
+export function getSkyMilkyWaySignature(cycle) {
+  return cycle.milkyWay
+    ? [
+        Math.round((cycle.yearProgress ?? 0) * 48),
+        Math.round((cycle.milkyWay.azimuthOffset ?? 0) * 20),
+        Math.round((cycle.milkyWay.inclination ?? 0) * 20),
+        Math.round((cycle.milkyWay.width ?? 0) * 100),
+        Math.round((cycle.milkyWay.opacity ?? 0) * 20),
+      ].join('|')
+    : 'none';
+}
+
+export function getSkyAuroraSignature(cycle) {
+  return (cycle.auroraBands ?? [])
+    .map((band) =>
+      [
+        band.id,
+        Math.round((band.azimuthCenter ?? 0) * 10),
+        Math.round((band.altitude ?? 0) * 10),
+        Math.round((band.height ?? 0) * 20),
+        Math.round((band.intensity ?? 0) * 10),
+        Math.round((band.wavePhase ?? 0) * 20),
+      ].join(':')
+    )
+    .join('|');
 }
 
 export function shouldRenderWorldTile({

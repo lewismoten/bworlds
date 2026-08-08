@@ -51,6 +51,14 @@ export function createSolarSystemPreviewRenderer(host: HTMLElement | null) {
   root.add(eventRoot);
   const labelRoot = new THREE.Group();
   root.add(labelRoot);
+  const sceneSignatureState = {
+    lastStars: '',
+    lastOrbits: '',
+    lastBodies: '',
+    lastShell: '',
+    lastEvents: '',
+    lastLabels: '',
+  };
 
   const interaction = {
     yaw: 0,
@@ -115,12 +123,31 @@ export function createSolarSystemPreviewRenderer(host: HTMLElement | null) {
   function render(cycle: DaylightCycleLike) {
     root.rotation.y = interaction.yaw;
     root.rotation.x = interaction.pitch;
-    syncBackgroundStars(starRoot, cycle);
-    syncSolarSystemOrbits(orbitRoot, cycle);
-    syncSolarSystemBodies(bodyRoot, cycle, sunLight);
-    syncSolarSystemShell(shellRoot, cycle);
-    syncSolarSystemEvents(eventRoot, cycle);
-    syncSolarSystemLabels(labelRoot, cycle);
+    const signatures = getSolarSystemSceneSignatures(cycle);
+    if (signatures.stars !== sceneSignatureState.lastStars) {
+      syncBackgroundStars(starRoot, cycle);
+      sceneSignatureState.lastStars = signatures.stars;
+    }
+    if (signatures.orbits !== sceneSignatureState.lastOrbits) {
+      syncSolarSystemOrbits(orbitRoot, cycle);
+      sceneSignatureState.lastOrbits = signatures.orbits;
+    }
+    if (signatures.bodies !== sceneSignatureState.lastBodies) {
+      syncSolarSystemBodies(bodyRoot, cycle, sunLight);
+      sceneSignatureState.lastBodies = signatures.bodies;
+    }
+    if (signatures.shell !== sceneSignatureState.lastShell) {
+      syncSolarSystemShell(shellRoot, cycle);
+      sceneSignatureState.lastShell = signatures.shell;
+    }
+    if (signatures.events !== sceneSignatureState.lastEvents) {
+      syncSolarSystemEvents(eventRoot, cycle);
+      sceneSignatureState.lastEvents = signatures.events;
+    }
+    if (signatures.labels !== sceneSignatureState.lastLabels) {
+      syncSolarSystemLabels(labelRoot, cycle);
+      sceneSignatureState.lastLabels = signatures.labels;
+    }
     renderer.render(scene, camera);
   }
 
@@ -187,6 +214,66 @@ export function getSolarSystemEventMarkerStates(
   });
 
   return markers;
+}
+
+export function getSolarSystemSceneSignatures(cycle: DaylightCycleLike) {
+  return {
+    stars: [
+      Math.round((cycle.yearProgress ?? 0) * 24),
+      Math.round((cycle.starsOpacity ?? 0) * 10),
+    ].join('|'),
+    orbits: (cycle.orreryBodies ?? [])
+      .map((body) =>
+        [
+          body.id,
+          Math.round((body.orbitRadius ?? 0) * 10),
+          Math.round((body.orbitTilt ?? 0) * 20),
+          Math.round((body.orbitHeight ?? 0) * 20),
+          Math.round((body.orbitEccentricity ?? 0) * 20),
+          Math.round((body.orbitRotation ?? 0) * 20),
+        ].join(':')
+      )
+      .join('|'),
+    bodies: (cycle.orreryBodies ?? [])
+      .map((body) =>
+        [
+          body.id,
+          Math.round((body.angle ?? 0) * 24),
+          Math.round((body.size ?? 0) * 20),
+          Math.round((body.trailLength ?? 0) * 10),
+        ].join(':')
+      )
+      .join('|'),
+    shell: [
+      Math.round((cycle.starsOpacity ?? 0) * 10),
+      Math.round((cycle.yearProgress ?? 0) * 24),
+      cycle.activeConstellationIndex ?? 0,
+      cycle.milkyWay
+        ? [
+            Math.round(cycle.milkyWay.azimuthOffset * 20),
+            Math.round(cycle.milkyWay.inclination * 20),
+            Math.round(cycle.milkyWay.opacity * 20),
+          ].join(':')
+        : 'none',
+    ].join('|'),
+    events: getSolarSystemEventMarkerStates(cycle)
+      .map((marker) =>
+        [
+          marker.type,
+          Math.round(marker.position.x * 10),
+          Math.round(marker.position.y * 10),
+          Math.round(marker.position.z * 10),
+          Math.round((marker.intensity ?? 0) * 10),
+          Math.round((marker.trailLength ?? 0) * 10),
+        ].join(':')
+      )
+      .join('|'),
+    labels: (cycle.orreryBodies ?? [])
+      .filter((body) => body.type !== 'moon')
+      .slice(0, 4)
+      .map((body) => body.id)
+      .join('|'),
+  };
 }
 
 function syncBackgroundStars(root: THREE.Group, cycle: DaylightCycleLike) {

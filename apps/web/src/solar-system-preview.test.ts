@@ -3,6 +3,7 @@ import { getDaylightCycleState } from '@bworlds/core';
 import {
   getSolarSystemBodyPositions,
   getSolarSystemEventMarkerStates,
+  getSolarSystemSceneSignatures,
 } from './solar-system-preview.ts';
 
 describe('solar system preview helpers', () => {
@@ -80,5 +81,32 @@ describe('solar system preview helpers', () => {
     ]);
     expect(markers.every((marker) => marker.position.length() > 14)).toBe(true);
     expect(markers.every((marker) => marker.intensity > 0.5)).toBe(true);
+  });
+
+  it('uses coarse solar-system signatures so tiny movement does not thrash geometry rebuilds', () => {
+    const cycle = getDaylightCycleState(210000, {
+      observerLatitudeDegrees: 24,
+    });
+    const nearCycle = {
+      ...cycle,
+      starsOpacity: cycle.starsOpacity + 0.01,
+      orreryBodies: cycle.orreryBodies.map((body) => ({
+        ...body,
+        angle: body.angle + 0.002,
+      })),
+    } as any;
+    const farCycle = {
+      ...cycle,
+      orreryBodies: cycle.orreryBodies.map((body, index) =>
+        index === 0 ? { ...body, angle: body.angle + 0.08 } : body
+      ),
+    } as any;
+
+    expect(getSolarSystemSceneSignatures(nearCycle)).toEqual(
+      getSolarSystemSceneSignatures(cycle as any)
+    );
+    expect(getSolarSystemSceneSignatures(farCycle).bodies).not.toBe(
+      getSolarSystemSceneSignatures(cycle as any).bodies
+    );
   });
 });

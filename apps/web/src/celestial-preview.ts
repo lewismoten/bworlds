@@ -119,6 +119,13 @@ export function createCelestialPreviewRenderer(host: HTMLElement | null) {
   const planetTextureState = {
     lastSampler: null as OverworldSamplerLike | null,
   };
+  const sceneSignatureState = {
+    lastConstellation: '',
+    lastEvents: '',
+    lastMilkyWay: '',
+    lastAurora: '',
+    lastOrbit: '',
+  };
 
   const worldGlow = new THREE.Mesh(
     new THREE.SphereGeometry(3.15, 28, 28),
@@ -306,11 +313,27 @@ export function createCelestialPreviewRenderer(host: HTMLElement | null) {
     );
     moon.material.transparent = true;
 
-    syncPreviewConstellations(constellationRoot, cycle);
-    syncPreviewEvents(eventRoot, cycle);
-    syncMilkyWayBelt(beltRoot, cycle);
-    syncPreviewAuroras(auroraRoot, cycle);
-    syncPreviewOrbits(orbitRoot, cycle);
+    const signatures = getCelestialPreviewSceneSignatures(cycle);
+    if (signatures.constellations !== sceneSignatureState.lastConstellation) {
+      syncPreviewConstellations(constellationRoot, cycle);
+      sceneSignatureState.lastConstellation = signatures.constellations;
+    }
+    if (signatures.events !== sceneSignatureState.lastEvents) {
+      syncPreviewEvents(eventRoot, cycle);
+      sceneSignatureState.lastEvents = signatures.events;
+    }
+    if (signatures.milkyWay !== sceneSignatureState.lastMilkyWay) {
+      syncMilkyWayBelt(beltRoot, cycle);
+      sceneSignatureState.lastMilkyWay = signatures.milkyWay;
+    }
+    if (signatures.aurora !== sceneSignatureState.lastAurora) {
+      syncPreviewAuroras(auroraRoot, cycle);
+      sceneSignatureState.lastAurora = signatures.aurora;
+    }
+    if (signatures.orbits !== sceneSignatureState.lastOrbit) {
+      syncPreviewOrbits(orbitRoot, cycle);
+      sceneSignatureState.lastOrbit = signatures.orbits;
+    }
 
     const skyOpacity = 0.06 + cycle.starsOpacity * 0.12;
     (skyShell.material as THREE.MeshBasicMaterial).opacity = skyOpacity;
@@ -430,6 +453,58 @@ export function getPreviewPlanetLightBalance(cycle: PreviewLightingCycleLike) {
     daySideLight,
     darkSideLight,
     contrastRatio: daySideLight / Math.max(0.001, darkSideLight),
+  };
+}
+
+export function getCelestialPreviewSceneSignatures(cycle: DaylightCycleLike) {
+  return {
+    constellations: [
+      cycle.activeConstellationIndex ?? 0,
+      Math.round((cycle.yearProgress ?? 0) * 48),
+      Math.round((cycle.starsOpacity ?? 0) * 10),
+    ].join('|'),
+    events: (cycle.visibleEvents ?? [])
+      .map((event) =>
+        [
+          event.type,
+          event.name,
+          Math.round(event.azimuth * 10),
+          Math.round(event.altitude * 10),
+          Math.round((event.visibility ?? 0) * 10),
+          Math.round((event.intensity ?? 0) * 10),
+        ].join(':')
+      )
+      .join('|'),
+    milkyWay: cycle.milkyWay
+      ? [
+          Math.round(cycle.milkyWay.azimuthOffset * 20),
+          Math.round(cycle.milkyWay.inclination * 20),
+          Math.round(cycle.milkyWay.width * 100),
+          Math.round(cycle.milkyWay.opacity * 20),
+          Math.round((cycle.yearProgress ?? 0) * 48),
+        ].join('|')
+      : 'none',
+    aurora: (cycle.auroraBands ?? [])
+      .map((band) =>
+        [
+          band.id,
+          Math.round(band.azimuthCenter * 10),
+          Math.round(band.altitude * 10),
+          Math.round(band.height * 20),
+          Math.round(band.intensity * 10),
+          Math.round(band.wavePhase * 20),
+        ].join(':')
+      )
+      .join('|'),
+    orbits: [
+      Math.round((cycle.sunAzimuth ?? 0) * 20),
+      Math.round((cycle.sunriseAzimuth ?? 0) * 20),
+      Math.round((cycle.sunsetAzimuth ?? 0) * 20),
+      Math.round((cycle.moonAzimuth ?? 0) * 20),
+      ...(cycle.visibleEvents ?? [])
+        .filter((event) => event.type === 'planet')
+        .map((event) => `${event.name}:${Math.round(event.azimuth * 10)}`),
+    ].join('|'),
   };
 }
 
