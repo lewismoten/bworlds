@@ -15,7 +15,7 @@ import {
   getPreviewSunOrbitSpec,
   getPlanetSurfaceColor,
 } from './celestial-preview.ts';
-import { getDaylightCycleState } from '@bworlds/core';
+import { DEFAULT_DAY_LENGTH_MS, getDaylightCycleState } from '@bworlds/core';
 
 describe('celestial preview helpers', () => {
   it('maps known overworld kinds to stable planet surface colors', () => {
@@ -142,7 +142,9 @@ describe('celestial preview helpers', () => {
   });
 
   it('positions the preview sun rig and keeps the moon inside a generous shadow volume', () => {
-    const cycle = getDaylightCycleState(120000);
+    const cycle = getDaylightCycleState(DEFAULT_DAY_LENGTH_MS / 2, {
+      dayLengthMs: DEFAULT_DAY_LENGTH_MS,
+    });
     const rig = getPreviewLightRigState(cycle);
 
     expect(rig.sun.y).toBeGreaterThan(0);
@@ -153,7 +155,9 @@ describe('celestial preview helpers', () => {
   });
 
   it('keeps the world center and moon inside the configured sun shadow frustum', () => {
-    const cycle = getDaylightCycleState(120000);
+    const cycle = getDaylightCycleState(DEFAULT_DAY_LENGTH_MS / 2, {
+      dayLengthMs: DEFAULT_DAY_LENGTH_MS,
+    });
     const coverage = getPreviewSunShadowCoverageState(cycle);
 
     expect(coverage.worldWithinShadow).toBe(true);

@@ -89,10 +89,10 @@ describe('solar system preview helpers', () => {
     });
     const nearCycle = {
       ...cycle,
-      starsOpacity: cycle.starsOpacity + 0.01,
+      starsOpacity: Math.min(1, cycle.starsOpacity + 0.004),
       orreryBodies: cycle.orreryBodies.map((body) => ({
         ...body,
-        angle: body.angle + 0.002,
+        angle: body.angle + 0.0004,
       })),
     } as any;
     const farCycle = {

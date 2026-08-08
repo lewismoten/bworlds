@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getDaylightCycleState } from '@bworlds/core';
+import { DEFAULT_DAY_LENGTH_MS, getDaylightCycleState } from '@bworlds/core';
 import {
   getCelestialDateLabel,
   getCelestialRingStars,
@@ -57,7 +57,9 @@ describe('timekeeper helpers', () => {
 
   it('keeps the moon ring progress stable across hours within the same day', () => {
     const midnight = getDaylightCycleState(0);
-    const noon = getDaylightCycleState(120000);
+    const noon = getDaylightCycleState(DEFAULT_DAY_LENGTH_MS / 2, {
+      dayLengthMs: DEFAULT_DAY_LENGTH_MS,
+    });
 
     expect(getMoonMidnightOrbitProgress(noon)).toBe(
       getMoonMidnightOrbitProgress(midnight)
@@ -65,7 +67,9 @@ describe('timekeeper helpers', () => {
   });
 
   it('anchors the daylight ring to the current dial position', () => {
-    const cycle = getDaylightCycleState(120000);
+    const cycle = getDaylightCycleState(DEFAULT_DAY_LENGTH_MS / 2, {
+      dayLengthMs: DEFAULT_DAY_LENGTH_MS,
+    });
     const layout = getDaylightRingLayout(cycle);
 
     expect(layout.dayCenterAngle).toBeCloseTo(-Math.PI / 2, 6);

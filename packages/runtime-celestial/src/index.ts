@@ -1,5 +1,6 @@
 import {
   DEFAULT_CONSTELLATION_COUNT,
+  DEFAULT_DAY_LENGTH_MS,
   DEFAULT_YEAR_LENGTH_DAYS,
   getDaylightCycleState,
   toGps,
@@ -8,7 +9,7 @@ import { createRuntimePlugin } from '@bworlds/plugin-api';
 import type { RuntimePlugin } from '@bworlds/plugin-api';
 
 const CELESTIAL_SEED = 'bworlds-celestial';
-export const CELESTIAL_DAY_LENGTH_MS = 42 * 60 * 1000;
+export const CELESTIAL_DAY_LENGTH_MS = DEFAULT_DAY_LENGTH_MS;
 
 export function resolveCelestialCycleConfig(state?: { player?: { x?: number; y?: number } }) {
   const latitude = toGps(state?.player?.x ?? 0, state?.player?.y ?? 0).latitude;
