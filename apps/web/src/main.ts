@@ -121,6 +121,7 @@ import {
   shouldRestore3dViewportKeyboardFocusOnPointerDown,
 } from './viewport-focus.ts';
 import { attemptAutoEnterOverworldPoi } from './overworld-auto-enter.ts';
+import { getInteractionPrompt } from './interaction-prompt.ts';
 import {
   createSoundEffectController,
   createWebAudioSoundEffectSink,
@@ -991,6 +992,7 @@ function updateStatus(
   const tileLabel = definition?.name ?? tile.kind;
   const playerLevel = normalizePlayerLevel(state.playerLevel);
   const hint = tile.note ?? 'Explore the frontier.';
+  const interactionPrompt = getInteractionPrompt(state);
   const statusSignature = getStatusSignature({
     viewMode: state.viewMode,
     playerLevel,
@@ -1059,6 +1061,7 @@ function updateStatus(
       facing,
       headingLabel,
       showCompass: showViewportCompass,
+      interactionPrompt,
     });
     if (viewportHudSignature !== uiRenderState.lastViewportHudSignature) {
       viewportHud.innerHTML = buildViewportHudMarkup({
@@ -1069,6 +1072,7 @@ function updateStatus(
         facing,
         headingLabel,
         showCompass: showViewportCompass,
+        interactionPrompt,
         compassMarkup: renderCompass(facing),
       });
       uiRenderState.lastViewportHudSignature = viewportHudSignature;

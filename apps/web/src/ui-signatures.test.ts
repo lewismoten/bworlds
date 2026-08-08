@@ -62,6 +62,7 @@ describe('ui signature helpers', () => {
       facing: 'N',
       headingLabel: 'Heading 000°',
       showCompass: true,
+      interactionPrompt: '',
     };
     const details: EventDetail[] = [
       { kind: 'aurora', label: '2 aurora bands' },
@@ -105,6 +106,13 @@ describe('ui signature helpers', () => {
         compassMarkup: '<span>N</span>',
       })
     ).not.toContain('viewport-hud-compass');
+    expect(
+      buildViewportHudMarkup({
+        ...hud,
+        interactionPrompt: 'Press Enter to enter Oakcross',
+        compassMarkup: '<span>N</span>',
+      })
+    ).toContain('viewport-hud-prompt');
     expect(
       buildEventSummaryMarkup({
         modeLabel: 'Aurora',

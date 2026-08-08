@@ -48,6 +48,7 @@ type ViewportHudSignatureOptions = {
   facing: string;
   headingLabel: string;
   showCompass: boolean;
+  interactionPrompt: string;
 };
 
 type EventSummarySignatureOptions = {
@@ -102,6 +103,7 @@ export function getViewportHudSignature(
     options.facing,
     options.headingLabel,
     options.showCompass ? '1' : '0',
+    options.interactionPrompt,
   ].join('|');
 }
 
@@ -204,6 +206,11 @@ export function buildViewportHudMarkup(
       ${
         showCompassText
           ? `<div class="viewport-hud-compass">${options.compassMarkup}</div>`
+          : ''
+      }
+      ${
+        options.interactionPrompt
+          ? `<div class="viewport-hud-prompt">${options.interactionPrompt}</div>`
           : ''
       }
     `;
