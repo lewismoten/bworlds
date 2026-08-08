@@ -295,6 +295,40 @@ describe('procedural music', () => {
     }
   });
 
+  it('can swap representative instrument families when time, weather, or location changes', () => {
+    const theme = resolveMusicTheme('plains', 'overworld');
+    const daytime = createProceduralInstrumentBank(theme, 3, 4, {
+      tileKind: 'plains',
+      contextType: 'overworld',
+      dayProgress: 0.5,
+      yearProgress: 0.5,
+    });
+    const nighttime = createProceduralInstrumentBank(theme, 3, 4, {
+      tileKind: 'plains',
+      contextType: 'overworld',
+      dayProgress: 0.9,
+      yearProgress: 0.5,
+    });
+    const stormy = createProceduralInstrumentBank(theme, 3, 4, {
+      tileKind: 'plains',
+      contextType: 'overworld',
+      dayProgress: 0.5,
+      yearProgress: 0.5,
+      weatherKind: 'heavy-rain',
+      weatherIntensity: 0.95,
+    });
+    const town = createProceduralInstrumentBank(resolveMusicTheme('town', 'town'), 3, 4, {
+      tileKind: 'town',
+      contextType: 'town',
+      dayProgress: 0.5,
+      yearProgress: 0.5,
+    });
+
+    expect(nighttime.instruments.lead.family).not.toBe(daytime.instruments.lead.family);
+    expect(stormy.instruments.percussion.family).not.toBe(daytime.instruments.percussion.family);
+    expect(town.instruments.harmony.family).not.toBe(daytime.instruments.harmony.family);
+  });
+
   it('emits scheduled notes through the controller sink', () => {
     const played: ProceduralMusicNote[] = [];
     const controller = createMusicController({

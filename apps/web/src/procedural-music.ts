@@ -64,6 +64,15 @@ export type ProceduralInstrumentBank = {
   instruments: Record<InstrumentRole, ProceduralInstrument>;
 };
 
+type ProceduralInstrumentBankOptions = {
+  tileKind?: TileKind;
+  contextType?: ContextType;
+  weatherKind?: WeatherKind;
+  weatherIntensity?: number;
+  dayProgress?: number;
+  yearProgress?: number;
+};
+
 type MusicMood = {
   tempoMultiplier: number;
   brightness: number;
@@ -952,15 +961,16 @@ function scheduleThemeLayerNotes(
 export function createProceduralInstrumentBank(
   theme: MusicRegionTheme,
   clusterX: number,
-  clusterY: number
+  clusterY: number,
+  options?: ProceduralInstrumentBankOptions
 ): ProceduralInstrumentBank {
   return {
     themeId: theme.id,
     instruments: {
-      lead: createProceduralInstrument(theme, 'lead', clusterX, clusterY),
-      harmony: createProceduralInstrument(theme, 'harmony', clusterX, clusterY),
-      bass: createProceduralInstrument(theme, 'bass', clusterX, clusterY),
-      percussion: createProceduralInstrument(theme, 'percussion', clusterX, clusterY),
+      lead: createProceduralInstrument(theme, 'lead', clusterX, clusterY, options),
+      harmony: createProceduralInstrument(theme, 'harmony', clusterX, clusterY, options),
+      bass: createProceduralInstrument(theme, 'bass', clusterX, clusterY, options),
+      percussion: createProceduralInstrument(theme, 'percussion', clusterX, clusterY, options),
     },
   };
 }
@@ -969,10 +979,11 @@ function createProceduralInstrument(
   theme: MusicRegionTheme,
   role: InstrumentRole,
   clusterX: number,
-  clusterY: number
+  clusterY: number,
+  options?: ProceduralInstrumentBankOptions
 ): ProceduralInstrument {
   const seedKey = `${theme.id}:${role}`;
-  const family = resolveInstrumentFamily(theme, role, clusterX, clusterY);
+  const family = resolveInstrumentFamily(theme, role, clusterX, clusterY, options);
   const waveformOptions: Record<InstrumentRole, MusicWaveform[]> = {
     lead: ['triangle', 'sine', 'sawtooth'],
     harmony: ['triangle', 'sawtooth', 'square'],
@@ -1016,13 +1027,145 @@ function resolveInstrumentFamily(
   theme: MusicRegionTheme,
   role: InstrumentRole,
   clusterX: number,
-  clusterY: number
+  clusterY: number,
+  options?: ProceduralInstrumentBankOptions
 ): InstrumentFamily {
-  const families = INSTRUMENT_FAMILY_LIBRARY[role];
+  const families = resolveInstrumentFamilyPool(theme, role, options);
+  const familyContextKey = resolveInstrumentFamilyContextKey(theme, role, options);
   const index = Math.floor(
-    hash2D(`${theme.id}:${role}:family`, clusterX, clusterY) * families.length
+    hash2D(`${theme.id}:${role}:family:${familyContextKey}`, clusterX, clusterY) *
+      families.length
   );
   return families[index] ?? families[0];
+}
+
+function resolveInstrumentFamilyPool(
+  theme: MusicRegionTheme,
+  role: InstrumentRole,
+  options?: ProceduralInstrumentBankOptions
+): readonly InstrumentFamily[] {
+  const season = resolveSeason(options?.yearProgress ?? 0.25);
+  const normalizedDayProgress = normalizeWrappedProgress(options?.dayProgress ?? 0.5);
+  const atNight = normalizedDayProgress < 0.2 || normalizedDayProgress > 0.8;
+  const weatherBand =
+    options?.weatherKind === 'heavy-rain' || (options?.weatherIntensity ?? 0) >= 0.8
+      ? 'storm'
+      : options?.weatherKind === 'light-rain' || options?.weatherKind === 'fog'
+        ? 'soft-weather'
+        : 'clear';
+  const locationBand =
+    options?.contextType ??
+    options?.tileKind ??
+    (theme.id === 'town-square'
+      ? 'town'
+      : theme.id === 'cavern-echo'
+        ? 'cave'
+        : theme.id === 'interior-hall'
+          ? 'interior'
+          : 'overworld');
+
+  if (role === 'lead') {
+    if (season === 'winter') {
+      return ['violin', 'flute', 'trumpet', 'synth-lead'];
+    }
+    if (atNight) {
+      return ['flute', 'violin', 'synth-lead', 'vocals'];
+    }
+    if (locationBand === 'town' || locationBand === 'interior') {
+      return ['vocals', 'flute', 'trumpet', 'lead-guitar'];
+    }
+  }
+  if (role === 'harmony') {
+    if (locationBand === 'town' || locationBand === 'interior') {
+      return ['piano', 'guitar', 'organ'];
+    }
+    if (weatherBand !== 'clear') {
+      return ['organ', 'strings', 'synth-pad'];
+    }
+    return ['strings', 'synth-pad', 'guitar'];
+  }
+  if (role === 'bass') {
+    if (season === 'winter') {
+      return ['upright-bass', 'tuba', 'bass-synth'];
+    }
+    if (locationBand === 'cave') {
+      return ['upright-bass', 'tuba'];
+    }
+  }
+  if (role === 'percussion') {
+    if (weatherBand === 'storm') {
+      return ['snare', 'cymbals', 'hand-percussion'];
+    }
+    if (atNight) {
+      return ['shaker', 'hand-percussion', 'cymbals'];
+    }
+  }
+  return INSTRUMENT_FAMILY_LIBRARY[role];
+}
+
+function resolveInstrumentFamilyContextKey(
+  theme: MusicRegionTheme,
+  role: InstrumentRole,
+  options?: ProceduralInstrumentBankOptions
+): string {
+  const season = resolveSeason(options?.yearProgress ?? 0.25);
+  const normalizedDayProgress = normalizeWrappedProgress(options?.dayProgress ?? 0.5);
+  const dayPhase =
+    normalizedDayProgress < 0.2 || normalizedDayProgress > 0.8
+      ? 'night'
+      : normalizedDayProgress < 0.32 || normalizedDayProgress > 0.68
+        ? 'twilight'
+        : 'day';
+  const weatherBand =
+    options?.weatherKind === 'heavy-rain' || (options?.weatherIntensity ?? 0) >= 0.8
+      ? 'storm'
+      : options?.weatherKind === 'light-rain' || options?.weatherKind === 'fog'
+        ? 'soft-weather'
+        : 'clear';
+  const locationBand =
+    options?.contextType ??
+    options?.tileKind ??
+    (theme.id === 'town-square'
+      ? 'town'
+      : theme.id === 'cavern-echo'
+        ? 'cave'
+        : theme.id === 'interior-hall'
+          ? 'interior'
+          : 'overworld');
+
+  if (role === 'lead') {
+    if (season === 'winter') {
+      return `${locationBand}:winter-bells`;
+    }
+    if (dayPhase === 'night') {
+      return `${locationBand}:night-air`;
+    }
+  }
+  if (role === 'harmony') {
+    if (locationBand === 'town' || locationBand === 'interior') {
+      return `${locationBand}:settled`;
+    }
+    if (weatherBand !== 'clear') {
+      return `${locationBand}:${weatherBand}`;
+    }
+  }
+  if (role === 'bass') {
+    if (season === 'winter') {
+      return `${locationBand}:winter-foundation`;
+    }
+    if (locationBand === 'cave') {
+      return 'cave:depth';
+    }
+  }
+  if (role === 'percussion') {
+    if (weatherBand === 'storm') {
+      return `${locationBand}:storm-kit`;
+    }
+    if (dayPhase === 'night') {
+      return `${locationBand}:night-rhythm`;
+    }
+  }
+  return `${locationBand}:${dayPhase}:${season}:${weatherBand}`;
 }
 
 function selectInstrumentRole(stepIndex: number): InstrumentRole {

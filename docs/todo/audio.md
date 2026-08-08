@@ -8,7 +8,7 @@
 - [x] Harmony is often representative of piano, guitar, organ, strings, and synth pads
 - [x] Bass is often representative of bass guitar, upright bass, bass synth, tuba
 - [x] A drum track is made of different instruments of drums, cymbals, shakers, percussion
-- [ ] Songs can simply swap out different intruments for more variety, speed-up/slow-down tempo, or change the key that could be associated with location, danger, combat, weather, time of day, or NPC activity
+- [x] Songs can simply swap out different intruments for more variety, speed-up/slow-down tempo, or change the key that could be associated with location, danger, combat, weather, time of day, or NPC activity
 - [ ] Background music should be 1.5 to 4 minutes
 - [ ] Exploration or town music should be 2-3 minutes long
 - [ ] Battle tracks are around 1-2 minutes long
