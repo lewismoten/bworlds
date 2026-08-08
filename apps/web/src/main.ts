@@ -77,6 +77,12 @@ import {
   DEFAULT_RENDER_BUDGET_STATE,
 } from './render-budget.ts';
 import { getMouseLookAngles } from './mouse-look.ts';
+import {
+  isEditableKeyboardTarget,
+  normalizeKeyboardKey,
+  shouldPreventDefaultGameplayKey,
+  shouldRestoreViewportFocusForGameplayKey,
+} from './keyboard-input.ts';
 import { getMovementIntent } from './movement-input.ts';
 import {
   getHmrNoticeText,
@@ -2447,10 +2453,19 @@ import.meta.hot?.on('vite:afterUpdate', () => {
   showHmrNotice(getHmrNoticeText('after-update'));
 });
 
-window.addEventListener('keydown', (event) => {
+document.addEventListener('keydown', (event) => {
+  if (isEditableKeyboardTarget(event.target)) {
+    return;
+  }
   soundEffects.resume();
   musicController.resume();
-  const key = event.key.length === 1 ? event.key.toLowerCase() : event.key;
+  const key = normalizeKeyboardKey(event.key);
+  if (
+    state.viewMode === '3d' &&
+    shouldRestoreViewportFocusForGameplayKey(key)
+  ) {
+    restore3dViewportKeyboardFocus(state.viewMode, viewport3d);
+  }
   keys.add(key);
 
   if (key === 'v') toggleView();
@@ -2469,22 +2484,23 @@ window.addEventListener('keydown', (event) => {
   if (key === 'x') handleTryExit();
   requestRender();
 
-  if (
-    ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(event.key)
-  ) {
+  if (shouldPreventDefaultGameplayKey(event.key)) {
     event.preventDefault();
   }
-});
+}, true);
 
-window.addEventListener('keyup', (event) => {
-  const key = event.key.length === 1 ? event.key.toLowerCase() : event.key;
+document.addEventListener('keyup', (event) => {
+  if (isEditableKeyboardTarget(event.target)) {
+    return;
+  }
+  const key = normalizeKeyboardKey(event.key);
   keys.delete(key);
   if (event.key === ' ') {
     motion.spaceHeld = false;
     motion.spaceReady = true;
   }
   requestRender();
-});
+}, true);
 
 toggleButton.addEventListener('click', toggleView);
 actionButton.addEventListener('click', handleInteraction);
