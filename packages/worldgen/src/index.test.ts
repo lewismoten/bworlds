@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_DAY_LENGTH_MS } from '@bworlds/core';
+import { DEFAULT_DAY_LENGTH_MS, normalizeAngle } from '@bworlds/core';
 import { getActivePluginRegistry } from '@bworlds/plugin-api';
 import {
   createBuiltinContentPackCatalog,
@@ -14,6 +14,7 @@ import {
 import type {
   PluginPackDefinitionLike,
   ResolveWorldEnvironmentContext,
+  WorldActionLike,
 } from '@bworlds/plugin-api';
 
 function createGenerator() {
@@ -283,6 +284,63 @@ describe('world generator', () => {
       }
     }
     expect(found?.poi?.type).toMatch(/town|dungeon|cave/);
+  });
+
+  it('enters poi instances and exits back to the overworld facing away from the entrance', () => {
+    const runtime = createWorldRuntime({
+      seed: 'spec',
+      activateRegistry: false,
+    });
+    const state = runtime.state;
+    let poiLocation: { x: number; y: number } | null = null;
+    let action: WorldActionLike | null = null;
+
+    for (let y = -300; y <= 300 && !poiLocation; y += 1) {
+      for (let x = -300; x <= 300; x += 1) {
+        const candidateAction = state.getCurrentMap().getAction?.(
+          x,
+          y,
+          state
+        ) as WorldActionLike | null | undefined;
+        if (candidateAction?.type === 'enter' && candidateAction.context?.type) {
+          poiLocation = { x, y };
+          action = candidateAction;
+          break;
+        }
+      }
+    }
+
+    if (!poiLocation || !action?.context?.type) {
+      throw new Error('Expected to find an enterable point of interest near the origin band.');
+    }
+
+    state.player.x = poiLocation.x;
+    state.player.y = poiLocation.y;
+    state.player.facing = 0.35;
+
+    expect(state.interact()).toBe(true);
+    expect(state.stack).toHaveLength(2);
+    expect(state.getCurrentContext()).toEqual(
+      expect.objectContaining({
+        id: action.context.id,
+        type: action.context.type,
+      })
+    );
+
+    if (action.context.type === 'town') {
+      state.player.x = 0;
+      state.player.y = 11;
+    } else {
+      state.player.x = 0;
+      state.player.y = 6;
+    }
+
+    expect(state.tryExit()).toBe(true);
+    expect(state.stack).toHaveLength(1);
+    expect(state.getCurrentContext().type).toBe('overworld');
+    expect(state.player.x).toBe(poiLocation.x);
+    expect(state.player.y).toBe(poiLocation.y);
+    expect(state.player.facing).toBeCloseTo(normalizeAngle(0.35 + Math.PI), 6);
   });
 
   it('keeps forests, rivers, and bridges present near the overworld origin band', () => {

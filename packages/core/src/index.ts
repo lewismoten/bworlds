@@ -1676,7 +1676,8 @@ export function createWorldState({
       const map = this.getCurrentMap();
       const action = map.getAction?.(
         snapWorldCoordinate(this.player.x),
-        snapWorldCoordinate(this.player.y)
+        snapWorldCoordinate(this.player.y),
+        this
       );
       if (!isCoreWorldActionLike(action)) return false;
       const nextContext = {
@@ -1721,6 +1722,10 @@ export function createWorldState({
       this.player.y = spawn.y;
       if (typeof action.facing === 'number') {
         this.player.facing = action.facing;
+      } else if (typeof action.spawn?.facing === 'number') {
+        this.player.facing = action.spawn.facing;
+      } else if (typeof currentContext.returnTo?.facing === 'number') {
+        this.player.facing = currentContext.returnTo.facing;
       } else if (typeof spawn.facing === 'number') {
         this.player.facing = spawn.facing;
       }

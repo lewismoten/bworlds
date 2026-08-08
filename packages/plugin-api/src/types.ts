@@ -541,7 +541,7 @@ export type OverworldAnchors = {
 
 export interface WorldMapLike {
   getTile(x: number, y: number): TileLike;
-  getAction?(x: number, y: number): unknown;
+  getAction?(x: number, y: number, state?: WorldStateLike): unknown;
   getExit?(x?: number, y?: number): unknown;
 }
 
@@ -550,6 +550,7 @@ export interface WorldActionLike {
   context?: WorldContextLike;
   spawn?: Point;
   facing?: FacingAngle;
+  returnTo?: Point & { facing?: FacingAngle };
   [key: string]: unknown;
 }
 

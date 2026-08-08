@@ -1,4 +1,4 @@
-import { hash2D } from '@bworlds/core';
+import { normalizeAngle } from '@bworlds/core';
 import { createContextMapPlugin } from '@bworlds/map-support';
 import {
   composeOverworldTileFromPlugins,
@@ -53,16 +53,28 @@ function createOverworldMap(
     return cache.get(key) ?? { kind: defaultTileKind };
   }
 
-  function getAction(x: number, y: number) {
+  function getAction(x: number, y: number, state?: { player?: { facing?: number } }) {
     const tile = getTile(x, y);
-    return (
+    const action =
       plugins.createWorldAction({
         seed,
         x,
         y,
         tile,
-      }) ?? null
-    );
+      }) ?? null;
+    if (
+      action &&
+      action.type === 'enter' &&
+      tile.poi &&
+      typeof state?.player?.facing === 'number'
+    ) {
+      action.returnTo = {
+        x,
+        y,
+        facing: normalizeAngle(state.player.facing + Math.PI),
+      };
+    }
+    return action;
   }
 
   function getExit() {
