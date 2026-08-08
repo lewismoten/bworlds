@@ -146,19 +146,8 @@ export function drawTimeWheel(canvas: HTMLCanvasElement | null, cycle: DaylightC
   const moonInnerRadius = daylightOuterRadius * 1.04;
   const constellationOuterRadius = daylightOuterRadius * 1.72;
   const constellationInnerRadius = daylightOuterRadius * 1.36;
-  const wheelRotation = -cycle.dayProgress * Math.PI * 2;
   const seasonRotation = -cycle.yearProgress * Math.PI * 2;
   const ringEntries = getTimeWheelConstellationEntries(cycle);
-  const windowGradient = context.createLinearGradient(
-    0,
-    -daylightOuterRadius,
-    0,
-    daylightOuterRadius
-  );
-  windowGradient.addColorStop(0, '#9fe1ff');
-  windowGradient.addColorStop(0.45, '#ffe3a2');
-  windowGradient.addColorStop(0.52, '#10203a');
-  windowGradient.addColorStop(1, '#07111d');
 
   context.clearRect(0, 0, width, height);
   context.save();
@@ -286,13 +275,7 @@ export function drawTimeWheel(canvas: HTMLCanvasElement | null, cycle: DaylightC
     18
   );
   context.clip();
-  context.rotate(wheelRotation);
-  context.fillStyle = windowGradient;
-  context.beginPath();
-  context.arc(0, 0, daylightOuterRadius, 0, Math.PI * 2);
-  context.arc(0, 0, daylightInnerRadius, Math.PI * 2, 0, true);
-  context.closePath();
-  context.fill();
+  drawDaylightWindowPreview(context, cycle, daylightOuterRadius, daylightInnerRadius);
   context.restore();
 
   context.strokeStyle = 'rgba(255,255,255,0.22)';
@@ -416,6 +399,25 @@ function drawDaylightRing(
   outerRadius: number,
   innerRadius: number
 ) {
+  drawDaylightBand(context, cycle, outerRadius, innerRadius, true);
+}
+
+function drawDaylightWindowPreview(
+  context: CanvasRenderingContext2D,
+  cycle: DaylightCycleLike,
+  outerRadius: number,
+  innerRadius: number
+) {
+  drawDaylightBand(context, cycle, outerRadius, innerRadius, false);
+}
+
+function drawDaylightBand(
+  context: CanvasRenderingContext2D,
+  cycle: DaylightCycleLike,
+  outerRadius: number,
+  innerRadius: number,
+  includeBodies: boolean
+) {
   const { dawnAngle, duskAngle, dayCenterAngle, nightCenterAngle } =
     getDaylightRingLayout(cycle);
   const ringGradient = context.createLinearGradient(0, -outerRadius, 0, outerRadius);
@@ -448,6 +450,10 @@ function drawDaylightRing(
   drawDayNightDividerGlow(context, outerRadius, innerRadius, duskAngle, '#f7b98a');
   drawDayNightDividerMark(context, outerRadius, innerRadius, dawnAngle);
   drawDayNightDividerMark(context, outerRadius, innerRadius, duskAngle);
+
+  if (!includeBodies) {
+    return;
+  }
 
   const moonRadius = (innerRadius + outerRadius) * 0.5;
   drawMoonPhaseGlyph(

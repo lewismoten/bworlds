@@ -81,6 +81,23 @@ describe('timekeeper helpers', () => {
     );
   });
 
+  it('pins dawn and dusk dividers to the top marker when the selected time is sunrise or sunset', () => {
+    const sunriseCycle = getDaylightCycleState(0, {
+      dayLengthMs: 240000,
+    });
+    sunriseCycle.dayProgress = sunriseCycle.sunriseProgress;
+    const sunriseLayout = getDaylightRingLayout(sunriseCycle);
+
+    const sunsetCycle = getDaylightCycleState(0, {
+      dayLengthMs: 240000,
+    });
+    sunsetCycle.dayProgress = sunsetCycle.sunsetProgress;
+    const sunsetLayout = getDaylightRingLayout(sunsetCycle);
+
+    expect(sunriseLayout.dawnAngle).toBeCloseTo(-Math.PI / 2, 6);
+    expect(sunsetLayout.duskAngle).toBeCloseTo(-Math.PI / 2, 6);
+  });
+
   it('keeps night-ring stars on the night half of the dial', () => {
     const cycle = getDaylightCycleState(120000);
     const layout = getDaylightRingLayout(cycle);

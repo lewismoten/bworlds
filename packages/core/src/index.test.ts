@@ -11,8 +11,10 @@ import {
   formatCelestialDate,
   generateConstellations,
   getCelestialEventsForDay,
+  getCometOrbitProgress,
   getDaylightCycleState,
   getOrreryBodies,
+  getPlanetaryOrbitProgress,
   getWorldDaylightCycle,
   getWorldTimeMs,
   hash2D,
@@ -204,6 +206,40 @@ describe('core utilities', () => {
     expect(events.every((event) => event.visibility >= 0 && event.visibility <= 1)).toBe(
       true
     );
+  });
+
+  it('varies planetary orbital progress rather than moving at a perfectly uniform rate', () => {
+    const firstStep = getPlanetaryOrbitProgress(1, {
+      orbitLengthDays: 17,
+      wobblePeriodDays: 9,
+      wobbleAmplitude: 0.017,
+      wobblePhase: 0.54,
+    });
+    const secondStep = getPlanetaryOrbitProgress(2, {
+      orbitLengthDays: 17,
+      wobblePeriodDays: 9,
+      wobbleAmplitude: 0.017,
+      wobblePhase: 0.54,
+    });
+    const thirdStep = getPlanetaryOrbitProgress(3, {
+      orbitLengthDays: 17,
+      wobblePeriodDays: 9,
+      wobbleAmplitude: 0.017,
+      wobblePhase: 0.54,
+    });
+
+    const deltaA = secondStep - firstStep;
+    const deltaB = thirdStep - secondStep;
+
+    expect(Math.abs(deltaA - deltaB)).toBeGreaterThan(0.0001);
+  });
+
+  it('accelerates comet progress near the start of its visible pass', () => {
+    const firstStep = getCometOrbitProgress(0.5, 20, 0.18, 0.58);
+    const secondStep = getCometOrbitProgress(1.5, 20, 0.18, 0.58);
+    const thirdStep = getCometOrbitProgress(2.5, 20, 0.18, 0.58);
+
+    expect(secondStep - firstStep).toBeGreaterThan(thirdStep - secondStep);
   });
 
   it('dims celestial events differently across daylight and night conditions', () => {

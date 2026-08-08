@@ -101,3 +101,5 @@ add a outer globe of stars in the sky that appear at night with procedurally gen
 - [x] When time keeper is selected, I still see buttons to navigate the celestial model
 - [x] The compass needle can wobble back and forth a few times, especially if we clicked on of the cardinal buttons to jump between directions.
 - [x] The compass can have a compass dial that can be modified to help set an orientation to move in.
+- [x] The black dividers for day/night dawn/dusk are not lined up with the dawn/dusk dial
+- [ ] The sun does not appear to have an orbit around the planet in the model

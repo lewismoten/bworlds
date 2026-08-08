@@ -75,6 +75,9 @@ const COMET_NAMES = ['White Lantern', 'Pilgrim Tail'];
 const PLANET_SKY_PROFILES = [
   {
     orbitLengthDays: 11,
+    wobblePeriodDays: 6,
+    wobbleAmplitude: 0.012,
+    wobblePhase: 0.18,
     declinationFactor: 0.18,
     declinationWaveDays: 15,
     declinationWaveAmplitude: 0.05,
@@ -89,6 +92,9 @@ const PLANET_SKY_PROFILES = [
   },
   {
     orbitLengthDays: 17,
+    wobblePeriodDays: 9,
+    wobbleAmplitude: 0.017,
+    wobblePhase: 0.54,
     declinationFactor: 0.26,
     declinationWaveDays: 21,
     declinationWaveAmplitude: 0.08,
@@ -103,6 +109,9 @@ const PLANET_SKY_PROFILES = [
   },
   {
     orbitLengthDays: 24,
+    wobblePeriodDays: 13,
+    wobbleAmplitude: 0.024,
+    wobblePhase: 0.92,
     declinationFactor: 0.34,
     declinationWaveDays: 30,
     declinationWaveAmplitude: 0.12,
@@ -117,6 +126,9 @@ const PLANET_SKY_PROFILES = [
   },
   {
     orbitLengthDays: 33,
+    wobblePeriodDays: 18,
+    wobbleAmplitude: 0.03,
+    wobblePhase: 1.36,
     declinationFactor: 0.44,
     declinationWaveDays: 38,
     declinationWaveAmplitude: 0.16,
@@ -135,11 +147,13 @@ const COMET_ORRERY_PROFILES = [
     orbitTilt: 0.46,
     orbitEccentricity: 0.42,
     orbitRotation: 0.88,
+    speedExponent: 0.72,
   },
   {
     orbitTilt: -0.38,
     orbitEccentricity: 0.56,
     orbitRotation: 1.74,
+    speedExponent: 0.58,
   },
 ] as const;
 
@@ -153,6 +167,37 @@ function getCometOrreryProfile(name: string, fallbackIndex = 0) {
   const index = COMET_NAMES.indexOf(name);
   const resolvedIndex = index >= 0 ? index : fallbackIndex;
   return COMET_ORRERY_PROFILES[resolvedIndex % COMET_ORRERY_PROFILES.length];
+}
+
+export function getPlanetaryOrbitProgress(
+  elapsedDays: number,
+  profile: {
+    orbitLengthDays: number;
+    wobblePeriodDays: number;
+    wobbleAmplitude: number;
+    wobblePhase: number;
+  }
+) {
+  const baseProgress = elapsedDays / profile.orbitLengthDays;
+  const wobble =
+    Math.sin((elapsedDays / profile.wobblePeriodDays) * Math.PI * 2 + profile.wobblePhase) *
+    profile.wobbleAmplitude;
+  const retrogradeBias =
+    Math.sin((elapsedDays / (profile.orbitLengthDays * 1.4)) * Math.PI * 2 + profile.wobblePhase) *
+    profile.wobbleAmplitude *
+    0.46;
+  return fract(baseProgress + wobble + retrogradeBias);
+}
+
+export function getCometOrbitProgress(
+  elapsedDays: number,
+  cycleLengthDays: number,
+  phaseOffset: number,
+  speedExponent = 0.7
+) {
+  const localProgress = fract(elapsedDays / cycleLengthDays);
+  const curvedProgress = Math.pow(localProgress, speedExponent);
+  return fract(curvedProgress + phaseOffset);
 }
 
 export interface ConstellationStarLike {
@@ -740,7 +785,7 @@ export function getCelestialEventsForDay(
   PLANET_NAMES.forEach((name, index) => {
     const profile = getPlanetSkyProfile(name, index);
     const orbitLength = profile.orbitLengthDays;
-    const orbitProgress = fract(dayNumber / orbitLength + dayProgress / orbitLength);
+    const orbitProgress = getPlanetaryOrbitProgress(dayNumber + dayProgress, profile);
     const orbitState = getOrbitState({
       orbitProgress,
       observerLatitudeDegrees,
@@ -819,7 +864,13 @@ export function getCelestialEventsForDay(
     const cycleLength = 20 + index * 12;
     const cycleDay = ((dayNumber % cycleLength) + cycleLength) % cycleLength;
     if (cycleDay <= 3) {
-      const progress = fract((cycleDay + dayProgress) / cycleLength + index * 0.18);
+      const orbitProfile = getCometOrreryProfile(name, index);
+      const progress = getCometOrbitProgress(
+        cycleDay + dayProgress,
+        cycleLength,
+        index * 0.18,
+        orbitProfile.speedExponent
+      );
       const orbitState = getOrbitState({
         orbitProgress: progress,
         observerLatitudeDegrees,
