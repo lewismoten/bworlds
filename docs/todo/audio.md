@@ -23,7 +23,7 @@
 - [ ] Add ability to use question-and-answer phrases so phrase 1 feels unfinished; phrase 2 resolved it
 - [ ] Respect musical meter where in 4/4 beats 1 and 3 feel stronger. Steble notes and chord tones there more often. Passing tones can happen between them.
 - [ ] Add ability to create rhythmic motifs so melody has a recognizable rhythm
-- [ ] Add ability to have rests/silence
+- [x] Add ability to have rests/silence
 - [ ] Add ability limit melodic jumps so larger leaps are rare and more often followed by movement back in the oppisite direction
 - [ ] Add ability for bass to primarily play chord roots, occasionally fifths, octaves, and passing tones
 - [ ] Generator(s) for the different layers should be aware of each layer, and work with each-other - set tempo + meter, chord progression, bass + harmony, work out melody, then percussion reacts to the structure

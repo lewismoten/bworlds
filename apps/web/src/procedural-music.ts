@@ -921,24 +921,28 @@ function scheduleThemeLayerNotes(
   while (nextNoteAtMs < options.nowMs + LOOKAHEAD_MS) {
     const role = selectInstrumentRole(stepIndex);
     const arrangementProfile = arrangement.roleProfiles[role];
+    const shouldRest =
+      role !== 'bass' &&
+      shouldRestAtThemeStep(theme, role, stepIndex, clusterX, clusterY);
     const shouldSkipRole =
-      typeof arrangementProfile.skipEvery === 'number' &&
-      arrangementProfile.skipEvery > 1 &&
-      stepIndex % arrangementProfile.skipEvery === 0;
+      shouldRest ||
+      (typeof arrangementProfile.skipEvery === 'number' &&
+        arrangementProfile.skipEvery > 1 &&
+        stepIndex % arrangementProfile.skipEvery === 0);
 
-    const note = createThemeNote({
-      startMs: nextNoteAtMs,
-      theme,
-      instrumentBank,
-      mood,
-      arrangement,
-      stepIndex,
-      clusterX,
-      clusterY,
-      emitter: options.emitter,
-      listener: options.listener,
-    });
     if (!shouldSkipRole) {
+      const note = createThemeNote({
+        startMs: nextNoteAtMs,
+        theme,
+        instrumentBank,
+        mood,
+        arrangement,
+        stepIndex,
+        clusterX,
+        clusterY,
+        emitter: options.emitter,
+        listener: options.listener,
+      });
       notes.push({
         ...note,
         volume: note.volume * options.gainMultiplier,
@@ -1205,6 +1209,28 @@ function resolveInstrumentSemitones(
     return [0, 7, 12, 3][stepIndex % 4] ?? 0;
   }
   return leadSemitones;
+}
+
+function shouldRestAtThemeStep(
+  theme: MusicRegionTheme,
+  role: Exclude<InstrumentRole, 'bass'>,
+  stepIndex: number,
+  clusterX: number,
+  clusterY: number
+): boolean {
+  if (stepIndex < 2) {
+    return false;
+  }
+  const phraseStep = stepIndex % theme.stepPattern.length;
+  if (phraseStep === 0 || phraseStep === theme.stepPattern.length - 1) {
+    return false;
+  }
+  const restChance =
+    role === 'lead' ? 0.18 : role === 'harmony' ? 0.14 : 0.22;
+  const variation =
+    hash2D(`${theme.id}:${role}:rest`, clusterX + stepIndex, clusterY) +
+    (theme.stepPattern[phraseStep] ?? 0) * 0.013;
+  return variation > 1 - restChance;
 }
 
 function normalizeWrappedProgress(value: number): number {

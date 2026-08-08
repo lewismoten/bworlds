@@ -215,6 +215,69 @@ describe('procedural music', () => {
     expect((winterLead?.frequency ?? 0) / (summerLead?.frequency ?? 1)).toBeGreaterThan(1.9);
   });
 
+  it('introduces deterministic rests without dropping the phrase anchors', () => {
+    const first = scheduleProceduralMusicNotes({
+      nowMs: 0,
+      tileKind: 'plains',
+      contextType: 'overworld',
+      dayProgress: 0.5,
+      yearProgress: 0.5,
+      clusterX: 0,
+      clusterY: 0,
+    });
+    const second = scheduleProceduralMusicNotes(
+      {
+        nowMs: 1000,
+        tileKind: 'plains',
+        contextType: 'overworld',
+        dayProgress: 0.5,
+        yearProgress: 0.5,
+        clusterX: 0,
+        clusterY: 0,
+      },
+      first.state
+    );
+    const third = scheduleProceduralMusicNotes(
+      {
+        nowMs: 2000,
+        tileKind: 'plains',
+        contextType: 'overworld',
+        dayProgress: 0.5,
+        yearProgress: 0.5,
+        clusterX: 0,
+        clusterY: 0,
+      },
+      second.state
+    );
+    const scheduledNotes = [...first.notes, ...second.notes, ...third.notes];
+    const theme = resolveMusicTheme('plains', 'overworld');
+    const stepMs = theme.noteDurationMs / resolveMusicMood({ dayProgress: 0.5 }).tempoMultiplier;
+
+    expect(scheduledNotes.some((note) => note.role === 'bass')).toBe(true);
+    expect(
+      scheduledNotes.some(
+        (note, index, notes) =>
+          index > 0 && note.startMs - notes[index - 1]!.startMs > stepMs * 1.5
+      )
+    ).toBe(true);
+
+    const repeated = scheduleProceduralMusicNotes(
+      {
+        nowMs: 2000,
+        tileKind: 'plains',
+        contextType: 'overworld',
+        dayProgress: 0.5,
+        yearProgress: 0.5,
+        clusterX: 0,
+        clusterY: 0,
+      },
+      second.state
+    );
+    expect(repeated.notes.map((note) => [note.role, note.startMs])).toEqual(
+      third.notes.map((note) => [note.role, note.startMs])
+    );
+  });
+
   it('applies softer panning and falloff for nearby ambient music emitters', () => {
     expect(
       getMusicSpatialMix({ x: 6, y: 0 }, { x: 0, y: 0 })
