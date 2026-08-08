@@ -2,6 +2,15 @@ type ViewModeLike = '2d' | '3d' | 'text';
 type SurfaceKind = string;
 type SoundEffectKind = 'footstep' | 'jump' | 'landing' | 'blocked';
 type SoundWaveform = OscillatorType;
+type SurfaceAudioFamily =
+  | 'default'
+  | 'road'
+  | 'bridge'
+  | 'dock'
+  | 'shore'
+  | 'interior'
+  | 'town'
+  | 'cave';
 
 export type ProceduralSoundEffect = {
   kind: SoundEffectKind;
@@ -39,16 +48,15 @@ type SurfaceAudioProfile = {
   waveform: SoundWaveform;
 };
 
-const DEFAULT_SURFACE_PROFILE: SurfaceAudioProfile = {
-  cadenceMs: 310,
-  footstepFrequency: 122,
-  landingFrequency: 92,
-  footstepVolume: 0.045,
-  landingVolume: 0.065,
-  waveform: 'triangle',
-};
-
-const SURFACE_AUDIO_PROFILES: Record<string, SurfaceAudioProfile> = {
+const SURFACE_AUDIO_PROFILES: Record<SurfaceAudioFamily, SurfaceAudioProfile> = {
+  default: {
+    cadenceMs: 310,
+    footstepFrequency: 122,
+    landingFrequency: 92,
+    footstepVolume: 0.045,
+    landingVolume: 0.065,
+    waveform: 'triangle',
+  },
   road: {
     cadenceMs: 265,
     footstepFrequency: 168,
@@ -73,7 +81,31 @@ const SURFACE_AUDIO_PROFILES: Record<string, SurfaceAudioProfile> = {
     landingVolume: 0.058,
     waveform: 'square',
   },
-  caveFloor: {
+  shore: {
+    cadenceMs: 305,
+    footstepFrequency: 132,
+    landingFrequency: 98,
+    footstepVolume: 0.034,
+    landingVolume: 0.05,
+    waveform: 'triangle',
+  },
+  interior: {
+    cadenceMs: 285,
+    footstepFrequency: 146,
+    landingFrequency: 104,
+    footstepVolume: 0.032,
+    landingVolume: 0.048,
+    waveform: 'square',
+  },
+  town: {
+    cadenceMs: 275,
+    footstepFrequency: 156,
+    landingFrequency: 112,
+    footstepVolume: 0.036,
+    landingVolume: 0.052,
+    waveform: 'square',
+  },
+  cave: {
     cadenceMs: 330,
     footstepFrequency: 108,
     landingFrequency: 82,
@@ -83,16 +115,40 @@ const SURFACE_AUDIO_PROFILES: Record<string, SurfaceAudioProfile> = {
   },
 };
 
+export function getSurfaceAudioFamily(
+  tileKind: SurfaceKind | undefined
+): SurfaceAudioFamily {
+  if (!tileKind) {
+    return 'default';
+  }
+  if (tileKind === 'cave-floor' || tileKind === 'cave-mushrooms') {
+    return 'cave';
+  }
+  if (tileKind === 'floor' || tileKind === 'shop' || tileKind === 'stairsUp' || tileKind === 'stairsDown') {
+    return 'interior';
+  }
+  if (tileKind === 'shore') {
+    return 'shore';
+  }
+  if (tileKind === 'town') {
+    return 'town';
+  }
+  if (tileKind === 'road') {
+    return 'road';
+  }
+  if (tileKind === 'bridge') {
+    return 'bridge';
+  }
+  if (tileKind === 'dock') {
+    return 'dock';
+  }
+  return 'default';
+}
+
 export function getSurfaceAudioProfile(
   tileKind: SurfaceKind | undefined
 ): SurfaceAudioProfile {
-  if (!tileKind) {
-    return DEFAULT_SURFACE_PROFILE;
-  }
-  if (tileKind === 'cave-floor' || tileKind === 'cave-mushrooms') {
-    return SURFACE_AUDIO_PROFILES.caveFloor;
-  }
-  return SURFACE_AUDIO_PROFILES[tileKind] ?? DEFAULT_SURFACE_PROFILE;
+  return SURFACE_AUDIO_PROFILES[getSurfaceAudioFamily(tileKind)];
 }
 
 export function createSoundEffectController(

@@ -7,7 +7,7 @@
 # Sound Effects
 - [x] Add sound effects for walking / jumping
 - [x] Add sound effects for walking into a tree
-- [ ] add sound effects for walking over different types of roads, bridges, etc.
+- [x] add sound effects for walking over different types of roads, bridges, etc.
 - [ ] Sound is played based on position of where it was emitted, and distance
 - [ ] When items, doors, corpses are opened and closed
 - [ ] Combat sounds with different weapons / magic

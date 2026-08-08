@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
   createSoundEffectController,
+  getSurfaceAudioFamily,
   getSurfaceAudioProfile,
   shouldPlayBlockedMovementSound,
   type ProceduralSoundEffect,
@@ -117,6 +118,51 @@ describe('sound effects', () => {
       expect.objectContaining({
         cadenceMs: 290,
         waveform: 'square',
+      })
+    );
+  });
+
+  it('maps walkable tiles into distinct surface families for footsteps', () => {
+    expect(getSurfaceAudioFamily('road')).toBe('road');
+    expect(getSurfaceAudioFamily('bridge')).toBe('bridge');
+    expect(getSurfaceAudioFamily('dock')).toBe('dock');
+    expect(getSurfaceAudioFamily('shore')).toBe('shore');
+    expect(getSurfaceAudioFamily('town')).toBe('town');
+    expect(getSurfaceAudioFamily('floor')).toBe('interior');
+    expect(getSurfaceAudioFamily('shop')).toBe('interior');
+    expect(getSurfaceAudioFamily('stairsUp')).toBe('interior');
+    expect(getSurfaceAudioFamily('cave-mushrooms')).toBe('cave');
+  });
+
+  it('varies cadence and pitch across road, bridge, shore, town, and interior surfaces', () => {
+    expect(getSurfaceAudioProfile('road')).toEqual(
+      expect.objectContaining({
+        cadenceMs: 265,
+        footstepFrequency: 168,
+      })
+    );
+    expect(getSurfaceAudioProfile('bridge')).toEqual(
+      expect.objectContaining({
+        cadenceMs: 290,
+        footstepFrequency: 188,
+      })
+    );
+    expect(getSurfaceAudioProfile('shore')).toEqual(
+      expect.objectContaining({
+        cadenceMs: 305,
+        footstepFrequency: 132,
+      })
+    );
+    expect(getSurfaceAudioProfile('town')).toEqual(
+      expect.objectContaining({
+        cadenceMs: 275,
+        footstepFrequency: 156,
+      })
+    );
+    expect(getSurfaceAudioProfile('floor')).toEqual(
+      expect.objectContaining({
+        cadenceMs: 285,
+        footstepFrequency: 146,
       })
     );
   });
