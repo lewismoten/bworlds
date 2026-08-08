@@ -154,10 +154,10 @@ That gives you something you can save from a slow scene, attach to a bug report,
 
 # Textures
 
-* [ ] Include texture count.
+* [x] Include texture count.
 * [ ] Include texture dimensions.
 * [ ] Include largest texture width/height.
-* [ ] Include decoded texture-memory estimate.
+* [x] Include decoded texture-memory estimate.
 * [ ] Include estimated GPU texture memory.
 * [ ] Include mipmap-memory estimate.
 * [ ] Include compressed versus uncompressed texture count.

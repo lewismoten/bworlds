@@ -155,6 +155,10 @@ export type DebugSnapshotExport = {
     textureMemoryEstimateMb: number;
     geometryMemoryCount: number;
   };
+  textures: {
+    textureCount: number;
+    decodedTextureMemoryEstimateMb: number;
+  };
   history: Array<{
     t: number;
     fps: number;
@@ -243,6 +247,10 @@ export function buildDebugSnapshotExport(
       textureCount: options.snapshot.textureCount,
       textureMemoryEstimateMb: options.snapshot.textureMemoryEstimateMb,
       geometryMemoryCount: options.snapshot.geometryMemoryCount,
+    },
+    textures: {
+      textureCount: options.snapshot.textureCount,
+      decodedTextureMemoryEstimateMb: options.snapshot.textureMemoryEstimateMb,
     },
     particles: {
       activeParticleSystems:

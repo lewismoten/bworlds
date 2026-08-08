@@ -299,6 +299,10 @@ describe('debug snapshot', () => {
       textureMemoryEstimateMb: 12.5,
       geometryMemoryCount: 63,
     });
+    expect(result.textures).toMatchObject({
+      textureCount: 7,
+      decodedTextureMemoryEstimateMb: 12.5,
+    });
     expect(result.history).toEqual([
       expect.objectContaining({
         t: -2,
