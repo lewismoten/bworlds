@@ -77,9 +77,9 @@ That gives you something you can save from a slow scene, attach to a bug report,
 * [ ] Include shadow-pass draw count.
 * [ ] Include post-processing passes.
 * [ ] Include GPU frame timing when available.
-* [ ] Include render-resolution dimensions.
-* [ ] Include device pixel ratio.
-* [ ] Include render scale.
+* [x] Include render-resolution dimensions.
+* [x] Include device pixel ratio.
+* [x] Include render scale.
 
 # Three.js Scene Graph
 

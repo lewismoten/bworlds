@@ -1278,6 +1278,16 @@ function resizeCanvas(): void {
   solarSystemPreview.resize();
 }
 
+function getCurrentRenderScale(
+  appliedPixelRatio: number,
+  devicePixelRatio: number
+): number {
+  if (!Number.isFinite(devicePixelRatio) || devicePixelRatio <= 0) {
+    return 1;
+  }
+  return appliedPixelRatio / devicePixelRatio;
+}
+
 function updateModelPreviewModeUi(): void {
   modelPreviewWorldButton?.classList.toggle(
     'is-active',
@@ -2684,6 +2694,8 @@ function render(): FrameLoopActivityLike {
       }
     );
     const performanceStats = performance as PerformanceWithMemory;
+    const devicePixelRatio = window.devicePixelRatio || 1;
+    const appliedRenderPixelRatio = Math.min(devicePixelRatio, 2);
     recordMaterialGrowthSample(debugResourceTrendState.materialSamples, {
       nowMs,
       materialCount: rendererStats.materialCount,
@@ -2725,6 +2737,13 @@ function render(): FrameLoopActivityLike {
       triangles: rendererStats.triangles,
       points: rendererStats.points,
       lines: rendererStats.lines,
+      renderWidth: Math.max(1, Math.floor(viewport2d.width)),
+      renderHeight: Math.max(1, Math.floor(viewport2d.height)),
+      devicePixelRatio,
+      renderScale: getCurrentRenderScale(
+        appliedRenderPixelRatio,
+        devicePixelRatio
+      ),
       sceneChildCount: rendererStats.sceneChildCount,
       visibleTileCount: rendererStats.visibleTileCount,
       visibleTreeCount: rendererStats.visibleTreeCount,

@@ -13,6 +13,10 @@ export type DebugSnapshot = {
   triangles: number;
   points: number;
   lines: number;
+  renderWidth?: number;
+  renderHeight?: number;
+  devicePixelRatio?: number;
+  renderScale?: number;
   sceneChildCount: number;
   visibleTileCount: number;
   visibleTreeCount: number;
@@ -131,6 +135,10 @@ export function getDebugSignature(snapshot: DebugSnapshot): string {
     snapshot.triangles,
     snapshot.points,
     snapshot.lines,
+    snapshot.renderWidth ?? 0,
+    snapshot.renderHeight ?? 0,
+    (snapshot.devicePixelRatio ?? 0).toFixed(2),
+    (snapshot.renderScale ?? 0).toFixed(2),
     snapshot.sceneChildCount,
     snapshot.visibleTileCount,
     snapshot.visibleTreeCount,
@@ -250,6 +258,9 @@ export function buildDebugMarkup(snapshot: DebugSnapshot): string {
     <div><dt>Triangles</dt><dd>${snapshot.triangles}</dd></div>
     <div><dt>GPU Points</dt><dd>${snapshot.points}</dd></div>
     <div><dt>GPU Lines</dt><dd>${snapshot.lines}</dd></div>
+    <div><dt>Render Resolution</dt><dd>${snapshot.renderWidth ?? 0} x ${snapshot.renderHeight ?? 0}</dd></div>
+    <div><dt>Device Pixel Ratio</dt><dd>${(snapshot.devicePixelRatio ?? 0).toFixed(2)}</dd></div>
+    <div><dt>Render Scale</dt><dd>${(snapshot.renderScale ?? 0).toFixed(2)}</dd></div>
     <div><dt>Scene Roots</dt><dd>${snapshot.sceneChildCount}</dd></div>
     <div><dt>Visible Tiles</dt><dd>${snapshot.visibleTileCount}</dd></div>
     <div><dt>Visible Trees</dt><dd>${snapshot.visibleTreeCount}</dd></div>

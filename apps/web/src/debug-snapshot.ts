@@ -123,6 +123,10 @@ export type DebugSnapshotExport = {
     vertices: number;
     points: number;
     lines: number;
+    renderWidth: number;
+    renderHeight: number;
+    devicePixelRatio: number;
+    renderScale: number;
     visibleInstancedMeshCount: number;
     renderedInstanceCount: number;
     visibleMeshCount: number;
@@ -252,6 +256,10 @@ export function buildDebugSnapshotExport(
       vertices: options.snapshot.vertexCount,
       points: options.snapshot.points,
       lines: options.snapshot.lines,
+      renderWidth: options.snapshot.renderWidth ?? 0,
+      renderHeight: options.snapshot.renderHeight ?? 0,
+      devicePixelRatio: options.snapshot.devicePixelRatio ?? 0,
+      renderScale: options.snapshot.renderScale ?? 0,
       visibleInstancedMeshCount: options.snapshot.visibleInstancedMeshCount ?? 0,
       renderedInstanceCount: options.snapshot.renderedInstanceCount ?? 0,
       visibleMeshCount: options.snapshot.visibleMeshCount,

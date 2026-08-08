@@ -43,6 +43,10 @@ describe('debug panel', () => {
       triangles: 2048,
       points: 96,
       lines: 18,
+      renderWidth: 1536,
+      renderHeight: 864,
+      devicePixelRatio: 2,
+      renderScale: 1,
       sceneChildCount: 7,
       visibleTileCount: 112,
       visibleTreeCount: 27,
@@ -105,6 +109,9 @@ describe('debug panel', () => {
     expect(buildDebugMarkup(snapshot)).toContain('Quality Limiters');
     expect(buildDebugMarkup(snapshot)).toContain('Level');
     expect(buildDebugMarkup(snapshot)).toContain('GPU Points');
+    expect(buildDebugMarkup(snapshot)).toContain('Render Resolution');
+    expect(buildDebugMarkup(snapshot)).toContain('Device Pixel Ratio');
+    expect(buildDebugMarkup(snapshot)).toContain('Render Scale');
     expect(buildDebugMarkup(snapshot)).toContain('Geometry Count');
     expect(buildDebugMarkup(snapshot)).toContain('Vertices');
     expect(buildDebugMarkup(snapshot)).toContain('Textures');
