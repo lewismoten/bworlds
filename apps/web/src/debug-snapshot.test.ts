@@ -278,6 +278,20 @@ describe('debug snapshot', () => {
       activeParticles: 90,
       maxParticlesDuringSamplingWindow: 96,
     });
+    expect(result.shaderPrograms).toMatchObject({
+      currentProgramCount: 12,
+    });
+    expect(result.world).toMatchObject({
+      currentMapId: 'town:3:7',
+      currentMapType: 'town',
+      currentMapDepth: 1,
+      visibleTileCount: 112,
+      pendingTileBuildCount: 6,
+      tileBuildsPerSecond: 11,
+      averageTileBuildMs: 2.4,
+      worstTileBuildMs: 6.8,
+      tileKinds: 'forest:48, plains:32',
+    });
     expect(result.resources).toMatchObject({
       uniqueMaterialCount: 24,
       geometryCount: 61,

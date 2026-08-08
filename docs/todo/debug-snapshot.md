@@ -123,7 +123,7 @@ That gives you something you can save from a slow scene, attach to a bug report,
 
 # Shader Programs
 
-* [ ] Include current shader-program count.
+* [x] Include current shader-program count.
 * [ ] Include total program compilations.
 * [ ] Include shader compilations during recent sampling window.
 * [ ] Include estimated shader compilation time.
@@ -190,20 +190,20 @@ That gives you something you can save from a slow scene, attach to a bug report,
 
 # World and Tile State
 
-* [ ] Include current map/level.
-* [ ] Include visible tile count.
+* [x] Include current map/level.
+* [x] Include visible tile count.
 * [ ] Include loaded tile count.
 * [ ] Include active tile count.
 * [ ] Include dormant tile count.
-* [ ] Include pending tile-build count.
-* [ ] Include tile builds per second.
+* [x] Include pending tile-build count.
+* [x] Include tile builds per second.
 * [ ] Include unique tile builds per second.
 * [ ] Include duplicate tile builds per second.
 * [ ] Include tile rebuilds per second.
-* [ ] Include average tile-build time.
-* [ ] Include worst tile-build time.
+* [x] Include average tile-build time.
+* [x] Include worst tile-build time.
 * [ ] Include tile-cache hit/miss rate.
-* [ ] Include tile counts by kind.
+* [x] Include tile counts by kind.
 * [ ] Include rendering cost by tile kind.
 * [ ] Include build cost by tile kind.
 * [ ] Include memory estimate by tile kind.

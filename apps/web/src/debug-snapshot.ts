@@ -134,6 +134,20 @@ export type DebugSnapshotExport = {
     activeParticles: number;
     maxParticlesDuringSamplingWindow: number;
   };
+  shaderPrograms: {
+    currentProgramCount: number;
+  };
+  world: {
+    currentMapId: string;
+    currentMapType?: string;
+    currentMapDepth: number;
+    visibleTileCount: number;
+    pendingTileBuildCount: number;
+    tileBuildsPerSecond: number;
+    averageTileBuildMs: number;
+    worstTileBuildMs: number;
+    tileKinds: string;
+  };
   resources: {
     uniqueMaterialCount: number;
     geometryCount: number;
@@ -238,6 +252,20 @@ export function buildDebugSnapshotExport(
         options.snapshot.activeParticleCount,
         ...options.history.map((sample) => sample.activeParticleCount ?? 0)
       ),
+    },
+    shaderPrograms: {
+      currentProgramCount: options.snapshot.programCount,
+    },
+    world: {
+      currentMapId: options.context.id,
+      currentMapType: options.context.type,
+      currentMapDepth: options.context.depth,
+      visibleTileCount: options.snapshot.visibleTileCount,
+      pendingTileBuildCount: options.snapshot.pendingTileCount,
+      tileBuildsPerSecond: options.snapshot.tileBuildsPerSecond,
+      averageTileBuildMs: options.snapshot.averageTileBuildMs,
+      worstTileBuildMs: options.snapshot.maxTileBuildMs,
+      tileKinds: options.snapshot.visibleTileKindSummary,
     },
     history: options.history.map((sample) => ({
       t: roundTenths((sample.nowMs - latestHistoryTime) / 1000),
