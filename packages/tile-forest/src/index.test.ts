@@ -6,7 +6,11 @@ vi.mock('@bworlds/three-support', () => ({
   },
 }));
 
-import { createForestTilePlugin, getForestFloorDetails } from './index.ts';
+import {
+  createForestTilePlugin,
+  getForestFloorDetails,
+  getForestLandmark,
+} from './index.ts';
 
 class FakeGeometry {
   constructor(..._args: number[]) {}
@@ -175,6 +179,34 @@ describe('tile forest', () => {
     ).toBe(true);
   });
 
+  it('generates an occasional mushroom or stone ring for large forests', () => {
+    const landmarks: Array<{
+      x: number;
+      y: number;
+      landmark: NonNullable<ReturnType<typeof getForestLandmark>>;
+    }> = [];
+
+    for (let tileY = 0; tileY < 24; tileY += 1) {
+      for (let tileX = 0; tileX < 24; tileX += 1) {
+        const landmark = getForestLandmark(tileX, tileY);
+        if (landmark) {
+          landmarks.push({ x: tileX, y: tileY, landmark });
+        }
+      }
+    }
+
+    expect(landmarks.length).toBeGreaterThan(0);
+    expect(
+      landmarks.some(({ landmark }) => landmark.kind === 'mushroom-ring')
+    ).toBe(true);
+    expect(
+      landmarks.some(({ landmark }) => landmark.kind === 'stone-ring')
+    ).toBe(true);
+
+    const first = landmarks[0];
+    expect(getForestLandmark(first.x, first.y)).toEqual(first.landmark);
+  });
+
   it('adds stump and fallen tree geometry only to full-detail forest models', () => {
     const plugin = createForestTilePlugin();
     const tile = plugin.tiles?.find((entry) => entry.kind === 'forest');
@@ -244,6 +276,77 @@ describe('tile forest', () => {
 
     expect(fullDetailKinds.size).toBeGreaterThan(0);
     expect(lowDetailKinds.size).toBe(0);
+  });
+
+  it('renders forest ring landmarks only in full-detail models', () => {
+    const plugin = createForestTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'forest');
+    const state = {
+      player: { x: 0, y: 0, facing: 0 },
+      getCurrentContext() {
+        return { id: 'overworld', type: 'overworld', depth: 0 };
+      },
+      getCurrentTile() {
+        return { kind: 'forest' };
+      },
+      getTileDefinition() {
+        return {
+          name: 'Forest',
+          color: '#000000',
+          miniColor: '#111111',
+          walkable: true,
+          wallHeight: 0.38,
+        };
+      },
+    };
+
+    let targetTile: { x: number; y: number } | null = null;
+    for (let tileY = 0; tileY < 24 && !targetTile; tileY += 1) {
+      for (let tileX = 0; tileX < 24; tileX += 1) {
+        if (getForestLandmark(tileX, tileY)) {
+          targetTile = { x: tileX, y: tileY };
+          break;
+        }
+      }
+    }
+
+    expect(targetTile).not.toBeNull();
+
+    const fullModel = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'forest' },
+      tileX: targetTile!.x,
+      tileY: targetTile!.y,
+      detailLevel: 'full',
+    }) as FakeGroup;
+    const lowModel = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'forest' },
+      tileX: targetTile!.x,
+      tileY: targetTile!.y,
+      detailLevel: 'low',
+    }) as FakeGroup;
+
+    const fullLandmarks = new Set<string>();
+    fullModel.traverse((node) => {
+      const kind = node.userData?.forestLandmark;
+      if (typeof kind === 'string') {
+        fullLandmarks.add(kind);
+      }
+    });
+
+    const lowLandmarks = new Set<string>();
+    lowModel.traverse((node) => {
+      const kind = node.userData?.forestLandmark;
+      if (typeof kind === 'string') {
+        lowLandmarks.add(kind);
+      }
+    });
+
+    expect(fullLandmarks.size).toBeGreaterThan(0);
+    expect(lowLandmarks.size).toBe(0);
   });
 
   it('shows fireflies only after dark', () => {

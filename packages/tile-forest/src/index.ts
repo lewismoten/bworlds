@@ -27,6 +27,7 @@ const TREE_BARK_COLOR = '#4a2f1b';
 const FIREFLY_KEY = 'forestFirefly';
 const FIREFLY_LIGHT_KEY = 'forestFireflyLight';
 const FLOOR_DETAIL_KEY = 'forestFloorDetail';
+const LANDMARK_KEY = 'forestLandmark';
 const TREE_CLUSTER_SIZE = 4;
 const TREE_REGION_SIZE = 14;
 
@@ -35,16 +36,10 @@ const treeStyleCache = new Map<string, ForestTreeStyle>();
 const resolveForestTreeDescriptors = createCoordinateValueResolver(
   treeDescriptorCache,
   ({ tileX, tileY }) => {
-    const groveCenterX =
-      (hash2D('forest-grove-center-x', tileX, tileY) - 0.5) * 0.36;
-    const groveCenterY =
-      (hash2D('forest-grove-center-y', tileX, tileY) - 0.5) * 0.36;
-    const loneTree =
-      hash2D('forest-lone-tree', tileX, tileY) > 0.9 &&
-      hash2D('forest-tree-count', tileX, tileY) < 0.25;
-    const count = loneTree
-      ? 1
-      : 3 + Math.floor(hash2D('forest-tree-count', tileX, tileY) * 4);
+    const groveCenter = getForestGroveCenter(tileX, tileY);
+    const loneTree = hasForestLoneTree(tileX, tileY);
+    const count = getForestTreeCount(tileX, tileY);
+    const landmark = getForestLandmark(tileX, tileY);
     const descriptors: ForestTreeDescriptor[] = [];
 
     for (let index = 0; index < count; index += 1) {
@@ -54,10 +49,10 @@ const resolveForestTreeDescriptors = createCoordinateValueResolver(
       const spread = loneTree ? 0.06 : outlierChance > 0.84 ? 0.28 : 0.17;
       const descriptor: ForestTreeDescriptor = {
         x: clampToTile(
-          groveCenterX + (hash2D(baseSeed, 1, 0) - 0.5) * spread * 2
+          groveCenter.x + (hash2D(baseSeed, 1, 0) - 0.5) * spread * 2
         ),
         y: clampToTile(
-          groveCenterY + (hash2D(baseSeed, 2, 0) - 0.5) * spread * 2
+          groveCenter.y + (hash2D(baseSeed, 2, 0) - 0.5) * spread * 2
         ),
         radius: 0.08 + hash2D(baseSeed, 3, 0) * 0.05,
         scale: 0.78 + hash2D(baseSeed, 4, 0) * 0.55,
@@ -95,10 +90,50 @@ const resolveForestTreeDescriptors = createCoordinateValueResolver(
         });
       }
 
+      if (landmark) {
+        const distanceFromLandmark = Math.hypot(
+          descriptor.x - landmark.x,
+          descriptor.y - landmark.y
+        );
+        if (distanceFromLandmark < landmark.ringRadius + 0.1) {
+          continue;
+        }
+      }
+
       descriptors.push(descriptor);
     }
 
     return descriptors;
+  }
+);
+const forestLandmarkCache = new Map<string, ForestLandmarkDescriptor | null>();
+const resolveForestLandmarkDescriptor = createCoordinateValueResolver(
+  forestLandmarkCache,
+  ({ tileX, tileY }) => {
+    const treeCount = getForestTreeCount(tileX, tileY);
+    if (treeCount < 5) {
+      return null;
+    }
+
+    const landmarkChance = hash2D('forest-landmark', tileX, tileY);
+    if (landmarkChance < 0.8) {
+      return null;
+    }
+
+    const groveCenter = getForestGroveCenter(tileX, tileY);
+    const kind: ForestLandmarkDescriptor['kind'] =
+      hash2D('forest-landmark-kind', tileX, tileY) > 0.54
+        ? 'mushroom-ring'
+        : 'stone-ring';
+    return {
+      kind,
+      x: clampToTile(groveCenter.x * 0.45),
+      y: clampToTile(groveCenter.y * 0.45),
+      rotation: hash2D('forest-landmark-rotation', tileX, tileY) * Math.PI * 2,
+      ringRadius: 0.16 + hash2D('forest-landmark-radius', tileX, tileY) * 0.05,
+      memberCount: 5 + Math.floor(hash2D('forest-landmark-members', tileX, tileY) * 3),
+      scale: 0.8 + hash2D('forest-landmark-scale', tileX, tileY) * 0.35,
+    };
   }
 );
 const forestFloorDetailCache = new Map<string, ForestFloorDetailDescriptor[]>();
@@ -297,6 +332,17 @@ export function createForestTilePlugin(): RuntimePlugin {
 
         if (detailLevel === 'full') {
           const floorDetailStyle = getTreeStyle(three, tileX, tileY, 0);
+          const landmark = getForestLandmark(tileX, tileY);
+          if (landmark) {
+            createForestLandmarkMeshes(
+              three,
+              group,
+              tileX,
+              tileY,
+              landmark,
+              floorDetailStyle
+            );
+          }
           for (const detail of getForestFloorDetails(tileX, tileY)) {
             if (detail.kind === 'stump') {
               const stump = new three.Mesh(
@@ -393,6 +439,33 @@ export function getForestFloorDetails(
   return resolveForestFloorDetailDescriptors(tileX, tileY);
 }
 
+export function getForestLandmark(
+  tileX: number,
+  tileY: number
+): ForestLandmarkDescriptor | null {
+  return resolveForestLandmarkDescriptor(tileX, tileY);
+}
+
+function getForestGroveCenter(tileX: number, tileY: number) {
+  return {
+    x: (hash2D('forest-grove-center-x', tileX, tileY) - 0.5) * 0.36,
+    y: (hash2D('forest-grove-center-y', tileX, tileY) - 0.5) * 0.36,
+  };
+}
+
+function hasForestLoneTree(tileX: number, tileY: number) {
+  return (
+    hash2D('forest-lone-tree', tileX, tileY) > 0.9 &&
+    hash2D('forest-tree-count', tileX, tileY) < 0.25
+  );
+}
+
+function getForestTreeCount(tileX: number, tileY: number) {
+  return hasForestLoneTree(tileX, tileY)
+    ? 1
+    : 3 + Math.floor(hash2D('forest-tree-count', tileX, tileY) * 4);
+}
+
 function getTreeVarietyIndex(
   tileX: number,
   tileY: number,
@@ -468,6 +541,32 @@ function getTreeStyle(
         metalness: 0.01,
         flatShading: true,
       }),
+      stoneMaterial: new three.MeshStandardMaterial({
+        color: tintHexColor(
+          '#7f847a',
+          0.86 + hash2D('tree-stone-tint', regionX, regionY + variety) * 0.24
+        ),
+        roughness: 0.99,
+        metalness: 0.01,
+        flatShading: true,
+      }),
+      mushroomCapMaterial: new three.MeshStandardMaterial({
+        color: tintHexColor(
+          '#c75442',
+          0.84 + hash2D('tree-mushroom-cap-tint', regionX + variety, regionY) * 0.28
+        ),
+        roughness: 0.88,
+        metalness: 0.01,
+        flatShading: true,
+      }),
+      mushroomStemMaterial: new three.MeshStandardMaterial({
+        color: tintHexColor(
+          '#ded6bb',
+          0.9 + hash2D('tree-mushroom-stem-tint', regionX, regionY + variety) * 0.14
+        ),
+        roughness: 0.94,
+        metalness: 0.01,
+      }),
     });
   }
 
@@ -542,6 +641,7 @@ function createForestFloorDetailDescriptor(
   trees: ForestTreeDescriptor[],
   detailIndex: number
 ): ForestFloorDetailDescriptor | null {
+  const landmark = getForestLandmark(tileX, tileY);
   const maxAttempts = 4;
   for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
     const seed = `forest-floor:${kind}:${tileX}:${tileY}:${detailIndex}:${attempt}`;
@@ -555,6 +655,12 @@ function createForestFloorDetailDescriptor(
 
     if (nearTree) {
       continue;
+    }
+    if (landmark) {
+      const distanceFromLandmark = Math.hypot(x - landmark.x, y - landmark.y);
+      if (distanceFromLandmark < landmark.ringRadius + 0.08) {
+        continue;
+      }
     }
 
     if (kind === 'stump') {
@@ -580,6 +686,66 @@ function createForestFloorDetailDescriptor(
   }
 
   return null;
+}
+
+function createForestLandmarkMeshes(
+  three: ThreeHostLike,
+  group: ThreeObject3DLike,
+  tileX: number,
+  tileY: number,
+  landmark: ForestLandmarkDescriptor,
+  style: ForestTreeStyle
+) {
+  for (let index = 0; index < landmark.memberCount; index += 1) {
+    const angle =
+      landmark.rotation + (index / landmark.memberCount) * Math.PI * 2;
+    const x = tileX + landmark.x + Math.cos(angle) * landmark.ringRadius;
+    const z = tileY + landmark.y + Math.sin(angle) * landmark.ringRadius;
+
+    if (landmark.kind === 'stone-ring') {
+      const stone = new three.Mesh(
+        new three.SphereGeometry(0.12, 6, 6),
+        style.stoneMaterial
+      );
+      stone.position.set(x, 0.12, z);
+      stone.scale.set(
+        0.7 * landmark.scale,
+        1 + (index % 2) * 0.25,
+        0.58 * landmark.scale
+      );
+      stone.rotation.y = angle;
+      stone.userData = {
+        ...(stone.userData ?? {}),
+        [LANDMARK_KEY]: landmark.kind,
+      };
+      group.add(stone);
+      continue;
+    }
+
+    const stem = new three.Mesh(
+      new three.CylinderGeometry(0.03, 0.05, 0.18, 6),
+      style.mushroomStemMaterial
+    );
+    stem.position.set(x, 0.1, z);
+    stem.scale.setScalar(landmark.scale);
+    stem.userData = {
+      ...(stem.userData ?? {}),
+      [LANDMARK_KEY]: landmark.kind,
+    };
+    group.add(stem);
+
+    const cap = new three.Mesh(
+      new three.SphereGeometry(0.11, 7, 7),
+      style.mushroomCapMaterial
+    );
+    cap.position.set(x, 0.18 * landmark.scale, z);
+    cap.scale.set(1.2 * landmark.scale, 0.62 * landmark.scale, 1.2 * landmark.scale);
+    cap.userData = {
+      ...(cap.userData ?? {}),
+      [LANDMARK_KEY]: landmark.kind,
+    };
+    group.add(cap);
+  }
 }
 
 function syncForestFireflies(
@@ -741,6 +907,9 @@ function createTreeFoliageTexture(
 interface ForestTreeStyle {
   trunkMaterial: ThreeMaterialLike;
   foliageMaterial: ThreeMaterialLike;
+  stoneMaterial: ThreeMaterialLike;
+  mushroomCapMaterial: ThreeMaterialLike;
+  mushroomStemMaterial: ThreeMaterialLike;
 }
 
 interface ForestBranchDescriptor {
@@ -780,4 +949,14 @@ interface ForestFloorDetailDescriptor {
   radius: number;
   height: number;
   length?: number;
+}
+
+interface ForestLandmarkDescriptor {
+  kind: 'mushroom-ring' | 'stone-ring';
+  x: number;
+  y: number;
+  rotation: number;
+  ringRadius: number;
+  memberCount: number;
+  scale: number;
 }
