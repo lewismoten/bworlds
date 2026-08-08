@@ -81,3 +81,4 @@ add a outer globe of stars in the sky that appear at night with procedurally gen
 - [x] Clicking "Timekeeper" should hide the Model and Compass
 - [x] Clicking "Model" should hide the compass and time keeper
 - [x] Clicking "Compass" should hide the time keeper and model
+- [x] Model is still open when Time keeper or Compass is selected

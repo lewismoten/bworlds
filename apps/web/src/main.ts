@@ -699,6 +699,9 @@ function setInspectorTab(tabId: string | undefined) {
     }
     card.classList.add('is-hidden');
   });
+  timeWheelCanvas?.classList.toggle('is-hidden', activeInspectorTab !== 'timekeeper');
+  celestialPreviewHost?.classList.toggle('is-hidden', activeInspectorTab !== 'model');
+  compassDialCanvas?.classList.toggle('is-hidden', activeInspectorTab !== 'compass');
   saveSession();
 }
 

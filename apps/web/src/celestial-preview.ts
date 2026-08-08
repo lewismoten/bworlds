@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import type { WorldEnvironmentLike } from '@bworlds/plugin-api';
 import type { getDaylightCycleState } from '@bworlds/core';
+import { getOrreryBodies } from './celestial-preview-model.ts';
 
 type DaylightCycleLike = ReturnType<typeof getDaylightCycleState>;
 
@@ -84,6 +85,8 @@ export function createCelestialPreviewRenderer(host: HTMLElement | null) {
   root.add(beltRoot);
   const orbitRoot = new THREE.Group();
   root.add(orbitRoot);
+  const orreryRoot = new THREE.Group();
+  root.add(orreryRoot);
 
   const sun = new THREE.Mesh(
     new THREE.SphereGeometry(0.95, 24, 24),
@@ -194,6 +197,7 @@ export function createCelestialPreviewRenderer(host: HTMLElement | null) {
     syncPreviewEvents(eventRoot, cycle);
     syncMilkyWayBelt(beltRoot, cycle);
     syncPreviewOrbits(orbitRoot, cycle);
+    syncPreviewOrrery(orreryRoot, cycle);
 
     const skyOpacity = 0.06 + cycle.starsOpacity * 0.12;
     (skyShell.material as THREE.MeshBasicMaterial).opacity = skyOpacity;
@@ -201,6 +205,7 @@ export function createCelestialPreviewRenderer(host: HTMLElement | null) {
     beltRoot.visible = cycle.starsOpacity > 0.02;
     eventRoot.visible = true;
     orbitRoot.visible = true;
+    orreryRoot.visible = true;
 
     renderer.render(scene, camera);
   }
@@ -412,6 +417,87 @@ function syncPreviewOrbits(root: THREE.Group, cycle: DaylightCycleLike) {
   });
 }
 
+function syncPreviewOrrery(root: THREE.Group, cycle: DaylightCycleLike) {
+  root.clear();
+  const bodies = getOrreryBodies(cycle);
+  root.position.set(0, -7.8, 0);
+  root.rotation.x = -Math.PI * 0.42;
+  root.rotation.z = cycle.solarDeclination * 0.08;
+
+  const base = new THREE.Mesh(
+    new THREE.CircleGeometry(7.3, 40),
+    new THREE.MeshBasicMaterial({
+      color: '#081019',
+      transparent: true,
+      opacity: 0.86,
+    })
+  );
+  root.add(base);
+
+  const baseGlow = new THREE.Mesh(
+    new THREE.RingGeometry(6.7, 7.4, 40),
+    new THREE.MeshBasicMaterial({
+      color: '#3e607f',
+      transparent: true,
+      opacity: 0.22,
+      side: THREE.DoubleSide,
+    })
+  );
+  root.add(baseGlow);
+
+  bodies.forEach((body) => {
+    if (body.orbitRadius > 0) {
+      root.add(
+        new THREE.LineLoop(
+          new THREE.BufferGeometry().setFromPoints(
+            createOrreryRingPoints(body.orbitRadius)
+          ),
+          new THREE.LineBasicMaterial({
+            color: body.type === 'moon' ? '#708fbb' : '#4b617a',
+            transparent: true,
+            opacity: body.type === 'moon' ? 0.28 : 0.2,
+          })
+        )
+      );
+    }
+
+    const angle = body.angle * Math.PI * 2 - Math.PI / 2;
+    const position = new THREE.Vector3(
+      Math.cos(angle) * body.orbitRadius,
+      Math.sin(angle) * body.orbitRadius,
+      0.12 + body.orbitRadius * 0.01
+    );
+    const marker = new THREE.Mesh(
+      new THREE.SphereGeometry(body.size, 14, 14),
+      new THREE.MeshBasicMaterial({
+        color: body.color,
+        transparent: true,
+        opacity: body.type === 'sun' ? 1 : 0.92,
+      })
+    );
+    marker.position.copy(position);
+    root.add(marker);
+
+    if (body.type === 'comet' && body.trailLength > 0) {
+      root.add(
+        new THREE.Line(
+          new THREE.BufferGeometry().setFromPoints([
+            position.clone().add(
+              new THREE.Vector3(-body.trailLength * 0.16, -body.trailLength * 0.06, 0)
+            ),
+            position,
+          ]),
+          new THREE.LineBasicMaterial({
+            color: body.color,
+            transparent: true,
+            opacity: 0.34,
+          })
+        )
+      );
+    }
+  });
+}
+
 function createPreviewPoint(azimuth: number, phi: number, radius: number) {
   const sinPhi = Math.sin(phi);
   return new THREE.Vector3(
@@ -457,6 +543,21 @@ function buildPreviewArc(
       opacity,
     })
   );
+}
+
+function createOrreryRingPoints(radius: number) {
+  const points: THREE.Vector3[] = [];
+  for (let index = 0; index <= 40; index += 1) {
+    const angle = (index / 40) * Math.PI * 2;
+    points.push(
+      new THREE.Vector3(
+        Math.cos(angle) * radius,
+        Math.sin(angle) * radius,
+        0
+      )
+    );
+  }
+  return points;
 }
 
 function previewConstellationPoint(
