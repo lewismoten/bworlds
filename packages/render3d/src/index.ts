@@ -103,6 +103,9 @@ type Render3DController = {
     transparentMaterialCount: number;
     alphaTestMaterialCount: number;
     doubleSidedMaterialCount: number;
+    fogMaterialCount: number;
+    customShaderMaterialCount: number;
+    materialTypes: string;
     geometryCount: number;
     textureMemoryEstimateBytes: number;
     geometryMemoryCount: number;
@@ -195,6 +198,9 @@ type SceneResourceStats = {
   transparentMaterialCount: number;
   alphaTestMaterialCount: number;
   doubleSidedMaterialCount: number;
+  fogMaterialCount: number;
+  customShaderMaterialCount: number;
+  materialTypes: string;
   geometryCount: number;
   textureMemoryEstimateBytes: number;
   treeCount: number;
@@ -818,6 +824,9 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       transparentMaterialCount: sceneResourceStats.transparentMaterialCount,
       alphaTestMaterialCount: sceneResourceStats.alphaTestMaterialCount,
       doubleSidedMaterialCount: sceneResourceStats.doubleSidedMaterialCount,
+      fogMaterialCount: sceneResourceStats.fogMaterialCount,
+      customShaderMaterialCount: sceneResourceStats.customShaderMaterialCount,
+      materialTypes: sceneResourceStats.materialTypes,
       geometryCount: sceneResourceStats.geometryCount,
       textureMemoryEstimateBytes: sceneResourceStats.textureMemoryEstimateBytes,
       geometryMemoryCount: renderer.info.memory.geometries,
@@ -2185,6 +2194,9 @@ export function collectSceneResourceStats(
     transparentMaterialCount: countMaterialsMatching(materials, isTransparentMaterial),
     alphaTestMaterialCount: countMaterialsMatching(materials, usesAlphaTest),
     doubleSidedMaterialCount: countMaterialsMatching(materials, isDoubleSidedMaterial),
+    fogMaterialCount: countMaterialsMatching(materials, receivesFog),
+    customShaderMaterialCount: countMaterialsMatching(materials, usesCustomShaders),
+    materialTypes: summarizeMaterialTypes(materials),
     geometryCount: geometries.size,
     textureMemoryEstimateBytes,
     treeCount,
@@ -2295,6 +2307,41 @@ function usesAlphaTest(material: THREE.Material): boolean {
 function isDoubleSidedMaterial(material: THREE.Material): boolean {
   const side = (material as THREE.Material & { side?: number }).side;
   return typeof side === 'number' && side === THREE.DoubleSide;
+}
+
+function receivesFog(material: THREE.Material): boolean {
+  return (material as THREE.Material & { fog?: boolean }).fog !== false;
+}
+
+function usesCustomShaders(material: THREE.Material): boolean {
+  const typedMaterial = material as THREE.Material & {
+    vertexShader?: unknown;
+    fragmentShader?: unknown;
+    type?: unknown;
+  };
+  return (
+    typedMaterial.type === 'ShaderMaterial' ||
+    typedMaterial.type === 'RawShaderMaterial' ||
+    typeof typedMaterial.vertexShader === 'string' ||
+    typeof typedMaterial.fragmentShader === 'string'
+  );
+}
+
+function summarizeMaterialTypes(materials: ReadonlySet<THREE.Material>): string {
+  const counts = new Map<string, number>();
+  for (const material of materials) {
+    const type = getMaterialTypeName(material);
+    counts.set(type, (counts.get(type) ?? 0) + 1);
+  }
+  return [...counts.entries()]
+    .sort((left, right) => left[0].localeCompare(right[0]))
+    .map(([type, count]) => `${type}:${count}`)
+    .join(', ');
+}
+
+function getMaterialTypeName(material: THREE.Material): string {
+  const type = (material as THREE.Material & { type?: unknown }).type;
+  return typeof type === 'string' && type.length > 0 ? type : 'Material';
 }
 
 function getInstancedMeshCount(object: unknown): number {

@@ -110,9 +110,9 @@ That gives you something you can save from a slow scene, attach to a bug report,
 * [x] Include transparent materials.
 * [x] Include materials using alpha testing.
 * [x] Include double-sided materials.
-* [ ] Include materials receiving fog.
-* [ ] Include materials using custom shaders.
-* [ ] Include materials by type.
+* [x] Include materials receiving fog.
+* [x] Include materials using custom shaders.
+* [x] Include materials by type.
 * [ ] Include materials created during the sampling window.
 * [ ] Include materials disposed during the sampling window.
 * [ ] Include peak material count.
