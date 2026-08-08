@@ -19,7 +19,7 @@
 - [X] Add steam whistles to steam boats to indicate arrival and leaving
 
 # Air Travel
-- [ ] Add the ability to ride or pilot a plane
+- [X] Add the ability to ride or pilot a plane
 - [X] Add the ability to ride or pilot a blimp
 - [X] Add the ability to ride or pilot a baloon
 - [ ] Add the ability to ride or pilot a tall ship with propellers

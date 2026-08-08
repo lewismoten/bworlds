@@ -10,6 +10,7 @@
     "@bworlds/map-canoe": "0.1.0",
     "@bworlds/map-depth": "0.1.0",
     "@bworlds/map-glider": "0.1.0",
+    "@bworlds/map-plane": "0.1.0",
     "@bworlds/map-lighthouse": "0.1.0",
     "@bworlds/map-observatory": "0.1.0",
     "@bworlds/map-overworld": "0.1.0",

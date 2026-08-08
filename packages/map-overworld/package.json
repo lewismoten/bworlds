@@ -9,6 +9,7 @@
     "@bworlds/map-boat": "0.1.0",
     "@bworlds/map-canoe": "0.1.0",
     "@bworlds/map-glider": "0.1.0",
+    "@bworlds/map-plane": "0.1.0",
     "@bworlds/map-support": "0.1.0",
     "@bworlds/overworld-support": "0.1.0",
     "@bworlds/plugin-api": "0.1.0"

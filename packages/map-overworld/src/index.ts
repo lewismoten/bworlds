@@ -19,6 +19,11 @@ import {
   findGliderLandingPoint,
   isGliderLaunchableLandTile,
 } from '@bworlds/map-glider';
+import {
+  type PlaneContext,
+  findPlaneLandingPoint,
+  isPlaneLaunchableLandTile,
+} from '@bworlds/map-plane';
 import { normalizeAngle } from '@bworlds/core';
 import { createContextMapPlugin, createEnterMapAction } from '@bworlds/map-support';
 import {
@@ -116,6 +121,10 @@ function createOverworldMap(
       const gliderAction = resolveGliderAction(x, y, state);
       if (gliderAction) {
         return gliderAction;
+      }
+      const planeAction = resolvePlaneAction(x, y, state);
+      if (planeAction) {
+        return planeAction;
       }
       const blimpAction = resolveBlimpAction(x, y, state);
       if (blimpAction) {
@@ -365,6 +374,57 @@ function createOverworldMap(
       id: `blimp:${x}:${y}:${landing.x}:${landing.y}`,
       label: 'Blimp',
       type: 'blimp',
+      depth: 1,
+      origin: { x, y },
+      destination: landing,
+    };
+
+    return createEnterMapAction({
+      context,
+      spawn: { x: 0, y: 1 },
+      facing,
+    });
+  }
+
+  function resolvePlaneAction(
+    x: number,
+    y: number,
+    state?: WorldStateLike & { player?: { facing?: number } }
+  ) {
+    const facing = state?.player?.facing ?? 0;
+    if (
+      !isPlaneLaunchableLandTile({
+        x,
+        y,
+        facing,
+        sampleTile: getTile,
+        isWalkable(kind) {
+          return Boolean(plugins.getTileDefinition(kind)?.walkable);
+        },
+        state,
+      })
+    ) {
+      return null;
+    }
+
+    const landing = findPlaneLandingPoint({
+      x,
+      y,
+      facing,
+      sampleTile: getTile,
+      isWalkable(kind) {
+        return Boolean(plugins.getTileDefinition(kind)?.walkable);
+      },
+      state,
+    });
+    if (!landing) {
+      return null;
+    }
+
+    const context: PlaneContext = {
+      id: `plane:${x}:${y}:${landing.x}:${landing.y}`,
+      label: 'Plane',
+      type: 'plane',
       depth: 1,
       origin: { x, y },
       destination: landing,

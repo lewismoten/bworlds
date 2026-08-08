@@ -8,6 +8,7 @@ import { createGliderMapPlugin } from '@bworlds/map-glider';
 import { createLighthouseMapPlugin } from '@bworlds/map-lighthouse';
 import { createObservatoryMapPlugin } from '@bworlds/map-observatory';
 import { createOverworldCompositionPlugin } from '@bworlds/map-overworld';
+import { createPlaneMapPlugin } from '@bworlds/map-plane';
 import { createQuarryMapPlugin } from '@bworlds/map-quarry';
 import { createShipMapPlugin } from '@bworlds/map-ship';
 import { createStationMapPlugin } from '@bworlds/map-station';
@@ -86,6 +87,10 @@ export function createDefaultMapPlugins(): RuntimePlugin[] {
     {
       create: createBlimpMapPlugin,
       order: { priority: 32.35 },
+    },
+    {
+      create: createPlaneMapPlugin,
+      order: { priority: 32.4 },
     },
     {
       create: createGliderMapPlugin,
