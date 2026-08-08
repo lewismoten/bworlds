@@ -27,6 +27,7 @@ export type DebugSnapshot = {
   pointsCount: number;
   spriteCount: number;
   lightCount: number;
+  shadowLightCount: number;
   materialCount: number;
   geometryCount: number;
   geometryMemoryCount: number;
@@ -100,6 +101,7 @@ export function getDebugSignature(snapshot: DebugSnapshot): string {
     snapshot.pointsCount,
     snapshot.spriteCount,
     snapshot.lightCount,
+    snapshot.shadowLightCount,
     snapshot.materialCount,
     snapshot.geometryCount,
     snapshot.geometryMemoryCount,
@@ -203,6 +205,7 @@ export function buildDebugMarkup(snapshot: DebugSnapshot): string {
     <div><dt>Points Nodes</dt><dd>${snapshot.pointsCount}</dd></div>
     <div><dt>Sprites</dt><dd>${snapshot.spriteCount}</dd></div>
     <div><dt>Lights</dt><dd>${snapshot.lightCount}</dd></div>
+    <div><dt>Shadow Lights</dt><dd>${snapshot.shadowLightCount}</dd></div>
     <div><dt>Objects / Tree</dt><dd>${objectsPerVisibleTree}</dd></div>
     <div><dt>Meshes / Tree</dt><dd>${meshesPerVisibleTree}</dd></div>
     <div><dt>Materials</dt><dd>${snapshot.materialCount}</dd></div>
@@ -378,6 +381,7 @@ export function getPerformanceWarnings(
   snapshot: Pick<
     DebugSnapshot,
     'frameMs' | 'targetFps' | 'drawCalls' | 'triangles' | 'object3dCount' | 'programCount'
+    | 'shadowLightCount'
   >,
   {
     maxFrameMs = 50,
@@ -387,6 +391,7 @@ export function getPerformanceWarnings(
     maxTrianglesAt30Fps = 700000,
     maxObject3dCount = 2400,
     maxProgramCount = 48,
+    maxShadowLightCount = 3,
   }: {
     maxFrameMs?: number;
     maxDrawCallsAt60Fps?: number;
@@ -395,6 +400,7 @@ export function getPerformanceWarnings(
     maxTrianglesAt30Fps?: number;
     maxObject3dCount?: number;
     maxProgramCount?: number;
+    maxShadowLightCount?: number;
   } = {}
 ): string[] {
   const warnings: string[] = [];
@@ -430,6 +436,12 @@ export function getPerformanceWarnings(
   if (snapshot.programCount > maxProgramCount) {
     warnings.push(
       `Shader program count is high (${snapshot.programCount} > ${maxProgramCount}).`
+    );
+  }
+
+  if (snapshot.shadowLightCount > maxShadowLightCount) {
+    warnings.push(
+      `Shadow light count is high (${snapshot.shadowLightCount} > ${maxShadowLightCount}).`
     );
   }
 

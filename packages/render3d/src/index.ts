@@ -77,6 +77,7 @@ type Render3DController = {
     pointsCount: number;
     spriteCount: number;
     lightCount: number;
+    shadowLightCount: number;
     materialCount: number;
     geometryCount: number;
     geometryMemoryCount: number;
@@ -143,6 +144,7 @@ type SceneResourceStats = {
   pointsCount: number;
   spriteCount: number;
   lightCount: number;
+  shadowLightCount: number;
   materialCount: number;
   geometryCount: number;
   treeCount: number;
@@ -731,6 +733,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       pointsCount: sceneResourceStats.pointsCount,
       spriteCount: sceneResourceStats.spriteCount,
       lightCount: sceneResourceStats.lightCount,
+      shadowLightCount: sceneResourceStats.shadowLightCount,
       materialCount: sceneResourceStats.materialCount,
       geometryCount: sceneResourceStats.geometryCount,
       geometryMemoryCount: renderer.info.memory.geometries,
@@ -1923,6 +1926,7 @@ export function collectSceneResourceStats(
   let pointsCount = 0;
   let spriteCount = 0;
   let lightCount = 0;
+  let shadowLightCount = 0;
   let treeCount = 0;
   let treeObjectCount = 0;
   let treeMeshCount = 0;
@@ -1943,6 +1947,9 @@ export function collectSceneResourceStats(
     }
     if ((child as THREE.Object3D).isLight) {
       lightCount += 1;
+      if ((child as THREE.Object3D & { castShadow?: boolean }).castShadow) {
+        shadowLightCount += 1;
+      }
     }
     if ((child as THREE.Object3D).userData?.renderStatKind === 'tree') {
       treeCount += 1;
@@ -1976,6 +1983,7 @@ export function collectSceneResourceStats(
     pointsCount,
     spriteCount,
     lightCount,
+    shadowLightCount,
     materialCount: materials.size,
     geometryCount: geometries.size,
     treeCount,

@@ -54,6 +54,7 @@ describe('debug panel', () => {
       pointsCount: 5,
       spriteCount: 9,
       lightCount: 12,
+      shadowLightCount: 2,
       materialCount: 24,
       geometryCount: 61,
       geometryMemoryCount: 63,
@@ -96,6 +97,7 @@ describe('debug panel', () => {
     expect(buildDebugMarkup(snapshot)).toContain('Points Nodes');
     expect(buildDebugMarkup(snapshot)).toContain('Sprites');
     expect(buildDebugMarkup(snapshot)).toContain('Lights');
+    expect(buildDebugMarkup(snapshot)).toContain('Shadow Lights');
     expect(buildDebugMarkup(snapshot)).toContain('Objects / Tree');
     expect(buildDebugMarkup(snapshot)).toContain('Meshes / Tree');
     expect(buildDebugMarkup(snapshot)).toContain('Objects / Tile');
@@ -332,7 +334,7 @@ describe('debug panel', () => {
     ).toEqual([]);
   });
 
-  it('warns when frame time, draw calls, triangle count, object count, or program count exceed budgets', () => {
+  it('warns when frame time, draw calls, triangle count, object count, program count, or shadow lights exceed budgets', () => {
     expect(
       getPerformanceWarnings({
         frameMs: 54.2,
@@ -341,6 +343,7 @@ describe('debug panel', () => {
         triangles: 470000,
         object3dCount: 2601,
         programCount: 52,
+        shadowLightCount: 4,
       })
     ).toEqual([
       'Frame time is over budget (54.2 ms > 50.0 ms).',
@@ -348,6 +351,7 @@ describe('debug panel', () => {
       'Triangle count is high (470000 > 450000).',
       'Three.js object count is high (2601 > 2400).',
       'Shader program count is high (52 > 48).',
+      'Shadow light count is high (4 > 3).',
     ]);
 
     expect(
@@ -358,6 +362,7 @@ describe('debug panel', () => {
         triangles: 650000,
         object3dCount: 2200,
         programCount: 32,
+        shadowLightCount: 2,
       })
     ).toEqual([]);
   });

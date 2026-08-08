@@ -67,6 +67,7 @@ describe('render3d visibility helpers', () => {
       pointsCount: 0,
       spriteCount: 0,
       lightCount: 0,
+      shadowLightCount: 0,
       materialCount: 2,
       geometryCount: 2,
       treeCount: 1,
@@ -106,20 +107,22 @@ describe('render3d visibility helpers', () => {
     expect(child.material.dispose).toHaveBeenCalledTimes(1);
   });
 
-  it('records additional object-type counts for points, sprites, and lights', () => {
+  it('records additional object-type counts for points, sprites, lights, and shadow lights', () => {
     const root = createMockObject3D(undefined, [
       createMockObject3D(undefined, [], undefined, {}, 'Points'),
       createMockObject3D(undefined, [], undefined, {}, 'Sprite'),
-      createMockObject3D(undefined, [], undefined, {}, 'PointLight', true),
+      createMockObject3D(undefined, [], undefined, {}, 'PointLight', true, true),
+      createMockObject3D(undefined, [], undefined, {}, 'PointLight', true, false),
     ]);
 
     expect(collectSceneResourceStats(root as never)).toEqual({
-      object3dCount: 4,
+      object3dCount: 5,
       groupCount: 1,
       meshCount: 0,
       pointsCount: 1,
       spriteCount: 1,
-      lightCount: 1,
+      lightCount: 2,
+      shadowLightCount: 1,
       materialCount: 0,
       geometryCount: 0,
       treeCount: 0,
@@ -176,6 +179,7 @@ describe('render3d visibility helpers', () => {
       pointsCount: 0,
       spriteCount: 0,
       lightCount: 0,
+      shadowLightCount: 0,
       materialCount: 2,
       geometryCount: 2,
       treeCount: 1,
@@ -932,12 +936,14 @@ function createMockObject3D(
   geometry?: unknown,
   userData: Record<string, unknown> = {},
   type = geometry ? 'Mesh' : 'Group',
-  isLight = false
+  isLight = false,
+  castShadow = false
 ) {
   const node = {
     visible: true,
     type,
     isLight,
+    castShadow,
     userData,
     material,
     geometry,

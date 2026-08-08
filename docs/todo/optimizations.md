@@ -938,7 +938,7 @@ You could even have debug-mode warnings automatically trigger when thresholds ar
 
 * [X] Warn when draw calls exceed the target.
 * [X] Warn when triangle count becomes excessive.
-* [ ] Warn when too many shadow lights exist.
+* [X] Warn when too many shadow lights exist.
 * [ ] Warn when active audio sources exceed the budget.
 * [X] Warn when chunk-generation queues back up.
 * [X] Warn when a frame exceeds 50 ms.

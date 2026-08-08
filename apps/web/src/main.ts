@@ -2592,6 +2592,7 @@ function render(): FrameLoopActivityLike {
       pointsCount: rendererStats.pointsCount,
       spriteCount: rendererStats.spriteCount,
       lightCount: rendererStats.lightCount,
+      shadowLightCount: rendererStats.shadowLightCount,
       materialCount: rendererStats.materialCount,
       geometryCount: rendererStats.geometryCount,
       geometryMemoryCount: rendererStats.geometryMemoryCount,
