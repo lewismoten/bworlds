@@ -1749,7 +1749,9 @@ function collectCurrentDebugSnapshot(
     reducedSimulationEntityCount: worldStats.reducedSimulationEntityCount,
     activeAudioSourceCount:
       soundEffects.getActiveSourceCount() + musicController.getActiveSourceCount(),
+    materialRefCount: rendererStats.materialRefCount,
     materialCount: rendererStats.materialCount,
+    sharedMaterialCount: rendererStats.sharedMaterialCount,
     geometryCount: rendererStats.geometryCount,
     vertexCount: rendererStats.vertexCount,
     geometryMemoryCount: rendererStats.geometryMemoryCount,

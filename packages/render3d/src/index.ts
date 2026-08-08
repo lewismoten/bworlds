@@ -96,7 +96,9 @@ type Render3DController = {
     dynamicLightCount: number;
     shadowLightCount: number;
     vertexCount: number;
+    materialRefCount: number;
     materialCount: number;
+    sharedMaterialCount: number;
     geometryCount: number;
     textureMemoryEstimateBytes: number;
     geometryMemoryCount: number;
@@ -182,7 +184,9 @@ type SceneResourceStats = {
   dynamicLightCount: number;
   shadowLightCount: number;
   vertexCount: number;
+  materialRefCount: number;
   materialCount: number;
+  sharedMaterialCount: number;
   geometryCount: number;
   textureMemoryEstimateBytes: number;
   treeCount: number;
@@ -799,7 +803,9 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       dynamicLightCount: sceneResourceStats.dynamicLightCount,
       shadowLightCount: sceneResourceStats.shadowLightCount,
       vertexCount: sceneResourceStats.vertexCount,
+      materialRefCount: sceneResourceStats.materialRefCount,
       materialCount: sceneResourceStats.materialCount,
+      sharedMaterialCount: sceneResourceStats.sharedMaterialCount,
       geometryCount: sceneResourceStats.geometryCount,
       textureMemoryEstimateBytes: sceneResourceStats.textureMemoryEstimateBytes,
       geometryMemoryCount: renderer.info.memory.geometries,
@@ -2022,6 +2028,7 @@ export function collectSceneResourceStats(
   let dynamicLightCount = 0;
   let shadowLightCount = 0;
   let vertexCount = 0;
+  let materialRefCount = 0;
   let textureMemoryEstimateBytes = 0;
   let treeCount = 0;
   let treeObjectCount = 0;
@@ -2109,6 +2116,7 @@ export function collectSceneResourceStats(
     }
 
     const childMaterials = getObjectMaterials(renderable);
+    materialRefCount += childMaterials.length;
     if (childMaterials.length > 0 && renderable.geometry) {
       meshCount += 1;
       if (renderable.visible !== false) {
@@ -2154,7 +2162,9 @@ export function collectSceneResourceStats(
     dynamicLightCount,
     shadowLightCount,
     vertexCount,
+    materialRefCount,
     materialCount: materials.size,
+    sharedMaterialCount: Math.max(0, materialRefCount - materials.size),
     geometryCount: geometries.size,
     textureMemoryEstimateBytes,
     treeCount,

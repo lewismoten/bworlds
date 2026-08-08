@@ -59,7 +59,9 @@ export type DebugSnapshot = {
   fullSimulationEntityCount: number;
   reducedSimulationEntityCount: number;
   activeAudioSourceCount: number;
+  materialRefCount?: number;
   materialCount: number;
+  sharedMaterialCount?: number;
   geometryCount: number;
   vertexCount: number;
   geometryMemoryCount: number;

@@ -154,7 +154,9 @@ describe('debug snapshot', () => {
         fullSimulationEntityCount: 21,
         reducedSimulationEntityCount: 2,
         activeAudioSourceCount: 6,
+        materialRefCount: 38,
         materialCount: 24,
+        sharedMaterialCount: 14,
         geometryCount: 61,
         vertexCount: 14432,
         geometryMemoryCount: 63,
@@ -317,6 +319,15 @@ describe('debug snapshot', () => {
       lineObjectCount: 7,
       cameraCount: 1,
       lightCount: 12,
+    });
+    expect(result.resources).toMatchObject({
+      totalMaterialReferences: 38,
+      uniqueMaterialCount: 24,
+      sharedMaterialCount: 14,
+      geometryCount: 61,
+      textureCount: 7,
+      textureMemoryEstimateMb: 12.5,
+      geometryMemoryCount: 63,
     });
     expect(result.particles).toMatchObject({
       activeParticleSystems: 4,

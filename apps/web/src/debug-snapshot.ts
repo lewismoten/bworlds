@@ -181,7 +181,9 @@ export type DebugSnapshotExport = {
     thresholds: LodThresholdSummary;
   };
   resources: {
+    totalMaterialReferences: number;
     uniqueMaterialCount: number;
+    sharedMaterialCount: number;
     geometryCount: number;
     textureCount: number;
     textureMemoryEstimateMb: number;
@@ -303,7 +305,9 @@ export function buildDebugSnapshotExport(
       lightCount: options.snapshot.lightCount,
     },
     resources: {
+      totalMaterialReferences: options.snapshot.materialRefCount ?? 0,
       uniqueMaterialCount: options.snapshot.materialCount,
+      sharedMaterialCount: options.snapshot.sharedMaterialCount ?? 0,
       geometryCount: options.snapshot.geometryCount,
       textureCount: options.snapshot.textureCount,
       textureMemoryEstimateMb: options.snapshot.textureMemoryEstimateMb,
