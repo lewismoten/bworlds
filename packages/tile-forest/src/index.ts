@@ -1,5 +1,6 @@
 import { hash2D, octaveNoise2D } from '@bworlds/core';
 import { createPlainsBackedTilePainter } from '@bworlds/paint-support';
+import { getPoiLightActivation, markPoiLightEmitter } from '@bworlds/poi-support';
 import { createTilePlugin } from '@bworlds/plugin-api';
 import {
   createCoordinateValueResolver,
@@ -17,11 +18,14 @@ import type {
   ThreeGeometryLike,
   ThreeHostLike,
   ThreeMaterialLike,
+  ThreeObject3DLike,
 } from '@bworlds/plugin-api';
 
 const TILE_PIXEL_SIZE = 16;
 const TREE_FOLIAGE_COLOR = '#163b20';
 const TREE_BARK_COLOR = '#4a2f1b';
+const FIREFLY_KEY = 'forestFirefly';
+const FIREFLY_LIGHT_KEY = 'forestFireflyLight';
 const TREE_CLUSTER_SIZE = 4;
 const TREE_REGION_SIZE = 14;
 
@@ -251,7 +255,19 @@ export function createForestTilePlugin(): RuntimePlugin {
           group.add(tree);
         }
 
+        if (detailLevel === 'full') {
+          for (const firefly of getForestFireflies(three, tileX, tileY)) {
+            group.add(firefly);
+          }
+        }
+
         return group;
+      },
+      sync3DModel({ model, cycle, timeMs = 0 }) {
+        if (!model || typeof model !== 'object') {
+          return;
+        }
+        syncForestFireflies(model as ThreeObject3DLike, cycle, timeMs);
       },
       canOccupy3D({
         tileX,
@@ -372,6 +388,125 @@ function getTreeStyle(
   }
 
   return treeStyleCache.get(key)!;
+}
+
+function getForestFireflies(three: ThreeHostLike, tileX: number, tileY: number) {
+  const count = 2 + Math.floor(hash2D('forest-firefly-count', tileX, tileY) * 2);
+  const fireflies = [];
+
+  for (let index = 0; index < count; index += 1) {
+    const group = new three.Group();
+    const phase = hash2D('forest-firefly-phase', tileX * 17 + index, tileY * 13);
+    const drift = hash2D('forest-firefly-drift', tileX + index, tileY - index);
+    group.userData = {
+      ...(group.userData ?? {}),
+      [FIREFLY_KEY]: {
+        phase,
+        drift,
+        baseX: (hash2D('forest-firefly-x', tileX + index, tileY) - 0.5) * 0.56,
+        baseZ: (hash2D('forest-firefly-z', tileX, tileY + index) - 0.5) * 0.56,
+        baseY: 0.32 + hash2D('forest-firefly-y', tileX - index, tileY + index) * 0.34,
+      },
+    };
+
+    const glow = markPoiLightEmitter(
+      new three.Mesh(
+        new three.SphereGeometry(0.028, 6, 6),
+        new three.MeshStandardMaterial({
+          color: '#d9ff8a',
+          emissive: '#d9ff8a',
+          emissiveIntensity: 0,
+          roughness: 0.18,
+          metalness: 0.02,
+        })
+      ),
+      {
+        kind: 'emissive-mesh',
+        dayIntensity: 0,
+        nightIntensity: 0.92,
+      }
+    );
+    group.add(glow);
+
+    if (index === 0) {
+      const light = markPoiLightEmitter(
+        new three.PointLight('#d9ff8a', 0, 1.9, 2.1),
+        {
+          kind: 'point-light',
+          nightIntensity: 0.22,
+          visibleThreshold: 0.02,
+        }
+      );
+      light.userData = {
+        ...(light.userData ?? {}),
+        [FIREFLY_LIGHT_KEY]: true,
+      };
+      light.visible = false;
+      group.add(light);
+    }
+
+    fireflies.push(group);
+  }
+
+  return fireflies;
+}
+
+function syncForestFireflies(
+  root: ThreeObject3DLike,
+  cycle: { daylight: number; twilight: number; night: number },
+  timeMs: number
+) {
+  const activation = getPoiLightActivation(cycle);
+  root.traverse?.((node) => {
+    const firefly = node.userData?.[FIREFLY_KEY] as
+      | {
+          phase: number;
+          drift: number;
+          baseX: number;
+          baseY: number;
+          baseZ: number;
+        }
+      | undefined;
+    if (!firefly) {
+      return;
+    }
+
+    const flutter =
+      timeMs * (0.0014 + firefly.drift * 0.0011) + firefly.phase * Math.PI * 2;
+    const pulse = (Math.sin(flutter * 1.9) + 1) * 0.5;
+    const swayX = Math.cos(flutter) * 0.05;
+    const swayY = Math.sin(flutter * 1.6) * 0.04;
+    const swayZ = Math.sin(flutter * 1.2) * 0.05;
+    node.position.set(
+      firefly.baseX + swayX,
+      firefly.baseY + swayY,
+      firefly.baseZ + swayZ
+    );
+    node.visible = activation > 0.08;
+
+    node.traverse?.((child) => {
+      if (child === node) {
+        return;
+      }
+      const tagged = child as ThreeObject3DLike & {
+        material?: ThreeMaterialLike | ThreeMaterialLike[];
+        intensity?: number;
+      };
+      if (child.userData?.poiNightLightEmitter && tagged.material) {
+        const materials = Array.isArray(tagged.material)
+          ? tagged.material
+          : [tagged.material];
+        materials.forEach((material) => {
+          (material as ThreeMaterialLike & { emissiveIntensity?: number }).emissiveIntensity =
+            activation * pulse * 0.92;
+        });
+      }
+      if (child.userData?.[FIREFLY_LIGHT_KEY] && typeof tagged.intensity === 'number') {
+        tagged.intensity = activation * pulse * 0.22;
+        child.visible = tagged.intensity > 0.02;
+      }
+    });
+  });
 }
 
 function averageMoisture(
