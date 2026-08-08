@@ -83,6 +83,7 @@ import {
   getHmrNoticeVisibleUntil,
   shouldShowHmrNotice,
 } from './hmr-notice.ts';
+import { restore3dViewportKeyboardFocus } from './viewport-focus.ts';
 import {
   buildEventSummaryMarkup,
   buildStatusMarkup,
@@ -199,6 +200,8 @@ root.innerHTML = `
           <div
             id="viewport-3d"
             class="viewport-3d is-hidden"
+            tabindex="0"
+            aria-label="3D world view"
             aria-hidden="true"
           ></div>
           <div
@@ -1077,6 +1080,7 @@ function toggleView(): void {
   }
   state.viewMode = cycleViewMode(state.viewMode);
   syncViewportModeUi();
+  restore3dViewportKeyboardFocus(state.viewMode, viewport3d);
   saveSession();
   requestRender();
 }
@@ -2411,6 +2415,7 @@ viewport3d?.addEventListener('pointerdown', (event) => {
   if (state.viewMode !== '3d' || event.button !== 0) {
     return;
   }
+  restore3dViewportKeyboardFocus(state.viewMode, viewport3d);
   mouseLookState.dragging = true;
   mouseLookState.pointerId = event.pointerId;
   mouseLookState.startPointerX = event.clientX;
