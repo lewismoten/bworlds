@@ -131,4 +131,6 @@ add a outer globe of stars in the sky that appear at night with procedurally gen
 - [x] Save compass heading in persisted state
 - [x] Compass heading is clipped on the edge of the screen. Just keep heading number in the closest corner
 - [x] Heading below compass duplicates the heading number next to the arrow.
-- [ ] When activating celestial events, I'm unable to see any difference.
+- [x] When activating celestial events, I'm unable to see any difference.
+- [ ] Compass lost its dragging ability on the heading.
+- [ ] If I click an area, and the heading is already marked, smoothly rotate the arrow to the new heading and ease-in.

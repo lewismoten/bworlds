@@ -1162,9 +1162,18 @@ function render() {
   celestialPreview.render(displayCycle, environment, state.player.facing, generator);
   solarSystemPreview.render(displayCycle);
   if (eventSummary) {
+    const eventDetails = getActiveCelestialEventDetails(displayCycle);
     eventSummary.innerHTML = `
       <div class="event-summary-label">Mode: ${formatCelestialEventModeLabel(celestialEventModeState.mode)}</div>
       <div class="event-summary-active">${describeActiveCelestialEvents(displayCycle)}</div>
+      <div class="event-summary-chips">
+        ${eventDetails
+          .map(
+            (detail) =>
+              `<span class="event-summary-chip event-summary-chip-${detail.kind}">${detail.label}</span>`
+          )
+          .join('')}
+      </div>
     `;
   }
   drawCompassDial(
@@ -1235,6 +1244,57 @@ function describeActiveCelestialEvents(
     activeEvents.push('Comet visible');
   }
   return activeEvents.length > 0 ? activeEvents.join(' • ') : 'No active events';
+}
+
+function getActiveCelestialEventDetails(
+  cycle: ReturnType<typeof getDaylightCycleState> & {
+    auroraBands?: Array<{ intensity: number }>;
+    visibleEvents?: Array<{ type?: string; visibility?: number }>;
+  }
+) {
+  const details: Array<{
+    kind: 'aurora' | 'meteor-shower' | 'comet' | 'none';
+    label: string;
+  }> = [];
+
+  const auroraCount = (cycle.auroraBands ?? []).filter(
+    (band) => band.intensity > 0.03
+  ).length;
+  const meteorCount = (cycle.visibleEvents ?? []).filter(
+    (event) =>
+      event.type === 'meteor-shower' && (event.visibility ?? 0) > 0.03
+  ).length;
+  const cometCount = (cycle.visibleEvents ?? []).filter(
+    (event) => event.type === 'comet' && (event.visibility ?? 0) > 0.03
+  ).length;
+
+  if (auroraCount > 0) {
+    details.push({
+      kind: 'aurora',
+      label: `${auroraCount} aurora band${auroraCount === 1 ? '' : 's'}`,
+    });
+  }
+  if (meteorCount > 0) {
+    details.push({
+      kind: 'meteor-shower',
+      label: `${meteorCount} meteor stream${meteorCount === 1 ? '' : 's'}`,
+    });
+  }
+  if (cometCount > 0) {
+    details.push({
+      kind: 'comet',
+      label: `${cometCount} comet trail${cometCount === 1 ? '' : 's'}`,
+    });
+  }
+
+  if (details.length === 0) {
+    details.push({
+      kind: 'none',
+      label: 'Switch to Model to inspect sky changes',
+    });
+  }
+
+  return details;
 }
 
 function updateDisplayedCycle(cycle: ReturnType<typeof getDaylightCycleState>) {

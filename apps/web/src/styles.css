@@ -318,6 +318,44 @@ button:hover {
   line-height: 1.4;
 }
 
+.event-summary-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-top: 0.2rem;
+}
+
+.event-summary-chip {
+  padding: 0.38rem 0.62rem;
+  border-radius: 999px;
+  font-size: 0.76rem;
+  line-height: 1;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.event-summary-chip-aurora {
+  border-color: rgba(126, 255, 188, 0.36);
+  background: rgba(126, 255, 188, 0.12);
+  color: #d9fff0;
+}
+
+.event-summary-chip-meteor-shower {
+  border-color: rgba(223, 244, 255, 0.32);
+  background: rgba(223, 244, 255, 0.12);
+  color: #f0fbff;
+}
+
+.event-summary-chip-comet {
+  border-color: rgba(173, 220, 255, 0.32);
+  background: rgba(173, 220, 255, 0.12);
+  color: #eaf7ff;
+}
+
+.event-summary-chip-none {
+  color: var(--muted);
+}
+
 .model-preview-card {
   display: grid;
   gap: 0.55rem;

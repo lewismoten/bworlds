@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { getDaylightCycleState } from '@bworlds/core';
-import { getSolarSystemBodyPositions } from './solar-system-preview.ts';
+import {
+  getSolarSystemBodyPositions,
+  getSolarSystemEventMarkerStates,
+} from './solar-system-preview.ts';
 
 describe('solar system preview helpers', () => {
   it('maps orrery bodies into stable preview positions', () => {
@@ -20,5 +23,62 @@ describe('solar system preview helpers', () => {
         (entry) => entry.id.startsWith('planet:') && entry.position.length() > 0.5
       )
     ).toBe(true);
+  });
+
+  it('maps active aurora, meteor, and comet events into shell markers', () => {
+    const cycle = {
+      ...getDaylightCycleState(210000, {
+        observerLatitudeDegrees: 24,
+      }),
+      auroraBands: [
+        {
+          id: 'aurora-test',
+          azimuthCenter: 0.4,
+          span: 0.8,
+          altitude: 0.24,
+          height: 0.18,
+          intensity: 0.8,
+          wavePhase: 0.2,
+          colorA: '#7effbc',
+          colorB: '#46d8ff',
+        },
+      ],
+      visibleEvents: [
+        {
+          type: 'meteor-shower' as const,
+          name: 'Burst',
+          progress: 0.2,
+          intensity: 0.8,
+          visibility: 0.9,
+          azimuth: -0.5,
+          altitude: 0.3,
+          color: '#dff4ff',
+          size: 0.3,
+          trailLength: 2.4,
+        },
+        {
+          type: 'comet' as const,
+          name: 'Guest',
+          progress: 0.5,
+          intensity: 0.7,
+          visibility: 0.85,
+          azimuth: 1.1,
+          altitude: 0.22,
+          color: '#dff6ff',
+          size: 0.48,
+          trailLength: 2.8,
+        },
+      ],
+    };
+
+    const markers = getSolarSystemEventMarkerStates(cycle as any);
+
+    expect(markers.map((marker) => marker.type)).toEqual([
+      'aurora',
+      'meteor-shower',
+      'comet',
+    ]);
+    expect(markers.every((marker) => marker.position.length() > 14)).toBe(true);
+    expect(markers.every((marker) => marker.intensity > 0.5)).toBe(true);
   });
 });

@@ -47,6 +47,8 @@ export function createSolarSystemPreviewRenderer(host: HTMLElement | null) {
   root.add(bodyRoot);
   const shellRoot = new THREE.Group();
   root.add(shellRoot);
+  const eventRoot = new THREE.Group();
+  root.add(eventRoot);
   const labelRoot = new THREE.Group();
   root.add(labelRoot);
 
@@ -117,6 +119,7 @@ export function createSolarSystemPreviewRenderer(host: HTMLElement | null) {
     syncSolarSystemOrbits(orbitRoot, cycle);
     syncSolarSystemBodies(bodyRoot, cycle, sunLight);
     syncSolarSystemShell(shellRoot, cycle);
+    syncSolarSystemEvents(eventRoot, cycle);
     syncSolarSystemLabels(labelRoot, cycle);
     renderer.render(scene, camera);
   }
@@ -136,6 +139,54 @@ export function getSolarSystemBodyPositions(
     id: body.id,
     position: createSolarSystemBodyPosition(body),
   }));
+}
+
+export function getSolarSystemEventMarkerStates(
+  cycle: DaylightCycleLike,
+  shellRadius = 15.4
+) {
+  const markers: Array<{
+    type: 'aurora' | 'meteor-shower' | 'comet';
+    position: THREE.Vector3;
+    intensity: number;
+    color: string;
+    trailLength?: number;
+  }> = [];
+
+  (cycle.auroraBands ?? []).forEach((band) => {
+    markers.push({
+      type: 'aurora',
+      position: createShellAltitudePoint(
+        band.azimuthCenter,
+        band.altitude + band.height * 0.55,
+        shellRadius - 0.28
+      ),
+      intensity: band.intensity,
+      color: band.colorA,
+    });
+  });
+
+  (cycle.visibleEvents ?? []).forEach((event) => {
+    if (
+      event.type !== 'meteor-shower' &&
+      event.type !== 'comet'
+    ) {
+      return;
+    }
+    markers.push({
+      type: event.type,
+      position: createShellAltitudePoint(
+        event.azimuth,
+        event.altitude,
+        shellRadius - 0.18
+      ),
+      intensity: event.visibility * event.intensity,
+      color: event.color,
+      trailLength: event.trailLength,
+    });
+  });
+
+  return markers;
 }
 
 function syncBackgroundStars(root: THREE.Group, cycle: DaylightCycleLike) {
@@ -343,6 +394,70 @@ function syncSolarSystemLabels(root: THREE.Group, cycle: DaylightCycleLike) {
   });
 }
 
+function syncSolarSystemEvents(root: THREE.Group, cycle: DaylightCycleLike) {
+  root.clear();
+  const markers = getSolarSystemEventMarkerStates(cycle);
+  markers.forEach((marker, index) => {
+    const glow = new THREE.Sprite(
+      new THREE.SpriteMaterial({
+        color: marker.color,
+        transparent: true,
+        opacity:
+          marker.type === 'aurora'
+            ? 0.18 + marker.intensity * 0.3
+            : 0.26 + marker.intensity * 0.46,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending,
+      })
+    );
+    glow.position.copy(marker.position);
+    const scale =
+      marker.type === 'aurora'
+        ? 1.8 + marker.intensity * 2.2
+        : 0.65 + marker.intensity * 1.25;
+    glow.scale.set(scale, scale, 1);
+    root.add(glow);
+
+    if (marker.type === 'aurora') {
+      root.add(
+        new THREE.Line(
+          new THREE.BufferGeometry().setFromPoints([
+            marker.position.clone().add(new THREE.Vector3(-1.3, 0.18, 0)),
+            marker.position.clone().add(new THREE.Vector3(0, 0.4, 0)),
+            marker.position.clone().add(new THREE.Vector3(1.3, -0.18, 0)),
+          ]),
+          new THREE.LineBasicMaterial({
+            color: '#c7f8ff',
+            transparent: true,
+            opacity: 0.28 + marker.intensity * 0.34,
+          })
+        )
+      );
+      return;
+    }
+
+    const trail = new THREE.Line(
+      new THREE.BufferGeometry().setFromPoints([
+        marker.position.clone().add(
+          new THREE.Vector3(
+            (marker.type === 'meteor-shower' ? 1 : -1) *
+              Math.max(0.7, (marker.trailLength ?? 1.4) * 0.42),
+            marker.type === 'meteor-shower' ? 0.28 : -0.14,
+            index % 2 === 0 ? 0.2 : -0.2
+          )
+        ),
+        marker.position,
+      ]),
+      new THREE.LineBasicMaterial({
+        color: marker.color,
+        transparent: true,
+        opacity: 0.24 + marker.intensity * 0.42,
+      })
+    );
+    root.add(trail);
+  });
+}
+
 function createSolarSystemOrbitRing(body: OrreryBodyLike) {
   const points: THREE.Vector3[] = [];
   for (let index = 0; index <= 56; index += 1) {
@@ -374,6 +489,15 @@ function createShellPoint(azimuth: number, phi: number, radius: number) {
     Math.cos(phi) * radius,
     Math.sin(azimuth) * sinPhi * radius
   );
+}
+
+function createShellAltitudePoint(
+  azimuth: number,
+  altitude: number,
+  radius: number
+) {
+  const phi = ((1 - altitude) * Math.PI) / 2;
+  return createShellPoint(azimuth, phi, radius);
 }
 
 function createShellConstellationPoint(
