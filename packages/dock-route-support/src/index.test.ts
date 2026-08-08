@@ -70,6 +70,8 @@ describe('dock route support', () => {
 
     expect(route?.boatName).toEqual(expect.any(String));
     expect(route?.currentStopIndex).toBe(0);
+    expect(route?.stops.length).toBeGreaterThanOrEqual(2);
+    expect(route?.stops.length).toBeLessThanOrEqual(5);
     expect(route?.stops).toEqual([
       expect.objectContaining({ name: 'Beacon Point' }),
       expect.objectContaining({ name: 'Crescent Watch' }),

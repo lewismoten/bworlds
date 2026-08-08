@@ -660,6 +660,11 @@ describe('tile route', () => {
           type: 'ship',
           label: expect.any(String),
           destination: { x: 11, y: 22 },
+          routeStops: [
+            expect.objectContaining({ name: 'Beacon Point' }),
+            expect.objectContaining({ name: 'Crescent Watch' }),
+            expect.objectContaining({ name: 'Harbor Market' }),
+          ],
         }),
         spawn: { x: 0, y: 4 },
       })
