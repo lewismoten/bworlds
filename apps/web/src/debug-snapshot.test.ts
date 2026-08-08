@@ -164,6 +164,8 @@ describe('debug snapshot', () => {
         fogMaterialCount: 19,
         customShaderMaterialCount: 2,
         materialTypes: 'MeshBasicMaterial:4, MeshStandardMaterial:14, ShaderMaterial:2, SpriteMaterial:4',
+        materialsCreatedDuringSamplingWindow: 5,
+        materialsDisposedDuringSamplingWindow: 2,
         geometryCount: 61,
         vertexCount: 14432,
         geometryMemoryCount: 63,
@@ -339,6 +341,8 @@ describe('debug snapshot', () => {
       customShaderMaterialCount: 2,
       materialTypes:
         'MeshBasicMaterial:4, MeshStandardMaterial:14, ShaderMaterial:2, SpriteMaterial:4',
+      materialsCreatedDuringSamplingWindow: 5,
+      materialsDisposedDuringSamplingWindow: 2,
       geometryCount: 61,
       textureCount: 7,
       textureMemoryEstimateMb: 12.5,

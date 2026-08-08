@@ -191,6 +191,8 @@ export type DebugSnapshotExport = {
     fogMaterialCount: number;
     customShaderMaterialCount: number;
     materialTypes: string;
+    materialsCreatedDuringSamplingWindow: number;
+    materialsDisposedDuringSamplingWindow: number;
     geometryCount: number;
     textureCount: number;
     textureMemoryEstimateMb: number;
@@ -324,6 +326,10 @@ export function buildDebugSnapshotExport(
       customShaderMaterialCount:
         options.snapshot.customShaderMaterialCount ?? 0,
       materialTypes: options.snapshot.materialTypes ?? '',
+      materialsCreatedDuringSamplingWindow:
+        options.snapshot.materialsCreatedDuringSamplingWindow ?? 0,
+      materialsDisposedDuringSamplingWindow:
+        options.snapshot.materialsDisposedDuringSamplingWindow ?? 0,
       geometryCount: options.snapshot.geometryCount,
       textureCount: options.snapshot.textureCount,
       textureMemoryEstimateMb: options.snapshot.textureMemoryEstimateMb,

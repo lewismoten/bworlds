@@ -113,8 +113,8 @@ That gives you something you can save from a slow scene, attach to a bug report,
 * [x] Include materials receiving fog.
 * [x] Include materials using custom shaders.
 * [x] Include materials by type.
-* [ ] Include materials created during the sampling window.
-* [ ] Include materials disposed during the sampling window.
+* [x] Include materials created during the sampling window.
+* [x] Include materials disposed during the sampling window.
 * [ ] Include peak material count.
 * [ ] Include material-cache hit rate.
 * [ ] Include material-cache miss rate.

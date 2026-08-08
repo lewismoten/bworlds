@@ -1759,6 +1759,10 @@ function collectCurrentDebugSnapshot(
     fogMaterialCount: rendererStats.fogMaterialCount,
     customShaderMaterialCount: rendererStats.customShaderMaterialCount,
     materialTypes: rendererStats.materialTypes,
+    materialsCreatedDuringSamplingWindow:
+      rendererStats.materialsCreatedDuringSamplingWindow,
+    materialsDisposedDuringSamplingWindow:
+      rendererStats.materialsDisposedDuringSamplingWindow,
     geometryCount: rendererStats.geometryCount,
     vertexCount: rendererStats.vertexCount,
     geometryMemoryCount: rendererStats.geometryMemoryCount,

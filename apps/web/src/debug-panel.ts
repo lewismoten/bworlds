@@ -69,6 +69,8 @@ export type DebugSnapshot = {
   fogMaterialCount?: number;
   customShaderMaterialCount?: number;
   materialTypes?: string;
+  materialsCreatedDuringSamplingWindow?: number;
+  materialsDisposedDuringSamplingWindow?: number;
   geometryCount: number;
   vertexCount: number;
   geometryMemoryCount: number;

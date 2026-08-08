@@ -8,6 +8,7 @@ import {
   DEFAULT_CAMERA_PITCH,
   getRecentCountStats,
   getRecentDurationStats,
+  getRecentOwnedMaterialLifecycleCounts,
   getRenderChurnStats,
   getSharedBoxGeometry,
   getSharedPlaneGeometry,
@@ -36,6 +37,7 @@ import {
   recordRecentCountMetric,
   recordRecentMetric,
   recordRecentDurationMetric,
+  resetOwnedMaterialLifecycleMetrics,
   shouldProcessPendingWorldBuildEntry,
   shouldEvaluateTileModelDetailLevel,
   shouldSyncTileModelDetailLevels,
@@ -149,6 +151,35 @@ describe('render3d visibility helpers', () => {
 
     expect(sourceMaterial.dispose).toHaveBeenCalledTimes(0);
     expect(child.material.dispose).toHaveBeenCalledTimes(1);
+  });
+
+  it('tracks owned material creation and disposal within the recent sampling window', () => {
+    resetOwnedMaterialLifecycleMetrics();
+    const nowSpy = vi.spyOn(performance, 'now');
+    const sourceMaterial = createMockMaterial();
+    const child = createMockObject3D(sourceMaterial);
+    const root = createMockObject3D(undefined, [child]);
+
+    nowSpy.mockReturnValue(1000);
+    prepareObjectForDistanceFade(root as never);
+    expect(getRecentOwnedMaterialLifecycleCounts(1000)).toEqual({
+      createdCount: 1,
+      disposedCount: 0,
+    });
+
+    nowSpy.mockReturnValue(1400);
+    disposeObject3DResources(root as never);
+    expect(getRecentOwnedMaterialLifecycleCounts(1400)).toEqual({
+      createdCount: 1,
+      disposedCount: 1,
+    });
+    expect(getRecentOwnedMaterialLifecycleCounts(2401)).toEqual({
+      createdCount: 0,
+      disposedCount: 0,
+    });
+
+    nowSpy.mockRestore();
+    resetOwnedMaterialLifecycleMetrics();
   });
 
   it('records additional object-type counts for points, lines, sprites, visible meshes, dynamic lights, and shadow lights', () => {

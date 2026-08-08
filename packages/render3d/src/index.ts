@@ -106,6 +106,8 @@ type Render3DController = {
     fogMaterialCount: number;
     customShaderMaterialCount: number;
     materialTypes: string;
+    materialsCreatedDuringSamplingWindow: number;
+    materialsDisposedDuringSamplingWindow: number;
     geometryCount: number;
     textureMemoryEstimateBytes: number;
     geometryMemoryCount: number;
@@ -201,6 +203,8 @@ type SceneResourceStats = {
   fogMaterialCount: number;
   customShaderMaterialCount: number;
   materialTypes: string;
+  materialsCreatedDuringSamplingWindow: number;
+  materialsDisposedDuringSamplingWindow: number;
   geometryCount: number;
   textureMemoryEstimateBytes: number;
   treeCount: number;
@@ -290,6 +294,8 @@ const FALLBACK_TILE_DEFINITION = {
 const distanceFadeTargetCache = new WeakMap<THREE.Object3D, DistanceFadeTargets>();
 const ownedDisposableGeometries = new WeakSet<object>();
 const ownedDisposableMaterials = new WeakSet<object>();
+const ownedMaterialCreationTimestamps: number[] = [];
+const ownedMaterialDisposalTimestamps: number[] = [];
 const sharedBoxGeometryCache = new Map<string, THREE.BoxGeometry>();
 const sharedPlaneGeometryCache = new Map<string, THREE.PlaneGeometry>();
 
@@ -819,15 +825,23 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       vertexCount: sceneResourceStats.vertexCount,
       materialRefCount: sceneResourceStats.materialRefCount,
       materialCount: sceneResourceStats.materialCount,
-      sharedMaterialCount: sceneResourceStats.sharedMaterialCount,
-      clonedMaterialCount: sceneResourceStats.clonedMaterialCount,
-      transparentMaterialCount: sceneResourceStats.transparentMaterialCount,
-      alphaTestMaterialCount: sceneResourceStats.alphaTestMaterialCount,
-      doubleSidedMaterialCount: sceneResourceStats.doubleSidedMaterialCount,
-      fogMaterialCount: sceneResourceStats.fogMaterialCount,
-      customShaderMaterialCount: sceneResourceStats.customShaderMaterialCount,
-      materialTypes: sceneResourceStats.materialTypes,
-      geometryCount: sceneResourceStats.geometryCount,
+    sharedMaterialCount: sceneResourceStats.sharedMaterialCount,
+    clonedMaterialCount: sceneResourceStats.clonedMaterialCount,
+    transparentMaterialCount: sceneResourceStats.transparentMaterialCount,
+    alphaTestMaterialCount: sceneResourceStats.alphaTestMaterialCount,
+    doubleSidedMaterialCount: sceneResourceStats.doubleSidedMaterialCount,
+    fogMaterialCount: sceneResourceStats.fogMaterialCount,
+    customShaderMaterialCount: sceneResourceStats.customShaderMaterialCount,
+    materialTypes: sceneResourceStats.materialTypes,
+    materialsCreatedDuringSamplingWindow: countRecentMetricEvents(
+      ownedMaterialCreationTimestamps,
+      nowMs
+    ),
+    materialsDisposedDuringSamplingWindow: countRecentMetricEvents(
+      ownedMaterialDisposalTimestamps,
+      nowMs
+    ),
+    geometryCount: sceneResourceStats.geometryCount,
       textureMemoryEstimateBytes: sceneResourceStats.textureMemoryEstimateBytes,
       geometryMemoryCount: renderer.info.memory.geometries,
       treeObjectCount: sceneResourceStats.treeObjectCount,
@@ -1924,6 +1938,7 @@ function markOwnedGeometry<T extends object>(geometry: T): T {
 
 function markOwnedMaterial<T extends object>(material: T): T {
   ownedDisposableMaterials.add(material);
+  recordRecentMetric(ownedMaterialCreationTimestamps, performance.now());
   return material;
 }
 
@@ -2020,6 +2035,7 @@ export function disposeObject3DResources(
         continue;
       }
       disposedMaterials.add(material);
+      recordRecentMetric(ownedMaterialDisposalTimestamps, performance.now());
       (material as THREE.Material & { dispose?: () => void }).dispose?.();
     }
   });
@@ -2197,6 +2213,8 @@ export function collectSceneResourceStats(
     fogMaterialCount: countMaterialsMatching(materials, receivesFog),
     customShaderMaterialCount: countMaterialsMatching(materials, usesCustomShaders),
     materialTypes: summarizeMaterialTypes(materials),
+    materialsCreatedDuringSamplingWindow: 0,
+    materialsDisposedDuringSamplingWindow: 0,
     geometryCount: geometries.size,
     textureMemoryEstimateBytes,
     treeCount,
@@ -2475,6 +2493,32 @@ export function countRecentMetricEvents(
 ): number {
   pruneRecentMetricTimestamps(timestamps, nowMs, windowMs);
   return timestamps.length;
+}
+
+export function getRecentOwnedMaterialLifecycleCounts(
+  nowMs: number,
+  windowMs = 1000
+): {
+  createdCount: number;
+  disposedCount: number;
+} {
+  return {
+    createdCount: countRecentMetricEvents(
+      ownedMaterialCreationTimestamps,
+      nowMs,
+      windowMs
+    ),
+    disposedCount: countRecentMetricEvents(
+      ownedMaterialDisposalTimestamps,
+      nowMs,
+      windowMs
+    ),
+  };
+}
+
+export function resetOwnedMaterialLifecycleMetrics(): void {
+  ownedMaterialCreationTimestamps.length = 0;
+  ownedMaterialDisposalTimestamps.length = 0;
 }
 
 export function recordRecentDurationMetric(
