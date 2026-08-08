@@ -15,6 +15,7 @@ import {
   getForestLandmark,
   getForestMeadows,
   getForestOwls,
+  getForestTreeForms,
   getForestTreeHollows,
 } from './index.ts';
 
@@ -323,6 +324,34 @@ describe('tile forest', () => {
     expect(getForestMeadows(first.x, first.y)).toEqual(first.meadows);
   });
 
+  it('generates deterministic pine tree forms for some forest tiles', () => {
+    const sampleTiles: Array<{
+      x: number;
+      y: number;
+      forms: ReturnType<typeof getForestTreeForms>;
+    }> = [];
+
+    for (let tileY = 0; tileY < 24; tileY += 1) {
+      for (let tileX = 0; tileX < 24; tileX += 1) {
+        const forms = getForestTreeForms(tileX, tileY);
+        if (forms.includes('pine')) {
+          sampleTiles.push({ x: tileX, y: tileY, forms });
+        }
+      }
+    }
+
+    expect(sampleTiles.length).toBeGreaterThan(0);
+    expect(
+      sampleTiles.some(({ forms }) => forms.includes('pine'))
+    ).toBe(true);
+    expect(
+      sampleTiles.some(({ forms }) => forms.includes('broadleaf'))
+    ).toBe(true);
+
+    const first = sampleTiles[0];
+    expect(getForestTreeForms(first.x, first.y)).toEqual(first.forms);
+  });
+
   it('generates deterministic birds for some forest tiles', () => {
     const sampleTiles: Array<{
       x: number;
@@ -398,6 +427,74 @@ describe('tile forest', () => {
     expect(lowModel.children.length).toBeLessThan(fullModel.children.length);
     expect(
       lowModel.children.every((tree) => tree.children.length <= 2)
+    ).toBe(true);
+  });
+
+  it('renders pine trees distinctly in full and low detail forest models', () => {
+    const plugin = createForestTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'forest');
+    const state = {
+      player: { x: 0, y: 0, facing: 0 },
+      getCurrentContext() {
+        return { id: 'overworld', type: 'overworld', depth: 0 };
+      },
+      getCurrentTile() {
+        return { kind: 'forest' };
+      },
+      getTileDefinition() {
+        return {
+          name: 'Forest',
+          color: '#000000',
+          miniColor: '#111111',
+          walkable: true,
+          wallHeight: 0.38,
+        };
+      },
+    };
+
+    let targetTile: { x: number; y: number } | null = null;
+    for (let tileY = 0; tileY < 24 && !targetTile; tileY += 1) {
+      for (let tileX = 0; tileX < 24; tileX += 1) {
+        if (getForestTreeForms(tileX, tileY).includes('pine')) {
+          targetTile = { x: tileX, y: tileY };
+          break;
+        }
+      }
+    }
+
+    expect(targetTile).not.toBeNull();
+
+    const fullModel = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'forest' },
+      tileX: targetTile!.x,
+      tileY: targetTile!.y,
+      detailLevel: 'full',
+    }) as FakeGroup;
+    const lowModel = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'forest' },
+      tileX: targetTile!.x,
+      tileY: targetTile!.y,
+      detailLevel: 'low',
+    }) as FakeGroup;
+
+    const fullPines = fullModel.children.filter(
+      (child) => child.userData?.forestTreeForm === 'pine'
+    );
+    const lowPines = lowModel.children.filter(
+      (child) => child.userData?.forestTreeForm === 'pine'
+    );
+
+    expect(fullPines.length).toBeGreaterThan(0);
+    expect(lowPines.length).toBeGreaterThan(0);
+    expect(
+      fullPines.some((tree) => tree.children.length > 3)
+    ).toBe(true);
+    expect(
+      lowPines.every((tree) => tree.children.length <= 2)
     ).toBe(true);
   });
 

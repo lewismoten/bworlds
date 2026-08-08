@@ -34,6 +34,7 @@ const OWL_KEY = 'forestOwl';
 const CARVING_KEY = 'forestCarving';
 const MEADOW_KEY = 'forestMeadow';
 const BIRD_KEY = 'forestBird';
+const TREE_FORM_KEY = 'forestTreeForm';
 const TREE_CLUSTER_SIZE = 4;
 const TREE_REGION_SIZE = 14;
 
@@ -64,35 +65,72 @@ const resolveForestTreeDescriptors = createCoordinateValueResolver(
         scale: 0.78 + hash2D(baseSeed, 4, 0) * 0.55,
         trunkHeight: 0.72 + hash2D(baseSeed, 5, 0) * 0.45,
         variety,
+        form: getTreeForm(variety),
         branches: [],
         foliage: [],
       };
 
-      const branchCount = 1 + Math.floor(hash2D(baseSeed, 6, 0) * 3);
+      const branchCount =
+        descriptor.form === 'pine'
+          ? 3 + Math.floor(hash2D(baseSeed, 6, 0) * 3)
+          : 1 + Math.floor(hash2D(baseSeed, 6, 0) * 3);
       for (let branchIndex = 0; branchIndex < branchCount; branchIndex += 1) {
+        const branchHeightFactor =
+          descriptor.form === 'pine'
+            ? 0.32 + hash2D(baseSeed, 10 + branchIndex, 2) * 0.48
+            : 0.45 + hash2D(baseSeed, 10 + branchIndex, 2) * 0.28;
         descriptor.branches.push({
-          x: (hash2D(baseSeed, 10 + branchIndex, 1) - 0.5) * 0.16,
-          y:
-            descriptor.trunkHeight *
-            (0.45 + hash2D(baseSeed, 10 + branchIndex, 2) * 0.28),
-          z: (hash2D(baseSeed, 10 + branchIndex, 3) - 0.5) * 0.16,
-          length: 0.72 + hash2D(baseSeed, 10 + branchIndex, 4) * 0.45,
-          pitch: 0.45 + hash2D(baseSeed, 10 + branchIndex, 5) * 0.35,
+          x:
+            (hash2D(baseSeed, 10 + branchIndex, 1) - 0.5) *
+            (descriptor.form === 'pine' ? 0.08 : 0.16),
+          y: descriptor.trunkHeight * branchHeightFactor,
+          z:
+            (hash2D(baseSeed, 10 + branchIndex, 3) - 0.5) *
+            (descriptor.form === 'pine' ? 0.08 : 0.16),
+          length:
+            descriptor.form === 'pine'
+              ? 0.82 + hash2D(baseSeed, 10 + branchIndex, 4) * 0.34
+              : 0.72 + hash2D(baseSeed, 10 + branchIndex, 4) * 0.45,
+          pitch:
+            descriptor.form === 'pine'
+              ? 1 + hash2D(baseSeed, 10 + branchIndex, 5) * 0.28
+              : 0.45 + hash2D(baseSeed, 10 + branchIndex, 5) * 0.35,
           roll: -1.25 + hash2D(baseSeed, 10 + branchIndex, 6) * Math.PI * 0.9,
         });
       }
 
-      const foliageCount = 3 + Math.floor(hash2D(baseSeed, 30, 0) * 3);
+      const foliageCount =
+        descriptor.form === 'pine'
+          ? 4 + Math.floor(hash2D(baseSeed, 30, 0) * 2)
+          : 3 + Math.floor(hash2D(baseSeed, 30, 0) * 3);
       for (let foliageIndex = 0; foliageIndex < foliageCount; foliageIndex += 1) {
+        const layerProgress =
+          foliageCount <= 1 ? 0 : foliageIndex / (foliageCount - 1);
+        const pineLayerScale = 1 - layerProgress * 0.45;
         descriptor.foliage.push({
-          x: (hash2D(baseSeed, 40 + foliageIndex, 1) - 0.5) * 0.28,
+          x:
+            (hash2D(baseSeed, 40 + foliageIndex, 1) - 0.5) *
+            (descriptor.form === 'pine' ? 0.08 : 0.28),
           y:
             descriptor.trunkHeight *
-            (0.78 + hash2D(baseSeed, 40 + foliageIndex, 2) * 0.5),
-          z: (hash2D(baseSeed, 40 + foliageIndex, 3) - 0.5) * 0.28,
-          scaleX: 0.68 + hash2D(baseSeed, 40 + foliageIndex, 4) * 0.52,
-          scaleY: 0.58 + hash2D(baseSeed, 40 + foliageIndex, 5) * 0.48,
-          scaleZ: 0.68 + hash2D(baseSeed, 40 + foliageIndex, 6) * 0.52,
+            (descriptor.form === 'pine'
+              ? 0.42 + layerProgress * 0.52
+              : 0.78 + hash2D(baseSeed, 40 + foliageIndex, 2) * 0.5),
+          z:
+            (hash2D(baseSeed, 40 + foliageIndex, 3) - 0.5) *
+            (descriptor.form === 'pine' ? 0.08 : 0.28),
+          scaleX:
+            descriptor.form === 'pine'
+              ? 0.58 * pineLayerScale + hash2D(baseSeed, 40 + foliageIndex, 4) * 0.16
+              : 0.68 + hash2D(baseSeed, 40 + foliageIndex, 4) * 0.52,
+          scaleY:
+            descriptor.form === 'pine'
+              ? 0.32 + hash2D(baseSeed, 40 + foliageIndex, 5) * 0.18
+              : 0.58 + hash2D(baseSeed, 40 + foliageIndex, 5) * 0.48,
+          scaleZ:
+            descriptor.form === 'pine'
+              ? 0.58 * pineLayerScale + hash2D(baseSeed, 40 + foliageIndex, 6) * 0.16
+              : 0.68 + hash2D(baseSeed, 40 + foliageIndex, 6) * 0.52,
         });
       }
 
@@ -472,6 +510,10 @@ export function createForestTilePlugin(): RuntimePlugin {
           const tree = new three.Group();
           tree.position.set(tileX + descriptor.x, 0, tileY + descriptor.y);
           tree.scale.setScalar(descriptor.scale);
+          tree.userData = {
+            ...(tree.userData ?? {}),
+            [TREE_FORM_KEY]: descriptor.form,
+          };
 
           const trunk = new three.Mesh(geometry.trunk, style.trunkMaterial);
           trunk.position.y = descriptor.trunkHeight * 0.5;
@@ -483,8 +525,16 @@ export function createForestTilePlugin(): RuntimePlugin {
               geometry.foliage,
               style.foliageMaterial
             );
-            canopy.position.set(0, descriptor.trunkHeight * 0.9, 0);
-            canopy.scale.set(0.84, 0.72, 0.84);
+            canopy.position.set(
+              0,
+              descriptor.trunkHeight * (descriptor.form === 'pine' ? 0.74 : 0.9),
+              0
+            );
+            canopy.scale.set(
+              descriptor.form === 'pine' ? 0.54 : 0.84,
+              descriptor.form === 'pine' ? 1.18 : 0.72,
+              descriptor.form === 'pine' ? 0.54 : 0.84
+            );
             tree.add(canopy);
             group.add(tree);
             continue;
@@ -878,6 +928,13 @@ export function getForestBirds(
   return resolveForestBirdDescriptors(tileX, tileY);
 }
 
+export function getForestTreeForms(
+  tileX: number,
+  tileY: number
+): ForestTreeForm[] {
+  return getForestTreeDescriptors(tileX, tileY).map((descriptor) => descriptor.form);
+}
+
 function getForestGroveCenter(tileX: number, tileY: number) {
   return {
     x: (hash2D('forest-grove-center-x', tileX, tileY) - 0.5) * 0.36,
@@ -919,6 +976,10 @@ function getTreeVarietyIndex(
   }
 
   return dominant;
+}
+
+function getTreeForm(variety: number): ForestTreeForm {
+  return variety === 2 ? 'pine' : 'broadleaf';
 }
 
 function getTreeStyle(
@@ -1593,9 +1654,12 @@ interface ForestTreeDescriptor {
   scale: number;
   trunkHeight: number;
   variety: number;
+  form: ForestTreeForm;
   branches: ForestBranchDescriptor[];
   foliage: ForestFoliageDescriptor[];
 }
+
+type ForestTreeForm = 'broadleaf' | 'pine';
 
 interface ForestFloorDetailDescriptor {
   kind: 'stump' | 'fallen-tree';
