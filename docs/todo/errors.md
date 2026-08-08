@@ -99,8 +99,8 @@ That should be a major optimization target.
 * [ ] Avoid creating a `Group` merely to contain one child.
 * [ ] Avoid creating individual meshes for details that can be merged.
 * [ ] Merge static components where practical.
-* [ ] Convert repeated forest components to `InstancedMesh`.
-* [ ] Instance common trunk shapes.
+* [x] Convert repeated forest components to `InstancedMesh`.
+* [x] Instance common trunk shapes.
 * [ ] Instance common branch geometry where possible.
 * [ ] Instance foliage clusters.
 * [ ] Instance fruit, flowers, rocks, and minor tree decorations.

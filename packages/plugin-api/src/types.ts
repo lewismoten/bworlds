@@ -419,6 +419,18 @@ export interface ThreePointsLike extends ThreeObject3DLike {
   material?: ThreeMaterialLike;
 }
 
+export interface ThreeMatrix4Like {
+  makeScale(x: number, y: number, z: number): this;
+  setPosition(x: number, y: number, z: number): this;
+}
+
+export interface ThreeInstancedMeshLike extends ThreeObject3DLike {
+  geometry?: ThreeGeometryLike;
+  material?: ThreeMaterialLike;
+  count: number;
+  setMatrixAt(index: number, matrix: ThreeMatrix4Like): void;
+}
+
 export interface ThreePointLightLike extends ThreeObject3DLike {
   intensity: number;
 }
@@ -461,6 +473,12 @@ export interface ThreeHostLike {
   MeshStandardMaterial: new (
     options?: Record<string, unknown>
   ) => ThreeMaterialLike;
+  InstancedMesh: new (
+    geometry?: ThreeGeometryLike,
+    material?: ThreeMaterialLike,
+    count?: number
+  ) => ThreeInstancedMeshLike;
+  Matrix4: new () => ThreeMatrix4Like;
   Points: new (
     geometry?: ThreeBufferGeometryLike,
     material?: ThreeMaterialLike

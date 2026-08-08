@@ -106,11 +106,36 @@ class FakePointLight extends FakeNode {
     super();
   }
 }
+class FakeMatrix4 {
+  scale = { x: 1, y: 1, z: 1 };
+  position = { x: 0, y: 0, z: 0 };
+  makeScale(x: number, y: number, z: number) {
+    this.scale = { x, y, z };
+    return this;
+  }
+  setPosition(x: number, y: number, z: number) {
+    this.position = { x, y, z };
+    return this;
+  }
+}
 class FakeFloat32BufferAttribute {
   array: number[];
   needsUpdate = false;
   constructor(values: ArrayLike<number> | number[], public itemSize: number) {
     this.array = Array.from(values);
+  }
+}
+class FakeInstancedMesh extends FakeNode {
+  matrices: FakeMatrix4[] = [];
+  constructor(
+    public geometry?: object,
+    public material?: FakeMaterial | FakeMaterial[],
+    public count = 0
+  ) {
+    super();
+  }
+  setMatrixAt(index: number, matrix: FakeMatrix4) {
+    this.matrices[index] = matrix;
   }
 }
 class FakePoints extends FakeNode {
@@ -125,6 +150,8 @@ class FakePoints extends FakeNode {
 const fakeThree = {
   BufferGeometry: FakeGeometry,
   Group: FakeGroup,
+  InstancedMesh: FakeInstancedMesh,
+  Matrix4: FakeMatrix4,
   Mesh: FakeMesh,
   Points: FakePoints,
   PointLight: FakePointLight,
@@ -534,6 +561,9 @@ describe('tile forest', () => {
     expect(
       lowModel.children.every((node) => node.userData?.renderStatKind === 'tree')
     ).toBe(true);
+    expect(
+      lowModel.children.every((node) => node instanceof FakeInstancedMesh)
+    ).toBe(true);
   });
 
   it('renders pine trees distinctly in full and low detail forest models', () => {
@@ -604,7 +634,7 @@ describe('tile forest', () => {
     ).toBe(true);
   });
 
-  it('flattens low-detail tree meshes instead of creating one group per tree', () => {
+  it('instances low-detail tree trunks and canopies instead of creating one group per tree', () => {
     const plugin = createForestTilePlugin();
     const tile = plugin.tiles?.find((entry) => entry.kind === 'forest');
     const state = {
@@ -639,10 +669,24 @@ describe('tile forest', () => {
     const taggedTreeMeshes = lowModel.children.filter(
       (child) => child.userData?.renderStatKind === 'tree'
     );
+    const instancedTrunks = lowModel.children.filter(
+      (child) =>
+        child instanceof FakeInstancedMesh &&
+        child.userData?.forestTreeLowDetailInstancedPart === 'trunk'
+    ) as FakeInstancedMesh[];
+    const instancedCanopies = lowModel.children.filter(
+      (child) =>
+        child instanceof FakeInstancedMesh &&
+        child.userData?.forestTreeLowDetailInstancedPart === 'canopy'
+    ) as FakeInstancedMesh[];
 
     expect(groupedTrees.length).toBe(0);
     expect(taggedTreeMeshes.length).toBeGreaterThan(0);
-    expect(taggedTreeMeshes.length % 2).toBe(0);
+    expect(instancedTrunks.length).toBeGreaterThan(0);
+    expect(instancedCanopies.length).toBeGreaterThan(0);
+    expect(instancedTrunks.every((mesh) => mesh.count > 0)).toBe(true);
+    expect(instancedCanopies.every((mesh) => mesh.count > 0)).toBe(true);
+    expect(instancedTrunks.some((mesh) => mesh.matrices.length > 0)).toBe(true);
   });
 
   it('generates an occasional mushroom or stone ring for large forests', () => {

@@ -24,6 +24,7 @@ import type {
   ThreeGeometryLike,
   ThreeHostLike,
   ThreeMaterialLike,
+  ThreeMatrix4Like,
   ThreeObject3DLike,
 } from '@bworlds/plugin-api';
 
@@ -605,21 +606,22 @@ export function createForestTilePlugin(): RuntimePlugin {
               )
             : getForestTreeDescriptors(tileX, tileY);
         const geometry = getTreeGeometry(three);
+        if (detailLevel === 'low') {
+          addLowDetailForestTreeInstances(
+            three,
+            group,
+            geometry,
+            tileX,
+            tileY,
+            descriptors
+          );
+        }
 
         for (const descriptor of descriptors) {
-          const style = getTreeStyle(three, tileX, tileY, descriptor.variety);
           if (detailLevel === 'low') {
-            addLowDetailForestTreeMeshes(
-              three,
-              group,
-              geometry,
-              style,
-              tileX,
-              tileY,
-              descriptor
-            );
             continue;
           }
+          const style = getTreeStyle(three, tileX, tileY, descriptor.variety);
 
           const tree = new three.Group();
           tree.position.set(tileX + descriptor.x, 0, tileY + descriptor.y);
@@ -1308,53 +1310,95 @@ function getForestFireflies(three: ThreeHostLike, tileX: number, tileY: number) 
   return [points];
 }
 
-function addLowDetailForestTreeMeshes(
+function addLowDetailForestTreeInstances(
   three: ThreeHostLike,
   group: ThreeObject3DLike,
   geometry: TreeGeometry,
-  style: ForestTreeStyle,
   tileX: number,
   tileY: number,
-  descriptor: ForestTreeDescriptor
+  descriptors: ForestTreeDescriptor[]
 ) {
-  const trunk = new three.Mesh(geometry.trunk, style.trunkMaterial);
-  trunk.position.set(
-    tileX + descriptor.x,
-    descriptor.trunkHeight * descriptor.scale * 0.5,
-    tileY + descriptor.y
-  );
-  trunk.scale.set(
-    descriptor.scale,
-    descriptor.trunkHeight * descriptor.scale,
-    descriptor.scale
-  );
-  trunk.userData = {
-    ...(trunk.userData ?? {}),
-    [TREE_FORM_KEY]: descriptor.form,
-    [RENDER_STATS_CATEGORY_KEY]: 'tree',
-  };
-  group.add(trunk);
+  const trunkBuckets = new Map<string, ForestTreeDescriptor[]>();
 
-  const canopy = new three.Mesh(geometry.foliage, style.foliageMaterial);
-  canopy.position.set(
-    tileX + descriptor.x,
-    descriptor.trunkHeight *
-      descriptor.scale *
-      (descriptor.form === 'pine' ? 0.74 : 0.9),
-    tileY + descriptor.y
-  );
-  canopy.scale.set(
-    descriptor.scale * (descriptor.form === 'pine' ? 0.54 : 0.84),
-    descriptor.scale * (descriptor.form === 'pine' ? 1.18 : 0.72),
-    descriptor.scale * (descriptor.form === 'pine' ? 0.54 : 0.84)
-  );
-  canopy.userData = {
-    ...(canopy.userData ?? {}),
-    [TREE_FORM_KEY]: descriptor.form,
-    [RENDER_STATS_CATEGORY_KEY]: 'tree',
-  };
-  tagForestFoliageWind(canopy, tileX, tileY, descriptor.variety, 0);
-  group.add(canopy);
+  for (const descriptor of descriptors) {
+    const styleKey = String(descriptor.variety);
+    if (!trunkBuckets.has(styleKey)) {
+      trunkBuckets.set(styleKey, []);
+    }
+    trunkBuckets.get(styleKey)!.push(descriptor);
+  }
+
+  for (const [styleKey, bucket] of trunkBuckets.entries()) {
+    const style = getTreeStyle(three, tileX, tileY, Number(styleKey));
+    const form = bucket[0]?.form ?? 'broadleaf';
+    const trunkInstances = new three.InstancedMesh(
+      geometry.trunk,
+      style.trunkMaterial,
+      bucket.length
+    );
+    trunkInstances.userData = {
+      ...(trunkInstances.userData ?? {}),
+      [RENDER_STATS_CATEGORY_KEY]: 'tree',
+      [TREE_FORM_KEY]: form,
+      forestTreeLowDetailInstancedPart: 'trunk',
+    };
+    bucket.forEach((descriptor, index) => {
+      trunkInstances.setMatrixAt(
+        index,
+        createLowDetailTreeMatrix(
+          three,
+          tileX + descriptor.x,
+          descriptor.trunkHeight * descriptor.scale * 0.5,
+          tileY + descriptor.y,
+          descriptor.scale,
+          descriptor.trunkHeight * descriptor.scale,
+          descriptor.scale
+        )
+      );
+    });
+    group.add(trunkInstances);
+
+    const canopyInstances = new three.InstancedMesh(
+      geometry.foliage,
+      style.foliageMaterial,
+      bucket.length
+    );
+      canopyInstances.userData = {
+        ...(canopyInstances.userData ?? {}),
+        [RENDER_STATS_CATEGORY_KEY]: 'tree',
+        [TREE_FORM_KEY]: form,
+        forestTreeLowDetailInstancedPart: 'canopy',
+      };
+    bucket.forEach((descriptor, index) => {
+      canopyInstances.setMatrixAt(
+        index,
+        createLowDetailTreeMatrix(
+          three,
+          tileX + descriptor.x,
+          descriptor.trunkHeight *
+            descriptor.scale *
+            (descriptor.form === 'pine' ? 0.74 : 0.9),
+          tileY + descriptor.y,
+          descriptor.scale * (descriptor.form === 'pine' ? 0.54 : 0.84),
+          descriptor.scale * (descriptor.form === 'pine' ? 1.18 : 0.72),
+          descriptor.scale * (descriptor.form === 'pine' ? 0.54 : 0.84)
+        )
+      );
+    });
+    group.add(canopyInstances);
+  }
+}
+
+function createLowDetailTreeMatrix(
+  three: ThreeHostLike,
+  x: number,
+  y: number,
+  z: number,
+  scaleX: number,
+  scaleY: number,
+  scaleZ: number
+): ThreeMatrix4Like {
+  return new three.Matrix4().makeScale(scaleX, scaleY, scaleZ).setPosition(x, y, z);
 }
 
 function createForestFloorDetailDescriptor(
