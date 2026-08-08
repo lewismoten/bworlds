@@ -177,9 +177,9 @@ That gives you something you can save from a slow scene, attach to a bug report,
 * [ ] Include point-light count.
 * [ ] Include spot-light count.
 * [ ] Include hemisphere-light count.
-* [ ] Include currently active lights.
+* [x] Include currently active lights.
 * [ ] Include culled/inactive lights.
-* [ ] Include shadow-casting lights.
+* [x] Include shadow-casting lights.
 * [ ] Include shadow-map count.
 * [ ] Include each shadow-map resolution.
 * [ ] Include total shadow-map pixels.
@@ -192,7 +192,7 @@ That gives you something you can save from a slow scene, attach to a bug report,
 
 * [x] Include current map/level.
 * [x] Include visible tile count.
-* [ ] Include loaded tile count.
+* [x] Include loaded tile count.
 * [ ] Include active tile count.
 * [ ] Include dormant tile count.
 * [x] Include pending tile-build count.

@@ -137,11 +137,16 @@ export type DebugSnapshotExport = {
   shaderPrograms: {
     currentProgramCount: number;
   };
+  lighting: {
+    currentlyActiveLights: number;
+    shadowCastingLights: number;
+  };
   world: {
     currentMapId: string;
     currentMapType?: string;
     currentMapDepth: number;
     visibleTileCount: number;
+    loadedTileCount: number;
     pendingTileBuildCount: number;
     tileBuildsPerSecond: number;
     averageTileBuildMs: number;
@@ -264,11 +269,16 @@ export function buildDebugSnapshotExport(
     shaderPrograms: {
       currentProgramCount: options.snapshot.programCount,
     },
+    lighting: {
+      currentlyActiveLights: options.snapshot.lightCount,
+      shadowCastingLights: options.snapshot.shadowLightCount,
+    },
     world: {
       currentMapId: options.context.id,
       currentMapType: options.context.type,
       currentMapDepth: options.context.depth,
       visibleTileCount: options.snapshot.visibleTileCount,
+      loadedTileCount: options.snapshot.loadedChunkCount,
       pendingTileBuildCount: options.snapshot.pendingTileCount,
       tileBuildsPerSecond: options.snapshot.tileBuildsPerSecond,
       averageTileBuildMs: options.snapshot.averageTileBuildMs,

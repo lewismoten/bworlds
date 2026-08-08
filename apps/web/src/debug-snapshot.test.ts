@@ -281,11 +281,16 @@ describe('debug snapshot', () => {
     expect(result.shaderPrograms).toMatchObject({
       currentProgramCount: 12,
     });
+    expect(result.lighting).toMatchObject({
+      currentlyActiveLights: 12,
+      shadowCastingLights: 2,
+    });
     expect(result.world).toMatchObject({
       currentMapId: 'town:3:7',
       currentMapType: 'town',
       currentMapDepth: 1,
       visibleTileCount: 112,
+      loadedTileCount: 112,
       pendingTileBuildCount: 6,
       tileBuildsPerSecond: 11,
       averageTileBuildMs: 2.4,
