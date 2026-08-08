@@ -434,7 +434,15 @@ const resolveForestCarvingDescriptors = createCoordinateValueResolver(
       }
 
       const motif: ForestCarvingDescriptor['motif'] =
-        chance > 0.965 ? 'date' : chance > 0.93 ? 'heart' : 'initials';
+        chance > 0.985
+          ? 'arrow'
+          : chance > 0.965
+            ? 'traveler-mark'
+            : chance > 0.94
+              ? 'date'
+              : chance > 0.91
+                ? 'heart'
+                : 'initials';
 
       carvings.push({
         treeIndex,
@@ -2517,6 +2525,16 @@ function getForestCarvingText(
   tileY: number,
   treeIndex: number
 ) {
+  if (motif === 'arrow') {
+    return hash2D('forest-carving-arrow', tileX + treeIndex, tileY) > 0.5
+      ? '>'
+      : '<';
+  }
+
+  if (motif === 'traveler-mark') {
+    return 'X';
+  }
+
   if (motif === 'date') {
     const year = 1860 + Math.floor(hash2D('forest-carving-date', tileX + treeIndex, tileY) * 50);
     return String(year);
@@ -3130,7 +3148,7 @@ interface ForestCarvingDescriptor {
   sideOffset: -1 | 1;
   height: number;
   scale: number;
-  motif: 'initials' | 'heart' | 'date';
+  motif: 'initials' | 'heart' | 'date' | 'traveler-mark' | 'arrow';
   text: string;
 }
 
@@ -3312,6 +3330,33 @@ const CARVING_DIGIT_9 = [
   { x: 0.3, y: 0.9 },
 ] as const satisfies readonly ForestMarkerPoint[];
 
+const CARVING_TRAVELER_X = [
+  { x: -0.7, y: 1.8 },
+  { x: -0.2, y: 1.2 },
+  { x: 0.2, y: 0.6 },
+  { x: 0.7, y: 0 },
+  { x: 0.7, y: 1.8 },
+  { x: 0.2, y: 1.2 },
+  { x: -0.2, y: 0.6 },
+  { x: -0.7, y: 0 },
+] as const satisfies readonly ForestMarkerPoint[];
+
+const CARVING_ARROW_RIGHT = [
+  { x: -0.8, y: 0.9 },
+  { x: -0.1, y: 0.9 },
+  { x: 0.4, y: 1.5 },
+  { x: 0.9, y: 0.9 },
+  { x: 0.4, y: 0.3 },
+] as const satisfies readonly ForestMarkerPoint[];
+
+const CARVING_ARROW_LEFT = [
+  { x: 0.8, y: 0.9 },
+  { x: 0.1, y: 0.9 },
+  { x: -0.4, y: 1.5 },
+  { x: -0.9, y: 0.9 },
+  { x: -0.4, y: 0.3 },
+] as const satisfies readonly ForestMarkerPoint[];
+
 const FOREST_CARVING_GLYPHS = {
   L: CARVING_LETTER_L,
   M: CARVING_LETTER_M,
@@ -3329,4 +3374,7 @@ const FOREST_CARVING_GLYPHS = {
   '7': CARVING_DIGIT_7,
   '8': CARVING_DIGIT_8,
   '9': CARVING_DIGIT_9,
+  X: CARVING_TRAVELER_X,
+  '>': CARVING_ARROW_RIGHT,
+  '<': CARVING_ARROW_LEFT,
 } as const satisfies Record<string, readonly ForestMarkerPoint[]>;

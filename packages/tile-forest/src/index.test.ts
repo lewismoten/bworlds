@@ -350,7 +350,7 @@ describe('tile forest', () => {
     expect(getForestOwls(first.x, first.y)).toEqual(first.owls);
   });
 
-  it("generates deterministic lovers' initials, hearts, and dates for some forest trees", () => {
+  it("generates deterministic lovers' initials, hearts, dates, traveler marks, and arrows for some forest trees", () => {
     const sampleTiles: Array<{
       x: number;
       y: number;
@@ -391,6 +391,22 @@ describe('tile forest', () => {
           (carving) =>
             carving.motif === 'date' &&
             /^(18\d{2}|19\d{2})$/.test(carving.text)
+        )
+      )
+    ).toBe(true);
+    expect(
+      sampleTiles.some(({ carvings }) =>
+        carvings.some(
+          (carving) => carving.motif === 'traveler-mark' && carving.text === 'X'
+        )
+      )
+    ).toBe(true);
+    expect(
+      sampleTiles.some(({ carvings }) =>
+        carvings.some(
+          (carving) =>
+            carving.motif === 'arrow' &&
+            (carving.text === '>' || carving.text === '<')
         )
       )
     ).toBe(true);
@@ -1499,7 +1515,16 @@ describe('tile forest', () => {
     });
 
     expect(fullCarvingCount).toBeGreaterThan(0);
-    expect([...fullLabels].some((label) => label === 'LM+FG' || label === 'LM*FG')).toBe(true);
+    expect(
+      [...fullLabels].some(
+        (label) =>
+          label === 'LM+FG' ||
+          label === 'LM*FG' ||
+          label === 'X' ||
+          label === '>' ||
+          label === '<'
+      )
+    ).toBe(true);
     expect(lowCarvingCount).toBe(0);
 
     let datedTile: { x: number; y: number } | null = null;
@@ -1538,6 +1563,43 @@ describe('tile forest', () => {
     });
 
     expect(datedRenderCount).toBeGreaterThan(0);
+
+    let symbolTile: { x: number; y: number } | null = null;
+    for (let tileY = 0; tileY < 18 && !symbolTile; tileY += 1) {
+      for (let tileX = 0; tileX < 18; tileX += 1) {
+        if (
+          getForestCarvings(tileX, tileY).some(
+            (carving) =>
+              carving.motif === 'traveler-mark' || carving.motif === 'arrow'
+          )
+        ) {
+          symbolTile = { x: tileX, y: tileY };
+          break;
+        }
+      }
+    }
+
+    expect(symbolTile).not.toBeNull();
+    state.player.x = symbolTile!.x;
+    state.player.y = symbolTile!.y;
+    const symbolModel = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'forest' },
+      tileX: symbolTile!.x,
+      tileY: symbolTile!.y,
+      detailLevel: 'full',
+    }) as FakeGroup;
+
+    const symbolLabels = new Set<string>();
+    symbolModel.traverse((node) => {
+      const carving = node.userData?.forestCarving;
+      if (typeof carving === 'string' && ['X', '>', '<'].includes(carving)) {
+        symbolLabels.add(carving);
+      }
+    });
+
+    expect(symbolLabels.size).toBeGreaterThan(0);
   });
 
   it('renders flower meadows only in full-detail forest models', () => {

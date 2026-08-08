@@ -639,8 +639,8 @@ This probably deserves several interchangeable strategies.
 * [x] Generate old lovers' initials.
 * [x] Generate hearts.
 * [x] Generate dates.
-* [ ] Generate traveler markings.
-* [ ] Generate directional arrows.
+* [x] Generate traveler markings.
+* [x] Generate directional arrows.
 * [ ] Generate symbols.
 * [ ] Generate religious markings.
 * [ ] Generate guild symbols.
