@@ -135,10 +135,10 @@ That gives you something you can save from a slow scene, attach to a bug report,
 
 # Geometry
 
-* [ ] Include total geometry references.
-* [ ] Include unique geometry instances.
-* [ ] Include GPU geometry count.
-* [ ] Include shared geometry count.
+* [x] Include total geometry references.
+* [x] Include unique geometry instances.
+* [x] Include GPU geometry count.
+* [x] Include shared geometry count.
 * [ ] Include total geometry bytes where calculable.
 * [ ] Include vertex-buffer bytes.
 * [ ] Include index-buffer bytes.

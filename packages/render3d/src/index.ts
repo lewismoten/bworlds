@@ -102,6 +102,7 @@ type Render3DController = {
     shadowLightCount: number;
     vertexCount: number;
     materialRefCount: number;
+    geometryRefCount: number;
     materialCount: number;
     sharedMaterialCount: number;
     clonedMaterialCount: number;
@@ -114,8 +115,9 @@ type Render3DController = {
     materialsCreatedDuringSamplingWindow: number;
     materialsDisposedDuringSamplingWindow: number;
     geometryCount: number;
+    sharedGeometryCount: number;
     textureMemoryEstimateBytes: number;
-    geometryMemoryCount: number;
+    gpuGeometryCount: number;
     treeObjectCount: number;
     treeMeshCount: number;
     treeMaterialRefCount: number;
@@ -204,6 +206,7 @@ type SceneResourceStats = {
   shadowLightCount: number;
   vertexCount: number;
   materialRefCount: number;
+  geometryRefCount: number;
   materialCount: number;
   sharedMaterialCount: number;
   clonedMaterialCount: number;
@@ -216,6 +219,7 @@ type SceneResourceStats = {
   materialsCreatedDuringSamplingWindow: number;
   materialsDisposedDuringSamplingWindow: number;
   geometryCount: number;
+  sharedGeometryCount: number;
   textureMemoryEstimateBytes: number;
   treeCount: number;
   treeObjectCount: number;
@@ -846,26 +850,28 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       shadowLightCount: sceneResourceStats.shadowLightCount,
       vertexCount: sceneResourceStats.vertexCount,
       materialRefCount: sceneResourceStats.materialRefCount,
+      geometryRefCount: sceneResourceStats.geometryRefCount,
       materialCount: sceneResourceStats.materialCount,
-    sharedMaterialCount: sceneResourceStats.sharedMaterialCount,
-    clonedMaterialCount: sceneResourceStats.clonedMaterialCount,
-    transparentMaterialCount: sceneResourceStats.transparentMaterialCount,
-    alphaTestMaterialCount: sceneResourceStats.alphaTestMaterialCount,
-    doubleSidedMaterialCount: sceneResourceStats.doubleSidedMaterialCount,
-    fogMaterialCount: sceneResourceStats.fogMaterialCount,
-    customShaderMaterialCount: sceneResourceStats.customShaderMaterialCount,
-    materialTypes: sceneResourceStats.materialTypes,
-    materialsCreatedDuringSamplingWindow: countRecentMetricEvents(
-      ownedMaterialCreationTimestamps,
-      nowMs
-    ),
-    materialsDisposedDuringSamplingWindow: countRecentMetricEvents(
-      ownedMaterialDisposalTimestamps,
-      nowMs
-    ),
-    geometryCount: sceneResourceStats.geometryCount,
+      sharedMaterialCount: sceneResourceStats.sharedMaterialCount,
+      clonedMaterialCount: sceneResourceStats.clonedMaterialCount,
+      transparentMaterialCount: sceneResourceStats.transparentMaterialCount,
+      alphaTestMaterialCount: sceneResourceStats.alphaTestMaterialCount,
+      doubleSidedMaterialCount: sceneResourceStats.doubleSidedMaterialCount,
+      fogMaterialCount: sceneResourceStats.fogMaterialCount,
+      customShaderMaterialCount: sceneResourceStats.customShaderMaterialCount,
+      materialTypes: sceneResourceStats.materialTypes,
+      materialsCreatedDuringSamplingWindow: countRecentMetricEvents(
+        ownedMaterialCreationTimestamps,
+        nowMs
+      ),
+      materialsDisposedDuringSamplingWindow: countRecentMetricEvents(
+        ownedMaterialDisposalTimestamps,
+        nowMs
+      ),
+      geometryCount: sceneResourceStats.geometryCount,
+      sharedGeometryCount: sceneResourceStats.sharedGeometryCount,
       textureMemoryEstimateBytes: sceneResourceStats.textureMemoryEstimateBytes,
-      geometryMemoryCount: renderer.info.memory.geometries,
+      gpuGeometryCount: renderer.info.memory.geometries,
       treeObjectCount: sceneResourceStats.treeObjectCount,
       treeMeshCount: sceneResourceStats.treeMeshCount,
       treeMaterialRefCount: sceneResourceStats.treeMaterialRefCount,
@@ -2097,6 +2103,7 @@ export function collectSceneResourceStats(
   let shadowLightCount = 0;
   let vertexCount = 0;
   let materialRefCount = 0;
+  let geometryRefCount = 0;
   let textureMemoryEstimateBytes = 0;
   let treeCount = 0;
   let treeObjectCount = 0;
@@ -2192,6 +2199,7 @@ export function collectSceneResourceStats(
       material?: THREE.Material | THREE.Material[];
     };
     if (renderable.geometry) {
+      geometryRefCount += 1;
       if (!geometries.has(renderable.geometry)) {
         geometries.add(renderable.geometry);
         vertexCount += getGeometryVertexCount(renderable.geometry);
@@ -2251,6 +2259,7 @@ export function collectSceneResourceStats(
     shadowLightCount,
     vertexCount,
     materialRefCount,
+    geometryRefCount,
     materialCount: materials.size,
     sharedMaterialCount: Math.max(0, materialRefCount - materials.size),
     clonedMaterialCount: countMaterialsMatching(materials, isTrackableClonedMaterial),
@@ -2263,6 +2272,7 @@ export function collectSceneResourceStats(
     materialsCreatedDuringSamplingWindow: 0,
     materialsDisposedDuringSamplingWindow: 0,
     geometryCount: geometries.size,
+    sharedGeometryCount: Math.max(0, geometryRefCount - geometries.size),
     textureMemoryEstimateBytes,
     treeCount,
     treeObjectCount,

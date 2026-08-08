@@ -172,7 +172,10 @@ describe('debug snapshot', () => {
         materialsCreatedDuringSamplingWindow: 5,
         materialsDisposedDuringSamplingWindow: 2,
         peakMaterialCount: 29,
+        geometryRefCount: 88,
         geometryCount: 61,
+        sharedGeometryCount: 27,
+        gpuGeometryCount: 63,
         vertexCount: 14432,
         geometryMemoryCount: 63,
         treeObjectCount: 216,
@@ -350,10 +353,12 @@ describe('debug snapshot', () => {
       materialsCreatedDuringSamplingWindow: 5,
       materialsDisposedDuringSamplingWindow: 2,
       peakMaterialCount: 29,
+      totalGeometryReferences: 88,
       geometryCount: 61,
+      sharedGeometryCount: 27,
       textureCount: 7,
       textureMemoryEstimateMb: 12.5,
-      geometryMemoryCount: 63,
+      gpuGeometryCount: 63,
     });
     expect(result.particles).toMatchObject({
       activeParticleSystems: 4,
@@ -398,10 +403,12 @@ describe('debug snapshot', () => {
     });
     expect(result.resources).toMatchObject({
       uniqueMaterialCount: 24,
+      totalGeometryReferences: 88,
       geometryCount: 61,
+      sharedGeometryCount: 27,
       textureCount: 7,
       textureMemoryEstimateMb: 12.5,
-      geometryMemoryCount: 63,
+      gpuGeometryCount: 63,
     });
     expect(result.textures).toMatchObject({
       textureCount: 7,

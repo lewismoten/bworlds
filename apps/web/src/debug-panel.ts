@@ -77,7 +77,10 @@ export type DebugSnapshot = {
   materialsCreatedDuringSamplingWindow?: number;
   materialsDisposedDuringSamplingWindow?: number;
   peakMaterialCount?: number;
+  geometryRefCount?: number;
   geometryCount: number;
+  sharedGeometryCount?: number;
+  gpuGeometryCount?: number;
   vertexCount: number;
   geometryMemoryCount: number;
   treeObjectCount: number;

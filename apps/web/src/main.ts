@@ -1768,9 +1768,12 @@ function collectCurrentDebugSnapshot(
       rendererStats.materialsCreatedDuringSamplingWindow,
     materialsDisposedDuringSamplingWindow:
       rendererStats.materialsDisposedDuringSamplingWindow,
+    geometryRefCount: rendererStats.geometryRefCount,
     geometryCount: rendererStats.geometryCount,
+    sharedGeometryCount: rendererStats.sharedGeometryCount,
+    gpuGeometryCount: rendererStats.gpuGeometryCount,
     vertexCount: rendererStats.vertexCount,
-    geometryMemoryCount: rendererStats.geometryMemoryCount,
+    geometryMemoryCount: rendererStats.gpuGeometryCount,
     treeObjectCount: rendererStats.treeObjectCount,
     treeMeshCount: rendererStats.treeMeshCount,
     treeMaterialRefCount: rendererStats.treeMaterialRefCount,

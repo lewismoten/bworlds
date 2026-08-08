@@ -199,10 +199,12 @@ export type DebugSnapshotExport = {
     materialsCreatedDuringSamplingWindow: number;
     materialsDisposedDuringSamplingWindow: number;
     peakMaterialCount: number;
+    totalGeometryReferences: number;
     geometryCount: number;
+    sharedGeometryCount: number;
     textureCount: number;
     textureMemoryEstimateMb: number;
-    geometryMemoryCount: number;
+    gpuGeometryCount: number;
   };
   textures: {
     textureCount: number;
@@ -337,10 +339,13 @@ export function buildDebugSnapshotExport(
       materialsDisposedDuringSamplingWindow:
         options.snapshot.materialsDisposedDuringSamplingWindow ?? 0,
       peakMaterialCount: options.snapshot.peakMaterialCount ?? 0,
+      totalGeometryReferences: options.snapshot.geometryRefCount ?? 0,
       geometryCount: options.snapshot.geometryCount,
+      sharedGeometryCount: options.snapshot.sharedGeometryCount ?? 0,
       textureCount: options.snapshot.textureCount,
       textureMemoryEstimateMb: options.snapshot.textureMemoryEstimateMb,
-      geometryMemoryCount: options.snapshot.geometryMemoryCount,
+      gpuGeometryCount:
+        options.snapshot.gpuGeometryCount ?? options.snapshot.geometryMemoryCount,
     },
     textures: {
       textureCount: options.snapshot.textureCount,
