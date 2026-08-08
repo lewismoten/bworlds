@@ -265,6 +265,44 @@ describe('town support', () => {
     ).toBe(true);
   });
 
+  it('surfaces fetch and recovery quest offers from generated town schedules', () => {
+    const fetchStates = getTownNpcQuestStates(3, 7, DEFAULT_DAY_LENGTH_MS * 0.88, {
+      level: 3,
+    });
+    const townSamples: Array<[number, number]> = [
+      [3, 7],
+      [10, -4],
+      [25, 9],
+      [48, -16],
+      [120, -80],
+    ];
+    let recoveryStates: ReturnType<typeof getTownNpcQuestStates> = [];
+
+    outer: for (const [x, y] of townSamples) {
+      for (let minute = 0; minute < 24 * 60; minute += 30) {
+        recoveryStates = getTownNpcQuestStates(
+          x,
+          y,
+          DEFAULT_DAY_LENGTH_MS * (minute / (24 * 60)),
+          {
+            level: 5,
+            profession: 'guard',
+          }
+        );
+        if (recoveryStates.some((entry) => entry.offers.some((offer) => offer.type === 'recovery'))) {
+          break outer;
+        }
+      }
+    }
+
+    expect(
+      fetchStates.some((entry) => entry.offers.some((offer) => offer.type === 'fetch'))
+    ).toBe(true);
+    expect(
+      recoveryStates.some((entry) => entry.offers.some((offer) => offer.type === 'recovery'))
+    ).toBe(true);
+  });
+
   it('scales building counts upward for at least some higher-level towns', () => {
     const signatures = new Set(
       [

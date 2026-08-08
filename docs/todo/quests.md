@@ -3,7 +3,7 @@ Quests should be setup as indivual plugins for each type, and support procedural
 
 Quests may include:
 
-- [ ] Fetch quest — retrieve an item and bring it back.
+- [X] Fetch quest — retrieve an item and bring it back.
 - [ ] Kill quest — defeat a certain enemy, boss, or number of enemies.
 - [X] Escort quest — protect an NPC while traveling somewhere.
 - [X] Delivery quest — carry an item or message to another person or place.
@@ -25,7 +25,7 @@ Quests may include:
 - [ ] Faction quest — perform work to gain reputation or advance within an organization.
 - [ ] Companion quest — resolve a party member's personal storyline.
 - [ ] Revenge quest — pursue someone responsible for an earlier event.
-- [ ] Recovery quest — reclaim stolen property, territory, equipment, or something lost.
+- [X] Recovery quest — reclaim stolen property, territory, equipment, or something lost.
 - [ ] Activation quest — turn on generators, shrines, portals, towers, switches, etc.
 - [ ] Destruction / sabotage quest — destroy an object, structure, supply line, machine, or enemy resource.
 - [ ] Construction / restoration quest — rebuild a town, repair equipment, establish an outpost, or improve a location.

@@ -75,6 +75,8 @@ export function getDefaultQuestPlugins(): QuestTypePlugin[] {
     createDeliveryQuestPlugin(),
     createHomeNeedQuestPlugin(),
     createEscortQuestPlugin(),
+    createFetchQuestPlugin(),
+    createRecoveryQuestPlugin(),
     createCraftingQuestPlugin(),
     createTrainingQuestPlugin(),
     createFollowUpQuestPlugin(),
@@ -279,6 +281,101 @@ function createCraftingQuestPlugin(): QuestTypePlugin {
       type: 'crafting',
       title: `${seasonLabel} Workshop Order`,
       summary: `${context.npcName} needs help gathering parts and finishing ${project}.${professionHint}`,
+      availability: 'work',
+      sourceNpcId: context.npcId,
+      sourceNpcName: context.npcName,
+    };
+  });
+}
+
+function createFetchQuestPlugin(): QuestTypePlugin {
+  return createQuestTypePlugin('fetch', (context) => {
+    if (
+      !(
+        context.npcState === 'home' ||
+        context.npcState === 'working'
+      ) ||
+      context.playerLevel > 10
+    ) {
+      return null;
+    }
+
+    const family = context.professionFamily;
+    if (
+      !(
+        family === 'temple' ||
+        family === 'inn' ||
+        family === 'market' ||
+        family === 'stable'
+      )
+    ) {
+      return null;
+    }
+
+    const seasonLabel = getSeasonLabel(context.yearProgress);
+    const requestedItem =
+      family === 'temple'
+        ? seasonLabel === 'Winter'
+          ? 'healing herbs'
+          : 'blessing oil'
+        : family === 'stable'
+          ? 'fresh tack straps'
+          : family === 'market'
+            ? 'ledger satchel'
+            : 'kitchen provisions';
+    const questId = `${context.townKey}:${context.npcId}:fetch:${requestedItem.replaceAll(' ', '-')}`;
+    if (context.completedQuestIds.has(questId)) {
+      return null;
+    }
+
+    return {
+      id: questId,
+      type: 'fetch',
+      title: `${seasonLabel} Quick Fetch`,
+      summary: `${context.npcName} needs ${requestedItem} retrieved and brought back before the day's work slips behind.`,
+      availability: context.npcState === 'home' ? 'home' : 'work',
+      sourceNpcId: context.npcId,
+      sourceNpcName: context.npcName,
+    };
+  });
+}
+
+function createRecoveryQuestPlugin(): QuestTypePlugin {
+  return createQuestTypePlugin('recovery', (context) => {
+    if (
+      context.npcState !== 'working' ||
+      context.playerLevel < 4 ||
+      !(
+        context.professionFamily === 'market' ||
+        context.professionFamily === 'town-hall' ||
+        context.professionFamily === 'smithy'
+      )
+    ) {
+      return null;
+    }
+
+    const seasonLabel = getSeasonLabel(context.yearProgress);
+    const lostAsset =
+      context.professionFamily === 'smithy'
+        ? 'tool crate'
+        : context.professionFamily === 'town-hall'
+          ? 'survey ledger'
+          : 'trade parcel';
+    const questId = `${context.townKey}:${context.npcId}:recovery:${lostAsset.replaceAll(' ', '-')}`;
+    if (context.completedQuestIds.has(questId)) {
+      return null;
+    }
+
+    const professionHint =
+      context.playerProfession === 'guard' || context.playerProfession === 'scout'
+        ? ' Your patrol experience should help track it down.'
+        : '';
+
+    return {
+      id: questId,
+      type: 'recovery',
+      title: `${seasonLabel} Lost Property`,
+      summary: `${context.npcName} wants a missing ${lostAsset} reclaimed before it causes trouble for the town.${professionHint}`,
       availability: 'work',
       sourceNpcId: context.npcId,
       sourceNpcName: context.npcName,

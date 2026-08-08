@@ -9,6 +9,8 @@ describe('quest support', () => {
       'delivery',
       'collection',
       'escort',
+      'fetch',
+      'recovery',
       'crafting',
       'training',
       'investigation',
@@ -152,5 +154,62 @@ describe('quest support', () => {
       true
     );
     expect(overleveledOffers.some((offer) => offer.type === 'training')).toBe(false);
+  });
+
+  it('offers fetch quests for supported staffed or homebound professions', () => {
+    const workFetch = getDefaultQuestRegistry().getOffers({
+      npcId: 'npc:healer',
+      npcName: 'Elise Harrow',
+      townKey: '3:7',
+      dayProgress: 0.4,
+      yearProgress: 0.9,
+      playerLevel: 3,
+      completedQuestIds: new Set<string>(),
+      npcState: 'working',
+      profession: 'healer',
+      professionFamily: 'temple',
+      residenceBuildingId: 'home',
+      workplaceBuildingId: 'temple',
+    });
+    const homeFetch = getDefaultQuestRegistry().getOffers({
+      npcId: 'npc:inn',
+      npcName: 'June Briar',
+      townKey: '3:7',
+      dayProgress: 0.88,
+      yearProgress: 0.2,
+      playerLevel: 3,
+      completedQuestIds: new Set<string>(),
+      npcState: 'home',
+      profession: 'innkeeper',
+      professionFamily: 'inn',
+      residenceBuildingId: 'home',
+      workplaceBuildingId: 'inn',
+    });
+
+    expect(workFetch.some((offer) => offer.type === 'fetch')).toBe(true);
+    expect(homeFetch.some((offer) => offer.type === 'fetch')).toBe(true);
+  });
+
+  it('offers recovery quests for higher-level town work and respects tracking professions', () => {
+    const recovery = getDefaultQuestRegistry().getOffers({
+      npcId: 'npc:merchant',
+      npcName: 'Nora Morrow',
+      townKey: '3:7',
+      dayProgress: 0.5,
+      yearProgress: 0.6,
+      playerLevel: 5,
+      playerProfession: 'guard',
+      completedQuestIds: new Set<string>(),
+      npcState: 'working',
+      profession: 'merchant',
+      professionFamily: 'market',
+      residenceBuildingId: 'home',
+      workplaceBuildingId: 'market',
+    });
+
+    expect(recovery.some((offer) => offer.type === 'recovery')).toBe(true);
+    expect(
+      recovery.some((offer) => offer.summary.includes('patrol experience'))
+    ).toBe(true);
   });
 });
