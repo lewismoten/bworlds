@@ -120,6 +120,28 @@ export function getOrCreatePaintedCanvasTexture(
   return cache.get(key)!;
 }
 
+export function getOrCreatePaintedCanvasTextureTyped<TTexture extends ThreeTextureLike>(
+  cache: Map<string, TTexture>,
+  key: string,
+  three: TextureHostLike<TTexture>,
+  options: {
+    width: number;
+    height: number;
+    repeatX?: number;
+    repeatY?: number;
+    wrap?: boolean;
+    paint: (
+      context: CanvasRenderingContext2D,
+      canvas: HTMLCanvasElement
+    ) => void;
+  }
+): TTexture {
+  if (!cache.has(key)) {
+    cache.set(key, createPaintedCanvasTexture(three, options));
+  }
+  return cache.get(key)!;
+}
+
 export function createPaintedStandardMaterial(
   three: StandardMaterialHostLike<ThreeTextureLike, ThreeMaterialLike>,
   options: {
@@ -175,17 +197,21 @@ export function createBasicMaterial(
   }));
 }
 
-export function createTexturedPlaneMesh(
-  three: PlaneMeshHostLike<ThreeMaterialLike, ThreeMeshLike>,
+export function createTexturedPlaneMesh<
+  TTexture extends ThreeTextureLike,
+  TMaterial extends ThreeMaterialLike = ThreeMaterialLike,
+  TMesh extends ThreeMeshLike = ThreeMeshLike,
+>(
+  three: PlaneMeshHostLike<TMaterial, TMesh>,
   options: {
     width: number;
     height: number;
-    texture: ThreeTextureLike;
+    texture: TTexture;
     transparent?: boolean;
     depthWrite?: boolean;
     color?: string;
   }
-) {
+): TMesh {
   return new three.Mesh(
     new three.PlaneGeometry(options.width, options.height),
     createBasicMaterial(three, {
@@ -193,7 +219,7 @@ export function createTexturedPlaneMesh(
       transparent: options.transparent ?? true,
       depthWrite: options.depthWrite ?? false,
       color: options.color,
-    })
+    }) as TMaterial
   );
 }
 

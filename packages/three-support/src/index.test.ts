@@ -1,9 +1,11 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import type { ThreeTextureLike } from '@bworlds/plugin-api';
 import {
   createBasicMaterial,
   createPaintedStandardMaterial,
   createTexturedPlaneMesh,
   getOrCreatePaintedCanvasTexture,
+  getOrCreatePaintedCanvasTextureTyped,
 } from './index.ts';
 
 describe('three support', () => {
@@ -137,8 +139,8 @@ describe('three support', () => {
       RepeatWrapping: 'repeat',
     };
 
-    const first = getOrCreatePaintedCanvasTexture(
-      cache as unknown as Map<string, any>,
+    const first = getOrCreatePaintedCanvasTextureTyped(
+      cache,
       'sign:starter',
       three,
       {
@@ -151,8 +153,8 @@ describe('three support', () => {
         },
       }
     );
-    const second = getOrCreatePaintedCanvasTexture(
-      cache as unknown as Map<string, any>,
+    const second = getOrCreatePaintedCanvasTextureTyped(
+      cache,
       'sign:starter',
       three,
       {
@@ -219,7 +221,10 @@ describe('three support', () => {
       add = vi.fn(() => this);
     }
 
-    const texture = { id: 'label-texture' };
+    const texture: ThreeTextureLike & { id: string } = {
+      id: 'label-texture',
+      needsUpdate: false,
+    };
     const mesh = createTexturedPlaneMesh(
       {
         PlaneGeometry: FakePlaneGeometry,
@@ -229,7 +234,7 @@ describe('three support', () => {
       {
         width: 1.2,
         height: 0.6,
-        texture: texture as any,
+        texture,
       }
     ) as FakeMesh;
 

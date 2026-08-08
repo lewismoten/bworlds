@@ -10,6 +10,8 @@
     "packages/core/src/index.ts",
     "packages/plugin-api/src/index.ts",
     "packages/plugin-api/src/types.ts",
-    "packages/plugin-api/src/utils.ts"
+    "packages/plugin-api/src/utils.ts",
+    "packages/procedural-style/src/index.ts",
+    "packages/three-support/src/index.ts"
   ]
 }

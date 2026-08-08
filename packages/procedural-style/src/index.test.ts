@@ -102,11 +102,11 @@ describe('procedural style helpers', () => {
       })
     );
 
-    expect(resolveMaterial({ label: 'three-a' } as any, 21, 6)).toEqual({
+    expect(resolveMaterial({ label: 'three-a' }, 21, 6)).toEqual({
       cacheKey: '2:0',
       host: 'three-a',
     });
-    expect(resolveMaterial({ label: 'three-b' } as any, 24, 9)).toEqual({
+    expect(resolveMaterial({ label: 'three-b' }, 24, 9)).toEqual({
       cacheKey: '2:0',
       host: 'three-b',
     });
