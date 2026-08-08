@@ -93,11 +93,17 @@ export type GeneratedNamedPoiAnchor = PoiAnchorLike & { name: string };
 export function createOverworldTerrainSignalSampler(
   seed: Seed
 ): OverworldTerrainSignalSampler {
+  const signalCache = new Map<number, Map<number, OverworldSignals>>();
   const riverControlPointCache = new Map<string, RiverControlPoint[]>();
   const riverCurvePointCache = new Map<string, RiverControlPoint[]>();
   const riverForkPathCache = new Map<string, RiverForkPath | null>();
 
   return function sampleTerrainSignals(x: number, y: number): OverworldSignals {
+    const cachedSignals = signalCache.get(x)?.get(y);
+    if (cachedSignals) {
+      return cachedSignals;
+    }
+
     const scaledX = x / 160;
     const scaledY = y / 160;
     const continent = octaveNoise2D(`${seed}:continent`, scaledX, scaledY, {
@@ -133,8 +139,7 @@ export function createOverworldTerrainSignalSampler(
         baseRiverSignal * 0.28 + riverPathSignal * 0.92 * riverPathWeight
       )
     );
-
-    return {
+    const signals = {
       continent,
       elevation,
       moisture,
@@ -144,6 +149,13 @@ export function createOverworldTerrainSignalSampler(
         persistence: 0.6,
       }),
     };
+    let row = signalCache.get(x);
+    if (!row) {
+      row = new Map<number, OverworldSignals>();
+      signalCache.set(x, row);
+    }
+    row.set(y, signals);
+    return signals;
   };
 }
 
@@ -304,7 +316,9 @@ export function createRiverCurvePoints(
       end,
       segmentsPerCurve
     );
-    curvePoints.push(...segmentPoints.slice(1));
+    for (let pointIndex = 1; pointIndex < segmentPoints.length; pointIndex += 1) {
+      curvePoints.push(segmentPoints[pointIndex]);
+    }
   }
 
   return curvePoints;
@@ -561,11 +575,11 @@ function sampleCubicBezierPoints(
   end: RiverControlPoint,
   segments: number
 ): RiverControlPoint[] {
-  const points: RiverControlPoint[] = [];
+  const points = new Array<RiverControlPoint>(segments + 1);
   for (let index = 0; index <= segments; index += 1) {
     const t = index / segments;
     const inverseT = 1 - t;
-    points.push({
+    points[index] = {
       x:
         inverseT * inverseT * inverseT * start.x +
         3 * inverseT * inverseT * t * controlA.x +
@@ -576,7 +590,7 @@ function sampleCubicBezierPoints(
         3 * inverseT * inverseT * t * controlA.y +
         3 * inverseT * t * t * controlB.y +
         t * t * t * end.y,
-    });
+    };
   }
   return points;
 }

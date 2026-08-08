@@ -187,6 +187,14 @@ describe('overworld support', () => {
     expect(sampleA(12, -9)).not.toEqual(sampleA(13, -9));
   });
 
+  it('reuses cached terrain signal objects for repeated coordinate samples', () => {
+    const sampleTerrainSignals = createOverworldTerrainSignalSampler('spec-seed');
+    const first = sampleTerrainSignals(12, -9);
+    const second = sampleTerrainSignals(12, -9);
+
+    expect(second).toBe(first);
+  });
+
   it('creates deterministic river control points with 2-10 tile spacing', () => {
     const points = createRiverControlPoints('spec-seed', 1, -2);
 
