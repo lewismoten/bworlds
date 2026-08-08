@@ -3,6 +3,7 @@ import {
   clampCameraPitch,
   DEFAULT_CAMERA_PITCH,
   getDecoratedTileSurfaceHeight,
+  getBoundaryPriority,
   getFarLandModelOpacity,
   getFacingVisibilityBucket,
   getWorldCurvatureOffset,
@@ -14,6 +15,7 @@ import {
   getTwilightSkyPalette,
   getTileModelDetailLevel,
   getVisibleWorldTileBuildOrder,
+  pickCornerBoundaryProfile,
   syncDynamicTileNodes,
   shouldRenderWorldTile,
 } from './index.ts';
@@ -251,15 +253,32 @@ describe('render3d visibility helpers', () => {
     expect(getDecoratedTileSurfaceHeight({})).toBe(0);
   });
 
-  it('syncs dynamic visible tile nodes through tile plugin hooks', () => {
+  it('prefers sea and channel boundaries without sorting transient arrays', () => {
+    const bank = { boundaryRole: null, surfaceHeight: 0.2 };
+    const sea = { boundaryRole: 'sea' as const, surfaceHeight: 0 };
+    const crossing = { boundaryRole: 'crossing' as const, surfaceHeight: 0.1 };
+
+    expect(getBoundaryPriority(sea.boundaryRole)).toBeLessThan(
+      getBoundaryPriority(crossing.boundaryRole)
+    );
+    expect(getBoundaryPriority(crossing.boundaryRole)).toBeLessThan(
+      getBoundaryPriority(bank.boundaryRole)
+    );
+    expect(
+      pickCornerBoundaryProfile([bank, null, crossing, sea])
+    ).toEqual(sea);
+  });
+
+  it('syncs dynamic visible tile nodes through tile plugin hooks from any iterable', () => {
     const calls: Array<{
       tileX: number;
       tileY: number;
       night: number;
       environmentId: string | undefined;
     }> = [];
-    syncDynamicTileNodes(
+    const entries = new Map([
       [
+        '4:5',
         {
           key: '4:5',
           tile: { kind: 'town' },
@@ -277,6 +296,9 @@ describe('render3d visibility helpers', () => {
           },
         },
       ],
+    ]).values();
+    syncDynamicTileNodes(
+      entries,
       {
         three: {} as never,
         state: {

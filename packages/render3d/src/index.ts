@@ -86,6 +86,27 @@ type DecoratedSurfaceTile = {
   surfaceHeight?: unknown;
 };
 
+type TileSurfaceProfile = {
+  surfaceHeight: number;
+  boundaryRole: SurfaceBoundaryRole3D | null;
+  underlayKind: string | null;
+  chamferEligible: boolean;
+  boundaryTransition: {
+    bodyInset?: number;
+    maxChamferDrop?: number;
+    minBankHeight?: number;
+  } | null;
+};
+
+type TileBuildCache = {
+  getTile(tileX: number, tileY: number): TileLike;
+  getSurfaceProfile(
+    tileX: number,
+    tileY: number,
+    tile?: TileLike
+  ): TileSurfaceProfile;
+};
+
 const TILE_SIZE = 1;
 const CHUNK_RADIUS = 18;
 const NEAR_VISIBLE_RADIUS = 6;
@@ -248,17 +269,13 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     detailLevel: 'full' | 'low' = 'full'
   ): DynamicTileNode {
     const tileNode = new THREE.Group();
-    const tile = state.getCurrentTile(x, y);
+    const buildCache = createTileBuildCache(state);
+    const tile = buildCache.getTile(x, y);
     const definition = getTileDefinitionFromRegistry(tile.kind);
     const variant = getTileVariantIndex(tile.kind, x, y);
-    const surfaceHeight = getTileSurfaceProfile(
-      state,
-      tile,
-      x,
-      y
-    ).surfaceHeight;
+    const surfaceHeight = buildCache.getSurfaceProfile(x, y, tile).surfaceHeight;
 
-    tileNode.add(createFloorMesh(state, tile, x, y, variant));
+    tileNode.add(createFloorMesh(state, tile, x, y, variant, buildCache));
 
     const tilePlugin = registry.getTilePlugin(tile.kind);
     const pluginModel = tilePlugin?.create3DModel?.({
@@ -404,7 +421,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       syncVisibleWorld(state, chunkRadius);
     }
     flushPendingWorldBuild(state);
-    syncWorldCurvature([...visibleTileNodes.values()], state);
+    syncWorldCurvature(visibleTileNodes.values(), state);
 
     camera.position.set(
       state.player.x * TILE_SIZE,
@@ -424,8 +441,8 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       environment
     );
     syncTileModelDetailLevels(state, getActivePluginRegistry());
-    updateFarLandModelVisibility([...visibleTileNodes.values()], state);
-    syncDynamicTileNodes([...visibleTileNodes.values()], {
+    updateFarLandModelVisibility(visibleTileNodes.values(), state);
+    syncDynamicTileNodes(visibleTileNodes.values(), {
       three: THREE,
       state,
       timeMs: options.timeMs,
@@ -497,7 +514,44 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     }
   }
 
-  function getTileSurfaceProfile(state, tile, tileX, tileY) {
+  function createTileBuildCache(state): TileBuildCache {
+    const tileCache = new Map<string, TileLike>();
+    const surfaceProfileCache = new Map<string, TileSurfaceProfile>();
+
+    function makeKey(tileX: number, tileY: number) {
+      return `${tileX}:${tileY}`;
+    }
+
+    function getTile(tileX: number, tileY: number): TileLike {
+      const key = makeKey(tileX, tileY);
+      if (!tileCache.has(key)) {
+        tileCache.set(key, state.getCurrentTile(tileX, tileY));
+      }
+      return tileCache.get(key) as TileLike;
+    }
+
+    function getSurfaceProfile(
+      tileX: number,
+      tileY: number,
+      tile = getTile(tileX, tileY)
+    ): TileSurfaceProfile {
+      const key = makeKey(tileX, tileY);
+      if (!surfaceProfileCache.has(key)) {
+        surfaceProfileCache.set(
+          key,
+          getTileSurfaceProfile(state, tile, tileX, tileY)
+        );
+      }
+      return surfaceProfileCache.get(key) as TileSurfaceProfile;
+    }
+
+    return {
+      getTile,
+      getSurfaceProfile,
+    };
+  }
+
+  function getTileSurfaceProfile(state, tile, tileX, tileY): TileSurfaceProfile {
     const pluginProfile =
       (getActivePluginRegistry().getSurfaceProfile3D({
         state,
@@ -555,8 +609,15 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     return materialCache.get(key);
   }
 
-  function createFloorMesh(state, tile, tileX, tileY, variant) {
-    const surfaceProfile = getTileSurfaceProfile(state, tile, tileX, tileY);
+  function createFloorMesh(
+    state,
+    tile,
+    tileX,
+    tileY,
+    variant,
+    buildCache: TileBuildCache
+  ) {
+    const surfaceProfile = buildCache.getSurfaceProfile(tileX, tileY, tile);
     if (surfaceProfile.underlayKind) {
       return createUnderlayFloor(
         tileX,
@@ -581,16 +642,16 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     const riverNeighbors = getAdjacentBoundaryNeighbors(state, tileX, tileY, {
       ...surfaceProfile,
       kind: floorKind,
-    });
+    }, buildCache);
 
     if (!riverNeighbors || riverNeighbors.count === 0) {
       if (isWaterKind(floorKind)) {
         return createWaterFloorMesh(
-          state,
           tileX,
           tileY,
           floorKind,
-          surfaceHeight
+          surfaceHeight,
+          buildCache
         );
       }
       const floorThickness =
@@ -724,11 +785,11 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
   function createUnderlayFloor(tileX, tileY, kind, surfaceHeight) {
     if (isWaterKind(kind)) {
       return createWaterFloorMesh(
-        null,
         tileX,
         tileY,
         kind,
-        surfaceHeight
+        surfaceHeight,
+        null
       );
     }
     const floorThickness =
@@ -748,9 +809,15 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     return floorMesh;
   }
 
-  function createWaterFloorMesh(state, tileX, tileY, kind, surfaceHeight) {
+  function createWaterFloorMesh(
+    tileX,
+    tileY,
+    kind,
+    surfaceHeight,
+    buildCache: TileBuildCache | null
+  ) {
     const material = getTileMaterial(kind, getTileVariantIndex(kind, tileX, tileY));
-    const inset = getWaterBodyInset(state, tileX, tileY, kind);
+    const inset = getWaterBodyInset(tileX, tileY, kind, buildCache);
     const width = Math.max(0.1, TILE_SIZE - inset.west - inset.east);
     const depth = Math.max(0.1, TILE_SIZE - inset.north - inset.south);
     const centerX = (inset.west - inset.east) * 0.5;
@@ -810,8 +877,8 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     group.add(mesh);
   }
 
-  function getWaterBodyInset(state, tileX, tileY, kind) {
-    if (!state) {
+  function getWaterBodyInset(tileX, tileY, kind, buildCache: TileBuildCache | null) {
+    if (!buildCache) {
       return { north: 0, east: 0, south: 0, west: 0 };
     }
 
@@ -819,29 +886,29 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       return { north: 0, east: 0, south: 0, west: 0 };
     }
 
-    const tile = state.getCurrentTile(tileX, tileY);
-    const profile = getTileSurfaceProfile(state, tile, tileX, tileY);
+    const tile = buildCache.getTile(tileX, tileY);
+    const profile = buildCache.getSurfaceProfile(tileX, tileY, tile);
     const insetAmount = profile.boundaryTransition?.bodyInset ?? 0;
 
     return {
-      north: shouldInsetWaterEdge(state, tileX, tileY - 1, kind)
+      north: shouldInsetWaterEdge(tileX, tileY - 1, kind, buildCache)
         ? insetAmount
         : 0,
-      east: shouldInsetWaterEdge(state, tileX + 1, tileY, kind)
+      east: shouldInsetWaterEdge(tileX + 1, tileY, kind, buildCache)
         ? insetAmount
         : 0,
-      south: shouldInsetWaterEdge(state, tileX, tileY + 1, kind)
+      south: shouldInsetWaterEdge(tileX, tileY + 1, kind, buildCache)
         ? insetAmount
         : 0,
-      west: shouldInsetWaterEdge(state, tileX - 1, tileY, kind)
+      west: shouldInsetWaterEdge(tileX - 1, tileY, kind, buildCache)
         ? insetAmount
         : 0,
     };
   }
 
-  function shouldInsetWaterEdge(state, tileX, tileY, kind) {
-    const neighborTile = state.getCurrentTile(tileX, tileY);
-    const profile = getTileSurfaceProfile(state, neighborTile, tileX, tileY);
+  function shouldInsetWaterEdge(tileX, tileY, kind, buildCache: TileBuildCache) {
+    const neighborTile = buildCache.getTile(tileX, tileY);
+    const profile = buildCache.getSurfaceProfile(tileX, tileY, neighborTile);
     if (profile.underlayKind && isWaterKind(profile.underlayKind)) {
       return false;
     }
@@ -854,59 +921,57 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     return !isWaterKind(neighborTile.kind);
   }
 
-  function getAdjacentBoundaryNeighbors(state, tileX, tileY, surfaceProfile) {
+  function getAdjacentBoundaryNeighbors(
+    state,
+    tileX,
+    tileY,
+    surfaceProfile,
+    buildCache: TileBuildCache
+  ) {
     if (!surfaceProfile.chamferEligible) {
       return null;
     }
 
     const neighbors = {
       north: getBoundaryProfile(
-        state,
-        state.getCurrentTile(tileX, tileY - 1),
         tileX,
-        tileY - 1
+        tileY - 1,
+        buildCache
       ),
       northeast: getBoundaryProfile(
-        state,
-        state.getCurrentTile(tileX + 1, tileY - 1),
         tileX + 1,
-        tileY - 1
+        tileY - 1,
+        buildCache
       ),
       east: getBoundaryProfile(
-        state,
-        state.getCurrentTile(tileX + 1, tileY),
         tileX + 1,
-        tileY
+        tileY,
+        buildCache
       ),
       southeast: getBoundaryProfile(
-        state,
-        state.getCurrentTile(tileX + 1, tileY + 1),
         tileX + 1,
-        tileY + 1
+        tileY + 1,
+        buildCache
       ),
       south: getBoundaryProfile(
-        state,
-        state.getCurrentTile(tileX, tileY + 1),
         tileX,
-        tileY + 1
+        tileY + 1,
+        buildCache
       ),
       southwest: getBoundaryProfile(
-        state,
-        state.getCurrentTile(tileX - 1, tileY + 1),
         tileX - 1,
-        tileY + 1
+        tileY + 1,
+        buildCache
       ),
       west: getBoundaryProfile(
-        state,
-        state.getCurrentTile(tileX - 1, tileY),
         tileX - 1,
-        tileY
+        tileY,
+        buildCache
       ),
       northwest: getBoundaryProfile(
-        state,
-        state.getCurrentTile(tileX - 1, tileY - 1),
         tileX - 1,
-        tileY - 1
+        tileY - 1,
+        buildCache
       ),
       count: 0,
     };
@@ -922,13 +987,9 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     return neighbors;
   }
 
-  function getBoundaryProfile(
-    state,
-    tile,
-    tileX,
-    tileY
-  ) {
-    const profile = getTileSurfaceProfile(state, tile, tileX, tileY);
+  function getBoundaryProfile(tileX, tileY, buildCache: TileBuildCache) {
+    const tile = buildCache.getTile(tileX, tileY);
+    const profile = buildCache.getSurfaceProfile(tileX, tileY, tile);
     return profile.boundaryRole ? profile : null;
   }
 
@@ -955,26 +1016,6 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       surfaceHeight - maxChamferDrop,
       boundaryProfile.surfaceHeight + minBankHeight
     );
-  }
-
-  function pickCornerBoundaryProfile(boundaries) {
-    return boundaries
-      .filter(Boolean)
-      .sort(
-        (left, right) =>
-          getBoundaryPriority(left.boundaryRole) -
-          getBoundaryPriority(right.boundaryRole)
-      )[0] ?? null;
-  }
-
-  function getBoundaryPriority(boundaryRole: SurfaceBoundaryRole3D | null) {
-    if (boundaryRole === 'sea') {
-      return 0;
-    }
-    if (boundaryRole === 'channel' || boundaryRole === 'crossing') {
-      return 1;
-    }
-    return 2;
   }
 
   function updateSkyAndLights(
@@ -1159,7 +1200,7 @@ export function clampCameraPitch(pitch: number): number {
 }
 
 export function syncDynamicTileNodes(
-  entries: DynamicTileNode[],
+  entries: Iterable<DynamicTileNode>,
   {
     three,
     state,
@@ -1176,9 +1217,9 @@ export function syncDynamicTileNodes(
     environment: WorldEnvironmentLike;
   }
 ): void {
-  entries.forEach((entry) => {
+  for (const entry of entries) {
     if ((entry.modelVisibilityOpacity ?? 1) <= MIN_MODEL_VISIBILITY_OPACITY) {
-      return;
+      continue;
     }
     entry.sync3DModel?.({
       three,
@@ -1191,7 +1232,7 @@ export function syncDynamicTileNodes(
       cycle,
       environment,
     });
-  });
+  }
 }
 
 export function getFarLandModelOpacity(
@@ -1254,26 +1295,26 @@ export function getWorldCurvatureOffset(
 }
 
 function syncWorldCurvature(
-  entries: DynamicTileNode[],
+  entries: Iterable<DynamicTileNode>,
   state: Render3DState
 ): void {
-  entries.forEach((entry) => {
+  for (const entry of entries) {
     const distance = Math.hypot(
       entry.tileX - state.player.x,
       entry.tileY - state.player.y
     );
     entry.node.position.y = getWorldCurvatureOffset(distance);
-  });
+  }
 }
 
 function updateFarLandModelVisibility(
-  entries: DynamicTileNode[],
+  entries: Iterable<DynamicTileNode>,
   state: Render3DState
 ): void {
-  entries.forEach((entry) => {
+  for (const entry of entries) {
     if (!entry.distanceFadeEligible || !entry.modelRoot) {
       entry.modelVisibilityOpacity = 1;
-      return;
+      continue;
     }
 
     const distance = Math.hypot(
@@ -1283,7 +1324,39 @@ function updateFarLandModelVisibility(
     const opacity = getFarLandModelOpacity(distance, entry.tileX, entry.tileY);
     entry.modelVisibilityOpacity = opacity;
     applyObjectDistanceFade(entry.modelRoot, opacity);
-  });
+  }
+}
+
+export function getBoundaryPriority(
+  boundaryRole: SurfaceBoundaryRole3D | null
+): number {
+  if (boundaryRole === 'sea') {
+    return 0;
+  }
+  if (boundaryRole === 'channel' || boundaryRole === 'crossing') {
+    return 1;
+  }
+  return 2;
+}
+
+export function pickCornerBoundaryProfile<
+  TBoundary extends { boundaryRole: SurfaceBoundaryRole3D | null },
+>(boundaries: Array<TBoundary | null>): TBoundary | null {
+  let bestBoundary: TBoundary | null = null;
+  let bestPriority = Number.POSITIVE_INFINITY;
+
+  for (const boundary of boundaries) {
+    if (!boundary) {
+      continue;
+    }
+    const priority = getBoundaryPriority(boundary.boundaryRole);
+    if (priority < bestPriority) {
+      bestBoundary = boundary;
+      bestPriority = priority;
+    }
+  }
+
+  return bestBoundary;
 }
 
 function prepareObjectForDistanceFade(root: THREE.Object3D): void {
