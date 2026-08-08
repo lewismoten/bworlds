@@ -1,4 +1,9 @@
 import {
+  type AirshipContext,
+  findAirshipLandingPoint,
+  isAirshipLaunchableLandTile,
+} from '@bworlds/map-airship';
+import {
   type BalloonContext,
   findBalloonLandingPoint,
   isBalloonLaunchableLandTile,
@@ -110,6 +115,10 @@ function createOverworldMap(
         state,
       }) ?? null;
     if (!action) {
+      const airshipAction = resolveAirshipAction(x, y, state);
+      if (airshipAction) {
+        return airshipAction;
+      }
       const boatAction = resolveBoatAction(x, y, state);
       if (boatAction) {
         return boatAction;
@@ -186,6 +195,56 @@ function createOverworldMap(
         y: launch.y - y,
       },
       facing: state?.player?.facing ?? 0,
+    });
+  }
+
+  function resolveAirshipAction(
+    x: number,
+    y: number,
+    state?: WorldStateLike & { player?: { facing?: number } }
+  ) {
+    if (
+      !isAirshipLaunchableLandTile({
+        x,
+        y,
+        sampleTile: getTile,
+        isWalkable(kind) {
+          return Boolean(plugins.getTileDefinition(kind)?.walkable);
+        },
+        state,
+      })
+    ) {
+      return null;
+    }
+
+    const facing = state?.player?.facing ?? 0;
+    const landing = findAirshipLandingPoint({
+      x,
+      y,
+      facing,
+      sampleTile: getTile,
+      isWalkable(kind) {
+        return Boolean(plugins.getTileDefinition(kind)?.walkable);
+      },
+      state,
+    });
+    if (!landing) {
+      return null;
+    }
+
+    const context: AirshipContext = {
+      id: `airship:${x}:${y}:${landing.x}:${landing.y}`,
+      label: 'Propeller Tall Ship',
+      type: 'airship',
+      depth: 1,
+      origin: { x, y },
+      destination: landing,
+    };
+
+    return createEnterMapAction({
+      context,
+      spawn: { x: 0, y: 1 },
+      facing,
     });
   }
 

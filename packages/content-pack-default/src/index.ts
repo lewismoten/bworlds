@@ -1,3 +1,4 @@
+import { createAirshipMapPlugin } from '@bworlds/map-airship';
 import { createBalloonMapPlugin } from '@bworlds/map-balloon';
 import { createBlimpMapPlugin } from '@bworlds/map-blimp';
 import { createBoatMapPlugin } from '@bworlds/map-boat';
@@ -79,6 +80,10 @@ export function createDefaultMapPlugins(): RuntimePlugin[] {
     {
       create: createDepthMapPlugin,
       order: { priority: 30 },
+    },
+    {
+      create: createAirshipMapPlugin,
+      order: { priority: 32.2 },
     },
     {
       create: createBalloonMapPlugin,
