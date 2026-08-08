@@ -15,6 +15,7 @@ import {
   normalizeWorldSeed,
   recordHeapUsageSample,
   recordMaterialGrowthSample,
+  recordPerformanceHistorySample,
   recordRendererChurnSample,
   resolvePerformanceTier,
 } from './debug-panel.ts';
@@ -307,6 +308,97 @@ describe('debug panel', () => {
     ).toBe(
       'Heap usage keeps climbing while idle (120.0 -> 149.0 MB over 0.32 tiles).'
     );
+  });
+
+  it('records performance history samples on a rolling one-minute window', () => {
+    const samples = [
+      {
+        nowMs: 100,
+        fps: 60,
+        frameMs: 16.7,
+        drawCalls: 100,
+        triangles: 2000,
+        objectCount: 300,
+        materialCount: 20,
+        geometryCount: 40,
+        heapUsedMb: 48,
+        tileBuildsPerSecond: 12,
+        lodReplacementsPerSecond: 2,
+        visibleTileCount: 120,
+        visibleTreeCount: 32,
+        activeLightCount: 4,
+        generationQueueSize: 3,
+      },
+    ];
+
+    recordPerformanceHistorySample(samples, {
+      nowMs: 500,
+      fps: 58,
+      frameMs: 17.3,
+      drawCalls: 104,
+      triangles: 2200,
+      objectCount: 308,
+      materialCount: 21,
+      geometryCount: 41,
+      heapUsedMb: 49,
+      tileBuildsPerSecond: 11,
+      lodReplacementsPerSecond: 3,
+      visibleTileCount: 118,
+      visibleTreeCount: 30,
+      activeLightCount: 5,
+      generationQueueSize: 5,
+    });
+
+    expect(samples).toHaveLength(1);
+
+    recordPerformanceHistorySample(samples, {
+      nowMs: 1200,
+      fps: 55,
+      frameMs: 18.1,
+      drawCalls: 110,
+      triangles: 2400,
+      objectCount: 315,
+      materialCount: 22,
+      geometryCount: 42,
+      heapUsedMb: 50,
+      tileBuildsPerSecond: 9,
+      lodReplacementsPerSecond: 4,
+      visibleTileCount: 116,
+      visibleTreeCount: 29,
+      activeLightCount: 5,
+      generationQueueSize: 6,
+    });
+
+    expect(samples).toEqual([
+      expect.objectContaining({ nowMs: 1200, fps: 55, generationQueueSize: 6 }),
+    ]);
+
+    recordPerformanceHistorySample(samples, {
+      nowMs: 62050,
+      fps: 53,
+      frameMs: 18.9,
+      drawCalls: 120,
+      triangles: 2600,
+      objectCount: 320,
+      materialCount: 23,
+      geometryCount: 43,
+      heapUsedMb: null,
+      tileBuildsPerSecond: 8,
+      lodReplacementsPerSecond: 4,
+      visibleTileCount: 110,
+      visibleTreeCount: 24,
+      activeLightCount: 6,
+      generationQueueSize: 7,
+    });
+
+    expect(samples).toEqual([
+      expect.objectContaining({
+        nowMs: 62050,
+        heapUsedMb: null,
+        activeLightCount: 6,
+        generationQueueSize: 7,
+      }),
+    ]);
   });
 
   it('avoids idle allocation warnings when the player is moving or heap growth is too small', () => {

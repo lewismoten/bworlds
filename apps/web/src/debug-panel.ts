@@ -83,6 +83,24 @@ export type HeapUsageSample = {
   playerY: number;
 };
 
+export type PerformanceHistorySample = {
+  nowMs: number;
+  fps: number;
+  frameMs: number;
+  drawCalls: number;
+  triangles: number;
+  objectCount: number;
+  materialCount: number;
+  geometryCount: number;
+  heapUsedMb: number | null;
+  tileBuildsPerSecond: number;
+  lodReplacementsPerSecond: number;
+  visibleTileCount: number;
+  visibleTreeCount: number;
+  activeLightCount: number;
+  generationQueueSize: number;
+};
+
 export function normalizeWorldSeed(seed: string | undefined, fallback: string): string {
   const trimmed = seed?.trim();
   return trimmed ? trimmed : fallback;
@@ -340,6 +358,23 @@ export function recordHeapUsageSample(
   {
     sampleIntervalMs = 1000,
     historyWindowMs = 12000,
+  }: {
+    sampleIntervalMs?: number;
+    historyWindowMs?: number;
+  } = {}
+): void {
+  recordRollingSample(samples, sample, {
+    sampleIntervalMs,
+    historyWindowMs,
+  });
+}
+
+export function recordPerformanceHistorySample(
+  samples: PerformanceHistorySample[],
+  sample: PerformanceHistorySample,
+  {
+    sampleIntervalMs = 1000,
+    historyWindowMs = 60000,
   }: {
     sampleIntervalMs?: number;
     historyWindowMs?: number;

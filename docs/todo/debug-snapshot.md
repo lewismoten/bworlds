@@ -454,21 +454,21 @@ That is probably the most important improvement I'd make.
 
 * [ ] Keep the previous 10–30 seconds of performance samples in a circular buffer.
 * [ ] Export that buffer with the snapshot.
-* [ ] Record FPS each sample.
-* [ ] Record CPU frame time.
+* [X] Record FPS each sample.
+* [X] Record CPU frame time.
 * [ ] Record GPU frame time where available.
-* [ ] Record draw calls.
-* [ ] Record triangles.
-* [ ] Record objects.
-* [ ] Record materials.
-* [ ] Record geometries.
-* [ ] Record heap.
-* [ ] Record tile builds.
-* [ ] Record LOD swaps.
-* [ ] Record visible tiles.
-* [ ] Record visible trees.
-* [ ] Record active lights.
-* [ ] Record generation queue size.
+* [X] Record draw calls.
+* [X] Record triangles.
+* [X] Record objects.
+* [X] Record materials.
+* [X] Record geometries.
+* [X] Record heap.
+* [X] Record tile builds.
+* [X] Record LOD swaps.
+* [X] Record visible tiles.
+* [X] Record visible trees.
+* [X] Record active lights.
+* [X] Record generation queue size.
 
 For example:
 

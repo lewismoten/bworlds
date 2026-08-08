@@ -102,6 +102,7 @@ import {
   resolvePerformanceTier,
   recordHeapUsageSample,
   recordMaterialGrowthSample,
+  recordPerformanceHistorySample,
   recordRendererChurnSample,
   getDebugSignature,
   normalizeWorldSeed,
@@ -1044,6 +1045,23 @@ const debugResourceTrendState = {
     heapUsedMb: number;
     playerX: number;
     playerY: number;
+  }>,
+  performanceSamples: [] as Array<{
+    nowMs: number;
+    fps: number;
+    frameMs: number;
+    drawCalls: number;
+    triangles: number;
+    objectCount: number;
+    materialCount: number;
+    geometryCount: number;
+    heapUsedMb: number | null;
+    tileBuildsPerSecond: number;
+    lodReplacementsPerSecond: number;
+    visibleTileCount: number;
+    visibleTreeCount: number;
+    activeLightCount: number;
+    generationQueueSize: number;
   }>,
 };
 const renderBudgetState = {
@@ -2677,6 +2695,23 @@ function render(): FrameLoopActivityLike {
       ...(idleAllocationWarning ? [idleAllocationWarning] : []),
       ...(stationaryTileBuildWarning ? [stationaryTileBuildWarning] : []),
     ];
+    recordPerformanceHistorySample(debugResourceTrendState.performanceSamples, {
+      nowMs,
+      fps: debugSnapshot.fps,
+      frameMs: debugSnapshot.frameMs,
+      drawCalls: debugSnapshot.drawCalls,
+      triangles: debugSnapshot.triangles,
+      objectCount: debugSnapshot.object3dCount,
+      materialCount: debugSnapshot.materialCount,
+      geometryCount: debugSnapshot.geometryCount,
+      heapUsedMb: debugSnapshot.heapUsedMb,
+      tileBuildsPerSecond: debugSnapshot.tileBuildsPerSecond,
+      lodReplacementsPerSecond: debugSnapshot.lodReplacementsPerSecond,
+      visibleTileCount: debugSnapshot.visibleTileCount,
+      visibleTreeCount: debugSnapshot.visibleTreeCount,
+      activeLightCount: debugSnapshot.lightCount,
+      generationQueueSize: debugSnapshot.chunkGenerationQueueSize,
+    });
     const debugSignature = getDebugSignature(debugSnapshot);
     if (debugSignature !== uiRenderState.lastDebugSignature) {
       debugSummary.innerHTML = buildDebugMarkup(debugSnapshot);
