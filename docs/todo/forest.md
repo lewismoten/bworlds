@@ -4,8 +4,8 @@
 - [ ] Improve the branch generation to make trees
 - [ ] Add pine trees
 - [ ] Add bushes
-- [ ] Sometimes show a stump
-- [ ] Sometimes show a fallen tree
+- [X] Sometimes show a stump
+- [X] Sometimes show a fallen tree
 - [ ] Consider a forest near a river can have a fallen tree across the river to form a bridge without a path/road leading to it
 - [ ] A forest may have a meadow with flowers
 - [ ] A tree may have a hollow

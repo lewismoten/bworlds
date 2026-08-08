@@ -6,7 +6,7 @@ vi.mock('@bworlds/three-support', () => ({
   },
 }));
 
-import { createForestTilePlugin } from './index.ts';
+import { createForestTilePlugin, getForestFloorDetails } from './index.ts';
 
 class FakeGeometry {
   constructor(..._args: number[]) {}
@@ -98,6 +98,38 @@ const fakeThree = {
 } as const;
 
 describe('tile forest', () => {
+  it('generates deterministic stump and fallen tree floor details', () => {
+    const sampleTiles: Array<{
+      x: number;
+      y: number;
+      details: ReturnType<typeof getForestFloorDetails>;
+    }> = [];
+
+    for (let tileY = 0; tileY < 18; tileY += 1) {
+      for (let tileX = 0; tileX < 18; tileX += 1) {
+        const details = getForestFloorDetails(tileX, tileY);
+        if (details.length > 0) {
+          sampleTiles.push({ x: tileX, y: tileY, details });
+        }
+      }
+    }
+
+    expect(sampleTiles.length).toBeGreaterThan(0);
+    expect(
+      sampleTiles.some(({ details }) =>
+        details.some((detail) => detail.kind === 'stump')
+      )
+    ).toBe(true);
+    expect(
+      sampleTiles.some(({ details }) =>
+        details.some((detail) => detail.kind === 'fallen-tree')
+      )
+    ).toBe(true);
+
+    const first = sampleTiles[0];
+    expect(getForestFloorDetails(first.x, first.y)).toEqual(first.details);
+  });
+
   it('creates a lower-detail distant forest model', () => {
     const plugin = createForestTilePlugin();
     const tile = plugin.tiles?.find((entry) => entry.kind === 'forest');
@@ -141,6 +173,77 @@ describe('tile forest', () => {
     expect(
       lowModel.children.every((tree) => tree.children.length <= 2)
     ).toBe(true);
+  });
+
+  it('adds stump and fallen tree geometry only to full-detail forest models', () => {
+    const plugin = createForestTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'forest');
+    const state = {
+      player: { x: 0, y: 0, facing: 0 },
+      getCurrentContext() {
+        return { id: 'overworld', type: 'overworld', depth: 0 };
+      },
+      getCurrentTile() {
+        return { kind: 'forest' };
+      },
+      getTileDefinition() {
+        return {
+          name: 'Forest',
+          color: '#000000',
+          miniColor: '#111111',
+          walkable: true,
+          wallHeight: 0.38,
+        };
+      },
+    };
+
+    let targetTile: { x: number; y: number } | null = null;
+    for (let tileY = 0; tileY < 18 && !targetTile; tileY += 1) {
+      for (let tileX = 0; tileX < 18; tileX += 1) {
+        if (getForestFloorDetails(tileX, tileY).length > 0) {
+          targetTile = { x: tileX, y: tileY };
+          break;
+        }
+      }
+    }
+
+    expect(targetTile).not.toBeNull();
+
+    const fullModel = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'forest' },
+      tileX: targetTile!.x,
+      tileY: targetTile!.y,
+      detailLevel: 'full',
+    }) as FakeGroup;
+    const lowModel = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'forest' },
+      tileX: targetTile!.x,
+      tileY: targetTile!.y,
+      detailLevel: 'low',
+    }) as FakeGroup;
+
+    const fullDetailKinds = new Set<string>();
+    fullModel.traverse((node) => {
+      const kind = node.userData?.forestFloorDetail;
+      if (typeof kind === 'string') {
+        fullDetailKinds.add(kind);
+      }
+    });
+
+    const lowDetailKinds = new Set<string>();
+    lowModel.traverse((node) => {
+      const kind = node.userData?.forestFloorDetail;
+      if (typeof kind === 'string') {
+        lowDetailKinds.add(kind);
+      }
+    });
+
+    expect(fullDetailKinds.size).toBeGreaterThan(0);
+    expect(lowDetailKinds.size).toBe(0);
   });
 
   it('shows fireflies only after dark', () => {

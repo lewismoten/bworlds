@@ -26,6 +26,7 @@ const TREE_FOLIAGE_COLOR = '#163b20';
 const TREE_BARK_COLOR = '#4a2f1b';
 const FIREFLY_KEY = 'forestFirefly';
 const FIREFLY_LIGHT_KEY = 'forestFireflyLight';
+const FLOOR_DETAIL_KEY = 'forestFloorDetail';
 const TREE_CLUSTER_SIZE = 4;
 const TREE_REGION_SIZE = 14;
 
@@ -98,6 +99,45 @@ const resolveForestTreeDescriptors = createCoordinateValueResolver(
     }
 
     return descriptors;
+  }
+);
+const forestFloorDetailCache = new Map<string, ForestFloorDetailDescriptor[]>();
+const resolveForestFloorDetailDescriptors = createCoordinateValueResolver(
+  forestFloorDetailCache,
+  ({ tileX, tileY }) => {
+    const trees = resolveForestTreeDescriptors(tileX, tileY);
+    const details: ForestFloorDetailDescriptor[] = [];
+    const denseForest = trees.length >= 5;
+    const stumpChance = hash2D('forest-stump-detail', tileX, tileY);
+    const fallenTreeChance = hash2D('forest-fallen-detail', tileX, tileY);
+
+    if (stumpChance > (denseForest ? 0.34 : 0.54)) {
+      const stump = createForestFloorDetailDescriptor(
+        'stump',
+        tileX,
+        tileY,
+        trees,
+        0
+      );
+      if (stump) {
+        details.push(stump);
+      }
+    }
+
+    if (fallenTreeChance > (denseForest ? 0.44 : 0.74)) {
+      const fallenTree = createForestFloorDetailDescriptor(
+        'fallen-tree',
+        tileX,
+        tileY,
+        trees,
+        details.length
+      );
+      if (fallenTree) {
+        details.push(fallenTree);
+      }
+    }
+
+    return details;
   }
 );
 const treeGeometryCache = new WeakMap<
@@ -256,6 +296,43 @@ export function createForestTilePlugin(): RuntimePlugin {
         }
 
         if (detailLevel === 'full') {
+          const floorDetailStyle = getTreeStyle(three, tileX, tileY, 0);
+          for (const detail of getForestFloorDetails(tileX, tileY)) {
+            if (detail.kind === 'stump') {
+              const stump = new three.Mesh(
+                geometry.trunk,
+                floorDetailStyle.trunkMaterial
+              );
+              stump.position.set(
+                tileX + detail.x,
+                detail.height * 0.5,
+                tileY + detail.y
+              );
+              stump.rotation.y = detail.rotation;
+              stump.scale.set(detail.radius, detail.height, detail.radius);
+              stump.userData = {
+                ...(stump.userData ?? {}),
+                [FLOOR_DETAIL_KEY]: detail.kind,
+              };
+              group.add(stump);
+              continue;
+            }
+
+            const log = new three.Mesh(
+              geometry.trunk,
+              floorDetailStyle.trunkMaterial
+            );
+            log.position.set(tileX + detail.x, detail.radius * 0.8, tileY + detail.y);
+            log.rotation.z = Math.PI / 2;
+            log.rotation.y = detail.rotation;
+            log.scale.set(detail.radius, detail.length, detail.radius);
+            log.userData = {
+              ...(log.userData ?? {}),
+              [FLOOR_DETAIL_KEY]: detail.kind,
+            };
+            group.add(log);
+          }
+
           for (const firefly of getForestFireflies(three, tileX, tileY)) {
             group.add(firefly);
           }
@@ -307,6 +384,13 @@ function getForestTreeDescriptors(
   tileY: number
 ): ForestTreeDescriptor[] {
   return resolveForestTreeDescriptors(tileX, tileY);
+}
+
+export function getForestFloorDetails(
+  tileX: number,
+  tileY: number
+): ForestFloorDetailDescriptor[] {
+  return resolveForestFloorDetailDescriptors(tileX, tileY);
 }
 
 function getTreeVarietyIndex(
@@ -449,6 +533,53 @@ function getForestFireflies(three: ThreeHostLike, tileX: number, tileY: number) 
   }
 
   return fireflies;
+}
+
+function createForestFloorDetailDescriptor(
+  kind: ForestFloorDetailDescriptor['kind'],
+  tileX: number,
+  tileY: number,
+  trees: ForestTreeDescriptor[],
+  detailIndex: number
+): ForestFloorDetailDescriptor | null {
+  const maxAttempts = 4;
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    const seed = `forest-floor:${kind}:${tileX}:${tileY}:${detailIndex}:${attempt}`;
+    const x = clampToTile((hash2D(seed, 1, 0) - 0.5) * 0.56);
+    const y = clampToTile((hash2D(seed, 2, 0) - 0.5) * 0.56);
+    const clearance = kind === 'stump' ? 0.09 : 0.12;
+    const nearTree = trees.some((tree) => {
+      const distance = Math.hypot(x - tree.x, y - tree.y);
+      return distance < tree.radius + clearance;
+    });
+
+    if (nearTree) {
+      continue;
+    }
+
+    if (kind === 'stump') {
+      return {
+        kind,
+        x,
+        y,
+        rotation: hash2D(seed, 3, 0) * Math.PI * 2,
+        radius: 0.48 + hash2D(seed, 4, 0) * 0.24,
+        height: 0.12 + hash2D(seed, 5, 0) * 0.08,
+      };
+    }
+
+    return {
+      kind,
+      x,
+      y,
+      rotation: hash2D(seed, 3, 0) * Math.PI * 2,
+      radius: 0.34 + hash2D(seed, 4, 0) * 0.12,
+      length: 0.42 + hash2D(seed, 5, 0) * 0.24,
+      height: 0.12,
+    };
+  }
+
+  return null;
 }
 
 function syncForestFireflies(
@@ -639,4 +770,14 @@ interface ForestTreeDescriptor {
   variety: number;
   branches: ForestBranchDescriptor[];
   foliage: ForestFoliageDescriptor[];
+}
+
+interface ForestFloorDetailDescriptor {
+  kind: 'stump' | 'fallen-tree';
+  x: number;
+  y: number;
+  rotation: number;
+  radius: number;
+  height: number;
+  length?: number;
 }
