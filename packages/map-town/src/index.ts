@@ -26,7 +26,8 @@ type TownContext = WorldContextLike & {
 const TOWN_WIDTH = 25;
 const TOWN_HEIGHT = 25;
 const TOWN_EDGE_OFFSET = 9;
-const TOWN_BUILDING_ROW_OFFSET = 4;
+const TOWN_BUILDING_ROW_OFFSET = 5;
+const TOWN_APPROACH_PATH_OFFSET = 4;
 const TOWN_FRONTAGE_ROAD_OFFSET = 3;
 const TOWN_BUILDING_SPAN = 8;
 const TOWN_SIDE_STREET_INTERVAL = 4;
@@ -135,6 +136,7 @@ export function resolveTownTile(options: {
   if (
     isTownMainRoad(offsetX, offsetY) ||
     isTownFrontageRoad(offsetX, offsetY) ||
+    isTownApproachPath(offsetX, offsetY) ||
     isTownConnectorRoad(offsetX, offsetY)
   ) {
     return { kind: 'road' };
@@ -162,6 +164,14 @@ export function isTownFrontageRoad(offsetX: number, offsetY: number): boolean {
   return (
     Math.abs(offsetY) === TOWN_FRONTAGE_ROAD_OFFSET &&
     Math.abs(offsetX) <= TOWN_BUILDING_SPAN
+  );
+}
+
+export function isTownApproachPath(offsetX: number, offsetY: number): boolean {
+  return (
+    Math.abs(offsetY) === TOWN_APPROACH_PATH_OFFSET &&
+    Math.abs(offsetX) <= TOWN_BUILDING_SPAN &&
+    offsetX % 2 === 0
   );
 }
 

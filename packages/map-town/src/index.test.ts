@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { CreateMapContext } from '@bworlds/plugin-api';
 import {
   createTownMapPlugin,
+  isTownApproachPath,
   isTownBuildingPlot,
   isTownConnectorRoad,
   isTownFrontageRoad,
@@ -35,7 +36,7 @@ function createTownMap() {
 }
 
 describe('map town', () => {
-  it('lays out frontage roads directly past every building plot', () => {
+  it('lays out an approach path from every building plot to the frontage road', () => {
     const map = createTownMap();
     const buildingTiles: Array<{ x: number; y: number }> = [];
 
@@ -50,8 +51,12 @@ describe('map town', () => {
     expect(buildingTiles.length).toBeGreaterThan(0);
     expect(
       buildingTiles.every(({ x, y }) => {
-        const frontageY = y > 0 ? y - 1 : y + 1;
-        return map.getTile(x, frontageY).kind === 'road';
+        const pathY = y > 0 ? y - 1 : y + 1;
+        const frontageY = y > 0 ? y - 2 : y + 2;
+        return (
+          map.getTile(x, pathY).kind === 'road' &&
+          map.getTile(x, frontageY).kind === 'road'
+        );
       })
     ).toBe(true);
   });
@@ -70,7 +75,8 @@ describe('map town', () => {
   });
 
   it('resolves town tile roles through shared layout helpers', () => {
-    expect(isTownBuildingPlot(0, 4)).toBe(true);
+    expect(isTownBuildingPlot(0, 5)).toBe(true);
+    expect(isTownApproachPath(0, 4)).toBe(true);
     expect(isTownFrontageRoad(0, 3)).toBe(true);
     expect(isTownConnectorRoad(4, 2)).toBe(true);
     expect(isTownMainRoad(0, 1)).toBe(true);
@@ -78,15 +84,15 @@ describe('map town', () => {
       resolveTownTile({
         contextId: 'town:test',
         x: 0,
-        y: 4,
+        y: 5,
         localX: 12,
-        localY: 16,
+        localY: 17,
         centerX: 12,
         centerY: 12,
       })
     ).toMatchObject({
       kind: 'shop',
-      building: { id: 'town:test:0:4' },
+      building: { id: 'town:test:0:5' },
     });
   });
 });
