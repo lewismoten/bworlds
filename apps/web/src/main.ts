@@ -69,10 +69,15 @@ import {
   normalizeWorldSeed,
 } from './debug-panel.ts';
 import {
+  findRandomTileDestination,
+  listTileTeleportOptions,
+} from './debug-teleport.ts';
+import {
   advanceRenderBudgetState,
   DEFAULT_RENDER_BUDGET_STATE,
 } from './render-budget.ts';
 import { getMouseLookAngles } from './mouse-look.ts';
+import { getMovementIntent } from './movement-input.ts';
 import {
   getHmrNoticeText,
   getHmrNoticeVisibleUntil,
@@ -431,6 +436,14 @@ root.innerHTML = `
               <button id="debug-apply-seed" type="button">Apply Seed</button>
               <button id="debug-load-seed" type="button">Load Saved</button>
             </div>
+            <div class="debug-seed-controls">
+              <select
+                id="debug-tile-kind"
+                class="debug-seed-input"
+                aria-label="Tile kind teleport"
+              ></select>
+              <button id="debug-teleport-tile" type="button">Jump To Tile</button>
+            </div>
             <dl id="debug-summary" class="debug-summary"></dl>
             <p class="inspector-note">
               Applied seeds are saved with the session and restored when you load it again.
@@ -570,6 +583,10 @@ const debugApplySeedButton =
   document.querySelector<HTMLButtonElement>('#debug-apply-seed');
 const debugLoadSeedButton =
   document.querySelector<HTMLButtonElement>('#debug-load-seed');
+const debugTileKindSelect =
+  document.querySelector<HTMLSelectElement>('#debug-tile-kind');
+const debugTeleportTileButton =
+  document.querySelector<HTMLButtonElement>('#debug-teleport-tile');
 const freezeTimeButton =
   document.querySelector<HTMLButtonElement>('#time-freeze-toggle');
 const celestialToolsCard =
@@ -740,6 +757,7 @@ updateMinimapDisplayModeUi();
 if (debugSeedInput) {
   debugSeedInput.value = currentWorldSeed;
 }
+updateDebugTeleportOptions();
 
 function updateViewModeUi(): void {
   if (toggleButton) {
@@ -1140,6 +1158,7 @@ function rebuildRuntime(nextPackIds: string[]): void {
   drawAtlas(atlasCanvas.getContext('2d'));
   renderContentPackControls();
   updateContentPackLabel();
+  updateDebugTeleportOptions();
   saveSession();
   requestRender();
 }
@@ -1147,6 +1166,35 @@ function rebuildRuntime(nextPackIds: string[]): void {
 function syncDebugSeedInput(): void {
   if (debugSeedInput && debugSeedInput.value !== currentWorldSeed) {
     debugSeedInput.value = currentWorldSeed;
+  }
+}
+
+function updateDebugTeleportOptions(): void {
+  if (!debugTileKindSelect) {
+    return;
+  }
+
+  const previousValue = debugTileKindSelect.value;
+  const options = listTileTeleportOptions(
+    registry.listResolvedTileDefinitions().map(([kind, definition]) => [
+      kind,
+      {
+        name: definition.name,
+        walkable: definition.walkable,
+      },
+    ])
+  );
+
+  debugTileKindSelect.innerHTML = options
+    .map(
+      (option) =>
+        `<option value="${option.kind}">${option.label}</option>`
+    )
+    .join('');
+
+  const hasPreviousValue = options.some((option) => option.kind === previousValue);
+  if (hasPreviousValue) {
+    debugTileKindSelect.value = previousValue;
   }
 }
 
@@ -1166,6 +1214,18 @@ function applyWorldSeed(seed: string): void {
 function loadSavedWorldSeed(): void {
   const parsed = parseSavedSession(window.localStorage.getItem(STORAGE_KEY));
   applyWorldSeed(parsed?.worldSeed ?? DEFAULT_WORLD_SEED);
+}
+
+function canLandOnOverworldTile(x: number, y: number): boolean {
+  const tile = generator.sampleOverworld(x, y);
+  const definition =
+    registry.resolveTileDefinition(tile.kind, state.getTileDefinition(tile.kind)) ??
+    state.getTileDefinition(tile.kind);
+  return (
+    Boolean(definition?.walkable) &&
+    tile.kind !== 'river' &&
+    tile.kind !== 'ocean'
+  );
 }
 
 function getCurrentWorldTimeMs(): number {
@@ -1332,39 +1392,38 @@ function travelToOverworld(
   requestRender();
 }
 
-function findRandomPlainsLocation(): WorldPoint {
-  for (let attempt = 0; attempt < 3000; attempt += 1) {
-    const x = Math.floor((Math.random() * 2 - 1) * HALF_WORLD_TILES);
-    const y = Math.floor((Math.random() * 2 - 1) * HALF_WORLD_TILES * 0.5);
-    const tile = generator.sampleOverworld(x, y);
-    if (tile.kind === 'plains') {
-      return { x, y };
-    }
-  }
-
-  for (let radius = 0; radius <= 12; radius += 1) {
-    for (let offsetY = -radius; offsetY <= radius; offsetY += 1) {
-      for (let offsetX = -radius; offsetX <= radius; offsetX += 1) {
-        const x = offsetX;
-        const y = offsetY;
-        const tile = generator.sampleOverworld(x, y);
-        if (tile.kind === 'plains') {
-          return { x, y };
-        }
-      }
-    }
-  }
-
-  return { x: 0, y: 0 };
-}
-
 function jumpToRandomPlains(): void {
-  const destination = findRandomPlainsLocation();
+  const destination =
+    findRandomTileDestination('plains', {
+      sampleOverworld: generator.sampleOverworld,
+      canLandAt: canLandOnOverworldTile,
+    }) ?? { x: 0, y: 0 };
   travelToOverworld(destination.x, destination.y);
 }
 
 function jumpHome(): void {
   travelToOverworld(0, 0, 0);
+}
+
+function teleportToSelectedTileKind(): void {
+  const targetKind = debugTileKindSelect?.value;
+  if (!targetKind) {
+    showHmrNotice('Select a tile type first.');
+    return;
+  }
+
+  const destination = findRandomTileDestination(targetKind, {
+    sampleOverworld: generator.sampleOverworld,
+    canLandAt: canLandOnOverworldTile,
+  });
+
+  if (!destination) {
+    showHmrNotice(`Unable to find a nearby landing spot for ${targetKind}.`);
+    return;
+  }
+
+  travelToOverworld(destination.x, destination.y);
+  showHmrNotice(`Jumped to ${targetKind} near ${destination.x}, ${destination.y}.`);
 }
 
 function skipTimeByHours(hours: number): void {
@@ -1518,7 +1577,7 @@ function updateMovement(deltaMs: number): void {
   const previousFacing = state.player.facing;
   const turnSpeed = 0.0034 * deltaMs;
   const moveSpeed = 0.0052 * deltaMs;
-  const shiftHeld = keys.has('Shift');
+  const intent = getMovementIntent(keys);
 
   if (keys.has('q')) {
     state.player.facing = normalizeAngle(state.player.facing - turnSpeed);
@@ -1535,29 +1594,27 @@ function updateMovement(deltaMs: number): void {
     y: Math.sin(state.player.facing + Math.PI / 2),
   };
 
-  if (state.viewMode !== '3d') {
-    if ((keys.has('ArrowLeft') || keys.has('a')) && !shiftHeld) {
-      state.player.facing = normalizeAngle(state.player.facing - turnSpeed);
-    }
-    if ((keys.has('ArrowRight') || keys.has('d')) && !shiftHeld) {
-      state.player.facing = normalizeAngle(state.player.facing + turnSpeed);
-    }
-    if (keys.has('ArrowUp') || keys.has('w')) {
-      moveX += forward.x;
-      moveY += forward.y;
-    }
-    if (keys.has('ArrowDown') || keys.has('s')) {
-      moveX -= forward.x;
-      moveY -= forward.y;
-    }
-    if ((keys.has('ArrowLeft') || keys.has('a')) && shiftHeld) {
-      moveX -= strafe.x;
-      moveY -= strafe.y;
-    }
-    if ((keys.has('ArrowRight') || keys.has('d')) && shiftHeld) {
-      moveX += strafe.x;
-      moveY += strafe.y;
-    }
+  if (intent.turnLeft) {
+    state.player.facing = normalizeAngle(state.player.facing - turnSpeed);
+  }
+  if (intent.turnRight) {
+    state.player.facing = normalizeAngle(state.player.facing + turnSpeed);
+  }
+  if (intent.moveForward) {
+    moveX += forward.x;
+    moveY += forward.y;
+  }
+  if (intent.moveBackward) {
+    moveX -= forward.x;
+    moveY -= forward.y;
+  }
+  if (intent.strafeLeft) {
+    moveX -= strafe.x;
+    moveY -= strafe.y;
+  }
+  if (intent.strafeRight) {
+    moveX += strafe.x;
+    moveY += strafe.y;
   }
 
   const magnitude = Math.hypot(moveX, moveY);
@@ -2189,9 +2246,15 @@ debugApplySeedButton?.addEventListener('click', () => {
   applyWorldSeed(debugSeedInput?.value ?? currentWorldSeed);
 });
 debugLoadSeedButton?.addEventListener('click', loadSavedWorldSeed);
+debugTeleportTileButton?.addEventListener('click', teleportToSelectedTileKind);
 debugSeedInput?.addEventListener('keydown', (event) => {
   if (event.key === 'Enter') {
     applyWorldSeed(debugSeedInput.value);
+  }
+});
+debugTileKindSelect?.addEventListener('keydown', (event) => {
+  if (event.key === 'Enter') {
+    teleportToSelectedTileKind();
   }
 });
 modelPreviewWorldButton?.addEventListener('click', () => setModelPreviewMode('world'));
