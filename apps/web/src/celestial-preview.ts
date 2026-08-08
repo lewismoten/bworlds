@@ -20,6 +20,11 @@ type PreviewPoint3D = {
   z: number;
 };
 
+type PreviewLightingCycleLike = Pick<
+  DaylightCycleLike,
+  'daylight' | 'night' | 'starsOpacity'
+>;
+
 const PLANET_SURFACE_COLORS: Record<string, string> = {
   ocean: '#1a3d68',
   water: '#1a3d68',
@@ -58,7 +63,7 @@ export function createCelestialPreviewRenderer(host: HTMLElement | null) {
   renderer.setClearColor(0x000000, 0);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.18;
+  renderer.toneMappingExposure = 1.08;
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   host.appendChild(renderer.domElement);
@@ -337,7 +342,7 @@ export function getPlanetSurfaceColor(kind: string | undefined) {
   return PLANET_SURFACE_COLORS[kind] ?? '#6b7c59';
 }
 
-export function brightenPreviewSurfaceColor(color: string, factor = 0.16) {
+export function brightenPreviewSurfaceColor(color: string, factor = 0.12) {
   const red = Number.parseInt(color.slice(1, 3), 16);
   const green = Number.parseInt(color.slice(3, 5), 16);
   const blue = Number.parseInt(color.slice(5, 7), 16);
@@ -348,20 +353,18 @@ export function brightenPreviewSurfaceColor(color: string, factor = 0.16) {
   return `#${brighten(red)}${brighten(green)}${brighten(blue)}`;
 }
 
-export function getPreviewLightingProfile(
-  cycle: Pick<DaylightCycleLike, 'daylight' | 'night' | 'starsOpacity'>
-) {
+export function getPreviewLightingProfile(cycle: PreviewLightingCycleLike) {
   return {
-    ambientIntensity: 1.16 + cycle.daylight * 0.56 + cycle.night * 0.18,
-    hemisphereIntensity: 0.62 + cycle.daylight * 0.5 + cycle.night * 0.14,
-    rimIntensity: 1.02 + cycle.daylight * 0.82,
-    sunIntensity: 1.28 + cycle.daylight * 2.14,
-    sunFillIntensity: 0.46 + cycle.daylight * 1.22,
-    bounceFillIntensity: 0.3 + cycle.daylight * 0.64 + cycle.night * 0.1,
-    nightFillIntensity: 0.38 + cycle.night * 0.46,
-    emissiveIntensity: 0.6 + cycle.night * 0.34,
-    moonEmissiveIntensity: 0.02 + cycle.night * 0.08,
-    sunGlowOpacity: 0.16 + cycle.daylight * 0.16 + cycle.starsOpacity * 0.02,
+    ambientIntensity: 1.08 + cycle.daylight * 0.46 + cycle.night * 0.16,
+    hemisphereIntensity: 0.56 + cycle.daylight * 0.4 + cycle.night * 0.12,
+    rimIntensity: 0.96 + cycle.daylight * 0.72,
+    sunIntensity: 1.18 + cycle.daylight * 1.88,
+    sunFillIntensity: 0.38 + cycle.daylight * 0.96,
+    bounceFillIntensity: 0.24 + cycle.daylight * 0.48 + cycle.night * 0.08,
+    nightFillIntensity: 0.34 + cycle.night * 0.38,
+    emissiveIntensity: 0.52 + cycle.night * 0.28,
+    moonEmissiveIntensity: 0.02 + cycle.night * 0.06,
+    sunGlowOpacity: 0.14 + cycle.daylight * 0.14 + cycle.starsOpacity * 0.02,
     glowOpacity: 0.07 + cycle.daylight * 0.06 + cycle.starsOpacity * 0.02,
   };
 }
@@ -408,6 +411,60 @@ export function getPreviewShadowProfile(
   };
 }
 
+export function getPreviewPlanetLightBalance(cycle: PreviewLightingCycleLike) {
+  const lighting = getPreviewLightingProfile(cycle);
+  const daySideLight =
+    lighting.ambientIntensity +
+    lighting.hemisphereIntensity * 0.82 +
+    lighting.sunIntensity +
+    lighting.sunFillIntensity * 0.72 +
+    lighting.bounceFillIntensity * 0.48 +
+    lighting.emissiveIntensity * 0.26;
+  const darkSideLight =
+    lighting.ambientIntensity +
+    lighting.hemisphereIntensity * 0.72 +
+    lighting.nightFillIntensity * 0.88 +
+    lighting.bounceFillIntensity * 0.64 +
+    lighting.emissiveIntensity;
+  return {
+    daySideLight,
+    darkSideLight,
+    contrastRatio: daySideLight / Math.max(0.001, darkSideLight),
+  };
+}
+
+export function getPreviewSunShadowCoverageState(
+  cycle: Pick<
+    DaylightCycleLike,
+    'daylight' | 'sunAltitude' | 'sunAzimuth' | 'moonAltitude' | 'moonAzimuth'
+  >
+) {
+  const shadowProfile = getPreviewShadowProfile(cycle);
+  const lightPosition = getPreviewLightRigState({
+    daylight: cycle.daylight,
+    night: 1 - cycle.daylight,
+    starsOpacity: 1 - cycle.daylight,
+    sunAzimuth: cycle.sunAzimuth,
+    sunAltitude: cycle.sunAltitude,
+    moonAzimuth: cycle.moonAzimuth,
+    moonAltitude: cycle.moonAltitude,
+  }).sun;
+  const moon = getPreviewBodyPosition(cycle.moonAzimuth, cycle.moonAltitude, 10.8);
+  const world = { x: 0, y: 0, z: 0 };
+  const frustum = describeDirectionalShadowFrustum(
+    lightPosition,
+    world,
+    shadowProfile.cameraExtent,
+    1,
+    52
+  );
+  return {
+    shadowProfile,
+    worldWithinShadow: isPointInsideDirectionalShadowFrustum(frustum, world),
+    moonWithinShadow: isPointInsideDirectionalShadowFrustum(frustum, moon),
+  };
+}
+
 export function getPreviewLightRigState(
   cycle: Pick<
     DaylightCycleLike,
@@ -451,7 +508,7 @@ export function buildPlanetTextureGrid(
       const worldX = Math.round((longitude - 0.5) * 256);
       const worldY = Math.round((0.5 - latitude) * 128);
       return brightenPreviewSurfaceColor(
-        getPlanetSurfaceColor(sampleOverworld(worldX, worldY)?.kind)
+        getPlanetSurfaceColor(samplePreviewOverworldKind(sampleOverworld, worldX, worldY))
       );
     })
   );
@@ -509,6 +566,18 @@ function syncPreviewPlanetTexture(
   material.emissiveMap = texture;
   material.needsUpdate = true;
   textureState.lastSampler = overworldSampler;
+}
+
+function samplePreviewOverworldKind(
+  sampleOverworld: OverworldSamplerLike['sampleOverworld'],
+  x: number,
+  y: number
+) {
+  try {
+    return sampleOverworld(x, y)?.kind;
+  } catch {
+    return undefined;
+  }
 }
 
 function syncPreviewFacingArrow(mesh: THREE.Mesh, facingAngle: number) {
@@ -571,6 +640,75 @@ function syncPreviewConstellations(root: THREE.Group, cycle: DaylightCycleLike) 
       root.add(sprite);
     });
   });
+}
+
+function describeDirectionalShadowFrustum(
+  lightPosition: PreviewPoint3D,
+  targetPosition: PreviewPoint3D,
+  extent: number,
+  near: number,
+  far: number
+) {
+  const forward = normalizeVector({
+    x: targetPosition.x - lightPosition.x,
+    y: targetPosition.y - lightPosition.y,
+    z: targetPosition.z - lightPosition.z,
+  });
+  const seedUp = Math.abs(forward.y) > 0.94
+    ? { x: 0, y: 0, z: 1 }
+    : { x: 0, y: 1, z: 0 };
+  const right = normalizeVector(crossVector(seedUp, forward));
+  const up = normalizeVector(crossVector(forward, right));
+  return {
+    lightPosition,
+    right,
+    up,
+    forward,
+    extent,
+    near,
+    far,
+  };
+}
+
+function isPointInsideDirectionalShadowFrustum(
+  frustum: ReturnType<typeof describeDirectionalShadowFrustum>,
+  point: PreviewPoint3D
+) {
+  const relative = {
+    x: point.x - frustum.lightPosition.x,
+    y: point.y - frustum.lightPosition.y,
+    z: point.z - frustum.lightPosition.z,
+  };
+  const x = dotVector(relative, frustum.right);
+  const y = dotVector(relative, frustum.up);
+  const z = dotVector(relative, frustum.forward);
+  return (
+    Math.abs(x) <= frustum.extent &&
+    Math.abs(y) <= frustum.extent &&
+    z >= frustum.near &&
+    z <= frustum.far
+  );
+}
+
+function dotVector(a: PreviewPoint3D, b: PreviewPoint3D) {
+  return a.x * b.x + a.y * b.y + a.z * b.z;
+}
+
+function crossVector(a: PreviewPoint3D, b: PreviewPoint3D): PreviewPoint3D {
+  return {
+    x: a.y * b.z - a.z * b.y,
+    y: a.z * b.x - a.x * b.z,
+    z: a.x * b.y - a.y * b.x,
+  };
+}
+
+function normalizeVector(vector: PreviewPoint3D): PreviewPoint3D {
+  const length = Math.hypot(vector.x, vector.y, vector.z) || 1;
+  return {
+    x: vector.x / length,
+    y: vector.y / length,
+    z: vector.z / length,
+  };
 }
 
 function syncPreviewEvents(root: THREE.Group, cycle: DaylightCycleLike) {

@@ -7,8 +7,10 @@ import {
   getPreviewFacingArrowState,
   getPreviewLightingProfile,
   getPreviewLightRigState,
+  getPreviewPlanetLightBalance,
   getPreviewRootPitch,
   getPreviewShadowProfile,
+  getPreviewSunShadowCoverageState,
   getPreviewSunOrbitSpec,
   getPlanetSurfaceColor,
 } from './celestial-preview.ts';
@@ -19,7 +21,7 @@ describe('celestial preview helpers', () => {
     expect(getPlanetSurfaceColor('water')).toBe('#1a3d68');
     expect(getPlanetSurfaceColor('plains')).toBe('#6d9954');
     expect(getPlanetSurfaceColor('mountain')).toBe('#8d8579');
-    expect(brightenPreviewSurfaceColor('#1a3d68')).toBe('#3f5c80');
+    expect(brightenPreviewSurfaceColor('#1a3d68')).toBe('#35547a');
   });
 
   it('builds a deterministic low-resolution texture grid from overworld samples', () => {
@@ -34,9 +36,17 @@ describe('celestial preview helpers', () => {
     }, 4, 2);
 
     expect(grid).toEqual([
-      ['#3f5c80', '#3f5c80', '#3f5c80', '#3f5c80'],
-      ['#9f998e', '#9f998e', '#9f998e', '#84a96f'],
+      ['#35547a', '#35547a', '#35547a', '#35547a'],
+      ['#9b9489', '#9b9489', '#9b9489', '#7fa569'],
     ]);
+  });
+
+  it('falls back to ocean shading when the preview sampler is temporarily unavailable', () => {
+    const grid = buildPlanetTextureGrid(() => {
+      throw new Error('map not ready');
+    }, 2, 1);
+
+    expect(grid).toEqual([['#35547a', '#35547a']]);
   });
 
   it('describes a full sun orbit plus the daylight arc for the preview model', () => {
@@ -112,6 +122,24 @@ describe('celestial preview helpers', () => {
     expect(nightShadow.sunCastShadow).toBe(false);
   });
 
+  it('keeps the preview planet dark side readable without flattening day-side contrast', () => {
+    const noon = getPreviewPlanetLightBalance({
+      daylight: 1,
+      night: 0,
+      starsOpacity: 0,
+    } as any);
+    const midnight = getPreviewPlanetLightBalance({
+      daylight: 0,
+      night: 1,
+      starsOpacity: 1,
+    } as any);
+
+    expect(midnight.darkSideLight).toBeGreaterThan(1.8);
+    expect(noon.daySideLight).toBeGreaterThan(midnight.daySideLight);
+    expect(noon.contrastRatio).toBeGreaterThan(1.4);
+    expect(noon.daySideLight).toBeLessThan(7);
+  });
+
   it('positions the preview sun rig and keeps the moon inside a generous shadow volume', () => {
     const cycle = getDaylightCycleState(120000);
     const rig = getPreviewLightRigState(cycle);
@@ -123,6 +151,15 @@ describe('celestial preview helpers', () => {
     expect(rig.shadowProfile.cameraExtent).toBeGreaterThanOrEqual(14);
   });
 
+  it('keeps the world center and moon inside the configured sun shadow frustum', () => {
+    const cycle = getDaylightCycleState(120000);
+    const coverage = getPreviewSunShadowCoverageState(cycle);
+
+    expect(coverage.worldWithinShadow).toBe(true);
+    expect(coverage.moonWithinShadow).toBe(true);
+    expect(coverage.shadowProfile.sunCastShadow).toBe(true);
+  });
+
   it('uses the planet texture itself as a low-level emissive fill source', () => {
     const grid = buildPlanetTextureGrid(
       () => ({ kind: 'forest' }),
@@ -130,7 +167,7 @@ describe('celestial preview helpers', () => {
       1
     );
 
-    expect(grid[0][0]).toBe(brightenPreviewSurfaceColor('#3e6a43'));
+    expect(grid[0][0]).toBe('#557c5a');
   });
 
   it('maps body azimuth and altitude into stable preview coordinates', () => {

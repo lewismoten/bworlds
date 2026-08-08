@@ -102,7 +102,6 @@ root.innerHTML = `
         </div>
         <div class="card" id="celestial-tools-card">
           <div class="inspector-header">
-            <h2>Celestial Tools</h2>
             <div class="inspector-tabs" role="tablist" aria-label="Celestial tools">
               <button
                 id="tab-timekeeper"

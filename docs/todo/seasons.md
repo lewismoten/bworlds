@@ -118,8 +118,8 @@ add a outer globe of stars in the sky that appear at night with procedurally gen
 - [x] When I click the bezel of the compass to set a heading, the arrow appears there, but a different bezel is highlighted about 90 degrees off.
 - [x] Clicking the bezel should show the degrees that it is at.
 - [x] Clicking the same bezel should toggle the arrow off.
-- [ ] In the celestial model, the planet is still very dark. it may need some emissive light or omnidirectional light applied. 
-- [ ] In the celestial model, the sun is not emitting light onto the planet and casing shadows on the moon
+- [x] In the celestial model, the planet is still very dark. it may need some emissive light or omnidirectional light applied. 
+- [x] In the celestial model, the sun is not emitting light onto the planet and casing shadows on the moon
 - [x] The arrows shouldn't rotate the celestial model. instead, it should rotate the players orientation in the model.
 - [x] There appears to be two suns in the celestial model. There is a bunch of "junk" below the planet, appearing to be a black hold swallowing a few planets.
 - [x] Add a separate side-window 3D solar system model that reflects the current sun, moon, planets, constellations, and Milky Way layout.
@@ -134,3 +134,6 @@ add a outer globe of stars in the sky that appear at night with procedurally gen
 - [x] When activating celestial events, I'm unable to see any difference.
 - [x] Compass lost its dragging ability on the heading.
 - [x] If I click an area, and the heading is already marked, smoothly rotate the arrow to the new heading and ease-in.
+- [x] In celestial model, the planet is too bright
+- [x] on day/night ring, the black bars are still not lined up with sunrise/sunset. they seem to be off by 90 degrees.
+- [x] Celestial Tools heading is pushing the tab buttons off the edge. Remove the "Celestial Tools" text, or place it above the tab buttons.

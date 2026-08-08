@@ -5,6 +5,7 @@ import {
   getCelestialRingStars,
   getDaylightRingLayout,
   getDialAngle,
+  getDialRadialRotation,
   getMoonMidnightOrbitProgress,
   getMoonPhaseLabel,
   getMoonOrbitProgress,
@@ -97,6 +98,11 @@ describe('timekeeper helpers', () => {
 
     expect(sunriseLayout.dawnAngle).toBeCloseTo(-Math.PI / 2, 6);
     expect(sunsetLayout.duskAngle).toBeCloseTo(-Math.PI / 2, 6);
+  });
+
+  it('rotates sunrise and sunset divider bars onto the same radial axis used by the dial markers', () => {
+    expect(getDialRadialRotation(-Math.PI / 2)).toBeCloseTo(0, 6);
+    expect(getDialRadialRotation(0)).toBeCloseTo(Math.PI / 2, 6);
   });
 
   it('keeps displayed sunrise and sunset dividers pinned during smoothed preset jumps', () => {

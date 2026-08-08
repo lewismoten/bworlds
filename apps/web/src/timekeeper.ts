@@ -48,6 +48,10 @@ export function getDialAngle(progress: number, referenceProgress: number) {
   return (progress - referenceProgress) * Math.PI * 2 - Math.PI / 2;
 }
 
+export function getDialRadialRotation(angle: number) {
+  return angle + Math.PI / 2;
+}
+
 export function getDaylightRingLayout(cycle: DaylightCycleLike) {
   const dawnAngle = getDialAngle(cycle.sunriseProgress, cycle.dayProgress);
   const duskAngle = getDialAngle(cycle.sunsetProgress, cycle.dayProgress);
@@ -679,7 +683,7 @@ function drawDayNightDividerGlow(
   color: string
 ) {
   context.save();
-  context.rotate(angle);
+  context.rotate(getDialRadialRotation(angle));
   const feather = context.createLinearGradient(0, -outerRadius, 0, -innerRadius);
   feather.addColorStop(0, 'rgba(0, 0, 0, 0)');
   feather.addColorStop(0.2, 'rgba(255, 255, 255, 0.03)');
@@ -705,7 +709,7 @@ function drawDayNightTransitionBlend(
   color: string
 ) {
   context.save();
-  context.rotate(angle);
+  context.rotate(getDialRadialRotation(angle));
   const feather = context.createLinearGradient(-34, 0, 34, 0);
   feather.addColorStop(0, 'rgba(255, 255, 255, 0)');
   feather.addColorStop(0.24, 'rgba(255, 255, 255, 0.08)');
@@ -731,7 +735,7 @@ function drawDayNightDividerMark(
   angle: number
 ) {
   context.save();
-  context.rotate(angle);
+  context.rotate(getDialRadialRotation(angle));
   context.strokeStyle = 'rgba(4, 8, 14, 0.9)';
   context.lineWidth = 2.4;
   context.beginPath();

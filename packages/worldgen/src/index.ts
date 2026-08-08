@@ -61,27 +61,28 @@ export function createWorldGenerator({
   sampleOverworld(x: number, y: number): SpawnTile;
 } {
   const mapCache = new Map<string, WorldMapLike>();
+  const getMap = (context: Context) => {
+    const key = makeKey(context.id, context.depth);
+    if (!mapCache.has(key)) {
+      const map = plugins.createMap({
+        context,
+        seed,
+        plugins,
+      });
+      if (!map) {
+        throw new Error(
+          `No map plugin registered for context type "${context.type}"`
+        );
+      }
+      mapCache.set(key, map);
+    }
+    return mapCache.get(key) as WorldMapLike;
+  };
 
   return {
-    getMap(context: Context) {
-      const key = makeKey(context.id, context.depth);
-      if (!mapCache.has(key)) {
-        const map = plugins.createMap({
-          context,
-          seed,
-          plugins,
-        });
-        if (!map) {
-          throw new Error(
-            `No map plugin registered for context type "${context.type}"`
-          );
-        }
-        mapCache.set(key, map);
-      }
-      return mapCache.get(key);
-    },
+    getMap,
     sampleOverworld(x: number, y: number) {
-      return this.getMap(OVERWORLD_CONTEXT).getTile(x, y) as SpawnTile;
+      return getMap(OVERWORLD_CONTEXT).getTile(x, y) as SpawnTile;
     },
   };
 }

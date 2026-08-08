@@ -216,7 +216,7 @@ button:hover {
 
 .inspector-header {
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   align-items: center;
   gap: 0.75rem;
   margin-bottom: 0.9rem;
@@ -224,6 +224,8 @@ button:hover {
 
 .inspector-tabs {
   display: inline-flex;
+  flex-wrap: wrap;
+  justify-content: center;
   gap: 0.35rem;
   padding: 0.25rem;
   border-radius: 999px;

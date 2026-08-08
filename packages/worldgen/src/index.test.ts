@@ -208,6 +208,13 @@ describe('world generator', () => {
     );
   });
 
+  it('keeps sampleOverworld callable even when the method is detached', () => {
+    const generator = createGenerator();
+    const { sampleOverworld } = generator;
+
+    expect(sampleOverworld(10, 20)).toEqual(generator.sampleOverworld(10, 20));
+  });
+
   it('creates the overworld through the registered map plugin path', () => {
     const generator = createGenerator();
     const overworld = generator.getMap({
