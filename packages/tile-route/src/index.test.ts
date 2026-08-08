@@ -1,8 +1,61 @@
 import { describe, expect, it } from 'vitest';
 import { createRouteTilePlugin } from './index.ts';
 
+class FakeGeometry {
+  constructor(..._args: number[]) {}
+}
+
+class FakeMaterial {
+  constructor(public options: Record<string, unknown> = {}) {}
+}
+
+class FakeNode {
+  position = {
+    x: 0,
+    y: 0,
+    z: 0,
+    set: (x: number, y: number, z: number) => {
+      this.position.x = x;
+      this.position.y = y;
+      this.position.z = z;
+      return this.position;
+    },
+  };
+  rotation = { x: 0, y: 0, z: 0 };
+  userData?: Record<string, unknown>;
+  children: FakeNode[] = [];
+  add(...children: FakeNode[]) {
+    this.children.push(...children);
+    return this;
+  }
+  traverse(visit: (child: FakeNode) => void) {
+    visit(this);
+    this.children.forEach((child) => child.traverse(visit));
+  }
+}
+
+class FakeGroup extends FakeNode {}
+
+class FakeMesh extends FakeNode {
+  constructor(
+    public geometry?: object,
+    public material?: FakeMaterial | FakeMaterial[]
+  ) {
+    super();
+  }
+}
+
+const fakeThree = {
+  Group: FakeGroup,
+  Mesh: FakeMesh,
+  MeshStandardMaterial: FakeMaterial,
+  BoxGeometry: FakeGeometry,
+  CylinderGeometry: FakeGeometry,
+} as const;
+
 const plugin = createRouteTilePlugin();
 const roadTile = plugin.tiles?.find((tile) => tile.kind === 'road');
+const dockTile = plugin.tiles?.find((tile) => tile.kind === 'dock');
 const classifier = roadTile?.classifyOverworldTile;
 const resolver = roadTile?.resolveFloorKind3D;
 type RouteClassifierPayload = Parameters<NonNullable<typeof classifier>>[0];
@@ -73,6 +126,38 @@ function createRouteFloorPayload(): RouteFloorPayload {
           wallHeight: 0,
         };
       },
+    },
+  };
+}
+
+function createDockModelState() {
+  const dockTiles = new Set(['0:0', '1:0', '2:0', '3:0']);
+  return {
+    player: { x: 0, y: 0, facing: 0 },
+    getCurrentContext() {
+      return { id: 'overworld', depth: 0, type: 'overworld' as const };
+    },
+    getCurrentTile(x: number, y: number) {
+      const key = `${x}:${y}`;
+      if (dockTiles.has(key)) {
+        return { kind: 'dock' };
+      }
+      if (y === 0 && x === -1) {
+        return { kind: 'road' };
+      }
+      if (Math.abs(y) === 1 && x >= 0 && x <= 3) {
+        return { kind: 'ocean' };
+      }
+      return { kind: 'shore' };
+    },
+    getTileDefinition(kind: string) {
+      return {
+        name: kind,
+        color: '#000000',
+        miniColor: '#111111',
+        walkable: true,
+        wallHeight: 0,
+      };
     },
   };
 }
@@ -180,5 +265,30 @@ describe('tile route', () => {
 
   it('resolves the 3D road floor kind from dominant neighboring terrain', () => {
     expect(resolver?.(createRouteFloorPayload())).toBe('plains');
+  });
+
+  it('renders multiple boats across long dock clusters', () => {
+    const state = createDockModelState();
+    const models = [0, 1, 2, 3].map((tileX) =>
+      dockTile?.create3DModel?.({
+        three: fakeThree as never,
+        state: state as never,
+        tile: { kind: 'dock' } as never,
+        tileX,
+        tileY: 0,
+      })
+    );
+
+    const longDockBoatMarkers = models.flatMap((model) => {
+      const markers: number[] = [];
+      (model as FakeNode | undefined)?.traverse((node) => {
+        if (node.userData?.dockBoat) {
+          markers.push(Number(node.userData.dockBoatClusterLength));
+        }
+      });
+      return markers;
+    });
+
+    expect(longDockBoatMarkers).toEqual([4, 4]);
   });
 });

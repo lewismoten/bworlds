@@ -40,6 +40,7 @@ const TILE_PIXEL_SIZE = 16;
 const TILE_SIZE = 1;
 const BRIDGE_REGION_SIZE = 22;
 const ROAD_REGION_SIZE = 20;
+const DOCK_REGION_SIZE = 18;
 const BRIDGE_DECK_THICKNESS = 0.08;
 const BRIDGE_RAIL_HEIGHT = 0.18;
 const ROAD_SURFACE_HEIGHT = 0.012;
@@ -47,12 +48,15 @@ const ROAD_CORE_HEIGHT = 0.02;
 const COASTAL_LAND_CONTINENT_THRESHOLD = 0.42;
 const OCEAN_CONTINENT_THRESHOLD = 0.38;
 const MAX_DOCK_LENGTH = 3;
+const LONG_DOCK_BOAT_LENGTH = 3;
 type RoadStyleType = 'footpath' | 'cobble' | 'brick';
 type BridgeTextureType = 'wood' | 'stone' | 'metal' | 'drawbridge' | 'roof' | 'roof-stone';
 type BridgeTextureLayer = 'deck' | 'rail' | 'cover' | 'pillar';
 
 const bridgeStyleCache = new Map<string, BridgeStyle>();
 const bridgeClusterCache = new Map<string, BridgeClusterInfo>();
+const dockStyleCache = new Map<string, DockStyle>();
+const dockClusterCache = new Map<string, DockClusterInfo>();
 const roadStyleCache = new Map<string, RoadStyleBlueprint>();
 const resolveRoadStyle = createRegionalMaterialResolver(
   roadStyleCache,
@@ -966,30 +970,15 @@ function createDockGroup(
   tileX: number,
   tileY: number
 ) {
-  const axis = getDockAxis(state, tileX, tileY) ?? 'ew';
-  const alongX = axis === 'ew';
+  const info = getDockClusterInfo(state, tileX, tileY);
+  const style = getDockStyle(three, info.clusterKey, info.anchorX, info.anchorY);
+  const alongX = info.axis === 'ew';
   const group = new three.Group();
   group.position.set(tileX, 0, tileY);
 
-  const deckMaterial = new three.MeshStandardMaterial({
-    color: '#8b5a2b',
-    roughness: 0.92,
-    metalness: 0.02,
-  });
-  const railMaterial = new three.MeshStandardMaterial({
-    color: '#6b3f15',
-    roughness: 0.88,
-    metalness: 0.02,
-  });
-  const pileMaterial = new three.MeshStandardMaterial({
-    color: '#5a3416',
-    roughness: 0.94,
-    metalness: 0.02,
-  });
-
   const deck = new three.Mesh(
     new three.BoxGeometry(alongX ? 1.02 : 0.64, 0.07, alongX ? 0.64 : 1.02),
-    deckMaterial
+    style.deckMaterial
   );
   deck.position.y = -0.035;
   group.add(deck);
@@ -997,7 +986,7 @@ function createDockGroup(
   for (const side of [-1, 1]) {
     const rail = new three.Mesh(
       new three.BoxGeometry(alongX ? 1.04 : 0.04, 0.04, alongX ? 0.04 : 1.04),
-      railMaterial
+      style.railMaterial
     );
     if (alongX) {
       rail.position.set(0, 0.08, side * 0.24);
@@ -1022,10 +1011,17 @@ function createDockGroup(
       ]) {
     const pile = new three.Mesh(
       new three.BoxGeometry(0.06, 0.2, 0.06),
-      pileMaterial
+      style.pileMaterial
     );
     pile.position.set(xOffset, -0.03, zOffset);
     group.add(pile);
+  }
+
+  if (shouldRenderDockBoat(state, tileX, tileY, info)) {
+    const boat = createDockBoat(three, state, style, alongX, tileX, tileY, info);
+    if (boat) {
+      group.add(boat);
+    }
   }
 
   return group;
@@ -1080,6 +1076,285 @@ function getDockAxis(
 
 function isDockTravelKind(kind: Kind): boolean {
   return kind === 'dock' || kind === 'road' || isRouteTerminalKind(kind);
+}
+
+function getDockClusterInfo(
+  state: WorldStateLike,
+  tileX: number,
+  tileY: number
+) {
+  const key = `${tileX}:${tileY}`;
+  if (dockClusterCache.has(key)) {
+    return dockClusterCache.get(key)!;
+  }
+
+  const queue = [[tileX, tileY]];
+  const visited = new Set([key]);
+  const tiles: Array<{ x: number; y: number }> = [];
+
+  while (queue.length > 0) {
+    const [currentX, currentY] = queue.shift()!;
+    tiles.push({ x: currentX, y: currentY });
+    for (const [dx, dy] of [
+      [0, -1],
+      [1, 0],
+      [0, 1],
+      [-1, 0],
+    ]) {
+      const nextX = currentX + dx;
+      const nextY = currentY + dy;
+      const nextKey = `${nextX}:${nextY}`;
+      if (visited.has(nextKey)) continue;
+      if (state.getCurrentTile(nextX, nextY).kind !== 'dock') continue;
+      visited.add(nextKey);
+      queue.push([nextX, nextY]);
+    }
+  }
+
+  tiles.sort((left, right) =>
+    left.y === right.y ? left.x - right.x : left.y - right.y
+  );
+  const bounds = tiles.reduce(
+    (acc, tile) => ({
+      minX: Math.min(acc.minX, tile.x),
+      maxX: Math.max(acc.maxX, tile.x),
+      minY: Math.min(acc.minY, tile.y),
+      maxY: Math.max(acc.maxY, tile.y),
+    }),
+    { minX: Infinity, maxX: -Infinity, minY: Infinity, maxY: -Infinity }
+  );
+  const spanX = bounds.maxX - bounds.minX + 1;
+  const spanY = bounds.maxY - bounds.minY + 1;
+  const axis = spanX >= spanY ? 'ew' : 'ns';
+  const orderedTiles = [...tiles].sort((left, right) =>
+    axis === 'ew'
+      ? left.x - right.x || left.y - right.y
+      : left.y - right.y || left.x - right.x
+  );
+  const anchor = orderedTiles[0];
+  const clusterKey = `dock:${axis}:${anchor.x}:${anchor.y}`;
+
+  for (let index = 0; index < orderedTiles.length; index += 1) {
+    const tile = orderedTiles[index];
+    const negativeKey =
+      axis === 'ew' ? `${tile.x - 1}:${tile.y}` : `${tile.x}:${tile.y - 1}`;
+    const positiveKey =
+      axis === 'ew' ? `${tile.x + 1}:${tile.y}` : `${tile.x}:${tile.y + 1}`;
+    dockClusterCache.set(`${tile.x}:${tile.y}`, {
+      axis,
+      clusterKey,
+      anchorX: anchor.x,
+      anchorY: anchor.y,
+      length: orderedTiles.length,
+      segmentIndex: index,
+      connectNegative: visited.has(negativeKey),
+      connectPositive: visited.has(positiveKey),
+    });
+  }
+
+  return dockClusterCache.get(key)!;
+}
+
+function getDockStyle(
+  three: ThreeHostLike,
+  clusterKey: string,
+  tileX: number,
+  tileY: number
+) {
+  if (!dockStyleCache.has(clusterKey)) {
+    const regionX = Math.floor(tileX / DOCK_REGION_SIZE);
+    const regionY = Math.floor(tileY / DOCK_REGION_SIZE);
+    const palette =
+      hash2D('dock-palette', regionX, regionY) > 0.55
+        ? {
+            deck: '#8f6033',
+            rail: '#6e4522',
+            pile: '#543114',
+            boat: '#6f4431',
+            sail: '#d9ccb1',
+            trim: '#d6b27e',
+          }
+        : {
+            deck: '#7f5330',
+            rail: '#603a1d',
+            pile: '#492a13',
+            boat: '#7c4e2e',
+            sail: '#cbb89d',
+            trim: '#d4a86f',
+          };
+    dockStyleCache.set(clusterKey, {
+      deckMaterial: new three.MeshStandardMaterial({
+        color: palette.deck,
+        roughness: 0.92,
+        metalness: 0.02,
+      }),
+      railMaterial: new three.MeshStandardMaterial({
+        color: palette.rail,
+        roughness: 0.88,
+        metalness: 0.02,
+      }),
+      pileMaterial: new three.MeshStandardMaterial({
+        color: palette.pile,
+        roughness: 0.94,
+        metalness: 0.02,
+      }),
+      boatMaterial: new three.MeshStandardMaterial({
+        color: palette.boat,
+        roughness: 0.84,
+        metalness: 0.03,
+      }),
+      sailMaterial: new three.MeshStandardMaterial({
+        color: palette.sail,
+        roughness: 0.96,
+        metalness: 0.01,
+      }),
+      trimMaterial: new three.MeshStandardMaterial({
+        color: palette.trim,
+        roughness: 0.85,
+        metalness: 0.02,
+      }),
+    });
+  }
+
+  return dockStyleCache.get(clusterKey)!;
+}
+
+function shouldRenderDockBoat(
+  state: WorldStateLike,
+  tileX: number,
+  tileY: number,
+  info: DockClusterInfo
+) {
+  if (info.length < 2) {
+    return false;
+  }
+  if (info.length < LONG_DOCK_BOAT_LENGTH) {
+    return info.segmentIndex === info.length - 1;
+  }
+  if (info.segmentIndex === 0) {
+    return false;
+  }
+
+  const targetSegmentCount = Math.min(2, info.length - 1);
+  const remainingSegments = info.length - 1;
+  const eligibleSegments = new Set<number>();
+  for (let index = 1; index <= targetSegmentCount; index += 1) {
+    eligibleSegments.add(
+      Math.min(
+        info.length - 1,
+        Math.max(1, Math.round((remainingSegments * index) / targetSegmentCount))
+      )
+    );
+  }
+
+  if (!eligibleSegments.has(info.segmentIndex)) {
+    return false;
+  }
+
+  return getDockBoatSide(state, tileX, tileY, info.axis) !== null;
+}
+
+function getDockBoatSide(
+  state: WorldStateLike,
+  tileX: number,
+  tileY: number,
+  axis: DockClusterInfo['axis']
+) {
+  const sideOffsets =
+    axis === 'ew'
+      ? [
+          { dx: 0, dy: -1, side: -1 as const },
+          { dx: 0, dy: 1, side: 1 as const },
+        ]
+      : [
+          { dx: -1, dy: 0, side: -1 as const },
+          { dx: 1, dy: 0, side: 1 as const },
+        ];
+  const waterSides = sideOffsets.filter(({ dx, dy }) =>
+    isWaterOrCrossingKind(state.getCurrentTile(tileX + dx, tileY + dy).kind)
+  );
+
+  if (waterSides.length === 0) {
+    return null;
+  }
+  if (waterSides.length === 1) {
+    return waterSides[0]!.side;
+  }
+
+  return hash2D('dock-boat-side', tileX, tileY) > 0.5
+    ? waterSides[0]!.side
+    : waterSides[1]!.side;
+}
+
+function createDockBoat(
+  three: ThreeHostLike,
+  state: WorldStateLike,
+  style: DockStyle,
+  alongX: boolean,
+  tileX: number,
+  tileY: number,
+  info: DockClusterInfo
+) {
+  const side = getDockBoatSide(state, tileX, tileY, info.axis);
+  if (side === null) {
+    return null;
+  }
+
+  const group = new three.Group();
+  group.userData = {
+    dockBoat: true,
+    dockBoatClusterLength: info.length,
+  };
+  const hullLength = 0.42 + hash2D('dock-boat-length', tileX, tileY) * 0.12;
+  const hullWidth = 0.18 + hash2D('dock-boat-width', tileX, tileY) * 0.04;
+  const hull = new three.Mesh(
+    new three.BoxGeometry(alongX ? hullLength : hullWidth, 0.09, alongX ? hullWidth : hullLength),
+    style.boatMaterial
+  );
+  hull.position.y = -0.07;
+  group.add(hull);
+
+  const prow = new three.Mesh(
+    new three.BoxGeometry(alongX ? 0.08 : hullWidth * 0.72, 0.1, alongX ? hullWidth * 0.72 : 0.08),
+    style.trimMaterial
+  );
+  if (alongX) {
+    prow.position.set(side > 0 ? 0.16 : -0.16, -0.045, 0);
+  } else {
+    prow.position.set(0, -0.045, side > 0 ? 0.16 : -0.16);
+  }
+  group.add(prow);
+
+  if (hash2D('dock-boat-sail', tileX, tileY) > 0.48) {
+    const mast = new three.Mesh(
+      new three.BoxGeometry(0.03, 0.34, 0.03),
+      style.trimMaterial
+    );
+    mast.position.y = 0.12;
+    group.add(mast);
+
+    const sail = new three.Mesh(
+      new three.BoxGeometry(alongX ? 0.02 : 0.16, 0.18, alongX ? 0.16 : 0.02),
+      style.sailMaterial
+    );
+    if (alongX) {
+      sail.position.set(0.03 * side, 0.14, 0);
+    } else {
+      sail.position.set(0, 0.14, 0.03 * side);
+    }
+    group.add(sail);
+  }
+
+  if (alongX) {
+    group.position.set(0, 0, side * 0.47);
+    group.rotation.y = Math.PI * 0.5;
+  } else {
+    group.position.set(side * 0.47, 0, 0);
+  }
+  if (side < 0) {
+    group.rotation.y += Math.PI;
+  }
+  return group;
 }
 
 function addBridgeParapets(
@@ -1594,4 +1869,24 @@ interface BridgeStyle {
   trimMaterial: ThreeMaterialLike;
   coverMaterial: ThreeMaterialLike;
   pillarMaterial: ThreeMaterialLike;
+}
+
+interface DockClusterInfo {
+  axis: 'ew' | 'ns';
+  clusterKey: string;
+  anchorX: number;
+  anchorY: number;
+  length: number;
+  segmentIndex: number;
+  connectNegative: boolean;
+  connectPositive: boolean;
+}
+
+interface DockStyle {
+  deckMaterial: ThreeMaterialLike;
+  railMaterial: ThreeMaterialLike;
+  pileMaterial: ThreeMaterialLike;
+  boatMaterial: ThreeMaterialLike;
+  sailMaterial: ThreeMaterialLike;
+  trimMaterial: ThreeMaterialLike;
 }

@@ -11,7 +11,7 @@
 - [X] Add docks at POI, and prevent bridges from becomming docks. All bridges should go strait in one direction to the other side of a river or ocean.
 - [X] A bridge should not run along the side of land in parallel for long lengths (5+ tiles) within 2 tiles.
 - [X] All POI should have a procdurally generated name.
-- [ ] Long docks may have multiple boats
+- [X] Long docks may have multiple boats
 - [ ] Some docks may have a stationary tall ship or broken down ship that may serve as a point of interest, that lets you board and explore
 - [ ] A player may build a new POI anywhere.
 - [ ] Observatories appear on top of hills/mountains
