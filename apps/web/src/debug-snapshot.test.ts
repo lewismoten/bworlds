@@ -127,6 +127,7 @@ describe('debug snapshot', () => {
         meshCount: 180,
         visibleMeshCount: 164,
         pointsCount: 5,
+        lineObjectCount: 7,
         activeParticleSystemCount: 4,
         activeParticleCount: 90,
         spriteCount: 9,
@@ -281,6 +282,7 @@ describe('debug snapshot', () => {
       groupCount: 54,
       meshCount: 180,
       pointsCount: 5,
+      lineObjectCount: 7,
       lightCount: 12,
     });
     expect(result.particles).toMatchObject({

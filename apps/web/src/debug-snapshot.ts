@@ -131,6 +131,7 @@ export type DebugSnapshotExport = {
     meshCount: number;
     spriteCount: number;
     pointsCount: number;
+    lineObjectCount: number;
     lightCount: number;
   };
   particles: {
@@ -253,6 +254,7 @@ export function buildDebugSnapshotExport(
       meshCount: options.snapshot.meshCount,
       spriteCount: options.snapshot.spriteCount,
       pointsCount: options.snapshot.pointsCount,
+      lineObjectCount: options.snapshot.lineObjectCount ?? 0,
       lightCount: options.snapshot.lightCount,
     },
     resources: {

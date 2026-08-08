@@ -69,6 +69,7 @@ describe('render3d visibility helpers', () => {
       meshCount: 3,
       visibleMeshCount: 3,
       pointsCount: 0,
+      lineObjectCount: 0,
       activeParticleSystemCount: 0,
       activeParticleCount: 0,
       spriteCount: 0,
@@ -116,7 +117,7 @@ describe('render3d visibility helpers', () => {
     expect(child.material.dispose).toHaveBeenCalledTimes(1);
   });
 
-  it('records additional object-type counts for points, sprites, visible meshes, dynamic lights, and shadow lights', () => {
+  it('records additional object-type counts for points, lines, sprites, visible meshes, dynamic lights, and shadow lights', () => {
     const root = createMockObject3D(undefined, [
       createMockObject3D({}, [], createMockStatGeometry('visible-geometry', 8), {}, 'Mesh'),
       createMockObject3D(
@@ -130,17 +131,20 @@ describe('render3d visibility helpers', () => {
         false
       ),
       createMockObject3D(undefined, [], undefined, {}, 'Points'),
+      createMockObject3D(undefined, [], undefined, {}, 'Line'),
+      createMockObject3D(undefined, [], undefined, {}, 'LineLoop'),
       createMockObject3D(undefined, [], undefined, {}, 'Sprite'),
       createMockObject3D(undefined, [], undefined, {}, 'PointLight', true, true),
       createMockObject3D(undefined, [], undefined, {}, 'DirectionalLight', true, false),
     ]);
 
     expect(collectSceneResourceStats(root as never)).toEqual({
-      object3dCount: 7,
+      object3dCount: 9,
       groupCount: 1,
       meshCount: 2,
       visibleMeshCount: 1,
       pointsCount: 1,
+      lineObjectCount: 2,
       activeParticleSystemCount: 1,
       activeParticleCount: 0,
       spriteCount: 1,
@@ -188,6 +192,7 @@ describe('render3d visibility helpers', () => {
       meshCount: 2,
       visibleMeshCount: 1,
       pointsCount: 2,
+      lineObjectCount: 0,
       activeParticleSystemCount: 1,
       activeParticleCount: 18,
       spriteCount: 0,
@@ -259,6 +264,7 @@ describe('render3d visibility helpers', () => {
       meshCount: 2,
       visibleMeshCount: 2,
       pointsCount: 0,
+      lineObjectCount: 0,
       activeParticleSystemCount: 0,
       activeParticleCount: 0,
       spriteCount: 0,

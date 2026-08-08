@@ -76,6 +76,7 @@ type Render3DController = {
     meshCount: number;
     visibleMeshCount: number;
     pointsCount: number;
+    lineObjectCount: number;
     activeParticleSystemCount: number;
     activeParticleCount: number;
     spriteCount: number;
@@ -149,6 +150,7 @@ type SceneResourceStats = {
   meshCount: number;
   visibleMeshCount: number;
   pointsCount: number;
+  lineObjectCount: number;
   activeParticleSystemCount: number;
   activeParticleCount: number;
   spriteCount: number;
@@ -753,6 +755,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       meshCount: sceneResourceStats.meshCount,
       visibleMeshCount: sceneResourceStats.visibleMeshCount,
       pointsCount: sceneResourceStats.pointsCount,
+      lineObjectCount: sceneResourceStats.lineObjectCount,
       activeParticleSystemCount: sceneResourceStats.activeParticleSystemCount,
       activeParticleCount: sceneResourceStats.activeParticleCount,
       spriteCount: sceneResourceStats.spriteCount,
@@ -1963,6 +1966,7 @@ export function collectSceneResourceStats(
   let meshCount = 0;
   let visibleMeshCount = 0;
   let pointsCount = 0;
+  let lineObjectCount = 0;
   let activeParticleSystemCount = 0;
   let activeParticleCount = 0;
   let spriteCount = 0;
@@ -1992,6 +1996,9 @@ export function collectSceneResourceStats(
           (child as THREE.Object3D & { geometry?: unknown }).geometry
         );
       }
+    }
+    if (isLineObjectType((child as THREE.Object3D).type)) {
+      lineObjectCount += 1;
     }
     if ((child as THREE.Object3D).type === 'Sprite') {
       spriteCount += 1;
@@ -2049,6 +2056,7 @@ export function collectSceneResourceStats(
     meshCount,
     visibleMeshCount,
     pointsCount,
+    lineObjectCount,
     activeParticleSystemCount,
     activeParticleCount,
     spriteCount,
@@ -2072,6 +2080,10 @@ function isDynamicLightType(type: string): boolean {
     type === 'SpotLight' ||
     type === 'RectAreaLight'
   );
+}
+
+function isLineObjectType(type: string): boolean {
+  return type === 'Line' || type === 'LineLoop' || type === 'LineSegments';
 }
 
 function getMaterialTextures(material: THREE.Material): unknown[] {
