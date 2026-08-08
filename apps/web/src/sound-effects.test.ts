@@ -108,6 +108,37 @@ describe('sound effects', () => {
     expect(played[0]?.waveform).toBe('sawtooth');
   });
 
+  it('plays reusable open and close interaction sounds for doors and exits', () => {
+    const played: ProceduralSoundEffect[] = [];
+    const controller = createSoundEffectController({
+      play(effect) {
+        played.push(effect);
+      },
+    });
+
+    controller.triggerInteraction({
+      nowMs: 100,
+      event: 'open',
+      tileKind: 'door',
+    });
+    controller.triggerInteraction({
+      nowMs: 140,
+      event: 'close',
+      tileKind: 'stairsUp',
+    });
+    controller.triggerInteraction({
+      nowMs: 240,
+      event: 'close',
+      tileKind: 'stairsUp',
+    });
+
+    expect(played.map((effect) => effect.kind)).toEqual(['open', 'close']);
+    expect(played[0]?.waveform).toBe('square');
+    expect((played[0]?.frequency ?? 0) > (played[1]?.frequency ?? 0)).toBe(
+      true
+    );
+  });
+
   it('provides cave and bridge audio profiles for later surface-specific effects', () => {
     expect(getSurfaceAudioProfile('cave-floor')).toEqual(
       expect.objectContaining({

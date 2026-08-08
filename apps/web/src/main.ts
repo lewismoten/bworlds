@@ -1479,9 +1479,43 @@ function forwardDelta(): WorldPoint {
 }
 
 function handleInteraction(): void {
-  if (state.interact()) {
-    saveSession();
+  const currentTile = state.getCurrentTile();
+  const emitter = {
+    x: snapWorldCoordinate(state.player.x),
+    y: snapWorldCoordinate(state.player.y),
+  };
+  if (!state.interact()) {
+    return;
   }
+  soundEffects.resume();
+  soundEffects.triggerInteraction({
+    nowMs: performance.now(),
+    event: 'open',
+    tileKind: currentTile.kind,
+    emitter,
+    listener: { x: state.player.x, y: state.player.y },
+  });
+  saveSession();
+}
+
+function handleTryExit(): void {
+  const currentTile = state.getCurrentTile();
+  const emitter = {
+    x: snapWorldCoordinate(state.player.x),
+    y: snapWorldCoordinate(state.player.y),
+  };
+  if (!state.tryExit()) {
+    return;
+  }
+  soundEffects.resume();
+  soundEffects.triggerInteraction({
+    nowMs: performance.now(),
+    event: 'close',
+    tileKind: currentTile.kind,
+    emitter,
+    listener: { x: state.player.x, y: state.player.y },
+  });
+  saveSession();
 }
 
 function getSavedPlayerPlacedPois(): PlayerPlacedPoiLike[] {
@@ -2432,7 +2466,7 @@ window.addEventListener('keydown', (event) => {
       handleInteraction();
     }
   }
-  if (key === 'x' && state.tryExit()) saveSession();
+  if (key === 'x') handleTryExit();
   requestRender();
 
   if (

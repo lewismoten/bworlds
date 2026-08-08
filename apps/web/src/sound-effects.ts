@@ -1,6 +1,12 @@
 type ViewModeLike = '2d' | '3d' | 'text';
 type SurfaceKind = string;
-type SoundEffectKind = 'footstep' | 'jump' | 'landing' | 'blocked';
+type SoundEffectKind =
+  | 'footstep'
+  | 'jump'
+  | 'landing'
+  | 'blocked'
+  | 'open'
+  | 'close';
 type SoundWaveform = OscillatorType;
 type SoundPosition = { x: number; y: number };
 type SurfaceAudioFamily =
@@ -31,6 +37,13 @@ export type SoundEffectSink = {
 
 export type SoundEffectController = {
   resume(): void;
+  triggerInteraction(options: {
+    nowMs: number;
+    event: 'open' | 'close';
+    tileKind?: SurfaceKind;
+    emitter?: SoundPosition;
+    listener?: SoundPosition;
+  }): void;
   triggerJump(options: {
     nowMs: number;
     tileKind?: SurfaceKind;
@@ -188,6 +201,7 @@ export function createSoundEffectController(
   let lastFootstepAtMs = -Infinity;
   let lastJumpAtMs = -Infinity;
   let lastBlockedAtMs = -Infinity;
+  let lastInteractionAtMs = -Infinity;
   let previousJumping = false;
   let footstepVariant = 0;
 
@@ -207,22 +221,41 @@ export function createSoundEffectController(
       frequency:
         kind === 'jump'
           ? profile.footstepFrequency + 72
+          : kind === 'open'
+            ? resolveInteractionFrequency('open', tileKind, profile, variantOffset)
+          : kind === 'close'
+            ? resolveInteractionFrequency('close', tileKind, profile, variantOffset)
           : kind === 'blocked'
             ? Math.max(58, profile.landingFrequency - 18 + variantOffset)
           : kind === 'landing'
             ? profile.landingFrequency + variantOffset
             : profile.footstepFrequency + variantOffset,
       durationMs:
-        kind === 'jump' ? 140 : kind === 'landing' ? 120 : kind === 'blocked' ? 105 : 90,
+        kind === 'jump'
+          ? 140
+          : kind === 'landing'
+            ? 120
+            : kind === 'blocked'
+              ? 105
+              : kind === 'open' || kind === 'close'
+                ? 135
+                : 90,
       volume:
         kind === 'jump'
           ? profile.footstepVolume * 1.2
+          : kind === 'open' || kind === 'close'
+            ? profile.landingVolume * 0.8
           : kind === 'blocked'
             ? profile.landingVolume * 0.7
           : kind === 'landing'
             ? profile.landingVolume
             : profile.footstepVolume,
-      waveform: kind === 'blocked' ? 'sawtooth' : profile.waveform,
+      waveform:
+        kind === 'blocked'
+          ? 'sawtooth'
+          : kind === 'open' || kind === 'close'
+            ? resolveInteractionWaveform(tileKind, profile.waveform)
+            : profile.waveform,
       emitter,
       listener,
     });
@@ -231,6 +264,13 @@ export function createSoundEffectController(
   return {
     resume() {
       sink.resume?.();
+    },
+    triggerInteraction({ nowMs, event, tileKind, emitter, listener }) {
+      if (nowMs - lastInteractionAtMs < 90) {
+        return;
+      }
+      lastInteractionAtMs = nowMs;
+      play(event, nowMs, tileKind, emitter, listener);
     },
     triggerJump({ nowMs, tileKind, emitter, listener }) {
       if (nowMs - lastJumpAtMs < 120) {
@@ -283,6 +323,40 @@ export function shouldPlayBlockedMovementSound(
   tileKind: SurfaceKind | undefined
 ): boolean {
   return tileKind === 'forest';
+}
+
+function resolveInteractionFrequency(
+  event: 'open' | 'close',
+  tileKind: SurfaceKind | undefined,
+  profile: SurfaceAudioProfile,
+  variantOffset: number
+): number {
+  const family = getSurfaceAudioFamily(tileKind);
+  const base =
+    tileKind === 'door' || family === 'interior'
+      ? 212
+      : family === 'cave'
+        ? 134
+        : family === 'town'
+          ? 184
+          : 166;
+  return event === 'open'
+    ? base + 18 + variantOffset * 0.5
+    : base - 14 + variantOffset * 0.35 + profile.landingFrequency * 0.08;
+}
+
+function resolveInteractionWaveform(
+  tileKind: SurfaceKind | undefined,
+  fallback: SoundWaveform
+): SoundWaveform {
+  const family = getSurfaceAudioFamily(tileKind);
+  if (tileKind === 'door' || family === 'interior') {
+    return 'square';
+  }
+  if (family === 'cave') {
+    return 'triangle';
+  }
+  return fallback;
 }
 
 type AudioContextCtor = new () => AudioContext;
