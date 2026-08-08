@@ -923,7 +923,7 @@ I would actually put these into a developer performance panel.
 * [X] Active shadow-light count.
 * [X] Active particle count.
 * [X] Active audio-source count.
-* [ ] Active NPC count.
+* [X] Active NPC count.
 * [ ] Full-simulation entity count.
 * [ ] Reduced-simulation entity count.
 * [ ] Loaded chunk count.

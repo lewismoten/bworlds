@@ -33,6 +33,7 @@ export type DebugSnapshot = {
   lightCount: number;
   dynamicLightCount: number;
   shadowLightCount: number;
+  activeNpcCount: number;
   activeAudioSourceCount: number;
   materialCount: number;
   geometryCount: number;
@@ -116,6 +117,7 @@ export function getDebugSignature(snapshot: DebugSnapshot): string {
     snapshot.lightCount,
     snapshot.dynamicLightCount,
     snapshot.shadowLightCount,
+    snapshot.activeNpcCount,
     snapshot.activeAudioSourceCount,
     snapshot.materialCount,
     snapshot.geometryCount,
@@ -227,6 +229,7 @@ export function buildDebugMarkup(snapshot: DebugSnapshot): string {
     <div><dt>Active Dynamic Lights</dt><dd>${snapshot.dynamicLightCount}</dd></div>
     <div><dt>Light Nodes</dt><dd>${snapshot.lightCount}</dd></div>
     <div><dt>Active Shadow Lights</dt><dd>${snapshot.shadowLightCount}</dd></div>
+    <div><dt>Active NPCs</dt><dd>${snapshot.activeNpcCount}</dd></div>
     <div><dt>Audio Sources</dt><dd>${snapshot.activeAudioSourceCount}</dd></div>
     <div><dt>Objects / Tree</dt><dd>${objectsPerVisibleTree}</dd></div>
     <div><dt>Meshes / Tree</dt><dd>${meshesPerVisibleTree}</dd></div>

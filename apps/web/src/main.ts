@@ -110,6 +110,7 @@ import {
   findRandomTileDestination,
   listTileTeleportOptions,
 } from './debug-teleport.ts';
+import { getActiveNpcCount } from './debug-world-stats.ts';
 import {
   advanceRenderBudgetState,
   DEFAULT_RENDER_BUDGET_STATE,
@@ -2604,6 +2605,7 @@ function render(): FrameLoopActivityLike {
       lightCount: rendererStats.lightCount,
       dynamicLightCount: rendererStats.dynamicLightCount,
       shadowLightCount: rendererStats.shadowLightCount,
+      activeNpcCount: getActiveNpcCount(state),
       activeAudioSourceCount:
         soundEffects.getActiveSourceCount() + musicController.getActiveSourceCount(),
       materialCount: rendererStats.materialCount,
