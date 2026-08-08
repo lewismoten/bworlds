@@ -278,6 +278,17 @@ export function buildPlanetTextureGrid(
   );
 }
 
+export function getPreviewSunOrbitSpec(cycle: DaylightCycleLike) {
+  return {
+    radius: 10,
+    altitude: 0.04,
+    fullStartAzimuth: cycle.sunriseAzimuth,
+    fullEndAzimuth: cycle.sunriseAzimuth + Math.PI * 2,
+    daylightStartAzimuth: cycle.sunriseAzimuth,
+    daylightEndAzimuth: cycle.sunsetAzimuth,
+  };
+}
+
 function syncPreviewPlanetTexture(
   world: THREE.Mesh,
   overworldSampler: OverworldSamplerLike | null,
@@ -502,13 +513,24 @@ function syncMilkyWayBelt(root: THREE.Group, cycle: DaylightCycleLike) {
 
 function syncPreviewOrbits(root: THREE.Group, cycle: DaylightCycleLike) {
   root.clear();
+  const sunOrbit = getPreviewSunOrbitSpec(cycle);
 
   root.add(
     buildPreviewArc(
-      cycle.sunriseAzimuth,
-      cycle.sunsetAzimuth,
-      0.04,
-      10,
+      sunOrbit.fullStartAzimuth,
+      sunOrbit.fullEndAzimuth,
+      sunOrbit.altitude,
+      sunOrbit.radius,
+      '#415c79',
+      0.14
+    )
+  );
+  root.add(
+    buildPreviewArc(
+      sunOrbit.daylightStartAzimuth,
+      sunOrbit.daylightEndAzimuth,
+      sunOrbit.altitude,
+      sunOrbit.radius,
       '#ffbf69',
       0.34
     )
