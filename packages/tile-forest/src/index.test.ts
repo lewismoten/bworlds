@@ -9,10 +9,11 @@ vi.mock('@bworlds/three-support', () => ({
 import {
   createForestTilePlugin,
   getForestBushes,
+  getForestCarvings,
   getForestFloorDetails,
   getForestLandmark,
-  getForestTreeHollows,
   getForestOwls,
+  getForestTreeHollows,
 } from './index.ts';
 
 class FakeGeometry {
@@ -222,6 +223,35 @@ describe('tile forest', () => {
 
     const first = sampleTiles[0];
     expect(getForestOwls(first.x, first.y)).toEqual(first.owls);
+  });
+
+  it('generates deterministic carved initials for some forest trees', () => {
+    const sampleTiles: Array<{
+      x: number;
+      y: number;
+      carvings: ReturnType<typeof getForestCarvings>;
+    }> = [];
+
+    for (let tileY = 0; tileY < 18; tileY += 1) {
+      for (let tileX = 0; tileX < 18; tileX += 1) {
+        const carvings = getForestCarvings(tileX, tileY);
+        if (carvings.length > 0) {
+          sampleTiles.push({ x: tileX, y: tileY, carvings });
+        }
+      }
+    }
+
+    expect(sampleTiles.length).toBeGreaterThan(0);
+    expect(
+      sampleTiles.some(({ carvings }) =>
+        carvings.every(
+          (carving) => carving.text === 'LM+FG' && carving.height > 0.2 && carving.scale > 0.015
+        )
+      )
+    ).toBe(true);
+
+    const first = sampleTiles[0];
+    expect(getForestCarvings(first.x, first.y)).toEqual(first.carvings);
   });
 
   it('creates a lower-detail distant forest model', () => {
@@ -644,6 +674,79 @@ describe('tile forest', () => {
 
     expect(fullOwlCount).toBeGreaterThan(0);
     expect(lowOwlCount).toBe(0);
+  });
+
+  it('renders carved initials only in full-detail forest models', () => {
+    const plugin = createForestTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'forest');
+    const state = {
+      player: { x: 0, y: 0, facing: 0 },
+      getCurrentContext() {
+        return { id: 'overworld', type: 'overworld', depth: 0 };
+      },
+      getCurrentTile() {
+        return { kind: 'forest' };
+      },
+      getTileDefinition() {
+        return {
+          name: 'Forest',
+          color: '#000000',
+          miniColor: '#111111',
+          walkable: true,
+          wallHeight: 0.38,
+        };
+      },
+    };
+
+    let targetTile: { x: number; y: number } | null = null;
+    for (let tileY = 0; tileY < 18 && !targetTile; tileY += 1) {
+      for (let tileX = 0; tileX < 18; tileX += 1) {
+        if (getForestCarvings(tileX, tileY).length > 0) {
+          targetTile = { x: tileX, y: tileY };
+          break;
+        }
+      }
+    }
+
+    expect(targetTile).not.toBeNull();
+
+    const fullModel = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'forest' },
+      tileX: targetTile!.x,
+      tileY: targetTile!.y,
+      detailLevel: 'full',
+    }) as FakeGroup;
+    const lowModel = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'forest' },
+      tileX: targetTile!.x,
+      tileY: targetTile!.y,
+      detailLevel: 'low',
+    }) as FakeGroup;
+
+    let fullCarvingCount = 0;
+    const fullLabels = new Set<string>();
+    fullModel.traverse((node) => {
+      const carving = node.userData?.forestCarving;
+      if (typeof carving === 'string') {
+        fullCarvingCount += 1;
+        fullLabels.add(carving);
+      }
+    });
+
+    let lowCarvingCount = 0;
+    lowModel.traverse((node) => {
+      if (node.userData?.forestCarving) {
+        lowCarvingCount += 1;
+      }
+    });
+
+    expect(fullCarvingCount).toBeGreaterThan(0);
+    expect(fullLabels.has('LM+FG')).toBe(true);
+    expect(lowCarvingCount).toBe(0);
   });
 
   it('shows fireflies only after dark', () => {

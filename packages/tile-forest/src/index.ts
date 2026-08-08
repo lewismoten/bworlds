@@ -31,6 +31,7 @@ const BUSH_KEY = 'forestBush';
 const LANDMARK_KEY = 'forestLandmark';
 const HOLLOW_KEY = 'forestHollow';
 const OWL_KEY = 'forestOwl';
+const CARVING_KEY = 'forestCarving';
 const TREE_CLUSTER_SIZE = 4;
 const TREE_REGION_SIZE = 14;
 
@@ -260,6 +261,33 @@ const resolveForestOwlDescriptors = createCoordinateValueResolver(
     });
 
     return owls;
+  }
+);
+const forestCarvingCache = new Map<string, ForestCarvingDescriptor[]>();
+const resolveForestCarvingDescriptors = createCoordinateValueResolver(
+  forestCarvingCache,
+  ({ tileX, tileY }) => {
+    const trees = resolveForestTreeDescriptors(tileX, tileY);
+    const carvings: ForestCarvingDescriptor[] = [];
+
+    trees.forEach((tree, treeIndex) => {
+      const chance = hash2D('forest-carving', tileX * 31 + treeIndex, tileY * 37);
+      if (chance < 0.88) {
+        return;
+      }
+
+      carvings.push({
+        treeIndex,
+        sideOffset: chance > 0.94 ? 1 : -1,
+        height:
+          tree.trunkHeight *
+          (0.44 + hash2D('forest-carving-height', treeIndex, tileY) * 0.14),
+        scale: 0.018 + hash2D('forest-carving-scale', tileX + treeIndex, tileY) * 0.006,
+        text: 'LM+FG',
+      });
+    });
+
+    return carvings;
   }
 );
 const treeGeometryCache = new WeakMap<
@@ -505,6 +533,32 @@ export function createForestTilePlugin(): RuntimePlugin {
             };
             group.add(rightEye);
           }
+          for (const carving of getForestCarvings(tileX, tileY)) {
+            const treeDescriptor = descriptors[carving.treeIndex];
+            if (!treeDescriptor) {
+              continue;
+            }
+
+            for (const marker of getForestCarvingMarkers(carving)) {
+              const notch = new three.Mesh(
+                geometry.foliage,
+                floorDetailStyle.carvingMaterial
+              );
+              notch.position.set(
+                tileX +
+                  treeDescriptor.x +
+                  treeDescriptor.radius * 0.74 * carving.sideOffset,
+                carving.height + marker.y * carving.scale,
+                tileY + treeDescriptor.y + marker.x * carving.scale
+              );
+              notch.scale.setScalar(carving.scale);
+              notch.userData = {
+                ...(notch.userData ?? {}),
+                [CARVING_KEY]: carving.text,
+              };
+              group.add(notch);
+            }
+          }
           const landmark = getForestLandmark(tileX, tileY);
           if (landmark) {
             createForestLandmarkMeshes(
@@ -653,6 +707,13 @@ export function getForestOwls(
   return resolveForestOwlDescriptors(tileX, tileY);
 }
 
+export function getForestCarvings(
+  tileX: number,
+  tileY: number
+): ForestCarvingDescriptor[] {
+  return resolveForestCarvingDescriptors(tileX, tileY);
+}
+
 function getForestGroveCenter(tileX: number, tileY: number) {
   return {
     x: (hash2D('forest-grove-center-x', tileX, tileY) - 0.5) * 0.36,
@@ -791,6 +852,11 @@ function getTreeStyle(
         color: '#f6e6a0',
         roughness: 0.82,
         metalness: 0.02,
+      }),
+      carvingMaterial: new three.MeshStandardMaterial({
+        color: '#d3a06d',
+        roughness: 0.96,
+        metalness: 0.01,
       }),
     });
   }
@@ -1026,6 +1092,33 @@ function createForestLandmarkMeshes(
   }
 }
 
+function getForestCarvingMarkers(carving: ForestCarvingDescriptor) {
+  const glyphs = [
+    ...offsetMarkers(CARVING_LETTER_L, -5.3, 0),
+    ...offsetMarkers(CARVING_LETTER_M, -3.1, 0),
+    ...offsetMarkers(CARVING_HEART, -0.8, 0),
+    ...offsetMarkers(CARVING_PLUS, 0.8, 0),
+    ...offsetMarkers(CARVING_LETTER_F, 2.3, 0),
+    ...offsetMarkers(CARVING_LETTER_G, 4.7, 0),
+  ];
+
+  return glyphs.map((marker) => ({
+    x: marker.x * carving.scale * 1.25,
+    y: marker.y * carving.scale * 1.7,
+  }));
+}
+
+function offsetMarkers(
+  markers: readonly ForestMarkerPoint[],
+  offsetX: number,
+  offsetY: number
+) {
+  return markers.map((marker) => ({
+    x: marker.x + offsetX,
+    y: marker.y + offsetY,
+  }));
+}
+
 function syncForestFireflies(
   root: ThreeObject3DLike,
   cycle: { daylight: number; twilight: number; night: number },
@@ -1191,6 +1284,7 @@ interface ForestTreeStyle {
   hollowMaterial: ThreeMaterialLike;
   owlBodyMaterial: ThreeMaterialLike;
   owlEyeMaterial: ThreeMaterialLike;
+  carvingMaterial: ThreeMaterialLike;
 }
 
 interface ForestBranchDescriptor {
@@ -1264,3 +1358,69 @@ interface ForestOwlDescriptor {
   eyeSpread: number;
   perchOffset: number;
 }
+
+interface ForestCarvingDescriptor {
+  treeIndex: number;
+  sideOffset: -1 | 1;
+  height: number;
+  scale: number;
+  text: 'LM+FG';
+}
+
+interface ForestMarkerPoint {
+  x: number;
+  y: number;
+}
+
+const CARVING_LETTER_L = [
+  { x: -0.4, y: 1.8 },
+  { x: -0.4, y: 0.9 },
+  { x: -0.4, y: 0 },
+  { x: 0.4, y: 0 },
+] as const satisfies readonly ForestMarkerPoint[];
+
+const CARVING_LETTER_M = [
+  { x: -0.7, y: 0 },
+  { x: -0.7, y: 0.9 },
+  { x: -0.7, y: 1.8 },
+  { x: 0, y: 0.9 },
+  { x: 0.7, y: 1.8 },
+  { x: 0.7, y: 0.9 },
+  { x: 0.7, y: 0 },
+] as const satisfies readonly ForestMarkerPoint[];
+
+const CARVING_HEART = [
+  { x: -0.5, y: 1.6 },
+  { x: 0.5, y: 1.6 },
+  { x: -0.8, y: 1.1 },
+  { x: 0.8, y: 1.1 },
+  { x: 0, y: 0.5 },
+  { x: 0, y: 0 },
+] as const satisfies readonly ForestMarkerPoint[];
+
+const CARVING_PLUS = [
+  { x: 0, y: 1.2 },
+  { x: 0, y: 0.6 },
+  { x: 0, y: 0 },
+  { x: -0.5, y: 0.6 },
+  { x: 0.5, y: 0.6 },
+] as const satisfies readonly ForestMarkerPoint[];
+
+const CARVING_LETTER_F = [
+  { x: -0.5, y: 1.8 },
+  { x: -0.5, y: 0.9 },
+  { x: -0.5, y: 0 },
+  { x: 0.4, y: 1.8 },
+  { x: 0.2, y: 0.9 },
+] as const satisfies readonly ForestMarkerPoint[];
+
+const CARVING_LETTER_G = [
+  { x: 0.4, y: 1.8 },
+  { x: -0.3, y: 1.8 },
+  { x: -0.8, y: 1.2 },
+  { x: -0.8, y: 0.5 },
+  { x: -0.3, y: 0 },
+  { x: 0.4, y: 0 },
+  { x: 0.4, y: 0.7 },
+  { x: 0, y: 0.7 },
+] as const satisfies readonly ForestMarkerPoint[];

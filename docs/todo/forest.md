@@ -11,5 +11,5 @@
 - [X] A tree may have a hollow
 - [ ] Birds can fly over trees
 - [X] An owl may live in the hollow of a tree
-- [ ] A tree may have two pairs of initials carved into it with a heart (LM + FG)
+- [X] A tree may have two pairs of initials carved into it with a heart (LM + FG)
 - [ ] A path may be through the woods without any markings other than there are no trees (or perhaps breadcrumbs)
