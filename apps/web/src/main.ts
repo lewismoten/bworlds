@@ -137,6 +137,7 @@ import {
   createWebAudioMusicSink,
   resolvePoiMusicMix,
 } from './procedural-music.ts';
+import { createMusicUpdatePayloadBuilder } from './music-update-payload.ts';
 import {
   buildSextantMarkup,
   buildEventSummaryMarkup,
@@ -907,6 +908,7 @@ const soundEffects = createSoundEffectController(
   createWebAudioSoundEffectSink()
 );
 const musicController = createMusicController(createWebAudioMusicSink());
+const buildMusicUpdatePayload = createMusicUpdatePayloadBuilder();
 const celestialPreview = createCelestialPreviewRenderer(celestialPreviewHost, {
   onRenderRequested: () => requestRender(),
 });
@@ -2212,7 +2214,7 @@ function render(): FrameLoopActivityLike {
   const musicClusterX = Math.floor(state.player.x / 12);
   const musicClusterY = Math.floor(state.player.y / 12);
   const nearbyPoiMusic = getNearbyPoiMusicProfile();
-  musicController.update({
+  musicController.update(buildMusicUpdatePayload({
     nowMs,
     tileKind: currentTile.kind,
     contextType: context.type,
@@ -2221,18 +2223,12 @@ function render(): FrameLoopActivityLike {
     weatherIntensity: environment.weather?.current?.intensity,
     clusterX: musicClusterX,
     clusterY: musicClusterY,
-    emitter: {
-      x: musicClusterX * 12 + 6,
-      y: musicClusterY * 12 + 6,
-    },
-    listener: { x: state.player.x, y: state.player.y },
-    nearbyPoi: nearbyPoiMusic
-      ? {
-          ...nearbyPoiMusic,
-          listener: { x: state.player.x, y: state.player.y },
-        }
-      : null,
-  });
+    emitterX: musicClusterX * 12 + 6,
+    emitterY: musicClusterY * 12 + 6,
+    listenerX: state.player.x,
+    listenerY: state.player.y,
+    nearbyPoi: nearbyPoiMusic,
+  }));
   if (state.viewMode === '2d') {
     const context = viewport2d?.getContext('2d');
     if (!context) return;
