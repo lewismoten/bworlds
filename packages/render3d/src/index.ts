@@ -121,6 +121,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.domElement.tabIndex = -1;
   host.appendChild(renderer.domElement);
 
   const scene = new THREE.Scene();
