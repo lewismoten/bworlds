@@ -202,7 +202,9 @@ export function createCelestialPreviewRenderer(host: HTMLElement | null) {
     (skyShell.material as THREE.MeshBasicMaterial).opacity = skyOpacity;
     constellationRoot.visible = true;
     beltRoot.visible = cycle.starsOpacity > 0.02;
-    eventRoot.visible = true;
+    eventRoot.visible = (cycle.visibleEvents ?? []).some(
+      (event) => event.visibility > 0.02
+    );
     orbitRoot.visible = true;
     orreryRoot.visible = true;
 
@@ -301,48 +303,49 @@ function syncPreviewEvents(root: THREE.Group, cycle: DaylightCycleLike) {
       new THREE.MeshBasicMaterial({
         color: event.color,
         transparent: true,
-        opacity: 0.34 + event.intensity * 0.38,
+        opacity: (0.34 + event.intensity * 0.38) * event.visibility,
       })
     );
     mesh.position.copy(point);
+    mesh.visible = (mesh.material as THREE.MeshBasicMaterial).opacity > 0.015;
     root.add(mesh);
 
     if (event.type === 'comet') {
-      root.add(
-        new THREE.Line(
-          new THREE.BufferGeometry().setFromPoints([
-            point.clone().add(
-              new THREE.Vector3(-event.trailLength * 0.42, -0.08, 0)
-            ),
-            point,
-          ]),
-          new THREE.LineBasicMaterial({
-            color: event.color,
-            transparent: true,
-            opacity: 0.2 + event.intensity * 0.24,
-          })
-        )
+      const tail = new THREE.Line(
+        new THREE.BufferGeometry().setFromPoints([
+          point.clone().add(
+            new THREE.Vector3(-event.trailLength * 0.42, -0.08, 0)
+          ),
+          point,
+        ]),
+        new THREE.LineBasicMaterial({
+          color: event.color,
+          transparent: true,
+          opacity: (0.2 + event.intensity * 0.24) * event.visibility,
+        })
       );
+      tail.visible = (tail.material as THREE.LineBasicMaterial).opacity > 0.015;
+      root.add(tail);
     }
 
     if (event.type === 'meteor-shower') {
-      root.add(
-        new THREE.Line(
-          new THREE.BufferGeometry().setFromPoints([
-            point.clone().add(
-              new THREE.Vector3(event.trailLength * 0.2, 0.12, -0.08)
-            ),
-            point.clone().add(
-              new THREE.Vector3(-event.trailLength * 0.22, -0.2, 0.08)
-            ),
-          ]),
-          new THREE.LineBasicMaterial({
-            color: event.color,
-            transparent: true,
-            opacity: 0.18 + event.intensity * 0.24,
-          })
-        )
+      const streak = new THREE.Line(
+        new THREE.BufferGeometry().setFromPoints([
+          point.clone().add(
+            new THREE.Vector3(event.trailLength * 0.2, 0.12, -0.08)
+          ),
+          point.clone().add(
+            new THREE.Vector3(-event.trailLength * 0.22, -0.2, 0.08)
+          ),
+        ]),
+        new THREE.LineBasicMaterial({
+          color: event.color,
+          transparent: true,
+          opacity: (0.18 + event.intensity * 0.24) * event.visibility,
+        })
       );
+      streak.visible = (streak.material as THREE.LineBasicMaterial).opacity > 0.015;
+      root.add(streak);
     }
   });
 }

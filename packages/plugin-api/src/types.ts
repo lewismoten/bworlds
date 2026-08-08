@@ -150,6 +150,7 @@ export interface WorldEnvironmentCelestialEventLike {
   name: string;
   progress: number;
   intensity: number;
+  visibility: number;
   azimuth: number;
   altitude: number;
   color: Color;

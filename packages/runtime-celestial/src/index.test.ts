@@ -23,6 +23,7 @@ describe('runtime celestial', () => {
           dateLabel: expect.stringContaining('/'),
           visibleEvents: expect.arrayContaining([
             expect.objectContaining({
+              visibility: expect.any(Number),
               azimuth: expect.any(Number),
               altitude: expect.any(Number),
               color: expect.any(String),

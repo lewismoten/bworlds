@@ -193,6 +193,7 @@ describe('core utilities', () => {
     expect(events.some((event) => event.type === 'comet')).toBe(true);
     expect(events[0]).toEqual(
       expect.objectContaining({
+        visibility: expect.any(Number),
         azimuth: expect.any(Number),
         altitude: expect.any(Number),
         color: expect.any(String),
@@ -200,6 +201,42 @@ describe('core utilities', () => {
         trailLength: expect.any(Number),
       })
     );
+    expect(events.every((event) => event.visibility >= 0 && event.visibility <= 1)).toBe(
+      true
+    );
+  });
+
+  it('dims celestial events differently across daylight and night conditions', () => {
+    const daytime = getCelestialEventsForDay(0, {
+      yearLengthDays: DEFAULT_YEAR_LENGTH_DAYS,
+      dayProgress: 0.5,
+      observerLatitudeDegrees: 24,
+      solarDeclination: 0.12,
+      sunriseAzimuth: 0.08,
+      sunsetAzimuth: Math.PI - 0.08,
+      daylight: 1,
+      night: 0,
+      starsOpacity: 0,
+    });
+    const nighttime = getCelestialEventsForDay(0, {
+      yearLengthDays: DEFAULT_YEAR_LENGTH_DAYS,
+      dayProgress: 0.5,
+      observerLatitudeDegrees: 24,
+      solarDeclination: 0.12,
+      sunriseAzimuth: 0.08,
+      sunsetAzimuth: Math.PI - 0.08,
+      daylight: 0,
+      night: 1,
+      starsOpacity: 1,
+    });
+
+    const dayMeteor = daytime.find((event) => event.type === 'meteor-shower');
+    const nightMeteor = nighttime.find((event) => event.type === 'meteor-shower');
+    const dayPlanet = daytime.find((event) => event.type === 'planet');
+    const nightPlanet = nighttime.find((event) => event.type === 'planet');
+
+    expect(dayMeteor?.visibility ?? 0).toBeLessThan(nightMeteor?.visibility ?? 1);
+    expect(dayPlanet?.visibility ?? 0).toBeLessThanOrEqual(nightPlanet?.visibility ?? 1);
   });
 
   it('exposes a faint Milky Way belt state that responds to season and latitude', () => {

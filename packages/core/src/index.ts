@@ -183,6 +183,7 @@ export interface CelestialEventLike {
   name: string;
   progress: number;
   intensity: number;
+  visibility: number;
   azimuth: number;
   altitude: number;
   color: string;
@@ -358,6 +359,9 @@ export function getDaylightCycleState(
     solarDeclination,
     sunriseAzimuth,
     sunsetAzimuth,
+    daylight,
+    night,
+    starsOpacity,
   });
   const calendar = formatCelestialDate(activeConstellation?.name ?? 'Unknown', moonPhaseName);
   const celestialRing = createCelestialRing(constellations);
@@ -717,6 +721,9 @@ export function getCelestialEventsForDay(
     solarDeclination?: number;
     sunriseAzimuth?: number;
     sunsetAzimuth?: number;
+    daylight?: number;
+    night?: number;
+    starsOpacity?: number;
   } = {}
 ): CelestialEventLike[] {
   const yearLengthDays = options.yearLengthDays ?? DEFAULT_YEAR_LENGTH_DAYS;
@@ -725,6 +732,9 @@ export function getCelestialEventsForDay(
   const solarDeclination = options.solarDeclination ?? 0;
   const sunriseAzimuth = options.sunriseAzimuth ?? 0;
   const sunsetAzimuth = options.sunsetAzimuth ?? Math.PI;
+  const daylight = clamp(options.daylight ?? 0, 0, 1);
+  const night = clamp(options.night ?? 1, 0, 1);
+  const starsOpacity = clamp(options.starsOpacity ?? night, 0, 1);
   const events: CelestialEventLike[] = [];
 
   PLANET_NAMES.forEach((name, index) => {
@@ -749,6 +759,16 @@ export function getCelestialEventsForDay(
       intensity:
         profile.intensityBase +
         hash2D('planet-intensity', index, dayNumber % orbitLength) * profile.intensitySwing,
+      visibility: getCelestialEventVisibility({
+        type: 'planet',
+        altitude: orbitState.altitude,
+        intensity:
+          profile.intensityBase +
+          hash2D('planet-intensity', index, dayNumber % orbitLength) * profile.intensitySwing,
+        daylight,
+        night,
+        starsOpacity,
+      }),
       azimuth: orbitState.azimuth,
       altitude: orbitState.altitude,
       color: profile.color,
@@ -778,6 +798,14 @@ export function getCelestialEventsForDay(
         name,
         progress,
         intensity: 1 - distance / 4,
+        visibility: getCelestialEventVisibility({
+          type: 'meteor-shower',
+          altitude: orbitState.altitude,
+          intensity: 1 - distance / 4,
+          daylight,
+          night,
+          starsOpacity,
+        }),
         azimuth: orbitState.azimuth,
         altitude: orbitState.altitude,
         color: '#eef6ff',
@@ -807,6 +835,14 @@ export function getCelestialEventsForDay(
         name,
         progress,
         intensity: 1 - cycleDay / 3,
+        visibility: getCelestialEventVisibility({
+          type: 'comet',
+          altitude: orbitState.altitude,
+          intensity: 1 - cycleDay / 3,
+          daylight,
+          night,
+          starsOpacity,
+        }),
         azimuth: orbitState.azimuth,
         altitude: orbitState.altitude,
         color: '#dff5ff',
@@ -817,6 +853,50 @@ export function getCelestialEventsForDay(
   });
 
   return events;
+}
+
+function getCelestialEventVisibility({
+  type,
+  altitude,
+  intensity,
+  daylight,
+  night,
+  starsOpacity,
+}: {
+  type: CelestialEventLike['type'];
+  altitude: number;
+  intensity: number;
+  daylight: number;
+  night: number;
+  starsOpacity: number;
+}) {
+  const horizonVisibility = smoothstep(-0.12, 0.18, altitude);
+  const twilightVisibility = smoothstep(0.12, 0.82, starsOpacity);
+  const daySuppression = 1 - smoothstep(0.18, 0.92, daylight);
+
+  if (type === 'meteor-shower') {
+    return clamp(horizonVisibility * twilightVisibility * night * (0.55 + intensity * 0.45), 0, 1);
+  }
+
+  if (type === 'comet') {
+    return clamp(
+      horizonVisibility *
+        (0.18 + twilightVisibility * 0.82) *
+        (0.4 + intensity * 0.6) *
+        (0.25 + daySuppression * 0.75),
+      0,
+      1
+    );
+  }
+
+  return clamp(
+    horizonVisibility *
+      (0.22 + intensity * 0.22) *
+      Math.max(0.18, 1 - daylight * 0.72) *
+      (0.2 + twilightVisibility * 0.8),
+    0,
+    1
+  );
 }
 
 export function getMilkyWayBeltState({

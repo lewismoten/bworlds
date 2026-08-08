@@ -817,7 +817,9 @@ export function create3DRenderer(host) {
     syncCelestialEvents(eventRoot, cycle);
     syncMilkyWayBelt(milkyWayRoot, cycle);
     constellationRoot.visible = cycle.starsOpacity > 0.02;
-    eventRoot.visible = cycle.starsOpacity > 0.05;
+    eventRoot.visible = (cycle.visibleEvents ?? []).some(
+      (event) => event.visibility > 0.02
+    );
     milkyWayRoot.visible = cycle.starsOpacity > 0.02;
 
     sunSprite.position.set(
@@ -1048,7 +1050,8 @@ function syncCelestialEvents(root, cycle) {
           new THREE.LineBasicMaterial({
             color: event.color,
             transparent: true,
-            opacity: (0.18 + event.intensity * 0.34) * horizonFade,
+            opacity:
+              (0.18 + event.intensity * 0.34) * event.visibility * horizonFade,
             depthTest: true,
           })
         );
@@ -1062,7 +1065,8 @@ function syncCelestialEvents(root, cycle) {
       new THREE.SpriteMaterial({
         color: event.color,
         transparent: true,
-        opacity: (0.26 + event.intensity * 0.42) * horizonFade,
+        opacity:
+          (0.26 + event.intensity * 0.42) * event.visibility * horizonFade,
         depthWrite: false,
         depthTest: true,
       })
@@ -1085,7 +1089,8 @@ function syncCelestialEvents(root, cycle) {
         new THREE.LineBasicMaterial({
           color: event.color,
           transparent: true,
-          opacity: (0.16 + event.intensity * 0.28) * horizonFade,
+          opacity:
+            (0.16 + event.intensity * 0.28) * event.visibility * horizonFade,
           depthTest: true,
         })
       );
