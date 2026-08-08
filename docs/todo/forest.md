@@ -627,7 +627,7 @@ This probably deserves several interchangeable strategies.
 * [x] Generate beaver-chewed trunks near suitable waterways.
 * [x] Generate characteristic cone-shaped chew marks.
 * [x] Generate partial chewing.
-* [ ] Generate nearly felled trees.
+* [x] Generate nearly felled trees.
 * [ ] Generate felled beaver-cut trees.
 * [x] Generate stripped branches.
 * [ ] Associate damage with nearby beaver populations.

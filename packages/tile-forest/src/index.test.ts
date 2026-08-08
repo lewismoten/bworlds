@@ -644,8 +644,13 @@ describe('tile forest', () => {
     expect(
       wetDamage.some(
         (damage) =>
-          damage.severity === 'partial' || damage.severity === 'deep'
+          damage.severity === 'partial' ||
+          damage.severity === 'deep' ||
+          damage.severity === 'near-felled'
       )
+    ).toBe(true);
+    expect(
+      wetDamage.some((damage) => damage.severity === 'near-felled')
     ).toBe(true);
     expect(
       wetDamage.every(
@@ -653,7 +658,8 @@ describe('tile forest', () => {
           damage.chewHeight > 0.07 &&
           damage.chewRadiusScale > 0.8 &&
           damage.coneScale > 0.5 &&
-          damage.strippedBranchCount >= 1
+          damage.strippedBranchCount >= 1 &&
+          Math.abs(damage.leanDirection) === 1
       )
     ).toBe(true);
   });
@@ -1823,6 +1829,9 @@ describe('tile forest', () => {
     expect(countTaggedNodes(wetModel, 'forestBeaverDamage')).toBeGreaterThan(0);
     expect(countTaggedValue(wetModel, 'forestBeaverDamage', 'chew')).toBeGreaterThan(0);
     expect(countTaggedValue(wetModel, 'forestBeaverDamage', 'debris')).toBeGreaterThan(0);
+    expect(
+      countTaggedValue(wetModel, 'forestBeaverDamage', 'near-felled')
+    ).toBeGreaterThan(0);
     expect(countTaggedNodes(dryModel, 'forestBeaverDamage')).toBe(0);
     expect(countTaggedNodes(farModel, 'forestBeaverDamage')).toBe(0);
     expect(countTaggedNodes(lowModel, 'forestBeaverDamage')).toBe(0);
