@@ -1,3 +1,4 @@
+import { createBoundedCache } from '@bworlds/cache-support';
 import { getTrainBoardingSpawn, type TrainContext } from '@bworlds/map-train';
 import {
   createContextMapPlugin,
@@ -26,6 +27,7 @@ type StationContext = WorldContextLike & {
 
 const STATION_PLATFORM_Y = -4;
 const BOARDABLE_TRAIN_APPROACH_THRESHOLD = 0.18;
+const STATION_SERVICE_CACHE_LIMIT = 256;
 
 export function createStationMapPlugin(): RuntimePlugin {
   return createContextMapPlugin<StationContext>({
@@ -41,7 +43,9 @@ function createStationMap(
   _plugins: CreateMapContext['plugins']
 ): WorldMapLike {
   const sampleTerrainSignals = createOverworldTerrainSignalSampler(seed);
-  const serviceCache = new Map<number, RailTrainPlacement | null>();
+  const serviceCache = createBoundedCache<number, RailTrainPlacement | null>(
+    STATION_SERVICE_CACHE_LIMIT
+  );
 
   function resolveBoardableTrainService(
     state?: WorldStateLike

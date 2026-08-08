@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "type": "module",
   "dependencies": {
+    "@bworlds/cache-support": "0.1.0",
     "@bworlds/map-train": "0.1.0",
     "@bworlds/map-support": "0.1.0",
     "@bworlds/overworld-support": "0.1.0",
