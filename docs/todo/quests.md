@@ -13,7 +13,7 @@ Quests may include:
 - [X] Collection quest — gather several items, ingredients, artifacts, or resources.
 - [X] Crafting quest — obtain materials and build, repair, cook, or forge something.
 - [X] Puzzle quest — solve mechanisms, riddles, codes, environmental puzzles, or logic challenges.
-- [ ] Defense quest — protect a location or NPC against waves of enemies.
+- [X] Defense quest — protect a location or NPC against waves of enemies.
 - [X] Survival quest — endure for a period of time or reach safety under difficult conditions.
 - [ ] Stealth / infiltration quest — enter an area without being detected, steal something, spy, or sabotage.
 - [ ] Assassination / bounty quest — locate and eliminate a specific target.

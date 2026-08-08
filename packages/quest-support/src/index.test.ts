@@ -9,6 +9,7 @@ describe('quest support', () => {
       'delivery',
       'collection',
       'kill',
+      'defense',
       'escort',
       'rescue',
       'tracking',
@@ -123,6 +124,44 @@ describe('quest support', () => {
       kill.some((offer) => offer.summary.includes('combat patrol experience'))
     ).toBe(true);
     expect(underleveled.some((offer) => offer.type === 'kill')).toBe(false);
+  });
+
+  it('offers defense quests for staffed professions guarding people and places', () => {
+    const defense = getDefaultQuestRegistry().getOffers({
+      npcId: 'npc:priest',
+      npcName: 'Elise Harrow',
+      townKey: '3:7',
+      dayProgress: 0.79,
+      yearProgress: 0.88,
+      playerLevel: 6,
+      playerProfession: 'healer',
+      completedQuestIds: new Set<string>(),
+      npcState: 'working',
+      profession: 'priest',
+      professionFamily: 'temple',
+      residenceBuildingId: 'home',
+      workplaceBuildingId: 'temple',
+    });
+    const underleveled = getDefaultQuestRegistry().getOffers({
+      npcId: 'npc:priest',
+      npcName: 'Elise Harrow',
+      townKey: '3:7',
+      dayProgress: 0.79,
+      yearProgress: 0.88,
+      playerLevel: 2,
+      completedQuestIds: new Set<string>(),
+      npcState: 'working',
+      profession: 'priest',
+      professionFamily: 'temple',
+      residenceBuildingId: 'home',
+      workplaceBuildingId: 'temple',
+    });
+
+    expect(defense.some((offer) => offer.type === 'defense')).toBe(true);
+    expect(
+      defense.some((offer) => offer.summary.includes('hold a line under pressure'))
+    ).toBe(true);
+    expect(underleveled.some((offer) => offer.type === 'defense')).toBe(false);
   });
 
   it('offers rescue quests for staffed civic, temple, and stable roles', () => {

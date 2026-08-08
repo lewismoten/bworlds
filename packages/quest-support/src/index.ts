@@ -75,6 +75,7 @@ export function getDefaultQuestPlugins(): QuestTypePlugin[] {
     createDeliveryQuestPlugin(),
     createHomeNeedQuestPlugin(),
     createKillQuestPlugin(),
+    createDefenseQuestPlugin(),
     createEscortQuestPlugin(),
     createRescueQuestPlugin(),
     createTrackingQuestPlugin(),
@@ -234,6 +235,65 @@ function createKillQuestPlugin(): QuestTypePlugin {
       title: `${seasonLabel} Hunt Order`,
       summary: `${context.npcName} needs someone to ${threat}.${professionHint}`,
       availability: 'work',
+      sourceNpcId: context.npcId,
+      sourceNpcName: context.npcName,
+    };
+  });
+}
+
+function createDefenseQuestPlugin(): QuestTypePlugin {
+  return createQuestTypePlugin('defense', (context) => {
+    if (
+      context.playerLevel < 4 ||
+      context.playerLevel > 20 ||
+      !(
+        context.npcState === 'working' ||
+        context.npcState === 'commuting-home'
+      ) ||
+      !(
+        context.professionFamily === 'town-hall' ||
+        context.professionFamily === 'inn' ||
+        context.professionFamily === 'stable' ||
+        context.professionFamily === 'temple'
+      )
+    ) {
+      return null;
+    }
+
+    const seasonLabel = getSeasonLabel(context.yearProgress);
+    const defensePoint =
+      context.professionFamily === 'inn'
+        ? seasonLabel === 'Winter'
+          ? 'hold the roadside inn against freezing-night raiders until dawn relief arrives'
+          : 'protect the guest yard from the next bandit rush'
+        : context.professionFamily === 'stable'
+          ? seasonLabel === 'Winter'
+            ? 'defend the animal pens from hungry winter predators'
+            : 'guard the hitch lines while repeated beast waves hit the trail gate'
+          : context.professionFamily === 'temple'
+            ? seasonLabel === 'Winter'
+              ? 'keep the lantern shrine safe through a night of restless dead'
+              : 'protect the pilgrims gathering during the next raider surge'
+            : seasonLabel === 'Winter'
+              ? 'stand with the watch and defend the storehouses through the storm alarm'
+              : 'help repel repeated attacks on the outer barricades';
+    const questId =
+      `${context.townKey}:${context.npcId}:defense:${context.professionFamily}:${seasonLabel}:${context.npcState}`;
+    if (context.completedQuestIds.has(questId)) {
+      return null;
+    }
+
+    const professionHint =
+      context.playerProfession === 'guard' || context.playerProfession === 'healer'
+        ? ' Your ability to hold a line under pressure makes you especially valuable.'
+        : '';
+
+    return {
+      id: questId,
+      type: 'defense',
+      title: `${seasonLabel} Hold the Line`,
+      summary: `${context.npcName} needs someone to ${defensePoint}.${professionHint}`,
+      availability: context.npcState === 'working' ? 'work' : 'travel',
       sourceNpcId: context.npcId,
       sourceNpcName: context.npcName,
     };

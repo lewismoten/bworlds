@@ -336,6 +336,39 @@ describe('town support', () => {
     ).toBe(true);
   });
 
+  it('surfaces defense quest offers from generated town schedules', () => {
+    let defenseStates: ReturnType<typeof getTownNpcQuestStates> = [];
+
+    outerDefense: for (let x = -4; x <= 12; x += 1) {
+      for (let y = -4; y <= 12; y += 1) {
+        for (let minute = 15 * 60; minute <= 23 * 60; minute += 30) {
+          defenseStates = getTownNpcQuestStates(
+            x,
+            y,
+            DEFAULT_DAY_LENGTH_MS * (minute / (24 * 60)),
+            {
+              level: 6,
+              profession: 'healer',
+            }
+          );
+          if (
+            defenseStates.some((entry) =>
+              entry.offers.some((offer) => offer.type === 'defense')
+            )
+          ) {
+            break outerDefense;
+          }
+        }
+      }
+    }
+
+    expect(
+      defenseStates.some((entry) =>
+        entry.offers.some((offer) => offer.type === 'defense')
+      )
+    ).toBe(true);
+  });
+
   it('surfaces crafting and training quest offers from matching town professions', () => {
     const crafting = getTownNpcQuestStates(3, 7, DEFAULT_DAY_LENGTH_MS * 0.5, {
       level: 5,
