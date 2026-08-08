@@ -5,6 +5,7 @@
   "dependencies": {
     "@bworlds/core": "0.1.0",
     "@bworlds/map-balloon": "0.1.0",
+    "@bworlds/map-blimp": "0.1.0",
     "@bworlds/map-boat": "0.1.0",
     "@bworlds/map-canoe": "0.1.0",
     "@bworlds/map-glider": "0.1.0",
