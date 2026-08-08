@@ -4,7 +4,14 @@ type FocusableLike = {
 
 type ViewportHostLike = {
   focus: (options?: FocusOptions) => void;
+  querySelector?: (selector: string) => FocusableLike;
 } | null | undefined;
+
+function resolveViewportKeyboardFocusTarget(
+  viewport: ViewportHostLike
+): FocusableLike {
+  return viewport?.querySelector?.('canvas') ?? viewport;
+}
 
 export function shouldRestore3dViewportKeyboardFocusOnPointerDown(
   viewMode: '2d' | '3d' | 'text',
@@ -33,6 +40,7 @@ export function restore3dViewportKeyboardFocus(
     return false;
   }
 
-  viewport.focus({ preventScroll: true });
+  const target = resolveViewportKeyboardFocusTarget(viewport);
+  target?.focus({ preventScroll: true });
   return true;
 }

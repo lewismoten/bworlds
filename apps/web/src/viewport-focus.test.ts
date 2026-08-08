@@ -41,6 +41,21 @@ describe('viewport keyboard focus', () => {
     expect(viewport.focus).toHaveBeenCalledWith({ preventScroll: true });
   });
 
+  it('prefers the renderer canvas when the 3d host wraps one', () => {
+    const canvas = {
+      focus: vi.fn(),
+    };
+    const viewport = {
+      focus: vi.fn(),
+      querySelector: vi.fn().mockReturnValue(canvas),
+    };
+
+    expect(restore3dViewportKeyboardFocus('3d', viewport)).toBe(true);
+    expect(viewport.querySelector).toHaveBeenCalledWith('canvas');
+    expect(canvas.focus).toHaveBeenCalledWith({ preventScroll: true });
+    expect(viewport.focus).not.toHaveBeenCalled();
+  });
+
   it('does not require a renderer canvas to restore focus', () => {
     const viewport = {
       focus: vi.fn(),
