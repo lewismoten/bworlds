@@ -32,6 +32,7 @@ const LANDMARK_KEY = 'forestLandmark';
 const HOLLOW_KEY = 'forestHollow';
 const OWL_KEY = 'forestOwl';
 const CARVING_KEY = 'forestCarving';
+const MEADOW_KEY = 'forestMeadow';
 const TREE_CLUSTER_SIZE = 4;
 const TREE_REGION_SIZE = 14;
 
@@ -288,6 +289,25 @@ const resolveForestCarvingDescriptors = createCoordinateValueResolver(
     });
 
     return carvings;
+  }
+);
+const forestMeadowCache = new Map<string, ForestMeadowDescriptor[]>();
+const resolveForestMeadowDescriptors = createCoordinateValueResolver(
+  forestMeadowCache,
+  ({ tileX, tileY }) => {
+    const trees = resolveForestTreeDescriptors(tileX, tileY);
+    const landmark = getForestLandmark(tileX, tileY);
+    const count = hash2D('forest-meadow-count', tileX, tileY) > 0.86 ? 1 : 0;
+    const meadows: ForestMeadowDescriptor[] = [];
+
+    for (let index = 0; index < count; index += 1) {
+      const meadow = createForestMeadowDescriptor(tileX, tileY, index, trees, landmark);
+      if (meadow) {
+        meadows.push(meadow);
+      }
+    }
+
+    return meadows;
   }
 );
 const treeGeometryCache = new WeakMap<
@@ -559,6 +579,55 @@ export function createForestTilePlugin(): RuntimePlugin {
               group.add(notch);
             }
           }
+          for (const meadow of getForestMeadows(tileX, tileY)) {
+            const patch = new three.Mesh(
+              geometry.foliage,
+              floorDetailStyle.meadowGrassMaterial
+            );
+            patch.position.set(tileX + meadow.x, 0.03, tileY + meadow.y);
+            patch.scale.set(meadow.radiusX, 0.08, meadow.radiusY);
+            patch.userData = {
+              ...(patch.userData ?? {}),
+              [MEADOW_KEY]: 'grass',
+            };
+            group.add(patch);
+
+            meadow.flowers.forEach((flower) => {
+              const stem = new three.Mesh(
+                geometry.branch,
+                floorDetailStyle.meadowStemMaterial
+              );
+              stem.position.set(
+                tileX + meadow.x + flower.x,
+                0.08,
+                tileY + meadow.y + flower.y
+              );
+              stem.scale.set(0.22, flower.height, 0.22);
+              stem.userData = {
+                ...(stem.userData ?? {}),
+                [MEADOW_KEY]: 'flower-stem',
+              };
+              group.add(stem);
+
+              const bloom = new three.Mesh(
+                geometry.foliage,
+                flower.color === 'white'
+                  ? floorDetailStyle.meadowFlowerWhiteMaterial
+                  : floorDetailStyle.meadowFlowerYellowMaterial
+              );
+              bloom.position.set(
+                tileX + meadow.x + flower.x,
+                0.12 + flower.height,
+                tileY + meadow.y + flower.y
+              );
+              bloom.scale.setScalar(flower.scale);
+              bloom.userData = {
+                ...(bloom.userData ?? {}),
+                [MEADOW_KEY]: flower.color,
+              };
+              group.add(bloom);
+            });
+          }
           const landmark = getForestLandmark(tileX, tileY);
           if (landmark) {
             createForestLandmarkMeshes(
@@ -714,6 +783,13 @@ export function getForestCarvings(
   return resolveForestCarvingDescriptors(tileX, tileY);
 }
 
+export function getForestMeadows(
+  tileX: number,
+  tileY: number
+): ForestMeadowDescriptor[] {
+  return resolveForestMeadowDescriptors(tileX, tileY);
+}
+
 function getForestGroveCenter(tileX: number, tileY: number) {
   return {
     x: (hash2D('forest-grove-center-x', tileX, tileY) - 0.5) * 0.36,
@@ -856,6 +932,29 @@ function getTreeStyle(
       carvingMaterial: new three.MeshStandardMaterial({
         color: '#d3a06d',
         roughness: 0.96,
+        metalness: 0.01,
+      }),
+      meadowGrassMaterial: new three.MeshStandardMaterial({
+        color: tintHexColor(
+          '#79a85a',
+          0.92 + hash2D('tree-meadow-grass-tint', regionX, regionY + variety) * 0.16
+        ),
+        roughness: 0.98,
+        metalness: 0.01,
+      }),
+      meadowStemMaterial: new three.MeshStandardMaterial({
+        color: '#5f8d41',
+        roughness: 0.98,
+        metalness: 0.01,
+      }),
+      meadowFlowerWhiteMaterial: new three.MeshStandardMaterial({
+        color: '#fff5df',
+        roughness: 0.9,
+        metalness: 0.01,
+      }),
+      meadowFlowerYellowMaterial: new three.MeshStandardMaterial({
+        color: '#f3cf62',
+        roughness: 0.9,
         metalness: 0.01,
       }),
     });
@@ -1119,6 +1218,60 @@ function offsetMarkers(
   }));
 }
 
+function createForestMeadowDescriptor(
+  tileX: number,
+  tileY: number,
+  meadowIndex: number,
+  trees: ForestTreeDescriptor[],
+  landmark: ForestLandmarkDescriptor | null
+): ForestMeadowDescriptor | null {
+  const maxAttempts = 4;
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    const seed = `forest-meadow:${tileX}:${tileY}:${meadowIndex}:${attempt}`;
+    const x = clampToTile((hash2D(seed, 1, 0) - 0.5) * 0.56);
+    const y = clampToTile((hash2D(seed, 2, 0) - 0.5) * 0.56);
+    const radiusX = 0.2 + hash2D(seed, 3, 0) * 0.08;
+    const radiusY = 0.18 + hash2D(seed, 4, 0) * 0.08;
+    const clearance = Math.max(radiusX, radiusY) * 0.8;
+    const nearTree = trees.some((tree) => {
+      const distance = Math.hypot(x - tree.x, y - tree.y);
+      return distance < tree.radius + clearance;
+    });
+    if (nearTree) {
+      continue;
+    }
+    if (landmark) {
+      const distanceFromLandmark = Math.hypot(x - landmark.x, y - landmark.y);
+      if (distanceFromLandmark < landmark.ringRadius + clearance) {
+        continue;
+      }
+    }
+
+    const flowerCount = 4 + Math.floor(hash2D(seed, 5, 0) * 4);
+    const flowers: ForestFlowerDescriptor[] = [];
+    for (let flowerIndex = 0; flowerIndex < flowerCount; flowerIndex += 1) {
+      const flowerSeed = `${seed}:flower:${flowerIndex}`;
+      flowers.push({
+        x: (hash2D(flowerSeed, 1, 0) - 0.5) * radiusX * 1.4,
+        y: (hash2D(flowerSeed, 2, 0) - 0.5) * radiusY * 1.4,
+        height: 0.06 + hash2D(flowerSeed, 3, 0) * 0.03,
+        scale: 0.026 + hash2D(flowerSeed, 4, 0) * 0.014,
+        color: hash2D(flowerSeed, 5, 0) > 0.52 ? 'white' : 'yellow',
+      });
+    }
+
+    return {
+      x,
+      y,
+      radiusX,
+      radiusY,
+      flowers,
+    };
+  }
+
+  return null;
+}
+
 function syncForestFireflies(
   root: ThreeObject3DLike,
   cycle: { daylight: number; twilight: number; night: number },
@@ -1285,6 +1438,10 @@ interface ForestTreeStyle {
   owlBodyMaterial: ThreeMaterialLike;
   owlEyeMaterial: ThreeMaterialLike;
   carvingMaterial: ThreeMaterialLike;
+  meadowGrassMaterial: ThreeMaterialLike;
+  meadowStemMaterial: ThreeMaterialLike;
+  meadowFlowerWhiteMaterial: ThreeMaterialLike;
+  meadowFlowerYellowMaterial: ThreeMaterialLike;
 }
 
 interface ForestBranchDescriptor {
@@ -1370,6 +1527,22 @@ interface ForestCarvingDescriptor {
 interface ForestMarkerPoint {
   x: number;
   y: number;
+}
+
+interface ForestFlowerDescriptor {
+  x: number;
+  y: number;
+  height: number;
+  scale: number;
+  color: 'white' | 'yellow';
+}
+
+interface ForestMeadowDescriptor {
+  x: number;
+  y: number;
+  radiusX: number;
+  radiusY: number;
+  flowers: ForestFlowerDescriptor[];
 }
 
 const CARVING_LETTER_L = [

@@ -7,7 +7,7 @@
 - [X] Sometimes show a stump
 - [X] Sometimes show a fallen tree
 - [ ] Consider a forest near a river can have a fallen tree across the river to form a bridge without a path/road leading to it
-- [ ] A forest may have a meadow with flowers
+- [X] A forest may have a meadow with flowers
 - [X] A tree may have a hollow
 - [ ] Birds can fly over trees
 - [X] An owl may live in the hollow of a tree

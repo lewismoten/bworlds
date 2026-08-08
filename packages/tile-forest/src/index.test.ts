@@ -12,6 +12,7 @@ import {
   getForestCarvings,
   getForestFloorDetails,
   getForestLandmark,
+  getForestMeadows,
   getForestOwls,
   getForestTreeHollows,
 } from './index.ts';
@@ -252,6 +253,38 @@ describe('tile forest', () => {
 
     const first = sampleTiles[0];
     expect(getForestCarvings(first.x, first.y)).toEqual(first.carvings);
+  });
+
+  it('generates deterministic flower meadows for some forest tiles', () => {
+    const sampleTiles: Array<{
+      x: number;
+      y: number;
+      meadows: ReturnType<typeof getForestMeadows>;
+    }> = [];
+
+    for (let tileY = 0; tileY < 24; tileY += 1) {
+      for (let tileX = 0; tileX < 24; tileX += 1) {
+        const meadows = getForestMeadows(tileX, tileY);
+        if (meadows.length > 0) {
+          sampleTiles.push({ x: tileX, y: tileY, meadows });
+        }
+      }
+    }
+
+    expect(sampleTiles.length).toBeGreaterThan(0);
+    expect(
+      sampleTiles.some(({ meadows }) =>
+        meadows.every(
+          (meadow) =>
+            meadow.radiusX > 0.18 &&
+            meadow.radiusY > 0.16 &&
+            meadow.flowers.length >= 4
+        )
+      )
+    ).toBe(true);
+
+    const first = sampleTiles[0];
+    expect(getForestMeadows(first.x, first.y)).toEqual(first.meadows);
   });
 
   it('creates a lower-detail distant forest model', () => {
@@ -747,6 +780,75 @@ describe('tile forest', () => {
     expect(fullCarvingCount).toBeGreaterThan(0);
     expect(fullLabels.has('LM+FG')).toBe(true);
     expect(lowCarvingCount).toBe(0);
+  });
+
+  it('renders flower meadows only in full-detail forest models', () => {
+    const plugin = createForestTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'forest');
+    const state = {
+      player: { x: 0, y: 0, facing: 0 },
+      getCurrentContext() {
+        return { id: 'overworld', type: 'overworld', depth: 0 };
+      },
+      getCurrentTile() {
+        return { kind: 'forest' };
+      },
+      getTileDefinition() {
+        return {
+          name: 'Forest',
+          color: '#000000',
+          miniColor: '#111111',
+          walkable: true,
+          wallHeight: 0.38,
+        };
+      },
+    };
+
+    let targetTile: { x: number; y: number } | null = null;
+    for (let tileY = 0; tileY < 24 && !targetTile; tileY += 1) {
+      for (let tileX = 0; tileX < 24; tileX += 1) {
+        if (getForestMeadows(tileX, tileY).length > 0) {
+          targetTile = { x: tileX, y: tileY };
+          break;
+        }
+      }
+    }
+
+    expect(targetTile).not.toBeNull();
+
+    const fullModel = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'forest' },
+      tileX: targetTile!.x,
+      tileY: targetTile!.y,
+      detailLevel: 'full',
+    }) as FakeGroup;
+    const lowModel = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'forest' },
+      tileX: targetTile!.x,
+      tileY: targetTile!.y,
+      detailLevel: 'low',
+    }) as FakeGroup;
+
+    let fullMeadowCount = 0;
+    fullModel.traverse((node) => {
+      if (node.userData?.forestMeadow) {
+        fullMeadowCount += 1;
+      }
+    });
+
+    let lowMeadowCount = 0;
+    lowModel.traverse((node) => {
+      if (node.userData?.forestMeadow) {
+        lowMeadowCount += 1;
+      }
+    });
+
+    expect(fullMeadowCount).toBeGreaterThan(0);
+    expect(lowMeadowCount).toBe(0);
   });
 
   it('shows fireflies only after dark', () => {
