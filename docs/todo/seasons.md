@@ -78,3 +78,6 @@ add a outer globe of stars in the sky that appear at night with procedurally gen
 - [x] The compass should have four buttons to make me face North, East, West, or South
 - [x] The compass needle should be red/black. Red should point north.
 - [x] When I click the "North" button, the compass red needle should be on "N" at the top.
+- [x] Clicking "Timekeeper" should hide the Model and Compass
+- [x] Clicking "Model" should hide the compass and time keeper
+- [x] Clicking "Compass" should hide the time keeper and model
