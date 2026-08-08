@@ -63,6 +63,8 @@ describe('debug panel', () => {
       dynamicLightCount: 4,
       shadowLightCount: 2,
       activeNpcCount: 19,
+      fullSimulationEntityCount: 21,
+      reducedSimulationEntityCount: 2,
       activeAudioSourceCount: 6,
       materialCount: 24,
       geometryCount: 61,
@@ -118,6 +120,8 @@ describe('debug panel', () => {
     expect(buildDebugMarkup(snapshot)).toContain('Active Dynamic Lights');
     expect(buildDebugMarkup(snapshot)).toContain('Active Shadow Lights');
     expect(buildDebugMarkup(snapshot)).toContain('Active NPCs');
+    expect(buildDebugMarkup(snapshot)).toContain('Full-sim Entities');
+    expect(buildDebugMarkup(snapshot)).toContain('Reduced-sim Entities');
     expect(buildDebugMarkup(snapshot)).toContain('Audio Sources');
     expect(buildDebugMarkup(snapshot)).toContain('Objects / Tree');
     expect(buildDebugMarkup(snapshot)).toContain('Meshes / Tree');

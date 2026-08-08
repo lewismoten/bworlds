@@ -110,7 +110,7 @@ import {
   findRandomTileDestination,
   listTileTeleportOptions,
 } from './debug-teleport.ts';
-import { getActiveNpcCount } from './debug-world-stats.ts';
+import { getDebugWorldStats } from './debug-world-stats.ts';
 import {
   advanceRenderBudgetState,
   DEFAULT_RENDER_BUDGET_STATE,
@@ -2545,6 +2545,16 @@ function render(): FrameLoopActivityLike {
   }
   if (debugSummary && debugInspectorVisible && gps) {
     const rendererStats = renderer3d.getStats();
+    const worldStats = getDebugWorldStats(
+      state as typeof state & {
+        activeCharacterIds?: string[];
+        characterRoster?: {
+          characters: Array<{
+            availability: 'active' | 'available' | 'dropped';
+          }>;
+        };
+      }
+    );
     const performanceStats = performance as PerformanceWithMemory;
     recordMaterialGrowthSample(debugResourceTrendState.materialSamples, {
       nowMs,
@@ -2605,7 +2615,9 @@ function render(): FrameLoopActivityLike {
       lightCount: rendererStats.lightCount,
       dynamicLightCount: rendererStats.dynamicLightCount,
       shadowLightCount: rendererStats.shadowLightCount,
-      activeNpcCount: getActiveNpcCount(state),
+      activeNpcCount: worldStats.activeNpcCount,
+      fullSimulationEntityCount: worldStats.fullSimulationEntityCount,
+      reducedSimulationEntityCount: worldStats.reducedSimulationEntityCount,
       activeAudioSourceCount:
         soundEffects.getActiveSourceCount() + musicController.getActiveSourceCount(),
       materialCount: rendererStats.materialCount,

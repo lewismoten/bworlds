@@ -924,8 +924,8 @@ I would actually put these into a developer performance panel.
 * [X] Active particle count.
 * [X] Active audio-source count.
 * [X] Active NPC count.
-* [ ] Full-simulation entity count.
-* [ ] Reduced-simulation entity count.
+* [X] Full-simulation entity count.
+* [X] Reduced-simulation entity count.
 * [ ] Loaded chunk count.
 * [ ] Chunk-generation queue size.
 * [ ] Worker-job queue size.
