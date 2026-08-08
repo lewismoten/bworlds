@@ -12,6 +12,7 @@ import {
 } from '@bworlds/core';
 import type {
   ClassifyOverworldTileContext,
+  DecorateOverworldTileContext,
   OverworldAnchorLike,
   OverworldAnchorSet,
   PoiAnchorLike,
@@ -1214,7 +1215,7 @@ export function createOverworldGenerationContext({
   plugins: PluginRegistryLike;
   sampleTerrainSignals: OverworldTerrainSignalSampler;
   state?: WorldStateLike;
-}): ClassifyOverworldTileContext {
+}): ClassifyOverworldTileContext & { state?: WorldStateLike } {
   const signals = sampleTerrainSignals(x, y);
   const anchors = plugins.resolveOverworldAnchors({
     seed,
@@ -1235,6 +1236,7 @@ export function createOverworldGenerationContext({
     x,
     y,
     tile,
+    state,
     nearLand: isNearOverworldLand(signals),
     townChance: placementChances.town,
     caveChance: placementChances.cave,
@@ -1297,20 +1299,12 @@ export function composeOverworldTileFromPlugins({
     state,
   });
 
-  let tile = plugins.classifyTerrainTile(generationContext) ?? startingTile;
-  tile =
-    plugins.classifyOverworldTile({
-      ...generationContext,
-      tile,
-    }) ?? tile;
+  generationContext.tile =
+    plugins.classifyTerrainTile(generationContext) ?? generationContext.tile;
+  generationContext.tile =
+    plugins.classifyOverworldTile(generationContext) ?? generationContext.tile;
 
-  return plugins.decorateOverworldTile({
-    seed,
-    x,
-    y,
-    signals: generationContext.signals,
-    tile,
-    state,
-    sampleTerrainSignals,
-  });
+  return plugins.decorateOverworldTile(
+    generationContext as DecorateOverworldTileContext
+  );
 }

@@ -728,6 +728,7 @@ describe('overworld support', () => {
   it('composes overworld tiles through the shared plugin pipeline', () => {
     const sampleTerrainSignals = createOverworldTerrainSignalSampler('spec-seed');
     const calls: string[] = [];
+    const contexts: object[] = [];
     const state = {
       timeMs: 1234,
       player: { x: 0, y: 0, facing: 0 },
@@ -758,14 +759,17 @@ describe('overworld support', () => {
           };
         },
         classifyTerrainTile(context) {
+          contexts.push(context);
           calls.push(`terrain:${context.tile.kind}`);
           return { kind: 'river' };
         },
         classifyOverworldTile(context) {
+          contexts.push(context);
           calls.push(`overworld:${context.tile.kind}`);
           return { kind: 'bridge' };
         },
         decorateOverworldTile(context) {
+          contexts.push(context);
           calls.push(`decorate:${context.tile.kind}`);
           calls.push(`time:${context.state?.timeMs ?? 'none'}`);
           calls.push(
@@ -790,6 +794,8 @@ describe('overworld support', () => {
       'time:1234',
       'sampler:yes',
     ]);
+    expect(contexts[0]).toBe(contexts[1]);
+    expect(contexts[1]).toBe(contexts[2]);
   });
 
   it('uses the plugin-owned default tile kind as the initial overworld tile', () => {
