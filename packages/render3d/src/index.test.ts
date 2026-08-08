@@ -73,7 +73,7 @@ describe('render3d visibility helpers', () => {
     });
   });
 
-  it('disposes unique materials and geometries when removing a tile node', () => {
+  it('disposes only tile-owned materials and geometries when removing a tile node', () => {
     const sharedMaterial = createMockMaterial();
     const otherMaterial = createMockMaterial();
     const sharedGeometry = createMockGeometry();
@@ -85,10 +85,22 @@ describe('render3d visibility helpers', () => {
 
     disposeObject3DResources(root as never);
 
-    expect(sharedMaterial.dispose).toHaveBeenCalledTimes(1);
-    expect(otherMaterial.dispose).toHaveBeenCalledTimes(1);
-    expect(sharedGeometry.dispose).toHaveBeenCalledTimes(1);
-    expect(otherGeometry.dispose).toHaveBeenCalledTimes(1);
+    expect(sharedMaterial.dispose).toHaveBeenCalledTimes(0);
+    expect(otherMaterial.dispose).toHaveBeenCalledTimes(0);
+    expect(sharedGeometry.dispose).toHaveBeenCalledTimes(0);
+    expect(otherGeometry.dispose).toHaveBeenCalledTimes(0);
+  });
+
+  it('disposes fade-owned material clones without touching shared source materials', () => {
+    const sourceMaterial = createMockMaterial();
+    const child = createMockObject3D(sourceMaterial);
+    const root = createMockObject3D(undefined, [child]);
+
+    prepareObjectForDistanceFade(root as never);
+    disposeObject3DResources(root as never);
+
+    expect(sourceMaterial.dispose).toHaveBeenCalledTimes(0);
+    expect(child.material.dispose).toHaveBeenCalledTimes(1);
   });
 
   it('records additional object-type counts for points, sprites, and lights', () => {
@@ -858,6 +870,7 @@ function createMockMaterial(
     transparent: overrides.transparent ?? false,
     depthWrite: overrides.depthWrite ?? true,
     userData: {},
+    dispose: vi.fn(),
   };
   return {
     opacity: overrides.opacity ?? 1,
@@ -871,6 +884,7 @@ function createMockMaterial(
 
 function createMockGeometry() {
   return {
+    userData: {},
     dispose: vi.fn(),
   };
 }

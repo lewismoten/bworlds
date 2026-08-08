@@ -221,6 +221,8 @@ const FALLBACK_TILE_DEFINITION = {
   wallHeight: 0,
 };
 const distanceFadeTargetCache = new WeakMap<THREE.Object3D, DistanceFadeTargets>();
+const ownedDisposableGeometries = new WeakSet<object>();
+const ownedDisposableMaterials = new WeakSet<object>();
 
 export function create3DRenderer(host: HTMLElement): Render3DController {
   const renderer = new THREE.WebGLRenderer({
@@ -396,7 +398,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     } else if (!isWaterKind(tile.kind) && definition.wallHeight > 0.08) {
       const wallHeight = Math.max(definition.wallHeight * 1.9, 0.18);
       const wallMesh = new THREE.Mesh(
-        new THREE.BoxGeometry(TILE_SIZE, wallHeight, TILE_SIZE),
+        markOwnedGeometry(new THREE.BoxGeometry(TILE_SIZE, wallHeight, TILE_SIZE)),
         getTileMaterial(tile.kind, variant)
       );
       wallMesh.position.set(
@@ -908,7 +910,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
           ? WATER_FLOOR_THICKNESS
           : FLOOR_THICKNESS;
       const floorMesh = new THREE.Mesh(
-        new THREE.BoxGeometry(TILE_SIZE, floorThickness, TILE_SIZE),
+        markOwnedGeometry(new THREE.BoxGeometry(TILE_SIZE, floorThickness, TILE_SIZE)),
         material
       );
       floorMesh.position.set(
@@ -947,7 +949,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     const group = new THREE.Group();
     group.position.set(tileX * TILE_SIZE, 0, tileY * TILE_SIZE);
 
-    const topGeometry = new THREE.BufferGeometry();
+    const topGeometry = markOwnedGeometry(new THREE.BufferGeometry());
     const positions = new Float32Array([
       -0.5,
       cornerHeights.nw,
@@ -1046,7 +1048,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
         ? WATER_FLOOR_THICKNESS
         : FLOOR_THICKNESS;
     const floorMesh = new THREE.Mesh(
-      new THREE.BoxGeometry(TILE_SIZE, floorThickness, TILE_SIZE),
+      markOwnedGeometry(new THREE.BoxGeometry(TILE_SIZE, floorThickness, TILE_SIZE)),
       getTileMaterial(kind, getTileVariantIndex(kind, tileX, tileY))
     );
     floorMesh.position.set(
@@ -1076,7 +1078,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     group.position.set(tileX * TILE_SIZE, 0, tileY * TILE_SIZE);
 
     const surfaceMesh = new THREE.Mesh(
-      new THREE.PlaneGeometry(TILE_SIZE, TILE_SIZE),
+      markOwnedGeometry(new THREE.PlaneGeometry(TILE_SIZE, TILE_SIZE)),
       material
     );
     surfaceMesh.rotation.x = -Math.PI / 2;
@@ -1085,7 +1087,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     group.add(surfaceMesh);
 
     const bodyMesh = new THREE.Mesh(
-      new THREE.BoxGeometry(width, WATER_FLOOR_THICKNESS, depth),
+      markOwnedGeometry(new THREE.BoxGeometry(width, WATER_FLOOR_THICKNESS, depth)),
       material
     );
     bodyMesh.position.set(
@@ -1103,11 +1105,15 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     const mesh =
       edge === 'north' || edge === 'south'
         ? new THREE.Mesh(
-            new THREE.BoxGeometry(TILE_SIZE, wallHeight, RIVER_WALL_THICKNESS),
+            markOwnedGeometry(
+              new THREE.BoxGeometry(TILE_SIZE, wallHeight, RIVER_WALL_THICKNESS)
+            ),
             material
           )
         : new THREE.Mesh(
-            new THREE.BoxGeometry(RIVER_WALL_THICKNESS, wallHeight, TILE_SIZE),
+            markOwnedGeometry(
+              new THREE.BoxGeometry(RIVER_WALL_THICKNESS, wallHeight, TILE_SIZE)
+            ),
             material
           );
 
@@ -1764,8 +1770,19 @@ function getDistanceFadeMaterialVariant(
   }
 
   const clone = material.clone();
+  markOwnedMaterial(clone);
   cache.set(material, clone);
   return clone;
+}
+
+function markOwnedGeometry<T extends object>(geometry: T): T {
+  ownedDisposableGeometries.add(geometry);
+  return geometry;
+}
+
+function markOwnedMaterial<T extends object>(material: T): T {
+  ownedDisposableMaterials.add(material);
+  return material;
 }
 
 function getDistanceFadeTargets(root: THREE.Object3D): DistanceFadeTargets {
@@ -1821,13 +1838,20 @@ export function disposeObject3DResources(
       material?: THREE.Material | THREE.Material[];
     };
 
-    if (renderable.geometry && !disposedGeometries.has(renderable.geometry)) {
+    if (
+      renderable.geometry &&
+      ownedDisposableGeometries.has(renderable.geometry) &&
+      !disposedGeometries.has(renderable.geometry)
+    ) {
       disposedGeometries.add(renderable.geometry);
       renderable.geometry.dispose?.();
     }
 
     for (const material of getObjectMaterials(renderable)) {
-      if (disposedMaterials.has(material)) {
+      if (
+        disposedMaterials.has(material) ||
+        !ownedDisposableMaterials.has(material)
+      ) {
         continue;
       }
       disposedMaterials.add(material);
