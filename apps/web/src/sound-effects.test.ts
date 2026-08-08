@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
   createSoundEffectController,
+  createWebAudioSoundEffectSink,
   getCombatSoundCadenceMs,
   getCombatSoundDurationMs,
   getCombatSoundVolume,
@@ -23,6 +24,92 @@ import {
 } from './sound-effects.ts';
 
 describe('sound effects', () => {
+  it('tracks active web audio sound sources while effects are still playing', () => {
+    const createdOscillators: Array<{
+      onended: ((event: Event) => void) | null;
+      finish(): void;
+      type: string;
+      frequency: {
+        setValueAtTime: ReturnType<typeof vi.fn>;
+        exponentialRampToValueAtTime: ReturnType<typeof vi.fn>;
+        linearRampToValueAtTime: ReturnType<typeof vi.fn>;
+      };
+      connect: ReturnType<typeof vi.fn>;
+      start: ReturnType<typeof vi.fn>;
+      stop: ReturnType<typeof vi.fn>;
+    }> = [];
+
+    class FakeAudioContext {
+      state: AudioContextState = 'running';
+      currentTime = 0;
+      destination = {};
+      createOscillator() {
+        const oscillator = {
+          onended: null as ((event: Event) => void) | null,
+          type: 'sine',
+          frequency: {
+            setValueAtTime: vi.fn(),
+            exponentialRampToValueAtTime: vi.fn(),
+            linearRampToValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+          start: vi.fn(),
+          stop: vi.fn(),
+          finish() {
+            this.onended?.(new Event('ended'));
+          },
+        };
+        createdOscillators.push(oscillator);
+        return oscillator as unknown as OscillatorNode;
+      }
+      createGain() {
+        return {
+          gain: {
+            setValueAtTime: vi.fn(),
+            exponentialRampToValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+        } as unknown as GainNode;
+      }
+      createStereoPanner() {
+        return {
+          pan: {
+            setValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+        } as unknown as StereoPannerNode;
+      }
+      resume() {
+        return Promise.resolve();
+      }
+    }
+
+    const originalAudioContext = globalThis.AudioContext;
+    vi.stubGlobal('AudioContext', FakeAudioContext);
+
+    try {
+      const sink = createWebAudioSoundEffectSink();
+      sink.play({
+        kind: 'jump',
+        nowMs: 0,
+        frequency: 440,
+        durationMs: 120,
+        volume: 0.05,
+        waveform: 'sine',
+      });
+
+      expect(sink.getActiveSourceCount?.()).toBe(1);
+      createdOscillators[0]?.finish();
+      expect(sink.getActiveSourceCount?.()).toBe(0);
+    } finally {
+      if (originalAudioContext) {
+        vi.stubGlobal('AudioContext', originalAudioContext);
+      } else {
+        vi.unstubAllGlobals();
+      }
+    }
+  });
+
   it('schedules footsteps on a cadence while walking in 3d', () => {
     const played: ProceduralSoundEffect[] = [];
     const controller = createSoundEffectController({

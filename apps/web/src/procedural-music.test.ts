@@ -1,7 +1,8 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
   createProceduralInstrumentBank,
   createMusicController,
+  createWebAudioMusicSink,
   getMusicUpdateSignature,
   getMusicRegionSignature,
   getMusicSpatialMix,
@@ -15,6 +16,105 @@ import {
 } from './procedural-music.ts';
 
 describe('procedural music', () => {
+  it('tracks active web audio music sources while notes are still playing', () => {
+    const createdOscillators: Array<{
+      onended: ((event: Event) => void) | null;
+      finish(): void;
+      type: string;
+      frequency: {
+        setValueAtTime: ReturnType<typeof vi.fn>;
+        exponentialRampToValueAtTime: ReturnType<typeof vi.fn>;
+      };
+      detune: {
+        setValueAtTime: ReturnType<typeof vi.fn>;
+      };
+      connect: ReturnType<typeof vi.fn>;
+      start: ReturnType<typeof vi.fn>;
+      stop: ReturnType<typeof vi.fn>;
+    }> = [];
+
+    class FakeAudioContext {
+      state: AudioContextState = 'running';
+      currentTime = 0;
+      destination = {};
+      createOscillator() {
+        const oscillator = {
+          onended: null as ((event: Event) => void) | null,
+          type: 'sine',
+          frequency: {
+            setValueAtTime: vi.fn(),
+            exponentialRampToValueAtTime: vi.fn(),
+          },
+          detune: {
+            setValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+          start: vi.fn(),
+          stop: vi.fn(),
+          finish() {
+            this.onended?.(new Event('ended'));
+          },
+        };
+        createdOscillators.push(oscillator);
+        return oscillator as unknown as OscillatorNode;
+      }
+      createGain() {
+        return {
+          gain: {
+            setValueAtTime: vi.fn(),
+            exponentialRampToValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+        } as unknown as GainNode;
+      }
+      createStereoPanner() {
+        return {
+          pan: {
+            setValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+        } as unknown as StereoPannerNode;
+      }
+      resume() {
+        return Promise.resolve();
+      }
+    }
+
+    const originalAudioContext = globalThis.AudioContext;
+    vi.stubGlobal('AudioContext', FakeAudioContext);
+
+    try {
+      const sink = createWebAudioMusicSink();
+      sink.play({
+        themeId: 'frontier-plains',
+        instrumentId: 'lead',
+        role: 'lead',
+        startMs: 0,
+        durationMs: 240,
+        frequency: 440,
+        volume: 0.05,
+        waveform: 'sine',
+        attackMs: 20,
+        releaseMs: 80,
+        detuneCents: 0,
+        harmonicGain: 0.4,
+        pulseRate: 1,
+      });
+
+      expect(sink.getActiveSourceCount?.()).toBe(2);
+      createdOscillators[0]?.finish();
+      expect(sink.getActiveSourceCount?.()).toBe(1);
+      createdOscillators[1]?.finish();
+      expect(sink.getActiveSourceCount?.()).toBe(0);
+    } finally {
+      if (originalAudioContext) {
+        vi.stubGlobal('AudioContext', originalAudioContext);
+      } else {
+        vi.unstubAllGlobals();
+      }
+    }
+  });
+
   it('selects stable regional themes from the current tile and context', () => {
     expect(resolveMusicTheme('forest', 'overworld').id).toBe('deep-forest');
     expect(resolveMusicTheme('shore', 'overworld').id).toBe('coastal-shore');

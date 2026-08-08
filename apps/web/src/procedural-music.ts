@@ -128,10 +128,12 @@ export type ProceduralMusicNote = {
 export type MusicSink = {
   resume?(): void;
   play(note: ProceduralMusicNote): void;
+  getActiveSourceCount?(): number;
 };
 
 export type MusicController = {
   resume(): void;
+  getActiveSourceCount(): number;
   update(options: MusicUpdateOptions): void;
 };
 
@@ -539,6 +541,9 @@ export function createMusicController(sink: MusicSink): MusicController {
     resume() {
       sink.resume?.();
     },
+    getActiveSourceCount() {
+      return sink.getActiveSourceCount?.() ?? 0;
+    },
     update(options) {
       const updateSignature = getMusicUpdateSignature(options);
       const signatureChanged =
@@ -642,6 +647,7 @@ type StereoPannerNodeLike = StereoPannerNode;
 
 export function createWebAudioMusicSink(): MusicSink {
   let audioContext: AudioContext | null = null;
+  let activeSourceCount = 0;
 
   function getAudioContext(): AudioContext | null {
     if (audioContext) {
@@ -738,10 +744,20 @@ export function createWebAudioMusicSink(): MusicSink {
         harmonicGain.connect(context.destination);
       }
 
+      activeSourceCount += 2;
+      oscillator.onended = () => {
+        activeSourceCount = Math.max(0, activeSourceCount - 1);
+      };
+      harmonicOscillator.onended = () => {
+        activeSourceCount = Math.max(0, activeSourceCount - 1);
+      };
       oscillator.start(startAt);
       harmonicOscillator.start(startAt);
       oscillator.stop(startAt + durationSeconds);
       harmonicOscillator.stop(startAt + durationSeconds);
+    },
+    getActiveSourceCount() {
+      return activeSourceCount;
     },
   };
 }

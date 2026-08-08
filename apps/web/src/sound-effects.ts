@@ -50,10 +50,12 @@ export type ProceduralSoundEffect = {
 export type SoundEffectSink = {
   resume?(): void;
   play(effect: ProceduralSoundEffect): void;
+  getActiveSourceCount?(): number;
 };
 
 export type SoundEffectController = {
   resume(): void;
+  getActiveSourceCount(): number;
   triggerProgression(options: {
     nowMs: number;
     level?: number;
@@ -384,6 +386,9 @@ export function createSoundEffectController(
   return {
     resume() {
       sink.resume?.();
+    },
+    getActiveSourceCount() {
+      return sink.getActiveSourceCount?.() ?? 0;
     },
     triggerProgression({ nowMs, level, emitter, listener }) {
       if (nowMs - lastProgressionAtMs < 180) {
@@ -774,6 +779,7 @@ type AudioContextCtor = new () => AudioContext;
 
 export function createWebAudioSoundEffectSink(): SoundEffectSink {
   let audioContext: AudioContext | null = null;
+  let activeSourceCount = 0;
 
   function getAudioContext(): AudioContext | null {
     if (audioContext) {
@@ -897,8 +903,15 @@ export function createWebAudioSoundEffectSink(): SoundEffectSink {
       } else {
         gain.connect(context.destination);
       }
+      activeSourceCount += 1;
+      oscillator.onended = () => {
+        activeSourceCount = Math.max(0, activeSourceCount - 1);
+      };
       oscillator.start(startAt);
       oscillator.stop(startAt + durationSeconds);
+    },
+    getActiveSourceCount() {
+      return activeSourceCount;
     },
   };
 }

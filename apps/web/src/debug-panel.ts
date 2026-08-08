@@ -28,6 +28,7 @@ export type DebugSnapshot = {
   spriteCount: number;
   lightCount: number;
   shadowLightCount: number;
+  activeAudioSourceCount: number;
   materialCount: number;
   geometryCount: number;
   geometryMemoryCount: number;
@@ -104,6 +105,7 @@ export function getDebugSignature(snapshot: DebugSnapshot): string {
     snapshot.spriteCount,
     snapshot.lightCount,
     snapshot.shadowLightCount,
+    snapshot.activeAudioSourceCount,
     snapshot.materialCount,
     snapshot.geometryCount,
     snapshot.geometryMemoryCount,
@@ -208,6 +210,7 @@ export function buildDebugMarkup(snapshot: DebugSnapshot): string {
     <div><dt>Sprites</dt><dd>${snapshot.spriteCount}</dd></div>
     <div><dt>Lights</dt><dd>${snapshot.lightCount}</dd></div>
     <div><dt>Shadow Lights</dt><dd>${snapshot.shadowLightCount}</dd></div>
+    <div><dt>Audio Sources</dt><dd>${snapshot.activeAudioSourceCount}</dd></div>
     <div><dt>Objects / Tree</dt><dd>${objectsPerVisibleTree}</dd></div>
     <div><dt>Meshes / Tree</dt><dd>${meshesPerVisibleTree}</dd></div>
     <div><dt>Materials</dt><dd>${snapshot.materialCount}</dd></div>
@@ -383,7 +386,7 @@ export function getPerformanceWarnings(
   snapshot: Pick<
     DebugSnapshot,
     'frameMs' | 'targetFps' | 'drawCalls' | 'triangles' | 'object3dCount' | 'programCount'
-    | 'shadowLightCount'
+    | 'shadowLightCount' | 'activeAudioSourceCount'
   >,
   {
     maxFrameMs = 50,
@@ -394,6 +397,7 @@ export function getPerformanceWarnings(
     maxObject3dCount = 2400,
     maxProgramCount = 48,
     maxShadowLightCount = 3,
+    maxActiveAudioSourceCount = 24,
   }: {
     maxFrameMs?: number;
     maxDrawCallsAt60Fps?: number;
@@ -403,6 +407,7 @@ export function getPerformanceWarnings(
     maxObject3dCount?: number;
     maxProgramCount?: number;
     maxShadowLightCount?: number;
+    maxActiveAudioSourceCount?: number;
   } = {}
 ): string[] {
   const warnings: string[] = [];
@@ -444,6 +449,12 @@ export function getPerformanceWarnings(
   if (snapshot.shadowLightCount > maxShadowLightCount) {
     warnings.push(
       `Shadow light count is high (${snapshot.shadowLightCount} > ${maxShadowLightCount}).`
+    );
+  }
+
+  if (snapshot.activeAudioSourceCount > maxActiveAudioSourceCount) {
+    warnings.push(
+      `Active audio source count is high (${snapshot.activeAudioSourceCount} > ${maxActiveAudioSourceCount}).`
     );
   }
 

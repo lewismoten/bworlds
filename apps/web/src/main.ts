@@ -2598,6 +2598,8 @@ function render(): FrameLoopActivityLike {
       spriteCount: rendererStats.spriteCount,
       lightCount: rendererStats.lightCount,
       shadowLightCount: rendererStats.shadowLightCount,
+      activeAudioSourceCount:
+        soundEffects.getActiveSourceCount() + musicController.getActiveSourceCount(),
       materialCount: rendererStats.materialCount,
       geometryCount: rendererStats.geometryCount,
       geometryMemoryCount: rendererStats.geometryMemoryCount,
