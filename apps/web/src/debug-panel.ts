@@ -64,6 +64,8 @@ export type RendererChurnSample = {
 export type HeapUsageSample = {
   nowMs: number;
   heapUsedMb: number;
+  playerX: number;
+  playerY: number;
 };
 
 export function normalizeWorldSeed(seed: string | undefined, fallback: string): string {
@@ -503,6 +505,51 @@ export function getHeapGrowthWarning(
   }
 
   return `Heap usage keeps climbing (${firstSample.heapUsedMb.toFixed(1)} -> ${lastSample.heapUsedMb.toFixed(1)} MB).`;
+}
+
+export function getIdleAllocationWarning(
+  samples: HeapUsageSample[],
+  {
+    minimumSampleCount = 4,
+    minimumHeapIncreaseMb = 16,
+    maximumWalkDistance = 0.75,
+  }: {
+    minimumSampleCount?: number;
+    minimumHeapIncreaseMb?: number;
+    maximumWalkDistance?: number;
+  } = {}
+): string | null {
+  if (samples.length < minimumSampleCount) {
+    return null;
+  }
+
+  const recentSamples = samples.slice(-minimumSampleCount);
+  const firstSample = recentSamples[0];
+  const lastSample = recentSamples[recentSamples.length - 1];
+  if (!firstSample || !lastSample) {
+    return null;
+  }
+
+  const walkedDistance = Math.hypot(
+    lastSample.playerX - firstSample.playerX,
+    lastSample.playerY - firstSample.playerY
+  );
+  if (walkedDistance > maximumWalkDistance) {
+    return null;
+  }
+
+  const heapIncreaseMb = lastSample.heapUsedMb - firstSample.heapUsedMb;
+  if (heapIncreaseMb < minimumHeapIncreaseMb) {
+    return null;
+  }
+
+  for (let index = 1; index < recentSamples.length; index += 1) {
+    if (recentSamples[index]!.heapUsedMb <= recentSamples[index - 1]!.heapUsedMb) {
+      return null;
+    }
+  }
+
+  return `Heap usage keeps climbing while idle (${firstSample.heapUsedMb.toFixed(1)} -> ${lastSample.heapUsedMb.toFixed(1)} MB over ${walkedDistance.toFixed(2)} tiles).`;
 }
 
 export function getStationaryTileBuildWarning(

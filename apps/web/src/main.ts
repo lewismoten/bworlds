@@ -92,6 +92,7 @@ import {
 import {
   buildDebugMarkup,
   getHeapGrowthWarning,
+  getIdleAllocationWarning,
   getMaterialGrowthWarning,
   getPerformanceWarnings,
   getSceneBudgetWarnings,
@@ -1036,6 +1037,8 @@ const debugResourceTrendState = {
   heapSamples: [] as Array<{
     nowMs: number;
     heapUsedMb: number;
+    playerX: number;
+    playerY: number;
   }>,
 };
 const renderBudgetState = {
@@ -2561,6 +2564,8 @@ function render(): FrameLoopActivityLike {
       recordHeapUsageSample(debugResourceTrendState.heapSamples, {
         nowMs,
         heapUsedMb,
+        playerX: spatial.playerX,
+        playerY: spatial.playerY,
       });
     }
     const debugSnapshot = {
@@ -2623,12 +2628,16 @@ function render(): FrameLoopActivityLike {
     const heapGrowthWarning = getHeapGrowthWarning(
       debugResourceTrendState.heapSamples
     );
+    const idleAllocationWarning = getIdleAllocationWarning(
+      debugResourceTrendState.heapSamples
+    );
     debugSnapshot.resourceWarnings = [
       ...getPerformanceWarnings(debugSnapshot),
       ...getWorkQueueWarnings(debugSnapshot),
       ...getSceneBudgetWarnings(debugSnapshot),
       ...(materialGrowthWarning ? [materialGrowthWarning] : []),
       ...(heapGrowthWarning ? [heapGrowthWarning] : []),
+      ...(idleAllocationWarning ? [idleAllocationWarning] : []),
       ...(stationaryTileBuildWarning ? [stationaryTileBuildWarning] : []),
     ];
     const debugSignature = getDebugSignature(debugSnapshot);

@@ -943,7 +943,7 @@ You could even have debug-mode warnings automatically trigger when thresholds ar
 * [X] Warn when chunk-generation queues back up.
 * [X] Warn when a frame exceeds 50 ms.
 * [X] Warn when heap usage continually increases.
-* [ ] Warn when a system allocates excessively while idle.
+* [X] Warn when a system allocates excessively while idle.
 * [X] Warn when too many Three.js objects exist.
 * [ ] Warn when an unloaded region still owns render resources.
 * [ ] Warn when a worker queue is no longer being drained.

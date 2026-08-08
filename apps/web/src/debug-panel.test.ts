@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   buildDebugMarkup,
   getHeapGrowthWarning,
+  getIdleAllocationWarning,
   formatPerformanceTierLabel,
   getMaterialGrowthWarning,
   getPerformanceWarnings,
@@ -187,15 +188,21 @@ describe('debug panel', () => {
     const samples: Array<{
       nowMs: number;
       heapUsedMb: number;
+      playerX: number;
+      playerY: number;
     }> = [];
 
     recordHeapUsageSample(samples, {
       nowMs: 0,
       heapUsedMb: 120,
+      playerX: 0,
+      playerY: 0,
     });
     recordHeapUsageSample(samples, {
       nowMs: 400,
       heapUsedMb: 126,
+      playerX: 0.1,
+      playerY: 0,
     });
     expect(samples).toHaveLength(1);
     expect(samples[0]?.heapUsedMb).toBe(126);
@@ -203,14 +210,20 @@ describe('debug panel', () => {
     recordHeapUsageSample(samples, {
       nowMs: 1500,
       heapUsedMb: 138,
+      playerX: 0.2,
+      playerY: 0,
     });
     recordHeapUsageSample(samples, {
       nowMs: 3000,
       heapUsedMb: 151,
+      playerX: 0.3,
+      playerY: 0.1,
     });
     recordHeapUsageSample(samples, {
       nowMs: 4500,
       heapUsedMb: 164,
+      playerX: 0.4,
+      playerY: 0.1,
     });
 
     expect(getHeapGrowthWarning(samples)).toBe(
@@ -220,6 +233,8 @@ describe('debug panel', () => {
     recordHeapUsageSample(samples, {
       nowMs: 18000,
       heapUsedMb: 150,
+      playerX: 1,
+      playerY: 0,
     });
     expect(samples).toHaveLength(1);
   });
@@ -227,19 +242,52 @@ describe('debug panel', () => {
   it('avoids heap growth warnings when the increase is too small or non-monotonic', () => {
     expect(
       getHeapGrowthWarning([
-        { nowMs: 0, heapUsedMb: 120 },
-        { nowMs: 1000, heapUsedMb: 128 },
-        { nowMs: 2000, heapUsedMb: 133 },
-        { nowMs: 3000, heapUsedMb: 141 },
+        { nowMs: 0, heapUsedMb: 120, playerX: 0, playerY: 0 },
+        { nowMs: 1000, heapUsedMb: 128, playerX: 0, playerY: 0 },
+        { nowMs: 2000, heapUsedMb: 133, playerX: 0, playerY: 0 },
+        { nowMs: 3000, heapUsedMb: 141, playerX: 0, playerY: 0 },
       ])
     ).toBeNull();
 
     expect(
       getHeapGrowthWarning([
-        { nowMs: 0, heapUsedMb: 120 },
-        { nowMs: 1000, heapUsedMb: 138 },
-        { nowMs: 2000, heapUsedMb: 134 },
-        { nowMs: 3000, heapUsedMb: 149 },
+        { nowMs: 0, heapUsedMb: 120, playerX: 0, playerY: 0 },
+        { nowMs: 1000, heapUsedMb: 138, playerX: 0, playerY: 0 },
+        { nowMs: 2000, heapUsedMb: 134, playerX: 0, playerY: 0 },
+        { nowMs: 3000, heapUsedMb: 149, playerX: 0, playerY: 0 },
+      ])
+    ).toBeNull();
+  });
+
+  it('warns when heap usage keeps climbing while the player is effectively idle', () => {
+    expect(
+      getIdleAllocationWarning([
+        { nowMs: 0, heapUsedMb: 120, playerX: 10, playerY: 4 },
+        { nowMs: 1000, heapUsedMb: 129, playerX: 10.1, playerY: 4 },
+        { nowMs: 2000, heapUsedMb: 139, playerX: 10.2, playerY: 4.1 },
+        { nowMs: 3000, heapUsedMb: 149, playerX: 10.3, playerY: 4.1 },
+      ])
+    ).toBe(
+      'Heap usage keeps climbing while idle (120.0 -> 149.0 MB over 0.32 tiles).'
+    );
+  });
+
+  it('avoids idle allocation warnings when the player is moving or heap growth is too small', () => {
+    expect(
+      getIdleAllocationWarning([
+        { nowMs: 0, heapUsedMb: 120, playerX: 0, playerY: 0 },
+        { nowMs: 1000, heapUsedMb: 129, playerX: 0.9, playerY: 0 },
+        { nowMs: 2000, heapUsedMb: 139, playerX: 1.8, playerY: 0 },
+        { nowMs: 3000, heapUsedMb: 149, playerX: 2.7, playerY: 0 },
+      ])
+    ).toBeNull();
+
+    expect(
+      getIdleAllocationWarning([
+        { nowMs: 0, heapUsedMb: 120, playerX: 10, playerY: 4 },
+        { nowMs: 1000, heapUsedMb: 124, playerX: 10.1, playerY: 4 },
+        { nowMs: 2000, heapUsedMb: 129, playerX: 10.2, playerY: 4.1 },
+        { nowMs: 3000, heapUsedMb: 134, playerX: 10.3, playerY: 4.1 },
       ])
     ).toBeNull();
   });
