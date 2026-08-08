@@ -1,3 +1,4 @@
+import { createBoundedCache, type CacheLike } from '@bworlds/cache-support';
 import { hash2D } from '@bworlds/core';
 import { createPlainsBackedTilePainter } from '@bworlds/paint-support';
 import {
@@ -42,8 +43,12 @@ const LONG_ROAD_SIGN_THRESHOLD = 0.9975;
 const ROADSIDE_SIGN_THRESHOLD = 0.9992;
 const LONG_ROAD_MIN_SPAN = 8;
 const LONG_ROAD_POI_DISTANCE = 28;
+const SIGN_STYLE_CACHE_LIMIT = 96;
+const SIGN_LABEL_CACHE_LIMIT = 192;
 const DIRECTION_ARROWS = ['E', 'SE', 'S', 'SW', 'W', 'NW', 'N', 'NE'] as const;
-const signStyleCache = new Map<string, SignStyleBlueprint>();
+const signStyleCache = createBoundedCache<string, SignStyleBlueprint>(
+  SIGN_STYLE_CACHE_LIMIT
+);
 const resolveRegionalSignStyle = createRegionalMaterialResolver(
   signStyleCache,
   SIGN_REGION_SIZE,
@@ -88,7 +93,9 @@ const resolveRegionalSignStyle = createRegionalMaterialResolver(
           placardColor,
           trimColor,
           textColor,
-          labelCache: new Map(),
+          labelCache: createBoundedCache<string, ThreeTextureLike>(
+            SIGN_LABEL_CACHE_LIMIT
+          ),
           postMaterial: new three.MeshStandardMaterial({
             color: postColor,
             roughness: 0.94,
@@ -568,7 +575,7 @@ interface SignStyle {
   placardColor: string;
   trimColor: string;
   textColor: string;
-  labelCache: Map<string, ThreeTextureLike>;
+  labelCache: CacheLike<string, ThreeTextureLike>;
   postMaterial: ThreeMaterialLike;
   placardMaterial: ThreeMaterialLike;
   trimMaterial: ThreeMaterialLike;

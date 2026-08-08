@@ -2,13 +2,20 @@ import { describe, expect, it, vi } from 'vitest';
 import { createSignTilePlugin } from './index.ts';
 import type { OverworldSignals } from '@bworlds/plugin-api';
 
+const getOrCreatePaintedCanvasTextureMock = vi.hoisted(() =>
+  vi.fn((cache: { has(key: string): boolean; get(key: string): unknown; set(key: string, value: unknown): void }, key: string) => {
+    if (!cache.has(key)) {
+      cache.set(key, { colorSpace: '', needsUpdate: false });
+    }
+    return cache.get(key);
+  })
+);
+
 vi.mock('@bworlds/three-support', () => ({
   createPaintedCanvasTexture() {
     return { colorSpace: '', needsUpdate: false };
   },
-  getOrCreatePaintedCanvasTexture() {
-    return { colorSpace: '', needsUpdate: false };
-  },
+  getOrCreatePaintedCanvasTexture: getOrCreatePaintedCanvasTextureMock,
   createTexturedPlaneMesh() {
     return {
       position: {
@@ -174,6 +181,30 @@ function createSignClassifierPayload(
   };
 }
 
+function createSignState(name: string) {
+  return {
+    player: { x: 0, y: 0, facing: 0 },
+    getCurrentContext() {
+      return { id: 'overworld', type: 'overworld', depth: 0 };
+    },
+    getCurrentTile(x: number, y: number) {
+      if (x === 9 && y === 8) {
+        return { kind: 'town', poi: { type: 'town', name } };
+      }
+      return { kind: 'plains' };
+    },
+    getTileDefinition() {
+      return {
+        name: 'Plains',
+        color: '#000000',
+        miniColor: '#111111',
+        walkable: true,
+        wallHeight: 0,
+      };
+    },
+  };
+}
+
 describe('tile sign', () => {
   it('prefers placing signs beside crossroads', () => {
     const tile = classifier?.(createSignClassifierPayload({
@@ -273,27 +304,7 @@ describe('tile sign', () => {
   it('lights sign lanterns at night', () => {
     const model = signTile?.create3DModel?.({
       three: fakeThree as never,
-      state: {
-        player: { x: 0, y: 0, facing: 0 },
-        getCurrentContext() {
-          return { id: 'overworld', type: 'overworld', depth: 0 };
-        },
-        getCurrentTile(x: number, y: number) {
-          if (x === 9 && y === 8) {
-            return { kind: 'town', poi: { type: 'town', name: 'Oakcross' } };
-          }
-          return { kind: 'plains' };
-        },
-        getTileDefinition() {
-          return {
-            name: 'Plains',
-            color: '#000000',
-            miniColor: '#111111',
-            walkable: true,
-            wallHeight: 0,
-          };
-        },
-      },
+      state: createSignState('Oakcross'),
       tile: { kind: 'sign' },
       tileX: 8,
       tileY: 8,
@@ -344,5 +355,44 @@ describe('tile sign', () => {
     expect((glowMesh?.material as FakeMaterial)?.emissiveIntensity ?? 0).toBeGreaterThan(1);
     expect(pointLight?.intensity ?? 0).toBeCloseTo(0.75, 6);
     expect(pointLight?.visible).toBe(true);
+  });
+
+  it('recreates sign label textures after bounded cache eviction', () => {
+    getOrCreatePaintedCanvasTextureMock.mockClear();
+
+    signTile?.create3DModel?.({
+      three: fakeThree as never,
+      state: createSignState('Alpha'),
+      tile: { kind: 'sign' },
+      tileX: 8,
+      tileY: 8,
+    });
+
+    const firstTexture = getOrCreatePaintedCanvasTextureMock.mock.results[0]?.value;
+
+    for (let index = 0; index < 192; index += 1) {
+      signTile?.create3DModel?.({
+        three: fakeThree as never,
+        state: createSignState(`Poi ${index}`),
+        tile: { kind: 'sign' },
+        tileX: 8,
+        tileY: 8,
+      });
+    }
+
+    signTile?.create3DModel?.({
+      three: fakeThree as never,
+      state: createSignState('Alpha'),
+      tile: { kind: 'sign' },
+      tileX: 8,
+      tileY: 8,
+    });
+
+    const recreatedTexture =
+      getOrCreatePaintedCanvasTextureMock.mock.results.at(-2)?.value;
+
+    expect(firstTexture).toBeDefined();
+    expect(recreatedTexture).toBeDefined();
+    expect(recreatedTexture).not.toBe(firstTexture);
   });
 });
