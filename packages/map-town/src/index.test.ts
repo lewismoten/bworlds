@@ -2,9 +2,11 @@ import { describe, expect, it } from 'vitest';
 import type { CreateMapContext } from '@bworlds/plugin-api';
 import {
   createTownMapPlugin,
+  hasTownFence,
   isTownApproachPath,
   isTownBuildingPlot,
   isTownConnectorRoad,
+  isTownFenceTile,
   isTownFrontageRoad,
   isTownMainRoad,
   resolveTownTile,
@@ -79,6 +81,10 @@ describe('map town', () => {
     expect(isTownApproachPath(0, 4)).toBe(true);
     expect(isTownFrontageRoad(0, 3)).toBe(true);
     expect(isTownConnectorRoad(4, 2)).toBe(true);
+    expect(hasTownFence(0, 5)).toBe(false);
+    expect(hasTownFence(2, 5)).toBe(true);
+    expect(isTownFenceTile(1, 4)).toBe(true);
+    expect(isTownFenceTile(2, 4)).toBe(false);
     expect(isTownMainRoad(0, 1)).toBe(true);
     expect(
       resolveTownTile({
@@ -94,5 +100,22 @@ describe('map town', () => {
       kind: 'shop',
       building: { id: 'town:test:0:5' },
     });
+  });
+
+  it('adds fenced lots with an opening aligned to the building approach path', () => {
+    const map = createTownMap();
+
+    expect(map.getTile(2, 5)).toMatchObject({
+      kind: 'shop',
+      building: { id: 'town:test:2:5' },
+    });
+    expect(map.getTile(1, 4).kind).toBe('wall');
+    expect(map.getTile(3, 4).kind).toBe('wall');
+    expect(map.getTile(2, 4).kind).toBe('road');
+    expect(map.getTile(1, 5).kind).toBe('wall');
+    expect(map.getTile(3, 5).kind).toBe('wall');
+    expect(map.getTile(1, 6).kind).toBe('wall');
+    expect(map.getTile(2, 6).kind).toBe('wall');
+    expect(map.getTile(3, 6).kind).toBe('wall');
   });
 });

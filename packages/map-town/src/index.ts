@@ -31,6 +31,7 @@ const TOWN_APPROACH_PATH_OFFSET = 4;
 const TOWN_FRONTAGE_ROAD_OFFSET = 3;
 const TOWN_BUILDING_SPAN = 8;
 const TOWN_SIDE_STREET_INTERVAL = 4;
+const TOWN_FENCE_HALF_WIDTH = 1;
 
 export function createTownMapPlugin(): RuntimePlugin {
   return createContextMapPlugin<TownContext>({
@@ -133,6 +134,13 @@ export function resolveTownTile(options: {
     };
   }
 
+  if (isTownFenceTile(offsetX, offsetY)) {
+    return {
+      kind: 'wall',
+      note: 'A low fence leaves an opening toward the lane.',
+    };
+  }
+
   if (
     isTownMainRoad(offsetX, offsetY) ||
     isTownFrontageRoad(offsetX, offsetY) ||
@@ -181,4 +189,53 @@ export function isTownConnectorRoad(offsetX: number, offsetY: number): boolean {
     Math.abs(offsetX) % TOWN_SIDE_STREET_INTERVAL === 0 &&
     Math.abs(offsetY) <= TOWN_FRONTAGE_ROAD_OFFSET
   );
+}
+
+export function hasTownFence(offsetX: number, offsetY: number): boolean {
+  if (!isTownBuildingPlot(offsetX, offsetY)) {
+    return false;
+  }
+  const plotIndex = Math.abs(offsetX / 2);
+  const rowSign = offsetY > 0 ? 1 : -1;
+  return (plotIndex + (rowSign > 0 ? 1 : 0)) % 2 === 0;
+}
+
+export function isTownFenceTile(offsetX: number, offsetY: number): boolean {
+  const rowSign = offsetY === 0 ? 0 : offsetY > 0 ? 1 : -1;
+  if (rowSign === 0) {
+    return false;
+  }
+
+  const buildingY = rowSign * TOWN_BUILDING_ROW_OFFSET;
+  const frontY = rowSign * TOWN_APPROACH_PATH_OFFSET;
+  const backY = rowSign * (TOWN_BUILDING_ROW_OFFSET + 1);
+
+  for (
+    let buildingX = -TOWN_BUILDING_SPAN;
+    buildingX <= TOWN_BUILDING_SPAN;
+    buildingX += 2
+  ) {
+    if (!hasTownFence(buildingX, buildingY)) {
+      continue;
+    }
+    const leftX = buildingX - TOWN_FENCE_HALF_WIDTH;
+    const rightX = buildingX + TOWN_FENCE_HALF_WIDTH;
+    const withinY =
+      Math.abs(offsetY) >= Math.abs(frontY) && Math.abs(offsetY) <= Math.abs(backY);
+    const sideFence =
+      withinY && (offsetX === leftX || offsetX === rightX);
+    const backFence =
+      offsetY === backY && offsetX >= leftX && offsetX <= rightX;
+    const frontFence =
+      offsetY === frontY &&
+      offsetX >= leftX &&
+      offsetX <= rightX &&
+      offsetX !== buildingX;
+
+    if (sideFence || backFence || frontFence) {
+      return true;
+    }
+  }
+
+  return false;
 }
