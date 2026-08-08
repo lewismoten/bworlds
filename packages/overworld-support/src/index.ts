@@ -32,6 +32,7 @@ export type RiverControlPoint = {
 export type RiverForkPath = {
   trunkStartIndex: number;
   trunkEndIndex: number;
+  trunkAngle: number;
   points: RiverControlPoint[];
 };
 
@@ -349,16 +350,22 @@ export function createRiverForkPath(
     const sway =
       (hash2D(`${seed}:river-fork-sway:${index}`, cellX, cellY) - 0.5) *
       (Math.PI / 10);
+    const stepAngle = clampAngleToRange(
+      branchAngle + sway,
+      baseAngle - RIVER_FORK_MAX_ANGLE_DELTA,
+      baseAngle + RIVER_FORK_MAX_ANGLE_DELTA
+    );
     const priorPoint = points[index - 1];
     points.push({
-      x: clamp(priorPoint.x + Math.cos(branchAngle + sway) * distance, minX, maxX),
-      y: clamp(priorPoint.y + Math.sin(branchAngle + sway) * distance, minY, maxY),
+      x: clamp(priorPoint.x + Math.cos(stepAngle) * distance, minX, maxX),
+      y: clamp(priorPoint.y + Math.sin(stepAngle) * distance, minY, maxY),
     });
   }
 
   return {
     trunkStartIndex,
     trunkEndIndex,
+    trunkAngle: baseAngle,
     points: createRiverCurvePoints(points),
   };
 }
@@ -485,6 +492,16 @@ function sampleCubicBezierPoints(
     });
   }
   return points;
+}
+
+function clampAngleToRange(angle: number, min: number, max: number): number {
+  if (angle < min) {
+    return min;
+  }
+  if (angle > max) {
+    return max;
+  }
+  return angle;
 }
 
 export function isNearOverworldLand(signals: OverworldSignals): boolean {

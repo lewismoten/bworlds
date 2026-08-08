@@ -16,6 +16,17 @@ import {
 } from './index.ts';
 import type { PluginRegistryLike } from '@bworlds/plugin-api';
 
+function normalizeAngleDelta(delta: number): number {
+  let normalized = delta;
+  while (normalized > Math.PI) {
+    normalized -= Math.PI * 2;
+  }
+  while (normalized < -Math.PI) {
+    normalized += Math.PI * 2;
+  }
+  return normalized;
+}
+
 type GenerationContextPayload = Parameters<typeof createOverworldGenerationContext>[0];
 type ComposeOverworldTilePayload = Parameters<typeof composeOverworldTileFromPlugins>[0];
 type ResolveOverworldAnchorsPayload = Parameters<
@@ -206,6 +217,41 @@ describe('overworld support', () => {
     );
     expect(fork?.points.length ?? 0).toBeGreaterThanOrEqual(2);
     expect(fork?.points[1]).not.toEqual(fork?.points[0]);
+  });
+
+  it('keeps fork branch segments within 45 degrees of the trunk heading', () => {
+    let forkSeedCell:
+      | { seed: string; cellX: number; cellY: number; controlPoints: { x: number; y: number }[] }
+      | undefined;
+
+    for (let cellY = -4; cellY <= 4 && !forkSeedCell; cellY += 1) {
+      for (let cellX = -4; cellX <= 4; cellX += 1) {
+        const controlPoints = createRiverControlPoints('spec-seed', cellX, cellY);
+        const fork = createRiverForkPath('spec-seed', cellX, cellY, controlPoints);
+        if (fork && fork.points.length >= 2) {
+          forkSeedCell = { seed: 'spec-seed', cellX, cellY, controlPoints };
+          break;
+        }
+      }
+    }
+
+    expect(forkSeedCell).toBeDefined();
+    const fork = createRiverForkPath(
+      forkSeedCell!.seed,
+      forkSeedCell!.cellX,
+      forkSeedCell!.cellY,
+      forkSeedCell!.controlPoints
+    );
+
+    for (let index = 1; index < (fork?.points.length ?? 0); index += 1) {
+      const start = fork!.points[index - 1];
+      const end = fork!.points[index];
+      const segmentAngle = Math.atan2(end.y - start.y, end.x - start.x);
+      const delta = Math.abs(
+        normalizeAngleDelta(segmentAngle - fork!.trunkAngle)
+      );
+      expect(delta).toBeLessThanOrEqual(Math.PI * 0.25 + 0.0001);
+    }
   });
 
   it('raises river signals near river control path segments', () => {
