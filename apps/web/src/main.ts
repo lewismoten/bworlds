@@ -25,6 +25,7 @@ import {
   getCelestialDateLabel,
   getMoonMidnightOrbitProgress,
   getMoonOrbitProgress,
+  stabilizeDisplayedDaylightAnchors,
 } from './timekeeper.ts';
 import { createCelestialPreviewRenderer } from './celestial-preview.ts';
 import { createSolarSystemPreviewRenderer } from './solar-system-preview.ts';
@@ -1335,6 +1336,14 @@ function updateDisplayedCycle(cycle: ReturnType<typeof getDaylightCycleState>) {
     dialState.daylightDuration +=
       (cycle.daylightDuration - dialState.daylightDuration) * 0.12;
   }
+
+  const stabilizedAnchors = stabilizeDisplayedDaylightAnchors(cycle, {
+    dayProgress: dialState.dayProgress,
+    sunriseProgress: dialState.sunriseProgress,
+    sunsetProgress: dialState.sunsetProgress,
+  });
+  dialState.sunriseProgress = stabilizedAnchors.sunriseProgress;
+  dialState.sunsetProgress = stabilizedAnchors.sunsetProgress;
 
   const moonPhaseIndex = Math.round((dialState.moonPhaseProgress % 1) * 8) % 8;
   const constellationCount = Math.max(1, cycle.constellations.length);

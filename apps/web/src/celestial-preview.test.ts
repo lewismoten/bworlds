@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  brightenPreviewSurfaceColor,
   buildPlanetTextureGrid,
   getPreviewAuroraBandPath,
   getPreviewFacingArrowState,
@@ -16,6 +17,7 @@ describe('celestial preview helpers', () => {
     expect(getPlanetSurfaceColor('water')).toBe('#1a3d68');
     expect(getPlanetSurfaceColor('plains')).toBe('#6d9954');
     expect(getPlanetSurfaceColor('mountain')).toBe('#8d8579');
+    expect(brightenPreviewSurfaceColor('#1a3d68')).toBe('#3f5c80');
   });
 
   it('builds a deterministic low-resolution texture grid from overworld samples', () => {
@@ -30,8 +32,8 @@ describe('celestial preview helpers', () => {
     }, 4, 2);
 
     expect(grid).toEqual([
-      ['#1a3d68', '#1a3d68', '#1a3d68', '#1a3d68'],
-      ['#8d8579', '#8d8579', '#8d8579', '#6d9954'],
+      ['#3f5c80', '#3f5c80', '#3f5c80', '#3f5c80'],
+      ['#9f998e', '#9f998e', '#9f998e', '#84a96f'],
     ]);
   });
 

@@ -65,6 +65,35 @@ export function getDaylightRingLayout(cycle: DaylightCycleLike) {
   };
 }
 
+export function stabilizeDisplayedDaylightAnchors(
+  cycle: Pick<
+    DaylightCycleLike,
+    'dayProgress' | 'sunriseProgress' | 'sunsetProgress'
+  >,
+  displayed: {
+    dayProgress: number;
+    sunriseProgress: number;
+    sunsetProgress: number;
+  },
+  threshold = 0.0005
+) {
+  const sunriseAligned =
+    Math.abs(getWrappedProgressDelta(cycle.dayProgress, cycle.sunriseProgress)) <=
+    threshold;
+  const sunsetAligned =
+    Math.abs(getWrappedProgressDelta(cycle.dayProgress, cycle.sunsetProgress)) <=
+    threshold;
+
+  return {
+    sunriseProgress: sunriseAligned
+      ? displayed.dayProgress
+      : displayed.sunriseProgress,
+    sunsetProgress: sunsetAligned
+      ? displayed.dayProgress
+      : displayed.sunsetProgress,
+  };
+}
+
 export function getNightRingStars(
   innerRadius: number,
   outerRadius: number,
@@ -804,6 +833,13 @@ function drawNoonSkyBlend(
 
 function pseudoRandom(seed: number, offset: number) {
   return ((Math.sin(seed + offset) + 1) * 0.5) % 1;
+}
+
+function getWrappedProgressDelta(current: number, target: number) {
+  let delta = target - current;
+  if (delta > 0.5) delta -= 1;
+  if (delta < -0.5) delta += 1;
+  return delta;
 }
 
 function formatCycleTime(dayProgress: number) {

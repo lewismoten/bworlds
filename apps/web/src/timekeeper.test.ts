@@ -10,6 +10,7 @@ import {
   getMoonOrbitProgress,
   getMoonPhaseSymbol,
   getNightRingStars,
+  stabilizeDisplayedDaylightAnchors,
   getTimeWheelWindowLayout,
   getTimeWheelConstellationEntries,
 } from './timekeeper.ts';
@@ -96,6 +97,39 @@ describe('timekeeper helpers', () => {
 
     expect(sunriseLayout.dawnAngle).toBeCloseTo(-Math.PI / 2, 6);
     expect(sunsetLayout.duskAngle).toBeCloseTo(-Math.PI / 2, 6);
+  });
+
+  it('keeps displayed sunrise and sunset dividers pinned during smoothed preset jumps', () => {
+    const sunriseCycle = getDaylightCycleState(0, {
+      dayLengthMs: 240000,
+    });
+    sunriseCycle.dayProgress = sunriseCycle.sunriseProgress;
+    const sunriseAnchors = stabilizeDisplayedDaylightAnchors(
+      sunriseCycle,
+      {
+        dayProgress: 0.32,
+        sunriseProgress: 0.27,
+        sunsetProgress: 0.81,
+      }
+    );
+
+    const sunsetCycle = getDaylightCycleState(0, {
+      dayLengthMs: 240000,
+    });
+    sunsetCycle.dayProgress = sunsetCycle.sunsetProgress;
+    const sunsetAnchors = stabilizeDisplayedDaylightAnchors(
+      sunsetCycle,
+      {
+        dayProgress: 0.78,
+        sunriseProgress: 0.23,
+        sunsetProgress: 0.74,
+      }
+    );
+
+    expect(sunriseAnchors.sunriseProgress).toBe(0.32);
+    expect(sunriseAnchors.sunsetProgress).toBe(0.81);
+    expect(sunsetAnchors.sunriseProgress).toBe(0.23);
+    expect(sunsetAnchors.sunsetProgress).toBe(0.78);
   });
 
   it('keeps night-ring stars on the night half of the dial', () => {

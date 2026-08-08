@@ -94,9 +94,9 @@ export function createCelestialPreviewRenderer(host: HTMLElement | null) {
   const world = new THREE.Mesh(
     new THREE.SphereGeometry(2.8, 28, 28),
     new THREE.MeshStandardMaterial({
-      color: '#1d3552',
-      emissive: '#0a1422',
-      roughness: 0.95,
+      color: '#ffffff',
+      emissive: '#15263c',
+      roughness: 0.88,
       metalness: 0.02,
     })
   );
@@ -319,6 +319,17 @@ export function getPlanetSurfaceColor(kind: string | undefined) {
   return PLANET_SURFACE_COLORS[kind] ?? '#6b7c59';
 }
 
+export function brightenPreviewSurfaceColor(color: string, factor = 0.16) {
+  const red = Number.parseInt(color.slice(1, 3), 16);
+  const green = Number.parseInt(color.slice(3, 5), 16);
+  const blue = Number.parseInt(color.slice(5, 7), 16);
+  const brighten = (channel: number) =>
+    Math.round(channel + (255 - channel) * factor)
+      .toString(16)
+      .padStart(2, '0');
+  return `#${brighten(red)}${brighten(green)}${brighten(blue)}`;
+}
+
 export function getPreviewLightingProfile(
   cycle: Pick<DaylightCycleLike, 'daylight' | 'night' | 'starsOpacity'>
 ) {
@@ -375,7 +386,9 @@ export function buildPlanetTextureGrid(
       const latitude = y / height;
       const worldX = Math.round((longitude - 0.5) * 256);
       const worldY = Math.round((0.5 - latitude) * 128);
-      return getPlanetSurfaceColor(sampleOverworld(worldX, worldY)?.kind);
+      return brightenPreviewSurfaceColor(
+        getPlanetSurfaceColor(sampleOverworld(worldX, worldY)?.kind)
+      );
     })
   );
 }

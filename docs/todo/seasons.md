@@ -104,7 +104,7 @@ add a outer globe of stars in the sky that appear at night with procedurally gen
 - [x] The black dividers for day/night dawn/dusk are not lined up with the dawn/dusk dial
 - [x] The sun does not appear to have an orbit around the planet in the model
 - [x] The planet in the model does not appear to have contenents. If contentents are not procedurally generated first, add that in as the first thing that is procedurally generated, so that a low-resolution shap can be put onto the planet as a texture map.
-- [ ] The black dividers for sunrise/sunset are still not at the proper rotation on the day/night wheel.
+- [x] The black dividers for sunrise/sunset are still not at the proper rotation on the day/night wheel.
 - [x] Add a plugin to generate animated aurora's at night occasionally which may appear the further north you go.
 - [x] Add a plugin to generate animated meteor showers at night occasionally
 - [x] Add a plugin to generate visiting commets that may appear briefly, or rarely last for days.
