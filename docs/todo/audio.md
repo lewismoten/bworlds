@@ -5,7 +5,7 @@
 - [ ] As you walk near POI that have there own music, the world music may start to fade away, and the POI music starts to fade in
 
 # Sound Effects
-- [ ] Add sound effects for walking / jumping
+- [x] Add sound effects for walking / jumping
 - [ ] Add sound effects for walking into a tree
 - [ ] add sound effects for walking over different types of roads, bridges, etc.
 - [ ] Sound is played based on position of where it was emitted, and distance

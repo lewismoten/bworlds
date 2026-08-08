@@ -88,6 +88,10 @@ import {
   shouldRestore3dViewportKeyboardFocusOnPointerDown,
 } from './viewport-focus.ts';
 import {
+  createSoundEffectController,
+  createWebAudioSoundEffectSink,
+} from './sound-effects.ts';
+import {
   buildSextantMarkup,
   buildEventSummaryMarkup,
   buildStatusMarkup,
@@ -739,6 +743,9 @@ const MOON_PHASE_ILLUMINATIONS = [0, 0.25, 0.5, 0.75, 1, 0.75, 0.5, 0.25] as con
 
 drawAtlas(atlasCanvas.getContext('2d'));
 const renderer3d = create3DRenderer(viewport3d);
+const soundEffects = createSoundEffectController(
+  createWebAudioSoundEffectSink()
+);
 const celestialPreview = createCelestialPreviewRenderer(celestialPreviewHost, {
   onRenderRequested: () => requestRender(),
 });
@@ -1604,6 +1611,11 @@ function toggleTimeFreeze(): void {
 function jump(): void {
   if (state.viewMode !== '3d') return;
   if (motion.isJumping) return;
+  soundEffects.resume();
+  soundEffects.triggerJump({
+    nowMs: performance.now(),
+    tileKind: state.getCurrentTile().kind,
+  });
   motion.isJumping = true;
   motion.jumpHeight = 0;
   motion.jumpVelocity = motion.shortJumpVelocity;
@@ -1613,6 +1625,7 @@ function jump(): void {
 }
 
 function updateMovement(deltaMs: number): void {
+  const nowMs = performance.now();
   const previousX = state.player.x;
   const previousY = state.player.y;
   const previousFacing = state.player.facing;
@@ -1715,6 +1728,14 @@ function updateMovement(deltaMs: number): void {
       motion.longJumpActivated = false;
     }
   }
+
+  soundEffects.update({
+    nowMs,
+    walking,
+    isJumping: motion.isJumping,
+    viewMode: state.viewMode,
+    tileKind: state.getCurrentTile().kind,
+  });
 
   if (
     previousX !== state.player.x ||
@@ -2253,6 +2274,7 @@ import.meta.hot?.on('vite:afterUpdate', () => {
 });
 
 window.addEventListener('keydown', (event) => {
+  soundEffects.resume();
   const key = event.key.length === 1 ? event.key.toLowerCase() : event.key;
   keys.add(key);
 
@@ -2489,6 +2511,7 @@ root.querySelectorAll<HTMLButtonElement>('[data-time-preset]').forEach((button) 
 });
 
 viewportStage?.addEventListener('pointerdown', (event) => {
+  soundEffects.resume();
   if (
     !shouldRestore3dViewportKeyboardFocusOnPointerDown(
       state.viewMode,
