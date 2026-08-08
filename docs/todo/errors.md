@@ -253,8 +253,8 @@ This is about **8.25 MB inclusive** in this sample.
 * [x] Bucket LOD checks across several frames.
 * [x] Use squared distance for LOD thresholds.
 * [ ] Cull obviously distant chunks before per-tile LOD checks.
-* [ ] Add hysteresis between LOD boundaries.
-* [ ] Prevent trees from repeatedly switching between two LODs near a boundary.
+* [x] Add hysteresis between LOD boundaries.
+* [x] Prevent trees from repeatedly switching between two LODs near a boundary.
 * [x] Cache each object's current LOD.
 * [x] Skip work if desired LOD equals current LOD.
 * [ ] Avoid rebuilding material/fade configuration during every LOD check.

@@ -180,6 +180,12 @@ const DEFAULT_PENDING_WORLD_BUILD_BUDGET_MS = 2.5;
 const LOW_DETAIL_MODEL_DISTANCE = 6.5;
 const LOW_DETAIL_MODEL_DISTANCE_SQUARED =
   LOW_DETAIL_MODEL_DISTANCE * LOW_DETAIL_MODEL_DISTANCE;
+const LOD_DETAIL_HYSTERESIS_DISTANCE = 0.5;
+const LOW_DETAIL_ENTER_DISTANCE_SQUARED = LOW_DETAIL_MODEL_DISTANCE_SQUARED;
+const LOW_DETAIL_EXIT_DISTANCE =
+  LOW_DETAIL_MODEL_DISTANCE - LOD_DETAIL_HYSTERESIS_DISTANCE;
+const LOW_DETAIL_EXIT_DISTANCE_SQUARED =
+  LOW_DETAIL_EXIT_DISTANCE * LOW_DETAIL_EXIT_DISTANCE;
 const PENDING_BUILD_FULL_DETAIL_DISTANCE = 3;
 const PENDING_BUILD_FULL_DETAIL_DISTANCE_SQUARED =
   PENDING_BUILD_FULL_DETAIL_DISTANCE * PENDING_BUILD_FULL_DETAIL_DISTANCE;
@@ -724,7 +730,8 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       recordRecentMetric(renderChurnMetrics.lodChecks, nowMs);
       const dx = entry.tileX - state.player.x;
       const dy = entry.tileY - state.player.y;
-      const desiredDetailLevel = getTileModelDetailLevelFromSquaredDistance(
+      const desiredDetailLevel = getTileModelDetailLevelWithHysteresis(
+        entry.detailLevel,
         dx * dx + dy * dy
       );
       if ((entry.detailLevel ?? 'full') === desiredDetailLevel) {
@@ -1510,6 +1517,24 @@ export function getTileModelDetailLevelFromSquaredDistance(
   lowDetailDistanceSquared = LOW_DETAIL_MODEL_DISTANCE_SQUARED
 ): 'full' | 'low' {
   return distanceSquared >= lowDetailDistanceSquared ? 'low' : 'full';
+}
+
+export function getTileModelDetailLevelWithHysteresis(
+  currentDetailLevel: 'full' | 'low' | undefined,
+  distanceSquared: number,
+  {
+    lowDetailEnterDistanceSquared = LOW_DETAIL_ENTER_DISTANCE_SQUARED,
+    lowDetailExitDistanceSquared = LOW_DETAIL_EXIT_DISTANCE_SQUARED,
+  }: {
+    lowDetailEnterDistanceSquared?: number;
+    lowDetailExitDistanceSquared?: number;
+  } = {}
+): 'full' | 'low' {
+  if (currentDetailLevel === 'low') {
+    return distanceSquared <= lowDetailExitDistanceSquared ? 'full' : 'low';
+  }
+
+  return distanceSquared >= lowDetailEnterDistanceSquared ? 'low' : 'full';
 }
 
 export function getPendingWorldBuildDetailLevel(

@@ -23,6 +23,7 @@ import {
   getTwilightSkyPalette,
   getTileModelDetailLevel,
   getTileModelDetailLevelFromSquaredDistance,
+  getTileModelDetailLevelWithHysteresis,
   getPendingWorldBuildDetailLevel,
   getVisibleWorldTileBuildOrder,
   pickCornerBoundaryProfile,
@@ -499,6 +500,14 @@ describe('render3d visibility helpers', () => {
     expect(getTileModelDetailLevelFromSquaredDistance(42.24)).toBe('full');
     expect(getTileModelDetailLevelFromSquaredDistance(42.25)).toBe('low');
     expect(getTileModelDetailLevelFromSquaredDistance(100)).toBe('low');
+  });
+
+  it('uses hysteresis to avoid lod thrash near the boundary', () => {
+    expect(getTileModelDetailLevelWithHysteresis('full', 42.25)).toBe('low');
+    expect(getTileModelDetailLevelWithHysteresis('full', 40)).toBe('full');
+    expect(getTileModelDetailLevelWithHysteresis('low', 40)).toBe('low');
+    expect(getTileModelDetailLevelWithHysteresis('low', 35.99)).toBe('full');
+    expect(getTileModelDetailLevelWithHysteresis(undefined, 42.25)).toBe('low');
   });
 
   it('uses low detail for non-near pending builds while the queue is still draining', () => {
