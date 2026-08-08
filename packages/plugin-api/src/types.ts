@@ -632,6 +632,7 @@ export type OverworldAnchors = {
 
 export interface WorldMapLike {
   getTile(x: number, y: number, state?: WorldStateLike): TileLike;
+  canWalk?(x: number, y: number, state?: WorldStateLike): boolean;
   getAction?(x: number, y: number, state?: WorldStateLike): unknown;
   getExit?(x?: number, y?: number): unknown;
 }

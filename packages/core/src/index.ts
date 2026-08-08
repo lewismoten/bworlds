@@ -1834,6 +1834,7 @@ export function createWorldState({
       return getResolvedTileDefinition(kind);
     },
     canWalk(x: number, y: number) {
+      const map = this.getCurrentMap();
       const probes = [
         [x, y],
         [x + 0.3, y],
@@ -1843,9 +1844,13 @@ export function createWorldState({
       ];
 
       return probes.every(
-        ([probeX, probeY]) =>
-          this.getTileDefinition(this.getCurrentTile(probeX, probeY).kind)
-            .walkable
+        ([probeX, probeY]) => {
+          if (typeof map.canWalk === 'function') {
+            return map.canWalk(probeX, probeY, this);
+          }
+          return this.getTileDefinition(this.getCurrentTile(probeX, probeY).kind)
+            .walkable;
+        }
       );
     },
     interact() {

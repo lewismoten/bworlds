@@ -11,7 +11,7 @@
 - [X] Give trains audio for whistel and steam engine movement
 
 # Water Travel
-- [ ] Add the ability to use a canoe to travel on rivers and along shores within 2-3 tiles of the ocean
+- [X] Add the ability to use a canoe to travel on rivers and along shores within 2-3 tiles of the ocean
 - [ ] Add the ability to use a boat to travel the ocean
 - [ ] Add paddle boats that lower the front to board them at docks
 - [ ] Show paddle boats traveling on the ocean

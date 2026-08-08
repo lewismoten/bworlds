@@ -1,4 +1,5 @@
 import { createBuildingMapPlugin } from '@bworlds/map-building';
+import { createCanoeMapPlugin } from '@bworlds/map-canoe';
 import { createDepthMapPlugin } from '@bworlds/map-depth';
 import { createLighthouseMapPlugin } from '@bworlds/map-lighthouse';
 import { createObservatoryMapPlugin } from '@bworlds/map-observatory';
@@ -70,6 +71,10 @@ export function createDefaultMapPlugins(): RuntimePlugin[] {
     {
       create: createDepthMapPlugin,
       order: { priority: 30 },
+    },
+    {
+      create: createCanoeMapPlugin,
+      order: { priority: 34 },
     },
     {
       create: createQuarryMapPlugin,

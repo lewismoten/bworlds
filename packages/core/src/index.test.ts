@@ -632,4 +632,40 @@ describe('core utilities', () => {
     );
     expect(state.canWalk(0, 0)).toBe(true);
   });
+
+  it('allows maps to override contextual walkability rules', () => {
+    const state = createWorldState({
+      generator: {
+        getMap() {
+          return {
+            getTile() {
+              return { kind: 'ocean' };
+            },
+            canWalk(x: number) {
+              return x < 1;
+            },
+            getAction() {
+              return null;
+            },
+            getExit() {
+              return null;
+            },
+          };
+        },
+      },
+      player: createPlayer(),
+      resolveTileDefinition() {
+        return {
+          name: 'Ocean',
+          color: '#000000',
+          miniColor: '#111111',
+          walkable: false,
+          wallHeight: 0,
+        };
+      },
+    });
+
+    expect(state.canWalk(0, 0)).toBe(true);
+    expect(state.canWalk(1.2, 0)).toBe(false);
+  });
 });

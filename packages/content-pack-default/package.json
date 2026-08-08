@@ -4,6 +4,7 @@
   "type": "module",
   "dependencies": {
     "@bworlds/map-building": "0.1.0",
+    "@bworlds/map-canoe": "0.1.0",
     "@bworlds/map-depth": "0.1.0",
     "@bworlds/map-lighthouse": "0.1.0",
     "@bworlds/map-observatory": "0.1.0",

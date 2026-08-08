@@ -1,13 +1,12 @@
 {
-  "name": "@bworlds/map-overworld",
+  "name": "@bworlds/map-canoe",
   "version": "0.1.0",
   "type": "module",
   "dependencies": {
-    "@bworlds/core": "0.1.0",
-    "@bworlds/map-canoe": "0.1.0",
     "@bworlds/map-support": "0.1.0",
     "@bworlds/overworld-support": "0.1.0",
-    "@bworlds/plugin-api": "0.1.0"
+    "@bworlds/plugin-api": "0.1.0",
+    "@bworlds/tile-support": "0.1.0"
   },
   "exports": {
     ".": "./src/index.ts"

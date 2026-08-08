@@ -1,5 +1,6 @@
+import { type CanoeContext, findNearestCanoeLaunchPoint } from '@bworlds/map-canoe';
 import { normalizeAngle } from '@bworlds/core';
-import { createContextMapPlugin } from '@bworlds/map-support';
+import { createContextMapPlugin, createEnterMapAction } from '@bworlds/map-support';
 import {
   composeOverworldTileFromPlugins,
   createOverworldTerrainSignalSampler,
@@ -83,6 +84,12 @@ function createOverworldMap(
         tile,
         state,
       }) ?? null;
+    if (!action) {
+      const canoeAction = resolveCanoeAction(x, y, state);
+      if (canoeAction) {
+        return canoeAction;
+      }
+    }
     if (
       action &&
       action.type === 'enter' &&
@@ -103,4 +110,37 @@ function createOverworldMap(
   }
 
   return { getTile, getAction, getExit };
+
+  function resolveCanoeAction(
+    x: number,
+    y: number,
+    state?: WorldStateLike & { player?: { facing?: number } }
+  ) {
+    const launch = findNearestCanoeLaunchPoint({
+      x,
+      y,
+      sampleTile: getTile,
+      state,
+    });
+    if (!launch) {
+      return null;
+    }
+
+    const context: CanoeContext = {
+      id: `canoe:${x}:${y}`,
+      label: 'Canoe',
+      type: 'canoe',
+      depth: 1,
+      origin: { x, y },
+    };
+
+    return createEnterMapAction({
+      context,
+      spawn: {
+        x: launch.x - x,
+        y: launch.y - y,
+      },
+      facing: state?.player?.facing ?? 0,
+    });
+  }
 }
