@@ -196,6 +196,17 @@ describe('overworld support', () => {
     expect(second).toBe(first);
   });
 
+  it('regenerates identical terrain signals after bounded cache eviction churn', () => {
+    const sampleTerrainSignals = createOverworldTerrainSignalSampler('spec-seed');
+    const baseline = sampleTerrainSignals(12, -9);
+
+    for (let index = 0; index < 9000; index += 1) {
+      sampleTerrainSignals((index % 180) - 90, Math.floor(index / 180) - 25);
+    }
+
+    expect(sampleTerrainSignals(12, -9)).toEqual(baseline);
+  });
+
   it('creates deterministic river control points with 2-10 tile spacing', () => {
     const points = createRiverControlPoints('spec-seed', 1, -2);
 
@@ -370,6 +381,30 @@ describe('overworld support', () => {
       })
     );
     expect(calls).toBe(2);
+  });
+
+  it('keeps cached overworld tile resolvers deterministic after bounded eviction churn', () => {
+    let calls = 0;
+    const resolveTile = createCachedOverworldTileResolver(({ seed, x, y }) => {
+      calls += 1;
+      return {
+        kind: x === y ? 'town' : 'forest',
+        note: `${seed}:${x}:${y}`,
+      };
+    });
+
+    const baseline = resolveTile({ seed: 'spec-seed', x: 6, y: -2 });
+
+    for (let index = 0; index < 5000; index += 1) {
+      resolveTile({
+        seed: 'spec-seed',
+        x: (index % 100) - 50,
+        y: Math.floor(index / 100) - 25,
+      });
+    }
+
+    expect(resolveTile({ seed: 'spec-seed', x: 6, y: -2 })).toEqual(baseline);
+    expect(calls).toBeGreaterThan(1);
   });
 
   it('exposes the shared near-land heuristic', () => {
@@ -571,6 +606,80 @@ describe('overworld support', () => {
     expect(first.townAnchors.length).toBeGreaterThan(0);
     expect(first.poiAnchors.some((anchor) => anchor.type === 'town')).toBe(true);
     expect(first.poiAnchors.some((anchor) => anchor.type === 'cave')).toBe(true);
+  });
+
+  it('keeps grouped overworld anchor resolvers deterministic after bounded eviction churn', () => {
+    const sampleTerrainSignals = () => ({
+      continent: 0.6,
+      elevation: 0.4,
+      moisture: 0.4,
+      riverSignal: 0.2,
+      roadSignal: 0.3,
+    });
+    const resolver = createOverworldAnchorResolver({
+      town: {
+        spec: createGeneratedNamedOverworldCellAnchorSpec({
+          id: 'town',
+          nameType: 'town',
+          cellSize: 20,
+          chanceKey: 'town-anchor',
+          offsetXKey: 'town-anchor-x',
+          offsetYKey: 'town-anchor-y',
+          threshold: 0.1,
+          isSuitableTerrain() {
+            return true;
+          },
+        }),
+      },
+      poi: {
+        specs: {
+          cave: createGeneratedPoiOverworldCellAnchorSpec({
+            id: 'cave',
+            poiType: 'cave',
+            cellSize: 18,
+            chanceKey: 'cave-anchor',
+            offsetXKey: 'cave-anchor-x',
+            offsetYKey: 'cave-anchor-y',
+            threshold: 0.1,
+            isSuitableTerrain() {
+              return true;
+            },
+          }),
+        },
+        minSpacing: 0,
+        baseAnchors({ townAnchors }) {
+          return townAnchors.map((anchor) => ({
+            ...anchor,
+            type: 'town',
+          }));
+        },
+      },
+    });
+
+    const baseline = resolver({
+      seed: 'spec-seed',
+      x: 0,
+      y: 0,
+      sampleTerrainSignals,
+    });
+
+    for (let index = 0; index < 2200; index += 1) {
+      resolver({
+        seed: 'spec-seed',
+        x: (index % 120) - 60,
+        y: Math.floor(index / 120) - 10,
+        sampleTerrainSignals,
+      });
+    }
+
+    expect(
+      resolver({
+        seed: 'spec-seed',
+        x: 0,
+        y: 0,
+        sampleTerrainSignals,
+      })
+    ).toEqual(baseline);
   });
 
   it('reuses candidate terrain evaluation across overlapping anchor conflict checks', () => {

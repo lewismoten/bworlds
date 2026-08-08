@@ -1,4 +1,8 @@
 import {
+  createBoundedCache,
+  type CacheLike,
+} from '@bworlds/cache-support';
+import {
   clamp,
   generatePoiName,
   hash2D,
@@ -56,6 +60,11 @@ const RIVER_FORK_CHANCE_THRESHOLD = 0.63;
 const RIVER_FORK_MAX_ANGLE_DELTA = Math.PI * 0.25;
 const RIVER_CONTROL_MEANDER_BIAS = Math.PI * 0.34;
 const RIVER_CONTROL_MAX_TURN = Math.PI * 0.88;
+const OVERWORLD_SIGNAL_CACHE_LIMIT = 8192;
+const OVERWORLD_RIVER_CACHE_LIMIT = 1024;
+const OVERWORLD_TILE_CACHE_LIMIT = 4096;
+const OVERWORLD_ANCHOR_CACHE_LIMIT = 1024;
+const OVERWORLD_ANCHOR_EVALUATION_CACHE_LIMIT = 2048;
 
 export interface OverworldCellAnchorSpec<
   TAnchor extends OverworldAnchorLike = OverworldAnchorLike,
@@ -101,13 +110,22 @@ export type GeneratedNamedPoiAnchor = PoiAnchorLike & { name: string };
 export function createOverworldTerrainSignalSampler(
   seed: Seed
 ): OverworldTerrainSignalSampler {
-  const signalCache = new Map<number, Map<number, OverworldSignals>>();
-  const riverControlPointCache = new Map<string, RiverControlPoint[]>();
-  const riverCurvePointCache = new Map<string, RiverControlPoint[]>();
-  const riverForkPathCache = new Map<string, RiverForkPath | null>();
+  const signalCache = createBoundedCache<string, OverworldSignals>(
+    OVERWORLD_SIGNAL_CACHE_LIMIT
+  );
+  const riverControlPointCache = createBoundedCache<string, RiverControlPoint[]>(
+    OVERWORLD_RIVER_CACHE_LIMIT
+  );
+  const riverCurvePointCache = createBoundedCache<string, RiverControlPoint[]>(
+    OVERWORLD_RIVER_CACHE_LIMIT
+  );
+  const riverForkPathCache = createBoundedCache<string, RiverForkPath | null>(
+    OVERWORLD_RIVER_CACHE_LIMIT
+  );
 
   return function sampleTerrainSignals(x: number, y: number): OverworldSignals {
-    const cachedSignals = signalCache.get(x)?.get(y);
+    const signalKey = `${x}:${y}`;
+    const cachedSignals = signalCache.get(signalKey);
     if (cachedSignals) {
       return cachedSignals;
     }
@@ -157,12 +175,7 @@ export function createOverworldTerrainSignalSampler(
         persistence: 0.6,
       }),
     };
-    let row = signalCache.get(x);
-    if (!row) {
-      row = new Map<number, OverworldSignals>();
-      signalCache.set(x, row);
-    }
-    row.set(y, signals);
+    signalCache.set(signalKey, signals);
     return signals;
   };
 }
@@ -255,9 +268,9 @@ function sampleRiverControlPathSignal(
   seed: Seed,
   x: number,
   y: number,
-  controlPointCache: Map<string, RiverControlPoint[]>,
-  curvePointCache: Map<string, RiverControlPoint[]>,
-  forkPathCache: Map<string, RiverForkPath | null>
+  controlPointCache: CacheLike<string, RiverControlPoint[]>,
+  curvePointCache: CacheLike<string, RiverControlPoint[]>,
+  forkPathCache: CacheLike<string, RiverForkPath | null>
 ): number {
   const cellX = Math.floor(x / RIVER_CONTROL_CELL_SIZE);
   const cellY = Math.floor(y / RIVER_CONTROL_CELL_SIZE);
@@ -483,7 +496,7 @@ function getCachedRiverControlPoints(
   seed: Seed,
   cellX: number,
   cellY: number,
-  cache: Map<string, RiverControlPoint[]>
+  cache: CacheLike<string, RiverControlPoint[]>
 ): RiverControlPoint[] {
   const key = `${seed}:${cellX}:${cellY}`;
   if (!cache.has(key)) {
@@ -496,8 +509,8 @@ function getCachedRiverCurvePoints(
   seed: Seed,
   cellX: number,
   cellY: number,
-  controlPointCache: Map<string, RiverControlPoint[]>,
-  curvePointCache: Map<string, RiverControlPoint[]>
+  controlPointCache: CacheLike<string, RiverControlPoint[]>,
+  curvePointCache: CacheLike<string, RiverControlPoint[]>
 ): RiverControlPoint[] {
   const key = `${seed}:${cellX}:${cellY}`;
   if (!curvePointCache.has(key)) {
@@ -515,8 +528,8 @@ function getCachedRiverForkPath(
   seed: Seed,
   cellX: number,
   cellY: number,
-  controlPointCache: Map<string, RiverControlPoint[]>,
-  forkPathCache: Map<string, RiverForkPath | null>
+  controlPointCache: CacheLike<string, RiverControlPoint[]>,
+  forkPathCache: CacheLike<string, RiverForkPath | null>
 ): RiverForkPath | null {
   const key = `${seed}:${cellX}:${cellY}`;
   if (!forkPathCache.has(key)) {
@@ -629,7 +642,9 @@ export function getOverworldPlacementChance(
 export function createCachedOverworldTileResolver(
   resolveTile: (params: { seed: Seed; x: number; y: number }) => TileLike | null
 ) {
-  const cache = new Map<string, TileLike | null>();
+  const cache = createBoundedCache<string, TileLike | null>(
+    OVERWORLD_TILE_CACHE_LIMIT
+  );
 
   return function resolveOverworldTile({
     seed,
@@ -800,12 +815,12 @@ export function collectNearbyOverworldCellAnchors<
   y: number;
   spec: OverworldCellAnchorSpec<TAnchor>;
   sampleTerrainSignals: OverworldTerrainSignalSampler;
-  cache: Map<string, TAnchor | null>;
+  cache: CacheLike<string, TAnchor | null>;
   radius?: number;
   minSpacing?: number;
   blockingAnchors?: Array<Pick<OverworldAnchorLike, 'x' | 'y'>>;
   conflictSpecs?: OverworldCellAnchorSpec[];
-  evaluationCache?: Map<string, OverworldCellAnchorEvaluation>;
+  evaluationCache?: CacheLike<string, OverworldCellAnchorEvaluation>;
 }) {
   const cellX = Math.floor(x / spec.cellSize);
   const cellY = Math.floor(y / spec.cellSize);
@@ -853,12 +868,12 @@ export function collectNearbyOverworldPoiAnchors<
   x: number;
   y: number;
   specs: Record<TPoiType, OverworldCellAnchorSpec<TAnchor>>;
-  caches: Record<TPoiType, Map<string, TAnchor | null>>;
+  caches: Record<TPoiType, CacheLike<string, TAnchor | null>>;
   sampleTerrainSignals: OverworldTerrainSignalSampler;
   minSpacing?: number;
   blockingAnchors?: Array<Pick<OverworldAnchorLike, 'x' | 'y'>>;
   baseAnchors?: TAnchor[];
-  evaluationCache?: Map<string, OverworldCellAnchorEvaluation>;
+  evaluationCache?: CacheLike<string, OverworldCellAnchorEvaluation>;
 }) {
   const anchors = [...baseAnchors];
   const specList = Object.values(specs) as OverworldCellAnchorSpec<TAnchor>[];
@@ -926,15 +941,22 @@ export function createOverworldAnchorResolver<
     TBridgeAnchor
   >;
 }) {
-  const townCache = new Map<string, TTownAnchor | null>();
-  const bridgeCache = new Map<string, TBridgeAnchor | null>();
-  const anchorEvaluationCache = new Map<string, OverworldCellAnchorEvaluation>();
+  const townCache = createBoundedCache<string, TTownAnchor | null>(
+    OVERWORLD_ANCHOR_CACHE_LIMIT
+  );
+  const bridgeCache = createBoundedCache<string, TBridgeAnchor | null>(
+    OVERWORLD_ANCHOR_CACHE_LIMIT
+  );
+  const anchorEvaluationCache = createBoundedCache<
+    string,
+    OverworldCellAnchorEvaluation
+  >(OVERWORLD_ANCHOR_EVALUATION_CACHE_LIMIT);
   const poiCaches = Object.fromEntries(
     Object.keys(options.poi?.specs ?? {}).map((poiType) => [
       poiType,
-      new Map<string, TPoiAnchor | null>(),
+      createBoundedCache<string, TPoiAnchor | null>(OVERWORLD_ANCHOR_CACHE_LIMIT),
     ])
-  ) as Record<TPoiType, Map<string, TPoiAnchor | null>>;
+  ) as unknown as Record<TPoiType, CacheLike<string, TPoiAnchor | null>>;
 
   return function resolveOverworldAnchors({
     seed,
@@ -1022,11 +1044,11 @@ export function resolveOverworldCellAnchor<
   cellY: number;
   spec: OverworldCellAnchorSpec<TAnchor>;
   sampleTerrainSignals: OverworldTerrainSignalSampler;
-  cache: Map<string, TAnchor | null>;
+  cache: CacheLike<string, TAnchor | null>;
   minSpacing?: number;
   blockingAnchors?: Array<Pick<OverworldAnchorLike, 'x' | 'y'>>;
   conflictSpecs?: OverworldCellAnchorSpec[];
-  evaluationCache?: Map<string, OverworldCellAnchorEvaluation>;
+  evaluationCache?: CacheLike<string, OverworldCellAnchorEvaluation>;
 }) {
   const key = `${seed}:${spec.id}:${cellX}:${cellY}`;
   if (!cache.has(key)) {
@@ -1086,7 +1108,7 @@ function hasHigherPriorityOverworldAnchorConflict({
   blockingAnchors: Array<Pick<OverworldAnchorLike, 'x' | 'y'>>;
   minSpacing: number;
   conflictSpecs: OverworldCellAnchorSpec[];
-  evaluationCache: Map<string, OverworldCellAnchorEvaluation>;
+  evaluationCache: CacheLike<string, OverworldCellAnchorEvaluation>;
 }) {
   if (minSpacing <= 0) {
     return false;
@@ -1153,7 +1175,7 @@ function getOverworldCellAnchorEvaluation<
   cellY: number;
   spec: OverworldCellAnchorSpec<TAnchor>;
   sampleTerrainSignals: OverworldTerrainSignalSampler;
-  evaluationCache: Map<string, OverworldCellAnchorEvaluation>;
+  evaluationCache: CacheLike<string, OverworldCellAnchorEvaluation>;
 }): OverworldCellAnchorEvaluation<TAnchor> {
   const key = `${seed}:${spec.id}:${cellX}:${cellY}`;
   if (!evaluationCache.has(key)) {
