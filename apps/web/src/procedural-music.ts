@@ -6,6 +6,27 @@ type TileKind = string;
 type ContextType = string;
 type WeatherKind = string;
 type InstrumentRole = 'lead' | 'harmony' | 'bass' | 'percussion';
+type InstrumentFamily =
+  | 'vocals'
+  | 'lead-guitar'
+  | 'violin'
+  | 'flute'
+  | 'trumpet'
+  | 'synth-lead'
+  | 'piano'
+  | 'guitar'
+  | 'organ'
+  | 'strings'
+  | 'synth-pad'
+  | 'bass-guitar'
+  | 'upright-bass'
+  | 'bass-synth'
+  | 'tuba'
+  | 'kick'
+  | 'snare'
+  | 'cymbals'
+  | 'shaker'
+  | 'hand-percussion';
 
 type MusicRegionThemeId =
   | 'frontier-plains'
@@ -28,6 +49,7 @@ type MusicRegionTheme = {
 export type ProceduralInstrument = {
   id: string;
   role: InstrumentRole;
+  family: InstrumentFamily;
   waveform: MusicWaveform;
   attackMs: number;
   releaseMs: number;
@@ -190,6 +212,15 @@ const THEME_LIBRARY: Record<MusicRegionThemeId, MusicRegionTheme> = {
 
 const LOOKAHEAD_MS = 900;
 const MUSIC_SCHEDULE_LEAD_MS = 240;
+const INSTRUMENT_FAMILY_LIBRARY: Record<
+  InstrumentRole,
+  readonly InstrumentFamily[]
+> = {
+  lead: ['vocals', 'lead-guitar', 'violin', 'flute', 'trumpet', 'synth-lead'],
+  harmony: ['piano', 'guitar', 'organ', 'strings', 'synth-pad'],
+  bass: ['bass-guitar', 'upright-bass', 'bass-synth', 'tuba'],
+  percussion: ['kick', 'snare', 'cymbals', 'shaker', 'hand-percussion'],
+};
 
 export function resolveMusicTheme(
   tileKind?: TileKind,
@@ -941,6 +972,7 @@ function createProceduralInstrument(
   clusterY: number
 ): ProceduralInstrument {
   const seedKey = `${theme.id}:${role}`;
+  const family = resolveInstrumentFamily(theme, role, clusterX, clusterY);
   const waveformOptions: Record<InstrumentRole, MusicWaveform[]> = {
     lead: ['triangle', 'sine', 'sawtooth'],
     harmony: ['triangle', 'sawtooth', 'square'],
@@ -959,6 +991,7 @@ function createProceduralInstrument(
   return {
     id: `${theme.id}:${role}:${clusterX}:${clusterY}`,
     role,
+    family,
     waveform,
     attackMs: attackMsBase + Math.round(hash2D(`${seedKey}:attack`, clusterX, clusterY) * 24),
     releaseMs:
@@ -977,6 +1010,19 @@ function createProceduralInstrument(
     brightness:
       0.82 + hash2D(`${seedKey}:brightness`, clusterX, clusterY) * 0.34,
   };
+}
+
+function resolveInstrumentFamily(
+  theme: MusicRegionTheme,
+  role: InstrumentRole,
+  clusterX: number,
+  clusterY: number
+): InstrumentFamily {
+  const families = INSTRUMENT_FAMILY_LIBRARY[role];
+  const index = Math.floor(
+    hash2D(`${theme.id}:${role}:family`, clusterX, clusterY) * families.length
+  );
+  return families[index] ?? families[0];
 }
 
 function selectInstrumentRole(stepIndex: number): InstrumentRole {

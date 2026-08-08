@@ -4,10 +4,10 @@
 - [x] Generate "instruments" or a procedurally generated sound bank that allows sounds to be used similar to MIDI.
 - [x] As you walk near POI that have there own music, the world music may start to fade away, and the POI music starts to fade in
 - [x] Music should usually have 4 instruments/tracks for harmony/chords, rhythm/percussion, bass, and malody/lead
-- [ ] Meloady is often representative of vocals, lead guitar, violin, flute, trumpet, and synth lead
-- [ ] Harmony is often representative of piano, guitar, organ, strings, and synth pads
-- [ ] Bass is often representative of bass guitar, upright bass, bass synth, tuba
-- [ ] A drum track is made of different instruments of drums, cymbals, shakers, percussion
+- [x] Meloady is often representative of vocals, lead guitar, violin, flute, trumpet, and synth lead
+- [x] Harmony is often representative of piano, guitar, organ, strings, and synth pads
+- [x] Bass is often representative of bass guitar, upright bass, bass synth, tuba
+- [x] A drum track is made of different instruments of drums, cymbals, shakers, percussion
 - [ ] Songs can simply swap out different intruments for more variety, speed-up/slow-down tempo, or change the key that could be associated with location, danger, combat, weather, time of day, or NPC activity
 - [ ] Background music should be 1.5 to 4 minutes
 - [ ] Exploration or town music should be 2-3 minutes long

@@ -243,26 +243,56 @@ describe('procedural music', () => {
       expect.objectContaining({
         id: 'deep-forest:lead:2:-1',
         role: 'lead',
+        family: expect.stringMatching(
+          /^(vocals|lead-guitar|violin|flute|trumpet|synth-lead)$/
+        ),
       })
     );
     expect(bank.instruments.harmony).toEqual(
       expect.objectContaining({
         id: 'deep-forest:harmony:2:-1',
         role: 'harmony',
+        family: expect.stringMatching(/^(piano|guitar|organ|strings|synth-pad)$/),
       })
     );
     expect(bank.instruments.bass).toEqual(
       expect.objectContaining({
         id: 'deep-forest:bass:2:-1',
         role: 'bass',
+        family: expect.stringMatching(/^(bass-guitar|upright-bass|bass-synth|tuba)$/),
       })
     );
     expect(bank.instruments.percussion).toEqual(
       expect.objectContaining({
         id: 'deep-forest:percussion:2:-1',
         role: 'percussion',
+        family: expect.stringMatching(/^(kick|snare|cymbals|shaker|hand-percussion)$/),
       })
     );
+  });
+
+  it('keeps each procedural role inside its representative instrument family pool', () => {
+    const frontier = createProceduralInstrumentBank(
+      resolveMusicTheme('plains', 'overworld'),
+      0,
+      0
+    );
+    const town = createProceduralInstrumentBank(resolveMusicTheme('town', 'town'), 5, -3);
+
+    for (const bank of [frontier, town]) {
+      expect(['vocals', 'lead-guitar', 'violin', 'flute', 'trumpet', 'synth-lead']).toContain(
+        bank.instruments.lead.family
+      );
+      expect(['piano', 'guitar', 'organ', 'strings', 'synth-pad']).toContain(
+        bank.instruments.harmony.family
+      );
+      expect(['bass-guitar', 'upright-bass', 'bass-synth', 'tuba']).toContain(
+        bank.instruments.bass.family
+      );
+      expect(['kick', 'snare', 'cymbals', 'shaker', 'hand-percussion']).toContain(
+        bank.instruments.percussion.family
+      );
+    }
   });
 
   it('emits scheduled notes through the controller sink', () => {
