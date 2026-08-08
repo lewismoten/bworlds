@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
+  collectSceneResourceStats,
   applyObjectDistanceFade,
   clampCameraPitch,
   DEFAULT_CAMERA_PITCH,
@@ -25,6 +26,25 @@ import {
 type SkySignatureCycle = Parameters<typeof getSkyConstellationSignature>[0];
 
 describe('render3d visibility helpers', () => {
+  it('collects unique scene material and geometry counts for debug diagnostics', () => {
+    const sharedMaterial = createMockMaterial();
+    const otherMaterial = createMockMaterial();
+    const sharedGeometry = { id: 'shared-geometry' };
+    const otherGeometry = { id: 'other-geometry' };
+    const root = createMockObject3D(undefined, [
+      createMockObject3D(sharedMaterial, [], sharedGeometry),
+      createMockObject3D([sharedMaterial, otherMaterial], [], sharedGeometry),
+      createMockObject3D(otherMaterial, [], otherGeometry),
+    ]);
+
+    expect(collectSceneResourceStats(root as never)).toEqual({
+      object3dCount: 4,
+      meshCount: 3,
+      materialCount: 2,
+      geometryCount: 2,
+    });
+  });
+
   it('reuses one faded material clone per source material within a model root', () => {
     const sourceMaterial = createMockMaterial();
     const childA = createMockObject3D(sourceMaterial);
@@ -453,12 +473,14 @@ function createMockObject3D(
   material?: unknown,
   children: Array<{
     traverse: (callback: (child: unknown) => void) => void;
-  }> = []
+  }> = [],
+  geometry?: unknown
 ) {
   const node = {
     visible: true,
     userData: {},
     material,
+    geometry,
     children,
     traverse(callback: (child: typeof node) => void) {
       callback(node);

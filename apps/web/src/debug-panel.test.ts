@@ -27,6 +27,12 @@ describe('debug panel', () => {
       triangles: 2048,
       visibleTileCount: 112,
       pendingTileCount: 6,
+      object3dCount: 318,
+      meshCount: 180,
+      materialCount: 24,
+      geometryCount: 61,
+      textureCount: 7,
+      programCount: 12,
       latitude: 32.1234,
       longitude: -81.5678,
       gridX: 14,
@@ -41,6 +47,8 @@ describe('debug panel', () => {
     expect(buildDebugMarkup(snapshot)).toContain('Frame Target');
     expect(buildDebugMarkup(snapshot)).toContain('Perf Tier');
     expect(buildDebugMarkup(snapshot)).toContain('Level');
+    expect(buildDebugMarkup(snapshot)).toContain('Materials');
+    expect(buildDebugMarkup(snapshot)).toContain('Programs');
     expect(buildDebugMarkup(snapshot)).toContain('alpha');
   });
 

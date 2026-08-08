@@ -57,6 +57,12 @@ type Render3DController = {
     triangles: number;
     visibleTileCount: number;
     pendingTileCount: number;
+    object3dCount: number;
+    meshCount: number;
+    materialCount: number;
+    geometryCount: number;
+    textureCount: number;
+    programCount: number;
   };
   render(state: Render3DState, options?: Render3DOptions): void;
   resize(width: number, height: number, pixelRatio?: number): void;
@@ -105,6 +111,13 @@ type TileBuildCache = {
     tileY: number,
     tile?: TileLike
   ): TileSurfaceProfile;
+};
+
+type SceneResourceStats = {
+  object3dCount: number;
+  meshCount: number;
+  materialCount: number;
+  geometryCount: number;
 };
 
 const TILE_SIZE = 1;
@@ -476,11 +489,21 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
   }
 
   function getStats() {
+    const sceneResourceStats = collectSceneResourceStats(scene);
+    const rendererInfo = renderer.info as THREE.WebGLInfo & {
+      programs?: ArrayLike<unknown>;
+    };
     return {
       drawCalls: renderer.info.render.calls,
       triangles: renderer.info.render.triangles,
       visibleTileCount: visibleTileNodes.size,
       pendingTileCount: pendingWorldBuild.queue.length,
+      object3dCount: sceneResourceStats.object3dCount,
+      meshCount: sceneResourceStats.meshCount,
+      materialCount: sceneResourceStats.materialCount,
+      geometryCount: sceneResourceStats.geometryCount,
+      textureCount: renderer.info.memory.textures,
+      programCount: rendererInfo.programs?.length ?? 0,
     };
   }
 
@@ -1435,6 +1458,42 @@ function getObjectMaterials(
     return [];
   }
   return Array.isArray(node.material) ? node.material : [node.material];
+}
+
+export function collectSceneResourceStats(
+  root: Pick<THREE.Object3D, 'traverse'>
+): SceneResourceStats {
+  let object3dCount = 0;
+  let meshCount = 0;
+  const materials = new Set<THREE.Material>();
+  const geometries = new Set<unknown>();
+
+  root.traverse((child) => {
+    object3dCount += 1;
+
+    const renderable = child as THREE.Object3D & {
+      geometry?: unknown;
+      material?: THREE.Material | THREE.Material[];
+    };
+    if (renderable.geometry) {
+      geometries.add(renderable.geometry);
+    }
+
+    const childMaterials = getObjectMaterials(renderable);
+    if (childMaterials.length > 0 && renderable.geometry) {
+      meshCount += 1;
+    }
+    for (const material of childMaterials) {
+      materials.add(material);
+    }
+  });
+
+  return {
+    object3dCount,
+    meshCount,
+    materialCount: materials.size,
+    geometryCount: geometries.size,
+  };
 }
 
 function clamp01(value: number): number {

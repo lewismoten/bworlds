@@ -9,6 +9,12 @@ export type DebugSnapshot = {
   triangles: number;
   visibleTileCount: number;
   pendingTileCount: number;
+  object3dCount: number;
+  meshCount: number;
+  materialCount: number;
+  geometryCount: number;
+  textureCount: number;
+  programCount: number;
   latitude: number;
   longitude: number;
   gridX: number;
@@ -35,6 +41,12 @@ export function getDebugSignature(snapshot: DebugSnapshot): string {
     snapshot.triangles,
     snapshot.visibleTileCount,
     snapshot.pendingTileCount,
+    snapshot.object3dCount,
+    snapshot.meshCount,
+    snapshot.materialCount,
+    snapshot.geometryCount,
+    snapshot.textureCount,
+    snapshot.programCount,
     snapshot.latitude.toFixed(4),
     snapshot.longitude.toFixed(4),
     snapshot.gridX,
@@ -90,6 +102,12 @@ export function buildDebugMarkup(snapshot: DebugSnapshot): string {
     <div><dt>GPU Tris</dt><dd>${snapshot.triangles}</dd></div>
     <div><dt>Visible Tiles</dt><dd>${snapshot.visibleTileCount}</dd></div>
     <div><dt>Pending Tiles</dt><dd>${snapshot.pendingTileCount}</dd></div>
+    <div><dt>Objects</dt><dd>${snapshot.object3dCount}</dd></div>
+    <div><dt>Meshes</dt><dd>${snapshot.meshCount}</dd></div>
+    <div><dt>Materials</dt><dd>${snapshot.materialCount}</dd></div>
+    <div><dt>Geometries</dt><dd>${snapshot.geometryCount}</dd></div>
+    <div><dt>Textures</dt><dd>${snapshot.textureCount}</dd></div>
+    <div><dt>Programs</dt><dd>${snapshot.programCount}</dd></div>
     <div><dt>Heap</dt><dd>${heapLabel}</dd></div>
     <div><dt>GPS</dt><dd>${snapshot.latitude.toFixed(4)}, ${snapshot.longitude.toFixed(4)}</dd></div>
     <div><dt>Grid</dt><dd>${snapshot.gridX}, ${snapshot.gridY}</dd></div>

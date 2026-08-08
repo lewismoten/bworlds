@@ -24,8 +24,8 @@ I would turn it into this task backlog, roughly in priority order.
 * [x] Cache compatible faded material variants instead of creating one per object.
 * [ ] Ensure changing distance LOD does not create another material clone every time.
 * [ ] Verify old cloned materials are disposed when no longer needed.
-* [ ] Add a debug counter showing active materials.
-* [ ] Add a debug counter showing compiled WebGL shader programs.
+* [x] Add a debug counter showing active materials.
+* [x] Add a debug counter showing compiled WebGL shader programs.
 * [ ] Add a warning if material count grows continuously while walking around.
 
 The biggest allocation path is currently approximately:
@@ -468,13 +468,13 @@ I would add a little developer overlay now.
 * [ ] Display `renderer.info.render.points`.
 * [ ] Display `renderer.info.render.lines`.
 * [ ] Display `renderer.info.memory.geometries`.
-* [ ] Display `renderer.info.memory.textures`.
-* [ ] Display `renderer.info.programs?.length`.
-* [ ] Count active `Object3D`s recursively.
-* [ ] Count `Mesh` objects.
+* [x] Display `renderer.info.memory.textures`.
+* [x] Display `renderer.info.programs?.length`.
+* [x] Count active `Object3D`s recursively.
+* [x] Count `Mesh` objects.
 * [ ] Count `Group` objects.
-* [ ] Count unique material identities.
-* [ ] Count unique geometry identities.
+* [x] Count unique material identities.
+* [x] Count unique geometry identities.
 * [ ] Count visible tiles.
 * [ ] Count visible trees.
 * [ ] Calculate meshes per visible tree.
