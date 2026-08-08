@@ -108,6 +108,20 @@ describe('celestial preview helpers', () => {
     ]);
   });
 
+  it('prefers lightweight preview samplers when available', () => {
+    const sampleOverworld = resolvePreviewSampler({
+      sampleOverworld() {
+        return { kind: 'mountain' };
+      },
+      samplePreviewOverworld() {
+        return { kind: 'forest' };
+      },
+    });
+
+    expect(sampleOverworld).not.toBeNull();
+    expect(buildPlanetTextureGrid(sampleOverworld!, 1, 1)).toEqual([['#557c5a']]);
+  });
+
   it('describes a full sun orbit plus the daylight arc for the preview model', () => {
     const cycle = getDaylightCycleState(0);
     const orbit = getPreviewSunOrbitSpec(cycle);

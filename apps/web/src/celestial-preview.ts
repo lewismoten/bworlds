@@ -16,6 +16,9 @@ type OverworldSamplerLike = {
   sampleOverworld(x: number, y: number): {
     kind?: string;
   };
+  samplePreviewOverworld?(x: number, y: number): {
+    kind?: string;
+  };
 };
 
 type PreviewPoint3D = {
@@ -794,7 +797,13 @@ function syncPreviewPlanetTexture(
 export function resolvePreviewSampler(
   overworldSampler: OverworldSamplerLike | null
 ): OverworldSamplerLike['sampleOverworld'] | null {
-  if (!overworldSampler || typeof overworldSampler.sampleOverworld !== 'function') {
+  if (!overworldSampler) {
+    return null;
+  }
+  if (typeof overworldSampler.samplePreviewOverworld === 'function') {
+    return overworldSampler.samplePreviewOverworld.bind(overworldSampler);
+  }
+  if (typeof overworldSampler.sampleOverworld !== 'function') {
     return null;
   }
   return overworldSampler.sampleOverworld.bind(overworldSampler);

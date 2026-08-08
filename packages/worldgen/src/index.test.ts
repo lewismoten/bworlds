@@ -269,6 +269,16 @@ describe('world generator', () => {
     expect(sampleOverworld(10, 20)).toEqual(generator.sampleOverworld(10, 20));
   });
 
+  it('provides a lightweight preview sampler that is stable and omits route decoration', () => {
+    const generator = createGenerator();
+
+    expect(generator.samplePreviewOverworld(10, 20)).toEqual(
+      generator.samplePreviewOverworld(10, 20)
+    );
+    expect(generator.samplePreviewOverworld(3, 2).kind).not.toBe('bridge');
+    expect(generator.sampleOverworld(3, 2).kind).toBe('bridge');
+  });
+
   it('creates the overworld through the registered map plugin path', () => {
     const generator = createGenerator();
     const overworld = generator.getMap({

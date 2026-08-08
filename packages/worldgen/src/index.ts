@@ -31,6 +31,11 @@ import {
   type WorldMapLike,
   type WorldStateLike,
 } from '@bworlds/plugin-api';
+import {
+  createOverworldTerrainSignalSampler,
+  getOverworldPlacementChance,
+  isNearOverworldLand,
+} from '@bworlds/overworld-support';
 
 type Point = { x: number; y: number };
 type SpawnTile = TileLike & {
@@ -61,8 +66,11 @@ export function createWorldGenerator({
 }): {
   getMap(context: Context): WorldMapLike;
   sampleOverworld(x: number, y: number): SpawnTile;
+  samplePreviewOverworld(x: number, y: number): SpawnTile;
 } {
   const mapCache = new Map<string, WorldMapLike>();
+  const terrainSignals = createOverworldTerrainSignalSampler(seed);
+  const previewTileCache = new Map<string, SpawnTile>();
   const getMap = (context: Context) => {
     const key = makeKey(context.id, context.depth);
     if (!mapCache.has(key)) {
@@ -85,6 +93,49 @@ export function createWorldGenerator({
     getMap,
     sampleOverworld(x: number, y: number) {
       return getMap(OVERWORLD_CONTEXT).getTile(x, y) as SpawnTile;
+    },
+    samplePreviewOverworld(x: number, y: number) {
+      const key = makeKey('preview-overworld', x, y);
+      if (!previewTileCache.has(key)) {
+        const startingTile = {
+          kind: plugins.getDefaultTileKind?.('plains') ?? 'plains',
+        };
+        const signals = terrainSignals(x, y);
+        const placementChances = {
+          town: getOverworldPlacementChance(seed, 'town', x, y),
+          cave: getOverworldPlacementChance(seed, 'cave', x, y),
+          dungeon: getOverworldPlacementChance(seed, 'dungeon', x, y),
+          sign: getOverworldPlacementChance(seed, 'sign', x, y),
+        };
+        previewTileCache.set(
+          key,
+          (plugins.classifyTerrainTile({
+            seed,
+            x,
+            y,
+            tile: startingTile,
+            nearLand: isNearOverworldLand(signals),
+            townChance: placementChances.town,
+            caveChance: placementChances.cave,
+            dungeonChance: placementChances.dungeon,
+            signChance: placementChances.sign,
+            placementChances,
+            getPlacementChance(chanceKey: string) {
+              return (
+                placementChances[chanceKey] ??
+                getOverworldPlacementChance(seed, chanceKey, x, y)
+              );
+            },
+            signals,
+            sampleTerrainSignals: terrainSignals,
+            townAnchors: [],
+            bridgeAnchors: [],
+            poiAnchors: [],
+          }) ??
+            startingTile) as SpawnTile
+        );
+      }
+      return previewTileCache.get(key) as SpawnTile;
     },
   };
 }
