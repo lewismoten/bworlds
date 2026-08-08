@@ -350,15 +350,15 @@ describe('tile forest', () => {
     expect(getForestOwls(first.x, first.y)).toEqual(first.owls);
   });
 
-  it("generates deterministic forest carvings for initials, hearts, dates, travel marks, symbols, and warnings", () => {
+  it('generates deterministic forest carvings across romantic, symbolic, clue, and historical motifs', () => {
     const sampleTiles: Array<{
       x: number;
       y: number;
       carvings: ReturnType<typeof getForestCarvings>;
     }> = [];
 
-    for (let tileY = 0; tileY < 18; tileY += 1) {
-      for (let tileX = 0; tileX < 18; tileX += 1) {
+    for (let tileY = 0; tileY < 32; tileY += 1) {
+      for (let tileX = 0; tileX < 32; tileX += 1) {
         const carvings = getForestCarvings(tileX, tileY);
         if (carvings.length > 0) {
           sampleTiles.push({ x: tileX, y: tileY, carvings });
@@ -435,6 +435,33 @@ describe('tile forest', () => {
       sampleTiles.some(({ carvings }) =>
         carvings.some(
           (carving) => carving.motif === 'warning' && carving.text === '!'
+        )
+      )
+    ).toBe(true);
+    expect(
+      sampleTiles.some(({ carvings }) =>
+        carvings.some(
+          (carving) =>
+            carving.motif === 'quest-hint' &&
+            ['N2', 'E3', 'S4', 'W1'].includes(carving.text)
+        )
+      )
+    ).toBe(true);
+    expect(
+      sampleTiles.some(({ carvings }) =>
+        carvings.some(
+          (carving) =>
+            carving.motif === 'treasure-map-clue' &&
+            ['X2', 'X4', '>3', '<5'].includes(carving.text)
+        )
+      )
+    ).toBe(true);
+    expect(
+      sampleTiles.some(({ carvings }) =>
+        carvings.some(
+          (carving) =>
+            carving.motif === 'historical-inscription' &&
+            ['OLD', 'MOSS', '1891'].includes(carving.text)
         )
       )
     ).toBe(true);
@@ -1672,6 +1699,50 @@ describe('tile forest', () => {
     });
 
     expect(extendedSymbolLabels.size).toBeGreaterThan(0);
+
+    let clueTile: { x: number; y: number } | null = null;
+    for (let tileY = 0; tileY < 32 && !clueTile; tileY += 1) {
+      for (let tileX = 0; tileX < 32; tileX += 1) {
+        if (
+          getForestCarvings(tileX, tileY).some(
+            (carving) =>
+              carving.motif === 'quest-hint' ||
+              carving.motif === 'treasure-map-clue' ||
+              carving.motif === 'historical-inscription'
+          )
+        ) {
+          clueTile = { x: tileX, y: tileY };
+          break;
+        }
+      }
+    }
+
+    expect(clueTile).not.toBeNull();
+    state.player.x = clueTile!.x;
+    state.player.y = clueTile!.y;
+    const clueModel = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'forest' },
+      tileX: clueTile!.x,
+      tileY: clueTile!.y,
+      detailLevel: 'full',
+    }) as FakeGroup;
+
+    const clueLabels = new Set<string>();
+    clueModel.traverse((node) => {
+      const carving = node.userData?.forestCarving;
+      if (
+        typeof carving === 'string' &&
+        ['N2', 'E3', 'S4', 'W1', 'X2', 'X4', '>3', '<5', 'OLD', 'MOSS', '1891'].includes(
+          carving
+        )
+      ) {
+        clueLabels.add(carving);
+      }
+    });
+
+    expect(clueLabels.size).toBeGreaterThan(0);
   });
 
   it('renders flower meadows only in full-detail forest models', () => {

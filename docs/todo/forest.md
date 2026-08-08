@@ -645,9 +645,9 @@ This probably deserves several interchangeable strategies.
 * [X] Generate religious markings.
 * [X] Generate guild symbols.
 * [X] Generate warning marks.
-* [ ] Generate quest hints.
-* [ ] Generate treasure-map clues.
-* [ ] Generate historical inscriptions.
+* [X] Generate quest hints.
+* [X] Generate treasure-map clues.
+* [X] Generate historical inscriptions.
 * [ ] Allow players to inspect carvings.
 * [ ] Allow new player-created carvings if desirable.
 * [ ] Age carvings visually.

@@ -62,6 +62,9 @@ const FOREST_FIREFLY_MEDIUM_DISTANCE_SQUARED =
 const FIREFLY_SEASON_START = 0.18;
 const FIREFLY_SEASON_PEAK = 0.5;
 const FIREFLY_SEASON_END = 0.82;
+const FOREST_QUEST_HINT_LABELS = ['N2', 'E3', 'S4', 'W1'] as const;
+const FOREST_TREASURE_CLUE_LABELS = ['X2', 'X4', '>3', '<5'] as const;
+const FOREST_HISTORICAL_INSCRIPTION_LABELS = ['OLD', 'MOSS', '1891'] as const;
 
 const treeDescriptorCache = new Map<string, ForestTreeDescriptor[]>();
 const treeStyleCache = new Map<string, ForestTreeStyle>();
@@ -434,23 +437,29 @@ const resolveForestCarvingDescriptors = createCoordinateValueResolver(
       }
 
       const motif: ForestCarvingDescriptor['motif'] =
-        chance > 0.994
-          ? 'warning'
-          : chance > 0.988
-            ? 'guild'
-            : chance > 0.982
-              ? 'religious'
-              : chance > 0.976
-                ? 'symbol'
-                : chance > 0.966
-                  ? 'arrow'
-                  : chance > 0.952
-                    ? 'traveler-mark'
-                    : chance > 0.934
-                      ? 'date'
-                      : chance > 0.908
-                        ? 'heart'
-                        : 'initials';
+        chance > 0.997
+          ? 'historical-inscription'
+          : chance > 0.994
+            ? 'treasure-map-clue'
+            : chance > 0.99
+              ? 'quest-hint'
+              : chance > 0.985
+                ? 'warning'
+                : chance > 0.979
+                  ? 'guild'
+                  : chance > 0.973
+                    ? 'religious'
+                    : chance > 0.967
+                      ? 'symbol'
+                      : chance > 0.957
+                        ? 'arrow'
+                        : chance > 0.943
+                          ? 'traveler-mark'
+                          : chance > 0.926
+                            ? 'date'
+                            : chance > 0.904
+                              ? 'heart'
+                              : 'initials';
 
       carvings.push({
         treeIndex,
@@ -2533,6 +2542,36 @@ function getForestCarvingText(
   tileY: number,
   treeIndex: number
 ) {
+  if (motif === 'historical-inscription') {
+    return pickForestCarvingLabel(
+      FOREST_HISTORICAL_INSCRIPTION_LABELS,
+      'forest-carving-historical',
+      tileX,
+      tileY,
+      treeIndex
+    );
+  }
+
+  if (motif === 'treasure-map-clue') {
+    return pickForestCarvingLabel(
+      FOREST_TREASURE_CLUE_LABELS,
+      'forest-carving-treasure',
+      tileX,
+      tileY,
+      treeIndex
+    );
+  }
+
+  if (motif === 'quest-hint') {
+    return pickForestCarvingLabel(
+      FOREST_QUEST_HINT_LABELS,
+      'forest-carving-quest',
+      tileX,
+      tileY,
+      treeIndex
+    );
+  }
+
   if (motif === 'warning') {
     return '!';
   }
@@ -2565,6 +2604,19 @@ function getForestCarvingText(
   }
 
   return motif === 'heart' ? 'LM*FG' : 'LM+FG';
+}
+
+function pickForestCarvingLabel(
+  labels: readonly string[],
+  seed: string,
+  tileX: number,
+  tileY: number,
+  treeIndex: number
+) {
+  const index = Math.floor(
+    hash2D(seed, tileX * 19 + treeIndex, tileY * 23) * labels.length
+  );
+  return labels[index] ?? labels[0] ?? '';
 }
 
 function offsetMarkers(
@@ -3181,7 +3233,10 @@ interface ForestCarvingDescriptor {
     | 'symbol'
     | 'religious'
     | 'guild'
-    | 'warning';
+    | 'warning'
+    | 'quest-hint'
+    | 'treasure-map-clue'
+    | 'historical-inscription';
   text: string;
 }
 
@@ -3267,6 +3322,55 @@ const CARVING_LETTER_G = [
   { x: 0.4, y: 0 },
   { x: 0.4, y: 0.7 },
   { x: 0, y: 0.7 },
+] as const satisfies readonly ForestMarkerPoint[];
+
+const CARVING_LETTER_D = [
+  { x: -0.6, y: 1.8 },
+  { x: -0.6, y: 0.9 },
+  { x: -0.6, y: 0 },
+  { x: 0.1, y: 1.8 },
+  { x: 0.6, y: 1.4 },
+  { x: 0.7, y: 0.9 },
+  { x: 0.6, y: 0.4 },
+  { x: 0.1, y: 0 },
+] as const satisfies readonly ForestMarkerPoint[];
+
+const CARVING_LETTER_E = [
+  { x: 0.6, y: 1.8 },
+  { x: -0.6, y: 1.8 },
+  { x: -0.6, y: 0.9 },
+  { x: -0.6, y: 0 },
+  { x: 0.6, y: 0 },
+  { x: -0.4, y: 0.9 },
+  { x: 0.3, y: 0.9 },
+] as const satisfies readonly ForestMarkerPoint[];
+
+const CARVING_LETTER_N = [
+  { x: -0.6, y: 0 },
+  { x: -0.6, y: 0.9 },
+  { x: -0.6, y: 1.8 },
+  { x: 0, y: 0.9 },
+  { x: 0.6, y: 1.8 },
+  { x: 0.6, y: 0.9 },
+  { x: 0.6, y: 0 },
+] as const satisfies readonly ForestMarkerPoint[];
+
+const CARVING_LETTER_S = [
+  { x: 0.5, y: 1.8 },
+  { x: -0.4, y: 1.8 },
+  { x: -0.7, y: 1.3 },
+  { x: 0.3, y: 0.9 },
+  { x: 0.6, y: 0.4 },
+  { x: -0.3, y: 0 },
+  { x: -0.7, y: 0 },
+] as const satisfies readonly ForestMarkerPoint[];
+
+const CARVING_LETTER_W = [
+  { x: -0.8, y: 1.8 },
+  { x: -0.4, y: 0 },
+  { x: 0, y: 1.1 },
+  { x: 0.4, y: 0 },
+  { x: 0.8, y: 1.8 },
 ] as const satisfies readonly ForestMarkerPoint[];
 
 const CARVING_DIGIT_0 = [
@@ -3399,11 +3503,16 @@ const CARVING_WARNING = [
 ] as const satisfies readonly ForestMarkerPoint[];
 
 const FOREST_CARVING_GLYPHS = {
+  D: CARVING_LETTER_D,
+  E: CARVING_LETTER_E,
   L: CARVING_LETTER_L,
   M: CARVING_LETTER_M,
   F: CARVING_LETTER_F,
   G: CARVING_LETTER_G,
+  N: CARVING_LETTER_N,
   O: CARVING_DIGIT_0,
+  S: CARVING_LETTER_S,
+  W: CARVING_LETTER_W,
   '+': CARVING_PLUS,
   '*': CARVING_HEART,
   '0': CARVING_DIGIT_0,
