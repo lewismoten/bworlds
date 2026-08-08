@@ -939,7 +939,7 @@ function render() {
   }
 
   drawTimeWheel(timeWheelCanvas, displayCycle);
-  celestialPreview.render(displayCycle, environment, state.player.facing);
+  celestialPreview.render(displayCycle, environment, state.player.facing, generator);
   drawCompassDial(
     compassDialCanvas,
     updateDisplayedCompass(state.player.facing)

@@ -103,3 +103,5 @@ add a outer globe of stars in the sky that appear at night with procedurally gen
 - [x] The compass can have a compass dial that can be modified to help set an orientation to move in.
 - [x] The black dividers for day/night dawn/dusk are not lined up with the dawn/dusk dial
 - [ ] The sun does not appear to have an orbit around the planet in the model
+- [x] The planet in the model does not appear to have contenents. If contentents are not procedurally generated first, add that in as the first thing that is procedurally generated, so that a low-resolution shap can be put onto the planet as a texture map.
+- [ ] The black dividers for sunrise/sunset are still not at the proper rotation on the day/night wheel.

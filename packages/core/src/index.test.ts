@@ -13,6 +13,7 @@ import {
   getCelestialEventsForDay,
   getCometOrbitProgress,
   getDaylightCycleState,
+  getMilkyWayBandSamples,
   getOrreryBodies,
   getPlanetaryOrbitProgress,
   getWorldDaylightCycle,
@@ -295,6 +296,22 @@ describe('core utilities', () => {
     );
     expect(northern.milkyWay.inclination).not.toBe(
       equatorial.milkyWay.inclination
+    );
+  });
+
+  it('builds shared Milky Way band samples for ribbon rendering', () => {
+    const cycle = getDaylightCycleState(DEFAULT_DAY_LENGTH_MS * 5, {
+      observerLatitudeDegrees: 22,
+      yearLengthDays: DEFAULT_YEAR_LENGTH_DAYS,
+    });
+    const samples = getMilkyWayBandSamples(cycle.milkyWay, cycle.yearProgress, 24);
+
+    expect(samples).toHaveLength(25);
+    expect(samples[0]?.azimuth).toBeCloseTo(cycle.milkyWay.azimuthOffset, 6);
+    expect(samples.every((sample) => sample.innerPhi < sample.centerPhi)).toBe(true);
+    expect(samples.every((sample) => sample.outerPhi > sample.centerPhi)).toBe(true);
+    expect(samples.every((sample) => sample.opacity >= 0 && sample.opacity <= 1)).toBe(
+      true
     );
   });
 

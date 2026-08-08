@@ -7,6 +7,7 @@ import {
 } from '@bworlds/atlas';
 import {
   getDaylightCycleState,
+  getMilkyWayBandSamples,
   hash2D,
   smoothstep,
 } from '@bworlds/core';
@@ -1106,22 +1107,55 @@ function syncMilkyWayBelt(root, cycle) {
   if (!belt) {
     return;
   }
-  const points = [];
-  for (let index = 0; index <= 72; index += 1) {
-    const azimuth = (index / 72) * Math.PI * 2 + belt.azimuthOffset;
-    const phi =
-      belt.inclination +
-      Math.sin(azimuth * 2.4 + cycle.yearProgress * Math.PI * 2) * belt.width;
-    points.push(createSkyPosition(azimuth, phi, SKY_RADIUS - 5.5));
+  const samples = getMilkyWayBandSamples(belt, cycle.yearProgress, 72);
+  const innerPoints = samples.map((sample) =>
+    createSkyPosition(sample.azimuth, sample.innerPhi, SKY_RADIUS - 5.7)
+  );
+  const outerPoints = samples.map((sample) =>
+    createSkyPosition(sample.azimuth, sample.outerPhi, SKY_RADIUS - 5.4)
+  );
+  const positions: number[] = [];
+  const indices: number[] = [];
+
+  samples.forEach((sample, index) => {
+    const inner = innerPoints[index];
+    const outer = outerPoints[index];
+    positions.push(inner.x, inner.y, inner.z, outer.x, outer.y, outer.z);
+  });
+
+  for (let index = 0; index < samples.length - 1; index += 1) {
+    const start = index * 2;
+    indices.push(start, start + 1, start + 2, start + 1, start + 3, start + 2);
   }
 
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  geometry.setIndex(indices);
   root.add(
-    new THREE.LineLoop(
-      new THREE.BufferGeometry().setFromPoints(points),
-      new THREE.LineBasicMaterial({
+    new THREE.Mesh(
+      geometry,
+      new THREE.MeshBasicMaterial({
         color: '#7f9fca',
         transparent: true,
-        opacity: belt.opacity,
+        opacity: belt.opacity * 0.32,
+        side: THREE.DoubleSide,
+        depthWrite: false,
+        depthTest: false,
+        blending: THREE.AdditiveBlending,
+      })
+    )
+  );
+  root.add(
+    new THREE.LineLoop(
+      new THREE.BufferGeometry().setFromPoints(
+        samples.map((sample) =>
+          createSkyPosition(sample.azimuth, sample.centerPhi, SKY_RADIUS - 5.5)
+        )
+      ),
+      new THREE.LineBasicMaterial({
+        color: '#9fbce0',
+        transparent: true,
+        opacity: belt.opacity * 0.4,
         depthTest: false,
       })
     )

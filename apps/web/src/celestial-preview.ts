@@ -1,8 +1,39 @@
 import * as THREE from 'three';
 import type { WorldEnvironmentLike } from '@bworlds/plugin-api';
-import type { OrreryBodyLike, getDaylightCycleState } from '@bworlds/core';
+import {
+  getMilkyWayBandSamples,
+  type OrreryBodyLike,
+  type getDaylightCycleState,
+} from '@bworlds/core';
 
 type DaylightCycleLike = ReturnType<typeof getDaylightCycleState>;
+type OverworldSamplerLike = {
+  sampleOverworld(x: number, y: number): {
+    kind?: string;
+  };
+};
+
+const PLANET_SURFACE_COLORS: Record<string, string> = {
+  ocean: '#1a3d68',
+  water: '#1a3d68',
+  river: '#3f78a8',
+  shallows: '#2c5f8f',
+  coast: '#d6c08b',
+  plains: '#6d9954',
+  grassland: '#6d9954',
+  forest: '#3e6a43',
+  jungle: '#2f6b47',
+  desert: '#b69258',
+  dunes: '#c4a066',
+  mountain: '#8d8579',
+  peak: '#d9d7d2',
+  snow: '#eef3f8',
+  tundra: '#93a88b',
+  swamp: '#516b47',
+  ruins: '#867766',
+  road: '#8f7f6a',
+  town: '#c9b48a',
+};
 
 export function createCelestialPreviewRenderer(host: HTMLElement | null) {
   if (!host) {
@@ -53,6 +84,9 @@ export function createCelestialPreviewRenderer(host: HTMLElement | null) {
     })
   );
   root.add(world);
+  const planetTextureState = {
+    lastSampler: null as OverworldSamplerLike | null,
+  };
 
   const worldGlow = new THREE.Mesh(
     new THREE.SphereGeometry(3.15, 28, 28),
@@ -161,7 +195,8 @@ export function createCelestialPreviewRenderer(host: HTMLElement | null) {
   function render(
     cycle: DaylightCycleLike,
     environment: WorldEnvironmentLike,
-    facingAngle = 0
+    facingAngle = 0,
+    overworldSampler: OverworldSamplerLike | null = null
   ) {
     root.rotation.y = facingAngle + Math.PI + rotationState.yaw;
     root.rotation.z =
@@ -169,6 +204,7 @@ export function createCelestialPreviewRenderer(host: HTMLElement | null) {
       rotationState.pitch;
     world.rotation.y += 0.002;
     world.rotation.z = cycle.solarDeclination * 0.4;
+    syncPreviewPlanetTexture(world, overworldSampler, planetTextureState);
     facingArrow.rotation.z = -facingAngle;
 
     updateBodyPosition(
@@ -217,6 +253,63 @@ export function createCelestialPreviewRenderer(host: HTMLElement | null) {
     resize,
     render,
   };
+}
+
+export function getPlanetSurfaceColor(kind: string | undefined) {
+  if (!kind) {
+    return '#1a3d68';
+  }
+  return PLANET_SURFACE_COLORS[kind] ?? '#6b7c59';
+}
+
+export function buildPlanetTextureGrid(
+  sampleOverworld: OverworldSamplerLike['sampleOverworld'],
+  width = 64,
+  height = 32
+) {
+  return Array.from({ length: height }, (_, y) =>
+    Array.from({ length: width }, (_, x) => {
+      const longitude = x / width;
+      const latitude = y / height;
+      const worldX = Math.round((longitude - 0.5) * 256);
+      const worldY = Math.round((0.5 - latitude) * 128);
+      return getPlanetSurfaceColor(sampleOverworld(worldX, worldY)?.kind);
+    })
+  );
+}
+
+function syncPreviewPlanetTexture(
+  world: THREE.Mesh,
+  overworldSampler: OverworldSamplerLike | null,
+  textureState: {
+    lastSampler: OverworldSamplerLike | null;
+  }
+) {
+  const material = world.material as THREE.MeshStandardMaterial;
+  if (!overworldSampler || overworldSampler === textureState.lastSampler) {
+    return;
+  }
+  const canvas = document.createElement('canvas');
+  canvas.width = 128;
+  canvas.height = 64;
+  const context = canvas.getContext('2d');
+  if (!context) {
+    return;
+  }
+  const grid = buildPlanetTextureGrid(overworldSampler.sampleOverworld, canvas.width, canvas.height);
+  grid.forEach((row, y) => {
+    row.forEach((color, x) => {
+      context.fillStyle = color;
+      context.fillRect(x, y, 1, 1);
+    });
+  });
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.magFilter = THREE.NearestFilter;
+  texture.minFilter = THREE.LinearFilter;
+  material.map = texture;
+  material.needsUpdate = true;
+  textureState.lastSampler = overworldSampler;
 }
 
 function updateBodyPosition(
@@ -356,23 +449,52 @@ function syncMilkyWayBelt(root: THREE.Group, cycle: DaylightCycleLike) {
   if (!belt) {
     return;
   }
-  const points: THREE.Vector3[] = [];
-  for (let index = 0; index <= 60; index += 1) {
-    const azimuth = (index / 60) * Math.PI * 2 + belt.azimuthOffset;
-    const latitudeWave =
-      Math.sin(azimuth * 2 + cycle.yearProgress * Math.PI * 2) * belt.width;
-    points.push(
-      createPreviewPoint(azimuth, belt.inclination + latitudeWave, 11.8)
-    );
+  const samples = getMilkyWayBandSamples(belt, cycle.yearProgress, 60);
+  const innerPoints = samples.map((sample) =>
+    createPreviewPoint(sample.azimuth, sample.innerPhi, 11.75)
+  );
+  const outerPoints = samples.map((sample) =>
+    createPreviewPoint(sample.azimuth, sample.outerPhi, 11.95)
+  );
+  const positions: number[] = [];
+  const indices: number[] = [];
+
+  samples.forEach((_, index) => {
+    const inner = innerPoints[index];
+    const outer = outerPoints[index];
+    positions.push(inner.x, inner.y, inner.z, outer.x, outer.y, outer.z);
+  });
+
+  for (let index = 0; index < samples.length - 1; index += 1) {
+    const start = index * 2;
+    indices.push(start, start + 1, start + 2, start + 1, start + 3, start + 2);
   }
 
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  geometry.setIndex(indices);
   root.add(
-    new THREE.LineLoop(
-      new THREE.BufferGeometry().setFromPoints(points),
-      new THREE.LineBasicMaterial({
+    new THREE.Mesh(
+      geometry,
+      new THREE.MeshBasicMaterial({
         color: '#7da0d5',
         transparent: true,
-        opacity: belt.opacity,
+        opacity: belt.opacity * 0.4,
+        side: THREE.DoubleSide,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending,
+      })
+    )
+  );
+  root.add(
+    new THREE.LineLoop(
+      new THREE.BufferGeometry().setFromPoints(
+        samples.map((sample) => createPreviewPoint(sample.azimuth, sample.centerPhi, 11.85))
+      ),
+      new THREE.LineBasicMaterial({
+        color: '#b7d1f0',
+        transparent: true,
+        opacity: belt.opacity * 0.34,
       })
     )
   );

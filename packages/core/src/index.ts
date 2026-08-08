@@ -243,6 +243,14 @@ export interface MilkyWayBeltLike {
   opacity: number;
 }
 
+export interface MilkyWayBandSampleLike {
+  azimuth: number;
+  centerPhi: number;
+  innerPhi: number;
+  outerPhi: number;
+  opacity: number;
+}
+
 export interface OrreryBodyLike {
   id: string;
   type: 'sun' | 'moon' | 'planet' | 'comet';
@@ -971,6 +979,30 @@ export function getMilkyWayBeltState({
     width: 0.22 + Math.abs(Math.sin(latitudeRadians)) * 0.06,
     opacity: 0.03 + (starsOpacity ?? 0) * 0.16,
   };
+}
+
+export function getMilkyWayBandSamples(
+  belt: MilkyWayBeltLike,
+  yearProgress: number,
+  sampleCount = 72
+): MilkyWayBandSampleLike[] {
+  const resolvedSampleCount = Math.max(8, Math.floor(sampleCount));
+  const halfBandWidth = belt.width * 0.7;
+  return Array.from({ length: resolvedSampleCount + 1 }, (_, index) => {
+    const progress = index / resolvedSampleCount;
+    const azimuth = progress * Math.PI * 2 + belt.azimuthOffset;
+    const latitudeWave =
+      Math.sin(azimuth * 2.4 + yearProgress * Math.PI * 2) * belt.width;
+    const centerPhi = belt.inclination + latitudeWave;
+    const edgeFade = Math.cos(progress * Math.PI * 2 - Math.PI / 2) * 0.08;
+    return {
+      azimuth,
+      centerPhi,
+      innerPhi: centerPhi - halfBandWidth,
+      outerPhi: centerPhi + halfBandWidth,
+      opacity: clamp(belt.opacity * (0.84 + edgeFade), 0, 1),
+    };
+  });
 }
 
 export function getOrreryBodies({
