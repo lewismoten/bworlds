@@ -1,11 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import {
+  buildSextantMarkup,
   buildTextViewportMarkup,
   buildEventSummaryMarkup,
   buildStatusMarkup,
   buildViewportHudMarkup,
   getDetailLabels,
   getEventSummarySignature,
+  getSextantSignature,
   getStatusSignature,
   getTextViewportSignature,
   getViewportHudSignature,
@@ -104,6 +106,25 @@ describe('ui signature helpers', () => {
         details,
       })
     ).toContain('event-summary-chip-aurora');
+  });
+
+  it('builds stable signatures and markup for sextant coordinates', () => {
+    const sextant = {
+      latitude: 24.12345,
+      longitude: -80.98765,
+      gridX: 128,
+      gridY: -64,
+    };
+
+    expect(getSextantSignature(sextant)).toBe(
+      getSextantSignature({ ...sextant })
+    );
+    expect(
+      getSextantSignature({ ...sextant, gridX: sextant.gridX + 1 })
+    ).not.toBe(getSextantSignature(sextant));
+    expect(buildSextantMarkup(sextant)).toContain('GPS');
+    expect(buildSextantMarkup(sextant)).toContain('World');
+    expect(buildSextantMarkup(sextant)).toContain('24.1234');
   });
 
   it('builds stable signatures and markup for ascii text viewport content', () => {

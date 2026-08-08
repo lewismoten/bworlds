@@ -140,6 +140,7 @@ export function parseSavedSession(raw: string | null): SavedSession | null {
       parsed.inspectorTab !== 'model' &&
       parsed.inspectorTab !== 'events' &&
       parsed.inspectorTab !== 'compass' &&
+      parsed.inspectorTab !== 'sextant' &&
       parsed.inspectorTab !== 'debug'
     ) {
       return null;

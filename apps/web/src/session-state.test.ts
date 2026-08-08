@@ -121,6 +121,20 @@ describe('session state', () => {
         JSON.stringify({
           player: { x: 0, y: 0, facing: 0 },
           stack: [{ id: 'overworld', depth: 0 }],
+          inspectorTab: 'sextant',
+        })
+      )
+    ).toEqual(
+      expect.objectContaining({
+        inspectorTab: 'sextant',
+      })
+    );
+
+    expect(
+      parseSavedSession(
+        JSON.stringify({
+          player: { x: 0, y: 0, facing: 0 },
+          stack: [{ id: 'overworld', depth: 0 }],
           inspectorTab: 'invalid',
         })
       )

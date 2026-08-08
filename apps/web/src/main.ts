@@ -85,12 +85,14 @@ import {
 } from './hmr-notice.ts';
 import { restore3dViewportKeyboardFocus } from './viewport-focus.ts';
 import {
+  buildSextantMarkup,
   buildEventSummaryMarkup,
   buildStatusMarkup,
   buildTextViewportMarkup,
   buildViewportHudMarkup,
   getDetailLabels,
   getEventSummarySignature,
+  getSextantSignature,
   getStatusSignature,
   getTextViewportSignature,
   getViewportHudSignature,
@@ -286,6 +288,16 @@ root.innerHTML = `
                 Compass
               </button>
               <button
+                id="tab-sextant"
+                class="inspector-tab"
+                type="button"
+                role="tab"
+                aria-selected="false"
+                aria-controls="panel-sextant"
+              >
+                Sextant
+              </button>
+              <button
                 id="tab-debug"
                 class="inspector-tab"
                 type="button"
@@ -420,6 +432,18 @@ root.innerHTML = `
               <button id="face-south" type="button">South</button>
               <button id="face-west" type="button">West</button>
             </div>
+          </section>
+          <section
+            id="panel-sextant"
+            class="inspector-panel is-hidden"
+            role="tabpanel"
+            aria-hidden="true"
+            hidden
+          >
+            <dl id="sextant-summary" class="debug-summary"></dl>
+            <p class="inspector-note">
+              GPS and world coordinates stay in sync with the current player position.
+            </p>
           </section>
           <section
             id="panel-debug"
@@ -578,6 +602,8 @@ const modelPreviewSolarCard =
   document.querySelector<HTMLElement>('#model-preview-card-solar');
 const eventSummary =
   document.querySelector<HTMLElement>('#event-summary');
+const sextantSummary =
+  document.querySelector<HTMLElement>('#sextant-summary');
 const debugSummary =
   document.querySelector<HTMLElement>('#debug-summary');
 const debugSeedInput =
@@ -605,6 +631,7 @@ const inspectorPanels = {
   model: document.querySelector<HTMLElement>('#panel-model'),
   events: document.querySelector<HTMLElement>('#panel-events'),
   compass: document.querySelector<HTMLElement>('#panel-compass'),
+  sextant: document.querySelector<HTMLElement>('#panel-sextant'),
   debug: document.querySelector<HTMLElement>('#panel-debug'),
 };
 let lastSavedSnapshot = '';
@@ -735,6 +762,7 @@ const uiRenderState = {
   lastViewportHudSignature: '',
   lastEventSummarySignature: '',
   lastTextViewportSignature: '',
+  lastSextantSignature: '',
   lastDebugSignature: '',
 };
 const hmrNoticeState = {
@@ -1494,7 +1522,7 @@ function setInspectorTab(tabId: string | undefined): void {
   Object.entries(inspectorPanels).forEach(([panelId, panel]) => {
     const isActive = isInspectorSectionVisible(
       activeInspectorTab,
-      panelId as 'timekeeper' | 'model' | 'events' | 'compass'
+      panelId as 'timekeeper' | 'model' | 'events' | 'compass' | 'sextant' | 'debug'
     );
     panel?.classList.toggle('is-hidden', !isActive);
     panel?.setAttribute('aria-hidden', String(!isActive));
@@ -1802,10 +1830,27 @@ function render(): FrameLoopActivityLike {
     )
   );
   updateStatus(environment, displayCycle);
+  const gps = toGps(state.player.x, state.player.y);
+  const gridX = snapWorldCoordinate(state.player.x);
+  const gridY = snapWorldCoordinate(state.player.y);
+  if (sextantSummary) {
+    const sextantSignature = getSextantSignature({
+      latitude: gps.latitude,
+      longitude: gps.longitude,
+      gridX,
+      gridY,
+    });
+    if (sextantSignature !== uiRenderState.lastSextantSignature) {
+      sextantSummary.innerHTML = buildSextantMarkup({
+        latitude: gps.latitude,
+        longitude: gps.longitude,
+        gridX,
+        gridY,
+      });
+      uiRenderState.lastSextantSignature = sextantSignature;
+    }
+  }
   if (debugSummary) {
-    const gps = toGps(state.player.x, state.player.y);
-    const gridX = snapWorldCoordinate(state.player.x);
-    const gridY = snapWorldCoordinate(state.player.y);
     const rendererStats = renderer3d.getStats();
     const performanceStats = performance as PerformanceWithMemory;
     const debugSnapshot = {

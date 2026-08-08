@@ -6,7 +6,13 @@ type DaylightCycleLike = {
 };
 
 export type TimePreset = 'dawn' | 'noon' | 'dusk' | 'midnight';
-export type InspectorTab = 'timekeeper' | 'model' | 'events' | 'compass' | 'debug';
+export type InspectorTab =
+  | 'timekeeper'
+  | 'model'
+  | 'events'
+  | 'compass'
+  | 'sextant'
+  | 'debug';
 export type InspectorSection = InspectorTab | 'viewport-compass';
 export type ModelPreviewMode = 'world' | 'solar-system' | 'split';
 export type TimekeeperDisplayMode =
@@ -66,6 +72,7 @@ export function getNextInspectorTab(tabId: string | undefined): InspectorTab {
     tabId === 'model' ||
     tabId === 'events' ||
     tabId === 'compass' ||
+    tabId === 'sextant' ||
     tabId === 'debug'
   ) {
     return tabId;

@@ -36,6 +36,7 @@ describe('time controls', () => {
     expect(getNextInspectorTab('debug')).toBe('debug');
     expect(getNextInspectorTab('events')).toBe('events');
     expect(getNextInspectorTab('model')).toBe('model');
+    expect(getNextInspectorTab('sextant')).toBe('sextant');
     expect(getNextInspectorTab('timekeeper')).toBe('timekeeper');
     expect(getNextInspectorTab('unknown')).toBe('timekeeper');
   });
@@ -97,6 +98,7 @@ describe('time controls', () => {
     expect(isInspectorSectionVisible('timekeeper', 'compass')).toBe(false);
     expect(isInspectorSectionVisible('timekeeper', 'viewport-compass')).toBe(false);
     expect(isInspectorSectionVisible('compass', 'viewport-compass')).toBe(true);
+    expect(isInspectorSectionVisible('sextant', 'sextant')).toBe(true);
     expect(isInspectorSectionVisible('debug', 'debug')).toBe(true);
   });
 

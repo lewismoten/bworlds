@@ -53,6 +53,13 @@ type EventSummarySignatureOptions = {
   detailLabels: string[];
 };
 
+type SextantSignatureOptions = {
+  latitude: number;
+  longitude: number;
+  gridX: number;
+  gridY: number;
+};
+
 export function getStatusSignature(options: StatusSignatureOptions): string {
   return [
     options.viewMode,
@@ -99,6 +106,15 @@ export function getEventSummarySignature(
     options.modeLabel,
     options.activeEventsLabel,
     ...options.detailLabels,
+  ].join('|');
+}
+
+export function getSextantSignature(options: SextantSignatureOptions): string {
+  return [
+    options.latitude.toFixed(4),
+    options.longitude.toFixed(4),
+    options.gridX,
+    options.gridY,
   ].join('|');
 }
 
@@ -202,5 +218,12 @@ export function buildEventSummaryMarkup(
           )
           .join('')}
       </div>
+    `;
+}
+
+export function buildSextantMarkup(options: SextantSignatureOptions): string {
+  return `
+      <div><dt>GPS</dt><dd>${options.latitude.toFixed(4)}, ${options.longitude.toFixed(4)}</dd></div>
+      <div><dt>World</dt><dd>${options.gridX}, ${options.gridY}</dd></div>
     `;
 }
