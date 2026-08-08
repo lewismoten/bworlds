@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
+  clampCameraPitch,
+  DEFAULT_CAMERA_PITCH,
   getFacingVisibilityBucket,
   getSkyAuroraSignature,
   getSkyConstellationSignature,
@@ -13,6 +15,12 @@ import {
 type SkySignatureCycle = Parameters<typeof getSkyConstellationSignature>[0];
 
 describe('render3d visibility helpers', () => {
+  it('clamps camera pitch to a playable range', () => {
+    expect(clampCameraPitch(DEFAULT_CAMERA_PITCH)).toBe(DEFAULT_CAMERA_PITCH);
+    expect(clampCameraPitch(-5)).toBe(-1.1);
+    expect(clampCameraPitch(5)).toBe(0.85);
+  });
+
   it('keeps nearby tiles visible regardless of facing', () => {
     expect(
       shouldRenderWorldTile({

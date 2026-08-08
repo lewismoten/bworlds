@@ -24,6 +24,7 @@ describe('session state', () => {
       modelPreviewMode: 'split',
       celestialEventMode: 'aurora',
       compassHeadingAngle: -Math.PI / 2,
+      cameraPitch: -0.22,
       playerPlacedPois: [
         {
           x: 4,
@@ -46,6 +47,7 @@ describe('session state', () => {
         frozenWorldTimeMs: 123456,
         inspectorTab: 'compass',
         compassHeadingAngle: -Math.PI / 2,
+        cameraPitch: -0.22,
         playerPlacedPois: [
           expect.objectContaining({
             kind: 'town',
@@ -127,6 +129,16 @@ describe('session state', () => {
         JSON.stringify({
           player: { x: 0, y: 0, facing: 0 },
           stack: [{ id: 'overworld', depth: 0 }],
+          cameraPitch: 'up',
+        })
+      )
+    ).toBeNull();
+
+    expect(
+      parseSavedSession(
+        JSON.stringify({
+          player: { x: 0, y: 0, facing: 0 },
+          stack: [{ id: 'overworld', depth: 0 }],
           timeFrozen: 'yes',
         })
       )
@@ -175,6 +187,7 @@ describe('session state', () => {
       modelPreviewMode: 'world',
       celestialEventMode: 'auto',
       compassHeadingAngle: null,
+      cameraPitch: -0.08,
       playerPlacedPois: [],
     });
 

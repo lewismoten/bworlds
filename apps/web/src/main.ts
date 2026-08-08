@@ -14,7 +14,7 @@ import {
   toGps,
 } from '@bworlds/core';
 import { render2D } from '@bworlds/render2d';
-import { create3DRenderer } from '@bworlds/render3d';
+import { clampCameraPitch, create3DRenderer, DEFAULT_CAMERA_PITCH } from '@bworlds/render3d';
 import {
   buildPlayerPoi,
   listPlayerPlacedPois,
@@ -59,6 +59,7 @@ import {
   getFrameLoopActivity,
   shouldContinueFrameLoop,
 } from './frame-loop.ts';
+import { getMouseLookAngles } from './mouse-look.ts';
 import {
   getHmrNoticeText,
   getHmrNoticeVisibleUntil,
@@ -399,6 +400,7 @@ root.innerHTML = `
 `;
 
 const viewport2d = document.querySelector<HTMLCanvasElement>('#viewport-2d');
+const viewportStage = document.querySelector<HTMLElement>('#viewport-stage');
 const viewport3d = document.querySelector<HTMLElement>('#viewport-3d');
 const viewportHud = document.querySelector<HTMLElement>('#viewport-hud');
 const viewportTimekeeperMini =
@@ -585,6 +587,18 @@ const compassDialPointerState = {
   startHeadingAngle: null as number | null,
   startPointerAngle: 0,
   draggedHeading: false,
+};
+const mouseLookState = {
+  pitch:
+    typeof savedSession?.cameraPitch === 'number'
+      ? clampCameraPitch(savedSession.cameraPitch)
+      : DEFAULT_CAMERA_PITCH,
+  pointerId: -1,
+  dragging: false,
+  startPointerX: 0,
+  startPointerY: 0,
+  startFacing: 0,
+  startPitch: DEFAULT_CAMERA_PITCH,
 };
 const MOON_PHASE_NAMES = [
   'New Moon',
@@ -948,12 +962,18 @@ function setCelestialEventMode(modeId: string | undefined): void {
 }
 
 function toggleView(): void {
+  if (state.viewMode === '3d' && mouseLookState.dragging) {
+    mouseLookState.dragging = false;
+    mouseLookState.pointerId = -1;
+    viewportStage?.classList.remove('is-mouse-looking');
+  }
   state.viewMode = state.viewMode === '2d' ? '3d' : '2d';
   toggleButton.textContent =
     state.viewMode === '2d' ? 'Switch to 3D' : 'Switch to 2D';
   viewport2d.classList.toggle('is-hidden', state.viewMode !== '2d');
   viewport3d.classList.toggle('is-hidden', state.viewMode !== '3d');
   saveSession();
+  requestRender();
 }
 
 function updateContentPackLabel(): void {
@@ -1524,6 +1544,7 @@ function render(): FrameLoopActivityLike {
       jumpHeight: motion.jumpHeight,
       timeMs,
       environment,
+      cameraPitch: mouseLookState.pitch,
     });
   }
 
@@ -2150,6 +2171,61 @@ root.querySelectorAll<HTMLButtonElement>('[data-time-preset]').forEach((button) 
   });
 });
 
+viewport3d?.addEventListener('pointerdown', (event) => {
+  if (state.viewMode !== '3d' || event.button !== 0) {
+    return;
+  }
+  mouseLookState.dragging = true;
+  mouseLookState.pointerId = event.pointerId;
+  mouseLookState.startPointerX = event.clientX;
+  mouseLookState.startPointerY = event.clientY;
+  mouseLookState.startFacing = state.player.facing;
+  mouseLookState.startPitch = mouseLookState.pitch;
+  viewport3d.setPointerCapture(event.pointerId);
+  viewportStage?.classList.add('is-mouse-looking');
+  requestRender();
+});
+
+viewport3d?.addEventListener('pointermove', (event) => {
+  if (
+    state.viewMode !== '3d' ||
+    !mouseLookState.dragging ||
+    event.pointerId !== mouseLookState.pointerId
+  ) {
+    return;
+  }
+  const nextLook = getMouseLookAngles(
+    {
+      pointerX: mouseLookState.startPointerX,
+      pointerY: mouseLookState.startPointerY,
+      facing: mouseLookState.startFacing,
+      pitch: mouseLookState.startPitch,
+    },
+    event.clientX,
+    event.clientY
+  );
+  state.player.facing = nextLook.facing;
+  mouseLookState.pitch = nextLook.pitch;
+  requestRender();
+});
+
+const releaseMouseLook = (event: PointerEvent) => {
+  if (event.pointerId !== mouseLookState.pointerId) {
+    return;
+  }
+  mouseLookState.dragging = false;
+  mouseLookState.pointerId = -1;
+  if (viewport3d.hasPointerCapture(event.pointerId)) {
+    viewport3d.releasePointerCapture(event.pointerId);
+  }
+  viewportStage?.classList.remove('is-mouse-looking');
+  saveSession();
+  requestRender();
+};
+
+viewport3d?.addEventListener('pointerup', releaseMouseLook);
+viewport3d?.addEventListener('pointercancel', releaseMouseLook);
+
 resizeCanvas();
 viewport2d.classList.toggle('is-hidden', state.viewMode !== '2d');
 viewport3d.classList.toggle('is-hidden', state.viewMode !== '3d');
@@ -2183,6 +2259,7 @@ function saveSession(): void {
       modelPreviewMode: activeModelPreviewMode,
       celestialEventMode: celestialEventModeState.mode,
       compassHeadingAngle: compassHeadingState.angle,
+      cameraPitch: mouseLookState.pitch,
       playerPlacedPois: getSavedPlayerPlacedPois(),
     });
     if (snapshot === lastSavedSnapshot) return;

@@ -43,6 +43,7 @@ type Render3DOptions = {
   jumpHeight?: number;
   timeMs?: number;
   environment?: WorldEnvironmentLike;
+  cameraPitch?: number;
 };
 type Render3DController = {
   canOccupy(state: Render3DState, nextX: number, nextY: number): boolean;
@@ -81,6 +82,9 @@ const SKY_SUNSET_COLOR = '#f08b64';
 const SKY_NIGHT_COLOR = '#06111f';
 const FOG_DAY_COLOR = '#9ed8ff';
 const FOG_NIGHT_COLOR = '#0a1524';
+export const DEFAULT_CAMERA_PITCH = -0.08;
+export const MIN_CAMERA_PITCH = -1.1;
+export const MAX_CAMERA_PITCH = 0.85;
 const FALLBACK_TILE_DEFINITION = {
   name: 'Unknown Tile',
   color: '#64748b',
@@ -348,7 +352,9 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       state.player.y * TILE_SIZE
     );
     camera.rotation.y = -state.player.facing - Math.PI / 2;
-    camera.rotation.x = -0.08;
+    camera.rotation.x = clampCameraPitch(
+      options.cameraPitch ?? DEFAULT_CAMERA_PITCH
+    );
 
     const environment = options.environment ?? {};
     const cycle = updateSkyAndLights(
@@ -1028,6 +1034,10 @@ export function getFacingVisibilityBucket(
   const normalized =
     ((facingAngle % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
   return Math.floor((normalized / (Math.PI * 2)) * bucketCount);
+}
+
+export function clampCameraPitch(pitch: number): number {
+  return Math.min(MAX_CAMERA_PITCH, Math.max(MIN_CAMERA_PITCH, pitch));
 }
 
 export function syncDynamicTileNodes(

@@ -165,6 +165,15 @@ button:hover {
   background: #02060b;
 }
 
+.viewport-stage.is-mouse-looking,
+.viewport-3d {
+  cursor: grab;
+}
+
+.viewport-stage.is-mouse-looking {
+  cursor: grabbing;
+}
+
 .viewport-hud {
   position: absolute;
   top: 1rem;
@@ -268,6 +277,7 @@ button:hover {
 .viewport-3d {
   position: absolute;
   inset: 0;
+  touch-action: none;
 }
 
 #viewport-2d {

@@ -45,6 +45,7 @@ export type SavedSession = {
   modelPreviewMode?: ModelPreviewMode;
   celestialEventMode?: CelestialEventMode;
   compassHeadingAngle?: number | null;
+  cameraPitch?: number;
   playerPlacedPois?: PlayerPlacedPoiLike[];
 };
 
@@ -68,6 +69,7 @@ export type SessionSnapshot = {
   modelPreviewMode: ModelPreviewMode;
   celestialEventMode: CelestialEventMode;
   compassHeadingAngle: number | null;
+  cameraPitch: number;
   playerPlacedPois: PlayerPlacedPoiLike[];
 };
 
@@ -172,6 +174,12 @@ export function parseSavedSession(raw: string | null): SavedSession | null {
       typeof parsed?.compassHeadingAngle !== 'undefined' &&
       parsed.compassHeadingAngle !== null &&
       typeof parsed.compassHeadingAngle !== 'number'
+    ) {
+      return null;
+    }
+    if (
+      typeof parsed?.cameraPitch !== 'undefined' &&
+      typeof parsed.cameraPitch !== 'number'
     ) {
       return null;
     }
