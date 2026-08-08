@@ -46,6 +46,7 @@ type Render3DOptions = {
   environment?: WorldEnvironmentLike;
   cameraPitch?: number;
   cameraBobOffset?: number;
+  visibilityRadius?: number;
 };
 type Render3DController = {
   canOccupy(state: Render3DState, nextX: number, nextY: number): boolean;
@@ -182,6 +183,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
   let lastCenterKey = '';
   let lastContextKey = '';
   let lastFacingBucket = '';
+  let lastChunkRadius = CHUNK_RADIUS;
   let lastSkyConstellationSignature = '';
   let lastSkyEventSignature = '';
   let lastSkyMilkyWaySignature = '';
@@ -269,7 +271,10 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     };
   }
 
-  function syncVisibleWorld(state) {
+  function syncVisibleWorld(
+    state,
+    chunkRadius = CHUNK_RADIUS
+  ) {
     const context = state.getCurrentContext();
     const centerX = Math.round(state.player.x);
     const centerY = Math.round(state.player.y);
@@ -279,7 +284,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       playerTileX: centerX,
       playerTileY: centerY,
       facingAngle: state.player.facing,
-      chunkRadius: CHUNK_RADIUS,
+      chunkRadius,
     });
 
     for (const entry of nextQueue) {
@@ -304,6 +309,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     lastCenterKey = `${centerX}:${centerY}`;
     lastContextKey = context.id;
     lastFacingBucket = String(facingBucket);
+    lastChunkRadius = chunkRadius;
   }
 
   function flushPendingWorldBuild(state) {
@@ -336,15 +342,17 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     const centerKey = `${Math.round(state.player.x)}:${Math.round(state.player.y)}`;
     const contextKey = state.getCurrentContext().id;
     const facingBucket = String(getFacingVisibilityBucket(state.player.facing));
+    const chunkRadius = Math.max(8, Math.floor(options.visibilityRadius ?? CHUNK_RADIUS));
     if (contextKey !== lastContextKey) {
       clearWorld();
     }
     if (
       centerKey !== lastCenterKey ||
       contextKey !== lastContextKey ||
-      facingBucket !== lastFacingBucket
+      facingBucket !== lastFacingBucket ||
+      chunkRadius !== lastChunkRadius
     ) {
-      syncVisibleWorld(state);
+      syncVisibleWorld(state, chunkRadius);
     }
     flushPendingWorldBuild(state);
 

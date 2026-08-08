@@ -63,6 +63,10 @@ import {
   advanceHeadBobState,
   DEFAULT_HEAD_BOB_STATE,
 } from './head-bob.ts';
+import {
+  advanceRenderBudgetState,
+  DEFAULT_RENDER_BUDGET_STATE,
+} from './render-budget.ts';
 import { getMouseLookAngles } from './mouse-look.ts';
 import {
   getHmrNoticeText,
@@ -661,6 +665,9 @@ const uiRenderState = {
 const hmrNoticeState = {
   message: '',
   visibleUntilMs: null as number | null,
+};
+const renderBudgetState = {
+  ...DEFAULT_RENDER_BUDGET_STATE,
 };
 
 (state as typeof state & { celestialEventMode?: string }).celestialEventMode =
@@ -1577,6 +1584,7 @@ function render(): FrameLoopActivityLike {
       environment,
       cameraPitch: mouseLookState.pitch,
       cameraBobOffset: motion.headBob.offset,
+      visibilityRadius: renderBudgetState.visibilityRadius,
     });
   }
 
@@ -1961,6 +1969,12 @@ function loop(timestamp: number): void {
   pendingFrameHandle = 0;
   const delta =
     lastFrame === 0 ? 16.67 : Math.min(timestamp - lastFrame, 33.34);
+  const nextBudgetState = advanceRenderBudgetState(renderBudgetState, {
+    deltaMs: delta,
+    active3d: state.viewMode === '3d',
+  });
+  renderBudgetState.smoothedFrameMs = nextBudgetState.smoothedFrameMs;
+  renderBudgetState.visibilityRadius = nextBudgetState.visibilityRadius;
   updateMovement(delta);
   const activity = render();
   lastFrame = timestamp;
