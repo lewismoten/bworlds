@@ -38,12 +38,16 @@ class FakeGeometry {
 class FakeMaterial {
   opacity?: number;
   emissiveIntensity?: number;
+  uniforms?: Record<string, { value: unknown }>;
   constructor(public options: Record<string, unknown> = {}) {
     if (typeof options.opacity === 'number') {
       this.opacity = options.opacity;
     }
     if (typeof options.emissiveIntensity === 'number') {
       this.emissiveIntensity = options.emissiveIntensity;
+    }
+    if (options.uniforms && typeof options.uniforms === 'object') {
+      this.uniforms = options.uniforms as Record<string, { value: unknown }>;
     }
   }
 }
@@ -161,6 +165,7 @@ const fakeThree = {
   PointLight: FakePointLight,
   MeshStandardMaterial: FakeMaterial,
   PointsMaterial: FakeMaterial,
+  ShaderMaterial: FakeMaterial,
   CanvasTexture: class {
     colorSpace = '';
     needsUpdate = false;
@@ -168,6 +173,7 @@ const fakeThree = {
   Float32BufferAttribute: FakeFloat32BufferAttribute,
   CylinderGeometry: FakeGeometry,
   SphereGeometry: FakeGeometry,
+  AdditiveBlending: 'additive',
 } as const;
 
 function createForestTestState(
@@ -2754,11 +2760,21 @@ describe('tile forest', () => {
     ).toBe(true);
     expect(
       (
+        fireflyPoints[0]?.material as FakeMaterial | undefined
+      )?.uniforms?.uTimeMs?.value
+    ).toBe(1200);
+    expect(
+      (
+        fireflyPoints[0]?.material as FakeMaterial | undefined
+      )?.uniforms?.uActivation?.value
+    ).toBe(1);
+    expect(
+      (
         fireflyPoints[0]?.geometry?.attributes.position as
           | FakeFloat32BufferAttribute
           | undefined
       )?.needsUpdate
-    ).toBe(true);
+    ).not.toBe(true);
   });
 
   it('keeps fireflies hidden at night outside their warm-season window', () => {
@@ -2924,14 +2940,18 @@ describe('tile forest', () => {
     expect(secondPoints).toBeDefined();
     expect(firstPoints?.material).toBe(secondPoints?.material);
     expect((firstPoints?.material as FakeMaterial | undefined)?.options).toMatchObject({
-      map: expect.objectContaining({
-        colorSpace: '',
-        needsUpdate: false,
+      uniforms: expect.objectContaining({
+        uTimeMs: expect.objectContaining({ value: expect.any(Number) }),
+        uActivation: expect.objectContaining({ value: expect.any(Number) }),
+        uColor: { value: [0.85, 1, 0.54] },
       }),
-      alphaTest: 0.08,
+      vertexShader: expect.stringContaining('fireflyPhase'),
+      fragmentShader: expect.stringContaining('gl_PointCoord'),
+      blending: 'additive',
       transparent: true,
       depthWrite: false,
     });
+    expect((firstPoints?.material as FakeMaterial | undefined)?.options.map).toBeUndefined();
   });
 
   it('scales firefly particle density down for farther close-detail forest tiles', () => {

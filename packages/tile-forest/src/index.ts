@@ -99,6 +99,70 @@ const forestBeaverPopulationCache = createBoundedCache<
   string,
   ForestBeaverPopulationDescriptor | null
 >(FOREST_COORDINATE_CACHE_LIMIT);
+const FOREST_FIREFLY_VERTEX_SHADER = `
+attribute float fireflyPhase;
+attribute float fireflyDrift;
+uniform float uTimeMs;
+uniform float uActivation;
+varying float vAlpha;
+
+void main() {
+  float flutter = uTimeMs * (0.0014 + fireflyDrift * 0.0011) + fireflyPhase * 6.28318530718;
+  float pulse = (sin(flutter * 1.9) + 1.0) * 0.5;
+  vec3 animatedPosition = position + vec3(
+    cos(flutter) * 0.05,
+    sin(flutter * 1.6) * 0.04,
+    sin(flutter * 1.2) * 0.05
+  );
+  vec4 mvPosition = modelViewMatrix * vec4(animatedPosition, 1.0);
+  float distanceScale = 240.0 / max(1.0, -mvPosition.z);
+  gl_PointSize = (8.0 + pulse * 6.0) * distanceScale;
+  gl_Position = projectionMatrix * mvPosition;
+  vAlpha = uActivation * (0.28 + pulse * 0.64);
+}
+`;
+const FOREST_FIREFLY_FRAGMENT_SHADER = `
+uniform vec3 uColor;
+varying float vAlpha;
+
+void main() {
+  vec2 centered = gl_PointCoord - vec2(0.5);
+  float distanceFromCenter = length(centered);
+  float glow = smoothstep(0.5, 0.0, distanceFromCenter);
+  float core = smoothstep(0.18, 0.0, distanceFromCenter);
+  float alpha = vAlpha * glow;
+  if (alpha <= 0.01) {
+    discard;
+  }
+  vec3 color = uColor * (0.78 + core * 0.9);
+  gl_FragColor = vec4(color, alpha);
+}
+`;
+
+type ForestFireflyMaterialLike = ThreeMaterialLike & {
+  opacity?: number;
+  uniforms?: Record<string, { value: unknown }>;
+};
+
+type ForestFireflyNodeState = {
+  descriptors: ForestFireflyDescriptor[];
+  particleCount: number;
+  positionAttribute?: {
+    array: ArrayLike<number> & { [index: number]: number };
+    needsUpdate?: boolean;
+  };
+  uniforms?: {
+    uTimeMs: { value: number };
+    uActivation: { value: number };
+  };
+};
+
+type ForestFireflyShaderHost = ThreeHostLike & {
+  ShaderMaterial?: new (
+    options?: Record<string, unknown>
+  ) => ForestFireflyMaterialLike;
+  AdditiveBlending?: unknown;
+};
 const resolveForestTrailDescriptor = createCoordinateValueResolver(
   forestTrailCache,
   ({ tileX, tileY }) => {
@@ -1721,26 +1785,50 @@ function createForestFireflyParticleCloud(
   descriptors: ForestFireflyDescriptor[]
 ) {
   const geometry = new three.BufferGeometry() as ThreeBufferGeometryLike;
+  const positionValues = new Float32Array(descriptors.length * 3);
+  const phaseValues = new Float32Array(descriptors.length);
+  const driftValues = new Float32Array(descriptors.length);
+
+  descriptors.forEach((descriptor, index) => {
+    const offset = index * 3;
+    positionValues[offset] = descriptor.baseX;
+    positionValues[offset + 1] = descriptor.baseY;
+    positionValues[offset + 2] = descriptor.baseZ;
+    phaseValues[index] = descriptor.phase;
+    driftValues[index] = descriptor.drift;
+  });
+
   const positionAttribute = new three.Float32BufferAttribute(
-    new Float32Array(descriptors.length * 3),
+    positionValues,
     3
   ) as {
     array: ArrayLike<number> & { [index: number]: number };
     needsUpdate?: boolean;
   };
   geometry.setAttribute('position', positionAttribute);
+  geometry.setAttribute(
+    'fireflyPhase',
+    new three.Float32BufferAttribute(phaseValues, 1) as ThreeBufferGeometryLike
+  );
+  geometry.setAttribute(
+    'fireflyDrift',
+    new three.Float32BufferAttribute(driftValues, 1) as ThreeBufferGeometryLike
+  );
 
   const points = new three.Points(
     geometry,
     getSharedForestFireflyMaterial(three)
   );
+  const material = points.material as ForestFireflyMaterialLike | undefined;
 
   points.userData = {
     ...(points.userData ?? {}),
     [FIREFLY_KEY]: {
       descriptors,
-      positionAttribute,
+      positionAttribute:
+        material?.uniforms ? undefined : positionAttribute,
       particleCount: descriptors.length,
+      uniforms: material?.uniforms as ForestFireflyNodeState['uniforms'] | undefined,
     },
   };
 
@@ -1751,6 +1839,12 @@ function getSharedForestFireflyMaterial(three: ThreeHostLike) {
   const cachedMaterial = forestFireflyMaterialCache.get(three);
   if (cachedMaterial) {
     return cachedMaterial;
+  }
+
+  const shaderMaterial = createForestFireflyShaderMaterial(three);
+  if (shaderMaterial) {
+    forestFireflyMaterialCache.set(three, shaderMaterial);
+    return shaderMaterial;
   }
 
   const fireflyTexture = getSharedForestFireflyTexture(three);
@@ -1765,6 +1859,26 @@ function getSharedForestFireflyMaterial(three: ThreeHostLike) {
   }));
   forestFireflyMaterialCache.set(three, material);
   return material;
+}
+
+function createForestFireflyShaderMaterial(three: ThreeHostLike) {
+  const shaderHost = three as ForestFireflyShaderHost;
+  if (!shaderHost.ShaderMaterial) {
+    return null;
+  }
+
+  return new shaderHost.ShaderMaterial({
+    uniforms: {
+      uTimeMs: { value: 0 },
+      uActivation: { value: 0 },
+      uColor: { value: [0.85, 1, 0.54] },
+    },
+    vertexShader: FOREST_FIREFLY_VERTEX_SHADER,
+    fragmentShader: FOREST_FIREFLY_FRAGMENT_SHADER,
+    transparent: true,
+    depthWrite: false,
+    blending: shaderHost.AdditiveBlending,
+  });
 }
 
 function getSharedForestFireflyTexture(three: ThreeHostLike) {
@@ -2982,50 +3096,52 @@ function syncForestFireflies(
     getForestFireflySeasonalActivation(cycle.yearProgress);
   root.traverse?.((node) => {
     const firefly = node.userData?.[FIREFLY_KEY] as
-      | {
-          descriptors: ForestFireflyDescriptor[];
-          positionAttribute: {
-            array: ArrayLike<number> & { [index: number]: number };
-            needsUpdate?: boolean;
-          };
-        }
+      | ForestFireflyNodeState
       | undefined;
     if (!firefly) {
       return;
     }
     node.visible = activation > 0.08;
-    let leadPulse = 0;
+    let materialOpacity = activation;
 
-    firefly.descriptors.forEach((descriptor, index) => {
-      const flutter =
-        timeMs * (0.0014 + descriptor.drift * 0.0011) + descriptor.phase * Math.PI * 2;
-      const pulse = (Math.sin(flutter * 1.9) + 1) * 0.5;
-      const swayX = Math.cos(flutter) * 0.05;
-      const swayY = Math.sin(flutter * 1.6) * 0.04;
-      const swayZ = Math.sin(flutter * 1.2) * 0.05;
-      const offset = index * 3;
-      const x = descriptor.baseX + swayX;
-      const y = descriptor.baseY + swayY;
-      const z = descriptor.baseZ + swayZ;
-      firefly.positionAttribute.array[offset] = x;
-      firefly.positionAttribute.array[offset + 1] = y;
-      firefly.positionAttribute.array[offset + 2] = z;
-      if (index === 0) {
-        leadPulse = pulse;
-      }
-    });
-    firefly.positionAttribute.needsUpdate = true;
+    if (firefly.uniforms) {
+      firefly.uniforms.uTimeMs.value = timeMs;
+      firefly.uniforms.uActivation.value = activation;
+    } else if (firefly.positionAttribute) {
+      let leadPulse = 0;
+
+      firefly.descriptors.forEach((descriptor, index) => {
+        const flutter =
+          timeMs * (0.0014 + descriptor.drift * 0.0011) +
+          descriptor.phase * Math.PI * 2;
+        const pulse = (Math.sin(flutter * 1.9) + 1) * 0.5;
+        const swayX = Math.cos(flutter) * 0.05;
+        const swayY = Math.sin(flutter * 1.6) * 0.04;
+        const swayZ = Math.sin(flutter * 1.2) * 0.05;
+        const offset = index * 3;
+        const x = descriptor.baseX + swayX;
+        const y = descriptor.baseY + swayY;
+        const z = descriptor.baseZ + swayZ;
+        firefly.positionAttribute.array[offset] = x;
+        firefly.positionAttribute.array[offset + 1] = y;
+        firefly.positionAttribute.array[offset + 2] = z;
+        if (index === 0) {
+          leadPulse = pulse;
+        }
+      });
+      firefly.positionAttribute.needsUpdate = true;
+      materialOpacity = activation * (0.28 + leadPulse * 0.64);
+    }
 
     const taggedNode = node as ThreeObject3DLike & {
-      material?: ThreeMaterialLike | ThreeMaterialLike[];
+      material?: ForestFireflyMaterialLike | ForestFireflyMaterialLike[];
     };
     if (taggedNode.material) {
       const materials = Array.isArray(taggedNode.material)
         ? taggedNode.material
         : [taggedNode.material];
       materials.forEach((material) => {
-        (material as ThreeMaterialLike & { opacity?: number }).opacity =
-          activation * (0.28 + leadPulse * 0.64);
+        material.opacity = materialOpacity;
       });
     }
   });

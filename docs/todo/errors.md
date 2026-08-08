@@ -315,9 +315,9 @@ These reinforce the material/program concern.
 * [x] Review `getForestFireflies()` around `tile-forest/src/index.ts:1012`.
 * [x] Avoid creating individual `Object3D`s for each firefly.
 * [x] Use one `Points` object for many fireflies.
-* [ ] Consider a GPU particle implementation.
+* [x] Consider a GPU particle implementation.
 * [x] Generate firefly positions in compact typed arrays.
-* [ ] Animate them in a shader where practical.
+* [x] Animate them in a shader where practical.
 * [x] Cap the number of visible fireflies.
 * [x] Scale density based on camera distance.
 * [x] Disable fireflies outside appropriate times/seasons.
