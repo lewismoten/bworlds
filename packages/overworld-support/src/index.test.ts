@@ -51,6 +51,19 @@ function getDistanceToSegment(
   return Math.hypot(point.x - closestX, point.y - closestY);
 }
 
+function getAccumulatedTurn(points: { x: number; y: number }[]): number {
+  let totalTurn = 0;
+  for (let index = 1; index < points.length - 1; index += 1) {
+    const previous = points[index - 1];
+    const current = points[index];
+    const next = points[index + 1];
+    const entryAngle = Math.atan2(current.y - previous.y, current.x - previous.x);
+    const exitAngle = Math.atan2(next.y - current.y, next.x - current.x);
+    totalTurn += Math.abs(normalizeAngleDelta(exitAngle - entryAngle));
+  }
+  return totalTurn;
+}
+
 type GenerationContextPayload = Parameters<typeof createOverworldGenerationContext>[0];
 type ComposeOverworldTilePayload = Parameters<typeof composeOverworldTileFromPlugins>[0];
 type ResolveOverworldAnchorsPayload = Parameters<
@@ -203,6 +216,26 @@ describe('overworld support', () => {
     expect(curvePoints.at(-1)).toEqual(controlPoints.at(-1));
     expect(middlePoint.x).not.toBe(2);
     expect(middlePoint.y).not.toBe(0);
+  });
+
+  it('can generate strongly meandering river control paths', () => {
+    let foundCurvyPath = false;
+
+    for (let cellY = -8; cellY <= 8 && !foundCurvyPath; cellY += 1) {
+      for (let cellX = -8; cellX <= 8; cellX += 1) {
+        const controlPoints = createRiverControlPoints('spec-seed', cellX, cellY);
+        if (controlPoints.length < 4) {
+          continue;
+        }
+        const curvePoints = createRiverCurvePoints(controlPoints, 6);
+        if (getAccumulatedTurn(curvePoints) > Math.PI * 1.2) {
+          foundCurvyPath = true;
+          break;
+        }
+      }
+    }
+
+    expect(foundCurvyPath).toBe(true);
   });
 
   it('creates deterministic fork paths that branch away from the main river', () => {

@@ -3,6 +3,6 @@
 - [x] A brazier curve is used to connect river points together
 - [x] A river may fork into two rivers
 - [x] A river may combine back into one as a fork.
-- [ ] A river may be very curvy
+- [x] A river may be very curvy
 - [x] A river connects to another river at 45 degrees at max to appear as branching.
 - [ ] Multiple tiles may need to be made into a bridge if the river path takes more than 1 tile where the bridge is crossing.

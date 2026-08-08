@@ -46,6 +46,8 @@ const RIVER_FORK_MIN_POINTS = 2;
 const RIVER_FORK_MAX_POINTS = 4;
 const RIVER_FORK_CHANCE_THRESHOLD = 0.63;
 const RIVER_FORK_MAX_ANGLE_DELTA = Math.PI * 0.25;
+const RIVER_CONTROL_MEANDER_BIAS = Math.PI * 0.34;
+const RIVER_CONTROL_MAX_TURN = Math.PI * 0.88;
 
 export interface OverworldCellAnchorSpec<
   TAnchor extends OverworldAnchorLike = OverworldAnchorLike,
@@ -177,7 +179,13 @@ export function createRiverControlPoints(
       y: startY,
     },
   ];
-
+  const meanderSign =
+    hash2D(`${seed}:river-control-meander-sign`, cellX, cellY) >= 0.5 ? 1 : -1;
+  const meanderStrength =
+    0.24 +
+    hash2D(`${seed}:river-control-meander-strength`, cellX, cellY) * 0.42;
+  const meanderPhase =
+    hash2D(`${seed}:river-control-meander-phase`, cellX, cellY) * Math.PI * 2;
   let previousAngle =
     hash2D(`${seed}:river-control-angle`, cellX, cellY) * Math.PI * 2;
 
@@ -188,9 +196,19 @@ export function createRiverControlPoints(
         hash2D(`${seed}:river-control-distance:${index}`, cellX, cellY) *
           (RIVER_MAX_CONTROL_STEP - RIVER_MIN_CONTROL_STEP + 1)
       );
-    const angleDelta =
+    const rawAngleDelta =
       (hash2D(`${seed}:river-control-angle-delta:${index}`, cellX, cellY) - 0.5) *
       (Math.PI * 0.92);
+    const meanderDelta =
+      Math.sin(index * 1.15 + meanderPhase) *
+      RIVER_CONTROL_MEANDER_BIAS *
+      meanderStrength *
+      meanderSign;
+    const angleDelta = clamp(
+      rawAngleDelta * 0.48 + meanderDelta,
+      -RIVER_CONTROL_MAX_TURN,
+      RIVER_CONTROL_MAX_TURN
+    );
     const angle = previousAngle + angleDelta;
     const priorPoint = points[index - 1];
     const nextX = clamp(
