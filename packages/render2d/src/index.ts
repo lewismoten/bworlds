@@ -1,7 +1,28 @@
 import { drawTileSprite, getTileVariantIndex } from '@bworlds/atlas';
 import { getDaylightCycleState } from '@bworlds/core';
+import type {
+  TileLike,
+  WorldEnvironmentLike,
+  WorldStateLike,
+} from '@bworlds/plugin-api';
 
-export function render2D(context, state, viewport) {
+type Render2DState = Pick<WorldStateLike, 'player' | 'getCurrentTile'>;
+
+export interface Render2DViewport {
+  width: number;
+  height: number;
+  rotation?: number;
+  timeMs?: number;
+  environment?: WorldEnvironmentLike;
+}
+
+type TileSampler = (worldX: number, worldY: number) => TileLike;
+
+export function render2D(
+  context: CanvasRenderingContext2D,
+  state: Render2DState,
+  viewport: Render2DViewport
+) {
   const tileAt = createViewportTileSampler(state);
   const tileSize = Math.max(
     14,
@@ -71,18 +92,41 @@ export function render2D(context, state, viewport) {
 
 const RIVER_OVERLAY_NETWORK_KINDS = new Set(['river', 'bridge', 'ocean']);
 
-export function createViewportTileSampler(state) {
-  const tileCache = new Map();
-  return (worldX, worldY) => {
+export function createViewportTileSampler(state: Render2DState): TileSampler {
+  const tileCache = new Map<string, TileLike>();
+  return (worldX: number, worldY: number) => {
     const key = `${worldX}:${worldY}`;
     if (!tileCache.has(key)) {
       tileCache.set(key, state.getCurrentTile(worldX, worldY));
     }
-    return tileCache.get(key);
+    return tileCache.get(key) ?? { kind: 'unknown' };
   };
 }
 
-export function getRiverOverlayConnections(tileAt, worldX, worldY) {
+export interface RiverOverlayDirection {
+  id:
+    | 'north'
+    | 'east'
+    | 'south'
+    | 'west'
+    | 'northeast'
+    | 'southeast'
+    | 'southwest'
+    | 'northwest';
+  dx: number;
+  dy: number;
+  edgeX: number;
+  edgeY: number;
+  inwardX: number;
+  inwardY: number;
+  angle: number;
+}
+
+export function getRiverOverlayConnections(
+  tileAt: TileSampler,
+  worldX: number,
+  worldY: number
+): RiverOverlayDirection[] {
   const directions = [
     createRiverOverlayDirection('north', 0, -1, 0.5, 0, 0.5, 0.22),
     createRiverOverlayDirection('east', 1, 0, 1, 0.5, 0.78, 0.5),
@@ -103,7 +147,15 @@ export function getRiverOverlayConnections(tileAt, worldX, worldY) {
     .sort((left, right) => left.angle - right.angle);
 }
 
-function createRiverOverlayDirection(id, dx, dy, edgeX, edgeY, inwardX, inwardY) {
+function createRiverOverlayDirection(
+  id: RiverOverlayDirection['id'],
+  dx: number,
+  dy: number,
+  edgeX: number,
+  edgeY: number,
+  inwardX: number,
+  inwardY: number
+): RiverOverlayDirection {
   return {
     id,
     dx,
@@ -116,7 +168,15 @@ function createRiverOverlayDirection(id, dx, dy, edgeX, edgeY, inwardX, inwardY)
   };
 }
 
-function drawRiverOverlay(context, tileAt, worldX, worldY, x, y, size) {
+function drawRiverOverlay(
+  context: CanvasRenderingContext2D,
+  tileAt: TileSampler,
+  worldX: number,
+  worldY: number,
+  x: number,
+  y: number,
+  size: number
+) {
   const connections = getRiverOverlayConnections(tileAt, worldX, worldY);
   const bodyWidth = Math.max(3, size * 0.28);
   const highlightWidth = Math.max(1, bodyWidth * 0.28);
@@ -172,7 +232,12 @@ function drawRiverOverlay(context, tileAt, worldX, worldY, x, y, size) {
   });
 }
 
-function drawRiverPool(context, centerX, centerY, radius) {
+function drawRiverPool(
+  context: CanvasRenderingContext2D,
+  centerX: number,
+  centerY: number,
+  radius: number
+) {
   context.fillStyle = '#38bdf8';
   context.beginPath();
   context.arc(centerX, centerY, radius, 0, Math.PI * 2);
@@ -190,7 +255,12 @@ function drawRiverPool(context, centerX, centerY, radius) {
   context.fill();
 }
 
-function drawRiverStroke(context, points, lineWidth, strokeStyle) {
+function drawRiverStroke(
+  context: CanvasRenderingContext2D,
+  points: Array<{ x: number; y: number }>,
+  lineWidth: number,
+  strokeStyle: string
+) {
   context.strokeStyle = strokeStyle;
   context.lineWidth = lineWidth;
   context.lineCap = 'round';
@@ -208,7 +278,7 @@ function drawRiverStroke(context, points, lineWidth, strokeStyle) {
   context.stroke();
 }
 
-function pointAt(x, y, size, px, py) {
+function pointAt(x: number, y: number, size: number, px: number, py: number) {
   return {
     x: x + size * px,
     y: y + size * py,
@@ -216,12 +286,12 @@ function pointAt(x, y, size, px, py) {
 }
 
 function drawRotatedGrid(
-  context,
-  viewport,
-  centerX,
-  centerY,
-  tileSize,
-  rotation
+  context: CanvasRenderingContext2D,
+  viewport: Render2DViewport,
+  centerX: number,
+  centerY: number,
+  tileSize: number,
+  rotation: number
 ) {
   context.save();
   context.translate(centerX + tileSize / 2, centerY + tileSize / 2);
@@ -245,7 +315,12 @@ function drawRotatedGrid(
   context.restore();
 }
 
-function drawFacingMarker(context, centerX, centerY, tileSize) {
+function drawFacingMarker(
+  context: CanvasRenderingContext2D,
+  centerX: number,
+  centerY: number,
+  tileSize: number
+) {
   context.save();
   context.translate(centerX, centerY);
   context.rotate(-Math.PI / 2);
@@ -268,7 +343,12 @@ function drawFacingMarker(context, centerX, centerY, tileSize) {
   context.restore();
 }
 
-function drawTimeOfDayOverlay(context, viewport, timeMs, environment) {
+function drawTimeOfDayOverlay(
+  context: CanvasRenderingContext2D,
+  viewport: Render2DViewport,
+  timeMs: number,
+  environment: WorldEnvironmentLike
+) {
   const cycle = getDaylightCycleState(timeMs, environment.cycle ?? {});
 
   context.save();

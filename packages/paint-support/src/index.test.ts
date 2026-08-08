@@ -3,7 +3,37 @@ import {
   composeTilePainter,
   createPlainsBackedTilePainter,
   paintPlainsBackdrop,
+  type TilePainter2D,
 } from './index.ts';
+import type { Paint2DContext } from '@bworlds/plugin-api';
+
+function createPaintContext(
+  overrides: Partial<Paint2DContext> = {}
+): Paint2DContext {
+  return {
+    context: {} as CanvasRenderingContext2D,
+    kind: 'spec',
+    definition: {
+      name: 'Spec',
+      color: '#000000',
+      miniColor: '#111111',
+      walkable: true,
+      wallHeight: 0,
+    },
+    x: 0,
+    y: 0,
+    motif: {
+      seed: 1,
+      int(min: number) {
+        return min;
+      },
+    },
+    tilePixelSize: 16,
+    fillRect() {},
+    speckle() {},
+    ...overrides,
+  };
+}
 
 describe('paint support', () => {
   it('paints a plains backdrop through the provided fillRect helper', () => {
@@ -30,23 +60,14 @@ describe('paint support', () => {
 
   it('creates plains-backed tile painters that add custom foreground details', () => {
     const calls: Array<[number, number, number, number, string]> = [];
-    const paint = createPlainsBackedTilePainter(
-      ({ context, x, y, fillRect }: any) => {
+    const overlayPainter: TilePainter2D = ({ context, x, y, fillRect }) => {
         fillRect(context, x + 4, y + 5, 3, 2, '#123456');
-      }
-    );
+      };
+    const paint = createPlainsBackedTilePainter(overlayPainter);
 
     expect(
-      paint({
+      paint(createPaintContext({
         context: {} as CanvasRenderingContext2D,
-        kind: 'spec',
-        definition: {
-          name: 'Spec',
-          color: '#000000',
-          miniColor: '#111111',
-          walkable: true,
-          wallHeight: 0,
-        },
         x: 2,
         y: 3,
         motif: {
@@ -55,12 +76,10 @@ describe('paint support', () => {
             return min;
           },
         },
-        tilePixelSize: 16,
         fillRect(_context, x, y, width, height, color) {
           calls.push([x, y, width, height, color]);
         },
-        speckle() {},
-      })
+      }))
     ).toBe(true);
 
     expect(calls[0]).toEqual([2, 3, 16, 16, '#7fb069']);
@@ -81,28 +100,7 @@ describe('paint support', () => {
     );
 
     expect(
-      paint({
-        context: {} as CanvasRenderingContext2D,
-        kind: 'spec',
-        definition: {
-          name: 'Spec',
-          color: '#000000',
-          miniColor: '#111111',
-          walkable: true,
-          wallHeight: 0,
-        },
-        x: 0,
-        y: 0,
-        motif: {
-          seed: 1,
-          int(min: number) {
-            return min;
-          },
-        },
-        tilePixelSize: 16,
-        fillRect() {},
-        speckle() {},
-      })
+      paint(createPaintContext())
     ).toBe(true);
 
     expect(calls).toEqual(['base', 'overlay']);

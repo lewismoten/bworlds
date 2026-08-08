@@ -9,6 +9,8 @@ import {
   shouldRenderWorldTile,
 } from './index.ts';
 
+type SkySignatureCycle = Parameters<typeof getSkyConstellationSignature>[0];
+
 describe('render3d visibility helpers', () => {
   it('keeps nearby tiles visible regardless of facing', () => {
     expect(
@@ -68,7 +70,7 @@ describe('render3d visibility helpers', () => {
   });
 
   it('uses coarse sky signatures so tiny celestial drift does not rebuild sky layers', () => {
-    const baseCycle = {
+    const baseCycle: SkySignatureCycle = {
       activeConstellationIndex: 1,
       yearProgress: 0.25,
       starsOpacity: 0.5,
@@ -86,21 +88,27 @@ describe('render3d visibility helpers', () => {
           height: 0.4,
           intensity: 0.7,
           wavePhase: 0.2,
+          span: 0.6,
+          colorA: '#9df2ff',
+          colorB: '#7cf7c5',
         },
       ],
       visibleEvents: [
         {
           type: 'meteor-shower',
           name: 'Burst',
+          progress: 0.4,
           azimuth: 0.4,
           altitude: 0.5,
           visibility: 0.9,
           intensity: 0.8,
           trailLength: 3.6,
+          color: '#ffffff',
+          size: 0.2,
         },
       ],
-    } as any;
-    const nearCycle = {
+    };
+    const nearCycle: SkySignatureCycle = {
       ...baseCycle,
       yearProgress: 0.2501,
       milkyWay: {
@@ -119,8 +127,8 @@ describe('render3d visibility helpers', () => {
           azimuth: 0.401,
         },
       ],
-    } as any;
-    const farCycle = {
+    };
+    const farCycle: SkySignatureCycle = {
       ...baseCycle,
       yearProgress: 0.31,
       visibleEvents: [
@@ -129,7 +137,7 @@ describe('render3d visibility helpers', () => {
           azimuth: 0.7,
         },
       ],
-    } as any;
+    };
 
     expect(getSkyConstellationSignature(nearCycle)).toBe(
       getSkyConstellationSignature(baseCycle)

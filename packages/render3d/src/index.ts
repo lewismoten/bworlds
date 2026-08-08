@@ -22,6 +22,16 @@ import {
 type CelestialEnvironmentOverrides = Parameters<
   typeof applyCelestialEnvironmentOverrides
 >[1];
+type DaylightCycleState = ReturnType<typeof getDaylightCycleState>;
+type SkySignatureCycle = Pick<
+  DaylightCycleState,
+  | 'activeConstellationIndex'
+  | 'yearProgress'
+  | 'starsOpacity'
+  | 'visibleEvents'
+  | 'milkyWay'
+  | 'auroraBands'
+>;
 
 const TILE_SIZE = 1;
 const CHUNK_RADIUS = 18;
@@ -947,7 +957,7 @@ export function create3DRenderer(host) {
 }
 
 export function getFacingVisibilityBucket(
-  facingAngle,
+  facingAngle: number,
   bucketCount = FACING_BUCKETS
 ) {
   const normalized =
@@ -955,7 +965,7 @@ export function getFacingVisibilityBucket(
   return Math.floor((normalized / (Math.PI * 2)) * bucketCount);
 }
 
-export function getSkyConstellationSignature(cycle) {
+export function getSkyConstellationSignature(cycle: SkySignatureCycle) {
   return [
     cycle.activeConstellationIndex ?? 0,
     Math.round((cycle.yearProgress ?? 0) * 48),
@@ -963,7 +973,7 @@ export function getSkyConstellationSignature(cycle) {
   ].join('|');
 }
 
-export function getSkyEventSignature(cycle) {
+export function getSkyEventSignature(cycle: SkySignatureCycle) {
   return (cycle.visibleEvents ?? [])
     .map((event) =>
       [
@@ -979,7 +989,7 @@ export function getSkyEventSignature(cycle) {
     .join('|');
 }
 
-export function getSkyMilkyWaySignature(cycle) {
+export function getSkyMilkyWaySignature(cycle: SkySignatureCycle) {
   return cycle.milkyWay
     ? [
         Math.round((cycle.yearProgress ?? 0) * 48),
@@ -991,7 +1001,7 @@ export function getSkyMilkyWaySignature(cycle) {
     : 'none';
 }
 
-export function getSkyAuroraSignature(cycle) {
+export function getSkyAuroraSignature(cycle: SkySignatureCycle) {
   return (cycle.auroraBands ?? [])
     .map((band) =>
       [

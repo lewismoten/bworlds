@@ -12,9 +12,15 @@ import {
   getRiverOverlayConnections,
   render2D,
 } from './index';
+import type { Render2DViewport } from './index';
+import type { TileLike } from '@bworlds/plugin-api';
 
-function createState(tileMap: Record<string, string>) {
+type Render2DState = Parameters<typeof createViewportTileSampler>[0];
+type Render2DContext = Parameters<typeof render2D>[0];
+
+function createState(tileMap: Record<string, TileLike['kind']>): Render2DState {
   return {
+    player: { x: 0, y: 0, facing: 0 },
     getCurrentTile(x: number, y: number) {
       return {
         kind: tileMap[`${x}:${y}`] ?? 'plains',
@@ -68,7 +74,10 @@ describe('getRiverOverlayConnections', () => {
               ? 'ocean'
               : 'plains',
     }));
-    const tileAt = createViewportTileSampler({ getCurrentTile });
+    const tileAt = createViewportTileSampler({
+      player: { x: 0, y: 0, facing: 0 },
+      getCurrentTile,
+    });
 
     expect(getRiverOverlayConnections(tileAt, 0, 0)).toHaveLength(3);
     expect(getRiverOverlayConnections(tileAt, 0, 0)).toHaveLength(3);
@@ -107,16 +116,10 @@ describe('render2D night sky overlay', () => {
         }
         calls.push('tile');
       },
-    } as any;
+    } as unknown as Render2DContext;
 
-    const state = {
-      player: { x: 0, y: 0 },
-      getCurrentTile() {
-        return { kind: 'plains' };
-      },
-    };
-
-    render2D(context, state as any, {
+    const state = createState({});
+    const viewport: Render2DViewport = {
       width: 100,
       height: 100,
       rotation: 0,
@@ -130,7 +133,9 @@ describe('render2D night sky overlay', () => {
           density: 1,
         },
       },
-    });
+    };
+
+    render2D(context, state, viewport);
 
     expect(calls.indexOf('overlay')).toBeGreaterThanOrEqual(0);
     expect(calls).not.toContain('star');
