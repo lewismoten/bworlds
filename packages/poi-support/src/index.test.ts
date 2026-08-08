@@ -62,6 +62,46 @@ describe('poi support', () => {
     });
   });
 
+  it('creates deterministic generated names for additional poi types', () => {
+    expect(
+      createGeneratedPoiTile({
+        kind: 'quarry',
+        note: 'An open quarry cuts into the nearby stone.',
+        poiType: 'quarry',
+        seed: 'spec',
+        x: 12,
+        y: -4,
+      })
+    ).toMatchObject({
+      kind: 'quarry',
+      poi: {
+        type: 'quarry',
+        name: expect.stringMatching(
+          /\b(Quarry|Cut|Excavation|Pit|Works|Stone)\b/
+        ),
+      },
+    });
+
+    expect(
+      createGeneratedPoiTile({
+        kind: 'ruins',
+        note: 'Weathered ruins rest in the open land.',
+        poiType: 'ruins',
+        seed: 'spec',
+        x: -7,
+        y: 13,
+      })
+    ).toMatchObject({
+      kind: 'ruins',
+      poi: {
+        type: 'ruins',
+        name: expect.stringMatching(
+          /\b(Ruins|Forum|Temple|Sanctum|Court|Stones)\b/
+        ),
+      },
+    });
+  });
+
   it('creates anchored poi tiles that preserve anchor names', () => {
     expect(
       createAnchoredPoiTile({
@@ -105,6 +145,31 @@ describe('poi support', () => {
       poi: {
         type: 'cave',
         name: expect.any(String),
+      },
+    });
+  });
+
+  it('creates anchored poi tiles with generated fallback names for quarry anchors', () => {
+    expect(
+      createAnchoredPoiTile({
+        kind: 'quarry',
+        note: 'An open quarry cuts into the nearby stone.',
+        poiType: 'quarry',
+        seed: 'spec',
+        tile: { kind: 'plains' },
+        anchor: {
+          x: 12,
+          y: -4,
+          type: 'quarry',
+        },
+      })
+    ).toMatchObject({
+      kind: 'quarry',
+      poi: {
+        type: 'quarry',
+        name: expect.stringMatching(
+          /\b(Quarry|Cut|Excavation|Pit|Works|Stone)\b/
+        ),
       },
     });
   });

@@ -98,24 +98,32 @@ describe('runtime start region', () => {
   });
 
   it('replaces starter poi names with deterministic generated names', () => {
-    const tile = plugin.resolveOverworldTile?.(
-      createStartRegionPayload({
-        x: 5,
-        y: 4,
-      })
-    );
+    const samples = [
+      { x: 5, y: 4, kind: 'town', original: 'Starter Town' },
+      { x: -4, y: 5, kind: 'cave', original: 'Starter Cave' },
+      { x: -5, y: 4, kind: 'dungeon', original: 'Starter Dungeon' },
+    ] as const;
 
-    expect(tile).toEqual(
-      expect.objectContaining({
-        kind: 'town',
-        poi: expect.objectContaining({
-          type: 'town',
-          name: expect.any(String),
-        }),
-      })
-    );
-    expect(tile && 'poi' in tile ? tile.poi?.name : undefined).not.toBe(
-      'Starter Town'
-    );
+    for (const sample of samples) {
+      const tile = plugin.resolveOverworldTile?.(
+        createStartRegionPayload({
+          x: sample.x,
+          y: sample.y,
+        })
+      );
+
+      expect(tile).toEqual(
+        expect.objectContaining({
+          kind: sample.kind,
+          poi: expect.objectContaining({
+            type: sample.kind,
+            name: expect.any(String),
+          }),
+        })
+      );
+      expect(tile && 'poi' in tile ? tile.poi?.name : undefined).not.toBe(
+        sample.original
+      );
+    }
   });
 });
