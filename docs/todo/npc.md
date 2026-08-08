@@ -1,10 +1,10 @@
-- [ ] Setup NPC's in towns
-- [ ] Each NPC should be designated to live in a residence
-- [ ] Each NPC has a name
-- [ ] Each NPC has a mother and father
-- [ ] Each NPC has an age
-- [ ] Adult NPC's have a profession, unless they are old/retired/dead
-- [ ] Working NPC's are designated to a building in town that they work at that is related to their profession
+- [X] Setup NPC's in towns
+- [X] Each NPC should be designated to live in a residence
+- [X] Each NPC has a name
+- [X] Each NPC has a mother and father
+- [X] Each NPC has an age
+- [X] Adult NPC's have a profession, unless they are old/retired/dead
+- [X] Working NPC's are designated to a building in town that they work at that is related to their profession
 - [ ] NPC's can walk from their home to their profession and back based on the time of day and their type of profession
 - [ ] If the profession supports it, NPC's at their business may buy/sell items, train/revive players, provide quests, etc.
 - [ ] NPC's may offer quests to players based on the time of day, time of year, player level, profession, prior quests completed, if they are home, at work, walking around town, etc.

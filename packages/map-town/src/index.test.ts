@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import type { CreateMapContext } from '@bworlds/plugin-api';
-import { getTownBuildingPlots, getTownProfile } from '@bworlds/town-support';
+import {
+  getTownBuildingPlots,
+  getTownBuildings,
+  getTownNpcs,
+  getTownProfile,
+} from '@bworlds/town-support';
 import {
   createTownMapPlugin,
   hasTownFence,
@@ -89,12 +94,6 @@ describe('map town', () => {
     expect(isTownFenceTile(1, 4)).toBe(true);
     expect(isTownFenceTile(2, 4)).toBe(false);
     expect(isTownMainRoad(0, 1)).toBe(true);
-    const buildingPlotRoles = new Map(
-      getTownBuildingPlots(TOWN_ORIGIN.x, TOWN_ORIGIN.y).map((plot) => [
-        `${plot.x}:${plot.y}`,
-        plot.role,
-      ])
-    );
     expect(
       resolveTownTile({
         contextId: 'town:test',
@@ -104,11 +103,19 @@ describe('map town', () => {
         localY: 17,
         centerX: 12,
         centerY: 12,
-        buildingPlotRoles,
+        buildingSummaries: new Map(
+          getTownBuildings(TOWN_ORIGIN.x, TOWN_ORIGIN.y).map((building) => [
+            `${building.x}:${building.y}`,
+            building,
+          ])
+        ),
       })
     ).toMatchObject({
       kind: 'shop',
-      building: { id: 'town:test:0:5', role: 'professional' },
+      building: {
+        id: 'town:10:-4:building:0:5',
+        role: 'professional',
+      },
     });
   });
 
@@ -124,7 +131,7 @@ describe('map town', () => {
 
     expect(map.getTile(fencedPlot.x, fencedPlot.y)).toMatchObject({
       kind: 'shop',
-      building: { id: `town:test:${fencedPlot.x}:${fencedPlot.y}` },
+      building: { id: `town:${TOWN_ORIGIN.x}:${TOWN_ORIGIN.y}:building:${fencedPlot.x}:${fencedPlot.y}` },
     });
     const pathY = fencedPlot.y > 0 ? fencedPlot.y - 1 : fencedPlot.y + 1;
     const backY = fencedPlot.y > 0 ? fencedPlot.y + 1 : fencedPlot.y - 1;
@@ -165,5 +172,35 @@ describe('map town', () => {
     expect(map.getTile(0, 0).note).toContain(`Level ${profile.level}`);
     expect(map.getTile(0, 0).note).toContain(String(profile.population));
     expect(plots).toHaveLength(profile.buildingCount);
+  });
+
+  it('surfaces shared npc rosters on town building tiles', () => {
+    const map = createTownMap();
+    const buildings = getTownBuildings(TOWN_ORIGIN.x, TOWN_ORIGIN.y);
+    const npcs = getTownNpcs(TOWN_ORIGIN.x, TOWN_ORIGIN.y);
+    const residence = buildings.find((building) => building.role === 'residential');
+    const workplace = buildings.find((building) => building.role === 'professional');
+
+    if (!residence || !workplace) {
+      throw new Error('Expected the deterministic town layout to include residences and workplaces.');
+    }
+
+    const residenceTile = map.getTile(residence.x, residence.y);
+    const workplaceTile = map.getTile(workplace.x, workplace.y);
+    const residentName = npcs.find((npc) => npc.id === residence.residentNpcIds[0])?.name;
+
+    expect(residenceTile.building).toMatchObject({
+      id: residence.id,
+      role: 'residential',
+      residents: residence.residentNpcIds,
+    });
+    expect(workplaceTile.building).toMatchObject({
+      id: workplace.id,
+      role: 'professional',
+      workers: workplace.workerNpcIds,
+    });
+    expect(residentName).toBeTruthy();
+    expect(residenceTile.note).toContain('Residents:');
+    expect(workplaceTile.note).toContain('Workers:');
   });
 });

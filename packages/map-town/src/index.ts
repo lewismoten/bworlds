@@ -5,7 +5,12 @@ import {
   createEnterMapAction,
   createExitMapAction,
 } from '@bworlds/map-support';
-import { getTownBuildingPlots, getTownProfile } from '@bworlds/town-support';
+import {
+  getTownBuildingLabel,
+  getTownBuildings,
+  getTownProfile,
+} from '@bworlds/town-support';
+import type { TownBuilding, TownBuildingRole } from '@bworlds/town-support';
 import type {
   CreateMapContext,
   RuntimePlugin,
@@ -17,7 +22,13 @@ import type {
 type Point = { x: number; y: number };
 
 type TownTile = TileLike & {
-  building?: { id: string; role?: string };
+  building?: {
+    id: string;
+    role?: TownBuildingRole;
+    professionFamily?: TownBuilding['professionFamily'];
+    residents?: string[];
+    workers?: string[];
+  };
 };
 
 type TownContext = WorldContextLike & {
@@ -52,10 +63,10 @@ function createTownMap(
   const cx = Math.floor(width / 2);
   const cy = Math.floor(height / 2);
   const townProfile = getTownProfile(context.origin.x, context.origin.y);
-  const buildingPlotRoles = new Map(
-    getTownBuildingPlots(context.origin.x, context.origin.y).map((plot) => [
-      `${plot.x}:${plot.y}`,
-      plot.role,
+  const buildingSummaries = new Map(
+    getTownBuildings(context.origin.x, context.origin.y).map((building) => [
+      `${building.x}:${building.y}`,
+      building,
     ])
   );
 
@@ -77,7 +88,7 @@ function createTownMap(
         localY,
         centerX: cx,
         centerY: cy,
-        buildingPlotRoles,
+        buildingSummaries,
       });
       if (localX === cx && localY === cy) {
         tile = {
@@ -126,7 +137,7 @@ export function resolveTownTile(options: {
   localY: number;
   centerX: number;
   centerY: number;
-  buildingPlotRoles?: Map<string, string>;
+  buildingSummaries?: Map<string, TownBuilding>;
 }): TownTile {
   const offsetX = options.localX - options.centerX;
   const offsetY = options.localY - options.centerY;
@@ -137,18 +148,33 @@ export function resolveTownTile(options: {
     return { kind: 'forest' };
   }
 
-  const buildingRole = options.buildingPlotRoles?.get(`${offsetX}:${offsetY}`);
-  if (typeof buildingRole === 'string') {
+  const building = options.buildingSummaries?.get(`${offsetX}:${offsetY}`);
+  if (building) {
+    const buildingLabel = getTownBuildingLabel(
+      building.professionFamily,
+      building.role === 'professional' ? 'professional' : 'residential'
+    );
+    const occupants =
+      building.role === 'professional'
+        ? building.workerNpcIds.length > 0
+          ? ` Workers: ${building.workerNpcIds.join(', ')}.`
+          : ''
+        : building.residentNpcIds.length > 0
+          ? ` Residents: ${building.residentNpcIds.join(', ')}.`
+          : '';
     return {
       kind: 'shop',
       building: {
-        id: `${options.contextId}:${options.x}:${options.y}`,
-        role: buildingRole,
+        id: building.id,
+        role: building.role,
+        professionFamily: building.professionFamily,
+        residents: [...building.residentNpcIds],
+        workers: [...building.workerNpcIds],
       },
       note:
-        buildingRole === 'professional'
-          ? 'A professional town building stands near the square.'
-          : 'A residential home lines the town lane.',
+        building.role === 'professional'
+          ? `A ${buildingLabel} stands near the square.${occupants}`
+          : `A residential home lines the town lane.${occupants}`,
     };
   }
 
