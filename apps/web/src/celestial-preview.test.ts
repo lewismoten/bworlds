@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   brightenPreviewSurfaceColor,
   buildPlanetTextureGrid,
+  getCelestialPreviewFrameSignature,
   getCelestialPreviewSceneSignatures,
   getPreviewAuroraBandPath,
   getPreviewBodyPosition,
@@ -326,6 +327,33 @@ describe('celestial preview helpers', () => {
     );
     expect(getCelestialPreviewSceneSignatures(farCycle).constellations).not.toBe(
       getCelestialPreviewSceneSignatures(cycle).constellations
+    );
+  });
+
+  it('uses coarse frame signatures so tiny lighting drifts do not redraw the preview every frame', () => {
+    const cycle = getDaylightCycleState(120000, {
+      observerLatitudeDegrees: 24,
+    });
+    const nearCycle = clonePreviewSceneCycle(cycle, {
+      ...cycle,
+      sunAzimuth: cycle.sunAzimuth + 0.01,
+      sunAltitude: cycle.sunAltitude + 0.003,
+      moonAltitude: cycle.moonAltitude + 0.002,
+      starsOpacity: Math.min(1, cycle.starsOpacity + 0.01),
+    });
+    const farCycle = clonePreviewSceneCycle(cycle, {
+      ...cycle,
+      sunAzimuth: cycle.sunAzimuth + 0.08,
+    });
+
+    expect(getCelestialPreviewFrameSignature(nearCycle, 0.2, true)).toBe(
+      getCelestialPreviewFrameSignature(cycle, 0.2, true)
+    );
+    expect(getCelestialPreviewFrameSignature(cycle, 0.2, true)).not.toBe(
+      getCelestialPreviewFrameSignature(farCycle, 0.2, true)
+    );
+    expect(getCelestialPreviewFrameSignature(cycle, 0.2, true)).not.toBe(
+      getCelestialPreviewFrameSignature(cycle, 0.5, true)
     );
   });
 });

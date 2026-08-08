@@ -98,6 +98,10 @@ export function createSolarSystemPreviewRenderer(
     lastEvents: '',
     lastLabels: '',
   };
+  const renderState = {
+    dirty: true,
+    lastFrameSignature: '',
+  };
 
   const interaction = {
     yaw: 0,
@@ -160,9 +164,25 @@ export function createSolarSystemPreviewRenderer(
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     camera.aspect = width / height;
     camera.updateProjectionMatrix();
+    renderState.dirty = true;
   }
 
   function render(cycle: DaylightCycleLike) {
+    if (host.hidden) {
+      return;
+    }
+    const frameSignature = getSolarSystemRenderSignature(
+      cycle,
+      interaction.yaw,
+      interaction.pitch
+    );
+    if (
+      !interaction.dragging &&
+      !renderState.dirty &&
+      frameSignature === renderState.lastFrameSignature
+    ) {
+      return;
+    }
     root.rotation.y = interaction.yaw;
     root.rotation.x = interaction.pitch;
     const signatures = getSolarSystemSceneSignatures(cycle);
@@ -191,6 +211,8 @@ export function createSolarSystemPreviewRenderer(
       sceneSignatureState.lastLabels = signatures.labels;
     }
     renderer.render(scene, camera);
+    renderState.dirty = false;
+    renderState.lastFrameSignature = frameSignature;
   }
 
   resize();
@@ -211,6 +233,24 @@ export function getSolarSystemBodyPositions(
     id: body.id,
     position: createSolarSystemBodyPosition(body),
   }));
+}
+
+export function getSolarSystemRenderSignature(
+  cycle: DaylightCycleLike,
+  yaw = 0,
+  pitch = 0
+): string {
+  const scene = getSolarSystemSceneSignatures(cycle);
+  return [
+    scene.stars,
+    scene.orbits,
+    scene.bodies,
+    scene.shell,
+    scene.events,
+    scene.labels,
+    Math.round(yaw * 40),
+    Math.round(pitch * 40),
+  ].join('|');
 }
 
 export function getSolarSystemEventMarkerStates(

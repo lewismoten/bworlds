@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { getDaylightCycleState } from '@bworlds/core';
 import {
   getBackgroundStarStates,
+  getSolarSystemRenderSignature,
   getSolarSystemBodyPositions,
   getSolarSystemEventMarkerStates,
   getSolarSystemSceneSignatures,
@@ -162,5 +163,31 @@ describe('solar system preview helpers', () => {
     expect(brighterStars[0]?.opacity).toBeGreaterThan(dimmerStars[0]?.opacity ?? 0);
     expect(brighterStars[0]?.x).not.toBeCloseTo(stars[0]?.x ?? 0, 6);
     expect(brighterStars[0]?.z).not.toBeCloseTo(stars[0]?.z ?? 0, 6);
+  });
+
+  it('reuses the same render signature until the scene or camera meaningfully changes', () => {
+    const cycle = getDaylightCycleState(210000, {
+      observerLatitudeDegrees: 24,
+    });
+    const nearCycle = cloneSolarSystemCycle(cycle, {
+      ...cycle,
+      starsOpacity: Math.min(1, cycle.starsOpacity + 0.004),
+    });
+    const farCycle = cloneSolarSystemCycle(cycle, {
+      ...cycle,
+      orreryBodies: cycle.orreryBodies.map((body, index) =>
+        index === 1 ? { ...body, angle: body.angle + 0.09 } : body
+      ),
+    });
+
+    expect(getSolarSystemRenderSignature(nearCycle, 0.1, -0.2)).toBe(
+      getSolarSystemRenderSignature(cycle, 0.1, -0.2)
+    );
+    expect(getSolarSystemRenderSignature(farCycle, 0.1, -0.2)).not.toBe(
+      getSolarSystemRenderSignature(cycle, 0.1, -0.2)
+    );
+    expect(getSolarSystemRenderSignature(cycle, 0.4, -0.2)).not.toBe(
+      getSolarSystemRenderSignature(cycle, 0.1, -0.2)
+    );
   });
 });

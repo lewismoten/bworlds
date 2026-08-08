@@ -208,6 +208,10 @@ export function createCelestialPreviewRenderer(
   const planetTextureState = {
     lastSampler: null as OverworldSamplerLike | null,
   };
+  const renderState = {
+    dirty: true,
+    lastFrameSignature: '',
+  };
   const sceneSignatureState = {
     lastConstellation: '',
     lastEvents: '',
@@ -337,14 +341,33 @@ export function createCelestialPreviewRenderer(
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     camera.aspect = 1;
     camera.updateProjectionMatrix();
+    renderState.dirty = true;
   }
 
   function render(
     cycle: DaylightCycleLike,
-    environment: WorldEnvironmentLike,
+    _environment: WorldEnvironmentLike,
     facingAngle = 0,
     overworldSampler: OverworldSamplerLike | null = null
   ) {
+    if (host.hidden) {
+      return;
+    }
+    const sampleOverworld = resolvePreviewSampler(overworldSampler);
+    const textureDirty = Boolean(sampleOverworld) && overworldSampler !== planetTextureState.lastSampler;
+    const frameSignature = getCelestialPreviewFrameSignature(
+      cycle,
+      facingAngle,
+      Boolean(sampleOverworld)
+    );
+    if (
+      !rotationState.dragging &&
+      !renderState.dirty &&
+      !textureDirty &&
+      frameSignature === renderState.lastFrameSignature
+    ) {
+      return;
+    }
     root.rotation.y = Math.PI + rotationState.yaw;
     root.rotation.z = getPreviewRootPitch(cycle.observerLatitudeDegrees, rotationState.pitch);
     world.rotation.y += 0.002;
@@ -445,6 +468,8 @@ export function createCelestialPreviewRenderer(
     orbitRoot.visible = true;
 
     renderer.render(scene, camera);
+    renderState.dirty = false;
+    renderState.lastFrameSignature = frameSignature;
   }
 
   resize();
@@ -725,17 +750,57 @@ export function buildPlanetTextureGrid(
   width = 64,
   height = 32
 ): string[][] {
-  return Array.from({ length: height }, (_, y) =>
-    Array.from({ length: width }, (_, x) => {
+  const grid = new Array<string[]>(height);
+  for (let y = 0; y < height; y += 1) {
+    const row = new Array<string>(width);
+    const latitude = y / height;
+    const worldY = Math.round((0.5 - latitude) * 128);
+    for (let x = 0; x < width; x += 1) {
       const longitude = x / width;
-      const latitude = y / height;
       const worldX = Math.round((longitude - 0.5) * 256);
-      const worldY = Math.round((0.5 - latitude) * 128);
-      return brightenPreviewSurfaceColor(
+      row[x] = brightenPreviewSurfaceColor(
         getPlanetSurfaceColor(samplePreviewOverworldKind(sampleOverworld, worldX, worldY))
       );
-    })
-  );
+    }
+    grid[y] = row;
+  }
+  return grid;
+}
+
+export function getCelestialPreviewFrameSignature(
+  cycle: Pick<
+    DaylightCycleLike,
+    | 'observerLatitudeDegrees'
+    | 'solarDeclination'
+    | 'sunAzimuth'
+    | 'sunAltitude'
+    | 'moonAzimuth'
+    | 'moonAltitude'
+    | 'moonIllumination'
+    | 'daylight'
+    | 'night'
+    | 'starsOpacity'
+    | 'solarEclipse'
+  >,
+  facingAngle = 0,
+  hasSampler = false
+): string {
+  return [
+    Math.round((cycle.observerLatitudeDegrees ?? 0) * 2),
+    Math.round((cycle.solarDeclination ?? 0) * 100),
+    Math.round((cycle.sunAzimuth ?? 0) * 24),
+    Math.round((cycle.sunAltitude ?? 0) * 80),
+    Math.round((cycle.moonAzimuth ?? 0) * 16),
+    Math.round((cycle.moonAltitude ?? 0) * 80),
+    Math.round((cycle.moonIllumination ?? 0) * 12),
+    Math.round((cycle.daylight ?? 0) * 16),
+    Math.round((cycle.night ?? 0) * 16),
+    Math.round((cycle.starsOpacity ?? 0) * 16),
+    Math.round((cycle.solarEclipse?.coverage ?? 0) * 20),
+    Math.round((cycle.solarEclipse?.totality ?? 0) * 20),
+    Math.round(facingAngle * 12),
+    hasSampler ? 'map' : 'none',
+  ].join('|');
 }
 
 export function getPreviewSunOrbitSpec(
