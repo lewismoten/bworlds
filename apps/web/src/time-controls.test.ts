@@ -33,6 +33,7 @@ describe('time controls', () => {
 
   it('normalizes the inspector tab id to a supported tab', () => {
     expect(getNextInspectorTab('compass')).toBe('compass');
+    expect(getNextInspectorTab('debug')).toBe('debug');
     expect(getNextInspectorTab('events')).toBe('events');
     expect(getNextInspectorTab('model')).toBe('model');
     expect(getNextInspectorTab('timekeeper')).toBe('timekeeper');
@@ -96,6 +97,7 @@ describe('time controls', () => {
     expect(isInspectorSectionVisible('timekeeper', 'compass')).toBe(false);
     expect(isInspectorSectionVisible('timekeeper', 'viewport-compass')).toBe(false);
     expect(isInspectorSectionVisible('compass', 'viewport-compass')).toBe(true);
+    expect(isInspectorSectionVisible('debug', 'debug')).toBe(true);
   });
 
   it('can focus one model preview or show both together', () => {

@@ -50,6 +50,12 @@ type Render3DOptions = {
 };
 type Render3DController = {
   canOccupy(state: Render3DState, nextX: number, nextY: number): boolean;
+  getStats(): {
+    drawCalls: number;
+    triangles: number;
+    visibleTileCount: number;
+    pendingTileCount: number;
+  };
   render(state: Render3DState, options?: Render3DOptions): void;
   resize(width: number, height: number, pixelRatio?: number): void;
 };
@@ -404,6 +410,15 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       }
     }
     return true;
+  }
+
+  function getStats() {
+    return {
+      drawCalls: renderer.info.render.calls,
+      triangles: renderer.info.render.triangles,
+      visibleTileCount: visibleTileNodes.size,
+      pendingTileCount: pendingWorldBuild.queue.length,
+    };
   }
 
   function getTileSurfaceProfile(state, tile, tileX, tileY) {
@@ -1032,6 +1047,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
 
   return {
     canOccupy,
+    getStats,
     render,
     resize,
   };

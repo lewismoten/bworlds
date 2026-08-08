@@ -13,6 +13,7 @@ describe('session state', () => {
       packIds: ['default-content-pack'],
       stack: [{ id: 'overworld', depth: 0 }],
       viewMode: '3d',
+      worldSeed: 'spec-seed',
       timekeeperDisplayMode: 'graphical',
       compassDisplayMode: 'graphical',
       minimapDisplayMode: 'graphical',
@@ -39,6 +40,7 @@ describe('session state', () => {
     expect(parseSavedSession(raw)).toEqual(
       expect.objectContaining({
         timeOffsetMs: 42000,
+        worldSeed: 'spec-seed',
         timekeeperDisplayMode: 'graphical',
         compassDisplayMode: 'graphical',
         minimapDisplayMode: 'graphical',
@@ -58,6 +60,16 @@ describe('session state', () => {
   });
 
   it('accepts the ascii text viewport mode in saved sessions', () => {
+    expect(
+      parseSavedSession(
+        JSON.stringify({
+          player: { x: 0, y: 0, facing: 0 },
+          stack: [{ id: 'overworld', depth: 0 }],
+          worldSeed: 42,
+        })
+      )
+    ).toBeNull();
+
     expect(
       parseSavedSession(
         JSON.stringify({
@@ -192,6 +204,7 @@ describe('session state', () => {
       packIds: ['default-content-pack'],
       stack: [{ id: 'overworld', depth: 0 }],
       viewMode: '2d',
+      worldSeed: 'season-seed',
       timekeeperDisplayMode: 'time-date',
       compassDisplayMode: 'letters',
       minimapDisplayMode: 'hidden',

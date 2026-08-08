@@ -6,7 +6,7 @@ type DaylightCycleLike = {
 };
 
 export type TimePreset = 'dawn' | 'noon' | 'dusk' | 'midnight';
-export type InspectorTab = 'timekeeper' | 'model' | 'events' | 'compass';
+export type InspectorTab = 'timekeeper' | 'model' | 'events' | 'compass' | 'debug';
 export type InspectorSection = InspectorTab | 'viewport-compass';
 export type ModelPreviewMode = 'world' | 'solar-system' | 'split';
 export type TimekeeperDisplayMode =
@@ -62,7 +62,12 @@ export function getTimePresetProgress(
 }
 
 export function getNextInspectorTab(tabId: string | undefined): InspectorTab {
-  if (tabId === 'model' || tabId === 'events' || tabId === 'compass') {
+  if (
+    tabId === 'model' ||
+    tabId === 'events' ||
+    tabId === 'compass' ||
+    tabId === 'debug'
+  ) {
     return tabId;
   }
   return 'timekeeper';

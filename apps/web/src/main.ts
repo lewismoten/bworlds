@@ -64,6 +64,11 @@ import {
   DEFAULT_HEAD_BOB_STATE,
 } from './head-bob.ts';
 import {
+  buildDebugMarkup,
+  getDebugSignature,
+  normalizeWorldSeed,
+} from './debug-panel.ts';
+import {
   advanceRenderBudgetState,
   DEFAULT_RENDER_BUDGET_STATE,
 } from './render-budget.ts';
@@ -125,9 +130,15 @@ type DisplayedCycle = ReturnType<typeof getDaylightCycleState> & {
     | undefined;
 };
 type FrameLoopActivityLike = ReturnType<typeof getFrameLoopActivity>;
+type PerformanceWithMemory = Performance & {
+  memory?: {
+    usedJSHeapSize: number;
+    jsHeapSizeLimit: number;
+  };
+};
 
 const STORAGE_KEY = 'bworlds:session';
-const WORLD_SEED = 'bworlds-alpha';
+const DEFAULT_WORLD_SEED = 'bworlds-alpha';
 const builtinPackCatalog = createBuiltinContentPackCatalog();
 const builtinPackManifests = builtinPackCatalog.list();
 const REQUIRED_PACK_ID = 'default-content-pack';
@@ -266,6 +277,16 @@ root.innerHTML = `
               >
                 Compass
               </button>
+              <button
+                id="tab-debug"
+                class="inspector-tab"
+                type="button"
+                role="tab"
+                aria-selected="false"
+                aria-controls="panel-debug"
+              >
+                Debug
+              </button>
             </div>
           </div>
           <section id="panel-timekeeper" class="inspector-panel" role="tabpanel">
@@ -391,6 +412,29 @@ root.innerHTML = `
               <button id="face-south" type="button">South</button>
               <button id="face-west" type="button">West</button>
             </div>
+          </section>
+          <section
+            id="panel-debug"
+            class="inspector-panel is-hidden"
+            role="tabpanel"
+            aria-hidden="true"
+            hidden
+          >
+            <div class="debug-seed-controls">
+              <input
+                id="debug-seed-input"
+                class="debug-seed-input"
+                type="text"
+                spellcheck="false"
+                aria-label="World seed"
+              />
+              <button id="debug-apply-seed" type="button">Apply Seed</button>
+              <button id="debug-load-seed" type="button">Load Saved</button>
+            </div>
+            <dl id="debug-summary" class="debug-summary"></dl>
+            <p class="inspector-note">
+              Applied seeds are saved with the session and restored when you load it again.
+            </p>
           </section>
         </div>
         <div class="card">
@@ -518,6 +562,14 @@ const modelPreviewSolarCard =
   document.querySelector<HTMLElement>('#model-preview-card-solar');
 const eventSummary =
   document.querySelector<HTMLElement>('#event-summary');
+const debugSummary =
+  document.querySelector<HTMLElement>('#debug-summary');
+const debugSeedInput =
+  document.querySelector<HTMLInputElement>('#debug-seed-input');
+const debugApplySeedButton =
+  document.querySelector<HTMLButtonElement>('#debug-apply-seed');
+const debugLoadSeedButton =
+  document.querySelector<HTMLButtonElement>('#debug-load-seed');
 const freezeTimeButton =
   document.querySelector<HTMLButtonElement>('#time-freeze-toggle');
 const celestialToolsCard =
@@ -533,13 +585,15 @@ const inspectorPanels = {
   model: document.querySelector<HTMLElement>('#panel-model'),
   events: document.querySelector<HTMLElement>('#panel-events'),
   compass: document.querySelector<HTMLElement>('#panel-compass'),
+  debug: document.querySelector<HTMLElement>('#panel-debug'),
 };
 let lastSavedSnapshot = '';
 
 const savedSession = loadSession();
+let currentWorldSeed = normalizeWorldSeed(savedSession?.worldSeed, DEFAULT_WORLD_SEED);
 let activePackIds = normalizeSelectedPackIds(savedSession?.packIds);
 let runtime = createWorldRuntime({
-  seed: WORLD_SEED,
+  seed: currentWorldSeed,
   packIds: activePackIds,
   player: savedSession?.player,
   stack: savedSession?.stack,
@@ -661,6 +715,7 @@ const uiRenderState = {
   lastViewportHudSignature: '',
   lastEventSummarySignature: '',
   lastTextViewportSignature: '',
+  lastDebugSignature: '',
 };
 const hmrNoticeState = {
   message: '',
@@ -682,6 +737,9 @@ updateViewModeUi();
 updateTimekeeperDisplayModeUi();
 updateCompassDisplayModeUi();
 updateMinimapDisplayModeUi();
+if (debugSeedInput) {
+  debugSeedInput.value = currentWorldSeed;
+}
 
 function updateViewModeUi(): void {
   if (toggleButton) {
@@ -1064,7 +1122,7 @@ function rebuildRuntime(nextPackIds: string[]): void {
   const normalizedPackIds = normalizeSelectedPackIds(nextPackIds);
   const placedPois = getSavedPlayerPlacedPois();
   runtime = createWorldRuntime({
-    seed: WORLD_SEED,
+    seed: currentWorldSeed,
     packIds: normalizedPackIds,
     player: {
       x: state.player.x,
@@ -1084,6 +1142,30 @@ function rebuildRuntime(nextPackIds: string[]): void {
   updateContentPackLabel();
   saveSession();
   requestRender();
+}
+
+function syncDebugSeedInput(): void {
+  if (debugSeedInput && debugSeedInput.value !== currentWorldSeed) {
+    debugSeedInput.value = currentWorldSeed;
+  }
+}
+
+function applyWorldSeed(seed: string): void {
+  const nextSeed = normalizeWorldSeed(seed, DEFAULT_WORLD_SEED);
+  if (nextSeed === currentWorldSeed) {
+    syncDebugSeedInput();
+    requestRender();
+    return;
+  }
+  currentWorldSeed = nextSeed;
+  rebuildRuntime(activePackIds);
+  syncDebugSeedInput();
+  showHmrNotice(`World seed applied: ${currentWorldSeed}`);
+}
+
+function loadSavedWorldSeed(): void {
+  const parsed = parseSavedSession(window.localStorage.getItem(STORAGE_KEY));
+  applyWorldSeed(parsed?.worldSeed ?? DEFAULT_WORLD_SEED);
 }
 
 function getCurrentWorldTimeMs(): number {
@@ -1206,7 +1288,7 @@ function handleBuildPoi(): void {
     return;
   }
 
-  const built = buildPlayerPoi(state, WORLD_SEED, selectedKind);
+  const built = buildPlayerPoi(state, currentWorldSeed, selectedKind);
   if (!built) {
     showHmrNotice('Unable to build here. Move to an open overworld tile without an existing point of interest.');
     return;
@@ -1659,6 +1741,40 @@ function render(): FrameLoopActivityLike {
     )
   );
   updateStatus(environment, displayCycle);
+  if (debugSummary) {
+    const gps = toGps(state.player.x, state.player.y);
+    const gridX = snapWorldCoordinate(state.player.x);
+    const gridY = snapWorldCoordinate(state.player.y);
+    const rendererStats = renderer3d.getStats();
+    const performanceStats = performance as PerformanceWithMemory;
+    const debugSnapshot = {
+      fps: 1000 / Math.max(1, renderBudgetState.smoothedFrameMs),
+      frameMs: renderBudgetState.smoothedFrameMs,
+      visibilityRadius: renderBudgetState.visibilityRadius,
+      drawCalls: rendererStats.drawCalls,
+      triangles: rendererStats.triangles,
+      visibleTileCount: rendererStats.visibleTileCount,
+      pendingTileCount: rendererStats.pendingTileCount,
+      latitude: gps.latitude,
+      longitude: gps.longitude,
+      gridX,
+      gridY,
+      worldSeed: currentWorldSeed,
+      heapUsedMb:
+        typeof performanceStats.memory?.usedJSHeapSize === 'number'
+          ? performanceStats.memory.usedJSHeapSize / (1024 * 1024)
+          : null,
+      heapLimitMb:
+        typeof performanceStats.memory?.jsHeapSizeLimit === 'number'
+          ? performanceStats.memory.jsHeapSizeLimit / (1024 * 1024)
+          : null,
+    };
+    const debugSignature = getDebugSignature(debugSnapshot);
+    if (debugSignature !== uiRenderState.lastDebugSignature) {
+      debugSummary.innerHTML = buildDebugMarkup(debugSnapshot);
+      uiRenderState.lastDebugSignature = debugSignature;
+    }
+  }
   return getFrameLoopActivity({
     nowMs,
     timeFrozen: timeState.frozen,
@@ -2069,6 +2185,15 @@ modelPlusHourButton?.addEventListener('click', () => skipTimeByHours(1));
 modelMinusHourButton?.addEventListener('click', () => skipTimeByHours(-1));
 modelMinusSeasonButton?.addEventListener('click', () => skipSeasonByCount(-1));
 modelPlusSeasonButton?.addEventListener('click', () => skipSeasonByCount(1));
+debugApplySeedButton?.addEventListener('click', () => {
+  applyWorldSeed(debugSeedInput?.value ?? currentWorldSeed);
+});
+debugLoadSeedButton?.addEventListener('click', loadSavedWorldSeed);
+debugSeedInput?.addEventListener('keydown', (event) => {
+  if (event.key === 'Enter') {
+    applyWorldSeed(debugSeedInput.value);
+  }
+});
 modelPreviewWorldButton?.addEventListener('click', () => setModelPreviewMode('world'));
 modelPreviewSolarButton?.addEventListener('click', () => setModelPreviewMode('solar-system'));
 modelPreviewSplitButton?.addEventListener('click', () => setModelPreviewMode('split'));
@@ -2307,6 +2432,7 @@ function saveSession(): void {
       celestialEventMode: celestialEventModeState.mode,
       compassHeadingAngle: compassHeadingState.angle,
       cameraPitch: mouseLookState.pitch,
+      worldSeed: currentWorldSeed,
       playerPlacedPois: getSavedPlayerPlacedPois(),
     });
     if (snapshot === lastSavedSnapshot) return;

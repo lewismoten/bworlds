@@ -34,6 +34,7 @@ export type SavedSession = {
   packIds?: string[];
   stack: SessionWorldContext[];
   viewMode?: SessionViewMode;
+  worldSeed?: string;
   timekeeperDisplayMode?: TimekeeperDisplayMode;
   compassDisplayMode?: CompassDisplayMode;
   minimapDisplayMode?: MinimapDisplayMode;
@@ -58,6 +59,7 @@ export type SessionSnapshot = {
   packIds: string[];
   stack: SessionWorldContext[];
   viewMode: SessionViewMode;
+  worldSeed: string;
   timekeeperDisplayMode: TimekeeperDisplayMode;
   compassDisplayMode: CompassDisplayMode;
   minimapDisplayMode: MinimapDisplayMode;
@@ -137,7 +139,14 @@ export function parseSavedSession(raw: string | null): SavedSession | null {
       parsed.inspectorTab !== 'timekeeper' &&
       parsed.inspectorTab !== 'model' &&
       parsed.inspectorTab !== 'events' &&
-      parsed.inspectorTab !== 'compass'
+      parsed.inspectorTab !== 'compass' &&
+      parsed.inspectorTab !== 'debug'
+    ) {
+      return null;
+    }
+    if (
+      typeof parsed?.worldSeed !== 'undefined' &&
+      typeof parsed.worldSeed !== 'string'
     ) {
       return null;
     }
