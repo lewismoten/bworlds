@@ -333,9 +333,9 @@ These reinforce the material/program concern.
 `markPoiWindResponder()` appears several times and contributes a smaller but noticeable amount.
 
 * [ ] Review how wind-responsive objects are tagged.
-* [ ] Avoid allocating metadata objects for every foliage element.
-* [ ] Avoid storing callbacks independently on thousands of objects.
-* [ ] Use shared identifiers or compact flags.
+* [x] Avoid allocating metadata objects for every foliage element.
+* [x] Avoid storing callbacks independently on thousands of objects.
+* [x] Use shared identifiers or compact flags.
 * [ ] Group wind-responsive vegetation.
 * [ ] Favor shader-based wind over JavaScript object-by-object animation.
 * [x] Avoid traversing the scene every frame looking for wind responders.

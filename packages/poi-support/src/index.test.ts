@@ -679,6 +679,61 @@ describe('poi support', () => {
     expect(root.traverse).toHaveBeenCalledTimes(1);
   });
 
+  it('reuses identical wind responder metadata profiles', () => {
+    const first = markPoiWindResponder(
+      {
+        userData: {},
+        visible: true,
+        position: { x: 0, y: 0, z: 0, set() { return this; } },
+        rotation: { x: 0, y: 0, z: 0 },
+        scale: {
+          x: 1,
+          y: 1,
+          z: 1,
+          set() { return this; },
+          setScalar() { return this; },
+        },
+        add() { return this; },
+      },
+      {
+        axis: 'z',
+        baseRotation: 0.1,
+        idleAmplitude: 0.01,
+        windAmplitude: 0.08,
+      }
+    );
+    const second = markPoiWindResponder(
+      {
+        userData: {},
+        visible: true,
+        position: { x: 0, y: 0, z: 0, set() { return this; } },
+        rotation: { x: 0, y: 0, z: 0 },
+        scale: {
+          x: 1,
+          y: 1,
+          z: 1,
+          set() { return this; },
+          setScalar() { return this; },
+        },
+        add() { return this; },
+      },
+      {
+        axis: 'z',
+        baseRotation: 0.1,
+        idleAmplitude: 0.01,
+        windAmplitude: 0.08,
+      }
+    );
+
+    expect(
+      (first.userData as { poiWindResponder?: unknown } | undefined)
+        ?.poiWindResponder
+    ).toBe(
+      (second.userData as { poiWindResponder?: unknown } | undefined)
+        ?.poiWindResponder
+    );
+  });
+
   it('finds reachable route distances for a facing direction', () => {
     const east = CARDINAL_DIRECTIONS.find(
       (direction) => direction.label === 'east'

@@ -149,6 +149,10 @@ type PoiWindResponderOptions = {
 };
 const POI_LIGHT_EMITTER_KEY = 'poiNightLightEmitter';
 const POI_WIND_RESPONDER_KEY = 'poiWindResponder';
+const poiWindResponderProfileCache = new Map<
+  string,
+  Required<PoiWindResponderOptions>
+>();
 const poiWindResponderCache = new WeakMap<
   ThreeObject3DLike,
   Array<
@@ -224,19 +228,10 @@ export function markPoiWindResponder<TObject extends ThreeObject3DLike>(
   target: TObject,
   options: PoiWindResponderOptions = {}
 ): TObject {
+  const responderProfile = getPoiWindResponderProfile(options);
   target.userData = {
     ...(target.userData ?? {}),
-    [POI_WIND_RESPONDER_KEY]: {
-      axis: options.axis ?? 'z',
-      baseRotation: options.baseRotation ?? 0,
-      idleAmplitude: options.idleAmplitude ?? 0.02,
-      windAmplitude: options.windAmplitude ?? 0.14,
-      gustAmplitude: options.gustAmplitude ?? 0.06,
-      speed: options.speed ?? 1,
-      gustSpeed: options.gustSpeed ?? 2.2,
-      phase: options.phase ?? 0,
-      gustPhase: options.gustPhase ?? 0,
-    } satisfies Required<PoiWindResponderOptions>,
+    [POI_WIND_RESPONDER_KEY]: responderProfile,
   };
   return target;
 }
@@ -298,6 +293,39 @@ function getPoiWindResponderTargets(root: ThreeObject3DLike) {
 
   poiWindResponderCache.set(root, responders);
   return responders;
+}
+
+function getPoiWindResponderProfile(
+  options: PoiWindResponderOptions = {}
+): Required<PoiWindResponderOptions> {
+  const normalized = {
+    axis: options.axis ?? 'z',
+    baseRotation: options.baseRotation ?? 0,
+    idleAmplitude: options.idleAmplitude ?? 0.02,
+    windAmplitude: options.windAmplitude ?? 0.14,
+    gustAmplitude: options.gustAmplitude ?? 0.06,
+    speed: options.speed ?? 1,
+    gustSpeed: options.gustSpeed ?? 2.2,
+    phase: options.phase ?? 0,
+    gustPhase: options.gustPhase ?? 0,
+  } satisfies Required<PoiWindResponderOptions>;
+  const key = [
+    normalized.axis,
+    normalized.baseRotation,
+    normalized.idleAmplitude,
+    normalized.windAmplitude,
+    normalized.gustAmplitude,
+    normalized.speed,
+    normalized.gustSpeed,
+    normalized.phase,
+    normalized.gustPhase,
+  ].join(':');
+
+  if (!poiWindResponderProfileCache.has(key)) {
+    poiWindResponderProfileCache.set(key, normalized);
+  }
+
+  return poiWindResponderProfileCache.get(key)!;
 }
 
 export function canPlaceLandPoi(
