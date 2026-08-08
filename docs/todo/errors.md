@@ -175,7 +175,7 @@ with one sampled site around **4.1 MB**.
 * [ ] Avoid representing tiny details as individual `Object3D`s.
 * [ ] Move purely decorative details into geometry or shaders.
 * [x] Don't create objects for features invisible at the current LOD.
-* [ ] Don't create wildlife/decorative models until close enough to see them.
+* [x] Don't create wildlife/decorative models until close enough to see them.
 * [ ] Remove objects immediately when their owning tile unloads.
 * [ ] Verify unloading actually removes references to descendants.
 

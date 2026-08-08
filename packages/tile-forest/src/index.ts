@@ -47,6 +47,9 @@ const RENDER_STATS_CATEGORY_KEY = 'renderStatKind';
 const TREE_CLUSTER_SIZE = 4;
 const TREE_REGION_SIZE = 14;
 const MAX_FOREST_FIREFLIES = 3;
+const FOREST_CLOSE_DETAIL_DISTANCE = 2.5;
+const FOREST_CLOSE_DETAIL_DISTANCE_SQUARED =
+  FOREST_CLOSE_DETAIL_DISTANCE * FOREST_CLOSE_DETAIL_DISTANCE;
 
 const treeDescriptorCache = new Map<string, ForestTreeDescriptor[]>();
 const treeStyleCache = new Map<string, ForestTreeStyle>();
@@ -594,11 +597,17 @@ export function createForestTilePlugin(): RuntimePlugin {
       }),
       create3DModel({
         three,
+        state,
         tileX,
         tileY,
         detailLevel = 'full',
       }: Create3DModelContext) {
         const group = new three.Group();
+        const renderCloseDetails = shouldRenderForestCloseDetails(
+          state,
+          tileX,
+          tileY
+        );
         const descriptors =
           detailLevel === 'low'
             ? getForestTreeDescriptors(tileX, tileY).filter(
@@ -668,7 +677,9 @@ export function createForestTilePlugin(): RuntimePlugin {
 
         if (detailLevel === 'full') {
           const floorDetailStyle = getTreeStyle(three, tileX, tileY, 0);
-          const hollows = getForestTreeHollows(tileX, tileY);
+          const hollows = renderCloseDetails
+            ? getForestTreeHollows(tileX, tileY)
+            : [];
           for (const hollow of hollows) {
             const treeDescriptor = descriptors[hollow.treeIndex];
             if (!treeDescriptor) {
@@ -691,93 +702,97 @@ export function createForestTilePlugin(): RuntimePlugin {
             };
             group.add(hollowMesh);
           }
-          for (const owl of getForestOwls(tileX, tileY)) {
-            const hollow = hollows[owl.hollowIndex];
-            const treeDescriptor = hollow
-              ? descriptors[hollow.treeIndex]
-              : null;
-            if (!hollow || !treeDescriptor) {
-              continue;
-            }
+          if (renderCloseDetails) {
+            for (const owl of getForestOwls(tileX, tileY)) {
+              const hollow = hollows[owl.hollowIndex];
+              const treeDescriptor = hollow
+                ? descriptors[hollow.treeIndex]
+                : null;
+              if (!hollow || !treeDescriptor) {
+                continue;
+              }
 
-            const owlBody = new three.Mesh(
-              geometry.foliage,
-              floorDetailStyle.owlBodyMaterial
-            );
-            owlBody.position.set(
-              tileX +
-                treeDescriptor.x +
-                treeDescriptor.radius * 0.56 * hollow.sideOffset,
-              hollow.height - owl.perchOffset,
-              tileY + treeDescriptor.y + hollow.depth * 0.2
-            );
-            owlBody.scale.set(
-              owl.bodyScale,
-              owl.bodyScale * 1.18,
-              owl.bodyScale * 0.92
-            );
-            owlBody.userData = {
-              ...(owlBody.userData ?? {}),
-              [OWL_KEY]: true,
-            };
-            group.add(owlBody);
-
-            const leftEye = new three.Mesh(
-              geometry.foliage,
-              floorDetailStyle.owlEyeMaterial
-            );
-            leftEye.position.set(
-              owlBody.position.x + owl.eyeSpread * 0.5,
-              owlBody.position.y + owl.bodyScale * 0.16,
-              owlBody.position.z + owl.bodyScale * 0.68
-            );
-            leftEye.scale.setScalar(owl.bodyScale * 0.16);
-            leftEye.userData = {
-              ...(leftEye.userData ?? {}),
-              [OWL_KEY]: true,
-            };
-            group.add(leftEye);
-
-            const rightEye = new three.Mesh(
-              geometry.foliage,
-              floorDetailStyle.owlEyeMaterial
-            );
-            rightEye.position.set(
-              owlBody.position.x - owl.eyeSpread * 0.5,
-              owlBody.position.y + owl.bodyScale * 0.16,
-              owlBody.position.z + owl.bodyScale * 0.68
-            );
-            rightEye.scale.setScalar(owl.bodyScale * 0.16);
-            rightEye.userData = {
-              ...(rightEye.userData ?? {}),
-              [OWL_KEY]: true,
-            };
-            group.add(rightEye);
-          }
-          for (const carving of getForestCarvings(tileX, tileY)) {
-            const treeDescriptor = descriptors[carving.treeIndex];
-            if (!treeDescriptor) {
-              continue;
-            }
-
-            for (const marker of getForestCarvingMarkers(carving)) {
-              const notch = new three.Mesh(
+              const owlBody = new three.Mesh(
                 geometry.foliage,
-                floorDetailStyle.carvingMaterial
+                floorDetailStyle.owlBodyMaterial
               );
-              notch.position.set(
+              owlBody.position.set(
                 tileX +
                   treeDescriptor.x +
-                  treeDescriptor.radius * 0.74 * carving.sideOffset,
-                carving.height + marker.y * carving.scale,
-                tileY + treeDescriptor.y + marker.x * carving.scale
+                  treeDescriptor.radius * 0.56 * hollow.sideOffset,
+                hollow.height - owl.perchOffset,
+                tileY + treeDescriptor.y + hollow.depth * 0.2
               );
-              notch.scale.setScalar(carving.scale);
-              notch.userData = {
-                ...(notch.userData ?? {}),
-                [CARVING_KEY]: carving.text,
+              owlBody.scale.set(
+                owl.bodyScale,
+                owl.bodyScale * 1.18,
+                owl.bodyScale * 0.92
+              );
+              owlBody.userData = {
+                ...(owlBody.userData ?? {}),
+                [OWL_KEY]: true,
               };
-              group.add(notch);
+              group.add(owlBody);
+
+              const leftEye = new three.Mesh(
+                geometry.foliage,
+                floorDetailStyle.owlEyeMaterial
+              );
+              leftEye.position.set(
+                owlBody.position.x + owl.eyeSpread * 0.5,
+                owlBody.position.y + owl.bodyScale * 0.16,
+                owlBody.position.z + owl.bodyScale * 0.68
+              );
+              leftEye.scale.setScalar(owl.bodyScale * 0.16);
+              leftEye.userData = {
+                ...(leftEye.userData ?? {}),
+                [OWL_KEY]: true,
+              };
+              group.add(leftEye);
+
+              const rightEye = new three.Mesh(
+                geometry.foliage,
+                floorDetailStyle.owlEyeMaterial
+              );
+              rightEye.position.set(
+                owlBody.position.x - owl.eyeSpread * 0.5,
+                owlBody.position.y + owl.bodyScale * 0.16,
+                owlBody.position.z + owl.bodyScale * 0.68
+              );
+              rightEye.scale.setScalar(owl.bodyScale * 0.16);
+              rightEye.userData = {
+                ...(rightEye.userData ?? {}),
+                [OWL_KEY]: true,
+              };
+              group.add(rightEye);
+            }
+          }
+          if (renderCloseDetails) {
+            for (const carving of getForestCarvings(tileX, tileY)) {
+              const treeDescriptor = descriptors[carving.treeIndex];
+              if (!treeDescriptor) {
+                continue;
+              }
+
+              for (const marker of getForestCarvingMarkers(carving)) {
+                const notch = new three.Mesh(
+                  geometry.foliage,
+                  floorDetailStyle.carvingMaterial
+                );
+                notch.position.set(
+                  tileX +
+                    treeDescriptor.x +
+                    treeDescriptor.radius * 0.74 * carving.sideOffset,
+                  carving.height + marker.y * carving.scale,
+                  tileY + treeDescriptor.y + marker.x * carving.scale
+                );
+                notch.scale.setScalar(carving.scale);
+                notch.userData = {
+                  ...(notch.userData ?? {}),
+                  [CARVING_KEY]: carving.text,
+                };
+                group.add(notch);
+              }
             }
           }
           for (const meadow of getForestMeadows(tileX, tileY)) {
@@ -802,38 +817,44 @@ export function createForestTilePlugin(): RuntimePlugin {
               meadow
             );
           }
-          for (const bird of getForestBirds(tileX, tileY)) {
-            const birdGroup = new three.Group();
-            birdGroup.userData = {
-              ...(birdGroup.userData ?? {}),
-              [BIRD_KEY]: bird,
-            };
+          if (renderCloseDetails) {
+            for (const bird of getForestBirds(tileX, tileY)) {
+              const birdGroup = new three.Group();
+              birdGroup.userData = {
+                ...(birdGroup.userData ?? {}),
+                [BIRD_KEY]: bird,
+              };
 
-            const leftWing = new three.Mesh(
-              geometry.branch,
-              floorDetailStyle.birdMaterial
-            );
-            leftWing.position.set(-bird.wingScale * 0.5, 0, 0);
-            leftWing.rotation.z = -0.35;
-            leftWing.scale.set(0.18, bird.wingScale, 0.18);
-            birdGroup.add(leftWing);
+              const leftWing = new three.Mesh(
+                geometry.branch,
+                floorDetailStyle.birdMaterial
+              );
+              leftWing.position.set(-bird.wingScale * 0.5, 0, 0);
+              leftWing.rotation.z = -0.35;
+              leftWing.scale.set(0.18, bird.wingScale, 0.18);
+              birdGroup.add(leftWing);
 
-            const rightWing = new three.Mesh(
-              geometry.branch,
-              floorDetailStyle.birdMaterial
-            );
-            rightWing.position.set(bird.wingScale * 0.5, 0, 0);
-            rightWing.rotation.z = 0.35;
-            rightWing.scale.set(0.18, bird.wingScale, 0.18);
-            birdGroup.add(rightWing);
+              const rightWing = new three.Mesh(
+                geometry.branch,
+                floorDetailStyle.birdMaterial
+              );
+              rightWing.position.set(bird.wingScale * 0.5, 0, 0);
+              rightWing.rotation.z = 0.35;
+              rightWing.scale.set(0.18, bird.wingScale, 0.18);
+              birdGroup.add(rightWing);
 
-            const body = new three.Mesh(
-              geometry.foliage,
-              floorDetailStyle.birdMaterial
-            );
-            body.scale.set(bird.wingScale * 0.55, bird.wingScale * 0.3, bird.wingScale * 0.3);
-            birdGroup.add(body);
-            group.add(birdGroup);
+              const body = new three.Mesh(
+                geometry.foliage,
+                floorDetailStyle.birdMaterial
+              );
+              body.scale.set(
+                bird.wingScale * 0.55,
+                bird.wingScale * 0.3,
+                bird.wingScale * 0.3
+              );
+              birdGroup.add(body);
+              group.add(birdGroup);
+            }
           }
           const trail = getForestTrail(tileX, tileY);
           if (trail) {
@@ -903,7 +924,7 @@ export function createForestTilePlugin(): RuntimePlugin {
             group.add(log);
           }
 
-          if (detailLevel === 'full') {
+          if (renderCloseDetails) {
             for (const firefly of getForestFireflies(three, tileX, tileY)) {
               group.add(firefly);
             }
@@ -1271,6 +1292,24 @@ function getForestFireflies(three: ThreeHostLike, tileX: number, tileY: number) 
   };
 
   return [points];
+}
+
+function shouldRenderForestCloseDetails(
+  state: Create3DModelContext['state'],
+  tileX: number,
+  tileY: number
+) {
+  const player = state?.player;
+  if (!player) {
+    return true;
+  }
+
+  const deltaX = tileX - player.x;
+  const deltaY = tileY - player.y;
+  return (
+    deltaX * deltaX + deltaY * deltaY <=
+    FOREST_CLOSE_DETAIL_DISTANCE_SQUARED
+  );
 }
 
 function addLowDetailForestTreeInstances(

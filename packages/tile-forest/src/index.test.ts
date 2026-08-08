@@ -166,6 +166,27 @@ const fakeThree = {
   SphereGeometry: FakeGeometry,
 } as const;
 
+function createForestTestState(playerX = 0, playerY = 0) {
+  return {
+    player: { x: playerX, y: playerY, facing: 0 },
+    getCurrentContext() {
+      return { id: 'overworld', type: 'overworld', depth: 0 };
+    },
+    getCurrentTile() {
+      return { kind: 'forest' };
+    },
+    getTileDefinition() {
+      return {
+        name: 'Forest',
+        color: '#000000',
+        miniColor: '#111111',
+        walkable: true,
+        wallHeight: 0.38,
+      };
+    },
+  };
+}
+
 describe('tile forest', () => {
   it('generates deterministic stump and fallen tree floor details', () => {
     const sampleTiles: Array<{
@@ -1052,24 +1073,7 @@ describe('tile forest', () => {
   it('renders tree hollows only in full-detail forest models', () => {
     const plugin = createForestTilePlugin();
     const tile = plugin.tiles?.find((entry) => entry.kind === 'forest');
-    const state = {
-      player: { x: 0, y: 0, facing: 0 },
-      getCurrentContext() {
-        return { id: 'overworld', type: 'overworld', depth: 0 };
-      },
-      getCurrentTile() {
-        return { kind: 'forest' };
-      },
-      getTileDefinition() {
-        return {
-          name: 'Forest',
-          color: '#000000',
-          miniColor: '#111111',
-          walkable: true,
-          wallHeight: 0.38,
-        };
-      },
-    };
+    const state = createForestTestState();
 
     let targetTile: { x: number; y: number } | null = null;
     for (let tileY = 0; tileY < 18 && !targetTile; tileY += 1) {
@@ -1082,6 +1086,8 @@ describe('tile forest', () => {
     }
 
     expect(targetTile).not.toBeNull();
+    state.player.x = targetTile!.x;
+    state.player.y = targetTile!.y;
 
     const fullModel = tile?.create3DModel?.({
       three: fakeThree as never,
@@ -1121,24 +1127,7 @@ describe('tile forest', () => {
   it('renders owls only in full-detail forest models', () => {
     const plugin = createForestTilePlugin();
     const tile = plugin.tiles?.find((entry) => entry.kind === 'forest');
-    const state = {
-      player: { x: 0, y: 0, facing: 0 },
-      getCurrentContext() {
-        return { id: 'overworld', type: 'overworld', depth: 0 };
-      },
-      getCurrentTile() {
-        return { kind: 'forest' };
-      },
-      getTileDefinition() {
-        return {
-          name: 'Forest',
-          color: '#000000',
-          miniColor: '#111111',
-          walkable: true,
-          wallHeight: 0.38,
-        };
-      },
-    };
+    const state = createForestTestState();
 
     let targetTile: { x: number; y: number } | null = null;
     for (let tileY = 0; tileY < 18 && !targetTile; tileY += 1) {
@@ -1151,6 +1140,8 @@ describe('tile forest', () => {
     }
 
     expect(targetTile).not.toBeNull();
+    state.player.x = targetTile!.x;
+    state.player.y = targetTile!.y;
 
     const fullModel = tile?.create3DModel?.({
       three: fakeThree as never,
@@ -1190,24 +1181,7 @@ describe('tile forest', () => {
   it('renders carved initials only in full-detail forest models', () => {
     const plugin = createForestTilePlugin();
     const tile = plugin.tiles?.find((entry) => entry.kind === 'forest');
-    const state = {
-      player: { x: 0, y: 0, facing: 0 },
-      getCurrentContext() {
-        return { id: 'overworld', type: 'overworld', depth: 0 };
-      },
-      getCurrentTile() {
-        return { kind: 'forest' };
-      },
-      getTileDefinition() {
-        return {
-          name: 'Forest',
-          color: '#000000',
-          miniColor: '#111111',
-          walkable: true,
-          wallHeight: 0.38,
-        };
-      },
-    };
+    const state = createForestTestState();
 
     let targetTile: { x: number; y: number } | null = null;
     for (let tileY = 0; tileY < 18 && !targetTile; tileY += 1) {
@@ -1220,6 +1194,8 @@ describe('tile forest', () => {
     }
 
     expect(targetTile).not.toBeNull();
+    state.player.x = targetTile!.x;
+    state.player.y = targetTile!.y;
 
     const fullModel = tile?.create3DModel?.({
       three: fakeThree as never,
@@ -1393,24 +1369,7 @@ describe('tile forest', () => {
   it('renders and animates birds only in full-detail forest models', () => {
     const plugin = createForestTilePlugin();
     const tile = plugin.tiles?.find((entry) => entry.kind === 'forest');
-    const state = {
-      player: { x: 0, y: 0, facing: 0 },
-      getCurrentContext() {
-        return { id: 'overworld', type: 'overworld', depth: 0 };
-      },
-      getCurrentTile() {
-        return { kind: 'forest' };
-      },
-      getTileDefinition() {
-        return {
-          name: 'Forest',
-          color: '#000000',
-          miniColor: '#111111',
-          walkable: true,
-          wallHeight: 0.38,
-        };
-      },
-    };
+    const state = createForestTestState();
 
     let targetTile: { x: number; y: number } | null = null;
     for (let tileY = 0; tileY < 24 && !targetTile; tileY += 1) {
@@ -1423,6 +1382,8 @@ describe('tile forest', () => {
     }
 
     expect(targetTile).not.toBeNull();
+    state.player.x = targetTile!.x;
+    state.player.y = targetTile!.y;
 
     const fullModel = tile?.create3DModel?.({
       three: fakeThree as never,
@@ -1556,24 +1517,7 @@ describe('tile forest', () => {
   it('shows fireflies only after dark', () => {
     const plugin = createForestTilePlugin();
     const tile = plugin.tiles?.find((entry) => entry.kind === 'forest');
-    const state = {
-      player: { x: 0, y: 0, facing: 0 },
-      getCurrentContext() {
-        return { id: 'overworld', type: 'overworld', depth: 0 };
-      },
-      getCurrentTile() {
-        return { kind: 'forest' };
-      },
-      getTileDefinition() {
-        return {
-          name: 'Forest',
-          color: '#000000',
-          miniColor: '#111111',
-          walkable: true,
-          wallHeight: 0.38,
-        };
-      },
-    };
+    const state = createForestTestState(8, 6);
 
     const model = tile?.create3DModel?.({
       three: fakeThree as never,
@@ -1646,24 +1590,7 @@ describe('tile forest', () => {
   it('renders fireflies as particles only in full-detail forest models', () => {
     const plugin = createForestTilePlugin();
     const tile = plugin.tiles?.find((entry) => entry.kind === 'forest');
-    const state = {
-      player: { x: 0, y: 0, facing: 0 },
-      getCurrentContext() {
-        return { id: 'overworld', type: 'overworld', depth: 0 };
-      },
-      getCurrentTile() {
-        return { kind: 'forest' };
-      },
-      getTileDefinition() {
-        return {
-          name: 'Forest',
-          color: '#000000',
-          miniColor: '#111111',
-          walkable: true,
-          wallHeight: 0.38,
-        };
-      },
-    };
+    const state = createForestTestState(8, 6);
 
     const fullModel = tile?.create3DModel?.({
       three: fakeThree as never,
@@ -1698,6 +1625,68 @@ describe('tile forest', () => {
 
     expect(fullFireflyPoints).toHaveLength(1);
     expect(lowFireflyCount).toBe(0);
+  });
+
+  it('skips close-only wildlife and decorative forest details when the player is far away', () => {
+    const plugin = createForestTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'forest');
+
+    let targetTile: { x: number; y: number } | null = null;
+    for (let tileY = 0; tileY < 24 && !targetTile; tileY += 1) {
+      for (let tileX = 0; tileX < 24; tileX += 1) {
+        if (
+          getForestTreeHollows(tileX, tileY).length > 0 &&
+          getForestOwls(tileX, tileY).length > 0 &&
+          getForestCarvings(tileX, tileY).length > 0 &&
+          getForestBirds(tileX, tileY).length > 0
+        ) {
+          targetTile = { x: tileX, y: tileY };
+          break;
+        }
+      }
+    }
+
+    expect(targetTile).not.toBeNull();
+
+    const farState = createForestTestState(0, 0);
+    const nearState = createForestTestState(targetTile!.x, targetTile!.y);
+
+    const nearModel = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state: nearState,
+      tile: { kind: 'forest' },
+      tileX: targetTile!.x,
+      tileY: targetTile!.y,
+      detailLevel: 'full',
+    }) as FakeGroup;
+    const farModel = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state: farState,
+      tile: { kind: 'forest' },
+      tileX: targetTile!.x,
+      tileY: targetTile!.y,
+      detailLevel: 'full',
+    }) as FakeGroup;
+
+    const countTaggedNodes = (model: FakeGroup, key: string) => {
+      let count = 0;
+      model.traverse((node) => {
+        if (node.userData?.[key]) {
+          count += 1;
+        }
+      });
+      return count;
+    };
+
+    expect(countTaggedNodes(nearModel, 'forestHollow')).toBeGreaterThan(0);
+    expect(countTaggedNodes(nearModel, 'forestOwl')).toBeGreaterThan(0);
+    expect(countTaggedNodes(nearModel, 'forestCarving')).toBeGreaterThan(0);
+    expect(countTaggedNodes(nearModel, 'forestBird')).toBeGreaterThan(0);
+    expect(countTaggedNodes(farModel, 'forestHollow')).toBe(0);
+    expect(countTaggedNodes(farModel, 'forestOwl')).toBe(0);
+    expect(countTaggedNodes(farModel, 'forestCarving')).toBe(0);
+    expect(countTaggedNodes(farModel, 'forestBird')).toBe(0);
+    expect(countTaggedNodes(farModel, 'forestFirefly')).toBe(0);
   });
 
   it('caches deterministic firefly descriptors and keeps their count capped', () => {
