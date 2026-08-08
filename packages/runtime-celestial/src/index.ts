@@ -9,19 +9,23 @@ import type { RuntimePlugin } from '@bworlds/plugin-api';
 
 const CELESTIAL_SEED = 'bworlds-celestial';
 
+export function resolveCelestialCycleConfig(state?: { player?: { x?: number; y?: number } }) {
+  const latitude = toGps(state?.player?.x ?? 0, state?.player?.y ?? 0).latitude;
+  return {
+    dayLengthMs: 300000,
+    offsetMs: 45000,
+    yearLengthDays: DEFAULT_YEAR_LENGTH_DAYS,
+    constellationCount: DEFAULT_CONSTELLATION_COUNT,
+    constellationSeed: CELESTIAL_SEED,
+    seasonDaylightAmplitude: 0.41,
+    observerLatitudeDegrees: latitude,
+  };
+}
+
 export function createCelestialRuntimePlugin(): RuntimePlugin {
   return createRuntimePlugin('runtime-celestial', {
     resolveWorldEnvironment({ timeMs, state }) {
-      const latitude = toGps(state?.player?.x ?? 0, state?.player?.y ?? 0).latitude;
-      const cycle = {
-        dayLengthMs: 300000,
-        offsetMs: 45000,
-        yearLengthDays: DEFAULT_YEAR_LENGTH_DAYS,
-        constellationCount: DEFAULT_CONSTELLATION_COUNT,
-        constellationSeed: CELESTIAL_SEED,
-        seasonDaylightAmplitude: 0.41,
-        observerLatitudeDegrees: latitude,
-      };
+      const cycle = resolveCelestialCycleConfig(state);
       const resolvedTimeMs = typeof timeMs === 'number' ? timeMs : 0;
       const celestialState = getDaylightCycleState(resolvedTimeMs, cycle);
 

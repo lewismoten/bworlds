@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import type { WorldEnvironmentLike } from '@bworlds/plugin-api';
 import {
+  type AuroraBandLike,
   getMilkyWayBandSamples,
   type OrreryBodyLike,
   type getDaylightCycleState,
@@ -116,6 +117,8 @@ export function createCelestialPreviewRenderer(host: HTMLElement | null) {
   root.add(eventRoot);
   const beltRoot = new THREE.Group();
   root.add(beltRoot);
+  const auroraRoot = new THREE.Group();
+  root.add(auroraRoot);
   const orbitRoot = new THREE.Group();
   root.add(orbitRoot);
   const orreryRoot = new THREE.Group();
@@ -231,6 +234,7 @@ export function createCelestialPreviewRenderer(host: HTMLElement | null) {
     syncPreviewConstellations(constellationRoot, cycle);
     syncPreviewEvents(eventRoot, cycle);
     syncMilkyWayBelt(beltRoot, cycle);
+    syncPreviewAuroras(auroraRoot, cycle);
     syncPreviewOrbits(orbitRoot, cycle);
     syncPreviewOrrery(orreryRoot, cycle);
 
@@ -238,6 +242,9 @@ export function createCelestialPreviewRenderer(host: HTMLElement | null) {
     (skyShell.material as THREE.MeshBasicMaterial).opacity = skyOpacity;
     constellationRoot.visible = true;
     beltRoot.visible = cycle.starsOpacity > 0.02;
+    auroraRoot.visible = (cycle.auroraBands ?? []).some(
+      (band) => band.intensity > 0.03
+    );
     eventRoot.visible = (cycle.visibleEvents ?? []).some(
       (event) => event.visibility > 0.02
     );
@@ -307,7 +314,11 @@ function syncPreviewPlanetTexture(
   if (!context) {
     return;
   }
-  const grid = buildPlanetTextureGrid(overworldSampler.sampleOverworld, canvas.width, canvas.height);
+  const grid = buildPlanetTextureGrid(
+    (x, y) => overworldSampler.sampleOverworld(x, y),
+    canvas.width,
+    canvas.height
+  );
   grid.forEach((row, y) => {
     row.forEach((color, x) => {
       context.fillStyle = color;
@@ -509,6 +520,97 @@ function syncMilkyWayBelt(root: THREE.Group, cycle: DaylightCycleLike) {
       })
     )
   );
+}
+
+function syncPreviewAuroras(root: THREE.Group, cycle: DaylightCycleLike) {
+  root.clear();
+  const bands = cycle.auroraBands ?? [];
+  bands.forEach((band) => {
+    const positions: number[] = [];
+    const indices: number[] = [];
+    const samples = 20;
+    const start = band.azimuthCenter - band.span * 0.5;
+    const end = band.azimuthCenter + band.span * 0.5;
+
+    for (let index = 0; index <= samples; index += 1) {
+      const progress = index / samples;
+      const azimuth = start + (end - start) * progress;
+      const wave =
+        Math.sin(progress * Math.PI * 3 + band.wavePhase * Math.PI * 2) *
+        band.height *
+        0.18;
+      const lower = createPreviewAltitudePoint(
+        azimuth,
+        band.altitude + wave,
+        11.45
+      );
+      const upper = createPreviewAltitudePoint(
+        azimuth,
+        band.altitude + band.height + wave,
+        11.8
+      );
+      positions.push(lower.x, lower.y, lower.z, upper.x, upper.y, upper.z);
+    }
+
+    for (let index = 0; index < samples; index += 1) {
+      const startIndex = index * 2;
+      indices.push(
+        startIndex,
+        startIndex + 1,
+        startIndex + 2,
+        startIndex + 1,
+        startIndex + 3,
+        startIndex + 2
+      );
+    }
+
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute(
+      'position',
+      new THREE.Float32BufferAttribute(positions, 3)
+    );
+    geometry.setIndex(indices);
+    root.add(
+      new THREE.Mesh(
+        geometry,
+        new THREE.MeshBasicMaterial({
+          color: band.colorA,
+          transparent: true,
+          opacity: band.intensity * 0.26,
+          side: THREE.DoubleSide,
+          depthWrite: false,
+          blending: THREE.AdditiveBlending,
+        })
+      )
+    );
+
+    root.add(
+      new THREE.Line(
+        new THREE.BufferGeometry().setFromPoints(
+          Array.from({ length: samples + 1 }, (_, index) => {
+            const progress = index / samples;
+            const azimuth = start + (end - start) * progress;
+            const wave =
+              Math.sin(
+                progress * Math.PI * 3 + band.wavePhase * Math.PI * 2
+              ) *
+              band.height *
+              0.18;
+            return createPreviewAltitudePoint(
+              azimuth,
+              band.altitude + band.height * 0.6 + wave,
+              11.86
+            );
+          })
+        ),
+        new THREE.LineBasicMaterial({
+          color: band.colorB,
+          transparent: true,
+          opacity: band.intensity * 0.42,
+        })
+      )
+    );
+  });
 }
 
 function syncPreviewOrbits(root: THREE.Group, cycle: DaylightCycleLike) {
@@ -802,6 +904,30 @@ function createOrreryLabel(body: OrreryBodyLike, position: THREE.Vector3) {
   sprite.position.copy(position.clone().add(new THREE.Vector3(0, 0.72, 0)));
   sprite.scale.set(2.8, 0.72, 1);
   return sprite;
+}
+
+export function getPreviewAuroraBandPath(
+  band: Pick<
+    AuroraBandLike,
+    'azimuthCenter' | 'span' | 'altitude' | 'height' | 'wavePhase'
+  >,
+  samples = 20
+) {
+  return Array.from({ length: samples + 1 }, (_, index) => {
+    const progress = index / samples;
+    const azimuth =
+      band.azimuthCenter - band.span * 0.5 + band.span * progress;
+    const wave =
+      Math.sin(progress * Math.PI * 3 + band.wavePhase * Math.PI * 2) *
+      band.height *
+      0.18;
+    const point = createPreviewAltitudePoint(
+      azimuth,
+      band.altitude + band.height * 0.6 + wave,
+      11.86
+    );
+    return { x: point.x, y: point.y, z: point.z };
+  });
 }
 
 function formatOrreryLabel(body: OrreryBodyLike) {

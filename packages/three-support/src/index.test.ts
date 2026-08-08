@@ -257,5 +257,59 @@ describe('three support', () => {
         depthWrite: false,
       })
     );
+    expect(material.options).not.toHaveProperty('map');
+    expect(material.options).not.toHaveProperty('transparent');
+  });
+
+  it('omits undefined optional material parameters', () => {
+    class FakeMeshStandardMaterial {
+      options: Record<string, unknown>;
+
+      constructor(options: Record<string, unknown>) {
+        this.options = options;
+      }
+    }
+
+    class FakeCanvasTexture {
+      repeat = {
+        set: vi.fn(),
+      };
+
+      constructor(public image: HTMLCanvasElement) {}
+    }
+
+    const fakeContext = {
+      fillStyle: '',
+      fillRect: vi.fn(),
+    } as unknown as CanvasRenderingContext2D;
+    const fakeCanvas = {
+      width: 0,
+      height: 0,
+      getContext: vi.fn(() => fakeContext),
+    } as unknown as HTMLCanvasElement;
+    globalThis.document = {
+      createElement: vi.fn(() => fakeCanvas),
+    } as unknown as Document;
+
+    const material = createPaintedStandardMaterial(
+      {
+        CanvasTexture: FakeCanvasTexture,
+        MeshStandardMaterial: FakeMeshStandardMaterial,
+        SRGBColorSpace: 'srgb',
+        NearestFilter: 'nearest',
+        RepeatWrapping: 'repeat',
+      },
+      {
+        width: 8,
+        height: 8,
+        paint() {},
+      }
+    ) as FakeMeshStandardMaterial;
+
+    expect(material.options).not.toHaveProperty('emissive');
+    expect(material.options).not.toHaveProperty('emissiveIntensity');
+    expect(material.options).not.toHaveProperty('transparent');
+    expect(material.options).not.toHaveProperty('opacity');
+    expect(material.options).not.toHaveProperty('side');
   });
 });

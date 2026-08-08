@@ -243,6 +243,18 @@ export interface MilkyWayBeltLike {
   opacity: number;
 }
 
+export interface AuroraBandLike {
+  id: string;
+  azimuthCenter: number;
+  span: number;
+  altitude: number;
+  height: number;
+  intensity: number;
+  wavePhase: number;
+  colorA: string;
+  colorB: string;
+}
+
 export interface MilkyWayBandSampleLike {
   azimuth: number;
   centerPhi: number;
@@ -467,8 +479,32 @@ export function getDaylightCycleState(
     calendar,
     visibleEvents,
     milkyWay,
+    auroraBands: [] as AuroraBandLike[],
     orreryBodies,
     isNight: daylight < 0.22,
+  };
+}
+
+export function applyCelestialEnvironmentOverrides(
+  cycle,
+  overrides: {
+    constellations?: ConstellationLike[];
+    activeConstellationIndex?: number;
+    visibleEvents?: CelestialEventLike[];
+    milkyWay?: MilkyWayBeltLike;
+    auroraBands?: AuroraBandLike[];
+    orreryBodies?: OrreryBodyLike[];
+  } = {}
+) {
+  return {
+    ...cycle,
+    constellations: overrides.constellations ?? cycle.constellations,
+    activeConstellationIndex:
+      overrides.activeConstellationIndex ?? cycle.activeConstellationIndex,
+    visibleEvents: overrides.visibleEvents ?? cycle.visibleEvents,
+    milkyWay: overrides.milkyWay ?? cycle.milkyWay,
+    auroraBands: overrides.auroraBands ?? cycle.auroraBands ?? [],
+    orreryBodies: overrides.orreryBodies ?? cycle.orreryBodies,
   };
 }
 

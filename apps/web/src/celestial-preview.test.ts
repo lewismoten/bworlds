@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   buildPlanetTextureGrid,
+  getPreviewAuroraBandPath,
   getPreviewSunOrbitSpec,
   getPlanetSurfaceColor,
 } from './celestial-preview.ts';
@@ -39,5 +40,25 @@ describe('celestial preview helpers', () => {
     expect(orbit.daylightStartAzimuth).toBeCloseTo(cycle.sunriseAzimuth, 6);
     expect(orbit.daylightEndAzimuth).toBeCloseTo(cycle.sunsetAzimuth, 6);
     expect(orbit.fullEndAzimuth - orbit.fullStartAzimuth).toBeCloseTo(Math.PI * 2, 6);
+  });
+
+  it('builds a stable aurora path for the preview model', () => {
+    const points = getPreviewAuroraBandPath({
+      azimuthCenter: Math.PI / 3,
+      span: 0.9,
+      altitude: 0.28,
+      height: 0.2,
+      wavePhase: 0.125,
+    });
+
+    expect(points).toHaveLength(21);
+    expect(points[0]).toEqual(
+      expect.objectContaining({
+        x: expect.any(Number),
+        y: expect.any(Number),
+        z: expect.any(Number),
+      })
+    );
+    expect(points[10].y).not.toBeCloseTo(points[0].y, 4);
   });
 });

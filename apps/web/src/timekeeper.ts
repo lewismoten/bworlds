@@ -399,7 +399,7 @@ function drawDaylightRing(
   outerRadius: number,
   innerRadius: number
 ) {
-  drawDaylightBand(context, cycle, outerRadius, innerRadius, true);
+  drawDaylightBand(context, cycle, outerRadius, innerRadius, true, true);
 }
 
 function drawDaylightWindowPreview(
@@ -408,7 +408,7 @@ function drawDaylightWindowPreview(
   outerRadius: number,
   innerRadius: number
 ) {
-  drawDaylightBand(context, cycle, outerRadius, innerRadius, false);
+  drawDaylightBand(context, cycle, outerRadius, innerRadius, false, false);
 }
 
 function drawDaylightBand(
@@ -416,7 +416,8 @@ function drawDaylightBand(
   cycle: DaylightCycleLike,
   outerRadius: number,
   innerRadius: number,
-  includeBodies: boolean
+  includeBodies: boolean,
+  includeDividers: boolean
 ) {
   const { dawnAngle, duskAngle, dayCenterAngle, nightCenterAngle } =
     getDaylightRingLayout(cycle);
@@ -446,10 +447,12 @@ function drawDaylightBand(
   drawDayNightTransitionBlend(context, outerRadius, innerRadius, dawnAngle, '#ffe6bf');
   drawDayNightTransitionBlend(context, outerRadius, innerRadius, duskAngle, '#ffb37a');
 
-  drawDayNightDividerGlow(context, outerRadius, innerRadius, dawnAngle, '#ffe6b8');
-  drawDayNightDividerGlow(context, outerRadius, innerRadius, duskAngle, '#f7b98a');
-  drawDayNightDividerMark(context, outerRadius, innerRadius, dawnAngle);
-  drawDayNightDividerMark(context, outerRadius, innerRadius, duskAngle);
+  if (includeDividers) {
+    drawDayNightDividerGlow(context, outerRadius, innerRadius, dawnAngle, '#ffe6b8');
+    drawDayNightDividerGlow(context, outerRadius, innerRadius, duskAngle, '#f7b98a');
+    drawDayNightDividerMark(context, outerRadius, innerRadius, dawnAngle);
+    drawDayNightDividerMark(context, outerRadius, innerRadius, duskAngle);
+  }
 
   if (!includeBodies) {
     return;

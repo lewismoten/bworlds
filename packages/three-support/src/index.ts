@@ -121,7 +121,7 @@ export function createPaintedStandardMaterial(
   }
 ): ThreeMaterialLike {
   const texture = createPaintedCanvasTexture(three, options);
-  return new three.MeshStandardMaterial({
+  return new three.MeshStandardMaterial(compactMaterialOptions({
     color: options.color ?? '#ffffff',
     map: texture,
     roughness: options.roughness,
@@ -131,7 +131,7 @@ export function createPaintedStandardMaterial(
     transparent: options.transparent,
     opacity: options.opacity,
     side: options.side,
-  });
+  }));
 }
 
 export function createBasicMaterial(
@@ -144,13 +144,13 @@ export function createBasicMaterial(
     side?: unknown;
   } = {}
 ) {
-  return new three.MeshBasicMaterial({
+  return new three.MeshBasicMaterial(compactMaterialOptions({
     color: options.color,
     map: options.map,
     transparent: options.transparent,
     depthWrite: options.depthWrite,
     side: options.side,
-  });
+  }));
 }
 
 export function createTexturedPlaneMesh(
@@ -183,6 +183,12 @@ export interface PathPointLike {
     addScaledVector(vector: PathPointLike, scalar: number): PathPointLike;
   };
   distanceTo(other: PathPointLike): number;
+}
+
+function compactMaterialOptions<T extends Record<string, unknown>>(options: T): T {
+  return Object.fromEntries(
+    Object.entries(options).filter(([, value]) => value !== undefined)
+  ) as T;
 }
 
 export function createQuadraticBezierPoints(

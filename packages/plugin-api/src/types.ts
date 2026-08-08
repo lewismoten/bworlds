@@ -165,6 +165,18 @@ export interface WorldEnvironmentMilkyWayLike {
   opacity: number;
 }
 
+export interface WorldEnvironmentAuroraBandLike {
+  id: Identity;
+  azimuthCenter: number;
+  span: number;
+  altitude: number;
+  height: number;
+  intensity: number;
+  wavePhase: number;
+  colorA: Color;
+  colorB: Color;
+}
+
 export interface WorldEnvironmentOrreryBodyLike {
   id: Identity;
   type: 'sun' | 'moon' | 'planet' | 'comet';
@@ -185,6 +197,7 @@ export interface WorldEnvironmentCelestialLike {
   dateLabel?: string;
   visibleEvents?: WorldEnvironmentCelestialEventLike[];
   milkyWay?: WorldEnvironmentMilkyWayLike;
+  auroraBands?: WorldEnvironmentAuroraBandLike[];
   orreryBodies?: WorldEnvironmentOrreryBodyLike[];
 }
 

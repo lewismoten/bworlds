@@ -6,6 +6,7 @@ import {
   getTileVariantIndex,
 } from '@bworlds/atlas';
 import {
+  applyCelestialEnvironmentOverrides,
   getDaylightCycleState,
   getMilkyWayBandSamples,
   hash2D,
@@ -95,6 +96,9 @@ export function create3DRenderer(host) {
 
   const milkyWayRoot = new THREE.Group();
   skyRoot.add(milkyWayRoot);
+
+  const auroraRoot = new THREE.Group();
+  skyRoot.add(auroraRoot);
 
   const sunSprite = createSunSprite();
   skyRoot.add(sunSprite);
@@ -754,7 +758,10 @@ export function create3DRenderer(host) {
   }
 
   function updateSkyAndLights(worldX, worldY, timeMs, environment) {
-    const cycle = getDaylightCycleState(timeMs, environment.cycle ?? {});
+    const cycle = applyCelestialEnvironmentOverrides(
+      getDaylightCycleState(timeMs, environment.cycle ?? {}),
+      (environment.celestial ?? {}) as any
+    );
     const dayBlend = cycle.daylight;
     const twilightBlend = Math.max(0, 1 - Math.abs(cycle.daylight - 0.5) * 2);
     const sky = environment.sky ?? {};
@@ -817,11 +824,15 @@ export function create3DRenderer(host) {
     syncConstellationSky(constellationRoot, cycle);
     syncCelestialEvents(eventRoot, cycle);
     syncMilkyWayBelt(milkyWayRoot, cycle);
+    syncAuroraBands(auroraRoot, cycle);
     constellationRoot.visible = cycle.starsOpacity > 0.02;
     eventRoot.visible = (cycle.visibleEvents ?? []).some(
       (event) => event.visibility > 0.02
     );
     milkyWayRoot.visible = cycle.starsOpacity > 0.02;
+    auroraRoot.visible = (cycle.auroraBands ?? []).some(
+      (band) => band.intensity > 0.03
+    );
 
     sunSprite.position.set(
       sunOrbitX * 1.45,
@@ -1160,6 +1171,91 @@ function syncMilkyWayBelt(root, cycle) {
       })
     )
   );
+}
+
+function syncAuroraBands(root, cycle) {
+  root.clear();
+  const bands = cycle.auroraBands ?? [];
+  bands.forEach((band) => {
+    const samples = 30;
+    const start = band.azimuthCenter - band.span * 0.5;
+    const end = band.azimuthCenter + band.span * 0.5;
+    const positions: number[] = [];
+    const indices: number[] = [];
+    const crestPoints: THREE.Vector3[] = [];
+
+    for (let index = 0; index <= samples; index += 1) {
+      const progress = index / samples;
+      const azimuth = start + (end - start) * progress;
+      const wave =
+        Math.sin(progress * Math.PI * 3 + band.wavePhase * Math.PI * 2) *
+        band.height *
+        0.22;
+      const lower = createSkyAltitudePosition(
+        azimuth,
+        band.altitude + wave,
+        SKY_RADIUS - 6.2
+      );
+      const upper = createSkyAltitudePosition(
+        azimuth,
+        band.altitude + band.height + wave,
+        SKY_RADIUS - 5.6
+      );
+      crestPoints.push(
+        createSkyAltitudePosition(
+          azimuth,
+          band.altitude + band.height * 0.58 + wave,
+          SKY_RADIUS - 5.45
+        )
+      );
+      positions.push(lower.x, lower.y, lower.z, upper.x, upper.y, upper.z);
+    }
+
+    for (let index = 0; index < samples; index += 1) {
+      const startIndex = index * 2;
+      indices.push(
+        startIndex,
+        startIndex + 1,
+        startIndex + 2,
+        startIndex + 1,
+        startIndex + 3,
+        startIndex + 2
+      );
+    }
+
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute(
+      'position',
+      new THREE.Float32BufferAttribute(positions, 3)
+    );
+    geometry.setIndex(indices);
+    root.add(
+      new THREE.Mesh(
+        geometry,
+        new THREE.MeshBasicMaterial({
+          color: band.colorA,
+          transparent: true,
+          opacity: band.intensity * 0.24,
+          side: THREE.DoubleSide,
+          depthWrite: false,
+          depthTest: true,
+          blending: THREE.AdditiveBlending,
+        })
+      )
+    );
+
+    const crest = new THREE.Line(
+      new THREE.BufferGeometry().setFromPoints(crestPoints),
+      new THREE.LineBasicMaterial({
+        color: band.colorB,
+        transparent: true,
+        opacity: band.intensity * 0.4,
+        depthTest: true,
+      })
+    );
+    crest.visible = crest.material.opacity > 0.015;
+    root.add(crest);
+  });
 }
 
 function createSkyAltitudePosition(azimuth, altitude, radius) {

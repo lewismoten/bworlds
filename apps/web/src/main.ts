@@ -2,6 +2,7 @@ import { drawAtlas } from '@bworlds/atlas';
 import {
   advanceWorldTimeOffsetByHours,
   advanceWorldTimeOffsetBySeasons,
+  applyCelestialEnvironmentOverrides,
   alignWorldTimeOffsetToDayProgress,
   getWorldTimeMs,
   getDaylightCycleState,
@@ -507,7 +508,10 @@ function getCurrentEnvironment(
 }
 
 function getCurrentCycle(environment: WorldEnvironmentLike = getCurrentEnvironment()) {
-  return getDaylightCycleState(getCurrentWorldTimeMs(), environment.cycle ?? {});
+  return applyCelestialEnvironmentOverrides(
+    getDaylightCycleState(getCurrentWorldTimeMs(), environment.cycle ?? {}),
+    (environment.celestial ?? {}) as any
+  );
 }
 
 function canMoveTo(nextX, nextY) {
@@ -916,7 +920,10 @@ function updateMovement(deltaMs) {
 function render() {
   const timeMs = getCurrentWorldTimeMs();
   const environment = getCurrentEnvironment(timeMs);
-  const actualCycle = getDaylightCycleState(timeMs, environment.cycle ?? {});
+  const actualCycle = applyCelestialEnvironmentOverrides(
+    getDaylightCycleState(timeMs, environment.cycle ?? {}),
+    (environment.celestial ?? {}) as any
+  );
   const displayCycle = updateDisplayedCycle(actualCycle);
   if (state.viewMode === '2d') {
     const context = viewport2d?.getContext('2d');
