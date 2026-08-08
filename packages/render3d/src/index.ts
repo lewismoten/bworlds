@@ -175,6 +175,7 @@ const CHUNK_RADIUS = 18;
 const NEAR_VISIBLE_RADIUS = 6;
 const FACING_BUCKETS = 12;
 const WORLD_SYNC_BATCH_SIZE = 28;
+const LOD_SYNC_BATCH_SIZE = 28;
 const DEFAULT_PENDING_WORLD_BUILD_BUDGET_MS = 2.5;
 const LOW_DETAIL_MODEL_DISTANCE = 6.5;
 const LOW_DETAIL_MODEL_DISTANCE_SQUARED =
@@ -305,6 +306,8 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
   let lastFacingBucket = '';
   let lastChunkRadius = CHUNK_RADIUS;
   let lastLodSyncPlayerPosition: { x: number; y: number } | null = null;
+  let pendingLodSyncChecks = 0;
+  let lodSyncEntryOffset = 0;
   let lastSkyConstellationSignature = '';
   let lastSkyEventSignature = '';
   let lastSkyMilkyWaySignature = '';
@@ -337,6 +340,8 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     worldRoot.clear();
     visibleTileNodes.clear();
     lastLodSyncPlayerPosition = null;
+    pendingLodSyncChecks = 0;
+    lodSyncEntryOffset = 0;
     pendingWorldBuild = {
       contextId: '',
       centerKey: '',
@@ -594,8 +599,33 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
         state.player.y
       )
     ) {
-      syncTileModelDetailLevels(state, getActivePluginRegistry(), frameNowMs);
+      pendingLodSyncChecks = visibleTileNodes.size;
+      lodSyncEntryOffset = 0;
       lastLodSyncPlayerPosition = { x: state.player.x, y: state.player.y };
+    }
+    if (pendingLodSyncChecks > 0) {
+      const visibleEntries = Array.from(visibleTileNodes.entries());
+      const lodBatch = getWrappedBatchWindow(
+        visibleEntries,
+        lodSyncEntryOffset,
+        LOD_SYNC_BATCH_SIZE
+      );
+      if (lodBatch.items.length > 0) {
+        syncTileModelDetailLevels(
+          state,
+          getActivePluginRegistry(),
+          frameNowMs,
+          lodBatch.items
+        );
+        lodSyncEntryOffset = lodBatch.nextIndex;
+        pendingLodSyncChecks = Math.max(
+          0,
+          pendingLodSyncChecks - lodBatch.items.length
+        );
+      } else {
+        pendingLodSyncChecks = 0;
+        lodSyncEntryOffset = 0;
+      }
     }
     updateFarLandModelVisibility(visibleTileNodes.values(), state);
     syncDynamicTileNodes(visibleTileNodes.values(), {
@@ -684,13 +714,14 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
   function syncTileModelDetailLevels(
     state: Render3DState,
     registry: ReturnType<typeof getActivePluginRegistry>,
-    nowMs: number
+    nowMs: number,
+    entries: Array<[string, DynamicTileNode]>
   ): void {
-    recordRecentMetric(renderChurnMetrics.lodChecks, nowMs);
-    for (const [key, entry] of visibleTileNodes.entries()) {
+    for (const [key, entry] of entries) {
       if (!entry.modelRoot) {
         continue;
       }
+      recordRecentMetric(renderChurnMetrics.lodChecks, nowMs);
       const dx = entry.tileX - state.player.x;
       const dy = entry.tileY - state.player.y;
       const desiredDetailLevel = getTileModelDetailLevelFromSquaredDistance(
@@ -1509,6 +1540,30 @@ export function shouldSyncTileModelDetailLevels(
   const dx = nextX - previousPosition.x;
   const dy = nextY - previousPosition.y;
   return dx * dx + dy * dy >= minimumMovementSquared;
+}
+
+export function getWrappedBatchWindow<T>(
+  items: readonly T[],
+  startIndex: number,
+  maxItems: number
+): { items: T[]; nextIndex: number } {
+  if (items.length === 0 || maxItems <= 0) {
+    return { items: [], nextIndex: 0 };
+  }
+
+  const normalizedStart =
+    ((Math.floor(startIndex) % items.length) + items.length) % items.length;
+  const count = Math.min(items.length, Math.floor(maxItems));
+  const batch: T[] = [];
+
+  for (let index = 0; index < count; index += 1) {
+    batch.push(items[(normalizedStart + index) % items.length] as T);
+  }
+
+  return {
+    items: batch,
+    nextIndex: (normalizedStart + count) % items.length,
+  };
 }
 
 export function getWorldCurvatureOffset(

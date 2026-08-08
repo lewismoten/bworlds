@@ -19,6 +19,7 @@ import {
   getSkyConstellationSignature,
   getSkyEventSignature,
   getSkyMilkyWaySignature,
+  getWrappedBatchWindow,
   getTwilightSkyPalette,
   getTileModelDetailLevel,
   getTileModelDetailLevelFromSquaredDistance,
@@ -511,6 +512,21 @@ describe('render3d visibility helpers', () => {
     expect(shouldSyncTileModelDetailLevels(null, 0, 0)).toBe(true);
     expect(shouldSyncTileModelDetailLevels({ x: 0, y: 0 }, 0.05, 0.05)).toBe(false);
     expect(shouldSyncTileModelDetailLevels({ x: 0, y: 0 }, 0.18, 0)).toBe(true);
+  });
+
+  it('buckets wrapped LOD batches across frames without starving later entries', () => {
+    expect(getWrappedBatchWindow(['a', 'b', 'c', 'd'], 0, 2)).toEqual({
+      items: ['a', 'b'],
+      nextIndex: 2,
+    });
+    expect(getWrappedBatchWindow(['a', 'b', 'c', 'd'], 3, 3)).toEqual({
+      items: ['d', 'a', 'b'],
+      nextIndex: 2,
+    });
+    expect(getWrappedBatchWindow(['a', 'b'], 0, 0)).toEqual({
+      items: [],
+      nextIndex: 0,
+    });
   });
 
   it('keeps nearby terrain flat while bending the far horizon downward', () => {

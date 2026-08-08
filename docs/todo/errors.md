@@ -250,7 +250,7 @@ This is about **8.25 MB inclusive** in this sample.
 * [x] Audit how frequently `syncTileModelDetailLevels()` runs.
 * [x] Do not evaluate LOD changes for every tile every frame if unnecessary.
 * [x] Reevaluate LOD only after meaningful camera movement.
-* [ ] Bucket LOD checks across several frames.
+* [x] Bucket LOD checks across several frames.
 * [x] Use squared distance for LOD thresholds.
 * [ ] Cull obviously distant chunks before per-tile LOD checks.
 * [ ] Add hysteresis between LOD boundaries.
