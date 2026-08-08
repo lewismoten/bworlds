@@ -1,5 +1,6 @@
 import type {
   PluginPackDefinitionLike,
+  RuntimePlugin,
   PluginPackLike,
   PluginPackManifestLike,
 } from '@bworlds/plugin-api';
@@ -10,7 +11,7 @@ import {
 } from '@bworlds/plugin-api';
 import { createRuinsTilePlugin } from '@bworlds/tile-ruins';
 
-export function createRuinsTilePlugins() {
+export function createRuinsTilePlugins(): RuntimePlugin[] {
   return instantiateOrderedPlugins([
     {
       create: createRuinsTilePlugin,

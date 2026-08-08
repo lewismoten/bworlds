@@ -1,5 +1,6 @@
 import type {
   PluginPackDefinitionLike,
+  RuntimePlugin,
   PluginPackLike,
   PluginPackManifestLike,
 } from '@bworlds/plugin-api';
@@ -10,7 +11,7 @@ import {
 } from '@bworlds/plugin-api';
 import { createFrontierFlavorRuntimePlugin } from '@bworlds/runtime-frontier-flavor';
 
-export function createFrontierRuntimePlugins() {
+export function createFrontierRuntimePlugins(): RuntimePlugin[] {
   return instantiateOrderedPlugins([
     {
       create: createFrontierFlavorRuntimePlugin,

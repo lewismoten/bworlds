@@ -23,6 +23,7 @@ import {
   type PluginPackDefinitionLike,
   type PluginPackManifestLike,
   type RuntimePlayerLike,
+  type RuntimePlugin,
   type Seed,
   type TileLike,
   type ViewMode,
@@ -88,15 +89,15 @@ export function createWorldGenerator({
   };
 }
 
-export function createDefaultRuntimePlugins() {
+export function createDefaultRuntimePlugins(): RuntimePlugin[] {
   return createDefaultRuntimePluginsFromPack();
 }
 
-export function createDefaultTilePlugins() {
+export function createDefaultTilePlugins(): RuntimePlugin[] {
   return createDefaultTilePluginsFromPack();
 }
 
-export function createDefaultPluginRegistry() {
+export function createDefaultPluginRegistry(): PluginRegistry {
   return createBuiltinContentPackCatalog().createRegistry(['default-content-pack']);
 }
 
@@ -108,7 +109,9 @@ export function createBuiltinContentPackDefinitions(): PluginPackDefinitionLike[
   ];
 }
 
-export function createBuiltinContentPackCatalog() {
+export function createBuiltinContentPackCatalog(): ReturnType<
+  typeof createPluginPackCatalog
+> {
   return createPluginPackCatalog(createBuiltinContentPackDefinitions(), [
     'default-content-pack',
     frontierContentPackManifest.id,
@@ -128,14 +131,14 @@ export function listBuiltinContentPacks(): PluginPackManifestLike[] {
 export function createPluginRegistryFromPacks(
   packIds: string[] = createBuiltinContentPackCatalog().defaultPackIds,
   packDefinitions: PluginPackDefinitionLike[] = createBuiltinContentPackDefinitions()
-) {
+): PluginRegistry {
   return createPluginPackCatalog(packDefinitions, packIds).createRegistry();
 }
 
 export function createPluginRegistryFromPack(
   packId = 'default-content-pack',
   packDefinitions: PluginPackDefinitionLike[] = createBuiltinContentPackDefinitions()
-) {
+): PluginRegistry {
   return createPluginRegistryFromPacks([packId], packDefinitions);
 }
 
