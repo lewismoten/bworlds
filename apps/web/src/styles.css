@@ -196,7 +196,7 @@ button:hover {
 }
 
 .is-hidden {
-  display: none;
+  display: none !important;
 }
 
 .sidebar {

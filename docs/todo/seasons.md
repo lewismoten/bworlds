@@ -97,3 +97,6 @@ add a outer globe of stars in the sky that appear at night with procedurally gen
 - [x] Time needs to be a little higher in the center of the clock.
 - [x] Constellation displayed before name should move up a little to be centered-in-line with text, and a little more to the left.
 - [x] Moon phase should just be Waxing/Wanning/Full/New
+- [x] When time keeper is selected, I still see compass
+- [x] When time keeper is selected, I still see buttons to navigate the celestial model
+- [ ] When i click model, i'm still seeing time keeper and compass

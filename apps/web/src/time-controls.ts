@@ -4,6 +4,7 @@ type DaylightCycleLike = ReturnType<typeof getDaylightCycleState>;
 
 export type TimePreset = 'dawn' | 'noon' | 'dusk' | 'midnight';
 export type InspectorTab = 'timekeeper' | 'model' | 'compass';
+export type InspectorSection = InspectorTab | 'viewport-compass';
 
 export function getTimePresetProgress(
   cycle: DaylightCycleLike,
@@ -26,4 +27,14 @@ export function getNextInspectorTab(tabId: string | undefined): InspectorTab {
     return tabId;
   }
   return 'timekeeper';
+}
+
+export function isInspectorSectionVisible(
+  activeTab: InspectorTab,
+  section: InspectorSection
+) {
+  if (section === 'viewport-compass') {
+    return activeTab === 'compass';
+  }
+  return activeTab === section;
 }

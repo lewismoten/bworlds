@@ -29,6 +29,7 @@ import { createCelestialPreviewRenderer } from './celestial-preview.ts';
 import { drawCompassDial, easeAngle } from './compass.ts';
 import {
   getNextInspectorTab,
+  isInspectorSectionVisible,
   getTimePresetProgress,
 } from './time-controls.ts';
 
@@ -373,12 +374,20 @@ function updateStatus() {
   `;
 
   if (viewportHud) {
+    const showViewportCompass = isInspectorSectionVisible(
+      activeInspectorTab,
+      'viewport-compass'
+    );
     viewportHud.innerHTML = `
       <div class="viewport-hud-label">${formatCycleTime(cycle.dayProgress)}</div>
       <div class="viewport-hud-date">${getCelestialDateLabel(cycle)}</div>
       <div class="viewport-hud-meta">${cycle.activeConstellation.name} • ${cycle.moonPhaseName}</div>
       <div class="viewport-hud-meta">Facing ${facing}</div>
-      <div class="viewport-hud-compass">${renderCompass(facing)}</div>
+      ${
+        showViewportCompass
+          ? `<div class="viewport-hud-compass">${renderCompass(facing)}</div>`
+          : ''
+      }
     `;
   }
 }
@@ -689,7 +698,10 @@ function setInspectorTab(tabId: string | undefined) {
     button.setAttribute('aria-selected', String(isActive));
   });
   Object.entries(inspectorPanels).forEach(([panelId, panel]) => {
-    const isActive = panelId === activeInspectorTab;
+    const isActive = isInspectorSectionVisible(
+      activeInspectorTab,
+      panelId as 'timekeeper' | 'model' | 'compass'
+    );
     panel?.classList.toggle('is-hidden', !isActive);
     panel?.setAttribute('aria-hidden', String(!isActive));
   });
@@ -700,9 +712,18 @@ function setInspectorTab(tabId: string | undefined) {
     }
     card.classList.add('is-hidden');
   });
-  timeWheelCanvas?.classList.toggle('is-hidden', activeInspectorTab !== 'timekeeper');
-  celestialPreviewHost?.classList.toggle('is-hidden', activeInspectorTab !== 'model');
-  compassDialCanvas?.classList.toggle('is-hidden', activeInspectorTab !== 'compass');
+  timeWheelCanvas?.classList.toggle(
+    'is-hidden',
+    !isInspectorSectionVisible(activeInspectorTab, 'timekeeper')
+  );
+  celestialPreviewHost?.classList.toggle(
+    'is-hidden',
+    !isInspectorSectionVisible(activeInspectorTab, 'model')
+  );
+  compassDialCanvas?.classList.toggle(
+    'is-hidden',
+    !isInspectorSectionVisible(activeInspectorTab, 'compass')
+  );
   saveSession();
 }
 

@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_DAY_LENGTH_MS, getDaylightCycleState } from '@bworlds/core';
-import { getNextInspectorTab, getTimePresetProgress } from './time-controls.ts';
+import {
+  getNextInspectorTab,
+  getTimePresetProgress,
+  isInspectorSectionVisible,
+} from './time-controls.ts';
 
 describe('time controls', () => {
   it('maps sunrise and sunset presets to the current seasonal cycle markers', () => {
@@ -23,5 +27,13 @@ describe('time controls', () => {
     expect(getNextInspectorTab('model')).toBe('model');
     expect(getNextInspectorTab('timekeeper')).toBe('timekeeper');
     expect(getNextInspectorTab('unknown')).toBe('timekeeper');
+  });
+
+  it('shows only the active inspector section and reserves the viewport compass for compass mode', () => {
+    expect(isInspectorSectionVisible('timekeeper', 'timekeeper')).toBe(true);
+    expect(isInspectorSectionVisible('timekeeper', 'model')).toBe(false);
+    expect(isInspectorSectionVisible('timekeeper', 'compass')).toBe(false);
+    expect(isInspectorSectionVisible('timekeeper', 'viewport-compass')).toBe(false);
+    expect(isInspectorSectionVisible('compass', 'viewport-compass')).toBe(true);
   });
 });
