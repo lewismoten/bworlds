@@ -786,7 +786,7 @@ describe('tile forest', () => {
     ).toBe(true);
 
     const first = sampleTiles[0];
-    expect(getForestWebs(first.x, first.y)).toBe(first.webs);
+    expect(getForestWebs(first.x, first.y)).toEqual(first.webs);
   });
 
   it('generates deterministic spiders near forest webs', () => {
@@ -833,7 +833,7 @@ describe('tile forest', () => {
     ).toBe(true);
 
     const first = sampleTiles[0];
-    expect(getForestSpiders(first.x, first.y)).toBe(first.spiders);
+    expect(getForestSpiders(first.x, first.y)).toEqual(first.spiders);
   });
 
   it('generates beaver damage only for some forest tiles near active river beaver habitat', () => {

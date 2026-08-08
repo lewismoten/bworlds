@@ -1,3 +1,4 @@
+import { createBoundedCache } from '@bworlds/cache-support';
 import { hash2D, octaveNoise2D } from '@bworlds/core';
 import { createPlainsBackedTilePainter } from '@bworlds/paint-support';
 import {
@@ -63,18 +64,38 @@ const FOREST_FIREFLY_MEDIUM_DISTANCE_SQUARED =
 const FIREFLY_SEASON_START = 0.18;
 const FIREFLY_SEASON_PEAK = 0.5;
 const FIREFLY_SEASON_END = 0.82;
+const FOREST_COORDINATE_CACHE_LIMIT = 512;
+const FOREST_STYLE_CACHE_LIMIT = 96;
 const FOREST_QUEST_HINT_LABELS = ['N2', 'E3', 'S4', 'W1'] as const;
 const FOREST_TREASURE_CLUE_LABELS = ['X2', 'X4', '>3', '<5'] as const;
 const FOREST_HISTORICAL_INSCRIPTION_LABELS = ['OLD', 'MOSS', '1891'] as const;
 
-const treeDescriptorCache = new Map<string, ForestTreeDescriptor[]>();
-const treeStyleCache = new Map<string, ForestTreeStyle>();
-const forestTrailCache = new Map<string, ForestTrailDescriptor | null>();
-const forestFireflyCache = new Map<string, ForestFireflyDescriptor[]>();
-const forestWebCache = new Map<string, ForestWebDescriptor[]>();
-const forestSpiderCache = new Map<string, ForestSpiderDescriptor[]>();
-const forestBeaverDamageCache = new Map<string, ForestBeaverDamageDescriptor[]>();
-const forestBeaverPopulationCache = new Map<string, ForestBeaverPopulationDescriptor | null>();
+const treeDescriptorCache = createBoundedCache<string, ForestTreeDescriptor[]>(
+  FOREST_COORDINATE_CACHE_LIMIT
+);
+const treeStyleCache = createBoundedCache<string, ForestTreeStyle>(
+  FOREST_STYLE_CACHE_LIMIT
+);
+const forestTrailCache = createBoundedCache<string, ForestTrailDescriptor | null>(
+  FOREST_COORDINATE_CACHE_LIMIT
+);
+const forestFireflyCache = createBoundedCache<string, ForestFireflyDescriptor[]>(
+  FOREST_COORDINATE_CACHE_LIMIT
+);
+const forestWebCache = createBoundedCache<string, ForestWebDescriptor[]>(
+  FOREST_COORDINATE_CACHE_LIMIT
+);
+const forestSpiderCache = createBoundedCache<string, ForestSpiderDescriptor[]>(
+  FOREST_COORDINATE_CACHE_LIMIT
+);
+const forestBeaverDamageCache = createBoundedCache<
+  string,
+  ForestBeaverDamageDescriptor[]
+>(FOREST_COORDINATE_CACHE_LIMIT);
+const forestBeaverPopulationCache = createBoundedCache<
+  string,
+  ForestBeaverPopulationDescriptor | null
+>(FOREST_COORDINATE_CACHE_LIMIT);
 const resolveForestTrailDescriptor = createCoordinateValueResolver(
   forestTrailCache,
   ({ tileX, tileY }) => {
@@ -252,7 +273,10 @@ const resolveForestTreeDescriptors = createCoordinateValueResolver(
     return descriptors;
   }
 );
-const forestLandmarkCache = new Map<string, ForestLandmarkDescriptor | null>();
+const forestLandmarkCache = createBoundedCache<
+  string,
+  ForestLandmarkDescriptor | null
+>(FOREST_COORDINATE_CACHE_LIMIT);
 const resolveForestLandmarkDescriptor = createCoordinateValueResolver(
   forestLandmarkCache,
   ({ tileX, tileY }) => {
@@ -282,7 +306,10 @@ const resolveForestLandmarkDescriptor = createCoordinateValueResolver(
     };
   }
 );
-const forestFloorDetailCache = new Map<string, ForestFloorDetailDescriptor[]>();
+const forestFloorDetailCache = createBoundedCache<
+  string,
+  ForestFloorDetailDescriptor[]
+>(FOREST_COORDINATE_CACHE_LIMIT);
 const resolveForestFloorDetailDescriptors = createCoordinateValueResolver(
   forestFloorDetailCache,
   ({ tileX, tileY }) => {
@@ -340,7 +367,9 @@ const resolveForestFloorDetailDescriptors = createCoordinateValueResolver(
     return details;
   }
 );
-const forestBushCache = new Map<string, ForestBushDescriptor[]>();
+const forestBushCache = createBoundedCache<string, ForestBushDescriptor[]>(
+  FOREST_COORDINATE_CACHE_LIMIT
+);
 const resolveForestBushDescriptors = createCoordinateValueResolver(
   forestBushCache,
   ({ tileX, tileY }) => {
@@ -367,7 +396,9 @@ const resolveForestBushDescriptors = createCoordinateValueResolver(
     return bushes;
   }
 );
-const forestHollowCache = new Map<string, ForestHollowDescriptor[]>();
+const forestHollowCache = createBoundedCache<string, ForestHollowDescriptor[]>(
+  FOREST_COORDINATE_CACHE_LIMIT
+);
 const resolveForestHollowDescriptors = createCoordinateValueResolver(
   forestHollowCache,
   ({ tileX, tileY }) => {
@@ -400,7 +431,9 @@ const resolveForestHollowDescriptors = createCoordinateValueResolver(
     return hollows;
   }
 );
-const forestOwlCache = new Map<string, ForestOwlDescriptor[]>();
+const forestOwlCache = createBoundedCache<string, ForestOwlDescriptor[]>(
+  FOREST_COORDINATE_CACHE_LIMIT
+);
 const resolveForestOwlDescriptors = createCoordinateValueResolver(
   forestOwlCache,
   ({ tileX, tileY }) => {
@@ -424,7 +457,9 @@ const resolveForestOwlDescriptors = createCoordinateValueResolver(
     return owls;
   }
 );
-const forestCarvingCache = new Map<string, ForestCarvingDescriptor[]>();
+const forestCarvingCache = createBoundedCache<string, ForestCarvingDescriptor[]>(
+  FOREST_COORDINATE_CACHE_LIMIT
+);
 const resolveForestCarvingDescriptors = createCoordinateValueResolver(
   forestCarvingCache,
   ({ tileX, tileY }) => {
@@ -481,7 +516,9 @@ const resolveForestCarvingDescriptors = createCoordinateValueResolver(
     return carvings;
   }
 );
-const forestMeadowCache = new Map<string, ForestMeadowDescriptor[]>();
+const forestMeadowCache = createBoundedCache<string, ForestMeadowDescriptor[]>(
+  FOREST_COORDINATE_CACHE_LIMIT
+);
 const resolveForestMeadowDescriptors = createCoordinateValueResolver(
   forestMeadowCache,
   ({ tileX, tileY }) => {
@@ -500,7 +537,9 @@ const resolveForestMeadowDescriptors = createCoordinateValueResolver(
     return meadows;
   }
 );
-const forestBirdCache = new Map<string, ForestBirdDescriptor[]>();
+const forestBirdCache = createBoundedCache<string, ForestBirdDescriptor[]>(
+  FOREST_COORDINATE_CACHE_LIMIT
+);
 const resolveForestBirdDescriptors = createCoordinateValueResolver(
   forestBirdCache,
   ({ tileX, tileY }) => {

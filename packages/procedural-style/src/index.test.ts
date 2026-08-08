@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { createBoundedCache } from '@bworlds/cache-support';
 import {
   createCoordinateValueResolver,
   createRegionalMaterialResolver,
@@ -80,6 +81,33 @@ describe('procedural style helpers', () => {
       tileY: -2,
     });
     expect(cache.size).toBe(1);
+  });
+
+  it('supports bounded cache-like resolvers and recreates values after eviction', () => {
+    const cache = createBoundedCache<
+      string,
+      { key: string; tileX: number; tileY: number; stamp: number }
+    >(2);
+    let stamp = 0;
+    const resolveValue = createCoordinateValueResolver(
+      cache,
+      ({ key, tileX, tileY }) => ({
+        key,
+        tileX,
+        tileY,
+        stamp: stamp += 1,
+      })
+    );
+
+    const first = resolveValue(0, 0);
+    resolveValue(1, 0);
+    resolveValue(2, 0);
+    const second = resolveValue(0, 0);
+
+    expect(first.key).toBe('0:0');
+    expect(second.key).toBe('0:0');
+    expect(second.stamp).toBeGreaterThan(first.stamp);
+    expect(cache.size()).toBe(2);
   });
 
   it('creates reusable regional material resolvers for tile package style helpers', () => {

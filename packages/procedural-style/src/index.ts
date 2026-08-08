@@ -1,3 +1,4 @@
+import type { CacheLike } from '@bworlds/cache-support';
 import type { ThreeHostLike } from '@bworlds/plugin-api';
 
 export function createRegionKey(
@@ -19,7 +20,7 @@ export function createRegionKey(
 }
 
 export function getOrCreateRegionalValue<T>(
-  cache: Map<string, T>,
+  cache: CacheLike<string, T>,
   tileX: number,
   tileY: number,
   regionSize: number,
@@ -37,7 +38,7 @@ export function getOrCreateRegionalValue<T>(
 }
 
 export function createRegionalValueResolver<T>(
-  cache: Map<string, T>,
+  cache: CacheLike<string, T>,
   regionSize: number,
   createValue: (context: {
     regionX: number;
@@ -66,7 +67,7 @@ export function createRegionalValueResolver<T>(
 }
 
 export function createCoordinateValueResolver<T>(
-  cache: Map<string, T>,
+  cache: CacheLike<string, T>,
   createValue: (context: {
     key: string;
     tileX: number;
@@ -94,6 +95,11 @@ export function createRegionalMaterialResolver<
   THost extends object = ThreeHostLike,
 >(
   cache: Map<
+    string,
+    {
+      createMaterials(three: THost): TMaterial;
+    }
+  > | CacheLike<
     string,
     {
       createMaterials(three: THost): TMaterial;
