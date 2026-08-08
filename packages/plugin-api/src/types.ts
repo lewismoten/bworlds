@@ -281,7 +281,11 @@ export interface ThreeObject3DLike {
   position: ThreeVectorLike;
   rotation: ThreeEulerLike;
   scale: ThreeScaleLike;
+  userData?: Record<string, unknown>;
+  visible?: boolean;
+  castShadow?: boolean;
   add(...children: ThreeObject3DLike[]): this;
+  traverse?(visit: (child: ThreeObject3DLike) => void): void;
 }
 
 export type ThreeGeometryLike = object;
@@ -314,6 +318,10 @@ export interface ThreeMeshLike extends ThreeObject3DLike {
 }
 
 export interface ThreeGroupLike extends ThreeObject3DLike {}
+
+export interface ThreePointLightLike extends ThreeObject3DLike {
+  intensity: number;
+}
 
 export interface ThreeQuadraticBezierCurve3Like {
   getPoints(segments: number): ThreeVector3Like[];
@@ -353,6 +361,12 @@ export interface ThreeHostLike {
   MeshStandardMaterial: new (
     options?: Record<string, unknown>
   ) => ThreeMaterialLike;
+  PointLight: new (
+    color?: unknown,
+    intensity?: number,
+    distance?: number,
+    decay?: number
+  ) => ThreePointLightLike;
   PlaneGeometry: ThreeGeometryConstructorLike;
   QuadraticBezierCurve3: new (
     start: ThreeCoordinateLike,
@@ -446,6 +460,20 @@ export interface Paint2DOverlayContext {
 
 export interface Create3DModelContext extends TileCoordinate {
   three: ThreeHostLike;
+}
+
+export interface Sync3DModelContext extends TileCoordinate {
+  three: ThreeHostLike;
+  model: unknown;
+  timeMs?: number;
+  cycle: {
+    daylight: number;
+    twilight: number;
+    night: number;
+    isNight?: boolean;
+    moonIllumination?: number;
+  };
+  environment: WorldEnvironmentLike;
 }
 
 export type SurfaceBoundaryRole3D = 'sea' | 'channel' | 'crossing';
@@ -590,6 +618,7 @@ export interface TilePlugin extends Pick<TileLike, 'kind'> {
   paint2D?: (context: Paint2DContext) => boolean | void;
   paint2DOverlay?: (context: Paint2DOverlayContext) => boolean | void;
   create3DModel?: (context: Create3DModelContext) => unknown;
+  sync3DModel?: (context: Sync3DModelContext) => void;
   canOccupy3D?: (context: CanOccupy3DContext) => boolean | null | void;
   getSurfaceProfile3D?: (
     context: SurfaceProfile3DContext

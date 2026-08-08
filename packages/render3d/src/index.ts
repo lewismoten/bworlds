@@ -15,6 +15,8 @@ import {
 import { isWaterKind } from '@bworlds/tile-support';
 import {
   getActivePluginRegistry,
+  type TileLike,
+  type TilePlugin,
   type WorldEnvironmentLike,
   type SurfaceBoundaryRole3D,
   type TileDefinitionLike,
@@ -46,6 +48,15 @@ type Render3DController = {
   canOccupy(state: Render3DState, nextX: number, nextY: number): boolean;
   render(state: Render3DState, options?: Render3DOptions): void;
   resize(width: number, height: number, pixelRatio?: number): void;
+};
+type DynamicTileNode = {
+  key: string;
+  tile: TileLike;
+  tileX: number;
+  tileY: number;
+  node: THREE.Group;
+  model: unknown;
+  sync3DModel?: NonNullable<TilePlugin['sync3DModel']>;
 };
 type ConstellationStarLike = NonNullable<
   NonNullable<DaylightCycleState['constellations']>[number]
@@ -155,7 +166,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
   atlasTexture.generateMipmaps = false;
 
   const materialCache = new Map();
-  const visibleTileNodes = new Map();
+  const visibleTileNodes = new Map<string, DynamicTileNode>();
   const backgroundColor = new THREE.Color(SKY_DAY_COLOR);
   const twilightColor = new THREE.Color(SKY_SUNSET_COLOR);
   const nightColor = new THREE.Color(SKY_NIGHT_COLOR);
@@ -196,7 +207,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     };
   }
 
-  function buildTileNode(state, registry, x, y) {
+  function buildTileNode(state, registry, x, y): DynamicTileNode {
     const tileNode = new THREE.Group();
     const tile = state.getCurrentTile(x, y);
     const definition = getTileDefinitionFromRegistry(tile.kind);
@@ -241,7 +252,15 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       tileNode.add(wallMesh);
     }
 
-    return tileNode;
+    return {
+      key: `${x}:${y}`,
+      tile,
+      tileX: x,
+      tileY: y,
+      node: tileNode,
+      model: pluginModel ?? tileNode,
+      sync3DModel: tilePlugin?.sync3DModel,
+    };
   }
 
   function syncVisibleWorld(state) {
@@ -265,7 +284,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       if (nextVisibleKeys.has(key)) {
         continue;
       }
-      worldRoot.remove(tileNode);
+      worldRoot.remove(tileNode.node);
       visibleTileNodes.delete(key);
     }
 
@@ -303,7 +322,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       }
       const tileNode = buildTileNode(state, registry, entry.x, entry.y);
       visibleTileNodes.set(entry.key, tileNode);
-      worldRoot.add(tileNode);
+      worldRoot.add(tileNode.node);
     }
   }
 
@@ -331,12 +350,20 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     camera.rotation.y = -state.player.facing - Math.PI / 2;
     camera.rotation.x = -0.08;
 
-    updateSkyAndLights(
+    const environment = options.environment ?? {};
+    const cycle = updateSkyAndLights(
       state.player.x * TILE_SIZE,
       state.player.y * TILE_SIZE,
       options.timeMs ?? performance.now(),
-      options.environment ?? {}
+      environment
     );
+    syncDynamicTileNodes([...visibleTileNodes.values()], {
+      three: THREE,
+      state,
+      timeMs: options.timeMs,
+      cycle,
+      environment,
+    });
     renderer.render(scene, camera);
   }
 
@@ -840,7 +867,12 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     return 2;
   }
 
-  function updateSkyAndLights(worldX, worldY, timeMs, environment) {
+  function updateSkyAndLights(
+    worldX,
+    worldY,
+    timeMs,
+    environment
+  ): DaylightCycleState {
     const cycle = applyCelestialEnvironmentOverrides(
       getDaylightCycleState(timeMs, environment.cycle ?? {}),
       (environment.celestial ?? {}) as CelestialEnvironmentOverrides
@@ -962,6 +994,8 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       moonSprite.material.map.needsUpdate = true;
       lastMoonPhaseIndex = cycle.moonPhaseIndex;
     }
+
+    return cycle;
   }
 
   return {
@@ -978,6 +1012,39 @@ export function getFacingVisibilityBucket(
   const normalized =
     ((facingAngle % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
   return Math.floor((normalized / (Math.PI * 2)) * bucketCount);
+}
+
+export function syncDynamicTileNodes(
+  entries: DynamicTileNode[],
+  {
+    three,
+    state,
+    timeMs,
+    cycle,
+    environment,
+  }: {
+    three: Render3DState extends { viewMode?: infer _ } ? Parameters<
+      NonNullable<TilePlugin['sync3DModel']>
+    >[0]['three'] : never;
+    state: Render3DState;
+    timeMs?: number;
+    cycle: Parameters<NonNullable<TilePlugin['sync3DModel']>>[0]['cycle'];
+    environment: WorldEnvironmentLike;
+  }
+): void {
+  entries.forEach((entry) => {
+    entry.sync3DModel?.({
+      three,
+      state,
+      tile: entry.tile,
+      tileX: entry.tileX,
+      tileY: entry.tileY,
+      model: entry.model,
+      timeMs,
+      cycle,
+      environment,
+    });
+  });
 }
 
 export function getSkyConstellationSignature(cycle: SkySignatureCycle): string {

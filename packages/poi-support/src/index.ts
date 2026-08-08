@@ -1,4 +1,4 @@
-import { generatePoiName, hash2D } from '@bworlds/core';
+import { clamp, generatePoiName, hash2D } from '@bworlds/core';
 import { createRouteTraversalProfile } from '@bworlds/tile-support';
 import type {
   ClassifyOverworldTileContext,
@@ -13,6 +13,8 @@ import type {
   Seed,
   TileLike,
   TilePlugin,
+  ThreeMaterialLike,
+  ThreeObject3DLike,
   TraversalProfile3D,
   ViewMode,
   WorldActionLike,
@@ -72,6 +74,7 @@ interface EnterablePoiTilePluginOptions {
   worldAction?: PoiWorldActionOptions;
   paint2D?: TilePlugin['paint2D'];
   create3DModel?: TilePlugin['create3DModel'];
+  sync3DModel?: TilePlugin['sync3DModel'];
   canOccupy3D?: TilePlugin['canOccupy3D'];
   getSurfaceProfile3D?: TilePlugin['getSurfaceProfile3D'];
   getTraversalProfile3D?: TilePlugin['getTraversalProfile3D'];
@@ -112,6 +115,88 @@ interface AnchoredEnterablePoiTilePluginOptions
 }
 
 type LandmarkFacingScore = CardinalDirectionLike & { score: number };
+type PoiLightCycleLike = {
+  daylight: number;
+  twilight: number;
+  night: number;
+};
+type PoiLightEmitterKind = 'emissive-mesh' | 'point-light';
+type PoiLightEmitterOptions = {
+  kind: PoiLightEmitterKind;
+  dayIntensity?: number;
+  nightIntensity: number;
+  visibleThreshold?: number;
+};
+type PoiLightMaterialLike = ThreeMaterialLike & {
+  emissiveIntensity?: number;
+};
+type PoiLightTaggedObject = ThreeObject3DLike & {
+  intensity?: number;
+  material?: PoiLightMaterialLike | PoiLightMaterialLike[];
+};
+const POI_LIGHT_EMITTER_KEY = 'poiNightLightEmitter';
+
+export function getPoiLightActivation(cycle: PoiLightCycleLike): number {
+  return clamp(
+    cycle.night * 1.08 + cycle.twilight * 0.52 - cycle.daylight * 0.12,
+    0,
+    1
+  );
+}
+
+export function markPoiLightEmitter<TObject extends ThreeObject3DLike>(
+  target: TObject,
+  options: PoiLightEmitterOptions
+): TObject {
+  target.userData = {
+    ...(target.userData ?? {}),
+    [POI_LIGHT_EMITTER_KEY]: options,
+  };
+  return target;
+}
+
+export function syncPoiLightEmitters(
+  root: ThreeObject3DLike,
+  cycle: PoiLightCycleLike
+): void {
+  const activation = getPoiLightActivation(cycle);
+  const visit = (node: ThreeObject3DLike): void => {
+    const emitter = node.userData?.[POI_LIGHT_EMITTER_KEY] as
+      | PoiLightEmitterOptions
+      | undefined;
+    if (!emitter) {
+      return;
+    }
+
+    const intensity =
+      (emitter.dayIntensity ?? 0) +
+      (emitter.nightIntensity - (emitter.dayIntensity ?? 0)) * activation;
+    const target = node as PoiLightTaggedObject;
+    if (emitter.kind === 'point-light' && typeof target.intensity === 'number') {
+      target.intensity = intensity;
+      target.visible = intensity > (emitter.visibleThreshold ?? 0.01);
+      return;
+    }
+
+    const materials = Array.isArray(target.material)
+      ? target.material
+      : target.material
+        ? [target.material]
+        : [];
+    materials.forEach((material) => {
+      material.emissiveIntensity = intensity;
+    });
+  };
+
+  if (typeof root.traverse === 'function') {
+    root.traverse((node) => {
+      visit(node);
+    });
+    return;
+  }
+
+  visit(root);
+}
 
 export function canPlaceLandPoi(
   nearLand: boolean,
@@ -243,6 +328,7 @@ export function createEnterablePoiTilePlugin(
         ...enterablePoiFeatures,
         paint2D: options.paint2D,
         create3DModel: options.create3DModel,
+        sync3DModel: options.sync3DModel,
         canOccupy3D: options.canOccupy3D,
         getSurfaceProfile3D: options.getSurfaceProfile3D,
         getTraversalProfile3D:

@@ -10,9 +10,12 @@ import {
   createEnterablePoiTileFeatures,
   createGeneratedPoiTile,
   createPoiWorldAction,
+  getPoiLightActivation,
   getNearestAccessibleRouteDistance,
+  markPoiLightEmitter,
   pickPreferredLandmarkFacing,
   resolvePlacementChance,
+  syncPoiLightEmitters,
 } from './index.ts';
 import type { ClassifyOverworldTileContext, WorldStateLike } from '@bworlds/plugin-api';
 
@@ -397,6 +400,87 @@ describe('poi support', () => {
         'ruins'
       )
     ).toBe(0.999);
+  });
+
+  it('ramps poi light activation from day through twilight to night', () => {
+    expect(
+      getPoiLightActivation({ daylight: 1, twilight: 0, night: 0 })
+    ).toBe(0);
+    expect(
+      getPoiLightActivation({ daylight: 0.15, twilight: 0.75, night: 0.35 })
+    ).toBeGreaterThan(0.3);
+    expect(
+      getPoiLightActivation({ daylight: 0, twilight: 0, night: 1 })
+    ).toBe(1);
+  });
+
+  it('syncs tagged poi emissive meshes and point lights from cycle state', () => {
+    const emissiveMesh = markPoiLightEmitter(
+      {
+        userData: {},
+        position: { x: 0, y: 0, z: 0, set() { return this; } },
+        rotation: { x: 0, y: 0, z: 0 },
+        scale: {
+          x: 1,
+          y: 1,
+          z: 1,
+          set() { return this; },
+          setScalar() { return this; },
+        },
+        add() { return this; },
+        material: { emissiveIntensity: 0 },
+      },
+      {
+        kind: 'emissive-mesh',
+        dayIntensity: 0.05,
+        nightIntensity: 1.25,
+      }
+    );
+    const pointLight = markPoiLightEmitter(
+      {
+        userData: {},
+        visible: false,
+        intensity: 0,
+        position: { x: 0, y: 0, z: 0, set() { return this; } },
+        rotation: { x: 0, y: 0, z: 0 },
+        scale: {
+          x: 1,
+          y: 1,
+          z: 1,
+          set() { return this; },
+          setScalar() { return this; },
+        },
+        add() { return this; },
+      },
+      {
+        kind: 'point-light',
+        nightIntensity: 0.9,
+      }
+    );
+    const root = {
+      position: { x: 0, y: 0, z: 0, set() { return this; } },
+      rotation: { x: 0, y: 0, z: 0 },
+      scale: {
+        x: 1,
+        y: 1,
+        z: 1,
+        set() { return this; },
+        setScalar() { return this; },
+      },
+      add() { return this; },
+      traverse(
+        visit: (node: typeof emissiveMesh | typeof pointLight) => void
+      ) {
+        visit(emissiveMesh);
+        visit(pointLight);
+      },
+    };
+
+    syncPoiLightEmitters(root, { daylight: 0, twilight: 0, night: 1 });
+
+    expect(emissiveMesh.material?.emissiveIntensity).toBeCloseTo(1.25, 6);
+    expect(pointLight.intensity).toBeCloseTo(0.9, 6);
+    expect(pointLight.visible).toBe(true);
   });
 
   it('finds reachable route distances for a facing direction', () => {

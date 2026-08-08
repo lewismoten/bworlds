@@ -3,7 +3,7 @@
 - [X] space out all POI a minimum distance from anything else
 - [X] dungeons should be in the middle of forests
 - [X] caves should be next to mountains
-- [ ] towns, dungeons, other POI should emit light as the sun goes down
+- [X] towns, dungeons, other POI should emit light as the sun goes down
 - [ ] When walking into a town, dungeon, or other point of interest, it can take you to separate instance of that POI.
 - [ ] When exiting a point of interest, you should appear at the entrance of the POI, facing away from the entrance.
 - [ ] Add a quarry as a POI

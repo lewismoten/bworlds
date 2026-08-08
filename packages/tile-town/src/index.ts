@@ -1,6 +1,8 @@
 import { hash2D } from '@bworlds/core';
 import {
   createAnchoredEnterablePoiTilePlugin,
+  markPoiLightEmitter,
+  syncPoiLightEmitters,
 } from '@bworlds/poi-support';
 import {
   createCoordinateValueResolver,
@@ -254,9 +256,16 @@ export function createTownTilePlugin(): RuntimePlugin {
         building.add(door);
 
         for (const window of descriptor.windows) {
-          const pane = new three.Mesh(
+          const pane = markPoiLightEmitter(
+            new three.Mesh(
             new three.BoxGeometry(window.width, window.height, 0.03),
             style.windowMaterial
+            ),
+            {
+              kind: 'emissive-mesh',
+              dayIntensity: 0.08,
+              nightIntensity: 1.2,
+            }
           );
           pane.position.set(window.x, window.y, descriptor.depth * 0.5 + 0.008);
           building.add(pane);
@@ -268,7 +277,23 @@ export function createTownTilePlugin(): RuntimePlugin {
       if (tile.poi?.name) {
         group.add(createTownNameSign(three, tile.poi.name, tileX, tileY, style));
       }
+      const lantern = markPoiLightEmitter(
+        new three.PointLight('#f7c97a', 0, 3.8, 1.8),
+        {
+          kind: 'point-light',
+          nightIntensity: 0.9,
+          visibleThreshold: 0.04,
+        }
+      );
+      lantern.position.set(tileX, 1.18, tileY);
+      lantern.visible = false;
+      group.add(lantern);
       return group;
+    },
+    sync3DModel({ model, cycle }) {
+      if (model && typeof model === 'object') {
+        syncPoiLightEmitters(model as Parameters<typeof syncPoiLightEmitters>[0], cycle);
+      }
     },
   });
 }

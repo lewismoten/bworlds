@@ -6,6 +6,7 @@ import {
   getSkyEventSignature,
   getSkyMilkyWaySignature,
   getVisibleWorldTileBuildOrder,
+  syncDynamicTileNodes,
   shouldRenderWorldTile,
 } from './index.ts';
 
@@ -153,5 +154,74 @@ describe('render3d visibility helpers', () => {
       getSkyConstellationSignature(baseCycle)
     );
     expect(getSkyEventSignature(farCycle)).not.toBe(getSkyEventSignature(baseCycle));
+  });
+
+  it('syncs dynamic visible tile nodes through tile plugin hooks', () => {
+    const calls: Array<{
+      tileX: number;
+      tileY: number;
+      night: number;
+      environmentId: string | undefined;
+    }> = [];
+    syncDynamicTileNodes(
+      [
+        {
+          key: '4:5',
+          tile: { kind: 'town' },
+          tileX: 4,
+          tileY: 5,
+          node: {} as never,
+          model: { id: 'model-town' },
+          sync3DModel({ tileX, tileY, cycle, environment }) {
+            calls.push({
+              tileX,
+              tileY,
+              night: cycle.night,
+              environmentId: environment.sky?.nightColor,
+            });
+          },
+        },
+      ],
+      {
+        three: {} as never,
+        state: {
+          player: { x: 0, y: 0, facing: 0 },
+          getCurrentContext() {
+            return { id: 'overworld', type: 'overworld', depth: 0 };
+          },
+          getCurrentTile() {
+            return { kind: 'plains' };
+          },
+          getTileDefinition() {
+            return {
+              name: 'Plains',
+              color: '#000000',
+              miniColor: '#111111',
+              walkable: true,
+              wallHeight: 0,
+            };
+          },
+        },
+        cycle: {
+          daylight: 0,
+          twilight: 0.2,
+          night: 0.8,
+        },
+        environment: {
+          sky: {
+            nightColor: '#06111f',
+          },
+        },
+      }
+    );
+
+    expect(calls).toEqual([
+      {
+        tileX: 4,
+        tileY: 5,
+        night: 0.8,
+        environmentId: '#06111f',
+      },
+    ]);
   });
 });

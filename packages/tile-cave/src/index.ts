@@ -2,7 +2,9 @@ import { hash2D } from '@bworlds/core';
 import { createPlainsBackedTilePainter } from '@bworlds/paint-support';
 import {
   createAnchoredEnterablePoiTilePlugin,
+  markPoiLightEmitter,
   pickPreferredLandmarkFacing,
+  syncPoiLightEmitters,
 } from '@bworlds/poi-support';
 import {
   createBasicMaterial,
@@ -194,8 +196,45 @@ export function createCaveTilePlugin(): RuntimePlugin {
       sill.scale.set(2.8, 0.55, 1.2);
       portal.add(sill);
 
+      const lanternCore = markPoiLightEmitter(
+        new three.Mesh(
+          new three.SphereGeometry(0.035, 6, 6),
+          new three.MeshStandardMaterial({
+            color: '#f59e0b',
+            emissive: '#f59e0b',
+            emissiveIntensity: 0.02,
+            roughness: 0.28,
+            metalness: 0.04,
+          })
+        ),
+        {
+          kind: 'emissive-mesh',
+          dayIntensity: 0.02,
+          nightIntensity: 1.35,
+        }
+      );
+      lanternCore.position.set(0.24, 0.34, 0.18);
+      portal.add(lanternCore);
+
+      const lanternLight = markPoiLightEmitter(
+        new three.PointLight('#f6b85d', 0, 2.9, 1.9),
+        {
+          kind: 'point-light',
+          nightIntensity: 0.82,
+          visibleThreshold: 0.04,
+        }
+      );
+      lanternLight.position.set(0.24, 0.34, 0.12);
+      lanternLight.visible = false;
+      portal.add(lanternLight);
+
       group.add(portal);
       return group;
+    },
+    sync3DModel({ model, cycle }) {
+      if (model && typeof model === 'object') {
+        syncPoiLightEmitters(model as Parameters<typeof syncPoiLightEmitters>[0], cycle);
+      }
     },
   });
 }

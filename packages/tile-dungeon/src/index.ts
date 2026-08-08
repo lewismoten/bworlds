@@ -1,7 +1,9 @@
 import { hash2D } from '@bworlds/core';
 import {
   createAnchoredEnterablePoiTilePlugin,
+  markPoiLightEmitter,
   pickPreferredLandmarkFacing,
+  syncPoiLightEmitters,
 } from '@bworlds/poi-support';
 import {
   createRegionalMaterialResolver,
@@ -160,8 +162,45 @@ export function createDungeonTilePlugin(): RuntimePlugin {
       darkness.position.set(0, 0.15, -0.1);
       gate.add(darkness);
 
+      const beacon = markPoiLightEmitter(
+        new three.Mesh(
+          new three.SphereGeometry(0.04, 6, 6),
+          new three.MeshStandardMaterial({
+            color: '#dc2626',
+            emissive: '#dc2626',
+            emissiveIntensity: 0.02,
+            roughness: 0.32,
+            metalness: 0.04,
+          })
+        ),
+        {
+          kind: 'emissive-mesh',
+          dayIntensity: 0.02,
+          nightIntensity: 1.45,
+        }
+      );
+      beacon.position.set(0, 0.42, 0.06);
+      gate.add(beacon);
+
+      const beaconLight = markPoiLightEmitter(
+        new three.PointLight('#f87171', 0, 3.6, 1.85),
+        {
+          kind: 'point-light',
+          nightIntensity: 0.95,
+          visibleThreshold: 0.04,
+        }
+      );
+      beaconLight.position.set(0, 0.4, 0.03);
+      beaconLight.visible = false;
+      gate.add(beaconLight);
+
       group.add(gate);
       return group;
+    },
+    sync3DModel({ model, cycle }) {
+      if (model && typeof model === 'object') {
+        syncPoiLightEmitters(model as Parameters<typeof syncPoiLightEmitters>[0], cycle);
+      }
     },
   });
 }
