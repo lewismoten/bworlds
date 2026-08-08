@@ -7,11 +7,19 @@ import {
 
 type DaylightCycleLike = ReturnType<typeof getDaylightCycleState>;
 
-export function createSolarSystemPreviewRenderer(host: HTMLElement | null) {
+export function createSolarSystemPreviewRenderer(
+  host: HTMLElement | null,
+  options: {
+    onRenderRequested?: () => void;
+  } = {}
+) {
   if (!host) {
     return {
       resize() {},
       render() {},
+      isInteracting() {
+        return false;
+      },
     };
   }
 
@@ -76,6 +84,7 @@ export function createSolarSystemPreviewRenderer(host: HTMLElement | null) {
     interaction.lastY = event.clientY;
     host.classList.add('is-dragging');
     host.setPointerCapture(event.pointerId);
+    options.onRenderRequested?.();
   });
 
   host.addEventListener('pointermove', (event) => {
@@ -88,6 +97,7 @@ export function createSolarSystemPreviewRenderer(host: HTMLElement | null) {
     interaction.lastY = event.clientY;
     interaction.yaw += deltaX * 0.008;
     interaction.pitch = clamp(interaction.pitch + deltaY * 0.005, -1.1, 0.2);
+    options.onRenderRequested?.();
   });
 
   const releasePointer = (event: PointerEvent) => {
@@ -100,6 +110,7 @@ export function createSolarSystemPreviewRenderer(host: HTMLElement | null) {
     if (host.hasPointerCapture(event.pointerId)) {
       host.releasePointerCapture(event.pointerId);
     }
+    options.onRenderRequested?.();
   };
 
   host.addEventListener('pointerup', releasePointer);
@@ -156,6 +167,9 @@ export function createSolarSystemPreviewRenderer(host: HTMLElement | null) {
   return {
     resize,
     render,
+    isInteracting() {
+      return interaction.dragging;
+    },
   };
 }
 

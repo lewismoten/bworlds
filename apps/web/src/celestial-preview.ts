@@ -47,11 +47,19 @@ const PLANET_SURFACE_COLORS: Record<string, string> = {
   town: '#c9b48a',
 };
 
-export function createCelestialPreviewRenderer(host: HTMLElement | null) {
+export function createCelestialPreviewRenderer(
+  host: HTMLElement | null,
+  options: {
+    onRenderRequested?: () => void;
+  } = {}
+) {
   if (!host) {
     return {
       resize() {},
       render() {},
+      isInteracting() {
+        return false;
+      },
     };
   }
 
@@ -103,7 +111,6 @@ export function createCelestialPreviewRenderer(host: HTMLElement | null) {
     lastX: 0,
     lastY: 0,
   };
-
   const world = new THREE.Mesh(
     new THREE.SphereGeometry(2.8, 28, 28),
     new THREE.MeshStandardMaterial({
@@ -203,6 +210,7 @@ export function createCelestialPreviewRenderer(host: HTMLElement | null) {
     rotationState.lastY = event.clientY;
     host.classList.add('is-dragging');
     host.setPointerCapture(event.pointerId);
+    options.onRenderRequested?.();
   });
 
   host.addEventListener('pointermove', (event) => {
@@ -215,6 +223,7 @@ export function createCelestialPreviewRenderer(host: HTMLElement | null) {
     rotationState.lastY = event.clientY;
     rotationState.yaw += deltaX * 0.008;
     rotationState.pitch = clamp(rotationState.pitch + deltaY * 0.006, -0.9, 0.9);
+    options.onRenderRequested?.();
   });
 
   const releasePointer = (event: PointerEvent) => {
@@ -227,6 +236,7 @@ export function createCelestialPreviewRenderer(host: HTMLElement | null) {
     if (host.hasPointerCapture(event.pointerId)) {
       host.releasePointerCapture(event.pointerId);
     }
+    options.onRenderRequested?.();
   };
 
   host.addEventListener('pointerup', releasePointer);
@@ -355,6 +365,9 @@ export function createCelestialPreviewRenderer(host: HTMLElement | null) {
   return {
     resize,
     render,
+    isInteracting() {
+      return rotationState.dragging;
+    },
   };
 }
 

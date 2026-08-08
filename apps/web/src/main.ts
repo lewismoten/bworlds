@@ -49,6 +49,10 @@ import {
   shouldToggleCompassHeading,
 } from './compass.ts';
 import {
+  getFrameLoopActivity,
+  shouldContinueFrameLoop,
+} from './frame-loop.ts';
+import {
   getNextCelestialEventMode,
   getNextInspectorTab,
   getNextModelPreviewMode,
@@ -470,8 +474,12 @@ const MOON_PHASE_ILLUMINATIONS = [0, 0.25, 0.5, 0.75, 1, 0.75, 0.5, 0.25] as con
 
 drawAtlas(atlasCanvas.getContext('2d'));
 const renderer3d = create3DRenderer(viewport3d);
-const celestialPreview = createCelestialPreviewRenderer(celestialPreviewHost);
-const solarSystemPreview = createSolarSystemPreviewRenderer(solarSystemPreviewHost);
+const celestialPreview = createCelestialPreviewRenderer(celestialPreviewHost, {
+  onRenderRequested: () => requestRender(),
+});
+const solarSystemPreview = createSolarSystemPreviewRenderer(solarSystemPreviewHost, {
+  onRenderRequested: () => requestRender(),
+});
 let activeInspectorTab = getNextInspectorTab(savedSession?.inspectorTab);
 let activeModelPreviewMode = getNextModelPreviewMode(savedSession?.modelPreviewMode);
 const celestialEventModeState = {
@@ -481,7 +489,7 @@ const celestialEventModeState = {
 (state as typeof state & { celestialEventMode?: string }).celestialEventMode =
   celestialEventModeState.mode;
 
-const keys = new Set();
+const keys = new Set<string>();
 
 renderContentPackControls();
 updateContentPackLabel();
@@ -617,7 +625,7 @@ function setModelPreviewMode(mode: 'world' | 'solar-system' | 'split') {
   updateModelPreviewModeUi();
   saveSession();
   resizeCanvas();
-  render();
+  requestRender();
 }
 
 function setCelestialEventMode(modeId: string | undefined) {
@@ -626,7 +634,7 @@ function setCelestialEventMode(modeId: string | undefined) {
     celestialEventModeState.mode;
   updateCelestialEventModeUi();
   saveSession();
-  render();
+  requestRender();
 }
 
 function toggleView() {
@@ -700,7 +708,7 @@ function rebuildRuntime(nextPackIds: string[]) {
   renderContentPackControls();
   updateContentPackLabel();
   saveSession();
-  render();
+  requestRender();
 }
 
 function getCurrentWorldTimeMs() {
@@ -826,7 +834,7 @@ function travelToOverworld(x, y, facing = state.player.facing) {
   state.player.facing = normalizeAngle(facing);
   resetMotionState();
   saveSession();
-  render();
+  requestRender();
 }
 
 function findRandomPlainsLocation() {
@@ -876,7 +884,7 @@ function skipTimeByHours(hours: number) {
     });
   }
   saveSession();
-  render();
+  requestRender();
 }
 
 function skipSeasonByCount(seasons: number) {
@@ -893,7 +901,7 @@ function skipSeasonByCount(seasons: number) {
     });
   }
   saveSession();
-  render();
+  requestRender();
 }
 
 function jumpToTimePreset(preset: 'dawn' | 'noon' | 'dusk' | 'midnight') {
@@ -913,7 +921,7 @@ function jumpToTimePreset(preset: 'dawn' | 'noon' | 'dusk' | 'midnight') {
     });
   }
   saveSession();
-  render();
+  requestRender();
 }
 
 function setInspectorTab(tabId: string | undefined) {
@@ -993,7 +1001,7 @@ function toggleTimeFreeze() {
 
   updateFreezeTimeButton();
   saveSession();
-  render();
+  requestRender();
 }
 
 function jump() {
@@ -1004,6 +1012,7 @@ function jump() {
   motion.jumpVelocity = motion.shortJumpVelocity;
   motion.jumpHoldElapsed = 0;
   motion.longJumpActivated = false;
+  requestRender();
 }
 
 function updateMovement(deltaMs) {
@@ -1193,9 +1202,44 @@ function render() {
     )
   );
   updateStatus(environment, displayCycle);
+  return getFrameLoopActivity({
+    timeFrozen: timeState.frozen,
+    keys,
+    isJumping: motion.isJumping,
+    compassVelocity: compassState.velocity,
+    headingVisualAngle: compassHeadingVisualState.angle,
+    headingTargetAngle: compassHeadingState.angle,
+    previewInteracting:
+      celestialPreview.isInteracting() || solarSystemPreview.isInteracting(),
+    compassDragging: compassDialPointerState.draggingMode !== null,
+    displayedCycle: {
+      dayProgress: displayCycle.dayProgress,
+      yearProgress: displayCycle.yearProgress,
+      moonMidnightOrbitProgress: displayCycle.moonMidnightOrbitProgress,
+      sunriseProgress: displayCycle.sunriseProgress,
+      sunsetProgress: displayCycle.sunsetProgress,
+      daylightDuration: displayCycle.daylightDuration,
+    },
+    actualCycle: {
+      dayProgress: actualCycle.dayProgress,
+      yearProgress: actualCycle.yearProgress,
+      moonMidnightOrbitProgress: actualCycle.moonMidnightOrbitProgress,
+      sunriseProgress: actualCycle.sunriseProgress,
+      sunsetProgress: actualCycle.sunsetProgress,
+      daylightDuration: actualCycle.daylightDuration,
+    },
+  });
 }
 
 let lastFrame = 0;
+let pendingFrameHandle = 0;
+
+function requestRender() {
+  if (pendingFrameHandle !== 0) {
+    return;
+  }
+  pendingFrameHandle = requestAnimationFrame(loop);
+}
 
 function formatCycleTime(dayProgress: number) {
   const totalMinutes = Math.floor(dayProgress * 24 * 60);
@@ -1410,21 +1454,26 @@ function faceDirection(angle: number) {
   }
   state.player.facing = normalizeAngle(angle);
   saveSession();
-  render();
+  requestRender();
 }
 
 function loop(timestamp) {
+  pendingFrameHandle = 0;
   const delta =
     lastFrame === 0 ? 16.67 : Math.min(timestamp - lastFrame, 33.34);
   updateMovement(delta);
-  render();
+  const activity = render();
   lastFrame = timestamp;
-  requestAnimationFrame(loop);
+  if (shouldContinueFrameLoop(activity)) {
+    requestRender();
+    return;
+  }
+  lastFrame = 0;
 }
 
 window.addEventListener('resize', () => {
   resizeCanvas();
-  render();
+  requestRender();
 });
 
 window.addEventListener('keydown', (event) => {
@@ -1445,6 +1494,7 @@ window.addEventListener('keydown', (event) => {
     }
   }
   if (key === 'x' && state.tryExit()) saveSession();
+  requestRender();
 
   if (
     ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(event.key)
@@ -1460,6 +1510,7 @@ window.addEventListener('keyup', (event) => {
     motion.spaceHeld = false;
     motion.spaceReady = true;
   }
+  requestRender();
 });
 
 toggleButton.addEventListener('click', toggleView);
@@ -1541,7 +1592,7 @@ compassDialCanvas?.addEventListener('pointerdown', (event) => {
     typeof compassHeadingState.angle !== 'number'
   ) {
     compassHeadingState.angle = angle;
-    render();
+    requestRender();
   }
 });
 
@@ -1568,7 +1619,7 @@ compassDialCanvas?.addEventListener('pointermove', (event) => {
   );
   compassDialPointerState.draggedHeading = preview.draggedHeading;
   compassHeadingState.angle = preview.headingAngle;
-  render();
+  requestRender();
 });
 
 const releaseCompassDialPointer = (event: PointerEvent) => {
@@ -1608,7 +1659,7 @@ const releaseCompassDialPointer = (event: PointerEvent) => {
       draggedHeading
     );
     saveSession();
-    render();
+    requestRender();
     return;
   }
 
@@ -1639,8 +1690,7 @@ viewport3d.classList.toggle('is-hidden', state.viewMode !== '3d');
 setInspectorTab(activeInspectorTab);
 updateModelPreviewModeUi();
 updateCelestialEventModeUi();
-render();
-requestAnimationFrame(loop);
+requestRender();
 
 function saveSession() {
   try {
