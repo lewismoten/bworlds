@@ -27,14 +27,25 @@ export function formatCompassHeading(headingAngle: number | null) {
 
 export function getCompassHeadingLabelState(
   headingAngle: number,
-  bezelRadius: number
+  width: number,
+  height: number,
+  padding = 24
 ) {
   const degrees = getCompassHeadingDegrees(headingAngle);
-  const labelRadius = bezelRadius + 28;
+  const quadrant = (((headingAngle + Math.PI / 2) / (Math.PI / 2)) % 4 + 4) % 4;
+  const cornerIndex = Math.floor(quadrant);
+  const corners = [
+    { x: width - padding, y: padding, textAlign: 'right' as const },
+    { x: width - padding, y: height - padding, textAlign: 'right' as const },
+    { x: padding, y: height - padding, textAlign: 'left' as const },
+    { x: padding, y: padding, textAlign: 'left' as const },
+  ];
+  const corner = corners[cornerIndex] ?? corners[0];
   return {
     degrees,
-    x: Math.cos(headingAngle) * labelRadius,
-    y: Math.sin(headingAngle) * labelRadius,
+    x: corner.x - width / 2,
+    y: corner.y - height / 2,
+    textAlign: corner.textAlign,
   };
 }
 
@@ -78,6 +89,29 @@ export function isCompassHeadingDragSignificant(
   thresholdRadians = Math.PI / 90
 ) {
   return Math.abs(getCompassDelta(startHeadingAngle, nextHeadingAngle)) > thresholdRadians;
+}
+
+export function getCompassHeadingDragPreview(
+  startPointerAngle: number,
+  nextHeadingAngle: number,
+  draggedHeading = false
+) {
+  return {
+    draggedHeading:
+      draggedHeading ||
+      isCompassHeadingDragSignificant(startPointerAngle, nextHeadingAngle),
+    headingAngle: nextHeadingAngle,
+  };
+}
+
+export function resolveCompassHeadingRelease(
+  startHeadingAngle: number | null,
+  nextHeadingAngle: number,
+  draggedHeading: boolean
+) {
+  return !draggedHeading && shouldToggleCompassHeading(startHeadingAngle, nextHeadingAngle)
+    ? null
+    : nextHeadingAngle;
 }
 
 export function getCompassPalette() {
@@ -248,7 +282,7 @@ export function drawCompassDial(
   });
 
   if (typeof headingAngle === 'number') {
-    const headingLabel = getCompassHeadingLabelState(headingAngle, bezelRadius);
+    const headingLabel = getCompassHeadingLabelState(headingAngle, width, height);
     const headingMarker = getCompassHeadingMarkerState(headingAngle, bezelRadius);
     context.strokeStyle = 'rgba(85, 214, 190, 0.38)';
     context.lineWidth = 5;
@@ -271,18 +305,27 @@ export function drawCompassDial(
 
     context.fillStyle = 'rgba(8, 16, 25, 0.92)';
     context.beginPath();
-    context.arc(headingLabel.x, headingLabel.y, 18, 0, Math.PI * 2);
+    roundedRectPath(
+      context,
+      headingLabel.textAlign === 'right' ? headingLabel.x - 44 : headingLabel.x - 6,
+      headingLabel.y - 14,
+      50,
+      28,
+      10
+    );
     context.fill();
     context.strokeStyle = 'rgba(85, 214, 190, 0.55)';
     context.lineWidth = 1.5;
     context.stroke();
     context.fillStyle = '#dce8f5';
     context.font = '700 11px Trebuchet MS';
+    context.textAlign = headingLabel.textAlign;
     context.fillText(
       `${headingLabel.degrees.toString().padStart(3, '0')}°`,
-      headingLabel.x,
+      headingLabel.textAlign === 'right' ? headingLabel.x - 8 : headingLabel.x + 8,
       headingLabel.y
     );
+    context.textAlign = 'center';
   }
 
   context.save();
@@ -309,15 +352,33 @@ export function drawCompassDial(
   context.stroke();
   context.restore();
 
-  context.fillStyle = '#dce8f5';
-  context.font = '600 14px Trebuchet MS';
-  context.fillText(formatCompassHeading(headingAngle), 0, radius + 18);
   context.fillStyle = '#9bb3c6';
   context.font = '600 12px Trebuchet MS';
   context.fillText(
     'Click center to face, outer bezel to mark or clear a heading',
     0,
-    radius + 36
+    radius + 28
   );
   context.restore();
+}
+
+function roundedRectPath(
+  context: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  radius: number
+) {
+  context.beginPath();
+  context.moveTo(x + radius, y);
+  context.lineTo(x + width - radius, y);
+  context.quadraticCurveTo(x + width, y, x + width, y + radius);
+  context.lineTo(x + width, y + height - radius);
+  context.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+  context.lineTo(x + radius, y + height);
+  context.quadraticCurveTo(x, y + height, x, y + height - radius);
+  context.lineTo(x, y + radius);
+  context.quadraticCurveTo(x, y, x + radius, y);
+  context.closePath();
 }

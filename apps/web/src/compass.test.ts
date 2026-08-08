@@ -6,6 +6,7 @@ import {
   getCompassBezelRotation,
   getCompassDialFacingAngle,
   getCompassDialInteractionMode,
+  getCompassHeadingDragPreview,
   getCompassHeadingDegrees,
   getCompassHeadingLabelState,
   getCompassHeadingMarkerState,
@@ -13,6 +14,7 @@ import {
   getCompassPalette,
   getCompassWobbleBoost,
   isCompassHeadingDragSignificant,
+  resolveCompassHeadingRelease,
   shouldToggleCompassHeading,
 } from './compass.ts';
 
@@ -79,15 +81,22 @@ describe('compass helpers', () => {
   });
 
   it('positions a degree chip near the selected bezel heading', () => {
-    const north = getCompassHeadingLabelState(-Math.PI / 2, 80);
-    const east = getCompassHeadingLabelState(0, 80);
+    const north = getCompassHeadingLabelState(-Math.PI / 2, 320, 320);
+    const east = getCompassHeadingLabelState(0, 320, 320);
+    const south = getCompassHeadingLabelState(Math.PI / 2, 320, 320);
 
     expect(north.degrees).toBe(0);
-    expect(Math.abs(north.x)).toBeLessThan(0.001);
+    expect(north.x).toBeGreaterThan(100);
     expect(north.y).toBeLessThan(-100);
+    expect(north.textAlign).toBe('right');
     expect(east.degrees).toBe(90);
     expect(east.x).toBeGreaterThan(100);
-    expect(Math.abs(east.y)).toBeLessThan(0.001);
+    expect(east.y).toBeGreaterThan(100);
+    expect(east.textAlign).toBe('right');
+    expect(south.degrees).toBe(180);
+    expect(south.x).toBeLessThan(-100);
+    expect(south.y).toBeGreaterThan(100);
+    expect(south.textAlign).toBe('left');
   });
 
   it('anchors the bezel highlight directly to the selected heading angle', () => {
@@ -106,10 +115,20 @@ describe('compass helpers', () => {
     expect(shouldToggleCompassHeading(0, 0.02)).toBe(true);
     expect(shouldToggleCompassHeading(0, Math.PI / 2)).toBe(false);
     expect(shouldToggleCompassHeading(null, 0)).toBe(false);
+    expect(resolveCompassHeadingRelease(0, 0.02, false)).toBeNull();
+    expect(resolveCompassHeadingRelease(0, 0.2, true)).toBeCloseTo(0.2);
   });
 
   it('distinguishes a live drag from a simple heading toggle tap', () => {
     expect(isCompassHeadingDragSignificant(0, 0.2)).toBe(true);
     expect(isCompassHeadingDragSignificant(0, 0.01)).toBe(false);
+    expect(getCompassHeadingDragPreview(0, 0.2)).toEqual({
+      draggedHeading: true,
+      headingAngle: 0.2,
+    });
+    expect(getCompassHeadingDragPreview(0, 0.01)).toEqual({
+      draggedHeading: false,
+      headingAngle: 0.01,
+    });
   });
 });

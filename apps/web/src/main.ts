@@ -40,8 +40,10 @@ import {
   getCompassDialFacingAngle,
   getCompassDialInteractionMode,
   getCompassDialRadius,
+  getCompassHeadingDragPreview,
   getCompassWobbleBoost,
   isCompassHeadingDragSignificant,
+  resolveCompassHeadingRelease,
   shouldToggleCompassHeading,
 } from './compass.ts';
 import {
@@ -1465,10 +1467,13 @@ compassDialCanvas?.addEventListener('pointermove', (event) => {
     rect.width / 2,
     rect.height / 2
   );
-  compassDialPointerState.draggedHeading =
-    compassDialPointerState.draggedHeading ||
-    isCompassHeadingDragSignificant(compassDialPointerState.startPointerAngle, angle);
-  compassHeadingState.angle = angle;
+  const preview = getCompassHeadingDragPreview(
+    compassDialPointerState.startPointerAngle,
+    angle,
+    compassDialPointerState.draggedHeading
+  );
+  compassDialPointerState.draggedHeading = preview.draggedHeading;
+  compassHeadingState.angle = preview.headingAngle;
   render();
 });
 
@@ -1503,10 +1508,11 @@ const releaseCompassDialPointer = (event: PointerEvent) => {
   );
 
   if (draggingMode === 'heading-bug') {
-    compassHeadingState.angle =
-      !draggedHeading && shouldToggleCompassHeading(startHeadingAngle, angle)
-        ? null
-        : angle;
+    compassHeadingState.angle = resolveCompassHeadingRelease(
+      startHeadingAngle,
+      angle,
+      draggedHeading
+    );
     saveSession();
     render();
     return;
