@@ -269,8 +269,8 @@ This represents about **6.86 MB inclusive**.
 * [ ] Review how much world-building work is processed during one flush.
 * [x] Put a strict frame-time budget on pending world builds.
 * [x] Limit how many tiles may be constructed per frame.
-* [ ] Prioritize visible tiles.
-* [ ] Prioritize tiles in the player's movement direction.
+* [x] Prioritize visible tiles.
+* [x] Prioritize tiles in the player's movement direction.
 * [ ] Delay decorative details until essential terrain is visible.
 * [x] Cancel queued builds for tiles that leave the active area.
 * [x] Deduplicate pending build requests.

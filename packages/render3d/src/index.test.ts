@@ -345,6 +345,35 @@ describe('render3d visibility helpers', () => {
     expect(rearIndex).toBeGreaterThan(frontIndex);
   });
 
+  it('builds visible near tiles before farther ones and prefers forward tiles over side tiles at equal distance', () => {
+    const buildOrder = getVisibleWorldTileBuildOrder({
+      playerTileX: 0,
+      playerTileY: 0,
+      facingAngle: 0,
+      chunkRadius: 8,
+    });
+
+    const nearFrontIndex = buildOrder.findIndex((entry) => entry.key === '2:0');
+    const farFrontIndex = buildOrder.findIndex((entry) => entry.key === '6:0');
+    const sideIndex = buildOrder.findIndex((entry) => entry.key === '0:2');
+
+    expect(nearFrontIndex).toBeGreaterThanOrEqual(0);
+    expect(farFrontIndex).toBeGreaterThan(nearFrontIndex);
+    expect(sideIndex).toBeGreaterThan(nearFrontIndex);
+  });
+
+  it('omits far rear tiles from the build order when they fall outside the forward visibility cone', () => {
+    const buildOrder = getVisibleWorldTileBuildOrder({
+      playerTileX: 0,
+      playerTileY: 0,
+      facingAngle: 0,
+      chunkRadius: 12,
+    });
+
+    expect(buildOrder.some((entry) => entry.key === '-12:0')).toBe(false);
+    expect(buildOrder.some((entry) => entry.key === '12:0')).toBe(true);
+  });
+
   it('keeps nearby land models fully visible and thins far ones deterministically', () => {
     expect(getFarLandModelOpacity(6, 12, 4)).toBe(1);
     expect(
