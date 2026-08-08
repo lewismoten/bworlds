@@ -90,6 +90,20 @@ describe('core utilities', () => {
     expect(figureNames).toBeGreaterThan(0);
   });
 
+  it('generates visibly distinct constellation layouts across a seasonal set', () => {
+    const constellations = generateConstellations('layout-spec', { count: 8 });
+    const fingerprints = new Set(
+      constellations.map((constellation) =>
+        constellation.stars
+          .slice(0, 5)
+          .map((star) => `${star.x.toFixed(2)}:${star.y.toFixed(2)}`)
+          .join('|')
+      )
+    );
+
+    expect(fingerprints.size).toBeGreaterThanOrEqual(6);
+  });
+
   it('shifts sunrise and daylight length across the seasonal year', () => {
     const winter = getDaylightCycleState(
       DEFAULT_DAY_LENGTH_MS * Math.floor(DEFAULT_YEAR_LENGTH_DAYS * 0.75),

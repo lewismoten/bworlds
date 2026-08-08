@@ -192,6 +192,9 @@ const dialState = {
   dayProgress: 0,
   yearProgress: 0,
   moonPhaseProgress: 0,
+  sunriseProgress: 0,
+  sunsetProgress: 0,
+  daylightDuration: 0,
   initialized: false,
 };
 const MOON_PHASE_NAMES = [
@@ -777,6 +780,9 @@ function updateDisplayedCycle(cycle: ReturnType<typeof getDaylightCycleState>) {
     dialState.dayProgress = cycle.dayProgress;
     dialState.yearProgress = cycle.yearProgress;
     dialState.moonPhaseProgress = cycle.moonPhaseIndex / 8;
+    dialState.sunriseProgress = cycle.sunriseProgress;
+    dialState.sunsetProgress = cycle.sunsetProgress;
+    dialState.daylightDuration = cycle.daylightDuration;
     dialState.initialized = true;
   } else {
     dialState.dayProgress = easeWrappedProgress(
@@ -794,16 +800,36 @@ function updateDisplayedCycle(cycle: ReturnType<typeof getDaylightCycleState>) {
       cycle.moonPhaseIndex / 8,
       0.18
     );
+    dialState.sunriseProgress = easeWrappedProgress(
+      dialState.sunriseProgress,
+      cycle.sunriseProgress,
+      0.12
+    );
+    dialState.sunsetProgress = easeWrappedProgress(
+      dialState.sunsetProgress,
+      cycle.sunsetProgress,
+      0.12
+    );
+    dialState.daylightDuration +=
+      (cycle.daylightDuration - dialState.daylightDuration) * 0.12;
   }
 
   const moonPhaseIndex = Math.round((dialState.moonPhaseProgress % 1) * 8) % 8;
+  const constellationCount = Math.max(1, cycle.constellations.length);
+  const activeConstellationIndex =
+    Math.floor(dialState.yearProgress * constellationCount) % constellationCount;
   return {
     ...cycle,
     dayProgress: dialState.dayProgress,
     yearProgress: dialState.yearProgress,
+    sunriseProgress: dialState.sunriseProgress,
+    sunsetProgress: dialState.sunsetProgress,
+    daylightDuration: dialState.daylightDuration,
     moonPhaseIndex,
     moonPhaseName: MOON_PHASE_NAMES[moonPhaseIndex],
     moonIllumination: MOON_PHASE_ILLUMINATIONS[moonPhaseIndex],
+    activeConstellationIndex,
+    activeConstellation: cycle.constellations[activeConstellationIndex],
   };
 }
 

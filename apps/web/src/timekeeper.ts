@@ -29,16 +29,21 @@ export function drawTimeWheel(canvas: HTMLCanvasElement | null, cycle: DaylightC
   const { width, height } = canvas;
   const centerX = width / 2;
   const centerY = height / 2;
-  const outerRadius = Math.min(width, height) * 0.36;
-  const constellationOuterRadius = outerRadius * 1.45;
-  const constellationInnerRadius = outerRadius * 1.13;
-  const moonOuterRadius = outerRadius * 1.03;
-  const moonInnerRadius = outerRadius * 0.84;
-  const innerRadius = outerRadius * 0.56;
+  const daylightOuterRadius = Math.min(width, height) * 0.295;
+  const daylightInnerRadius = daylightOuterRadius * 0.58;
+  const moonOuterRadius = daylightOuterRadius * 1.28;
+  const moonInnerRadius = daylightOuterRadius * 1.04;
+  const constellationOuterRadius = daylightOuterRadius * 1.72;
+  const constellationInnerRadius = daylightOuterRadius * 1.36;
   const wheelRotation = -cycle.dayProgress * Math.PI * 2;
   const seasonRotation = -cycle.yearProgress * Math.PI * 2;
   const ringEntries = getTimeWheelConstellationEntries(cycle);
-  const windowGradient = context.createLinearGradient(0, -outerRadius, 0, outerRadius);
+  const windowGradient = context.createLinearGradient(
+    0,
+    -daylightOuterRadius,
+    0,
+    daylightOuterRadius
+  );
   windowGradient.addColorStop(0, '#9fe1ff');
   windowGradient.addColorStop(0.45, '#ffe3a2');
   windowGradient.addColorStop(0.52, '#10203a');
@@ -48,12 +53,19 @@ export function drawTimeWheel(canvas: HTMLCanvasElement | null, cycle: DaylightC
   context.save();
   context.translate(centerX, centerY);
 
-  const halo = context.createRadialGradient(0, 0, innerRadius * 0.2, 0, 0, outerRadius * 1.15);
+  const halo = context.createRadialGradient(
+    0,
+    0,
+    daylightInnerRadius * 0.2,
+    0,
+    0,
+    constellationOuterRadius * 1.04
+  );
   halo.addColorStop(0, 'rgba(255, 191, 105, 0.12)');
   halo.addColorStop(1, 'rgba(85, 214, 190, 0)');
   context.fillStyle = halo;
   context.beginPath();
-  context.arc(0, 0, outerRadius * 1.15, 0, Math.PI * 2);
+  context.arc(0, 0, constellationOuterRadius * 1.04, 0, Math.PI * 2);
   context.fill();
 
   context.save();
@@ -68,6 +80,7 @@ export function drawTimeWheel(canvas: HTMLCanvasElement | null, cycle: DaylightC
   context.restore();
 
   drawTopMarker(context, constellationOuterRadius + 10, '#f6f8ea');
+  drawDownMarker(context, constellationInnerRadius - 6, '#d8eaff');
 
   context.save();
   context.rotate((cycle.moonPhaseIndex / 8) * Math.PI * 2);
@@ -79,12 +92,12 @@ export function drawTimeWheel(canvas: HTMLCanvasElement | null, cycle: DaylightC
   context.save();
   context.rotate(wheelRotation);
 
-  drawDaylightRing(context, cycle, outerRadius, innerRadius);
+  drawDaylightRing(context, cycle, daylightOuterRadius, daylightInnerRadius);
 
   for (let hour = 0; hour < 24; hour += 1) {
     const angle = (hour / 24) * Math.PI * 2 - Math.PI / 2;
-    const tickOuter = outerRadius + (hour % 6 === 0 ? 6 : 2);
-    const tickInner = outerRadius - (hour % 6 === 0 ? 16 : 9);
+    const tickOuter = daylightOuterRadius + (hour % 6 === 0 ? 6 : 2);
+    const tickInner = daylightOuterRadius - (hour % 6 === 0 ? 16 : 9);
     context.strokeStyle =
       hour < 12 ? 'rgba(255,255,255,0.5)' : 'rgba(159,196,255,0.4)';
     context.lineWidth = hour % 6 === 0 ? 2 : 1;
@@ -98,8 +111,8 @@ export function drawTimeWheel(canvas: HTMLCanvasElement | null, cycle: DaylightC
   context.fillStyle = '#ffcf6b';
   context.beginPath();
   context.arc(
-    Math.cos(sunAngle) * ((outerRadius + innerRadius) * 0.5),
-    Math.sin(sunAngle) * ((outerRadius + innerRadius) * 0.5),
+    Math.cos(sunAngle) * ((daylightOuterRadius + daylightInnerRadius) * 0.5),
+    Math.sin(sunAngle) * ((daylightOuterRadius + daylightInnerRadius) * 0.5),
     11,
     0,
     Math.PI * 2
@@ -108,8 +121,8 @@ export function drawTimeWheel(canvas: HTMLCanvasElement | null, cycle: DaylightC
   context.fillStyle = 'rgba(255, 245, 196, 0.4)';
   context.beginPath();
   context.arc(
-    Math.cos(sunAngle) * ((outerRadius + innerRadius) * 0.5),
-    Math.sin(sunAngle) * ((outerRadius + innerRadius) * 0.5),
+    Math.cos(sunAngle) * ((daylightOuterRadius + daylightInnerRadius) * 0.5),
+    Math.sin(sunAngle) * ((daylightOuterRadius + daylightInnerRadius) * 0.5),
     18,
     0,
     Math.PI * 2
@@ -120,8 +133,8 @@ export function drawTimeWheel(canvas: HTMLCanvasElement | null, cycle: DaylightC
   context.fillStyle = '#d9e8ff';
   context.beginPath();
   context.arc(
-    Math.cos(moonAngle) * ((outerRadius + innerRadius) * 0.5),
-    Math.sin(moonAngle) * ((outerRadius + innerRadius) * 0.5),
+    Math.cos(moonAngle) * ((daylightOuterRadius + daylightInnerRadius) * 0.5),
+    Math.sin(moonAngle) * ((daylightOuterRadius + daylightInnerRadius) * 0.5),
     9,
     0,
     Math.PI * 2
@@ -130,8 +143,9 @@ export function drawTimeWheel(canvas: HTMLCanvasElement | null, cycle: DaylightC
   context.fillStyle = '#09111a';
   context.beginPath();
   context.arc(
-    Math.cos(moonAngle) * ((outerRadius + innerRadius) * 0.5) + (1 - cycle.moonIllumination) * 7,
-    Math.sin(moonAngle) * ((outerRadius + innerRadius) * 0.5),
+    Math.cos(moonAngle) * ((daylightOuterRadius + daylightInnerRadius) * 0.5) +
+      (1 - cycle.moonIllumination) * 7,
+    Math.sin(moonAngle) * ((daylightOuterRadius + daylightInnerRadius) * 0.5),
     8,
     0,
     Math.PI * 2
@@ -140,18 +154,17 @@ export function drawTimeWheel(canvas: HTMLCanvasElement | null, cycle: DaylightC
 
   context.restore();
 
-  drawTopMarker(context, outerRadius + 12, '#ffcf6b');
-  drawTransitionMarker(context, cycle.sunriseProgress, outerRadius + 6, '#f1d088');
-  drawTransitionMarker(context, cycle.sunsetProgress, outerRadius + 6, '#f39a63');
+  drawTopMarker(context, daylightOuterRadius + 12, '#ffcf6b');
+  drawDownMarker(context, daylightOuterRadius - 2, '#f1d088');
 
   context.fillStyle = '#081019';
   context.beginPath();
-  context.arc(0, 0, innerRadius - 3, 0, Math.PI * 2);
+  context.arc(0, 0, daylightInnerRadius - 3, 0, Math.PI * 2);
   context.fill();
 
-  const windowWidth = innerRadius * 1.26;
-  const windowHeight = innerRadius * 0.72;
-  const windowY = -innerRadius * 0.12;
+  const windowWidth = daylightInnerRadius * 1.4;
+  const windowHeight = daylightInnerRadius * 0.88;
+  const windowY = -daylightInnerRadius * 0.06;
 
   context.save();
   context.beginPath();
@@ -167,8 +180,8 @@ export function drawTimeWheel(canvas: HTMLCanvasElement | null, cycle: DaylightC
   context.rotate(wheelRotation);
   context.fillStyle = windowGradient;
   context.beginPath();
-  context.arc(0, 0, outerRadius, 0, Math.PI * 2);
-  context.arc(0, 0, innerRadius, Math.PI * 2, 0, true);
+  context.arc(0, 0, daylightOuterRadius, 0, Math.PI * 2);
+  context.arc(0, 0, daylightInnerRadius, Math.PI * 2, 0, true);
   context.closePath();
   context.fill();
   context.restore();
@@ -188,12 +201,12 @@ export function drawTimeWheel(canvas: HTMLCanvasElement | null, cycle: DaylightC
   context.fillStyle = '#ecf4f7';
   context.font = '600 14px Trebuchet MS';
   context.textAlign = 'center';
-  context.fillText(formatCycleTime(cycle.dayProgress), 0, innerRadius * 0.02);
+  context.fillText(formatCycleTime(cycle.dayProgress), 0, daylightInnerRadius * -0.02);
   drawConstellationGlyph(
     context,
     cycle.activeConstellation,
     -windowWidth * 0.24,
-    innerRadius * 0.18,
+    daylightInnerRadius * 0.12,
     28,
     20,
     cycle.activeConstellation?.symbolRotation ?? 0
@@ -201,13 +214,25 @@ export function drawTimeWheel(canvas: HTMLCanvasElement | null, cycle: DaylightC
   context.fillStyle = '#dce8f5';
   context.font = '600 11px Trebuchet MS';
   context.textAlign = 'left';
-  context.fillText(cycle.activeConstellation?.name ?? 'Unknown', -windowWidth * 0.12, innerRadius * 0.2);
+  context.fillText(
+    cycle.activeConstellation?.name ?? 'Unknown',
+    -windowWidth * 0.12,
+    daylightInnerRadius * 0.14
+  );
   context.fillStyle = '#dfe9ff';
   context.font = '600 12px Trebuchet MS';
-  context.fillText(getMoonPhaseSymbol(cycle.moonPhaseIndex), -windowWidth * 0.24, innerRadius * 0.39);
+  context.fillText(
+    getMoonPhaseSymbol(cycle.moonPhaseIndex),
+    -windowWidth * 0.24,
+    daylightInnerRadius * 0.33
+  );
   context.fillStyle = '#9fb4c7';
   context.font = '11px Trebuchet MS';
-  context.fillText(cycle.moonPhaseName, -windowWidth * 0.12, innerRadius * 0.39);
+  context.fillText(
+    cycle.moonPhaseName,
+    -windowWidth * 0.12,
+    daylightInnerRadius * 0.33
+  );
   context.restore();
 }
 
@@ -396,21 +421,19 @@ function drawTopMarker(
   context.restore();
 }
 
-function drawTransitionMarker(
+function drawDownMarker(
   context: CanvasRenderingContext2D,
-  progress: number,
   radius: number,
   color: string
 ) {
-  const angle = progress * Math.PI * 2 - Math.PI / 2;
   context.save();
-  context.rotate(angle);
+  context.rotate(-Math.PI / 2);
   context.translate(0, -radius);
   context.fillStyle = color;
   context.beginPath();
   context.moveTo(0, 8);
-  context.lineTo(5, -6);
-  context.lineTo(-5, -6);
+  context.lineTo(6, -8);
+  context.lineTo(-6, -8);
   context.closePath();
   context.fill();
   context.restore();

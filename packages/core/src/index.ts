@@ -376,23 +376,29 @@ export function generateConstellations(
 
   return Array.from({ length: count }, (_, index) => {
     const starCount = 5 + Math.floor(hash2D(`${seed}:stars`, index, count) * 4);
+    const archetype = getConstellationArchetype(seed, index);
     const stars = Array.from({ length: starCount }, (_, starIndex) => {
-      const radial = 0.18 + hash2D(`${seed}:r`, index, starIndex) * 0.22;
+      const blueprint = archetype.points[starIndex % archetype.points.length];
+      const radial =
+        blueprint.radial * (0.82 + hash2D(`${seed}:r`, index, starIndex) * 0.36);
       const angle =
-        (starIndex / starCount) * Math.PI * 2 +
-        hash2D(`${seed}:theta`, index, starIndex) * 0.9;
+        blueprint.angle +
+        hash2D(`${seed}:theta`, index, starIndex) * 0.72 +
+        archetype.rotation;
       return {
         id: `${index}:${starIndex}`,
         x: 0.5 + Math.cos(angle) * radial,
-        y: 0.5 + Math.sin(angle) * radial * (0.7 + hash2D(`${seed}:stretch`, index, starIndex) * 0.6),
+        y:
+          0.5 +
+          Math.sin(angle) *
+            radial *
+            archetype.verticalScale *
+            (0.8 + hash2D(`${seed}:stretch`, index, starIndex) * 0.46),
         brightness: 0.45 + hash2D(`${seed}:b`, index, starIndex) * 0.55,
       };
     }).sort((left, right) => left.x - right.x);
 
-    const connections = stars.slice(1).map((_, starIndex) => [starIndex, starIndex + 1] as [number, number]);
-    if (stars.length > 4) {
-      connections.push([0, Math.floor(stars.length / 2)]);
-    }
+    const connections = buildConstellationConnections(stars.length, archetype.connectionStyle);
 
     let name = createConstellationName(
       seed,
@@ -416,6 +422,88 @@ export function generateConstellations(
       ringJitter: (hash2D(`${seed}:ring-jitter`, index, count) * 2 - 1) * 0.28,
     };
   });
+}
+
+function getConstellationArchetype(seed, index) {
+  const baseArchetypes = [
+    {
+      points: [
+        { angle: -1.4, radial: 0.3 },
+        { angle: -0.7, radial: 0.16 },
+        { angle: -0.2, radial: 0.24 },
+        { angle: 0.35, radial: 0.15 },
+        { angle: 1.1, radial: 0.3 },
+      ],
+      verticalScale: 1.05,
+      connectionStyle: 'arc',
+    },
+    {
+      points: [
+        { angle: -1.5, radial: 0.26 },
+        { angle: -0.9, radial: 0.12 },
+        { angle: -0.15, radial: 0.28 },
+        { angle: 0.6, radial: 0.14 },
+        { angle: 1.35, radial: 0.27 },
+      ],
+      verticalScale: 0.68,
+      connectionStyle: 'zigzag',
+    },
+    {
+      points: [
+        { angle: -1.35, radial: 0.18 },
+        { angle: -0.8, radial: 0.28 },
+        { angle: -0.15, radial: 0.1 },
+        { angle: 0.55, radial: 0.27 },
+        { angle: 1.25, radial: 0.18 },
+      ],
+      verticalScale: 1.22,
+      connectionStyle: 'fork',
+    },
+    {
+      points: [
+        { angle: -1.2, radial: 0.22 },
+        { angle: -0.55, radial: 0.3 },
+        { angle: 0.1, radial: 0.18 },
+        { angle: 0.72, radial: 0.31 },
+        { angle: 1.4, radial: 0.2 },
+      ],
+      verticalScale: 0.92,
+      connectionStyle: 'kite',
+    },
+  ] as const;
+
+  const base =
+    baseArchetypes[
+      Math.floor(hash2D(`${seed}:constellation-archetype`, index, 0) * baseArchetypes.length)
+    ];
+  return {
+    ...base,
+    rotation: hash2D(`${seed}:constellation-rotation`, index, 1) * Math.PI * 2,
+  };
+}
+
+function buildConstellationConnections(
+  starCount: number,
+  style: 'arc' | 'zigzag' | 'fork' | 'kite'
+) {
+  const chain = Array.from({ length: Math.max(0, starCount - 1) }, (_, starIndex) => [
+    starIndex,
+    starIndex + 1,
+  ] as [number, number]);
+  if (starCount < 4) {
+    return chain;
+  }
+
+  if (style === 'arc') {
+    return [...chain, [0, Math.floor(starCount / 2)] as [number, number]];
+  }
+  if (style === 'zigzag') {
+    return [...chain, [1, starCount - 1] as [number, number]];
+  }
+  if (style === 'fork') {
+    return [...chain, [0, Math.floor(starCount / 2)] as [number, number], [2, starCount - 1] as [number, number]];
+  }
+  return [...chain, [0, starCount - 2] as [number, number], [1, starCount - 1] as [number, number]];
 }
 
 export function createConstellationName(

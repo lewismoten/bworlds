@@ -42,7 +42,7 @@ add a outer globe of stars in the sky that appear at night with procedurally gen
 - [x] The moon should appear with its own traveling path across the sky, using earth as a reference of how a moon travels. The moon may be visible during the day (not as bright), if the planet does not block it.
 - [x] When clicking Next/Prev season, make the time keeper celestial dial rotate smoothely to the next position, and ease-in.
 - [x] When clicking different time changes of the day, adding hours/days or chanign sunrise/none/sunset/midnight, rotate the day cycle dial smoothly, and ease into the new position.
-- [ ] constellations need enough variate, that each one is uniquly different from the other.
+- [x] constellations need enough variate, that each one is uniquly different from the other.
 - [x] Constellations may be randomly positioned in a specific area of the sky rather than being equidistant between eachother. this will make some constallations appear closer to each other on the celestial dial, but they all still govern an equal area - just at different spots of that area.
 - [x] The celestial dial arrow is pointing to the left, but it should probably point to the top - and the dcelestial dial changed accordingly.
 - [x] Most names for constellations are unreadable. Hide the names, or put them rite under the constellation.
@@ -52,6 +52,9 @@ add a outer globe of stars in the sky that appear at night with procedurally gen
 - [x] The constellation name under the time, shoud appear on its own, along with its symbol before it
 - [x] The moon phase should appear under the constellation along with its phase symbol before it
 - [x] Add a compass that lets us know what direction we are facing.
-- [ ] The amount of daylight should animate and ease-in when jumping between seasons
-- [ ] The up arrow for the constellation should not move.
-- [ ] The down arrow for daylight/night time should not move.
+- [x] The amount of daylight should animate and ease-in when jumping between seasons
+- [x] The up arrow for the constellation should not move.
+- [x] The down arrow for daylight/night time should not move.
+- [x] The middle ring of moon phases does not appear.
+- [ ] The Celestial model view should be controllable with the mouse to rotate it
+- [ ] The Time Keeper and Celestrial Model should appear as tabs that let me see one or the other. The celestial model should allow me to also change the seasons or increment days.
