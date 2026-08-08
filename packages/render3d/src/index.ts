@@ -1098,20 +1098,22 @@ function syncCelestialEvents(root, cycle) {
     const horizonFade = smoothstep(-1.4, 6, position.y);
 
     if (event.type === 'meteor-shower') {
-      const streakCount = Math.max(2, Math.round(2 + event.intensity * 3));
+      const streakCount = Math.max(4, Math.round(4 + event.intensity * 6));
       for (let streak = 0; streak < streakCount; streak += 1) {
+        const lateralDrift = ((streak % 5) - 2) * 0.18;
+        const verticalDrift = (streak % 3) * 0.08;
         const offset = new THREE.Vector3(
-          streak * 0.24,
-          streak * 0.1,
+          lateralDrift,
+          verticalDrift,
           -streak * 0.06
         );
         const geometry = new THREE.BufferGeometry().setFromPoints([
           position.clone().add(offset),
           position.clone().add(
             new THREE.Vector3(
-              event.trailLength + streak * 0.28,
-              -0.34 - streak * 0.12,
-              0.12 * streak
+              event.trailLength + streak * 0.22,
+              -0.42 - streak * 0.1,
+              0.16 * (streak - streakCount * 0.5)
             )
           ),
         ]);
@@ -1121,7 +1123,7 @@ function syncCelestialEvents(root, cycle) {
             color: event.color,
             transparent: true,
             opacity:
-              (0.18 + event.intensity * 0.34) * event.visibility * horizonFade,
+              (0.24 + event.intensity * 0.4) * event.visibility * horizonFade,
             depthTest: true,
           })
         );
@@ -1302,6 +1304,66 @@ function syncAuroraBands(root, cycle) {
       )
     );
 
+    const innerRibbonPositions: number[] = [];
+    const innerRibbonIndices: number[] = [];
+    for (let index = 0; index <= samples; index += 1) {
+      const progress = index / samples;
+      const azimuth = start + (end - start) * progress;
+      const wave =
+        Math.sin(progress * Math.PI * 5 + band.wavePhase * Math.PI * 2) *
+        band.height *
+        0.12;
+      const midLower = createSkyAltitudePosition(
+        azimuth,
+        band.altitude + band.height * 0.2 + wave,
+        SKY_RADIUS - 5.9
+      );
+      const midUpper = createSkyAltitudePosition(
+        azimuth,
+        band.altitude + band.height * 0.78 + wave,
+        SKY_RADIUS - 5.5
+      );
+      innerRibbonPositions.push(
+        midLower.x,
+        midLower.y,
+        midLower.z,
+        midUpper.x,
+        midUpper.y,
+        midUpper.z
+      );
+    }
+    for (let index = 0; index < samples; index += 1) {
+      const startIndex = index * 2;
+      innerRibbonIndices.push(
+        startIndex,
+        startIndex + 1,
+        startIndex + 2,
+        startIndex + 1,
+        startIndex + 3,
+        startIndex + 2
+      );
+    }
+    const innerRibbonGeometry = new THREE.BufferGeometry();
+    innerRibbonGeometry.setAttribute(
+      'position',
+      new THREE.Float32BufferAttribute(innerRibbonPositions, 3)
+    );
+    innerRibbonGeometry.setIndex(innerRibbonIndices);
+    root.add(
+      new THREE.Mesh(
+        innerRibbonGeometry,
+        new THREE.MeshBasicMaterial({
+          color: band.colorB,
+          transparent: true,
+          opacity: band.intensity * 0.18,
+          side: THREE.DoubleSide,
+          depthWrite: false,
+          depthTest: true,
+          blending: THREE.AdditiveBlending,
+        })
+      )
+    );
+
     const crest = new THREE.Line(
       new THREE.BufferGeometry().setFromPoints(crestPoints),
       new THREE.LineBasicMaterial({
@@ -1313,6 +1375,37 @@ function syncAuroraBands(root, cycle) {
     );
     crest.visible = crest.material.opacity > 0.015;
     root.add(crest);
+
+    const curtainRibs = 6;
+    for (let ribIndex = 0; ribIndex < curtainRibs; ribIndex += 1) {
+      const progress = ribIndex / (curtainRibs - 1);
+      const azimuth = start + (end - start) * progress;
+      const sway =
+        Math.sin(progress * Math.PI * 4 + band.wavePhase * Math.PI * 2) *
+        band.height *
+        0.1;
+      const lower = createSkyAltitudePosition(
+        azimuth,
+        band.altitude + sway,
+        SKY_RADIUS - 6
+      );
+      const upper = createSkyAltitudePosition(
+        azimuth,
+        band.altitude + band.height + sway,
+        SKY_RADIUS - 5.45
+      );
+      const rib = new THREE.Line(
+        new THREE.BufferGeometry().setFromPoints([lower, upper]),
+        new THREE.LineBasicMaterial({
+          color: ribIndex % 2 === 0 ? band.colorA : band.colorB,
+          transparent: true,
+          opacity: band.intensity * 0.14,
+          depthTest: true,
+        })
+      );
+      rib.visible = rib.material.opacity > 0.015;
+      root.add(rib);
+    }
   });
 }
 

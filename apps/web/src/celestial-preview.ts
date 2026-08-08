@@ -752,6 +752,38 @@ function syncPreviewEvents(root: THREE.Group, cycle: DaylightCycleLike) {
     }
 
     if (event.type === 'meteor-shower') {
+      const streakCount = Math.max(3, Math.round(3 + event.intensity * 4));
+      for (let streakIndex = 0; streakIndex < streakCount; streakIndex += 1) {
+        const streak = new THREE.Line(
+          new THREE.BufferGeometry().setFromPoints([
+            point.clone().add(
+              new THREE.Vector3(
+                event.trailLength * (0.12 + streakIndex * 0.03),
+                0.14 + (streakIndex % 3) * 0.05,
+                -0.14 + ((streakIndex % 5) - 2) * 0.06
+              )
+            ),
+            point.clone().add(
+              new THREE.Vector3(
+                -event.trailLength * (0.28 + streakIndex * 0.025),
+                -0.22 - streakIndex * 0.06,
+                0.1 + ((streakIndex % 4) - 1.5) * 0.04
+              )
+            ),
+          ]),
+          new THREE.LineBasicMaterial({
+            color: event.color,
+            transparent: true,
+            opacity:
+              (0.14 + event.intensity * 0.18) *
+              event.visibility *
+              (1 - streakIndex / Math.max(1, streakCount + 1)),
+          })
+        );
+        streak.visible = (streak.material as THREE.LineBasicMaterial).opacity > 0.015;
+        root.add(streak);
+      }
+
       const streak = new THREE.Line(
         new THREE.BufferGeometry().setFromPoints([
           point.clone().add(
@@ -892,6 +924,67 @@ function syncPreviewAuroras(root: THREE.Group, cycle: DaylightCycleLike) {
       )
     );
 
+    const innerRibbonPositions: number[] = [];
+    const innerRibbonIndices: number[] = [];
+    for (let index = 0; index <= samples; index += 1) {
+      const progress = index / samples;
+      const azimuth = start + (end - start) * progress;
+      const wave =
+        Math.sin(progress * Math.PI * 5 + band.wavePhase * Math.PI * 2) *
+        band.height *
+        0.12;
+      const midLower = createPreviewAltitudePoint(
+        azimuth,
+        band.altitude + band.height * 0.22 + wave,
+        11.6
+      );
+      const midUpper = createPreviewAltitudePoint(
+        azimuth,
+        band.altitude + band.height * 0.76 + wave,
+        11.92
+      );
+      innerRibbonPositions.push(
+        midLower.x,
+        midLower.y,
+        midLower.z,
+        midUpper.x,
+        midUpper.y,
+        midUpper.z
+      );
+    }
+
+    for (let index = 0; index < samples; index += 1) {
+      const startIndex = index * 2;
+      innerRibbonIndices.push(
+        startIndex,
+        startIndex + 1,
+        startIndex + 2,
+        startIndex + 1,
+        startIndex + 3,
+        startIndex + 2
+      );
+    }
+
+    const innerRibbonGeometry = new THREE.BufferGeometry();
+    innerRibbonGeometry.setAttribute(
+      'position',
+      new THREE.Float32BufferAttribute(innerRibbonPositions, 3)
+    );
+    innerRibbonGeometry.setIndex(innerRibbonIndices);
+    root.add(
+      new THREE.Mesh(
+        innerRibbonGeometry,
+        new THREE.MeshBasicMaterial({
+          color: band.colorB,
+          transparent: true,
+          opacity: band.intensity * 0.16,
+          side: THREE.DoubleSide,
+          depthWrite: false,
+          blending: THREE.AdditiveBlending,
+        })
+      )
+    );
+
     root.add(
       new THREE.Line(
         new THREE.BufferGeometry().setFromPoints(
@@ -918,6 +1011,32 @@ function syncPreviewAuroras(root: THREE.Group, cycle: DaylightCycleLike) {
         })
       )
     );
+
+    for (let ribIndex = 0; ribIndex < 5; ribIndex += 1) {
+      const progress = ribIndex / 4;
+      const azimuth = start + (end - start) * progress;
+      const wave =
+        Math.sin(progress * Math.PI * 4 + band.wavePhase * Math.PI * 2) *
+        band.height *
+        0.1;
+      root.add(
+        new THREE.Line(
+          new THREE.BufferGeometry().setFromPoints([
+            createPreviewAltitudePoint(azimuth, band.altitude + wave, 11.54),
+            createPreviewAltitudePoint(
+              azimuth,
+              band.altitude + band.height + wave,
+              11.96
+            ),
+          ]),
+          new THREE.LineBasicMaterial({
+            color: ribIndex % 2 === 0 ? band.colorA : band.colorB,
+            transparent: true,
+            opacity: band.intensity * 0.12,
+          })
+        )
+      );
+    }
   });
 }
 

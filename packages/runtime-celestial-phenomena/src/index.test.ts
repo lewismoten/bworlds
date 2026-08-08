@@ -145,10 +145,15 @@ describe('runtime celestial phenomena', () => {
         }),
       ])
     );
-    expect(environment?.celestial?.auroraBands).toHaveLength(3);
+    expect(environment?.celestial?.auroraBands).toHaveLength(5);
     expect(
       (environment?.celestial?.auroraBands ?? []).every(
-        (band) => band.intensity >= 0.6 && band.span > 1
+        (band) => band.intensity >= 0.6 && band.span > 1.4 && band.height >= 0.34
+      )
+    ).toBe(true);
+    expect(
+      (environment?.celestial?.auroraBands ?? []).every(
+        (band) => band.azimuthCenter < 0.3
       )
     ).toBe(true);
   });
@@ -175,14 +180,24 @@ describe('runtime celestial phenomena', () => {
         }),
       ])
     );
-    expect(environment?.celestial?.visibleEventsAppend).toHaveLength(7);
+    expect(environment?.celestial?.visibleEventsAppend).toHaveLength(18);
     expect(
       (environment?.celestial?.visibleEventsAppend ?? []).every(
         (event) =>
           event.type === 'meteor-shower' &&
           event.visibility >= 0.72 &&
           event.altitude >= 0.35 &&
-          event.trailLength >= 3.4
+          event.trailLength >= 3.8
+      )
+    ).toBe(true);
+    expect(
+      (environment?.celestial?.visibleEventsAppend ?? []).some(
+        (event) => event.azimuth < 0
+      )
+    ).toBe(true);
+    expect(
+      (environment?.celestial?.visibleEventsAppend ?? []).some(
+        (event) => event.azimuth > 1
       )
     ).toBe(true);
   });

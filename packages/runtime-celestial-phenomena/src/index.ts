@@ -16,6 +16,8 @@ import { resolveCelestialCycleConfig } from '@bworlds/runtime-celestial';
 const AURORA_COLORS = [
   ['#7effbc', '#46d8ff'],
   ['#9dff8f', '#6cf4d4'],
+  ['#89ffd6', '#8b9dff'],
+  ['#c7ff8c', '#49e8ff'],
 ] as const;
 
 export type CelestialEventMode = 'auto' | 'aurora' | 'meteor-shower' | 'comet';
@@ -104,32 +106,39 @@ function buildAuroraBands(
   const baseNightFactor = forced ? Math.max(cycle.night, 0.95) : cycle.night;
   const baseIntensity =
     effectiveLatitudeFactor * baseNightFactor * (0.58 + dayChance * 0.42);
-  const bandCount = forced ? 3 : dayChance > 0.86 ? 2 : 1;
+  const bandCount = forced ? 5 : dayChance > 0.9 ? 3 : dayChance > 0.82 ? 2 : 1;
+  const poleAzimuth =
+    cycle.observerLatitudeDegrees >= 0 ? -Math.PI / 2 : Math.PI / 2;
+  const facingToPole =
+    Math.cos(facingAngle - poleAzimuth) * 0.3;
   const hemisphereAzimuth = forced
-    ? facingAngle
-    : cycle.observerLatitudeDegrees >= 0
-      ? -Math.PI / 2
-      : Math.PI / 2;
+    ? poleAzimuth + facingToPole
+    : poleAzimuth + Math.sin(timeMs / 28000) * 0.08;
   return Array.from({ length: bandCount }, (_, index) => {
     const colors = AURORA_COLORS[index % AURORA_COLORS.length];
+    const bandDrift =
+      Math.sin(timeMs / 22000 + index * 0.8) * (forced ? 0.12 : 0.08);
+    const bandOffset = (index - (bandCount - 1) * 0.5) * (forced ? 0.24 : 0.28);
     return {
       id: `aurora-${cycle.dayNumber}-${index}`,
-      azimuthCenter: hemisphereAzimuth + (index - (bandCount - 1) * 0.5) * 0.34,
+      azimuthCenter: hemisphereAzimuth + bandOffset + bandDrift,
       span: forced
-        ? 1.22 + effectiveLatitudeFactor * 0.34 + index * 0.12
-        : 0.82 + effectiveLatitudeFactor * 0.36 + index * 0.08,
-      altitude: forced ? 0.34 + index * 0.05 : 0.3 + index * 0.06,
+        ? 1.5 + effectiveLatitudeFactor * 0.4 + index * 0.16
+        : 0.88 + effectiveLatitudeFactor * 0.42 + index * 0.1,
+      altitude: forced
+        ? 0.24 + index * 0.04 + Math.sin(timeMs / 18000 + index) * 0.02
+        : 0.26 + index * 0.05 + Math.sin(timeMs / 22000 + index) * 0.015,
       height: forced
-        ? 0.26 + effectiveLatitudeFactor * 0.1
-        : 0.18 + effectiveLatitudeFactor * 0.08,
+        ? 0.34 + effectiveLatitudeFactor * 0.12 + index * 0.015
+        : 0.22 + effectiveLatitudeFactor * 0.1 + index * 0.01,
       intensity: clamp(
         forced
-          ? Math.max(0.72, baseIntensity * 1.8) * (1 - index * 0.08)
-          : baseIntensity * (1 - index * 0.14),
+          ? Math.max(0.78, baseIntensity * 1.95) * (1 - index * 0.06)
+          : baseIntensity * (1 - index * 0.12),
         0,
         1
       ),
-      wavePhase: fract(timeMs / 18000 + index * 0.23),
+      wavePhase: fract(timeMs / 12000 + index * 0.19),
       colorA: colors[0],
       colorB: colors[1],
     };
@@ -149,16 +158,23 @@ function buildTransientMeteorEvents(
     return [];
   }
 
-  const burstPhase = fract(timeMs / 40000);
+  const burstPhase = fract(timeMs / 7000);
   const count = forced
-    ? 7
-    : 3 + Math.floor(hash2D('meteor-burst-count', cycle.dayNumber, 0) * 2);
+    ? 18
+    : 6 + Math.floor(hash2D('meteor-burst-count', cycle.dayNumber, 0) * 4);
   return Array.from({ length: count }, (_, index) => {
-    const progress = fract(burstPhase + index * 0.19);
+    const progress = fract(burstPhase + index * 0.071);
     const orbitState = forced
       ? {
-          azimuth: facingAngle - 0.42 + index * 0.14,
-          altitude: 0.58 + Math.sin(progress * Math.PI * 2 + index * 0.4) * 0.18,
+          azimuth:
+            facingAngle -
+            0.9 +
+            (index / Math.max(1, count - 1)) * 1.8 +
+            Math.sin(progress * Math.PI * 2 + index * 0.4) * 0.08,
+          altitude:
+            0.5 +
+            Math.sin(progress * Math.PI * 2 + index * 0.6) * 0.2 +
+            (index % 3) * 0.03,
         }
       : getOrbitalSkyPosition({
           orbitProgress: progress,
@@ -194,8 +210,8 @@ function buildTransientMeteorEvents(
       azimuth: orbitState.azimuth,
       altitude: orbitState.altitude,
       color: '#dff4ff',
-      size: forced ? 0.38 : 0.3,
-      trailLength: forced ? 3.4 + index * 0.22 : 2.4 + index * 0.18,
+      size: forced ? 0.42 : 0.32,
+      trailLength: forced ? 3.8 + (index % 5) * 0.28 : 2.6 + (index % 4) * 0.22,
     };
   });
 }
