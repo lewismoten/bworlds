@@ -1,6 +1,8 @@
 export type DebugSnapshot = {
   fps: number;
   frameMs: number;
+  targetFps: 60 | 30;
+  performanceTier: 'healthy' | 'reduced' | 'critical';
   playerLevel: number;
   visibilityRadius: number;
   drawCalls: number;
@@ -25,6 +27,8 @@ export function getDebugSignature(snapshot: DebugSnapshot): string {
   return [
     snapshot.fps.toFixed(1),
     snapshot.frameMs.toFixed(1),
+    snapshot.targetFps,
+    snapshot.performanceTier,
     snapshot.playerLevel,
     snapshot.visibilityRadius,
     snapshot.drawCalls,
@@ -41,14 +45,45 @@ export function getDebugSignature(snapshot: DebugSnapshot): string {
   ].join('|');
 }
 
+export function getTargetFrameMs(targetFps: 60 | 30): number {
+  return 1000 / targetFps;
+}
+
+export function resolvePerformanceTier(
+  frameMs: number
+): DebugSnapshot['performanceTier'] {
+  if (frameMs >= 1000 / 28) {
+    return 'critical';
+  }
+  if (frameMs >= 1000 / 42) {
+    return 'reduced';
+  }
+  return 'healthy';
+}
+
+export function formatPerformanceTierLabel(
+  performanceTier: DebugSnapshot['performanceTier']
+): string {
+  if (performanceTier === 'critical') {
+    return 'Critical';
+  }
+  if (performanceTier === 'reduced') {
+    return 'Reduced';
+  }
+  return 'Healthy';
+}
+
 export function buildDebugMarkup(snapshot: DebugSnapshot): string {
   const heapLabel =
     snapshot.heapUsedMb === null
       ? 'Unavailable'
       : `${snapshot.heapUsedMb.toFixed(1)} / ${(snapshot.heapLimitMb ?? 0).toFixed(1)} MB`;
+  const targetFrameMs = getTargetFrameMs(snapshot.targetFps);
   return `
     <div><dt>FPS</dt><dd>${snapshot.fps.toFixed(1)}</dd></div>
     <div><dt>CPU Frame</dt><dd>${snapshot.frameMs.toFixed(1)} ms</dd></div>
+    <div><dt>Frame Target</dt><dd>${snapshot.targetFps} FPS / ${targetFrameMs.toFixed(1)} ms</dd></div>
+    <div><dt>Perf Tier</dt><dd>${formatPerformanceTierLabel(snapshot.performanceTier)}</dd></div>
     <div><dt>Level</dt><dd>${snapshot.playerLevel}</dd></div>
     <div><dt>Render Radius</dt><dd>${snapshot.visibilityRadius}</dd></div>
     <div><dt>GPU Draws</dt><dd>${snapshot.drawCalls}</dd></div>

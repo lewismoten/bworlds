@@ -30,7 +30,7 @@ Here’s a development checklist you can work through.
 * [ ] Establish performance budgets for CPU, GPU, memory, rendering, networking, and audio.
 * [ ] Establish a target frame rate such as 60 FPS.
 * [ ] Allow lower-performance devices to target 30 FPS.
-* [ ] Measure frame time rather than relying only on FPS.
+* [X] Measure frame time rather than relying only on FPS.
 * [ ] Keep normal 60 FPS frames below roughly 16.7 ms.
 * [ ] Avoid doing large amounts of work during a single frame.
 * [ ] Spread expensive work across multiple frames.
@@ -40,7 +40,7 @@ Here’s a development checklist you can work through.
 * [ ] Pause unnecessary simulation when the game is paused.
 * [X] Suspend expensive systems while the browser tab is hidden.
 * [ ] Detect major performance degradation and reduce optional effects dynamically.
-* [ ] Maintain performance telemetry during development.
+* [X] Maintain performance telemetry during development.
 * [ ] Regularly test performance on slower hardware rather than only the development machine.
 
 # World Chunking

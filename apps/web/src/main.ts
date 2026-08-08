@@ -91,6 +91,7 @@ import {
 } from './head-bob.ts';
 import {
   buildDebugMarkup,
+  resolvePerformanceTier,
   getDebugSignature,
   normalizeWorldSeed,
 } from './debug-panel.ts';
@@ -2354,9 +2355,15 @@ function render(): FrameLoopActivityLike {
   if (debugSummary) {
     const rendererStats = renderer3d.getStats();
     const performanceStats = performance as PerformanceWithMemory;
+    const targetFps: 30 | 60 =
+      renderBudgetState.visibilityRadius < DEFAULT_RENDER_BUDGET_STATE.visibilityRadius
+        ? 30
+        : 60;
     const debugSnapshot = {
       fps: 1000 / Math.max(1, renderBudgetState.smoothedFrameMs),
       frameMs: renderBudgetState.smoothedFrameMs,
+      targetFps,
+      performanceTier: resolvePerformanceTier(renderBudgetState.smoothedFrameMs),
       playerLevel: normalizePlayerLevel(state.playerLevel),
       visibilityRadius: renderBudgetState.visibilityRadius,
       drawCalls: rendererStats.drawCalls,

@@ -1,8 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import {
   buildDebugMarkup,
+  formatPerformanceTierLabel,
   getDebugSignature,
+  getTargetFrameMs,
   normalizeWorldSeed,
+  resolvePerformanceTier,
 } from './debug-panel.ts';
 
 describe('debug panel', () => {
@@ -16,6 +19,8 @@ describe('debug panel', () => {
     const snapshot = {
       fps: 58.2,
       frameMs: 17.2,
+      targetFps: 60 as const,
+      performanceTier: 'healthy' as const,
       playerLevel: 4,
       visibilityRadius: 18,
       drawCalls: 42,
@@ -33,7 +38,20 @@ describe('debug panel', () => {
 
     expect(getDebugSignature(snapshot)).toBe(getDebugSignature({ ...snapshot }));
     expect(buildDebugMarkup(snapshot)).toContain('GPU Draws');
+    expect(buildDebugMarkup(snapshot)).toContain('Frame Target');
+    expect(buildDebugMarkup(snapshot)).toContain('Perf Tier');
     expect(buildDebugMarkup(snapshot)).toContain('Level');
     expect(buildDebugMarkup(snapshot)).toContain('alpha');
+  });
+
+  it('derives frame budgets and performance tiers from frame time', () => {
+    expect(getTargetFrameMs(60)).toBeCloseTo(16.6667, 3);
+    expect(getTargetFrameMs(30)).toBeCloseTo(33.3333, 3);
+    expect(resolvePerformanceTier(16.7)).toBe('healthy');
+    expect(resolvePerformanceTier(24)).toBe('reduced');
+    expect(resolvePerformanceTier(40)).toBe('critical');
+    expect(formatPerformanceTierLabel('healthy')).toBe('Healthy');
+    expect(formatPerformanceTierLabel('reduced')).toBe('Reduced');
+    expect(formatPerformanceTierLabel('critical')).toBe('Critical');
   });
 });
