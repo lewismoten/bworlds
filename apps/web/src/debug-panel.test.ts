@@ -2,9 +2,11 @@ import { describe, expect, it } from 'vitest';
 import {
   buildDebugMarkup,
   formatPerformanceTierLabel,
+  getMaterialGrowthWarning,
   getDebugSignature,
   getTargetFrameMs,
   normalizeWorldSeed,
+  recordMaterialGrowthSample,
   resolvePerformanceTier,
 } from './debug-panel.ts';
 
@@ -49,6 +51,7 @@ describe('debug panel', () => {
       worldSeed: 'alpha',
       heapUsedMb: 48.4,
       heapLimitMb: 128,
+      materialGrowthWarning: 'Material count keeps climbing while moving (24 -> 39).',
     };
 
     expect(getDebugSignature(snapshot)).toBe(getDebugSignature({ ...snapshot }));
@@ -65,7 +68,83 @@ describe('debug panel', () => {
     expect(buildDebugMarkup(snapshot)).toContain('Objects / Tile');
     expect(buildDebugMarkup(snapshot)).toContain('Materials');
     expect(buildDebugMarkup(snapshot)).toContain('Programs');
+    expect(buildDebugMarkup(snapshot)).toContain('Warning');
     expect(buildDebugMarkup(snapshot)).toContain('alpha');
+  });
+
+  it('records material growth samples on a small rolling history and warns on sustained increases while moving', () => {
+    const samples: Array<{
+      nowMs: number;
+      materialCount: number;
+      playerX: number;
+      playerY: number;
+    }> = [];
+
+    recordMaterialGrowthSample(samples, {
+      nowMs: 0,
+      materialCount: 24,
+      playerX: 0,
+      playerY: 0,
+    });
+    recordMaterialGrowthSample(samples, {
+      nowMs: 250,
+      materialCount: 25,
+      playerX: 0.2,
+      playerY: 0,
+    });
+    expect(samples).toHaveLength(1);
+    expect(samples[0]?.materialCount).toBe(25);
+
+    recordMaterialGrowthSample(samples, {
+      nowMs: 900,
+      materialCount: 30,
+      playerX: 1.5,
+      playerY: 0,
+    });
+    recordMaterialGrowthSample(samples, {
+      nowMs: 1800,
+      materialCount: 36,
+      playerX: 2.8,
+      playerY: 0,
+    });
+    recordMaterialGrowthSample(samples, {
+      nowMs: 2700,
+      materialCount: 42,
+      playerX: 4.4,
+      playerY: 0,
+    });
+
+    expect(getMaterialGrowthWarning(samples)).toContain(
+      'Material count keeps climbing while moving'
+    );
+
+    recordMaterialGrowthSample(samples, {
+      nowMs: 11850,
+      materialCount: 28,
+      playerX: 5,
+      playerY: 0,
+    });
+    expect(samples).toHaveLength(1);
+  });
+
+  it('avoids warning when material growth is too small or the player is mostly stationary', () => {
+    expect(
+      getMaterialGrowthWarning([
+        { nowMs: 0, materialCount: 20, playerX: 0, playerY: 0 },
+        { nowMs: 600, materialCount: 24, playerX: 0.3, playerY: 0 },
+        { nowMs: 1200, materialCount: 27, playerX: 0.5, playerY: 0 },
+        { nowMs: 1800, materialCount: 31, playerX: 0.7, playerY: 0 },
+      ])
+    ).toBeNull();
+
+    expect(
+      getMaterialGrowthWarning([
+        { nowMs: 0, materialCount: 20, playerX: 0, playerY: 0 },
+        { nowMs: 600, materialCount: 24, playerX: 1.4, playerY: 0 },
+        { nowMs: 1200, materialCount: 27, playerX: 2.6, playerY: 0 },
+        { nowMs: 1800, materialCount: 30, playerX: 4.2, playerY: 0 },
+      ])
+    ).toBeNull();
   });
 
   it('derives frame budgets and performance tiers from frame time', () => {

@@ -91,7 +91,9 @@ import {
 } from './head-bob.ts';
 import {
   buildDebugMarkup,
+  getMaterialGrowthWarning,
   resolvePerformanceTier,
+  recordMaterialGrowthSample,
   getDebugSignature,
   normalizeWorldSeed,
 } from './debug-panel.ts';
@@ -985,6 +987,14 @@ const hmrNoticeState = {
 };
 const pageVisibilityState = {
   hidden: typeof document !== 'undefined' ? document.hidden : false,
+};
+const debugResourceTrendState = {
+  materialSamples: [] as Array<{
+    nowMs: number;
+    materialCount: number;
+    playerX: number;
+    playerY: number;
+  }>,
 };
 const renderBudgetState = {
   ...DEFAULT_RENDER_BUDGET_STATE,
@@ -2483,6 +2493,12 @@ function render(): FrameLoopActivityLike {
   if (debugSummary && debugInspectorVisible && gps) {
     const rendererStats = renderer3d.getStats();
     const performanceStats = performance as PerformanceWithMemory;
+    recordMaterialGrowthSample(debugResourceTrendState.materialSamples, {
+      nowMs,
+      materialCount: rendererStats.materialCount,
+      playerX: spatial.playerX,
+      playerY: spatial.playerY,
+    });
     const debugSnapshot = {
       fps: 1000 / Math.max(1, renderBudgetState.smoothedFrameMs),
       frameMs: renderBudgetState.smoothedFrameMs,
@@ -2522,6 +2538,9 @@ function render(): FrameLoopActivityLike {
         typeof performanceStats.memory?.jsHeapSizeLimit === 'number'
           ? performanceStats.memory.jsHeapSizeLimit / (1024 * 1024)
           : null,
+      materialGrowthWarning: getMaterialGrowthWarning(
+        debugResourceTrendState.materialSamples
+      ),
     };
     const debugSignature = getDebugSignature(debugSnapshot);
     if (debugSignature !== uiRenderState.lastDebugSignature) {

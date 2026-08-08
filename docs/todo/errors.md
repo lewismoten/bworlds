@@ -26,7 +26,7 @@ I would turn it into this task backlog, roughly in priority order.
 * [ ] Verify old cloned materials are disposed when no longer needed.
 * [x] Add a debug counter showing active materials.
 * [x] Add a debug counter showing compiled WebGL shader programs.
-* [ ] Add a warning if material count grows continuously while walking around.
+* [x] Add a warning if material count grows continuously while walking around.
 
 The biggest allocation path is currently approximately:
 
