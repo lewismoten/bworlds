@@ -808,6 +808,7 @@ function createThemeNote(options: {
     options.stepIndex
   );
   const octaveBoost =
+    role !== 'bass' &&
     hash2D(
       `${options.theme.id}:octave`,
       options.clusterX + options.stepIndex,
@@ -1207,7 +1208,7 @@ function resolveInstrumentSemitones(
   const leadSemitones = theme.scale[scaleIndex] ?? 0;
 
   if (role === 'bass') {
-    return theme.scale[0] ?? 0;
+    return resolveBassSemitones(theme, stepIndex);
   }
   if (role === 'harmony') {
     const harmonyIndex =
@@ -1219,6 +1220,20 @@ function resolveInstrumentSemitones(
     return [0, 7, 12, 3][stepIndex % 4] ?? 0;
   }
   return leadSemitones;
+}
+
+function resolveBassSemitones(
+  theme: MusicRegionTheme,
+  stepIndex: number
+): number {
+  const root = theme.scale[0] ?? 0;
+  const fifth = 7;
+  const octave = 12;
+  const passingTone =
+    theme.scale[1] ?? theme.scale[2] ?? Math.min(root + 2, octave);
+  const bassPulseIndex = Math.floor(stepIndex / 4);
+  const bassPattern = [root, fifth, root, octave, root, passingTone];
+  return bassPattern[bassPulseIndex % bassPattern.length] ?? root;
 }
 
 function shouldRestAtThemeStep(

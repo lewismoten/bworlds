@@ -308,6 +308,42 @@ describe('procedural music', () => {
     );
   });
 
+  it('lets bass lines favor roots while occasionally using fifths, octaves, and passing tones', () => {
+    const theme = resolveMusicTheme('plains', 'overworld');
+    const mood = resolveMusicMood({ dayProgress: 0.5 });
+    const bassBaseFrequency = theme.rootHz * mood.brightness * 0.5;
+    const scheduledNotes: ProceduralMusicNote[] = [];
+    let schedulerState: ReturnType<typeof scheduleProceduralMusicNotes>['state'] | undefined;
+
+    for (const nowMs of [0, 1600, 3200, 4800, 6400, 8000, 9600, 11200]) {
+      const scheduled = scheduleProceduralMusicNotes(
+        {
+          nowMs,
+          tileKind: 'plains',
+          contextType: 'overworld',
+          dayProgress: 0.5,
+          yearProgress: 0.5,
+          clusterX: 0,
+          clusterY: 0,
+        },
+        schedulerState
+      );
+      scheduledNotes.push(...scheduled.notes);
+      schedulerState = scheduled.state;
+    }
+
+    const bassSemitones = scheduledNotes
+      .filter((note) => note.role === 'bass')
+      .map((note) => Math.round(12 * Math.log2(note.frequency / bassBaseFrequency)));
+
+    expect(bassSemitones.filter((semitones) => semitones === 0).length).toBeGreaterThan(
+      bassSemitones.length / 3
+    );
+    expect(bassSemitones).toContain(7);
+    expect(bassSemitones).toContain(12);
+    expect(bassSemitones).toContain(theme.scale[1] ?? theme.scale[2] ?? 2);
+  });
+
   it('applies softer panning and falloff for nearby ambient music emitters', () => {
     expect(
       getMusicSpatialMix({ x: 6, y: 0 }, { x: 0, y: 0 })
