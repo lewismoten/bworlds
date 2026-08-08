@@ -1,7 +1,18 @@
 import { describe, expect, it } from 'vitest';
-import { createCelestialRuntimePlugin } from './index.ts';
+import {
+  CELESTIAL_DAY_LENGTH_MS,
+  createCelestialRuntimePlugin,
+  resolveCelestialCycleConfig,
+} from './index.ts';
 
 describe('runtime celestial', () => {
+  it('configures a game day to last 42 minutes', () => {
+    const cycle = resolveCelestialCycleConfig();
+
+    expect(cycle.dayLengthMs).toBe(42 * 60 * 1000);
+    expect(cycle.dayLengthMs).toBe(CELESTIAL_DAY_LENGTH_MS);
+  });
+
   it('provides seasonal cycle metadata plus procedural constellations', () => {
     const plugin = createCelestialRuntimePlugin();
     const environment = plugin.resolveWorldEnvironment?.({
@@ -15,6 +26,7 @@ describe('runtime celestial', () => {
     expect(environment).toEqual(
       expect.objectContaining({
         cycle: expect.objectContaining({
+          dayLengthMs: CELESTIAL_DAY_LENGTH_MS,
           yearLengthDays: 64,
           constellationCount: 8,
         }),
