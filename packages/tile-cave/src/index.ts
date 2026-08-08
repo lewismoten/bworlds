@@ -1,7 +1,8 @@
 import { hash2D } from '@bworlds/core';
 import { createPlainsBackedTilePainter } from '@bworlds/paint-support';
 import {
-  createAnchoredEnterablePoiTilePlugin,
+  createEnterablePoiTilePlugin,
+  findPoiAnchor,
   markPoiLightEmitter,
   pickPreferredLandmarkFacing,
   syncPoiLightEmitters,
@@ -11,15 +12,22 @@ import {
   createMountainTerrainMaterials,
 } from '@bworlds/three-support';
 import type {
+  ClassifyOverworldTileContext,
   Create3DModelContext,
+  CreateWorldActionContext,
   Paint2DContext,
+  PoiAnchorLike,
   RuntimePlugin,
+  TileLike,
 } from '@bworlds/plugin-api';
 
 const TILE_PIXEL_SIZE = 16;
+const CAVE_TUNNEL_LINK_DISTANCE = 10;
+const CAVE_PASS_ELEVATION_THRESHOLD = 0.72;
+const CAVE_PASS_SAMPLE_COUNT = 5;
 
 export function createCaveTilePlugin(): RuntimePlugin {
-  return createAnchoredEnterablePoiTilePlugin({
+  return createEnterablePoiTilePlugin({
     pluginName: 'tile-cave',
     kind: 'cave',
     definition: {
@@ -29,7 +37,6 @@ export function createCaveTilePlugin(): RuntimePlugin {
       walkable: true,
       wallHeight: 0.55,
     },
-    note: 'A cave mouth opens in the terrain.',
     paint2D: createPlainsBackedTilePainter(({ context, x, y, motif, fillRect, speckle }) => {
       speckle(context, x, y, '#9ecf82', 14, 0.22, motif);
       context.fillStyle = '#27272a';
@@ -39,6 +46,53 @@ export function createCaveTilePlugin(): RuntimePlugin {
       fillRect(context, x + 5, y + 8, 6, 4, '#09090b');
       return true;
     }),
+    classifyPoi(context: ClassifyOverworldTileContext): TileLike | null {
+      const anchor = findPoiAnchor(context, 'cave', 0.55);
+      if (!anchor || !context.nearLand) {
+        return null;
+      }
+      const linkedEntrances = resolveLinkedCaveEntrances(context, anchor);
+      const systemId = createCaveSystemId(linkedEntrances);
+      return {
+        kind: 'cave',
+        note: 'A cave mouth opens in the terrain.',
+        poi: {
+          ...(context.tile.poi ?? {}),
+          type: 'cave',
+          name: anchor.name ?? context.tile.poi?.name ?? 'Cave',
+          systemId,
+          entrances: linkedEntrances.map(({ x, y, name }) => ({ x, y, name })),
+        },
+      };
+    },
+    createWorldAction(context: CreateWorldActionContext) {
+      if (!context.tile.poi) {
+        return null;
+      }
+      const entrances = normalizeCaveEntrances(context.tile.poi.entrances, {
+        x: context.x,
+        y: context.y,
+        name: context.tile.poi.name,
+      });
+      const systemId =
+        typeof context.tile.poi.systemId === 'string'
+          ? context.tile.poi.systemId
+          : createCaveSystemId(entrances);
+      return {
+        type: 'enter',
+        context: {
+          id: systemId,
+          label: context.tile.poi.name,
+          type: 'cave',
+          depth: 1,
+          origin: { x: context.x, y: context.y },
+          entrances,
+          systemId,
+        },
+        spawn: { x: 0, y: 0 },
+        facing: 0,
+      };
+    },
     create3DModel({
       three,
       state,
@@ -251,4 +305,122 @@ function getCaveEntranceDirection(
     seedKey: 'cave-facing',
     preferLandFacing: true,
   });
+}
+
+function resolveLinkedCaveEntrances(
+  context: ClassifyOverworldTileContext,
+  anchor: PoiAnchorLike
+): PoiAnchorLike[] {
+  const caveAnchors = (context.poiAnchors ?? []).filter(
+    (candidate): candidate is PoiAnchorLike => candidate.type === 'cave'
+  );
+  const queue = [anchor];
+  const visited = new Set<string>();
+  const linked: PoiAnchorLike[] = [];
+
+  while (queue.length > 0) {
+    const current = queue.shift()!;
+    const currentKey = `${current.x}:${current.y}`;
+    if (visited.has(currentKey)) {
+      continue;
+    }
+    visited.add(currentKey);
+    linked.push(current);
+
+    caveAnchors.forEach((candidate) => {
+      const candidateKey = `${candidate.x}:${candidate.y}`;
+      if (visited.has(candidateKey)) {
+        return;
+      }
+      if (
+        Math.hypot(candidate.x - current.x, candidate.y - current.y) >
+        CAVE_TUNNEL_LINK_DISTANCE
+      ) {
+        return;
+      }
+      if (
+        !sharesMountainPass(
+          current,
+          candidate,
+          context.sampleTerrainSignals
+        )
+      ) {
+        return;
+      }
+      queue.push(candidate);
+    });
+  }
+
+  return linked.sort((left, right) =>
+    left.y === right.y ? left.x - right.x : left.y - right.y
+  );
+}
+
+function sharesMountainPass(
+  left: Pick<PoiAnchorLike, 'x' | 'y'>,
+  right: Pick<PoiAnchorLike, 'x' | 'y'>,
+  sampleTerrainSignals: ClassifyOverworldTileContext['sampleTerrainSignals']
+): boolean {
+  if (!sampleTerrainSignals) {
+    return false;
+  }
+  let supportedSamples = 0;
+  for (let index = 0; index < CAVE_PASS_SAMPLE_COUNT; index += 1) {
+    const t =
+      CAVE_PASS_SAMPLE_COUNT <= 1 ? 0 : index / (CAVE_PASS_SAMPLE_COUNT - 1);
+    const sampleX = Math.round(left.x + (right.x - left.x) * t);
+    const sampleY = Math.round(left.y + (right.y - left.y) * t);
+    if (hasAdjacentMountainPass(sampleX, sampleY, sampleTerrainSignals)) {
+      supportedSamples += 1;
+    }
+  }
+  return supportedSamples >= Math.ceil(CAVE_PASS_SAMPLE_COUNT * 0.6);
+}
+
+function hasAdjacentMountainPass(
+  x: number,
+  y: number,
+  sampleTerrainSignals: NonNullable<ClassifyOverworldTileContext['sampleTerrainSignals']>
+): boolean {
+  return [
+    sampleTerrainSignals(x + 1, y).elevation,
+    sampleTerrainSignals(x - 1, y).elevation,
+    sampleTerrainSignals(x, y + 1).elevation,
+    sampleTerrainSignals(x, y - 1).elevation,
+  ].some((elevation) => elevation >= CAVE_PASS_ELEVATION_THRESHOLD);
+}
+
+function createCaveSystemId(
+  entrances: Array<Pick<PoiAnchorLike, 'x' | 'y'>>
+): string {
+  return `cave-system:${entrances.map(({ x, y }) => `${x},${y}`).join('|')}`;
+}
+
+function normalizeCaveEntrances(
+  value: unknown,
+  fallback: { x: number; y: number; name?: unknown }
+): Array<{ x: number; y: number; name?: string }> {
+  if (!Array.isArray(value) || value.length === 0) {
+    return [
+      {
+        x: fallback.x,
+        y: fallback.y,
+        ...(typeof fallback.name === 'string' ? { name: fallback.name } : {}),
+      },
+    ];
+  }
+
+  return value
+    .filter(
+      (entry): entry is { x: number; y: number; name?: string } =>
+        typeof entry === 'object' &&
+        entry !== null &&
+        typeof (entry as { x?: unknown }).x === 'number' &&
+        typeof (entry as { y?: unknown }).y === 'number'
+    )
+    .map((entry) => ({
+      x: entry.x,
+      y: entry.y,
+      ...(typeof entry.name === 'string' ? { name: entry.name } : {}),
+    }));
 }
