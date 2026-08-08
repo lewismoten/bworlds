@@ -629,7 +629,7 @@ This probably deserves several interchangeable strategies.
 * [x] Generate partial chewing.
 * [ ] Generate nearly felled trees.
 * [ ] Generate felled beaver-cut trees.
-* [ ] Generate stripped branches.
+* [x] Generate stripped branches.
 * [ ] Associate damage with nearby beaver populations.
 * [x] Avoid beaver damage far from suitable habitat.
 

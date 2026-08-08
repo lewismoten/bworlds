@@ -652,7 +652,8 @@ describe('tile forest', () => {
         (damage) =>
           damage.chewHeight > 0.07 &&
           damage.chewRadiusScale > 0.8 &&
-          damage.coneScale > 0.5
+          damage.coneScale > 0.5 &&
+          damage.strippedBranchCount >= 1
       )
     ).toBe(true);
   });
@@ -1809,8 +1810,19 @@ describe('tile forest', () => {
       });
       return count;
     };
+    const countTaggedValue = (model: FakeGroup, key: string, value: string) => {
+      let count = 0;
+      model.traverse((node) => {
+        if (node.userData?.[key] === value) {
+          count += 1;
+        }
+      });
+      return count;
+    };
 
     expect(countTaggedNodes(wetModel, 'forestBeaverDamage')).toBeGreaterThan(0);
+    expect(countTaggedValue(wetModel, 'forestBeaverDamage', 'chew')).toBeGreaterThan(0);
+    expect(countTaggedValue(wetModel, 'forestBeaverDamage', 'debris')).toBeGreaterThan(0);
     expect(countTaggedNodes(dryModel, 'forestBeaverDamage')).toBe(0);
     expect(countTaggedNodes(farModel, 'forestBeaverDamage')).toBe(0);
     expect(countTaggedNodes(lowModel, 'forestBeaverDamage')).toBe(0);
