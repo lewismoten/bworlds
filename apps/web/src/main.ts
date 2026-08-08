@@ -2355,14 +2355,10 @@ function render(): FrameLoopActivityLike {
   if (debugSummary) {
     const rendererStats = renderer3d.getStats();
     const performanceStats = performance as PerformanceWithMemory;
-    const targetFps: 30 | 60 =
-      renderBudgetState.visibilityRadius < DEFAULT_RENDER_BUDGET_STATE.visibilityRadius
-        ? 30
-        : 60;
     const debugSnapshot = {
       fps: 1000 / Math.max(1, renderBudgetState.smoothedFrameMs),
       frameMs: renderBudgetState.smoothedFrameMs,
-      targetFps,
+      targetFps: renderBudgetState.targetFps,
       performanceTier: resolvePerformanceTier(renderBudgetState.smoothedFrameMs),
       playerLevel: normalizePlayerLevel(state.playerLevel),
       visibilityRadius: renderBudgetState.visibilityRadius,
@@ -2737,6 +2733,7 @@ function loop(timestamp: number): void {
   });
   renderBudgetState.smoothedFrameMs = nextBudgetState.smoothedFrameMs;
   renderBudgetState.visibilityRadius = nextBudgetState.visibilityRadius;
+  renderBudgetState.targetFps = nextBudgetState.targetFps;
   updateMovement(delta);
   const activity = render();
   lastFrame = timestamp;

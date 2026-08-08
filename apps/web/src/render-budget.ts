@@ -1,6 +1,7 @@
 export type RenderBudgetState = {
   smoothedFrameMs: number;
   visibilityRadius: number;
+  targetFps: 60 | 30;
 };
 
 export const DEFAULT_VISIBILITY_RADIUS = 18;
@@ -10,6 +11,7 @@ export const MIN_VISIBILITY_RADIUS = 10;
 export const DEFAULT_RENDER_BUDGET_STATE: RenderBudgetState = {
   smoothedFrameMs: 16.67,
   visibilityRadius: DEFAULT_VISIBILITY_RADIUS,
+  targetFps: 60,
 };
 
 const FRAME_SMOOTHING = 0.14;
@@ -31,6 +33,7 @@ export function advanceRenderBudgetState(
     return {
       ...state,
       visibilityRadius: DEFAULT_VISIBILITY_RADIUS,
+      targetFps: 60,
     };
   }
 
@@ -40,16 +43,21 @@ export function advanceRenderBudgetState(
     (clampedDeltaMs - state.smoothedFrameMs) * FRAME_SMOOTHING;
 
   let visibilityRadius = state.visibilityRadius;
+  let targetFps = state.targetFps;
   if (smoothedFrameMs >= CRITICAL_FPS_FRAME_MS) {
     visibilityRadius = MIN_VISIBILITY_RADIUS;
+    targetFps = 30;
   } else if (smoothedFrameMs >= LOW_FPS_FRAME_MS) {
     visibilityRadius = Math.min(visibilityRadius, REDUCED_VISIBILITY_RADIUS);
+    targetFps = 30;
   } else if (smoothedFrameMs <= RECOVERED_FPS_FRAME_MS) {
     visibilityRadius = DEFAULT_VISIBILITY_RADIUS;
+    targetFps = 60;
   }
 
   return {
     smoothedFrameMs,
     visibilityRadius,
+    targetFps,
   };
 }

@@ -28,8 +28,8 @@ Here’s a development checklist you can work through.
 # Overall Performance Architecture
 
 * [ ] Establish performance budgets for CPU, GPU, memory, rendering, networking, and audio.
-* [ ] Establish a target frame rate such as 60 FPS.
-* [ ] Allow lower-performance devices to target 30 FPS.
+* [X] Establish a target frame rate such as 60 FPS.
+* [X] Allow lower-performance devices to target 30 FPS.
 * [X] Measure frame time rather than relying only on FPS.
 * [ ] Keep normal 60 FPS frames below roughly 16.7 ms.
 * [ ] Avoid doing large amounts of work during a single frame.

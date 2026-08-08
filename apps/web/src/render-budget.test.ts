@@ -5,6 +5,7 @@ import {
   DEFAULT_VISIBILITY_RADIUS,
   MIN_VISIBILITY_RADIUS,
   REDUCED_VISIBILITY_RADIUS,
+  type RenderBudgetState,
 } from './render-budget.ts';
 
 describe('render budget', () => {
@@ -18,9 +19,10 @@ describe('render budget', () => {
     }
 
     expect(state.visibilityRadius).toBe(DEFAULT_VISIBILITY_RADIUS);
+    expect(state.targetFps).toBe(60);
   });
 
-  it('reduces visibility radius in stages as frame times degrade', () => {
+  it('reduces visibility radius in stages as frame times degrade and lowers the target fps', () => {
     let state = DEFAULT_RENDER_BUDGET_STATE;
     for (let index = 0; index < 18; index += 1) {
       state = advanceRenderBudgetState(state, {
@@ -29,6 +31,7 @@ describe('render budget', () => {
       });
     }
     expect(state.visibilityRadius).toBe(REDUCED_VISIBILITY_RADIUS);
+    expect(state.targetFps).toBe(30);
 
     for (let index = 0; index < 18; index += 1) {
       state = advanceRenderBudgetState(state, {
@@ -37,12 +40,14 @@ describe('render budget', () => {
       });
     }
     expect(state.visibilityRadius).toBe(MIN_VISIBILITY_RADIUS);
+    expect(state.targetFps).toBe(30);
   });
 
-  it('recovers the full radius after sustained healthy frame times or when leaving 3d', () => {
-    let state = {
+  it('recovers the full radius and 60 fps target after healthy frames or when leaving 3d', () => {
+    let state: RenderBudgetState = {
       smoothedFrameMs: 38,
       visibilityRadius: MIN_VISIBILITY_RADIUS,
+      targetFps: 30,
     };
 
     for (let index = 0; index < 24; index += 1) {
@@ -52,11 +57,13 @@ describe('render budget', () => {
       });
     }
     expect(state.visibilityRadius).toBe(DEFAULT_VISIBILITY_RADIUS);
+    expect(state.targetFps).toBe(60);
 
     state = advanceRenderBudgetState(state, {
       deltaMs: 16.67,
       active3d: false,
     });
     expect(state.visibilityRadius).toBe(DEFAULT_VISIBILITY_RADIUS);
+    expect(state.targetFps).toBe(60);
   });
 });
