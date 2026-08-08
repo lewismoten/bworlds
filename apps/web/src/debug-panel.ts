@@ -225,6 +225,7 @@ export function buildDebugMarkup(snapshot: DebugSnapshot): string {
     <div><dt>Visible Trees</dt><dd>${snapshot.visibleTreeCount}</dd></div>
     <div><dt>Loaded Chunks</dt><dd>${snapshot.loadedChunkCount}</dd></div>
     <div><dt>Chunk Queue</dt><dd>${snapshot.chunkGenerationQueueSize}</dd></div>
+    <div><dt>Model Queue</dt><dd>${snapshot.chunkGenerationQueueSize}</dd></div>
     <div><dt>Pending Tiles</dt><dd>${snapshot.pendingTileCount}</dd></div>
     <div><dt>Avg Flush Tiles</dt><dd>${snapshot.averagePendingFlushTiles.toFixed(2)}</dd></div>
     <div><dt>Max Flush Tiles</dt><dd>${snapshot.maxPendingFlushTiles}</dd></div>

@@ -111,6 +111,7 @@ describe('debug panel', () => {
     expect(buildDebugMarkup(snapshot)).toContain('Visible Trees');
     expect(buildDebugMarkup(snapshot)).toContain('Loaded Chunks');
     expect(buildDebugMarkup(snapshot)).toContain('Chunk Queue');
+    expect(buildDebugMarkup(snapshot)).toContain('Model Queue');
     expect(buildDebugMarkup(snapshot)).toContain('Avg Flush Tiles');
     expect(buildDebugMarkup(snapshot)).toContain('Max Flush Tiles');
     expect(buildDebugMarkup(snapshot)).toContain('Avg Tile Build');

@@ -779,7 +779,7 @@ A barrel should not get the same budget as a cathedral.
 * [ ] Show bones currently animated.
 * [ ] Show audio voices.
 * [X] Show loaded chunks.
-* [ ] Show model generation queue size.
+* [X] Show model generation queue size.
 * [X] Show active render quality level.
 * [X] Show which budget is currently limiting quality.
 
