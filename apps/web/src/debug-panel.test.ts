@@ -32,6 +32,8 @@ describe('debug panel', () => {
       visibleTileCount: 112,
       visibleTreeCount: 27,
       pendingTileCount: 6,
+      averageTileBuildMs: 2.45,
+      maxTileBuildMs: 6.75,
       tileBuildsPerSecond: 14,
       lodReplacementsPerSecond: 3,
       object3dCount: 318,
@@ -66,6 +68,8 @@ describe('debug panel', () => {
     expect(buildDebugMarkup(snapshot)).toContain('GPU Points');
     expect(buildDebugMarkup(snapshot)).toContain('GPU Geometries');
     expect(buildDebugMarkup(snapshot)).toContain('Visible Trees');
+    expect(buildDebugMarkup(snapshot)).toContain('Avg Tile Build');
+    expect(buildDebugMarkup(snapshot)).toContain('Max Tile Build');
     expect(buildDebugMarkup(snapshot)).toContain('Tile Builds/s');
     expect(buildDebugMarkup(snapshot)).toContain('LOD Swaps/s');
     expect(buildDebugMarkup(snapshot)).toContain('Points Nodes');

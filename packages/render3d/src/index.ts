@@ -60,6 +60,8 @@ type Render3DController = {
     visibleTileCount: number;
     visibleTreeCount: number;
     pendingTileCount: number;
+    averageTileBuildMs: number;
+    maxTileBuildMs: number;
     tileBuildsPerSecond: number;
     lodReplacementsPerSecond: number;
     object3dCount: number;
@@ -138,6 +140,11 @@ type SceneResourceStats = {
   treeCount: number;
   treeMeshCount: number;
   treeMaterialRefCount: number;
+};
+
+type RecentDurationSample = {
+  nowMs: number;
+  durationMs: number;
 };
 
 const TILE_SIZE = 1;
@@ -276,6 +283,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
   const renderChurnMetrics = {
     tileBuilds: [] as number[],
     lodReplacements: [] as number[],
+    tileBuildDurations: [] as RecentDurationSample[],
   };
 
   function resize(width, height, pixelRatio = window.devicePixelRatio || 1) {
@@ -427,6 +435,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       if (visibleTileNodes.has(entry.key)) {
         continue;
       }
+      const buildStartMs = performance.now();
       const tileNode = buildTileNode(
         state,
         registry,
@@ -436,9 +445,14 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
           Math.hypot(entry.x - state.player.x, entry.y - state.player.y)
         )
       );
+      const buildDurationMs = performance.now() - buildStartMs;
       visibleTileNodes.set(entry.key, tileNode);
       worldRoot.add(tileNode.node);
       recordRecentMetric(renderChurnMetrics.tileBuilds, nowMs);
+      recordRecentDurationMetric(renderChurnMetrics.tileBuildDurations, {
+        nowMs,
+        durationMs: buildDurationMs,
+      });
     }
   }
 
@@ -520,6 +534,10 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       programs?: ArrayLike<unknown>;
     };
     const nowMs = performance.now();
+    const recentTileBuildStats = getRecentDurationStats(
+      renderChurnMetrics.tileBuildDurations,
+      nowMs
+    );
     return {
       drawCalls: renderer.info.render.calls,
       triangles: renderer.info.render.triangles,
@@ -528,6 +546,8 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       visibleTileCount: visibleTileNodes.size,
       visibleTreeCount: sceneResourceStats.treeCount,
       pendingTileCount: pendingWorldBuild.queue.length,
+      averageTileBuildMs: recentTileBuildStats.averageMs,
+      maxTileBuildMs: recentTileBuildStats.maxMs,
       tileBuildsPerSecond: countRecentMetricEvents(renderChurnMetrics.tileBuilds, nowMs),
       lodReplacementsPerSecond: countRecentMetricEvents(
         renderChurnMetrics.lodReplacements,
@@ -1622,6 +1642,44 @@ export function countRecentMetricEvents(
   return timestamps.length;
 }
 
+export function recordRecentDurationMetric(
+  samples: RecentDurationSample[],
+  sample: RecentDurationSample,
+  windowMs = 1000
+): void {
+  samples.push(sample);
+  pruneRecentDurationSamples(samples, sample.nowMs, windowMs);
+}
+
+export function getRecentDurationStats(
+  samples: RecentDurationSample[],
+  nowMs: number,
+  windowMs = 1000
+): {
+  averageMs: number;
+  maxMs: number;
+} {
+  pruneRecentDurationSamples(samples, nowMs, windowMs);
+  if (samples.length === 0) {
+    return {
+      averageMs: 0,
+      maxMs: 0,
+    };
+  }
+
+  let totalMs = 0;
+  let maxMs = 0;
+  for (const sample of samples) {
+    totalMs += sample.durationMs;
+    maxMs = Math.max(maxMs, sample.durationMs);
+  }
+
+  return {
+    averageMs: totalMs / samples.length,
+    maxMs,
+  };
+}
+
 function pruneRecentMetricTimestamps(
   timestamps: number[],
   nowMs: number,
@@ -1634,6 +1692,21 @@ function pruneRecentMetricTimestamps(
   }
   if (removeCount > 0) {
     timestamps.splice(0, removeCount);
+  }
+}
+
+function pruneRecentDurationSamples(
+  samples: RecentDurationSample[],
+  nowMs: number,
+  windowMs: number
+): void {
+  const minimumTime = nowMs - windowMs;
+  let removeCount = 0;
+  while (removeCount < samples.length && samples[removeCount]!.nowMs < minimumTime) {
+    removeCount += 1;
+  }
+  if (removeCount > 0) {
+    samples.splice(0, removeCount);
   }
 }
 

@@ -5,6 +5,7 @@ import {
   applyObjectDistanceFade,
   clampCameraPitch,
   DEFAULT_CAMERA_PITCH,
+  getRecentDurationStats,
   getDecoratedTileSurfaceHeight,
   getBoundaryPriority,
   getFarLandModelOpacity,
@@ -21,6 +22,7 @@ import {
   pickCornerBoundaryProfile,
   prepareObjectForDistanceFade,
   recordRecentMetric,
+  recordRecentDurationMetric,
   summarizeVisibleTileKinds,
   syncDynamicTileNodes,
   shouldRenderWorldTile,
@@ -90,6 +92,31 @@ describe('render3d visibility helpers', () => {
     recordRecentMetric(timestamps, 2405);
     expect(timestamps).toEqual([2405]);
     expect(countRecentMetricEvents(timestamps, 2600)).toBe(1);
+  });
+
+  it('tracks recent tile build durations with rolling average and max stats', () => {
+    const samples = [
+      { nowMs: 100, durationMs: 2 },
+      { nowMs: 450, durationMs: 4 },
+    ];
+
+    recordRecentDurationMetric(samples, { nowMs: 900, durationMs: 6 });
+    expect(getRecentDurationStats(samples, 950)).toEqual({
+      averageMs: 4,
+      maxMs: 6,
+    });
+
+    expect(getRecentDurationStats(samples, 1405)).toEqual({
+      averageMs: 5,
+      maxMs: 6,
+    });
+
+    recordRecentDurationMetric(samples, { nowMs: 2405, durationMs: 3 });
+    expect(samples).toEqual([{ nowMs: 2405, durationMs: 3 }]);
+    expect(getRecentDurationStats(samples, 2600)).toEqual({
+      averageMs: 3,
+      maxMs: 3,
+    });
   });
 
   it('summarizes the most common visible tile kinds for the debug overlay', () => {

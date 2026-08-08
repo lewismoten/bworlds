@@ -275,9 +275,9 @@ This represents about **6.86 MB inclusive**.
 * [ ] Cancel queued builds for tiles that leave the active area.
 * [ ] Deduplicate pending build requests.
 * [ ] Avoid rebuilding tiles already waiting in the queue.
-* [ ] Track queue length.
-* [ ] Track average tile build time.
-* [ ] Track maximum tile build time.
+* [x] Track queue length.
+* [x] Track average tile build time.
+* [x] Track maximum tile build time.
 * [ ] Spread expensive forest generation over several frames if necessary.
 
 ---
