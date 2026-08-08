@@ -184,6 +184,9 @@ export type DebugSnapshotExport = {
     totalMaterialReferences: number;
     uniqueMaterialCount: number;
     sharedMaterialCount: number;
+    transparentMaterialCount: number;
+    alphaTestMaterialCount: number;
+    doubleSidedMaterialCount: number;
     geometryCount: number;
     textureCount: number;
     textureMemoryEstimateMb: number;
@@ -308,6 +311,10 @@ export function buildDebugSnapshotExport(
       totalMaterialReferences: options.snapshot.materialRefCount ?? 0,
       uniqueMaterialCount: options.snapshot.materialCount,
       sharedMaterialCount: options.snapshot.sharedMaterialCount ?? 0,
+      transparentMaterialCount: options.snapshot.transparentMaterialCount ?? 0,
+      alphaTestMaterialCount: options.snapshot.alphaTestMaterialCount ?? 0,
+      doubleSidedMaterialCount:
+        options.snapshot.doubleSidedMaterialCount ?? 0,
       geometryCount: options.snapshot.geometryCount,
       textureCount: options.snapshot.textureCount,
       textureMemoryEstimateMb: options.snapshot.textureMemoryEstimateMb,

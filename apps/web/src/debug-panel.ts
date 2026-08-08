@@ -62,6 +62,9 @@ export type DebugSnapshot = {
   materialRefCount?: number;
   materialCount: number;
   sharedMaterialCount?: number;
+  transparentMaterialCount?: number;
+  alphaTestMaterialCount?: number;
+  doubleSidedMaterialCount?: number;
   geometryCount: number;
   vertexCount: number;
   geometryMemoryCount: number;

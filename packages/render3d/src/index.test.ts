@@ -51,8 +51,16 @@ describe('render3d visibility helpers', () => {
   it('collects unique scene material and geometry counts for debug diagnostics', () => {
     const sharedTexture = createMockTexture(32, 16);
     const uniqueTexture = createMockTexture(8, 8, false);
-    const sharedMaterial = createMockMaterial({ map: sharedTexture });
-    const otherMaterial = createMockMaterial({ emissiveMap: uniqueTexture });
+    const sharedMaterial = createMockMaterial({
+      map: sharedTexture,
+      transparent: true,
+      alphaTest: 0.08,
+      side: 2,
+    });
+    const otherMaterial = createMockMaterial({
+      emissiveMap: uniqueTexture,
+      transparent: true,
+    });
     const sharedGeometry = createMockStatGeometry('shared-geometry', 24);
     const otherGeometry = createMockStatGeometry('other-geometry', 12);
     const root = createMockObject3D(undefined, [
@@ -92,6 +100,9 @@ describe('render3d visibility helpers', () => {
       materialRefCount: 4,
       materialCount: 2,
       sharedMaterialCount: 2,
+      transparentMaterialCount: 2,
+      alphaTestMaterialCount: 1,
+      doubleSidedMaterialCount: 1,
       geometryCount: 2,
       textureMemoryEstimateBytes: 2987,
       treeCount: 1,
@@ -191,6 +202,9 @@ describe('render3d visibility helpers', () => {
       materialRefCount: 3,
       materialCount: 3,
       sharedMaterialCount: 0,
+      transparentMaterialCount: 0,
+      alphaTestMaterialCount: 0,
+      doubleSidedMaterialCount: 0,
       geometryCount: 3,
       textureMemoryEstimateBytes: 0,
       treeCount: 0,
@@ -253,6 +267,9 @@ describe('render3d visibility helpers', () => {
       materialRefCount: 2,
       materialCount: 2,
       sharedMaterialCount: 0,
+      transparentMaterialCount: 0,
+      alphaTestMaterialCount: 0,
+      doubleSidedMaterialCount: 0,
       geometryCount: 2,
       textureMemoryEstimateBytes: 0,
       treeCount: 0,
@@ -339,6 +356,9 @@ describe('render3d visibility helpers', () => {
       materialRefCount: 2,
       materialCount: 2,
       sharedMaterialCount: 0,
+      transparentMaterialCount: 0,
+      alphaTestMaterialCount: 0,
+      doubleSidedMaterialCount: 0,
       geometryCount: 2,
       textureMemoryEstimateBytes: 0,
       treeCount: 1,
@@ -395,6 +415,9 @@ describe('render3d visibility helpers', () => {
       materialRefCount: 2,
       materialCount: 2,
       sharedMaterialCount: 0,
+      transparentMaterialCount: 0,
+      alphaTestMaterialCount: 0,
+      doubleSidedMaterialCount: 0,
       geometryCount: 2,
       textureMemoryEstimateBytes: 0,
       treeCount: 0,
@@ -483,6 +506,9 @@ describe('render3d visibility helpers', () => {
       materialRefCount: 2,
       materialCount: 2,
       sharedMaterialCount: 0,
+      transparentMaterialCount: 0,
+      alphaTestMaterialCount: 0,
+      doubleSidedMaterialCount: 0,
       geometryCount: 2,
       textureMemoryEstimateBytes: 0,
       treeCount: 0,
@@ -1216,6 +1242,8 @@ function createMockMaterial(
     opacity: number;
     transparent: boolean;
     depthWrite: boolean;
+    alphaTest: number;
+    side: number;
   }> &
     Record<string, unknown> = {}
 ) {
@@ -1223,6 +1251,8 @@ function createMockMaterial(
     opacity: overrides.opacity ?? 1,
     transparent: overrides.transparent ?? false,
     depthWrite: overrides.depthWrite ?? true,
+    alphaTest: overrides.alphaTest ?? 0,
+    side: overrides.side ?? 0,
     userData: {},
     dispose: vi.fn(),
   };
@@ -1230,6 +1260,8 @@ function createMockMaterial(
     opacity: overrides.opacity ?? 1,
     transparent: overrides.transparent ?? false,
     depthWrite: overrides.depthWrite ?? true,
+    alphaTest: overrides.alphaTest ?? 0,
+    side: overrides.side ?? 0,
     userData: {},
     ...overrides,
     clone: vi.fn(() => ({ ...clone, userData: {} })),

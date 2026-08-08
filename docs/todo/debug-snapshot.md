@@ -107,9 +107,9 @@ That gives you something you can save from a slow scene, attach to a bug report,
 * [x] Include unique material instances.
 * [x] Include shared material instances.
 * [ ] Include cloned-material count where trackable.
-* [ ] Include transparent materials.
-* [ ] Include materials using alpha testing.
-* [ ] Include double-sided materials.
+* [x] Include transparent materials.
+* [x] Include materials using alpha testing.
+* [x] Include double-sided materials.
 * [ ] Include materials receiving fog.
 * [ ] Include materials using custom shaders.
 * [ ] Include materials by type.

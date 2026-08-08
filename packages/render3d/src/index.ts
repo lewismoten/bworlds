@@ -99,6 +99,9 @@ type Render3DController = {
     materialRefCount: number;
     materialCount: number;
     sharedMaterialCount: number;
+    transparentMaterialCount: number;
+    alphaTestMaterialCount: number;
+    doubleSidedMaterialCount: number;
     geometryCount: number;
     textureMemoryEstimateBytes: number;
     geometryMemoryCount: number;
@@ -187,6 +190,9 @@ type SceneResourceStats = {
   materialRefCount: number;
   materialCount: number;
   sharedMaterialCount: number;
+  transparentMaterialCount: number;
+  alphaTestMaterialCount: number;
+  doubleSidedMaterialCount: number;
   geometryCount: number;
   textureMemoryEstimateBytes: number;
   treeCount: number;
@@ -806,6 +812,9 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       materialRefCount: sceneResourceStats.materialRefCount,
       materialCount: sceneResourceStats.materialCount,
       sharedMaterialCount: sceneResourceStats.sharedMaterialCount,
+      transparentMaterialCount: sceneResourceStats.transparentMaterialCount,
+      alphaTestMaterialCount: sceneResourceStats.alphaTestMaterialCount,
+      doubleSidedMaterialCount: sceneResourceStats.doubleSidedMaterialCount,
       geometryCount: sceneResourceStats.geometryCount,
       textureMemoryEstimateBytes: sceneResourceStats.textureMemoryEstimateBytes,
       geometryMemoryCount: renderer.info.memory.geometries,
@@ -2165,6 +2174,9 @@ export function collectSceneResourceStats(
     materialRefCount,
     materialCount: materials.size,
     sharedMaterialCount: Math.max(0, materialRefCount - materials.size),
+    transparentMaterialCount: countMaterialsMatching(materials, isTransparentMaterial),
+    alphaTestMaterialCount: countMaterialsMatching(materials, usesAlphaTest),
+    doubleSidedMaterialCount: countMaterialsMatching(materials, isDoubleSidedMaterial),
     geometryCount: geometries.size,
     textureMemoryEstimateBytes,
     treeCount,
@@ -2239,6 +2251,33 @@ function traverseSceneGraphWithDepth(
 function getObjectChildCount(object: unknown): number {
   const children = (object as { children?: unknown })?.children;
   return Array.isArray(children) ? children.length : 0;
+}
+
+function countMaterialsMatching(
+  materials: ReadonlySet<THREE.Material>,
+  predicate: (material: THREE.Material) => boolean
+): number {
+  let count = 0;
+  for (const material of materials) {
+    if (predicate(material)) {
+      count += 1;
+    }
+  }
+  return count;
+}
+
+function isTransparentMaterial(material: THREE.Material): boolean {
+  return (material as THREE.Material & { transparent?: boolean }).transparent === true;
+}
+
+function usesAlphaTest(material: THREE.Material): boolean {
+  const alphaTest = (material as THREE.Material & { alphaTest?: number }).alphaTest;
+  return typeof alphaTest === 'number' && alphaTest > 0;
+}
+
+function isDoubleSidedMaterial(material: THREE.Material): boolean {
+  const side = (material as THREE.Material & { side?: number }).side;
+  return typeof side === 'number' && side === THREE.DoubleSide;
 }
 
 function getInstancedMeshCount(object: unknown): number {
