@@ -93,6 +93,10 @@ import {
   shouldPlayBlockedMovementSound,
 } from './sound-effects.ts';
 import {
+  createMusicController,
+  createWebAudioMusicSink,
+} from './procedural-music.ts';
+import {
   buildSextantMarkup,
   buildEventSummaryMarkup,
   buildStatusMarkup,
@@ -747,6 +751,7 @@ const renderer3d = create3DRenderer(viewport3d);
 const soundEffects = createSoundEffectController(
   createWebAudioSoundEffectSink()
 );
+const musicController = createMusicController(createWebAudioMusicSink());
 const celestialPreview = createCelestialPreviewRenderer(celestialPreviewHost, {
   onRenderRequested: () => requestRender(),
 });
@@ -1778,6 +1783,25 @@ function render(): FrameLoopActivityLike {
     (environment.celestial ?? {}) as CelestialEnvironmentOverrides
   );
   const displayCycle = updateDisplayedCycle(actualCycle);
+  const context = state.getCurrentContext();
+  const currentTile = state.getCurrentTile();
+  const musicClusterX = Math.floor(state.player.x / 12);
+  const musicClusterY = Math.floor(state.player.y / 12);
+  musicController.update({
+    nowMs,
+    tileKind: currentTile.kind,
+    contextType: context.type,
+    dayProgress: actualCycle.dayProgress,
+    weatherKind: environment.weather?.current?.kind,
+    weatherIntensity: environment.weather?.current?.intensity,
+    clusterX: musicClusterX,
+    clusterY: musicClusterY,
+    emitter: {
+      x: musicClusterX * 12 + 6,
+      y: musicClusterY * 12 + 6,
+    },
+    listener: { x: state.player.x, y: state.player.y },
+  });
   if (state.viewMode === '2d') {
     const context = viewport2d?.getContext('2d');
     if (!context) return;
@@ -2298,6 +2322,7 @@ import.meta.hot?.on('vite:afterUpdate', () => {
 
 window.addEventListener('keydown', (event) => {
   soundEffects.resume();
+  musicController.resume();
   const key = event.key.length === 1 ? event.key.toLowerCase() : event.key;
   keys.add(key);
 
@@ -2535,6 +2560,7 @@ root.querySelectorAll<HTMLButtonElement>('[data-time-preset]').forEach((button) 
 
 viewportStage?.addEventListener('pointerdown', (event) => {
   soundEffects.resume();
+  musicController.resume();
   if (
     !shouldRestore3dViewportKeyboardFocusOnPointerDown(
       state.viewMode,
