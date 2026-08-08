@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { DEFAULT_DAY_LENGTH_MS } from '@bworlds/core';
 import { getActivePluginRegistry } from '@bworlds/plugin-api';
 import {
   createBuiltinContentPackCatalog,
@@ -135,6 +136,22 @@ describe('world generator', () => {
       'tile-ruins'
     );
     expect(registry.getTilePlugin('town')?.kind).toBe('town');
+  });
+
+  it('keeps the default celestial day length when the frontier overlay is enabled', () => {
+    const registry = createPluginRegistryFromPacks([
+      'default-content-pack',
+      'frontier-content-pack',
+    ]);
+
+    const environment = registry.resolveWorldEnvironment({
+      timeMs: 0,
+      state: {
+        player: { x: 0, y: 0, facing: 0 },
+      } as any,
+    });
+
+    expect(environment.cycle?.dayLengthMs).toBe(DEFAULT_DAY_LENGTH_MS);
   });
 
   it('creates registries from caller-supplied content pack definitions', () => {

@@ -12,9 +12,6 @@ describe('runtime frontier flavor', () => {
     const plugin = createFrontierFlavorRuntimePlugin();
     expect(plugin.resolveWorldEnvironment?.({ state: {} as any })).toEqual(
       expect.objectContaining({
-        cycle: expect.objectContaining({
-          dayLengthMs: 300000,
-        }),
         stars: expect.objectContaining({
           density: 1,
         }),

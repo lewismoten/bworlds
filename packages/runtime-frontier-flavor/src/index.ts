@@ -9,10 +9,6 @@ export function createFrontierFlavorRuntimePlugin(): RuntimePlugin {
   return createRuntimePlugin('runtime-frontier-flavor', {
     resolveWorldEnvironment() {
       return {
-        cycle: {
-          dayLengthMs: 300000,
-          offsetMs: 45000,
-        },
         sky: {
           dayColor: '#9ed8ff',
           sunsetColor: '#f2a06a',
