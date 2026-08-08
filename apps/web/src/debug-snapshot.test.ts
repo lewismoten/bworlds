@@ -83,6 +83,16 @@ describe('debug snapshot', () => {
           },
         },
       },
+      lod: {
+        thresholds: {
+          lowDetailDistance: 6.5,
+          lowDetailEnterDistance: 6.5,
+          lowDetailExitDistance: 6,
+          hysteresisDistance: 0.5,
+          pendingBuildFullDetailDistance: 3,
+          syncMovementDistance: 0.18,
+        },
+      },
       snapshot: {
         fps: 44.6,
         averageFps: 46.2,
@@ -296,6 +306,18 @@ describe('debug snapshot', () => {
       averageTileBuildMs: 2.4,
       worstTileBuildMs: 6.8,
       tileKinds: 'forest:48, plains:32',
+    });
+    expect(result.lod).toMatchObject({
+      checksPerSecond: 5,
+      swapsPerSecond: 3,
+      thresholds: {
+        lowDetailDistance: 6.5,
+        lowDetailEnterDistance: 6.5,
+        lowDetailExitDistance: 6,
+        hysteresisDistance: 0.5,
+        pendingBuildFullDetailDistance: 3,
+        syncMovementDistance: 0.18,
+      },
     });
     expect(result.resources).toMatchObject({
       uniqueMaterialCount: 24,

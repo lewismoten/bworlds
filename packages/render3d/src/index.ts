@@ -175,6 +175,15 @@ type RecentCountSample = {
   count: number;
 };
 
+export type LodThresholdSummary = {
+  lowDetailDistance: number;
+  lowDetailEnterDistance: number;
+  lowDetailExitDistance: number;
+  hysteresisDistance: number;
+  pendingBuildFullDetailDistance: number;
+  syncMovementDistance: number;
+};
+
 type RenderChurnMetrics = {
   tileNodeBuilds: number[];
   tileBuilds: number[];
@@ -1579,6 +1588,17 @@ export function getTileModelDetailLevel(
   lowDetailDistance = LOW_DETAIL_MODEL_DISTANCE
 ): 'full' | 'low' {
   return distance >= lowDetailDistance ? 'low' : 'full';
+}
+
+export function getLodThresholdSummary(): LodThresholdSummary {
+  return {
+    lowDetailDistance: LOW_DETAIL_MODEL_DISTANCE,
+    lowDetailEnterDistance: LOW_DETAIL_MODEL_DISTANCE,
+    lowDetailExitDistance: LOW_DETAIL_EXIT_DISTANCE,
+    hysteresisDistance: LOD_DETAIL_HYSTERESIS_DISTANCE,
+    pendingBuildFullDetailDistance: PENDING_BUILD_FULL_DETAIL_DISTANCE,
+    syncMovementDistance: LOD_SYNC_MOVEMENT_DISTANCE,
+  };
 }
 
 export function getTileModelDetailLevelFromSquaredDistance(

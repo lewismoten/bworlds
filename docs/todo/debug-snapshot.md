@@ -214,10 +214,10 @@ That gives you something you can save from a slow scene, attach to a bug report,
 * [ ] Include LOD1 model count.
 * [ ] Include LOD2 model count.
 * [ ] Include LOD3 model count.
-* [ ] Include LOD checks per second.
-* [ ] Include LOD swaps per second.
+* [x] Include LOD checks per second.
+* [x] Include LOD swaps per second.
 * [ ] Include LOD builds per second.
-* [ ] Include current LOD thresholds.
+* [x] Include current LOD thresholds.
 * [ ] Include LOD cache hits and misses.
 * [ ] Include current objects participating in LOD crossfades.
 * [ ] Include crossfade duration.

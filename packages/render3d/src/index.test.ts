@@ -19,6 +19,7 @@ import {
   getFacingVisibilityBucket,
   getWorldCurvatureOffset,
   getWeatherFogRange,
+  getLodThresholdSummary,
   getSkyAuroraSignature,
   getSkyConstellationSignature,
   getSkyEventSignature,
@@ -650,6 +651,17 @@ describe('render3d visibility helpers', () => {
     expect(getTileModelDetailLevel(6.49)).toBe('full');
     expect(getTileModelDetailLevel(6.5)).toBe('low');
     expect(getTileModelDetailLevel(10)).toBe('low');
+  });
+
+  it('describes the current lod threshold policy in one place', () => {
+    expect(getLodThresholdSummary()).toEqual({
+      lowDetailDistance: 6.5,
+      lowDetailEnterDistance: 6.5,
+      lowDetailExitDistance: 6,
+      hysteresisDistance: 0.5,
+      pendingBuildFullDetailDistance: 3,
+      syncMovementDistance: 0.18,
+    });
   });
 
   it('switches to low-detail models beyond the lod distance using squared distance thresholds', () => {

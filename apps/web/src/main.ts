@@ -15,7 +15,12 @@ import {
   toGps,
 } from '@bworlds/core';
 import { buildTextViewportGrid, render2D } from '@bworlds/render2d';
-import { clampCameraPitch, create3DRenderer, DEFAULT_CAMERA_PITCH } from '@bworlds/render3d';
+import {
+  clampCameraPitch,
+  create3DRenderer,
+  DEFAULT_CAMERA_PITCH,
+  getLodThresholdSummary,
+} from '@bworlds/render3d';
 import {
   buildPlayerPoi,
   listPlayerPlacedPois,
@@ -1626,6 +1631,7 @@ function downloadCurrentDebugSnapshot(): void {
   const pendingWorldBuildBudget = getPendingWorldBuildBudget(renderBudgetState);
   const renderBudgetCaps = getRenderBudgetCaps(renderBudgetState);
   const graphicsCapabilities = collectGraphicsCapabilities();
+  const lodThresholds = getLodThresholdSummary();
   const exportPayload = buildDebugSnapshotExport({
     timestamp,
     gameVersion: APP_VERSION,
@@ -1677,6 +1683,9 @@ function downloadCurrentDebugSnapshot(): void {
       pendingBuildBudgetMs: pendingWorldBuildBudget.pendingBuildBudgetMs,
       maxPendingBuildTiles: pendingWorldBuildBudget.maxPendingBuildTiles,
       caps: renderBudgetCaps,
+    },
+    lod: {
+      thresholds: lodThresholds,
     },
     snapshot: latestSnapshot,
     history: debugResourceTrendState.performanceSamples,

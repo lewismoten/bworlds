@@ -3,6 +3,7 @@ import type {
   PerformanceHistorySample,
 } from './debug-panel.ts';
 import type { GraphicsCapabilitiesSummary } from './graphics-capabilities.ts';
+import type { LodThresholdSummary } from '@bworlds/render3d';
 
 type ContentPackSummary = {
   id: string;
@@ -76,6 +77,9 @@ type DebugSnapshotExportOptions = {
         hard: number;
       };
     };
+  };
+  lod: {
+    thresholds: LodThresholdSummary;
   };
   snapshot: DebugSnapshot;
   history: PerformanceHistorySample[];
@@ -152,6 +156,11 @@ export type DebugSnapshotExport = {
     averageTileBuildMs: number;
     worstTileBuildMs: number;
     tileKinds: string;
+  };
+  lod: {
+    checksPerSecond: number;
+    swapsPerSecond: number;
+    thresholds: LodThresholdSummary;
   };
   resources: {
     uniqueMaterialCount: number;
@@ -284,6 +293,11 @@ export function buildDebugSnapshotExport(
       averageTileBuildMs: options.snapshot.averageTileBuildMs,
       worstTileBuildMs: options.snapshot.maxTileBuildMs,
       tileKinds: options.snapshot.visibleTileKindSummary,
+    },
+    lod: {
+      checksPerSecond: options.snapshot.lodChecksPerSecond,
+      swapsPerSecond: options.snapshot.lodReplacementsPerSecond,
+      thresholds: options.lod.thresholds,
     },
     history: options.history.map((sample) => ({
       t: roundTenths((sample.nowMs - latestHistoryTime) / 1000),
