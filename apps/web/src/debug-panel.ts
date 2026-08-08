@@ -32,6 +32,8 @@ export type DebugSnapshot = {
   invisibleObjectCount?: number;
   groupCount: number;
   meshCount: number;
+  instancedMeshCount?: number;
+  renderedInstanceCount?: number;
   visibleMeshCount: number;
   pointsCount: number;
   lineObjectCount?: number;

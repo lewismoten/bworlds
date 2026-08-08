@@ -86,7 +86,7 @@ That gives you something you can save from a slow scene, attach to a bug report,
 * [x] Include total `Object3D` count.
 * [x] Include `Group` count.
 * [x] Include `Mesh` count.
-* [ ] Include `InstancedMesh` count.
+* [x] Include `InstancedMesh` count.
 * [x] Include `Sprite` count.
 * [x] Include `Points` node count.
 * [x] Include line-object count.
@@ -255,8 +255,8 @@ Given how important trees currently are, I would definitely include a specialize
 
 # Instancing
 
-* [ ] Include total `InstancedMesh` nodes.
-* [ ] Include total rendered instances.
+* [x] Include total `InstancedMesh` nodes.
+* [x] Include total rendered instances.
 * [ ] Include instance counts by plugin.
 * [ ] Include instance counts by model category.
 * [ ] Include repeated meshes that are not currently instanced.

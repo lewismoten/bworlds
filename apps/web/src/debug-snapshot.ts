@@ -131,6 +131,8 @@ export type DebugSnapshotExport = {
     invisibleObjectCount: number;
     groupCount: number;
     meshCount: number;
+    instancedMeshCount: number;
+    renderedInstanceCount: number;
     spriteCount: number;
     pointsCount: number;
     lineObjectCount: number;
@@ -266,6 +268,8 @@ export function buildDebugSnapshotExport(
         ),
       groupCount: options.snapshot.groupCount,
       meshCount: options.snapshot.meshCount,
+      instancedMeshCount: options.snapshot.instancedMeshCount ?? 0,
+      renderedInstanceCount: options.snapshot.renderedInstanceCount ?? 0,
       spriteCount: options.snapshot.spriteCount,
       pointsCount: options.snapshot.pointsCount,
       lineObjectCount: options.snapshot.lineObjectCount ?? 0,

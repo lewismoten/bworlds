@@ -2746,6 +2746,8 @@ function render(): FrameLoopActivityLike {
       invisibleObjectCount: rendererStats.invisibleObjectCount,
       groupCount: rendererStats.groupCount,
       meshCount: rendererStats.meshCount,
+      instancedMeshCount: rendererStats.instancedMeshCount,
+      renderedInstanceCount: rendererStats.renderedInstanceCount,
       visibleMeshCount: rendererStats.visibleMeshCount,
       pointsCount: rendererStats.pointsCount,
       lineObjectCount: rendererStats.lineObjectCount,

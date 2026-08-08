@@ -69,6 +69,8 @@ describe('render3d visibility helpers', () => {
       invisibleObjectCount: 0,
       groupCount: 1,
       meshCount: 3,
+      instancedMeshCount: 0,
+      renderedInstanceCount: 0,
       visibleMeshCount: 3,
       pointsCount: 0,
       lineObjectCount: 0,
@@ -120,6 +122,14 @@ describe('render3d visibility helpers', () => {
   });
 
   it('records additional object-type counts for points, lines, sprites, visible meshes, dynamic lights, and shadow lights', () => {
+    const visibleInstancedMesh = createMockObject3D(
+      {},
+      [],
+      createMockStatGeometry('instanced-geometry', 4),
+      {},
+      'InstancedMesh'
+    );
+    (visibleInstancedMesh as { count?: number }).count = 24;
     const root = createMockObject3D(undefined, [
       createMockObject3D({}, [], createMockStatGeometry('visible-geometry', 8), {}, 'Mesh'),
       createMockObject3D(
@@ -132,6 +142,7 @@ describe('render3d visibility helpers', () => {
         false,
         false
       ),
+      visibleInstancedMesh,
       createMockObject3D(undefined, [], undefined, {}, 'Points'),
       createMockObject3D(undefined, [], undefined, {}, 'Line'),
       createMockObject3D(undefined, [], undefined, {}, 'LineLoop'),
@@ -141,12 +152,14 @@ describe('render3d visibility helpers', () => {
     ]);
 
     expect(collectSceneResourceStats(root as never)).toEqual({
-      object3dCount: 9,
-      visibleObjectCount: 8,
+      object3dCount: 10,
+      visibleObjectCount: 9,
       invisibleObjectCount: 1,
       groupCount: 1,
-      meshCount: 2,
-      visibleMeshCount: 1,
+      meshCount: 3,
+      instancedMeshCount: 1,
+      renderedInstanceCount: 24,
+      visibleMeshCount: 2,
       pointsCount: 1,
       lineObjectCount: 2,
       activeParticleSystemCount: 1,
@@ -155,9 +168,9 @@ describe('render3d visibility helpers', () => {
       lightCount: 2,
       dynamicLightCount: 1,
       shadowLightCount: 1,
-      vertexCount: 14,
-      materialCount: 2,
-      geometryCount: 2,
+      vertexCount: 18,
+      materialCount: 3,
+      geometryCount: 3,
       textureMemoryEstimateBytes: 0,
       treeCount: 0,
       treeObjectCount: 0,
@@ -196,6 +209,8 @@ describe('render3d visibility helpers', () => {
       invisibleObjectCount: 1,
       groupCount: 1,
       meshCount: 2,
+      instancedMeshCount: 0,
+      renderedInstanceCount: 0,
       visibleMeshCount: 1,
       pointsCount: 2,
       lineObjectCount: 0,
@@ -270,6 +285,8 @@ describe('render3d visibility helpers', () => {
       invisibleObjectCount: 0,
       groupCount: 2,
       meshCount: 2,
+      instancedMeshCount: 0,
+      renderedInstanceCount: 0,
       visibleMeshCount: 2,
       pointsCount: 0,
       lineObjectCount: 0,

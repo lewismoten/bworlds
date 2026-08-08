@@ -76,6 +76,8 @@ type Render3DController = {
     invisibleObjectCount: number;
     groupCount: number;
     meshCount: number;
+    instancedMeshCount: number;
+    renderedInstanceCount: number;
     visibleMeshCount: number;
     pointsCount: number;
     lineObjectCount: number;
@@ -152,6 +154,8 @@ type SceneResourceStats = {
   invisibleObjectCount: number;
   groupCount: number;
   meshCount: number;
+  instancedMeshCount: number;
+  renderedInstanceCount: number;
   visibleMeshCount: number;
   pointsCount: number;
   lineObjectCount: number;
@@ -759,6 +763,8 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       invisibleObjectCount: sceneResourceStats.invisibleObjectCount,
       groupCount: sceneResourceStats.groupCount,
       meshCount: sceneResourceStats.meshCount,
+      instancedMeshCount: sceneResourceStats.instancedMeshCount,
+      renderedInstanceCount: sceneResourceStats.renderedInstanceCount,
       visibleMeshCount: sceneResourceStats.visibleMeshCount,
       pointsCount: sceneResourceStats.pointsCount,
       lineObjectCount: sceneResourceStats.lineObjectCount,
@@ -1972,6 +1978,8 @@ export function collectSceneResourceStats(
   let invisibleObjectCount = 0;
   let groupCount = 0;
   let meshCount = 0;
+  let instancedMeshCount = 0;
+  let renderedInstanceCount = 0;
   let visibleMeshCount = 0;
   let pointsCount = 0;
   let lineObjectCount = 0;
@@ -2000,6 +2008,12 @@ export function collectSceneResourceStats(
     }
     if ((child as THREE.Object3D).type === 'Group') {
       groupCount += 1;
+    }
+    if ((child as THREE.Object3D).type === 'InstancedMesh') {
+      instancedMeshCount += 1;
+      if ((child as THREE.Object3D).visible !== false) {
+        renderedInstanceCount += getInstancedMeshCount(child);
+      }
     }
     if ((child as THREE.Object3D).type === 'Points') {
       pointsCount += 1;
@@ -2069,6 +2083,8 @@ export function collectSceneResourceStats(
     invisibleObjectCount,
     groupCount,
     meshCount,
+    instancedMeshCount,
+    renderedInstanceCount,
     visibleMeshCount,
     pointsCount,
     lineObjectCount,
@@ -2099,6 +2115,11 @@ function isDynamicLightType(type: string): boolean {
 
 function isLineObjectType(type: string): boolean {
   return type === 'Line' || type === 'LineLoop' || type === 'LineSegments';
+}
+
+function getInstancedMeshCount(object: unknown): number {
+  const count = (object as { count?: unknown })?.count;
+  return typeof count === 'number' && Number.isFinite(count) ? count : 0;
 }
 
 function getMaterialTextures(material: THREE.Material): unknown[] {
