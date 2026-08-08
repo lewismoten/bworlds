@@ -71,8 +71,8 @@ That gives you something you can save from a slow scene, attach to a bug report,
 * [x] Include visible object count.
 * [ ] Include culled object count where available.
 * [x] Include visible mesh count.
-* [ ] Include visible instanced-mesh count.
-* [ ] Include total rendered instances.
+* [x] Include visible instanced-mesh count.
+* [x] Include total rendered instances.
 * [ ] Include transparent draw count.
 * [ ] Include shadow-pass draw count.
 * [ ] Include post-processing passes.

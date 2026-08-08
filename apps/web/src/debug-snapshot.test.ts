@@ -128,6 +128,7 @@ describe('debug snapshot', () => {
         groupCount: 54,
         meshCount: 180,
         instancedMeshCount: 6,
+        visibleInstancedMeshCount: 5,
         renderedInstanceCount: 248,
         visibleMeshCount: 164,
         pointsCount: 5,
@@ -279,6 +280,8 @@ describe('debug snapshot', () => {
       drawCalls: 420,
       triangles: 120000,
       vertices: 14432,
+      visibleInstancedMeshCount: 5,
+      renderedInstanceCount: 248,
       visibleMeshCount: 164,
     });
     expect(result.sceneGraph).toMatchObject({

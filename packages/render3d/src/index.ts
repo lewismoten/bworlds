@@ -77,6 +77,7 @@ type Render3DController = {
     groupCount: number;
     meshCount: number;
     instancedMeshCount: number;
+    visibleInstancedMeshCount: number;
     renderedInstanceCount: number;
     visibleMeshCount: number;
     pointsCount: number;
@@ -155,6 +156,7 @@ type SceneResourceStats = {
   groupCount: number;
   meshCount: number;
   instancedMeshCount: number;
+  visibleInstancedMeshCount: number;
   renderedInstanceCount: number;
   visibleMeshCount: number;
   pointsCount: number;
@@ -764,6 +766,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       groupCount: sceneResourceStats.groupCount,
       meshCount: sceneResourceStats.meshCount,
       instancedMeshCount: sceneResourceStats.instancedMeshCount,
+      visibleInstancedMeshCount: sceneResourceStats.visibleInstancedMeshCount,
       renderedInstanceCount: sceneResourceStats.renderedInstanceCount,
       visibleMeshCount: sceneResourceStats.visibleMeshCount,
       pointsCount: sceneResourceStats.pointsCount,
@@ -1979,6 +1982,7 @@ export function collectSceneResourceStats(
   let groupCount = 0;
   let meshCount = 0;
   let instancedMeshCount = 0;
+  let visibleInstancedMeshCount = 0;
   let renderedInstanceCount = 0;
   let visibleMeshCount = 0;
   let pointsCount = 0;
@@ -2012,6 +2016,7 @@ export function collectSceneResourceStats(
     if ((child as THREE.Object3D).type === 'InstancedMesh') {
       instancedMeshCount += 1;
       if ((child as THREE.Object3D).visible !== false) {
+        visibleInstancedMeshCount += 1;
         renderedInstanceCount += getInstancedMeshCount(child);
       }
     }
@@ -2084,6 +2089,7 @@ export function collectSceneResourceStats(
     groupCount,
     meshCount,
     instancedMeshCount,
+    visibleInstancedMeshCount,
     renderedInstanceCount,
     visibleMeshCount,
     pointsCount,

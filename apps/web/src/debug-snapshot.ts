@@ -123,6 +123,8 @@ export type DebugSnapshotExport = {
     vertices: number;
     points: number;
     lines: number;
+    visibleInstancedMeshCount: number;
+    renderedInstanceCount: number;
     visibleMeshCount: number;
   };
   sceneGraph: {
@@ -250,6 +252,8 @@ export function buildDebugSnapshotExport(
       vertices: options.snapshot.vertexCount,
       points: options.snapshot.points,
       lines: options.snapshot.lines,
+      visibleInstancedMeshCount: options.snapshot.visibleInstancedMeshCount ?? 0,
+      renderedInstanceCount: options.snapshot.renderedInstanceCount ?? 0,
       visibleMeshCount: options.snapshot.visibleMeshCount,
     },
     sceneGraph: {
