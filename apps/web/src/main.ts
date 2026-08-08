@@ -123,6 +123,7 @@ import {
   DEFAULT_RENDER_BUDGET_STATE,
   formatRenderQualityLevel,
   getPendingWorldBuildBudget,
+  getRenderBudgetCaps,
   getRenderQualityLevel,
   getRenderQualityLimiters,
 } from './render-budget.ts';
@@ -1622,6 +1623,7 @@ function downloadCurrentDebugSnapshot(): void {
   const timestamp = new Date();
   const currentContext = state.getCurrentContext();
   const pendingWorldBuildBudget = getPendingWorldBuildBudget(renderBudgetState);
+  const renderBudgetCaps = getRenderBudgetCaps(renderBudgetState);
   const exportPayload = buildDebugSnapshotExport({
     timestamp,
     gameVersion: APP_VERSION,
@@ -1671,6 +1673,7 @@ function downloadCurrentDebugSnapshot(): void {
       visibilityRadius: renderBudgetState.visibilityRadius,
       pendingBuildBudgetMs: pendingWorldBuildBudget.pendingBuildBudgetMs,
       maxPendingBuildTiles: pendingWorldBuildBudget.maxPendingBuildTiles,
+      caps: renderBudgetCaps,
     },
     snapshot: latestSnapshot,
     history: debugResourceTrendState.performanceSamples,

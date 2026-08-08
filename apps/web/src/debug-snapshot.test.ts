@@ -49,6 +49,25 @@ describe('debug snapshot', () => {
         visibilityRadius: 14,
         pendingBuildBudgetMs: 2.25,
         maxPendingBuildTiles: 4,
+        caps: {
+          frameMs: {
+            soft: 1000 / 42,
+            hard: 1000 / 28,
+          },
+          visibilityRadius: {
+            full: 18,
+            reduced: 14,
+            minimum: 10,
+          },
+          pendingBuildBudgetMs: {
+            minimum: 0.75,
+            maximum: 2.25,
+          },
+          pendingBuildTiles: {
+            soft: 4,
+            hard: 2,
+          },
+        },
       },
       snapshot: {
         fps: 44.6,
@@ -181,6 +200,27 @@ describe('debug snapshot', () => {
     expect(result.metadata.context.id).toBe('town:3:7');
     expect(result.metadata.activeContentPacks[0]?.id).toBe('default-content-pack');
     expect(result.metadata.enabledPlugins).toEqual(['tile-forest', 'map-town']);
+    expect(result.metadata.performanceBudget).toMatchObject({
+      currentFrameMs: 22.4,
+      targetFps: 30,
+      visibilityRadius: 14,
+      pendingBuildBudgetMs: 2.25,
+      maxPendingBuildTiles: 4,
+      caps: {
+        frameMs: {
+          soft: 1000 / 42,
+          hard: 1000 / 28,
+        },
+        pendingBuildBudgetMs: {
+          minimum: 0.75,
+          maximum: 2.25,
+        },
+        pendingBuildTiles: {
+          soft: 4,
+          hard: 2,
+        },
+      },
+    });
     expect(result.summary).toMatchObject({
       currentFps: 44.6,
       averageFps: 46.2,

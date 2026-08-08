@@ -13,6 +13,26 @@ export type PendingWorldBuildBudget = {
   maxPendingBuildTiles: number;
 };
 
+export type RenderBudgetCaps = {
+  frameMs: {
+    soft: number;
+    hard: number;
+  };
+  visibilityRadius: {
+    full: number;
+    reduced: number;
+    minimum: number;
+  };
+  pendingBuildBudgetMs: {
+    minimum: number;
+    maximum: number;
+  };
+  pendingBuildTiles: {
+    soft: number;
+    hard: number;
+  };
+};
+
 export type RenderQualityLevel = 'full' | 'reduced' | 'minimal';
 
 export const DEFAULT_VISIBILITY_RADIUS = 18;
@@ -120,6 +140,35 @@ export function getPendingWorldBuildBudget(
   return {
     pendingBuildBudgetMs,
     maxPendingBuildTiles: overBudget ? 4 : 8,
+  };
+}
+
+export function getRenderBudgetCaps(
+  state: Pick<RenderBudgetState, 'targetFps'>
+): RenderBudgetCaps {
+  return {
+    frameMs: {
+      soft: LOW_FPS_FRAME_MS,
+      hard: CRITICAL_FPS_FRAME_MS,
+    },
+    visibilityRadius: {
+      full: DEFAULT_VISIBILITY_RADIUS,
+      reduced: REDUCED_VISIBILITY_RADIUS,
+      minimum: MIN_VISIBILITY_RADIUS,
+    },
+    pendingBuildBudgetMs: {
+      minimum: 0.75,
+      maximum: state.targetFps === 60 ? 3.5 : 2.25,
+    },
+    pendingBuildTiles: state.targetFps === 30
+      ? {
+          soft: 4,
+          hard: 2,
+        }
+      : {
+          soft: 8,
+          hard: 4,
+        },
   };
 }
 

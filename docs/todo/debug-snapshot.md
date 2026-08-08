@@ -23,7 +23,7 @@ That gives you something you can save from a slow scene, attach to a bug report,
 * [ ] Include WebGL/WebGPU capabilities.
 * [x] Include hardware concurrency and available device-memory hints where exposed.
 * [x] Include active performance-budget configuration.
-* [ ] Include soft and hard caps alongside actual values.
+* [x] Include soft and hard caps alongside actual values.
 * [x] Generate a descriptive filename such as `bworlds-debug-20260808-151120.json`.
 
 # Snapshot Summary

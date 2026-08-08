@@ -55,6 +55,25 @@ type DebugSnapshotExportOptions = {
     visibilityRadius: number;
     pendingBuildBudgetMs: number;
     maxPendingBuildTiles: number;
+    caps: {
+      frameMs: {
+        soft: number;
+        hard: number;
+      };
+      visibilityRadius: {
+        full: number;
+        reduced: number;
+        minimum: number;
+      };
+      pendingBuildBudgetMs: {
+        minimum: number;
+        maximum: number;
+      };
+      pendingBuildTiles: {
+        soft: number;
+        hard: number;
+      };
+    };
   };
   snapshot: DebugSnapshot;
   history: PerformanceHistorySample[];

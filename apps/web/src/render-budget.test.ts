@@ -5,6 +5,7 @@ import {
   DEFAULT_VISIBILITY_RADIUS,
   formatRenderQualityLevel,
   getPendingWorldBuildBudget,
+  getRenderBudgetCaps,
   getRenderQualityLevel,
   getRenderQualityLimiters,
   MIN_VISIBILITY_RADIUS,
@@ -118,6 +119,39 @@ describe('render budget', () => {
     expect(criticalBudget.pendingBuildBudgetMs).toBeLessThan(
       reducedBudget.pendingBuildBudgetMs
     );
+  });
+
+  it('describes the active soft and hard caps for the current render-budget policy', () => {
+    expect(getRenderBudgetCaps({ targetFps: 60 })).toEqual({
+      frameMs: {
+        soft: 1000 / 42,
+        hard: 1000 / 28,
+      },
+      visibilityRadius: {
+        full: DEFAULT_VISIBILITY_RADIUS,
+        reduced: REDUCED_VISIBILITY_RADIUS,
+        minimum: MIN_VISIBILITY_RADIUS,
+      },
+      pendingBuildBudgetMs: {
+        minimum: 0.75,
+        maximum: 3.5,
+      },
+      pendingBuildTiles: {
+        soft: 8,
+        hard: 4,
+      },
+    });
+
+    expect(getRenderBudgetCaps({ targetFps: 30 })).toMatchObject({
+      pendingBuildBudgetMs: {
+        minimum: 0.75,
+        maximum: 2.25,
+      },
+      pendingBuildTiles: {
+        soft: 4,
+        hard: 2,
+      },
+    });
   });
 
   it('derives a stable render quality label from the current budget state', () => {
