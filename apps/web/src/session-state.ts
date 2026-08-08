@@ -11,6 +11,10 @@ import {
   type PlayerPlacedPoiLike,
 } from '@bworlds/runtime-player-poi';
 import { normalizePlayerLevel } from './player-progression.ts';
+import {
+  parseSavedCharacterProfile,
+  type SavedCharacterProfile,
+} from './character-storage.ts';
 
 type SessionViewMode = '2d' | '3d' | 'text';
 
@@ -27,6 +31,7 @@ type SessionWorldContext = {
 };
 
 export type SavedSession = {
+  characterProfile?: SavedCharacterProfile;
   player: {
     x: number;
     y: number;
@@ -49,10 +54,13 @@ export type SavedSession = {
   compassHeadingAngle?: number | null;
   cameraPitch?: number;
   playerLevel?: number;
+  playerProfession?: string;
+  completedQuestIds?: string[];
   playerPlacedPois?: PlayerPlacedPoiLike[];
 };
 
 export type SessionSnapshot = {
+  characterProfile?: SavedCharacterProfile;
   player: {
     x: number;
     y: number;
@@ -75,6 +83,8 @@ export type SessionSnapshot = {
   compassHeadingAngle: number | null;
   cameraPitch: number;
   playerLevel: number;
+  playerProfession?: string;
+  completedQuestIds: string[];
   playerPlacedPois: PlayerPlacedPoiLike[];
 };
 
@@ -104,6 +114,12 @@ export function parseSavedSession(raw: string | null): SavedSession | null {
       parsed.viewMode !== '2d' &&
       parsed.viewMode !== '3d' &&
       parsed.viewMode !== 'text'
+    ) {
+      return null;
+    }
+    if (
+      typeof parsed?.characterProfile !== 'undefined' &&
+      parseSavedCharacterProfile(JSON.stringify(parsed.characterProfile)) === null
     ) {
       return null;
     }
@@ -211,10 +227,28 @@ export function parseSavedSession(raw: string | null): SavedSession | null {
       return null;
     }
     if (
+      typeof parsed?.playerProfession !== 'undefined' &&
+      typeof parsed.playerProfession !== 'string'
+    ) {
+      return null;
+    }
+    if (
+      typeof parsed?.completedQuestIds !== 'undefined' &&
+      (!Array.isArray(parsed.completedQuestIds) ||
+        parsed.completedQuestIds.some((value: unknown) => typeof value !== 'string'))
+    ) {
+      return null;
+    }
+    if (
       typeof parsed?.playerPlacedPois !== 'undefined' &&
       parsePlayerPlacedPois(parsed.playerPlacedPois) === null
     ) {
       return null;
+    }
+    if (typeof parsed?.characterProfile !== 'undefined') {
+      parsed.characterProfile = parseSavedCharacterProfile(
+        JSON.stringify(parsed.characterProfile)
+      );
     }
     if (typeof parsed?.playerPlacedPois !== 'undefined') {
       parsed.playerPlacedPois = parsePlayerPlacedPois(parsed.playerPlacedPois);

@@ -37,6 +37,12 @@ import {
 import { createCelestialPreviewRenderer } from './celestial-preview.ts';
 import { createSolarSystemPreviewRenderer } from './solar-system-preview.ts';
 import {
+  createLocalCharacterStorage,
+  serializeCharacterProfile,
+  type SavedCharacterProfile,
+  type CharacterProfileSnapshot,
+} from './character-storage.ts';
+import {
   parseSavedSession,
   serializeSessionSnapshot,
 } from './session-state.ts';
@@ -170,7 +176,8 @@ type PerformanceWithMemory = Performance & {
   };
 };
 
-const STORAGE_KEY = 'bworlds:session';
+const SESSION_STORAGE_KEY = 'bworlds:session';
+const CHARACTER_STORAGE_KEY = 'bworlds:character';
 const DEFAULT_WORLD_SEED = 'bworlds-alpha';
 const builtinPackCatalog = createBuiltinContentPackCatalog();
 const builtinPackManifests = builtinPackCatalog.list();
@@ -668,20 +675,37 @@ const inspectorPanels = {
   debug: document.querySelector<HTMLElement>('#panel-debug'),
 };
 let lastSavedSnapshot = '';
+let lastSavedCharacterSnapshot = '';
+const characterStorage = createLocalCharacterStorage(
+  window.localStorage,
+  CHARACTER_STORAGE_KEY
+);
 
 const savedSession = loadSession();
-let currentWorldSeed = normalizeWorldSeed(savedSession?.worldSeed, DEFAULT_WORLD_SEED);
-let activePackIds = normalizeSelectedPackIds(savedSession?.packIds);
+const savedCharacterProfile = loadCharacterProfile(savedSession);
+let currentWorldSeed = normalizeWorldSeed(
+  savedCharacterProfile?.worldSeed ?? savedSession?.worldSeed,
+  DEFAULT_WORLD_SEED
+);
+let activePackIds = normalizeSelectedPackIds(
+  savedCharacterProfile?.packIds ?? savedSession?.packIds
+);
 let runtime = createWorldRuntime({
   seed: currentWorldSeed,
   packIds: activePackIds,
-  player: savedSession?.player,
-  stack: savedSession?.stack,
+  player: savedCharacterProfile?.player ?? savedSession?.player,
+  stack: savedCharacterProfile?.stack ?? savedSession?.stack,
   viewMode: getNextViewMode(savedSession?.viewMode),
 });
 let { contentPacks: activePacks, generator, registry, state } = runtime;
-state.playerLevel = normalizePlayerLevel(savedSession?.playerLevel);
-syncPlayerPlacedPoisIntoState(savedSession?.playerPlacedPois ?? []);
+state.playerLevel = normalizePlayerLevel(
+  savedCharacterProfile?.playerLevel ?? savedSession?.playerLevel
+);
+state.playerProfession = savedCharacterProfile?.playerProfession;
+state.completedQuestIds = [...(savedCharacterProfile?.completedQuestIds ?? [])];
+syncPlayerPlacedPoisIntoState(
+  savedCharacterProfile?.playerPlacedPois ?? savedSession?.playerPlacedPois ?? []
+);
 const timeState = {
   offsetMs: savedSession?.timeOffsetMs ?? 0,
   frozen: savedSession?.timeFrozen ?? false,
@@ -1347,7 +1371,12 @@ function applyWorldSeed(seed: string): void {
 }
 
 function loadSavedWorldSeed(): void {
-  const parsed = parseSavedSession(window.localStorage.getItem(STORAGE_KEY));
+  const profile = characterStorage.loadProfile();
+  if (profile) {
+    applyWorldSeed(profile.worldSeed ?? DEFAULT_WORLD_SEED);
+    return;
+  }
+  const parsed = parseSavedSession(window.localStorage.getItem(SESSION_STORAGE_KEY));
   applyWorldSeed(parsed?.worldSeed ?? DEFAULT_WORLD_SEED);
 }
 
@@ -2958,7 +2987,14 @@ requestRender();
 
 function saveSession(): void {
   try {
+    const characterProfile = buildCharacterProfileSnapshot();
+    const serializedCharacterProfile = serializeCharacterProfile(characterProfile);
+    if (serializedCharacterProfile !== lastSavedCharacterSnapshot) {
+      characterStorage.saveProfile(characterProfile);
+      lastSavedCharacterSnapshot = serializedCharacterProfile;
+    }
     const snapshot = serializeSessionSnapshot({
+      characterProfile,
       player: {
         x: state.player.x,
         y: state.player.y,
@@ -2981,10 +3017,12 @@ function saveSession(): void {
       cameraPitch: mouseLookState.pitch,
       worldSeed: currentWorldSeed,
       playerLevel: normalizePlayerLevel(state.playerLevel),
+      playerProfession: state.playerProfession,
+      completedQuestIds: [...(state.completedQuestIds ?? [])],
       playerPlacedPois: getSavedPlayerPlacedPois(),
     });
     if (snapshot === lastSavedSnapshot) return;
-    window.localStorage.setItem(STORAGE_KEY, snapshot);
+    window.localStorage.setItem(SESSION_STORAGE_KEY, snapshot);
     lastSavedSnapshot = snapshot;
   } catch {
     // Ignore storage write failures so play continues normally.
@@ -2992,11 +3030,69 @@ function saveSession(): void {
 }
 
 function loadSession(): ReturnType<typeof parseSavedSession> {
-  const raw = window.localStorage.getItem(STORAGE_KEY);
+  const raw = window.localStorage.getItem(SESSION_STORAGE_KEY);
   const parsed = parseSavedSession(raw);
   if (!parsed) {
     return null;
   }
   lastSavedSnapshot = raw ?? '';
   return parsed;
+}
+
+function buildCharacterProfileSnapshot(): CharacterProfileSnapshot {
+  return {
+    player: {
+      x: state.player.x,
+      y: state.player.y,
+      facing: state.player.facing,
+    },
+    packIds: activePackIds,
+    stack: state.stack,
+    worldSeed: currentWorldSeed,
+    playerLevel: normalizePlayerLevel(state.playerLevel),
+    playerProfession: state.playerProfession,
+    completedQuestIds: [...(state.completedQuestIds ?? [])],
+    playerPlacedPois: getSavedPlayerPlacedPois(),
+  };
+}
+
+function getLegacyCharacterProfile(
+  session: ReturnType<typeof parseSavedSession>
+): SavedCharacterProfile | null {
+  if (!session) {
+    return null;
+  }
+  return {
+    player: session.player,
+    packIds: session.packIds,
+    stack: session.stack,
+    worldSeed: session.worldSeed,
+    playerLevel: session.playerLevel,
+    playerProfession: session.playerProfession,
+    completedQuestIds: session.completedQuestIds,
+    playerPlacedPois: session.playerPlacedPois,
+  };
+}
+
+function loadCharacterProfile(
+  session: ReturnType<typeof parseSavedSession>
+): SavedCharacterProfile | null {
+  const profile =
+    characterStorage.loadProfile() ??
+    session?.characterProfile ??
+    getLegacyCharacterProfile(session);
+  if (!profile) {
+    return null;
+  }
+  lastSavedCharacterSnapshot = serializeCharacterProfile({
+    player: profile.player,
+    packIds: profile.packIds ?? [],
+    stack: profile.stack,
+    worldSeed: profile.worldSeed ?? DEFAULT_WORLD_SEED,
+    playerLevel: normalizePlayerLevel(profile.playerLevel),
+    playerProfession: profile.playerProfession,
+    completedQuestIds: [...(profile.completedQuestIds ?? [])],
+    playerPlacedPois: profile.playerPlacedPois ?? [],
+  });
+  return profile;
 }

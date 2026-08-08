@@ -6,6 +6,28 @@ import { parseSavedSession, serializeSessionSnapshot } from './session-state.ts'
 describe('session state', () => {
   it('round-trips frozen time, active tab, and compass heading state', () => {
     const raw = serializeSessionSnapshot({
+      characterProfile: {
+        player: {
+          x: 12.5,
+          y: -4.25,
+          facing: Math.PI / 3,
+        },
+        packIds: ['default-content-pack'],
+        stack: [{ id: 'overworld', depth: 0 }],
+        worldSeed: 'spec-seed',
+        playerLevel: 4,
+        playerProfession: 'guard',
+        completedQuestIds: ['tower:1'],
+        playerPlacedPois: [
+          {
+            x: 4,
+            y: 5,
+            kind: 'town',
+            note: 'A newly founded settlement takes shape here.',
+            poi: { type: 'town', name: 'Spec Town' },
+          },
+        ],
+      },
       player: {
         x: 12.5,
         y: -4.25,
@@ -28,6 +50,7 @@ describe('session state', () => {
       compassHeadingAngle: -Math.PI / 2,
       cameraPitch: -0.22,
       playerLevel: 4,
+      completedQuestIds: ['tower:1'],
       playerPlacedPois: [
         {
           x: 4,
@@ -41,6 +64,10 @@ describe('session state', () => {
 
     expect(parseSavedSession(raw)).toEqual(
       expect.objectContaining({
+        characterProfile: expect.objectContaining({
+          playerProfession: 'guard',
+          completedQuestIds: ['tower:1'],
+        }),
         timeOffsetMs: 42000,
         worldSeed: 'spec-seed',
         timekeeperDisplayMode: 'graphical',
@@ -214,10 +241,59 @@ describe('session state', () => {
         JSON.stringify({
           player: { x: 0, y: 0, facing: 0 },
           stack: [{ id: 'overworld', depth: 0 }],
+          playerProfession: 42,
+        })
+      )
+    ).toBeNull();
+
+    expect(
+      parseSavedSession(
+        JSON.stringify({
+          player: { x: 0, y: 0, facing: 0 },
+          stack: [{ id: 'overworld', depth: 0 }],
+          completedQuestIds: ['tower:1', 7],
+        })
+      )
+    ).toBeNull();
+
+    expect(
+      parseSavedSession(
+        JSON.stringify({
+          player: { x: 0, y: 0, facing: 0 },
+          stack: [{ id: 'overworld', depth: 0 }],
           playerPlacedPois: [{ x: 1 }],
         })
       )
     ).toBeNull();
+  });
+
+  it('accepts nested character profiles for character-storage migration', () => {
+    expect(
+      parseSavedSession(
+        JSON.stringify({
+          player: { x: 0, y: 0, facing: 0 },
+          stack: [{ id: 'overworld', depth: 0 }],
+          characterProfile: {
+            player: { x: 1, y: 2, facing: 0.5 },
+            stack: [{ id: 'overworld', depth: 0 }],
+            worldSeed: 'migrated-seed',
+            playerLevel: 0,
+            playerProfession: 'courier',
+            completedQuestIds: ['quest:one'],
+            playerPlacedPois: [],
+          },
+        })
+      )
+    ).toEqual(
+      expect.objectContaining({
+        characterProfile: expect.objectContaining({
+          worldSeed: 'migrated-seed',
+          playerLevel: DEFAULT_PLAYER_LEVEL,
+          playerProfession: 'courier',
+          completedQuestIds: ['quest:one'],
+        }),
+      })
+    );
   });
 
   it('restores the same season and moon phase from the saved world time offset', () => {
@@ -245,6 +321,7 @@ describe('session state', () => {
       compassHeadingAngle: null,
       cameraPitch: -0.08,
       playerLevel: 3,
+      completedQuestIds: [],
       playerPlacedPois: [],
     });
 
