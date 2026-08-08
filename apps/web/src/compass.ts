@@ -38,6 +38,29 @@ export function getCompassHeadingLabelState(
   };
 }
 
+export function getCompassHeadingMarkerState(
+  headingAngle: number,
+  bezelRadius: number
+) {
+  const arcSpan = 0.24;
+  const tipRadius = bezelRadius + 8;
+  const baseRadius = bezelRadius - 5;
+  return {
+    arcStartAngle: headingAngle - arcSpan,
+    arcEndAngle: headingAngle + arcSpan,
+    tipX: Math.cos(headingAngle) * tipRadius,
+    tipY: Math.sin(headingAngle) * tipRadius,
+    leftX: Math.cos(headingAngle + Math.PI / 2) * 10 + Math.cos(headingAngle) * baseRadius,
+    leftY: Math.sin(headingAngle + Math.PI / 2) * 10 + Math.sin(headingAngle) * baseRadius,
+    rightX:
+      Math.cos(headingAngle - Math.PI / 2) * 10 +
+      Math.cos(headingAngle) * baseRadius,
+    rightY:
+      Math.sin(headingAngle - Math.PI / 2) * 10 +
+      Math.sin(headingAngle) * baseRadius,
+  };
+}
+
 export function shouldToggleCompassHeading(
   currentHeadingAngle: number | null,
   nextHeadingAngle: number,
@@ -226,21 +249,25 @@ export function drawCompassDial(
 
   if (typeof headingAngle === 'number') {
     const headingLabel = getCompassHeadingLabelState(headingAngle, bezelRadius);
-    context.save();
-    context.rotate(getCompassBezelRotation(headingAngle));
+    const headingMarker = getCompassHeadingMarkerState(headingAngle, bezelRadius);
     context.strokeStyle = 'rgba(85, 214, 190, 0.38)';
     context.lineWidth = 5;
     context.beginPath();
-    context.arc(0, 0, bezelRadius, -Math.PI / 2 - 0.24, -Math.PI / 2 + 0.24);
+    context.arc(
+      0,
+      0,
+      bezelRadius,
+      headingMarker.arcStartAngle,
+      headingMarker.arcEndAngle
+    );
     context.stroke();
     context.fillStyle = palette.bezelMarker;
     context.beginPath();
-    context.moveTo(0, -bezelRadius - 8);
-    context.lineTo(10, -bezelRadius + 5);
-    context.lineTo(-10, -bezelRadius + 5);
+    context.moveTo(headingMarker.tipX, headingMarker.tipY);
+    context.lineTo(headingMarker.leftX, headingMarker.leftY);
+    context.lineTo(headingMarker.rightX, headingMarker.rightY);
     context.closePath();
     context.fill();
-    context.restore();
 
     context.fillStyle = 'rgba(8, 16, 25, 0.92)';
     context.beginPath();

@@ -8,6 +8,7 @@ import {
   getCompassDialInteractionMode,
   getCompassHeadingDegrees,
   getCompassHeadingLabelState,
+  getCompassHeadingMarkerState,
   getCompassNeedleRotation,
   getCompassPalette,
   getCompassWobbleBoost,
@@ -87,6 +88,18 @@ describe('compass helpers', () => {
     expect(east.degrees).toBe(90);
     expect(east.x).toBeGreaterThan(100);
     expect(Math.abs(east.y)).toBeLessThan(0.001);
+  });
+
+  it('anchors the bezel highlight directly to the selected heading angle', () => {
+    const north = getCompassHeadingMarkerState(-Math.PI / 2, 80);
+    const east = getCompassHeadingMarkerState(0, 80);
+
+    expect(north.tipX).toBeCloseTo(0, 6);
+    expect(north.tipY).toBeLessThan(-87);
+    expect(north.arcStartAngle).toBeCloseTo(-Math.PI / 2 - 0.24, 6);
+    expect(east.tipX).toBeGreaterThan(87);
+    expect(Math.abs(east.tipY)).toBeLessThan(0.001);
+    expect(east.arcEndAngle).toBeCloseTo(0.24, 6);
   });
 
   it('can toggle the heading bug off when clicking the same bezel again', () => {
