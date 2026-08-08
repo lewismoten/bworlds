@@ -11,6 +11,7 @@ import {
   DEFAULT_YEAR_LENGTH_DAYS,
   formatCelestialDate,
   generateConstellations,
+  generatePoiName,
   getCelestialEventsForDay,
   getCometOrbitProgress,
   getDaylightCycleState,
@@ -203,6 +204,16 @@ describe('core utilities', () => {
       week: 'Full Moon',
       label: 'Dawn Crown / Full Moon',
     });
+  });
+
+  it('generates deterministic quarry point-of-interest names', () => {
+    const left = generatePoiName('quarry-spec', 'quarry', 18, -12);
+    const right = generatePoiName('quarry-spec', 'quarry', 18, -12);
+
+    expect(left).toBe(right);
+    expect(left).toMatch(
+      /\b(Quarry|Cut|Excavation|Pit|Works|Stone)\b/
+    );
   });
 
   it('exposes periodic planets, meteor showers, and comets', () => {

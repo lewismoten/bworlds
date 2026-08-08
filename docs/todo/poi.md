@@ -6,8 +6,8 @@
 - [X] towns, dungeons, other POI should emit light as the sun goes down
 - [X] When walking into a town, dungeon, or other point of interest, it can take you to separate instance of that POI.
 - [X] When exiting a point of interest, you should appear at the entrance of the POI, facing away from the entrance.
-- [ ] Add a quarry as a POI
-- [ ] Add a light house POI that appears within 1-2 tiles of ocean, and make it have a beam that lights up at night that can be seen from afar
+- [X] Add a quarry as a POI
+- [ ] Add a light house POI that appears within 1-2 tiles of ocean, neighboring land, and make it have a beam that lights up at night that can be seen from afar
 - [ ] Add docks at POI, and prevent bridges from becomming docks. All bridges should go strait in one direction to the other side of a river or ocean.
 - [ ] A bridge should not run along the side of land in parallel for long lengths (5+ tiles) within 2 tiles.
 - [ ] All POI should have a procdurally generated name.

@@ -174,4 +174,62 @@ describe('runtime overworld anchors', () => {
       expect(forestLikeCount).toBeGreaterThanOrEqual(Math.ceil(sampleCount * 0.68));
     });
   });
+
+  it('places quarry anchors on dry rocky foothills near mountain terrain', () => {
+    const sampleTerrainSignals = (x: number, y: number): OverworldSignals => {
+      if (Math.abs(x) <= 1 && Math.abs(y) <= 1) {
+        return {
+          continent: 0.68,
+          elevation: 0.84,
+          moisture: 0.32,
+          riverSignal: 0.16,
+          roadSignal: 0.28,
+        };
+      }
+      return {
+        continent: 0.68,
+        elevation: 0.58,
+        moisture: 0.34,
+        riverSignal: 0.16,
+        roadSignal: 0.28,
+      };
+    };
+    let anchors: OverworldAnchorSet = {
+      townAnchors: [],
+      bridgeAnchors: [],
+      poiAnchors: [],
+    };
+
+    for (let seedIndex = 0; seedIndex < 12; seedIndex += 1) {
+      anchors =
+        (plugin.resolveOverworldAnchors?.(
+          createAnchorPayload({
+            seed: `quarry-rock-spec:${seedIndex}`,
+            x: 0,
+            y: 0,
+            sampleTerrainSignals,
+          })
+        ) as OverworldAnchorSet) ?? anchors;
+      if ((anchors.poiAnchors ?? []).some((anchor) => anchor.type === 'quarry')) {
+        break;
+      }
+    }
+
+    const quarries = (anchors.poiAnchors ?? []).filter(
+      (anchor) => anchor.type === 'quarry'
+    );
+    expect(quarries.length).toBeGreaterThan(0);
+    quarries.forEach((anchor) => {
+      expect(sampleTerrainSignals(anchor.x, anchor.y).moisture).toBeLessThan(0.58);
+      let foundMountain = false;
+      for (let sampleY = anchor.y - 2; sampleY <= anchor.y + 2; sampleY += 1) {
+        for (let sampleX = anchor.x - 2; sampleX <= anchor.x + 2; sampleX += 1) {
+          if (sampleTerrainSignals(sampleX, sampleY).elevation > 0.72) {
+            foundMountain = true;
+          }
+        }
+      }
+      expect(foundMountain).toBe(true);
+    });
+  });
 });

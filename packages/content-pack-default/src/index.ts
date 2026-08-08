@@ -1,6 +1,7 @@
 import { createBuildingMapPlugin } from '@bworlds/map-building';
 import { createDepthMapPlugin } from '@bworlds/map-depth';
 import { createOverworldCompositionPlugin } from '@bworlds/map-overworld';
+import { createQuarryMapPlugin } from '@bworlds/map-quarry';
 import { createTownMapPlugin } from '@bworlds/map-town';
 import type {
   Kind,
@@ -32,6 +33,7 @@ import { createForestTilePlugin } from '@bworlds/tile-forest';
 import { createInteriorTilePlugin } from '@bworlds/tile-interior';
 import { createMountainTilePlugin } from '@bworlds/tile-mountain';
 import { createPlainsTilePlugin } from '@bworlds/tile-plains';
+import { createQuarryTilePlugin } from '@bworlds/tile-quarry';
 import { createRouteTilePlugin } from '@bworlds/tile-route';
 import { createSignTilePlugin } from '@bworlds/tile-sign';
 import { createTownTilePlugin } from '@bworlds/tile-town';
@@ -54,6 +56,10 @@ export function createDefaultMapPlugins(): RuntimePlugin[] {
     {
       create: createDepthMapPlugin,
       order: { priority: 30 },
+    },
+    {
+      create: createQuarryMapPlugin,
+      order: { priority: 35 },
     },
     {
       create: createOverworldCompositionPlugin,
@@ -126,6 +132,10 @@ export function createDefaultTilePlugins(): RuntimePlugin[] {
     {
       create: createCaveTilePlugin,
       order: { priority: 40 },
+    },
+    {
+      create: createQuarryTilePlugin,
+      order: { priority: 45 },
     },
     {
       create: createDungeonTilePlugin,

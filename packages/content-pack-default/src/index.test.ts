@@ -35,6 +35,11 @@ describe('default content pack tile definitions', () => {
         name: 'Town',
       })
     );
+    expect(getDefaultTileDefinition('quarry')).toEqual(
+      expect.objectContaining({
+        name: 'Quarry',
+      })
+    );
     expect(getDefaultTileDefinition('missing-kind')).toEqual(
       expect.objectContaining({
         name: 'Plains',

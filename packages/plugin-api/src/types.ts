@@ -1,6 +1,11 @@
 export type WaterTileKind = 'ocean' | 'river';
 export type CrossingTileKind = 'bridge';
-export type RouteTerminalTileKind = 'sign' | 'town' | 'cave' | 'dungeon';
+export type RouteTerminalTileKind =
+  | 'sign'
+  | 'town'
+  | 'cave'
+  | 'dungeon'
+  | 'quarry';
 export type KnownTileKind =
   | 'unknown'
   | 'plains'
@@ -13,6 +18,7 @@ export type KnownTileKind =
   | 'door'
   | 'road'
   | 'ruins'
+  | 'quarry'
   | WaterTileKind
   | CrossingTileKind
   | RouteTerminalTileKind;

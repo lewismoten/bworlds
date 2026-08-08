@@ -327,7 +327,9 @@ export interface CelestialRingEntryLike {
   visualAzimuth: number;
 }
 
-export type PoiNameType = ('town' | 'cave' | 'dungeon' | 'ruins') | (string & {});
+export type PoiNameType =
+  | ('town' | 'cave' | 'dungeon' | 'ruins' | 'quarry')
+  | (string & {});
 type CardinalDirection = 'N' | 'S' | 'E' | 'W';
 type CoreWorldContextType =
   | 'overworld'
@@ -356,6 +358,7 @@ type CoreWorldTileKind =
   | 'town'
   | 'cave'
   | 'dungeon'
+  | 'quarry'
   | 'shop'
   | 'stairsUp'
   | 'stairsDown'
@@ -1575,6 +1578,11 @@ export function generatePoiName(
 
   if (type === 'ruins') {
     const nouns = ['Ruins', 'Forum', 'Temple', 'Sanctum', 'Court', 'Stones'];
+    return `${prefix} ${pickFrom(nouns, hash2D(`${stem}:noun`, x, y))}`;
+  }
+
+  if (type === 'quarry') {
+    const nouns = ['Quarry', 'Cut', 'Excavation', 'Pit', 'Works', 'Stone'];
     return `${prefix} ${pickFrom(nouns, hash2D(`${stem}:noun`, x, y))}`;
   }
 

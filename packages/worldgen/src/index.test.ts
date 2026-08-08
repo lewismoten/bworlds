@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_DAY_LENGTH_MS, normalizeAngle } from '@bworlds/core';
+import { createOverworldTerrainSignalSampler } from '@bworlds/overworld-support';
 import { getActivePluginRegistry } from '@bworlds/plugin-api';
 import {
   createBuiltinContentPackCatalog,
@@ -140,6 +141,7 @@ describe('world generator', () => {
       'tile-ruins'
     );
     expect(registry.getTilePlugin('town')?.kind).toBe('town');
+    expect(registry.getTilePlugin('quarry')?.kind).toBe('quarry');
   });
 
   it('keeps the default celestial day length when the frontier overlay is enabled', () => {
@@ -283,7 +285,7 @@ describe('world generator', () => {
         }
       }
     }
-    expect(found?.poi?.type).toMatch(/town|dungeon|cave/);
+    expect(found?.poi?.type).toMatch(/town|dungeon|cave|quarry/);
   });
 
   it('enters poi instances and exits back to the overworld facing away from the entrance', () => {
@@ -456,6 +458,60 @@ describe('world generator', () => {
         depth: 2,
       },
     });
+  });
+
+  it('creates quarry maps through the registered map plugin path', () => {
+    const generator = createGenerator();
+    const quarryMap = generator.getMap({
+      id: 'quarry:5:4:1',
+      label: 'Test Quarry',
+      type: 'quarry',
+      depth: 1,
+      origin: { x: 5, y: 4 },
+    });
+
+    expect(quarryMap.getTile(0, 0).kind).toBe('quarry');
+    expect(quarryMap.getTile(0, 8).kind).toBe('door');
+    expect(quarryMap.getTile(0, 4).kind).toBe('road');
+  });
+
+  it('creates quarry points of interest somewhere near the origin', () => {
+    const registry = createDefaultPluginRegistry();
+    let quarryAnchor: { x: number; y: number } | null = null;
+    let quarrySeed = '';
+
+    for (let seedIndex = 0; seedIndex < 12 && !quarryAnchor; seedIndex += 1) {
+      quarrySeed = `quarry-worldgen-spec:${seedIndex}`;
+      const sampleTerrainSignals = createOverworldTerrainSignalSampler(quarrySeed);
+      for (let y = -320; y <= 320 && !quarryAnchor; y += 32) {
+        for (let x = -320; x <= 320; x += 32) {
+          const anchors = registry.resolveOverworldAnchors({
+            seed: quarrySeed,
+            x,
+            y,
+            sampleTerrainSignals,
+          });
+          const found = anchors.poiAnchors.find((anchor) => anchor.type === 'quarry');
+          if (found) {
+            quarryAnchor = { x: found.x, y: found.y };
+            break;
+          }
+        }
+      }
+    }
+
+    expect(quarryAnchor).not.toBeNull();
+    const generator = createWorldGenerator({
+      seed: quarrySeed,
+      plugins: registry,
+    });
+
+    const quarryTile = generator.sampleOverworld(quarryAnchor!.x, quarryAnchor!.y);
+
+    expect(quarryTile.poi?.type).toBe('quarry');
+    expect(quarryTile.poi?.name).toMatch(
+      /\b(Quarry|Cut|Excavation|Pit|Works|Stone)\b/
+    );
   });
 
   it('applies depth flavor through the registered runtime plugin path', () => {
