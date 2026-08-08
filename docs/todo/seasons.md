@@ -140,3 +140,5 @@ add a outer globe of stars in the sky that appear at night with procedurally gen
 - [x] I still do not see anything happening when i check off arora, meteor shower, or comet. I see this error: warmup.html:1 Unchecked runtime.lastError: Could not establish connection. Receiving end does not exist.
 - [x] aurora borealis should appear to be animated with different colors across the sky at random parts, and appear like ribbons, preferably as you look toward the closest north/south pole
 - [x] meteor shower is still not showing lots of meteors (or any) in the sky
+- [x] time seems to be jumping, but i can't tell if it's because of vite reloading things. Add some kind of visual notice that vite has updated, or is about to update scripts - and keep it around long enough that i have a chance to read it.
+- [x] Remove the celestial information from the hud.

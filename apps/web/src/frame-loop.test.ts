@@ -23,6 +23,7 @@ describe('frame loop helpers', () => {
 
   it('keeps frames running while time is active or easing is unfinished', () => {
     const running = getFrameLoopActivity({
+      nowMs: 1000,
       timeFrozen: false,
       keys: [],
       isJumping: false,
@@ -47,6 +48,7 @@ describe('frame loop helpers', () => {
       },
     });
     const easing = getFrameLoopActivity({
+      nowMs: 1000,
       timeFrozen: true,
       keys: [],
       isJumping: false,
@@ -71,6 +73,7 @@ describe('frame loop helpers', () => {
       },
     });
     const idle = getFrameLoopActivity({
+      nowMs: 1000,
       timeFrozen: true,
       keys: [],
       isJumping: false,
@@ -98,5 +101,36 @@ describe('frame loop helpers', () => {
     expect(shouldContinueFrameLoop(running)).toBe(true);
     expect(shouldContinueFrameLoop(easing)).toBe(true);
     expect(shouldContinueFrameLoop(idle)).toBe(false);
+  });
+
+  it('keeps frames alive while an hmr notice is still visible', () => {
+    const notice = getFrameLoopActivity({
+      nowMs: 1000,
+      timeFrozen: true,
+      keys: [],
+      isJumping: false,
+      compassVelocity: 0,
+      headingVisualAngle: null,
+      headingTargetAngle: null,
+      hmrNoticeVisibleUntilMs: 1500,
+      displayedCycle: {
+        dayProgress: 0.1,
+        yearProgress: 0.2,
+        moonMidnightOrbitProgress: 0.3,
+        sunriseProgress: 0.25,
+        sunsetProgress: 0.75,
+        daylightDuration: 0.5,
+      },
+      actualCycle: {
+        dayProgress: 0.1,
+        yearProgress: 0.2,
+        moonMidnightOrbitProgress: 0.3,
+        sunriseProgress: 0.25,
+        sunsetProgress: 0.75,
+        daylightDuration: 0.5,
+      },
+    });
+
+    expect(shouldContinueFrameLoop(notice)).toBe(true);
   });
 });

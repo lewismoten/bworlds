@@ -49,6 +49,7 @@ export function isAngleAnimating(
 }
 
 export function getFrameLoopActivity(options: {
+  nowMs?: number;
   timeFrozen: boolean;
   keys: Iterable<string>;
   isJumping: boolean;
@@ -57,6 +58,7 @@ export function getFrameLoopActivity(options: {
   headingTargetAngle: number | null;
   previewInteracting?: boolean;
   compassDragging?: boolean;
+  hmrNoticeVisibleUntilMs?: number | null;
   displayedCycle: {
     dayProgress: number;
     yearProgress: number;
@@ -110,6 +112,9 @@ export function getFrameLoopActivity(options: {
     isDialSettling: dialSettling,
     previewInteracting: options.previewInteracting ?? false,
     compassDragging: options.compassDragging ?? false,
+    hmrNoticeVisible:
+      typeof options.hmrNoticeVisibleUntilMs === 'number' &&
+      (options.nowMs ?? 0) < options.hmrNoticeVisibleUntilMs,
   };
 }
 
@@ -124,6 +129,7 @@ export function shouldContinueFrameLoop(
     activity.isHeadingSettling ||
     activity.isDialSettling ||
     activity.previewInteracting ||
-    activity.compassDragging
+    activity.compassDragging ||
+    activity.hmrNoticeVisible
   );
 }

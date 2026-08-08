@@ -53,6 +53,20 @@ import {
   shouldContinueFrameLoop,
 } from './frame-loop.ts';
 import {
+  getHmrNoticeText,
+  getHmrNoticeVisibleUntil,
+  shouldShowHmrNotice,
+} from './hmr-notice.ts';
+import {
+  buildEventSummaryMarkup,
+  buildStatusMarkup,
+  buildViewportHudMarkup,
+  getDetailLabels,
+  getEventSummarySignature,
+  getStatusSignature,
+  getViewportHudSignature,
+} from './ui-signatures.ts';
+import {
   getNextCelestialEventMode,
   getNextInspectorTab,
   getNextModelPreviewMode,
@@ -79,6 +93,12 @@ root.innerHTML = `
           towns, dungeons, caves, and buildings that generate on demand.
         </p>
         <p class="eyebrow" id="content-pack-label"></p>
+        <div
+          id="hmr-notice"
+          class="hmr-notice is-hidden"
+          aria-live="polite"
+          hidden
+        ></div>
       </div>
       <div class="controls">
         <button id="toggle-view" type="button">Switch to 3D</button>
@@ -299,6 +319,7 @@ root.innerHTML = `
 const viewport2d = document.querySelector<HTMLCanvasElement>('#viewport-2d');
 const viewport3d = document.querySelector<HTMLElement>('#viewport-3d');
 const viewportHud = document.querySelector<HTMLElement>('#viewport-hud');
+const hmrNotice = document.querySelector<HTMLElement>('#hmr-notice');
 const atlasCanvas = document.querySelector<HTMLCanvasElement>('#atlas');
 const timeWheelCanvas =
   document.querySelector<HTMLCanvasElement>('#time-wheel');
@@ -485,6 +506,15 @@ let activeModelPreviewMode = getNextModelPreviewMode(savedSession?.modelPreviewM
 const celestialEventModeState = {
   mode: getNextCelestialEventMode(savedSession?.celestialEventMode),
 };
+const uiRenderState = {
+  lastStatusSignature: '',
+  lastViewportHudSignature: '',
+  lastEventSummarySignature: '',
+};
+const hmrNoticeState = {
+  message: '',
+  visibleUntilMs: null as number | null,
+};
 
 (state as typeof state & { celestialEventMode?: string }).celestialEventMode =
   celestialEventModeState.mode;
@@ -509,45 +539,86 @@ function updateStatus(
   const facing = cardinalFromAngle(state.player.facing);
   const gridX = snapWorldCoordinate(state.player.x);
   const gridY = snapWorldCoordinate(state.player.y);
-
-  status.innerHTML = `
-    <div><dt>View</dt><dd>${state.viewMode.toUpperCase()}</dd></div>
-    <div><dt>Place</dt><dd>${context.label}</dd></div>
-    <div><dt>Tile</dt><dd>${definition?.name ?? tile.kind}</dd></div>
-    <div><dt>Facing</dt><dd>${facing}</dd></div>
-    <div><dt>World</dt><dd>${state.player.x.toFixed(2)}, ${state.player.y.toFixed(2)}</dd></div>
-    <div><dt>Grid</dt><dd>${gridX}, ${gridY}</dd></div>
-    <div><dt>GPS</dt><dd>${gps.latitude.toFixed(4)}, ${gps.longitude.toFixed(4)}</dd></div>
-    <div><dt>Time</dt><dd>${formatCycleTime(cycle.dayProgress)}</dd></div>
-    <div><dt>Date</dt><dd>${getCelestialDateLabel(cycle)}</dd></div>
-    <div><dt>Cycle</dt><dd>${timeState.frozen ? 'Frozen' : 'Running'}</dd></div>
-    <div><dt>Season</dt><dd>${cycle.activeConstellation.name}</dd></div>
-    <div><dt>Moon</dt><dd>${cycle.moonPhaseName}</dd></div>
-    <div><dt>Event Mode</dt><dd>${formatCelestialEventModeLabel(celestialEventModeState.mode)}</dd></div>
-    <div><dt>Events</dt><dd>${describeActiveCelestialEvents(cycle)}</dd></div>
-    <div><dt>Sunrise</dt><dd>${cardinalFromAngle(cycle.sunriseAzimuth)}</dd></div>
-    <div><dt>Depth</dt><dd>${context.depth}</dd></div>
-    <div><dt>Hint</dt><dd>${tile.note ?? 'Explore the frontier.'}</dd></div>
-  `;
+  const timeLabel = formatCycleTime(cycle.dayProgress);
+  const dateLabel = getCelestialDateLabel(cycle);
+  const cycleLabel = timeState.frozen ? 'Frozen' : 'Running';
+  const seasonLabel = cycle.activeConstellation.name;
+  const moonLabel = cycle.moonPhaseName;
+  const eventModeLabel = formatCelestialEventModeLabel(celestialEventModeState.mode);
+  const eventsLabel = describeActiveCelestialEvents(cycle);
+  const sunriseLabel = cardinalFromAngle(cycle.sunriseAzimuth);
+  const tileLabel = definition?.name ?? tile.kind;
+  const hint = tile.note ?? 'Explore the frontier.';
+  const statusSignature = getStatusSignature({
+    viewMode: state.viewMode,
+    contextLabel: context.label,
+    tileLabel,
+    facing,
+    playerX: state.player.x,
+    playerY: state.player.y,
+    gridX,
+    gridY,
+    latitude: gps.latitude,
+    longitude: gps.longitude,
+    timeLabel,
+    dateLabel,
+    cycleLabel,
+    seasonLabel,
+    moonLabel,
+    eventModeLabel,
+    eventsLabel,
+    sunriseLabel,
+    depth: context.depth,
+    hint,
+  });
+  if (statusSignature !== uiRenderState.lastStatusSignature) {
+    status.innerHTML = buildStatusMarkup({
+      viewMode: state.viewMode,
+      contextLabel: context.label,
+      tileLabel,
+      facing,
+      playerX: state.player.x,
+      playerY: state.player.y,
+      gridX,
+      gridY,
+      latitude: gps.latitude,
+      longitude: gps.longitude,
+      timeLabel,
+      dateLabel,
+      cycleLabel,
+      seasonLabel,
+      moonLabel,
+      eventModeLabel,
+      eventsLabel,
+      sunriseLabel,
+      depth: context.depth,
+      hint,
+    });
+    uiRenderState.lastStatusSignature = statusSignature;
+  }
 
   if (viewportHud) {
     const showViewportCompass = isInspectorSectionVisible(
       activeInspectorTab,
       'viewport-compass'
     );
-    viewportHud.innerHTML = `
-      <div class="viewport-hud-label">${formatCycleTime(cycle.dayProgress)}</div>
-      <div class="viewport-hud-date">${getCelestialDateLabel(cycle)}</div>
-      <div class="viewport-hud-meta">${cycle.activeConstellation.name} • ${cycle.moonPhaseName}</div>
-      <div class="viewport-hud-meta">Facing ${facing}</div>
-      <div class="viewport-hud-meta">${formatCompassHeading(compassHeadingState.angle)}</div>
-      <div class="viewport-hud-meta">${describeActiveCelestialEvents(cycle)}</div>
-      ${
-        showViewportCompass
-          ? `<div class="viewport-hud-compass">${renderCompass(facing)}</div>`
-          : ''
-      }
-    `;
+    const headingLabel = formatCompassHeading(compassHeadingState.angle);
+    const viewportHudSignature = getViewportHudSignature({
+      timeLabel,
+      facing,
+      headingLabel,
+      showCompass: showViewportCompass,
+    });
+    if (viewportHudSignature !== uiRenderState.lastViewportHudSignature) {
+      viewportHud.innerHTML = buildViewportHudMarkup({
+        timeLabel,
+        facing,
+        headingLabel,
+        showCompass: showViewportCompass,
+        compassMarkup: renderCompass(facing),
+      });
+      uiRenderState.lastViewportHudSignature = viewportHudSignature;
+    }
   }
 }
 
@@ -1148,6 +1219,7 @@ function updateMovement(deltaMs) {
 }
 
 function render() {
+  const nowMs = performance.now();
   const timeMs = getCurrentWorldTimeMs();
   const environment = getCurrentEnvironment(timeMs);
   const actualCycle = applyCelestialEnvironmentOverrides(
@@ -1180,19 +1252,23 @@ function render() {
   solarSystemPreview.render(displayCycle);
   if (eventSummary) {
     const eventDetails = getActiveCelestialEventDetails(displayCycle);
-    eventSummary.innerHTML = `
-      <div class="event-summary-label">Mode: ${formatCelestialEventModeLabel(celestialEventModeState.mode)}</div>
-      <div class="event-summary-active">${describeActiveCelestialEvents(displayCycle)}</div>
-      <div class="event-summary-chips">
-        ${eventDetails
-          .map(
-            (detail) =>
-              `<span class="event-summary-chip event-summary-chip-${detail.kind}">${detail.label}</span>`
-          )
-          .join('')}
-      </div>
-    `;
+    const modeLabel = formatCelestialEventModeLabel(celestialEventModeState.mode);
+    const activeEventsLabel = describeActiveCelestialEvents(displayCycle);
+    const eventSummarySignature = getEventSummarySignature({
+      modeLabel,
+      activeEventsLabel,
+      detailLabels: getDetailLabels(eventDetails),
+    });
+    if (eventSummarySignature !== uiRenderState.lastEventSummarySignature) {
+      eventSummary.innerHTML = buildEventSummaryMarkup({
+        modeLabel,
+        activeEventsLabel,
+        details: eventDetails,
+      });
+      uiRenderState.lastEventSummarySignature = eventSummarySignature;
+    }
   }
+  syncHmrNotice(nowMs);
   drawCompassDial(
     compassDialCanvas,
     updateDisplayedCompass(state.player.facing),
@@ -1203,6 +1279,7 @@ function render() {
   );
   updateStatus(environment, displayCycle);
   return getFrameLoopActivity({
+    nowMs,
     timeFrozen: timeState.frozen,
     keys,
     isJumping: motion.isJumping,
@@ -1212,6 +1289,7 @@ function render() {
     previewInteracting:
       celestialPreview.isInteracting() || solarSystemPreview.isInteracting(),
     compassDragging: compassDialPointerState.draggingMode !== null,
+    hmrNoticeVisibleUntilMs: hmrNoticeState.visibleUntilMs,
     displayedCycle: {
       dayProgress: displayCycle.dayProgress,
       yearProgress: displayCycle.yearProgress,
@@ -1239,6 +1317,27 @@ function requestRender() {
     return;
   }
   pendingFrameHandle = requestAnimationFrame(loop);
+}
+
+function showHmrNotice(message: string, durationMs = 8000) {
+  hmrNoticeState.message = message;
+  hmrNoticeState.visibleUntilMs = getHmrNoticeVisibleUntil(performance.now(), durationMs);
+  requestRender();
+}
+
+function syncHmrNotice(nowMs: number) {
+  if (!hmrNotice) {
+    return;
+  }
+  const visible = shouldShowHmrNotice(hmrNoticeState.visibleUntilMs, nowMs);
+  hmrNotice.classList.toggle('is-hidden', !visible);
+  hmrNotice.hidden = !visible;
+  if (visible && hmrNotice.textContent !== hmrNoticeState.message) {
+    hmrNotice.textContent = hmrNoticeState.message;
+  }
+  if (!visible && hmrNotice.textContent !== '') {
+    hmrNotice.textContent = '';
+  }
 }
 
 function formatCycleTime(dayProgress: number) {
@@ -1474,6 +1573,14 @@ function loop(timestamp) {
 window.addEventListener('resize', () => {
   resizeCanvas();
   requestRender();
+});
+
+import.meta.hot?.on('vite:beforeUpdate', () => {
+  showHmrNotice(getHmrNoticeText('before-update'));
+});
+
+import.meta.hot?.on('vite:afterUpdate', () => {
+  showHmrNotice(getHmrNoticeText('after-update'));
 });
 
 window.addEventListener('keydown', (event) => {
