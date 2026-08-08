@@ -75,6 +75,8 @@ export function getDefaultQuestPlugins(): QuestTypePlugin[] {
     createDeliveryQuestPlugin(),
     createHomeNeedQuestPlugin(),
     createEscortQuestPlugin(),
+    createCraftingQuestPlugin(),
+    createTrainingQuestPlugin(),
     createFollowUpQuestPlugin(),
   ];
   questPluginCache.set(cacheKey, plugins);
@@ -231,6 +233,91 @@ function createFollowUpQuestPlugin(): QuestTypePlugin {
       type: 'investigation',
       title: 'Missing Ledger Trail',
       summary: `${context.npcName} trusts you to investigate missing ${specialty} after your earlier help.`,
+      availability: 'work',
+      sourceNpcId: context.npcId,
+      sourceNpcName: context.npcName,
+    };
+  });
+}
+
+function createCraftingQuestPlugin(): QuestTypePlugin {
+  return createQuestTypePlugin('crafting', (context) => {
+    if (
+      context.npcState !== 'working' ||
+      !(
+        context.professionFamily === 'smithy' ||
+        context.professionFamily === 'workshop'
+      ) ||
+      context.playerLevel < 2 ||
+      context.playerLevel > 18
+    ) {
+      return null;
+    }
+
+    const seasonLabel = getSeasonLabel(context.yearProgress);
+    const project =
+      context.professionFamily === 'smithy'
+        ? seasonLabel === 'Winter'
+          ? 'cold-weather fittings'
+          : 'field tool repairs'
+        : seasonLabel === 'Autumn'
+          ? 'harvest crates'
+          : 'roadside supply frames';
+    const questId = `${context.townKey}:${context.npcId}:crafting:${project.replaceAll(' ', '-')}`;
+    if (context.completedQuestIds.has(questId)) {
+      return null;
+    }
+
+    const professionHint =
+      context.playerProfession === 'smith' ||
+      context.playerProfession === 'carpenter'
+        ? ' Your trade background makes you especially useful here.'
+        : '';
+
+    return {
+      id: questId,
+      type: 'crafting',
+      title: `${seasonLabel} Workshop Order`,
+      summary: `${context.npcName} needs help gathering parts and finishing ${project}.${professionHint}`,
+      availability: 'work',
+      sourceNpcId: context.npcId,
+      sourceNpcName: context.npcName,
+    };
+  });
+}
+
+function createTrainingQuestPlugin(): QuestTypePlugin {
+  return createQuestTypePlugin('training', (context) => {
+    if (
+      context.npcState !== 'working' ||
+      !(
+        context.professionFamily === 'school' ||
+        context.professionFamily === 'town-hall' ||
+        context.professionFamily === 'smithy'
+      ) ||
+      context.playerLevel > 6
+    ) {
+      return null;
+    }
+
+    const topic =
+      context.playerProfession === 'guard'
+        ? 'route discipline'
+        : context.playerProfession === 'scholar'
+          ? 'field notes'
+          : context.professionFamily === 'smithy'
+            ? 'tool handling'
+            : 'town basics';
+    const questId = `${context.townKey}:${context.npcId}:training:${topic.replaceAll(' ', '-')}`;
+    if (context.completedQuestIds.has(questId)) {
+      return null;
+    }
+
+    return {
+      id: questId,
+      type: 'training',
+      title: 'Guided Lesson',
+      summary: `${context.npcName} offers a short practical lesson in ${topic} for newer adventurers.`,
       availability: 'work',
       sourceNpcId: context.npcId,
       sourceNpcName: context.npcName,

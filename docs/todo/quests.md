@@ -11,7 +11,7 @@ Quests may include:
 - [X] Search / investigation quest — gather clues, inspect locations, question NPCs, solve a mystery.
 - [ ] Exploration quest — discover a location, map an area, reach a landmark, or uncover hidden places.
 - [X] Collection quest — gather several items, ingredients, artifacts, or resources.
-- [ ] Crafting quest — obtain materials and build, repair, cook, or forge something.
+- [X] Crafting quest — obtain materials and build, repair, cook, or forge something.
 - [ ] Puzzle quest — solve mechanisms, riddles, codes, environmental puzzles, or logic challenges.
 - [ ] Defense quest — protect a location or NPC against waves of enemies.
 - [ ] Survival quest — endure for a period of time or reach safety under difficult conditions.
@@ -29,5 +29,5 @@ Quests may include:
 - [ ] Activation quest — turn on generators, shrines, portals, towers, switches, etc.
 - [ ] Destruction / sabotage quest — destroy an object, structure, supply line, machine, or enemy resource.
 - [ ] Construction / restoration quest — rebuild a town, repair equipment, establish an outpost, or improve a location.
-- [ ] Training / tutorial quest — teach mechanics by having the player perform them.
+- [X] Training / tutorial quest — teach mechanics by having the player perform them.
 - [ ] Tournament / challenge quest — win a fight, contest, arena, card game, race, or series of trials.

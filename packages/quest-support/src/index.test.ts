@@ -9,6 +9,8 @@ describe('quest support', () => {
       'delivery',
       'collection',
       'escort',
+      'crafting',
+      'training',
       'investigation',
     ]);
     expect(getDefaultQuestRegistry().list()).toHaveLength(plugins.length);
@@ -89,5 +91,66 @@ describe('quest support', () => {
     expect(
       followUp.some((offer) => offer.summary.includes('records and patterns'))
     ).toBe(true);
+  });
+
+  it('offers profession-aware crafting work from staffed workshops and smithies', () => {
+    const offers = getDefaultQuestRegistry().getOffers({
+      npcId: 'npc:smith',
+      npcName: 'Bram Irongate',
+      townKey: '3:7',
+      dayProgress: 0.52,
+      yearProgress: 0.78,
+      playerLevel: 5,
+      playerProfession: 'smith',
+      completedQuestIds: new Set<string>(),
+      npcState: 'working',
+      profession: 'blacksmith',
+      professionFamily: 'smithy',
+      residenceBuildingId: 'home',
+      workplaceBuildingId: 'forge',
+    });
+
+    expect(offers.some((offer) => offer.type === 'crafting')).toBe(true);
+    expect(
+      offers.some((offer) => offer.summary.includes('trade background'))
+    ).toBe(true);
+  });
+
+  it('offers guided training quests for newer players at teaching professions', () => {
+    const schoolOffers = getDefaultQuestRegistry().getOffers({
+      npcId: 'npc:tutor',
+      npcName: 'Iris Juniper',
+      townKey: '3:7',
+      dayProgress: 0.45,
+      yearProgress: 0.3,
+      playerLevel: 2,
+      playerProfession: 'scholar',
+      completedQuestIds: new Set<string>(),
+      npcState: 'working',
+      profession: 'teacher',
+      professionFamily: 'school',
+      residenceBuildingId: 'home',
+      workplaceBuildingId: 'school',
+    });
+    const overleveledOffers = getDefaultQuestRegistry().getOffers({
+      npcId: 'npc:tutor',
+      npcName: 'Iris Juniper',
+      townKey: '3:7',
+      dayProgress: 0.45,
+      yearProgress: 0.3,
+      playerLevel: 12,
+      completedQuestIds: new Set<string>(),
+      npcState: 'working',
+      profession: 'teacher',
+      professionFamily: 'school',
+      residenceBuildingId: 'home',
+      workplaceBuildingId: 'school',
+    });
+
+    expect(schoolOffers.some((offer) => offer.type === 'training')).toBe(true);
+    expect(schoolOffers.some((offer) => offer.summary.includes('field notes'))).toBe(
+      true
+    );
+    expect(overleveledOffers.some((offer) => offer.type === 'training')).toBe(false);
   });
 });
