@@ -1,4 +1,10 @@
-import { generatePoiName, hash2D, octaveNoise2D, ridgedNoise2D } from '@bworlds/core';
+import {
+  generatePoiName,
+  hash2D,
+  octaveNoise2D,
+  ridgedNoise2D,
+  type PoiNameType,
+} from '@bworlds/core';
 import type {
   ClassifyOverworldTileContext,
   OverworldAnchorLike,
@@ -125,7 +131,7 @@ export function createGeneratedNamedOverworldCellAnchorSpec<
     OverworldCellAnchorSpec<TAnchor>,
     'createAnchor'
   > & {
-    nameType: string;
+    nameType: PoiNameType;
     createAnchorExtras?(
       params: {
         seed: Seed;
@@ -165,7 +171,7 @@ export function createGeneratedPoiOverworldCellAnchorSpec<
     OverworldCellAnchorSpec<TAnchor>,
     'createAnchor'
   > & {
-    poiType: string;
+    poiType: PoiNameType;
     createAnchorExtras?(
       params: {
         seed: Seed;

@@ -23,11 +23,13 @@ import {
 } from '@bworlds/three-support';
 import type {
   ClassifyOverworldTileContext,
+  Kind,
   Create3DModelContext,
   Paint2DContext,
   SurfaceProfile3D,
   ThreeHostLike,
   ThreeMaterialLike,
+  RuntimePlugin,
   ThreeTextureLike,
   TraversalProfile3DContext,
   TraversalProfile3D,
@@ -42,6 +44,9 @@ const BRIDGE_DECK_THICKNESS = 0.08;
 const BRIDGE_RAIL_HEIGHT = 0.18;
 const ROAD_SURFACE_HEIGHT = 0.012;
 const ROAD_CORE_HEIGHT = 0.02;
+type RoadStyleType = 'footpath' | 'cobble' | 'brick';
+type BridgeTextureType = 'wood' | 'stone' | 'metal' | 'drawbridge' | 'roof' | 'roof-stone';
+type BridgeTextureLayer = 'deck' | 'rail' | 'cover' | 'pillar';
 
 const bridgeStyleCache = new Map<string, BridgeStyle>();
 const bridgeClusterCache = new Map<string, BridgeClusterInfo>();
@@ -51,11 +56,12 @@ const resolveRoadStyle = createRegionalMaterialResolver(
   ROAD_REGION_SIZE,
   ({ regionX, regionY }) => {
     const tier = Math.floor(hash2D('road-tier', regionX, regionY) * 3);
-    const styleType = ['footpath', 'cobble', 'brick'][tier];
+    const styleType = ['footpath', 'cobble', 'brick'] as const;
+    const roadStyleType = styleType[tier] ?? 'brick';
     const palette =
-      styleType === 'brick'
+      roadStyleType === 'brick'
         ? { road: '#a14d34', shoulder: '#6b5d48', accent: '#7a2f1d' }
-        : styleType === 'cobble'
+        : roadStyleType === 'cobble'
           ? { road: '#8f8578', shoulder: '#6e7a68', accent: '#5f5b56' }
           : {
               road: '#8d6a42',
@@ -74,7 +80,7 @@ const resolveRoadStyle = createRegionalMaterialResolver(
           three,
           palette.road,
           palette.accent,
-          styleType,
+          roadStyleType,
           regionX,
           regionY
         );
@@ -87,13 +93,13 @@ const resolveRoadStyle = createRegionalMaterialResolver(
         );
 
         return {
-          roadWidth: styleType === 'footpath' ? 0.24 : 0.3,
-          shoulderWidth: styleType === 'footpath' ? 0.36 : 0.42,
+          roadWidth: roadStyleType === 'footpath' ? 0.24 : 0.3,
+          shoulderWidth: roadStyleType === 'footpath' ? 0.36 : 0.42,
           roadMaterial: new three.MeshStandardMaterial({
             color: '#ffffff',
             map: roadTexture,
             roughness: 0.95,
-            metalness: styleType === 'cobble' ? 0.04 : 0.02,
+            metalness: roadStyleType === 'cobble' ? 0.04 : 0.02,
             polygonOffset: true,
             polygonOffsetFactor: -2,
             polygonOffsetUnits: -2,
@@ -115,7 +121,7 @@ const resolveRoadStyle = createRegionalMaterialResolver(
   }
 );
 
-export function createRouteTilePlugin() {
+export function createRouteTilePlugin(): RuntimePlugin {
   return createTilePlugin('tile-route', [
     {
       kind: 'road',
@@ -492,7 +498,7 @@ function getRoadConnections(
     );
 }
 
-function isRoadNetworkKind(kind: string) {
+function isRoadNetworkKind(kind: Kind) {
   return kind === 'road' || kind === 'bridge' || isRouteTerminalKind(kind);
 }
 
@@ -584,7 +590,7 @@ function createRoadTexture(
   three: ThreeHostLike,
   baseColor: string,
   accentColor: string,
-  styleType: string,
+  styleType: RoadStyleType,
   regionX: number,
   regionY: number
 ) {
@@ -755,7 +761,7 @@ function getBridgeAxis(state: WorldStateLike, tileX: number, tileY: number) {
   return null;
 }
 
-function isBridgeTravelKind(kind: string) {
+function isBridgeTravelKind(kind: Kind) {
   return kind === 'bridge' || kind === 'road' || isRouteTerminalKind(kind);
 }
 
@@ -1154,8 +1160,8 @@ function createBridgeTexture(
   three: ThreeHostLike,
   baseColor: string,
   accentColor: string,
-  type: string,
-  layer: string,
+  type: BridgeTextureType,
+  layer: BridgeTextureLayer,
   tileX: number,
   tileY: number
 ) {

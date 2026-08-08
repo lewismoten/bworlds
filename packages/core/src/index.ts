@@ -314,8 +314,39 @@ export interface CelestialRingEntryLike {
   visualAzimuth: number;
 }
 
-type PoiNameType = ('town' | 'cave' | 'dungeon' | 'ruins') | (string & {});
+export type PoiNameType = ('town' | 'cave' | 'dungeon' | 'ruins') | (string & {});
 type CardinalDirection = 'N' | 'S' | 'E' | 'W';
+type CoreWorldContextType =
+  | 'overworld'
+  | 'town'
+  | 'building'
+  | 'depth'
+  | 'cave'
+  | 'dungeon'
+  | (string & {});
+type CoreWorldTileKind =
+  | 'unknown'
+  | 'plains'
+  | 'shore'
+  | 'mountain'
+  | 'forest'
+  | 'interior'
+  | 'floor'
+  | 'wall'
+  | 'door'
+  | 'road'
+  | 'ruins'
+  | 'ocean'
+  | 'river'
+  | 'bridge'
+  | 'sign'
+  | 'town'
+  | 'cave'
+  | 'dungeon'
+  | 'shop'
+  | 'stairsUp'
+  | 'stairsDown'
+  | (string & {});
 
 type WorldPositionLike = {
   x: number;
@@ -335,13 +366,13 @@ type CoreTileDefinitionLike = {
 };
 
 type CoreWorldTileLike = {
-  kind: string;
+  kind: CoreWorldTileKind;
 };
 
 type CoreWorldContextLike = {
   id: string;
   label: string;
-  type: string;
+  type: CoreWorldContextType;
   depth: number;
   origin: WorldPositionLike;
   returnTo?: FacingPositionLike;
@@ -412,7 +443,7 @@ type CoreWorldStateLike = {
   getCurrentContext(): CoreWorldContextLike;
   getCurrentMap(): CoreWorldMapLike;
   getCurrentTile(x?: number, y?: number): CoreWorldTileLike;
-  getTileDefinition(kind: string): CoreTileDefinitionLike;
+  getTileDefinition(kind: CoreWorldTileKind): CoreTileDefinitionLike;
   canWalk(x: number, y: number): boolean;
   interact(): boolean;
   tryExit(): boolean;
@@ -1525,7 +1556,7 @@ export const DEFAULT_TILE_DEFINITION: CoreTileDefinitionLike = {
   wallHeight: 0,
 };
 
-export function getTileDefinition(kind: string) {
+export function getTileDefinition(kind: CoreWorldTileKind): CoreTileDefinitionLike {
   return {
     ...DEFAULT_TILE_DEFINITION,
     name: kind
@@ -1559,10 +1590,10 @@ export function createWorldState({
 }: {
   generator: CoreWorldGeneratorLike;
   player: FacingPositionLike & { facing: number };
-  resolveTileDefinition?: (kind: string) => CoreTileDefinitionLike;
+  resolveTileDefinition?: (kind: CoreWorldTileKind) => CoreTileDefinitionLike;
 }) {
   const getResolvedTileDefinition =
-    resolveTileDefinition ?? ((kind: string) => getTileDefinition(kind));
+    resolveTileDefinition ?? ((kind: CoreWorldTileKind) => getTileDefinition(kind));
   const stack: CoreWorldContextLike[] = [
     {
       id: 'overworld',
@@ -1590,7 +1621,7 @@ export function createWorldState({
         snapWorldCoordinate(y)
       );
     },
-    getTileDefinition(kind: string) {
+    getTileDefinition(kind: CoreWorldTileKind) {
       return getResolvedTileDefinition(kind);
     },
     canWalk(x: number, y: number) {
