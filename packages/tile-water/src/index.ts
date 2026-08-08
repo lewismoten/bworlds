@@ -356,22 +356,79 @@ function classifyRiverTile(
   const hasTurningFlow =
     strongCardinalNeighbors >= 2 ||
     (strongCardinalNeighbors >= 1 && strongDiagonalNeighbors >= 1);
+  const centerlineCandidate = isSingleTileRiverCandidate({
+    riverSignal,
+    north: neighborSignals[0],
+    east: neighborSignals[1],
+    south: neighborSignals[2],
+    west: neighborSignals[3],
+  });
 
-  if (riverSignal >= 0.82 && strongestNeighbor >= 0.68) {
+  if (riverSignal >= 0.82 && strongestNeighbor >= 0.68 && centerlineCandidate) {
     return { kind: 'river' };
   }
-  if (riverSignal >= 0.77 && (hasOpposingFlow || hasTurningFlow)) {
+  if (
+    riverSignal >= 0.77 &&
+    (hasOpposingFlow || hasTurningFlow) &&
+    centerlineCandidate
+  ) {
     return { kind: 'river' };
   }
   if (
     riverSignal >= 0.73 &&
     strongCardinalNeighbors >= 1 &&
-    neighborAverage >= 0.67
+    neighborAverage >= 0.67 &&
+    centerlineCandidate
   ) {
     return { kind: 'river' };
   }
 
   return null;
+}
+
+export function isSingleTileRiverCandidate(options: {
+  riverSignal: number;
+  north: number;
+  east: number;
+  south: number;
+  west: number;
+}): boolean {
+  const perpendicularMargin = 0.035;
+  const horizontalFlow =
+    options.east >= 0.72 || options.west >= 0.72;
+  const verticalFlow =
+    options.north >= 0.72 || options.south >= 0.72;
+
+  if (horizontalFlow && !verticalFlow) {
+    return (
+      options.riverSignal >= options.north + perpendicularMargin &&
+      options.riverSignal >= options.south + perpendicularMargin
+    );
+  }
+
+  if (verticalFlow && !horizontalFlow) {
+    return (
+      options.riverSignal >= options.east + perpendicularMargin &&
+      options.riverSignal >= options.west + perpendicularMargin
+    );
+  }
+
+  if (horizontalFlow && verticalFlow) {
+    const verticalStrength = Math.max(options.north, options.south);
+    const horizontalStrength = Math.max(options.east, options.west);
+    if (verticalStrength > horizontalStrength) {
+      return (
+        options.riverSignal >= options.east + perpendicularMargin &&
+        options.riverSignal >= options.west + perpendicularMargin
+      );
+    }
+    return (
+      options.riverSignal >= options.north + perpendicularMargin &&
+      options.riverSignal >= options.south + perpendicularMargin
+    );
+  }
+
+  return options.riverSignal >= 0.78;
 }
 
 function createRiverGroup(
