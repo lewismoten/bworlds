@@ -78,9 +78,17 @@ export type DebugSnapshotExport = {
   summary: {
     currentFps: number;
     averageFps: number;
+    minimumFps: number;
+    averageFrameMs: number;
+    p50FrameMs: number;
+    p95FrameMs: number;
+    p99FrameMs: number;
     worstRecentFrameMs: number;
     targetFrameMs: number;
     performanceTier: string;
+    framesOver16_7Ms: number;
+    framesOver33_3Ms: number;
+    framesOver50Ms: number;
     cpuFrameMs: number;
   };
   rendering: {
@@ -137,6 +145,14 @@ export function buildDebugSnapshotExport(
 ): DebugSnapshotExport {
   const latestHistoryTime =
     options.history[options.history.length - 1]?.nowMs ?? options.snapshot.frameMs;
+  const frameSamples =
+    options.history.length > 0
+      ? options.history.map((sample) => sample.frameMs)
+      : [options.snapshot.frameMs];
+  const fpsSamples =
+    options.history.length > 0
+      ? options.history.map((sample) => sample.fps)
+      : [options.snapshot.fps];
   return {
     metadata: {
       timestamp: options.timestamp.toISOString(),
@@ -155,9 +171,17 @@ export function buildDebugSnapshotExport(
     summary: {
       currentFps: options.snapshot.fps,
       averageFps: options.snapshot.averageFps,
+      minimumFps: Math.min(...fpsSamples),
+      averageFrameMs: roundTenths(getAverage(frameSamples)),
+      p50FrameMs: roundTenths(getPercentile(frameSamples, 0.5)),
+      p95FrameMs: roundTenths(getPercentile(frameSamples, 0.95)),
+      p99FrameMs: roundTenths(getPercentile(frameSamples, 0.99)),
       worstRecentFrameMs: options.snapshot.worstRecentFrameMs,
       targetFrameMs: 1000 / options.snapshot.targetFps,
       performanceTier: options.snapshot.performanceTier,
+      framesOver16_7Ms: countFramesOver(frameSamples, 16.7),
+      framesOver33_3Ms: countFramesOver(frameSamples, 33.3),
+      framesOver50Ms: countFramesOver(frameSamples, 50),
       cpuFrameMs: options.snapshot.frameMs,
     },
     rendering: {
@@ -226,4 +250,21 @@ export function formatDebugSnapshotFilename(timestamp: Date): string {
 
 function roundTenths(value: number): number {
   return Math.round(value * 10) / 10;
+}
+
+function getAverage(values: number[]): number {
+  return values.reduce((total, value) => total + value, 0) / Math.max(1, values.length);
+}
+
+function getPercentile(values: number[], percentile: number): number {
+  const sorted = [...values].sort((left, right) => left - right);
+  const index = Math.max(
+    0,
+    Math.min(sorted.length - 1, Math.ceil(percentile * sorted.length) - 1)
+  );
+  return sorted[index] ?? 0;
+}
+
+function countFramesOver(values: number[], threshold: number): number {
+  return values.filter((value) => value > threshold).length;
 }

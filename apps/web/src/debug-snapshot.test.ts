@@ -116,6 +116,25 @@ describe('debug snapshot', () => {
       },
       history: [
         {
+          nowMs: 0,
+          fps: 58.5,
+          frameMs: 17.1,
+          drawCalls: 398,
+          triangles: 116000,
+          objectCount: 304,
+          materialCount: 23,
+          geometryCount: 59,
+          heapUsedMb: 47.2,
+          tileBuildsPerSecond: 13,
+          lodReplacementsPerSecond: 1,
+          visibleTileCount: 109,
+          visibleTreeCount: 26,
+          activeLightCount: 10,
+          activeParticleSystemCount: 2,
+          activeParticleCount: 48,
+          generationQueueSize: 3,
+        },
+        {
           nowMs: 1000,
           fps: 48,
           frameMs: 20.8,
@@ -165,8 +184,16 @@ describe('debug snapshot', () => {
     expect(result.summary).toMatchObject({
       currentFps: 44.6,
       averageFps: 46.2,
+      minimumFps: 44.6,
+      averageFrameMs: 20.1,
+      p50FrameMs: 20.8,
+      p95FrameMs: 22.4,
+      p99FrameMs: 22.4,
       targetFrameMs: 1000 / 30,
       performanceTier: 'reduced',
+      framesOver16_7Ms: 3,
+      framesOver33_3Ms: 0,
+      framesOver50Ms: 0,
       cpuFrameMs: 22.4,
     });
     expect(result.rendering).toMatchObject({
@@ -195,6 +222,13 @@ describe('debug snapshot', () => {
       geometryMemoryCount: 63,
     });
     expect(result.history).toEqual([
+      expect.objectContaining({
+        t: -2,
+        fps: 58.5,
+        activeParticleSystemCount: 2,
+        activeParticleCount: 48,
+        generationQueueSize: 3,
+      }),
       expect.objectContaining({
         t: -1,
         fps: 48,

@@ -30,17 +30,17 @@ That gives you something you can save from a slow scene, attach to a bug report,
 
 * [x] Include current FPS.
 * [x] Include average FPS over a recent window.
-* [ ] Include minimum FPS.
-* [ ] Include frame-time average.
-* [ ] Include P50 frame time.
-* [ ] Include P95 frame time.
-* [ ] Include P99 frame time.
+* [x] Include minimum FPS.
+* [x] Include frame-time average.
+* [x] Include P50 frame time.
+* [x] Include P95 frame time.
+* [x] Include P99 frame time.
 * [x] Include worst recent frame.
 * [x] Include target frame time.
 * [x] Include current performance tier.
-* [ ] Include number of frames exceeding 16.7 ms.
-* [ ] Include number of frames exceeding 33.3 ms.
-* [ ] Include number of frames exceeding 50 ms.
+* [x] Include number of frames exceeding 16.7 ms.
+* [x] Include number of frames exceeding 33.3 ms.
+* [x] Include number of frames exceeding 50 ms.
 
 # CPU Timing Breakdown
 
