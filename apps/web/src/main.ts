@@ -29,6 +29,10 @@ import {
 import { createCelestialPreviewRenderer } from './celestial-preview.ts';
 import { createSolarSystemPreviewRenderer } from './solar-system-preview.ts';
 import {
+  parseSavedSession,
+  serializeSessionSnapshot,
+} from './session-state.ts';
+import {
   advanceCompassState,
   drawCompassDial,
   easeAngle,
@@ -1540,7 +1544,7 @@ requestAnimationFrame(loop);
 
 function saveSession() {
   try {
-    const snapshot = JSON.stringify({
+    const snapshot = serializeSessionSnapshot({
       player: {
         x: state.player.x,
         y: state.player.y,
@@ -1566,49 +1570,11 @@ function saveSession() {
 }
 
 function loadSession() {
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw);
-    if (
-      typeof parsed?.player?.x !== 'number' ||
-      typeof parsed?.player?.y !== 'number' ||
-      typeof parsed?.player?.facing !== 'number'
-    ) {
-      return null;
-    }
-    if (!Array.isArray(parsed?.stack) || parsed.stack.length === 0) {
-      return null;
-    }
-    if (
-      typeof parsed?.inspectorTab !== 'undefined' &&
-      parsed.inspectorTab !== 'timekeeper' &&
-      parsed.inspectorTab !== 'model' &&
-      parsed.inspectorTab !== 'events' &&
-      parsed.inspectorTab !== 'compass'
-    ) {
-      return null;
-    }
-    if (
-      typeof parsed?.modelPreviewMode !== 'undefined' &&
-      parsed.modelPreviewMode !== 'world' &&
-      parsed.modelPreviewMode !== 'solar-system' &&
-      parsed.modelPreviewMode !== 'split'
-    ) {
-      return null;
-    }
-    if (
-      typeof parsed?.celestialEventMode !== 'undefined' &&
-      parsed.celestialEventMode !== 'auto' &&
-      parsed.celestialEventMode !== 'aurora' &&
-      parsed.celestialEventMode !== 'meteor-shower' &&
-      parsed.celestialEventMode !== 'comet'
-    ) {
-      return null;
-    }
-    lastSavedSnapshot = raw;
-    return parsed;
-  } catch {
+  const raw = window.localStorage.getItem(STORAGE_KEY);
+  const parsed = parseSavedSession(raw);
+  if (!parsed) {
     return null;
   }
+  lastSavedSnapshot = raw ?? '';
+  return parsed;
 }

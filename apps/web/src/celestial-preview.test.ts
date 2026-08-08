@@ -79,25 +79,29 @@ describe('celestial preview helpers', () => {
     } as any);
 
     expect(noon.sunIntensity).toBeGreaterThan(midnight.sunIntensity);
-    expect(midnight.ambientIntensity).toBeGreaterThan(0.95);
+    expect(midnight.ambientIntensity).toBeGreaterThan(1);
+    expect(noon.hemisphereIntensity).toBeGreaterThan(midnight.hemisphereIntensity);
     expect(midnight.emissiveIntensity).toBeGreaterThan(noon.emissiveIntensity);
     expect(noon.sunFillIntensity).toBeGreaterThan(midnight.sunFillIntensity);
+    expect(noon.bounceFillIntensity).toBeGreaterThan(midnight.bounceFillIntensity);
     expect(noon.glowOpacity).toBeGreaterThan(midnight.glowOpacity);
   });
 
   it('keeps preview shadows active when the sun is above or near the horizon', () => {
-    expect(
-      getPreviewShadowProfile({
-        daylight: 0.4,
-        sunAltitude: 0.2,
-      } as any).sunCastShadow
-    ).toBe(true);
-    expect(
-      getPreviewShadowProfile({
-        daylight: 0,
-        sunAltitude: -0.2,
-      } as any).sunCastShadow
-    ).toBe(false);
+    const daylightShadow = getPreviewShadowProfile({
+      daylight: 0.4,
+      sunAltitude: 0.2,
+    } as any);
+    const nightShadow = getPreviewShadowProfile({
+      daylight: 0,
+      sunAltitude: -0.2,
+    } as any);
+
+    expect(daylightShadow.sunCastShadow).toBe(true);
+    expect(daylightShadow.cameraExtent).toBeGreaterThanOrEqual(13);
+    expect(daylightShadow.mapSize).toBeGreaterThanOrEqual(1280);
+    expect(daylightShadow.bias).toBeLessThan(0);
+    expect(nightShadow.sunCastShadow).toBe(false);
   });
 
   it('moves the facing marker without rotating the whole preview root by player heading', () => {

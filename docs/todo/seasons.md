@@ -125,7 +125,9 @@ add a outer globe of stars in the sky that appear at night with procedurally gen
 - [x] Add a separate side-window 3D solar system model that reflects the current sun, moon, planets, constellations, and Milky Way layout.
 - [x] the side-window 3d solar system is hard to see anything and small, as well as the world model. If two models are needed, then there should be a way to toggle which one is currently active/visible.
 - [ ] As I drag the heading with the mouse, update the arrow and text to follow my mouse.
-- [ ] Add a tab to instantly trigger celestial events provided by the celestial plugins such as auroras, meteor showers, comets, etc. regardless of where the player is and time of day.
-- [ ] Save time/frozen state so refreshing will resume where i left off.
-- [ ] Save active tab so refreshing will show correct tab open
-- [ ] Save compass heading in persisted state
+- [x] Add a tab to instantly trigger celestial events provided by the celestial plugins such as auroras, meteor showers, comets, etc. regardless of where the player is and time of day.
+- [x] Save time/frozen state so refreshing will resume where i left off.
+- [x] Save active tab so refreshing will show correct tab open
+- [x] Save compass heading in persisted state
+- [ ] Compass heading is clipped on the edge of the screen.
+- [ ] Heading below compass duplicates the heading number next to the arrow.
