@@ -76,6 +76,7 @@ export function getDefaultQuestPlugins(): QuestTypePlugin[] {
     createHomeNeedQuestPlugin(),
     createKillQuestPlugin(),
     createDefenseQuestPlugin(),
+    createStealthQuestPlugin(),
     createEscortQuestPlugin(),
     createRescueQuestPlugin(),
     createTrackingQuestPlugin(),
@@ -293,6 +294,57 @@ function createDefenseQuestPlugin(): QuestTypePlugin {
       type: 'defense',
       title: `${seasonLabel} Hold the Line`,
       summary: `${context.npcName} needs someone to ${defensePoint}.${professionHint}`,
+      availability: context.npcState === 'working' ? 'work' : 'travel',
+      sourceNpcId: context.npcId,
+      sourceNpcName: context.npcName,
+    };
+  });
+}
+
+function createStealthQuestPlugin(): QuestTypePlugin {
+  return createQuestTypePlugin('stealth', (context) => {
+    if (
+      context.playerLevel < 5 ||
+      context.playerLevel > 18 ||
+      !(
+        context.npcState === 'working' ||
+        context.npcState === 'commuting-home'
+      ) ||
+      !(
+        context.professionFamily === 'market' ||
+        context.professionFamily === 'town-hall' ||
+        context.professionFamily === 'temple' ||
+        context.professionFamily === 'school'
+      )
+    ) {
+      return null;
+    }
+
+    const seasonLabel = getSeasonLabel(context.yearProgress);
+    const objective =
+      context.professionFamily === 'school'
+        ? 'slip into the abandoned observatory annex and recover the lesson charts without disturbing the ward bells'
+        : context.professionFamily === 'temple'
+          ? 'enter the shuttered shrine crypt quietly and spy on the relic thieves'
+          : context.professionFamily === 'market'
+            ? 'sneak into the smugglers cache and mark which crates belong to the town merchants'
+            : 'move through the watch alleys unseen and sabotage the raiders signal posts';
+    const questId =
+      `${context.townKey}:${context.npcId}:stealth:${context.professionFamily}:${seasonLabel}:${context.npcState}`;
+    if (context.completedQuestIds.has(questId)) {
+      return null;
+    }
+
+    const professionHint =
+      context.playerProfession === 'scout' || context.playerProfession === 'scholar'
+        ? ' Your quiet footwork should keep the operation from turning into a fight.'
+        : '';
+
+    return {
+      id: questId,
+      type: 'stealth',
+      title: `${seasonLabel} Quiet Work`,
+      summary: `${context.npcName} needs someone to ${objective}.${professionHint}`,
       availability: context.npcState === 'working' ? 'work' : 'travel',
       sourceNpcId: context.npcId,
       sourceNpcName: context.npcName,

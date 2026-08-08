@@ -10,6 +10,7 @@ describe('quest support', () => {
       'collection',
       'kill',
       'defense',
+      'stealth',
       'escort',
       'rescue',
       'tracking',
@@ -162,6 +163,44 @@ describe('quest support', () => {
       defense.some((offer) => offer.summary.includes('hold a line under pressure'))
     ).toBe(true);
     expect(underleveled.some((offer) => offer.type === 'defense')).toBe(false);
+  });
+
+  it('offers stealth quests for staffed professions that need infiltration or sabotage', () => {
+    const stealth = getDefaultQuestRegistry().getOffers({
+      npcId: 'npc:teacher',
+      npcName: 'Iris Juniper',
+      townKey: '3:7',
+      dayProgress: 0.72,
+      yearProgress: 0.22,
+      playerLevel: 7,
+      playerProfession: 'scout',
+      completedQuestIds: new Set<string>(),
+      npcState: 'working',
+      profession: 'teacher',
+      professionFamily: 'school',
+      residenceBuildingId: 'home',
+      workplaceBuildingId: 'school',
+    });
+    const underleveled = getDefaultQuestRegistry().getOffers({
+      npcId: 'npc:teacher',
+      npcName: 'Iris Juniper',
+      townKey: '3:7',
+      dayProgress: 0.72,
+      yearProgress: 0.22,
+      playerLevel: 3,
+      completedQuestIds: new Set<string>(),
+      npcState: 'working',
+      profession: 'teacher',
+      professionFamily: 'school',
+      residenceBuildingId: 'home',
+      workplaceBuildingId: 'school',
+    });
+
+    expect(stealth.some((offer) => offer.type === 'stealth')).toBe(true);
+    expect(
+      stealth.some((offer) => offer.summary.includes('quiet footwork'))
+    ).toBe(true);
+    expect(underleveled.some((offer) => offer.type === 'stealth')).toBe(false);
   });
 
   it('offers rescue quests for staffed civic, temple, and stable roles', () => {

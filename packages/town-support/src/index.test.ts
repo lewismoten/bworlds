@@ -369,6 +369,39 @@ describe('town support', () => {
     ).toBe(true);
   });
 
+  it('surfaces stealth quest offers from generated town schedules', () => {
+    let stealthStates: ReturnType<typeof getTownNpcQuestStates> = [];
+
+    outerStealth: for (let x = -4; x <= 12; x += 1) {
+      for (let y = -4; y <= 12; y += 1) {
+        for (let minute = 14 * 60; minute <= 22 * 60; minute += 30) {
+          stealthStates = getTownNpcQuestStates(
+            x,
+            y,
+            DEFAULT_DAY_LENGTH_MS * (minute / (24 * 60)),
+            {
+              level: 7,
+              profession: 'scout',
+            }
+          );
+          if (
+            stealthStates.some((entry) =>
+              entry.offers.some((offer) => offer.type === 'stealth')
+            )
+          ) {
+            break outerStealth;
+          }
+        }
+      }
+    }
+
+    expect(
+      stealthStates.some((entry) =>
+        entry.offers.some((offer) => offer.type === 'stealth')
+      )
+    ).toBe(true);
+  });
+
   it('surfaces crafting and training quest offers from matching town professions', () => {
     const crafting = getTownNpcQuestStates(3, 7, DEFAULT_DAY_LENGTH_MS * 0.5, {
       level: 5,
