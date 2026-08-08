@@ -69,7 +69,7 @@ const CONSTELLATION_FIGURES = [
   'The Open Hand',
   'The Wolf',
 ];
-const PLANET_NAMES = ['Aurel', 'Brink', 'Cael', 'Damar'];
+const PLANET_NAMES = ['Aurel', 'Brink', 'Cael', 'Damar', 'Vela'];
 const METEOR_SHOWER_NAMES = ['Silver Wake', 'Ember Rain', 'Northfall'];
 const COMET_NAMES = ['White Lantern', 'Pilgrim Tail'];
 const PLANET_SKY_PROFILES = [
@@ -141,6 +141,23 @@ const PLANET_SKY_PROFILES = [
     orbitEccentricity: 0.24,
     orbitRotation: 1.52,
   },
+  {
+    orbitLengthDays: 41,
+    wobblePeriodDays: 23,
+    wobbleAmplitude: 0.034,
+    wobblePhase: 1.86,
+    declinationFactor: 0.5,
+    declinationWaveDays: 45,
+    declinationWaveAmplitude: 0.2,
+    azimuthShift: 1.18,
+    intensityBase: 0.32,
+    intensitySwing: 0.44,
+    color: '#9fd0ff',
+    size: 0.84,
+    orbitTilt: -0.36,
+    orbitEccentricity: 0.29,
+    orbitRotation: 1.96,
+  },
 ] as const;
 const COMET_ORRERY_PROFILES = [
   {
@@ -163,10 +180,20 @@ function getPlanetSkyProfile(name: string, fallbackIndex = 0) {
   return PLANET_SKY_PROFILES[resolvedIndex % PLANET_SKY_PROFILES.length];
 }
 
+function getPlanetSkyProfileIndex(name: string, fallbackIndex = 0) {
+  const index = PLANET_NAMES.indexOf(name);
+  return index >= 0 ? index : fallbackIndex % PLANET_SKY_PROFILES.length;
+}
+
 function getCometOrreryProfile(name: string, fallbackIndex = 0) {
   const index = COMET_NAMES.indexOf(name);
   const resolvedIndex = index >= 0 ? index : fallbackIndex;
   return COMET_ORRERY_PROFILES[resolvedIndex % COMET_ORRERY_PROFILES.length];
+}
+
+function getCometOrreryProfileIndex(name: string, fallbackIndex = 0) {
+  const index = COMET_NAMES.indexOf(name);
+  return index >= 0 ? index : fallbackIndex % COMET_ORRERY_PROFILES.length;
 }
 
 export function getPlanetaryOrbitProgress(
@@ -1105,24 +1132,39 @@ export function getOrreryBodies({
     },
   ];
 
-  let orbitIndex = 0;
+  let unknownPlanetIndex = PLANET_NAMES.length;
+  let unknownCometIndex = COMET_NAMES.length;
   visibleEvents.forEach((event) => {
     if (event.type === 'meteor-shower') {
       return;
     }
 
-    orbitIndex += 1;
     const orbitProfile =
       event.type === 'planet'
-        ? getPlanetSkyProfile(event.name, orbitIndex - 1)
-        : getCometOrreryProfile(event.name, orbitIndex - 1);
+        ? getPlanetSkyProfile(event.name, unknownPlanetIndex)
+        : getCometOrreryProfile(event.name, unknownCometIndex);
+    const orbitRadius =
+      event.type === 'planet'
+        ? 3.6 + getPlanetSkyProfileIndex(event.name, unknownPlanetIndex) * 0.75
+        : 8.1 + getCometOrreryProfileIndex(event.name, unknownCometIndex) * 0.95;
+    if (event.type === 'planet' && !PLANET_NAMES.includes(event.name as any)) {
+      unknownPlanetIndex += 1;
+    }
+    if (event.type === 'comet' && !COMET_NAMES.includes(event.name as any)) {
+      unknownCometIndex += 1;
+    }
     bodies.push({
       id: `${event.type}:${event.name}`,
       type: event.type === 'planet' ? 'planet' : 'comet',
-      orbitRadius: 3.6 + orbitIndex * 0.75,
+      orbitRadius,
       angle: normalizeTurns(event.progress),
       orbitTilt:
-        orbitProfile.orbitTilt + (event.type === 'planet' ? 0 : (orbitIndex % 2 === 0 ? 0.04 : -0.04)),
+        orbitProfile.orbitTilt +
+        (event.type === 'planet'
+          ? 0
+          : getCometOrreryProfileIndex(event.name, 0) % 2 === 0
+            ? 0.04
+            : -0.04),
       orbitHeight: event.altitude * 0.35,
       orbitEccentricity: orbitProfile.orbitEccentricity,
       orbitRotation: orbitProfile.orbitRotation,

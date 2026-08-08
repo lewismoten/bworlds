@@ -395,6 +395,64 @@ describe('core utilities', () => {
     ).toBe(true);
   });
 
+  it('keeps named planet orbit lanes stable when visible events are filtered or replaced', () => {
+    const cycle = getDaylightCycleState(210000, {
+      observerLatitudeDegrees: 24,
+    });
+    const overrides = applyCelestialEnvironmentOverrides(cycle, {
+      removeVisibleEventTypes: ['planet'],
+      visibleEventsAppend: [
+        {
+          type: 'planet',
+          name: 'Vela',
+          progress: 0.42,
+          intensity: 0.66,
+          visibility: 0.8,
+          azimuth: 1.2,
+          altitude: 0.34,
+          color: '#9fd0ff',
+          size: 0.84,
+          trailLength: 0,
+        },
+      ],
+      deriveOrreryFromVisibleEvents: true,
+    });
+    const overrideVela = overrides.orreryBodies.find(
+      (body) => body.id === 'planet:Vela'
+    );
+
+    expect(overrideVela?.orbitRadius).toBeCloseTo(6.6, 6);
+    expect(
+      overrides.orreryBodies.filter((body) => body.type === 'planet')
+    ).toHaveLength(1);
+  });
+
+  it('keeps comet orbit lanes stable regardless of which comet is currently visible', () => {
+    const bodies = getOrreryBodies({
+      moonAngle: 0,
+      moonIllumination: 0.5,
+      visibleEvents: [
+        {
+          type: 'comet',
+          name: 'Kite',
+          progress: 0.2,
+          intensity: 0.8,
+          visibility: 0.9,
+          azimuth: 0.7,
+          altitude: 0.24,
+          color: '#dff6ff',
+          size: 0.48,
+          trailLength: 2.8,
+        },
+      ],
+    });
+
+    expect(bodies.find((body) => body.id === 'comet:Kite')?.orbitRadius).toBeCloseTo(
+      8.1,
+      6
+    );
+  });
+
   it('exposes tile-definition lookup through world state', () => {
     const state = createWorldState({
       generator: {
