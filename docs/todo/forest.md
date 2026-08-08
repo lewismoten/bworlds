@@ -9,7 +9,7 @@
 - [ ] Consider a forest near a river can have a fallen tree across the river to form a bridge without a path/road leading to it
 - [X] A forest may have a meadow with flowers
 - [X] A tree may have a hollow
-- [ ] Birds can fly over trees
+- [X] Birds can fly over trees
 - [X] An owl may live in the hollow of a tree
 - [X] A tree may have two pairs of initials carved into it with a heart (LM + FG)
 - [ ] A path may be through the woods without any markings other than there are no trees (or perhaps breadcrumbs)

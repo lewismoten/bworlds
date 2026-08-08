@@ -8,6 +8,7 @@ vi.mock('@bworlds/three-support', () => ({
 
 import {
   createForestTilePlugin,
+  getForestBirds,
   getForestBushes,
   getForestCarvings,
   getForestFloorDetails,
@@ -285,6 +286,39 @@ describe('tile forest', () => {
 
     const first = sampleTiles[0];
     expect(getForestMeadows(first.x, first.y)).toEqual(first.meadows);
+  });
+
+  it('generates deterministic birds for some forest tiles', () => {
+    const sampleTiles: Array<{
+      x: number;
+      y: number;
+      birds: ReturnType<typeof getForestBirds>;
+    }> = [];
+
+    for (let tileY = 0; tileY < 24; tileY += 1) {
+      for (let tileX = 0; tileX < 24; tileX += 1) {
+        const birds = getForestBirds(tileX, tileY);
+        if (birds.length > 0) {
+          sampleTiles.push({ x: tileX, y: tileY, birds });
+        }
+      }
+    }
+
+    expect(sampleTiles.length).toBeGreaterThan(0);
+    expect(
+      sampleTiles.some(({ birds }) =>
+        birds.every(
+          (bird) =>
+            bird.height > 1 &&
+            bird.radius > 0.1 &&
+            bird.speed > 0.0007 &&
+            bird.wingScale > 0.04
+        )
+      )
+    ).toBe(true);
+
+    const first = sampleTiles[0];
+    expect(getForestBirds(first.x, first.y)).toEqual(first.birds);
   });
 
   it('creates a lower-detail distant forest model', () => {
@@ -849,6 +883,96 @@ describe('tile forest', () => {
 
     expect(fullMeadowCount).toBeGreaterThan(0);
     expect(lowMeadowCount).toBe(0);
+  });
+
+  it('renders and animates birds only in full-detail forest models', () => {
+    const plugin = createForestTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'forest');
+    const state = {
+      player: { x: 0, y: 0, facing: 0 },
+      getCurrentContext() {
+        return { id: 'overworld', type: 'overworld', depth: 0 };
+      },
+      getCurrentTile() {
+        return { kind: 'forest' };
+      },
+      getTileDefinition() {
+        return {
+          name: 'Forest',
+          color: '#000000',
+          miniColor: '#111111',
+          walkable: true,
+          wallHeight: 0.38,
+        };
+      },
+    };
+
+    let targetTile: { x: number; y: number } | null = null;
+    for (let tileY = 0; tileY < 24 && !targetTile; tileY += 1) {
+      for (let tileX = 0; tileX < 24; tileX += 1) {
+        if (getForestBirds(tileX, tileY).length > 0) {
+          targetTile = { x: tileX, y: tileY };
+          break;
+        }
+      }
+    }
+
+    expect(targetTile).not.toBeNull();
+
+    const fullModel = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'forest' },
+      tileX: targetTile!.x,
+      tileY: targetTile!.y,
+      detailLevel: 'full',
+    }) as FakeGroup;
+    const lowModel = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'forest' },
+      tileX: targetTile!.x,
+      tileY: targetTile!.y,
+      detailLevel: 'low',
+    }) as FakeGroup;
+
+    const fullBirds: FakeNode[] = [];
+    fullModel.traverse((node) => {
+      if (node.userData?.forestBird) {
+        fullBirds.push(node);
+      }
+    });
+
+    let lowBirdCount = 0;
+    lowModel.traverse((node) => {
+      if (node.userData?.forestBird) {
+        lowBirdCount += 1;
+      }
+    });
+
+    expect(fullBirds.length).toBeGreaterThan(0);
+    expect(lowBirdCount).toBe(0);
+
+    const firstBird = fullBirds[0];
+    const initialX = firstBird.position.x;
+    const initialY = firstBird.position.y;
+    const initialLeftWing = firstBird.children[0]?.rotation.z;
+
+    tile?.sync3DModel?.({
+      three: fakeThree as never,
+      state: {} as never,
+      tile: { kind: 'forest' },
+      tileX: targetTile!.x,
+      tileY: targetTile!.y,
+      model: fullModel,
+      timeMs: 1400,
+      cycle: { daylight: 1, twilight: 0, night: 0 },
+      environment: {},
+    });
+
+    expect(firstBird.position.x).not.toBe(initialX);
+    expect(firstBird.position.y).not.toBe(initialY);
+    expect(firstBird.children[0]?.rotation.z).not.toBe(initialLeftWing);
   });
 
   it('shows fireflies only after dark', () => {

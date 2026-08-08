@@ -33,6 +33,7 @@ const HOLLOW_KEY = 'forestHollow';
 const OWL_KEY = 'forestOwl';
 const CARVING_KEY = 'forestCarving';
 const MEADOW_KEY = 'forestMeadow';
+const BIRD_KEY = 'forestBird';
 const TREE_CLUSTER_SIZE = 4;
 const TREE_REGION_SIZE = 14;
 
@@ -308,6 +309,33 @@ const resolveForestMeadowDescriptors = createCoordinateValueResolver(
     }
 
     return meadows;
+  }
+);
+const forestBirdCache = new Map<string, ForestBirdDescriptor[]>();
+const resolveForestBirdDescriptors = createCoordinateValueResolver(
+  forestBirdCache,
+  ({ tileX, tileY }) => {
+    const trees = resolveForestTreeDescriptors(tileX, tileY);
+    const count = hash2D('forest-bird-count', tileX, tileY) > 0.72 ? 1 : 0;
+    const birds: ForestBirdDescriptor[] = [];
+
+    for (let index = 0; index < count; index += 1) {
+      const seed = `forest-bird:${tileX}:${tileY}:${index}`;
+      const averageHeight =
+        trees.reduce((sum, tree) => sum + tree.trunkHeight * tree.scale, 0) /
+        Math.max(1, trees.length);
+      birds.push({
+        x: (hash2D(seed, 1, 0) - 0.5) * 0.58,
+        y: (hash2D(seed, 2, 0) - 0.5) * 0.58,
+        height: 0.92 + averageHeight * 0.46 + hash2D(seed, 3, 0) * 0.3,
+        radius: 0.12 + hash2D(seed, 4, 0) * 0.1,
+        phase: hash2D(seed, 5, 0),
+        speed: 0.0008 + hash2D(seed, 6, 0) * 0.0007,
+        wingScale: 0.05 + hash2D(seed, 7, 0) * 0.02,
+      });
+    }
+
+    return birds;
   }
 );
 const treeGeometryCache = new WeakMap<
@@ -628,6 +656,39 @@ export function createForestTilePlugin(): RuntimePlugin {
               group.add(bloom);
             });
           }
+          for (const bird of getForestBirds(tileX, tileY)) {
+            const birdGroup = new three.Group();
+            birdGroup.userData = {
+              ...(birdGroup.userData ?? {}),
+              [BIRD_KEY]: bird,
+            };
+
+            const leftWing = new three.Mesh(
+              geometry.branch,
+              floorDetailStyle.birdMaterial
+            );
+            leftWing.position.set(-bird.wingScale * 0.5, 0, 0);
+            leftWing.rotation.z = -0.35;
+            leftWing.scale.set(0.18, bird.wingScale, 0.18);
+            birdGroup.add(leftWing);
+
+            const rightWing = new three.Mesh(
+              geometry.branch,
+              floorDetailStyle.birdMaterial
+            );
+            rightWing.position.set(bird.wingScale * 0.5, 0, 0);
+            rightWing.rotation.z = 0.35;
+            rightWing.scale.set(0.18, bird.wingScale, 0.18);
+            birdGroup.add(rightWing);
+
+            const body = new three.Mesh(
+              geometry.foliage,
+              floorDetailStyle.birdMaterial
+            );
+            body.scale.set(bird.wingScale * 0.55, bird.wingScale * 0.3, bird.wingScale * 0.3);
+            birdGroup.add(body);
+            group.add(birdGroup);
+          }
           const landmark = getForestLandmark(tileX, tileY);
           if (landmark) {
             createForestLandmarkMeshes(
@@ -700,6 +761,7 @@ export function createForestTilePlugin(): RuntimePlugin {
           return;
         }
         syncForestFireflies(model as ThreeObject3DLike, cycle, timeMs);
+        syncForestBirds(model as ThreeObject3DLike, timeMs);
       },
       canOccupy3D({
         tileX,
@@ -788,6 +850,13 @@ export function getForestMeadows(
   tileY: number
 ): ForestMeadowDescriptor[] {
   return resolveForestMeadowDescriptors(tileX, tileY);
+}
+
+export function getForestBirds(
+  tileX: number,
+  tileY: number
+): ForestBirdDescriptor[] {
+  return resolveForestBirdDescriptors(tileX, tileY);
 }
 
 function getForestGroveCenter(tileX: number, tileY: number) {
@@ -955,6 +1024,11 @@ function getTreeStyle(
       meadowFlowerYellowMaterial: new three.MeshStandardMaterial({
         color: '#f3cf62',
         roughness: 0.9,
+        metalness: 0.01,
+      }),
+      birdMaterial: new three.MeshStandardMaterial({
+        color: '#2f2420',
+        roughness: 0.95,
         metalness: 0.01,
       }),
     });
@@ -1330,6 +1404,32 @@ function syncForestFireflies(
   });
 }
 
+function syncForestBirds(root: ThreeObject3DLike, timeMs: number) {
+  root.traverse?.((node) => {
+    const bird = node.userData?.[BIRD_KEY] as ForestBirdDescriptor | undefined;
+    if (!bird) {
+      return;
+    }
+    const birdNode = node as ThreeObject3DLike & {
+      children?: Array<{ rotation: { z: number } }>;
+    };
+
+    const angle = bird.phase * Math.PI * 2 + timeMs * bird.speed;
+    birdNode.position.set(
+      bird.x + Math.cos(angle) * bird.radius,
+      bird.height + Math.sin(angle * 2.2) * 0.04,
+      bird.y + Math.sin(angle) * bird.radius
+    );
+    birdNode.rotation.y = angle + Math.PI / 2;
+
+    const flap = Math.sin(angle * 8);
+    if ((birdNode.children?.length ?? 0) >= 2) {
+      birdNode.children![0].rotation.z = -0.35 - flap * 0.4;
+      birdNode.children![1].rotation.z = 0.35 + flap * 0.4;
+    }
+  });
+}
+
 function averageMoisture(
   sampleTerrainSignals: NonNullable<
     ClassifyOverworldTileContext['sampleTerrainSignals']
@@ -1442,6 +1542,7 @@ interface ForestTreeStyle {
   meadowStemMaterial: ThreeMaterialLike;
   meadowFlowerWhiteMaterial: ThreeMaterialLike;
   meadowFlowerYellowMaterial: ThreeMaterialLike;
+  birdMaterial: ThreeMaterialLike;
 }
 
 interface ForestBranchDescriptor {
@@ -1543,6 +1644,16 @@ interface ForestMeadowDescriptor {
   radiusX: number;
   radiusY: number;
   flowers: ForestFlowerDescriptor[];
+}
+
+interface ForestBirdDescriptor {
+  x: number;
+  y: number;
+  height: number;
+  radius: number;
+  phase: number;
+  speed: number;
+  wingScale: number;
 }
 
 const CARVING_LETTER_L = [
