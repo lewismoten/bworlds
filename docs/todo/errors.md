@@ -272,9 +272,9 @@ This represents about **6.86 MB inclusive**.
 * [ ] Prioritize visible tiles.
 * [ ] Prioritize tiles in the player's movement direction.
 * [ ] Delay decorative details until essential terrain is visible.
-* [ ] Cancel queued builds for tiles that leave the active area.
-* [ ] Deduplicate pending build requests.
-* [ ] Avoid rebuilding tiles already waiting in the queue.
+* [x] Cancel queued builds for tiles that leave the active area.
+* [x] Deduplicate pending build requests.
+* [x] Avoid rebuilding tiles already waiting in the queue.
 * [x] Track queue length.
 * [x] Track average tile build time.
 * [x] Track maximum tile build time.

@@ -432,7 +432,10 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       contextId: context.id,
       centerKey: `${centerX}:${centerY}`,
       facingBucket: String(facingBucket),
-      queue: nextQueue.filter((entry) => !visibleTileNodes.has(entry.key)),
+      queue: buildPendingWorldBuildQueue(
+        nextQueue,
+        new Set(visibleTileNodes.keys())
+      ),
     };
 
     lastCenterKey = `${centerX}:${centerY}`;
@@ -1814,6 +1817,24 @@ export function getRenderChurnStats(
       windowMs
     ),
   };
+}
+
+export function buildPendingWorldBuildQueue(
+  nextQueue: Array<{ key: string; x: number; y: number }>,
+  visibleTileKeys: ReadonlySet<string>
+): Array<{ key: string; x: number; y: number }> {
+  const pendingQueue: Array<{ key: string; x: number; y: number }> = [];
+  const queuedKeys = new Set<string>();
+
+  for (const entry of nextQueue) {
+    if (visibleTileKeys.has(entry.key) || queuedKeys.has(entry.key)) {
+      continue;
+    }
+    queuedKeys.add(entry.key);
+    pendingQueue.push(entry);
+  }
+
+  return pendingQueue;
 }
 
 export function shouldProcessPendingWorldBuildEntry(

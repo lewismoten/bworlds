@@ -7,6 +7,7 @@ import {
   DEFAULT_CAMERA_PITCH,
   getRecentDurationStats,
   getRenderChurnStats,
+  buildPendingWorldBuildQueue,
   getDecoratedTileSurfaceHeight,
   getBoundaryPriority,
   getFarLandModelOpacity,
@@ -190,6 +191,24 @@ describe('render3d visibility helpers', () => {
         maxPendingBuildTiles: 4,
       })
     ).toBe(false);
+  });
+
+  it('rebuilds the pending world-build queue without visible or duplicate tile requests', () => {
+    expect(
+      buildPendingWorldBuildQueue(
+        [
+          { key: '0:0', x: 0, y: 0 },
+          { key: '1:0', x: 1, y: 0 },
+          { key: '1:0', x: 1, y: 0 },
+          { key: '2:0', x: 2, y: 0 },
+          { key: '0:0', x: 0, y: 0 },
+        ],
+        new Set(['0:0'])
+      )
+    ).toEqual([
+      { key: '1:0', x: 1, y: 0 },
+      { key: '2:0', x: 2, y: 0 },
+    ]);
   });
 
   it('tracks recent tile build durations with rolling average and max stats', () => {
