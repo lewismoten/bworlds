@@ -22,6 +22,38 @@ describe('inventory storage', () => {
     });
   });
 
+  it('preserves custom inventory payloads such as treasure-map documents', () => {
+    const raw = serializeInventoryProfile({
+      items: [
+        {
+          id: 'treasure:one',
+          quantity: 1,
+          label: 'Treasure Map N9 E17',
+          kind: 'treasure-map',
+          treasureMap: {
+            gpsLabel: 'N9 E17',
+            rows: ['..:X', '.::.', '....'],
+          },
+        },
+      ],
+    });
+
+    expect(parseSavedInventoryProfile(raw)).toEqual({
+      items: [
+        {
+          id: 'treasure:one',
+          quantity: 1,
+          label: 'Treasure Map N9 E17',
+          kind: 'treasure-map',
+          treasureMap: {
+            gpsLabel: 'N9 E17',
+            rows: ['..:X', '.::.', '....'],
+          },
+        },
+      ],
+    });
+  });
+
   it('rejects malformed inventory items and normalizes quantities', () => {
     expect(
       parseSavedInventoryProfile(
