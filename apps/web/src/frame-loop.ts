@@ -30,6 +30,8 @@ type FrameLoopActivityOptions = {
   compassVelocity: number;
   headingVisualAngle: number | null;
   headingTargetAngle: number | null;
+  headBobOffset?: number;
+  headBobIntensity?: number;
   previewInteracting?: boolean;
   compassDragging?: boolean;
   hmrNoticeVisibleUntilMs?: number | null;
@@ -43,6 +45,7 @@ type FrameLoopActivity = {
   isTimeRunning: boolean;
   isCompassSettling: boolean;
   isHeadingSettling: boolean;
+  isHeadBobSettling: boolean;
   isDialSettling: boolean;
   previewInteracting: boolean;
   compassDragging: boolean;
@@ -120,6 +123,9 @@ export function getFrameLoopActivity(
       options.headingVisualAngle,
       options.headingTargetAngle
     ),
+    isHeadBobSettling:
+      Math.abs(options.headBobOffset ?? 0) > 0.0005 ||
+      (options.headBobIntensity ?? 0) > 0.0005,
     isDialSettling: dialSettling,
     previewInteracting: options.previewInteracting ?? false,
     compassDragging: options.compassDragging ?? false,
@@ -138,6 +144,7 @@ export function shouldContinueFrameLoop(
     activity.isTimeRunning ||
     activity.isCompassSettling ||
     activity.isHeadingSettling ||
+    activity.isHeadBobSettling ||
     activity.isDialSettling ||
     activity.previewInteracting ||
     activity.compassDragging ||

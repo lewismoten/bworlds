@@ -59,6 +59,10 @@ import {
   getFrameLoopActivity,
   shouldContinueFrameLoop,
 } from './frame-loop.ts';
+import {
+  advanceHeadBobState,
+  DEFAULT_HEAD_BOB_STATE,
+} from './head-bob.ts';
 import { getMouseLookAngles } from './mouse-look.ts';
 import {
   getHmrNoticeText,
@@ -565,6 +569,7 @@ const motion = {
   longJumpVelocity: 0.00195,
   longJumpThreshold: 110,
   longJumpActivated: false,
+  headBob: DEFAULT_HEAD_BOB_STATE,
 };
 
 const dialState = {
@@ -1213,6 +1218,7 @@ function resetMotionState(): void {
   motion.jumpVelocity = 0;
   motion.jumpHoldElapsed = 0;
   motion.longJumpActivated = false;
+  motion.headBob = DEFAULT_HEAD_BOB_STATE;
 }
 
 function travelToOverworld(
@@ -1466,11 +1472,17 @@ function updateMovement(deltaMs: number): void {
   }
 
   const magnitude = Math.hypot(moveX, moveY);
+  const walking = magnitude > 0 && state.viewMode === '3d' && !motion.isJumping;
   if (magnitude > 0) {
     const normalizedX = (moveX / magnitude) * moveSpeed;
     const normalizedY = (moveY / magnitude) * moveSpeed;
     attemptMove(normalizedX, normalizedY);
   }
+  motion.headBob = advanceHeadBobState(motion.headBob, {
+    deltaMs,
+    walking,
+    enabled: state.viewMode === '3d',
+  });
 
   if (motion.isJumping) {
     if (
@@ -1564,6 +1576,7 @@ function render(): FrameLoopActivityLike {
       timeMs,
       environment,
       cameraPitch: mouseLookState.pitch,
+      cameraBobOffset: motion.headBob.offset,
     });
   }
 
@@ -1646,6 +1659,8 @@ function render(): FrameLoopActivityLike {
     compassVelocity: compassState.velocity,
     headingVisualAngle: compassHeadingVisualState.angle,
     headingTargetAngle: compassHeadingState.angle,
+    headBobOffset: motion.headBob.offset,
+    headBobIntensity: motion.headBob.intensity,
     previewInteracting:
       celestialPreview.isInteracting() || solarSystemPreview.isInteracting(),
     compassDragging: compassDialPointerState.draggingMode !== null,

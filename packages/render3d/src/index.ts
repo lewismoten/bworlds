@@ -45,6 +45,7 @@ type Render3DOptions = {
   timeMs?: number;
   environment?: WorldEnvironmentLike;
   cameraPitch?: number;
+  cameraBobOffset?: number;
 };
 type Render3DController = {
   canOccupy(state: Render3DState, nextX: number, nextY: number): boolean;
@@ -349,7 +350,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
 
     camera.position.set(
       state.player.x * TILE_SIZE,
-      0.82 + (options.jumpHeight ?? 0) * 2.2,
+      0.82 + (options.jumpHeight ?? 0) * 2.2 + (options.cameraBobOffset ?? 0),
       state.player.y * TILE_SIZE
     );
     camera.rotation.y = -state.player.facing - Math.PI / 2;

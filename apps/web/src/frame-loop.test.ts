@@ -30,6 +30,8 @@ describe('frame loop helpers', () => {
       compassVelocity: 0,
       headingVisualAngle: null,
       headingTargetAngle: null,
+      headBobOffset: 0,
+      headBobIntensity: 0,
       displayedCycle: {
         dayProgress: 0.1,
         yearProgress: 0.2,
@@ -55,6 +57,8 @@ describe('frame loop helpers', () => {
       compassVelocity: 0.004,
       headingVisualAngle: -Math.PI / 2,
       headingTargetAngle: 0,
+      headBobOffset: 0,
+      headBobIntensity: 0,
       displayedCycle: {
         dayProgress: 0.1,
         yearProgress: 0.2,
@@ -80,6 +84,8 @@ describe('frame loop helpers', () => {
       compassVelocity: 0,
       headingVisualAngle: null,
       headingTargetAngle: null,
+      headBobOffset: 0,
+      headBobIntensity: 0,
       displayedCycle: {
         dayProgress: 0.1,
         yearProgress: 0.2,
@@ -112,6 +118,8 @@ describe('frame loop helpers', () => {
       compassVelocity: 0,
       headingVisualAngle: null,
       headingTargetAngle: null,
+      headBobOffset: 0,
+      headBobIntensity: 0,
       hmrNoticeVisibleUntilMs: 1500,
       displayedCycle: {
         dayProgress: 0.1,
@@ -132,5 +140,38 @@ describe('frame loop helpers', () => {
     });
 
     expect(shouldContinueFrameLoop(notice)).toBe(true);
+  });
+
+  it('keeps frames alive while head bobbing is settling back to rest', () => {
+    const settling = getFrameLoopActivity({
+      nowMs: 1000,
+      timeFrozen: true,
+      keys: [],
+      isJumping: false,
+      compassVelocity: 0,
+      headingVisualAngle: null,
+      headingTargetAngle: null,
+      headBobOffset: 0.004,
+      headBobIntensity: 0.2,
+      displayedCycle: {
+        dayProgress: 0.1,
+        yearProgress: 0.2,
+        moonMidnightOrbitProgress: 0.3,
+        sunriseProgress: 0.25,
+        sunsetProgress: 0.75,
+        daylightDuration: 0.5,
+      },
+      actualCycle: {
+        dayProgress: 0.1,
+        yearProgress: 0.2,
+        moonMidnightOrbitProgress: 0.3,
+        sunriseProgress: 0.25,
+        sunsetProgress: 0.75,
+        daylightDuration: 0.5,
+      },
+    });
+
+    expect(settling.isHeadBobSettling).toBe(true);
+    expect(shouldContinueFrameLoop(settling)).toBe(true);
   });
 });
