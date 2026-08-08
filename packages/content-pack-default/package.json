@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "type": "module",
   "dependencies": {
+    "@bworlds/map-balloon": "0.1.0",
     "@bworlds/map-boat": "0.1.0",
     "@bworlds/map-building": "0.1.0",
     "@bworlds/map-canoe": "0.1.0",

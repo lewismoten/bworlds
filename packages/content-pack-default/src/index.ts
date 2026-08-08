@@ -1,3 +1,4 @@
+import { createBalloonMapPlugin } from '@bworlds/map-balloon';
 import { createBoatMapPlugin } from '@bworlds/map-boat';
 import { createBuildingMapPlugin } from '@bworlds/map-building';
 import { createCanoeMapPlugin } from '@bworlds/map-canoe';
@@ -76,6 +77,10 @@ export function createDefaultMapPlugins(): RuntimePlugin[] {
     {
       create: createDepthMapPlugin,
       order: { priority: 30 },
+    },
+    {
+      create: createBalloonMapPlugin,
+      order: { priority: 32.25 },
     },
     {
       create: createGliderMapPlugin,

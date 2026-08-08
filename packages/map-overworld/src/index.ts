@@ -1,4 +1,9 @@
 import {
+  type BalloonContext,
+  findBalloonLandingPoint,
+  isBalloonLaunchableLandTile,
+} from '@bworlds/map-balloon';
+import {
   type BoatContext,
   findNearestBoatLaunchPoint,
   isBoatLaunchableLandTile,
@@ -106,6 +111,10 @@ function createOverworldMap(
       const gliderAction = resolveGliderAction(x, y, state);
       if (gliderAction) {
         return gliderAction;
+      }
+      const balloonAction = resolveBalloonAction(x, y, state);
+      if (balloonAction) {
+        return balloonAction;
       }
     }
     if (
@@ -247,6 +256,56 @@ function createOverworldMap(
       id: `glider:${x}:${y}:${landing.x}:${landing.y}`,
       label: 'Glider',
       type: 'glider',
+      depth: 1,
+      origin: { x, y },
+      destination: landing,
+    };
+
+    return createEnterMapAction({
+      context,
+      spawn: { x: 0, y: 1 },
+      facing,
+    });
+  }
+
+  function resolveBalloonAction(
+    x: number,
+    y: number,
+    state?: WorldStateLike & { player?: { facing?: number } }
+  ) {
+    if (
+      !isBalloonLaunchableLandTile({
+        x,
+        y,
+        sampleTile: getTile,
+        isWalkable(kind) {
+          return Boolean(plugins.getTileDefinition(kind)?.walkable);
+        },
+        state,
+      })
+    ) {
+      return null;
+    }
+
+    const facing = state?.player?.facing ?? 0;
+    const landing = findBalloonLandingPoint({
+      x,
+      y,
+      facing,
+      sampleTile: getTile,
+      isWalkable(kind) {
+        return Boolean(plugins.getTileDefinition(kind)?.walkable);
+      },
+      state,
+    });
+    if (!landing) {
+      return null;
+    }
+
+    const context: BalloonContext = {
+      id: `balloon:${x}:${y}:${landing.x}:${landing.y}`,
+      label: 'Balloon',
+      type: 'balloon',
       depth: 1,
       origin: { x, y },
       destination: landing,
