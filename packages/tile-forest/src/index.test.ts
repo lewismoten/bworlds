@@ -486,6 +486,26 @@ describe('tile forest', () => {
         carvings.some((carving) => carving.barkCoverage >= 0.45)
       )
     ).toBe(true);
+    expect(
+      sampleTiles.some(({ carvings }) =>
+        carvings.some(
+          (carving) =>
+            carving.motif === 'quest-hint' &&
+            carving.preserved &&
+            carving.barkCoverage <= 0.38
+        )
+      )
+    ).toBe(true);
+    expect(
+      sampleTiles.some(({ carvings }) =>
+        carvings.some(
+          (carving) =>
+            carving.motif === 'treasure-map-clue' &&
+            carving.preserved &&
+            carving.barkCoverage <= 0.38
+        )
+      )
+    ).toBe(true);
 
     const first = sampleTiles[0];
     expect(getForestCarvings(first.x, first.y)).toEqual(first.carvings);
@@ -525,6 +545,37 @@ describe('tile forest', () => {
       throw new Error('expected a forest carving inspect action');
     }
     expect(action.note).toMatch(/carv|mark|initials|date|arrow|heart/i);
+
+    let preservedTile: { x: number; y: number } | null = null;
+    for (let tileY = 0; tileY < 32 && !preservedTile; tileY += 1) {
+      for (let tileX = 0; tileX < 32; tileX += 1) {
+        if (
+          getForestCarvings(tileX, tileY).some(
+            (carving) => carving.preserved && carving.motif === 'quest-hint'
+          )
+        ) {
+          preservedTile = { x: tileX, y: tileY };
+          break;
+        }
+      }
+    }
+
+    expect(preservedTile).not.toBeNull();
+    const preservedAction = tile?.createWorldAction?.({
+      seed: 'spec',
+      x: preservedTile!.x,
+      y: preservedTile!.y,
+      tile: { kind: 'forest' },
+      state: createForestTestState(preservedTile!.x, preservedTile!.y),
+    });
+    if (
+      !preservedAction ||
+      typeof preservedAction !== 'object' ||
+      !('note' in preservedAction)
+    ) {
+      throw new Error('expected a preserved forest carving inspect action');
+    }
+    expect(preservedAction.note).toMatch(/trail sign|hidden route/i);
     expect(
       tile?.createWorldAction?.({
         seed: 'spec',
@@ -1864,6 +1915,43 @@ describe('tile forest', () => {
 
     expect(agedRenderAges.some((age) => age >= 0.8)).toBe(true);
     expect(agedRenderCoverage.some((coverage) => coverage >= 0.45)).toBe(true);
+
+    let preservedClueTile: { x: number; y: number } | null = null;
+    for (let tileY = 0; tileY < 32 && !preservedClueTile; tileY += 1) {
+      for (let tileX = 0; tileX < 32; tileX += 1) {
+        if (
+          getForestCarvings(tileX, tileY).some(
+            (carving) =>
+              carving.preserved &&
+              (carving.motif === 'quest-hint' || carving.motif === 'treasure-map-clue')
+          )
+        ) {
+          preservedClueTile = { x: tileX, y: tileY };
+          break;
+        }
+      }
+    }
+
+    expect(preservedClueTile).not.toBeNull();
+    state.player.x = preservedClueTile!.x;
+    state.player.y = preservedClueTile!.y;
+    const preservedClueModel = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'forest' },
+      tileX: preservedClueTile!.x,
+      tileY: preservedClueTile!.y,
+      detailLevel: 'full',
+    }) as FakeGroup;
+
+    const preservedCoverage: number[] = [];
+    preservedClueModel.traverse((node) => {
+      if (typeof node.userData?.forestCarvingBarkCoverage === 'number') {
+        preservedCoverage.push(node.userData.forestCarvingBarkCoverage);
+      }
+    });
+
+    expect(preservedCoverage.some((coverage) => coverage <= 0.38)).toBe(true);
   });
 
   it('renders flower meadows only in full-detail forest models', () => {

@@ -652,7 +652,7 @@ This probably deserves several interchangeable strategies.
 * [ ] Allow new player-created carvings if desirable.
 * [X] Age carvings visually.
 * [X] Allow bark growth to partially obscure old carvings.
-* [ ] Preserve important quest carvings deterministically.
+* [X] Preserve important quest carvings deterministically.
 
 # Items Attached to Trees
 
