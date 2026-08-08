@@ -9,6 +9,7 @@ import {
   getCompassNeedleRotation,
   getCompassPalette,
   getCompassWobbleBoost,
+  isCompassHeadingDragSignificant,
   shouldToggleCompassHeading,
 } from './compass.ts';
 
@@ -76,5 +77,10 @@ describe('compass helpers', () => {
     expect(shouldToggleCompassHeading(0, 0.02)).toBe(true);
     expect(shouldToggleCompassHeading(0, Math.PI / 2)).toBe(false);
     expect(shouldToggleCompassHeading(null, 0)).toBe(false);
+  });
+
+  it('distinguishes a live drag from a simple heading toggle tap', () => {
+    expect(isCompassHeadingDragSignificant(0, 0.2)).toBe(true);
+    expect(isCompassHeadingDragSignificant(0, 0.01)).toBe(false);
   });
 });

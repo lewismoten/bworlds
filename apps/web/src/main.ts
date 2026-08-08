@@ -37,6 +37,7 @@ import {
   getCompassDialInteractionMode,
   getCompassDialRadius,
   getCompassWobbleBoost,
+  isCompassHeadingDragSignificant,
   shouldToggleCompassHeading,
 } from './compass.ts';
 import {
@@ -386,6 +387,13 @@ const compassHeadingState = {
     typeof savedSession?.compassHeadingAngle === 'number'
       ? savedSession.compassHeadingAngle
       : null,
+};
+const compassDialPointerState = {
+  draggingMode: null as null | 'heading-bug' | 'facing',
+  pointerId: -1,
+  startHeadingAngle: null as number | null,
+  startPointerAngle: 0,
+  draggedHeading: false,
 };
 const MOON_PHASE_NAMES = [
   'New Moon',
@@ -1262,7 +1270,7 @@ faceNorthButton?.addEventListener('click', () => faceDirection(-Math.PI / 2));
 faceEastButton?.addEventListener('click', () => faceDirection(0));
 faceSouthButton?.addEventListener('click', () => faceDirection(Math.PI / 2));
 faceWestButton?.addEventListener('click', () => faceDirection(Math.PI));
-compassDialCanvas?.addEventListener('click', (event) => {
+compassDialCanvas?.addEventListener('pointerdown', (event) => {
   const rect = compassDialCanvas.getBoundingClientRect();
   const pointX = event.clientX - rect.left;
   const pointY = event.clientY - rect.top;
@@ -1277,21 +1285,91 @@ compassDialCanvas?.addEventListener('click', (event) => {
     centerY,
     radius
   );
+  if (interactionMode === 'none') {
+    return;
+  }
+  compassDialPointerState.draggingMode = interactionMode;
+  compassDialPointerState.pointerId = event.pointerId;
+  compassDialPointerState.startHeadingAngle = compassHeadingState.angle;
+  compassDialPointerState.startPointerAngle = angle;
+  compassDialPointerState.draggedHeading = false;
+  compassDialCanvas.setPointerCapture(event.pointerId);
   if (interactionMode === 'heading-bug') {
-    compassHeadingState.angle = shouldToggleCompassHeading(
-      compassHeadingState.angle,
-      angle
-    )
-      ? null
-      : angle;
+    compassHeadingState.angle = angle;
+    render();
+  }
+});
+
+compassDialCanvas?.addEventListener('pointermove', (event) => {
+  if (
+    compassDialPointerState.draggingMode !== 'heading-bug' ||
+    event.pointerId !== compassDialPointerState.pointerId
+  ) {
+    return;
+  }
+  const rect = compassDialCanvas.getBoundingClientRect();
+  const pointX = event.clientX - rect.left;
+  const pointY = event.clientY - rect.top;
+  const angle = getCompassDialFacingAngle(
+    pointX,
+    pointY,
+    rect.width / 2,
+    rect.height / 2
+  );
+  compassDialPointerState.draggedHeading =
+    compassDialPointerState.draggedHeading ||
+    isCompassHeadingDragSignificant(compassDialPointerState.startPointerAngle, angle);
+  compassHeadingState.angle = angle;
+  render();
+});
+
+const releaseCompassDialPointer = (event: PointerEvent) => {
+  if (event.pointerId !== compassDialPointerState.pointerId) {
+    return;
+  }
+  const draggingMode = compassDialPointerState.draggingMode;
+  const startHeadingAngle = compassDialPointerState.startHeadingAngle;
+  const draggedHeading = compassDialPointerState.draggedHeading;
+  compassDialPointerState.draggingMode = null;
+  compassDialPointerState.pointerId = -1;
+  compassDialPointerState.startHeadingAngle = null;
+  compassDialPointerState.draggedHeading = false;
+  if (compassDialCanvas.hasPointerCapture(event.pointerId)) {
+    compassDialCanvas.releasePointerCapture(event.pointerId);
+  }
+
+  const rect = compassDialCanvas.getBoundingClientRect();
+  const pointX = event.clientX - rect.left;
+  const pointY = event.clientY - rect.top;
+  const centerX = rect.width / 2;
+  const centerY = rect.height / 2;
+  const radius = getCompassDialRadius(rect.width, rect.height);
+  const angle = getCompassDialFacingAngle(pointX, pointY, centerX, centerY);
+  const interactionMode = getCompassDialInteractionMode(
+    pointX,
+    pointY,
+    centerX,
+    centerY,
+    radius
+  );
+
+  if (draggingMode === 'heading-bug') {
+    compassHeadingState.angle =
+      !draggedHeading && shouldToggleCompassHeading(startHeadingAngle, angle)
+        ? null
+        : angle;
     saveSession();
     render();
     return;
   }
-  if (interactionMode === 'facing') {
+
+  if (draggingMode === 'facing' && interactionMode === 'facing') {
     faceDirection(angle);
   }
-});
+};
+
+compassDialCanvas?.addEventListener('pointerup', releaseCompassDialPointer);
+compassDialCanvas?.addEventListener('pointercancel', releaseCompassDialPointer);
 root.querySelectorAll<HTMLButtonElement>('[data-time-preset]').forEach((button) => {
   button.addEventListener('click', () => {
     const preset = button.dataset.timePreset;

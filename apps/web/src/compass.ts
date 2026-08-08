@@ -32,6 +32,14 @@ export function shouldToggleCompassHeading(
   return Math.abs(getCompassDelta(currentHeadingAngle, nextHeadingAngle)) <= thresholdRadians;
 }
 
+export function isCompassHeadingDragSignificant(
+  startHeadingAngle: number,
+  nextHeadingAngle: number,
+  thresholdRadians = Math.PI / 90
+) {
+  return Math.abs(getCompassDelta(startHeadingAngle, nextHeadingAngle)) > thresholdRadians;
+}
+
 export function getCompassPalette() {
   return {
     northLabel: '#d54343',
