@@ -1,3 +1,4 @@
+import { createBoundedCache } from '@bworlds/cache-support';
 import { getDaylightCycleState, hash2D } from '@bworlds/core';
 import {
   getDefaultQuestRegistry,
@@ -125,6 +126,9 @@ const SLOT_ORDER: ReadonlyArray<{ x: number; y: number }> = [
     { x, y: BUILDING_ROW_Y },
   ]),
 ];
+const TOWN_STRUCTURE_CACHE_LIMIT = 256;
+const TOWN_TIME_CACHE_LIMIT = 768;
+const TOWN_PROFILE_CACHE_LIMIT = 256;
 
 const PROFESSIONS: readonly TownProfessionTemplate[] = [
   {
@@ -226,12 +230,24 @@ const LAST_NAMES = [
   'Pine',
 ];
 
-const buildingCache = new Map<string, TownBuilding[]>();
-const npcCache = new Map<string, TownNpc[]>();
-const placementCache = new Map<string, TownNpcPlacement[]>();
-const serviceStateCache = new Map<string, TownBuildingServiceState>();
-const questStateCache = new Map<string, TownNpcQuestState[]>();
-const townProfileCache = new Map<string, TownProfile>();
+const buildingCache = createBoundedCache<string, TownBuilding[]>(
+  TOWN_STRUCTURE_CACHE_LIMIT
+);
+const npcCache = createBoundedCache<string, TownNpc[]>(
+  TOWN_STRUCTURE_CACHE_LIMIT
+);
+const placementCache = createBoundedCache<string, TownNpcPlacement[]>(
+  TOWN_TIME_CACHE_LIMIT
+);
+const serviceStateCache = createBoundedCache<string, TownBuildingServiceState>(
+  TOWN_TIME_CACHE_LIMIT
+);
+const questStateCache = createBoundedCache<string, TownNpcQuestState[]>(
+  TOWN_TIME_CACHE_LIMIT
+);
+const townProfileCache = createBoundedCache<string, TownProfile>(
+  TOWN_PROFILE_CACHE_LIMIT
+);
 
 function getTownCacheKey(tileX: number, tileY: number): string {
   return `${tileX}:${tileY}`;
