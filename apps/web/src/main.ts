@@ -138,6 +138,7 @@ import {
   resolvePoiMusicMix,
 } from './procedural-music.ts';
 import { createMusicUpdatePayloadBuilder } from './music-update-payload.ts';
+import { createDebouncedPersistence } from './debounced-persistence.ts';
 import {
   buildSextantMarkup,
   buildEventSummaryMarkup,
@@ -909,6 +910,7 @@ const soundEffects = createSoundEffectController(
 );
 const musicController = createMusicController(createWebAudioMusicSink());
 const buildMusicUpdatePayload = createMusicUpdatePayloadBuilder();
+const sessionPersistence = createDebouncedPersistence(flushSessionSave);
 const celestialPreview = createCelestialPreviewRenderer(celestialPreviewHost, {
   onRenderRequested: () => requestRender(),
 });
@@ -2824,10 +2826,15 @@ window.addEventListener('resize', () => {
 document.addEventListener('visibilitychange', () => {
   pageVisibilityState.hidden = document.hidden;
   if (pageVisibilityState.hidden) {
+    sessionPersistence.flush();
     lastFrame = 0;
     return;
   }
   requestRender();
+});
+
+window.addEventListener('pagehide', () => {
+  sessionPersistence.flush();
 });
 
 import.meta.hot?.on('vite:beforeUpdate', () => {
@@ -3179,6 +3186,10 @@ restore3dViewportKeyboardFocus(state.viewMode, viewport3d);
 requestRender();
 
 function saveSession(): void {
+  sessionPersistence.schedule();
+}
+
+function flushSessionSave(): void {
   try {
     const characterProfile = buildCharacterProfileSnapshot();
     const serializedCharacterProfile = serializeCharacterProfile(characterProfile);
