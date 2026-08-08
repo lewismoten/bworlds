@@ -1,3 +1,4 @@
+import { createBoundedCache } from '@bworlds/cache-support';
 import {
   createPlayer,
   createWorldState,
@@ -52,6 +53,7 @@ const OVERWORLD_CONTEXT: Context = {
   depth: 0,
   origin: { x: 0, y: 0 },
 };
+const PREVIEW_TILE_CACHE_LIMIT = 4096;
 
 function makeKey(...parts: Array<string | number>): string {
   return parts.join(':');
@@ -70,7 +72,9 @@ export function createWorldGenerator({
 } {
   const mapCache = new Map<string, WorldMapLike>();
   const terrainSignals = createOverworldTerrainSignalSampler(seed);
-  const previewTileCache = new Map<string, SpawnTile>();
+  const previewTileCache = createBoundedCache<string, SpawnTile>(
+    PREVIEW_TILE_CACHE_LIMIT
+  );
   const getMap = (context: Context) => {
     const key = makeKey(context.id, context.depth);
     if (!mapCache.has(key)) {

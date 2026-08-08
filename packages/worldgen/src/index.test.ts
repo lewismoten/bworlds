@@ -280,6 +280,22 @@ describe('world generator', () => {
     expect(generator.sampleOverworld(3, 2).kind).toBe('bridge');
   });
 
+  it('keeps preview sampling deterministic after bounded cache eviction churn', () => {
+    const generator = createGenerator();
+    const baselinePreview = generator.samplePreviewOverworld(10, 20);
+    const baselineOverworld = generator.sampleOverworld(3, 2);
+
+    for (let index = 0; index < 5000; index += 1) {
+      const x = (index % 100) - 50;
+      const y = Math.floor(index / 100) - 25;
+      generator.samplePreviewOverworld(x, y);
+    }
+
+    expect(generator.samplePreviewOverworld(10, 20)).toEqual(baselinePreview);
+    expect(generator.sampleOverworld(3, 2)).toEqual(baselineOverworld);
+    expect(generator.samplePreviewOverworld(3, 2).kind).not.toBe('bridge');
+  });
+
   it('creates the overworld through the registered map plugin path', () => {
     const generator = createGenerator();
     const overworld = generator.getMap({
@@ -320,31 +336,15 @@ describe('world generator', () => {
       activateRegistry: false,
     });
     const state = runtime.state;
-    let poiLocation: { x: number; y: number } | null = null;
-    let action: WorldActionLike | null = null;
+    const poiLocation = { x: 5, y: 4 };
+    const action = state.getCurrentMap().getAction?.(
+      poiLocation.x,
+      poiLocation.y,
+      state
+    ) as WorldActionLike | null | undefined;
 
-    for (let y = -300; y <= 300 && !poiLocation; y += 1) {
-      for (let x = -300; x <= 300; x += 1) {
-        const candidateAction = state.getCurrentMap().getAction?.(
-          x,
-          y,
-          state
-        ) as WorldActionLike | null | undefined;
-        if (
-          candidateAction?.type === 'enter' &&
-          candidateAction.context?.type &&
-          candidateAction.context.type !== 'canoe' &&
-          candidateAction.context.type !== 'boat'
-        ) {
-          poiLocation = { x, y };
-          action = candidateAction;
-          break;
-        }
-      }
-    }
-
-    if (!poiLocation || !action?.context?.type) {
-      throw new Error('Expected to find an enterable point of interest near the origin band.');
+    if (action?.type !== 'enter' || action.context?.type !== 'town') {
+      throw new Error('Expected a deterministic town entry near the overworld origin.');
     }
 
     state.player.x = poiLocation.x;
@@ -360,13 +360,8 @@ describe('world generator', () => {
       })
     );
 
-    if (action.context.type === 'town') {
-      state.player.x = 0;
-      state.player.y = 11;
-    } else {
-      state.player.x = 0;
-      state.player.y = 6;
-    }
+    state.player.x = 0;
+    state.player.y = 11;
 
     expect(state.tryExit()).toBe(true);
     expect(state.stack).toHaveLength(1);

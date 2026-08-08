@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "type": "module",
   "dependencies": {
+    "@bworlds/cache-support": "0.1.0",
     "@bworlds/content-pack-frontier": "0.1.0",
     "@bworlds/content-pack-ruins": "0.1.0",
     "@bworlds/content-pack-default": "0.1.0",
