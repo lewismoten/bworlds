@@ -76,11 +76,13 @@ export function getDefaultQuestPlugins(): QuestTypePlugin[] {
     createHomeNeedQuestPlugin(),
     createEscortQuestPlugin(),
     createTrackingQuestPlugin(),
+    createExplorationQuestPlugin(),
     createTimedQuestPlugin(),
     createDiplomacyQuestPlugin(),
     createChoiceQuestPlugin(),
     createFactionQuestPlugin(),
     createConstructionQuestPlugin(),
+    createActivationQuestPlugin(),
     createFetchQuestPlugin(),
     createRecoveryQuestPlugin(),
     createCraftingQuestPlugin(),
@@ -436,6 +438,52 @@ function createTrackingQuestPlugin(): QuestTypePlugin {
   });
 }
 
+function createExplorationQuestPlugin(): QuestTypePlugin {
+  return createQuestTypePlugin('exploration', (context) => {
+    if (
+      context.playerLevel < 2 ||
+      context.playerLevel > 16 ||
+      context.npcState !== 'working' ||
+      !(
+        context.professionFamily === 'inn' ||
+        context.professionFamily === 'stable' ||
+        context.professionFamily === 'school' ||
+        context.professionFamily === 'town-hall'
+      )
+    ) {
+      return null;
+    }
+
+    const route =
+      context.professionFamily === 'town-hall'
+        ? 'survey the boundary stones beyond town'
+        : context.professionFamily === 'school'
+          ? 'chart the nearby landmarks for the lesson board'
+          : context.professionFamily === 'stable'
+            ? 'map the ridge trail and outer hitch markers'
+            : 'reach the old lookout and mark the safer guest road';
+    const questId = `${context.townKey}:${context.npcId}:exploration:${context.professionFamily}`;
+    if (context.completedQuestIds.has(questId)) {
+      return null;
+    }
+
+    const professionHint =
+      context.playerProfession === 'scout' || context.playerProfession === 'scholar'
+        ? ' Your eye for routes and landmarks should make the survey easier.'
+        : '';
+
+    return {
+      id: questId,
+      type: 'exploration',
+      title: 'Chart the Way',
+      summary: `${context.npcName} asks you to ${route} before the town updates its local maps.${professionHint}`,
+      availability: 'work',
+      sourceNpcId: context.npcId,
+      sourceNpcName: context.npcName,
+    };
+  });
+}
+
 function createTimedQuestPlugin(): QuestTypePlugin {
   return createQuestTypePlugin('timed', (context) => {
     if (
@@ -479,6 +527,51 @@ function createTimedQuestPlugin(): QuestTypePlugin {
       summary: `${context.npcName} needs someone to ${objective} ${deadline}.${professionHint}`,
       availability:
         context.npcState === 'working' ? 'work' : 'travel',
+      sourceNpcId: context.npcId,
+      sourceNpcName: context.npcName,
+    };
+  });
+}
+
+function createActivationQuestPlugin(): QuestTypePlugin {
+  return createQuestTypePlugin('activation', (context) => {
+    if (
+      context.playerLevel < 3 ||
+      !(
+        context.npcState === 'working' ||
+        context.npcState === 'commuting-to-work'
+      ) ||
+      !(
+        context.professionFamily === 'temple' ||
+        context.professionFamily === 'town-hall' ||
+        context.professionFamily === 'workshop'
+      )
+    ) {
+      return null;
+    }
+
+    const system =
+      context.professionFamily === 'temple'
+        ? 'rekindle the hillside shrine lamps'
+        : context.professionFamily === 'workshop'
+          ? 'reset the waterwheel lift and yard winch'
+          : 'raise the watch lanterns on the town towers';
+    const questId = `${context.townKey}:${context.npcId}:activation:${context.professionFamily}:${context.npcState}`;
+    if (context.completedQuestIds.has(questId)) {
+      return null;
+    }
+
+    const professionHint =
+      context.playerProfession === 'smith' || context.playerProfession === 'healer'
+        ? ' Your steady hands should help bring the system online quickly.'
+        : '';
+
+    return {
+      id: questId,
+      type: 'activation',
+      title: 'Set It in Motion',
+      summary: `${context.npcName} needs someone to ${system} before the next town cycle begins.${professionHint}`,
+      availability: context.npcState === 'working' ? 'work' : 'travel',
       sourceNpcId: context.npcId,
       sourceNpcName: context.npcName,
     };

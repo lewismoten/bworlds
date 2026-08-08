@@ -356,6 +356,71 @@ describe('town support', () => {
     ).toBe(true);
   });
 
+  it('surfaces exploration and activation quest offers from generated town schedules', () => {
+    const townSamples: Array<[number, number]> = [
+      [3, 7],
+      [10, -4],
+      [25, 9],
+      [48, -16],
+      [120, -80],
+    ];
+    let explorationStates: ReturnType<typeof getTownNpcQuestStates> = [];
+    let activationStates: ReturnType<typeof getTownNpcQuestStates> = [];
+
+    outerExploration: for (const [x, y] of townSamples) {
+      for (let minute = 0; minute < 24 * 60; minute += 30) {
+        explorationStates = getTownNpcQuestStates(
+          x,
+          y,
+          DEFAULT_DAY_LENGTH_MS * (minute / (24 * 60)),
+          {
+            level: 4,
+            profession: 'scout',
+          }
+        );
+        if (
+          explorationStates.some((entry) =>
+            entry.offers.some((offer) => offer.type === 'exploration')
+          )
+        ) {
+          break outerExploration;
+        }
+      }
+    }
+
+    outerActivation: for (const [x, y] of townSamples) {
+      for (let minute = 0; minute < 24 * 60; minute += 30) {
+        activationStates = getTownNpcQuestStates(
+          x,
+          y,
+          DEFAULT_DAY_LENGTH_MS * (minute / (24 * 60)),
+          {
+            level: 4,
+            profession: 'healer',
+          }
+        );
+        if (
+          activationStates.some((entry) =>
+            entry.offers.some((offer) => offer.type === 'activation')
+          )
+        ) {
+          break outerActivation;
+        }
+      }
+    }
+
+    expect(
+      explorationStates.some((entry) =>
+        entry.offers.some((offer) => offer.type === 'exploration')
+      )
+    ).toBe(true);
+    expect(
+      activationStates.some((entry) =>
+        entry.offers.some((offer) => offer.type === 'activation')
+      )
+    ).toBe(true);
+  });
+
   it('surfaces diplomacy and choice quests from generated town schedules', () => {
     const townSamples: Array<[number, number]> = [
       [3, 7],

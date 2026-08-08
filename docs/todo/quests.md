@@ -9,7 +9,7 @@ Quests may include:
 - [X] Delivery quest — carry an item or message to another person or place.
 - [ ] Rescue quest — find and save an NPC, prisoner, animal, etc.
 - [X] Search / investigation quest — gather clues, inspect locations, question NPCs, solve a mystery.
-- [ ] Exploration quest — discover a location, map an area, reach a landmark, or uncover hidden places.
+- [X] Exploration quest — discover a location, map an area, reach a landmark, or uncover hidden places.
 - [X] Collection quest — gather several items, ingredients, artifacts, or resources.
 - [X] Crafting quest — obtain materials and build, repair, cook, or forge something.
 - [ ] Puzzle quest — solve mechanisms, riddles, codes, environmental puzzles, or logic challenges.
@@ -26,7 +26,7 @@ Quests may include:
 - [ ] Companion quest — resolve a party member's personal storyline.
 - [ ] Revenge quest — pursue someone responsible for an earlier event.
 - [X] Recovery quest — reclaim stolen property, territory, equipment, or something lost.
-- [ ] Activation quest — turn on generators, shrines, portals, towers, switches, etc.
+- [X] Activation quest — turn on generators, shrines, portals, towers, switches, etc.
 - [ ] Destruction / sabotage quest — destroy an object, structure, supply line, machine, or enemy resource.
 - [X] Construction / restoration quest — rebuild a town, repair equipment, establish an outpost, or improve a location.
 - [X] Training / tutorial quest — teach mechanics by having the player perform them.

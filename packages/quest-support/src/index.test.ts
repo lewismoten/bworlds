@@ -10,11 +10,13 @@ describe('quest support', () => {
       'collection',
       'escort',
       'tracking',
+      'exploration',
       'timed',
       'diplomacy',
       'choice',
       'faction',
       'construction',
+      'activation',
       'fetch',
       'recovery',
       'crafting',
@@ -242,6 +244,44 @@ describe('quest support', () => {
     ).toBe(true);
   });
 
+  it('offers exploration quests for professions that can issue surveys and route charts', () => {
+    const exploration = getDefaultQuestRegistry().getOffers({
+      npcId: 'npc:teacher',
+      npcName: 'Iris Juniper',
+      townKey: '3:7',
+      dayProgress: 0.4,
+      yearProgress: 0.47,
+      playerLevel: 4,
+      playerProfession: 'scout',
+      completedQuestIds: new Set<string>(),
+      npcState: 'working',
+      profession: 'teacher',
+      professionFamily: 'school',
+      residenceBuildingId: 'home',
+      workplaceBuildingId: 'school',
+    });
+    const overleveled = getDefaultQuestRegistry().getOffers({
+      npcId: 'npc:teacher',
+      npcName: 'Iris Juniper',
+      townKey: '3:7',
+      dayProgress: 0.4,
+      yearProgress: 0.47,
+      playerLevel: 20,
+      completedQuestIds: new Set<string>(),
+      npcState: 'working',
+      profession: 'teacher',
+      professionFamily: 'school',
+      residenceBuildingId: 'home',
+      workplaceBuildingId: 'school',
+    });
+
+    expect(exploration.some((offer) => offer.type === 'exploration')).toBe(true);
+    expect(
+      exploration.some((offer) => offer.summary.includes('routes and landmarks'))
+    ).toBe(true);
+    expect(overleveled.some((offer) => offer.type === 'exploration')).toBe(false);
+  });
+
   it('offers timed quests for rush jobs and favors fast-delivery professions', () => {
     const timed = getDefaultQuestRegistry().getOffers({
       npcId: 'npc:merchant',
@@ -276,6 +316,44 @@ describe('quest support', () => {
     expect(timed.some((offer) => offer.type === 'timed')).toBe(true);
     expect(timed.some((offer) => offer.summary.includes('quick feet'))).toBe(true);
     expect(overleveled.some((offer) => offer.type === 'timed')).toBe(false);
+  });
+
+  it('offers activation quests for staffed civic, temple, and workshop systems', () => {
+    const activation = getDefaultQuestRegistry().getOffers({
+      npcId: 'npc:priest',
+      npcName: 'Elise Harrow',
+      townKey: '3:7',
+      dayProgress: 0.28,
+      yearProgress: 0.85,
+      playerLevel: 4,
+      playerProfession: 'healer',
+      completedQuestIds: new Set<string>(),
+      npcState: 'working',
+      profession: 'priest',
+      professionFamily: 'temple',
+      residenceBuildingId: 'home',
+      workplaceBuildingId: 'temple',
+    });
+    const underleveled = getDefaultQuestRegistry().getOffers({
+      npcId: 'npc:priest',
+      npcName: 'Elise Harrow',
+      townKey: '3:7',
+      dayProgress: 0.28,
+      yearProgress: 0.85,
+      playerLevel: 1,
+      completedQuestIds: new Set<string>(),
+      npcState: 'working',
+      profession: 'priest',
+      professionFamily: 'temple',
+      residenceBuildingId: 'home',
+      workplaceBuildingId: 'temple',
+    });
+
+    expect(activation.some((offer) => offer.type === 'activation')).toBe(true);
+    expect(
+      activation.some((offer) => offer.summary.includes('steady hands'))
+    ).toBe(true);
+    expect(underleveled.some((offer) => offer.type === 'activation')).toBe(false);
   });
 
   it('offers diplomacy quests for civic and social disputes', () => {
