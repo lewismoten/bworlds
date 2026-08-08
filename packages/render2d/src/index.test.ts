@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import { DEFAULT_DAY_LENGTH_MS } from '@bworlds/core';
 
 vi.mock('@bworlds/atlas', () => ({
   drawTileSprite() {},
@@ -126,7 +127,7 @@ describe('render2D night sky overlay', () => {
       timeMs: 0,
       environment: {
         cycle: {
-          dayLengthMs: 240000,
+          dayLengthMs: DEFAULT_DAY_LENGTH_MS,
           offsetMs: 0,
         },
         stars: {

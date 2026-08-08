@@ -32,6 +32,7 @@ export const DEFAULT_ROUTE_TERMINAL_KINDS = new Set<RouteTerminalTileKind>([
   'quarry',
   'lighthouse',
   'ship',
+  'observatory',
 ]);
 
 export const DEFAULT_BRIDGE_WATER_KINDS = new Set<WaterTileKind>([

@@ -104,4 +104,22 @@ describe('runtime player poi', () => {
     ]);
     expect(parsePlayerPlacedPois([{ x: 1 }])).toBeNull();
   });
+
+  it('allows players to build observatories on open overworld tiles', () => {
+    const state = createState();
+
+    expect(canBuildPlayerPoi(state as never, 'observatory')).toBe(true);
+    const built = buildPlayerPoi(state as never, 'spec', 'observatory');
+
+    expect(built).toEqual(
+      expect.objectContaining({
+        kind: 'observatory',
+        note: 'A newly raised observatory opens its dome to the sky above.',
+        poi: expect.objectContaining({
+          type: 'observatory',
+          name: expect.any(String),
+        }),
+      })
+    );
+  });
 });

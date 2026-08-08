@@ -236,6 +236,16 @@ describe('core utilities', () => {
     );
   });
 
+  it('generates deterministic observatory point-of-interest names', () => {
+    const left = generatePoiName('observatory-spec', 'observatory', -11, 16);
+    const right = generatePoiName('observatory-spec', 'observatory', -11, 16);
+
+    expect(left).toBe(right);
+    expect(left).toMatch(
+      /\b(Observatory|Dome|Lens|Crown|Apex|Spire)\b/
+    );
+  });
+
   it('exposes periodic planets, meteor showers, and comets', () => {
     const events = getCelestialEventsForDay(0, {
       yearLengthDays: DEFAULT_YEAR_LENGTH_DAYS,

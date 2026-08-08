@@ -32,6 +32,7 @@ const BUILDABLE_POI_KINDS = new Set<Kind>([
   'quarry',
   'lighthouse',
   'ship',
+  'observatory',
 ]);
 
 export function createPlayerPoiRuntimePlugin(): RuntimePlugin {
@@ -141,6 +142,9 @@ export function getPlayerPoiBuildNote(kind: Kind): string {
   if (kind === 'quarry') return 'Fresh-cut stone marks a newly started quarry.';
   if (kind === 'lighthouse') return 'A newly built lighthouse now watches the horizon.';
   if (kind === 'ship') return 'A newly moored ship creaks at its berth.';
+  if (kind === 'observatory') {
+    return 'A newly raised observatory opens its dome to the sky above.';
+  }
   return 'A newly built point of interest stands here.';
 }
 

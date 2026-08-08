@@ -144,6 +144,7 @@ root.innerHTML = `
             <option value="quarry">Build Quarry</option>
             <option value="lighthouse">Build Lighthouse</option>
             <option value="ship">Build Ship</option>
+            <option value="observatory">Build Observatory</option>
           </select>
           <button id="build-poi" type="button">Build Here</button>
         </div>

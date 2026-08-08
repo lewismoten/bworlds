@@ -287,7 +287,7 @@ describe('world generator', () => {
         }
       }
     }
-    expect(found?.poi?.type).toMatch(/town|dungeon|cave|quarry|ship/);
+    expect(found?.poi?.type).toMatch(/town|dungeon|cave|quarry|ship|observatory/);
   });
 
   it('enters poi instances and exits back to the overworld facing away from the entrance', () => {
@@ -573,6 +573,55 @@ describe('world generator', () => {
     );
     expect(state.interact()).toBe(true);
     expect(state.getCurrentContext().type).toBe('town');
+  });
+
+  it('lets the player build and enter a new observatory on an open overworld tile', () => {
+    const runtime = createWorldRuntime({
+      seed: 'spec',
+      activateRegistry: false,
+    });
+    const state = runtime.state;
+
+    state.player.x = 0;
+    state.player.y = 0;
+    state.player.facing = 0;
+
+    const built = buildPlayerPoi(state, 'spec', 'observatory');
+
+    expect(built).toEqual(
+      expect.objectContaining({
+        kind: 'observatory',
+        poi: expect.objectContaining({
+          type: 'observatory',
+        }),
+      })
+    );
+    expect(state.getCurrentTile(0, 0)).toEqual(
+      expect.objectContaining({
+        kind: 'observatory',
+        poi: expect.objectContaining({
+          type: 'observatory',
+        }),
+      })
+    );
+    expect(state.interact()).toBe(true);
+    expect(state.getCurrentContext().type).toBe('observatory');
+
+    state.player.x = 0;
+    state.player.y = 5;
+    state.player.facing = 0;
+    expect(state.tryExit()).toBe(true);
+    expect(state.getCurrentContext().type).toBe('overworld');
+  });
+
+  it('creates a starter observatory on a nearby summit', () => {
+    const generator = createGenerator();
+    const observatoryTile = generator.sampleOverworld(-6, -2);
+
+    expect(observatoryTile.poi?.type).toBe('observatory');
+    expect(observatoryTile.poi?.name).toMatch(
+      /\b(Observatory|Dome|Lens|Crown|Apex|Spire)\b/
+    );
   });
 
   it('creates starter docks beside the lighthouse instead of bridge-like coastal crossings', () => {

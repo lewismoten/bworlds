@@ -14,7 +14,7 @@
 - [X] Long docks may have multiple boats
 - [X] Some docks may have a stationary tall ship or broken down ship that may serve as a point of interest, that lets you board and explore
 - [X] A player may build a new POI anywhere.
-- [ ] Observatories appear on top of hills/mountains
-  - [ ] Dome opens at sunset and telescope comes out
-  - [ ] Dome closes at sunrise
-  - [ ] Can visit the observatory and look at the night sky
+- [X] Observatories appear on top of hills/mountains
+  - [X] Dome opens at sunset and telescope comes out
+  - [X] Dome closes at sunrise
+  - [X] Can visit the observatory and look at the night sky

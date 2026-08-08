@@ -140,7 +140,7 @@ describe('runtime overworld anchors', () => {
       bridgeAnchors: [],
       poiAnchors: [],
     };
-    for (let seedIndex = 0; seedIndex < 12; seedIndex += 1) {
+    for (let seedIndex = 0; seedIndex < 256; seedIndex += 1) {
       anchors =
         (plugin.resolveOverworldAnchors?.(
           createAnchorPayload({
@@ -292,6 +292,66 @@ describe('runtime overworld anchors', () => {
         }
       }
       expect(foundOcean).toBe(true);
+    });
+  });
+
+  it('places observatory anchors on mountain summit clusters', () => {
+    const sampleTerrainSignals = (x: number, y: number): OverworldSignals => {
+      const summitCenterX = Math.round(x / 6) * 6;
+      const summitCenterY = Math.round(y / 6) * 6;
+      if (Math.abs(x - summitCenterX) <= 1 && Math.abs(y - summitCenterY) <= 1) {
+        return {
+          continent: 0.72,
+          elevation: 0.9,
+          moisture: 0.36,
+          riverSignal: 0.12,
+          roadSignal: 0.22,
+        };
+      }
+      return {
+        continent: 0.72,
+        elevation: 0.7,
+        moisture: 0.36,
+        riverSignal: 0.12,
+        roadSignal: 0.22,
+      };
+    };
+    let anchors: OverworldAnchorSet = {
+      townAnchors: [],
+      bridgeAnchors: [],
+      poiAnchors: [],
+    };
+
+    for (let seedIndex = 0; seedIndex < 12; seedIndex += 1) {
+      anchors =
+        (plugin.resolveOverworldAnchors?.(
+          createAnchorPayload({
+            seed: `observatory-summit-spec:${seedIndex}`,
+            x: 0,
+            y: 0,
+            sampleTerrainSignals,
+          })
+        ) as OverworldAnchorSet) ?? anchors;
+      if ((anchors.poiAnchors ?? []).some((anchor) => anchor.type === 'observatory')) {
+        break;
+      }
+    }
+
+    const observatories = (anchors.poiAnchors ?? []).filter(
+      (anchor) => anchor.type === 'observatory'
+    );
+    expect(observatories.length).toBeGreaterThan(0);
+    observatories.forEach((anchor) => {
+      expect(sampleTerrainSignals(anchor.x, anchor.y).elevation).toBeGreaterThanOrEqual(0.78);
+      let elevatedSamples = 0;
+      for (let sampleY = anchor.y - 1; sampleY <= anchor.y + 1; sampleY += 1) {
+        for (let sampleX = anchor.x - 1; sampleX <= anchor.x + 1; sampleX += 1) {
+          if (sampleTerrainSignals(sampleX, sampleY).elevation > 0.72) {
+            elevatedSamples += 1;
+          }
+        }
+      }
+      expect(elevatedSamples).toBeGreaterThanOrEqual(4);
     });
   });
 

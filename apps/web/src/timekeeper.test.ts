@@ -89,13 +89,13 @@ describe('timekeeper helpers', () => {
 
   it('pins dawn and dusk dividers to the top marker when the selected time is sunrise or sunset', () => {
     const sunriseCycle = getDaylightCycleState(0, {
-      dayLengthMs: 240000,
+      dayLengthMs: DEFAULT_DAY_LENGTH_MS,
     });
     sunriseCycle.dayProgress = sunriseCycle.sunriseProgress;
     const sunriseLayout = getDaylightRingLayout(sunriseCycle);
 
     const sunsetCycle = getDaylightCycleState(0, {
-      dayLengthMs: 240000,
+      dayLengthMs: DEFAULT_DAY_LENGTH_MS,
     });
     sunsetCycle.dayProgress = sunsetCycle.sunsetProgress;
     const sunsetLayout = getDaylightRingLayout(sunsetCycle);
@@ -111,7 +111,7 @@ describe('timekeeper helpers', () => {
 
   it('keeps displayed sunrise and sunset dividers pinned during smoothed preset jumps', () => {
     const sunriseCycle = getDaylightCycleState(0, {
-      dayLengthMs: 240000,
+      dayLengthMs: DEFAULT_DAY_LENGTH_MS,
     });
     sunriseCycle.dayProgress = sunriseCycle.sunriseProgress;
     const sunriseAnchors = stabilizeDisplayedDaylightAnchors(
@@ -124,7 +124,7 @@ describe('timekeeper helpers', () => {
     );
 
     const sunsetCycle = getDaylightCycleState(0, {
-      dayLengthMs: 240000,
+      dayLengthMs: DEFAULT_DAY_LENGTH_MS,
     });
     sunsetCycle.dayProgress = sunsetCycle.sunsetProgress;
     const sunsetAnchors = stabilizeDisplayedDaylightAnchors(

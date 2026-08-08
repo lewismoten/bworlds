@@ -10,6 +10,7 @@ type StarterTerrainTileKind =
   | 'town'
   | 'lighthouse'
   | 'ship'
+  | 'observatory'
   | 'dock';
 
 const plugin = createStartRegionRuntimePlugin();
@@ -64,6 +65,7 @@ describe('runtime start region', () => {
       { x: 7, y: 0, kind: 'dock' },
       { x: 8, y: 0, kind: 'dock' },
       { x: 9, y: 0, kind: 'ship' },
+      { x: -6, y: -2, kind: 'observatory' },
     ];
 
     for (const sample of samples) {
@@ -111,6 +113,7 @@ describe('runtime start region', () => {
       { x: -5, y: 4, kind: 'dungeon', original: 'Starter Dungeon' },
       { x: 6, y: 0, kind: 'lighthouse', original: 'Starter Lighthouse' },
       { x: 9, y: 0, kind: 'ship', original: 'Starter Ship' },
+      { x: -6, y: -2, kind: 'observatory', original: 'Starter Observatory' },
     ] as const;
 
     for (const sample of samples) {

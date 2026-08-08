@@ -9,6 +9,14 @@ const curatedSpawnTiles = new Map<string, TileLike>([
   ['-2,3', { kind: 'forest', note: 'A small woodland borders the plains.' }],
   ['-5,-1', { kind: 'mountain', note: 'A rugged mountain rises nearby.' }],
   [
+    '-6,-2',
+    {
+      kind: 'observatory',
+      poi: { type: 'observatory', name: 'Starter Observatory' },
+      note: 'An observatory keeps watch from the nearby summit.',
+    },
+  ],
+  [
     '-5,4',
     {
       kind: 'dungeon',
@@ -116,6 +124,12 @@ function getCuratedTile({
       return {
         ...tile,
         poi: { ...tile.poi, name: generatePoiName(seed, 'ship', 9, 0) },
+      };
+    }
+    if (tile.kind === 'observatory' && tile.poi) {
+      return {
+        ...tile,
+        poi: { ...tile.poi, name: generatePoiName(seed, 'observatory', -6, -2) },
       };
     }
 

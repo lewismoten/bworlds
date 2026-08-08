@@ -15,7 +15,13 @@ import type {
 
 type NamedPoint = OverworldAnchorLike & { name: string };
 type NamedPoiAnchor = PoiAnchorLike & { name: string };
-type PoiType = 'cave' | 'dungeon' | 'quarry' | 'lighthouse' | 'ship';
+type PoiType =
+  | 'cave'
+  | 'dungeon'
+  | 'quarry'
+  | 'lighthouse'
+  | 'ship'
+  | 'observatory';
 
 const TOWN_CELL_SIZE = 20;
 const BRIDGE_CELL_SIZE = 16;
@@ -30,6 +36,26 @@ const FOREST_CLUSTER_RADIUS = 2;
 const OCEAN_CONTINENT_THRESHOLD = 0.38;
 const LAND_CONTINENT_THRESHOLD = 0.42;
 const SHIP_CONTINENT_MAX = 0.74;
+const OBSERVATORY_ELEVATION_MIN = 0.78;
+
+function hasMountainSummitCluster(
+  x: number,
+  y: number,
+  sampleTerrainSignals: OverworldTerrainSignalSampler
+): boolean {
+  let elevatedCount = 0;
+  for (let offsetY = -1; offsetY <= 1; offsetY += 1) {
+    for (let offsetX = -1; offsetX <= 1; offsetX += 1) {
+      if (
+        sampleTerrainSignals(x + offsetX, y + offsetY).elevation >=
+        MOUNTAIN_ELEVATION_THRESHOLD
+      ) {
+        elevatedCount += 1;
+      }
+    }
+  }
+  return elevatedCount >= 4;
+}
 
 function hasNearbyMountainTerrain(
   x: number,
@@ -265,6 +291,24 @@ const POI_SPECS: Record<PoiType, OverworldCellAnchorSpec<NamedPoiAnchor>> = {
         terrain.moisture > 0.38 &&
         hasNearbyOceanTerrain(x, y, sampleTerrainSignals, 2) &&
         hasAdjacentLandNeighbor(x, y, sampleTerrainSignals)
+      );
+    },
+  }),
+  observatory: createGeneratedPoiOverworldCellAnchorSpec({
+    id: 'observatory',
+    poiType: 'observatory',
+    cellSize: 24,
+    chanceKey: 'observatory-anchor',
+    offsetXKey: 'observatory-anchor-x',
+    offsetYKey: 'observatory-anchor-y',
+    threshold: 0.72,
+    priority: 24,
+    isSuitableTerrain({ terrain, x, y, sampleTerrainSignals }) {
+      return (
+        terrain.continent >= LAND_CONTINENT_THRESHOLD &&
+        terrain.elevation >= OBSERVATORY_ELEVATION_MIN &&
+        terrain.riverSignal < 0.72 &&
+        hasMountainSummitCluster(x, y, sampleTerrainSignals)
       );
     },
   }),
