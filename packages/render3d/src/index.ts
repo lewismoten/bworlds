@@ -49,6 +49,8 @@ type Render3DOptions = {
   cameraPitch?: number;
   cameraBobOffset?: number;
   visibilityRadius?: number;
+  pendingBuildBudgetMs?: number;
+  maxPendingBuildTiles?: number;
 };
 type Render3DController = {
   canOccupy(state: Render3DState, nextX: number, nextY: number): boolean;
@@ -165,6 +167,7 @@ const CHUNK_RADIUS = 18;
 const NEAR_VISIBLE_RADIUS = 6;
 const FACING_BUCKETS = 12;
 const WORLD_SYNC_BATCH_SIZE = 28;
+const DEFAULT_PENDING_WORLD_BUILD_BUDGET_MS = 2.5;
 const LOW_DETAIL_MODEL_DISTANCE = 6.5;
 const LOW_DETAIL_MODEL_DISTANCE_SQUARED =
   LOW_DETAIL_MODEL_DISTANCE * LOW_DETAIL_MODEL_DISTANCE;
@@ -438,7 +441,11 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     lastChunkRadius = chunkRadius;
   }
 
-  function flushPendingWorldBuild(state, nowMs: number) {
+  function flushPendingWorldBuild(
+    state,
+    nowMs: number,
+    options: Pick<Render3DOptions, 'pendingBuildBudgetMs' | 'maxPendingBuildTiles'> = {}
+  ) {
     if (pendingWorldBuild.queue.length === 0) {
       return;
     }
@@ -453,8 +460,37 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       return;
     }
     const registry = getActivePluginRegistry();
-    const batch = pendingWorldBuild.queue.splice(0, WORLD_SYNC_BATCH_SIZE);
-    for (const entry of batch) {
+    const flushStartMs = performance.now();
+    const maxPendingBuildTiles = Math.max(
+      1,
+      Math.min(
+        WORLD_SYNC_BATCH_SIZE,
+        Math.floor(options.maxPendingBuildTiles ?? WORLD_SYNC_BATCH_SIZE)
+      )
+    );
+    const pendingBuildBudgetMs = Math.max(
+      0.25,
+      options.pendingBuildBudgetMs ?? DEFAULT_PENDING_WORLD_BUILD_BUDGET_MS
+    );
+    let processedEntryCount = 0;
+
+    while (
+      processedEntryCount < pendingWorldBuild.queue.length &&
+      shouldProcessPendingWorldBuildEntry(
+        flushStartMs,
+        performance.now(),
+        processedEntryCount,
+        {
+          pendingBuildBudgetMs,
+          maxPendingBuildTiles,
+        }
+      )
+    ) {
+      const entry = pendingWorldBuild.queue[processedEntryCount];
+      processedEntryCount += 1;
+      if (!entry) {
+        continue;
+      }
       if (visibleTileNodes.has(entry.key)) {
         continue;
       }
@@ -479,6 +515,10 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
         durationMs: buildDurationMs,
       });
     }
+
+    if (processedEntryCount > 0) {
+      pendingWorldBuild.queue.splice(0, processedEntryCount);
+    }
   }
 
   function render(state: Render3DState, options: Render3DOptions = {}): void {
@@ -498,7 +538,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       syncVisibleWorld(state, chunkRadius);
     }
     const frameNowMs = options.timeMs ?? performance.now();
-    flushPendingWorldBuild(state, frameNowMs);
+    flushPendingWorldBuild(state, frameNowMs, options);
     syncWorldCurvature(visibleTileNodes.values(), state);
 
     camera.position.set(
@@ -1774,6 +1814,29 @@ export function getRenderChurnStats(
       windowMs
     ),
   };
+}
+
+export function shouldProcessPendingWorldBuildEntry(
+  flushStartMs: number,
+  currentMs: number,
+  processedEntryCount: number,
+  {
+    pendingBuildBudgetMs = DEFAULT_PENDING_WORLD_BUILD_BUDGET_MS,
+    maxPendingBuildTiles = WORLD_SYNC_BATCH_SIZE,
+    minimumEntriesPerFlush = 1,
+  }: {
+    pendingBuildBudgetMs?: number;
+    maxPendingBuildTiles?: number;
+    minimumEntriesPerFlush?: number;
+  } = {}
+): boolean {
+  if (processedEntryCount >= maxPendingBuildTiles) {
+    return false;
+  }
+  if (processedEntryCount < minimumEntriesPerFlush) {
+    return true;
+  }
+  return currentMs - flushStartMs < pendingBuildBudgetMs;
 }
 
 function pruneRecentMetricTimestamps(

@@ -4,6 +4,11 @@ export type RenderBudgetState = {
   targetFps: 60 | 30;
 };
 
+export type PendingWorldBuildBudget = {
+  pendingBuildBudgetMs: number;
+  maxPendingBuildTiles: number;
+};
+
 export const DEFAULT_VISIBILITY_RADIUS = 18;
 export const REDUCED_VISIBILITY_RADIUS = 14;
 export const MIN_VISIBILITY_RADIUS = 10;
@@ -60,4 +65,34 @@ export function advanceRenderBudgetState(
     visibilityRadius,
     targetFps,
   };
+}
+
+export function getPendingWorldBuildBudget(
+  state: Pick<RenderBudgetState, 'smoothedFrameMs' | 'targetFps'>
+): PendingWorldBuildBudget {
+  const targetFrameMs = 1000 / state.targetFps;
+  const framePressure = clamp(state.smoothedFrameMs / targetFrameMs, 0.5, 1.6);
+  const overBudget = framePressure > 1.02;
+  const maxBudgetMs = state.targetFps === 60 ? 3.5 : 2.25;
+  const pendingBuildBudgetMs = clamp(
+    maxBudgetMs - Math.max(0, framePressure - 0.8) * 4,
+    0.75,
+    maxBudgetMs
+  );
+
+  if (state.targetFps === 30) {
+    return {
+      pendingBuildBudgetMs,
+      maxPendingBuildTiles: overBudget ? 2 : 4,
+    };
+  }
+
+  return {
+    pendingBuildBudgetMs,
+    maxPendingBuildTiles: overBudget ? 4 : 8,
+  };
+}
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, value));
 }

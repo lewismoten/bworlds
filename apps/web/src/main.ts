@@ -107,6 +107,7 @@ import {
 import {
   advanceRenderBudgetState,
   DEFAULT_RENDER_BUDGET_STATE,
+  getPendingWorldBuildBudget,
 } from './render-budget.ts';
 import { getMouseLookAngles } from './mouse-look.ts';
 import {
@@ -2320,6 +2321,7 @@ function render(): FrameLoopActivityLike {
       uiRenderState.lastTextViewportSignature = textViewportSignature;
     }
   } else {
+    const pendingWorldBuildBudget = getPendingWorldBuildBudget(renderBudgetState);
     renderer3d.render(state, {
       jumpHeight: motion.jumpHeight,
       timeMs,
@@ -2327,6 +2329,8 @@ function render(): FrameLoopActivityLike {
       cameraPitch: mouseLookState.pitch,
       cameraBobOffset: motion.headBob.offset,
       visibilityRadius: renderBudgetState.visibilityRadius,
+      pendingBuildBudgetMs: pendingWorldBuildBudget.pendingBuildBudgetMs,
+      maxPendingBuildTiles: pendingWorldBuildBudget.maxPendingBuildTiles,
     });
   }
 

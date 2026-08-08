@@ -25,6 +25,7 @@ import {
   prepareObjectForDistanceFade,
   recordRecentMetric,
   recordRecentDurationMetric,
+  shouldProcessPendingWorldBuildEntry,
   shouldSyncTileModelDetailLevels,
   summarizeVisibleTileKinds,
   syncDynamicTileNodes,
@@ -159,6 +160,36 @@ describe('render3d visibility helpers', () => {
       lodChecksPerSecond: 1,
       lodReplacementsPerSecond: 0,
     });
+  });
+
+  it('always allows one pending world build entry but stops once the budget or entry cap is exhausted', () => {
+    expect(
+      shouldProcessPendingWorldBuildEntry(100, 105, 0, {
+        pendingBuildBudgetMs: 1,
+        maxPendingBuildTiles: 4,
+      })
+    ).toBe(true);
+
+    expect(
+      shouldProcessPendingWorldBuildEntry(100, 100.5, 1, {
+        pendingBuildBudgetMs: 1,
+        maxPendingBuildTiles: 4,
+      })
+    ).toBe(true);
+
+    expect(
+      shouldProcessPendingWorldBuildEntry(100, 101.5, 1, {
+        pendingBuildBudgetMs: 1,
+        maxPendingBuildTiles: 4,
+      })
+    ).toBe(false);
+
+    expect(
+      shouldProcessPendingWorldBuildEntry(100, 100.2, 4, {
+        pendingBuildBudgetMs: 10,
+        maxPendingBuildTiles: 4,
+      })
+    ).toBe(false);
   });
 
   it('tracks recent tile build durations with rolling average and max stats', () => {

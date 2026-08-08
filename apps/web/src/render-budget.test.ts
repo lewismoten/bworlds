@@ -3,6 +3,7 @@ import {
   advanceRenderBudgetState,
   DEFAULT_RENDER_BUDGET_STATE,
   DEFAULT_VISIBILITY_RADIUS,
+  getPendingWorldBuildBudget,
   MIN_VISIBILITY_RADIUS,
   REDUCED_VISIBILITY_RADIUS,
   type RenderBudgetState,
@@ -65,5 +66,28 @@ describe('render budget', () => {
     });
     expect(state.visibilityRadius).toBe(DEFAULT_VISIBILITY_RADIUS);
     expect(state.targetFps).toBe(60);
+  });
+
+  it('allocates more pending world-build time when frames are healthy and less when under pressure', () => {
+    const healthyBudget = getPendingWorldBuildBudget(DEFAULT_RENDER_BUDGET_STATE);
+    expect(healthyBudget.pendingBuildBudgetMs).toBeCloseTo(2.7, 1);
+    expect(healthyBudget.maxPendingBuildTiles).toBe(8);
+
+    const reducedBudget = getPendingWorldBuildBudget({
+      smoothedFrameMs: 26,
+      targetFps: 30,
+    });
+    expect(reducedBudget.pendingBuildBudgetMs).toBe(2.25);
+    expect(reducedBudget.maxPendingBuildTiles).toBe(4);
+
+    const criticalBudget = getPendingWorldBuildBudget({
+      smoothedFrameMs: 40,
+      targetFps: 30,
+    });
+    expect(criticalBudget.pendingBuildBudgetMs).toBe(0.75);
+    expect(criticalBudget.maxPendingBuildTiles).toBe(2);
+    expect(criticalBudget.pendingBuildBudgetMs).toBeLessThan(
+      reducedBudget.pendingBuildBudgetMs
+    );
   });
 });
