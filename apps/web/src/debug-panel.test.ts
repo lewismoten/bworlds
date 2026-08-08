@@ -10,6 +10,7 @@ import {
   getStationaryTileBuildWarning,
   getDebugSignature,
   getTargetFrameMs,
+  getUnloadedRegionWarnings,
   getWorkQueueWarnings,
   normalizeWorldSeed,
   recordHeapUsageSample,
@@ -436,6 +437,50 @@ describe('debug panel', () => {
         pendingTileCount: 18,
         averagePendingFlushTiles: 2.4,
         maxPendingFlushTiles: 5,
+      })
+    ).toEqual([]);
+  });
+
+  it('warns when no tiles are visible but render resources still appear retained', () => {
+    expect(
+      getUnloadedRegionWarnings({
+        visibleTileCount: 0,
+        visibleTreeCount: 2,
+        treeObjectCount: 14,
+        geometryCount: 40,
+        geometryMemoryCount: 37,
+        materialCount: 41,
+        textureCount: 19,
+      })
+    ).toEqual([
+      'No tiles are visible, but tree count remains (2 > 0).',
+      'No tiles are visible, but tree objects remain (14 > 0).',
+      'No tiles are visible, but render resources remain (geom 40/37, mat 41, tex 19).',
+    ]);
+  });
+
+  it('avoids unloaded-region warnings while tiles are still visible or retained resources stay under the baseline', () => {
+    expect(
+      getUnloadedRegionWarnings({
+        visibleTileCount: 3,
+        visibleTreeCount: 2,
+        treeObjectCount: 14,
+        geometryCount: 40,
+        geometryMemoryCount: 37,
+        materialCount: 41,
+        textureCount: 19,
+      })
+    ).toEqual([]);
+
+    expect(
+      getUnloadedRegionWarnings({
+        visibleTileCount: 0,
+        visibleTreeCount: 0,
+        treeObjectCount: 0,
+        geometryCount: 18,
+        geometryMemoryCount: 16,
+        materialCount: 20,
+        textureCount: 8,
       })
     ).toEqual([]);
   });

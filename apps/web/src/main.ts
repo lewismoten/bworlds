@@ -97,6 +97,7 @@ import {
   getPerformanceWarnings,
   getSceneBudgetWarnings,
   getStationaryTileBuildWarning,
+  getUnloadedRegionWarnings,
   getWorkQueueWarnings,
   resolvePerformanceTier,
   recordHeapUsageSample,
@@ -2636,6 +2637,7 @@ function render(): FrameLoopActivityLike {
     debugSnapshot.resourceWarnings = [
       ...getPerformanceWarnings(debugSnapshot),
       ...getWorkQueueWarnings(debugSnapshot),
+      ...getUnloadedRegionWarnings(debugSnapshot),
       ...getSceneBudgetWarnings(debugSnapshot),
       ...(materialGrowthWarning ? [materialGrowthWarning] : []),
       ...(heapGrowthWarning ? [heapGrowthWarning] : []),

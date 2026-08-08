@@ -483,6 +483,63 @@ export function getWorkQueueWarnings(
   ];
 }
 
+export function getUnloadedRegionWarnings(
+  snapshot: Pick<
+    DebugSnapshot,
+    | 'visibleTileCount'
+    | 'visibleTreeCount'
+    | 'treeObjectCount'
+    | 'geometryCount'
+    | 'geometryMemoryCount'
+    | 'materialCount'
+    | 'textureCount'
+  >,
+  {
+    maxRetainedVisibleTrees = 0,
+    maxRetainedTreeObjects = 0,
+    maxRetainedGeometryCount = 24,
+    maxRetainedGeometryMemoryCount = 24,
+    maxRetainedMaterialCount = 32,
+    maxRetainedTextureCount = 16,
+  }: {
+    maxRetainedVisibleTrees?: number;
+    maxRetainedTreeObjects?: number;
+    maxRetainedGeometryCount?: number;
+    maxRetainedGeometryMemoryCount?: number;
+    maxRetainedMaterialCount?: number;
+    maxRetainedTextureCount?: number;
+  } = {}
+): string[] {
+  if (snapshot.visibleTileCount > 0) {
+    return [];
+  }
+
+  const warnings: string[] = [];
+
+  if (snapshot.visibleTreeCount > maxRetainedVisibleTrees) {
+    warnings.push(
+      `No tiles are visible, but tree count remains (${snapshot.visibleTreeCount} > ${maxRetainedVisibleTrees}).`
+    );
+  }
+  if (snapshot.treeObjectCount > maxRetainedTreeObjects) {
+    warnings.push(
+      `No tiles are visible, but tree objects remain (${snapshot.treeObjectCount} > ${maxRetainedTreeObjects}).`
+    );
+  }
+  if (
+    snapshot.geometryCount > maxRetainedGeometryCount ||
+    snapshot.geometryMemoryCount > maxRetainedGeometryMemoryCount ||
+    snapshot.materialCount > maxRetainedMaterialCount ||
+    snapshot.textureCount > maxRetainedTextureCount
+  ) {
+    warnings.push(
+      `No tiles are visible, but render resources remain (geom ${snapshot.geometryCount}/${snapshot.geometryMemoryCount}, mat ${snapshot.materialCount}, tex ${snapshot.textureCount}).`
+    );
+  }
+
+  return warnings;
+}
+
 export function getHeapGrowthWarning(
   samples: HeapUsageSample[],
   {

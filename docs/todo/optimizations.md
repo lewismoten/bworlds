@@ -945,7 +945,7 @@ You could even have debug-mode warnings automatically trigger when thresholds ar
 * [X] Warn when heap usage continually increases.
 * [X] Warn when a system allocates excessively while idle.
 * [X] Warn when too many Three.js objects exist.
-* [ ] Warn when an unloaded region still owns render resources.
+* [X] Warn when an unloaded region still owns render resources.
 * [ ] Warn when a worker queue is no longer being drained.
 
 # Performance Regression Tests
