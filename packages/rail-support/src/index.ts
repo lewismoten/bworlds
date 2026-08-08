@@ -1,3 +1,4 @@
+import { createBoundedCache } from '@bworlds/cache-support';
 import { hash2D, clamp } from '@bworlds/core';
 import type {
   OverworldAnchors,
@@ -34,10 +35,16 @@ const MAX_RAIL_ELEVATION = 0.72;
 const MAX_RAIL_RIVER_SIGNAL = 0.82;
 const MIN_ROUTE_SIGNAL_SHARE = 0.35;
 const RAIL_SAMPLE_SEGMENTS = 20;
+const RAIL_REGION_CACHE_LIMIT = 256;
+const RAIL_TRAIN_CACHE_LIMIT = 512;
 
 const anchorPlugin = createOverworldAnchorsRuntimePlugin();
-const railRegionCache = new Map<string, Map<string, TileLike>>();
-const railTrainCache = new Map<string, RailTrainPlacement[]>();
+const railRegionCache = createBoundedCache<string, Map<string, TileLike>>(
+  RAIL_REGION_CACHE_LIMIT
+);
+const railTrainCache = createBoundedCache<string, RailTrainPlacement[]>(
+  RAIL_TRAIN_CACHE_LIMIT
+);
 
 export function resolveRailTile({
   seed,

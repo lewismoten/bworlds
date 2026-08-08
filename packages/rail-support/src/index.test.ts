@@ -3,6 +3,7 @@ import {
   buildRailConnections,
   buildRailCurvePoints,
   getRailTrainPlacements,
+  resolveRailTile,
   type StationAnchorLike,
 } from './index.ts';
 
@@ -118,5 +119,62 @@ describe('rail support', () => {
       })
     );
     expect(foundMovement).toBe(true);
+  });
+
+  it('keeps resolved rail tiles deterministic after bounded region cache eviction churn', () => {
+    const baseline = resolveRailTile({
+      seed: 'spec-seed',
+      x: 24,
+      y: 8,
+      sampleTerrainSignals,
+    });
+
+    for (let index = 0; index < 320; index += 1) {
+      resolveRailTile({
+        seed: 'spec-seed',
+        x: index * 24,
+        y: (index % 9) * 24,
+        sampleTerrainSignals,
+      });
+    }
+
+    expect(
+      resolveRailTile({
+        seed: 'spec-seed',
+        x: 24,
+        y: 8,
+        sampleTerrainSignals,
+      })
+    ).toEqual(baseline);
+  });
+
+  it('keeps train placements deterministic after bounded time-bucket cache eviction churn', () => {
+    const baseline = getRailTrainPlacements({
+      seed: 'spec-seed',
+      timeMs: 0,
+      x: 24,
+      y: 8,
+      sampleTerrainSignals,
+    });
+
+    for (let index = 0; index < 640; index += 1) {
+      getRailTrainPlacements({
+        seed: 'spec-seed',
+        timeMs: index * 2_000,
+        x: 24 + (index % 5) * 24,
+        y: 8 + (index % 7) * 24,
+        sampleTerrainSignals,
+      });
+    }
+
+    expect(
+      getRailTrainPlacements({
+        seed: 'spec-seed',
+        timeMs: 0,
+        x: 24,
+        y: 8,
+        sampleTerrainSignals,
+      })
+    ).toEqual(baseline);
   });
 });
