@@ -1,3 +1,4 @@
+import { createBoundedCache } from '@bworlds/cache-support';
 import { hash2D } from '@bworlds/core';
 import {
   createAnchoredEnterablePoiTilePlugin,
@@ -34,9 +35,18 @@ import type {
 const TOWN_REGION_SIZE = 18;
 const LARGE_TOWN_BUILDING_COUNT = 6;
 const TOWN_BANNER_KEY = 'townBanner';
-const signLabelCache = new Map<string, ThreeTextureLike>();
-const townStyleCache = new Map<string, TownStyleBlueprint>();
-const townDescriptorCache = new Map<string, TownDescriptor[]>();
+const TOWN_DESCRIPTOR_CACHE_LIMIT = 256;
+const TOWN_STYLE_CACHE_LIMIT = 96;
+const TOWN_SIGN_LABEL_CACHE_LIMIT = 192;
+const signLabelCache = createBoundedCache<string, ThreeTextureLike>(
+  TOWN_SIGN_LABEL_CACHE_LIMIT
+);
+const townStyleCache = createBoundedCache<string, TownStyleBlueprint>(
+  TOWN_STYLE_CACHE_LIMIT
+);
+const townDescriptorCache = createBoundedCache<string, TownDescriptor[]>(
+  TOWN_DESCRIPTOR_CACHE_LIMIT
+);
 const resolveTownDescriptors = createCoordinateValueResolver(
   townDescriptorCache,
   ({ tileX, tileY }) => {
