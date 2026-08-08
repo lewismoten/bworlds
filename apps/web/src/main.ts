@@ -935,6 +935,8 @@ const uiRenderState = {
   lastTextViewportSignature: '',
   lastSextantSignature: '',
   lastDebugSignature: '',
+  lastTimekeeperSignature: '',
+  lastCompassSignature: '',
   lastTimekeeperMiniSignature: '',
   lastCompassMiniSignature: '',
   lastMinimapMiniSignature: '',
@@ -2265,7 +2267,23 @@ function render(): FrameLoopActivityLike {
     });
   }
 
-  drawTimeWheel(timeWheelCanvas, displayCycle);
+  if (timeWheelCanvas && !timeWheelCanvas.hidden) {
+    const timekeeperSignature = getTimekeeperMiniSignature({
+      width: timeWheelCanvas.width,
+      height: timeWheelCanvas.height,
+      dayProgress: displayCycle.dayProgress,
+      yearProgress: displayCycle.yearProgress,
+      moonAngle: displayCycle.moonAngle,
+      moonMidnightAngle: displayCycle.moonMidnightAngle,
+      sunriseAzimuth: displayCycle.sunriseAzimuth,
+      sunsetAzimuth: displayCycle.sunsetAzimuth,
+      daylightDuration: displayCycle.daylightDuration,
+    });
+    if (timekeeperSignature !== uiRenderState.lastTimekeeperSignature) {
+      drawTimeWheel(timeWheelCanvas, displayCycle);
+      uiRenderState.lastTimekeeperSignature = timekeeperSignature;
+    }
+  }
   if (
     viewportTimekeeperMini &&
     activeTimekeeperDisplayMode === 'graphical' &&
@@ -2368,14 +2386,27 @@ function render(): FrameLoopActivityLike {
     }
   }
   syncHmrNotice(nowMs);
-  drawCompassDial(
-    compassDialCanvas,
-    updateDisplayedCompass(state.player.facing),
-    updateDisplayedCompassHeading(
+  if (compassDialCanvas && !compassDialCanvas.hidden) {
+    const displayedFacingAngle = updateDisplayedCompass(state.player.facing);
+    const displayedHeadingAngle = updateDisplayedCompassHeading(
       compassHeadingState.angle,
       compassDialPointerState.draggingMode === 'heading-bug'
-    )
-  );
+    );
+    const compassSignature = getCompassMiniSignature({
+      width: compassDialCanvas.width,
+      height: compassDialCanvas.height,
+      facingAngle: displayedFacingAngle,
+      headingAngle: displayedHeadingAngle,
+    });
+    if (compassSignature !== uiRenderState.lastCompassSignature) {
+      drawCompassDial(
+        compassDialCanvas,
+        displayedFacingAngle,
+        displayedHeadingAngle
+      );
+      uiRenderState.lastCompassSignature = compassSignature;
+    }
+  }
   updateStatus(environment, displayCycle);
   const gps = toGps(state.player.x, state.player.y);
   const gridX = snapWorldCoordinate(state.player.x);
