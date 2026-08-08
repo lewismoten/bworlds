@@ -937,6 +937,9 @@ const hmrNoticeState = {
   message: '',
   visibleUntilMs: null as number | null,
 };
+const pageVisibilityState = {
+  hidden: typeof document !== 'undefined' ? document.hidden : false,
+};
 const renderBudgetState = {
   ...DEFAULT_RENDER_BUDGET_STATE,
 };
@@ -2383,6 +2386,7 @@ function render(): FrameLoopActivityLike {
   return getFrameLoopActivity({
     nowMs,
     timeFrozen: timeState.frozen,
+    tabHidden: pageVisibilityState.hidden,
     keys,
     isJumping: motion.isJumping,
     compassVelocity: compassState.velocity,
@@ -2417,6 +2421,9 @@ let lastFrame = 0;
 let pendingFrameHandle = 0;
 
 function requestRender(): void {
+  if (pageVisibilityState.hidden) {
+    return;
+  }
   if (pendingFrameHandle !== 0) {
     return;
   }
@@ -2711,6 +2718,10 @@ function faceDirection(angle: number): void {
 
 function loop(timestamp: number): void {
   pendingFrameHandle = 0;
+  if (pageVisibilityState.hidden) {
+    lastFrame = 0;
+    return;
+  }
   const delta =
     lastFrame === 0 ? 16.67 : Math.min(timestamp - lastFrame, 33.34);
   const nextBudgetState = advanceRenderBudgetState(renderBudgetState, {
@@ -2731,6 +2742,15 @@ function loop(timestamp: number): void {
 
 window.addEventListener('resize', () => {
   resizeCanvas();
+  requestRender();
+});
+
+document.addEventListener('visibilitychange', () => {
+  pageVisibilityState.hidden = document.hidden;
+  if (pageVisibilityState.hidden) {
+    lastFrame = 0;
+    return;
+  }
   requestRender();
 });
 

@@ -25,6 +25,7 @@ type FrameLoopCycleProgress = {
 type FrameLoopActivityOptions = {
   nowMs?: number;
   timeFrozen: boolean;
+  tabHidden?: boolean;
   keys: Iterable<string>;
   isJumping: boolean;
   compassVelocity: number;
@@ -40,6 +41,7 @@ type FrameLoopActivityOptions = {
 };
 
 type FrameLoopActivity = {
+  tabHidden: boolean;
   hasMovementInput: boolean;
   isJumping: boolean;
   isTimeRunning: boolean;
@@ -115,6 +117,7 @@ export function getFrameLoopActivity(
     ) > 0.002;
 
   return {
+    tabHidden: options.tabHidden ?? false,
     hasMovementInput: hasActiveMovementInput(options.keys),
     isJumping: options.isJumping,
     isTimeRunning: !options.timeFrozen,
@@ -138,6 +141,9 @@ export function getFrameLoopActivity(
 export function shouldContinueFrameLoop(
   activity: ReturnType<typeof getFrameLoopActivity>
 ) {
+  if (activity.tabHidden) {
+    return false;
+  }
   return (
     activity.hasMovementInput ||
     activity.isJumping ||

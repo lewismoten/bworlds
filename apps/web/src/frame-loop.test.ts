@@ -25,6 +25,7 @@ describe('frame loop helpers', () => {
     const running = getFrameLoopActivity({
       nowMs: 1000,
       timeFrozen: false,
+      tabHidden: false,
       keys: [],
       isJumping: false,
       compassVelocity: 0,
@@ -52,6 +53,7 @@ describe('frame loop helpers', () => {
     const easing = getFrameLoopActivity({
       nowMs: 1000,
       timeFrozen: true,
+      tabHidden: false,
       keys: [],
       isJumping: false,
       compassVelocity: 0.004,
@@ -79,6 +81,7 @@ describe('frame loop helpers', () => {
     const idle = getFrameLoopActivity({
       nowMs: 1000,
       timeFrozen: true,
+      tabHidden: false,
       keys: [],
       isJumping: false,
       compassVelocity: 0,
@@ -113,6 +116,7 @@ describe('frame loop helpers', () => {
     const notice = getFrameLoopActivity({
       nowMs: 1000,
       timeFrozen: true,
+      tabHidden: false,
       keys: [],
       isJumping: false,
       compassVelocity: 0,
@@ -146,6 +150,7 @@ describe('frame loop helpers', () => {
     const settling = getFrameLoopActivity({
       nowMs: 1000,
       timeFrozen: true,
+      tabHidden: false,
       keys: [],
       isJumping: false,
       compassVelocity: 0,
@@ -173,5 +178,41 @@ describe('frame loop helpers', () => {
 
     expect(settling.isHeadBobSettling).toBe(true);
     expect(shouldContinueFrameLoop(settling)).toBe(true);
+  });
+
+  it('suspends the frame loop while the browser tab is hidden', () => {
+    const hidden = getFrameLoopActivity({
+      nowMs: 1000,
+      timeFrozen: false,
+      tabHidden: true,
+      keys: ['w'],
+      isJumping: true,
+      compassVelocity: 0.2,
+      headingVisualAngle: 0,
+      headingTargetAngle: Math.PI / 2,
+      headBobOffset: 0.1,
+      headBobIntensity: 0.3,
+      displayedCycle: {
+        dayProgress: 0.1,
+        yearProgress: 0.2,
+        moonMidnightOrbitProgress: 0.3,
+        sunriseProgress: 0.25,
+        sunsetProgress: 0.75,
+        daylightDuration: 0.5,
+      },
+      actualCycle: {
+        dayProgress: 0.18,
+        yearProgress: 0.22,
+        moonMidnightOrbitProgress: 0.34,
+        sunriseProgress: 0.28,
+        sunsetProgress: 0.78,
+        daylightDuration: 0.53,
+      },
+    });
+
+    expect(hidden.tabHidden).toBe(true);
+    expect(hidden.hasMovementInput).toBe(true);
+    expect(hidden.isTimeRunning).toBe(true);
+    expect(shouldContinueFrameLoop(hidden)).toBe(false);
   });
 });
