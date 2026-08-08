@@ -39,6 +39,11 @@ export type TextViewportGrid = {
   centerRow: number;
 };
 
+type ReliefTile = {
+  kind: string;
+  surfaceHeight?: unknown;
+};
+
 export function render2D(
   context: CanvasRenderingContext2D,
   state: Render2DState,
@@ -84,6 +89,8 @@ export function render2D(
       if (tile.kind === 'river') {
         drawRiverOverlay(context, tileAt, worldX, worldY, drawX, drawY, tileSize);
       }
+
+      drawReliefOverlay(context, tile, drawX, drawY, tileSize);
     }
   }
 
@@ -176,6 +183,20 @@ export function getTextViewportGlyph(kind: string, tileName?: string): string {
   return glyph.toUpperCase();
 }
 
+export function getTileReliefStrength(tile: ReliefTile): number {
+  if (
+    tile.kind === 'river' ||
+    tile.kind === 'ocean' ||
+    tile.kind === 'bridge' ||
+    tile.kind === 'dock' ||
+    tile.kind === 'mountain'
+  ) {
+    return 0;
+  }
+  const height = typeof tile.surfaceHeight === 'number' ? tile.surfaceHeight : 0;
+  return Math.max(0, Math.min(1, height / 0.36));
+}
+
 function resolveTileDefinition(
   state: Render2DState,
   kind: string
@@ -193,6 +214,37 @@ function resolveTileName(state: Render2DState, kind: string): string | undefined
 function resolveTileColor(state: Render2DState, kind: string): string {
   const definition = resolveTileDefinition(state, kind);
   return definition?.miniColor ?? definition?.color ?? '#d9e8f4';
+}
+
+function drawReliefOverlay(
+  context: CanvasRenderingContext2D,
+  tile: ReliefTile,
+  drawX: number,
+  drawY: number,
+  tileSize: number
+) {
+  const relief = getTileReliefStrength(tile);
+  if (relief <= 0.04) {
+    return;
+  }
+
+  context.fillStyle = `rgba(255,255,255,${(0.06 + relief * 0.16).toFixed(3)})`;
+  context.fillRect(drawX, drawY, tileSize, Math.max(1, tileSize * 0.16));
+  context.fillRect(drawX, drawY, Math.max(1, tileSize * 0.16), tileSize);
+
+  context.fillStyle = `rgba(9,16,25,${(0.08 + relief * 0.18).toFixed(3)})`;
+  context.fillRect(
+    drawX,
+    drawY + tileSize - Math.max(1, tileSize * 0.18),
+    tileSize,
+    Math.max(1, tileSize * 0.18)
+  );
+  context.fillRect(
+    drawX + tileSize - Math.max(1, tileSize * 0.18),
+    drawY,
+    Math.max(1, tileSize * 0.18),
+    tileSize
+  );
 }
 
 const ASCII_TILE_GLYPHS: Record<string, string> = {

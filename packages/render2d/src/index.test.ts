@@ -12,6 +12,7 @@ import {
   buildTextViewportGrid,
   createViewportTileSampler,
   getTextViewportGlyph,
+  getTileReliefStrength,
   getViewportTileSize,
   getRiverOverlayConnections,
   render2D,
@@ -208,5 +209,14 @@ describe('render2D night sky overlay', () => {
     expect(getTextViewportGlyph('mountain', 'Mountain')).toBe('^');
     expect(getTextViewportGlyph('custom-obelisk', 'obelisk')).toBe('O');
     expect(getTextViewportGlyph('', '')).toBe('?');
+  });
+
+  it('derives visible relief strength from decorated hill surface heights', () => {
+    expect(getTileReliefStrength({ kind: 'plains', surfaceHeight: 0.18 })).toBeCloseTo(
+      0.5,
+      1
+    );
+    expect(getTileReliefStrength({ kind: 'mountain', surfaceHeight: 0.3 })).toBe(0);
+    expect(getTileReliefStrength({ kind: 'plains' })).toBe(0);
   });
 });

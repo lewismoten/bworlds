@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   clampCameraPitch,
   DEFAULT_CAMERA_PITCH,
+  getDecoratedTileSurfaceHeight,
   getFarLandModelOpacity,
   getFacingVisibilityBucket,
   getWeatherFogRange,
@@ -234,6 +235,11 @@ describe('render3d visibility helpers', () => {
   it('tightens fog range when weather visibility drops', () => {
     expect(getWeatherFogRange(0.9).far).toBeGreaterThan(getWeatherFogRange(0.3).far);
     expect(getWeatherFogRange(0.9).near).toBeGreaterThan(getWeatherFogRange(0.3).near);
+  });
+
+  it('falls back to decorated tile surface height when no explicit profile is provided', () => {
+    expect(getDecoratedTileSurfaceHeight({ surfaceHeight: 0.24 })).toBeCloseTo(0.24, 6);
+    expect(getDecoratedTileSurfaceHeight({})).toBe(0);
   });
 
   it('syncs dynamic visible tile nodes through tile plugin hooks', () => {

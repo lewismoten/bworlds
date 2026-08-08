@@ -82,6 +82,10 @@ type ShadowSettingsOptions = {
   receiveShadow: boolean;
 };
 
+type DecoratedSurfaceTile = {
+  surfaceHeight?: unknown;
+};
+
 const TILE_SIZE = 1;
 const CHUNK_RADIUS = 18;
 const NEAR_VISIBLE_RADIUS = 6;
@@ -264,6 +268,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     });
 
     if (pluginModel) {
+      pluginModel.position.y += surfaceHeight;
       applyShadowSettings(pluginModel, {
         castShadow: true,
         receiveShadow: true,
@@ -496,7 +501,10 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
         tileX,
         tileY,
       }) || null) ?? {};
-    const surfaceHeight = pluginProfile.surfaceHeight ?? 0;
+    const surfaceHeight =
+      typeof pluginProfile.surfaceHeight === 'number'
+        ? pluginProfile.surfaceHeight
+        : getDecoratedTileSurfaceHeight(tile);
     const boundaryRole = pluginProfile.boundaryRole ?? null;
     const chamferEligible =
       pluginProfile.chamferEligible ??
@@ -1127,6 +1135,10 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     render,
     resize,
   };
+}
+
+export function getDecoratedTileSurfaceHeight(tile: DecoratedSurfaceTile): number {
+  return typeof tile.surfaceHeight === 'number' ? tile.surfaceHeight : 0;
 }
 
 export function getFacingVisibilityBucket(
