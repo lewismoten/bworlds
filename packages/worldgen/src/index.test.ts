@@ -398,6 +398,40 @@ describe('world generator', () => {
     expect(foundRiverRun).toBe(true);
   });
 
+  it('produces forked river junctions outside the curated start region', () => {
+    const generator = createGenerator();
+    let foundRiverFork = false;
+
+    for (let y = -180; y <= 180 && !foundRiverFork; y += 1) {
+      for (let x = -180; x <= 180; x += 1) {
+        if (Math.abs(x) <= 12 && Math.abs(y) <= 12) {
+          continue;
+        }
+        if (generator.sampleOverworld(x, y).kind !== 'river') {
+          continue;
+        }
+
+        const riverNeighbors = [
+          generator.sampleOverworld(x, y - 1).kind,
+          generator.sampleOverworld(x + 1, y).kind,
+          generator.sampleOverworld(x, y + 1).kind,
+          generator.sampleOverworld(x - 1, y).kind,
+          generator.sampleOverworld(x + 1, y - 1).kind,
+          generator.sampleOverworld(x + 1, y + 1).kind,
+          generator.sampleOverworld(x - 1, y + 1).kind,
+          generator.sampleOverworld(x - 1, y - 1).kind,
+        ].filter((kind) => kind === 'river').length;
+
+        if (riverNeighbors >= 3) {
+          foundRiverFork = true;
+          break;
+        }
+      }
+    }
+
+    expect(foundRiverFork).toBe(true);
+  });
+
   it('creates town maps through the registered map plugin path', () => {
     const generator = createGenerator();
     const townMap = generator.getMap({

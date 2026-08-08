@@ -6,6 +6,7 @@ import {
   createOverworldAnchorResolver,
   createRiverCurvePoints,
   createRiverControlPoints,
+  createRiverForkPath,
   createOverworldGenerationContext,
   createGeneratedNamedOverworldCellAnchorSpec,
   createGeneratedPoiOverworldCellAnchorSpec,
@@ -167,6 +168,44 @@ describe('overworld support', () => {
     expect(curvePoints.at(-1)).toEqual(controlPoints.at(-1));
     expect(middlePoint.x).not.toBe(2);
     expect(middlePoint.y).not.toBe(0);
+  });
+
+  it('creates deterministic fork paths that branch away from the main river', () => {
+    let forkSeedCell:
+      | { seed: string; cellX: number; cellY: number; controlPoints: { x: number; y: number }[] }
+      | undefined;
+
+    for (let cellY = -4; cellY <= 4 && !forkSeedCell; cellY += 1) {
+      for (let cellX = -4; cellX <= 4; cellX += 1) {
+        const controlPoints = createRiverControlPoints('spec-seed', cellX, cellY);
+        const fork = createRiverForkPath('spec-seed', cellX, cellY, controlPoints);
+        if (fork) {
+          forkSeedCell = { seed: 'spec-seed', cellX, cellY, controlPoints };
+          break;
+        }
+      }
+    }
+
+    expect(forkSeedCell).toBeDefined();
+    const fork = createRiverForkPath(
+      forkSeedCell!.seed,
+      forkSeedCell!.cellX,
+      forkSeedCell!.cellY,
+      forkSeedCell!.controlPoints
+    );
+    const repeatedFork = createRiverForkPath(
+      forkSeedCell!.seed,
+      forkSeedCell!.cellX,
+      forkSeedCell!.cellY,
+      forkSeedCell!.controlPoints
+    );
+
+    expect(fork).toEqual(repeatedFork);
+    expect(fork?.points[0]).toEqual(
+      forkSeedCell!.controlPoints[fork!.trunkStartIndex]
+    );
+    expect(fork?.points.length ?? 0).toBeGreaterThanOrEqual(2);
+    expect(fork?.points[1]).not.toEqual(fork?.points[0]);
   });
 
   it('raises river signals near river control path segments', () => {

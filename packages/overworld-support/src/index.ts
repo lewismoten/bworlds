@@ -29,12 +29,22 @@ export type RiverControlPoint = {
   y: number;
 };
 
+export type RiverForkPath = {
+  trunkStartIndex: number;
+  trunkEndIndex: number;
+  points: RiverControlPoint[];
+};
+
 const RIVER_CONTROL_CELL_SIZE = 24;
 const RIVER_MIN_CONTROL_STEP = 2;
 const RIVER_MAX_CONTROL_STEP = 10;
 const RIVER_MAX_CONTROL_POINTS = 5;
 const RIVER_SEGMENT_FALLOFF = 2.35;
 const RIVER_CURVE_SEGMENTS = 6;
+const RIVER_FORK_MIN_POINTS = 2;
+const RIVER_FORK_MAX_POINTS = 4;
+const RIVER_FORK_CHANCE_THRESHOLD = 0.63;
+const RIVER_FORK_MAX_ANGLE_DELTA = Math.PI * 0.25;
 
 export interface OverworldCellAnchorSpec<
   TAnchor extends OverworldAnchorLike = OverworldAnchorLike,
@@ -82,6 +92,7 @@ export function createOverworldTerrainSignalSampler(
 ): OverworldTerrainSignalSampler {
   const riverControlPointCache = new Map<string, RiverControlPoint[]>();
   const riverCurvePointCache = new Map<string, RiverControlPoint[]>();
+  const riverForkPathCache = new Map<string, RiverForkPath | null>();
 
   return function sampleTerrainSignals(x: number, y: number): OverworldSignals {
     const scaledX = x / 160;
@@ -107,7 +118,8 @@ export function createOverworldTerrainSignalSampler(
       x,
       y,
       riverControlPointCache,
-      riverCurvePointCache
+      riverCurvePointCache,
+      riverForkPathCache
     );
     const riverPathWeight =
       continent > 0.42 && continent < 0.9 && elevation < 0.68 ? 1 : 0.45;
@@ -205,7 +217,8 @@ function sampleRiverControlPathSignal(
   x: number,
   y: number,
   controlPointCache: Map<string, RiverControlPoint[]>,
-  curvePointCache: Map<string, RiverControlPoint[]>
+  curvePointCache: Map<string, RiverControlPoint[]>,
+  forkPathCache: Map<string, RiverForkPath | null>
 ): number {
   const cellX = Math.floor(x / RIVER_CONTROL_CELL_SIZE);
   const cellY = Math.floor(y / RIVER_CONTROL_CELL_SIZE);
@@ -220,20 +233,22 @@ function sampleRiverControlPathSignal(
         controlPointCache,
         curvePointCache
       );
-      for (let index = 1; index < points.length; index += 1) {
-        const segmentDistance = getDistanceToLineSegment(
-          x,
-          y,
-          points[index - 1],
-          points[index]
+      strongestSignal = Math.max(
+        strongestSignal,
+        getRiverPathSignalAtPoint(points, x, y)
+      );
+      const forkPath = getCachedRiverForkPath(
+        seed,
+        cellX + offsetX,
+        cellY + offsetY,
+        controlPointCache,
+        forkPathCache
+      );
+      if (forkPath) {
+        strongestSignal = Math.max(
+          strongestSignal,
+          getRiverPathSignalAtPoint(forkPath.points, x, y)
         );
-        const segmentSignal = Math.max(
-          0,
-          1 - segmentDistance / RIVER_SEGMENT_FALLOFF
-        );
-        if (segmentSignal > strongestSignal) {
-          strongestSignal = segmentSignal;
-        }
       }
     }
   }
@@ -276,6 +291,78 @@ export function createRiverCurvePoints(
   return curvePoints;
 }
 
+export function createRiverForkPath(
+  seed: Seed,
+  cellX: number,
+  cellY: number,
+  controlPoints: RiverControlPoint[]
+): RiverForkPath | null {
+  if (controlPoints.length < 3) {
+    return null;
+  }
+  if (
+    hash2D(`${seed}:river-fork-chance`, cellX, cellY) <
+    RIVER_FORK_CHANCE_THRESHOLD
+  ) {
+    return null;
+  }
+
+  const trunkStartIndex =
+    1 +
+    Math.floor(
+      hash2D(`${seed}:river-fork-trunk-start`, cellX, cellY) *
+        (controlPoints.length - 2)
+    );
+  const trunkEndIndex = Math.min(trunkStartIndex + 1, controlPoints.length - 1);
+  const pivot = controlPoints[trunkStartIndex];
+  const next = controlPoints[trunkEndIndex];
+  const previous = controlPoints[Math.max(0, trunkStartIndex - 1)];
+  const baseAngle = Math.atan2(next.y - previous.y, next.x - previous.x);
+  const angleSign =
+    hash2D(`${seed}:river-fork-angle-sign`, cellX, cellY) >= 0.5 ? 1 : -1;
+  const angleDelta =
+    (0.25 +
+      hash2D(`${seed}:river-fork-angle-delta`, cellX, cellY) * 0.75) *
+    RIVER_FORK_MAX_ANGLE_DELTA *
+    angleSign;
+  const branchAngle = baseAngle + angleDelta;
+  const pointCount =
+    RIVER_FORK_MIN_POINTS +
+    Math.floor(
+      hash2D(`${seed}:river-fork-point-count`, cellX, cellY) *
+        (RIVER_FORK_MAX_POINTS - RIVER_FORK_MIN_POINTS + 1)
+    );
+  const points: RiverControlPoint[] = [pivot];
+  const padding = RIVER_MAX_CONTROL_STEP + 1;
+  const minX = cellX * RIVER_CONTROL_CELL_SIZE - padding;
+  const maxX = (cellX + 1) * RIVER_CONTROL_CELL_SIZE + padding;
+  const minY = cellY * RIVER_CONTROL_CELL_SIZE - padding;
+  const maxY = (cellY + 1) * RIVER_CONTROL_CELL_SIZE + padding;
+
+  for (let index = 1; index < pointCount; index += 1) {
+    const distance =
+      RIVER_MIN_CONTROL_STEP +
+      Math.floor(
+        hash2D(`${seed}:river-fork-distance:${index}`, cellX, cellY) *
+          (RIVER_MAX_CONTROL_STEP - RIVER_MIN_CONTROL_STEP + 1)
+      );
+    const sway =
+      (hash2D(`${seed}:river-fork-sway:${index}`, cellX, cellY) - 0.5) *
+      (Math.PI / 10);
+    const priorPoint = points[index - 1];
+    points.push({
+      x: clamp(priorPoint.x + Math.cos(branchAngle + sway) * distance, minX, maxX),
+      y: clamp(priorPoint.y + Math.sin(branchAngle + sway) * distance, minY, maxY),
+    });
+  }
+
+  return {
+    trunkStartIndex,
+    trunkEndIndex,
+    points: createRiverCurvePoints(points),
+  };
+}
+
 function getCachedRiverControlPoints(
   seed: Seed,
   cellX: number,
@@ -306,6 +393,49 @@ function getCachedRiverCurvePoints(
     );
   }
   return curvePointCache.get(key) ?? [];
+}
+
+function getCachedRiverForkPath(
+  seed: Seed,
+  cellX: number,
+  cellY: number,
+  controlPointCache: Map<string, RiverControlPoint[]>,
+  forkPathCache: Map<string, RiverForkPath | null>
+): RiverForkPath | null {
+  const key = `${seed}:${cellX}:${cellY}`;
+  if (!forkPathCache.has(key)) {
+    forkPathCache.set(
+      key,
+      createRiverForkPath(
+        seed,
+        cellX,
+        cellY,
+        getCachedRiverControlPoints(seed, cellX, cellY, controlPointCache)
+      )
+    );
+  }
+  return forkPathCache.get(key) ?? null;
+}
+
+function getRiverPathSignalAtPoint(
+  points: RiverControlPoint[],
+  x: number,
+  y: number
+): number {
+  let strongestSignal = 0;
+  for (let index = 1; index < points.length; index += 1) {
+    const segmentDistance = getDistanceToLineSegment(
+      x,
+      y,
+      points[index - 1],
+      points[index]
+    );
+    const segmentSignal = Math.max(0, 1 - segmentDistance / RIVER_SEGMENT_FALLOFF);
+    if (segmentSignal > strongestSignal) {
+      strongestSignal = segmentSignal;
+    }
+  }
+  return strongestSignal;
 }
 
 function getDistanceToLineSegment(

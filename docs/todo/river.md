@@ -1,7 +1,7 @@
 - [x] Rivers should only be 1 tile wide. 
 - [x] Rivers have multiple points set within 2-10 tiles
 - [x] A brazier curve is used to connect river points together
-- [ ] A river may fork into two rivers
+- [x] A river may fork into two rivers
 - [ ] A river may combine back into one as a fork.
 - [ ] A river may be very curvy
 - [ ] A river connects to another river at 45 degrees at max to appear as branching.
