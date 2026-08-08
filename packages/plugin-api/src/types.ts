@@ -170,6 +170,54 @@ export interface WorldEnvironmentStarsLike {
   density?: number;
 }
 
+export type WorldWeatherConditionKind =
+  | 'clear'
+  | 'clouds'
+  | 'wind'
+  | 'fog'
+  | 'light-rain'
+  | 'heavy-rain'
+  | 'snow'
+  | 'hail';
+
+export type WorldWeatherFrontKind = 'warm' | 'cold' | 'occluded';
+
+export interface WorldEnvironmentWeatherFrontLike {
+  id: Identity;
+  kind: WorldWeatherFrontKind;
+  intensity: number;
+  humidityShift: number;
+  temperatureShift: number;
+  windDirectionDegrees: number;
+  speed: number;
+}
+
+export interface WorldEnvironmentWeatherConditionLike {
+  kind: WorldWeatherConditionKind;
+  label: string;
+  intensity: number;
+  cloudCover: number;
+  windStrength: number;
+  precipitation: number;
+  visibility: number;
+  temperature: number;
+  front: WorldEnvironmentWeatherFrontLike;
+}
+
+export interface WorldEnvironmentWeatherForecastDayLike {
+  dayNumber: number;
+  label: string;
+  summary: string;
+  highTemperature: number;
+  lowTemperature: number;
+  condition: WorldEnvironmentWeatherConditionLike;
+}
+
+export interface WorldEnvironmentWeatherLike {
+  current?: WorldEnvironmentWeatherConditionLike;
+  forecast?: WorldEnvironmentWeatherForecastDayLike[];
+}
+
 export interface WorldEnvironmentConstellationStarLike {
   id?: Identity;
   x: number;
@@ -261,6 +309,7 @@ export interface WorldEnvironmentLike {
   sky?: WorldEnvironmentSkyLike;
   lighting?: WorldEnvironmentLightingLike;
   stars?: WorldEnvironmentStarsLike;
+  weather?: WorldEnvironmentWeatherLike;
   celestial?: WorldEnvironmentCelestialLike;
 }
 

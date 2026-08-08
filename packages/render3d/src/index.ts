@@ -7,9 +7,11 @@ import {
 } from '@bworlds/atlas';
 import {
   applyCelestialEnvironmentOverrides,
+  clamp,
   getDaylightCycleState,
   getMilkyWayBandSamples,
   hash2D,
+  lerp,
   smoothstep,
 } from '@bworlds/core';
 import { isWaterKind } from '@bworlds/tile-support';
@@ -977,19 +979,27 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     const twilightBlend = Math.max(0, 1 - Math.abs(cycle.daylight - 0.5) * 2);
     const sky = environment.sky ?? {};
     const lighting = environment.lighting ?? {};
-    const starDensity = environment.stars?.density ?? 1;
+    const weather = environment.weather?.current;
+    const weatherVisibility = weather?.visibility ?? 0.88;
+    const weatherCloudCover = weather?.cloudCover ?? 0;
+    const starDensity =
+      (environment.stars?.density ?? 1) *
+      clamp(1 - weatherCloudCover * 0.42 - (1 - weatherVisibility) * 0.58, 0.08, 1);
     const daySkyColor = new THREE.Color(sky.dayColor ?? SKY_DAY_COLOR);
     const twilightPalette = getTwilightSkyPalette(sky, cycle);
     const sunsetSkyColor = new THREE.Color(twilightPalette.skyColor);
     const nightSkyColor = new THREE.Color(sky.nightColor ?? SKY_NIGHT_COLOR);
     const twilightFogColor = new THREE.Color(twilightPalette.fogColor);
     const nightFogColor = new THREE.Color(sky.fogNightColor ?? FOG_NIGHT_COLOR);
+    const fogRange = getWeatherFogRange(weatherVisibility);
 
     scene.background
       .copy(nightSkyColor)
       .lerp(sunsetSkyColor, cycle.twilight)
       .lerp(daySkyColor, dayBlend);
     scene.fog.color.copy(nightFogColor).lerp(twilightFogColor, cycle.twilight);
+    scene.fog.near = fogRange.near;
+    scene.fog.far = fogRange.far;
 
     ambientLight.intensity = 0.2 + cycle.twilight * 0.75 + dayBlend * 0.45;
     ambientLight.color
@@ -1359,6 +1369,14 @@ export function getTwilightSkyPalette(
     fogColor: dawnSide
       ? sky.fogDawnColor ?? sky.fogDayColor ?? FOG_DAY_COLOR
       : sky.fogDuskColor ?? sky.fogDayColor ?? FOG_DAY_COLOR,
+  };
+}
+
+export function getWeatherFogRange(visibility = 0.88) {
+  const clampedVisibility = clamp(visibility, 0.12, 1);
+  return {
+    near: lerp(4.5, 12, clampedVisibility),
+    far: lerp(12, 34, clampedVisibility),
   };
 }
 

@@ -31,6 +31,7 @@ import { createOverworldAnchorsRuntimePlugin } from '@bworlds/runtime-overworld-
 import { createPlayerPoiRuntimePlugin } from '@bworlds/runtime-player-poi';
 import { createStartRegionRuntimePlugin } from '@bworlds/runtime-start-region';
 import { createWayfindingRuntimePlugin } from '@bworlds/runtime-wayfinding';
+import { createWeatherRuntimePlugin } from '@bworlds/runtime-weather';
 import { createCaveTilePlugin } from '@bworlds/tile-cave';
 import { createDungeonTilePlugin } from '@bworlds/tile-dungeon';
 import { createForestTilePlugin } from '@bworlds/tile-forest';
@@ -125,6 +126,13 @@ export function createDefaultRuntimePlugins(): RuntimePlugin[] {
       order: {
         priority: 20,
         after: ['runtime-wayfinding', 'runtime-overworld-anchors'],
+      },
+    },
+    {
+      create: createWeatherRuntimePlugin,
+      order: {
+        priority: 25,
+        after: ['runtime-celestial', 'runtime-depth-flavor'],
       },
     },
   ]);

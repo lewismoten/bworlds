@@ -258,6 +258,27 @@ describe('plugin registry', () => {
         return {
           lighting: { sunColor: '#fedcba', shadowStrength: 0.8 },
           stars: { density: 1.4 },
+          weather: {
+            current: {
+              kind: 'clouds',
+              label: 'Clouds',
+              intensity: 0.4,
+              cloudCover: 0.7,
+              windStrength: 0.3,
+              precipitation: 0,
+              visibility: 0.8,
+              temperature: 64,
+              front: {
+                id: 'front-a',
+                kind: 'warm',
+                intensity: 0.4,
+                humidityShift: 0.2,
+                temperatureShift: 0.1,
+                windDirectionDegrees: 90,
+                speed: 0.35,
+              },
+            },
+          },
           celestial: { dateLabel: 'Dawn Crown / Full Moon' },
         };
       },
@@ -273,6 +294,13 @@ describe('plugin registry', () => {
       sky: { dayColor: '#abcdef' },
       lighting: { sunColor: '#fedcba', shadowStrength: 0.8 },
       stars: { density: 1.4 },
+      weather: {
+        current: expect.objectContaining({
+          kind: 'clouds',
+          label: 'Clouds',
+          temperature: 64,
+        }),
+      },
       celestial: { dateLabel: 'Dawn Crown / Full Moon' },
     });
   });

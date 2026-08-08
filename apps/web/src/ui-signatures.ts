@@ -30,6 +30,8 @@ type StatusSignatureOptions = {
   cycleLabel: string;
   seasonLabel: string;
   moonLabel: string;
+  weatherLabel: string;
+  forecastLabel: string;
   eventModeLabel: string;
   eventsLabel: string;
   sunriseLabel: string;
@@ -77,6 +79,8 @@ export function getStatusSignature(options: StatusSignatureOptions): string {
     options.cycleLabel,
     options.seasonLabel,
     options.moonLabel,
+    options.weatherLabel,
+    options.forecastLabel,
     options.eventModeLabel,
     options.eventsLabel,
     options.sunriseLabel,
@@ -156,6 +160,8 @@ export function buildStatusMarkup(options: StatusSignatureOptions): string {
     <div><dt>Cycle</dt><dd>${options.cycleLabel}</dd></div>
     <div><dt>Season</dt><dd>${options.seasonLabel}</dd></div>
     <div><dt>Moon</dt><dd>${options.moonLabel}</dd></div>
+    <div><dt>Weather</dt><dd>${options.weatherLabel}</dd></div>
+    <div><dt>Forecast</dt><dd>${options.forecastLabel}</dd></div>
     <div><dt>Event Mode</dt><dd>${options.eventModeLabel}</dd></div>
     <div><dt>Events</dt><dd>${options.eventsLabel}</dd></div>
     <div><dt>Sunrise</dt><dd>${options.sunriseLabel}</dd></div>

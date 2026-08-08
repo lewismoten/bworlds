@@ -4,6 +4,7 @@ import {
   DEFAULT_CAMERA_PITCH,
   getFarLandModelOpacity,
   getFacingVisibilityBucket,
+  getWeatherFogRange,
   getSkyAuroraSignature,
   getSkyConstellationSignature,
   getSkyEventSignature,
@@ -228,6 +229,11 @@ describe('render3d visibility helpers', () => {
       skyColor: '#dusk',
       fogColor: '#fog-dusk',
     });
+  });
+
+  it('tightens fog range when weather visibility drops', () => {
+    expect(getWeatherFogRange(0.9).far).toBeGreaterThan(getWeatherFogRange(0.3).far);
+    expect(getWeatherFogRange(0.9).near).toBeGreaterThan(getWeatherFogRange(0.3).near);
   });
 
   it('syncs dynamic visible tile nodes through tile plugin hooks', () => {

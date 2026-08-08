@@ -815,6 +815,8 @@ function updateStatus(
   const cycleLabel = timeState.frozen ? 'Frozen' : 'Running';
   const seasonLabel = cycle.activeConstellation.name;
   const moonLabel = cycle.moonPhaseName;
+  const weatherLabel = formatWeatherSummary(environment);
+  const forecastLabel = formatForecastSummary(environment);
   const eventModeLabel = formatCelestialEventModeLabel(celestialEventModeState.mode);
   const eventsLabel = describeActiveCelestialEvents(cycle);
   const sunriseLabel = cardinalFromAngle(cycle.sunriseAzimuth);
@@ -836,6 +838,8 @@ function updateStatus(
     cycleLabel,
     seasonLabel,
     moonLabel,
+    weatherLabel,
+    forecastLabel,
     eventModeLabel,
     eventsLabel,
     sunriseLabel,
@@ -859,6 +863,8 @@ function updateStatus(
       cycleLabel,
       seasonLabel,
       moonLabel,
+      weatherLabel,
+      forecastLabel,
       eventModeLabel,
       eventsLabel,
       sunriseLabel,
@@ -1962,6 +1968,29 @@ function renderCompass(facing: CardinalFacing): string {
         : `<span>${direction}</span>`
     )
     .join('');
+}
+
+function formatWeatherSummary(environment: WorldEnvironmentLike): string {
+  const current = environment.weather?.current;
+  if (!current) {
+    return 'Clear';
+  }
+  return `${current.label} ${Math.round(current.temperature)}\u00b0F, wind ${Math.round(
+    current.front.windDirectionDegrees
+  )}\u00b0`;
+}
+
+function formatForecastSummary(environment: WorldEnvironmentLike): string {
+  const forecast = environment.weather?.forecast ?? [];
+  if (forecast.length === 0) {
+    return 'No forecast available';
+  }
+  return forecast
+    .map(
+      (day) =>
+        `${day.label} ${day.condition.label} ${day.highTemperature}\u00b0/${day.lowTemperature}\u00b0F`
+    )
+    .join(' • ');
 }
 
 function formatCelestialEventModeLabel(mode: CelestialEventMode): string {

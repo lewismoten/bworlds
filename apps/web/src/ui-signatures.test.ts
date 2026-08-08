@@ -33,6 +33,8 @@ describe('ui signature helpers', () => {
       cycleLabel: 'Running',
       seasonLabel: 'Nova Crown',
       moonLabel: 'Waxing',
+      weatherLabel: 'Clouds 64F, light wind from 090',
+      forecastLabel: 'Today Clouds 64/51F',
       eventModeLabel: 'Auto',
       eventsLabel: 'No active events',
       sunriseLabel: 'E',
@@ -45,6 +47,8 @@ describe('ui signature helpers', () => {
       getStatusSignature(base)
     );
     expect(buildStatusMarkup(base)).toContain('Grassland');
+    expect(buildStatusMarkup(base)).toContain('Weather');
+    expect(buildStatusMarkup(base)).toContain('Forecast');
   });
 
   it('tracks viewport hud and event summary changes without needing DOM writes for stable content', () => {

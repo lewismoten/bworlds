@@ -231,6 +231,12 @@ export class PluginRegistry implements PluginRegistryLike {
           ...resolved.stars,
         };
       }
+      if (resolved.weather) {
+        merged.weather = {
+          ...(merged.weather ?? {}),
+          ...resolved.weather,
+        };
+      }
       if (resolved.celestial) {
         merged.celestial = {
           ...(merged.celestial ?? {}),
