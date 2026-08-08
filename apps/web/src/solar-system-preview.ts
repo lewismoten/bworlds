@@ -29,6 +29,14 @@ type SolarSystemEventMarkerState = ReturnType<
 type ConstellationStarLike = NonNullable<
   NonNullable<DaylightCycleLike['constellations']>[number]
 >['stars'][number];
+type BackgroundStarState = {
+  color: string;
+  opacity: number;
+  radius: number;
+  x: number;
+  y: number;
+  z: number;
+};
 
 export function createSolarSystemPreviewRenderer(
   host: HTMLElement | null,
@@ -316,27 +324,66 @@ export function getSolarSystemSceneSignatures(
 }
 
 function syncBackgroundStars(root: THREE.Group, cycle: DaylightCycleLike): void {
-  root.clear();
-  const starCount = 56;
-  for (let index = 0; index < starCount; index += 1) {
-    const azimuth = (index / starCount) * Math.PI * 2 + cycle.yearProgress * Math.PI * 2 * 0.1;
-    const radius = 13.2 + ((index * 17) % 5) * 0.9;
-    const height = -3.2 + ((index * 13) % 7) * 1.04;
-    const sprite = new THREE.Mesh(
-      new THREE.SphereGeometry(0.04 + (index % 3) * 0.02, 8, 8),
-      new THREE.MeshBasicMaterial({
-        color: index % 7 === 0 ? '#fff2ca' : '#d8e9ff',
-        transparent: true,
-        opacity: 0.16 + cycle.starsOpacity * 0.34,
-      })
-    );
-    sprite.position.set(
-      Math.cos(azimuth) * radius,
-      height,
-      Math.sin(azimuth) * radius
-    );
-    root.add(sprite);
+  const stars = getBackgroundStarStates(cycle);
+  while (root.children.length > stars.length) {
+    const child = root.children[root.children.length - 1];
+    root.remove(child);
+    if (child instanceof THREE.Mesh) {
+      child.geometry.dispose();
+      if (Array.isArray(child.material)) {
+        child.material.forEach((material) => material.dispose());
+      } else {
+        child.material.dispose();
+      }
+    }
   }
+  while (root.children.length < stars.length) {
+    const star = stars[root.children.length];
+    root.add(
+      new THREE.Mesh(
+        new THREE.SphereGeometry(star.radius, 8, 8),
+        new THREE.MeshBasicMaterial({
+          color: star.color,
+          transparent: true,
+          opacity: star.opacity,
+        })
+      )
+    );
+  }
+  stars.forEach((star, index) => {
+    const sprite = root.children[index];
+    if (!(sprite instanceof THREE.Mesh)) {
+      return;
+    }
+    sprite.position.set(star.x, star.y, star.z);
+    const material = sprite.material;
+    if (material instanceof THREE.MeshBasicMaterial) {
+      material.color.set(star.color);
+      material.opacity = star.opacity;
+    }
+  });
+}
+
+export function getBackgroundStarStates(
+  cycle: DaylightCycleLike,
+  starCount = 56
+): BackgroundStarState[] {
+  const opacity = 0.16 + cycle.starsOpacity * 0.34;
+  const seasonalOffset = cycle.yearProgress * Math.PI * 2 * 0.1;
+  const stars: BackgroundStarState[] = new Array(starCount);
+  for (let index = 0; index < starCount; index += 1) {
+    const azimuth = (index / starCount) * Math.PI * 2 + seasonalOffset;
+    const radius = 13.2 + ((index * 17) % 5) * 0.9;
+    stars[index] = {
+      color: index % 7 === 0 ? '#fff2ca' : '#d8e9ff',
+      opacity,
+      radius: 0.04 + (index % 3) * 0.02,
+      x: Math.cos(azimuth) * radius,
+      y: -3.2 + ((index * 13) % 7) * 1.04,
+      z: Math.sin(azimuth) * radius,
+    };
+  }
+  return stars;
 }
 
 function syncSolarSystemOrbits(

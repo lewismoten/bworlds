@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { getDaylightCycleState } from '@bworlds/core';
 import {
+  getBackgroundStarStates,
   getSolarSystemBodyPositions,
   getSolarSystemEventMarkerStates,
   getSolarSystemSceneSignatures,
@@ -125,5 +126,41 @@ describe('solar system preview helpers', () => {
     expect(getSolarSystemSceneSignatures(farCycle).bodies).not.toBe(
       getSolarSystemSceneSignatures(cycle).bodies
     );
+  });
+
+  it('builds stable background star states from a fixed reusable pool', () => {
+    const cycle = getDaylightCycleState(210000, {
+      observerLatitudeDegrees: 24,
+    });
+    const dimmerCycle = cloneSolarSystemCycle(cycle, {
+      ...cycle,
+      starsOpacity: Math.max(0, cycle.starsOpacity - 0.25),
+    });
+    const brighterCycle = cloneSolarSystemCycle(cycle, {
+      ...cycle,
+      yearProgress: cycle.yearProgress + 0.15,
+      starsOpacity: Math.min(1, cycle.starsOpacity + 0.25),
+    });
+
+    const dimmerStars = getBackgroundStarStates(dimmerCycle);
+    const stars = getBackgroundStarStates(cycle);
+    const brighterStars = getBackgroundStarStates(brighterCycle);
+
+    expect(stars).toHaveLength(56);
+    expect(stars[0]).toEqual(
+      expect.objectContaining({
+        color: '#fff2ca',
+        radius: 0.04,
+      })
+    );
+    expect(stars[1]).toEqual(
+      expect.objectContaining({
+        color: '#d8e9ff',
+        radius: 0.06,
+      })
+    );
+    expect(brighterStars[0]?.opacity).toBeGreaterThan(dimmerStars[0]?.opacity ?? 0);
+    expect(brighterStars[0]?.x).not.toBeCloseTo(stars[0]?.x ?? 0, 6);
+    expect(brighterStars[0]?.z).not.toBeCloseTo(stars[0]?.z ?? 0, 6);
   });
 });
