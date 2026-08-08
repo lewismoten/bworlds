@@ -2397,7 +2397,10 @@ function render(): FrameLoopActivityLike {
   }
   celestialPreview.render(displayCycle, environment, state.player.facing, generator);
   solarSystemPreview.render(displayCycle);
-  if (eventSummary) {
+  const eventsInspectorVisible = isInspectorSectionVisible(activeInspectorTab, 'events');
+  const sextantInspectorVisible = isInspectorSectionVisible(activeInspectorTab, 'sextant');
+  const debugInspectorVisible = isInspectorSectionVisible(activeInspectorTab, 'debug');
+  if (eventSummary && eventsInspectorVisible) {
     const eventDetails = getActiveCelestialEventDetails(displayCycle);
     const modeLabel = formatCelestialEventModeLabel(celestialEventModeState.mode);
     const activeEventsLabel = describeActiveCelestialEvents(displayCycle);
@@ -2438,10 +2441,11 @@ function render(): FrameLoopActivityLike {
     }
   }
   updateStatus(environment, displayCycle);
-  const gps = toGps(state.player.x, state.player.y);
-  const gridX = snapWorldCoordinate(state.player.x);
-  const gridY = snapWorldCoordinate(state.player.y);
-  if (sextantSummary) {
+  const needsCoordinateSummary = sextantInspectorVisible || debugInspectorVisible;
+  const gps = needsCoordinateSummary ? toGps(state.player.x, state.player.y) : null;
+  const gridX = needsCoordinateSummary ? snapWorldCoordinate(state.player.x) : 0;
+  const gridY = needsCoordinateSummary ? snapWorldCoordinate(state.player.y) : 0;
+  if (sextantSummary && sextantInspectorVisible && gps) {
     const sextantSignature = getSextantSignature({
       latitude: gps.latitude,
       longitude: gps.longitude,
@@ -2458,7 +2462,7 @@ function render(): FrameLoopActivityLike {
       uiRenderState.lastSextantSignature = sextantSignature;
     }
   }
-  if (debugSummary) {
+  if (debugSummary && debugInspectorVisible && gps) {
     const rendererStats = renderer3d.getStats();
     const performanceStats = performance as PerformanceWithMemory;
     const debugSnapshot = {

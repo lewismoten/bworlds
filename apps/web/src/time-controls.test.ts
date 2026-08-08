@@ -97,9 +97,13 @@ describe('time controls', () => {
     expect(isInspectorSectionVisible('timekeeper', 'events')).toBe(false);
     expect(isInspectorSectionVisible('timekeeper', 'compass')).toBe(false);
     expect(isInspectorSectionVisible('timekeeper', 'viewport-compass')).toBe(false);
+    expect(isInspectorSectionVisible('events', 'events')).toBe(true);
+    expect(isInspectorSectionVisible('events', 'debug')).toBe(false);
     expect(isInspectorSectionVisible('compass', 'viewport-compass')).toBe(true);
     expect(isInspectorSectionVisible('sextant', 'sextant')).toBe(true);
+    expect(isInspectorSectionVisible('sextant', 'events')).toBe(false);
     expect(isInspectorSectionVisible('debug', 'debug')).toBe(true);
+    expect(isInspectorSectionVisible('debug', 'sextant')).toBe(false);
   });
 
   it('can focus one model preview or show both together', () => {
