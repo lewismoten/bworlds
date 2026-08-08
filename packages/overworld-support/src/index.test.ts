@@ -7,6 +7,7 @@ import {
   createRiverCurvePoints,
   createRiverControlPoints,
   createRiverForkPath,
+  resolveOverworldCellAnchor,
   createOverworldGenerationContext,
   createGeneratedNamedOverworldCellAnchorSpec,
   createGeneratedPoiOverworldCellAnchorSpec,
@@ -570,6 +571,49 @@ describe('overworld support', () => {
     expect(first.townAnchors.length).toBeGreaterThan(0);
     expect(first.poiAnchors.some((anchor) => anchor.type === 'town')).toBe(true);
     expect(first.poiAnchors.some((anchor) => anchor.type === 'cave')).toBe(true);
+  });
+
+  it('reuses candidate terrain evaluation across overlapping anchor conflict checks', () => {
+    const sampleCounts = new Map<string, number>();
+    const sampleTerrainSignals = (x: number, y: number) => {
+      const key = `${x}:${y}`;
+      sampleCounts.set(key, (sampleCounts.get(key) ?? 0) + 1);
+      return {
+        continent: 0.6,
+        elevation: 0.4,
+        moisture: 0.5,
+        riverSignal: 0.2,
+        roadSignal: 0.2,
+      };
+    };
+    const spec = createGeneratedNamedOverworldCellAnchorSpec({
+      id: 'town',
+      nameType: 'town',
+      cellSize: 1,
+      chanceKey: 'chance',
+      offsetXKey: 'offset-x',
+      offsetYKey: 'offset-y',
+      offsetScale: 0,
+      threshold: -1,
+      isSuitableTerrain() {
+        return true;
+      },
+    });
+
+    resolveOverworldCellAnchor({
+      seed: 'spec-seed',
+      cellX: 0,
+      cellY: 0,
+      spec,
+      sampleTerrainSignals,
+      cache: new Map(),
+      minSpacing: 1,
+      conflictSpecs: [spec],
+      evaluationCache: new Map(),
+    });
+
+    expect(sampleCounts.size).toBeGreaterThan(1);
+    expect(Math.max(...sampleCounts.values())).toBe(1);
   });
 
   it('composes overworld tiles through the shared plugin pipeline', () => {

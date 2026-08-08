@@ -36,6 +36,14 @@ export type RiverForkPath = {
   points: RiverControlPoint[];
 };
 
+type OverworldCellAnchorEvaluation<
+  TAnchor extends OverworldAnchorLike = OverworldAnchorLike,
+> = {
+  candidate: OverworldCellAnchorCandidate<TAnchor>;
+  terrain: OverworldSignals;
+  terrainSuitable: boolean;
+};
+
 const RIVER_CONTROL_CELL_SIZE = 24;
 const RIVER_MIN_CONTROL_STEP = 2;
 const RIVER_MAX_CONTROL_STEP = 10;
@@ -785,6 +793,7 @@ export function collectNearbyOverworldCellAnchors<
   minSpacing = 0,
   blockingAnchors = [],
   conflictSpecs = [spec],
+  evaluationCache = new Map<string, OverworldCellAnchorEvaluation>(),
 }: {
   seed: Seed;
   x: number;
@@ -796,6 +805,7 @@ export function collectNearbyOverworldCellAnchors<
   minSpacing?: number;
   blockingAnchors?: Array<Pick<OverworldAnchorLike, 'x' | 'y'>>;
   conflictSpecs?: OverworldCellAnchorSpec[];
+  evaluationCache?: Map<string, OverworldCellAnchorEvaluation>;
 }) {
   const cellX = Math.floor(x / spec.cellSize);
   const cellY = Math.floor(y / spec.cellSize);
@@ -813,6 +823,7 @@ export function collectNearbyOverworldCellAnchors<
         minSpacing,
         blockingAnchors,
         conflictSpecs,
+        evaluationCache,
       });
       if (anchor) {
         anchors.push(anchor);
@@ -836,6 +847,7 @@ export function collectNearbyOverworldPoiAnchors<
   minSpacing = 0,
   blockingAnchors = [],
   baseAnchors = [],
+  evaluationCache = new Map<string, OverworldCellAnchorEvaluation>(),
 }: {
   seed: Seed;
   x: number;
@@ -846,6 +858,7 @@ export function collectNearbyOverworldPoiAnchors<
   minSpacing?: number;
   blockingAnchors?: Array<Pick<OverworldAnchorLike, 'x' | 'y'>>;
   baseAnchors?: TAnchor[];
+  evaluationCache?: Map<string, OverworldCellAnchorEvaluation>;
 }) {
   const anchors = [...baseAnchors];
   const specList = Object.values(specs) as OverworldCellAnchorSpec<TAnchor>[];
@@ -862,6 +875,7 @@ export function collectNearbyOverworldPoiAnchors<
         minSpacing,
         blockingAnchors,
         conflictSpecs: specList,
+        evaluationCache,
       })
     );
   }
@@ -914,6 +928,7 @@ export function createOverworldAnchorResolver<
 }) {
   const townCache = new Map<string, TTownAnchor | null>();
   const bridgeCache = new Map<string, TBridgeAnchor | null>();
+  const anchorEvaluationCache = new Map<string, OverworldCellAnchorEvaluation>();
   const poiCaches = Object.fromEntries(
     Object.keys(options.poi?.specs ?? {}).map((poiType) => [
       poiType,
@@ -939,6 +954,7 @@ export function createOverworldAnchorResolver<
           minSpacing: options.town.minSpacing,
           blockingAnchors: options.town.blockingAnchors,
           conflictSpecs: options.town.conflictSpecs,
+          evaluationCache: anchorEvaluationCache,
         })
       : [];
     const bridgeAnchors = options.bridge
@@ -953,6 +969,7 @@ export function createOverworldAnchorResolver<
           minSpacing: options.bridge.minSpacing,
           blockingAnchors: options.bridge.blockingAnchors,
           conflictSpecs: options.bridge.conflictSpecs,
+          evaluationCache: anchorEvaluationCache,
         })
       : [];
     const poiAnchors = options.poi
@@ -974,6 +991,7 @@ export function createOverworldAnchorResolver<
               townAnchors,
               bridgeAnchors,
             }) ?? [],
+          evaluationCache: anchorEvaluationCache,
         })
       : [];
 
@@ -997,6 +1015,7 @@ export function resolveOverworldCellAnchor<
   minSpacing = 0,
   blockingAnchors = [],
   conflictSpecs = [spec],
+  evaluationCache = new Map<string, OverworldCellAnchorEvaluation>(),
 }: {
   seed: Seed;
   cellX: number;
@@ -1007,19 +1026,22 @@ export function resolveOverworldCellAnchor<
   minSpacing?: number;
   blockingAnchors?: Array<Pick<OverworldAnchorLike, 'x' | 'y'>>;
   conflictSpecs?: OverworldCellAnchorSpec[];
+  evaluationCache?: Map<string, OverworldCellAnchorEvaluation>;
 }) {
   const key = `${seed}:${spec.id}:${cellX}:${cellY}`;
   if (!cache.has(key)) {
-    const candidate = createOverworldCellAnchorCandidate(seed, cellX, cellY, spec);
-    const terrain = sampleTerrainSignals(candidate.x, candidate.y);
+    const evaluation = getOverworldCellAnchorEvaluation({
+      seed,
+      cellX,
+      cellY,
+      spec,
+      sampleTerrainSignals,
+      evaluationCache,
+    });
+    const { candidate } = evaluation;
     const suitable =
       candidate.chance > spec.threshold &&
-      spec.isSuitableTerrain({
-        terrain,
-        x: candidate.x,
-        y: candidate.y,
-        sampleTerrainSignals,
-      }) &&
+      evaluation.terrainSuitable &&
       !hasOverworldAnchorConflict(candidate, blockingAnchors, minSpacing) &&
       !hasHigherPriorityOverworldAnchorConflict({
         seed,
@@ -1028,6 +1050,7 @@ export function resolveOverworldCellAnchor<
         blockingAnchors,
         minSpacing,
         conflictSpecs,
+        evaluationCache,
       });
 
     cache.set(
@@ -1055,6 +1078,7 @@ function hasHigherPriorityOverworldAnchorConflict({
   blockingAnchors,
   minSpacing,
   conflictSpecs,
+  evaluationCache,
 }: {
   seed: Seed;
   candidate: OverworldCellAnchorCandidate;
@@ -1062,6 +1086,7 @@ function hasHigherPriorityOverworldAnchorConflict({
   blockingAnchors: Array<Pick<OverworldAnchorLike, 'x' | 'y'>>;
   minSpacing: number;
   conflictSpecs: OverworldCellAnchorSpec[];
+  evaluationCache: Map<string, OverworldCellAnchorEvaluation>;
 }) {
   if (minSpacing <= 0) {
     return false;
@@ -1074,12 +1099,15 @@ function hasHigherPriorityOverworldAnchorConflict({
 
     for (let dy = -radius; dy <= radius; dy += 1) {
       for (let dx = -radius; dx <= radius; dx += 1) {
-        const other = createOverworldCellAnchorCandidate(
+        const otherEvaluation = getOverworldCellAnchorEvaluation({
           seed,
-          cellX + dx,
-          cellY + dy,
-          spec
-        );
+          cellX: cellX + dx,
+          cellY: cellY + dy,
+          spec,
+          sampleTerrainSignals,
+          evaluationCache,
+        });
+        const other = otherEvaluation.candidate;
         if (
           other.spec.id === candidate.spec.id &&
           other.cellX === candidate.cellX &&
@@ -1088,15 +1116,9 @@ function hasHigherPriorityOverworldAnchorConflict({
           continue;
         }
 
-        const terrain = sampleTerrainSignals(other.x, other.y);
         if (
           other.chance <= other.spec.threshold ||
-          !other.spec.isSuitableTerrain({
-            terrain,
-            x: other.x,
-            y: other.y,
-            sampleTerrainSignals,
-          }) ||
+          !otherEvaluation.terrainSuitable ||
           hasOverworldAnchorConflict(other, blockingAnchors, minSpacing)
         ) {
           continue;
@@ -1114,6 +1136,44 @@ function hasHigherPriorityOverworldAnchorConflict({
   }
 
   return false;
+}
+
+function getOverworldCellAnchorEvaluation<
+  TAnchor extends OverworldAnchorLike = OverworldAnchorLike,
+>({
+  seed,
+  cellX,
+  cellY,
+  spec,
+  sampleTerrainSignals,
+  evaluationCache,
+}: {
+  seed: Seed;
+  cellX: number;
+  cellY: number;
+  spec: OverworldCellAnchorSpec<TAnchor>;
+  sampleTerrainSignals: OverworldTerrainSignalSampler;
+  evaluationCache: Map<string, OverworldCellAnchorEvaluation>;
+}): OverworldCellAnchorEvaluation<TAnchor> {
+  const key = `${seed}:${spec.id}:${cellX}:${cellY}`;
+  if (!evaluationCache.has(key)) {
+    const candidate = createOverworldCellAnchorCandidate(seed, cellX, cellY, spec);
+    const terrain = sampleTerrainSignals(candidate.x, candidate.y);
+    evaluationCache.set(key, {
+      candidate,
+      terrain,
+      terrainSuitable:
+        candidate.chance > spec.threshold &&
+        spec.isSuitableTerrain({
+          terrain,
+          x: candidate.x,
+          y: candidate.y,
+          sampleTerrainSignals,
+        }),
+    });
+  }
+
+  return evaluationCache.get(key) as OverworldCellAnchorEvaluation<TAnchor>;
 }
 
 export function createOverworldGenerationContext({
