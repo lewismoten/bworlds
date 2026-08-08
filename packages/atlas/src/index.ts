@@ -1,12 +1,16 @@
 import { hash2D } from '@bworlds/core';
-import { getActivePluginRegistry } from '@bworlds/plugin-api';
+import {
+  getActivePluginRegistry,
+  type Kind,
+  type TileDefinitionLike,
+} from '@bworlds/plugin-api';
 
 const TILE_PIXEL_SIZE = 16;
 const VARIANT_GRID_SIZE = 3;
 const VARIANTS_PER_TILE = VARIANT_GRID_SIZE * VARIANT_GRID_SIZE;
 const KIND_COLUMNS = 4;
-const atlasCache = new Map();
-const FALLBACK_TILE_DEFINITION = {
+const atlasCache = new Map<'default', HTMLCanvasElement>();
+const FALLBACK_TILE_DEFINITION: TileDefinitionLike = {
   name: 'Unknown Tile',
   color: '#64748b',
   miniColor: '#94a3b8',
@@ -20,7 +24,7 @@ type DrawTileSpriteOptions = {
   timeMs?: number;
 };
 
-export function drawAtlas(context) {
+export function drawAtlas(context: CanvasRenderingContext2D) {
   const entries = getTileDefinitionEntries();
   context.clearRect(0, 0, 256, 256);
   context.font = '10px sans-serif';
@@ -37,11 +41,11 @@ export function drawAtlas(context) {
 }
 
 export function drawTileSprite(
-  context,
-  kind,
-  x,
-  y,
-  size,
+  context: CanvasRenderingContext2D,
+  kind: Kind,
+  x: number,
+  y: number,
+  size: number,
   options: DrawTileSpriteOptions = {}
 ) {
   const variant =
@@ -76,24 +80,24 @@ export function drawTileSprite(
   });
 }
 
-export function getTileVariantIndex(kind, worldX, worldY) {
+export function getTileVariantIndex(kind: Kind, worldX: number, worldY: number) {
   const hash = hash2D(`tile-variant:${kind}`, worldX, worldY);
   return Math.floor(hash * VARIANTS_PER_TILE) % VARIANTS_PER_TILE;
 }
 
-export function getTileAtlasCanvas() {
+export function getTileAtlasCanvas(): HTMLCanvasElement {
   return getAtlasCanvas();
 }
 
-export function getTilePixelSize() {
+export function getTilePixelSize(): number {
   return TILE_PIXEL_SIZE;
 }
 
-export function getTileSpriteRect(kind, variant) {
+export function getTileSpriteRect(kind: Kind, variant: number) {
   return getTileSpriteRegion(kind, variant);
 }
 
-function getTileSpriteRegion(kind, variant) {
+function getTileSpriteRegion(kind: Kind, variant: number) {
   const kinds = getTileDefinitionEntries().map(([name]) => name);
   const index = Math.max(0, kinds.indexOf(kind));
   const kindColumn = index % KIND_COLUMNS;
@@ -107,14 +111,14 @@ function getTileSpriteRegion(kind, variant) {
   };
 }
 
-function getAtlasCanvas() {
+function getAtlasCanvas(): HTMLCanvasElement {
   if (!atlasCache.has('default')) {
     atlasCache.set('default', buildAtlasCanvas());
   }
-  return atlasCache.get('default');
+  return atlasCache.get('default')!;
 }
 
-function buildAtlasCanvas() {
+function buildAtlasCanvas(): HTMLCanvasElement {
   const kinds = getTileDefinitionEntries().map(([kind]) => kind);
   const kindRows = Math.ceil(kinds.length / KIND_COLUMNS);
   const canvas = document.createElement('canvas');
@@ -134,7 +138,13 @@ function buildAtlasCanvas() {
   return canvas;
 }
 
-function paintTileSprite(context, kind, variant, x, y) {
+function paintTileSprite(
+  context: CanvasRenderingContext2D,
+  kind: Kind,
+  variant: number,
+  x: number,
+  y: number
+) {
   const definition = getActivePluginRegistry().resolveTileDefinition(
     kind,
     FALLBACK_TILE_DEFINITION
@@ -162,11 +172,23 @@ function paintTileSprite(context, kind, variant, x, y) {
   shadeTileBorder(context, x, y, definition, motif);
 }
 
-function paintGenericTile(context, x, y, definition, motif) {
+function paintGenericTile(
+  context: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  definition: TileDefinitionLike,
+  motif: ReturnType<typeof createVariantMotif>
+) {
   speckle(context, x, y, definition.miniColor, 26, 0.28, motif);
 }
 
-function shadeTileBorder(context, x, y, definition, motif) {
+function shadeTileBorder(
+  context: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  definition: TileDefinitionLike,
+  motif: ReturnType<typeof createVariantMotif>
+) {
   fillRect(context, x, y, TILE_PIXEL_SIZE, 1, 'rgba(255,255,255,0.12)');
   fillRect(context, x, y, 1, TILE_PIXEL_SIZE, 'rgba(255,255,255,0.1)');
   fillRect(
@@ -188,7 +210,15 @@ function shadeTileBorder(context, x, y, definition, motif) {
   fillRect(context, x + 1 + motif.int(0, 1), y + 1, 1, 1, definition.miniColor);
 }
 
-function speckle(context, x, y, color, count, alpha, motif) {
+function speckle(
+  context: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  color: string,
+  count: number,
+  alpha: number,
+  motif: ReturnType<typeof createVariantMotif>
+) {
   context.fillStyle = withAlpha(color, alpha);
   for (let index = 0; index < count; index += 1) {
     const px = x + ((index * 7 + 3 + motif.seed) % TILE_PIXEL_SIZE);
@@ -197,12 +227,19 @@ function speckle(context, x, y, color, count, alpha, motif) {
   }
 }
 
-function fillRect(context, x, y, width, height, color) {
+function fillRect(
+  context: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  color: string
+) {
   context.fillStyle = color;
   context.fillRect(x, y, width, height);
 }
 
-function withAlpha(hex, alpha) {
+function withAlpha(hex: string, alpha: number) {
   const normalized = hex.replace('#', '');
   const red = Number.parseInt(normalized.slice(0, 2), 16);
   const green = Number.parseInt(normalized.slice(2, 4), 16);
@@ -210,7 +247,7 @@ function withAlpha(hex, alpha) {
   return `rgba(${red}, ${green}, ${blue}, ${alpha})`;
 }
 
-function createVariantMotif(kind, variant) {
+function createVariantMotif(kind: Kind, variant: number) {
   const seed = Math.floor(
     hash2D(`atlas:${kind}`, variant, variant * 13) * 100000
   );
@@ -226,7 +263,7 @@ function createVariantMotif(kind, variant) {
   };
 }
 
-function getTileDefinitionEntries() {
+function getTileDefinitionEntries(): Array<[Kind, TileDefinitionLike]> {
   const entries = getActivePluginRegistry().listTileDefinitions();
   if (entries.length > 0) {
     return entries;

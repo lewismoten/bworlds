@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import type { WorldEnvironmentLike } from '@bworlds/plugin-api';
+import type { Kind, WorldEnvironmentLike } from '@bworlds/plugin-api';
 import {
   type AuroraBandLike,
   getMilkyWayBandSamples,
@@ -25,7 +25,21 @@ type PreviewLightingCycleLike = Pick<
   'daylight' | 'night' | 'starsOpacity'
 >;
 
-const PLANET_SURFACE_COLORS: Record<string, string> = {
+type PlanetSurfaceKind =
+  | Kind
+  | 'water'
+  | 'shallows'
+  | 'coast'
+  | 'grassland'
+  | 'jungle'
+  | 'desert'
+  | 'dunes'
+  | 'peak'
+  | 'snow'
+  | 'tundra'
+  | 'swamp';
+
+const PLANET_SURFACE_COLORS: Partial<Record<PlanetSurfaceKind, string>> = {
   ocean: '#1a3d68',
   water: '#1a3d68',
   river: '#3f78a8',
@@ -371,7 +385,7 @@ export function createCelestialPreviewRenderer(
   };
 }
 
-export function getPlanetSurfaceColor(kind: string | undefined) {
+export function getPlanetSurfaceColor(kind: PlanetSurfaceKind | undefined) {
   if (!kind) {
     return '#1a3d68';
   }
@@ -660,7 +674,7 @@ function samplePreviewOverworldKind(
   sampleOverworld: OverworldSamplerLike['sampleOverworld'],
   x: number,
   y: number
-) {
+): PlanetSurfaceKind | undefined {
   try {
     return sampleOverworld(x, y)?.kind;
   } catch {

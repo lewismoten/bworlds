@@ -1,9 +1,15 @@
-import { type getDaylightCycleState } from '@bworlds/core';
+import type { ViewMode } from '@bworlds/plugin-api';
 
-type DaylightCycleLike = ReturnType<typeof getDaylightCycleState>;
+export type EventDetailKind =
+  | 'aurora'
+  | 'meteor-shower'
+  | 'comet'
+  | 'planet'
+  | 'none';
+export type EventDetail = { kind: EventDetailKind; label: string };
 
-export function getStatusSignature(options: {
-  viewMode: string;
+type StatusSignatureOptions = {
+  viewMode: ViewMode;
   contextLabel: string;
   tileLabel: string;
   facing: string;
@@ -23,7 +29,22 @@ export function getStatusSignature(options: {
   sunriseLabel: string;
   depth: number;
   hint: string;
-}) {
+};
+
+type ViewportHudSignatureOptions = {
+  timeLabel: string;
+  facing: string;
+  headingLabel: string;
+  showCompass: boolean;
+};
+
+type EventSummarySignatureOptions = {
+  modeLabel: string;
+  activeEventsLabel: string;
+  detailLabels: string[];
+};
+
+export function getStatusSignature(options: StatusSignatureOptions) {
   return [
     options.viewMode,
     options.contextLabel,
@@ -48,12 +69,7 @@ export function getStatusSignature(options: {
   ].join('|');
 }
 
-export function getViewportHudSignature(options: {
-  timeLabel: string;
-  facing: string;
-  headingLabel: string;
-  showCompass: boolean;
-}) {
+export function getViewportHudSignature(options: ViewportHudSignatureOptions) {
   return [
     options.timeLabel,
     options.facing,
@@ -62,11 +78,7 @@ export function getViewportHudSignature(options: {
   ].join('|');
 }
 
-export function getEventSummarySignature(options: {
-  modeLabel: string;
-  activeEventsLabel: string;
-  detailLabels: string[];
-}) {
+export function getEventSummarySignature(options: EventSummarySignatureOptions) {
   return [
     options.modeLabel,
     options.activeEventsLabel,
@@ -74,34 +86,11 @@ export function getEventSummarySignature(options: {
   ].join('|');
 }
 
-export function getDetailLabels(
-  details: Array<{ kind: string; label: string }>
-) {
+export function getDetailLabels(details: EventDetail[]) {
   return details.map((detail) => `${detail.kind}:${detail.label}`);
 }
 
-export function buildStatusMarkup(options: {
-  viewMode: string;
-  contextLabel: string;
-  tileLabel: string;
-  facing: string;
-  playerX: number;
-  playerY: number;
-  gridX: number;
-  gridY: number;
-  latitude: number;
-  longitude: number;
-  timeLabel: string;
-  dateLabel: string;
-  cycleLabel: string;
-  seasonLabel: string;
-  moonLabel: string;
-  eventModeLabel: string;
-  eventsLabel: string;
-  sunriseLabel: string;
-  depth: number;
-  hint: string;
-}) {
+export function buildStatusMarkup(options: StatusSignatureOptions) {
   return `
     <div><dt>View</dt><dd>${options.viewMode.toUpperCase()}</dd></div>
     <div><dt>Place</dt><dd>${options.contextLabel}</dd></div>
@@ -123,13 +112,11 @@ export function buildStatusMarkup(options: {
   `;
 }
 
-export function buildViewportHudMarkup(options: {
-  timeLabel: string;
-  facing: string;
-  headingLabel: string;
-  showCompass: boolean;
-  compassMarkup: string;
-}) {
+export function buildViewportHudMarkup(
+  options: ViewportHudSignatureOptions & {
+    compassMarkup: string;
+  }
+) {
   return `
       <div class="viewport-hud-label">${options.timeLabel}</div>
       <div class="viewport-hud-meta">Facing ${options.facing}</div>
@@ -142,11 +129,13 @@ export function buildViewportHudMarkup(options: {
     `;
 }
 
-export function buildEventSummaryMarkup(options: {
-  modeLabel: string;
-  activeEventsLabel: string;
-  details: Array<{ kind: string; label: string }>;
-}) {
+export function buildEventSummaryMarkup(
+  options: {
+    modeLabel: string;
+    activeEventsLabel: string;
+    details: EventDetail[];
+  }
+) {
   return `
       <div class="event-summary-label">Mode: ${options.modeLabel}</div>
       <div class="event-summary-active">${options.activeEventsLabel}</div>

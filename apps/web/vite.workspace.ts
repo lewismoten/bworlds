@@ -11,7 +11,7 @@ const APP_DIR = fileURLToPath(new URL('.', import.meta.url));
 const REPO_ROOT = path.resolve(APP_DIR, '../..');
 const PACKAGES_DIR = path.join(REPO_ROOT, 'packages');
 
-export function buildWorkspaceAliases() {
+export function buildWorkspaceAliases(): Record<string, string> {
   const aliases: Record<string, string> = {
     '@bworlds/app': path.join(APP_DIR, 'src', 'main.ts'),
   };
@@ -38,7 +38,9 @@ export function buildWorkspaceAliases() {
   return aliases;
 }
 
-function resolvePackageExportPath(exportsField: WorkspacePackageManifest['exports']) {
+function resolvePackageExportPath(
+  exportsField: WorkspacePackageManifest['exports']
+): string | null {
   if (typeof exportsField === 'string') {
     return exportsField;
   }

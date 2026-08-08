@@ -8,11 +8,13 @@ import {
   getStatusSignature,
   getViewportHudSignature,
 } from './ui-signatures.ts';
+import type { EventDetail } from './ui-signatures.ts';
+import type { ViewMode } from '@bworlds/plugin-api';
 
 describe('ui signature helpers', () => {
   it('keeps identical status payloads on the same signature and changes when content changes', () => {
     const base = {
-      viewMode: '3d',
+      viewMode: '3d' as ViewMode,
       contextLabel: 'Overworld',
       tileLabel: 'Grassland',
       facing: 'N',
@@ -48,7 +50,7 @@ describe('ui signature helpers', () => {
       headingLabel: 'Heading 000°',
       showCompass: true,
     };
-    const details = [
+    const details: EventDetail[] = [
       { kind: 'aurora', label: '2 aurora bands' },
       { kind: 'meteor-shower', label: '1 meteor stream' },
     ];
