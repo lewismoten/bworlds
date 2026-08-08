@@ -67,6 +67,61 @@ describe('runtime celestial phenomena', () => {
     expect(environment?.celestial?.deriveOrreryFromVisibleEvents).toBe(true);
   });
 
+  it('maps natural transient events through observer-aware sky positions', () => {
+    const plugin = createCelestialPhenomenaRuntimePlugin();
+    let equatorialEnvironment: WorldEnvironmentLike | undefined;
+    let northernEnvironment: WorldEnvironmentLike | undefined;
+    let matchedEquatorialEvent:
+      | { type?: string; name?: string; altitude?: number; azimuth?: number }
+      | undefined;
+    let matchedNorthernEvent:
+      | { type?: string; name?: string; altitude?: number; azimuth?: number }
+      | undefined;
+
+    for (let day = 0; day < 192 && !matchedEquatorialEvent; day += 1) {
+      equatorialEnvironment = plugin.resolveWorldEnvironment?.({
+        state: {
+          player: {
+            x: 0,
+            y: 0,
+          },
+        } as any,
+        timeMs: day * 300000 + 210000,
+      }) as WorldEnvironmentLike | undefined;
+      northernEnvironment = plugin.resolveWorldEnvironment?.({
+        state: {
+          player: {
+            x: 0,
+            y: -50000,
+          },
+        } as any,
+        timeMs: day * 300000 + 210000,
+      }) as WorldEnvironmentLike | undefined;
+
+      for (const event of equatorialEnvironment?.celestial?.visibleEventsAppend ?? []) {
+        const match = (northernEnvironment?.celestial?.visibleEventsAppend ?? []).find(
+          (candidate) =>
+            candidate.type === event.type &&
+            candidate.name === event.name
+        );
+        if (match) {
+          matchedEquatorialEvent = event;
+          matchedNorthernEvent = match;
+          break;
+        }
+      }
+    }
+
+    expect(matchedEquatorialEvent).toBeDefined();
+    expect(matchedNorthernEvent).toBeDefined();
+    expect(matchedEquatorialEvent?.altitude).not.toBeCloseTo(
+      matchedNorthernEvent?.altitude ?? 0,
+      6
+    );
+    expect(matchedEquatorialEvent?.azimuth).not.toBeNaN();
+    expect(matchedNorthernEvent?.azimuth).not.toBeNaN();
+  });
+
   it('can force an aurora regardless of latitude and time of day', () => {
     const plugin = createCelestialPhenomenaRuntimePlugin();
     const environment = plugin.resolveWorldEnvironment?.({

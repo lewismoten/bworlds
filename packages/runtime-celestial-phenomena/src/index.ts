@@ -3,6 +3,7 @@ import {
   fract,
   getCometOrbitProgress,
   getDaylightCycleState,
+  getOrbitalSkyPosition,
   hash2D,
   smoothstep,
   type AuroraBandLike,
@@ -154,12 +155,27 @@ function buildTransientMeteorEvents(
     : 3 + Math.floor(hash2D('meteor-burst-count', cycle.dayNumber, 0) * 2);
   return Array.from({ length: count }, (_, index) => {
     const progress = fract(burstPhase + index * 0.19);
-    const azimuth = forced
-      ? facingAngle - 0.42 + index * 0.14
-      : cycle.sunsetAzimuth + 0.45 + index * 0.11;
-    const altitude = forced
-      ? 0.58 + Math.sin(progress * Math.PI * 2 + index * 0.4) * 0.18
-      : 0.34 + Math.sin(progress * Math.PI * 2 + index) * 0.18;
+    const orbitState = forced
+      ? {
+          azimuth: facingAngle - 0.42 + index * 0.14,
+          altitude: 0.58 + Math.sin(progress * Math.PI * 2 + index * 0.4) * 0.18,
+        }
+      : getOrbitalSkyPosition({
+          orbitProgress: progress,
+          observerLatitudeDegrees: cycle.observerLatitudeDegrees,
+          declination: clamp(
+            cycle.solarDeclination * -0.24 +
+              Math.sin(
+                ((cycle.dayNumber + progress) / (9 + index * 2)) * Math.PI * 2
+              ) *
+                0.16,
+            -0.68,
+            0.68
+          ),
+          sunriseAzimuth: cycle.sunriseAzimuth,
+          sunsetAzimuth: cycle.sunsetAzimuth,
+          azimuthShift: 0.92 + index * 0.12,
+        });
     const intensity = forced
       ? clamp(0.82 + Math.sin(progress * Math.PI * 2) * 0.14, 0.72, 1)
       : clamp(0.55 + Math.sin(progress * Math.PI * 2) * 0.24, 0.35, 0.9);
@@ -168,9 +184,15 @@ function buildTransientMeteorEvents(
       name: 'Northfall Burst',
       progress,
       intensity,
-      visibility: getTransientVisibility(cycle, altitude, intensity, true, forced),
-      azimuth,
-      altitude,
+      visibility: getTransientVisibility(
+        cycle,
+        orbitState.altitude,
+        intensity,
+        true,
+        forced
+      ),
+      azimuth: orbitState.azimuth,
+      altitude: orbitState.altitude,
       color: '#dff4ff',
       size: forced ? 0.38 : 0.3,
       trailLength: forced ? 3.4 + index * 0.22 : 2.4 + index * 0.18,
@@ -203,12 +225,27 @@ function buildVisitingCometEvents(
     phaseOffset,
     0.6
   );
-  const azimuth = forced
-    ? facingAngle + Math.sin(progress * Math.PI * 2) * 0.18
-    : cycle.sunriseAzimuth + Math.PI * 0.8 + Math.sin(progress * Math.PI * 2) * 0.72;
-  const altitude = forced
-    ? 0.62 + Math.cos(progress * Math.PI * 2) * 0.08
-    : 0.22 + Math.cos(progress * Math.PI * 2) * 0.2;
+  const orbitState = forced
+    ? {
+        azimuth: facingAngle + Math.sin(progress * Math.PI * 2) * 0.18,
+        altitude: 0.62 + Math.cos(progress * Math.PI * 2) * 0.08,
+      }
+    : getOrbitalSkyPosition({
+        orbitProgress: progress,
+        observerLatitudeDegrees: cycle.observerLatitudeDegrees,
+        declination: clamp(
+          cycle.solarDeclination * -0.42 +
+            Math.cos(
+              ((cycle.dayNumber + cycle.dayProgress) / cycleLengthDays) * Math.PI * 2
+            ) *
+              0.22,
+          -0.72,
+          0.72
+        ),
+        sunriseAzimuth: cycle.sunriseAzimuth,
+        sunsetAzimuth: cycle.sunsetAzimuth,
+        azimuthShift: 1.08,
+      });
   const intensity = forced ? 1 : clamp(1 - cycleDay / visitLengthDays, 0.28, 1);
   return [
     {
@@ -216,9 +253,15 @@ function buildVisitingCometEvents(
       name: 'Pilgrim Guest',
       progress,
       intensity,
-      visibility: getTransientVisibility(cycle, altitude, intensity, false, forced),
-      azimuth,
-      altitude,
+      visibility: getTransientVisibility(
+        cycle,
+        orbitState.altitude,
+        intensity,
+        false,
+        forced
+      ),
+      azimuth: orbitState.azimuth,
+      altitude: orbitState.altitude,
       color: '#dff6ff',
       size: forced ? 0.62 : 0.48,
       trailLength: forced ? 3.8 : 2.8,
