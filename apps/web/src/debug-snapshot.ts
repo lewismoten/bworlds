@@ -2,6 +2,7 @@ import type {
   DebugSnapshot,
   PerformanceHistorySample,
 } from './debug-panel.ts';
+import type { GraphicsCapabilitiesSummary } from './graphics-capabilities.ts';
 
 type ContentPackSummary = {
   id: string;
@@ -48,6 +49,7 @@ type DebugSnapshotExportOptions = {
     hardwareConcurrency?: number | null;
     deviceMemoryGb?: number | null;
   };
+  graphicsCapabilities: GraphicsCapabilitiesSummary;
   performanceBudget: {
     currentFrameMs: number;
     smoothedFrameMs: number;
@@ -92,6 +94,7 @@ export type DebugSnapshotExport = {
     enabledPlugins: string[];
     graphicsQuality: DebugSnapshotExportOptions['graphicsQuality'];
     device: DebugSnapshotExportOptions['device'];
+    graphicsCapabilities: DebugSnapshotExportOptions['graphicsCapabilities'];
     performanceBudget: DebugSnapshotExportOptions['performanceBudget'];
   };
   summary: {
@@ -185,6 +188,7 @@ export function buildDebugSnapshotExport(
       enabledPlugins: [...options.enabledPlugins],
       graphicsQuality: options.graphicsQuality,
       device: options.device,
+      graphicsCapabilities: options.graphicsCapabilities,
       performanceBudget: options.performanceBudget,
     },
     summary: {

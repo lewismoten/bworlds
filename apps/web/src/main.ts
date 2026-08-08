@@ -113,6 +113,7 @@ import {
   buildDebugSnapshotExport,
   formatDebugSnapshotFilename,
 } from './debug-snapshot.ts';
+import { collectGraphicsCapabilities } from './graphics-capabilities.ts';
 import {
   findRandomTileDestination,
   listTileTeleportOptions,
@@ -1624,6 +1625,7 @@ function downloadCurrentDebugSnapshot(): void {
   const currentContext = state.getCurrentContext();
   const pendingWorldBuildBudget = getPendingWorldBuildBudget(renderBudgetState);
   const renderBudgetCaps = getRenderBudgetCaps(renderBudgetState);
+  const graphicsCapabilities = collectGraphicsCapabilities();
   const exportPayload = buildDebugSnapshotExport({
     timestamp,
     gameVersion: APP_VERSION,
@@ -1666,6 +1668,7 @@ function downloadCurrentDebugSnapshot(): void {
       deviceMemoryGb:
         (navigator as Navigator & { deviceMemory?: number }).deviceMemory ?? null,
     },
+    graphicsCapabilities,
     performanceBudget: {
       currentFrameMs: renderBudgetState.currentFrameMs,
       smoothedFrameMs: renderBudgetState.smoothedFrameMs,

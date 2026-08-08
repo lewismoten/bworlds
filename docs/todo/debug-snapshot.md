@@ -20,7 +20,7 @@ That gives you something you can save from a slow scene, attach to a bug report,
 * [x] Include graphics-quality settings.
 * [x] Include render radius.
 * [x] Include device/browser information.
-* [ ] Include WebGL/WebGPU capabilities.
+* [x] Include WebGL/WebGPU capabilities.
 * [x] Include hardware concurrency and available device-memory hints where exposed.
 * [x] Include active performance-budget configuration.
 * [x] Include soft and hard caps alongside actual values.

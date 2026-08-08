@@ -42,6 +42,20 @@ describe('debug snapshot', () => {
         hardwareConcurrency: 8,
         deviceMemoryGb: 16,
       },
+      graphicsCapabilities: {
+        webgpuSupported: false,
+        webgl2Supported: true,
+        webglSupported: true,
+        renderer: 'Fake GPU',
+        vendor: 'Fake Vendor',
+        maxTextureSize: 8192,
+        maxCubeMapTextureSize: 4096,
+        maxRenderbufferSize: 2048,
+        maxVertexUniformVectors: 1024,
+        maxFragmentUniformVectors: 512,
+        maxCombinedTextureImageUnits: 32,
+        antialias: true,
+      },
       performanceBudget: {
         currentFrameMs: 22.4,
         smoothedFrameMs: 24.1,
@@ -200,6 +214,16 @@ describe('debug snapshot', () => {
     expect(result.metadata.context.id).toBe('town:3:7');
     expect(result.metadata.activeContentPacks[0]?.id).toBe('default-content-pack');
     expect(result.metadata.enabledPlugins).toEqual(['tile-forest', 'map-town']);
+    expect(result.metadata.graphicsCapabilities).toMatchObject({
+      webgpuSupported: false,
+      webgl2Supported: true,
+      webglSupported: true,
+      renderer: 'Fake GPU',
+      vendor: 'Fake Vendor',
+      maxTextureSize: 8192,
+      maxCombinedTextureImageUnits: 32,
+      antialias: true,
+    });
     expect(result.metadata.performanceBudget).toMatchObject({
       currentFrameMs: 22.4,
       targetFps: 30,
