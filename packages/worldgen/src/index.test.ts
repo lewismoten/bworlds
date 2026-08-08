@@ -496,6 +496,47 @@ describe('world generator', () => {
     });
   });
 
+  it('recreates deterministic maps after bounded map-cache eviction churn', () => {
+    const generator = createGenerator();
+    const baselineTownMap = generator.getMap({
+      id: 'town:test:0',
+      label: 'Test Town',
+      type: 'town',
+      depth: 1,
+      origin: { x: 5, y: 4 },
+    });
+    const baselineTiles = [
+      baselineTownMap.getTile(0, 0),
+      baselineTownMap.getTile(0, 11),
+      baselineTownMap.getTile(4, 0),
+    ];
+
+    for (let index = 0; index < 320; index += 1) {
+      const map = generator.getMap({
+        id: `town:evict:${index}`,
+        label: `Town ${index}`,
+        type: 'town',
+        depth: 1,
+        origin: { x: index + 20, y: index + 30 },
+      });
+      map.getTile(0, 0);
+    }
+
+    const regeneratedTownMap = generator.getMap({
+      id: 'town:test:0',
+      label: 'Test Town',
+      type: 'town',
+      depth: 1,
+      origin: { x: 5, y: 4 },
+    });
+
+    expect([
+      regeneratedTownMap.getTile(0, 0),
+      regeneratedTownMap.getTile(0, 11),
+      regeneratedTownMap.getTile(4, 0),
+    ]).toEqual(baselineTiles);
+  });
+
   it('creates quarry maps through the registered map plugin path', () => {
     const generator = createGenerator();
     const quarryMap = generator.getMap({

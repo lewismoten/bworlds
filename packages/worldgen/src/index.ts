@@ -53,6 +53,7 @@ const OVERWORLD_CONTEXT: Context = {
   depth: 0,
   origin: { x: 0, y: 0 },
 };
+const MAP_CACHE_LIMIT = 256;
 const PREVIEW_TILE_CACHE_LIMIT = 4096;
 
 function makeKey(...parts: Array<string | number>): string {
@@ -70,7 +71,7 @@ export function createWorldGenerator({
   sampleOverworld(x: number, y: number): SpawnTile;
   samplePreviewOverworld(x: number, y: number): SpawnTile;
 } {
-  const mapCache = new Map<string, WorldMapLike>();
+  const mapCache = createBoundedCache<string, WorldMapLike>(MAP_CACHE_LIMIT);
   const terrainSignals = createOverworldTerrainSignalSampler(seed);
   const previewTileCache = createBoundedCache<string, SpawnTile>(
     PREVIEW_TILE_CACHE_LIMIT
