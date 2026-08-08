@@ -139,6 +139,7 @@ import {
 } from './procedural-music.ts';
 import { createMusicUpdatePayloadBuilder } from './music-update-payload.ts';
 import { createDebouncedPersistence } from './debounced-persistence.ts';
+import { createBoundedCache } from './bounded-cache.ts';
 import {
   buildSextantMarkup,
   buildEventSummaryMarkup,
@@ -861,7 +862,19 @@ const mouseLookState = {
   startPitch: DEFAULT_CAMERA_PITCH,
 };
 const nearbyPoiMusicState = {
-  cacheKey: '',
+  cache: createBoundedCache<
+    string,
+    | null
+    | {
+        tileKind?: string;
+        poiType?: string;
+        contextType?: string;
+        mix: number;
+        clusterX: number;
+        clusterY: number;
+        emitter: { x: number; y: number };
+      }
+  >(48),
   profile: null as null | {
     tileKind?: string;
     poiType?: string;
@@ -873,7 +886,14 @@ const nearbyPoiMusicState = {
   },
 };
 const nearbyTrainAudioState = {
-  cacheKey: '',
+  cache: createBoundedCache<
+    string,
+    | null
+    | {
+        progress?: number;
+        emitter: { x: number; y: number };
+      }
+  >(48),
   profile: null as
     | null
     | {
@@ -882,7 +902,15 @@ const nearbyTrainAudioState = {
       },
 };
 const nearbyPaddleBoatAudioState = {
-  cacheKey: '',
+  cache: createBoundedCache<
+    string,
+    | null
+    | {
+        progress?: number;
+        whistlePhase?: 'arrival' | 'departure';
+        emitter: { x: number; y: number };
+      }
+  >(48),
   profile: null as
     | null
     | {
@@ -1539,15 +1567,16 @@ function getBridgeAxis(): 'ew' | 'ns' | null {
 function getNearbyPoiMusicProfile() {
   const context = state.getCurrentContext();
   if (context.type !== 'overworld') {
-    nearbyPoiMusicState.cacheKey = `${context.id}:${snapWorldCoordinate(state.player.x)}:${snapWorldCoordinate(state.player.y)}`;
+    nearbyPoiMusicState.cache.clear();
     nearbyPoiMusicState.profile = null;
     return null;
   }
 
   const centerX = snapWorldCoordinate(state.player.x);
   const centerY = snapWorldCoordinate(state.player.y);
-  const cacheKey = `${context.id}:${centerX}:${centerY}`;
-  if (nearbyPoiMusicState.cacheKey === cacheKey) {
+  const cacheKey = `${currentWorldSeed}:${context.id}:${centerX}:${centerY}`;
+  if (nearbyPoiMusicState.cache.has(cacheKey)) {
+    nearbyPoiMusicState.profile = nearbyPoiMusicState.cache.get(cacheKey) ?? null;
     return nearbyPoiMusicState.profile;
   }
 
@@ -1594,7 +1623,6 @@ function getNearbyPoiMusicProfile() {
     }
   }
 
-  nearbyPoiMusicState.cacheKey = cacheKey;
   nearbyPoiMusicState.profile = best
     ? {
         tileKind: best.tileKind,
@@ -1606,13 +1634,14 @@ function getNearbyPoiMusicProfile() {
         emitter: best.emitter,
       }
     : null;
+  nearbyPoiMusicState.cache.set(cacheKey, nearbyPoiMusicState.profile);
   return nearbyPoiMusicState.profile;
 }
 
 function getNearbyTrainAudioProfile() {
   const context = state.getCurrentContext();
   if (context.type !== 'overworld') {
-    nearbyTrainAudioState.cacheKey = `${context.id}:${snapWorldCoordinate(state.player.x)}:${snapWorldCoordinate(state.player.y)}`;
+    nearbyTrainAudioState.cache.clear();
     nearbyTrainAudioState.profile = null;
     return null;
   }
@@ -1620,8 +1649,9 @@ function getNearbyTrainAudioProfile() {
   const centerX = snapWorldCoordinate(state.player.x);
   const centerY = snapWorldCoordinate(state.player.y);
   const trainTimeBucket = Math.floor((state.timeMs ?? 0) / 2000);
-  const cacheKey = `${context.id}:${centerX}:${centerY}:${trainTimeBucket}`;
-  if (nearbyTrainAudioState.cacheKey === cacheKey) {
+  const cacheKey = `${currentWorldSeed}:${context.id}:${centerX}:${centerY}:${trainTimeBucket}`;
+  if (nearbyTrainAudioState.cache.has(cacheKey)) {
+    nearbyTrainAudioState.profile = nearbyTrainAudioState.cache.get(cacheKey) ?? null;
     return nearbyTrainAudioState.profile;
   }
 
@@ -1641,15 +1671,15 @@ function getNearbyTrainAudioProfile() {
     },
   });
 
-  nearbyTrainAudioState.cacheKey = cacheKey;
   nearbyTrainAudioState.profile = best;
+  nearbyTrainAudioState.cache.set(cacheKey, nearbyTrainAudioState.profile);
   return nearbyTrainAudioState.profile;
 }
 
 function getNearbyPaddleBoatAudioProfile() {
   const context = state.getCurrentContext();
   if (context.type !== 'overworld') {
-    nearbyPaddleBoatAudioState.cacheKey = `${context.id}:${snapWorldCoordinate(state.player.x)}:${snapWorldCoordinate(state.player.y)}`;
+    nearbyPaddleBoatAudioState.cache.clear();
     nearbyPaddleBoatAudioState.profile = null;
     return null;
   }
@@ -1657,8 +1687,10 @@ function getNearbyPaddleBoatAudioProfile() {
   const centerX = snapWorldCoordinate(state.player.x);
   const centerY = snapWorldCoordinate(state.player.y);
   const boatTimeBucket = Math.floor((state.timeMs ?? 0) / 2000);
-  const cacheKey = `${context.id}:${centerX}:${centerY}:${boatTimeBucket}`;
-  if (nearbyPaddleBoatAudioState.cacheKey === cacheKey) {
+  const cacheKey = `${currentWorldSeed}:${context.id}:${centerX}:${centerY}:${boatTimeBucket}`;
+  if (nearbyPaddleBoatAudioState.cache.has(cacheKey)) {
+    nearbyPaddleBoatAudioState.profile =
+      nearbyPaddleBoatAudioState.cache.get(cacheKey) ?? null;
     return nearbyPaddleBoatAudioState.profile;
   }
 
@@ -1684,8 +1716,8 @@ function getNearbyPaddleBoatAudioProfile() {
     },
   });
 
-  nearbyPaddleBoatAudioState.cacheKey = cacheKey;
   nearbyPaddleBoatAudioState.profile = best;
+  nearbyPaddleBoatAudioState.cache.set(cacheKey, nearbyPaddleBoatAudioState.profile);
   return nearbyPaddleBoatAudioState.profile;
 }
 
