@@ -27,9 +27,17 @@ describe('keyboard input helpers', () => {
   });
 
   it('ignores editable fields but keeps gameplay active for ordinary controls', () => {
-    expect(isEditableKeyboardTarget({ tagName: 'INPUT' })).toBe(true);
+    expect(isEditableKeyboardTarget({ tagName: 'INPUT', type: 'text' })).toBe(
+      true
+    );
     expect(isEditableKeyboardTarget({ tagName: 'TEXTAREA' })).toBe(true);
     expect(isEditableKeyboardTarget({ isContentEditable: true })).toBe(true);
+    expect(isEditableKeyboardTarget({ tagName: 'INPUT', type: 'checkbox' })).toBe(
+      false
+    );
+    expect(isEditableKeyboardTarget({ tagName: 'INPUT', type: 'radio' })).toBe(
+      false
+    );
     expect(isEditableKeyboardTarget({ tagName: 'SELECT' })).toBe(false);
     expect(isEditableKeyboardTarget({ tagName: 'BUTTON' })).toBe(false);
   });
