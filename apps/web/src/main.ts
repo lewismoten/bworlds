@@ -2596,6 +2596,7 @@ function render(): FrameLoopActivityLike {
       sceneChildCount: rendererStats.sceneChildCount,
       visibleTileCount: rendererStats.visibleTileCount,
       visibleTreeCount: rendererStats.visibleTreeCount,
+      chunkGenerationQueueSize: rendererStats.pendingTileCount,
       pendingTileCount: rendererStats.pendingTileCount,
       averagePendingFlushTiles: rendererStats.averagePendingFlushTiles,
       maxPendingFlushTiles: rendererStats.maxPendingFlushTiles,

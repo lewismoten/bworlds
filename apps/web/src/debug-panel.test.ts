@@ -43,6 +43,7 @@ describe('debug panel', () => {
       sceneChildCount: 7,
       visibleTileCount: 112,
       visibleTreeCount: 27,
+      chunkGenerationQueueSize: 6,
       pendingTileCount: 6,
       averagePendingFlushTiles: 3.5,
       maxPendingFlushTiles: 5,
@@ -103,6 +104,7 @@ describe('debug panel', () => {
     expect(buildDebugMarkup(snapshot)).toContain('GPU Geometries');
     expect(buildDebugMarkup(snapshot)).toContain('Scene Roots');
     expect(buildDebugMarkup(snapshot)).toContain('Visible Trees');
+    expect(buildDebugMarkup(snapshot)).toContain('Chunk Queue');
     expect(buildDebugMarkup(snapshot)).toContain('Avg Flush Tiles');
     expect(buildDebugMarkup(snapshot)).toContain('Max Flush Tiles');
     expect(buildDebugMarkup(snapshot)).toContain('Avg Tile Build');
@@ -443,20 +445,20 @@ describe('debug panel', () => {
     ).toEqual([]);
   });
 
-  it('warns when the pending tile queue backs up faster than it is draining', () => {
+  it('warns when the chunk-generation queue backs up faster than it is draining', () => {
     expect(
       getWorkQueueWarnings({
-        pendingTileCount: 63,
+        chunkGenerationQueueSize: 63,
         averagePendingFlushTiles: 2.4,
         maxPendingFlushTiles: 5,
       })
     ).toEqual([
-      'Pending tile queue is backing up (63 queued, avg flush 2.4, max flush 5).',
+      'Chunk-generation queue is backing up (63 queued, avg flush 2.4, max flush 5).',
     ]);
 
     expect(
       getWorkQueueWarnings({
-        pendingTileCount: 18,
+        chunkGenerationQueueSize: 18,
         averagePendingFlushTiles: 2.4,
         maxPendingFlushTiles: 5,
       })

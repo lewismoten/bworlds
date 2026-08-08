@@ -14,6 +14,7 @@ export type DebugSnapshot = {
   sceneChildCount: number;
   visibleTileCount: number;
   visibleTreeCount: number;
+  chunkGenerationQueueSize: number;
   pendingTileCount: number;
   averagePendingFlushTiles: number;
   maxPendingFlushTiles: number;
@@ -100,6 +101,7 @@ export function getDebugSignature(snapshot: DebugSnapshot): string {
     snapshot.sceneChildCount,
     snapshot.visibleTileCount,
     snapshot.visibleTreeCount,
+    snapshot.chunkGenerationQueueSize,
     snapshot.pendingTileCount,
     snapshot.averagePendingFlushTiles.toFixed(2),
     snapshot.maxPendingFlushTiles.toFixed(0),
@@ -213,6 +215,7 @@ export function buildDebugMarkup(snapshot: DebugSnapshot): string {
     <div><dt>Scene Roots</dt><dd>${snapshot.sceneChildCount}</dd></div>
     <div><dt>Visible Tiles</dt><dd>${snapshot.visibleTileCount}</dd></div>
     <div><dt>Visible Trees</dt><dd>${snapshot.visibleTreeCount}</dd></div>
+    <div><dt>Chunk Queue</dt><dd>${snapshot.chunkGenerationQueueSize}</dd></div>
     <div><dt>Pending Tiles</dt><dd>${snapshot.pendingTileCount}</dd></div>
     <div><dt>Avg Flush Tiles</dt><dd>${snapshot.averagePendingFlushTiles.toFixed(2)}</dd></div>
     <div><dt>Max Flush Tiles</dt><dd>${snapshot.maxPendingFlushTiles}</dd></div>
@@ -489,7 +492,10 @@ export function getPerformanceWarnings(
 }
 
 export function getWorkQueueWarnings(
-  snapshot: Pick<DebugSnapshot, 'pendingTileCount' | 'averagePendingFlushTiles' | 'maxPendingFlushTiles'>,
+  snapshot: Pick<
+    DebugSnapshot,
+    'chunkGenerationQueueSize' | 'averagePendingFlushTiles' | 'maxPendingFlushTiles'
+  >,
   {
     maxPendingTileCount = 48,
     minimumAverageFlushTiles = 1,
@@ -499,14 +505,14 @@ export function getWorkQueueWarnings(
   } = {}
 ): string[] {
   if (
-    snapshot.pendingTileCount <= maxPendingTileCount ||
+    snapshot.chunkGenerationQueueSize <= maxPendingTileCount ||
     snapshot.averagePendingFlushTiles < minimumAverageFlushTiles
   ) {
     return [];
   }
 
   return [
-    `Pending tile queue is backing up (${snapshot.pendingTileCount} queued, avg flush ${snapshot.averagePendingFlushTiles.toFixed(1)}, max flush ${snapshot.maxPendingFlushTiles}).`,
+    `Chunk-generation queue is backing up (${snapshot.chunkGenerationQueueSize} queued, avg flush ${snapshot.averagePendingFlushTiles.toFixed(1)}, max flush ${snapshot.maxPendingFlushTiles}).`,
   ];
 }
 

@@ -927,7 +927,7 @@ I would actually put these into a developer performance panel.
 * [X] Full-simulation entity count.
 * [X] Reduced-simulation entity count.
 * [ ] Loaded chunk count.
-* [ ] Chunk-generation queue size.
+* [X] Chunk-generation queue size.
 * [ ] Worker-job queue size.
 * [ ] Network messages per second.
 * [ ] Network bytes per second.
