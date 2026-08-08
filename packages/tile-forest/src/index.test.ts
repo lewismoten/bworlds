@@ -2831,6 +2831,43 @@ describe('tile forest', () => {
     ).toBe(false);
   });
 
+  it('packs visible fireflies into a single particle cloud per forest tile', () => {
+    const plugin = createForestTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'forest');
+    const state = createForestTestState(8, 6);
+
+    const model = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'forest' },
+      tileX: 8,
+      tileY: 6,
+      detailLevel: 'full',
+    }) as FakeGroup;
+
+    const fireflyNodes = model.children.filter(
+      (node) => node.userData?.forestFirefly
+    );
+    const fireflyPoints = fireflyNodes[0] as FakePoints | undefined;
+    const particleCount =
+      (
+        fireflyPoints?.userData?.forestFirefly as
+          | { particleCount?: number }
+          | undefined
+      )?.particleCount ?? 0;
+    const positionCount =
+      (
+        fireflyPoints?.geometry?.attributes.position as
+          | FakeFloat32BufferAttribute
+          | undefined
+      )?.array.length ?? 0;
+
+    expect(fireflyNodes).toHaveLength(1);
+    expect(fireflyPoints).toBeInstanceOf(FakePoints);
+    expect(particleCount).toBeGreaterThan(0);
+    expect(positionCount).toBe(particleCount * 3);
+  });
+
   it('scales firefly particle density down for farther close-detail forest tiles', () => {
     const plugin = createForestTilePlugin();
     const tile = plugin.tiles?.find((entry) => entry.kind === 'forest');

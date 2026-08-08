@@ -1680,35 +1680,7 @@ function getForestFireflies(
   tileY: number
 ) {
   const descriptors = getForestVisibleFireflyDescriptors(state, tileX, tileY);
-  const positions = new Array<number>(descriptors.length * 3).fill(0);
-
-  const geometry = new three.BufferGeometry();
-  const positionAttribute = new three.Float32BufferAttribute(positions, 3) as {
-    array: ArrayLike<number> & { [index: number]: number };
-    needsUpdate?: boolean;
-  };
-  geometry.setAttribute('position', positionAttribute);
-
-  const points = new three.Points(
-    geometry,
-    new three.PointsMaterial({
-      color: '#d9ff8a',
-      size: 0.085,
-      transparent: true,
-      opacity: 0,
-      depthWrite: false,
-    })
-  );
-
-  points.userData = {
-    ...(points.userData ?? {}),
-    [FIREFLY_KEY]: {
-      descriptors,
-      positionAttribute,
-    },
-  };
-
-  return [points];
+  return [createForestFireflyParticleCloud(three, descriptors)];
 }
 
 function getForestVisibleFireflyDescriptors(
@@ -1732,6 +1704,43 @@ function getForestVisibleFireflyDescriptors(
         ? Math.min(descriptors.length, 2)
         : 1;
   return descriptors.slice(0, visibleCount);
+}
+
+function createForestFireflyParticleCloud(
+  three: ThreeHostLike,
+  descriptors: ForestFireflyDescriptor[]
+) {
+  const geometry = new three.BufferGeometry() as ThreeBufferGeometryLike;
+  const positionAttribute = new three.Float32BufferAttribute(
+    new Float32Array(descriptors.length * 3),
+    3
+  ) as {
+    array: ArrayLike<number> & { [index: number]: number };
+    needsUpdate?: boolean;
+  };
+  geometry.setAttribute('position', positionAttribute);
+
+  const points = new three.Points(
+    geometry,
+    new three.PointsMaterial({
+      color: '#d9ff8a',
+      size: 0.085,
+      transparent: true,
+      opacity: 0,
+      depthWrite: false,
+    })
+  );
+
+  points.userData = {
+    ...(points.userData ?? {}),
+    [FIREFLY_KEY]: {
+      descriptors,
+      positionAttribute,
+      particleCount: descriptors.length,
+    },
+  };
+
+  return points;
 }
 
 function getForestFireflyHabitatAnchors(
