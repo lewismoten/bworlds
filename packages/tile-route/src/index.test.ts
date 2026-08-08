@@ -1,5 +1,23 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { createRouteTilePlugin } from './index.ts';
+
+vi.mock('@bworlds/three-support', async () => {
+  const actual = await vi.importActual<typeof import('@bworlds/three-support')>(
+    '@bworlds/three-support'
+  );
+  return {
+    ...actual,
+    createPaintedCanvasTexture() {
+      return { colorSpace: '', needsUpdate: false };
+    },
+    getOrCreatePaintedCanvasTexture() {
+      return { colorSpace: '', needsUpdate: false };
+    },
+    createTexturedPlaneMesh() {
+      return new FakeMesh();
+    },
+  };
+});
 
 class FakeGeometry {
   constructor(..._args: number[]) {}
@@ -51,6 +69,7 @@ const fakeThree = {
   MeshStandardMaterial: FakeMaterial,
   BoxGeometry: FakeGeometry,
   CylinderGeometry: FakeGeometry,
+  PlaneGeometry: FakeGeometry,
 } as const;
 
 const plugin = createRouteTilePlugin();
@@ -157,6 +176,45 @@ function createDockModelState() {
         color: '#000000',
         miniColor: '#111111',
         walkable: true,
+        wallHeight: 0,
+      };
+    },
+  };
+}
+
+function createRoutedDockModelState() {
+  const dockTiles = new Set([
+    '0:0',
+    '1:0',
+    '24:10',
+    '25:10',
+  ]);
+  const poiNames: Record<string, string> = {
+    '-1:0': 'Beacon Point',
+    '23:10': 'Harbor Market',
+  };
+
+  return {
+    player: { x: 0, y: 0, facing: 0 },
+    getCurrentContext() {
+      return { id: 'overworld', depth: 0, type: 'overworld' as const };
+    },
+    getCurrentTile(x: number, y: number) {
+      const key = `${x}:${y}`;
+      if (dockTiles.has(key)) {
+        return { kind: 'dock' };
+      }
+      if (poiNames[key]) {
+        return { kind: 'shore', poi: { type: 'town', name: poiNames[key] } };
+      }
+      return { kind: 'ocean' };
+    },
+    getTileDefinition(kind: string) {
+      return {
+        name: kind,
+        color: '#000000',
+        miniColor: '#111111',
+        walkable: kind !== 'ocean',
         wallHeight: 0,
       };
     },
@@ -535,5 +593,31 @@ describe('tile route', () => {
     });
 
     expect(longDockBoatMarkers).toEqual([4, 4]);
+  });
+
+  it('renders a dock route sign with the boat name and destination stops', () => {
+    const state = createRoutedDockModelState();
+    const model = dockTile?.create3DModel?.({
+      three: fakeThree as never,
+      state: state as never,
+      tile: { kind: 'dock' } as never,
+      tileX: 0,
+      tileY: 0,
+    }) as FakeGroup;
+
+    let signData: Record<string, unknown> | null = null;
+    model.traverse((node) => {
+      if (node.userData?.dockRouteSign) {
+        signData = node.userData;
+      }
+    });
+
+    expect(signData).toEqual(
+      expect.objectContaining({
+        dockRouteSign: true,
+        dockRouteBoatName: expect.any(String),
+        dockRouteStops: ['Harbor Market'],
+      })
+    );
   });
 });

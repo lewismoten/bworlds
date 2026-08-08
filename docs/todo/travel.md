@@ -1,7 +1,7 @@
 - [ ] Dock at oceans may have a tall ship arrive that you can walk onto, and it will take you to a nearby dock. A tall ship may have 2-5 docks that it circles around.
 - [ ] A dock may only participate as a ship transportation area if there in an unobstructed path of ocean tiles to another dock between 20-60 tiles. A draw bridge also counts as an unobstructed ocean tile. A bridge that raises high above the ocean allowing a boat to pass under it is also an unobstructed ocean tile.
 - [ ] A boat route must be circular in that the boat should not double-back on any part of it's path between each dock
-- [ ] A dock with a boat should have a sign indicating the name of the stops except its own. Each stop should indicate the closest POI to each dock. The sign should state the name of the boat.
+- [X] A dock with a boat should have a sign indicating the name of the stops except its own. Each stop should indicate the closest POI to each dock. The sign should state the name of the boat.
 
 # Rail Travel
 - [ ] Add train tracks with brazier curves that connect points

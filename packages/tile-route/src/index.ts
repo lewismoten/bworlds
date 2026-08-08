@@ -1,3 +1,4 @@
+import { resolveDockBoatRoute } from '@bworlds/dock-route-support';
 import { hash2D } from '@bworlds/core';
 import { createPlainsBackedTilePainter } from '@bworlds/paint-support';
 import { createTilePlugin } from '@bworlds/plugin-api';
@@ -19,6 +20,8 @@ import {
   createPaintedCanvasTexture,
   createQuadraticBezierPoints,
   createRibbonMesh,
+  createTexturedPlaneMesh,
+  getOrCreatePaintedCanvasTexture,
   type PathPointLike,
 } from '@bworlds/three-support';
 import type {
@@ -58,6 +61,7 @@ type BridgeTextureLayer = 'deck' | 'rail' | 'cover' | 'pillar';
 const bridgeStyleCache = new Map<string, BridgeStyle>();
 const bridgeClusterCache = new Map<string, BridgeClusterInfo>();
 const dockStyleCache = new Map<string, DockStyle>();
+const dockRouteLabelCache = new Map<string, ThreeTextureLike>();
 const dockClusterCache = new Map<string, DockClusterInfo>();
 const roadStyleCache = new Map<string, RoadStyleBlueprint>();
 const resolveRoadStyle = createRegionalMaterialResolver(
@@ -1237,7 +1241,157 @@ function createDockGroup(
     }
   }
 
+  const route = resolveDockBoatRoute(state, tileX, tileY);
+  if (route && info.segmentIndex === 0) {
+    const sign = createDockRouteSign(three, state, style, alongX, tileX, tileY, route);
+    if (sign) {
+      group.add(sign);
+    }
+  }
+
   return group;
+}
+
+function createDockRouteSign(
+  three: ThreeHostLike,
+  state: WorldStateLike,
+  style: DockStyle,
+  alongX: boolean,
+  tileX: number,
+  tileY: number,
+  route: NonNullable<ReturnType<typeof resolveDockBoatRoute>>
+) {
+  const destinations = route.stops.filter(
+    (_stop, index) => index !== route.currentStopIndex
+  );
+  if (destinations.length === 0) {
+    return null;
+  }
+
+  const group = new three.Group();
+  const side = getDockLandwardSide(state, tileX, tileY, alongX);
+  const post = new three.Mesh(
+    new three.BoxGeometry(0.05, 0.52, 0.05),
+    style.pileMaterial
+  );
+  post.position.y = 0.22;
+  group.add(post);
+
+  const mainBoard = new three.Mesh(
+    new three.BoxGeometry(0.46, 0.12, 0.04),
+    style.trimMaterial
+  );
+  mainBoard.position.y = 0.46;
+  group.add(mainBoard);
+
+  const mainLabel = createDockRouteLabelPlane(three, {
+    boatName: route.boatName,
+    stopName: '',
+    width: 0.42,
+    height: 0.09,
+    key: `boat:${route.boatName}`,
+  });
+  mainLabel.position.set(0, 0.46, 0.03);
+  group.add(mainLabel);
+
+  destinations.slice(0, 3).forEach((destination, index) => {
+    const placard = new three.Mesh(
+      new three.BoxGeometry(0.38, 0.1, 0.035),
+      style.deckMaterial
+    );
+    placard.position.set(0, 0.32 - index * 0.12, 0);
+    group.add(placard);
+
+    const label = createDockRouteLabelPlane(three, {
+      boatName: route.boatName,
+      stopName: destination.name,
+      width: 0.34,
+      height: 0.075,
+      key: `stop:${route.boatName}:${destination.name}`,
+    });
+    label.position.set(0, 0.32 - index * 0.12, 0.025);
+    group.add(label);
+  });
+
+  group.userData = {
+    ...(group.userData ?? {}),
+    dockRouteSign: true,
+    dockRouteBoatName: route.boatName,
+    dockRouteStops: destinations.map((destination) => destination.name),
+  };
+
+  if (alongX) {
+    group.position.set(0, 0, side * -0.28);
+  } else {
+    group.position.set(side * -0.28, 0, 0);
+    group.rotation.y = Math.PI * 0.5;
+  }
+
+  return group;
+}
+
+function createDockRouteLabelPlane(
+  three: ThreeHostLike,
+  options: {
+    boatName: string;
+    stopName: string;
+    width: number;
+    height: number;
+    key: string;
+  }
+) {
+  const texture = getOrCreatePaintedCanvasTexture(
+    dockRouteLabelCache,
+    options.key,
+    three,
+    {
+      width: 256,
+      height: 80,
+      wrap: false,
+      paint(context, canvas) {
+        context.clearRect(0, 0, canvas.width, canvas.height);
+        context.fillStyle = '#f5deb3';
+        context.fillRect(0, 0, canvas.width, canvas.height);
+        context.strokeStyle = '#5a3418';
+        context.lineWidth = 6;
+        context.strokeRect(3, 3, canvas.width - 6, canvas.height - 6);
+        context.fillStyle = '#2b1a0f';
+        context.textAlign = 'center';
+        context.textBaseline = 'middle';
+        if (options.stopName.length === 0) {
+          context.font = 'bold 26px sans-serif';
+          context.fillText(options.boatName, canvas.width * 0.5, canvas.height * 0.5);
+          return;
+        }
+        context.font = 'bold 24px sans-serif';
+        context.fillText(options.stopName, canvas.width * 0.5, canvas.height * 0.5);
+      },
+    }
+  );
+  return createTexturedPlaneMesh(three, {
+    width: options.width,
+    height: options.height,
+    texture,
+  });
+}
+
+function getDockLandwardSide(
+  state: WorldStateLike,
+  tileX: number,
+  tileY: number,
+  alongX: boolean
+) {
+  const candidates = alongX
+    ? [
+        { offset: -1, kind: state.getCurrentTile(tileX, tileY - 1).kind },
+        { offset: 1, kind: state.getCurrentTile(tileX, tileY + 1).kind },
+      ]
+    : [
+        { offset: -1, kind: state.getCurrentTile(tileX - 1, tileY).kind },
+        { offset: 1, kind: state.getCurrentTile(tileX + 1, tileY).kind },
+      ];
+  const landward = candidates.find(({ kind }) => !isWaterOrCrossingKind(kind));
+  return landward?.offset ?? -1;
 }
 
 function getBridgeAxis(
