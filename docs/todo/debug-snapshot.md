@@ -142,9 +142,9 @@ That gives you something you can save from a slow scene, attach to a bug report,
 * [x] Include total geometry bytes where calculable.
 * [x] Include vertex-buffer bytes.
 * [x] Include index-buffer bytes.
-* [ ] Include average vertices per geometry.
-* [ ] Include largest geometry by vertices.
-* [ ] Include largest geometry by memory.
+* [x] Include average vertices per geometry.
+* [x] Include largest geometry by vertices.
+* [x] Include largest geometry by memory.
 * [ ] Include geometries created during sampling period.
 * [ ] Include geometries disposed during sampling period.
 * [ ] Include geometry-cache hits.

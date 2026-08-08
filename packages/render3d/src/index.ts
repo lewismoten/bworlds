@@ -119,6 +119,9 @@ type Render3DController = {
     geometryBytes: number;
     vertexBufferBytes: number;
     indexBufferBytes: number;
+    averageVerticesPerGeometry: number;
+    largestGeometryVertexCount: number;
+    largestGeometryBytes: number;
     textureMemoryEstimateBytes: number;
     gpuGeometryCount: number;
     treeObjectCount: number;
@@ -226,6 +229,9 @@ type SceneResourceStats = {
   geometryBytes: number;
   vertexBufferBytes: number;
   indexBufferBytes: number;
+  averageVerticesPerGeometry: number;
+  largestGeometryVertexCount: number;
+  largestGeometryBytes: number;
   textureMemoryEstimateBytes: number;
   treeCount: number;
   treeObjectCount: number;
@@ -879,6 +885,9 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       geometryBytes: sceneResourceStats.geometryBytes,
       vertexBufferBytes: sceneResourceStats.vertexBufferBytes,
       indexBufferBytes: sceneResourceStats.indexBufferBytes,
+      averageVerticesPerGeometry: sceneResourceStats.averageVerticesPerGeometry,
+      largestGeometryVertexCount: sceneResourceStats.largestGeometryVertexCount,
+      largestGeometryBytes: sceneResourceStats.largestGeometryBytes,
       textureMemoryEstimateBytes: sceneResourceStats.textureMemoryEstimateBytes,
       gpuGeometryCount: renderer.info.memory.geometries,
       treeObjectCount: sceneResourceStats.treeObjectCount,
@@ -2116,6 +2125,8 @@ export function collectSceneResourceStats(
   let geometryBytes = 0;
   let vertexBufferBytes = 0;
   let indexBufferBytes = 0;
+  let largestGeometryVertexCount = 0;
+  let largestGeometryBytes = 0;
   let textureMemoryEstimateBytes = 0;
   let treeCount = 0;
   let treeObjectCount = 0;
@@ -2214,11 +2225,20 @@ export function collectSceneResourceStats(
       geometryRefCount += 1;
       if (!geometries.has(renderable.geometry)) {
         geometries.add(renderable.geometry);
-        vertexCount += getGeometryVertexCount(renderable.geometry);
+        const geometryVertexCount = getGeometryVertexCount(renderable.geometry);
+        vertexCount += geometryVertexCount;
         const geometryMemory = getGeometryMemoryEstimate(renderable.geometry);
         geometryBytes += geometryMemory.totalBytes;
         vertexBufferBytes += geometryMemory.vertexBufferBytes;
         indexBufferBytes += geometryMemory.indexBufferBytes;
+        largestGeometryVertexCount = Math.max(
+          largestGeometryVertexCount,
+          geometryVertexCount
+        );
+        largestGeometryBytes = Math.max(
+          largestGeometryBytes,
+          geometryMemory.totalBytes
+        );
       }
     }
 
@@ -2292,6 +2312,10 @@ export function collectSceneResourceStats(
     geometryBytes,
     vertexBufferBytes,
     indexBufferBytes,
+    averageVerticesPerGeometry:
+      geometries.size > 0 ? vertexCount / geometries.size : 0,
+    largestGeometryVertexCount,
+    largestGeometryBytes,
     textureMemoryEstimateBytes,
     treeCount,
     treeObjectCount,

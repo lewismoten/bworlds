@@ -84,6 +84,9 @@ export type DebugSnapshot = {
   geometryBytes?: number;
   vertexBufferBytes?: number;
   indexBufferBytes?: number;
+  averageVerticesPerGeometry?: number;
+  largestGeometryVertexCount?: number;
+  largestGeometryBytes?: number;
   vertexCount: number;
   geometryMemoryCount: number;
   treeObjectCount: number;
