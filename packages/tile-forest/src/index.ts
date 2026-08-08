@@ -792,42 +792,15 @@ export function createForestTilePlugin(): RuntimePlugin {
               [MEADOW_KEY]: 'grass',
             };
             group.add(patch);
-
-            meadow.flowers.forEach((flower) => {
-              const stem = new three.Mesh(
-                geometry.branch,
-                floorDetailStyle.meadowStemMaterial
-              );
-              stem.position.set(
-                tileX + meadow.x + flower.x,
-                0.08,
-                tileY + meadow.y + flower.y
-              );
-              stem.scale.set(0.22, flower.height, 0.22);
-              stem.userData = {
-                ...(stem.userData ?? {}),
-                [MEADOW_KEY]: 'flower-stem',
-              };
-              group.add(stem);
-
-              const bloom = new three.Mesh(
-                geometry.foliage,
-                flower.color === 'white'
-                  ? floorDetailStyle.meadowFlowerWhiteMaterial
-                  : floorDetailStyle.meadowFlowerYellowMaterial
-              );
-              bloom.position.set(
-                tileX + meadow.x + flower.x,
-                0.12 + flower.height,
-                tileY + meadow.y + flower.y
-              );
-              bloom.scale.setScalar(flower.scale);
-              bloom.userData = {
-                ...(bloom.userData ?? {}),
-                [MEADOW_KEY]: flower.color,
-              };
-              group.add(bloom);
-            });
+            addForestMeadowFlowerInstances(
+              three,
+              group,
+              geometry,
+              floorDetailStyle,
+              tileX,
+              tileY,
+              meadow
+            );
           }
           for (const bird of getForestBirds(tileX, tileY)) {
             const birdGroup = new three.Group();
@@ -1399,6 +1372,82 @@ function createLowDetailTreeMatrix(
   scaleZ: number
 ): ThreeMatrix4Like {
   return new three.Matrix4().makeScale(scaleX, scaleY, scaleZ).setPosition(x, y, z);
+}
+
+function addForestMeadowFlowerInstances(
+  three: ThreeHostLike,
+  group: ThreeObject3DLike,
+  geometry: TreeGeometry,
+  style: ForestTreeStyle,
+  tileX: number,
+  tileY: number,
+  meadow: ForestMeadowDescriptor
+) {
+  if (meadow.flowers.length === 0) {
+    return;
+  }
+
+  const stemInstances = new three.InstancedMesh(
+    geometry.branch,
+    style.meadowStemMaterial,
+    meadow.flowers.length
+  );
+  stemInstances.userData = {
+    ...(stemInstances.userData ?? {}),
+    [MEADOW_KEY]: 'flower-stem',
+  };
+  meadow.flowers.forEach((flower, index) => {
+    stemInstances.setMatrixAt(
+      index,
+      createLowDetailTreeMatrix(
+        three,
+        tileX + meadow.x + flower.x,
+        0.08,
+        tileY + meadow.y + flower.y,
+        0.22,
+        flower.height,
+        0.22
+      )
+    );
+  });
+  group.add(stemInstances);
+
+  const bloomsByColor = new Map<'white' | 'yellow', ForestFlowerDescriptor[]>();
+  meadow.flowers.forEach((flower) => {
+    if (!bloomsByColor.has(flower.color)) {
+      bloomsByColor.set(flower.color, []);
+    }
+    bloomsByColor.get(flower.color)!.push(flower);
+  });
+
+  for (const [color, flowers] of bloomsByColor.entries()) {
+    const bloomInstances = new three.InstancedMesh(
+      geometry.foliage,
+      color === 'white'
+        ? style.meadowFlowerWhiteMaterial
+        : style.meadowFlowerYellowMaterial,
+      flowers.length
+    );
+    bloomInstances.userData = {
+      ...(bloomInstances.userData ?? {}),
+      [MEADOW_KEY]: color,
+    };
+    flowers.forEach((flower, index) => {
+      bloomInstances.setMatrixAt(
+        index,
+        createLowDetailTreeMatrix(
+          three,
+          tileX + meadow.x + flower.x,
+          0.12 + flower.height,
+          tileY + meadow.y + flower.y,
+          flower.scale,
+          flower.scale,
+          flower.scale
+        )
+      );
+    });
+    group.add(bloomInstances);
+  }
 }
 
 function createForestFloorDetailDescriptor(

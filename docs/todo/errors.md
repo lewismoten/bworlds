@@ -103,7 +103,7 @@ That should be a major optimization target.
 * [x] Instance common trunk shapes.
 * [ ] Instance common branch geometry where possible.
 * [ ] Instance foliage clusters.
-* [ ] Instance fruit, flowers, rocks, and minor tree decorations.
+* [x] Instance fruit, flowers, rocks, and minor tree decorations.
 * [ ] Share geometries across procedural variants whenever the difference can be expressed with transforms.
 * [ ] Share materials across trees of the same visual family.
 * [ ] Use vertex color or instance color for variation rather than unique materials.

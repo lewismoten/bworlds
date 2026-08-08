@@ -1331,6 +1331,67 @@ describe('tile forest', () => {
     expect(lowMeadowCount).toBe(0);
   });
 
+  it('instances meadow flower stems and blooms in full-detail forest models', () => {
+    const plugin = createForestTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'forest');
+    const state = {
+      player: { x: 0, y: 0, facing: 0 },
+      getCurrentContext() {
+        return { id: 'overworld', type: 'overworld', depth: 0 };
+      },
+      getCurrentTile() {
+        return { kind: 'forest' };
+      },
+      getTileDefinition() {
+        return {
+          name: 'Forest',
+          color: '#000000',
+          miniColor: '#111111',
+          walkable: true,
+          wallHeight: 0.38,
+        };
+      },
+    };
+
+    let targetTile: { x: number; y: number } | null = null;
+    for (let tileY = 0; tileY < 24 && !targetTile; tileY += 1) {
+      for (let tileX = 0; tileX < 24; tileX += 1) {
+        if (getForestMeadows(tileX, tileY).some((meadow) => meadow.flowers.length > 0)) {
+          targetTile = { x: tileX, y: tileY };
+          break;
+        }
+      }
+    }
+
+    expect(targetTile).not.toBeNull();
+
+    const fullModel = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'forest' },
+      tileX: targetTile!.x,
+      tileY: targetTile!.y,
+      detailLevel: 'full',
+    }) as FakeGroup;
+
+    const flowerStems = fullModel.children.filter(
+      (child) =>
+        child instanceof FakeInstancedMesh &&
+        child.userData?.forestMeadow === 'flower-stem'
+    ) as FakeInstancedMesh[];
+    const flowerBlooms = fullModel.children.filter(
+      (child) =>
+        child instanceof FakeInstancedMesh &&
+        (child.userData?.forestMeadow === 'white' ||
+          child.userData?.forestMeadow === 'yellow')
+    ) as FakeInstancedMesh[];
+
+    expect(flowerStems.length).toBeGreaterThan(0);
+    expect(flowerBlooms.length).toBeGreaterThan(0);
+    expect(flowerStems.some((mesh) => mesh.count > 0)).toBe(true);
+    expect(flowerBlooms.some((mesh) => mesh.count > 0)).toBe(true);
+  });
+
   it('renders and animates birds only in full-detail forest models', () => {
     const plugin = createForestTilePlugin();
     const tile = plugin.tiles?.find((entry) => entry.kind === 'forest');
