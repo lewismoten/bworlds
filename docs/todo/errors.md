@@ -248,10 +248,10 @@ There are two important paths through `buildTileNode()`:
 This is about **8.25 MB inclusive** in this sample.
 
 * [ ] Audit how frequently `syncTileModelDetailLevels()` runs.
-* [ ] Do not evaluate LOD changes for every tile every frame if unnecessary.
-* [ ] Reevaluate LOD only after meaningful camera movement.
+* [x] Do not evaluate LOD changes for every tile every frame if unnecessary.
+* [x] Reevaluate LOD only after meaningful camera movement.
 * [ ] Bucket LOD checks across several frames.
-* [ ] Use squared distance for LOD thresholds.
+* [x] Use squared distance for LOD thresholds.
 * [ ] Cull obviously distant chunks before per-tile LOD checks.
 * [ ] Add hysteresis between LOD boundaries.
 * [ ] Prevent trees from repeatedly switching between two LODs near a boundary.

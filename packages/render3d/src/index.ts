@@ -156,6 +156,11 @@ const NEAR_VISIBLE_RADIUS = 6;
 const FACING_BUCKETS = 12;
 const WORLD_SYNC_BATCH_SIZE = 28;
 const LOW_DETAIL_MODEL_DISTANCE = 6.5;
+const LOW_DETAIL_MODEL_DISTANCE_SQUARED =
+  LOW_DETAIL_MODEL_DISTANCE * LOW_DETAIL_MODEL_DISTANCE;
+const LOD_SYNC_MOVEMENT_DISTANCE = 0.18;
+const LOD_SYNC_MOVEMENT_DISTANCE_SQUARED =
+  LOD_SYNC_MOVEMENT_DISTANCE * LOD_SYNC_MOVEMENT_DISTANCE;
 const FAR_MODEL_FULL_VISIBILITY_DISTANCE = 8;
 const FAR_MODEL_REVEAL_DISTANCE_VARIANCE = 8;
 const FAR_MODEL_FADE_DISTANCE = 1.75;
@@ -273,6 +278,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
   let lastContextKey = '';
   let lastFacingBucket = '';
   let lastChunkRadius = CHUNK_RADIUS;
+  let lastLodSyncPlayerPosition: { x: number; y: number } | null = null;
   let lastSkyConstellationSignature = '';
   let lastSkyEventSignature = '';
   let lastSkyMilkyWaySignature = '';
@@ -301,6 +307,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
   function clearWorld() {
     worldRoot.clear();
     visibleTileNodes.clear();
+    lastLodSyncPlayerPosition = null;
     pendingWorldBuild = {
       contextId: '',
       centerKey: '',
@@ -439,13 +446,15 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
         continue;
       }
       const buildStartMs = performance.now();
+      const dx = entry.x - state.player.x;
+      const dy = entry.y - state.player.y;
       const tileNode = buildTileNode(
         state,
         registry,
         entry.x,
         entry.y,
-        getTileModelDetailLevel(
-          Math.hypot(entry.x - state.player.x, entry.y - state.player.y)
+        getTileModelDetailLevelFromSquaredDistance(
+          dx * dx + dy * dy
         )
       );
       const buildDurationMs = performance.now() - buildStartMs;
@@ -496,7 +505,16 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       frameNowMs,
       environment
     );
-    syncTileModelDetailLevels(state, getActivePluginRegistry(), frameNowMs);
+    if (
+      shouldSyncTileModelDetailLevels(
+        lastLodSyncPlayerPosition,
+        state.player.x,
+        state.player.y
+      )
+    ) {
+      syncTileModelDetailLevels(state, getActivePluginRegistry(), frameNowMs);
+      lastLodSyncPlayerPosition = { x: state.player.x, y: state.player.y };
+    }
     updateFarLandModelVisibility(visibleTileNodes.values(), state);
     syncDynamicTileNodes(visibleTileNodes.values(), {
       three: THREE,
@@ -584,11 +602,11 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       if (!entry.modelRoot) {
         continue;
       }
-      const distance = Math.hypot(
-        entry.tileX - state.player.x,
-        entry.tileY - state.player.y
+      const dx = entry.tileX - state.player.x;
+      const dy = entry.tileY - state.player.y;
+      const desiredDetailLevel = getTileModelDetailLevelFromSquaredDistance(
+        dx * dx + dy * dy
       );
-      const desiredDetailLevel = getTileModelDetailLevel(distance);
       if ((entry.detailLevel ?? 'full') === desiredDetailLevel) {
         continue;
       }
@@ -1365,6 +1383,28 @@ export function getTileModelDetailLevel(
   lowDetailDistance = LOW_DETAIL_MODEL_DISTANCE
 ): 'full' | 'low' {
   return distance >= lowDetailDistance ? 'low' : 'full';
+}
+
+export function getTileModelDetailLevelFromSquaredDistance(
+  distanceSquared: number,
+  lowDetailDistanceSquared = LOW_DETAIL_MODEL_DISTANCE_SQUARED
+): 'full' | 'low' {
+  return distanceSquared >= lowDetailDistanceSquared ? 'low' : 'full';
+}
+
+export function shouldSyncTileModelDetailLevels(
+  previousPosition: { x: number; y: number } | null,
+  nextX: number,
+  nextY: number,
+  minimumMovementSquared = LOD_SYNC_MOVEMENT_DISTANCE_SQUARED
+): boolean {
+  if (!previousPosition) {
+    return true;
+  }
+
+  const dx = nextX - previousPosition.x;
+  const dy = nextY - previousPosition.y;
+  return dx * dx + dy * dy >= minimumMovementSquared;
 }
 
 export function getWorldCurvatureOffset(

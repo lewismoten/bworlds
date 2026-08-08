@@ -18,11 +18,13 @@ import {
   getSkyMilkyWaySignature,
   getTwilightSkyPalette,
   getTileModelDetailLevel,
+  getTileModelDetailLevelFromSquaredDistance,
   getVisibleWorldTileBuildOrder,
   pickCornerBoundaryProfile,
   prepareObjectForDistanceFade,
   recordRecentMetric,
   recordRecentDurationMetric,
+  shouldSyncTileModelDetailLevels,
   summarizeVisibleTileKinds,
   syncDynamicTileNodes,
   shouldRenderWorldTile,
@@ -279,6 +281,19 @@ describe('render3d visibility helpers', () => {
     expect(getTileModelDetailLevel(6.49)).toBe('full');
     expect(getTileModelDetailLevel(6.5)).toBe('low');
     expect(getTileModelDetailLevel(10)).toBe('low');
+  });
+
+  it('switches to low-detail models beyond the lod distance using squared distance thresholds', () => {
+    expect(getTileModelDetailLevelFromSquaredDistance(9)).toBe('full');
+    expect(getTileModelDetailLevelFromSquaredDistance(42.24)).toBe('full');
+    expect(getTileModelDetailLevelFromSquaredDistance(42.25)).toBe('low');
+    expect(getTileModelDetailLevelFromSquaredDistance(100)).toBe('low');
+  });
+
+  it('only rechecks tile lod after meaningful movement', () => {
+    expect(shouldSyncTileModelDetailLevels(null, 0, 0)).toBe(true);
+    expect(shouldSyncTileModelDetailLevels({ x: 0, y: 0 }, 0.05, 0.05)).toBe(false);
+    expect(shouldSyncTileModelDetailLevels({ x: 0, y: 0 }, 0.18, 0)).toBe(true);
   });
 
   it('keeps nearby terrain flat while bending the far horizon downward', () => {
