@@ -15,6 +15,7 @@ import {
   getCometOrbitProgress,
   getDaylightCycleState,
   getMilkyWayBandSamples,
+  getOrbitalSkyPosition,
   getOrreryBodies,
   getPlanetaryOrbitProgress,
   getWorldDaylightCycle,
@@ -142,6 +143,28 @@ describe('core utilities', () => {
     });
 
     expect(equatorNoon.sunAltitude).toBeGreaterThan(northernNoon.sunAltitude);
+  });
+
+  it('maps orbital progress into observer-aware sky positions', () => {
+    const equatorial = getOrbitalSkyPosition({
+      orbitProgress: 0.5,
+      observerLatitudeDegrees: 0,
+      declination: 0.28,
+      sunriseAzimuth: 0.08,
+      sunsetAzimuth: Math.PI - 0.08,
+      azimuthShift: 0.24,
+    });
+    const northern = getOrbitalSkyPosition({
+      orbitProgress: 0.5,
+      observerLatitudeDegrees: 55,
+      declination: 0.28,
+      sunriseAzimuth: 0.08,
+      sunsetAzimuth: Math.PI - 0.08,
+      azimuthShift: 0.24,
+    });
+
+    expect(equatorial.altitude).toBeGreaterThan(northern.altitude);
+    expect(equatorial.azimuth).toBeCloseTo(northern.azimuth, 6);
   });
 
   it('provides shared world-clock helpers for offset and preset time changes', () => {

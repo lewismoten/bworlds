@@ -879,7 +879,7 @@ export function getCelestialEventsForDay(
     const profile = getPlanetSkyProfile(name, index);
     const orbitLength = profile.orbitLengthDays;
     const orbitProgress = getPlanetaryOrbitProgress(dayNumber + dayProgress, profile);
-    const orbitState = getOrbitState({
+    const orbitState = getOrbitalSkyPosition({
       orbitProgress,
       observerLatitudeDegrees,
       declination:
@@ -921,7 +921,7 @@ export function getCelestialEventsForDay(
     if (peakOffset <= 4 || peakOffset >= yearLengthDays - 4) {
       const distance = Math.min(peakOffset, yearLengthDays - peakOffset);
       const progress = fract(dayProgress + index * 0.21);
-      const orbitState = getOrbitState({
+      const orbitState = getOrbitalSkyPosition({
         orbitProgress: progress,
         observerLatitudeDegrees,
         declination:
@@ -964,7 +964,7 @@ export function getCelestialEventsForDay(
         index * 0.18,
         orbitProfile.speedExponent
       );
-      const orbitState = getOrbitState({
+      const orbitState = getOrbitalSkyPosition({
         orbitProgress: progress,
         observerLatitudeDegrees,
         declination:
@@ -1180,7 +1180,7 @@ export function getOrreryBodies({
   return bodies;
 }
 
-function getOrbitState({
+export function getOrbitalSkyPosition({
   orbitProgress,
   observerLatitudeDegrees,
   declination,

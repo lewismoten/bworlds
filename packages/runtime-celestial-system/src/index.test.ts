@@ -19,6 +19,35 @@ describe('runtime celestial system', () => {
     expect(events.every((event) => event.visibility >= 0 && event.visibility <= 1)).toBe(
       true
     );
+    expect(events.every((event) => event.altitude >= -1 && event.altitude <= 1)).toBe(true);
+    expect(events.every((event) => event.azimuth >= 0 && event.azimuth <= Math.PI * 2)).toBe(
+      true
+    );
+  });
+
+  it('uses shared observer-aware orbit math so planet altitude changes with latitude', () => {
+    const equatorialCycle = getDaylightCycleState(210000, {
+      observerLatitudeDegrees: 0,
+    });
+    const northernCycle = getDaylightCycleState(210000, {
+      observerLatitudeDegrees: 55,
+    });
+
+    const equatorialAurel = buildSolarSystemPlanetEvents(
+      equatorialCycle,
+      210000
+    ).find((event) => event.name === 'Aurel');
+    const northernAurel = buildSolarSystemPlanetEvents(
+      northernCycle,
+      210000
+    ).find((event) => event.name === 'Aurel');
+
+    expect(equatorialAurel?.altitude).not.toBeCloseTo(
+      northernAurel?.altitude ?? 0,
+      6
+    );
+    expect(equatorialAurel?.azimuth).not.toBeNaN();
+    expect(northernAurel?.azimuth).not.toBeNaN();
   });
 
   it('replaces baseline planets with plugin-driven system planets and requests orrery regeneration', () => {

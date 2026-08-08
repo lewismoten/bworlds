@@ -1,6 +1,7 @@
 import {
   clamp,
   getDaylightCycleState,
+  getOrbitalSkyPosition,
   getPlanetaryOrbitProgress,
   smoothstep,
   type CelestialEventLike,
@@ -132,16 +133,10 @@ export function buildSolarSystemPlanetEvents(
       cycle.dayNumber + cycle.dayProgress,
       planet
     );
-    const azimuth =
-      cycle.sunriseAzimuth +
-      progress * Math.PI * 2 +
-      planet.azimuthShift +
-      Math.sin(cycle.yearProgress * Math.PI * 2 + index * 0.6) * 0.08;
-    const latitudeFactor = Math.abs(cycle.observerLatitudeDegrees) / 90;
-    const altitude = clamp(
+    const declination = clamp(
       planet.baseAltitude +
         Math.sin(progress * Math.PI * 2 + planet.altitudePhase) *
-          (planet.altitudeSwing + latitudeFactor * 0.08) +
+          planet.altitudeSwing +
         cycle.solarDeclination * planet.declinationFactor +
         Math.sin(
           ((cycle.dayNumber + cycle.dayProgress) / planet.declinationWaveDays) *
@@ -150,9 +145,19 @@ export function buildSolarSystemPlanetEvents(
             planet.altitudePhase
         ) *
           planet.declinationWaveAmplitude,
-      -0.34,
-      0.92
+      -0.72,
+      0.72
     );
+    const orbitState = getOrbitalSkyPosition({
+      orbitProgress: progress,
+      observerLatitudeDegrees: cycle.observerLatitudeDegrees,
+      declination,
+      sunriseAzimuth: cycle.sunriseAzimuth,
+      sunsetAzimuth: cycle.sunsetAzimuth,
+      azimuthShift:
+        planet.azimuthShift +
+        Math.sin(cycle.yearProgress * Math.PI * 2 + index * 0.6) * 0.08,
+    });
     const intensity = clamp(
       planet.intensityBase +
         Math.sin(timeMs / 90000 + index * 1.7) * 0.04 +
@@ -168,12 +173,12 @@ export function buildSolarSystemPlanetEvents(
       intensity,
       visibility: getSolarSystemPlanetVisibility(
         cycle,
-        altitude,
+        orbitState.altitude,
         intensity,
         planet.daylightPresence
       ),
-      azimuth,
-      altitude,
+      azimuth: orbitState.azimuth,
+      altitude: orbitState.altitude,
       color: planet.color,
       size: planet.size,
       trailLength: 0,
