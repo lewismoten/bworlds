@@ -186,12 +186,15 @@ function createRoutedDockModelState() {
   const dockTiles = new Set([
     '0:0',
     '1:0',
-    '24:10',
-    '25:10',
+    '22:0',
+    '23:0',
+    '11:22',
+    '12:22',
   ]);
   const poiNames: Record<string, string> = {
     '-1:0': 'Beacon Point',
-    '23:10': 'Harbor Market',
+    '24:0': 'Harbor Market',
+    '13:23': 'Crescent Watch',
   };
 
   return {
@@ -207,7 +210,26 @@ function createRoutedDockModelState() {
       if (poiNames[key]) {
         return { kind: 'shore', poi: { type: 'town', name: poiNames[key] } };
       }
-      return { kind: 'ocean' };
+      const onTopRoute = y === 0 && x >= 2 && x <= 21;
+      const onRightRoute = x === 23 && y >= 1 && y <= 21;
+      const onBottomRightRoute = y === 22 && x >= 13 && x <= 23;
+      const onBottomLeftRoute = y === 22 && x >= 0 && x <= 10;
+      const onLeftRoute = x === 0 && y >= 1 && y <= 21;
+      if (
+        onTopRoute ||
+        onRightRoute ||
+        onBottomRightRoute ||
+        onBottomLeftRoute ||
+        onLeftRoute
+      ) {
+        return {
+          kind:
+            (x === 23 && y === 22) || (x === 12 && y === 21)
+              ? 'bridge'
+              : 'ocean',
+        };
+      }
+      return { kind: 'shore' };
     },
     getTileDefinition(kind: string) {
       return {
@@ -616,7 +638,7 @@ describe('tile route', () => {
       expect.objectContaining({
         dockRouteSign: true,
         dockRouteBoatName: expect.any(String),
-        dockRouteStops: ['Harbor Market'],
+        dockRouteStops: ['Crescent Watch', 'Harbor Market'],
       })
     );
   });

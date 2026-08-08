@@ -98,13 +98,6 @@ function buildDockBoatRoute(
   const currentNeighbors = [...(adjacency.get(currentClusterKey) ?? [])].sort();
   const candidates: Array<{ route: string[]; score: string }> = [];
 
-  for (const neighborKey of currentNeighbors) {
-    candidates.push({
-      route: [currentClusterKey, neighborKey],
-      score: createRouteScore([currentClusterKey, neighborKey], edgeMap),
-    });
-  }
-
   const visited = new Set<string>([currentClusterKey]);
   const stack = [currentClusterKey];
 
@@ -137,6 +130,10 @@ function buildDockBoatRoute(
   }
 
   walk();
+
+  if (currentNeighbors.length === 0) {
+    return null;
+  }
 
   candidates.sort((left, right) =>
     left.score < right.score ? -1 : left.score > right.score ? 1 : 0
