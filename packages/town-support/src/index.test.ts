@@ -3,6 +3,7 @@ import { DEFAULT_DAY_LENGTH_MS } from '@bworlds/core';
 import {
   getTownBuildingPlots,
   getTownBuildings,
+  getTownBuildingServiceState,
   getTownNpcPlacements,
   getTownNpcs,
   getTownProfile,
@@ -167,6 +168,34 @@ describe('town support', () => {
       y: workplace.y,
       state: 'working',
     });
+  });
+
+  it('only exposes building services while the right professionals are present', () => {
+    const professionalBuilding = getTownBuildings(3, 7).find(
+      (building) => building.role === 'professional'
+    );
+
+    if (!professionalBuilding) {
+      throw new Error('Expected a professional building in the deterministic town layout.');
+    }
+
+    const middayServices = getTownBuildingServiceState(
+      3,
+      7,
+      professionalBuilding.id,
+      DEFAULT_DAY_LENGTH_MS * 0.5
+    );
+    const midnightServices = getTownBuildingServiceState(
+      3,
+      7,
+      professionalBuilding.id,
+      0
+    );
+
+    expect(middayServices.presentNpcNames.length).toBeGreaterThan(0);
+    expect(middayServices.availableServices.length).toBeGreaterThan(0);
+    expect(midnightServices.presentNpcNames).toHaveLength(0);
+    expect(midnightServices.availableServices).toHaveLength(0);
   });
 
   it('scales building counts upward for at least some higher-level towns', () => {

@@ -265,4 +265,35 @@ describe('map town', () => {
     expect(commuteTile.npcs).toContain(commuteSample.name);
     expect(commuteTile.note).toContain('Present:');
   });
+
+  it('passes building metadata into entered interiors and shows services during business hours', () => {
+    const map = createTownMap();
+    const workplace = getTownBuildings(TOWN_ORIGIN.x, TOWN_ORIGIN.y).find(
+      (building) => building.role === 'professional'
+    );
+
+    if (!workplace) {
+      throw new Error('Expected at least one professional building in town.');
+    }
+
+    const tile = map.getTile(workplace.x, workplace.y, {
+      timeMs: DEFAULT_DAY_LENGTH_MS * 0.5,
+    } as never);
+    const action = map.getAction?.(workplace.x, workplace.y) as
+      | {
+          type: string;
+          context?: Record<string, unknown>;
+        }
+      | undefined;
+
+    expect(tile.note).toContain('Services:');
+    expect(action).toMatchObject({
+      type: 'enter',
+      context: {
+        townBuildingId: workplace.id,
+        townBuildingRole: 'professional',
+        professionFamily: workplace.professionFamily,
+      },
+    });
+  });
 });

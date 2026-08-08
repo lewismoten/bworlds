@@ -70,6 +70,25 @@ export type TownNpcPlacement = {
   state: TownNpcRoutineState;
 };
 
+export type TownServiceKind =
+  | 'trade'
+  | 'training'
+  | 'revival'
+  | 'healing'
+  | 'quests';
+
+export type TownServiceOffer = {
+  kind: TownServiceKind;
+  label: string;
+  description: string;
+};
+
+export type TownBuildingServiceState = {
+  buildingId: string;
+  presentNpcNames: string[];
+  availableServices: TownServiceOffer[];
+};
+
 type TownStructure = Omit<TownProfile, 'population'>;
 type NameStyle = 'feminine' | 'masculine';
 type TownNpcDraft = Omit<TownNpc, 'mother' | 'father'> & {
@@ -195,6 +214,7 @@ const LAST_NAMES = [
 const buildingCache = new Map<string, TownBuilding[]>();
 const npcCache = new Map<string, TownNpc[]>();
 const placementCache = new Map<string, TownNpcPlacement[]>();
+const serviceStateCache = new Map<string, TownBuildingServiceState>();
 const townProfileCache = new Map<string, TownProfile>();
 
 function getTownCacheKey(tileX: number, tileY: number): string {
@@ -514,6 +534,124 @@ function getRouteWaypoint(
   return waypoints[waypointIndex] ?? waypoints[0] ?? { x: 0, y: 0 };
 }
 
+function getTownProfessionServiceOffers(
+  family: TownProfessionFamily | undefined
+): TownServiceOffer[] {
+  switch (family) {
+    case 'inn':
+      return [
+        {
+          kind: 'trade',
+          label: 'Supplies',
+          description: 'Buy and sell travel goods, meals, and common provisions.',
+        },
+        {
+          kind: 'quests',
+          label: 'Rumors',
+          description: 'Ask about local troubles, travelers, and odd jobs.',
+        },
+      ];
+    case 'smithy':
+      return [
+        {
+          kind: 'trade',
+          label: 'Smithing Goods',
+          description: 'Buy and sell forged wares, tools, and equipment.',
+        },
+        {
+          kind: 'training',
+          label: 'Weapons Training',
+          description: 'Learn combat fundamentals and practical weapon drills.',
+        },
+      ];
+    case 'market':
+      return [
+        {
+          kind: 'trade',
+          label: 'Market Trade',
+          description: 'Buy and sell produce, goods, and regional specialties.',
+        },
+        {
+          kind: 'quests',
+          label: 'Errands',
+          description: 'Pick up delivery work and local merchant requests.',
+        },
+      ];
+    case 'temple':
+      return [
+        {
+          kind: 'healing',
+          label: 'Healing',
+          description: 'Receive care, blessings, and aid for the wounded.',
+        },
+        {
+          kind: 'revival',
+          label: 'Revival',
+          description: 'Seek sacred rites for those lost in battle.',
+        },
+        {
+          kind: 'quests',
+          label: 'Sacred Tasks',
+          description: 'Accept pilgrimages, charity work, and holy errands.',
+        },
+      ];
+    case 'workshop':
+      return [
+        {
+          kind: 'trade',
+          label: 'Craft Goods',
+          description: 'Commission or exchange crafted tools and materials.',
+        },
+        {
+          kind: 'training',
+          label: 'Craft Training',
+          description: 'Study hands-on techniques from local artisans.',
+        },
+      ];
+    case 'stable':
+      return [
+        {
+          kind: 'trade',
+          label: 'Stable Supplies',
+          description: 'Arrange tack, feed, and overland travel support.',
+        },
+        {
+          kind: 'quests',
+          label: 'Courier Work',
+          description: 'Take delivery runs and road-scouting assignments.',
+        },
+      ];
+    case 'school':
+      return [
+        {
+          kind: 'training',
+          label: 'Lessons',
+          description: 'Train practical skills with the town tutor or scribe.',
+        },
+        {
+          kind: 'quests',
+          label: 'Research Tasks',
+          description: 'Help gather notes, texts, and field observations.',
+        },
+      ];
+    case 'town-hall':
+      return [
+        {
+          kind: 'quests',
+          label: 'Town Contracts',
+          description: 'Review work requests, civic duties, and local notices.',
+        },
+        {
+          kind: 'training',
+          label: 'Civic Guidance',
+          description: 'Learn town rules, routes, and public responsibilities.',
+        },
+      ];
+    default:
+      return [];
+  }
+}
+
 export function getTownBuildingId(
   tileX: number,
   tileY: number,
@@ -720,6 +858,52 @@ export function getTownNpcPlacements(
 
   placementCache.set(cacheKey, placements);
   return placements;
+}
+
+export function getTownBuildingServiceState(
+  tileX: number,
+  tileY: number,
+  buildingId: string,
+  timeMs = 0
+): TownBuildingServiceState {
+  const cycle = getDaylightCycleState(timeMs);
+  const minuteOfDay = Math.floor(cycle.dayProgress * 24 * 60) % (24 * 60);
+  const cacheKey = `${getTownCacheKey(tileX, tileY)}:${buildingId}:${minuteOfDay}`;
+  const cached = serviceStateCache.get(cacheKey);
+  if (cached) {
+    return cached;
+  }
+
+  const buildings = new Map(
+    getTownBuildings(tileX, tileY).map((building) => [building.id, building])
+  );
+  const building = buildings.get(buildingId);
+  if (!building) {
+    const emptyState = {
+      buildingId,
+      presentNpcNames: [],
+      availableServices: [],
+    };
+    serviceStateCache.set(cacheKey, emptyState);
+    return emptyState;
+  }
+
+  const placements = getTownNpcPlacements(tileX, tileY, timeMs);
+  const presentNpcNames = placements
+    .filter((placement) => placement.x === building.x && placement.y === building.y)
+    .map((placement) => placement.name);
+  const availableServices =
+    building.role === 'professional' && presentNpcNames.length > 0
+      ? getTownProfessionServiceOffers(building.professionFamily)
+      : [];
+
+  const state = {
+    buildingId,
+    presentNpcNames,
+    availableServices,
+  };
+  serviceStateCache.set(cacheKey, state);
+  return state;
 }
 
 export function getTownBuildingLabel(

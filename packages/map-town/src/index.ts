@@ -6,6 +6,7 @@ import {
   createExitMapAction,
 } from '@bworlds/map-support';
 import {
+  getTownBuildingServiceState,
   getTownBuildingLabel,
   getTownBuildings,
   getTownNpcPlacements,
@@ -111,6 +112,15 @@ function createTownMap(
         centerY: cy,
         buildingSummaries,
         presentNpcNames: activeNpcPlacements.get(`${x}:${y}`) ?? [],
+        serviceState:
+          buildingSummaries.get(`${x}:${y}`) != null
+            ? getTownBuildingServiceState(
+                context.origin.x,
+                context.origin.y,
+                buildingSummaries.get(`${x}:${y}`)?.id ?? '',
+                resolvedTimeMs
+              )
+            : undefined,
       });
       if (localX === cx && localY === cy) {
         tile = {
@@ -131,12 +141,24 @@ function createTownMap(
   function getAction(x: number, y: number) {
     const tile = getTile(x, y);
     if (!tile.building) return null;
+    const building = buildingSummaries.get(`${x}:${y}`);
+    const childContext = createChildContext(context, {
+      id: `${tile.building.id}:building`,
+      label: 'Building Interior',
+      type: 'building',
+      origin: context.origin,
+    });
     return createEnterMapAction({
-      context: createChildContext(context, {
-        id: `${tile.building.id}:building`,
-        label: 'Building Interior',
-        type: 'building',
-      }),
+      context: building
+        ? {
+            ...childContext,
+            townBuildingId: building.id,
+            townBuildingRole: building.role,
+            professionFamily: building.professionFamily,
+            buildingPlotX: building.x,
+            buildingPlotY: building.y,
+          }
+        : childContext,
       spawn: { x: 0, y: 3 },
     });
   }
@@ -161,6 +183,9 @@ export function resolveTownTile(options: {
   centerY: number;
   buildingSummaries?: Map<string, TownBuilding>;
   presentNpcNames?: string[];
+  serviceState?: {
+    availableServices: Array<{ kind: string; label: string }>;
+  };
 }): TownTile {
   const offsetX = options.localX - options.centerX;
   const offsetY = options.localY - options.centerY;
@@ -185,6 +210,12 @@ export function resolveTownTile(options: {
         : building.residentNpcIds.length > 0
           ? ` Residents: ${building.residentNpcIds.join(', ')}.`
           : '';
+    const services =
+      options.serviceState?.availableServices?.length
+        ? ` Services: ${options.serviceState.availableServices
+            .map((service) => service.label)
+            .join(', ')}.`
+        : '';
     return {
       kind: 'shop',
       building: {
@@ -198,7 +229,7 @@ export function resolveTownTile(options: {
       npcs: [...(options.presentNpcNames ?? [])],
       note:
         building.role === 'professional'
-          ? `A ${buildingLabel} stands near the square.${occupants}${
+          ? `A ${buildingLabel} stands near the square.${occupants}${services}${
               options.presentNpcNames?.length
                 ? ` Present: ${options.presentNpcNames.join(', ')}.`
                 : ''

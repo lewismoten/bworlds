@@ -3,6 +3,10 @@ import {
   createDecoratedMapTileGetter,
   createReturnMapAction,
 } from '@bworlds/map-support';
+import {
+  getTownBuildingLabel,
+  getTownBuildingServiceState,
+} from '@bworlds/town-support';
 import type {
   CreateMapContext,
   RuntimePlugin,
@@ -17,6 +21,9 @@ type BuildingTile = TileLike;
 
 type BuildingContext = WorldContextLike & {
   origin: Point;
+  townBuildingId?: string;
+  townBuildingRole?: 'residential' | 'professional';
+  professionFamily?: string;
 };
 
 export function createBuildingMapPlugin(): RuntimePlugin {
@@ -35,11 +42,17 @@ function createBuildingMap(
   const getTile = createDecoratedMapTileGetter<BuildingTile, BuildingContext>({
     context,
     seed,
-    resolveTile(x: number, y: number) {
-    let tile: BuildingTile = { kind: 'wall' };
-    if (Math.abs(x) <= 3 && Math.abs(y) <= 3) tile = { kind: 'floor' };
-    if (y === 3 && x === 0) tile = { kind: 'door', note: 'Press X to leave.' };
-    if (y === -2 && Math.abs(x) <= 1) tile = { kind: 'shop' };
+    resolveTile(x: number, y: number, state) {
+      let tile: BuildingTile = { kind: 'wall' };
+      if (Math.abs(x) <= 3 && Math.abs(y) <= 3) {
+        tile = { kind: 'floor' };
+      }
+      if (y === 3 && x === 0) {
+        tile = { kind: 'door', note: 'Press X to leave.' };
+      }
+      if (y === -2 && Math.abs(x) <= 1) {
+        tile = resolveBuildingCounterTile(context, state?.timeMs);
+      }
       return tile;
     },
     decorateTile(payload) {
@@ -59,4 +72,50 @@ function createBuildingMap(
   }
 
   return { getTile, getAction, getExit };
+}
+
+function resolveBuildingCounterTile(
+  context: BuildingContext,
+  timeMs = 0
+): BuildingTile {
+  if (!context.townBuildingId || !context.origin) {
+    return { kind: 'shop', note: 'A service counter waits inside the building.' };
+  }
+
+  const buildingRole = context.townBuildingRole ?? 'professional';
+  const buildingLabel = getTownBuildingLabel(
+    context.professionFamily as Parameters<typeof getTownBuildingLabel>[0],
+    buildingRole
+  );
+  const serviceState = getTownBuildingServiceState(
+    context.origin.x,
+    context.origin.y,
+    context.townBuildingId,
+    timeMs
+  );
+
+  if (buildingRole !== 'professional') {
+    return {
+      kind: 'shop',
+      note:
+        serviceState.presentNpcNames.length > 0
+          ? `${serviceState.presentNpcNames.join(', ')} are home right now.`
+          : 'The house is quiet right now.',
+    };
+  }
+
+  if (serviceState.presentNpcNames.length === 0) {
+    return {
+      kind: 'shop',
+      note: `The ${buildingLabel} is unattended right now. Come back during business hours.`,
+    };
+  }
+
+  const serviceLabels = serviceState.availableServices.map((service) => service.label);
+  return {
+    kind: 'shop',
+    note: `${serviceState.presentNpcNames.join(', ')} can help here with ${serviceLabels.join(', ')}.`,
+    services: serviceState.availableServices,
+    npcs: serviceState.presentNpcNames,
+  };
 }
