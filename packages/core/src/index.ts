@@ -311,25 +311,129 @@ export interface CelestialRingEntryLike {
   visualAzimuth: number;
 }
 
-export function fract(value) {
+type PoiNameType = ('town' | 'cave' | 'dungeon' | 'ruins') | (string & {});
+type CardinalDirection = 'N' | 'S' | 'E' | 'W';
+
+type WorldPositionLike = {
+  x: number;
+  y: number;
+};
+
+type FacingPositionLike = WorldPositionLike & {
+  facing?: number;
+};
+
+type CoreTileDefinitionLike = {
+  name: string;
+  color: string;
+  miniColor: string;
+  walkable: boolean;
+  wallHeight: number;
+};
+
+type CoreWorldTileLike = {
+  kind: string;
+};
+
+type CoreWorldContextLike = {
+  id: string;
+  label: string;
+  type: string;
+  depth: number;
+  origin: WorldPositionLike;
+  returnTo?: FacingPositionLike;
+};
+
+type CoreWorldActionLike = {
+  type?: 'enter' | 'deepen' | (string & {});
+  context?: CoreWorldContextLike;
+  spawn?: WorldPositionLike;
+  facing?: number;
+  returnTo?: FacingPositionLike;
+};
+
+type CoreWorldMapLike = {
+  getTile(x: number, y: number): CoreWorldTileLike;
+  getAction?(x: number, y: number): unknown;
+  getExit?(x?: number, y?: number): unknown;
+};
+
+type CoreWorldExitLike = {
+  spawn?: FacingPositionLike;
+  facing?: number;
+};
+
+function isCoreWorldActionLike(value: unknown): value is CoreWorldActionLike & {
+  type: string;
+  context: CoreWorldContextLike;
+  spawn: WorldPositionLike;
+} {
+  if (!value || typeof value !== 'object') {
+    return false;
+  }
+
+  const action = value as CoreWorldActionLike;
+  return (
+    typeof action.type === 'string' &&
+    typeof action.context?.id === 'string' &&
+    typeof action.context?.label === 'string' &&
+    typeof action.context?.type === 'string' &&
+    typeof action.context?.depth === 'number' &&
+    typeof action.spawn?.x === 'number' &&
+    typeof action.spawn?.y === 'number'
+  );
+}
+
+function isCoreWorldExitLike(value: unknown): value is CoreWorldExitLike {
+  if (!value || typeof value !== 'object') {
+    return false;
+  }
+
+  const action = value as CoreWorldExitLike;
+  return (
+    typeof action.spawn === 'undefined' ||
+    action.spawn === null ||
+    (typeof action.spawn.x === 'number' && typeof action.spawn.y === 'number')
+  );
+}
+
+type CoreWorldGeneratorLike = {
+  getMap(context: CoreWorldContextLike, player?: FacingPositionLike): CoreWorldMapLike;
+};
+
+type CoreWorldStateLike = {
+  generator: CoreWorldGeneratorLike;
+  player: FacingPositionLike & { facing: number };
+  stack: CoreWorldContextLike[];
+  viewMode: '2d';
+  getCurrentContext(): CoreWorldContextLike;
+  getCurrentMap(): CoreWorldMapLike;
+  getCurrentTile(x?: number, y?: number): CoreWorldTileLike;
+  getTileDefinition(kind: string): CoreTileDefinitionLike;
+  canWalk(x: number, y: number): boolean;
+  interact(): boolean;
+  tryExit(): boolean;
+};
+
+export function fract(value: number) {
   return value - Math.floor(value);
 }
 
-export function clamp(value, min, max) {
+export function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
 }
 
-export function lerp(a, b, t) {
+export function lerp(a: number, b: number, t: number) {
   return a + (b - a) * t;
 }
 
-export function smoothstep(edge0, edge1, value) {
+export function smoothstep(edge0: number, edge1: number, value: number) {
   const t = clamp((value - edge0) / (edge1 - edge0), 0, 1);
   return t * t * (3 - 2 * t);
 }
 
 export function getDaylightCycleState(
-  timeMs,
+  timeMs: number,
   options: {
     dayLengthMs?: number;
     offsetMs?: number;
@@ -514,7 +618,7 @@ export function getDaylightCycleState(
 }
 
 export function applyCelestialEnvironmentOverrides(
-  cycle,
+  cycle: ReturnType<typeof getDaylightCycleState>,
   overrides: {
     constellations?: ConstellationLike[];
     activeConstellationIndex?: number;
@@ -559,7 +663,7 @@ export function applyCelestialEnvironmentOverrides(
 }
 
 export function getWorldTimeMs(
-  realTimeMs,
+  realTimeMs: number,
   options: {
     timeOffsetMs?: number;
   } = {}
@@ -568,7 +672,7 @@ export function getWorldTimeMs(
 }
 
 export function getWorldDaylightCycle(
-  realTimeMs,
+  realTimeMs: number,
   options: {
     timeOffsetMs?: number;
     cycle?: {
@@ -587,8 +691,8 @@ export function getWorldDaylightCycle(
 }
 
 export function advanceWorldTimeOffsetByHours(
-  currentOffsetMs,
-  hours,
+  currentOffsetMs: number,
+  hours: number,
   options: {
     dayLengthMs?: number;
   } = {}
@@ -598,9 +702,9 @@ export function advanceWorldTimeOffsetByHours(
 }
 
 export function alignWorldTimeOffsetToDayProgress(
-  realTimeMs,
-  currentOffsetMs,
-  targetDayProgress,
+  realTimeMs: number,
+  currentOffsetMs: number,
+  targetDayProgress: number,
   options: {
     dayLengthMs?: number;
     offsetMs?: number;
@@ -618,8 +722,8 @@ export function alignWorldTimeOffsetToDayProgress(
 }
 
 export function advanceWorldTimeOffsetBySeasons(
-  currentOffsetMs,
-  seasons,
+  currentOffsetMs: number,
+  seasons: number,
   options: {
     dayLengthMs?: number;
     yearLengthDays?: number;
@@ -637,7 +741,7 @@ export function advanceWorldTimeOffsetBySeasons(
 }
 
 export function generateConstellations(
-  seed,
+  seed: string,
   options: {
     count?: number;
   } = {}
@@ -698,7 +802,7 @@ export function generateConstellations(
   });
 }
 
-function getConstellationArchetype(seed, index) {
+function getConstellationArchetype(seed: string, index: number) {
   const baseArchetypes = [
     {
       points: [
@@ -781,8 +885,8 @@ function buildConstellationConnections(
 }
 
 export function createConstellationName(
-  seed,
-  index,
+  seed: string,
+  index: number,
   prefixCounts = new Map<string, number>(),
   suffixCounts = new Map<string, number>(),
   figureCounts = new Map<string, number>()
@@ -813,7 +917,12 @@ export function createConstellationName(
   return `${prefix} ${suffix}`;
 }
 
-function pickLimitedNamePart(parts, counts, maxCount, seedValue) {
+function pickLimitedNamePart(
+  parts: readonly string[],
+  counts: Map<string, number>,
+  maxCount: number,
+  seedValue: number
+) {
   const startIndex = Math.floor(seedValue * parts.length) % parts.length;
   for (let offset = 0; offset < parts.length; offset += 1) {
     const candidate = parts[(startIndex + offset) % parts.length];
@@ -843,7 +952,10 @@ export function createCelestialRing(
   }));
 }
 
-export function formatCelestialDate(constellationName, moonPhaseName): CelestialCalendarLike {
+export function formatCelestialDate(
+  constellationName: string,
+  moonPhaseName: string
+): CelestialCalendarLike {
   return {
     month: constellationName,
     week: moonPhaseName,
@@ -852,7 +964,7 @@ export function formatCelestialDate(constellationName, moonPhaseName): Celestial
 }
 
 export function getCelestialEventsForDay(
-  dayNumber,
+  dayNumber: number,
   options: {
     yearLengthDays?: number;
     dayProgress?: number;
@@ -1220,7 +1332,7 @@ export function getOrbitalSkyPosition({
   };
 }
 
-export function hash2D(seed, x, y) {
+export function hash2D(seed: string | number, x: number, y: number) {
   let hash = 2166136261;
   const input = `${seed}:${x}:${y}`;
   for (let index = 0; index < input.length; index += 1) {
@@ -1234,7 +1346,7 @@ function normalizeTurns(value: number) {
   return ((value % 1) + 1) % 1;
 }
 
-export function valueNoise2D(seed, x, y) {
+export function valueNoise2D(seed: string | number, x: number, y: number) {
   const x0 = Math.floor(x);
   const y0 = Math.floor(y);
   const x1 = x0 + 1;
@@ -1251,9 +1363,9 @@ export function valueNoise2D(seed, x, y) {
 }
 
 export function octaveNoise2D(
-  seed,
-  x,
-  y,
+  seed: string | number,
+  x: number,
+  y: number,
   options: {
     octaves?: number;
     persistence?: number;
@@ -1279,9 +1391,9 @@ export function octaveNoise2D(
 }
 
 export function ridgedNoise2D(
-  seed,
-  x,
-  y,
+  seed: string | number,
+  x: number,
+  y: number,
   options: {
     octaves?: number;
     persistence?: number;
@@ -1291,13 +1403,13 @@ export function ridgedNoise2D(
   return 1 - Math.abs(octaveNoise2D(seed, x, y, options) * 2 - 1);
 }
 
-export function wrapLongitude(longitude) {
+export function wrapLongitude(longitude: number) {
   if (longitude > 180) return longitude - 360;
   if (longitude < -180) return longitude + 360;
   return longitude;
 }
 
-export function toGps(x, y) {
+export function toGps(x: number, y: number) {
   const longitude = wrapLongitude((x / WORLD_TILES_WIDE) * 360);
   const latitude = clamp((-y / WORLD_TILES_WIDE) * 180, -90, 90);
   return {
@@ -1306,14 +1418,14 @@ export function toGps(x, y) {
   };
 }
 
-export function normalizeAngle(angle) {
+export function normalizeAngle(angle: number) {
   const tau = Math.PI * 2;
   let next = angle % tau;
   if (next < 0) next += tau;
   return next;
 }
 
-export function cardinalFromAngle(angle) {
+export function cardinalFromAngle(angle: number): CardinalDirection {
   const normalized = normalizeAngle(angle);
   if (normalized < Math.PI * 0.25 || normalized >= Math.PI * 1.75) return 'E';
   if (normalized < Math.PI * 0.75) return 'S';
@@ -1321,11 +1433,11 @@ export function cardinalFromAngle(angle) {
   return 'N';
 }
 
-function pickFrom(list, seedValue) {
+function pickFrom<T>(list: readonly T[], seedValue: number): T {
   return list[Math.floor(seedValue * list.length) % list.length];
 }
 
-export function getRegionalPoiNameStyle(seed, x, y) {
+export function getRegionalPoiNameStyle(seed: string | number, x: number, y: number) {
   const regionX = Math.floor(x / 48);
   const regionY = Math.floor(y / 48);
   const prefixSets = [
@@ -1361,7 +1473,12 @@ export function getRegionalPoiNameStyle(seed, x, y) {
   };
 }
 
-export function generatePoiName(seed, type, x, y) {
+export function generatePoiName(
+  seed: string | number,
+  type: PoiNameType,
+  x: number,
+  y: number
+) {
   const style = getRegionalPoiNameStyle(seed, x, y);
   const stem = `${seed}:${type}:${x}:${y}`;
   const prefix = pickFrom(style.prefixes, hash2D(`${stem}:prefix`, x, y));
@@ -1397,7 +1514,7 @@ export function generatePoiName(seed, type, x, y) {
   return `${prefix}${suffix}`;
 }
 
-export const DEFAULT_TILE_DEFINITION = {
+export const DEFAULT_TILE_DEFINITION: CoreTileDefinitionLike = {
   name: 'Unknown Tile',
   color: '#64748b',
   miniColor: '#94a3b8',
@@ -1405,7 +1522,7 @@ export const DEFAULT_TILE_DEFINITION = {
   wallHeight: 0,
 };
 
-export function getTileDefinition(kind) {
+export function getTileDefinition(kind: string) {
   return {
     ...DEFAULT_TILE_DEFINITION,
     name: kind
@@ -1428,7 +1545,7 @@ export function createPlayer(
   };
 }
 
-export function snapWorldCoordinate(value) {
+export function snapWorldCoordinate(value: number) {
   return Math.round(value);
 }
 
@@ -1437,23 +1554,13 @@ export function createWorldState({
   player,
   resolveTileDefinition,
 }: {
-  generator: {
-    getMap(context: unknown, player?: unknown): {
-      getTile(x: number, y: number): { kind: string };
-      getAction?(x: number, y: number): any;
-      getExit?(x?: number, y?: number): any;
-    };
-  };
-  player: {
-    x: number;
-    y: number;
-    facing: number;
-  };
-  resolveTileDefinition?: (kind: string) => any;
+  generator: CoreWorldGeneratorLike;
+  player: FacingPositionLike & { facing: number };
+  resolveTileDefinition?: (kind: string) => CoreTileDefinitionLike;
 }) {
   const getResolvedTileDefinition =
-    resolveTileDefinition ?? ((kind) => getTileDefinition(kind));
-  const stack = [
+    resolveTileDefinition ?? ((kind: string) => getTileDefinition(kind));
+  const stack: CoreWorldContextLike[] = [
     {
       id: 'overworld',
       label: 'Overworld',
@@ -1463,27 +1570,27 @@ export function createWorldState({
     },
   ];
 
-  const state = {
+  const state: CoreWorldStateLike = {
     generator,
     player,
     stack,
-    viewMode: '2d',
+    viewMode: '2d' as const,
     getCurrentContext() {
       return this.stack[this.stack.length - 1];
     },
     getCurrentMap() {
       return this.generator.getMap(this.getCurrentContext(), this.player);
     },
-    getCurrentTile(x = this.player.x, y = this.player.y) {
+    getCurrentTile(this: CoreWorldStateLike, x = this.player.x, y = this.player.y) {
       return this.getCurrentMap().getTile(
         snapWorldCoordinate(x),
         snapWorldCoordinate(y)
       );
     },
-    getTileDefinition(kind) {
+    getTileDefinition(kind: string) {
       return getResolvedTileDefinition(kind);
     },
-    canWalk(x, y) {
+    canWalk(x: number, y: number) {
       const probes = [
         [x, y],
         [x + 0.3, y],
@@ -1500,11 +1607,11 @@ export function createWorldState({
     },
     interact() {
       const map = this.getCurrentMap();
-      const action = map.getAction(
+      const action = map.getAction?.(
         snapWorldCoordinate(this.player.x),
         snapWorldCoordinate(this.player.y)
       );
-      if (!action) return false;
+      if (!isCoreWorldActionLike(action)) return false;
       const nextContext = {
         ...action.context,
         returnTo: action.returnTo ?? {
@@ -1532,14 +1639,17 @@ export function createWorldState({
     },
     tryExit() {
       const map = this.getCurrentMap();
-      const action = map.getExit(
+      const action = map.getExit?.(
         snapWorldCoordinate(this.player.x),
         snapWorldCoordinate(this.player.y)
       );
-      if (!action) return false;
+      if (!isCoreWorldExitLike(action)) return false;
       const currentContext = this.getCurrentContext();
       this.stack.pop();
       const spawn = action.spawn ?? currentContext.returnTo;
+      if (!spawn) {
+        return false;
+      }
       this.player.x = spawn.x;
       this.player.y = spawn.y;
       if (typeof action.facing === 'number') {
