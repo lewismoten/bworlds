@@ -90,6 +90,7 @@ import {
 import {
   createSoundEffectController,
   createWebAudioSoundEffectSink,
+  shouldPlayBlockedMovementSound,
 } from './sound-effects.ts';
 import {
   buildSextantMarkup,
@@ -1357,7 +1358,20 @@ function attemptMove(stepX: number, stepY: number): void {
   }
   if (stepY !== 0 && canMoveTo(state.player.x, state.player.y + stepY)) {
     commitMove(state.player.x, state.player.y + stepY);
+    return;
   }
+
+  if (state.viewMode !== '3d') {
+    return;
+  }
+  const blockedTileKind = state.getCurrentTile(nextX, nextY).kind;
+  if (!shouldPlayBlockedMovementSound(blockedTileKind)) {
+    return;
+  }
+  soundEffects.triggerBlockedMovement({
+    nowMs: performance.now(),
+    tileKind: blockedTileKind,
+  });
 }
 
 function forwardDelta(): WorldPoint {

@@ -1,6 +1,6 @@
 type ViewModeLike = '2d' | '3d' | 'text';
 type SurfaceKind = string;
-type SoundEffectKind = 'footstep' | 'jump' | 'landing';
+type SoundEffectKind = 'footstep' | 'jump' | 'landing' | 'blocked';
 type SoundWaveform = OscillatorType;
 
 export type ProceduralSoundEffect = {
@@ -20,6 +20,7 @@ export type SoundEffectSink = {
 export type SoundEffectController = {
   resume(): void;
   triggerJump(options: { nowMs: number; tileKind?: SurfaceKind }): void;
+  triggerBlockedMovement(options: { nowMs: number; tileKind?: SurfaceKind }): void;
   update(options: {
     nowMs: number;
     walking: boolean;
@@ -99,6 +100,7 @@ export function createSoundEffectController(
 ): SoundEffectController {
   let lastFootstepAtMs = -Infinity;
   let lastJumpAtMs = -Infinity;
+  let lastBlockedAtMs = -Infinity;
   let previousJumping = false;
   let footstepVariant = 0;
 
@@ -112,17 +114,22 @@ export function createSoundEffectController(
       frequency:
         kind === 'jump'
           ? profile.footstepFrequency + 72
+          : kind === 'blocked'
+            ? Math.max(58, profile.landingFrequency - 18 + variantOffset)
           : kind === 'landing'
             ? profile.landingFrequency + variantOffset
             : profile.footstepFrequency + variantOffset,
-      durationMs: kind === 'jump' ? 140 : kind === 'landing' ? 120 : 90,
+      durationMs:
+        kind === 'jump' ? 140 : kind === 'landing' ? 120 : kind === 'blocked' ? 105 : 90,
       volume:
         kind === 'jump'
           ? profile.footstepVolume * 1.2
+          : kind === 'blocked'
+            ? profile.landingVolume * 0.7
           : kind === 'landing'
             ? profile.landingVolume
             : profile.footstepVolume,
-      waveform: profile.waveform,
+      waveform: kind === 'blocked' ? 'sawtooth' : profile.waveform,
     });
   }
 
@@ -136,6 +143,16 @@ export function createSoundEffectController(
       }
       lastJumpAtMs = nowMs;
       play('jump', nowMs, tileKind);
+    },
+    triggerBlockedMovement({ nowMs, tileKind }) {
+      if (!shouldPlayBlockedMovementSound(tileKind)) {
+        return;
+      }
+      if (nowMs - lastBlockedAtMs < 180) {
+        return;
+      }
+      lastBlockedAtMs = nowMs;
+      play('blocked', nowMs, tileKind);
     },
     update({ nowMs, walking, isJumping, viewMode, tileKind }) {
       if (viewMode !== '3d') {
@@ -165,6 +182,12 @@ export function createSoundEffectController(
       play('footstep', nowMs, tileKind);
     },
   };
+}
+
+export function shouldPlayBlockedMovementSound(
+  tileKind: SurfaceKind | undefined
+): boolean {
+  return tileKind === 'forest';
 }
 
 type AudioContextCtor = new () => AudioContext;

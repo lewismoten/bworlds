@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   createSoundEffectController,
   getSurfaceAudioProfile,
+  shouldPlayBlockedMovementSound,
   type ProceduralSoundEffect,
 } from './sound-effects.ts';
 
@@ -86,6 +87,25 @@ describe('sound effects', () => {
     expect(play).not.toHaveBeenCalled();
   });
 
+  it('plays a debounced blocked-movement cue when walking into forest trees', () => {
+    const played: ProceduralSoundEffect[] = [];
+    const controller = createSoundEffectController({
+      play(effect) {
+        played.push(effect);
+      },
+    });
+
+    controller.triggerBlockedMovement({ nowMs: 100, tileKind: 'forest' });
+    controller.triggerBlockedMovement({ nowMs: 180, tileKind: 'forest' });
+    controller.triggerBlockedMovement({ nowMs: 320, tileKind: 'forest' });
+
+    expect(played.map((effect) => effect.kind)).toEqual([
+      'blocked',
+      'blocked',
+    ]);
+    expect(played[0]?.waveform).toBe('sawtooth');
+  });
+
   it('provides cave and bridge audio profiles for later surface-specific effects', () => {
     expect(getSurfaceAudioProfile('cave-floor')).toEqual(
       expect.objectContaining({
@@ -99,5 +119,11 @@ describe('sound effects', () => {
         waveform: 'square',
       })
     );
+  });
+
+  it('limits blocked-movement tree impacts to forest collisions for now', () => {
+    expect(shouldPlayBlockedMovementSound('forest')).toBe(true);
+    expect(shouldPlayBlockedMovementSound('road')).toBe(false);
+    expect(shouldPlayBlockedMovementSound(undefined)).toBe(false);
   });
 });
