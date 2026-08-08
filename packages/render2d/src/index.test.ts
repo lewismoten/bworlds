@@ -7,7 +7,11 @@ vi.mock('@bworlds/atlas', () => ({
   },
 }));
 
-import { getRiverOverlayConnections, render2D } from './index';
+import {
+  createViewportTileSampler,
+  getRiverOverlayConnections,
+  render2D,
+} from './index';
 
 function createState(tileMap: Record<string, string>) {
   return {
@@ -27,8 +31,9 @@ describe('getRiverOverlayConnections', () => {
       '0:1': 'ocean',
       '-1:0': 'plains',
     });
+    const tileAt = createViewportTileSampler(state);
 
-    expect(getRiverOverlayConnections(state, 0, 0).map(({ id }) => id)).toEqual([
+    expect(getRiverOverlayConnections(tileAt, 0, 0).map(({ id }) => id)).toEqual([
       'north',
       'east',
       'south',
@@ -42,13 +47,32 @@ describe('getRiverOverlayConnections', () => {
       '1:1': 'river',
       '-1:1': 'river',
     });
+    const tileAt = createViewportTileSampler(state);
 
-    expect(getRiverOverlayConnections(state, 0, 0).map(({ id }) => id)).toEqual([
+    expect(getRiverOverlayConnections(tileAt, 0, 0).map(({ id }) => id)).toEqual([
       'northeast',
       'east',
       'southeast',
       'southwest',
     ]);
+  });
+
+  it('reuses cached tile samples across repeated river connection checks', () => {
+    const getCurrentTile = vi.fn((x: number, y: number) => ({
+      kind:
+        x === 0 && y === -1
+          ? 'river'
+          : x === 1 && y === 0
+            ? 'bridge'
+            : x === 0 && y === 1
+              ? 'ocean'
+              : 'plains',
+    }));
+    const tileAt = createViewportTileSampler({ getCurrentTile });
+
+    expect(getRiverOverlayConnections(tileAt, 0, 0)).toHaveLength(3);
+    expect(getRiverOverlayConnections(tileAt, 0, 0)).toHaveLength(3);
+    expect(getCurrentTile).toHaveBeenCalledTimes(8);
   });
 });
 

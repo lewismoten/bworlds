@@ -323,6 +323,26 @@ describe('core utilities', () => {
     );
   });
 
+  it('rotates the Milky Way belt across the day as the sky turns overhead', () => {
+    const sunrise = getDaylightCycleState(DEFAULT_DAY_LENGTH_MS * 5, {
+      observerLatitudeDegrees: 22,
+      yearLengthDays: DEFAULT_YEAR_LENGTH_DAYS,
+    });
+    const sunset = getDaylightCycleState(DEFAULT_DAY_LENGTH_MS * 5 + DEFAULT_DAY_LENGTH_MS * 0.5, {
+      observerLatitudeDegrees: 22,
+      yearLengthDays: DEFAULT_YEAR_LENGTH_DAYS,
+    });
+
+    expect(sunrise.milkyWay.azimuthOffset).not.toBeCloseTo(
+      sunset.milkyWay.azimuthOffset,
+      6
+    );
+    expect(sunrise.milkyWay.inclination).toBeCloseTo(
+      sunset.milkyWay.inclination,
+      6
+    );
+  });
+
   it('builds shared Milky Way band samples for ribbon rendering', () => {
     const cycle = getDaylightCycleState(DEFAULT_DAY_LENGTH_MS * 5, {
       observerLatitudeDegrees: 22,

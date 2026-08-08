@@ -2,6 +2,7 @@ import { drawTileSprite, getTileVariantIndex } from '@bworlds/atlas';
 import { getDaylightCycleState } from '@bworlds/core';
 
 export function render2D(context, state, viewport) {
+  const tileAt = createViewportTileSampler(state);
   const tileSize = Math.max(
     14,
     Math.floor(Math.min(viewport.width, viewport.height) / 22)
@@ -30,7 +31,7 @@ export function render2D(context, state, viewport) {
     for (let x = -radiusX; x <= radiusX; x += 1) {
       const worldX = anchorX + x;
       const worldY = anchorY + y;
-      const tile = state.getCurrentTile(worldX, worldY);
+      const tile = tileAt(worldX, worldY);
       const drawX = (x - offsetX) * tileSize;
       const drawY = (y - offsetY) * tileSize;
 
@@ -42,7 +43,7 @@ export function render2D(context, state, viewport) {
       });
 
       if (tile.kind === 'river') {
-        drawRiverOverlay(context, state, worldX, worldY, drawX, drawY, tileSize);
+        drawRiverOverlay(context, tileAt, worldX, worldY, drawX, drawY, tileSize);
       }
     }
   }
@@ -70,7 +71,18 @@ export function render2D(context, state, viewport) {
 
 const RIVER_OVERLAY_NETWORK_KINDS = new Set(['river', 'bridge', 'ocean']);
 
-export function getRiverOverlayConnections(state, worldX, worldY) {
+export function createViewportTileSampler(state) {
+  const tileCache = new Map();
+  return (worldX, worldY) => {
+    const key = `${worldX}:${worldY}`;
+    if (!tileCache.has(key)) {
+      tileCache.set(key, state.getCurrentTile(worldX, worldY));
+    }
+    return tileCache.get(key);
+  };
+}
+
+export function getRiverOverlayConnections(tileAt, worldX, worldY) {
   const directions = [
     createRiverOverlayDirection('north', 0, -1, 0.5, 0, 0.5, 0.22),
     createRiverOverlayDirection('east', 1, 0, 1, 0.5, 0.78, 0.5),
@@ -85,7 +97,7 @@ export function getRiverOverlayConnections(state, worldX, worldY) {
   return directions
     .filter(({ dx, dy }) =>
       RIVER_OVERLAY_NETWORK_KINDS.has(
-        state.getCurrentTile(worldX + dx, worldY + dy).kind
+        tileAt(worldX + dx, worldY + dy).kind
       )
     )
     .sort((left, right) => left.angle - right.angle);
@@ -104,8 +116,8 @@ function createRiverOverlayDirection(id, dx, dy, edgeX, edgeY, inwardX, inwardY)
   };
 }
 
-function drawRiverOverlay(context, state, worldX, worldY, x, y, size) {
-  const connections = getRiverOverlayConnections(state, worldX, worldY);
+function drawRiverOverlay(context, tileAt, worldX, worldY, x, y, size) {
+  const connections = getRiverOverlayConnections(tileAt, worldX, worldY);
   const bodyWidth = Math.max(3, size * 0.28);
   const highlightWidth = Math.max(1, bodyWidth * 0.28);
   const center = pointAt(x, y, size, 0.5, 0.5);

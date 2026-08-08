@@ -458,6 +458,7 @@ export function getDaylightCycleState(
   const calendar = formatCelestialDate(activeConstellation?.name ?? 'Unknown', moonPhaseName);
   const celestialRing = createCelestialRing(constellations);
   const milkyWay = getMilkyWayBeltState({
+    dayProgress,
     yearProgress,
     observerLatitudeDegrees,
     starsOpacity,
@@ -1044,17 +1045,21 @@ function getCelestialEventVisibility({
 }
 
 export function getMilkyWayBeltState({
+  dayProgress,
   yearProgress,
   observerLatitudeDegrees,
   starsOpacity,
 }: {
+  dayProgress?: number;
   yearProgress: number;
   observerLatitudeDegrees?: number;
   starsOpacity?: number;
 }): MilkyWayBeltLike {
   const latitudeRadians = ((observerLatitudeDegrees ?? 0) / 180) * Math.PI;
+  const dailyRotation = (dayProgress ?? 0) * Math.PI * 2;
   return {
     azimuthOffset:
+      dailyRotation +
       yearProgress * Math.PI * 2 * 0.16 +
       Math.sin(latitudeRadians) * 0.42,
     inclination:
