@@ -227,6 +227,88 @@ describe('town support', () => {
     ).toBe(true);
   });
 
+  it('surfaces rescue and revenge quest offers from generated town schedules', () => {
+    const townSamples: Array<[number, number]> = [
+      [3, 7],
+      [10, -4],
+      [25, 9],
+      [48, -16],
+      [120, -80],
+    ];
+    let rescueStates: ReturnType<typeof getTownNpcQuestStates> = [];
+    let revengeStates: ReturnType<typeof getTownNpcQuestStates> = [];
+
+    outerRescue: for (const [x, y] of townSamples) {
+      for (let minute = 0; minute < 24 * 60; minute += 30) {
+        rescueStates = getTownNpcQuestStates(
+          x,
+          y,
+          DEFAULT_DAY_LENGTH_MS * (minute / (24 * 60)),
+          {
+            level: 4,
+            profession: 'healer',
+          }
+        );
+        if (
+          rescueStates.some((entry) =>
+            entry.offers.some((offer) => offer.type === 'rescue')
+          )
+        ) {
+          break outerRescue;
+        }
+      }
+    }
+
+    outerRevenge: for (const [x, y] of townSamples) {
+      for (let minute = 0; minute < 24 * 60; minute += 30) {
+        const baseStates = getTownNpcQuestStates(
+          x,
+          y,
+          DEFAULT_DAY_LENGTH_MS * (minute / (24 * 60)),
+          {
+            level: 6,
+            profession: 'guard',
+          }
+        );
+        const prerequisiteIds = baseStates
+          .flatMap((entry) => entry.offers)
+          .filter((offer) => offer.type === 'recovery' || offer.type === 'tracking')
+          .map((offer) => offer.id);
+        if (prerequisiteIds.length === 0) {
+          continue;
+        }
+        revengeStates = getTownNpcQuestStates(
+          x,
+          y,
+          DEFAULT_DAY_LENGTH_MS * (minute / (24 * 60)),
+          {
+            level: 6,
+            profession: 'guard',
+            completedQuestIds: prerequisiteIds,
+          }
+        );
+        if (
+          revengeStates.some((entry) =>
+            entry.offers.some((offer) => offer.type === 'revenge')
+          )
+        ) {
+          break outerRevenge;
+        }
+      }
+    }
+
+    expect(
+      rescueStates.some((entry) =>
+        entry.offers.some((offer) => offer.type === 'rescue')
+      )
+    ).toBe(true);
+    expect(
+      revengeStates.some((entry) =>
+        entry.offers.some((offer) => offer.type === 'revenge')
+      )
+    ).toBe(true);
+  });
+
   it('surfaces crafting and training quest offers from matching town professions', () => {
     const crafting = getTownNpcQuestStates(3, 7, DEFAULT_DAY_LENGTH_MS * 0.5, {
       level: 5,

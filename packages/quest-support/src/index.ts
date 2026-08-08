@@ -75,6 +75,7 @@ export function getDefaultQuestPlugins(): QuestTypePlugin[] {
     createDeliveryQuestPlugin(),
     createHomeNeedQuestPlugin(),
     createEscortQuestPlugin(),
+    createRescueQuestPlugin(),
     createTrackingQuestPlugin(),
     createExplorationQuestPlugin(),
     createPuzzleQuestPlugin(),
@@ -87,6 +88,7 @@ export function getDefaultQuestPlugins(): QuestTypePlugin[] {
     createConstructionQuestPlugin(),
     createActivationQuestPlugin(),
     createDestructionQuestPlugin(),
+    createRevengeQuestPlugin(),
     createFetchQuestPlugin(),
     createRecoveryQuestPlugin(),
     createCraftingQuestPlugin(),
@@ -212,6 +214,51 @@ function createEscortQuestPlugin(): QuestTypePlugin {
       title: 'Safe Passage',
       summary: `${context.npcName} wants an escort ${destination} through town traffic.${professionHint}`,
       availability: 'travel',
+      sourceNpcId: context.npcId,
+      sourceNpcName: context.npcName,
+    };
+  });
+}
+
+function createRescueQuestPlugin(): QuestTypePlugin {
+  return createQuestTypePlugin('rescue', (context) => {
+    if (
+      context.playerLevel < 3 ||
+      !(
+        context.npcState === 'working' ||
+        context.npcState === 'commuting-home'
+      ) ||
+      !(
+        context.professionFamily === 'temple' ||
+        context.professionFamily === 'stable' ||
+        context.professionFamily === 'town-hall'
+      )
+    ) {
+      return null;
+    }
+
+    const rescueTarget =
+      context.professionFamily === 'temple'
+        ? 'bring back a missing pilgrim before the lanterns go cold'
+        : context.professionFamily === 'stable'
+          ? 'find and return an injured trail mare'
+          : 'locate a stranded survey hand and guide them back safely';
+    const questId = `${context.townKey}:${context.npcId}:rescue:${context.professionFamily}:${context.npcState}`;
+    if (context.completedQuestIds.has(questId)) {
+      return null;
+    }
+
+    const professionHint =
+      context.playerProfession === 'guard' || context.playerProfession === 'healer'
+        ? ' Your calm rescue work makes you the best choice.'
+        : '';
+
+    return {
+      id: questId,
+      type: 'rescue',
+      title: 'Bring Them Home',
+      summary: `${context.npcName} needs someone to ${rescueTarget}.${professionHint}`,
+      availability: context.npcState === 'working' ? 'work' : 'travel',
       sourceNpcId: context.npcId,
       sourceNpcName: context.npcName,
     };
@@ -723,6 +770,58 @@ function createDestructionQuestPlugin(): QuestTypePlugin {
       type: 'destruction',
       title: 'Controlled Demolition',
       summary: `${context.npcName} needs help to ${target}.${professionHint}`,
+      availability: 'work',
+      sourceNpcId: context.npcId,
+      sourceNpcName: context.npcName,
+    };
+  });
+}
+
+function createRevengeQuestPlugin(): QuestTypePlugin {
+  return createQuestTypePlugin('revenge', (context) => {
+    if (
+      context.playerLevel < 5 ||
+      context.npcState !== 'working' ||
+      !(
+        context.professionFamily === 'market' ||
+        context.professionFamily === 'town-hall' ||
+        context.professionFamily === 'stable'
+      )
+    ) {
+      return null;
+    }
+
+    const prerequisiteId =
+      context.professionFamily === 'market'
+        ? `${context.townKey}:${context.npcId}:recovery:trade-parcel`
+        : context.professionFamily === 'town-hall'
+          ? `${context.townKey}:${context.npcId}:recovery:survey-ledger`
+          : `${context.townKey}:${context.npcId}:tracking:a missing trail horse:working`;
+    if (!context.completedQuestIds.has(prerequisiteId)) {
+      return null;
+    }
+
+    const questId = `${context.townKey}:${context.npcId}:revenge:${context.professionFamily}`;
+    if (context.completedQuestIds.has(questId)) {
+      return null;
+    }
+
+    const grievance =
+      context.professionFamily === 'town-hall'
+        ? 'pursue the saboteur who endangered the town survey crew'
+        : context.professionFamily === 'stable'
+          ? 'track down the handler who abandoned the missing horse'
+          : 'confront the broker who set the theft in motion';
+    const professionHint =
+      context.playerProfession === 'guard' || context.playerProfession === 'scout'
+        ? ' Your sense for pursuit should help settle the score lawfully.'
+        : '';
+
+    return {
+      id: questId,
+      type: 'revenge',
+      title: 'Settle the Wrong',
+      summary: `${context.npcName} asks you to ${grievance}.${professionHint}`,
       availability: 'work',
       sourceNpcId: context.npcId,
       sourceNpcName: context.npcName,

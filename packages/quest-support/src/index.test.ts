@@ -9,6 +9,7 @@ describe('quest support', () => {
       'delivery',
       'collection',
       'escort',
+      'rescue',
       'tracking',
       'exploration',
       'puzzle',
@@ -21,6 +22,7 @@ describe('quest support', () => {
       'construction',
       'activation',
       'destruction',
+      'revenge',
       'fetch',
       'recovery',
       'crafting',
@@ -82,6 +84,44 @@ describe('quest support', () => {
     expect(homeOffers.some((offer) => offer.type === 'collection')).toBe(true);
     expect(homeOffers.some((offer) => offer.title.includes('Winter'))).toBe(true);
     expect(commuteOffers.some((offer) => offer.type === 'escort')).toBe(true);
+  });
+
+  it('offers rescue quests for staffed civic, temple, and stable roles', () => {
+    const rescue = getDefaultQuestRegistry().getOffers({
+      npcId: 'npc:healer',
+      npcName: 'Elise Harrow',
+      townKey: '3:7',
+      dayProgress: 0.73,
+      yearProgress: 0.61,
+      playerLevel: 4,
+      playerProfession: 'healer',
+      completedQuestIds: new Set<string>(),
+      npcState: 'working',
+      profession: 'healer',
+      professionFamily: 'temple',
+      residenceBuildingId: 'home',
+      workplaceBuildingId: 'temple',
+    });
+    const underleveled = getDefaultQuestRegistry().getOffers({
+      npcId: 'npc:healer',
+      npcName: 'Elise Harrow',
+      townKey: '3:7',
+      dayProgress: 0.73,
+      yearProgress: 0.61,
+      playerLevel: 1,
+      completedQuestIds: new Set<string>(),
+      npcState: 'working',
+      profession: 'healer',
+      professionFamily: 'temple',
+      residenceBuildingId: 'home',
+      workplaceBuildingId: 'temple',
+    });
+
+    expect(rescue.some((offer) => offer.type === 'rescue')).toBe(true);
+    expect(
+      rescue.some((offer) => offer.summary.includes('calm rescue work'))
+    ).toBe(true);
+    expect(underleveled.some((offer) => offer.type === 'rescue')).toBe(false);
   });
 
   it('unlocks follow-up investigation quests from prior completions', () => {
@@ -472,6 +512,44 @@ describe('quest support', () => {
       destruction.some((offer) => offer.summary.includes('force and equipment'))
     ).toBe(true);
     expect(underleveled.some((offer) => offer.type === 'destruction')).toBe(false);
+  });
+
+  it('offers revenge quests after related recovery or tracking work is completed', () => {
+    const revenge = getDefaultQuestRegistry().getOffers({
+      npcId: 'npc:merchant',
+      npcName: 'Nora Morrow',
+      townKey: '3:7',
+      dayProgress: 0.5,
+      yearProgress: 0.37,
+      playerLevel: 6,
+      playerProfession: 'guard',
+      completedQuestIds: new Set<string>(['3:7:npc:merchant:recovery:trade-parcel']),
+      npcState: 'working',
+      profession: 'merchant',
+      professionFamily: 'market',
+      residenceBuildingId: 'home',
+      workplaceBuildingId: 'market',
+    });
+    const locked = getDefaultQuestRegistry().getOffers({
+      npcId: 'npc:merchant',
+      npcName: 'Nora Morrow',
+      townKey: '3:7',
+      dayProgress: 0.5,
+      yearProgress: 0.37,
+      playerLevel: 6,
+      completedQuestIds: new Set<string>(),
+      npcState: 'working',
+      profession: 'merchant',
+      professionFamily: 'market',
+      residenceBuildingId: 'home',
+      workplaceBuildingId: 'market',
+    });
+
+    expect(revenge.some((offer) => offer.type === 'revenge')).toBe(true);
+    expect(
+      revenge.some((offer) => offer.summary.includes('settle the score lawfully'))
+    ).toBe(true);
+    expect(locked.some((offer) => offer.type === 'revenge')).toBe(false);
   });
 
   it('offers challenge quests for local contests and trials', () => {

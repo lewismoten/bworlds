@@ -7,7 +7,7 @@ Quests may include:
 - [ ] Kill quest — defeat a certain enemy, boss, or number of enemies.
 - [X] Escort quest — protect an NPC while traveling somewhere.
 - [X] Delivery quest — carry an item or message to another person or place.
-- [ ] Rescue quest — find and save an NPC, prisoner, animal, etc.
+- [X] Rescue quest — find and save an NPC, prisoner, animal, etc.
 - [X] Search / investigation quest — gather clues, inspect locations, question NPCs, solve a mystery.
 - [X] Exploration quest — discover a location, map an area, reach a landmark, or uncover hidden places.
 - [X] Collection quest — gather several items, ingredients, artifacts, or resources.
@@ -24,7 +24,7 @@ Quests may include:
 - [X] Choice / moral quest — make a decision that changes relationships, rewards, factions, or story outcomes.
 - [X] Faction quest — perform work to gain reputation or advance within an organization.
 - [ ] Companion quest — resolve a party member's personal storyline.
-- [ ] Revenge quest — pursue someone responsible for an earlier event.
+- [X] Revenge quest — pursue someone responsible for an earlier event.
 - [X] Recovery quest — reclaim stolen property, territory, equipment, or something lost.
 - [X] Activation quest — turn on generators, shrines, portals, towers, switches, etc.
 - [X] Destruction / sabotage quest — destroy an object, structure, supply line, machine, or enemy resource.
