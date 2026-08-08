@@ -4,7 +4,8 @@
   "type": "module",
   "dependencies": {
     "@bworlds/map-support": "0.1.0",
-    "@bworlds/plugin-api": "0.1.0"
+    "@bworlds/plugin-api": "0.1.0",
+    "@bworlds/town-support": "0.1.0"
   },
   "exports": {
     ".": "./src/index.ts"

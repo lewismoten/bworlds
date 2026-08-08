@@ -11,6 +11,7 @@ import {
   createRegionalMaterialResolver,
   pickThresholdColor,
 } from '@bworlds/procedural-style';
+import { getTownProfile } from '@bworlds/town-support';
 import {
   createPaintedCanvasTexture,
   createTexturedPlaneMesh,
@@ -39,8 +40,7 @@ const townDescriptorCache = new Map<string, TownDescriptor[]>();
 const resolveTownDescriptors = createCoordinateValueResolver(
   townDescriptorCache,
   ({ tileX, tileY }) => {
-    const complexity = hash2D('town-complexity', tileX, tileY);
-    const count = 3 + Math.floor(complexity * 4);
+    const count = getTownBuildingCount(tileX, tileY);
     const descriptors: TownDescriptor[] = [];
 
     for (let index = 0; index < count; index += 1) {
@@ -82,6 +82,10 @@ const resolveTownDescriptors = createCoordinateValueResolver(
     return descriptors;
   }
 );
+
+export function getTownBuildingCount(tileX: number, tileY: number): number {
+  return getTownProfile(tileX, tileY).buildingCount;
+}
 const resolveTownStyle = createRegionalMaterialResolver(
   townStyleCache,
   TOWN_REGION_SIZE,

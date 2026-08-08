@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { CreateMapContext } from '@bworlds/plugin-api';
+import { getTownBuildingPlots, getTownProfile } from '@bworlds/town-support';
 import {
   createTownMapPlugin,
   hasTownFence,
@@ -12,6 +13,8 @@ import {
   resolveTownTile,
 } from './index.ts';
 
+const TOWN_ORIGIN = { x: 10, y: -4 };
+
 function createTownMap() {
   const plugin = createTownMapPlugin();
   const map = plugin.createMap?.({
@@ -20,7 +23,7 @@ function createTownMap() {
       label: 'Town',
       type: 'town',
       depth: 1,
-      origin: { x: 10, y: -4 },
+      origin: TOWN_ORIGIN,
     },
     seed: 'spec',
     plugins: {
@@ -86,6 +89,12 @@ describe('map town', () => {
     expect(isTownFenceTile(1, 4)).toBe(true);
     expect(isTownFenceTile(2, 4)).toBe(false);
     expect(isTownMainRoad(0, 1)).toBe(true);
+    const buildingPlotRoles = new Map(
+      getTownBuildingPlots(TOWN_ORIGIN.x, TOWN_ORIGIN.y).map((plot) => [
+        `${plot.x}:${plot.y}`,
+        plot.role,
+      ])
+    );
     expect(
       resolveTownTile({
         contextId: 'town:test',
@@ -95,27 +104,66 @@ describe('map town', () => {
         localY: 17,
         centerX: 12,
         centerY: 12,
+        buildingPlotRoles,
       })
     ).toMatchObject({
       kind: 'shop',
-      building: { id: 'town:test:0:5' },
+      building: { id: 'town:test:0:5', role: 'professional' },
     });
   });
 
   it('adds fenced lots with an opening aligned to the building approach path', () => {
     const map = createTownMap();
+    const fencedPlot = getTownBuildingPlots(TOWN_ORIGIN.x, TOWN_ORIGIN.y).find((plot) =>
+      hasTownFence(plot.x, plot.y)
+    );
 
-    expect(map.getTile(2, 5)).toMatchObject({
+    if (!fencedPlot) {
+      throw new Error('Expected a fenced plot in the deterministic town layout.');
+    }
+
+    expect(map.getTile(fencedPlot.x, fencedPlot.y)).toMatchObject({
       kind: 'shop',
-      building: { id: 'town:test:2:5' },
+      building: { id: `town:test:${fencedPlot.x}:${fencedPlot.y}` },
     });
-    expect(map.getTile(1, 4).kind).toBe('wall');
-    expect(map.getTile(3, 4).kind).toBe('wall');
-    expect(map.getTile(2, 4).kind).toBe('road');
-    expect(map.getTile(1, 5).kind).toBe('wall');
-    expect(map.getTile(3, 5).kind).toBe('wall');
-    expect(map.getTile(1, 6).kind).toBe('wall');
-    expect(map.getTile(2, 6).kind).toBe('wall');
-    expect(map.getTile(3, 6).kind).toBe('wall');
+    const pathY = fencedPlot.y > 0 ? fencedPlot.y - 1 : fencedPlot.y + 1;
+    const backY = fencedPlot.y > 0 ? fencedPlot.y + 1 : fencedPlot.y - 1;
+
+    expect(map.getTile(fencedPlot.x - 1, pathY).kind).toBe('wall');
+    expect(map.getTile(fencedPlot.x + 1, pathY).kind).toBe('wall');
+    expect(map.getTile(fencedPlot.x, pathY).kind).toBe('road');
+    expect(map.getTile(fencedPlot.x - 1, fencedPlot.y).kind).toBe('wall');
+    expect(map.getTile(fencedPlot.x + 1, fencedPlot.y).kind).toBe('wall');
+    expect(map.getTile(fencedPlot.x - 1, backY).kind).toBe('wall');
+    expect(map.getTile(fencedPlot.x, backY).kind).toBe('wall');
+    expect(map.getTile(fencedPlot.x + 1, backY).kind).toBe('wall');
+  });
+
+  it('uses the shared town profile for level, population, and building mix', () => {
+    const map = createTownMap();
+    const profile = getTownProfile(TOWN_ORIGIN.x, TOWN_ORIGIN.y);
+    const plots = getTownBuildingPlots(TOWN_ORIGIN.x, TOWN_ORIGIN.y);
+    const buildingTiles: Array<{ role?: string }> = [];
+
+    for (let y = -12; y <= 12; y += 1) {
+      for (let x = -12; x <= 12; x += 1) {
+        const tile = map.getTile(x, y);
+        if (tile.building) {
+          const building = tile.building as { role?: string };
+          buildingTiles.push({ role: building.role });
+        }
+      }
+    }
+
+    expect(buildingTiles).toHaveLength(profile.buildingCount);
+    expect(
+      buildingTiles.filter((tile) => tile.role === 'professional')
+    ).toHaveLength(profile.professionalBuildings);
+    expect(
+      buildingTiles.filter((tile) => tile.role === 'residential')
+    ).toHaveLength(profile.residentialBuildings);
+    expect(map.getTile(0, 0).note).toContain(`Level ${profile.level}`);
+    expect(map.getTile(0, 0).note).toContain(String(profile.population));
+    expect(plots).toHaveLength(profile.buildingCount);
   });
 });

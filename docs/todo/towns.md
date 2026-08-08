@@ -1,4 +1,4 @@
-- [ ] Towns have levels that determine the population and number of residential and professional buildings.
+- [X] Towns have levels that determine the population and number of residential and professional buildings.
 - [X] All buildings in a town have roads that run past them.
 - [X] All buildings in a town have a sidewalk, path, etc. that lead to the road
 - [X] Some buildings have fences with an opening leading to the entrance

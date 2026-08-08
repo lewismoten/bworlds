@@ -38,6 +38,7 @@ vi.mock('@bworlds/three-support', () => ({
 
 import {
   createTownTilePlugin,
+  getTownBuildingCount,
   getTownNightLightCount,
   getTownNightLightDistance,
   getTownNightLightIntensity,
@@ -193,6 +194,12 @@ describe('tile town', () => {
     expect(
       lowModel.children.every((building) => building.children.length === 1)
     ).toBe(true);
+  });
+
+  it('uses the shared town profile to scale overworld building counts by town', () => {
+    expect(getTownBuildingCount(3, 7)).toBeGreaterThan(0);
+    expect(getTownBuildingCount(3, 7)).toBe(getTownBuildingCount(3, 7));
+    expect(getTownBuildingCount(3, 7)).not.toBe(getTownBuildingCount(18, -11));
   });
 
   it('activates town night lights after dark', () => {

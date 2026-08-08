@@ -7,6 +7,7 @@
     "@bworlds/poi-support": "0.1.0",
     "@bworlds/procedural-style": "0.1.0",
     "@bworlds/plugin-api": "0.1.0",
+    "@bworlds/town-support": "0.1.0",
     "@bworlds/tile-support": "0.1.0",
     "@bworlds/three-support": "0.1.0"
   },

@@ -5,6 +5,7 @@ import {
   createEnterMapAction,
   createExitMapAction,
 } from '@bworlds/map-support';
+import { getTownBuildingPlots, getTownProfile } from '@bworlds/town-support';
 import type {
   CreateMapContext,
   RuntimePlugin,
@@ -16,7 +17,7 @@ import type {
 type Point = { x: number; y: number };
 
 type TownTile = TileLike & {
-  building?: { id: string };
+  building?: { id: string; role?: string };
 };
 
 type TownContext = WorldContextLike & {
@@ -50,6 +51,13 @@ function createTownMap(
   const height = TOWN_HEIGHT;
   const cx = Math.floor(width / 2);
   const cy = Math.floor(height / 2);
+  const townProfile = getTownProfile(context.origin.x, context.origin.y);
+  const buildingPlotRoles = new Map(
+    getTownBuildingPlots(context.origin.x, context.origin.y).map((plot) => [
+      `${plot.x}:${plot.y}`,
+      plot.role,
+    ])
+  );
 
   const getTile = createDecoratedMapTileGetter<TownTile, TownContext>({
     context,
@@ -69,11 +77,12 @@ function createTownMap(
         localY,
         centerX: cx,
         centerY: cy,
+        buildingPlotRoles,
       });
       if (localX === cx && localY === cy) {
         tile = {
           kind: 'town',
-          note: 'Town square. Explore the buildings or leave at the gate.',
+          note: `Town square. Level ${townProfile.level} town, population ${townProfile.population}.`,
         };
       }
       if (localX === cx && localY === height - 2) {
@@ -117,6 +126,7 @@ export function resolveTownTile(options: {
   localY: number;
   centerX: number;
   centerY: number;
+  buildingPlotRoles?: Map<string, string>;
 }): TownTile {
   const offsetX = options.localX - options.centerX;
   const offsetY = options.localY - options.centerY;
@@ -127,10 +137,18 @@ export function resolveTownTile(options: {
     return { kind: 'forest' };
   }
 
-  if (isTownBuildingPlot(offsetX, offsetY)) {
+  const buildingRole = options.buildingPlotRoles?.get(`${offsetX}:${offsetY}`);
+  if (typeof buildingRole === 'string') {
     return {
       kind: 'shop',
-      building: { id: `${options.contextId}:${options.x}:${options.y}` },
+      building: {
+        id: `${options.contextId}:${options.x}:${options.y}`,
+        role: buildingRole,
+      },
+      note:
+        buildingRole === 'professional'
+          ? 'A professional town building stands near the square.'
+          : 'A residential home lines the town lane.',
     };
   }
 
