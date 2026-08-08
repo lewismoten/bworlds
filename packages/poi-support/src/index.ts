@@ -487,7 +487,7 @@ export function getNearestAccessibleRouteDistance(
       tileX + direction.dx * distance,
       tileY + direction.dy * distance
     );
-    if (tile.kind === 'road' || tile.kind === 'bridge') {
+    if (tile.kind === 'road' || tile.kind === 'bridge' || tile.kind === 'dock') {
       return distance;
     }
     if (!state.getTileDefinition(tile.kind).walkable) {

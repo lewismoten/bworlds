@@ -92,6 +92,92 @@ describe('tile route', () => {
     ).toBeNull();
   });
 
+  it('creates docks for coastal lighthouse approaches instead of bridges', () => {
+    expect(
+      classifier?.(
+        createRouteClassifierPayload({
+          x: 7,
+          y: 0,
+          tile: { kind: 'shore' },
+          signals: {
+            continent: 0.39,
+            elevation: 0.22,
+            moisture: 0.5,
+            riverSignal: 0.1,
+            roadSignal: 0.95,
+          },
+          sampleTerrainSignals(sampleX: number, sampleY: number) {
+            if (sampleX === 6 && sampleY === 0) {
+              return {
+                continent: 0.5,
+                elevation: 0.3,
+                moisture: 0.5,
+                riverSignal: 0.1,
+                roadSignal: 0.7,
+              };
+            }
+            if (sampleX >= 8) {
+              return {
+                continent: 0.2,
+                elevation: 0.1,
+                moisture: 0.6,
+                riverSignal: 0.1,
+                roadSignal: 0.2,
+              };
+            }
+            return {
+              continent: 0.44,
+              elevation: 0.2,
+              moisture: 0.5,
+              riverSignal: 0.1,
+              roadSignal: 0.2,
+            };
+          },
+          townAnchors: [],
+          bridgeAnchors: [],
+          poiAnchors: [{ x: 6, y: 0, type: 'lighthouse', name: 'Beacon Point' }],
+        })
+      )
+    ).toEqual(
+      expect.objectContaining({
+        kind: 'dock',
+      })
+    );
+  });
+
+  it('rejects coast-parallel ocean spans as bridges', () => {
+    expect(
+      classifier?.(
+        createRouteClassifierPayload({
+          x: 10,
+          y: 3,
+          tile: { kind: 'ocean' },
+          signals: {
+            continent: 0.2,
+            elevation: 0.1,
+            moisture: 0.6,
+            riverSignal: 0.1,
+            roadSignal: 0.96,
+          },
+          sampleTerrainSignals(sampleX: number, sampleY: number) {
+            const coastBand = sampleY === 2 || sampleY === 1;
+            return {
+              continent: coastBand ? 0.62 : 0.2,
+              elevation: 0.2,
+              moisture: 0.5,
+              riverSignal: 0.1,
+              roadSignal:
+                sampleY === 3 && sampleX >= 8 && sampleX <= 12 ? 0.97 : 0.2,
+            };
+          },
+          townAnchors: [],
+          bridgeAnchors: [],
+          poiAnchors: [],
+        })
+      )
+    ).toBeNull();
+  });
+
   it('resolves the 3D road floor kind from dominant neighboring terrain', () => {
     expect(resolver?.(createRouteFloorPayload())).toBe('plains');
   });

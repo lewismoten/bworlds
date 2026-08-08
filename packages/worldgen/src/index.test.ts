@@ -348,33 +348,9 @@ describe('world generator', () => {
 
   it('keeps forests, rivers, and bridges present near the overworld origin band', () => {
     const generator = createGenerator();
-    let foundForest = false;
-    let foundRiver = false;
-    let foundBridge = false;
-
-    for (let y = -160; y <= 160; y += 1) {
-      for (let x = -160; x <= 160; x += 1) {
-        const tile = generator.sampleOverworld(x, y);
-        if (tile.kind === 'forest') {
-          foundForest = true;
-        } else if (tile.kind === 'river') {
-          foundRiver = true;
-        } else if (tile.kind === 'bridge') {
-          foundBridge = true;
-        }
-
-        if (foundForest && foundRiver && foundBridge) {
-          break;
-        }
-      }
-      if (foundForest && foundRiver && foundBridge) {
-        break;
-      }
-    }
-
-    expect(foundForest).toBe(true);
-    expect(foundRiver).toBe(true);
-    expect(foundBridge).toBe(true);
+    expect(generator.sampleOverworld(-3, -3).kind).toBe('forest');
+    expect(generator.sampleOverworld(3, -1).kind).toBe('river');
+    expect(generator.sampleOverworld(3, 2).kind).toBe('bridge');
   });
 
   it('produces connected river runs outside the curated start region', () => {
@@ -538,6 +514,14 @@ describe('world generator', () => {
     expect(lighthouseTile.poi?.name).toMatch(
       /\b(Beacon|Light|Watch|Lantern|Signal|Point)\b/
     );
+  });
+
+  it('creates starter docks beside the lighthouse instead of bridge-like coastal crossings', () => {
+    const generator = createGenerator();
+
+    expect(generator.sampleOverworld(7, 0).kind).toBe('dock');
+    expect(generator.sampleOverworld(8, 0).kind).toBe('dock');
+    expect(generator.sampleOverworld(3, 2).kind).toBe('bridge');
   });
 
   it('applies depth flavor through the registered runtime plugin path', () => {

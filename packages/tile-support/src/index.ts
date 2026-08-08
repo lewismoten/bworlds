@@ -43,6 +43,7 @@ export const DEFAULT_WATER_OR_CROSSING_KINDS = new Set<
 >([
   ...DEFAULT_WATER_KINDS,
   'bridge',
+  'dock',
 ]);
 
 export function isRouteTerminalKind(

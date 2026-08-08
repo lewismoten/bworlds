@@ -44,6 +44,9 @@ const BRIDGE_DECK_THICKNESS = 0.08;
 const BRIDGE_RAIL_HEIGHT = 0.18;
 const ROAD_SURFACE_HEIGHT = 0.012;
 const ROAD_CORE_HEIGHT = 0.02;
+const COASTAL_LAND_CONTINENT_THRESHOLD = 0.42;
+const OCEAN_CONTINENT_THRESHOLD = 0.38;
+const MAX_DOCK_LENGTH = 3;
 type RoadStyleType = 'footpath' | 'cobble' | 'brick';
 type BridgeTextureType = 'wood' | 'stone' | 'metal' | 'drawbridge' | 'roof' | 'roof-stone';
 type BridgeTextureLayer = 'deck' | 'rail' | 'cover' | 'pillar';
@@ -145,7 +148,9 @@ export function createRouteTilePlugin(): RuntimePlugin {
               context.tile.note ??
               (connectedRoadKind === 'bridge'
                 ? 'A crossing links the nearby routes.'
-                : 'A road runs between nearby landmarks.'),
+                : connectedRoadKind === 'dock'
+                  ? 'A dock reaches out from the nearby coast.'
+                  : 'A road runs between nearby landmarks.'),
           };
         }
 
@@ -228,6 +233,44 @@ export function createRouteTilePlugin(): RuntimePlugin {
         return createBridgeGroup(three, state, tileX, tileY);
       },
     },
+    {
+      kind: 'dock',
+      definition: {
+        name: 'Dock',
+        color: '#8b5a2b',
+        miniColor: '#b97a3d',
+        walkable: true,
+        wallHeight: 0.08,
+      },
+      getTraversalProfile3D(): TraversalProfile3D {
+        return createRouteTraversalProfile();
+      },
+      getSurfaceProfile3D(): SurfaceProfile3D {
+        return createBoundarySurfaceProfile({
+          surfaceHeight: -0.12,
+          boundaryRole: 'crossing',
+          underlayKind: 'ocean',
+          boundaryTransition: {
+            maxChamferDrop: 0.08,
+            minBankHeight: 0,
+            bodyInset: 0.04,
+          },
+        });
+      },
+      paint2D({ context, x, y, motif, fillRect }: Paint2DContext) {
+        fillRect(context, x, y, TILE_PIXEL_SIZE, TILE_PIXEL_SIZE, '#2a78c8');
+        for (let plank = 1; plank < TILE_PIXEL_SIZE; plank += 3) {
+          fillRect(context, x + plank, y + 3, 2, 10, '#a86b2d');
+        }
+        const postOffset = motif.int(0, 1);
+        fillRect(context, x + 2 + postOffset, y + 2, 1, 12, '#6b3f15');
+        fillRect(context, x + 13 - postOffset, y + 2, 1, 12, '#6b3f15');
+        return true;
+      },
+      create3DModel({ three, state, tileX, tileY }: Create3DModelContext) {
+        return createDockGroup(three, state, tileX, tileY);
+      },
+    },
   ]);
 }
 
@@ -237,13 +280,36 @@ function classifyConnectedRoad({
   tile,
   townAnchors,
   bridgeAnchors,
+  poiAnchors,
+  sampleTerrainSignals,
+  signals,
 }: ClassifyOverworldTileContext) {
   const baseKind = tile.kind;
   if (baseKind === 'mountain' || isRouteTerminalKind(baseKind)) {
     return null;
   }
+  const dockKind = classifyPoiDock({
+    x,
+    y,
+    tile,
+    poiAnchors,
+    sampleTerrainSignals,
+  });
+  if (dockKind) {
+    return dockKind;
+  }
   if (hasConnectedRoutePath({ x, y, townAnchors, bridgeAnchors })) {
-    return isBridgeWaterKind(baseKind) ? 'bridge' : 'road';
+    if (isBridgeWaterKind(baseKind)) {
+      return canClassifyBridgeWaterTile({
+        x,
+        y,
+        signals,
+        sampleTerrainSignals,
+      })
+        ? 'bridge'
+        : null;
+    }
+    return 'road';
   }
 
   return null;
@@ -281,21 +347,160 @@ function classifyNoiseRoad({
   }
 
   if (isBridgeWaterKind(tileKind)) {
-    const north = sampleTerrainSignals(x, y - 1).roadSignal;
-    const east = sampleTerrainSignals(x + 1, y).roadSignal;
-    const south = sampleTerrainSignals(x, y + 1).roadSignal;
-    const west = sampleTerrainSignals(x - 1, y).roadSignal;
-    const horizontalRidge =
-      roadSignal >= north && roadSignal >= south && roadSignal > 0.91;
-    const verticalRidge =
-      roadSignal >= east && roadSignal >= west && roadSignal > 0.91;
-    if (horizontalRidge && verticalRidge) {
-      return null;
-    }
-    return 'bridge';
+    return canClassifyBridgeWaterTile({
+      x,
+      y,
+      signals,
+      sampleTerrainSignals,
+    })
+      ? 'bridge'
+      : null;
   }
 
   return 'road';
+}
+
+function classifyPoiDock({
+  x,
+  y,
+  tile,
+  poiAnchors,
+  sampleTerrainSignals,
+}: Pick<
+  ClassifyOverworldTileContext,
+  'x' | 'y' | 'tile' | 'poiAnchors' | 'sampleTerrainSignals'
+>) {
+  if (!sampleTerrainSignals) {
+    return null;
+  }
+  if (tile.kind !== 'shore' && tile.kind !== 'ocean') {
+    return null;
+  }
+
+  const anchors = (poiAnchors ?? []).filter(
+    (anchor) => anchor.type === 'lighthouse' || anchor.type === 'town'
+  );
+  for (const anchor of anchors) {
+    for (const direction of [
+      { dx: 1, dy: 0 },
+      { dx: -1, dy: 0 },
+      { dx: 0, dy: 1 },
+      { dx: 0, dy: -1 },
+    ]) {
+      const landBehind = sampleTerrainSignals(
+        anchor.x - direction.dx,
+        anchor.y - direction.dy
+      ).continent;
+      if (landBehind < COASTAL_LAND_CONTINENT_THRESHOLD) {
+        continue;
+      }
+
+      const segments: Array<{ x: number; y: number }> = [];
+      let oceanSeen = false;
+      for (let step = 1; step <= MAX_DOCK_LENGTH; step += 1) {
+        const segmentX = anchor.x + direction.dx * step;
+        const segmentY = anchor.y + direction.dy * step;
+        const continent = sampleTerrainSignals(segmentX, segmentY).continent;
+        if (continent > 0.46) {
+          break;
+        }
+        if (continent <= OCEAN_CONTINENT_THRESHOLD) {
+          oceanSeen = true;
+        }
+        segments.push({ x: segmentX, y: segmentY });
+      }
+
+      if (
+        oceanSeen &&
+        segments.some((segment) => segment.x === x && segment.y === y)
+      ) {
+        return 'dock';
+      }
+    }
+  }
+
+  return null;
+}
+
+function canClassifyBridgeWaterTile({
+  x,
+  y,
+  signals,
+  sampleTerrainSignals,
+}: Pick<
+  ClassifyOverworldTileContext,
+  'x' | 'y' | 'signals' | 'sampleTerrainSignals'
+>) {
+  if (!sampleTerrainSignals) {
+    return false;
+  }
+  const roadSignal = signals.roadSignal;
+  const north = sampleTerrainSignals(x, y - 1).roadSignal;
+  const east = sampleTerrainSignals(x + 1, y).roadSignal;
+  const south = sampleTerrainSignals(x, y + 1).roadSignal;
+  const west = sampleTerrainSignals(x - 1, y).roadSignal;
+  const horizontalRidge =
+    roadSignal >= north && roadSignal >= south && roadSignal > 0.91;
+  const verticalRidge =
+    roadSignal >= east && roadSignal >= west && roadSignal > 0.91;
+  if (horizontalRidge === verticalRidge) {
+    return false;
+  }
+
+  const axis: 'ew' | 'ns' = horizontalRidge ? 'ew' : 'ns';
+  return !hasParallelLandWithinBridgeSpan(x, y, axis, sampleTerrainSignals);
+}
+
+function hasParallelLandWithinBridgeSpan(
+  x: number,
+  y: number,
+  axis: 'ew' | 'ns',
+  sampleTerrainSignals: NonNullable<ClassifyOverworldTileContext['sampleTerrainSignals']>
+) {
+  const along =
+    axis === 'ew'
+      ? [
+          { dx: -2, dy: 0 },
+          { dx: -1, dy: 0 },
+          { dx: 0, dy: 0 },
+          { dx: 1, dy: 0 },
+          { dx: 2, dy: 0 },
+        ]
+      : [
+          { dx: 0, dy: -2 },
+          { dx: 0, dy: -1 },
+          { dx: 0, dy: 0 },
+          { dx: 0, dy: 1 },
+          { dx: 0, dy: 2 },
+        ];
+  const sideOffsets =
+    axis === 'ew'
+      ? [
+          { dx: 0, dy: -1 },
+          { dx: 0, dy: 1 },
+          { dx: 0, dy: -2 },
+          { dx: 0, dy: 2 },
+        ]
+      : [
+          { dx: -1, dy: 0 },
+          { dx: 1, dy: 0 },
+          { dx: -2, dy: 0 },
+          { dx: 2, dy: 0 },
+        ];
+
+  return sideOffsets.some((side) => {
+    let count = 0;
+    for (const offset of along) {
+      const continent = sampleTerrainSignals(
+        x + offset.dx + side.dx,
+        y + offset.dy + side.dy
+      ).continent;
+      if (continent >= COASTAL_LAND_CONTINENT_THRESHOLD) {
+        count += 1;
+      }
+    }
+    return count >= 5;
+  });
 }
 
 function createRoadGroup(
@@ -499,7 +704,12 @@ function getRoadConnections(
 }
 
 function isRoadNetworkKind(kind: Kind): boolean {
-  return kind === 'road' || kind === 'bridge' || isRouteTerminalKind(kind);
+  return (
+    kind === 'road' ||
+    kind === 'bridge' ||
+    kind === 'dock' ||
+    isRouteTerminalKind(kind)
+  );
 }
 
 function createRoadCurve(
@@ -750,6 +960,77 @@ function createBridgeGroup(
   return group;
 }
 
+function createDockGroup(
+  three: ThreeHostLike,
+  state: WorldStateLike,
+  tileX: number,
+  tileY: number
+) {
+  const axis = getDockAxis(state, tileX, tileY) ?? 'ew';
+  const alongX = axis === 'ew';
+  const group = new three.Group();
+  group.position.set(tileX, 0, tileY);
+
+  const deckMaterial = new three.MeshStandardMaterial({
+    color: '#8b5a2b',
+    roughness: 0.92,
+    metalness: 0.02,
+  });
+  const railMaterial = new three.MeshStandardMaterial({
+    color: '#6b3f15',
+    roughness: 0.88,
+    metalness: 0.02,
+  });
+  const pileMaterial = new three.MeshStandardMaterial({
+    color: '#5a3416',
+    roughness: 0.94,
+    metalness: 0.02,
+  });
+
+  const deck = new three.Mesh(
+    new three.BoxGeometry(alongX ? 1.02 : 0.64, 0.07, alongX ? 0.64 : 1.02),
+    deckMaterial
+  );
+  deck.position.y = -0.035;
+  group.add(deck);
+
+  for (const side of [-1, 1]) {
+    const rail = new three.Mesh(
+      new three.BoxGeometry(alongX ? 1.04 : 0.04, 0.04, alongX ? 0.04 : 1.04),
+      railMaterial
+    );
+    if (alongX) {
+      rail.position.set(0, 0.08, side * 0.24);
+    } else {
+      rail.position.set(side * 0.24, 0.08, 0);
+    }
+    group.add(rail);
+  }
+
+  for (const [xOffset, zOffset] of alongX
+    ? [
+        [-0.36, -0.22],
+        [0.36, -0.22],
+        [-0.36, 0.22],
+        [0.36, 0.22],
+      ]
+    : [
+        [-0.22, -0.36],
+        [-0.22, 0.36],
+        [0.22, -0.36],
+        [0.22, 0.36],
+      ]) {
+    const pile = new three.Mesh(
+      new three.BoxGeometry(0.06, 0.2, 0.06),
+      pileMaterial
+    );
+    pile.position.set(xOffset, -0.03, zOffset);
+    group.add(pile);
+  }
+
+  return group;
+}
+
 function getBridgeAxis(
   state: WorldStateLike,
   tileX: number,
@@ -770,7 +1051,35 @@ function getBridgeAxis(
 }
 
 function isBridgeTravelKind(kind: Kind): boolean {
-  return kind === 'bridge' || kind === 'road' || isRouteTerminalKind(kind);
+  return (
+    kind === 'bridge' ||
+    kind === 'dock' ||
+    kind === 'road' ||
+    isRouteTerminalKind(kind)
+  );
+}
+
+function getDockAxis(
+  state: WorldStateLike,
+  tileX: number,
+  tileY: number
+): 'ew' | 'ns' | null {
+  const west = isDockTravelKind(state.getCurrentTile(tileX - 1, tileY).kind);
+  const east = isDockTravelKind(state.getCurrentTile(tileX + 1, tileY).kind);
+  const north = isDockTravelKind(state.getCurrentTile(tileX, tileY - 1).kind);
+  const south = isDockTravelKind(state.getCurrentTile(tileX, tileY + 1).kind);
+
+  if ((west || east) && !(north || south)) {
+    return 'ew';
+  }
+  if ((north || south) && !(west || east)) {
+    return 'ns';
+  }
+  return null;
+}
+
+function isDockTravelKind(kind: Kind): boolean {
+  return kind === 'dock' || kind === 'road' || isRouteTerminalKind(kind);
 }
 
 function addBridgeParapets(

@@ -735,7 +735,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     if (profile.underlayKind && isWaterKind(profile.underlayKind)) {
       return false;
     }
-    if (neighborTile.kind === 'bridge') {
+    if (neighborTile.kind === 'bridge' || neighborTile.kind === 'dock') {
       return false;
     }
     if (kind === 'ocean') {

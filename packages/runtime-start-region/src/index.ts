@@ -56,8 +56,8 @@ const curatedSpawnTiles = new Map<string, TileLike>([
       note: 'A lighthouse watches over the nearby shoals.',
     },
   ],
-  ['7,0', { kind: 'shore', note: 'The grass gives way to a sandy shoreline.' }],
-  ['8,0', { kind: 'ocean', note: 'Open water stretches beyond the shore.' }],
+  ['7,0', { kind: 'dock', note: 'The dock begins at the coastal stones below the light.' }],
+  ['8,0', { kind: 'dock', note: 'The dock stretches out above the rolling tide.' }],
   ['7,1', { kind: 'shore', note: 'Foamy surf washes onto the coast.' }],
   ['8,1', { kind: 'ocean', note: 'The sea rolls just beyond the beach.' }],
 ]);

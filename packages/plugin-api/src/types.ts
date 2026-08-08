@@ -1,5 +1,5 @@
 export type WaterTileKind = 'ocean' | 'river';
-export type CrossingTileKind = 'bridge';
+export type CrossingTileKind = 'bridge' | 'dock';
 export type RouteTerminalTileKind =
   | 'sign'
   | 'town'

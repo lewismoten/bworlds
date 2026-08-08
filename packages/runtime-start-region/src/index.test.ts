@@ -8,7 +8,8 @@ type StarterTerrainTileKind =
   | 'river'
   | 'bridge'
   | 'town'
-  | 'lighthouse';
+  | 'lighthouse'
+  | 'dock';
 
 const plugin = createStartRegionRuntimePlugin();
 type ResolveOverworldTilePayload = Parameters<
@@ -59,6 +60,8 @@ describe('runtime start region', () => {
       { x: 4, y: 4, kind: 'river' },
       { x: 5, y: 5, kind: 'river' },
       { x: 6, y: 0, kind: 'lighthouse' },
+      { x: 7, y: 0, kind: 'dock' },
+      { x: 8, y: 0, kind: 'dock' },
     ];
 
     for (const sample of samples) {
