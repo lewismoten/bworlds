@@ -17,6 +17,41 @@ import {
 } from './celestial-preview.ts';
 import { DEFAULT_DAY_LENGTH_MS, getDaylightCycleState } from '@bworlds/core';
 
+type PreviewLightingCycleLike = Parameters<typeof getPreviewLightingProfile>[0];
+type PreviewShadowCycleLike = Parameters<typeof getPreviewShadowProfile>[0];
+type PreviewSceneCycleLike = Parameters<typeof getCelestialPreviewSceneSignatures>[0];
+
+function makePreviewLightingCycle(
+  overrides: Partial<PreviewLightingCycleLike>
+): PreviewLightingCycleLike {
+  return {
+    daylight: 0,
+    night: 0,
+    starsOpacity: 0,
+    ...overrides,
+  };
+}
+
+function makePreviewShadowCycle(
+  overrides: Partial<PreviewShadowCycleLike>
+): PreviewShadowCycleLike {
+  return {
+    daylight: 0,
+    sunAltitude: 0,
+    ...overrides,
+  };
+}
+
+function clonePreviewSceneCycle(
+  cycle: PreviewSceneCycleLike,
+  overrides: Partial<PreviewSceneCycleLike>
+): PreviewSceneCycleLike {
+  return {
+    ...cycle,
+    ...overrides,
+  };
+}
+
 describe('celestial preview helpers', () => {
   it('maps known overworld kinds to stable planet surface colors', () => {
     expect(getPlanetSurfaceColor('water')).toBe('#1a3d68');
@@ -82,16 +117,16 @@ describe('celestial preview helpers', () => {
   });
 
   it('keeps the preview planet readable at night while still brightening in daylight', () => {
-    const noon = getPreviewLightingProfile({
+    const noon = getPreviewLightingProfile(makePreviewLightingCycle({
       daylight: 1,
       night: 0,
       starsOpacity: 0,
-    } as any);
-    const midnight = getPreviewLightingProfile({
+    }));
+    const midnight = getPreviewLightingProfile(makePreviewLightingCycle({
       daylight: 0,
       night: 1,
       starsOpacity: 1,
-    } as any);
+    }));
 
     expect(noon.sunIntensity).toBeGreaterThan(midnight.sunIntensity);
     expect(midnight.ambientIntensity).toBeGreaterThan(1);
@@ -105,14 +140,14 @@ describe('celestial preview helpers', () => {
   });
 
   it('keeps preview shadows active when the sun is above or near the horizon', () => {
-    const daylightShadow = getPreviewShadowProfile({
+    const daylightShadow = getPreviewShadowProfile(makePreviewShadowCycle({
       daylight: 0.4,
       sunAltitude: 0.2,
-    } as any);
-    const nightShadow = getPreviewShadowProfile({
+    }));
+    const nightShadow = getPreviewShadowProfile(makePreviewShadowCycle({
       daylight: 0,
       sunAltitude: -0.2,
-    } as any);
+    }));
 
     expect(daylightShadow.sunCastShadow).toBe(true);
     expect(daylightShadow.cameraExtent).toBeGreaterThanOrEqual(13);
@@ -124,16 +159,16 @@ describe('celestial preview helpers', () => {
   });
 
   it('keeps the preview planet dark side readable without flattening day-side contrast', () => {
-    const noon = getPreviewPlanetLightBalance({
+    const noon = getPreviewPlanetLightBalance(makePreviewLightingCycle({
       daylight: 1,
       night: 0,
       starsOpacity: 0,
-    } as any);
-    const midnight = getPreviewPlanetLightBalance({
+    }));
+    const midnight = getPreviewPlanetLightBalance(makePreviewLightingCycle({
       daylight: 0,
       night: 1,
       starsOpacity: 1,
-    } as any);
+    }));
 
     expect(midnight.darkSideLight).toBeGreaterThan(1.8);
     expect(noon.daySideLight).toBeGreaterThan(midnight.daySideLight);
@@ -204,7 +239,7 @@ describe('celestial preview helpers', () => {
     const cycle = getDaylightCycleState(120000, {
       observerLatitudeDegrees: 24,
     });
-    const nearCycle = {
+    const nearCycle = clonePreviewSceneCycle(cycle, {
       ...cycle,
       yearProgress: cycle.yearProgress + 0.0002,
       visibleEvents: (cycle.visibleEvents ?? []).map((event) => ({
@@ -215,17 +250,17 @@ describe('celestial preview helpers', () => {
         ...band,
         wavePhase: band.wavePhase + 0.01,
       })),
-    } as any;
-    const farCycle = {
+    });
+    const farCycle = clonePreviewSceneCycle(cycle, {
       ...cycle,
       yearProgress: cycle.yearProgress + 0.04,
-    } as any;
+    });
 
     expect(getCelestialPreviewSceneSignatures(nearCycle)).toEqual(
-      getCelestialPreviewSceneSignatures(cycle as any)
+      getCelestialPreviewSceneSignatures(cycle)
     );
     expect(getCelestialPreviewSceneSignatures(farCycle).constellations).not.toBe(
-      getCelestialPreviewSceneSignatures(cycle as any).constellations
+      getCelestialPreviewSceneSignatures(cycle).constellations
     );
   });
 });

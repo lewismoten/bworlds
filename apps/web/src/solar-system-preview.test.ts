@@ -6,6 +6,23 @@ import {
   getSolarSystemSceneSignatures,
 } from './solar-system-preview.ts';
 
+type SolarSystemSceneCycleLike = Parameters<typeof getSolarSystemSceneSignatures>[0];
+type SolarSystemEventCycleLike = Parameters<typeof getSolarSystemEventMarkerStates>[0];
+
+function cloneSolarSystemCycle(
+  cycle: SolarSystemSceneCycleLike,
+  overrides: Partial<SolarSystemSceneCycleLike>
+): SolarSystemSceneCycleLike {
+  return {
+    ...cycle,
+    ...overrides,
+  };
+}
+
+function asSolarSystemEventCycle(cycle: SolarSystemSceneCycleLike): SolarSystemEventCycleLike {
+  return cycle;
+}
+
 describe('solar system preview helpers', () => {
   it('maps orrery bodies into stable preview positions', () => {
     const cycle = getDaylightCycleState(210000, {
@@ -72,7 +89,7 @@ describe('solar system preview helpers', () => {
       ],
     };
 
-    const markers = getSolarSystemEventMarkerStates(cycle as any);
+    const markers = getSolarSystemEventMarkerStates(asSolarSystemEventCycle(cycle));
 
     expect(markers.map((marker) => marker.type)).toEqual([
       'aurora',
@@ -87,26 +104,26 @@ describe('solar system preview helpers', () => {
     const cycle = getDaylightCycleState(210000, {
       observerLatitudeDegrees: 24,
     });
-    const nearCycle = {
+    const nearCycle = cloneSolarSystemCycle(cycle, {
       ...cycle,
       starsOpacity: Math.min(1, cycle.starsOpacity + 0.004),
       orreryBodies: cycle.orreryBodies.map((body) => ({
         ...body,
         angle: body.angle + 0.0004,
       })),
-    } as any;
-    const farCycle = {
+    });
+    const farCycle = cloneSolarSystemCycle(cycle, {
       ...cycle,
       orreryBodies: cycle.orreryBodies.map((body, index) =>
         index === 0 ? { ...body, angle: body.angle + 0.08 } : body
       ),
-    } as any;
+    });
 
     expect(getSolarSystemSceneSignatures(nearCycle)).toEqual(
-      getSolarSystemSceneSignatures(cycle as any)
+      getSolarSystemSceneSignatures(cycle)
     );
     expect(getSolarSystemSceneSignatures(farCycle).bodies).not.toBe(
-      getSolarSystemSceneSignatures(cycle as any).bodies
+      getSolarSystemSceneSignatures(cycle).bodies
     );
   });
 });
