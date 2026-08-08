@@ -10,7 +10,7 @@ import {
   resolveDominantNeighborFloorKind3D,
   withTerrainTileClassifier,
 } from './index.ts';
-import type { TilePlugin } from '@bworlds/plugin-api';
+import type { ResolveFloorKind3DContext, TilePlugin } from '@bworlds/plugin-api';
 
 describe('tile support', () => {
   it('creates a default route traversal profile', () => {
@@ -220,29 +220,43 @@ describe('tile support', () => {
   });
 
   it('resolves the dominant neighboring floor kind for 3D tile overlays', () => {
+    const payload: ResolveFloorKind3DContext = {
+      tile: { kind: 'road' },
+      tileX: 0,
+      tileY: 0,
+      state: {
+        player: { x: 0, y: 0, facing: 0 },
+        getCurrentContext() {
+          return { id: 'overworld', type: 'overworld', depth: 0 };
+        },
+        getCurrentTile(x: number, y: number) {
+          const key = `${x}:${y}`;
+          const kinds: Record<string, string> = {
+            '-1:-1': 'plains',
+            '0:-1': 'plains',
+            '1:-1': 'forest',
+            '-1:0': 'plains',
+            '1:0': 'road',
+            '-1:1': 'forest',
+            '0:1': 'plains',
+            '1:1': 'river',
+          };
+          return { kind: kinds[key] ?? 'road' };
+        },
+        getTileDefinition(kind: string) {
+          return {
+            name: kind,
+            color: '#000000',
+            miniColor: '#111111',
+            walkable: true,
+            wallHeight: 0,
+          };
+        },
+      },
+    };
     expect(
       resolveDominantNeighborFloorKind3D(
-        {
-          tile: { kind: 'road' },
-          tileX: 0,
-          tileY: 0,
-          state: {
-            getCurrentTile(x: number, y: number) {
-              const key = `${x}:${y}`;
-              const kinds: Record<string, string> = {
-                '-1:-1': 'plains',
-                '0:-1': 'plains',
-                '1:-1': 'forest',
-                '-1:0': 'plains',
-                '1:0': 'road',
-                '-1:1': 'forest',
-                '0:1': 'plains',
-                '1:1': 'river',
-              };
-              return { kind: kinds[key] ?? 'road' };
-            },
-          } as any,
-        },
+        payload,
         {
           isExcludedKind(kind) {
             return kind === 'road' || kind === 'river';

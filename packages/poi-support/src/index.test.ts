@@ -14,6 +14,30 @@ import {
   pickPreferredLandmarkFacing,
   resolvePlacementChance,
 } from './index.ts';
+import type { ClassifyOverworldTileContext, WorldStateLike } from '@bworlds/plugin-api';
+
+function createPoiClassifierPayload(
+  overrides: Partial<ClassifyOverworldTileContext> = {}
+): ClassifyOverworldTileContext {
+  return {
+    seed: 'spec',
+    x: 8,
+    y: 9,
+    tile: { kind: 'plains' },
+    nearLand: true,
+    signals: {
+      continent: 0.5,
+      elevation: 0.5,
+      moisture: 0.5,
+      riverSignal: 0.5,
+      roadSignal: 0.5,
+    },
+    townAnchors: [],
+    bridgeAnchors: [],
+    poiAnchors: [],
+    ...overrides,
+  };
+}
 
 describe('poi support', () => {
   it('creates deterministic generated poi tiles', () => {
@@ -213,23 +237,11 @@ describe('poi support', () => {
     });
 
     expect(
-      classify({
-        seed: 'spec',
-        x: 8,
-        y: 9,
-        tile: { kind: 'plains' },
-        nearLand: true,
-        signals: {
-          continent: 0.5,
-          elevation: 0.5,
-          moisture: 0.5,
-          riverSignal: 0.5,
-          roadSignal: 0.5,
-        },
-        townAnchors: [],
-        bridgeAnchors: [],
-        poiAnchors: [{ x: 8, y: 9, type: 'cave', name: 'Stone Hollow' }],
-      } as any)
+      classify(
+        createPoiClassifierPayload({
+          poiAnchors: [{ x: 8, y: 9, type: 'cave', name: 'Stone Hollow' }],
+        })
+      )
     ).toMatchObject({
       kind: 'cave',
       poi: {
@@ -258,23 +270,11 @@ describe('poi support', () => {
     const townTile = plugin.tiles?.find((tile) => tile.kind === 'town');
 
     expect(
-      townTile?.classifyOverworldTile?.({
-        seed: 'spec',
-        x: 8,
-        y: 9,
-        tile: { kind: 'plains' },
-        nearLand: true,
-        signals: {
-          continent: 0.5,
-          elevation: 0.5,
-          moisture: 0.5,
-          riverSignal: 0.5,
-          roadSignal: 0.5,
-        },
-        townAnchors: [],
-        bridgeAnchors: [],
-        poiAnchors: [{ x: 8, y: 9, type: 'town', name: 'Ashford' }],
-      } as any)
+      townTile?.classifyOverworldTile?.(
+        createPoiClassifierPayload({
+          poiAnchors: [{ x: 8, y: 9, type: 'town', name: 'Ashford' }],
+        })
+      )
     ).toMatchObject({
       kind: 'town',
       poi: {
@@ -319,22 +319,12 @@ describe('poi support', () => {
     const landmarkTile = plugin.tiles?.find((tile) => tile.kind === 'landmark');
 
     expect(
-      landmarkTile?.classifyOverworldTile?.({
-        seed: 'spec',
-        x: 2,
-        y: 3,
-        tile: { kind: 'plains' },
-        nearLand: true,
-        signals: {
-          continent: 0.5,
-          elevation: 0.5,
-          moisture: 0.5,
-          riverSignal: 0.5,
-          roadSignal: 0.5,
-        },
-        townAnchors: [],
-        bridgeAnchors: [],
-      } as any)
+      landmarkTile?.classifyOverworldTile?.(
+        createPoiClassifierPayload({
+          x: 2,
+          y: 3,
+        })
+      )
     ).toEqual({
       kind: 'landmark',
       poi: { type: 'landmark', name: 'Stone Marker' },
@@ -442,7 +432,7 @@ describe('poi support', () => {
   });
 });
 
-function createMockState(tileMap: Record<string, { kind: string }>) {
+function createMockState(tileMap: Record<string, { kind: string }>): WorldStateLike {
   return {
     player: { x: 0, y: 0, facing: 0 },
     getCurrentContext() {

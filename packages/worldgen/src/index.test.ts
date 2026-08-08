@@ -11,7 +11,10 @@ import {
   listContentPacks,
   listBuiltinContentPacks,
 } from './index.ts';
-import type { PluginPackDefinitionLike } from '@bworlds/plugin-api';
+import type {
+  PluginPackDefinitionLike,
+  ResolveWorldEnvironmentContext,
+} from '@bworlds/plugin-api';
 
 function createGenerator() {
   const plugins = createDefaultPluginRegistry();
@@ -143,13 +146,29 @@ describe('world generator', () => {
       'default-content-pack',
       'frontier-content-pack',
     ]);
-
-    const environment = registry.resolveWorldEnvironment({
+    const payload: ResolveWorldEnvironmentContext = {
       timeMs: 0,
       state: {
         player: { x: 0, y: 0, facing: 0 },
-      } as any,
-    });
+        getCurrentContext() {
+          return { id: 'overworld', type: 'overworld', depth: 0 };
+        },
+        getCurrentTile() {
+          return { kind: 'plains' };
+        },
+        getTileDefinition() {
+          return {
+            name: 'Plains',
+            color: '#000000',
+            miniColor: '#111111',
+            walkable: true,
+            wallHeight: 0,
+          };
+        },
+      },
+    };
+
+    const environment = registry.resolveWorldEnvironment(payload);
 
     expect(environment.cycle?.dayLengthMs).toBe(DEFAULT_DAY_LENGTH_MS);
   });
