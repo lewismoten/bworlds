@@ -83,6 +83,7 @@ type Render3DController = {
     vertexCount: number;
     materialCount: number;
     geometryCount: number;
+    textureMemoryEstimateBytes: number;
     geometryMemoryCount: number;
     treeObjectCount: number;
     treeMeshCount: number;
@@ -153,6 +154,7 @@ type SceneResourceStats = {
   vertexCount: number;
   materialCount: number;
   geometryCount: number;
+  textureMemoryEstimateBytes: number;
   treeCount: number;
   treeObjectCount: number;
   treeMeshCount: number;
@@ -745,6 +747,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       vertexCount: sceneResourceStats.vertexCount,
       materialCount: sceneResourceStats.materialCount,
       geometryCount: sceneResourceStats.geometryCount,
+      textureMemoryEstimateBytes: sceneResourceStats.textureMemoryEstimateBytes,
       geometryMemoryCount: renderer.info.memory.geometries,
       treeObjectCount: sceneResourceStats.treeObjectCount,
       treeMeshCount: sceneResourceStats.treeMeshCount,
@@ -1939,12 +1942,14 @@ export function collectSceneResourceStats(
   let dynamicLightCount = 0;
   let shadowLightCount = 0;
   let vertexCount = 0;
+  let textureMemoryEstimateBytes = 0;
   let treeCount = 0;
   let treeObjectCount = 0;
   let treeMeshCount = 0;
   let treeMaterialRefCount = 0;
   const materials = new Set<THREE.Material>();
   const geometries = new Set<unknown>();
+  const textures = new Set<unknown>();
 
   root.traverse((child) => {
     object3dCount += 1;
@@ -1994,6 +1999,13 @@ export function collectSceneResourceStats(
     }
     for (const material of childMaterials) {
       materials.add(material);
+      for (const texture of getMaterialTextures(material)) {
+        if (textures.has(texture)) {
+          continue;
+        }
+        textures.add(texture);
+        textureMemoryEstimateBytes += getTextureMemoryEstimateBytes(texture);
+      }
     }
   });
 
@@ -2010,6 +2022,7 @@ export function collectSceneResourceStats(
     vertexCount,
     materialCount: materials.size,
     geometryCount: geometries.size,
+    textureMemoryEstimateBytes,
     treeCount,
     treeObjectCount,
     treeMeshCount,
@@ -2023,6 +2036,49 @@ function isDynamicLightType(type: string): boolean {
     type === 'SpotLight' ||
     type === 'RectAreaLight'
   );
+}
+
+function getMaterialTextures(material: THREE.Material): unknown[] {
+  return Object.values(material).filter(isTextureLike);
+}
+
+function isTextureLike(value: unknown): boolean {
+  if (!value || typeof value !== 'object') {
+    return false;
+  }
+  const texture = value as {
+    image?: unknown;
+    colorSpace?: unknown;
+    needsUpdate?: boolean;
+    repeat?: unknown;
+  };
+  return (
+    texture.image != null ||
+    texture.colorSpace != null ||
+    texture.needsUpdate != null ||
+    texture.repeat != null
+  );
+}
+
+function getTextureMemoryEstimateBytes(texture: unknown): number {
+  const image = (texture as {
+    image?: {
+      width?: number;
+      height?: number;
+      videoWidth?: number;
+      videoHeight?: number;
+    };
+    generateMipmaps?: boolean;
+  }).image;
+  const width = image?.width ?? image?.videoWidth ?? 0;
+  const height = image?.height ?? image?.videoHeight ?? 0;
+  if (width <= 0 || height <= 0) {
+    return 0;
+  }
+
+  const baseBytes = width * height * 4;
+  const usesMipmaps = (texture as { generateMipmaps?: boolean }).generateMipmaps !== false;
+  return usesMipmaps ? Math.round((baseBytes * 4) / 3) : baseBytes;
 }
 
 function getGeometryVertexCount(geometry: unknown): number {

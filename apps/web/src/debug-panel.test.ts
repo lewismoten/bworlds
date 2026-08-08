@@ -79,6 +79,7 @@ describe('debug panel', () => {
       treeMaterialRefCount: 135,
       visibleTileKindSummary: 'forest:48, plains:32, river:12, town:4',
       textureCount: 7,
+      textureMemoryEstimateMb: 12.5,
       programCount: 12,
       latitude: 32.1234,
       longitude: -81.5678,
@@ -105,6 +106,7 @@ describe('debug panel', () => {
     expect(buildDebugMarkup(snapshot)).toContain('Geometry Count');
     expect(buildDebugMarkup(snapshot)).toContain('Vertices');
     expect(buildDebugMarkup(snapshot)).toContain('Textures');
+    expect(buildDebugMarkup(snapshot)).toContain('Estimated Texture Memory');
     expect(buildDebugMarkup(snapshot)).toContain('JavaScript Heap');
     expect(buildDebugMarkup(snapshot)).toContain('Geometry Memory');
     expect(buildDebugMarkup(snapshot)).toContain('Scene Roots');

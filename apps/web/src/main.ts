@@ -2640,6 +2640,8 @@ function render(): FrameLoopActivityLike {
       treeMaterialRefCount: rendererStats.treeMaterialRefCount,
       visibleTileKindSummary: rendererStats.visibleTileKindSummary,
       textureCount: rendererStats.textureCount,
+      textureMemoryEstimateMb:
+        rendererStats.textureMemoryEstimateBytes / (1024 * 1024),
       programCount: rendererStats.programCount,
       latitude: gps.latitude,
       longitude: gps.longitude,

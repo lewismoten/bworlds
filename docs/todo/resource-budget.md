@@ -769,7 +769,7 @@ A barrel should not get the same budget as a cathedral.
 * [X] Show draw calls.
 * [X] Show materials.
 * [X] Show textures.
-* [ ] Show estimated texture memory.
+* [X] Show estimated texture memory.
 * [X] Show geometry memory.
 * [X] Show shader programs.
 * [X] Show lights.

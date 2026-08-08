@@ -50,6 +50,7 @@ export type DebugSnapshot = {
   treeMaterialRefCount: number;
   visibleTileKindSummary: string;
   textureCount: number;
+  textureMemoryEstimateMb: number;
   programCount: number;
   latitude: number;
   longitude: number;
@@ -140,6 +141,7 @@ export function getDebugSignature(snapshot: DebugSnapshot): string {
     snapshot.treeMaterialRefCount,
     snapshot.visibleTileKindSummary,
     snapshot.textureCount,
+    snapshot.textureMemoryEstimateMb.toFixed(1),
     snapshot.programCount,
     snapshot.latitude.toFixed(4),
     snapshot.longitude.toFixed(4),
@@ -260,6 +262,7 @@ export function buildDebugMarkup(snapshot: DebugSnapshot): string {
     <div><dt>Vertices</dt><dd>${snapshot.vertexCount}</dd></div>
     <div><dt>Geometry Memory</dt><dd>${snapshot.geometryMemoryCount}</dd></div>
     <div><dt>Textures</dt><dd>${snapshot.textureCount}</dd></div>
+    <div><dt>Estimated Texture Memory</dt><dd>${snapshot.textureMemoryEstimateMb.toFixed(1)} MB</dd></div>
     <div><dt>Shader Programs</dt><dd>${snapshot.programCount}</dd></div>
     <div><dt>JavaScript Heap</dt><dd>${heapLabel}</dd></div>
     ${warningMarkup}

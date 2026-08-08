@@ -48,8 +48,10 @@ type SkySignatureCycle = Parameters<typeof getSkyConstellationSignature>[0];
 
 describe('render3d visibility helpers', () => {
   it('collects unique scene material and geometry counts for debug diagnostics', () => {
-    const sharedMaterial = createMockMaterial();
-    const otherMaterial = createMockMaterial();
+    const sharedTexture = createMockTexture(32, 16);
+    const uniqueTexture = createMockTexture(8, 8, false);
+    const sharedMaterial = createMockMaterial({ map: sharedTexture });
+    const otherMaterial = createMockMaterial({ emissiveMap: uniqueTexture });
     const sharedGeometry = createMockStatGeometry('shared-geometry', 24);
     const otherGeometry = createMockStatGeometry('other-geometry', 12);
     const root = createMockObject3D(undefined, [
@@ -73,6 +75,7 @@ describe('render3d visibility helpers', () => {
       vertexCount: 36,
       materialCount: 2,
       geometryCount: 2,
+      textureMemoryEstimateBytes: 2987,
       treeCount: 1,
       treeObjectCount: 1,
       treeMeshCount: 1,
@@ -142,6 +145,7 @@ describe('render3d visibility helpers', () => {
       vertexCount: 14,
       materialCount: 2,
       geometryCount: 2,
+      textureMemoryEstimateBytes: 0,
       treeCount: 0,
       treeObjectCount: 0,
       treeMeshCount: 0,
@@ -210,6 +214,7 @@ describe('render3d visibility helpers', () => {
       vertexCount: 26,
       materialCount: 2,
       geometryCount: 2,
+      textureMemoryEstimateBytes: 0,
       treeCount: 1,
       treeObjectCount: 3,
       treeMeshCount: 2,
@@ -930,7 +935,8 @@ function createMockMaterial(
     opacity: number;
     transparent: boolean;
     depthWrite: boolean;
-  }> = {}
+  }> &
+    Record<string, unknown> = {}
 ) {
   const clone = {
     opacity: overrides.opacity ?? 1,
@@ -944,8 +950,16 @@ function createMockMaterial(
     transparent: overrides.transparent ?? false,
     depthWrite: overrides.depthWrite ?? true,
     userData: {},
+    ...overrides,
     clone: vi.fn(() => ({ ...clone, userData: {} })),
     dispose: vi.fn(),
+  };
+}
+
+function createMockTexture(width: number, height: number, generateMipmaps = true) {
+  return {
+    image: { width, height },
+    generateMipmaps,
   };
 }
 
