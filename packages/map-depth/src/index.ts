@@ -1,3 +1,4 @@
+import { createBoundedCache } from '@bworlds/cache-support';
 import { hash2D } from '@bworlds/core';
 import {
   createChildContext,
@@ -46,7 +47,10 @@ type DepthEntranceExit = {
 
 const DEFAULT_DEPTH_SIZE = 21;
 const CAVE_DEPTH_SIZE = 27;
-const depthLayoutCache = new Map<string, DepthLayout>();
+const DEPTH_LAYOUT_CACHE_LIMIT = 256;
+const depthLayoutCache = createBoundedCache<string, DepthLayout>(
+  DEPTH_LAYOUT_CACHE_LIMIT
+);
 
 export function createDepthMapPlugin(): RuntimePlugin {
   return createContextMapPlugin<DepthContext>({
