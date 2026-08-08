@@ -16,6 +16,7 @@ import {
   getForestLandmark,
   getForestMeadows,
   getForestOwls,
+  getForestTrail,
   getForestTreeForms,
   getForestTreeHollows,
 } from './index.ts';
@@ -426,6 +427,36 @@ describe('tile forest', () => {
 
     const first = sampleTiles[0];
     expect(getForestBirds(first.x, first.y)).toEqual(first.birds);
+  });
+
+  it('generates deterministic breadcrumb trails for some forest tiles', () => {
+    const sampleTiles: Array<{
+      x: number;
+      y: number;
+      trail: NonNullable<ReturnType<typeof getForestTrail>>;
+    }> = [];
+
+    for (let tileY = 0; tileY < 24; tileY += 1) {
+      for (let tileX = 0; tileX < 24; tileX += 1) {
+        const trail = getForestTrail(tileX, tileY);
+        if (trail) {
+          sampleTiles.push({ x: tileX, y: tileY, trail });
+        }
+      }
+    }
+
+    expect(sampleTiles.length).toBeGreaterThan(0);
+    expect(
+      sampleTiles.some(
+        ({ trail }) => trail.halfWidth > 0.08 && trail.start.x !== trail.end.x
+      )
+    ).toBe(true);
+    expect(
+      sampleTiles.some(({ trail }) => trail.breadcrumbs.length > 0)
+    ).toBe(true);
+
+    const first = sampleTiles[0];
+    expect(getForestTrail(first.x, first.y)).toEqual(first.trail);
   });
 
   it('creates a lower-detail distant forest model', () => {
@@ -1148,6 +1179,79 @@ describe('tile forest', () => {
     expect(firstBird.position.x).not.toBe(initialX);
     expect(firstBird.position.y).not.toBe(initialY);
     expect(firstBird.children[0]?.rotation.z).not.toBe(initialLeftWing);
+  });
+
+  it('renders breadcrumb trails only in full-detail forest models', () => {
+    const plugin = createForestTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'forest');
+    const state = {
+      player: { x: 0, y: 0, facing: 0 },
+      getCurrentContext() {
+        return { id: 'overworld', type: 'overworld', depth: 0 };
+      },
+      getCurrentTile() {
+        return { kind: 'forest' };
+      },
+      getTileDefinition() {
+        return {
+          name: 'Forest',
+          color: '#000000',
+          miniColor: '#111111',
+          walkable: true,
+          wallHeight: 0.38,
+        };
+      },
+    };
+
+    let targetTile: { x: number; y: number } | null = null;
+    for (let tileY = 0; tileY < 24 && !targetTile; tileY += 1) {
+      for (let tileX = 0; tileX < 24; tileX += 1) {
+        const trail = getForestTrail(tileX, tileY);
+        if (trail && trail.breadcrumbs.length > 0) {
+          targetTile = { x: tileX, y: tileY };
+          break;
+        }
+      }
+    }
+
+    expect(targetTile).not.toBeNull();
+
+    const fullModel = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'forest' },
+      tileX: targetTile!.x,
+      tileY: targetTile!.y,
+      detailLevel: 'full',
+    }) as FakeGroup;
+    const lowModel = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'forest' },
+      tileX: targetTile!.x,
+      tileY: targetTile!.y,
+      detailLevel: 'low',
+    }) as FakeGroup;
+
+    let fullTrailCount = 0;
+    fullModel.traverse((node) => {
+      if (node.userData?.forestTrail === 'breadcrumb') {
+        fullTrailCount += 1;
+      }
+    });
+
+    let lowTrailCount = 0;
+    lowModel.traverse((node) => {
+      if (node.userData?.forestTrail === 'breadcrumb') {
+        lowTrailCount += 1;
+      }
+    });
+
+    expect(fullTrailCount).toBe(
+      getForestTrail(targetTile!.x, targetTile!.y)?.breadcrumbs.length
+    );
+    expect(fullTrailCount).toBeGreaterThan(0);
+    expect(lowTrailCount).toBe(0);
   });
 
   it('shows fireflies only after dark', () => {

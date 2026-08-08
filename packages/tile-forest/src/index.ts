@@ -34,12 +34,71 @@ const OWL_KEY = 'forestOwl';
 const CARVING_KEY = 'forestCarving';
 const MEADOW_KEY = 'forestMeadow';
 const BIRD_KEY = 'forestBird';
+const TRAIL_KEY = 'forestTrail';
 const TREE_FORM_KEY = 'forestTreeForm';
 const TREE_CLUSTER_SIZE = 4;
 const TREE_REGION_SIZE = 14;
 
 const treeDescriptorCache = new Map<string, ForestTreeDescriptor[]>();
 const treeStyleCache = new Map<string, ForestTreeStyle>();
+const forestTrailCache = new Map<string, ForestTrailDescriptor | null>();
+const resolveForestTrailDescriptor = createCoordinateValueResolver(
+  forestTrailCache,
+  ({ tileX, tileY }) => {
+    if (getForestTreeCount(tileX, tileY) < 4) {
+      return null;
+    }
+
+    const trailChance = hash2D('forest-trail', tileX, tileY);
+    if (trailChance < 0.84) {
+      return null;
+    }
+
+    const angle = hash2D('forest-trail-angle', tileX, tileY) * Math.PI;
+    const normalAngle = angle + Math.PI / 2;
+    const offset = (hash2D('forest-trail-offset', tileX, tileY) - 0.5) * 0.32;
+    const extent = 0.44;
+    const halfWidth = 0.08 + hash2D('forest-trail-width', tileX, tileY) * 0.03;
+    const start = {
+      x: Math.cos(angle) * -extent + Math.cos(normalAngle) * offset,
+      y: Math.sin(angle) * -extent + Math.sin(normalAngle) * offset,
+    };
+    const end = {
+      x: Math.cos(angle) * extent + Math.cos(normalAngle) * offset,
+      y: Math.sin(angle) * extent + Math.sin(normalAngle) * offset,
+    };
+    const breadcrumbCount =
+      trailChance > 0.93
+        ? 3 + Math.floor(hash2D('forest-trail-breadcrumb-count', tileX, tileY) * 3)
+        : 0;
+    const breadcrumbs: ForestTrailBreadcrumb[] = [];
+
+    for (let index = 0; index < breadcrumbCount; index += 1) {
+      const progress = (index + 1) / (breadcrumbCount + 1);
+      const wobble =
+        (hash2D('forest-trail-breadcrumb-wobble', tileX * 11 + index, tileY * 13) -
+          0.5) *
+        halfWidth *
+        0.9;
+      const x =
+        start.x + (end.x - start.x) * progress + Math.cos(normalAngle) * wobble;
+      const y =
+        start.y + (end.y - start.y) * progress + Math.sin(normalAngle) * wobble;
+      breadcrumbs.push({
+        x: clampToTile(x),
+        y: clampToTile(y),
+        scale: 0.018 + hash2D('forest-trail-breadcrumb-scale', tileX + index, tileY) * 0.014,
+      });
+    }
+
+    return {
+      start,
+      end,
+      halfWidth,
+      breadcrumbs,
+    };
+  }
+);
 const resolveForestTreeDescriptors = createCoordinateValueResolver(
   treeDescriptorCache,
   ({ tileX, tileY }) => {
@@ -47,6 +106,7 @@ const resolveForestTreeDescriptors = createCoordinateValueResolver(
     const loneTree = hasForestLoneTree(tileX, tileY);
     const count = getForestTreeCount(tileX, tileY);
     const landmark = getForestLandmark(tileX, tileY);
+    const trail = getForestTrail(tileX, tileY);
     const descriptors: ForestTreeDescriptor[] = [];
 
     for (let index = 0; index < count; index += 1) {
@@ -147,6 +207,10 @@ const resolveForestTreeDescriptors = createCoordinateValueResolver(
         if (distanceFromLandmark < landmark.ringRadius + 0.1) {
           continue;
         }
+      }
+
+      if (trail && isPointInsideForestTrail(trail, descriptor.x, descriptor.y, 0.02)) {
+        continue;
       }
 
       descriptors.push(descriptor);
@@ -763,6 +827,26 @@ export function createForestTilePlugin(): RuntimePlugin {
             birdGroup.add(body);
             group.add(birdGroup);
           }
+          const trail = getForestTrail(tileX, tileY);
+          if (trail) {
+            for (const breadcrumb of trail.breadcrumbs) {
+              const crumb = new three.Mesh(
+                geometry.foliage,
+                floorDetailStyle.breadcrumbMaterial
+              );
+              crumb.position.set(tileX + breadcrumb.x, 0.03, tileY + breadcrumb.y);
+              crumb.scale.set(
+                breadcrumb.scale * 1.4,
+                breadcrumb.scale * 0.55,
+                breadcrumb.scale
+              );
+              crumb.userData = {
+                ...(crumb.userData ?? {}),
+                [TRAIL_KEY]: 'breadcrumb',
+              };
+              group.add(crumb);
+            }
+          }
           const landmark = getForestLandmark(tileX, tileY);
           if (landmark) {
             createForestLandmarkMeshes(
@@ -931,6 +1015,13 @@ export function getForestBirds(
   tileY: number
 ): ForestBirdDescriptor[] {
   return resolveForestBirdDescriptors(tileX, tileY);
+}
+
+export function getForestTrail(
+  tileX: number,
+  tileY: number
+): ForestTrailDescriptor | null {
+  return resolveForestTrailDescriptor(tileX, tileY);
 }
 
 export function getForestTreeForms(
@@ -1124,6 +1215,14 @@ function getTreeStyle(
         roughness: 0.9,
         metalness: 0.01,
       }),
+      breadcrumbMaterial: new three.MeshStandardMaterial({
+        color: tintHexColor(
+          '#e6d6a8',
+          0.92 + hash2D('tree-breadcrumb-tint', regionX + variety, regionY) * 0.12
+        ),
+        roughness: 0.98,
+        metalness: 0.01,
+      }),
       birdMaterial: new three.MeshStandardMaterial({
         color: '#2f2420',
         roughness: 0.95,
@@ -1207,6 +1306,7 @@ function createForestFloorDetailDescriptor(
   } = {}
 ): ForestFloorDetailDescriptor | null {
   const landmark = getForestLandmark(tileX, tileY);
+  const trail = getForestTrail(tileX, tileY);
   const maxAttempts = options.preferInterior ? 6 : 4;
   for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
     const seed = `forest-floor:${kind}:${tileX}:${tileY}:${detailIndex}:${attempt}`;
@@ -1220,6 +1320,17 @@ function createForestFloorDetailDescriptor(
     });
 
     if (nearTree) {
+      continue;
+    }
+    if (
+      trail &&
+      isPointInsideForestTrail(
+        trail,
+        x,
+        y,
+        kind === 'fallen-tree' ? 0.1 : 0.06
+      )
+    ) {
       continue;
     }
     if (landmark) {
@@ -1262,6 +1373,7 @@ function createForestBushDescriptor(
   floorDetails: ForestFloorDetailDescriptor[],
   landmark: ForestLandmarkDescriptor | null
 ): ForestBushDescriptor | null {
+  const trail = getForestTrail(tileX, tileY);
   const maxAttempts = 4;
   for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
     const seed = `forest-bush:${tileX}:${tileY}:${bushIndex}:${attempt}`;
@@ -1285,6 +1397,10 @@ function createForestBushDescriptor(
       return distance < detailRadius + bushRadius + 0.04;
     });
     if (nearFloorDetail) {
+      continue;
+    }
+
+    if (trail && isPointInsideForestTrail(trail, x, y, bushRadius + 0.02)) {
       continue;
     }
 
@@ -1401,6 +1517,7 @@ function createForestMeadowDescriptor(
   trees: ForestTreeDescriptor[],
   landmark: ForestLandmarkDescriptor | null
 ): ForestMeadowDescriptor | null {
+  const trail = getForestTrail(tileX, tileY);
   const maxAttempts = 4;
   for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
     const seed = `forest-meadow:${tileX}:${tileY}:${meadowIndex}:${attempt}`;
@@ -1414,6 +1531,9 @@ function createForestMeadowDescriptor(
       return distance < tree.radius + clearance;
     });
     if (nearTree) {
+      continue;
+    }
+    if (trail && isPointInsideForestTrail(trail, x, y, clearance * 0.6)) {
       continue;
     }
     if (landmark) {
@@ -1553,6 +1673,40 @@ function clampToTile(value: number): number {
   return Math.max(-0.34, Math.min(0.34, value));
 }
 
+function isPointInsideForestTrail(
+  trail: ForestTrailDescriptor,
+  x: number,
+  y: number,
+  padding = 0
+): boolean {
+  return getDistanceToTrailSegment(trail, x, y) < trail.halfWidth + padding;
+}
+
+function getDistanceToTrailSegment(
+  trail: ForestTrailDescriptor,
+  x: number,
+  y: number
+): number {
+  const segmentX = trail.end.x - trail.start.x;
+  const segmentY = trail.end.y - trail.start.y;
+  const segmentLengthSquared = segmentX * segmentX + segmentY * segmentY;
+  if (segmentLengthSquared <= Number.EPSILON) {
+    return Math.hypot(x - trail.start.x, y - trail.start.y);
+  }
+
+  const projection = Math.max(
+    0,
+    Math.min(
+      1,
+      ((x - trail.start.x) * segmentX + (y - trail.start.y) * segmentY) /
+        segmentLengthSquared
+    )
+  );
+  const nearestX = trail.start.x + segmentX * projection;
+  const nearestY = trail.start.y + segmentY * projection;
+  return Math.hypot(x - nearestX, y - nearestY);
+}
+
 function createTreeBarkTexture(
   three: ThreeHostLike,
   baseColor: string,
@@ -1644,6 +1798,7 @@ interface ForestTreeStyle {
   meadowStemMaterial: ThreeMaterialLike;
   meadowFlowerWhiteMaterial: ThreeMaterialLike;
   meadowFlowerYellowMaterial: ThreeMaterialLike;
+  breadcrumbMaterial: ThreeMaterialLike;
   birdMaterial: ThreeMaterialLike;
 }
 
@@ -1697,6 +1852,25 @@ interface ForestLandmarkDescriptor {
   ringRadius: number;
   memberCount: number;
   scale: number;
+}
+
+interface ForestTrailBreadcrumb {
+  x: number;
+  y: number;
+  scale: number;
+}
+
+interface ForestTrailDescriptor {
+  start: {
+    x: number;
+    y: number;
+  };
+  end: {
+    x: number;
+    y: number;
+  };
+  halfWidth: number;
+  breadcrumbs: ForestTrailBreadcrumb[];
 }
 
 interface ForestBushDescriptor {
