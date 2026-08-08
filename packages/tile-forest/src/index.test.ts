@@ -11,6 +11,7 @@ import {
   getForestBushes,
   getForestFloorDetails,
   getForestLandmark,
+  getForestTreeHollows,
 } from './index.ts';
 
 class FakeGeometry {
@@ -162,6 +163,35 @@ describe('tile forest', () => {
 
     const first = sampleTiles[0];
     expect(getForestBushes(first.x, first.y)).toEqual(first.bushes);
+  });
+
+  it('generates deterministic tree hollows for some forest tiles', () => {
+    const sampleTiles: Array<{
+      x: number;
+      y: number;
+      hollows: ReturnType<typeof getForestTreeHollows>;
+    }> = [];
+
+    for (let tileY = 0; tileY < 18; tileY += 1) {
+      for (let tileX = 0; tileX < 18; tileX += 1) {
+        const hollows = getForestTreeHollows(tileX, tileY);
+        if (hollows.length > 0) {
+          sampleTiles.push({ x: tileX, y: tileY, hollows });
+        }
+      }
+    }
+
+    expect(sampleTiles.length).toBeGreaterThan(0);
+    expect(
+      sampleTiles.some(({ hollows }) =>
+        hollows.every(
+          (hollow) => hollow.height > 0.2 && hollow.scale > 0.1 && hollow.depth > 0.07
+        )
+      )
+    ).toBe(true);
+
+    const first = sampleTiles[0];
+    expect(getForestTreeHollows(first.x, first.y)).toEqual(first.hollows);
   });
 
   it('creates a lower-detail distant forest model', () => {
@@ -446,6 +476,75 @@ describe('tile forest', () => {
 
     expect(fullBushCount).toBeGreaterThan(0);
     expect(lowBushCount).toBe(0);
+  });
+
+  it('renders tree hollows only in full-detail forest models', () => {
+    const plugin = createForestTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'forest');
+    const state = {
+      player: { x: 0, y: 0, facing: 0 },
+      getCurrentContext() {
+        return { id: 'overworld', type: 'overworld', depth: 0 };
+      },
+      getCurrentTile() {
+        return { kind: 'forest' };
+      },
+      getTileDefinition() {
+        return {
+          name: 'Forest',
+          color: '#000000',
+          miniColor: '#111111',
+          walkable: true,
+          wallHeight: 0.38,
+        };
+      },
+    };
+
+    let targetTile: { x: number; y: number } | null = null;
+    for (let tileY = 0; tileY < 18 && !targetTile; tileY += 1) {
+      for (let tileX = 0; tileX < 18; tileX += 1) {
+        if (getForestTreeHollows(tileX, tileY).length > 0) {
+          targetTile = { x: tileX, y: tileY };
+          break;
+        }
+      }
+    }
+
+    expect(targetTile).not.toBeNull();
+
+    const fullModel = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'forest' },
+      tileX: targetTile!.x,
+      tileY: targetTile!.y,
+      detailLevel: 'full',
+    }) as FakeGroup;
+    const lowModel = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'forest' },
+      tileX: targetTile!.x,
+      tileY: targetTile!.y,
+      detailLevel: 'low',
+    }) as FakeGroup;
+
+    let fullHollowCount = 0;
+    fullModel.traverse((node) => {
+      if (node.userData?.forestHollow) {
+        fullHollowCount += 1;
+      }
+    });
+
+    let lowHollowCount = 0;
+    lowModel.traverse((node) => {
+      if (node.userData?.forestHollow) {
+        lowHollowCount += 1;
+      }
+    });
+
+    expect(fullHollowCount).toBeGreaterThan(0);
+    expect(lowHollowCount).toBe(0);
   });
 
   it('shows fireflies only after dark', () => {

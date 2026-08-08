@@ -29,6 +29,7 @@ const FIREFLY_LIGHT_KEY = 'forestFireflyLight';
 const FLOOR_DETAIL_KEY = 'forestFloorDetail';
 const BUSH_KEY = 'forestBush';
 const LANDMARK_KEY = 'forestLandmark';
+const HOLLOW_KEY = 'forestHollow';
 const TREE_CLUSTER_SIZE = 4;
 const TREE_REGION_SIZE = 14;
 
@@ -203,6 +204,39 @@ const resolveForestBushDescriptors = createCoordinateValueResolver(
     return bushes;
   }
 );
+const forestHollowCache = new Map<string, ForestHollowDescriptor[]>();
+const resolveForestHollowDescriptors = createCoordinateValueResolver(
+  forestHollowCache,
+  ({ tileX, tileY }) => {
+    const trees = resolveForestTreeDescriptors(tileX, tileY);
+    const landmark = getForestLandmark(tileX, tileY);
+    const hollows: ForestHollowDescriptor[] = [];
+
+    trees.forEach((tree, treeIndex) => {
+      const chance = hash2D('forest-hollow', tileX * 17 + treeIndex, tileY * 19);
+      if (chance < 0.78) {
+        return;
+      }
+
+      if (landmark) {
+        const distanceFromLandmark = Math.hypot(tree.x - landmark.x, tree.y - landmark.y);
+        if (distanceFromLandmark < landmark.ringRadius + 0.08) {
+          return;
+        }
+      }
+
+      hollows.push({
+        treeIndex,
+        sideOffset: chance > 0.9 ? 1 : -1,
+        height: tree.trunkHeight * (0.38 + hash2D('forest-hollow-height', treeIndex, tileY) * 0.16),
+        scale: 0.12 + hash2D('forest-hollow-scale', tileX + treeIndex, tileY) * 0.05,
+        depth: 0.08 + hash2D('forest-hollow-depth', tileX, tileY + treeIndex) * 0.03,
+      });
+    });
+
+    return hollows;
+  }
+);
 const treeGeometryCache = new WeakMap<
   object,
   {
@@ -360,6 +394,29 @@ export function createForestTilePlugin(): RuntimePlugin {
 
         if (detailLevel === 'full') {
           const floorDetailStyle = getTreeStyle(three, tileX, tileY, 0);
+          const hollows = getForestTreeHollows(tileX, tileY);
+          for (const hollow of hollows) {
+            const treeDescriptor = descriptors[hollow.treeIndex];
+            if (!treeDescriptor) {
+              continue;
+            }
+
+            const hollowMesh = new three.Mesh(
+              geometry.foliage,
+              floorDetailStyle.hollowMaterial
+            );
+            hollowMesh.position.set(
+              tileX + treeDescriptor.x + treeDescriptor.radius * 0.7 * hollow.sideOffset,
+              hollow.height,
+              tileY + treeDescriptor.y
+            );
+            hollowMesh.scale.set(hollow.scale, hollow.scale * 0.82, hollow.depth);
+            hollowMesh.userData = {
+              ...(hollowMesh.userData ?? {}),
+              [HOLLOW_KEY]: true,
+            };
+            group.add(hollowMesh);
+          }
           const landmark = getForestLandmark(tileX, tileY);
           if (landmark) {
             createForestLandmarkMeshes(
@@ -494,6 +551,13 @@ export function getForestBushes(
   return resolveForestBushDescriptors(tileX, tileY);
 }
 
+export function getForestTreeHollows(
+  tileX: number,
+  tileY: number
+): ForestHollowDescriptor[] {
+  return resolveForestHollowDescriptors(tileX, tileY);
+}
+
 function getForestGroveCenter(tileX: number, tileY: number) {
   return {
     x: (hash2D('forest-grove-center-x', tileX, tileY) - 0.5) * 0.36,
@@ -614,6 +678,11 @@ function getTreeStyle(
         ),
         roughness: 0.94,
         metalness: 0.01,
+      }),
+      hollowMaterial: new three.MeshStandardMaterial({
+        color: '#120b07',
+        roughness: 1,
+        metalness: 0,
       }),
     });
   }
@@ -1011,6 +1080,7 @@ interface ForestTreeStyle {
   stoneMaterial: ThreeMaterialLike;
   mushroomCapMaterial: ThreeMaterialLike;
   mushroomStemMaterial: ThreeMaterialLike;
+  hollowMaterial: ThreeMaterialLike;
 }
 
 interface ForestBranchDescriptor {
@@ -1068,4 +1138,12 @@ interface ForestBushDescriptor {
   width: number;
   depth: number;
   height: number;
+}
+
+interface ForestHollowDescriptor {
+  treeIndex: number;
+  sideOffset: -1 | 1;
+  height: number;
+  scale: number;
+  depth: number;
 }

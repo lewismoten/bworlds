@@ -8,7 +8,7 @@
 - [X] Sometimes show a fallen tree
 - [ ] Consider a forest near a river can have a fallen tree across the river to form a bridge without a path/road leading to it
 - [ ] A forest may have a meadow with flowers
-- [ ] A tree may have a hollow
+- [X] A tree may have a hollow
 - [ ] Birds can fly over trees
 - [ ] An owl may live in the hollow of a tree
 - [ ] A tree may have two pairs of initials carved into it with a heart (LM + FG)
