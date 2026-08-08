@@ -215,6 +215,30 @@ type PerformanceWithMemory = Performance & {
   };
 };
 
+function getInspectionHint(
+  state: {
+    inspection?: { contextId: string; x: number; y: number; note: string } | null;
+    getCurrentContext(): { id: string };
+  },
+  playerX: number,
+  playerY: number
+) {
+  const inspection = state.inspection;
+  if (!inspection) {
+    return null;
+  }
+  if (inspection.contextId !== state.getCurrentContext().id) {
+    return null;
+  }
+  if (
+    inspection.x !== snapWorldCoordinate(playerX) ||
+    inspection.y !== snapWorldCoordinate(playerY)
+  ) {
+    return null;
+  }
+  return inspection.note;
+}
+
 const SESSION_STORAGE_KEY = 'bworlds:session';
 const CHARACTER_STORAGE_KEY = 'bworlds:character';
 const INVENTORY_STORAGE_KEY = 'bworlds:inventory';
@@ -1061,7 +1085,10 @@ function updateStatus(
   const sunriseLabel = cardinalFromAngle(cycle.sunriseAzimuth);
   const tileLabel = definition?.name ?? tile.kind;
   const playerLevel = normalizePlayerLevel(state.playerLevel);
-  const hint = tile.note ?? 'Explore the frontier.';
+  const hint =
+    getInspectionHint(state, spatial.playerX, spatial.playerY) ??
+    tile.note ??
+    'Explore the frontier.';
   const interactionPrompt = getInteractionPromptFromResolvedState({
     map: state.getCurrentMap(),
     player: { x: spatial.playerX, y: spatial.playerY },

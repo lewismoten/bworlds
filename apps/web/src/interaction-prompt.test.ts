@@ -138,6 +138,36 @@ describe('interaction prompt', () => {
     );
   });
 
+  it('shows an inspect prompt for non-enter interactions', () => {
+    const state = {
+      player: { x: 2, y: 3 },
+      getCurrentContext() {
+        return { id: 'overworld', label: 'Overworld', type: 'overworld', depth: 0 };
+      },
+      getCurrentTile() {
+        return { kind: 'forest' };
+      },
+      getCurrentMap() {
+        return {
+          getAction() {
+            return {
+              type: 'inspect',
+              label: 'tree carvings',
+              note: 'Old carvings cut across the bark.',
+            };
+          },
+          getExit() {
+            return null;
+          },
+        };
+      },
+    };
+
+    expect(getInteractionPrompt(state as never)).toBe(
+      'Press Enter to inspect tree carvings'
+    );
+  });
+
   it('returns no prompt when the current tile has no interaction', () => {
     const state = {
       player: { x: 0, y: 0 },

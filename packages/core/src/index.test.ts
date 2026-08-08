@@ -668,4 +668,41 @@ describe('core utilities', () => {
     expect(state.canWalk(0, 0)).toBe(true);
     expect(state.canWalk(1.2, 0)).toBe(false);
   });
+
+  it('stores inspection notes for non-transition world actions without moving the player', () => {
+    const state = createWorldState({
+      generator: {
+        getMap() {
+          return {
+            getTile() {
+              return { kind: 'forest' };
+            },
+            getAction() {
+              return {
+                type: 'inspect',
+                label: 'Tree carvings',
+                note: 'A weathered arrow points east beside old initials.',
+              };
+            },
+            getExit() {
+              return null;
+            },
+          };
+        },
+      },
+      player: createPlayer(),
+    });
+
+    expect(state.interact()).toBe(true);
+    expect(state.player.x).toBe(0);
+    expect(state.player.y).toBe(0);
+    expect(state.stack).toHaveLength(1);
+    expect(state.inspection).toEqual({
+      contextId: 'overworld',
+      x: 0,
+      y: 0,
+      label: 'Tree carvings',
+      note: 'A weathered arrow points east beside old initials.',
+    });
+  });
 });

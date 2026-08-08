@@ -58,6 +58,13 @@ function buildActionPrompt(tile: TileLike, action: WorldActionLike): string {
       describeTile(tile);
     return `Press Enter to descend into ${destinationLabel}`;
   }
+  if (action.type === 'inspect') {
+    const targetLabel =
+      (typeof action.label === 'string' && action.label) ||
+      (typeof action.context?.label === 'string' && action.context.label) ||
+      describeTile(tile);
+    return `Press Enter to inspect ${targetLabel}`;
+  }
   if (action.type !== 'enter') {
     return '';
   }

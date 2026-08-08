@@ -470,6 +470,51 @@ describe('tile forest', () => {
     expect(getForestCarvings(first.x, first.y)).toEqual(first.carvings);
   });
 
+  it('offers deterministic inspect actions for forest carvings', () => {
+    const plugin = createForestTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'forest');
+
+    let targetTile: { x: number; y: number } | null = null;
+    for (let tileY = 0; tileY < 32 && !targetTile; tileY += 1) {
+      for (let tileX = 0; tileX < 32; tileX += 1) {
+        if (getForestCarvings(tileX, tileY).length > 0) {
+          targetTile = { x: tileX, y: tileY };
+          break;
+        }
+      }
+    }
+
+    expect(targetTile).not.toBeNull();
+    const action = tile?.createWorldAction?.({
+      seed: 'spec',
+      x: targetTile!.x,
+      y: targetTile!.y,
+      tile: { kind: 'forest' },
+      state: createForestTestState(targetTile!.x, targetTile!.y),
+    });
+
+    expect(action).toEqual(
+      expect.objectContaining({
+        type: 'inspect',
+        label: 'tree carvings',
+        note: expect.any(String),
+      })
+    );
+    if (!action || typeof action !== 'object' || !('note' in action)) {
+      throw new Error('expected a forest carving inspect action');
+    }
+    expect(action.note).toMatch(/carv|mark|initials|date|arrow|heart/i);
+    expect(
+      tile?.createWorldAction?.({
+        seed: 'spec',
+        x: targetTile!.x,
+        y: targetTile!.y,
+        tile: { kind: 'forest' },
+        state: createForestTestState(targetTile!.x, targetTile!.y),
+      })
+    ).toEqual(action);
+  });
+
   it('generates deterministic flower meadows for some forest tiles', () => {
     const sampleTiles: Array<{
       x: number;

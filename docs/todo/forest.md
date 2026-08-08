@@ -648,7 +648,7 @@ This probably deserves several interchangeable strategies.
 * [X] Generate quest hints.
 * [X] Generate treasure-map clues.
 * [X] Generate historical inscriptions.
-* [ ] Allow players to inspect carvings.
+* [X] Allow players to inspect carvings.
 * [ ] Allow new player-created carvings if desirable.
 * [ ] Age carvings visually.
 * [ ] Allow bark growth to partially obscure old carvings.

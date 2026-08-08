@@ -326,6 +326,13 @@ export interface WorldStateLike {
   completedQuestIds?: string[];
   inventory?: InventoryItemLike[];
   viewMode?: ViewMode;
+  inspection?: {
+    contextId: Identity;
+    x: number;
+    y: number;
+    note: string;
+    label?: string;
+  } | null;
   getCurrentContext(): WorldContextLike;
   getCurrentMap?(): WorldMapLike;
   getCurrentTile(x?: number, y?: number): TileLike;

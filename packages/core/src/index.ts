@@ -423,6 +423,8 @@ type CoreWorldActionLike = {
   spawn?: WorldPositionLike;
   facing?: number;
   returnTo?: FacingPositionLike;
+  note?: string;
+  label?: string;
 };
 
 type CoreWorldMapLike = {
@@ -438,16 +440,22 @@ type CoreWorldExitLike = {
 
 function isCoreWorldActionLike(value: unknown): value is CoreWorldActionLike & {
   type: string;
-  context: CoreWorldContextLike;
-  spawn: WorldPositionLike;
 } {
   if (!value || typeof value !== 'object') {
     return false;
   }
 
   const action = value as CoreWorldActionLike;
+  return typeof action.type === 'string';
+}
+
+function isCoreWorldTransitionAction(
+  action: CoreWorldActionLike
+): action is CoreWorldActionLike & {
+  context: CoreWorldContextLike;
+  spawn: WorldPositionLike;
+} {
   return (
-    typeof action.type === 'string' &&
     typeof action.context?.id === 'string' &&
     typeof action.context?.label === 'string' &&
     typeof action.context?.type === 'string' &&
@@ -481,6 +489,13 @@ type CoreWorldStateLike = {
   playerLevel?: number;
   playerProfession?: string;
   completedQuestIds?: string[];
+  inspection?: {
+    contextId: string;
+    x: number;
+    y: number;
+    note: string;
+    label?: string;
+  } | null;
   stack: CoreWorldContextLike[];
   viewMode: '2d';
   getCurrentContext(): CoreWorldContextLike;
@@ -1815,6 +1830,7 @@ export function createWorldState({
   const state: CoreWorldStateLike = {
     generator,
     player,
+    inspection: null,
     stack,
     viewMode: '2d' as const,
     getCurrentContext() {
@@ -1855,21 +1871,35 @@ export function createWorldState({
     },
     interact() {
       const map = this.getCurrentMap();
+      const interactionX = snapWorldCoordinate(this.player.x);
+      const interactionY = snapWorldCoordinate(this.player.y);
       const action = map.getAction?.(
-        snapWorldCoordinate(this.player.x),
-        snapWorldCoordinate(this.player.y),
+        interactionX,
+        interactionY,
         this
       );
       if (!isCoreWorldActionLike(action)) return false;
+      if (action.type === 'inspect' && typeof action.note === 'string') {
+        this.inspection = {
+          contextId: this.getCurrentContext().id,
+          x: interactionX,
+          y: interactionY,
+          note: action.note,
+          ...(typeof action.label === 'string' ? { label: action.label } : {}),
+        };
+        return true;
+      }
+      if (!isCoreWorldTransitionAction(action)) return false;
       const nextContext = {
         ...action.context,
         returnTo: action.returnTo ?? {
-          x: snapWorldCoordinate(this.player.x),
-          y: snapWorldCoordinate(this.player.y),
+          x: interactionX,
+          y: interactionY,
           facing: this.player.facing,
         },
       };
       if (action.type === 'enter') {
+        this.inspection = null;
         this.stack.push(nextContext);
         this.player.x = action.spawn.x;
         this.player.y = action.spawn.y;
@@ -1879,6 +1909,7 @@ export function createWorldState({
         return true;
       }
       if (action.type === 'deepen') {
+        this.inspection = null;
         this.stack.push(nextContext);
         this.player.x = action.spawn.x;
         this.player.y = action.spawn.y;
@@ -1893,6 +1924,7 @@ export function createWorldState({
         snapWorldCoordinate(this.player.y)
       );
       if (!isCoreWorldExitLike(action)) return false;
+      this.inspection = null;
       const currentContext = this.getCurrentContext();
       this.stack.pop();
       const spawn = action.spawn ?? currentContext.returnTo;

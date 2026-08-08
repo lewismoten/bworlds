@@ -16,6 +16,7 @@ import { createPaintedCanvasTexture } from '@bworlds/three-support';
 import type {
   CanOccupy3DContext,
   ClassifyOverworldTileContext,
+  CreateWorldActionContext,
   Create3DModelContext,
   Paint2DContext,
   RuntimePlugin,
@@ -806,6 +807,9 @@ export function createForestTilePlugin(): RuntimePlugin {
         }
         return true;
       }),
+      createWorldAction(context: CreateWorldActionContext) {
+        return createForestCarvingInspectAction(context);
+      },
       create3DModel({
         three,
         state,
@@ -2604,6 +2608,76 @@ function getForestCarvingText(
   }
 
   return motif === 'heart' ? 'LM*FG' : 'LM+FG';
+}
+
+function createForestCarvingInspectAction({
+  tile,
+  x,
+  y,
+}: CreateWorldActionContext) {
+  if (tile.kind !== 'forest') {
+    return null;
+  }
+
+  const carving = getPrimaryForestCarving(x, y);
+  if (!carving) {
+    return null;
+  }
+
+  return {
+    type: 'inspect',
+    label: 'tree carvings',
+    note: describeForestCarving(carving),
+  };
+}
+
+function getPrimaryForestCarving(tileX: number, tileY: number) {
+  const carvings = getForestCarvings(tileX, tileY);
+  if (carvings.length === 0) {
+    return null;
+  }
+
+  const index = Math.floor(
+    hash2D('forest-carving-inspect', tileX, tileY) * carvings.length
+  );
+  return carvings[index] ?? carvings[0] ?? null;
+}
+
+function describeForestCarving(carving: ForestCarvingDescriptor) {
+  if (carving.motif === 'historical-inscription') {
+    return `A weathered carving reads "${carving.text}", half-swallowed by old bark.`;
+  }
+  if (carving.motif === 'treasure-map-clue') {
+    return `A cryptic carving marks "${carving.text}", like a clue cut for a hidden route.`;
+  }
+  if (carving.motif === 'quest-hint') {
+    return `A deliberate trail sign reads "${carving.text}", pointing the observant onward.`;
+  }
+  if (carving.motif === 'warning') {
+    return 'A stark warning mark has been carved deep into the trunk.';
+  }
+  if (carving.motif === 'guild') {
+    return 'A compact guild sign has been cut into the bark with practiced strokes.';
+  }
+  if (carving.motif === 'religious') {
+    return 'A simple devotional mark rests in the bark, smoothed by weather.';
+  }
+  if (carving.motif === 'symbol') {
+    return 'A lone symbol circles the trunk, its meaning left to the woods.';
+  }
+  if (carving.motif === 'arrow') {
+    return `A carved arrow points ${carving.text === '>' ? 'east' : 'west'}.`;
+  }
+  if (carving.motif === 'traveler-mark') {
+    return 'A traveler has left an X-shaped waymark on the tree.';
+  }
+  if (carving.motif === 'date') {
+    return `A faded date, "${carving.text}", is still visible beneath the bark growth.`;
+  }
+  if (carving.motif === 'heart') {
+    return 'Two sets of initials are enclosed in a heart that has aged with the tree.';
+  }
+  return `Old initials, "${carving.text}", have been carved into the trunk.`;
 }
 
 function pickForestCarvingLabel(
