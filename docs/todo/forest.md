@@ -614,7 +614,7 @@ This probably deserves several interchangeable strategies.
 
 # Spider Webs
 
-* [ ] Generate webs between nearby branches.
+* [x] Generate webs between nearby branches.
 * [x] Generate webs inside hollows.
 * [x] Generate webs around dead branches.
 * [x] Generate webs on abandoned/dead trees more frequently.

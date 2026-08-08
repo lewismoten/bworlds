@@ -538,7 +538,7 @@ describe('tile forest', () => {
     expect(getForestTrail(first.x, first.y)).toEqual(first.trail);
   });
 
-  it('generates deterministic spider webs for hollows and deadwood', () => {
+  it('generates deterministic spider webs for branches, hollows, and deadwood', () => {
     const sampleTiles: Array<{
       x: number;
       y: number;
@@ -555,6 +555,9 @@ describe('tile forest', () => {
     }
 
     expect(sampleTiles.length).toBeGreaterThan(0);
+    expect(
+      sampleTiles.some(({ webs }) => webs.some((web) => web.kind === 'branch'))
+    ).toBe(true);
     expect(
       sampleTiles.some(({ webs }) => webs.some((web) => web.kind === 'hollow'))
     ).toBe(true);
@@ -589,6 +592,11 @@ describe('tile forest', () => {
     }
 
     expect(sampleTiles.length).toBeGreaterThan(0);
+    expect(
+      sampleTiles.some(({ spiders }) =>
+        spiders.some((spider) => spider.webKind === 'branch')
+      )
+    ).toBe(true);
     expect(
       sampleTiles.some(({ spiders }) =>
         spiders.some((spider) => spider.webKind === 'hollow')

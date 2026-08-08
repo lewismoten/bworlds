@@ -549,6 +549,39 @@ const resolveForestWebDescriptors = createCoordinateValueResolver(
     const floorDetails = resolveForestFloorDetailDescriptors(tileX, tileY);
     const webs: ForestWebDescriptor[] = [];
 
+    trees.forEach((tree, treeIndex) => {
+      if (tree.form !== 'broadleaf' || tree.branches.length < 2) {
+        return;
+      }
+
+      const sortedBranches = [...tree.branches].sort((left, right) => left.y - right.y);
+      for (let branchIndex = 1; branchIndex < sortedBranches.length; branchIndex += 1) {
+        const lower = sortedBranches[branchIndex - 1]!;
+        const upper = sortedBranches[branchIndex]!;
+        const chance = hash2D(
+          'forest-web-branch',
+          tileX * 37 + treeIndex * 11 + branchIndex,
+          tileY * 39 - treeIndex * 13 - branchIndex
+        );
+        const branchGap = Math.hypot(upper.x - lower.x, upper.z - lower.z);
+        if (chance < 0.78 || branchGap > 0.18) {
+          continue;
+        }
+
+        const midX = tree.x + (lower.x + upper.x) * 0.5;
+        const midY = (lower.y + upper.y) * 0.5;
+        const midZ = tree.y + (lower.z + upper.z) * 0.5;
+        webs.push({
+          kind: 'branch',
+          x: midX,
+          y: midY,
+          z: midZ,
+          radius: Math.max(0.03, branchGap * 0.42),
+          strandCount: 4 + Math.floor(chance * 3),
+        });
+      }
+    });
+
     hollows.forEach((hollow, hollowIndex) => {
       const tree = trees[hollow.treeIndex];
       if (!tree) {
@@ -604,7 +637,9 @@ const resolveForestSpiderDescriptors = createCoordinateValueResolver(
 
     webs.forEach((web, webIndex) => {
       const chance = hash2D('forest-spider-web', tileX * 59 + webIndex, tileY * 61);
-      if (chance < (web.kind === 'deadwood' ? 0.26 : 0.42)) {
+      const threshold =
+        web.kind === 'deadwood' ? 0.26 : web.kind === 'branch' ? 0.58 : 0.42;
+      if (chance < threshold) {
         return;
       }
 
@@ -2653,7 +2688,7 @@ interface ForestFireflyHabitatAnchor {
 }
 
 interface ForestWebDescriptor {
-  kind: 'hollow' | 'deadwood';
+  kind: 'branch' | 'hollow' | 'deadwood';
   x: number;
   y: number;
   z: number;
@@ -2662,7 +2697,7 @@ interface ForestWebDescriptor {
 }
 
 interface ForestSpiderDescriptor {
-  webKind: 'hollow' | 'deadwood';
+  webKind: 'branch' | 'hollow' | 'deadwood';
   x: number;
   y: number;
   z: number;
