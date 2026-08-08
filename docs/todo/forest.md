@@ -609,7 +609,7 @@ This probably deserves several interchangeable strategies.
 * [ ] Animate independently.
 * [ ] Vary glow timing.
 * [ ] Avoid synchronized flashing unless representing a species that does so.
-* [ ] Reduce firefly rendering at distance.
+* [x] Reduce firefly rendering at distance.
 * [ ] Allow fireflies to cluster around certain vegetation.
 
 # Spider Webs

@@ -1643,6 +1643,63 @@ describe('tile forest', () => {
     ).toBe(true);
   });
 
+  it('renders fireflies as particles only in full-detail forest models', () => {
+    const plugin = createForestTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'forest');
+    const state = {
+      player: { x: 0, y: 0, facing: 0 },
+      getCurrentContext() {
+        return { id: 'overworld', type: 'overworld', depth: 0 };
+      },
+      getCurrentTile() {
+        return { kind: 'forest' };
+      },
+      getTileDefinition() {
+        return {
+          name: 'Forest',
+          color: '#000000',
+          miniColor: '#111111',
+          walkable: true,
+          wallHeight: 0.38,
+        };
+      },
+    };
+
+    const fullModel = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'forest' },
+      tileX: 8,
+      tileY: 6,
+      detailLevel: 'full',
+    }) as FakeGroup;
+    const lowModel = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'forest' },
+      tileX: 8,
+      tileY: 6,
+      detailLevel: 'low',
+    }) as FakeGroup;
+
+    const fullFireflyPoints: FakePoints[] = [];
+    fullModel.traverse((node) => {
+      if (node instanceof FakePoints && node.userData?.forestFirefly) {
+        fullFireflyPoints.push(node);
+      }
+    });
+
+    let lowFireflyCount = 0;
+    lowModel.traverse((node) => {
+      if (node.userData?.forestFirefly) {
+        lowFireflyCount += 1;
+      }
+    });
+
+    expect(fullFireflyPoints).toHaveLength(1);
+    expect(lowFireflyCount).toBe(0);
+  });
+
   it('caches deterministic firefly descriptors and keeps their count capped', () => {
     const first = getForestFireflyDescriptors(8, 6);
     const second = getForestFireflyDescriptors(8, 6);

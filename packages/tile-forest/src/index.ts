@@ -903,8 +903,10 @@ export function createForestTilePlugin(): RuntimePlugin {
             group.add(log);
           }
 
-          for (const firefly of getForestFireflies(three, tileX, tileY)) {
-            group.add(firefly);
+          if (detailLevel === 'full') {
+            for (const firefly of getForestFireflies(three, tileX, tileY)) {
+              group.add(firefly);
+            }
           }
         }
 
