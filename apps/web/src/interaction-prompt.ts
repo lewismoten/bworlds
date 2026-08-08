@@ -1,4 +1,9 @@
-import type { TileLike, WorldActionLike, WorldStateLike } from '@bworlds/plugin-api';
+import type {
+  TileLike,
+  WorldActionLike,
+  WorldMapLike,
+  WorldStateLike,
+} from '@bworlds/plugin-api';
 
 type PromptState = Pick<
   WorldStateLike,
@@ -7,7 +12,8 @@ type PromptState = Pick<
   player: { x: number; y: number };
 };
 
-type ResolvedPromptState = Pick<PromptState, 'getCurrentMap'> & {
+type ResolvedPromptState = {
+  map?: WorldMapLike | null;
   player: { x: number; y: number };
   tile: TileLike;
   contextLabel: string;
@@ -15,7 +21,7 @@ type ResolvedPromptState = Pick<PromptState, 'getCurrentMap'> & {
 
 export function getInteractionPrompt(state: PromptState): string {
   return getInteractionPromptFromResolvedState({
-    getCurrentMap: state.getCurrentMap,
+    map: state.getCurrentMap(),
     player: state.player,
     tile: state.getCurrentTile(state.player.x, state.player.y),
     contextLabel: state.getCurrentContext().label,
@@ -25,7 +31,7 @@ export function getInteractionPrompt(state: PromptState): string {
 export function getInteractionPromptFromResolvedState(
   state: ResolvedPromptState
 ): string {
-  const map = state.getCurrentMap?.();
+  const map = state.map ?? null;
   const action =
     (map?.getAction?.(state.player.x, state.player.y, state as unknown as WorldStateLike) as
       | WorldActionLike

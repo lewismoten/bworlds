@@ -1,3 +1,1 @@
-- [X] index.ts:100 Uncaught RangeError: Maximum call stack size exceeded at sampleTerrainSignals
-- [X] celestial-preview.ts: preview planet texture sampler could crash when `sampleOverworld` expected `this`
-- [X] celestial-preview.ts / solar-system-preview.ts: Three.js material warnings from undefined optional material fields
+- [x] `interaction-prompt.ts` / `main.ts`: the viewport interaction prompt could crash render updates by calling a detached `getCurrentMap()` method without the original world-state context

@@ -162,30 +162,61 @@ describe('interaction prompt', () => {
     expect(getInteractionPrompt(state as never)).toBe('');
   });
 
-  it('can build a prompt from pre-resolved tile and context state', () => {
-    expect(
-      getInteractionPromptFromResolvedState({
-        player: { x: 4, y: 6 },
-        tile: { kind: 'town', poi: { type: 'town', name: 'Oakcross' } },
-        contextLabel: 'Overworld',
-        getCurrentMap() {
+  it('resolves the current map from the original state context', () => {
+    const state = {
+      player: { x: 4, y: 6 },
+      map: {
+        getAction() {
           return {
-            getAction() {
-              return {
-                type: 'enter',
-                context: {
-                  id: 'town:4:6:0',
-                  label: 'Oakcross',
-                  type: 'town',
-                  depth: 1,
-                },
-              };
-            },
-            getExit() {
-              return null;
+            type: 'enter',
+            context: {
+              id: 'town:4:6:0',
+              label: 'Oakcross',
+              type: 'town',
+              depth: 1,
             },
           };
         },
+        getExit() {
+          return null;
+        },
+      },
+      getCurrentContext() {
+        return { id: 'overworld', label: 'Overworld', type: 'overworld', depth: 0 };
+      },
+      getCurrentTile() {
+        return { kind: 'town', poi: { type: 'town', name: 'Oakcross' } };
+      },
+      getCurrentMap() {
+        return this.map;
+      },
+    };
+
+    expect(getInteractionPrompt(state as never)).toBe('Press Enter to enter Oakcross');
+  });
+
+  it('can build a prompt from pre-resolved tile and context state', () => {
+    expect(
+      getInteractionPromptFromResolvedState({
+        map: {
+          getAction() {
+            return {
+              type: 'enter',
+              context: {
+                id: 'town:4:6:0',
+                label: 'Oakcross',
+                type: 'town',
+                depth: 1,
+              },
+            };
+          },
+          getExit() {
+            return null;
+          },
+        },
+        player: { x: 4, y: 6 },
+        tile: { kind: 'town', poi: { type: 'town', name: 'Oakcross' } },
+        contextLabel: 'Overworld',
       } as never)
     ).toBe('Press Enter to enter Oakcross');
   });

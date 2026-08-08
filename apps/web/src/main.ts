@@ -1043,7 +1043,7 @@ function updateStatus(
   const playerLevel = normalizePlayerLevel(state.playerLevel);
   const hint = tile.note ?? 'Explore the frontier.';
   const interactionPrompt = getInteractionPromptFromResolvedState({
-    getCurrentMap: state.getCurrentMap,
+    map: state.getCurrentMap(),
     player: { x: spatial.playerX, y: spatial.playerY },
     tile,
     contextLabel: context.label,
