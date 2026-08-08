@@ -39,6 +39,7 @@ const OWL_KEY = 'forestOwl';
 const CARVING_KEY = 'forestCarving';
 const MEADOW_KEY = 'forestMeadow';
 const BIRD_KEY = 'forestBird';
+const WEB_KEY = 'forestWeb';
 const TRAIL_KEY = 'forestTrail';
 const TREE_FORM_KEY = 'forestTreeForm';
 const TREE_FOLIAGE_KEY = 'forestTreeFoliage';
@@ -63,6 +64,7 @@ const treeDescriptorCache = new Map<string, ForestTreeDescriptor[]>();
 const treeStyleCache = new Map<string, ForestTreeStyle>();
 const forestTrailCache = new Map<string, ForestTrailDescriptor | null>();
 const forestFireflyCache = new Map<string, ForestFireflyDescriptor[]>();
+const forestWebCache = new Map<string, ForestWebDescriptor[]>();
 const resolveForestTrailDescriptor = createCoordinateValueResolver(
   forestTrailCache,
   ({ tileX, tileY }) => {
@@ -536,6 +538,61 @@ const resolveForestFireflyDescriptors = createCoordinateValueResolver(
     return fireflies;
   }
 );
+const resolveForestWebDescriptors = createCoordinateValueResolver(
+  forestWebCache,
+  ({ tileX, tileY }) => {
+    const trees = resolveForestTreeDescriptors(tileX, tileY);
+    const hollows = resolveForestHollowDescriptors(tileX, tileY);
+    const floorDetails = resolveForestFloorDetailDescriptors(tileX, tileY);
+    const webs: ForestWebDescriptor[] = [];
+
+    hollows.forEach((hollow, hollowIndex) => {
+      const tree = trees[hollow.treeIndex];
+      if (!tree) {
+        return;
+      }
+
+      const chance = hash2D('forest-web-hollow', tileX * 41 + hollowIndex, tileY * 43);
+      if (chance < 0.34) {
+        return;
+      }
+
+      webs.push({
+        kind: 'hollow',
+        x: tree.x + tree.radius * 0.64 * hollow.sideOffset,
+        y: hollow.height,
+        z: tree.y + hollow.depth * 0.18,
+        radius: hollow.scale * (0.68 + chance * 0.22),
+        strandCount: 5 + Math.floor(chance * 4),
+      });
+    });
+
+    floorDetails.forEach((detail, detailIndex) => {
+      const chance = hash2D('forest-web-deadwood', tileX * 47 + detailIndex, tileY * 53);
+      const threshold = detail.kind === 'fallen-tree' ? 0.18 : 0.28;
+      if (chance < threshold) {
+        return;
+      }
+
+      webs.push({
+        kind: 'deadwood',
+        x: detail.x,
+        y: detail.kind === 'fallen-tree' ? detail.height * 1.25 : detail.height * 1.4,
+        z: detail.y,
+        radius:
+          detail.kind === 'fallen-tree'
+            ? (detail.length ?? detail.radius) * 0.18
+            : detail.radius * 0.12,
+        strandCount:
+          detail.kind === 'fallen-tree'
+            ? 6 + Math.floor(chance * 4)
+            : 5 + Math.floor(chance * 3),
+      });
+    });
+
+    return webs;
+  }
+);
 const treeGeometryCache = new WeakMap<
   object,
   {
@@ -892,6 +949,17 @@ export function createForestTilePlugin(): RuntimePlugin {
               group.add(birdGroup);
             }
           }
+          if (renderCloseDetails) {
+            addForestWebInstances(
+              three,
+              group,
+              geometry,
+              floorDetailStyle,
+              tileX,
+              tileY,
+              getForestWebs(tileX, tileY)
+            );
+          }
           const trail = getForestTrail(tileX, tileY);
           if (trail) {
             addForestBreadcrumbInstances(
@@ -1084,6 +1152,13 @@ export function getForestFireflyDescriptors(
   return resolveForestFireflyDescriptors(tileX, tileY);
 }
 
+export function getForestWebs(
+  tileX: number,
+  tileY: number
+): ForestWebDescriptor[] {
+  return resolveForestWebDescriptors(tileX, tileY);
+}
+
 export function getForestTrail(
   tileX: number,
   tileY: number
@@ -1250,6 +1325,13 @@ function getTreeStyle(
         color: '#f6e6a0',
         roughness: 0.82,
         metalness: 0.02,
+      }),
+      webMaterial: new three.MeshStandardMaterial({
+        color: '#d9dfdf',
+        roughness: 0.96,
+        metalness: 0,
+        transparent: true,
+        opacity: 0.68,
       }),
       carvingMaterial: new three.MeshStandardMaterial({
         color: '#d3a06d',
@@ -1702,6 +1784,62 @@ function addForestBreadcrumbInstances(
     );
   });
   group.add(breadcrumbInstances);
+}
+
+function addForestWebInstances(
+  three: ThreeHostLike,
+  group: ThreeObject3DLike,
+  geometry: TreeGeometry,
+  style: ForestTreeStyle,
+  tileX: number,
+  tileY: number,
+  webs: ForestWebDescriptor[]
+) {
+  if (webs.length === 0) {
+    return;
+  }
+
+  const totalStrands = webs.reduce((sum, web) => sum + web.strandCount, 0);
+  const webInstances = new three.InstancedMesh(
+    geometry.foliage,
+    style.webMaterial,
+    totalStrands
+  );
+  webInstances.userData = {
+    ...(webInstances.userData ?? {}),
+    [WEB_KEY]: true,
+  };
+
+  let strandIndex = 0;
+  webs.forEach((web, webIndex) => {
+    for (let index = 0; index < web.strandCount; index += 1) {
+      const angle =
+        (index / web.strandCount) * Math.PI * 2 +
+        hash2D('forest-web-angle', webIndex, index) * 0.3;
+      const distance =
+        web.radius *
+        (0.24 + hash2D('forest-web-radius', webIndex, index) * 0.76);
+      const silkScale =
+        web.kind === 'deadwood'
+          ? 0.008 + hash2D('forest-web-scale', webIndex, index) * 0.006
+          : 0.007 + hash2D('forest-web-scale', webIndex, index) * 0.005;
+      webInstances.setMatrixAt(
+        strandIndex,
+        createLowDetailTreeMatrix(
+          three,
+          tileX + web.x + Math.cos(angle) * distance,
+          web.y + Math.sin(angle * 1.7) * web.radius * 0.16,
+          tileY + web.z + Math.sin(angle) * distance,
+          silkScale,
+          silkScale,
+          silkScale
+        )
+      );
+      strandIndex += 1;
+    }
+  });
+
+  group.add(webInstances);
 }
 
 function createForestFloorDetailDescriptor(
@@ -2268,6 +2406,7 @@ interface ForestTreeStyle {
   hollowMaterial: ThreeMaterialLike;
   owlBodyMaterial: ThreeMaterialLike;
   owlEyeMaterial: ThreeMaterialLike;
+  webMaterial: ThreeMaterialLike;
   carvingMaterial: ThreeMaterialLike;
   meadowGrassMaterial: ThreeMaterialLike;
   meadowStemMaterial: ThreeMaterialLike;
@@ -2314,6 +2453,15 @@ interface ForestFireflyHabitatAnchor {
   radius: number;
   height: number;
   weight: number;
+}
+
+interface ForestWebDescriptor {
+  kind: 'hollow' | 'deadwood';
+  x: number;
+  y: number;
+  z: number;
+  radius: number;
+  strandCount: number;
 }
 
 interface ForestTreeDescriptor {

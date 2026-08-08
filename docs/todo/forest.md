@@ -615,9 +615,9 @@ This probably deserves several interchangeable strategies.
 # Spider Webs
 
 * [ ] Generate webs between nearby branches.
-* [ ] Generate webs inside hollows.
-* [ ] Generate webs around dead branches.
-* [ ] Generate webs on abandoned/dead trees more frequently.
+* [x] Generate webs inside hollows.
+* [x] Generate webs around dead branches.
+* [x] Generate webs on abandoned/dead trees more frequently.
 * [ ] Add dew or rain glint where appropriate.
 * [ ] Allow webs to be disturbed or destroyed.
 * [ ] Generate spiders where appropriate.

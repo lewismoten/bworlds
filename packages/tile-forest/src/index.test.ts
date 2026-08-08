@@ -20,6 +20,7 @@ import {
   getForestTrail,
   getForestTreeForms,
   getForestTreeHollows,
+  getForestWebs,
 } from './index.ts';
 
 class FakeGeometry {
@@ -534,6 +535,40 @@ describe('tile forest', () => {
 
     const first = sampleTiles[0];
     expect(getForestTrail(first.x, first.y)).toEqual(first.trail);
+  });
+
+  it('generates deterministic spider webs for hollows and deadwood', () => {
+    const sampleTiles: Array<{
+      x: number;
+      y: number;
+      webs: ReturnType<typeof getForestWebs>;
+    }> = [];
+
+    for (let tileY = 0; tileY < 24; tileY += 1) {
+      for (let tileX = 0; tileX < 24; tileX += 1) {
+        const webs = getForestWebs(tileX, tileY);
+        if (webs.length > 0) {
+          sampleTiles.push({ x: tileX, y: tileY, webs });
+        }
+      }
+    }
+
+    expect(sampleTiles.length).toBeGreaterThan(0);
+    expect(
+      sampleTiles.some(({ webs }) => webs.some((web) => web.kind === 'hollow'))
+    ).toBe(true);
+    expect(
+      sampleTiles.some(({ webs }) => webs.some((web) => web.kind === 'deadwood'))
+    ).toBe(true);
+    expect(
+      sampleTiles.some(({ webs }) =>
+        webs.filter((web) => web.kind === 'deadwood').length >=
+        webs.filter((web) => web.kind === 'hollow').length
+      )
+    ).toBe(true);
+
+    const first = sampleTiles[0];
+    expect(getForestWebs(first.x, first.y)).toBe(first.webs);
   });
 
   it('creates a lower-detail distant forest model', () => {
@@ -1571,6 +1606,69 @@ describe('tile forest', () => {
     expect(lowTrailCount).toBe(0);
   });
 
+  it('renders spider webs only in nearby full-detail forest models', () => {
+    const plugin = createForestTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'forest');
+
+    let targetTile: { x: number; y: number } | null = null;
+    for (let tileY = 0; tileY < 24 && !targetTile; tileY += 1) {
+      for (let tileX = 0; tileX < 24; tileX += 1) {
+        if (getForestWebs(tileX, tileY).length > 0) {
+          targetTile = { x: tileX, y: tileY };
+          break;
+        }
+      }
+    }
+
+    expect(targetTile).not.toBeNull();
+
+    const nearState = createForestTestState(targetTile!.x, targetTile!.y);
+    const farState = createForestTestState(-100, -100);
+
+    const nearModel = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state: nearState,
+      tile: { kind: 'forest' },
+      tileX: targetTile!.x,
+      tileY: targetTile!.y,
+      detailLevel: 'full',
+    }) as FakeGroup;
+    const farModel = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state: farState,
+      tile: { kind: 'forest' },
+      tileX: targetTile!.x,
+      tileY: targetTile!.y,
+      detailLevel: 'full',
+    }) as FakeGroup;
+    const lowModel = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state: nearState,
+      tile: { kind: 'forest' },
+      tileX: targetTile!.x,
+      tileY: targetTile!.y,
+      detailLevel: 'low',
+    }) as FakeGroup;
+
+    const nearWebInstances = nearModel.children.filter(
+      (node) => node instanceof FakeInstancedMesh && node.userData?.forestWeb
+    ) as FakeInstancedMesh[];
+    const countTaggedNodes = (model: FakeGroup, key: string) => {
+      let count = 0;
+      model.traverse((node) => {
+        if (node.userData?.[key]) {
+          count += 1;
+        }
+      });
+      return count;
+    };
+
+    expect(nearWebInstances).toHaveLength(1);
+    expect(nearWebInstances[0]?.count).toBeGreaterThan(0);
+    expect(countTaggedNodes(farModel, 'forestWeb')).toBe(0);
+    expect(countTaggedNodes(lowModel, 'forestWeb')).toBe(0);
+  });
+
   it('shows fireflies only after dark', () => {
     const plugin = createForestTilePlugin();
     const tile = plugin.tiles?.find((entry) => entry.kind === 'forest');
@@ -1797,7 +1895,8 @@ describe('tile forest', () => {
           getForestTreeHollows(tileX, tileY).length > 0 &&
           getForestOwls(tileX, tileY).length > 0 &&
           getForestCarvings(tileX, tileY).length > 0 &&
-          getForestBirds(tileX, tileY).length > 0
+          getForestBirds(tileX, tileY).length > 0 &&
+          getForestWebs(tileX, tileY).length > 0
         ) {
           targetTile = { x: tileX, y: tileY };
           break;
@@ -1807,7 +1906,7 @@ describe('tile forest', () => {
 
     expect(targetTile).not.toBeNull();
 
-    const farState = createForestTestState(0, 0);
+    const farState = createForestTestState(-100, -100);
     const nearState = createForestTestState(targetTile!.x, targetTile!.y);
 
     const nearModel = tile?.create3DModel?.({
@@ -1845,6 +1944,7 @@ describe('tile forest', () => {
     expect(countTaggedNodes(farModel, 'forestOwl')).toBe(0);
     expect(countTaggedNodes(farModel, 'forestCarving')).toBe(0);
     expect(countTaggedNodes(farModel, 'forestBird')).toBe(0);
+    expect(countTaggedNodes(farModel, 'forestWeb')).toBe(0);
     expect(countTaggedNodes(farModel, 'forestFirefly')).toBe(0);
   });
 
