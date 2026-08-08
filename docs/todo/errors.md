@@ -235,7 +235,7 @@ There are two important paths through `buildTileNode()`:
 
 * [ ] Track why a tile was rebuilt in debug mode.
 
-* [ ] Add counters for `buildTileNode()` calls per second.
+* [x] Add counters for `buildTileNode()` calls per second.
 
 * [ ] Warn if tiles rebuild while the camera/player is stationary.
 
@@ -247,7 +247,7 @@ There are two important paths through `buildTileNode()`:
 
 This is about **8.25 MB inclusive** in this sample.
 
-* [ ] Audit how frequently `syncTileModelDetailLevels()` runs.
+* [x] Audit how frequently `syncTileModelDetailLevels()` runs.
 * [x] Do not evaluate LOD changes for every tile every frame if unnecessary.
 * [x] Reevaluate LOD only after meaningful camera movement.
 * [ ] Bucket LOD checks across several frames.

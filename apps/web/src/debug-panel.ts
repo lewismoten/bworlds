@@ -15,7 +15,9 @@ export type DebugSnapshot = {
   pendingTileCount: number;
   averageTileBuildMs: number;
   maxTileBuildMs: number;
+  tileNodeBuildsPerSecond: number;
   tileBuildsPerSecond: number;
+  lodChecksPerSecond: number;
   lodReplacementsPerSecond: number;
   object3dCount: number;
   groupCount: number;
@@ -72,7 +74,9 @@ export function getDebugSignature(snapshot: DebugSnapshot): string {
     snapshot.pendingTileCount,
     snapshot.averageTileBuildMs.toFixed(2),
     snapshot.maxTileBuildMs.toFixed(2),
+    snapshot.tileNodeBuildsPerSecond,
     snapshot.tileBuildsPerSecond,
+    snapshot.lodChecksPerSecond,
     snapshot.lodReplacementsPerSecond,
     snapshot.object3dCount,
     snapshot.groupCount,
@@ -170,7 +174,9 @@ export function buildDebugMarkup(snapshot: DebugSnapshot): string {
     <div><dt>Pending Tiles</dt><dd>${snapshot.pendingTileCount}</dd></div>
     <div><dt>Avg Tile Build</dt><dd>${snapshot.averageTileBuildMs.toFixed(2)} ms</dd></div>
     <div><dt>Max Tile Build</dt><dd>${snapshot.maxTileBuildMs.toFixed(2)} ms</dd></div>
+    <div><dt>Tile Nodes/s</dt><dd>${snapshot.tileNodeBuildsPerSecond}</dd></div>
     <div><dt>Tile Builds/s</dt><dd>${snapshot.tileBuildsPerSecond}</dd></div>
+    <div><dt>LOD Checks/s</dt><dd>${snapshot.lodChecksPerSecond}</dd></div>
     <div><dt>LOD Swaps/s</dt><dd>${snapshot.lodReplacementsPerSecond}</dd></div>
     <div><dt>Objects</dt><dd>${snapshot.object3dCount}</dd></div>
     <div><dt>Objects / Tile</dt><dd>${objectsPerVisibleTile}</dd></div>

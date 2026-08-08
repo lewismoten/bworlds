@@ -36,7 +36,9 @@ describe('debug panel', () => {
       pendingTileCount: 6,
       averageTileBuildMs: 2.45,
       maxTileBuildMs: 6.75,
+      tileNodeBuildsPerSecond: 17,
       tileBuildsPerSecond: 14,
+      lodChecksPerSecond: 5,
       lodReplacementsPerSecond: 3,
       object3dCount: 318,
       groupCount: 54,
@@ -77,7 +79,9 @@ describe('debug panel', () => {
     expect(buildDebugMarkup(snapshot)).toContain('Visible Trees');
     expect(buildDebugMarkup(snapshot)).toContain('Avg Tile Build');
     expect(buildDebugMarkup(snapshot)).toContain('Max Tile Build');
+    expect(buildDebugMarkup(snapshot)).toContain('Tile Nodes/s');
     expect(buildDebugMarkup(snapshot)).toContain('Tile Builds/s');
+    expect(buildDebugMarkup(snapshot)).toContain('LOD Checks/s');
     expect(buildDebugMarkup(snapshot)).toContain('LOD Swaps/s');
     expect(buildDebugMarkup(snapshot)).toContain('Points Nodes');
     expect(buildDebugMarkup(snapshot)).toContain('Sprites');

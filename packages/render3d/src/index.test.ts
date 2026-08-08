@@ -6,6 +6,7 @@ import {
   clampCameraPitch,
   DEFAULT_CAMERA_PITCH,
   getRecentDurationStats,
+  getRenderChurnStats,
   getDecoratedTileSurfaceHeight,
   getBoundaryPriority,
   getFarLandModelOpacity,
@@ -120,6 +121,44 @@ describe('render3d visibility helpers', () => {
     recordRecentMetric(timestamps, 2405);
     expect(timestamps).toEqual([2405]);
     expect(countRecentMetricEvents(timestamps, 2600)).toBe(1);
+  });
+
+  it('summarizes recent render churn counters for debug stats', () => {
+    expect(
+      getRenderChurnStats(
+        {
+          tileNodeBuilds: [100, 450, 900],
+          tileBuilds: [450, 900],
+          lodChecks: [900],
+          lodReplacements: [100, 450],
+          tileBuildDurations: [],
+        },
+        950
+      )
+    ).toEqual({
+      tileNodeBuildsPerSecond: 3,
+      tileBuildsPerSecond: 2,
+      lodChecksPerSecond: 1,
+      lodReplacementsPerSecond: 2,
+    });
+
+    expect(
+      getRenderChurnStats(
+        {
+          tileNodeBuilds: [100, 450, 900],
+          tileBuilds: [450, 900],
+          lodChecks: [900],
+          lodReplacements: [100, 450],
+          tileBuildDurations: [],
+        },
+        1505
+      )
+    ).toEqual({
+      tileNodeBuildsPerSecond: 1,
+      tileBuildsPerSecond: 1,
+      lodChecksPerSecond: 1,
+      lodReplacementsPerSecond: 0,
+    });
   });
 
   it('tracks recent tile build durations with rolling average and max stats', () => {

@@ -63,7 +63,9 @@ type Render3DController = {
     pendingTileCount: number;
     averageTileBuildMs: number;
     maxTileBuildMs: number;
+    tileNodeBuildsPerSecond: number;
     tileBuildsPerSecond: number;
+    lodChecksPerSecond: number;
     lodReplacementsPerSecond: number;
     object3dCount: number;
     groupCount: number;
@@ -148,6 +150,14 @@ type SceneResourceStats = {
 type RecentDurationSample = {
   nowMs: number;
   durationMs: number;
+};
+
+type RenderChurnMetrics = {
+  tileNodeBuilds: number[];
+  tileBuilds: number[];
+  lodChecks: number[];
+  lodReplacements: number[];
+  tileBuildDurations: RecentDurationSample[];
 };
 
 const TILE_SIZE = 1;
@@ -290,10 +300,12 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     queue: [] as Array<{ key: string; x: number; y: number }>,
   };
   const renderChurnMetrics = {
+    tileNodeBuilds: [] as number[],
     tileBuilds: [] as number[],
+    lodChecks: [] as number[],
     lodReplacements: [] as number[],
     tileBuildDurations: [] as RecentDurationSample[],
-  };
+  } satisfies RenderChurnMetrics;
 
   function resize(width, height, pixelRatio = window.devicePixelRatio || 1) {
     const safeWidth = Math.max(1, Math.floor(width));
@@ -323,6 +335,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     y,
     detailLevel: 'full' | 'low' = 'full'
   ): DynamicTileNode {
+    recordRecentMetric(renderChurnMetrics.tileNodeBuilds, performance.now());
     const tileNode = new THREE.Group();
     const buildCache = createTileBuildCache(state);
     const tile = buildCache.getTile(x, y);
@@ -559,6 +572,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       renderChurnMetrics.tileBuildDurations,
       nowMs
     );
+    const renderChurnStats = getRenderChurnStats(renderChurnMetrics, nowMs);
     return {
       drawCalls: renderer.info.render.calls,
       triangles: renderer.info.render.triangles,
@@ -570,11 +584,10 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       pendingTileCount: pendingWorldBuild.queue.length,
       averageTileBuildMs: recentTileBuildStats.averageMs,
       maxTileBuildMs: recentTileBuildStats.maxMs,
-      tileBuildsPerSecond: countRecentMetricEvents(renderChurnMetrics.tileBuilds, nowMs),
-      lodReplacementsPerSecond: countRecentMetricEvents(
-        renderChurnMetrics.lodReplacements,
-        nowMs
-      ),
+      tileNodeBuildsPerSecond: renderChurnStats.tileNodeBuildsPerSecond,
+      tileBuildsPerSecond: renderChurnStats.tileBuildsPerSecond,
+      lodChecksPerSecond: renderChurnStats.lodChecksPerSecond,
+      lodReplacementsPerSecond: renderChurnStats.lodReplacementsPerSecond,
       object3dCount: sceneResourceStats.object3dCount,
       groupCount: sceneResourceStats.groupCount,
       meshCount: sceneResourceStats.meshCount,
@@ -598,6 +611,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     registry: ReturnType<typeof getActivePluginRegistry>,
     nowMs: number
   ): void {
+    recordRecentMetric(renderChurnMetrics.lodChecks, nowMs);
     for (const [key, entry] of visibleTileNodes.entries()) {
       if (!entry.modelRoot) {
         continue;
@@ -1729,6 +1743,36 @@ export function getRecentDurationStats(
   return {
     averageMs: totalMs / samples.length,
     maxMs,
+  };
+}
+
+export function getRenderChurnStats(
+  metrics: RenderChurnMetrics,
+  nowMs: number,
+  windowMs = 1000
+): {
+  tileNodeBuildsPerSecond: number;
+  tileBuildsPerSecond: number;
+  lodChecksPerSecond: number;
+  lodReplacementsPerSecond: number;
+} {
+  return {
+    tileNodeBuildsPerSecond: countRecentMetricEvents(
+      metrics.tileNodeBuilds,
+      nowMs,
+      windowMs
+    ),
+    tileBuildsPerSecond: countRecentMetricEvents(
+      metrics.tileBuilds,
+      nowMs,
+      windowMs
+    ),
+    lodChecksPerSecond: countRecentMetricEvents(metrics.lodChecks, nowMs, windowMs),
+    lodReplacementsPerSecond: countRecentMetricEvents(
+      metrics.lodReplacements,
+      nowMs,
+      windowMs
+    ),
   };
 }
 
