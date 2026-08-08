@@ -1,3 +1,44 @@
+export type CompassLabelAlignment = 'left' | 'right';
+export type CompassDialInteractionMode = 'none' | 'heading-bug' | 'facing';
+
+export interface CompassHeadingLabelState {
+  degrees: number;
+  x: number;
+  y: number;
+  textAlign: CompassLabelAlignment;
+}
+
+export interface CompassHeadingMarkerState {
+  arcStartAngle: number;
+  arcEndAngle: number;
+  tipX: number;
+  tipY: number;
+  leftX: number;
+  leftY: number;
+  rightX: number;
+  rightY: number;
+}
+
+export interface CompassHeadingDragPreview {
+  draggedHeading: boolean;
+  headingAngle: number;
+}
+
+export interface CompassPalette {
+  northLabel: string;
+  cardinalLabel: string;
+  bezelMarker: string;
+  northNeedle: string;
+  southNeedle: string;
+  southNeedleOutline: string;
+}
+
+export interface CompassState {
+  angle: number;
+  velocity: number;
+  initialized: boolean;
+}
+
 export function easeAngle(current: number, target: number, factor: number) {
   let delta = getCompassDelta(current, target);
   return current + delta * factor;
@@ -30,19 +71,19 @@ export function getCompassHeadingLabelState(
   width: number,
   height: number,
   padding = 24
-) {
+): CompassHeadingLabelState {
   const degrees = getCompassHeadingDegrees(headingAngle);
   const quadrant = (((headingAngle + Math.PI / 2) / (Math.PI / 2)) % 4 + 4) % 4;
   const cornerIndex = Math.floor(quadrant);
-  const corners = [
-    { x: width - padding, y: padding, textAlign: 'right' as const },
-    { x: width - padding, y: height - padding, textAlign: 'right' as const },
-    { x: padding, y: height - padding, textAlign: 'left' as const },
-    { x: padding, y: padding, textAlign: 'left' as const },
+  const corners: CompassHeadingLabelState[] = [
+    { degrees, x: width - padding, y: padding, textAlign: 'right' },
+    { degrees, x: width - padding, y: height - padding, textAlign: 'right' },
+    { degrees, x: padding, y: height - padding, textAlign: 'left' },
+    { degrees, x: padding, y: padding, textAlign: 'left' },
   ];
   const corner = corners[cornerIndex] ?? corners[0];
   return {
-    degrees,
+    degrees: corner.degrees,
     x: corner.x - width / 2,
     y: corner.y - height / 2,
     textAlign: corner.textAlign,
@@ -52,7 +93,7 @@ export function getCompassHeadingLabelState(
 export function getCompassHeadingMarkerState(
   headingAngle: number,
   bezelRadius: number
-) {
+): CompassHeadingMarkerState {
   const arcSpan = 0.24;
   const tipRadius = bezelRadius + 8;
   const baseRadius = bezelRadius - 5;
@@ -95,7 +136,7 @@ export function getCompassHeadingDragPreview(
   startPointerAngle: number,
   nextHeadingAngle: number,
   draggedHeading = false
-) {
+): CompassHeadingDragPreview {
   return {
     draggedHeading:
       draggedHeading ||
@@ -114,7 +155,7 @@ export function resolveCompassHeadingRelease(
     : nextHeadingAngle;
 }
 
-export function getCompassPalette() {
+export function getCompassPalette(): CompassPalette {
   return {
     northLabel: '#d54343',
     cardinalLabel: '#dbe9ff',
@@ -153,13 +194,9 @@ export function advanceDisplayedCompassHeading(
 }
 
 export function advanceCompassState(
-  state: {
-    angle: number;
-    velocity: number;
-    initialized: boolean;
-  },
+  state: CompassState,
   target: number
-) {
+): CompassState {
   if (!state.initialized) {
     return {
       angle: target,
@@ -202,7 +239,7 @@ export function getCompassDialInteractionMode(
   centerX: number,
   centerY: number,
   radius: number
-) {
+): CompassDialInteractionMode {
   const distance = Math.hypot(pointX - centerX, pointY - centerY);
   if (distance > radius * 1.18) {
     return 'none';

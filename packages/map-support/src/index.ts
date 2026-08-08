@@ -8,19 +8,39 @@ import type {
   TileLike,
   WorldActionLike,
   WorldContextLike,
+  WorldContextType,
   WorldMapLike,
 } from '@bworlds/plugin-api';
 
-export function createChildContext(
+type DecoratedTileContext =
+  | DecorateTownTileContext
+  | DecorateBuildingTileContext
+  | DecorateDepthTileContext;
+
+type ContextualWorldLike<TContextType extends WorldContextType> = WorldContextLike & {
+  type?: TContextType;
+};
+
+function hasMatchingContextType(
+  context: WorldContextLike,
+  contextTypes: readonly WorldContextType[]
+): boolean {
+  return (
+    typeof context.type === 'string' &&
+    contextTypes.includes(context.type as WorldContextType)
+  );
+}
+
+export function createChildContext<TContextType extends WorldContextType>(
   context: WorldContextLike,
   overrides: {
     id: string;
     label: string;
-    type: string;
+    type: TContextType;
     depth?: number;
     origin?: Point;
   }
-) {
+): ContextualWorldLike<TContextType> {
   return {
     id: overrides.id,
     label: overrides.label,
@@ -83,13 +103,8 @@ export function createDecoratedMapTileGetter<
   context: TContext;
   seed: CreateMapContext['seed'];
   resolveTile(x: number, y: number): TTile;
-  decorateTile(
-    payload:
-      | DecorateTownTileContext
-      | DecorateBuildingTileContext
-      | DecorateDepthTileContext
-  ): TileLike;
-}) {
+  decorateTile(payload: DecoratedTileContext): TileLike;
+}): (x: number, y: number) => TTile {
   return function getTile(x: number, y: number): TTile {
     return decorateTile({
       context,
@@ -103,7 +118,7 @@ export function createDecoratedMapTileGetter<
 
 export function createContextMapPlugin<TContext extends WorldContextLike>(options: {
   name: string;
-  contextType: string | string[];
+  contextType: WorldContextType | readonly WorldContextType[];
   createMap(
     context: TContext,
     seed: CreateMapContext['seed'],
@@ -117,7 +132,7 @@ export function createContextMapPlugin<TContext extends WorldContextLike>(option
   return {
     name: options.name,
     createMap({ context, seed, plugins }: CreateMapContext) {
-      if (!context.type || !contextTypes.includes(context.type)) {
+      if (!hasMatchingContextType(context, contextTypes)) {
         return null;
       }
       return options.createMap(context as TContext, seed, plugins);

@@ -3,9 +3,11 @@ import { createDepthMapPlugin } from '@bworlds/map-depth';
 import { createOverworldCompositionPlugin } from '@bworlds/map-overworld';
 import { createTownMapPlugin } from '@bworlds/map-town';
 import type {
+  Kind,
   PluginPackDefinitionLike,
   PluginPackLike,
   PluginPackManifestLike,
+  RuntimePlugin,
   TileDefinitionLike,
 } from '@bworlds/plugin-api';
 import {
@@ -35,11 +37,11 @@ import { createSignTilePlugin } from '@bworlds/tile-sign';
 import { createTownTilePlugin } from '@bworlds/tile-town';
 import { createWaterTilePlugin } from '@bworlds/tile-water';
 
-function createDefaultBaseTilePlugin() {
+function createDefaultBaseTilePlugin(): RuntimePlugin {
   return withDefaultTileKind(createPlainsTilePlugin(), 'plains');
 }
 
-export function createDefaultMapPlugins() {
+export function createDefaultMapPlugins(): RuntimePlugin[] {
   return instantiateOrderedPlugins([
     {
       create: createTownMapPlugin,
@@ -60,7 +62,7 @@ export function createDefaultMapPlugins() {
   ]);
 }
 
-export function createDefaultRuntimePlugins() {
+export function createDefaultRuntimePlugins(): RuntimePlugin[] {
   return instantiateOrderedPlugins([
     {
       create: createCelestialRuntimePlugin,
@@ -99,7 +101,7 @@ export function createDefaultRuntimePlugins() {
   ]);
 }
 
-export function createDefaultTilePlugins() {
+export function createDefaultTilePlugins(): RuntimePlugin[] {
   return instantiateOrderedPlugins([
     {
       create: createInteriorTilePlugin,
@@ -147,11 +149,11 @@ export function createDefaultTilePlugins() {
   ]);
 }
 
-export function listDefaultTileDefinitions(): Array<[string, TileDefinitionLike]> {
+export function listDefaultTileDefinitions(): Array<[Kind, TileDefinitionLike]> {
   return listTileDefinitionsFromPlugins(createDefaultTilePlugins());
 }
 
-export function getDefaultTileDefinition(kind: string): TileDefinitionLike {
+export function getDefaultTileDefinition(kind: Kind): TileDefinitionLike {
   return resolveTileDefinitionFromPlugins(
     createDefaultTilePlugins(),
     kind,
