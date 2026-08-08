@@ -689,6 +689,29 @@ describe('tile forest', () => {
     expect(getForestTreeBranchProfiles(first.x, first.y)).toEqual(first.profiles);
   });
 
+  it('keeps tree branch profiles deterministic after bounded descriptor cache eviction churn', () => {
+    let target: { x: number; y: number; profiles: ReturnType<typeof getForestTreeBranchProfiles> } | null =
+      null;
+
+    for (let tileY = 0; tileY < 24 && !target; tileY += 1) {
+      for (let tileX = 0; tileX < 24; tileX += 1) {
+        const profiles = getForestTreeBranchProfiles(tileX, tileY);
+        if (profiles.length > 0) {
+          target = { x: tileX, y: tileY, profiles };
+          break;
+        }
+      }
+    }
+
+    expect(target).not.toBeNull();
+
+    for (let index = 0; index < 800; index += 1) {
+      getForestTreeBranchProfiles((index % 80) - 40, Math.floor(index / 80) - 5);
+    }
+
+    expect(getForestTreeBranchProfiles(target!.x, target!.y)).toEqual(target!.profiles);
+  });
+
   it('generates deterministic birds for some forest tiles', () => {
     const sampleTiles: Array<{
       x: number;

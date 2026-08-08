@@ -168,103 +168,110 @@ const resolveForestTreeDescriptors = createCoordinateValueResolver(
       const variety = getTreeVarietyIndex(tileX, tileY, index);
       const outlierChance = hash2D(baseSeed, 0, 0);
       const spread = loneTree ? 0.06 : outlierChance > 0.84 ? 0.28 : 0.17;
-      const descriptor: ForestTreeDescriptor = {
-        x: clampToTile(
-          groveCenter.x + (hash2D(baseSeed, 1, 0) - 0.5) * spread * 2
-        ),
-        y: clampToTile(
-          groveCenter.y + (hash2D(baseSeed, 2, 0) - 0.5) * spread * 2
-        ),
-        radius: 0.08 + hash2D(baseSeed, 3, 0) * 0.05,
-        scale: 0.78 + hash2D(baseSeed, 4, 0) * 0.55,
-        trunkHeight: 0.72 + hash2D(baseSeed, 5, 0) * 0.45,
-        variety,
-        form: getTreeForm(variety),
-        branches: [],
-        foliage: [],
-      };
-
-      const branchCount =
-        descriptor.form === 'pine'
-          ? 3 + Math.floor(hash2D(baseSeed, 6, 0) * 3)
-          : 2 + Math.floor(hash2D(baseSeed, 6, 0) * 3);
-      for (let branchIndex = 0; branchIndex < branchCount; branchIndex += 1) {
-        const branchProgress =
-          branchCount <= 1 ? 0 : branchIndex / (branchCount - 1);
-        const branchHeightFactor =
-          descriptor.form === 'pine'
-            ? 0.32 + hash2D(baseSeed, 10 + branchIndex, 2) * 0.48
-            : 0.28 + branchProgress * 0.5;
-        const broadleafSpread = 0.18 - branchProgress * 0.06;
-        const broadleafLengthScale = 1.08 - branchProgress * 0.34;
-        descriptor.branches.push({
-          x:
-            (hash2D(baseSeed, 10 + branchIndex, 1) - 0.5) *
-            (descriptor.form === 'pine' ? 0.08 : broadleafSpread),
-          y: descriptor.trunkHeight * branchHeightFactor,
-          z:
-            (hash2D(baseSeed, 10 + branchIndex, 3) - 0.5) *
-            (descriptor.form === 'pine' ? 0.08 : broadleafSpread),
-          length:
-            descriptor.form === 'pine'
-              ? 0.82 + hash2D(baseSeed, 10 + branchIndex, 4) * 0.34
-              : (0.62 + hash2D(baseSeed, 10 + branchIndex, 4) * 0.34) *
-                broadleafLengthScale,
-          pitch:
-            descriptor.form === 'pine'
-              ? 1 + hash2D(baseSeed, 10 + branchIndex, 5) * 0.28
-              : 0.3 + branchProgress * 0.38 + hash2D(baseSeed, 10 + branchIndex, 5) * 0.14,
-          roll: -1.25 + hash2D(baseSeed, 10 + branchIndex, 6) * Math.PI * 0.9,
-        });
-      }
-
-      const foliageCount =
-        descriptor.form === 'pine'
-          ? 4 + Math.floor(hash2D(baseSeed, 30, 0) * 2)
-          : 3 + Math.floor(hash2D(baseSeed, 30, 0) * 3);
-      for (let foliageIndex = 0; foliageIndex < foliageCount; foliageIndex += 1) {
-        const layerProgress =
-          foliageCount <= 1 ? 0 : foliageIndex / (foliageCount - 1);
-        const pineLayerScale = 1 - layerProgress * 0.45;
-        descriptor.foliage.push({
-          x:
-            (hash2D(baseSeed, 40 + foliageIndex, 1) - 0.5) *
-            (descriptor.form === 'pine' ? 0.08 : 0.28),
-          y:
-            descriptor.trunkHeight *
-            (descriptor.form === 'pine'
-              ? 0.42 + layerProgress * 0.52
-              : 0.78 + hash2D(baseSeed, 40 + foliageIndex, 2) * 0.5),
-          z:
-            (hash2D(baseSeed, 40 + foliageIndex, 3) - 0.5) *
-            (descriptor.form === 'pine' ? 0.08 : 0.28),
-          scaleX:
-            descriptor.form === 'pine'
-              ? 0.58 * pineLayerScale + hash2D(baseSeed, 40 + foliageIndex, 4) * 0.16
-              : 0.68 + hash2D(baseSeed, 40 + foliageIndex, 4) * 0.52,
-          scaleY:
-            descriptor.form === 'pine'
-              ? 0.32 + hash2D(baseSeed, 40 + foliageIndex, 5) * 0.18
-              : 0.58 + hash2D(baseSeed, 40 + foliageIndex, 5) * 0.48,
-          scaleZ:
-            descriptor.form === 'pine'
-              ? 0.58 * pineLayerScale + hash2D(baseSeed, 40 + foliageIndex, 6) * 0.16
-              : 0.68 + hash2D(baseSeed, 40 + foliageIndex, 6) * 0.52,
-        });
-      }
+      const x = clampToTile(
+        groveCenter.x + (hash2D(baseSeed, 1, 0) - 0.5) * spread * 2
+      );
+      const y = clampToTile(
+        groveCenter.y + (hash2D(baseSeed, 2, 0) - 0.5) * spread * 2
+      );
 
       if (landmark) {
         const distanceFromLandmark = Math.hypot(
-          descriptor.x - landmark.x,
-          descriptor.y - landmark.y
+          x - landmark.x,
+          y - landmark.y
         );
         if (distanceFromLandmark < landmark.ringRadius + 0.1) {
           continue;
         }
       }
 
-      if (trail && isPointInsideForestTrail(trail, descriptor.x, descriptor.y, 0.02)) {
+      if (trail && isPointInsideForestTrail(trail, x, y, 0.02)) {
         continue;
+      }
+
+      const trunkHeight = 0.72 + hash2D(baseSeed, 5, 0) * 0.45;
+      const form = getTreeForm(variety);
+      const branchCount =
+        form === 'pine'
+          ? 3 + Math.floor(hash2D(baseSeed, 6, 0) * 3)
+          : 2 + Math.floor(hash2D(baseSeed, 6, 0) * 3);
+      const branches = new Array<ForestBranchDescriptor>(branchCount);
+      const foliageCount =
+        form === 'pine'
+          ? 4 + Math.floor(hash2D(baseSeed, 30, 0) * 2)
+          : 3 + Math.floor(hash2D(baseSeed, 30, 0) * 3);
+      const foliage = new Array<ForestFoliageDescriptor>(foliageCount);
+      const descriptor: ForestTreeDescriptor = {
+        x,
+        y,
+        radius: 0.08 + hash2D(baseSeed, 3, 0) * 0.05,
+        scale: 0.78 + hash2D(baseSeed, 4, 0) * 0.55,
+        trunkHeight,
+        variety,
+        form,
+        branches,
+        foliage,
+      };
+
+      for (let branchIndex = 0; branchIndex < branchCount; branchIndex += 1) {
+        const branchProgress =
+          branchCount <= 1 ? 0 : branchIndex / (branchCount - 1);
+        const branchHeightFactor =
+          form === 'pine'
+            ? 0.32 + hash2D(baseSeed, 10 + branchIndex, 2) * 0.48
+            : 0.28 + branchProgress * 0.5;
+        const broadleafSpread = 0.18 - branchProgress * 0.06;
+        const broadleafLengthScale = 1.08 - branchProgress * 0.34;
+        branches[branchIndex] = {
+          x:
+            (hash2D(baseSeed, 10 + branchIndex, 1) - 0.5) *
+            (form === 'pine' ? 0.08 : broadleafSpread),
+          y: trunkHeight * branchHeightFactor,
+          z:
+            (hash2D(baseSeed, 10 + branchIndex, 3) - 0.5) *
+            (form === 'pine' ? 0.08 : broadleafSpread),
+          length:
+            form === 'pine'
+              ? 0.82 + hash2D(baseSeed, 10 + branchIndex, 4) * 0.34
+              : (0.62 + hash2D(baseSeed, 10 + branchIndex, 4) * 0.34) *
+                broadleafLengthScale,
+          pitch:
+            form === 'pine'
+              ? 1 + hash2D(baseSeed, 10 + branchIndex, 5) * 0.28
+              : 0.3 + branchProgress * 0.38 + hash2D(baseSeed, 10 + branchIndex, 5) * 0.14,
+          roll: -1.25 + hash2D(baseSeed, 10 + branchIndex, 6) * Math.PI * 0.9,
+        };
+      }
+
+      for (let foliageIndex = 0; foliageIndex < foliageCount; foliageIndex += 1) {
+        const layerProgress =
+          foliageCount <= 1 ? 0 : foliageIndex / (foliageCount - 1);
+        const pineLayerScale = 1 - layerProgress * 0.45;
+        foliage[foliageIndex] = {
+          x:
+            (hash2D(baseSeed, 40 + foliageIndex, 1) - 0.5) *
+            (form === 'pine' ? 0.08 : 0.28),
+          y:
+            trunkHeight *
+            (form === 'pine'
+              ? 0.42 + layerProgress * 0.52
+              : 0.78 + hash2D(baseSeed, 40 + foliageIndex, 2) * 0.5),
+          z:
+            (hash2D(baseSeed, 40 + foliageIndex, 3) - 0.5) *
+            (form === 'pine' ? 0.08 : 0.28),
+          scaleX:
+            form === 'pine'
+              ? 0.58 * pineLayerScale + hash2D(baseSeed, 40 + foliageIndex, 4) * 0.16
+              : 0.68 + hash2D(baseSeed, 40 + foliageIndex, 4) * 0.52,
+          scaleY:
+            form === 'pine'
+              ? 0.32 + hash2D(baseSeed, 40 + foliageIndex, 5) * 0.18
+              : 0.58 + hash2D(baseSeed, 40 + foliageIndex, 5) * 0.48,
+          scaleZ:
+            form === 'pine'
+              ? 0.58 * pineLayerScale + hash2D(baseSeed, 40 + foliageIndex, 6) * 0.16
+              : 0.68 + hash2D(baseSeed, 40 + foliageIndex, 6) * 0.52,
+        };
       }
 
       descriptors.push(descriptor);
