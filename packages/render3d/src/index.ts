@@ -17,6 +17,7 @@ import {
   getActivePluginRegistry,
   type WorldEnvironmentLike,
   type SurfaceBoundaryRole3D,
+  type WorldStateLike,
 } from '@bworlds/plugin-api';
 
 type CelestialEnvironmentOverrides = Parameters<
@@ -32,6 +33,19 @@ type SkySignatureCycle = Pick<
   | 'milkyWay'
   | 'auroraBands'
 >;
+type Render3DState = WorldStateLike & {
+  viewMode?: '2d' | '3d';
+};
+type Render3DOptions = {
+  jumpHeight?: number;
+  timeMs?: number;
+  environment?: WorldEnvironmentLike;
+};
+type Render3DController = {
+  canOccupy(state: Render3DState, nextX: number, nextY: number): boolean;
+  render(state: Render3DState, options?: Render3DOptions): void;
+  resize(width: number, height: number, pixelRatio?: number): void;
+};
 
 const TILE_SIZE = 1;
 const CHUNK_RADIUS = 18;
@@ -56,7 +70,7 @@ const FALLBACK_TILE_DEFINITION = {
   wallHeight: 0,
 };
 
-export function create3DRenderer(host) {
+export function create3DRenderer(host: HTMLElement): Render3DController {
   const renderer = new THREE.WebGLRenderer({
     antialias: true,
     alpha: false,
@@ -285,14 +299,7 @@ export function create3DRenderer(host) {
     }
   }
 
-  function render(
-    state,
-    options: {
-      jumpHeight?: number;
-      timeMs?: number;
-      environment?: WorldEnvironmentLike;
-    } = {}
-  ) {
+  function render(state: Render3DState, options: Render3DOptions = {}): void {
     const centerKey = `${Math.round(state.player.x)}:${Math.round(state.player.y)}`;
     const contextKey = state.getCurrentContext().id;
     const facingBucket = String(getFacingVisibilityBucket(state.player.facing));
@@ -325,7 +332,7 @@ export function create3DRenderer(host) {
     renderer.render(scene, camera);
   }
 
-  function canOccupy(state, nextX, nextY) {
+  function canOccupy(state: Render3DState, nextX: number, nextY: number): boolean {
     const tileX = Math.round(nextX);
     const tileY = Math.round(nextY);
     for (let y = tileY - 1; y <= tileY + 1; y += 1) {

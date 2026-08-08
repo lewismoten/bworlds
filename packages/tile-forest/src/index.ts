@@ -13,6 +13,7 @@ import type {
   ClassifyOverworldTileContext,
   Create3DModelContext,
   Paint2DContext,
+  RuntimePlugin,
   ThreeGeometryLike,
   ThreeHostLike,
   ThreeMaterialLike,
@@ -104,7 +105,7 @@ const treeGeometryCache = new WeakMap<
   }
 >();
 
-export function createForestTilePlugin() {
+export function createForestTilePlugin(): RuntimePlugin {
   return createTilePlugin('tile-forest', [
     {
       kind: 'forest',

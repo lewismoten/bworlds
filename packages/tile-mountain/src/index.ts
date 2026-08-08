@@ -9,6 +9,7 @@ import type {
   ClassifyOverworldTileContext,
   Create3DModelContext,
   Paint2DContext,
+  RuntimePlugin,
   ThreeHostLike,
   ThreeMaterialLike,
   WorldStateLike,
@@ -33,7 +34,7 @@ const classifyMountainTile = createThresholdTerrainClassifier({
   ],
 });
 
-export function createMountainTilePlugin() {
+export function createMountainTilePlugin(): RuntimePlugin {
   return createSingleTilePlugin(
     'tile-mountain',
     withTerrainTileClassifier({

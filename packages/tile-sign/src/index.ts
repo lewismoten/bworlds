@@ -19,6 +19,7 @@ import type {
   ClassifyOverworldTileContext,
   Create3DModelContext,
   Paint2DContext,
+  RuntimePlugin,
   TileLike,
   ThreeHostLike,
   ThreeMaterialLike,
@@ -103,7 +104,7 @@ const resolveRegionalSignStyle = createRegionalMaterialResolver(
   }
 );
 
-export function createSignTilePlugin() {
+export function createSignTilePlugin(): RuntimePlugin {
   return createTilePlugin('tile-sign', [
     {
       kind: 'sign',

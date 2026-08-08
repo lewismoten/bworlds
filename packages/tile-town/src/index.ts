@@ -18,6 +18,7 @@ import type {
   CreateWorldActionContext,
   Create3DModelContext,
   Paint2DContext,
+  RuntimePlugin,
   TileLike,
   ThreeHostLike,
   ThreeMaterialLike,
@@ -173,7 +174,7 @@ const resolveTownStyle = createRegionalMaterialResolver(
   }
 );
 
-export function createTownTilePlugin() {
+export function createTownTilePlugin(): RuntimePlugin {
   return createAnchoredEnterablePoiTilePlugin({
     pluginName: 'tile-town',
     kind: 'town',

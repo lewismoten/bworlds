@@ -15,6 +15,7 @@ import {
 import type {
   Create3DModelContext,
   Paint2DContext,
+  RuntimePlugin,
   ThreeHostLike,
   ThreeMaterialLike,
   ThreeTextureLike,
@@ -22,7 +23,7 @@ import type {
 
 const TILE_PIXEL_SIZE = 16;
 
-export function createDungeonTilePlugin() {
+export function createDungeonTilePlugin(): RuntimePlugin {
   return createAnchoredEnterablePoiTilePlugin({
     pluginName: 'tile-dungeon',
     kind: 'dungeon',

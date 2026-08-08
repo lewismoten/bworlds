@@ -11,11 +11,12 @@ import {
 import type {
   Create3DModelContext,
   Paint2DContext,
+  RuntimePlugin,
 } from '@bworlds/plugin-api';
 
 const TILE_PIXEL_SIZE = 16;
 
-export function createCaveTilePlugin() {
+export function createCaveTilePlugin(): RuntimePlugin {
   return createAnchoredEnterablePoiTilePlugin({
     pluginName: 'tile-cave',
     kind: 'cave',

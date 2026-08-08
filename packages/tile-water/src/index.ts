@@ -16,8 +16,10 @@ import type {
   ClassifyOverworldTileContext,
   Create3DModelContext,
   DecorateOverworldTileContext,
+  Kind,
   Paint2DContext,
   Paint2DOverlayContext,
+  RuntimePlugin,
   SurfaceProfile3D,
   ThreeHostLike,
   ThreeMaterialLike,
@@ -35,7 +37,7 @@ const classifyOceanTile = createThresholdTerrainClassifier({
   },
 });
 
-export function createWaterTilePlugin() {
+export function createWaterTilePlugin(): RuntimePlugin {
   return createTilePlugin(
     'tile-water',
     [
@@ -589,7 +591,7 @@ function getRiverConnections(
     );
 }
 
-function isRiverNetworkKind(kind: string) {
+function isRiverNetworkKind(kind: Kind) {
   return isWaterOrCrossingKind(kind);
 }
 
