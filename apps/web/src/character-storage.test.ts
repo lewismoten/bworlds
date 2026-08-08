@@ -4,6 +4,7 @@ import {
   parseSavedCharacterProfile,
   serializeCharacterProfile,
 } from './character-storage.ts';
+import { createPrimaryPlayerCharacterRoster } from './player-character-roster.ts';
 
 describe('character storage', () => {
   it('round-trips persisted character profiles with level and quest progress', () => {
@@ -19,6 +20,18 @@ describe('character storage', () => {
       playerLevel: 5,
       playerProfession: 'guard',
       completedQuestIds: ['tower:1', 'cave:2'],
+      characterRoster: createPrimaryPlayerCharacterRoster({
+        player: {
+          x: 4.5,
+          y: -2.25,
+          facing: Math.PI / 4,
+        },
+        stack: [{ id: 'overworld', depth: 0, type: 'overworld' }],
+        worldSeed: 'character-seed',
+        playerLevel: 5,
+        playerProfession: 'guard',
+        completedQuestIds: ['tower:1', 'cave:2'],
+      }),
     });
 
     expect(parseSavedCharacterProfile(raw)).toEqual(
@@ -27,6 +40,9 @@ describe('character storage', () => {
         playerLevel: 5,
         playerProfession: 'guard',
         completedQuestIds: ['tower:1', 'cave:2'],
+        characterRoster: expect.objectContaining({
+          activeCharacterIds: ['player'],
+        }),
       })
     );
   });
@@ -48,6 +64,19 @@ describe('character storage', () => {
           player: { x: 0, y: 0, facing: 0 },
           stack: [{ id: 'overworld', depth: 0 }],
           completedQuestIds: ['tower:1', 2],
+        })
+      )
+    ).toBeNull();
+
+    expect(
+      parseSavedCharacterProfile(
+        JSON.stringify({
+          player: { x: 0, y: 0, facing: 0 },
+          stack: [{ id: 'overworld', depth: 0 }],
+          characterRoster: {
+            characters: [],
+            activeCharacterIds: ['player'],
+          },
         })
       )
     ).toBeNull();
@@ -77,12 +106,21 @@ describe('character storage', () => {
       worldSeed: 'adapter-seed',
       playerLevel: 3,
       completedQuestIds: [],
+      characterRoster: createPrimaryPlayerCharacterRoster({
+        player: { x: 2, y: 3, facing: 0.5 },
+        stack: [{ id: 'overworld', depth: 0 }],
+        worldSeed: 'adapter-seed',
+        playerLevel: 3,
+      }),
     });
 
     expect(storage.loadProfile()).toEqual(
       expect.objectContaining({
         worldSeed: 'adapter-seed',
         playerLevel: 3,
+        characterRoster: expect.objectContaining({
+          activeCharacterIds: ['player'],
+        }),
       })
     );
 

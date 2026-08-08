@@ -3,18 +3,11 @@ import {
   type PlayerPlacedPoiLike,
 } from '@bworlds/runtime-player-poi';
 import { normalizePlayerLevel } from './player-progression.ts';
-
-type CharacterWorldContext = {
-  id: string;
-  depth: number;
-  origin?: {
-    x: number;
-    y: number;
-  };
-  label?: string;
-  type?: string;
-  [key: string]: unknown;
-};
+import {
+  parsePlayerCharacterRoster,
+  type CharacterWorldContext,
+  type PlayerCharacterRosterSnapshot,
+} from './player-character-roster.ts';
 
 export type SavedCharacterProfile = {
   player: {
@@ -29,6 +22,7 @@ export type SavedCharacterProfile = {
   playerProfession?: string;
   completedQuestIds?: string[];
   playerPlacedPois?: PlayerPlacedPoiLike[];
+  characterRoster?: PlayerCharacterRosterSnapshot;
 };
 
 export type CharacterProfileSnapshot = {
@@ -43,6 +37,7 @@ export type CharacterProfileSnapshot = {
   playerLevel: number;
   playerProfession?: string;
   completedQuestIds: string[];
+  characterRoster: PlayerCharacterRosterSnapshot;
 };
 
 export type CharacterStorageLike = {
@@ -109,9 +104,18 @@ export function parseSavedCharacterProfile(
     ) {
       return null;
     }
+    if (
+      typeof parsed?.characterRoster !== 'undefined' &&
+      parsePlayerCharacterRoster(parsed.characterRoster) === null
+    ) {
+      return null;
+    }
 
     if (typeof parsed?.playerPlacedPois !== 'undefined') {
       parsed.playerPlacedPois = parsePlayerPlacedPois(parsed.playerPlacedPois);
+    }
+    if (typeof parsed?.characterRoster !== 'undefined') {
+      parsed.characterRoster = parsePlayerCharacterRoster(parsed.characterRoster);
     }
     if (typeof parsed?.playerLevel !== 'undefined') {
       parsed.playerLevel = normalizePlayerLevel(parsed.playerLevel);

@@ -43,6 +43,11 @@ import {
   type CharacterProfileSnapshot,
 } from './character-storage.ts';
 import {
+  ensurePlayerCharacterRoster,
+  syncPrimaryPlayerCharacter,
+  type PlayerCharacterRosterSnapshot,
+} from './player-character-roster.ts';
+import {
   createLocalInventoryStorage,
   serializeInventoryProfile,
   type SavedInventoryProfile,
@@ -744,6 +749,28 @@ state.playerLevel = normalizePlayerLevel(
 );
 state.playerProfession = savedCharacterProfile?.playerProfession;
 state.completedQuestIds = [...(savedCharacterProfile?.completedQuestIds ?? [])];
+const characterRosterState = {
+  roster: ensurePlayerCharacterRoster(savedCharacterProfile?.characterRoster ?? null, {
+    player: savedCharacterProfile?.player ?? savedSession?.player ?? state.player,
+    stack: savedCharacterProfile?.stack ?? savedSession?.stack ?? state.stack,
+    worldSeed:
+      savedCharacterProfile?.worldSeed ??
+      savedSession?.worldSeed ??
+      DEFAULT_WORLD_SEED,
+    playerLevel: normalizePlayerLevel(
+      savedCharacterProfile?.playerLevel ?? savedSession?.playerLevel
+    ),
+    playerProfession: savedCharacterProfile?.playerProfession,
+    completedQuestIds: savedCharacterProfile?.completedQuestIds ?? [],
+  }),
+};
+(state as typeof state & {
+  characterRoster?: PlayerCharacterRosterSnapshot;
+  activeCharacterIds?: string[];
+}).characterRoster = characterRosterState.roster;
+(state as typeof state & {
+  activeCharacterIds?: string[];
+}).activeCharacterIds = [...characterRosterState.roster.activeCharacterIds];
 state.inventory = [...(savedInventoryProfile?.items ?? savedSession?.inventory ?? [])];
 syncPlayerPlacedPoisIntoState(
   savedWorldMapProfile?.playerPlacedPois ??
@@ -3119,6 +3146,18 @@ function loadSession(): ReturnType<typeof parseSavedSession> {
 }
 
 function buildCharacterProfileSnapshot(): CharacterProfileSnapshot {
+  characterRosterState.roster = syncPrimaryPlayerCharacter(characterRosterState.roster, {
+    player: {
+      x: state.player.x,
+      y: state.player.y,
+      facing: state.player.facing,
+    },
+    stack: state.stack,
+    worldSeed: currentWorldSeed,
+    playerLevel: normalizePlayerLevel(state.playerLevel),
+    playerProfession: state.playerProfession,
+    completedQuestIds: [...(state.completedQuestIds ?? [])],
+  });
   return {
     player: {
       x: state.player.x,
@@ -3131,6 +3170,7 @@ function buildCharacterProfileSnapshot(): CharacterProfileSnapshot {
     playerLevel: normalizePlayerLevel(state.playerLevel),
     playerProfession: state.playerProfession,
     completedQuestIds: [...(state.completedQuestIds ?? [])],
+    characterRoster: characterRosterState.roster,
   };
 }
 
@@ -3161,6 +3201,15 @@ function loadCharacterProfile(
   if (!profile) {
     return null;
   }
+  const roster = ensurePlayerCharacterRoster(profile.characterRoster ?? null, {
+    player: profile.player,
+    stack: profile.stack,
+    worldSeed: profile.worldSeed ?? DEFAULT_WORLD_SEED,
+    playerLevel: normalizePlayerLevel(profile.playerLevel),
+    playerProfession: profile.playerProfession,
+    completedQuestIds: profile.completedQuestIds ?? [],
+  });
+  profile.characterRoster = roster;
   lastSavedCharacterSnapshot = serializeCharacterProfile({
     player: profile.player,
     packIds: profile.packIds ?? [],
@@ -3169,6 +3218,7 @@ function loadCharacterProfile(
     playerLevel: normalizePlayerLevel(profile.playerLevel),
     playerProfession: profile.playerProfession,
     completedQuestIds: [...(profile.completedQuestIds ?? [])],
+    characterRoster: roster,
   });
   return profile;
 }
