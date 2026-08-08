@@ -10,6 +10,7 @@ import {
   createForestTilePlugin,
   getForestBirds,
   getForestBushes,
+  getForestTreeBranchProfiles,
   getForestCarvings,
   getForestFloorDetails,
   getForestLandmark,
@@ -350,6 +351,48 @@ describe('tile forest', () => {
 
     const first = sampleTiles[0];
     expect(getForestTreeForms(first.x, first.y)).toEqual(first.forms);
+  });
+
+  it('generates more tree-like branch profiles for broadleaf and pine forms', () => {
+    const branchTiles: Array<{
+      x: number;
+      y: number;
+      profiles: ReturnType<typeof getForestTreeBranchProfiles>;
+    }> = [];
+
+    for (let tileY = 0; tileY < 24; tileY += 1) {
+      for (let tileX = 0; tileX < 24; tileX += 1) {
+        const profiles = getForestTreeBranchProfiles(tileX, tileY);
+        const hasBroadleaf = profiles.some((profile) => profile.form === 'broadleaf');
+        const hasPine = profiles.some((profile) => profile.form === 'pine');
+        if (hasBroadleaf && hasPine) {
+          branchTiles.push({ x: tileX, y: tileY, profiles });
+        }
+      }
+    }
+
+    expect(branchTiles.length).toBeGreaterThan(0);
+
+    const broadleaf = branchTiles
+      .flatMap(({ profiles }) => profiles)
+      .find((profile) => profile.form === 'broadleaf' && profile.branches.length >= 3);
+    const pine = branchTiles
+      .flatMap(({ profiles }) => profiles)
+      .find((profile) => profile.form === 'pine' && profile.branches.length >= 3);
+
+    expect(broadleaf).toBeDefined();
+    expect(pine).toBeDefined();
+
+    const broadleafBranches = [...broadleaf!.branches].sort((a, b) => a.y - b.y);
+    const pineBranches = [...pine!.branches].sort((a, b) => a.y - b.y);
+
+    expect(broadleafBranches[0].length).toBeGreaterThan(broadleafBranches.at(-1)!.length);
+    expect(broadleafBranches[0].pitch).toBeLessThan(broadleafBranches.at(-1)!.pitch);
+    expect(pineBranches.length).toBeGreaterThanOrEqual(3);
+    expect(pineBranches.every((branch) => branch.pitch >= 1)).toBe(true);
+
+    const first = branchTiles[0];
+    expect(getForestTreeBranchProfiles(first.x, first.y)).toEqual(first.profiles);
   });
 
   it('generates deterministic birds for some forest tiles', () => {

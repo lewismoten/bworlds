@@ -73,28 +73,33 @@ const resolveForestTreeDescriptors = createCoordinateValueResolver(
       const branchCount =
         descriptor.form === 'pine'
           ? 3 + Math.floor(hash2D(baseSeed, 6, 0) * 3)
-          : 1 + Math.floor(hash2D(baseSeed, 6, 0) * 3);
+          : 2 + Math.floor(hash2D(baseSeed, 6, 0) * 3);
       for (let branchIndex = 0; branchIndex < branchCount; branchIndex += 1) {
+        const branchProgress =
+          branchCount <= 1 ? 0 : branchIndex / (branchCount - 1);
         const branchHeightFactor =
           descriptor.form === 'pine'
             ? 0.32 + hash2D(baseSeed, 10 + branchIndex, 2) * 0.48
-            : 0.45 + hash2D(baseSeed, 10 + branchIndex, 2) * 0.28;
+            : 0.28 + branchProgress * 0.5;
+        const broadleafSpread = 0.18 - branchProgress * 0.06;
+        const broadleafLengthScale = 1.08 - branchProgress * 0.34;
         descriptor.branches.push({
           x:
             (hash2D(baseSeed, 10 + branchIndex, 1) - 0.5) *
-            (descriptor.form === 'pine' ? 0.08 : 0.16),
+            (descriptor.form === 'pine' ? 0.08 : broadleafSpread),
           y: descriptor.trunkHeight * branchHeightFactor,
           z:
             (hash2D(baseSeed, 10 + branchIndex, 3) - 0.5) *
-            (descriptor.form === 'pine' ? 0.08 : 0.16),
+            (descriptor.form === 'pine' ? 0.08 : broadleafSpread),
           length:
             descriptor.form === 'pine'
               ? 0.82 + hash2D(baseSeed, 10 + branchIndex, 4) * 0.34
-              : 0.72 + hash2D(baseSeed, 10 + branchIndex, 4) * 0.45,
+              : (0.62 + hash2D(baseSeed, 10 + branchIndex, 4) * 0.34) *
+                broadleafLengthScale,
           pitch:
             descriptor.form === 'pine'
               ? 1 + hash2D(baseSeed, 10 + branchIndex, 5) * 0.28
-              : 0.45 + hash2D(baseSeed, 10 + branchIndex, 5) * 0.35,
+              : 0.3 + branchProgress * 0.38 + hash2D(baseSeed, 10 + branchIndex, 5) * 0.14,
           roll: -1.25 + hash2D(baseSeed, 10 + branchIndex, 6) * Math.PI * 0.9,
         });
       }
@@ -933,6 +938,19 @@ export function getForestTreeForms(
   tileY: number
 ): ForestTreeForm[] {
   return getForestTreeDescriptors(tileX, tileY).map((descriptor) => descriptor.form);
+}
+
+export function getForestTreeBranchProfiles(
+  tileX: number,
+  tileY: number
+): Array<{
+  form: ForestTreeForm;
+  branches: ForestBranchDescriptor[];
+}> {
+  return getForestTreeDescriptors(tileX, tileY).map((descriptor) => ({
+    form: descriptor.form,
+    branches: descriptor.branches,
+  }));
 }
 
 function getForestGroveCenter(tileX: number, tileY: number) {
