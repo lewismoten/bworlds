@@ -23,6 +23,14 @@ type TownContext = WorldContextLike & {
   origin: Point;
 };
 
+const TOWN_WIDTH = 25;
+const TOWN_HEIGHT = 25;
+const TOWN_EDGE_OFFSET = 9;
+const TOWN_BUILDING_ROW_OFFSET = 4;
+const TOWN_FRONTAGE_ROAD_OFFSET = 3;
+const TOWN_BUILDING_SPAN = 8;
+const TOWN_SIDE_STREET_INTERVAL = 4;
+
 export function createTownMapPlugin(): RuntimePlugin {
   return createContextMapPlugin<TownContext>({
     name: 'map-town',
@@ -36,8 +44,8 @@ function createTownMap(
   seed: string | number,
   plugins: CreateMapContext['plugins']
 ): WorldMapLike {
-  const width = 25;
-  const height = 25;
+  const width = TOWN_WIDTH;
+  const height = TOWN_HEIGHT;
   const cx = Math.floor(width / 2);
   const cy = Math.floor(height / 2);
 
@@ -51,22 +59,15 @@ function createTownMap(
         return { kind: 'forest' };
       }
 
-      let tile: TownTile = { kind: 'plains' };
-      const onRoad = localX === cx || localY === cy;
-      const plaza =
-        Math.abs(localX - cx) <= 1 && Math.abs(localY - cy) <= 1 && !onRoad;
-      const buildingBand =
-        Math.abs(localY - cy) === 3 &&
-        Math.abs(localX - cx) <= 8 &&
-        localX % 2 === 0;
-
-      if (onRoad || plaza) tile = { kind: 'road' };
-      if (buildingBand) {
-        tile = { kind: 'shop', building: { id: `${context.id}:${x}:${y}` } };
-      }
-      if (Math.abs(localX - cx) === 9 || Math.abs(localY - cy) === 9) {
-        tile = { kind: 'forest' };
-      }
+      let tile = resolveTownTile({
+        contextId: context.id,
+        x,
+        y,
+        localX,
+        localY,
+        centerX: cx,
+        centerY: cy,
+      });
       if (localX === cx && localY === cy) {
         tile = {
           kind: 'town',
@@ -104,4 +105,70 @@ function createTownMap(
   }
 
   return { getTile, getAction, getExit };
+}
+
+export function resolveTownTile(options: {
+  contextId: string;
+  x: number;
+  y: number;
+  localX: number;
+  localY: number;
+  centerX: number;
+  centerY: number;
+}): TownTile {
+  const offsetX = options.localX - options.centerX;
+  const offsetY = options.localY - options.centerY;
+  if (
+    Math.abs(offsetX) === TOWN_EDGE_OFFSET ||
+    Math.abs(offsetY) === TOWN_EDGE_OFFSET
+  ) {
+    return { kind: 'forest' };
+  }
+
+  if (isTownBuildingPlot(offsetX, offsetY)) {
+    return {
+      kind: 'shop',
+      building: { id: `${options.contextId}:${options.x}:${options.y}` },
+    };
+  }
+
+  if (
+    isTownMainRoad(offsetX, offsetY) ||
+    isTownFrontageRoad(offsetX, offsetY) ||
+    isTownConnectorRoad(offsetX, offsetY)
+  ) {
+    return { kind: 'road' };
+  }
+
+  return { kind: 'plains' };
+}
+
+export function isTownBuildingPlot(offsetX: number, offsetY: number): boolean {
+  return (
+    Math.abs(offsetY) === TOWN_BUILDING_ROW_OFFSET &&
+    Math.abs(offsetX) <= TOWN_BUILDING_SPAN &&
+    offsetX % 2 === 0
+  );
+}
+
+export function isTownMainRoad(offsetX: number, offsetY: number): boolean {
+  const onCrossroad = offsetX === 0 || offsetY === 0;
+  const plaza =
+    Math.abs(offsetX) <= 1 && Math.abs(offsetY) <= 1 && !onCrossroad;
+  return onCrossroad || plaza;
+}
+
+export function isTownFrontageRoad(offsetX: number, offsetY: number): boolean {
+  return (
+    Math.abs(offsetY) === TOWN_FRONTAGE_ROAD_OFFSET &&
+    Math.abs(offsetX) <= TOWN_BUILDING_SPAN
+  );
+}
+
+export function isTownConnectorRoad(offsetX: number, offsetY: number): boolean {
+  return (
+    Math.abs(offsetX) <= TOWN_BUILDING_SPAN &&
+    Math.abs(offsetX) % TOWN_SIDE_STREET_INTERVAL === 0 &&
+    Math.abs(offsetY) <= TOWN_FRONTAGE_ROAD_OFFSET
+  );
 }
