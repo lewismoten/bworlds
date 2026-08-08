@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { DEFAULT_DAY_LENGTH_MINUTES, DEFAULT_DAY_LENGTH_MS } from '@bworlds/core';
 import {
   CELESTIAL_DAY_LENGTH_MS,
   createCelestialRuntimePlugin,
@@ -38,7 +39,8 @@ describe('runtime celestial', () => {
   it('configures a game day to last 42 minutes', () => {
     const cycle = resolveCelestialCycleConfig();
 
-    expect(cycle.dayLengthMs).toBe(42 * 60 * 1000);
+    expect(DEFAULT_DAY_LENGTH_MINUTES).toBe(42);
+    expect(cycle.dayLengthMs).toBe(DEFAULT_DAY_LENGTH_MS);
     expect(cycle.dayLengthMs).toBe(CELESTIAL_DAY_LENGTH_MS);
   });
 
