@@ -3,6 +3,8 @@ import { createPlainsBackedTilePainter } from '@bworlds/paint-support';
 import {
   DEFAULT_LAND_POI_BLOCKED_KINDS,
   createChanceBasedLandPoiClassifier,
+  markPoiLightEmitter,
+  syncPoiLightEmitters,
 } from '@bworlds/poi-support';
 import {
   createRegionalMaterialResolver,
@@ -221,7 +223,48 @@ export function createRuinsTilePlugin(): RuntimePlugin {
             group.add(rubble);
           }
 
+          const glowCore = markPoiLightEmitter(
+            new three.Mesh(
+              new three.SphereGeometry(0.05, 8, 8),
+              new three.MeshStandardMaterial({
+                color: '#93c5fd',
+                emissive: '#93c5fd',
+                emissiveIntensity: 0.01,
+                roughness: 0.28,
+                metalness: 0.04,
+              })
+            ),
+            {
+              kind: 'emissive-mesh',
+              dayIntensity: 0.01,
+              nightIntensity: 0.62,
+            }
+          );
+          glowCore.position.set(0, 0.24, 0);
+          group.add(glowCore);
+
+          const glowLight = markPoiLightEmitter(
+            new three.PointLight('#60a5fa', 0, 2.6, 1.9),
+            {
+              kind: 'point-light',
+              nightIntensity: 0.38,
+              visibleThreshold: 0.03,
+            }
+          );
+          glowLight.position.set(0, 0.22, 0);
+          glowLight.visible = false;
+          group.add(glowLight);
+
           return group;
+        },
+        sync3DModel({ model, cycle }) {
+          if (!model || typeof model !== 'object') {
+            return;
+          }
+          syncPoiLightEmitters(
+            model as Parameters<typeof syncPoiLightEmitters>[0],
+            cycle
+          );
         },
       },
       classifyRuinsTile

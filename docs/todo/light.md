@@ -4,5 +4,5 @@ Try to introduce light where possible for the night.
 - [X] Towns may emit their own light.
 - [X] Larger towns may emit more light.
 - [ ] Strongholds can emit red light.
-- [ ] Ruins may emit a blue faint light.
+- [X] Ruins may emit a blue faint light.
 - [ ] Forests may have fireflies flying around lighting up the area.

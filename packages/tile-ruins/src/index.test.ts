@@ -1,0 +1,154 @@
+import { describe, expect, it, vi } from 'vitest';
+
+vi.mock('@bworlds/three-support', () => ({
+  createPaintedStandardMaterial(_three: unknown, options: Record<string, unknown>) {
+    return { options };
+  },
+}));
+
+import { createRuinsTilePlugin } from './index.ts';
+
+class FakeGeometry {
+  constructor(..._args: number[]) {}
+}
+
+class FakeMaterial {
+  emissiveIntensity?: number;
+  constructor(public options: Record<string, unknown> = {}) {
+    if (typeof options.emissiveIntensity === 'number') {
+      this.emissiveIntensity = options.emissiveIntensity;
+    }
+  }
+}
+
+class FakeNode {
+  position = {
+    x: 0,
+    y: 0,
+    z: 0,
+    set: (x: number, y: number, z: number) => {
+      this.position.x = x;
+      this.position.y = y;
+      this.position.z = z;
+      return this.position;
+    },
+  };
+  rotation = { x: 0, y: 0, z: 0 };
+  visible = true;
+  userData?: Record<string, unknown>;
+  children: FakeNode[] = [];
+  add(...children: FakeNode[]) {
+    this.children.push(...children);
+    return this;
+  }
+  traverse(visit: (child: FakeNode) => void) {
+    visit(this);
+    this.children.forEach((child) => child.traverse(visit));
+  }
+}
+
+class FakeGroup extends FakeNode {}
+class FakeMesh extends FakeNode {
+  constructor(
+    public geometry?: object,
+    public material?: FakeMaterial | FakeMaterial[]
+  ) {
+    super();
+  }
+}
+class FakePointLight extends FakeNode {
+  constructor(
+    public color?: string,
+    public intensity = 0,
+    public distance?: number,
+    public decay?: number
+  ) {
+    super();
+  }
+}
+
+const fakeThree = {
+  Group: FakeGroup,
+  Mesh: FakeMesh,
+  PointLight: FakePointLight,
+  MeshStandardMaterial: FakeMaterial,
+  BoxGeometry: FakeGeometry,
+  SphereGeometry: FakeGeometry,
+} as const;
+
+describe('tile ruins', () => {
+  it('emits a faint blue light at night', () => {
+    const plugin = createRuinsTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'ruins');
+    const model = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state: {
+        player: { x: 0, y: 0, facing: 0 },
+        getCurrentContext() {
+          return { id: 'overworld', type: 'overworld', depth: 0 };
+        },
+        getCurrentTile() {
+          return { kind: 'plains' };
+        },
+        getTileDefinition() {
+          return {
+            name: 'Plains',
+            color: '#000000',
+            miniColor: '#111111',
+            walkable: true,
+            wallHeight: 0,
+          };
+        },
+      },
+      tile: { kind: 'ruins' },
+      tileX: 6,
+      tileY: 4,
+    }) as FakeGroup;
+
+    let glowMesh: FakeMesh | null = null;
+    let pointLight: FakePointLight | null = null;
+    model.traverse((node) => {
+      if (node instanceof FakeMesh && node.userData?.poiNightLightEmitter) {
+        glowMesh = node;
+      }
+      if (node instanceof FakePointLight && node.userData?.poiNightLightEmitter) {
+        pointLight = node;
+      }
+    });
+
+    expect(glowMesh).not.toBeNull();
+    expect(pointLight).not.toBeNull();
+
+    tile?.sync3DModel?.({
+      three: fakeThree as never,
+      state: {} as never,
+      tile: { kind: 'ruins' },
+      tileX: 6,
+      tileY: 4,
+      model,
+      timeMs: 0,
+      cycle: { daylight: 1, twilight: 0, night: 0 },
+      environment: {},
+    });
+
+    expect((glowMesh?.material as FakeMaterial)?.emissiveIntensity ?? 0).toBeCloseTo(0.01, 6);
+    expect(pointLight?.intensity ?? 0).toBeCloseTo(0, 6);
+    expect(pointLight?.visible).toBe(false);
+
+    tile?.sync3DModel?.({
+      three: fakeThree as never,
+      state: {} as never,
+      tile: { kind: 'ruins' },
+      tileX: 6,
+      tileY: 4,
+      model,
+      timeMs: 0,
+      cycle: { daylight: 0, twilight: 0, night: 1 },
+      environment: {},
+    });
+
+    expect((glowMesh?.material as FakeMaterial)?.emissiveIntensity ?? 0).toBeGreaterThan(0.5);
+    expect(pointLight?.intensity ?? 0).toBeCloseTo(0.38, 6);
+    expect(pointLight?.visible).toBe(true);
+  });
+});
