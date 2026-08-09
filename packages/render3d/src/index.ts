@@ -37,12 +37,39 @@ type DaylightCycleState = ReturnType<typeof getDaylightCycleState>;
 type SkySignatureCycle = Pick<
   DaylightCycleState,
   | 'activeConstellationIndex'
+  | 'daylight'
+  | 'moonAltitude'
+  | 'moonAzimuth'
+  | 'moonIllumination'
+  | 'night'
+  | 'observerLatitudeDegrees'
+  | 'solarEclipse'
   | 'yearProgress'
+  | 'sunAltitude'
+  | 'sunAzimuth'
   | 'starsOpacity'
+  | 'twilight'
   | 'visibleEvents'
   | 'milkyWay'
   | 'auroraBands'
 >;
+type CachedSkyPose = {
+  sunOrbitX: number;
+  sunOrbitY: number;
+  sunOrbitZ: number;
+  moonOrbitX: number;
+  moonOrbitY: number;
+  moonOrbitZ: number;
+  skyRotationZ: number;
+  sunSpriteX: number;
+  sunSpriteY: number;
+  sunSpriteZ: number;
+  sunSpriteOpacity: number;
+  moonSpriteX: number;
+  moonSpriteY: number;
+  moonSpriteZ: number;
+  moonSpriteOpacity: number;
+};
 type Render3DState = WorldStateLike & {
   viewMode?: ViewMode;
 };
@@ -461,6 +488,8 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
   let lastSkyEventSignature = '';
   let lastSkyMilkyWaySignature = '';
   let lastSkyAuroraSignature = '';
+  let lastSkyPositionSignature = '';
+  let cachedSkyPose: CachedSkyPose | null = null;
   let pendingWorldBuild = {
     contextId: '',
     centerKey: '',
@@ -492,6 +521,8 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     lastWorldCurvaturePlayerPosition = null;
     visibleWorldMutationVersion += 1;
     lastWorldCurvatureMutationVersion = -1;
+    lastSkyPositionSignature = '';
+    cachedSkyPose = null;
     pendingLodSyncChecks = 0;
     lodSyncEntryOffset = 0;
     pendingWorldBuild = {
@@ -1547,6 +1578,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     const starDensity =
       (environment.stars?.density ?? 1) *
       clamp(1 - weatherCloudCover * 0.42 - (1 - weatherVisibility) * 0.58, 0.08, 1);
+    const skyPositionSignature = getSkyPositionSignature(cycle, starDensity);
     const daySkyColor = new THREE.Color(sky.dayColor ?? SKY_DAY_COLOR);
     const twilightPalette = getTwilightSkyPalette(sky, cycle);
     const sunsetSkyColor = new THREE.Color(twilightPalette.skyColor);
@@ -1574,12 +1606,32 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
         0.35 + dayBlend * 0.65
       );
 
-    const sunHeight = Math.max(-0.2, cycle.sunAltitude);
-    const sunDistance = 18;
-    const sunOrbitX = Math.cos(cycle.sunAzimuth) * sunDistance;
-    const sunOrbitY = 5 + Math.max(0, sunHeight) * 18;
-    const sunOrbitZ = Math.sin(cycle.sunAzimuth) * sunDistance * 0.65;
-    sunLight.position.set(worldX - sunOrbitX, sunOrbitY, worldY - sunOrbitZ);
+    if (skyPositionSignature !== lastSkyPositionSignature || !cachedSkyPose) {
+      cachedSkyPose = createCachedSkyPose(cycle);
+      lastSkyPositionSignature = skyPositionSignature;
+      skyRoot.rotation.z = cachedSkyPose.skyRotationZ;
+      syncStarField(stars, cycle, starDensity);
+      sunSprite.position.set(
+        cachedSkyPose.sunSpriteX,
+        cachedSkyPose.sunSpriteY,
+        cachedSkyPose.sunSpriteZ
+      );
+      sunSprite.material.opacity = cachedSkyPose.sunSpriteOpacity;
+      sunSprite.visible = cachedSkyPose.sunSpriteOpacity > 0.03;
+      moonSprite.position.set(
+        cachedSkyPose.moonSpriteX,
+        cachedSkyPose.moonSpriteY,
+        cachedSkyPose.moonSpriteZ
+      );
+      moonSprite.material.opacity = cachedSkyPose.moonSpriteOpacity;
+      moonSprite.visible = cachedSkyPose.moonSpriteOpacity > 0.03;
+    }
+    const skyPose = cachedSkyPose;
+    sunLight.position.set(
+      worldX - skyPose.sunOrbitX,
+      skyPose.sunOrbitY,
+      worldY - skyPose.sunOrbitZ
+    );
     sunTarget.position.set(worldX, 0, worldY);
     sunLight.intensity =
       (dayBlend * 1.75 + twilightBlend * 0.25) *
@@ -1595,15 +1647,11 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     sunLight.castShadow =
       shadowStrength * (lighting.shadowStrength ?? 1) > 0.08;
 
-    const displayedMoonAzimuth =
-      cycle.solarEclipse?.active ? cycle.solarEclipse.moonAzimuth : cycle.moonAzimuth;
-    const displayedMoonAltitude =
-      cycle.solarEclipse?.active ? cycle.solarEclipse.moonAltitude : cycle.moonAltitude;
-    const moonDistance = 22;
-    const moonOrbitX = Math.cos(displayedMoonAzimuth) * moonDistance;
-    const moonOrbitY = 6 + Math.max(0, displayedMoonAltitude) * 12;
-    const moonOrbitZ = Math.sin(displayedMoonAzimuth) * moonDistance * 0.7;
-    moonLight.position.set(worldX - moonOrbitX, moonOrbitY, worldY - moonOrbitZ);
+    moonLight.position.set(
+      worldX - skyPose.moonOrbitX,
+      skyPose.moonOrbitY,
+      worldY - skyPose.moonOrbitZ
+    );
     moonTarget.position.set(worldX, 0, worldY);
     moonLight.color.set(lighting.moonColor ?? '#9ec5ff');
     moonLight.intensity =
@@ -1611,8 +1659,6 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       (cycle.solarEclipse?.coverage ?? 0) * 0.04;
 
     skyRoot.position.set(worldX, 0, worldY);
-    skyRoot.rotation.z = (-cycle.observerLatitudeDegrees / 180) * Math.PI * 0.5;
-    syncStarField(stars, cycle, starDensity);
     const constellationSignature = getSkyConstellationSignature(cycle);
     const eventSignature = getSkyEventSignature(cycle);
     const milkyWaySignature = getSkyMilkyWaySignature(cycle);
@@ -1641,34 +1687,6 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     auroraRoot.visible = (cycle.auroraBands ?? []).some(
       (band) => band.intensity > 0.03
     );
-
-    sunSprite.position.set(
-      sunOrbitX * 1.45,
-      14 + Math.max(-0.12, cycle.sunAltitude) * 15,
-      sunOrbitZ * 1.45
-    );
-    sunSprite.material.opacity = Math.max(
-      0,
-      Math.min(
-        0.92,
-        (cycle.twilight * 0.72 + dayBlend * 0.32) *
-          (1 - (cycle.solarEclipse?.totality ?? 0) * 0.28)
-      )
-    );
-    sunSprite.visible = sunSprite.material.opacity > 0.03;
-
-    moonSprite.position.set(
-      moonOrbitX * 1.7,
-      16 + Math.max(0, displayedMoonAltitude) * 14,
-      moonOrbitZ * 1.7
-    );
-    moonSprite.material.opacity =
-      Math.max(
-        0,
-        (cycle.night * 0.82 + (displayedMoonAltitude > -0.08 ? 0.16 : 0)) *
-          (0.22 + cycle.moonIllumination * 0.78)
-      ) + (cycle.solarEclipse?.coverage ?? 0) * 0.46;
-    moonSprite.visible = moonSprite.material.opacity > 0.03;
 
     if (lastMoonPhaseIndex !== cycle.moonPhaseIndex) {
       updateMoonPhaseTexture(
@@ -3091,6 +3109,47 @@ export function getSkyAuroraSignature(cycle: SkySignatureCycle): string {
     .join('|');
 }
 
+export function getSkyPositionSignature(
+  cycle: Pick<
+    SkySignatureCycle,
+    | 'activeConstellationIndex'
+    | 'daylight'
+    | 'moonAltitude'
+    | 'moonAzimuth'
+    | 'moonIllumination'
+    | 'night'
+    | 'observerLatitudeDegrees'
+    | 'solarEclipse'
+    | 'sunAltitude'
+    | 'sunAzimuth'
+    | 'starsOpacity'
+    | 'twilight'
+    | 'yearProgress'
+  >,
+  starDensity: number
+): string {
+  return [
+    Math.round((cycle.sunAzimuth ?? 0) * 24),
+    Math.round((cycle.sunAltitude ?? 0) * 24),
+    Math.round((cycle.moonAzimuth ?? 0) * 24),
+    Math.round((cycle.moonAltitude ?? 0) * 24),
+    Math.round((cycle.observerLatitudeDegrees ?? 0) * 2),
+    Math.round((cycle.yearProgress ?? 0) * 96),
+    Math.round((cycle.starsOpacity ?? 0) * 20),
+    Math.round((cycle.twilight ?? 0) * 20),
+    Math.round((cycle.daylight ?? 0) * 20),
+    Math.round((cycle.night ?? 0) * 20),
+    Math.round((cycle.moonIllumination ?? 0) * 20),
+    cycle.activeConstellationIndex ?? 0,
+    Math.round(starDensity * 20),
+    cycle.solarEclipse?.active ? 1 : 0,
+    Math.round((cycle.solarEclipse?.moonAzimuth ?? 0) * 24),
+    Math.round((cycle.solarEclipse?.moonAltitude ?? 0) * 24),
+    Math.round((cycle.solarEclipse?.coverage ?? 0) * 20),
+    Math.round((cycle.solarEclipse?.totality ?? 0) * 20),
+  ].join('|');
+}
+
 export function getTwilightSkyPalette(
   sky: {
     dawnColor?: string;
@@ -3379,6 +3438,52 @@ function createSkyPosition(
     Math.cos(phi) * radius,
     Math.sin(theta) * sinPhi * radius
   );
+}
+
+function createCachedSkyPose(cycle: DaylightCycleState): CachedSkyPose {
+  const sunHeight = Math.max(-0.2, cycle.sunAltitude);
+  const sunDistance = 18;
+  const sunOrbitX = Math.cos(cycle.sunAzimuth) * sunDistance;
+  const sunOrbitY = 5 + Math.max(0, sunHeight) * 18;
+  const sunOrbitZ = Math.sin(cycle.sunAzimuth) * sunDistance * 0.65;
+  const displayedMoonAzimuth =
+    cycle.solarEclipse?.active ? cycle.solarEclipse.moonAzimuth : cycle.moonAzimuth;
+  const displayedMoonAltitude =
+    cycle.solarEclipse?.active ? cycle.solarEclipse.moonAltitude : cycle.moonAltitude;
+  const moonDistance = 22;
+  const moonOrbitX = Math.cos(displayedMoonAzimuth) * moonDistance;
+  const moonOrbitY = 6 + Math.max(0, displayedMoonAltitude) * 12;
+  const moonOrbitZ = Math.sin(displayedMoonAzimuth) * moonDistance * 0.7;
+
+  return {
+    sunOrbitX,
+    sunOrbitY,
+    sunOrbitZ,
+    moonOrbitX,
+    moonOrbitY,
+    moonOrbitZ,
+    skyRotationZ: (-cycle.observerLatitudeDegrees / 180) * Math.PI * 0.5,
+    sunSpriteX: sunOrbitX * 1.45,
+    sunSpriteY: 14 + Math.max(-0.12, cycle.sunAltitude) * 15,
+    sunSpriteZ: sunOrbitZ * 1.45,
+    sunSpriteOpacity: Math.max(
+      0,
+      Math.min(
+        0.92,
+        (cycle.twilight * 0.72 + cycle.daylight * 0.32) *
+          (1 - (cycle.solarEclipse?.totality ?? 0) * 0.28)
+      )
+    ),
+    moonSpriteX: moonOrbitX * 1.7,
+    moonSpriteY: 16 + Math.max(0, displayedMoonAltitude) * 14,
+    moonSpriteZ: moonOrbitZ * 1.7,
+    moonSpriteOpacity:
+      Math.max(
+        0,
+        (cycle.night * 0.82 + (displayedMoonAltitude > -0.08 ? 0.16 : 0)) *
+          (0.22 + cycle.moonIllumination * 0.78)
+      ) + (cycle.solarEclipse?.coverage ?? 0) * 0.46,
+  };
 }
 
 function syncCelestialEvents(

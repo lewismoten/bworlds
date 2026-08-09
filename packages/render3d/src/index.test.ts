@@ -28,6 +28,7 @@ import {
   getSkyConstellationSignature,
   getSkyEventSignature,
   getSkyMilkyWaySignature,
+  getSkyPositionSignature,
   getWrappedBatchWindow,
   getTwilightSkyPalette,
   getTileModelDetailLevel,
@@ -1179,6 +1180,16 @@ describe('render3d visibility helpers', () => {
   it('uses coarse sky signatures so tiny celestial drift does not rebuild sky layers', () => {
     const baseCycle: SkySignatureCycle = {
       activeConstellationIndex: 1,
+      daylight: 0.5,
+      moonAltitude: 0.22,
+      moonAzimuth: 0.48,
+      moonIllumination: 0.64,
+      night: 0.3,
+      observerLatitudeDegrees: 32,
+      solarEclipse: null,
+      sunAltitude: 0.54,
+      sunAzimuth: 1.12,
+      twilight: 0.16,
       yearProgress: 0.25,
       starsOpacity: 0.5,
       milkyWay: {
@@ -1260,6 +1271,63 @@ describe('render3d visibility helpers', () => {
       getSkyConstellationSignature(baseCycle)
     );
     expect(getSkyEventSignature(farCycle)).not.toBe(getSkyEventSignature(baseCycle));
+  });
+
+  it('uses a coarse sky-position signature so tiny celestial drift does not recompute sky poses', () => {
+    const baseCycle: SkySignatureCycle = {
+      activeConstellationIndex: 1,
+      daylight: 0.62,
+      moonAltitude: 0.18,
+      moonAzimuth: 0.42,
+      moonIllumination: 0.7,
+      night: 0.24,
+      observerLatitudeDegrees: 34,
+      solarEclipse: {
+        active: false,
+        coverage: 0,
+        daylightReduction: 0,
+        moonAltitude: 0.18,
+        moonAzimuth: 0.42,
+        shadowOffsetX: 0,
+        shadowOffsetY: 0,
+        totality: 0,
+      },
+      starsOpacity: 0.5,
+      sunAltitude: 0.58,
+      sunAzimuth: 1.2,
+      twilight: 0.18,
+      yearProgress: 0.25,
+      milkyWay: null,
+      auroraBands: [],
+      visibleEvents: [],
+    };
+    const nearCycle: SkySignatureCycle = {
+      ...baseCycle,
+      sunAzimuth: 1.201,
+      moonAltitude: 0.181,
+      yearProgress: 0.2502,
+    };
+    const farCycle: SkySignatureCycle = {
+      ...baseCycle,
+      sunAzimuth: 1.4,
+      moonAltitude: 0.36,
+      solarEclipse: {
+        ...baseCycle.solarEclipse!,
+        active: true,
+        coverage: 0.5,
+        moonAzimuth: 0.7,
+      },
+    };
+
+    expect(getSkyPositionSignature(nearCycle, 0.84)).toBe(
+      getSkyPositionSignature(baseCycle, 0.84)
+    );
+    expect(getSkyPositionSignature(baseCycle, 0.9)).not.toBe(
+      getSkyPositionSignature(baseCycle, 0.84)
+    );
+    expect(getSkyPositionSignature(farCycle, 0.84)).not.toBe(
+      getSkyPositionSignature(baseCycle, 0.84)
+    );
   });
 
   it('selects distinct dawn and dusk twilight palettes by time of day', () => {
