@@ -78,7 +78,10 @@ import {
 } from './pending-world-build-queue.ts';
 import { shouldProcessPendingWorldBuildEntryWithinBudget } from './pending-world-build-processing.ts';
 import { collectMaterialTexturesInto } from './material-texture-collector.ts';
-import { countEquivalentShareableMaterials } from './material-equivalence.ts';
+import {
+  countColorVariantShareableMaterials,
+  countEquivalentShareableMaterials,
+} from './material-equivalence.ts';
 import {
   disposeOwnedObject3DMaterials,
   getRecentOwnedMaterialLifecycleCounts,
@@ -137,7 +140,10 @@ export {
 } from './pending-world-build-queue.ts';
 export { shouldProcessPendingWorldBuildEntryWithinBudget } from './pending-world-build-processing.ts';
 export { collectMaterialTexturesInto } from './material-texture-collector.ts';
-export { countEquivalentShareableMaterials } from './material-equivalence.ts';
+export {
+  countColorVariantShareableMaterials,
+  countEquivalentShareableMaterials,
+} from './material-equivalence.ts';
 export {
   getRecentOwnedMaterialLifecycleCounts,
   resetOwnedMaterialLifecycleMetrics,
@@ -150,6 +156,7 @@ export {
   validateTileModelCostEstimateAgainstLimits,
 } from './tile-model-cost-estimate-budget.ts';
 export {
+  getTileModelColorVariantMaterialWarning,
   getTileModelDrawCallRatioWarning,
   getTileModelEquivalentMaterialWarning,
   getTileModelInstancingWarning,
@@ -317,6 +324,7 @@ type Render3DController = {
     materialCount: number;
     sharedMaterialCount: number;
     clonedMaterialCount: number;
+    colorVariantMaterialCount: number;
     transparentMaterialCount: number;
     alphaTestMaterialCount: number;
     doubleSidedMaterialCount: number;
@@ -890,6 +898,7 @@ type SceneResourceStats = {
   materialCount: number;
   sharedMaterialCount: number;
   clonedMaterialCount: number;
+  colorVariantMaterialCount: number;
   transparentMaterialCount: number;
   alphaTestMaterialCount: number;
   doubleSidedMaterialCount: number;
@@ -1058,6 +1067,7 @@ function createEmptySceneResourceStats(): SceneResourceStats {
     materialCount: 0,
     sharedMaterialCount: 0,
     clonedMaterialCount: 0,
+    colorVariantMaterialCount: 0,
     transparentMaterialCount: 0,
     alphaTestMaterialCount: 0,
     doubleSidedMaterialCount: 0,
@@ -2282,6 +2292,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       materialCount: sceneResourceStats.materialCount,
       sharedMaterialCount: sceneResourceStats.sharedMaterialCount,
       clonedMaterialCount: sceneResourceStats.clonedMaterialCount,
+      colorVariantMaterialCount: sceneResourceStats.colorVariantMaterialCount,
       transparentMaterialCount: sceneResourceStats.transparentMaterialCount,
       alphaTestMaterialCount: sceneResourceStats.alphaTestMaterialCount,
       doubleSidedMaterialCount: sceneResourceStats.doubleSidedMaterialCount,
@@ -3926,6 +3937,7 @@ export function collectSceneResourceStats(
     materialCount: materials.size,
     sharedMaterialCount: Math.max(0, materialRefCount - materials.size),
     clonedMaterialCount: countEquivalentShareableMaterials(materials),
+    colorVariantMaterialCount: countColorVariantShareableMaterials(materials),
     transparentMaterialCount: countMaterialsMatching(materials, isTransparentMaterial),
     alphaTestMaterialCount: countMaterialsMatching(materials, usesAlphaTest),
     doubleSidedMaterialCount: countMaterialsMatching(materials, isDoubleSidedMaterial),

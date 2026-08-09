@@ -91,7 +91,7 @@ Given the heap issue you just saw, I would take this very seriously.
 * [ ] Prefer shared material references instead of `material.clone()`.
 * [X] Detect identical or equivalent materials that could be shared.
 * [X] Warn when a plugin creates a material for every object instance.
-* [ ] Avoid creating separate materials solely for color variation.
+* [X] Avoid creating separate materials solely for color variation.
 * [ ] Use instance colors where possible.
 * [ ] Use vertex colors where possible.
 * [ ] Use uniforms for cheap variation where sharing permits it.

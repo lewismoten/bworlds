@@ -28,6 +28,8 @@ const PER_INSTANCE_MATERIAL_WARNING_MIN_UNIQUE_MATERIAL_RATIO = 0.8;
 const PER_INSTANCE_MATERIAL_WARNING_MAX_SHARED_MATERIAL_RATIO = 0.25;
 const FULL_DETAIL_EQUIVALENT_MATERIAL_WARNING_MIN_COUNT = 3;
 const LOW_DETAIL_EQUIVALENT_MATERIAL_WARNING_MIN_COUNT = 2;
+const FULL_DETAIL_COLOR_VARIANT_MATERIAL_WARNING_MIN_COUNT = 3;
+const LOW_DETAIL_COLOR_VARIANT_MATERIAL_WARNING_MIN_COUNT = 2;
 
 export function getTileModelDrawCallRatioWarning(
   {
@@ -238,6 +240,26 @@ export function getTileModelEquivalentMaterialWarning(
   return `clonedMaterialCount ${clonedMaterialCount} across materialCount ${materialCount} suggests equivalent materials could be shared`;
 }
 
+export function getTileModelColorVariantMaterialWarning(
+  {
+    colorVariantMaterialCount,
+    materialCount,
+  }: {
+    colorVariantMaterialCount: number;
+    materialCount: number;
+  },
+  detailLevel: RenderBudgetDetailLevel = 'full'
+): string | null {
+  const minimumCount =
+    detailLevel === 'low'
+      ? LOW_DETAIL_COLOR_VARIANT_MATERIAL_WARNING_MIN_COUNT
+      : FULL_DETAIL_COLOR_VARIANT_MATERIAL_WARNING_MIN_COUNT;
+  if (colorVariantMaterialCount < minimumCount) {
+    return null;
+  }
+  return `colorVariantMaterialCount ${colorVariantMaterialCount} across materialCount ${materialCount} suggests instance, vertex, or uniform color variation instead of separate materials`;
+}
+
 export function getTileModelPerformanceWarnings(
   stats: {
     drawCallCount: number;
@@ -249,6 +271,7 @@ export function getTileModelPerformanceWarnings(
     materialCount: number;
     sharedMaterialCount: number;
     clonedMaterialCount: number;
+    colorVariantMaterialCount: number;
     sharedGeometryCount: number;
   },
   detailLevel: RenderBudgetDetailLevel = 'full'
@@ -260,6 +283,7 @@ export function getTileModelPerformanceWarnings(
     getTileModelInstancingWarning(stats, detailLevel),
     getTileModelPerInstanceMaterialWarning(stats, detailLevel),
     getTileModelEquivalentMaterialWarning(stats, detailLevel),
+    getTileModelColorVariantMaterialWarning(stats, detailLevel),
   ];
 
   return warnings.filter((warning): warning is string => typeof warning === 'string');

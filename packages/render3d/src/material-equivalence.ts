@@ -22,7 +22,55 @@ export function countEquivalentShareableMaterials(
   return equivalentCount;
 }
 
+export function countColorVariantShareableMaterials(
+  materials: Iterable<THREE.Material>
+): number {
+  const groupedSignatures = new Map<string, Map<string, number>>();
+
+  for (const material of materials) {
+    const baseSignature = getMaterialColorVariantSignature(material);
+    const exactSignature = getMaterialEquivalenceSignature(material);
+    let exactCounts = groupedSignatures.get(baseSignature);
+    if (!exactCounts) {
+      exactCounts = new Map<string, number>();
+      groupedSignatures.set(baseSignature, exactCounts);
+    }
+    exactCounts.set(exactSignature, (exactCounts.get(exactSignature) ?? 0) + 1);
+  }
+
+  let colorVariantCount = 0;
+  for (const exactCounts of groupedSignatures.values()) {
+    if (exactCounts.size <= 1) {
+      continue;
+    }
+    for (const count of exactCounts.values()) {
+      colorVariantCount += count;
+    }
+  }
+
+  return colorVariantCount;
+}
+
 export function getMaterialEquivalenceSignature(material: THREE.Material): string {
+  return getMaterialSignature(material, {
+    includeColorVariation: true,
+  });
+}
+
+export function getMaterialColorVariantSignature(material: THREE.Material): string {
+  return getMaterialSignature(material, {
+    includeColorVariation: false,
+  });
+}
+
+function getMaterialSignature(
+  material: THREE.Material,
+  {
+    includeColorVariation,
+  }: {
+    includeColorVariation: boolean;
+  }
+): string {
   const candidate = material as MaterialLike;
   const entries: string[] = [
     `type:${candidate.type ?? ''}`,
@@ -32,9 +80,9 @@ export function getMaterialEquivalenceSignature(material: THREE.Material): strin
     `side:${normalizeUnknownNumber(candidate.side)}`,
     `fog:${candidate.fog === false ? 0 : 1}`,
     `depthWrite:${candidate.depthWrite === false ? 0 : 1}`,
-    `color:${getColorLikeKey(candidate.color)}`,
-    `emissive:${getColorLikeKey(candidate.emissive)}`,
-    `emissiveIntensity:${normalizeUnknownNumber(candidate.emissiveIntensity)}`,
+    `color:${includeColorVariation ? getColorLikeKey(candidate.color) : ''}`,
+    `emissive:${includeColorVariation ? getColorLikeKey(candidate.emissive) : ''}`,
+    `emissiveIntensity:${includeColorVariation ? normalizeUnknownNumber(candidate.emissiveIntensity) : ''}`,
     `roughness:${normalizeUnknownNumber(candidate.roughness)}`,
     `metalness:${normalizeUnknownNumber(candidate.metalness)}`,
     `map:${getObjectReferenceKey(candidate.map)}`,
