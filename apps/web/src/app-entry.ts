@@ -1,13 +1,13 @@
-import { redirectToCanonicalDebugRoute } from './debug-route-guard.ts';
-import { resolveRootEntryPagePath } from './root-entry-route.ts';
+import { resolveAppBootstrapRoute } from './app-bootstrap-route.ts';
 
 async function bootstrap(): Promise<void> {
-  if (redirectToCanonicalDebugRoute(window.location)) {
-    return;
+  const route = resolveAppBootstrapRoute(window.location);
+
+  if (route.canonicalUrl) {
+    window.history.replaceState(null, '', route.canonicalUrl);
   }
 
-  const pagePath = resolveRootEntryPagePath(window.location.pathname);
-  switch (pagePath) {
+  switch (route.pagePath) {
     case '/debug/':
       await import('./debug-directory-page.ts');
       return;
