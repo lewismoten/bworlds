@@ -339,6 +339,15 @@ describe('core utilities', () => {
     );
   });
 
+  it('generates deterministic tower point-of-interest names', () => {
+    const seedHash = registerHashLabel('tower-spec');
+    const left = generatePoiName(seedHash, 'tower', 7, -14);
+    const right = generatePoiName(seedHash, 'tower', 7, -14);
+
+    expect(left).toBe(right);
+    expect(left).toMatch(/\b(Tower|Watch|Spire|Keep|Lookout|Crown)\b/);
+  });
+
   it('keeps custom point-of-interest type label registration deterministic', () => {
     const seedHash = registerHashLabel('custom-poi-spec');
     registerPoiNameType('stronghold');

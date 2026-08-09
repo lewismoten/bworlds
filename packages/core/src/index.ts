@@ -248,6 +248,7 @@ const POI_NAME_TYPE_LABELS = registerHashLabels([
   'town',
   'cave',
   'dungeon',
+  'tower',
   'ruins',
   'quarry',
   'lighthouse',
@@ -1823,6 +1824,11 @@ export function generatePoiName(
 
   if (type === 'dungeon') {
     const nouns = ['Barrow', 'Crypt', 'Depths', 'Hall', 'Vault', 'Warren'];
+    return `${prefix} ${pickFrom(nouns, hash2DWithSeed(nounSeed, x, y))}`;
+  }
+
+  if (type === 'tower') {
+    const nouns = ['Tower', 'Watch', 'Spire', 'Keep', 'Lookout', 'Crown'];
     return `${prefix} ${pickFrom(nouns, hash2DWithSeed(nounSeed, x, y))}`;
   }
 
