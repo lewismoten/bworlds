@@ -65,6 +65,11 @@ export type SoundEffectSink = {
   getActiveSourceCount?(): number;
 };
 
+type SoundEffectVolumeBounds = {
+  min: number;
+  max: number;
+};
+
 export type SoundEffectController = {
   resume(): void;
   getActiveSourceCount(): number;
@@ -1150,6 +1155,11 @@ const MAX_SIMULTANEOUS_SOUND_VOICES_BY_KIND: Partial<
   footstep: 2,
 };
 
+const AMBIENT_SOUND_VOLUME_BOUNDS: SoundEffectVolumeBounds = {
+  min: 0.012,
+  max: 0.032,
+};
+
 export function createWebAudioSoundEffectSink(): SoundEffectSink {
   let audioContext: AudioContext | null = null;
   let activeSourceCount = 0;
@@ -1233,6 +1243,10 @@ export function createWebAudioSoundEffectSink(): SoundEffectSink {
       }
       const outputGain = getOutputGainNode(context);
       const spatialMix = getSoundSpatialMix(effect.emitter, effect.listener);
+      const normalizedVolume = normalizeSoundEffectVolume(
+        effect.kind,
+        effect.volume
+      );
       const startAt = context.currentTime;
       const durationSeconds = effect.durationMs / 1000;
       const oscillator = context.createOscillator();
@@ -1241,7 +1255,7 @@ export function createWebAudioSoundEffectSink(): SoundEffectSink {
         typeof context.createStereoPanner === 'function'
           ? context.createStereoPanner()
           : null;
-      const loudness = effect.volume * spatialMix.gainMultiplier;
+      const loudness = normalizedVolume * spatialMix.gainMultiplier;
       const priority = resolveSoundEffectPriority(effect.kind);
       const voice: ActiveSoundVoice = {
         kind: effect.kind,
@@ -1347,7 +1361,7 @@ export function createWebAudioSoundEffectSink(): SoundEffectSink {
       }
       gain.gain.setValueAtTime(0.0001, startAt);
       gain.gain.exponentialRampToValueAtTime(
-        effect.volume * spatialMix.gainMultiplier,
+        normalizedVolume * spatialMix.gainMultiplier,
         startAt + durationSeconds * 0.2
       );
       gain.gain.exponentialRampToValueAtTime(0.0001, startAt + durationSeconds);
@@ -1437,6 +1451,50 @@ function resolveSoundMixSafetyGain(totalLoudness: number): number {
     return 1;
   }
   return clampValue(SOUND_MIX_HEADROOM_LOUDNESS / totalLoudness, 0.38, 1);
+}
+
+export function resolveSoundEffectVolumeBounds(
+  kind: SoundEffectKind
+): SoundEffectVolumeBounds {
+  switch (kind) {
+    case 'ocean':
+    case 'river-ambience':
+    case 'forest-ambience':
+    case 'plains-ambience':
+    case 'mountain-ambience':
+    case 'cave-ambience':
+    case 'settlement-ambience':
+    case 'ruins-ambience':
+    case 'wind':
+      return AMBIENT_SOUND_VOLUME_BOUNDS;
+    case 'footstep':
+    case 'jump':
+    case 'landing':
+    case 'blocked':
+    case 'open':
+    case 'close':
+      return { min: 0.022, max: 0.06 };
+    case 'train-engine':
+    case 'paddle-calliope':
+      return { min: 0.018, max: 0.038 };
+    case 'train-whistle':
+    case 'steam-whistle':
+      return { min: 0.028, max: 0.05 };
+    case 'combat-weapon':
+    case 'combat-magic':
+    case 'advancement':
+      return { min: 0.038, max: 0.058 };
+    default:
+      return { min: 0.02, max: 0.05 };
+  }
+}
+
+export function normalizeSoundEffectVolume(
+  kind: SoundEffectKind,
+  volume: number
+): number {
+  const bounds = resolveSoundEffectVolumeBounds(kind);
+  return clampValue(volume, bounds.min, bounds.max);
 }
 
 function clampValue(value: number, min: number, max: number): number {

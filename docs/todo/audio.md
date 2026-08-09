@@ -496,7 +496,7 @@
 - [x] Limit simultaneous voices through a priority system.
 - [x] Stop inaudible low-priority sounds first when reaching voice limits.
 - [x] Prevent clipping when many sounds occur simultaneously.
-- [ ] Normalize generated sounds to reasonable loudness ranges.
+- [x] Normalize generated sounds to reasonable loudness ranges.
 - [ ] Reserve dynamic range for major events.
 - [x] Ensure extremely close sounds do not become painfully loud.
 

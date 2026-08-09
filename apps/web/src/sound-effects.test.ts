@@ -7,7 +7,9 @@ import {
   getCombatSoundVolume,
   getForestWindCadenceMs,
   getPaddleBoatCalliopeCadenceMs,
+  normalizeSoundEffectVolume,
   resolveAmbienceDuckingGain,
+  resolveSoundEffectVolumeBounds,
   getSurfaceAudioFamily,
   getSurfaceAudioProfile,
   getSoundSpatialMix,
@@ -777,6 +779,28 @@ describe('sound effects', () => {
     expect(controller.getRecentPrioritySoundIntensity(100)).toBe(0.9);
     expect(controller.getRecentPrioritySoundIntensity(1200)).toBeLessThan(0.5);
     expect(controller.getRecentPrioritySoundIntensity(3000)).toBe(0);
+  });
+
+  it('normalizes sound volumes into stable family-specific ranges', () => {
+    expect(resolveSoundEffectVolumeBounds('forest-ambience')).toEqual({
+      min: 0.012,
+      max: 0.032,
+    });
+    expect(normalizeSoundEffectVolume('forest-ambience', 0.002)).toBe(0.012);
+    expect(normalizeSoundEffectVolume('forest-ambience', 0.05)).toBe(0.032);
+    expect(normalizeSoundEffectVolume('forest-ambience', 0.02)).toBe(0.02);
+
+    expect(resolveSoundEffectVolumeBounds('footstep')).toEqual({
+      min: 0.022,
+      max: 0.06,
+    });
+    expect(normalizeSoundEffectVolume('footstep', 0.01)).toBe(0.022);
+
+    expect(resolveSoundEffectVolumeBounds('combat-weapon')).toEqual({
+      min: 0.038,
+      max: 0.058,
+    });
+    expect(normalizeSoundEffectVolume('combat-weapon', 0.08)).toBe(0.058);
   });
 
   it('reduces low-priority ambience while recent important sounds are active', () => {
