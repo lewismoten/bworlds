@@ -393,6 +393,7 @@ const FULL_DETAIL_TILE_MODEL_HARD_LIMITS: TileModelHardLimits = {
   lightCount: 4,
   shadowLightCount: 1,
   animationMixerCount: 4,
+  skeletonCount: 2,
   vertexCount: 50_000,
 };
 
@@ -428,6 +429,7 @@ const LOW_DETAIL_TILE_MODEL_HARD_LIMITS: TileModelHardLimits = {
   lightCount: 1,
   shadowLightCount: 0,
   animationMixerCount: 0,
+  skeletonCount: 0,
   vertexCount: 8_000,
 };
 
@@ -525,6 +527,7 @@ export function validateTileModelAgainstRenderBudget(
         lightCount: safetyPrecheck.stats.lightCount,
         shadowLightCount: safetyPrecheck.stats.shadowLightCount,
         animationMixerCount: countAnimationMixers(root),
+        skeletonCount: countSkeletons(root),
         invalidPositionCoordinateCount: 0,
         pointVertexCount: safetyPrecheck.stats.pointVertexCount,
         particleEmitterCount: safetyPrecheck.stats.particleEmitterCount,
@@ -585,6 +588,7 @@ export function validateTileModelAgainstRenderBudget(
       minimumTriangleCount: ULTRA_DENSE_GEOMETRY_MIN_TRIANGLES,
     }),
     animationMixerCount: countAnimationMixers(root),
+    skeletonCount: countSkeletons(root),
   };
   const violations: TileModelBudgetViolation[] = [];
   const metrics: Array<keyof TileModelHardLimits> = [
@@ -619,6 +623,7 @@ export function validateTileModelAgainstRenderBudget(
     'lightCount',
     'shadowLightCount',
     'animationMixerCount',
+    'skeletonCount',
     'vertexCount',
   ];
 
@@ -720,6 +725,7 @@ export function getTileModelCostEstimateLimits(
     lightCount: limits.lightCount,
     shadowLightCount: limits.shadowLightCount,
     animationMixerCount: limits.animationMixerCount,
+    skeletonCount: limits.skeletonCount,
     vertexCount: limits.vertexCount,
     triangleCount: limits.triangleCount,
   };
@@ -868,6 +874,7 @@ type SceneResourceStats = {
   dynamicLightCount: number;
   shadowLightCount: number;
   animationMixerCount: number;
+  skeletonCount: number;
   triangleCount: number;
   vertexCount: number;
   materialRefCount: number;
@@ -931,6 +938,7 @@ type TileModelHardLimits = {
   lightCount: number;
   shadowLightCount: number;
   animationMixerCount: number;
+  skeletonCount: number;
   vertexCount: number;
 };
 
@@ -1024,6 +1032,7 @@ function createEmptySceneResourceStats(): SceneResourceStats {
     dynamicLightCount: 0,
     shadowLightCount: 0,
     animationMixerCount: 0,
+    skeletonCount: 0,
     triangleCount: 0,
     vertexCount: 0,
     materialRefCount: 0,
@@ -1101,6 +1110,20 @@ function countAnimationMixers(root: Pick<THREE.Object3D, 'traverse'>): number {
   });
 
   return mixerCount;
+}
+
+function countSkeletons(root: Pick<THREE.Object3D, 'traverse'>): number {
+  const skeletons = new Set<unknown>();
+
+  root.traverse((child) => {
+    const skeleton = (child as THREE.Object3D & { skeleton?: unknown }).skeleton;
+    if (!skeleton || typeof skeleton !== 'object') {
+      return;
+    }
+    skeletons.add(skeleton);
+  });
+
+  return skeletons.size;
 }
 
 type FrameTimeBudget = {
@@ -3532,6 +3555,7 @@ export function collectSceneResourceStats(
   let dynamicLightCount = 0;
   let shadowLightCount = 0;
   let animationMixerCount = 0;
+  const skeletons = new Set<unknown>();
   let triangleCount = 0;
   let vertexCount = 0;
   let materialRefCount = 0;
@@ -3638,6 +3662,10 @@ export function collectSceneResourceStats(
     if (animationMixerMetadata) {
       animationMixerCount += animationMixerMetadata.count ?? 1;
     }
+    const skeleton = (child as THREE.Object3D & { skeleton?: unknown }).skeleton;
+    if (skeleton && typeof skeleton === 'object') {
+      skeletons.add(skeleton);
+    }
 
     const renderable = child as THREE.Object3D & {
       geometry?: unknown;
@@ -3727,6 +3755,7 @@ export function collectSceneResourceStats(
     dynamicLightCount,
     shadowLightCount,
     animationMixerCount,
+    skeletonCount: skeletons.size,
     triangleCount,
     vertexCount,
     materialRefCount,

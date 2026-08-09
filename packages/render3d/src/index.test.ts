@@ -430,6 +430,7 @@ describe('render3d visibility helpers', () => {
       dynamicLightCount: 0,
       shadowLightCount: 0,
       animationMixerCount: 0,
+      skeletonCount: 0,
       triangleCount: 0,
       vertexCount: 36,
       materialRefCount: 4,
@@ -587,6 +588,7 @@ describe('render3d visibility helpers', () => {
       dynamicLightCount: 2,
       shadowLightCount: 1,
       animationMixerCount: 0,
+      skeletonCount: 0,
       triangleCount: 0,
       vertexCount: 18,
       materialRefCount: 3,
@@ -675,6 +677,7 @@ describe('render3d visibility helpers', () => {
       dynamicLightCount: 0,
       shadowLightCount: 0,
       animationMixerCount: 0,
+      skeletonCount: 0,
       triangleCount: 0,
       vertexCount: 25,
       materialRefCount: 2,
@@ -813,6 +816,7 @@ describe('render3d visibility helpers', () => {
       dynamicLightCount: 0,
       shadowLightCount: 0,
       animationMixerCount: 0,
+      skeletonCount: 0,
       triangleCount: 0,
       vertexCount: 26,
       materialRefCount: 2,
@@ -895,6 +899,7 @@ describe('render3d visibility helpers', () => {
       dynamicLightCount: 0,
       shadowLightCount: 0,
       animationMixerCount: 0,
+      skeletonCount: 0,
       triangleCount: 0,
       vertexCount: 8,
       materialRefCount: 2,
@@ -1009,6 +1014,7 @@ describe('render3d visibility helpers', () => {
       dynamicLightCount: 0,
       shadowLightCount: 0,
       animationMixerCount: 0,
+      skeletonCount: 0,
       triangleCount: 0,
       vertexCount: 10,
       materialRefCount: 2,
@@ -1282,6 +1288,7 @@ describe('render3d visibility helpers', () => {
       lightCount: 4,
       shadowLightCount: 1,
       animationMixerCount: 4,
+      skeletonCount: 2,
       vertexCount: 50_000,
     });
     expect(getTileModelHardLimits('low')).toEqual({
@@ -1316,6 +1323,7 @@ describe('render3d visibility helpers', () => {
       lightCount: 1,
       shadowLightCount: 0,
       animationMixerCount: 0,
+      skeletonCount: 0,
       vertexCount: 8_000,
     });
   });
@@ -1403,6 +1411,7 @@ describe('render3d visibility helpers', () => {
         lightCount: 0,
         shadowLightCount: 0,
         animationMixerCount: 0,
+        skeletonCount: 0,
         vertexCount: 72,
       }),
       violations: [],
@@ -1474,6 +1483,74 @@ describe('render3d visibility helpers', () => {
             metric: 'animationMixerCount',
             actual: 5,
             limit: 4,
+          },
+        ]),
+      })
+    );
+  });
+
+  it('tracks unique skeleton counts and rejects models above the cap', () => {
+    const material = createMockMaterial();
+    const sharedSkeleton = { bones: [] };
+    const uniqueSkeletonA = { bones: [] };
+    const uniqueSkeletonB = { bones: [] };
+    const meshA = createMockObject3D(
+      material,
+      [],
+      createMockStatGeometry('mesh-a', 48)
+    ) as ReturnType<typeof createMockObject3D> & { skeleton?: unknown };
+    const meshB = createMockObject3D(
+      material,
+      [],
+      createMockStatGeometry('mesh-b', 48)
+    ) as ReturnType<typeof createMockObject3D> & { skeleton?: unknown };
+    const meshC = createMockObject3D(
+      material,
+      [],
+      createMockStatGeometry('mesh-c', 48)
+    ) as ReturnType<typeof createMockObject3D> & { skeleton?: unknown };
+    const meshD = createMockObject3D(
+      material,
+      [],
+      createMockStatGeometry('mesh-d', 48)
+    ) as ReturnType<typeof createMockObject3D> & { skeleton?: unknown };
+    meshA.skeleton = sharedSkeleton;
+    meshB.skeleton = sharedSkeleton;
+    meshC.skeleton = uniqueSkeletonA;
+    meshD.skeleton = uniqueSkeletonB;
+    const root = createMockObject3D(undefined, [
+      meshA,
+      meshB,
+      meshC,
+      meshD,
+    ]);
+
+    expect(collectSceneResourceStats(root as never).skeletonCount).toBe(3);
+    expect(validateTileModelAgainstRenderBudget(root as never, 'full')).toEqual(
+      expect.objectContaining({
+        accepted: false,
+        violations: expect.arrayContaining([
+          {
+            metric: 'skeletonCount',
+            actual: 3,
+            limit: 2,
+          },
+        ]),
+      })
+    );
+    expect(
+      validateTileModelCostEstimateAgainstRenderBudget(
+        { skeletonCount: 3 },
+        'full'
+      )
+    ).toEqual(
+      expect.objectContaining({
+        accepted: false,
+        violations: expect.arrayContaining([
+          {
+            metric: 'skeletonCount',
+            actual: 3,
+            limit: 2,
           },
         ]),
       })

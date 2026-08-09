@@ -15,6 +15,7 @@ export const TILE_MODEL_COST_ESTIMATE_METRICS = [
   'lightCount',
   'shadowLightCount',
   'animationMixerCount',
+  'skeletonCount',
   'vertexCount',
   'triangleCount',
 ] as const satisfies ReadonlyArray<keyof Model3DResourceCostEstimate>;
