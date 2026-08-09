@@ -25,4 +25,94 @@ describe('tile tower', () => {
       })
     );
   });
+
+  it('reuses shared tower materials across repeated builds on the same host', () => {
+    const plugin = createTowerTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'tower');
+    const three = createFakeThree() as never;
+
+    const first = tile?.create3DModel?.({
+      tile: { kind: 'tower' },
+      three,
+      state: {} as never,
+      tileX: 8,
+      tileY: -3,
+    }) as { children?: Array<{ material: unknown }> } | null | undefined;
+    const second = tile?.create3DModel?.({
+      tile: { kind: 'tower' },
+      three,
+      state: {} as never,
+      tileX: 10,
+      tileY: -1,
+    }) as { children?: Array<{ material: unknown }> } | null | undefined;
+
+    expect(first?.children[0]?.material).toBe(second?.children[0]?.material);
+    expect(first?.children[2]?.material).toBe(second?.children[2]?.material);
+    expect(first?.children[5]?.material).toBe(second?.children[5]?.material);
+  });
 });
+
+function createFakeThree() {
+  class Group {
+    children: unknown[] = [];
+    add(child: unknown) {
+      this.children.push(child);
+    }
+  }
+  class Mesh {
+    position = {
+      set() {
+        return undefined;
+      },
+    };
+    constructor(
+      public geometry: unknown,
+      public material: unknown
+    ) {}
+  }
+  class PointLight {
+    position = {
+      set() {
+        return undefined;
+      },
+    };
+    visible = true;
+    userData: Record<string, unknown> = {};
+    constructor(
+      public color: unknown,
+      public intensity: unknown,
+      public distance: unknown,
+      public decay: unknown
+    ) {}
+  }
+  class MeshBasicMaterial {
+    constructor(public options: unknown) {}
+  }
+  class MeshStandardMaterial {
+    constructor(public options: unknown) {}
+  }
+  class CylinderGeometry {
+    constructor(..._args: unknown[]) {}
+  }
+  class ConeGeometry {
+    constructor(..._args: unknown[]) {}
+  }
+  class BoxGeometry {
+    constructor(..._args: unknown[]) {}
+  }
+  class SphereGeometry {
+    constructor(..._args: unknown[]) {}
+  }
+
+  return {
+    Group,
+    Mesh,
+    PointLight,
+    MeshBasicMaterial,
+    MeshStandardMaterial,
+    CylinderGeometry,
+    ConeGeometry,
+    BoxGeometry,
+    SphereGeometry,
+  };
+}

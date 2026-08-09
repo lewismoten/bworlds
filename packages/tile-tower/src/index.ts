@@ -5,7 +5,21 @@ import {
   syncPoiLightEmitters,
 } from '@bworlds/poi-support';
 import { createBasicMaterial } from '@bworlds/three-support';
-import type { Create3DModelContext, RuntimePlugin } from '@bworlds/plugin-api';
+import type {
+  Create3DModelContext,
+  RuntimePlugin,
+  ThreeMaterialLike,
+} from '@bworlds/plugin-api';
+
+const towerMaterialCache = new WeakMap<
+  object,
+  {
+    stoneMaterial: ThreeMaterialLike;
+    trimMaterial: ThreeMaterialLike;
+    roofMaterial: ThreeMaterialLike;
+    lampMaterial: ThreeMaterialLike;
+  }
+>();
 
 export function createTowerTilePlugin(): RuntimePlugin {
   return createAnchoredEnterablePoiTilePlugin({
@@ -29,16 +43,8 @@ export function createTowerTilePlugin(): RuntimePlugin {
       return true;
     }),
     create3DModel({ three, tileX, tileY }: Create3DModelContext) {
-      const stoneMaterial = createBasicMaterial(three, { color: '#9b9085' });
-      const trimMaterial = createBasicMaterial(three, { color: '#645b54' });
-      const roofMaterial = createBasicMaterial(three, { color: '#4d423b' });
-      const lampMaterial = new three.MeshStandardMaterial({
-        color: '#fbbf24',
-        emissive: '#fbbf24',
-        emissiveIntensity: 0.02,
-        roughness: 0.34,
-        metalness: 0.04,
-      });
+      const { stoneMaterial, trimMaterial, roofMaterial, lampMaterial } =
+        getTowerSharedMaterials(three);
       const group = new three.Group();
 
       const base = new three.Mesh(
@@ -107,4 +113,24 @@ export function createTowerTilePlugin(): RuntimePlugin {
       }
     },
   });
+}
+
+function getTowerSharedMaterials(three: Create3DModelContext['three']) {
+  let cached = towerMaterialCache.get(three as object);
+  if (!cached) {
+    cached = {
+      stoneMaterial: createBasicMaterial(three, { color: '#9b9085' }),
+      trimMaterial: createBasicMaterial(three, { color: '#645b54' }),
+      roofMaterial: createBasicMaterial(three, { color: '#4d423b' }),
+      lampMaterial: new three.MeshStandardMaterial({
+        color: '#fbbf24',
+        emissive: '#fbbf24',
+        emissiveIntensity: 0.02,
+        roughness: 0.34,
+        metalness: 0.04,
+      }),
+    };
+    towerMaterialCache.set(three as object, cached);
+  }
+  return cached;
 }

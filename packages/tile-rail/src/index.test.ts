@@ -17,9 +17,10 @@ describe('tile rail', () => {
   it('renders sleepers and rails in overworld scenes', () => {
     const plugin = createRailTilePlugin();
     const tile = plugin.tiles?.find((entry) => entry.kind === 'rail');
+    const three = createFakeThree() as never;
     const model = tile?.create3DModel?.({
       tile: { kind: 'rail' },
-      three: createFakeThree() as never,
+      three,
       state: {
         getCurrentContext() {
           return { type: 'overworld' };
@@ -33,6 +34,38 @@ describe('tile rail', () => {
     }) as { children?: unknown[] } | null | undefined;
 
     expect(model?.children.length ?? 0).toBeGreaterThanOrEqual(6);
+  });
+
+  it('reuses shared rail materials across repeated builds on the same host', () => {
+    const plugin = createRailTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'rail');
+    const three = createFakeThree() as never;
+    const state = {
+      getCurrentContext() {
+        return { type: 'overworld' };
+      },
+      getCurrentTile() {
+        return { kind: 'rail' };
+      },
+    } as never;
+
+    const first = tile?.create3DModel?.({
+      tile: { kind: 'rail' },
+      three,
+      state,
+      tileX: 0,
+      tileY: 0,
+    }) as { children?: Array<{ material: unknown }> } | null | undefined;
+    const second = tile?.create3DModel?.({
+      tile: { kind: 'rail' },
+      three,
+      state,
+      tileX: 1,
+      tileY: 0,
+    }) as { children?: Array<{ material: unknown }> } | null | undefined;
+
+    expect(first?.children[0]?.material).toBe(second?.children[0]?.material);
+    expect(first?.children[2]?.material).toBe(second?.children[2]?.material);
   });
 });
 

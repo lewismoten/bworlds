@@ -6,8 +6,17 @@ import type {
   Create3DModelContext,
   Kind,
   RuntimePlugin,
+  ThreeMaterialLike,
   ThreeHostLike,
 } from '@bworlds/plugin-api';
+
+const railMaterialCache = new WeakMap<
+  object,
+  {
+    sleeperMaterial: ThreeMaterialLike;
+    railMaterial: ThreeMaterialLike;
+  }
+>();
 
 export function createRailTilePlugin(): RuntimePlugin {
   return createTilePlugin('tile-rail', [
@@ -48,8 +57,7 @@ function createRailGroup(
   tileY: number
 ) {
   const group = new three.Group();
-  const sleeperMaterial = createBasicMaterial(three, { color: '#7c5836' });
-  const railMaterial = createBasicMaterial(three, { color: '#9ca3af' });
+  const { sleeperMaterial, railMaterial } = getRailSharedMaterials(three);
   group.position.set(tileX, 0, tileY);
 
   const horizontal = hasConnection(state, tileX, tileY, 'east') || hasConnection(state, tileX, tileY, 'west');
@@ -90,6 +98,18 @@ function createRailGroup(
   }
 
   return group;
+}
+
+function getRailSharedMaterials(three: ThreeHostLike) {
+  let cached = railMaterialCache.get(three as object);
+  if (!cached) {
+    cached = {
+      sleeperMaterial: createBasicMaterial(three, { color: '#7c5836' }),
+      railMaterial: createBasicMaterial(three, { color: '#9ca3af' }),
+    };
+    railMaterialCache.set(three as object, cached);
+  }
+  return cached;
 }
 
 function hasConnection(
