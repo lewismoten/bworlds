@@ -1221,6 +1221,22 @@ describe('procedural music', () => {
     );
   });
 
+  it('keeps generated note dynamics expressive after gentle compression', () => {
+    const scheduled = scheduleProceduralMusicNotes({
+      nowMs: 0,
+      tileKind: 'town',
+      contextType: 'town',
+      dayProgress: 0.45,
+      clusterX: 0,
+      clusterY: 0,
+    });
+    const volumes = scheduled.notes.map((note) => note.volume);
+    const spread = Math.max(...volumes) - Math.min(...volumes);
+
+    expect(spread).toBeGreaterThan(0.006);
+    expect(spread).toBeLessThan(0.028);
+  });
+
   it('lets percussion react to the shared composition structure instead of staying flat', () => {
     const first = scheduleProceduralMusicNotes({
       nowMs: 0,
