@@ -386,6 +386,81 @@ export function createRenderBudget(
   };
 }
 
+export function createRenderBudgetBuilder(): (
+  state: Pick<RenderBudgetState, 'visibilityRadius' | 'targetFps'> &
+    Partial<
+      Pick<
+        RenderBudgetState,
+        'currentFrameMs' | 'smoothedFrameMs' | 'severeFrameStreak'
+      >
+    >,
+  options?: {
+    detailLevel?: RenderBudgetDetailLevel;
+    generationBudgetMs?: number;
+    remainingGenerationBudgetMs?: number;
+    pendingBuildBudgetMs?: number;
+    maxPendingBuildTiles?: number;
+  }
+) => RenderBudget {
+  const budget: RenderBudget = {
+    quality: 'full',
+    detailLevel: 'full',
+    targetFps: 60,
+    visibilityRadius: DEFAULT_VISIBILITY_RADIUS,
+    frame: {
+      currentMs: DEFAULT_RENDER_BUDGET_STATE.currentFrameMs,
+      smoothedMs: DEFAULT_RENDER_BUDGET_STATE.smoothedFrameMs,
+      generationBudgetMs: undefined,
+      remainingGenerationBudgetMs: undefined,
+      limits: {
+        soft: 1000 / 42,
+        hard: 1000 / 28,
+      },
+    },
+    pendingBuild: {
+      budgetMs: undefined,
+      maxTiles: undefined,
+      tileLimits: {
+        soft: 8,
+        hard: 4,
+      },
+    },
+  };
+
+  return (state, options = {}) => {
+    const {
+      detailLevel = 'full',
+      generationBudgetMs,
+      remainingGenerationBudgetMs = generationBudgetMs,
+      pendingBuildBudgetMs,
+      maxPendingBuildTiles,
+    } = options;
+    const caps = getRenderBudgetCaps(state);
+
+    budget.quality = getRenderQualityLevel({
+      visibilityRadius: state.visibilityRadius,
+      targetFps: state.targetFps,
+      smoothedFrameMs: state.smoothedFrameMs ?? DEFAULT_RENDER_BUDGET_STATE.smoothedFrameMs,
+      severeFrameStreak:
+        state.severeFrameStreak ?? DEFAULT_RENDER_BUDGET_STATE.severeFrameStreak,
+    });
+    budget.detailLevel = detailLevel;
+    budget.targetFps = state.targetFps;
+    budget.visibilityRadius = state.visibilityRadius;
+    budget.frame.currentMs = state.currentFrameMs;
+    budget.frame.smoothedMs = state.smoothedFrameMs;
+    budget.frame.generationBudgetMs = generationBudgetMs;
+    budget.frame.remainingGenerationBudgetMs = remainingGenerationBudgetMs;
+    budget.frame.limits.soft = caps.frameMs.soft;
+    budget.frame.limits.hard = caps.frameMs.hard;
+    budget.pendingBuild.budgetMs = pendingBuildBudgetMs;
+    budget.pendingBuild.maxTiles = maxPendingBuildTiles;
+    budget.pendingBuild.tileLimits.soft = caps.pendingBuildTiles.soft;
+    budget.pendingBuild.tileLimits.hard = caps.pendingBuildTiles.hard;
+    return budget;
+  };
+}
+
 function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
 }

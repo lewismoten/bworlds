@@ -144,7 +144,7 @@ import { resetStateToOverworld } from './overworld-travel.ts';
 import { getDebugWorldStats } from './debug-world-stats.ts';
 import {
   advanceRenderBudgetState,
-  createRenderBudget,
+  createRenderBudgetBuilder,
   DEFAULT_RENDER_BUDGET_STATE,
   getFrameGenerationBudget,
   formatRenderQualityLevel,
@@ -1174,6 +1174,7 @@ const resolveCachedPlayerSpatialSummary = createPlayerSpatialSummaryCache(
 const resolveCachedNearbyOverworldQueryState = createNearbyOverworldQueryStateCache(
   getNearbyOverworldQueryState
 );
+const buildReusableRenderBudget = createRenderBudgetBuilder();
 let latestEnvironment: WorldEnvironmentLike = getCurrentEnvironment();
 
 (state as typeof state & { celestialEventMode?: string }).celestialEventMode =
@@ -2909,7 +2910,7 @@ function render(): FrameLoopActivityLike {
   } else {
     const pendingWorldBuildBudget = getPendingWorldBuildBudget(renderBudgetState);
     const frameGenerationBudget = getFrameGenerationBudget(renderBudgetState);
-    const renderBudget = createRenderBudget(renderBudgetState, {
+    const renderBudget = buildReusableRenderBudget(renderBudgetState, {
       generationBudgetMs: frameGenerationBudget.generationBudgetMs,
       pendingBuildBudgetMs: pendingWorldBuildBudget.pendingBuildBudgetMs,
       maxPendingBuildTiles: pendingWorldBuildBudget.maxPendingBuildTiles,

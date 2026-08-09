@@ -114,7 +114,7 @@ State/events only
 * [X] Reuse temporary math objects.
 * [ ] Avoid creating closures inside frequently executed loops.
 * [ ] Avoid string construction inside hot loops.
-* [ ] Avoid object spreading in per-frame operations.
+* [X] Avoid object spreading in per-frame operations.
 * [ ] Avoid repeatedly cloning game state.
 * [X] Separate high-frequency and low-frequency updates.
 * [X] Run expensive nonvisual updates less frequently than rendering.

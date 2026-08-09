@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   advanceRenderBudgetState,
+  createRenderBudgetBuilder,
   createRenderBudget,
   DEFAULT_RENDER_BUDGET_STATE,
   DEFAULT_VISIBILITY_RADIUS,
@@ -413,6 +414,68 @@ describe('render budget', () => {
         tileLimits: {
           soft: 4,
           hard: 2,
+        },
+      },
+    });
+  });
+
+  it('reuses the same render budget object and nested sections for active frame updates', () => {
+    const buildRenderBudget = createRenderBudgetBuilder();
+    const first = buildRenderBudget(
+      {
+        currentFrameMs: 20,
+        smoothedFrameMs: 24,
+        visibilityRadius: REDUCED_VISIBILITY_RADIUS,
+        targetFps: 30,
+      },
+      {
+        detailLevel: 'low',
+        generationBudgetMs: 2.25,
+        remainingGenerationBudgetMs: 1.5,
+        pendingBuildBudgetMs: 1.75,
+        maxPendingBuildTiles: 3,
+      }
+    );
+    const firstFrame = first.frame;
+    const firstPendingBuild = first.pendingBuild;
+    const second = buildRenderBudget(
+      {
+        currentFrameMs: 16.67,
+        smoothedFrameMs: 18,
+        visibilityRadius: DEFAULT_VISIBILITY_RADIUS,
+        targetFps: 60,
+      },
+      {
+        generationBudgetMs: 3.25,
+        pendingBuildBudgetMs: 2.2,
+        maxPendingBuildTiles: 8,
+      }
+    );
+
+    expect(second).toBe(first);
+    expect(second.frame).toBe(firstFrame);
+    expect(second.pendingBuild).toBe(firstPendingBuild);
+    expect(second).toEqual({
+      quality: 'full',
+      detailLevel: 'full',
+      targetFps: 60,
+      visibilityRadius: DEFAULT_VISIBILITY_RADIUS,
+      frame: {
+        currentMs: 16.67,
+        smoothedMs: 18,
+        generationBudgetMs: 3.25,
+        remainingGenerationBudgetMs: 3.25,
+        limits: {
+          soft: 1000 / 42,
+          hard: 1000 / 28,
+        },
+      },
+      pendingBuild: {
+        budgetMs: 2.2,
+        maxTiles: 8,
+        tileLimits: {
+          soft: 8,
+          hard: 4,
         },
       },
     });
