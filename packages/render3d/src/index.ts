@@ -217,14 +217,14 @@ export function createTilePluginRenderBudget(
 }
 
 const FULL_DETAIL_TILE_MODEL_HARD_LIMITS: TileModelHardLimits = {
-  object3dCount: 64,
-  groupCount: 32,
-  meshCount: 32,
-  materialCount: 6,
-  textureCount: 8,
-  lightCount: 2,
+  object3dCount: 128,
+  groupCount: 64,
+  meshCount: 96,
+  materialCount: 16,
+  textureCount: 16,
+  lightCount: 4,
   shadowLightCount: 1,
-  vertexCount: 25_000,
+  vertexCount: 50_000,
 };
 
 const LOW_DETAIL_TILE_MODEL_HARD_LIMITS: TileModelHardLimits = {

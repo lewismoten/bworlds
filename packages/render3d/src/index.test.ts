@@ -1,4 +1,92 @@
 import { describe, expect, it, vi } from 'vitest';
+
+vi.mock('@bworlds/three-support', () => ({
+  createPaintedCanvasTexture() {
+    return { colorSpace: '', needsUpdate: false, image: { width: 16, height: 16 } };
+  },
+  getOrCreatePaintedCanvasTexture() {
+    return { colorSpace: '', needsUpdate: false, image: { width: 16, height: 16 } };
+  },
+  createTexturedPlaneMesh(_three: unknown, _texture: unknown, width: number, height: number) {
+    return {
+      type: 'Mesh',
+      position: {
+        x: 0,
+        y: 0,
+        z: 0,
+        set(x: number, y: number, z: number) {
+          this.x = x;
+          this.y = y;
+          this.z = z;
+          return this;
+        },
+      },
+      rotation: { x: 0, y: 0, z: 0 },
+      scale: { x: width, y: height, z: 1 },
+      userData: {},
+      visible: true,
+      children: [],
+      add() {},
+      traverse(visit: (child: unknown) => void) {
+        visit(this);
+      },
+    };
+  },
+  createPaintedStandardMaterial(_three: unknown, options: Record<string, unknown>) {
+    return {
+      ...options,
+      userData: {},
+      clone() {
+        return { ...this, userData: {} };
+      },
+      dispose() {},
+    };
+  },
+  getSharedCylinderGeometry(_three: unknown, ..._args: number[]) {
+    return {
+      attributes: {
+        position: {
+          count: 24,
+          array: new Float32Array(24 * 3),
+        },
+      },
+    };
+  },
+  getSharedConeGeometry(_three: unknown, ..._args: number[]) {
+    return {
+      attributes: {
+        position: {
+          count: 24,
+          array: new Float32Array(24 * 3),
+        },
+      },
+    };
+  },
+  getSharedBoxGeometry(_three: unknown, ..._args: number[]) {
+    return {
+      attributes: {
+        position: {
+          count: 24,
+          array: new Float32Array(24 * 3),
+        },
+      },
+    };
+  },
+  getSharedSphereGeometry(_three: unknown, ..._args: number[]) {
+    return {
+      attributes: {
+        position: {
+          count: 24,
+          array: new Float32Array(24 * 3),
+        },
+      },
+    };
+  },
+}));
+
+import { createForestTilePlugin } from '@bworlds/tile-forest';
+import { createLighthouseTilePlugin } from '@bworlds/tile-lighthouse';
+import { createTownTilePlugin } from '@bworlds/tile-town';
 import {
   acceptTilePluginModelForRenderBudget,
   collectSceneResourceStats,
@@ -66,6 +154,194 @@ import {
 } from './index.ts';
 
 type SkySignatureCycle = Parameters<typeof getSkyConstellationSignature>[0];
+
+class FakePluginGeometry {
+  attributes: Record<string, unknown>;
+
+  constructor(..._args: number[]) {
+    this.attributes = {
+      position: {
+        count: 24,
+        array: new Float32Array(24 * 3),
+      },
+    };
+  }
+
+  setAttribute(name: string, attribute: unknown) {
+    this.attributes[name] = attribute;
+    return this;
+  }
+}
+
+class FakePluginMaterial {
+  opacity?: number;
+  emissiveIntensity?: number;
+  uniforms?: Record<string, { value: unknown }>;
+  userData: Record<string, unknown> = {};
+
+  constructor(public options: Record<string, unknown> = {}) {
+    if (typeof options.opacity === 'number') {
+      this.opacity = options.opacity;
+    }
+    if (typeof options.emissiveIntensity === 'number') {
+      this.emissiveIntensity = options.emissiveIntensity;
+    }
+    if (options.uniforms && typeof options.uniforms === 'object') {
+      this.uniforms = options.uniforms as Record<string, { value: unknown }>;
+    }
+  }
+
+  clone() {
+    return new FakePluginMaterial({ ...this.options });
+  }
+
+  dispose() {}
+}
+
+class FakePluginNode {
+  type = 'Group';
+  isLight = false;
+  castShadow = false;
+  receiveShadow = false;
+  matrixAutoUpdate = true;
+  userData?: Record<string, unknown>;
+  material?: unknown;
+  geometry?: unknown;
+  children: FakePluginNode[] = [];
+  position = {
+    x: 0,
+    y: 0,
+    z: 0,
+    set: (x: number, y: number, z: number) => {
+      this.position.x = x;
+      this.position.y = y;
+      this.position.z = z;
+      return this.position;
+    },
+  };
+  rotation = { x: 0, y: 0, z: 0 };
+  scale = {
+    x: 1,
+    y: 1,
+    z: 1,
+    set: (x: number, y: number, z: number) => {
+      this.scale.x = x;
+      this.scale.y = y;
+      this.scale.z = z;
+      return this.scale;
+    },
+    setScalar: (value: number) => {
+      this.scale.x = value;
+      this.scale.y = value;
+      this.scale.z = value;
+      return this.scale;
+    },
+  };
+  visible = true;
+
+  add(...children: FakePluginNode[]) {
+    this.children.push(...children);
+    return this;
+  }
+
+  updateMatrix() {
+    this.matrixAutoUpdate = false;
+  }
+
+  traverse(visit: (child: FakePluginNode) => void) {
+    visit(this);
+    this.children.forEach((child) => child.traverse(visit));
+  }
+}
+
+class FakePluginGroup extends FakePluginNode {}
+
+class FakePluginMesh extends FakePluginNode {
+  type = 'Mesh';
+
+  constructor(
+    geometry?: unknown,
+    material?: FakePluginMaterial | FakePluginMaterial[]
+  ) {
+    super();
+    this.geometry = geometry;
+    this.material = material;
+  }
+}
+
+class FakePluginInstancedMesh extends FakePluginMesh {
+  type = 'InstancedMesh';
+  matrices: unknown[] = [];
+
+  constructor(
+    geometry: unknown,
+    material: FakePluginMaterial | FakePluginMaterial[] | undefined,
+    public count: number
+  ) {
+    super(geometry, material);
+  }
+
+  setMatrixAt(index: number, matrix: unknown) {
+    this.matrices[index] = matrix;
+  }
+}
+
+class FakePluginPointLight extends FakePluginNode {
+  type = 'PointLight';
+  isLight = true;
+
+  constructor(
+    public color?: unknown,
+    public intensity = 0,
+    public distance?: number,
+    public decay?: number
+  ) {
+    super();
+  }
+}
+
+class FakePluginMatrix4 {
+  scale = { x: 1, y: 1, z: 1 };
+  position = { x: 0, y: 0, z: 0 };
+
+  makeScale(x: number, y: number, z: number) {
+    this.scale = { x, y, z };
+    return this;
+  }
+
+  setPosition(x: number, y: number, z: number) {
+    this.position = { x, y, z };
+    return this;
+  }
+}
+
+class FakePluginFloat32BufferAttribute {
+  array: Float32Array;
+  count: number;
+
+  constructor(values: number[], itemSize: number) {
+    this.array = new Float32Array(values);
+    this.count = values.length / itemSize;
+  }
+}
+
+const fakePluginThree = {
+  Group: FakePluginGroup,
+  Mesh: FakePluginMesh,
+  InstancedMesh: FakePluginInstancedMesh,
+  PointLight: FakePluginPointLight,
+  MeshStandardMaterial: FakePluginMaterial,
+  MeshBasicMaterial: FakePluginMaterial,
+  SphereGeometry: FakePluginGeometry,
+  CylinderGeometry: FakePluginGeometry,
+  ConeGeometry: FakePluginGeometry,
+  BoxGeometry: FakePluginGeometry,
+  PlaneGeometry: FakePluginGeometry,
+  CircleGeometry: FakePluginGeometry,
+  Matrix4: FakePluginMatrix4,
+  Float32BufferAttribute: FakePluginFloat32BufferAttribute,
+  DoubleSide: 'double-side',
+} as const;
 
 describe('render3d visibility helpers', () => {
   it('collects unique scene material and geometry counts for debug diagnostics', () => {
@@ -905,14 +1181,14 @@ describe('render3d visibility helpers', () => {
 
   it('defines stricter hard caps for low-detail tile models than full-detail ones', () => {
     expect(getTileModelHardLimits('full')).toEqual({
-      object3dCount: 64,
-      groupCount: 32,
-      meshCount: 32,
-      materialCount: 6,
-      textureCount: 8,
-      lightCount: 2,
+      object3dCount: 128,
+      groupCount: 64,
+      meshCount: 96,
+      materialCount: 16,
+      textureCount: 16,
+      lightCount: 4,
       shadowLightCount: 1,
-      vertexCount: 25_000,
+      vertexCount: 50_000,
     });
     expect(getTileModelHardLimits('low')).toEqual({
       object3dCount: 32,
@@ -1011,6 +1287,73 @@ describe('render3d visibility helpers', () => {
     const root = createMockObject3D(rootMaterial, [child], createMockGeometry(0));
 
     expect(acceptTilePluginModelForRenderBudget(root as never, 'low')).toBeNull();
+  });
+
+  it('accepts representative nearby world tile models at full detail', () => {
+    const forestPlugin = createForestTilePlugin();
+    const forestTile = forestPlugin.tiles?.find((entry) => entry.kind === 'forest');
+    const townPlugin = createTownTilePlugin();
+    const townTile = townPlugin.tiles?.find((entry) => entry.kind === 'town');
+    const lighthousePlugin = createLighthouseTilePlugin();
+    const lighthouseTile = lighthousePlugin.tiles?.find(
+      (entry) => entry.kind === 'lighthouse'
+    );
+
+    const state = createPluginRenderState();
+    const forestModel = forestTile?.create3DModel?.({
+      three: fakePluginThree as never,
+      state,
+      tile: { kind: 'forest' },
+      tileX: 8,
+      tileY: 6,
+      detailLevel: 'full',
+    });
+    const townModel = townTile?.create3DModel?.({
+      three: fakePluginThree as never,
+      state,
+      tile: {
+        kind: 'town',
+        poi: {
+          id: 'town-poi',
+          name: 'Oak Hollow',
+          type: 'town',
+          x: 4,
+          y: 4,
+        },
+      } as never,
+      tileX: 4,
+      tileY: 4,
+      detailLevel: 'full',
+    });
+    const lighthouseModel = lighthouseTile?.create3DModel?.({
+      three: fakePluginThree as never,
+      state,
+      tile: { kind: 'lighthouse' },
+      tileX: 3,
+      tileY: 3,
+      detailLevel: 'full',
+    });
+
+    expect(validateTileModelAgainstRenderBudget(forestModel as never, 'full')).toEqual(
+      expect.objectContaining({
+        accepted: true,
+        violations: [],
+      })
+    );
+    expect(validateTileModelAgainstRenderBudget(townModel as never, 'full')).toEqual(
+      expect.objectContaining({
+        accepted: true,
+        violations: [],
+      })
+    );
+    expect(
+      validateTileModelAgainstRenderBudget(lighthouseModel as never, 'full')
+    ).toEqual(
+      expect.objectContaining({
+        accepted: true,
+        violations: [],
+      })
+    );
   });
 
   it('summarizes recent tile-model budget violations by plugin label', () => {
@@ -2015,6 +2358,43 @@ function createMockMaterial(
     ...overrides,
     clone: vi.fn(() => ({ ...clone, userData: {} })),
     dispose: vi.fn(),
+  };
+}
+
+function createPluginRenderState() {
+  return {
+    player: { x: 4, y: 4, facing: 0 },
+    getCurrentContext() {
+      return { id: 'overworld', type: 'overworld', depth: 0 };
+    },
+    getCurrentTile() {
+      return { kind: 'plains' };
+    },
+    getTileDefinition() {
+      return {
+        name: 'Plains',
+        color: '#000000',
+        miniColor: '#111111',
+        walkable: true,
+        wallHeight: 0.18,
+      };
+    },
+    getEnvironment() {
+      return {
+        weather: {
+          current: {
+            kind: 'clear',
+            label: 'Clear',
+            intensity: 0,
+            cloudCover: 0.2,
+            windStrength: 0.2,
+            precipitation: 0,
+            visibility: 0.95,
+            temperature: 68,
+          },
+        },
+      };
+    },
   };
 }
 

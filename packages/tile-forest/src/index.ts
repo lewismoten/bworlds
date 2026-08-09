@@ -2533,6 +2533,7 @@ function createForestTreeDescriptorFromSpecies(
     (0.62 + maturity * 0.72);
   const structure: TreeStructuralState = {
     radius: trunkRadius,
+    trunkTopRadius: trunkRadius * 0.72,
     scale: (0.72 + appearanceRandom() * 0.48) * (0.62 + maturity * 0.72),
     trunkHeight,
     branches,
