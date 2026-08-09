@@ -32,6 +32,8 @@ type WatercraftTilePredicate = (options: {
   state?: WorldStateLike;
 }) => boolean;
 
+const watercraftSearchOffsetsCache = new Map<number, Point[]>();
+
 export function createWatercraftMap({
   context,
   seed,
@@ -221,6 +223,11 @@ export function hasNearbyKind(
 }
 
 function getSearchOffsets(radius: number): Point[] {
+  const cached = watercraftSearchOffsetsCache.get(radius);
+  if (cached) {
+    return cached;
+  }
+
   const offsets: Point[] = [{ x: 0, y: 0 }];
   for (let step = 1; step <= radius; step += 1) {
     const ring: Point[] = [];
@@ -242,5 +249,7 @@ function getSearchOffsets(radius: number): Point[] {
     );
     offsets.push(...ring);
   }
+
+  watercraftSearchOffsetsCache.set(radius, offsets);
   return offsets;
 }
