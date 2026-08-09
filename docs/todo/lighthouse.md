@@ -78,16 +78,16 @@ Here’s a focused lighthouse checklist that covers the current visual bugs, day
 
 ## Lens and Lantern Room
 
-* [ ] Add a bright emissive lens source.
-* [ ] Add a visible lantern-room glow at night.
-* [ ] Add glass around the lantern room.
-* [ ] Add metal framework around the glass.
+* [X] Add a bright emissive lens source.
+* [X] Add a visible lantern-room glow at night.
+* [X] Add glass around the lantern room.
+* [X] Add metal framework around the glass.
 * [ ] Add lens rotation if visually appropriate.
 * [ ] Add subtle internal reflections.
 * [ ] Add a warm glow on nearby tower surfaces.
 * [ ] Add maintenance access around the lantern room.
 * [ ] Add a balcony around the top where appropriate.
-* [ ] Let the lantern remain visible when the beam points away.
+* [X] Let the lantern remain visible when the beam points away.
 
 ## Fog and Weather Interaction
 

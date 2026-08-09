@@ -107,9 +107,11 @@ const fakeThree = {
   PointLight: FakePointLight,
   MeshStandardMaterial: FakeMaterial,
   MeshBasicMaterial: FakeMaterial,
+  BoxGeometry: FakeGeometry,
   CylinderGeometry: FakeGeometry,
   ConeGeometry: FakeGeometry,
   PlaneGeometry: FakeGeometry,
+  SphereGeometry: FakeGeometry,
   DoubleSide: 'double-side',
 } as const;
 
@@ -268,6 +270,34 @@ describe('tile lighthouse', () => {
       expect(beam.receiveShadow).toBe(false);
       expect((beam.material as FakeMaterial)?.options.emissive).toBe('#ffe9a8');
     });
+  });
+
+  it('builds a lantern room with glass, metal framing, and a dedicated lens source', () => {
+    const plugin = createLighthouseTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'lighthouse');
+    const model = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state: {} as never,
+      tile: { kind: 'lighthouse' } as never,
+      tileX: 4,
+      tileY: 5,
+    }) as FakeNode | undefined;
+    const glassMeshes = collectTaggedMeshes(model, 'lighthouseGlass');
+    const frameMeshes = collectTaggedMeshes(model, 'lighthouseFrame');
+    const lensMeshes = collectTaggedMeshes(model, 'lighthouseLens');
+
+    expect(glassMeshes).toHaveLength(1);
+    expect(frameMeshes).toHaveLength(6);
+    expect(lensMeshes).toHaveLength(1);
+    expect((glassMeshes[0]?.material as FakeMaterial | undefined)?.options.transparent).toBe(true);
+    expect((glassMeshes[0]?.material as FakeMaterial | undefined)?.options.opacity).toBeCloseTo(
+      0.42,
+      6
+    );
+    expect((frameMeshes[0]?.material as FakeMaterial | undefined)?.options.color).toBe('#5d6673');
+    expect((lensMeshes[0]?.material as FakeMaterial | undefined)?.options.emissive).toBe(
+      '#ffe9a8'
+    );
   });
 
   it('sweeps and fades the beam by distance at night', () => {
@@ -547,6 +577,42 @@ describe('tile lighthouse', () => {
     expect(atOpacity).toBeLessThan(afterOpacity);
     expect(beamNodes.some((beam) => beam.visible)).toBe(true);
   });
+
+  it('keeps the lantern lens glowing at night even when the beam points away', () => {
+    const plugin = createLighthouseTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'lighthouse');
+    const model = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state: {} as never,
+      tile: { kind: 'lighthouse' } as never,
+      tileX: 4,
+      tileY: 5,
+    }) as FakeNode | undefined;
+    const lens = collectTaggedMeshes(model, 'lighthouseLens')[0];
+    const beamPivot = findBeamPivot(model);
+    const rotationDurationMs =
+      typeof beamPivot?.userData?.lighthouseBeamRotationDurationMs === 'number'
+        ? beamPivot.userData.lighthouseBeamRotationDurationMs
+        : 2100;
+
+    tile?.sync3DModel?.({
+      three: fakeThree as never,
+      state: {} as never,
+      tile: { kind: 'lighthouse' } as never,
+      tileX: 4,
+      tileY: 5,
+      model,
+      timeMs: rotationDurationMs * 0.5,
+      cycle: { daylight: 0, twilight: 0, night: 1 },
+      environment: {},
+    });
+
+    expect(lens?.visible).toBe(true);
+    expect((lens?.material as FakeMaterial | undefined)?.emissiveIntensity ?? 0).toBeGreaterThan(
+      1.5
+    );
+    expect(beamPivot?.rotation.y).toBeGreaterThanOrEqual(0);
+  });
 });
 
 function countSharedMaterialReferences(
@@ -588,6 +654,16 @@ function collectBeamMeshes(root: FakeNode | undefined): FakeMesh[] {
     }
   });
   return beams;
+}
+
+function collectTaggedMeshes(root: FakeNode | undefined, key: string): FakeMesh[] {
+  const meshes: FakeMesh[] = [];
+  root?.traverse((node) => {
+    if (node.userData?.[key]) {
+      meshes.push(node as FakeMesh);
+    }
+  });
+  return meshes;
 }
 
 function findBeamPivot(root: FakeNode | undefined): FakeGroup | undefined {

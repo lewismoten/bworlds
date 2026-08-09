@@ -11,8 +11,10 @@ import {
   createRegionalMaterialResolver,
 } from '@bworlds/procedural-style';
 import {
+  getSharedBoxGeometry,
   getSharedConeGeometry,
   getSharedCylinderGeometry,
+  getSharedSphereGeometry,
 } from '@bworlds/three-support';
 import type {
   Create3DModelContext,
@@ -23,6 +25,9 @@ import type {
 
 const LIGHTHOUSE_BEAM_PIVOT_KEY = 'lighthouseBeamPivot';
 const LIGHTHOUSE_BEAM_KEY = 'lighthouseBeam';
+const LIGHTHOUSE_LENS_KEY = 'lighthouseLens';
+const LIGHTHOUSE_GLASS_KEY = 'lighthouseGlass';
+const LIGHTHOUSE_FRAME_KEY = 'lighthouseFrame';
 const LIGHTHOUSE_REGION_SIZE = 18;
 const LIGHTHOUSE_BEAM_COLOR_SEED = registerHashLabel('lighthouse-beam-color');
 const LIGHTHOUSE_PANE_COLOR_SEED = registerHashLabel('lighthouse-pane-color');
@@ -57,6 +62,9 @@ type LighthouseStyleMaterials = {
   stripeMaterial: ThreeMaterialLike;
   stoneMaterial: ThreeMaterialLike;
   paneMaterial: ThreeMaterialLike;
+  glassMaterial: ThreeMaterialLike;
+  frameMaterial: ThreeMaterialLike;
+  lensMaterial: ThreeMaterialLike;
   beamColor: string;
   rotationDurationMs: number;
   rotationDirection: 1 | -1;
@@ -106,6 +114,30 @@ const resolveRegionalLighthouseStyle = createRegionalMaterialResolver(
           roughness: 0.3,
           metalness: 0.02,
           side: three.DoubleSide,
+        }),
+        glassMaterial: new three.MeshStandardMaterial({
+          color: '#d7eefc',
+          emissive: paneColor,
+          emissiveIntensity: 0.02,
+          transparent: true,
+          opacity: 0.42,
+          roughness: 0.08,
+          metalness: 0.06,
+          side: three.DoubleSide,
+        }),
+        frameMaterial: new three.MeshStandardMaterial({
+          color: '#5d6673',
+          roughness: 0.64,
+          metalness: 0.28,
+        }),
+        lensMaterial: new three.MeshStandardMaterial({
+          color: beamColor,
+          emissive: beamColor,
+          emissiveIntensity: 0.12,
+          transparent: true,
+          opacity: 0.96,
+          roughness: 0.18,
+          metalness: 0.04,
         }),
         beamColor,
         rotationDurationMs,
@@ -158,6 +190,9 @@ export function createLighthouseTilePlugin(): RuntimePlugin {
         stripeMaterial,
         stoneMaterial,
         paneMaterial,
+        glassMaterial,
+        frameMaterial,
+        lensMaterial,
         beamColor,
         rotationDurationMs,
         rotationDirection,
@@ -199,6 +234,63 @@ export function createLighthouseTilePlugin(): RuntimePlugin {
       );
       lanternRoom.position.set(tileX, 1.86, tileY);
       group.add(lanternRoom);
+
+      const lanternGlass = new three.Mesh(
+        getSharedCylinderGeometry(three, 0.27, 0.27, 0.3, 8),
+        glassMaterial
+      );
+      lanternGlass.userData = {
+        ...(lanternGlass.userData ?? {}),
+        [LIGHTHOUSE_GLASS_KEY]: true,
+      };
+      lanternGlass.position.set(tileX, 1.86, tileY);
+      group.add(lanternGlass);
+
+      for (const yOffset of [-0.13, 0.13]) {
+        const frameRing = new three.Mesh(
+          getSharedCylinderGeometry(three, 0.29, 0.29, 0.03, 8),
+          frameMaterial
+        );
+        frameRing.userData = {
+          ...(frameRing.userData ?? {}),
+          [LIGHTHOUSE_FRAME_KEY]: true,
+        };
+        frameRing.position.set(tileX, 1.86 + yOffset, tileY);
+        group.add(frameRing);
+      }
+
+      for (const offset of [
+        { x: 0.18, z: 0 },
+        { x: -0.18, z: 0 },
+        { x: 0, z: 0.18 },
+        { x: 0, z: -0.18 },
+      ]) {
+        const framePost = new three.Mesh(
+          getSharedBoxGeometry(three, 0.03, 0.28, 0.03),
+          frameMaterial
+        );
+        framePost.userData = {
+          ...(framePost.userData ?? {}),
+          [LIGHTHOUSE_FRAME_KEY]: true,
+        };
+        framePost.position.set(tileX + offset.x, 1.86, tileY + offset.z);
+        group.add(framePost);
+      }
+
+      const lens = markPoiLightEmitter(
+        new three.Mesh(getSharedSphereGeometry(three, 0.08, 10, 8), lensMaterial),
+        {
+          kind: 'emissive-mesh',
+          dayIntensity: 0.12,
+          nightIntensity: 1.9,
+        }
+      );
+      lens.userData = {
+        ...(lens.userData ?? {}),
+        [LIGHTHOUSE_LENS_KEY]: true,
+      };
+      lens.position.set(tileX, 1.86, tileY);
+      group.add(lens);
 
       for (const offset of [
         { x: 0.22, z: 0 },
