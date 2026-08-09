@@ -5,6 +5,10 @@ import {
   type MusicUpdateOptions,
 } from './procedural-music.ts';
 import {
+  resolveFactionInteractionMotif,
+  resolveMusicFactionMotifs,
+} from './procedural-music-faction-motif.ts';
+import {
   resolveProceduralChordProgression,
   resolveProceduralLeadContour,
   resolveProceduralLeadMotif,
@@ -29,6 +33,13 @@ export type ProceduralSongDna = {
   leadContour: readonly string[];
   blueprintId: ReturnType<typeof resolveProceduralMusicBlueprint>['id'];
   blueprintLabel: string;
+  factionMotifs: Array<{
+    factionId: string;
+    factionName: string;
+    sourceProfessionFamily: string;
+    motifDegreeOffsets: readonly number[];
+  }>;
+  factionInteractionMotif: readonly number[];
   importantNpcMotifs: Array<{
     npcId: string;
     npcName: string;
@@ -71,6 +82,8 @@ export function createProceduralSongDna(
     clusterX,
     clusterY
   ).map((step) => `${step.stage}:${step.degreeOffset}`);
+  const factionMotifs = resolveMusicFactionMotifs(options);
+  const factionInteractionMotif = resolveFactionInteractionMotif(options);
   const importantNpcMotifs = resolveImportantMusicNpcMotifs(options);
   const variantLabel = resolveSongDnaVariantLabel(
     options.tileKind,
@@ -103,6 +116,8 @@ export function createProceduralSongDna(
     leadContour,
     blueprintId: blueprint.id,
     blueprintLabel: blueprint.label,
+    factionMotifs,
+    factionInteractionMotif,
     importantNpcMotifs,
     instrumentation: {
       lead: instrumentBank.instruments.lead.family,

@@ -108,4 +108,28 @@ describe('procedural music song dna', () => {
     expect(first.importantNpcMotifs).toEqual(second.importantNpcMotifs);
     expect(first.leadMotif).toEqual(second.leadMotif);
   });
+
+  it('captures local faction motifs and their combined interaction phrase', () => {
+    const first = createProceduralSongDna({
+      tileKind: 'town',
+      contextType: 'town',
+      clusterX: 3,
+      clusterY: -2,
+      encounterMode: 'ambient',
+    });
+    const second = createProceduralSongDna({
+      tileKind: 'floor',
+      contextType: 'building',
+      clusterX: 3,
+      clusterY: -2,
+      encounterMode: 'ambient',
+    });
+
+    expect(first.factionMotifs.length).toBeGreaterThan(0);
+    expect(first.factionMotifs).toEqual(second.factionMotifs);
+    expect(first.factionInteractionMotif.length).toBeGreaterThan(0);
+    expect(first.factionInteractionMotif).toEqual(
+      second.factionInteractionMotif
+    );
+  });
 });

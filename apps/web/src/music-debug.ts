@@ -480,6 +480,12 @@ export function buildMusicDebugSummaryMarkup(
       <span>Lead Motif ${snapshot.leadMotif.map((degree) => degree + 1).join(' - ')}</span>
     </div>
     <div class="music-debug-role-counts">
+      <span>Faction Motifs ${formatMusicDebugFactionMotifs(snapshot.songDna.factionMotifs)}</span>
+    </div>
+    <div class="music-debug-role-counts">
+      <span>Faction Interaction ${formatMusicDebugDegreeMotif(snapshot.songDna.factionInteractionMotif)}</span>
+    </div>
+    <div class="music-debug-role-counts">
       <span>NPC Motifs ${formatMusicDebugNpcMotifs(snapshot.songDna.importantNpcMotifs)}</span>
     </div>
     <div class="music-debug-role-counts">
@@ -753,4 +759,29 @@ function formatMusicDebugNpcMotifs(
           .join(' - ')}`
     )
     .join(' | ');
+}
+
+function formatMusicDebugFactionMotifs(
+  motifs: MusicDebugSnapshot['songDna']['factionMotifs']
+): string {
+  if (motifs.length === 0) {
+    return 'none';
+  }
+
+  return motifs
+    .map(
+      (motif) =>
+        `${motif.factionName} ${formatMusicDebugDegreeMotif(
+          motif.motifDegreeOffsets
+        )}`
+    )
+    .join(' | ');
+}
+
+function formatMusicDebugDegreeMotif(motif: readonly number[]): string {
+  if (motif.length === 0) {
+    return 'none';
+  }
+
+  return motif.map((degree) => degree + 1).join(' - ');
 }
