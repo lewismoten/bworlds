@@ -33,6 +33,7 @@ import {
   getTreeCollisionState,
   getTreeCanopyState,
   getTreeDamageState,
+  getTreeHistoricalState,
   getTreeStructuralState,
   resolveTreeSeason,
   type TreeBiologicalState,
@@ -44,6 +45,7 @@ import {
   type TreeFamily,
   type TreeFoliageState,
   type TreeGenerator,
+  type TreeHistoricalState,
   type TreeLogicalState,
   type TreeSceneState,
   type TreeStructuralState,
@@ -79,6 +81,7 @@ const HOLLOW_KEY = 'forestHollow';
 const OWL_KEY = 'forestOwl';
 const CARVING_KEY = 'forestCarving';
 const BARK_DAMAGE_KEY = 'forestBarkDamage';
+const HISTORICAL_TREE_KEY = 'forestHistoricalTree';
 const MEADOW_KEY = 'forestMeadow';
 const BIRD_KEY = 'forestBird';
 const WEB_KEY = 'forestWeb';
@@ -108,6 +111,12 @@ const FOREST_STYLE_CACHE_LIMIT = 96;
 const FOREST_QUEST_HINT_LABELS = ['N2', 'E3', 'S4', 'W1'] as const;
 const FOREST_TREASURE_CLUE_LABELS = ['X2', 'X4', '>3', '<5'] as const;
 const FOREST_HISTORICAL_INSCRIPTION_LABELS = ['OLD', 'MOSS', '1891'] as const;
+const FOREST_HISTORICAL_TREE_RECORDS = [
+  'Remembered as a meeting tree for the old trail.',
+  'Locals say this trunk marked a safe crossing in hard winters.',
+  'Its scarred bark is kept as a witness of an older forest.',
+  'Travelers still use it as a bearing when mist settles in the grove.',
+] as const;
 const FOREST_TRAIL_SEED = registerHashLabel('forest-trail');
 const FOREST_TRAIL_ANGLE_SEED = registerHashLabel('forest-trail-angle');
 const FOREST_TRAIL_OFFSET_SEED = registerHashLabel('forest-trail-offset');
@@ -161,6 +170,11 @@ const FOREST_CARVING_MARKER_VISIBLE_SEED = registerHashLabel('visible');
 const FOREST_CARVING_MARKER_PRIORITY_SEED = registerHashLabel('priority');
 const FOREST_CARVING_MARKER_JITTER_X_SEED = registerHashLabel('jitter-x');
 const FOREST_CARVING_MARKER_JITTER_Y_SEED = registerHashLabel('jitter-y');
+const FOREST_HISTORICAL_TREE_SEED = registerHashLabel('forest-historical-tree');
+const FOREST_HISTORICAL_TREE_TITLE_SEED = registerHashLabel('forest-historical-tree-title');
+const FOREST_HISTORICAL_TREE_RECORD_SEED = registerHashLabel(
+  'forest-historical-tree-record'
+);
 const FOREST_MEADOW_COUNT_SEED = registerHashLabel('forest-meadow-count');
 const FOREST_MEADOW_SEED = registerHashLabel('forest-meadow');
 const FOREST_FLOWER_SEED = registerHashLabel('flower');
@@ -1098,6 +1112,7 @@ export function createForestTilePlugin(): RuntimePlugin {
           const structure = getTreeStructuralState(descriptor);
           const canopy = getTreeCanopyState(descriptor);
           const damage = getTreeDamageState(descriptor);
+          const historical = getTreeHistoricalState(descriptor);
 
           const tree = new three.Group();
           tree.position.set(tileX + descriptor.x, 0, tileY + descriptor.y);
@@ -1106,6 +1121,13 @@ export function createForestTilePlugin(): RuntimePlugin {
             ...(tree.userData ?? {}),
             [TREE_FORM_KEY]: descriptor.form,
             [RENDER_STATS_CATEGORY_KEY]: 'tree',
+            ...(historical.landmark
+              ? {
+                  [HISTORICAL_TREE_KEY]: historical.title,
+                  forestHistoricalTreeRecord: historical.record,
+                  forestHistoricalTreeProminence: historical.prominence,
+                }
+              : {}),
           };
 
           const trunk = new three.Mesh(geometry.trunk, style.trunkMaterial);
@@ -1159,6 +1181,29 @@ export function createForestTilePlugin(): RuntimePlugin {
               forestBarkDamageSeverity: barkMark.severity,
             };
             tree.add(mark);
+          }
+
+          if (historical.landmark) {
+            for (let markerIndex = 0; markerIndex < 3; markerIndex += 1) {
+              const angle = (markerIndex / 3) * Math.PI * 2 + historical.prominence;
+              const marker = new three.Mesh(geometry.foliage, style.stoneMaterial);
+              marker.position.set(
+                Math.cos(angle) * structure.radius * 1.8,
+                0.04 + markerIndex * 0.01,
+                Math.sin(angle) * structure.radius * 1.8
+              );
+              marker.scale.set(
+                0.05 + historical.prominence * 0.035,
+                0.07 + historical.prominence * 0.05,
+                0.05 + historical.prominence * 0.035
+              );
+              marker.userData = {
+                ...(marker.userData ?? {}),
+                [HISTORICAL_TREE_KEY]: historical.title,
+                forestHistoricalTreeRecord: historical.record,
+              };
+              tree.add(marker);
+            }
           }
 
           group.add(tree);
@@ -1860,11 +1905,86 @@ export function getForestTreeDamageProfiles(
   }));
 }
 
+export function getForestTreeHistoricalProfiles(
+  tileX: number,
+  tileY: number
+): Array<{
+  form: ForestTreeForm;
+  speciesId: ForestTreeSpeciesId;
+  landmark: boolean;
+  title: string;
+  record: string;
+  prominence: number;
+}> {
+  return getForestTreeDescriptors(tileX, tileY).map((descriptor) => {
+    const historical = getTreeHistoricalState(descriptor);
+    return {
+      form: descriptor.form,
+      speciesId: descriptor.speciesId,
+      landmark: historical.landmark,
+      title: historical.title,
+      record: historical.record,
+      prominence: historical.prominence,
+    };
+  });
+}
+
 function getForestGroveCenter(tileX: number, tileY: number) {
   return {
     x: (hash2D(FOREST_GROVE_CENTER_X_SEED, tileX, tileY) - 0.5) * 0.36,
     y: (hash2D(FOREST_GROVE_CENTER_Y_SEED, tileX, tileY) - 0.5) * 0.36,
   };
+}
+
+function createForestHistoricalTreeState(
+  speciesId: ForestTreeSpeciesId,
+  biological: TreeBiologicalState,
+  tileX: number,
+  tileY: number,
+  treeIndex: number,
+  loneTree: boolean
+): TreeHistoricalState {
+  const chance = hash2D(FOREST_HISTORICAL_TREE_SEED, tileX * 29 + treeIndex, tileY * 31);
+  const landmark =
+    biological.lifeStage === 'ancient' && chance > (loneTree ? 0.84 : 0.93);
+  if (!landmark) {
+    return {
+      landmark: false,
+      title: '',
+      record: '',
+      prominence: 0,
+    };
+  }
+
+  return {
+    landmark: true,
+    title: getForestHistoricalTreeTitle(speciesId, tileX, tileY, treeIndex),
+    record: pickForestCarvingLabel(
+      FOREST_HISTORICAL_TREE_RECORDS,
+      FOREST_HISTORICAL_TREE_RECORD_SEED,
+      tileX,
+      tileY,
+      treeIndex
+    ),
+    prominence: 0.62 + chance * 0.38,
+  };
+}
+
+function getForestHistoricalTreeTitle(
+  speciesId: ForestTreeSpeciesId,
+  tileX: number,
+  tileY: number,
+  treeIndex: number
+) {
+  const qualifier =
+    hash2D(FOREST_HISTORICAL_TREE_TITLE_SEED, tileX + treeIndex, tileY) > 0.66
+      ? 'Elder'
+      : hash2D(FOREST_HISTORICAL_TREE_TITLE_SEED, tileX - treeIndex, tileY + 1) > 0.5
+        ? 'Watch'
+        : 'Old';
+  const speciesName =
+    speciesId === 'oak' ? 'Oak' : speciesId === 'birch' ? 'Birch' : 'Pine';
+  return `${qualifier} ${speciesName}`;
 }
 
 function hasForestLoneTree(tileX: number, tileY: number) {
@@ -2228,6 +2348,14 @@ function createForestTreeDescriptorFromSpecies(
   const damage: TreeDamageState = {
     barkMarks,
   };
+  const historical = createForestHistoricalTreeState(
+    definition.speciesId,
+    biological,
+    context.tileX,
+    context.tileY,
+    context.treeIndex,
+    context.loneTree
+  );
 
   for (let branchIndex = 0; branchIndex < branchCount; branchIndex += 1) {
     const branchProgress = branchCount <= 1 ? 0 : branchIndex / (branchCount - 1);
@@ -2383,6 +2511,7 @@ function createForestTreeDescriptorFromSpecies(
       collision,
       biological,
       damage,
+      historical,
     }),
     familyId: definition.familyId,
     speciesId: definition.speciesId,

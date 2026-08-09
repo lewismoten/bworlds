@@ -11,6 +11,7 @@ import {
   getTreeBiologicalState,
   getTreeCanopyState,
   getTreeDamageState,
+  getTreeHistoricalState,
   getTreeStructuralState,
   resolveTreeSeason,
   type TreeLogicalState,
@@ -128,6 +129,12 @@ describe('tree support', () => {
       damage: {
         barkMarks: [{ x: 0.1, y: 0.7, scale: 0.08, severity: 0.6, kind: 'scar' }],
       },
+      historical: {
+        landmark: true,
+        title: 'Elder Oak',
+        record: 'Remembered for sheltering travelers.',
+        prominence: 0.78,
+      },
     });
 
     expect(tree.radius).toBe(0.2);
@@ -138,6 +145,7 @@ describe('tree support', () => {
     expect(getTreeCollisionState(tree)).toEqual(tree.collision);
     expect(getTreeBiologicalState(tree)).toEqual(tree.biological);
     expect(getTreeDamageState(tree)).toEqual(tree.damage);
+    expect(getTreeHistoricalState(tree)).toEqual(tree.historical);
   });
 
   it('derives structural and canopy state for older tree shapes', () => {
@@ -170,6 +178,12 @@ describe('tree support', () => {
       lifeStage: 'sapling',
     });
     expect(getTreeDamageState(legacy)).toEqual({ barkMarks: [] });
+    expect(getTreeHistoricalState(legacy)).toEqual({
+      landmark: false,
+      title: '',
+      record: '',
+      prominence: 0,
+    });
   });
 
   it('creates biological state with deterministic maturity stages', () => {

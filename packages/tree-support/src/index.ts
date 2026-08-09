@@ -93,6 +93,13 @@ export interface TreeDamageState {
   barkMarks: TreeDamageMark[];
 }
 
+export interface TreeHistoricalState {
+  landmark: boolean;
+  title: string;
+  record: string;
+  prominence: number;
+}
+
 export type TreeLifeStage =
   | 'sapling'
   | 'adolescent'
@@ -130,6 +137,7 @@ export interface TreeLogicalState<TForm extends string = string> {
   collision?: TreeCollisionState;
   biological?: TreeBiologicalState;
   damage?: TreeDamageState;
+  historical?: TreeHistoricalState;
 }
 
 type TreeCapabilitySource =
@@ -204,6 +212,7 @@ export function createTreeLogicalState<TForm extends string = string>({
   collision,
   biological,
   damage,
+  historical,
 }: {
   x: number;
   y: number;
@@ -213,6 +222,7 @@ export function createTreeLogicalState<TForm extends string = string>({
   collision?: TreeCollisionState;
   biological?: TreeBiologicalState;
   damage?: TreeDamageState;
+  historical?: TreeHistoricalState;
 }): TreeLogicalState<TForm> {
   const collisionState = collision ?? {
     radius: structure.radius,
@@ -232,6 +242,7 @@ export function createTreeLogicalState<TForm extends string = string>({
     collision: collisionState,
     biological,
     damage,
+    historical,
   };
 }
 
@@ -306,6 +317,19 @@ export function getTreeDamageState<TForm extends string = string>(
   tree: TreeLogicalState<TForm>
 ): TreeDamageState {
   return tree.damage ?? { barkMarks: [] };
+}
+
+export function getTreeHistoricalState<TForm extends string = string>(
+  tree: TreeLogicalState<TForm>
+): TreeHistoricalState {
+  return (
+    tree.historical ?? {
+      landmark: false,
+      title: '',
+      record: '',
+      prominence: 0,
+    }
+  );
 }
 
 export function createTreeSceneState<
