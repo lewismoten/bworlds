@@ -11,6 +11,7 @@ import { findNearestBoatLaunchPoint } from '@bworlds/map-boat';
 import { createPlainsBackedTilePainter } from '@bworlds/paint-support';
 import { createTilePlugin } from '@bworlds/plugin-api';
 import {
+  createHostMaterialResolver,
   createRegionalMaterialResolver,
   pickThresholdColor,
 } from '@bworlds/procedural-style';
@@ -231,13 +232,7 @@ const resolveRoadStyle = createRegionalMaterialResolver(
               accent: '#5a4025',
             };
 
-    return {
-      materialCache: new WeakMap<object, RoadStyle>(),
-      createMaterials(three: ThreeHostLike): RoadStyle {
-        const cached = this.materialCache.get(three as object);
-        if (cached) {
-          return cached;
-        }
+    return createHostMaterialResolver((three: ThreeHostLike): RoadStyle => {
         const roadTexture = createRoadTexture(
           three,
           palette.road,
@@ -278,10 +273,8 @@ const resolveRoadStyle = createRegionalMaterialResolver(
             side: three.DoubleSide,
           }),
         };
-        this.materialCache.set(three as object, style);
         return style;
-      },
-    };
+      });
   }
 );
 
@@ -1739,13 +1732,7 @@ function getDockStyle(
             sail: '#cbb89d',
             trim: '#d4a86f',
           };
-    return {
-      materialCache: new WeakMap<object, DockStyle>(),
-      createMaterials(host: ThreeHostLike): DockStyle {
-        const cached = this.materialCache.get(host as object);
-        if (cached) {
-          return cached;
-        }
+    return createHostMaterialResolver((host: ThreeHostLike): DockStyle => {
         const style = {
           deckMaterial: new host.MeshStandardMaterial({
             color: palette.deck,
@@ -1778,10 +1765,8 @@ function getDockStyle(
             metalness: 0.02,
           }),
         };
-        this.materialCache.set(host as object, style);
         return style;
-      },
-    };
+      });
   }).createMaterials(three);
 }
 
@@ -2331,8 +2316,7 @@ function getBridgeStyle(
       tileX,
       tileY
     );
-    return {
-      materialCache: new WeakMap<object, BridgeStyle>(),
+    const sharedStyle = {
       type,
       covered: covered && !drawbridge,
       drawbridge,
@@ -2340,19 +2324,12 @@ function getBridgeStyle(
       coverHeight: hash2D(BRIDGE_COVER_HEIGHT_SEED, tileX, tileY) * 0.16,
       pillarSpacing,
       pillarWidth: 0.14 + hash2D(BRIDGE_PILLAR_WIDTH_SEED, tileX, tileY) * 0.09,
-      createMaterials(host: ThreeHostLike): BridgeStyle {
-        const cached = this.materialCache.get(host as object);
-        if (cached) {
-          return cached;
-        }
+    };
+    return {
+      ...sharedStyle,
+      ...createHostMaterialResolver((host: ThreeHostLike): BridgeStyle => {
         const style = {
-          type: this.type,
-          covered: this.covered,
-          drawbridge: this.drawbridge,
-          widthJitter: this.widthJitter,
-          coverHeight: this.coverHeight,
-          pillarSpacing: this.pillarSpacing,
-          pillarWidth: this.pillarWidth,
+          ...sharedStyle,
           deckMaterial: new host.MeshStandardMaterial({
             color: '#ffffff',
             map: deckTexture,
@@ -2388,9 +2365,8 @@ function getBridgeStyle(
             metalness: type === 'metal' ? 0.18 : 0.02,
           }),
         };
-        this.materialCache.set(host as object, style);
         return style;
-      },
+      }),
     };
   }).createMaterials(three);
 }
@@ -2488,7 +2464,6 @@ interface RoadStyle {
 }
 
 interface RoadStyleBlueprint {
-  materialCache: WeakMap<object, RoadStyle>;
   createMaterials(three: ThreeHostLike): RoadStyle;
 }
 
@@ -2529,7 +2504,6 @@ interface BridgeStyleBlueprint
     | 'coverMaterial'
     | 'pillarMaterial'
   > {
-  materialCache: WeakMap<object, BridgeStyle>;
   createMaterials(three: ThreeHostLike): BridgeStyle;
 }
 
@@ -2554,6 +2528,5 @@ interface DockStyle {
 }
 
 interface DockStyleBlueprint {
-  materialCache: WeakMap<object, DockStyle>;
   createMaterials(three: ThreeHostLike): DockStyle;
 }
