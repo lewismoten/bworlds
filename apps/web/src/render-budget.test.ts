@@ -4,6 +4,7 @@ import {
   DEFAULT_RENDER_BUDGET_STATE,
   DEFAULT_VISIBILITY_RADIUS,
   formatRenderQualityLevel,
+  getFrameGenerationBudget,
   getPendingWorldBuildBudget,
   getRenderBudgetCaps,
   getRenderQualityLevel,
@@ -118,6 +119,27 @@ describe('render budget', () => {
     expect(criticalBudget.maxPendingBuildTiles).toBe(2);
     expect(criticalBudget.pendingBuildBudgetMs).toBeLessThan(
       reducedBudget.pendingBuildBudgetMs
+    );
+  });
+
+  it('keeps a shared frame-generation budget above pending builds while tightening under pressure', () => {
+    const healthyBudget = getFrameGenerationBudget(DEFAULT_RENDER_BUDGET_STATE);
+    const healthyPendingBudget = getPendingWorldBuildBudget(DEFAULT_RENDER_BUDGET_STATE);
+    const criticalState = {
+      smoothedFrameMs: 40,
+      targetFps: 30 as const,
+    };
+    const criticalBudget = getFrameGenerationBudget(criticalState);
+    const criticalPendingBudget = getPendingWorldBuildBudget(criticalState);
+
+    expect(healthyBudget.generationBudgetMs).toBeGreaterThan(
+      healthyPendingBudget.pendingBuildBudgetMs
+    );
+    expect(criticalBudget.generationBudgetMs).toBeGreaterThanOrEqual(
+      criticalPendingBudget.pendingBuildBudgetMs
+    );
+    expect(criticalBudget.generationBudgetMs).toBeLessThan(
+      healthyBudget.generationBudgetMs
     );
   });
 

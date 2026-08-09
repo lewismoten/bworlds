@@ -49,6 +49,7 @@ type Render3DOptions = {
   cameraPitch?: number;
   cameraBobOffset?: number;
   visibilityRadius?: number;
+  generationBudgetMs?: number;
   pendingBuildBudgetMs?: number;
   maxPendingBuildTiles?: number;
 };
@@ -247,6 +248,11 @@ type RecentDurationSample = {
 type RecentCountSample = {
   nowMs: number;
   count: number;
+};
+
+type FrameTimeBudget = {
+  budgetMs: number;
+  startMs: number;
 };
 
 export type LodThresholdSummary = {
@@ -597,7 +603,8 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
   function flushPendingWorldBuild(
     state,
     nowMs: number,
-    options: Pick<Render3DOptions, 'pendingBuildBudgetMs' | 'maxPendingBuildTiles'> = {}
+    options: Pick<Render3DOptions, 'pendingBuildBudgetMs' | 'maxPendingBuildTiles'> = {},
+    frameBudget?: FrameTimeBudget
   ) {
     if (pendingWorldBuild.queue.length === 0) {
       return;
@@ -614,6 +621,12 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     }
     const registry = getActivePluginRegistry();
     const flushStartMs = performance.now();
+    const remainingFrameBudgetMs = frameBudget
+      ? getRemainingFrameTimeBudgetMs(frameBudget, flushStartMs)
+      : Number.POSITIVE_INFINITY;
+    if (remainingFrameBudgetMs <= 0) {
+      return;
+    }
     const recentTileBuildStats = getRecentDurationStats(
       renderChurnMetrics.tileBuildDurations,
       nowMs
@@ -621,7 +634,10 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     const effectivePendingWorldBuildBudget = getEffectivePendingWorldBuildBudget({
       pendingBuildBudgetMs: Math.max(
         0.25,
-        options.pendingBuildBudgetMs ?? DEFAULT_PENDING_WORLD_BUILD_BUDGET_MS
+        Math.min(
+          options.pendingBuildBudgetMs ?? DEFAULT_PENDING_WORLD_BUILD_BUDGET_MS,
+          remainingFrameBudgetMs
+        )
       ),
       maxPendingBuildTiles: Math.max(
         1,
@@ -643,7 +659,10 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
         flushStartMs,
         performance.now(),
         processedEntryCount,
-        effectivePendingWorldBuildBudget
+        {
+          ...effectivePendingWorldBuildBudget,
+          minimumEntriesPerFlush: 0,
+        }
       )
     ) {
       const entry = pendingWorldBuild.queue[processedEntryCount];
@@ -710,7 +729,11 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       syncVisibleWorld(state, chunkRadius);
     }
     const frameNowMs = options.timeMs ?? performance.now();
-    flushPendingWorldBuild(state, frameNowMs, options);
+    const generationFrameBudget = createFrameTimeBudget(
+      options.generationBudgetMs ?? options.pendingBuildBudgetMs ?? DEFAULT_PENDING_WORLD_BUILD_BUDGET_MS,
+      performance.now()
+    );
+    flushPendingWorldBuild(state, frameNowMs, options, generationFrameBudget);
     syncWorldCurvature(visibleTileNodes.values(), state);
 
     camera.position.set(
@@ -742,27 +765,33 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       lastLodSyncPlayerPosition = { x: state.player.x, y: state.player.y };
     }
     if (pendingLodSyncChecks > 0) {
-      const visibleEntries = Array.from(visibleTileNodes.entries());
-      const lodBatch = getWrappedBatchWindow(
-        visibleEntries,
-        lodSyncEntryOffset,
-        LOD_SYNC_BATCH_SIZE
-      );
-      if (lodBatch.items.length > 0) {
-        syncTileModelDetailLevels(
-          state,
-          getActivePluginRegistry(),
-          frameNowMs,
-          lodBatch.items
+      if (!isFrameTimeBudgetExhausted(generationFrameBudget)) {
+        const visibleEntries = Array.from(visibleTileNodes.entries());
+        const lodBatch = getWrappedBatchWindow(
+          visibleEntries,
+          lodSyncEntryOffset,
+          LOD_SYNC_BATCH_SIZE
         );
-        lodSyncEntryOffset = lodBatch.nextIndex;
-        pendingLodSyncChecks = Math.max(
-          0,
-          pendingLodSyncChecks - lodBatch.items.length
-        );
-      } else {
-        pendingLodSyncChecks = 0;
-        lodSyncEntryOffset = 0;
+        if (lodBatch.items.length > 0) {
+          const processedEntryCount = syncTileModelDetailLevels(
+            state,
+            getActivePluginRegistry(),
+            frameNowMs,
+            lodBatch.items,
+            generationFrameBudget
+          );
+          if (visibleEntries.length > 0 && processedEntryCount > 0) {
+            lodSyncEntryOffset =
+              (lodSyncEntryOffset + processedEntryCount) % visibleEntries.length;
+            pendingLodSyncChecks = Math.max(
+              0,
+              pendingLodSyncChecks - processedEntryCount
+            );
+          }
+        } else {
+          pendingLodSyncChecks = 0;
+          lodSyncEntryOffset = 0;
+        }
       }
     }
     updateFarLandModelVisibility(visibleTileNodes.values(), state);
@@ -903,9 +932,15 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     state: Render3DState,
     registry: ReturnType<typeof getActivePluginRegistry>,
     nowMs: number,
-    entries: Array<[string, DynamicTileNode]>
-  ): void {
+    entries: Array<[string, DynamicTileNode]>,
+    frameBudget?: FrameTimeBudget
+  ): number {
+    let processedEntryCount = 0;
     for (const [key, entry] of entries) {
+      if (frameBudget && isFrameTimeBudgetExhausted(frameBudget)) {
+        break;
+      }
+      processedEntryCount += 1;
       if (!entry.modelRoot) {
         continue;
       }
@@ -942,6 +977,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       worldRoot.add(nextEntry.node);
       recordRecentMetric(renderChurnMetrics.lodReplacements, nowMs);
     }
+    return processedEntryCount;
   }
 
   function createTileBuildCache(state): TileBuildCache {
@@ -2820,6 +2856,30 @@ export function shouldProcessPendingWorldBuildEntry(
     return true;
   }
   return currentMs - flushStartMs < pendingBuildBudgetMs;
+}
+
+export function createFrameTimeBudget(
+  budgetMs: number,
+  startMs = performance.now()
+): FrameTimeBudget {
+  return {
+    budgetMs: Math.max(0, budgetMs),
+    startMs,
+  };
+}
+
+export function getRemainingFrameTimeBudgetMs(
+  budget: FrameTimeBudget,
+  currentMs = performance.now()
+): number {
+  return Math.max(0, budget.budgetMs - Math.max(0, currentMs - budget.startMs));
+}
+
+export function isFrameTimeBudgetExhausted(
+  budget: FrameTimeBudget,
+  currentMs = performance.now()
+): boolean {
+  return getRemainingFrameTimeBudgetMs(budget, currentMs) <= 0;
 }
 
 export function getEffectivePendingWorldBuildBudget({

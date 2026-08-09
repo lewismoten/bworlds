@@ -13,6 +13,10 @@ export type PendingWorldBuildBudget = {
   maxPendingBuildTiles: number;
 };
 
+export type FrameGenerationBudget = {
+  generationBudgetMs: number;
+};
+
 export type RenderBudgetCaps = {
   frameMs: {
     soft: number;
@@ -169,6 +173,24 @@ export function getRenderBudgetCaps(
           soft: 8,
           hard: 4,
         },
+  };
+}
+
+export function getFrameGenerationBudget(
+  state: Pick<RenderBudgetState, 'smoothedFrameMs' | 'targetFps'>
+): FrameGenerationBudget {
+  const pendingBudget = getPendingWorldBuildBudget(state);
+  const targetFrameMs = 1000 / state.targetFps;
+  const framePressure = clamp(state.smoothedFrameMs / targetFrameMs, 0.5, 1.6);
+  const maximumBudgetMs = state.targetFps === 60 ? 4.25 : 2.75;
+  const reserveMs = state.targetFps === 60 ? 0.6 : 0.4;
+
+  return {
+    generationBudgetMs: clamp(
+      pendingBudget.pendingBuildBudgetMs + reserveMs - Math.max(0, framePressure - 1) * 1.5,
+      pendingBudget.pendingBuildBudgetMs,
+      maximumBudgetMs
+    ),
   };
 }
 

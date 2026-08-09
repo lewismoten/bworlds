@@ -14,11 +14,13 @@ import {
   getSharedPlaneGeometry,
   getWaterFloorBodyProfile,
   buildPendingWorldBuildQueue,
+  createFrameTimeBudget,
   getDecoratedTileSurfaceHeight,
   getEffectivePendingWorldBuildBudget,
   getBoundaryPriority,
   getFarLandModelOpacity,
   getFacingVisibilityBucket,
+  getRemainingFrameTimeBudgetMs,
   getWorldCurvatureOffset,
   getWeatherFogRange,
   getLodThresholdSummary,
@@ -39,6 +41,7 @@ import {
   recordRecentMetric,
   recordRecentDurationMetric,
   resetOwnedMaterialLifecycleMetrics,
+  isFrameTimeBudgetExhausted,
   shouldProcessPendingWorldBuildEntry,
   shouldEvaluateTileModelDetailLevel,
   shouldSyncTileModelDetailLevels,
@@ -808,6 +811,14 @@ describe('render3d visibility helpers', () => {
     });
   });
 
+  it('tracks shared frame generation budgets and reports when they are exhausted', () => {
+    const budget = createFrameTimeBudget(2.5, 100);
+
+    expect(getRemainingFrameTimeBudgetMs(budget, 101)).toBeCloseTo(1.5, 6);
+    expect(isFrameTimeBudgetExhausted(budget, 102.49)).toBe(false);
+    expect(isFrameTimeBudgetExhausted(budget, 102.5)).toBe(true);
+  });
+
   it('rebuilds the pending world-build queue without visible or duplicate tile requests', () => {
     expect(
       buildPendingWorldBuildQueue(
@@ -1116,6 +1127,16 @@ describe('render3d visibility helpers', () => {
     expect(getPendingWorldBuildDetailLevel('full', 4, 10)).toBe('full');
     expect(getPendingWorldBuildDetailLevel('full', 16, 10)).toBe('low');
     expect(getPendingWorldBuildDetailLevel('full', 16, 0)).toBe('full');
+  });
+
+  it('lets pending world builds stop immediately when the shared frame budget is already exhausted', () => {
+    expect(
+      shouldProcessPendingWorldBuildEntry(100, 100, 0, {
+        pendingBuildBudgetMs: 0,
+        maxPendingBuildTiles: 4,
+        minimumEntriesPerFlush: 0,
+      })
+    ).toBe(false);
   });
 
   it('only rechecks tile lod after meaningful movement', () => {

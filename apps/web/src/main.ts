@@ -128,6 +128,7 @@ import { getDebugWorldStats } from './debug-world-stats.ts';
 import {
   advanceRenderBudgetState,
   DEFAULT_RENDER_BUDGET_STATE,
+  getFrameGenerationBudget,
   formatRenderQualityLevel,
   getPendingWorldBuildBudget,
   getRenderBudgetCaps,
@@ -2742,6 +2743,7 @@ function render(): FrameLoopActivityLike {
     }
   } else {
     const pendingWorldBuildBudget = getPendingWorldBuildBudget(renderBudgetState);
+    const frameGenerationBudget = getFrameGenerationBudget(renderBudgetState);
     renderer3d.render(state, {
       jumpHeight: motion.jumpHeight,
       timeMs,
@@ -2749,6 +2751,7 @@ function render(): FrameLoopActivityLike {
       cameraPitch: mouseLookState.pitch,
       cameraBobOffset: motion.headBob.offset,
       visibilityRadius: renderBudgetState.visibilityRadius,
+      generationBudgetMs: frameGenerationBudget.generationBudgetMs,
       pendingBuildBudgetMs: pendingWorldBuildBudget.pendingBuildBudgetMs,
       maxPendingBuildTiles: pendingWorldBuildBudget.maxPendingBuildTiles,
     });

@@ -1,6 +1,6 @@
 # High Priority
 
-- [ ] Enforce a hard per-frame generation budget
+- [x] Enforce a hard per-frame generation budget
    No world-generation, tile-building, LOD, cache filling, or procedural work should be allowed to hold `loop()` for seconds. Process only a few milliseconds of queued work, then yield to the next frame.
 
 - [ ] Rewrite the hot cache path to minimize lookups and allocations.
