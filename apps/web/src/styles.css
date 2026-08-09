@@ -832,3 +832,49 @@ ul {
     max-width: calc(100% - 1.4rem);
   }
 }
+
+@media (max-width: 720px) {
+  .controls {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    width: 100%;
+  }
+
+  .controls > button,
+  .controls > .audio-volume-controls,
+  .controls > .build-controls {
+    width: 100%;
+  }
+
+  .audio-volume-controls {
+    grid-template-columns: minmax(0, 1fr);
+    width: 100%;
+    padding: 0.75rem;
+  }
+
+  .audio-volume-control {
+    gap: 0.45rem;
+  }
+
+  .audio-volume-row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.4rem;
+  }
+
+  .audio-volume-row output {
+    min-width: 0;
+    text-align: left;
+  }
+
+  .build-controls {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    justify-items: stretch;
+    width: 100%;
+  }
+
+  .build-controls select,
+  .build-controls button {
+    width: 100%;
+  }
+}

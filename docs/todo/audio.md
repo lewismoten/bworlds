@@ -95,7 +95,7 @@
 - [x] Allow random ocean tiles to generate ocean sounds as ambiance so only one or two can be heard within the players hearing distance
 - [x] Allow the user to toggle ambiance sounds
 - [x] All tiles and POI support ambiance. Base tiles have a lower chance of playing ambiance as a sound source so that only 1 or two are within the players hearing distance.
-- [ ] Make sure parameters fit in the panel, or conform to a responsive layout for skinny screens
+- [x] Make sure parameters fit in the panel, or conform to a responsive layout for skinny screens
 
 # Development checklist
 
