@@ -1,4 +1,9 @@
 import './music-debug.css';
+import {
+  createMusicDebugPagePersistenceController,
+  loadMusicDebugPagePersistenceState,
+  resolveMusicDebugPlaybackResumeOffset,
+} from './music-debug-page-persistence.ts';
 import { createMusicDebugPageState } from './music-debug-page-state.ts';
 import { createMusicDebugPlaybackController } from './music-debug-playback.ts';
 import { downloadMusicDebugMidiFile } from './music-debug-midi.ts';
@@ -15,6 +20,7 @@ import {
   buildMusicDebugShellMarkup,
   createCachedMusicDebugSnapshot,
   buildMusicDebugSummaryMarkup,
+  normalizeMusicDebugOptions,
   randomizeMusicDebugSeed,
   createMusicDebugSongPlayback,
   formatMusicDebugDuration,
@@ -67,9 +73,17 @@ const scheduleAnimationFrame =
 const cancelAnimationFrameFallback =
   globalThis.cancelAnimationFrame?.bind(globalThis) ??
   ((handle: number) => clearTimeout(handle));
+const persistedState = loadMusicDebugPagePersistenceState(
+  globalThis.localStorage ?? null
+);
 let previewOffsetMs = 0;
 let playbackVisualState: MusicDebugPlaybackVisualState | null = null;
 let playbackFrameHandle: number | null = null;
+const pagePersistence = createMusicDebugPagePersistenceController({
+  storage: globalThis.localStorage ?? null,
+});
+
+applyPersistedPageState();
 
 function resolveCurrentSnapshot() {
   return pageState.currentSnapshot();
@@ -154,6 +168,7 @@ function tickPlaybackFrame(): void {
     return;
   }
   renderPlaybackUi(playbackVisualState.snapshot);
+  persistPageState(true, resolveDisplayedOffsetMs());
   playbackFrameHandle = scheduleAnimationFrame(() => {
     tickPlaybackFrame();
   });
@@ -176,6 +191,7 @@ function updatePreviewOffset(nextOffsetMs: number): void {
   }
   previewOffsetMs = clampMusicDebugPreviewOffset(snapshot, nextOffsetMs);
   renderPlaybackUi(snapshot);
+  persistPageState(false);
 }
 
 function seekToOffset(nextOffsetMs: number): void {
@@ -186,9 +202,11 @@ function seekToOffset(nextOffsetMs: number): void {
       loop: loopInput?.checked === true,
       startOffsetMs: previewOffsetMs,
     });
+    persistPageState(true);
     return;
   }
   renderPlaybackUi(snapshot);
+  persistPageState(false);
 }
 
 const pageState = createMusicDebugPageState({
@@ -202,6 +220,7 @@ const pageState = createMusicDebugPageState({
       previewOffsetMs
     );
     renderPlaybackUi(nextSnapshot);
+    persistPageState(playbackController.isPlaying());
   },
 });
 const playback = createMusicDebugSongPlayback();
@@ -215,6 +234,7 @@ const playbackController = createMusicDebugPlaybackController({
     if (!playing) {
       stopPlaybackFrameLoop();
     }
+    persistPageState(playing);
   },
   onPlaybackCycle(state) {
     playbackVisualState = {
@@ -224,6 +244,7 @@ const playbackController = createMusicDebugPlaybackController({
     };
     previewOffsetMs = state.region?.startOffsetMs ?? 0;
     renderPlaybackUi(state.snapshot);
+    persistPageState(true);
     startPlaybackFrameLoop();
   },
   onPlaybackStop() {
@@ -235,6 +256,7 @@ const playbackController = createMusicDebugPlaybackController({
     }
     playbackVisualState = null;
     renderPlaybackUi();
+    persistPageState(false);
   },
   playbackLeadMs: 8,
 });
@@ -270,6 +292,53 @@ function collectOptions(): Partial<MusicDebugOptions> {
   } as Partial<MusicDebugOptions>;
 }
 
+function applyPersistedPageState(): void {
+  if (!form || !persistedState) {
+    return;
+  }
+  setNamedFormValue('tileKind', persistedState.options.tileKind);
+  setNamedFormValue('contextType', persistedState.options.contextType);
+  setNamedFormValue('encounterMode', persistedState.options.encounterMode);
+  setNamedFormValue('weatherKind', persistedState.options.weatherKind);
+  setNamedFormValue(
+    'weatherIntensity',
+    String(persistedState.options.weatherIntensity)
+  );
+  setNamedFormValue('dayProgress', String(persistedState.options.dayProgress));
+  setNamedFormValue(
+    'yearProgress',
+    String(persistedState.options.yearProgress)
+  );
+  setNamedFormValue('clusterX', String(persistedState.options.clusterX));
+  setNamedFormValue('clusterY', String(persistedState.options.clusterY));
+  previewOffsetMs = persistedState.previewOffsetMs;
+  if (loopInput) {
+    loopInput.checked = persistedState.loopEnabled;
+  }
+}
+
+function setNamedFormValue(name: string, value: string): void {
+  const field = form?.elements.namedItem(name);
+  if (!(
+    field instanceof HTMLInputElement || field instanceof HTMLSelectElement
+  )) {
+    return;
+  }
+  field.value = value;
+}
+
+function persistPageState(
+  shouldResume: boolean,
+  offsetMs = previewOffsetMs
+): void {
+  pagePersistence.save({
+    options: normalizeMusicDebugOptions(collectOptions()),
+    loopEnabled: loopInput?.checked === true,
+    previewOffsetMs: offsetMs,
+    shouldResume,
+  });
+}
+
 form?.addEventListener('submit', (event) => {
   event.preventDefault();
   instrumentPreviewPlayer.stop();
@@ -281,6 +350,7 @@ form?.addEventListener('input', () => {
   instrumentPreviewPlayer.stop();
   playbackController.stop();
   pageState.scheduleRefresh();
+  persistPageState(false);
 });
 
 playButton?.addEventListener('click', () => {
@@ -289,9 +359,13 @@ playButton?.addEventListener('click', () => {
     return;
   }
   const currentSnapshot = pageState.refreshNow();
+  const startOffsetMs = resolveMusicDebugPlaybackResumeOffset({
+    snapshot: currentSnapshot,
+    previewOffsetMs,
+  });
   playbackController.start(currentSnapshot, {
     loop: loopInput?.checked === true,
-    startOffsetMs: previewOffsetMs,
+    startOffsetMs,
   });
 });
 
@@ -306,6 +380,7 @@ randomizeButton?.addEventListener('click', () => {
     clusterYInput.value = String(randomized.clusterY);
   }
   pageState.refreshNow();
+  persistPageState(false);
 });
 
 downloadButton?.addEventListener('click', () => {
@@ -350,6 +425,10 @@ sectionButtons?.addEventListener('click', (event) => {
   seekToOffset(offsetMs);
 });
 
+loopInput?.addEventListener('change', () => {
+  persistPageState(playbackController.isPlaying());
+});
+
 timeline?.addEventListener('click', (event) => {
   const bounds = timeline.getBoundingClientRect();
   const snapshot = pageState.refreshNow();
@@ -369,6 +448,20 @@ const scheduleAfterPaint =
     setTimeout(() => callback(performance.now()), 0));
 
 scheduleAfterPaint(() => {
-  pageState.refreshNow();
+  const snapshot = pageState.refreshNow();
+  if (persistedState?.shouldResume) {
+    const startOffsetMs = resolveMusicDebugPlaybackResumeOffset({
+      snapshot,
+      previewOffsetMs,
+    });
+    playbackController.start(snapshot, {
+      loop: loopInput?.checked === true,
+      startOffsetMs,
+    });
+  }
   updatePreviewOffset(previewOffsetMs);
+});
+
+globalThis.addEventListener?.('pagehide', () => {
+  pagePersistence.flush();
 });
