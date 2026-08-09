@@ -78,6 +78,11 @@ import {
 } from './pending-world-build-queue.ts';
 import { shouldProcessPendingWorldBuildEntryWithinBudget } from './pending-world-build-processing.ts';
 import { collectMaterialTexturesInto } from './material-texture-collector.ts';
+import {
+  disposeOwnedObject3DMaterials,
+  getRecentOwnedMaterialLifecycleCounts,
+  trackOwnedObject3DMaterials,
+} from './owned-material-lifecycle.ts';
 import { collectRecentWindowedEvents } from './recent-windowed-events.ts';
 import { getRenderEffectQualityProfile } from './render-effect-quality.ts';
 import {
@@ -131,6 +136,11 @@ export {
 } from './pending-world-build-queue.ts';
 export { shouldProcessPendingWorldBuildEntryWithinBudget } from './pending-world-build-processing.ts';
 export { collectMaterialTexturesInto } from './material-texture-collector.ts';
+export {
+  getRecentOwnedMaterialLifecycleCounts,
+  resetOwnedMaterialLifecycleMetrics,
+  trackOwnedObject3DMaterials,
+} from './owned-material-lifecycle.ts';
 export { collectRecentWindowedEvents } from './recent-windowed-events.ts';
 export {
   createTilePluginModelFromCostEstimate,
@@ -681,7 +691,8 @@ export function acceptTilePluginModelForRenderBudgetWithResult<
   }
   const pruned = pruneTileModelOptionalPartsForBudget(
     model as TObject & Pick<THREE.Object3D, 'userData'>,
-    (candidate) => validateTileModelAgainstRenderBudget(candidate, detailLevel)
+    (candidate) => validateTileModelAgainstRenderBudget(candidate, detailLevel),
+    (removedNode) => disposeObject3DResources(removedNode as Pick<THREE.Object3D, 'traverse'>)
   );
   if (pruned.validation.accepted) {
     return {
@@ -1323,9 +1334,6 @@ const LANDMARK_TILE_KINDS = new Set([
 ]);
 const distanceFadeTargetCache = new WeakMap<THREE.Object3D, DistanceFadeTargets>();
 const ownedDisposableGeometries = new WeakSet<object>();
-const ownedDisposableMaterials = new WeakSet<object>();
-const ownedMaterialCreationTimestamps: number[] = [];
-const ownedMaterialDisposalTimestamps: number[] = [];
 export const SHARED_RENDER_GEOMETRY_CACHE_MAX_ENTRIES = 128;
 const sharedBoxGeometryCache = createBoundedCache<string, THREE.BoxGeometry>(
   SHARED_RENDER_GEOMETRY_CACHE_MAX_ENTRIES
@@ -1556,6 +1564,9 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       | (Pick<THREE.Object3D, 'traverse' | 'children' | 'type' | 'position'> &
           THREE.Object3D)
       | null;
+    if (pluginModel) {
+      trackOwnedObject3DMaterials(pluginModel);
+    }
     if (tilePlugin?.create3DModel) {
       recordRecentLabeledDurationMetric(renderChurnMetrics.tilePluginBuildDurations, {
         nowMs: pluginBuildStartMs,
@@ -1727,7 +1738,9 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
           tileNode as typeof tileNode & Pick<THREE.Object3D, 'userData'>,
           (candidate) => ({
             accepted: validateTileDrawCallBudget(candidate, detailLevel).accepted,
-          })
+          }),
+          (removedNode) =>
+            disposeObject3DResources(removedNode as Pick<THREE.Object3D, 'traverse'>)
         );
         if (pruned.validation.accepted) {
           if (pruned.removedParts.length > 0) {
@@ -2192,6 +2205,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       renderChurnMetrics.tileModelBudgetViolations,
       nowMs
     );
+    const ownedMaterialLifecycleCounts = getRecentOwnedMaterialLifecycleCounts(nowMs);
     const recentEvents = getRecentRenderDebugEvents(recentDebugEvents, nowMs);
     const renderChurnStats = getRenderChurnStats(renderChurnMetrics, nowMs);
     return {
@@ -2270,14 +2284,8 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       fogMaterialCount: sceneResourceStats.fogMaterialCount,
       customShaderMaterialCount: sceneResourceStats.customShaderMaterialCount,
       materialTypes: sceneResourceStats.materialTypes,
-      materialsCreatedDuringSamplingWindow: countRecentMetricEvents(
-        ownedMaterialCreationTimestamps,
-        nowMs
-      ),
-      materialsDisposedDuringSamplingWindow: countRecentMetricEvents(
-        ownedMaterialDisposalTimestamps,
-        nowMs
-      ),
+      materialsCreatedDuringSamplingWindow: ownedMaterialLifecycleCounts.createdCount,
+      materialsDisposedDuringSamplingWindow: ownedMaterialLifecycleCounts.disposedCount,
       geometryCount: sceneResourceStats.geometryCount,
       sharedGeometryCount: sceneResourceStats.sharedGeometryCount,
       geometryBytes: sceneResourceStats.geometryBytes,
@@ -3598,7 +3606,6 @@ function getObjectMaterials(
 export function disposeObject3DResources(
   root: Pick<THREE.Object3D, 'traverse'>
 ): void {
-  const disposedMaterials = new Set<unknown>();
   const disposedGeometries = new Set<unknown>();
 
   root.traverse((child) => {
@@ -3615,19 +3622,8 @@ export function disposeObject3DResources(
       disposedGeometries.add(renderable.geometry);
       renderable.geometry.dispose?.();
     }
-
-    for (const material of getObjectMaterials(renderable)) {
-      if (
-        disposedMaterials.has(material) ||
-        !ownedDisposableMaterials.has(material)
-      ) {
-        continue;
-      }
-      disposedMaterials.add(material);
-      recordRecentMetric(ownedMaterialDisposalTimestamps, performance.now());
-      (material as THREE.Material & { dispose?: () => void }).dispose?.();
-    }
   });
+  disposeOwnedObject3DMaterials(root);
 }
 
 export function collectSceneResourceStats(
@@ -4230,32 +4226,6 @@ export function countRecentMetricEvents(
 ): number {
   pruneRecentMetricTimestamps(timestamps, nowMs, windowMs);
   return timestamps.length;
-}
-
-export function getRecentOwnedMaterialLifecycleCounts(
-  nowMs: number,
-  windowMs = 1000
-): {
-  createdCount: number;
-  disposedCount: number;
-} {
-  return {
-    createdCount: countRecentMetricEvents(
-      ownedMaterialCreationTimestamps,
-      nowMs,
-      windowMs
-    ),
-    disposedCount: countRecentMetricEvents(
-      ownedMaterialDisposalTimestamps,
-      nowMs,
-      windowMs
-    ),
-  };
-}
-
-export function resetOwnedMaterialLifecycleMetrics(): void {
-  ownedMaterialCreationTimestamps.length = 0;
-  ownedMaterialDisposalTimestamps.length = 0;
 }
 
 export function recordRecentDurationMetric(

@@ -99,8 +99,8 @@ Given the heap issue you just saw, I would take this very seriously.
 * [ ] Cap shader complexity classes.
 * [ ] Avoid unique shader `define` combinations unless necessary.
 * [ ] Cache common material variants.
-* [ ] Dispose rejected materials immediately.
-* [ ] Dispose no-longer-used plugin-generated materials safely.
+* [X] Dispose rejected materials immediately.
+* [X] Dispose no-longer-used plugin-generated materials safely.
 
 # Texture Dimension Caps
 

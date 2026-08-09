@@ -4,7 +4,10 @@ import {
   type RenderBudgetPartMetadata,
 } from '@bworlds/plugin-api';
 
-type RemovableChildObjectLike = Pick<THREE.Object3D, 'children' | 'userData'>;
+type RemovableChildObjectLike = Pick<
+  THREE.Object3D,
+  'children' | 'traverse' | 'userData'
+>;
 
 type OptionalBudgetPartCandidate = {
   node: RemovableChildObjectLike;
@@ -25,7 +28,8 @@ export function pruneTileModelOptionalPartsForBudget<
   TObject extends RemovableChildObjectLike,
 >(
   model: TObject,
-  validate: (candidate: TObject) => { accepted: boolean }
+  validate: (candidate: TObject) => { accepted: boolean },
+  onRemoved?: (node: RemovableChildObjectLike) => void
 ): TileModelBudgetPruneResult<TObject> {
   let validation = validate(model);
   if (validation.accepted) {
@@ -45,6 +49,7 @@ export function pruneTileModelOptionalPartsForBudget<
     if (!detachChildFromParent(candidate.parent, candidate.node)) {
       continue;
     }
+    onRemoved?.(candidate.node);
     removedParts.push(candidate.metadata);
     validation = validate(model);
     if (validation.accepted) {

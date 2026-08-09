@@ -172,6 +172,7 @@ import {
   recordRecentDurationMetric,
   recordRecentLabeledDurationMetric,
   resetOwnedMaterialLifecycleMetrics,
+  trackOwnedObject3DMaterials,
   isFrameTimeBudgetExhausted,
   shouldProcessPendingWorldBuildEntry,
   shouldEvaluateTileModelDetailLevel,
@@ -530,6 +531,71 @@ describe('render3d visibility helpers', () => {
     expect(getRecentOwnedMaterialLifecycleCounts(2401)).toEqual({
       createdCount: 0,
       disposedCount: 0,
+    });
+
+    nowSpy.mockRestore();
+    resetOwnedMaterialLifecycleMetrics();
+  });
+
+  it('disposes tracked owned materials immediately when a rejected model is discarded', () => {
+    resetOwnedMaterialLifecycleMetrics();
+    const nowSpy = vi.spyOn(performance, 'now');
+    const rootMaterial = createMockMaterial();
+    const childMaterial = createMockMaterial();
+    const root = createMockObject3D(rootMaterial, [
+      createMockObject3D(childMaterial, [], createMockGeometry(4)),
+    ]);
+
+    nowSpy.mockReturnValue(1000);
+    trackOwnedObject3DMaterials(root as never);
+    expect(getRecentOwnedMaterialLifecycleCounts(1000)).toEqual({
+      createdCount: 2,
+      disposedCount: 0,
+    });
+
+    nowSpy.mockReturnValue(1200);
+    disposeObject3DResources(root as never);
+    expect(rootMaterial.dispose).toHaveBeenCalledTimes(1);
+    expect(childMaterial.dispose).toHaveBeenCalledTimes(1);
+    expect(getRecentOwnedMaterialLifecycleCounts(1200)).toEqual({
+      createdCount: 2,
+      disposedCount: 2,
+    });
+
+    nowSpy.mockRestore();
+    resetOwnedMaterialLifecycleMetrics();
+  });
+
+  it('keeps tracked shared plugin materials alive until the last model releases them', () => {
+    resetOwnedMaterialLifecycleMetrics();
+    const nowSpy = vi.spyOn(performance, 'now');
+    const sharedMaterial = createMockMaterial();
+    const rootA = createMockObject3D(sharedMaterial, [], createMockGeometry(4));
+    const rootB = createMockObject3D(sharedMaterial, [], createMockGeometry(6));
+
+    nowSpy.mockReturnValue(1000);
+    trackOwnedObject3DMaterials(rootA as never);
+    nowSpy.mockReturnValue(1100);
+    trackOwnedObject3DMaterials(rootB as never);
+    expect(getRecentOwnedMaterialLifecycleCounts(1100)).toEqual({
+      createdCount: 1,
+      disposedCount: 0,
+    });
+
+    nowSpy.mockReturnValue(1200);
+    disposeObject3DResources(rootA as never);
+    expect(sharedMaterial.dispose).toHaveBeenCalledTimes(0);
+    expect(getRecentOwnedMaterialLifecycleCounts(1200)).toEqual({
+      createdCount: 1,
+      disposedCount: 0,
+    });
+
+    nowSpy.mockReturnValue(1300);
+    disposeObject3DResources(rootB as never);
+    expect(sharedMaterial.dispose).toHaveBeenCalledTimes(1);
+    expect(getRecentOwnedMaterialLifecycleCounts(1300)).toEqual({
+      createdCount: 1,
+      disposedCount: 1,
     });
 
     nowSpy.mockRestore();
@@ -3052,6 +3118,65 @@ describe('render3d visibility helpers', () => {
         { priority: 4 },
       ])
     ).toBe('optional-low@1, unnamed@4');
+  });
+
+  it('disposes removed optional part materials as soon as budget pruning detaches them', () => {
+    resetOwnedMaterialLifecycleMetrics();
+    const nowSpy = vi.spyOn(performance, 'now');
+    const requiredMaterial = createMockMaterial();
+    const optionalMaterial = createMockMaterial();
+    const sharedGeometry = createMockStatGeometry('shared-budget-prune-dispose', 24);
+    const lowPriorityOptional = setRenderBudgetPartMetadata(
+      createMockObject3D(optionalMaterial, [], sharedGeometry),
+      {
+        optional: true,
+        priority: 1,
+        label: 'optional-low',
+      }
+    );
+    const highPriorityOptional = setRenderBudgetPartMetadata(
+      createMockObject3D(requiredMaterial, [], sharedGeometry),
+      {
+        optional: true,
+        priority: 10,
+        label: 'optional-high',
+      }
+    );
+    const root = createMockObject3D(undefined, [
+      ...Array.from({ length: 15 }, () =>
+        createMockObject3D(requiredMaterial, [], sharedGeometry)
+      ),
+      lowPriorityOptional,
+      highPriorityOptional,
+    ]);
+
+    nowSpy.mockReturnValue(1000);
+    trackOwnedObject3DMaterials(root as never);
+    expect(getRecentOwnedMaterialLifecycleCounts(1000)).toEqual({
+      createdCount: 2,
+      disposedCount: 0,
+    });
+
+    nowSpy.mockReturnValue(1200);
+    expect(acceptTilePluginModelForRenderBudgetWithResult(root as never, 'low')).toEqual({
+      model: root,
+      removedParts: [
+        {
+          label: 'optional-low',
+          priority: 1,
+        },
+      ],
+    });
+
+    expect(optionalMaterial.dispose).toHaveBeenCalledTimes(1);
+    expect(requiredMaterial.dispose).toHaveBeenCalledTimes(0);
+    expect(getRecentOwnedMaterialLifecycleCounts(1200)).toEqual({
+      createdCount: 2,
+      disposedCount: 1,
+    });
+
+    nowSpy.mockRestore();
+    resetOwnedMaterialLifecycleMetrics();
   });
 
   it('accepts representative nearby world tile models at full detail', () => {
