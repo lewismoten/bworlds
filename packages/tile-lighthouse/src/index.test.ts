@@ -142,6 +142,38 @@ describe('tile lighthouse', () => {
     expect((firstBeamPivot?.children[0] as FakeMesh | undefined)?.geometry).toBe(
       (secondBeamPivot?.children[0] as FakeMesh | undefined)?.geometry
     );
+    expect((firstBeamMeshes[0]?.material as FakeMaterial | undefined)?.options.color).toBe(
+      (secondBeamMeshes[0]?.material as FakeMaterial | undefined)?.options.color
+    );
+  });
+
+  it('varies lighthouse beam colors across different regions while keeping local styles shared', () => {
+    const plugin = createLighthouseTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'lighthouse');
+    const coordinates = [
+      { x: 4, y: 5 },
+      { x: 40, y: 5 },
+      { x: 4, y: 40 },
+      { x: 40, y: 40 },
+    ];
+    const beamColors = new Set<string>();
+
+    coordinates.forEach(({ x, y }) => {
+      const model = tile?.create3DModel?.({
+        three: fakeThree as never,
+        state: {} as never,
+        tile: { kind: 'lighthouse' } as never,
+        tileX: x,
+        tileY: y,
+      }) as FakeNode | undefined;
+      const beamMeshes = collectBeamMeshes(model);
+      const color = (beamMeshes[0]?.material as FakeMaterial | undefined)?.options.color;
+      if (typeof color === 'string') {
+        beamColors.add(color);
+      }
+    });
+
+    expect(beamColors.size).toBeGreaterThan(1);
   });
 
   it('builds a tapered emissive beam from the lantern room without beam shadows', () => {

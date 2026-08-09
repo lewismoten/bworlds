@@ -23,7 +23,7 @@ Here’s a focused lighthouse checklist that covers the current visual bugs, day
 * [ ] Avoid visible geometry seams where the beam starts.
 * [ ] Clip or hide the beam inside the lighthouse structure.
 * [ ] Prevent the beam from appearing through solid lighthouse walls.
-* [ ] Make beam color configurable by lighthouse type or region.
+* [X] Make beam color configurable by lighthouse type or region.
 
 ## Lighthouse Rotation
 
