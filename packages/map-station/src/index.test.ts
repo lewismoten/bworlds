@@ -90,6 +90,38 @@ describe('map station', () => {
     ).toBeNull();
   });
 
+  it('prefers the closest eligible arriving train when multiple services can board', () => {
+    expect(
+      findBoardableTrainService(
+        [
+          {
+            x: 0,
+            y: 0,
+            progress: 0.16,
+            direction: 'forward',
+            lineName: 'Copper Lantern Line',
+            from: 'Copper Lantern Station',
+            to: 'Frost Junction',
+          },
+          {
+            x: 1,
+            y: 0,
+            progress: 0.08,
+            direction: 'forward',
+            lineName: 'Harbor Express',
+            from: 'Copper Lantern Station',
+            to: 'Harbor Terminus',
+          },
+        ],
+        'Copper Lantern Station'
+      )
+    ).toEqual(
+      expect.objectContaining({
+        lineName: 'Harbor Express',
+      })
+    );
+  });
+
   it('keeps station boarding tiles deterministic after bounded service-cache eviction churn', () => {
     const plugin = createStationMapPlugin();
     const map = plugin.createMap?.({

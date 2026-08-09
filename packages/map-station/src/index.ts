@@ -150,25 +150,25 @@ export function findBoardableTrainService(
   placements: RailTrainPlacement[],
   stationName: string
 ): RailTrainPlacement | null {
-  return (
-    placements
-      .map((placement) => ({
-        placement,
-        approachDistance: getTrainApproachDistance(placement, stationName),
-      }))
-      .filter(
-        (
-          candidate
-        ): candidate is {
-          placement: RailTrainPlacement;
-          approachDistance: number;
-        } =>
-          typeof candidate.approachDistance === 'number' &&
-          candidate.approachDistance <= BOARDABLE_TRAIN_APPROACH_THRESHOLD
-      )
-      .sort((left, right) => left.approachDistance - right.approachDistance)[0]
-      ?.placement ?? null
-  );
+  let bestPlacement: RailTrainPlacement | null = null;
+  let bestApproachDistance = Number.POSITIVE_INFINITY;
+
+  for (let index = 0; index < placements.length; index += 1) {
+    const placement = placements[index]!;
+    const approachDistance = getTrainApproachDistance(placement, stationName);
+    if (
+      approachDistance === null ||
+      approachDistance > BOARDABLE_TRAIN_APPROACH_THRESHOLD ||
+      approachDistance >= bestApproachDistance
+    ) {
+      continue;
+    }
+
+    bestPlacement = placement;
+    bestApproachDistance = approachDistance;
+  }
+
+  return bestPlacement;
 }
 
 function getTrainApproachDistance(
