@@ -99,7 +99,7 @@ const ROAD_RIBBON_STUB_SEED = registerHashLabel('stub');
 const ROAD_RIBBON_SHOULDER_SEED = registerHashLabel('shoulder');
 const ROAD_RIBBON_ROAD_SEED = registerHashLabel('road');
 const ROAD_RIBBON_BRANCH_SEED = registerHashLabel('branch');
-const ROAD_CONNECTION_DIRECTION_SEEDS: Record<string, number> = {
+const ROAD_CONNECTION_DIRECTION_SEEDS: Record<RoadConnection['id'], number> = {
   north: registerHashLabel('north'),
   east: registerHashLabel('east'),
   south: registerHashLabel('south'),
@@ -941,7 +941,7 @@ function createRoadGroup(
     const branch = createRoadBranch(three, tileX, tileY, connection, index);
     const branchSeed = appendHashSeedLabel(
       appendHashSeedLabel(tileSeed, ROAD_RIBBON_BRANCH_SEED),
-      ROAD_CONNECTION_DIRECTION_SEEDS[connection.id] ?? registerHashLabel(connection.id)
+      ROAD_CONNECTION_DIRECTION_SEEDS[connection.id]
     );
     group.add(
       createRoadRibbonMesh(

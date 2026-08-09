@@ -45,7 +45,17 @@ const RIVER_RIBBON_STUB_SEED = registerHashLabel('stub');
 const RIVER_RIBBON_HIGHLIGHT_SEED = registerHashLabel('highlight');
 const RIVER_RIBBON_BRANCH_SEED = registerHashLabel('branch');
 const RIVER_RIBBON_RIVER_SEED = registerHashLabel('river');
-const RIVER_CONNECTION_DIRECTION_SEEDS: Record<string, number> = {
+type RiverConnectionDirectionId =
+  | 'north'
+  | 'east'
+  | 'south'
+  | 'west'
+  | 'northeast'
+  | 'southeast'
+  | 'southwest'
+  | 'northwest'
+  | 'stub';
+const RIVER_CONNECTION_DIRECTION_SEEDS: Record<RiverConnectionDirectionId, number> = {
   north: registerHashLabel('north'),
   east: registerHashLabel('east'),
   south: registerHashLabel('south'),
@@ -648,7 +658,7 @@ function createRiverGroup(
     const branch = createRiverBranch(three, tileX, tileY, connection, index);
     const branchSeed = appendHashSeedLabel(
       appendHashSeedLabel(tileSeed, RIVER_RIBBON_BRANCH_SEED),
-      RIVER_CONNECTION_DIRECTION_SEEDS[connection.id] ?? registerHashLabel(connection.id)
+      RIVER_CONNECTION_DIRECTION_SEEDS[connection.id]
     );
     group.add(
       createRiverRibbonMesh(
@@ -815,7 +825,7 @@ function createRiverRibbonMesh(
 }
 
 interface RiverConnection {
-  id: string;
+  id: RiverConnectionDirectionId;
   dx: number;
   dy: number;
   edgeX: number;

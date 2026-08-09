@@ -83,6 +83,7 @@ const DOCK_WHISTLE_WINDOW = 0.08;
 const DOCK_ROUTE_CACHE_LIMIT = 256;
 const DOCK_ROUTE_PREFIX_SEED = registerHashLabel('dock-route-prefix');
 const DOCK_ROUTE_SUFFIX_SEED = registerHashLabel('dock-route-suffix');
+const dockBoatPhaseSeedCache = new Map<string, number>();
 const routeCache = new WeakMap<
   WorldStateLike,
   CacheLike<string, DockBoatRoute | null>
@@ -166,6 +167,20 @@ export function getDockBoatPlacements(
     left.x - right.x ||
     left.boatName.localeCompare(right.boatName)
   );
+}
+
+export function getDockBoatPhaseSeed(boatName: string): number {
+  const cached = dockBoatPhaseSeedCache.get(boatName);
+  if (cached !== undefined) {
+    return cached;
+  }
+
+  const seedHash = appendHashSeedLabel(
+    DOCK_BOAT_PHASE_SEED,
+    registerHashLabel(boatName)
+  );
+  dockBoatPhaseSeedCache.set(boatName, seedHash);
+  return seedHash;
 }
 
 function buildDockBoatRoute(
@@ -550,7 +565,7 @@ function resolveDockBoatPlacement(
     Math.max(12, Math.min(30, Math.round(geometry.points.length / 4))) * 60 * 1000;
   const phaseOffset =
     hash2D(
-      appendHashSeedLabel(DOCK_BOAT_PHASE_SEED, registerHashLabel(route.boatName)),
+      getDockBoatPhaseSeed(route.boatName),
       route.stops[0]?.x ?? 0,
       route.stops[0]?.y ?? 0
     ) * loopDurationMs;

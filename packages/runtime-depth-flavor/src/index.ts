@@ -16,7 +16,7 @@ export function createDepthFlavorRuntimePlugin(): RuntimePlugin {
       if (
         tile.kind === 'floor' &&
         hash2D(
-          appendHashSeedLabel(depthFlavorSeed, registerHashLabel(context.id)),
+          getDepthFlavorContextSeed(depthFlavorSeed, context.id),
           x,
           y
         ) > 0.985
@@ -25,4 +25,21 @@ export function createDepthFlavorRuntimePlugin(): RuntimePlugin {
       }
     },
   });
+}
+
+const depthFlavorContextSeedCache = new Map<string, number>();
+
+export function getDepthFlavorContextSeed(
+  depthFlavorSeed: number,
+  contextId: string
+): number {
+  const cacheKey = `${depthFlavorSeed}:${contextId}`;
+  const cached = depthFlavorContextSeedCache.get(cacheKey);
+  if (cached !== undefined) {
+    return cached;
+  }
+
+  const seedHash = appendHashSeedLabel(depthFlavorSeed, registerHashLabel(contextId));
+  depthFlavorContextSeedCache.set(cacheKey, seedHash);
+  return seedHash;
 }

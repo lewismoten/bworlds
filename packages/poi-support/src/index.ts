@@ -159,7 +159,8 @@ type PoiWindResponderOptions = {
 };
 const POI_LIGHT_EMITTER_KEY = 'poiNightLightEmitter';
 const POI_WIND_RESPONDER_KEY = 'poiWindResponder';
-const LANDMARK_FACING_DIRECTION_SEEDS: Record<string, number> = {
+type LandmarkFacingDirectionId = 'north' | 'east' | 'south' | 'west';
+const LANDMARK_FACING_DIRECTION_SEEDS: Record<LandmarkFacingDirectionId, number> = {
   north: registerHashLabel('north'),
   east: registerHashLabel('east'),
   south: registerHashLabel('south'),
@@ -684,8 +685,9 @@ export function pickPreferredLandmarkFacing({
         hash2DWithSeed(
           appendHashSeedLabel(
             seedHash,
-            LANDMARK_FACING_DIRECTION_SEEDS[direction.label] ??
-              registerHashLabel(direction.label)
+            LANDMARK_FACING_DIRECTION_SEEDS[
+              direction.label as LandmarkFacingDirectionId
+            ]
           ),
           tileX,
           tileY

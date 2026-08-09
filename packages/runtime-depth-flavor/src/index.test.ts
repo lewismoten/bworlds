@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { createDepthFlavorRuntimePlugin } from './index.ts';
+import {
+  createDepthFlavorRuntimePlugin,
+  getDepthFlavorContextSeed,
+} from './index.ts';
 
 type DepthTestTile = {
   kind: string;
@@ -26,6 +29,15 @@ function createDepthDecoratePayload(
 }
 
 describe('runtime depth flavor', () => {
+  it('reuses deterministic cached context seeds', () => {
+    expect(getDepthFlavorContextSeed(123, 'dungeon:test')).toBe(
+      getDepthFlavorContextSeed(123, 'dungeon:test')
+    );
+    expect(getDepthFlavorContextSeed(123, 'dungeon:test')).not.toBe(
+      getDepthFlavorContextSeed(123, 'depth:crypt')
+    );
+  });
+
   it('adds ancient markings to at least one deterministic floor sample', () => {
     let decorated = null as null | DepthTestTile;
 

@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { getDockBoatPlacements, resolveDockBoatRoute } from './index.ts';
+import {
+  getDockBoatPhaseSeed,
+  getDockBoatPlacements,
+  resolveDockBoatRoute,
+} from './index.ts';
 
 function createCircularDockRouteState() {
   const dockTiles = new Set([
@@ -63,6 +67,15 @@ function createCircularDockRouteState() {
 }
 
 describe('dock route support', () => {
+  it('reuses deterministic boat phase seeds for repeated boat names', () => {
+    expect(getDockBoatPhaseSeed('Harbor Runner')).toBe(
+      getDockBoatPhaseSeed('Harbor Runner')
+    );
+    expect(getDockBoatPhaseSeed('Harbor Runner')).not.toBe(
+      getDockBoatPhaseSeed('Crescent Ferry')
+    );
+  });
+
   it('resolves a deterministic circular dock route with named stops', () => {
     const state = createCircularDockRouteState();
 
