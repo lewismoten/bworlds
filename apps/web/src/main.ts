@@ -114,6 +114,7 @@ import {
   getIdleAllocationWarning,
   getMaterialGrowthWarning,
   getPerformanceWarnings,
+  getRenderBudgetViolationWarnings,
   getSceneBudgetWarnings,
   getSynchronousTileBuildWarnings,
   getStationaryTileBuildWarning,
@@ -1799,6 +1800,12 @@ function collectCurrentDebugSnapshot(
     averageTilePluginBuildMs: rendererStats.averageTilePluginBuildMs,
     maxTilePluginBuildMs: rendererStats.maxTilePluginBuildMs,
     slowestTilePluginLabel: rendererStats.slowestTilePluginLabel,
+    tileModelBudgetViolationsPerSecond:
+      rendererStats.tileModelBudgetViolationsPerSecond,
+    tileModelBudgetViolationTopPluginLabel:
+      rendererStats.tileModelBudgetViolationTopPluginLabel,
+    tileModelBudgetViolationSummary:
+      rendererStats.tileModelBudgetViolationSummary,
     tileNodeBuildsPerSecond: rendererStats.tileNodeBuildsPerSecond,
     tileBuildsPerSecond: rendererStats.tileBuildsPerSecond,
     lodChecksPerSecond: rendererStats.lodChecksPerSecond,
@@ -1897,6 +1904,7 @@ function collectCurrentDebugSnapshot(
     ...getPerformanceWarnings(debugSnapshot),
     ...getWorkQueueWarnings(debugSnapshot),
     ...getSynchronousTileBuildWarnings(debugSnapshot),
+    ...getRenderBudgetViolationWarnings(debugSnapshot),
     ...getUnloadedRegionWarnings(debugSnapshot),
     ...getSceneBudgetWarnings(debugSnapshot),
     ...(materialGrowthWarning ? [materialGrowthWarning] : []),

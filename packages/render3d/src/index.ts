@@ -111,6 +111,9 @@ type Render3DController = {
     averageTilePluginBuildMs: number;
     maxTilePluginBuildMs: number;
     slowestTilePluginLabel: string;
+    tileModelBudgetViolationsPerSecond: number;
+    tileModelBudgetViolationTopPluginLabel: string;
+    tileModelBudgetViolationSummary: string;
     tileNodeBuildsPerSecond: number;
     tileBuildsPerSecond: number;
     pendingCancelledEntriesPerSecond: number;
@@ -425,6 +428,10 @@ type RecentCountSample = {
   count: number;
 };
 
+type RecentLabeledCountSample = RecentCountSample & {
+  label: string;
+};
+
 type FrameTimeBudget = {
   budgetMs: number;
   startMs: number;
@@ -448,6 +455,7 @@ type RenderChurnMetrics = {
   pendingFlushCounts: RecentCountSample[];
   tileBuildDurations: RecentDurationSample[];
   tilePluginBuildDurations: RecentLabeledDurationSample[];
+  tileModelBudgetViolations: RecentLabeledCountSample[];
 };
 
 const TILE_SIZE = 1;
@@ -646,6 +654,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     pendingFlushCounts: [] as RecentCountSample[],
     tileBuildDurations: [] as RecentDurationSample[],
     tilePluginBuildDurations: [] as RecentLabeledDurationSample[],
+    tileModelBudgetViolations: [] as RecentLabeledCountSample[],
   } satisfies RenderChurnMetrics;
 
   function resize(width, height, pixelRatio = window.devicePixelRatio || 1) {
@@ -697,6 +706,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     tileNode.add(floorMesh);
 
     const tilePlugin = registry.getTilePlugin(tile.kind);
+    const tilePluginOwnerLabel = getTilePluginOwnerLabel(registry, tile.kind);
     const pluginBuildStartMs = performance.now();
     let pluginModel = tilePlugin?.create3DModel?.({
       three: THREE,
@@ -712,12 +722,23 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       recordRecentLabeledDurationMetric(renderChurnMetrics.tilePluginBuildDurations, {
         nowMs: pluginBuildStartMs,
         durationMs: pluginBuildDurationMs,
-        label: getTilePluginOwnerLabel(registry, tile.kind),
+        label: tilePluginOwnerLabel,
       });
     }
 
     if (pluginModel) {
-      pluginModel = acceptTilePluginModelForRenderBudget(pluginModel, detailLevel);
+      const modelBudgetValidation = validateTileModelAgainstRenderBudget(
+        pluginModel,
+        detailLevel
+      );
+      if (!modelBudgetValidation.accepted) {
+        recordRecentLabeledCountMetric(renderChurnMetrics.tileModelBudgetViolations, {
+          nowMs: pluginBuildStartMs,
+          count: 1,
+          label: tilePluginOwnerLabel,
+        });
+        pluginModel = acceptTilePluginModelForRenderBudget(pluginModel, detailLevel);
+      }
     }
 
     if (pluginModel) {
@@ -1110,6 +1131,10 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       renderChurnMetrics.tilePluginBuildDurations,
       nowMs
     );
+    const recentTileModelBudgetViolationStats = getRecentLabeledCountStats(
+      renderChurnMetrics.tileModelBudgetViolations,
+      nowMs
+    );
     const renderChurnStats = getRenderChurnStats(renderChurnMetrics, nowMs);
     return {
       drawCalls: renderer.info.render.calls,
@@ -1127,6 +1152,12 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       averageTilePluginBuildMs: recentTilePluginBuildStats.averageMs,
       maxTilePluginBuildMs: recentTilePluginBuildStats.maxMs,
       slowestTilePluginLabel: recentTilePluginBuildStats.maxLabel,
+      tileModelBudgetViolationsPerSecond:
+        recentTileModelBudgetViolationStats.totalCount,
+      tileModelBudgetViolationTopPluginLabel:
+        recentTileModelBudgetViolationStats.topLabel,
+      tileModelBudgetViolationSummary:
+        recentTileModelBudgetViolationStats.summary,
       tileNodeBuildsPerSecond: renderChurnStats.tileNodeBuildsPerSecond,
       tileBuildsPerSecond: renderChurnStats.tileBuildsPerSecond,
       pendingCancelledEntriesPerSecond:
@@ -3118,6 +3149,68 @@ export function getRecentCountStats(
   return {
     averageCount: totalCount / samples.length,
     maxCount,
+  };
+}
+
+export function recordRecentLabeledCountMetric(
+  samples: RecentLabeledCountSample[],
+  sample: RecentLabeledCountSample,
+  windowMs = 1000
+): void {
+  samples.push(sample);
+  pruneRecentCountSamples(samples, sample.nowMs, windowMs);
+}
+
+export function getRecentLabeledCountStats(
+  samples: RecentLabeledCountSample[],
+  nowMs: number,
+  windowMs = 1000
+): {
+  totalCount: number;
+  topCount: number;
+  topLabel: string;
+  summary: string;
+} {
+  pruneRecentCountSamples(samples, nowMs, windowMs);
+  if (samples.length === 0) {
+    return {
+      totalCount: 0,
+      topCount: 0,
+      topLabel: '',
+      summary: '',
+    };
+  }
+
+  let totalCount = 0;
+  const counts = new Map<string, number>();
+  for (const sample of samples) {
+    totalCount += sample.count;
+    counts.set(sample.label, (counts.get(sample.label) ?? 0) + sample.count);
+  }
+
+  let topCount = 0;
+  let topLabel = '';
+  const summary = [...counts.entries()]
+    .sort((left, right) => {
+      if (right[1] !== left[1]) {
+        return right[1] - left[1];
+      }
+      return left[0].localeCompare(right[0]);
+    })
+    .map(([label, count]) => {
+      if (count > topCount) {
+        topCount = count;
+        topLabel = label;
+      }
+      return `${label}:${count}`;
+    })
+    .join(', ');
+
+  return {
+    totalCount,
+    topCount,
+    topLabel,
+    summary,
   };
 }
 

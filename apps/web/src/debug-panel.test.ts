@@ -6,6 +6,7 @@ import {
   formatPerformanceTierLabel,
   getMaterialGrowthWarning,
   getPerformanceWarnings,
+  getRenderBudgetViolationWarnings,
   getSceneBudgetWarnings,
   getSynchronousTileBuildWarnings,
   getStationaryTileBuildWarning,
@@ -58,6 +59,9 @@ describe('debug panel', () => {
       maxPendingFlushTiles: 5,
       averageTileBuildMs: 2.45,
       maxTileBuildMs: 6.75,
+      tileModelBudgetViolationsPerSecond: 2,
+      tileModelBudgetViolationTopPluginLabel: 'tile-forest',
+      tileModelBudgetViolationSummary: 'tile-forest:2, tile-town:1',
       tileNodeBuildsPerSecond: 17,
       tileBuildsPerSecond: 14,
       lodChecksPerSecond: 5,
@@ -128,6 +132,9 @@ describe('debug panel', () => {
     expect(buildDebugMarkup(snapshot)).toContain('Max Flush Tiles');
     expect(buildDebugMarkup(snapshot)).toContain('Avg Tile Build');
     expect(buildDebugMarkup(snapshot)).toContain('Max Tile Build');
+    expect(buildDebugMarkup(snapshot)).toContain('Budget Rejects/s');
+    expect(buildDebugMarkup(snapshot)).toContain('Budget Plugin');
+    expect(buildDebugMarkup(snapshot)).toContain('Budget Summary');
     expect(buildDebugMarkup(snapshot)).toContain('Tile Nodes/s');
     expect(buildDebugMarkup(snapshot)).toContain('Tile Builds/s');
     expect(buildDebugMarkup(snapshot)).toContain('LOD Checks/s');
@@ -591,6 +598,24 @@ describe('debug panel', () => {
       getSynchronousTileBuildWarnings({
         maxTilePluginBuildMs: 6.9,
         slowestTilePluginLabel: 'tile-forest',
+      })
+    ).toEqual([]);
+  });
+
+  it('warns when render-budget validation keeps rejecting plugin models', () => {
+    expect(
+      getRenderBudgetViolationWarnings({
+        tileModelBudgetViolationsPerSecond: 3,
+        tileModelBudgetViolationTopPluginLabel: 'tile-forest',
+      })
+    ).toEqual([
+      'Render budget is rejecting plugin models (3/s, top plugin tile-forest).',
+    ]);
+
+    expect(
+      getRenderBudgetViolationWarnings({
+        tileModelBudgetViolationsPerSecond: 0,
+        tileModelBudgetViolationTopPluginLabel: 'tile-forest',
       })
     ).toEqual([]);
   });

@@ -30,6 +30,9 @@ export type DebugSnapshot = {
   averageTilePluginBuildMs?: number;
   maxTilePluginBuildMs?: number;
   slowestTilePluginLabel?: string;
+  tileModelBudgetViolationsPerSecond?: number;
+  tileModelBudgetViolationTopPluginLabel?: string;
+  tileModelBudgetViolationSummary?: string;
   tileNodeBuildsPerSecond: number;
   tileBuildsPerSecond: number;
   lodChecksPerSecond: number;
@@ -188,6 +191,9 @@ export function getDebugSignature(snapshot: DebugSnapshot): string {
     (snapshot.averageTilePluginBuildMs ?? 0).toFixed(2),
     (snapshot.maxTilePluginBuildMs ?? 0).toFixed(2),
     snapshot.slowestTilePluginLabel ?? '',
+    snapshot.tileModelBudgetViolationsPerSecond ?? 0,
+    snapshot.tileModelBudgetViolationTopPluginLabel ?? '',
+    snapshot.tileModelBudgetViolationSummary ?? '',
     snapshot.tileNodeBuildsPerSecond,
     snapshot.tileBuildsPerSecond,
     snapshot.lodChecksPerSecond,
@@ -314,6 +320,9 @@ export function buildDebugMarkup(snapshot: DebugSnapshot): string {
     <div><dt>Avg Plugin Build</dt><dd>${(snapshot.averageTilePluginBuildMs ?? 0).toFixed(2)} ms</dd></div>
     <div><dt>Max Plugin Build</dt><dd>${(snapshot.maxTilePluginBuildMs ?? 0).toFixed(2)} ms</dd></div>
     <div><dt>Slowest Plugin</dt><dd>${snapshot.slowestTilePluginLabel || 'None'}</dd></div>
+    <div><dt>Budget Rejects/s</dt><dd>${snapshot.tileModelBudgetViolationsPerSecond ?? 0}</dd></div>
+    <div><dt>Budget Plugin</dt><dd>${snapshot.tileModelBudgetViolationTopPluginLabel || 'None'}</dd></div>
+    <div><dt>Budget Summary</dt><dd>${snapshot.tileModelBudgetViolationSummary || 'None'}</dd></div>
     <div><dt>Tile Nodes/s</dt><dd>${snapshot.tileNodeBuildsPerSecond}</dd></div>
     <div><dt>Tile Builds/s</dt><dd>${snapshot.tileBuildsPerSecond}</dd></div>
     <div><dt>LOD Checks/s</dt><dd>${snapshot.lodChecksPerSecond}</dd></div>
@@ -645,6 +654,28 @@ export function getSynchronousTileBuildWarnings(
   const label = snapshot.slowestTilePluginLabel?.trim() || 'unknown tile plugin';
   return [
     `Synchronous tile build is too slow (${label} took ${maxBuildMs.toFixed(1)} ms > ${maxSynchronousTilePluginBuildMs.toFixed(1)} ms).`,
+  ];
+}
+
+export function getRenderBudgetViolationWarnings(
+  snapshot: Pick<
+    DebugSnapshot,
+    'tileModelBudgetViolationsPerSecond' | 'tileModelBudgetViolationTopPluginLabel'
+  >,
+  {
+    maxViolationsPerSecond = 0,
+  }: {
+    maxViolationsPerSecond?: number;
+  } = {}
+): string[] {
+  const violationsPerSecond = snapshot.tileModelBudgetViolationsPerSecond ?? 0;
+  if (violationsPerSecond <= maxViolationsPerSecond) {
+    return [];
+  }
+
+  const label = snapshot.tileModelBudgetViolationTopPluginLabel?.trim() || 'unknown tile plugin';
+  return [
+    `Render budget is rejecting plugin models (${violationsPerSecond}/s, top plugin ${label}).`,
   ];
 }
 
