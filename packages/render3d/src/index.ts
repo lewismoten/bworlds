@@ -202,6 +202,84 @@ export function createTilePluginRenderBudget(
   };
 }
 
+const FULL_DETAIL_TILE_MODEL_HARD_LIMITS: TileModelHardLimits = {
+  object3dCount: 64,
+  groupCount: 32,
+  meshCount: 32,
+  materialCount: 6,
+  textureCount: 8,
+  lightCount: 2,
+  shadowLightCount: 1,
+  vertexCount: 25_000,
+};
+
+const LOW_DETAIL_TILE_MODEL_HARD_LIMITS: TileModelHardLimits = {
+  object3dCount: 32,
+  groupCount: 16,
+  meshCount: 16,
+  materialCount: 3,
+  textureCount: 4,
+  lightCount: 1,
+  shadowLightCount: 0,
+  vertexCount: 8_000,
+};
+
+export function getTileModelHardLimits(
+  detailLevel: RenderBudgetDetailLevel = 'full'
+): TileModelHardLimits {
+  return detailLevel === 'low'
+    ? LOW_DETAIL_TILE_MODEL_HARD_LIMITS
+    : FULL_DETAIL_TILE_MODEL_HARD_LIMITS;
+}
+
+export function validateTileModelAgainstRenderBudget(
+  root: Pick<THREE.Object3D, 'traverse' | 'children' | 'type'>,
+  detailLevel: RenderBudgetDetailLevel = 'full'
+): TileModelBudgetValidation {
+  const stats = collectSceneResourceStats(root);
+  const limits = getTileModelHardLimits(detailLevel);
+  const violations: TileModelBudgetViolation[] = [];
+  const metrics: Array<keyof TileModelHardLimits> = [
+    'object3dCount',
+    'groupCount',
+    'meshCount',
+    'materialCount',
+    'textureCount',
+    'lightCount',
+    'shadowLightCount',
+    'vertexCount',
+  ];
+
+  for (const metric of metrics) {
+    const actual = stats[metric];
+    const limit = limits[metric];
+    if (actual > limit) {
+      violations.push({ metric, actual, limit });
+    }
+  }
+
+  return {
+    accepted: violations.length === 0,
+    stats,
+    limits,
+    violations,
+  };
+}
+
+export function acceptTilePluginModelForRenderBudget<
+  TObject extends Pick<THREE.Object3D, 'traverse' | 'children' | 'type'>
+>(
+  model: TObject,
+  detailLevel: RenderBudgetDetailLevel = 'full'
+): TObject | null {
+  const validation = validateTileModelAgainstRenderBudget(model, detailLevel);
+  if (validation.accepted) {
+    return model;
+  }
+  disposeObject3DResources(model);
+  return null;
+}
+
 type DynamicTileNode = {
   key: string;
   tile: TileLike;
@@ -301,11 +379,36 @@ type SceneResourceStats = {
   averageVerticesPerGeometry: number;
   largestGeometryVertexCount: number;
   largestGeometryBytes: number;
+  textureCount: number;
   textureMemoryEstimateBytes: number;
   treeCount: number;
   treeObjectCount: number;
   treeMeshCount: number;
   treeMaterialRefCount: number;
+};
+
+type TileModelHardLimits = {
+  object3dCount: number;
+  groupCount: number;
+  meshCount: number;
+  materialCount: number;
+  textureCount: number;
+  lightCount: number;
+  shadowLightCount: number;
+  vertexCount: number;
+};
+
+type TileModelBudgetViolation = {
+  metric: keyof TileModelHardLimits;
+  actual: number;
+  limit: number;
+};
+
+type TileModelBudgetValidation = {
+  accepted: boolean;
+  stats: SceneResourceStats;
+  limits: TileModelHardLimits;
+  violations: TileModelBudgetViolation[];
 };
 
 type RecentDurationSample = {
@@ -595,7 +698,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
 
     const tilePlugin = registry.getTilePlugin(tile.kind);
     const pluginBuildStartMs = performance.now();
-    const pluginModel = tilePlugin?.create3DModel?.({
+    let pluginModel = tilePlugin?.create3DModel?.({
       three: THREE,
       state,
       tile,
@@ -611,6 +714,10 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
         durationMs: pluginBuildDurationMs,
         label: getTilePluginOwnerLabel(registry, tile.kind),
       });
+    }
+
+    if (pluginModel) {
+      pluginModel = acceptTilePluginModelForRenderBudget(pluginModel, detailLevel);
     }
 
     if (pluginModel) {
@@ -2537,6 +2644,7 @@ export function collectSceneResourceStats(
       geometries.size > 0 ? vertexCount / geometries.size : 0,
     largestGeometryVertexCount,
     largestGeometryBytes,
+    textureCount: textures.size,
     textureMemoryEstimateBytes,
     treeCount,
     treeObjectCount,

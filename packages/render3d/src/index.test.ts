@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
+  acceptTilePluginModelForRenderBudget,
   collectSceneResourceStats,
   countRecentMetricEvents,
   disposeObject3DResources,
@@ -7,6 +8,7 @@ import {
   clampCameraPitch,
   createTilePluginRenderBudget,
   DEFAULT_CAMERA_PITCH,
+  getTileModelHardLimits,
   getRecentCountStats,
   getRecentDurationStats,
   getRecentLabeledDurationStats,
@@ -55,6 +57,7 @@ import {
   summarizeVisibleTileKinds,
   syncDynamicTileNodes,
   updateFarLandModelVisibility,
+  validateTileModelAgainstRenderBudget,
   shouldRenderWorldTile,
 } from './index.ts';
 
@@ -141,6 +144,7 @@ describe('render3d visibility helpers', () => {
       averageVerticesPerGeometry: 18,
       largestGeometryVertexCount: 24,
       largestGeometryBytes: 288,
+      textureCount: 2,
       textureMemoryEstimateBytes: 2987,
       treeCount: 1,
       treeObjectCount: 1,
@@ -294,6 +298,7 @@ describe('render3d visibility helpers', () => {
       averageVerticesPerGeometry: 6,
       largestGeometryVertexCount: 8,
       largestGeometryBytes: 96,
+      textureCount: 0,
       textureMemoryEstimateBytes: 0,
       treeCount: 0,
       treeObjectCount: 0,
@@ -378,6 +383,7 @@ describe('render3d visibility helpers', () => {
       averageVerticesPerGeometry: 12.5,
       largestGeometryVertexCount: 18,
       largestGeometryBytes: 216,
+      textureCount: 0,
       textureMemoryEstimateBytes: 0,
       treeCount: 0,
       treeObjectCount: 0,
@@ -486,6 +492,7 @@ describe('render3d visibility helpers', () => {
       averageVerticesPerGeometry: 13,
       largestGeometryVertexCount: 16,
       largestGeometryBytes: 192,
+      textureCount: 0,
       textureMemoryEstimateBytes: 0,
       treeCount: 1,
       treeObjectCount: 3,
@@ -564,6 +571,7 @@ describe('render3d visibility helpers', () => {
       averageVerticesPerGeometry: 4,
       largestGeometryVertexCount: 5,
       largestGeometryBytes: 60,
+      textureCount: 0,
       textureMemoryEstimateBytes: 0,
       treeCount: 0,
       treeObjectCount: 0,
@@ -674,6 +682,7 @@ describe('render3d visibility helpers', () => {
       averageVerticesPerGeometry: 5,
       largestGeometryVertexCount: 6,
       largestGeometryBytes: 72,
+      textureCount: 0,
       textureMemoryEstimateBytes: 0,
       treeCount: 0,
       treeObjectCount: 0,
@@ -886,6 +895,116 @@ describe('render3d visibility helpers', () => {
       },
     });
     expect(createTilePluginRenderBudget(undefined, 'full')).toBeUndefined();
+  });
+
+  it('defines stricter hard caps for low-detail tile models than full-detail ones', () => {
+    expect(getTileModelHardLimits('full')).toEqual({
+      object3dCount: 64,
+      groupCount: 32,
+      meshCount: 32,
+      materialCount: 6,
+      textureCount: 8,
+      lightCount: 2,
+      shadowLightCount: 1,
+      vertexCount: 25_000,
+    });
+    expect(getTileModelHardLimits('low')).toEqual({
+      object3dCount: 32,
+      groupCount: 16,
+      meshCount: 16,
+      materialCount: 3,
+      textureCount: 4,
+      lightCount: 1,
+      shadowLightCount: 0,
+      vertexCount: 8_000,
+    });
+  });
+
+  it('accepts models that stay within the requested lod hard limits', () => {
+    const texture = createMockTexture(16, 16);
+    const material = createMockMaterial({ map: texture });
+    const root = createMockObject3D(undefined, [
+      createMockObject3D(material, [], createMockStatGeometry('mesh-a', 48)),
+      createMockObject3D(material, [], createMockStatGeometry('mesh-b', 24)),
+    ]);
+
+    expect(validateTileModelAgainstRenderBudget(root as never, 'low')).toEqual({
+      accepted: true,
+      limits: getTileModelHardLimits('low'),
+      stats: expect.objectContaining({
+        object3dCount: 3,
+        meshCount: 2,
+        materialCount: 1,
+        textureCount: 1,
+        lightCount: 0,
+        shadowLightCount: 0,
+        vertexCount: 72,
+      }),
+      violations: [],
+    });
+  });
+
+  it('rejects models that exceed the requested lod hard limits', () => {
+    const materialA = createMockMaterial({ map: createMockTexture(16, 16) });
+    const materialB = createMockMaterial({ map: createMockTexture(16, 16) });
+    const materialC = createMockMaterial({ map: createMockTexture(16, 16) });
+    const materialD = createMockMaterial({ map: createMockTexture(16, 16) });
+    const shadowLight = createMockObject3D(
+      undefined,
+      [],
+      undefined,
+      {},
+      'SpotLight',
+      true,
+      true
+    );
+    const root = createMockObject3D(undefined, [
+      createMockObject3D(materialA, [], createMockStatGeometry('mesh-a', 2500)),
+      createMockObject3D(materialB, [], createMockStatGeometry('mesh-b', 2500)),
+      createMockObject3D(materialC, [], createMockStatGeometry('mesh-c', 2500)),
+      createMockObject3D(materialD, [], createMockStatGeometry('mesh-d', 2500)),
+      shadowLight,
+    ]);
+
+    expect(validateTileModelAgainstRenderBudget(root as never, 'low')).toEqual({
+      accepted: false,
+      limits: getTileModelHardLimits('low'),
+      stats: expect.objectContaining({
+        materialCount: 4,
+        textureCount: 4,
+        shadowLightCount: 1,
+        vertexCount: 10_000,
+      }),
+      violations: [
+        {
+          metric: 'materialCount',
+          actual: 4,
+          limit: 3,
+        },
+        {
+          metric: 'shadowLightCount',
+          actual: 1,
+          limit: 0,
+        },
+        {
+          metric: 'vertexCount',
+          actual: 10_000,
+          limit: 8_000,
+        },
+      ],
+    });
+  });
+
+  it('disposes and rejects over-budget plugin models before they reach the scene', () => {
+    const rootMaterial = createMockMaterial();
+    const child = createMockObject3D(
+      createMockMaterial(),
+      [],
+      createMockGeometry(9000)
+    );
+    const root = createMockObject3D(rootMaterial, [child], createMockGeometry(0));
+
+    expect(acceptTilePluginModelForRenderBudget(root as never, 'low')).toBeNull();
   });
 
   it('rebuilds the pending world-build queue without visible or duplicate tile requests', () => {

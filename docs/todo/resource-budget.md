@@ -7,8 +7,8 @@ Operates at several levels: per model, per LOD, per plugin, per chunk, and per e
 * [X] Create a common `RenderBudget` interface.
 * [X] Define separate **soft limits** and **hard limits**.
 * [X] Let plugins receive the current budget before generating a model.
-* [ ] Validate every generated model against hard limits before accepting it.
-* [ ] Allow the renderer to reject an entire model when required limits are exceeded.
+* [X] Validate every generated model against hard limits before accepting it.
+* [X] Allow the renderer to reject an entire model when required limits are exceeded.
 * [ ] Allow the renderer to discard optional model parts when budgets are exceeded.
 * [ ] Require generated model parts to have explicit priorities.
 * [ ] Treat higher-priority parts as more important to preserve.
@@ -22,19 +22,19 @@ Operates at several levels: per model, per LOD, per plugin, per chunk, and per e
 
 # Per-Model Caps
 
-* [ ] Cap total `Object3D` count per generated model.
-* [ ] Cap total `Group` count.
-* [ ] Cap total mesh count.
+* [X] Cap total `Object3D` count per generated model.
+* [X] Cap total `Group` count.
+* [X] Cap total mesh count.
 * [ ] Cap total instanced-mesh count.
 * [ ] Cap total sprite count.
 * [ ] Cap total `Points` objects.
 * [ ] Cap total line objects.
 * [ ] Cap total particle emitters.
 * [ ] Cap total geometry objects.
-* [ ] Cap total materials.
-* [ ] Cap total textures.
-* [ ] Cap total lights.
-* [ ] Cap total shadow-casting lights.
+* [X] Cap total materials.
+* [X] Cap total textures.
+* [X] Cap total lights.
+* [X] Cap total shadow-casting lights.
 * [ ] Cap total animation mixers.
 * [ ] Cap total skeletons.
 * [ ] Cap total bones.
@@ -46,7 +46,7 @@ Operates at several levels: per model, per LOD, per plugin, per chunk, and per e
 # Geometry Caps
 
 * [ ] Cap vertices per mesh.
-* [ ] Cap vertices per complete generated model.
+* [X] Cap vertices per complete generated model.
 * [ ] Cap indexed vertices.
 * [ ] Cap triangle count per mesh.
 * [ ] Cap triangle count per model.
@@ -178,7 +178,7 @@ These can quietly consume huge amounts of GPU memory.
 * [ ] Support billboard/impostor LOD where appropriate.
 * [ ] Avoid generating high-detail models before determining requested LOD.
 * [X] Pass LOD budget to plugins before generation.
-* [ ] Validate plugin-generated LOD against the requested LOD budget.
+* [X] Validate plugin-generated LOD against the requested LOD budget.
 * [ ] Allow the renderer to substitute a lower LOD if the requested one exceeds available scene resources.
 
 # Example LOD Caps to Start Testing
