@@ -1132,6 +1132,7 @@ type ActiveSoundVoice = {
   loudness: number;
   oscillator: OscillatorNode;
   gain: GainNode;
+  mixGain: GainNode;
   panner: StereoPannerNode | null;
 };
 
@@ -1194,8 +1195,15 @@ export function createWebAudioSoundEffectSink(): SoundEffectSink {
   }
 
   function updateOutputGain(context: AudioContext): void {
+    const highestPriority = [...activeVoices].reduce(
+      (highest, voice) => Math.max(highest, voice.priority),
+      0
+    );
     const totalLoudness = [...activeVoices].reduce(
-      (sum, voice) => sum + voice.loudness,
+      (sum, voice) =>
+        sum +
+        voice.loudness *
+          resolvePriorityDynamicRangeGain(voice.priority, highestPriority),
       0
     );
     const mixGain = resolveSoundMixSafetyGain(totalLoudness);
@@ -1203,6 +1211,12 @@ export function createWebAudioSoundEffectSink(): SoundEffectSink {
       mixGain,
       context.currentTime
     );
+    activeVoices.forEach((voice) => {
+      voice.mixGain.gain.setValueAtTime(
+        resolvePriorityDynamicRangeGain(voice.priority, highestPriority),
+        context.currentTime
+      );
+    });
   }
 
   function removeVoice(voice: ActiveSoundVoice): void {
@@ -1213,6 +1227,7 @@ export function createWebAudioSoundEffectSink(): SoundEffectSink {
     voice.oscillator.onended = null;
     voice.oscillator.disconnect?.();
     voice.gain.disconnect?.();
+    voice.mixGain.disconnect?.();
     voice.panner?.disconnect?.();
     if (audioContext) {
       updateOutputGain(audioContext);
@@ -1251,6 +1266,7 @@ export function createWebAudioSoundEffectSink(): SoundEffectSink {
       const durationSeconds = effect.durationMs / 1000;
       const oscillator = context.createOscillator();
       const gain = context.createGain();
+      const mixGain = context.createGain();
       const panner =
         typeof context.createStereoPanner === 'function'
           ? context.createStereoPanner()
@@ -1263,6 +1279,7 @@ export function createWebAudioSoundEffectSink(): SoundEffectSink {
         loudness,
         oscillator,
         gain,
+        mixGain,
         panner,
       };
       const sameKindVoices = [...activeVoices].filter(
@@ -1368,10 +1385,12 @@ export function createWebAudioSoundEffectSink(): SoundEffectSink {
       oscillator.connect(gain);
       if (panner) {
         panner.pan.setValueAtTime(spatialMix.pan, startAt);
-        gain.connect(panner);
+        gain.connect(mixGain);
+        mixGain.connect(panner);
         panner.connect(outputGain);
       } else {
-        gain.connect(outputGain);
+        gain.connect(mixGain);
+        mixGain.connect(outputGain);
       }
       activeVoices.add(voice);
       activeSourceCount += 1;
@@ -1451,6 +1470,19 @@ function resolveSoundMixSafetyGain(totalLoudness: number): number {
     return 1;
   }
   return clampValue(SOUND_MIX_HEADROOM_LOUDNESS / totalLoudness, 0.38, 1);
+}
+
+export function resolvePriorityDynamicRangeGain(
+  voicePriority: number,
+  highestPriority: number
+): number {
+  if (highestPriority < 5 || voicePriority >= highestPriority) {
+    return 1;
+  }
+  const priorityGap = highestPriority - voicePriority;
+  const reductionPerStep = highestPriority >= 6 ? 0.12 : 0.08;
+  const floor = highestPriority >= 6 ? 0.52 : 0.64;
+  return clampValue(1 - priorityGap * reductionPerStep, floor, 1);
 }
 
 export function resolveSoundEffectVolumeBounds(

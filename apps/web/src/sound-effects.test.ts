@@ -9,6 +9,7 @@ import {
   getPaddleBoatCalliopeCadenceMs,
   normalizeSoundEffectVolume,
   resolveAmbienceDuckingGain,
+  resolvePriorityDynamicRangeGain,
   resolveSoundEffectVolumeBounds,
   getSurfaceAudioFamily,
   getSurfaceAudioProfile,
@@ -801,6 +802,14 @@ describe('sound effects', () => {
       max: 0.058,
     });
     expect(normalizeSoundEffectVolume('combat-weapon', 0.08)).toBe(0.058);
+  });
+
+  it('reserves more dynamic range for major events than for ordinary overlapping sounds', () => {
+    expect(resolvePriorityDynamicRangeGain(6, 6)).toBe(1);
+    expect(resolvePriorityDynamicRangeGain(5, 6)).toBeCloseTo(0.88, 6);
+    expect(resolvePriorityDynamicRangeGain(1, 6)).toBeCloseTo(0.52, 6);
+    expect(resolvePriorityDynamicRangeGain(3, 4)).toBe(1);
+    expect(resolvePriorityDynamicRangeGain(2, 5)).toBeCloseTo(0.76, 6);
   });
 
   it('reduces low-priority ambience while recent important sounds are active', () => {
