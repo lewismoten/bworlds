@@ -13,7 +13,10 @@ import {
   renderProceduralSoundToBufferData,
   resolveRenderedSoundFrameCount,
 } from './procedural-sound-render.ts';
-import { buildProceduralSoundRecipe } from './sound-effects/recipe-library.ts';
+import {
+  buildProceduralSoundRecipe,
+  buildProceduralSoundRecipeId,
+} from './sound-effects/recipe-library.ts';
 import {
   type ProceduralAmplitudeEnvelope,
   type ProceduralSoundDelay,
@@ -321,11 +324,13 @@ function resolveProceduralSoundRecipe(
   tileKind: SurfaceKind | undefined,
   profile: SurfaceAudioProfile,
   variantOffset: number,
-  durationMsOverride?: number
+  durationMsOverride?: number,
+  identityVariant?: string
 ) {
   return buildProceduralSoundRecipe({
     kind,
     tileKind,
+    identityVariant,
     profile,
     variantOffset,
     durationMsOverride,
@@ -383,7 +388,8 @@ export function createSoundEffectController(
     tileKind?: SurfaceKind,
     emitter?: SoundPosition,
     listener?: SoundPosition,
-    durationMsOverride?: number
+    durationMsOverride?: number,
+    identityVariant?: string
   ): ProceduralSoundEffect {
     const profile = getSurfaceAudioProfile(tileKind);
     const variationIndex = footstepVariant;
@@ -398,7 +404,8 @@ export function createSoundEffectController(
         tileKind,
         profile,
         variantOffset,
-        durationMsOverride
+        durationMsOverride,
+        identityVariant
       ),
       emitter,
       listener,
@@ -412,7 +419,8 @@ export function createSoundEffectController(
     emitter?: SoundPosition,
     listener?: SoundPosition,
     volumeMultiplier = 1,
-    durationMsOverride?: number
+    durationMsOverride?: number,
+    identityVariant?: string
   ) {
     const effect = createProceduralEffect(
       kind,
@@ -420,7 +428,8 @@ export function createSoundEffectController(
       tileKind,
       emitter,
       listener,
-      durationMsOverride
+      durationMsOverride,
+      identityVariant
     );
     sink.play({
       ...effect,
@@ -544,6 +553,7 @@ export function createSoundEffectController(
         waveform: resolveCombatSoundWaveform(style),
         emitter,
         listener,
+        recipeId: buildProceduralSoundRecipeId(kind, undefined, style),
       });
     },
     update({
@@ -623,6 +633,10 @@ export function createSoundEffectController(
             waveform: 'triangle',
             emitter: nearbyPaddleBoat.emitter,
             listener: nearbyPaddleBoat.listener ?? listener,
+            recipeId: buildProceduralSoundRecipeId(
+              'paddle-calliope',
+              'paddle-boat'
+            ),
           });
         }
         if (
@@ -649,6 +663,11 @@ export function createSoundEffectController(
               waveform: 'square',
               emitter: nearbyPaddleBoat.emitter,
               listener: nearbyPaddleBoat.listener ?? listener,
+              recipeId: buildProceduralSoundRecipeId(
+                'steam-whistle',
+                'paddle-boat',
+                nearbyPaddleBoat.whistlePhase
+              ),
             });
           }
         } else {
@@ -693,6 +712,10 @@ export function createSoundEffectController(
             waveform: resolveAmbientSoundWaveform(nearbyAmbient.kind),
             emitter: nearbyAmbient.emitter,
             listener: nearbyAmbient.listener ?? listener,
+            recipeId: buildProceduralSoundRecipeId(
+              resolveAmbientEffectKind(nearbyAmbient.kind),
+              nearbyAmbient.kind
+            ),
           });
         } else if (!nearbyAmbient?.emitter) {
           lastAmbientSignature = '';
@@ -711,7 +734,8 @@ export function createSoundEffectController(
             emitter,
             listener,
             ambienceDuckingGain,
-            getWindSoundDurationMs(windStrength ?? weatherIntensity ?? 0)
+            getWindSoundDurationMs(windStrength ?? weatherIntensity ?? 0),
+            weatherKind === 'wind' ? 'stormfront' : 'canopy'
           );
         }
       } else {

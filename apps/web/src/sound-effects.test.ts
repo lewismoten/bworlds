@@ -2971,6 +2971,7 @@ describe('sound effects', () => {
 
     expect(played.map((effect) => effect.kind)).toEqual(['wind', 'wind']);
     expect(played[0]?.waveform).toBe('triangle');
+    expect(played[0]?.recipeId).toBe('wind:forest:stormfront');
   });
 
   it('plays a debounced blocked-movement cue when walking into forest trees', () => {
@@ -3016,12 +3017,14 @@ describe('sound effects', () => {
         frequency: 210,
         waveform: 'sawtooth',
         emitter: { x: 1, y: 0 },
+        recipeId: 'combat-weapon:slash',
       }),
       expect.objectContaining({
         kind: 'combat-magic',
         frequency: 322,
         waveform: 'sawtooth',
         emitter: { x: 2, y: 0 },
+        recipeId: 'combat-magic:fire',
       }),
     ]);
   });
@@ -3232,6 +3235,8 @@ describe('sound effects', () => {
 
     expect(played.map((effect) => effect.kind)).toEqual(['open', 'close']);
     expect(played[0]?.waveform).toBe('square');
+    expect(played[0]?.recipeId).toBe('open:door');
+    expect(played[1]?.recipeId).toBe('close:stairsup');
     expect((played[0]?.frequency ?? 0) > (played[1]?.frequency ?? 0)).toBe(
       true
     );
@@ -3401,6 +3406,7 @@ describe('sound effects', () => {
 
     expect(played.map((effect) => effect.kind)).toEqual(['ocean', 'ocean']);
     expect(played[0]?.waveform).toBe('sine');
+    expect(played[0]?.recipeId).toBe('ocean:ocean');
   });
 
   it('plays train engine pulses and whistles for nearby active rail traffic', () => {
@@ -3459,6 +3465,43 @@ describe('sound effects', () => {
     );
     expect(played[1]?.durationMs).toBeLessThanOrEqual(
       getTrainWhistleDurationMs(0.04) * 1.05
+    );
+  });
+
+  it('keeps recurring contextual recipe ids stable across nearby vehicle and ambient signatures', () => {
+    const played: ProceduralSoundEffect[] = [];
+    const controller = createSoundEffectController({
+      play(effect) {
+        played.push(effect);
+      },
+    });
+
+    controller.update({
+      nowMs: 0,
+      walking: false,
+      isJumping: false,
+      viewMode: '3d',
+      tileKind: 'shore',
+      nearbyAmbient: {
+        kind: 'river',
+        intensity: 0.6,
+        emitter: { x: 2, y: 0 },
+      },
+      nearbyPaddleBoat: {
+        progress: 0.18,
+        whistlePhase: 'departure',
+        emitter: { x: 1, y: 0 },
+      },
+    });
+
+    expect(played.map((effect) => effect.recipeId)).toContain(
+      'paddle-calliope:paddle-boat'
+    );
+    expect(played.map((effect) => effect.recipeId)).toContain(
+      'steam-whistle:paddle-boat:departure'
+    );
+    expect(played.map((effect) => effect.recipeId)).toContain(
+      'river-ambience:river'
     );
   });
 

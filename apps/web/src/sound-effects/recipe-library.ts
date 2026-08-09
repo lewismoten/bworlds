@@ -46,6 +46,7 @@ type SoundVariationProfile = {
 type ResolveSoundRecipeOptions = {
   kind: SoundEffectKind;
   tileKind?: string;
+  identityVariant?: string;
   profile: SoundRecipeSurfaceProfile;
   variantOffset: number;
   durationMsOverride?: number;
@@ -307,7 +308,11 @@ export function buildProceduralSoundRecipe(
 
   return applyFamilyVariationProfile(
     {
-      id: options.kind,
+      id: buildProceduralSoundRecipeId(
+        options.kind,
+        options.tileKind,
+        options.identityVariant
+      ),
       baseFrequency,
       baseDurationMs,
       baseVolume,
@@ -335,6 +340,22 @@ export function buildProceduralSoundRecipe(
     },
     identity.family
   );
+}
+
+export function buildProceduralSoundRecipeId(
+  kind: SoundEffectKind,
+  tileKind?: string,
+  identityVariant?: string
+): string {
+  const signatureParts: string[] = [kind];
+  const tileIdentity = normalizeTileIdentity(tileKind);
+  if (tileIdentity) {
+    signatureParts.push(tileIdentity);
+  }
+  if (identityVariant) {
+    signatureParts.push(identityVariant);
+  }
+  return signatureParts.join(':');
 }
 
 function applyFamilyVariationProfile(
@@ -365,6 +386,17 @@ function applyFamilyVariationProfile(
 
 function clampMinimum(baseValue: number, rangeRatio: number): number {
   return Math.max(0.0001, baseValue * (1 - rangeRatio));
+}
+
+function normalizeTileIdentity(tileKind: string | undefined): string | null {
+  if (!tileKind) {
+    return null;
+  }
+  return tileKind
+    .trim()
+    .replace(/[^a-z0-9]+/gi, '-')
+    .replace(/^-+|-+$/g, '')
+    .toLowerCase();
 }
 
 function resolveProceduralSoundEnvelope(kind: SoundEffectKind) {

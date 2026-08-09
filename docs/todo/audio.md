@@ -42,6 +42,7 @@
 - [x] Seasons may influence music - ie winter: same motif, bells, sparser arrangement, higher register
 - [x] Compat may influence music - ie same motif, faster rhythm, lower bass, strong percussion, changed harmony
 - [x] Music should support different instrument types for the tracks rather than just sine, square, sawtooth
+- [ ] Besides melody, atmosphere, percussion and bass, another option is Atmosphere
 
 # Debug
 
@@ -57,7 +58,7 @@
 - [ ] Clicking anywhere on the graphical track should move the play-head to that location
 - [ ] All instrument sounds used to play the music should be listed along with their track, name, graphical wave form, and ability to play on their own.
 - [ ] MIDI download should let each instrument (ie melody, harmony, bass, drums) be represented as individual tracks and labeled as such.
-- [ ] MIDI download should have meta markers to indicate which section is being played
+- [ ] MIDI download should have meta markers to indicate which section is being played (Meta/Controle Lane Guide)
 - [ ] MIDI duration should match the generated song duration
 - [ ] MIDI should include tempo event(s)
 - [ ] MIDI should include time signature(s)
@@ -66,6 +67,7 @@
 - [ ] MIDI should include pans(s)
 - [ ] MIDI should include bank select MSB(s)
 - [ ] MIDI should include bank select LSB(s)
+- [ ] MIDI Drum channel should include any use of sample sounds such as Closed HH, Cabasa, Open HH, Tambourine, Ride, Crash
 
 # Sound Effects
 
@@ -120,7 +122,7 @@
 - [ ] Allow variation in individual layers without changing every layer simultaneously.
 - [ ] Define acceptable parameter ranges separately for every sound family.
 - [ ] Prevent randomization from producing sounds outside the intended character of the source.
-- [ ] Allow important objects, creatures, spells, and locations to have their own recurring sound signatures.
+- [x] Allow important objects, creatures, spells, and locations to have their own recurring sound signatures.
 - [ ] Allow related objects to inherit characteristics from a common sound family.
 
 ### Repetition Prevention

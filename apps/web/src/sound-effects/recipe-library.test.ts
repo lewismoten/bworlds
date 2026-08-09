@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createProceduralSoundEffectGenerator } from '../procedural-sound-effect-generator.ts';
 import {
+  buildProceduralSoundRecipeId,
   buildProceduralSoundRecipe,
   getSoundIdentityDescriptor,
   SOUND_IDENTITY_DESCRIPTORS,
@@ -126,5 +127,20 @@ describe('sound recipe library', () => {
     expect(getSoundIdentityDescriptor('footstep').signature).not.toBe(
       getSoundIdentityDescriptor('landing').signature
     );
+  });
+
+  it('builds stable contextual recipe ids for recurring sound signatures', () => {
+    expect(buildProceduralSoundRecipeId('footstep', 'cave-floor')).toBe(
+      'footstep:cave-floor'
+    );
+    expect(buildProceduralSoundRecipeId('open', 'stairsUp')).toBe(
+      'open:stairsup'
+    );
+    expect(
+      buildProceduralSoundRecipeId('combat-magic', undefined, 'fire')
+    ).toBe('combat-magic:fire');
+    expect(
+      buildProceduralSoundRecipeId('combat-magic', 'tower', 'arcane')
+    ).toBe('combat-magic:tower:arcane');
   });
 });
