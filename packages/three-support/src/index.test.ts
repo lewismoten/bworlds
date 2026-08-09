@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { ThreeTextureLike } from '@bworlds/plugin-api';
 import {
+  applyPixelArtTextureSampling,
   createBasicMaterial,
   createPaintedStandardMaterial,
   createTexturedPlaneMesh,
@@ -102,6 +103,15 @@ describe('three support', () => {
     expect(
       (material.options.map as FakeCanvasTexture).repeat.set
     ).toHaveBeenCalledWith(2, 3);
+    expect(material.options.map).toEqual(
+      expect.objectContaining({
+        anisotropy: 1,
+        generateMipmaps: false,
+        magFilter: 'nearest',
+        minFilter: 'nearest',
+        needsUpdate: true,
+      })
+    );
   });
 
   it('memoizes painted canvas textures by key', () => {
@@ -259,6 +269,23 @@ describe('three support', () => {
         }),
       })
     );
+  });
+
+  it('applies pixel-art texture sampling without mipmaps or high anisotropy', () => {
+    const texture = {};
+
+    expect(
+      applyPixelArtTextureSampling(texture, {
+        NearestFilter: 'nearest',
+      })
+    ).toBe(texture);
+    expect(texture).toEqual({
+      anisotropy: 1,
+      generateMipmaps: false,
+      magFilter: 'nearest',
+      minFilter: 'nearest',
+      needsUpdate: true,
+    });
   });
 
   it('reuses shared primitive geometries per host and dimensions', () => {

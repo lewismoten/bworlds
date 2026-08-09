@@ -1541,9 +1541,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
 
   const atlasTexture = new THREE.CanvasTexture(getTileAtlasCanvas());
   atlasTexture.colorSpace = THREE.SRGBColorSpace;
-  atlasTexture.magFilter = THREE.NearestFilter;
-  atlasTexture.minFilter = THREE.NearestFilter;
-  atlasTexture.generateMipmaps = false;
+  applyPixelArtTextureSampling(atlasTexture);
 
   const materialCache = new Map();
   const tilePluginOwnerCache = new Map<string, string>();
@@ -2731,9 +2729,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       );
       texture.wrapS = THREE.ClampToEdgeWrapping;
       texture.wrapT = THREE.ClampToEdgeWrapping;
-      texture.magFilter = THREE.NearestFilter;
-      texture.minFilter = THREE.NearestFilter;
-      texture.generateMipmaps = false;
+      applyPixelArtTextureSampling(texture);
 
       return new THREE.MeshStandardMaterial({
         map: texture,
@@ -3340,6 +3336,21 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     render,
     resize,
   };
+}
+
+function applyPixelArtTextureSampling<
+  TTexture extends {
+    magFilter?: unknown;
+    minFilter?: unknown;
+    anisotropy?: number;
+    generateMipmaps?: boolean;
+  },
+>(texture: TTexture): TTexture {
+  texture.magFilter = THREE.NearestFilter;
+  texture.minFilter = THREE.NearestFilter;
+  texture.anisotropy = 1;
+  texture.generateMipmaps = false;
+  return texture;
 }
 
 export function getDecoratedTileSurfaceHeight(tile: DecoratedSurfaceTile): number {

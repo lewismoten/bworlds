@@ -406,6 +406,7 @@ export interface ThreeTextureLike {
   colorSpace?: unknown;
   magFilter?: unknown;
   minFilter?: unknown;
+  anisotropy?: number;
   generateMipmaps?: boolean;
   needsUpdate?: boolean;
   wrapS?: unknown;

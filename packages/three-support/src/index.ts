@@ -81,10 +81,7 @@ export function createCanvasTexture<TTexture extends ThreeTextureLike>(
 ): TTexture {
   const texture = new three.CanvasTexture(canvas);
   texture.colorSpace = three.SRGBColorSpace;
-  texture.magFilter = three.NearestFilter;
-  texture.minFilter = three.NearestFilter;
-  texture.generateMipmaps = false;
-  texture.needsUpdate = true;
+  applyPixelArtTextureSampling(texture, three);
 
   if (options.wrap !== false) {
     texture.wrapS = three.RepeatWrapping;
@@ -99,6 +96,18 @@ export function createCanvasTexture<TTexture extends ThreeTextureLike>(
     texture.repeat.set(options.repeatX, options.repeatY);
   }
 
+  return texture;
+}
+
+export function applyPixelArtTextureSampling<TTexture extends ThreeTextureLike>(
+  texture: TTexture,
+  three: Pick<TextureHostLike<TTexture>, 'NearestFilter'>
+): TTexture {
+  texture.magFilter = three.NearestFilter;
+  texture.minFilter = three.NearestFilter;
+  texture.anisotropy = 1;
+  texture.generateMipmaps = false;
+  texture.needsUpdate = true;
   return texture;
 }
 

@@ -137,7 +137,7 @@ Do not rely only on file size.
 
 * [ ] Cap anisotropy according to graphics quality.
 * [ ] Avoid maximum anisotropy on every texture.
-* [ ] Disable mipmaps where they provide no benefit.
+* [X] Disable mipmaps where they provide no benefit.
 * [ ] Require mipmaps for appropriate distant 3D surfaces.
 * [ ] Limit expensive filtering modes.
 * [ ] Limit simultaneous high-resolution normal maps.
