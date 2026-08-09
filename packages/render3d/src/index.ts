@@ -19,6 +19,8 @@ import {
 import { isWaterKind } from '@bworlds/tile-support';
 import {
   getActivePluginRegistry,
+  getRenderBudgetPartMetadata,
+  hasRenderBudgetPartMetadata,
   type RenderBudget,
   type RenderBudgetDetailLevel,
   type TileLike,
@@ -254,6 +256,7 @@ const FULL_DETAIL_TILE_MODEL_HARD_LIMITS: TileModelHardLimits = {
   maxGeometryGroupCount: 12,
   maxGeometryDrawRangeCount: 0,
   invalidGeometryIndexTypeCount: 0,
+  invalidRenderBudgetPartMetadataCount: 0,
   ultraDenseTinyGeometryCount: 0,
   materialCount: 16,
   textureCount: 16,
@@ -285,6 +288,7 @@ const LOW_DETAIL_TILE_MODEL_HARD_LIMITS: TileModelHardLimits = {
   maxGeometryGroupCount: 4,
   maxGeometryDrawRangeCount: 0,
   invalidGeometryIndexTypeCount: 0,
+  invalidRenderBudgetPartMetadataCount: 0,
   ultraDenseTinyGeometryCount: 0,
   materialCount: 3,
   textureCount: 4,
@@ -334,6 +338,8 @@ export function validateTileModelAgainstRenderBudget(
     maxGeometryDrawRangeCount:
       geometryStructureBudgetStats.maxGeometryDrawRangeCount,
     invalidGeometryIndexTypeCount: countInvalidGeometryIndexTypes(root),
+    invalidRenderBudgetPartMetadataCount:
+      countInvalidRenderBudgetPartMetadata(root),
     ultraDenseTinyGeometryCount: countUltraDenseTinyGeometries(root, {
       maximumAxisSpan: ULTRA_DENSE_GEOMETRY_MAX_AXIS_SPAN,
       minimumTriangleCount: ULTRA_DENSE_GEOMETRY_MIN_TRIANGLES,
@@ -364,6 +370,7 @@ export function validateTileModelAgainstRenderBudget(
     'maxGeometryGroupCount',
     'maxGeometryDrawRangeCount',
     'invalidGeometryIndexTypeCount',
+    'invalidRenderBudgetPartMetadataCount',
     'ultraDenseTinyGeometryCount',
     'materialCount',
     'textureCount',
@@ -577,6 +584,7 @@ type TileModelHardLimits = {
   maxGeometryGroupCount: number;
   maxGeometryDrawRangeCount: number;
   invalidGeometryIndexTypeCount: number;
+  invalidRenderBudgetPartMetadataCount: number;
   ultraDenseTinyGeometryCount: number;
   materialCount: number;
   textureCount: number;
@@ -608,6 +616,7 @@ type TileModelBudgetValidation = {
     maxGeometryGroupCount: number;
     maxGeometryDrawRangeCount: number;
     invalidGeometryIndexTypeCount: number;
+    invalidRenderBudgetPartMetadataCount: number;
     ultraDenseTinyGeometryCount: number;
   };
   limits: TileModelHardLimits;
@@ -638,6 +647,25 @@ const FULL_DETAIL_MAX_GEOMETRY_AXIS_SPAN = 24;
 const LOW_DETAIL_MAX_GEOMETRY_AXIS_SPAN = 16;
 const ULTRA_DENSE_GEOMETRY_MAX_AXIS_SPAN = 0.2;
 const ULTRA_DENSE_GEOMETRY_MIN_TRIANGLES = 256;
+
+function countInvalidRenderBudgetPartMetadata(
+  root: Pick<THREE.Object3D, 'traverse'>
+): number {
+  let invalidCount = 0;
+
+  root.traverse((child) => {
+    const object = child as Pick<THREE.Object3D, 'userData'>;
+    if (!hasRenderBudgetPartMetadata(object)) {
+      return;
+    }
+    if (getRenderBudgetPartMetadata(object) !== null) {
+      return;
+    }
+    invalidCount += 1;
+  });
+
+  return invalidCount;
+}
 
 type FrameTimeBudget = {
   budgetMs: number;

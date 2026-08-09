@@ -22,6 +22,7 @@ import {
   resolveTileDefinitionFromPlugins,
   resolvePluginPackDefinition,
   getRenderBudgetPartMetadata,
+  hasRenderBudgetPartMetadata,
   selectPluginPackManifests,
   setRenderBudgetPartMetadata,
   withDefaultTileKind,
@@ -87,15 +88,16 @@ describe('plugin registry', () => {
   });
 
   it('ignores malformed render-budget part metadata', () => {
-    expect(
-      getRenderBudgetPartMetadata({
-        userData: {
-          renderBudgetPart: {
-            optional: true,
-          },
+    const target = {
+      userData: {
+        renderBudgetPart: {
+          optional: true,
         },
-      })
-    ).toBeNull();
+      },
+    };
+
+    expect(getRenderBudgetPartMetadata(target)).toBeNull();
+    expect(hasRenderBudgetPartMetadata(target)).toBe(true);
   });
 
   it('registers content packs in map, runtime, then tile order', () => {

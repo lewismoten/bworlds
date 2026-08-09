@@ -28,7 +28,7 @@ export function setRenderBudgetPartMetadata<TTarget extends RenderBudgetPartTarg
 export function getRenderBudgetPartMetadata(
   target: RenderBudgetPartTarget | null | undefined
 ): RenderBudgetPartMetadata | null {
-  const metadata = target?.userData?.[RENDER_BUDGET_PART_USER_DATA_KEY];
+  const metadata = getRawRenderBudgetPartMetadata(target);
   if (!metadata || typeof metadata !== 'object') {
     return null;
   }
@@ -46,4 +46,16 @@ export function getRenderBudgetPartMetadata(
     priority,
     ...(typeof label === 'string' ? { label } : {}),
   };
+}
+
+export function hasRenderBudgetPartMetadata(
+  target: RenderBudgetPartTarget | null | undefined
+): boolean {
+  return getRawRenderBudgetPartMetadata(target) != null;
+}
+
+function getRawRenderBudgetPartMetadata(
+  target: RenderBudgetPartTarget | null | undefined
+): unknown {
+  return target?.userData?.[RENDER_BUDGET_PART_USER_DATA_KEY];
 }

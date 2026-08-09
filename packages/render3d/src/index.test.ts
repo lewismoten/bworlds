@@ -1217,6 +1217,7 @@ describe('render3d visibility helpers', () => {
       maxGeometryGroupCount: 12,
       maxGeometryDrawRangeCount: 0,
       invalidGeometryIndexTypeCount: 0,
+      invalidRenderBudgetPartMetadataCount: 0,
       ultraDenseTinyGeometryCount: 0,
       materialCount: 16,
       textureCount: 16,
@@ -1247,6 +1248,7 @@ describe('render3d visibility helpers', () => {
       maxGeometryGroupCount: 4,
       maxGeometryDrawRangeCount: 0,
       invalidGeometryIndexTypeCount: 0,
+      invalidRenderBudgetPartMetadataCount: 0,
       ultraDenseTinyGeometryCount: 0,
       materialCount: 3,
       textureCount: 4,
@@ -1289,6 +1291,7 @@ describe('render3d visibility helpers', () => {
         maxGeometryGroupCount: 0,
         maxGeometryDrawRangeCount: 0,
         invalidGeometryIndexTypeCount: 0,
+        invalidRenderBudgetPartMetadataCount: 0,
         ultraDenseTinyGeometryCount: 0,
         materialCount: 1,
         textureCount: 1,
@@ -1340,6 +1343,7 @@ describe('render3d visibility helpers', () => {
         maxGeometryGroupCount: 0,
         maxGeometryDrawRangeCount: 0,
         invalidGeometryIndexTypeCount: 0,
+        invalidRenderBudgetPartMetadataCount: 0,
         ultraDenseTinyGeometryCount: 0,
       }),
       violations: [
@@ -1420,6 +1424,7 @@ describe('render3d visibility helpers', () => {
         maxGeometryGroupCount: 0,
         maxGeometryDrawRangeCount: 0,
         invalidGeometryIndexTypeCount: 0,
+        invalidRenderBudgetPartMetadataCount: 0,
         ultraDenseTinyGeometryCount: 0,
       }),
       violations: [
@@ -1492,6 +1497,7 @@ describe('render3d visibility helpers', () => {
         maxGeometryGroupCount: 0,
         maxGeometryDrawRangeCount: 0,
         invalidGeometryIndexTypeCount: 0,
+        invalidRenderBudgetPartMetadataCount: 0,
         ultraDenseTinyGeometryCount: 0,
       }),
       violations: [
@@ -1538,6 +1544,7 @@ describe('render3d visibility helpers', () => {
         maxGeometryGroupCount: 0,
         maxGeometryDrawRangeCount: 0,
         invalidGeometryIndexTypeCount: 0,
+        invalidRenderBudgetPartMetadataCount: 0,
         ultraDenseTinyGeometryCount: 0,
       }),
       violations: [
@@ -1573,6 +1580,7 @@ describe('render3d visibility helpers', () => {
         maxGeometryGroupCount: 0,
         maxGeometryDrawRangeCount: 0,
         invalidGeometryIndexTypeCount: 0,
+        invalidRenderBudgetPartMetadataCount: 0,
         ultraDenseTinyGeometryCount: 0,
       }),
       violations: [
@@ -1607,6 +1615,7 @@ describe('render3d visibility helpers', () => {
         maxGeometryGroupCount: 0,
         maxGeometryDrawRangeCount: 0,
         invalidGeometryIndexTypeCount: 0,
+        invalidRenderBudgetPartMetadataCount: 0,
         ultraDenseTinyGeometryCount: 0,
       }),
       violations: [
@@ -1636,6 +1645,7 @@ describe('render3d visibility helpers', () => {
         maxGeometryGroupCount: 0,
         maxGeometryDrawRangeCount: 0,
         invalidGeometryIndexTypeCount: 0,
+        invalidRenderBudgetPartMetadataCount: 0,
         ultraDenseTinyGeometryCount: 0,
       }),
       violations: [
@@ -1674,6 +1684,7 @@ describe('render3d visibility helpers', () => {
         maxGeometryGroupCount: 0,
         maxGeometryDrawRangeCount: 0,
         invalidGeometryIndexTypeCount: 0,
+        invalidRenderBudgetPartMetadataCount: 0,
         ultraDenseTinyGeometryCount: 0,
       }),
       violations: [
@@ -1723,6 +1734,7 @@ describe('render3d visibility helpers', () => {
         maxGeometryGroupCount: 0,
         maxGeometryDrawRangeCount: 0,
         invalidGeometryIndexTypeCount: 0,
+        invalidRenderBudgetPartMetadataCount: 0,
         ultraDenseTinyGeometryCount: 0,
       }),
       violations: [
@@ -1820,6 +1832,7 @@ describe('render3d visibility helpers', () => {
         maxGeometryGroupCount: 5,
         maxGeometryDrawRangeCount: 0,
         invalidGeometryIndexTypeCount: 0,
+        invalidRenderBudgetPartMetadataCount: 0,
         ultraDenseTinyGeometryCount: 0,
       }),
       violations: [
@@ -1845,6 +1858,7 @@ describe('render3d visibility helpers', () => {
       stats: expect.objectContaining({
         maxGeometryDrawRangeCount: 1,
         invalidGeometryIndexTypeCount: 0,
+        invalidRenderBudgetPartMetadataCount: 0,
         ultraDenseTinyGeometryCount: 0,
       }),
       violations: [
@@ -1869,6 +1883,7 @@ describe('render3d visibility helpers', () => {
       limits: getTileModelHardLimits('low'),
       stats: expect.objectContaining({
         invalidGeometryIndexTypeCount: 1,
+        invalidRenderBudgetPartMetadataCount: 0,
         ultraDenseTinyGeometryCount: 0,
       }),
       violations: [
@@ -1895,6 +1910,7 @@ describe('render3d visibility helpers', () => {
       accepted: false,
       limits: getTileModelHardLimits('low'),
       stats: expect.objectContaining({
+        invalidRenderBudgetPartMetadataCount: 0,
         ultraDenseTinyGeometryCount: 1,
       }),
       violations: [
@@ -1917,6 +1933,34 @@ describe('render3d visibility helpers', () => {
     const root = createMockObject3D(rootMaterial, [child], createMockGeometry(0));
 
     expect(acceptTilePluginModelForRenderBudget(root as never, 'low')).toBeNull();
+  });
+
+  it('rejects malformed render-budget part metadata so priorities stay explicit', () => {
+    const root = createMockObject3D(
+      createMockMaterial(),
+      [],
+      createMockStatGeometry('invalid-budget-part', 24),
+      {
+        renderBudgetPart: {
+          optional: true,
+        },
+      }
+    );
+
+    expect(validateTileModelAgainstRenderBudget(root as never, 'low')).toEqual({
+      accepted: false,
+      limits: getTileModelHardLimits('low'),
+      stats: expect.objectContaining({
+        invalidRenderBudgetPartMetadataCount: 1,
+      }),
+      violations: [
+        {
+          metric: 'invalidRenderBudgetPartMetadataCount',
+          actual: 1,
+          limit: 0,
+        },
+      ],
+    });
   });
 
   it('drops the lowest-priority optional model parts before rejecting a model', () => {
