@@ -114,6 +114,57 @@ const fakeThree = {
   DoubleSide: 2,
 } as const;
 
+function normalizeMaterialOptions(options: Record<string, unknown> | undefined) {
+  if (!options) {
+    return undefined;
+  }
+
+  const normalized: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(options)) {
+    if (typeof value === 'function') {
+      continue;
+    }
+    normalized[key] = value;
+  }
+  return normalized;
+}
+
+function createModelSignature(model: FakeNode) {
+  const signature: Array<Record<string, unknown>> = [];
+  model.traverse((node) => {
+    signature.push({
+      type: node.constructor.name,
+      x: node.position.x,
+      y: node.position.y,
+      z: node.position.z,
+      rotationX: node.rotation.x,
+      rotationY: node.rotation.y,
+      rotationZ: node.rotation.z,
+      visible: node.visible,
+      childCount: node.children.length,
+      material:
+        node instanceof FakeMesh
+          ? Array.isArray(node.material)
+            ? node.material.map((material) =>
+                normalizeMaterialOptions(material.options)
+              )
+            : normalizeMaterialOptions(node.material?.options)
+          : undefined,
+      light:
+        node instanceof FakePointLight
+          ? {
+              color: node.color,
+              intensity: node.intensity,
+              distance: node.distance,
+              decay: node.decay,
+            }
+          : undefined,
+      userData: node.userData,
+    });
+  });
+  return signature;
+}
+
 function createDungeonState() {
   return {
     player: { x: 0, y: 0, facing: 0 },
@@ -370,5 +421,42 @@ describe('tile dungeon', () => {
     expect(firstMaterial).toBeDefined();
     expect(secondMaterial).toBeDefined();
     expect(secondMaterial).not.toBe(firstMaterial);
+  });
+
+  it('keeps full-detail dungeon model signatures stable after regional churn', () => {
+    const plugin = createDungeonTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'dungeon');
+    const state = createDungeonState();
+
+    const baseline = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'dungeon' },
+      tileX: 5,
+      tileY: 4,
+      detailLevel: 'full',
+    }) as FakeGroup;
+
+    for (let index = 0; index < 144; index += 1) {
+      tile?.create3DModel?.({
+        three: fakeThree as never,
+        state,
+        tile: { kind: 'dungeon' },
+        tileX: index * 18,
+        tileY: 18,
+        detailLevel: 'full',
+      });
+    }
+
+    const resolved = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'dungeon' },
+      tileX: 5,
+      tileY: 4,
+      detailLevel: 'full',
+    }) as FakeGroup;
+
+    expect(createModelSignature(resolved)).toEqual(createModelSignature(baseline));
   });
 });

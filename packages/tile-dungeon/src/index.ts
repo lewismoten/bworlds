@@ -1,5 +1,5 @@
 import { createBoundedCache } from '@bworlds/cache-support';
-import { hash2D } from '@bworlds/core';
+import { hash2D, registerHashLabel } from '@bworlds/core';
 import {
   createAnchoredEnterablePoiTilePlugin,
   markPoiLightEmitter,
@@ -31,6 +31,30 @@ const TILE_PIXEL_SIZE = 16;
 const DUNGEON_BEACON_KEY = 'dungeonBeacon';
 const DUNGEON_BANNER_KEY = 'dungeonBanner';
 const DUNGEON_STYLE_CACHE_LIMIT = 96;
+const DUNGEON_WIDTH_SEED = registerHashLabel('dungeon-width');
+const DUNGEON_DEPTH_SEED = registerHashLabel('dungeon-depth');
+const DUNGEON_HEIGHT_SEED = registerHashLabel('dungeon-height');
+const DUNGEON_TOWER_COUNT_SEED = registerHashLabel('dungeon-tower-count');
+const DUNGEON_TOWER_RADIUS_SEED = registerHashLabel('dungeon-tower-radius');
+const DUNGEON_TOWER_HEIGHT_SEED = registerHashLabel('dungeon-tower-height');
+const DUNGEON_TOWER_CAP_SEED = registerHashLabel('dungeon-tower-cap');
+const DUNGEON_BEACON_SCALE_SEED = registerHashLabel('dungeon-beacon-scale');
+const DUNGEON_BEACON_INTENSITY_SEED = registerHashLabel('dungeon-beacon-intensity');
+const DUNGEON_BEACON_DISTANCE_SEED = registerHashLabel('dungeon-beacon-distance');
+const DUNGEON_BEACON_GLOW_SEED = registerHashLabel('dungeon-beacon-glow');
+const DUNGEON_FACING_SEED = registerHashLabel('dungeon-facing');
+const DUNGEON_WALL_TONE_SEED = registerHashLabel('dungeon-wall-tone');
+const DUNGEON_ROOF_TONE_SEED = registerHashLabel('dungeon-roof-tone');
+const DUNGEON_TRIM_TONE_SEED = registerHashLabel('dungeon-trim-tone');
+const DUNGEON_BANNER_SPEED_SEED = registerHashLabel('dungeon-banner-speed');
+const DUNGEON_BANNER_GUST_SPEED_SEED = registerHashLabel('dungeon-banner-gust-speed');
+const DUNGEON_BANNER_PHASE_SEED = registerHashLabel('dungeon-banner-phase');
+const DUNGEON_BANNER_GUST_PHASE_SEED = registerHashLabel('dungeon-banner-gust-phase');
+const DUNGEON_BANNER_COLOR_SEED = registerHashLabel('dungeon-banner-color');
+const DUNGEON_STONE_CHIP_X_SEED = registerHashLabel('dungeon-stone-chip-x');
+const DUNGEON_STONE_CHIP_Y_SEED = registerHashLabel('dungeon-stone-chip-y');
+const DUNGEON_ROOF_X_SEED = registerHashLabel('dungeon-roof-x');
+const DUNGEON_ROOF_Y_SEED = registerHashLabel('dungeon-roof-y');
 
 export function createDungeonTilePlugin(): RuntimePlugin {
   return createAnchoredEnterablePoiTilePlugin({
@@ -62,9 +86,9 @@ export function createDungeonTilePlugin(): RuntimePlugin {
       const group = new three.Group();
       const style = getDungeonStyle(three, tileX, tileY);
       const entrance = getDungeonEntranceDirection(state, tileX, tileY);
-      const baseWidth = 0.9 + hash2D('dungeon-width', tileX, tileY) * 0.16;
-      const baseDepth = 0.9 + hash2D('dungeon-depth', tileX, tileY) * 0.18;
-      const baseHeight = 0.7 + hash2D('dungeon-height', tileX, tileY) * 0.16;
+      const baseWidth = 0.9 + hash2D(DUNGEON_WIDTH_SEED, tileX, tileY) * 0.16;
+      const baseDepth = 0.9 + hash2D(DUNGEON_DEPTH_SEED, tileX, tileY) * 0.18;
+      const baseHeight = 0.7 + hash2D(DUNGEON_HEIGHT_SEED, tileX, tileY) * 0.16;
 
       const base = new three.Mesh(
         new three.BoxGeometry(baseWidth, baseHeight, baseDepth),
@@ -232,20 +256,31 @@ function getDungeonTowerOffsets(
   baseDepth: number
 ) {
   const towerCount =
-    2 + Math.floor(hash2D('dungeon-tower-count', tileX, tileY) * 3);
+    2 + Math.floor(hash2D(DUNGEON_TOWER_COUNT_SEED, tileX, tileY) * 3);
   const corners = [
     { x: -baseWidth * 0.42, z: -baseDepth * 0.42 },
     { x: baseWidth * 0.42, z: -baseDepth * 0.42 },
     { x: baseWidth * 0.42, z: baseDepth * 0.42 },
     { x: -baseWidth * 0.42, z: baseDepth * 0.42 },
   ];
-
-  return corners.slice(0, towerCount).map((corner, index) => ({
-    ...corner,
-    radius: 0.1 + hash2D('dungeon-tower-radius', tileX + index, tileY) * 0.03,
-    height: 0.72 + hash2D('dungeon-tower-height', tileX, tileY + index) * 0.22,
-    capHeight: 0.14 + hash2D('dungeon-tower-cap', tileX - index, tileY) * 0.08,
-  }));
+  const towers: Array<{
+    x: number;
+    z: number;
+    radius: number;
+    height: number;
+    capHeight: number;
+  }> = [];
+  for (let index = 0; index < towerCount; index += 1) {
+    const corner = corners[index]!;
+    towers.push({
+      x: corner.x,
+      z: corner.z,
+      radius: 0.1 + hash2D(DUNGEON_TOWER_RADIUS_SEED, tileX + index, tileY) * 0.03,
+      height: 0.72 + hash2D(DUNGEON_TOWER_HEIGHT_SEED, tileX, tileY + index) * 0.22,
+      capHeight: 0.14 + hash2D(DUNGEON_TOWER_CAP_SEED, tileX - index, tileY) * 0.08,
+    });
+  }
+  return towers;
 }
 
 function getDungeonTowerBeaconDescriptors(
@@ -259,17 +294,17 @@ function getDungeonTowerBeaconDescriptors(
       x: tileX + tower.x,
       y: tower.height + tower.capHeight * 0.42,
       z: tileY + tower.z,
-      glowScale: 0.034 + hash2D('dungeon-beacon-scale', tileX + index, tileY) * 0.01,
+      glowScale: 0.034 + hash2D(DUNGEON_BEACON_SCALE_SEED, tileX + index, tileY) * 0.01,
       pointLightY: tower.height + tower.capHeight * 0.34,
       pointLightZ: tileY + tower.z,
       pointLightIntensity:
-        0.46 + hash2D('dungeon-beacon-intensity', tileX, tileY + index) * 0.18,
+        0.46 + hash2D(DUNGEON_BEACON_INTENSITY_SEED, tileX, tileY + index) * 0.18,
       pointLightDistance:
-        2.2 + hash2D('dungeon-beacon-distance', tileX - index, tileY) * 0.4,
+        2.2 + hash2D(DUNGEON_BEACON_DISTANCE_SEED, tileX - index, tileY) * 0.4,
       pointLightDecay: 1.9,
       glowDayIntensity: 0.01,
       glowNightIntensity:
-        0.82 + hash2D('dungeon-beacon-glow', tileX + index, tileY - index) * 0.18,
+        0.82 + hash2D(DUNGEON_BEACON_GLOW_SEED, tileX + index, tileY - index) * 0.18,
       label: `tower-${index}`,
     })
   );
@@ -284,7 +319,7 @@ function getDungeonEntranceDirection(
     state,
     tileX,
     tileY,
-    seedKey: 'dungeon-facing',
+    seedKey: DUNGEON_FACING_SEED,
   });
 }
 
@@ -296,19 +331,19 @@ const resolveDungeonStyle = createRegionalMaterialResolver(
   18,
   ({ regionX, regionY }) => {
     const wallBase = pickThresholdColor(
-      hash2D('dungeon-wall-tone', regionX, regionY),
+      hash2D(DUNGEON_WALL_TONE_SEED, regionX, regionY),
       0.5,
       '#7b7064',
       '#645b53'
     );
     const roofBase = pickThresholdColor(
-      hash2D('dungeon-roof-tone', regionX, regionY),
+      hash2D(DUNGEON_ROOF_TONE_SEED, regionX, regionY),
       0.5,
       '#4b1f1f',
       '#374151'
     );
     const trimBase = pickThresholdColor(
-      hash2D('dungeon-trim-tone', regionX, regionY),
+      hash2D(DUNGEON_TRIM_TONE_SEED, regionX, regionY),
       0.5,
       '#2f241c',
       '#1f2937'
@@ -482,11 +517,13 @@ function createDungeonBanner(
       idleAmplitude: 0.016,
       windAmplitude: 0.12,
       gustAmplitude: 0.045,
-      speed: 1.2 + hash2D('dungeon-banner-speed', tileX + index, tileY) * 0.8,
-      gustSpeed: 1.9 + hash2D('dungeon-banner-gust-speed', tileX, tileY + index) * 0.9,
-      phase: hash2D('dungeon-banner-phase', tileX + index, tileY - index) * Math.PI * 2,
+      speed: 1.2 + hash2D(DUNGEON_BANNER_SPEED_SEED, tileX + index, tileY) * 0.8,
+      gustSpeed:
+        1.9 + hash2D(DUNGEON_BANNER_GUST_SPEED_SEED, tileX, tileY + index) * 0.9,
+      phase:
+        hash2D(DUNGEON_BANNER_PHASE_SEED, tileX + index, tileY - index) * Math.PI * 2,
       gustPhase:
-        hash2D('dungeon-banner-gust-phase', tileX - index, tileY + index) *
+        hash2D(DUNGEON_BANNER_GUST_PHASE_SEED, tileX - index, tileY + index) *
         Math.PI *
         2,
     }
@@ -511,7 +548,7 @@ function getDungeonBannerDescriptors(
   baseDepth: number
 ): DungeonBannerDescriptor[] {
   const color = pickThresholdColor(
-    hash2D('dungeon-banner-color', tileX, tileY),
+    hash2D(DUNGEON_BANNER_COLOR_SEED, tileX, tileY),
     0.5,
     '#7c3aed',
     '#b91c1c'
@@ -566,8 +603,12 @@ function paintDungeonStoneTexture(
   }
 
   for (let index = 0; index < 60; index += 1) {
-    const x = Math.floor(hash2D('dungeon-stone-chip-x', regionX + index, regionY) * canvas.width);
-    const y = Math.floor(hash2D('dungeon-stone-chip-y', regionY + index, regionX) * canvas.height);
+    const x = Math.floor(
+      hash2D(DUNGEON_STONE_CHIP_X_SEED, regionX + index, regionY) * canvas.width
+    );
+    const y = Math.floor(
+      hash2D(DUNGEON_STONE_CHIP_Y_SEED, regionY + index, regionX) * canvas.height
+    );
     context.fillStyle = 'rgba(255,255,255,0.08)';
     context.fillRect(x, y, 2, 1);
   }
@@ -590,8 +631,12 @@ function paintDungeonRoofTexture(
   }
 
   for (let index = 0; index < 40; index += 1) {
-    const x = Math.floor(hash2D('dungeon-roof-x', regionX + index, regionY) * canvas.width);
-    const y = Math.floor(hash2D('dungeon-roof-y', regionY + index, regionX) * canvas.height);
+    const x = Math.floor(
+      hash2D(DUNGEON_ROOF_X_SEED, regionX + index, regionY) * canvas.width
+    );
+    const y = Math.floor(
+      hash2D(DUNGEON_ROOF_Y_SEED, regionY + index, regionX) * canvas.height
+    );
     context.fillStyle = 'rgba(17,24,39,0.2)';
     context.fillRect(x, y, 2, 1);
   }
