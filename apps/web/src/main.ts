@@ -136,6 +136,7 @@ import {
   findRandomTileDestination,
   listTileTeleportOptions,
 } from './debug-teleport.ts';
+import { resetStateToOverworld } from './overworld-travel.ts';
 import { getDebugWorldStats } from './debug-world-stats.ts';
 import {
   advanceRenderBudgetState,
@@ -2398,18 +2399,7 @@ function travelToOverworld(
   y: number,
   facing = state.player.facing
 ): void {
-  state.stack = [
-    {
-      id: 'overworld',
-      label: 'Overworld',
-      type: 'overworld',
-      depth: 0,
-      origin: { x: 0, y: 0 },
-    },
-  ];
-  state.player.x = x;
-  state.player.y = y;
-  state.player.facing = normalizeAngle(facing);
+  resetStateToOverworld(state, { x, y }, facing);
   resetMotionState();
   saveSession();
   requestRender();
