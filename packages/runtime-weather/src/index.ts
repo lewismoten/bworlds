@@ -5,6 +5,7 @@ import {
   getDaylightCycleState,
   hash2D,
   lerp,
+  registerHashLabel,
   smoothstep,
 } from '@bworlds/core';
 import { createRuntimePlugin } from '@bworlds/plugin-api';
@@ -19,6 +20,11 @@ import { resolveCelestialCycleConfig } from '@bworlds/runtime-celestial';
 const WEATHER_REGION_SIZE = 24;
 const FORECAST_DAYS = 7;
 const WEATHER_CACHE_LIMIT = 640;
+const WEATHER_WIND_EXPOSURE_SEED = registerHashLabel('weather-wind-exposure');
+const WEATHER_LIFT_SEED = registerHashLabel('weather-lift');
+const WEATHER_FRONT_SEED = registerHashLabel('weather-front-seed');
+const WEATHER_FRONT_KIND_SEED = registerHashLabel('weather-front-kind');
+const WEATHER_BASIN_SEED = registerHashLabel('weather-basin');
 const WEATHER_KIND_LABELS: Record<
   WorldEnvironmentWeatherConditionLike['kind'],
   string
@@ -119,11 +125,12 @@ export function resolveWeatherProfile(options: {
     latitudeDegrees: cycle.observerLatitudeDegrees,
     dayProgress: cycle.dayProgress,
   });
-  const forecast = Array.from({ length: FORECAST_DAYS }, (_, index) => {
+  const forecast: WorldEnvironmentWeatherForecastDayLike[] = [];
+  for (let index = 0; index < FORECAST_DAYS; index += 1) {
     const dayTimeMs =
       (cycle.dayNumber + index) * cycleConfig.dayLengthMs + cycleConfig.dayLengthMs * 0.5;
     const dayCycle = getDaylightCycleState(dayTimeMs, cycleConfig);
-    return resolveForecastDay({
+    forecast.push(resolveForecastDay({
       regionX,
       regionY,
       dayNumber: cycle.dayNumber + index,
@@ -131,8 +138,8 @@ export function resolveWeatherProfile(options: {
       latitudeDegrees: dayCycle.observerLatitudeDegrees,
       label:
         index === 0 ? 'Today' : index === 1 ? 'Tomorrow' : `Day ${index + 1}`,
-    });
-  });
+    }));
+  }
 
   return {
     current,
@@ -218,7 +225,7 @@ export function resolveWeatherCondition(
   const windStrength = clamp(
     0.18 +
       front.speed * 0.62 +
-      hash2D('weather-wind-exposure', options.regionX, options.regionY) * 0.22,
+      hash2D(WEATHER_WIND_EXPOSURE_SEED, options.regionX, options.regionY) * 0.22,
     0,
     1
   );
@@ -226,7 +233,7 @@ export function resolveWeatherCondition(
   const convectiveLift = clamp(
     front.intensity * 0.62 +
       humidity * 0.34 +
-      hash2D('weather-lift', options.regionX, options.dayNumber) * 0.16,
+      hash2D(WEATHER_LIFT_SEED, options.regionX, options.dayNumber) * 0.16,
     0,
     1
   );
@@ -279,7 +286,7 @@ export function resolveWeatherFront(
 
   for (let index = 0; index < 3; index += 1) {
     const seed = hash2D(
-      'weather-front-seed',
+      WEATHER_FRONT_SEED,
       options.regionX * 7 + index * 13,
       options.regionY * 11 + index * 17
     );
@@ -297,7 +304,7 @@ export function resolveWeatherFront(
     }
 
     const kindSignal = hash2D(
-      'weather-front-kind',
+      WEATHER_FRONT_KIND_SEED,
       index + Math.floor(options.dayNumber / 2),
       options.regionX - options.regionY
     );
@@ -361,19 +368,28 @@ function resolveWeatherKind(options: {
 function pickRepresentativeCondition(
   conditions: WorldEnvironmentWeatherConditionLike[]
 ): WorldEnvironmentWeatherConditionLike {
-  return [...conditions].sort((left, right) => {
-    const rightScore =
-      right.precipitation * 1.4 +
-      right.cloudCover * 0.5 +
-      right.windStrength * 0.4 +
-      right.intensity * 0.3;
-    const leftScore =
-      left.precipitation * 1.4 +
-      left.cloudCover * 0.5 +
-      left.windStrength * 0.4 +
-      left.intensity * 0.3;
-    return rightScore - leftScore;
-  })[0];
+  let representative = conditions[0]!;
+  let bestScore =
+    representative.precipitation * 1.4 +
+    representative.cloudCover * 0.5 +
+    representative.windStrength * 0.4 +
+    representative.intensity * 0.3;
+
+  for (let index = 1; index < conditions.length; index += 1) {
+    const condition = conditions[index]!;
+    const score =
+      condition.precipitation * 1.4 +
+      condition.cloudCover * 0.5 +
+      condition.windStrength * 0.4 +
+      condition.intensity * 0.3;
+    if (score <= bestScore) {
+      continue;
+    }
+    representative = condition;
+    bestScore = score;
+  }
+
+  return representative;
 }
 
 function resolveHumidity(
@@ -381,7 +397,7 @@ function resolveHumidity(
   front: WorldEnvironmentWeatherFrontLike
 ) {
   const basinSignal = hash2D(
-    'weather-basin',
+    WEATHER_BASIN_SEED,
     Math.floor(options.regionX / 2),
     Math.floor(options.regionY / 2)
   );

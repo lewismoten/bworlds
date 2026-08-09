@@ -98,6 +98,30 @@ describe('runtime weather', () => {
     expect(farRegion.forecast[0].summary).not.toBe(summer.forecast[0].summary);
   });
 
+  it('keeps weather profiles stable after repeated regional churn', () => {
+    const baseline = resolveWeatherProfile({
+      playerX: 120,
+      playerY: -360,
+      timeMs: 3 * 24 * 60 * 60 * 1000,
+    });
+
+    for (let index = 0; index < 960; index += 1) {
+      resolveWeatherProfile({
+        playerX: (index % 48) * 24,
+        playerY: (Math.floor(index / 48) - 10) * 24,
+        timeMs: index * 60 * 60 * 1000,
+      });
+    }
+
+    expect(
+      resolveWeatherProfile({
+        playerX: 120,
+        playerY: -360,
+        timeMs: 3 * 24 * 60 * 60 * 1000,
+      })
+    ).toEqual(baseline);
+  });
+
   it('resolves fronts with direction and intensity metadata', () => {
     const front = resolveWeatherFront({
       regionX: 2,
