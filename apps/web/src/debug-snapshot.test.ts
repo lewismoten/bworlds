@@ -102,6 +102,10 @@ describe('debug snapshot', () => {
             soft: 24000,
             hard: 36000,
           },
+          lights: {
+            soft: 14,
+            hard: 20,
+          },
           textures: {
             soft: 48,
             hard: 72,
@@ -410,6 +414,10 @@ describe('debug snapshot', () => {
         chunkTriangles: {
           soft: 24000,
           hard: 36000,
+        },
+        lights: {
+          soft: 14,
+          hard: 20,
         },
         estimatedGpuMemoryBytes: {
           soft: 96 * 1024 * 1024,

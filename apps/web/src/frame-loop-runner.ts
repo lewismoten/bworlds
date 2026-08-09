@@ -13,6 +13,7 @@ type FrameLoopRunnerOptions<T> = {
   getMaxChunkObjects: () => number;
   getMaxChunkMeshes: () => number;
   getMaxChunkTriangles: () => number;
+  getLightCount: () => number;
   getMaterialCount: () => number;
   getTextureCount: () => number;
   getVisibleObjectCount: () => number;
@@ -40,6 +41,7 @@ export function createFrameLoopRunner<T>(
       maxChunkObjectCount: options.getMaxChunkObjects(),
       maxChunkMeshes: options.getMaxChunkMeshes(),
       maxChunkTriangleCount: options.getMaxChunkTriangles(),
+      totalLightCount: options.getLightCount(),
       materialCount: options.getMaterialCount(),
       textureCount: options.getTextureCount(),
       visibleObjectCount: options.getVisibleObjectCount(),

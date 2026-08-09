@@ -35,6 +35,7 @@ describe('render budget', () => {
     expect(state.maxChunkDrawCalls).toBe(0);
     expect(state.maxChunkMeshes).toBe(0);
     expect(state.maxChunkTriangleCount).toBe(0);
+    expect(state.totalLightCount).toBe(0);
     expect(state.materialCount).toBe(0);
     expect(state.textureCount).toBe(0);
     expect(state.visibleObjectCount).toBe(0);
@@ -86,6 +87,7 @@ describe('render budget', () => {
       maxChunkObjectCount: 0,
       maxChunkMeshes: 0,
       maxChunkTriangleCount: 0,
+      totalLightCount: 0,
       materialCount: 0,
       textureCount: 0,
       visibleObjectCount: 0,
@@ -150,6 +152,7 @@ describe('render budget', () => {
         maxChunkDrawCalls: 184,
         maxChunkMeshes: 88,
         maxChunkTriangleCount: 18240,
+        totalLightCount: 9,
         materialCount: 30,
         textureCount: 36,
         visibleObjectCount: 640,
@@ -165,6 +168,7 @@ describe('render budget', () => {
     expect(state.maxChunkDrawCalls).toBe(184);
     expect(state.maxChunkMeshes).toBe(88);
     expect(state.maxChunkTriangleCount).toBe(18240);
+    expect(state.totalLightCount).toBe(9);
     expect(state.materialCount).toBe(30);
     expect(state.textureCount).toBe(36);
     expect(state.visibleObjectCount).toBe(640);
@@ -323,6 +327,10 @@ describe('render budget', () => {
         soft: 24000,
         hard: 36000,
       },
+      lights: {
+        soft: 14,
+        hard: 20,
+      },
       textures: {
         soft: 48,
         hard: 72,
@@ -369,6 +377,10 @@ describe('render budget', () => {
       chunkTriangles: {
         soft: 24000,
         hard: 36000,
+      },
+      lights: {
+        soft: 14,
+        hard: 20,
       },
       estimatedGpuMemoryBytes: {
         soft: 96 * 1024 * 1024,
@@ -917,6 +929,88 @@ describe('render budget', () => {
     ).toEqual([
       `Visibility radius reduced to ${MIN_VISIBILITY_RADIUS}`,
       'Chunk triangles exceeded the hard cap',
+    ]);
+  });
+
+  it('reduces draw distance when too many lights are active at once', () => {
+    let state = DEFAULT_RENDER_BUDGET_STATE;
+
+    state = advanceRenderBudgetState(state, {
+      deltaMs: 16.67,
+      active3d: true,
+      weatherVisibility: 1,
+      drawCalls: 200,
+      maxChunkDrawCalls: 0,
+      maxChunkMeshes: 0,
+      materialCount: 0,
+      totalLightCount: 15,
+      textureCount: 0,
+      visibleObjectCount: 0,
+      visibleVertexCount: 0,
+      visibleMeshCount: 0,
+    });
+    expect(state.visibilityRadius).toBe(REDUCED_VISIBILITY_RADIUS);
+
+    state = advanceRenderBudgetState(state, {
+      deltaMs: 16.67,
+      active3d: true,
+      weatherVisibility: 1,
+      drawCalls: 200,
+      maxChunkDrawCalls: 0,
+      maxChunkMeshes: 0,
+      materialCount: 0,
+      totalLightCount: 22,
+      textureCount: 0,
+      visibleObjectCount: 0,
+      visibleVertexCount: 0,
+      visibleMeshCount: 0,
+    });
+    expect(state.visibilityRadius).toBe(MIN_VISIBILITY_RADIUS);
+  });
+
+  it('reports active light pressure in the active limiter list', () => {
+    expect(
+      getRenderQualityLimiters({
+        smoothedFrameMs: 16.67,
+        visibilityRadius: REDUCED_VISIBILITY_RADIUS,
+        weatherVisibilityRadiusCap: DEFAULT_VISIBILITY_RADIUS,
+        targetFps: 60,
+        severeFrameStreak: 0,
+        drawCalls: 0,
+        maxChunkDrawCalls: 0,
+        maxChunkMeshes: 0,
+        materialCount: 0,
+        totalLightCount: 15,
+        textureCount: 0,
+        visibleObjectCount: 0,
+        visibleVertexCount: 0,
+        visibleMeshCount: 0,
+      })
+    ).toEqual([
+      `Visibility radius reduced to ${REDUCED_VISIBILITY_RADIUS}`,
+      'Active lights exceeded the soft cap',
+    ]);
+
+    expect(
+      getRenderQualityLimiters({
+        smoothedFrameMs: 16.67,
+        visibilityRadius: MIN_VISIBILITY_RADIUS,
+        weatherVisibilityRadiusCap: DEFAULT_VISIBILITY_RADIUS,
+        targetFps: 60,
+        severeFrameStreak: 0,
+        drawCalls: 0,
+        maxChunkDrawCalls: 0,
+        maxChunkMeshes: 0,
+        materialCount: 0,
+        totalLightCount: 22,
+        textureCount: 0,
+        visibleObjectCount: 0,
+        visibleVertexCount: 0,
+        visibleMeshCount: 0,
+      })
+    ).toEqual([
+      `Visibility radius reduced to ${MIN_VISIBILITY_RADIUS}`,
+      'Active lights exceeded the hard cap',
     ]);
   });
 

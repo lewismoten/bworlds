@@ -311,6 +311,7 @@ type Render3DController = {
   getMaxChunkObjects(): number;
   getMaxChunkMeshes(): number;
   getMaxChunkTriangles(): number;
+  getLightCount(): number;
   getMaterialCount(): number;
   getTextureCount(): number;
   getVisibleObjectCount(): number;
@@ -778,6 +779,7 @@ type DynamicTileNode = {
   tileY: number;
   drawCallCount: number;
   visibleObjectCount: number;
+  lightCount: number;
   visibleMeshCount: number;
   materialCount: number;
   vertexCount: number;
@@ -1277,6 +1279,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
   const materialCache = new Map();
   const tilePluginOwnerCache = new Map<string, string>();
   const visibleTileNodes = new Map<string, DynamicTileNode>();
+  const persistentSceneLightCount = collectSceneResourceStats(scene).lightCount;
   const lodSyncVisibleEntriesBuffer: Array<[string, DynamicTileNode]> = [];
   const lodSyncBatchBuffer: Array<[string, DynamicTileNode]> = [];
   const visibleWorldNextVisibleKeysBuffer = new Set<string>();
@@ -1619,6 +1622,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       tileY: y,
       drawCallCount: finalSceneResourceStats.drawCallCount,
       visibleObjectCount: finalSceneResourceStats.visibleObjectCount,
+      lightCount: finalSceneResourceStats.lightCount,
       visibleMeshCount: finalSceneResourceStats.visibleMeshCount,
       materialCount: finalSceneResourceStats.materialCount,
       vertexCount: finalSceneResourceStats.vertexCount,
@@ -2152,6 +2156,13 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
 
   function getTextureCount(): number {
     return renderer.info.memory.textures;
+  }
+
+  function getLightCount(): number {
+    return (
+      persistentSceneLightCount +
+      collectVisibleTileResourceStats(visibleTileNodes.values()).totalLightCount
+    );
   }
 
   function getMaterialCount(): number {
@@ -2920,6 +2931,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     getMaxChunkObjects,
     getMaxChunkMeshes,
     getMaxChunkTriangles,
+    getLightCount,
     getMaterialCount,
     getTextureCount,
     getVisibleObjectCount,

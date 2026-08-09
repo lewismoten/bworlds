@@ -272,7 +272,7 @@ This is critical because individually valid models can still overwhelm the rende
 * [ ] Cap total active skeletons.
 * [ ] Cap total bones being evaluated per frame.
 * [ ] Cap total particle count.
-* [ ] Cap total lights.
+* [X] Cap total lights.
 * [ ] Cap total shadow lights.
 * [ ] Cap total active audio emitters.
 * [ ] Cap total reflection surfaces.
