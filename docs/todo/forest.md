@@ -31,13 +31,13 @@ For example, an oak and a pine both support `age`, but aging them should produce
 * [X] Allow one generator to represent a family of closely related trees.
 * [X] Allow individual species to override family behavior.
 * [ ] Separate tree biological state from rendered geometry.
-* [ ] Separate tree placement from tree appearance generation.
+* [X] Separate tree placement from tree appearance generation.
 * [ ] Separate structural geometry from foliage.
 * [ ] Separate decorations and inhabitants from the tree itself.
 * [ ] Separate collision geometry from visible geometry.
 * [ ] Separate tree simulation from rendering.
 * [ ] Allow text, 2D, and 3D renderers to consume the same logical tree state.
-* [ ] Generate trees deterministically from world seed and location.
+* [X] Generate trees deterministically from world seed and location.
 * [ ] Preserve persistent changes such as carvings, damage, harvesting, and fire.
 * [ ] Avoid regenerating persistent tree state from scratch after the player modifies it.
 * [X] Allow generators to advertise optional capabilities.
@@ -150,8 +150,8 @@ interface TreeCapabilities {
 
 # Placement-Based Procedural Generation
 
-* [ ] Use world coordinates as part of the procedural seed.
-* [ ] Include species in the seed.
+* [X] Use world coordinates as part of the procedural seed.
+* [X] Include species in the seed.
 * [ ] Include biome in tree generation.
 * [ ] Include altitude.
 * [ ] Include slope.

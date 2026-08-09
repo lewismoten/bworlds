@@ -730,6 +730,41 @@ describe('tile forest', () => {
     expect(getForestTreeSpeciesIds(first.x, first.y)).toEqual(first.species);
   });
 
+  it('separates deterministic tree placement from species-specific appearance', () => {
+    const broadleafFamily = getForestTreeFamilies().find(
+      (family) => family.familyId === 'broadleaf'
+    );
+
+    expect(broadleafFamily).toBeDefined();
+
+    const oak = broadleafFamily!.generateSpecies('oak', {
+      tileX: 12,
+      tileY: 8,
+      treeIndex: 1,
+      loneTree: false,
+      groveCenter: { x: 0.04, y: -0.03 },
+      variety: 0,
+      form: 'broadleaf',
+    });
+    const birch = broadleafFamily!.generateSpecies('birch', {
+      tileX: 12,
+      tileY: 8,
+      treeIndex: 1,
+      loneTree: false,
+      groveCenter: { x: 0.04, y: -0.03 },
+      variety: 1,
+      form: 'broadleaf',
+    });
+
+    expect(oak.x).toBe(birch.x);
+    expect(oak.y).toBe(birch.y);
+    expect(oak.speciesId).toBe('oak');
+    expect(birch.speciesId).toBe('birch');
+    expect(oak.trunkHeight).not.toBe(birch.trunkHeight);
+    expect(oak.branches).not.toEqual(birch.branches);
+    expect(oak.foliage).not.toEqual(birch.foliage);
+  });
+
   it('generates more tree-like branch profiles for broadleaf and pine forms', () => {
     const branchTiles: Array<{
       x: number;

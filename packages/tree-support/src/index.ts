@@ -1,3 +1,4 @@
+import { createRandom } from '@bworlds/core';
 import { appendHashSeedPart } from '@bworlds/core/hash';
 
 export type TreeCapability =
@@ -77,6 +78,10 @@ export interface TreeGeneratorBase {
     location: TreeGenerationLocation,
     ...parts: number[]
   ): number;
+  createInstanceRandom(
+    location: TreeGenerationLocation,
+    ...parts: number[]
+  ): () => number;
   getCapabilities(query?: TreeCapabilityQuery): TreeCapabilityMap;
   getCapability(
     capability: TreeCapability,
@@ -140,6 +145,9 @@ export function createTreeGeneratorBase({
         resolvedSeed = appendHashSeedPart(resolvedSeed, part);
       }
       return resolvedSeed;
+    },
+    createInstanceRandom(location, ...parts) {
+      return createRandom(this.createInstanceSeed(location, ...parts));
     },
     getCapabilities(query) {
       return getResolvedCapabilities(query);

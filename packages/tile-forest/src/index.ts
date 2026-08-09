@@ -200,6 +200,11 @@ const FOREST_GROVE_CENTER_Y_SEED = registerHashLabel('forest-grove-center-y');
 const FOREST_LONE_TREE_SEED = registerHashLabel('forest-lone-tree');
 const FOREST_TREE_COUNT_SEED = registerHashLabel('forest-tree-count');
 const FOREST_TREE_DESCRIPTOR_SEED = registerHashLabel('forest-tree-descriptor');
+const FOREST_TREE_PLACEMENT_SEED = registerHashLabel('forest-tree-placement');
+const FOREST_TREE_APPEARANCE_SEED = registerHashLabel('forest-tree-appearance');
+const FOREST_TREE_OAK_SEED = registerHashLabel('forest-tree-oak');
+const FOREST_TREE_BIRCH_SEED = registerHashLabel('forest-tree-birch');
+const FOREST_TREE_PINE_SEED = registerHashLabel('forest-tree-pine');
 const FOREST_BUSH_DESCRIPTOR_SEED = registerHashLabel('forest-bush-descriptor');
 const FOREST_LONER_SEED = registerHashLabel('forest-loner');
 const FOREST_BEAVER_DAMAGE_SEED = registerHashLabel('forest-beaver-damage');
@@ -1717,6 +1722,7 @@ function getForestTreeSpeciesId(variety: number): ForestTreeSpeciesId {
 }
 
 type ForestTreeSpeciesDefinition = {
+  seed: number;
   speciesId: ForestTreeSpeciesId;
   familyId: ForestTreeFamilyId;
   variety: number;
@@ -1790,6 +1796,7 @@ const forestOakSpecies = createTreeSpecies<
   },
   generate(context, base) {
     return createForestTreeDescriptorFromSpecies(context, base, {
+      seed: FOREST_TREE_OAK_SEED,
       speciesId: 'oak',
       familyId: 'broadleaf',
       variety: 0,
@@ -1823,6 +1830,7 @@ const forestBirchSpecies = createTreeSpecies<
   },
   generate(context, base) {
     return createForestTreeDescriptorFromSpecies(context, base, {
+      seed: FOREST_TREE_BIRCH_SEED,
       speciesId: 'birch',
       familyId: 'broadleaf',
       variety: 1,
@@ -1856,6 +1864,7 @@ const forestPineSpecies = createTreeSpecies<
   },
   generate(context, base) {
     return createForestTreeDescriptorFromSpecies(context, base, {
+      seed: FOREST_TREE_PINE_SEED,
       speciesId: 'pine',
       familyId: 'conifer',
       variety: 2,
@@ -1921,33 +1930,41 @@ function createForestTreeDescriptorFromSpecies(
   base: ReturnType<typeof createTreeGeneratorBase>,
   definition: ForestTreeSpeciesDefinition
 ): ForestTreeDescriptor {
-  const baseSeed = base.createInstanceSeed({
+  const location = {
     tileX: context.tileX,
     tileY: context.tileY,
     index: context.treeIndex,
-  });
-  const outlierChance = hash2D(baseSeed, 0, 0);
+  };
+  const placementRandom = base.createInstanceRandom(
+    location,
+    FOREST_TREE_PLACEMENT_SEED
+  );
+  const appearanceRandom = base.createInstanceRandom(
+    location,
+    FOREST_TREE_APPEARANCE_SEED,
+    definition.seed
+  );
+  const outlierChance = placementRandom();
   const spread = context.loneTree ? 0.06 : outlierChance > 0.84 ? 0.28 : 0.17;
   const trunkHeight =
-    definition.trunkHeightMin + hash2D(baseSeed, 5, 0) * definition.trunkHeightRange;
+    definition.trunkHeightMin + appearanceRandom() * definition.trunkHeightRange;
   const branchCount =
-    definition.branchCountBase +
-    Math.floor(hash2D(baseSeed, 6, 0) * definition.branchCountRange);
+    definition.branchCountBase + Math.floor(appearanceRandom() * definition.branchCountRange);
   const branches = new Array<ForestBranchDescriptor>(branchCount);
   const foliageCount =
     definition.form === 'pine'
-      ? 4 + Math.floor(hash2D(baseSeed, 30, 0) * 2)
-      : 3 + Math.floor(hash2D(baseSeed, 30, 0) * 3);
+      ? 4 + Math.floor(appearanceRandom() * 2)
+      : 3 + Math.floor(appearanceRandom() * 3);
   const foliage = new Array<ForestFoliageDescriptor>(foliageCount);
   const descriptor: ForestTreeDescriptor = {
     x: clampToTile(
-      context.groveCenter.x + (hash2D(baseSeed, 1, 0) - 0.5) * spread * 2
+      context.groveCenter.x + (placementRandom() - 0.5) * spread * 2
     ),
     y: clampToTile(
-      context.groveCenter.y + (hash2D(baseSeed, 2, 0) - 0.5) * spread * 2
+      context.groveCenter.y + (placementRandom() - 0.5) * spread * 2
     ),
-    radius: 0.08 + hash2D(baseSeed, 3, 0) * 0.05,
-    scale: 0.78 + hash2D(baseSeed, 4, 0) * 0.55,
+    radius: 0.08 + appearanceRandom() * 0.05,
+    scale: 0.78 + appearanceRandom() * 0.55,
     trunkHeight,
     familyId: definition.familyId,
     speciesId: definition.speciesId,
@@ -1961,33 +1978,28 @@ function createForestTreeDescriptorFromSpecies(
     const branchProgress = branchCount <= 1 ? 0 : branchIndex / (branchCount - 1);
     const branchHeightFactor =
       definition.form === 'pine'
-        ? 0.32 + hash2D(baseSeed, 10 + branchIndex, 2) * 0.48
+        ? 0.32 + appearanceRandom() * 0.48
         : 0.28 + branchProgress * 0.5;
     const broadleafSpread =
       definition.broadleafSpreadBase - branchProgress * definition.broadleafSpreadDrop;
     const broadleafLengthScale =
-      definition.broadleafLengthBase +
-      hash2D(baseSeed, 10 + branchIndex, 4) * definition.broadleafLengthRange;
+      definition.broadleafLengthBase + appearanceRandom() * definition.broadleafLengthRange;
     branches[branchIndex] = {
-      x:
-        (hash2D(baseSeed, 10 + branchIndex, 1) - 0.5) *
-        (definition.form === 'pine' ? 0.08 : broadleafSpread),
+      x: (appearanceRandom() - 0.5) * (definition.form === 'pine' ? 0.08 : broadleafSpread),
       y: trunkHeight * branchHeightFactor,
-      z:
-        (hash2D(baseSeed, 10 + branchIndex, 3) - 0.5) *
-        (definition.form === 'pine' ? 0.08 : broadleafSpread),
+      z: (appearanceRandom() - 0.5) * (definition.form === 'pine' ? 0.08 : broadleafSpread),
       length:
         definition.form === 'pine'
           ? definition.broadleafLengthBase +
-            hash2D(baseSeed, 10 + branchIndex, 4) * definition.broadleafLengthRange
+            appearanceRandom() * definition.broadleafLengthRange
           : broadleafLengthScale,
       pitch:
         definition.form === 'pine'
-          ? 1 + hash2D(baseSeed, 10 + branchIndex, 5) * 0.28
+          ? 1 + appearanceRandom() * 0.28
           : 0.3 +
             branchProgress * 0.38 +
-            hash2D(baseSeed, 10 + branchIndex, 5) * 0.14,
-      roll: -1.25 + hash2D(baseSeed, 10 + branchIndex, 6) * Math.PI * 0.9,
+            appearanceRandom() * 0.14,
+      roll: -1.25 + appearanceRandom() * Math.PI * 0.9,
     };
   }
 
@@ -1995,35 +2007,31 @@ function createForestTreeDescriptorFromSpecies(
     const layerProgress = foliageCount <= 1 ? 0 : foliageIndex / (foliageCount - 1);
     const pineLayerScale = 1 - layerProgress * 0.45;
     foliage[foliageIndex] = {
-      x:
-        (hash2D(baseSeed, 40 + foliageIndex, 1) - 0.5) *
-        (definition.form === 'pine' ? 0.08 : 0.28),
+      x: (appearanceRandom() - 0.5) * (definition.form === 'pine' ? 0.08 : 0.28),
       y:
         trunkHeight *
         (definition.form === 'pine'
           ? definition.canopyHeightBase +
             layerProgress * definition.canopyHeightRange
           : definition.canopyHeightBase +
-            hash2D(baseSeed, 40 + foliageIndex, 2) * definition.canopyHeightRange),
-      z:
-        (hash2D(baseSeed, 40 + foliageIndex, 3) - 0.5) *
-        (definition.form === 'pine' ? 0.08 : 0.28),
+            appearanceRandom() * definition.canopyHeightRange),
+      z: (appearanceRandom() - 0.5) * (definition.form === 'pine' ? 0.08 : 0.28),
       scaleX:
         definition.form === 'pine'
           ? definition.canopyScaleBase * pineLayerScale +
-            hash2D(baseSeed, 40 + foliageIndex, 4) * definition.canopyScaleRange
+            appearanceRandom() * definition.canopyScaleRange
           : definition.canopyScaleBase +
-            hash2D(baseSeed, 40 + foliageIndex, 4) * definition.canopyScaleRange,
+            appearanceRandom() * definition.canopyScaleRange,
       scaleY:
         definition.form === 'pine'
-          ? 0.32 + hash2D(baseSeed, 40 + foliageIndex, 5) * 0.18
-          : 0.58 + hash2D(baseSeed, 40 + foliageIndex, 5) * 0.48,
+          ? 0.32 + appearanceRandom() * 0.18
+          : 0.58 + appearanceRandom() * 0.48,
       scaleZ:
         definition.form === 'pine'
           ? definition.canopyScaleBase * pineLayerScale +
-            hash2D(baseSeed, 40 + foliageIndex, 6) * definition.canopyScaleRange
+            appearanceRandom() * definition.canopyScaleRange
           : definition.canopyScaleBase +
-            hash2D(baseSeed, 40 + foliageIndex, 6) * definition.canopyScaleRange,
+            appearanceRandom() * definition.canopyScaleRange,
     };
   }
 

@@ -19,6 +19,20 @@ describe('tree support', () => {
     ).not.toBe(base.createInstanceSeed({ tileX: 4, tileY: -2, index: 2 }));
   });
 
+  it('creates deterministic per-instance random streams from a shared base generator', () => {
+    const base = createTreeGeneratorBase({ seed: 12345 });
+    const first = base.createInstanceRandom({ tileX: 4, tileY: -2, index: 1 }, 9);
+    const second = base.createInstanceRandom({ tileX: 4, tileY: -2, index: 1 }, 9);
+    const other = base.createInstanceRandom({ tileX: 4, tileY: -2, index: 1 }, 10);
+
+    expect([first(), first(), first()]).toEqual([second(), second(), second()]);
+    expect([first(), first(), first()]).not.toEqual([
+      other(),
+      other(),
+      other(),
+    ]);
+  });
+
   it('supports composed capability bases and per-lod capability metadata', () => {
     const familyBase = createTreeGeneratorBase({
       seed: 99,
