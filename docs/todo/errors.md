@@ -19,7 +19,7 @@ Always run tests to make sure all tests pass
   - [ ] Convert long plugin loops to generators that yield work to the scheduler.
   - [ ] Resume unfinished generators on later frames.
   - [X] Prioritize nearby and visible generation jobs first.
-  - [ ] Allow queued generators to be cancelled when no longer relevant.
+  - [X] Allow queued generators to be cancelled when no longer relevant.
   - [ ] Let generators yield progress without creating final Three.js objects yet.
   - [X] Warn when a plugin performs long synchronous work between yields.
   - [ ] Keep simple/cheap plugin methods synchronous where generators add no value.

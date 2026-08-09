@@ -110,6 +110,7 @@ type Render3DController = {
     slowestTilePluginLabel: string;
     tileNodeBuildsPerSecond: number;
     tileBuildsPerSecond: number;
+    pendingCancelledEntriesPerSecond: number;
     lodChecksPerSecond: number;
     lodReplacementsPerSecond: number;
     object3dCount: number;
@@ -312,6 +313,7 @@ export type LodThresholdSummary = {
 type RenderChurnMetrics = {
   tileNodeBuilds: number[];
   tileBuilds: number[];
+  pendingCancelledEntries: number[];
   lodChecks: number[];
   lodReplacements: number[];
   pendingFlushCounts: RecentCountSample[];
@@ -509,6 +511,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
   const renderChurnMetrics = {
     tileNodeBuilds: [] as number[],
     tileBuilds: [] as number[],
+    pendingCancelledEntries: [] as number[],
     lodChecks: [] as number[],
     lodReplacements: [] as number[],
     pendingFlushCounts: [] as RecentCountSample[],
@@ -687,6 +690,9 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       facingBucket: String(facingBucket),
       queue: nextPendingWorldBuild.queue,
     };
+    for (let index = 0; index < nextPendingWorldBuild.cancelledEntryCount; index += 1) {
+      recordRecentMetric(renderChurnMetrics.pendingCancelledEntries, performance.now());
+    }
 
     lastCenterKey = `${centerX}:${centerY}`;
     lastContextKey = context.id;
@@ -975,6 +981,8 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       slowestTilePluginLabel: recentTilePluginBuildStats.maxLabel,
       tileNodeBuildsPerSecond: renderChurnStats.tileNodeBuildsPerSecond,
       tileBuildsPerSecond: renderChurnStats.tileBuildsPerSecond,
+      pendingCancelledEntriesPerSecond:
+        renderChurnStats.pendingCancelledEntriesPerSecond,
       lodChecksPerSecond: renderChurnStats.lodChecksPerSecond,
       lodReplacementsPerSecond: renderChurnStats.lodReplacementsPerSecond,
       object3dCount: sceneResourceStats.object3dCount,
@@ -2965,6 +2973,7 @@ export function getRenderChurnStats(
 ): {
   tileNodeBuildsPerSecond: number;
   tileBuildsPerSecond: number;
+  pendingCancelledEntriesPerSecond: number;
   lodChecksPerSecond: number;
   lodReplacementsPerSecond: number;
 } {
@@ -2976,6 +2985,11 @@ export function getRenderChurnStats(
     ),
     tileBuildsPerSecond: countRecentMetricEvents(
       metrics.tileBuilds,
+      nowMs,
+      windowMs
+    ),
+    pendingCancelledEntriesPerSecond: countRecentMetricEvents(
+      metrics.pendingCancelledEntries,
       nowMs,
       windowMs
     ),

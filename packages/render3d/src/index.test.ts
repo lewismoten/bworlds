@@ -700,6 +700,7 @@ describe('render3d visibility helpers', () => {
         {
           tileNodeBuilds: [100, 450, 900],
           tileBuilds: [450, 900],
+          pendingCancelledEntries: [450, 800],
           lodChecks: [900],
           lodReplacements: [100, 450],
           pendingFlushCounts: [],
@@ -711,6 +712,7 @@ describe('render3d visibility helpers', () => {
     ).toEqual({
       tileNodeBuildsPerSecond: 3,
       tileBuildsPerSecond: 2,
+      pendingCancelledEntriesPerSecond: 2,
       lodChecksPerSecond: 1,
       lodReplacementsPerSecond: 2,
     });
@@ -720,6 +722,7 @@ describe('render3d visibility helpers', () => {
         {
           tileNodeBuilds: [100, 450, 900],
           tileBuilds: [450, 900],
+          pendingCancelledEntries: [450, 800],
           lodChecks: [900],
           lodReplacements: [100, 450],
           pendingFlushCounts: [],
@@ -731,6 +734,7 @@ describe('render3d visibility helpers', () => {
     ).toEqual({
       tileNodeBuildsPerSecond: 1,
       tileBuildsPerSecond: 1,
+      pendingCancelledEntriesPerSecond: 1,
       lodChecksPerSecond: 1,
       lodReplacementsPerSecond: 0,
     });
