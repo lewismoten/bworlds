@@ -53,6 +53,7 @@ export interface TreeBranchState {
   pitch: number;
   roll: number;
   dead?: boolean;
+  loss?: number;
 }
 
 export interface TreeFoliageState {

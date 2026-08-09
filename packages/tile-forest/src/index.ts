@@ -2238,6 +2238,16 @@ function createForestTreeDescriptorFromSpecies(
       branchProgress >= deadBranchThreshold &&
       appearanceRandom() >
         (biological.lifeStage === 'ancient' ? 0.14 : 0.58);
+    const loss =
+      dead && biological.lifeStage === 'ancient'
+        ? 0.28 + appearanceRandom() * 0.48
+        : dead && biological.lifeStage === 'mature'
+          ? 0.12 + appearanceRandom() * 0.28
+          : biological.lifeStage === 'ancient' && appearanceRandom() > 0.72
+            ? 0.08 + appearanceRandom() * 0.18
+            : biological.lifeStage === 'mature' && appearanceRandom() > 0.86
+              ? 0.04 + appearanceRandom() * 0.12
+              : 0;
     const irregularWobbleX = (appearanceRandom() - 0.5) * irregularity;
     const irregularWobbleZ = (appearanceRandom() - 0.5) * irregularity;
     const irregularPitch = (appearanceRandom() - 0.5) * irregularity * 0.7;
@@ -2269,8 +2279,9 @@ function createForestTreeDescriptorFromSpecies(
         definition.form === 'pine'
           ? (definition.broadleafLengthBase +
               appearanceRandom() * definition.broadleafLengthRange) *
-            irregularLengthScale
-          : broadleafLengthScale,
+            irregularLengthScale *
+            (1 - loss)
+          : broadleafLengthScale * (1 - loss),
       pitch:
         definition.form === 'pine'
           ? 1 + appearanceRandom() * 0.28 + irregularPitch
@@ -2280,6 +2291,7 @@ function createForestTreeDescriptorFromSpecies(
             irregularPitch,
       roll: -1.25 + appearanceRandom() * Math.PI * 0.9 + irregularRoll,
       dead,
+      loss,
     };
   }
 

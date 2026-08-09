@@ -1123,6 +1123,45 @@ describe('tile forest', () => {
     expect(ancientScores.some((score) => score > 0)).toBe(true);
   });
 
+  it('increases branch loss with age in forest trees', () => {
+    const samples: Array<{
+      age: ReturnType<typeof getForestTreeAgeProfiles>[number];
+      branches: ReturnType<typeof getForestTreeBranchProfiles>[number];
+    }> = [];
+
+    for (let tileY = 0; tileY < 64; tileY += 1) {
+      for (let tileX = 0; tileX < 64; tileX += 1) {
+        const ages = getForestTreeAgeProfiles(tileX, tileY);
+        const branches = getForestTreeBranchProfiles(tileX, tileY);
+        for (let index = 0; index < ages.length; index += 1) {
+          const age = ages[index];
+          const branch = branches[index];
+          if (age && branch) {
+            samples.push({ age, branches: branch });
+          }
+        }
+      }
+    }
+
+    const branchLossScore = (sample: (typeof samples)[number]) =>
+      sample.branches.branches.reduce((sum, branch) => sum + (branch.loss ?? 0), 0);
+    const matureScores = samples
+      .filter((sample) => sample.age.lifeStage === 'mature')
+      .map(branchLossScore);
+    const ancientScores = samples
+      .filter((sample) => sample.age.lifeStage === 'ancient')
+      .map(branchLossScore);
+
+    expect(matureScores.length).toBeGreaterThan(0);
+    expect(ancientScores.length).toBeGreaterThan(0);
+
+    const average = (values: number[]) =>
+      values.reduce((sum, value) => sum + value, 0) / values.length;
+
+    expect(average(ancientScores)).toBeGreaterThan(average(matureScores));
+    expect(ancientScores.some((score) => score >= 0.28)).toBe(true);
+  });
+
   it('generates more tree-like branch profiles for broadleaf and pine forms', () => {
     const branchTiles: Array<{
       x: number;

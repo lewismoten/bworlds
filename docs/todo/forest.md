@@ -188,7 +188,7 @@ interface TreeCapabilities {
 * [X] Give older trees more dead branches.
 * [X] Increase hollow probability with age.
 * [X] Increase bark damage with age.
-* [ ] Increase branch loss with age.
+* [X] Increase branch loss with age.
 * [ ] Allow old trees to become historically significant landmarks.
 * [ ] Allow especially old trees to receive unique procedural names or records.
 * [ ] Adjust fruit production according to maturity.
