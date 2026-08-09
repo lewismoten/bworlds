@@ -1,4 +1,11 @@
-import { hash2D } from '@bworlds/core';
+import {
+  appendHashSeedLabel,
+  appendHashSeedPart,
+  createHashSeed,
+  hash2D,
+  hash2DWithSeed,
+  registerHashLabel,
+} from '@bworlds/core';
 import {
   getActivePluginRegistry,
   type Kind,
@@ -10,6 +17,9 @@ const VARIANT_GRID_SIZE = 3;
 const VARIANTS_PER_TILE = VARIANT_GRID_SIZE * VARIANT_GRID_SIZE;
 const KIND_COLUMNS = 4;
 const atlasCache = new Map<'default', HTMLCanvasElement>();
+const TILE_VARIANT_LABEL = registerHashLabel('tile-variant');
+const ATLAS_LABEL = registerHashLabel('atlas');
+const MOTIF_LABEL = registerHashLabel('motif');
 const FALLBACK_TILE_DEFINITION: TileDefinitionLike = {
   name: 'Unknown Tile',
   color: '#64748b',
@@ -93,7 +103,7 @@ export function getTileVariantIndex(
   worldX: number,
   worldY: number
 ): number {
-  const hash = hash2D(`tile-variant:${kind}`, worldX, worldY);
+  const hash = hash2D(createTileVariantSeed(kind), worldX, worldY);
   return Math.floor(hash * VARIANTS_PER_TILE) % VARIANTS_PER_TILE;
 }
 
@@ -263,18 +273,37 @@ function withAlpha(hex: string, alpha: number): string {
 }
 
 function createVariantMotif(kind: Kind, variant: number): VariantMotif {
+  const motifSeed = createVariantMotifSeed(kind, variant);
   const seed = Math.floor(
-    hash2D(`atlas:${kind}`, variant, variant * 13) * 100000
+    hash2DWithSeed(motifSeed.seedHash, variant, variant * 13) * 100000
   );
   return {
     seed,
     int(min: number, max: number): number {
       const span = max - min + 1;
       const value = Math.floor(
-        hash2D(`motif:${kind}:${variant}`, min, max) * span
+        hash2DWithSeed(motifSeed.motifHash, min, max) * span
       );
       return min + value;
     },
+  };
+}
+
+function createTileVariantSeed(kind: Kind): number {
+  return appendHashSeedLabel(createHashSeed(kind), TILE_VARIANT_LABEL);
+}
+
+function createVariantMotifSeed(kind: Kind, variant: number): {
+  seedHash: number;
+  motifHash: number;
+} {
+  const kindSeed = createHashSeed(kind);
+  return {
+    seedHash: appendHashSeedLabel(kindSeed, ATLAS_LABEL),
+    motifHash: appendHashSeedPart(
+      appendHashSeedLabel(kindSeed, MOTIF_LABEL),
+      variant
+    ),
   };
 }
 
