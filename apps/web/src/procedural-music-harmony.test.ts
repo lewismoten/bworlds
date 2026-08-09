@@ -3,6 +3,7 @@ import {
   resolveProceduralChordAtStep,
   resolveProceduralChordProgression,
   resolveProceduralInstrumentSemitones,
+  resolveProceduralLeadMotif,
   type ProceduralHarmonyTheme,
 } from './procedural-music-harmony.ts';
 
@@ -51,5 +52,29 @@ describe('procedural music harmony', () => {
         entry.chord.fifthSemitones,
       ]).toContain(entry.semitones);
     }
+  });
+
+  it('reuses a deterministic short lead motif across phrase cycles', () => {
+    const first = resolveProceduralLeadMotif(TEST_THEME, 3, -2);
+    const second = resolveProceduralLeadMotif(TEST_THEME, 3, -2);
+
+    expect(first).toEqual(second);
+    expect(first.degreeOffsets.length).toBeGreaterThanOrEqual(3);
+    expect(first.degreeOffsets.length).toBeLessThanOrEqual(8);
+
+    const describeCycle = (steps: number[]) =>
+      steps.map((stepIndex) =>
+        resolveProceduralInstrumentSemitones({
+          theme: TEST_THEME,
+          role: 'lead',
+          stepIndex,
+          clusterX: 3,
+          clusterY: -2,
+        })
+      );
+
+    expect(describeCycle([0, 1, 3, 5])).toEqual(
+      describeCycle([16, 17, 19, 21])
+    );
   });
 });

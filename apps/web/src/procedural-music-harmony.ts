@@ -17,12 +17,27 @@ export type ProceduralChord = {
   passingSemitones: number;
 };
 
+export type ProceduralLeadMotif = {
+  degreeOffsets: readonly number[];
+};
+
 const MUSIC_PROGRESSION_SEED = registerHashLabel('music-progression');
+const MUSIC_MOTIF_SEED = registerHashLabel('music-lead-motif');
 const PROGRESSION_PATTERNS = [
   [0, 3, 4, 0],
   [0, 4, 5, 0],
   [0, 5, 3, 4],
   [0, 2, 5, 0],
+] as const;
+const MOTIF_PATTERNS = [
+  [0, 1, 0],
+  [0, 1, 2, 1],
+  [0, 2, 1, 0],
+  [0, 1, 3, 1, 0],
+  [0, 2, 4, 2, 1, 0],
+  [0, 1, 0, 2, 1, 3],
+  [0, 2, 1, 3, 2, 1, 0],
+  [0, 1, 3, 2, 4, 2, 1, 0],
 ] as const;
 
 export function resolveProceduralChordProgression(
@@ -38,6 +53,23 @@ export function resolveProceduralChordProgression(
     ) * PROGRESSION_PATTERNS.length
   );
   return PROGRESSION_PATTERNS[patternIndex] ?? PROGRESSION_PATTERNS[0];
+}
+
+export function resolveProceduralLeadMotif(
+  theme: ProceduralHarmonyTheme,
+  clusterX: number,
+  clusterY: number
+): ProceduralLeadMotif {
+  const patternIndex = Math.floor(
+    hash2DWithSeed(
+      MUSIC_MOTIF_SEED,
+      clusterX - theme.id.length * 29,
+      clusterY + theme.id.length * 19
+    ) * MOTIF_PATTERNS.length
+  );
+  return {
+    degreeOffsets: MOTIF_PATTERNS[patternIndex] ?? MOTIF_PATTERNS[0],
+  };
 }
 
 export function resolveProceduralChordAtStep(
@@ -81,7 +113,13 @@ export function resolveProceduralInstrumentSemitones(options: {
     return [0, 7, 12, 3][options.stepIndex % 4] ?? 0;
   }
 
-  return resolveLeadSemitones(options.theme, chord, options.stepIndex);
+  return resolveLeadSemitones(
+    options.theme,
+    chord,
+    options.stepIndex,
+    options.clusterX,
+    options.clusterY
+  );
 }
 
 function createProceduralChord(
@@ -144,10 +182,15 @@ function resolveHarmonySemitones(
 function resolveLeadSemitones(
   theme: ProceduralHarmonyTheme,
   chord: ProceduralChord,
-  stepIndex: number
+  stepIndex: number,
+  clusterX: number,
+  clusterY: number
 ): number {
+  const motif = resolveProceduralLeadMotif(theme, clusterX, clusterY);
   const phraseStep = stepIndex % theme.stepPattern.length;
-  const melodyPatternIndex = theme.stepPattern[phraseStep] ?? 0;
+  const melodyPatternIndex =
+    chord.degreeIndex +
+    (motif.degreeOffsets[phraseStep % motif.degreeOffsets.length] ?? 0);
   const leadScaleSemitones = getScaleDegreeSemitones(
     theme.scale,
     melodyPatternIndex
