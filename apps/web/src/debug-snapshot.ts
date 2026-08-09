@@ -117,6 +117,10 @@ type DebugSnapshotExportOptions = {
         soft: number;
         hard: number;
       };
+      visibleObjects: {
+        soft: number;
+        hard: number;
+      };
       visibleMeshes: {
         soft: number;
         hard: number;

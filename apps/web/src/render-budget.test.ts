@@ -36,6 +36,7 @@ describe('render budget', () => {
     expect(state.maxChunkMeshes).toBe(0);
     expect(state.materialCount).toBe(0);
     expect(state.textureCount).toBe(0);
+    expect(state.visibleObjectCount).toBe(0);
     expect(state.visibleMeshCount).toBe(0);
     expect(state.currentFrameMs).toBeCloseTo(16.67, 2);
     expect(state.averageFps).toBeCloseTo(60, 0);
@@ -81,6 +82,7 @@ describe('render budget', () => {
       maxChunkMeshes: 0,
       materialCount: 0,
       textureCount: 0,
+      visibleObjectCount: 0,
       visibleMeshCount: 0,
       weatherVisibility: 1,
       weatherVisibilityRadiusCap: DEFAULT_VISIBILITY_RADIUS,
@@ -140,6 +142,7 @@ describe('render budget', () => {
         maxChunkMeshes: 88,
         materialCount: 30,
         textureCount: 36,
+        visibleObjectCount: 640,
         visibleMeshCount: 420,
       })
     ).toBe(state);
@@ -150,6 +153,7 @@ describe('render budget', () => {
     expect(state.maxChunkMeshes).toBe(88);
     expect(state.materialCount).toBe(30);
     expect(state.textureCount).toBe(36);
+    expect(state.visibleObjectCount).toBe(640);
     expect(state.visibleMeshCount).toBe(420);
     expect(state.weatherVisibility).toBe(0.8);
 
@@ -302,6 +306,10 @@ describe('render budget', () => {
         soft: 32,
         hard: 48,
       },
+      visibleObjects: {
+        soft: 1200,
+        hard: 1800,
+      },
       visibleMeshes: {
         soft: 640,
         hard: 960,
@@ -383,6 +391,7 @@ describe('render budget', () => {
         maxChunkMeshes: 0,
         materialCount: 0,
         textureCount: 0,
+        visibleObjectCount: 0,
         visibleMeshCount: 0,
       })
     ).toEqual(['None']);
@@ -399,6 +408,7 @@ describe('render budget', () => {
         maxChunkMeshes: 0,
         materialCount: 0,
         textureCount: 0,
+        visibleObjectCount: 0,
         visibleMeshCount: 0,
       })
     ).toEqual([
@@ -419,6 +429,7 @@ describe('render budget', () => {
         maxChunkMeshes: 0,
         materialCount: 0,
         textureCount: 0,
+        visibleObjectCount: 0,
         visibleMeshCount: 0,
       })
     ).toEqual([
@@ -440,6 +451,7 @@ describe('render budget', () => {
         maxChunkMeshes: 0,
         materialCount: 0,
         textureCount: 0,
+        visibleObjectCount: 0,
         visibleMeshCount: 0,
       })
     ).toEqual([
@@ -460,6 +472,7 @@ describe('render budget', () => {
       maxChunkMeshes: 0,
       materialCount: 0,
       textureCount: 0,
+      visibleObjectCount: 0,
       visibleMeshCount: 0,
     });
     expect(state.visibilityRadius).toBe(REDUCED_VISIBILITY_RADIUS);
@@ -474,6 +487,7 @@ describe('render budget', () => {
       maxChunkMeshes: 0,
       materialCount: 0,
       textureCount: 0,
+      visibleObjectCount: 0,
       visibleMeshCount: 0,
     });
     expect(state.visibilityRadius).toBe(MIN_VISIBILITY_RADIUS);
@@ -492,6 +506,7 @@ describe('render budget', () => {
         maxChunkMeshes: 0,
         materialCount: 0,
         textureCount: 0,
+        visibleObjectCount: 0,
         visibleMeshCount: 0,
       })
     ).toEqual([
@@ -511,6 +526,7 @@ describe('render budget', () => {
         maxChunkMeshes: 0,
         materialCount: 0,
         textureCount: 0,
+        visibleObjectCount: 0,
         visibleMeshCount: 0,
       })
     ).toEqual([
@@ -531,6 +547,7 @@ describe('render budget', () => {
       maxChunkMeshes: 0,
       materialCount: 0,
       textureCount: 0,
+      visibleObjectCount: 0,
       visibleMeshCount: 0,
     });
     expect(state.visibilityRadius).toBe(REDUCED_VISIBILITY_RADIUS);
@@ -544,6 +561,7 @@ describe('render budget', () => {
       maxChunkMeshes: 0,
       materialCount: 0,
       textureCount: 0,
+      visibleObjectCount: 0,
       visibleMeshCount: 0,
     });
     expect(state.visibilityRadius).toBe(MIN_VISIBILITY_RADIUS);
@@ -562,6 +580,7 @@ describe('render budget', () => {
         maxChunkMeshes: 0,
         materialCount: 0,
         textureCount: 0,
+        visibleObjectCount: 0,
         visibleMeshCount: 0,
       })
     ).toEqual([
@@ -581,6 +600,7 @@ describe('render budget', () => {
         maxChunkMeshes: 0,
         materialCount: 0,
         textureCount: 0,
+        visibleObjectCount: 0,
         visibleMeshCount: 0,
       })
     ).toEqual([
@@ -601,6 +621,7 @@ describe('render budget', () => {
       maxChunkMeshes: 100,
       materialCount: 0,
       textureCount: 0,
+      visibleObjectCount: 0,
       visibleMeshCount: 0,
     });
     expect(state.visibilityRadius).toBe(REDUCED_VISIBILITY_RADIUS);
@@ -614,6 +635,7 @@ describe('render budget', () => {
       maxChunkMeshes: 150,
       materialCount: 0,
       textureCount: 0,
+      visibleObjectCount: 0,
       visibleMeshCount: 0,
     });
     expect(state.visibilityRadius).toBe(MIN_VISIBILITY_RADIUS);
@@ -632,6 +654,7 @@ describe('render budget', () => {
         maxChunkMeshes: 100,
         materialCount: 0,
         textureCount: 0,
+        visibleObjectCount: 0,
         visibleMeshCount: 0,
       })
     ).toEqual([
@@ -651,6 +674,7 @@ describe('render budget', () => {
         maxChunkMeshes: 150,
         materialCount: 0,
         textureCount: 0,
+        visibleObjectCount: 0,
         visibleMeshCount: 0,
       })
     ).toEqual([
@@ -671,6 +695,7 @@ describe('render budget', () => {
       maxChunkMeshes: 0,
       materialCount: 0,
       textureCount: 52,
+      visibleObjectCount: 0,
       visibleMeshCount: 0,
     });
     expect(state.visibilityRadius).toBe(REDUCED_VISIBILITY_RADIUS);
@@ -684,6 +709,7 @@ describe('render budget', () => {
       maxChunkMeshes: 0,
       materialCount: 0,
       textureCount: 80,
+      visibleObjectCount: 0,
       visibleMeshCount: 0,
     });
     expect(state.visibilityRadius).toBe(MIN_VISIBILITY_RADIUS);
@@ -702,6 +728,7 @@ describe('render budget', () => {
         maxChunkMeshes: 0,
         materialCount: 0,
         textureCount: 52,
+        visibleObjectCount: 0,
         visibleMeshCount: 0,
       })
     ).toEqual([
@@ -721,6 +748,7 @@ describe('render budget', () => {
         maxChunkMeshes: 0,
         materialCount: 0,
         textureCount: 80,
+        visibleObjectCount: 0,
         visibleMeshCount: 0,
       })
     ).toEqual([
@@ -741,6 +769,7 @@ describe('render budget', () => {
       maxChunkMeshes: 0,
       materialCount: 36,
       textureCount: 0,
+      visibleObjectCount: 0,
       visibleMeshCount: 0,
     });
     expect(state.visibilityRadius).toBe(REDUCED_VISIBILITY_RADIUS);
@@ -754,6 +783,7 @@ describe('render budget', () => {
       maxChunkMeshes: 0,
       materialCount: 52,
       textureCount: 0,
+      visibleObjectCount: 0,
       visibleMeshCount: 0,
     });
     expect(state.visibilityRadius).toBe(MIN_VISIBILITY_RADIUS);
@@ -772,6 +802,7 @@ describe('render budget', () => {
         maxChunkMeshes: 0,
         materialCount: 36,
         textureCount: 0,
+        visibleObjectCount: 0,
         visibleMeshCount: 0,
       })
     ).toEqual([
@@ -791,11 +822,86 @@ describe('render budget', () => {
         maxChunkMeshes: 0,
         materialCount: 52,
         textureCount: 0,
+        visibleObjectCount: 0,
         visibleMeshCount: 0,
       })
     ).toEqual([
       `Visibility radius reduced to ${MIN_VISIBILITY_RADIUS}`,
       'Scene materials exceeded the hard cap',
+    ]);
+  });
+
+  it('reduces draw distance when too many objects are visible at once', () => {
+    let state = DEFAULT_RENDER_BUDGET_STATE;
+
+    state = advanceRenderBudgetState(state, {
+      deltaMs: 16.67,
+      active3d: true,
+      weatherVisibility: 1,
+      drawCalls: 200,
+      maxChunkDrawCalls: 0,
+      maxChunkMeshes: 0,
+      materialCount: 0,
+      textureCount: 0,
+      visibleObjectCount: 1300,
+      visibleMeshCount: 0,
+    });
+    expect(state.visibilityRadius).toBe(REDUCED_VISIBILITY_RADIUS);
+
+    state = advanceRenderBudgetState(state, {
+      deltaMs: 16.67,
+      active3d: true,
+      weatherVisibility: 1,
+      drawCalls: 200,
+      maxChunkDrawCalls: 0,
+      maxChunkMeshes: 0,
+      materialCount: 0,
+      textureCount: 0,
+      visibleObjectCount: 1900,
+      visibleMeshCount: 0,
+    });
+    expect(state.visibilityRadius).toBe(MIN_VISIBILITY_RADIUS);
+  });
+
+  it('reports visible object pressure in the active limiter list', () => {
+    expect(
+      getRenderQualityLimiters({
+        smoothedFrameMs: 16.67,
+        visibilityRadius: REDUCED_VISIBILITY_RADIUS,
+        weatherVisibilityRadiusCap: DEFAULT_VISIBILITY_RADIUS,
+        targetFps: 60,
+        severeFrameStreak: 0,
+        drawCalls: 0,
+        maxChunkDrawCalls: 0,
+        maxChunkMeshes: 0,
+        materialCount: 0,
+        textureCount: 0,
+        visibleObjectCount: 1300,
+        visibleMeshCount: 0,
+      })
+    ).toEqual([
+      `Visibility radius reduced to ${REDUCED_VISIBILITY_RADIUS}`,
+      'Visible objects exceeded the soft cap',
+    ]);
+
+    expect(
+      getRenderQualityLimiters({
+        smoothedFrameMs: 16.67,
+        visibilityRadius: MIN_VISIBILITY_RADIUS,
+        weatherVisibilityRadiusCap: DEFAULT_VISIBILITY_RADIUS,
+        targetFps: 60,
+        severeFrameStreak: 0,
+        drawCalls: 0,
+        maxChunkDrawCalls: 0,
+        maxChunkMeshes: 0,
+        materialCount: 0,
+        textureCount: 0,
+        visibleObjectCount: 1900,
+        visibleMeshCount: 0,
+      })
+    ).toEqual([
+      `Visibility radius reduced to ${MIN_VISIBILITY_RADIUS}`,
+      'Visible objects exceeded the hard cap',
     ]);
   });
 
@@ -811,6 +917,7 @@ describe('render budget', () => {
       maxChunkMeshes: 0,
       materialCount: 0,
       textureCount: 0,
+      visibleObjectCount: 700,
       visibleMeshCount: 700,
     });
     expect(state.visibilityRadius).toBe(REDUCED_VISIBILITY_RADIUS);
@@ -824,6 +931,7 @@ describe('render budget', () => {
       maxChunkMeshes: 0,
       materialCount: 0,
       textureCount: 0,
+      visibleObjectCount: 980,
       visibleMeshCount: 980,
     });
     expect(state.visibilityRadius).toBe(MIN_VISIBILITY_RADIUS);
@@ -842,6 +950,7 @@ describe('render budget', () => {
         maxChunkMeshes: 0,
         materialCount: 0,
         textureCount: 0,
+        visibleObjectCount: 700,
         visibleMeshCount: 700,
       })
     ).toEqual([
@@ -861,6 +970,7 @@ describe('render budget', () => {
         maxChunkMeshes: 0,
         materialCount: 0,
         textureCount: 0,
+        visibleObjectCount: 980,
         visibleMeshCount: 980,
       })
     ).toEqual([

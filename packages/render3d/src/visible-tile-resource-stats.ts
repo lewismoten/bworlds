@@ -4,6 +4,7 @@ export type VisibleTileResourceStatsEntry = {
   tileX: number;
   tileY: number;
   drawCallCount: number;
+  visibleObjectCount?: number;
   visibleMeshCount?: number;
   materialCount?: number;
 };
@@ -15,6 +16,7 @@ export function collectVisibleTileResourceStats<TEntry extends VisibleTileResour
   chunkCount: number;
   maxChunkDrawCallCount: number;
   maxChunkMeshCount: number;
+  totalVisibleObjectCount: number;
   totalVisibleMeshCount: number;
   totalMaterialCount: number;
 } {
@@ -23,6 +25,7 @@ export function collectVisibleTileResourceStats<TEntry extends VisibleTileResour
   const chunkMeshes = new Map<string, number>();
   let maxChunkDrawCallCount = 0;
   let maxChunkMeshCount = 0;
+  let totalVisibleObjectCount = 0;
   let totalVisibleMeshCount = 0;
   let totalMaterialCount = 0;
 
@@ -39,6 +42,7 @@ export function collectVisibleTileResourceStats<TEntry extends VisibleTileResour
     const nextMeshCount =
       (chunkMeshes.get(key) ?? 0) + Math.max(0, Math.floor(entry.visibleMeshCount ?? 0));
     chunkMeshes.set(key, nextMeshCount);
+    totalVisibleObjectCount += Math.max(0, Math.floor(entry.visibleObjectCount ?? 0));
     totalVisibleMeshCount += Math.max(0, Math.floor(entry.visibleMeshCount ?? 0));
     totalMaterialCount += Math.max(0, Math.floor(entry.materialCount ?? 0));
     if (nextMeshCount > maxChunkMeshCount) {
@@ -50,6 +54,7 @@ export function collectVisibleTileResourceStats<TEntry extends VisibleTileResour
     chunkCount: chunkDrawCalls.size,
     maxChunkDrawCallCount,
     maxChunkMeshCount,
+    totalVisibleObjectCount,
     totalVisibleMeshCount,
     totalMaterialCount,
   };

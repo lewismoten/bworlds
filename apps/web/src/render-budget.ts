@@ -14,6 +14,7 @@ export type RenderBudgetState = {
   maxChunkMeshes: number;
   materialCount: number;
   textureCount: number;
+  visibleObjectCount: number;
   visibleMeshCount: number;
   visibilityRadius: number;
   weatherVisibility: number;
@@ -71,6 +72,10 @@ export type RenderBudgetCaps = {
     soft: number;
     hard: number;
   };
+  visibleObjects: {
+    soft: number;
+    hard: number;
+  };
   visibleMeshes: {
     soft: number;
     hard: number;
@@ -92,6 +97,7 @@ export const DEFAULT_RENDER_BUDGET_STATE: RenderBudgetState = {
   maxChunkMeshes: 0,
   materialCount: 0,
   textureCount: 0,
+  visibleObjectCount: 0,
   visibleMeshCount: 0,
   visibilityRadius: DEFAULT_VISIBILITY_RADIUS,
   weatherVisibility: 1,
@@ -120,6 +126,8 @@ const SOFT_TEXTURE_LIMIT = 48;
 const HARD_TEXTURE_LIMIT = 72;
 const SOFT_MATERIAL_LIMIT = 32;
 const HARD_MATERIAL_LIMIT = 48;
+const SOFT_VISIBLE_OBJECT_LIMIT = 1200;
+const HARD_VISIBLE_OBJECT_LIMIT = 1800;
 const SOFT_VISIBLE_MESH_LIMIT = 640;
 const HARD_VISIBLE_MESH_LIMIT = 960;
 
@@ -133,6 +141,7 @@ function resetRenderBudgetStateInPlace(state: RenderBudgetState): RenderBudgetSt
   state.maxChunkMeshes = 0;
   state.materialCount = 0;
   state.textureCount = 0;
+  state.visibleObjectCount = 0;
   state.visibleMeshCount = 0;
   state.visibilityRadius = DEFAULT_VISIBILITY_RADIUS;
   state.weatherVisibility = 1;
@@ -169,6 +178,7 @@ export function updateRenderBudgetStateInPlace(
     maxChunkMeshes,
     materialCount,
     textureCount,
+    visibleObjectCount,
     visibleMeshCount,
   }: {
     deltaMs: number;
@@ -179,6 +189,7 @@ export function updateRenderBudgetStateInPlace(
     maxChunkMeshes?: number;
     materialCount?: number;
     textureCount?: number;
+    visibleObjectCount?: number;
     visibleMeshCount?: number;
   }
 ): RenderBudgetState {
@@ -232,6 +243,10 @@ export function updateRenderBudgetStateInPlace(
     0,
     Math.floor(visibleMeshCount ?? state.visibleMeshCount)
   );
+  const normalizedVisibleObjectCount = Math.max(
+    0,
+    Math.floor(visibleObjectCount ?? state.visibleObjectCount)
+  );
   const weatherVisibilityRadiusCap = getWeatherVisibilityRadiusCap(
     normalizedWeatherVisibility
   );
@@ -275,6 +290,11 @@ export function updateRenderBudgetStateInPlace(
   } else if (normalizedMaterialCount >= SOFT_MATERIAL_LIMIT) {
     visibilityRadius = Math.min(visibilityRadius, REDUCED_VISIBILITY_RADIUS);
   }
+  if (normalizedVisibleObjectCount >= HARD_VISIBLE_OBJECT_LIMIT) {
+    visibilityRadius = Math.min(visibilityRadius, MIN_VISIBILITY_RADIUS);
+  } else if (normalizedVisibleObjectCount >= SOFT_VISIBLE_OBJECT_LIMIT) {
+    visibilityRadius = Math.min(visibilityRadius, REDUCED_VISIBILITY_RADIUS);
+  }
   if (normalizedVisibleMeshCount >= HARD_VISIBLE_MESH_LIMIT) {
     visibilityRadius = Math.min(visibilityRadius, MIN_VISIBILITY_RADIUS);
   } else if (normalizedVisibleMeshCount >= SOFT_VISIBLE_MESH_LIMIT) {
@@ -288,6 +308,7 @@ export function updateRenderBudgetStateInPlace(
   state.maxChunkMeshes = normalizedMaxChunkMeshes;
   state.materialCount = normalizedMaterialCount;
   state.textureCount = normalizedTextureCount;
+  state.visibleObjectCount = normalizedVisibleObjectCount;
   state.visibleMeshCount = normalizedVisibleMeshCount;
   state.visibilityRadius = Math.min(visibilityRadius, weatherVisibilityRadiusCap);
   state.weatherVisibility = normalizedWeatherVisibility;
@@ -310,6 +331,7 @@ export function advanceRenderBudgetState(
     maxChunkMeshes,
     materialCount,
     textureCount,
+    visibleObjectCount,
     visibleMeshCount,
   }: {
     deltaMs: number;
@@ -320,6 +342,7 @@ export function advanceRenderBudgetState(
     maxChunkMeshes?: number;
     materialCount?: number;
     textureCount?: number;
+    visibleObjectCount?: number;
     visibleMeshCount?: number;
   }
 ): RenderBudgetState {
@@ -337,6 +360,7 @@ export function advanceRenderBudgetState(
       maxChunkMeshes,
       materialCount,
       textureCount,
+      visibleObjectCount,
       visibleMeshCount,
     }
   );
@@ -414,6 +438,10 @@ export function getRenderBudgetCaps(
       soft: SOFT_MATERIAL_LIMIT,
       hard: HARD_MATERIAL_LIMIT,
     },
+    visibleObjects: {
+      soft: SOFT_VISIBLE_OBJECT_LIMIT,
+      hard: HARD_VISIBLE_OBJECT_LIMIT,
+    },
     visibleMeshes: {
       soft: SOFT_VISIBLE_MESH_LIMIT,
       hard: HARD_VISIBLE_MESH_LIMIT,
@@ -482,6 +510,7 @@ export function getRenderQualityLimiters(
     | 'maxChunkMeshes'
     | 'materialCount'
     | 'textureCount'
+    | 'visibleObjectCount'
     | 'visibleMeshCount'
   >
 ): string[] {
@@ -525,6 +554,11 @@ export function getRenderQualityLimiters(
     limiters.push('Scene materials exceeded the hard cap');
   } else if (state.materialCount >= SOFT_MATERIAL_LIMIT) {
     limiters.push('Scene materials exceeded the soft cap');
+  }
+  if (state.visibleObjectCount >= HARD_VISIBLE_OBJECT_LIMIT) {
+    limiters.push('Visible objects exceeded the hard cap');
+  } else if (state.visibleObjectCount >= SOFT_VISIBLE_OBJECT_LIMIT) {
+    limiters.push('Visible objects exceeded the soft cap');
   }
   if (state.visibleMeshCount >= HARD_VISIBLE_MESH_LIMIT) {
     limiters.push('Visible meshes exceeded the hard cap');
