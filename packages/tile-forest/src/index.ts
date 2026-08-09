@@ -1,6 +1,12 @@
 import { createBoundedCache } from '@bworlds/cache-support';
 import { octaveNoise2D } from '@bworlds/core';
-import { hash2D, registerHashLabel } from '@bworlds/core/hash';
+import {
+  appendHashSeedLabel,
+  appendHashSeedPart,
+  hash2D,
+  hash2DWithSeed,
+  registerHashLabel,
+} from '@bworlds/core/hash';
 import { createPlainsBackedTilePainter } from '@bworlds/paint-support';
 import {
   getPoiLightActivation,
@@ -95,6 +101,48 @@ const FOREST_FALLEN_DETAIL_SEED = registerHashLabel('forest-fallen-detail');
 const FOREST_INTERIOR_FLOOR_DETAIL_SEED = registerHashLabel(
   'forest-interior-floor-detail'
 );
+const FOREST_HOLLOW_SEED = registerHashLabel('forest-hollow');
+const FOREST_HOLLOW_HEIGHT_SEED = registerHashLabel('forest-hollow-height');
+const FOREST_HOLLOW_SCALE_SEED = registerHashLabel('forest-hollow-scale');
+const FOREST_HOLLOW_DEPTH_SEED = registerHashLabel('forest-hollow-depth');
+const FOREST_OWL_SEED = registerHashLabel('forest-owl');
+const FOREST_OWL_BODY_SEED = registerHashLabel('forest-owl-body');
+const FOREST_OWL_EYE_SPREAD_SEED = registerHashLabel('forest-owl-eye-spread');
+const FOREST_OWL_PERCH_SEED = registerHashLabel('forest-owl-perch');
+const FOREST_CARVING_SEED = registerHashLabel('forest-carving');
+const FOREST_CARVING_HEIGHT_SEED = registerHashLabel('forest-carving-height');
+const FOREST_CARVING_SCALE_SEED = registerHashLabel('forest-carving-scale');
+const FOREST_CARVING_HISTORICAL_SEED = registerHashLabel('forest-carving-historical');
+const FOREST_CARVING_TREASURE_SEED = registerHashLabel('forest-carving-treasure');
+const FOREST_CARVING_QUEST_SEED = registerHashLabel('forest-carving-quest');
+const FOREST_CARVING_ARROW_SEED = registerHashLabel('forest-carving-arrow');
+const FOREST_CARVING_DATE_SEED = registerHashLabel('forest-carving-date');
+const FOREST_CARVING_AGE_SEED = registerHashLabel('forest-carving-age');
+const FOREST_CARVING_BARK_COVERAGE_SEED = registerHashLabel(
+  'forest-carving-bark-coverage'
+);
+const FOREST_CARVING_INSPECT_PRESERVED_SEED = registerHashLabel(
+  'forest-carving-inspect-preserved'
+);
+const FOREST_CARVING_INSPECT_SEED = registerHashLabel('forest-carving-inspect');
+const FOREST_CARVING_MARKER_SEED = registerHashLabel('forest-carving-marker');
+const FOREST_CARVING_MARKER_VISIBLE_SEED = registerHashLabel('visible');
+const FOREST_CARVING_MARKER_PRIORITY_SEED = registerHashLabel('priority');
+const FOREST_CARVING_MARKER_JITTER_X_SEED = registerHashLabel('jitter-x');
+const FOREST_CARVING_MARKER_JITTER_Y_SEED = registerHashLabel('jitter-y');
+const FOREST_MEADOW_COUNT_SEED = registerHashLabel('forest-meadow-count');
+const FOREST_MEADOW_SEED = registerHashLabel('forest-meadow');
+const FOREST_FLOWER_SEED = registerHashLabel('flower');
+const FOREST_BIRD_COUNT_SEED = registerHashLabel('forest-bird-count');
+const FOREST_BIRD_SEED = registerHashLabel('forest-bird');
+const FOREST_FIREFLY_COUNT_SEED = registerHashLabel('forest-firefly-count');
+const FOREST_FIREFLY_ORBIT_ANGLE_SEED = registerHashLabel('forest-firefly-orbit-angle');
+const FOREST_FIREFLY_ORBIT_DISTANCE_SEED = registerHashLabel(
+  'forest-firefly-orbit-distance'
+);
+const FOREST_FIREFLY_CANOPY_BIAS_SEED = registerHashLabel('forest-firefly-canopy-bias');
+const FOREST_FIREFLY_PHASE_SEED = registerHashLabel('forest-firefly-phase');
+const FOREST_FIREFLY_DRIFT_SEED = registerHashLabel('forest-firefly-drift');
 
 const treeDescriptorCache = createBoundedCache<string, ForestTreeDescriptor[]>(
   FOREST_COORDINATE_CACHE_LIMIT
@@ -514,7 +562,7 @@ const resolveForestHollowDescriptors = createCoordinateValueResolver(
     const hollows: ForestHollowDescriptor[] = [];
 
     trees.forEach((tree, treeIndex) => {
-      const chance = hash2D('forest-hollow', tileX * 17 + treeIndex, tileY * 19);
+      const chance = hash2D(FOREST_HOLLOW_SEED, tileX * 17 + treeIndex, tileY * 19);
       if (chance < 0.78) {
         return;
       }
@@ -529,9 +577,13 @@ const resolveForestHollowDescriptors = createCoordinateValueResolver(
       hollows.push({
         treeIndex,
         sideOffset: chance > 0.9 ? 1 : -1,
-        height: tree.trunkHeight * (0.38 + hash2D('forest-hollow-height', treeIndex, tileY) * 0.16),
-        scale: 0.12 + hash2D('forest-hollow-scale', tileX + treeIndex, tileY) * 0.05,
-        depth: 0.08 + hash2D('forest-hollow-depth', tileX, tileY + treeIndex) * 0.03,
+        height:
+          tree.trunkHeight *
+          (0.38 + hash2D(FOREST_HOLLOW_HEIGHT_SEED, treeIndex, tileY) * 0.16),
+        scale:
+          0.12 + hash2D(FOREST_HOLLOW_SCALE_SEED, tileX + treeIndex, tileY) * 0.05,
+        depth:
+          0.08 + hash2D(FOREST_HOLLOW_DEPTH_SEED, tileX, tileY + treeIndex) * 0.03,
       });
     });
 
@@ -548,16 +600,20 @@ const resolveForestOwlDescriptors = createCoordinateValueResolver(
     const owls: ForestOwlDescriptor[] = [];
 
     hollows.forEach((hollow, hollowIndex) => {
-      const chance = hash2D('forest-owl', tileX * 23 + hollowIndex, tileY * 29);
+      const chance = hash2D(FOREST_OWL_SEED, tileX * 23 + hollowIndex, tileY * 29);
       if (chance < 0.58) {
         return;
       }
 
       owls.push({
         hollowIndex,
-        bodyScale: 0.08 + hash2D('forest-owl-body', tileX + hollowIndex, tileY) * 0.03,
-        eyeSpread: 0.022 + hash2D('forest-owl-eye-spread', tileX, tileY + hollowIndex) * 0.012,
-        perchOffset: 0.01 + hash2D('forest-owl-perch', tileX - hollowIndex, tileY) * 0.02,
+        bodyScale:
+          0.08 + hash2D(FOREST_OWL_BODY_SEED, tileX + hollowIndex, tileY) * 0.03,
+        eyeSpread:
+          0.022 +
+          hash2D(FOREST_OWL_EYE_SPREAD_SEED, tileX, tileY + hollowIndex) * 0.012,
+        perchOffset:
+          0.01 + hash2D(FOREST_OWL_PERCH_SEED, tileX - hollowIndex, tileY) * 0.02,
       });
     });
 
@@ -574,7 +630,7 @@ const resolveForestCarvingDescriptors = createCoordinateValueResolver(
     const carvings: ForestCarvingDescriptor[] = [];
 
     trees.forEach((tree, treeIndex) => {
-      const chance = hash2D('forest-carving', tileX * 31 + treeIndex, tileY * 37);
+      const chance = hash2D(FOREST_CARVING_SEED, tileX * 31 + treeIndex, tileY * 37);
       if (chance < 0.88) {
         return;
       }
@@ -609,12 +665,14 @@ const resolveForestCarvingDescriptors = createCoordinateValueResolver(
         sideOffset: chance > 0.94 ? 1 : -1,
         height:
           tree.trunkHeight *
-          (0.44 + hash2D('forest-carving-height', treeIndex, tileY) * 0.14),
-        scale: 0.018 + hash2D('forest-carving-scale', tileX + treeIndex, tileY) * 0.006,
+          (0.44 + hash2D(FOREST_CARVING_HEIGHT_SEED, treeIndex, tileY) * 0.14),
+        scale:
+          0.018 +
+          hash2D(FOREST_CARVING_SCALE_SEED, tileX + treeIndex, tileY) * 0.006,
         preserved: isForestQuestCarvingMotif(motif),
         age: resolveForestCarvingAge(motif, tileX, tileY, treeIndex),
         barkCoverage: resolveForestCarvingBarkCoverage(motif, tileX, tileY, treeIndex),
-        markerSeed: `forest-carving:${tileX}:${tileY}:${treeIndex}`,
+        markerSeed: createForestCarvingMarkerSeed(tileX, tileY, treeIndex),
         motif,
         text: getForestCarvingText(motif, tileX, tileY, treeIndex),
       });
@@ -631,7 +689,7 @@ const resolveForestMeadowDescriptors = createCoordinateValueResolver(
   ({ tileX, tileY }) => {
     const trees = resolveForestTreeDescriptors(tileX, tileY);
     const landmark = getForestLandmark(tileX, tileY);
-    const count = hash2D('forest-meadow-count', tileX, tileY) > 0.86 ? 1 : 0;
+    const count = hash2D(FOREST_MEADOW_COUNT_SEED, tileX, tileY) > 0.86 ? 1 : 0;
     const meadows: ForestMeadowDescriptor[] = [];
 
     for (let index = 0; index < count; index += 1) {
@@ -651,22 +709,22 @@ const resolveForestBirdDescriptors = createCoordinateValueResolver(
   forestBirdCache,
   ({ tileX, tileY }) => {
     const trees = resolveForestTreeDescriptors(tileX, tileY);
-    const count = hash2D('forest-bird-count', tileX, tileY) > 0.72 ? 1 : 0;
+    const count = hash2D(FOREST_BIRD_COUNT_SEED, tileX, tileY) > 0.72 ? 1 : 0;
     const birds: ForestBirdDescriptor[] = [];
 
     for (let index = 0; index < count; index += 1) {
-      const seed = `forest-bird:${tileX}:${tileY}:${index}`;
+      const seed = createForestBirdSeed(tileX, tileY, index);
       const averageHeight =
         trees.reduce((sum, tree) => sum + tree.trunkHeight * tree.scale, 0) /
         Math.max(1, trees.length);
       birds.push({
-        x: (hash2D(seed, 1, 0) - 0.5) * 0.58,
-        y: (hash2D(seed, 2, 0) - 0.5) * 0.58,
-        height: 0.92 + averageHeight * 0.46 + hash2D(seed, 3, 0) * 0.3,
-        radius: 0.12 + hash2D(seed, 4, 0) * 0.1,
-        phase: hash2D(seed, 5, 0),
-        speed: 0.0008 + hash2D(seed, 6, 0) * 0.0007,
-        wingScale: 0.05 + hash2D(seed, 7, 0) * 0.02,
+        x: (hash2DWithSeed(seed, 1, 0) - 0.5) * 0.58,
+        y: (hash2DWithSeed(seed, 2, 0) - 0.5) * 0.58,
+        height: 0.92 + averageHeight * 0.46 + hash2DWithSeed(seed, 3, 0) * 0.3,
+        radius: 0.12 + hash2DWithSeed(seed, 4, 0) * 0.1,
+        phase: hash2DWithSeed(seed, 5, 0),
+        speed: 0.0008 + hash2DWithSeed(seed, 6, 0) * 0.0007,
+        wingScale: 0.05 + hash2DWithSeed(seed, 7, 0) * 0.02,
       });
     }
 
@@ -683,7 +741,7 @@ const resolveForestFireflyDescriptors = createCoordinateValueResolver(
     const humidAnchors = anchors.filter((anchor) => anchor.habitatKind !== 'tree');
     const count = Math.min(
       MAX_FOREST_FIREFLIES,
-      2 + Math.floor(hash2D('forest-firefly-count', tileX, tileY) * 2)
+      2 + Math.floor(hash2D(FOREST_FIREFLY_COUNT_SEED, tileX, tileY) * 2)
     );
     const fireflies: ForestFireflyDescriptor[] = [];
 
@@ -692,22 +750,22 @@ const resolveForestFireflyDescriptors = createCoordinateValueResolver(
         index === 0 && humidAnchors.length > 0 ? humidAnchors : anchors;
       const anchor = pickForestFireflyHabitatAnchor(anchorPool, tileX, tileY, index);
       const orbitAngle =
-        hash2D('forest-firefly-orbit-angle', tileX * 13 + index, tileY * 17) *
+        hash2D(FOREST_FIREFLY_ORBIT_ANGLE_SEED, tileX * 13 + index, tileY * 17) *
         Math.PI *
         2;
       const orbitDistance =
         anchor.radius *
         (0.2 +
-          hash2D('forest-firefly-orbit-distance', tileX + index, tileY - index) *
+          hash2D(FOREST_FIREFLY_ORBIT_DISTANCE_SEED, tileX + index, tileY - index) *
             0.8);
       const canopyBias = hash2D(
-        'forest-firefly-canopy-bias',
+        FOREST_FIREFLY_CANOPY_BIAS_SEED,
         tileX - index,
         tileY + index
       );
       fireflies.push({
-        phase: hash2D('forest-firefly-phase', tileX * 17 + index, tileY * 13),
-        drift: hash2D('forest-firefly-drift', tileX + index, tileY - index),
+        phase: hash2D(FOREST_FIREFLY_PHASE_SEED, tileX * 17 + index, tileY * 13),
+        drift: hash2D(FOREST_FIREFLY_DRIFT_SEED, tileX + index, tileY - index),
         habitatKind: anchor.habitatKind,
         anchorX: anchor.x,
         anchorZ: anchor.z,
@@ -2766,13 +2824,29 @@ function createForestLandmarkMeshes(
 function getForestCarvingMarkers(carving: ForestCarvingDescriptor) {
   const glyphs = getForestCarvingGlyphs(carving.text);
   const weathering = 0.18 + carving.age * 0.42;
+  const visibleSeed = appendHashSeedLabel(
+    carving.markerSeed,
+    FOREST_CARVING_MARKER_VISIBLE_SEED
+  );
+  const prioritySeed = appendHashSeedLabel(
+    carving.markerSeed,
+    FOREST_CARVING_MARKER_PRIORITY_SEED
+  );
+  const jitterXSeed = appendHashSeedLabel(
+    carving.markerSeed,
+    FOREST_CARVING_MARKER_JITTER_X_SEED
+  );
+  const jitterYSeed = appendHashSeedLabel(
+    carving.markerSeed,
+    FOREST_CARVING_MARKER_JITTER_Y_SEED
+  );
   const obscuredThreshold = Math.min(
     carving.preserved ? 0.34 : 0.94,
     carving.barkCoverage * (carving.preserved ? 0.42 : 0.72) + carving.age * 0.08
   );
   const visibleGlyphs = glyphs.filter(
     (_marker, index) =>
-      hash2D(`${carving.markerSeed}:visible`, index, 0) >= obscuredThreshold
+      hash2DWithSeed(visibleSeed, index, 0) >= obscuredThreshold
   );
   const minimumVisibleCount = carving.preserved
     ? Math.max(2, Math.ceil(glyphs.length * 0.55))
@@ -2781,20 +2855,20 @@ function getForestCarvingMarkers(carving: ForestCarvingDescriptor) {
     carving.preserved && visibleGlyphs.length < minimumVisibleCount
       ? glyphs.filter(
           (_marker, index) =>
-            hash2D(`${carving.markerSeed}:priority`, index, 0) >= 0.22
+            hash2DWithSeed(prioritySeed, index, 0) >= 0.22
         )
       : visibleGlyphs;
 
   return filteredGlyphs
     .map((marker, index) => {
       const jitterX =
-        (hash2D(`${carving.markerSeed}:jitter-x`, index, 0) - 0.5) *
+        (hash2DWithSeed(jitterXSeed, index, 0) - 0.5) *
         carving.scale *
         weathering *
         (carving.preserved ? 0.45 : 0.8) *
         0.8;
       const jitterY =
-        (hash2D(`${carving.markerSeed}:jitter-y`, index, 0) - 0.5) *
+        (hash2DWithSeed(jitterYSeed, index, 0) - 0.5) *
         carving.scale *
         weathering *
         (carving.preserved ? 0.5 : 1) *
@@ -2845,7 +2919,7 @@ function getForestCarvingText(
   if (motif === 'historical-inscription') {
     return pickForestCarvingLabel(
       FOREST_HISTORICAL_INSCRIPTION_LABELS,
-      'forest-carving-historical',
+      FOREST_CARVING_HISTORICAL_SEED,
       tileX,
       tileY,
       treeIndex
@@ -2855,7 +2929,7 @@ function getForestCarvingText(
   if (motif === 'treasure-map-clue') {
     return pickForestCarvingLabel(
       FOREST_TREASURE_CLUE_LABELS,
-      'forest-carving-treasure',
+      FOREST_CARVING_TREASURE_SEED,
       tileX,
       tileY,
       treeIndex
@@ -2865,7 +2939,7 @@ function getForestCarvingText(
   if (motif === 'quest-hint') {
     return pickForestCarvingLabel(
       FOREST_QUEST_HINT_LABELS,
-      'forest-carving-quest',
+      FOREST_CARVING_QUEST_SEED,
       tileX,
       tileY,
       treeIndex
@@ -2889,7 +2963,7 @@ function getForestCarvingText(
   }
 
   if (motif === 'arrow') {
-    return hash2D('forest-carving-arrow', tileX + treeIndex, tileY) > 0.5
+    return hash2D(FOREST_CARVING_ARROW_SEED, tileX + treeIndex, tileY) > 0.5
       ? '>'
       : '<';
   }
@@ -2899,7 +2973,9 @@ function getForestCarvingText(
   }
 
   if (motif === 'date') {
-    const year = 1860 + Math.floor(hash2D('forest-carving-date', tileX + treeIndex, tileY) * 50);
+    const year =
+      1860 +
+      Math.floor(hash2D(FOREST_CARVING_DATE_SEED, tileX + treeIndex, tileY) * 50);
     return String(year);
   }
 
@@ -2916,7 +2992,7 @@ function resolveForestCarvingAge(
   tileY: number,
   treeIndex: number
 ) {
-  const baseAge = hash2D('forest-carving-age', tileX * 17 + treeIndex, tileY * 19);
+  const baseAge = hash2D(FOREST_CARVING_AGE_SEED, tileX * 17 + treeIndex, tileY * 19);
   if (motif === 'historical-inscription') {
     return 0.78 + baseAge * 0.22;
   }
@@ -2940,7 +3016,7 @@ function resolveForestCarvingBarkCoverage(
 ) {
   const age = resolveForestCarvingAge(motif, tileX, tileY, treeIndex);
   const baseCoverage = hash2D(
-    'forest-carving-bark-coverage',
+    FOREST_CARVING_BARK_COVERAGE_SEED,
     tileX * 23 + treeIndex,
     tileY * 29
   );
@@ -2981,7 +3057,7 @@ function getPrimaryForestCarving(tileX: number, tileY: number) {
   const preservedCarvings = carvings.filter((carving) => carving.preserved);
   if (preservedCarvings.length > 0) {
     const preservedIndex = Math.floor(
-      hash2D('forest-carving-inspect-preserved', tileX, tileY) *
+      hash2D(FOREST_CARVING_INSPECT_PRESERVED_SEED, tileX, tileY) *
         preservedCarvings.length
     );
     return (
@@ -2990,7 +3066,7 @@ function getPrimaryForestCarving(tileX: number, tileY: number) {
   }
 
   const index = Math.floor(
-    hash2D('forest-carving-inspect', tileX, tileY) * carvings.length
+    hash2D(FOREST_CARVING_INSPECT_SEED, tileX, tileY) * carvings.length
   );
   return carvings[index] ?? carvings[0] ?? null;
 }
@@ -3034,7 +3110,7 @@ function describeForestCarving(carving: ForestCarvingDescriptor) {
 
 function pickForestCarvingLabel(
   labels: readonly string[],
-  seed: string,
+  seed: number,
   tileX: number,
   tileY: number,
   treeIndex: number
@@ -3043,6 +3119,55 @@ function pickForestCarvingLabel(
     hash2D(seed, tileX * 19 + treeIndex, tileY * 23) * labels.length
   );
   return labels[index] ?? labels[0] ?? '';
+}
+
+function createForestCarvingMarkerSeed(
+  tileX: number,
+  tileY: number,
+  treeIndex: number
+) {
+  return appendHashSeedPart(
+    appendHashSeedPart(
+      appendHashSeedPart(FOREST_CARVING_MARKER_SEED, tileX),
+      tileY
+    ),
+    treeIndex
+  );
+}
+
+function createForestMeadowSeed(
+  tileX: number,
+  tileY: number,
+  meadowIndex: number,
+  attempt: number
+) {
+  return appendHashSeedPart(
+    appendHashSeedPart(
+      appendHashSeedPart(
+        appendHashSeedPart(FOREST_MEADOW_SEED, tileX),
+        tileY
+      ),
+      meadowIndex
+    ),
+    attempt
+  );
+}
+
+function createForestFlowerSeed(meadowSeed: number, flowerIndex: number) {
+  return appendHashSeedPart(
+    appendHashSeedLabel(meadowSeed, FOREST_FLOWER_SEED),
+    flowerIndex
+  );
+}
+
+function createForestBirdSeed(tileX: number, tileY: number, birdIndex: number) {
+  return appendHashSeedPart(
+    appendHashSeedPart(
+      appendHashSeedPart(FOREST_BIRD_SEED, tileX),
+      tileY
+    ),
+    birdIndex
+  );
 }
 
 function offsetMarkers(
@@ -3066,11 +3191,11 @@ function createForestMeadowDescriptor(
   const trail = getForestTrail(tileX, tileY);
   const maxAttempts = 4;
   for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
-    const seed = `forest-meadow:${tileX}:${tileY}:${meadowIndex}:${attempt}`;
-    const x = clampToTile((hash2D(seed, 1, 0) - 0.5) * 0.56);
-    const y = clampToTile((hash2D(seed, 2, 0) - 0.5) * 0.56);
-    const radiusX = 0.2 + hash2D(seed, 3, 0) * 0.08;
-    const radiusY = 0.18 + hash2D(seed, 4, 0) * 0.08;
+    const seed = createForestMeadowSeed(tileX, tileY, meadowIndex, attempt);
+    const x = clampToTile((hash2DWithSeed(seed, 1, 0) - 0.5) * 0.56);
+    const y = clampToTile((hash2DWithSeed(seed, 2, 0) - 0.5) * 0.56);
+    const radiusX = 0.2 + hash2DWithSeed(seed, 3, 0) * 0.08;
+    const radiusY = 0.18 + hash2DWithSeed(seed, 4, 0) * 0.08;
     const clearance = Math.max(radiusX, radiusY) * 0.8;
     const nearTree = trees.some((tree) => {
       const distance = Math.hypot(x - tree.x, y - tree.y);
@@ -3089,16 +3214,16 @@ function createForestMeadowDescriptor(
       }
     }
 
-    const flowerCount = 4 + Math.floor(hash2D(seed, 5, 0) * 4);
+    const flowerCount = 4 + Math.floor(hash2DWithSeed(seed, 5, 0) * 4);
     const flowers: ForestFlowerDescriptor[] = [];
     for (let flowerIndex = 0; flowerIndex < flowerCount; flowerIndex += 1) {
-      const flowerSeed = `${seed}:flower:${flowerIndex}`;
+      const flowerSeed = createForestFlowerSeed(seed, flowerIndex);
       flowers.push({
-        x: (hash2D(flowerSeed, 1, 0) - 0.5) * radiusX * 1.4,
-        y: (hash2D(flowerSeed, 2, 0) - 0.5) * radiusY * 1.4,
-        height: 0.06 + hash2D(flowerSeed, 3, 0) * 0.03,
-        scale: 0.026 + hash2D(flowerSeed, 4, 0) * 0.014,
-        color: hash2D(flowerSeed, 5, 0) > 0.52 ? 'white' : 'yellow',
+        x: (hash2DWithSeed(flowerSeed, 1, 0) - 0.5) * radiusX * 1.4,
+        y: (hash2DWithSeed(flowerSeed, 2, 0) - 0.5) * radiusY * 1.4,
+        height: 0.06 + hash2DWithSeed(flowerSeed, 3, 0) * 0.03,
+        scale: 0.026 + hash2DWithSeed(flowerSeed, 4, 0) * 0.014,
+        color: hash2DWithSeed(flowerSeed, 5, 0) > 0.52 ? 'white' : 'yellow',
       });
     }
 
@@ -3661,7 +3786,7 @@ interface ForestCarvingDescriptor {
   preserved: boolean;
   age: number;
   barkCoverage: number;
-  markerSeed: string;
+  markerSeed: number;
   motif:
     | 'initials'
     | 'heart'
