@@ -264,10 +264,10 @@ This is critical because individually valid models can still overwhelm the rende
 * [X] Cap total visible meshes.
 * [X] Cap total visible triangles.
 * [X] Cap total visible vertices.
-* [ ] Cap total scene draw calls.
+* [X] Cap total scene draw calls.
 * [X] Cap total scene materials.
 * [X] Cap total active textures.
-* [ ] Cap estimated GPU memory.
+* [X] Cap estimated GPU memory.
 * [ ] Cap total animated characters.
 * [ ] Cap total active skeletons.
 * [ ] Cap total bones being evaluated per frame.

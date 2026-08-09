@@ -37,6 +37,7 @@ describe('render budget', () => {
     expect(state.materialCount).toBe(0);
     expect(state.textureCount).toBe(0);
     expect(state.visibleObjectCount).toBe(0);
+    expect(state.estimatedGpuMemoryBytes).toBe(0);
     expect(state.visibleTriangleCount).toBe(0);
     expect(state.visibleVertexCount).toBe(0);
     expect(state.visibleMeshCount).toBe(0);
@@ -85,6 +86,7 @@ describe('render budget', () => {
       materialCount: 0,
       textureCount: 0,
       visibleObjectCount: 0,
+      estimatedGpuMemoryBytes: 0,
       visibleTriangleCount: 0,
       visibleVertexCount: 0,
       visibleMeshCount: 0,
@@ -147,6 +149,7 @@ describe('render budget', () => {
         materialCount: 30,
         textureCount: 36,
         visibleObjectCount: 640,
+        estimatedGpuMemoryBytes: 28 * 1024 * 1024,
         visibleTriangleCount: 54000,
         visibleVertexCount: 82000,
         visibleMeshCount: 420,
@@ -160,6 +163,7 @@ describe('render budget', () => {
     expect(state.materialCount).toBe(30);
     expect(state.textureCount).toBe(36);
     expect(state.visibleObjectCount).toBe(640);
+    expect(state.estimatedGpuMemoryBytes).toBe(28 * 1024 * 1024);
     expect(state.visibleTriangleCount).toBe(54000);
     expect(state.visibleVertexCount).toBe(82000);
     expect(state.visibleMeshCount).toBe(420);
@@ -310,6 +314,10 @@ describe('render budget', () => {
         soft: 48,
         hard: 72,
       },
+      estimatedGpuMemoryBytes: {
+        soft: 96 * 1024 * 1024,
+        hard: 144 * 1024 * 1024,
+      },
       materials: {
         soft: 32,
         hard: 48,
@@ -340,6 +348,10 @@ describe('render budget', () => {
       pendingBuildTiles: {
         soft: 4,
         hard: 2,
+      },
+      estimatedGpuMemoryBytes: {
+        soft: 96 * 1024 * 1024,
+        hard: 144 * 1024 * 1024,
       },
     });
   });
@@ -796,6 +808,92 @@ describe('render budget', () => {
     ).toEqual([
       `Visibility radius reduced to ${MIN_VISIBILITY_RADIUS}`,
       'Active textures exceeded the hard cap',
+    ]);
+  });
+
+  it('reduces draw distance when estimated GPU memory gets too high', () => {
+    let state = DEFAULT_RENDER_BUDGET_STATE;
+
+    state = advanceRenderBudgetState(state, {
+      deltaMs: 16.67,
+      active3d: true,
+      weatherVisibility: 1,
+      drawCalls: 200,
+      maxChunkDrawCalls: 0,
+      maxChunkMeshes: 0,
+      materialCount: 0,
+      textureCount: 0,
+      visibleObjectCount: 0,
+      estimatedGpuMemoryBytes: 104 * 1024 * 1024,
+      visibleTriangleCount: 0,
+      visibleVertexCount: 0,
+      visibleMeshCount: 0,
+    });
+    expect(state.visibilityRadius).toBe(REDUCED_VISIBILITY_RADIUS);
+
+    state = advanceRenderBudgetState(state, {
+      deltaMs: 16.67,
+      active3d: true,
+      weatherVisibility: 1,
+      drawCalls: 200,
+      maxChunkDrawCalls: 0,
+      maxChunkMeshes: 0,
+      materialCount: 0,
+      textureCount: 0,
+      visibleObjectCount: 0,
+      estimatedGpuMemoryBytes: 152 * 1024 * 1024,
+      visibleTriangleCount: 0,
+      visibleVertexCount: 0,
+      visibleMeshCount: 0,
+    });
+    expect(state.visibilityRadius).toBe(MIN_VISIBILITY_RADIUS);
+  });
+
+  it('reports estimated GPU memory pressure in the active limiter list', () => {
+    expect(
+      getRenderQualityLimiters({
+        smoothedFrameMs: 16.67,
+        visibilityRadius: REDUCED_VISIBILITY_RADIUS,
+        weatherVisibilityRadiusCap: DEFAULT_VISIBILITY_RADIUS,
+        targetFps: 60,
+        severeFrameStreak: 0,
+        drawCalls: 0,
+        maxChunkDrawCalls: 0,
+        maxChunkMeshes: 0,
+        materialCount: 0,
+        textureCount: 0,
+        visibleObjectCount: 0,
+        estimatedGpuMemoryBytes: 104 * 1024 * 1024,
+        visibleTriangleCount: 0,
+        visibleVertexCount: 0,
+        visibleMeshCount: 0,
+      })
+    ).toEqual([
+      `Visibility radius reduced to ${REDUCED_VISIBILITY_RADIUS}`,
+      'Estimated GPU memory exceeded the soft cap',
+    ]);
+
+    expect(
+      getRenderQualityLimiters({
+        smoothedFrameMs: 16.67,
+        visibilityRadius: MIN_VISIBILITY_RADIUS,
+        weatherVisibilityRadiusCap: DEFAULT_VISIBILITY_RADIUS,
+        targetFps: 60,
+        severeFrameStreak: 0,
+        drawCalls: 0,
+        maxChunkDrawCalls: 0,
+        maxChunkMeshes: 0,
+        materialCount: 0,
+        textureCount: 0,
+        visibleObjectCount: 0,
+        estimatedGpuMemoryBytes: 152 * 1024 * 1024,
+        visibleTriangleCount: 0,
+        visibleVertexCount: 0,
+        visibleMeshCount: 0,
+      })
+    ).toEqual([
+      `Visibility radius reduced to ${MIN_VISIBILITY_RADIUS}`,
+      'Estimated GPU memory exceeded the hard cap',
     ]);
   });
 

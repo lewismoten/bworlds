@@ -9,6 +9,8 @@ export type VisibleTileResourceStatsEntry = {
   materialCount?: number;
   vertexCount?: number;
   triangleCount?: number;
+  geometryBytes?: number;
+  textureMemoryEstimateBytes?: number;
 };
 
 export function collectVisibleTileResourceStats<TEntry extends VisibleTileResourceStatsEntry>(
@@ -23,6 +25,9 @@ export function collectVisibleTileResourceStats<TEntry extends VisibleTileResour
   totalMaterialCount: number;
   totalVertexCount: number;
   totalTriangleCount: number;
+  totalGeometryBytes: number;
+  totalTextureMemoryEstimateBytes: number;
+  totalEstimatedGpuMemoryBytes: number;
 } {
   const size = Math.max(1, Math.floor(chunkTileSize));
   const chunkDrawCalls = new Map<string, number>();
@@ -34,6 +39,8 @@ export function collectVisibleTileResourceStats<TEntry extends VisibleTileResour
   let totalMaterialCount = 0;
   let totalVertexCount = 0;
   let totalTriangleCount = 0;
+  let totalGeometryBytes = 0;
+  let totalTextureMemoryEstimateBytes = 0;
 
   for (const entry of entries) {
     const chunkX = Math.floor(entry.tileX / size);
@@ -53,6 +60,11 @@ export function collectVisibleTileResourceStats<TEntry extends VisibleTileResour
     totalMaterialCount += Math.max(0, Math.floor(entry.materialCount ?? 0));
     totalVertexCount += Math.max(0, Math.floor(entry.vertexCount ?? 0));
     totalTriangleCount += Math.max(0, Math.floor(entry.triangleCount ?? 0));
+    totalGeometryBytes += Math.max(0, Math.floor(entry.geometryBytes ?? 0));
+    totalTextureMemoryEstimateBytes += Math.max(
+      0,
+      Math.floor(entry.textureMemoryEstimateBytes ?? 0)
+    );
     if (nextMeshCount > maxChunkMeshCount) {
       maxChunkMeshCount = nextMeshCount;
     }
@@ -67,6 +79,10 @@ export function collectVisibleTileResourceStats<TEntry extends VisibleTileResour
     totalMaterialCount,
     totalVertexCount,
     totalTriangleCount,
+    totalGeometryBytes,
+    totalTextureMemoryEstimateBytes,
+    totalEstimatedGpuMemoryBytes:
+      totalGeometryBytes + totalTextureMemoryEstimateBytes,
   };
 }
 

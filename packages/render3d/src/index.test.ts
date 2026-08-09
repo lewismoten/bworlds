@@ -2007,6 +2007,8 @@ describe('render3d visibility helpers', () => {
         visibleMeshCount: 4,
         materialCount: 2,
         triangleCount: 10,
+        geometryBytes: 512,
+        textureMemoryEstimateBytes: 1024,
       },
       {
         tileX: 1,
@@ -2015,6 +2017,8 @@ describe('render3d visibility helpers', () => {
         visibleMeshCount: 3,
         materialCount: 3,
         triangleCount: 12,
+        geometryBytes: 768,
+        textureMemoryEstimateBytes: 2048,
       },
       {
         tileX: 4,
@@ -2023,6 +2027,8 @@ describe('render3d visibility helpers', () => {
         visibleMeshCount: 6,
         materialCount: 4,
         triangleCount: 18,
+        geometryBytes: 1024,
+        textureMemoryEstimateBytes: 4096,
       },
       {
         tileX: -1,
@@ -2031,6 +2037,8 @@ describe('render3d visibility helpers', () => {
         visibleMeshCount: 5,
         materialCount: 2,
         triangleCount: 14,
+        geometryBytes: 640,
+        textureMemoryEstimateBytes: 512,
       },
     ];
 
@@ -2047,6 +2055,9 @@ describe('render3d visibility helpers', () => {
       totalMaterialCount: 11,
       totalVertexCount: 0,
       totalTriangleCount: 54,
+      totalGeometryBytes: 2944,
+      totalTextureMemoryEstimateBytes: 7680,
+      totalEstimatedGpuMemoryBytes: 10624,
     });
   });
 
@@ -2843,6 +2854,8 @@ describe('render3d visibility helpers', () => {
           materialCount: 1,
           vertexCount: 1,
           triangleCount: 1,
+          geometryBytes: 64,
+          textureMemoryEstimateBytes: 128,
           node: {} as never,
           model: root as never,
           modelRoot: root as never,
@@ -3338,6 +3351,8 @@ describe('render3d visibility helpers', () => {
           materialCount: 2,
           vertexCount: 2,
           triangleCount: 2,
+          geometryBytes: 96,
+          textureMemoryEstimateBytes: 192,
           node: {} as never,
           model: { id: 'model-town' },
           sync3DModel({ tileX, tileY, cycle, environment }) {
@@ -3411,6 +3426,8 @@ describe('render3d visibility helpers', () => {
           materialCount: 1,
           vertexCount: 1,
           triangleCount: 1,
+          geometryBytes: 48,
+          textureMemoryEstimateBytes: 96,
           node: {} as never,
           model: { id: 'model-forest' },
           modelRoot: null,

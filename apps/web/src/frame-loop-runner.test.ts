@@ -20,6 +20,7 @@ describe('frame loop runner', () => {
       getMaterialCount: () => 28,
       getTextureCount: () => 24,
       getVisibleObjectCount: () => 260,
+      getEstimatedGpuMemoryBytes: () => 18 * 1024 * 1024,
       getVisibleTriangleCount: () => 4810,
       getVisibleVertexCount: () => 14432,
       getVisibleMeshCount: () => 180,
@@ -42,6 +43,7 @@ describe('frame loop runner', () => {
     expect(renderBudgetState.materialCount).toBe(28);
     expect(renderBudgetState.textureCount).toBe(24);
     expect(renderBudgetState.visibleObjectCount).toBe(260);
+    expect(renderBudgetState.estimatedGpuMemoryBytes).toBe(18 * 1024 * 1024);
     expect(renderBudgetState.visibleTriangleCount).toBe(4810);
     expect(renderBudgetState.visibleVertexCount).toBe(14432);
     expect(renderBudgetState.visibleMeshCount).toBe(180);
@@ -66,6 +68,7 @@ describe('frame loop runner', () => {
       getMaterialCount: () => 0,
       getTextureCount: () => 0,
       getVisibleObjectCount: () => 0,
+      getEstimatedGpuMemoryBytes: () => 0,
       getVisibleTriangleCount: () => 0,
       getVisibleVertexCount: () => 0,
       getVisibleMeshCount: () => 0,

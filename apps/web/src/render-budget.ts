@@ -15,6 +15,7 @@ export type RenderBudgetState = {
   materialCount: number;
   textureCount: number;
   visibleObjectCount: number;
+  estimatedGpuMemoryBytes: number;
   visibleTriangleCount: number;
   visibleVertexCount: number;
   visibleMeshCount: number;
@@ -70,6 +71,10 @@ export type RenderBudgetCaps = {
     soft: number;
     hard: number;
   };
+  estimatedGpuMemoryBytes: {
+    soft: number;
+    hard: number;
+  };
   materials: {
     soft: number;
     hard: number;
@@ -108,6 +113,7 @@ export const DEFAULT_RENDER_BUDGET_STATE: RenderBudgetState = {
   materialCount: 0,
   textureCount: 0,
   visibleObjectCount: 0,
+  estimatedGpuMemoryBytes: 0,
   visibleTriangleCount: 0,
   visibleVertexCount: 0,
   visibleMeshCount: 0,
@@ -136,6 +142,8 @@ const SOFT_CHUNK_MESH_LIMIT = 96;
 const HARD_CHUNK_MESH_LIMIT = 144;
 const SOFT_TEXTURE_LIMIT = 48;
 const HARD_TEXTURE_LIMIT = 72;
+const SOFT_ESTIMATED_GPU_MEMORY_BYTES = 96 * 1024 * 1024;
+const HARD_ESTIMATED_GPU_MEMORY_BYTES = 144 * 1024 * 1024;
 const SOFT_MATERIAL_LIMIT = 32;
 const HARD_MATERIAL_LIMIT = 48;
 const SOFT_VISIBLE_OBJECT_LIMIT = 1200;
@@ -158,6 +166,7 @@ function resetRenderBudgetStateInPlace(state: RenderBudgetState): RenderBudgetSt
   state.materialCount = 0;
   state.textureCount = 0;
   state.visibleObjectCount = 0;
+  state.estimatedGpuMemoryBytes = 0;
   state.visibleTriangleCount = 0;
   state.visibleVertexCount = 0;
   state.visibleMeshCount = 0;
@@ -197,6 +206,7 @@ export function updateRenderBudgetStateInPlace(
     materialCount,
     textureCount,
     visibleObjectCount,
+    estimatedGpuMemoryBytes,
     visibleTriangleCount,
     visibleVertexCount,
     visibleMeshCount,
@@ -210,6 +220,7 @@ export function updateRenderBudgetStateInPlace(
     materialCount?: number;
     textureCount?: number;
     visibleObjectCount?: number;
+    estimatedGpuMemoryBytes?: number;
     visibleTriangleCount?: number;
     visibleVertexCount?: number;
     visibleMeshCount?: number;
@@ -269,6 +280,10 @@ export function updateRenderBudgetStateInPlace(
     0,
     Math.floor(visibleObjectCount ?? state.visibleObjectCount)
   );
+  const normalizedEstimatedGpuMemoryBytes = Math.max(
+    0,
+    Math.floor(estimatedGpuMemoryBytes ?? state.estimatedGpuMemoryBytes)
+  );
   const normalizedVisibleVertexCount = Math.max(
     0,
     Math.floor(visibleVertexCount ?? state.visibleVertexCount)
@@ -315,6 +330,11 @@ export function updateRenderBudgetStateInPlace(
   } else if (normalizedTextureCount >= SOFT_TEXTURE_LIMIT) {
     visibilityRadius = Math.min(visibilityRadius, REDUCED_VISIBILITY_RADIUS);
   }
+  if (normalizedEstimatedGpuMemoryBytes >= HARD_ESTIMATED_GPU_MEMORY_BYTES) {
+    visibilityRadius = Math.min(visibilityRadius, MIN_VISIBILITY_RADIUS);
+  } else if (normalizedEstimatedGpuMemoryBytes >= SOFT_ESTIMATED_GPU_MEMORY_BYTES) {
+    visibilityRadius = Math.min(visibilityRadius, REDUCED_VISIBILITY_RADIUS);
+  }
   if (normalizedMaterialCount >= HARD_MATERIAL_LIMIT) {
     visibilityRadius = Math.min(visibilityRadius, MIN_VISIBILITY_RADIUS);
   } else if (normalizedMaterialCount >= SOFT_MATERIAL_LIMIT) {
@@ -349,6 +369,7 @@ export function updateRenderBudgetStateInPlace(
   state.materialCount = normalizedMaterialCount;
   state.textureCount = normalizedTextureCount;
   state.visibleObjectCount = normalizedVisibleObjectCount;
+  state.estimatedGpuMemoryBytes = normalizedEstimatedGpuMemoryBytes;
   state.visibleTriangleCount = normalizedVisibleTriangleCount;
   state.visibleVertexCount = normalizedVisibleVertexCount;
   state.visibleMeshCount = normalizedVisibleMeshCount;
@@ -374,6 +395,7 @@ export function advanceRenderBudgetState(
     materialCount,
     textureCount,
     visibleObjectCount,
+    estimatedGpuMemoryBytes,
     visibleTriangleCount,
     visibleVertexCount,
     visibleMeshCount,
@@ -387,6 +409,7 @@ export function advanceRenderBudgetState(
     materialCount?: number;
     textureCount?: number;
     visibleObjectCount?: number;
+    estimatedGpuMemoryBytes?: number;
     visibleTriangleCount?: number;
     visibleVertexCount?: number;
     visibleMeshCount?: number;
@@ -407,6 +430,7 @@ export function advanceRenderBudgetState(
       materialCount,
       textureCount,
       visibleObjectCount,
+      estimatedGpuMemoryBytes,
       visibleTriangleCount,
       visibleVertexCount,
       visibleMeshCount,
@@ -481,6 +505,10 @@ export function getRenderBudgetCaps(
     textures: {
       soft: SOFT_TEXTURE_LIMIT,
       hard: HARD_TEXTURE_LIMIT,
+    },
+    estimatedGpuMemoryBytes: {
+      soft: SOFT_ESTIMATED_GPU_MEMORY_BYTES,
+      hard: HARD_ESTIMATED_GPU_MEMORY_BYTES,
     },
     materials: {
       soft: SOFT_MATERIAL_LIMIT,
@@ -570,10 +598,16 @@ export function getRenderQualityLimiters(
     | 'visibleVertexCount'
     | 'visibleMeshCount'
   > &
-    Partial<Pick<RenderBudgetState, 'visibleTriangleCount'>>
+    Partial<
+      Pick<RenderBudgetState, 'visibleTriangleCount' | 'estimatedGpuMemoryBytes'>
+    >
 ): string[] {
   const limiters: string[] = [];
   const visibleTriangleCount = Math.max(0, state.visibleTriangleCount ?? 0);
+  const estimatedGpuMemoryBytes = Math.max(
+    0,
+    state.estimatedGpuMemoryBytes ?? 0
+  );
   if (state.targetFps === 30) {
     limiters.push('Target FPS reduced to 30');
   }
@@ -608,6 +642,11 @@ export function getRenderQualityLimiters(
     limiters.push('Active textures exceeded the hard cap');
   } else if (state.textureCount >= SOFT_TEXTURE_LIMIT) {
     limiters.push('Active textures exceeded the soft cap');
+  }
+  if (estimatedGpuMemoryBytes >= HARD_ESTIMATED_GPU_MEMORY_BYTES) {
+    limiters.push('Estimated GPU memory exceeded the hard cap');
+  } else if (estimatedGpuMemoryBytes >= SOFT_ESTIMATED_GPU_MEMORY_BYTES) {
+    limiters.push('Estimated GPU memory exceeded the soft cap');
   }
   if (state.materialCount >= HARD_MATERIAL_LIMIT) {
     limiters.push('Scene materials exceeded the hard cap');

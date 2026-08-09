@@ -77,6 +77,7 @@ type DebugSnapshotExportOptions = {
     smoothedFrameMs: number;
     targetFps: 60 | 30;
     visibilityRadius: number;
+    estimatedGpuMemoryBytes: number;
     pendingBuildBudgetMs: number;
     maxPendingBuildTiles: number;
     caps: {
@@ -110,6 +111,10 @@ type DebugSnapshotExportOptions = {
         hard: number;
       };
       textures: {
+        soft: number;
+        hard: number;
+      };
+      estimatedGpuMemoryBytes: {
         soft: number;
         hard: number;
       };
@@ -289,6 +294,12 @@ export type DebugSnapshotExport = {
         status: 'ok' | 'warning' | 'critical';
       };
       pendingBuildTiles: {
+        current: number;
+        soft: number;
+        hard: number;
+        status: 'ok' | 'warning' | 'critical';
+      };
+      estimatedGpuMemoryBytes: {
         current: number;
         soft: number;
         hard: number;
@@ -602,7 +613,11 @@ function buildResourceBudgetSnapshot(
     frameCurrentUtilizationPct,
     visibilityCurrentUtilizationPct,
     pendingBuildBudgetCurrentUtilizationPct,
-    pendingBuildTilesCurrentUtilizationPct
+    pendingBuildTilesCurrentUtilizationPct,
+    getIncreasingMetricUtilizationPct(
+      options.performanceBudget.estimatedGpuMemoryBytes,
+      options.performanceBudget.caps.estimatedGpuMemoryBytes.hard
+    )
   );
 
   return {
@@ -612,7 +627,11 @@ function buildResourceBudgetSnapshot(
         framePeakUtilizationPct,
         visibilityCurrentUtilizationPct,
         pendingBuildBudgetCurrentUtilizationPct,
-        pendingBuildTilesCurrentUtilizationPct
+        pendingBuildTilesCurrentUtilizationPct,
+        getIncreasingMetricUtilizationPct(
+          options.performanceBudget.estimatedGpuMemoryBytes,
+          options.performanceBudget.caps.estimatedGpuMemoryBytes.hard
+        )
       )
     ),
     qualityReductionCauses: parseQualityLimiterList(options.graphicsQuality.limiters),
@@ -661,6 +680,16 @@ function buildResourceBudgetSnapshot(
           options.performanceBudget.maxPendingBuildTiles,
           options.performanceBudget.caps.pendingBuildTiles.soft,
           options.performanceBudget.caps.pendingBuildTiles.hard
+        ),
+      },
+      estimatedGpuMemoryBytes: {
+        current: options.performanceBudget.estimatedGpuMemoryBytes,
+        soft: options.performanceBudget.caps.estimatedGpuMemoryBytes.soft,
+        hard: options.performanceBudget.caps.estimatedGpuMemoryBytes.hard,
+        status: getIncreasingMetricStatus(
+          options.performanceBudget.estimatedGpuMemoryBytes,
+          options.performanceBudget.caps.estimatedGpuMemoryBytes.soft,
+          options.performanceBudget.caps.estimatedGpuMemoryBytes.hard
         ),
       },
     },

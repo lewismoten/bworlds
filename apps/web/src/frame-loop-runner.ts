@@ -14,6 +14,7 @@ type FrameLoopRunnerOptions<T> = {
   getMaterialCount: () => number;
   getTextureCount: () => number;
   getVisibleObjectCount: () => number;
+  getEstimatedGpuMemoryBytes: () => number;
   getVisibleTriangleCount: () => number;
   getVisibleVertexCount: () => number;
   getVisibleMeshCount: () => number;
@@ -38,6 +39,7 @@ export function createFrameLoopRunner<T>(
       materialCount: options.getMaterialCount(),
       textureCount: options.getTextureCount(),
       visibleObjectCount: options.getVisibleObjectCount(),
+      estimatedGpuMemoryBytes: options.getEstimatedGpuMemoryBytes(),
       visibleTriangleCount: options.getVisibleTriangleCount(),
       visibleVertexCount: options.getVisibleVertexCount(),
       visibleMeshCount: options.getVisibleMeshCount(),

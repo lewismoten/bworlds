@@ -310,6 +310,7 @@ type Render3DController = {
   getMaterialCount(): number;
   getTextureCount(): number;
   getVisibleObjectCount(): number;
+  getEstimatedGpuMemoryBytes(): number;
   getVisibleTriangleCount(): number;
   getVisibleVertexCount(): number;
   getVisibleMeshCount(): number;
@@ -777,6 +778,8 @@ type DynamicTileNode = {
   materialCount: number;
   vertexCount: number;
   triangleCount: number;
+  geometryBytes: number;
+  textureMemoryEstimateBytes: number;
   node: THREE.Group;
   model: unknown;
   modelRoot?: THREE.Object3D | null;
@@ -1616,6 +1619,8 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       materialCount: finalSceneResourceStats.materialCount,
       vertexCount: finalSceneResourceStats.vertexCount,
       triangleCount: finalSceneResourceStats.triangleCount,
+      geometryBytes: finalSceneResourceStats.geometryBytes,
+      textureMemoryEstimateBytes: finalSceneResourceStats.textureMemoryEstimateBytes,
       node: tileNode,
       model: pluginModel ?? tileNode,
       modelRoot: pluginModel ?? null,
@@ -2141,6 +2146,12 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
 
   function getVisibleObjectCount(): number {
     return collectVisibleTileResourceStats(visibleTileNodes.values()).totalVisibleObjectCount;
+  }
+
+  function getEstimatedGpuMemoryBytes(): number {
+    return collectVisibleTileResourceStats(
+      visibleTileNodes.values()
+    ).totalEstimatedGpuMemoryBytes;
   }
 
   function getVisibleVertexCount(): number {
@@ -2896,6 +2907,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     getMaterialCount,
     getTextureCount,
     getVisibleObjectCount,
+    getEstimatedGpuMemoryBytes,
     getVisibleTriangleCount,
     getVisibleVertexCount,
     getVisibleMeshCount,

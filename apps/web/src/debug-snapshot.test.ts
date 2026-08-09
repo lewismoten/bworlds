@@ -61,6 +61,7 @@ describe('debug snapshot', () => {
         smoothedFrameMs: 24.1,
         targetFps: 30,
         visibilityRadius: 14,
+        estimatedGpuMemoryBytes: 13893632,
         pendingBuildBudgetMs: 2.25,
         maxPendingBuildTiles: 4,
         caps: {
@@ -96,6 +97,10 @@ describe('debug snapshot', () => {
           textures: {
             soft: 48,
             hard: 72,
+          },
+          estimatedGpuMemoryBytes: {
+            soft: 96 * 1024 * 1024,
+            hard: 144 * 1024 * 1024,
           },
           materials: {
             soft: 32,
@@ -362,6 +367,7 @@ describe('debug snapshot', () => {
       currentFrameMs: 22.4,
       targetFps: 30,
       visibilityRadius: 14,
+      estimatedGpuMemoryBytes: 13893632,
       pendingBuildBudgetMs: 2.25,
       maxPendingBuildTiles: 4,
       caps: {
@@ -388,6 +394,10 @@ describe('debug snapshot', () => {
         chunkMeshes: {
           soft: 96,
           hard: 144,
+        },
+        estimatedGpuMemoryBytes: {
+          soft: 96 * 1024 * 1024,
+          hard: 144 * 1024 * 1024,
         },
         textures: {
           soft: 48,
@@ -621,6 +631,12 @@ describe('debug snapshot', () => {
           current: 4,
           soft: 4,
           hard: 2,
+          status: 'ok',
+        },
+        estimatedGpuMemoryBytes: {
+          current: 13893632,
+          soft: 96 * 1024 * 1024,
+          hard: 144 * 1024 * 1024,
           status: 'ok',
         },
       },
