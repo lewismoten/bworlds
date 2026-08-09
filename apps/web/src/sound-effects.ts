@@ -30,6 +30,7 @@ import {
   normalizeWindAudioIntensity,
   normalizeWeatherAudioIntensity,
   resolveHailAudioSurface,
+  resolveWeatherAcousticGain,
   resolveWindAudioSurface,
   resolveWeatherPrecipitationSurface,
   type WeatherHailSurface,
@@ -847,6 +848,10 @@ export function createSoundEffectController(
             weatherIntensity,
             weatherKind
           );
+          const weatherAcousticGain = resolveWeatherAcousticGain(
+            tileKind,
+            weatherKind
+          );
           const precipitationSurface =
             resolveWeatherPrecipitationSurface(tileKind);
           lastRainAtMs = nowMs;
@@ -857,6 +862,7 @@ export function createSoundEffectController(
             emitter,
             listener,
             getRainSoundVolume(rainIntensity, precipitationSurface) *
+              weatherAcousticGain *
               ambienceDuckingGain,
             getRainSoundDurationMs(rainIntensity),
             precipitationSurface
@@ -871,6 +877,10 @@ export function createSoundEffectController(
           nowMs - lastHailAtMs >= getHailCadenceMs(hailIntensity)
         ) {
           const hailSurface = resolveHailAudioSurface(tileKind);
+          const weatherAcousticGain = resolveWeatherAcousticGain(
+            tileKind,
+            weatherKind
+          );
           lastHailAtMs = nowMs;
           play(
             'hail',
@@ -879,6 +889,7 @@ export function createSoundEffectController(
             emitter,
             listener,
             getHailSoundVolume(hailIntensity, hailSurface) *
+              weatherAcousticGain *
               ambienceDuckingGain,
             getHailSoundDurationMs(hailIntensity),
             hailSurface
@@ -894,6 +905,10 @@ export function createSoundEffectController(
           snowstormIntensity >= 0.45 &&
           nowMs - lastSnowstormAtMs >= getSnowstormCadenceMs(snowstormIntensity)
         ) {
+          const weatherAcousticGain = resolveWeatherAcousticGain(
+            tileKind,
+            weatherKind
+          );
           lastSnowstormAtMs = nowMs;
           play(
             'snowstorm',
@@ -901,7 +916,9 @@ export function createSoundEffectController(
             tileKind,
             emitter,
             listener,
-            getSnowstormSoundVolume(snowstormIntensity) * ambienceDuckingGain,
+            getSnowstormSoundVolume(snowstormIntensity) *
+              weatherAcousticGain *
+              ambienceDuckingGain,
             getSnowstormSoundDurationMs(snowstormIntensity),
             snowstormIntensity >= 0.72 ? 'whiteout' : 'flurries'
           );
@@ -916,13 +933,17 @@ export function createSoundEffectController(
         ) {
           lastWindAtMs = nowMs;
           const windSurface = resolveWindAudioSurface(tileKind);
+          const weatherAcousticGain = resolveWeatherAcousticGain(
+            tileKind,
+            weatherKind
+          );
           play(
             'wind',
             nowMs,
             tileKind,
             emitter,
             listener,
-            ambienceDuckingGain,
+            weatherAcousticGain * ambienceDuckingGain,
             getWindSoundDurationMs(windAudioIntensity),
             resolveWindIdentityVariant(windSurface, weatherKind)
           );

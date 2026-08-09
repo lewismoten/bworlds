@@ -12,6 +12,8 @@ import {
   normalizeSnowstormAudioIntensity,
   normalizeWindAudioIntensity,
   normalizeWeatherAudioIntensity,
+  resolveWeatherAcousticExposure,
+  resolveWeatherAcousticGain,
   resolveHailAudioSurface,
   resolveWindAudioSurface,
   resolveWeatherPrecipitationSurface,
@@ -47,6 +49,12 @@ describe('weather audio', () => {
     expect(isInteriorAcousticTile('forest')).toBe(false);
   });
 
+  it('distinguishes sheltered interiors from opening tiles for weather leakage', () => {
+    expect(resolveWeatherAcousticExposure('plains')).toBe('outdoor');
+    expect(resolveWeatherAcousticExposure('interior')).toBe('sheltered');
+    expect(resolveWeatherAcousticExposure('door')).toBe('opening');
+  });
+
   it('normalizes wind intensity from actual weather conditions', () => {
     expect(normalizeWindAudioIntensity(0.2, 'wind')).toBe(0.35);
     expect(normalizeWindAudioIntensity(0.65, 'clouds')).toBe(0.65);
@@ -79,5 +87,17 @@ describe('weather audio', () => {
     expect(normalizeSnowstormAudioIntensity(0.8, 'clear', 0.6)).toBe(0);
     expect(normalizeHailAudioIntensity(0.2, 'hail')).toBe(0.55);
     expect(normalizeHailAudioIntensity(0.8, 'clear')).toBe(0);
+  });
+
+  it('keeps weather loudest outdoors while allowing openings to leak more than interiors', () => {
+    expect(resolveWeatherAcousticGain('plains', 'heavy-rain')).toBe(1);
+    expect(resolveWeatherAcousticGain('door', 'heavy-rain')).toBe(0.58);
+    expect(resolveWeatherAcousticGain('interior', 'heavy-rain')).toBe(0.24);
+    expect(resolveWeatherAcousticGain('door', 'wind')).toBeGreaterThan(
+      resolveWeatherAcousticGain('interior', 'wind')
+    );
+    expect(resolveWeatherAcousticGain('door', 'snow')).toBeGreaterThan(
+      resolveWeatherAcousticGain('interior', 'snow')
+    );
   });
 });

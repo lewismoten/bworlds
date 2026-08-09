@@ -2,6 +2,7 @@ export type WeatherPrecipitationSurface = 'open' | 'roof' | 'leaves' | 'water';
 export type WeatherWindSurface = 'open-air' | 'canopy' | 'crossdraft';
 export type WeatherHailSurface =
   'roof' | 'wood' | 'rock' | 'water' | 'vegetation' | 'snow' | 'open';
+export type WeatherAcousticExposure = 'outdoor' | 'sheltered' | 'opening';
 
 export function isRainWeatherKind(kind: string | undefined): boolean {
   return kind === 'light-rain' || kind === 'heavy-rain';
@@ -203,6 +204,52 @@ export function resolveWindAudioSurface(
     return 'crossdraft';
   }
   return 'open-air';
+}
+
+export function resolveWeatherAcousticExposure(
+  tileKind: string | undefined
+): WeatherAcousticExposure {
+  if (isWindOpeningTile(tileKind)) {
+    return 'opening';
+  }
+  if (isInteriorAcousticTile(tileKind)) {
+    return 'sheltered';
+  }
+  return 'outdoor';
+}
+
+export function resolveWeatherAcousticGain(
+  tileKind: string | undefined,
+  weatherKind: string | undefined
+): number {
+  const exposure = resolveWeatherAcousticExposure(tileKind);
+  switch (exposure) {
+    case 'opening':
+      if (isWindWeatherKind(weatherKind)) {
+        return 0.84;
+      }
+      if (isSnowWeatherKind(weatherKind)) {
+        return 0.66;
+      }
+      if (isHailWeatherKind(weatherKind)) {
+        return 0.62;
+      }
+      return 0.58;
+    case 'sheltered':
+      if (isWindWeatherKind(weatherKind)) {
+        return 0.3;
+      }
+      if (isSnowWeatherKind(weatherKind)) {
+        return 0.34;
+      }
+      if (isHailWeatherKind(weatherKind)) {
+        return 0.28;
+      }
+      return 0.24;
+    case 'outdoor':
+    default:
+      return 1;
+  }
 }
 
 function clamp(value: number, min: number, max: number): number {

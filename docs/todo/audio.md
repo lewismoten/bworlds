@@ -210,8 +210,8 @@
 - [x] Generate hail impacts according to surrounding materials.
 - [ ] Generate sandstorm ambience.
 - [ ] Generate tornado or extreme-wind sounds where applicable.
-- [ ] Make weather acoustically quieter inside buildings.
-- [ ] Allow weather sounds to enter through open windows and doors.
+- [x] Make weather acoustically quieter inside buildings.
+- [x] Allow weather sounds to enter through open windows and doors.
 
 ---
 

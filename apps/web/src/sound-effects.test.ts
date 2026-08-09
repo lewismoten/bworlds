@@ -3130,6 +3130,106 @@ describe('sound effects', () => {
     expect(played[1]?.recipeId).toBe('rain:shore:water');
   });
 
+  it('makes interior weather quieter while letting opening tiles leak more of it through', () => {
+    const played: ProceduralSoundEffect[] = [];
+    const controller = createSoundEffectController({
+      play(effect) {
+        played.push(effect);
+      },
+    });
+
+    controller.update({
+      nowMs: 0,
+      walking: false,
+      isJumping: false,
+      viewMode: '3d',
+      tileKind: 'plains',
+      weatherKind: 'heavy-rain',
+      weatherIntensity: 0.7,
+    });
+    controller.update({
+      nowMs: getRainCadenceMs(0.7) + 20,
+      walking: false,
+      isJumping: false,
+      viewMode: '3d',
+      tileKind: 'door',
+      weatherKind: 'heavy-rain',
+      weatherIntensity: 0.7,
+    });
+    controller.update({
+      nowMs: getRainCadenceMs(0.7) * 2 + 40,
+      walking: false,
+      isJumping: false,
+      viewMode: '3d',
+      tileKind: 'interior',
+      weatherKind: 'heavy-rain',
+      weatherIntensity: 0.7,
+    });
+
+    const rains = played.filter((effect) => effect.kind === 'rain');
+    expect(rains).toHaveLength(3);
+    expect(rains[0]?.volume).toBeGreaterThan(rains[1]?.volume ?? 0);
+    expect(rains[1]?.volume).toBeGreaterThan(rains[2]?.volume ?? 0);
+    expect(rains[1]?.recipeId).toBe('rain:door:roof');
+    expect(rains[2]?.recipeId).toBe('rain:interior:roof');
+  });
+
+  it('applies the same opening leakage model to wind and snowstorm weather', () => {
+    const played: ProceduralSoundEffect[] = [];
+    const controller = createSoundEffectController({
+      play(effect) {
+        played.push(effect);
+      },
+    });
+
+    controller.update({
+      nowMs: 0,
+      walking: false,
+      isJumping: false,
+      viewMode: '3d',
+      tileKind: 'door',
+      weatherKind: 'wind',
+      windStrength: 0.55,
+    });
+    controller.update({
+      nowMs: getForestWindCadenceMs(0.55) + 25,
+      walking: false,
+      isJumping: false,
+      viewMode: '3d',
+      tileKind: 'interior',
+      weatherKind: 'wind',
+      windStrength: 0.55,
+    });
+    controller.update({
+      nowMs: getForestWindCadenceMs(0.55) + getSnowstormCadenceMs(0.844) + 60,
+      walking: false,
+      isJumping: false,
+      viewMode: '3d',
+      tileKind: 'door',
+      weatherKind: 'snow',
+      weatherIntensity: 0.8,
+      windStrength: 0.6,
+    });
+    controller.update({
+      nowMs:
+        getForestWindCadenceMs(0.55) + getSnowstormCadenceMs(0.844) * 2 + 120,
+      walking: false,
+      isJumping: false,
+      viewMode: '3d',
+      tileKind: 'interior',
+      weatherKind: 'snow',
+      weatherIntensity: 0.8,
+      windStrength: 0.6,
+    });
+
+    const winds = played.filter((effect) => effect.kind === 'wind');
+    const storms = played.filter((effect) => effect.kind === 'snowstorm');
+    expect(winds.length).toBeGreaterThanOrEqual(2);
+    expect(storms).toHaveLength(2);
+    expect(winds[0]?.volume).toBeGreaterThan(winds[1]?.volume ?? 0);
+    expect(storms[0]?.volume).toBeGreaterThan(storms[1]?.volume ?? 0);
+  });
+
   it('scales rain duration and volume continuously from weather intensity', () => {
     const played: ProceduralSoundEffect[] = [];
     const controller = createSoundEffectController({
