@@ -77,6 +77,36 @@ describe('town support', () => {
     ).toBe(true);
   });
 
+  it('keeps household rosters stable after bounded town cache churn', () => {
+    const baseline = getTownNpcs(10, -4).map((npc) => ({
+      id: npc.id,
+      name: npc.name,
+      age: npc.age,
+      mother: npc.mother.name,
+      father: npc.father.name,
+      profession: npc.profession,
+      workplaceBuildingId: npc.workplaceBuildingId,
+    }));
+
+    for (let index = 0; index < 320; index += 1) {
+      getTownProfile(index - 160, Math.floor(index / 8) - 20);
+      getTownBuildings(index - 160, Math.floor(index / 8) - 20);
+      getTownNpcs(index - 160, Math.floor(index / 8) - 20);
+    }
+
+    expect(
+      getTownNpcs(10, -4).map((npc) => ({
+        id: npc.id,
+        name: npc.name,
+        age: npc.age,
+        mother: npc.mother.name,
+        father: npc.father.name,
+        profession: npc.profession,
+        workplaceBuildingId: npc.workplaceBuildingId,
+      }))
+    ).toEqual(baseline);
+  });
+
   it('assigns working adults to matching town workplaces while elders retire', () => {
     const npcs = getTownNpcs(3, 7);
     const buildings = new Map(
@@ -605,10 +635,6 @@ describe('town support', () => {
   });
 
   it('surfaces crafting and training quest offers from matching town professions', () => {
-    const crafting = getTownNpcQuestStates(3, 7, DEFAULT_DAY_LENGTH_MS * 0.5, {
-      level: 5,
-      profession: 'smith',
-    });
     const townSamples: Array<[number, number]> = [
       [3, 7],
       [10, -4],
@@ -616,8 +642,27 @@ describe('town support', () => {
       [48, -16],
       [120, -80],
     ];
+    let crafting: ReturnType<typeof getTownNpcQuestStates> = [];
     let training: ReturnType<typeof getTownNpcQuestStates> = [];
-    outer: for (const [x, y] of townSamples) {
+
+    outerCrafting: for (const [x, y] of townSamples) {
+      for (let minute = 0; minute < 24 * 60; minute += 30) {
+        crafting = getTownNpcQuestStates(
+          x,
+          y,
+          DEFAULT_DAY_LENGTH_MS * (minute / (24 * 60)),
+          {
+            level: 5,
+            profession: 'smith',
+          }
+        );
+        if (crafting.some((entry) => entry.offers.some((offer) => offer.type === 'crafting'))) {
+          break outerCrafting;
+        }
+      }
+    }
+
+    outerTraining: for (const [x, y] of townSamples) {
       for (let minute = 0; minute < 24 * 60; minute += 30) {
         training = getTownNpcQuestStates(
           x,
@@ -629,7 +674,7 @@ describe('town support', () => {
           }
         );
         if (training.some((entry) => entry.offers.some((offer) => offer.type === 'training'))) {
-          break outer;
+          break outerTraining;
         }
       }
     }

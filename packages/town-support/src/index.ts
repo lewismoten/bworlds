@@ -1,5 +1,12 @@
 import { createBoundedCache } from '@bworlds/cache-support';
-import { getDaylightCycleState, hash2D } from '@bworlds/core';
+import {
+  appendHashSeedLabel,
+  appendHashSeedPart,
+  getDaylightCycleState,
+  hash2D,
+  hash2DWithSeed,
+  registerHashLabel,
+} from '@bworlds/core';
 import {
   getDefaultQuestRegistry,
   type QuestOffer,
@@ -129,6 +136,25 @@ const SLOT_ORDER: ReadonlyArray<{ x: number; y: number }> = [
 const TOWN_STRUCTURE_CACHE_LIMIT = 256;
 const TOWN_TIME_CACHE_LIMIT = 768;
 const TOWN_PROFILE_CACHE_LIMIT = 256;
+const TOWN_LEVEL_SEED = registerHashLabel('town-level');
+const TOWN_RESIDENTIAL_SEED = registerHashLabel('town-residential');
+const TOWN_PROFESSIONAL_SEED = registerHashLabel('town-professional');
+const TOWN_RESIDENCE_LABEL = registerHashLabel('town-residence');
+const TOWN_HOUSEHOLD_SIZE_LABEL = registerHashLabel('town-household-size');
+const TOWN_PROFESSION_FAMILY_LABEL = registerHashLabel('town-profession-family');
+const TOWN_HOUSEHOLD_SURNAME_LABEL = registerHashLabel('town-household-surname');
+const TOWN_ADULT_ONE_AGE_LABEL = registerHashLabel('town-adult-one-age');
+const TOWN_ADULT_TWO_AGE_LABEL = registerHashLabel('town-adult-two-age');
+const TOWN_ADULT_ONE_NAME_LABEL = registerHashLabel('town-adult-one-name');
+const TOWN_ADULT_TWO_NAME_LABEL = registerHashLabel('town-adult-two-name');
+const TOWN_HOUSEHOLD_MEMBER_LABEL = registerHashLabel('town-household-member');
+const TOWN_MEMBER_TYPE_LABEL = registerHashLabel('type');
+const TOWN_MEMBER_STYLE_LABEL = registerHashLabel('style');
+const TOWN_MEMBER_AGE_LABEL = registerHashLabel('age');
+const TOWN_MEMBER_NAME_LABEL = registerHashLabel('name');
+const TOWN_PARENT_SURNAME_LABEL = registerHashLabel('town-parent-surname');
+const TOWN_MOTHER_LABEL = registerHashLabel('mother');
+const TOWN_FATHER_LABEL = registerHashLabel('father');
 
 const PROFESSIONS: readonly TownProfessionTemplate[] = [
   {
@@ -253,22 +279,55 @@ function getTownCacheKey(tileX: number, tileY: number): string {
   return `${tileX}:${tileY}`;
 }
 
+function createTownPlotSeed(seedLabel: number, plotX: number, plotY: number): number {
+  return appendHashSeedPart(appendHashSeedPart(seedLabel, plotX), plotY);
+}
+
+function createTownResidenceSeed(
+  tileX: number,
+  tileY: number,
+  plotX: number,
+  plotY: number
+): number {
+  return appendHashSeedPart(
+    appendHashSeedPart(
+      appendHashSeedPart(
+        appendHashSeedPart(TOWN_RESIDENCE_LABEL, tileX),
+        tileY
+      ),
+      plotX
+    ),
+    plotY
+  );
+}
+
+function createTownIndexSeed(seedLabel: number, tileX: number, tileY: number, index: number): number {
+  return appendHashSeedPart(
+    appendHashSeedPart(appendHashSeedPart(seedLabel, tileX), tileY),
+    index
+  );
+}
+
 function pickFromList<T>(
   list: readonly T[],
-  key: string,
+  key: string | number,
   tileX: number,
   tileY: number
 ): T {
-  const index = Math.floor(hash2D(key, tileX, tileY) * list.length) % list.length;
+  const hash =
+    typeof key === 'number'
+      ? hash2DWithSeed(key, tileX, tileY)
+      : hash2D(key, tileX, tileY);
+  const index = Math.floor(hash * list.length) % list.length;
   return list[index] as T;
 }
 
 function getTownStructure(tileX: number, tileY: number): TownStructure {
-  const level = (1 + Math.floor(hash2D('town-level', tileX, tileY) * 4)) as TownLevel;
+  const level = (1 + Math.floor(hash2D(TOWN_LEVEL_SEED, tileX, tileY) * 4)) as TownLevel;
   const residentialBuildings =
-    2 + level * 2 + Math.floor(hash2D('town-residential', tileX, tileY) * 2);
+    2 + level * 2 + Math.floor(hash2D(TOWN_RESIDENTIAL_SEED, tileX, tileY) * 2);
   const professionalBuildings =
-    1 + level + Math.floor(hash2D('town-professional', tileX, tileY) * 2);
+    1 + level + Math.floor(hash2D(TOWN_PROFESSIONAL_SEED, tileX, tileY) * 2);
   const buildingCount = Math.min(
     SLOT_ORDER.length,
     residentialBuildings + professionalBuildings
@@ -284,7 +343,14 @@ function getTownStructure(tileX: number, tileY: number): TownStructure {
 
 function getHouseholdSize(tileX: number, tileY: number, plotX: number, plotY: number): number {
   return (
-    3 + Math.floor(hash2D(`town-household-size:${plotX}:${plotY}`, tileX, tileY) * 3)
+    3 +
+    Math.floor(
+      hash2DWithSeed(
+        createTownPlotSeed(TOWN_HOUSEHOLD_SIZE_LABEL, plotX, plotY),
+        tileX,
+        tileY
+      ) * 3
+    )
   );
 }
 
@@ -296,7 +362,7 @@ function getBuildingProfessionTemplate(
 ): TownProfessionTemplate {
   return pickFromList(
     PROFESSIONS,
-    `town-profession-family:${plotX}:${plotY}`,
+    createTownPlotSeed(TOWN_PROFESSION_FAMILY_LABEL, plotX, plotY),
     tileX,
     tileY
   );
@@ -307,10 +373,19 @@ function createParentIdentity(
   label: 'mother' | 'father',
   style: NameStyle,
   surname: string,
+  seedHash: number,
   tileX: number,
   tileY: number
 ): TownNpcParent {
-  const firstName = getFirstName(`${npcId}:${label}`, style, tileX, tileY);
+  const firstName = getFirstName(
+    appendHashSeedLabel(
+      seedHash,
+      label === 'mother' ? TOWN_MOTHER_LABEL : TOWN_FATHER_LABEL
+    ),
+    style,
+    tileX,
+    tileY
+  );
   return {
     id: `${npcId}:${label}`,
     name: `${firstName} ${surname}`,
@@ -319,7 +394,7 @@ function createParentIdentity(
 }
 
 function getFirstName(
-  key: string,
+  key: string | number,
   style: NameStyle,
   tileX: number,
   tileY: number
@@ -329,7 +404,7 @@ function getFirstName(
     : pickFromList(MASCULINE_FIRST_NAMES, key, tileX, tileY);
 }
 
-function getLastName(key: string, tileX: number, tileY: number): string {
+function getLastName(key: string | number, tileX: number, tileY: number): string {
   return pickFromList(LAST_NAMES, key, tileX, tileY);
 }
 
@@ -347,22 +422,37 @@ function createHouseholdNpcs(
   tileY: number,
   residence: TownBuilding
 ): TownNpcDraft[] {
+  const residenceSeed = createTownResidenceSeed(tileX, tileY, residence.x, residence.y);
   const householdSize = getHouseholdSize(tileX, tileY, residence.x, residence.y);
   const surname = getLastName(
-    `town-household-surname:${residence.x}:${residence.y}`,
+    appendHashSeedLabel(residenceSeed, TOWN_HOUSEHOLD_SURNAME_LABEL),
     tileX,
     tileY
   );
   const adultOneAge =
-    24 + Math.floor(hash2D(`town-adult-one-age:${residence.id}`, tileX, tileY) * 20);
+    24 +
+    Math.floor(
+      hash2DWithSeed(
+        appendHashSeedLabel(residenceSeed, TOWN_ADULT_ONE_AGE_LABEL),
+        tileX,
+        tileY
+      ) * 20
+    );
   const adultTwoAge =
-    22 + Math.floor(hash2D(`town-adult-two-age:${residence.id}`, tileX, tileY) * 22);
+    22 +
+    Math.floor(
+      hash2DWithSeed(
+        appendHashSeedLabel(residenceSeed, TOWN_ADULT_TWO_AGE_LABEL),
+        tileX,
+        tileY
+      ) * 22
+    );
 
   const adults: TownNpcDraft[] = [
     {
       id: createNpcId(tileX, tileY, residence.id, 0),
       name: `${getFirstName(
-        `town-adult-one-name:${residence.id}`,
+        appendHashSeedLabel(residenceSeed, TOWN_ADULT_ONE_NAME_LABEL),
         'feminine',
         tileX,
         tileY
@@ -375,7 +465,7 @@ function createHouseholdNpcs(
     {
       id: createNpcId(tileX, tileY, residence.id, 1),
       name: `${getFirstName(
-        `town-adult-two-name:${residence.id}`,
+        appendHashSeedLabel(residenceSeed, TOWN_ADULT_TWO_NAME_LABEL),
         'masculine',
         tileX,
         tileY
@@ -389,27 +479,69 @@ function createHouseholdNpcs(
 
   const members = [...adults];
   for (let index = 2; index < householdSize; index += 1) {
-    const seedKey = `town-household-member:${residence.id}:${index}`;
-    const memberTypeRoll = hash2D(`${seedKey}:type`, tileX, tileY);
+    const memberSeed = appendHashSeedPart(
+      appendHashSeedLabel(residenceSeed, TOWN_HOUSEHOLD_MEMBER_LABEL),
+      index
+    );
+    const memberTypeRoll = hash2DWithSeed(
+      appendHashSeedLabel(memberSeed, TOWN_MEMBER_TYPE_LABEL),
+      tileX,
+      tileY
+    );
     let age = 0;
     let lifeStage: TownNpcLifeStage = 'child';
     let style: NameStyle =
-      hash2D(`${seedKey}:style`, tileX, tileY) < 0.5 ? 'feminine' : 'masculine';
+      hash2DWithSeed(
+        appendHashSeedLabel(memberSeed, TOWN_MEMBER_STYLE_LABEL),
+        tileX,
+        tileY
+      ) < 0.5
+        ? 'feminine'
+        : 'masculine';
 
     if (memberTypeRoll < 0.6) {
-      age = 1 + Math.floor(hash2D(`${seedKey}:age`, tileX, tileY) * 17);
+      age =
+        1 +
+        Math.floor(
+          hash2DWithSeed(
+            appendHashSeedLabel(memberSeed, TOWN_MEMBER_AGE_LABEL),
+            tileX,
+            tileY
+          ) * 17
+        );
       lifeStage = 'child';
     } else if (memberTypeRoll < 0.88) {
-      age = 18 + Math.floor(hash2D(`${seedKey}:age`, tileX, tileY) * 40);
+      age =
+        18 +
+        Math.floor(
+          hash2DWithSeed(
+            appendHashSeedLabel(memberSeed, TOWN_MEMBER_AGE_LABEL),
+            tileX,
+            tileY
+          ) * 40
+        );
       lifeStage = 'adult';
     } else {
-      age = 65 + Math.floor(hash2D(`${seedKey}:age`, tileX, tileY) * 24);
+      age =
+        65 +
+        Math.floor(
+          hash2DWithSeed(
+            appendHashSeedLabel(memberSeed, TOWN_MEMBER_AGE_LABEL),
+            tileX,
+            tileY
+          ) * 24
+        );
       lifeStage = 'elder';
     }
 
     members.push({
       id: createNpcId(tileX, tileY, residence.id, index),
-      name: `${getFirstName(`${seedKey}:name`, style, tileX, tileY)} ${surname}`,
+      name: `${getFirstName(
+        appendHashSeedLabel(memberSeed, TOWN_MEMBER_NAME_LABEL),
+        style,
+        tileX,
+        tileY
+      )} ${surname}`,
       age,
       lifeStage,
       residenceBuildingId: residence.id,
@@ -437,6 +569,7 @@ function createHouseholdNpcs(
           'mother',
           'feminine',
           surname,
+          residenceSeed,
           tileX,
           tileY
         ),
@@ -445,6 +578,7 @@ function createHouseholdNpcs(
           'father',
           'masculine',
           surname,
+          residenceSeed,
           tileX,
           tileY
         ),
@@ -459,6 +593,7 @@ function createHouseholdNpcs(
           'mother',
           'feminine',
           surname,
+          residenceSeed,
           tileX,
           tileY
         ),
@@ -467,6 +602,7 @@ function createHouseholdNpcs(
           'father',
           'masculine',
           surname,
+          residenceSeed,
           tileX,
           tileY
         ),
@@ -773,29 +909,40 @@ export function getTownNpcs(tileX: number, tileY: number): TownNpc[] {
 
   assignNpcJobs(tileX, tileY, npcDrafts, buildings);
 
-  const npcs = npcDrafts.map((npc) => ({
-    ...npc,
-    mother:
-      npc.mother ??
-      createParentIdentity(
-        npc.id,
-        'mother',
-        'feminine',
-        getLastName(`town-parent-surname:${npc.id}`, tileX, tileY),
-        tileX,
-        tileY
-      ),
-    father:
-      npc.father ??
-      createParentIdentity(
-        npc.id,
-        'father',
-        'masculine',
-        getLastName(`town-parent-surname:${npc.id}`, tileX, tileY),
-        tileX,
-        tileY
-      ),
-  }));
+  const npcs = npcDrafts.map((npc, index) => {
+    const parentSurnameSeed = createTownIndexSeed(
+      TOWN_PARENT_SURNAME_LABEL,
+      tileX,
+      tileY,
+      index
+    );
+    const parentSurname = getLastName(parentSurnameSeed, tileX, tileY);
+    return {
+      ...npc,
+      mother:
+        npc.mother ??
+        createParentIdentity(
+          npc.id,
+          'mother',
+          'feminine',
+          parentSurname,
+          parentSurnameSeed,
+          tileX,
+          tileY
+        ),
+      father:
+        npc.father ??
+        createParentIdentity(
+          npc.id,
+          'father',
+          'masculine',
+          parentSurname,
+          parentSurnameSeed,
+          tileX,
+          tileY
+        ),
+    };
+  });
 
   for (const building of getTownBuildings(tileX, tileY)) {
     const resolved = buildings.find((candidate) => candidate.id === building.id);
