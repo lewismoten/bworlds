@@ -7,6 +7,7 @@ import {
   getOrbitalSkyPosition,
   hash2D,
   normalizeAngle,
+  registerHashLabel,
   smoothstep,
   type AuroraBandLike,
   type CelestialEventLike,
@@ -21,6 +22,11 @@ const AURORA_COLORS = [
   ['#89ffd6', '#8b9dff'],
   ['#c7ff8c', '#49e8ff'],
 ] as const;
+const AURORA_DAY_SEED = registerHashLabel('aurora-day');
+const METEOR_BURST_DAY_SEED = registerHashLabel('meteor-burst-day');
+const METEOR_BURST_COUNT_SEED = registerHashLabel('meteor-burst-count');
+const VISITING_COMET_DAY_SEED = registerHashLabel('visiting-comet-day');
+const VISITING_COMET_OFFSET_SEED = registerHashLabel('visiting-comet-offset');
 
 export type CelestialEventMode =
   | 'auto'
@@ -37,20 +43,37 @@ export function createCelestialPhenomenaRuntimePlugin(): RuntimePlugin {
       const celestialState = getDaylightCycleState(resolvedTimeMs, cycle);
       const forcedMode = getForcedCelestialEventMode(state);
       const forcedFacingAngle = getForcedFacingAngle(state);
-      const transientEvents = [
-        ...buildTransientMeteorEvents(
-          celestialState,
-          resolvedTimeMs,
-          forcedMode === 'meteor-shower',
-          forcedFacingAngle
-        ),
-        ...buildVisitingCometEvents(
-          celestialState,
-          resolvedTimeMs,
-          forcedMode === 'comet',
-          forcedFacingAngle
-        ),
-      ];
+      const transientEvents =
+        forcedMode === 'meteor-shower'
+          ? buildTransientMeteorEvents(
+              celestialState,
+              resolvedTimeMs,
+              true,
+              forcedFacingAngle
+            )
+          : forcedMode === 'comet'
+            ? buildVisitingCometEvents(
+                celestialState,
+                resolvedTimeMs,
+                true,
+                forcedFacingAngle
+              )
+            : forcedMode === 'auto'
+              ? [
+                  ...buildTransientMeteorEvents(
+                    celestialState,
+                    resolvedTimeMs,
+                    false,
+                    forcedFacingAngle
+                  ),
+                  ...buildVisitingCometEvents(
+                    celestialState,
+                    resolvedTimeMs,
+                    false,
+                    forcedFacingAngle
+                  ),
+                ]
+              : [];
       const auroraBands = buildAuroraBands(
         celestialState,
         resolvedTimeMs,
@@ -142,7 +165,7 @@ function buildAuroraBands(
   }
 
   const dayChance = hash2D(
-    'aurora-day',
+    AURORA_DAY_SEED,
     cycle.dayNumber,
     cycle.observerLatitudeDegrees >= 0 ? 1 : 0
   );
@@ -161,12 +184,13 @@ function buildAuroraBands(
   const hemisphereAzimuth = forced
     ? poleAzimuth + facingToPole
     : poleAzimuth + Math.sin(timeMs / 28000) * 0.08;
-  return Array.from({ length: bandCount }, (_, index) => {
+  const bands: AuroraBandLike[] = [];
+  for (let index = 0; index < bandCount; index += 1) {
     const colors = AURORA_COLORS[index % AURORA_COLORS.length];
     const bandDrift =
       Math.sin(timeMs / 22000 + index * 0.8) * (forced ? 0.12 : 0.08);
     const bandOffset = (index - (bandCount - 1) * 0.5) * (forced ? 0.24 : 0.28);
-    return {
+    bands.push({
       id: `aurora-${cycle.dayNumber}-${index}`,
       azimuthCenter: hemisphereAzimuth + bandOffset + bandDrift,
       span: forced
@@ -188,8 +212,9 @@ function buildAuroraBands(
       wavePhase: fract(timeMs / 12000 + index * 0.19),
       colorA: colors[0],
       colorB: colors[1],
-    };
-  });
+    });
+  }
+  return bands;
 }
 
 function buildTransientMeteorEvents(
@@ -200,7 +225,7 @@ function buildTransientMeteorEvents(
 ): CelestialEventLike[] {
   if (
     (!forced && cycle.night <= 0.45) ||
-    (!forced && hash2D('meteor-burst-day', cycle.dayNumber, 0) < 0.93)
+    (!forced && hash2D(METEOR_BURST_DAY_SEED, cycle.dayNumber, 0) < 0.93)
   ) {
     return [];
   }
@@ -208,8 +233,9 @@ function buildTransientMeteorEvents(
   const burstPhase = fract(timeMs / 7000);
   const count = forced
     ? 18
-    : 6 + Math.floor(hash2D('meteor-burst-count', cycle.dayNumber, 0) * 4);
-  return Array.from({ length: count }, (_, index) => {
+    : 6 + Math.floor(hash2D(METEOR_BURST_COUNT_SEED, cycle.dayNumber, 0) * 4);
+  const events: CelestialEventLike[] = [];
+  for (let index = 0; index < count; index += 1) {
     const progress = fract(burstPhase + index * 0.071);
     const orbitState = forced
       ? {
@@ -242,7 +268,7 @@ function buildTransientMeteorEvents(
     const intensity = forced
       ? clamp(0.82 + Math.sin(progress * Math.PI * 2) * 0.14, 0.72, 1)
       : clamp(0.55 + Math.sin(progress * Math.PI * 2) * 0.24, 0.35, 0.9);
-    return {
+    events.push({
       type: 'meteor-shower',
       name: 'Northfall Burst',
       progress,
@@ -259,8 +285,9 @@ function buildTransientMeteorEvents(
       color: '#dff4ff',
       size: forced ? 0.42 : 0.32,
       trailLength: forced ? 3.8 + (index % 5) * 0.28 : 2.6 + (index % 4) * 0.22,
-    };
-  });
+    });
+  }
+  return events;
 }
 
 function buildVisitingCometEvents(
@@ -275,12 +302,13 @@ function buildVisitingCometEvents(
     ((cycle.dayNumber % cycleLengthDays) + cycleLengthDays) % cycleLengthDays;
   if (
     (!forced && cycleDay >= visitLengthDays) ||
-    (!forced && hash2D('visiting-comet-day', cycle.dayNumber, 0) < 0.82)
+    (!forced && hash2D(VISITING_COMET_DAY_SEED, cycle.dayNumber, 0) < 0.82)
   ) {
     return [];
   }
 
-  const phaseOffset = 0.41 + hash2D('visiting-comet-offset', cycle.dayNumber, 0) * 0.12;
+  const phaseOffset =
+    0.41 + hash2D(VISITING_COMET_OFFSET_SEED, cycle.dayNumber, 0) * 0.12;
   const progress = getCometOrbitProgress(
     (forced ? cycle.dayProgress * visitLengthDays : cycleDay + cycle.dayProgress) +
       fract(timeMs / 120000) * 0.2,

@@ -105,6 +105,49 @@ describe('runtime celestial phenomena', () => {
     expect(environment?.celestial?.deriveOrreryFromVisibleEvents).toBe(true);
   });
 
+  it('keeps natural celestial event resolution stable for the same day after nearby churn', () => {
+    const payload = createCelestialPhenomenaPayload({
+      state: {
+        ...createCelestialPhenomenaPayload().state,
+        player: {
+          x: 0,
+          y: -50000,
+          facing: 0,
+        },
+      },
+      timeMs: 37 * DEFAULT_DAY_LENGTH_MS + NIGHT_SAMPLE_OFFSET_MS,
+    });
+    const baseline = plugin.resolveWorldEnvironment?.(payload) as
+      | WorldEnvironmentLike
+      | undefined;
+
+    for (let day = 0; day < 96; day += 1) {
+      plugin.resolveWorldEnvironment?.(
+        createCelestialPhenomenaPayload({
+          state: {
+            ...createCelestialPhenomenaPayload().state,
+            player: {
+              x: 0,
+              y: day % 2 === 0 ? -50000 : 40,
+              facing: (day % 8) * (Math.PI / 8),
+            },
+            celestialEventMode:
+              day % 4 === 0
+                ? 'aurora'
+                : day % 4 === 1
+                  ? 'meteor-shower'
+                  : day % 4 === 2
+                    ? 'comet'
+                    : 'auto',
+          } as CelestialPhenomenaPayload['state'],
+          timeMs: day * DEFAULT_DAY_LENGTH_MS + NIGHT_SAMPLE_OFFSET_MS,
+        })
+      );
+    }
+
+    expect(plugin.resolveWorldEnvironment?.(payload)).toEqual(baseline);
+  });
+
   it('maps natural transient events through observer-aware sky positions', () => {
     let equatorialEnvironment: WorldEnvironmentLike | undefined;
     let northernEnvironment: WorldEnvironmentLike | undefined;
