@@ -113,11 +113,11 @@ type RoadStyleType = 'footpath' | 'cobble' | 'brick';
 type BridgeTextureType = 'wood' | 'stone' | 'metal' | 'drawbridge' | 'roof' | 'roof-stone';
 type BridgeTextureLayer = 'deck' | 'rail' | 'cover' | 'pillar';
 
-const bridgeStyleCache = createBoundedCache<string, BridgeStyle>(
+const bridgeStyleCache = createBoundedCache<string, BridgeStyleBlueprint>(
   ROUTE_STYLE_CACHE_LIMIT
 );
 const bridgeClusterCache = createCoordinateCache<BridgeClusterInfo>();
-const dockStyleCache = createBoundedCache<string, DockStyle>(
+const dockStyleCache = createBoundedCache<string, DockStyleBlueprint>(
   ROUTE_STYLE_CACHE_LIMIT
 );
 const dockRouteLabelCache = createBoundedCache<string, ThreeTextureLike>(
@@ -127,6 +127,13 @@ const dockClusterCache = createCoordinateCache<DockClusterInfo>();
 const roadStyleCache = createBoundedCache<string, RoadStyleBlueprint>(
   ROUTE_STYLE_CACHE_LIMIT
 );
+const forestLogBridgeMaterialCache = new WeakMap<
+  object,
+  {
+    trunkMaterial: ThreeMaterialLike;
+    supportMaterial: ThreeMaterialLike;
+  }
+>();
 const ROAD_DIRECTIONS: RoadConnection[] = [
   {
     id: 'north',
@@ -225,7 +232,12 @@ const resolveRoadStyle = createRegionalMaterialResolver(
             };
 
     return {
+      materialCache: new WeakMap<object, RoadStyle>(),
       createMaterials(three: ThreeHostLike): RoadStyle {
+        const cached = this.materialCache.get(three as object);
+        if (cached) {
+          return cached;
+        }
         const roadTexture = createRoadTexture(
           three,
           palette.road,
@@ -242,7 +254,7 @@ const resolveRoadStyle = createRegionalMaterialResolver(
           regionY
         );
 
-        return {
+        const style = {
           roadWidth: roadStyleType === 'footpath' ? 0.24 : 0.3,
           shoulderWidth: roadStyleType === 'footpath' ? 0.36 : 0.42,
           roadMaterial: new three.MeshStandardMaterial({
@@ -266,6 +278,8 @@ const resolveRoadStyle = createRegionalMaterialResolver(
             side: three.DoubleSide,
           }),
         };
+        this.materialCache.set(three as object, style);
+        return style;
       },
     };
   }
@@ -1261,14 +1275,11 @@ function createForestLogBridgeGroup(
 ) {
   const group = new three.Group();
   group.position.set(tileX, 0, tileY);
+  const { trunkMaterial, supportMaterial } = getForestLogBridgeMaterials(three);
 
   const trunk = new three.Mesh(
     new three.CylinderGeometry(0.08, 0.1, 1.08, 7),
-    new three.MeshStandardMaterial({
-      color: '#5b3a22',
-      roughness: 0.94,
-      metalness: 0.02,
-    })
+    trunkMaterial
   );
   trunk.position.y = -0.02;
   trunk.rotation.z = Math.PI * 0.5;
@@ -1287,11 +1298,7 @@ function createForestLogBridgeGroup(
   supportOffsets.forEach((offset) => {
     const support = new three.Mesh(
       new three.CylinderGeometry(0.04, 0.05, 0.18, 6),
-      new three.MeshStandardMaterial({
-        color: '#3f2a18',
-        roughness: 0.96,
-        metalness: 0.02,
-      })
+      supportMaterial
     );
     support.position.set(offset.x, -0.12, offset.z);
     support.userData = {
@@ -1302,6 +1309,26 @@ function createForestLogBridgeGroup(
   });
 
   return group;
+}
+
+function getForestLogBridgeMaterials(three: ThreeHostLike) {
+  let cached = forestLogBridgeMaterialCache.get(three as object);
+  if (!cached) {
+    cached = {
+      trunkMaterial: new three.MeshStandardMaterial({
+        color: '#5b3a22',
+        roughness: 0.94,
+        metalness: 0.02,
+      }),
+      supportMaterial: new three.MeshStandardMaterial({
+        color: '#3f2a18',
+        roughness: 0.96,
+        metalness: 0.02,
+      }),
+    };
+    forestLogBridgeMaterialCache.set(three as object, cached);
+  }
+  return cached;
 }
 
 function createDockGroup(
@@ -1713,38 +1740,49 @@ function getDockStyle(
             trim: '#d4a86f',
           };
     return {
-      deckMaterial: new three.MeshStandardMaterial({
-        color: palette.deck,
-        roughness: 0.92,
-        metalness: 0.02,
-      }),
-      railMaterial: new three.MeshStandardMaterial({
-        color: palette.rail,
-        roughness: 0.88,
-        metalness: 0.02,
-      }),
-      pileMaterial: new three.MeshStandardMaterial({
-        color: palette.pile,
-        roughness: 0.94,
-        metalness: 0.02,
-      }),
-      boatMaterial: new three.MeshStandardMaterial({
-        color: palette.boat,
-        roughness: 0.84,
-        metalness: 0.03,
-      }),
-      sailMaterial: new three.MeshStandardMaterial({
-        color: palette.sail,
-        roughness: 0.96,
-        metalness: 0.01,
-      }),
-      trimMaterial: new three.MeshStandardMaterial({
-        color: palette.trim,
-        roughness: 0.85,
-        metalness: 0.02,
-      }),
+      materialCache: new WeakMap<object, DockStyle>(),
+      createMaterials(host: ThreeHostLike): DockStyle {
+        const cached = this.materialCache.get(host as object);
+        if (cached) {
+          return cached;
+        }
+        const style = {
+          deckMaterial: new host.MeshStandardMaterial({
+            color: palette.deck,
+            roughness: 0.92,
+            metalness: 0.02,
+          }),
+          railMaterial: new host.MeshStandardMaterial({
+            color: palette.rail,
+            roughness: 0.88,
+            metalness: 0.02,
+          }),
+          pileMaterial: new host.MeshStandardMaterial({
+            color: palette.pile,
+            roughness: 0.94,
+            metalness: 0.02,
+          }),
+          boatMaterial: new host.MeshStandardMaterial({
+            color: palette.boat,
+            roughness: 0.84,
+            metalness: 0.03,
+          }),
+          sailMaterial: new host.MeshStandardMaterial({
+            color: palette.sail,
+            roughness: 0.96,
+            metalness: 0.01,
+          }),
+          trimMaterial: new host.MeshStandardMaterial({
+            color: palette.trim,
+            roughness: 0.85,
+            metalness: 0.02,
+          }),
+        };
+        this.materialCache.set(host as object, style);
+        return style;
+      },
     };
-  });
+  }).createMaterials(three);
 }
 
 function shouldRenderDockBoat(
@@ -2294,6 +2332,7 @@ function getBridgeStyle(
       tileY
     );
     return {
+      materialCache: new WeakMap<object, BridgeStyle>(),
       type,
       covered: covered && !drawbridge,
       drawbridge,
@@ -2301,42 +2340,59 @@ function getBridgeStyle(
       coverHeight: hash2D(BRIDGE_COVER_HEIGHT_SEED, tileX, tileY) * 0.16,
       pillarSpacing,
       pillarWidth: 0.14 + hash2D(BRIDGE_PILLAR_WIDTH_SEED, tileX, tileY) * 0.09,
-      deckMaterial: new three.MeshStandardMaterial({
-        color: '#ffffff',
-        map: deckTexture,
-        roughness: 0.9,
-        metalness: type === 'metal' ? 0.28 : 0.04,
-      }),
-      railMaterial: new three.MeshStandardMaterial({
-        color: '#ffffff',
-        map: railTexture,
-        roughness: 0.86,
-        metalness: type === 'metal' ? 0.36 : 0.05,
-      }),
-      postMaterial: new three.MeshStandardMaterial({
-        color: palette.trim,
-        roughness: 0.88,
-        metalness: type === 'metal' ? 0.22 : 0.03,
-      }),
-      trimMaterial: new three.MeshStandardMaterial({
-        color: palette.trim,
-        roughness: 0.82,
-        metalness: type === 'metal' ? 0.34 : 0.04,
-      }),
-      coverMaterial: new three.MeshStandardMaterial({
-        color: '#ffffff',
-        map: coverTexture,
-        roughness: 0.9,
-        metalness: 0.03,
-      }),
-      pillarMaterial: new three.MeshStandardMaterial({
-        color: '#ffffff',
-        map: railTexture,
-        roughness: 0.92,
-        metalness: type === 'metal' ? 0.18 : 0.02,
-      }),
+      createMaterials(host: ThreeHostLike): BridgeStyle {
+        const cached = this.materialCache.get(host as object);
+        if (cached) {
+          return cached;
+        }
+        const style = {
+          type: this.type,
+          covered: this.covered,
+          drawbridge: this.drawbridge,
+          widthJitter: this.widthJitter,
+          coverHeight: this.coverHeight,
+          pillarSpacing: this.pillarSpacing,
+          pillarWidth: this.pillarWidth,
+          deckMaterial: new host.MeshStandardMaterial({
+            color: '#ffffff',
+            map: deckTexture,
+            roughness: 0.9,
+            metalness: type === 'metal' ? 0.28 : 0.04,
+          }),
+          railMaterial: new host.MeshStandardMaterial({
+            color: '#ffffff',
+            map: railTexture,
+            roughness: 0.86,
+            metalness: type === 'metal' ? 0.36 : 0.05,
+          }),
+          postMaterial: new host.MeshStandardMaterial({
+            color: palette.trim,
+            roughness: 0.88,
+            metalness: type === 'metal' ? 0.22 : 0.03,
+          }),
+          trimMaterial: new host.MeshStandardMaterial({
+            color: palette.trim,
+            roughness: 0.82,
+            metalness: type === 'metal' ? 0.34 : 0.04,
+          }),
+          coverMaterial: new host.MeshStandardMaterial({
+            color: '#ffffff',
+            map: coverTexture,
+            roughness: 0.9,
+            metalness: 0.03,
+          }),
+          pillarMaterial: new host.MeshStandardMaterial({
+            color: '#ffffff',
+            map: railTexture,
+            roughness: 0.92,
+            metalness: type === 'metal' ? 0.18 : 0.02,
+          }),
+        };
+        this.materialCache.set(host as object, style);
+        return style;
+      },
     };
-  });
+  }).createMaterials(three);
 }
 
 function createBridgeTexture(
@@ -2432,6 +2488,7 @@ interface RoadStyle {
 }
 
 interface RoadStyleBlueprint {
+  materialCache: WeakMap<object, RoadStyle>;
   createMaterials(three: ThreeHostLike): RoadStyle;
 }
 
@@ -2462,6 +2519,20 @@ interface BridgeStyle {
   pillarMaterial: ThreeMaterialLike;
 }
 
+interface BridgeStyleBlueprint
+  extends Omit<
+    BridgeStyle,
+    | 'deckMaterial'
+    | 'railMaterial'
+    | 'postMaterial'
+    | 'trimMaterial'
+    | 'coverMaterial'
+    | 'pillarMaterial'
+  > {
+  materialCache: WeakMap<object, BridgeStyle>;
+  createMaterials(three: ThreeHostLike): BridgeStyle;
+}
+
 interface DockClusterInfo {
   axis: 'ew' | 'ns';
   clusterKey: string;
@@ -2480,4 +2551,9 @@ interface DockStyle {
   boatMaterial: ThreeMaterialLike;
   sailMaterial: ThreeMaterialLike;
   trimMaterial: ThreeMaterialLike;
+}
+
+interface DockStyleBlueprint {
+  materialCache: WeakMap<object, DockStyle>;
+  createMaterials(three: ThreeHostLike): DockStyle;
 }

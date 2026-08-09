@@ -13,6 +13,17 @@ vi.mock('@bworlds/three-support', async () => {
     getOrCreatePaintedCanvasTexture() {
       return { colorSpace: '', needsUpdate: false };
     },
+    createQuadraticBezierPoints(_three: unknown, start: unknown, control: unknown, end: unknown) {
+      return [start, control, end];
+    },
+    createRibbonMesh(
+      _three: unknown,
+      _points: unknown[],
+      _width: number,
+      material: unknown
+    ) {
+      return new FakeMesh(undefined, material as FakeMaterial);
+    },
     createTexturedPlaneMesh() {
       return new FakeMesh();
     },
@@ -21,6 +32,14 @@ vi.mock('@bworlds/three-support', async () => {
 
 class FakeGeometry {
   constructor(..._args: number[]) {}
+}
+
+class FakeVector3 {
+  constructor(
+    public x = 0,
+    public y = 0,
+    public z = 0
+  ) {}
 }
 
 class FakeMaterial {
@@ -40,6 +59,7 @@ class FakeNode {
     },
   };
   rotation = { x: 0, y: 0, z: 0 };
+  scale = { x: 1, y: 1, z: 1 };
   userData?: Record<string, unknown>;
   children: FakeNode[] = [];
   add(...children: FakeNode[]) {
@@ -70,6 +90,7 @@ const fakeThree = {
   BoxGeometry: FakeGeometry,
   CylinderGeometry: FakeGeometry,
   PlaneGeometry: FakeGeometry,
+  Vector3: FakeVector3,
 } as const;
 
 const plugin = createRouteTilePlugin();
@@ -733,6 +754,83 @@ describe('tile route', () => {
     expect(captureBridgeMarkers()).toEqual(baselineBridgeMarkers);
   });
 
+  it('reuses shared road materials across repeated road model builds', () => {
+    const state = {
+      player: { x: 0, y: 0, facing: 0 },
+      getCurrentContext() {
+        return { id: 'overworld', depth: 0, type: 'overworld' as const };
+      },
+      getCurrentTile() {
+        return { kind: 'plains' };
+      },
+      getTileDefinition(kind: string) {
+        return {
+          name: kind,
+          color: '#000000',
+          miniColor: '#111111',
+          walkable: true,
+          wallHeight: 0,
+        };
+      },
+    };
+    const first = roadTile?.create3DModel?.({
+      three: fakeThree as never,
+      state: state as never,
+      tile: { kind: 'road' } as never,
+      tileX: 0,
+      tileY: 0,
+    }) as FakeNode | undefined;
+    const second = roadTile?.create3DModel?.({
+      three: fakeThree as never,
+      state: state as never,
+      tile: { kind: 'road' } as never,
+      tileX: 1,
+      tileY: 0,
+    }) as FakeNode | undefined;
+
+    expect(countSharedMaterialReferences(first, second)).toBeGreaterThanOrEqual(2);
+  });
+
+  it('reuses shared dock materials across repeated dock model builds', () => {
+    const state = createDockModelState();
+    const first = dockTile?.create3DModel?.({
+      three: fakeThree as never,
+      state: state as never,
+      tile: { kind: 'dock' } as never,
+      tileX: 0,
+      tileY: 0,
+    }) as FakeNode | undefined;
+    const second = dockTile?.create3DModel?.({
+      three: fakeThree as never,
+      state: state as never,
+      tile: { kind: 'dock' } as never,
+      tileX: 1,
+      tileY: 0,
+    }) as FakeNode | undefined;
+
+    expect(countSharedMaterialReferences(first, second)).toBeGreaterThanOrEqual(3);
+  });
+
+  it('reuses shared bridge materials across repeated bridge model builds', () => {
+    const state = createForestLogBridgeState();
+    const first = bridgeTile?.create3DModel?.({
+      three: fakeThree as never,
+      state: state as never,
+      tile: { kind: 'bridge' } as never,
+      tileX: 0,
+      tileY: 0,
+    }) as FakeNode | undefined;
+    const second = bridgeTile?.create3DModel?.({
+      three: fakeThree as never,
+      state: state as never,
+      tile: { kind: 'bridge' } as never,
+      tileX: 0,
+      tileY: 0,
+    }) as FakeNode | undefined;
+
+    expect(countSharedMaterialReferences(first, second)).toBeGreaterThanOrEqual(2);
+  });
+
   it('creates a boardable ship action from docks on a valid route', () => {
     const state = createRoutedDockModelState();
     const action = dockTile?.createWorldAction?.({
@@ -783,3 +881,34 @@ describe('tile route', () => {
     );
   });
 });
+
+function countSharedMaterialReferences(
+  left: FakeNode | undefined,
+  right: FakeNode | undefined
+): number {
+  const leftMaterials = collectMeshMaterials(left);
+  const rightMaterials = collectMeshMaterials(right);
+  let sharedCount = 0;
+
+  leftMaterials.forEach((material) => {
+    if (rightMaterials.has(material)) {
+      sharedCount += 1;
+    }
+  });
+
+  return sharedCount;
+}
+
+function collectMeshMaterials(root: FakeNode | undefined): Set<FakeMaterial> {
+  const materials = new Set<FakeMaterial>();
+  root?.traverse((node) => {
+    if (node instanceof FakeMesh) {
+      if (Array.isArray(node.material)) {
+        node.material.forEach((material) => materials.add(material));
+      } else if (node.material) {
+        materials.add(node.material);
+      }
+    }
+  });
+  return materials;
+}
