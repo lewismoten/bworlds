@@ -2213,6 +2213,8 @@ type ForestTreeSpeciesDefinition = {
   maximumAgeYears: number;
   trunkHeightMin: number;
   trunkHeightRange: number;
+  trunkRadiusMin: number;
+  trunkRadiusRange: number;
   branchCountBase: number;
   branchCountRange: number;
   broadleafSpreadBase: number;
@@ -2301,6 +2303,8 @@ const forestOakSpecies = createTreeSpecies<
       maximumAgeYears: 240,
       trunkHeightMin: 0.76,
       trunkHeightRange: 0.42,
+      trunkRadiusMin: 0.09,
+      trunkRadiusRange: 0.06,
       branchCountBase: 3,
       branchCountRange: 2,
       broadleafSpreadBase: 0.2,
@@ -2338,6 +2342,8 @@ const forestBirchSpecies = createTreeSpecies<
       maximumAgeYears: 140,
       trunkHeightMin: 0.82,
       trunkHeightRange: 0.52,
+      trunkRadiusMin: 0.07,
+      trunkRadiusRange: 0.04,
       branchCountBase: 2,
       branchCountRange: 2,
       broadleafSpreadBase: 0.15,
@@ -2375,6 +2381,8 @@ const forestPineSpecies = createTreeSpecies<
       maximumAgeYears: 210,
       trunkHeightMin: 0.72,
       trunkHeightRange: 0.45,
+      trunkRadiusMin: 0.08,
+      trunkRadiusRange: 0.05,
       branchCountBase: 3,
       branchCountRange: 3,
       broadleafSpreadBase: 0.08,
@@ -2520,8 +2528,11 @@ function createForestTreeDescriptorFromSpecies(
   const y = clampToTile(
     context.groveCenter.y + (placementRandom() - 0.5) * spread * 2
   );
+  const trunkRadius =
+    (definition.trunkRadiusMin + appearanceRandom() * definition.trunkRadiusRange) *
+    (0.62 + maturity * 0.72);
   const structure: TreeStructuralState = {
-    radius: 0.08 + appearanceRandom() * 0.05,
+    radius: trunkRadius,
     scale: (0.72 + appearanceRandom() * 0.48) * (0.62 + maturity * 0.72),
     trunkHeight,
     branches,

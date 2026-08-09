@@ -876,9 +876,19 @@ describe('tile forest', () => {
       broadleafTrunks.map((trunk) => trunk.trunkHeight.toFixed(3))
     );
     const pineHeights = new Set(pineTrunks.map((trunk) => trunk.trunkHeight.toFixed(3)));
+    const broadleafRadii = new Set(broadleafTrunks.map((trunk) => trunk.radius.toFixed(3)));
+    const pineRadii = new Set(pineTrunks.map((trunk) => trunk.radius.toFixed(3)));
 
     expect(broadleafHeights.size).toBeGreaterThan(1);
     expect(pineHeights.size).toBeGreaterThan(1);
+    expect(broadleafRadii.size).toBeGreaterThan(1);
+    expect(pineRadii.size).toBeGreaterThan(1);
+    expect(
+      broadleafTrunks.some((trunk) => trunk.speciesId === 'oak' && trunk.radius > 0.1)
+    ).toBe(true);
+    expect(
+      broadleafTrunks.some((trunk) => trunk.speciesId === 'birch' && trunk.radius < 0.09)
+    ).toBe(true);
 
     const first = trunkTiles[0]!;
     expect(getForestTreeTrunkProfiles(first.x, first.y)).toEqual(first.trunks);
