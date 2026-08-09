@@ -55,6 +55,10 @@ import {
   type TileModelCostEstimateLimits,
 } from './tile-model-cost-estimate-validation.ts';
 import { getRenderEffectQualityProfile } from './render-effect-quality.ts';
+import {
+  createSkyLightingColorState,
+  updateSkyLightingColorState,
+} from './sky-lighting-colors.ts';
 import { runTileModelSafetyPrecheck } from './tile-model-safety-precheck.ts';
 
 const LAND_MODEL_REVEAL_SEED = registerHashLabel('render3d:land-model-reveal');
@@ -1082,6 +1086,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
   const nightColor = new THREE.Color(SKY_NIGHT_COLOR);
   const fogDayColor = new THREE.Color(FOG_DAY_COLOR);
   const fogNightColor = new THREE.Color(FOG_NIGHT_COLOR);
+  const skyLightingColorState = createSkyLightingColorState();
   let lastMoonPhaseIndex = -1;
   let lastCenterKey = '';
   let lastContextKey = '';
@@ -2408,32 +2413,39 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       clamp(1 - weatherCloudCover * 0.42 - (1 - weatherVisibility) * 0.58, 0.08, 1) *
       renderEffectQuality.starDensityMultiplier;
     const skyPositionSignature = getSkyPositionSignature(cycle, starDensity);
-    const daySkyColor = new THREE.Color(sky.dayColor ?? SKY_DAY_COLOR);
     const twilightPalette = getTwilightSkyPalette(sky, cycle);
-    const sunsetSkyColor = new THREE.Color(twilightPalette.skyColor);
-    const nightSkyColor = new THREE.Color(sky.nightColor ?? SKY_NIGHT_COLOR);
-    const twilightFogColor = new THREE.Color(twilightPalette.fogColor);
-    const nightFogColor = new THREE.Color(sky.fogNightColor ?? FOG_NIGHT_COLOR);
+    updateSkyLightingColorState(skyLightingColorState, {
+      sky,
+      twilightPalette,
+      lighting,
+      defaults: {
+        daySkyColor: SKY_DAY_COLOR,
+        nightSkyColor: SKY_NIGHT_COLOR,
+        fogNightColor: FOG_NIGHT_COLOR,
+        ambientDayColor: '#eaf6ff',
+        groundDayColor: '#28442f',
+        sunColor: '#fff3cf',
+      },
+    });
     const fogRange = getWeatherFogRange(weatherVisibility);
 
     scene.background
-      .copy(nightSkyColor)
-      .lerp(sunsetSkyColor, cycle.twilight)
-      .lerp(daySkyColor, dayBlend);
-    scene.fog.color.copy(nightFogColor).lerp(twilightFogColor, cycle.twilight);
+      .copy(skyLightingColorState.nightSkyColor)
+      .lerp(skyLightingColorState.sunsetSkyColor, cycle.twilight)
+      .lerp(skyLightingColorState.daySkyColor, dayBlend);
+    scene.fog.color
+      .copy(skyLightingColorState.nightFogColor)
+      .lerp(skyLightingColorState.twilightFogColor, cycle.twilight);
     scene.fog.near = fogRange.near;
     scene.fog.far = fogRange.far;
 
     ambientLight.intensity = 0.2 + cycle.twilight * 0.75 + dayBlend * 0.45;
     ambientLight.color
       .set(lighting.ambientNightColor ?? '#9fc4ff')
-      .lerp(new THREE.Color(lighting.ambientDayColor ?? '#eaf6ff'), dayBlend);
+      .lerp(skyLightingColorState.ambientDayColor, dayBlend);
     ambientLight.groundColor
       .set(lighting.groundNightColor ?? '#101826')
-      .lerp(
-        new THREE.Color(lighting.groundDayColor ?? '#28442f'),
-        0.35 + dayBlend * 0.65
-      );
+      .lerp(skyLightingColorState.groundDayColor, 0.35 + dayBlend * 0.65);
 
     if (skyPositionSignature !== lastSkyPositionSignature || !cachedSkyPose) {
       cachedSkyPose = createCachedSkyPose(cycle);
@@ -2467,10 +2479,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       (1 - (cycle.solarEclipse?.daylightReduction ?? 0) * 0.6);
     sunLight.color
       .set('#ffb06e')
-      .lerp(
-        new THREE.Color(lighting.sunColor ?? '#fff3cf'),
-        Math.min(1, dayBlend + 0.2)
-      );
+      .lerp(skyLightingColorState.sunDayColor, Math.min(1, dayBlend + 0.2));
 
     const shadowStrength = Math.max(0, cycle.daylight - 0.12);
     sunLight.castShadow =

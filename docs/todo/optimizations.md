@@ -111,7 +111,7 @@ State/events only
 * [ ] Avoid creating arrays during every frame.
 * [ ] Avoid creating temporary `{ x, y, z }` objects every frame.
 * [ ] Avoid repeatedly constructing `Vector2`, `Vector3`, `Matrix4`, or quaternion objects.
-* [ ] Reuse temporary math objects.
+* [X] Reuse temporary math objects.
 * [ ] Avoid creating closures inside frequently executed loops.
 * [ ] Avoid string construction inside hot loops.
 * [ ] Avoid object spreading in per-frame operations.
