@@ -898,6 +898,16 @@ describe('tile forest', () => {
         (trunk) => `${trunk.trunkCurveX.toFixed(3)}:${trunk.trunkCurveZ.toFixed(3)}`
       )
     );
+    const broadleafLeans = new Set(
+      broadleafTrunks.map(
+        (trunk) => `${trunk.trunkLeanX.toFixed(3)}:${trunk.trunkLeanZ.toFixed(3)}`
+      )
+    );
+    const pineLeans = new Set(
+      pineTrunks.map(
+        (trunk) => `${trunk.trunkLeanX.toFixed(3)}:${trunk.trunkLeanZ.toFixed(3)}`
+      )
+    );
 
     expect(broadleafHeights.size).toBeGreaterThan(1);
     expect(pineHeights.size).toBeGreaterThan(1);
@@ -907,6 +917,8 @@ describe('tile forest', () => {
     expect(pineTaperRatios.size).toBeGreaterThan(1);
     expect(broadleafCurves.size).toBeGreaterThan(1);
     expect(pineCurves.size).toBeGreaterThan(1);
+    expect(broadleafLeans.size).toBeGreaterThan(1);
+    expect(pineLeans.size).toBeGreaterThan(1);
     expect(broadleafTrunks.every((trunk) => trunk.trunkTopRadius < trunk.radius)).toBe(true);
     expect(pineTrunks.every((trunk) => trunk.trunkTopRadius < trunk.radius)).toBe(true);
     expect(
@@ -917,6 +929,16 @@ describe('tile forest', () => {
     expect(
       pineTrunks.some(
         (trunk) => Math.abs(trunk.trunkCurveX) + Math.abs(trunk.trunkCurveZ) > 0.01
+      )
+    ).toBe(true);
+    expect(
+      broadleafTrunks.some(
+        (trunk) => Math.abs(trunk.trunkLeanX) + Math.abs(trunk.trunkLeanZ) > 0.01
+      )
+    ).toBe(true);
+    expect(
+      pineTrunks.some(
+        (trunk) => Math.abs(trunk.trunkLeanX) + Math.abs(trunk.trunkLeanZ) > 0.012
       )
     ).toBe(true);
     expect(
@@ -2076,6 +2098,43 @@ describe('tile forest', () => {
     ).toBeGreaterThan(0.01);
     expect(upperTrunkMesh?.position.x).toBeCloseTo(trunks[curvedIndex]!.trunkCurveX, 3);
     expect(upperTrunkMesh?.position.z).toBeCloseTo(trunks[curvedIndex]!.trunkCurveZ, 3);
+  });
+
+  it('adds directional lean to full-detail forest trees from shared structural state', () => {
+    const plugin = createForestTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'forest');
+    const state = createForestTestState(8, 6);
+    const trunks = getForestTreeTrunkProfiles(8, 6);
+    const leaningIndex = trunks.findIndex(
+      (trunk) => Math.abs(trunk.trunkLeanX) + Math.abs(trunk.trunkLeanZ) > 0.01
+    );
+
+    expect(leaningIndex).toBeGreaterThanOrEqual(0);
+
+    const fullModel = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'forest' },
+      tileX: 8,
+      tileY: 6,
+      detailLevel: 'full',
+    }) as FakeGroup;
+
+    const leaningTree = fullModel.children.filter(
+      (child) => child instanceof FakeGroup && child.userData?.renderStatKind === 'tree'
+    )[leaningIndex] as FakeGroup | undefined;
+
+    expect(leaningTree).toBeDefined();
+    expect(Math.abs(leaningTree?.rotation.x ?? 0) + Math.abs(leaningTree?.rotation.z ?? 0))
+      .toBeGreaterThan(0.005);
+    expect(leaningTree?.rotation.x).toBeCloseTo(
+      Math.atan2(trunks[leaningIndex]!.trunkLeanZ, trunks[leaningIndex]!.trunkHeight),
+      3
+    );
+    expect(leaningTree?.rotation.z).toBeCloseTo(
+      -Math.atan2(trunks[leaningIndex]!.trunkLeanX, trunks[leaningIndex]!.trunkHeight),
+      3
+    );
   });
 
   it('instances low-detail tree trunks and canopies instead of creating one group per tree', () => {

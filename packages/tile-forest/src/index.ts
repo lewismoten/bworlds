@@ -1173,6 +1173,14 @@ export function createForestTilePlugin(): RuntimePlugin {
           const tree = new three.Group();
           tree.position.set(tileX + descriptor.x, 0, tileY + descriptor.y);
           tree.scale.setScalar(structure.scale);
+          tree.rotation.x = Math.atan2(
+            structure.trunkLeanZ,
+            Math.max(0.001, structure.trunkHeight)
+          );
+          tree.rotation.z = -Math.atan2(
+            structure.trunkLeanX,
+            Math.max(0.001, structure.trunkHeight)
+          );
           tree.userData = {
             ...(tree.userData ?? {}),
             [TREE_FORM_KEY]: descriptor.form,
@@ -2066,6 +2074,8 @@ export function getForestTreeTrunkProfiles(
   trunkTopRadius: number;
   trunkCurveX: number;
   trunkCurveZ: number;
+  trunkLeanX: number;
+  trunkLeanZ: number;
 }> {
   return getForestTreeDescriptors(tileX, tileY).map((descriptor) => {
     const structure = getTreeStructuralState(descriptor);
@@ -2077,6 +2087,8 @@ export function getForestTreeTrunkProfiles(
       trunkTopRadius: structure.trunkTopRadius,
       trunkCurveX: structure.trunkCurveX,
       trunkCurveZ: structure.trunkCurveZ,
+      trunkLeanX: structure.trunkLeanX,
+      trunkLeanZ: structure.trunkLeanZ,
     };
   });
 }
@@ -2660,11 +2672,18 @@ function createForestTreeDescriptorFromSpecies(
     (definition.form === 'pine' ? 0.01 : 0.014) +
     appearanceRandom() * (definition.form === 'pine' ? 0.018 : 0.024);
   const resolvedTrunkCurveMagnitude = trunkCurveMagnitude * (0.35 + maturity * 0.7);
+  const trunkLeanAngle = appearanceRandom() * Math.PI * 2;
+  const trunkLeanMagnitude =
+    (definition.form === 'pine' ? 0.014 : 0.01) +
+    appearanceRandom() * (definition.form === 'pine' ? 0.024 : 0.018);
+  const resolvedTrunkLeanMagnitude = trunkLeanMagnitude * (0.3 + maturity * 0.85);
   const structure: TreeStructuralState = {
     radius: trunkRadius,
     trunkTopRadius: trunkRadius * trunkTaperRatio,
     trunkCurveX: Math.cos(trunkCurveAngle) * resolvedTrunkCurveMagnitude,
     trunkCurveZ: Math.sin(trunkCurveAngle) * resolvedTrunkCurveMagnitude,
+    trunkLeanX: Math.cos(trunkLeanAngle) * resolvedTrunkLeanMagnitude,
+    trunkLeanZ: Math.sin(trunkLeanAngle) * resolvedTrunkLeanMagnitude,
     scale: (0.72 + appearanceRandom() * 0.48) * (0.62 + maturity * 0.72),
     trunkHeight,
     branches,

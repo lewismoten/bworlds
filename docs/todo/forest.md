@@ -202,7 +202,7 @@ interface TreeCapabilities {
 * [X] Taper trunks naturally toward the canopy.
 * [X] Avoid perfectly straight cylinders.
 * [X] Add slight curvature.
-* [ ] Add directional lean.
+* [X] Add directional lean.
 * [ ] Allow terrain slope to influence lean.
 * [ ] Allow wind exposure to influence lean.
 * [ ] Generate buttress roots for appropriate species.

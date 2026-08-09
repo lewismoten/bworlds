@@ -70,6 +70,8 @@ export interface TreeStructuralState {
   trunkTopRadius: number;
   trunkCurveX: number;
   trunkCurveZ: number;
+  trunkLeanX: number;
+  trunkLeanZ: number;
   scale: number;
   trunkHeight: number;
   branches: TreeBranchState[];
@@ -269,6 +271,8 @@ export function getTreeStructuralState<TForm extends string = string>(
       trunkTopRadius: tree.radius * 0.72,
       trunkCurveX: 0,
       trunkCurveZ: 0,
+      trunkLeanX: 0,
+      trunkLeanZ: 0,
       scale: tree.scale,
       trunkHeight: tree.trunkHeight,
       branches: tree.branches,
