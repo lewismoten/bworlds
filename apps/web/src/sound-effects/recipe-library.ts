@@ -849,6 +849,149 @@ function resolveProceduralSoundLayers(
   identityVariant?: string
 ): SoundLayerRecipe | undefined {
   switch (kind) {
+    case 'wind':
+      if (identityVariant === 'stormfront') {
+        return [
+          {
+            id: 'wind-storm-bed',
+            waveform: ['triangle', 'sine'] as const,
+            noiseColor: 'brown' as const,
+            frequencyMultiplier: 0.68,
+            durationMultiplier: 1,
+            volumeMultiplier: 0.66,
+            frequencyVariation: 0.028,
+            durationVariation: 0.14,
+            volumeVariation: 0.08,
+            variationDepth: 1,
+          },
+          {
+            id: 'wind-storm-whip',
+            waveform: ['sine', 'triangle'] as const,
+            frequencyMultiplier: 1.3,
+            durationMultiplier: 0.88,
+            volumeMultiplier: 0.24,
+            startOffsetMs: 28,
+            startOffsetVariation: 0.24,
+            frequencyVariation: 0.03,
+            durationVariation: 0.1,
+            volumeVariation: 0.08,
+            variationDepth: 0.82,
+            tremolo: {
+              rateHz: 5.6,
+              depth: 0.2,
+              waveform: ['sine', 'triangle'] as const,
+              rateVariation: 0.05,
+              depthVariation: 0.06,
+            },
+          },
+        ] as const;
+      }
+      if (identityVariant === 'crossdraft') {
+        return [
+          {
+            id: 'wind-crossdraft-bed',
+            waveform: ['triangle', 'sine'] as const,
+            noiseColor: 'brown' as const,
+            frequencyMultiplier: 0.74,
+            durationMultiplier: 1,
+            volumeMultiplier: 0.46,
+            frequencyVariation: 0.022,
+            durationVariation: 0.12,
+            volumeVariation: 0.06,
+            variationDepth: 0.88,
+          },
+          {
+            id: 'wind-crossdraft-whistle',
+            waveform: ['sine', 'triangle'] as const,
+            frequencyMultiplier: 1.42,
+            durationMultiplier: 0.72,
+            volumeMultiplier: 0.22,
+            startOffsetMs: 20,
+            startOffsetVariation: 0.22,
+            frequencyVariation: 0.022,
+            durationVariation: 0.08,
+            volumeVariation: 0.08,
+            variationDepth: 0.72,
+            vibrato: {
+              rateHz: 5.2,
+              depthHz: 8,
+              waveform: ['sine', 'triangle'] as const,
+              rateVariation: 0.05,
+              depthVariation: 0.06,
+            },
+          },
+        ] as const;
+      }
+      if (identityVariant === 'canopy') {
+        return [
+          {
+            id: 'wind-canopy-bed',
+            waveform: ['triangle', 'sine'] as const,
+            noiseColor: 'brown' as const,
+            frequencyMultiplier: 0.72,
+            durationMultiplier: 1,
+            volumeMultiplier: 0.58,
+            frequencyVariation: 0.02,
+            durationVariation: 0.12,
+            volumeVariation: 0.06,
+            variationDepth: 1,
+          },
+          {
+            id: 'wind-leaf-whistle',
+            waveform: ['sine', 'triangle'] as const,
+            frequencyMultiplier: 1.18,
+            durationMultiplier: 0.84,
+            volumeMultiplier: 0.18,
+            startOffsetMs: 36,
+            startOffsetVariation: 0.28,
+            frequencyVariation: 0.024,
+            durationVariation: 0.09,
+            volumeVariation: 0.08,
+            variationDepth: 0.72,
+            tremolo: {
+              rateHz: 5.1,
+              depth: 0.16,
+              waveform: ['sine', 'triangle'] as const,
+              rateVariation: 0.05,
+              depthVariation: 0.06,
+            },
+          },
+        ] as const;
+      }
+      return [
+        {
+          id: 'wind-noise-bed',
+          waveform: ['triangle', 'sine'] as const,
+          noiseColor: 'brown' as const,
+          frequencyMultiplier: 0.72,
+          durationMultiplier: 1,
+          volumeMultiplier: 0.58,
+          frequencyVariation: 0.02,
+          durationVariation: 0.12,
+          volumeVariation: 0.06,
+          variationDepth: 1,
+        },
+        {
+          id: 'wind-edge-whistle',
+          waveform: ['sine', 'triangle'] as const,
+          frequencyMultiplier: 1.18,
+          durationMultiplier: 0.84,
+          volumeMultiplier: 0.18,
+          startOffsetMs: 36,
+          startOffsetVariation: 0.28,
+          frequencyVariation: 0.024,
+          durationVariation: 0.09,
+          volumeVariation: 0.08,
+          variationDepth: 0.72,
+          tremolo: {
+            rateHz: 5.1,
+            depth: 0.16,
+            waveform: ['sine', 'triangle'] as const,
+            rateVariation: 0.05,
+            depthVariation: 0.06,
+          },
+        },
+      ] as const;
     case 'rain':
       if (identityVariant === 'roof') {
         return [
@@ -966,41 +1109,6 @@ function resolveProceduralSoundLayers(
           durationVariation: 0.18,
           volumeVariation: 0.08,
           variationDepth: 0.82,
-        },
-      ] as const;
-    case 'wind':
-      return [
-        {
-          id: 'wind-noise-bed',
-          waveform: ['triangle', 'sine'] as const,
-          noiseColor: 'brown' as const,
-          frequencyMultiplier: 0.72,
-          durationMultiplier: 1,
-          volumeMultiplier: 0.58,
-          frequencyVariation: 0.02,
-          durationVariation: 0.12,
-          volumeVariation: 0.06,
-          variationDepth: 1,
-        },
-        {
-          id: 'wind-edge-whistle',
-          waveform: ['sine', 'triangle'] as const,
-          frequencyMultiplier: 1.18,
-          durationMultiplier: 0.84,
-          volumeMultiplier: 0.18,
-          startOffsetMs: 36,
-          startOffsetVariation: 0.28,
-          frequencyVariation: 0.024,
-          durationVariation: 0.09,
-          volumeVariation: 0.08,
-          variationDepth: 0.72,
-          tremolo: {
-            rateHz: 5.1,
-            depth: 0.16,
-            waveform: ['sine', 'triangle'] as const,
-            rateVariation: 0.05,
-            depthVariation: 0.06,
-          },
         },
       ] as const;
     case 'river-ambience':
@@ -2788,7 +2896,15 @@ function resolveBaseSoundEffectFrequency(
     case 'wind':
       return (
         190 +
-        (options.tileKind === 'forest' ? 16 : 0) +
+        (options.identityVariant === 'canopy'
+          ? 16
+          : options.identityVariant === 'crossdraft'
+            ? 30
+            : options.identityVariant === 'stormfront'
+              ? 10
+              : options.tileKind === 'forest'
+                ? 16
+                : 0) +
         options.variantOffset * 0.4
       );
     case 'ocean':

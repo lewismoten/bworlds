@@ -22,7 +22,10 @@ import {
 import { createSoundVariationSelector } from './sound-effects/variation-selector.ts';
 import {
   isRainWeatherKind,
+  isWindWeatherKind,
+  normalizeWindAudioIntensity,
   normalizeWeatherAudioIntensity,
+  resolveWindAudioSurface,
   resolveWeatherPrecipitationSurface,
   type WeatherPrecipitationSurface,
 } from './weather-audio.ts';
@@ -849,12 +852,16 @@ export function createSoundEffectController(
             precipitationSurface
           );
         }
+        const windAudioIntensity = normalizeWindAudioIntensity(
+          windStrength,
+          weatherKind
+        );
         if (
-          shouldPlayForestWindSound(tileKind, weatherKind, windStrength) &&
-          nowMs - lastWindAtMs >=
-            getForestWindCadenceMs(windStrength ?? weatherIntensity ?? 0)
+          shouldPlayWindSound(tileKind, weatherKind, windStrength) &&
+          nowMs - lastWindAtMs >= getForestWindCadenceMs(windAudioIntensity)
         ) {
           lastWindAtMs = nowMs;
+          const windSurface = resolveWindAudioSurface(tileKind);
           play(
             'wind',
             nowMs,
@@ -862,8 +869,8 @@ export function createSoundEffectController(
             emitter,
             listener,
             ambienceDuckingGain,
-            getWindSoundDurationMs(windStrength ?? weatherIntensity ?? 0),
-            weatherKind === 'wind' ? 'stormfront' : 'canopy'
+            getWindSoundDurationMs(windAudioIntensity),
+            resolveWindIdentityVariant(windSurface, weatherKind)
           );
         }
       } else {
@@ -928,6 +935,37 @@ export function shouldPlayForestWindSound(
     tileKind === 'forest' &&
     (weatherKind === 'wind' || (windStrength ?? 0) >= 0.3)
   );
+}
+
+export function shouldPlayWindSound(
+  tileKind: SurfaceKind | undefined,
+  weatherKind?: string,
+  windStrength?: number
+): boolean {
+  const intensity = normalizeWindAudioIntensity(windStrength, weatherKind);
+  const windSurface = resolveWindAudioSurface(tileKind);
+  switch (windSurface) {
+    case 'canopy':
+      return intensity >= 0.3;
+    case 'crossdraft':
+      return intensity >= 0.38;
+    case 'open-air':
+    default:
+      return isWindWeatherKind(weatherKind) && intensity >= 0.35;
+  }
+}
+
+export function resolveWindIdentityVariant(
+  surface: 'open-air' | 'canopy' | 'crossdraft',
+  weatherKind?: string
+): 'stormfront' | 'canopy' | 'crossdraft' {
+  if (surface === 'crossdraft') {
+    return 'crossdraft';
+  }
+  if (surface === 'canopy' && weatherKind !== 'wind') {
+    return 'canopy';
+  }
+  return 'stormfront';
 }
 
 export function getForestWindCadenceMs(windStrength: number): number {

@@ -316,6 +316,44 @@ describe('sound recipe library', () => {
     ]);
   });
 
+  it('supports canopy and crossdraft wind variants for weather-responsive surfaces', () => {
+    const canopyRecipe = buildProceduralSoundRecipe({
+      kind: 'wind',
+      identityVariant: 'canopy',
+      profile: DEFAULT_SURFACE_PROFILE,
+      variantOffset: 0,
+      resolveAdvancementFrequency: () => 300,
+      resolveAmbientSoundFrequency: () => 172,
+      resolveInteractionFrequency: () => 128,
+      resolveInteractionWaveform: (_tileKind, fallback) => fallback,
+      resolvePaddleBoatCalliopeFrequency: () => 520,
+      resolveSteamWhistleFrequency: () => 360,
+    });
+    const crossdraftRecipe = buildProceduralSoundRecipe({
+      kind: 'wind',
+      identityVariant: 'crossdraft',
+      profile: DEFAULT_SURFACE_PROFILE,
+      variantOffset: 0,
+      resolveAdvancementFrequency: () => 300,
+      resolveAmbientSoundFrequency: () => 172,
+      resolveInteractionFrequency: () => 128,
+      resolveInteractionWaveform: (_tileKind, fallback) => fallback,
+      resolvePaddleBoatCalliopeFrequency: () => 520,
+      resolveSteamWhistleFrequency: () => 360,
+    });
+
+    expect(canopyRecipe.id).toBe('wind:canopy');
+    expect(canopyRecipe.layers?.map((layer) => layer.id)).toEqual([
+      'wind-canopy-bed',
+      'wind-leaf-whistle',
+    ]);
+    expect(crossdraftRecipe.id).toBe('wind:crossdraft');
+    expect(crossdraftRecipe.layers?.map((layer) => layer.id)).toEqual([
+      'wind-crossdraft-bed',
+      'wind-crossdraft-whistle',
+    ]);
+  });
+
   it('supports time-of-day and seasonal ambient variants for plains, forest, and settlements', () => {
     const forestNightRecipe = buildProceduralSoundRecipe({
       kind: 'forest-ambience',

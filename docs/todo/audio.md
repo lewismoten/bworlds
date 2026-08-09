@@ -203,9 +203,9 @@
 - [ ] Calculate thunder delay from lightning distance.
 - [ ] Change thunder characteristics according to storm distance.
 - [ ] Generate multiple thunder components such as initial crack, rumble, and distant reflections.
-- [ ] Generate wind intensity from actual weather conditions.
-- [ ] Make trees and vegetation respond audibly to wind intensity.
-- [ ] Generate wind whistling around buildings and openings.
+- [x] Generate wind intensity from actual weather conditions.
+- [x] Make trees and vegetation respond audibly to wind intensity.
+- [x] Generate wind whistling around buildings and openings.
 - [ ] Generate snowstorm ambience.
 - [ ] Generate hail impacts according to surrounding materials.
 - [ ] Generate sandstorm ambience.

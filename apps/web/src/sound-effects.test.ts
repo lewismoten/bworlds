@@ -29,10 +29,12 @@ import {
   resolveCombatSoundFrequency,
   resolveCombatSoundWaveform,
   resolvePaddleBoatCalliopeFrequency,
+  resolveWindIdentityVariant,
   resolveSteamWhistleFrequency,
   getTrainEngineCadenceMs,
   shouldPlayBlockedMovementSound,
   shouldPlayForestWindSound,
+  shouldPlayWindSound,
   shouldPlaySteamWhistle,
   shouldPlayTrainWhistle,
   type ProceduralSoundEffect,
@@ -2980,6 +2982,39 @@ describe('sound effects', () => {
     expect(played[0]?.recipeId).toBe('wind:forest:stormfront');
   });
 
+  it('plays canopy and crossdraft wind variants from actual weather-driven wind intensity', () => {
+    const played: ProceduralSoundEffect[] = [];
+    const controller = createSoundEffectController({
+      play(effect) {
+        played.push(effect);
+      },
+    });
+
+    controller.update({
+      nowMs: 0,
+      walking: false,
+      isJumping: false,
+      viewMode: '3d',
+      tileKind: 'vegetation',
+      weatherKind: 'clouds',
+      windStrength: 0.45,
+    });
+    controller.update({
+      nowMs: getForestWindCadenceMs(0.45) + 40,
+      walking: false,
+      isJumping: false,
+      viewMode: '3d',
+      tileKind: 'door',
+      weatherKind: 'wind',
+      windStrength: 0.55,
+    });
+
+    const winds = played.filter((effect) => effect.kind === 'wind');
+    expect(winds).toHaveLength(2);
+    expect(winds[0]?.recipeId).toBe('wind:vegetation:canopy');
+    expect(winds[1]?.recipeId).toBe('wind:door:crossdraft');
+  });
+
   it('plays debounced rain ambience with surface-aware recipe variants', () => {
     const played: ProceduralSoundEffect[] = [];
     const controller = createSoundEffectController({
@@ -3496,6 +3531,16 @@ describe('sound effects', () => {
     expect(shouldPlayForestWindSound('forest', 'clouds', 0.45)).toBe(true);
     expect(shouldPlayForestWindSound('forest', 'clouds', 0.1)).toBe(false);
     expect(shouldPlayForestWindSound('road', 'wind', 0.9)).toBe(false);
+  });
+
+  it('schedules wind ambience for vegetation and openings from actual wind strength', () => {
+    expect(shouldPlayWindSound('vegetation', 'clouds', 0.45)).toBe(true);
+    expect(shouldPlayWindSound('door', 'wind', 0.4)).toBe(true);
+    expect(shouldPlayWindSound('door', 'clouds', 0.2)).toBe(false);
+    expect(shouldPlayWindSound('plains', 'clouds', 0.8)).toBe(false);
+    expect(resolveWindIdentityVariant('canopy', 'clouds')).toBe('canopy');
+    expect(resolveWindIdentityVariant('canopy', 'wind')).toBe('stormfront');
+    expect(resolveWindIdentityVariant('crossdraft', 'wind')).toBe('crossdraft');
   });
 
   it('plays a debounced ocean ambience cue when nearby ambient water is audible', () => {
