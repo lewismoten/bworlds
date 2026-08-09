@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createBoundedCache } from '@bworlds/cache-support';
 import {
+  createHostMaterialResolver,
   createCoordinateValueResolver,
   createRegionalMaterialResolver,
   createRegionalValueResolver,
@@ -139,6 +140,24 @@ describe('procedural style helpers', () => {
       host: 'three-b',
     });
     expect(cache.size).toBe(1);
+  });
+
+  it('memoizes host-specific material factories through a shared helper', () => {
+    let buildCount = 0;
+    const resolver = createHostMaterialResolver((three: { label: string }) => ({
+      host: three.label,
+      build: ++buildCount,
+    }));
+    const hostA = { label: 'three-a' };
+    const hostB = { label: 'three-b' };
+
+    const first = resolver.createMaterials(hostA);
+    const second = resolver.createMaterials(hostA);
+    const third = resolver.createMaterials(hostB);
+
+    expect(first).toBe(second);
+    expect(first).toEqual({ host: 'three-a', build: 1 });
+    expect(third).toEqual({ host: 'three-b', build: 2 });
   });
 
   it('tints hex colors by a multiplier', () => {

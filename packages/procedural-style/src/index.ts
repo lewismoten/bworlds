@@ -138,6 +138,28 @@ export function createRegionalMaterialResolver<
   };
 }
 
+export function createHostMaterialResolver<
+  TMaterial,
+  THost extends object = ThreeHostLike,
+>(createMaterials: (three: THost) => TMaterial): {
+  createMaterials(three: THost): TMaterial;
+} {
+  const materialCache = new WeakMap<object, TMaterial>();
+
+  return {
+    createMaterials(three: THost): TMaterial {
+      const cached = materialCache.get(three as object);
+      if (cached !== undefined) {
+        return cached;
+      }
+
+      const resolved = createMaterials(three);
+      materialCache.set(three as object, resolved);
+      return resolved;
+    },
+  };
+}
+
 export function pickThresholdColor(
   signal: number,
   threshold: number,

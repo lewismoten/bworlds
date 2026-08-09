@@ -16,6 +16,7 @@ import {
 } from '@bworlds/poi-support';
 import {
   createCoordinateValueResolver,
+  createHostMaterialResolver,
   createRegionalMaterialResolver,
   pickThresholdColor,
 } from '@bworlds/procedural-style';
@@ -168,13 +169,7 @@ const resolveTownStyle = createRegionalMaterialResolver(
       '#e8c889'
     );
 
-    return {
-      materialCache: new WeakMap<object, TownStyle>(),
-      createMaterials(three: ThreeHostLike) {
-        const cached = this.materialCache.get(three as object);
-        if (cached) {
-          return cached;
-        }
+    return createHostMaterialResolver((three: ThreeHostLike) => {
         const bannerMaterialCache = new Map<string, ThreeMaterialLike>();
         const style = {
           key,
@@ -249,10 +244,8 @@ const resolveTownStyle = createRegionalMaterialResolver(
             return material;
           },
         };
-        this.materialCache.set(three as object, style);
         return style;
-      },
-    };
+      });
   }
 );
 
@@ -737,7 +730,6 @@ interface TownStyle {
 }
 
 interface TownStyleBlueprint {
-  materialCache: WeakMap<object, TownStyle>;
   createMaterials(three: ThreeHostLike): TownStyle;
 }
 

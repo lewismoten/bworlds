@@ -13,6 +13,7 @@ import {
   syncPoiLightEmitters,
 } from '@bworlds/poi-support';
 import {
+  createHostMaterialResolver,
   createRegionalMaterialResolver,
   pickThresholdColor,
 } from '@bworlds/procedural-style';
@@ -86,14 +87,7 @@ const resolveRuinsStyle = createRegionalMaterialResolver(
       '#8c6d5b'
     );
 
-    return {
-      materialCache: new WeakMap<object, RuinsStyle>(),
-      createMaterials(three: ThreeHostLike) {
-        const cached = this.materialCache.get(three as object);
-        if (cached) {
-          return cached;
-        }
-
+    return createHostMaterialResolver((three: ThreeHostLike) => {
         const style = {
           stoneMaterial: createPaintedStandardMaterial(three, {
             color: stoneColor,
@@ -141,10 +135,8 @@ const resolveRuinsStyle = createRegionalMaterialResolver(
             metalness: 0.04,
           }),
         };
-        this.materialCache.set(three as object, style);
         return style;
-      },
-    };
+      });
   }
 );
 const classifyRuinsTile = createChanceBasedLandPoiClassifier({
@@ -408,6 +400,5 @@ type RuinsStyle = {
 };
 
 type RuinsStyleBlueprint = {
-  materialCache: WeakMap<object, RuinsStyle>;
   createMaterials(three: ThreeHostLike): RuinsStyle;
 };

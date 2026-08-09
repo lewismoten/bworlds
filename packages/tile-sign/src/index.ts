@@ -9,6 +9,7 @@ import {
 } from '@bworlds/poi-support';
 import { createTilePlugin } from '@bworlds/plugin-api';
 import {
+  createHostMaterialResolver,
   createRegionalMaterialResolver,
   pickThresholdColor,
 } from '@bworlds/procedural-style';
@@ -90,13 +91,7 @@ const resolveRegionalSignStyle = createRegionalMaterialResolver(
     const trimColor = pickThresholdColor(trimTint, 0.5, '#7c4a1a', '#8c5b24');
     const textColor = '#24150c';
 
-    return {
-      materialCache: new WeakMap<object, SignStyle>(),
-      createMaterials(three: ThreeHostLike): SignStyle {
-        const cached = this.materialCache.get(three as object);
-        if (cached) {
-          return cached;
-        }
+    return createHostMaterialResolver((three: ThreeHostLike): SignStyle => {
         const style = {
           key,
           postHeight,
@@ -133,10 +128,8 @@ const resolveRegionalSignStyle = createRegionalMaterialResolver(
             metalness: 0.02,
           }),
         };
-        this.materialCache.set(three as object, style);
         return style;
-      },
-    };
+      });
   }
 );
 
@@ -620,6 +613,5 @@ interface SignStyle {
 }
 
 interface SignStyleBlueprint {
-  materialCache: WeakMap<object, SignStyle>;
   createMaterials(three: ThreeHostLike): SignStyle;
 }

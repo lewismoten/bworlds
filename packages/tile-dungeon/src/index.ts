@@ -9,6 +9,7 @@ import {
   syncPoiWindResponders,
 } from '@bworlds/poi-support';
 import {
+  createHostMaterialResolver,
   createRegionalMaterialResolver,
   pickThresholdColor,
 } from '@bworlds/procedural-style';
@@ -342,13 +343,7 @@ const resolveDungeonStyle = createRegionalMaterialResolver(
       '#2f241c',
       '#1f2937'
     );
-    return {
-      materialCache: new WeakMap<object, DungeonStyle>(),
-      createMaterials(three: ThreeHostLike) {
-        const cached = this.materialCache.get(three as object);
-        if (cached) {
-          return cached;
-        }
+    return createHostMaterialResolver((three: ThreeHostLike) => {
         const barTexture = createDungeonBarTexture(three);
         const bannerMaterialCache = new Map<string, ThreeMaterialLike>();
         const glowMaterialCache = new Map<string, ThreeMaterialLike>();
@@ -441,10 +436,8 @@ const resolveDungeonStyle = createRegionalMaterialResolver(
             return material;
           },
         };
-        this.materialCache.set(three as object, style);
         return style;
-      },
-    };
+      });
   }
 );
 
@@ -709,7 +702,6 @@ interface DungeonStyle {
 }
 
 interface DungeonStyleBlueprint {
-  materialCache: WeakMap<object, DungeonStyle>;
   createMaterials(three: ThreeHostLike): DungeonStyle;
 }
 
