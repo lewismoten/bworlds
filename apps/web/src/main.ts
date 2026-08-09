@@ -766,18 +766,6 @@ root.innerHTML = `
         </div>
       </div>
     </section>
-    <section class="support-tray" hidden aria-hidden="true">
-      <p class="eyebrow" id="content-pack-label"></p>
-      <div
-        id="hmr-notice"
-        class="hmr-notice is-hidden"
-        aria-live="polite"
-        hidden
-      ></div>
-      <form id="content-pack-form" class="pack-form"></form>
-      <dl id="status"></dl>
-      <canvas id="atlas" width="256" height="256"></canvas>
-    </section>
     <dialog id="view-dialog" class="control-dialog">
       <form method="dialog" class="control-dialog-shell">
         <div class="control-dialog-head">
@@ -929,6 +917,18 @@ root.innerHTML = `
       </form>
     </dialog>
   </main>
+  <section class="support-tray" hidden aria-hidden="true">
+    <p class="eyebrow" id="content-pack-label"></p>
+    <div
+      id="hmr-notice"
+      class="hmr-notice is-hidden"
+      aria-live="polite"
+      hidden
+    ></div>
+    <form id="content-pack-form" class="pack-form"></form>
+    <dl id="status"></dl>
+    <canvas id="atlas" width="256" height="256"></canvas>
+  </section>
 `;
 
 const viewport2d = document.querySelector<HTMLCanvasElement>('#viewport-2d');

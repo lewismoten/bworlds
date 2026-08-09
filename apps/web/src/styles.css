@@ -71,7 +71,9 @@ body {
 .controls {
   display: flex;
   gap: 0.75rem;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: center;
 }
 
 .controls-compact {
@@ -91,8 +93,9 @@ body {
 }
 
 .dock-cluster {
-  display: flex;
-  flex-wrap: nowrap;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: max-content;
   align-items: center;
   justify-content: center;
   gap: 0.55rem;
@@ -836,15 +839,7 @@ dd {
   }
 
   .controls {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    width: 100%;
-  }
-
-  .controls > button,
-  .controls > .audio-volume-controls,
-  .controls > .build-controls {
-    width: 100%;
+    gap: 0;
   }
 
   .audio-volume-controls {
@@ -886,7 +881,8 @@ dd {
   }
 
   .dock-cluster {
-    justify-content: flex-start;
+    justify-content: center;
+    padding-inline: 0.35rem;
   }
 }
 .control-dialog {

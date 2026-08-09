@@ -16,7 +16,7 @@ describe('main layout and hmr wiring', () => {
     expect(source).not.toContain('<section class="utility-panels">');
     expect(source).toContain('<section class="control-dock card">');
     expect(source).toContain('<div class="dock-cluster" aria-label="Quick controls">');
-    expect(source).toContain('<section class="support-tray" hidden aria-hidden="true">');
+    expect(source).toContain('</main>\n  <section class="support-tray" hidden aria-hidden="true">');
   });
 
   it('cleans up global main-page listeners during hot replacement', () => {
