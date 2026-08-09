@@ -1,5 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
+  resolveProceduralChordAtStep,
+  resolveProceduralInstrumentSemitones,
+} from './procedural-music-harmony.ts';
+import {
   createProceduralInstrumentBank,
   createMusicController,
   createWebAudioMusicSink,
@@ -572,43 +576,40 @@ describe('procedural music', () => {
     );
   });
 
-  it('lets bass lines favor roots while occasionally using fifths, octaves, and passing tones', () => {
+  it('lets bass lines follow the active chord root while still using fifths, octaves, and passing tones', () => {
     const theme = resolveMusicTheme('plains', 'overworld');
-    const mood = resolveMusicMood({ dayProgress: 0.5 });
-    const bassBaseFrequency = theme.rootHz * mood.brightness * 0.5;
-    const scheduledNotes: ProceduralMusicNote[] = [];
-    let schedulerState:
-      ReturnType<typeof scheduleProceduralMusicNotes>['state'] | undefined;
-
-    for (const nowMs of [0, 1600, 3200, 4800, 6400, 8000, 9600, 11200]) {
-      const scheduled = scheduleProceduralMusicNotes(
-        {
-          nowMs,
-          tileKind: 'plains',
-          contextType: 'overworld',
-          dayProgress: 0.5,
-          yearProgress: 0.5,
-          clusterX: 0,
-          clusterY: 0,
-        },
-        schedulerState
-      );
-      scheduledNotes.push(...scheduled.notes);
-      schedulerState = scheduled.state;
-    }
-
-    const bassSemitones = scheduledNotes
-      .filter((note) => note.role === 'bass')
-      .map((note) =>
-        Math.round(12 * Math.log2(note.frequency / bassBaseFrequency))
-      );
+    const bassSemitones = [0, 4, 8, 12, 16, 20].map((stepIndex) => ({
+      stepIndex,
+      semitones: resolveProceduralInstrumentSemitones({
+        theme,
+        role: 'bass',
+        stepIndex,
+        clusterX: 0,
+        clusterY: 0,
+      }),
+      chord: resolveProceduralChordAtStep(theme, stepIndex, 0, 0),
+    }));
 
     expect(
-      bassSemitones.filter((semitones) => semitones === 0).length
-    ).toBeGreaterThan(bassSemitones.length / 3);
-    expect(bassSemitones).toContain(7);
-    expect(bassSemitones).toContain(12);
-    expect(bassSemitones).toContain(theme.scale[1] ?? theme.scale[2] ?? 2);
+      bassSemitones.filter(
+        (entry) => entry.semitones === entry.chord.rootSemitones
+      ).length
+    ).toBeGreaterThanOrEqual(bassSemitones.length / 3);
+    expect(
+      bassSemitones.some(
+        (entry) => entry.semitones === entry.chord.fifthSemitones
+      )
+    ).toBe(true);
+    expect(
+      bassSemitones.some(
+        (entry) => entry.semitones === entry.chord.rootSemitones + 12
+      )
+    ).toBe(true);
+    expect(
+      bassSemitones.some(
+        (entry) => entry.semitones === entry.chord.passingSemitones
+      )
+    ).toBe(true);
   });
 
   it('applies softer panning and falloff for nearby ambient music emitters', () => {

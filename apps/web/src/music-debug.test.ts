@@ -55,6 +55,7 @@ describe('music debug', () => {
 
     expect(first.theme.id).toBe('town-square');
     expect(first.instrumentBank).toEqual(second.instrumentBank);
+    expect(first.chordProgression).toEqual(second.chordProgression);
     expect(first.notes).toEqual(second.notes);
     expect(first.durationMs).toBeGreaterThanOrEqual(120_000);
     expect(first.durationMs).toBeLessThanOrEqual(180_000);
@@ -85,6 +86,7 @@ describe('music debug', () => {
     expect(summary).toContain('Scheduled Notes');
     expect(summary).toContain('Song Length');
     expect(summary).toContain('Loop Range');
+    expect(summary).toContain('Chords');
     expect(summary).toContain(snapshot.theme.id);
     expect(summary).toContain('Hz</li>');
   });

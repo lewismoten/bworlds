@@ -4,6 +4,7 @@ import {
   registerHashLabel,
   registerHashSeeds,
 } from '@bworlds/core/hash';
+import { resolveProceduralInstrumentSemitones } from './procedural-music-harmony.ts';
 import {
   resolveProceduralInstrumentTimbre,
   type InstrumentFamily,
@@ -953,11 +954,13 @@ function createThemeNote(options: {
   const role = selectInstrumentRole(options.stepIndex);
   const instrument = options.instrumentBank.instruments[role];
   const arrangementProfile = options.arrangement.roleProfiles[role];
-  const semitones = resolveInstrumentSemitones(
-    options.theme,
+  const semitones = resolveProceduralInstrumentSemitones({
+    theme: options.theme,
     role,
-    options.stepIndex
-  );
+    stepIndex: options.stepIndex,
+    clusterX: options.clusterX,
+    clusterY: options.clusterY,
+  });
   const octaveBoost =
     role !== 'bass' &&
     hash2DWithSeed(
@@ -1458,45 +1461,6 @@ function selectInstrumentRole(stepIndex: number): InstrumentRole {
     return 'lead';
   }
   return 'percussion';
-}
-
-function resolveInstrumentSemitones(
-  theme: MusicRegionTheme,
-  role: InstrumentRole,
-  stepIndex: number
-): number {
-  const patternIndex =
-    theme.stepPattern[stepIndex % theme.stepPattern.length] ?? 0;
-  const scaleIndex = patternIndex % theme.scale.length;
-  const leadSemitones = theme.scale[scaleIndex] ?? 0;
-
-  if (role === 'bass') {
-    return resolveBassSemitones(theme, stepIndex);
-  }
-  if (role === 'harmony') {
-    const harmonyIndex =
-      (patternIndex + 2 + Math.floor(stepIndex / theme.stepPattern.length)) %
-      theme.scale.length;
-    return theme.scale[harmonyIndex] ?? leadSemitones;
-  }
-  if (role === 'percussion') {
-    return [0, 7, 12, 3][stepIndex % 4] ?? 0;
-  }
-  return leadSemitones;
-}
-
-function resolveBassSemitones(
-  theme: MusicRegionTheme,
-  stepIndex: number
-): number {
-  const root = theme.scale[0] ?? 0;
-  const fifth = 7;
-  const octave = 12;
-  const passingTone =
-    theme.scale[1] ?? theme.scale[2] ?? Math.min(root + 2, octave);
-  const bassPulseIndex = Math.floor(stepIndex / 4);
-  const bassPattern = [root, fifth, root, octave, root, passingTone];
-  return bassPattern[bassPulseIndex % bassPattern.length] ?? root;
 }
 
 function shouldRestAtThemeStep(

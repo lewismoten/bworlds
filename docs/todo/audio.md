@@ -23,7 +23,7 @@
 - [x] Song structures should have things like intro (4-8 measures), section a (16-32 measures), section b (16-32 measures), variation (16-32 measures), return (8-16) measures, and loop as an example of a 2 minute range (100-120 BPM 4/4 time)
 - [ ] lean toward shorter modular layers where rhythm, bass, harmony, melody are each built fromo 16-32 measure phrases, then recombine or mute them dynamically to make 2 minutes feel like 10-20 minutes before repetition is noticed
 - [ ] A song should choose a key and stay mostly inside it. Outside notes may be used occasionally deliberately
-- [ ] Choose a chord progression before generating melody so that melody favors chord tones on strong beats (D minor chord: D, F, A feel stable)
+- [x] Choose a chord progression before generating melody so that melody favors chord tones on strong beats (D minor chord: D, F, A feel stable)
 - [ ] Use motives with recognizable 3-8 note idea, and reuse it.
 - [ ] Add ability to Repeat with variation so phrase A and B are transposed, change endings, shift on rhythm, reverse a small fragment, or change one or two notes
 - [ ] Add ability to use question-and-answer phrases so phrase 1 feels unfinished; phrase 2 resolved it
