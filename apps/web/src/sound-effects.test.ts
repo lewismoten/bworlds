@@ -419,6 +419,7 @@ describe('sound effects', () => {
         layers: [
           {
             id: 'noise-bed',
+            startOffsetMs: 80,
             frequency: 140,
             durationMs: 1600,
             volume: 0.009,
@@ -430,8 +431,11 @@ describe('sound effects', () => {
 
       expect(createdOscillators).toHaveLength(1);
       expect(createdBufferSources).toHaveLength(1);
-      expect(createdOscillators[0]?.start).toHaveBeenCalled();
-      expect(createdBufferSources[0]?.start).toHaveBeenCalled();
+      expect(createdOscillators[0]?.start).toHaveBeenCalledWith(0);
+      expect(createdBufferSources[0]?.start).toHaveBeenCalledWith(0.08);
+      expect(createdBufferSources[0]?.stop).toHaveBeenCalledWith(
+        expect.closeTo(1.68, 10)
+      );
     } finally {
       if (originalAudioContext) {
         vi.stubGlobal('AudioContext', originalAudioContext);

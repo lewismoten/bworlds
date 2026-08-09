@@ -32,6 +32,7 @@ export type SoundPosition = { x: number; y: number };
 export type ProceduralSoundEffect = {
   kind: SoundEffectKind;
   nowMs: number;
+  startOffsetMs?: number;
   frequency: number;
   durationMs: number;
   volume: number;
@@ -57,6 +58,7 @@ export type ProceduralSoundEffect = {
 
 export type ProceduralSoundEffectLayer = {
   id: string;
+  startOffsetMs: number;
   frequency: number;
   durationMs: number;
   volume: number;
@@ -338,6 +340,7 @@ export type ProceduralSoundRingModulationRecipe = {
 
 export type ProceduralSoundLayerRecipe = {
   id: string;
+  startOffsetMs?: number;
   waveform: SoundWaveform | readonly SoundWaveform[];
   noiseColor?: ProceduralNoiseColor | readonly ProceduralNoiseColor[];
   frequencyMultiplier?: number;
@@ -347,6 +350,7 @@ export type ProceduralSoundLayerRecipe = {
   frequencyVariation?: number;
   durationVariation?: number;
   volumeVariation?: number;
+  startOffsetVariation?: number;
   variationDepth?: number;
   minFrequency?: number;
   maxFrequency?: number;
@@ -479,6 +483,7 @@ export function createProceduralSoundEffectGenerator(): ProceduralSoundEffectGen
       return {
         kind,
         nowMs,
+        startOffsetMs: 0,
         frequency,
         durationMs,
         volume,
@@ -532,6 +537,15 @@ function resolveEffectLayers(
     const baseDurationMs =
       base.durationMs * (layerRecipe.durationMultiplier ?? 1);
     const baseVolume = base.volume * (layerRecipe.volumeMultiplier ?? 1);
+    const startOffsetMs = Math.max(
+      0,
+      varyScalar(
+        layerRecipe.startOffsetMs ?? 0,
+        layerRecipe.startOffsetVariation ?? 0,
+        variationDepth,
+        random
+      )
+    );
     const frequency = clampValue(
       varyScalar(
         baseFrequency,
@@ -567,6 +581,7 @@ function resolveEffectLayers(
 
     layers.push({
       id: layerRecipe.id,
+      startOffsetMs,
       frequency,
       durationMs,
       volume,

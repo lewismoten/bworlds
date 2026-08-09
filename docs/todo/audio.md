@@ -88,7 +88,7 @@
 - [x] Support vibrato through frequency modulation.
 - [x] Support frequency modulation for metallic, magical, bell-like, and unusual sounds.
 - [x] Support ring modulation for unnatural, technological, and magical sounds.
-- [ ] Support layered sounds where individual components start at different times.
+- [x] Support layered sounds where individual components start at different times.
 - [ ] Support procedural sound duration based on the event producing the sound.
 - [ ] Allow generated sounds to be rendered into reusable audio buffers when regeneration is unnecessary.
 

@@ -2108,27 +2108,36 @@ export function createWebAudioSoundEffectSink(
         }
         stopVoice(weakestActiveVoice);
       }
+      let finalSource = sources[sources.length - 1]!;
+      let finalEndAt = startAt + finalSource.effect.durationMs / 1000;
       for (const source of sources) {
+        const sourceStartAt =
+          startAt + (source.effect.startOffsetMs ?? 0) / 1000;
         const durationSeconds = source.effect.durationMs / 1000;
         applySoundEffectSourceShape(
           source.source,
           source.effect,
-          startAt,
+          sourceStartAt,
           durationSeconds
         );
-        applySoundEffectFilterEnvelopes(source, startAt, durationSeconds);
+        applySoundEffectFilterEnvelopes(source, sourceStartAt, durationSeconds);
         applyAmplitudeEnvelope(
           source.gain,
           source.effect,
           normalizeSoundEffectVolume(source.effect.kind, source.effect.volume) *
             categoryVolume *
             spatialMix.gainMultiplier,
-          startAt,
+          sourceStartAt,
           durationSeconds
         );
         connectSoundEffectSourceModulation(source);
         connectSoundEffectSourceChain(source);
         source.gain.connect(mixGain);
+        const sourceEndAt = sourceStartAt + durationSeconds;
+        if (sourceEndAt >= finalEndAt) {
+          finalSource = source;
+          finalEndAt = sourceEndAt;
+        }
       }
       if (panner) {
         panner.pan.setValueAtTime(spatialMix.pan, startAt);
@@ -2140,29 +2149,23 @@ export function createWebAudioSoundEffectSink(
       activeVoices.add(voice);
       activeSourceCount += 1;
       updateOutputGain(context);
-      const finalSource = sources[sources.length - 1];
       finalSource.source.onended = () => {
         removeVoice(voice);
       };
       for (const source of sources) {
-        source.tremolo?.oscillator.start(startAt);
-        source.tremolo?.oscillator.stop(
-          startAt + source.effect.durationMs / 1000
-        );
-        source.vibrato?.oscillator.start(startAt);
-        source.vibrato?.oscillator.stop(
-          startAt + source.effect.durationMs / 1000
-        );
-        source.frequencyModulation?.oscillator.start(startAt);
-        source.frequencyModulation?.oscillator.stop(
-          startAt + source.effect.durationMs / 1000
-        );
-        source.ringModulation?.oscillator.start(startAt);
-        source.ringModulation?.oscillator.stop(
-          startAt + source.effect.durationMs / 1000
-        );
-        source.source.start(startAt);
-        source.source.stop(startAt + source.effect.durationMs / 1000);
+        const sourceStartAt =
+          startAt + (source.effect.startOffsetMs ?? 0) / 1000;
+        const sourceEndAt = sourceStartAt + source.effect.durationMs / 1000;
+        source.tremolo?.oscillator.start(sourceStartAt);
+        source.tremolo?.oscillator.stop(sourceEndAt);
+        source.vibrato?.oscillator.start(sourceStartAt);
+        source.vibrato?.oscillator.stop(sourceEndAt);
+        source.frequencyModulation?.oscillator.start(sourceStartAt);
+        source.frequencyModulation?.oscillator.stop(sourceEndAt);
+        source.ringModulation?.oscillator.start(sourceStartAt);
+        source.ringModulation?.oscillator.stop(sourceEndAt);
+        source.source.start(sourceStartAt);
+        source.source.stop(sourceEndAt);
       }
     },
     stopAll() {
@@ -2233,6 +2236,7 @@ function createLayeredSoundEffect(
 ): ProceduralSoundEffect {
   return {
     ...effect,
+    startOffsetMs: layer.startOffsetMs,
     frequency: layer.frequency,
     durationMs: layer.durationMs,
     volume: layer.volume,

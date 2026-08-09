@@ -106,6 +106,7 @@ describe('procedural sound effect generator', () => {
         layers: [
           {
             id: 'noise-bed',
+            startOffsetMs: 48,
             waveform: 'triangle',
             noiseColor: 'brown',
             frequencyMultiplier: 0.72,
@@ -113,6 +114,7 @@ describe('procedural sound effect generator', () => {
           },
           {
             id: 'air-whistle',
+            startOffsetMs: 96,
             waveform: 'sine',
             frequencyMultiplier: 1.22,
             volumeMultiplier: 0.3,
@@ -124,17 +126,55 @@ describe('procedural sound effect generator', () => {
     expect(effect.layers).toEqual([
       expect.objectContaining({
         id: 'noise-bed',
+        startOffsetMs: 48,
         waveform: 'triangle',
         noiseColor: 'brown',
       }),
       expect.objectContaining({
         id: 'air-whistle',
+        startOffsetMs: 96,
         waveform: 'sine',
         noiseColor: undefined,
       }),
     ]);
     expect(effect.layers?.[0]?.frequency).toBeCloseTo(129.6, 4);
     expect(effect.layers?.[1]?.frequency).toBeCloseTo(219.6, 4);
+  });
+
+  it('supports deterministic per-layer start offsets', () => {
+    const generator = createProceduralSoundEffectGenerator();
+    const effect = generator.generate({
+      kind: 'wind',
+      nowMs: 780,
+      seed: 27,
+      recipe: {
+        id: 'wind-staggered-stack',
+        baseFrequency: 180,
+        baseDurationMs: 680,
+        baseVolume: 0.018,
+        waveform: 'triangle',
+        layers: [
+          {
+            id: 'noise-bed',
+            startOffsetMs: 60,
+            startOffsetVariation: 0.1,
+            waveform: 'triangle',
+            noiseColor: 'brown',
+            frequencyMultiplier: 0.72,
+            volumeMultiplier: 0.58,
+          },
+        ],
+      },
+    });
+
+    expect(effect.layers?.[0]).toEqual(
+      expect.objectContaining({
+        id: 'noise-bed',
+        startOffsetMs: expect.any(Number),
+      })
+    );
+    expect(effect.layers?.[0]?.startOffsetMs).toBeGreaterThanOrEqual(54);
+    expect(effect.layers?.[0]?.startOffsetMs).toBeLessThanOrEqual(66);
   });
 
   it('preserves ordered frequency sweep definitions on generated sounds', () => {
