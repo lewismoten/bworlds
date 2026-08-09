@@ -139,6 +139,7 @@ export {
 } from './tile-model-cost-estimate-budget.ts';
 export {
   getTileModelDrawCallRatioWarning,
+  getTileModelInstancingWarning,
   getTileModelMaterialGroupWarning,
   getTileModelTinyMeshWarning,
   getTileModelPerformanceWarnings,

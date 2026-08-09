@@ -15,6 +15,13 @@ const LOW_DETAIL_TINY_MESH_WARNING_MIN_MATERIALS = 2;
 const FULL_DETAIL_TINY_MESH_WARNING_MIN_TRIANGLES_PER_MESH = 24;
 const LOW_DETAIL_TINY_MESH_WARNING_MIN_TRIANGLES_PER_MESH = 16;
 const TINY_MESH_WARNING_MAX_SHARED_MATERIAL_RATIO = 0.5;
+const FULL_DETAIL_INSTANCING_WARNING_MIN_MESHES = 12;
+const LOW_DETAIL_INSTANCING_WARNING_MIN_MESHES = 6;
+const FULL_DETAIL_INSTANCING_WARNING_MIN_SHARED_GEOMETRY = 6;
+const LOW_DETAIL_INSTANCING_WARNING_MIN_SHARED_GEOMETRY = 3;
+const FULL_DETAIL_INSTANCING_WARNING_MIN_RENDERABLES = 12;
+const LOW_DETAIL_INSTANCING_WARNING_MIN_RENDERABLES = 6;
+const INSTANCING_WARNING_MAX_INSTANCED_RATIO = 0.25;
 
 export function getTileModelDrawCallRatioWarning(
   {
@@ -125,14 +132,64 @@ export function getTileModelTinyMeshWarning(
   return `meshCount ${meshCount} with materialCount ${materialCount} and sharedMaterialCount ${sharedMaterialCount} for triangleCount ${triangleCount} (${trianglesPerMesh.toFixed(1)} triangles/mesh)`;
 }
 
+export function getTileModelInstancingWarning(
+  {
+    meshCount,
+    instancedMeshCount,
+    renderedInstanceCount,
+    sharedGeometryCount,
+  }: {
+    meshCount: number;
+    instancedMeshCount: number;
+    renderedInstanceCount: number;
+    sharedGeometryCount: number;
+  },
+  detailLevel: RenderBudgetDetailLevel = 'full'
+): string | null {
+  const minimumMeshes =
+    detailLevel === 'low'
+      ? LOW_DETAIL_INSTANCING_WARNING_MIN_MESHES
+      : FULL_DETAIL_INSTANCING_WARNING_MIN_MESHES;
+  if (meshCount < minimumMeshes) {
+    return null;
+  }
+
+  const minimumSharedGeometry =
+    detailLevel === 'low'
+      ? LOW_DETAIL_INSTANCING_WARNING_MIN_SHARED_GEOMETRY
+      : FULL_DETAIL_INSTANCING_WARNING_MIN_SHARED_GEOMETRY;
+  if (sharedGeometryCount < minimumSharedGeometry) {
+    return null;
+  }
+
+  const renderableCount = meshCount + renderedInstanceCount;
+  const minimumRenderables =
+    detailLevel === 'low'
+      ? LOW_DETAIL_INSTANCING_WARNING_MIN_RENDERABLES
+      : FULL_DETAIL_INSTANCING_WARNING_MIN_RENDERABLES;
+  if (renderableCount < minimumRenderables) {
+    return null;
+  }
+
+  const instancedRatio = renderableCount > 0 ? renderedInstanceCount / renderableCount : 0;
+  if (instancedRatio > INSTANCING_WARNING_MAX_INSTANCED_RATIO) {
+    return null;
+  }
+
+  return `meshCount ${meshCount} with sharedGeometryCount ${sharedGeometryCount} and instancedMeshCount ${instancedMeshCount} (renderedInstanceCount ${renderedInstanceCount}) suggests instancing repeated parts`;
+}
+
 export function getTileModelPerformanceWarnings(
   stats: {
     drawCallCount: number;
     triangleCount: number;
     maxGeometryGroupCount: number;
     meshCount: number;
+    instancedMeshCount: number;
+    renderedInstanceCount: number;
     materialCount: number;
     sharedMaterialCount: number;
+    sharedGeometryCount: number;
   },
   detailLevel: RenderBudgetDetailLevel = 'full'
 ): string[] {
@@ -140,6 +197,7 @@ export function getTileModelPerformanceWarnings(
     getTileModelDrawCallRatioWarning(stats, detailLevel),
     getTileModelMaterialGroupWarning(stats, detailLevel),
     getTileModelTinyMeshWarning(stats, detailLevel),
+    getTileModelInstancingWarning(stats, detailLevel),
   ];
 
   return warnings.filter((warning): warning is string => typeof warning === 'string');

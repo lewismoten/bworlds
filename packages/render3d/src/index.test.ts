@@ -150,6 +150,7 @@ import {
   getTileDrawCallLimit,
   getTileModelCostEstimateLimits,
   getTileModelDrawCallRatioWarning,
+  getTileModelInstancingWarning,
   getTileModelMaterialGroupWarning,
   getTileModelPerformanceWarnings,
   getTileModelTinyMeshWarning,
@@ -2647,8 +2648,11 @@ describe('render3d visibility helpers', () => {
           triangleCount: 96,
           maxGeometryGroupCount: 6,
           meshCount: 6,
+          instancedMeshCount: 0,
+          renderedInstanceCount: 0,
           materialCount: 1,
           sharedMaterialCount: 5,
+          sharedGeometryCount: 0,
         },
         'full'
       )
@@ -2664,8 +2668,11 @@ describe('render3d visibility helpers', () => {
           triangleCount: 256,
           maxGeometryGroupCount: 2,
           meshCount: 4,
+          instancedMeshCount: 0,
+          renderedInstanceCount: 0,
           materialCount: 1,
           sharedMaterialCount: 3,
+          sharedGeometryCount: 0,
         },
         'full'
       )
@@ -2734,13 +2741,91 @@ describe('render3d visibility helpers', () => {
           triangleCount: 96,
           maxGeometryGroupCount: 2,
           meshCount: 12,
+          instancedMeshCount: 0,
+          renderedInstanceCount: 0,
           materialCount: 6,
           sharedMaterialCount: 2,
+          sharedGeometryCount: 0,
         },
         'full'
       )
     ).toEqual([
       'meshCount 12 with materialCount 6 and sharedMaterialCount 2 for triangleCount 96 (8.0 triangles/mesh)',
+    ]);
+  });
+
+  it('warns when repeated parts should likely be instanced', () => {
+    expect(
+      getTileModelInstancingWarning(
+        {
+          meshCount: 12,
+          instancedMeshCount: 0,
+          renderedInstanceCount: 0,
+          sharedGeometryCount: 8,
+        },
+        'full'
+      )
+    ).toBe(
+      'meshCount 12 with sharedGeometryCount 8 and instancedMeshCount 0 (renderedInstanceCount 0) suggests instancing repeated parts'
+    );
+
+    expect(
+      getTileModelInstancingWarning(
+        {
+          meshCount: 6,
+          instancedMeshCount: 0,
+          renderedInstanceCount: 0,
+          sharedGeometryCount: 3,
+        },
+        'low'
+      )
+    ).toBe(
+      'meshCount 6 with sharedGeometryCount 3 and instancedMeshCount 0 (renderedInstanceCount 0) suggests instancing repeated parts'
+    );
+
+    expect(
+      getTileModelInstancingWarning(
+        {
+          meshCount: 12,
+          instancedMeshCount: 2,
+          renderedInstanceCount: 12,
+          sharedGeometryCount: 8,
+        },
+        'full'
+      )
+    ).toBeNull();
+
+    expect(
+      getTileModelInstancingWarning(
+        {
+          meshCount: 5,
+          instancedMeshCount: 0,
+          renderedInstanceCount: 0,
+          sharedGeometryCount: 4,
+        },
+        'full'
+      )
+    ).toBeNull();
+  });
+
+  it('collects plugin performance warnings for repeated meshes that should be instanced', () => {
+    expect(
+      getTileModelPerformanceWarnings(
+        {
+          drawCallCount: 10,
+          triangleCount: 240,
+          maxGeometryGroupCount: 2,
+          meshCount: 12,
+          instancedMeshCount: 0,
+          renderedInstanceCount: 0,
+          materialCount: 2,
+          sharedMaterialCount: 10,
+          sharedGeometryCount: 8,
+        },
+        'full'
+      )
+    ).toEqual([
+      'meshCount 12 with sharedGeometryCount 8 and instancedMeshCount 0 (renderedInstanceCount 0) suggests instancing repeated parts',
     ]);
   });
 

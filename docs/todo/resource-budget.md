@@ -75,7 +75,7 @@ Operates at several levels: per model, per LOD, per plugin, per chunk, and per e
 * [X] Count each material group as a potential draw call.
 * [X] Penalize models containing many material groups.
 * [X] Prefer one mesh with one shared material over many tiny meshes.
-* [ ] Encourage instancing when many identical parts are generated.
+* [X] Encourage instancing when many identical parts are generated.
 * [X] Automatically reduce distant detail when scene draw-call budget is high.
 * [X] Add warnings for plugins that produce unusually high draw-call-to-triangle ratios.
 
