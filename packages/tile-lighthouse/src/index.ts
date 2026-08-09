@@ -203,7 +203,12 @@ export function createLighthouseTilePlugin(): RuntimePlugin {
       fillRect(context, x + 7, y + 8, 2, 4, '#7c3f1d');
       return true;
     }),
-    create3DModel({ three, tileX, tileY }: Create3DModelContext) {
+    create3DModel({
+      three,
+      tileX,
+      tileY,
+      detailLevel = 'full',
+    }: Create3DModelContext) {
       const group = new three.Group();
       const {
         wallMaterial,
@@ -221,6 +226,15 @@ export function createLighthouseTilePlugin(): RuntimePlugin {
         beamMaterials,
       } =
         resolveRegionalLighthouseStyle(three, tileX, tileY);
+
+      if (detailLevel === 'low') {
+        return createLowDetailLighthouseModel(three, tileX, tileY, {
+          wallMaterial,
+          stripeMaterial,
+          stoneMaterial,
+          lensMaterial,
+        });
+      }
 
       const base = new three.Mesh(
         getSharedCylinderGeometry(three, 0.46, 0.6, 0.32, 10),
@@ -454,6 +468,68 @@ export function createLighthouseTilePlugin(): RuntimePlugin {
       syncLighthouseBeam(model as ThreeObject3DLike, cycle, timeMs ?? 0);
     },
   });
+}
+
+function createLowDetailLighthouseModel(
+  three: Create3DModelContext['three'],
+  tileX: number,
+  tileY: number,
+  {
+    wallMaterial,
+    stripeMaterial,
+    stoneMaterial,
+    lensMaterial,
+  }: Pick<
+    ReturnType<typeof resolveRegionalLighthouseStyle>,
+    'wallMaterial' | 'stripeMaterial' | 'stoneMaterial' | 'lensMaterial'
+  >
+) {
+  const group = new three.Group();
+
+  const base = new three.Mesh(
+    getSharedCylinderGeometry(three, 0.46, 0.58, 0.28, 10),
+    stoneMaterial
+  );
+  base.position.set(tileX, 0.14, tileY);
+  group.add(base);
+
+  const tower = new three.Mesh(
+    getSharedCylinderGeometry(three, 0.34, 0.42, 1.66, 10),
+    wallMaterial
+  );
+  tower.position.set(tileX, 0.97, tileY);
+  group.add(tower);
+
+  const stripe = new three.Mesh(
+    getSharedCylinderGeometry(three, 0.35, 0.41, 0.2, 10),
+    stripeMaterial
+  );
+  stripe.position.set(tileX, 0.9, tileY);
+  group.add(stripe);
+
+  const cap = new three.Mesh(
+    getSharedConeGeometry(three, 0.41, 0.3, 10),
+    stripeMaterial
+  );
+  cap.position.set(tileX, 1.96, tileY);
+  group.add(cap);
+
+  const lens = markPoiLightEmitter(
+    new three.Mesh(getSharedSphereGeometry(three, 0.09, 8, 6), lensMaterial),
+    {
+      kind: 'emissive-mesh',
+      dayIntensity: 0.12,
+      nightIntensity: 1.7,
+    }
+  );
+  lens.userData = {
+    ...(lens.userData ?? {}),
+    [LIGHTHOUSE_LENS_KEY]: true,
+  };
+  lens.position.set(tileX, 1.7, tileY);
+  group.add(lens);
+
+  return group;
 }
 
 function pickLighthouseBeamColor(signal: number): string {

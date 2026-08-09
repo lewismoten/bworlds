@@ -225,13 +225,32 @@ export function createSignTilePlugin(): RuntimePlugin {
         fillRect(context, x + postX - 2, y + 4, 6, 1, '#8a5a19');
         return true;
       }),
-      create3DModel({ three, state, tileX, tileY }: Create3DModelContext) {
+      create3DModel({
+        three,
+        state,
+        tileX,
+        tileY,
+        detailLevel = 'full',
+      }: Create3DModelContext) {
         const style = getRegionalSignStyle(three, tileX, tileY);
         const group = new three.Group();
         const nearbyPois = getNearbyPois(state, tileX, tileY);
         const placardCount = Math.max(1, Math.min(3, nearbyPois.length || 1));
         const useSecondPost =
           placardCount > 2 && hash2D(SIGN_SECOND_POST_SEED, tileX, tileY) > 0.48;
+
+        if (detailLevel === 'low') {
+          group.add(
+            createLowDetailSign(
+              three,
+              style,
+              placardCount,
+              getLowDetailSignHeading(nearbyPois)
+            )
+          );
+          group.position.set(tileX, 0, tileY);
+          return group;
+        }
 
         const primaryPost = createSignPost(three, style, placardCount);
         group.add(primaryPost);
@@ -354,6 +373,60 @@ function createSecondaryPost(
   mesh.position.y = style.postHeight * 0.42;
   post.add(mesh);
   return post;
+}
+
+function createLowDetailSign(
+  three: ThreeHostLike,
+  style: SignStyle,
+  placardCount: number,
+  heading: number
+) {
+  const group = new three.Group();
+  const post = new three.Mesh(
+    new three.BoxGeometry(
+      style.postThickness * 1.08,
+      style.postHeight * 0.82,
+      style.postThickness * 1.08
+    ),
+    style.postMaterial
+  );
+  post.position.y = style.postHeight * 0.41;
+  group.add(post);
+
+  if (placardCount > 1) {
+    const brace = new three.Mesh(
+      new three.BoxGeometry(
+        style.postThickness * 1.9,
+        style.postThickness * 0.7,
+        style.postThickness * 1.9
+      ),
+      style.trimMaterial
+    );
+    brace.position.y = style.postHeight * 0.6;
+    group.add(brace);
+  }
+
+  const placard = new three.Mesh(
+    new three.BoxGeometry(
+      style.placardWidth * 1.2,
+      style.placardHeight * 1.08,
+      style.placardDepth * 1.35
+    ),
+    style.placardMaterial
+  );
+  placard.position.set(0, style.postHeight * 0.72, 0);
+  placard.rotation.y = -heading;
+  group.add(placard);
+
+  return group;
+}
+
+function getLowDetailSignHeading(nearbyPois: NearbyPoi[]): number {
+  const [poi] = nearbyPois;
+  if (!poi) {
+    return 0;
+  }
+  return Math.atan2(poi.dy, poi.dx);
 }
 
 function createDirectionalPlacard(

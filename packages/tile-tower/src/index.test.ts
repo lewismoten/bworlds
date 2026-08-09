@@ -50,6 +50,32 @@ describe('tile tower', () => {
     expect(first?.children[2]?.material).toBe(second?.children[2]?.material);
     expect(first?.children[5]?.material).toBe(second?.children[5]?.material);
   });
+
+  it('builds a simplified low-detail tower without the doorway and lantern rig', () => {
+    const plugin = createTowerTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'tower');
+    const three = createFakeThree() as never;
+
+    const full = tile?.create3DModel?.({
+      tile: { kind: 'tower' },
+      three,
+      state: {} as never,
+      tileX: 8,
+      tileY: -3,
+      detailLevel: 'full',
+    }) as { children?: unknown[] } | null | undefined;
+    const low = tile?.create3DModel?.({
+      tile: { kind: 'tower' },
+      three,
+      state: {} as never,
+      tileX: 8,
+      tileY: -3,
+      detailLevel: 'low',
+    }) as { children?: unknown[] } | null | undefined;
+
+    expect(low?.children).toHaveLength(3);
+    expect((full?.children?.length ?? 0)).toBeGreaterThan(low?.children?.length ?? 0);
+  });
 });
 
 function createFakeThree() {

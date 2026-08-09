@@ -137,6 +137,7 @@ export function createCaveTilePlugin(): RuntimePlugin {
       state,
       tileX,
       tileY,
+      detailLevel = 'full',
     }: Create3DModelContext) {
       const { mountainMaterial } = createMountainTerrainMaterials(three);
       const {
@@ -152,6 +153,24 @@ export function createCaveTilePlugin(): RuntimePlugin {
       const width = 0.9 + hash2D(CAVE_WIDTH_SEED, tileX, tileY) * 0.22;
       const depth = 0.92 + hash2D(CAVE_DEPTH_SEED, tileX, tileY) * 0.24;
       const height = 0.96 + hash2D(CAVE_HEIGHT_SEED, tileX, tileY) * 0.26;
+
+      if (detailLevel === 'low') {
+        group.add(
+          createLowDetailCaveModel(three, {
+            tileX,
+            tileY,
+            width,
+            depth,
+            height,
+            entrance,
+            mountainMaterial,
+            mouthVoidMaterial,
+            tunnelBackMaterial,
+          })
+        );
+        return group;
+      }
+
       const boulderCount =
         3 + Math.floor(hash2D(CAVE_BOULDER_COUNT_SEED, tileX, tileY) * 3);
 
@@ -664,6 +683,66 @@ function getCaveSharedMaterials(three: Create3DModelContext['three']) {
     caveMaterialCache.set(three as object, cached);
   }
   return cached;
+}
+
+function createLowDetailCaveModel(
+  three: Create3DModelContext['three'],
+  {
+    tileX,
+    tileY,
+    width,
+    depth,
+    height,
+    entrance,
+    mountainMaterial,
+    mouthVoidMaterial,
+    tunnelBackMaterial,
+  }: {
+    tileX: number;
+    tileY: number;
+    width: number;
+    depth: number;
+    height: number;
+    entrance: ReturnType<typeof getCaveEntranceDirection>;
+    mountainMaterial: ThreeMaterialLike;
+    mouthVoidMaterial: ThreeMaterialLike;
+    tunnelBackMaterial: ThreeMaterialLike;
+  }
+) {
+  const group = new three.Group();
+
+  const mound = new three.Mesh(
+    new three.SphereGeometry(0.32, 7, 6),
+    mountainMaterial
+  );
+  mound.position.set(tileX, height * 0.46, tileY);
+  mound.scale.set(width * 1.9, height * 1.22, depth * 1.55);
+  group.add(mound);
+
+  const portal = new three.Group();
+  portal.position.set(
+    tileX + entrance.dx * 0.46,
+    0,
+    tileY + entrance.dy * 0.46
+  );
+  portal.rotation.y = entrance.rotationY;
+
+  const mouthVoid = new three.Mesh(
+    new three.CircleGeometry(0.19, 16),
+    mouthVoidMaterial
+  );
+  mouthVoid.position.set(0, 0.22, 0.2);
+  portal.add(mouthVoid);
+
+  const tunnelBack = new three.Mesh(
+    new three.CircleGeometry(0.13, 14),
+    tunnelBackMaterial
+  );
+  tunnelBack.position.set(0, 0.2, -0.12);
+  portal.add(tunnelBack);
+
+  group.add(portal);
+  return group;
 }
 
 function createCaveDripstoneGroup(

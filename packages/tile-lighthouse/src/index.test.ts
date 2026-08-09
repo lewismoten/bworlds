@@ -316,6 +316,31 @@ describe('tile lighthouse', () => {
     );
   });
 
+  it('builds a simplified low-detail lighthouse silhouette without the beam rig', () => {
+    const plugin = createLighthouseTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'lighthouse');
+    const full = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state: {} as never,
+      tile: { kind: 'lighthouse' } as never,
+      tileX: 4,
+      tileY: 5,
+      detailLevel: 'full',
+    }) as FakeNode | undefined;
+    const low = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state: {} as never,
+      tile: { kind: 'lighthouse' } as never,
+      tileX: 4,
+      tileY: 5,
+      detailLevel: 'low',
+    }) as FakeNode | undefined;
+
+    expect(collectBeamMeshes(low)).toHaveLength(0);
+    expect((low?.children.length ?? 0)).toBeLessThan(full?.children.length ?? Infinity);
+    expect(collectTaggedMeshes(low, 'lighthouseLens')).toHaveLength(1);
+  });
+
   it('sweeps and fades the beam by distance at night', () => {
     const plugin = createLighthouseTilePlugin();
     const tile = plugin.tiles?.find((entry) => entry.kind === 'lighthouse');

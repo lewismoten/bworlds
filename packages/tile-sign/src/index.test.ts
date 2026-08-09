@@ -475,6 +475,35 @@ describe('tile sign', () => {
 
     expect(countSharedMaterialReferences(first, second)).toBeGreaterThanOrEqual(4);
   });
+
+  it('builds a simpler low-detail sign silhouette without lantern or label sprites', () => {
+    const full = signTile?.create3DModel?.({
+      three: fakeThree as never,
+      state: createSignState('Oakcross'),
+      tile: { kind: 'sign' },
+      tileX: 8,
+      tileY: 8,
+      detailLevel: 'full',
+    }) as FakeGroup | undefined;
+    const low = signTile?.create3DModel?.({
+      three: fakeThree as never,
+      state: createSignState('Oakcross'),
+      tile: { kind: 'sign' },
+      tileX: 8,
+      tileY: 8,
+      detailLevel: 'low',
+    }) as FakeGroup | undefined;
+
+    let lowPointLightCount = 0;
+    low?.traverse((node) => {
+      if (node instanceof FakePointLight) {
+        lowPointLightCount += 1;
+      }
+    });
+
+    expect((low?.children.length ?? 0)).toBeLessThan(full?.children.length ?? Infinity);
+    expect(lowPointLightCount).toBe(0);
+  });
 });
 
 function countSharedMaterialReferences(

@@ -1907,9 +1907,9 @@ describe('render3d visibility helpers', () => {
     expect(shouldKeepTileModelFullDetailLonger({ kind: 'sign' })).toBe(true);
     expect(shouldKeepTileModelFullDetailLonger({ kind: 'lighthouse' })).toBe(true);
     expect(shouldKeepTileModelFullDetailLonger({ kind: 'plains' })).toBe(false);
-    expect(getTileModelLowDetailDistance({ kind: 'sign' })).toBe(10.5);
-    expect(getTileModelDetailLevel(10, { kind: 'sign' })).toBe('full');
-    expect(getTileModelDetailLevel(10.5, { kind: 'sign' })).toBe('low');
+    expect(getTileModelLowDetailDistance({ kind: 'sign' })).toBe(13.5);
+    expect(getTileModelDetailLevel(13, { kind: 'sign' })).toBe('full');
+    expect(getTileModelDetailLevel(13.5, { kind: 'sign' })).toBe('low');
     expect(getTileModelDetailLevel(10, { kind: 'plains' })).toBe('low');
   });
 
@@ -1930,7 +1930,8 @@ describe('render3d visibility helpers', () => {
     expect(getTileModelDetailLevelFromSquaredDistance(42.25)).toBe('low');
     expect(getTileModelDetailLevelFromSquaredDistance(100)).toBe('low');
     expect(getTileModelDetailLevelFromSquaredDistance(100, { kind: 'tower' })).toBe('full');
-    expect(getTileModelDetailLevelFromSquaredDistance(110.25, { kind: 'tower' })).toBe('low');
+    expect(getTileModelDetailLevelFromSquaredDistance(182.24, { kind: 'tower' })).toBe('full');
+    expect(getTileModelDetailLevelFromSquaredDistance(182.25, { kind: 'tower' })).toBe('low');
   });
 
   it('uses hysteresis to avoid lod thrash near the boundary', () => {
@@ -1942,7 +1943,7 @@ describe('render3d visibility helpers', () => {
     expect(getTileModelDetailLevelWithHysteresis('full', 100, { kind: 'cave' })).toBe(
       'full'
     );
-    expect(getTileModelDetailLevelWithHysteresis('low', 100.01, { kind: 'cave' })).toBe(
+    expect(getTileModelDetailLevelWithHysteresis('low', 169.01, { kind: 'cave' })).toBe(
       'low'
     );
   });

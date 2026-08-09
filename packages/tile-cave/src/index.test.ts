@@ -203,6 +203,45 @@ describe('tile cave', () => {
     expect(first?.children?.[0]?.material).toBe(second?.children?.[0]?.material);
     expect(first?.children?.[1]?.material).toBe(second?.children?.[1]?.material);
   });
+
+  it('builds a lightweight low-detail cave mouth silhouette for distant rendering', () => {
+    const previousDocument = globalThis.document;
+    globalThis.document = createFakeDocument() as never;
+
+    const three = createFakeThree() as never;
+    const state = {
+      getCurrentTile() {
+        return { kind: 'plains' };
+      },
+      getTileDefinition() {
+        return { walkable: true };
+      },
+    } as never;
+
+    try {
+      const full = caveTile?.create3DModel?.({
+        tile: { kind: 'cave' },
+        three,
+        state,
+        tileX: 4,
+        tileY: 6,
+        detailLevel: 'full',
+      }) as { children?: Array<{ children?: unknown[] }> } | null | undefined;
+      const low = caveTile?.create3DModel?.({
+        tile: { kind: 'cave' },
+        three,
+        state,
+        tileX: 4,
+        tileY: 6,
+        detailLevel: 'low',
+      }) as { children?: Array<{ children?: unknown[] }> } | null | undefined;
+
+      expect((low?.children?.length ?? 0)).toBeLessThan(full?.children?.length ?? Infinity);
+      expect(low?.children?.[0]?.children).toHaveLength(2);
+    } finally {
+      globalThis.document = previousDocument;
+    }
+  });
 });
 
 function createFakeThree() {

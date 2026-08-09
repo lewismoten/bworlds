@@ -48,7 +48,12 @@ export function createTowerTilePlugin(): RuntimePlugin {
       fillRect(context, x + 6, y + 1, 4, 1, '#5b524b');
       return true;
     }),
-    create3DModel({ three, tileX, tileY }: Create3DModelContext) {
+    create3DModel({
+      three,
+      tileX,
+      tileY,
+      detailLevel = 'full',
+    }: Create3DModelContext) {
       const { stoneMaterial, trimMaterial, roofMaterial, lampMaterial } =
         getTowerSharedMaterials(three);
       const group = new three.Group();
@@ -66,6 +71,16 @@ export function createTowerTilePlugin(): RuntimePlugin {
       );
       shaft.position.set(tileX, 0.96, tileY);
       group.add(shaft);
+
+      if (detailLevel === 'low') {
+        const cap = new three.Mesh(
+          getSharedConeGeometry(three, 0.52, 0.3, 8),
+          roofMaterial
+        );
+        cap.position.set(tileX, 1.8, tileY);
+        group.add(cap);
+        return group;
+      }
 
       const ring = new three.Mesh(
         getSharedCylinderGeometry(three, 0.5, 0.56, 0.08, 8),
