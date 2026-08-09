@@ -15,6 +15,7 @@ export type RenderBudgetState = {
   targetFps: 60 | 30;
   averageFps: number;
   worstRecentFrameMs: number;
+  severeFrameStreak: number;
 };
 
 export type PendingWorldBuildBudget = {
@@ -62,6 +63,7 @@ export const DEFAULT_RENDER_BUDGET_STATE: RenderBudgetState = {
   targetFps: 60,
   averageFps: 60,
   worstRecentFrameMs: 16.67,
+  severeFrameStreak: 0,
 };
 
 const FRAME_SMOOTHING = 0.14;
@@ -69,6 +71,9 @@ const RECENT_FRAME_WINDOW_SIZE = 60;
 const LOW_FPS_FRAME_MS = 1000 / 42;
 const CRITICAL_FPS_FRAME_MS = 1000 / 28;
 const RECOVERED_FPS_FRAME_MS = 1000 / 54;
+const SEVERE_FPS_FRAME_MS = 1000 / 24;
+const SEVERE_FRAME_STREAK_THRESHOLD = 10;
+const SEVERE_FRAME_STREAK_RECOVERY_STEP = 2;
 
 export function advanceRenderBudgetState(
   state: RenderBudgetState,
@@ -93,6 +98,7 @@ export function advanceRenderBudgetState(
       targetFps: 60,
       averageFps: 60,
       worstRecentFrameMs: 16.67,
+      severeFrameStreak: 0,
     };
   }
 
@@ -111,6 +117,10 @@ export function advanceRenderBudgetState(
     (worst, frameMs) => Math.max(worst, frameMs),
     clampedDeltaMs
   );
+  const severeFrameStreak =
+    clampedDeltaMs >= SEVERE_FPS_FRAME_MS
+      ? state.severeFrameStreak + 1
+      : Math.max(0, state.severeFrameStreak - SEVERE_FRAME_STREAK_RECOVERY_STEP);
   const normalizedWeatherVisibility = clamp(
     weatherVisibility ?? state.weatherVisibility,
     0,
@@ -146,6 +156,7 @@ export function advanceRenderBudgetState(
     targetFps,
     averageFps,
     worstRecentFrameMs,
+    severeFrameStreak,
   };
 }
 
@@ -223,11 +234,13 @@ export function getFrameGenerationBudget(
 }
 
 export function getRenderQualityLevel(
-  state: Pick<RenderBudgetState, 'visibilityRadius' | 'targetFps'>
+  state: Pick<
+    RenderBudgetState,
+    'visibilityRadius' | 'targetFps' | 'smoothedFrameMs' | 'severeFrameStreak'
+  >
 ): RenderQualityLevel {
   if (
-    state.visibilityRadius <= MIN_VISIBILITY_RADIUS &&
-    state.targetFps === 30
+    state.severeFrameStreak >= SEVERE_FRAME_STREAK_THRESHOLD
   ) {
     return 'minimal';
   }
@@ -257,6 +270,7 @@ export function getRenderQualityLimiters(
     | 'visibilityRadius'
     | 'weatherVisibilityRadiusCap'
     | 'targetFps'
+    | 'severeFrameStreak'
   >
 ): string[] {
   const limiters: string[] = [];
@@ -272,6 +286,9 @@ export function getRenderQualityLimiters(
   ) {
     limiters.push('Weather visibility reduced draw distance');
   }
+  if (state.severeFrameStreak >= SEVERE_FRAME_STREAK_THRESHOLD) {
+    limiters.push('Optional effects minimized after sustained frame stalls');
+  }
   if (state.smoothedFrameMs >= CRITICAL_FPS_FRAME_MS) {
     limiters.push('Critical frame pressure');
   } else if (state.smoothedFrameMs >= LOW_FPS_FRAME_MS) {
@@ -282,7 +299,12 @@ export function getRenderQualityLimiters(
 
 export function createRenderBudget(
   state: Pick<RenderBudgetState, 'visibilityRadius' | 'targetFps'> &
-    Partial<Pick<RenderBudgetState, 'currentFrameMs' | 'smoothedFrameMs'>>,
+    Partial<
+      Pick<
+        RenderBudgetState,
+        'currentFrameMs' | 'smoothedFrameMs' | 'severeFrameStreak'
+      >
+    >,
   {
     detailLevel = 'full',
     generationBudgetMs,
@@ -299,7 +321,13 @@ export function createRenderBudget(
 ): RenderBudget {
   const caps = getRenderBudgetCaps(state);
   return {
-    quality: getRenderQualityLevel(state),
+    quality: getRenderQualityLevel({
+      visibilityRadius: state.visibilityRadius,
+      targetFps: state.targetFps,
+      smoothedFrameMs: state.smoothedFrameMs ?? DEFAULT_RENDER_BUDGET_STATE.smoothedFrameMs,
+      severeFrameStreak:
+        state.severeFrameStreak ?? DEFAULT_RENDER_BUDGET_STATE.severeFrameStreak,
+    }),
     detailLevel,
     targetFps: state.targetFps,
     visibilityRadius: state.visibilityRadius,

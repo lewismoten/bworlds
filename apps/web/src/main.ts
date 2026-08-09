@@ -3436,6 +3436,7 @@ function loop(timestamp: number): void {
       renderBudgetState.recentFrameMs = nextBudgetState.recentFrameMs;
       renderBudgetState.averageFps = nextBudgetState.averageFps;
       renderBudgetState.worstRecentFrameMs = nextBudgetState.worstRecentFrameMs;
+      renderBudgetState.severeFrameStreak = nextBudgetState.severeFrameStreak;
       updateMovement(deltaMs);
       return render();
     },

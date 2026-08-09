@@ -39,7 +39,7 @@ Here’s a development checklist you can work through.
 * [ ] Avoid updating systems simply because a render frame occurred.
 * [ ] Pause unnecessary simulation when the game is paused.
 * [X] Suspend expensive systems while the browser tab is hidden.
-* [ ] Detect major performance degradation and reduce optional effects dynamically.
+* [X] Detect major performance degradation and reduce optional effects dynamically.
 * [X] Maintain performance telemetry during development.
 * [ ] Regularly test performance on slower hardware rather than only the development machine.
 

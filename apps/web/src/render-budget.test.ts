@@ -67,6 +67,7 @@ describe('render budget', () => {
       targetFps: 30,
       averageFps: 1000 / 36,
       worstRecentFrameMs: 38,
+      severeFrameStreak: 12,
       weatherVisibility: 1,
       weatherVisibilityRadiusCap: DEFAULT_VISIBILITY_RADIUS,
     };
@@ -247,6 +248,8 @@ describe('render budget', () => {
         getRenderQualityLevel({
           visibilityRadius: REDUCED_VISIBILITY_RADIUS,
           targetFps: 30,
+          smoothedFrameMs: 26,
+          severeFrameStreak: 0,
         })
       )
     ).toBe('Reduced');
@@ -255,9 +258,35 @@ describe('render budget', () => {
         getRenderQualityLevel({
           visibilityRadius: MIN_VISIBILITY_RADIUS,
           targetFps: 30,
+          smoothedFrameMs: 40,
+          severeFrameStreak: 10,
         })
       )
     ).toBe('Minimal');
+  });
+
+  it('minimizes optional effects only after sustained severe frame stalls', () => {
+    let state = DEFAULT_RENDER_BUDGET_STATE;
+
+    for (let index = 0; index < 9; index += 1) {
+      state = advanceRenderBudgetState(state, {
+        deltaMs: 45,
+        active3d: true,
+        weatherVisibility: 1,
+      });
+    }
+
+    expect(getRenderQualityLevel(state)).toBe('reduced');
+    expect(state.severeFrameStreak).toBe(9);
+
+    state = advanceRenderBudgetState(state, {
+      deltaMs: 45,
+      active3d: true,
+      weatherVisibility: 1,
+    });
+
+    expect(getRenderQualityLevel(state)).toBe('minimal');
+    expect(state.severeFrameStreak).toBe(10);
   });
 
   it('lists the quality limiters that are currently constraining rendering', () => {
@@ -267,6 +296,7 @@ describe('render budget', () => {
         visibilityRadius: DEFAULT_VISIBILITY_RADIUS,
         weatherVisibilityRadiusCap: DEFAULT_VISIBILITY_RADIUS,
         targetFps: 60,
+        severeFrameStreak: 0,
       })
     ).toEqual(['None']);
 
@@ -276,6 +306,7 @@ describe('render budget', () => {
         visibilityRadius: REDUCED_VISIBILITY_RADIUS,
         weatherVisibilityRadiusCap: DEFAULT_VISIBILITY_RADIUS,
         targetFps: 30,
+        severeFrameStreak: 0,
       })
     ).toEqual([
       'Target FPS reduced to 30',
@@ -289,10 +320,12 @@ describe('render budget', () => {
         visibilityRadius: MIN_VISIBILITY_RADIUS,
         weatherVisibilityRadiusCap: DEFAULT_VISIBILITY_RADIUS,
         targetFps: 30,
+        severeFrameStreak: 10,
       })
     ).toEqual([
       'Target FPS reduced to 30',
       `Visibility radius reduced to ${MIN_VISIBILITY_RADIUS}`,
+      'Optional effects minimized after sustained frame stalls',
       'Critical frame pressure',
     ]);
 
@@ -302,6 +335,7 @@ describe('render budget', () => {
         visibilityRadius: 12.5,
         weatherVisibilityRadiusCap: 12.5,
         targetFps: 60,
+        severeFrameStreak: 0,
       })
     ).toEqual([
       'Visibility radius reduced to 12.5',

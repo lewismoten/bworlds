@@ -54,6 +54,7 @@ import {
   type TileModelCostEstimateBudgetViolation,
   type TileModelCostEstimateLimits,
 } from './tile-model-cost-estimate-validation.ts';
+import { getRenderEffectQualityProfile } from './render-effect-quality.ts';
 import { runTileModelSafetyPrecheck } from './tile-model-safety-precheck.ts';
 
 const LAND_MODEL_REVEAL_SEED = registerHashLabel('render3d:land-model-reveal');
@@ -1603,7 +1604,8 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       state.player.x * TILE_SIZE,
       state.player.y * TILE_SIZE,
       frameNowMs,
-      environment
+      environment,
+      options.renderBudget
     );
     if (
       shouldSyncTileModelDetailLevels(
@@ -2383,7 +2385,8 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     worldX,
     worldY,
     timeMs,
-    environment
+    environment,
+    renderBudget?: RenderBudget
   ): DaylightCycleState {
     const cycle = applyCelestialEnvironmentOverrides(
       getDaylightCycleState(timeMs, environment.cycle ?? {}),
@@ -2396,9 +2399,14 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     const weather = environment.weather?.current;
     const weatherVisibility = weather?.visibility ?? 0.88;
     const weatherCloudCover = weather?.cloudCover ?? 0;
+    const renderEffectQuality = getRenderEffectQualityProfile(
+      renderBudget?.quality
+    );
+    renderer.shadowMap.enabled = renderEffectQuality.shadowMapEnabled;
     const starDensity =
       (environment.stars?.density ?? 1) *
-      clamp(1 - weatherCloudCover * 0.42 - (1 - weatherVisibility) * 0.58, 0.08, 1);
+      clamp(1 - weatherCloudCover * 0.42 - (1 - weatherVisibility) * 0.58, 0.08, 1) *
+      renderEffectQuality.starDensityMultiplier;
     const skyPositionSignature = getSkyPositionSignature(cycle, starDensity);
     const daySkyColor = new THREE.Color(sky.dayColor ?? SKY_DAY_COLOR);
     const twilightPalette = getTwilightSkyPalette(sky, cycle);
@@ -2466,6 +2474,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
 
     const shadowStrength = Math.max(0, cycle.daylight - 0.12);
     sunLight.castShadow =
+      renderEffectQuality.allowShadowCasting &&
       shadowStrength * (lighting.shadowStrength ?? 1) > 0.08;
 
     moonLight.position.set(
@@ -2500,14 +2509,16 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       syncAuroraBands(auroraRoot, cycle);
       lastSkyAuroraSignature = auroraSignature;
     }
-    constellationRoot.visible = cycle.starsOpacity > 0.02;
+    constellationRoot.visible =
+      renderEffectQuality.showConstellations && cycle.starsOpacity > 0.02;
     eventRoot.visible = (cycle.visibleEvents ?? []).some(
       (event) => event.visibility > 0.02
     );
-    milkyWayRoot.visible = cycle.starsOpacity > 0.02;
-    auroraRoot.visible = (cycle.auroraBands ?? []).some(
-      (band) => band.intensity > 0.03
-    );
+    milkyWayRoot.visible =
+      renderEffectQuality.showMilkyWay && cycle.starsOpacity > 0.02;
+    auroraRoot.visible =
+      renderEffectQuality.showAurora &&
+      (cycle.auroraBands ?? []).some((band) => band.intensity > 0.03);
 
     if (lastMoonPhaseIndex !== cycle.moonPhaseIndex) {
       updateMoonPhaseTexture(
