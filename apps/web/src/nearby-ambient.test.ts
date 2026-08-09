@@ -26,11 +26,14 @@ describe('nearby ambient', () => {
       searchRadius: 0,
     });
 
-    expect(profile).toEqual({
-      kind: 'forest',
-      intensity: 1,
-      emitter: { x: -1, y: 1 },
-    });
+    expect(profile).toEqual(
+      expect.objectContaining({
+        kind: 'forest',
+        intensity: 1,
+        altitude: 0,
+        emitter: { x: -1, y: 1 },
+      })
+    );
   });
 
   it('prefers POI ambience over a base tile when both are audible', () => {
@@ -52,11 +55,14 @@ describe('nearby ambient', () => {
       searchRadius: 5,
     });
 
-    expect(profile).toEqual({
-      kind: 'settlement',
-      intensity: expect.closeTo(1 - 2 / 6, 6),
-      emitter: { x: 2, y: 0 },
-    });
+    expect(profile).toEqual(
+      expect.objectContaining({
+        kind: 'settlement',
+        intensity: expect.closeTo(1 - 2 / 6, 6),
+        altitude: 0,
+        emitter: { x: 2, y: 0 },
+      })
+    );
   });
 
   it('combines dense nearby ambient sources into one stronger profile', () => {
@@ -75,11 +81,14 @@ describe('nearby ambient', () => {
       searchRadius: 1,
     });
 
-    expect(profile).toEqual({
-      kind: 'forest',
-      intensity: 1,
-      emitter: { x: 2, y: -3 },
-    });
+    expect(profile).toEqual(
+      expect.objectContaining({
+        kind: 'forest',
+        intensity: 1,
+        altitude: 0,
+        emitter: { x: 2, y: -3 },
+      })
+    );
   });
 
   it('keeps secondary biome layers so ambience can blend across boundaries', () => {
@@ -129,11 +138,14 @@ describe('nearby ambient', () => {
       searchRadius: 4,
     });
 
-    expect(profile).toEqual({
-      kind: 'settlement',
-      intensity: expect.closeTo(1 - 1 / 5, 6),
-      emitter: { x: 5, y: 4 },
-    });
+    expect(profile).toEqual(
+      expect.objectContaining({
+        kind: 'settlement',
+        intensity: expect.closeTo(1 - 1 / 5, 6),
+        altitude: 0,
+        emitter: { x: 5, y: 4 },
+      })
+    );
   });
 
   it('uses deterministic sparse selection for generic base terrain ambience', () => {
@@ -230,11 +242,14 @@ describe('nearby ambient', () => {
     expect(resolveAmbientBiologicalActivity('volcanic')).toBeLessThan(
       resolveAmbientBiologicalActivity('mountain')
     );
-    expect(profile).toEqual({
-      kind: 'volcanic',
-      intensity: expect.any(Number),
-      emitter: { x: -1, y: -8 },
-    });
+    expect(profile).toEqual(
+      expect.objectContaining({
+        kind: 'volcanic',
+        intensity: expect.any(Number),
+        altitude: 0,
+        emitter: { x: -1, y: -8 },
+      })
+    );
   });
 
   it('maps swamp tiles into a dedicated swamp ambience family', () => {
@@ -259,6 +274,7 @@ describe('nearby ambient', () => {
     expect(profile).toEqual({
       kind: 'swamp',
       intensity: expect.any(Number),
+      altitude: 0,
       emitter: { x: 3, y: -6 },
     });
   });
@@ -282,8 +298,26 @@ describe('nearby ambient', () => {
     expect(profile).toEqual(
       expect.objectContaining({
         kind: 'desert',
+        altitude: 0,
       })
     );
+  });
+
+  it('preserves surface height as ambient altitude data', () => {
+    const profile = findNearbyAmbientProfile({
+      state: {
+        player: { x: -3, y: 2 },
+        getCurrentTile() {
+          return { kind: 'mountain', surfaceHeight: 0.34 };
+        },
+      },
+      centerX: -3,
+      centerY: 2,
+      searchRadius: 0,
+    });
+
+    expect(profile).toEqual(expect.objectContaining({ kind: 'mountain' }));
+    expect(profile?.altitude).toBeCloseTo(0.34, 6);
   });
 
   it('returns null when no nearby base tiles or POIs advertise ambience', () => {

@@ -80,6 +80,7 @@ export function createSoundUpdatePayloadBuilder(): (
     intensity: undefined,
     emitter: { x: 0, y: 0 },
     listener: { x: 0, y: 0 },
+    altitude: undefined,
     blendedLayers: undefined,
   };
   const nearbyAmbientBlendPayload: NonNullable<
@@ -144,6 +145,7 @@ export function createSoundUpdatePayloadBuilder(): (
     if (input.nearbyAmbient) {
       nearbyAmbientPayload.kind = input.nearbyAmbient.kind;
       nearbyAmbientPayload.intensity = input.nearbyAmbient.intensity;
+      nearbyAmbientPayload.altitude = input.nearbyAmbient.altitude;
       if (nearbyAmbientPayload.emitter) {
         nearbyAmbientPayload.emitter.x = input.nearbyAmbient.emitter?.x ?? 0;
         nearbyAmbientPayload.emitter.y = input.nearbyAmbient.emitter?.y ?? 0;
@@ -165,6 +167,7 @@ export function createSoundUpdatePayloadBuilder(): (
         nearbyAmbientBlendPayload.push({
           kind: layer.kind,
           intensity: layer.intensity,
+          altitude: layer.altitude,
           emitter: {
             x: layer.emitter.x,
             y: layer.emitter.y,
@@ -225,10 +228,10 @@ export function getSoundUpdateInputSignature(
       input.nearbyPaddleBoat?.whistlePhase ?? '',
       input.nearbyAmbient
         ? [
-            `${input.nearbyAmbient.kind}:${Math.round((input.nearbyAmbient.intensity ?? 0) * 100)}:${Math.round(input.nearbyAmbient.emitter?.x ?? 0)}:${Math.round(input.nearbyAmbient.emitter?.y ?? 0)}`,
+            `${input.nearbyAmbient.kind}:${Math.round((input.nearbyAmbient.intensity ?? 0) * 100)}:${Math.round(input.nearbyAmbient.emitter?.x ?? 0)}:${Math.round(input.nearbyAmbient.emitter?.y ?? 0)}:h:${Math.round((input.nearbyAmbient.altitude ?? 0) * 100)}`,
             ...(input.nearbyAmbient.blendedLayers ?? []).map(
               (layer) =>
-                `${layer.kind}:${Math.round((layer.intensity ?? 0) * 100)}:${Math.round(layer.emitter?.x ?? 0)}:${Math.round(layer.emitter?.y ?? 0)}`
+                `${layer.kind}:${Math.round((layer.intensity ?? 0) * 100)}:${Math.round(layer.emitter?.x ?? 0)}:${Math.round(layer.emitter?.y ?? 0)}:h:${Math.round((layer.altitude ?? 0) * 100)}`
             ),
           ].join(',')
         : '',

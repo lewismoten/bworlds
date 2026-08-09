@@ -78,6 +78,49 @@ describe('ambient soundscape', () => {
     expect(coastalForest?.signature).not.toBe(isolatedForest?.signature);
   });
 
+  it('varies ambience according to altitude', () => {
+    const lowForest = resolveAmbientPlaybackLayers({
+      profile: {
+        kind: 'forest',
+        intensity: 0.8,
+        altitude: 0.02,
+        emitter: { x: 2, y: 0 },
+      },
+      nowMs: 0,
+      dayProgress: 0.5,
+      yearProgress: 0.5,
+    })[0];
+    const highForest = resolveAmbientPlaybackLayers({
+      profile: {
+        kind: 'forest',
+        intensity: 0.8,
+        altitude: 0.32,
+        emitter: { x: 2, y: 0 },
+      },
+      nowMs: 0,
+      dayProgress: 0.5,
+      yearProgress: 0.5,
+    })[0];
+    const highMountain = resolveAmbientPlaybackLayers({
+      profile: {
+        kind: 'mountain',
+        intensity: 0.8,
+        altitude: 0.32,
+        emitter: { x: 6, y: 0 },
+      },
+      nowMs: 0,
+    })[0];
+
+    expect(highForest?.cadenceMultiplier).toBeGreaterThan(
+      lowForest?.cadenceMultiplier ?? 0
+    );
+    expect(highForest?.volumeMultiplier).toBeLessThan(
+      lowForest?.volumeMultiplier ?? Infinity
+    );
+    expect(highMountain?.volumeMultiplier).toBeGreaterThan(1);
+    expect(highMountain?.signature).toContain('altitude:');
+  });
+
   it('cycles biome identity variants over time for repeated ambience', () => {
     const first = resolveAmbientPlaybackLayers({
       profile: {

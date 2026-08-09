@@ -24,6 +24,7 @@ type AmbientAggregationGroup = {
   maxIntensity: number;
   weightedX: number;
   weightedY: number;
+  weightedAltitude: number;
   nearestDistance: number;
   count: number;
 };
@@ -37,6 +38,7 @@ export type NearbyAmbientProfile = {
   kind: NearbyAmbientKind;
   intensity: number;
   emitter: AmbientPosition;
+  altitude?: number;
   blendedLayers?: NearbyAmbientLayer[];
 };
 
@@ -44,6 +46,7 @@ export type NearbyAmbientLayer = {
   kind: NearbyAmbientKind;
   intensity: number;
   emitter: AmbientPosition;
+  altitude?: number;
 };
 
 const AMBIENT_KIND_SALTS: Record<NearbyAmbientKind, number> = {
@@ -182,11 +185,16 @@ function resolveAmbientProfileForTile(
   if (intensity <= 0.08) {
     return null;
   }
+  const altitude =
+    typeof (tile as { surfaceHeight?: unknown }).surfaceHeight === 'number'
+      ? ((tile as { surfaceHeight?: number }).surfaceHeight ?? 0)
+      : 0;
 
   return {
     kind: ambientKind,
     intensity,
     emitter: { x, y },
+    altitude,
     distance,
     priority: sourceTier === 'poi' ? 2 : 1,
   };
@@ -300,6 +308,7 @@ function aggregateAmbientProfiles(
       );
       existing.weightedX += profile.emitter.x * profile.intensity;
       existing.weightedY += profile.emitter.y * profile.intensity;
+      existing.weightedAltitude += (profile.altitude ?? 0) * profile.intensity;
       existing.nearestDistance = Math.min(
         existing.nearestDistance,
         profile.distance
@@ -313,6 +322,7 @@ function aggregateAmbientProfiles(
       maxIntensity: profile.intensity,
       weightedX: profile.emitter.x * profile.intensity,
       weightedY: profile.emitter.y * profile.intensity,
+      weightedAltitude: (profile.altitude ?? 0) * profile.intensity,
       nearestDistance: profile.distance,
       count: 1,
     });
@@ -366,6 +376,7 @@ function createAmbientLayerFromGroup(
       x: Math.round(centroidX),
       y: Math.round(centroidY),
     },
+    altitude: group.weightedAltitude / group.sumIntensity,
   };
 }
 

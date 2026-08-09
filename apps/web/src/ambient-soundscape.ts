@@ -13,6 +13,7 @@ import {
   resolveAmbientIdentityVariantModifiers,
   resolveAmbientIdentityVariants,
 } from './ambient-presets.ts';
+import { resolveAmbientAltitudeInfluence } from './ambient-altitude-influence.ts';
 import { resolveAmbientNearbyTerrainInfluence } from './ambient-terrain-influence.ts';
 
 export type AmbientPlaybackLayer = {
@@ -20,6 +21,7 @@ export type AmbientPlaybackLayer = {
   intensity: number;
   emitter: SoundPosition;
   listener?: SoundPosition;
+  altitude?: number;
   identityVariant?: string;
   cadenceMultiplier: number;
   volumeMultiplier: number;
@@ -43,6 +45,7 @@ export function resolveAmbientPlaybackLayers(options: {
     kind: profile.kind,
     intensity: profile.intensity,
     emitter: profile.emitter,
+    altitude: profile.altitude,
     listener: options.listener,
     layerIndex: 0,
     nowMs: options.nowMs,
@@ -64,6 +67,7 @@ export function resolveAmbientPlaybackLayers(options: {
       kind: layer.kind,
       intensity: layer.intensity,
       emitter: layer.emitter,
+      altitude: layer.altitude,
       listener: options.listener,
       layerIndex: index + 1,
       nowMs: options.nowMs,
@@ -81,6 +85,7 @@ function createAmbientPlaybackLayer(options: {
   kind: NearbyAmbientKind;
   intensity: number;
   emitter: SoundPosition;
+  altitude?: number;
   listener?: SoundPosition;
   layerIndex: number;
   nowMs: number;
@@ -108,23 +113,30 @@ function createAmbientPlaybackLayer(options: {
     kind: options.kind,
     nearbyKinds: options.nearbyKinds,
   });
+  const altitudeInfluence = resolveAmbientAltitudeInfluence({
+    kind: options.kind,
+    altitude: options.altitude,
+  });
   const emitterX = Math.round(options.emitter.x);
   const emitterY = Math.round(options.emitter.y);
   return {
     kind: options.kind,
     intensity: options.intensity,
     emitter: options.emitter,
+    altitude: options.altitude,
     listener: options.listener,
     identityVariant,
     cadenceMultiplier:
       options.cadenceMultiplier *
       layerModifiers.cadenceMultiplier *
-      terrainInfluence.cadenceMultiplier,
+      terrainInfluence.cadenceMultiplier *
+      altitudeInfluence.cadenceMultiplier,
     volumeMultiplier: Math.max(
       0.3,
       options.volumeMultiplier *
         layerModifiers.volumeMultiplier *
-        terrainInfluence.volumeMultiplier
+        terrainInfluence.volumeMultiplier *
+        altitudeInfluence.volumeMultiplier
     ),
     signature: [
       options.kind,
@@ -135,6 +147,7 @@ function createAmbientPlaybackLayer(options: {
       options.season,
       Math.round(options.intensity * 100),
       terrainInfluence.signatureSuffix,
+      altitudeInfluence.signatureSuffix,
     ].join(':'),
   };
 }

@@ -36,11 +36,13 @@ describe('sound update payload builder', () => {
       nearbyAmbient: {
         kind: 'settlement',
         intensity: 0.65,
+        altitude: 0.08,
         emitter: { x: 14, y: -7 },
         blendedLayers: [
           {
             kind: 'plains',
             intensity: 0.28,
+            altitude: 0.02,
             emitter: { x: 12, y: -8 },
           },
         ],
@@ -74,11 +76,13 @@ describe('sound update payload builder', () => {
       nearbyAmbient: {
         kind: 'ocean',
         intensity: 0.25,
+        altitude: -0.08,
         emitter: { x: 15, y: -9 },
         blendedLayers: [
           {
             kind: 'forest',
             intensity: 0.4,
+            altitude: 0.18,
             emitter: { x: 13, y: -8 },
           },
         ],
@@ -115,12 +119,14 @@ describe('sound update payload builder', () => {
       expect.objectContaining({
         kind: 'ocean',
         intensity: 0.25,
+        altitude: -0.08,
         emitter: { x: 15, y: -9 },
         listener: { x: 13.5, y: -5.5 },
         blendedLayers: [
           {
             kind: 'forest',
             intensity: 0.4,
+            altitude: 0.18,
             emitter: { x: 13, y: -8 },
           },
         ],
@@ -156,6 +162,7 @@ describe('sound update payload builder', () => {
       nearbyAmbient: {
         kind: 'ocean',
         intensity: 0.8,
+        altitude: 0.04,
         emitter: { x: 5, y: 0 },
       },
     });
@@ -226,5 +233,50 @@ describe('sound update payload builder', () => {
     });
 
     expect(day.ambient).not.toBe(night.ambient);
+  });
+
+  it('changes the traffic signature when ambient altitude changes', () => {
+    const low = getSoundUpdateInputSignature({
+      walking: false,
+      isJumping: false,
+      viewMode: '3d',
+      ambianceEnabled: true,
+      tileKind: 'mountain',
+      dayProgress: 0.5,
+      yearProgress: 0.5,
+      weatherKind: 'clear',
+      weatherIntensity: 0,
+      windStrength: 0,
+      nearbyTrain: null,
+      nearbyPaddleBoat: null,
+      nearbyAmbient: {
+        kind: 'mountain',
+        intensity: 0.7,
+        altitude: 0.08,
+        emitter: { x: 2, y: 0 },
+      },
+    });
+    const high = getSoundUpdateInputSignature({
+      walking: false,
+      isJumping: false,
+      viewMode: '3d',
+      ambianceEnabled: true,
+      tileKind: 'mountain',
+      dayProgress: 0.5,
+      yearProgress: 0.5,
+      weatherKind: 'clear',
+      weatherIntensity: 0,
+      windStrength: 0,
+      nearbyTrain: null,
+      nearbyPaddleBoat: null,
+      nearbyAmbient: {
+        kind: 'mountain',
+        intensity: 0.7,
+        altitude: 0.3,
+        emitter: { x: 2, y: 0 },
+      },
+    });
+
+    expect(low.traffic).not.toBe(high.traffic);
   });
 });

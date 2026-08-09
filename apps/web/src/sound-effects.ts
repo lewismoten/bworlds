@@ -173,6 +173,7 @@ export type SoundEffectController = {
       intensity?: number;
       emitter?: SoundPosition;
       listener?: SoundPosition;
+      altitude?: number;
       blendedLayers?: NearbyAmbientProfile['blendedLayers'];
     } | null;
     emitter?: SoundPosition;
@@ -892,6 +893,7 @@ export function createSoundEffectController(
                 emitter: nearbyAmbient.emitter,
                 listener: nearbyAmbient.listener ?? listener,
                 blendedLayers: nearbyAmbient.blendedLayers,
+                altitude: nearbyAmbient.altitude,
               }
             : null;
 
