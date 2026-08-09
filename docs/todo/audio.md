@@ -17,8 +17,8 @@
 - [x] Songs can simply swap out different intruments for more variety, speed-up/slow-down tempo, or change the key that could be associated with location, danger, combat, weather, time of day, or NPC activity
 - [x] Background music should be 1.5 to 4 minutes
 - [x] Exploration or town music should be 2-3 minutes long
-- [ ] Battle tracks are around 1-2 minutes long
-- [ ] Major boss themese or cinematic pieces can run 3-6 (or more) minutes
+- [x] Battle tracks are around 1-2 minutes long
+- [x] Major boss themese or cinematic pieces can run 3-6 (or more) minutes
 - [x] Songs should support looping
 - [x] Song structures should have things like intro (4-8 measures), section a (16-32 measures), section b (16-32 measures), variation (16-32 measures), return (8-16) measures, and loop as an example of a 2 minute range (100-120 BPM 4/4 time)
 - [x] lean toward shorter modular layers where rhythm, bass, harmony, melody are each built fromo 16-32 measure phrases, then recombine or mute them dynamically to make 2 minutes feel like 10-20 minutes before repetition is noticed

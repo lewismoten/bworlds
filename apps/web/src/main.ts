@@ -188,6 +188,7 @@ import {
 import {
   createMusicController,
   createWebAudioMusicSink,
+  resolveMusicEncounterMode,
   resolvePoiMusicMix,
 } from './procedural-music.ts';
 import { createMusicUpdateGate } from './music-update-gate.ts';
@@ -2958,6 +2959,7 @@ function render(): FrameLoopActivityLike {
   const musicClusterY = Math.floor(spatial.playerY / 12);
   const nearbyPoiMusic = getNearbyPoiMusicProfile();
   const combatIntensity = soundEffects.getRecentCombatIntensity(nowMs);
+  const encounterMode = resolveMusicEncounterMode({ combatIntensity });
   const musicUpdate = gateMusicUpdate({
     nowMs,
     tileKind: currentTile.kind,
@@ -2967,6 +2969,7 @@ function render(): FrameLoopActivityLike {
     weatherKind: environment.weather?.current?.kind,
     weatherIntensity: environment.weather?.current?.intensity,
     combatIntensity,
+    encounterMode,
     clusterX: musicClusterX,
     clusterY: musicClusterY,
     emitterX: musicClusterX * 12 + 6,

@@ -2,9 +2,11 @@ import {
   createProceduralInstrumentBank,
   type MusicSink,
   createWebAudioMusicSink,
+  resolveMusicEncounterMode,
   resolveMusicArrangement,
   resolveMusicMood,
   resolveMusicTheme,
+  type MusicEncounterMode,
   type ProceduralMusicNote,
 } from './procedural-music.ts';
 import {
@@ -32,6 +34,7 @@ export type MusicDebugWeatherKind =
 export type MusicDebugOptions = {
   tileKind: MusicDebugTileKind;
   contextType: MusicDebugContextType;
+  encounterMode: MusicEncounterMode;
   weatherKind: MusicDebugWeatherKind;
   weatherIntensity: number;
   combatIntensity: number;
@@ -94,6 +97,7 @@ export type MusicDebugPlaybackRegion = {
 export const DEFAULT_MUSIC_DEBUG_OPTIONS: MusicDebugOptions = {
   tileKind: 'forest',
   contextType: 'overworld',
+  encounterMode: 'ambient',
   weatherKind: 'clear',
   weatherIntensity: 0,
   combatIntensity: 0,
@@ -121,6 +125,7 @@ export function normalizeMusicDebugOptions(
   return {
     tileKind: normalizeTileKind(value?.tileKind),
     contextType: normalizeContextType(value?.contextType),
+    encounterMode: normalizeEncounterMode(value?.encounterMode),
     weatherKind: normalizeWeatherKind(value?.weatherKind),
     weatherIntensity: clampMusicDebugWeatherIntensity(
       value?.weatherIntensity ?? DEFAULT_MUSIC_DEBUG_OPTIONS.weatherIntensity
@@ -165,6 +170,7 @@ export function createMusicDebugSnapshot(
   const arrangement = resolveMusicArrangement({
     dayProgress: options.dayProgress,
     yearProgress: options.yearProgress,
+    encounterMode: options.encounterMode,
     weatherKind:
       options.weatherKind === 'clear' ? undefined : options.weatherKind,
     weatherIntensity: options.weatherIntensity,
@@ -204,6 +210,7 @@ export function createMusicDebugSnapshot(
       options.weatherKind === 'clear' ? undefined : options.weatherKind,
     weatherIntensity: options.weatherIntensity,
     combatIntensity: options.combatIntensity,
+    encounterMode: options.encounterMode,
     dayProgress: options.dayProgress,
     yearProgress: options.yearProgress,
     clusterX: options.clusterX,
@@ -336,6 +343,15 @@ export function buildMusicDebugMarkup(
               </select>
             </label>
             <label>
+              <span>Encounter</span>
+              <select name="encounterMode">
+                ${buildSelectOptions(
+                  ['ambient', 'battle', 'boss'],
+                  snapshot.options.encounterMode
+                )}
+              </select>
+            </label>
+            <label>
               <span>Weather</span>
               <select name="weatherKind">
                 ${buildSelectOptions(
@@ -407,6 +423,7 @@ export function buildMusicDebugSummaryMarkup(
       <div><dt>Song Length</dt><dd>${formatMusicDebugDuration(snapshot.durationMs)}</dd></div>
       <div><dt>Blueprint</dt><dd>${snapshot.blueprintLabel}</dd></div>
       <div><dt>Loop Range</dt><dd>${formatMusicDebugLoopRange(snapshot.loopStartOffsetMs, snapshot.loopEndOffsetMs)}</dd></div>
+      <div><dt>Encounter</dt><dd>${snapshot.options.encounterMode}</dd></div>
       <div><dt>Tempo</dt><dd>${snapshot.mood.tempoMultiplier.toFixed(2)}x</dd></div>
       <div><dt>Brightness</dt><dd>${snapshot.mood.brightness.toFixed(2)}x</dd></div>
       <div><dt>Combat</dt><dd>${snapshot.options.combatIntensity.toFixed(2)}</dd></div>
@@ -663,6 +680,20 @@ function normalizeContextType(
     return value;
   }
   return 'overworld';
+}
+
+function normalizeEncounterMode(
+  value: MusicDebugOptions['encounterMode'] | undefined
+): MusicEncounterMode {
+  if (value === 'battle' || value === 'boss') {
+    return value;
+  }
+  if (value === 'ambient') {
+    return value;
+  }
+  return resolveMusicEncounterMode({
+    combatIntensity: DEFAULT_MUSIC_DEBUG_OPTIONS.combatIntensity,
+  });
 }
 
 function normalizeWeatherKind(

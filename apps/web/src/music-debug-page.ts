@@ -55,6 +55,7 @@ function collectOptions(): Partial<MusicDebugOptions> {
   return {
     tileKind: String(data.get('tileKind') ?? ''),
     contextType: String(data.get('contextType') ?? ''),
+    encounterMode: String(data.get('encounterMode') ?? ''),
     weatherKind: String(data.get('weatherKind') ?? ''),
     weatherIntensity: Number(data.get('weatherIntensity') ?? 0),
     dayProgress: Number(data.get('dayProgress') ?? 0),

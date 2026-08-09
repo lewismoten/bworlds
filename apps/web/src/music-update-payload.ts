@@ -15,6 +15,7 @@ export type MusicUpdatePayloadInput = {
   weatherKind?: MusicUpdateOptions['weatherKind'];
   weatherIntensity?: MusicUpdateOptions['weatherIntensity'];
   combatIntensity?: MusicUpdateOptions['combatIntensity'];
+  encounterMode?: MusicUpdateOptions['encounterMode'];
   dayProgress: number;
   yearProgress?: number;
   clusterX: number;
@@ -58,6 +59,7 @@ export function createMusicUpdatePayloadBuilder(): (
     payload.weatherKind = input.weatherKind;
     payload.weatherIntensity = input.weatherIntensity;
     payload.combatIntensity = input.combatIntensity ?? 0;
+    payload.encounterMode = input.encounterMode ?? 'ambient';
     payload.dayProgress = input.dayProgress;
     payload.yearProgress = input.yearProgress ?? 0;
     payload.clusterX = input.clusterX;
@@ -103,6 +105,7 @@ export function getMusicUpdateInputSignature(
     | 'weatherKind'
     | 'weatherIntensity'
     | 'combatIntensity'
+    | 'encounterMode'
     | 'dayProgress'
     | 'yearProgress'
     | 'clusterX'
@@ -119,6 +122,7 @@ export function getMusicUpdateInputSignature(
       input.weatherKind ?? '',
       Math.round((input.weatherIntensity ?? 0) * 10),
       Math.round((input.combatIntensity ?? 0) * 100),
+      input.encounterMode ?? 'ambient',
       input.clusterX ?? 0,
       input.clusterY ?? 0,
     ].join('|'),
@@ -132,6 +136,7 @@ export function getMusicUpdateInputSignature(
           input.weatherKind ?? '',
           Math.round((input.weatherIntensity ?? 0) * 10),
           Math.round((input.combatIntensity ?? 0) * 100),
+          input.encounterMode ?? 'ambient',
           input.nearbyPoi.clusterX ?? 0,
           input.nearbyPoi.clusterY ?? 0,
           Math.round(clamp(input.nearbyPoi.mix ?? 0, 0, 1) * 100),

@@ -14,6 +14,7 @@ describe('music debug', () => {
     expect(
       normalizeMusicDebugOptions({
         tileKind: 'forest',
+        encounterMode: 'boss',
         dayProgress: 2,
         yearProgress: -1,
         weatherIntensity: 4,
@@ -23,6 +24,7 @@ describe('music debug', () => {
       expect.objectContaining({
         tileKind: 'forest',
         contextType: 'overworld',
+        encounterMode: 'boss',
         dayProgress: 1,
         yearProgress: 0,
         weatherIntensity: 1,
@@ -102,6 +104,7 @@ describe('music debug', () => {
     expect(summary).toContain('Song Length');
     expect(summary).toContain('Blueprint');
     expect(summary).toContain('Loop Range');
+    expect(summary).toContain('Encounter');
     expect(summary).toContain('Combat');
     expect(summary).toContain('Mode');
     expect(summary).toContain('Region');
@@ -189,5 +192,25 @@ describe('music debug', () => {
 
     expect(snapshot.theme.scale.length).toBeGreaterThan(0);
     expect(snapshot.theme.rootHz).toBeGreaterThan(0);
+  });
+
+  it('shows battle and boss encounter modes through song length generation', () => {
+    const battle = createMusicDebugSnapshot({
+      tileKind: 'forest',
+      contextType: 'overworld',
+      encounterMode: 'battle',
+      combatIntensity: 0.6,
+    });
+    const boss = createMusicDebugSnapshot({
+      tileKind: 'cave',
+      contextType: 'dungeon',
+      encounterMode: 'boss',
+      combatIntensity: 0.95,
+    });
+
+    expect(battle.durationMs).toBeGreaterThanOrEqual(60_000);
+    expect(battle.durationMs).toBeLessThanOrEqual(120_000);
+    expect(boss.durationMs).toBeGreaterThanOrEqual(180_000);
+    expect(boss.durationMs).toBeLessThanOrEqual(360_000);
   });
 });

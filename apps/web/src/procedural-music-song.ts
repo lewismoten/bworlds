@@ -6,8 +6,10 @@ import {
   type ProceduralMusicSongSectionTemplate,
 } from './procedural-music-blueprint.ts';
 import {
+  resolveMusicEncounterMode,
   resolveMusicTheme,
   scheduleProceduralMusicNotes,
+  type MusicEncounterMode,
   type MusicUpdateOptions,
   type ProceduralMusicNote,
 } from './procedural-music.ts';
@@ -62,7 +64,12 @@ export function createProceduralMusicSong(
 export function resolveProceduralMusicSongDurationMs(
   options: Pick<
     MusicUpdateOptions,
-    'tileKind' | 'contextType' | 'clusterX' | 'clusterY'
+    | 'tileKind'
+    | 'contextType'
+    | 'clusterX'
+    | 'clusterY'
+    | 'encounterMode'
+    | 'combatIntensity'
   >
 ): number {
   const theme = resolveMusicTheme(
@@ -86,8 +93,20 @@ export function resolveProceduralMusicSongDurationMs(
 }
 
 function getMusicSongDurationRange(
-  options: Pick<MusicUpdateOptions, 'tileKind' | 'contextType'>
+  options: Pick<
+    MusicUpdateOptions,
+    'tileKind' | 'contextType' | 'encounterMode' | 'combatIntensity'
+  >
 ): { minDurationMs: number; maxDurationMs: number } {
+  const encounterMode: MusicEncounterMode =
+    options.encounterMode ?? resolveMusicEncounterMode(options);
+
+  if (encounterMode === 'battle') {
+    return { minDurationMs: 60_000, maxDurationMs: 120_000 };
+  }
+  if (encounterMode === 'boss') {
+    return { minDurationMs: 180_000, maxDurationMs: 360_000 };
+  }
   if (options.contextType === 'town' || options.tileKind === 'town') {
     return { minDurationMs: 120_000, maxDurationMs: 180_000 };
   }

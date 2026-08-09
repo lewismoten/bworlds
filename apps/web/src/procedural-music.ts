@@ -29,6 +29,7 @@ type TileKind = string;
 type ContextType = string;
 type WeatherKind = string;
 type InstrumentRole = 'lead' | 'harmony' | 'bass' | 'percussion';
+export type MusicEncounterMode = 'ambient' | 'battle' | 'boss';
 
 type MusicRegionTheme = {
   id: MusicRegionThemeId;
@@ -237,6 +238,7 @@ export type MusicUpdateOptions = {
   weatherKind?: WeatherKind;
   weatherIntensity?: number;
   combatIntensity?: number;
+  encounterMode?: MusicEncounterMode;
   dayProgress: number;
   yearProgress?: number;
   clusterX?: number;
@@ -433,6 +435,7 @@ export function resolveMusicArrangement(options: {
   weatherKind?: WeatherKind;
   weatherIntensity?: number;
   combatIntensity?: number;
+  encounterMode?: MusicEncounterMode;
 }): MusicArrangement {
   const dayProgress = normalizeWrappedProgress(options.dayProgress);
   const season = resolveSeason(options.yearProgress ?? 0);
@@ -445,7 +448,11 @@ export function resolveMusicArrangement(options: {
     options.weatherKind === 'heavy-rain' ||
     (options.weatherIntensity ?? 0) >= 0.85;
 
-  if (combatIntensity >= 0.35) {
+  if (
+    options.encounterMode === 'battle' ||
+    options.encounterMode === 'boss' ||
+    combatIntensity >= 0.35
+  ) {
     return {
       roleProfiles: {
         lead: {
@@ -649,6 +656,19 @@ export function resolveMusicArrangement(options: {
   };
 }
 
+export function resolveMusicEncounterMode(options: {
+  combatIntensity?: number;
+}): MusicEncounterMode {
+  const combatIntensity = clamp(options.combatIntensity ?? 0, 0, 1);
+  if (combatIntensity >= 0.85) {
+    return 'boss';
+  }
+  if (combatIntensity >= 0.35) {
+    return 'battle';
+  }
+  return 'ambient';
+}
+
 export function getMusicRegionSignature(options: {
   tileKind?: TileKind;
   contextType?: ContextType;
@@ -789,6 +809,7 @@ export function getMusicUpdateSignature(
       options.weatherKind ?? '',
       Math.round((options.weatherIntensity ?? 0) * 10),
       Math.round(clamp(options.combatIntensity ?? 0, 0, 1) * 100),
+      options.encounterMode ?? 'ambient',
       options.clusterX ?? 0,
       options.clusterY ?? 0,
     ].join('|'),
@@ -802,6 +823,7 @@ export function getMusicUpdateSignature(
           options.weatherKind ?? '',
           Math.round((options.weatherIntensity ?? 0) * 10),
           Math.round(clamp(options.combatIntensity ?? 0, 0, 1) * 100),
+          options.encounterMode ?? 'ambient',
           options.nearbyPoi.clusterX ?? 0,
           options.nearbyPoi.clusterY ?? 0,
           Math.round(clamp(options.nearbyPoi.mix ?? 0, 0, 1) * 100),

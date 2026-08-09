@@ -25,6 +25,34 @@ describe('procedural music song', () => {
     expect(townDurationMs).toBeLessThanOrEqual(180_000);
   });
 
+  it('keeps battle tracks in the one-to-two-minute range', () => {
+    const durationMs = resolveProceduralMusicSongDurationMs({
+      tileKind: 'forest',
+      contextType: 'overworld',
+      encounterMode: 'battle',
+      combatIntensity: 0.6,
+      clusterX: 3,
+      clusterY: -2,
+    });
+
+    expect(durationMs).toBeGreaterThanOrEqual(60_000);
+    expect(durationMs).toBeLessThanOrEqual(120_000);
+  });
+
+  it('lets boss or cinematic tracks run in the three-to-six-minute range', () => {
+    const durationMs = resolveProceduralMusicSongDurationMs({
+      tileKind: 'cave',
+      contextType: 'dungeon',
+      encounterMode: 'boss',
+      combatIntensity: 0.95,
+      clusterX: 7,
+      clusterY: 4,
+    });
+
+    expect(durationMs).toBeGreaterThanOrEqual(180_000);
+    expect(durationMs).toBeLessThanOrEqual(360_000);
+  });
+
   it('builds deterministic full-song structures with loopable middle sections', () => {
     const first = createProceduralMusicSong({
       nowMs: 1_000,
