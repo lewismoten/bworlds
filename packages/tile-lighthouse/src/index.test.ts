@@ -176,6 +176,59 @@ describe('tile lighthouse', () => {
     expect(beamColors.size).toBeGreaterThan(1);
   });
 
+  it('varies lighthouse sweep configuration by region while keeping local settings shared', () => {
+    const plugin = createLighthouseTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'lighthouse');
+    const first = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state: {} as never,
+      tile: { kind: 'lighthouse' } as never,
+      tileX: 4,
+      tileY: 5,
+    }) as FakeNode | undefined;
+    const second = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state: {} as never,
+      tile: { kind: 'lighthouse' } as never,
+      tileX: 8,
+      tileY: 9,
+    }) as FakeNode | undefined;
+    const differentRegions = [
+      { x: 4, y: 5 },
+      { x: 40, y: 5 },
+      { x: 4, y: 40 },
+      { x: 40, y: 40 },
+    ].map(({ x, y }) =>
+      tile?.create3DModel?.({
+        three: fakeThree as never,
+        state: {} as never,
+        tile: { kind: 'lighthouse' } as never,
+        tileX: x,
+        tileY: y,
+      }) as FakeNode | undefined
+    );
+    const firstPivot = findBeamPivot(first);
+    const secondPivot = findBeamPivot(second);
+    const signatures = new Set(
+      differentRegions
+        .map((model) => {
+          const pivot = findBeamPivot(model);
+          return pivot
+            ? `${pivot.userData?.lighthouseBeamRotationDirection}:${pivot.userData?.lighthouseBeamRotationDurationMs}`
+            : null;
+        })
+        .filter((value): value is string => typeof value === 'string')
+    );
+
+    expect(firstPivot?.userData?.lighthouseBeamRotationDurationMs).toBe(
+      secondPivot?.userData?.lighthouseBeamRotationDurationMs
+    );
+    expect(firstPivot?.userData?.lighthouseBeamRotationDirection).toBe(
+      secondPivot?.userData?.lighthouseBeamRotationDirection
+    );
+    expect(signatures.size).toBeGreaterThan(1);
+  });
+
   it('builds a tapered emissive beam from the lantern room without beam shadows', () => {
     const plugin = createLighthouseTilePlugin();
     const tile = plugin.tiles?.find((entry) => entry.kind === 'lighthouse');
@@ -256,6 +309,12 @@ describe('tile lighthouse', () => {
 
     expect(beamNodes).toHaveLength(3);
     expect(beamPivot).not.toBeNull();
+    const rotationDurationMs =
+      typeof beamPivot?.userData?.lighthouseBeamRotationDurationMs === 'number'
+        ? beamPivot.userData.lighthouseBeamRotationDurationMs
+        : 2100;
+    const rotationDirection =
+      beamPivot?.userData?.lighthouseBeamRotationDirection === -1 ? -1 : 1;
 
     tile?.sync3DModel?.({
       three: fakeThree as never,
@@ -318,7 +377,7 @@ describe('tile lighthouse', () => {
       tileX: 4,
       tileY: 5,
       model,
-      timeMs: 2100,
+      timeMs: rotationDurationMs / 3,
       cycle: { daylight: 0, twilight: 0, night: 1 },
       environment: {},
     });
@@ -335,7 +394,12 @@ describe('tile lighthouse', () => {
     expect(
       (beamNodes[0]?.material as FakeMaterial)?.emissiveIntensity ?? 0
     ).toBeGreaterThan((beamNodes[2]?.material as FakeMaterial)?.emissiveIntensity ?? 0);
-    expect(beamPivot?.rotation.y).toBeCloseTo(1, 6);
+    const expectedRotation =
+      ((((rotationDurationMs / 3 / rotationDurationMs) * Math.PI * 2 * rotationDirection) %
+        (Math.PI * 2)) +
+        Math.PI * 2) %
+      (Math.PI * 2);
+    expect(beamPivot?.rotation.y).toBeCloseTo(expectedRotation, 6);
   });
 });
 
@@ -378,4 +442,14 @@ function collectBeamMeshes(root: FakeNode | undefined): FakeMesh[] {
     }
   });
   return beams;
+}
+
+function findBeamPivot(root: FakeNode | undefined): FakeGroup | undefined {
+  let pivot: FakeGroup | undefined;
+  root?.traverse((node) => {
+    if (node.userData?.lighthouseBeamPivot) {
+      pivot = node as FakeGroup;
+    }
+  });
+  return pivot;
 }

@@ -26,6 +26,8 @@ const LIGHTHOUSE_BEAM_KEY = 'lighthouseBeam';
 const LIGHTHOUSE_REGION_SIZE = 18;
 const LIGHTHOUSE_BEAM_COLOR_SEED = registerHashLabel('lighthouse-beam-color');
 const LIGHTHOUSE_PANE_COLOR_SEED = registerHashLabel('lighthouse-pane-color');
+const LIGHTHOUSE_ROTATION_SPEED_SEED = registerHashLabel('lighthouse-rotation-speed');
+const LIGHTHOUSE_ROTATION_DIRECTION_SEED = registerHashLabel('lighthouse-rotation-direction');
 const LIGHTHOUSE_BEAM_START_OFFSET = 0.14;
 const LIGHTHOUSE_BEAM_SEGMENTS = [
   { key: 'near', radius: 0.1, length: 1.1, opacity: 0.24, emissiveIntensity: 1.2 },
@@ -56,6 +58,8 @@ type LighthouseStyleMaterials = {
   stoneMaterial: ThreeMaterialLike;
   paneMaterial: ThreeMaterialLike;
   beamColor: string;
+  rotationDurationMs: number;
+  rotationDirection: 1 | -1;
   beamMaterials: Record<
     (typeof LIGHTHOUSE_BEAM_SEGMENTS)[number]['key'],
     ThreeMaterialLike
@@ -73,6 +77,10 @@ const resolveRegionalLighthouseStyle = createRegionalMaterialResolver(
       hash2D(LIGHTHOUSE_PANE_COLOR_SEED, regionX, regionY),
       beamColor
     );
+    const rotationDurationMs =
+      1800 + Math.round(hash2D(LIGHTHOUSE_ROTATION_SPEED_SEED, regionX, regionY) * 1800);
+    const rotationDirection =
+      hash2D(LIGHTHOUSE_ROTATION_DIRECTION_SEED, regionX, regionY) >= 0.5 ? 1 : -1;
 
     return createHostMaterialResolver(
       (three: Create3DModelContext['three']): LighthouseStyleMaterials => ({
@@ -100,6 +108,8 @@ const resolveRegionalLighthouseStyle = createRegionalMaterialResolver(
           side: three.DoubleSide,
         }),
         beamColor,
+        rotationDurationMs,
+        rotationDirection,
         beamMaterials: Object.fromEntries(
           LIGHTHOUSE_BEAM_SEGMENTS.map((segment) => [
             segment.key,
@@ -143,7 +153,16 @@ export function createLighthouseTilePlugin(): RuntimePlugin {
     }),
     create3DModel({ three, tileX, tileY }: Create3DModelContext) {
       const group = new three.Group();
-      const { wallMaterial, stripeMaterial, stoneMaterial, paneMaterial, beamColor, beamMaterials } =
+      const {
+        wallMaterial,
+        stripeMaterial,
+        stoneMaterial,
+        paneMaterial,
+        beamColor,
+        rotationDurationMs,
+        rotationDirection,
+        beamMaterials,
+      } =
         resolveRegionalLighthouseStyle(three, tileX, tileY);
 
       const base = new three.Mesh(
@@ -206,6 +225,8 @@ export function createLighthouseTilePlugin(): RuntimePlugin {
       beamPivot.userData = {
         ...(beamPivot.userData ?? {}),
         [LIGHTHOUSE_BEAM_PIVOT_KEY]: true,
+        lighthouseBeamRotationDurationMs: rotationDurationMs,
+        lighthouseBeamRotationDirection: rotationDirection,
       };
       beamPivot.position.set(tileX, 1.88, tileY);
 
@@ -285,10 +306,19 @@ function syncLighthouseBeam(
   timeMs: number
 ): void {
   const activation = getPoiLightActivation(cycle);
-  const sweepRotation = ((timeMs / 2100) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2);
 
   root.traverse?.((node) => {
     if (node.userData?.[LIGHTHOUSE_BEAM_PIVOT_KEY]) {
+      const rotationDurationMs =
+        typeof node.userData?.lighthouseBeamRotationDurationMs === 'number'
+          ? Math.max(1, node.userData.lighthouseBeamRotationDurationMs)
+          : 2100;
+      const rotationDirection =
+        node.userData?.lighthouseBeamRotationDirection === -1 ? -1 : 1;
+      const sweepRotation =
+        ((((timeMs / rotationDurationMs) * Math.PI * 2 * rotationDirection) % (Math.PI * 2)) +
+          Math.PI * 2) %
+        (Math.PI * 2);
       node.rotation.y = sweepRotation;
     }
     if (!node.userData?.[LIGHTHOUSE_BEAM_KEY]) {

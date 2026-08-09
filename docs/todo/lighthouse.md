@@ -27,16 +27,16 @@ Here’s a focused lighthouse checklist that covers the current visual bugs, day
 
 ## Lighthouse Rotation
 
-* [ ] Rotate the beam continuously around the lighthouse.
-* [ ] Make rotation speed configurable.
-* [ ] Keep rotation speed stable regardless of frame rate.
-* [ ] Allow some lighthouse types to rotate in the opposite direction.
+* [X] Rotate the beam continuously around the lighthouse.
+* [X] Make rotation speed configurable.
+* [X] Keep rotation speed stable regardless of frame rate.
+* [X] Allow some lighthouse types to rotate in the opposite direction.
 * [ ] Allow damaged lighthouses to rotate irregularly.
 * [ ] Allow abandoned lighthouses to stop rotating.
 * [ ] Allow manually operated lighthouses to require activation.
-* [ ] Avoid rebuilding beam geometry during rotation.
-* [ ] Rotate only the beam transform or light direction.
-* [ ] Keep distant beam animation inexpensive.
+* [X] Avoid rebuilding beam geometry during rotation.
+* [X] Rotate only the beam transform or light direction.
+* [X] Keep distant beam animation inexpensive.
 
 ## Sunset and Sunrise Behavior
 
