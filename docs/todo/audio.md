@@ -509,12 +509,12 @@
 - [ ] Cache complex generated AudioBuffers.
 - [ ] Generate reusable sound families ahead of time when appropriate.
 - [ ] Generate rare sounds only when needed.
-- [ ] Limit active procedural oscillators.
-- [ ] Stop and disconnect completed AudioNodes.
-- [ ] Prevent orphaned Web Audio nodes.
+- [x] Limit active procedural oscillators.
+- [x] Stop and disconnect completed AudioNodes.
+- [x] Prevent orphaned Web Audio nodes.
 - [ ] Profile AudioContext CPU usage.
 - [ ] Profile garbage collection during heavy combat and ambient scenes.
-- [ ] Establish a maximum simultaneous procedural-sound budget.
+- [x] Establish a maximum simultaneous procedural-sound budget.
 - [ ] Reduce sound complexity dynamically when system performance falls.
 - [ ] Suspend audio processing for distant or inactive regions.
 - [ ] Avoid generating detailed sounds server-side unless gameplay synchronization requires it.

@@ -1,3 +1,4 @@
+import { MAX_SIMULTANEOUS_PROCEDURAL_SOUND_VOICES } from './audio-budget.ts';
 import type { AudioCategory } from './audio-categories.ts';
 import { resolveSoundEffectCategory } from './audio-categories.ts';
 import type { NearbyAmbientKind } from './nearby-ambient.ts';
@@ -1142,7 +1143,6 @@ type ActiveSoundVoice = {
   panner: StereoPannerNode | null;
 };
 
-const MAX_ACTIVE_SOUND_VOICES = 10;
 const SOUND_MIX_HEADROOM_LOUDNESS = 0.14;
 
 const MAX_SIMULTANEOUS_SOUND_VOICES_BY_KIND: Partial<
@@ -1316,7 +1316,7 @@ export function createWebAudioSoundEffectSink(
         }
         stopVoice(weakestSameKindVoice);
       }
-      if (activeVoices.size >= MAX_ACTIVE_SOUND_VOICES) {
+      if (activeVoices.size >= MAX_SIMULTANEOUS_PROCEDURAL_SOUND_VOICES) {
         const weakestActiveVoice = [...activeVoices].reduce(
           (weakest, active) =>
             compareActiveSoundVoices(active, weakest) < 0 ? active : weakest

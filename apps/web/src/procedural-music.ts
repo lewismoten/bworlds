@@ -37,6 +37,7 @@ import {
   resolveMusicSpaceProfile,
   type MusicSpaceProfile,
 } from './procedural-music-space.ts';
+import { MAX_ACTIVE_PROCEDURAL_MUSIC_OSCILLATORS } from './audio-budget.ts';
 import type { AudioCategory } from './audio-categories.ts';
 type MusicPosition = { x: number; y: number };
 type TileKind = string;
@@ -898,12 +899,26 @@ type SharedReverbBus = {
   output: GainNode;
 };
 
+type ActiveMusicVoice = {
+  loudness: number;
+  startedAt: number;
+  oscillator: OscillatorNode;
+  harmonicOscillator: OscillatorNode;
+  gain: GainNode;
+  harmonicGain: GainNode;
+  reverbSend: GainNode;
+  timbreFilter: BiquadFilterNodeLike | null;
+  eqFilters: BiquadFilterNodeLike[];
+  panner: StereoPannerNodeLike | null;
+  remainingOscillators: number;
+};
+
 export function createWebAudioMusicSink(
   options: MusicSinkOptions = {}
 ): MusicSink {
   let audioContext: AudioContext | null = null;
   let activeSourceCount = 0;
-  const activeOscillators = new Set<OscillatorNode>();
+  const activeVoices = new Set<ActiveMusicVoice>();
   const sharedReverbBuses = new Map<string, SharedReverbBus>();
 
   function getAudioContext(): AudioContext | null {
@@ -921,6 +936,81 @@ export function createWebAudioMusicSink(
     }
     audioContext = new ContextCtor();
     return audioContext;
+  }
+
+  function removeVoice(voice: ActiveMusicVoice): void {
+    if (!activeVoices.delete(voice)) {
+      return;
+    }
+    activeSourceCount = Math.max(
+      0,
+      activeSourceCount - voice.remainingOscillators
+    );
+    voice.oscillator.onended = null;
+    voice.harmonicOscillator.onended = null;
+    voice.oscillator.disconnect?.();
+    voice.harmonicOscillator.disconnect?.();
+    voice.gain.disconnect?.();
+    voice.harmonicGain.disconnect?.();
+    voice.reverbSend.disconnect?.();
+    voice.timbreFilter?.disconnect?.();
+    voice.eqFilters.forEach((filter) => filter.disconnect?.());
+    voice.panner?.disconnect?.();
+  }
+
+  function handleVoiceOscillatorEnded(voice: ActiveMusicVoice): void {
+    if (!activeVoices.has(voice)) {
+      return;
+    }
+    voice.remainingOscillators = Math.max(0, voice.remainingOscillators - 1);
+    activeSourceCount = Math.max(0, activeSourceCount - 1);
+    if (voice.remainingOscillators === 0) {
+      removeVoice(voice);
+    }
+  }
+
+  function stopVoice(
+    voice: ActiveMusicVoice,
+    stopAt = audioContext?.currentTime ?? 0
+  ): void {
+    voice.oscillator.onended = null;
+    voice.harmonicOscillator.onended = null;
+    try {
+      voice.oscillator.stop(stopAt);
+    } catch {
+      // Ignore repeated or invalid stop requests.
+    }
+    try {
+      voice.harmonicOscillator.stop(stopAt);
+    } catch {
+      // Ignore repeated or invalid stop requests.
+    }
+    removeVoice(voice);
+  }
+
+  function enforceMusicOscillatorBudget(nextVoiceLoudness: number): boolean {
+    if (activeSourceCount + 2 <= MAX_ACTIVE_PROCEDURAL_MUSIC_OSCILLATORS) {
+      return true;
+    }
+
+    const weakestVoice = [...activeVoices].reduce<ActiveMusicVoice | null>(
+      (weakest, current) => {
+        if (!weakest) {
+          return current;
+        }
+        if (current.loudness !== weakest.loudness) {
+          return current.loudness < weakest.loudness ? current : weakest;
+        }
+        return current.startedAt < weakest.startedAt ? current : weakest;
+      },
+      null
+    );
+    if (!weakestVoice || nextVoiceLoudness <= weakestVoice.loudness) {
+      return false;
+    }
+
+    stopVoice(weakestVoice);
+    return activeSourceCount + 2 <= MAX_ACTIVE_PROCEDURAL_MUSIC_OSCILLATORS;
   }
 
   return {
@@ -948,6 +1038,14 @@ export function createWebAudioMusicSink(
       const spatial = getMusicSpatialMix(note.emitter, note.listener);
       const resolvedPan = resolveMusicStereoPan(note, spatial.pan);
       const space = note.space ?? null;
+      const startAt =
+        context.currentTime + Math.max(0, (note.startMs - nowMs) / 1000);
+      const durationSeconds = note.durationMs / 1000;
+      const sustainVolume =
+        note.volume * categoryVolume * spatial.gainMultiplier;
+      if (!enforceMusicOscillatorBudget(sustainVolume)) {
+        return;
+      }
       const oscillator = context.createOscillator();
       const harmonicOscillator = context.createOscillator();
       const gain = context.createGain();
@@ -967,9 +1065,6 @@ export function createWebAudioMusicSink(
           ? (context.createStereoPanner() as StereoPannerNodeLike)
           : null;
       const reverbSend = context.createGain();
-      const startAt =
-        context.currentTime + Math.max(0, (note.startMs - nowMs) / 1000);
-      const durationSeconds = note.durationMs / 1000;
 
       oscillator.type = note.waveform;
       oscillator.frequency.setValueAtTime(note.frequency, startAt);
@@ -992,8 +1087,6 @@ export function createWebAudioMusicSink(
       );
       gain.gain.setValueAtTime(0.0001, startAt);
       harmonicGain.gain.setValueAtTime(0.0001, startAt);
-      const sustainVolume =
-        note.volume * categoryVolume * spatial.gainMultiplier;
       gain.gain.exponentialRampToValueAtTime(
         sustainVolume,
         startAt + note.attackMs / 1000
@@ -1083,17 +1176,27 @@ export function createWebAudioMusicSink(
         reverbSend.connect(reverbBus.send);
       }
 
+      const voice: ActiveMusicVoice = {
+        loudness: sustainVolume,
+        startedAt: startAt,
+        oscillator,
+        harmonicOscillator,
+        gain,
+        harmonicGain,
+        reverbSend,
+        timbreFilter,
+        eqFilters,
+        panner,
+        remainingOscillators: 2,
+      };
+      activeVoices.add(voice);
       activeSourceCount += 2;
       oscillator.onended = () => {
-        activeOscillators.delete(oscillator);
-        activeSourceCount = Math.max(0, activeSourceCount - 1);
+        handleVoiceOscillatorEnded(voice);
       };
       harmonicOscillator.onended = () => {
-        activeOscillators.delete(harmonicOscillator);
-        activeSourceCount = Math.max(0, activeSourceCount - 1);
+        handleVoiceOscillatorEnded(voice);
       };
-      activeOscillators.add(oscillator);
-      activeOscillators.add(harmonicOscillator);
       oscillator.start(startAt);
       harmonicOscillator.start(startAt);
       oscillator.stop(startAt + durationSeconds);
@@ -1105,14 +1208,9 @@ export function createWebAudioMusicSink(
         return;
       }
 
-      for (const oscillator of activeOscillators) {
-        try {
-          oscillator.stop(context.currentTime);
-        } catch {
-          // Ignore already-stopped oscillators.
-        }
+      for (const voice of [...activeVoices]) {
+        stopVoice(voice, context.currentTime);
       }
-      activeOscillators.clear();
       activeSourceCount = 0;
     },
     getActiveSourceCount() {

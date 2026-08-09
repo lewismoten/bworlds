@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import { MAX_ACTIVE_PROCEDURAL_MUSIC_OSCILLATORS } from './audio-budget.ts';
 import {
   resolveProceduralChordAtStep,
   resolveProceduralInstrumentSemitones,
@@ -36,6 +37,7 @@ describe('procedural music', () => {
         setValueAtTime: ReturnType<typeof vi.fn>;
       };
       connect: ReturnType<typeof vi.fn>;
+      disconnect: ReturnType<typeof vi.fn>;
       start: ReturnType<typeof vi.fn>;
       stop: ReturnType<typeof vi.fn>;
     }> = [];
@@ -48,18 +50,21 @@ describe('procedural music', () => {
         setValueAtTime: ReturnType<typeof vi.fn>;
       };
       connect: ReturnType<typeof vi.fn>;
+      disconnect: ReturnType<typeof vi.fn>;
     }> = [];
     const createdPanners: Array<{
       pan: {
         setValueAtTime: ReturnType<typeof vi.fn>;
       };
       connect: ReturnType<typeof vi.fn>;
+      disconnect: ReturnType<typeof vi.fn>;
     }> = [];
     const createdDelays: Array<{
       delayTime: {
         setValueAtTime: ReturnType<typeof vi.fn>;
       };
       connect: ReturnType<typeof vi.fn>;
+      disconnect: ReturnType<typeof vi.fn>;
     }> = [];
 
     class FakeAudioContext {
@@ -78,6 +83,7 @@ describe('procedural music', () => {
             setValueAtTime: vi.fn(),
           },
           connect: vi.fn(),
+          disconnect: vi.fn(),
           start: vi.fn(),
           stop: vi.fn(),
           finish() {
@@ -106,6 +112,7 @@ describe('procedural music', () => {
             setValueAtTime: vi.fn(),
           },
           connect: vi.fn(),
+          disconnect: vi.fn(),
         };
         createdFilters.push(filter);
         return filter as unknown as BiquadFilterNode;
@@ -116,6 +123,7 @@ describe('procedural music', () => {
             setValueAtTime: vi.fn(),
           },
           connect: vi.fn(),
+          disconnect: vi.fn(),
         };
         createdPanners.push(panner);
         return panner as unknown as StereoPannerNode;
@@ -126,6 +134,7 @@ describe('procedural music', () => {
             setValueAtTime: vi.fn(),
           },
           connect: vi.fn(),
+          disconnect: vi.fn(),
         };
         createdDelays.push(delay);
         return delay as unknown as DelayNode;
@@ -181,6 +190,10 @@ describe('procedural music', () => {
       expect(sink.getActiveSourceCount?.()).toBe(1);
       createdOscillators[1]?.finish();
       expect(sink.getActiveSourceCount?.()).toBe(0);
+      expect(createdOscillators[0]?.disconnect).toHaveBeenCalled();
+      expect(createdOscillators[1]?.disconnect).toHaveBeenCalled();
+      expect(createdFilters[0]?.disconnect).toHaveBeenCalled();
+      expect(createdPanners[0]?.disconnect).toHaveBeenCalled();
     } finally {
       if (originalAudioContext) {
         vi.stubGlobal('AudioContext', originalAudioContext);
@@ -411,6 +424,164 @@ describe('procedural music', () => {
       const envelopeCalls =
         createdGains[0]?.gain.exponentialRampToValueAtTime.mock.calls ?? [];
       expect(envelopeCalls[0]?.[0]).toBeCloseTo(0.025, 6);
+    } finally {
+      if (originalAudioContext) {
+        vi.stubGlobal('AudioContext', originalAudioContext);
+      } else {
+        vi.unstubAllGlobals();
+      }
+    }
+  });
+
+  it('caps active procedural music oscillators and evicts weaker older voices', () => {
+    const createdOscillators: Array<{
+      onended: ((event: Event) => void) | null;
+      stop: ReturnType<typeof vi.fn>;
+      connect: ReturnType<typeof vi.fn>;
+      disconnect: ReturnType<typeof vi.fn>;
+      frequency: {
+        setValueAtTime: ReturnType<typeof vi.fn>;
+        exponentialRampToValueAtTime: ReturnType<typeof vi.fn>;
+      };
+      detune: {
+        setValueAtTime: ReturnType<typeof vi.fn>;
+      };
+      type: string;
+      start: ReturnType<typeof vi.fn>;
+    }> = [];
+
+    class FakeAudioContext {
+      state: AudioContextState = 'running';
+      currentTime = 0;
+      destination = {};
+      createOscillator() {
+        const oscillator = {
+          onended: null as ((event: Event) => void) | null,
+          stop: vi.fn(),
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+          frequency: {
+            setValueAtTime: vi.fn(),
+            exponentialRampToValueAtTime: vi.fn(),
+          },
+          detune: {
+            setValueAtTime: vi.fn(),
+          },
+          type: 'sine',
+          start: vi.fn(),
+        };
+        createdOscillators.push(oscillator);
+        return oscillator as unknown as OscillatorNode;
+      }
+      createGain() {
+        return {
+          gain: {
+            setValueAtTime: vi.fn(),
+            exponentialRampToValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+        } as unknown as GainNode;
+      }
+      createBiquadFilter() {
+        return {
+          type: 'lowpass' as BiquadFilterType,
+          frequency: {
+            setValueAtTime: vi.fn(),
+          },
+          Q: {
+            setValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+        } as unknown as BiquadFilterNode;
+      }
+      createStereoPanner() {
+        return {
+          pan: {
+            setValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+        } as unknown as StereoPannerNode;
+      }
+      createDelay() {
+        return {
+          delayTime: {
+            setValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+        } as unknown as DelayNode;
+      }
+      resume() {
+        return Promise.resolve();
+      }
+    }
+
+    const originalAudioContext = globalThis.AudioContext;
+    vi.stubGlobal('AudioContext', FakeAudioContext);
+
+    try {
+      const sink = createWebAudioMusicSink();
+      const noteCount = MAX_ACTIVE_PROCEDURAL_MUSIC_OSCILLATORS / 2;
+      for (let index = 0; index < noteCount; index += 1) {
+        sink.play({
+          themeId: 'frontier-plains',
+          instrumentId: `lead-${index}`,
+          role: 'lead',
+          startMs: 0,
+          durationMs: 240,
+          frequency: 440 + index,
+          volume: 0.02,
+          waveform: 'sine',
+          timbre: {
+            harmonicWaveform: 'triangle',
+            harmonicRatio: 2,
+            filterType: 'lowpass',
+            filterCutoffHz: 1200,
+            filterQ: 0.8,
+          },
+          attackMs: 20,
+          releaseMs: 80,
+          detuneCents: 0,
+          harmonicGain: 0.4,
+          pulseRate: 1,
+        });
+      }
+
+      expect(sink.getActiveSourceCount?.()).toBe(
+        MAX_ACTIVE_PROCEDURAL_MUSIC_OSCILLATORS
+      );
+
+      sink.play({
+        themeId: 'frontier-plains',
+        instrumentId: 'lead-priority',
+        role: 'lead',
+        startMs: 0,
+        durationMs: 240,
+        frequency: 660,
+        volume: 0.08,
+        waveform: 'sine',
+        timbre: {
+          harmonicWaveform: 'triangle',
+          harmonicRatio: 2,
+          filterType: 'lowpass',
+          filterCutoffHz: 1200,
+          filterQ: 0.8,
+        },
+        attackMs: 20,
+        releaseMs: 80,
+        detuneCents: 0,
+        harmonicGain: 0.4,
+        pulseRate: 1,
+      });
+
+      expect(sink.getActiveSourceCount?.()).toBe(
+        MAX_ACTIVE_PROCEDURAL_MUSIC_OSCILLATORS
+      );
+      expect(createdOscillators[0]?.stop).toHaveBeenCalled();
+      expect(createdOscillators[1]?.stop).toHaveBeenCalled();
     } finally {
       if (originalAudioContext) {
         vi.stubGlobal('AudioContext', originalAudioContext);
