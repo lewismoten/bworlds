@@ -5,6 +5,7 @@ import {
   disposeObject3DResources,
   applyObjectDistanceFade,
   clampCameraPitch,
+  createTilePluginRenderBudget,
   DEFAULT_CAMERA_PITCH,
   getRecentCountStats,
   getRecentDurationStats,
@@ -829,6 +830,62 @@ describe('render3d visibility helpers', () => {
     expect(getRemainingFrameTimeBudgetMs(budget, 101)).toBeCloseTo(1.5, 6);
     expect(isFrameTimeBudgetExhausted(budget, 102.49)).toBe(false);
     expect(isFrameTimeBudgetExhausted(budget, 102.5)).toBe(true);
+  });
+
+  it('adapts the shared render budget to the requested tile detail and remaining frame time', () => {
+    expect(
+      createTilePluginRenderBudget(
+        {
+          quality: 'reduced',
+          detailLevel: 'full',
+          targetFps: 30,
+          visibilityRadius: 14,
+          frame: {
+            currentMs: 20,
+            smoothedMs: 24,
+            generationBudgetMs: 2.5,
+            limits: {
+              soft: 1000 / 42,
+              hard: 1000 / 28,
+            },
+          },
+          pendingBuild: {
+            budgetMs: 1.75,
+            maxTiles: 3,
+            tileLimits: {
+              soft: 4,
+              hard: 2,
+            },
+          },
+        },
+        'low',
+        1.1
+      )
+    ).toEqual({
+      quality: 'reduced',
+      detailLevel: 'low',
+      targetFps: 30,
+      visibilityRadius: 14,
+      frame: {
+        currentMs: 20,
+        smoothedMs: 24,
+        generationBudgetMs: 2.5,
+        remainingGenerationBudgetMs: 1.1,
+        limits: {
+          soft: 1000 / 42,
+          hard: 1000 / 28,
+        },
+      },
+      pendingBuild: {
+        budgetMs: 1.75,
+        maxTiles: 3,
+        tileLimits: {
+          soft: 4,
+          hard: 2,
+        },
+      },
+    });
+    expect(createTilePluginRenderBudget(undefined, 'full')).toBeUndefined();
   });
 
   it('rebuilds the pending world-build queue without visible or duplicate tile requests', () => {

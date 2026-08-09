@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   advanceRenderBudgetState,
+  createRenderBudget,
   DEFAULT_RENDER_BUDGET_STATE,
   DEFAULT_VISIBILITY_RADIUS,
   formatRenderQualityLevel,
@@ -230,5 +231,48 @@ describe('render budget', () => {
       `Visibility radius reduced to ${MIN_VISIBILITY_RADIUS}`,
       'Critical frame pressure',
     ]);
+  });
+
+  it('builds a shared plugin-facing render budget from the active policy state', () => {
+    expect(
+      createRenderBudget(
+        {
+          currentFrameMs: 20,
+          smoothedFrameMs: 24,
+          visibilityRadius: REDUCED_VISIBILITY_RADIUS,
+          targetFps: 30,
+        },
+        {
+          detailLevel: 'low',
+          generationBudgetMs: 2.25,
+          remainingGenerationBudgetMs: 1.5,
+          pendingBuildBudgetMs: 1.75,
+          maxPendingBuildTiles: 3,
+        }
+      )
+    ).toEqual({
+      quality: 'reduced',
+      detailLevel: 'low',
+      targetFps: 30,
+      visibilityRadius: REDUCED_VISIBILITY_RADIUS,
+      frame: {
+        currentMs: 20,
+        smoothedMs: 24,
+        generationBudgetMs: 2.25,
+        remainingGenerationBudgetMs: 1.5,
+        limits: {
+          soft: 1000 / 42,
+          hard: 1000 / 28,
+        },
+      },
+      pendingBuild: {
+        budgetMs: 1.75,
+        maxTiles: 3,
+        tileLimits: {
+          soft: 4,
+          hard: 2,
+        },
+      },
+    });
   });
 });

@@ -1,3 +1,8 @@
+import type {
+  RenderBudget,
+  RenderBudgetDetailLevel,
+} from '@bworlds/plugin-api';
+
 export type RenderBudgetState = {
   currentFrameMs: number;
   smoothedFrameMs: number;
@@ -238,6 +243,44 @@ export function getRenderQualityLimiters(
     limiters.push('High frame pressure');
   }
   return limiters.length > 0 ? limiters : ['None'];
+}
+
+export function createRenderBudget(
+  state: Pick<RenderBudgetState, 'visibilityRadius' | 'targetFps'> &
+    Partial<Pick<RenderBudgetState, 'currentFrameMs' | 'smoothedFrameMs'>>,
+  {
+    detailLevel = 'full',
+    generationBudgetMs,
+    remainingGenerationBudgetMs = generationBudgetMs,
+    pendingBuildBudgetMs,
+    maxPendingBuildTiles,
+  }: {
+    detailLevel?: RenderBudgetDetailLevel;
+    generationBudgetMs?: number;
+    remainingGenerationBudgetMs?: number;
+    pendingBuildBudgetMs?: number;
+    maxPendingBuildTiles?: number;
+  } = {}
+): RenderBudget {
+  const caps = getRenderBudgetCaps(state);
+  return {
+    quality: getRenderQualityLevel(state),
+    detailLevel,
+    targetFps: state.targetFps,
+    visibilityRadius: state.visibilityRadius,
+    frame: {
+      currentMs: state.currentFrameMs,
+      smoothedMs: state.smoothedFrameMs,
+      generationBudgetMs,
+      remainingGenerationBudgetMs,
+      limits: caps.frameMs,
+    },
+    pendingBuild: {
+      budgetMs: pendingBuildBudgetMs,
+      maxTiles: maxPendingBuildTiles,
+      tileLimits: caps.pendingBuildTiles,
+    },
+  };
 }
 
 function clamp(value: number, min: number, max: number): number {

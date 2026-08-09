@@ -19,6 +19,8 @@ import {
 import { isWaterKind } from '@bworlds/tile-support';
 import {
   getActivePluginRegistry,
+  type RenderBudget,
+  type RenderBudgetDetailLevel,
   type TileLike,
   type TilePlugin,
   type ViewMode,
@@ -86,6 +88,7 @@ type Render3DOptions = {
   cameraPitch?: number;
   cameraBobOffset?: number;
   visibilityRadius?: number;
+  renderBudget?: RenderBudget;
   generationBudgetMs?: number;
   pendingBuildBudgetMs?: number;
   maxPendingBuildTiles?: number;
@@ -176,6 +179,29 @@ type Render3DController = {
   render(state: Render3DState, options?: Render3DOptions): void;
   resize(width: number, height: number, pixelRatio?: number): void;
 };
+
+export function createTilePluginRenderBudget(
+  renderBudget: RenderBudget | undefined,
+  detailLevel: RenderBudgetDetailLevel,
+  remainingGenerationBudgetMs?: number
+): RenderBudget | undefined {
+  if (!renderBudget) {
+    return undefined;
+  }
+
+  return {
+    ...renderBudget,
+    detailLevel,
+    frame: {
+      ...renderBudget.frame,
+      remainingGenerationBudgetMs:
+        remainingGenerationBudgetMs ??
+        renderBudget.frame.remainingGenerationBudgetMs ??
+        renderBudget.frame.generationBudgetMs,
+    },
+  };
+}
+
 type DynamicTileNode = {
   key: string;
   tile: TileLike;
@@ -186,7 +212,7 @@ type DynamicTileNode = {
   modelRoot?: THREE.Object3D | null;
   modelVisibilityOpacity?: number;
   distanceFadeEligible?: boolean;
-  detailLevel?: 'full' | 'low';
+  detailLevel?: RenderBudgetDetailLevel;
   sync3DModel?: NonNullable<TilePlugin['sync3DModel']>;
 };
 type PendingWorldBuildEntry = { key: string; x: number; y: number };
@@ -552,7 +578,8 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     registry,
     x,
     y,
-    detailLevel: 'full' | 'low' = 'full'
+    detailLevel: RenderBudgetDetailLevel = 'full',
+    renderBudget?: RenderBudget
   ): DynamicTileNode {
     recordRecentMetric(renderChurnMetrics.tileNodeBuilds, performance.now());
     const tileNode = new THREE.Group();
@@ -575,6 +602,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       tileX: x,
       tileY: y,
       detailLevel,
+      renderBudget: createTilePluginRenderBudget(renderBudget, detailLevel),
     });
     const pluginBuildDurationMs = performance.now() - pluginBuildStartMs;
     if (tilePlugin?.create3DModel) {
@@ -651,7 +679,8 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
 
   function syncVisibleWorld(
     state,
-    chunkRadius = CHUNK_RADIUS
+    chunkRadius = CHUNK_RADIUS,
+    renderBudget?: RenderBudget
   ) {
     const context = state.getCurrentContext();
     const centerX = Math.round(state.player.x);
@@ -703,7 +732,10 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
   function flushPendingWorldBuild(
     state,
     nowMs: number,
-    options: Pick<Render3DOptions, 'pendingBuildBudgetMs' | 'maxPendingBuildTiles'> = {},
+    options: Pick<
+      Render3DOptions,
+      'pendingBuildBudgetMs' | 'maxPendingBuildTiles' | 'renderBudget'
+    > = {},
     frameBudget?: FrameTimeBudget
   ) {
     if (pendingWorldBuild.queue.length === 0) {
@@ -779,15 +811,23 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       const desiredDetailLevel = getTileModelDetailLevelFromSquaredDistance(
         dx * dx + dy * dy
       );
+      const detailLevel = getPendingWorldBuildDetailLevel(
+        desiredDetailLevel,
+        dx * dx + dy * dy,
+        pendingWorldBuild.queue.length - processedEntryCount
+      );
       const tileNode = buildTileNode(
         state,
         registry,
         entry.x,
         entry.y,
-        getPendingWorldBuildDetailLevel(
-          desiredDetailLevel,
-          dx * dx + dy * dy,
-          pendingWorldBuild.queue.length - processedEntryCount
+        detailLevel,
+        createTilePluginRenderBudget(
+          options.renderBudget,
+          detailLevel,
+          frameBudget
+            ? getRemainingFrameTimeBudgetMs(frameBudget, buildStartMs)
+            : undefined
         )
       );
       const buildDurationMs = performance.now() - buildStartMs;
@@ -827,7 +867,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       facingBucket !== lastFacingBucket ||
       chunkRadius !== lastChunkRadius
     ) {
-      syncVisibleWorld(state, chunkRadius);
+      syncVisibleWorld(state, chunkRadius, options.renderBudget);
     }
     const frameNowMs = options.timeMs ?? performance.now();
     const generationFrameBudget = createFrameTimeBudget(
@@ -894,7 +934,8 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
             getActivePluginRegistry(),
             frameNowMs,
             lodBatch.items,
-            generationFrameBudget
+            generationFrameBudget,
+            options.renderBudget
           );
           if (visibleEntries.length > 0 && processedEntryCount > 0) {
             lodSyncEntryOffset =
@@ -1058,7 +1099,8 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     registry: ReturnType<typeof getActivePluginRegistry>,
     nowMs: number,
     entries: Array<[string, DynamicTileNode]>,
-    frameBudget?: FrameTimeBudget
+    frameBudget?: FrameTimeBudget,
+    renderBudget?: RenderBudget
   ): number {
     let processedEntryCount = 0;
     for (const [key, entry] of entries) {
@@ -1094,7 +1136,12 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
         registry,
         entry.tileX,
         entry.tileY,
-        desiredDetailLevel
+        desiredDetailLevel,
+        createTilePluginRenderBudget(
+          renderBudget,
+          desiredDetailLevel,
+          frameBudget ? getRemainingFrameTimeBudgetMs(frameBudget) : undefined
+        )
       );
       visibleTileNodes.set(key, nextEntry);
       worldRoot.remove(entry.node);

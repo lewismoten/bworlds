@@ -590,9 +590,37 @@ export interface Paint2DOverlayContext {
   timeMs?: number;
 }
 
+export type RenderBudgetDetailLevel = 'full' | 'low';
+export type RenderBudgetQualityLevel = 'full' | 'reduced' | 'minimal';
+
+export interface RenderBudgetThreshold {
+  soft: number;
+  hard: number;
+}
+
+export interface RenderBudget {
+  quality: RenderBudgetQualityLevel;
+  detailLevel: RenderBudgetDetailLevel;
+  targetFps: 60 | 30;
+  visibilityRadius: number;
+  frame: {
+    currentMs?: number;
+    smoothedMs?: number;
+    generationBudgetMs?: number;
+    remainingGenerationBudgetMs?: number;
+    limits?: RenderBudgetThreshold;
+  };
+  pendingBuild: {
+    budgetMs?: number;
+    maxTiles?: number;
+    tileLimits?: RenderBudgetThreshold;
+  };
+}
+
 export interface Create3DModelContext extends TileCoordinate {
   three: ThreeHostLike;
-  detailLevel?: 'full' | 'low';
+  detailLevel?: RenderBudgetDetailLevel;
+  renderBudget?: RenderBudget;
 }
 
 export interface Sync3DModelContext extends TileCoordinate {

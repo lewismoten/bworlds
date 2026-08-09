@@ -4,9 +4,9 @@ Operates at several levels: per model, per LOD, per plugin, per chunk, and per e
 
 ## Core Resource Budget System
 
-* [ ] Create a common `RenderBudget` interface.
-* [ ] Define separate **soft limits** and **hard limits**.
-* [ ] Let plugins receive the current budget before generating a model.
+* [X] Create a common `RenderBudget` interface.
+* [X] Define separate **soft limits** and **hard limits**.
+* [X] Let plugins receive the current budget before generating a model.
 * [ ] Validate every generated model against hard limits before accepting it.
 * [ ] Allow the renderer to reject an entire model when required limits are exceeded.
 * [ ] Allow the renderer to discard optional model parts when budgets are exceeded.
@@ -177,7 +177,7 @@ These can quietly consume huge amounts of GPU memory.
 * [ ] Make LOD3 use extremely cheap representations.
 * [ ] Support billboard/impostor LOD where appropriate.
 * [ ] Avoid generating high-detail models before determining requested LOD.
-* [ ] Pass LOD budget to plugins before generation.
+* [X] Pass LOD budget to plugins before generation.
 * [ ] Validate plugin-generated LOD against the requested LOD budget.
 * [ ] Allow the renderer to substitute a lower LOD if the requested one exceeds available scene resources.
 
