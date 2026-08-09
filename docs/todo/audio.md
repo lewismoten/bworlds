@@ -206,8 +206,8 @@
 - [x] Generate wind intensity from actual weather conditions.
 - [x] Make trees and vegetation respond audibly to wind intensity.
 - [x] Generate wind whistling around buildings and openings.
-- [ ] Generate snowstorm ambience.
-- [ ] Generate hail impacts according to surrounding materials.
+- [x] Generate snowstorm ambience.
+- [x] Generate hail impacts according to surrounding materials.
 - [ ] Generate sandstorm ambience.
 - [ ] Generate tornado or extreme-wind sounds where applicable.
 - [ ] Make weather acoustically quieter inside buildings.

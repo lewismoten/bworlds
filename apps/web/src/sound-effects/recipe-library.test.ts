@@ -354,6 +354,78 @@ describe('sound recipe library', () => {
     ]);
   });
 
+  it('supports snowstorm and hail variants for winter weather surfaces', () => {
+    const flurryRecipe = buildProceduralSoundRecipe({
+      kind: 'snowstorm',
+      identityVariant: 'flurries',
+      profile: DEFAULT_SURFACE_PROFILE,
+      variantOffset: 0,
+      resolveAdvancementFrequency: () => 300,
+      resolveAmbientSoundFrequency: () => 172,
+      resolveInteractionFrequency: () => 128,
+      resolveInteractionWaveform: (_tileKind, fallback) => fallback,
+      resolvePaddleBoatCalliopeFrequency: () => 520,
+      resolveSteamWhistleFrequency: () => 360,
+    });
+    const whiteoutRecipe = buildProceduralSoundRecipe({
+      kind: 'snowstorm',
+      identityVariant: 'whiteout',
+      profile: DEFAULT_SURFACE_PROFILE,
+      variantOffset: 0,
+      resolveAdvancementFrequency: () => 300,
+      resolveAmbientSoundFrequency: () => 172,
+      resolveInteractionFrequency: () => 128,
+      resolveInteractionWaveform: (_tileKind, fallback) => fallback,
+      resolvePaddleBoatCalliopeFrequency: () => 520,
+      resolveSteamWhistleFrequency: () => 360,
+    });
+    const hailRoofRecipe = buildProceduralSoundRecipe({
+      kind: 'hail',
+      identityVariant: 'roof',
+      profile: DEFAULT_SURFACE_PROFILE,
+      variantOffset: 0,
+      resolveAdvancementFrequency: () => 300,
+      resolveAmbientSoundFrequency: () => 172,
+      resolveInteractionFrequency: () => 128,
+      resolveInteractionWaveform: (_tileKind, fallback) => fallback,
+      resolvePaddleBoatCalliopeFrequency: () => 520,
+      resolveSteamWhistleFrequency: () => 360,
+    });
+    const hailSnowRecipe = buildProceduralSoundRecipe({
+      kind: 'hail',
+      identityVariant: 'snow',
+      profile: DEFAULT_SURFACE_PROFILE,
+      variantOffset: 0,
+      resolveAdvancementFrequency: () => 300,
+      resolveAmbientSoundFrequency: () => 172,
+      resolveInteractionFrequency: () => 128,
+      resolveInteractionWaveform: (_tileKind, fallback) => fallback,
+      resolvePaddleBoatCalliopeFrequency: () => 520,
+      resolveSteamWhistleFrequency: () => 360,
+    });
+
+    expect(flurryRecipe.id).toBe('snowstorm:flurries');
+    expect(flurryRecipe.layers?.map((layer) => layer.id)).toEqual([
+      'snowstorm-flurry-bed',
+      'snowstorm-grit',
+    ]);
+    expect(whiteoutRecipe.id).toBe('snowstorm:whiteout');
+    expect(whiteoutRecipe.layers?.map((layer) => layer.id)).toEqual([
+      'snowstorm-whiteout-bed',
+      'snowstorm-ice-shear',
+    ]);
+    expect(hailRoofRecipe.id).toBe('hail:roof');
+    expect(hailRoofRecipe.layers?.map((layer) => layer.id)).toEqual([
+      'hail-roof-bed',
+      'hail-roof-pings',
+    ]);
+    expect(hailSnowRecipe.id).toBe('hail:snow');
+    expect(hailSnowRecipe.layers?.map((layer) => layer.id)).toEqual([
+      'hail-snow-bed',
+      'hail-snow-crunch',
+    ]);
+  });
+
   it('supports time-of-day and seasonal ambient variants for plains, forest, and settlements', () => {
     const forestNightRecipe = buildProceduralSoundRecipe({
       kind: 'forest-ambience',

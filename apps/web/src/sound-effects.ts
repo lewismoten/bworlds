@@ -21,12 +21,18 @@ import {
 } from './sound-effects/recipe-library.ts';
 import { createSoundVariationSelector } from './sound-effects/variation-selector.ts';
 import {
+  isHailWeatherKind,
   isRainWeatherKind,
+  isSnowWeatherKind,
   isWindWeatherKind,
+  normalizeHailAudioIntensity,
+  normalizeSnowstormAudioIntensity,
   normalizeWindAudioIntensity,
   normalizeWeatherAudioIntensity,
+  resolveHailAudioSurface,
   resolveWindAudioSurface,
   resolveWeatherPrecipitationSurface,
+  type WeatherHailSurface,
   type WeatherPrecipitationSurface,
 } from './weather-audio.ts';
 import {
@@ -299,6 +305,8 @@ const SOUND_EFFECT_SEEDS = registerHashSeeds([
   'open',
   'close',
   'rain',
+  'hail',
+  'snowstorm',
   'wind',
   'ocean',
   'river-ambience',
@@ -461,6 +469,8 @@ export function createSoundEffectController(
   let lastCombatSignature = '';
   let lastInteractionAtMs = -Infinity;
   let lastRainAtMs = -Infinity;
+  let lastHailAtMs = -Infinity;
+  let lastSnowstormAtMs = -Infinity;
   let lastWindAtMs = -Infinity;
   let lastProgressionAtMs = -Infinity;
   const lastAmbientCueAtMsBySignature = new Map<string, number>();
@@ -852,6 +862,50 @@ export function createSoundEffectController(
             precipitationSurface
           );
         }
+        const hailIntensity = normalizeHailAudioIntensity(
+          weatherIntensity,
+          weatherKind
+        );
+        if (
+          isHailWeatherKind(weatherKind) &&
+          nowMs - lastHailAtMs >= getHailCadenceMs(hailIntensity)
+        ) {
+          const hailSurface = resolveHailAudioSurface(tileKind);
+          lastHailAtMs = nowMs;
+          play(
+            'hail',
+            nowMs,
+            tileKind,
+            emitter,
+            listener,
+            getHailSoundVolume(hailIntensity, hailSurface) *
+              ambienceDuckingGain,
+            getHailSoundDurationMs(hailIntensity),
+            hailSurface
+          );
+        }
+        const snowstormIntensity = normalizeSnowstormAudioIntensity(
+          weatherIntensity,
+          weatherKind,
+          windStrength
+        );
+        if (
+          isSnowWeatherKind(weatherKind) &&
+          snowstormIntensity >= 0.45 &&
+          nowMs - lastSnowstormAtMs >= getSnowstormCadenceMs(snowstormIntensity)
+        ) {
+          lastSnowstormAtMs = nowMs;
+          play(
+            'snowstorm',
+            nowMs,
+            tileKind,
+            emitter,
+            listener,
+            getSnowstormSoundVolume(snowstormIntensity) * ambienceDuckingGain,
+            getSnowstormSoundDurationMs(snowstormIntensity),
+            snowstormIntensity >= 0.72 ? 'whiteout' : 'flurries'
+          );
+        }
         const windAudioIntensity = normalizeWindAudioIntensity(
           windStrength,
           weatherKind
@@ -976,8 +1030,24 @@ export function getRainCadenceMs(intensity: number): number {
   return Math.round(clampValue(2600 - intensity * 1350, 900, 2600));
 }
 
+export function getHailCadenceMs(intensity: number): number {
+  return Math.round(clampValue(2200 - intensity * 1100, 760, 2200));
+}
+
+export function getSnowstormCadenceMs(intensity: number): number {
+  return Math.round(clampValue(3200 - intensity * 1200, 1400, 3200));
+}
+
 export function getRainSoundDurationMs(intensity: number): number {
   return Math.round(clampValue(1500 + intensity * 900, 1500, 2400));
+}
+
+export function getHailSoundDurationMs(intensity: number): number {
+  return Math.round(clampValue(720 + intensity * 420, 720, 1240));
+}
+
+export function getSnowstormSoundDurationMs(intensity: number): number {
+  return Math.round(clampValue(1800 + intensity * 1200, 1800, 3000));
 }
 
 export function getRainSoundVolume(
@@ -997,6 +1067,36 @@ export function getRainSoundVolume(
     default:
       return baseVolume;
   }
+}
+
+export function getHailSoundVolume(
+  intensity: number,
+  surface: WeatherHailSurface
+): number {
+  const clamped = clampValue(intensity, 0, 1);
+  const baseVolume = clampValue(0.012 + clamped * 0.014, 0.012, 0.026);
+  switch (surface) {
+    case 'roof':
+      return baseVolume * 1.1;
+    case 'rock':
+      return baseVolume * 1.06;
+    case 'wood':
+      return baseVolume * 0.96;
+    case 'water':
+      return baseVolume * 1.02;
+    case 'vegetation':
+      return baseVolume * 0.86;
+    case 'snow':
+      return baseVolume * 0.72;
+    case 'open':
+    default:
+      return baseVolume;
+  }
+}
+
+export function getSnowstormSoundVolume(intensity: number): number {
+  const clamped = clampValue(intensity, 0, 1);
+  return clampValue(0.012 + clamped * 0.014, 0.012, 0.026);
 }
 
 export function resolveAmbienceDuckingGain(

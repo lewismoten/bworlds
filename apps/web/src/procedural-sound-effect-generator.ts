@@ -9,6 +9,8 @@ export type SoundEffectKind =
   | 'open'
   | 'close'
   | 'rain'
+  | 'hail'
+  | 'snowstorm'
   | 'wind'
   | 'ocean'
   | 'river-ambience'

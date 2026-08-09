@@ -7,11 +7,17 @@ import {
   getCombatSoundVolume,
   getForestWindCadenceMs,
   getAmbientSoundDurationMs,
+  getHailCadenceMs,
+  getHailSoundDurationMs,
+  getHailSoundVolume,
   getPaddleBoatCalliopeCadenceMs,
   getPaddleBoatCalliopeDurationMs,
   getRainCadenceMs,
   getRainSoundDurationMs,
   getRainSoundVolume,
+  getSnowstormCadenceMs,
+  getSnowstormSoundDurationMs,
+  getSnowstormSoundVolume,
   getProgressionSoundDurationMs,
   normalizeSoundEffectVolume,
   resolveAmbienceDuckingGain,
@@ -3015,6 +3021,74 @@ describe('sound effects', () => {
     expect(winds[1]?.recipeId).toBe('wind:door:crossdraft');
   });
 
+  it('plays snowstorm ambience only during snowy high-wind conditions', () => {
+    const played: ProceduralSoundEffect[] = [];
+    const controller = createSoundEffectController({
+      play(effect) {
+        played.push(effect);
+      },
+    });
+
+    controller.update({
+      nowMs: 0,
+      walking: false,
+      isJumping: false,
+      viewMode: '3d',
+      tileKind: 'snow',
+      weatherKind: 'snow',
+      weatherIntensity: 0.82,
+      windStrength: 0.6,
+    });
+    controller.update({
+      nowMs: getSnowstormCadenceMs(0.8564) + 40,
+      walking: false,
+      isJumping: false,
+      viewMode: '3d',
+      tileKind: 'snow',
+      weatherKind: 'snow',
+      weatherIntensity: 0.92,
+      windStrength: 0.9,
+    });
+
+    const storms = played.filter((effect) => effect.kind === 'snowstorm');
+    expect(storms).toHaveLength(2);
+    expect(storms[0]?.recipeId).toBe('snowstorm:snow:whiteout');
+    expect(storms[1]?.recipeId).toBe('snowstorm:snow:whiteout');
+  });
+
+  it('plays hail impacts with surface-specific recipe variants', () => {
+    const played: ProceduralSoundEffect[] = [];
+    const controller = createSoundEffectController({
+      play(effect) {
+        played.push(effect);
+      },
+    });
+
+    controller.update({
+      nowMs: 0,
+      walking: false,
+      isJumping: false,
+      viewMode: '3d',
+      tileKind: 'door',
+      weatherKind: 'hail',
+      weatherIntensity: 0.2,
+    });
+    controller.update({
+      nowMs: getHailCadenceMs(0.55) + 30,
+      walking: false,
+      isJumping: false,
+      viewMode: '3d',
+      tileKind: 'shore',
+      weatherKind: 'hail',
+      weatherIntensity: 0.85,
+    });
+
+    const hails = played.filter((effect) => effect.kind === 'hail');
+    expect(hails).toHaveLength(2);
+    expect(hails[0]?.recipeId).toBe('hail:door:wood');
+    expect(hails[1]?.recipeId).toBe('hail:shore:water');
+  });
+
   it('plays debounced rain ambience with surface-aware recipe variants', () => {
     const played: ProceduralSoundEffect[] = [];
     const controller = createSoundEffectController({
@@ -3541,6 +3615,23 @@ describe('sound effects', () => {
     expect(resolveWindIdentityVariant('canopy', 'clouds')).toBe('canopy');
     expect(resolveWindIdentityVariant('canopy', 'wind')).toBe('stormfront');
     expect(resolveWindIdentityVariant('crossdraft', 'wind')).toBe('crossdraft');
+  });
+
+  it('scales hail and snowstorm helper timing and volume with weather intensity', () => {
+    expect(getHailCadenceMs(0.9)).toBeLessThan(getHailCadenceMs(0.55));
+    expect(getHailSoundDurationMs(0.9)).toBeGreaterThan(
+      getHailSoundDurationMs(0.55)
+    );
+    expect(getHailSoundVolume(0.9, 'roof')).toBeGreaterThan(
+      getHailSoundVolume(0.55, 'snow')
+    );
+    expect(getSnowstormCadenceMs(0.9)).toBeLessThan(getSnowstormCadenceMs(0.5));
+    expect(getSnowstormSoundDurationMs(0.9)).toBeGreaterThan(
+      getSnowstormSoundDurationMs(0.5)
+    );
+    expect(getSnowstormSoundVolume(0.9)).toBeGreaterThan(
+      getSnowstormSoundVolume(0.5)
+    );
   });
 
   it('plays a debounced ocean ambience cue when nearby ambient water is audible', () => {

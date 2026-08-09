@@ -1,13 +1,18 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  isHailWeatherKind,
+  isSnowWeatherKind,
   isVegetationAcousticTile,
   isWindOpeningTile,
   isWindWeatherKind,
   isInteriorAcousticTile,
   isRainWeatherKind,
+  normalizeHailAudioIntensity,
+  normalizeSnowstormAudioIntensity,
   normalizeWindAudioIntensity,
   normalizeWeatherAudioIntensity,
+  resolveHailAudioSurface,
   resolveWindAudioSurface,
   resolveWeatherPrecipitationSurface,
 } from './weather-audio.ts';
@@ -19,6 +24,8 @@ describe('weather audio', () => {
     expect(isRainWeatherKind('wind')).toBe(false);
     expect(isWindWeatherKind('wind')).toBe(true);
     expect(isWindWeatherKind('light-rain')).toBe(false);
+    expect(isSnowWeatherKind('snow')).toBe(true);
+    expect(isHailWeatherKind('hail')).toBe(true);
   });
 
   it('maps surrounding tiles into precipitation surfaces', () => {
@@ -53,5 +60,24 @@ describe('weather audio', () => {
     expect(resolveWindAudioSurface('vegetation')).toBe('canopy');
     expect(resolveWindAudioSurface('observatory')).toBe('crossdraft');
     expect(resolveWindAudioSurface('plains')).toBe('open-air');
+  });
+
+  it('maps hail-responsive tiles into material surfaces', () => {
+    expect(resolveHailAudioSurface('door')).toBe('wood');
+    expect(resolveHailAudioSurface('mountain')).toBe('rock');
+    expect(resolveHailAudioSurface('shore')).toBe('water');
+    expect(resolveHailAudioSurface('forest')).toBe('vegetation');
+    expect(resolveHailAudioSurface('snow')).toBe('snow');
+    expect(resolveHailAudioSurface('interior')).toBe('roof');
+  });
+
+  it('normalizes snowstorm and hail intensities from supported weather kinds', () => {
+    expect(normalizeSnowstormAudioIntensity(0.8, 'snow', 0.6)).toBeCloseTo(
+      0.844,
+      3
+    );
+    expect(normalizeSnowstormAudioIntensity(0.8, 'clear', 0.6)).toBe(0);
+    expect(normalizeHailAudioIntensity(0.2, 'hail')).toBe(0.55);
+    expect(normalizeHailAudioIntensity(0.8, 'clear')).toBe(0);
   });
 });

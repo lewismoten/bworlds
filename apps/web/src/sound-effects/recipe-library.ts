@@ -113,6 +113,16 @@ export const SOUND_IDENTITY_DESCRIPTORS: Record<
     signature:
       'layered rainfall with surface-specific impacts and drifting wet texture',
   },
+  hail: {
+    family: 'ambient-rain',
+    signature:
+      'hard icy impacts that change character across roofs, water, stone, and foliage',
+  },
+  snowstorm: {
+    family: 'ambient-wind',
+    signature:
+      'cold muffled storm wash with swirling snow and low whiteout movement',
+  },
   wind: {
     family: 'ambient-wind',
     signature: 'broad airy wash with low drifting noise movement',
@@ -429,6 +439,8 @@ function resolveProceduralSoundEnvelope(kind: SoundEffectKind) {
     case 'close':
       return { attackMs: 5, decayMs: 28, sustainLevel: 0.48, releaseMs: 40 };
     case 'rain':
+    case 'hail':
+    case 'snowstorm':
     case 'wind':
     case 'ocean':
     case 'river-ambience':
@@ -528,6 +540,8 @@ function resolveProceduralSoundFilters(kind: SoundEffectKind) {
     case 'ocean':
     case 'river-ambience':
     case 'rain':
+    case 'hail':
+    case 'snowstorm':
       return [
         {
           type: 'lowpass' as const,
@@ -849,6 +863,274 @@ function resolveProceduralSoundLayers(
   identityVariant?: string
 ): SoundLayerRecipe | undefined {
   switch (kind) {
+    case 'snowstorm':
+      if (identityVariant === 'whiteout') {
+        return [
+          {
+            id: 'snowstorm-whiteout-bed',
+            waveform: ['triangle', 'sine'] as const,
+            noiseColor: ['white', 'pink'] as const,
+            frequencyMultiplier: 0.68,
+            durationMultiplier: 1,
+            volumeMultiplier: 0.66,
+            frequencyVariation: 0.024,
+            durationVariation: 0.14,
+            volumeVariation: 0.08,
+            variationDepth: 0.96,
+          },
+          {
+            id: 'snowstorm-ice-shear',
+            waveform: ['sine', 'triangle'] as const,
+            noiseColor: 'white' as const,
+            frequencyMultiplier: 1.18,
+            durationMultiplier: 0.82,
+            volumeMultiplier: 0.18,
+            startOffsetMs: 34,
+            startOffsetVariation: 0.24,
+            frequencyVariation: 0.024,
+            durationVariation: 0.12,
+            volumeVariation: 0.08,
+            variationDepth: 0.76,
+          },
+        ] as const;
+      }
+      return [
+        {
+          id: 'snowstorm-flurry-bed',
+          waveform: ['triangle', 'sine'] as const,
+          noiseColor: ['white', 'pink'] as const,
+          frequencyMultiplier: 0.72,
+          durationMultiplier: 1,
+          volumeMultiplier: 0.58,
+          frequencyVariation: 0.022,
+          durationVariation: 0.12,
+          volumeVariation: 0.08,
+          variationDepth: 0.92,
+        },
+        {
+          id: 'snowstorm-grit',
+          waveform: ['triangle', 'sine'] as const,
+          noiseColor: 'white' as const,
+          frequencyMultiplier: 1.06,
+          durationMultiplier: 0.86,
+          volumeMultiplier: 0.16,
+          startOffsetMs: 44,
+          startOffsetVariation: 0.26,
+          frequencyVariation: 0.022,
+          durationVariation: 0.12,
+          volumeVariation: 0.08,
+          variationDepth: 0.72,
+        },
+      ] as const;
+    case 'hail':
+      if (identityVariant === 'roof') {
+        return [
+          {
+            id: 'hail-roof-bed',
+            waveform: ['square', 'triangle'] as const,
+            noiseColor: 'white' as const,
+            frequencyMultiplier: 1.1,
+            durationMultiplier: 0.76,
+            volumeMultiplier: 0.26,
+            frequencyVariation: 0.03,
+            durationVariation: 0.16,
+            volumeVariation: 0.1,
+            variationDepth: 0.84,
+          },
+          {
+            id: 'hail-roof-pings',
+            waveform: ['square', 'sine'] as const,
+            noiseColor: 'white' as const,
+            frequencyMultiplier: 1.56,
+            durationMultiplier: 0.46,
+            volumeMultiplier: 0.18,
+            startOffsetMs: 16,
+            startOffsetVariation: 0.18,
+            frequencyVariation: 0.04,
+            durationVariation: 0.18,
+            volumeVariation: 0.1,
+            variationDepth: 0.82,
+          },
+        ] as const;
+      }
+      if (identityVariant === 'wood') {
+        return [
+          {
+            id: 'hail-wood-bed',
+            waveform: ['triangle', 'square'] as const,
+            noiseColor: 'white' as const,
+            frequencyMultiplier: 0.98,
+            durationMultiplier: 0.8,
+            volumeMultiplier: 0.22,
+            frequencyVariation: 0.03,
+            durationVariation: 0.16,
+            volumeVariation: 0.1,
+            variationDepth: 0.82,
+          },
+          {
+            id: 'hail-wood-knocks',
+            waveform: ['square', 'triangle'] as const,
+            noiseColor: 'white' as const,
+            frequencyMultiplier: 1.36,
+            durationMultiplier: 0.5,
+            volumeMultiplier: 0.16,
+            startOffsetMs: 18,
+            startOffsetVariation: 0.2,
+            frequencyVariation: 0.04,
+            durationVariation: 0.18,
+            volumeVariation: 0.1,
+            variationDepth: 0.8,
+          },
+        ] as const;
+      }
+      if (identityVariant === 'rock') {
+        return [
+          {
+            id: 'hail-stone-bed',
+            waveform: ['square', 'triangle'] as const,
+            noiseColor: 'white' as const,
+            frequencyMultiplier: 1.16,
+            durationMultiplier: 0.72,
+            volumeMultiplier: 0.24,
+            frequencyVariation: 0.03,
+            durationVariation: 0.16,
+            volumeVariation: 0.1,
+            variationDepth: 0.84,
+          },
+          {
+            id: 'hail-stone-ticks',
+            waveform: ['square', 'sine'] as const,
+            noiseColor: 'white' as const,
+            frequencyMultiplier: 1.62,
+            durationMultiplier: 0.44,
+            volumeMultiplier: 0.18,
+            startOffsetMs: 14,
+            startOffsetVariation: 0.16,
+            frequencyVariation: 0.04,
+            durationVariation: 0.18,
+            volumeVariation: 0.1,
+            variationDepth: 0.82,
+          },
+        ] as const;
+      }
+      if (identityVariant === 'water') {
+        return [
+          {
+            id: 'hail-water-bed',
+            waveform: ['triangle', 'sine'] as const,
+            noiseColor: ['white', 'pink'] as const,
+            frequencyMultiplier: 0.9,
+            durationMultiplier: 0.84,
+            volumeMultiplier: 0.22,
+            frequencyVariation: 0.03,
+            durationVariation: 0.16,
+            volumeVariation: 0.1,
+            variationDepth: 0.82,
+          },
+          {
+            id: 'hail-water-splashes',
+            waveform: ['sine', 'triangle'] as const,
+            noiseColor: 'white' as const,
+            frequencyMultiplier: 1.28,
+            durationMultiplier: 0.56,
+            volumeMultiplier: 0.18,
+            startOffsetMs: 24,
+            startOffsetVariation: 0.2,
+            frequencyVariation: 0.04,
+            durationVariation: 0.18,
+            volumeVariation: 0.1,
+            variationDepth: 0.8,
+          },
+        ] as const;
+      }
+      if (identityVariant === 'vegetation') {
+        return [
+          {
+            id: 'hail-canopy-bed',
+            waveform: ['triangle', 'sine'] as const,
+            noiseColor: ['white', 'pink'] as const,
+            frequencyMultiplier: 0.92,
+            durationMultiplier: 0.88,
+            volumeMultiplier: 0.22,
+            frequencyVariation: 0.03,
+            durationVariation: 0.16,
+            volumeVariation: 0.1,
+            variationDepth: 0.82,
+          },
+          {
+            id: 'hail-leaf-ticks',
+            waveform: ['square', 'triangle'] as const,
+            noiseColor: 'white' as const,
+            frequencyMultiplier: 1.22,
+            durationMultiplier: 0.54,
+            volumeMultiplier: 0.16,
+            startOffsetMs: 20,
+            startOffsetVariation: 0.2,
+            frequencyVariation: 0.04,
+            durationVariation: 0.18,
+            volumeVariation: 0.1,
+            variationDepth: 0.8,
+          },
+        ] as const;
+      }
+      if (identityVariant === 'snow') {
+        return [
+          {
+            id: 'hail-snow-bed',
+            waveform: ['triangle', 'sine'] as const,
+            noiseColor: ['white', 'pink'] as const,
+            frequencyMultiplier: 0.82,
+            durationMultiplier: 0.9,
+            volumeMultiplier: 0.18,
+            frequencyVariation: 0.028,
+            durationVariation: 0.14,
+            volumeVariation: 0.08,
+            variationDepth: 0.78,
+          },
+          {
+            id: 'hail-snow-crunch',
+            waveform: ['triangle', 'square'] as const,
+            noiseColor: 'white' as const,
+            frequencyMultiplier: 1.06,
+            durationMultiplier: 0.6,
+            volumeMultiplier: 0.12,
+            startOffsetMs: 22,
+            startOffsetVariation: 0.18,
+            frequencyVariation: 0.034,
+            durationVariation: 0.16,
+            volumeVariation: 0.08,
+            variationDepth: 0.76,
+          },
+        ] as const;
+      }
+      return [
+        {
+          id: 'hail-open-bed',
+          waveform: ['triangle', 'square'] as const,
+          noiseColor: 'white' as const,
+          frequencyMultiplier: 1.02,
+          durationMultiplier: 0.78,
+          volumeMultiplier: 0.22,
+          frequencyVariation: 0.03,
+          durationVariation: 0.16,
+          volumeVariation: 0.1,
+          variationDepth: 0.82,
+        },
+        {
+          id: 'hail-open-ticks',
+          waveform: ['square', 'sine'] as const,
+          noiseColor: 'white' as const,
+          frequencyMultiplier: 1.42,
+          durationMultiplier: 0.48,
+          volumeMultiplier: 0.18,
+          startOffsetMs: 18,
+          startOffsetVariation: 0.18,
+          frequencyVariation: 0.04,
+          durationVariation: 0.18,
+          volumeVariation: 0.1,
+          variationDepth: 0.8,
+        },
+      ] as const;
     case 'wind':
       if (identityVariant === 'stormfront') {
         return [
@@ -2881,6 +3163,28 @@ function resolveBaseSoundEffectFrequency(
   switch (options.kind) {
     case 'jump':
       return options.profile.footstepFrequency + 72;
+    case 'hail':
+      return (
+        228 +
+        (options.identityVariant === 'roof'
+          ? 24
+          : options.identityVariant === 'rock'
+            ? 18
+            : options.identityVariant === 'wood'
+              ? 8
+              : options.identityVariant === 'water'
+                ? -10
+                : options.identityVariant === 'snow'
+                  ? -26
+                  : 0) +
+        options.variantOffset * 0.45
+      );
+    case 'snowstorm':
+      return (
+        168 +
+        (options.identityVariant === 'whiteout' ? -12 : 0) +
+        options.variantOffset * 0.3
+      );
     case 'rain':
       return (
         176 +
@@ -2968,6 +3272,10 @@ function resolveBaseSoundEffectDurationMs(kind: SoundEffectKind): number {
   switch (kind) {
     case 'jump':
       return 140;
+    case 'hail':
+      return 980;
+    case 'snowstorm':
+      return 2100;
     case 'rain':
       return 1900;
     case 'wind':
@@ -3015,6 +3323,10 @@ function resolveBaseSoundEffectVolume(
   switch (kind) {
     case 'jump':
       return profile.footstepVolume * 1.2;
+    case 'hail':
+      return 0.02;
+    case 'snowstorm':
+      return 0.018;
     case 'rain':
       return 0.024;
     case 'wind':
@@ -3071,6 +3383,10 @@ function resolveBaseSoundEffectWaveform(
   switch (kind) {
     case 'blocked':
       return 'sawtooth';
+    case 'hail':
+      return ['square', 'triangle'];
+    case 'snowstorm':
+      return ['triangle', 'sine'];
     case 'rain':
       return ['triangle', 'sine'];
     case 'wind':
@@ -3120,6 +3436,10 @@ function resolveBaseSoundEffectNoiseColor(
   kind: SoundEffectKind
 ): ProceduralNoiseColor | readonly ProceduralNoiseColor[] | undefined {
   switch (kind) {
+    case 'hail':
+      return ['white', 'pink'];
+    case 'snowstorm':
+      return ['white', 'pink'];
     case 'rain':
       return ['white', 'pink'];
     case 'wind':

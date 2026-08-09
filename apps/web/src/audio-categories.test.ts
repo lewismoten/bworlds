@@ -48,6 +48,8 @@ describe('audio categories', () => {
     expect(resolveSoundEffectCategory('combat-weapon')).toBe('combat');
     expect(resolveSoundEffectCategory('open')).toBe('ui');
     expect(resolveSoundEffectCategory('rain')).toBe('environment');
+    expect(resolveSoundEffectCategory('hail')).toBe('environment');
+    expect(resolveSoundEffectCategory('snowstorm')).toBe('environment');
     expect(resolveSoundEffectCategory('forest-ambience')).toBe('environment');
   });
 
