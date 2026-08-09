@@ -3,9 +3,12 @@ import {
   type CacheLike,
 } from '@bworlds/cache-support';
 import {
+  appendHashSeedPart,
   clamp,
+  createHashSeed,
   generatePoiName,
   hash2D,
+  hash2DWithSeed,
   octaveNoise2D,
   ridgedNoise2D,
   type PoiNameType,
@@ -181,6 +184,16 @@ export function createRiverControlPoints(
   cellX: number,
   cellY: number
 ): RiverControlPoint[] {
+  const seedHash = createHashSeed(seed);
+  const pointCountSeed = appendHashSeedPart(seedHash, 'river-control-point-count');
+  const startXSeed = appendHashSeedPart(seedHash, 'river-control-start-x');
+  const startYSeed = appendHashSeedPart(seedHash, 'river-control-start-y');
+  const meanderSignSeed = appendHashSeedPart(seedHash, 'river-control-meander-sign');
+  const meanderStrengthSeed = appendHashSeedPart(seedHash, 'river-control-meander-strength');
+  const meanderPhaseSeed = appendHashSeedPart(seedHash, 'river-control-meander-phase');
+  const angleSeed = appendHashSeedPart(seedHash, 'river-control-angle');
+  const distanceSeed = appendHashSeedPart(seedHash, 'river-control-distance');
+  const angleDeltaSeed = appendHashSeedPart(seedHash, 'river-control-angle-delta');
   const cellOriginX = cellX * RIVER_CONTROL_CELL_SIZE;
   const cellOriginY = cellY * RIVER_CONTROL_CELL_SIZE;
   const padding = RIVER_MAX_CONTROL_STEP + 1;
@@ -191,16 +204,16 @@ export function createRiverControlPoints(
   const pointCount =
     2 +
     Math.floor(
-      hash2D(`${seed}:river-control-point-count`, cellX, cellY) *
+      hash2DWithSeed(pointCountSeed, cellX, cellY) *
         (RIVER_MAX_CONTROL_POINTS - 1)
     );
   const startX =
     cellOriginX +
-    hash2D(`${seed}:river-control-start-x`, cellX, cellY) *
+    hash2DWithSeed(startXSeed, cellX, cellY) *
       RIVER_CONTROL_CELL_SIZE;
   const startY =
     cellOriginY +
-    hash2D(`${seed}:river-control-start-y`, cellX, cellY) *
+    hash2DWithSeed(startYSeed, cellX, cellY) *
       RIVER_CONTROL_CELL_SIZE;
   const points: RiverControlPoint[] = [
     {
@@ -209,24 +222,24 @@ export function createRiverControlPoints(
     },
   ];
   const meanderSign =
-    hash2D(`${seed}:river-control-meander-sign`, cellX, cellY) >= 0.5 ? 1 : -1;
+    hash2DWithSeed(meanderSignSeed, cellX, cellY) >= 0.5 ? 1 : -1;
   const meanderStrength =
     0.24 +
-    hash2D(`${seed}:river-control-meander-strength`, cellX, cellY) * 0.42;
+    hash2DWithSeed(meanderStrengthSeed, cellX, cellY) * 0.42;
   const meanderPhase =
-    hash2D(`${seed}:river-control-meander-phase`, cellX, cellY) * Math.PI * 2;
+    hash2DWithSeed(meanderPhaseSeed, cellX, cellY) * Math.PI * 2;
   let previousAngle =
-    hash2D(`${seed}:river-control-angle`, cellX, cellY) * Math.PI * 2;
+    hash2DWithSeed(angleSeed, cellX, cellY) * Math.PI * 2;
 
   for (let index = 1; index < pointCount; index += 1) {
     const distance =
       RIVER_MIN_CONTROL_STEP +
       Math.floor(
-        hash2D(`${seed}:river-control-distance:${index}`, cellX, cellY) *
+        hash2DWithSeed(appendHashSeedPart(distanceSeed, index), cellX, cellY) *
           (RIVER_MAX_CONTROL_STEP - RIVER_MIN_CONTROL_STEP + 1)
       );
     const rawAngleDelta =
-      (hash2D(`${seed}:river-control-angle-delta:${index}`, cellX, cellY) - 0.5) *
+      (hash2DWithSeed(appendHashSeedPart(angleDeltaSeed, index), cellX, cellY) - 0.5) *
       (Math.PI * 0.92);
     const meanderDelta =
       Math.sin(index * 1.15 + meanderPhase) *
@@ -344,11 +357,19 @@ export function createRiverForkPath(
   cellY: number,
   controlPoints: RiverControlPoint[]
 ): RiverForkPath | null {
+  const seedHash = createHashSeed(seed);
+  const chanceSeed = appendHashSeedPart(seedHash, 'river-fork-chance');
+  const trunkStartSeed = appendHashSeedPart(seedHash, 'river-fork-trunk-start');
+  const trunkSpanSeed = appendHashSeedPart(seedHash, 'river-fork-trunk-span');
+  const angleSignSeed = appendHashSeedPart(seedHash, 'river-fork-angle-sign');
+  const angleDeltaSeed = appendHashSeedPart(seedHash, 'river-fork-angle-delta');
+  const pointCountSeed = appendHashSeedPart(seedHash, 'river-fork-point-count');
+  const midSwaySeed = appendHashSeedPart(seedHash, 'river-fork-mid-sway');
   if (controlPoints.length < 4) {
     return null;
   }
   if (
-    hash2D(`${seed}:river-fork-chance`, cellX, cellY) <
+    hash2DWithSeed(chanceSeed, cellX, cellY) <
     RIVER_FORK_CHANCE_THRESHOLD
   ) {
     return null;
@@ -357,7 +378,7 @@ export function createRiverForkPath(
   const trunkStartIndex =
     1 +
     Math.floor(
-      hash2D(`${seed}:river-fork-trunk-start`, cellX, cellY) *
+      hash2DWithSeed(trunkStartSeed, cellX, cellY) *
         Math.max(1, controlPoints.length - 3)
     );
   const maxAdditionalSpan = Math.max(
@@ -369,7 +390,7 @@ export function createRiverForkPath(
     trunkStartIndex +
       2 +
       Math.floor(
-        hash2D(`${seed}:river-fork-trunk-span`, cellX, cellY) *
+        hash2DWithSeed(trunkSpanSeed, cellX, cellY) *
           (maxAdditionalSpan + 1)
       )
   );
@@ -377,17 +398,17 @@ export function createRiverForkPath(
   const merge = controlPoints[trunkEndIndex];
   const baseAngle = Math.atan2(merge.y - pivot.y, merge.x - pivot.x);
   const angleSign =
-    hash2D(`${seed}:river-fork-angle-sign`, cellX, cellY) >= 0.5 ? 1 : -1;
+    hash2DWithSeed(angleSignSeed, cellX, cellY) >= 0.5 ? 1 : -1;
   const angleDelta =
     (0.25 +
-      hash2D(`${seed}:river-fork-angle-delta`, cellX, cellY) * 0.75) *
+      hash2DWithSeed(angleDeltaSeed, cellX, cellY) * 0.75) *
     RIVER_FORK_MAX_ANGLE_DELTA *
     angleSign;
   const branchAngle = baseAngle + angleDelta;
   const branchStepCount =
     2 +
     Math.floor(
-      hash2D(`${seed}:river-fork-point-count`, cellX, cellY) *
+      hash2DWithSeed(pointCountSeed, cellX, cellY) *
         Math.max(1, RIVER_FORK_MAX_POINTS - RIVER_FORK_MIN_POINTS)
     );
   const points: RiverControlPoint[] = [pivot];
@@ -447,7 +468,7 @@ export function createRiverForkPath(
     if (branchStepCount > 3) {
       const midT = 0.5;
       const swayDistance =
-        (hash2D(`${seed}:river-fork-mid-sway`, cellX, cellY) - 0.5) *
+        (hash2DWithSeed(midSwaySeed, cellX, cellY) - 0.5) *
         trunkDistance *
         0.18;
       points.push({
@@ -637,7 +658,11 @@ export function getOverworldPlacementChance(
   x: number,
   y: number
 ) {
-  return hash2D(`${seed}:${chanceKey}`, x, y);
+  return hash2DWithSeed(
+    appendHashSeedPart(createHashSeed(seed), chanceKey),
+    x,
+    y
+  );
 }
 
 export function createCachedOverworldTileResolver(
@@ -741,6 +766,10 @@ export function createOverworldCellAnchorCandidate<
   cellY: number,
   spec: OverworldCellAnchorSpec<TAnchor>
 ): OverworldCellAnchorCandidate<TAnchor> {
+  const seedHash = createHashSeed(seed);
+  const chanceSeed = appendHashSeedPart(seedHash, spec.chanceKey);
+  const offsetXSeed = appendHashSeedPart(seedHash, spec.offsetXKey);
+  const offsetYSeed = appendHashSeedPart(seedHash, spec.offsetYKey);
   const centerX = cellX * spec.cellSize;
   const centerY = cellY * spec.cellSize;
   const offsetScale = spec.offsetScale ?? 0.34;
@@ -749,17 +778,17 @@ export function createOverworldCellAnchorCandidate<
     spec,
     cellX,
     cellY,
-    chance: hash2D(`${seed}:${spec.chanceKey}`, cellX, cellY),
+    chance: hash2DWithSeed(chanceSeed, cellX, cellY),
     x:
       centerX +
       Math.round(
-        (hash2D(`${seed}:${spec.offsetXKey}`, cellX, cellY) - 0.5) *
+        (hash2DWithSeed(offsetXSeed, cellX, cellY) - 0.5) *
           (spec.cellSize * offsetScale)
       ),
     y:
       centerY +
       Math.round(
-        (hash2D(`${seed}:${spec.offsetYKey}`, cellX, cellY) - 0.5) *
+        (hash2DWithSeed(offsetYSeed, cellX, cellY) - 0.5) *
           (spec.cellSize * offsetScale)
       ),
   };

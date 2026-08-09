@@ -1549,7 +1549,22 @@ export function getOrbitalSkyPosition({
 }
 
 export function hash2D(seed: string | number, x: number, y: number): number {
-  let hash = getCachedHashSeed(seed);
+  return hash2DWithSeed(getCachedHashSeed(seed), x, y);
+}
+
+export function createHashSeed(seed: string | number): number {
+  return getCachedHashSeed(seed);
+}
+
+export function appendHashSeedPart(
+  seedHash: number,
+  value: string | number
+): number {
+  return mixHashString(mixHashCharacter(seedHash, 58), value);
+}
+
+export function hash2DWithSeed(seedHash: number, x: number, y: number): number {
+  let hash = seedHash;
   hash = mixHashCharacter(hash, 58);
   hash = mixHashString(hash, x);
   hash = mixHashCharacter(hash, 58);

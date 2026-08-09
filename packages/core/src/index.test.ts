@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import {
+  appendHashSeedPart,
   applyCelestialEnvironmentOverrides,
   advanceWorldTimeOffsetByHours,
   advanceWorldTimeOffsetBySeasons,
   alignWorldTimeOffsetToDayProgress,
   cardinalFromAngle,
+  createHashSeed,
   createPlayer,
   createWorldState,
   DEFAULT_DAY_LENGTH_MS,
@@ -23,6 +25,7 @@ import {
   getWorldDaylightCycle,
   getWorldTimeMs,
   hash2D,
+  hash2DWithSeed,
   toGps,
   WORLD_TILES_WIDE,
 } from './index.ts';
@@ -31,6 +34,21 @@ describe('core utilities', () => {
   it('returns deterministic hashes', () => {
     expect(hash2D('seed', 4, 9)).toBe(hash2D('seed', 4, 9));
     expect(hash2D('seed', 4, 9)).not.toBe(hash2D('seed', 4, 10));
+  });
+
+  it('keeps prehashed seed paths equivalent to string-based hash lookups', () => {
+    const seededHash = appendHashSeedPart(createHashSeed('seed'), 'river-control');
+
+    expect(hash2DWithSeed(seededHash, 4, 9)).toBe(
+      hash2D('seed:river-control', 4, 9)
+    );
+    expect(
+      hash2DWithSeed(
+        appendHashSeedPart(seededHash, 'angle-delta'),
+        -12,
+        7
+      )
+    ).toBe(hash2D('seed:river-control:angle-delta', -12, 7));
   });
 
   it('maps world coordinates to GPS coordinates', () => {
