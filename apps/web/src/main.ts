@@ -189,7 +189,7 @@ import {
   createWebAudioMusicSink,
   resolvePoiMusicMix,
 } from './procedural-music.ts';
-import { createMusicUpdatePayloadBuilder } from './music-update-payload.ts';
+import { createMusicUpdateGate } from './music-update-gate.ts';
 import { createDebouncedPersistence } from './debounced-persistence.ts';
 import { createBoundedCache } from './bounded-cache.ts';
 import { getPlayerSpatialSummary } from './player-spatial-summary.ts';
@@ -1042,7 +1042,7 @@ const musicController = createEnabledMusicController(
   createMusicController(createWebAudioMusicSink()),
   () => audioPreferenceState.musicEnabled
 );
-const buildMusicUpdatePayload = createMusicUpdatePayloadBuilder();
+const gateMusicUpdate = createMusicUpdateGate();
 const sessionPersistence = createDebouncedPersistence(flushSessionSave);
 const celestialPreview = createCelestialPreviewRenderer(celestialPreviewHost, {
   onRenderRequested: () => requestRender(),
@@ -2832,7 +2832,7 @@ function render(): FrameLoopActivityLike {
   const musicClusterX = Math.floor(spatial.playerX / 12);
   const musicClusterY = Math.floor(spatial.playerY / 12);
   const nearbyPoiMusic = getNearbyPoiMusicProfile();
-  musicController.update(buildMusicUpdatePayload({
+  const musicUpdate = gateMusicUpdate({
     nowMs,
     tileKind: currentTile.kind,
     contextType: context.type,
@@ -2847,7 +2847,10 @@ function render(): FrameLoopActivityLike {
     listenerX: spatial.playerX,
     listenerY: spatial.playerY,
     nearbyPoi: nearbyPoiMusic,
-  }));
+  });
+  if (musicUpdate) {
+    musicController.update(musicUpdate);
+  }
   if (state.viewMode === '2d') {
     const context = viewport2d?.getContext('2d');
     if (!context) return;

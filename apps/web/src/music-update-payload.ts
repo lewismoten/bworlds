@@ -3,7 +3,12 @@ import type {
   NearbyPoiMusicLike,
 } from './procedural-music.ts';
 
-type MusicUpdatePayloadInput = {
+type MusicUpdateSignatureState = {
+  ambient: string;
+  poi: string;
+};
+
+export type MusicUpdatePayloadInput = {
   nowMs: number;
   tileKind?: MusicUpdateOptions['tileKind'];
   contextType?: MusicUpdateOptions['contextType'];
@@ -84,4 +89,50 @@ export function createMusicUpdatePayloadBuilder(): (
     payload.nearbyPoi = nearbyPoiPayload;
     return payload;
   };
+}
+
+export function getMusicUpdateInputSignature(
+  input: Pick<
+    MusicUpdatePayloadInput,
+    | 'tileKind'
+    | 'contextType'
+    | 'weatherKind'
+    | 'weatherIntensity'
+    | 'dayProgress'
+    | 'yearProgress'
+    | 'clusterX'
+    | 'clusterY'
+    | 'nearbyPoi'
+  >
+): MusicUpdateSignatureState {
+  return {
+    ambient: [
+      input.tileKind ?? '',
+      input.contextType ?? '',
+      Math.round(input.dayProgress * 96),
+      Math.round((input.yearProgress ?? 0) * 96),
+      input.weatherKind ?? '',
+      Math.round((input.weatherIntensity ?? 0) * 10),
+      input.clusterX ?? 0,
+      input.clusterY ?? 0,
+    ].join('|'),
+    poi: input.nearbyPoi
+      ? [
+          input.nearbyPoi.tileKind ?? '',
+          input.nearbyPoi.contextType ?? '',
+          input.nearbyPoi.poiType ?? '',
+          Math.round(input.dayProgress * 96),
+          Math.round((input.yearProgress ?? 0) * 96),
+          input.weatherKind ?? '',
+          Math.round((input.weatherIntensity ?? 0) * 10),
+          input.nearbyPoi.clusterX ?? 0,
+          input.nearbyPoi.clusterY ?? 0,
+          Math.round(clamp(input.nearbyPoi.mix ?? 0, 0, 1) * 100),
+        ].join('|')
+      : '',
+  };
+}
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, value));
 }
