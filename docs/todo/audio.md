@@ -162,13 +162,13 @@
 - [x] Generate ambient soundscapes based on biome.
 - [x] Give forests characteristic birds, insects, leaves, branches, and distant wildlife.
 - [ ] Give deserts wind, sand, insects, and sparse wildlife.
-- [ ] Give mountains stronger winds, echoes, rock movement, and distant animals.
+- [x] Give mountains stronger winds, echoes, rock movement, and distant animals.
 - [ ] Give swamps insects, frogs, water movement, bubbles, and birds.
 - [x] Give coastal areas waves, wind, seabirds, and shoreline movement.
 - [ ] Give plains grass movement, insects, birds, and distant animals.
 - [ ] Give snowy regions wind, snow movement, cracking ice, and muffled ambience.
 - [ ] Give volcanic areas rumbling, cracking stone, steam, and lava activity.
-- [ ] Give caves dripping water, distant movement, echoes, rock sounds, and underground wind.
+- [x] Give caves dripping water, distant movement, echoes, rock sounds, and underground wind.
 - [ ] Give magical environments their own unnatural ambient layers.
 - [ ] Generate ambient density based on how biologically active an area should be.
 - [ ] Vary ambient sounds according to altitude.

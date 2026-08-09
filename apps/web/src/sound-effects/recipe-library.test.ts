@@ -206,6 +206,44 @@ describe('sound recipe library', () => {
     );
   });
 
+  it('supports mountain and cave ambience variants with dedicated layer sets', () => {
+    const mountainRecipe = buildProceduralSoundRecipe({
+      kind: 'mountain-ambience',
+      identityVariant: 'stone',
+      profile: DEFAULT_SURFACE_PROFILE,
+      variantOffset: 4,
+      resolveAdvancementFrequency: () => 300,
+      resolveAmbientSoundFrequency: () => 172,
+      resolveInteractionFrequency: () => 128,
+      resolveInteractionWaveform: (_tileKind, fallback) => fallback,
+      resolvePaddleBoatCalliopeFrequency: () => 520,
+      resolveSteamWhistleFrequency: () => 360,
+    });
+    const caveRecipe = buildProceduralSoundRecipe({
+      kind: 'cave-ambience',
+      identityVariant: 'underground-wind',
+      profile: DEFAULT_SURFACE_PROFILE,
+      variantOffset: -2,
+      resolveAdvancementFrequency: () => 300,
+      resolveAmbientSoundFrequency: () => 172,
+      resolveInteractionFrequency: () => 128,
+      resolveInteractionWaveform: (_tileKind, fallback) => fallback,
+      resolvePaddleBoatCalliopeFrequency: () => 520,
+      resolveSteamWhistleFrequency: () => 360,
+    });
+
+    expect(mountainRecipe.id).toBe('mountain-ambience:stone');
+    expect(mountainRecipe.layers?.map((layer) => layer.id)).toEqual([
+      'mountain-rumble-bed',
+      'mountain-rock-shift',
+    ]);
+    expect(caveRecipe.id).toBe('cave-ambience:underground-wind');
+    expect(caveRecipe.layers?.map((layer) => layer.id)).toEqual([
+      'cave-wind-bed',
+      'cave-whistle-edge',
+    ]);
+  });
+
   it('lets related movement sounds inherit the same family identity while keeping different signatures', () => {
     expect(getSoundIdentityDescriptor('footstep').family).toBe('movement');
     expect(getSoundIdentityDescriptor('jump').family).toBe('movement');

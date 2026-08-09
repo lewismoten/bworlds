@@ -22,8 +22,8 @@ const AMBIENT_IDENTITY_VARIANTS: Record<NearbyAmbientKind, readonly string[]> =
     river: [],
     forest: ['canopy', 'insects', 'branches', 'wildlife'],
     plains: [],
-    mountain: [],
-    cave: [],
+    mountain: ['gusts', 'stone', 'highland-birds'],
+    cave: ['drips', 'echo', 'underground-wind'],
     settlement: [],
     ruins: [],
   };

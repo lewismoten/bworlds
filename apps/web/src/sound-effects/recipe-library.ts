@@ -1008,7 +1008,191 @@ function resolveProceduralSoundLayers(
           ] as const,
         },
       ] as const;
+    case 'mountain-ambience':
+      if (identityVariant === 'highland-birds') {
+        return [
+          {
+            id: 'mountain-bird-calls',
+            waveform: ['sine', 'triangle'] as const,
+            noiseColor: 'white' as const,
+            frequencyMultiplier: 1.54,
+            durationMultiplier: 0.68,
+            volumeMultiplier: 0.16,
+            frequencyVariation: 0.034,
+            durationVariation: 0.16,
+            volumeVariation: 0.08,
+            variationDepth: 0.86,
+            vibrato: {
+              rateHz: 5.8,
+              depth: 0.05,
+              waveform: ['sine', 'triangle'] as const,
+              rateVariation: 0.05,
+              depthVariation: 0.05,
+            },
+          },
+          {
+            id: 'mountain-air-bed',
+            waveform: ['triangle', 'sawtooth'] as const,
+            noiseColor: ['white', 'brown'] as const,
+            frequencyMultiplier: 0.78,
+            durationMultiplier: 1,
+            volumeMultiplier: 0.48,
+            startOffsetMs: 36,
+            startOffsetVariation: 0.24,
+            frequencyVariation: 0.02,
+            durationVariation: 0.14,
+            volumeVariation: 0.08,
+            variationDepth: 0.82,
+          },
+        ] as const;
+      }
+      if (identityVariant === 'stone') {
+        return [
+          {
+            id: 'mountain-rumble-bed',
+            waveform: ['sawtooth', 'triangle'] as const,
+            noiseColor: ['brown', 'white'] as const,
+            frequencyMultiplier: 0.74,
+            durationMultiplier: 1,
+            volumeMultiplier: 0.52,
+            frequencyVariation: 0.024,
+            durationVariation: 0.16,
+            volumeVariation: 0.08,
+            variationDepth: 0.88,
+          },
+          {
+            id: 'mountain-rock-shift',
+            waveform: ['square', 'triangle'] as const,
+            noiseColor: 'white' as const,
+            frequencyMultiplier: 1.08,
+            durationMultiplier: 0.72,
+            volumeMultiplier: 0.18,
+            startOffsetMs: 68,
+            startOffsetVariation: 0.26,
+            frequencyVariation: 0.03,
+            durationVariation: 0.18,
+            volumeVariation: 0.1,
+            variationDepth: 0.84,
+            delay: {
+              timeMs: 92,
+              feedback: 0.16,
+              mix: 0.12,
+              timeVariation: 0.05,
+              feedbackVariation: 0.06,
+              mixVariation: 0.08,
+            },
+          },
+        ] as const;
+      }
+      return [
+        {
+          id: 'mountain-wind-bed',
+          waveform: ['triangle', 'sawtooth'] as const,
+          noiseColor: ['white', 'brown'] as const,
+          frequencyMultiplier: 0.76,
+          durationMultiplier: 1,
+          volumeMultiplier: 0.54,
+          frequencyVariation: 0.024,
+          durationVariation: 0.16,
+          volumeVariation: 0.08,
+          variationDepth: 0.92,
+        },
+        {
+          id: 'mountain-ridge-echo',
+          waveform: ['sine', 'triangle'] as const,
+          frequencyMultiplier: 1.12,
+          durationMultiplier: 0.84,
+          volumeMultiplier: 0.16,
+          startOffsetMs: 52,
+          startOffsetVariation: 0.24,
+          frequencyVariation: 0.03,
+          durationVariation: 0.14,
+          volumeVariation: 0.08,
+          variationDepth: 0.8,
+          delay: {
+            timeMs: 108,
+            feedback: 0.2,
+            mix: 0.14,
+            timeVariation: 0.05,
+            feedbackVariation: 0.06,
+            mixVariation: 0.08,
+          },
+        },
+      ] as const;
     case 'cave-ambience':
+      if (identityVariant === 'drips') {
+        return [
+          {
+            id: 'cave-drip-bed',
+            waveform: ['sine', 'triangle'] as const,
+            noiseColor: 'brown' as const,
+            frequencyMultiplier: 0.72,
+            durationMultiplier: 1,
+            volumeMultiplier: 0.46,
+            frequencyVariation: 0.018,
+            durationVariation: 0.1,
+            volumeVariation: 0.06,
+            variationDepth: 0.84,
+          },
+          {
+            id: 'cave-drip-strike',
+            waveform: ['triangle', 'sine'] as const,
+            frequencyMultiplier: 1.74,
+            durationMultiplier: 0.48,
+            volumeMultiplier: 0.15,
+            startOffsetMs: 96,
+            startOffsetVariation: 0.38,
+            frequencyVariation: 0.028,
+            durationVariation: 0.16,
+            volumeVariation: 0.1,
+            variationDepth: 0.78,
+            delay: {
+              timeMs: 136,
+              feedback: 0.24,
+              mix: 0.18,
+              timeVariation: 0.06,
+              feedbackVariation: 0.07,
+              mixVariation: 0.08,
+            },
+          },
+        ] as const;
+      }
+      if (identityVariant === 'underground-wind') {
+        return [
+          {
+            id: 'cave-wind-bed',
+            waveform: ['triangle', 'sine'] as const,
+            noiseColor: ['brown', 'pink'] as const,
+            frequencyMultiplier: 0.7,
+            durationMultiplier: 1,
+            volumeMultiplier: 0.5,
+            frequencyVariation: 0.02,
+            durationVariation: 0.12,
+            volumeVariation: 0.06,
+            variationDepth: 0.88,
+          },
+          {
+            id: 'cave-whistle-edge',
+            waveform: ['sine', 'triangle'] as const,
+            frequencyMultiplier: 1.26,
+            durationMultiplier: 0.82,
+            volumeMultiplier: 0.14,
+            startOffsetMs: 44,
+            startOffsetVariation: 0.28,
+            frequencyVariation: 0.024,
+            durationVariation: 0.12,
+            volumeVariation: 0.08,
+            variationDepth: 0.76,
+            tremolo: {
+              rateHz: 4.6,
+              depth: 0.14,
+              waveform: ['sine', 'triangle'] as const,
+              rateVariation: 0.05,
+              depthVariation: 0.05,
+            },
+          },
+        ] as const;
+      }
       return [
         {
           id: 'cave-hollow-bed',
