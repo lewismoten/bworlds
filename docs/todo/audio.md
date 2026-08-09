@@ -199,10 +199,10 @@
 - [x] Generate rain impacts on roofs separately from open-air rain.
 - [x] Generate rain impacts on leaves.
 - [x] Generate rain impacts on water.
-- [ ] Generate procedural thunder.
-- [ ] Calculate thunder delay from lightning distance.
-- [ ] Change thunder characteristics according to storm distance.
-- [ ] Generate multiple thunder components such as initial crack, rumble, and distant reflections.
+- [x] Generate procedural thunder.
+- [x] Calculate thunder delay from lightning distance.
+- [x] Change thunder characteristics according to storm distance.
+- [x] Generate multiple thunder components such as initial crack, rumble, and distant reflections.
 - [x] Generate wind intensity from actual weather conditions.
 - [x] Make trees and vegetation respond audibly to wind intensity.
 - [x] Generate wind whistling around buildings and openings.

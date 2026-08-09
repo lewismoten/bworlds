@@ -18,6 +18,9 @@ import {
   getSnowstormCadenceMs,
   getSnowstormSoundDurationMs,
   getSnowstormSoundVolume,
+  getThunderCadenceMs,
+  getThunderSoundDurationMs,
+  getThunderSoundVolume,
   getProgressionSoundDurationMs,
   normalizeSoundEffectVolume,
   resolveAmbienceDuckingGain,
@@ -3056,6 +3059,44 @@ describe('sound effects', () => {
     expect(storms[1]?.recipeId).toBe('snowstorm:snow:whiteout');
   });
 
+  it('plays delayed thunder with storm-distance recipe variants during convective storms', () => {
+    const played: ProceduralSoundEffect[] = [];
+    const controller = createSoundEffectController({
+      play(effect) {
+        played.push(effect);
+      },
+    });
+
+    controller.update({
+      nowMs: 0,
+      walking: false,
+      isJumping: false,
+      viewMode: '3d',
+      tileKind: 'plains',
+      weatherKind: 'heavy-rain',
+      weatherIntensity: 0.95,
+      windStrength: 0.7,
+    });
+    controller.update({
+      nowMs: getThunderCadenceMs(0.62) + 60,
+      walking: false,
+      isJumping: false,
+      viewMode: '3d',
+      tileKind: 'plains',
+      weatherKind: 'hail',
+      weatherIntensity: 0.4,
+      windStrength: 0.3,
+    });
+
+    const thunder = played.filter((effect) => effect.kind === 'thunder');
+    expect(thunder).toHaveLength(2);
+    expect(thunder[0]?.startOffsetMs).toBeGreaterThan(0);
+    expect(thunder[1]?.startOffsetMs).toBeGreaterThan(
+      thunder[0]?.startOffsetMs ?? 0
+    );
+    expect(thunder[0]?.recipeId).toMatch(/^thunder:plains:/);
+  });
+
   it('plays hail impacts with surface-specific recipe variants', () => {
     const played: ProceduralSoundEffect[] = [];
     const controller = createSoundEffectController({
@@ -3125,9 +3166,10 @@ describe('sound effects', () => {
       weatherIntensity: 0.85,
     });
 
-    expect(played.map((effect) => effect.kind)).toEqual(['rain', 'rain']);
-    expect(played[0]?.recipeId).toBe('rain:forest:leaves');
-    expect(played[1]?.recipeId).toBe('rain:shore:water');
+    const rains = played.filter((effect) => effect.kind === 'rain');
+    expect(rains).toHaveLength(2);
+    expect(rains[0]?.recipeId).toBe('rain:forest:leaves');
+    expect(rains[1]?.recipeId).toBe('rain:shore:water');
   });
 
   it('makes interior weather quieter while letting opening tiles leak more of it through', () => {
@@ -3731,6 +3773,13 @@ describe('sound effects', () => {
     );
     expect(getSnowstormSoundVolume(0.9)).toBeGreaterThan(
       getSnowstormSoundVolume(0.5)
+    );
+    expect(getThunderCadenceMs(0.9)).toBeLessThan(getThunderCadenceMs(0.5));
+    expect(getThunderSoundDurationMs(0.9, 'distant')).toBeGreaterThan(
+      getThunderSoundDurationMs(0.5, 'near')
+    );
+    expect(getThunderSoundVolume(0.9, 'overhead')).toBeGreaterThan(
+      getThunderSoundVolume(0.5, 'distant')
     );
   });
 

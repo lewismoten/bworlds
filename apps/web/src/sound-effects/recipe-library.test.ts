@@ -426,6 +426,45 @@ describe('sound recipe library', () => {
     ]);
   });
 
+  it('supports thunder variants with crack, rumble, and reflection layers', () => {
+    const overheadRecipe = buildProceduralSoundRecipe({
+      kind: 'thunder',
+      identityVariant: 'overhead',
+      profile: DEFAULT_SURFACE_PROFILE,
+      variantOffset: 0,
+      resolveAdvancementFrequency: () => 300,
+      resolveAmbientSoundFrequency: () => 172,
+      resolveInteractionFrequency: () => 128,
+      resolveInteractionWaveform: (_tileKind, fallback) => fallback,
+      resolvePaddleBoatCalliopeFrequency: () => 520,
+      resolveSteamWhistleFrequency: () => 360,
+    });
+    const distantRecipe = buildProceduralSoundRecipe({
+      kind: 'thunder',
+      identityVariant: 'distant',
+      profile: DEFAULT_SURFACE_PROFILE,
+      variantOffset: 0,
+      resolveAdvancementFrequency: () => 300,
+      resolveAmbientSoundFrequency: () => 172,
+      resolveInteractionFrequency: () => 128,
+      resolveInteractionWaveform: (_tileKind, fallback) => fallback,
+      resolvePaddleBoatCalliopeFrequency: () => 520,
+      resolveSteamWhistleFrequency: () => 360,
+    });
+
+    expect(overheadRecipe.id).toBe('thunder:overhead');
+    expect(overheadRecipe.layers?.map((layer) => layer.id)).toEqual([
+      'thunder-overhead-crack',
+      'thunder-overhead-rumble',
+      'thunder-overhead-reflections',
+    ]);
+    expect(distantRecipe.id).toBe('thunder:distant');
+    expect(distantRecipe.layers?.map((layer) => layer.id)).toEqual([
+      'thunder-distant-rumble',
+      'thunder-distant-reflections',
+    ]);
+  });
+
   it('supports time-of-day and seasonal ambient variants for plains, forest, and settlements', () => {
     const forestNightRecipe = buildProceduralSoundRecipe({
       kind: 'forest-ambience',

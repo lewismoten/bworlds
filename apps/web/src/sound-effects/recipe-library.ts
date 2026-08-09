@@ -108,6 +108,11 @@ export const SOUND_IDENTITY_DESCRIPTORS: Record<
     family: 'interaction',
     signature: 'brief mechanical or wooden closing gesture',
   },
+  thunder: {
+    family: 'ambient-wind',
+    signature:
+      'layered storm thunder with lightning crack, rolling rumble, and distant reflections',
+  },
   rain: {
     family: 'ambient-rain',
     signature:
@@ -920,6 +925,123 @@ function resolveProceduralSoundLayers(
           durationVariation: 0.12,
           volumeVariation: 0.08,
           variationDepth: 0.72,
+        },
+      ] as const;
+    case 'thunder':
+      if (identityVariant === 'overhead') {
+        return [
+          {
+            id: 'thunder-overhead-crack',
+            waveform: ['sawtooth', 'square'] as const,
+            noiseColor: 'white' as const,
+            frequencyMultiplier: 1.56,
+            durationMultiplier: 0.22,
+            volumeMultiplier: 0.3,
+            frequencyVariation: 0.03,
+            durationVariation: 0.08,
+            volumeVariation: 0.08,
+            variationDepth: 0.72,
+          },
+          {
+            id: 'thunder-overhead-rumble',
+            waveform: ['triangle', 'sine'] as const,
+            noiseColor: 'brown' as const,
+            frequencyMultiplier: 0.54,
+            durationMultiplier: 1,
+            volumeMultiplier: 0.66,
+            startOffsetMs: 90,
+            startOffsetVariation: 0.1,
+            frequencyVariation: 0.024,
+            durationVariation: 0.14,
+            volumeVariation: 0.06,
+            variationDepth: 0.84,
+          },
+          {
+            id: 'thunder-overhead-reflections',
+            waveform: ['sine', 'triangle'] as const,
+            noiseColor: 'brown' as const,
+            frequencyMultiplier: 0.38,
+            durationMultiplier: 0.72,
+            volumeMultiplier: 0.18,
+            startOffsetMs: 360,
+            startOffsetVariation: 0.12,
+            frequencyVariation: 0.02,
+            durationVariation: 0.12,
+            volumeVariation: 0.06,
+            variationDepth: 0.7,
+          },
+        ] as const;
+      }
+      if (identityVariant === 'near') {
+        return [
+          {
+            id: 'thunder-near-crack',
+            waveform: ['square', 'sawtooth'] as const,
+            noiseColor: 'white' as const,
+            frequencyMultiplier: 1.3,
+            durationMultiplier: 0.18,
+            volumeMultiplier: 0.18,
+            frequencyVariation: 0.03,
+            durationVariation: 0.06,
+            volumeVariation: 0.08,
+            variationDepth: 0.68,
+          },
+          {
+            id: 'thunder-near-rumble',
+            waveform: ['triangle', 'sine'] as const,
+            noiseColor: 'brown' as const,
+            frequencyMultiplier: 0.58,
+            durationMultiplier: 1,
+            volumeMultiplier: 0.62,
+            startOffsetMs: 120,
+            startOffsetVariation: 0.14,
+            frequencyVariation: 0.022,
+            durationVariation: 0.14,
+            volumeVariation: 0.06,
+            variationDepth: 0.82,
+          },
+          {
+            id: 'thunder-near-reflections',
+            waveform: ['sine', 'triangle'] as const,
+            noiseColor: 'brown' as const,
+            frequencyMultiplier: 0.34,
+            durationMultiplier: 0.78,
+            volumeMultiplier: 0.16,
+            startOffsetMs: 440,
+            startOffsetVariation: 0.16,
+            frequencyVariation: 0.02,
+            durationVariation: 0.12,
+            volumeVariation: 0.06,
+            variationDepth: 0.7,
+          },
+        ] as const;
+      }
+      return [
+        {
+          id: 'thunder-distant-rumble',
+          waveform: ['triangle', 'sine'] as const,
+          noiseColor: 'brown' as const,
+          frequencyMultiplier: 0.46,
+          durationMultiplier: 1,
+          volumeMultiplier: 0.58,
+          frequencyVariation: 0.02,
+          durationVariation: 0.14,
+          volumeVariation: 0.06,
+          variationDepth: 0.8,
+        },
+        {
+          id: 'thunder-distant-reflections',
+          waveform: ['sine', 'triangle'] as const,
+          noiseColor: 'brown' as const,
+          frequencyMultiplier: 0.28,
+          durationMultiplier: 0.84,
+          volumeMultiplier: 0.2,
+          startOffsetMs: 520,
+          startOffsetVariation: 0.2,
+          frequencyVariation: 0.018,
+          durationVariation: 0.12,
+          volumeVariation: 0.06,
+          variationDepth: 0.68,
         },
       ] as const;
     case 'hail':
@@ -3163,6 +3285,16 @@ function resolveBaseSoundEffectFrequency(
   switch (options.kind) {
     case 'jump':
       return options.profile.footstepFrequency + 72;
+    case 'thunder':
+      return (
+        114 +
+        (options.identityVariant === 'overhead'
+          ? 34
+          : options.identityVariant === 'near'
+            ? 10
+            : -20) +
+        options.variantOffset * 0.32
+      );
     case 'hail':
       return (
         228 +
@@ -3272,6 +3404,8 @@ function resolveBaseSoundEffectDurationMs(kind: SoundEffectKind): number {
   switch (kind) {
     case 'jump':
       return 140;
+    case 'thunder':
+      return 2600;
     case 'hail':
       return 980;
     case 'snowstorm':
@@ -3323,6 +3457,8 @@ function resolveBaseSoundEffectVolume(
   switch (kind) {
     case 'jump':
       return profile.footstepVolume * 1.2;
+    case 'thunder':
+      return 0.03;
     case 'hail':
       return 0.02;
     case 'snowstorm':
@@ -3383,6 +3519,8 @@ function resolveBaseSoundEffectWaveform(
   switch (kind) {
     case 'blocked':
       return 'sawtooth';
+    case 'thunder':
+      return ['sawtooth', 'triangle', 'sine'];
     case 'hail':
       return ['square', 'triangle'];
     case 'snowstorm':
@@ -3436,6 +3574,8 @@ function resolveBaseSoundEffectNoiseColor(
   kind: SoundEffectKind
 ): ProceduralNoiseColor | readonly ProceduralNoiseColor[] | undefined {
   switch (kind) {
+    case 'thunder':
+      return ['white', 'brown'];
     case 'hail':
       return ['white', 'pink'];
     case 'snowstorm':

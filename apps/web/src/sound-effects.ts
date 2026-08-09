@@ -24,17 +24,21 @@ import {
   isHailWeatherKind,
   isRainWeatherKind,
   isSnowWeatherKind,
+  isThunderstormWeatherKind,
   isWindWeatherKind,
   normalizeHailAudioIntensity,
   normalizeSnowstormAudioIntensity,
+  normalizeThunderstormAudioIntensity,
   normalizeWindAudioIntensity,
   normalizeWeatherAudioIntensity,
   resolveHailAudioSurface,
+  resolveThunderLightningStrike,
   resolveWeatherAcousticGain,
   resolveWindAudioSurface,
   resolveWeatherPrecipitationSurface,
   type WeatherHailSurface,
   type WeatherPrecipitationSurface,
+  type WeatherThunderVariant,
 } from './weather-audio.ts';
 import {
   type ProceduralAmplitudeEnvelope,
@@ -305,6 +309,7 @@ const SOUND_EFFECT_SEEDS = registerHashSeeds([
   'blocked',
   'open',
   'close',
+  'thunder',
   'rain',
   'hail',
   'snowstorm',
@@ -470,6 +475,7 @@ export function createSoundEffectController(
   let lastCombatSignature = '';
   let lastInteractionAtMs = -Infinity;
   let lastRainAtMs = -Infinity;
+  let lastThunderAtMs = -Infinity;
   let lastHailAtMs = -Infinity;
   let lastSnowstormAtMs = -Infinity;
   let lastWindAtMs = -Infinity;
@@ -838,6 +844,59 @@ export function createSoundEffectController(
         }
 
         if (
+          isThunderstormWeatherKind(weatherKind) &&
+          nowMs - lastThunderAtMs >=
+            getThunderCadenceMs(
+              normalizeThunderstormAudioIntensity(
+                weatherIntensity,
+                weatherKind,
+                windStrength
+              )
+            )
+        ) {
+          const thunderIntensity = normalizeThunderstormAudioIntensity(
+            weatherIntensity,
+            weatherKind,
+            windStrength
+          );
+          const thunderSeed = createWeatherEventSeed(
+            'thunder',
+            nowMs,
+            tileKind,
+            weatherKind,
+            thunderIntensity
+          );
+          const thunderStrike = resolveThunderLightningStrike({
+            weatherIntensity,
+            weatherKind,
+            windStrength,
+            seed: thunderSeed,
+          });
+          const thunderEffect = createProceduralEffect(
+            'thunder',
+            nowMs,
+            tileKind,
+            emitter,
+            listener,
+            getThunderSoundDurationMs(thunderIntensity, thunderStrike.variant),
+            thunderStrike.variant
+          );
+          const weatherAcousticGain = resolveWeatherAcousticGain(
+            tileKind,
+            weatherKind
+          );
+          lastThunderAtMs = nowMs;
+          sink.play({
+            ...thunderEffect,
+            startOffsetMs: thunderStrike.delayMs,
+            volume:
+              thunderEffect.volume *
+              getThunderSoundVolume(thunderIntensity, thunderStrike.variant) *
+              weatherAcousticGain *
+              ambienceDuckingGain,
+          });
+        }
+        if (
           isRainWeatherKind(weatherKind) &&
           nowMs - lastRainAtMs >=
             getRainCadenceMs(
@@ -1047,6 +1106,10 @@ export function getForestWindCadenceMs(windStrength: number): number {
   return Math.round(clampValue(2600 - windStrength * 1200, 1200, 2600));
 }
 
+export function getThunderCadenceMs(intensity: number): number {
+  return Math.round(clampValue(14_000 - intensity * 7_600, 5_600, 14_000));
+}
+
 export function getRainCadenceMs(intensity: number): number {
   return Math.round(clampValue(2600 - intensity * 1350, 900, 2600));
 }
@@ -1061,6 +1124,15 @@ export function getSnowstormCadenceMs(intensity: number): number {
 
 export function getRainSoundDurationMs(intensity: number): number {
   return Math.round(clampValue(1500 + intensity * 900, 1500, 2400));
+}
+
+export function getThunderSoundDurationMs(
+  intensity: number,
+  variant: WeatherThunderVariant
+): number {
+  const baseDurationMs =
+    variant === 'overhead' ? 2400 : variant === 'near' ? 2900 : 3400;
+  return Math.round(clampValue(baseDurationMs + intensity * 760, 2200, 4200));
 }
 
 export function getHailSoundDurationMs(intensity: number): number {
@@ -1087,6 +1159,23 @@ export function getRainSoundVolume(
     case 'open':
     default:
       return baseVolume;
+  }
+}
+
+export function getThunderSoundVolume(
+  intensity: number,
+  variant: WeatherThunderVariant
+): number {
+  const clamped = clampValue(intensity, 0, 1);
+  const baseVolume = clampValue(0.026 + clamped * 0.018, 0.026, 0.044);
+  switch (variant) {
+    case 'overhead':
+      return baseVolume * 1.18;
+    case 'near':
+      return baseVolume * 1.02;
+    case 'distant':
+    default:
+      return baseVolume * 0.82;
   }
 }
 
@@ -1537,8 +1626,9 @@ function resolveSoundVariationPolicy(kind: SoundEffectKind): {
     case 'ocean':
     case 'river-ambience':
     case 'wind':
+    case 'thunder':
       return {
-        frequentWindowMs: 2400,
+        frequentWindowMs: kind === 'thunder' ? 8000 : 2400,
         recognition: 'low',
         rareCooldownMs: 7_200,
         rareEvery: 5,
@@ -2841,6 +2931,8 @@ function resolveSoundEffectPriority(kind: SoundEffectKind): number {
     case 'steam-whistle':
     case 'train-whistle':
       return 6;
+    case 'thunder':
+      return 5;
     case 'jump':
     case 'landing':
     case 'blocked':
@@ -2914,6 +3006,8 @@ export function resolveSoundEffectVolumeBounds(
     case 'train-whistle':
     case 'steam-whistle':
       return { min: 0.028, max: 0.05 };
+    case 'thunder':
+      return { min: 0.028, max: 0.058 };
     case 'combat-weapon':
     case 'combat-magic':
     case 'advancement':
@@ -2929,6 +3023,28 @@ export function normalizeSoundEffectVolume(
 ): number {
   const bounds = resolveSoundEffectVolumeBounds(kind);
   return clampValue(volume, bounds.min, bounds.max);
+}
+
+function createWeatherEventSeed(
+  kind: SoundEffectKind,
+  nowMs: number,
+  tileKind: SurfaceKind | undefined,
+  weatherKind: string | undefined,
+  intensity: number
+): number {
+  let seed = SOUND_EFFECT_SEEDS[kind];
+  seed = appendHashSeedPart(
+    seed,
+    SURFACE_AUDIO_FAMILY_SEED_PARTS[getSurfaceAudioFamily(tileKind)]
+  );
+  seed = appendHashSeedPart(seed, Math.round(nowMs / 1000));
+  seed = appendHashSeedPart(seed, Math.round(intensity * 100));
+  if (typeof weatherKind === 'string' && weatherKind.length > 0) {
+    for (let index = 0; index < weatherKind.length; index += 1) {
+      seed = appendHashSeedPart(seed, weatherKind.charCodeAt(index));
+    }
+  }
+  return seed;
 }
 
 function clampValue(value: number, min: number, max: number): number {

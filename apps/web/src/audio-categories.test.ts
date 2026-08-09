@@ -47,6 +47,7 @@ describe('audio categories', () => {
   it('maps sound effects into stable audio categories', () => {
     expect(resolveSoundEffectCategory('combat-weapon')).toBe('combat');
     expect(resolveSoundEffectCategory('open')).toBe('ui');
+    expect(resolveSoundEffectCategory('thunder')).toBe('environment');
     expect(resolveSoundEffectCategory('rain')).toBe('environment');
     expect(resolveSoundEffectCategory('hail')).toBe('environment');
     expect(resolveSoundEffectCategory('snowstorm')).toBe('environment');

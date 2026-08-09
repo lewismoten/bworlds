@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   isHailWeatherKind,
   isSnowWeatherKind,
+  isThunderstormWeatherKind,
   isVegetationAcousticTile,
   isWindOpeningTile,
   isWindWeatherKind,
@@ -10,8 +11,12 @@ import {
   isRainWeatherKind,
   normalizeHailAudioIntensity,
   normalizeSnowstormAudioIntensity,
+  normalizeThunderstormAudioIntensity,
   normalizeWindAudioIntensity,
   normalizeWeatherAudioIntensity,
+  resolveThunderDelayMs,
+  resolveThunderIdentityVariant,
+  resolveThunderLightningStrike,
   resolveWeatherAcousticExposure,
   resolveWeatherAcousticGain,
   resolveHailAudioSurface,
@@ -28,6 +33,9 @@ describe('weather audio', () => {
     expect(isWindWeatherKind('light-rain')).toBe(false);
     expect(isSnowWeatherKind('snow')).toBe(true);
     expect(isHailWeatherKind('hail')).toBe(true);
+    expect(isThunderstormWeatherKind('heavy-rain')).toBe(true);
+    expect(isThunderstormWeatherKind('hail')).toBe(true);
+    expect(isThunderstormWeatherKind('light-rain')).toBe(false);
   });
 
   it('maps surrounding tiles into precipitation surfaces', () => {
@@ -87,6 +95,42 @@ describe('weather audio', () => {
     expect(normalizeSnowstormAudioIntensity(0.8, 'clear', 0.6)).toBe(0);
     expect(normalizeHailAudioIntensity(0.2, 'hail')).toBe(0.55);
     expect(normalizeHailAudioIntensity(0.8, 'clear')).toBe(0);
+  });
+
+  it('normalizes thunderstorm intensity from convective weather and wind strength', () => {
+    expect(normalizeThunderstormAudioIntensity(0.8, 'heavy-rain', 0.3)).toBe(
+      0.694
+    );
+    expect(normalizeThunderstormAudioIntensity(0.3, 'hail', 0.2)).toBe(0.62);
+    expect(normalizeThunderstormAudioIntensity(0.9, 'snow', 0.8)).toBe(0);
+  });
+
+  it('derives thunder delay and character from deterministic lightning distance', () => {
+    expect(resolveThunderDelayMs(1)).toBe(2915);
+    expect(resolveThunderIdentityVariant(1.2)).toBe('overhead');
+    expect(resolveThunderIdentityVariant(3)).toBe('near');
+    expect(resolveThunderIdentityVariant(8)).toBe('distant');
+
+    const intenseStrike = resolveThunderLightningStrike({
+      weatherIntensity: 0.95,
+      weatherKind: 'heavy-rain',
+      windStrength: 0.7,
+      seed: 12345,
+    });
+    const weakerStrike = resolveThunderLightningStrike({
+      weatherIntensity: 0.45,
+      weatherKind: 'heavy-rain',
+      windStrength: 0.2,
+      seed: 12345,
+    });
+
+    expect(intenseStrike.delayMs).toBe(
+      resolveThunderDelayMs(intenseStrike.distanceKm)
+    );
+    expect(intenseStrike.variant).toBe(
+      resolveThunderIdentityVariant(intenseStrike.distanceKm)
+    );
+    expect(intenseStrike.distanceKm).toBeLessThan(weakerStrike.distanceKm);
   });
 
   it('keeps weather loudest outdoors while allowing openings to leak more than interiors', () => {

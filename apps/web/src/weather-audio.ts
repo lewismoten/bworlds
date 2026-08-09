@@ -1,8 +1,16 @@
+import { createRandom } from '@bworlds/core';
+
 export type WeatherPrecipitationSurface = 'open' | 'roof' | 'leaves' | 'water';
 export type WeatherWindSurface = 'open-air' | 'canopy' | 'crossdraft';
 export type WeatherHailSurface =
   'roof' | 'wood' | 'rock' | 'water' | 'vegetation' | 'snow' | 'open';
 export type WeatherAcousticExposure = 'outdoor' | 'sheltered' | 'opening';
+export type WeatherThunderVariant = 'overhead' | 'near' | 'distant';
+export type WeatherThunderStrike = {
+  distanceKm: number;
+  delayMs: number;
+  variant: WeatherThunderVariant;
+};
 
 export function isRainWeatherKind(kind: string | undefined): boolean {
   return kind === 'light-rain' || kind === 'heavy-rain';
@@ -18,6 +26,10 @@ export function isSnowWeatherKind(kind: string | undefined): boolean {
 
 export function isHailWeatherKind(kind: string | undefined): boolean {
   return kind === 'hail';
+}
+
+export function isThunderstormWeatherKind(kind: string | undefined): boolean {
+  return kind === 'heavy-rain' || kind === 'hail';
 }
 
 export function resolveWeatherPrecipitationSurface(
@@ -194,6 +206,32 @@ export function normalizeHailAudioIntensity(
   return clamp(Math.max(base, 0.55), 0, 1);
 }
 
+export function normalizeThunderstormAudioIntensity(
+  weatherIntensity: number | undefined,
+  weatherKind: string | undefined,
+  windStrength: number | undefined
+): number {
+  if (!isThunderstormWeatherKind(weatherKind)) {
+    return 0;
+  }
+  const precipitationIntensity = clamp(
+    typeof weatherIntensity === 'number' ? weatherIntensity : 0,
+    0,
+    1
+  );
+  const windIntensity = clamp(
+    typeof windStrength === 'number' ? windStrength : 0,
+    0,
+    1
+  );
+  const baseFloor = weatherKind === 'hail' ? 0.62 : 0.42;
+  return clamp(
+    Math.max(baseFloor, precipitationIntensity * 0.74 + windIntensity * 0.34),
+    0,
+    1
+  );
+}
+
 export function resolveWindAudioSurface(
   tileKind: string | undefined
 ): WeatherWindSurface {
@@ -250,6 +288,49 @@ export function resolveWeatherAcousticGain(
     default:
       return 1;
   }
+}
+
+export function resolveThunderDelayMs(distanceKm: number): number {
+  return Math.round(clamp(distanceKm, 0.2, 12) * 2915);
+}
+
+export function resolveThunderIdentityVariant(
+  distanceKm: number
+): WeatherThunderVariant {
+  if (distanceKm <= 1.5) {
+    return 'overhead';
+  }
+  if (distanceKm <= 5.2) {
+    return 'near';
+  }
+  return 'distant';
+}
+
+export function resolveThunderLightningStrike(options: {
+  weatherIntensity: number | undefined;
+  weatherKind: string | undefined;
+  windStrength: number | undefined;
+  seed: number;
+}): WeatherThunderStrike {
+  const intensity = normalizeThunderstormAudioIntensity(
+    options.weatherIntensity,
+    options.weatherKind,
+    options.windStrength
+  );
+  const random = createRandom(options.seed);
+  const nearBias = 1 - intensity;
+  const minimumDistanceKm = 0.35 + nearBias * 1.2;
+  const distanceSpanKm = 1.6 + nearBias * 7.4;
+  const distanceKm = clamp(
+    minimumDistanceKm + random() * distanceSpanKm,
+    0.35,
+    12
+  );
+  return {
+    distanceKm,
+    delayMs: resolveThunderDelayMs(distanceKm),
+    variant: resolveThunderIdentityVariant(distanceKm),
+  };
 }
 
 function clamp(value: number, min: number, max: number): number {
