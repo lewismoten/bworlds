@@ -3,7 +3,12 @@ import {
   createEnterablePoiTilePlugin,
   findPoiAnchor,
 } from '@bworlds/poi-support';
-import { createMountainTerrainMaterials } from '@bworlds/three-support';
+import {
+  createMountainTerrainMaterials,
+  getSharedBoxGeometry,
+  getSharedCylinderGeometry,
+  getSharedSphereGeometry,
+} from '@bworlds/three-support';
 import type {
   ClassifyOverworldTileContext,
   Create3DModelContext,
@@ -71,21 +76,21 @@ export function createObservatoryTilePlugin(): RuntimePlugin {
       const group = new three.Group();
 
       const base = new three.Mesh(
-        new three.CylinderGeometry(0.72, 0.92, 0.38, 10),
+        getSharedCylinderGeometry(three, 0.72, 0.92, 0.38, 10),
         mountainMaterial
       );
       base.position.set(tileX, 0.19, tileY);
       group.add(base);
 
       const tower = new three.Mesh(
-        new three.CylinderGeometry(0.46, 0.52, 0.82, 10),
+        getSharedCylinderGeometry(three, 0.46, 0.52, 0.82, 10),
         wallMaterial
       );
       tower.position.set(tileX, 0.7, tileY);
       group.add(tower);
 
       const ring = new three.Mesh(
-        new three.CylinderGeometry(0.5, 0.54, 0.08, 10),
+        getSharedCylinderGeometry(three, 0.5, 0.54, 0.08, 10),
         trimMaterial
       );
       ring.position.set(tileX, 1.08, tileY);
@@ -99,14 +104,14 @@ export function createObservatoryTilePlugin(): RuntimePlugin {
       domePivot.position.set(tileX, 1.08, tileY);
 
       const dome = new three.Mesh(
-        new three.SphereGeometry(0.42, 12, 8),
+        getSharedSphereGeometry(three, 0.42, 12, 8),
         domeMaterial
       );
       dome.scale.set(1, 0.82, 1);
       domePivot.add(dome);
 
       const slit = new three.Mesh(
-        new three.BoxGeometry(0.12, 0.44, 0.58),
+        getSharedBoxGeometry(three, 0.12, 0.44, 0.58),
         trimMaterial
       );
       slit.position.set(0, 0.06, 0.2);
@@ -122,14 +127,14 @@ export function createObservatoryTilePlugin(): RuntimePlugin {
       telescope.visible = false;
 
       const telescopeBase = new three.Mesh(
-        new three.CylinderGeometry(0.08, 0.1, 0.22, 8),
+        getSharedCylinderGeometry(three, 0.08, 0.1, 0.22, 8),
         trimMaterial
       );
       telescopeBase.position.y = 0.11;
       telescope.add(telescopeBase);
 
       const telescopeTube = new three.Mesh(
-        new three.CylinderGeometry(0.06, 0.07, 0.72, 10),
+        getSharedCylinderGeometry(three, 0.06, 0.07, 0.72, 10),
         telescopeMaterial
       );
       telescopeTube.rotation.z = Math.PI / 2.5;
@@ -138,7 +143,7 @@ export function createObservatoryTilePlugin(): RuntimePlugin {
       telescope.add(telescopeTube);
 
       const eyepiece = new three.Mesh(
-        new three.CylinderGeometry(0.03, 0.03, 0.14, 8),
+        getSharedCylinderGeometry(three, 0.03, 0.03, 0.14, 8),
         snowMaterial
       );
       eyepiece.rotation.z = telescopeTube.rotation.z;

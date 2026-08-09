@@ -1,13 +1,46 @@
 import { describe, expect, it, vi } from 'vitest';
 
-vi.mock('@bworlds/three-support', () => ({
-  createMountainTerrainMaterials() {
-    return {
-      mountainMaterial: { id: 'mountain-material' },
-      snowMaterial: { id: 'snow-material' },
-    };
-  },
-}));
+vi.mock('@bworlds/three-support', () => {
+  const boxCache = new Map<string, FakeGeometry>();
+  const cylinderCache = new Map<string, FakeGeometry>();
+  const sphereCache = new Map<string, FakeGeometry>();
+
+  return {
+    createMountainTerrainMaterials() {
+      return {
+        mountainMaterial: { id: 'mountain-material' },
+        snowMaterial: { id: 'snow-material' },
+      };
+    },
+    getSharedBoxGeometry(_three: unknown, ...args: number[]) {
+      const key = args.join(':');
+      let cached = boxCache.get(key);
+      if (!cached) {
+        cached = new FakeGeometry(...args);
+        boxCache.set(key, cached);
+      }
+      return cached;
+    },
+    getSharedCylinderGeometry(_three: unknown, ...args: number[]) {
+      const key = args.join(':');
+      let cached = cylinderCache.get(key);
+      if (!cached) {
+        cached = new FakeGeometry(...args);
+        cylinderCache.set(key, cached);
+      }
+      return cached;
+    },
+    getSharedSphereGeometry(_three: unknown, ...args: number[]) {
+      const key = args.join(':');
+      let cached = sphereCache.get(key);
+      if (!cached) {
+        cached = new FakeGeometry(...args);
+        sphereCache.set(key, cached);
+      }
+      return cached;
+    },
+  };
+});
 
 import { createObservatoryTilePlugin } from './index.ts';
 
@@ -93,8 +126,18 @@ describe('tile observatory', () => {
       tileX: 8,
       tileY: 9,
     }) as FakeNode | undefined;
+    const firstChildren = first?.children as FakeNode[] | undefined;
+    const secondChildren = second?.children as FakeNode[] | undefined;
+    const firstDomePivot = firstChildren?.[3] as FakeGroup | undefined;
+    const secondDomePivot = secondChildren?.[3] as FakeGroup | undefined;
 
     expect(countSharedMaterialReferences(first, second)).toBeGreaterThanOrEqual(4);
+    expect((firstChildren?.[0] as FakeMesh | undefined)?.geometry).toBe(
+      (secondChildren?.[0] as FakeMesh | undefined)?.geometry
+    );
+    expect((firstDomePivot?.children[0] as FakeMesh | undefined)?.geometry).toBe(
+      (secondDomePivot?.children[0] as FakeMesh | undefined)?.geometry
+    );
   });
 
   it('opens the dome and reveals the telescope at night', () => {

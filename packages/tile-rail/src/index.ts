@@ -1,7 +1,7 @@
 import { createPlainsBackedTilePainter } from '@bworlds/paint-support';
 import { createTilePlugin } from '@bworlds/plugin-api';
 import { createRouteTraversalProfile } from '@bworlds/tile-support';
-import { createBasicMaterial } from '@bworlds/three-support';
+import { createBasicMaterial, getSharedBoxGeometry } from '@bworlds/three-support';
 import type {
   Create3DModelContext,
   Kind,
@@ -79,7 +79,7 @@ function createRailGroup(
 
   for (const offset of [-0.22, 0.22]) {
     const rail = new three.Mesh(
-      new three.BoxGeometry(0.92, 0.05, 0.06),
+      getSharedBoxGeometry(three, 0.92, 0.05, 0.06),
       railMaterial
     );
     rail.position.set(0, 0.08, offset);
@@ -89,7 +89,7 @@ function createRailGroup(
 
   for (const offset of [-0.32, -0.12, 0.08, 0.28]) {
     const sleeper = new three.Mesh(
-      new three.BoxGeometry(0.14, 0.04, 0.56),
+      getSharedBoxGeometry(three, 0.14, 0.04, 0.56),
       sleeperMaterial
     );
     sleeper.position.set(offset, 0.04, 0);

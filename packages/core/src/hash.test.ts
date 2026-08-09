@@ -6,9 +6,9 @@ import {
   hash2D,
   hash2DWithSeed,
   normalizeHash,
-  resolveHashSeed,
   registerHashLabel,
-  registerHashLabels,
+  registerHashSeed,
+  registerHashSeeds,
 } from './hash.ts';
 import { describe, expect, it } from 'vitest';
 
@@ -48,23 +48,27 @@ describe('hash seeds', () => {
     expect(hash2DWithSeed(seedHash, 4, 9)).toBe(hash2D(seedHash, 4, 9));
   });
 
-  it('normalizes numeric seeds through one boundary helper', () => {
+  it('normalizes numeric seeds through the numeric boundary helper', () => {
     const seedHash = registerHashLabel('seed');
 
-    expect(resolveHashSeed(seedHash)).toBe(seedHash >>> 0);
-    expect(resolveHashSeed('seed')).toBe(seedHash >>> 0);
     expect(createHashSeed(0)).toBe(0);
     expect(createHashSeed(0xFFFFFFFF)).toBe(0xFFFFFFFF);
     expect(createHashSeed(0x100000000)).toBe(0);
     expect(createHashSeed(-1)).toBe(0xFFFFFFFF);
+    expect(createHashSeed(seedHash)).toBe(seedHash >>> 0);
   });
 
-  it('registers label groups through the shared hash module cache', () => {
-    const labels = registerHashLabels(['north', 'south'] as const);
+  it('registers setup-time seeds through the shared hash module cache', () => {
+    const labels = registerHashSeeds(['north', 'south'] as const);
 
-    expect(labels.north).toBe(registerHashLabel('north'));
-    expect(labels.south).toBe(registerHashLabel('south'));
+    expect(labels.north).toBe(registerHashSeed('north'));
+    expect(labels.south).toBe(registerHashSeed('south'));
     expect(hash2D(labels.north, 3, 4)).toBe(hash2D(registerHashLabel('north'), 3, 4));
+  });
+
+  it('keeps direct seed registration deterministic', () => {
+    expect(registerHashSeed('weather-front')).toBe(registerHashSeed('weather-front'));
+    expect(registerHashSeed('weather-front')).not.toBe(registerHashSeed('river-path'));
   });
 
   it('memoizes appended registered labels in the shared hash module', () => {

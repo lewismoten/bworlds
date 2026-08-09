@@ -144,7 +144,7 @@ export interface WorldEnvironmentCycleLike {
   offsetMs?: number;
   yearLengthDays?: number;
   constellationCount?: number;
-  constellationSeed?: string | number;
+  constellationSeed?: number;
   seasonDaylightAmplitude?: number;
   observerLatitudeDegrees?: number;
 }

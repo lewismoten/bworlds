@@ -7,15 +7,20 @@ const HASH_SEED_LABEL_CACHE_LIMIT = 4096;
 const appendedHashSeedLabelCache = new Map<string, HashSeed>();
 
 export type HashSeed = number;
-export type HashSeedLike = HashSeed | string;
 export { registerHashLabel, registerHashLabels } from './hash-labels.ts';
+
+export function registerHashSeed(label: string): HashSeed {
+  return registerHashLabel(label);
+}
+
+export function registerHashSeeds<const TLabels extends readonly string[]>(
+  labels: TLabels
+): { [K in TLabels[number]]: HashSeed } {
+  return registerHashLabels(labels);
+}
 
 export function createHashSeed(seed: number): HashSeed {
   return seed >>> 0;
-}
-
-export function resolveHashSeed(seed: HashSeedLike): HashSeed {
-  return typeof seed === 'number' ? createHashSeed(seed) : registerHashLabel(seed);
 }
 
 export function appendHashSeedPart(seedHash: HashSeed, value: number): HashSeed {

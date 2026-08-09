@@ -5,7 +5,11 @@ import {
   markPoiLightEmitter,
   syncPoiLightEmitters,
 } from '@bworlds/poi-support';
-import { createBasicMaterial } from '@bworlds/three-support';
+import {
+  createBasicMaterial,
+  getSharedConeGeometry,
+  getSharedCylinderGeometry,
+} from '@bworlds/three-support';
 import type {
   Create3DModelContext,
   RuntimePlugin,
@@ -59,35 +63,35 @@ export function createLighthouseTilePlugin(): RuntimePlugin {
         getLighthouseSharedMaterials(three);
 
       const base = new three.Mesh(
-        new three.CylinderGeometry(0.46, 0.6, 0.32, 10),
+        getSharedCylinderGeometry(three, 0.46, 0.6, 0.32, 10),
         stoneMaterial
       );
       base.position.set(tileX, 0.16, tileY);
       group.add(base);
 
       const tower = new three.Mesh(
-        new three.CylinderGeometry(0.34, 0.42, 1.8, 10),
+        getSharedCylinderGeometry(three, 0.34, 0.42, 1.8, 10),
         wallMaterial
       );
       tower.position.set(tileX, 1.06, tileY);
       group.add(tower);
 
       const stripe = new three.Mesh(
-        new three.CylinderGeometry(0.35, 0.41, 0.22, 10),
+        getSharedCylinderGeometry(three, 0.35, 0.41, 0.22, 10),
         stripeMaterial
       );
       stripe.position.set(tileX, 0.92, tileY);
       group.add(stripe);
 
       const cap = new three.Mesh(
-        new three.ConeGeometry(0.42, 0.34, 10),
+        getSharedConeGeometry(three, 0.42, 0.34, 10),
         stripeMaterial
       );
       cap.position.set(tileX, 2.1, tileY);
       group.add(cap);
 
       const lanternRoom = new three.Mesh(
-        new three.CylinderGeometry(0.24, 0.24, 0.28, 8),
+        getSharedCylinderGeometry(three, 0.24, 0.24, 0.28, 8),
         wallMaterial
       );
       lanternRoom.position.set(tileX, 1.86, tileY);
@@ -122,7 +126,7 @@ export function createLighthouseTilePlugin(): RuntimePlugin {
       beamPivot.position.set(tileX, 1.88, tileY);
 
       const beam = new three.Mesh(
-        new three.ConeGeometry(0.32, 3.8, 12),
+        getSharedConeGeometry(three, 0.32, 3.8, 12),
         beamMaterial
       ) as BeamNodeLike;
       beam.userData = {

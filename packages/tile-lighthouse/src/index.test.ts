@@ -117,9 +117,17 @@ describe('tile lighthouse', () => {
     }) as FakeNode | undefined;
 
     const sharedCount = countSharedMaterialReferences(first, second);
+    const firstChildren = first?.children as FakeMesh[] | undefined;
+    const secondChildren = second?.children as FakeMesh[] | undefined;
+    const firstBeamPivot = firstChildren?.[5] as FakeGroup | undefined;
+    const secondBeamPivot = secondChildren?.[5] as FakeGroup | undefined;
 
     expect(sharedCount).toBeGreaterThanOrEqual(5);
     expect(findBeamMaterial(first)).toBe(findBeamMaterial(second));
+    expect(firstChildren?.[0]?.geometry).toBe(secondChildren?.[0]?.geometry);
+    expect((firstBeamPivot?.children[0] as FakeMesh | undefined)?.geometry).toBe(
+      (secondBeamPivot?.children[0] as FakeMesh | undefined)?.geometry
+    );
   });
 
   it('sweeps and reveals the beam at night', () => {

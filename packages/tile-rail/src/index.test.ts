@@ -55,17 +55,25 @@ describe('tile rail', () => {
       state,
       tileX: 0,
       tileY: 0,
-    }) as { children?: Array<{ material: unknown }> } | null | undefined;
+    }) as
+      | { children?: Array<{ material: unknown; geometry: unknown }> }
+      | null
+      | undefined;
     const second = tile?.create3DModel?.({
       tile: { kind: 'rail' },
       three,
       state,
       tileX: 1,
       tileY: 0,
-    }) as { children?: Array<{ material: unknown }> } | null | undefined;
+    }) as
+      | { children?: Array<{ material: unknown; geometry: unknown }> }
+      | null
+      | undefined;
 
     expect(first?.children[0]?.material).toBe(second?.children[0]?.material);
     expect(first?.children[2]?.material).toBe(second?.children[2]?.material);
+    expect(first?.children[0]?.geometry).toBe(second?.children[0]?.geometry);
+    expect(first?.children[2]?.geometry).toBe(second?.children[2]?.geometry);
   });
 });
 

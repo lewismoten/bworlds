@@ -6,10 +6,10 @@ import {
   hash2D,
   hash2DWithSeed,
   type HashSeed,
-  type HashSeedLike,
-  resolveHashSeed,
   registerHashLabel,
+  registerHashSeed,
   registerHashLabels,
+  registerHashSeeds,
 } from './hash.ts';
 
 export {
@@ -20,10 +20,10 @@ export {
   hash2D,
   hash2DWithSeed,
   type HashSeed,
-  type HashSeedLike,
-  resolveHashSeed,
   registerHashLabel,
+  registerHashSeed,
   registerHashLabels,
+  registerHashSeeds,
 } from './hash.ts';
 
 export { createRandom } from './prng.ts';
@@ -40,7 +40,7 @@ export const DEFAULT_DAY_LENGTH_MS = DEFAULT_DAY_LENGTH_MINUTES * 60 * 1000;
 export const DEFAULT_YEAR_LENGTH_DAYS = 64;
 export const DEFAULT_CONSTELLATION_COUNT = 8;
 export const DEFAULT_SEASON_DAYLIGHT_AMPLITUDE = 0.41;
-const DEFAULT_CONSTELLATION_SEED = registerHashLabel('bworlds-celestial');
+const DEFAULT_CONSTELLATION_SEED = registerHashSeed('bworlds-celestial');
 export const MOON_PHASE_NAMES = [
   'New Moon',
   'Waxing Crescent',
@@ -598,7 +598,7 @@ export function getDaylightCycleState(
     offsetMs?: number;
     yearLengthDays?: number;
     constellationCount?: number;
-    constellationSeed?: HashSeedLike;
+    constellationSeed?: HashSeed;
     seasonDaylightAmplitude?: number;
     observerLatitudeDegrees?: number;
   } = {}
@@ -717,7 +717,7 @@ export function getDaylightCycleState(
   const constellationSeedHash =
     constellationSeed === undefined
       ? DEFAULT_CONSTELLATION_SEED
-      : resolveHashSeed(constellationSeed);
+      : createHashSeed(constellationSeed);
   const constellations = generateConstellations(constellationSeedHash, {
     count: constellationCount,
   });

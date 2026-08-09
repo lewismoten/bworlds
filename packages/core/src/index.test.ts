@@ -93,7 +93,10 @@ describe('core utilities', () => {
     );
   });
 
-  it('produces occasional daytime solar eclipses that briefly dim the world', () => {
+  it(
+    'produces occasional daytime solar eclipses that briefly dim the world',
+    { timeout: 1000 },
+    () => {
     let eclipseCycle: ReturnType<typeof getDaylightCycleState> | null = null;
 
     for (let day = 0; day < 512 && !eclipseCycle; day += 1) {
@@ -115,7 +118,8 @@ describe('core utilities', () => {
       eclipseCycle?.sunAzimuth ?? 0,
       1
     );
-  });
+    }
+  );
 
   it('generates deterministic procedural constellations with names and links', () => {
     const seedHash = registerHashLabel('spec-seed');
