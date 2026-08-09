@@ -9,8 +9,15 @@ const BASE_AMBIENT_IDENTITY_VARIANTS: Record<
   river: ['current', 'water-splashes'],
   forest: ['canopy', 'insects', 'branches', 'wildlife', 'vegetation-rustle'],
   plains: ['breeze', 'wildlife', 'vegetation-rustle'],
+  desert: ['sand-wind', 'sand-shift', 'sparse-calls'],
   snowfield: ['winter-quiet', 'ice-creaks', 'winter-gusts', 'muffled-open'],
-  swamp: ['marsh-insects', 'frogs', 'water-movement', 'bubbles', 'wading-birds'],
+  swamp: [
+    'marsh-insects',
+    'frogs',
+    'water-movement',
+    'bubbles',
+    'wading-birds',
+  ],
   volcanic: ['rumble', 'steam-vents', 'stone-cracks', 'lava-pops'],
   mountain: ['gusts', 'stone', 'highland-birds', 'falling-rocks'],
   cave: ['drips', 'echo', 'underground-wind'],
@@ -28,6 +35,8 @@ export function resolveAmbientIdentityVariants(
       return resolveForestVariants(dayPhase, season);
     case 'plains':
       return resolvePlainsVariants(dayPhase, season);
+    case 'desert':
+      return resolveDesertVariants(dayPhase, season);
     case 'snowfield':
       return resolveSnowfieldVariants(dayPhase, season);
     case 'swamp':
@@ -66,6 +75,7 @@ export function resolveAmbientIdentityVariantModifiers(options: {
   if (
     options.kind === 'forest' ||
     options.kind === 'plains' ||
+    options.kind === 'desert' ||
     options.kind === 'snowfield' ||
     options.kind === 'swamp' ||
     options.kind === 'volcanic' ||
@@ -165,8 +175,29 @@ export function resolveAmbientIdentityVariantModifiers(options: {
       volumeMultiplier *= 0.94;
       break;
     case 'summer-insects':
+    case 'heat-insects':
       cadenceMultiplier *= 0.92;
       volumeMultiplier *= 1.08;
+      break;
+    case 'desert-insects':
+      cadenceMultiplier *= 0.96;
+      volumeMultiplier *= 1.04;
+      break;
+    case 'night-insects':
+      cadenceMultiplier *= 1.04;
+      volumeMultiplier *= 0.96;
+      break;
+    case 'sand-wind':
+      cadenceMultiplier *= 0.98;
+      volumeMultiplier *= 1.06;
+      break;
+    case 'sand-shift':
+      cadenceMultiplier *= 1.32;
+      volumeMultiplier *= 0.88;
+      break;
+    case 'sparse-calls':
+      cadenceMultiplier *= 1.82;
+      volumeMultiplier *= 0.78;
       break;
     case 'spring-frogs':
       cadenceMultiplier *= 0.95;
@@ -246,6 +277,22 @@ function resolvePlainsVariants(
     return ['autumn-leaves', 'migrating-birds', 'animal-calls'];
   }
   return ['breeze', 'nearby-birds', 'distant-birds', 'animal-calls'];
+}
+
+function resolveDesertVariants(
+  dayPhase: AmbientDayPhase,
+  season: AmbientSeason
+): readonly string[] {
+  if (dayPhase === 'night') {
+    return ['night-insects', 'sand-wind', 'sparse-calls'];
+  }
+  if (dayPhase === 'dawn' || dayPhase === 'dusk') {
+    return ['sand-wind', 'desert-insects', 'sparse-calls'];
+  }
+  if (season === 'summer') {
+    return ['heat-insects', 'sand-wind', 'sand-shift'];
+  }
+  return BASE_AMBIENT_IDENTITY_VARIANTS.desert;
 }
 
 function resolveSnowfieldVariants(

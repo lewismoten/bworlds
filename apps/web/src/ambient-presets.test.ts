@@ -41,6 +41,17 @@ describe('ambient presets', () => {
     ]);
   });
 
+  it('gives deserts their own windy day and insect-heavy night identities', () => {
+    expect(resolveAmbientIdentityVariants('desert', 'day', 'spring')).toEqual([
+      'sand-wind',
+      'sand-shift',
+      'sparse-calls',
+    ]);
+    expect(resolveAmbientIdentityVariants('desert', 'night', 'summer')).toEqual(
+      ['night-insects', 'sand-wind', 'sparse-calls']
+    );
+  });
+
   it('slows rare hints and distant events while keeping nearby calls stronger', () => {
     const nearbyBirds = resolveAmbientIdentityVariantModifiers({
       kind: 'forest',
@@ -80,5 +91,26 @@ describe('ambient presets', () => {
     expect(frogs.cadenceMultiplier).not.toBe(bubbles.cadenceMultiplier);
     expect(frogs.volumeMultiplier).not.toBe(bubbles.volumeMultiplier);
     expect(bubbles.volumeMultiplier).toBeLessThan(1);
+  });
+
+  it('treats desert wind as stronger than sparse wildlife calls', () => {
+    const sandWind = resolveAmbientIdentityVariantModifiers({
+      kind: 'desert',
+      dayPhase: 'day',
+      season: 'spring',
+      identityVariant: 'sand-wind',
+    });
+    const sparseCalls = resolveAmbientIdentityVariantModifiers({
+      kind: 'desert',
+      dayPhase: 'night',
+      season: 'summer',
+      identityVariant: 'sparse-calls',
+    });
+
+    expect(sandWind.volumeMultiplier).toBeGreaterThan(1);
+    expect(sparseCalls.cadenceMultiplier).toBeGreaterThan(1.5);
+    expect(sparseCalls.volumeMultiplier).toBeLessThan(
+      sandWind.volumeMultiplier
+    );
   });
 });

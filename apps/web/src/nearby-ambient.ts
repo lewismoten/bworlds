@@ -3,6 +3,7 @@ export type NearbyAmbientKind =
   | 'river'
   | 'forest'
   | 'plains'
+  | 'desert'
   | 'snowfield'
   | 'swamp'
   | 'volcanic'
@@ -50,6 +51,7 @@ const AMBIENT_KIND_SALTS: Record<NearbyAmbientKind, number> = {
   river: 0x2468ace1,
   forest: 0x31415926,
   plains: 0x27182818,
+  desert: 0x6a09e667,
   snowfield: 0x10293847,
   swamp: 0x456789ab,
   volcanic: 0x56473829,
@@ -64,6 +66,7 @@ const BASE_AMBIENT_THRESHOLDS: Record<NearbyAmbientKind, number> = {
   river: 0.28,
   forest: 0.24,
   plains: 0.16,
+  desert: 0.18,
   snowfield: 0.24,
   swamp: 0.28,
   volcanic: 0.22,
@@ -78,6 +81,7 @@ const AMBIENT_BIOLOGICAL_ACTIVITY: Record<NearbyAmbientKind, number> = {
   river: 0.68,
   forest: 1,
   plains: 0.78,
+  desert: 0.26,
   snowfield: 0.28,
   swamp: 0.9,
   volcanic: 0.08,
@@ -225,6 +229,9 @@ function resolveBaseAmbientKind(tileKind: string): NearbyAmbientKind {
       return 'river';
     case 'forest':
       return 'forest';
+    case 'sand':
+    case 'desert':
+      return 'desert';
     case 'snow':
     case 'ice':
       return 'snowfield';

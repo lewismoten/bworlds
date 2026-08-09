@@ -17,6 +17,7 @@ export type SoundEffectKind =
   | 'river-ambience'
   | 'forest-ambience'
   | 'plains-ambience'
+  | 'desert-ambience'
   | 'snowfield-ambience'
   | 'swamp-ambience'
   | 'volcanic-ambience'

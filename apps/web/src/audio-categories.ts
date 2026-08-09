@@ -94,6 +94,7 @@ export function resolveSoundEffectCategory(
     case 'river-ambience':
     case 'forest-ambience':
     case 'plains-ambience':
+    case 'desert-ambience':
     case 'mountain-ambience':
     case 'cave-ambience':
     case 'settlement-ambience':

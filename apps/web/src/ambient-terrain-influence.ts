@@ -60,6 +60,15 @@ function applyAmbientNearbyTerrainModifier(
         apply(0.98, 1.03);
       }
       return;
+    case 'desert':
+      if (nearbyKind === 'mountain') {
+        apply(1.06, 1.02);
+        return;
+      }
+      if (nearbyKind === 'river' || nearbyKind === 'ocean') {
+        apply(0.96, 1.05);
+      }
+      return;
     case 'swamp':
       if (nearbyKind === 'river' || nearbyKind === 'ocean') {
         apply(0.92, 1.06);

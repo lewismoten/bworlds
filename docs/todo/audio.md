@@ -172,7 +172,7 @@
 
 - [x] Generate ambient soundscapes based on biome.
 - [x] Give forests characteristic birds, insects, leaves, branches, and distant wildlife.
-- [ ] Give deserts wind, sand, insects, and sparse wildlife.
+- [x] Give deserts wind, sand, insects, and sparse wildlife.
 - [x] Give mountains stronger winds, echoes, rock movement, and distant animals.
 - [x] Give swamps insects, frogs, water movement, bubbles, and birds.
 - [x] Give coastal areas waves, wind, seabirds, and shoreline movement.

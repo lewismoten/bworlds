@@ -58,6 +58,7 @@ type ResolveSoundRecipeOptions = {
       | 'river'
       | 'forest'
       | 'plains'
+      | 'desert'
       | 'snowfield'
       | 'swamp'
       | 'volcanic'
@@ -150,6 +151,11 @@ export const SOUND_IDENTITY_DESCRIPTORS: Record<
   'plains-ambience': {
     family: 'ambient-wilds',
     signature: 'open grassland wash with sparse bright movement',
+  },
+  'desert-ambience': {
+    family: 'ambient-wilds',
+    signature:
+      'dry dune wash with sand drift, heat insects, and sparse wildlife',
   },
   'snowfield-ambience': {
     family: 'ambient-wilds',
@@ -473,6 +479,7 @@ function resolveProceduralSoundEnvelope(kind: SoundEffectKind) {
     case 'river-ambience':
     case 'forest-ambience':
     case 'plains-ambience':
+    case 'desert-ambience':
     case 'mountain-ambience':
     case 'cave-ambience':
     case 'settlement-ambience':
@@ -2890,6 +2897,171 @@ function resolveProceduralSoundLayers(
           variationDepth: 0.76,
         },
       ] as const;
+    case 'desert-ambience':
+      if (identityVariant === 'sand-wind') {
+        return [
+          {
+            id: 'desert-sand-wind-bed',
+            waveform: ['sawtooth', 'triangle'] as const,
+            noiseColor: ['brown', 'white'] as const,
+            frequencyMultiplier: 0.74,
+            durationMultiplier: 1,
+            volumeMultiplier: 0.36,
+            frequencyVariation: 0.02,
+            durationVariation: 0.12,
+            volumeVariation: 0.08,
+            variationDepth: 0.8,
+          },
+          {
+            id: 'desert-dune-whistle',
+            waveform: ['sine', 'triangle'] as const,
+            noiseColor: 'white' as const,
+            frequencyMultiplier: 1.02,
+            durationMultiplier: 0.78,
+            volumeMultiplier: 0.14,
+            startOffsetMs: 26,
+            startOffsetVariation: 0.22,
+            frequencyVariation: 0.024,
+            durationVariation: 0.14,
+            volumeVariation: 0.08,
+            variationDepth: 0.76,
+          },
+        ] as const;
+      }
+      if (identityVariant === 'sand-shift') {
+        return [
+          {
+            id: 'desert-sand-shift-bed',
+            waveform: ['triangle', 'sawtooth'] as const,
+            noiseColor: ['brown', 'pink'] as const,
+            frequencyMultiplier: 0.8,
+            durationMultiplier: 1,
+            volumeMultiplier: 0.34,
+            frequencyVariation: 0.022,
+            durationVariation: 0.12,
+            volumeVariation: 0.08,
+            variationDepth: 0.78,
+          },
+          {
+            id: 'desert-grit-scatter',
+            waveform: ['square', 'triangle'] as const,
+            noiseColor: 'white' as const,
+            frequencyMultiplier: 1.08,
+            durationMultiplier: 0.68,
+            volumeMultiplier: 0.1,
+            startOffsetMs: 24,
+            startOffsetVariation: 0.22,
+            frequencyVariation: 0.028,
+            durationVariation: 0.14,
+            volumeVariation: 0.08,
+            variationDepth: 0.74,
+          },
+        ] as const;
+      }
+      if (
+        identityVariant === 'desert-insects' ||
+        identityVariant === 'heat-insects' ||
+        identityVariant === 'night-insects'
+      ) {
+        return [
+          {
+            id:
+              identityVariant === 'night-insects'
+                ? 'desert-night-insects'
+                : identityVariant === 'heat-insects'
+                  ? 'desert-heat-insects'
+                  : 'desert-dusk-insects',
+            waveform:
+              identityVariant === 'night-insects'
+                ? (['square', 'triangle'] as const)
+                : (['square', 'sine'] as const),
+            noiseColor: 'pink' as const,
+            frequencyMultiplier:
+              identityVariant === 'night-insects' ? 1.08 : 1.22,
+            durationMultiplier: 0.66,
+            volumeMultiplier: 0.16,
+            frequencyVariation: 0.03,
+            durationVariation: 0.18,
+            volumeVariation: 0.08,
+            variationDepth: 0.84,
+          },
+          {
+            id: 'desert-heat-haze-bed',
+            waveform: ['triangle', 'sine'] as const,
+            noiseColor:
+              identityVariant === 'night-insects'
+                ? (['brown', 'white'] as const)
+                : (['white', 'pink'] as const),
+            frequencyMultiplier: 0.76,
+            durationMultiplier: 1,
+            volumeMultiplier: 0.28,
+            startOffsetMs: 30,
+            startOffsetVariation: 0.22,
+            frequencyVariation: 0.022,
+            durationVariation: 0.12,
+            volumeVariation: 0.08,
+            variationDepth: 0.76,
+          },
+        ] as const;
+      }
+      if (identityVariant === 'sparse-calls') {
+        return [
+          {
+            id: 'desert-sparse-calls',
+            waveform: ['sine', 'triangle'] as const,
+            noiseColor: 'white' as const,
+            frequencyMultiplier: 0.94,
+            durationMultiplier: 0.8,
+            volumeMultiplier: 0.12,
+            frequencyVariation: 0.028,
+            durationVariation: 0.16,
+            volumeVariation: 0.08,
+            variationDepth: 0.76,
+          },
+          {
+            id: 'desert-open-bed',
+            waveform: ['triangle', 'sawtooth'] as const,
+            noiseColor: ['brown', 'white'] as const,
+            frequencyMultiplier: 0.74,
+            durationMultiplier: 1,
+            volumeMultiplier: 0.3,
+            startOffsetMs: 36,
+            startOffsetVariation: 0.24,
+            frequencyVariation: 0.02,
+            durationVariation: 0.12,
+            volumeVariation: 0.08,
+            variationDepth: 0.74,
+          },
+        ] as const;
+      }
+      return [
+        {
+          id: 'desert-open-wash',
+          waveform: ['triangle', 'sawtooth'] as const,
+          noiseColor: ['brown', 'white'] as const,
+          frequencyMultiplier: 0.76,
+          durationMultiplier: 1,
+          volumeMultiplier: 0.38,
+          frequencyVariation: 0.02,
+          durationVariation: 0.12,
+          volumeVariation: 0.08,
+          variationDepth: 0.8,
+        },
+        {
+          id: 'desert-fine-grit',
+          waveform: ['square', 'triangle'] as const,
+          noiseColor: 'white' as const,
+          frequencyMultiplier: 1.02,
+          durationMultiplier: 0.74,
+          volumeMultiplier: 0.1,
+          startOffsetMs: 28,
+          startOffsetVariation: 0.22,
+          frequencyVariation: 0.024,
+          durationVariation: 0.14,
+          volumeVariation: 0.08,
+          variationDepth: 0.74,
+        },
+      ] as const;
     case 'snowfield-ambience':
       if (identityVariant === 'ice-creaks') {
         return [
@@ -4301,6 +4473,8 @@ function resolveBaseSoundEffectFrequency(
       return options.resolveAmbientSoundFrequency('forest', undefined);
     case 'plains-ambience':
       return options.resolveAmbientSoundFrequency('plains', undefined);
+    case 'desert-ambience':
+      return options.resolveAmbientSoundFrequency('desert', undefined);
     case 'snowfield-ambience':
       return options.resolveAmbientSoundFrequency('snowfield', undefined);
     case 'swamp-ambience':
@@ -4382,6 +4556,7 @@ function resolveBaseSoundEffectDurationMs(kind: SoundEffectKind): number {
     case 'river-ambience':
     case 'forest-ambience':
     case 'plains-ambience':
+    case 'desert-ambience':
     case 'snowfield-ambience':
     case 'swamp-ambience':
     case 'volcanic-ambience':
@@ -4456,6 +4631,8 @@ function resolveBaseSoundEffectVolume(
       return 0.018;
     case 'plains-ambience':
       return 0.016;
+    case 'desert-ambience':
+      return 0.017;
     case 'snowfield-ambience':
       return 0.017;
     case 'swamp-ambience':
@@ -4542,6 +4719,8 @@ function resolveBaseSoundEffectWaveform(
       return ['triangle', 'sine', 'square'];
     case 'plains-ambience':
       return ['sine', 'triangle'];
+    case 'desert-ambience':
+      return ['sawtooth', 'triangle'];
     case 'snowfield-ambience':
       return ['triangle', 'sine'];
     case 'swamp-ambience':
@@ -4613,6 +4792,8 @@ function resolveBaseSoundEffectNoiseColor(
       return ['pink', 'brown'];
     case 'plains-ambience':
       return ['white', 'pink'];
+    case 'desert-ambience':
+      return ['brown', 'white'];
     case 'snowfield-ambience':
       return ['white', 'brown'];
     case 'swamp-ambience':

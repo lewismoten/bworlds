@@ -263,6 +263,29 @@ describe('nearby ambient', () => {
     });
   });
 
+  it('maps inland sand tiles into a dedicated desert ambience family', () => {
+    const profile = findNearbyAmbientProfile({
+      state: {
+        player: { x: 7, y: 0 },
+        getCurrentTile() {
+          return { kind: 'sand' };
+        },
+      },
+      centerX: 7,
+      centerY: 0,
+      searchRadius: 0,
+    });
+
+    expect(resolveAmbientBiologicalActivity('desert')).toBeLessThan(
+      resolveAmbientBiologicalActivity('plains')
+    );
+    expect(profile).toEqual(
+      expect.objectContaining({
+        kind: 'desert',
+      })
+    );
+  });
+
   it('returns null when no nearby base tiles or POIs advertise ambience', () => {
     const profile = findNearbyAmbientProfile({
       state: {

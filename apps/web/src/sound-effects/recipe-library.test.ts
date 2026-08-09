@@ -632,6 +632,61 @@ describe('sound recipe library', () => {
     );
   });
 
+  it('supports desert ambience variants with wind, sand drift, insects, and sparse calls', () => {
+    const sandWindRecipe = buildProceduralSoundRecipe({
+      kind: 'desert-ambience',
+      identityVariant: 'sand-wind',
+      profile: DEFAULT_SURFACE_PROFILE,
+      variantOffset: 0,
+      resolveAdvancementFrequency: () => 300,
+      resolveAmbientSoundFrequency: (kind) => (kind === 'desert' ? 164 : 172),
+      resolveInteractionFrequency: () => 128,
+      resolveInteractionWaveform: (_tileKind, fallback) => fallback,
+      resolvePaddleBoatCalliopeFrequency: () => 520,
+      resolveSteamWhistleFrequency: () => 360,
+    });
+    const nightInsectRecipe = buildProceduralSoundRecipe({
+      kind: 'desert-ambience',
+      identityVariant: 'night-insects',
+      profile: DEFAULT_SURFACE_PROFILE,
+      variantOffset: 0,
+      resolveAdvancementFrequency: () => 300,
+      resolveAmbientSoundFrequency: (kind) => (kind === 'desert' ? 164 : 172),
+      resolveInteractionFrequency: () => 128,
+      resolveInteractionWaveform: (_tileKind, fallback) => fallback,
+      resolvePaddleBoatCalliopeFrequency: () => 520,
+      resolveSteamWhistleFrequency: () => 360,
+    });
+    const sparseCallRecipe = buildProceduralSoundRecipe({
+      kind: 'desert-ambience',
+      identityVariant: 'sparse-calls',
+      profile: DEFAULT_SURFACE_PROFILE,
+      variantOffset: 0,
+      resolveAdvancementFrequency: () => 300,
+      resolveAmbientSoundFrequency: (kind) => (kind === 'desert' ? 164 : 172),
+      resolveInteractionFrequency: () => 128,
+      resolveInteractionWaveform: (_tileKind, fallback) => fallback,
+      resolvePaddleBoatCalliopeFrequency: () => 520,
+      resolveSteamWhistleFrequency: () => 360,
+    });
+
+    expect(sandWindRecipe.id).toBe('desert-ambience:sand-wind');
+    expect(sandWindRecipe.layers?.map((layer) => layer.id)).toEqual([
+      'desert-sand-wind-bed',
+      'desert-dune-whistle',
+    ]);
+    expect(nightInsectRecipe.id).toBe('desert-ambience:night-insects');
+    expect(nightInsectRecipe.layers?.map((layer) => layer.id)).toEqual([
+      'desert-night-insects',
+      'desert-heat-haze-bed',
+    ]);
+    expect(sparseCallRecipe.id).toBe('desert-ambience:sparse-calls');
+    expect(sparseCallRecipe.layers?.map((layer) => layer.id)).toEqual([
+      'desert-sparse-calls',
+      'desert-open-bed',
+    ]);
+  });
+
   it('supports thunder variants with crack, rumble, and reflection layers', () => {
     const overheadRecipe = buildProceduralSoundRecipe({
       kind: 'thunder',

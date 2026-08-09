@@ -329,6 +329,7 @@ const SOUND_EFFECT_SEEDS = registerHashSeeds([
   'river-ambience',
   'forest-ambience',
   'plains-ambience',
+  'desert-ambience',
   'snowfield-ambience',
   'swamp-ambience',
   'volcanic-ambience',
@@ -1375,6 +1376,8 @@ export function getAmbientSoundCadenceMs(
       return Math.round(clampValue(2800 - clamped * 900, 1400, 2800));
     case 'plains':
       return Math.round(clampValue(3400 - clamped * 1000, 1800, 3400));
+    case 'desert':
+      return Math.round(clampValue(3520 - clamped * 980, 2000, 3520));
     case 'snowfield':
       return Math.round(clampValue(3800 - clamped * 900, 2200, 3800));
     case 'swamp':
@@ -1407,6 +1410,8 @@ export function getAmbientSoundVolume(
       return 0.014 + clamped * 0.014;
     case 'plains':
       return 0.012 + clamped * 0.01;
+    case 'desert':
+      return 0.013 + clamped * 0.011;
     case 'snowfield':
       return 0.011 + clamped * 0.012;
     case 'swamp':
@@ -1439,6 +1444,8 @@ export function resolveAmbientSoundFrequency(
       return 170 + clamped * 22;
     case 'plains':
       return 210 + clamped * 18;
+    case 'desert':
+      return 148 + clamped * 16;
     case 'snowfield':
       return 132 + clamped * 14;
     case 'swamp':
@@ -1469,6 +1476,8 @@ export function resolveAmbientSoundWaveform(
       return 'triangle';
     case 'plains':
       return 'sine';
+    case 'desert':
+      return 'sawtooth';
     case 'snowfield':
       return 'triangle';
     case 'swamp':
@@ -1497,6 +1506,8 @@ function resolveAmbientEffectKind(kind: AmbientSoundKind): SoundEffectKind {
       return 'forest-ambience';
     case 'plains':
       return 'plains-ambience';
+    case 'desert':
+      return 'desert-ambience';
     case 'snowfield':
       return 'snowfield-ambience';
     case 'swamp':
@@ -1550,6 +1561,8 @@ export function getAmbientSoundDurationMs(
       return Math.round(clampValue(1440 + clamped * 400, 1440, 1840));
     case 'plains':
       return Math.round(clampValue(1380 + clamped * 360, 1380, 1740));
+    case 'desert':
+      return Math.round(clampValue(1460 + clamped * 380, 1460, 1840));
     case 'snowfield':
       return Math.round(clampValue(1720 + clamped * 420, 1720, 2140));
     case 'swamp':
@@ -1802,6 +1815,7 @@ function resolveSoundVariationPolicy(kind: SoundEffectKind): {
       };
     case 'forest-ambience':
     case 'plains-ambience':
+    case 'desert-ambience':
     case 'snowfield-ambience':
     case 'swamp-ambience':
     case 'volcanic-ambience':
@@ -1919,6 +1933,7 @@ const MAX_SIMULTANEOUS_SOUND_VOICES_BY_KIND: Partial<
   'river-ambience': 1,
   'forest-ambience': 1,
   'plains-ambience': 1,
+  'desert-ambience': 1,
   'snowfield-ambience': 1,
   'swamp-ambience': 1,
   'volcanic-ambience': 1,
@@ -3138,6 +3153,7 @@ function resolveSoundEffectPriority(kind: SoundEffectKind): number {
     case 'river-ambience':
     case 'forest-ambience':
     case 'plains-ambience':
+    case 'desert-ambience':
     case 'snowfield-ambience':
     case 'swamp-ambience':
     case 'volcanic-ambience':
@@ -3179,6 +3195,7 @@ export function resolveSoundEffectVolumeBounds(
     case 'river-ambience':
     case 'forest-ambience':
     case 'plains-ambience':
+    case 'desert-ambience':
     case 'snowfield-ambience':
     case 'swamp-ambience':
     case 'volcanic-ambience':
