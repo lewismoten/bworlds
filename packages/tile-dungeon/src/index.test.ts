@@ -448,6 +448,34 @@ describe('tile dungeon', () => {
     expect(countSharedMaterialReferences(first, second)).toBeGreaterThanOrEqual(4);
   });
 
+  it('reuses full-detail gate, beacon, and banner materials across repeated builds', () => {
+    const plugin = createDungeonTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'dungeon');
+    const state = createDungeonState();
+
+    const first = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'dungeon' },
+      tileX: 5,
+      tileY: 4,
+      detailLevel: 'full',
+    }) as FakeGroup;
+    const second = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'dungeon' },
+      tileX: 5,
+      tileY: 4,
+      detailLevel: 'full',
+    }) as FakeGroup;
+
+    expect(countSharedMaterialReferences(first, second)).toBeGreaterThanOrEqual(7);
+    expect(findBeaconGlowMaterial(first)).toBe(findBeaconGlowMaterial(second));
+    expect(findBannerClothMaterial(first)).toBe(findBannerClothMaterial(second));
+    expect(findGateVoidMaterial(first)).toBe(findGateVoidMaterial(second));
+  });
+
   it('keeps full-detail dungeon model signatures stable after regional churn', () => {
     const plugin = createDungeonTilePlugin();
     const tile = plugin.tiles?.find((entry) => entry.kind === 'dungeon');
@@ -515,4 +543,59 @@ function collectMeshMaterials(root: FakeGroup): Set<FakeMaterial> {
     }
   });
   return materials;
+}
+
+function findBeaconGlowMaterial(root: FakeGroup) {
+  let material: FakeMaterial | undefined;
+  root.traverse((node) => {
+    if (
+      material ||
+      !(node instanceof FakeMesh) ||
+      typeof node.userData?.dungeonBeacon !== 'string'
+    ) {
+      return;
+    }
+
+    const resolved = Array.isArray(node.material) ? node.material[0] : node.material;
+    if (resolved?.options?.emissive === '#ef4444') {
+      material = resolved;
+    }
+  });
+  return material;
+}
+
+function findBannerClothMaterial(root: FakeGroup) {
+  let material: FakeMaterial | undefined;
+  root.traverse((node) => {
+    if (
+      material ||
+      !(node instanceof FakeMesh) ||
+      typeof node.userData?.dungeonBanner !== 'string'
+    ) {
+      return;
+    }
+
+    material = Array.isArray(node.material) ? node.material[0] : node.material;
+  });
+  return material;
+}
+
+function findGateVoidMaterial(root: FakeGroup) {
+  let material: FakeMaterial | undefined;
+  root.traverse((node) => {
+    if (material || !(node instanceof FakeMesh)) {
+      return;
+    }
+
+    const resolved = Array.isArray(node.material) ? node.material[0] : node.material;
+    if (
+      resolved &&
+      typeof resolved === 'object' &&
+      'options' in resolved &&
+      resolved.options?.color === '#000000'
+    ) {
+      material = resolved;
+    }
+  });
+  return material;
 }

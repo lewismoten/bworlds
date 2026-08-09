@@ -174,10 +174,7 @@ export function createDungeonTilePlugin(): RuntimePlugin {
 
       const portcullis = new three.Mesh(
         new three.PlaneGeometry(0.24, 0.28),
-        createBasicMaterial(three, {
-          color: '#111827',
-          side: three.DoubleSide,
-        })
+        style.gateVoidMaterial
       );
       portcullis.position.set(0, 0.17, 0.08);
       gate.add(portcullis);
@@ -191,10 +188,7 @@ export function createDungeonTilePlugin(): RuntimePlugin {
 
       const darkness = new three.Mesh(
         new three.CircleGeometry(0.12, 18),
-        createBasicMaterial(three, {
-          color: '#000000',
-          side: three.DoubleSide,
-        })
+        style.gateVoidMaterial
       );
       darkness.position.set(0, 0.15, -0.1);
       gate.add(darkness);
@@ -356,6 +350,8 @@ const resolveDungeonStyle = createRegionalMaterialResolver(
           return cached;
         }
         const barTexture = createDungeonBarTexture(three);
+        const bannerMaterialCache = new Map<string, ThreeMaterialLike>();
+        const glowMaterialCache = new Map<string, ThreeMaterialLike>();
         const style = {
           wallMaterial: createPaintedStandardMaterial(three, {
             color: '#ffffff',
@@ -406,6 +402,44 @@ const resolveDungeonStyle = createRegionalMaterialResolver(
             roughness: 0.7,
             metalness: 0.18,
           }),
+          gateVoidMaterial: createBasicMaterial(three, {
+            color: '#000000',
+            side: three.DoubleSide,
+          }),
+          getGlowMaterial(dayIntensity: number, nightIntensity: number) {
+            const cacheKey = `${dayIntensity}:${nightIntensity}`;
+            const cachedMaterial = glowMaterialCache.get(cacheKey);
+            if (cachedMaterial) {
+              return cachedMaterial;
+            }
+
+            const material = new three.MeshStandardMaterial({
+              color: '#ef4444',
+              emissive: '#ef4444',
+              emissiveIntensity: dayIntensity,
+              roughness: 0.3,
+              metalness: 0.04,
+            });
+            glowMaterialCache.set(cacheKey, material);
+            return material;
+          },
+          getBannerMaterial(color: string) {
+            const cachedMaterial = bannerMaterialCache.get(color);
+            if (cachedMaterial) {
+              return cachedMaterial;
+            }
+
+            const material = new three.MeshStandardMaterial({
+              color,
+              emissive: color,
+              emissiveIntensity: 0.03,
+              roughness: 0.86,
+              metalness: 0.02,
+              side: three.DoubleSide,
+            });
+            bannerMaterialCache.set(color, material);
+            return material;
+          },
         };
         this.materialCache.set(three as object, style);
         return style;
@@ -442,13 +476,10 @@ function createDungeonBeacon(
   const glow = markPoiLightEmitter(
     new three.Mesh(
       new three.SphereGeometry(descriptor.glowScale, 6, 6),
-      new three.MeshStandardMaterial({
-        color: '#ef4444',
-        emissive: '#ef4444',
-        emissiveIntensity: descriptor.glowDayIntensity,
-        roughness: 0.3,
-        metalness: 0.04,
-      })
+      style.getGlowMaterial(
+        descriptor.glowDayIntensity,
+        descriptor.glowNightIntensity
+      )
     ),
     {
       kind: 'emissive-mesh',
@@ -509,14 +540,7 @@ function createDungeonBanner(
   const cloth = markPoiWindResponder(
     new three.Mesh(
       new three.PlaneGeometry(descriptor.width, descriptor.length),
-      new three.MeshStandardMaterial({
-        color: descriptor.color,
-        emissive: descriptor.color,
-        emissiveIntensity: 0.03,
-        roughness: 0.86,
-        metalness: 0.02,
-        side: three.DoubleSide,
-      })
+      style.getBannerMaterial(descriptor.color)
     ),
     {
       axis: 'z',
@@ -676,6 +700,12 @@ interface DungeonStyle {
   roofMaterial: ThreeMaterialLike;
   trimMaterial: ThreeMaterialLike;
   barMaterial: ThreeMaterialLike;
+  gateVoidMaterial: ThreeMaterialLike;
+  getGlowMaterial(
+    dayIntensity: number,
+    nightIntensity: number
+  ): ThreeMaterialLike;
+  getBannerMaterial(color: string): ThreeMaterialLike;
 }
 
 interface DungeonStyleBlueprint {
