@@ -441,6 +441,109 @@ describe('sound effects', () => {
     }
   });
 
+  it('applies declared frequency sweeps to oscillator-backed effects', () => {
+    const createdOscillators: Array<{
+      onended: ((event: Event) => void) | null;
+      type: string;
+      frequency: {
+        setValueAtTime: ReturnType<typeof vi.fn>;
+        exponentialRampToValueAtTime: ReturnType<typeof vi.fn>;
+        linearRampToValueAtTime: ReturnType<typeof vi.fn>;
+      };
+      connect: ReturnType<typeof vi.fn>;
+      disconnect: ReturnType<typeof vi.fn>;
+      start: ReturnType<typeof vi.fn>;
+      stop: ReturnType<typeof vi.fn>;
+    }> = [];
+
+    class FakeAudioContext {
+      state: AudioContextState = 'running';
+      currentTime = 0;
+      destination = {};
+      createOscillator() {
+        const oscillator = {
+          onended: null as ((event: Event) => void) | null,
+          type: 'sine',
+          frequency: {
+            setValueAtTime: vi.fn(),
+            exponentialRampToValueAtTime: vi.fn(),
+            linearRampToValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+          start: vi.fn(),
+          stop: vi.fn(),
+        };
+        createdOscillators.push(oscillator);
+        return oscillator as unknown as OscillatorNode;
+      }
+      createGain() {
+        return {
+          gain: {
+            setValueAtTime: vi.fn(),
+            exponentialRampToValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+        } as unknown as GainNode;
+      }
+      createStereoPanner() {
+        return {
+          pan: {
+            setValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+        } as unknown as StereoPannerNode;
+      }
+      resume() {
+        return Promise.resolve();
+      }
+    }
+
+    const originalAudioContext = globalThis.AudioContext;
+    vi.stubGlobal('AudioContext', FakeAudioContext);
+
+    try {
+      const sink = createWebAudioSoundEffectSink();
+      sink.play({
+        kind: 'combat-magic',
+        nowMs: 0,
+        frequency: 244,
+        durationMs: 320,
+        volume: 0.05,
+        waveform: 'triangle',
+        sweeps: [
+          {
+            curve: 'linear',
+            targetMultiplier: 1.18,
+            atProgress: 0.3,
+          },
+          {
+            curve: 'linear',
+            targetMultiplier: 0.86,
+            atProgress: 1,
+          },
+        ],
+      });
+
+      const oscillator = createdOscillators[0];
+      expect(oscillator?.frequency.setValueAtTime).toHaveBeenCalledWith(244, 0);
+      expect(
+        oscillator?.frequency.linearRampToValueAtTime
+      ).toHaveBeenNthCalledWith(1, 244 * 1.18, 0.096);
+      expect(
+        oscillator?.frequency.linearRampToValueAtTime
+      ).toHaveBeenNthCalledWith(2, 244 * 0.86, 0.32);
+    } finally {
+      if (originalAudioContext) {
+        vi.stubGlobal('AudioContext', originalAudioContext);
+      } else {
+        vi.unstubAllGlobals();
+      }
+    }
+  });
+
   it('limits identical low-priority ambient voices in the web audio sink', () => {
     const createdOscillators: Array<{
       onended: ((event: Event) => void) | null;

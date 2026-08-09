@@ -136,4 +136,47 @@ describe('procedural sound effect generator', () => {
     expect(effect.layers?.[0]?.frequency).toBeCloseTo(129.6, 4);
     expect(effect.layers?.[1]?.frequency).toBeCloseTo(219.6, 4);
   });
+
+  it('preserves ordered frequency sweep definitions on generated sounds', () => {
+    const generator = createProceduralSoundEffectGenerator();
+    const effect = generator.generate({
+      kind: 'combat-magic',
+      nowMs: 900,
+      seed: 5,
+      recipe: {
+        id: 'combat-magic-sweep',
+        baseFrequency: 244,
+        baseDurationMs: 320,
+        baseVolume: 0.05,
+        waveform: 'triangle',
+        sweeps: [
+          {
+            curve: 'linear',
+            targetMultiplier: 0.86,
+            atProgress: 1,
+          },
+          {
+            curve: 'linear',
+            targetMultiplier: 1.18,
+            atProgress: 0.3,
+          },
+        ],
+      },
+    });
+
+    expect(effect.sweeps).toEqual([
+      {
+        curve: 'linear',
+        targetMultiplier: 1.18,
+        targetFrequency: undefined,
+        atProgress: 0.3,
+      },
+      {
+        curve: 'linear',
+        targetMultiplier: 0.86,
+        targetFrequency: undefined,
+        atProgress: 1,
+      },
+    ]);
+  });
 });

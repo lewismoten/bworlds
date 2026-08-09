@@ -37,6 +37,7 @@ export type ProceduralSoundEffect = {
   volume: number;
   waveform: SoundWaveform;
   noiseColor?: ProceduralNoiseColor;
+  sweeps?: ProceduralSoundFrequencySweep[];
   layers?: ProceduralSoundEffectLayer[];
   emitter?: SoundPosition;
   listener?: SoundPosition;
@@ -51,6 +52,16 @@ export type ProceduralSoundEffectLayer = {
   volume: number;
   waveform: SoundWaveform;
   noiseColor?: ProceduralNoiseColor;
+  sweeps?: ProceduralSoundFrequencySweep[];
+};
+
+export type ProceduralSoundFrequencySweepCurve = 'linear' | 'exponential';
+
+export type ProceduralSoundFrequencySweep = {
+  curve: ProceduralSoundFrequencySweepCurve;
+  targetMultiplier?: number;
+  targetFrequency?: number;
+  atProgress: number;
 };
 
 export type ProceduralSoundRecipe = {
@@ -70,7 +81,16 @@ export type ProceduralSoundRecipe = {
   maxDurationMs?: number;
   minVolume?: number;
   maxVolume?: number;
+  sweeps?: readonly ProceduralSoundFrequencySweepRecipe[];
   layers?: readonly ProceduralSoundLayerRecipe[];
+};
+
+export type ProceduralSoundFrequencySweepRecipe = {
+  curve: ProceduralSoundFrequencySweepCurve;
+  targetMultiplier?: number;
+  targetFrequency?: number;
+  targetVariation?: number;
+  atProgress: number;
 };
 
 export type ProceduralSoundLayerRecipe = {
@@ -91,6 +111,7 @@ export type ProceduralSoundLayerRecipe = {
   maxDurationMs?: number;
   minVolume?: number;
   maxVolume?: number;
+  sweeps?: readonly ProceduralSoundFrequencySweepRecipe[];
 };
 
 export type ProceduralSoundEffectGenerator = {
@@ -153,6 +174,12 @@ export function createProceduralSoundEffectGenerator(): ProceduralSoundEffectGen
         variationDepth,
         random
       );
+      const sweeps = resolveFrequencySweeps(
+        recipe.sweeps,
+        frequency,
+        variationDepth,
+        random
+      );
 
       return {
         kind,
@@ -162,6 +189,7 @@ export function createProceduralSoundEffectGenerator(): ProceduralSoundEffectGen
         volume,
         waveform,
         noiseColor,
+        sweeps,
         layers,
         emitter,
         listener,
@@ -199,47 +227,89 @@ function resolveEffectLayers(
     const baseDurationMs =
       base.durationMs * (layerRecipe.durationMultiplier ?? 1);
     const baseVolume = base.volume * (layerRecipe.volumeMultiplier ?? 1);
+    const frequency = clampValue(
+      varyScalar(
+        baseFrequency,
+        layerRecipe.frequencyVariation ?? 0,
+        variationDepth,
+        random
+      ),
+      layerRecipe.minFrequency ?? 20,
+      layerRecipe.maxFrequency ?? 20_000
+    );
+    const durationMs = clampValue(
+      Math.round(
+        varyScalar(
+          baseDurationMs,
+          layerRecipe.durationVariation ?? 0,
+          variationDepth,
+          random
+        )
+      ),
+      layerRecipe.minDurationMs ?? 20,
+      layerRecipe.maxDurationMs ?? Number.POSITIVE_INFINITY
+    );
+    const volume = clampValue(
+      varyScalar(
+        baseVolume,
+        layerRecipe.volumeVariation ?? 0,
+        variationDepth,
+        random
+      ),
+      layerRecipe.minVolume ?? 0.0001,
+      layerRecipe.maxVolume ?? 1
+    );
 
     layers.push({
       id: layerRecipe.id,
-      frequency: clampValue(
-        varyScalar(
-          baseFrequency,
-          layerRecipe.frequencyVariation ?? 0,
-          variationDepth,
-          random
-        ),
-        layerRecipe.minFrequency ?? 20,
-        layerRecipe.maxFrequency ?? 20_000
-      ),
-      durationMs: clampValue(
-        Math.round(
-          varyScalar(
-            baseDurationMs,
-            layerRecipe.durationVariation ?? 0,
-            variationDepth,
-            random
-          )
-        ),
-        layerRecipe.minDurationMs ?? 20,
-        layerRecipe.maxDurationMs ?? Number.POSITIVE_INFINITY
-      ),
-      volume: clampValue(
-        varyScalar(
-          baseVolume,
-          layerRecipe.volumeVariation ?? 0,
-          variationDepth,
-          random
-        ),
-        layerRecipe.minVolume ?? 0.0001,
-        layerRecipe.maxVolume ?? 1
-      ),
+      frequency,
+      durationMs,
+      volume,
       waveform,
       noiseColor,
+      sweeps: resolveFrequencySweeps(
+        layerRecipe.sweeps,
+        frequency,
+        variationDepth,
+        random
+      ),
     });
   }
 
   return layers;
+}
+
+function resolveFrequencySweeps(
+  sweepRecipes: readonly ProceduralSoundFrequencySweepRecipe[] | undefined,
+  baseFrequency: number,
+  variationDepth: number,
+  random: () => number
+): ProceduralSoundFrequencySweep[] | undefined {
+  if (!sweepRecipes || sweepRecipes.length === 0) {
+    return undefined;
+  }
+
+  const sweeps: ProceduralSoundFrequencySweep[] = [];
+  for (const sweepRecipe of sweepRecipes) {
+    const targetFrequency =
+      typeof sweepRecipe.targetFrequency === 'number'
+        ? varyScalar(
+            sweepRecipe.targetFrequency,
+            sweepRecipe.targetVariation ?? 0,
+            variationDepth,
+            random
+          )
+        : undefined;
+    sweeps.push({
+      curve: sweepRecipe.curve,
+      targetMultiplier: sweepRecipe.targetMultiplier,
+      targetFrequency,
+      atProgress: clampValue(sweepRecipe.atProgress, 0, 1),
+    });
+  }
+
+  sweeps.sort((left, right) => left.atProgress - right.atProgress);
+  return sweeps;
 }
 
 function resolveWaveform(

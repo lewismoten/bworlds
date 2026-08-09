@@ -313,9 +313,104 @@ function resolveProceduralSoundRecipe(
     baseVolume: resolveBaseSoundEffectVolume(kind, profile),
     waveform: resolveBaseSoundEffectWaveform(kind, tileKind, profile),
     noiseColor: resolveBaseSoundEffectNoiseColor(kind),
+    sweeps: resolveProceduralSoundSweeps(kind),
     layers: resolveProceduralSoundLayers(kind),
     ...resolveProceduralSoundVariation(kind),
   };
+}
+
+function resolveProceduralSoundSweeps(kind: SoundEffectKind) {
+  switch (kind) {
+    case 'jump':
+      return [
+        {
+          curve: 'exponential' as const,
+          targetMultiplier: 1.35,
+          atProgress: 1,
+        },
+      ] as const;
+    case 'landing':
+      return [
+        {
+          curve: 'exponential' as const,
+          targetMultiplier: 0.78,
+          atProgress: 1,
+        },
+      ] as const;
+    case 'advancement':
+      return [
+        {
+          curve: 'exponential' as const,
+          targetMultiplier: 1.5,
+          atProgress: 0.55,
+        },
+      ] as const;
+    case 'train-engine':
+      return [
+        {
+          curve: 'exponential' as const,
+          targetMultiplier: 0.82,
+          atProgress: 1,
+        },
+      ] as const;
+    case 'train-whistle':
+      return [
+        {
+          curve: 'exponential' as const,
+          targetMultiplier: 1.28,
+          atProgress: 0.72,
+        },
+      ] as const;
+    case 'paddle-calliope':
+      return [
+        {
+          curve: 'linear' as const,
+          targetMultiplier: 1.08,
+          atProgress: 0.32,
+        },
+        {
+          curve: 'linear' as const,
+          targetMultiplier: 0.94,
+          atProgress: 0.88,
+        },
+      ] as const;
+    case 'steam-whistle':
+      return [
+        {
+          curve: 'exponential' as const,
+          targetMultiplier: 1.22,
+          atProgress: 0.22,
+        },
+        {
+          curve: 'exponential' as const,
+          targetMultiplier: 0.92,
+          atProgress: 1,
+        },
+      ] as const;
+    case 'combat-weapon':
+      return [
+        {
+          curve: 'exponential' as const,
+          targetMultiplier: 0.64,
+          atProgress: 1,
+        },
+      ] as const;
+    case 'combat-magic':
+      return [
+        {
+          curve: 'linear' as const,
+          targetMultiplier: 1.18,
+          atProgress: 0.3,
+        },
+        {
+          curve: 'linear' as const,
+          targetMultiplier: 0.86,
+          atProgress: 1,
+        },
+      ] as const;
+    default:
+      return undefined;
+  }
 }
 
 function resolveProceduralSoundLayers(kind: SoundEffectKind) {
@@ -1707,71 +1802,19 @@ function applySoundEffectSourceShape(
 
   source.type = effect.waveform;
   source.frequency.setValueAtTime(effect.frequency, startAt);
-  if (effect.kind === 'jump') {
-    source.frequency.exponentialRampToValueAtTime(
-      effect.frequency * 1.35,
-      startAt + durationSeconds
+  for (const sweep of effect.sweeps ?? []) {
+    const targetFrequency = Math.max(
+      40,
+      typeof sweep.targetFrequency === 'number'
+        ? sweep.targetFrequency
+        : effect.frequency * (sweep.targetMultiplier ?? 1)
     );
-  }
-  if (effect.kind === 'landing') {
-    source.frequency.exponentialRampToValueAtTime(
-      Math.max(40, effect.frequency * 0.78),
-      startAt + durationSeconds
-    );
-  }
-  if (effect.kind === 'advancement') {
-    source.frequency.exponentialRampToValueAtTime(
-      effect.frequency * 1.5,
-      startAt + durationSeconds * 0.55
-    );
-  }
-  if (effect.kind === 'train-engine') {
-    source.frequency.exponentialRampToValueAtTime(
-      Math.max(48, effect.frequency * 0.82),
-      startAt + durationSeconds
-    );
-  }
-  if (effect.kind === 'train-whistle') {
-    source.frequency.exponentialRampToValueAtTime(
-      effect.frequency * 1.28,
-      startAt + durationSeconds * 0.72
-    );
-  }
-  if (effect.kind === 'paddle-calliope') {
-    source.frequency.linearRampToValueAtTime(
-      effect.frequency * 1.08,
-      startAt + durationSeconds * 0.32
-    );
-    source.frequency.linearRampToValueAtTime(
-      effect.frequency * 0.94,
-      startAt + durationSeconds * 0.88
-    );
-  }
-  if (effect.kind === 'steam-whistle') {
-    source.frequency.exponentialRampToValueAtTime(
-      effect.frequency * 1.22,
-      startAt + durationSeconds * 0.22
-    );
-    source.frequency.exponentialRampToValueAtTime(
-      effect.frequency * 0.92,
-      startAt + durationSeconds
-    );
-  }
-  if (effect.kind === 'combat-weapon') {
-    source.frequency.exponentialRampToValueAtTime(
-      Math.max(60, effect.frequency * 0.64),
-      startAt + durationSeconds
-    );
-  }
-  if (effect.kind === 'combat-magic') {
-    source.frequency.linearRampToValueAtTime(
-      effect.frequency * 1.18,
-      startAt + durationSeconds * 0.3
-    );
-    source.frequency.linearRampToValueAtTime(
-      effect.frequency * 0.86,
-      startAt + durationSeconds
-    );
+    const targetAt = startAt + durationSeconds * sweep.atProgress;
+    if (sweep.curve === 'linear') {
+      source.frequency.linearRampToValueAtTime(targetFrequency, targetAt);
+      continue;
+    }
+    source.frequency.exponentialRampToValueAtTime(targetFrequency, targetAt);
   }
 }
 
