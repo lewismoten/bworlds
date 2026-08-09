@@ -8,6 +8,7 @@ type SoundEffectKind =
   | 'open'
   | 'close'
   | 'wind'
+  | 'ocean'
   | 'advancement'
   | 'train-engine'
   | 'train-whistle'
@@ -94,6 +95,7 @@ export type SoundEffectController = {
     walking: boolean;
     isJumping: boolean;
     viewMode: ViewModeLike;
+    ambianceEnabled?: boolean;
     tileKind?: SurfaceKind;
     weatherKind?: string;
     weatherIntensity?: number;
@@ -106,6 +108,11 @@ export type SoundEffectController = {
     nearbyPaddleBoat?: {
       progress?: number;
       whistlePhase?: 'arrival' | 'departure';
+      emitter?: SoundPosition;
+      listener?: SoundPosition;
+    } | null;
+    nearbyOcean?: {
+      intensity?: number;
       emitter?: SoundPosition;
       listener?: SoundPosition;
     } | null;
@@ -261,6 +268,7 @@ export function createSoundEffectController(
   let lastInteractionAtMs = -Infinity;
   let lastWindAtMs = -Infinity;
   let lastProgressionAtMs = -Infinity;
+  let lastOceanAtMs = -Infinity;
   let lastTrainEngineAtMs = -Infinity;
   let lastTrainWhistleAtMs = -Infinity;
   let lastPaddleCalliopeAtMs = -Infinity;
@@ -287,121 +295,129 @@ export function createSoundEffectController(
           ? profile.footstepFrequency + 72
           : kind === 'wind'
             ? 190 + (tileKind === 'forest' ? 16 : 0) + variantOffset * 0.4
-            : kind === 'advancement'
-              ? resolveAdvancementFrequency()
-              : kind === 'train-engine'
-                ? 74 + variantOffset * 0.35
-                : kind === 'train-whistle'
-                  ? 356 + variantOffset * 0.6
-                  : kind === 'paddle-calliope'
-                    ? resolvePaddleBoatCalliopeFrequency(undefined)
-                    : kind === 'steam-whistle'
-                      ? resolveSteamWhistleFrequency()
-                      : kind === 'combat-weapon'
-                        ? 148 + variantOffset * 0.5
-                        : kind === 'combat-magic'
-                          ? 244 + variantOffset * 0.5
-                          : kind === 'open'
-                            ? resolveInteractionFrequency(
-                                'open',
-                                tileKind,
-                                profile,
-                                variantOffset
-                              )
-                            : kind === 'close'
+            : kind === 'ocean'
+              ? resolveOceanAmbienceFrequency(undefined)
+              : kind === 'advancement'
+                ? resolveAdvancementFrequency()
+                : kind === 'train-engine'
+                  ? 74 + variantOffset * 0.35
+                  : kind === 'train-whistle'
+                    ? 356 + variantOffset * 0.6
+                    : kind === 'paddle-calliope'
+                      ? resolvePaddleBoatCalliopeFrequency(undefined)
+                      : kind === 'steam-whistle'
+                        ? resolveSteamWhistleFrequency()
+                        : kind === 'combat-weapon'
+                          ? 148 + variantOffset * 0.5
+                          : kind === 'combat-magic'
+                            ? 244 + variantOffset * 0.5
+                            : kind === 'open'
                               ? resolveInteractionFrequency(
-                                  'close',
+                                  'open',
                                   tileKind,
                                   profile,
                                   variantOffset
                                 )
-                              : kind === 'blocked'
-                                ? Math.max(
-                                    58,
-                                    profile.landingFrequency -
-                                      18 +
-                                      variantOffset
+                              : kind === 'close'
+                                ? resolveInteractionFrequency(
+                                    'close',
+                                    tileKind,
+                                    profile,
+                                    variantOffset
                                   )
-                                : kind === 'landing'
-                                  ? profile.landingFrequency + variantOffset
-                                  : profile.footstepFrequency + variantOffset,
+                                : kind === 'blocked'
+                                  ? Math.max(
+                                      58,
+                                      profile.landingFrequency -
+                                        18 +
+                                        variantOffset
+                                    )
+                                  : kind === 'landing'
+                                    ? profile.landingFrequency + variantOffset
+                                    : profile.footstepFrequency + variantOffset,
       durationMs:
         kind === 'jump'
           ? 140
           : kind === 'wind'
             ? 680
-            : kind === 'advancement'
-              ? 260
-              : kind === 'train-engine'
-                ? 420
-                : kind === 'train-whistle'
-                  ? 880
-                  : kind === 'paddle-calliope'
-                    ? 1180
-                    : kind === 'steam-whistle'
-                      ? 1050
-                      : kind === 'combat-weapon'
-                        ? 160
-                        : kind === 'combat-magic'
-                          ? 320
-                          : kind === 'landing'
-                            ? 120
-                            : kind === 'blocked'
-                              ? 105
-                              : kind === 'open' || kind === 'close'
-                                ? 135
-                                : 90,
+            : kind === 'ocean'
+              ? 1680
+              : kind === 'advancement'
+                ? 260
+                : kind === 'train-engine'
+                  ? 420
+                  : kind === 'train-whistle'
+                    ? 880
+                    : kind === 'paddle-calliope'
+                      ? 1180
+                      : kind === 'steam-whistle'
+                        ? 1050
+                        : kind === 'combat-weapon'
+                          ? 160
+                          : kind === 'combat-magic'
+                            ? 320
+                            : kind === 'landing'
+                              ? 120
+                              : kind === 'blocked'
+                                ? 105
+                                : kind === 'open' || kind === 'close'
+                                  ? 135
+                                  : 90,
       volume:
         kind === 'jump'
           ? profile.footstepVolume * 1.2
           : kind === 'wind'
             ? 0.018
-            : kind === 'advancement'
-              ? 0.052
-              : kind === 'train-engine'
-                ? 0.03
-                : kind === 'train-whistle'
-                  ? 0.042
-                  : kind === 'paddle-calliope'
-                    ? 0.034
-                    : kind === 'steam-whistle'
-                      ? 0.048
-                      : kind === 'combat-weapon'
-                        ? 0.056
-                        : kind === 'combat-magic'
-                          ? 0.05
-                          : kind === 'open' || kind === 'close'
-                            ? profile.landingVolume * 0.8
-                            : kind === 'blocked'
-                              ? profile.landingVolume * 0.7
-                              : kind === 'landing'
-                                ? profile.landingVolume
-                                : profile.footstepVolume,
+            : kind === 'ocean'
+              ? 0.026
+              : kind === 'advancement'
+                ? 0.052
+                : kind === 'train-engine'
+                  ? 0.03
+                  : kind === 'train-whistle'
+                    ? 0.042
+                    : kind === 'paddle-calliope'
+                      ? 0.034
+                      : kind === 'steam-whistle'
+                        ? 0.048
+                        : kind === 'combat-weapon'
+                          ? 0.056
+                          : kind === 'combat-magic'
+                            ? 0.05
+                            : kind === 'open' || kind === 'close'
+                              ? profile.landingVolume * 0.8
+                              : kind === 'blocked'
+                                ? profile.landingVolume * 0.7
+                                : kind === 'landing'
+                                  ? profile.landingVolume
+                                  : profile.footstepVolume,
       waveform:
         kind === 'blocked'
           ? 'sawtooth'
           : kind === 'wind'
             ? 'triangle'
-            : kind === 'advancement'
+            : kind === 'ocean'
               ? 'sine'
-              : kind === 'train-engine'
-                ? 'sawtooth'
-                : kind === 'train-whistle'
-                  ? 'square'
-                  : kind === 'paddle-calliope'
-                    ? 'triangle'
-                    : kind === 'steam-whistle'
-                      ? 'square'
-                      : kind === 'combat-weapon'
-                        ? 'sawtooth'
-                        : kind === 'combat-magic'
-                          ? 'triangle'
-                          : kind === 'open' || kind === 'close'
-                            ? resolveInteractionWaveform(
-                                tileKind,
-                                profile.waveform
-                              )
-                            : profile.waveform,
+              : kind === 'advancement'
+                ? 'sine'
+                : kind === 'train-engine'
+                  ? 'sawtooth'
+                  : kind === 'train-whistle'
+                    ? 'square'
+                    : kind === 'paddle-calliope'
+                      ? 'triangle'
+                      : kind === 'steam-whistle'
+                        ? 'square'
+                        : kind === 'combat-weapon'
+                          ? 'sawtooth'
+                          : kind === 'combat-magic'
+                            ? 'triangle'
+                            : kind === 'open' || kind === 'close'
+                              ? resolveInteractionWaveform(
+                                  tileKind,
+                                  profile.waveform
+                                )
+                              : profile.waveform,
       emitter,
       listener,
     });
@@ -511,12 +527,14 @@ export function createSoundEffectController(
       walking,
       isJumping,
       viewMode,
+      ambianceEnabled,
       tileKind,
       weatherKind,
       weatherIntensity,
       windStrength,
       nearbyTrain,
       nearbyPaddleBoat,
+      nearbyOcean,
       emitter,
       listener,
     }) {
@@ -525,89 +543,111 @@ export function createSoundEffectController(
         return;
       }
 
-      if (
-        nearbyTrain &&
-        nearbyTrain.emitter &&
-        nowMs - lastTrainEngineAtMs >= getTrainEngineCadenceMs()
-      ) {
-        lastTrainEngineAtMs = nowMs;
-        play(
-          'train-engine',
-          nowMs,
-          'rail',
-          nearbyTrain.emitter,
-          nearbyTrain.listener ?? listener
-        );
-      }
-      if (
-        nearbyTrain &&
-        nearbyTrain.emitter &&
-        shouldPlayTrainWhistle(nearbyTrain.progress) &&
-        nowMs - lastTrainWhistleAtMs >= 9000
-      ) {
-        lastTrainWhistleAtMs = nowMs;
-        play(
-          'train-whistle',
-          nowMs,
-          'rail',
-          nearbyTrain.emitter,
-          nearbyTrain.listener ?? listener
-        );
-      }
-      if (
-        nearbyPaddleBoat &&
-        nearbyPaddleBoat.emitter &&
-        nowMs - lastPaddleCalliopeAtMs >= getPaddleBoatCalliopeCadenceMs()
-      ) {
-        lastPaddleCalliopeAtMs = nowMs;
-        sink.play({
-          kind: 'paddle-calliope',
-          nowMs,
-          frequency: resolvePaddleBoatCalliopeFrequency(
-            nearbyPaddleBoat.progress
-          ),
-          durationMs: 1180,
-          volume: 0.034,
-          waveform: 'triangle',
-          emitter: nearbyPaddleBoat.emitter,
-          listener: nearbyPaddleBoat.listener ?? listener,
-        });
-      }
-      if (
-        nearbyPaddleBoat?.emitter &&
-        shouldPlaySteamWhistle(nearbyPaddleBoat.whistlePhase)
-      ) {
-        const whistleSignature = `${nearbyPaddleBoat.emitter.x}:${nearbyPaddleBoat.emitter.y}:${nearbyPaddleBoat.whistlePhase}`;
+      if (ambianceEnabled !== false) {
         if (
-          whistleSignature !== lastSteamWhistleSignature &&
-          nowMs - lastSteamWhistleAtMs >= 1200
+          nearbyTrain &&
+          nearbyTrain.emitter &&
+          nowMs - lastTrainEngineAtMs >= getTrainEngineCadenceMs()
         ) {
-          lastSteamWhistleSignature = whistleSignature;
-          lastSteamWhistleAtMs = nowMs;
-          sink.play({
-            kind: 'steam-whistle',
+          lastTrainEngineAtMs = nowMs;
+          play(
+            'train-engine',
             nowMs,
-            frequency: resolveSteamWhistleFrequency(
-              nearbyPaddleBoat.whistlePhase
+            'rail',
+            nearbyTrain.emitter,
+            nearbyTrain.listener ?? listener
+          );
+        }
+        if (
+          nearbyTrain &&
+          nearbyTrain.emitter &&
+          shouldPlayTrainWhistle(nearbyTrain.progress) &&
+          nowMs - lastTrainWhistleAtMs >= 9000
+        ) {
+          lastTrainWhistleAtMs = nowMs;
+          play(
+            'train-whistle',
+            nowMs,
+            'rail',
+            nearbyTrain.emitter,
+            nearbyTrain.listener ?? listener
+          );
+        }
+        if (
+          nearbyPaddleBoat &&
+          nearbyPaddleBoat.emitter &&
+          nowMs - lastPaddleCalliopeAtMs >= getPaddleBoatCalliopeCadenceMs()
+        ) {
+          lastPaddleCalliopeAtMs = nowMs;
+          sink.play({
+            kind: 'paddle-calliope',
+            nowMs,
+            frequency: resolvePaddleBoatCalliopeFrequency(
+              nearbyPaddleBoat.progress
             ),
-            durationMs: 1050,
-            volume: 0.048,
-            waveform: 'square',
+            durationMs: 1180,
+            volume: 0.034,
+            waveform: 'triangle',
             emitter: nearbyPaddleBoat.emitter,
             listener: nearbyPaddleBoat.listener ?? listener,
           });
         }
+        if (
+          nearbyPaddleBoat?.emitter &&
+          shouldPlaySteamWhistle(nearbyPaddleBoat.whistlePhase)
+        ) {
+          const whistleSignature = `${nearbyPaddleBoat.emitter.x}:${nearbyPaddleBoat.emitter.y}:${nearbyPaddleBoat.whistlePhase}`;
+          if (
+            whistleSignature !== lastSteamWhistleSignature &&
+            nowMs - lastSteamWhistleAtMs >= 1200
+          ) {
+            lastSteamWhistleSignature = whistleSignature;
+            lastSteamWhistleAtMs = nowMs;
+            sink.play({
+              kind: 'steam-whistle',
+              nowMs,
+              frequency: resolveSteamWhistleFrequency(
+                nearbyPaddleBoat.whistlePhase
+              ),
+              durationMs: 1050,
+              volume: 0.048,
+              waveform: 'square',
+              emitter: nearbyPaddleBoat.emitter,
+              listener: nearbyPaddleBoat.listener ?? listener,
+            });
+          }
+        } else {
+          lastSteamWhistleSignature = '';
+        }
+
+        if (
+          nearbyOcean?.emitter &&
+          nowMs - lastOceanAtMs >=
+            getOceanAmbienceCadenceMs(nearbyOcean.intensity ?? 0.5)
+        ) {
+          lastOceanAtMs = nowMs;
+          sink.play({
+            kind: 'ocean',
+            nowMs,
+            frequency: resolveOceanAmbienceFrequency(nearbyOcean.intensity),
+            durationMs: 1680,
+            volume: getOceanAmbienceVolume(nearbyOcean.intensity),
+            waveform: 'sine',
+            emitter: nearbyOcean.emitter,
+            listener: nearbyOcean.listener ?? listener,
+          });
+        }
+
+        if (
+          shouldPlayForestWindSound(tileKind, weatherKind, windStrength) &&
+          nowMs - lastWindAtMs >=
+            getForestWindCadenceMs(windStrength ?? weatherIntensity ?? 0)
+        ) {
+          lastWindAtMs = nowMs;
+          play('wind', nowMs, tileKind, emitter, listener);
+        }
       } else {
         lastSteamWhistleSignature = '';
-      }
-
-      if (
-        shouldPlayForestWindSound(tileKind, weatherKind, windStrength) &&
-        nowMs - lastWindAtMs >=
-          getForestWindCadenceMs(windStrength ?? weatherIntensity ?? 0)
-      ) {
-        lastWindAtMs = nowMs;
-        play('wind', nowMs, tileKind, emitter, listener);
       }
 
       if (!previousJumping && isJumping) {
@@ -653,6 +693,20 @@ export function shouldPlayForestWindSound(
 
 export function getForestWindCadenceMs(windStrength: number): number {
   return Math.round(clampValue(2600 - windStrength * 1200, 1200, 2600));
+}
+
+export function getOceanAmbienceCadenceMs(intensity: number): number {
+  return Math.round(clampValue(3200 - intensity * 1400, 1400, 3200));
+}
+
+export function getOceanAmbienceVolume(intensity: number | undefined): number {
+  return 0.016 + clampValue(intensity ?? 0.5, 0, 1) * 0.02;
+}
+
+export function resolveOceanAmbienceFrequency(
+  intensity: number | undefined
+): number {
+  return 88 + clampValue(intensity ?? 0.5, 0, 1) * 18;
 }
 
 export function getTrainEngineCadenceMs(): number {

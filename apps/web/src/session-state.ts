@@ -6,9 +6,7 @@ import type {
   ModelPreviewMode,
   TimekeeperDisplayMode,
 } from './time-controls.ts';
-import {
-  normalizeAudioPreferences,
-} from './audio-preferences.ts';
+import { normalizeAudioPreferences } from './audio-preferences.ts';
 import {
   parsePlayerPlacedPois,
   type PlayerPlacedPoiLike,
@@ -67,6 +65,7 @@ export type SavedSession = {
   celestialEventMode?: CelestialEventMode;
   musicEnabled?: boolean;
   soundEnabled?: boolean;
+  ambianceEnabled?: boolean;
   compassHeadingAngle?: number | null;
   cameraPitch?: number;
   playerLevel?: number;
@@ -101,6 +100,7 @@ export type SessionSnapshot = {
   celestialEventMode: CelestialEventMode;
   musicEnabled: boolean;
   soundEnabled: boolean;
+  ambianceEnabled: boolean;
   compassHeadingAngle: number | null;
   cameraPitch: number;
   playerLevel: number;
@@ -141,13 +141,15 @@ export function parseSavedSession(raw: string | null): SavedSession | null {
     }
     if (
       typeof parsed?.characterProfile !== 'undefined' &&
-      parseSavedCharacterProfile(JSON.stringify(parsed.characterProfile)) === null
+      parseSavedCharacterProfile(JSON.stringify(parsed.characterProfile)) ===
+        null
     ) {
       return null;
     }
     if (
       typeof parsed?.inventoryProfile !== 'undefined' &&
-      parseSavedInventoryProfile(JSON.stringify(parsed.inventoryProfile)) === null
+      parseSavedInventoryProfile(JSON.stringify(parsed.inventoryProfile)) ===
+        null
     ) {
       return null;
     }
@@ -247,6 +249,12 @@ export function parseSavedSession(raw: string | null): SavedSession | null {
       return null;
     }
     if (
+      typeof parsed?.ambianceEnabled !== 'undefined' &&
+      typeof parsed.ambianceEnabled !== 'boolean'
+    ) {
+      return null;
+    }
+    if (
       typeof parsed?.frozenWorldTimeMs !== 'undefined' &&
       parsed.frozenWorldTimeMs !== null &&
       typeof parsed.frozenWorldTimeMs !== 'number'
@@ -281,7 +289,9 @@ export function parseSavedSession(raw: string | null): SavedSession | null {
     if (
       typeof parsed?.completedQuestIds !== 'undefined' &&
       (!Array.isArray(parsed.completedQuestIds) ||
-        parsed.completedQuestIds.some((value: unknown) => typeof value !== 'string'))
+        parsed.completedQuestIds.some(
+          (value: unknown) => typeof value !== 'string'
+        ))
     ) {
       return null;
     }
@@ -327,6 +337,7 @@ export function parseSavedSession(raw: string | null): SavedSession | null {
       ...parsed,
       musicEnabled: audioPreferences.musicEnabled,
       soundEnabled: audioPreferences.soundEnabled,
+      ambianceEnabled: audioPreferences.ambianceEnabled,
     } as SavedSession;
   } catch {
     return null;

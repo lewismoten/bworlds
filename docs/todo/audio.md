@@ -60,8 +60,8 @@
 - [x] When items, doors, corpses are opened and closed
 - [x] Combat sounds with different weapons / magic
 - [x] Skill advancement, level up, etc.
-- [ ] Allow random ocean tiles to generate ocean sounds as ambiance so only one or two can be heard within the players hearing distance
-- [ ] Allow the user to toggle ambiance sounds
+- [x] Allow random ocean tiles to generate ocean sounds as ambiance so only one or two can be heard within the players hearing distance
+- [x] Allow the user to toggle ambiance sounds
 - [ ] All tiles and POI support ambiance. Base tiles have a lower chance of playing ambiance as a sound source so that only 1 or two are within the players hearing distance.
 
 # Development checklist

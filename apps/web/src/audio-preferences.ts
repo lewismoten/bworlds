@@ -1,13 +1,16 @@
-export type AudioPreferenceKey = 'musicEnabled' | 'soundEnabled';
+export type AudioPreferenceKey =
+  'musicEnabled' | 'soundEnabled' | 'ambianceEnabled';
 
 export type AudioPreferences = {
   musicEnabled: boolean;
   soundEnabled: boolean;
+  ambianceEnabled: boolean;
 };
 
 export const DEFAULT_AUDIO_PREFERENCES: AudioPreferences = {
   musicEnabled: true,
   soundEnabled: true,
+  ambianceEnabled: true,
 };
 
 export function normalizeAudioPreferences(
@@ -22,6 +25,10 @@ export function normalizeAudioPreferences(
       typeof value?.soundEnabled === 'boolean'
         ? value.soundEnabled
         : DEFAULT_AUDIO_PREFERENCES.soundEnabled,
+    ambianceEnabled:
+      typeof value?.ambianceEnabled === 'boolean'
+        ? value.ambianceEnabled
+        : DEFAULT_AUDIO_PREFERENCES.ambianceEnabled,
   };
 }
 
@@ -41,4 +48,8 @@ export function formatMusicToggleLabel(enabled: boolean): string {
 
 export function formatSoundToggleLabel(enabled: boolean): string {
   return `Sound: ${enabled ? 'On' : 'Off'}`;
+}
+
+export function formatAmbianceToggleLabel(enabled: boolean): string {
+  return `Ambiance: ${enabled ? 'On' : 'Off'}`;
 }

@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_DAY_LENGTH_MS, getDaylightCycleState } from '@bworlds/core';
 import { DEFAULT_PLAYER_LEVEL } from './player-progression.ts';
-import { parseSavedSession, serializeSessionSnapshot } from './session-state.ts';
+import {
+  parseSavedSession,
+  serializeSessionSnapshot,
+} from './session-state.ts';
 
 describe('session state', () => {
   it('round-trips frozen time, active tab, and compass heading state', () => {
@@ -66,11 +69,14 @@ describe('session state', () => {
       celestialEventMode: 'aurora',
       musicEnabled: false,
       soundEnabled: true,
+      ambianceEnabled: false,
       compassHeadingAngle: -Math.PI / 2,
       cameraPitch: -0.22,
       playerLevel: 4,
       completedQuestIds: ['tower:1'],
-      inventory: [{ id: 'rope', quantity: 2, label: 'Coil of Rope', kind: 'gear' }],
+      inventory: [
+        { id: 'rope', quantity: 2, label: 'Coil of Rope', kind: 'gear' },
+      ],
       playerPlacedPois: [
         {
           x: 4,
@@ -114,6 +120,7 @@ describe('session state', () => {
         inspectorTab: 'compass',
         musicEnabled: false,
         soundEnabled: true,
+        ambianceEnabled: false,
         compassHeadingAngle: -Math.PI / 2,
         cameraPitch: -0.22,
         playerLevel: 4,
@@ -138,6 +145,16 @@ describe('session state', () => {
           player: { x: 0, y: 0, facing: 0 },
           stack: [{ id: 'overworld', depth: 0 }],
           worldSeed: 42,
+        })
+      )
+    ).toBeNull();
+
+    expect(
+      parseSavedSession(
+        JSON.stringify({
+          player: { x: 0, y: 0, facing: 0 },
+          stack: [{ id: 'overworld', depth: 0 }],
+          ambianceEnabled: 'off',
         })
       )
     ).toBeNull();
@@ -416,6 +433,7 @@ describe('session state', () => {
       celestialEventMode: 'auto',
       musicEnabled: true,
       soundEnabled: true,
+      ambianceEnabled: true,
       compassHeadingAngle: null,
       cameraPitch: -0.08,
       playerLevel: 3,

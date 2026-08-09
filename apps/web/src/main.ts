@@ -80,6 +80,7 @@ import {
 } from './session-state.ts';
 import {
   DEFAULT_AUDIO_PREFERENCES,
+  formatAmbianceToggleLabel,
   formatMusicToggleLabel,
   formatSoundToggleLabel,
   normalizeAudioPreferences,
@@ -335,6 +336,7 @@ root.innerHTML = `
         <button id="toggle-minimap-display" type="button">Mini Map: Hidden</button>
         <button id="toggle-music" type="button">Music: On</button>
         <button id="toggle-sound" type="button">Sound: On</button>
+        <button id="toggle-ambiance" type="button">Ambiance: On</button>
         <button id="zoom-out-minimap" type="button">Map -</button>
         <button id="zoom-in-minimap" type="button">Map +</button>
         <div class="build-controls">
@@ -713,6 +715,8 @@ const toggleMusicButton =
   document.querySelector<HTMLButtonElement>('#toggle-music');
 const toggleSoundButton =
   document.querySelector<HTMLButtonElement>('#toggle-sound');
+const toggleAmbianceButton =
+  document.querySelector<HTMLButtonElement>('#toggle-ambiance');
 const zoomOutMinimapButton =
   document.querySelector<HTMLButtonElement>('#zoom-out-minimap');
 const zoomInMinimapButton =
@@ -1038,6 +1042,19 @@ const nearbyPaddleBoatAudioState = {
   profile: null as null | {
     progress?: number;
     whistlePhase?: 'arrival' | 'departure';
+    emitter: { x: number; y: number };
+  },
+};
+const nearbyOceanAudioState = {
+  cache: createBoundedCache<
+    string,
+    null | {
+      intensity?: number;
+      emitter: { x: number; y: number };
+    }
+  >(48),
+  profile: null as null | {
+    intensity?: number;
     emitter: { x: number; y: number };
   },
 };
@@ -1560,14 +1577,24 @@ function updateAudioPreferenceUi(): void {
       audioPreferenceState.soundEnabled
     );
   }
+  if (toggleAmbianceButton) {
+    toggleAmbianceButton.textContent = formatAmbianceToggleLabel(
+      audioPreferenceState.ambianceEnabled
+    );
+    toggleAmbianceButton.classList.toggle(
+      'is-active',
+      audioPreferenceState.ambianceEnabled
+    );
+  }
 }
 
 function toggleAudioPreferenceSetting(
-  key: 'musicEnabled' | 'soundEnabled'
+  key: 'musicEnabled' | 'soundEnabled' | 'ambianceEnabled'
 ): void {
   const nextPreferences = toggleAudioPreference(audioPreferenceState, key);
   audioPreferenceState.musicEnabled = nextPreferences.musicEnabled;
   audioPreferenceState.soundEnabled = nextPreferences.soundEnabled;
+  audioPreferenceState.ambianceEnabled = nextPreferences.ambianceEnabled;
   updateAudioPreferenceUi();
   saveSession();
   requestRender();
@@ -2416,6 +2443,61 @@ function getNearbyPaddleBoatAudioProfile() {
   return nearbyPaddleBoatAudioState.profile;
 }
 
+function getNearbyOceanAudioProfile() {
+  const queryState = resolveCachedNearbyOverworldQueryState(state);
+  if (!queryState) {
+    nearbyOceanAudioState.cache.clear();
+    nearbyOceanAudioState.profile = null;
+    return null;
+  }
+
+  const { centerX, centerY, contextId } = queryState;
+  const cacheKey = `${currentWorldSeed}:${contextId}:${centerX}:${centerY}`;
+  const cachedProfile = nearbyOceanAudioState.cache.get(cacheKey);
+  if (cachedProfile !== undefined) {
+    nearbyOceanAudioState.profile = cachedProfile ?? null;
+    return nearbyOceanAudioState.profile;
+  }
+
+  const searchRadius = 8;
+  let best: null | {
+    intensity: number;
+    emitter: { x: number; y: number };
+    distance: number;
+  } = null;
+
+  for (let y = centerY - searchRadius; y <= centerY + searchRadius; y += 1) {
+    for (let x = centerX - searchRadius; x <= centerX + searchRadius; x += 1) {
+      const tile = state.getCurrentTile(x, y);
+      if (tile.kind !== 'ocean') {
+        continue;
+      }
+      const distance = Math.hypot(state.player.x - x, state.player.y - y);
+      const intensity = Math.max(0, 1 - distance / (searchRadius + 1));
+      if (intensity <= 0.08) {
+        continue;
+      }
+      if (best && distance >= best.distance) {
+        continue;
+      }
+      best = {
+        intensity,
+        emitter: { x, y },
+        distance,
+      };
+    }
+  }
+
+  nearbyOceanAudioState.profile = best
+    ? {
+        intensity: best.intensity,
+        emitter: best.emitter,
+      }
+    : null;
+  nearbyOceanAudioState.cache.set(cacheKey, nearbyOceanAudioState.profile);
+  return nearbyOceanAudioState.profile;
+}
+
 function attemptMove(stepX: number, stepY: number): void {
   const nextX = state.player.x + stepX;
   const nextY = state.player.y + stepY;
@@ -2915,17 +2997,22 @@ function updateMovement(deltaMs: number): void {
   const nearbyPaddleBoatAudio = shouldResolveSoundContext
     ? getNearbyPaddleBoatAudioProfile()
     : null;
+  const nearbyOceanAudio = shouldResolveSoundContext
+    ? getNearbyOceanAudioProfile()
+    : null;
   const soundUpdate = gateSoundUpdate({
     nowMs,
     walking,
     isJumping: motion.isJumping,
     viewMode: state.viewMode,
+    ambianceEnabled: audioPreferenceState.ambianceEnabled,
     tileKind: currentTileKind,
     weatherKind: currentWeather?.kind,
     weatherIntensity: currentWeather?.intensity,
     windStrength: currentWeather?.windStrength,
     nearbyTrain: nearbyTrainAudio,
     nearbyPaddleBoat: nearbyPaddleBoatAudio,
+    nearbyOcean: nearbyOceanAudio,
     emitterX: state.player.x,
     emitterY: state.player.y,
     listenerX: state.player.x,
@@ -3680,6 +3767,9 @@ toggleMusicButton?.addEventListener('click', () => {
 toggleSoundButton?.addEventListener('click', () => {
   toggleAudioPreferenceSetting('soundEnabled');
 });
+toggleAmbianceButton?.addEventListener('click', () => {
+  toggleAudioPreferenceSetting('ambianceEnabled');
+});
 zoomOutMinimapButton?.addEventListener('click', () => adjustMinimapZoom(-0.1));
 zoomInMinimapButton?.addEventListener('click', () => adjustMinimapZoom(0.1));
 freezeTimeButton?.addEventListener('click', toggleTimeFreeze);
@@ -3951,6 +4041,7 @@ function flushSessionSave(): void {
       celestialEventMode: celestialEventModeState.mode,
       musicEnabled: audioPreferenceState.musicEnabled,
       soundEnabled: audioPreferenceState.soundEnabled,
+      ambianceEnabled: audioPreferenceState.ambianceEnabled,
       compassHeadingAngle: compassHeadingState.angle,
       cameraPitch: mouseLookState.pitch,
       worldSeed: currentWorldSeed,
