@@ -76,30 +76,83 @@ const fakeThree = {
   SphereGeometry: FakeGeometry,
 } as const;
 
+function createRuinsState() {
+  return {
+    player: { x: 0, y: 0, facing: 0 },
+    getCurrentContext() {
+      return { id: 'overworld', type: 'overworld', depth: 0 };
+    },
+    getCurrentTile() {
+      return { kind: 'plains' };
+    },
+    getTileDefinition() {
+      return {
+        name: 'Plains',
+        color: '#000000',
+        miniColor: '#111111',
+        walkable: true,
+        wallHeight: 0,
+      };
+    },
+  };
+}
+
+function normalizeMaterialOptions(options: Record<string, unknown> | undefined) {
+  if (!options) {
+    return undefined;
+  }
+
+  const normalized: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(options)) {
+    if (typeof value === 'function') {
+      continue;
+    }
+    normalized[key] = value;
+  }
+  return normalized;
+}
+
+function createModelSignature(model: FakeGroup) {
+  const signature: Array<Record<string, unknown>> = [];
+  model.traverse((node) => {
+    signature.push({
+      type: node.constructor.name,
+      x: node.position.x,
+      y: node.position.y,
+      z: node.position.z,
+      rotationY: node.rotation.y,
+      visible: node.visible,
+      childCount: node.children.length,
+      material:
+        node instanceof FakeMesh
+          ? Array.isArray(node.material)
+            ? node.material.map((material) =>
+                normalizeMaterialOptions(material.options)
+              )
+            : normalizeMaterialOptions(node.material?.options)
+          : undefined,
+      light:
+        node instanceof FakePointLight
+          ? {
+              color: node.color,
+              intensity: node.intensity,
+              distance: node.distance,
+              decay: node.decay,
+            }
+          : undefined,
+      userData: node.userData,
+    });
+  });
+  return signature;
+}
+
 describe('tile ruins', () => {
   it('emits a faint blue light at night', () => {
     const plugin = createRuinsTilePlugin();
     const tile = plugin.tiles?.find((entry) => entry.kind === 'ruins');
     const model = tile?.create3DModel?.({
       three: fakeThree as never,
-      state: {
-        player: { x: 0, y: 0, facing: 0 },
-        getCurrentContext() {
-          return { id: 'overworld', type: 'overworld', depth: 0 };
-        },
-        getCurrentTile() {
-          return { kind: 'plains' };
-        },
-        getTileDefinition() {
-          return {
-            name: 'Plains',
-            color: '#000000',
-            miniColor: '#111111',
-            walkable: true,
-            wallHeight: 0,
-          };
-        },
-      },
+      state: createRuinsState(),
       tile: { kind: 'ruins' },
       tileX: 6,
       tileY: 4,
@@ -150,5 +203,39 @@ describe('tile ruins', () => {
     expect((glowMesh?.material as FakeMaterial)?.emissiveIntensity ?? 0).toBeGreaterThan(0.5);
     expect(pointLight?.intensity ?? 0).toBeCloseTo(0.38, 6);
     expect(pointLight?.visible).toBe(true);
+  });
+
+  it('keeps ruins model signatures stable after repeated regional churn', () => {
+    const plugin = createRuinsTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'ruins');
+    const state = createRuinsState();
+
+    const baseline = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'ruins' },
+      tileX: 6,
+      tileY: 4,
+    }) as FakeGroup;
+
+    for (let index = 0; index < 160; index += 1) {
+      tile?.create3DModel?.({
+        three: fakeThree as never,
+        state,
+        tile: { kind: 'ruins' },
+        tileX: index * 16,
+        tileY: 0,
+      });
+    }
+
+    const resolved = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'ruins' },
+      tileX: 6,
+      tileY: 4,
+    }) as FakeGroup;
+
+    expect(createModelSignature(resolved)).toEqual(createModelSignature(baseline));
   });
 });
