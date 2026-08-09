@@ -1,5 +1,9 @@
 import './music-debug.css';
 import {
+  collectMusicDebugFormOptions,
+  setMusicDebugNamedFormValue,
+} from './music-debug-form.ts';
+import {
   createMusicDebugPagePersistenceController,
   loadMusicDebugPagePersistenceState,
   resolveMusicDebugPlaybackResumeOffset,
@@ -285,56 +289,67 @@ document.addEventListener('keydown', warmMusicDebugPlayback, {
 });
 
 function collectOptions(): Partial<MusicDebugOptions> {
-  if (!form) {
-    return {};
-  }
-  const data = new FormData(form);
-  return {
-    tileKind: String(data.get('tileKind') ?? ''),
-    contextType: String(data.get('contextType') ?? ''),
-    encounterMode: String(data.get('encounterMode') ?? ''),
-    weatherKind: String(data.get('weatherKind') ?? ''),
-    weatherIntensity: Number(data.get('weatherIntensity') ?? 0),
-    dayProgress: Number(data.get('dayProgress') ?? 0),
-    yearProgress: Number(data.get('yearProgress') ?? 0),
-    clusterX: Number(data.get('clusterX') ?? 0),
-    clusterY: Number(data.get('clusterY') ?? 0),
-  } as Partial<MusicDebugOptions>;
+  return collectMusicDebugFormOptions(form);
 }
 
 function applyPersistedPageState(): void {
   if (!form || !persistedState) {
     return;
   }
-  setNamedFormValue('tileKind', persistedState.options.tileKind);
-  setNamedFormValue('contextType', persistedState.options.contextType);
-  setNamedFormValue('encounterMode', persistedState.options.encounterMode);
-  setNamedFormValue('weatherKind', persistedState.options.weatherKind);
-  setNamedFormValue(
+  setMusicDebugNamedFormValue(
+    form,
+    'tileKind',
+    persistedState.options.tileKind
+  );
+  setMusicDebugNamedFormValue(
+    form,
+    'contextType',
+    persistedState.options.contextType
+  );
+  setMusicDebugNamedFormValue(
+    form,
+    'encounterMode',
+    persistedState.options.encounterMode
+  );
+  setMusicDebugNamedFormValue(
+    form,
+    'weatherKind',
+    persistedState.options.weatherKind
+  );
+  setMusicDebugNamedFormValue(
+    form,
     'weatherIntensity',
     String(persistedState.options.weatherIntensity)
   );
-  setNamedFormValue('dayProgress', String(persistedState.options.dayProgress));
-  setNamedFormValue(
+  setMusicDebugNamedFormValue(
+    form,
+    'combatIntensity',
+    String(persistedState.options.combatIntensity)
+  );
+  setMusicDebugNamedFormValue(
+    form,
+    'dayProgress',
+    String(persistedState.options.dayProgress)
+  );
+  setMusicDebugNamedFormValue(
+    form,
     'yearProgress',
     String(persistedState.options.yearProgress)
   );
-  setNamedFormValue('clusterX', String(persistedState.options.clusterX));
-  setNamedFormValue('clusterY', String(persistedState.options.clusterY));
+  setMusicDebugNamedFormValue(
+    form,
+    'clusterX',
+    String(persistedState.options.clusterX)
+  );
+  setMusicDebugNamedFormValue(
+    form,
+    'clusterY',
+    String(persistedState.options.clusterY)
+  );
   previewOffsetMs = persistedState.previewOffsetMs;
   if (loopInput) {
     loopInput.checked = persistedState.loopEnabled;
   }
-}
-
-function setNamedFormValue(name: string, value: string): void {
-  const field = form?.elements.namedItem(name);
-  if (!(
-    field instanceof HTMLInputElement || field instanceof HTMLSelectElement
-  )) {
-    return;
-  }
-  field.value = value;
 }
 
 function persistPageState(

@@ -237,6 +237,32 @@ describe('nearby ambient', () => {
     });
   });
 
+  it('maps swamp tiles into a dedicated swamp ambience family', () => {
+    const profile = findNearbyAmbientProfile({
+      state: {
+        player: { x: 3, y: -6 },
+        getCurrentTile(x: number, y: number) {
+          if (x === 3 && y === -6) {
+            return { kind: 'swamp' };
+          }
+          return { kind: 'plains' };
+        },
+      },
+      centerX: 3,
+      centerY: -6,
+      searchRadius: 0,
+    });
+
+    expect(resolveAmbientBiologicalActivity('swamp')).toBeGreaterThan(
+      resolveAmbientBiologicalActivity('plains')
+    );
+    expect(profile).toEqual({
+      kind: 'swamp',
+      intensity: expect.any(Number),
+      emitter: { x: 3, y: -6 },
+    });
+  });
+
   it('returns null when no nearby base tiles or POIs advertise ambience', () => {
     const profile = findNearbyAmbientProfile({
       state: {

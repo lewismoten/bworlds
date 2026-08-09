@@ -28,6 +28,19 @@ describe('ambient presets', () => {
     );
   });
 
+  it('gives swamps their own day and night ambient identities', () => {
+    expect(resolveAmbientIdentityVariants('swamp', 'night', 'summer')).toEqual([
+      'frogs',
+      'marsh-insects',
+      'bubbles',
+    ]);
+    expect(resolveAmbientIdentityVariants('swamp', 'dawn', 'spring')).toEqual([
+      'frogs',
+      'wading-birds',
+      'water-movement',
+    ]);
+  });
+
   it('slows rare hints and distant events while keeping nearby calls stronger', () => {
     const nearbyBirds = resolveAmbientIdentityVariantModifiers({
       kind: 'forest',
@@ -46,5 +59,26 @@ describe('ambient presets', () => {
     expect(nearbyBirds.volumeMultiplier).toBeGreaterThan(1);
     expect(mysteryHint.cadenceMultiplier).toBeGreaterThan(2);
     expect(mysteryHint.volumeMultiplier).toBeLessThan(1);
+  });
+
+  it('gives swamp frog and bubble layers distinct pacing and volume profiles', () => {
+    const frogs = resolveAmbientIdentityVariantModifiers({
+      kind: 'swamp',
+      dayPhase: 'night',
+      season: 'summer',
+      identityVariant: 'frogs',
+    });
+    const bubbles = resolveAmbientIdentityVariantModifiers({
+      kind: 'swamp',
+      dayPhase: 'day',
+      season: 'summer',
+      identityVariant: 'bubbles',
+    });
+
+    expect(frogs.cadenceMultiplier).toBeGreaterThan(1);
+    expect(bubbles.cadenceMultiplier).toBeGreaterThan(1.3);
+    expect(frogs.cadenceMultiplier).not.toBe(bubbles.cadenceMultiplier);
+    expect(frogs.volumeMultiplier).not.toBe(bubbles.volumeMultiplier);
+    expect(bubbles.volumeMultiplier).toBeLessThan(1);
   });
 });

@@ -59,6 +59,7 @@ type ResolveSoundRecipeOptions = {
       | 'forest'
       | 'plains'
       | 'snowfield'
+      | 'swamp'
       | 'volcanic'
       | 'mountain'
       | 'cave'
@@ -153,6 +154,11 @@ export const SOUND_IDENTITY_DESCRIPTORS: Record<
   'snowfield-ambience': {
     family: 'ambient-wilds',
     signature: 'cold open hush with ice strain, powder drift, and muffled air',
+  },
+  'swamp-ambience': {
+    family: 'ambient-wilds',
+    signature:
+      'wet marsh chorus with frogs, insects, bubbles, and shallow water drift',
   },
   'volcanic-ambience': {
     family: 'ambient-wilds',
@@ -3063,6 +3069,185 @@ function resolveProceduralSoundLayers(
           variationDepth: 0.74,
         },
       ] as const;
+    case 'swamp-ambience':
+      if (identityVariant === 'frogs') {
+        return [
+          {
+            id: 'swamp-frog-bed',
+            waveform: ['square', 'triangle'] as const,
+            noiseColor: ['brown', 'pink'] as const,
+            frequencyMultiplier: 0.92,
+            durationMultiplier: 0.84,
+            volumeMultiplier: 0.18,
+            frequencyVariation: 0.03,
+            durationVariation: 0.16,
+            volumeVariation: 0.08,
+            variationDepth: 0.82,
+          },
+          {
+            id: 'swamp-frog-ripples',
+            waveform: ['triangle', 'sine'] as const,
+            noiseColor: ['white', 'pink'] as const,
+            frequencyMultiplier: 0.78,
+            durationMultiplier: 1,
+            volumeMultiplier: 0.28,
+            startOffsetMs: 34,
+            startOffsetVariation: 0.22,
+            frequencyVariation: 0.022,
+            durationVariation: 0.12,
+            volumeVariation: 0.08,
+            variationDepth: 0.78,
+          },
+        ] as const;
+      }
+      if (identityVariant === 'marsh-insects') {
+        return [
+          {
+            id: 'swamp-insect-bed',
+            waveform: ['square', 'sine'] as const,
+            noiseColor: 'pink' as const,
+            frequencyMultiplier: 1.22,
+            durationMultiplier: 0.66,
+            volumeMultiplier: 0.18,
+            frequencyVariation: 0.032,
+            durationVariation: 0.16,
+            volumeVariation: 0.08,
+            variationDepth: 0.86,
+          },
+          {
+            id: 'swamp-humid-bed',
+            waveform: ['triangle', 'sine'] as const,
+            noiseColor: ['brown', 'pink'] as const,
+            frequencyMultiplier: 0.82,
+            durationMultiplier: 1,
+            volumeMultiplier: 0.3,
+            startOffsetMs: 24,
+            startOffsetVariation: 0.22,
+            frequencyVariation: 0.022,
+            durationVariation: 0.12,
+            volumeVariation: 0.08,
+            variationDepth: 0.8,
+          },
+        ] as const;
+      }
+      if (identityVariant === 'water-movement') {
+        return [
+          {
+            id: 'swamp-water-bed',
+            waveform: ['triangle', 'sine'] as const,
+            noiseColor: ['white', 'pink'] as const,
+            frequencyMultiplier: 0.8,
+            durationMultiplier: 1,
+            volumeMultiplier: 0.34,
+            frequencyVariation: 0.022,
+            durationVariation: 0.12,
+            volumeVariation: 0.08,
+            variationDepth: 0.78,
+          },
+          {
+            id: 'swamp-reed-shift',
+            waveform: ['sine', 'triangle'] as const,
+            noiseColor: 'white' as const,
+            frequencyMultiplier: 1.02,
+            durationMultiplier: 0.78,
+            volumeMultiplier: 0.12,
+            startOffsetMs: 28,
+            startOffsetVariation: 0.22,
+            frequencyVariation: 0.024,
+            durationVariation: 0.14,
+            volumeVariation: 0.08,
+            variationDepth: 0.76,
+          },
+        ] as const;
+      }
+      if (identityVariant === 'bubbles') {
+        return [
+          {
+            id: 'swamp-bubble-bed',
+            waveform: ['triangle', 'sine'] as const,
+            noiseColor: ['brown', 'white'] as const,
+            frequencyMultiplier: 0.74,
+            durationMultiplier: 1,
+            volumeMultiplier: 0.28,
+            frequencyVariation: 0.02,
+            durationVariation: 0.12,
+            volumeVariation: 0.08,
+            variationDepth: 0.74,
+          },
+          {
+            id: 'swamp-bubble-pop',
+            waveform: ['square', 'triangle'] as const,
+            noiseColor: 'white' as const,
+            frequencyMultiplier: 1.08,
+            durationMultiplier: 0.68,
+            volumeMultiplier: 0.1,
+            startOffsetMs: 30,
+            startOffsetVariation: 0.24,
+            frequencyVariation: 0.028,
+            durationVariation: 0.16,
+            volumeVariation: 0.08,
+            variationDepth: 0.74,
+          },
+        ] as const;
+      }
+      if (identityVariant === 'wading-birds') {
+        return [
+          {
+            id: 'swamp-bird-calls',
+            waveform: ['sine', 'triangle'] as const,
+            noiseColor: 'white' as const,
+            frequencyMultiplier: 1.18,
+            durationMultiplier: 0.72,
+            volumeMultiplier: 0.14,
+            frequencyVariation: 0.028,
+            durationVariation: 0.16,
+            volumeVariation: 0.08,
+            variationDepth: 0.8,
+          },
+          {
+            id: 'swamp-open-water-bed',
+            waveform: ['triangle', 'sine'] as const,
+            noiseColor: ['white', 'pink'] as const,
+            frequencyMultiplier: 0.78,
+            durationMultiplier: 1,
+            volumeMultiplier: 0.24,
+            startOffsetMs: 38,
+            startOffsetVariation: 0.24,
+            frequencyVariation: 0.02,
+            durationVariation: 0.12,
+            volumeVariation: 0.08,
+            variationDepth: 0.76,
+          },
+        ] as const;
+      }
+      return [
+        {
+          id: 'swamp-marsh-bed',
+          waveform: ['triangle', 'sine'] as const,
+          noiseColor: ['brown', 'pink'] as const,
+          frequencyMultiplier: 0.8,
+          durationMultiplier: 1,
+          volumeMultiplier: 0.4,
+          frequencyVariation: 0.022,
+          durationVariation: 0.12,
+          volumeVariation: 0.08,
+          variationDepth: 0.82,
+        },
+        {
+          id: 'swamp-reed-breath',
+          waveform: ['sine', 'triangle'] as const,
+          noiseColor: 'white' as const,
+          frequencyMultiplier: 1,
+          durationMultiplier: 0.82,
+          volumeMultiplier: 0.14,
+          startOffsetMs: 30,
+          startOffsetVariation: 0.22,
+          frequencyVariation: 0.024,
+          durationVariation: 0.14,
+          volumeVariation: 0.08,
+          variationDepth: 0.76,
+        },
+      ] as const;
     case 'volcanic-ambience':
       if (identityVariant === 'rumble') {
         return [
@@ -4118,6 +4303,8 @@ function resolveBaseSoundEffectFrequency(
       return options.resolveAmbientSoundFrequency('plains', undefined);
     case 'snowfield-ambience':
       return options.resolveAmbientSoundFrequency('snowfield', undefined);
+    case 'swamp-ambience':
+      return options.resolveAmbientSoundFrequency('swamp', undefined);
     case 'volcanic-ambience':
       return options.resolveAmbientSoundFrequency('volcanic', undefined);
     case 'mountain-ambience':
@@ -4196,6 +4383,7 @@ function resolveBaseSoundEffectDurationMs(kind: SoundEffectKind): number {
     case 'forest-ambience':
     case 'plains-ambience':
     case 'snowfield-ambience':
+    case 'swamp-ambience':
     case 'volcanic-ambience':
     case 'mountain-ambience':
     case 'cave-ambience':
@@ -4270,6 +4458,8 @@ function resolveBaseSoundEffectVolume(
       return 0.016;
     case 'snowfield-ambience':
       return 0.017;
+    case 'swamp-ambience':
+      return 0.018;
     case 'volcanic-ambience':
       return 0.02;
     case 'mountain-ambience':
@@ -4354,6 +4544,8 @@ function resolveBaseSoundEffectWaveform(
       return ['sine', 'triangle'];
     case 'snowfield-ambience':
       return ['triangle', 'sine'];
+    case 'swamp-ambience':
+      return ['triangle', 'sine'];
     case 'volcanic-ambience':
       return ['sawtooth', 'triangle'];
     case 'mountain-ambience':
@@ -4423,6 +4615,8 @@ function resolveBaseSoundEffectNoiseColor(
       return ['white', 'pink'];
     case 'snowfield-ambience':
       return ['white', 'brown'];
+    case 'swamp-ambience':
+      return ['brown', 'pink'];
     case 'volcanic-ambience':
       return ['brown', 'pink'];
     case 'mountain-ambience':

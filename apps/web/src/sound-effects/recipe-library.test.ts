@@ -244,6 +244,44 @@ describe('sound recipe library', () => {
     ]);
   });
 
+  it('supports swamp ambience variants with wetland-specific layer sets', () => {
+    const frogRecipe = buildProceduralSoundRecipe({
+      kind: 'swamp-ambience',
+      identityVariant: 'frogs',
+      profile: DEFAULT_SURFACE_PROFILE,
+      variantOffset: 3,
+      resolveAdvancementFrequency: () => 300,
+      resolveAmbientSoundFrequency: () => 172,
+      resolveInteractionFrequency: () => 128,
+      resolveInteractionWaveform: (_tileKind, fallback) => fallback,
+      resolvePaddleBoatCalliopeFrequency: () => 520,
+      resolveSteamWhistleFrequency: () => 360,
+    });
+    const bubbleRecipe = buildProceduralSoundRecipe({
+      kind: 'swamp-ambience',
+      identityVariant: 'bubbles',
+      profile: DEFAULT_SURFACE_PROFILE,
+      variantOffset: -1,
+      resolveAdvancementFrequency: () => 300,
+      resolveAmbientSoundFrequency: () => 172,
+      resolveInteractionFrequency: () => 128,
+      resolveInteractionWaveform: (_tileKind, fallback) => fallback,
+      resolvePaddleBoatCalliopeFrequency: () => 520,
+      resolveSteamWhistleFrequency: () => 360,
+    });
+
+    expect(frogRecipe.id).toBe('swamp-ambience:frogs');
+    expect(frogRecipe.layers?.map((layer) => layer.id)).toEqual([
+      'swamp-frog-bed',
+      'swamp-frog-ripples',
+    ]);
+    expect(bubbleRecipe.id).toBe('swamp-ambience:bubbles');
+    expect(bubbleRecipe.layers?.map((layer) => layer.id)).toEqual([
+      'swamp-bubble-bed',
+      'swamp-bubble-pop',
+    ]);
+  });
+
   it('supports surface-aware rain variants for open air, roofs, leaves, and water', () => {
     const openRecipe = buildProceduralSoundRecipe({
       kind: 'rain',

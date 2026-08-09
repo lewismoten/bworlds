@@ -163,7 +163,7 @@
 - [x] Give forests characteristic birds, insects, leaves, branches, and distant wildlife.
 - [ ] Give deserts wind, sand, insects, and sparse wildlife.
 - [x] Give mountains stronger winds, echoes, rock movement, and distant animals.
-- [ ] Give swamps insects, frogs, water movement, bubbles, and birds.
+- [x] Give swamps insects, frogs, water movement, bubbles, and birds.
 - [x] Give coastal areas waves, wind, seabirds, and shoreline movement.
 - [x] Give plains grass movement, insects, birds, and distant animals.
 - [x] Give snowy regions wind, snow movement, cracking ice, and muffled ambience.

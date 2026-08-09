@@ -10,6 +10,7 @@ const BASE_AMBIENT_IDENTITY_VARIANTS: Record<
   forest: ['canopy', 'insects', 'branches', 'wildlife', 'vegetation-rustle'],
   plains: ['breeze', 'wildlife', 'vegetation-rustle'],
   snowfield: ['winter-quiet', 'ice-creaks', 'winter-gusts', 'muffled-open'],
+  swamp: ['marsh-insects', 'frogs', 'water-movement', 'bubbles', 'wading-birds'],
   volcanic: ['rumble', 'steam-vents', 'stone-cracks', 'lava-pops'],
   mountain: ['gusts', 'stone', 'highland-birds', 'falling-rocks'],
   cave: ['drips', 'echo', 'underground-wind'],
@@ -29,6 +30,8 @@ export function resolveAmbientIdentityVariants(
       return resolvePlainsVariants(dayPhase, season);
     case 'snowfield':
       return resolveSnowfieldVariants(dayPhase, season);
+    case 'swamp':
+      return resolveSwampVariants(dayPhase, season);
     case 'volcanic':
       return resolveVolcanicVariants(dayPhase);
     case 'settlement':
@@ -64,6 +67,7 @@ export function resolveAmbientIdentityVariantModifiers(options: {
     options.kind === 'forest' ||
     options.kind === 'plains' ||
     options.kind === 'snowfield' ||
+    options.kind === 'swamp' ||
     options.kind === 'volcanic' ||
     options.kind === 'settlement'
   ) {
@@ -123,6 +127,26 @@ export function resolveAmbientIdentityVariantModifiers(options: {
     case 'muffled-open':
       cadenceMultiplier *= 1.26;
       volumeMultiplier *= 0.76;
+      break;
+    case 'marsh-insects':
+      cadenceMultiplier *= 0.9;
+      volumeMultiplier *= 1.08;
+      break;
+    case 'frogs':
+      cadenceMultiplier *= 1.04;
+      volumeMultiplier *= 1.02;
+      break;
+    case 'water-movement':
+      cadenceMultiplier *= 1.18;
+      volumeMultiplier *= 0.94;
+      break;
+    case 'bubbles':
+      cadenceMultiplier *= 1.42;
+      volumeMultiplier *= 0.82;
+      break;
+    case 'wading-birds':
+      cadenceMultiplier *= 1.22;
+      volumeMultiplier *= 0.88;
       break;
     case 'rumble':
       cadenceMultiplier *= 1.42;
@@ -238,6 +262,24 @@ function resolveSnowfieldVariants(
     return ['ice-creaks', 'muffled-open', 'distant-birds'];
   }
   return ['winter-quiet', 'winter-gusts', 'muffled-open'];
+}
+
+function resolveSwampVariants(
+  dayPhase: AmbientDayPhase,
+  season: AmbientSeason
+): readonly string[] {
+  if (dayPhase === 'night') {
+    return ['frogs', 'marsh-insects', 'bubbles'];
+  }
+  if (dayPhase === 'dawn') {
+    return season === 'spring'
+      ? ['frogs', 'wading-birds', 'water-movement']
+      : ['wading-birds', 'water-movement', 'marsh-insects'];
+  }
+  if (season === 'spring') {
+    return ['frogs', 'marsh-insects', 'water-movement'];
+  }
+  return ['marsh-insects', 'water-movement', 'bubbles'];
 }
 
 function resolveVolcanicVariants(dayPhase: AmbientDayPhase): readonly string[] {
