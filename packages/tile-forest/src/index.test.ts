@@ -887,6 +887,17 @@ describe('tile forest', () => {
     const pineTaperRatios = new Set(
       pineTrunks.map((trunk) => (trunk.trunkTopRadius / trunk.radius).toFixed(3))
     );
+    const broadleafCurves = new Set(
+      broadleafTrunks.map(
+        (trunk) =>
+          `${trunk.trunkCurveX.toFixed(3)}:${trunk.trunkCurveZ.toFixed(3)}`
+      )
+    );
+    const pineCurves = new Set(
+      pineTrunks.map(
+        (trunk) => `${trunk.trunkCurveX.toFixed(3)}:${trunk.trunkCurveZ.toFixed(3)}`
+      )
+    );
 
     expect(broadleafHeights.size).toBeGreaterThan(1);
     expect(pineHeights.size).toBeGreaterThan(1);
@@ -894,8 +905,20 @@ describe('tile forest', () => {
     expect(pineRadii.size).toBeGreaterThan(1);
     expect(broadleafTaperRatios.size).toBeGreaterThan(1);
     expect(pineTaperRatios.size).toBeGreaterThan(1);
+    expect(broadleafCurves.size).toBeGreaterThan(1);
+    expect(pineCurves.size).toBeGreaterThan(1);
     expect(broadleafTrunks.every((trunk) => trunk.trunkTopRadius < trunk.radius)).toBe(true);
     expect(pineTrunks.every((trunk) => trunk.trunkTopRadius < trunk.radius)).toBe(true);
+    expect(
+      broadleafTrunks.some(
+        (trunk) => Math.abs(trunk.trunkCurveX) + Math.abs(trunk.trunkCurveZ) > 0.015
+      )
+    ).toBe(true);
+    expect(
+      pineTrunks.some(
+        (trunk) => Math.abs(trunk.trunkCurveX) + Math.abs(trunk.trunkCurveZ) > 0.01
+      )
+    ).toBe(true);
     expect(
       broadleafTrunks.some((trunk) => trunk.speciesId === 'oak' && trunk.radius > 0.1)
     ).toBe(true);
@@ -2008,6 +2031,51 @@ describe('tile forest', () => {
     expect(lowerGeometry.args[0]).not.toBeCloseTo(upperGeometry.args[1], 5);
     expect(upperTrunkMesh?.scale.x).toBeLessThan(lowerTrunkMesh?.scale.x ?? Infinity);
     expect(upperTrunkMesh?.position.y).toBeGreaterThan(lowerTrunkMesh?.position.y ?? -Infinity);
+  });
+
+  it('adds slight curvature to full-detail forest trunks from shared structural state', () => {
+    const plugin = createForestTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'forest');
+    const state = createForestTestState(8, 6);
+    const trunks = getForestTreeTrunkProfiles(8, 6);
+    const curvedIndex = trunks.findIndex(
+      (trunk) => Math.abs(trunk.trunkCurveX) + Math.abs(trunk.trunkCurveZ) > 0.01
+    );
+
+    expect(curvedIndex).toBeGreaterThanOrEqual(0);
+
+    const fullModel = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'forest' },
+      tileX: 8,
+      tileY: 6,
+      detailLevel: 'full',
+    }) as FakeGroup;
+
+    const curvedTree = fullModel.children.filter(
+      (child) => child instanceof FakeGroup && child.userData?.renderStatKind === 'tree'
+    )[curvedIndex] as FakeGroup | undefined;
+    const lowerTrunkMesh = curvedTree?.children.find(
+      (child) => child.userData?.forestTreeTrunkSegment === 'lower'
+    ) as FakeMesh | undefined;
+    const upperTrunkMesh = curvedTree?.children.find(
+      (child) => child.userData?.forestTreeTrunkSegment === 'upper'
+    ) as FakeMesh | undefined;
+
+    expect(lowerTrunkMesh).toBeDefined();
+    expect(upperTrunkMesh).toBeDefined();
+    expect(Math.abs(upperTrunkMesh?.position.x ?? 0)).toBeGreaterThanOrEqual(
+      Math.abs(lowerTrunkMesh?.position.x ?? 0)
+    );
+    expect(Math.abs(upperTrunkMesh?.position.z ?? 0)).toBeGreaterThanOrEqual(
+      Math.abs(lowerTrunkMesh?.position.z ?? 0)
+    );
+    expect(
+      Math.abs(upperTrunkMesh?.position.x ?? 0) + Math.abs(upperTrunkMesh?.position.z ?? 0)
+    ).toBeGreaterThan(0.01);
+    expect(upperTrunkMesh?.position.x).toBeCloseTo(trunks[curvedIndex]!.trunkCurveX, 3);
+    expect(upperTrunkMesh?.position.z).toBeCloseTo(trunks[curvedIndex]!.trunkCurveZ, 3);
   });
 
   it('instances low-detail tree trunks and canopies instead of creating one group per tree', () => {

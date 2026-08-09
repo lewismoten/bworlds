@@ -110,6 +110,9 @@ describe('tree support', () => {
       form: 'oak' as const,
       structure: {
         radius: 0.2,
+        trunkTopRadius: 0.12,
+        trunkCurveX: 0.03,
+        trunkCurveZ: -0.01,
         scale: 1.1,
         trunkHeight: 1.6,
         branches: [{ x: 0, y: 1, z: 0, length: 0.5, pitch: 0.4, roll: 0.2 }],
@@ -170,6 +173,9 @@ describe('tree support', () => {
 
     expect(getTreeStructuralState(legacy)).toEqual({
       radius: 0.18,
+      trunkTopRadius: 0.1296,
+      trunkCurveX: 0,
+      trunkCurveZ: 0,
       scale: 0.9,
       trunkHeight: 1.3,
       branches: [],
@@ -225,6 +231,9 @@ describe('tree support', () => {
       form: 'oak' as const,
       structure: {
         radius: 0.2,
+        trunkTopRadius: 0.14,
+        trunkCurveX: -0.02,
+        trunkCurveZ: 0.015,
         scale: 1,
         trunkHeight: 1.2,
         branches: [],

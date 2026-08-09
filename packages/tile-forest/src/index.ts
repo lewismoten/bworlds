@@ -1195,8 +1195,16 @@ export function createForestTilePlugin(): RuntimePlugin {
           );
 
           for (const branch of structure.branches) {
+            const branchCurveInfluence = Math.max(
+              0,
+              Math.min(1, branch.y / Math.max(0.001, structure.trunkHeight))
+            );
             const limb = new three.Mesh(geometry.branch, style.trunkMaterial);
-            limb.position.set(branch.x, branch.y, branch.z);
+            limb.position.set(
+              branch.x + structure.trunkCurveX * branchCurveInfluence,
+              branch.y,
+              branch.z + structure.trunkCurveZ * branchCurveInfluence
+            );
             limb.rotation.z = branch.roll;
             limb.rotation.x = branch.pitch;
             limb.scale.y = branch.length;
@@ -1204,11 +1212,19 @@ export function createForestTilePlugin(): RuntimePlugin {
           }
 
           for (const clump of canopy.foliage) {
+            const canopyCurveInfluence = Math.max(
+              0,
+              Math.min(1, clump.y / Math.max(0.001, structure.trunkHeight))
+            );
             const foliage = new three.Mesh(
               geometry.foliage,
               style.foliageMaterial
             );
-            foliage.position.set(clump.x, clump.y, clump.z);
+            foliage.position.set(
+              clump.x + structure.trunkCurveX * canopyCurveInfluence,
+              clump.y,
+              clump.z + structure.trunkCurveZ * canopyCurveInfluence
+            );
             foliage.scale.set(clump.scaleX, clump.scaleY, clump.scaleZ);
             tagForestFoliageWind(
               foliage,
@@ -1692,6 +1708,8 @@ function addForestFullDetailTrunk(
   const midRadius = getForestTrunkMidRadius(descriptor, structure);
   const bottomRadiusScale = structure.radius / 0.1;
   const midRadiusScale = midRadius / 0.1;
+  const lowerCurveX = structure.trunkCurveX * 0.18;
+  const lowerCurveZ = structure.trunkCurveZ * 0.18;
 
   const lowerTrunk = new three.Mesh(
     getForestTrunkGeometry(
@@ -1700,7 +1718,7 @@ function addForestFullDetailTrunk(
     ),
     material
   );
-  lowerTrunk.position.y = lowerHeight * 0.5;
+  lowerTrunk.position.set(lowerCurveX, lowerHeight * 0.5, lowerCurveZ);
   lowerTrunk.scale.set(bottomRadiusScale, lowerHeight, bottomRadiusScale);
   lowerTrunk.userData = {
     ...(lowerTrunk.userData ?? {}),
@@ -1712,7 +1730,11 @@ function addForestFullDetailTrunk(
     getForestTrunkGeometry(three, structure.trunkTopRadius / Math.max(0.0001, midRadius)),
     material
   );
-  upperTrunk.position.y = lowerHeight + upperHeight * 0.5;
+  upperTrunk.position.set(
+    structure.trunkCurveX,
+    lowerHeight + upperHeight * 0.5,
+    structure.trunkCurveZ
+  );
   upperTrunk.scale.set(midRadiusScale, upperHeight, midRadiusScale);
   upperTrunk.userData = {
     ...(upperTrunk.userData ?? {}),
@@ -2042,6 +2064,8 @@ export function getForestTreeTrunkProfiles(
   trunkHeight: number;
   radius: number;
   trunkTopRadius: number;
+  trunkCurveX: number;
+  trunkCurveZ: number;
 }> {
   return getForestTreeDescriptors(tileX, tileY).map((descriptor) => {
     const structure = getTreeStructuralState(descriptor);
@@ -2051,6 +2075,8 @@ export function getForestTreeTrunkProfiles(
       trunkHeight: descriptor.trunkHeight,
       radius: descriptor.radius,
       trunkTopRadius: structure.trunkTopRadius,
+      trunkCurveX: structure.trunkCurveX,
+      trunkCurveZ: structure.trunkCurveZ,
     };
   });
 }
@@ -2629,9 +2655,16 @@ function createForestTreeDescriptorFromSpecies(
     definition.form === 'pine'
       ? 0.44 + appearanceRandom() * 0.12
       : 0.5 + appearanceRandom() * 0.16;
+  const trunkCurveAngle = appearanceRandom() * Math.PI * 2;
+  const trunkCurveMagnitude =
+    (definition.form === 'pine' ? 0.01 : 0.014) +
+    appearanceRandom() * (definition.form === 'pine' ? 0.018 : 0.024);
+  const resolvedTrunkCurveMagnitude = trunkCurveMagnitude * (0.35 + maturity * 0.7);
   const structure: TreeStructuralState = {
     radius: trunkRadius,
     trunkTopRadius: trunkRadius * trunkTaperRatio,
+    trunkCurveX: Math.cos(trunkCurveAngle) * resolvedTrunkCurveMagnitude,
+    trunkCurveZ: Math.sin(trunkCurveAngle) * resolvedTrunkCurveMagnitude,
     scale: (0.72 + appearanceRandom() * 0.48) * (0.62 + maturity * 0.72),
     trunkHeight,
     branches,
