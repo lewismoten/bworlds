@@ -30,7 +30,7 @@ describe('music debug playback controller', () => {
     expect(controller.isPlaying()).toBe(true);
     expect(playback.play).toHaveBeenCalledWith(snapshot, null);
 
-    vi.advanceTimersByTime(snapshot.durationMs + 120);
+    vi.advanceTimersByTime(snapshot.durationMs + 16);
 
     expect(controller.isPlaying()).toBe(false);
     expect(playback.stop).toHaveBeenCalledTimes(1);
@@ -57,7 +57,7 @@ describe('music debug playback controller', () => {
     expect(snapshot.durationMs).toBeGreaterThan(snapshot.loopEndOffsetMs);
 
     controller.start(snapshot);
-    vi.advanceTimersByTime(snapshot.loopEndOffsetMs + 120);
+    vi.advanceTimersByTime(snapshot.loopEndOffsetMs + 16);
 
     expect(controller.isPlaying()).toBe(true);
     expect(playback.play).toHaveBeenCalledWith(snapshot, null);
@@ -108,7 +108,7 @@ describe('music debug playback controller', () => {
     expect(playback.play).toHaveBeenNthCalledWith(2, second, null);
     expect(playback.stop).toHaveBeenCalledTimes(1);
 
-    vi.advanceTimersByTime(second.durationMs + 120);
+    vi.advanceTimersByTime(second.durationMs + 16);
 
     expect(controller.isPlaying()).toBe(false);
     expect(playback.stop).toHaveBeenCalledTimes(2);
@@ -141,7 +141,7 @@ describe('music debug playback controller', () => {
       })
     );
 
-    vi.advanceTimersByTime(snapshot.loopEndOffsetMs + 120);
+    vi.advanceTimersByTime(snapshot.loopEndOffsetMs + 16);
 
     expect(playback.play).toHaveBeenNthCalledWith(
       2,

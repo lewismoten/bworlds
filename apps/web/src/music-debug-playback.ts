@@ -30,7 +30,7 @@ export function createMusicDebugPlaybackController(options: {
 }): MusicDebugPlaybackController {
   const scheduleTimeout = options.scheduleTimeout ?? setTimeout;
   const clearScheduledTimeout = options.clearScheduledTimeout ?? clearTimeout;
-  const playbackLeadMs = options.playbackLeadMs ?? 120;
+  const playbackLeadMs = options.playbackLeadMs ?? 16;
   let playing = false;
   let timeoutHandle: TimeoutHandle | null = null;
 

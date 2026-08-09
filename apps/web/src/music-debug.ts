@@ -101,6 +101,11 @@ export type MusicDebugSongPlayback = {
   stop(): void;
 };
 
+type MusicDebugSongPlaybackOptions = {
+  now?: () => number;
+  scheduleAheadMs?: number;
+};
+
 export type MusicDebugPlaybackRegion = {
   startOffsetMs: number;
   endOffsetMs: number;
@@ -635,12 +640,16 @@ export function resolveMusicDebugPlaybackDurationMs(
 }
 
 export function createMusicDebugSongPlayback(
-  sink: MusicSink = createWebAudioMusicSink()
+  sink: MusicSink = createWebAudioMusicSink(),
+  options: MusicDebugSongPlaybackOptions = {}
 ): MusicDebugSongPlayback {
+  const now = options.now ?? performance.now.bind(performance);
+  const scheduleAheadMs = options.scheduleAheadMs ?? 12;
+
   return {
     play(snapshot, region) {
       const playbackRegion = resolveMusicDebugPlaybackRegion(snapshot, region);
-      const startMs = performance.now() + 120;
+      const startMs = now() + scheduleAheadMs;
       const offsetMs = snapshot.song.startMs + playbackRegion.startOffsetMs;
       const endMs = snapshot.song.startMs + playbackRegion.endOffsetMs;
       sink.resume?.();

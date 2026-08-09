@@ -66,10 +66,7 @@ function collectOptions(): Partial<MusicDebugOptions> {
 }
 
 function renderSnapshot(): void {
-  snapshot = createMusicDebugSnapshot(
-    collectOptions(),
-    performance.now() + 120
-  );
+  snapshot = createMusicDebugSnapshot(collectOptions(), performance.now());
   if (summary) {
     summary.innerHTML = buildMusicDebugSummaryMarkup(snapshot);
   }

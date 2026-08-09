@@ -1,7 +1,8 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
   buildMusicDebugMarkup,
   buildMusicDebugSummaryMarkup,
+  createMusicDebugSongPlayback,
   createMusicDebugSnapshot,
   formatMusicDebugDuration,
   formatMusicDebugLoopRange,
@@ -215,6 +216,42 @@ describe('music debug', () => {
         clusterX: -9_999,
         clusterY: -9_999,
       })
+    );
+  });
+
+  it('starts debug song playback with a short lead and preserved note spacing', () => {
+    const snapshot = createMusicDebugSnapshot(
+      {
+        tileKind: 'forest',
+        contextType: 'overworld',
+        clusterX: 2,
+        clusterY: -1,
+      },
+      2_000
+    );
+    const play = vi.fn();
+    const playback = createMusicDebugSongPlayback(
+      {
+        resume: vi.fn(),
+        play,
+        stopAll: vi.fn(),
+      },
+      {
+        now: () => 1_000,
+        scheduleAheadMs: 12,
+      }
+    );
+
+    playback.play(snapshot);
+
+    const firstScheduled = play.mock.calls[0]?.[0];
+    const secondScheduled = play.mock.calls[1]?.[0];
+    const originalFirst = snapshot.notes[0];
+    const originalSecond = snapshot.notes[1];
+
+    expect(firstScheduled?.startMs).toBe(1_012);
+    expect(secondScheduled?.startMs - firstScheduled?.startMs).toBe(
+      (originalSecond?.startMs ?? 0) - (originalFirst?.startMs ?? 0)
     );
   });
 
