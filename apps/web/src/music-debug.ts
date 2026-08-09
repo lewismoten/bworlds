@@ -252,6 +252,7 @@ export function buildMusicDebugMarkup(
             <button id="music-debug-generate" type="submit">Generate</button>
             <button id="music-debug-randomize" type="button">🎲 Generate</button>
             <button id="music-debug-play" type="button">Play Song</button>
+            <button id="music-debug-download" type="button">Download MIDI</button>
           </div>
         </form>
         <section class="music-debug-card">

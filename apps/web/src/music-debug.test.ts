@@ -80,6 +80,7 @@ describe('music debug', () => {
     expect(markup).toContain('music-debug-timeline');
     expect(markup).toContain('music-debug-randomize');
     expect(markup).toContain('Play Song');
+    expect(markup).toContain('Download MIDI');
     expect(summary).toContain('Scheduled Notes');
     expect(summary).toContain('Song Length');
     expect(summary).toContain('Loop Range');

@@ -1,5 +1,6 @@
 import './music-debug.css';
 import { createMusicDebugPlaybackController } from './music-debug-playback.ts';
+import { downloadMusicDebugMidiFile } from './music-debug-midi.ts';
 import {
   buildMusicDebugMarkup,
   buildMusicDebugSummaryMarkup,
@@ -26,6 +27,9 @@ const playButton =
   document.querySelector<HTMLButtonElement>('#music-debug-play');
 const randomizeButton = document.querySelector<HTMLButtonElement>(
   '#music-debug-randomize'
+);
+const downloadButton = document.querySelector<HTMLButtonElement>(
+  '#music-debug-download'
 );
 const clusterXInput = document.querySelector<HTMLInputElement>(
   'input[name="clusterX"]'
@@ -107,4 +111,10 @@ randomizeButton?.addEventListener('click', () => {
     clusterYInput.value = String(randomized.clusterY);
   }
   renderSnapshot();
+});
+
+downloadButton?.addEventListener('click', () => {
+  playbackController.stop();
+  renderSnapshot();
+  downloadMusicDebugMidiFile(snapshot);
 });
