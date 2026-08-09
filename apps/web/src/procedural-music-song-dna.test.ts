@@ -20,6 +20,7 @@ describe('procedural music song dna', () => {
 
     expect(first).toEqual(second);
     expect(first.modeLabel.length).toBeGreaterThan(0);
+    expect(first.rootMidiNote).toBeGreaterThan(0);
     expect(first.progression.length).toBeGreaterThan(0);
     expect(first.leadMotif.length).toBeGreaterThan(0);
     expect(first.instrumentation.lead.length).toBeGreaterThan(0);

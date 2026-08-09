@@ -43,6 +43,7 @@ import {
   resolveProceduralNoteFrequency,
   resolveProceduralNoteHarmonicGain,
 } from './procedural-music-note-shaping.ts';
+import { resolveProceduralRootMidiNote } from './procedural-music-scale.ts';
 import type { AudioCategory } from './audio-categories.ts';
 type MusicPosition = { x: number; y: number };
 type TileKind = string;
@@ -54,6 +55,7 @@ export type MusicEncounterMode = 'ambient' | 'battle' | 'boss';
 type MusicRegionTheme = {
   id: MusicRegionThemeId;
   rootHz: number;
+  rootMidiNote: number;
   scale: number[];
   noteDurationMs: number;
   baseVolume: number;
@@ -280,6 +282,7 @@ const THEME_LIBRARY: Record<MusicRegionThemeId, MusicRegionTheme> = {
   'frontier-plains': {
     id: 'frontier-plains',
     rootHz: 196,
+    rootMidiNote: resolveProceduralRootMidiNote(196),
     scale: [0, 3, 5, 7, 10, 12],
     noteDurationMs: 360,
     baseVolume: 0.028,
@@ -291,6 +294,7 @@ const THEME_LIBRARY: Record<MusicRegionThemeId, MusicRegionTheme> = {
   'deep-forest': {
     id: 'deep-forest',
     rootHz: 174.61,
+    rootMidiNote: resolveProceduralRootMidiNote(174.61),
     scale: [0, 2, 3, 7, 8, 10, 12],
     noteDurationMs: 440,
     baseVolume: 0.026,
@@ -302,6 +306,7 @@ const THEME_LIBRARY: Record<MusicRegionThemeId, MusicRegionTheme> = {
   'coastal-shore': {
     id: 'coastal-shore',
     rootHz: 220,
+    rootMidiNote: resolveProceduralRootMidiNote(220),
     scale: [0, 2, 5, 7, 9, 12],
     noteDurationMs: 420,
     baseVolume: 0.027,
@@ -313,6 +318,7 @@ const THEME_LIBRARY: Record<MusicRegionThemeId, MusicRegionTheme> = {
   'town-square': {
     id: 'town-square',
     rootHz: 246.94,
+    rootMidiNote: resolveProceduralRootMidiNote(246.94),
     scale: [0, 2, 4, 7, 9, 12],
     noteDurationMs: 300,
     baseVolume: 0.024,
@@ -324,6 +330,7 @@ const THEME_LIBRARY: Record<MusicRegionThemeId, MusicRegionTheme> = {
   'ridge-pass': {
     id: 'ridge-pass',
     rootHz: 185,
+    rootMidiNote: resolveProceduralRootMidiNote(185),
     scale: [0, 3, 5, 6, 10, 12],
     noteDurationMs: 380,
     baseVolume: 0.024,
@@ -335,6 +342,7 @@ const THEME_LIBRARY: Record<MusicRegionThemeId, MusicRegionTheme> = {
   'cavern-echo': {
     id: 'cavern-echo',
     rootHz: 130.81,
+    rootMidiNote: resolveProceduralRootMidiNote(130.81),
     scale: [0, 3, 5, 7, 8, 12],
     noteDurationMs: 520,
     baseVolume: 0.03,
@@ -346,6 +354,7 @@ const THEME_LIBRARY: Record<MusicRegionThemeId, MusicRegionTheme> = {
   'interior-hall': {
     id: 'interior-hall',
     rootHz: 233.08,
+    rootMidiNote: resolveProceduralRootMidiNote(233.08),
     scale: [0, 2, 4, 7, 11, 12],
     noteDurationMs: 340,
     baseVolume: 0.022,
@@ -1395,7 +1404,7 @@ function createThemeNotes(options: {
       meterAccent.durationMultiplier *
       resolveCompositionDurationMultiplier(role, composition),
     frequency: resolveProceduralNoteFrequency({
-      rootHz: options.theme.rootHz,
+      rootMidiNote: options.theme.rootMidiNote,
       semitones: voiceSemitone + octaveBoost,
       role,
       octaveShiftSemitones: arrangementProfile.octaveShiftSemitones,

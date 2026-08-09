@@ -14,6 +14,7 @@ describe('procedural music vocabulary', () => {
     expect(forest.modeLabel).not.toBe(plains.modeLabel);
     expect(cave.tempoBandLabel).not.toBe(plains.tempoBandLabel);
     expect(forest.preferredIntervals.length).toBeGreaterThan(0);
+    expect(forest.preferredIntervalUnit).toBe('semitones');
     expect(forest.instrumentFamilies.lead.length).toBeGreaterThan(0);
   });
 

@@ -273,7 +273,7 @@ export function createMusicDebugSnapshot(
     durationMs,
   });
   const scaleMap = createProceduralScaleMap({
-    rootHz: theme.rootHz,
+    rootMidiNote: theme.rootMidiNote,
     scale: theme.scale,
   });
   const measureCount = resolveProceduralMusicBlueprintMeasureCount(
@@ -338,7 +338,7 @@ export function createMusicDebugSnapshot(
       `Tempo ${theme.vocabulary.tempoBandLabel}`,
       `Range ${theme.vocabulary.melodyRangeLabel}`,
       `Rhythm ${theme.vocabulary.rhythmDensityLabel}`,
-      `Intervals ${theme.vocabulary.preferredIntervals.join(', ')}`,
+      `Intervals (${theme.vocabulary.preferredIntervalUnit}) ${theme.vocabulary.preferredIntervals.join(', ')}`,
       `Motif ${theme.vocabulary.motifLabel}`,
     ],
     sharedMotif: [...theme.motif.sharedDegreeOffsets],
@@ -555,7 +555,7 @@ export function buildMusicDebugSummaryMarkup(
       <div><dt>Region</dt><dd>${snapshot.theme.vocabulary.regionLabel}</dd></div>
       <div><dt>Location</dt><dd>${snapshot.songDna.recognitionLabel}</dd></div>
       <div><dt>Rhythm</dt><dd>${snapshot.theme.vocabulary.rhythmDensityLabel}</dd></div>
-      <div><dt>Preferred Intervals</dt><dd>${snapshot.theme.vocabulary.preferredIntervals.join(', ')}</dd></div>
+      <div><dt>Preferred Intervals</dt><dd>${snapshot.theme.vocabulary.preferredIntervals.join(', ')} ${snapshot.theme.vocabulary.preferredIntervalUnit}</dd></div>
       <div><dt>Lead Max Leap</dt><dd>${snapshot.leadMaxLeapSemitones.toFixed(1)} st</dd></div>
       <div><dt>Accidentals</dt><dd>${snapshot.accidentalNoteCount} chromatic notes outside ${snapshot.theme.vocabulary.modeLabel}</dd></div>
       <div><dt>Out-of-Mode</dt><dd>B ${snapshot.outOfModeNotesByRole.bass} / H ${snapshot.outOfModeNotesByRole.harmony} / L ${snapshot.outOfModeNotesByRole.lead}</dd></div>

@@ -84,8 +84,10 @@ describe('music debug', () => {
     expect(first.durationMs).toBeLessThanOrEqual(180_000);
     expect(first.measureCount).toBe(80);
     expect(first.resolvedBpm).toBeGreaterThan(100);
+    expect(first.theme.rootMidiNote).toBe(first.scaleMap.rootMidiNote);
     expect(first.scaleMap.rootMidiNote).toBeGreaterThan(0);
     expect(first.scaleMap.modePitchOffsets.length).toBeGreaterThan(0);
+    expect(first.songDna.rootMidiNote).toBe(first.scaleMap.rootMidiNote);
     expect(first.song.sections.map((section) => section.id)).toEqual([
       'intro',
       'a',
@@ -139,6 +141,7 @@ describe('music debug', () => {
     expect(summary).toContain('Region');
     expect(summary).toContain('Location');
     expect(summary).toContain('Preferred Intervals');
+    expect(summary).toContain('semitones');
     expect(summary).toContain('Vocabulary');
     expect(summary).toContain('SongDNA');
     expect(summary).toContain('Layer Mix');

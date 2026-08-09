@@ -24,6 +24,7 @@ export type ProceduralSongDna = {
   biomeLabel: string;
   regionLabel: string;
   rootHz: number;
+  rootMidiNote: number;
   locationIdentityId: string;
   recognitionLabel: string;
   modeLabel: string;
@@ -108,6 +109,7 @@ export function createProceduralSongDna(
     biomeLabel: theme.vocabulary.biomeLabel,
     regionLabel: theme.vocabulary.regionLabel,
     rootHz: theme.rootHz,
+    rootMidiNote: theme.rootMidiNote,
     locationIdentityId: locationMemory.locationIdentityId,
     recognitionLabel: locationMemory.recognitionLabel,
     modeLabel: formatVariantModeLabel(theme.vocabulary.modeLabel, variantLabel),

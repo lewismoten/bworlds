@@ -34,14 +34,14 @@ added directly as semitones instead of moving through the selected scale.
 - [ ] Trace why bass notes center on G-sharp and F-sharp.
 - [ ] Trace why lead notes center on G-sharp and C-sharp.
 - [x] Verify motif degrees are not treated as semitone offsets.
-- [ ] Verify preferred intervals use one documented unit.
+- [x] Verify preferred intervals use one documented unit.
 - [x] Separate scale degrees from semitone intervals.
 
 ## Root and Mode
 
 - [x] Derive MIDI root note directly from the 196 Hz root.
 - [x] Verify 196 Hz resolves to MIDI note G3.
-- [ ] Store the root as a MIDI note before composing.
+- [x] Store the root as a MIDI note before composing.
 - [x] Store mode pitch offsets once per song.
 - [x] Share one mode definition across all tracks.
 - [x] Log each note's scale degree and resulting MIDI pitch.

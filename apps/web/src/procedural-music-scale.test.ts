@@ -14,10 +14,11 @@ describe('procedural music scale', () => {
 
   it('maps G Mixolydian scale degrees across octaves', () => {
     const scaleMap = createProceduralScaleMap({
-      rootHz: 196,
+      rootMidiNote: 55,
       scale: [0, 2, 4, 5, 7, 9, 10],
     });
 
+    expect(scaleMap.rootMidiNote).toBe(55);
     expect(scaleMap.modePitchOffsets).toEqual([0, 2, 4, 5, 7, 9, 10]);
     expect(
       [0, 1, 2, 3, 4, 5, 6].map((degreeIndex) =>
@@ -53,5 +54,15 @@ describe('procedural music scale', () => {
     expect(isProceduralSemitoneInMode(mixolydian, 11)).toBe(false);
     expect(isProceduralSemitoneInMode(mixolydian, 13)).toBe(false);
     expect(isProceduralSemitoneInMode(mixolydian, 14)).toBe(true);
+  });
+
+  it('accepts a precomputed root midi note when building the shared scale map', () => {
+    expect(
+      createProceduralScaleMap({
+        rootMidiNote: 55,
+        rootHz: 195.5,
+        scale: [0, 2, 4, 5, 7, 9, 10],
+      }).rootMidiNote
+    ).toBe(55);
   });
 });

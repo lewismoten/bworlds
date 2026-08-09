@@ -1,3 +1,5 @@
+import { resolveProceduralMidiNoteFrequency } from './procedural-music-scale.ts';
+
 export type ProceduralMusicPitchRole =
   'lead' | 'harmony' | 'bass' | 'percussion';
 
@@ -10,7 +12,7 @@ const ROLE_REGISTER_SHIFT_SEMITONES: Record<ProceduralMusicPitchRole, number> =
   };
 
 export function resolveProceduralNoteFrequency(options: {
-  rootHz: number;
+  rootMidiNote: number;
   semitones: number;
   role: ProceduralMusicPitchRole;
   octaveShiftSemitones?: number;
@@ -20,7 +22,9 @@ export function resolveProceduralNoteFrequency(options: {
     ROLE_REGISTER_SHIFT_SEMITONES[options.role] +
     (options.octaveShiftSemitones ?? 0);
 
-  return options.rootHz * Math.pow(2, totalSemitones / 12);
+  return resolveProceduralMidiNoteFrequency(
+    options.rootMidiNote + totalSemitones
+  );
 }
 
 export function resolveProceduralNoteHarmonicGain(options: {

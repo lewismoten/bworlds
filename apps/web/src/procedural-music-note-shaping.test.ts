@@ -3,29 +3,31 @@ import {
   resolveProceduralNoteFrequency,
   resolveProceduralNoteHarmonicGain,
 } from './procedural-music-note-shaping.ts';
+import { resolveProceduralRootMidiNote } from './procedural-music-scale.ts';
 
 describe('procedural music note shaping', () => {
-  it('keeps role register shifts on semitone boundaries', () => {
+  it('keeps role register shifts on semitone boundaries from a stored root midi note', () => {
     const rootHz = 196;
+    const rootMidiNote = resolveProceduralRootMidiNote(rootHz);
     const bass = resolveProceduralNoteFrequency({
-      rootHz,
+      rootMidiNote,
       semitones: 7,
       role: 'bass',
     });
     const harmony = resolveProceduralNoteFrequency({
-      rootHz,
+      rootMidiNote,
       semitones: 7,
       role: 'harmony',
     });
     const percussion = resolveProceduralNoteFrequency({
-      rootHz,
+      rootMidiNote,
       semitones: 0,
       role: 'percussion',
     });
 
-    expect(12 * Math.log2(bass / rootHz)).toBeCloseTo(-5, 6);
-    expect(12 * Math.log2(harmony / rootHz)).toBeCloseTo(7, 6);
-    expect(12 * Math.log2(percussion / rootHz)).toBeCloseTo(12, 6);
+    expect(12 * Math.log2(bass / rootHz)).toBeCloseTo(-5, 3);
+    expect(12 * Math.log2(harmony / rootHz)).toBeCloseTo(7, 3);
+    expect(12 * Math.log2(percussion / rootHz)).toBeCloseTo(12, 3);
   });
 
   it('shapes brightness with harmonic color instead of pitch', () => {

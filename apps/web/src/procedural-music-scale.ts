@@ -3,8 +3,14 @@ export type ProceduralScaleMap = {
   modePitchOffsets: readonly number[];
 };
 
+export const PROCEDURAL_MUSIC_INTERVAL_UNIT = 'semitones';
+
 export function resolveProceduralRootMidiNote(rootHz: number): number {
   return Math.round(69 + 12 * Math.log2(Math.max(rootHz, 1) / 440));
+}
+
+export function resolveProceduralMidiNoteFrequency(midiNote: number): number {
+  return 440 * Math.pow(2, (midiNote - 69) / 12);
 }
 
 export function resolveProceduralModePitchOffsets(
@@ -14,11 +20,14 @@ export function resolveProceduralModePitchOffsets(
 }
 
 export function createProceduralScaleMap(options: {
-  rootHz: number;
+  rootHz?: number;
+  rootMidiNote?: number;
   scale: readonly number[];
 }): ProceduralScaleMap {
+  const rootMidiNote =
+    options.rootMidiNote ?? resolveProceduralRootMidiNote(options.rootHz ?? 0);
   return {
-    rootMidiNote: resolveProceduralRootMidiNote(options.rootHz),
+    rootMidiNote,
     modePitchOffsets: resolveProceduralModePitchOffsets(options.scale),
   };
 }

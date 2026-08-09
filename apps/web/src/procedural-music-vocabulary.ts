@@ -1,4 +1,5 @@
 import { hash2DWithSeed, registerHashLabel } from '@bworlds/core/hash';
+import { PROCEDURAL_MUSIC_INTERVAL_UNIT } from './procedural-music-scale.ts';
 import type { InstrumentFamily } from './music-instrument-timbres.ts';
 
 export type MusicRegionThemeId =
@@ -28,6 +29,7 @@ export type MusicThemeVocabulary = {
   melodyRangeSemitones: readonly [number, number];
   rhythmDensityLabel: MusicVocabularyDensity;
   preferredIntervals: readonly number[];
+  preferredIntervalUnit: typeof PROCEDURAL_MUSIC_INTERVAL_UNIT;
   motifLabel: string;
   instrumentFamilies: MusicVocabularyInstrumentFamilies;
 };
@@ -59,6 +61,7 @@ const BASE_THEME_VOCABULARY: Record<MusicRegionThemeId, MusicThemeVocabulary> =
       melodyRangeSemitones: [0, 14],
       rhythmDensityLabel: 'measured',
       preferredIntervals: [2, 3, 5, 7],
+      preferredIntervalUnit: PROCEDURAL_MUSIC_INTERVAL_UNIT,
       motifLabel: 'open-road call',
       instrumentFamilies: {
         lead: ['vocals', 'lead-guitar', 'trumpet', 'flute'],
@@ -77,6 +80,7 @@ const BASE_THEME_VOCABULARY: Record<MusicRegionThemeId, MusicThemeVocabulary> =
       melodyRangeSemitones: [-2, 10],
       rhythmDensityLabel: 'sparse',
       preferredIntervals: [1, 2, 3, 5],
+      preferredIntervalUnit: PROCEDURAL_MUSIC_INTERVAL_UNIT,
       motifLabel: 'branch-whisper turn',
       instrumentFamilies: {
         lead: ['flute', 'violin', 'vocals', 'synth-lead'],
@@ -95,6 +99,7 @@ const BASE_THEME_VOCABULARY: Record<MusicRegionThemeId, MusicThemeVocabulary> =
       melodyRangeSemitones: [2, 16],
       rhythmDensityLabel: 'flowing',
       preferredIntervals: [2, 4, 5, 7, 9],
+      preferredIntervalUnit: PROCEDURAL_MUSIC_INTERVAL_UNIT,
       motifLabel: 'wave-rise answer',
       instrumentFamilies: {
         lead: ['flute', 'trumpet', 'vocals', 'synth-lead'],
@@ -113,6 +118,7 @@ const BASE_THEME_VOCABULARY: Record<MusicRegionThemeId, MusicThemeVocabulary> =
       melodyRangeSemitones: [0, 15],
       rhythmDensityLabel: 'driving',
       preferredIntervals: [2, 4, 5, 7],
+      preferredIntervalUnit: PROCEDURAL_MUSIC_INTERVAL_UNIT,
       motifLabel: 'festival fanfare',
       instrumentFamilies: {
         lead: ['vocals', 'trumpet', 'flute', 'lead-guitar'],
@@ -131,6 +137,7 @@ const BASE_THEME_VOCABULARY: Record<MusicRegionThemeId, MusicThemeVocabulary> =
       melodyRangeSemitones: [1, 17],
       rhythmDensityLabel: 'measured',
       preferredIntervals: [2, 3, 6, 7],
+      preferredIntervalUnit: PROCEDURAL_MUSIC_INTERVAL_UNIT,
       motifLabel: 'summit warning',
       instrumentFamilies: {
         lead: ['trumpet', 'violin', 'flute', 'synth-lead'],
@@ -149,6 +156,7 @@ const BASE_THEME_VOCABULARY: Record<MusicRegionThemeId, MusicThemeVocabulary> =
       melodyRangeSemitones: [-5, 9],
       rhythmDensityLabel: 'sparse',
       preferredIntervals: [1, 3, 5, 8],
+      preferredIntervalUnit: PROCEDURAL_MUSIC_INTERVAL_UNIT,
       motifLabel: 'drip-echo descent',
       instrumentFamilies: {
         lead: ['violin', 'flute', 'synth-lead', 'vocals'],
@@ -167,6 +175,7 @@ const BASE_THEME_VOCABULARY: Record<MusicRegionThemeId, MusicThemeVocabulary> =
       melodyRangeSemitones: [1, 14],
       rhythmDensityLabel: 'measured',
       preferredIntervals: [2, 4, 5, 7, 11],
+      preferredIntervalUnit: PROCEDURAL_MUSIC_INTERVAL_UNIT,
       motifLabel: 'courtly cadence',
       instrumentFamilies: {
         lead: ['vocals', 'flute', 'violin', 'trumpet'],
