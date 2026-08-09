@@ -3791,6 +3791,8 @@ describe('sound effects', () => {
     expect(getSurfaceAudioFamily('plains')).toBe('grass');
     expect(getSurfaceAudioFamily('forest')).toBe('vegetation');
     expect(getSurfaceAudioFamily('mud')).toBe('mud');
+    expect(getSurfaceAudioFamily('dirt')).toBe('dirt');
+    expect(getSurfaceAudioFamily('path')).toBe('dirt');
     expect(getSurfaceAudioFamily('shore')).toBe('sand');
     expect(getSurfaceAudioFamily('road')).toBe('gravel');
     expect(getSurfaceAudioFamily('mountain')).toBe('rock');
@@ -3814,6 +3816,18 @@ describe('sound effects', () => {
       expect.objectContaining({
         cadenceMs: 342,
         footstepFrequency: 98,
+      })
+    );
+    expect(getSurfaceAudioProfile('dirt')).toEqual(
+      expect.objectContaining({
+        cadenceMs: 332,
+        footstepFrequency: 112,
+      })
+    );
+    expect(getSurfaceAudioProfile('path')).toEqual(
+      expect.objectContaining({
+        cadenceMs: 332,
+        footstepFrequency: 112,
       })
     );
     expect(getSurfaceAudioProfile('road')).toEqual(

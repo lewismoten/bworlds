@@ -251,7 +251,7 @@
 # Footsteps and Movement
 
 - [x] Generate footsteps based on terrain material.
-- [ ] Support dirt footsteps.
+- [x] Support dirt footsteps.
 - [x] Support grass footsteps.
 - [x] Support mud footsteps.
 - [x] Support sand footsteps.

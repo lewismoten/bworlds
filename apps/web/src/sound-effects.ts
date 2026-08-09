@@ -77,6 +77,7 @@ export type CombatSoundStyle =
   | 'healing';
 type SurfaceAudioFamily =
   | 'default'
+  | 'dirt'
   | 'grass'
   | 'mud'
   | 'sand'
@@ -198,6 +199,14 @@ const SURFACE_AUDIO_PROFILES: Record<SurfaceAudioFamily, SurfaceAudioProfile> =
       landingVolume: 0.065,
       waveform: 'triangle',
     },
+    dirt: {
+      cadenceMs: 332,
+      footstepFrequency: 112,
+      landingFrequency: 84,
+      footstepVolume: 0.041,
+      landingVolume: 0.06,
+      waveform: 'triangle',
+    },
     grass: {
       cadenceMs: 315,
       footstepFrequency: 128,
@@ -290,17 +299,18 @@ const SURFACE_AUDIO_PROFILES: Record<SurfaceAudioFamily, SurfaceAudioProfile> =
 
 const SURFACE_AUDIO_FAMILY_SEED_PARTS: Record<SurfaceAudioFamily, number> = {
   default: 0,
-  grass: 1,
-  mud: 2,
-  sand: 3,
-  gravel: 4,
-  rock: 5,
-  wood: 6,
-  metal: 7,
-  'stone-floor': 8,
-  snow: 9,
-  'shallow-water': 10,
-  vegetation: 11,
+  dirt: 1,
+  grass: 2,
+  mud: 3,
+  sand: 4,
+  gravel: 5,
+  rock: 6,
+  wood: 7,
+  metal: 8,
+  'stone-floor': 9,
+  snow: 10,
+  'shallow-water': 11,
+  vegetation: 12,
 };
 
 const SOUND_EFFECT_SEEDS = registerHashSeeds([
@@ -360,15 +370,13 @@ export function getSurfaceAudioFamily(
   if (tileKind === 'mud' || tileKind === 'swamp') {
     return 'mud';
   }
+  if (tileKind === 'dirt' || tileKind === 'path') {
+    return 'dirt';
+  }
   if (tileKind === 'sand' || tileKind === 'shore') {
     return 'sand';
   }
-  if (
-    tileKind === 'road' ||
-    tileKind === 'path' ||
-    tileKind === 'gravel' ||
-    tileKind === 'quarry'
-  ) {
+  if (tileKind === 'road' || tileKind === 'gravel' || tileKind === 'quarry') {
     return 'gravel';
   }
   if (
