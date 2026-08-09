@@ -63,6 +63,10 @@ import {
 } from './pending-world-build-queue.ts';
 import { getRenderEffectQualityProfile } from './render-effect-quality.ts';
 import {
+  createVisibleWorldBuildOrderScratch,
+  fillVisibleWorldTileBuildOrder,
+} from './visible-world-build-order.ts';
+import {
   createSkyLightingColorState,
   updateSkyLightingColorState,
 } from './sky-lighting-colors.ts';
@@ -84,6 +88,10 @@ export {
   reconcilePendingWorldBuildQueue,
   reconcilePendingWorldBuildQueueWithScratch,
 } from './pending-world-build-queue.ts';
+export {
+  createVisibleWorldBuildOrderScratch,
+  fillVisibleWorldTileBuildOrder,
+} from './visible-world-build-order.ts';
 
 const LAND_MODEL_REVEAL_SEED = registerHashLabel('render3d:land-model-reveal');
 
@@ -1109,6 +1117,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
   const visibleWorldNextVisibleKeysBuffer = new Set<string>();
   const visibleWorldVisibleTileKeysBuffer = new Set<string>();
   const pendingWorldBuildQueueScratch = createPendingWorldBuildQueueScratch();
+  const visibleWorldBuildOrderScratch = createVisibleWorldBuildOrderScratch();
   const backgroundColor = new THREE.Color(SKY_DAY_COLOR);
   const twilightColor = new THREE.Color(SKY_SUNSET_COLOR);
   const nightColor = new THREE.Color(SKY_NIGHT_COLOR);
@@ -1414,11 +1423,20 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     const centerY = Math.round(state.player.y);
     const facingBucket = getFacingVisibilityBucket(state.player.facing);
     visibleWorldNextVisibleKeysBuffer.clear();
-    const nextQueue = getVisibleWorldTileBuildOrder({
+    const nextQueue = fillVisibleWorldTileBuildOrder(visibleWorldBuildOrderScratch, {
       playerTileX: centerX,
       playerTileY: centerY,
       facingAngle: state.player.facing,
       chunkRadius,
+      shouldRenderWorldTile: (tileX, tileY) =>
+        shouldRenderWorldTile({
+          playerTileX: centerX,
+          playerTileY: centerY,
+          tileX,
+          tileY,
+          facingAngle: state.player.facing,
+          chunkRadius,
+        }),
     });
 
     for (const entry of nextQueue) {
@@ -4159,57 +4177,21 @@ export function getVisibleWorldTileBuildOrder({
   facingAngle,
   chunkRadius = CHUNK_RADIUS,
 }) {
-  const entries: Array<{
-    key: string;
-    x: number;
-    y: number;
-    distance: number;
-    facingDot: number;
-  }> = [];
-  for (let y = playerTileY - chunkRadius; y <= playerTileY + chunkRadius; y += 1) {
-    for (let x = playerTileX - chunkRadius; x <= playerTileX + chunkRadius; x += 1) {
-      if (
-        !shouldRenderWorldTile({
-          playerTileX,
-          playerTileY,
-          tileX: x,
-          tileY: y,
-          facingAngle,
-          chunkRadius,
-        })
-      ) {
-        continue;
-      }
-      const deltaX = x - playerTileX;
-      const deltaY = y - playerTileY;
-      const distance = Math.hypot(deltaX, deltaY);
-      const facingDot =
-        distance === 0
-          ? 1
-          : Math.cos(facingAngle) * (deltaX / distance) +
-            Math.sin(facingAngle) * (deltaY / distance);
-      entries.push({
-        key: `${x}:${y}`,
-        x,
-        y,
-        distance,
-        facingDot,
-      });
-    }
-  }
-  entries.sort((left, right) => {
-    if (Math.abs(left.distance - right.distance) > 0.001) {
-      return left.distance - right.distance;
-    }
-    if (Math.abs(left.facingDot - right.facingDot) > 0.0001) {
-      return right.facingDot - left.facingDot;
-    }
-    if (left.y !== right.y) {
-      return left.y - right.y;
-    }
-    return left.x - right.x;
+  return fillVisibleWorldTileBuildOrder(createVisibleWorldBuildOrderScratch(), {
+    playerTileX,
+    playerTileY,
+    facingAngle,
+    chunkRadius,
+    shouldRenderWorldTile: (tileX, tileY) =>
+      shouldRenderWorldTile({
+        playerTileX,
+        playerTileY,
+        tileX,
+        tileY,
+        facingAngle,
+        chunkRadius,
+      }),
   });
-  return entries.map(({ key, x, y }) => ({ key, x, y }));
 }
 
 export function shouldRenderWorldTile({

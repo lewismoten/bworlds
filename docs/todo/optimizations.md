@@ -157,7 +157,7 @@ This is especially relevant given the heap profile you were examining earlier.
 * [ ] Minimize allocations inside hot code paths.
 * [X] Reuse frequently created temporary objects.
 * [ ] Pool short-lived objects when profiling demonstrates a benefit.
-* [ ] Reuse arrays by clearing them rather than repeatedly replacing them.
+* [X] Reuse arrays by clearing them rather than repeatedly replacing them.
 * [ ] Reuse vector objects.
 * [ ] Reuse matrices.
 * [ ] Reuse raycasting result buffers where possible.
