@@ -179,14 +179,14 @@ interface TreeCapabilities {
 * [X] Base tree height partly on age.
 * [X] Increase branching complexity with age.
 * [X] Increase canopy size with age.
-* [ ] Allow young trees to have simple geometry.
+* [X] Allow young trees to have simple geometry.
 * [X] Generate saplings.
 * [X] Generate adolescent trees.
 * [X] Generate mature trees.
 * [X] Generate ancient trees.
 * [ ] Make very old trees more irregular.
 * [ ] Give older trees more dead branches.
-* [ ] Increase hollow probability with age.
+* [X] Increase hollow probability with age.
 * [ ] Increase bark damage with age.
 * [ ] Increase branch loss with age.
 * [ ] Allow old trees to become historically significant landmarks.

@@ -949,6 +949,40 @@ describe('tile forest', () => {
     );
   });
 
+  it('makes hollows more likely in older forest trees than in saplings', () => {
+    const ageByTile = new Map<string, ReturnType<typeof getForestTreeAgeProfiles>>();
+    const hollowsByTile = new Map<string, ReturnType<typeof getForestTreeHollows>>();
+
+    for (let tileY = 0; tileY < 64; tileY += 1) {
+      for (let tileX = 0; tileX < 64; tileX += 1) {
+        const key = `${tileX}:${tileY}`;
+        ageByTile.set(key, getForestTreeAgeProfiles(tileX, tileY));
+        hollowsByTile.set(key, getForestTreeHollows(tileX, tileY));
+      }
+    }
+
+    const saplingTiles = [...ageByTile.entries()].filter(([, ages]) =>
+      ages.some((entry) => entry.lifeStage === 'sapling')
+    );
+    const ancientTiles = [...ageByTile.entries()].filter(([, ages]) =>
+      ages.some((entry) => entry.lifeStage === 'ancient')
+    );
+
+    expect(saplingTiles.length).toBeGreaterThan(0);
+    expect(ancientTiles.length).toBeGreaterThan(0);
+
+    const saplingHollows = saplingTiles.reduce(
+      (sum, [key]) => sum + (hollowsByTile.get(key)?.length ?? 0),
+      0
+    );
+    const ancientHollows = ancientTiles.reduce(
+      (sum, [key]) => sum + (hollowsByTile.get(key)?.length ?? 0),
+      0
+    );
+
+    expect(ancientHollows).toBeGreaterThan(saplingHollows);
+  });
+
   it('generates more tree-like branch profiles for broadleaf and pine forms', () => {
     const branchTiles: Array<{
       x: number;

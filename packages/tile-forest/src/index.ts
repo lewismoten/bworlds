@@ -572,8 +572,17 @@ const resolveForestHollowDescriptors = createCoordinateValueResolver(
     const hollows: ForestHollowDescriptor[] = [];
 
     trees.forEach((tree, treeIndex) => {
+      const biological = getTreeBiologicalState(tree);
       const chance = hash2D(FOREST_HOLLOW_SEED, tileX * 17 + treeIndex, tileY * 19);
-      if (chance < 0.78) {
+      const threshold =
+        biological.lifeStage === 'sapling'
+          ? 1
+          : biological.lifeStage === 'adolescent'
+            ? 0.94
+            : biological.lifeStage === 'mature'
+              ? 0.82
+              : 0.68;
+      if (chance < threshold) {
         return;
       }
 
@@ -589,9 +598,13 @@ const resolveForestHollowDescriptors = createCoordinateValueResolver(
         sideOffset: chance > 0.9 ? 1 : -1,
         height:
           tree.trunkHeight *
-          (0.38 + hash2D(FOREST_HOLLOW_HEIGHT_SEED, treeIndex, tileY) * 0.16),
+          (0.34 +
+            biological.maturity * 0.1 +
+            hash2D(FOREST_HOLLOW_HEIGHT_SEED, treeIndex, tileY) * 0.16),
         scale:
-          0.12 + hash2D(FOREST_HOLLOW_SCALE_SEED, tileX + treeIndex, tileY) * 0.05,
+          0.1 +
+          biological.maturity * 0.05 +
+          hash2D(FOREST_HOLLOW_SCALE_SEED, tileX + treeIndex, tileY) * 0.05,
         depth:
           0.08 + hash2D(FOREST_HOLLOW_DEPTH_SEED, tileX, tileY + treeIndex) * 0.03,
       });
