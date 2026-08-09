@@ -61,6 +61,7 @@ import {
   reconcilePendingWorldBuildQueueWithScratch,
   type PendingWorldBuildEntry,
 } from './pending-world-build-queue.ts';
+import { collectMaterialTexturesInto } from './material-texture-collector.ts';
 import { collectRecentWindowedEvents } from './recent-windowed-events.ts';
 import { getRenderEffectQualityProfile } from './render-effect-quality.ts';
 import {
@@ -97,6 +98,7 @@ export {
   reconcilePendingWorldBuildQueue,
   reconcilePendingWorldBuildQueueWithScratch,
 } from './pending-world-build-queue.ts';
+export { collectMaterialTexturesInto } from './material-texture-collector.ts';
 export { collectRecentWindowedEvents } from './recent-windowed-events.ts';
 export {
   createVisibleWorldBuildOrderScratch,
@@ -3194,6 +3196,7 @@ export function collectSceneResourceStats(
   const materials = new Set<THREE.Material>();
   const geometries = new Set<unknown>();
   const textures = new Set<unknown>();
+  const materialTexturesBuffer: unknown[] = [];
 
   traverseSceneGraphWithDepth(root, (child, depth) => {
     object3dCount += 1;
@@ -3311,7 +3314,12 @@ export function collectSceneResourceStats(
     }
     for (const material of childMaterials) {
       materials.add(material);
-      for (const texture of getMaterialTextures(material)) {
+      const materialTextures = collectMaterialTexturesInto(
+        material,
+        materialTexturesBuffer
+      );
+      for (let index = 0; index < materialTextures.length; index += 1) {
+        const texture = materialTextures[index];
         if (textures.has(texture)) {
           continue;
         }
@@ -3518,28 +3526,6 @@ function getMaterialTypeName(material: THREE.Material): string {
 function getInstancedMeshCount(object: unknown): number {
   const count = (object as { count?: unknown })?.count;
   return typeof count === 'number' && Number.isFinite(count) ? count : 0;
-}
-
-function getMaterialTextures(material: THREE.Material): unknown[] {
-  return Object.values(material).filter(isTextureLike);
-}
-
-function isTextureLike(value: unknown): boolean {
-  if (!value || typeof value !== 'object') {
-    return false;
-  }
-  const texture = value as {
-    image?: unknown;
-    colorSpace?: unknown;
-    needsUpdate?: boolean;
-    repeat?: unknown;
-  };
-  return (
-    texture.image != null ||
-    texture.colorSpace != null ||
-    texture.needsUpdate != null ||
-    texture.repeat != null
-  );
 }
 
 function getTextureMemoryEstimateBytes(texture: unknown): number {

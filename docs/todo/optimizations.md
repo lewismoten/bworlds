@@ -165,7 +165,7 @@ This is especially relevant given the heap profile you were examining earlier.
 * [X] Avoid unnecessary `map()`, `filter()`, and `reduce()` chains inside hot loops.
 * [X] Prefer a single iteration when several array operations can be combined.
 * [ ] Avoid large temporary arrays.
-* [ ] Avoid repeatedly converting between object representations.
+* [X] Avoid repeatedly converting between object representations.
 * [X] Remove `has()` + `get()` double cache lookups.
 * [ ] Cache deterministic calculations.
 * [ ] Bound every cache.
