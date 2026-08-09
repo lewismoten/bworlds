@@ -4001,4 +4001,133 @@ describe('sound effects', () => {
       'ruins-ambience',
     ]);
   });
+
+  it('changes forest ambient recipe ids across dawn, summer, and night cycles', () => {
+    const played: ProceduralSoundEffect[] = [];
+    const controller = createSoundEffectController({
+      play(effect) {
+        played.push(effect);
+      },
+    });
+
+    controller.update({
+      nowMs: 0,
+      walking: false,
+      isJumping: false,
+      viewMode: '3d',
+      dayProgress: 0.24,
+      yearProgress: 0.5,
+      nearbyAmbient: {
+        kind: 'forest',
+        intensity: 0.7,
+        emitter: { x: 4, y: 0 },
+      },
+    });
+    controller.update({
+      nowMs: 3000,
+      walking: false,
+      isJumping: false,
+      viewMode: '3d',
+      dayProgress: 0.5,
+      yearProgress: 0.5,
+      nearbyAmbient: {
+        kind: 'forest',
+        intensity: 0.7,
+        emitter: { x: 5, y: 0 },
+      },
+    });
+    controller.update({
+      nowMs: 6000,
+      walking: false,
+      isJumping: false,
+      viewMode: '3d',
+      dayProgress: 0.92,
+      yearProgress: 0.5,
+      nearbyAmbient: {
+        kind: 'forest',
+        intensity: 0.7,
+        emitter: { x: 4, y: 0 },
+      },
+    });
+
+    const forestRecipes = played
+      .filter((effect) => effect.kind === 'forest-ambience')
+      .map((effect) => effect.recipeId);
+
+    expect(forestRecipes).toContain('forest-ambience:forest:dawn-birds');
+    expect(forestRecipes).toContain('forest-ambience:forest:summer-insects');
+    expect(
+      forestRecipes.includes('forest-ambience:forest:night-crickets') ||
+        forestRecipes.includes('forest-ambience:forest:owl')
+    ).toBe(true);
+  });
+
+  it('changes settlement ambience across workday, tavern hours, and quiet night', () => {
+    const played: ProceduralSoundEffect[] = [];
+    const controller = createSoundEffectController({
+      play(effect) {
+        played.push(effect);
+      },
+    });
+
+    controller.update({
+      nowMs: 0,
+      walking: false,
+      isJumping: false,
+      viewMode: '3d',
+      dayProgress: 0.24,
+      nearbyAmbient: {
+        kind: 'settlement',
+        intensity: 0.8,
+        emitter: { x: 2, y: 0 },
+      },
+    });
+    controller.update({
+      nowMs: 3000,
+      walking: false,
+      isJumping: false,
+      viewMode: '3d',
+      dayProgress: 0.5,
+      nearbyAmbient: {
+        kind: 'settlement',
+        intensity: 0.8,
+        emitter: { x: 3, y: 0 },
+      },
+    });
+    controller.update({
+      nowMs: 6000,
+      walking: false,
+      isJumping: false,
+      viewMode: '3d',
+      dayProgress: 0.8,
+      nearbyAmbient: {
+        kind: 'settlement',
+        intensity: 0.8,
+        emitter: { x: 2, y: 0 },
+      },
+    });
+    controller.update({
+      nowMs: 9000,
+      walking: false,
+      isJumping: false,
+      viewMode: '3d',
+      dayProgress: 0.92,
+      nearbyAmbient: {
+        kind: 'settlement',
+        intensity: 0.8,
+        emitter: { x: 2, y: 0 },
+      },
+    });
+
+    expect(
+      played
+        .filter((effect) => effect.kind === 'settlement-ambience')
+        .map((effect) => effect.recipeId)
+    ).toEqual([
+      'settlement-ambience:settlement:rooster-bells',
+      'settlement-ambience:settlement:market',
+      'settlement-ambience:settlement:tavern',
+      'settlement-ambience:settlement:quiet-lanterns',
+    ]);
+  });
 });

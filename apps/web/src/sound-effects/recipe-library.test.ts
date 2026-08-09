@@ -244,6 +244,61 @@ describe('sound recipe library', () => {
     ]);
   });
 
+  it('supports time-of-day and seasonal ambient variants for plains, forest, and settlements', () => {
+    const forestNightRecipe = buildProceduralSoundRecipe({
+      kind: 'forest-ambience',
+      identityVariant: 'night-crickets',
+      profile: DEFAULT_SURFACE_PROFILE,
+      variantOffset: 2,
+      resolveAdvancementFrequency: () => 300,
+      resolveAmbientSoundFrequency: () => 172,
+      resolveInteractionFrequency: () => 128,
+      resolveInteractionWaveform: (_tileKind, fallback) => fallback,
+      resolvePaddleBoatCalliopeFrequency: () => 520,
+      resolveSteamWhistleFrequency: () => 360,
+    });
+    const plainsSummerRecipe = buildProceduralSoundRecipe({
+      kind: 'plains-ambience',
+      identityVariant: 'summer-insects',
+      profile: DEFAULT_SURFACE_PROFILE,
+      variantOffset: 1,
+      resolveAdvancementFrequency: () => 300,
+      resolveAmbientSoundFrequency: () => 172,
+      resolveInteractionFrequency: () => 128,
+      resolveInteractionWaveform: (_tileKind, fallback) => fallback,
+      resolvePaddleBoatCalliopeFrequency: () => 520,
+      resolveSteamWhistleFrequency: () => 360,
+    });
+    const settlementDuskRecipe = buildProceduralSoundRecipe({
+      kind: 'settlement-ambience',
+      identityVariant: 'tavern',
+      profile: DEFAULT_SURFACE_PROFILE,
+      variantOffset: -1,
+      resolveAdvancementFrequency: () => 300,
+      resolveAmbientSoundFrequency: () => 172,
+      resolveInteractionFrequency: () => 128,
+      resolveInteractionWaveform: (_tileKind, fallback) => fallback,
+      resolvePaddleBoatCalliopeFrequency: () => 520,
+      resolveSteamWhistleFrequency: () => 360,
+    });
+
+    expect(forestNightRecipe.id).toBe('forest-ambience:night-crickets');
+    expect(forestNightRecipe.layers?.map((layer) => layer.id)).toEqual([
+      'forest-cricket-bed',
+      'forest-nocturnal-rustle',
+    ]);
+    expect(plainsSummerRecipe.id).toBe('plains-ambience:summer-insects');
+    expect(plainsSummerRecipe.layers?.map((layer) => layer.id)).toEqual([
+      'plains-summer-insects',
+      'plains-heat-breeze',
+    ]);
+    expect(settlementDuskRecipe.id).toBe('settlement-ambience:tavern');
+    expect(settlementDuskRecipe.layers?.map((layer) => layer.id)).toEqual([
+      'settlement-tavern-bed',
+      'settlement-evening-fiddle',
+    ]);
+  });
+
   it('lets related movement sounds inherit the same family identity while keeping different signatures', () => {
     expect(getSoundIdentityDescriptor('footstep').family).toBe('movement');
     expect(getSoundIdentityDescriptor('jump').family).toBe('movement');

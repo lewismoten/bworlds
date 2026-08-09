@@ -1,4 +1,8 @@
 import type { SoundEffectController } from './sound-effects.ts';
+import {
+  resolveAmbientDayPhase,
+  resolveAmbientSeason,
+} from './ambient-cycle.ts';
 
 type SoundUpdateOptions = Parameters<SoundEffectController['update']>[0];
 type NearbyTrainLike = NonNullable<SoundUpdateOptions['nearbyTrain']>;
@@ -17,6 +21,8 @@ export type SoundUpdatePayloadInput = {
   viewMode: SoundUpdateOptions['viewMode'];
   ambianceEnabled?: SoundUpdateOptions['ambianceEnabled'];
   tileKind?: SoundUpdateOptions['tileKind'];
+  dayProgress?: number;
+  yearProgress?: number;
   weatherKind?: SoundUpdateOptions['weatherKind'];
   weatherIntensity?: SoundUpdateOptions['weatherIntensity'];
   windStrength?: SoundUpdateOptions['windStrength'];
@@ -50,6 +56,8 @@ export function createSoundUpdatePayloadBuilder(): (
     isJumping: false,
     viewMode: '2d',
     ambianceEnabled: true,
+    dayProgress: 0.5,
+    yearProgress: 0.5,
     emitter: { x: 0, y: 0 },
     listener: { x: 0, y: 0 },
     nearbyTrain: null,
@@ -85,6 +93,8 @@ export function createSoundUpdatePayloadBuilder(): (
     payload.viewMode = input.viewMode;
     payload.ambianceEnabled = input.ambianceEnabled ?? true;
     payload.tileKind = input.tileKind;
+    payload.dayProgress = input.dayProgress ?? 0.5;
+    payload.yearProgress = input.yearProgress ?? 0.5;
     payload.weatherKind = input.weatherKind;
     payload.weatherIntensity = input.weatherIntensity;
     payload.windStrength = input.windStrength;
@@ -182,6 +192,8 @@ export function getSoundUpdateInputSignature(
     | 'viewMode'
     | 'ambianceEnabled'
     | 'tileKind'
+    | 'dayProgress'
+    | 'yearProgress'
     | 'weatherKind'
     | 'weatherIntensity'
     | 'windStrength'
@@ -197,6 +209,8 @@ export function getSoundUpdateInputSignature(
       input.viewMode,
       input.ambianceEnabled === false ? 0 : 1,
       input.tileKind ?? '',
+      resolveAmbientDayPhase(input.dayProgress),
+      resolveAmbientSeason(input.yearProgress),
       input.weatherKind ?? '',
       Math.round((input.weatherIntensity ?? 0) * 10),
       Math.round((input.windStrength ?? 0) * 10),

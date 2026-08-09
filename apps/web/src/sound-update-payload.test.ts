@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { createSoundUpdatePayloadBuilder } from './sound-update-payload.ts';
+import {
+  createSoundUpdatePayloadBuilder,
+  getSoundUpdateInputSignature,
+} from './sound-update-payload.ts';
 
 describe('sound update payload builder', () => {
   it('reuses the same payload and nested audio position objects across frames', () => {
@@ -12,6 +15,8 @@ describe('sound update payload builder', () => {
       viewMode: '3d',
       ambianceEnabled: true,
       tileKind: 'town',
+      dayProgress: 0.24,
+      yearProgress: 0.2,
       weatherKind: 'fog',
       weatherIntensity: 0.4,
       windStrength: 0.2,
@@ -48,6 +53,8 @@ describe('sound update payload builder', () => {
       viewMode: '3d',
       ambianceEnabled: false,
       tileKind: 'bridge',
+      dayProgress: 0.92,
+      yearProgress: 0,
       weatherKind: 'wind',
       weatherIntensity: 0.8,
       windStrength: 0.65,
@@ -85,6 +92,8 @@ describe('sound update payload builder', () => {
     expect(second.nearbyPaddleBoat).toBe(first.nearbyPaddleBoat);
     expect(second.nearbyAmbient).toBe(first.nearbyAmbient);
     expect(second.ambianceEnabled).toBe(false);
+    expect(second.dayProgress).toBe(0.92);
+    expect(second.yearProgress).toBe(0);
     expect(second.emitter).toEqual({ x: 13.5, y: -5.5 });
     expect(second.listener).toEqual({ x: 13.5, y: -5.5 });
     expect(second.nearbyTrain).toEqual(
@@ -129,6 +138,8 @@ describe('sound update payload builder', () => {
       viewMode: '3d',
       ambianceEnabled: true,
       tileKind: 'town',
+      dayProgress: 0.5,
+      yearProgress: 0.5,
       emitterX: 0,
       emitterY: 0,
       listenerX: 0,
@@ -155,6 +166,8 @@ describe('sound update payload builder', () => {
       viewMode: '2d',
       ambianceEnabled: false,
       tileKind: 'plains',
+      dayProgress: 0.5,
+      yearProgress: 0.5,
       emitterX: 2,
       emitterY: 1,
       listenerX: 1,
@@ -170,5 +183,48 @@ describe('sound update payload builder', () => {
     expect(second.nearbyAmbient).toBeNull();
     expect(second.ambianceEnabled).toBe(false);
     expect(second.listener).toEqual({ x: 1, y: 2 });
+  });
+
+  it('changes the audible signature when ambient phase transitions between day and night', () => {
+    const day = getSoundUpdateInputSignature({
+      walking: false,
+      isJumping: false,
+      viewMode: '3d',
+      ambianceEnabled: true,
+      tileKind: 'forest',
+      dayProgress: 0.5,
+      yearProgress: 0.5,
+      weatherKind: 'clear',
+      weatherIntensity: 0,
+      windStrength: 0,
+      nearbyTrain: null,
+      nearbyPaddleBoat: null,
+      nearbyAmbient: {
+        kind: 'forest',
+        intensity: 0.7,
+        emitter: { x: 2, y: 0 },
+      },
+    });
+    const night = getSoundUpdateInputSignature({
+      walking: false,
+      isJumping: false,
+      viewMode: '3d',
+      ambianceEnabled: true,
+      tileKind: 'forest',
+      dayProgress: 0.92,
+      yearProgress: 0.5,
+      weatherKind: 'clear',
+      weatherIntensity: 0,
+      windStrength: 0,
+      nearbyTrain: null,
+      nearbyPaddleBoat: null,
+      nearbyAmbient: {
+        kind: 'forest',
+        intensity: 0.7,
+        emitter: { x: 2, y: 0 },
+      },
+    });
+
+    expect(day.ambient).not.toBe(night.ambient);
   });
 });

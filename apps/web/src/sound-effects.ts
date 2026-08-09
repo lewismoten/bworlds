@@ -130,6 +130,8 @@ export type SoundEffectController = {
     viewMode: ViewModeLike;
     ambianceEnabled?: boolean;
     tileKind?: SurfaceKind;
+    dayProgress?: number;
+    yearProgress?: number;
     weatherKind?: string;
     weatherIntensity?: number;
     windStrength?: number;
@@ -149,6 +151,7 @@ export type SoundEffectController = {
       intensity?: number;
       emitter?: SoundPosition;
       listener?: SoundPosition;
+      blendedLayers?: NearbyAmbientProfile['blendedLayers'];
     } | null;
     emitter?: SoundPosition;
     listener?: SoundPosition;
@@ -650,6 +653,8 @@ export function createSoundEffectController(
       viewMode,
       ambianceEnabled,
       tileKind,
+      dayProgress,
+      yearProgress,
       weatherKind,
       weatherIntensity,
       windStrength,
@@ -765,6 +770,8 @@ export function createSoundEffectController(
           profile: nearbyAmbient ?? null,
           listener,
           nowMs,
+          dayProgress,
+          yearProgress,
         });
         if (ambientLayers.length > 0) {
           for (let index = 0; index < ambientLayers.length; index += 1) {

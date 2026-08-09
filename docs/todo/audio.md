@@ -165,7 +165,7 @@
 - [x] Give mountains stronger winds, echoes, rock movement, and distant animals.
 - [ ] Give swamps insects, frogs, water movement, bubbles, and birds.
 - [x] Give coastal areas waves, wind, seabirds, and shoreline movement.
-- [ ] Give plains grass movement, insects, birds, and distant animals.
+- [x] Give plains grass movement, insects, birds, and distant animals.
 - [ ] Give snowy regions wind, snow movement, cracking ice, and muffled ambience.
 - [ ] Give volcanic areas rumbling, cracking stone, steam, and lava activity.
 - [x] Give caves dripping water, distant movement, echoes, rock sounds, and underground wind.
@@ -217,32 +217,32 @@
 
 # Time of Day
 
-- [ ] Change ambient wildlife as day becomes night.
-- [ ] Generate dawn-specific bird activity.
-- [ ] Reduce daytime insect sounds after sunset where appropriate.
-- [ ] Increase cricket and nocturnal insect activity at night.
-- [ ] Introduce owl and nocturnal animal calls.
-- [ ] Change settlement ambience according to time of day.
-- [ ] Reduce market and work sounds after businesses close.
-- [ ] Introduce tavern and entertainment sounds during evening hours.
-- [ ] Reduce village activity late at night.
-- [ ] Generate rooster, livestock, bells, or work sounds around dawn.
-- [ ] Make nighttime environments noticeably quieter without making them completely silent.
+- [x] Change ambient wildlife as day becomes night.
+- [x] Generate dawn-specific bird activity.
+- [x] Reduce daytime insect sounds after sunset where appropriate.
+- [x] Increase cricket and nocturnal insect activity at night.
+- [x] Introduce owl and nocturnal animal calls.
+- [x] Change settlement ambience according to time of day.
+- [x] Reduce market and work sounds after businesses close.
+- [x] Introduce tavern and entertainment sounds during evening hours.
+- [x] Reduce village activity late at night.
+- [x] Generate rooster, livestock, bells, or work sounds around dawn.
+- [x] Make nighttime environments noticeably quieter without making them completely silent.
 
 ---
 
 # Seasons
 
-- [ ] Change animal sounds according to season.
-- [ ] Change insect populations according to season.
+- [x] Change animal sounds according to season.
+- [x] Change insect populations according to season.
 - [ ] Change bird populations through migration.
-- [ ] Add spring frog and insect activity.
-- [ ] Increase summer insects.
+- [x] Add spring frog and insect activity.
+- [x] Increase summer insects.
 - [ ] Add autumn leaf sounds.
 - [ ] Generate dry-leaf footsteps during autumn.
 - [ ] Generate snow footsteps during winter.
 - [ ] Generate ice cracking and frozen-water ambience.
-- [ ] Reduce wildlife activity during harsh winter conditions.
+- [x] Reduce wildlife activity during harsh winter conditions.
 - [ ] Generate seasonal storms.
 - [ ] Associate certain rare ambient sounds with particular seasons.
 

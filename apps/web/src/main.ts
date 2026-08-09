@@ -3126,6 +3126,8 @@ function updateMovement(deltaMs: number): void {
     viewMode: state.viewMode,
     ambianceEnabled: audioPreferenceState.ambianceEnabled,
     tileKind: currentTileKind,
+    dayProgress: actualCycle.dayProgress,
+    yearProgress: actualCycle.yearProgress,
     weatherKind: currentWeather?.kind,
     weatherIntensity: currentWeather?.intensity,
     windStrength: currentWeather?.windStrength,

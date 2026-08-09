@@ -897,6 +897,214 @@ function resolveProceduralSoundLayers(
         },
       ] as const;
     case 'forest-ambience':
+      if (identityVariant === 'dawn-birds') {
+        return [
+          {
+            id: 'forest-dawn-birdsong',
+            waveform: ['sine', 'triangle'] as const,
+            noiseColor: 'white' as const,
+            frequencyMultiplier: 1.42,
+            durationMultiplier: 0.72,
+            volumeMultiplier: 0.22,
+            frequencyVariation: 0.036,
+            durationVariation: 0.18,
+            volumeVariation: 0.1,
+            variationDepth: 0.9,
+            vibrato: {
+              rateHz: 5.8,
+              depth: 0.04,
+              waveform: ['sine', 'triangle'] as const,
+              rateVariation: 0.05,
+              depthVariation: 0.04,
+            },
+          },
+          {
+            id: 'forest-morning-canopy',
+            waveform: ['triangle', 'sine'] as const,
+            noiseColor: ['pink', 'brown'] as const,
+            frequencyMultiplier: 0.9,
+            durationMultiplier: 1,
+            volumeMultiplier: 0.38,
+            startOffsetMs: 24,
+            startOffsetVariation: 0.22,
+            frequencyVariation: 0.024,
+            durationVariation: 0.12,
+            volumeVariation: 0.08,
+            variationDepth: 0.82,
+          },
+        ] as const;
+      }
+      if (identityVariant === 'summer-insects') {
+        return [
+          {
+            id: 'forest-summer-cicadas',
+            waveform: ['square', 'sine'] as const,
+            noiseColor: 'pink' as const,
+            frequencyMultiplier: 1.38,
+            durationMultiplier: 0.68,
+            volumeMultiplier: 0.2,
+            frequencyVariation: 0.034,
+            durationVariation: 0.2,
+            volumeVariation: 0.1,
+            variationDepth: 0.92,
+            tremolo: {
+              rateHz: 9.4,
+              depth: 0.24,
+              waveform: 'square' as const,
+              rateVariation: 0.08,
+              depthVariation: 0.06,
+            },
+          },
+          {
+            id: 'forest-warm-leaf-bed',
+            waveform: ['triangle', 'sine'] as const,
+            noiseColor: ['pink', 'brown'] as const,
+            frequencyMultiplier: 0.86,
+            durationMultiplier: 1,
+            volumeMultiplier: 0.42,
+            startOffsetMs: 30,
+            startOffsetVariation: 0.24,
+            frequencyVariation: 0.022,
+            durationVariation: 0.14,
+            volumeVariation: 0.08,
+            variationDepth: 0.84,
+          },
+        ] as const;
+      }
+      if (identityVariant === 'night-crickets') {
+        return [
+          {
+            id: 'forest-cricket-bed',
+            waveform: ['square', 'triangle'] as const,
+            noiseColor: 'pink' as const,
+            frequencyMultiplier: 1.3,
+            durationMultiplier: 0.66,
+            volumeMultiplier: 0.16,
+            frequencyVariation: 0.03,
+            durationVariation: 0.18,
+            volumeVariation: 0.08,
+            variationDepth: 0.88,
+            tremolo: {
+              rateHz: 8.2,
+              depth: 0.2,
+              waveform: 'square' as const,
+              rateVariation: 0.08,
+              depthVariation: 0.06,
+            },
+          },
+          {
+            id: 'forest-nocturnal-rustle',
+            waveform: ['triangle', 'sine'] as const,
+            noiseColor: ['brown', 'pink'] as const,
+            frequencyMultiplier: 0.76,
+            durationMultiplier: 1,
+            volumeMultiplier: 0.3,
+            startOffsetMs: 40,
+            startOffsetVariation: 0.26,
+            frequencyVariation: 0.02,
+            durationVariation: 0.14,
+            volumeVariation: 0.08,
+            variationDepth: 0.8,
+          },
+        ] as const;
+      }
+      if (identityVariant === 'owl') {
+        return [
+          {
+            id: 'forest-owl-call',
+            waveform: ['sine', 'triangle'] as const,
+            noiseColor: 'white' as const,
+            frequencyMultiplier: 1.06,
+            durationMultiplier: 0.88,
+            volumeMultiplier: 0.14,
+            frequencyVariation: 0.028,
+            durationVariation: 0.16,
+            volumeVariation: 0.08,
+            variationDepth: 0.76,
+            vibrato: {
+              rateHz: 4.2,
+              depth: 0.04,
+              waveform: ['sine', 'triangle'] as const,
+              rateVariation: 0.05,
+              depthVariation: 0.05,
+            },
+          },
+          {
+            id: 'forest-night-canopy',
+            waveform: ['triangle', 'sine'] as const,
+            noiseColor: ['brown', 'pink'] as const,
+            frequencyMultiplier: 0.74,
+            durationMultiplier: 1,
+            volumeMultiplier: 0.28,
+            startOffsetMs: 50,
+            startOffsetVariation: 0.28,
+            frequencyVariation: 0.02,
+            durationVariation: 0.14,
+            volumeVariation: 0.08,
+            variationDepth: 0.78,
+          },
+        ] as const;
+      }
+      if (identityVariant === 'spring-frogs') {
+        return [
+          {
+            id: 'forest-spring-frogs',
+            waveform: ['square', 'triangle'] as const,
+            noiseColor: 'brown' as const,
+            frequencyMultiplier: 0.98,
+            durationMultiplier: 0.78,
+            volumeMultiplier: 0.2,
+            frequencyVariation: 0.03,
+            durationVariation: 0.16,
+            volumeVariation: 0.08,
+            variationDepth: 0.84,
+          },
+          {
+            id: 'forest-thaw-rustle',
+            waveform: ['triangle', 'sine'] as const,
+            noiseColor: ['pink', 'brown'] as const,
+            frequencyMultiplier: 0.84,
+            durationMultiplier: 1,
+            volumeMultiplier: 0.34,
+            startOffsetMs: 34,
+            startOffsetVariation: 0.24,
+            frequencyVariation: 0.022,
+            durationVariation: 0.12,
+            volumeVariation: 0.08,
+            variationDepth: 0.8,
+          },
+        ] as const;
+      }
+      if (identityVariant === 'winter-quiet') {
+        return [
+          {
+            id: 'forest-winter-hush',
+            waveform: ['triangle', 'sine'] as const,
+            noiseColor: 'brown' as const,
+            frequencyMultiplier: 0.7,
+            durationMultiplier: 1,
+            volumeMultiplier: 0.38,
+            frequencyVariation: 0.018,
+            durationVariation: 0.12,
+            volumeVariation: 0.06,
+            variationDepth: 0.78,
+          },
+          {
+            id: 'forest-bare-branches',
+            waveform: ['square', 'triangle'] as const,
+            noiseColor: 'white' as const,
+            frequencyMultiplier: 0.92,
+            durationMultiplier: 0.8,
+            volumeMultiplier: 0.12,
+            startOffsetMs: 44,
+            startOffsetVariation: 0.22,
+            frequencyVariation: 0.026,
+            durationVariation: 0.14,
+            volumeVariation: 0.08,
+            variationDepth: 0.72,
+          },
+        ] as const;
+      }
       if (identityVariant === 'wildlife') {
         return [
           {
@@ -1006,6 +1214,215 @@ function resolveProceduralSoundLayers(
               qVariation: 0.05,
             },
           ] as const,
+        },
+      ] as const;
+    case 'plains-ambience':
+      if (identityVariant === 'dawn-birds') {
+        return [
+          {
+            id: 'plains-dawn-birds',
+            waveform: ['sine', 'triangle'] as const,
+            noiseColor: 'white' as const,
+            frequencyMultiplier: 1.34,
+            durationMultiplier: 0.7,
+            volumeMultiplier: 0.2,
+            frequencyVariation: 0.034,
+            durationVariation: 0.18,
+            volumeVariation: 0.08,
+            variationDepth: 0.88,
+          },
+          {
+            id: 'plains-morning-grass',
+            waveform: ['triangle', 'sine'] as const,
+            noiseColor: ['pink', 'white'] as const,
+            frequencyMultiplier: 0.86,
+            durationMultiplier: 1,
+            volumeMultiplier: 0.34,
+            startOffsetMs: 24,
+            startOffsetVariation: 0.22,
+            frequencyVariation: 0.022,
+            durationVariation: 0.12,
+            volumeVariation: 0.08,
+            variationDepth: 0.8,
+          },
+        ] as const;
+      }
+      if (identityVariant === 'summer-insects') {
+        return [
+          {
+            id: 'plains-summer-insects',
+            waveform: ['square', 'sine'] as const,
+            noiseColor: 'pink' as const,
+            frequencyMultiplier: 1.36,
+            durationMultiplier: 0.66,
+            volumeMultiplier: 0.18,
+            frequencyVariation: 0.032,
+            durationVariation: 0.18,
+            volumeVariation: 0.08,
+            variationDepth: 0.88,
+          },
+          {
+            id: 'plains-heat-breeze',
+            waveform: ['triangle', 'sine'] as const,
+            noiseColor: ['white', 'pink'] as const,
+            frequencyMultiplier: 0.8,
+            durationMultiplier: 1,
+            volumeMultiplier: 0.36,
+            startOffsetMs: 28,
+            startOffsetVariation: 0.22,
+            frequencyVariation: 0.022,
+            durationVariation: 0.12,
+            volumeVariation: 0.08,
+            variationDepth: 0.8,
+          },
+        ] as const;
+      }
+      if (identityVariant === 'night-crickets') {
+        return [
+          {
+            id: 'plains-night-crickets',
+            waveform: ['square', 'triangle'] as const,
+            noiseColor: 'pink' as const,
+            frequencyMultiplier: 1.24,
+            durationMultiplier: 0.64,
+            volumeMultiplier: 0.16,
+            frequencyVariation: 0.03,
+            durationVariation: 0.16,
+            volumeVariation: 0.08,
+            variationDepth: 0.84,
+          },
+          {
+            id: 'plains-night-breeze',
+            waveform: ['triangle', 'sine'] as const,
+            noiseColor: ['white', 'brown'] as const,
+            frequencyMultiplier: 0.74,
+            durationMultiplier: 1,
+            volumeMultiplier: 0.28,
+            startOffsetMs: 34,
+            startOffsetVariation: 0.24,
+            frequencyVariation: 0.02,
+            durationVariation: 0.14,
+            volumeVariation: 0.08,
+            variationDepth: 0.76,
+          },
+        ] as const;
+      }
+      if (identityVariant === 'spring-frogs') {
+        return [
+          {
+            id: 'plains-spring-frogs',
+            waveform: ['square', 'triangle'] as const,
+            noiseColor: 'brown' as const,
+            frequencyMultiplier: 0.94,
+            durationMultiplier: 0.78,
+            volumeMultiplier: 0.18,
+            frequencyVariation: 0.03,
+            durationVariation: 0.16,
+            volumeVariation: 0.08,
+            variationDepth: 0.82,
+          },
+          {
+            id: 'plains-thaw-breeze',
+            waveform: ['triangle', 'sine'] as const,
+            noiseColor: ['pink', 'brown'] as const,
+            frequencyMultiplier: 0.82,
+            durationMultiplier: 1,
+            volumeMultiplier: 0.32,
+            startOffsetMs: 30,
+            startOffsetVariation: 0.22,
+            frequencyVariation: 0.022,
+            durationVariation: 0.12,
+            volumeVariation: 0.08,
+            variationDepth: 0.78,
+          },
+        ] as const;
+      }
+      if (identityVariant === 'winter-quiet') {
+        return [
+          {
+            id: 'plains-winter-hush',
+            waveform: ['triangle', 'sine'] as const,
+            noiseColor: 'brown' as const,
+            frequencyMultiplier: 0.68,
+            durationMultiplier: 1,
+            volumeMultiplier: 0.34,
+            frequencyVariation: 0.018,
+            durationVariation: 0.12,
+            volumeVariation: 0.06,
+            variationDepth: 0.76,
+          },
+          {
+            id: 'plains-cold-grass',
+            waveform: ['square', 'triangle'] as const,
+            noiseColor: 'white' as const,
+            frequencyMultiplier: 0.88,
+            durationMultiplier: 0.76,
+            volumeMultiplier: 0.1,
+            startOffsetMs: 42,
+            startOffsetVariation: 0.22,
+            frequencyVariation: 0.024,
+            durationVariation: 0.14,
+            volumeVariation: 0.08,
+            variationDepth: 0.72,
+          },
+        ] as const;
+      }
+      if (identityVariant === 'wildlife') {
+        return [
+          {
+            id: 'plains-herd-calls',
+            waveform: ['sine', 'triangle'] as const,
+            noiseColor: 'white' as const,
+            frequencyMultiplier: 1.06,
+            durationMultiplier: 0.84,
+            volumeMultiplier: 0.14,
+            frequencyVariation: 0.028,
+            durationVariation: 0.16,
+            volumeVariation: 0.08,
+            variationDepth: 0.78,
+          },
+          {
+            id: 'plains-field-bed',
+            waveform: ['triangle', 'sine'] as const,
+            noiseColor: ['pink', 'white'] as const,
+            frequencyMultiplier: 0.82,
+            durationMultiplier: 1,
+            volumeMultiplier: 0.36,
+            startOffsetMs: 34,
+            startOffsetVariation: 0.22,
+            frequencyVariation: 0.022,
+            durationVariation: 0.12,
+            volumeVariation: 0.08,
+            variationDepth: 0.8,
+          },
+        ] as const;
+      }
+      return [
+        {
+          id: 'plains-grass-bed',
+          waveform: ['triangle', 'sine'] as const,
+          noiseColor: ['pink', 'white'] as const,
+          frequencyMultiplier: 0.8,
+          durationMultiplier: 1,
+          volumeMultiplier: 0.4,
+          frequencyVariation: 0.022,
+          durationVariation: 0.12,
+          volumeVariation: 0.08,
+          variationDepth: 0.82,
+        },
+        {
+          id: 'plains-breeze-edge',
+          waveform: ['sine', 'triangle'] as const,
+          noiseColor: 'white' as const,
+          frequencyMultiplier: 1.08,
+          durationMultiplier: 0.84,
+          volumeMultiplier: 0.14,
+          startOffsetMs: 28,
+          startOffsetVariation: 0.22,
+          frequencyVariation: 0.026,
+          durationVariation: 0.14,
+          volumeVariation: 0.08,
+          variationDepth: 0.76,
         },
       ] as const;
     case 'mountain-ambience':
@@ -1226,6 +1643,160 @@ function resolveProceduralSoundLayers(
             feedbackVariation: 0.07,
             mixVariation: 0.08,
           },
+        },
+      ] as const;
+    case 'settlement-ambience':
+      if (identityVariant === 'rooster-bells') {
+        return [
+          {
+            id: 'settlement-rooster-call',
+            waveform: ['sine', 'triangle'] as const,
+            noiseColor: 'white' as const,
+            frequencyMultiplier: 1.22,
+            durationMultiplier: 0.74,
+            volumeMultiplier: 0.16,
+            frequencyVariation: 0.03,
+            durationVariation: 0.16,
+            volumeVariation: 0.08,
+            variationDepth: 0.8,
+          },
+          {
+            id: 'settlement-dawn-bell',
+            waveform: ['triangle', 'sine'] as const,
+            frequencyMultiplier: 1.58,
+            durationMultiplier: 0.6,
+            volumeMultiplier: 0.12,
+            startOffsetMs: 54,
+            startOffsetVariation: 0.18,
+            frequencyVariation: 0.024,
+            durationVariation: 0.12,
+            volumeVariation: 0.08,
+            variationDepth: 0.74,
+          },
+        ] as const;
+      }
+      if (identityVariant === 'market') {
+        return [
+          {
+            id: 'settlement-market-bed',
+            waveform: ['triangle', 'sine'] as const,
+            noiseColor: ['pink', 'white'] as const,
+            frequencyMultiplier: 0.84,
+            durationMultiplier: 1,
+            volumeMultiplier: 0.42,
+            frequencyVariation: 0.022,
+            durationVariation: 0.12,
+            volumeVariation: 0.08,
+            variationDepth: 0.82,
+          },
+          {
+            id: 'settlement-work-rattle',
+            waveform: ['square', 'triangle'] as const,
+            noiseColor: 'white' as const,
+            frequencyMultiplier: 1.18,
+            durationMultiplier: 0.72,
+            volumeMultiplier: 0.14,
+            startOffsetMs: 34,
+            startOffsetVariation: 0.22,
+            frequencyVariation: 0.028,
+            durationVariation: 0.14,
+            volumeVariation: 0.08,
+            variationDepth: 0.78,
+          },
+        ] as const;
+      }
+      if (identityVariant === 'tavern') {
+        return [
+          {
+            id: 'settlement-tavern-bed',
+            waveform: ['triangle', 'sine'] as const,
+            noiseColor: ['pink', 'white'] as const,
+            frequencyMultiplier: 0.86,
+            durationMultiplier: 1,
+            volumeMultiplier: 0.38,
+            frequencyVariation: 0.022,
+            durationVariation: 0.12,
+            volumeVariation: 0.08,
+            variationDepth: 0.8,
+          },
+          {
+            id: 'settlement-evening-fiddle',
+            waveform: ['sine', 'triangle'] as const,
+            frequencyMultiplier: 1.24,
+            durationMultiplier: 0.76,
+            volumeMultiplier: 0.14,
+            startOffsetMs: 38,
+            startOffsetVariation: 0.22,
+            frequencyVariation: 0.028,
+            durationVariation: 0.14,
+            volumeVariation: 0.08,
+            variationDepth: 0.76,
+            vibrato: {
+              rateHz: 5.1,
+              depth: 0.04,
+              waveform: ['sine', 'triangle'] as const,
+              rateVariation: 0.05,
+              depthVariation: 0.05,
+            },
+          },
+        ] as const;
+      }
+      if (identityVariant === 'quiet-lanterns') {
+        return [
+          {
+            id: 'settlement-lantern-hum',
+            waveform: ['sine', 'triangle'] as const,
+            noiseColor: 'brown' as const,
+            frequencyMultiplier: 0.76,
+            durationMultiplier: 1,
+            volumeMultiplier: 0.28,
+            frequencyVariation: 0.018,
+            durationVariation: 0.1,
+            volumeVariation: 0.06,
+            variationDepth: 0.72,
+          },
+          {
+            id: 'settlement-night-step',
+            waveform: ['triangle', 'square'] as const,
+            noiseColor: 'white' as const,
+            frequencyMultiplier: 0.98,
+            durationMultiplier: 0.7,
+            volumeMultiplier: 0.08,
+            startOffsetMs: 46,
+            startOffsetVariation: 0.22,
+            frequencyVariation: 0.024,
+            durationVariation: 0.14,
+            volumeVariation: 0.08,
+            variationDepth: 0.72,
+          },
+        ] as const;
+      }
+      return [
+        {
+          id: 'settlement-town-bed',
+          waveform: ['triangle', 'sine'] as const,
+          noiseColor: ['pink', 'white'] as const,
+          frequencyMultiplier: 0.82,
+          durationMultiplier: 1,
+          volumeMultiplier: 0.38,
+          frequencyVariation: 0.022,
+          durationVariation: 0.12,
+          volumeVariation: 0.08,
+          variationDepth: 0.78,
+        },
+        {
+          id: 'settlement-far-clatter',
+          waveform: ['square', 'triangle'] as const,
+          noiseColor: 'white' as const,
+          frequencyMultiplier: 1.08,
+          durationMultiplier: 0.7,
+          volumeMultiplier: 0.12,
+          startOffsetMs: 34,
+          startOffsetVariation: 0.22,
+          frequencyVariation: 0.026,
+          durationVariation: 0.14,
+          volumeVariation: 0.08,
+          variationDepth: 0.74,
         },
       ] as const;
     case 'ocean':

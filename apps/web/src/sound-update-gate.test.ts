@@ -13,6 +13,8 @@ describe('sound update gate', () => {
       viewMode: '3d',
       ambianceEnabled: true,
       tileKind: 'town',
+      dayProgress: 0.5,
+      yearProgress: 0.5,
       emitterX: 0,
       emitterY: 0,
       listenerX: 0,
@@ -28,6 +30,8 @@ describe('sound update gate', () => {
       viewMode: '3d',
       ambianceEnabled: true,
       tileKind: 'town',
+      dayProgress: 0.5,
+      yearProgress: 0.5,
       emitterX: 1,
       emitterY: 2,
       listenerX: 1,
@@ -52,6 +56,8 @@ describe('sound update gate', () => {
       viewMode: '3d',
       ambianceEnabled: true,
       tileKind: 'plains',
+      dayProgress: 0.5,
+      yearProgress: 0.5,
       emitterX: 0,
       emitterY: 0,
       listenerX: 0,
@@ -69,6 +75,8 @@ describe('sound update gate', () => {
         viewMode: '3d',
         ambianceEnabled: true,
         tileKind: 'plains',
+        dayProgress: 0.5,
+        yearProgress: 0.5,
         emitterX: 0.25,
         emitterY: 0.25,
         listenerX: 0.25,
@@ -90,6 +98,8 @@ describe('sound update gate', () => {
       viewMode: '3d',
       ambianceEnabled: true,
       tileKind: 'plains',
+      dayProgress: 0.5,
+      yearProgress: 0.5,
       emitterX: 0,
       emitterY: 0,
       listenerX: 0,
@@ -106,6 +116,8 @@ describe('sound update gate', () => {
       viewMode: '3d',
       ambianceEnabled: true,
       tileKind: 'plains',
+      dayProgress: 0.5,
+      yearProgress: 0.5,
       emitterX: 0.25,
       emitterY: 0.25,
       listenerX: 0.25,
@@ -129,6 +141,8 @@ describe('sound update gate', () => {
       viewMode: '3d',
       ambianceEnabled: true,
       tileKind: 'shore',
+      dayProgress: 0.5,
+      yearProgress: 0.5,
       emitterX: 0,
       emitterY: 0,
       listenerX: 0,
@@ -149,6 +163,8 @@ describe('sound update gate', () => {
       viewMode: '3d',
       ambianceEnabled: true,
       tileKind: 'shore',
+      dayProgress: 0.5,
+      yearProgress: 0.5,
       emitterX: 0,
       emitterY: 0,
       listenerX: 0,
@@ -181,6 +197,8 @@ describe('sound update gate', () => {
       viewMode: '3d',
       ambianceEnabled: true,
       tileKind: 'shore',
+      dayProgress: 0.5,
+      yearProgress: 0.5,
       emitterX: 0,
       emitterY: 0,
       listenerX: 0,
@@ -201,6 +219,8 @@ describe('sound update gate', () => {
       viewMode: '3d',
       ambianceEnabled: false,
       tileKind: 'shore',
+      dayProgress: 0.5,
+      yearProgress: 0.5,
       emitterX: 0,
       emitterY: 0,
       listenerX: 0,
@@ -223,5 +243,56 @@ describe('sound update gate', () => {
         emitter: { x: 4, y: 0 },
       })
     );
+  });
+
+  it('updates immediately when ambient time-of-day phases change', () => {
+    const gateUpdate = createSoundUpdateGate(50);
+
+    gateUpdate({
+      nowMs: 0,
+      walking: false,
+      isJumping: false,
+      viewMode: '3d',
+      ambianceEnabled: true,
+      tileKind: 'forest',
+      dayProgress: 0.5,
+      yearProgress: 0.5,
+      emitterX: 0,
+      emitterY: 0,
+      listenerX: 0,
+      listenerY: 0,
+      nearbyTrain: null,
+      nearbyPaddleBoat: null,
+      nearbyAmbient: {
+        kind: 'forest',
+        intensity: 0.7,
+        emitter: { x: 2, y: 0 },
+      },
+    });
+
+    const changed = gateUpdate({
+      nowMs: 16,
+      walking: false,
+      isJumping: false,
+      viewMode: '3d',
+      ambianceEnabled: true,
+      tileKind: 'forest',
+      dayProgress: 0.92,
+      yearProgress: 0.5,
+      emitterX: 0,
+      emitterY: 0,
+      listenerX: 0,
+      listenerY: 0,
+      nearbyTrain: null,
+      nearbyPaddleBoat: null,
+      nearbyAmbient: {
+        kind: 'forest',
+        intensity: 0.7,
+        emitter: { x: 2, y: 0 },
+      },
+    });
+
+    expect(changed).not.toBeNull();
+    expect(changed?.dayProgress).toBe(0.92);
   });
 });
