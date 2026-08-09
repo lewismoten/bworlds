@@ -102,6 +102,11 @@
 - [ ] Allow sound to be downloaded as a WAV file
 - [ ] Allow sound to be played
 - [ ] Show any details related to the selected sound
+- [ ] Create separate debug page for ambiance
+- [ ] Show a list of ambiance to choose from
+- [ ] Allow ambiance to play
+- [ ] Add ability to download any sounds used for the ambiance
+- [ ] Add ability to download a minute of ambiance
 
 # Development checklist
 
