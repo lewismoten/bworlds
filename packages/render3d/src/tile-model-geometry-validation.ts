@@ -160,6 +160,25 @@ export type GeometryStructureBudgetStats = {
   maxGeometryDrawRangeCount: number;
 };
 
+export function countInvalidGeometryIndexTypes(
+  root: TraversableObjectLike
+): number {
+  const geometries = new Set<unknown>();
+  let invalidGeometryIndexTypeCount = 0;
+
+  traverseSceneGraph(root, (child) => {
+    if (!child.geometry || geometries.has(child.geometry)) {
+      return;
+    }
+    geometries.add(child.geometry);
+    if (hasInvalidGeometryIndexType(child.geometry)) {
+      invalidGeometryIndexTypeCount += 1;
+    }
+  });
+
+  return invalidGeometryIndexTypeCount;
+}
+
 export function getGeometryAttributeBudgetStats(
   root: TraversableObjectLike
 ): GeometryAttributeBudgetStats {
@@ -362,6 +381,31 @@ function getGeometryTriangleCount(geometry: unknown): number {
     return Math.floor(indexCount / 3);
   }
   return Math.floor(getGeometryVertexCount(geometry) / 3);
+}
+
+function hasInvalidGeometryIndexType(geometry: unknown): boolean {
+  const vertexCount = getGeometryVertexCount(geometry);
+  const indexArray = (
+    geometry as {
+      index?: {
+        array?: ArrayLike<unknown> & { BYTES_PER_ELEMENT?: number };
+      };
+    }
+  )?.index?.array;
+  if (!indexArray || typeof indexArray.length !== 'number' || vertexCount <= 0) {
+    return false;
+  }
+  const bytesPerElement =
+    typeof indexArray.BYTES_PER_ELEMENT === 'number'
+      ? indexArray.BYTES_PER_ELEMENT
+      : undefined;
+  if (vertexCount <= 0xff) {
+    return false;
+  }
+  if (vertexCount <= 0xffff) {
+    return bytesPerElement === 1;
+  }
+  return bytesPerElement != null && bytesPerElement < 4;
 }
 
 function getGeometryGroupCount(geometry: unknown): number {

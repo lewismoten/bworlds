@@ -1215,6 +1215,7 @@ describe('render3d visibility helpers', () => {
       maxGeometryVertexAttributeByteSize: 1_200_000,
       maxGeometryGroupCount: 12,
       maxGeometryDrawRangeCount: 0,
+      invalidGeometryIndexTypeCount: 0,
       materialCount: 16,
       textureCount: 16,
       lightCount: 4,
@@ -1243,6 +1244,7 @@ describe('render3d visibility helpers', () => {
       maxGeometryVertexAttributeByteSize: 192_000,
       maxGeometryGroupCount: 4,
       maxGeometryDrawRangeCount: 0,
+      invalidGeometryIndexTypeCount: 0,
       materialCount: 3,
       textureCount: 4,
       lightCount: 1,
@@ -1283,6 +1285,7 @@ describe('render3d visibility helpers', () => {
         maxGeometryVertexAttributeByteSize: 576,
         maxGeometryGroupCount: 0,
         maxGeometryDrawRangeCount: 0,
+        invalidGeometryIndexTypeCount: 0,
         materialCount: 1,
         textureCount: 1,
         lightCount: 0,
@@ -1332,6 +1335,7 @@ describe('render3d visibility helpers', () => {
         maxGeometryVertexAttributeByteSize: 30_000,
         maxGeometryGroupCount: 0,
         maxGeometryDrawRangeCount: 0,
+        invalidGeometryIndexTypeCount: 0,
       }),
       violations: [
         {
@@ -1410,6 +1414,7 @@ describe('render3d visibility helpers', () => {
         maxGeometryVertexAttributeByteSize: 288,
         maxGeometryGroupCount: 0,
         maxGeometryDrawRangeCount: 0,
+        invalidGeometryIndexTypeCount: 0,
       }),
       violations: [
         {
@@ -1480,6 +1485,7 @@ describe('render3d visibility helpers', () => {
         maxGeometryVertexAttributeByteSize: 1_560,
         maxGeometryGroupCount: 0,
         maxGeometryDrawRangeCount: 0,
+        invalidGeometryIndexTypeCount: 0,
       }),
       violations: [
         {
@@ -1524,6 +1530,7 @@ describe('render3d visibility helpers', () => {
         maxGeometryVertexAttributeByteSize: 36,
         maxGeometryGroupCount: 0,
         maxGeometryDrawRangeCount: 0,
+        invalidGeometryIndexTypeCount: 0,
       }),
       violations: [
         {
@@ -1557,6 +1564,7 @@ describe('render3d visibility helpers', () => {
         maxGeometryVertexAttributeByteSize: 18_012,
         maxGeometryGroupCount: 0,
         maxGeometryDrawRangeCount: 0,
+        invalidGeometryIndexTypeCount: 0,
       }),
       violations: [
         {
@@ -1589,6 +1597,7 @@ describe('render3d visibility helpers', () => {
         maxGeometryVertexAttributeByteSize: 36,
         maxGeometryGroupCount: 0,
         maxGeometryDrawRangeCount: 0,
+        invalidGeometryIndexTypeCount: 0,
       }),
       violations: [
         {
@@ -1616,6 +1625,7 @@ describe('render3d visibility helpers', () => {
         maxGeometryVertexAttributeByteSize: 768,
         maxGeometryGroupCount: 0,
         maxGeometryDrawRangeCount: 0,
+        invalidGeometryIndexTypeCount: 0,
       }),
       violations: [
         {
@@ -1652,6 +1662,7 @@ describe('render3d visibility helpers', () => {
         maxGeometryVertexAttributeByteSize: 768,
         maxGeometryGroupCount: 0,
         maxGeometryDrawRangeCount: 0,
+        invalidGeometryIndexTypeCount: 0,
       }),
       violations: [
         {
@@ -1699,6 +1710,7 @@ describe('render3d visibility helpers', () => {
         maxGeometryVertexAttributeByteSize: 768,
         maxGeometryGroupCount: 0,
         maxGeometryDrawRangeCount: 0,
+        invalidGeometryIndexTypeCount: 0,
       }),
       violations: [
         {
@@ -1733,6 +1745,7 @@ describe('render3d visibility helpers', () => {
         maxCustomGeometryAttributeCount: 3,
         maxGeometryGroupCount: 0,
         maxGeometryDrawRangeCount: 0,
+        invalidGeometryIndexTypeCount: 0,
       }),
       violations: [
         {
@@ -1766,6 +1779,7 @@ describe('render3d visibility helpers', () => {
         maxGeometryVertexAttributeByteSize: 258_000,
         maxGeometryGroupCount: 0,
         maxGeometryDrawRangeCount: 0,
+        invalidGeometryIndexTypeCount: 0,
       }),
       violations: [
         {
@@ -1790,6 +1804,7 @@ describe('render3d visibility helpers', () => {
       stats: expect.objectContaining({
         maxGeometryGroupCount: 5,
         maxGeometryDrawRangeCount: 0,
+        invalidGeometryIndexTypeCount: 0,
       }),
       violations: [
         {
@@ -1813,10 +1828,34 @@ describe('render3d visibility helpers', () => {
       limits: getTileModelHardLimits('low'),
       stats: expect.objectContaining({
         maxGeometryDrawRangeCount: 1,
+        invalidGeometryIndexTypeCount: 0,
       }),
       violations: [
         {
           metric: 'maxGeometryDrawRangeCount',
+          actual: 1,
+          limit: 0,
+        },
+      ],
+    });
+  });
+
+  it('rejects models whose index array type cannot address the vertex count', () => {
+    const root = createMockObject3D(
+      createMockMaterial(),
+      [],
+      createMockIndexedGeometry(300, 900, Uint8Array)
+    );
+
+    expect(validateTileModelAgainstRenderBudget(root as never, 'low')).toEqual({
+      accepted: false,
+      limits: getTileModelHardLimits('low'),
+      stats: expect.objectContaining({
+        invalidGeometryIndexTypeCount: 1,
+      }),
+      violations: [
+        {
+          metric: 'invalidGeometryIndexTypeCount',
           actual: 1,
           limit: 0,
         },
@@ -3058,7 +3097,11 @@ function createMockPositionGeometry(values: number[], itemSize = 3) {
   };
 }
 
-function createMockIndexedGeometry(vertexCount: number, indexCount: number) {
+function createMockIndexedGeometry(
+  vertexCount: number,
+  indexCount: number,
+  IndexArray: typeof Uint32Array | typeof Uint16Array | typeof Uint8Array = Uint32Array
+) {
   return {
     attributes: {
       position: {
@@ -3069,7 +3112,7 @@ function createMockIndexedGeometry(vertexCount: number, indexCount: number) {
     },
     index: {
       count: indexCount,
-      array: new Uint32Array(indexCount),
+      array: new IndexArray(indexCount),
     },
   };
 }

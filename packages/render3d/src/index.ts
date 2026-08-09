@@ -32,6 +32,7 @@ import {
 import {
   countGeometriesExceedingBounds,
   countGeometryTriangles,
+  countInvalidGeometryIndexTypes,
   countInvalidGeometryCoordinateSets,
   countIndexedVertices,
   countLineSegments,
@@ -250,6 +251,7 @@ const FULL_DETAIL_TILE_MODEL_HARD_LIMITS: TileModelHardLimits = {
   maxGeometryVertexAttributeByteSize: 1_200_000,
   maxGeometryGroupCount: 12,
   maxGeometryDrawRangeCount: 0,
+  invalidGeometryIndexTypeCount: 0,
   materialCount: 16,
   textureCount: 16,
   lightCount: 4,
@@ -279,6 +281,7 @@ const LOW_DETAIL_TILE_MODEL_HARD_LIMITS: TileModelHardLimits = {
   maxGeometryVertexAttributeByteSize: 192_000,
   maxGeometryGroupCount: 4,
   maxGeometryDrawRangeCount: 0,
+  invalidGeometryIndexTypeCount: 0,
   materialCount: 3,
   textureCount: 4,
   lightCount: 1,
@@ -326,6 +329,7 @@ export function validateTileModelAgainstRenderBudget(
     maxGeometryGroupCount: geometryStructureBudgetStats.maxGeometryGroupCount,
     maxGeometryDrawRangeCount:
       geometryStructureBudgetStats.maxGeometryDrawRangeCount,
+    invalidGeometryIndexTypeCount: countInvalidGeometryIndexTypes(root),
   };
   const limits = getTileModelHardLimits(detailLevel);
   const violations: TileModelBudgetViolation[] = [];
@@ -351,6 +355,7 @@ export function validateTileModelAgainstRenderBudget(
     'maxGeometryVertexAttributeByteSize',
     'maxGeometryGroupCount',
     'maxGeometryDrawRangeCount',
+    'invalidGeometryIndexTypeCount',
     'materialCount',
     'textureCount',
     'lightCount',
@@ -555,6 +560,7 @@ type TileModelHardLimits = {
   maxGeometryVertexAttributeByteSize: number;
   maxGeometryGroupCount: number;
   maxGeometryDrawRangeCount: number;
+  invalidGeometryIndexTypeCount: number;
   materialCount: number;
   textureCount: number;
   lightCount: number;
@@ -584,6 +590,7 @@ type TileModelBudgetValidation = {
     maxGeometryVertexAttributeByteSize: number;
     maxGeometryGroupCount: number;
     maxGeometryDrawRangeCount: number;
+    invalidGeometryIndexTypeCount: number;
   };
   limits: TileModelHardLimits;
   violations: TileModelBudgetViolation[];

@@ -63,7 +63,7 @@ Operates at several levels: per model, per LOD, per plugin, per chunk, and per e
 * [ ] Avoid truncating arbitrary triangle/index buffers mid-mesh.
 * [ ] Drop an oversized optional mesh as a whole instead of corrupting its geometry.
 * [ ] Allow plugins to provide a cheaper replacement for oversized meshes.
-* [ ] Validate that geometry index types are appropriate for vertex counts.
+* [X] Validate that geometry index types are appropriate for vertex counts.
 
 # Draw-Call Budgets
 
