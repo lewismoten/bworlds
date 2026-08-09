@@ -22,12 +22,16 @@ import {
   tintHexColor,
 } from '@bworlds/procedural-style';
 import {
+  createTreeFamily,
   createTreeGenerator,
   createTreeGeneratorBase,
+  createTreeSpecies,
   type TreeBranchState,
+  type TreeFamily,
   type TreeFoliageState,
   type TreeGenerator,
   type TreeLogicalState,
+  type TreeSpecies,
 } from '@bworlds/tree-support';
 import { createThresholdTerrainClassifier } from '@bworlds/tile-support';
 import { createPaintedCanvasTexture } from '@bworlds/three-support';
@@ -1628,6 +1632,19 @@ export function getForestTreeGenerator(): TreeGenerator<
   return forestTreeGenerator;
 }
 
+export function getForestTreeFamilies(): Array<
+  TreeFamily<ForestTreeDescriptor, ForestTreeSpeciesContext>
+> {
+  return [forestBroadleafFamily, forestConiferFamily];
+}
+
+export function getForestTreeSpeciesIds(
+  tileX: number,
+  tileY: number
+): ForestTreeSpeciesId[] {
+  return getForestTreeDescriptors(tileX, tileY).map((descriptor) => descriptor.speciesId);
+}
+
 export function getForestTreeBranchProfiles(
   tileX: number,
   tileY: number
@@ -1688,6 +1705,36 @@ function getTreeForm(variety: number): ForestTreeForm {
   return variety === 2 ? 'pine' : 'broadleaf';
 }
 
+function getForestTreeFamilyId(variety: number): ForestTreeFamilyId {
+  return variety === 2 ? 'conifer' : 'broadleaf';
+}
+
+function getForestTreeSpeciesId(variety: number): ForestTreeSpeciesId {
+  if (variety === 2) {
+    return 'pine';
+  }
+  return variety === 1 ? 'birch' : 'oak';
+}
+
+type ForestTreeSpeciesDefinition = {
+  speciesId: ForestTreeSpeciesId;
+  familyId: ForestTreeFamilyId;
+  variety: number;
+  form: ForestTreeForm;
+  trunkHeightMin: number;
+  trunkHeightRange: number;
+  branchCountBase: number;
+  branchCountRange: number;
+  broadleafSpreadBase: number;
+  broadleafSpreadDrop: number;
+  broadleafLengthBase: number;
+  broadleafLengthRange: number;
+  canopyScaleBase: number;
+  canopyScaleRange: number;
+  canopyHeightBase: number;
+  canopyHeightRange: number;
+};
+
 const forestTreeGeneratorBase = createTreeGeneratorBase({
   seed: FOREST_TREE_DESCRIPTOR_SEED,
   capabilities: (query) => ({
@@ -1712,113 +1759,276 @@ const forestTreeGeneratorBase = createTreeGeneratorBase({
   }),
 });
 
+const forestBroadleafFamilyBase = createTreeGeneratorBase({
+  seed: FOREST_TREE_DESCRIPTOR_SEED,
+  parent: forestTreeGeneratorBase,
+  capabilities: {
+    seasonalLeaves: true,
+    flowers: true,
+  },
+});
+
+const forestConiferFamilyBase = createTreeGeneratorBase({
+  seed: FOREST_TREE_DESCRIPTOR_SEED,
+  parent: forestTreeGeneratorBase,
+  capabilities: {
+    seasonalLeaves: false,
+    flowers: false,
+  },
+});
+
+const forestOakSpecies = createTreeSpecies<
+  ForestTreeDescriptor,
+  ForestTreeSpeciesContext
+>({
+  familyId: 'broadleaf',
+  id: 'oak',
+  parentBase: forestBroadleafFamilyBase,
+  capabilities: {
+    hollows: true,
+    flowers: false,
+  },
+  generate(context, base) {
+    return createForestTreeDescriptorFromSpecies(context, base, {
+      speciesId: 'oak',
+      familyId: 'broadleaf',
+      variety: 0,
+      form: 'broadleaf',
+      trunkHeightMin: 0.76,
+      trunkHeightRange: 0.42,
+      branchCountBase: 3,
+      branchCountRange: 2,
+      broadleafSpreadBase: 0.2,
+      broadleafSpreadDrop: 0.065,
+      broadleafLengthBase: 0.7,
+      broadleafLengthRange: 0.3,
+      canopyScaleBase: 0.78,
+      canopyScaleRange: 0.34,
+      canopyHeightBase: 0.84,
+      canopyHeightRange: 0.44,
+    });
+  },
+});
+
+const forestBirchSpecies = createTreeSpecies<
+  ForestTreeDescriptor,
+  ForestTreeSpeciesContext
+>({
+  familyId: 'broadleaf',
+  id: 'birch',
+  parentBase: forestBroadleafFamilyBase,
+  capabilities: {
+    flowers: true,
+    hollows: false,
+  },
+  generate(context, base) {
+    return createForestTreeDescriptorFromSpecies(context, base, {
+      speciesId: 'birch',
+      familyId: 'broadleaf',
+      variety: 1,
+      form: 'broadleaf',
+      trunkHeightMin: 0.82,
+      trunkHeightRange: 0.52,
+      branchCountBase: 2,
+      branchCountRange: 2,
+      broadleafSpreadBase: 0.15,
+      broadleafSpreadDrop: 0.045,
+      broadleafLengthBase: 0.56,
+      broadleafLengthRange: 0.24,
+      canopyScaleBase: 0.58,
+      canopyScaleRange: 0.22,
+      canopyHeightBase: 0.88,
+      canopyHeightRange: 0.38,
+    });
+  },
+});
+
+const forestPineSpecies = createTreeSpecies<
+  ForestTreeDescriptor,
+  ForestTreeSpeciesContext
+>({
+  familyId: 'conifer',
+  id: 'pine',
+  parentBase: forestConiferFamilyBase,
+  capabilities: {
+    hollows: false,
+    flowers: false,
+  },
+  generate(context, base) {
+    return createForestTreeDescriptorFromSpecies(context, base, {
+      speciesId: 'pine',
+      familyId: 'conifer',
+      variety: 2,
+      form: 'pine',
+      trunkHeightMin: 0.72,
+      trunkHeightRange: 0.45,
+      branchCountBase: 3,
+      branchCountRange: 3,
+      broadleafSpreadBase: 0.08,
+      broadleafSpreadDrop: 0,
+      broadleafLengthBase: 0.82,
+      broadleafLengthRange: 0.34,
+      canopyScaleBase: 0.58,
+      canopyScaleRange: 0.16,
+      canopyHeightBase: 0.42,
+      canopyHeightRange: 0.52,
+    });
+  },
+});
+
+const forestBroadleafFamily = createTreeFamily<
+  ForestTreeDescriptor,
+  ForestTreeSpeciesContext
+>({
+  id: 'broadleaf',
+  base: forestBroadleafFamilyBase,
+  resolveSpeciesId(context) {
+    return getForestTreeSpeciesId(context.variety);
+  },
+  species: [forestOakSpecies, forestBirchSpecies],
+});
+
+const forestConiferFamily = createTreeFamily<
+  ForestTreeDescriptor,
+  ForestTreeSpeciesContext
+>({
+  id: 'conifer',
+  base: forestConiferFamilyBase,
+  resolveSpeciesId() {
+    return getForestTreeSpeciesId(2);
+  },
+  species: [forestPineSpecies],
+});
+
 const forestTreeGenerator = createTreeGenerator<
   ForestTreeDescriptor,
   ForestTreeGeneratorContext
 >({
   id: 'forest-family',
   base: forestTreeGeneratorBase,
-  generate(context, base) {
-    const { tileX, tileY, treeIndex, loneTree, groveCenter } = context;
-    const baseSeed = base.createInstanceSeed({
-      tileX,
-      tileY,
-      index: treeIndex,
-    });
-    const variety = getTreeVarietyIndex(tileX, tileY, treeIndex);
-    const outlierChance = hash2D(baseSeed, 0, 0);
-    const spread = loneTree ? 0.06 : outlierChance > 0.84 ? 0.28 : 0.17;
-    const x = clampToTile(
-      groveCenter.x + (hash2D(baseSeed, 1, 0) - 0.5) * spread * 2
-    );
-    const y = clampToTile(
-      groveCenter.y + (hash2D(baseSeed, 2, 0) - 0.5) * spread * 2
-    );
-    const trunkHeight = 0.72 + hash2D(baseSeed, 5, 0) * 0.45;
+  generate(context) {
+    const variety = getTreeVarietyIndex(context.tileX, context.tileY, context.treeIndex);
     const form = getTreeForm(variety);
-    const branchCount =
-      form === 'pine'
-        ? 3 + Math.floor(hash2D(baseSeed, 6, 0) * 3)
-        : 2 + Math.floor(hash2D(baseSeed, 6, 0) * 3);
-    const branches = new Array<ForestBranchDescriptor>(branchCount);
-    const foliageCount =
-      form === 'pine'
-        ? 4 + Math.floor(hash2D(baseSeed, 30, 0) * 2)
-        : 3 + Math.floor(hash2D(baseSeed, 30, 0) * 3);
-    const foliage = new Array<ForestFoliageDescriptor>(foliageCount);
-
-    for (let branchIndex = 0; branchIndex < branchCount; branchIndex += 1) {
-      const branchProgress = branchCount <= 1 ? 0 : branchIndex / (branchCount - 1);
-      const branchHeightFactor =
-        form === 'pine'
-          ? 0.32 + hash2D(baseSeed, 10 + branchIndex, 2) * 0.48
-          : 0.28 + branchProgress * 0.5;
-      const broadleafSpread = 0.18 - branchProgress * 0.06;
-      const broadleafLengthScale = 1.08 - branchProgress * 0.34;
-      branches[branchIndex] = {
-        x:
-          (hash2D(baseSeed, 10 + branchIndex, 1) - 0.5) *
-          (form === 'pine' ? 0.08 : broadleafSpread),
-        y: trunkHeight * branchHeightFactor,
-        z:
-          (hash2D(baseSeed, 10 + branchIndex, 3) - 0.5) *
-          (form === 'pine' ? 0.08 : broadleafSpread),
-        length:
-          form === 'pine'
-            ? 0.82 + hash2D(baseSeed, 10 + branchIndex, 4) * 0.34
-            : (0.62 + hash2D(baseSeed, 10 + branchIndex, 4) * 0.34) *
-              broadleafLengthScale,
-        pitch:
-          form === 'pine'
-            ? 1 + hash2D(baseSeed, 10 + branchIndex, 5) * 0.28
-            : 0.3 + branchProgress * 0.38 + hash2D(baseSeed, 10 + branchIndex, 5) * 0.14,
-        roll: -1.25 + hash2D(baseSeed, 10 + branchIndex, 6) * Math.PI * 0.9,
-      };
-    }
-
-    for (let foliageIndex = 0; foliageIndex < foliageCount; foliageIndex += 1) {
-      const layerProgress = foliageCount <= 1 ? 0 : foliageIndex / (foliageCount - 1);
-      const pineLayerScale = 1 - layerProgress * 0.45;
-      foliage[foliageIndex] = {
-        x:
-          (hash2D(baseSeed, 40 + foliageIndex, 1) - 0.5) *
-          (form === 'pine' ? 0.08 : 0.28),
-        y:
-          trunkHeight *
-          (form === 'pine'
-            ? 0.42 + layerProgress * 0.52
-            : 0.78 + hash2D(baseSeed, 40 + foliageIndex, 2) * 0.5),
-        z:
-          (hash2D(baseSeed, 40 + foliageIndex, 3) - 0.5) *
-          (form === 'pine' ? 0.08 : 0.28),
-        scaleX:
-          form === 'pine'
-            ? 0.58 * pineLayerScale + hash2D(baseSeed, 40 + foliageIndex, 4) * 0.16
-            : 0.24 + hash2D(baseSeed, 40 + foliageIndex, 4) * 0.16,
-        scaleY:
-          form === 'pine'
-            ? 0.48 * pineLayerScale + hash2D(baseSeed, 40 + foliageIndex, 5) * 0.22
-            : 0.18 + hash2D(baseSeed, 40 + foliageIndex, 5) * 0.14,
-        scaleZ:
-          form === 'pine'
-            ? 0.58 * pineLayerScale + hash2D(baseSeed, 40 + foliageIndex, 6) * 0.16
-            : 0.24 + hash2D(baseSeed, 40 + foliageIndex, 6) * 0.16,
-      };
-    }
-
-    return {
-      x,
-      y,
-      radius: 0.08 + hash2D(baseSeed, 3, 0) * 0.05,
-      scale: 0.78 + hash2D(baseSeed, 4, 0) * 0.55,
-      trunkHeight,
-      variety,
-      form,
-      branches,
-      foliage,
-    };
+    const family = getForestTreeFamilyId(variety) === 'conifer'
+      ? forestConiferFamily
+      : forestBroadleafFamily;
+    return family.generate({ ...context, variety, form });
   },
 });
+
+function createForestTreeDescriptorFromSpecies(
+  context: ForestTreeSpeciesContext,
+  base: ReturnType<typeof createTreeGeneratorBase>,
+  definition: ForestTreeSpeciesDefinition
+): ForestTreeDescriptor {
+  const baseSeed = base.createInstanceSeed({
+    tileX: context.tileX,
+    tileY: context.tileY,
+    index: context.treeIndex,
+  });
+  const outlierChance = hash2D(baseSeed, 0, 0);
+  const spread = context.loneTree ? 0.06 : outlierChance > 0.84 ? 0.28 : 0.17;
+  const trunkHeight =
+    definition.trunkHeightMin + hash2D(baseSeed, 5, 0) * definition.trunkHeightRange;
+  const branchCount =
+    definition.branchCountBase +
+    Math.floor(hash2D(baseSeed, 6, 0) * definition.branchCountRange);
+  const branches = new Array<ForestBranchDescriptor>(branchCount);
+  const foliageCount =
+    definition.form === 'pine'
+      ? 4 + Math.floor(hash2D(baseSeed, 30, 0) * 2)
+      : 3 + Math.floor(hash2D(baseSeed, 30, 0) * 3);
+  const foliage = new Array<ForestFoliageDescriptor>(foliageCount);
+  const descriptor: ForestTreeDescriptor = {
+    x: clampToTile(
+      context.groveCenter.x + (hash2D(baseSeed, 1, 0) - 0.5) * spread * 2
+    ),
+    y: clampToTile(
+      context.groveCenter.y + (hash2D(baseSeed, 2, 0) - 0.5) * spread * 2
+    ),
+    radius: 0.08 + hash2D(baseSeed, 3, 0) * 0.05,
+    scale: 0.78 + hash2D(baseSeed, 4, 0) * 0.55,
+    trunkHeight,
+    familyId: definition.familyId,
+    speciesId: definition.speciesId,
+    variety: definition.variety,
+    form: definition.form,
+    branches,
+    foliage,
+  };
+
+  for (let branchIndex = 0; branchIndex < branchCount; branchIndex += 1) {
+    const branchProgress = branchCount <= 1 ? 0 : branchIndex / (branchCount - 1);
+    const branchHeightFactor =
+      definition.form === 'pine'
+        ? 0.32 + hash2D(baseSeed, 10 + branchIndex, 2) * 0.48
+        : 0.28 + branchProgress * 0.5;
+    const broadleafSpread =
+      definition.broadleafSpreadBase - branchProgress * definition.broadleafSpreadDrop;
+    const broadleafLengthScale =
+      definition.broadleafLengthBase +
+      hash2D(baseSeed, 10 + branchIndex, 4) * definition.broadleafLengthRange;
+    branches[branchIndex] = {
+      x:
+        (hash2D(baseSeed, 10 + branchIndex, 1) - 0.5) *
+        (definition.form === 'pine' ? 0.08 : broadleafSpread),
+      y: trunkHeight * branchHeightFactor,
+      z:
+        (hash2D(baseSeed, 10 + branchIndex, 3) - 0.5) *
+        (definition.form === 'pine' ? 0.08 : broadleafSpread),
+      length:
+        definition.form === 'pine'
+          ? definition.broadleafLengthBase +
+            hash2D(baseSeed, 10 + branchIndex, 4) * definition.broadleafLengthRange
+          : broadleafLengthScale,
+      pitch:
+        definition.form === 'pine'
+          ? 1 + hash2D(baseSeed, 10 + branchIndex, 5) * 0.28
+          : 0.3 +
+            branchProgress * 0.38 +
+            hash2D(baseSeed, 10 + branchIndex, 5) * 0.14,
+      roll: -1.25 + hash2D(baseSeed, 10 + branchIndex, 6) * Math.PI * 0.9,
+    };
+  }
+
+  for (let foliageIndex = 0; foliageIndex < foliageCount; foliageIndex += 1) {
+    const layerProgress = foliageCount <= 1 ? 0 : foliageIndex / (foliageCount - 1);
+    const pineLayerScale = 1 - layerProgress * 0.45;
+    foliage[foliageIndex] = {
+      x:
+        (hash2D(baseSeed, 40 + foliageIndex, 1) - 0.5) *
+        (definition.form === 'pine' ? 0.08 : 0.28),
+      y:
+        trunkHeight *
+        (definition.form === 'pine'
+          ? definition.canopyHeightBase +
+            layerProgress * definition.canopyHeightRange
+          : definition.canopyHeightBase +
+            hash2D(baseSeed, 40 + foliageIndex, 2) * definition.canopyHeightRange),
+      z:
+        (hash2D(baseSeed, 40 + foliageIndex, 3) - 0.5) *
+        (definition.form === 'pine' ? 0.08 : 0.28),
+      scaleX:
+        definition.form === 'pine'
+          ? definition.canopyScaleBase * pineLayerScale +
+            hash2D(baseSeed, 40 + foliageIndex, 4) * definition.canopyScaleRange
+          : definition.canopyScaleBase +
+            hash2D(baseSeed, 40 + foliageIndex, 4) * definition.canopyScaleRange,
+      scaleY:
+        definition.form === 'pine'
+          ? 0.32 + hash2D(baseSeed, 40 + foliageIndex, 5) * 0.18
+          : 0.58 + hash2D(baseSeed, 40 + foliageIndex, 5) * 0.48,
+      scaleZ:
+        definition.form === 'pine'
+          ? definition.canopyScaleBase * pineLayerScale +
+            hash2D(baseSeed, 40 + foliageIndex, 6) * definition.canopyScaleRange
+          : definition.canopyScaleBase +
+            hash2D(baseSeed, 40 + foliageIndex, 6) * definition.canopyScaleRange,
+    };
+  }
+
+  return descriptor;
+}
 
 function getTreeStyle(
   three: ThreeHostLike,
@@ -3894,7 +4104,13 @@ interface ForestBeaverPopulationDescriptor {
   activity: number;
 }
 
+type ForestTreeFamilyId = 'broadleaf' | 'conifer';
+
+type ForestTreeSpeciesId = 'oak' | 'birch' | 'pine';
+
 interface ForestTreeDescriptor extends TreeLogicalState<ForestTreeForm> {
+  familyId: ForestTreeFamilyId;
+  speciesId: ForestTreeSpeciesId;
   variety: number;
 }
 
@@ -3906,6 +4122,11 @@ type ForestTreeGeneratorContext = {
   treeIndex: number;
   loneTree: boolean;
   groveCenter: { x: number; y: number };
+};
+
+type ForestTreeSpeciesContext = ForestTreeGeneratorContext & {
+  variety: number;
+  form: ForestTreeForm;
 };
 
 interface ForestFloorDetailDescriptor {

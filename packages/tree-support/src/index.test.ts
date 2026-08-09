@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
+  createTreeFamily,
   createTreeGenerator,
   createTreeGeneratorBase,
+  createTreeSpecies,
   type TreeLogicalState,
 } from './index.ts';
 
@@ -84,5 +86,85 @@ describe('tree support', () => {
     expect(tree satisfies TreeLogicalState<'oak'>).toBeTruthy();
     expect(tree.form).toBe('oak');
     expect(generated).toBe(1);
+  });
+
+  it('lets one family generator host species that inherit and override family behavior', () => {
+    const familyBase = createTreeGeneratorBase({
+      seed: 202,
+      capabilities: {
+        branches: true,
+        foliage: true,
+        flowers: false,
+      },
+    });
+    type BroadleafTree = TreeLogicalState<'oak' | 'birch'> & { bark: string };
+    type BroadleafContext = {
+      speciesId?: string;
+      tileX: number;
+      tileY: number;
+    };
+
+    const oak = createTreeSpecies<BroadleafTree, BroadleafContext>({
+      familyId: 'broadleaf',
+      id: 'oak',
+      parentBase: familyBase,
+      capabilities: {
+        hollows: true,
+      },
+      generate(context) {
+        return {
+          x: context.tileX,
+          y: context.tileY,
+          radius: 0.24,
+          scale: 1,
+          trunkHeight: 1.4,
+          form: 'oak',
+          branches: [],
+          foliage: [],
+          bark: 'rugged',
+        };
+      },
+    });
+    const birch = createTreeSpecies<BroadleafTree, BroadleafContext>({
+      familyId: 'broadleaf',
+      id: 'birch',
+      parentBase: familyBase,
+      capabilities: {
+        flowers: true,
+      },
+      generate(context) {
+        return {
+          x: context.tileX,
+          y: context.tileY,
+          radius: 0.16,
+          scale: 1,
+          trunkHeight: 1.7,
+          form: 'birch',
+          branches: [],
+          foliage: [],
+          bark: 'paper',
+        };
+      },
+    });
+    const family = createTreeFamily<BroadleafTree, BroadleafContext>({
+      id: 'broadleaf',
+      base: familyBase,
+      resolveSpeciesId(context) {
+        return context.speciesId ?? 'oak';
+      },
+      species: [oak, birch],
+    });
+
+    expect(family.listSpecies().map((species) => species.speciesId)).toEqual([
+      'oak',
+      'birch',
+    ]);
+    expect(family.getSpecies('oak')?.supports('branches')).toBe(true);
+    expect(family.getSpecies('oak')?.supports('flowers')).toBe(false);
+    expect(family.getSpecies('oak')?.supports('hollows')).toBe(true);
+    expect(family.getSpecies('birch')?.supports('flowers')).toBe(true);
+    expect(family.getSpecies('missing')).toBeNull();
+    expect(family.generateSpecies('birch', { tileX: 1, tileY: 2 }).form).toBe('birch');
+    expect(family.generate({ speciesId: 'oak', tileX: 3, tileY: 4 }).form).toBe('oak');
   });
 });

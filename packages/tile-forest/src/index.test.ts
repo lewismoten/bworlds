@@ -13,6 +13,7 @@ import {
   getForestBirds,
   getForestBushes,
   getForestFireflyDescriptors,
+  getForestTreeFamilies,
   getForestTreeGenerator,
   getForestTreeBranchProfiles,
   getForestCarvings,
@@ -24,6 +25,7 @@ import {
   getForestTrail,
   getForestTreeForms,
   getForestTreeHollows,
+  getForestTreeSpeciesIds,
   getForestWebs,
 } from './index.ts';
 
@@ -667,6 +669,65 @@ describe('tile forest', () => {
       branches: true,
       leaves: true,
     });
+  });
+
+  it('organizes forest trees into families and inheriting species', () => {
+    const families = getForestTreeFamilies();
+
+    expect(families.map((family) => family.familyId)).toEqual([
+      'broadleaf',
+      'conifer',
+    ]);
+    expect(families[0].listSpecies().map((species) => species.speciesId)).toEqual([
+      'oak',
+      'birch',
+    ]);
+    expect(families[1].listSpecies().map((species) => species.speciesId)).toEqual([
+      'pine',
+    ]);
+
+    const oak = families[0].getSpecies('oak');
+    const birch = families[0].getSpecies('birch');
+    const pine = families[1].getSpecies('pine');
+
+    expect(oak?.supports('seasonalLeaves')).toBe(true);
+    expect(oak?.supports('flowers')).toBe(false);
+    expect(oak?.supports('hollows')).toBe(true);
+    expect(birch?.supports('flowers')).toBe(true);
+    expect(birch?.supports('hollows')).toBe(false);
+    expect(pine?.supports('seasonalLeaves')).toBe(false);
+    expect(pine?.supports('flowers')).toBe(false);
+  });
+
+  it('keeps forest species selection deterministic across tiles', () => {
+    const speciesByTile: Array<{
+      x: number;
+      y: number;
+      species: ReturnType<typeof getForestTreeSpeciesIds>;
+    }> = [];
+
+    for (let tileY = 0; tileY < 24; tileY += 1) {
+      for (let tileX = 0; tileX < 24; tileX += 1) {
+        const species = getForestTreeSpeciesIds(tileX, tileY);
+        if (species.length > 0) {
+          speciesByTile.push({ x: tileX, y: tileY, species });
+        }
+      }
+    }
+
+    expect(speciesByTile.length).toBeGreaterThan(0);
+    expect(
+      speciesByTile.some(({ species }) => species.includes('oak'))
+    ).toBe(true);
+    expect(
+      speciesByTile.some(({ species }) => species.includes('birch'))
+    ).toBe(true);
+    expect(
+      speciesByTile.some(({ species }) => species.includes('pine'))
+    ).toBe(true);
+
+    const first = speciesByTile[0];
+    expect(getForestTreeSpeciesIds(first.x, first.y)).toEqual(first.species);
   });
 
   it('generates more tree-like branch profiles for broadleaf and pine forms', () => {

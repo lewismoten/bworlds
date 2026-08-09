@@ -28,8 +28,8 @@ For example, an oak and a pine both support `age`, but aging them should produce
 * [X] Create a common `TreeGenerator` interface used by every tree implementation.
 * [X] Create a shared base generator containing reusable tree-generation utilities.
 * [X] Allow specialized tree generators to extend or compose the shared functionality.
-* [ ] Allow one generator to represent a family of closely related trees.
-* [ ] Allow individual species to override family behavior.
+* [X] Allow one generator to represent a family of closely related trees.
+* [X] Allow individual species to override family behavior.
 * [ ] Separate tree biological state from rendered geometry.
 * [ ] Separate tree placement from tree appearance generation.
 * [ ] Separate structural geometry from foliage.
@@ -115,9 +115,9 @@ interface TreeCapabilities {
 
 # Tree Species and Families
 
-* [ ] Define tree families.
-* [ ] Define individual species.
-* [ ] Allow species to inherit characteristics from families.
+* [X] Define tree families.
+* [X] Define individual species.
+* [X] Allow species to inherit characteristics from families.
 * [ ] Define deciduous trees.
 * [ ] Define evergreen trees.
 * [ ] Define conifers.

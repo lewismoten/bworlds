@@ -96,6 +96,18 @@ export interface TreeGenerator<TTree, TContext> {
   supports(capability: TreeCapability, query?: TreeCapabilityQuery): boolean;
 }
 
+export interface TreeSpecies<TTree, TContext> extends TreeGenerator<TTree, TContext> {
+  familyId: string;
+  speciesId: string;
+}
+
+export interface TreeFamily<TTree, TContext> extends TreeGenerator<TTree, TContext> {
+  familyId: string;
+  listSpecies(): Array<TreeSpecies<TTree, TContext>>;
+  getSpecies(id: string): TreeSpecies<TTree, TContext> | null;
+  generateSpecies(id: string, context: TContext): TTree;
+}
+
 export function createTreeGeneratorBase({
   seed,
   capabilities,
@@ -165,6 +177,87 @@ export function createTreeGenerator<TTree, TContext>({
     },
     supports(capability, query) {
       return base.supports(capability, query);
+    },
+  };
+}
+
+export function createTreeSpecies<TTree, TContext>({
+  familyId,
+  id,
+  parentBase,
+  capabilities,
+  generate,
+}: {
+  familyId: string;
+  id: string;
+  parentBase: TreeGeneratorBase;
+  capabilities?: TreeCapabilitySource;
+  generate(context: TContext, base: TreeGeneratorBase): TTree;
+}): TreeSpecies<TTree, TContext> {
+  const base = createTreeGeneratorBase({
+    seed: parentBase.seed,
+    parent: parentBase,
+    capabilities,
+  });
+  const generator = createTreeGenerator<TTree, TContext>({
+    id: `${familyId}:${id}`,
+    base,
+    generate,
+  });
+  return {
+    ...generator,
+    familyId,
+    speciesId: id,
+  };
+}
+
+export function createTreeFamily<TTree, TContext>({
+  id,
+  base,
+  resolveSpeciesId,
+  species,
+}: {
+  id: string;
+  base: TreeGeneratorBase;
+  resolveSpeciesId(context: TContext): string;
+  species: Array<TreeSpecies<TTree, TContext>>;
+}): TreeFamily<TTree, TContext> {
+  const speciesById = new Map(species.map((entry) => [entry.speciesId, entry]));
+
+  return {
+    id,
+    familyId: id,
+    generate(context) {
+      const speciesId = resolveSpeciesId(context);
+      const resolved = speciesById.get(speciesId) ?? species[0];
+      if (!resolved) {
+        throw new Error(`Tree family "${id}" has no registered species.`);
+      }
+      return resolved.generate(context);
+    },
+    getCapabilities(query) {
+      return base.getCapabilities(query);
+    },
+    getCapability(capability, query) {
+      return base.getCapability(capability, query);
+    },
+    supports(capability, query) {
+      return base.supports(capability, query);
+    },
+    listSpecies() {
+      return [...species];
+    },
+    getSpecies(speciesId) {
+      return speciesById.get(speciesId) ?? null;
+    },
+    generateSpecies(speciesId, context) {
+      const resolved = speciesById.get(speciesId);
+      if (!resolved) {
+        throw new Error(
+          `Unknown tree species "${speciesId}" for family "${id}".`
+        );
+      }
+      return resolved.generate(context);
     },
   };
 }
