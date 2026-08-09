@@ -10,6 +10,7 @@ import {
 import {
   resolveProceduralChordProgression,
   resolveProceduralLeadMotif,
+  resolveProceduralLeadPhraseCadence,
 } from './procedural-music-harmony.ts';
 import {
   createProceduralMusicSong,
@@ -44,6 +45,7 @@ export type MusicDebugSnapshot = {
   instrumentBank: ReturnType<typeof createProceduralInstrumentBank>;
   chordProgression: number[];
   leadMotif: number[];
+  leadPhraseCadence: string[];
   song: ProceduralMusicSong;
   notes: ProceduralMusicNote[];
   durationMs: number;
@@ -158,6 +160,10 @@ export function createMusicDebugSnapshot(
     ...resolveProceduralLeadMotif(theme, options.clusterX, options.clusterY)
       .degreeOffsets,
   ];
+  const leadPhraseCadence = Array.from(
+    { length: Math.max(1, theme.stepPattern.length) },
+    (_, stepIndex) => resolveProceduralLeadPhraseCadence(theme, stepIndex)
+  );
   const song = createProceduralMusicSong({
     nowMs,
     tileKind: options.tileKind,
@@ -190,6 +196,7 @@ export function createMusicDebugSnapshot(
     instrumentBank,
     chordProgression,
     leadMotif,
+    leadPhraseCadence,
     song,
     notes: song.notes,
     durationMs,
@@ -343,6 +350,9 @@ export function buildMusicDebugSummaryMarkup(
     </div>
     <div class="music-debug-role-counts">
       <span>Lead Motif ${snapshot.leadMotif.map((degree) => degree + 1).join(' - ')}</span>
+    </div>
+    <div class="music-debug-role-counts">
+      <span>Lead Cadence ${snapshot.leadPhraseCadence.join(' / ')}</span>
     </div>
     <ul class="music-debug-instruments">${instruments}</ul>
   `;

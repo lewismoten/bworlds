@@ -4,6 +4,7 @@ import {
   resolveProceduralChordProgression,
   resolveProceduralInstrumentSemitones,
   resolveProceduralLeadMotif,
+  resolveProceduralLeadPhraseCadence,
   type ProceduralHarmonyTheme,
 } from './procedural-music-harmony.ts';
 
@@ -76,5 +77,48 @@ describe('procedural music harmony', () => {
     expect(describeCycle([0, 1, 3, 5])).toEqual(
       describeCycle([16, 17, 19, 21])
     );
+  });
+
+  it('uses question-and-answer cadences so phrases end unresolved before resolving', () => {
+    const cadenceTheme: ProceduralHarmonyTheme = {
+      id: 'cadence-test',
+      scale: [0, 2, 4, 5, 7, 9, 11],
+      stepPattern: [0, 2, 4, 2, 5, 4, 2, 0],
+    };
+    const questionSteps = [3, 11];
+    const answerSteps = [7, 15];
+
+    for (const stepIndex of questionSteps) {
+      const chord = resolveProceduralChordAtStep(cadenceTheme, stepIndex, 3, -2);
+      const semitones = resolveProceduralInstrumentSemitones({
+        theme: cadenceTheme,
+        role: 'lead',
+        stepIndex,
+        clusterX: 3,
+        clusterY: -2,
+      });
+
+      expect(resolveProceduralLeadPhraseCadence(cadenceTheme, stepIndex)).toBe(
+        'question'
+      );
+      expect(semitones).toBe(chord.passingSemitones);
+      expect(semitones).not.toBe(chord.rootSemitones);
+    }
+
+    for (const stepIndex of answerSteps) {
+      const chord = resolveProceduralChordAtStep(cadenceTheme, stepIndex, 3, -2);
+      const semitones = resolveProceduralInstrumentSemitones({
+        theme: cadenceTheme,
+        role: 'lead',
+        stepIndex,
+        clusterX: 3,
+        clusterY: -2,
+      });
+
+      expect(resolveProceduralLeadPhraseCadence(cadenceTheme, stepIndex)).toBe(
+        'answer'
+      );
+      expect(semitones).toBe(chord.rootSemitones);
+    }
   });
 });

@@ -21,6 +21,8 @@ export type ProceduralLeadMotif = {
   degreeOffsets: readonly number[];
 };
 
+export type ProceduralLeadPhraseCadence = 'neutral' | 'question' | 'answer';
+
 const MUSIC_PROGRESSION_SEED = registerHashLabel('music-progression');
 const MUSIC_MOTIF_SEED = registerHashLabel('music-lead-motif');
 const PROGRESSION_PATTERNS = [
@@ -70,6 +72,24 @@ export function resolveProceduralLeadMotif(
   return {
     degreeOffsets: MOTIF_PATTERNS[patternIndex] ?? MOTIF_PATTERNS[0],
   };
+}
+
+export function resolveProceduralLeadPhraseCadence(
+  theme: ProceduralHarmonyTheme,
+  stepIndex: number
+): ProceduralLeadPhraseCadence {
+  const phraseLength = Math.max(1, theme.stepPattern.length);
+  const phraseStep = stepIndex % phraseLength;
+  const questionStep = Math.max(0, Math.floor(phraseLength / 2) - 1);
+  const answerStep = phraseLength - 1;
+
+  if (phraseStep === questionStep) {
+    return 'question';
+  }
+  if (phraseStep === answerStep) {
+    return 'answer';
+  }
+  return 'neutral';
 }
 
 export function resolveProceduralChordAtStep(
@@ -188,6 +208,7 @@ function resolveLeadSemitones(
 ): number {
   const motif = resolveProceduralLeadMotif(theme, clusterX, clusterY);
   const phraseStep = stepIndex % theme.stepPattern.length;
+  const cadence = resolveProceduralLeadPhraseCadence(theme, stepIndex);
   const melodyPatternIndex =
     chord.degreeIndex +
     (motif.degreeOffsets[phraseStep % motif.degreeOffsets.length] ?? 0);
@@ -208,6 +229,13 @@ function resolveLeadSemitones(
       chordTonePattern[Math.floor(stepIndex / 4) % chordTonePattern.length] ??
       chord.rootSemitones
     );
+  }
+
+  if (cadence === 'question') {
+    return chord.passingSemitones;
+  }
+  if (cadence === 'answer') {
+    return chord.rootSemitones;
   }
 
   const melodicOptions = [
