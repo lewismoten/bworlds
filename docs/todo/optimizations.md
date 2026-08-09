@@ -132,7 +132,7 @@ Not everything needs 60 updates per second.
 * [X] Update weather simulation periodically rather than every frame.
 * [ ] Update economy simulation on long intervals.
 * [ ] Update vegetation growth on very long intervals.
-* [ ] Update day/night calculations incrementally.
+* [X] Update day/night calculations incrementally.
 * [ ] Update expensive pathfinding only when paths actually change.
 * [ ] Update UI only when displayed values change.
 * [X] Update minimaps only when necessary.

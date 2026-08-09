@@ -191,6 +191,7 @@ import {
 } from './procedural-music.ts';
 import { createMusicUpdateGate } from './music-update-gate.ts';
 import { createEnvironmentFrameCache } from './environment-frame-cache.ts';
+import { createCycleFrameCache } from './cycle-frame-cache.ts';
 import { createDebouncedPersistence } from './debounced-persistence.ts';
 import { createBoundedCache } from './bounded-cache.ts';
 import { getPlayerSpatialSummary } from './player-spatial-summary.ts';
@@ -1154,6 +1155,13 @@ const resolveCachedEnvironment = createEnvironmentFrameCache(({ timeMs }) =>
     state,
     timeMs,
   })
+);
+const resolveCachedCycle = createCycleFrameCache(
+  ({ timeMs, cycleConfig, celestialOverrides }) =>
+    applyCelestialEnvironmentOverrides(
+      getDaylightCycleState(timeMs, cycleConfig ?? {}),
+      (celestialOverrides ?? {}) as CelestialEnvironmentOverrides
+    )
 );
 let latestEnvironment: WorldEnvironmentLike = getCurrentEnvironment();
 
@@ -2132,11 +2140,15 @@ function getCurrentEnvironment(
   });
 }
 
-function getCurrentCycle(environment: WorldEnvironmentLike = getCurrentEnvironment()) {
-  return applyCelestialEnvironmentOverrides(
-    getDaylightCycleState(getCurrentWorldTimeMs(), environment.cycle ?? {}),
-    (environment.celestial ?? {}) as CelestialEnvironmentOverrides
-  );
+function getCurrentCycle(
+  environment: WorldEnvironmentLike = getCurrentEnvironment(),
+  timeMs = getCurrentWorldTimeMs()
+) {
+  return resolveCachedCycle({
+    timeMs,
+    cycleConfig: environment.cycle,
+    celestialOverrides: environment.celestial,
+  });
 }
 
 function canMoveTo(nextX: number, nextY: number): boolean {
@@ -2830,10 +2842,7 @@ function render(): FrameLoopActivityLike {
   state.timeMs = timeMs;
   const environment = getCurrentEnvironment(timeMs);
   latestEnvironment = environment;
-  const actualCycle = applyCelestialEnvironmentOverrides(
-    getDaylightCycleState(timeMs, environment.cycle ?? {}),
-    (environment.celestial ?? {}) as CelestialEnvironmentOverrides
-  );
+  const actualCycle = getCurrentCycle(environment, timeMs);
   const displayCycle = updateDisplayedCycle(actualCycle);
   const spatial = getPlayerSpatialSummary(state);
   const context = spatial.context;
