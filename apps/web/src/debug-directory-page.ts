@@ -12,6 +12,9 @@ const DEBUG_DIRECTORY_HMR_STATE_KEY = 'bworlds:debug-directory:hmr';
 
 const root = document.querySelector<HTMLElement>('#app');
 const pageScrollStorage = globalThis.sessionStorage ?? null;
+const pageLifecycleAbortController =
+  typeof AbortController === 'function' ? new AbortController() : null;
+const pageLifecycleSignal = pageLifecycleAbortController?.signal;
 const initialScrollY =
   loadHmrState<{ scrollY: number }>(
     import.meta.hot,
@@ -40,9 +43,20 @@ function persistScrollPosition(): void {
   );
 }
 
-globalThis.addEventListener?.('scroll', persistScrollPosition, {
-  passive: true,
-});
-globalThis.addEventListener?.('pagehide', persistScrollPosition);
+globalThis.addEventListener?.(
+  'scroll',
+  persistScrollPosition,
+  pageLifecycleSignal
+    ? { passive: true, signal: pageLifecycleSignal }
+    : { passive: true }
+);
+globalThis.addEventListener?.(
+  'pagehide',
+  persistScrollPosition,
+  pageLifecycleSignal ? { signal: pageLifecycleSignal } : undefined
+);
 import.meta.hot?.on('vite:beforeUpdate', persistScrollPosition);
-import.meta.hot?.dispose(persistScrollPosition);
+import.meta.hot?.dispose(() => {
+  pageLifecycleAbortController?.abort();
+  persistScrollPosition();
+});

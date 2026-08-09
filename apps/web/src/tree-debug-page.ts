@@ -14,6 +14,9 @@ import {
 } from './tree-debug.ts';
 
 const root = document.querySelector<HTMLElement>('#app');
+const pageLifecycleAbortController =
+  typeof AbortController === 'function' ? new AbortController() : null;
+const pageLifecycleSignal = pageLifecycleAbortController?.signal;
 const persistedState = loadTreeDebugPagePersistenceState(
   globalThis.sessionStorage ?? null,
   undefined,
@@ -129,17 +132,23 @@ globalThis.addEventListener?.(
     const form = document.querySelector<HTMLFormElement>('#tree-debug-form');
     persistPageState(form);
   },
-  { passive: true }
+  pageLifecycleSignal
+    ? { passive: true, signal: pageLifecycleSignal }
+    : { passive: true }
 );
 
 renderPage(snapshot);
 restorePersistedPageScrollY(persistedState?.scrollY ?? 0);
 
-globalThis.addEventListener?.('pagehide', () => {
-  const form = document.querySelector<HTMLFormElement>('#tree-debug-form');
-  persistPageState(form);
-  pagePersistence.flush();
-});
+globalThis.addEventListener?.(
+  'pagehide',
+  () => {
+    const form = document.querySelector<HTMLFormElement>('#tree-debug-form');
+    persistPageState(form);
+    pagePersistence.flush();
+  },
+  pageLifecycleSignal ? { signal: pageLifecycleSignal } : undefined
+);
 
 import.meta.hot?.on('vite:beforeUpdate', () => {
   const form = document.querySelector<HTMLFormElement>('#tree-debug-form');
@@ -148,6 +157,7 @@ import.meta.hot?.on('vite:beforeUpdate', () => {
 });
 
 import.meta.hot?.dispose(() => {
+  pageLifecycleAbortController?.abort();
   const form = document.querySelector<HTMLFormElement>('#tree-debug-form');
   persistPageState(form);
   pagePersistence.flush();

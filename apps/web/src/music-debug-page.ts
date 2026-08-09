@@ -34,6 +34,9 @@ import {
 } from './music-debug-timeline.ts';
 
 const root = document.querySelector<HTMLElement>('#app');
+const pageLifecycleAbortController =
+  typeof AbortController === 'function' ? new AbortController() : null;
+const pageLifecycleSignal = pageLifecycleAbortController?.signal;
 
 if (root) {
   root.innerHTML = buildMusicDebugShellMarkup();
@@ -273,10 +276,12 @@ function warmMusicDebugPlayback(): void {
 document.addEventListener('pointerdown', warmMusicDebugPlayback, {
   passive: true,
   once: true,
+  ...(pageLifecycleSignal ? { signal: pageLifecycleSignal } : {}),
 });
 document.addEventListener('keydown', warmMusicDebugPlayback, {
   passive: true,
   once: true,
+  ...(pageLifecycleSignal ? { signal: pageLifecycleSignal } : {}),
 });
 
 function collectOptions(): Partial<MusicDebugOptions> {
@@ -477,10 +482,14 @@ scheduleAfterPaint(() => {
   restorePersistedPageScrollY(persistedState?.scrollY ?? 0);
 });
 
-globalThis.addEventListener?.('pagehide', () => {
-  persistPageState(playbackController.isPlaying());
-  pagePersistence.flush();
-});
+globalThis.addEventListener?.(
+  'pagehide',
+  () => {
+    persistPageState(playbackController.isPlaying());
+    pagePersistence.flush();
+  },
+  pageLifecycleSignal ? { signal: pageLifecycleSignal } : undefined
+);
 
 import.meta.hot?.on('vite:beforeUpdate', () => {
   persistPageState(playbackController.isPlaying());
@@ -488,6 +497,7 @@ import.meta.hot?.on('vite:beforeUpdate', () => {
 });
 
 import.meta.hot?.dispose(() => {
+  pageLifecycleAbortController?.abort();
   persistPageState(playbackController.isPlaying());
   pagePersistence.flush();
 });

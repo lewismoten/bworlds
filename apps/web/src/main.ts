@@ -403,10 +403,6 @@ root.innerHTML = `
         </div>
       </div>
       <aside class="sidebar">
-        <div class="card">
-          <h2>Content Packs</h2>
-          <form id="content-pack-form" class="pack-form"></form>
-        </div>
         <div class="card" id="celestial-tools-card">
           <div class="inspector-header">
             <div class="inspector-tabs" role="tablist" aria-label="Celestial tools">
@@ -647,27 +643,33 @@ root.innerHTML = `
             </p>
           </section>
         </div>
-        <div class="card">
-          <h2>Status</h2>
-          <dl id="status"></dl>
-        </div>
-        <div class="card">
-          <h2>Legend</h2>
-          <canvas id="atlas" width="256" height="256"></canvas>
-        </div>
-        <div class="card">
-          <h2>Controls</h2>
-          <ul>
-            <li>In 2D, up/down move forward and reverse through the rotating map</li>
-            <li>In 2D, left/right rotate unless Shift is held to strafe</li>
-            <li>In 3D, left/right rotate unless Shift is held to strafe</li>
-            <li>Q/E also rotate in both 2D and 3D</li>
-            <li>In 3D, Space jumps and Enter interacts</li>
-            <li>V to toggle 2D and 3D</li>
-            <li>X to leave a place when standing on its exit</li>
-          </ul>
-        </div>
       </aside>
+    </section>
+    <section class="utility-panels">
+      <div class="card">
+        <h2>Content Packs</h2>
+        <form id="content-pack-form" class="pack-form"></form>
+      </div>
+      <div class="card">
+        <h2>Status</h2>
+        <dl id="status"></dl>
+      </div>
+      <div class="card">
+        <h2>Legend</h2>
+        <canvas id="atlas" width="256" height="256"></canvas>
+      </div>
+      <div class="card">
+        <h2>Controls</h2>
+        <ul>
+          <li>In 2D, up/down move forward and reverse through the rotating map</li>
+          <li>In 2D, left/right rotate unless Shift is held to strafe</li>
+          <li>In 3D, left/right rotate unless Shift is held to strafe</li>
+          <li>Q/E also rotate in both 2D and 3D</li>
+          <li>In 3D, Space jumps and Enter interacts</li>
+          <li>V to toggle 2D and 3D</li>
+          <li>X to leave a place when standing on its exit</li>
+        </ul>
+      </div>
     </section>
     <section class="control-dock card">
       <div class="controls">
@@ -760,6 +762,9 @@ const viewportMinimapMini = document.querySelector<HTMLCanvasElement>(
   '#viewport-minimap-mini'
 );
 const hmrNotice = document.querySelector<HTMLElement>('#hmr-notice');
+const pageLifecycleAbortController =
+  typeof AbortController === 'function' ? new AbortController() : null;
+const pageLifecycleSignal = pageLifecycleAbortController?.signal;
 const scheduleMainAfterPaint =
   globalThis.requestAnimationFrame?.bind(globalThis) ??
   ((callback: FrameRequestCallback) =>
@@ -3720,32 +3725,44 @@ function loop(timestamp: number): void {
   }
 }
 
-window.addEventListener('resize', () => {
-  resizeCanvas();
-  requestRender();
-});
+window.addEventListener(
+  'resize',
+  () => {
+    resizeCanvas();
+    requestRender();
+  },
+  pageLifecycleSignal ? { signal: pageLifecycleSignal } : undefined
+);
 
-document.addEventListener('visibilitychange', () => {
-  pageVisibilityState.hidden = document.hidden;
-  if (pageVisibilityState.hidden) {
+document.addEventListener(
+  'visibilitychange',
+  () => {
+    pageVisibilityState.hidden = document.hidden;
+    if (pageVisibilityState.hidden) {
+      sessionPersistence.flush();
+      soundEffects.stopAll();
+      musicController.stopAll();
+      lastFrame = 0;
+      return;
+    }
+    requestRender();
+  },
+  pageLifecycleSignal ? { signal: pageLifecycleSignal } : undefined
+);
+
+window.addEventListener(
+  'pagehide',
+  () => {
+    savePersistedPageScrollY(
+      mainPageScrollStorage,
+      MAIN_PAGE_SCROLL_STORAGE_KEY,
+      window.scrollY
+    );
     sessionPersistence.flush();
-    soundEffects.stopAll();
-    musicController.stopAll();
-    lastFrame = 0;
-    return;
-  }
-  requestRender();
-});
-
-window.addEventListener('pagehide', () => {
-  savePersistedPageScrollY(
-    mainPageScrollStorage,
-    MAIN_PAGE_SCROLL_STORAGE_KEY,
-    window.scrollY
-  );
-  sessionPersistence.flush();
-  persistMainPageHmrState();
-});
+    persistMainPageHmrState();
+  },
+  pageLifecycleSignal ? { signal: pageLifecycleSignal } : undefined
+);
 
 import.meta.hot?.on('vite:beforeUpdate', () => {
   savePersistedPageScrollY(
@@ -3769,6 +3786,7 @@ import.meta.hot?.dispose(() => {
     MAIN_PAGE_SCROLL_STORAGE_KEY,
     window.scrollY
   );
+  pageLifecycleAbortController?.abort();
   if (pendingFrameHandle !== 0) {
     cancelPendingRenderFrame(pendingFrameHandle);
     pendingFrameHandle = 0;
@@ -3815,7 +3833,7 @@ window.addEventListener(
       event.preventDefault();
     }
   },
-  true
+  pageLifecycleSignal ? { capture: true, signal: pageLifecycleSignal } : true
 );
 
 window.addEventListener(
@@ -3832,7 +3850,7 @@ window.addEventListener(
     }
     requestRender();
   },
-  true
+  pageLifecycleSignal ? { capture: true, signal: pageLifecycleSignal } : true
 );
 
 toggleButton.addEventListener('click', toggleView);
