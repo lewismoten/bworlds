@@ -62,6 +62,9 @@ describe('music debug', () => {
     expect(first.leadMaxLeapSemitones).toBe(second.leadMaxLeapSemitones);
     expect(first.accidentalNoteCount).toBe(second.accidentalNoteCount);
     expect(first.blueprintLabel).toBe(second.blueprintLabel);
+    expect(first.sectionLayerArrangement).toEqual(
+      second.sectionLayerArrangement
+    );
     expect(first.notes).toEqual(second.notes);
     expect(first.durationMs).toBeGreaterThanOrEqual(120_000);
     expect(first.durationMs).toBeLessThanOrEqual(180_000);
@@ -93,6 +96,7 @@ describe('music debug', () => {
     expect(summary).toContain('Song Length');
     expect(summary).toContain('Blueprint');
     expect(summary).toContain('Loop Range');
+    expect(summary).toContain('Layer Mix');
     expect(summary).toContain('Chords');
     expect(summary).toContain('Lead Motif');
     expect(summary).toContain('Lead Contour');

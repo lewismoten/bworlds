@@ -20,6 +20,7 @@ import {
 } from './procedural-music-song.ts';
 import { randomizeDebugCoordinatePair } from './debug-seed.ts';
 import { createMusicDebugScaleOverlay } from './music-debug-scale.ts';
+import { describeSongSectionLayerArrangement } from './procedural-music-song-layers.ts';
 
 export type MusicDebugTileKind =
   'plains' | 'forest' | 'shore' | 'town' | 'mountain' | 'cave' | 'floor';
@@ -53,6 +54,7 @@ export type MusicDebugSnapshot = {
   notes: ProceduralMusicNote[];
   durationMs: number;
   blueprintLabel: string;
+  sectionLayerArrangement: string[];
   loopStartOffsetMs: number;
   loopEndOffsetMs: number;
   leadMaxLeapSemitones: number;
@@ -231,6 +233,9 @@ export function createMusicDebugSnapshot(
     notes: song.notes,
     durationMs,
     blueprintLabel: song.blueprint.label,
+    sectionLayerArrangement: song.sections.map((section) =>
+      describeSongSectionLayerArrangement(section)
+    ),
     loopStartOffsetMs: song.loopStartOffsetMs,
     loopEndOffsetMs: song.loopEndOffsetMs,
     leadMaxLeapSemitones,
@@ -380,6 +385,9 @@ export function buildMusicDebugSummaryMarkup(
     </div>
     <div class="music-debug-role-counts">
       <span>Sections ${snapshot.song.sections.map((section) => section.label).join(' / ')}</span>
+    </div>
+    <div class="music-debug-role-counts">
+      <span>Layer Mix ${snapshot.sectionLayerArrangement.join(' | ')}</span>
     </div>
     <div class="music-debug-role-counts">
       <span>Chords ${snapshot.chordProgression.map((degree) => degree + 1).join(' - ')}</span>

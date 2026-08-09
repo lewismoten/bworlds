@@ -114,4 +114,44 @@ describe('procedural music song', () => {
     expect(aPrimeLead).not.toEqual(aLead);
     expect(variationLead).not.toEqual(aLead);
   });
+
+  it('recombines section layers so later phrases do not keep the same full stack', () => {
+    const song = createProceduralMusicSong({
+      nowMs: 1_000,
+      tileKind: 'forest',
+      contextType: 'overworld',
+      dayProgress: 0.45,
+      yearProgress: 0.25,
+      clusterX: 3,
+      clusterY: -2,
+    });
+    const sectionById = new Map(
+      song.sections.map((section) => [section.id, section])
+    );
+
+    const countRoles = (sectionId: 'a' | 'intro' | 'variation' | 'outro') => {
+      const section = sectionById.get(sectionId)!;
+      const endMs = song.startMs + section.startOffsetMs + section.durationMs;
+      return song.notes
+        .filter(
+          (note) =>
+            note.startMs >= song.startMs + section.startOffsetMs &&
+            note.startMs < endMs
+        )
+        .reduce<Record<string, number>>((counts, note) => {
+          counts[note.role] = (counts[note.role] ?? 0) + 1;
+          return counts;
+        }, {});
+    };
+
+    const intro = countRoles('intro');
+    const sectionA = countRoles('a');
+    const variation = countRoles('variation');
+    const outro = countRoles('outro');
+
+    expect(intro.percussion ?? 0).toBe(0);
+    expect(sectionA.percussion ?? 0).toBeGreaterThan(0);
+    expect(variation.percussion ?? 0).toBeLessThan(sectionA.percussion ?? 0);
+    expect(outro.percussion ?? 0).toBe(0);
+  });
 });

@@ -1,4 +1,5 @@
 import type { ProceduralMusicNote } from './procedural-music.ts';
+import { resolveSongSectionLayerTreatment } from './procedural-music-song-layers.ts';
 import type { ProceduralMusicSongSection } from './procedural-music-song.ts';
 
 const SEMITONE_RATIO = 2 ** (1 / 12);
@@ -8,47 +9,48 @@ export function transformSongSectionNote(
   section: ProceduralMusicSongSection,
   noteIndexInSection: number
 ): ProceduralMusicNote | null {
+  const layerTreatment = resolveSongSectionLayerTreatment(
+    section,
+    note,
+    noteIndexInSection
+  );
+  if (layerTreatment.muted) {
+    return null;
+  }
+
   switch (section.id) {
     case 'intro':
-      if (note.role === 'percussion') {
-        return null;
-      }
-      if (note.role === 'bass' && noteIndexInSection % 2 === 1) {
-        return null;
-      }
       return scaleSongNote(note, {
-        volumeMultiplier: note.role === 'lead' ? 0.84 : 0.68,
-        durationMultiplier: note.role === 'harmony' ? 1.14 : 1,
-        releaseMultiplier: 1.12,
+        volumeMultiplier: layerTreatment.volumeMultiplier,
+        durationMultiplier: layerTreatment.durationMultiplier,
+        releaseMultiplier: layerTreatment.releaseMultiplier,
       });
     case 'a-prime':
-      return transformAprimeSectionNote(note, noteIndexInSection);
+      return transformAprimeSectionNote(
+        note,
+        noteIndexInSection,
+        layerTreatment
+      );
     case 'b':
-      if (note.role === 'harmony' && noteIndexInSection % 5 === 0) {
-        return null;
-      }
       return scaleSongNote(note, {
-        volumeMultiplier:
-          note.role === 'lead' ? 1.08 : note.role === 'percussion' ? 0.9 : 1,
-        durationMultiplier: note.role === 'bass' ? 1.1 : 1,
+        volumeMultiplier: layerTreatment.volumeMultiplier,
+        durationMultiplier: layerTreatment.durationMultiplier,
       });
     case 'variation':
-      return transformVariationSectionNote(note, noteIndexInSection);
+      return transformVariationSectionNote(
+        note,
+        noteIndexInSection,
+        layerTreatment
+      );
     case 'return':
       return scaleSongNote(note, {
-        volumeMultiplier: note.role === 'lead' ? 0.94 : 0.98,
+        volumeMultiplier: layerTreatment.volumeMultiplier,
       });
     case 'outro':
-      if (note.role === 'percussion') {
-        return null;
-      }
-      if (note.role === 'lead' && noteIndexInSection % 2 === 1) {
-        return null;
-      }
       return scaleSongNote(note, {
-        volumeMultiplier: 0.72,
-        durationMultiplier: note.role === 'harmony' ? 1.2 : 1.08,
-        releaseMultiplier: 1.24,
+        volumeMultiplier: layerTreatment.volumeMultiplier,
+        durationMultiplier: layerTreatment.durationMultiplier,
+        releaseMultiplier: layerTreatment.releaseMultiplier,
       });
     case 'a':
     default:
@@ -58,7 +60,8 @@ export function transformSongSectionNote(
 
 function transformAprimeSectionNote(
   note: ProceduralMusicNote,
-  noteIndexInSection: number
+  noteIndexInSection: number,
+  layerTreatment: ReturnType<typeof resolveSongSectionLayerTreatment>
 ): ProceduralMusicNote {
   const phrasePosition = noteIndexInSection % 8;
   const endingOffsetSemitones =
@@ -73,8 +76,8 @@ function transformAprimeSectionNote(
     note.role === 'lead' && phrasePosition >= 4 ? (phrasePosition - 3) * 18 : 0;
 
   return scaleSongNote(note, {
-    volumeMultiplier: note.role === 'lead' ? 1.06 : 1,
-    durationMultiplier: note.role === 'harmony' ? 1.08 : 1,
+    volumeMultiplier: layerTreatment.volumeMultiplier,
+    durationMultiplier: layerTreatment.durationMultiplier,
     startOffsetMs: rhythmShiftMs,
     transposeSemitones: endingOffsetSemitones,
   });
@@ -82,12 +85,9 @@ function transformAprimeSectionNote(
 
 function transformVariationSectionNote(
   note: ProceduralMusicNote,
-  noteIndexInSection: number
-): ProceduralMusicNote | null {
-  if (note.role === 'percussion' && noteIndexInSection % 4 === 0) {
-    return null;
-  }
-
+  noteIndexInSection: number,
+  layerTreatment: ReturnType<typeof resolveSongSectionLayerTreatment>
+): ProceduralMusicNote {
   const phrasePosition = noteIndexInSection % 8;
   const transposeSemitones =
     note.role === 'lead'
@@ -103,10 +103,9 @@ function transformVariationSectionNote(
         : 0;
 
   return scaleSongNote(note, {
-    volumeMultiplier: note.role === 'harmony' ? 0.92 : 1,
-    durationMultiplier:
-      note.role === 'lead' ? 1.24 : note.role === 'harmony' ? 1.1 : 1,
-    releaseMultiplier: note.role === 'lead' ? 1.18 : 1,
+    volumeMultiplier: layerTreatment.volumeMultiplier,
+    durationMultiplier: layerTreatment.durationMultiplier,
+    releaseMultiplier: layerTreatment.releaseMultiplier,
     startOffsetMs: rhythmShiftMs,
     transposeSemitones,
   });
