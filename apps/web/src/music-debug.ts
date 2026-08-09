@@ -21,6 +21,7 @@ import {
   type ProceduralMusicSong,
 } from './procedural-music-song.ts';
 import { randomizeDebugCoordinatePair } from './debug-seed.ts';
+import { buildMusicDebugInstrumentPanelMarkup } from './music-debug-instrument-panel.ts';
 import { describeSongSectionLayerArrangement } from './procedural-music-song-layers.ts';
 
 export type MusicDebugTileKind =
@@ -483,13 +484,6 @@ export function buildMusicDebugPendingSummaryMarkup(): string {
 export function buildMusicDebugSummaryMarkup(
   snapshot: MusicDebugSnapshot
 ): string {
-  const instruments = Object.values(snapshot.instrumentBank.instruments)
-    .map(
-      (instrument) =>
-        `<li><strong>${instrument.role}</strong>: ${instrument.family} / ${instrument.waveform} + ${instrument.timbre.harmonicWaveform} @ ${instrument.timbre.harmonicRatio.toFixed(2)}x / ${instrument.timbre.filterType} ${instrument.timbre.filterCutoffHz.toFixed(0)}Hz</li>`
-    )
-    .join('');
-
   return `
     <div class="music-debug-summary-grid">
       <div><dt>Theme</dt><dd>${snapshot.theme.id}</dd></div>
@@ -555,7 +549,7 @@ export function buildMusicDebugSummaryMarkup(
     <div class="music-debug-role-counts">
       <span>Lead Cadence ${snapshot.leadPhraseCadence.join(' / ')}</span>
     </div>
-    <ul class="music-debug-instruments">${instruments}</ul>
+    ${buildMusicDebugInstrumentPanelMarkup(snapshot)}
   `;
 }
 

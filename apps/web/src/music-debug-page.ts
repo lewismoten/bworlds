@@ -2,6 +2,8 @@ import './music-debug.css';
 import { createMusicDebugPageState } from './music-debug-page-state.ts';
 import { createMusicDebugPlaybackController } from './music-debug-playback.ts';
 import { downloadMusicDebugMidiFile } from './music-debug-midi.ts';
+import { createMusicDebugInstrumentPreviewPlayer } from './music-debug-instrument-preview.ts';
+import { resolveMusicDebugInstrumentPreviewNote } from './music-debug-instrument-panel.ts';
 import {
   clampMusicDebugPreviewOffset,
   resolveMusicDebugDisplayedOffsetMs,
@@ -203,6 +205,7 @@ const pageState = createMusicDebugPageState({
   },
 });
 const playback = createMusicDebugSongPlayback();
+const instrumentPreviewPlayer = createMusicDebugInstrumentPreviewPlayer();
 const playbackController = createMusicDebugPlaybackController({
   playback,
   onPlayingChange(playing) {
@@ -269,11 +272,13 @@ function collectOptions(): Partial<MusicDebugOptions> {
 
 form?.addEventListener('submit', (event) => {
   event.preventDefault();
+  instrumentPreviewPlayer.stop();
   playbackController.stop();
   pageState.refreshNow();
 });
 
 form?.addEventListener('input', () => {
+  instrumentPreviewPlayer.stop();
   playbackController.stop();
   pageState.scheduleRefresh();
 });
@@ -291,6 +296,7 @@ playButton?.addEventListener('click', () => {
 });
 
 randomizeButton?.addEventListener('click', () => {
+  instrumentPreviewPlayer.stop();
   playbackController.stop();
   const randomized = randomizeMusicDebugSeed(collectOptions());
   if (clusterXInput) {
@@ -303,8 +309,36 @@ randomizeButton?.addEventListener('click', () => {
 });
 
 downloadButton?.addEventListener('click', () => {
+  instrumentPreviewPlayer.stop();
   playbackController.stop();
   downloadMusicDebugMidiFile(pageState.refreshNow());
+});
+
+summary?.addEventListener('click', (event) => {
+  const target = event.target;
+  if (!(target instanceof HTMLButtonElement)) {
+    return;
+  }
+  const role = target.dataset.role;
+  if (
+    role !== 'lead' &&
+    role !== 'harmony' &&
+    role !== 'bass' &&
+    role !== 'percussion'
+  ) {
+    return;
+  }
+  const snapshot = pageState.refreshNow();
+  const note = resolveMusicDebugInstrumentPreviewNote(
+    snapshot,
+    role,
+    performance.now()
+  );
+  if (!note) {
+    return;
+  }
+  instrumentPreviewPlayer.stop();
+  instrumentPreviewPlayer.play(note);
 });
 
 sectionButtons?.addEventListener('click', (event) => {

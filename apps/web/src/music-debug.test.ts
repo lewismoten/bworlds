@@ -109,6 +109,8 @@ describe('music debug', () => {
     expect(markup).toContain('music-debug-current-time');
     expect(markup).toContain('music-debug-current-section');
     expect(markup).toContain('music-debug-section-buttons');
+    expect(markup).toContain('music-debug-instrument-panel');
+    expect(markup).toContain('music-debug-instrument-play');
     expect(summary).toContain('Scheduled Notes');
     expect(summary).toContain('Song Length');
     expect(summary).toContain('Blueprint');
@@ -145,7 +147,9 @@ describe('music debug', () => {
     expect(summary).toContain(
       snapshot.songDna.importantNpcMotifs[0]?.npcName ?? ''
     );
-    expect(summary).toContain('Hz</li>');
+    expect(summary).toContain('music-debug-instrument-waveform');
+    expect(summary).toContain('music-debug-instrument-stats');
+    expect(summary).toContain('Hz</dd>');
   });
 
   it('renders a lightweight shell before the generated preview is ready', () => {
