@@ -205,6 +205,37 @@ function createSignState(name: string) {
   };
 }
 
+function createModelSignature(model: FakeGroup | undefined) {
+  const signature: Array<Record<string, unknown>> = [];
+  model?.traverse((node) => {
+    signature.push({
+      type: node.constructor.name,
+      x: node.position.x,
+      y: node.position.y,
+      z: node.position.z,
+      visible: node.visible,
+      childCount: node.children.length,
+      material:
+        node instanceof FakeMesh
+          ? Array.isArray(node.material)
+            ? node.material.map((material) => material.options)
+            : node.material?.options
+          : undefined,
+      light:
+        node instanceof FakePointLight
+          ? {
+              color: node.color,
+              intensity: node.intensity,
+              distance: node.distance,
+              decay: node.decay,
+            }
+          : undefined,
+      userData: node.userData,
+    });
+  });
+  return signature;
+}
+
 describe('tile sign', () => {
   it('prefers placing signs beside crossroads', () => {
     const tile = classifier?.(createSignClassifierPayload({
@@ -394,5 +425,35 @@ describe('tile sign', () => {
     expect(firstTexture).toBeDefined();
     expect(recreatedTexture).toBeDefined();
     expect(recreatedTexture).not.toBe(firstTexture);
+  });
+
+  it('keeps regional sign style stable after repeated model churn', () => {
+    const baseline = signTile?.create3DModel?.({
+      three: fakeThree as never,
+      state: createSignState('Oakcross'),
+      tile: { kind: 'sign' },
+      tileX: 8,
+      tileY: 8,
+    }) as FakeGroup | undefined;
+
+    for (let index = 0; index < 240; index += 1) {
+      signTile?.create3DModel?.({
+        three: fakeThree as never,
+        state: createSignState(`Waypost ${index}`),
+        tile: { kind: 'sign' },
+        tileX: index % 24,
+        tileY: Math.floor(index / 24),
+      });
+    }
+
+    const resolved = signTile?.create3DModel?.({
+      three: fakeThree as never,
+      state: createSignState('Oakcross'),
+      tile: { kind: 'sign' },
+      tileX: 8,
+      tileY: 8,
+    }) as FakeGroup | undefined;
+
+    expect(createModelSignature(resolved)).toEqual(createModelSignature(baseline));
   });
 });

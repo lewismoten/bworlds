@@ -1,5 +1,5 @@
 import { createBoundedCache, type CacheLike } from '@bworlds/cache-support';
-import { hash2D } from '@bworlds/core';
+import { hash2D, registerHashLabel } from '@bworlds/core';
 import { createPlainsBackedTilePainter } from '@bworlds/paint-support';
 import {
   canPlaceLandPoi,
@@ -46,6 +46,15 @@ const LONG_ROAD_POI_DISTANCE = 28;
 const SIGN_STYLE_CACHE_LIMIT = 96;
 const SIGN_LABEL_CACHE_LIMIT = 192;
 const DIRECTION_ARROWS = ['E', 'SE', 'S', 'SW', 'W', 'NW', 'N', 'NE'] as const;
+const SIGN_POST_HEIGHT_SEED = registerHashLabel('sign-post-height');
+const SIGN_POST_THICKNESS_SEED = registerHashLabel('sign-post-thickness');
+const SIGN_PLACARD_WIDTH_SEED = registerHashLabel('sign-placard-width');
+const SIGN_PLACARD_HEIGHT_SEED = registerHashLabel('sign-placard-height');
+const SIGN_PLACARD_DEPTH_SEED = registerHashLabel('sign-placard-depth');
+const SIGN_BARK_SEED = registerHashLabel('sign-bark');
+const SIGN_PLACARD_SEED = registerHashLabel('sign-placard');
+const SIGN_TRIM_SEED = registerHashLabel('sign-trim');
+const SIGN_SECOND_POST_SEED = registerHashLabel('sign-second-post');
 const signStyleCache = createBoundedCache<string, SignStyleBlueprint>(
   SIGN_STYLE_CACHE_LIMIT
 );
@@ -54,18 +63,18 @@ const resolveRegionalSignStyle = createRegionalMaterialResolver(
   SIGN_REGION_SIZE,
   ({ regionX, regionY, key }) => {
     const postHeight =
-      1.12 + hash2D('sign-post-height', regionX, regionY) * 0.42;
+      1.12 + hash2D(SIGN_POST_HEIGHT_SEED, regionX, regionY) * 0.42;
     const postThickness =
-      0.07 + hash2D('sign-post-thickness', regionX, regionY) * 0.04;
+      0.07 + hash2D(SIGN_POST_THICKNESS_SEED, regionX, regionY) * 0.04;
     const placardWidth =
-      0.54 + hash2D('sign-placard-width', regionX, regionY) * 0.16;
+      0.54 + hash2D(SIGN_PLACARD_WIDTH_SEED, regionX, regionY) * 0.16;
     const placardHeight =
-      0.16 + hash2D('sign-placard-height', regionX, regionY) * 0.05;
+      0.16 + hash2D(SIGN_PLACARD_HEIGHT_SEED, regionX, regionY) * 0.05;
     const placardDepth =
-      0.035 + hash2D('sign-placard-depth', regionX, regionY) * 0.02;
-    const barkTint = hash2D('sign-bark', regionX, regionY);
-    const placardTint = hash2D('sign-placard', regionX, regionY);
-    const trimTint = hash2D('sign-trim', regionX, regionY);
+      0.035 + hash2D(SIGN_PLACARD_DEPTH_SEED, regionX, regionY) * 0.02;
+    const barkTint = hash2D(SIGN_BARK_SEED, regionX, regionY);
+    const placardTint = hash2D(SIGN_PLACARD_SEED, regionX, regionY);
+    const trimTint = hash2D(SIGN_TRIM_SEED, regionX, regionY);
     const postColor = pickThresholdColor(
       barkTint,
       0.5,
@@ -223,7 +232,7 @@ export function createSignTilePlugin(): RuntimePlugin {
         const nearbyPois = getNearbyPois(state, tileX, tileY);
         const placardCount = Math.max(1, Math.min(3, nearbyPois.length || 1));
         const useSecondPost =
-          placardCount > 2 && hash2D('sign-second-post', tileX, tileY) > 0.48;
+          placardCount > 2 && hash2D(SIGN_SECOND_POST_SEED, tileX, tileY) > 0.48;
 
         const primaryPost = createSignPost(three, style, placardCount);
         group.add(primaryPost);
