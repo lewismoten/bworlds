@@ -55,6 +55,7 @@ export type MusicDebugSnapshot = {
   durationMs: number;
   blueprintLabel: string;
   vocabularySummary: string[];
+  sharedMotif: number[];
   sectionLayerArrangement: string[];
   loopStartOffsetMs: number;
   loopEndOffsetMs: number;
@@ -250,6 +251,7 @@ export function createMusicDebugSnapshot(
       `Intervals ${theme.vocabulary.preferredIntervals.join(', ')}`,
       `Motif ${theme.vocabulary.motifLabel}`,
     ],
+    sharedMotif: [...theme.motif.sharedDegreeOffsets],
     sectionLayerArrangement: song.sections.map((section) =>
       describeSongSectionLayerArrangement(section)
     ),
@@ -415,6 +417,9 @@ export function buildMusicDebugSummaryMarkup(
     </div>
     <div class="music-debug-role-counts">
       <span>Chords ${snapshot.chordProgression.map((degree) => degree + 1).join(' - ')}</span>
+    </div>
+    <div class="music-debug-role-counts">
+      <span>Shared Motif ${snapshot.sharedMotif.map((degree) => degree + 1).join(' - ')} (${snapshot.theme.motif.adaptationLabel})</span>
     </div>
     <div class="music-debug-role-counts">
       <span>Lead Motif ${snapshot.leadMotif.map((degree) => degree + 1).join(' - ')}</span>

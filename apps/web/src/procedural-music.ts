@@ -16,6 +16,10 @@ import {
   type MusicRegionThemeId,
   type MusicThemeVocabulary,
 } from './procedural-music-vocabulary.ts';
+import {
+  resolveProceduralThemeMotif,
+  type ProceduralThemeMotif,
+} from './procedural-music-theme-motif.ts';
 import { resolveProceduralMeterAccent } from './procedural-music-meter.ts';
 type MusicPosition = { x: number; y: number };
 type TileKind = string;
@@ -32,6 +36,7 @@ type MusicRegionTheme = {
   stepPattern: number[];
   rhythmPattern: number[];
   vocabulary: MusicThemeVocabulary;
+  motif: ProceduralThemeMotif;
 };
 
 const MUSIC_THEME_SEEDS = registerHashSeeds([
@@ -247,6 +252,7 @@ const THEME_LIBRARY: Record<MusicRegionThemeId, MusicRegionTheme> = {
     stepPattern: [0, 2, 4, 2, 5, 4, 2, 0],
     rhythmPattern: [1, 0.75, 1.25, 1, 1.5, 0.75, 1, 1.25],
     vocabulary: resolveMusicThemeVocabulary('frontier-plains'),
+    motif: resolveProceduralThemeMotif({ themeId: 'frontier-plains' }),
   },
   'deep-forest': {
     id: 'deep-forest',
@@ -257,6 +263,7 @@ const THEME_LIBRARY: Record<MusicRegionThemeId, MusicRegionTheme> = {
     stepPattern: [0, 2, 3, 5, 3, 2, 1, 0],
     rhythmPattern: [1.25, 0.75, 1, 1.25, 0.75, 1, 1.5, 0.75],
     vocabulary: resolveMusicThemeVocabulary('deep-forest'),
+    motif: resolveProceduralThemeMotif({ themeId: 'deep-forest' }),
   },
   'coastal-shore': {
     id: 'coastal-shore',
@@ -267,6 +274,7 @@ const THEME_LIBRARY: Record<MusicRegionThemeId, MusicRegionTheme> = {
     stepPattern: [0, 2, 4, 5, 4, 2, 0, 2],
     rhythmPattern: [1, 1.25, 0.75, 1, 1.25, 0.75, 1.5, 0.75],
     vocabulary: resolveMusicThemeVocabulary('coastal-shore'),
+    motif: resolveProceduralThemeMotif({ themeId: 'coastal-shore' }),
   },
   'town-square': {
     id: 'town-square',
@@ -277,6 +285,7 @@ const THEME_LIBRARY: Record<MusicRegionThemeId, MusicRegionTheme> = {
     stepPattern: [0, 2, 4, 5, 4, 2, 5, 4],
     rhythmPattern: [1, 0.5, 1, 0.5, 1.25, 0.75, 1, 1.5],
     vocabulary: resolveMusicThemeVocabulary('town-square'),
+    motif: resolveProceduralThemeMotif({ themeId: 'town-square' }),
   },
   'ridge-pass': {
     id: 'ridge-pass',
@@ -287,6 +296,7 @@ const THEME_LIBRARY: Record<MusicRegionThemeId, MusicRegionTheme> = {
     stepPattern: [0, 1, 3, 4, 3, 1, 0, 4],
     rhythmPattern: [1.5, 0.75, 1, 1.25, 0.75, 1, 1.25, 0.75],
     vocabulary: resolveMusicThemeVocabulary('ridge-pass'),
+    motif: resolveProceduralThemeMotif({ themeId: 'ridge-pass' }),
   },
   'cavern-echo': {
     id: 'cavern-echo',
@@ -297,6 +307,7 @@ const THEME_LIBRARY: Record<MusicRegionThemeId, MusicRegionTheme> = {
     stepPattern: [0, 2, 4, 2, 5, 2, 1, 0],
     rhythmPattern: [1.5, 1, 0.75, 1.25, 1, 0.75, 1.5, 0.75],
     vocabulary: resolveMusicThemeVocabulary('cavern-echo'),
+    motif: resolveProceduralThemeMotif({ themeId: 'cavern-echo' }),
   },
   'interior-hall': {
     id: 'interior-hall',
@@ -307,6 +318,7 @@ const THEME_LIBRARY: Record<MusicRegionThemeId, MusicRegionTheme> = {
     stepPattern: [0, 2, 4, 2, 5, 4, 2, 1],
     rhythmPattern: [1, 0.75, 1, 1.25, 0.75, 1, 1.25, 1],
     vocabulary: resolveMusicThemeVocabulary('interior-hall'),
+    motif: resolveProceduralThemeMotif({ themeId: 'interior-hall' }),
   },
 };
 
@@ -369,6 +381,13 @@ export function resolveMusicTheme(
   return {
     ...theme,
     vocabulary: resolveMusicThemeVocabulary(theme.id, clusterX, clusterY),
+    motif: resolveProceduralThemeMotif({
+      themeId: theme.id,
+      contextType,
+      tileKind: resolvedKind,
+      clusterX,
+      clusterY,
+    }),
   };
 }
 

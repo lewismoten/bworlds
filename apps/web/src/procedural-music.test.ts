@@ -19,6 +19,7 @@ import {
   scheduleProceduralMusicNotes,
   type ProceduralMusicNote,
 } from './procedural-music.ts';
+import { resolveProceduralThemeMotif } from './procedural-music-theme-motif.ts';
 
 describe('procedural music', () => {
   it('tracks active web audio music sources while notes are still playing', () => {
@@ -294,6 +295,33 @@ describe('procedural music', () => {
     );
     expect(nearbyForest.vocabulary.preferredIntervals).not.toEqual(
       distantForest.vocabulary.preferredIntervals
+    );
+  });
+
+  it('shares a regional four-note motif while adapting it for local context', () => {
+    const plainsTheme = resolveMusicTheme(
+      'plains',
+      'overworld',
+      undefined,
+      96,
+      0
+    );
+    const townTheme = resolveMusicTheme('town', 'town', undefined, 96, 0);
+    const ruinsMotif = resolveProceduralThemeMotif({
+      themeId: 'frontier-plains',
+      tileKind: 'ruins',
+      clusterX: 96,
+      clusterY: 0,
+    });
+
+    expect(townTheme.motif.sharedDegreeOffsets).toEqual(
+      plainsTheme.motif.sharedDegreeOffsets
+    );
+    expect(townTheme.motif.adaptedDegreeOffsets).not.toEqual(
+      plainsTheme.motif.adaptedDegreeOffsets
+    );
+    expect(ruinsMotif.adaptedDegreeOffsets).not.toEqual(
+      plainsTheme.motif.adaptedDegreeOffsets
     );
   });
 

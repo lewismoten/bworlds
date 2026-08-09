@@ -79,6 +79,20 @@ describe('procedural music harmony', () => {
     expect(describeCycle([0, 1, 3])).toEqual(describeCycle([16, 17, 19]));
   });
 
+  it('can anchor the lead motif to a shared regional motif when one is provided', () => {
+    const motifTheme: ProceduralHarmonyTheme = {
+      ...TEST_THEME,
+      motif: {
+        sharedDegreeOffsets: [0, 2, 1, 3],
+        adaptedDegreeOffsets: [0, 0, 2, 1, 3],
+      },
+    };
+
+    expect(resolveProceduralLeadMotif(motifTheme, 3, -2).degreeOffsets).toEqual(
+      [0, 0, 2, 1, 3]
+    );
+  });
+
   it('uses question-and-answer cadences so phrases end unresolved before resolving', () => {
     const cadenceTheme: ProceduralHarmonyTheme = {
       id: 'cadence-test',

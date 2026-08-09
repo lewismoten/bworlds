@@ -9,6 +9,10 @@ export type ProceduralHarmonyTheme = {
     melodyRangeSemitones?: readonly [number, number];
     preferredIntervals?: readonly number[];
   };
+  motif?: {
+    adaptedDegreeOffsets?: readonly number[];
+    sharedDegreeOffsets?: readonly number[];
+  };
 };
 
 export type ProceduralHarmonyRole = 'lead' | 'harmony' | 'bass' | 'percussion';
@@ -169,6 +173,9 @@ function getPreferredMotifPatterns(
 ): readonly (readonly number[])[] {
   const preferredIntervals = theme.vocabulary?.preferredIntervals;
   if (!preferredIntervals || preferredIntervals.length === 0) {
+    if (theme.motif?.adaptedDegreeOffsets?.length) {
+      return [theme.motif.adaptedDegreeOffsets];
+    }
     return MOTIF_PATTERNS;
   }
 
@@ -180,6 +187,10 @@ function getPreferredMotifPatterns(
   const preferredPatterns = scoredPatterns
     .filter((entry) => entry.score >= bestScore - 1)
     .map((entry) => entry.pattern);
+
+  if (theme.motif?.adaptedDegreeOffsets?.length) {
+    return [theme.motif.adaptedDegreeOffsets, ...preferredPatterns];
+  }
 
   return preferredPatterns.length > 0 ? preferredPatterns : MOTIF_PATTERNS;
 }
