@@ -1555,9 +1555,11 @@ function getDockClusterInfo(
   const visited = createCoordinateCache<true>();
   visited.set(tileX, tileY, true);
   const tiles: Array<{ x: number; y: number }> = [];
+  let queueIndex = 0;
 
-  while (queue.length > 0) {
-    const [currentX, currentY] = queue.shift()!;
+  while (queueIndex < queue.length) {
+    const [currentX, currentY] = queue[queueIndex]!;
+    queueIndex += 1;
     tiles.push({ x: currentX, y: currentY });
     for (const [dx, dy] of [
       [0, -1],
@@ -1589,16 +1591,16 @@ function getDockClusterInfo(
   const spanX = bounds.maxX - bounds.minX + 1;
   const spanY = bounds.maxY - bounds.minY + 1;
   const axis = spanX >= spanY ? 'ew' : 'ns';
-  const orderedTiles = [...tiles].sort((left, right) =>
+  tiles.sort((left, right) =>
     axis === 'ew'
       ? left.x - right.x || left.y - right.y
       : left.y - right.y || left.x - right.x
   );
-  const anchor = orderedTiles[0];
+  const anchor = tiles[0]!;
   const clusterKey = `dock:${axis}:${anchor.x}:${anchor.y}`;
 
-  for (let index = 0; index < orderedTiles.length; index += 1) {
-    const tile = orderedTiles[index];
+  for (let index = 0; index < tiles.length; index += 1) {
+    const tile = tiles[index]!;
     const negativeConnected =
       axis === 'ew'
         ? visited.has(tile.x - 1, tile.y)
@@ -1612,7 +1614,7 @@ function getDockClusterInfo(
       clusterKey,
       anchorX: anchor.x,
       anchorY: anchor.y,
-      length: orderedTiles.length,
+      length: tiles.length,
       segmentIndex: index,
       connectNegative: negativeConnected,
       connectPositive: positiveConnected,
@@ -2116,9 +2118,11 @@ function getBridgeClusterInfo(
   const visited = createCoordinateCache<true>();
   visited.set(tileX, tileY, true);
   const tiles: { x: number; y: number }[] = [];
+  let queueIndex = 0;
 
-  while (queue.length > 0) {
-    const [currentX, currentY] = queue.shift()!;
+  while (queueIndex < queue.length) {
+    const [currentX, currentY] = queue[queueIndex]!;
+    queueIndex += 1;
     tiles.push({ x: currentX, y: currentY });
     for (const [dx, dy] of [
       [0, -1],
@@ -2150,16 +2154,16 @@ function getBridgeClusterInfo(
   const spanX = bounds.maxX - bounds.minX + 1;
   const spanY = bounds.maxY - bounds.minY + 1;
   const axis = spanX >= spanY ? 'ew' : 'ns';
-  const orderedTiles = [...tiles].sort((left, right) =>
+  tiles.sort((left, right) =>
     axis === 'ew'
       ? left.x - right.x || left.y - right.y
       : left.y - right.y || left.x - right.x
   );
-  const anchor = orderedTiles[0];
+  const anchor = tiles[0]!;
   const clusterKey = `${axis}:${anchor.x}:${anchor.y}`;
 
-  for (let index = 0; index < orderedTiles.length; index += 1) {
-    const tile = orderedTiles[index];
+  for (let index = 0; index < tiles.length; index += 1) {
+    const tile = tiles[index]!;
     const negativeConnected =
       axis === 'ew'
         ? visited.has(tile.x - 1, tile.y)
@@ -2173,7 +2177,7 @@ function getBridgeClusterInfo(
       clusterKey,
       anchorX: anchor.x,
       anchorY: anchor.y,
-      length: orderedTiles.length,
+      length: tiles.length,
       segmentIndex: index,
       connectNegative: negativeConnected,
       connectPositive: positiveConnected,
