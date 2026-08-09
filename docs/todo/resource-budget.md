@@ -108,7 +108,7 @@ Given the heap issue you just saw, I would take this very seriously.
 * [X] Set maximum texture height.
 * [X] Set maximum texture pixel count.
 * [X] Set maximum texture count per model.
-* [ ] Set maximum texture count per material.
+* [X] Set maximum texture count per material.
 * [X] Set lower texture limits for distant LODs.
 * [ ] Reject textures above hardware-supported dimensions.
 * [ ] Downscale oversized procedural textures when safe.

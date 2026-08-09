@@ -3524,7 +3524,7 @@ describe('render3d visibility helpers', () => {
     );
   });
 
-  it('rejects models whose single material uses too many texture slots', () => {
+  it('rejects materials whose texture count exceeds the per-material cap', () => {
     const root = createMockObject3D(
       createMockMaterial({
         map: createMockTexture(16, 16),
