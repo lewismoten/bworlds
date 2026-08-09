@@ -93,6 +93,10 @@ import {
   getRecentOwnedMaterialLifecycleCounts,
   trackOwnedObject3DMaterials,
 } from './owned-material-lifecycle.ts';
+import {
+  collectUniqueObjectMaterials,
+  getObjectMaterials,
+} from './object-materials.ts';
 import { collectRecentWindowedEvents } from './recent-windowed-events.ts';
 import { getRenderEffectQualityProfile } from './render-effect-quality.ts';
 import {
@@ -109,6 +113,7 @@ import {
   collectVisibleTileResourceStats,
   DRAW_CALL_CHUNK_TILE_SIZE,
 } from './visible-tile-resource-stats.ts';
+import { validateVisibleTilePluginMaterialBudget } from './visible-tile-plugin-material-budget.ts';
 import {
   createPendingWorldBuildState,
   createWorldVisibilitySyncState,
@@ -845,6 +850,7 @@ export function getRecentRenderDebugEvents(
 type DynamicTileNode = {
   key: string;
   tile: TileLike;
+  tilePluginOwnerLabel?: string;
   tileX: number;
   tileY: number;
   drawCallCount: number;
@@ -860,6 +866,7 @@ type DynamicTileNode = {
   node: THREE.Group;
   model: unknown;
   modelRoot?: THREE.Object3D | null;
+  uniqueMaterials?: readonly THREE.Material[];
   modelVisibilityOpacity?: number;
   distanceFadeEligible?: boolean;
   detailLevel?: RenderBudgetDetailLevel;
@@ -1717,6 +1724,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     }
 
     let finalPluginModelBudgetValidation: TileModelBudgetValidation | null = null;
+    let pluginUniqueMaterials: readonly THREE.Material[] = [];
 
     if (pluginModel) {
       const modelBudgetValidation = validateTileModelAgainstRenderBudget(
@@ -1768,6 +1776,42 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
           : null;
       } else {
         finalPluginModelBudgetValidation = modelBudgetValidation;
+      }
+    }
+
+    if (pluginModel) {
+      pluginUniqueMaterials = collectUniqueObjectMaterials<THREE.Material>(pluginModel);
+      const pluginMaterialBudget = validateVisibleTilePluginMaterialBudget(
+        visibleTileNodes.values(),
+        tilePluginOwnerLabel,
+        pluginUniqueMaterials,
+        detailLevel,
+        `${x}:${y}`
+      );
+      if (!pluginMaterialBudget.accepted) {
+        const violationSummary =
+          `plugin unique materialCount ${pluginMaterialBudget.materialCount}>${pluginMaterialBudget.limit}`;
+        recordRecentLabeledCountMetric(renderChurnMetrics.tileModelBudgetViolations, {
+          nowMs: pluginBuildStartMs,
+          count: 1,
+          label: tilePluginOwnerLabel,
+        });
+        recordRenderDebugEvent(recentDebugEvents, {
+          nowMs: pluginBuildStartMs,
+          type: 'plugin-exceeded-budget',
+          tileKey: `${x}:${y}`,
+          plugin: tilePluginOwnerLabel,
+          summary: violationSummary,
+        });
+        recordRenderDebugEvent(recentDebugEvents, {
+          nowMs: pluginBuildStartMs,
+          type: 'model-rejected',
+          tileKey: `${x}:${y}`,
+          plugin: tilePluginOwnerLabel,
+          summary: violationSummary,
+        });
+        disposeObject3DResources(pluginModel);
+        pluginModel = null;
       }
     }
 
@@ -1870,6 +1914,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     return {
       key: `${x}:${y}`,
       tile,
+      tilePluginOwnerLabel,
       tileX: x,
       tileY: y,
       drawCallCount: finalSceneResourceStats.drawCallCount,
@@ -1885,6 +1930,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       node: tileNode,
       model: pluginModel ?? tileNode,
       modelRoot: pluginModel ?? null,
+      uniqueMaterials: pluginUniqueMaterials,
       modelVisibilityOpacity: 1,
       distanceFadeEligible:
         Boolean(pluginModel) && definition.walkable && !isWaterKind(tile.kind),
@@ -3674,17 +3720,6 @@ function getDistanceFadeTargets(root: THREE.Object3D): DistanceFadeTargets {
   const targets = { allNodes, renderableNodes };
   distanceFadeTargetCache.set(root, targets);
   return targets;
-}
-
-function getObjectMaterials(
-  node: THREE.Object3D & {
-    material?: THREE.Material | THREE.Material[];
-  }
-): THREE.Material[] {
-  if (!node.material) {
-    return [];
-  }
-  return Array.isArray(node.material) ? node.material : [node.material];
 }
 
 export function disposeObject3DResources(

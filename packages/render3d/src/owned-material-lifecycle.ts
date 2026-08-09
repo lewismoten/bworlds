@@ -1,4 +1,5 @@
 import type * as THREE from 'three';
+import { collectUniqueObjectMaterials } from './object-materials.ts';
 
 type DisposableMaterialLike = object & {
   dispose?: () => void;
@@ -74,34 +75,6 @@ function releaseOwnedMaterial(
   ownedMaterialDisposalTimestamps.push(nowMs);
   material.dispose?.();
   return true;
-}
-
-function collectUniqueObjectMaterials(
-  root: TraversableMaterialRoot
-): DisposableMaterialLike[] {
-  const uniqueMaterials = new Set<DisposableMaterialLike>();
-
-  root.traverse((child) => {
-    const renderable = child as THREE.Object3D & {
-      material?: DisposableMaterialLike | DisposableMaterialLike[];
-    };
-    for (const material of getObjectMaterials(renderable)) {
-      uniqueMaterials.add(material);
-    }
-  });
-
-  return Array.from(uniqueMaterials);
-}
-
-function getObjectMaterials(
-  node: THREE.Object3D & {
-    material?: DisposableMaterialLike | DisposableMaterialLike[];
-  }
-): DisposableMaterialLike[] {
-  if (!node.material) {
-    return [];
-  }
-  return Array.isArray(node.material) ? node.material : [node.material];
 }
 
 function countRecentMetricEvents(
