@@ -1,5 +1,12 @@
 import { createBoundedCache } from '@bworlds/cache-support';
-import { hash2D, clamp } from '@bworlds/core';
+import {
+  appendHashSeedLabel,
+  createHashSeed,
+  hash2D,
+  hash2DWithSeed,
+  clamp,
+  registerHashLabel,
+} from '@bworlds/core';
 import type {
   OverworldAnchors,
   PoiAnchorLike,
@@ -37,6 +44,9 @@ const MIN_ROUTE_SIGNAL_SHARE = 0.35;
 const RAIL_SAMPLE_SEGMENTS = 20;
 const RAIL_REGION_CACHE_LIMIT = 256;
 const RAIL_TRAIN_CACHE_LIMIT = 512;
+const RAIL_CURVE_DIRECTION_LABEL = registerHashLabel('rail-curve-direction');
+const RAIL_CURVE_OFFSET_LABEL = registerHashLabel('rail-curve-offset');
+const RAIL_TRAIN_PHASE_LABEL = registerHashLabel('rail-train-phase');
 
 const anchorPlugin = createOverworldAnchorsRuntimePlugin();
 const railRegionCache = createBoundedCache<string, Map<string, TileLike>>(
@@ -133,21 +143,27 @@ export function buildRailConnections({
       continue;
     }
 
-    const candidates = [...sortedStations]
-      .filter((other) => other !== station)
-      .map((other) => ({
-        other,
-        distance: Math.hypot(other.x - station.x, other.y - station.y),
-      }))
-      .filter(
-        ({ distance }) => distance >= MIN_RAIL_DISTANCE && distance <= MAX_RAIL_DISTANCE
-      )
-      .sort(
-        (left, right) =>
-          left.distance - right.distance ||
-          left.other.x - right.other.x ||
-          left.other.y - right.other.y
-      );
+    const candidates: Array<{
+      other: StationAnchorLike;
+      distance: number;
+    }> = [];
+    for (let index = 0; index < sortedStations.length; index += 1) {
+      const other = sortedStations[index]!;
+      if (other === station) {
+        continue;
+      }
+      const distance = Math.hypot(other.x - station.x, other.y - station.y);
+      if (distance < MIN_RAIL_DISTANCE || distance > MAX_RAIL_DISTANCE) {
+        continue;
+      }
+      candidates.push({ other, distance });
+    }
+    candidates.sort(
+      (left, right) =>
+        left.distance - right.distance ||
+        left.other.x - right.other.x ||
+        left.other.y - right.other.y
+    );
 
     for (const { other } of candidates) {
       const otherKey = `${other.x},${other.y}`;
@@ -219,6 +235,9 @@ export function buildRailCurvePoints(
   from: StationAnchorLike,
   to: StationAnchorLike
 ): Array<{ x: number; y: number }> {
+  const seedHash = createHashSeed(seed);
+  const curveDirectionSeed = appendHashSeedLabel(seedHash, RAIL_CURVE_DIRECTION_LABEL);
+  const curveOffsetSeed = appendHashSeedLabel(seedHash, RAIL_CURVE_OFFSET_LABEL);
   const deltaX = to.x - from.x;
   const deltaY = to.y - from.y;
   const distance = Math.hypot(deltaX, deltaY);
@@ -227,14 +246,14 @@ export function buildRailCurvePoints(
   const perpendicularX = distance === 0 ? 0 : -deltaY / distance;
   const perpendicularY = distance === 0 ? 0 : deltaX / distance;
   const curveDirection =
-    hash2D(`${seed}:rail-curve-direction`, from.x + to.x, from.y + to.y) >= 0.5
+    hash2DWithSeed(curveDirectionSeed, from.x + to.x, from.y + to.y) >= 0.5
       ? 1
       : -1;
   const curveOffset =
     clamp(distance * 0.18, 3.2, 9.5) *
     (0.8 +
-      hash2D(
-        `${seed}:rail-curve-offset`,
+      hash2DWithSeed(
+        curveOffsetSeed,
         from.x * 13 + to.x,
         from.y * 17 + to.y
       ) *
@@ -443,7 +462,11 @@ function resolveRailTrainPlacement(
   const routeLength = connection.points.length - 1;
   const dwelllessDurationMs =
     Math.max(6, Math.min(18, Math.round(routeLength / 3))) * 60 * 1000;
-  const phaseOffset = hash2D(`${seed}:rail-train-phase`, index, routeLength);
+  const phaseOffset = hash2DWithSeed(
+    appendHashSeedLabel(createHashSeed(seed), RAIL_TRAIN_PHASE_LABEL),
+    index,
+    routeLength
+  );
   const loopProgress = ((timeMs + dwelllessDurationMs * phaseOffset) % dwelllessDurationMs) /
     dwelllessDurationMs;
   const triangularProgress =
