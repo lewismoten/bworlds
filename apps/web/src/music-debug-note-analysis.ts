@@ -3,6 +3,13 @@ import { isProceduralSemitoneInMode } from './procedural-music-scale.ts';
 
 type ProceduralMusicRole = ProceduralMusicNote['role'];
 
+export type MusicDebugAccidentalReason =
+  | 'percussion'
+  | 'in-mode'
+  | 'lower-approach'
+  | 'upper-approach'
+  | 'unresolved-chromatic';
+
 export type MusicDebugNotePitchDiagnostic = {
   noteIndex: number;
   role: ProceduralMusicRole;
@@ -11,9 +18,11 @@ export type MusicDebugNotePitchDiagnostic = {
   relativeSemitones: number | null;
   scaleDegree: number | null;
   scaleDegreeLabel: string | null;
+  isBlackKey: boolean | null;
   inMode: boolean;
-  accidentalReason:
-    'percussion' | 'in-mode' | 'chromatic-approach' | 'unexplained-chromatic';
+  accidentalReason: MusicDebugAccidentalReason;
+  accidentalRuleLabel: string | null;
+  accidentalExplanation: string | null;
 };
 
 export type MusicDebugAccidentalBudget = {
@@ -26,6 +35,9 @@ export type MusicDebugPitchValidation = {
   accidentalNoteCount: number;
   accidentalsByRole: Record<ProceduralMusicRole, number>;
   outOfModeNotesByRole: Record<ProceduralMusicRole, number>;
+  accidentalReasonCounts: Record<MusicDebugAccidentalReason, number>;
+  blackKeyNoteCount: number;
+  blackKeyNotesByRole: Record<ProceduralMusicRole, number>;
   unexplainedAccidentalCount: number;
   budget: MusicDebugAccidentalBudget;
   isValidForMidiExport: boolean;
@@ -52,14 +64,22 @@ export function analyzeMusicDebugPitches(options: {
     if (diagnostic.role === 'percussion' || diagnostic.inMode) {
       continue;
     }
-    diagnostic.accidentalReason = resolveAccidentalReason(
+    const accidentalReason = resolveAccidentalReason(
       notePitchDiagnostics,
       index
     );
+    diagnostic.accidentalReason = accidentalReason;
+    diagnostic.accidentalRuleLabel =
+      describeMusicDebugAccidentalReason(accidentalReason);
+    diagnostic.accidentalExplanation =
+      explainMusicDebugAccidentalReason(accidentalReason);
   }
   const accidentalsByRole = createRoleCountMap();
   const outOfModeNotesByRole = createRoleCountMap();
+  const blackKeyNotesByRole = createRoleCountMap();
+  const accidentalReasonCounts = createAccidentalReasonCountMap();
   let accidentalNoteCount = 0;
+  let blackKeyNoteCount = 0;
   let unexplainedAccidentalCount = 0;
 
   for (let index = 0; index < notePitchDiagnostics.length; index += 1) {
@@ -67,11 +87,16 @@ export function analyzeMusicDebugPitches(options: {
     if (diagnostic.role === 'percussion') {
       continue;
     }
+    if (diagnostic.isBlackKey) {
+      blackKeyNoteCount += 1;
+      blackKeyNotesByRole[diagnostic.role] += 1;
+    }
     if (!diagnostic.inMode) {
       accidentalNoteCount += 1;
       accidentalsByRole[diagnostic.role] += 1;
       outOfModeNotesByRole[diagnostic.role] += 1;
-      if (diagnostic.accidentalReason === 'unexplained-chromatic') {
+      accidentalReasonCounts[diagnostic.accidentalReason] += 1;
+      if (diagnostic.accidentalReason === 'unresolved-chromatic') {
         unexplainedAccidentalCount += 1;
       }
     }
@@ -99,6 +124,9 @@ export function analyzeMusicDebugPitches(options: {
     accidentalNoteCount,
     accidentalsByRole,
     outOfModeNotesByRole,
+    accidentalReasonCounts,
+    blackKeyNoteCount,
+    blackKeyNotesByRole,
     unexplainedAccidentalCount,
     budget,
     isValidForMidiExport: messages.length === 0,
@@ -147,8 +175,11 @@ function createBaseNotePitchDiagnostic(options: {
       relativeSemitones: null,
       scaleDegree: null,
       scaleDegreeLabel: null,
+      isBlackKey: null,
       inMode: true,
       accidentalReason: 'percussion',
+      accidentalRuleLabel: null,
+      accidentalExplanation: null,
     };
   }
 
@@ -165,6 +196,7 @@ function createBaseNotePitchDiagnostic(options: {
   const scaleDegree = inMode
     ? resolveScaleDegree(relativeSemitones, options.modePitchOffsets)
     : null;
+  const accidentalReason = inMode ? 'in-mode' : 'unresolved-chromatic';
 
   return {
     noteIndex: options.noteIndex,
@@ -175,8 +207,11 @@ function createBaseNotePitchDiagnostic(options: {
     scaleDegree,
     scaleDegreeLabel:
       scaleDegree === null ? null : `degree ${((scaleDegree - 1) % 7) + 1}`,
+    isBlackKey: isBlackKeyMidiNote(midiNote),
     inMode,
-    accidentalReason: inMode ? 'in-mode' : 'unexplained-chromatic',
+    accidentalReason,
+    accidentalRuleLabel: describeMusicDebugAccidentalReason(accidentalReason),
+    accidentalExplanation: explainMusicDebugAccidentalReason(accidentalReason),
   };
 }
 
@@ -210,10 +245,10 @@ function resolveScaleDegree(
 function resolveAccidentalReason(
   diagnostics: readonly MusicDebugNotePitchDiagnostic[],
   noteIndex: number
-): MusicDebugNotePitchDiagnostic['accidentalReason'] {
+): MusicDebugAccidentalReason {
   const current = diagnostics[noteIndex];
   if (!current) {
-    return 'unexplained-chromatic';
+    return 'unresolved-chromatic';
   }
   const neighbor = findNextNoteForRole(diagnostics, noteIndex, current.role);
   if (
@@ -223,7 +258,9 @@ function resolveAccidentalReason(
     current.relativeSemitones !== null &&
     Math.abs(neighbor.relativeSemitones - current.relativeSemitones) === 1
   ) {
-    return 'chromatic-approach';
+    return current.relativeSemitones < neighbor.relativeSemitones
+      ? 'lower-approach'
+      : 'upper-approach';
   }
   const previous = findPreviousNoteForRole(
     diagnostics,
@@ -237,9 +274,11 @@ function resolveAccidentalReason(
     current.relativeSemitones !== null &&
     Math.abs(previous.relativeSemitones - current.relativeSemitones) === 1
   ) {
-    return 'chromatic-approach';
+    return current.relativeSemitones < previous.relativeSemitones
+      ? 'lower-approach'
+      : 'upper-approach';
   }
-  return 'unexplained-chromatic';
+  return 'unresolved-chromatic';
 }
 
 function findNextNoteForRole(
@@ -279,6 +318,57 @@ function createRoleCountMap(): Record<ProceduralMusicRole, number> {
     bass: 0,
     percussion: 0,
   };
+}
+
+function createAccidentalReasonCountMap(): Record<
+  MusicDebugAccidentalReason,
+  number
+> {
+  return {
+    percussion: 0,
+    'in-mode': 0,
+    'lower-approach': 0,
+    'upper-approach': 0,
+    'unresolved-chromatic': 0,
+  };
+}
+
+export function describeMusicDebugAccidentalReason(
+  reason: MusicDebugAccidentalReason
+): string | null {
+  switch (reason) {
+    case 'lower-approach':
+      return 'Lower chromatic approach';
+    case 'upper-approach':
+      return 'Upper chromatic approach';
+    case 'unresolved-chromatic':
+      return 'Unresolved chromatic note';
+    case 'in-mode':
+      return 'In mode';
+    case 'percussion':
+      return null;
+  }
+}
+
+export function explainMusicDebugAccidentalReason(
+  reason: MusicDebugAccidentalReason
+): string | null {
+  switch (reason) {
+    case 'lower-approach':
+      return 'One semitone below a nearby in-mode target and resolved by step.';
+    case 'upper-approach':
+      return 'One semitone above a nearby in-mode target and resolved by step.';
+    case 'unresolved-chromatic':
+      return 'Outside the current mode without a one-step resolution rule.';
+    case 'in-mode':
+      return 'Inside the active mode.';
+    case 'percussion':
+      return null;
+  }
+}
+
+function isBlackKeyMidiNote(midiNote: number): boolean {
+  return [1, 3, 6, 8, 10].includes(((midiNote % 12) + 12) % 12);
 }
 
 function normalizePitchClass(semitone: number): number {

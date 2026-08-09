@@ -91,7 +91,10 @@ describe('music debug midi', () => {
     );
     expect(
       conductorTexts.filter((text) => text.startsWith('More comments: '))
-    ).toHaveLength(4);
+    ).toHaveLength(5);
+    expect(conductorTexts.some((text) => text.includes('Chromatic'))).toBe(
+      true
+    );
     expect(readTrackMetaTexts(chunks.tracks[1]!, 0x04)).toHaveLength(1);
     expect(readTrackMetaTexts(chunks.tracks[2]!, 0x04)).toHaveLength(1);
     expect(readTrackMetaTexts(chunks.tracks[3]!, 0x04)).toHaveLength(1);

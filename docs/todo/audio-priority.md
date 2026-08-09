@@ -47,7 +47,7 @@ added directly as semitones instead of moving through the selected scale.
 - [x] Log each note's scale degree and resulting MIDI pitch.
 - [x] Count out-of-mode notes by track.
 - [x] Fail validation when accidental counts exceed limits.
-- [ ] Explain every accidental through a named rule.
+- [x] Explain every accidental through a named rule.
 - [x] Lower the accidental budget for ambient plains music.
 
 ## Tempo and Duration
@@ -216,15 +216,15 @@ added directly as semitones instead of moving through the selected scale.
 
 ## Accidentals
 
-- [ ] Define what the reported 226 accidentals represent.
-- [ ] Distinguish chromatic notes from MIDI black-key notes.
+- [x] Define what the reported 226 accidentals represent.
+- [x] Distinguish chromatic notes from MIDI black-key notes.
 - [ ] Count accidentals relative to G Mixolydian.
-- [ ] Report accidental counts separately by track.
+- [x] Report accidental counts separately by track.
 - [ ] Permit accidentals only through named embellishments.
 - [ ] Limit chromatic passing tones in exploration music.
 - [ ] Resolve chromatic notes by step.
 - [ ] Reject chromatic leaps without harmonic support.
-- [ ] Show accidental reasons in note-level debug output.
+- [x] Show accidental reasons in note-level debug output.
 
 ## Shared Track Context
 

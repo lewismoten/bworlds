@@ -37,6 +37,8 @@ import {
 import { resolveMusicDebugTempoBpm } from './music-debug-tempo.ts';
 import {
   analyzeMusicDebugPitches,
+  describeMusicDebugAccidentalReason,
+  type MusicDebugAccidentalReason,
   type MusicDebugNotePitchDiagnostic,
   type MusicDebugPitchValidation,
 } from './music-debug-note-analysis.ts';
@@ -101,6 +103,7 @@ export type MusicDebugSnapshot = {
   roleCounts: Record<ProceduralMusicNote['role'], number>;
   notePitchDiagnostics: MusicDebugNotePitchDiagnostic[];
   outOfModeNotesByRole: Record<ProceduralMusicNote['role'], number>;
+  blackKeyNotesByRole: Record<ProceduralMusicNote['role'], number>;
   midiExportValidation: MusicDebugPitchValidation;
 };
 
@@ -350,6 +353,7 @@ export function createMusicDebugSnapshot(
     roleCounts,
     notePitchDiagnostics: midiExportValidation.notePitchDiagnostics,
     outOfModeNotesByRole: midiExportValidation.outOfModeNotesByRole,
+    blackKeyNotesByRole: midiExportValidation.blackKeyNotesByRole,
     midiExportValidation,
   };
 }
@@ -553,8 +557,9 @@ export function buildMusicDebugSummaryMarkup(
       <div><dt>Rhythm</dt><dd>${snapshot.theme.vocabulary.rhythmDensityLabel}</dd></div>
       <div><dt>Preferred Intervals</dt><dd>${snapshot.theme.vocabulary.preferredIntervals.join(', ')}</dd></div>
       <div><dt>Lead Max Leap</dt><dd>${snapshot.leadMaxLeapSemitones.toFixed(1)} st</dd></div>
-      <div><dt>Accidentals</dt><dd>${snapshot.accidentalNoteCount}</dd></div>
+      <div><dt>Accidentals</dt><dd>${snapshot.accidentalNoteCount} chromatic notes outside ${snapshot.theme.vocabulary.modeLabel}</dd></div>
       <div><dt>Out-of-Mode</dt><dd>B ${snapshot.outOfModeNotesByRole.bass} / H ${snapshot.outOfModeNotesByRole.harmony} / L ${snapshot.outOfModeNotesByRole.lead}</dd></div>
+      <div><dt>Black Keys</dt><dd>${snapshot.midiExportValidation.blackKeyNoteCount} total; B ${snapshot.blackKeyNotesByRole.bass} / H ${snapshot.blackKeyNotesByRole.harmony} / L ${snapshot.blackKeyNotesByRole.lead}</dd></div>
     </div>
     <div class="music-debug-role-counts">
       <span>SongDNA ${snapshot.songDna.identityId} / ${snapshot.songDna.locationIdentityId} / ${snapshot.songDna.variantLabel} / ${snapshot.songDna.blueprintId} / ${snapshot.songDna.meterLabel}</span>
@@ -567,6 +572,12 @@ export function buildMusicDebugSummaryMarkup(
       <span>Harmony ${snapshot.roleCounts.harmony}</span>
       <span>Lead ${snapshot.roleCounts.lead}</span>
       <span>Percussion ${snapshot.roleCounts.percussion}</span>
+    </div>
+    <div class="music-debug-role-counts">
+      <span>Accidental Rules ${formatMusicDebugAccidentalRuleSummary(snapshot.midiExportValidation.accidentalReasonCounts)}</span>
+    </div>
+    <div class="music-debug-role-counts">
+      <span>Accidental Notes ${formatMusicDebugAccidentalExamples(snapshot.notePitchDiagnostics)}</span>
     </div>
     <div class="music-debug-role-counts">
       <span>Sections ${snapshot.song.sections.map((section) => section.label).join(' / ')}</span>
@@ -603,6 +614,42 @@ export function buildMusicDebugSummaryMarkup(
     </div>
     ${buildMusicDebugInstrumentPanelMarkup(snapshot)}
   `;
+}
+
+function formatMusicDebugAccidentalRuleSummary(
+  reasonCounts: Record<MusicDebugAccidentalReason, number>
+): string {
+  const parts: string[] = [];
+  for (const reason of [
+    'lower-approach',
+    'upper-approach',
+    'unresolved-chromatic',
+  ] as const) {
+    const count = reasonCounts[reason];
+    if (!count) {
+      continue;
+    }
+    parts.push(`${describeMusicDebugAccidentalReason(reason)} ${count}`);
+  }
+  return parts.length > 0 ? parts.join(' / ') : 'none';
+}
+
+function formatMusicDebugAccidentalExamples(
+  diagnostics: readonly MusicDebugNotePitchDiagnostic[]
+): string {
+  const accidentalNotes = diagnostics.filter(
+    (diagnostic) => !diagnostic.inMode
+  );
+  if (accidentalNotes.length === 0) {
+    return 'none';
+  }
+  return accidentalNotes
+    .slice(0, 6)
+    .map((diagnostic) => {
+      const roleLabel = diagnostic.role[0]?.toUpperCase() ?? '?';
+      return `${roleLabel}${diagnostic.noteIndex + 1} MIDI ${diagnostic.midiNote ?? '?'} ${diagnostic.accidentalRuleLabel ?? diagnostic.accidentalReason}`;
+    })
+    .join(' / ');
 }
 
 export function playMusicDebugSong(snapshot: MusicDebugSnapshot): void {

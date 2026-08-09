@@ -29,22 +29,28 @@ describe('music debug note analysis', () => {
         role: 'lead',
         midiNote: 55,
         scaleDegree: 1,
+        isBlackKey: false,
         inMode: true,
         accidentalReason: 'in-mode',
+        accidentalRuleLabel: 'In mode',
       })
     );
     expect(validation.notePitchDiagnostics[1]).toEqual(
       expect.objectContaining({
         role: 'lead',
+        isBlackKey: true,
         inMode: false,
-        accidentalReason: 'chromatic-approach',
+        accidentalReason: 'lower-approach',
+        accidentalRuleLabel: 'Lower chromatic approach',
       })
     );
     expect(validation.notePitchDiagnostics[4]).toEqual(
       expect.objectContaining({
         role: 'bass',
+        isBlackKey: true,
         inMode: false,
-        accidentalReason: 'unexplained-chromatic',
+        accidentalReason: 'unresolved-chromatic',
+        accidentalRuleLabel: 'Unresolved chromatic note',
       })
     );
     expect(validation.accidentalNoteCount).toBe(2);
@@ -52,6 +58,11 @@ describe('music debug note analysis', () => {
     expect(validation.accidentalsByRole.bass).toBe(1);
     expect(validation.outOfModeNotesByRole.lead).toBe(1);
     expect(validation.outOfModeNotesByRole.bass).toBe(1);
+    expect(validation.accidentalReasonCounts['lower-approach']).toBe(1);
+    expect(validation.accidentalReasonCounts['unresolved-chromatic']).toBe(1);
+    expect(validation.blackKeyNoteCount).toBe(2);
+    expect(validation.blackKeyNotesByRole.lead).toBe(1);
+    expect(validation.blackKeyNotesByRole.bass).toBe(1);
     expect(validation.unexplainedAccidentalCount).toBe(1);
     expect(validation.isValidForMidiExport).toBe(true);
   });

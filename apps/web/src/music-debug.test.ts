@@ -98,7 +98,11 @@ describe('music debug', () => {
     expect(first.roleCounts.bass).toBeGreaterThan(0);
     expect(first.notePitchDiagnostics.length).toBe(first.notes.length);
     expect(first.outOfModeNotesByRole.bass).toBeGreaterThanOrEqual(0);
+    expect(first.blackKeyNotesByRole.lead).toBeGreaterThanOrEqual(0);
     expect(first.midiExportValidation.accidentalNoteCount).toBe(
+      first.accidentalNoteCount
+    );
+    expect(first.midiExportValidation.blackKeyNoteCount).toBeGreaterThanOrEqual(
       first.accidentalNoteCount
     );
   });
@@ -150,6 +154,9 @@ describe('music debug', () => {
     expect(summary).toContain('Lead Max Leap');
     expect(summary).toContain('Accidentals');
     expect(summary).toContain('Out-of-Mode');
+    expect(summary).toContain('Black Keys');
+    expect(summary).toContain('Accidental Rules');
+    expect(summary).toContain('Accidental Notes');
     expect(summary).toContain(snapshot.theme.id);
     expect(summary).toContain(snapshot.theme.vocabulary.modeLabel);
     expect(summary).toContain(snapshot.theme.motif.adaptationLabel);
