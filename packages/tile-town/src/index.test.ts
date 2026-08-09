@@ -457,6 +457,32 @@ describe('tile town', () => {
 
     expect(countSharedMaterialReferences(first, second)).toBeGreaterThanOrEqual(4);
   });
+
+  it('reuses full-detail banner cloth materials across repeated builds', () => {
+    const plugin = createTownTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'town');
+    const state = createTownState();
+
+    const first = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'town', poi: { type: 'town', name: 'Oakcross' } } as never,
+      tileX: 3,
+      tileY: 7,
+      detailLevel: 'full',
+    }) as FakeGroup;
+    const second = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'town', poi: { type: 'town', name: 'Oakcross' } } as never,
+      tileX: 3,
+      tileY: 7,
+      detailLevel: 'full',
+    }) as FakeGroup;
+
+    expect(findTownBannerMaterial(first)).toBe(findTownBannerMaterial(second));
+    expect(countSharedMaterialReferences(first, second)).toBeGreaterThanOrEqual(5);
+  });
 });
 
 function countSharedMaterialReferences(
@@ -488,4 +514,20 @@ function collectMeshMaterials(root: FakeGroup): Set<FakeMaterial> {
     }
   });
   return materials;
+}
+
+function findTownBannerMaterial(root: FakeGroup) {
+  let material: FakeMaterial | undefined;
+  root.traverse((node) => {
+    if (
+      material ||
+      !(node instanceof FakeMesh) ||
+      typeof node.userData?.townBanner !== 'number'
+    ) {
+      return;
+    }
+
+    material = Array.isArray(node.material) ? node.material[0] : node.material;
+  });
+  return material;
 }

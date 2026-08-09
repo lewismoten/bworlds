@@ -175,6 +175,7 @@ const resolveTownStyle = createRegionalMaterialResolver(
         if (cached) {
           return cached;
         }
+        const bannerMaterialCache = new Map<string, ThreeMaterialLike>();
         const style = {
           key,
           trimColor,
@@ -230,6 +231,23 @@ const resolveTownStyle = createRegionalMaterialResolver(
             roughness: 0.4,
             metalness: 0.02,
           }),
+          getBannerMaterial(color: string) {
+            const cachedMaterial = bannerMaterialCache.get(color);
+            if (cachedMaterial) {
+              return cachedMaterial;
+            }
+
+            const material = new three.MeshStandardMaterial({
+              color,
+              emissive: color,
+              emissiveIntensity: 0.04,
+              roughness: 0.84,
+              metalness: 0.02,
+              side: three.DoubleSide,
+            });
+            bannerMaterialCache.set(color, material);
+            return material;
+          },
         };
         this.materialCache.set(three as object, style);
         return style;
@@ -534,14 +552,7 @@ function createTownBanner(
   const cloth = markPoiWindResponder(
     new three.Mesh(
       new three.PlaneGeometry(descriptor.width, descriptor.length),
-      new three.MeshStandardMaterial({
-        color: descriptor.color,
-        emissive: descriptor.color,
-        emissiveIntensity: 0.04,
-        roughness: 0.84,
-        metalness: 0.02,
-        side: three.DoubleSide,
-      })
+      style.getBannerMaterial(descriptor.color)
     ),
     {
       axis: 'z',
@@ -722,6 +733,7 @@ interface TownStyle {
   roofMaterial: ThreeMaterialLike;
   trimMaterial: ThreeMaterialLike;
   windowMaterial: ThreeMaterialLike;
+  getBannerMaterial(color: string): ThreeMaterialLike;
 }
 
 interface TownStyleBlueprint {
