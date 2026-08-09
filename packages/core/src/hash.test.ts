@@ -46,10 +46,9 @@ describe('hash seeds', () => {
     expect(hash2DWithSeed(seedHash, 4, 9)).toBe(hash2D(seedHash, 4, 9));
   });
 
-  it('resolves string and numeric seeds through one boundary helper', () => {
+  it('normalizes numeric seeds through one boundary helper', () => {
     const seedHash = registerHashLabel('seed');
 
-    expect(resolveHashSeed('seed')).toBe(seedHash);
     expect(resolveHashSeed(seedHash)).toBe(seedHash >>> 0);
     expect(createHashSeed(0)).toBe(0);
     expect(createHashSeed(0xFFFFFFFF)).toBe(0xFFFFFFFF);

@@ -30,6 +30,7 @@ export const DEFAULT_DAY_LENGTH_MS = DEFAULT_DAY_LENGTH_MINUTES * 60 * 1000;
 export const DEFAULT_YEAR_LENGTH_DAYS = 64;
 export const DEFAULT_CONSTELLATION_COUNT = 8;
 export const DEFAULT_SEASON_DAYLIGHT_AMPLITUDE = 0.41;
+const DEFAULT_CONSTELLATION_SEED = registerHashLabel('bworlds-celestial');
 export const MOON_PHASE_NAMES = [
   'New Moon',
   'Waxing Crescent',
@@ -241,6 +242,7 @@ const POI_NAME_TYPE_LABELS = {
   ship: registerHashLabel('ship'),
   observatory: registerHashLabel('observatory'),
 } as const;
+const dynamicPoiNameTypeLabels = new Map<string, number>();
 
 function getPlanetSkyProfile(name: string, fallbackIndex = 0): PlanetSkyProfile {
   const index = PLANET_NAMES.indexOf(name);
@@ -602,7 +604,7 @@ export function getDaylightCycleState(
     1,
     Math.floor(options.constellationCount ?? DEFAULT_CONSTELLATION_COUNT)
   );
-  const constellationSeed = options.constellationSeed ?? 'bworlds-celestial';
+  const constellationSeed = options.constellationSeed;
   const seasonDaylightAmplitude =
     options.seasonDaylightAmplitude ?? DEFAULT_SEASON_DAYLIGHT_AMPLITUDE;
   const observerLatitudeDegrees = clamp(
@@ -703,7 +705,12 @@ export function getDaylightCycleState(
     0.5,
     0.25,
   ][moonPhaseIndex];
-  const constellationSeedHash = resolveHashSeed(constellationSeed);
+  const constellationSeedHash =
+    constellationSeed === undefined
+      ? DEFAULT_CONSTELLATION_SEED
+      : typeof constellationSeed === 'number'
+        ? resolveHashSeed(constellationSeed)
+        : registerHashLabel(constellationSeed);
   const constellations = generateConstellations(constellationSeedHash, {
     count: constellationCount,
   });
@@ -1773,11 +1780,7 @@ export function generatePoiName(
   y: number
 ) {
   const style = getRegionalPoiNameStyle(seedHash, x, y);
-  const typeLabel = POI_NAME_TYPE_LABELS[type as keyof typeof POI_NAME_TYPE_LABELS];
-  const typeSeed = appendHashSeedLabel(
-    seedHash,
-    typeLabel ?? registerHashLabel(type)
-  );
+  const typeSeed = appendHashSeedLabel(seedHash, getPoiNameTypeLabel(type));
   const stemSeed = appendHashSeedPart(appendHashSeedPart(typeSeed, x), y);
   const prefixSeed = appendHashSeedLabel(stemSeed, POI_NAME_PREFIX_LABEL);
   const suffixSeed = appendHashSeedLabel(stemSeed, POI_NAME_SUFFIX_LABEL);
@@ -1840,6 +1843,22 @@ export function generatePoiName(
   }
 
   return `${prefix}${suffix}`;
+}
+
+function getPoiNameTypeLabel(type: PoiNameType): number {
+  const knownTypeLabel = POI_NAME_TYPE_LABELS[type as keyof typeof POI_NAME_TYPE_LABELS];
+  if (knownTypeLabel !== undefined) {
+    return knownTypeLabel;
+  }
+
+  const cached = dynamicPoiNameTypeLabels.get(type);
+  if (cached !== undefined) {
+    return cached;
+  }
+
+  const labelHash = registerHashLabel(type);
+  dynamicPoiNameTypeLabels.set(type, labelHash);
+  return labelHash;
 }
 
 export const DEFAULT_TILE_DEFINITION: CoreTileDefinitionLike = {

@@ -3,7 +3,7 @@ import {
   createPlayer,
   createWorldState,
 } from '@bworlds/core';
-import { resolveHashSeed } from '@bworlds/core/hash';
+import { createHashSeed, registerHashLabel } from '@bworlds/core/hash';
 import {
   createFrontierContentPackDefinition,
   frontierContentPackManifest,
@@ -74,7 +74,8 @@ export function createWorldGenerator({
   samplePreviewSurfaceKind(x: number, y: number): SpawnTile['kind'];
   samplePreviewOverworld(x: number, y: number): SpawnTile;
 } {
-  const seedHash = resolveHashSeed(seed);
+  const seedHash =
+    typeof seed === 'number' ? createHashSeed(seed) : registerHashLabel(seed);
   const mapCache = createBoundedCache<string, WorldMapLike>(MAP_CACHE_LIMIT);
   const terrainSignals = createOverworldTerrainSignalSampler(seedHash);
   const previewTileCache = createBoundedCache<string, SpawnTile>(

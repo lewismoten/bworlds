@@ -1,8 +1,8 @@
 import {
   appendHashSeedLabel,
+  createHashSeed,
   hash2DWithSeed,
   registerHashLabel,
-  resolveHashSeed,
 } from '@bworlds/core/hash';
 import {
   createContextMapPlugin,
@@ -53,6 +53,7 @@ const MIDDLE_CAR_TYPES: TrainCarType[] = [
 ];
 const TRAIN_MIDDLE_COUNT_SEED = registerHashLabel('train-middle-count');
 const TRAIN_MIDDLE_CAR_SEED = registerHashLabel('train-middle-car');
+const trainLineLabelHashes = new Map<string, number>();
 
 export function createTrainMapPlugin(): RuntimePlugin {
   return createContextMapPlugin<TrainContext>({
@@ -66,11 +67,12 @@ export function resolveTrainCarTypes(
   seed: string | number,
   context: Pick<TrainContext, 'origin' | 'lineName'>
 ): TrainCarType[] {
-  const seedHash = resolveHashSeed(seed);
+  const seedHash =
+    typeof seed === 'number' ? createHashSeed(seed) : registerHashLabel(seed);
   const middleCountSeed = appendHashSeedLabel(seedHash, TRAIN_MIDDLE_COUNT_SEED);
   const middleCarSeed = appendHashSeedLabel(
     appendHashSeedLabel(seedHash, TRAIN_MIDDLE_CAR_SEED),
-    registerHashLabel(context.lineName)
+    getTrainLineLabelHash(context.lineName)
   );
   const middleCount =
     2 +
@@ -108,6 +110,17 @@ export function getTrainBoardingSpawn(
     x: BOARDING_DOOR_X,
     y: observationCar?.centerY ?? layout.maxY - 1,
   };
+}
+
+function getTrainLineLabelHash(lineName: string): number {
+  const cached = trainLineLabelHashes.get(lineName);
+  if (cached !== undefined) {
+    return cached;
+  }
+
+  const labelHash = registerHashLabel(lineName);
+  trainLineLabelHashes.set(lineName, labelHash);
+  return labelHash;
 }
 
 function createTrainMap(

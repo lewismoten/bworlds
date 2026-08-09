@@ -334,6 +334,14 @@ describe('core utilities', () => {
     );
   });
 
+  it('keeps custom point-of-interest type label registration deterministic', () => {
+    const seedHash = registerHashLabel('custom-poi-spec');
+    const left = generatePoiName(seedHash, 'stronghold', 7, -14);
+    const right = generatePoiName(seedHash, 'stronghold', 7, -14);
+
+    expect(left).toBe(right);
+  });
+
   it('exposes periodic planets, meteor showers, and comets', () => {
     const events = getCelestialEventsForDay(0, {
       yearLengthDays: DEFAULT_YEAR_LENGTH_DAYS,

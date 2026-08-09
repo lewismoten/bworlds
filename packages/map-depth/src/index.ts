@@ -6,7 +6,6 @@ import {
   hash2D,
   hash2DWithSeed,
   registerHashLabel,
-  resolveHashSeed,
 } from '@bworlds/core/hash';
 import {
   createChildContext,
@@ -611,7 +610,7 @@ function carvePath(
 }
 
 function resolveDepthSeed(seed: string | number): number {
-  return typeof seed === 'number' ? createHashSeed(seed) : resolveHashSeed(seed);
+  return typeof seed === 'number' ? createHashSeed(seed) : registerHashLabel(seed);
 }
 
 function carveBrush(

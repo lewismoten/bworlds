@@ -14,9 +14,9 @@ import {
 import {
   appendHashSeedLabel,
   appendHashSeedPart,
+  createHashSeed,
   hash2D,
   hash2DWithSeed,
-  resolveHashSeed,
   registerHashLabel,
 } from '@bworlds/core/hash';
 import type {
@@ -132,7 +132,7 @@ const overworldGenerationSnapshotCaches = new WeakMap<
 >();
 
 function normalizeSeedHash(seed: Seed): number {
-  return resolveHashSeed(seed);
+  return typeof seed === 'number' ? createHashSeed(seed) : registerHashLabel(seed);
 }
 
 function getOverworldGenerationSnapshotCacheStore(

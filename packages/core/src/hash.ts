@@ -1,41 +1,18 @@
-const FNV_OFFSET_BASIS = 2166136261;
+import { registerHashLabel } from './hash-labels.ts';
+
 const FNV_PRIME = 16777619;
 const HASH_PART_SEPARATOR = 58;
-const HASH_LABEL_CACHE_LIMIT = 4096;
 const UINT32_RANGE = 2 ** 32;
 
-const registeredHashLabels = new Map<string, number>();
-
 export type HashSeed = number;
-
-export function registerHashLabel(label: string): number {
-  const cached = registeredHashLabels.get(label);
-  if (cached !== undefined) {
-    return cached;
-  }
-
-  let hash = FNV_OFFSET_BASIS;
-  for (let index = 0; index < label.length; index += 1) {
-    hash = mixHashCharacter(hash, label.charCodeAt(index));
-  }
-
-  const normalizedHash = hash >>> 0;
-  registeredHashLabels.set(label, normalizedHash);
-  if (registeredHashLabels.size > HASH_LABEL_CACHE_LIMIT) {
-    const oldest = registeredHashLabels.keys().next().value;
-    if (oldest !== undefined) {
-      registeredHashLabels.delete(oldest);
-    }
-  }
-  return normalizedHash;
-}
+export { registerHashLabel } from './hash-labels.ts';
 
 export function createHashSeed(seed: number): HashSeed {
   return seed >>> 0;
 }
 
-export function resolveHashSeed(seed: number | string): HashSeed {
-  return typeof seed === 'number' ? createHashSeed(seed) : registerHashLabel(seed);
+export function resolveHashSeed(seed: number): HashSeed {
+  return createHashSeed(seed);
 }
 
 export function appendHashSeedPart(seedHash: HashSeed, value: number): HashSeed {
