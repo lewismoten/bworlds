@@ -350,6 +350,27 @@ describe('procedural music', () => {
         volumeMultiplier: 0.82,
       })
     );
+
+    expect(
+      resolveMusicMood({
+        dayProgress: 0.52,
+        combatIntensity: 1,
+      }).tempoMultiplier
+    ).toBeGreaterThan(resolveMusicMood({ dayProgress: 0.52 }).tempoMultiplier);
+  });
+
+  it('intensifies arrangements during combat with stronger percussion and lower bass', () => {
+    const arrangement = resolveMusicArrangement({
+      dayProgress: 0.5,
+      yearProgress: 0.5,
+      combatIntensity: 0.8,
+    });
+
+    expect(
+      arrangement.roleProfiles.percussion.volumeMultiplier
+    ).toBeGreaterThan(1);
+    expect(arrangement.roleProfiles.bass.octaveShiftSemitones).toBe(-12);
+    expect(arrangement.roleProfiles.lead.durationMultiplier).toBeLessThan(1);
   });
 
   it('softens nighttime arrangements by lowering percussion density and extending softer layers', () => {

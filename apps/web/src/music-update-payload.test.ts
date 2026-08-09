@@ -11,6 +11,7 @@ describe('music update payload builder', () => {
       contextType: 'overworld',
       weatherKind: 'fog',
       weatherIntensity: 0.3,
+      combatIntensity: 0.25,
       dayProgress: 0.5,
       yearProgress: 0.05,
       clusterX: 1,
@@ -35,6 +36,7 @@ describe('music update payload builder', () => {
       contextType: 'overworld',
       weatherKind: 'light-rain',
       weatherIntensity: 0.6,
+      combatIntensity: 0.75,
       dayProgress: 0.52,
       yearProgress: 0.55,
       clusterX: 2,
@@ -61,6 +63,7 @@ describe('music update payload builder', () => {
     expect(second.tileKind).toBe('forest');
     expect(second.clusterX).toBe(2);
     expect(second.yearProgress).toBe(0.55);
+    expect(second.combatIntensity).toBe(0.75);
     expect(second.emitter).toEqual({ x: 30, y: -6 });
     expect(second.listener).toEqual({ x: 13.5, y: -5.25 });
     expect(second.nearbyPoi).toEqual(
@@ -86,6 +89,7 @@ describe('music update payload builder', () => {
       contextType: 'overworld',
       dayProgress: 0.5,
       yearProgress: 0.15,
+      combatIntensity: 0.5,
       clusterX: 0,
       clusterY: 0,
       emitterX: 6,
@@ -108,6 +112,7 @@ describe('music update payload builder', () => {
       contextType: 'overworld',
       dayProgress: 0.5,
       yearProgress: 0.15,
+      combatIntensity: 0,
       clusterX: 0,
       clusterY: 0,
       emitterX: 6,
@@ -119,6 +124,7 @@ describe('music update payload builder', () => {
 
     expect(second).toBe(first);
     expect(second.nearbyPoi).toBeNull();
+    expect(second.combatIntensity).toBe(0);
     expect(second.listener).toEqual({ x: 0.5, y: 1 });
   });
 });

@@ -17,6 +17,7 @@ describe('music debug', () => {
         dayProgress: 2,
         yearProgress: -1,
         weatherIntensity: 4,
+        combatIntensity: -2,
       })
     ).toEqual(
       expect.objectContaining({
@@ -25,6 +26,7 @@ describe('music debug', () => {
         dayProgress: 1,
         yearProgress: 0,
         weatherIntensity: 1,
+        combatIntensity: 0,
       })
     );
   });
@@ -100,6 +102,7 @@ describe('music debug', () => {
     expect(summary).toContain('Song Length');
     expect(summary).toContain('Blueprint');
     expect(summary).toContain('Loop Range');
+    expect(summary).toContain('Combat');
     expect(summary).toContain('Mode');
     expect(summary).toContain('Region');
     expect(summary).toContain('Preferred Intervals');

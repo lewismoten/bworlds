@@ -242,10 +242,7 @@ describe('sound effects', () => {
     controller.triggerBlockedMovement({ nowMs: 180, tileKind: 'forest' });
     controller.triggerBlockedMovement({ nowMs: 320, tileKind: 'forest' });
 
-    expect(played.map((effect) => effect.kind)).toEqual([
-      'blocked',
-      'blocked',
-    ]);
+    expect(played.map((effect) => effect.kind)).toEqual(['blocked', 'blocked']);
     expect(played[0]?.waveform).toBe('sawtooth');
   });
 
@@ -311,7 +308,27 @@ describe('sound effects', () => {
     });
 
     expect(played).toHaveLength(2);
-    expect(played.every((effect) => effect.kind === 'combat-weapon')).toBe(true);
+    expect(played.every((effect) => effect.kind === 'combat-weapon')).toBe(
+      true
+    );
+  });
+
+  it('tracks a fading recent combat intensity signal for music reactions', () => {
+    const controller = createSoundEffectController({
+      play() {},
+    });
+
+    expect(controller.getRecentCombatIntensity(100)).toBe(0);
+
+    controller.triggerCombat({
+      nowMs: 100,
+      style: 'slash',
+      emitter: { x: 0, y: 0 },
+    });
+
+    expect(controller.getRecentCombatIntensity(100)).toBe(1);
+    expect(controller.getRecentCombatIntensity(2100)).toBeCloseTo(0.5, 2);
+    expect(controller.getRecentCombatIntensity(5000)).toBe(0);
   });
 
   it('plays reusable open and close interaction sounds for doors and exits', () => {
@@ -383,19 +400,12 @@ describe('sound effects', () => {
   });
 
   it('computes quieter and panned mixes for distant off-center emitters', () => {
-    expect(
-      getSoundSpatialMix({ x: 3, y: 0 }, { x: 0, y: 0 })
-    ).toEqual({
+    expect(getSoundSpatialMix({ x: 3, y: 0 }, { x: 0, y: 0 })).toEqual({
       gainMultiplier: expect.closeTo(1 / (1 + 3 * 0.85), 6),
       pan: 1,
     });
-    expect(
-      getSoundSpatialMix({ x: -0.7, y: 0.2 }, { x: 0, y: 0 })
-    ).toEqual({
-      gainMultiplier: expect.closeTo(
-        1 / (1 + Math.hypot(0.7, 0.2) * 0.85),
-        6
-      ),
+    expect(getSoundSpatialMix({ x: -0.7, y: 0.2 }, { x: 0, y: 0 })).toEqual({
+      gainMultiplier: expect.closeTo(1 / (1 + Math.hypot(0.7, 0.2) * 0.85), 6),
       pan: expect.closeTo(-0.25, 6),
     });
   });
@@ -565,7 +575,9 @@ describe('sound effects', () => {
       'paddle-calliope',
     ]);
     expect(played[0]?.waveform).toBe('triangle');
-    expect((played[1]?.frequency ?? 0) > (played[0]?.frequency ?? 0)).toBe(true);
+    expect((played[1]?.frequency ?? 0) > (played[0]?.frequency ?? 0)).toBe(
+      true
+    );
   });
 
   it('maps paddle-boat progress into a stable calliope melody step', () => {

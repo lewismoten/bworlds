@@ -236,6 +236,7 @@ export type MusicUpdateOptions = {
   contextType?: ContextType;
   weatherKind?: WeatherKind;
   weatherIntensity?: number;
+  combatIntensity?: number;
   dayProgress: number;
   yearProgress?: number;
   clusterX?: number;
@@ -398,6 +399,7 @@ export function resolveMusicMood(options: {
   dayProgress: number;
   weatherKind?: WeatherKind;
   weatherIntensity?: number;
+  combatIntensity?: number;
 }): MusicMood {
   const dayProgress = normalizeWrappedProgress(options.dayProgress);
   const atNight = dayProgress < 0.2 || dayProgress > 0.8;
@@ -410,12 +412,18 @@ export function resolveMusicMood(options: {
       : options.weatherKind === 'fog'
         ? 0.06
         : 0;
+  const combatIntensity = clamp(options.combatIntensity ?? 0, 0, 1);
 
   return {
-    tempoMultiplier: atNight ? 0.82 : atDawnOrDusk ? 0.93 : 1.04 - rainPenalty,
-    brightness: atNight ? 0.78 : atDawnOrDusk ? 0.9 : 1.08 - rainPenalty,
+    tempoMultiplier:
+      (atNight ? 0.82 : atDawnOrDusk ? 0.93 : 1.04 - rainPenalty) +
+      combatIntensity * 0.22,
+    brightness:
+      (atNight ? 0.78 : atDawnOrDusk ? 0.9 : 1.08 - rainPenalty) -
+      combatIntensity * 0.06,
     volumeMultiplier:
-      options.weatherKind === 'heavy-rain' ? 0.82 : atNight ? 0.88 : 1,
+      (options.weatherKind === 'heavy-rain' ? 0.82 : atNight ? 0.88 : 1) +
+      combatIntensity * 0.08,
   };
 }
 
@@ -424,9 +432,11 @@ export function resolveMusicArrangement(options: {
   yearProgress?: number;
   weatherKind?: WeatherKind;
   weatherIntensity?: number;
+  combatIntensity?: number;
 }): MusicArrangement {
   const dayProgress = normalizeWrappedProgress(options.dayProgress);
   const season = resolveSeason(options.yearProgress ?? 0);
+  const combatIntensity = clamp(options.combatIntensity ?? 0, 0, 1);
   const atNight = dayProgress < 0.2 || dayProgress > 0.8;
   const atDawnOrDusk =
     (dayProgress >= 0.18 && dayProgress <= 0.3) ||
@@ -434,6 +444,46 @@ export function resolveMusicArrangement(options: {
   const heavyWeather =
     options.weatherKind === 'heavy-rain' ||
     (options.weatherIntensity ?? 0) >= 0.85;
+
+  if (combatIntensity >= 0.35) {
+    return {
+      roleProfiles: {
+        lead: {
+          volumeMultiplier: 1.04,
+          durationMultiplier: 0.94,
+          releaseMultiplier: 0.88,
+          harmonicGainMultiplier: 1.08,
+          pulseRateMultiplier: 1.08,
+          brightnessMultiplier: 0.96,
+        },
+        harmony: {
+          volumeMultiplier: 0.92,
+          durationMultiplier: 0.9,
+          releaseMultiplier: 0.84,
+          harmonicGainMultiplier: 1.12,
+          pulseRateMultiplier: 1.02,
+          brightnessMultiplier: 0.92,
+        },
+        bass: {
+          volumeMultiplier: 1.1,
+          durationMultiplier: 0.96,
+          releaseMultiplier: 0.9,
+          harmonicGainMultiplier: 1.14,
+          pulseRateMultiplier: 1.08,
+          brightnessMultiplier: 0.82,
+          octaveShiftSemitones: -12,
+        },
+        percussion: {
+          volumeMultiplier: 1.28,
+          durationMultiplier: 0.88,
+          releaseMultiplier: 0.82,
+          harmonicGainMultiplier: 1.22,
+          pulseRateMultiplier: 1.26,
+          brightnessMultiplier: 0.94,
+        },
+      },
+    };
+  }
 
   if (season === 'winter') {
     return {
@@ -633,6 +683,7 @@ export function scheduleProceduralMusicNotes(
       yearProgress: options.yearProgress,
       weatherKind: options.weatherKind,
       weatherIntensity: options.weatherIntensity,
+      combatIntensity: options.combatIntensity,
       clusterX: options.clusterX,
       clusterY: options.clusterY,
       emitter: options.emitter,
@@ -700,6 +751,7 @@ export function createMusicController(sink: MusicSink): MusicController {
           yearProgress: options.yearProgress,
           weatherKind: options.weatherKind,
           weatherIntensity: options.weatherIntensity,
+          combatIntensity: options.combatIntensity,
           clusterX: options.nearbyPoi.clusterX,
           clusterY: options.nearbyPoi.clusterY,
           emitter: options.nearbyPoi.emitter,
@@ -736,6 +788,7 @@ export function getMusicUpdateSignature(
       Math.round((options.yearProgress ?? 0) * 96),
       options.weatherKind ?? '',
       Math.round((options.weatherIntensity ?? 0) * 10),
+      Math.round(clamp(options.combatIntensity ?? 0, 0, 1) * 100),
       options.clusterX ?? 0,
       options.clusterY ?? 0,
     ].join('|'),
@@ -748,6 +801,7 @@ export function getMusicUpdateSignature(
           Math.round((options.yearProgress ?? 0) * 96),
           options.weatherKind ?? '',
           Math.round((options.weatherIntensity ?? 0) * 10),
+          Math.round(clamp(options.combatIntensity ?? 0, 0, 1) * 100),
           options.nearbyPoi.clusterX ?? 0,
           options.nearbyPoi.clusterY ?? 0,
           Math.round(clamp(options.nearbyPoi.mix ?? 0, 0, 1) * 100),
@@ -1084,6 +1138,7 @@ function scheduleThemeLayerNotes(
     poiType?: string;
     weatherKind?: WeatherKind;
     weatherIntensity?: number;
+    combatIntensity?: number;
     dayProgress: number;
     yearProgress?: number;
     clusterX?: number;
@@ -1112,12 +1167,14 @@ function scheduleThemeLayerNotes(
     dayProgress: options.dayProgress,
     weatherKind: options.weatherKind,
     weatherIntensity: options.weatherIntensity,
+    combatIntensity: options.combatIntensity,
   });
   const arrangement = resolveMusicArrangement({
     dayProgress: options.dayProgress,
     yearProgress: options.yearProgress,
     weatherKind: options.weatherKind,
     weatherIntensity: options.weatherIntensity,
+    combatIntensity: options.combatIntensity,
   });
   const regionSignature = [
     options.signaturePrefix ?? 'ambient',

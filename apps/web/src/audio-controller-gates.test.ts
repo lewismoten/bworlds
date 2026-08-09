@@ -11,6 +11,7 @@ describe('audio controller gates', () => {
     const controller: SoundEffectController = {
       resume: vi.fn(),
       getActiveSourceCount: vi.fn(() => 3),
+      getRecentCombatIntensity: vi.fn(() => 0.4),
       triggerProgression: vi.fn(),
       triggerInteraction: vi.fn(),
       triggerJump: vi.fn(),
@@ -34,6 +35,7 @@ describe('audio controller gates', () => {
     expect(controller.triggerJump).not.toHaveBeenCalled();
     expect(controller.update).not.toHaveBeenCalled();
     expect(gated.getActiveSourceCount()).toBe(3);
+    expect(gated.getRecentCombatIntensity(12)).toBe(0.4);
 
     enabled = true;
     gated.resume();

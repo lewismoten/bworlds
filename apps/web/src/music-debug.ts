@@ -34,6 +34,7 @@ export type MusicDebugOptions = {
   contextType: MusicDebugContextType;
   weatherKind: MusicDebugWeatherKind;
   weatherIntensity: number;
+  combatIntensity: number;
   dayProgress: number;
   yearProgress: number;
   clusterX: number;
@@ -95,6 +96,7 @@ export const DEFAULT_MUSIC_DEBUG_OPTIONS: MusicDebugOptions = {
   contextType: 'overworld',
   weatherKind: 'clear',
   weatherIntensity: 0,
+  combatIntensity: 0,
   dayProgress: 0.5,
   yearProgress: 0.25,
   clusterX: 0,
@@ -109,6 +111,10 @@ export function clampMusicDebugWeatherIntensity(value: number): number {
   return Math.min(1, Math.max(0, value));
 }
 
+export function clampMusicDebugCombatIntensity(value: number): number {
+  return Math.min(1, Math.max(0, value));
+}
+
 export function normalizeMusicDebugOptions(
   value: Partial<MusicDebugOptions> | null | undefined
 ): MusicDebugOptions {
@@ -118,6 +124,9 @@ export function normalizeMusicDebugOptions(
     weatherKind: normalizeWeatherKind(value?.weatherKind),
     weatherIntensity: clampMusicDebugWeatherIntensity(
       value?.weatherIntensity ?? DEFAULT_MUSIC_DEBUG_OPTIONS.weatherIntensity
+    ),
+    combatIntensity: clampMusicDebugCombatIntensity(
+      value?.combatIntensity ?? DEFAULT_MUSIC_DEBUG_OPTIONS.combatIntensity
     ),
     dayProgress: clampMusicDebugProgress(
       value?.dayProgress ?? DEFAULT_MUSIC_DEBUG_OPTIONS.dayProgress
@@ -151,6 +160,7 @@ export function createMusicDebugSnapshot(
     weatherKind:
       options.weatherKind === 'clear' ? undefined : options.weatherKind,
     weatherIntensity: options.weatherIntensity,
+    combatIntensity: options.combatIntensity,
   });
   const arrangement = resolveMusicArrangement({
     dayProgress: options.dayProgress,
@@ -158,6 +168,7 @@ export function createMusicDebugSnapshot(
     weatherKind:
       options.weatherKind === 'clear' ? undefined : options.weatherKind,
     weatherIntensity: options.weatherIntensity,
+    combatIntensity: options.combatIntensity,
   });
   const instrumentBank = createProceduralInstrumentBank(
     theme,
@@ -192,6 +203,7 @@ export function createMusicDebugSnapshot(
     weatherKind:
       options.weatherKind === 'clear' ? undefined : options.weatherKind,
     weatherIntensity: options.weatherIntensity,
+    combatIntensity: options.combatIntensity,
     dayProgress: options.dayProgress,
     yearProgress: options.yearProgress,
     clusterX: options.clusterX,
@@ -337,6 +349,10 @@ export function buildMusicDebugMarkup(
               <input name="weatherIntensity" type="range" min="0" max="1" step="0.05" value="${snapshot.options.weatherIntensity}" />
             </label>
             <label>
+              <span>Combat Intensity</span>
+              <input name="combatIntensity" type="range" min="0" max="1" step="0.05" value="${snapshot.options.combatIntensity}" />
+            </label>
+            <label>
               <span>Day Progress</span>
               <input name="dayProgress" type="range" min="0" max="1" step="0.01" value="${snapshot.options.dayProgress}" />
             </label>
@@ -393,6 +409,7 @@ export function buildMusicDebugSummaryMarkup(
       <div><dt>Loop Range</dt><dd>${formatMusicDebugLoopRange(snapshot.loopStartOffsetMs, snapshot.loopEndOffsetMs)}</dd></div>
       <div><dt>Tempo</dt><dd>${snapshot.mood.tempoMultiplier.toFixed(2)}x</dd></div>
       <div><dt>Brightness</dt><dd>${snapshot.mood.brightness.toFixed(2)}x</dd></div>
+      <div><dt>Combat</dt><dd>${snapshot.options.combatIntensity.toFixed(2)}</dd></div>
       <div><dt>Mode</dt><dd>${snapshot.theme.vocabulary.modeLabel}</dd></div>
       <div><dt>Region</dt><dd>${snapshot.theme.vocabulary.regionLabel}</dd></div>
       <div><dt>Rhythm</dt><dd>${snapshot.theme.vocabulary.rhythmDensityLabel}</dd></div>

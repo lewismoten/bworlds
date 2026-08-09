@@ -56,6 +56,7 @@ export type SoundEffectSink = {
 export type SoundEffectController = {
   resume(): void;
   getActiveSourceCount(): number;
+  getRecentCombatIntensity(nowMs: number): number;
   triggerProgression(options: {
     nowMs: number;
     level?: number;
@@ -96,21 +97,17 @@ export type SoundEffectController = {
     weatherKind?: string;
     weatherIntensity?: number;
     windStrength?: number;
-    nearbyTrain?:
-      | {
-          progress?: number;
-          emitter?: SoundPosition;
-          listener?: SoundPosition;
-        }
-      | null;
-    nearbyPaddleBoat?:
-      | {
-          progress?: number;
-          whistlePhase?: 'arrival' | 'departure';
-          emitter?: SoundPosition;
-          listener?: SoundPosition;
-        }
-      | null;
+    nearbyTrain?: {
+      progress?: number;
+      emitter?: SoundPosition;
+      listener?: SoundPosition;
+    } | null;
+    nearbyPaddleBoat?: {
+      progress?: number;
+      whistlePhase?: 'arrival' | 'departure';
+      emitter?: SoundPosition;
+      listener?: SoundPosition;
+    } | null;
     emitter?: SoundPosition;
     listener?: SoundPosition;
   }): void;
@@ -125,72 +122,73 @@ type SurfaceAudioProfile = {
   waveform: SoundWaveform;
 };
 
-const SURFACE_AUDIO_PROFILES: Record<SurfaceAudioFamily, SurfaceAudioProfile> = {
-  default: {
-    cadenceMs: 310,
-    footstepFrequency: 122,
-    landingFrequency: 92,
-    footstepVolume: 0.045,
-    landingVolume: 0.065,
-    waveform: 'triangle',
-  },
-  road: {
-    cadenceMs: 265,
-    footstepFrequency: 168,
-    landingFrequency: 122,
-    footstepVolume: 0.038,
-    landingVolume: 0.056,
-    waveform: 'square',
-  },
-  bridge: {
-    cadenceMs: 290,
-    footstepFrequency: 188,
-    landingFrequency: 132,
-    footstepVolume: 0.042,
-    landingVolume: 0.06,
-    waveform: 'square',
-  },
-  dock: {
-    cadenceMs: 300,
-    footstepFrequency: 176,
-    landingFrequency: 126,
-    footstepVolume: 0.04,
-    landingVolume: 0.058,
-    waveform: 'square',
-  },
-  shore: {
-    cadenceMs: 305,
-    footstepFrequency: 132,
-    landingFrequency: 98,
-    footstepVolume: 0.034,
-    landingVolume: 0.05,
-    waveform: 'triangle',
-  },
-  interior: {
-    cadenceMs: 285,
-    footstepFrequency: 146,
-    landingFrequency: 104,
-    footstepVolume: 0.032,
-    landingVolume: 0.048,
-    waveform: 'square',
-  },
-  town: {
-    cadenceMs: 275,
-    footstepFrequency: 156,
-    landingFrequency: 112,
-    footstepVolume: 0.036,
-    landingVolume: 0.052,
-    waveform: 'square',
-  },
-  cave: {
-    cadenceMs: 330,
-    footstepFrequency: 108,
-    landingFrequency: 82,
-    footstepVolume: 0.048,
-    landingVolume: 0.072,
-    waveform: 'triangle',
-  },
-};
+const SURFACE_AUDIO_PROFILES: Record<SurfaceAudioFamily, SurfaceAudioProfile> =
+  {
+    default: {
+      cadenceMs: 310,
+      footstepFrequency: 122,
+      landingFrequency: 92,
+      footstepVolume: 0.045,
+      landingVolume: 0.065,
+      waveform: 'triangle',
+    },
+    road: {
+      cadenceMs: 265,
+      footstepFrequency: 168,
+      landingFrequency: 122,
+      footstepVolume: 0.038,
+      landingVolume: 0.056,
+      waveform: 'square',
+    },
+    bridge: {
+      cadenceMs: 290,
+      footstepFrequency: 188,
+      landingFrequency: 132,
+      footstepVolume: 0.042,
+      landingVolume: 0.06,
+      waveform: 'square',
+    },
+    dock: {
+      cadenceMs: 300,
+      footstepFrequency: 176,
+      landingFrequency: 126,
+      footstepVolume: 0.04,
+      landingVolume: 0.058,
+      waveform: 'square',
+    },
+    shore: {
+      cadenceMs: 305,
+      footstepFrequency: 132,
+      landingFrequency: 98,
+      footstepVolume: 0.034,
+      landingVolume: 0.05,
+      waveform: 'triangle',
+    },
+    interior: {
+      cadenceMs: 285,
+      footstepFrequency: 146,
+      landingFrequency: 104,
+      footstepVolume: 0.032,
+      landingVolume: 0.048,
+      waveform: 'square',
+    },
+    town: {
+      cadenceMs: 275,
+      footstepFrequency: 156,
+      landingFrequency: 112,
+      footstepVolume: 0.036,
+      landingVolume: 0.052,
+      waveform: 'square',
+    },
+    cave: {
+      cadenceMs: 330,
+      footstepFrequency: 108,
+      landingFrequency: 82,
+      footstepVolume: 0.048,
+      landingVolume: 0.072,
+      waveform: 'triangle',
+    },
+  };
 
 export function getSurfaceAudioFamily(
   tileKind: SurfaceKind | undefined
@@ -201,7 +199,12 @@ export function getSurfaceAudioFamily(
   if (tileKind === 'cave-floor' || tileKind === 'cave-mushrooms') {
     return 'cave';
   }
-  if (tileKind === 'floor' || tileKind === 'shop' || tileKind === 'stairsUp' || tileKind === 'stairsDown') {
+  if (
+    tileKind === 'floor' ||
+    tileKind === 'shop' ||
+    tileKind === 'stairsUp' ||
+    tileKind === 'stairsDown'
+  ) {
     return 'interior';
   }
   if (tileKind === 'shore') {
@@ -281,103 +284,121 @@ export function createSoundEffectController(
           ? profile.footstepFrequency + 72
           : kind === 'wind'
             ? 190 + (tileKind === 'forest' ? 16 : 0) + variantOffset * 0.4
-          : kind === 'advancement'
-            ? resolveAdvancementFrequency()
-          : kind === 'train-engine'
-            ? 74 + variantOffset * 0.35
-          : kind === 'train-whistle'
-            ? 356 + variantOffset * 0.6
-          : kind === 'paddle-calliope'
-            ? resolvePaddleBoatCalliopeFrequency(undefined)
-          : kind === 'steam-whistle'
-            ? resolveSteamWhistleFrequency()
-          : kind === 'combat-weapon'
-            ? 148 + variantOffset * 0.5
-          : kind === 'combat-magic'
-            ? 244 + variantOffset * 0.5
-          : kind === 'open'
-            ? resolveInteractionFrequency('open', tileKind, profile, variantOffset)
-          : kind === 'close'
-            ? resolveInteractionFrequency('close', tileKind, profile, variantOffset)
-          : kind === 'blocked'
-            ? Math.max(58, profile.landingFrequency - 18 + variantOffset)
-          : kind === 'landing'
-            ? profile.landingFrequency + variantOffset
-            : profile.footstepFrequency + variantOffset,
+            : kind === 'advancement'
+              ? resolveAdvancementFrequency()
+              : kind === 'train-engine'
+                ? 74 + variantOffset * 0.35
+                : kind === 'train-whistle'
+                  ? 356 + variantOffset * 0.6
+                  : kind === 'paddle-calliope'
+                    ? resolvePaddleBoatCalliopeFrequency(undefined)
+                    : kind === 'steam-whistle'
+                      ? resolveSteamWhistleFrequency()
+                      : kind === 'combat-weapon'
+                        ? 148 + variantOffset * 0.5
+                        : kind === 'combat-magic'
+                          ? 244 + variantOffset * 0.5
+                          : kind === 'open'
+                            ? resolveInteractionFrequency(
+                                'open',
+                                tileKind,
+                                profile,
+                                variantOffset
+                              )
+                            : kind === 'close'
+                              ? resolveInteractionFrequency(
+                                  'close',
+                                  tileKind,
+                                  profile,
+                                  variantOffset
+                                )
+                              : kind === 'blocked'
+                                ? Math.max(
+                                    58,
+                                    profile.landingFrequency -
+                                      18 +
+                                      variantOffset
+                                  )
+                                : kind === 'landing'
+                                  ? profile.landingFrequency + variantOffset
+                                  : profile.footstepFrequency + variantOffset,
       durationMs:
         kind === 'jump'
           ? 140
           : kind === 'wind'
             ? 680
-          : kind === 'advancement'
-            ? 260
-          : kind === 'train-engine'
-            ? 420
-          : kind === 'train-whistle'
-            ? 880
-          : kind === 'paddle-calliope'
-            ? 1180
-          : kind === 'steam-whistle'
-            ? 1050
-          : kind === 'combat-weapon'
-            ? 160
-          : kind === 'combat-magic'
-            ? 320
-          : kind === 'landing'
-            ? 120
-            : kind === 'blocked'
-              ? 105
-              : kind === 'open' || kind === 'close'
-                ? 135
-                : 90,
+            : kind === 'advancement'
+              ? 260
+              : kind === 'train-engine'
+                ? 420
+                : kind === 'train-whistle'
+                  ? 880
+                  : kind === 'paddle-calliope'
+                    ? 1180
+                    : kind === 'steam-whistle'
+                      ? 1050
+                      : kind === 'combat-weapon'
+                        ? 160
+                        : kind === 'combat-magic'
+                          ? 320
+                          : kind === 'landing'
+                            ? 120
+                            : kind === 'blocked'
+                              ? 105
+                              : kind === 'open' || kind === 'close'
+                                ? 135
+                                : 90,
       volume:
         kind === 'jump'
           ? profile.footstepVolume * 1.2
           : kind === 'wind'
             ? 0.018
-          : kind === 'advancement'
-            ? 0.052
-          : kind === 'train-engine'
-            ? 0.03
-          : kind === 'train-whistle'
-            ? 0.042
-          : kind === 'paddle-calliope'
-            ? 0.034
-          : kind === 'steam-whistle'
-            ? 0.048
-          : kind === 'combat-weapon'
-            ? 0.056
-          : kind === 'combat-magic'
-            ? 0.05
-          : kind === 'open' || kind === 'close'
-            ? profile.landingVolume * 0.8
-          : kind === 'blocked'
-            ? profile.landingVolume * 0.7
-          : kind === 'landing'
-            ? profile.landingVolume
-            : profile.footstepVolume,
+            : kind === 'advancement'
+              ? 0.052
+              : kind === 'train-engine'
+                ? 0.03
+                : kind === 'train-whistle'
+                  ? 0.042
+                  : kind === 'paddle-calliope'
+                    ? 0.034
+                    : kind === 'steam-whistle'
+                      ? 0.048
+                      : kind === 'combat-weapon'
+                        ? 0.056
+                        : kind === 'combat-magic'
+                          ? 0.05
+                          : kind === 'open' || kind === 'close'
+                            ? profile.landingVolume * 0.8
+                            : kind === 'blocked'
+                              ? profile.landingVolume * 0.7
+                              : kind === 'landing'
+                                ? profile.landingVolume
+                                : profile.footstepVolume,
       waveform:
         kind === 'blocked'
           ? 'sawtooth'
           : kind === 'wind'
             ? 'triangle'
-          : kind === 'advancement'
-            ? 'sine'
-          : kind === 'train-engine'
-            ? 'sawtooth'
-          : kind === 'train-whistle'
-            ? 'square'
-          : kind === 'paddle-calliope'
-            ? 'triangle'
-          : kind === 'steam-whistle'
-            ? 'square'
-          : kind === 'combat-weapon'
-            ? 'sawtooth'
-          : kind === 'combat-magic'
-            ? 'triangle'
-          : kind === 'open' || kind === 'close'
-            ? resolveInteractionWaveform(tileKind, profile.waveform)
-            : profile.waveform,
+            : kind === 'advancement'
+              ? 'sine'
+              : kind === 'train-engine'
+                ? 'sawtooth'
+                : kind === 'train-whistle'
+                  ? 'square'
+                  : kind === 'paddle-calliope'
+                    ? 'triangle'
+                    : kind === 'steam-whistle'
+                      ? 'square'
+                      : kind === 'combat-weapon'
+                        ? 'sawtooth'
+                        : kind === 'combat-magic'
+                          ? 'triangle'
+                          : kind === 'open' || kind === 'close'
+                            ? resolveInteractionWaveform(
+                                tileKind,
+                                profile.waveform
+                              )
+                            : profile.waveform,
       emitter,
       listener,
     });
@@ -389,6 +410,14 @@ export function createSoundEffectController(
     },
     getActiveSourceCount() {
       return sink.getActiveSourceCount?.() ?? 0;
+    },
+    getRecentCombatIntensity(nowMs) {
+      const elapsedMs = nowMs - lastCombatAtMs;
+      if (!Number.isFinite(elapsedMs) || elapsedMs >= 4000) {
+        return 0;
+      }
+
+      return clampValue(1 - elapsedMs / 4000, 0, 1);
     },
     triggerProgression({ nowMs, level, emitter, listener }) {
       if (nowMs - lastProgressionAtMs < 180) {
@@ -509,7 +538,9 @@ export function createSoundEffectController(
         sink.play({
           kind: 'paddle-calliope',
           nowMs,
-          frequency: resolvePaddleBoatCalliopeFrequency(nearbyPaddleBoat.progress),
+          frequency: resolvePaddleBoatCalliopeFrequency(
+            nearbyPaddleBoat.progress
+          ),
           durationMs: 1180,
           volume: 0.034,
           waveform: 'triangle',
@@ -531,7 +562,9 @@ export function createSoundEffectController(
           sink.play({
             kind: 'steam-whistle',
             nowMs,
-            frequency: resolveSteamWhistleFrequency(nearbyPaddleBoat.whistlePhase),
+            frequency: resolveSteamWhistleFrequency(
+              nearbyPaddleBoat.whistlePhase
+            ),
             durationMs: 1050,
             volume: 0.048,
             waveform: 'square',
@@ -789,7 +822,8 @@ export function createWebAudioSoundEffectSink(): SoundEffectSink {
       AudioContext?: AudioContextCtor;
       webkitAudioContext?: AudioContextCtor;
     };
-    const ContextCtor = globalCtor.AudioContext ?? globalCtor.webkitAudioContext;
+    const ContextCtor =
+      globalCtor.AudioContext ?? globalCtor.webkitAudioContext;
     if (!ContextCtor) {
       return null;
     }
@@ -815,9 +849,10 @@ export function createWebAudioSoundEffectSink(): SoundEffectSink {
       const durationSeconds = effect.durationMs / 1000;
       const oscillator = context.createOscillator();
       const gain = context.createGain();
-      const panner = typeof context.createStereoPanner === 'function'
-        ? context.createStereoPanner()
-        : null;
+      const panner =
+        typeof context.createStereoPanner === 'function'
+          ? context.createStereoPanner()
+          : null;
       oscillator.type = effect.waveform;
       oscillator.frequency.setValueAtTime(effect.frequency, startAt);
       if (effect.kind === 'jump') {
@@ -891,10 +926,7 @@ export function createWebAudioSoundEffectSink(): SoundEffectSink {
         effect.volume * spatialMix.gainMultiplier,
         startAt + durationSeconds * 0.2
       );
-      gain.gain.exponentialRampToValueAtTime(
-        0.0001,
-        startAt + durationSeconds
-      );
+      gain.gain.exponentialRampToValueAtTime(0.0001, startAt + durationSeconds);
       oscillator.connect(gain);
       if (panner) {
         panner.pan.setValueAtTime(spatialMix.pan, startAt);

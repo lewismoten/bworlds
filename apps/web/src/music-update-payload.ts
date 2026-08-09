@@ -14,6 +14,7 @@ export type MusicUpdatePayloadInput = {
   contextType?: MusicUpdateOptions['contextType'];
   weatherKind?: MusicUpdateOptions['weatherKind'];
   weatherIntensity?: MusicUpdateOptions['weatherIntensity'];
+  combatIntensity?: MusicUpdateOptions['combatIntensity'];
   dayProgress: number;
   yearProgress?: number;
   clusterX: number;
@@ -22,9 +23,11 @@ export type MusicUpdatePayloadInput = {
   emitterY: number;
   listenerX: number;
   listenerY: number;
-  nearbyPoi: (Omit<NearbyPoiMusicLike, 'listener'> & {
-    emitter?: { x: number; y: number };
-  }) | null;
+  nearbyPoi:
+    | (Omit<NearbyPoiMusicLike, 'listener'> & {
+        emitter?: { x: number; y: number };
+      })
+    | null;
 };
 
 export function createMusicUpdatePayloadBuilder(): (
@@ -54,6 +57,7 @@ export function createMusicUpdatePayloadBuilder(): (
     payload.contextType = input.contextType;
     payload.weatherKind = input.weatherKind;
     payload.weatherIntensity = input.weatherIntensity;
+    payload.combatIntensity = input.combatIntensity ?? 0;
     payload.dayProgress = input.dayProgress;
     payload.yearProgress = input.yearProgress ?? 0;
     payload.clusterX = input.clusterX;
@@ -98,6 +102,7 @@ export function getMusicUpdateInputSignature(
     | 'contextType'
     | 'weatherKind'
     | 'weatherIntensity'
+    | 'combatIntensity'
     | 'dayProgress'
     | 'yearProgress'
     | 'clusterX'
@@ -113,6 +118,7 @@ export function getMusicUpdateInputSignature(
       Math.round((input.yearProgress ?? 0) * 96),
       input.weatherKind ?? '',
       Math.round((input.weatherIntensity ?? 0) * 10),
+      Math.round((input.combatIntensity ?? 0) * 100),
       input.clusterX ?? 0,
       input.clusterY ?? 0,
     ].join('|'),
@@ -125,6 +131,7 @@ export function getMusicUpdateInputSignature(
           Math.round((input.yearProgress ?? 0) * 96),
           input.weatherKind ?? '',
           Math.round((input.weatherIntensity ?? 0) * 10),
+          Math.round((input.combatIntensity ?? 0) * 100),
           input.nearbyPoi.clusterX ?? 0,
           input.nearbyPoi.clusterY ?? 0,
           Math.round(clamp(input.nearbyPoi.mix ?? 0, 0, 1) * 100),

@@ -17,6 +17,9 @@ export function createEnabledSoundEffectController(
     getActiveSourceCount() {
       return controller.getActiveSourceCount();
     },
+    getRecentCombatIntensity(nowMs) {
+      return controller.getRecentCombatIntensity(nowMs);
+    },
     triggerProgression(options) {
       if (!isEnabled()) {
         return;

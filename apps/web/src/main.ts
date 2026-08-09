@@ -104,15 +104,10 @@ import {
   resolveCompassHeadingRelease,
   shouldToggleCompassHeading,
 } from './compass.ts';
-import {
-  getFrameLoopActivity,
-} from './frame-loop.ts';
+import { getFrameLoopActivity } from './frame-loop.ts';
 import { createFrameLoopRunner } from './frame-loop-runner.ts';
 import { createAnimationFrameRunner } from './frame-scheduler.ts';
-import {
-  advanceHeadBobState,
-  DEFAULT_HEAD_BOB_STATE,
-} from './head-bob.ts';
+import { advanceHeadBobState, DEFAULT_HEAD_BOB_STATE } from './head-bob.ts';
 import {
   buildDebugMarkup,
   type DebugSnapshot,
@@ -221,10 +216,7 @@ import {
   getTimekeeperMiniSignature,
   getViewportHudSignature,
 } from './ui-signatures.ts';
-import {
-  createStatusView,
-  createViewportHudView,
-} from './status-view.ts';
+import { createStatusView, createViewportHudView } from './status-view.ts';
 import {
   cycleViewMode,
   getNextCompassDisplayMode,
@@ -276,7 +268,12 @@ type PerformanceWithMemory = Performance & {
 
 function getInspectionHint(
   state: {
-    inspection?: { contextId: string; x: number; y: number; note: string } | null;
+    inspection?: {
+      contextId: string;
+      x: number;
+      y: number;
+      note: string;
+    } | null;
     getCurrentContext(): { id: string };
   },
   playerX: number,
@@ -673,39 +670,44 @@ const viewport3d = document.querySelector<HTMLElement>('#viewport-3d');
 const viewportText = document.querySelector<HTMLElement>('#viewport-text');
 const viewportHud = document.querySelector<HTMLElement>('#viewport-hud');
 const viewportHudView = viewportHud ? createViewportHudView(viewportHud) : null;
-const viewportTimekeeperMini =
-  document.querySelector<HTMLCanvasElement>('#viewport-timekeeper-mini');
-const viewportCompassMini =
-  document.querySelector<HTMLCanvasElement>('#viewport-compass-mini');
-const viewportMinimapMini =
-  document.querySelector<HTMLCanvasElement>('#viewport-minimap-mini');
+const viewportTimekeeperMini = document.querySelector<HTMLCanvasElement>(
+  '#viewport-timekeeper-mini'
+);
+const viewportCompassMini = document.querySelector<HTMLCanvasElement>(
+  '#viewport-compass-mini'
+);
+const viewportMinimapMini = document.querySelector<HTMLCanvasElement>(
+  '#viewport-minimap-mini'
+);
 const hmrNotice = document.querySelector<HTMLElement>('#hmr-notice');
 const atlasCanvas = document.querySelector<HTMLCanvasElement>('#atlas');
 const timeWheelCanvas =
   document.querySelector<HTMLCanvasElement>('#time-wheel');
 const celestialPreviewHost =
   document.querySelector<HTMLElement>('#celestial-preview');
-const solarSystemPreviewHost =
-  document.querySelector<HTMLElement>('#solar-system-preview');
+const solarSystemPreviewHost = document.querySelector<HTMLElement>(
+  '#solar-system-preview'
+);
 const compassDialCanvas =
   document.querySelector<HTMLCanvasElement>('#compass-dial');
 const faceNorthButton =
   document.querySelector<HTMLButtonElement>('#face-north');
-const faceEastButton =
-  document.querySelector<HTMLButtonElement>('#face-east');
+const faceEastButton = document.querySelector<HTMLButtonElement>('#face-east');
 const faceSouthButton =
   document.querySelector<HTMLButtonElement>('#face-south');
-const faceWestButton =
-  document.querySelector<HTMLButtonElement>('#face-west');
+const faceWestButton = document.querySelector<HTMLButtonElement>('#face-west');
 const status = document.querySelector<HTMLElement>('#status');
 const statusView = status ? createStatusView(status) : null;
 const toggleButton = document.querySelector<HTMLButtonElement>('#toggle-view');
-const toggleTimekeeperDisplayButton =
-  document.querySelector<HTMLButtonElement>('#toggle-timekeeper-display');
-const toggleCompassDisplayButton =
-  document.querySelector<HTMLButtonElement>('#toggle-compass-display');
-const toggleMinimapDisplayButton =
-  document.querySelector<HTMLButtonElement>('#toggle-minimap-display');
+const toggleTimekeeperDisplayButton = document.querySelector<HTMLButtonElement>(
+  '#toggle-timekeeper-display'
+);
+const toggleCompassDisplayButton = document.querySelector<HTMLButtonElement>(
+  '#toggle-compass-display'
+);
+const toggleMinimapDisplayButton = document.querySelector<HTMLButtonElement>(
+  '#toggle-minimap-display'
+);
 const toggleMusicButton =
   document.querySelector<HTMLButtonElement>('#toggle-music');
 const toggleSoundButton =
@@ -715,16 +717,14 @@ const zoomOutMinimapButton =
 const zoomInMinimapButton =
   document.querySelector<HTMLButtonElement>('#zoom-in-minimap');
 const actionButton = document.querySelector<HTMLButtonElement>('#action');
-const buildPoiButton =
-  document.querySelector<HTMLButtonElement>('#build-poi');
+const buildPoiButton = document.querySelector<HTMLButtonElement>('#build-poi');
 const buildPoiKindSelect =
   document.querySelector<HTMLSelectElement>('#build-poi-kind');
 const contentPackForm =
   document.querySelector<HTMLFormElement>('#content-pack-form');
 const randomJumpButton =
   document.querySelector<HTMLButtonElement>('#jump-random');
-const homeJumpButton =
-  document.querySelector<HTMLButtonElement>('#jump-home');
+const homeJumpButton = document.querySelector<HTMLButtonElement>('#jump-home');
 const plusHourButton =
   document.querySelector<HTMLButtonElement>('#time-plus-hour');
 const plusSixButton =
@@ -745,38 +745,44 @@ const modelPlusHourButton =
   document.querySelector<HTMLButtonElement>('#model-plus-hour');
 const modelMinusHourButton =
   document.querySelector<HTMLButtonElement>('#model-minus-hour');
-const modelMinusSeasonButton =
-  document.querySelector<HTMLButtonElement>('#model-minus-season');
+const modelMinusSeasonButton = document.querySelector<HTMLButtonElement>(
+  '#model-minus-season'
+);
 const modelPlusSeasonButton =
   document.querySelector<HTMLButtonElement>('#model-plus-season');
-const modelPreviewWorldButton =
-  document.querySelector<HTMLButtonElement>('#model-preview-world');
-const modelPreviewSolarButton =
-  document.querySelector<HTMLButtonElement>('#model-preview-solar');
-const modelPreviewSplitButton =
-  document.querySelector<HTMLButtonElement>('#model-preview-split');
+const modelPreviewWorldButton = document.querySelector<HTMLButtonElement>(
+  '#model-preview-world'
+);
+const modelPreviewSolarButton = document.querySelector<HTMLButtonElement>(
+  '#model-preview-solar'
+);
+const modelPreviewSplitButton = document.querySelector<HTMLButtonElement>(
+  '#model-preview-split'
+);
 const eventModeAutoButton =
   document.querySelector<HTMLButtonElement>('#event-mode-auto');
 const eventModeAuroraButton =
   document.querySelector<HTMLButtonElement>('#event-mode-aurora');
-const eventModeMeteorButton =
-  document.querySelector<HTMLButtonElement>('#event-mode-meteor-shower');
+const eventModeMeteorButton = document.querySelector<HTMLButtonElement>(
+  '#event-mode-meteor-shower'
+);
 const eventModeCometButton =
   document.querySelector<HTMLButtonElement>('#event-mode-comet');
-const eventModeEclipseButton =
-  document.querySelector<HTMLButtonElement>('#event-mode-eclipse');
-const modelPreviewGrid =
-  document.querySelector<HTMLElement>('.model-preview-grid');
-const modelPreviewWorldCard =
-  document.querySelector<HTMLElement>('#model-preview-card-world');
-const modelPreviewSolarCard =
-  document.querySelector<HTMLElement>('#model-preview-card-solar');
-const eventSummary =
-  document.querySelector<HTMLElement>('#event-summary');
-const sextantSummary =
-  document.querySelector<HTMLElement>('#sextant-summary');
-const debugSummary =
-  document.querySelector<HTMLElement>('#debug-summary');
+const eventModeEclipseButton = document.querySelector<HTMLButtonElement>(
+  '#event-mode-eclipse'
+);
+const modelPreviewGrid = document.querySelector<HTMLElement>(
+  '.model-preview-grid'
+);
+const modelPreviewWorldCard = document.querySelector<HTMLElement>(
+  '#model-preview-card-world'
+);
+const modelPreviewSolarCard = document.querySelector<HTMLElement>(
+  '#model-preview-card-solar'
+);
+const eventSummary = document.querySelector<HTMLElement>('#event-summary');
+const sextantSummary = document.querySelector<HTMLElement>('#sextant-summary');
+const debugSummary = document.querySelector<HTMLElement>('#debug-summary');
 const debugSeedInput =
   document.querySelector<HTMLInputElement>('#debug-seed-input');
 const debugApplySeedButton =
@@ -785,18 +791,22 @@ const debugLoadSeedButton =
   document.querySelector<HTMLButtonElement>('#debug-load-seed');
 const debugTileKindSelect =
   document.querySelector<HTMLSelectElement>('#debug-tile-kind');
-const debugTeleportTileButton =
-  document.querySelector<HTMLButtonElement>('#debug-teleport-tile');
+const debugTeleportTileButton = document.querySelector<HTMLButtonElement>(
+  '#debug-teleport-tile'
+);
 const debugLevelDownButton =
   document.querySelector<HTMLButtonElement>('#debug-level-down');
 const debugLevelUpButton =
   document.querySelector<HTMLButtonElement>('#debug-level-up');
-const debugDownloadSnapshotButton =
-  document.querySelector<HTMLButtonElement>('#debug-download-snapshot');
-const freezeTimeButton =
-  document.querySelector<HTMLButtonElement>('#time-freeze-toggle');
-const celestialToolsCard =
-  document.querySelector<HTMLElement>('#celestial-tools-card');
+const debugDownloadSnapshotButton = document.querySelector<HTMLButtonElement>(
+  '#debug-download-snapshot'
+);
+const freezeTimeButton = document.querySelector<HTMLButtonElement>(
+  '#time-freeze-toggle'
+);
+const celestialToolsCard = document.querySelector<HTMLElement>(
+  '#celestial-tools-card'
+);
 const inspectorTabButtons = Array.from(
   document.querySelectorAll<HTMLButtonElement>('.inspector-tab')
 );
@@ -840,8 +850,7 @@ const savedWorldMapProfile = loadWorldMapProfile(savedSession);
 const worldMapServerPreferenceState = {
   preferredServerIds: normalizePreferredWorldMapServerIds(
     savedWorldMapProfile?.preferredServerIds ??
-      worldMapStorage.getPreferredServerIds?.() ??
-      ['local'],
+      worldMapStorage.getPreferredServerIds?.() ?? ['local'],
     worldMapStorage.getPreferredServerIds?.() ?? ['local']
   ),
 };
@@ -867,28 +876,38 @@ state.playerLevel = normalizePlayerLevel(
 state.playerProfession = savedCharacterProfile?.playerProfession;
 state.completedQuestIds = [...(savedCharacterProfile?.completedQuestIds ?? [])];
 const characterRosterState = {
-  roster: ensurePlayerCharacterRoster(savedCharacterProfile?.characterRoster ?? null, {
-    player: savedCharacterProfile?.player ?? savedSession?.player ?? state.player,
-    stack: savedCharacterProfile?.stack ?? savedSession?.stack ?? state.stack,
-    worldSeed:
-      savedCharacterProfile?.worldSeed ??
-      savedSession?.worldSeed ??
-      DEFAULT_WORLD_SEED,
-    playerLevel: normalizePlayerLevel(
-      savedCharacterProfile?.playerLevel ?? savedSession?.playerLevel
-    ),
-    playerProfession: savedCharacterProfile?.playerProfession,
-    completedQuestIds: savedCharacterProfile?.completedQuestIds ?? [],
-  }),
+  roster: ensurePlayerCharacterRoster(
+    savedCharacterProfile?.characterRoster ?? null,
+    {
+      player:
+        savedCharacterProfile?.player ?? savedSession?.player ?? state.player,
+      stack: savedCharacterProfile?.stack ?? savedSession?.stack ?? state.stack,
+      worldSeed:
+        savedCharacterProfile?.worldSeed ??
+        savedSession?.worldSeed ??
+        DEFAULT_WORLD_SEED,
+      playerLevel: normalizePlayerLevel(
+        savedCharacterProfile?.playerLevel ?? savedSession?.playerLevel
+      ),
+      playerProfession: savedCharacterProfile?.playerProfession,
+      completedQuestIds: savedCharacterProfile?.completedQuestIds ?? [],
+    }
+  ),
 };
-(state as typeof state & {
-  characterRoster?: PlayerCharacterRosterSnapshot;
-  activeCharacterIds?: string[];
-}).characterRoster = characterRosterState.roster;
-(state as typeof state & {
-  activeCharacterIds?: string[];
-}).activeCharacterIds = [...characterRosterState.roster.activeCharacterIds];
-state.inventory = [...(savedInventoryProfile?.items ?? savedSession?.inventory ?? [])];
+(
+  state as typeof state & {
+    characterRoster?: PlayerCharacterRosterSnapshot;
+    activeCharacterIds?: string[];
+  }
+).characterRoster = characterRosterState.roster;
+(
+  state as typeof state & {
+    activeCharacterIds?: string[];
+  }
+).activeCharacterIds = [...characterRosterState.roster.activeCharacterIds];
+state.inventory = [
+  ...(savedInventoryProfile?.items ?? savedSession?.inventory ?? []),
+];
 syncPlayerPlacedPoisIntoState(
   savedWorldMapProfile?.playerPlacedPois ??
     savedSession?.worldMapProfile?.playerPlacedPois ??
@@ -973,16 +992,15 @@ const mouseLookState = {
 const nearbyPoiMusicState = {
   cache: createBoundedCache<
     string,
-    | null
-    | {
-        tileKind?: string;
-        poiType?: string;
-        contextType?: string;
-        mix: number;
-        clusterX: number;
-        clusterY: number;
-        emitter: { x: number; y: number };
-      }
+    null | {
+      tileKind?: string;
+      poiType?: string;
+      contextType?: string;
+      mix: number;
+      clusterX: number;
+      clusterY: number;
+      emitter: { x: number; y: number };
+    }
   >(48),
   profile: null as null | {
     tileKind?: string;
@@ -997,36 +1015,30 @@ const nearbyPoiMusicState = {
 const nearbyTrainAudioState = {
   cache: createBoundedCache<
     string,
-    | null
-    | {
-        progress?: number;
-        emitter: { x: number; y: number };
-      }
+    null | {
+      progress?: number;
+      emitter: { x: number; y: number };
+    }
   >(48),
-  profile: null as
-    | null
-    | {
-        progress?: number;
-        emitter: { x: number; y: number };
-      },
+  profile: null as null | {
+    progress?: number;
+    emitter: { x: number; y: number };
+  },
 };
 const nearbyPaddleBoatAudioState = {
   cache: createBoundedCache<
     string,
-    | null
-    | {
-        progress?: number;
-        whistlePhase?: 'arrival' | 'departure';
-        emitter: { x: number; y: number };
-      }
+    null | {
+      progress?: number;
+      whistlePhase?: 'arrival' | 'departure';
+      emitter: { x: number; y: number };
+    }
   >(48),
-  profile: null as
-    | null
-    | {
-        progress?: number;
-        whistlePhase?: 'arrival' | 'departure';
-        emitter: { x: number; y: number };
-      },
+  profile: null as null | {
+    progress?: number;
+    whistlePhase?: 'arrival' | 'departure';
+    emitter: { x: number; y: number };
+  },
 };
 const MOON_PHASE_NAMES = [
   'New Moon',
@@ -1038,7 +1050,9 @@ const MOON_PHASE_NAMES = [
   'Last Quarter',
   'Waning Crescent',
 ] as const;
-const MOON_PHASE_ILLUMINATIONS = [0, 0.25, 0.5, 0.75, 1, 0.75, 0.5, 0.25] as const;
+const MOON_PHASE_ILLUMINATIONS = [
+  0, 0.25, 0.5, 0.75, 1, 0.75, 0.5, 0.25,
+] as const;
 
 drawAtlas(atlasCanvas.getContext('2d'));
 const renderer3d = create3DRenderer(viewport3d);
@@ -1059,14 +1073,19 @@ const sessionPersistence = createDebouncedPersistence(flushSessionSave);
 const celestialPreview = createCelestialPreviewRenderer(celestialPreviewHost, {
   onRenderRequested: () => requestRender(),
 });
-const solarSystemPreview = createSolarSystemPreviewRenderer(solarSystemPreviewHost, {
-  onRenderRequested: () => requestRender(),
-});
+const solarSystemPreview = createSolarSystemPreviewRenderer(
+  solarSystemPreviewHost,
+  {
+    onRenderRequested: () => requestRender(),
+  }
+);
 let activeInspectorTab = getInitialInspectorTab(
   savedSession?.inspectorTab,
   urlSearchParams.get('inspector') ?? undefined
 );
-let activeModelPreviewMode = getNextModelPreviewMode(savedSession?.modelPreviewMode);
+let activeModelPreviewMode = getNextModelPreviewMode(
+  savedSession?.modelPreviewMode
+);
 let activeTimekeeperDisplayMode = getNextTimekeeperDisplayMode(
   savedSession?.timekeeperDisplayMode
 );
@@ -1159,7 +1178,8 @@ const renderBudgetState = {
 };
 const APP_VERSION = appPackage.version;
 const BUILD_ID =
-  (import.meta.env as Record<string, string | undefined>).VITE_GIT_COMMIT ?? null;
+  (import.meta.env as Record<string, string | undefined>).VITE_GIT_COMMIT ??
+  null;
 const resolveCachedEnvironment = createEnvironmentFrameCache(({ timeMs }) =>
   registry.resolveWorldEnvironment({
     state,
@@ -1176,9 +1196,8 @@ const resolveCachedCycle = createCycleFrameCache(
 const resolveCachedPlayerSpatialSummary = createPlayerSpatialSummaryCache(
   getPlayerSpatialSummary
 );
-const resolveCachedNearbyOverworldQueryState = createNearbyOverworldQueryStateCache(
-  getNearbyOverworldQueryState
-);
+const resolveCachedNearbyOverworldQueryState =
+  createNearbyOverworldQueryStateCache(getNearbyOverworldQueryState);
 const buildReusableRenderBudget = createRenderBudgetBuilder();
 let latestEnvironment: WorldEnvironmentLike = getCurrentEnvironment();
 
@@ -1253,7 +1272,9 @@ function updateStatus(
   const moonLabel = cycle.moonPhaseName;
   const weatherLabel = formatWeatherSummary(environment);
   const forecastLabel = formatForecastSummary(environment);
-  const eventModeLabel = formatCelestialEventModeLabel(celestialEventModeState.mode);
+  const eventModeLabel = formatCelestialEventModeLabel(
+    celestialEventModeState.mode
+  );
   const eventsLabel = describeActiveCelestialEvents(
     summarizeCelestialEvents(cycle)
   );
@@ -1367,7 +1388,10 @@ function updateStatus(
 
   if (viewportTimekeeperMini) {
     const showGraphicTimekeeper = activeTimekeeperDisplayMode === 'graphical';
-    viewportTimekeeperMini.classList.toggle('is-hidden', !showGraphicTimekeeper);
+    viewportTimekeeperMini.classList.toggle(
+      'is-hidden',
+      !showGraphicTimekeeper
+    );
     viewportTimekeeperMini.hidden = !showGraphicTimekeeper;
   }
   if (viewportCompassMini) {
@@ -1434,7 +1458,10 @@ function updateModelPreviewModeUi(): void {
     activeModelPreviewMode === 'solar-system'
   );
   const showWorld = isModelPreviewVisible(activeModelPreviewMode, 'world');
-  const showSolar = isModelPreviewVisible(activeModelPreviewMode, 'solar-system');
+  const showSolar = isModelPreviewVisible(
+    activeModelPreviewMode,
+    'solar-system'
+  );
   modelPreviewWorldCard?.classList.toggle('is-hidden', !showWorld);
   modelPreviewSolarCard?.classList.toggle('is-hidden', !showSolar);
   if (modelPreviewWorldCard) {
@@ -1452,7 +1479,9 @@ function formatTimekeeperDisplayModeLabel(mode: TimekeeperDisplayMode): string {
   return 'Time + Date';
 }
 
-function cycleTimekeeperDisplayMode(mode: TimekeeperDisplayMode): TimekeeperDisplayMode {
+function cycleTimekeeperDisplayMode(
+  mode: TimekeeperDisplayMode
+): TimekeeperDisplayMode {
   if (mode === 'hidden') return 'time';
   if (mode === 'time') return 'time-date';
   if (mode === 'time-date') return 'graphical';
@@ -1502,10 +1531,12 @@ function updateMinimapDisplayModeUi(): void {
     )}`;
   }
   if (zoomOutMinimapButton) {
-    zoomOutMinimapButton.disabled = activeMinimapDisplayMode === 'hidden' || minimapZoom <= 0.7;
+    zoomOutMinimapButton.disabled =
+      activeMinimapDisplayMode === 'hidden' || minimapZoom <= 0.7;
   }
   if (zoomInMinimapButton) {
-    zoomInMinimapButton.disabled = activeMinimapDisplayMode === 'hidden' || minimapZoom >= 2;
+    zoomInMinimapButton.disabled =
+      activeMinimapDisplayMode === 'hidden' || minimapZoom >= 2;
   }
 }
 
@@ -1514,13 +1545,19 @@ function updateAudioPreferenceUi(): void {
     toggleMusicButton.textContent = formatMusicToggleLabel(
       audioPreferenceState.musicEnabled
     );
-    toggleMusicButton.classList.toggle('is-active', audioPreferenceState.musicEnabled);
+    toggleMusicButton.classList.toggle(
+      'is-active',
+      audioPreferenceState.musicEnabled
+    );
   }
   if (toggleSoundButton) {
     toggleSoundButton.textContent = formatSoundToggleLabel(
       audioPreferenceState.soundEnabled
     );
-    toggleSoundButton.classList.toggle('is-active', audioPreferenceState.soundEnabled);
+    toggleSoundButton.classList.toggle(
+      'is-active',
+      audioPreferenceState.soundEnabled
+    );
   }
 }
 
@@ -1745,13 +1782,12 @@ function updateDebugTeleportOptions(): void {
   );
 
   debugTileKindSelect.innerHTML = options
-    .map(
-      (option) =>
-        `<option value="${option.kind}">${option.label}</option>`
-    )
+    .map((option) => `<option value="${option.kind}">${option.label}</option>`)
     .join('');
 
-  const hasPreviousValue = options.some((option) => option.kind === previousValue);
+  const hasPreviousValue = options.some(
+    (option) => option.kind === previousValue
+  );
   if (hasPreviousValue) {
     debugTileKindSelect.value = previousValue;
   }
@@ -1777,7 +1813,9 @@ function loadSavedWorldSeed(): void {
     applyWorldSeed(profile.worldSeed ?? DEFAULT_WORLD_SEED);
     return;
   }
-  const parsed = parseSavedSession(window.localStorage.getItem(SESSION_STORAGE_KEY));
+  const parsed = parseSavedSession(
+    window.localStorage.getItem(SESSION_STORAGE_KEY)
+  );
   applyWorldSeed(parsed?.worldSeed ?? DEFAULT_WORLD_SEED);
 }
 
@@ -1841,7 +1879,8 @@ function collectCurrentDebugSnapshot(
     renderQualityLevel: formatRenderQualityLevel(
       getRenderQualityLevel(renderBudgetState)
     ),
-    renderQualityLimiters: getRenderQualityLimiters(renderBudgetState).join(', '),
+    renderQualityLimiters:
+      getRenderQualityLimiters(renderBudgetState).join(', '),
     playerLevel: normalizePlayerLevel(state.playerLevel),
     visibilityRadius: renderBudgetState.visibilityRadius,
     drawCalls: rendererStats.drawCalls,
@@ -1911,7 +1950,8 @@ function collectCurrentDebugSnapshot(
     fullSimulationEntityCount: worldStats.fullSimulationEntityCount,
     reducedSimulationEntityCount: worldStats.reducedSimulationEntityCount,
     activeAudioSourceCount:
-      soundEffects.getActiveSourceCount() + musicController.getActiveSourceCount(),
+      soundEffects.getActiveSourceCount() +
+      musicController.getActiveSourceCount(),
     materialRefCount: rendererStats.materialRefCount,
     materialCount: rendererStats.materialCount,
     sharedMaterialCount: rendererStats.sharedMaterialCount,
@@ -1943,7 +1983,8 @@ function collectCurrentDebugSnapshot(
     treeMaterialRefCount: rendererStats.treeMaterialRefCount,
     visibleTileKindSummary: rendererStats.visibleTileKindSummary,
     textureCount: rendererStats.textureCount,
-    textureMemoryEstimateMb: rendererStats.textureMemoryEstimateBytes / (1024 * 1024),
+    textureMemoryEstimateMb:
+      rendererStats.textureMemoryEstimateBytes / (1024 * 1024),
     programCount: rendererStats.programCount,
     latitude: spatial.gps.latitude,
     longitude: spatial.gps.longitude,
@@ -1964,7 +2005,9 @@ function collectCurrentDebugSnapshot(
   const stationaryTileBuildWarning = getStationaryTileBuildWarning(
     debugResourceTrendState.rendererChurnSamples
   );
-  const heapGrowthWarning = getHeapGrowthWarning(debugResourceTrendState.heapSamples);
+  const heapGrowthWarning = getHeapGrowthWarning(
+    debugResourceTrendState.heapSamples
+  );
   const idleAllocationWarning = getIdleAllocationWarning(
     debugResourceTrendState.heapSamples
   );
@@ -1985,11 +2028,9 @@ function collectCurrentDebugSnapshot(
   if (
     options.recordDiagnostics &&
     previousSnapshot &&
-    (
-      previousSnapshot.targetFps !== debugSnapshot.targetFps ||
+    (previousSnapshot.targetFps !== debugSnapshot.targetFps ||
       previousSnapshot.visibilityRadius !== debugSnapshot.visibilityRadius ||
-      previousSnapshot.renderQualityLevel !== debugSnapshot.renderQualityLevel
-    )
+      previousSnapshot.renderQualityLevel !== debugSnapshot.renderQualityLevel)
   ) {
     recordDebugRecentEvent({
       nowMs,
@@ -2030,7 +2071,9 @@ function collectCurrentDebugSnapshot(
 
   debugSnapshot.peakMaterialCount = Math.max(
     debugSnapshot.materialCount,
-    ...debugResourceTrendState.materialSamples.map((sample) => sample.materialCount)
+    ...debugResourceTrendState.materialSamples.map(
+      (sample) => sample.materialCount
+    )
   );
 
   debugSnapshotState.latestSnapshot = { ...debugSnapshot };
@@ -2087,12 +2130,15 @@ function downloadCurrentDebugSnapshot(): void {
       userAgent: navigator.userAgent,
       language: navigator.language,
       platform:
-        (navigator as Navigator & {
-          userAgentData?: { platform?: string };
-        }).userAgentData?.platform ?? navigator.platform,
+        (
+          navigator as Navigator & {
+            userAgentData?: { platform?: string };
+          }
+        ).userAgentData?.platform ?? navigator.platform,
       hardwareConcurrency: navigator.hardwareConcurrency,
       deviceMemoryGb:
-        (navigator as Navigator & { deviceMemory?: number }).deviceMemory ?? null,
+        (navigator as Navigator & { deviceMemory?: number }).deviceMemory ??
+        null,
     },
     graphicsCapabilities,
     performanceBudget: {
@@ -2144,8 +2190,10 @@ function recordDebugRecentEvent(event: DebugSnapshotRecentEvent): void {
 function canLandOnOverworldTile(x: number, y: number): boolean {
   const tile = generator.sampleOverworld(x, y);
   const definition =
-    registry.resolveTileDefinition(tile.kind, state.getTileDefinition(tile.kind)) ??
-    state.getTileDefinition(tile.kind);
+    registry.resolveTileDefinition(
+      tile.kind,
+      state.getTileDefinition(tile.kind)
+    ) ?? state.getTileDefinition(tile.kind);
   return (
     Boolean(definition?.walkable) &&
     tile.kind !== 'river' &&
@@ -2227,18 +2275,16 @@ function getNearbyPoiMusicProfile() {
   }
 
   const searchRadius = 7;
-  let best:
-    | null
-    | {
-        tileKind?: string;
-        poiType?: string;
-        contextType?: string;
-        mix: number;
-        clusterX: number;
-        clusterY: number;
-        emitter: { x: number; y: number };
-        distance: number;
-      } = null;
+  let best: null | {
+    tileKind?: string;
+    poiType?: string;
+    contextType?: string;
+    mix: number;
+    clusterX: number;
+    clusterY: number;
+    emitter: { x: number; y: number };
+    distance: number;
+  } = null;
 
   for (let y = centerY - searchRadius; y <= centerY + searchRadius; y += 1) {
     for (let x = centerX - searchRadius; x <= centerX + searchRadius; x += 1) {
@@ -2362,7 +2408,10 @@ function getNearbyPaddleBoatAudioProfile() {
   });
 
   nearbyPaddleBoatAudioState.profile = best;
-  nearbyPaddleBoatAudioState.cache.set(cacheKey, nearbyPaddleBoatAudioState.profile);
+  nearbyPaddleBoatAudioState.cache.set(
+    cacheKey,
+    nearbyPaddleBoatAudioState.profile
+  );
   return nearbyPaddleBoatAudioState.profile;
 }
 
@@ -2471,7 +2520,9 @@ function getSavedPlayerPlacedPois(): PlayerPlacedPoiLike[] {
 
 function syncPlayerPlacedPoisIntoState(pois: PlayerPlacedPoiLike[]): void {
   setPlayerPlacedPois(state, pois);
-  (state as typeof state & { overworldTileRevision?: number }).overworldTileRevision = 0;
+  (
+    state as typeof state & { overworldTileRevision?: number }
+  ).overworldTileRevision = 0;
 }
 
 function handleBuildPoi(): void {
@@ -2489,11 +2540,14 @@ function handleBuildPoi(): void {
 
   const built = buildPlayerPoi(state, currentWorldSeedHash, selectedKind);
   if (!built) {
-    showHmrNotice('Unable to build here. Move to an open overworld tile without an existing point of interest.');
+    showHmrNotice(
+      'Unable to build here. Move to an open overworld tile without an existing point of interest.'
+    );
     return;
   }
 
-  const publishTargets = worldMapStorage.getPreferredPoiPublishTargets?.() ?? [];
+  const publishTargets =
+    worldMapStorage.getPreferredPoiPublishTargets?.() ?? [];
   const publishPrompt = formatWorldMapPoiPublishPrompt(
     built.poi.name,
     publishTargets
@@ -2504,7 +2558,8 @@ function handleBuildPoi(): void {
     typeof window.confirm === 'function' &&
     window.confirm(publishPrompt)
   ) {
-    publishedServerIds = worldMapStorage.publishPoiToPreferredServers?.(built) ?? [];
+    publishedServerIds =
+      worldMapStorage.publishPoiToPreferredServers?.(built) ?? [];
   }
 
   saveSession();
@@ -2539,11 +2594,10 @@ function travelToOverworld(
 }
 
 function jumpToRandomPlains(): void {
-  const destination =
-    findRandomTileDestination('plains', {
-      sampleOverworld: generator.sampleOverworld,
-      canLandAt: canLandOnOverworldTile,
-    }) ?? { x: 0, y: 0 };
+  const destination = findRandomTileDestination('plains', {
+    sampleOverworld: generator.sampleOverworld,
+    canLandAt: canLandOnOverworldTile,
+  }) ?? { x: 0, y: 0 };
   travelToOverworld(destination.x, destination.y);
 }
 
@@ -2569,14 +2623,20 @@ function teleportToSelectedTileKind(): void {
   }
 
   travelToOverworld(destination.x, destination.y);
-  showHmrNotice(`Jumped to ${targetKind} near ${destination.x}, ${destination.y}.`);
+  showHmrNotice(
+    `Jumped to ${targetKind} near ${destination.x}, ${destination.y}.`
+  );
 }
 
 function skipTimeByHours(hours: number): void {
   const environment = getCurrentEnvironment();
-  const nextOffsetMs = advanceWorldTimeOffsetByHours(timeState.offsetMs, hours, {
-    dayLengthMs: environment.cycle?.dayLengthMs,
-  });
+  const nextOffsetMs = advanceWorldTimeOffsetByHours(
+    timeState.offsetMs,
+    hours,
+    {
+      dayLengthMs: environment.cycle?.dayLengthMs,
+    }
+  );
   timeState.offsetMs = nextOffsetMs;
   if (timeState.frozen) {
     timeState.frozenWorldTimeMs = getWorldTimeMs(performance.now(), {
@@ -2604,9 +2664,7 @@ function skipSeasonByCount(seasons: number): void {
   requestRender();
 }
 
-function jumpToTimePreset(
-  preset: 'dawn' | 'noon' | 'dusk' | 'midnight'
-): void {
+function jumpToTimePreset(preset: 'dawn' | 'noon' | 'dusk' | 'midnight'): void {
   const environment = getCurrentEnvironment();
   const cycle = getCurrentCycle(environment);
   const targetProgress = getTimePresetProgress(cycle, preset);
@@ -2636,7 +2694,8 @@ function setInspectorTab(tabId: string | undefined): void {
   Object.entries(inspectorPanels).forEach(([panelId, panel]) => {
     const isActive = isInspectorSectionVisible(
       activeInspectorTab,
-      panelId as 'timekeeper' | 'model' | 'events' | 'compass' | 'sextant' | 'debug'
+      panelId as
+        'timekeeper' | 'model' | 'events' | 'compass' | 'sextant' | 'debug'
     );
     panel?.classList.toggle('is-hidden', !isActive);
     panel?.setAttribute('aria-hidden', String(!isActive));
@@ -2656,28 +2715,40 @@ function setInspectorTab(tabId: string | undefined): void {
     !isInspectorSectionVisible(activeInspectorTab, 'timekeeper')
   );
   if (timeWheelCanvas) {
-    timeWheelCanvas.hidden = !isInspectorSectionVisible(activeInspectorTab, 'timekeeper');
+    timeWheelCanvas.hidden = !isInspectorSectionVisible(
+      activeInspectorTab,
+      'timekeeper'
+    );
   }
   celestialPreviewHost?.classList.toggle(
     'is-hidden',
     !isInspectorSectionVisible(activeInspectorTab, 'model')
   );
   if (celestialPreviewHost) {
-    celestialPreviewHost.hidden = !isInspectorSectionVisible(activeInspectorTab, 'model');
+    celestialPreviewHost.hidden = !isInspectorSectionVisible(
+      activeInspectorTab,
+      'model'
+    );
   }
   eventSummary?.classList.toggle(
     'is-hidden',
     !isInspectorSectionVisible(activeInspectorTab, 'events')
   );
   if (eventSummary) {
-    eventSummary.hidden = !isInspectorSectionVisible(activeInspectorTab, 'events');
+    eventSummary.hidden = !isInspectorSectionVisible(
+      activeInspectorTab,
+      'events'
+    );
   }
   compassDialCanvas?.classList.toggle(
     'is-hidden',
     !isInspectorSectionVisible(activeInspectorTab, 'compass')
   );
   if (compassDialCanvas) {
-    compassDialCanvas.hidden = !isInspectorSectionVisible(activeInspectorTab, 'compass');
+    compassDialCanvas.hidden = !isInspectorSectionVisible(
+      activeInspectorTab,
+      'compass'
+    );
   }
   saveSession();
 }
@@ -2886,6 +2957,7 @@ function render(): FrameLoopActivityLike {
   const musicClusterX = Math.floor(spatial.playerX / 12);
   const musicClusterY = Math.floor(spatial.playerY / 12);
   const nearbyPoiMusic = getNearbyPoiMusicProfile();
+  const combatIntensity = soundEffects.getRecentCombatIntensity(nowMs);
   const musicUpdate = gateMusicUpdate({
     nowMs,
     tileKind: currentTile.kind,
@@ -2894,6 +2966,7 @@ function render(): FrameLoopActivityLike {
     yearProgress: actualCycle.yearProgress,
     weatherKind: environment.weather?.current?.kind,
     weatherIntensity: environment.weather?.current?.intensity,
+    combatIntensity,
     clusterX: musicClusterX,
     clusterY: musicClusterY,
     emitterX: musicClusterX * 12 + 6,
@@ -2929,7 +3002,8 @@ function render(): FrameLoopActivityLike {
       uiRenderState.lastTextViewportSignature = textViewportSignature;
     }
   } else {
-    const pendingWorldBuildBudget = getPendingWorldBuildBudget(renderBudgetState);
+    const pendingWorldBuildBudget =
+      getPendingWorldBuildBudget(renderBudgetState);
     const frameGenerationBudget = getFrameGenerationBudget(renderBudgetState);
     const renderBudget = buildReusableRenderBudget(renderBudgetState, {
       generationBudgetMs: frameGenerationBudget.generationBudgetMs,
@@ -3023,7 +3097,12 @@ function render(): FrameLoopActivityLike {
       }
     }
   }
-  celestialPreview.render(displayCycle, environment, state.player.facing, generator);
+  celestialPreview.render(
+    displayCycle,
+    environment,
+    state.player.facing,
+    generator
+  );
   solarSystemPreview.render(displayCycle);
   const compassFrameState = resolveCompassFrameState({
     miniVisible:
@@ -3059,13 +3138,24 @@ function render(): FrameLoopActivityLike {
       uiRenderState.lastCompassMiniSignature = compassMiniSignature;
     }
   }
-  const eventsInspectorVisible = isInspectorSectionVisible(activeInspectorTab, 'events');
-  const sextantInspectorVisible = isInspectorSectionVisible(activeInspectorTab, 'sextant');
-  const debugInspectorVisible = isInspectorSectionVisible(activeInspectorTab, 'debug');
+  const eventsInspectorVisible = isInspectorSectionVisible(
+    activeInspectorTab,
+    'events'
+  );
+  const sextantInspectorVisible = isInspectorSectionVisible(
+    activeInspectorTab,
+    'sextant'
+  );
+  const debugInspectorVisible = isInspectorSectionVisible(
+    activeInspectorTab,
+    'debug'
+  );
   if (eventSummary && eventsInspectorVisible) {
     const eventSummaryState = summarizeCelestialEvents(displayCycle);
     const eventDetails = getActiveCelestialEventDetails(eventSummaryState);
-    const modeLabel = formatCelestialEventModeLabel(celestialEventModeState.mode);
+    const modeLabel = formatCelestialEventModeLabel(
+      celestialEventModeState.mode
+    );
     const activeEventsLabel = describeActiveCelestialEvents(eventSummaryState);
     const eventSummarySignature = getEventSummarySignature({
       modeLabel,
@@ -3099,7 +3189,8 @@ function render(): FrameLoopActivityLike {
     }
   }
   updateStatus(spatial, environment, displayCycle);
-  const needsCoordinateSummary = sextantInspectorVisible || debugInspectorVisible;
+  const needsCoordinateSummary =
+    sextantInspectorVisible || debugInspectorVisible;
   const gps = needsCoordinateSummary ? spatial.gps : null;
   const gridX = needsCoordinateSummary ? spatial.gridX : 0;
   const gridY = needsCoordinateSummary ? spatial.gridY : 0;
@@ -3188,7 +3279,10 @@ function requestRender(): void {
 
 function showHmrNotice(message: string, durationMs = 8000): void {
   hmrNoticeState.message = message;
-  hmrNoticeState.visibleUntilMs = getHmrNoticeVisibleUntil(performance.now(), durationMs);
+  hmrNoticeState.visibleUntilMs = getHmrNoticeVisibleUntil(
+    performance.now(),
+    durationMs
+  );
   requestRender();
 }
 
@@ -3317,7 +3411,8 @@ function updateDisplayedCycle(
   const moonPhaseIndex = Math.round((dialState.moonPhaseProgress % 1) * 8) % 8;
   const constellationCount = Math.max(1, cycle.constellations.length);
   const activeConstellationIndex =
-    Math.floor(dialState.yearProgress * constellationCount) % constellationCount;
+    Math.floor(dialState.yearProgress * constellationCount) %
+    constellationCount;
   return {
     ...cycle,
     dayProgress: dialState.dayProgress,
@@ -3421,54 +3516,62 @@ import.meta.hot?.on('vite:afterUpdate', () => {
   showHmrNotice(getHmrNoticeText('after-update'));
 });
 
-window.addEventListener('keydown', (event) => {
-  if (isEditableKeyboardTarget(event.target)) {
-    return;
-  }
-  soundEffects.resume();
-  musicController.resume();
-  const key = normalizeKeyboardKey(event.key);
-  if (
-    state.viewMode === '3d' &&
-    shouldRestoreViewportFocusForGameplayKey(key)
-  ) {
-    restore3dViewportKeyboardFocus(state.viewMode, viewport3d);
-  }
-  keys.add(key);
-
-  if (key === 'v') toggleView();
-  if (key === 'Enter') handleInteraction();
-  if (key === ' ') {
-    if (state.viewMode === '3d') {
-      motion.spaceHeld = true;
-      if (motion.spaceReady) {
-        motion.spaceReady = false;
-        jump();
-      }
-    } else {
-      handleInteraction();
+window.addEventListener(
+  'keydown',
+  (event) => {
+    if (isEditableKeyboardTarget(event.target)) {
+      return;
     }
-  }
-  if (key === 'x') handleTryExit();
-  requestRender();
+    soundEffects.resume();
+    musicController.resume();
+    const key = normalizeKeyboardKey(event.key);
+    if (
+      state.viewMode === '3d' &&
+      shouldRestoreViewportFocusForGameplayKey(key)
+    ) {
+      restore3dViewportKeyboardFocus(state.viewMode, viewport3d);
+    }
+    keys.add(key);
 
-  if (shouldPreventDefaultGameplayKey(event.key)) {
-    event.preventDefault();
-  }
-}, true);
+    if (key === 'v') toggleView();
+    if (key === 'Enter') handleInteraction();
+    if (key === ' ') {
+      if (state.viewMode === '3d') {
+        motion.spaceHeld = true;
+        if (motion.spaceReady) {
+          motion.spaceReady = false;
+          jump();
+        }
+      } else {
+        handleInteraction();
+      }
+    }
+    if (key === 'x') handleTryExit();
+    requestRender();
 
-window.addEventListener('keyup', (event) => {
-  if (isEditableKeyboardTarget(event.target)) {
-    return;
-  }
-  const key = normalizeKeyboardKey(event.key);
-  keys.delete(key);
-  if (event.key === ' ') {
-    motion.spaceHeld = false;
-    motion.spaceReady = true;
-  }
-  requestRender();
-}, true);
+    if (shouldPreventDefaultGameplayKey(event.key)) {
+      event.preventDefault();
+    }
+  },
+  true
+);
+
+window.addEventListener(
+  'keyup',
+  (event) => {
+    if (isEditableKeyboardTarget(event.target)) {
+      return;
+    }
+    const key = normalizeKeyboardKey(event.key);
+    keys.delete(key);
+    if (event.key === ' ') {
+      motion.spaceHeld = false;
+      motion.spaceReady = true;
+    }
+    requestRender();
+  },
+  true
+);
 
 toggleButton.addEventListener('click', toggleView);
 actionButton.addEventListener('click', handleInteraction);
@@ -3481,7 +3584,8 @@ contentPackForm?.addEventListener('change', () => {
         return pack.id === REQUIRED_PACK_ID;
       }
       const controls = Array.from(input).filter(
-        (control): control is HTMLInputElement => control instanceof HTMLInputElement
+        (control): control is HTMLInputElement =>
+          control instanceof HTMLInputElement
       );
       return controls.some(
         (control) => control.value === pack.id && control.checked
@@ -3515,7 +3619,10 @@ debugLevelDownButton?.addEventListener('click', () => {
 debugLevelUpButton?.addEventListener('click', () => {
   setPlayerLevel(normalizePlayerLevel(state.playerLevel) + 1);
 });
-debugDownloadSnapshotButton?.addEventListener('click', downloadCurrentDebugSnapshot);
+debugDownloadSnapshotButton?.addEventListener(
+  'click',
+  downloadCurrentDebugSnapshot
+);
 debugSeedInput?.addEventListener('keydown', (event) => {
   if (event.key === 'Enter') {
     applyWorldSeed(debugSeedInput.value);
@@ -3526,16 +3633,34 @@ debugTileKindSelect?.addEventListener('keydown', (event) => {
     teleportToSelectedTileKind();
   }
 });
-modelPreviewWorldButton?.addEventListener('click', () => setModelPreviewMode('world'));
-modelPreviewSolarButton?.addEventListener('click', () => setModelPreviewMode('solar-system'));
-modelPreviewSplitButton?.addEventListener('click', () => setModelPreviewMode('split'));
-eventModeAutoButton?.addEventListener('click', () => setCelestialEventMode('auto'));
-eventModeAuroraButton?.addEventListener('click', () => setCelestialEventMode('aurora'));
-eventModeMeteorButton?.addEventListener('click', () => setCelestialEventMode('meteor-shower'));
-eventModeCometButton?.addEventListener('click', () => setCelestialEventMode('comet'));
-eventModeEclipseButton?.addEventListener('click', () => setCelestialEventMode('eclipse'));
+modelPreviewWorldButton?.addEventListener('click', () =>
+  setModelPreviewMode('world')
+);
+modelPreviewSolarButton?.addEventListener('click', () =>
+  setModelPreviewMode('solar-system')
+);
+modelPreviewSplitButton?.addEventListener('click', () =>
+  setModelPreviewMode('split')
+);
+eventModeAutoButton?.addEventListener('click', () =>
+  setCelestialEventMode('auto')
+);
+eventModeAuroraButton?.addEventListener('click', () =>
+  setCelestialEventMode('aurora')
+);
+eventModeMeteorButton?.addEventListener('click', () =>
+  setCelestialEventMode('meteor-shower')
+);
+eventModeCometButton?.addEventListener('click', () =>
+  setCelestialEventMode('comet')
+);
+eventModeEclipseButton?.addEventListener('click', () =>
+  setCelestialEventMode('eclipse')
+);
 toggleTimekeeperDisplayButton?.addEventListener('click', () => {
-  setTimekeeperDisplayMode(cycleTimekeeperDisplayMode(activeTimekeeperDisplayMode));
+  setTimekeeperDisplayMode(
+    cycleTimekeeperDisplayMode(activeTimekeeperDisplayMode)
+  );
 });
 toggleCompassDisplayButton?.addEventListener('click', () => {
   setCompassDisplayMode(cycleCompassDisplayMode(activeCompassDisplayMode));
@@ -3668,19 +3793,21 @@ const releaseCompassDialPointer = (event: PointerEvent) => {
 
 compassDialCanvas?.addEventListener('pointerup', releaseCompassDialPointer);
 compassDialCanvas?.addEventListener('pointercancel', releaseCompassDialPointer);
-root.querySelectorAll<HTMLButtonElement>('[data-time-preset]').forEach((button) => {
-  button.addEventListener('click', () => {
-    const preset = button.dataset.timePreset;
-    if (
-      preset === 'dawn' ||
-      preset === 'noon' ||
-      preset === 'dusk' ||
-      preset === 'midnight'
-    ) {
-      jumpToTimePreset(preset);
-    }
+root
+  .querySelectorAll<HTMLButtonElement>('[data-time-preset]')
+  .forEach((button) => {
+    button.addEventListener('click', () => {
+      const preset = button.dataset.timePreset;
+      if (
+        preset === 'dawn' ||
+        preset === 'noon' ||
+        preset === 'dusk' ||
+        preset === 'midnight'
+      ) {
+        jumpToTimePreset(preset);
+      }
+    });
   });
-});
 
 viewportStage?.addEventListener('pointerdown', (event) => {
   soundEffects.resume();
@@ -3775,13 +3902,15 @@ function saveSession(): void {
 function flushSessionSave(): void {
   try {
     const characterProfile = buildCharacterProfileSnapshot();
-    const serializedCharacterProfile = serializeCharacterProfile(characterProfile);
+    const serializedCharacterProfile =
+      serializeCharacterProfile(characterProfile);
     if (serializedCharacterProfile !== lastSavedCharacterSnapshot) {
       characterStorage.saveProfile(characterProfile);
       lastSavedCharacterSnapshot = serializedCharacterProfile;
     }
     const inventoryProfile = buildInventoryProfileSnapshot();
-    const serializedInventoryProfile = serializeInventoryProfile(inventoryProfile);
+    const serializedInventoryProfile =
+      serializeInventoryProfile(inventoryProfile);
     if (serializedInventoryProfile !== lastSavedInventorySnapshot) {
       inventoryStorage.saveProfile(inventoryProfile);
       lastSavedInventorySnapshot = serializedInventoryProfile;
@@ -3844,18 +3973,21 @@ function loadSession(): ReturnType<typeof parseSavedSession> {
 }
 
 function buildCharacterProfileSnapshot(): CharacterProfileSnapshot {
-  characterRosterState.roster = syncPrimaryPlayerCharacter(characterRosterState.roster, {
-    player: {
-      x: state.player.x,
-      y: state.player.y,
-      facing: state.player.facing,
-    },
-    stack: state.stack,
-    worldSeed: currentWorldSeed,
-    playerLevel: normalizePlayerLevel(state.playerLevel),
-    playerProfession: state.playerProfession,
-    completedQuestIds: [...(state.completedQuestIds ?? [])],
-  });
+  characterRosterState.roster = syncPrimaryPlayerCharacter(
+    characterRosterState.roster,
+    {
+      player: {
+        x: state.player.x,
+        y: state.player.y,
+        facing: state.player.facing,
+      },
+      stack: state.stack,
+      worldSeed: currentWorldSeed,
+      playerLevel: normalizePlayerLevel(state.playerLevel),
+      playerProfession: state.playerProfession,
+      completedQuestIds: [...(state.completedQuestIds ?? [])],
+    }
+  );
   return {
     player: {
       x: state.player.x,
@@ -3970,9 +4102,7 @@ function getLegacyWorldMapProfile(
   }
   return {
     playerPlacedPois:
-      session?.playerPlacedPois ??
-      characterProfile?.playerPlacedPois ??
-      [],
+      session?.playerPlacedPois ?? characterProfile?.playerPlacedPois ?? [],
     preferredServerIds: ['local'],
   };
 }
@@ -3989,10 +4119,8 @@ function loadWorldMapProfile(
   }
   lastSavedWorldMapSnapshot = serializeWorldMapProfile({
     playerPlacedPois: profile.playerPlacedPois ?? [],
-    preferredServerIds:
-      profile.preferredServerIds ??
-      worldMapStorage.getPreferredServerIds?.() ??
-      ['local'],
+    preferredServerIds: profile.preferredServerIds ??
+      worldMapStorage.getPreferredServerIds?.() ?? ['local'],
   });
   return profile;
 }
