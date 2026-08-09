@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { createCoordinateCache } from '@bworlds/cache-support';
 import {
   getTileAtlasCanvas,
   getTilePixelSize,
@@ -981,21 +982,16 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
   }
 
   function createTileBuildCache(state): TileBuildCache {
-    const tileCache = new Map<string, TileLike>();
-    const surfaceProfileCache = new Map<string, TileSurfaceProfile>();
-
-    function makeKey(tileX: number, tileY: number) {
-      return `${tileX}:${tileY}`;
-    }
+    const tileCache = createCoordinateCache<TileLike>();
+    const surfaceProfileCache = createCoordinateCache<TileSurfaceProfile>();
 
     function getTile(tileX: number, tileY: number): TileLike {
-      const key = makeKey(tileX, tileY);
-      const cached = tileCache.get(key);
+      const cached = tileCache.get(tileX, tileY);
       if (cached !== undefined) {
         return cached;
       }
       const tile = state.getCurrentTile(tileX, tileY);
-      tileCache.set(key, tile);
+      tileCache.set(tileX, tileY, tile);
       return tile;
     }
 
@@ -1004,13 +1000,12 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       tileY: number,
       tile = getTile(tileX, tileY)
     ): TileSurfaceProfile {
-      const key = makeKey(tileX, tileY);
-      const cached = surfaceProfileCache.get(key);
+      const cached = surfaceProfileCache.get(tileX, tileY);
       if (cached !== undefined) {
         return cached;
       }
       const surfaceProfile = getTileSurfaceProfile(state, tile, tileX, tileY);
-      surfaceProfileCache.set(key, surfaceProfile);
+      surfaceProfileCache.set(tileX, tileY, surfaceProfile);
       return surfaceProfile;
     }
 

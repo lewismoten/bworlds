@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createBoundedCache } from './index.ts';
+import { createBoundedCache, createCoordinateCache } from './index.ts';
 
 describe('cache support', () => {
   it('stores and retrieves values while tracking presence separately from null values', () => {
@@ -95,5 +95,42 @@ describe('cache support', () => {
     expect(second).toBeUndefined();
     expect(cache.has('alpha')).toBe(true);
     expect(calls).toBe(1);
+  });
+
+  it('stores 2d coordinate values without allocating composite string keys', () => {
+    const cache = createCoordinateCache<string | undefined>();
+
+    cache.set(4, -2, 'value');
+    cache.set(4, 0, undefined);
+
+    expect(cache.get(4, -2)).toBe('value');
+    expect(cache.has(4, -2)).toBe(true);
+    expect(cache.has(4, 0)).toBe(true);
+    expect(cache.get(4, 0)).toBeUndefined();
+    expect(cache.size()).toBe(2);
+  });
+
+  it('creates 2d coordinate values only once and clears nested rows', () => {
+    const cache = createCoordinateCache<string | null>();
+    let calls = 0;
+
+    const first = cache.getOrCreate(7, 3, () => {
+      calls += 1;
+      return null;
+    });
+    const second = cache.getOrCreate(7, 3, () => {
+      calls += 1;
+      return 'unexpected';
+    });
+
+    expect(first).toBeNull();
+    expect(second).toBeNull();
+    expect(calls).toBe(1);
+    expect(cache.size()).toBe(1);
+
+    cache.clear();
+
+    expect(cache.size()).toBe(0);
+    expect(cache.has(7, 3)).toBe(false);
   });
 });

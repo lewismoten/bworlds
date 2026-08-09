@@ -11,6 +11,15 @@ export type BoundedCache<Key, Value> = CacheLike<Key, Value> & {
   size(): number;
 };
 
+export type CoordinateCache<Value> = {
+  clear(): void;
+  get(x: number, y: number): Value | undefined;
+  has(x: number, y: number): boolean;
+  set(x: number, y: number, value: Value): void;
+  getOrCreate(x: number, y: number, create: () => Value): Value;
+  size(): number;
+};
+
 type CacheEntry<Value> = {
   value: Value;
 };
@@ -72,6 +81,49 @@ export function createBoundedCache<Key, Value>(
     },
     size() {
       return entries.size;
+    },
+  };
+}
+
+export function createCoordinateCache<Value>(): CoordinateCache<Value> {
+  const rows = new Map<number, Map<number, Value>>();
+  let entryCount = 0;
+
+  const lookupRow = (x: number): Map<number, Value> | undefined => rows.get(x);
+
+  return {
+    clear() {
+      rows.clear();
+      entryCount = 0;
+    },
+    get(x, y) {
+      return lookupRow(x)?.get(y);
+    },
+    has(x, y) {
+      return lookupRow(x)?.has(y) ?? false;
+    },
+    set(x, y, value) {
+      let row = lookupRow(x);
+      if (!row) {
+        row = new Map<number, Value>();
+        rows.set(x, row);
+      }
+      if (!row.has(y)) {
+        entryCount += 1;
+      }
+      row.set(y, value);
+    },
+    getOrCreate(x, y, create) {
+      const cached = lookupRow(x)?.get(y);
+      if (cached !== undefined || this.has(x, y)) {
+        return cached as Value;
+      }
+      const value = create();
+      this.set(x, y, value);
+      return value;
+    },
+    size() {
+      return entryCount;
     },
   };
 }
