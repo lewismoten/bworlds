@@ -13,5 +13,7 @@ export default defineConfig({
       reporter: ['text', 'html'],
       include: ['packages/**/src/**/*.ts', 'apps/web/src/**/*.ts'],
     },
+    testTimeout: 200,
+    hookTimeout: 1000
   },
 });
