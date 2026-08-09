@@ -502,4 +502,39 @@ describe('procedural sound effect generator', () => {
     expect(effect.vibrato?.depthHz).toBeGreaterThan(16);
     expect(effect.vibrato?.depthHz).toBeLessThan(20);
   });
+
+  it('preserves deterministic frequency modulation settings', () => {
+    const generator = createProceduralSoundEffectGenerator();
+    const effect = generator.generate({
+      kind: 'combat-magic',
+      nowMs: 2550,
+      seed: 137,
+      recipe: {
+        id: 'combat-magic-fm',
+        baseFrequency: 244,
+        baseDurationMs: 320,
+        baseVolume: 0.05,
+        waveform: 'triangle',
+        frequencyModulation: {
+          modulatorFrequencyHz: 168,
+          depthHz: 42,
+          waveform: 'triangle',
+          rateVariation: 0.05,
+          depthVariation: 0.1,
+        },
+      },
+    });
+
+    expect(effect.frequencyModulation).toEqual({
+      modulatorFrequencyHz: expect.any(Number),
+      depthHz: expect.any(Number),
+      waveform: 'triangle',
+    });
+    expect(effect.frequencyModulation?.modulatorFrequencyHz).toBeGreaterThan(
+      159
+    );
+    expect(effect.frequencyModulation?.modulatorFrequencyHz).toBeLessThan(177);
+    expect(effect.frequencyModulation?.depthHz).toBeGreaterThan(37);
+    expect(effect.frequencyModulation?.depthHz).toBeLessThan(47);
+  });
 });

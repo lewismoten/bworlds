@@ -45,6 +45,7 @@ export type ProceduralSoundEffect = {
   reverb?: ProceduralSoundReverb;
   tremolo?: ProceduralSoundTremolo;
   vibrato?: ProceduralSoundVibrato;
+  frequencyModulation?: ProceduralSoundFrequencyModulation;
   sweeps?: ProceduralSoundFrequencySweep[];
   layers?: ProceduralSoundEffectLayer[];
   emitter?: SoundPosition;
@@ -68,6 +69,7 @@ export type ProceduralSoundEffectLayer = {
   reverb?: ProceduralSoundReverb;
   tremolo?: ProceduralSoundTremolo;
   vibrato?: ProceduralSoundVibrato;
+  frequencyModulation?: ProceduralSoundFrequencyModulation;
   sweeps?: ProceduralSoundFrequencySweep[];
 };
 
@@ -149,6 +151,12 @@ export type ProceduralSoundVibrato = {
   waveform: SoundWaveform;
 };
 
+export type ProceduralSoundFrequencyModulation = {
+  modulatorFrequencyHz: number;
+  depthHz: number;
+  waveform: SoundWaveform;
+};
+
 export type ProceduralSoundFrequencySweep = {
   curve: ProceduralSoundFrequencySweepCurve;
   targetMultiplier?: number;
@@ -181,6 +189,7 @@ export type ProceduralSoundRecipe = {
   reverb?: ProceduralSoundReverbRecipe;
   tremolo?: ProceduralSoundTremoloRecipe;
   vibrato?: ProceduralSoundVibratoRecipe;
+  frequencyModulation?: ProceduralSoundFrequencyModulationRecipe;
   sweeps?: readonly ProceduralSoundFrequencySweepRecipe[];
   layers?: readonly ProceduralSoundLayerRecipe[];
 };
@@ -302,6 +311,14 @@ export type ProceduralSoundVibratoRecipe = {
   depthVariation?: number;
 };
 
+export type ProceduralSoundFrequencyModulationRecipe = {
+  modulatorFrequencyHz: number;
+  depthHz: number;
+  waveform: SoundWaveform | readonly SoundWaveform[];
+  rateVariation?: number;
+  depthVariation?: number;
+};
+
 export type ProceduralSoundLayerRecipe = {
   id: string;
   waveform: SoundWaveform | readonly SoundWaveform[];
@@ -328,6 +345,7 @@ export type ProceduralSoundLayerRecipe = {
   reverb?: ProceduralSoundReverbRecipe;
   tremolo?: ProceduralSoundTremoloRecipe;
   vibrato?: ProceduralSoundVibratoRecipe;
+  frequencyModulation?: ProceduralSoundFrequencyModulationRecipe;
   sweeps?: readonly ProceduralSoundFrequencySweepRecipe[];
 };
 
@@ -429,6 +447,11 @@ export function createProceduralSoundEffectGenerator(): ProceduralSoundEffectGen
         variationDepth,
         random
       );
+      const frequencyModulation = resolveSoundFrequencyModulation(
+        recipe.frequencyModulation,
+        variationDepth,
+        random
+      );
 
       return {
         kind,
@@ -446,6 +469,7 @@ export function createProceduralSoundEffectGenerator(): ProceduralSoundEffectGen
         reverb,
         tremolo,
         vibrato,
+        frequencyModulation,
         sweeps,
         layers,
         emitter,
@@ -544,6 +568,11 @@ function resolveEffectLayers(
       reverb: resolveSoundReverb(layerRecipe.reverb, variationDepth, random),
       tremolo: resolveSoundTremolo(layerRecipe.tremolo, variationDepth, random),
       vibrato: resolveSoundVibrato(layerRecipe.vibrato, variationDepth, random),
+      frequencyModulation: resolveSoundFrequencyModulation(
+        layerRecipe.frequencyModulation,
+        variationDepth,
+        random
+      ),
       sweeps: resolveFrequencySweeps(
         layerRecipe.sweeps,
         frequency,
@@ -928,6 +957,41 @@ function resolveSoundVibrato(
       2_000
     ),
     waveform: resolveWaveform(vibratoRecipe.waveform, random),
+  };
+}
+
+function resolveSoundFrequencyModulation(
+  frequencyModulationRecipe:
+    ProceduralSoundFrequencyModulationRecipe | undefined,
+  variationDepth: number,
+  random: () => number
+): ProceduralSoundFrequencyModulation | undefined {
+  if (!frequencyModulationRecipe) {
+    return undefined;
+  }
+
+  return {
+    modulatorFrequencyHz: clampValue(
+      varyScalar(
+        frequencyModulationRecipe.modulatorFrequencyHz,
+        frequencyModulationRecipe.rateVariation ?? 0,
+        variationDepth,
+        random
+      ),
+      0.1,
+      20_000
+    ),
+    depthHz: clampValue(
+      varyScalar(
+        frequencyModulationRecipe.depthHz,
+        frequencyModulationRecipe.depthVariation ?? 0,
+        variationDepth,
+        random
+      ),
+      0.01,
+      20_000
+    ),
+    waveform: resolveWaveform(frequencyModulationRecipe.waveform, random),
   };
 }
 
