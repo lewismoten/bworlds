@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  createTreeSceneState,
   createTreeLogicalState,
   createTreeFamily,
   createTreeGenerator,
@@ -138,6 +139,32 @@ describe('tree support', () => {
       branches: [],
     });
     expect(getTreeCanopyState(legacy)).toEqual({ foliage: [] });
+  });
+
+  it('groups trees, decorations, and inhabitants into a separate scene state', () => {
+    const tree = createTreeLogicalState({
+      x: 0,
+      y: 0,
+      form: 'oak' as const,
+      structure: {
+        radius: 0.2,
+        scale: 1,
+        trunkHeight: 1.2,
+        branches: [],
+      },
+      canopy: {
+        foliage: [],
+      },
+    });
+    const scene = createTreeSceneState({
+      trees: [tree],
+      decorations: [{ kind: 'hollow', treeIndex: 0 }],
+      inhabitants: [{ kind: 'owl', treeIndex: 0 }],
+    });
+
+    expect(scene.trees).toHaveLength(1);
+    expect(scene.decorations).toEqual([{ kind: 'hollow', treeIndex: 0 }]);
+    expect(scene.inhabitants).toEqual([{ kind: 'owl', treeIndex: 0 }]);
   });
 
   it('lets generators advertise capabilities without generating a tree', () => {

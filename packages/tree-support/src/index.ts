@@ -74,6 +74,16 @@ export interface TreeCanopyState {
   foliage: TreeFoliageState[];
 }
 
+export interface TreeDecorationState<TKind extends string = string> {
+  kind: TKind;
+  treeIndex?: number;
+}
+
+export interface TreeInhabitantState<TKind extends string = string> {
+  kind: TKind;
+  treeIndex?: number;
+}
+
 export interface TreeLogicalState<TForm extends string = string> {
   x: number;
   y: number;
@@ -140,6 +150,16 @@ export interface TreeFamily<TTree, TContext> extends TreeGenerator<TTree, TConte
   generateSpecies(id: string, context: TContext): TTree;
 }
 
+export interface TreeSceneState<
+  TForm extends string = string,
+  TDecoration extends TreeDecorationState = TreeDecorationState,
+  TInhabitant extends TreeInhabitantState = TreeInhabitantState,
+> {
+  trees: Array<TreeLogicalState<TForm>>;
+  decorations: TDecoration[];
+  inhabitants: TInhabitant[];
+}
+
 export function createTreeLogicalState<TForm extends string = string>({
   x,
   y,
@@ -184,6 +204,26 @@ export function getTreeCanopyState<TForm extends string = string>(
   tree: TreeLogicalState<TForm>
 ): TreeCanopyState {
   return tree.canopy ?? { foliage: tree.foliage };
+}
+
+export function createTreeSceneState<
+  TForm extends string = string,
+  TDecoration extends TreeDecorationState = TreeDecorationState,
+  TInhabitant extends TreeInhabitantState = TreeInhabitantState,
+>({
+  trees,
+  decorations,
+  inhabitants,
+}: TreeSceneState<TForm, TDecoration, TInhabitant>): TreeSceneState<
+  TForm,
+  TDecoration,
+  TInhabitant
+> {
+  return {
+    trees,
+    decorations,
+    inhabitants,
+  };
 }
 
 export function createTreeGeneratorBase({

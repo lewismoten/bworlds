@@ -33,7 +33,7 @@ For example, an oak and a pine both support `age`, but aging them should produce
 * [ ] Separate tree biological state from rendered geometry.
 * [X] Separate tree placement from tree appearance generation.
 * [X] Separate structural geometry from foliage.
-* [ ] Separate decorations and inhabitants from the tree itself.
+* [X] Separate decorations and inhabitants from the tree itself.
 * [ ] Separate collision geometry from visible geometry.
 * [ ] Separate tree simulation from rendering.
 * [ ] Allow text, 2D, and 3D renderers to consume the same logical tree state.

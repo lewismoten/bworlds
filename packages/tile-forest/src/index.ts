@@ -23,6 +23,7 @@ import {
 } from '@bworlds/procedural-style';
 import {
   createTreeLogicalState,
+  createTreeSceneState,
   createTreeFamily,
   createTreeGenerator,
   createTreeGeneratorBase,
@@ -36,6 +37,7 @@ import {
   type TreeFoliageState,
   type TreeGenerator,
   type TreeLogicalState,
+  type TreeSceneState,
   type TreeStructuralState,
   type TreeSpecies,
 } from '@bworlds/tree-support';
@@ -248,6 +250,10 @@ const forestWebCache = createBoundedCache<string, ForestWebDescriptor[]>(
 const forestSpiderCache = createBoundedCache<string, ForestSpiderDescriptor[]>(
   FOREST_COORDINATE_CACHE_LIMIT
 );
+const forestTreeSceneCache = createBoundedCache<
+  string,
+  ForestTreeSceneState
+>(FOREST_COORDINATE_CACHE_LIMIT);
 const forestBeaverDamageCache = createBoundedCache<
   string,
   ForestBeaverDamageDescriptor[]
@@ -1115,8 +1121,12 @@ export function createForestTilePlugin(): RuntimePlugin {
 
         if (detailLevel === 'full') {
           const floorDetailStyle = getTreeStyle(three, tileX, tileY, 0);
+          const scene = getForestTreeSceneState(tileX, tileY);
           const hollows = renderCloseDetails
-            ? getForestTreeHollows(tileX, tileY)
+            ? scene.decorations.filter(
+                (decoration): decoration is Extract<ForestTreeDecoration, { kind: 'hollow' }> =>
+                  decoration.kind === 'hollow'
+              )
             : [];
           for (const hollow of hollows) {
             const treeDescriptor = descriptors[hollow.treeIndex];
@@ -1141,7 +1151,10 @@ export function createForestTilePlugin(): RuntimePlugin {
             group.add(hollowMesh);
           }
           if (renderCloseDetails) {
-            for (const owl of getForestOwls(tileX, tileY)) {
+            for (const owl of scene.inhabitants.filter(
+              (inhabitant): inhabitant is Extract<ForestTreeInhabitant, { kind: 'owl' }> =>
+                inhabitant.kind === 'owl'
+            )) {
               const hollow = hollows[owl.hollowIndex];
               const treeDescriptor = hollow
                 ? descriptors[hollow.treeIndex]
@@ -1206,7 +1219,10 @@ export function createForestTilePlugin(): RuntimePlugin {
             }
           }
           if (renderCloseDetails) {
-            for (const carving of getForestCarvings(tileX, tileY)) {
+            for (const carving of scene.decorations.filter(
+              (decoration): decoration is Extract<ForestTreeDecoration, { kind: 'carving' }> =>
+                decoration.kind === 'carving'
+            )) {
               const treeDescriptor = descriptors[carving.treeIndex];
               if (!treeDescriptor) {
                 continue;
@@ -1260,7 +1276,10 @@ export function createForestTilePlugin(): RuntimePlugin {
             );
           }
           if (renderCloseDetails) {
-            for (const bird of getForestBirds(tileX, tileY)) {
+            for (const bird of scene.inhabitants.filter(
+              (inhabitant): inhabitant is Extract<ForestTreeInhabitant, { kind: 'bird' }> =>
+                inhabitant.kind === 'bird'
+            )) {
               const birdGroup = new three.Group();
               birdGroup.userData = {
                 ...(birdGroup.userData ?? {}),
@@ -1306,7 +1325,19 @@ export function createForestTilePlugin(): RuntimePlugin {
               floorDetailStyle,
               tileX,
               tileY,
-              getForestWebs(tileX, tileY)
+              scene.decorations
+                .filter(
+                  (decoration): decoration is Extract<ForestTreeDecoration, { kind: 'web' }> =>
+                    decoration.kind === 'web'
+                )
+                .map((web) => ({
+                  kind: web.webKind,
+                  x: web.x,
+                  y: web.y,
+                  z: web.z,
+                  radius: web.radius,
+                  strandCount: web.strandCount,
+                }))
             );
           }
           if (renderCloseDetails) {
@@ -1317,7 +1348,10 @@ export function createForestTilePlugin(): RuntimePlugin {
               floorDetailStyle,
               tileX,
               tileY,
-              getForestSpiders(tileX, tileY)
+              scene.inhabitants.filter(
+                (inhabitant): inhabitant is Extract<ForestTreeInhabitant, { kind: 'spider' }> =>
+                  inhabitant.kind === 'spider'
+              )
             );
           }
           if (renderCloseDetails) {
@@ -1463,6 +1497,55 @@ function getForestTreeDescriptors(
   return resolveForestTreeDescriptors(tileX, tileY);
 }
 
+function getForestTreeSceneState(
+  tileX: number,
+  tileY: number
+): ForestTreeSceneState {
+  const cacheKey = `${tileX}:${tileY}`;
+  if (!forestTreeSceneCache.has(cacheKey)) {
+    forestTreeSceneCache.set(
+      cacheKey,
+      createTreeSceneState({
+        trees: getForestTreeDescriptors(tileX, tileY),
+        decorations: [
+          ...getForestTreeHollows(tileX, tileY).map((hollow) => ({
+            kind: 'hollow' as const,
+            ...hollow,
+          })),
+          ...getForestCarvings(tileX, tileY).map((carving) => ({
+            kind: 'carving' as const,
+            ...carving,
+          })),
+          ...getForestWebs(tileX, tileY).map((web) => ({
+            kind: 'web' as const,
+            webKind: web.kind,
+            x: web.x,
+            y: web.y,
+            z: web.z,
+            radius: web.radius,
+            strandCount: web.strandCount,
+          })),
+        ],
+        inhabitants: [
+          ...getForestOwls(tileX, tileY).map((owl) => ({
+            kind: 'owl' as const,
+            ...owl,
+          })),
+          ...getForestBirds(tileX, tileY).map((bird) => ({
+            kind: 'bird' as const,
+            ...bird,
+          })),
+          ...getForestSpiders(tileX, tileY).map((spider) => ({
+            kind: 'spider' as const,
+            ...spider,
+          })),
+        ],
+      })
+    );
+  }
+  return forestTreeSceneCache.get(cacheKey)!;
+}
+
 export function getForestFloorDetails(
   tileX: number,
   tileY: number
@@ -1482,6 +1565,20 @@ export function getForestBushes(
   tileY: number
 ): ForestBushDescriptor[] {
   return resolveForestBushDescriptors(tileX, tileY);
+}
+
+export function getForestTreeDecorations(
+  tileX: number,
+  tileY: number
+): ForestTreeDecoration[] {
+  return getForestTreeSceneState(tileX, tileY).decorations;
+}
+
+export function getForestTreeInhabitants(
+  tileX: number,
+  tileY: number
+): ForestTreeInhabitant[] {
+  return getForestTreeSceneState(tileX, tileY).inhabitants;
 }
 
 export function getForestTreeHollows(
@@ -4293,6 +4390,30 @@ interface ForestBirdDescriptor {
   speed: number;
   wingScale: number;
 }
+
+type ForestTreeDecoration =
+  | ({ kind: 'hollow' } & ForestHollowDescriptor)
+  | ({ kind: 'carving' } & ForestCarvingDescriptor)
+  | {
+      kind: 'web';
+      webKind: ForestWebDescriptor['kind'];
+      x: number;
+      y: number;
+      z: number;
+      radius: number;
+      strandCount: number;
+    };
+
+type ForestTreeInhabitant =
+  | ({ kind: 'owl' } & ForestOwlDescriptor)
+  | ({ kind: 'bird' } & ForestBirdDescriptor)
+  | ({ kind: 'spider' } & ForestSpiderDescriptor);
+
+type ForestTreeSceneState = TreeSceneState<
+  ForestTreeForm,
+  ForestTreeDecoration,
+  ForestTreeInhabitant
+>;
 
 const CARVING_LETTER_L = [
   { x: -0.4, y: 1.8 },

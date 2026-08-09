@@ -15,7 +15,9 @@ import {
   getForestFireflyDescriptors,
   getForestTreeFamilies,
   getForestTreeCanopyProfiles,
+  getForestTreeDecorations,
   getForestTreeGenerator,
+  getForestTreeInhabitants,
   getForestTreeBranchProfiles,
   getForestCarvings,
   getForestFloorDetails,
@@ -832,6 +834,46 @@ describe('tile forest', () => {
     ).toBe(true);
     expect(getForestTreeBranchProfiles(first.x, first.y)).toEqual(first.branches);
     expect(getForestTreeCanopyProfiles(first.x, first.y)).toEqual(first.canopies);
+  });
+
+  it('separates forest decorations and inhabitants from the core tree scene', () => {
+    const sampleTiles: Array<{
+      x: number;
+      y: number;
+      decorations: ReturnType<typeof getForestTreeDecorations>;
+      inhabitants: ReturnType<typeof getForestTreeInhabitants>;
+    }> = [];
+
+    for (let tileY = 0; tileY < 32; tileY += 1) {
+      for (let tileX = 0; tileX < 32; tileX += 1) {
+        const decorations = getForestTreeDecorations(tileX, tileY);
+        const inhabitants = getForestTreeInhabitants(tileX, tileY);
+        if (decorations.length > 0 || inhabitants.length > 0) {
+          sampleTiles.push({ x: tileX, y: tileY, decorations, inhabitants });
+        }
+      }
+    }
+
+    expect(sampleTiles.length).toBeGreaterThan(0);
+    expect(
+      sampleTiles.some(({ decorations }) =>
+        decorations.some((decoration) => decoration.kind === 'hollow')
+      )
+    ).toBe(true);
+    expect(
+      sampleTiles.some(({ decorations }) =>
+        decorations.some((decoration) => decoration.kind === 'carving')
+      )
+    ).toBe(true);
+    expect(
+      sampleTiles.some(({ inhabitants }) =>
+        inhabitants.some((inhabitant) => inhabitant.kind === 'bird')
+      )
+    ).toBe(true);
+
+    const first = sampleTiles[0]!;
+    expect(getForestTreeDecorations(first.x, first.y)).toEqual(first.decorations);
+    expect(getForestTreeInhabitants(first.x, first.y)).toEqual(first.inhabitants);
   });
 
   it('generates more tree-like branch profiles for broadleaf and pine forms', () => {
