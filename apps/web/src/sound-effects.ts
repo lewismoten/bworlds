@@ -441,6 +441,49 @@ export function resolveAmbientIdentityVariant(options: {
   return options.fallback;
 }
 
+export function resolveRainIdentityVariant(options: {
+  surface: WeatherPrecipitationSurface;
+  weatherKind?: string;
+  yearProgress?: number;
+}): string {
+  const season = resolveAmbientSeason(options.yearProgress);
+  if (options.weatherKind === 'heavy-rain') {
+    if (season === 'spring') {
+      return `spring-${options.surface}`;
+    }
+    if (season === 'autumn') {
+      return `autumn-${options.surface}`;
+    }
+  }
+  return options.surface;
+}
+
+export function resolveThunderIdentityVariant(
+  variant: WeatherThunderVariant,
+  yearProgress?: number
+): string {
+  const season = resolveAmbientSeason(yearProgress);
+  if (season === 'summer' || season === 'spring') {
+    return `${season}-${variant}`;
+  }
+  return variant;
+}
+
+export function resolveSeasonalWindIdentityVariant(
+  baseVariant: 'stormfront' | 'canopy' | 'crossdraft' | 'sandstorm' | 'cyclone',
+  yearProgress?: number,
+  weatherKind?: string
+): string {
+  const season = resolveAmbientSeason(yearProgress);
+  if (weatherKind === 'wind' && season === 'autumn') {
+    return `autumn-${baseVariant}`;
+  }
+  if (baseVariant === 'cyclone' && season === 'summer') {
+    return 'summer-cyclone';
+  }
+  return baseVariant;
+}
+
 function createProceduralEffectSeed(
   kind: SoundEffectKind,
   nowMs: number,
@@ -930,7 +973,7 @@ export function createSoundEffectController(
             emitter,
             listener,
             getThunderSoundDurationMs(thunderIntensity, thunderStrike.variant),
-            thunderStrike.variant
+            resolveThunderIdentityVariant(thunderStrike.variant, yearProgress)
           );
           const weatherAcousticGain = resolveWeatherAcousticGain(
             tileKind,
@@ -975,7 +1018,11 @@ export function createSoundEffectController(
               weatherAcousticGain *
               ambienceDuckingGain,
             getRainSoundDurationMs(rainIntensity),
-            precipitationSurface
+            resolveRainIdentityVariant({
+              surface: precipitationSurface,
+              weatherKind,
+              yearProgress,
+            })
           );
         }
         const hailIntensity = normalizeHailAudioIntensity(
@@ -1055,11 +1102,15 @@ export function createSoundEffectController(
             listener,
             weatherAcousticGain * ambienceDuckingGain,
             getWindSoundDurationMs(windAudioIntensity),
-            resolveWindIdentityVariant(
-              windSurface,
-              weatherKind,
-              tileKind,
-              windStrength
+            resolveSeasonalWindIdentityVariant(
+              resolveWindIdentityVariant(
+                windSurface,
+                weatherKind,
+                tileKind,
+                windStrength
+              ),
+              yearProgress,
+              weatherKind
             )
           );
         }

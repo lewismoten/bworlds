@@ -3095,7 +3095,7 @@ describe('sound effects', () => {
     const winds = played.filter((effect) => effect.kind === 'wind');
     expect(winds).toHaveLength(2);
     expect(winds[0]?.recipeId).toBe('wind:sand:sandstorm');
-    expect(winds[1]?.recipeId).toBe('wind:plains:cyclone');
+    expect(winds[1]?.recipeId).toBe('wind:plains:summer-cyclone');
   });
 
   it('plays snowstorm ambience only during snowy high-wind conditions', () => {
@@ -3169,6 +3169,62 @@ describe('sound effects', () => {
       thunder[0]?.startOffsetMs ?? 0
     );
     expect(thunder[0]?.recipeId).toMatch(/^thunder:plains:/);
+  });
+
+  it('tags storm audio with seasonal spring, summer, and autumn recipe variants', () => {
+    const played: ProceduralSoundEffect[] = [];
+    const controller = createSoundEffectController({
+      play(effect) {
+        played.push(effect);
+      },
+    });
+
+    controller.update({
+      nowMs: 0,
+      walking: false,
+      isJumping: false,
+      viewMode: '3d',
+      tileKind: 'plains',
+      weatherKind: 'heavy-rain',
+      weatherIntensity: 0.88,
+      windStrength: 0.62,
+      yearProgress: 0.18,
+    });
+    controller.update({
+      nowMs: getThunderCadenceMs(0.62) + 80,
+      walking: false,
+      isJumping: false,
+      viewMode: '3d',
+      tileKind: 'plains',
+      weatherKind: 'heavy-rain',
+      weatherIntensity: 0.94,
+      windStrength: 0.74,
+      yearProgress: 0.48,
+    });
+    controller.update({
+      nowMs: getThunderCadenceMs(0.62) + getRainCadenceMs(0.94) + 180,
+      walking: false,
+      isJumping: false,
+      viewMode: '3d',
+      tileKind: 'forest',
+      weatherKind: 'wind',
+      windStrength: 0.84,
+      yearProgress: 0.72,
+    });
+
+    expect(
+      played.some((effect) => effect.recipeId === 'rain:plains:spring-open')
+    ).toBe(true);
+    expect(
+      played.some((effect) =>
+        effect.recipeId?.startsWith('thunder:plains:summer-')
+      )
+    ).toBe(true);
+    expect(
+      played.some(
+        (effect) => effect.recipeId === 'wind:forest:autumn-stormfront'
+      )
+    ).toBe(true);
   });
 
   it('plays hail impacts with surface-specific recipe variants', () => {

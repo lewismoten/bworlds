@@ -392,6 +392,62 @@ describe('sound recipe library', () => {
     ]);
   });
 
+  it('supports seasonal storm variants for spring rain, summer thunder, and autumn wind', () => {
+    const springRainRecipe = buildProceduralSoundRecipe({
+      kind: 'rain',
+      identityVariant: 'spring-open',
+      profile: DEFAULT_SURFACE_PROFILE,
+      variantOffset: 0,
+      resolveAdvancementFrequency: () => 300,
+      resolveAmbientSoundFrequency: () => 172,
+      resolveInteractionFrequency: () => 128,
+      resolveInteractionWaveform: (_tileKind, fallback) => fallback,
+      resolvePaddleBoatCalliopeFrequency: () => 520,
+      resolveSteamWhistleFrequency: () => 360,
+    });
+    const summerThunderRecipe = buildProceduralSoundRecipe({
+      kind: 'thunder',
+      identityVariant: 'summer-overhead',
+      profile: DEFAULT_SURFACE_PROFILE,
+      variantOffset: 0,
+      resolveAdvancementFrequency: () => 300,
+      resolveAmbientSoundFrequency: () => 172,
+      resolveInteractionFrequency: () => 128,
+      resolveInteractionWaveform: (_tileKind, fallback) => fallback,
+      resolvePaddleBoatCalliopeFrequency: () => 520,
+      resolveSteamWhistleFrequency: () => 360,
+    });
+    const autumnWindRecipe = buildProceduralSoundRecipe({
+      kind: 'wind',
+      identityVariant: 'autumn-stormfront',
+      profile: DEFAULT_SURFACE_PROFILE,
+      variantOffset: 0,
+      resolveAdvancementFrequency: () => 300,
+      resolveAmbientSoundFrequency: () => 172,
+      resolveInteractionFrequency: () => 128,
+      resolveInteractionWaveform: (_tileKind, fallback) => fallback,
+      resolvePaddleBoatCalliopeFrequency: () => 520,
+      resolveSteamWhistleFrequency: () => 360,
+    });
+
+    expect(springRainRecipe.id).toBe('rain:spring-open');
+    expect(springRainRecipe.layers?.map((layer) => layer.id)).toEqual([
+      'rain-spring-bed',
+      'rain-spring-squall',
+    ]);
+    expect(summerThunderRecipe.id).toBe('thunder:summer-overhead');
+    expect(summerThunderRecipe.layers?.map((layer) => layer.id)).toEqual([
+      'thunder-summer-crack',
+      'thunder-summer-rumble',
+      'thunder-summer-reflections',
+    ]);
+    expect(autumnWindRecipe.id).toBe('wind:autumn-stormfront');
+    expect(autumnWindRecipe.layers?.map((layer) => layer.id)).toEqual([
+      'wind-autumn-gale-bed',
+      'wind-autumn-leaf-gust',
+    ]);
+  });
+
   it('supports snowstorm and hail variants for winter weather surfaces', () => {
     const flurryRecipe = buildProceduralSoundRecipe({
       kind: 'snowstorm',

@@ -587,6 +587,37 @@ function resolveMovementIdentityVariantOffset(
   }
 }
 
+function resolveSeasonalVariantSeason(
+  identityVariant: string | undefined
+): 'spring' | 'summer' | 'autumn' | 'winter' | null {
+  if (!identityVariant) {
+    return null;
+  }
+  if (identityVariant.startsWith('spring-')) {
+    return 'spring';
+  }
+  if (identityVariant.startsWith('summer-')) {
+    return 'summer';
+  }
+  if (identityVariant.startsWith('autumn-')) {
+    return 'autumn';
+  }
+  if (identityVariant.startsWith('winter-')) {
+    return 'winter';
+  }
+  return null;
+}
+
+function resolveSeasonalVariantBase(
+  identityVariant: string | undefined
+): string | undefined {
+  const season = resolveSeasonalVariantSeason(identityVariant);
+  if (!season || !identityVariant) {
+    return identityVariant;
+  }
+  return identityVariant.slice(season.length + 1);
+}
+
 function resolveProceduralSoundDistortion(kind: SoundEffectKind) {
   switch (kind) {
     case 'combat-weapon':
@@ -885,6 +916,8 @@ function resolveProceduralSoundLayers(
   kind: SoundEffectKind,
   identityVariant?: string
 ): SoundLayerRecipe | undefined {
+  const seasonalVariant = resolveSeasonalVariantSeason(identityVariant);
+  const baseVariant = resolveSeasonalVariantBase(identityVariant);
   switch (kind) {
     case 'snowstorm':
       if (identityVariant === 'whiteout') {
@@ -946,7 +979,81 @@ function resolveProceduralSoundLayers(
         },
       ] as const;
     case 'thunder':
-      if (identityVariant === 'overhead') {
+      if (seasonalVariant === 'summer') {
+        return [
+          {
+            id: 'thunder-summer-crack',
+            waveform: ['sawtooth', 'square'] as const,
+            noiseColor: 'white' as const,
+            frequencyMultiplier: baseVariant === 'distant' ? 1.18 : 1.46,
+            durationMultiplier: baseVariant === 'distant' ? 0.24 : 0.2,
+            volumeMultiplier: baseVariant === 'distant' ? 0.18 : 0.28,
+            frequencyVariation: 0.03,
+            durationVariation: 0.08,
+            volumeVariation: 0.08,
+            variationDepth: 0.76,
+          },
+          {
+            id: 'thunder-summer-rumble',
+            waveform: ['triangle', 'sine'] as const,
+            noiseColor: 'brown' as const,
+            frequencyMultiplier: 0.56,
+            durationMultiplier: 1,
+            volumeMultiplier: 0.64,
+            startOffsetMs: 104,
+            startOffsetVariation: 0.12,
+            frequencyVariation: 0.022,
+            durationVariation: 0.14,
+            volumeVariation: 0.06,
+            variationDepth: 0.82,
+          },
+          {
+            id: 'thunder-summer-reflections',
+            waveform: ['sine', 'triangle'] as const,
+            noiseColor: 'brown' as const,
+            frequencyMultiplier: 0.4,
+            durationMultiplier: 0.76,
+            volumeMultiplier: 0.18,
+            startOffsetMs: 320,
+            startOffsetVariation: 0.14,
+            frequencyVariation: 0.02,
+            durationVariation: 0.12,
+            volumeVariation: 0.06,
+            variationDepth: 0.72,
+          },
+        ] as const;
+      }
+      if (seasonalVariant === 'spring') {
+        return [
+          {
+            id: 'thunder-spring-crack',
+            waveform: ['square', 'sawtooth'] as const,
+            noiseColor: 'white' as const,
+            frequencyMultiplier: 1.24,
+            durationMultiplier: 0.2,
+            volumeMultiplier: 0.2,
+            frequencyVariation: 0.03,
+            durationVariation: 0.08,
+            volumeVariation: 0.08,
+            variationDepth: 0.7,
+          },
+          {
+            id: 'thunder-spring-rumble',
+            waveform: ['triangle', 'sine'] as const,
+            noiseColor: 'brown' as const,
+            frequencyMultiplier: 0.6,
+            durationMultiplier: 1,
+            volumeMultiplier: 0.58,
+            startOffsetMs: 128,
+            startOffsetVariation: 0.14,
+            frequencyVariation: 0.022,
+            durationVariation: 0.14,
+            volumeVariation: 0.06,
+            variationDepth: 0.8,
+          },
+        ] as const;
+      }
+      if (baseVariant === 'overhead') {
         return [
           {
             id: 'thunder-overhead-crack',
@@ -990,7 +1097,7 @@ function resolveProceduralSoundLayers(
           },
         ] as const;
       }
-      if (identityVariant === 'near') {
+      if (baseVariant === 'near') {
         return [
           {
             id: 'thunder-near-crack',
@@ -1272,7 +1379,37 @@ function resolveProceduralSoundLayers(
         },
       ] as const;
     case 'wind':
-      if (identityVariant === 'stormfront') {
+      if (identityVariant === 'autumn-stormfront') {
+        return [
+          {
+            id: 'wind-autumn-gale-bed',
+            waveform: ['triangle', 'sine'] as const,
+            noiseColor: 'brown' as const,
+            frequencyMultiplier: 0.7,
+            durationMultiplier: 1,
+            volumeMultiplier: 0.68,
+            frequencyVariation: 0.028,
+            durationVariation: 0.14,
+            volumeVariation: 0.08,
+            variationDepth: 1,
+          },
+          {
+            id: 'wind-autumn-leaf-gust',
+            waveform: ['triangle', 'square'] as const,
+            noiseColor: ['brown', 'pink'] as const,
+            frequencyMultiplier: 1.22,
+            durationMultiplier: 0.86,
+            volumeMultiplier: 0.24,
+            startOffsetMs: 26,
+            startOffsetVariation: 0.24,
+            frequencyVariation: 0.028,
+            durationVariation: 0.12,
+            volumeVariation: 0.08,
+            variationDepth: 0.8,
+          },
+        ] as const;
+      }
+      if (baseVariant === 'stormfront') {
         return [
           {
             id: 'wind-storm-bed',
@@ -1308,7 +1445,7 @@ function resolveProceduralSoundLayers(
           },
         ] as const;
       }
-      if (identityVariant === 'sandstorm') {
+      if (baseVariant === 'sandstorm') {
         return [
           {
             id: 'wind-sandstorm-bed',
@@ -1338,7 +1475,36 @@ function resolveProceduralSoundLayers(
           },
         ] as const;
       }
-      if (identityVariant === 'cyclone') {
+      if (identityVariant === 'summer-cyclone') {
+        return [
+          {
+            id: 'wind-summer-cyclone-bed',
+            waveform: ['sawtooth', 'triangle'] as const,
+            noiseColor: ['brown', 'white'] as const,
+            frequencyMultiplier: 0.66,
+            durationMultiplier: 1,
+            volumeMultiplier: 0.76,
+            frequencyVariation: 0.03,
+            durationVariation: 0.16,
+            volumeVariation: 0.08,
+            variationDepth: 1,
+          },
+          {
+            id: 'wind-summer-cyclone-whirl',
+            waveform: ['sine', 'sawtooth'] as const,
+            frequencyMultiplier: 1.26,
+            durationMultiplier: 0.9,
+            volumeMultiplier: 0.22,
+            startOffsetMs: 22,
+            startOffsetVariation: 0.22,
+            frequencyVariation: 0.026,
+            durationVariation: 0.1,
+            volumeVariation: 0.08,
+            variationDepth: 0.8,
+          },
+        ] as const;
+      }
+      if (baseVariant === 'cyclone') {
         return [
           {
             id: 'wind-cyclone-bed',
@@ -1374,7 +1540,7 @@ function resolveProceduralSoundLayers(
           },
         ] as const;
       }
-      if (identityVariant === 'crossdraft') {
+      if (baseVariant === 'crossdraft') {
         return [
           {
             id: 'wind-crossdraft-bed',
@@ -1410,7 +1576,7 @@ function resolveProceduralSoundLayers(
           },
         ] as const;
       }
-      if (identityVariant === 'canopy') {
+      if (baseVariant === 'canopy') {
         return [
           {
             id: 'wind-canopy-bed',
@@ -1481,7 +1647,70 @@ function resolveProceduralSoundLayers(
         },
       ] as const;
     case 'rain':
-      if (identityVariant === 'roof') {
+      if (seasonalVariant === 'spring') {
+        return [
+          {
+            id: 'rain-spring-bed',
+            waveform: ['triangle', 'sine'] as const,
+            noiseColor: ['white', 'pink'] as const,
+            frequencyMultiplier: 0.8,
+            durationMultiplier: 1,
+            volumeMultiplier: 0.54,
+            frequencyVariation: 0.024,
+            durationVariation: 0.14,
+            volumeVariation: 0.08,
+            variationDepth: 0.9,
+          },
+          {
+            id:
+              baseVariant === 'water'
+                ? 'rain-spring-runoff'
+                : 'rain-spring-squall',
+            waveform: ['triangle', 'square'] as const,
+            noiseColor: 'white' as const,
+            frequencyMultiplier: baseVariant === 'water' ? 1.18 : 1.3,
+            durationMultiplier: 0.62,
+            volumeMultiplier: 0.2,
+            startOffsetMs: 24,
+            startOffsetVariation: 0.24,
+            frequencyVariation: 0.03,
+            durationVariation: 0.16,
+            volumeVariation: 0.08,
+            variationDepth: 0.82,
+          },
+        ] as const;
+      }
+      if (seasonalVariant === 'autumn') {
+        return [
+          {
+            id: 'rain-autumn-bed',
+            waveform: ['triangle', 'sine'] as const,
+            noiseColor: ['pink', 'brown'] as const,
+            frequencyMultiplier: 0.78,
+            durationMultiplier: 1,
+            volumeMultiplier: 0.52,
+            frequencyVariation: 0.024,
+            durationVariation: 0.14,
+            volumeVariation: 0.08,
+            variationDepth: 0.88,
+          },
+          {
+            id: 'rain-autumn-sheets',
+            waveform: ['triangle', 'square'] as const,
+            noiseColor: 'white' as const,
+            frequencyMultiplier: 1.22,
+            durationMultiplier: 0.6,
+            volumeMultiplier: 0.18,
+            startOffsetMs: 30,
+            startOffsetVariation: 0.26,
+            frequencyVariation: 0.03,
+            durationVariation: 0.16,
+            volumeVariation: 0.08,
+            variationDepth: 0.8,
+          },
+        ] as const;
+      }
+      if (baseVariant === 'roof') {
         return [
           {
             id: 'rain-roof-bed',
@@ -1511,7 +1740,7 @@ function resolveProceduralSoundLayers(
           },
         ] as const;
       }
-      if (identityVariant === 'leaves') {
+      if (baseVariant === 'leaves') {
         return [
           {
             id: 'rain-canopy-bed',
@@ -1541,7 +1770,7 @@ function resolveProceduralSoundLayers(
           },
         ] as const;
       }
-      if (identityVariant === 'water') {
+      if (baseVariant === 'water') {
         return [
           {
             id: 'rain-water-bed',
@@ -3426,17 +3655,20 @@ function resolveProceduralSoundLayers(
 function resolveBaseSoundEffectFrequency(
   options: ResolveSoundRecipeOptions
 ): number {
+  const seasonalVariant = resolveSeasonalVariantSeason(options.identityVariant);
+  const baseVariant = resolveSeasonalVariantBase(options.identityVariant);
   switch (options.kind) {
     case 'jump':
       return options.profile.footstepFrequency + 72;
     case 'thunder':
       return (
         114 +
-        (options.identityVariant === 'overhead'
-          ? 34
-          : options.identityVariant === 'near'
-            ? 10
-            : -20) +
+        (baseVariant === 'overhead' ? 34 : baseVariant === 'near' ? 10 : -20) +
+        (seasonalVariant === 'summer'
+          ? 12
+          : seasonalVariant === 'spring'
+            ? 6
+            : 0) +
         options.variantOffset * 0.32
       );
     case 'hail':
@@ -3464,31 +3696,41 @@ function resolveBaseSoundEffectFrequency(
     case 'rain':
       return (
         176 +
-        (options.identityVariant === 'roof'
+        (baseVariant === 'roof'
           ? -12
-          : options.identityVariant === 'leaves'
+          : baseVariant === 'leaves'
             ? 6
-            : options.identityVariant === 'water'
+            : baseVariant === 'water'
               ? 10
               : 0) +
+        (seasonalVariant === 'spring'
+          ? 10
+          : seasonalVariant === 'autumn'
+            ? -6
+            : 0) +
         options.variantOffset * 0.35
       );
     case 'wind':
       return (
         190 +
-        (options.identityVariant === 'sandstorm'
+        (baseVariant === 'sandstorm'
           ? 38
-          : options.identityVariant === 'cyclone'
+          : baseVariant === 'cyclone'
             ? -22
-            : options.identityVariant === 'canopy'
+            : baseVariant === 'canopy'
               ? 16
-              : options.identityVariant === 'crossdraft'
+              : baseVariant === 'crossdraft'
                 ? 30
-                : options.identityVariant === 'stormfront'
+                : baseVariant === 'stormfront'
                   ? 10
                   : options.tileKind === 'forest'
                     ? 16
                     : 0) +
+        (seasonalVariant === 'autumn'
+          ? 8
+          : seasonalVariant === 'summer'
+            ? -6
+            : 0) +
         options.variantOffset * 0.4
       );
     case 'ocean':
@@ -3617,19 +3859,32 @@ function resolveBaseSoundEffectVolume(
   profile: SoundRecipeSurfaceProfile,
   identityVariant?: string
 ): number {
+  const seasonalVariant = resolveSeasonalVariantSeason(identityVariant);
   switch (kind) {
     case 'jump':
       return profile.footstepVolume * 1.2;
     case 'thunder':
-      return 0.03;
+      return seasonalVariant === 'summer'
+        ? 0.034
+        : seasonalVariant === 'spring'
+          ? 0.032
+          : 0.03;
     case 'hail':
       return 0.02;
     case 'snowstorm':
       return 0.018;
     case 'rain':
-      return 0.024;
+      return seasonalVariant === 'spring'
+        ? 0.026
+        : seasonalVariant === 'autumn'
+          ? 0.023
+          : 0.024;
     case 'wind':
-      return 0.018;
+      return seasonalVariant === 'autumn'
+        ? 0.02
+        : seasonalVariant === 'summer'
+          ? 0.019
+          : 0.018;
     case 'ocean':
       return identityVariant === 'frozen' ? 0.022 : 0.026;
     case 'river-ambience':
@@ -3688,19 +3943,26 @@ function resolveBaseSoundEffectWaveform(
   resolveInteractionWaveform: ResolveSoundRecipeOptions['resolveInteractionWaveform'],
   identityVariant?: string
 ): SoundWaveform | readonly SoundWaveform[] {
+  const seasonalVariant = resolveSeasonalVariantSeason(identityVariant);
   switch (kind) {
     case 'blocked':
       return 'sawtooth';
     case 'thunder':
-      return ['sawtooth', 'triangle', 'sine'];
+      return seasonalVariant === 'summer'
+        ? ['sawtooth', 'square', 'triangle']
+        : ['sawtooth', 'triangle', 'sine'];
     case 'hail':
       return ['square', 'triangle'];
     case 'snowstorm':
       return ['triangle', 'sine'];
     case 'rain':
-      return ['triangle', 'sine'];
+      return seasonalVariant === 'autumn'
+        ? ['triangle', 'square']
+        : ['triangle', 'sine'];
     case 'wind':
-      return 'triangle';
+      return seasonalVariant === 'summer'
+        ? ['sawtooth', 'triangle']
+        : 'triangle';
     case 'ocean':
       return identityVariant === 'frozen' ? ['triangle', 'square'] : 'sine';
     case 'river-ambience':
@@ -3750,17 +4012,22 @@ function resolveBaseSoundEffectNoiseColor(
   kind: SoundEffectKind,
   identityVariant?: string
 ): ProceduralNoiseColor | readonly ProceduralNoiseColor[] | undefined {
+  const seasonalVariant = resolveSeasonalVariantSeason(identityVariant);
   switch (kind) {
     case 'thunder':
-      return ['white', 'brown'];
+      return seasonalVariant === 'summer'
+        ? ['white', 'pink']
+        : ['white', 'brown'];
     case 'hail':
       return ['white', 'pink'];
     case 'snowstorm':
       return ['white', 'pink'];
     case 'rain':
-      return ['white', 'pink'];
+      return seasonalVariant === 'autumn'
+        ? ['pink', 'brown']
+        : ['white', 'pink'];
     case 'wind':
-      return 'brown';
+      return seasonalVariant === 'autumn' ? ['brown', 'pink'] : 'brown';
     case 'ocean':
       return identityVariant === 'frozen' ? ['white', 'brown'] : 'brown';
     case 'river-ambience':

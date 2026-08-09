@@ -2336,7 +2336,7 @@ export function getForestTreeSpeciesMetadata(speciesId: ForestTreeSpeciesId): {
     fruitKind: definition.fruitKind,
     maximumAgeYears: definition.maximumAgeYears,
     maximumHeight: definition.maximumHeight,
-    habitat: definition.habitat,
+    habitat: formatHabitatList(definition.habitat),
     temperatureTolerance: definition.temperatureTolerance,
     moistureTolerance: definition.moistureTolerance,
     altitudePreference: definition.altitudePreference,
@@ -2345,6 +2345,35 @@ export function getForestTreeSpeciesMetadata(speciesId: ForestTreeSpeciesId): {
     spacingRadius: definition.spacingRadius,
   };
 }
+
+function formatHabitatList(habitat: readonly Habitat[]): string {
+  const normalized = habitat
+    .map(
+      (entry) => FOREST_TREE_HABITAT_LABELS[entry] ?? entry.trim().toLowerCase()
+    )
+    .filter((entry) => entry.length > 0);
+  if (normalized.length === 0) {
+    return '';
+  }
+  if (normalized.length === 1) {
+    return normalized[0]!;
+  }
+  if (normalized.length === 2) {
+    return `${normalized[0]} and ${normalized[1]}`;
+  }
+  return `${normalized.slice(0, -1).join(', ')}, and ${normalized.at(-1)}`;
+}
+
+const FOREST_TREE_HABITAT_LABELS: Record<Habitat, string> = {
+  'Windy ridge': 'windy ridges',
+  'Conifer stand': 'conifer stands',
+  'Rocky clearing': 'rocky clearings',
+  'Deep temperate grove': 'deep temperate groves',
+  'Sheltered forest clearing': 'sheltered forest clearings',
+  'Bright forest edge': 'bright forest edges',
+  Meadow: 'meadows',
+  'Stream approache': 'stream approaches',
+};
 
 export function getForestRandomTreePreview(
   tileX: number,
@@ -2791,6 +2820,16 @@ function resolveForestBroadleafPreviewVariety(
     : 0;
 }
 
+type Habitat =
+  | 'Windy ridge'
+  | 'Conifer stand'
+  | 'Rocky clearing'
+  | 'Deep temperate grove'
+  | 'Sheltered forest clearing'
+  | 'Bright forest edge'
+  | 'Meadow'
+  | 'Stream approache';
+
 type ForestTreeSpeciesDefinition = {
   seed: number;
   speciesId: ForestTreeSpeciesId;
@@ -2800,7 +2839,7 @@ type ForestTreeSpeciesDefinition = {
   fruitKind: 'acorn' | 'samara' | 'cone';
   maximumAgeYears: number;
   maximumHeight: number;
-  habitat: string;
+  habitat: Habitat[];
   temperatureTolerance: string;
   moistureTolerance: string;
   altitudePreference: string;
@@ -2832,7 +2871,7 @@ const FOREST_OAK_SPECIES_DEFINITION = {
   fruitKind: 'acorn',
   maximumAgeYears: 240,
   maximumHeight: 2.64,
-  habitat: 'deep temperate groves and sheltered forest clearings',
+  habitat: ['Deep temperate grove', 'Sheltered forest clearing'],
   temperatureTolerance: 'cool to warm temperate seasons',
   moistureTolerance: 'moderate to high moisture',
   altitudePreference: 'lowland to rolling upland hills',
@@ -2864,7 +2903,7 @@ const FOREST_BIRCH_SPECIES_DEFINITION = {
   fruitKind: 'samara',
   maximumAgeYears: 140,
   maximumHeight: 2.88,
-  habitat: 'bright forest edges, meadows, and stream approaches',
+  habitat: ['Bright forest edge', 'Meadow', 'Stream approache'],
   temperatureTolerance: 'cool to mild temperate seasons',
   moistureTolerance: 'moderate moisture with seasonal wet spells',
   altitudePreference: 'lowland and lower upland slopes',
@@ -2896,7 +2935,7 @@ const FOREST_PINE_SPECIES_DEFINITION = {
   fruitKind: 'cone',
   maximumAgeYears: 210,
   maximumHeight: 3.18,
-  habitat: 'windy ridges, conifer stands, and rocky clearings',
+  habitat: ['Windy ridge', 'Conifer stand', 'Rocky clearing'],
   temperatureTolerance: 'cool to cold seasons',
   moistureTolerance: 'low to moderate moisture',
   altitudePreference: 'upland slopes and exposed high ground',

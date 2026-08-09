@@ -243,7 +243,7 @@
 - [x] Generate snow footsteps during winter.
 - [x] Generate ice cracking and frozen-water ambience.
 - [x] Reduce wildlife activity during harsh winter conditions.
-- [ ] Generate seasonal storms.
+- [x] Generate seasonal storms.
 - [x] Associate certain rare ambient sounds with particular seasons.
 
 ---
