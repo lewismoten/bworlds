@@ -1,3 +1,4 @@
+import { getOrCreateWeakMapValue } from '@bworlds/cache-support';
 import { createPlainsBackedTilePainter } from '@bworlds/paint-support';
 import {
   createEnterablePoiTilePlugin,
@@ -164,9 +165,8 @@ export function createObservatoryTilePlugin(): RuntimePlugin {
 }
 
 function getObservatorySharedMaterials(three: Create3DModelContext['three']) {
-  let cached = observatoryMaterialCache.get(three as object);
-  if (!cached) {
-    cached = {
+  return getOrCreateWeakMapValue(observatoryMaterialCache, three as object, () => {
+    return {
       wallMaterial: new three.MeshStandardMaterial({
         color: '#dbe5ed',
         roughness: 0.9,
@@ -188,9 +188,7 @@ function getObservatorySharedMaterials(three: Create3DModelContext['three']) {
         metalness: 0.32,
       }),
     };
-    observatoryMaterialCache.set(three as object, cached);
-  }
-  return cached;
+  });
 }
 
 function syncObservatoryModel(

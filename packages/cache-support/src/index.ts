@@ -52,6 +52,23 @@ export function getOrCreateMapValue<Key, Value>(
   return value;
 }
 
+export function getOrCreateWeakMapValue<
+  Key extends WeakKey,
+  Value,
+>(
+  cache: WeakMap<Key, Value>,
+  key: Key,
+  create: () => Value
+): Value {
+  const cached = cache.get(key);
+  if (cached !== undefined) {
+    return cached;
+  }
+  const value = create();
+  cache.set(key, value);
+  return value;
+}
+
 export function createBoundedCache<Key, Value>(
   maxEntries = 32
 ): BoundedCache<Key, Value> {

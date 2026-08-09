@@ -1,3 +1,4 @@
+import { getOrCreateWeakMapValue } from '@bworlds/cache-support';
 import { hash2D, registerHashLabel } from '@bworlds/core/hash';
 import { createSingleTilePlugin } from '@bworlds/plugin-api';
 import {
@@ -191,17 +192,13 @@ function getMountainPeakScale(
 }
 
 function getMountainStyle(three: ThreeHostLike): MountainStyle {
-  let style = styleCache.get(three);
-  if (!style) {
+  return getOrCreateWeakMapValue(styleCache, three, () => {
     const terrainMaterials = createMountainTerrainMaterials(three);
-    style = {
+    return {
       mountainMaterial: terrainMaterials.mountainMaterial,
       snowMaterial: terrainMaterials.snowMaterial,
     };
-    styleCache.set(three, style);
-  }
-
-  return style;
+  });
 }
 
 interface MountainStyle {

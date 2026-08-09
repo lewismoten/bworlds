@@ -1,3 +1,4 @@
+import { getOrCreateWeakMapValue } from '@bworlds/cache-support';
 import { createPlainsBackedTilePainter } from '@bworlds/paint-support';
 import {
   createAnchoredEnterablePoiTilePlugin,
@@ -137,9 +138,8 @@ export function createTowerTilePlugin(): RuntimePlugin {
 }
 
 function getTowerSharedMaterials(three: Create3DModelContext['three']) {
-  let cached = towerMaterialCache.get(three as object);
-  if (!cached) {
-    cached = {
+  return getOrCreateWeakMapValue(towerMaterialCache, three as object, () => {
+    return {
       stoneMaterial: createBasicMaterial(three, { color: '#9b9085' }),
       trimMaterial: createBasicMaterial(three, { color: '#645b54' }),
       roofMaterial: createBasicMaterial(three, { color: '#4d423b' }),
@@ -151,7 +151,5 @@ function getTowerSharedMaterials(three: Create3DModelContext['three']) {
         metalness: 0.04,
       }),
     };
-    towerMaterialCache.set(three as object, cached);
-  }
-  return cached;
+  });
 }

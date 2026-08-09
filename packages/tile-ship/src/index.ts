@@ -1,3 +1,4 @@
+import { getOrCreateWeakMapValue, getOrCreateMapValue } from '@bworlds/cache-support';
 import { hash2D, registerHashLabel } from '@bworlds/core/hash';
 import { createPlainsBackedTilePainter } from '@bworlds/paint-support';
 import {
@@ -172,15 +173,22 @@ function getShipSharedMaterials(
   three: Create3DModelContext['three'],
   variant: ShipVariant
 ) {
-  let byVariant = shipMaterialCache.get(three as object);
-  if (!byVariant) {
-    byVariant = new Map();
-    shipMaterialCache.set(three as object, byVariant);
-  }
+  const byVariant = getOrCreateWeakMapValue(
+    shipMaterialCache,
+    three as object,
+    () => new Map<ShipVariant, ReturnType<typeof createShipSharedMaterialsForVariant>>()
+  );
 
-  let cached = byVariant.get(variant);
-  if (!cached) {
-    cached = {
+  return getOrCreateMapValue(byVariant, variant, () =>
+    createShipSharedMaterialsForVariant(three, variant)
+  );
+}
+
+function createShipSharedMaterialsForVariant(
+  three: Create3DModelContext['three'],
+  variant: ShipVariant
+) {
+  return {
       hullMaterial: new three.MeshStandardMaterial({
         color: variant === 'tall-ship' ? '#7a4a2f' : '#6b4634',
         roughness: 0.9,
@@ -210,10 +218,6 @@ function getShipSharedMaterials(
         metalness: 0.03,
       }),
     };
-    byVariant.set(variant, cached);
-  }
-
-  return cached;
 }
 
 function getShipFacing(

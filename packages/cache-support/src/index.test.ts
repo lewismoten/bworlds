@@ -4,6 +4,7 @@ import {
   createCoordinateCache,
   getOrCreateCacheValue,
   getOrCreateMapValue,
+  getOrCreateWeakMapValue,
 } from './index.ts';
 
 describe('cache support', () => {
@@ -135,6 +136,25 @@ describe('cache support', () => {
 
     expect(first).toBe(42);
     expect(second).toBe(42);
+    expect(calls).toBe(1);
+  });
+
+  it('reuses defined weak map values without a separate presence check', () => {
+    const cache = new WeakMap<object, { value: number }>();
+    const key = {};
+    let calls = 0;
+
+    const first = getOrCreateWeakMapValue(cache, key, () => {
+      calls += 1;
+      return { value: 42 };
+    });
+    const second = getOrCreateWeakMapValue(cache, key, () => {
+      calls += 1;
+      return { value: 7 };
+    });
+
+    expect(first).toEqual({ value: 42 });
+    expect(second).toBe(first);
     expect(calls).toBe(1);
   });
 

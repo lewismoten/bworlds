@@ -108,6 +108,17 @@ const fakeThree = {
   BoxGeometry: FakeGeometry,
 } as const;
 
+function createFakeThreeHost() {
+  return {
+    Group: FakeGroup,
+    Mesh: FakeMesh,
+    MeshStandardMaterial: FakeMaterial,
+    CylinderGeometry: FakeGeometry,
+    SphereGeometry: FakeGeometry,
+    BoxGeometry: FakeGeometry,
+  } as const;
+}
+
 describe('tile observatory', () => {
   it('reuses shared observatory materials across repeated model builds', () => {
     const plugin = createObservatoryTilePlugin();
@@ -212,6 +223,35 @@ describe('tile observatory', () => {
     expect((domePivot?.rotation.y ?? 0)).toBeGreaterThan(0.8);
     expect(telescope?.visible).toBe(true);
     expect((telescope?.rotation.x ?? 0)).toBeLessThan(0);
+  });
+
+  it('keeps observatory materials scoped to the current Three host', () => {
+    const plugin = createObservatoryTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'observatory');
+    const firstHost = createFakeThreeHost();
+    const secondHost = createFakeThreeHost();
+
+    const first = tile?.create3DModel?.({
+      three: firstHost as never,
+      state: {} as never,
+      tile: { kind: 'observatory' } as never,
+      tileX: 4,
+      tileY: 5,
+    }) as FakeNode | undefined;
+    const second = tile?.create3DModel?.({
+      three: secondHost as never,
+      state: {} as never,
+      tile: { kind: 'observatory' } as never,
+      tileX: 4,
+      tileY: 5,
+    }) as FakeNode | undefined;
+
+    const firstTower = first?.children[1] as FakeMesh | undefined;
+    const secondTower = second?.children[1] as FakeMesh | undefined;
+
+    expect(firstTower?.material).toBeDefined();
+    expect(secondTower?.material).toBeDefined();
+    expect(secondTower?.material).not.toBe(firstTower?.material);
   });
 });
 

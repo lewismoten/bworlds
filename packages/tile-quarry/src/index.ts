@@ -1,3 +1,4 @@
+import { getOrCreateWeakMapValue } from '@bworlds/cache-support';
 import { hash2D, registerHashLabel } from '@bworlds/core/hash';
 import { createPlainsBackedTilePainter } from '@bworlds/paint-support';
 import {
@@ -217,9 +218,8 @@ export function createQuarryTilePlugin(): RuntimePlugin {
 }
 
 function getQuarrySharedMaterials(three: Create3DModelContext['three']) {
-  let cached = quarryMaterialCache.get(three as object);
-  if (!cached) {
-    cached = {
+  return getOrCreateWeakMapValue(quarryMaterialCache, three as object, () => {
+    return {
       timberMaterial: createBasicMaterial(three, { color: '#7c5a3b' }),
       ropeMaterial: createBasicMaterial(three, { color: '#d2b48c' }),
       rubbleMaterial: createBasicMaterial(three, { color: '#9c9186' }),
@@ -232,9 +232,7 @@ function getQuarrySharedMaterials(three: Create3DModelContext['three']) {
         metalness: 0.04,
       }),
     };
-    quarryMaterialCache.set(three as object, cached);
-  }
-  return cached;
+  });
 }
 
 function getQuarryFacing(
