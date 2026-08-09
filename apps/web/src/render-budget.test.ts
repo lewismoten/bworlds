@@ -19,6 +19,13 @@ import {
 import { getWeatherVisibilityRadiusCap } from './weather-visibility-budget.ts';
 
 describe('render budget', () => {
+  it('publishes scene material caps for the active render budget policy', () => {
+    expect(getRenderBudgetCaps(DEFAULT_RENDER_BUDGET_STATE).materials).toEqual({
+      soft: 32,
+      hard: 48,
+    });
+  });
+
   it('keeps the full visibility radius when frame times are healthy', () => {
     let state = DEFAULT_RENDER_BUDGET_STATE;
     for (let index = 0; index < 12; index += 1) {
