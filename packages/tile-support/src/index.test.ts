@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   createBoundarySurfaceProfile,
+  hasConnectedRoutePath,
   createRoadsideRouteProfile,
   createRouteTraversalProfile,
   createThresholdTerrainClassifier,
@@ -73,6 +74,20 @@ describe('tile support', () => {
     expect(profile.adjacentRoadCount).toBe(1);
     expect(profile.atJunction).toBe(true);
     expect(profile.routeSpan).toBeGreaterThanOrEqual(4);
+  });
+
+  it('treats tiles along the nearest town-to-bridge path as connected routes', () => {
+    expect(
+      hasConnectedRoutePath({
+        x: 4,
+        y: 0,
+        townAnchors: [
+          { x: 0, y: 0 },
+          { x: 20, y: 20 },
+        ],
+        bridgeAnchors: [{ x: 8, y: 0 }],
+      })
+    ).toBe(true);
   });
 
   it('creates reusable boundary surface profiles for 3D terrain transitions', () => {

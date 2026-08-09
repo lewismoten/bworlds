@@ -127,12 +127,7 @@ export function hasConnectedRoutePath({
   townPairPathTolerance?: number;
   bridgeAnchorSnapDistance?: number;
 }) {
-  const nearestTown = townAnchors
-    .map((anchor) => ({
-      anchor,
-      distance: Math.hypot(x - anchor.x, y - anchor.y),
-    }))
-    .sort((left, right) => left.distance - right.distance)[0];
+  const nearestTown = findNearestAnchorDistance(townAnchors, x, y);
 
   if (
     nearestTown &&
@@ -157,15 +152,11 @@ export function hasConnectedRoutePath({
   }
 
   if (nearestTown) {
-    const nearestBridge = bridgeAnchors
-      .map((anchor) => ({
-        anchor,
-        distance: Math.hypot(
-          nearestTown.anchor.x - anchor.x,
-          nearestTown.anchor.y - anchor.y
-        ),
-      }))
-      .sort((left, right) => left.distance - right.distance)[0];
+    const nearestBridge = findNearestAnchorDistance(
+      bridgeAnchors,
+      nearestTown.anchor.x,
+      nearestTown.anchor.y
+    );
 
     if (
       nearestBridge &&
@@ -264,7 +255,7 @@ export function createRoadsideRouteProfile({
     { dx: 1, dy: 0 },
     { dx: 0, dy: 1 },
     { dx: -1, dy: 0 },
-  ];
+  ] as const;
   const hasRouteAt = (targetX: number, targetY: number) =>
     hasPredictedRoutePresence({
       x: targetX,
@@ -273,15 +264,25 @@ export function createRoadsideRouteProfile({
       bridgeAnchors,
       sampleTerrainSignals,
     });
-  const adjacentRouteCells = directions
-    .map(({ dx, dy }) => ({ x: x + dx, y: y + dy }))
-    .filter(({ x: neighborX, y: neighborY }) => hasRouteAt(neighborX, neighborY));
+  const adjacentRouteCells: Array<{ x: number; y: number }> = [];
+  for (let index = 0; index < directions.length; index += 1) {
+    const direction = directions[index]!;
+    const neighborX = x + direction.dx;
+    const neighborY = y + direction.dy;
+    if (hasRouteAt(neighborX, neighborY)) {
+      adjacentRouteCells.push({ x: neighborX, y: neighborY });
+    }
+  }
   const isRouteJunction = (targetX: number, targetY: number) => {
     const north = hasRouteAt(targetX, targetY - 1);
     const east = hasRouteAt(targetX + 1, targetY);
     const south = hasRouteAt(targetX, targetY + 1);
     const west = hasRouteAt(targetX - 1, targetY);
-    const connectedCount = [north, east, south, west].filter(Boolean).length;
+    let connectedCount = 0;
+    if (north) connectedCount += 1;
+    if (east) connectedCount += 1;
+    if (south) connectedCount += 1;
+    if (west) connectedCount += 1;
     const touchesHorizontal = east || west;
     const touchesVertical = north || south;
     return (
@@ -289,8 +290,13 @@ export function createRoadsideRouteProfile({
       (connectedCount >= 2 && touchesHorizontal && touchesVertical)
     );
   };
-  const frontier = adjacentRouteCells.map((point) => ({ ...point, depth: 1 }));
-  const visited = new Set(frontier.map((point) => `${point.x}:${point.y}`));
+  const frontier: Array<{ x: number; y: number; depth: number }> = [];
+  const visited = new Set<string>();
+  for (let index = 0; index < adjacentRouteCells.length; index += 1) {
+    const point = adjacentRouteCells[index]!;
+    frontier.push({ x: point.x, y: point.y, depth: 1 });
+    visited.add(`${point.x}:${point.y}`);
+  }
   let routeSpan = 0;
 
   while (frontier.length > 0) {
@@ -368,7 +374,49 @@ export function resolveDominantNeighborFloorKind3D(
     }
   }
 
-  return [...candidates.entries()].sort((left, right) => right[1] - left[1])[0]?.[0] ?? null;
+  let dominantKind: Kind | null = null;
+  let dominantCount = Number.NEGATIVE_INFINITY;
+  for (const [kind, count] of candidates.entries()) {
+    if (count > dominantCount) {
+      dominantKind = kind;
+      dominantCount = count;
+    }
+  }
+
+  return dominantKind;
+}
+
+function findNearestAnchorDistance<TAnchor extends { x: number; y: number }>(
+  anchors: readonly TAnchor[],
+  x: number,
+  y: number
+): { anchor: TAnchor; distance: number } | undefined {
+  let nearestAnchor: TAnchor | undefined;
+  let nearestDistance = Number.POSITIVE_INFINITY;
+
+  for (let index = 0; index < anchors.length; index += 1) {
+    const anchor = anchors[index];
+    if (!anchor) {
+      continue;
+    }
+
+    const distance = Math.hypot(x - anchor.x, y - anchor.y);
+    if (distance >= nearestDistance) {
+      continue;
+    }
+
+    nearestAnchor = anchor;
+    nearestDistance = distance;
+  }
+
+  if (!nearestAnchor) {
+    return undefined;
+  }
+
+  return {
+    anchor: nearestAnchor,
+    distance: nearestDistance,
+  };
 }
 
 export function createThresholdTerrainClassifier(options: {
