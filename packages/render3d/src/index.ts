@@ -54,6 +54,7 @@ import {
   type TileModelCostEstimateBudgetViolation,
   type TileModelCostEstimateLimits,
 } from './tile-model-cost-estimate-validation.ts';
+import { runTileModelSafetyPrecheck } from './tile-model-safety-precheck.ts';
 
 const LAND_MODEL_REVEAL_SEED = registerHashLabel('render3d:land-model-reveal');
 
@@ -319,6 +320,45 @@ export function validateTileModelAgainstRenderBudget(
   root: Pick<THREE.Object3D, 'traverse' | 'children' | 'type'>,
   detailLevel: RenderBudgetDetailLevel = 'full'
 ): TileModelBudgetValidation {
+  const limits = getTileModelHardLimits(detailLevel);
+  const safetyPrecheck = runTileModelSafetyPrecheck(root as never, limits);
+  if (safetyPrecheck.exceeded) {
+    return {
+      accepted: false,
+      stats: {
+        ...createEmptySceneResourceStats(),
+        object3dCount: safetyPrecheck.stats.object3dCount,
+        groupCount: safetyPrecheck.stats.groupCount,
+        meshCount: safetyPrecheck.stats.meshCount,
+        instancedMeshCount: safetyPrecheck.stats.instancedMeshCount,
+        pointsCount: safetyPrecheck.stats.pointsCount,
+        lineObjectCount: safetyPrecheck.stats.lineObjectCount,
+        spriteCount: safetyPrecheck.stats.spriteCount,
+        geometryCount: safetyPrecheck.stats.geometryCount,
+        lightCount: safetyPrecheck.stats.lightCount,
+        shadowLightCount: safetyPrecheck.stats.shadowLightCount,
+        invalidPositionCoordinateCount: 0,
+        pointVertexCount: safetyPrecheck.stats.pointVertexCount,
+        particleEmitterCount: safetyPrecheck.stats.particleEmitterCount,
+        lineSegmentCount: safetyPrecheck.stats.lineSegmentCount,
+        oversizedGeometryBoundsCount: 0,
+        maxGeometryVertexCount: safetyPrecheck.stats.maxGeometryVertexCount,
+        indexedVertexCount: safetyPrecheck.stats.indexedVertexCount,
+        maxGeometryTriangleCount: safetyPrecheck.stats.maxGeometryTriangleCount,
+        triangleCount: safetyPrecheck.stats.triangleCount,
+        maxGeometryAttributeCount: 0,
+        maxCustomGeometryAttributeCount: 0,
+        maxGeometryVertexAttributeByteSize: 0,
+        maxGeometryGroupCount: 0,
+        maxGeometryDrawRangeCount: 0,
+        invalidGeometryIndexTypeCount: 0,
+        invalidRenderBudgetPartMetadataCount: 0,
+        ultraDenseTinyGeometryCount: 0,
+      },
+      limits,
+      violations: safetyPrecheck.violations,
+    };
+  }
   const maximumGeometryAxisSpan =
     detailLevel === 'low'
       ? LOW_DETAIL_MAX_GEOMETRY_AXIS_SPAN
@@ -356,7 +396,6 @@ export function validateTileModelAgainstRenderBudget(
       minimumTriangleCount: ULTRA_DENSE_GEOMETRY_MIN_TRIANGLES,
     }),
   };
-  const limits = getTileModelHardLimits(detailLevel);
   const violations: TileModelBudgetViolation[] = [];
   const metrics: Array<keyof TileModelHardLimits> = [
     'object3dCount',
@@ -744,6 +783,68 @@ const FULL_DETAIL_MAX_GEOMETRY_AXIS_SPAN = 24;
 const LOW_DETAIL_MAX_GEOMETRY_AXIS_SPAN = 16;
 const ULTRA_DENSE_GEOMETRY_MAX_AXIS_SPAN = 0.2;
 const ULTRA_DENSE_GEOMETRY_MIN_TRIANGLES = 256;
+
+function createEmptySceneResourceStats(): SceneResourceStats {
+  return {
+    object3dCount: 0,
+    visibleObjectCount: 0,
+    invisibleObjectCount: 0,
+    groupCount: 0,
+    meshCount: 0,
+    instancedMeshCount: 0,
+    visibleInstancedMeshCount: 0,
+    renderedInstanceCount: 0,
+    visibleMeshCount: 0,
+    maxHierarchyDepth: 0,
+    averageHierarchyDepth: 0,
+    emptyGroupCount: 0,
+    oneChildGroupCount: 0,
+    matrixAutoUpdateCount: 0,
+    staticMatrixAutoUpdateCount: 0,
+    pointsCount: 0,
+    lineObjectCount: 0,
+    cameraCount: 0,
+    activeParticleSystemCount: 0,
+    activeParticleCount: 0,
+    spriteCount: 0,
+    lightCount: 0,
+    ambientLightCount: 0,
+    directionalLightCount: 0,
+    pointLightCount: 0,
+    spotLightCount: 0,
+    hemisphereLightCount: 0,
+    dynamicLightCount: 0,
+    shadowLightCount: 0,
+    vertexCount: 0,
+    materialRefCount: 0,
+    geometryRefCount: 0,
+    materialCount: 0,
+    sharedMaterialCount: 0,
+    clonedMaterialCount: 0,
+    transparentMaterialCount: 0,
+    alphaTestMaterialCount: 0,
+    doubleSidedMaterialCount: 0,
+    fogMaterialCount: 0,
+    customShaderMaterialCount: 0,
+    materialTypes: '',
+    materialsCreatedDuringSamplingWindow: 0,
+    materialsDisposedDuringSamplingWindow: 0,
+    geometryCount: 0,
+    sharedGeometryCount: 0,
+    geometryBytes: 0,
+    vertexBufferBytes: 0,
+    indexBufferBytes: 0,
+    averageVerticesPerGeometry: 0,
+    largestGeometryVertexCount: 0,
+    largestGeometryBytes: 0,
+    textureCount: 0,
+    textureMemoryEstimateBytes: 0,
+    treeCount: 0,
+    treeObjectCount: 0,
+    treeMeshCount: 0,
+    treeMaterialRefCount: 0,
+  };
+}
 
 function countInvalidRenderBudgetPartMetadata(
   root: Pick<THREE.Object3D, 'traverse'>
