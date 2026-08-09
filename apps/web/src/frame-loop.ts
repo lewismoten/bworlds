@@ -147,10 +147,22 @@ export function getFrameLoopActivity(
 export function shouldAdvanceSimulation(
   options: SimulationStepOptions
 ): boolean {
+  return shouldAdvanceSimulationState(
+    options.timeFrozen,
+    options.keys,
+    options.isJumping
+  );
+}
+
+export function shouldAdvanceSimulationState(
+  timeFrozen: boolean,
+  keys: Iterable<string>,
+  isJumping: boolean
+): boolean {
   return (
-    !options.timeFrozen ||
-    options.isJumping ||
-    hasActiveMovementInput(options.keys)
+    !timeFrozen ||
+    isJumping ||
+    hasActiveMovementInput(keys)
   );
 }
 

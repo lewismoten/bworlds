@@ -106,7 +106,7 @@ State/events only
 
 # Frame Loop
 
-* [ ] Keep the main animation loop small.
+* [X] Keep the main animation loop small.
 * [X] Avoid allocating objects inside `requestAnimationFrame()` where possible.
 * [X] Avoid creating arrays during every frame.
 * [X] Avoid creating temporary `{ x, y, z }` objects every frame.

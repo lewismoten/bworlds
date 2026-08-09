@@ -101,8 +101,8 @@ import {
 } from './compass.ts';
 import {
   getFrameLoopActivity,
-  shouldAdvanceSimulation,
 } from './frame-loop.ts';
+import { createFrameLoopRunner } from './frame-loop-runner.ts';
 import { createAnimationFrameRunner } from './frame-scheduler.ts';
 import {
   advanceHeadBobState,
@@ -152,7 +152,6 @@ import {
   getRenderBudgetCaps,
   getRenderQualityLevel,
   getRenderQualityLimiters,
-  updateRenderBudgetStateInPlace,
 } from './render-budget.ts';
 import { getMouseLookAngles } from './mouse-look.ts';
 import {
@@ -1181,6 +1180,16 @@ let latestEnvironment: WorldEnvironmentLike = getCurrentEnvironment();
   celestialEventModeState.mode;
 
 const keys = new Set<string>();
+const runLoopFrame = createFrameLoopRunner({
+  renderBudgetState,
+  getWeatherVisibility: () => latestEnvironment.weather?.current?.visibility,
+  is3dViewActive: () => state.viewMode === '3d',
+  isTimeFrozen: () => timeState.frozen,
+  keys,
+  isJumping: () => motion.isJumping,
+  updateMovement,
+  render,
+});
 
 renderContentPackControls();
 updateContentPackLabel();
@@ -3448,24 +3457,6 @@ function faceDirection(angle: number): void {
   state.player.facing = normalizeAngle(angle);
   saveSession();
   requestRender();
-}
-
-function runLoopFrame(deltaMs: number): FrameLoopActivityLike {
-  updateRenderBudgetStateInPlace(renderBudgetState, {
-    deltaMs,
-    active3d: state.viewMode === '3d',
-    weatherVisibility: latestEnvironment.weather?.current?.visibility,
-  });
-  if (
-    shouldAdvanceSimulation({
-      timeFrozen: timeState.frozen,
-      keys,
-      isJumping: motion.isJumping,
-    })
-  ) {
-    updateMovement(deltaMs);
-  }
-  return render();
 }
 
 const runScheduledAnimationFrame = createAnimationFrameRunner(
