@@ -12,6 +12,7 @@ type FrameLoopRunnerOptions<T> = {
   getMaxChunkDrawCalls: () => number;
   getMaxChunkMeshes: () => number;
   getTextureCount: () => number;
+  getVisibleMeshCount: () => number;
   getWeatherVisibility: () => number | undefined;
   is3dViewActive: () => boolean;
   isTimeFrozen: () => boolean;
@@ -31,6 +32,7 @@ export function createFrameLoopRunner<T>(
       maxChunkDrawCalls: options.getMaxChunkDrawCalls(),
       maxChunkMeshes: options.getMaxChunkMeshes(),
       textureCount: options.getTextureCount(),
+      visibleMeshCount: options.getVisibleMeshCount(),
       active3d: options.is3dViewActive(),
       weatherVisibility: options.getWeatherVisibility(),
     });

@@ -14,12 +14,14 @@ export function collectVisibleTileResourceStats<TEntry extends VisibleTileResour
   chunkCount: number;
   maxChunkDrawCallCount: number;
   maxChunkMeshCount: number;
+  totalVisibleMeshCount: number;
 } {
   const size = Math.max(1, Math.floor(chunkTileSize));
   const chunkDrawCalls = new Map<string, number>();
   const chunkMeshes = new Map<string, number>();
   let maxChunkDrawCallCount = 0;
   let maxChunkMeshCount = 0;
+  let totalVisibleMeshCount = 0;
 
   for (const entry of entries) {
     const chunkX = Math.floor(entry.tileX / size);
@@ -34,6 +36,7 @@ export function collectVisibleTileResourceStats<TEntry extends VisibleTileResour
     const nextMeshCount =
       (chunkMeshes.get(key) ?? 0) + Math.max(0, Math.floor(entry.visibleMeshCount ?? 0));
     chunkMeshes.set(key, nextMeshCount);
+    totalVisibleMeshCount += Math.max(0, Math.floor(entry.visibleMeshCount ?? 0));
     if (nextMeshCount > maxChunkMeshCount) {
       maxChunkMeshCount = nextMeshCount;
     }
@@ -43,6 +46,7 @@ export function collectVisibleTileResourceStats<TEntry extends VisibleTileResour
     chunkCount: chunkDrawCalls.size,
     maxChunkDrawCallCount,
     maxChunkMeshCount,
+    totalVisibleMeshCount,
   };
 }
 

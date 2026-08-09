@@ -97,6 +97,10 @@ describe('debug snapshot', () => {
             soft: 48,
             hard: 72,
           },
+          visibleMeshes: {
+            soft: 640,
+            hard: 960,
+          },
         },
       },
       lod: {
@@ -372,6 +376,10 @@ describe('debug snapshot', () => {
         textures: {
           soft: 48,
           hard: 72,
+        },
+        visibleMeshes: {
+          soft: 640,
+          hard: 960,
         },
       },
     });

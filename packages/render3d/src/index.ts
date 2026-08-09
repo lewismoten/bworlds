@@ -308,6 +308,7 @@ type Render3DController = {
   getMaxChunkDrawCalls(): number;
   getMaxChunkMeshes(): number;
   getTextureCount(): number;
+  getVisibleMeshCount(): number;
   render(state: Render3DState, options?: Render3DOptions): void;
   resize(width: number, height: number, pixelRatio?: number): void;
 };
@@ -2120,6 +2121,10 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     return renderer.info.memory.textures;
   }
 
+  function getVisibleMeshCount(): number {
+    return collectVisibleTileResourceStats(visibleTileNodes.values()).totalVisibleMeshCount;
+  }
+
   function syncTileModelDetailLevels(
     state: Render3DState,
     registry: ReturnType<typeof getActivePluginRegistry>,
@@ -2859,6 +2864,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     getMaxChunkDrawCalls,
     getMaxChunkMeshes,
     getTextureCount,
+    getVisibleMeshCount,
     getStats,
     render,
     resize,

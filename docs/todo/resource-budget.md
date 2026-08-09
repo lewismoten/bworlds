@@ -261,7 +261,7 @@ This can be smarter than distance alone.
 This is critical because individually valid models can still overwhelm the renderer collectively.
 
 * [ ] Cap total visible objects.
-* [ ] Cap total visible meshes.
+* [X] Cap total visible meshes.
 * [ ] Cap total visible triangles.
 * [ ] Cap total visible vertices.
 * [ ] Cap total scene draw calls.
