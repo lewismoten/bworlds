@@ -197,7 +197,7 @@ interface TreeCapabilities {
 
 # Trunk Generation
 
-* [ ] Generate variable trunk height.
+* [X] Generate variable trunk height.
 * [ ] Generate variable trunk diameter.
 * [ ] Taper trunks naturally toward the canopy.
 * [ ] Avoid perfectly straight cylinders.

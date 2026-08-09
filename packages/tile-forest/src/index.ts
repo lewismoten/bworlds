@@ -1944,6 +1944,23 @@ export function getForestTreeAgeProfiles(
   });
 }
 
+export function getForestTreeTrunkProfiles(
+  tileX: number,
+  tileY: number
+): Array<{
+  form: ForestTreeForm;
+  speciesId: ForestTreeSpeciesId;
+  trunkHeight: number;
+  radius: number;
+}> {
+  return getForestTreeDescriptors(tileX, tileY).map((descriptor) => ({
+    form: descriptor.form,
+    speciesId: descriptor.speciesId,
+    trunkHeight: descriptor.trunkHeight,
+    radius: descriptor.radius,
+  }));
+}
+
 export function getForestTreeDamageProfiles(
   tileX: number,
   tileY: number

@@ -23,6 +23,7 @@ import {
   getForestTreeDamageProfiles,
   getForestTreeFruitProfiles,
   getForestTreeHistoricalProfiles,
+  getForestTreeTrunkProfiles,
   getForestCarvings,
   getForestFloorDetails,
   getForestLandmark,
@@ -844,6 +845,43 @@ describe('tile forest', () => {
     ).toBe(true);
     expect(getForestTreeBranchProfiles(first.x, first.y)).toEqual(first.branches);
     expect(getForestTreeCanopyProfiles(first.x, first.y)).toEqual(first.canopies);
+  });
+
+  it('generates variable trunk heights for forest trees', () => {
+    const trunkTiles: Array<{
+      x: number;
+      y: number;
+      trunks: ReturnType<typeof getForestTreeTrunkProfiles>;
+    }> = [];
+
+    for (let tileY = 0; tileY < 32; tileY += 1) {
+      for (let tileX = 0; tileX < 32; tileX += 1) {
+        const trunks = getForestTreeTrunkProfiles(tileX, tileY);
+        if (trunks.length > 0) {
+          trunkTiles.push({ x: tileX, y: tileY, trunks });
+        }
+      }
+    }
+
+    expect(trunkTiles.length).toBeGreaterThan(0);
+
+    const allTrunks = trunkTiles.flatMap(({ trunks }) => trunks);
+    const broadleafTrunks = allTrunks.filter((trunk) => trunk.form === 'broadleaf');
+    const pineTrunks = allTrunks.filter((trunk) => trunk.form === 'pine');
+
+    expect(broadleafTrunks.length).toBeGreaterThan(0);
+    expect(pineTrunks.length).toBeGreaterThan(0);
+
+    const broadleafHeights = new Set(
+      broadleafTrunks.map((trunk) => trunk.trunkHeight.toFixed(3))
+    );
+    const pineHeights = new Set(pineTrunks.map((trunk) => trunk.trunkHeight.toFixed(3)));
+
+    expect(broadleafHeights.size).toBeGreaterThan(1);
+    expect(pineHeights.size).toBeGreaterThan(1);
+
+    const first = trunkTiles[0]!;
+    expect(getForestTreeTrunkProfiles(first.x, first.y)).toEqual(first.trunks);
   });
 
   it('separates forest decorations and inhabitants from the core tree scene', () => {
