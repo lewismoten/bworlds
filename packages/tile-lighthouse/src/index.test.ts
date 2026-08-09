@@ -118,7 +118,8 @@ describe('tile lighthouse', () => {
 
     const sharedCount = countSharedMaterialReferences(first, second);
 
-    expect(sharedCount).toBeGreaterThanOrEqual(4);
+    expect(sharedCount).toBeGreaterThanOrEqual(5);
+    expect(findBeamMaterial(first)).toBe(findBeamMaterial(second));
   });
 
   it('sweeps and reveals the beam at night', () => {
@@ -262,4 +263,14 @@ function collectMeshMaterials(root: FakeNode | undefined): Set<FakeMaterial> {
     }
   });
   return materials;
+}
+
+function findBeamMaterial(root: FakeNode | undefined): FakeMaterial | FakeMaterial[] | undefined {
+  let beamMaterial: FakeMaterial | FakeMaterial[] | undefined;
+  root?.traverse((node) => {
+    if (node.userData?.lighthouseBeam) {
+      beamMaterial = (node as FakeMesh).material;
+    }
+  });
+  return beamMaterial;
 }

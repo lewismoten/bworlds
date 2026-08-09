@@ -22,6 +22,7 @@ const lighthouseMaterialCache = new WeakMap<
     stripeMaterial: ThreeMaterialLike;
     stoneMaterial: ThreeMaterialLike;
     paneMaterial: ThreeMaterialLike;
+    beamMaterial: ThreeMaterialLike;
   }
 >();
 
@@ -54,15 +55,8 @@ export function createLighthouseTilePlugin(): RuntimePlugin {
     }),
     create3DModel({ three, tileX, tileY }: Create3DModelContext) {
       const group = new three.Group();
-      const { wallMaterial, stripeMaterial, stoneMaterial, paneMaterial } =
+      const { wallMaterial, stripeMaterial, stoneMaterial, paneMaterial, beamMaterial } =
         getLighthouseSharedMaterials(three);
-      const beamMaterial = createBasicMaterial(three, {
-        color: '#ffe9a8',
-        transparent: true,
-        depthWrite: false,
-        side: three.DoubleSide,
-      }) as BeamMaterialLike;
-      beamMaterial.opacity = 0;
 
       const base = new three.Mesh(
         new three.CylinderGeometry(0.46, 0.6, 0.32, 10),
@@ -192,7 +186,14 @@ function getLighthouseSharedMaterials(three: Create3DModelContext['three']) {
         metalness: 0.02,
         side: three.DoubleSide,
       }),
+      beamMaterial: createBasicMaterial(three, {
+        color: '#ffe9a8',
+        transparent: true,
+        depthWrite: false,
+        side: three.DoubleSide,
+      }),
     };
+    (cached.beamMaterial as BeamMaterialLike).opacity = 0;
     lighthouseMaterialCache.set(three as object, cached);
   }
   return cached;
