@@ -4,6 +4,7 @@ import {
   cycleViewMode,
   getNextCompassDisplayMode,
   getNextCelestialEventMode,
+  getInitialInspectorTab,
   getNextInspectorTab,
   getNextMinimapDisplayMode,
   getNextModelPreviewMode,
@@ -39,6 +40,13 @@ describe('time controls', () => {
     expect(getNextInspectorTab('sextant')).toBe('sextant');
     expect(getNextInspectorTab('timekeeper')).toBe('timekeeper');
     expect(getNextInspectorTab('unknown')).toBe('timekeeper');
+  });
+
+  it('lets a supported URL override choose the initial inspector tab', () => {
+    expect(getInitialInspectorTab('timekeeper', 'debug')).toBe('debug');
+    expect(getInitialInspectorTab('sextant', 'events')).toBe('events');
+    expect(getInitialInspectorTab('debug', 'unknown')).toBe('debug');
+    expect(getInitialInspectorTab('unknown', undefined)).toBe('timekeeper');
   });
 
   it('normalizes the model preview mode to a supported layout', () => {

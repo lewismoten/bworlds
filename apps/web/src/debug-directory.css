@@ -1,0 +1,116 @@
+:root {
+  --debug-bg: #08121c;
+  --debug-card: rgba(10, 20, 31, 0.92);
+  --debug-text: #edf4f8;
+  --debug-muted: #9db2bd;
+  --debug-accent: #f5b971;
+  --debug-accent-2: #70d7c2;
+  --debug-border: rgba(255, 255, 255, 0.1);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  color: var(--debug-text);
+  font-family: 'Trebuchet MS', 'Avenir Next', Avenir, 'Segoe UI', sans-serif;
+  background:
+    radial-gradient(circle at top left, rgba(112, 215, 194, 0.16), transparent 28%),
+    radial-gradient(circle at top right, rgba(245, 185, 113, 0.18), transparent 24%),
+    linear-gradient(160deg, #071018 0%, #0f1d2c 60%, #08121c 100%);
+}
+
+.debug-directory-shell {
+  width: min(1120px, calc(100vw - 2rem));
+  margin: 0 auto;
+  padding: 2.5rem 0 3rem;
+}
+
+.debug-directory-hero {
+  max-width: 42rem;
+  margin-bottom: 1.8rem;
+}
+
+.debug-directory-kicker {
+  margin: 0 0 0.6rem;
+  color: var(--debug-accent-2);
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  font-size: 0.76rem;
+}
+
+.debug-directory-hero h1 {
+  margin: 0;
+  font-size: clamp(2.6rem, 5vw, 4.4rem);
+  line-height: 0.96;
+}
+
+.debug-directory-lede {
+  margin: 0.85rem 0 0;
+  color: var(--debug-muted);
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+.debug-directory-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1rem;
+}
+
+.debug-directory-card {
+  padding: 1.15rem;
+  border: 1px solid var(--debug-border);
+  border-radius: 22px;
+  background: var(--debug-card);
+  box-shadow: 0 24px 56px rgba(0, 0, 0, 0.26);
+  backdrop-filter: blur(14px);
+}
+
+.debug-directory-category {
+  margin: 0 0 0.45rem;
+  color: var(--debug-accent-2);
+  font-size: 0.72rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.debug-directory-card h2 {
+  margin: 0;
+  font-size: 1.4rem;
+}
+
+.debug-directory-description {
+  margin: 0.7rem 0 0;
+  color: var(--debug-muted);
+  line-height: 1.55;
+}
+
+.debug-directory-route {
+  margin: 0.95rem 0 0;
+  color: var(--debug-accent);
+  font-family: 'SFMono-Regular', 'Menlo', 'Monaco', monospace;
+  font-size: 0.88rem;
+}
+
+.debug-directory-link {
+  display: inline-flex;
+  margin-top: 1rem;
+  padding: 0.78rem 1rem;
+  border-radius: 999px;
+  border: 1px solid var(--debug-border);
+  color: var(--debug-text);
+  text-decoration: none;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.12), transparent);
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease;
+}
+
+.debug-directory-link:hover {
+  transform: translateY(-1px);
+  border-color: rgba(245, 185, 113, 0.48);
+}

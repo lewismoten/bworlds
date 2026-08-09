@@ -80,6 +80,23 @@ export function getNextInspectorTab(tabId: string | undefined): InspectorTab {
   return 'timekeeper';
 }
 
+export function getInitialInspectorTab(
+  savedTabId: string | undefined,
+  overrideTabId: string | undefined
+): InspectorTab {
+  if (
+    overrideTabId === 'model' ||
+    overrideTabId === 'events' ||
+    overrideTabId === 'compass' ||
+    overrideTabId === 'sextant' ||
+    overrideTabId === 'debug' ||
+    overrideTabId === 'timekeeper'
+  ) {
+    return overrideTabId;
+  }
+  return getNextInspectorTab(savedTabId);
+}
+
 export function getNextModelPreviewMode(
   modeId: string | undefined
 ): ModelPreviewMode {

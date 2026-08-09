@@ -211,6 +211,7 @@ import {
   cycleViewMode,
   getNextCompassDisplayMode,
   getNextCelestialEventMode,
+  getInitialInspectorTab,
   getNextInspectorTab,
   getNextMinimapDisplayMode,
   getNextModelPreviewMode,
@@ -812,6 +813,7 @@ const worldMapStorage = createWorldMapStorageCoordinator({
   settingsStorage: localWorldMapStorage,
   providers: [{ id: 'local', storage: localWorldMapStorage }],
 });
+const urlSearchParams = new URLSearchParams(window.location.search);
 
 const savedSession = loadSession();
 const savedCharacterProfile = loadCharacterProfile(savedSession);
@@ -1041,7 +1043,10 @@ const celestialPreview = createCelestialPreviewRenderer(celestialPreviewHost, {
 const solarSystemPreview = createSolarSystemPreviewRenderer(solarSystemPreviewHost, {
   onRenderRequested: () => requestRender(),
 });
-let activeInspectorTab = getNextInspectorTab(savedSession?.inspectorTab);
+let activeInspectorTab = getInitialInspectorTab(
+  savedSession?.inspectorTab,
+  urlSearchParams.get('inspector') ?? undefined
+);
 let activeModelPreviewMode = getNextModelPreviewMode(savedSession?.modelPreviewMode);
 let activeTimekeeperDisplayMode = getNextTimekeeperDisplayMode(
   savedSession?.timekeeperDisplayMode
