@@ -110,7 +110,7 @@ Given the heap issue you just saw, I would take this very seriously.
 * [X] Set maximum texture count per model.
 * [X] Set maximum texture count per material.
 * [X] Set lower texture limits for distant LODs.
-* [ ] Reject textures above hardware-supported dimensions.
+* [X] Reject textures above hardware-supported dimensions.
 * [ ] Downscale oversized procedural textures when safe.
 * [ ] Allow plugins to provide lower-resolution fallback textures.
 * [ ] Avoid loading 4K textures for small world objects.

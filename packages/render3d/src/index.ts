@@ -552,6 +552,30 @@ export function getTileModelHardLimits(
     : FULL_DETAIL_TILE_MODEL_HARD_LIMITS;
 }
 
+function getEffectiveTileModelHardLimits(
+  detailLevel: RenderBudgetDetailLevel,
+  hardwareConstraints?: TileModelHardwareConstraints
+): TileModelHardLimits {
+  const limits = getTileModelHardLimits(detailLevel);
+  const maxTextureDimension = normalizeMaxTextureDimension(
+    hardwareConstraints?.maxTextureDimension
+  );
+
+  if (
+    maxTextureDimension === null ||
+    (maxTextureDimension >= limits.maxTextureWidth &&
+      maxTextureDimension >= limits.maxTextureHeight)
+  ) {
+    return limits;
+  }
+
+  return {
+    ...limits,
+    maxTextureWidth: Math.min(limits.maxTextureWidth, maxTextureDimension),
+    maxTextureHeight: Math.min(limits.maxTextureHeight, maxTextureDimension),
+  };
+}
+
 const FULL_DETAIL_TILE_DRAW_CALL_LIMIT = 81;
 const LOW_DETAIL_TILE_DRAW_CALL_LIMIT = 17;
 
@@ -582,9 +606,10 @@ export function validateTileDrawCallBudget(
 
 export function validateTileModelAgainstRenderBudget(
   root: Pick<THREE.Object3D, 'traverse' | 'children' | 'type'>,
-  detailLevel: RenderBudgetDetailLevel = 'full'
+  detailLevel: RenderBudgetDetailLevel = 'full',
+  hardwareConstraints?: TileModelHardwareConstraints
 ): TileModelBudgetValidation {
-  const limits = getTileModelHardLimits(detailLevel);
+  const limits = getEffectiveTileModelHardLimits(detailLevel, hardwareConstraints);
   const safetyPrecheck = runTileModelSafetyPrecheck(root as never, limits);
   if (safetyPrecheck.exceeded) {
     return {
@@ -745,21 +770,31 @@ export function acceptTilePluginModelForRenderBudget<
   TObject extends Pick<THREE.Object3D, 'traverse' | 'children' | 'type'>
 >(
   model: TObject,
-  detailLevel: RenderBudgetDetailLevel = 'full'
+  detailLevel: RenderBudgetDetailLevel = 'full',
+  hardwareConstraints?: TileModelHardwareConstraints
 ): TObject | null {
-  return acceptTilePluginModelForRenderBudgetWithResult(model, detailLevel).model;
+  return acceptTilePluginModelForRenderBudgetWithResult(
+    model,
+    detailLevel,
+    hardwareConstraints
+  ).model;
 }
 
 export function acceptTilePluginModelForRenderBudgetWithResult<
   TObject extends Pick<THREE.Object3D, 'traverse' | 'children' | 'type'>
 >(
   model: TObject,
-  detailLevel: RenderBudgetDetailLevel = 'full'
+  detailLevel: RenderBudgetDetailLevel = 'full',
+  hardwareConstraints?: TileModelHardwareConstraints
 ): {
   model: TObject | null;
   removedParts: Array<{ label?: string; priority: number }>;
 } {
-  const validation = validateTileModelAgainstRenderBudget(model, detailLevel);
+  const validation = validateTileModelAgainstRenderBudget(
+    model,
+    detailLevel,
+    hardwareConstraints
+  );
   if (validation.accepted) {
     return {
       model,
@@ -768,7 +803,12 @@ export function acceptTilePluginModelForRenderBudgetWithResult<
   }
   const pruned = pruneTileModelOptionalPartsForBudget(
     model as TObject & Pick<THREE.Object3D, 'userData'>,
-    (candidate) => validateTileModelAgainstRenderBudget(candidate, detailLevel),
+    (candidate) =>
+      validateTileModelAgainstRenderBudget(
+        candidate,
+        detailLevel,
+        hardwareConstraints
+      ),
     (removedNode) => disposeObject3DResources(removedNode as Pick<THREE.Object3D, 'traverse'>)
   );
   if (pruned.validation.accepted) {
@@ -1052,6 +1092,10 @@ type TileModelBudgetViolation = {
   metric: keyof TileModelHardLimits;
   actual: number;
   limit: number;
+};
+
+type TileModelHardwareConstraints = {
+  maxTextureDimension?: number | null;
 };
 
 type TileModelBudgetValidation = {
@@ -1480,6 +1524,9 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   renderer.domElement.tabIndex = -1;
   host.appendChild(renderer.domElement);
+  const tileModelHardwareConstraints: TileModelHardwareConstraints = {
+    maxTextureDimension: renderer.capabilities.maxTextureSize,
+  };
 
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(SKY_DAY_COLOR);
@@ -1779,7 +1826,8 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     if (pluginModel) {
       const modelBudgetValidation = validateTileModelAgainstRenderBudget(
         pluginModel,
-        detailLevel
+        detailLevel,
+        tileModelHardwareConstraints
       );
       if (!modelBudgetValidation.accepted) {
         const violationSummary = summarizeTileModelBudgetViolations(
@@ -1806,7 +1854,8 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
         });
         const acceptedWithBudgetResult = acceptTilePluginModelForRenderBudgetWithResult(
           pluginModel,
-          detailLevel
+          detailLevel,
+          tileModelHardwareConstraints
         );
         if (acceptedWithBudgetResult.model && acceptedWithBudgetResult.removedParts.length > 0) {
           const removedSummary = summarizeRemovedTileModelBudgetParts(
@@ -1822,7 +1871,11 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
         }
         pluginModel = acceptedWithBudgetResult.model;
         finalPluginModelBudgetValidation = pluginModel
-          ? validateTileModelAgainstRenderBudget(pluginModel, detailLevel)
+          ? validateTileModelAgainstRenderBudget(
+              pluginModel,
+              detailLevel,
+              tileModelHardwareConstraints
+            )
           : null;
       } else {
         finalPluginModelBudgetValidation = modelBudgetValidation;
@@ -4188,6 +4241,16 @@ export function collectSceneResourceStats(
     treeMeshCount,
     treeMaterialRefCount,
   };
+}
+
+function normalizeMaxTextureDimension(
+  value: number | null | undefined
+): number | null {
+  if (typeof value !== 'number' || !Number.isFinite(value)) {
+    return null;
+  }
+  const normalized = Math.floor(value);
+  return normalized > 0 ? normalized : null;
 }
 
 function isDynamicLightType(type: string): boolean {

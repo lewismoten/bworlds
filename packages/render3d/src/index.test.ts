@@ -2180,6 +2180,63 @@ describe('render3d visibility helpers', () => {
     );
   });
 
+  it('rejects textures that exceed the hardware texture-dimension cap even when detail budgets allow them', () => {
+    const root = createMockObject3D(
+      createMockMaterial({ map: createMockTexture(300, 128) }),
+      [],
+      createMockStatGeometry('hardware-texture-width-cap', 24)
+    );
+
+    expect(
+      validateTileModelAgainstRenderBudget(root as never, 'full', {
+        maxTextureDimension: 256,
+      })
+    ).toEqual(
+      expect.objectContaining({
+        accepted: false,
+        stats: expect.objectContaining({
+          maxTextureWidth: 300,
+          maxTextureHeight: 128,
+          maxTexturePixelCount: 38_400,
+        }),
+        limits: expect.objectContaining({
+          maxTextureWidth: 256,
+          maxTextureHeight: 256,
+        }),
+        violations: expect.arrayContaining([
+          {
+            metric: 'maxTextureWidth',
+            actual: 300,
+            limit: 256,
+          },
+        ]),
+      })
+    );
+  });
+
+  it('ignores invalid hardware texture caps and keeps detail-level texture limits intact', () => {
+    const root = createMockObject3D(
+      createMockMaterial({ map: createMockTexture(700, 256) }),
+      [],
+      createMockStatGeometry('invalid-hardware-texture-cap', 24)
+    );
+
+    expect(
+      validateTileModelAgainstRenderBudget(root as never, 'full', {
+        maxTextureDimension: Number.NaN,
+      })
+    ).toEqual(
+      expect.objectContaining({
+        accepted: true,
+        limits: expect.objectContaining({
+          maxTextureWidth: 2_048,
+          maxTextureHeight: 2_048,
+        }),
+        violations: [],
+      })
+    );
+  });
+
   it('tracks animation-mixer counts in scene stats and rejects models above the cap', () => {
     const material = createMockMaterial();
     const root = createMockObject3D(undefined, [
