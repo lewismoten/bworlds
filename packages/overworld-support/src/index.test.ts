@@ -7,13 +7,14 @@ import {
   createRiverCurvePoints,
   createRiverControlPoints,
   createRiverForkPath,
-  resolveOverworldCellAnchor,
+  createOverworldTerrainSignalSampler,
   createOverworldGenerationContext,
   createGeneratedNamedOverworldCellAnchorSpec,
   createGeneratedPoiOverworldCellAnchorSpec,
   getOverworldPlacementChance,
-  createOverworldTerrainSignalSampler,
+  getRiverControlPathSignalAtPoint,
   isNearOverworldLand,
+  resolveOverworldCellAnchor,
 } from './index.ts';
 import type { PluginRegistryLike } from '@bworlds/plugin-api';
 
@@ -63,6 +64,26 @@ function getAccumulatedTurn(points: { x: number; y: number }[]): number {
     totalTurn += Math.abs(normalizeAngleDelta(exitAngle - entryAngle));
   }
   return totalTurn;
+}
+
+function getLegacyRiverPathSignalAtPoint(
+  points: { x: number; y: number }[],
+  x: number,
+  y: number
+): number {
+  let strongestSignal = 0;
+  for (let index = 1; index < points.length; index += 1) {
+    const segmentDistance = getDistanceToSegment(
+      { x, y },
+      points[index - 1]!,
+      points[index]!
+    );
+    const segmentSignal = Math.max(0, 1 - segmentDistance / 2.35);
+    if (segmentSignal > strongestSignal) {
+      strongestSignal = segmentSignal;
+    }
+  }
+  return strongestSignal;
 }
 
 type GenerationContextPayload = Parameters<typeof createOverworldGenerationContext>[0];
@@ -258,6 +279,31 @@ describe('overworld support', () => {
       { x: 8.88888888888889, y: 4.148148148148148 },
       { x: 10, y: 4 },
     ]);
+  });
+
+  it('matches river path signals without materializing sampled curve points', () => {
+    const controlPoints = [
+      { x: 0, y: 0 },
+      { x: 4, y: 0 },
+      { x: 6, y: 4 },
+      { x: 10, y: 4 },
+    ];
+    const sampledCurvePoints = createRiverCurvePoints(controlPoints, 5);
+    const sampleLocations = [
+      { x: 1.25, y: -0.2 },
+      { x: 4.9, y: 1.8 },
+      { x: 8.4, y: 4.2 },
+      { x: 12, y: 6 },
+    ];
+
+    for (const location of sampleLocations) {
+      expect(
+        getRiverControlPathSignalAtPoint(controlPoints, location.x, location.y, 5)
+      ).toBeCloseTo(
+        getLegacyRiverPathSignalAtPoint(sampledCurvePoints, location.x, location.y),
+        12
+      );
+    }
   });
 
   it('can generate strongly meandering river control paths', () => {

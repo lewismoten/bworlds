@@ -144,7 +144,6 @@ export function createOverworldTerrainSignalSampler(
   const roadSeed = `${seed}:road`;
   const signalCache = createCoordinateCache<OverworldSignals>();
   const riverControlPointCache = createCoordinateCache<RiverControlPoint[]>();
-  const riverCurvePointCache = createCoordinateCache<RiverControlPoint[]>();
   const riverForkPathCache = createCoordinateCache<RiverForkPath | null>();
 
   return function sampleTerrainSignals(x: number, y: number): OverworldSignals {
@@ -172,7 +171,6 @@ export function createOverworldTerrainSignalSampler(
         x,
         y,
         riverControlPointCache,
-        riverCurvePointCache,
         riverForkPathCache
       );
       const riverPathWeight =
@@ -297,7 +295,6 @@ function sampleRiverControlPathSignal(
   x: number,
   y: number,
   controlPointCache: CoordinateCache<RiverControlPoint[]>,
-  curvePointCache: CoordinateCache<RiverControlPoint[]>,
   forkPathCache: CoordinateCache<RiverForkPath | null>
 ): number {
   const cellX = Math.floor(x / RIVER_CONTROL_CELL_SIZE);
@@ -306,16 +303,15 @@ function sampleRiverControlPathSignal(
 
   for (let offsetY = -1; offsetY <= 1; offsetY += 1) {
     for (let offsetX = -1; offsetX <= 1; offsetX += 1) {
-      const points = getCachedRiverCurvePoints(
+      const points = getCachedRiverControlPoints(
         seed,
         cellX + offsetX,
         cellY + offsetY,
-        controlPointCache,
-        curvePointCache
+        controlPointCache
       );
       strongestSignal = Math.max(
         strongestSignal,
-        getRiverPathSignalAtPoint(points, x, y)
+        getRiverControlPathSignalAtPoint(points, x, y)
       );
       const forkPath = getCachedRiverForkPath(
         seed,
@@ -540,24 +536,6 @@ function getCachedRiverControlPoints(
   return points;
 }
 
-function getCachedRiverCurvePoints(
-  seed: Seed,
-  cellX: number,
-  cellY: number,
-  controlPointCache: CoordinateCache<RiverControlPoint[]>,
-  curvePointCache: CoordinateCache<RiverControlPoint[]>
-): RiverControlPoint[] {
-  const cached = curvePointCache.get(cellX, cellY);
-  if (cached !== undefined) {
-    return cached;
-  }
-  const points = createRiverCurvePoints(
-    getCachedRiverControlPoints(seed, cellX, cellY, controlPointCache)
-  );
-  curvePointCache.set(cellX, cellY, points);
-  return points;
-}
-
 function getCachedRiverForkPath(
   seed: Seed,
   cellX: number,
@@ -596,25 +574,95 @@ function getRiverPathSignalAtPoint(
   return strongestSignal;
 }
 
+export function getRiverControlPathSignalAtPoint(
+  controlPoints: RiverControlPoint[],
+  x: number,
+  y: number,
+  segmentsPerCurve = RIVER_CURVE_SEGMENTS
+): number {
+  if (controlPoints.length <= 1) {
+    return 0;
+  }
+  if (controlPoints.length <= 2) {
+    return getRiverPathSignalAtPoint(controlPoints, x, y);
+  }
+
+  let strongestSignal = 0;
+  for (let index = 0; index < controlPoints.length - 1; index += 1) {
+    const previous = controlPoints[Math.max(0, index - 1)]!;
+    const start = controlPoints[index]!;
+    const end = controlPoints[index + 1]!;
+    const next = controlPoints[Math.min(controlPoints.length - 1, index + 2)]!;
+    const controlAX = start.x + (end.x - previous.x) / 6;
+    const controlAY = start.y + (end.y - previous.y) / 6;
+    const controlBX = end.x - (next.x - start.x) / 6;
+    const controlBY = end.y - (next.y - start.y) / 6;
+
+    let priorX = start.x;
+    let priorY = start.y;
+    for (let segmentIndex = 1; segmentIndex <= segmentsPerCurve; segmentIndex += 1) {
+      const t = segmentIndex / segmentsPerCurve;
+      const inverseT = 1 - t;
+      const curveX =
+        inverseT * inverseT * inverseT * start.x +
+        3 * inverseT * inverseT * t * controlAX +
+        3 * inverseT * t * t * controlBX +
+        t * t * t * end.x;
+      const curveY =
+        inverseT * inverseT * inverseT * start.y +
+        3 * inverseT * inverseT * t * controlAY +
+        3 * inverseT * t * t * controlBY +
+        t * t * t * end.y;
+      const segmentDistance = getDistanceToLineSegmentXY(
+        x,
+        y,
+        priorX,
+        priorY,
+        curveX,
+        curveY
+      );
+      const segmentSignal = Math.max(0, 1 - segmentDistance / RIVER_SEGMENT_FALLOFF);
+      if (segmentSignal > strongestSignal) {
+        strongestSignal = segmentSignal;
+      }
+      priorX = curveX;
+      priorY = curveY;
+    }
+  }
+
+  return strongestSignal;
+}
+
 function getDistanceToLineSegment(
   x: number,
   y: number,
   start: RiverControlPoint,
   end: RiverControlPoint
 ): number {
-  const deltaX = end.x - start.x;
-  const deltaY = end.y - start.y;
+  return getDistanceToLineSegmentXY(x, y, start.x, start.y, end.x, end.y);
+}
+
+function getDistanceToLineSegmentXY(
+  x: number,
+  y: number,
+  startX: number,
+  startY: number,
+  endX: number,
+  endY: number
+): number {
+  const deltaX = endX - startX;
+  const deltaY = endY - startY;
   const squaredLength = deltaX * deltaX + deltaY * deltaY;
   if (squaredLength === 0) {
-    return Math.hypot(x - start.x, y - start.y);
+    return Math.hypot(x - startX, y - startY);
   }
   const projection = clamp(
-    ((x - start.x) * deltaX + (y - start.y) * deltaY) / squaredLength,
+    ((x - startX) * deltaX + (y - startY) * deltaY) / squaredLength,
     0,
     1
   );
-  const closestX = start.x + deltaX * projection;
-  const closestY = start.y + deltaY * projection;
+  const closestX = startX + deltaX * projection;
+  const closestY = startY + deltaY * projection;
   return Math.hypot(x - closestX, y - closestY);
 }
 
