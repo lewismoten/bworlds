@@ -4,6 +4,7 @@ import {
   buildPlanetTextureGrid,
   getCelestialPreviewFrameSignature,
   getCelestialPreviewSceneSignatures,
+  getPreviewConstellationRenderState,
   getPreviewAuroraBandPath,
   getPreviewBodyPosition,
   getPreviewFacingArrowState,
@@ -170,6 +171,67 @@ describe('celestial preview helpers', () => {
       })
     );
     expect(points[10].y).not.toBeCloseTo(points[0].y, 4);
+  });
+
+  it('derives stable pooled preview constellation render states from the visible ring', () => {
+    const cycle = getDaylightCycleState(120000, {
+      observerLatitudeDegrees: 24,
+    });
+    const state = getPreviewConstellationRenderState(cycle);
+
+    expect(state.lines.length).toBeGreaterThan(0);
+    expect(state.stars.length).toBeGreaterThan(0);
+    expect(state.lines[0]).toEqual(
+      expect.objectContaining({
+        start: expect.objectContaining({
+          x: expect.any(Number),
+          y: expect.any(Number),
+          z: expect.any(Number),
+        }),
+        end: expect.objectContaining({
+          x: expect.any(Number),
+          y: expect.any(Number),
+          z: expect.any(Number),
+        }),
+        opacity: expect.any(Number),
+        visible: expect.any(Boolean),
+      })
+    );
+    expect(state.stars[0]).toEqual(
+      expect.objectContaining({
+        position: expect.objectContaining({
+          x: expect.any(Number),
+          y: expect.any(Number),
+          z: expect.any(Number),
+        }),
+        scale: expect.any(Number),
+        opacity: expect.any(Number),
+        visible: expect.any(Boolean),
+      })
+    );
+  });
+
+  it('changes preview constellation positions seasonally without changing pool cardinality', () => {
+    const cycle = getDaylightCycleState(120000, {
+      observerLatitudeDegrees: 24,
+    });
+    const shiftedCycle = clonePreviewSceneCycle(cycle, {
+      ...cycle,
+      yearProgress: cycle.yearProgress + 0.12,
+    });
+    const baseState = getPreviewConstellationRenderState(cycle);
+    const shiftedState = getPreviewConstellationRenderState(shiftedCycle);
+
+    expect(shiftedState.lines).toHaveLength(baseState.lines.length);
+    expect(shiftedState.stars).toHaveLength(baseState.stars.length);
+    expect(shiftedState.lines[0]?.start.x).not.toBeCloseTo(
+      baseState.lines[0]?.start.x ?? 0,
+      6
+    );
+    expect(shiftedState.stars[0]?.position.z).not.toBeCloseTo(
+      baseState.stars[0]?.position.z ?? 0,
+      6
+    );
   });
 
   it('keeps the preview planet readable at night while still brightening in daylight', () => {

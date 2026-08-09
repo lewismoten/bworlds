@@ -82,6 +82,22 @@ type PreviewSunShadowCoverageState = {
   worldWithinShadow: boolean;
   moonWithinShadow: boolean;
 };
+type PreviewConstellationLineState = {
+  start: PreviewPoint3D;
+  end: PreviewPoint3D;
+  opacity: number;
+  visible: boolean;
+};
+type PreviewConstellationStarState = {
+  position: PreviewPoint3D;
+  scale: number;
+  opacity: number;
+  visible: boolean;
+};
+type PreviewConstellationRenderState = {
+  lines: PreviewConstellationLineState[];
+  stars: PreviewConstellationStarState[];
+};
 type PreviewLightRigState = {
   sun: PreviewPoint3D;
   moon: PreviewPoint3D;
@@ -949,7 +965,83 @@ function syncPreviewConstellations(
   root: THREE.Group,
   cycle: DaylightCycleLike
 ): void {
-  root.clear();
+  const state = getPreviewConstellationRenderState(cycle);
+  const rootState = root.userData as {
+    linePool?: THREE.Line[];
+    starPool?: THREE.Sprite[];
+  };
+  const linePool = rootState.linePool ?? (rootState.linePool = []);
+  const starPool = rootState.starPool ?? (rootState.starPool = []);
+
+  while (linePool.length < state.lines.length) {
+    const line = new THREE.Line(
+      new THREE.BufferGeometry().setAttribute(
+        'position',
+        new THREE.Float32BufferAttribute(6, 3)
+      ),
+      new THREE.LineBasicMaterial({
+        color: '#86aef5',
+        transparent: true,
+        opacity: 0,
+      })
+    );
+    line.visible = false;
+    linePool.push(line);
+    root.add(line);
+  }
+
+  while (starPool.length < state.stars.length) {
+    const sprite = new THREE.Sprite(
+      new THREE.SpriteMaterial({
+        color: '#f3f8ff',
+        transparent: true,
+        opacity: 0,
+        depthWrite: false,
+      })
+    );
+    sprite.visible = false;
+    starPool.push(sprite);
+    root.add(sprite);
+  }
+
+  linePool.forEach((line, index) => {
+    const lineState = state.lines[index];
+    if (!lineState) {
+      line.visible = false;
+      return;
+    }
+    const positions = line.geometry.getAttribute('position') as THREE.BufferAttribute;
+    positions.setXYZ(0, lineState.start.x, lineState.start.y, lineState.start.z);
+    positions.setXYZ(1, lineState.end.x, lineState.end.y, lineState.end.z);
+    positions.needsUpdate = true;
+    const material = line.material as THREE.LineBasicMaterial;
+    material.opacity = lineState.opacity;
+    line.visible = lineState.visible;
+  });
+
+  starPool.forEach((sprite, index) => {
+    const starState = state.stars[index];
+    if (!starState) {
+      sprite.visible = false;
+      return;
+    }
+    sprite.position.set(
+      starState.position.x,
+      starState.position.y,
+      starState.position.z
+    );
+    sprite.scale.set(starState.scale, starState.scale, 1);
+    const material = sprite.material as THREE.SpriteMaterial;
+    material.opacity = starState.opacity;
+    sprite.visible = starState.visible;
+  });
+}
+
+export function getPreviewConstellationRenderState(
+  cycle: DaylightCycleLike
+): PreviewConstellationRenderState {
+  const lines: PreviewConstellationLineState[] = [];
+  const stars: PreviewConstellationStarState[] = [];
   const ring = cycle.celestialRing ?? [];
   const constellations = cycle.constellations ?? [];
 
@@ -963,6 +1055,7 @@ function syncPreviewConstellations(
       0.78 + constellation.ringJitter * 0.12,
       11.4
     );
+    const lineOpacity = 0.14 + cycle.starsOpacity * 0.26;
 
     constellation.connections.forEach(([startIndex, endIndex]) => {
       const start = constellation.stars[startIndex];
@@ -970,36 +1063,26 @@ function syncPreviewConstellations(
       if (!start || !end) {
         return;
       }
-      const line = new THREE.Line(
-        new THREE.BufferGeometry().setFromPoints([
-          previewConstellationPoint(anchor, start),
-          previewConstellationPoint(anchor, end),
-        ]),
-        new THREE.LineBasicMaterial({
-          color: '#86aef5',
-          transparent: true,
-          opacity: 0.14 + cycle.starsOpacity * 0.26,
-        })
-      );
-      root.add(line);
+      lines.push({
+        start: previewConstellationPoint(anchor, start),
+        end: previewConstellationPoint(anchor, end),
+        opacity: lineOpacity,
+        visible: lineOpacity > 0.015,
+      });
     });
 
     constellation.stars.forEach((star) => {
-      const point = previewConstellationPoint(anchor, star);
-      const sprite = new THREE.Sprite(
-        new THREE.SpriteMaterial({
-          color: '#f3f8ff',
-          transparent: true,
-          opacity: 0.12 + (0.18 + star.brightness * 0.44) * cycle.starsOpacity,
-          depthWrite: false,
-        })
-      );
-      sprite.position.copy(point);
-      const scale = 0.16 + star.brightness * 0.18;
-      sprite.scale.set(scale, scale, 1);
-      root.add(sprite);
+      stars.push({
+        position: previewConstellationPoint(anchor, star),
+        scale: 0.16 + star.brightness * 0.18,
+        opacity: 0.12 + (0.18 + star.brightness * 0.44) * cycle.starsOpacity,
+        visible:
+          0.12 + (0.18 + star.brightness * 0.44) * cycle.starsOpacity > 0.015,
+      });
     });
   });
+
+  return { lines, stars };
 }
 
 function describeDirectionalShadowFrustum(
