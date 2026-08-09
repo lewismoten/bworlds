@@ -63,6 +63,17 @@ export interface TreeFoliageState {
   scaleZ: number;
 }
 
+export interface TreeStructuralState {
+  radius: number;
+  scale: number;
+  trunkHeight: number;
+  branches: TreeBranchState[];
+}
+
+export interface TreeCanopyState {
+  foliage: TreeFoliageState[];
+}
+
 export interface TreeLogicalState<TForm extends string = string> {
   x: number;
   y: number;
@@ -72,6 +83,8 @@ export interface TreeLogicalState<TForm extends string = string> {
   form: TForm;
   branches: TreeBranchState[];
   foliage: TreeFoliageState[];
+  structure?: TreeStructuralState;
+  canopy?: TreeCanopyState;
 }
 
 type TreeCapabilitySource =
@@ -125,6 +138,52 @@ export interface TreeFamily<TTree, TContext> extends TreeGenerator<TTree, TConte
   listSpecies(): Array<TreeSpecies<TTree, TContext>>;
   getSpecies(id: string): TreeSpecies<TTree, TContext> | null;
   generateSpecies(id: string, context: TContext): TTree;
+}
+
+export function createTreeLogicalState<TForm extends string = string>({
+  x,
+  y,
+  form,
+  structure,
+  canopy,
+}: {
+  x: number;
+  y: number;
+  form: TForm;
+  structure: TreeStructuralState;
+  canopy: TreeCanopyState;
+}): TreeLogicalState<TForm> {
+  return {
+    x,
+    y,
+    form,
+    radius: structure.radius,
+    scale: structure.scale,
+    trunkHeight: structure.trunkHeight,
+    branches: structure.branches,
+    foliage: canopy.foliage,
+    structure,
+    canopy,
+  };
+}
+
+export function getTreeStructuralState<TForm extends string = string>(
+  tree: TreeLogicalState<TForm>
+): TreeStructuralState {
+  return (
+    tree.structure ?? {
+      radius: tree.radius,
+      scale: tree.scale,
+      trunkHeight: tree.trunkHeight,
+      branches: tree.branches,
+    }
+  );
+}
+
+export function getTreeCanopyState<TForm extends string = string>(
+  tree: TreeLogicalState<TForm>
+): TreeCanopyState {
+  return tree.canopy ?? { foliage: tree.foliage };
 }
 
 export function createTreeGeneratorBase({

@@ -14,6 +14,7 @@ import {
   getForestBushes,
   getForestFireflyDescriptors,
   getForestTreeFamilies,
+  getForestTreeCanopyProfiles,
   getForestTreeGenerator,
   getForestTreeBranchProfiles,
   getForestCarvings,
@@ -790,11 +791,47 @@ describe('tile forest', () => {
 
     expect(oak.x).toBe(birch.x);
     expect(oak.y).toBe(birch.y);
+    expect(oak.structure?.branches).toEqual(oak.branches);
+    expect(oak.canopy?.foliage).toEqual(oak.foliage);
     expect(oak.speciesId).toBe('oak');
     expect(birch.speciesId).toBe('birch');
     expect(oak.trunkHeight).not.toBe(birch.trunkHeight);
     expect(oak.branches).not.toEqual(birch.branches);
     expect(oak.foliage).not.toEqual(birch.foliage);
+  });
+
+  it('separates forest structural profiles from canopy profiles', () => {
+    const branchTiles: Array<{
+      x: number;
+      y: number;
+      branches: ReturnType<typeof getForestTreeBranchProfiles>;
+      canopies: ReturnType<typeof getForestTreeCanopyProfiles>;
+    }> = [];
+
+    for (let tileY = 0; tileY < 24; tileY += 1) {
+      for (let tileX = 0; tileX < 24; tileX += 1) {
+        const branches = getForestTreeBranchProfiles(tileX, tileY);
+        const canopies = getForestTreeCanopyProfiles(tileX, tileY);
+        if (branches.length > 0 && branches.length === canopies.length) {
+          branchTiles.push({ x: tileX, y: tileY, branches, canopies });
+        }
+      }
+    }
+
+    expect(branchTiles.length).toBeGreaterThan(0);
+
+    const first = branchTiles[0]!;
+    expect(first.branches.map((entry) => entry.form)).toEqual(
+      first.canopies.map((entry) => entry.form)
+    );
+    expect(
+      first.branches.some((entry) => entry.branches.length > 0)
+    ).toBe(true);
+    expect(
+      first.canopies.some((entry) => entry.foliage.length > 0)
+    ).toBe(true);
+    expect(getForestTreeBranchProfiles(first.x, first.y)).toEqual(first.branches);
+    expect(getForestTreeCanopyProfiles(first.x, first.y)).toEqual(first.canopies);
   });
 
   it('generates more tree-like branch profiles for broadleaf and pine forms', () => {

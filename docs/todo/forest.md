@@ -32,7 +32,7 @@ For example, an oak and a pine both support `age`, but aging them should produce
 * [X] Allow individual species to override family behavior.
 * [ ] Separate tree biological state from rendered geometry.
 * [X] Separate tree placement from tree appearance generation.
-* [ ] Separate structural geometry from foliage.
+* [X] Separate structural geometry from foliage.
 * [ ] Separate decorations and inhabitants from the tree itself.
 * [ ] Separate collision geometry from visible geometry.
 * [ ] Separate tree simulation from rendering.

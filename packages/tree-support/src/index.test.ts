@@ -1,9 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import {
+  createTreeLogicalState,
   createTreeFamily,
   createTreeGenerator,
   createTreeGeneratorBase,
   createTreeSpecies,
+  getTreeCanopyState,
+  getTreeStructuralState,
   resolveTreeSeason,
   type TreeLogicalState,
 } from './index.ts';
@@ -91,6 +94,50 @@ describe('tree support', () => {
     expect(resolveTreeSeason({ yearProgress: 0.6 })).toBe('autumn');
     expect(resolveTreeSeason({ yearProgress: 0.9 })).toBe('winter');
     expect(resolveTreeSeason()).toBeUndefined();
+  });
+
+  it('separates explicit structural state from canopy state while preserving legacy fields', () => {
+    const tree = createTreeLogicalState({
+      x: 1,
+      y: 2,
+      form: 'oak' as const,
+      structure: {
+        radius: 0.2,
+        scale: 1.1,
+        trunkHeight: 1.6,
+        branches: [{ x: 0, y: 1, z: 0, length: 0.5, pitch: 0.4, roll: 0.2 }],
+      },
+      canopy: {
+        foliage: [{ x: 0, y: 1.4, z: 0, scaleX: 0.8, scaleY: 0.7, scaleZ: 0.8 }],
+      },
+    });
+
+    expect(tree.radius).toBe(0.2);
+    expect(tree.branches).toHaveLength(1);
+    expect(tree.foliage).toHaveLength(1);
+    expect(getTreeStructuralState(tree)).toEqual(tree.structure);
+    expect(getTreeCanopyState(tree)).toEqual(tree.canopy);
+  });
+
+  it('derives structural and canopy state for older tree shapes', () => {
+    const legacy: TreeLogicalState<'pine'> = {
+      x: 0,
+      y: 0,
+      radius: 0.18,
+      scale: 0.9,
+      trunkHeight: 1.3,
+      form: 'pine',
+      branches: [],
+      foliage: [],
+    };
+
+    expect(getTreeStructuralState(legacy)).toEqual({
+      radius: 0.18,
+      scale: 0.9,
+      trunkHeight: 1.3,
+      branches: [],
+    });
+    expect(getTreeCanopyState(legacy)).toEqual({ foliage: [] });
   });
 
   it('lets generators advertise capabilities without generating a tree', () => {

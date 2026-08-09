@@ -22,16 +22,21 @@ import {
   tintHexColor,
 } from '@bworlds/procedural-style';
 import {
+  createTreeLogicalState,
   createTreeFamily,
   createTreeGenerator,
   createTreeGeneratorBase,
   createTreeSpecies,
+  getTreeCanopyState,
+  getTreeStructuralState,
   resolveTreeSeason,
   type TreeBranchState,
+  type TreeCanopyState,
   type TreeFamily,
   type TreeFoliageState,
   type TreeGenerator,
   type TreeLogicalState,
+  type TreeStructuralState,
   type TreeSpecies,
 } from '@bworlds/tree-support';
 import { createThresholdTerrainClassifier } from '@bworlds/tile-support';
@@ -1062,10 +1067,12 @@ export function createForestTilePlugin(): RuntimePlugin {
             continue;
           }
           const style = getTreeStyle(three, tileX, tileY, descriptor.variety);
+          const structure = getTreeStructuralState(descriptor);
+          const canopy = getTreeCanopyState(descriptor);
 
           const tree = new three.Group();
           tree.position.set(tileX + descriptor.x, 0, tileY + descriptor.y);
-          tree.scale.setScalar(descriptor.scale);
+          tree.scale.setScalar(structure.scale);
           tree.userData = {
             ...(tree.userData ?? {}),
             [TREE_FORM_KEY]: descriptor.form,
@@ -1073,11 +1080,11 @@ export function createForestTilePlugin(): RuntimePlugin {
           };
 
           const trunk = new three.Mesh(geometry.trunk, style.trunkMaterial);
-          trunk.position.y = descriptor.trunkHeight * 0.5;
-          trunk.scale.y = descriptor.trunkHeight;
+          trunk.position.y = structure.trunkHeight * 0.5;
+          trunk.scale.y = structure.trunkHeight;
           tree.add(trunk);
 
-          for (const branch of descriptor.branches) {
+          for (const branch of structure.branches) {
             const limb = new three.Mesh(geometry.branch, style.trunkMaterial);
             limb.position.set(branch.x, branch.y, branch.z);
             limb.rotation.z = branch.roll;
@@ -1086,7 +1093,7 @@ export function createForestTilePlugin(): RuntimePlugin {
             tree.add(limb);
           }
 
-          for (const clump of descriptor.foliage) {
+          for (const clump of canopy.foliage) {
             const foliage = new three.Mesh(
               geometry.foliage,
               style.foliageMaterial
@@ -1424,10 +1431,11 @@ export function createForestTilePlugin(): RuntimePlugin {
       }: CanOccupy3DContext) {
         const descriptors = getForestTreeDescriptors(tileX, tileY);
         for (const descriptor of descriptors) {
+          const structure = getTreeStructuralState(descriptor);
           const dx = nextX - (tileX + descriptor.x);
           const dy = nextY - (tileY + descriptor.y);
           const distance = Math.hypot(dx, dy);
-          if (distance < descriptor.radius + playerRadius) {
+          if (distance < structure.radius + playerRadius) {
             return false;
           }
         }
@@ -1660,7 +1668,20 @@ export function getForestTreeBranchProfiles(
 }> {
   return getForestTreeDescriptors(tileX, tileY).map((descriptor) => ({
     form: descriptor.form,
-    branches: descriptor.branches,
+    branches: getTreeStructuralState(descriptor).branches,
+  }));
+}
+
+export function getForestTreeCanopyProfiles(
+  tileX: number,
+  tileY: number
+): Array<{
+  form: ForestTreeForm;
+  foliage: ForestFoliageDescriptor[];
+}> {
+  return getForestTreeDescriptors(tileX, tileY).map((descriptor) => ({
+    form: descriptor.form,
+    foliage: getTreeCanopyState(descriptor).foliage,
   }));
 }
 
@@ -1965,21 +1986,19 @@ function createForestTreeDescriptorFromSpecies(
       ? 4 + Math.floor(appearanceRandom() * 2)
       : 3 + Math.floor(appearanceRandom() * 3);
   const foliage = new Array<ForestFoliageDescriptor>(foliageCount);
-  const descriptor: ForestTreeDescriptor = {
-    x: clampToTile(
-      context.groveCenter.x + (placementRandom() - 0.5) * spread * 2
-    ),
-    y: clampToTile(
-      context.groveCenter.y + (placementRandom() - 0.5) * spread * 2
-    ),
+  const x = clampToTile(
+    context.groveCenter.x + (placementRandom() - 0.5) * spread * 2
+  );
+  const y = clampToTile(
+    context.groveCenter.y + (placementRandom() - 0.5) * spread * 2
+  );
+  const structure: TreeStructuralState = {
     radius: 0.08 + appearanceRandom() * 0.05,
     scale: 0.78 + appearanceRandom() * 0.55,
     trunkHeight,
-    familyId: definition.familyId,
-    speciesId: definition.speciesId,
-    variety: definition.variety,
-    form: definition.form,
     branches,
+  };
+  const canopy: TreeCanopyState = {
     foliage,
   };
 
@@ -2044,7 +2063,18 @@ function createForestTreeDescriptorFromSpecies(
     };
   }
 
-  return descriptor;
+  return {
+    ...createTreeLogicalState({
+      x,
+      y,
+      form: definition.form,
+      structure,
+      canopy,
+    }),
+    familyId: definition.familyId,
+    speciesId: definition.speciesId,
+    variety: definition.variety,
+  };
 }
 
 function getTreeStyle(
