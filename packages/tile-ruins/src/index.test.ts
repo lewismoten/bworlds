@@ -4,6 +4,9 @@ vi.mock('@bworlds/three-support', () => ({
   createPaintedStandardMaterial(_three: unknown, options: Record<string, unknown>) {
     return { options };
   },
+  getSharedSphereGeometry(_three: unknown, ...args: number[]) {
+    return new FakeGeometry(...args);
+  },
 }));
 
 import { createRuinsTilePlugin } from './index.ts';

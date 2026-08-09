@@ -1,4 +1,8 @@
-import { getOrCreateCacheValue, type CacheLike } from '@bworlds/cache-support';
+import {
+  getOrCreateCacheValue,
+  getOrCreateMapValue,
+  type CacheLike,
+} from '@bworlds/cache-support';
 import type {
   ThreeBufferGeometryLike,
   ThreeGeometryLike,
@@ -36,6 +40,11 @@ const mountainTerrainMaterialCache = new WeakMap<
     snowMaterial: ThreeMaterialLike;
   }
 >();
+const sharedBoxGeometryCache = new WeakMap<object, Map<string, ThreeGeometryLike>>();
+const sharedConeGeometryCache = new WeakMap<object, Map<string, ThreeGeometryLike>>();
+const sharedCylinderGeometryCache = new WeakMap<object, Map<string, ThreeGeometryLike>>();
+const sharedPlaneGeometryCache = new WeakMap<object, Map<string, ThreeGeometryLike>>();
+const sharedSphereGeometryCache = new WeakMap<object, Map<string, ThreeGeometryLike>>();
 const MOUNTAIN_TEXTURE_X_SEED = registerHashLabel('mountain-texture-x');
 const MOUNTAIN_TEXTURE_Y_SEED = registerHashLabel('mountain-texture-y');
 const MOUNTAIN_TEXTURE_LENGTH_SEED = registerHashLabel('mountain-texture-l');
@@ -219,13 +228,101 @@ export function createTexturedPlaneMesh<
   }
 ): TMesh {
   return new three.Mesh(
-    new three.PlaneGeometry(options.width, options.height),
+    getSharedPlaneGeometry(three, options.width, options.height),
     createBasicMaterial(three, {
       map: options.texture,
       transparent: options.transparent ?? true,
       depthWrite: options.depthWrite ?? false,
       color: options.color,
     }) as TMaterial
+  );
+}
+
+function getHostGeometryCache(
+  store: WeakMap<object, Map<string, ThreeGeometryLike>>,
+  three: object
+): Map<string, ThreeGeometryLike> {
+  let cache = store.get(three);
+  if (!cache) {
+    cache = new Map();
+    store.set(three, cache);
+  }
+  return cache;
+}
+
+export function getSharedBoxGeometry(
+  three: Pick<ThreeHostLike, 'BoxGeometry'>,
+  width: number,
+  height: number,
+  depth: number
+): ThreeGeometryLike {
+  const key = `${width}:${height}:${depth}`;
+  return getOrCreateMapValue(
+    getHostGeometryCache(sharedBoxGeometryCache, three as object),
+    key,
+    () => new three.BoxGeometry(width, height, depth)
+  );
+}
+
+export function getSharedConeGeometry(
+  three: Pick<ThreeHostLike, 'ConeGeometry'>,
+  radius: number,
+  height: number,
+  radialSegments: number
+): ThreeGeometryLike {
+  const key = `${radius}:${height}:${radialSegments}`;
+  return getOrCreateMapValue(
+    getHostGeometryCache(sharedConeGeometryCache, three as object),
+    key,
+    () => new three.ConeGeometry(radius, height, radialSegments)
+  );
+}
+
+export function getSharedCylinderGeometry(
+  three: Pick<ThreeHostLike, 'CylinderGeometry'>,
+  radiusTop: number,
+  radiusBottom: number,
+  height: number,
+  radialSegments: number
+): ThreeGeometryLike {
+  const key = `${radiusTop}:${radiusBottom}:${height}:${radialSegments}`;
+  return getOrCreateMapValue(
+    getHostGeometryCache(sharedCylinderGeometryCache, three as object),
+    key,
+    () =>
+      new three.CylinderGeometry(
+        radiusTop,
+        radiusBottom,
+        height,
+        radialSegments
+      )
+  );
+}
+
+export function getSharedPlaneGeometry(
+  three: Pick<ThreeHostLike, 'PlaneGeometry'>,
+  width: number,
+  height: number
+): ThreeGeometryLike {
+  const key = `${width}:${height}`;
+  return getOrCreateMapValue(
+    getHostGeometryCache(sharedPlaneGeometryCache, three as object),
+    key,
+    () => new three.PlaneGeometry(width, height)
+  );
+}
+
+export function getSharedSphereGeometry(
+  three: Pick<ThreeHostLike, 'SphereGeometry'>,
+  radius: number,
+  widthSegments: number,
+  heightSegments: number
+): ThreeGeometryLike {
+  const key = `${radius}:${widthSegments}:${heightSegments}`;
+  return getOrCreateMapValue(
+    getHostGeometryCache(sharedSphereGeometryCache, three as object),
+    key,
+    () => new three.SphereGeometry(radius, widthSegments, heightSegments)
   );
 }
 

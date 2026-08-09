@@ -17,7 +17,10 @@ import {
   pickThresholdColor,
 } from '@bworlds/procedural-style';
 import { createTilePlugin, withOverworldTileClassifier } from '@bworlds/plugin-api';
-import { createPaintedStandardMaterial } from '@bworlds/three-support';
+import {
+  createPaintedStandardMaterial,
+  getSharedSphereGeometry,
+} from '@bworlds/three-support';
 import type {
   ClassifyOverworldTileContext,
   Create3DModelContext,
@@ -291,7 +294,7 @@ export function createRuinsTilePlugin(): RuntimePlugin {
 
           const glowCore = markPoiLightEmitter(
             new three.Mesh(
-              new three.SphereGeometry(0.05, 8, 8),
+              getSharedSphereGeometry(three, 0.05, 8, 8),
               style.glowMaterial
             ),
             {

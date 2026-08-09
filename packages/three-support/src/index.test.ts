@@ -4,8 +4,13 @@ import {
   createBasicMaterial,
   createPaintedStandardMaterial,
   createTexturedPlaneMesh,
+  getSharedBoxGeometry,
+  getSharedConeGeometry,
+  getSharedCylinderGeometry,
   getOrCreatePaintedCanvasTexture,
   getOrCreatePaintedCanvasTextureTyped,
+  getSharedPlaneGeometry,
+  getSharedSphereGeometry,
 } from './index.ts';
 
 describe('three support', () => {
@@ -252,6 +257,68 @@ describe('three support', () => {
           depthWrite: false,
         }),
       })
+    );
+  });
+
+  it('reuses shared primitive geometries per host and dimensions', () => {
+    class FakeBoxGeometry {
+      constructor(
+        public width: number,
+        public height: number,
+        public depth: number
+      ) {}
+    }
+    class FakeConeGeometry {
+      constructor(
+        public radius: number,
+        public height: number,
+        public radialSegments: number
+      ) {}
+    }
+    class FakeCylinderGeometry {
+      constructor(
+        public radiusTop: number,
+        public radiusBottom: number,
+        public height: number,
+        public radialSegments: number
+      ) {}
+    }
+    class FakePlaneGeometry {
+      constructor(public width: number, public height: number) {}
+    }
+    class FakeSphereGeometry {
+      constructor(
+        public radius: number,
+        public widthSegments: number,
+        public heightSegments: number
+      ) {}
+    }
+
+    const host = {
+      BoxGeometry: FakeBoxGeometry,
+      ConeGeometry: FakeConeGeometry,
+      CylinderGeometry: FakeCylinderGeometry,
+      PlaneGeometry: FakePlaneGeometry,
+      SphereGeometry: FakeSphereGeometry,
+    };
+
+    expect(getSharedBoxGeometry(host, 1, 2, 3)).toBe(
+      getSharedBoxGeometry(host, 1, 2, 3)
+    );
+    expect(getSharedConeGeometry(host, 0.5, 1.5, 8)).toBe(
+      getSharedConeGeometry(host, 0.5, 1.5, 8)
+    );
+    expect(getSharedCylinderGeometry(host, 0.5, 0.7, 1.2, 6)).toBe(
+      getSharedCylinderGeometry(host, 0.5, 0.7, 1.2, 6)
+    );
+    expect(getSharedPlaneGeometry(host, 2, 1)).toBe(
+      getSharedPlaneGeometry(host, 2, 1)
+    );
+    expect(getSharedSphereGeometry(host, 0.4, 6, 5)).toBe(
+      getSharedSphereGeometry(host, 0.4, 6, 5)
+    );
+    expect(getSharedSphereGeometry(host, 0.4, 6, 5)).not.toBe(
+      getSharedSphereGeometry(host, 0.5, 6, 5)
     );
   });
 

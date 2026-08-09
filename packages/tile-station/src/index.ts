@@ -4,7 +4,12 @@ import {
   markPoiLightEmitter,
   syncPoiLightEmitters,
 } from '@bworlds/poi-support';
-import { createBasicMaterial } from '@bworlds/three-support';
+import {
+  createBasicMaterial,
+  getSharedBoxGeometry,
+  getSharedConeGeometry,
+  getSharedSphereGeometry,
+} from '@bworlds/three-support';
 import type {
   Create3DModelContext,
   RuntimePlugin,
@@ -47,21 +52,21 @@ export function createStationTilePlugin(): RuntimePlugin {
       const group = new three.Group();
 
       const base = new three.Mesh(
-        new three.BoxGeometry(1.08, 0.18, 1.08),
+        getSharedBoxGeometry(three, 1.08, 0.18, 1.08),
         wallMaterial
       );
       base.position.set(tileX, 0.09, tileY);
       group.add(base);
 
       const hall = new three.Mesh(
-        new three.BoxGeometry(0.88, 0.6, 0.76),
+        getSharedBoxGeometry(three, 0.88, 0.6, 0.76),
         wallMaterial
       );
       hall.position.set(tileX, 0.48, tileY + 0.06);
       group.add(hall);
 
       const roof = new three.Mesh(
-        new three.ConeGeometry(0.74, 0.42, 4),
+        getSharedConeGeometry(three, 0.74, 0.42, 4),
         roofMaterial
       );
       roof.position.set(tileX, 0.96, tileY + 0.06);
@@ -69,7 +74,7 @@ export function createStationTilePlugin(): RuntimePlugin {
       group.add(roof);
 
       const canopy = new three.Mesh(
-        new three.BoxGeometry(0.96, 0.06, 0.28),
+        getSharedBoxGeometry(three, 0.96, 0.06, 0.28),
         trimMaterial
       );
       canopy.position.set(tileX, 0.5, tileY - 0.44);
@@ -77,7 +82,7 @@ export function createStationTilePlugin(): RuntimePlugin {
 
       const lamp = markPoiLightEmitter(
         new three.Mesh(
-          new three.SphereGeometry(0.04, 6, 6),
+          getSharedSphereGeometry(three, 0.04, 6, 6),
           lampMaterial
         ),
         {
