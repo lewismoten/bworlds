@@ -44,6 +44,7 @@ import {
   isFrameTimeBudgetExhausted,
   shouldProcessPendingWorldBuildEntry,
   shouldEvaluateTileModelDetailLevel,
+  shouldSyncWorldCurvature,
   shouldSyncTileModelDetailLevels,
   summarizeVisibleTileKinds,
   syncDynamicTileNodes,
@@ -1143,6 +1144,13 @@ describe('render3d visibility helpers', () => {
     expect(shouldSyncTileModelDetailLevels(null, 0, 0)).toBe(true);
     expect(shouldSyncTileModelDetailLevels({ x: 0, y: 0 }, 0.05, 0.05)).toBe(false);
     expect(shouldSyncTileModelDetailLevels({ x: 0, y: 0 }, 0.18, 0)).toBe(true);
+  });
+
+  it('only resyncs world curvature when the player moves or visible tiles change', () => {
+    expect(shouldSyncWorldCurvature(null, 0, 0, -1, 0)).toBe(true);
+    expect(shouldSyncWorldCurvature({ x: 2, y: 3 }, 2, 3, 4, 4)).toBe(false);
+    expect(shouldSyncWorldCurvature({ x: 2, y: 3 }, 2.01, 3, 4, 4)).toBe(true);
+    expect(shouldSyncWorldCurvature({ x: 2, y: 3 }, 2, 3, 4, 5)).toBe(true);
   });
 
   it('buckets wrapped LOD batches across frames without starving later entries', () => {

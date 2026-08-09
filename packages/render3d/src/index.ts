@@ -452,6 +452,9 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
   let lastFacingBucket = '';
   let lastChunkRadius = CHUNK_RADIUS;
   let lastLodSyncPlayerPosition: { x: number; y: number } | null = null;
+  let lastWorldCurvaturePlayerPosition: { x: number; y: number } | null = null;
+  let visibleWorldMutationVersion = 0;
+  let lastWorldCurvatureMutationVersion = -1;
   let pendingLodSyncChecks = 0;
   let lodSyncEntryOffset = 0;
   let lastSkyConstellationSignature = '';
@@ -486,6 +489,9 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     worldRoot.clear();
     visibleTileNodes.clear();
     lastLodSyncPlayerPosition = null;
+    lastWorldCurvaturePlayerPosition = null;
+    visibleWorldMutationVersion += 1;
+    lastWorldCurvatureMutationVersion = -1;
     pendingLodSyncChecks = 0;
     lodSyncEntryOffset = 0;
     pendingWorldBuild = {
@@ -592,6 +598,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       worldRoot.remove(tileNode.node);
       disposeObject3DResources(tileNode.node);
       visibleTileNodes.delete(key);
+      visibleWorldMutationVersion += 1;
     }
 
     pendingWorldBuild = {
@@ -703,6 +710,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       const buildDurationMs = performance.now() - buildStartMs;
       visibleTileNodes.set(entry.key, tileNode);
       worldRoot.add(tileNode.node);
+      visibleWorldMutationVersion += 1;
       recordRecentMetric(renderChurnMetrics.tileBuilds, nowMs);
       recordRecentDurationMetric(renderChurnMetrics.tileBuildDurations, {
         nowMs,
@@ -744,7 +752,22 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       performance.now()
     );
     flushPendingWorldBuild(state, frameNowMs, options, generationFrameBudget);
-    syncWorldCurvature(visibleTileNodes.values(), state);
+    if (
+      shouldSyncWorldCurvature(
+        lastWorldCurvaturePlayerPosition,
+        state.player.x,
+        state.player.y,
+        lastWorldCurvatureMutationVersion,
+        visibleWorldMutationVersion
+      )
+    ) {
+      syncWorldCurvature(visibleTileNodes.values(), state);
+      lastWorldCurvaturePlayerPosition = {
+        x: state.player.x,
+        y: state.player.y,
+      };
+      lastWorldCurvatureMutationVersion = visibleWorldMutationVersion;
+    }
 
     camera.position.set(
       state.player.x * TILE_SIZE,
@@ -985,6 +1008,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       worldRoot.remove(entry.node);
       disposeObject3DResources(entry.node);
       worldRoot.add(nextEntry.node);
+      visibleWorldMutationVersion += 1;
       recordRecentMetric(renderChurnMetrics.lodReplacements, nowMs);
     }
     return processedEntryCount;
@@ -1835,6 +1859,23 @@ export function shouldSyncTileModelDetailLevels(
   const dx = nextX - previousPosition.x;
   const dy = nextY - previousPosition.y;
   return dx * dx + dy * dy >= minimumMovementSquared;
+}
+
+export function shouldSyncWorldCurvature(
+  previousPosition: { x: number; y: number } | null,
+  nextX: number,
+  nextY: number,
+  previousMutationVersion: number,
+  nextMutationVersion: number
+): boolean {
+  if (previousMutationVersion !== nextMutationVersion) {
+    return true;
+  }
+  if (!previousPosition) {
+    return true;
+  }
+
+  return previousPosition.x !== nextX || previousPosition.y !== nextY;
 }
 
 export function getWrappedBatchWindow<T>(
