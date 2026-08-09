@@ -4,6 +4,7 @@ const SPLITMIX32_MIX_1 = 0x21F0AAAD;
 const SPLITMIX32_MIX_2 = 0x735A2D97;
 
 // SplitMix32-style PRNG based on Tommy Ettinger's CC0/public-domain example.
+// JavaScript state-coercion fix based on a correction by GitHub user oisyn.
 // Intended for deterministic procedural generation; not cryptographically secure.
 // See: https://gist.github.com/tommyettinger/46a874533244883189143505d203312c
 
