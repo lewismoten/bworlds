@@ -16,6 +16,8 @@
 - [x] A path may be through the woods without any markings other than there are no trees (or perhaps breadcrumbs)
 - [ ] Touching / knocking on 3-5 trees in a specific order in a small area may reveal a secret treasure or entrance
 
+- [ ] When detailed tree exceeds its budget, fall back to the previous valid tree LOD rather than a plain box
+
 # Developer Notes
 
 A **shared tree-generation framework with species/family plugins**, rather than a completely unrelated generator for every tree.
@@ -198,6 +200,7 @@ interface TreeCapabilities {
 
 # Trunk Generation
 
+- [ ] Generate a mesh rather than combining primative objects
 - [x] Generate variable trunk height.
 - [x] Generate variable trunk diameter.
 - [x] Taper trunks naturally toward the canopy.
@@ -227,6 +230,7 @@ interface TreeCapabilities {
 
 This probably deserves several interchangeable strategies.
 
+- [ ] Generate a mesh rather than combining primative objects
 - [ ] Define a common branch-generation interface.
 - [ ] Support recursive branching.
 - [ ] Support rule-based/L-system branching.
@@ -260,6 +264,9 @@ This probably deserves several interchangeable strategies.
 
 # Canopy Generation
 
+- [ ] Generate a single mesh rather than combining primative objects
+- [ ] Render instanced leaf clusters when in close range - not individual leaf meshes
+- [ ] Use alphaTest for alpha testing rather than heavy transparency
 - [ ] Define species-specific canopy shapes.
 - [ ] Support spherical canopies.
 - [ ] Support broad spreading canopies.
