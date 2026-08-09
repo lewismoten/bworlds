@@ -138,6 +138,7 @@ import {
   getSkyEventSignature,
   getSkyMilkyWaySignature,
   getSkyPositionSignature,
+  getTileDrawCallLimit,
   getWrappedBatchWindow,
   getTwilightSkyPalette,
   getTileModelDetailLevel,
@@ -166,6 +167,7 @@ import {
   summarizeRemovedTileModelBudgetParts,
   syncDynamicTileNodes,
   updateFarLandModelVisibility,
+  validateTileDrawCallBudget,
   validateTileModelCostEstimateAgainstRenderBudget,
   validateTileModelAgainstRenderBudget,
   shouldRenderWorldTile,
@@ -1960,6 +1962,30 @@ describe('render3d visibility helpers', () => {
           limit: 16,
         },
       ],
+    });
+  });
+
+  it('caps total draw calls per tile after floor and model content are combined', () => {
+    const sharedMaterial = createMockMaterial();
+    const root = createMockObject3D(undefined, [
+      createMockObject3D(sharedMaterial, [], createMockStatGeometry('tile-floor', 24)),
+      ...Array.from({ length: 5 }, (_unused, index) =>
+        createMockObject3D(
+          sharedMaterial,
+          [],
+          createMockGroupedGeometry(24, 4),
+          {
+            tileDrawCallIndex: index,
+          }
+        )
+      ),
+    ]);
+
+    expect(getTileDrawCallLimit('low')).toBe(17);
+    expect(validateTileDrawCallBudget(root as never, 'low')).toEqual({
+      accepted: false,
+      drawCallCount: 21,
+      limit: 17,
     });
   });
 

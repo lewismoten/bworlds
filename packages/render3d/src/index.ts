@@ -403,6 +403,34 @@ export function getTileModelHardLimits(
     : FULL_DETAIL_TILE_MODEL_HARD_LIMITS;
 }
 
+const FULL_DETAIL_TILE_DRAW_CALL_LIMIT = 81;
+const LOW_DETAIL_TILE_DRAW_CALL_LIMIT = 17;
+
+export function getTileDrawCallLimit(
+  detailLevel: RenderBudgetDetailLevel = 'full'
+): number {
+  return detailLevel === 'low'
+    ? LOW_DETAIL_TILE_DRAW_CALL_LIMIT
+    : FULL_DETAIL_TILE_DRAW_CALL_LIMIT;
+}
+
+export function validateTileDrawCallBudget(
+  root: Pick<THREE.Object3D, 'traverse' | 'children' | 'type'>,
+  detailLevel: RenderBudgetDetailLevel = 'full'
+): {
+  accepted: boolean;
+  drawCallCount: number;
+  limit: number;
+} {
+  const drawCallCount = collectSceneResourceStats(root).drawCallCount;
+  const limit = getTileDrawCallLimit(detailLevel);
+  return {
+    accepted: drawCallCount <= limit,
+    drawCallCount,
+    limit,
+  };
+}
+
 export function validateTileModelAgainstRenderBudget(
   root: Pick<THREE.Object3D, 'traverse' | 'children' | 'type'>,
   detailLevel: RenderBudgetDetailLevel = 'full'
@@ -1418,6 +1446,58 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       }
       freezeStaticObjectTransforms(pluginModel);
       tileNode.add(pluginModel);
+
+      const tileDrawCallBudget = validateTileDrawCallBudget(tileNode, detailLevel);
+      if (!tileDrawCallBudget.accepted) {
+        const violationSummary = `tile drawCallCount ${tileDrawCallBudget.drawCallCount}>${tileDrawCallBudget.limit}`;
+        recordRecentLabeledCountMetric(renderChurnMetrics.tileModelBudgetViolations, {
+          nowMs: pluginBuildStartMs,
+          count: 1,
+          label: tilePluginOwnerLabel,
+        });
+        recordRenderDebugEvent(recentDebugEvents, {
+          nowMs: pluginBuildStartMs,
+          type: 'plugin-exceeded-budget',
+          tileKey: `${x}:${y}`,
+          plugin: tilePluginOwnerLabel,
+          summary: violationSummary,
+        });
+
+        const pruned = pruneTileModelOptionalPartsForBudget(
+          tileNode as typeof tileNode & Pick<THREE.Object3D, 'userData'>,
+          (candidate) => ({
+            accepted: validateTileDrawCallBudget(candidate, detailLevel).accepted,
+          })
+        );
+        if (pruned.validation.accepted) {
+          if (pruned.removedParts.length > 0) {
+            const removedSummary = summarizeRemovedTileModelBudgetParts(
+              pruned.removedParts.map((part) => ({
+                priority: part.priority,
+                ...(typeof part.label === 'string' ? { label: part.label } : {}),
+              }))
+            );
+            recordRenderDebugEvent(recentDebugEvents, {
+              nowMs: pluginBuildStartMs,
+              type: 'model-rejected',
+              tileKey: `${x}:${y}`,
+              plugin: tilePluginOwnerLabel,
+              summary: `removed optional parts ${removedSummary}`,
+            });
+          }
+        } else {
+          tileNode.remove(pluginModel);
+          disposeObject3DResources(pluginModel);
+          pluginModel = null;
+          recordRenderDebugEvent(recentDebugEvents, {
+            nowMs: pluginBuildStartMs,
+            type: 'model-rejected',
+            tileKey: `${x}:${y}`,
+            plugin: tilePluginOwnerLabel,
+            summary: violationSummary,
+          });
+        }
+      }
     } else if (!isWaterKind(tile.kind) && definition.wallHeight > 0.08) {
       const wallHeight = Math.max(definition.wallHeight * 1.9, 0.18);
       const wallMesh = new THREE.Mesh(

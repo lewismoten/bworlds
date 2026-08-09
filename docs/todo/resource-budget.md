@@ -69,7 +69,7 @@ Operates at several levels: per model, per LOD, per plugin, per chunk, and per e
 
 * [ ] Estimate draw calls before adding generated content.
 * [X] Cap draw calls per model.
-* [ ] Cap draw calls per tile.
+* [X] Cap draw calls per tile.
 * [ ] Cap draw calls per chunk.
 * [ ] Cap total scene draw calls.
 * [X] Count each material group as a potential draw call.
