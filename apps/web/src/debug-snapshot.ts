@@ -121,6 +121,10 @@ type DebugSnapshotExportOptions = {
         soft: number;
         hard: number;
       };
+      visibleTriangles: {
+        soft: number;
+        hard: number;
+      };
       visibleVertices: {
         soft: number;
         hard: number;

@@ -262,7 +262,7 @@ This is critical because individually valid models can still overwhelm the rende
 
 * [X] Cap total visible objects.
 * [X] Cap total visible meshes.
-* [ ] Cap total visible triangles.
+* [X] Cap total visible triangles.
 * [X] Cap total visible vertices.
 * [ ] Cap total scene draw calls.
 * [X] Cap total scene materials.

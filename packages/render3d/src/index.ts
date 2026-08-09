@@ -310,6 +310,7 @@ type Render3DController = {
   getMaterialCount(): number;
   getTextureCount(): number;
   getVisibleObjectCount(): number;
+  getVisibleTriangleCount(): number;
   getVisibleVertexCount(): number;
   getVisibleMeshCount(): number;
   render(state: Render3DState, options?: Render3DOptions): void;
@@ -775,6 +776,7 @@ type DynamicTileNode = {
   visibleMeshCount: number;
   materialCount: number;
   vertexCount: number;
+  triangleCount: number;
   node: THREE.Group;
   model: unknown;
   modelRoot?: THREE.Object3D | null;
@@ -847,6 +849,7 @@ type SceneResourceStats = {
   hemisphereLightCount: number;
   dynamicLightCount: number;
   shadowLightCount: number;
+  triangleCount: number;
   vertexCount: number;
   materialRefCount: number;
   geometryRefCount: number;
@@ -1000,6 +1003,7 @@ function createEmptySceneResourceStats(): SceneResourceStats {
     hemisphereLightCount: 0,
     dynamicLightCount: 0,
     shadowLightCount: 0,
+    triangleCount: 0,
     vertexCount: 0,
     materialRefCount: 0,
     geometryRefCount: 0,
@@ -1611,6 +1615,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       visibleMeshCount: finalSceneResourceStats.visibleMeshCount,
       materialCount: finalSceneResourceStats.materialCount,
       vertexCount: finalSceneResourceStats.vertexCount,
+      triangleCount: finalSceneResourceStats.triangleCount,
       node: tileNode,
       model: pluginModel ?? tileNode,
       modelRoot: pluginModel ?? null,
@@ -2140,6 +2145,10 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
 
   function getVisibleVertexCount(): number {
     return collectVisibleTileResourceStats(visibleTileNodes.values()).totalVertexCount;
+  }
+
+  function getVisibleTriangleCount(): number {
+    return collectVisibleTileResourceStats(visibleTileNodes.values()).totalTriangleCount;
   }
 
   function getVisibleMeshCount(): number {
@@ -2887,6 +2896,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     getMaterialCount,
     getTextureCount,
     getVisibleObjectCount,
+    getVisibleTriangleCount,
     getVisibleVertexCount,
     getVisibleMeshCount,
     getStats,
@@ -3442,6 +3452,7 @@ export function collectSceneResourceStats(
   let hemisphereLightCount = 0;
   let dynamicLightCount = 0;
   let shadowLightCount = 0;
+  let triangleCount = 0;
   let vertexCount = 0;
   let materialRefCount = 0;
   let geometryRefCount = 0;
@@ -3550,6 +3561,7 @@ export function collectSceneResourceStats(
       geometryRefCount += 1;
       if (!geometries.has(renderable.geometry)) {
         geometries.add(renderable.geometry);
+        triangleCount += countGeometryTriangles(renderable.geometry);
         const geometryVertexCount = getGeometryVertexCount(renderable.geometry);
         vertexCount += geometryVertexCount;
         const geometryMemory = getGeometryMemoryEstimate(renderable.geometry);
@@ -3628,6 +3640,7 @@ export function collectSceneResourceStats(
     hemisphereLightCount,
     dynamicLightCount,
     shadowLightCount,
+    triangleCount,
     vertexCount,
     materialRefCount,
     geometryRefCount,

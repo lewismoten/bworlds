@@ -15,6 +15,7 @@ export type RenderBudgetState = {
   materialCount: number;
   textureCount: number;
   visibleObjectCount: number;
+  visibleTriangleCount: number;
   visibleVertexCount: number;
   visibleMeshCount: number;
   visibilityRadius: number;
@@ -77,6 +78,10 @@ export type RenderBudgetCaps = {
     soft: number;
     hard: number;
   };
+  visibleTriangles: {
+    soft: number;
+    hard: number;
+  };
   visibleVertices: {
     soft: number;
     hard: number;
@@ -103,6 +108,7 @@ export const DEFAULT_RENDER_BUDGET_STATE: RenderBudgetState = {
   materialCount: 0,
   textureCount: 0,
   visibleObjectCount: 0,
+  visibleTriangleCount: 0,
   visibleVertexCount: 0,
   visibleMeshCount: 0,
   visibilityRadius: DEFAULT_VISIBILITY_RADIUS,
@@ -134,6 +140,8 @@ const SOFT_MATERIAL_LIMIT = 32;
 const HARD_MATERIAL_LIMIT = 48;
 const SOFT_VISIBLE_OBJECT_LIMIT = 1200;
 const HARD_VISIBLE_OBJECT_LIMIT = 1800;
+const SOFT_VISIBLE_TRIANGLE_LIMIT = 70_000;
+const HARD_VISIBLE_TRIANGLE_LIMIT = 110_000;
 const SOFT_VISIBLE_VERTEX_LIMIT = 120_000;
 const HARD_VISIBLE_VERTEX_LIMIT = 180_000;
 const SOFT_VISIBLE_MESH_LIMIT = 640;
@@ -150,6 +158,7 @@ function resetRenderBudgetStateInPlace(state: RenderBudgetState): RenderBudgetSt
   state.materialCount = 0;
   state.textureCount = 0;
   state.visibleObjectCount = 0;
+  state.visibleTriangleCount = 0;
   state.visibleVertexCount = 0;
   state.visibleMeshCount = 0;
   state.visibilityRadius = DEFAULT_VISIBILITY_RADIUS;
@@ -188,6 +197,7 @@ export function updateRenderBudgetStateInPlace(
     materialCount,
     textureCount,
     visibleObjectCount,
+    visibleTriangleCount,
     visibleVertexCount,
     visibleMeshCount,
   }: {
@@ -200,6 +210,7 @@ export function updateRenderBudgetStateInPlace(
     materialCount?: number;
     textureCount?: number;
     visibleObjectCount?: number;
+    visibleTriangleCount?: number;
     visibleVertexCount?: number;
     visibleMeshCount?: number;
   }
@@ -262,6 +273,10 @@ export function updateRenderBudgetStateInPlace(
     0,
     Math.floor(visibleVertexCount ?? state.visibleVertexCount)
   );
+  const normalizedVisibleTriangleCount = Math.max(
+    0,
+    Math.floor(visibleTriangleCount ?? state.visibleTriangleCount)
+  );
   const weatherVisibilityRadiusCap = getWeatherVisibilityRadiusCap(
     normalizedWeatherVisibility
   );
@@ -310,6 +325,11 @@ export function updateRenderBudgetStateInPlace(
   } else if (normalizedVisibleObjectCount >= SOFT_VISIBLE_OBJECT_LIMIT) {
     visibilityRadius = Math.min(visibilityRadius, REDUCED_VISIBILITY_RADIUS);
   }
+  if (normalizedVisibleTriangleCount >= HARD_VISIBLE_TRIANGLE_LIMIT) {
+    visibilityRadius = Math.min(visibilityRadius, MIN_VISIBILITY_RADIUS);
+  } else if (normalizedVisibleTriangleCount >= SOFT_VISIBLE_TRIANGLE_LIMIT) {
+    visibilityRadius = Math.min(visibilityRadius, REDUCED_VISIBILITY_RADIUS);
+  }
   if (normalizedVisibleVertexCount >= HARD_VISIBLE_VERTEX_LIMIT) {
     visibilityRadius = Math.min(visibilityRadius, MIN_VISIBILITY_RADIUS);
   } else if (normalizedVisibleVertexCount >= SOFT_VISIBLE_VERTEX_LIMIT) {
@@ -329,6 +349,7 @@ export function updateRenderBudgetStateInPlace(
   state.materialCount = normalizedMaterialCount;
   state.textureCount = normalizedTextureCount;
   state.visibleObjectCount = normalizedVisibleObjectCount;
+  state.visibleTriangleCount = normalizedVisibleTriangleCount;
   state.visibleVertexCount = normalizedVisibleVertexCount;
   state.visibleMeshCount = normalizedVisibleMeshCount;
   state.visibilityRadius = Math.min(visibilityRadius, weatherVisibilityRadiusCap);
@@ -353,6 +374,7 @@ export function advanceRenderBudgetState(
     materialCount,
     textureCount,
     visibleObjectCount,
+    visibleTriangleCount,
     visibleVertexCount,
     visibleMeshCount,
   }: {
@@ -365,6 +387,7 @@ export function advanceRenderBudgetState(
     materialCount?: number;
     textureCount?: number;
     visibleObjectCount?: number;
+    visibleTriangleCount?: number;
     visibleVertexCount?: number;
     visibleMeshCount?: number;
   }
@@ -384,6 +407,7 @@ export function advanceRenderBudgetState(
       materialCount,
       textureCount,
       visibleObjectCount,
+      visibleTriangleCount,
       visibleVertexCount,
       visibleMeshCount,
     }
@@ -466,6 +490,10 @@ export function getRenderBudgetCaps(
       soft: SOFT_VISIBLE_OBJECT_LIMIT,
       hard: HARD_VISIBLE_OBJECT_LIMIT,
     },
+    visibleTriangles: {
+      soft: SOFT_VISIBLE_TRIANGLE_LIMIT,
+      hard: HARD_VISIBLE_TRIANGLE_LIMIT,
+    },
     visibleVertices: {
       soft: SOFT_VISIBLE_VERTEX_LIMIT,
       hard: HARD_VISIBLE_VERTEX_LIMIT,
@@ -541,9 +569,11 @@ export function getRenderQualityLimiters(
     | 'visibleObjectCount'
     | 'visibleVertexCount'
     | 'visibleMeshCount'
-  >
+  > &
+    Partial<Pick<RenderBudgetState, 'visibleTriangleCount'>>
 ): string[] {
   const limiters: string[] = [];
+  const visibleTriangleCount = Math.max(0, state.visibleTriangleCount ?? 0);
   if (state.targetFps === 30) {
     limiters.push('Target FPS reduced to 30');
   }
@@ -588,6 +618,11 @@ export function getRenderQualityLimiters(
     limiters.push('Visible objects exceeded the hard cap');
   } else if (state.visibleObjectCount >= SOFT_VISIBLE_OBJECT_LIMIT) {
     limiters.push('Visible objects exceeded the soft cap');
+  }
+  if (visibleTriangleCount >= HARD_VISIBLE_TRIANGLE_LIMIT) {
+    limiters.push('Visible triangles exceeded the hard cap');
+  } else if (visibleTriangleCount >= SOFT_VISIBLE_TRIANGLE_LIMIT) {
+    limiters.push('Visible triangles exceeded the soft cap');
   }
   if (state.visibleVertexCount >= HARD_VISIBLE_VERTEX_LIMIT) {
     limiters.push('Visible vertices exceeded the hard cap');

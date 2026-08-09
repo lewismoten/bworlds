@@ -105,6 +105,10 @@ describe('debug snapshot', () => {
             soft: 1200,
             hard: 1800,
           },
+          visibleTriangles: {
+            soft: 70000,
+            hard: 110000,
+          },
           visibleVertices: {
             soft: 120000,
             hard: 180000,
@@ -396,6 +400,10 @@ describe('debug snapshot', () => {
         visibleObjects: {
           soft: 1200,
           hard: 1800,
+        },
+        visibleTriangles: {
+          soft: 70000,
+          hard: 110000,
         },
         visibleVertices: {
           soft: 120000,

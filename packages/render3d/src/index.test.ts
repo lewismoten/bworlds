@@ -426,6 +426,7 @@ describe('render3d visibility helpers', () => {
       hemisphereLightCount: 0,
       dynamicLightCount: 0,
       shadowLightCount: 0,
+      triangleCount: 0,
       vertexCount: 36,
       materialRefCount: 4,
       geometryRefCount: 3,
@@ -581,6 +582,7 @@ describe('render3d visibility helpers', () => {
       hemisphereLightCount: 1,
       dynamicLightCount: 2,
       shadowLightCount: 1,
+      triangleCount: 0,
       vertexCount: 18,
       materialRefCount: 3,
       geometryRefCount: 3,
@@ -667,6 +669,7 @@ describe('render3d visibility helpers', () => {
       hemisphereLightCount: 0,
       dynamicLightCount: 0,
       shadowLightCount: 0,
+      triangleCount: 0,
       vertexCount: 25,
       materialRefCount: 2,
       geometryRefCount: 2,
@@ -803,6 +806,7 @@ describe('render3d visibility helpers', () => {
       hemisphereLightCount: 0,
       dynamicLightCount: 0,
       shadowLightCount: 0,
+      triangleCount: 0,
       vertexCount: 26,
       materialRefCount: 2,
       geometryRefCount: 2,
@@ -883,6 +887,7 @@ describe('render3d visibility helpers', () => {
       hemisphereLightCount: 0,
       dynamicLightCount: 0,
       shadowLightCount: 0,
+      triangleCount: 0,
       vertexCount: 8,
       materialRefCount: 2,
       geometryRefCount: 2,
@@ -995,6 +1000,7 @@ describe('render3d visibility helpers', () => {
       hemisphereLightCount: 0,
       dynamicLightCount: 0,
       shadowLightCount: 0,
+      triangleCount: 0,
       vertexCount: 10,
       materialRefCount: 2,
       geometryRefCount: 2,
@@ -1994,10 +2000,38 @@ describe('render3d visibility helpers', () => {
 
   it('aggregates visible tile budget pressure by chunk', () => {
     const entries = [
-      { tileX: 0, tileY: 0, drawCallCount: 6, visibleMeshCount: 4, materialCount: 2 },
-      { tileX: 1, tileY: 2, drawCallCount: 5, visibleMeshCount: 3, materialCount: 3 },
-      { tileX: 4, tileY: 0, drawCallCount: 8, visibleMeshCount: 6, materialCount: 4 },
-      { tileX: -1, tileY: -1, drawCallCount: 7, visibleMeshCount: 5, materialCount: 2 },
+      {
+        tileX: 0,
+        tileY: 0,
+        drawCallCount: 6,
+        visibleMeshCount: 4,
+        materialCount: 2,
+        triangleCount: 10,
+      },
+      {
+        tileX: 1,
+        tileY: 2,
+        drawCallCount: 5,
+        visibleMeshCount: 3,
+        materialCount: 3,
+        triangleCount: 12,
+      },
+      {
+        tileX: 4,
+        tileY: 0,
+        drawCallCount: 8,
+        visibleMeshCount: 6,
+        materialCount: 4,
+        triangleCount: 18,
+      },
+      {
+        tileX: -1,
+        tileY: -1,
+        drawCallCount: 7,
+        visibleMeshCount: 5,
+        materialCount: 2,
+        triangleCount: 14,
+      },
     ];
 
     expect(collectChunkDrawCallStats(entries, 4)).toEqual({
@@ -2012,6 +2046,7 @@ describe('render3d visibility helpers', () => {
       totalVisibleMeshCount: 18,
       totalMaterialCount: 11,
       totalVertexCount: 0,
+      totalTriangleCount: 54,
     });
   });
 
@@ -2807,6 +2842,7 @@ describe('render3d visibility helpers', () => {
           visibleMeshCount: 1,
           materialCount: 1,
           vertexCount: 1,
+          triangleCount: 1,
           node: {} as never,
           model: root as never,
           modelRoot: root as never,
@@ -3301,6 +3337,7 @@ describe('render3d visibility helpers', () => {
           visibleMeshCount: 2,
           materialCount: 2,
           vertexCount: 2,
+          triangleCount: 2,
           node: {} as never,
           model: { id: 'model-town' },
           sync3DModel({ tileX, tileY, cycle, environment }) {
@@ -3373,6 +3410,7 @@ describe('render3d visibility helpers', () => {
           visibleMeshCount: 1,
           materialCount: 1,
           vertexCount: 1,
+          triangleCount: 1,
           node: {} as never,
           model: { id: 'model-forest' },
           modelRoot: null,
