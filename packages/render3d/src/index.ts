@@ -212,6 +212,8 @@ type Render3DController = {
     lines: number;
     sceneChildCount: number;
     visibleTileCount: number;
+    loadedChunkCount: number;
+    maxChunkDrawCallCount: number;
     visibleTreeCount: number;
     pendingTileCount: number;
     averagePendingFlushTiles: number;
@@ -292,6 +294,7 @@ type Render3DController = {
     programCount: number;
   };
   getDrawCalls(): number;
+  getMaxChunkDrawCalls(): number;
   render(state: Render3DState, options?: Render3DOptions): void;
   resize(width: number, height: number, pixelRatio?: number): void;
 };
@@ -437,6 +440,42 @@ export function validateTileDrawCallBudget(
     accepted: drawCallCount <= limit,
     drawCallCount,
     limit,
+  };
+}
+
+export const DRAW_CALL_CHUNK_TILE_SIZE = 4;
+
+export function collectChunkDrawCallStats<
+  TEntry extends {
+    tileX: number;
+    tileY: number;
+    drawCallCount: number;
+  },
+>(
+  entries: Iterable<TEntry>,
+  chunkTileSize = DRAW_CALL_CHUNK_TILE_SIZE
+): {
+  chunkCount: number;
+  maxChunkDrawCallCount: number;
+} {
+  const size = Math.max(1, Math.floor(chunkTileSize));
+  const chunkDrawCalls = new Map<string, number>();
+  let maxChunkDrawCallCount = 0;
+
+  for (const entry of entries) {
+    const chunkX = Math.floor(entry.tileX / size);
+    const chunkY = Math.floor(entry.tileY / size);
+    const key = `${chunkX}:${chunkY}`;
+    const nextDrawCalls = (chunkDrawCalls.get(key) ?? 0) + entry.drawCallCount;
+    chunkDrawCalls.set(key, nextDrawCalls);
+    if (nextDrawCalls > maxChunkDrawCallCount) {
+      maxChunkDrawCallCount = nextDrawCalls;
+    }
+  }
+
+  return {
+    chunkCount: chunkDrawCalls.size,
+    maxChunkDrawCallCount,
   };
 }
 
@@ -750,6 +789,7 @@ type DynamicTileNode = {
   tile: TileLike;
   tileX: number;
   tileY: number;
+  drawCallCount: number;
   node: THREE.Group;
   model: unknown;
   modelRoot?: THREE.Object3D | null;
@@ -1574,11 +1614,14 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       tileNode.add(wallMesh);
     }
 
+    const finalDrawCallCount = collectSceneResourceStats(tileNode).drawCallCount;
+
     return {
       key: `${x}:${y}`,
       tile,
       tileX: x,
       tileY: y,
+      drawCallCount: finalDrawCallCount,
       node: tileNode,
       model: pluginModel ?? tileNode,
       modelRoot: pluginModel ?? null,
@@ -1956,6 +1999,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
 
   function getStats() {
     const sceneResourceStats = collectSceneResourceStats(scene);
+    const chunkDrawCallStats = collectChunkDrawCallStats(visibleTileNodes.values());
     const rendererInfo = renderer.info as THREE.WebGLInfo & {
       programs?: ArrayLike<unknown>;
     };
@@ -1985,6 +2029,8 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       lines: renderer.info.render.lines,
       sceneChildCount: scene.children.length,
       visibleTileCount: visibleTileNodes.size,
+      loadedChunkCount: chunkDrawCallStats.chunkCount,
+      maxChunkDrawCallCount: chunkDrawCallStats.maxChunkDrawCallCount,
       visibleTreeCount: sceneResourceStats.treeCount,
       pendingTileCount: pendingWorldBuild.queue.length,
       averagePendingFlushTiles: recentPendingFlushStats.averageCount,
@@ -2078,6 +2124,10 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
 
   function getDrawCalls(): number {
     return renderer.info.render.calls;
+  }
+
+  function getMaxChunkDrawCalls(): number {
+    return collectChunkDrawCallStats(visibleTileNodes.values()).maxChunkDrawCallCount;
   }
 
   function syncTileModelDetailLevels(
@@ -2816,6 +2866,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
   return {
     canOccupy,
     getDrawCalls,
+    getMaxChunkDrawCalls,
     getStats,
     render,
     resize,

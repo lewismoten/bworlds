@@ -1189,6 +1189,7 @@ const keys = new Set<string>();
 const runLoopFrame = createFrameLoopRunner({
   renderBudgetState,
   getDrawCalls: () => renderer3d.getDrawCalls(),
+  getMaxChunkDrawCalls: () => renderer3d.getMaxChunkDrawCalls(),
   getWeatherVisibility: () => latestEnvironment.weather?.current?.visibility,
   is3dViewActive: () => state.viewMode === '3d',
   isTimeFrozen: () => timeState.frozen,
@@ -1845,7 +1846,7 @@ function collectCurrentDebugSnapshot(
     sceneChildCount: rendererStats.sceneChildCount,
     visibleTileCount: rendererStats.visibleTileCount,
     visibleTreeCount: rendererStats.visibleTreeCount,
-    loadedChunkCount: rendererStats.visibleTileCount,
+    loadedChunkCount: rendererStats.loadedChunkCount,
     chunkGenerationQueueSize: rendererStats.pendingTileCount,
     pendingTileCount: rendererStats.pendingTileCount,
     averagePendingFlushTiles: rendererStats.averagePendingFlushTiles,

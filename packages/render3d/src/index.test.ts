@@ -103,6 +103,7 @@ import {
   acceptTilePluginModelForRenderBudget,
   acceptTilePluginModelForRenderBudgetWithResult,
   collectSceneResourceStats,
+  collectChunkDrawCallStats,
   countRecentMetricEvents,
   disposeObject3DResources,
   applyObjectDistanceFade,
@@ -1990,6 +1991,23 @@ describe('render3d visibility helpers', () => {
     });
   });
 
+  it('aggregates visible tile draw calls by chunk and tracks the worst visible chunk', () => {
+    expect(
+      collectChunkDrawCallStats(
+        [
+          { tileX: 0, tileY: 0, drawCallCount: 6 },
+          { tileX: 1, tileY: 2, drawCallCount: 5 },
+          { tileX: 4, tileY: 0, drawCallCount: 8 },
+          { tileX: -1, tileY: -1, drawCallCount: 7 },
+        ],
+        4
+      )
+    ).toEqual({
+      chunkCount: 3,
+      maxChunkDrawCallCount: 11,
+    });
+  });
+
   it('warns when a plugin model uses many draw calls for very little triangle work', () => {
     expect(
       getTileModelDrawCallRatioWarning(
@@ -2777,6 +2795,7 @@ describe('render3d visibility helpers', () => {
           tile: { kind: 'plains' },
           tileX: 0,
           tileY: 0,
+          drawCallCount: 1,
           node: {} as never,
           model: root as never,
           modelRoot: root as never,
@@ -3266,6 +3285,7 @@ describe('render3d visibility helpers', () => {
           tile: { kind: 'town' },
           tileX: 4,
           tileY: 5,
+          drawCallCount: 3,
           node: {} as never,
           model: { id: 'model-town' },
           sync3DModel({ tileX, tileY, cycle, environment }) {
@@ -3333,6 +3353,7 @@ describe('render3d visibility helpers', () => {
           tile: { kind: 'forest' },
           tileX: 20,
           tileY: 2,
+          drawCallCount: 2,
           node: {} as never,
           model: { id: 'model-forest' },
           modelRoot: null,

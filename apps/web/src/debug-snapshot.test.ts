@@ -85,6 +85,10 @@ describe('debug snapshot', () => {
             soft: 900,
             hard: 1200,
           },
+          chunkDrawCalls: {
+            soft: 160,
+            hard: 240,
+          },
         },
       },
       lod: {
@@ -348,6 +352,10 @@ describe('debug snapshot', () => {
         drawCalls: {
           soft: 900,
           hard: 1200,
+        },
+        chunkDrawCalls: {
+          soft: 160,
+          hard: 240,
         },
       },
     });

@@ -101,6 +101,10 @@ type DebugSnapshotExportOptions = {
         soft: number;
         hard: number;
       };
+      chunkDrawCalls: {
+        soft: number;
+        hard: number;
+      };
     };
   };
   lod: {
