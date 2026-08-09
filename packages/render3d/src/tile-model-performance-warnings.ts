@@ -26,6 +26,8 @@ const FULL_DETAIL_PER_INSTANCE_MATERIAL_WARNING_MIN_MESHES = 10;
 const LOW_DETAIL_PER_INSTANCE_MATERIAL_WARNING_MIN_MESHES = 5;
 const PER_INSTANCE_MATERIAL_WARNING_MIN_UNIQUE_MATERIAL_RATIO = 0.8;
 const PER_INSTANCE_MATERIAL_WARNING_MAX_SHARED_MATERIAL_RATIO = 0.25;
+const FULL_DETAIL_EQUIVALENT_MATERIAL_WARNING_MIN_COUNT = 3;
+const LOW_DETAIL_EQUIVALENT_MATERIAL_WARNING_MIN_COUNT = 2;
 
 export function getTileModelDrawCallRatioWarning(
   {
@@ -216,6 +218,26 @@ export function getTileModelPerInstanceMaterialWarning(
   return `materialCount ${materialCount} for meshCount ${meshCount} with sharedMaterialCount ${sharedMaterialCount} suggests per-instance materials`;
 }
 
+export function getTileModelEquivalentMaterialWarning(
+  {
+    clonedMaterialCount,
+    materialCount,
+  }: {
+    clonedMaterialCount: number;
+    materialCount: number;
+  },
+  detailLevel: RenderBudgetDetailLevel = 'full'
+): string | null {
+  const minimumCount =
+    detailLevel === 'low'
+      ? LOW_DETAIL_EQUIVALENT_MATERIAL_WARNING_MIN_COUNT
+      : FULL_DETAIL_EQUIVALENT_MATERIAL_WARNING_MIN_COUNT;
+  if (clonedMaterialCount < minimumCount) {
+    return null;
+  }
+  return `clonedMaterialCount ${clonedMaterialCount} across materialCount ${materialCount} suggests equivalent materials could be shared`;
+}
+
 export function getTileModelPerformanceWarnings(
   stats: {
     drawCallCount: number;
@@ -226,6 +248,7 @@ export function getTileModelPerformanceWarnings(
     renderedInstanceCount: number;
     materialCount: number;
     sharedMaterialCount: number;
+    clonedMaterialCount: number;
     sharedGeometryCount: number;
   },
   detailLevel: RenderBudgetDetailLevel = 'full'
@@ -236,6 +259,7 @@ export function getTileModelPerformanceWarnings(
     getTileModelTinyMeshWarning(stats, detailLevel),
     getTileModelInstancingWarning(stats, detailLevel),
     getTileModelPerInstanceMaterialWarning(stats, detailLevel),
+    getTileModelEquivalentMaterialWarning(stats, detailLevel),
   ];
 
   return warnings.filter((warning): warning is string => typeof warning === 'string');

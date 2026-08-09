@@ -89,7 +89,7 @@ Given the heap issue you just saw, I would take this very seriously.
 * [X] Cap total unique materials in the active scene.
 * [X] Encourage plugins to request materials from a shared material registry.
 * [ ] Prefer shared material references instead of `material.clone()`.
-* [ ] Detect identical or equivalent materials that could be shared.
+* [X] Detect identical or equivalent materials that could be shared.
 * [X] Warn when a plugin creates a material for every object instance.
 * [ ] Avoid creating separate materials solely for color variation.
 * [ ] Use instance colors where possible.

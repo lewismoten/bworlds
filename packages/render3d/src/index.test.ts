@@ -112,6 +112,7 @@ import {
   collectChunkDrawCallStats,
   collectVisibleTileResourceStats,
   countRecentMetricEvents,
+  countEquivalentShareableMaterials,
   createTilePluginModelFromCostEstimate,
   disposeObject3DResources,
   applyObjectDistanceFade,
@@ -150,6 +151,7 @@ import {
   getTileDrawCallLimit,
   getTileModelCostEstimateLimits,
   getTileModelDrawCallRatioWarning,
+  getTileModelEquivalentMaterialWarning,
   getTileModelInstancingWarning,
   getTileModelMaterialGroupWarning,
   getTileModelPerInstanceMaterialWarning,
@@ -479,6 +481,58 @@ describe('render3d visibility helpers', () => {
     });
   });
 
+  it('detects equivalent material instances that could be shared', () => {
+    const sharedTexture = createMockTexture(16, 16);
+    const materialA = createMockMaterial({
+      map: sharedTexture,
+      color: '#7c5a3b',
+      type: 'MeshStandardMaterial',
+    });
+    const materialB = createMockMaterial({
+      map: sharedTexture,
+      color: '#7c5a3b',
+      type: 'MeshStandardMaterial',
+    });
+    const materialC = createMockMaterial({
+      map: sharedTexture,
+      color: '#7c5a3b',
+      type: 'MeshStandardMaterial',
+    });
+    const distinctMaterial = createMockMaterial({
+      map: sharedTexture,
+      color: '#4d423b',
+      type: 'MeshStandardMaterial',
+    });
+
+    expect(
+      countEquivalentShareableMaterials([
+        materialA as never,
+        materialB as never,
+        materialC as never,
+        distinctMaterial as never,
+      ])
+    ).toBe(2);
+
+    const root = createMockObject3D(undefined, [
+      createMockObject3D(materialA, [], createMockStatGeometry('eq-mat-a', 24)),
+      createMockObject3D(materialB, [], createMockStatGeometry('eq-mat-b', 24)),
+      createMockObject3D(materialC, [], createMockStatGeometry('eq-mat-c', 24)),
+      createMockObject3D(
+        distinctMaterial,
+        [],
+        createMockStatGeometry('eq-mat-d', 24)
+      ),
+    ]);
+
+    expect(collectSceneResourceStats(root as never)).toEqual(
+      expect.objectContaining({
+        materialCount: 4,
+        sharedMaterialCount: 0,
+        clonedMaterialCount: 2,
+      })
+    );
+  });
+
   it('disposes only tile-owned materials and geometries when removing a tile node', () => {
     const sharedMaterial = createMockMaterial();
     const otherMaterial = createMockMaterial();
@@ -681,7 +735,7 @@ describe('render3d visibility helpers', () => {
       geometryRefCount: 3,
       materialCount: 3,
       sharedMaterialCount: 0,
-      clonedMaterialCount: 0,
+      clonedMaterialCount: 2,
       transparentMaterialCount: 0,
       alphaTestMaterialCount: 0,
       doubleSidedMaterialCount: 0,
@@ -775,7 +829,7 @@ describe('render3d visibility helpers', () => {
       geometryRefCount: 2,
       materialCount: 2,
       sharedMaterialCount: 0,
-      clonedMaterialCount: 0,
+      clonedMaterialCount: 1,
       transparentMaterialCount: 0,
       alphaTestMaterialCount: 0,
       doubleSidedMaterialCount: 0,
@@ -919,7 +973,7 @@ describe('render3d visibility helpers', () => {
       geometryRefCount: 2,
       materialCount: 2,
       sharedMaterialCount: 0,
-      clonedMaterialCount: 0,
+      clonedMaterialCount: 1,
       transparentMaterialCount: 0,
       alphaTestMaterialCount: 0,
       doubleSidedMaterialCount: 0,
@@ -1007,7 +1061,7 @@ describe('render3d visibility helpers', () => {
       geometryRefCount: 2,
       materialCount: 2,
       sharedMaterialCount: 0,
-      clonedMaterialCount: 0,
+      clonedMaterialCount: 1,
       transparentMaterialCount: 0,
       alphaTestMaterialCount: 0,
       doubleSidedMaterialCount: 0,
@@ -1127,7 +1181,7 @@ describe('render3d visibility helpers', () => {
       geometryRefCount: 2,
       materialCount: 2,
       sharedMaterialCount: 0,
-      clonedMaterialCount: 0,
+      clonedMaterialCount: 1,
       transparentMaterialCount: 0,
       alphaTestMaterialCount: 0,
       doubleSidedMaterialCount: 0,
@@ -2719,6 +2773,7 @@ describe('render3d visibility helpers', () => {
           renderedInstanceCount: 0,
           materialCount: 1,
           sharedMaterialCount: 5,
+          clonedMaterialCount: 0,
           sharedGeometryCount: 0,
         },
         'full'
@@ -2739,6 +2794,7 @@ describe('render3d visibility helpers', () => {
           renderedInstanceCount: 0,
           materialCount: 1,
           sharedMaterialCount: 3,
+          clonedMaterialCount: 0,
           sharedGeometryCount: 0,
         },
         'full'
@@ -2812,6 +2868,7 @@ describe('render3d visibility helpers', () => {
           renderedInstanceCount: 0,
           materialCount: 6,
           sharedMaterialCount: 2,
+          clonedMaterialCount: 0,
           sharedGeometryCount: 0,
         },
         'full'
@@ -2887,6 +2944,7 @@ describe('render3d visibility helpers', () => {
           renderedInstanceCount: 0,
           materialCount: 2,
           sharedMaterialCount: 10,
+          clonedMaterialCount: 0,
           sharedGeometryCount: 8,
         },
         'full'
@@ -2958,12 +3016,71 @@ describe('render3d visibility helpers', () => {
           renderedInstanceCount: 0,
           materialCount: 9,
           sharedMaterialCount: 1,
+          clonedMaterialCount: 0,
           sharedGeometryCount: 2,
         },
         'full'
       )
     ).toEqual([
       'materialCount 9 for meshCount 10 with sharedMaterialCount 1 suggests per-instance materials',
+    ]);
+  });
+
+  it('warns when many distinct materials are effectively equivalent', () => {
+    expect(
+      getTileModelEquivalentMaterialWarning(
+        {
+          clonedMaterialCount: 3,
+          materialCount: 6,
+        },
+        'full'
+      )
+    ).toBe(
+      'clonedMaterialCount 3 across materialCount 6 suggests equivalent materials could be shared'
+    );
+
+    expect(
+      getTileModelEquivalentMaterialWarning(
+        {
+          clonedMaterialCount: 2,
+          materialCount: 4,
+        },
+        'low'
+      )
+    ).toBe(
+      'clonedMaterialCount 2 across materialCount 4 suggests equivalent materials could be shared'
+    );
+
+    expect(
+      getTileModelEquivalentMaterialWarning(
+        {
+          clonedMaterialCount: 1,
+          materialCount: 4,
+        },
+        'full'
+      )
+    ).toBeNull();
+  });
+
+  it('collects plugin performance warnings for equivalent materials that could be shared', () => {
+    expect(
+      getTileModelPerformanceWarnings(
+        {
+          drawCallCount: 6,
+          triangleCount: 240,
+          maxGeometryGroupCount: 2,
+          meshCount: 6,
+          instancedMeshCount: 0,
+          renderedInstanceCount: 0,
+          materialCount: 6,
+          sharedMaterialCount: 0,
+          clonedMaterialCount: 3,
+          sharedGeometryCount: 1,
+        },
+        'full'
+      )
+    ).toEqual([
+      'clonedMaterialCount 3 across materialCount 6 suggests equivalent materials could be shared',
     ]);
   });
 

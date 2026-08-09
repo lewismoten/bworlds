@@ -78,6 +78,7 @@ import {
 } from './pending-world-build-queue.ts';
 import { shouldProcessPendingWorldBuildEntryWithinBudget } from './pending-world-build-processing.ts';
 import { collectMaterialTexturesInto } from './material-texture-collector.ts';
+import { countEquivalentShareableMaterials } from './material-equivalence.ts';
 import {
   disposeOwnedObject3DMaterials,
   getRecentOwnedMaterialLifecycleCounts,
@@ -136,6 +137,7 @@ export {
 } from './pending-world-build-queue.ts';
 export { shouldProcessPendingWorldBuildEntryWithinBudget } from './pending-world-build-processing.ts';
 export { collectMaterialTexturesInto } from './material-texture-collector.ts';
+export { countEquivalentShareableMaterials } from './material-equivalence.ts';
 export {
   getRecentOwnedMaterialLifecycleCounts,
   resetOwnedMaterialLifecycleMetrics,
@@ -149,6 +151,7 @@ export {
 } from './tile-model-cost-estimate-budget.ts';
 export {
   getTileModelDrawCallRatioWarning,
+  getTileModelEquivalentMaterialWarning,
   getTileModelInstancingWarning,
   getTileModelMaterialGroupWarning,
   getTileModelPerInstanceMaterialWarning,
@@ -3922,7 +3925,7 @@ export function collectSceneResourceStats(
     geometryRefCount,
     materialCount: materials.size,
     sharedMaterialCount: Math.max(0, materialRefCount - materials.size),
-    clonedMaterialCount: 0,
+    clonedMaterialCount: countEquivalentShareableMaterials(materials),
     transparentMaterialCount: countMaterialsMatching(materials, isTransparentMaterial),
     alphaTestMaterialCount: countMaterialsMatching(materials, usesAlphaTest),
     doubleSidedMaterialCount: countMaterialsMatching(materials, isDoubleSidedMaterial),
