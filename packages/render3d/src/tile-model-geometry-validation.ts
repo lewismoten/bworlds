@@ -4,6 +4,19 @@ type TraversableObjectLike = Pick<THREE.Object3D, 'children' | 'type'> & {
   geometry?: unknown;
 };
 
+const STANDARD_GEOMETRY_ATTRIBUTE_NAMES = new Set([
+  'position',
+  'normal',
+  'uv',
+  'uv1',
+  'uv2',
+  'uv3',
+  'color',
+  'tangent',
+  'skinIndex',
+  'skinWeight',
+]);
+
 export function getGeometryVertexCount(geometry: unknown): number {
   const positionAttribute = (
     geometry as {
@@ -134,6 +147,45 @@ export function countIndexedVertices(root: TraversableObjectLike): number {
   });
 
   return indexedVertexCount;
+}
+
+export type GeometryAttributeBudgetStats = {
+  maxAttributeCount: number;
+  maxCustomAttributeCount: number;
+  maxVertexAttributeByteSize: number;
+};
+
+export function getGeometryAttributeBudgetStats(
+  root: TraversableObjectLike
+): GeometryAttributeBudgetStats {
+  const geometries = new Set<unknown>();
+  let maxAttributeCount = 0;
+  let maxCustomAttributeCount = 0;
+  let maxVertexAttributeByteSize = 0;
+
+  traverseSceneGraph(root, (child) => {
+    if (!child.geometry || geometries.has(child.geometry)) {
+      return;
+    }
+    geometries.add(child.geometry);
+    const attributeNames = getGeometryAttributeNames(child.geometry);
+    maxAttributeCount = Math.max(maxAttributeCount, attributeNames.length);
+    maxCustomAttributeCount = Math.max(
+      maxCustomAttributeCount,
+      attributeNames.filter((name) => !STANDARD_GEOMETRY_ATTRIBUTE_NAMES.has(name))
+        .length
+    );
+    maxVertexAttributeByteSize = Math.max(
+      maxVertexAttributeByteSize,
+      getGeometryVertexAttributeByteSize(child.geometry)
+    );
+  });
+
+  return {
+    maxAttributeCount,
+    maxCustomAttributeCount,
+    maxVertexAttributeByteSize,
+  };
 }
 
 export function countGeometryTriangles(root: TraversableObjectLike): number {
@@ -279,6 +331,29 @@ function getGeometryTriangleCount(geometry: unknown): number {
   return Math.floor(getGeometryVertexCount(geometry) / 3);
 }
 
+function getGeometryAttributeNames(geometry: unknown): string[] {
+  return Object.keys(
+    (
+      geometry as {
+        attributes?: Record<string, unknown>;
+      }
+    )?.attributes ?? {}
+  );
+}
+
+function getGeometryVertexAttributeByteSize(geometry: unknown): number {
+  const attributes = (
+    geometry as {
+      attributes?: Record<string, { array?: ArrayLike<unknown> & { byteLength?: number } }>;
+    }
+  )?.attributes;
+  let totalBytes = 0;
+  for (const attribute of Object.values(attributes ?? {})) {
+    totalBytes += getArrayLikeByteLength(attribute?.array);
+  }
+  return totalBytes;
+}
+
 function traverseSceneGraph(
   root: TraversableObjectLike,
   callback: (child: TraversableObjectLike) => void
@@ -299,4 +374,19 @@ function isLineObjectType(type: string): boolean {
 
 function isTriangleGeometryObjectType(type: string): boolean {
   return type.endsWith('Mesh');
+}
+
+function getArrayLikeByteLength(
+  arrayLike: (ArrayLike<unknown> & { byteLength?: number }) | undefined
+): number {
+  if (!arrayLike) {
+    return 0;
+  }
+  if (typeof arrayLike.byteLength === 'number') {
+    return arrayLike.byteLength;
+  }
+  if (typeof arrayLike.length !== 'number') {
+    return 0;
+  }
+  return arrayLike.length * 4;
 }

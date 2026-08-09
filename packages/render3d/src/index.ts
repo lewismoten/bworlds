@@ -36,6 +36,7 @@ import {
   countIndexedVertices,
   countLineSegments,
   countPointVertices,
+  getGeometryAttributeBudgetStats,
   getMaxGeometryTriangleCount,
   getGeometryVertexCount,
 } from './tile-model-geometry-validation.ts';
@@ -243,6 +244,9 @@ const FULL_DETAIL_TILE_MODEL_HARD_LIMITS: TileModelHardLimits = {
   indexedVertexCount: 75_000,
   maxGeometryTriangleCount: 25_000,
   triangleCount: 50_000,
+  maxGeometryAttributeCount: 10,
+  maxCustomGeometryAttributeCount: 4,
+  maxGeometryVertexAttributeByteSize: 1_200_000,
   materialCount: 16,
   textureCount: 16,
   lightCount: 4,
@@ -267,6 +271,9 @@ const LOW_DETAIL_TILE_MODEL_HARD_LIMITS: TileModelHardLimits = {
   indexedVertexCount: 12_000,
   maxGeometryTriangleCount: 1_000,
   triangleCount: 3_000,
+  maxGeometryAttributeCount: 6,
+  maxCustomGeometryAttributeCount: 2,
+  maxGeometryVertexAttributeByteSize: 192_000,
   materialCount: 3,
   textureCount: 4,
   lightCount: 1,
@@ -291,6 +298,7 @@ export function validateTileModelAgainstRenderBudget(
       ? LOW_DETAIL_MAX_GEOMETRY_AXIS_SPAN
       : FULL_DETAIL_MAX_GEOMETRY_AXIS_SPAN;
   const sceneResourceStats = collectSceneResourceStats(root);
+  const geometryAttributeBudgetStats = getGeometryAttributeBudgetStats(root);
   const stats = {
     ...sceneResourceStats,
     invalidPositionCoordinateCount: countInvalidGeometryCoordinateSets(root),
@@ -304,6 +312,11 @@ export function validateTileModelAgainstRenderBudget(
     indexedVertexCount: countIndexedVertices(root),
     maxGeometryTriangleCount: getMaxGeometryTriangleCount(root),
     triangleCount: countGeometryTriangles(root),
+    maxGeometryAttributeCount: geometryAttributeBudgetStats.maxAttributeCount,
+    maxCustomGeometryAttributeCount:
+      geometryAttributeBudgetStats.maxCustomAttributeCount,
+    maxGeometryVertexAttributeByteSize:
+      geometryAttributeBudgetStats.maxVertexAttributeByteSize,
   };
   const limits = getTileModelHardLimits(detailLevel);
   const violations: TileModelBudgetViolation[] = [];
@@ -324,6 +337,9 @@ export function validateTileModelAgainstRenderBudget(
     'indexedVertexCount',
     'maxGeometryTriangleCount',
     'triangleCount',
+    'maxGeometryAttributeCount',
+    'maxCustomGeometryAttributeCount',
+    'maxGeometryVertexAttributeByteSize',
     'materialCount',
     'textureCount',
     'lightCount',
@@ -523,6 +539,9 @@ type TileModelHardLimits = {
   indexedVertexCount: number;
   maxGeometryTriangleCount: number;
   triangleCount: number;
+  maxGeometryAttributeCount: number;
+  maxCustomGeometryAttributeCount: number;
+  maxGeometryVertexAttributeByteSize: number;
   materialCount: number;
   textureCount: number;
   lightCount: number;
@@ -547,6 +566,9 @@ type TileModelBudgetValidation = {
     indexedVertexCount: number;
     maxGeometryTriangleCount: number;
     triangleCount: number;
+    maxGeometryAttributeCount: number;
+    maxCustomGeometryAttributeCount: number;
+    maxGeometryVertexAttributeByteSize: number;
   };
   limits: TileModelHardLimits;
   violations: TileModelBudgetViolation[];

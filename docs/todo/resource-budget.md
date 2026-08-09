@@ -54,9 +54,9 @@ Operates at several levels: per model, per LOD, per plugin, per chunk, and per e
 * [X] Cap point count.
 * [ ] Cap geometry groups.
 * [ ] Cap separate draw ranges.
-* [ ] Cap attributes per geometry.
-* [ ] Cap custom vertex attributes.
-* [ ] Cap vertex attribute byte size.
+* [X] Cap attributes per geometry.
+* [X] Cap custom vertex attributes.
+* [X] Cap vertex attribute byte size.
 * [X] Reject geometry containing invalid `NaN` or infinite coordinates.
 * [X] Reject geometry with unreasonable bounding dimensions.
 * [ ] Reject accidental ultra-dense geometry occupying a tiny visual area.

@@ -1210,6 +1210,9 @@ describe('render3d visibility helpers', () => {
       indexedVertexCount: 75_000,
       maxGeometryTriangleCount: 25_000,
       triangleCount: 50_000,
+      maxGeometryAttributeCount: 10,
+      maxCustomGeometryAttributeCount: 4,
+      maxGeometryVertexAttributeByteSize: 1_200_000,
       materialCount: 16,
       textureCount: 16,
       lightCount: 4,
@@ -1233,6 +1236,9 @@ describe('render3d visibility helpers', () => {
       indexedVertexCount: 12_000,
       maxGeometryTriangleCount: 1_000,
       triangleCount: 3_000,
+      maxGeometryAttributeCount: 6,
+      maxCustomGeometryAttributeCount: 2,
+      maxGeometryVertexAttributeByteSize: 192_000,
       materialCount: 3,
       textureCount: 4,
       lightCount: 1,
@@ -1268,6 +1274,9 @@ describe('render3d visibility helpers', () => {
         indexedVertexCount: 0,
         maxGeometryTriangleCount: 16,
         triangleCount: 24,
+        maxGeometryAttributeCount: 1,
+        maxCustomGeometryAttributeCount: 0,
+        maxGeometryVertexAttributeByteSize: 576,
         materialCount: 1,
         textureCount: 1,
         lightCount: 0,
@@ -1312,6 +1321,9 @@ describe('render3d visibility helpers', () => {
         indexedVertexCount: 0,
         maxGeometryTriangleCount: 833,
         triangleCount: 3_332,
+        maxGeometryAttributeCount: 1,
+        maxCustomGeometryAttributeCount: 0,
+        maxGeometryVertexAttributeByteSize: 30_000,
       }),
       violations: [
         {
@@ -1385,6 +1397,9 @@ describe('render3d visibility helpers', () => {
         indexedVertexCount: 0,
         maxGeometryTriangleCount: 8,
         triangleCount: 42,
+        maxGeometryAttributeCount: 1,
+        maxCustomGeometryAttributeCount: 0,
+        maxGeometryVertexAttributeByteSize: 288,
       }),
       violations: [
         {
@@ -1450,6 +1465,9 @@ describe('render3d visibility helpers', () => {
         indexedVertexCount: 0,
         maxGeometryTriangleCount: 0,
         triangleCount: 0,
+        maxGeometryAttributeCount: 1,
+        maxCustomGeometryAttributeCount: 0,
+        maxGeometryVertexAttributeByteSize: 1_560,
       }),
       violations: [
         {
@@ -1489,6 +1507,9 @@ describe('render3d visibility helpers', () => {
         indexedVertexCount: 0,
         maxGeometryTriangleCount: 1,
         triangleCount: 1,
+        maxGeometryAttributeCount: 1,
+        maxCustomGeometryAttributeCount: 0,
+        maxGeometryVertexAttributeByteSize: 36,
       }),
       violations: [
         {
@@ -1517,6 +1538,9 @@ describe('render3d visibility helpers', () => {
         indexedVertexCount: 0,
         maxGeometryTriangleCount: 500,
         triangleCount: 500,
+        maxGeometryAttributeCount: 1,
+        maxCustomGeometryAttributeCount: 0,
+        maxGeometryVertexAttributeByteSize: 18_012,
       }),
       violations: [
         {
@@ -1544,6 +1568,9 @@ describe('render3d visibility helpers', () => {
         indexedVertexCount: 0,
         maxGeometryTriangleCount: 1,
         triangleCount: 1,
+        maxGeometryAttributeCount: 1,
+        maxCustomGeometryAttributeCount: 0,
+        maxGeometryVertexAttributeByteSize: 36,
       }),
       violations: [
         {
@@ -1566,6 +1593,9 @@ describe('render3d visibility helpers', () => {
         indexedVertexCount: 12_001,
         maxGeometryTriangleCount: 4_000,
         triangleCount: 4_000,
+        maxGeometryAttributeCount: 1,
+        maxCustomGeometryAttributeCount: 0,
+        maxGeometryVertexAttributeByteSize: 768,
       }),
       violations: [
         {
@@ -1597,6 +1627,9 @@ describe('render3d visibility helpers', () => {
       stats: expect.objectContaining({
         maxGeometryTriangleCount: 1_001,
         triangleCount: 1_001,
+        maxGeometryAttributeCount: 1,
+        maxCustomGeometryAttributeCount: 0,
+        maxGeometryVertexAttributeByteSize: 768,
       }),
       violations: [
         {
@@ -1639,12 +1672,78 @@ describe('render3d visibility helpers', () => {
       stats: expect.objectContaining({
         maxGeometryTriangleCount: 800,
         triangleCount: 3_200,
+        maxGeometryAttributeCount: 1,
+        maxCustomGeometryAttributeCount: 0,
+        maxGeometryVertexAttributeByteSize: 768,
       }),
       violations: [
         {
           metric: 'triangleCount',
           actual: 3_200,
           limit: 3_000,
+        },
+      ],
+    });
+  });
+
+  it('rejects models whose geometry exposes too many attributes', () => {
+    const root = createMockObject3D(
+      createMockMaterial(),
+      [],
+      createMockRichAttributeGeometry(48, {
+        normal: 3,
+        uv: 2,
+        color: 3,
+        tangent: 4,
+        weights: 4,
+        customA: 1,
+        customB: 1,
+      })
+    );
+
+    expect(validateTileModelAgainstRenderBudget(root as never, 'low')).toEqual({
+      accepted: false,
+      limits: getTileModelHardLimits('low'),
+      stats: expect.objectContaining({
+        maxGeometryAttributeCount: 8,
+        maxCustomGeometryAttributeCount: 3,
+      }),
+      violations: [
+        {
+          metric: 'maxGeometryAttributeCount',
+          actual: 8,
+          limit: 6,
+        },
+        {
+          metric: 'maxCustomGeometryAttributeCount',
+          actual: 3,
+          limit: 2,
+        },
+      ],
+    });
+  });
+
+  it('rejects models whose geometry attribute buffers grow past the byte cap', () => {
+    const root = createMockObject3D(
+      createMockMaterial(),
+      [],
+      createMockRichAttributeGeometry(1_500, {
+        customA: 20,
+        customB: 20,
+      })
+    );
+
+    expect(validateTileModelAgainstRenderBudget(root as never, 'low')).toEqual({
+      accepted: false,
+      limits: getTileModelHardLimits('low'),
+      stats: expect.objectContaining({
+        maxGeometryVertexAttributeByteSize: 258_000,
+      }),
+      violations: [
+        {
+          metric: 'maxGeometryVertexAttributeByteSize',
+          actual: 258_000,
+          limit: 192_000,
         },
       ],
     });
@@ -2898,6 +2997,28 @@ function createMockIndexedGeometry(vertexCount: number, indexCount: number) {
       array: new Uint32Array(indexCount),
     },
   };
+}
+
+function createMockRichAttributeGeometry(
+  vertexCount: number,
+  extraAttributes: Record<string, number>
+) {
+  const attributes: Record<string, { count: number; itemSize: number; array: Float32Array }> =
+    {
+      position: {
+        count: vertexCount,
+        itemSize: 3,
+        array: new Float32Array(vertexCount * 3),
+      },
+    };
+  for (const [name, itemSize] of Object.entries(extraAttributes)) {
+    attributes[name] = {
+      count: vertexCount,
+      itemSize,
+      array: new Float32Array(vertexCount * itemSize),
+    };
+  }
+  return { attributes };
 }
 
 function createMockObject3D(
