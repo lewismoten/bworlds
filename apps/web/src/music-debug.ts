@@ -1,5 +1,6 @@
 import {
   createProceduralInstrumentBank,
+  type MusicSink,
   createWebAudioMusicSink,
   resolveMusicArrangement,
   resolveMusicMood,
@@ -42,6 +43,11 @@ export type MusicDebugSnapshot = {
   loopStartOffsetMs: number;
   loopEndOffsetMs: number;
   roleCounts: Record<ProceduralMusicNote['role'], number>;
+};
+
+export type MusicDebugSongPlayback = {
+  play(snapshot: MusicDebugSnapshot): void;
+  stop(): void;
 };
 
 export const DEFAULT_MUSIC_DEBUG_OPTIONS: MusicDebugOptions = {
@@ -360,16 +366,28 @@ export function drawMusicDebugTimeline(
 }
 
 export function playMusicDebugSong(snapshot: MusicDebugSnapshot): void {
-  const sink = createWebAudioMusicSink();
-  const startMs = performance.now() + 120;
-  const offsetMs = snapshot.song.startMs;
-  sink.resume?.();
-  for (const note of snapshot.notes) {
-    sink.play({
-      ...note,
-      startMs: startMs + (note.startMs - offsetMs),
-    });
-  }
+  createMusicDebugSongPlayback().play(snapshot);
+}
+
+export function createMusicDebugSongPlayback(
+  sink: MusicSink = createWebAudioMusicSink()
+): MusicDebugSongPlayback {
+  return {
+    play(snapshot) {
+      const startMs = performance.now() + 120;
+      const offsetMs = snapshot.song.startMs;
+      sink.resume?.();
+      for (const note of snapshot.notes) {
+        sink.play({
+          ...note,
+          startMs: startMs + (note.startMs - offsetMs),
+        });
+      }
+    },
+    stop() {
+      sink.stopAll?.();
+    },
+  };
 }
 
 export function formatMusicDebugDuration(durationMs: number): string {

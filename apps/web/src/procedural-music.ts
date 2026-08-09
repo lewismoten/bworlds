@@ -129,7 +129,10 @@ function getThemeSeed(themeId: MusicRegionThemeId): number {
   return MUSIC_THEME_SEEDS[themeId];
 }
 
-function getThemeRoleSeed(themeId: MusicRegionThemeId, role: InstrumentRole): number {
+function getThemeRoleSeed(
+  themeId: MusicRegionThemeId,
+  role: InstrumentRole
+): number {
   return appendHashSeedLabel(getThemeSeed(themeId), MUSIC_ROLE_SEEDS[role]);
 }
 
@@ -137,7 +140,10 @@ function getThemePropertySeed(
   themeId: MusicRegionThemeId,
   property: keyof typeof MUSIC_PROPERTY_SEEDS
 ): number {
-  return appendHashSeedLabel(getThemeSeed(themeId), MUSIC_PROPERTY_SEEDS[property]);
+  return appendHashSeedLabel(
+    getThemeSeed(themeId),
+    MUSIC_PROPERTY_SEEDS[property]
+  );
 }
 
 function getRolePropertySeed(
@@ -145,7 +151,10 @@ function getRolePropertySeed(
   role: InstrumentRole,
   property: keyof typeof MUSIC_PROPERTY_SEEDS
 ): number {
-  return appendHashSeedLabel(getThemeRoleSeed(themeId, role), MUSIC_PROPERTY_SEEDS[property]);
+  return appendHashSeedLabel(
+    getThemeRoleSeed(themeId, role),
+    MUSIC_PROPERTY_SEEDS[property]
+  );
 }
 
 function getRoleContextPropertySeed(
@@ -208,6 +217,7 @@ export type ProceduralMusicNote = {
 export type MusicSink = {
   resume?(): void;
   play(note: ProceduralMusicNote): void;
+  stopAll?(): void;
   getActiveSourceCount?(): number;
 };
 
@@ -407,7 +417,8 @@ export function resolveMusicArrangement(options: {
     (dayProgress >= 0.18 && dayProgress <= 0.3) ||
     (dayProgress >= 0.7 && dayProgress <= 0.82);
   const heavyWeather =
-    options.weatherKind === 'heavy-rain' || (options.weatherIntensity ?? 0) >= 0.85;
+    options.weatherKind === 'heavy-rain' ||
+    (options.weatherIntensity ?? 0) >= 0.85;
 
   if (season === 'winter') {
     return {
@@ -693,7 +704,9 @@ export function createMusicController(sink: MusicSink): MusicController {
   };
 }
 
-export function getMusicUpdateSignature(options: MusicUpdateOptions): MusicUpdateSignatureState {
+export function getMusicUpdateSignature(
+  options: MusicUpdateOptions
+): MusicUpdateSignatureState {
   return {
     ambient: [
       options.tileKind ?? '',
@@ -728,6 +741,7 @@ type StereoPannerNodeLike = StereoPannerNode;
 export function createWebAudioMusicSink(): MusicSink {
   let audioContext: AudioContext | null = null;
   let activeSourceCount = 0;
+  const activeOscillators = new Set<OscillatorNode>();
 
   function getAudioContext(): AudioContext | null {
     if (audioContext) {
@@ -737,7 +751,8 @@ export function createWebAudioMusicSink(): MusicSink {
       AudioContext?: AudioContextCtor;
       webkitAudioContext?: AudioContextCtor;
     };
-    const ContextCtor = globalCtor.AudioContext ?? globalCtor.webkitAudioContext;
+    const ContextCtor =
+      globalCtor.AudioContext ?? globalCtor.webkitAudioContext;
     if (!ContextCtor) {
       return null;
     }
@@ -760,14 +775,16 @@ export function createWebAudioMusicSink(): MusicSink {
       }
       const nowMs = performance.now();
       const spatial = getMusicSpatialMix(note.emitter, note.listener);
-  const oscillator = context.createOscillator();
+      const oscillator = context.createOscillator();
       const harmonicOscillator = context.createOscillator();
       const gain = context.createGain();
       const harmonicGain = context.createGain();
-      const panner = typeof context.createStereoPanner === 'function'
-        ? (context.createStereoPanner() as StereoPannerNodeLike)
-        : null;
-      const startAt = context.currentTime + Math.max(0, (note.startMs - nowMs) / 1000);
+      const panner =
+        typeof context.createStereoPanner === 'function'
+          ? (context.createStereoPanner() as StereoPannerNodeLike)
+          : null;
+      const startAt =
+        context.currentTime + Math.max(0, (note.startMs - nowMs) / 1000);
       const durationSeconds = note.durationMs / 1000;
 
       oscillator.type = note.waveform;
@@ -797,16 +814,21 @@ export function createWebAudioMusicSink(): MusicSink {
       );
       gain.gain.exponentialRampToValueAtTime(
         sustainVolume * 0.74,
-        startAt + Math.max(durationSeconds - note.releaseMs / 1000, note.attackMs / 1000)
+        startAt +
+          Math.max(
+            durationSeconds - note.releaseMs / 1000,
+            note.attackMs / 1000
+          )
       );
       harmonicGain.gain.exponentialRampToValueAtTime(
         sustainVolume * note.harmonicGain * 0.68,
-        startAt + Math.max(durationSeconds - note.releaseMs / 1000, note.attackMs / 1000)
+        startAt +
+          Math.max(
+            durationSeconds - note.releaseMs / 1000,
+            note.attackMs / 1000
+          )
       );
-      gain.gain.exponentialRampToValueAtTime(
-        0.0001,
-        startAt + durationSeconds
-      );
+      gain.gain.exponentialRampToValueAtTime(0.0001, startAt + durationSeconds);
       harmonicGain.gain.exponentialRampToValueAtTime(
         0.0001,
         startAt + durationSeconds
@@ -826,15 +848,35 @@ export function createWebAudioMusicSink(): MusicSink {
 
       activeSourceCount += 2;
       oscillator.onended = () => {
+        activeOscillators.delete(oscillator);
         activeSourceCount = Math.max(0, activeSourceCount - 1);
       };
       harmonicOscillator.onended = () => {
+        activeOscillators.delete(harmonicOscillator);
         activeSourceCount = Math.max(0, activeSourceCount - 1);
       };
+      activeOscillators.add(oscillator);
+      activeOscillators.add(harmonicOscillator);
       oscillator.start(startAt);
       harmonicOscillator.start(startAt);
       oscillator.stop(startAt + durationSeconds);
       harmonicOscillator.stop(startAt + durationSeconds);
+    },
+    stopAll() {
+      const context = getAudioContext();
+      if (!context) {
+        return;
+      }
+
+      for (const oscillator of activeOscillators) {
+        try {
+          oscillator.stop(context.currentTime);
+        } catch {
+          // Ignore already-stopped oscillators.
+        }
+      }
+      activeOscillators.clear();
+      activeSourceCount = 0;
     },
     getActiveSourceCount() {
       return activeSourceCount;
@@ -873,9 +915,10 @@ export function resolvePoiMusicMix(
   return clamp(normalized, 0, 1);
 }
 
-export function resolvePoiMusicBlendGains(
-  mix: number
-): { ambientGain: number; poiGain: number } {
+export function resolvePoiMusicBlendGains(mix: number): {
+  ambientGain: number;
+  poiGain: number;
+} {
   const clampedMix = clamp(mix, 0, 1);
   return {
     ambientGain: Math.cos((clampedMix * Math.PI) / 2),
@@ -931,7 +974,10 @@ function createThemeNote(options: {
       options.theme.rootHz *
       Math.pow(
         2,
-        (semitones + octaveBoost + (arrangementProfile.octaveShiftSemitones ?? 0)) / 12
+        (semitones +
+          octaveBoost +
+          (arrangementProfile.octaveShiftSemitones ?? 0)) /
+          12
       ) *
       options.mood.brightness *
       arrangementProfile.brightnessMultiplier *
@@ -957,7 +1003,8 @@ function createThemeNote(options: {
     attackMs: instrument.attackMs,
     releaseMs: instrument.releaseMs * arrangementProfile.releaseMultiplier,
     detuneCents: instrument.detuneCents,
-    harmonicGain: instrument.harmonicGain * arrangementProfile.harmonicGainMultiplier,
+    harmonicGain:
+      instrument.harmonicGain * arrangementProfile.harmonicGainMultiplier,
     pulseRate: instrument.pulseRate * arrangementProfile.pulseRateMultiplier,
     emitter: options.emitter,
     listener: options.listener,
@@ -1016,7 +1063,9 @@ function scheduleThemeLayerNotes(
   const clusterX = options.clusterX ?? 0;
   const clusterY = options.clusterY ?? 0;
   let stepIndex =
-    previousState?.regionSignature === regionSignature ? previousState.stepIndex : 0;
+    previousState?.regionSignature === regionSignature
+      ? previousState.stepIndex
+      : 0;
   let nextNoteAtMs =
     previousState?.regionSignature === regionSignature
       ? Math.max(previousState.nextNoteAtMs, options.nowMs)
@@ -1054,7 +1103,8 @@ function scheduleThemeLayerNotes(
       });
     }
     nextNoteAtMs +=
-      (theme.noteDurationMs * resolveRhythmicMotifStepDuration(theme, stepIndex)) /
+      (theme.noteDurationMs *
+        resolveRhythmicMotifStepDuration(theme, stepIndex)) /
       mood.tempoMultiplier;
     stepIndex += 1;
   }
@@ -1078,10 +1128,34 @@ export function createProceduralInstrumentBank(
   return {
     themeId: theme.id,
     instruments: {
-      lead: createProceduralInstrument(theme, 'lead', clusterX, clusterY, options),
-      harmony: createProceduralInstrument(theme, 'harmony', clusterX, clusterY, options),
-      bass: createProceduralInstrument(theme, 'bass', clusterX, clusterY, options),
-      percussion: createProceduralInstrument(theme, 'percussion', clusterX, clusterY, options),
+      lead: createProceduralInstrument(
+        theme,
+        'lead',
+        clusterX,
+        clusterY,
+        options
+      ),
+      harmony: createProceduralInstrument(
+        theme,
+        'harmony',
+        clusterX,
+        clusterY,
+        options
+      ),
+      bass: createProceduralInstrument(
+        theme,
+        'bass',
+        clusterX,
+        clusterY,
+        options
+      ),
+      percussion: createProceduralInstrument(
+        theme,
+        'percussion',
+        clusterX,
+        clusterY,
+        options
+      ),
     },
   };
 }
@@ -1093,7 +1167,13 @@ function createProceduralInstrument(
   clusterY: number,
   options?: ProceduralInstrumentBankOptions
 ): ProceduralInstrument {
-  const family = resolveInstrumentFamily(theme, role, clusterX, clusterY, options);
+  const family = resolveInstrumentFamily(
+    theme,
+    role,
+    clusterX,
+    clusterY,
+    options
+  );
   const waveformOptions: Record<InstrumentRole, MusicWaveform[]> = {
     lead: ['triangle', 'sine', 'sawtooth'],
     harmony: ['triangle', 'sawtooth', 'square'],
@@ -1104,14 +1184,23 @@ function createProceduralInstrument(
   const waveform =
     waveformList[
       Math.floor(
-        hash2DWithSeed(getRolePropertySeed(theme.id, role, 'waveform'), clusterX, clusterY) *
-          waveformList.length
+        hash2DWithSeed(
+          getRolePropertySeed(theme.id, role, 'waveform'),
+          clusterX,
+          clusterY
+        ) * waveformList.length
       )
     ] ?? waveformList[0];
   const attackMsBase =
     role === 'lead' ? 28 : role === 'bass' ? 36 : role === 'harmony' ? 52 : 8;
   const releaseMsBase =
-    role === 'lead' ? 130 : role === 'bass' ? 180 : role === 'harmony' ? 220 : 48;
+    role === 'lead'
+      ? 130
+      : role === 'bass'
+        ? 180
+        : role === 'harmony'
+          ? 220
+          : 48;
   return {
     id: `${theme.id}:${role}:${clusterX}:${clusterY}`,
     role,
@@ -1120,27 +1209,52 @@ function createProceduralInstrument(
     attackMs:
       attackMsBase +
       Math.round(
-        hash2DWithSeed(getRolePropertySeed(theme.id, role, 'attack'), clusterX, clusterY) * 24
+        hash2DWithSeed(
+          getRolePropertySeed(theme.id, role, 'attack'),
+          clusterX,
+          clusterY
+        ) * 24
       ),
     releaseMs:
       releaseMsBase +
       Math.round(
-        hash2DWithSeed(getRolePropertySeed(theme.id, role, 'release'), clusterX, clusterY) * 40
+        hash2DWithSeed(
+          getRolePropertySeed(theme.id, role, 'release'),
+          clusterX,
+          clusterY
+        ) * 40
       ),
     detuneCents:
-      (hash2DWithSeed(getRolePropertySeed(theme.id, role, 'detune'), clusterX, clusterY) - 0.5) *
+      (hash2DWithSeed(
+        getRolePropertySeed(theme.id, role, 'detune'),
+        clusterX,
+        clusterY
+      ) -
+        0.5) *
       (role === 'percussion' ? 10 : 16),
     harmonicGain:
       0.12 +
-      hash2DWithSeed(getRolePropertySeed(theme.id, role, 'harmonics'), clusterX, clusterY) *
+      hash2DWithSeed(
+        getRolePropertySeed(theme.id, role, 'harmonics'),
+        clusterX,
+        clusterY
+      ) *
         (role === 'bass' ? 0.16 : role === 'percussion' ? 0.08 : 0.28),
     pulseRate:
       0.6 +
-      hash2DWithSeed(getRolePropertySeed(theme.id, role, 'pulse'), clusterX, clusterY) *
+      hash2DWithSeed(
+        getRolePropertySeed(theme.id, role, 'pulse'),
+        clusterX,
+        clusterY
+      ) *
         (role === 'percussion' ? 3.2 : role === 'harmony' ? 1.1 : 1.4),
     brightness:
       0.82 +
-      hash2DWithSeed(getRolePropertySeed(theme.id, role, 'brightness'), clusterX, clusterY) *
+      hash2DWithSeed(
+        getRolePropertySeed(theme.id, role, 'brightness'),
+        clusterX,
+        clusterY
+      ) *
         0.34,
   };
 }
@@ -1153,7 +1267,11 @@ function resolveInstrumentFamily(
   options?: ProceduralInstrumentBankOptions
 ): InstrumentFamily {
   const families = resolveInstrumentFamilyPool(theme, role, options);
-  const familyContextKey = resolveInstrumentFamilyContextKey(theme, role, options);
+  const familyContextKey = resolveInstrumentFamilyContextKey(
+    theme,
+    role,
+    options
+  );
   const index = Math.floor(
     hash2DWithSeed(
       getRoleContextPropertySeed(theme.id, role, 'family', familyContextKey),
@@ -1170,10 +1288,13 @@ function resolveInstrumentFamilyPool(
   options?: ProceduralInstrumentBankOptions
 ): readonly InstrumentFamily[] {
   const season = resolveSeason(options?.yearProgress ?? 0.25);
-  const normalizedDayProgress = normalizeWrappedProgress(options?.dayProgress ?? 0.5);
+  const normalizedDayProgress = normalizeWrappedProgress(
+    options?.dayProgress ?? 0.5
+  );
   const atNight = normalizedDayProgress < 0.2 || normalizedDayProgress > 0.8;
   const weatherBand =
-    options?.weatherKind === 'heavy-rain' || (options?.weatherIntensity ?? 0) >= 0.8
+    options?.weatherKind === 'heavy-rain' ||
+    (options?.weatherIntensity ?? 0) >= 0.8
       ? 'storm'
       : options?.weatherKind === 'light-rain' || options?.weatherKind === 'fog'
         ? 'soft-weather'
@@ -1234,7 +1355,9 @@ function resolveInstrumentFamilyContextKey(
   options?: ProceduralInstrumentBankOptions
 ): string {
   const season = resolveSeason(options?.yearProgress ?? 0.25);
-  const normalizedDayProgress = normalizeWrappedProgress(options?.dayProgress ?? 0.5);
+  const normalizedDayProgress = normalizeWrappedProgress(
+    options?.dayProgress ?? 0.5
+  );
   const dayPhase =
     normalizedDayProgress < 0.2 || normalizedDayProgress > 0.8
       ? 'night'
@@ -1242,7 +1365,8 @@ function resolveInstrumentFamilyContextKey(
         ? 'twilight'
         : 'day';
   const weatherBand =
-    options?.weatherKind === 'heavy-rain' || (options?.weatherIntensity ?? 0) >= 0.8
+    options?.weatherKind === 'heavy-rain' ||
+    (options?.weatherIntensity ?? 0) >= 0.8
       ? 'storm'
       : options?.weatherKind === 'light-rain' || options?.weatherKind === 'fog'
         ? 'soft-weather'
@@ -1362,7 +1486,11 @@ function shouldRestAtThemeStep(
   }
   const restChance = role === 'lead' ? 0.18 : 0.14;
   const variation =
-    hash2DWithSeed(getRolePropertySeed(theme.id, role, 'rest'), clusterX + stepIndex, clusterY) +
+    hash2DWithSeed(
+      getRolePropertySeed(theme.id, role, 'rest'),
+      clusterX + stepIndex,
+      clusterY
+    ) +
     (theme.stepPattern[phraseStep] ?? 0) * 0.013;
   return variation > 1 - restChance;
 }

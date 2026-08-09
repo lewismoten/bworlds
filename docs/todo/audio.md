@@ -41,12 +41,16 @@
 - [x] Time of day may influence music - ie night time: removing/lowering percussion, slow melody, higher reverb, soft harmony
 - [x] Seasons may influence music - ie winter: same motif, bells, sparser arrangement, higher register
 - [ ] Compat may influence music - ie same motif, faster rhythm, lower bass, strong percussion, changed harmony
+- [ ] Music should support different instrument types for the tracks rather than just sine, square, sawtooth
 
 # Debug
 
 - [x] List all debug pages under /debug
 - [x] Create a page to generate, visualize, and listen to music - consider the MIDI visualizer from my repo here: https://github.com/lewismoten/Athens-Acropolis-4507/tree/master/soundtrack
-- [ ] The "Play Song" button should change to "Stop Song" while it is playing, and change back when its not.
+- [x] The "Play Song" button should change to "Stop Song" while it is playing, and change back when its not.
+- [ ] Tracks (other than percussion) should give a visual indication of notes being played on the scale in addition to showing solid bars.
+- [ ] Add a Download button to download the song as a MIDI file
+
 # Sound Effects
 
 - [x] Add sound effects for walking / jumping
@@ -56,6 +60,9 @@
 - [x] When items, doors, corpses are opened and closed
 - [x] Combat sounds with different weapons / magic
 - [x] Skill advancement, level up, etc.
+- [ ] Allow random ocean tiles to generate ocean sounds as ambiance so only one or two can be heard within the players hearing distance
+- [ ] Allow the user to toggle ambiance sounds
+- [ ] All tiles and POI support ambiance. Base tiles have a lower chance of playing ambiance as a sound source so that only 1 or two are within the players hearing distance.
 
 # Development checklist
 

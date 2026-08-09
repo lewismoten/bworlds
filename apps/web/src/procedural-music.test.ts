@@ -115,6 +115,92 @@ describe('procedural music', () => {
     }
   });
 
+  it('can stop all active web audio music sources early for debug playback', () => {
+    const createdOscillators: Array<{
+      onended: ((event: Event) => void) | null;
+      stop: ReturnType<typeof vi.fn>;
+    }> = [];
+
+    class FakeAudioContext {
+      state: AudioContextState = 'running';
+      currentTime = 3;
+      destination = {};
+      createOscillator() {
+        const oscillator = {
+          onended: null as ((event: Event) => void) | null,
+          type: 'sine',
+          frequency: {
+            setValueAtTime: vi.fn(),
+            exponentialRampToValueAtTime: vi.fn(),
+          },
+          detune: {
+            setValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+          start: vi.fn(),
+          stop: vi.fn(),
+        };
+        createdOscillators.push(oscillator);
+        return oscillator as unknown as OscillatorNode;
+      }
+      createGain() {
+        return {
+          gain: {
+            setValueAtTime: vi.fn(),
+            exponentialRampToValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+        } as unknown as GainNode;
+      }
+      createStereoPanner() {
+        return {
+          pan: {
+            setValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+        } as unknown as StereoPannerNode;
+      }
+      resume() {
+        return Promise.resolve();
+      }
+    }
+
+    const originalAudioContext = globalThis.AudioContext;
+    vi.stubGlobal('AudioContext', FakeAudioContext);
+
+    try {
+      const sink = createWebAudioMusicSink();
+      sink.play({
+        themeId: 'frontier-plains',
+        instrumentId: 'lead',
+        role: 'lead',
+        startMs: 0,
+        durationMs: 240,
+        frequency: 440,
+        volume: 0.05,
+        waveform: 'sine',
+        attackMs: 20,
+        releaseMs: 80,
+        detuneCents: 0,
+        harmonicGain: 0.4,
+        pulseRate: 1,
+      });
+
+      sink.stopAll?.();
+
+      expect(sink.getActiveSourceCount?.()).toBe(0);
+      expect(createdOscillators).toHaveLength(2);
+      expect(createdOscillators[0]?.stop).toHaveBeenCalledWith(3);
+      expect(createdOscillators[1]?.stop).toHaveBeenCalledWith(3);
+    } finally {
+      if (originalAudioContext) {
+        vi.stubGlobal('AudioContext', originalAudioContext);
+      } else {
+        vi.unstubAllGlobals();
+      }
+    }
+  });
+
   it('selects stable regional themes from the current tile and context', () => {
     expect(resolveMusicTheme('forest', 'overworld').id).toBe('deep-forest');
     expect(resolveMusicTheme('shore', 'overworld').id).toBe('coastal-shore');

@@ -1,10 +1,11 @@
 import './music-debug.css';
+import { createMusicDebugPlaybackController } from './music-debug-playback.ts';
 import {
   buildMusicDebugMarkup,
   buildMusicDebugSummaryMarkup,
+  createMusicDebugSongPlayback,
   createMusicDebugSnapshot,
   drawMusicDebugTimeline,
-  playMusicDebugSong,
   randomizeMusicDebugSeed,
   type MusicDebugOptions,
 } from './music-debug.ts';
@@ -32,6 +33,14 @@ const clusterXInput = document.querySelector<HTMLInputElement>(
 const clusterYInput = document.querySelector<HTMLInputElement>(
   'input[name="clusterY"]'
 );
+const playbackController = createMusicDebugPlaybackController({
+  playback: createMusicDebugSongPlayback(),
+  onPlayingChange(playing) {
+    if (playButton) {
+      playButton.textContent = playing ? 'Stop Song' : 'Play Song';
+    }
+  },
+});
 
 function collectOptions(): Partial<MusicDebugOptions> {
   if (!form) {
@@ -70,19 +79,26 @@ if (summary && timeline) {
 
 form?.addEventListener('submit', (event) => {
   event.preventDefault();
+  playbackController.stop();
   renderSnapshot();
 });
 
 form?.addEventListener('input', () => {
+  playbackController.stop();
   renderSnapshot();
 });
 
 playButton?.addEventListener('click', () => {
+  if (playbackController.isPlaying()) {
+    playbackController.stop();
+    return;
+  }
   renderSnapshot();
-  playMusicDebugSong(snapshot);
+  playbackController.start(snapshot);
 });
 
 randomizeButton?.addEventListener('click', () => {
+  playbackController.stop();
   const randomized = randomizeMusicDebugSeed(collectOptions());
   if (clusterXInput) {
     clusterXInput.value = String(randomized.clusterX);
