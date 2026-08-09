@@ -5,6 +5,7 @@ import {
   type CacheLike,
 } from '@bworlds/cache-support';
 import type {
+  RenderBudgetQualityLevel,
   ThreeBufferGeometryLike,
   ThreeGeometryLike,
   ThreeHostLike,
@@ -18,6 +19,8 @@ type TextureHostLike<TTexture> = {
   CanvasTexture: new (canvas: HTMLCanvasElement) => TTexture;
   SRGBColorSpace: unknown;
   NearestFilter: unknown;
+  LinearFilter: unknown;
+  LinearMipmapLinearFilter: unknown;
   RepeatWrapping: unknown;
 };
 
@@ -111,6 +114,30 @@ export function applyPixelArtTextureSampling<TTexture extends ThreeTextureLike>(
   return texture;
 }
 
+export function applySurfaceTextureSampling<TTexture extends ThreeTextureLike>(
+  texture: TTexture,
+  three: Pick<
+    TextureHostLike<TTexture>,
+    'LinearFilter' | 'LinearMipmapLinearFilter'
+  >,
+  quality: RenderBudgetQualityLevel | null | undefined = 'full'
+): TTexture {
+  texture.magFilter = three.LinearFilter;
+  texture.anisotropy =
+    quality === 'minimal' ? 1 : quality === 'reduced' ? 2 : 4;
+
+  if (quality === 'minimal') {
+    texture.minFilter = three.LinearFilter;
+    texture.generateMipmaps = false;
+  } else {
+    texture.minFilter = three.LinearMipmapLinearFilter;
+    texture.generateMipmaps = true;
+  }
+
+  texture.needsUpdate = true;
+  return texture;
+}
+
 export function createPaintedCanvasTexture<TTexture extends ThreeTextureLike>(
   three: TextureHostLike<TTexture>,
   options: {
@@ -199,6 +226,7 @@ export function createPaintedStandardMaterial(
     repeatX?: number;
     repeatY?: number;
     wrap?: boolean;
+    quality?: RenderBudgetQualityLevel | null;
     paint: (
       context: CanvasRenderingContext2D,
       canvas: HTMLCanvasElement
@@ -206,6 +234,7 @@ export function createPaintedStandardMaterial(
   }
 ): ThreeMaterialLike {
   const texture = createPaintedCanvasTexture(three, options);
+  applySurfaceTextureSampling(texture, three, options.quality);
   return new three.MeshStandardMaterial(compactMaterialOptions({
     color: options.color ?? '#ffffff',
     map: texture,

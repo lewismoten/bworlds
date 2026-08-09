@@ -135,8 +135,8 @@ Do not rely only on file size.
 
 # Texture Feature Caps
 
-* [ ] Cap anisotropy according to graphics quality.
-* [ ] Avoid maximum anisotropy on every texture.
+* [X] Cap anisotropy according to graphics quality.
+* [X] Avoid maximum anisotropy on every texture.
 * [X] Disable mipmaps where they provide no benefit.
 * [ ] Require mipmaps for appropriate distant 3D surfaces.
 * [ ] Limit expensive filtering modes.

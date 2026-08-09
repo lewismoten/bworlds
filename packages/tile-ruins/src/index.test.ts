@@ -153,6 +153,32 @@ function createModelSignature(model: FakeGroup) {
 }
 
 describe('tile ruins', () => {
+  it('passes render quality through to textured ruins surface materials', () => {
+    const plugin = createRuinsTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'ruins');
+    const model = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state: createRuinsState(),
+      tile: { kind: 'ruins' },
+      tileX: 6,
+      tileY: 4,
+      renderBudget: {
+        quality: 'reduced',
+      } as never,
+    }) as FakeGroup;
+
+    const signature = createModelSignature(model);
+    const paintedMaterials = signature
+      .map((entry) => entry.material)
+      .filter((material) => material && !Array.isArray(material)) as Array<
+      Record<string, unknown>
+    >;
+
+    expect(
+      paintedMaterials.some((material) => material.quality === 'reduced')
+    ).toBe(true);
+  });
+
   it('emits a faint blue light at night', () => {
     const plugin = createRuinsTilePlugin();
     const tile = plugin.tiles?.find((entry) => entry.kind === 'ruins');

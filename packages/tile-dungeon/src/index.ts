@@ -9,9 +9,9 @@ import {
   syncPoiWindResponders,
 } from '@bworlds/poi-support';
 import {
-  createHostMaterialResolver,
+  createRegionalValueResolver,
   createHostVariantMaterialResolver,
-  createRegionalMaterialResolver,
+  createHostVariantValueResolver,
   pickThresholdColor,
 } from '@bworlds/procedural-style';
 import {
@@ -23,6 +23,7 @@ import { createLowDetailDungeonModel } from './low-detail.ts';
 import type {
   Create3DModelContext,
   Paint2DContext,
+  RenderBudgetQualityLevel,
   RuntimePlugin,
   ThreeObject3DLike,
   ThreeHostLike,
@@ -86,8 +87,9 @@ export function createDungeonTilePlugin(): RuntimePlugin {
       tileX,
       tileY,
       detailLevel = 'full',
+      renderBudget,
     }: Create3DModelContext) {
-      const style = getDungeonStyle(three, tileX, tileY);
+      const style = getDungeonStyle(three, tileX, tileY, renderBudget?.quality);
       const entrance = getDungeonEntranceDirection(state, tileX, tileY);
       const baseWidth = 0.9 + hash2D(DUNGEON_WIDTH_SEED, tileX, tileY) * 0.16;
       const baseDepth = 0.9 + hash2D(DUNGEON_DEPTH_SEED, tileX, tileY) * 0.18;
@@ -349,7 +351,7 @@ function getDungeonEntranceDirection(
 const dungeonStyleCache = createBoundedCache<string, DungeonStyleBlueprint>(
   DUNGEON_STYLE_CACHE_LIMIT
 );
-const resolveDungeonStyle = createRegionalMaterialResolver(
+const resolveDungeonStyle = createRegionalValueResolver(
   dungeonStyleCache,
   18,
   ({ regionX, regionY }) => {
@@ -371,7 +373,10 @@ const resolveDungeonStyle = createRegionalMaterialResolver(
       '#2f241c',
       '#1f2937'
     );
-    return createHostMaterialResolver((three: ThreeHostLike) => {
+    return createHostVariantValueResolver((
+      three: ThreeHostLike,
+      quality: RenderBudgetQualityLevel
+    ) => {
         const barTexture = createDungeonBarTexture(three);
         const bannerMaterials = createHostVariantMaterialResolver(
           (host: ThreeHostLike, color: string): ThreeMaterialLike =>
@@ -404,6 +409,7 @@ const resolveDungeonStyle = createRegionalMaterialResolver(
             color: '#ffffff',
             roughness: 0.95,
             metalness: 0.03,
+            quality,
             width: 64,
             height: 64,
             repeatX: 1.2,
@@ -423,6 +429,7 @@ const resolveDungeonStyle = createRegionalMaterialResolver(
             color: '#ffffff',
             roughness: 0.9,
             metalness: 0.04,
+            quality,
             width: 64,
             height: 64,
             repeatX: 1.2,
@@ -471,9 +478,10 @@ const resolveDungeonStyle = createRegionalMaterialResolver(
 function getDungeonStyle(
   three: ThreeHostLike,
   tileX: number,
-  tileY: number
+  tileY: number,
+  quality: RenderBudgetQualityLevel = 'full'
 ): DungeonStyle {
-  return resolveDungeonStyle(three, tileX, tileY);
+  return resolveDungeonStyle(tileX, tileY).getValue(three, quality);
 }
 
 function createDungeonBeacon(
@@ -728,7 +736,10 @@ interface DungeonStyle {
 }
 
 interface DungeonStyleBlueprint {
-  createMaterials(three: ThreeHostLike): DungeonStyle;
+  getValue(
+    three: ThreeHostLike,
+    quality: RenderBudgetQualityLevel
+  ): DungeonStyle;
 }
 
 interface DungeonBeaconDescriptor {

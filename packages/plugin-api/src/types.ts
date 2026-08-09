@@ -510,6 +510,8 @@ export interface ThreeHostLike {
   TorusGeometry: ThreeGeometryConstructorLike;
   Vector3: new (x?: number, y?: number, z?: number) => ThreeVector3Like;
   DoubleSide: unknown;
+  LinearFilter: unknown;
+  LinearMipmapLinearFilter: unknown;
   NearestFilter: unknown;
   RepeatWrapping: unknown;
   SRGBColorSpace: unknown;

@@ -251,6 +251,33 @@ describe('tile town', () => {
     ).toBe(true);
   });
 
+  it('passes render quality through to textured town surface materials', () => {
+    const plugin = createTownTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'town');
+    const model = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state: createTownState(),
+      tile: { kind: 'town', poi: { type: 'town', name: 'Oakcross' } } as never,
+      tileX: 3,
+      tileY: 7,
+      detailLevel: 'full',
+      renderBudget: {
+        quality: 'reduced',
+      } as never,
+    }) as FakeGroup;
+
+    const signature = createModelSignature(model);
+    const paintedMaterials = signature
+      .map((entry) => entry.material)
+      .filter((material) => material && !Array.isArray(material)) as Array<
+      Record<string, unknown>
+    >;
+
+    expect(
+      paintedMaterials.some((material) => material.quality === 'reduced')
+    ).toBe(true);
+  });
+
   it('uses the shared town profile to scale overworld building counts by town', () => {
     const counts = new Set(
       [

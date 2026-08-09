@@ -3,6 +3,7 @@ import { createBoundedCache } from '@bworlds/cache-support';
 import {
   createHostMaterialResolver,
   createHostVariantMaterialResolver,
+  createHostVariantValueResolver,
   createCoordinateValueResolver,
   createRegionalMaterialResolver,
   createRegionalValueResolver,
@@ -216,6 +217,34 @@ describe('procedural style helpers', () => {
     expect(buildCount).toBe(1);
     expect(first.clone).toBe(second.clone);
     expect(clone).toHaveBeenCalledTimes(0);
+  });
+
+  it('memoizes host-specific values across variants through a shared helper', () => {
+    let buildCount = 0;
+    const resolver = createHostVariantValueResolver(
+      (three: { label: string }, variant: string) => ({
+        host: three.label,
+        variant,
+        build: ++buildCount,
+      })
+    );
+    const host = { label: 'three-a' };
+
+    const first = resolver.getValue(host, 'full');
+    const second = resolver.getValue(host, 'full');
+    const third = resolver.getValue(host, 'reduced');
+
+    expect(first).toBe(second);
+    expect(first).toEqual({
+      host: 'three-a',
+      variant: 'full',
+      build: 1,
+    });
+    expect(third).toEqual({
+      host: 'three-a',
+      variant: 'reduced',
+      build: 2,
+    });
   });
 
   it('tints hex colors by a multiplier', () => {

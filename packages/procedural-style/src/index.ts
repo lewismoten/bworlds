@@ -189,6 +189,35 @@ export function createHostVariantMaterialResolver<
   };
 }
 
+export function createHostVariantValueResolver<
+  TVariant,
+  TValue,
+  THost extends object = ThreeHostLike,
+>(createValue: (three: THost, variant: TVariant) => TValue): {
+  getValue(three: THost, variant: TVariant): TValue;
+} {
+  const hostVariantCache = new WeakMap<object, Map<TVariant, TValue>>();
+
+  return {
+    getValue(three: THost, variant: TVariant): TValue {
+      let variantCache = hostVariantCache.get(three as object);
+      if (!variantCache) {
+        variantCache = new Map<TVariant, TValue>();
+        hostVariantCache.set(three as object, variantCache);
+      }
+
+      const cached = variantCache.get(variant);
+      if (cached !== undefined) {
+        return cached;
+      }
+
+      const resolved = createValue(three, variant);
+      variantCache.set(variant, resolved);
+      return resolved;
+    },
+  };
+}
+
 export function pickThresholdColor(
   signal: number,
   threshold: number,

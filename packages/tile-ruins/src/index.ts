@@ -15,8 +15,8 @@ import {
   syncPoiLightEmitters,
 } from '@bworlds/poi-support';
 import {
-  createHostMaterialResolver,
-  createRegionalMaterialResolver,
+  createHostVariantValueResolver,
+  createRegionalValueResolver,
   pickThresholdColor,
 } from '@bworlds/procedural-style';
 import { createTilePlugin, withOverworldTileClassifier } from '@bworlds/plugin-api';
@@ -28,6 +28,7 @@ import type {
   ClassifyOverworldTileContext,
   Create3DModelContext,
   Paint2DContext,
+  RenderBudgetQualityLevel,
   RuntimePlugin,
   ThreeHostLike,
   ThreeMaterialLike,
@@ -75,7 +76,7 @@ const RUINS_BLOCKED_KINDS = new Set([
 const ruinsStyleCache = createBoundedCache<string, RuinsStyleBlueprint>(
   RUINS_STYLE_CACHE_MAX_ENTRIES
 );
-const resolveRuinsStyle = createRegionalMaterialResolver(
+const resolveRuinsStyle = createRegionalValueResolver(
   ruinsStyleCache,
   RUINS_REGION_SIZE,
   ({ regionX, regionY }) => {
@@ -92,12 +93,16 @@ const resolveRuinsStyle = createRegionalMaterialResolver(
       '#8c6d5b'
     );
 
-    return createHostMaterialResolver((three: ThreeHostLike) => {
+    return createHostVariantValueResolver((
+      three: ThreeHostLike,
+      quality: RenderBudgetQualityLevel
+    ) => {
         const style = {
           stoneMaterial: createPaintedStandardMaterial(three, {
             color: stoneColor,
             roughness: 0.96,
             metalness: 0.03,
+            quality,
             width: 64,
             height: 64,
             repeatX: 1.5,
@@ -117,6 +122,7 @@ const resolveRuinsStyle = createRegionalMaterialResolver(
             color: accentColor,
             roughness: 0.92,
             metalness: 0.02,
+            quality,
             width: 64,
             height: 64,
             repeatX: 1.5,
@@ -197,8 +203,8 @@ export function createRuinsTilePlugin(): RuntimePlugin {
           fillRect(context, x + 6, y + plinthY - 3, 3, 1, '#5a5148');
           return true;
         }),
-        create3DModel({ three, tileX, tileY }: Create3DModelContext) {
-          const style = getRuinsStyle(three, tileX, tileY);
+        create3DModel({ three, tileX, tileY, renderBudget }: Create3DModelContext) {
+          const style = getRuinsStyle(three, tileX, tileY, renderBudget?.quality);
           const group = new three.Group();
           group.position.set(tileX, 0, tileY);
 
@@ -335,9 +341,10 @@ export function createRuinsTilePlugin(): RuntimePlugin {
 function getRuinsStyle(
   three: ThreeHostLike,
   tileX: number,
-  tileY: number
+  tileY: number,
+  quality: RenderBudgetQualityLevel = 'full'
 ): RuinsStyle {
-  return resolveRuinsStyle(three, tileX, tileY);
+  return resolveRuinsStyle(tileX, tileY).getValue(three, quality);
 }
 
 function paintRuinsTexture(
@@ -405,5 +412,8 @@ type RuinsStyle = {
 };
 
 type RuinsStyleBlueprint = {
-  createMaterials(three: ThreeHostLike): RuinsStyle;
+  getValue(
+    three: ThreeHostLike,
+    quality: RenderBudgetQualityLevel
+  ): RuinsStyle;
 };

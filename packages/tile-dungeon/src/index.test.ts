@@ -230,6 +230,33 @@ describe('tile dungeon', () => {
     expect(fullBeacons.size).toBeGreaterThan(lowBeacons.size);
   });
 
+  it('passes render quality through to textured dungeon surface materials', () => {
+    const plugin = createDungeonTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'dungeon');
+    const model = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state: createDungeonState(),
+      tile: { kind: 'dungeon' },
+      tileX: 5,
+      tileY: 4,
+      detailLevel: 'full',
+      renderBudget: {
+        quality: 'minimal',
+      } as never,
+    }) as FakeGroup;
+
+    const signature = createModelSignature(model);
+    const paintedMaterials = signature
+      .map((entry) => entry.material)
+      .filter((material) => material && !Array.isArray(material)) as Array<
+      Record<string, unknown>
+    >;
+
+    expect(
+      paintedMaterials.some((material) => material.quality === 'minimal')
+    ).toBe(true);
+  });
+
   it('keeps low-detail dungeon silhouettes lighter than full-detail ones', () => {
     const plugin = createDungeonTilePlugin();
     const tile = plugin.tiles?.find((entry) => entry.kind === 'dungeon');

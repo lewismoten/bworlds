@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { ThreeTextureLike } from '@bworlds/plugin-api';
 import {
   applyPixelArtTextureSampling,
+  applySurfaceTextureSampling,
   createBasicMaterial,
   createPaintedStandardMaterial,
   createTexturedPlaneMesh,
@@ -73,6 +74,8 @@ describe('three support', () => {
         CanvasTexture: FakeCanvasTexture,
         MeshStandardMaterial: FakeMeshStandardMaterial,
         SRGBColorSpace: 'srgb',
+        LinearFilter: 'linear',
+        LinearMipmapLinearFilter: 'linear-mipmap-linear',
         NearestFilter: 'nearest',
         RepeatWrapping: 'repeat',
       },
@@ -105,10 +108,10 @@ describe('three support', () => {
     ).toHaveBeenCalledWith(2, 3);
     expect(material.options.map).toEqual(
       expect.objectContaining({
-        anisotropy: 1,
-        generateMipmaps: false,
-        magFilter: 'nearest',
-        minFilter: 'nearest',
+        anisotropy: 4,
+        generateMipmaps: true,
+        magFilter: 'linear',
+        minFilter: 'linear-mipmap-linear',
         needsUpdate: true,
       })
     );
@@ -151,6 +154,8 @@ describe('three support', () => {
     const three = {
       CanvasTexture: FakeCanvasTexture,
       SRGBColorSpace: 'srgb',
+      LinearFilter: 'linear',
+      LinearMipmapLinearFilter: 'linear-mipmap-linear',
       NearestFilter: 'nearest',
       RepeatWrapping: 'repeat',
     };
@@ -284,6 +289,42 @@ describe('three support', () => {
       generateMipmaps: false,
       magFilter: 'nearest',
       minFilter: 'nearest',
+      needsUpdate: true,
+    });
+  });
+
+  it('caps surface texture anisotropy by quality instead of pushing every texture to the maximum', () => {
+    const full = {};
+    const reduced = {};
+    const minimal = {};
+    const host = {
+      LinearFilter: 'linear',
+      LinearMipmapLinearFilter: 'linear-mipmap-linear',
+    };
+
+    applySurfaceTextureSampling(full, host, 'full');
+    applySurfaceTextureSampling(reduced, host, 'reduced');
+    applySurfaceTextureSampling(minimal, host, 'minimal');
+
+    expect(full).toEqual({
+      anisotropy: 4,
+      generateMipmaps: true,
+      magFilter: 'linear',
+      minFilter: 'linear-mipmap-linear',
+      needsUpdate: true,
+    });
+    expect(reduced).toEqual({
+      anisotropy: 2,
+      generateMipmaps: true,
+      magFilter: 'linear',
+      minFilter: 'linear-mipmap-linear',
+      needsUpdate: true,
+    });
+    expect(minimal).toEqual({
+      anisotropy: 1,
+      generateMipmaps: false,
+      magFilter: 'linear',
+      minFilter: 'linear',
       needsUpdate: true,
     });
   });
@@ -465,6 +506,8 @@ describe('three support', () => {
         CanvasTexture: FakeCanvasTexture,
         MeshStandardMaterial: FakeMeshStandardMaterial,
         SRGBColorSpace: 'srgb',
+        LinearFilter: 'linear',
+        LinearMipmapLinearFilter: 'linear-mipmap-linear',
         NearestFilter: 'nearest',
         RepeatWrapping: 'repeat',
       },

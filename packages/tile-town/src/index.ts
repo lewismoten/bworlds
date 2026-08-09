@@ -14,9 +14,9 @@ import {
 } from '@bworlds/poi-support';
 import {
   createCoordinateValueResolver,
-  createHostMaterialResolver,
+  createRegionalValueResolver,
   createHostVariantMaterialResolver,
-  createRegionalMaterialResolver,
+  createHostVariantValueResolver,
   pickThresholdColor,
 } from '@bworlds/procedural-style';
 import { getTownProfile } from '@bworlds/town-support';
@@ -31,6 +31,7 @@ import type {
   CreateWorldActionContext,
   Create3DModelContext,
   Paint2DContext,
+  RenderBudgetQualityLevel,
   RuntimePlugin,
   TileLike,
   ThreeHostLike,
@@ -131,7 +132,7 @@ const resolveTownDescriptors = createCoordinateValueResolver(
 export function getTownBuildingCount(tileX: number, tileY: number): number {
   return getTownProfile(tileX, tileY).buildingCount;
 }
-const resolveTownStyle = createRegionalMaterialResolver(
+const resolveTownStyle = createRegionalValueResolver(
   townStyleCache,
   TOWN_REGION_SIZE,
   ({ regionX, regionY, key }) => {
@@ -166,7 +167,10 @@ const resolveTownStyle = createRegionalMaterialResolver(
       '#e8c889'
     );
 
-    return createHostMaterialResolver((three: ThreeHostLike) => {
+    return createHostVariantValueResolver((
+      three: ThreeHostLike,
+      quality: RenderBudgetQualityLevel
+    ) => {
         const bannerMaterials = createHostVariantMaterialResolver(
           (host: ThreeHostLike, color: string): ThreeMaterialLike =>
             new host.MeshStandardMaterial({
@@ -187,6 +191,7 @@ const resolveTownStyle = createRegionalMaterialResolver(
             color: '#ffffff',
             roughness: 0.92,
             metalness: 0.02,
+            quality,
             width: 64,
             height: 64,
             repeatX: 1.1,
@@ -206,6 +211,7 @@ const resolveTownStyle = createRegionalMaterialResolver(
             color: '#ffffff',
             roughness: 0.88,
             metalness: 0.03,
+            quality,
             width: 64,
             height: 64,
             repeatX: 1.35,
@@ -273,8 +279,9 @@ export function createTownTilePlugin(): RuntimePlugin {
       tileX,
       tileY,
       detailLevel = 'full',
+      renderBudget,
     }: Create3DModelContext & { tile: TileLike }) {
-      const style = getTownStyle(three, tileX, tileY);
+      const style = getTownStyle(three, tileX, tileY, renderBudget?.quality);
       const descriptors = getTownDescriptors(tileX, tileY);
       const group = new three.Group();
 
@@ -630,9 +637,10 @@ function getTownLabelTexture(
 function getTownStyle(
   three: ThreeHostLike,
   tileX: number,
-  tileY: number
+  tileY: number,
+  quality: RenderBudgetQualityLevel = 'full'
 ): TownStyle {
-  return resolveTownStyle(three, tileX, tileY);
+  return resolveTownStyle(tileX, tileY).getValue(three, quality);
 }
 
 function paintTownWallTexture(
@@ -723,7 +731,10 @@ interface TownStyle {
 }
 
 interface TownStyleBlueprint {
-  createMaterials(three: ThreeHostLike): TownStyle;
+  getValue(
+    three: ThreeHostLike,
+    quality: RenderBudgetQualityLevel
+  ): TownStyle;
 }
 
 interface TownWindow {
