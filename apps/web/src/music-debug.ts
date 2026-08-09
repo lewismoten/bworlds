@@ -8,6 +8,7 @@ import {
   type ProceduralMusicNote,
 } from './procedural-music.ts';
 import {
+  isProceduralSemitoneInScale,
   resolveProceduralChordProgression,
   resolveProceduralLeadMotif,
   resolveProceduralLeadPhraseCadence,
@@ -52,6 +53,7 @@ export type MusicDebugSnapshot = {
   loopStartOffsetMs: number;
   loopEndOffsetMs: number;
   leadMaxLeapSemitones: number;
+  accidentalNoteCount: number;
   roleCounts: Record<ProceduralMusicNote['role'], number>;
 };
 
@@ -185,10 +187,17 @@ export function createMusicDebugSnapshot(
     percussion: 0,
   };
   let leadMaxLeapSemitones = 0;
+  let accidentalNoteCount = 0;
   let previousLeadFrequency: number | null = null;
 
   for (const note of song.notes) {
     roleCounts[note.role] += 1;
+    const relativeSemitones = Math.round(
+      Math.log2(note.frequency / Math.max(theme.rootHz, Number.EPSILON)) * 12
+    );
+    if (!isProceduralSemitoneInScale(theme.scale, relativeSemitones)) {
+      accidentalNoteCount += 1;
+    }
     if (note.role !== 'lead') {
       continue;
     }
@@ -215,6 +224,7 @@ export function createMusicDebugSnapshot(
     loopStartOffsetMs: song.loopStartOffsetMs,
     loopEndOffsetMs: song.loopEndOffsetMs,
     leadMaxLeapSemitones,
+    accidentalNoteCount,
     roleCounts,
   };
 }
@@ -349,6 +359,7 @@ export function buildMusicDebugSummaryMarkup(
       <div><dt>Tempo</dt><dd>${snapshot.mood.tempoMultiplier.toFixed(2)}x</dd></div>
       <div><dt>Brightness</dt><dd>${snapshot.mood.brightness.toFixed(2)}x</dd></div>
       <div><dt>Lead Max Leap</dt><dd>${snapshot.leadMaxLeapSemitones.toFixed(1)} st</dd></div>
+      <div><dt>Accidentals</dt><dd>${snapshot.accidentalNoteCount}</dd></div>
     </div>
     <div class="music-debug-role-counts">
       <span>Bass ${snapshot.roleCounts.bass}</span>

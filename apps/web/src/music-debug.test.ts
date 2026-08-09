@@ -59,6 +59,7 @@ describe('music debug', () => {
     expect(first.leadMotif).toEqual(second.leadMotif);
     expect(first.leadPhraseCadence).toEqual(second.leadPhraseCadence);
     expect(first.leadMaxLeapSemitones).toBe(second.leadMaxLeapSemitones);
+    expect(first.accidentalNoteCount).toBe(second.accidentalNoteCount);
     expect(first.notes).toEqual(second.notes);
     expect(first.durationMs).toBeGreaterThanOrEqual(120_000);
     expect(first.durationMs).toBeLessThanOrEqual(180_000);
@@ -93,6 +94,7 @@ describe('music debug', () => {
     expect(summary).toContain('Lead Motif');
     expect(summary).toContain('Lead Cadence');
     expect(summary).toContain('Lead Max Leap');
+    expect(summary).toContain('Accidentals');
     expect(summary).toContain(snapshot.theme.id);
     expect(summary).toContain('Hz</li>');
   });

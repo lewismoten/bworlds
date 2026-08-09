@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  isProceduralSemitoneInScale,
   resolveProceduralChordAtStep,
   resolveProceduralChordProgression,
   resolveProceduralInstrumentSemitones,
@@ -74,9 +75,7 @@ describe('procedural music harmony', () => {
         })
       );
 
-    expect(describeCycle([0, 1, 3, 5])).toEqual(
-      describeCycle([16, 17, 19, 21])
-    );
+    expect(describeCycle([0, 1, 3])).toEqual(describeCycle([16, 17, 19]));
   });
 
   it('uses question-and-answer cadences so phrases end unresolved before resolving', () => {
@@ -157,5 +156,23 @@ describe('procedural music harmony', () => {
       expect(Math.sign(recovery!)).toBe(-Math.sign(leap.interval));
       expect(Math.abs(recovery!)).toBeLessThan(Math.abs(leap.interval));
     }
+  });
+
+  it('stays mostly inside the key while allowing sparse deliberate accidentals', () => {
+    const semitones = Array.from({ length: 48 }, (_, stepIndex) =>
+      resolveProceduralInstrumentSemitones({
+        theme: TEST_THEME,
+        role: 'lead',
+        stepIndex,
+        clusterX: 3,
+        clusterY: -2,
+      })
+    );
+    const accidentalCount = semitones.filter(
+      (semitones) => !isProceduralSemitoneInScale(TEST_THEME.scale, semitones)
+    ).length;
+
+    expect(accidentalCount).toBeGreaterThan(0);
+    expect(accidentalCount).toBeLessThan(semitones.length / 4);
   });
 });

@@ -26,6 +26,7 @@ export type ProceduralLeadPhraseCadence = 'neutral' | 'question' | 'answer';
 const MUSIC_PROGRESSION_SEED = registerHashLabel('music-progression');
 const MUSIC_MOTIF_SEED = registerHashLabel('music-lead-motif');
 const MUSIC_LEAP_SEED = registerHashLabel('music-leap-motion');
+const MUSIC_ACCIDENTAL_SEED = registerHashLabel('music-accidental-motion');
 const PROGRESSION_PATTERNS = [
   [0, 3, 4, 0],
   [0, 4, 5, 0],
@@ -91,6 +92,16 @@ export function resolveProceduralLeadPhraseCadence(
     return 'answer';
   }
   return 'neutral';
+}
+
+export function isProceduralSemitoneInScale(
+  scale: readonly number[],
+  semitone: number
+): boolean {
+  const normalizedSemitone = ((Math.round(semitone) % 12) + 12) % 12;
+  return scale.some(
+    (scaleSemitone) => ((scaleSemitone % 12) + 12) % 12 === normalizedSemitone
+  );
 }
 
 export function resolveProceduralChordAtStep(
@@ -318,6 +329,21 @@ function resolveLeadSemitonePlan(
     };
   }
 
+  const accidentalSemitones = resolveLeadAccidentalSemitones(
+    theme,
+    chord,
+    stepIndex,
+    clusterX,
+    clusterY
+  );
+  if (accidentalSemitones !== null) {
+    return {
+      semitones: accidentalSemitones,
+      cadence,
+      strongLeadBeat,
+    };
+  }
+
   const melodicOptions = [
     leadScaleSemitones,
     chord.passingSemitones,
@@ -330,6 +356,40 @@ function resolveLeadSemitonePlan(
     cadence,
     strongLeadBeat,
   };
+}
+
+function resolveLeadAccidentalSemitones(
+  theme: ProceduralHarmonyTheme,
+  chord: ProceduralChord,
+  stepIndex: number,
+  clusterX: number,
+  clusterY: number
+): number | null {
+  const phraseLength = Math.max(1, theme.stepPattern.length);
+  const phraseStep = stepIndex % phraseLength;
+  const approachStep = Math.max(0, phraseLength - 3);
+  if (phraseStep !== approachStep) {
+    return null;
+  }
+
+  const accidentalSignal = hash2DWithSeed(
+    MUSIC_ACCIDENTAL_SEED,
+    clusterX + stepIndex + theme.id.length * 11,
+    clusterY - stepIndex - theme.id.length * 3
+  );
+  if (accidentalSignal <= 0.72) {
+    return null;
+  }
+
+  const lowerApproach = chord.rootSemitones - 1;
+  if (!isProceduralSemitoneInScale(theme.scale, lowerApproach)) {
+    return lowerApproach;
+  }
+  const upperApproach = chord.rootSemitones + 1;
+  if (!isProceduralSemitoneInScale(theme.scale, upperApproach)) {
+    return upperApproach;
+  }
+  return null;
 }
 
 function getScaleDegreeSemitones(
