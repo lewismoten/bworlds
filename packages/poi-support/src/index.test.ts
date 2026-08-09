@@ -394,6 +394,10 @@ describe('poi support', () => {
   });
 
   it('creates a shared base enterable-poi tile plugin from a supplied classifier', () => {
+    const report3DModelCost = vi.fn(() => ({
+      meshCount: 4,
+      geometryCount: 4,
+    }));
     const plugin = createEnterablePoiTilePlugin({
       pluginName: 'tile-landmark',
       kind: 'landmark',
@@ -413,6 +417,7 @@ describe('poi support', () => {
         }
         return null;
       },
+      report3DModelCost,
     });
     const landmarkTile = plugin.tiles?.find((tile) => tile.kind === 'landmark');
 
@@ -427,6 +432,21 @@ describe('poi support', () => {
       kind: 'landmark',
       poi: { type: 'landmark', name: 'Stone Marker' },
     });
+    expect(
+      landmarkTile?.report3DModelCost?.({
+        three: {} as never,
+        state: createMockState({}),
+        tile: { kind: 'landmark' },
+        tileX: 2,
+        tileY: 3,
+        detailLevel: 'full',
+        model: { id: 'model' },
+      })
+    ).toEqual({
+      meshCount: 4,
+      geometryCount: 4,
+    });
+    expect(report3DModelCost).toHaveBeenCalledTimes(1);
     expect(
       landmarkTile?.getTraversalProfile3D?.({
         state: createMockState({}),

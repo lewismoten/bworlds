@@ -243,6 +243,11 @@ export function createLighthouseTilePlugin(): RuntimePlugin {
         ? LIGHTHOUSE_LOW_DETAIL_COST_ESTIMATE
         : LIGHTHOUSE_FULL_DETAIL_COST_ESTIMATE;
     },
+    report3DModelCost({ detailLevel = 'full' }: Create3DModelContext) {
+      return detailLevel === 'low'
+        ? LIGHTHOUSE_LOW_DETAIL_COST_ESTIMATE
+        : LIGHTHOUSE_FULL_DETAIL_COST_ESTIMATE;
+    },
     create3DModel({
       three,
       tileX,

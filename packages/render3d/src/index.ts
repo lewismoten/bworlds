@@ -1033,8 +1033,44 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     }
 
     if (estimateValidation && !estimateValidation.accepted) {
+      const violationSummary = summarizeTileModelCostEstimateBudgetViolations(
+        estimateValidation.violations
+      );
+      recordRecentLabeledCountMetric(renderChurnMetrics.tileModelBudgetViolations, {
+        nowMs: pluginBuildStartMs,
+        count: 1,
+        label: tilePluginOwnerLabel,
+      });
+      recordRenderDebugEvent(recentDebugEvents, {
+        nowMs: pluginBuildStartMs,
+        type: 'plugin-exceeded-budget',
+        tileKey: `${x}:${y}`,
+        plugin: tilePluginOwnerLabel,
+        summary: violationSummary,
+      });
+      recordRenderDebugEvent(recentDebugEvents, {
+        nowMs: pluginBuildStartMs,
+        type: 'model-rejected',
+        tileKey: `${x}:${y}`,
+        plugin: tilePluginOwnerLabel,
+        summary: violationSummary,
+      });
+    }
+
+    if (pluginModel) {
+      const reportedActualCost = tilePlugin?.report3DModelCost?.({
+        ...tilePluginRenderContext,
+        model: pluginModel,
+      });
+      const reportedActualCostValidation = reportedActualCost
+        ? validateTileModelCostEstimateAgainstRenderBudget(
+            reportedActualCost,
+            detailLevel
+          )
+        : null;
+      if (reportedActualCostValidation && !reportedActualCostValidation.accepted) {
         const violationSummary = summarizeTileModelCostEstimateBudgetViolations(
-          estimateValidation.violations
+          reportedActualCostValidation.violations
         );
         recordRecentLabeledCountMetric(renderChurnMetrics.tileModelBudgetViolations, {
           nowMs: pluginBuildStartMs,
@@ -1055,6 +1091,9 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
           plugin: tilePluginOwnerLabel,
           summary: violationSummary,
         });
+        disposeObject3DResources(pluginModel);
+        pluginModel = null;
+      }
     }
 
     if (pluginModel) {

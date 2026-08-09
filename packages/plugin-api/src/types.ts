@@ -640,6 +640,10 @@ export interface Create3DModelContext extends TileCoordinate {
   renderBudget?: RenderBudget;
 }
 
+export interface Report3DModelCostContext extends Create3DModelContext {
+  model: unknown;
+}
+
 export interface Sync3DModelContext extends TileCoordinate {
   three: ThreeHostLike;
   model: unknown;
@@ -808,6 +812,9 @@ export interface TilePlugin extends Pick<TileLike, 'kind'> {
   paint2DOverlay?: (context: Paint2DOverlayContext) => boolean | void;
   estimate3DModelCost?: (
     context: Create3DModelContext
+  ) => Model3DResourceCostEstimate | null | void;
+  report3DModelCost?: (
+    context: Report3DModelCostContext
   ) => Model3DResourceCostEstimate | null | void;
   create3DModel?: (context: Create3DModelContext) => unknown;
   sync3DModel?: (context: Sync3DModelContext) => void;

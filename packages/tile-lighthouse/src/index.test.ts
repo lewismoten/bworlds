@@ -288,6 +288,41 @@ describe('tile lighthouse', () => {
     );
   });
 
+  it('reports actual lighthouse model cost after generation using the same shared budget shape', () => {
+    const plugin = createLighthouseTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'lighthouse');
+    const model = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state: {} as never,
+      tile: { kind: 'lighthouse' } as never,
+      tileX: 4,
+      tileY: 5,
+      detailLevel: 'full',
+    });
+
+    expect(
+      tile?.report3DModelCost?.({
+        three: fakeThree as never,
+        state: {} as never,
+        tile: { kind: 'lighthouse' } as never,
+        tileX: 4,
+        tileY: 5,
+        detailLevel: 'full',
+        model,
+      })
+    ).toEqual({
+      object3dCount: 33,
+      groupCount: 2,
+      meshCount: 30,
+      geometryCount: 30,
+      materialCount: 9,
+      lightCount: 1,
+      shadowLightCount: 0,
+      vertexCount: 720,
+      triangleCount: 240,
+    });
+  });
+
   it('builds a tapered emissive beam from the lantern room without beam shadows', () => {
     const plugin = createLighthouseTilePlugin();
     const tile = plugin.tiles?.find((entry) => entry.kind === 'lighthouse');
