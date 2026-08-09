@@ -108,7 +108,7 @@ State/events only
 
 * [ ] Keep the main animation loop small.
 * [ ] Avoid allocating objects inside `requestAnimationFrame()` where possible.
-* [ ] Avoid creating arrays during every frame.
+* [X] Avoid creating arrays during every frame.
 * [ ] Avoid creating temporary `{ x, y, z }` objects every frame.
 * [ ] Avoid repeatedly constructing `Vector2`, `Vector3`, `Matrix4`, or quaternion objects.
 * [X] Reuse temporary math objects.

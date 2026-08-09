@@ -59,7 +59,18 @@ import {
   createSkyLightingColorState,
   updateSkyLightingColorState,
 } from './sky-lighting-colors.ts';
+import {
+  collectMapEntriesInto,
+  fillWrappedBatchWindow,
+  getWrappedBatchWindow,
+} from './reusable-batch-window.ts';
 import { runTileModelSafetyPrecheck } from './tile-model-safety-precheck.ts';
+
+export {
+  collectMapEntriesInto,
+  fillWrappedBatchWindow,
+  getWrappedBatchWindow,
+} from './reusable-batch-window.ts';
 
 const LAND_MODEL_REVEAL_SEED = registerHashLabel('render3d:land-model-reveal');
 
@@ -1081,6 +1092,8 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
   const materialCache = new Map();
   const tilePluginOwnerCache = new Map<string, string>();
   const visibleTileNodes = new Map<string, DynamicTileNode>();
+  const lodSyncVisibleEntriesBuffer: Array<[string, DynamicTileNode]> = [];
+  const lodSyncBatchBuffer: Array<[string, DynamicTileNode]> = [];
   const backgroundColor = new THREE.Color(SKY_DAY_COLOR);
   const twilightColor = new THREE.Color(SKY_SUNSET_COLOR);
   const nightColor = new THREE.Color(SKY_NIGHT_COLOR);
@@ -1625,11 +1638,15 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     }
     if (pendingLodSyncChecks > 0) {
       if (!isFrameTimeBudgetExhausted(generationFrameBudget)) {
-        const visibleEntries = Array.from(visibleTileNodes.entries());
-        const lodBatch = getWrappedBatchWindow(
+        const visibleEntries = collectMapEntriesInto(
+          visibleTileNodes.entries(),
+          lodSyncVisibleEntriesBuffer
+        );
+        const lodBatch = fillWrappedBatchWindow(
           visibleEntries,
           lodSyncEntryOffset,
-          LOD_SYNC_BATCH_SIZE
+          LOD_SYNC_BATCH_SIZE,
+          lodSyncBatchBuffer
         );
         if (lodBatch.items.length > 0) {
           const processedEntryCount = syncTileModelDetailLevels(
@@ -2773,30 +2790,6 @@ export function shouldSyncWorldCurvature(
   }
 
   return previousPosition.x !== nextX || previousPosition.y !== nextY;
-}
-
-export function getWrappedBatchWindow<T>(
-  items: readonly T[],
-  startIndex: number,
-  maxItems: number
-): { items: T[]; nextIndex: number } {
-  if (items.length === 0 || maxItems <= 0) {
-    return { items: [], nextIndex: 0 };
-  }
-
-  const normalizedStart =
-    ((Math.floor(startIndex) % items.length) + items.length) % items.length;
-  const count = Math.min(items.length, Math.floor(maxItems));
-  const batch: T[] = [];
-
-  for (let index = 0; index < count; index += 1) {
-    batch.push(items[(normalizedStart + index) % items.length] as T);
-  }
-
-  return {
-    items: batch,
-    nextIndex: (normalizedStart + count) % items.length,
-  };
 }
 
 export function getWorldCurvatureOffset(
