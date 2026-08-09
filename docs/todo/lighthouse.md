@@ -84,7 +84,7 @@ Here’s a focused lighthouse checklist that covers the current visual bugs, day
 * [X] Add metal framework around the glass.
 * [ ] Add lens rotation if visually appropriate.
 * [ ] Add subtle internal reflections.
-* [ ] Add a warm glow on nearby tower surfaces.
+* [X] Add a warm glow on nearby tower surfaces.
 * [X] Add maintenance access around the lantern room.
 * [X] Add a balcony around the top where appropriate.
 * [X] Let the lantern remain visible when the beam points away.

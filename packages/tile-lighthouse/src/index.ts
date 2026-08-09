@@ -30,6 +30,7 @@ const LIGHTHOUSE_GLASS_KEY = 'lighthouseGlass';
 const LIGHTHOUSE_FRAME_KEY = 'lighthouseFrame';
 const LIGHTHOUSE_BALCONY_KEY = 'lighthouseBalcony';
 const LIGHTHOUSE_BALCONY_RAIL_KEY = 'lighthouseBalconyRail';
+const LIGHTHOUSE_WALL_GLOW_KEY = 'lighthouseWallGlow';
 const LIGHTHOUSE_REGION_SIZE = 18;
 const LIGHTHOUSE_BEAM_COLOR_SEED = registerHashLabel('lighthouse-beam-color');
 const LIGHTHOUSE_PANE_COLOR_SEED = registerHashLabel('lighthouse-pane-color');
@@ -68,6 +69,7 @@ type LighthouseStyleMaterials = {
   frameMaterial: ThreeMaterialLike;
   lensMaterial: ThreeMaterialLike;
   balconyMaterial: ThreeMaterialLike;
+  wallGlowMaterial: ThreeMaterialLike;
   beamColor: string;
   rotationDurationMs: number;
   rotationDirection: 1 | -1;
@@ -147,6 +149,16 @@ const resolveRegionalLighthouseStyle = createRegionalMaterialResolver(
           roughness: 0.84,
           metalness: 0.08,
         }),
+        wallGlowMaterial: new three.MeshStandardMaterial({
+          color: '#f8d7a1',
+          emissive: '#f8d7a1',
+          emissiveIntensity: 0.03,
+          transparent: true,
+          opacity: 0.68,
+          roughness: 0.4,
+          metalness: 0.02,
+          side: three.DoubleSide,
+        }),
         beamColor,
         rotationDurationMs,
         rotationDirection,
@@ -202,6 +214,7 @@ export function createLighthouseTilePlugin(): RuntimePlugin {
         frameMaterial,
         lensMaterial,
         balconyMaterial,
+        wallGlowMaterial,
         beamColor,
         rotationDurationMs,
         rotationDirection,
@@ -284,6 +297,31 @@ export function createLighthouseTilePlugin(): RuntimePlugin {
         };
         framePost.position.set(tileX + offset.x, 1.86, tileY + offset.z);
         group.add(framePost);
+      }
+
+      for (const offset of [
+        { x: 0.255, z: 0, width: 0.04, depth: 0.22 },
+        { x: -0.255, z: 0, width: 0.04, depth: 0.22 },
+        { x: 0, z: 0.255, width: 0.22, depth: 0.04 },
+        { x: 0, z: -0.255, width: 0.22, depth: 0.04 },
+      ]) {
+        const wallGlow = markPoiLightEmitter(
+          new three.Mesh(
+            getSharedBoxGeometry(three, offset.width, 0.34, offset.depth),
+            wallGlowMaterial
+          ),
+          {
+            kind: 'emissive-mesh',
+            dayIntensity: 0.03,
+            nightIntensity: 0.46,
+          }
+        );
+        wallGlow.userData = {
+          ...(wallGlow.userData ?? {}),
+          [LIGHTHOUSE_WALL_GLOW_KEY]: true,
+        };
+        wallGlow.position.set(tileX + offset.x, 1.7, tileY + offset.z);
+        group.add(wallGlow);
       }
 
       const lens = markPoiLightEmitter(

@@ -287,12 +287,14 @@ describe('tile lighthouse', () => {
     const lensMeshes = collectTaggedMeshes(model, 'lighthouseLens');
     const balconyMeshes = collectTaggedMeshes(model, 'lighthouseBalcony');
     const balconyRailMeshes = collectTaggedMeshes(model, 'lighthouseBalconyRail');
+    const wallGlowMeshes = collectTaggedMeshes(model, 'lighthouseWallGlow');
 
     expect(glassMeshes).toHaveLength(1);
     expect(frameMeshes).toHaveLength(6);
     expect(lensMeshes).toHaveLength(1);
     expect(balconyMeshes).toHaveLength(1);
     expect(balconyRailMeshes).toHaveLength(5);
+    expect(wallGlowMeshes).toHaveLength(4);
     expect((glassMeshes[0]?.material as FakeMaterial | undefined)?.options.transparent).toBe(true);
     expect((glassMeshes[0]?.material as FakeMaterial | undefined)?.options.opacity).toBeCloseTo(
       0.42,
@@ -309,6 +311,9 @@ describe('tile lighthouse', () => {
       '#5d6673'
     );
     expect(balconyMeshes[0]?.position.y).toBeLessThan(glassMeshes[0]?.position.y ?? Infinity);
+    expect((wallGlowMeshes[0]?.material as FakeMaterial | undefined)?.options.emissive).toBe(
+      '#f8d7a1'
+    );
   });
 
   it('sweeps and fades the beam by distance at night', () => {
@@ -623,6 +628,38 @@ describe('tile lighthouse', () => {
       1.5
     );
     expect(beamPivot?.rotation.y).toBeGreaterThanOrEqual(0);
+  });
+
+  it('adds a warm glow to nearby tower surfaces at night', () => {
+    const plugin = createLighthouseTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'lighthouse');
+    const model = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state: {} as never,
+      tile: { kind: 'lighthouse' } as never,
+      tileX: 4,
+      tileY: 5,
+    }) as FakeNode | undefined;
+    const wallGlowMeshes = collectTaggedMeshes(model, 'lighthouseWallGlow');
+
+    tile?.sync3DModel?.({
+      three: fakeThree as never,
+      state: {} as never,
+      tile: { kind: 'lighthouse' } as never,
+      tileX: 4,
+      tileY: 5,
+      model,
+      timeMs: 0,
+      cycle: { daylight: 0, twilight: 0, night: 1 },
+      environment: {},
+    });
+
+    expect(wallGlowMeshes).toHaveLength(4);
+    wallGlowMeshes.forEach((mesh) => {
+      expect((mesh.material as FakeMaterial | undefined)?.emissiveIntensity ?? 0).toBeGreaterThan(
+        0.4
+      );
+    });
   });
 });
 
