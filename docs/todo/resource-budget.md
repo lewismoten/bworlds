@@ -57,7 +57,7 @@ Operates at several levels: per model, per LOD, per plugin, per chunk, and per e
 * [ ] Cap attributes per geometry.
 * [ ] Cap custom vertex attributes.
 * [ ] Cap vertex attribute byte size.
-* [ ] Reject geometry containing invalid `NaN` or infinite coordinates.
+* [X] Reject geometry containing invalid `NaN` or infinite coordinates.
 * [ ] Reject geometry with unreasonable bounding dimensions.
 * [ ] Reject accidental ultra-dense geometry occupying a tiny visual area.
 * [ ] Avoid truncating arbitrary triangle/index buffers mid-mesh.

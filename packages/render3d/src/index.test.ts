@@ -1202,6 +1202,7 @@ describe('render3d visibility helpers', () => {
       lineObjectCount: 12,
       spriteCount: 12,
       geometryCount: 96,
+      invalidPositionCoordinateCount: 0,
       materialCount: 16,
       textureCount: 16,
       lightCount: 4,
@@ -1217,6 +1218,7 @@ describe('render3d visibility helpers', () => {
       lineObjectCount: 4,
       spriteCount: 2,
       geometryCount: 16,
+      invalidPositionCoordinateCount: 0,
       materialCount: 3,
       textureCount: 4,
       lightCount: 1,
@@ -1244,6 +1246,7 @@ describe('render3d visibility helpers', () => {
         lineObjectCount: 0,
         spriteCount: 0,
         geometryCount: 2,
+        invalidPositionCoordinateCount: 0,
         materialCount: 1,
         textureCount: 1,
         lightCount: 0,
@@ -1339,6 +1342,7 @@ describe('render3d visibility helpers', () => {
         lineObjectCount: 5,
         spriteCount: 3,
         geometryCount: 18,
+        invalidPositionCoordinateCount: 0,
       }),
       violations: [
         {
@@ -1370,6 +1374,33 @@ describe('render3d visibility helpers', () => {
           metric: 'geometryCount',
           actual: 18,
           limit: 16,
+        },
+      ],
+    });
+  });
+
+  it('rejects models containing non-finite geometry coordinates', () => {
+    const geometry = createMockStatGeometry('invalid-position', 3);
+    (
+      geometry.attributes.position.array as Float32Array
+    )[4] = Number.POSITIVE_INFINITY;
+    const root = createMockObject3D(
+      createMockMaterial(),
+      [],
+      geometry
+    );
+
+    expect(validateTileModelAgainstRenderBudget(root as never, 'full')).toEqual({
+      accepted: false,
+      limits: getTileModelHardLimits('full'),
+      stats: expect.objectContaining({
+        invalidPositionCoordinateCount: 1,
+      }),
+      violations: [
+        {
+          metric: 'invalidPositionCoordinateCount',
+          actual: 1,
+          limit: 0,
         },
       ],
     });

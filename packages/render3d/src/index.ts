@@ -225,6 +225,7 @@ const FULL_DETAIL_TILE_MODEL_HARD_LIMITS: TileModelHardLimits = {
   lineObjectCount: 12,
   spriteCount: 12,
   geometryCount: 96,
+  invalidPositionCoordinateCount: 0,
   materialCount: 16,
   textureCount: 16,
   lightCount: 4,
@@ -241,6 +242,7 @@ const LOW_DETAIL_TILE_MODEL_HARD_LIMITS: TileModelHardLimits = {
   lineObjectCount: 4,
   spriteCount: 2,
   geometryCount: 16,
+  invalidPositionCoordinateCount: 0,
   materialCount: 3,
   textureCount: 4,
   lightCount: 1,
@@ -260,7 +262,10 @@ export function validateTileModelAgainstRenderBudget(
   root: Pick<THREE.Object3D, 'traverse' | 'children' | 'type'>,
   detailLevel: RenderBudgetDetailLevel = 'full'
 ): TileModelBudgetValidation {
-  const stats = collectSceneResourceStats(root);
+  const stats = {
+    ...collectSceneResourceStats(root),
+    invalidPositionCoordinateCount: countInvalidGeometryCoordinateSets(root),
+  };
   const limits = getTileModelHardLimits(detailLevel);
   const violations: TileModelBudgetViolation[] = [];
   const metrics: Array<keyof TileModelHardLimits> = [
@@ -272,6 +277,7 @@ export function validateTileModelAgainstRenderBudget(
     'lineObjectCount',
     'spriteCount',
     'geometryCount',
+    'invalidPositionCoordinateCount',
     'materialCount',
     'textureCount',
     'lightCount',
@@ -463,6 +469,7 @@ type TileModelHardLimits = {
   lineObjectCount: number;
   spriteCount: number;
   geometryCount: number;
+  invalidPositionCoordinateCount: number;
   materialCount: number;
   textureCount: number;
   lightCount: number;
@@ -478,7 +485,9 @@ type TileModelBudgetViolation = {
 
 type TileModelBudgetValidation = {
   accepted: boolean;
-  stats: SceneResourceStats;
+  stats: SceneResourceStats & {
+    invalidPositionCoordinateCount: number;
+  };
   limits: TileModelHardLimits;
   violations: TileModelBudgetViolation[];
 };
@@ -3079,6 +3088,49 @@ function getGeometryMemoryEstimate(geometry: unknown): {
     vertexBufferBytes,
     indexBufferBytes,
   };
+}
+
+function countInvalidGeometryCoordinateSets(
+  root: Pick<THREE.Object3D, 'traverse' | 'children' | 'type'>
+): number {
+  const geometries = new Set<unknown>();
+  let invalidGeometryCount = 0;
+
+  traverseSceneGraphWithDepth(root, (child) => {
+    const geometry = (child as THREE.Object3D & { geometry?: unknown }).geometry;
+    if (!geometry || geometries.has(geometry)) {
+      return;
+    }
+    geometries.add(geometry);
+    if (hasInvalidGeometryPositionCoordinates(geometry)) {
+      invalidGeometryCount += 1;
+    }
+  });
+
+  return invalidGeometryCount;
+}
+
+function hasInvalidGeometryPositionCoordinates(geometry: unknown): boolean {
+  const positionArray = (
+    geometry as {
+      attributes?: {
+        position?: {
+          array?: ArrayLike<unknown>;
+        };
+      };
+    }
+  )?.attributes?.position?.array;
+  if (!positionArray || typeof positionArray.length !== 'number') {
+    return false;
+  }
+  for (let index = 0; index < positionArray.length; index += 1) {
+    const value = positionArray[index];
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      continue;
+    }
+    return true;
+  }
+  return false;
 }
 
 function getArrayLikeByteLength(
