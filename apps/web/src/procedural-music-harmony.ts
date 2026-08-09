@@ -1,4 +1,5 @@
 import { hash2DWithSeed, registerHashLabel } from '@bworlds/core/hash';
+import { resolveProceduralMeterPosition } from './procedural-music-meter.ts';
 
 export type ProceduralHarmonyTheme = {
   id: string;
@@ -356,7 +357,7 @@ function resolveLeadSemitonePlan(
     theme.scale,
     melodyPatternIndex
   );
-  const strongLeadBeat = phraseStep === 2 || phraseStep === 6;
+  const strongLeadBeat = resolveProceduralMeterPosition(stepIndex).isStrongBeat;
 
   if (strongLeadBeat) {
     const chordTonePattern = [

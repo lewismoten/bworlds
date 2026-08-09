@@ -3,6 +3,7 @@ import {
   resolveProceduralChordAtStep,
   resolveProceduralInstrumentSemitones,
 } from './procedural-music-harmony.ts';
+import { resolveProceduralMeterPosition } from './procedural-music-meter.ts';
 import {
   createProceduralInstrumentBank,
   createMusicController,
@@ -401,6 +402,33 @@ describe('procedural music', () => {
     });
     expect(repeated.notes.map((note) => note.startMs)).toEqual(
       scheduled.notes.map((note) => note.startMs)
+    );
+  });
+
+  it('accents strong 4/4 beats with stronger generated notes', () => {
+    const scheduled = scheduleProceduralMusicNotes({
+      nowMs: 0,
+      tileKind: 'plains',
+      contextType: 'overworld',
+      dayProgress: 0.5,
+      yearProgress: 0.5,
+      clusterX: 0,
+      clusterY: 0,
+    });
+
+    const strongNotes = scheduled.notes.filter(
+      (note, index) => resolveProceduralMeterPosition(index).isStrongBeat
+    );
+    const weakNotes = scheduled.notes.filter(
+      (note, index) => !resolveProceduralMeterPosition(index).isStrongBeat
+    );
+    const average = (values: number[]) =>
+      values.reduce((total, value) => total + value, 0) / values.length;
+
+    expect(strongNotes.length).toBeGreaterThan(0);
+    expect(weakNotes.length).toBeGreaterThan(0);
+    expect(average(strongNotes.map((note) => note.volume))).toBeGreaterThan(
+      average(weakNotes.map((note) => note.volume))
     );
   });
 

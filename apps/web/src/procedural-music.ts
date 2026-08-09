@@ -11,6 +11,7 @@ import {
   type MusicWaveform,
   type ProceduralInstrumentTimbre,
 } from './music-instrument-timbres.ts';
+import { resolveProceduralMeterAccent } from './procedural-music-meter.ts';
 type MusicPosition = { x: number; y: number };
 type TileKind = string;
 type ContextType = string;
@@ -954,6 +955,7 @@ function createThemeNote(options: {
   const role = selectInstrumentRole(options.stepIndex);
   const instrument = options.instrumentBank.instruments[role];
   const arrangementProfile = options.arrangement.roleProfiles[role];
+  const meterAccent = resolveProceduralMeterAccent(role, options.stepIndex);
   const semitones = resolveProceduralInstrumentSemitones({
     theme: options.theme,
     role,
@@ -984,7 +986,8 @@ function createThemeNote(options: {
           : role === 'percussion'
             ? 0.34
             : 0.92) *
-      arrangementProfile.durationMultiplier,
+      arrangementProfile.durationMultiplier *
+      meterAccent.durationMultiplier,
     frequency:
       options.theme.rootHz *
       Math.pow(
@@ -1007,6 +1010,7 @@ function createThemeNote(options: {
       options.theme.baseVolume *
       options.mood.volumeMultiplier *
       arrangementProfile.volumeMultiplier *
+      meterAccent.volumeMultiplier *
       (role === 'bass'
         ? 0.86
         : role === 'harmony'
@@ -1021,7 +1025,10 @@ function createThemeNote(options: {
     detuneCents: instrument.detuneCents,
     harmonicGain:
       instrument.harmonicGain * arrangementProfile.harmonicGainMultiplier,
-    pulseRate: instrument.pulseRate * arrangementProfile.pulseRateMultiplier,
+    pulseRate:
+      instrument.pulseRate *
+      arrangementProfile.pulseRateMultiplier *
+      meterAccent.pulseRateMultiplier,
     emitter: options.emitter,
     listener: options.listener,
   };
