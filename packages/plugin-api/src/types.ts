@@ -617,6 +617,23 @@ export interface RenderBudget {
   };
 }
 
+export interface Model3DResourceCostEstimate {
+  object3dCount?: number;
+  groupCount?: number;
+  meshCount?: number;
+  instancedMeshCount?: number;
+  pointsCount?: number;
+  lineObjectCount?: number;
+  spriteCount?: number;
+  geometryCount?: number;
+  materialCount?: number;
+  textureCount?: number;
+  lightCount?: number;
+  shadowLightCount?: number;
+  vertexCount?: number;
+  triangleCount?: number;
+}
+
 export interface Create3DModelContext extends TileCoordinate {
   three: ThreeHostLike;
   detailLevel?: RenderBudgetDetailLevel;
@@ -789,6 +806,9 @@ export interface TilePlugin extends Pick<TileLike, 'kind'> {
   ) => TileLike | null;
   paint2D?: (context: Paint2DContext) => boolean | void;
   paint2DOverlay?: (context: Paint2DOverlayContext) => boolean | void;
+  estimate3DModelCost?: (
+    context: Create3DModelContext
+  ) => Model3DResourceCostEstimate | null | void;
   create3DModel?: (context: Create3DModelContext) => unknown;
   sync3DModel?: (context: Sync3DModelContext) => void;
   canOccupy3D?: (context: CanOccupy3DContext) => boolean | null | void;

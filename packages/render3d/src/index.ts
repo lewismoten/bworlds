@@ -21,6 +21,7 @@ import {
   getActivePluginRegistry,
   getRenderBudgetPartMetadata,
   hasRenderBudgetPartMetadata,
+  type Model3DResourceCostEstimate,
   type RenderBudget,
   type RenderBudgetDetailLevel,
   type TileLike,
@@ -46,6 +47,12 @@ import {
   getGeometryVertexCount,
 } from './tile-model-geometry-validation.ts';
 import { pruneTileModelOptionalPartsForBudget } from './tile-model-budget-pruning.ts';
+import {
+  getTileModelCostEstimateBudgetViolations,
+  summarizeTileModelCostEstimateBudgetViolations,
+  type TileModelCostEstimateBudgetViolation,
+  type TileModelCostEstimateLimits,
+} from './tile-model-cost-estimate-validation.ts';
 
 const LAND_MODEL_REVEAL_SEED = registerHashLabel('render3d:land-model-reveal');
 
@@ -414,6 +421,47 @@ export function acceptTilePluginModelForRenderBudget<
   }
   disposeObject3DResources(model);
   return null;
+}
+
+export function getTileModelCostEstimateLimits(
+  detailLevel: RenderBudgetDetailLevel = 'full'
+): TileModelCostEstimateLimits {
+  const limits = getTileModelHardLimits(detailLevel);
+  return {
+    object3dCount: limits.object3dCount,
+    groupCount: limits.groupCount,
+    meshCount: limits.meshCount,
+    instancedMeshCount: limits.instancedMeshCount,
+    pointsCount: limits.pointsCount,
+    lineObjectCount: limits.lineObjectCount,
+    spriteCount: limits.spriteCount,
+    geometryCount: limits.geometryCount,
+    materialCount: limits.materialCount,
+    textureCount: limits.textureCount,
+    lightCount: limits.lightCount,
+    shadowLightCount: limits.shadowLightCount,
+    vertexCount: limits.vertexCount,
+    triangleCount: limits.triangleCount,
+  };
+}
+
+export function validateTileModelCostEstimateAgainstRenderBudget(
+  estimate: Model3DResourceCostEstimate,
+  detailLevel: RenderBudgetDetailLevel = 'full'
+): {
+  accepted: boolean;
+  estimate: Model3DResourceCostEstimate;
+  limits: TileModelCostEstimateLimits;
+  violations: TileModelCostEstimateBudgetViolation[];
+} {
+  const limits = getTileModelCostEstimateLimits(detailLevel);
+  const violations = getTileModelCostEstimateBudgetViolations(estimate, limits);
+  return {
+    accepted: violations.length === 0,
+    estimate,
+    limits,
+    violations,
+  };
 }
 
 export function summarizeTileModelBudgetViolations(
@@ -957,8 +1005,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
 
     const tilePlugin = registry.getTilePlugin(tile.kind);
     const tilePluginOwnerLabel = getTilePluginOwnerLabel(registry, tile.kind);
-    const pluginBuildStartMs = performance.now();
-    let pluginModel = tilePlugin?.create3DModel?.({
+    const tilePluginRenderContext = {
       three: THREE,
       state,
       tile,
@@ -966,7 +1013,16 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       tileY: y,
       detailLevel,
       renderBudget: createTilePluginRenderBudget(renderBudget, detailLevel),
-    });
+    } as const;
+    const estimatedCost = tilePlugin?.estimate3DModelCost?.(tilePluginRenderContext);
+    const estimateValidation = estimatedCost
+      ? validateTileModelCostEstimateAgainstRenderBudget(estimatedCost, detailLevel)
+      : null;
+    const pluginBuildStartMs = performance.now();
+    let pluginModel =
+      estimateValidation && !estimateValidation.accepted
+        ? null
+        : tilePlugin?.create3DModel?.(tilePluginRenderContext);
     const pluginBuildDurationMs = performance.now() - pluginBuildStartMs;
     if (tilePlugin?.create3DModel) {
       recordRecentLabeledDurationMetric(renderChurnMetrics.tilePluginBuildDurations, {
@@ -974,6 +1030,31 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
         durationMs: pluginBuildDurationMs,
         label: tilePluginOwnerLabel,
       });
+    }
+
+    if (estimateValidation && !estimateValidation.accepted) {
+        const violationSummary = summarizeTileModelCostEstimateBudgetViolations(
+          estimateValidation.violations
+        );
+        recordRecentLabeledCountMetric(renderChurnMetrics.tileModelBudgetViolations, {
+          nowMs: pluginBuildStartMs,
+          count: 1,
+          label: tilePluginOwnerLabel,
+        });
+        recordRenderDebugEvent(recentDebugEvents, {
+          nowMs: pluginBuildStartMs,
+          type: 'plugin-exceeded-budget',
+          tileKey: `${x}:${y}`,
+          plugin: tilePluginOwnerLabel,
+          summary: violationSummary,
+        });
+        recordRenderDebugEvent(recentDebugEvents, {
+          nowMs: pluginBuildStartMs,
+          type: 'model-rejected',
+          tileKey: `${x}:${y}`,
+          plugin: tilePluginOwnerLabel,
+          summary: violationSummary,
+        });
     }
 
     if (pluginModel) {

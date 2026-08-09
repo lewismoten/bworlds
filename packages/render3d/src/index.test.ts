@@ -163,6 +163,7 @@ import {
   summarizeVisibleTileKinds,
   syncDynamicTileNodes,
   updateFarLandModelVisibility,
+  validateTileModelCostEstimateAgainstRenderBudget,
   validateTileModelAgainstRenderBudget,
   shouldRenderWorldTile,
 } from './index.ts';
@@ -1255,6 +1256,40 @@ describe('render3d visibility helpers', () => {
       lightCount: 1,
       shadowLightCount: 0,
       vertexCount: 8_000,
+    });
+  });
+
+  it('rejects over-budget plugin cost estimates before expensive model generation', () => {
+    expect(
+      validateTileModelCostEstimateAgainstRenderBudget(
+        {
+          meshCount: 20,
+          triangleCount: 4_000,
+        },
+        'low'
+      )
+    ).toEqual({
+      accepted: false,
+      estimate: {
+        meshCount: 20,
+        triangleCount: 4_000,
+      },
+      limits: expect.objectContaining({
+        meshCount: 16,
+        triangleCount: 3_000,
+      }),
+      violations: [
+        {
+          metric: 'meshCount',
+          actual: 20,
+          limit: 16,
+        },
+        {
+          metric: 'triangleCount',
+          actual: 4_000,
+          limit: 3_000,
+        },
+      ],
     });
   });
 

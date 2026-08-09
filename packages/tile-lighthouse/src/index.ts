@@ -20,6 +20,7 @@ import { createLowDetailLighthouseModel } from './low-detail.ts';
 import { getLighthouseBeamWeatherProfile } from './weather-response.ts';
 import type {
   Create3DModelContext,
+  Model3DResourceCostEstimate,
   RuntimePlugin,
   ThreeMaterialLike,
   ThreeObject3DLike,
@@ -54,6 +55,28 @@ const LIGHTHOUSE_LOW_DETAIL_BEAM_SEGMENTS = [
   { radius: 0.14, length: 1.24, opacity: 0.2, emissiveIntensity: 0.92 },
   { radius: 0.24, length: 1.5, opacity: 0.1, emissiveIntensity: 0.58 },
 ] as const;
+const LIGHTHOUSE_FULL_DETAIL_COST_ESTIMATE: Model3DResourceCostEstimate = {
+  object3dCount: 33,
+  groupCount: 2,
+  meshCount: 30,
+  geometryCount: 30,
+  materialCount: 9,
+  lightCount: 1,
+  shadowLightCount: 0,
+  vertexCount: 720,
+  triangleCount: 240,
+};
+const LIGHTHOUSE_LOW_DETAIL_COST_ESTIMATE: Model3DResourceCostEstimate = {
+  object3dCount: 7,
+  groupCount: 2,
+  meshCount: 6,
+  geometryCount: 6,
+  materialCount: 3,
+  lightCount: 0,
+  shadowLightCount: 0,
+  vertexCount: 144,
+  triangleCount: 48,
+};
 const lighthouseStyleCache = new Map<
   string,
   {
@@ -215,6 +238,11 @@ export function createLighthouseTilePlugin(): RuntimePlugin {
       fillRect(context, x + 7, y + 8, 2, 4, '#7c3f1d');
       return true;
     }),
+    estimate3DModelCost({ detailLevel = 'full' }: Create3DModelContext) {
+      return detailLevel === 'low'
+        ? LIGHTHOUSE_LOW_DETAIL_COST_ESTIMATE
+        : LIGHTHOUSE_FULL_DETAIL_COST_ESTIMATE;
+    },
     create3DModel({
       three,
       tileX,

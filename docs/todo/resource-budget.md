@@ -13,7 +13,7 @@ Operates at several levels: per model, per LOD, per plugin, per chunk, and per e
 * [X] Require generated model parts to have explicit priorities.
 * [X] Treat higher-priority parts as more important to preserve.
 * [X] Require optional decorations to have lower priority than structural geometry.
-* [ ] Allow plugins to report estimated resource cost before generating expensive content.
+* [X] Allow plugins to report estimated resource cost before generating expensive content.
 * [ ] Allow plugins to report actual resource cost after generation.
 * [X] Record budget violations by plugin.
 * [X] Expose budget violations in the developer HUD.

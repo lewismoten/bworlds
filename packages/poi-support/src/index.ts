@@ -84,6 +84,7 @@ interface EnterablePoiTilePluginOptions {
   traversalProfile?: Partial<TraversalProfile3D>;
   worldAction?: PoiWorldActionOptions;
   paint2D?: TilePlugin['paint2D'];
+  estimate3DModelCost?: TilePlugin['estimate3DModelCost'];
   create3DModel?: TilePlugin['create3DModel'];
   sync3DModel?: TilePlugin['sync3DModel'];
   canOccupy3D?: TilePlugin['canOccupy3D'];
@@ -475,6 +476,7 @@ export function createEnterablePoiTilePlugin(
         definition: options.definition,
         ...enterablePoiFeatures,
         paint2D: options.paint2D,
+        estimate3DModelCost: options.estimate3DModelCost,
         create3DModel: options.create3DModel,
         sync3DModel: options.sync3DModel,
         canOccupy3D: options.canOccupy3D,

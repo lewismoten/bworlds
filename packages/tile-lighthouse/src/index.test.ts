@@ -240,6 +240,54 @@ describe('tile lighthouse', () => {
     expect(signatures.size).toBeGreaterThan(1);
   });
 
+  it('reports a cheaper low-detail lighthouse cost estimate before model generation', () => {
+    const plugin = createLighthouseTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'lighthouse');
+
+    const fullEstimate = tile?.estimate3DModelCost?.({
+      three: fakeThree as never,
+      state: {} as never,
+      tile: { kind: 'lighthouse' } as never,
+      tileX: 4,
+      tileY: 5,
+      detailLevel: 'full',
+    });
+    const lowEstimate = tile?.estimate3DModelCost?.({
+      three: fakeThree as never,
+      state: {} as never,
+      tile: { kind: 'lighthouse' } as never,
+      tileX: 4,
+      tileY: 5,
+      detailLevel: 'low',
+    });
+
+    expect(fullEstimate).toEqual({
+      object3dCount: 33,
+      groupCount: 2,
+      meshCount: 30,
+      geometryCount: 30,
+      materialCount: 9,
+      lightCount: 1,
+      shadowLightCount: 0,
+      vertexCount: 720,
+      triangleCount: 240,
+    });
+    expect(lowEstimate).toEqual({
+      object3dCount: 7,
+      groupCount: 2,
+      meshCount: 6,
+      geometryCount: 6,
+      materialCount: 3,
+      lightCount: 0,
+      shadowLightCount: 0,
+      vertexCount: 144,
+      triangleCount: 48,
+    });
+    expect(lowEstimate && fullEstimate ? lowEstimate.meshCount : Infinity).toBeLessThan(
+      fullEstimate ? fullEstimate.meshCount ?? -Infinity : -Infinity
+    );
+  });
+
   it('builds a tapered emissive beam from the lantern room without beam shadows', () => {
     const plugin = createLighthouseTilePlugin();
     const tile = plugin.tiles?.find((entry) => entry.kind === 'lighthouse');
