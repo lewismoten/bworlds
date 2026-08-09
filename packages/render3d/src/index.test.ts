@@ -1369,6 +1369,29 @@ describe('render3d visibility helpers', () => {
     );
   });
 
+  it('accepts representative distant lighthouse models at low detail', () => {
+    const lighthousePlugin = createLighthouseTilePlugin();
+    const lighthouseTile = lighthousePlugin.tiles?.find(
+      (entry) => entry.kind === 'lighthouse'
+    );
+    const state = createPluginRenderState();
+    const lighthouseModel = lighthouseTile?.create3DModel?.({
+      three: fakePluginThree as never,
+      state,
+      tile: { kind: 'lighthouse' },
+      tileX: 3,
+      tileY: 3,
+      detailLevel: 'low',
+    });
+
+    expect(validateTileModelAgainstRenderBudget(lighthouseModel as never, 'low')).toEqual(
+      expect.objectContaining({
+        accepted: true,
+        violations: [],
+      })
+    );
+  });
+
   it('accepts representative distant dungeon models at low detail', () => {
     const dungeonPlugin = createDungeonTilePlugin();
     const dungeonTile = dungeonPlugin.tiles?.find((entry) => entry.kind === 'dungeon');

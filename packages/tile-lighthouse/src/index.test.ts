@@ -316,7 +316,7 @@ describe('tile lighthouse', () => {
     );
   });
 
-  it('builds a simplified low-detail lighthouse silhouette without the beam rig', () => {
+  it('builds a simplified low-detail lighthouse silhouette with a cheap rotating beam and no point light', () => {
     const plugin = createLighthouseTilePlugin();
     const tile = plugin.tiles?.find((entry) => entry.kind === 'lighthouse');
     const full = tile?.create3DModel?.({
@@ -336,9 +336,19 @@ describe('tile lighthouse', () => {
       detailLevel: 'low',
     }) as FakeNode | undefined;
 
-    expect(collectBeamMeshes(low)).toHaveLength(0);
+    const lowBeamMeshes = collectBeamMeshes(low);
+    const lowPointLights: FakePointLight[] = [];
+    low?.traverse((node) => {
+      if (node instanceof FakePointLight) {
+        lowPointLights.push(node);
+      }
+    });
+
+    expect(lowBeamMeshes).toHaveLength(2);
     expect((low?.children.length ?? 0)).toBeLessThan(full?.children.length ?? Infinity);
-    expect(collectTaggedMeshes(low, 'lighthouseLens')).toHaveLength(1);
+    expect(collectTaggedMeshes(low, 'lighthouseLens')).toHaveLength(0);
+    expect(lowPointLights).toHaveLength(0);
+    expect(findBeamPivot(low)).not.toBeNull();
   });
 
   it('sweeps and fades the beam by distance at night', () => {
