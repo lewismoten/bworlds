@@ -150,6 +150,8 @@ import {
   getTileDrawCallLimit,
   getTileModelCostEstimateLimits,
   getTileModelDrawCallRatioWarning,
+  getTileModelMaterialGroupWarning,
+  getTileModelPerformanceWarnings,
   getWrappedBatchWindow,
   getTwilightSkyPalette,
   getTileModelDetailLevel,
@@ -2602,6 +2604,65 @@ describe('render3d visibility helpers', () => {
         'low'
       )
     ).toBeNull();
+  });
+
+  it('warns when a plugin model uses many geometry groups for very little triangle work', () => {
+    expect(
+      getTileModelMaterialGroupWarning(
+        {
+          maxGeometryGroupCount: 6,
+          triangleCount: 96,
+        },
+        'full'
+      )
+    ).toBe('maxGeometryGroupCount 6 for triangleCount 96 (16.0 triangles/group)');
+
+    expect(
+      getTileModelMaterialGroupWarning(
+        {
+          maxGeometryGroupCount: 3,
+          triangleCount: 48,
+        },
+        'low'
+      )
+    ).toBe('maxGeometryGroupCount 3 for triangleCount 48 (16.0 triangles/group)');
+
+    expect(
+      getTileModelMaterialGroupWarning(
+        {
+          maxGeometryGroupCount: 5,
+          triangleCount: 320,
+        },
+        'full'
+      )
+    ).toBeNull();
+  });
+
+  it('collects plugin performance warnings for draw calls and geometry groups', () => {
+    expect(
+      getTileModelPerformanceWarnings(
+        {
+          drawCallCount: 24,
+          triangleCount: 96,
+          maxGeometryGroupCount: 6,
+        },
+        'full'
+      )
+    ).toEqual([
+      'drawCallCount 24 for triangleCount 96 (4.0 triangles/draw call)',
+      'maxGeometryGroupCount 6 for triangleCount 96 (16.0 triangles/group)',
+    ]);
+
+    expect(
+      getTileModelPerformanceWarnings(
+        {
+          drawCallCount: 8,
+          triangleCount: 256,
+          maxGeometryGroupCount: 2,
+        },
+        'full'
+      )
+    ).toEqual([]);
   });
 
   it('rejects models whose geometry uses too many separate draw ranges', () => {

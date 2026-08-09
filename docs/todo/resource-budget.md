@@ -73,7 +73,7 @@ Operates at several levels: per model, per LOD, per plugin, per chunk, and per e
 * [X] Cap draw calls per chunk.
 * [X] Cap total scene draw calls.
 * [X] Count each material group as a potential draw call.
-* [ ] Penalize models containing many material groups.
+* [X] Penalize models containing many material groups.
 * [ ] Prefer one mesh with one shared material over many tiny meshes.
 * [ ] Encourage instancing when many identical parts are generated.
 * [X] Automatically reduce distant detail when scene draw-call budget is high.
