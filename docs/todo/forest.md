@@ -17,6 +17,15 @@
 - [ ] Touching / knocking on 3-5 trees in a specific order in a small area may reveal a secret treasure or entrance
 
 - [ ] When detailed tree exceeds its budget, fall back to the previous valid tree LOD rather than a plain box
+- [ ] Debug page should only show age with 1 decimal point
+- [ ] Debug page should show only one tree at a time
+- [ ] Debug page should show rendered 3D tree with the ability to rotate/pan/zoom with the mouse
+- [ ] Debug page should show the rendered 3D tree at the top next to the input parameters
+- [ ] Debug page should show the ability to override tree type
+- [ ] Debug page should show the ability to override various parameters
+- [ ] Debug page should show the ability to download the current model as WebGL including all materials/textures
+- [ ] Debug page should show buttons to play any sounds associated with the tree
+- [ ] Debug page should add the ability to toggle wind animations, or any other animations the tree generator offers
 
 # Developer Notes
 
