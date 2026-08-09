@@ -62,4 +62,54 @@ describe('procedural music song', () => {
     expect(first.durationMs).toBe(second.durationMs);
     expect(first.notes).toEqual(second.notes);
   });
+
+  it('repeats song sections with deterministic melodic and rhythmic variation', () => {
+    const song = createProceduralMusicSong({
+      nowMs: 1_000,
+      tileKind: 'forest',
+      contextType: 'overworld',
+      dayProgress: 0.45,
+      yearProgress: 0.25,
+      clusterX: 3,
+      clusterY: -2,
+    });
+    const sectionById = new Map(
+      song.sections.map((section) => [section.id, section])
+    );
+    const sectionA = sectionById.get('a');
+    const sectionAPrime = sectionById.get('a-prime');
+    const sectionVariation = sectionById.get('variation');
+
+    expect(sectionA).toBeDefined();
+    expect(sectionAPrime).toBeDefined();
+    expect(sectionVariation).toBeDefined();
+
+    const extractLeadSignature = (sectionId: 'a' | 'a-prime' | 'variation') => {
+      const section = sectionById.get(sectionId)!;
+      const endMs = song.startMs + section.startOffsetMs + section.durationMs;
+      return song.notes
+        .filter(
+          (note) =>
+            note.role === 'lead' &&
+            note.startMs >= song.startMs + section.startOffsetMs &&
+            note.startMs < endMs
+        )
+        .slice(0, 8)
+        .map((note) => ({
+          startMs: note.startMs,
+          durationMs: note.durationMs,
+          frequency: Number(note.frequency.toFixed(3)),
+        }));
+    };
+
+    const aLead = extractLeadSignature('a');
+    const aPrimeLead = extractLeadSignature('a-prime');
+    const variationLead = extractLeadSignature('variation');
+
+    expect(aLead.length).toBeGreaterThan(0);
+    expect(aPrimeLead.length).toBeGreaterThan(0);
+    expect(variationLead.length).toBeGreaterThan(0);
+    expect(aPrimeLead).not.toEqual(aLead);
+    expect(variationLead).not.toEqual(aLead);
+  });
 });

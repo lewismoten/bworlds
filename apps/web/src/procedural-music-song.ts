@@ -5,6 +5,7 @@ import {
   type MusicUpdateOptions,
   type ProceduralMusicNote,
 } from './procedural-music.ts';
+import { transformSongSectionNote } from './procedural-music-song-variation.ts';
 
 export type ProceduralMusicSongSectionId =
   'intro' | 'a' | 'a-prime' | 'b' | 'variation' | 'return' | 'outro';
@@ -219,91 +220,6 @@ function applySongSectionsToNotes(
   }
 
   return transformedNotes;
-}
-
-function transformSongSectionNote(
-  note: ProceduralMusicNote,
-  section: ProceduralMusicSongSection,
-  noteIndexInSection: number
-): ProceduralMusicNote | null {
-  switch (section.id) {
-    case 'intro':
-      if (note.role === 'percussion') {
-        return null;
-      }
-      if (note.role === 'bass' && noteIndexInSection % 2 === 1) {
-        return null;
-      }
-      return scaleSongNote(note, {
-        volumeMultiplier: note.role === 'lead' ? 0.84 : 0.68,
-        durationMultiplier: note.role === 'harmony' ? 1.14 : 1,
-        releaseMultiplier: 1.12,
-      });
-    case 'a-prime':
-      if (note.role === 'percussion' && noteIndexInSection % 6 === 0) {
-        return null;
-      }
-      return scaleSongNote(note, {
-        volumeMultiplier: note.role === 'lead' ? 1.06 : 1,
-        durationMultiplier: note.role === 'harmony' ? 1.08 : 1,
-      });
-    case 'b':
-      if (note.role === 'harmony' && noteIndexInSection % 5 === 0) {
-        return null;
-      }
-      return scaleSongNote(note, {
-        volumeMultiplier:
-          note.role === 'lead' ? 1.08 : note.role === 'percussion' ? 0.9 : 1,
-        durationMultiplier: note.role === 'bass' ? 1.1 : 1,
-      });
-    case 'variation':
-      if (note.role === 'percussion' && noteIndexInSection % 4 === 0) {
-        return null;
-      }
-      return scaleSongNote(note, {
-        volumeMultiplier: note.role === 'harmony' ? 0.92 : 1,
-        durationMultiplier:
-          note.role === 'lead' ? 1.24 : note.role === 'harmony' ? 1.1 : 1,
-        releaseMultiplier: note.role === 'lead' ? 1.18 : 1,
-      });
-    case 'return':
-      return scaleSongNote(note, {
-        volumeMultiplier: note.role === 'lead' ? 0.94 : 0.98,
-      });
-    case 'outro':
-      if (note.role === 'percussion') {
-        return null;
-      }
-      if (note.role === 'lead' && noteIndexInSection % 2 === 1) {
-        return null;
-      }
-      return scaleSongNote(note, {
-        volumeMultiplier: 0.72,
-        durationMultiplier: note.role === 'harmony' ? 1.2 : 1.08,
-        releaseMultiplier: 1.24,
-      });
-    case 'a':
-    default:
-      return note;
-  }
-}
-
-function scaleSongNote(
-  note: ProceduralMusicNote,
-  options: {
-    volumeMultiplier?: number;
-    durationMultiplier?: number;
-    releaseMultiplier?: number;
-  }
-): ProceduralMusicNote {
-  const durationMultiplier = options.durationMultiplier ?? 1;
-  const releaseMultiplier = options.releaseMultiplier ?? 1;
-  return {
-    ...note,
-    volume: note.volume * (options.volumeMultiplier ?? 1),
-    durationMs: Math.max(24, Math.round(note.durationMs * durationMultiplier)),
-    releaseMs: Math.max(12, Math.round(note.releaseMs * releaseMultiplier)),
-  };
 }
 
 function roundToNearestThousand(value: number): number {
