@@ -27,6 +27,9 @@ export type DebugSnapshot = {
   maxPendingFlushTiles: number;
   averageTileBuildMs: number;
   maxTileBuildMs: number;
+  averageTilePluginBuildMs?: number;
+  maxTilePluginBuildMs?: number;
+  slowestTilePluginLabel?: string;
   tileNodeBuildsPerSecond: number;
   tileBuildsPerSecond: number;
   lodChecksPerSecond: number;
@@ -182,6 +185,9 @@ export function getDebugSignature(snapshot: DebugSnapshot): string {
     snapshot.maxPendingFlushTiles.toFixed(0),
     snapshot.averageTileBuildMs.toFixed(2),
     snapshot.maxTileBuildMs.toFixed(2),
+    (snapshot.averageTilePluginBuildMs ?? 0).toFixed(2),
+    (snapshot.maxTilePluginBuildMs ?? 0).toFixed(2),
+    snapshot.slowestTilePluginLabel ?? '',
     snapshot.tileNodeBuildsPerSecond,
     snapshot.tileBuildsPerSecond,
     snapshot.lodChecksPerSecond,
@@ -305,6 +311,9 @@ export function buildDebugMarkup(snapshot: DebugSnapshot): string {
     <div><dt>Max Flush Tiles</dt><dd>${snapshot.maxPendingFlushTiles}</dd></div>
     <div><dt>Avg Tile Build</dt><dd>${snapshot.averageTileBuildMs.toFixed(2)} ms</dd></div>
     <div><dt>Max Tile Build</dt><dd>${snapshot.maxTileBuildMs.toFixed(2)} ms</dd></div>
+    <div><dt>Avg Plugin Build</dt><dd>${(snapshot.averageTilePluginBuildMs ?? 0).toFixed(2)} ms</dd></div>
+    <div><dt>Max Plugin Build</dt><dd>${(snapshot.maxTilePluginBuildMs ?? 0).toFixed(2)} ms</dd></div>
+    <div><dt>Slowest Plugin</dt><dd>${snapshot.slowestTilePluginLabel || 'None'}</dd></div>
     <div><dt>Tile Nodes/s</dt><dd>${snapshot.tileNodeBuildsPerSecond}</dd></div>
     <div><dt>Tile Builds/s</dt><dd>${snapshot.tileBuildsPerSecond}</dd></div>
     <div><dt>LOD Checks/s</dt><dd>${snapshot.lodChecksPerSecond}</dd></div>
@@ -617,6 +626,25 @@ export function getWorkQueueWarnings(
 
   return [
     `Chunk-generation queue is backing up (${snapshot.chunkGenerationQueueSize} queued, avg flush ${snapshot.averagePendingFlushTiles.toFixed(1)}, max flush ${snapshot.maxPendingFlushTiles}).`,
+  ];
+}
+
+export function getSynchronousTileBuildWarnings(
+  snapshot: Pick<DebugSnapshot, 'maxTilePluginBuildMs' | 'slowestTilePluginLabel'>,
+  {
+    maxSynchronousTilePluginBuildMs = 8,
+  }: {
+    maxSynchronousTilePluginBuildMs?: number;
+  } = {}
+): string[] {
+  const maxBuildMs = snapshot.maxTilePluginBuildMs ?? 0;
+  if (maxBuildMs <= maxSynchronousTilePluginBuildMs) {
+    return [];
+  }
+
+  const label = snapshot.slowestTilePluginLabel?.trim() || 'unknown tile plugin';
+  return [
+    `Synchronous tile build is too slow (${label} took ${maxBuildMs.toFixed(1)} ms > ${maxSynchronousTilePluginBuildMs.toFixed(1)} ms).`,
   ];
 }
 

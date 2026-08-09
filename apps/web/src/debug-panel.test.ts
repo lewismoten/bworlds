@@ -7,6 +7,7 @@ import {
   getMaterialGrowthWarning,
   getPerformanceWarnings,
   getSceneBudgetWarnings,
+  getSynchronousTileBuildWarnings,
   getStationaryTileBuildWarning,
   getDebugSignature,
   getTargetFrameMs,
@@ -572,6 +573,24 @@ describe('debug panel', () => {
         chunkGenerationQueueSize: 18,
         averagePendingFlushTiles: 2.4,
         maxPendingFlushTiles: 5,
+      })
+    ).toEqual([]);
+  });
+
+  it('warns when one synchronous tile plugin build spends too much time in one frame slice', () => {
+    expect(
+      getSynchronousTileBuildWarnings({
+        maxTilePluginBuildMs: 12.4,
+        slowestTilePluginLabel: 'tile-forest',
+      })
+    ).toEqual([
+      'Synchronous tile build is too slow (tile-forest took 12.4 ms > 8.0 ms).',
+    ]);
+
+    expect(
+      getSynchronousTileBuildWarnings({
+        maxTilePluginBuildMs: 6.9,
+        slowestTilePluginLabel: 'tile-forest',
       })
     ).toEqual([]);
   });

@@ -21,7 +21,7 @@ Always run tests to make sure all tests pass
   - [ ] Prioritize nearby and visible generation jobs first.
   - [ ] Allow queued generators to be cancelled when no longer relevant.
   - [ ] Let generators yield progress without creating final Three.js objects yet.
-  - [ ] Warn when a plugin performs long synchronous work between yields.
+  - [X] Warn when a plugin performs long synchronous work between yields.
   - [ ] Keep simple/cheap plugin methods synchronous where generators add no value.
   - [ ] If enough CPU budget remains in a frame, generator can be called again to do next bit of work
 - [ ] Reduce unique materials and shader program variants.

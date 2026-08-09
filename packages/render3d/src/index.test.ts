@@ -8,6 +8,7 @@ import {
   DEFAULT_CAMERA_PITCH,
   getRecentCountStats,
   getRecentDurationStats,
+  getRecentLabeledDurationStats,
   getRecentOwnedMaterialLifecycleCounts,
   getRenderChurnStats,
   getSharedBoxGeometry,
@@ -42,6 +43,7 @@ import {
   recordRecentCountMetric,
   recordRecentMetric,
   recordRecentDurationMetric,
+  recordRecentLabeledDurationMetric,
   resetOwnedMaterialLifecycleMetrics,
   isFrameTimeBudgetExhausted,
   shouldProcessPendingWorldBuildEntry,
@@ -701,6 +703,7 @@ describe('render3d visibility helpers', () => {
           lodReplacements: [100, 450],
           pendingFlushCounts: [],
           tileBuildDurations: [],
+          tilePluginBuildDurations: [],
         },
         950
       )
@@ -720,6 +723,7 @@ describe('render3d visibility helpers', () => {
           lodReplacements: [100, 450],
           pendingFlushCounts: [],
           tileBuildDurations: [],
+          tilePluginBuildDurations: [],
         },
         1505
       )
@@ -862,6 +866,42 @@ describe('render3d visibility helpers', () => {
     expect(getRecentDurationStats(samples, 2600)).toEqual({
       averageMs: 3,
       maxMs: 3,
+    });
+  });
+
+  it('tracks recent plugin tile build durations with the slowest plugin label', () => {
+    const samples = [
+      { nowMs: 100, durationMs: 2, label: 'tile-town' },
+      { nowMs: 450, durationMs: 5, label: 'tile-forest' },
+    ];
+
+    recordRecentLabeledDurationMetric(samples, {
+      nowMs: 900,
+      durationMs: 4,
+      label: 'tile-water',
+    });
+    expect(getRecentLabeledDurationStats(samples, 950)).toEqual({
+      averageMs: 11 / 3,
+      maxMs: 5,
+      maxLabel: 'tile-forest',
+    });
+
+    expect(getRecentLabeledDurationStats(samples, 1405)).toEqual({
+      averageMs: 4.5,
+      maxMs: 5,
+      maxLabel: 'tile-forest',
+    });
+
+    recordRecentLabeledDurationMetric(samples, {
+      nowMs: 2405,
+      durationMs: 3,
+      label: 'tile-cave',
+    });
+    expect(samples).toEqual([{ nowMs: 2405, durationMs: 3, label: 'tile-cave' }]);
+    expect(getRecentLabeledDurationStats(samples, 2600)).toEqual({
+      averageMs: 3,
+      maxMs: 3,
+      maxLabel: 'tile-cave',
     });
   });
 

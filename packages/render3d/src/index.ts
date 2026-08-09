@@ -105,6 +105,9 @@ type Render3DController = {
     maxPendingFlushTiles: number;
     averageTileBuildMs: number;
     maxTileBuildMs: number;
+    averageTilePluginBuildMs: number;
+    maxTilePluginBuildMs: number;
+    slowestTilePluginLabel: string;
     tileNodeBuildsPerSecond: number;
     tileBuildsPerSecond: number;
     lodChecksPerSecond: number;
@@ -282,6 +285,10 @@ type RecentDurationSample = {
   durationMs: number;
 };
 
+type RecentLabeledDurationSample = RecentDurationSample & {
+  label: string;
+};
+
 type RecentCountSample = {
   nowMs: number;
   count: number;
@@ -308,6 +315,7 @@ type RenderChurnMetrics = {
   lodReplacements: number[];
   pendingFlushCounts: RecentCountSample[];
   tileBuildDurations: RecentDurationSample[];
+  tilePluginBuildDurations: RecentLabeledDurationSample[];
 };
 
 const TILE_SIZE = 1;
@@ -467,6 +475,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
   atlasTexture.generateMipmaps = false;
 
   const materialCache = new Map();
+  const tilePluginOwnerCache = new Map<string, string>();
   const visibleTileNodes = new Map<string, DynamicTileNode>();
   const backgroundColor = new THREE.Color(SKY_DAY_COLOR);
   const twilightColor = new THREE.Color(SKY_SUNSET_COLOR);
@@ -503,6 +512,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     lodReplacements: [] as number[],
     pendingFlushCounts: [] as RecentCountSample[],
     tileBuildDurations: [] as RecentDurationSample[],
+    tilePluginBuildDurations: [] as RecentLabeledDurationSample[],
   } satisfies RenderChurnMetrics;
 
   function resize(width, height, pixelRatio = window.devicePixelRatio || 1) {
@@ -553,6 +563,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     tileNode.add(floorMesh);
 
     const tilePlugin = registry.getTilePlugin(tile.kind);
+    const pluginBuildStartMs = performance.now();
     const pluginModel = tilePlugin?.create3DModel?.({
       three: THREE,
       state,
@@ -561,6 +572,14 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       tileY: y,
       detailLevel,
     });
+    const pluginBuildDurationMs = performance.now() - pluginBuildStartMs;
+    if (tilePlugin?.create3DModel) {
+      recordRecentLabeledDurationMetric(renderChurnMetrics.tilePluginBuildDurations, {
+        nowMs: pluginBuildStartMs,
+        durationMs: pluginBuildDurationMs,
+        label: getTilePluginOwnerLabel(registry, tile.kind),
+      });
+    }
 
     if (pluginModel) {
       pluginModel.position.y += surfaceHeight;
@@ -604,6 +623,26 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       detailLevel,
       sync3DModel: tilePlugin?.sync3DModel,
     };
+  }
+
+  function getTilePluginOwnerLabel(
+    registry: ReturnType<typeof getActivePluginRegistry>,
+    kind: string
+  ): string {
+    const cached = tilePluginOwnerCache.get(kind);
+    if (cached) {
+      return cached;
+    }
+
+    for (const plugin of registry.plugins) {
+      if (plugin.tiles?.some((tile) => tile.kind === kind)) {
+        tilePluginOwnerCache.set(kind, plugin.name);
+        return plugin.name;
+      }
+    }
+
+    tilePluginOwnerCache.set(kind, kind);
+    return kind;
   }
 
   function syncVisibleWorld(
@@ -910,6 +949,10 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       renderChurnMetrics.pendingFlushCounts,
       nowMs
     );
+    const recentTilePluginBuildStats = getRecentLabeledDurationStats(
+      renderChurnMetrics.tilePluginBuildDurations,
+      nowMs
+    );
     const renderChurnStats = getRenderChurnStats(renderChurnMetrics, nowMs);
     return {
       drawCalls: renderer.info.render.calls,
@@ -924,6 +967,9 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       maxPendingFlushTiles: recentPendingFlushStats.maxCount,
       averageTileBuildMs: recentTileBuildStats.averageMs,
       maxTileBuildMs: recentTileBuildStats.maxMs,
+      averageTilePluginBuildMs: recentTilePluginBuildStats.averageMs,
+      maxTilePluginBuildMs: recentTilePluginBuildStats.maxMs,
+      slowestTilePluginLabel: recentTilePluginBuildStats.maxLabel,
       tileNodeBuildsPerSecond: renderChurnStats.tileNodeBuildsPerSecond,
       tileBuildsPerSecond: renderChurnStats.tileBuildsPerSecond,
       lodChecksPerSecond: renderChurnStats.lodChecksPerSecond,
@@ -2824,6 +2870,51 @@ export function getRecentDurationStats(
   return {
     averageMs: totalMs / samples.length,
     maxMs,
+  };
+}
+
+export function recordRecentLabeledDurationMetric(
+  samples: RecentLabeledDurationSample[],
+  sample: RecentLabeledDurationSample,
+  windowMs = 1000
+): void {
+  samples.push(sample);
+  pruneRecentDurationSamples(samples, sample.nowMs, windowMs);
+}
+
+export function getRecentLabeledDurationStats(
+  samples: RecentLabeledDurationSample[],
+  nowMs: number,
+  windowMs = 1000
+): {
+  averageMs: number;
+  maxMs: number;
+  maxLabel: string;
+} {
+  pruneRecentDurationSamples(samples, nowMs, windowMs);
+  if (samples.length === 0) {
+    return {
+      averageMs: 0,
+      maxMs: 0,
+      maxLabel: '',
+    };
+  }
+
+  let totalMs = 0;
+  let maxMs = 0;
+  let maxLabel = '';
+  for (const sample of samples) {
+    totalMs += sample.durationMs;
+    if (sample.durationMs >= maxMs) {
+      maxMs = sample.durationMs;
+      maxLabel = sample.label;
+    }
+  }
+
+  return {
+    averageMs: totalMs / samples.length,
+    maxMs,
+    maxLabel,
   };
 }
 
