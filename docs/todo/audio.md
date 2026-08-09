@@ -63,6 +63,17 @@
 - [ ] MIDI should include tempo event(s)
 - [ ] MIDI should include time signature(s)
 - [ ] MIDI should include key signature(s)
+- [ ] MIDI should include Division
+- [ ] MIDI should include an Author
+- [ ] MIDI should include Arranger
+- [ ] MIDI should include Created Date
+- [ ] MIDI should include Website
+- [ ] MIDI should include source
+- [ ] MIDI should include sequencer
+- [ ] MIDI should include instrument names
+- [ ] MIDI should include comments
+- [ ] MIDI may include multiple "More comments" (ie plugin, seed, parameters)
+- [ ] MIDI may include lyrics if any were generated for the song
 - [ ] MIDI should include channel volume(s)
 - [ ] MIDI should include pans(s)
 - [ ] MIDI should include bank select MSB(s)
@@ -81,6 +92,7 @@
 - [x] Allow random ocean tiles to generate ocean sounds as ambiance so only one or two can be heard within the players hearing distance
 - [x] Allow the user to toggle ambiance sounds
 - [x] All tiles and POI support ambiance. Base tiles have a lower chance of playing ambiance as a sound source so that only 1 or two are within the players hearing distance.
+- [ ] Make sure parameters fit in the panel, or conform to a responsive layout for skinny screens
 
 # Development checklist
 
@@ -107,33 +119,33 @@
 - [x] Support frequency modulation for metallic, magical, bell-like, and unusual sounds.
 - [x] Support ring modulation for unnatural, technological, and magical sounds.
 - [x] Support layered sounds where individual components start at different times.
-- [ ] Support procedural sound duration based on the event producing the sound.
-- [ ] Allow generated sounds to be rendered into reusable audio buffers when regeneration is unnecessary.
+- [x] Support procedural sound duration based on the event producing the sound.
+- [x] Allow generated sounds to be rendered into reusable audio buffers when regeneration is unnecessary.
 
 ### Sound Identity
 
-- [ ] Give every sound category a recognizable sonic identity.
-- [ ] Define a base recipe for each type of sound rather than generating it completely randomly.
-- [ ] Allow small variations in pitch while preserving the recognizable base sound.
-- [ ] Allow small variations in timing.
-- [ ] Allow small variations in volume.
-- [ ] Allow small variations in oscillator parameters.
-- [ ] Allow small variations in filtering.
-- [ ] Allow variation in individual layers without changing every layer simultaneously.
-- [ ] Define acceptable parameter ranges separately for every sound family.
-- [ ] Prevent randomization from producing sounds outside the intended character of the source.
+- [x] Give every sound category a recognizable sonic identity.
+- [x] Define a base recipe for each type of sound rather than generating it completely randomly.
+- [x] Allow small variations in pitch while preserving the recognizable base sound.
+- [x] Allow small variations in timing.
+- [x] Allow small variations in volume.
+- [x] Allow small variations in oscillator parameters.
+- [x] Allow small variations in filtering.
+- [x] Allow variation in individual layers without changing every layer simultaneously.
+- [x] Define acceptable parameter ranges separately for every sound family.
+- [x] Prevent randomization from producing sounds outside the intended character of the source.
 - [x] Allow important objects, creatures, spells, and locations to have their own recurring sound signatures.
-- [ ] Allow related objects to inherit characteristics from a common sound family.
+- [x] Allow related objects to inherit characteristics from a common sound family.
 
 ### Repetition Prevention
 
-- [ ] Prevent an identical sound variation from playing twice consecutively when alternatives are available.
-- [ ] Maintain recent-variation history for frequently repeated sounds.
-- [ ] Use weighted variation rather than unrestricted randomization.
-- [ ] Increase variation for sounds that occur frequently.
-- [ ] Use less variation for sounds that need strong player recognition.
-- [ ] Randomize individual sound layers independently.
-- [ ] Support round-robin variation sets generated procedurally.
+- [x] Prevent an identical sound variation from playing twice consecutively when alternatives are available.
+- [x] Maintain recent-variation history for frequently repeated sounds.
+- [x] Use weighted variation rather than unrestricted randomization.
+- [x] Increase variation for sounds that occur frequently.
+- [x] Use less variation for sounds that need strong player recognition.
+- [x] Randomize individual sound layers independently.
+- [x] Support round-robin variation sets generated procedurally.
 - [ ] Occasionally introduce rare variations for commonly heard sounds.
 - [ ] Prevent extreme pitch or timing combinations caused by overlapping random parameters.
 - [ ] Ensure procedural variation remains subtle enough that objects retain a consistent audio identity.

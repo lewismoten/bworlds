@@ -17,6 +17,7 @@ import {
   buildProceduralSoundRecipe,
   buildProceduralSoundRecipeId,
 } from './sound-effects/recipe-library.ts';
+import { createSoundVariationSelector } from './sound-effects/variation-selector.ts';
 import {
   type ProceduralAmplitudeEnvelope,
   type ProceduralSoundDelay,
@@ -262,6 +263,7 @@ const SOUND_EFFECT_SEEDS = registerHashSeeds([
 ] as const);
 
 const proceduralSoundEffectGenerator = createProceduralSoundEffectGenerator();
+const VARIATION_OFFSET_SEQUENCE = [-8, 6, -3, 10, -11, 4, 0, 8] as const;
 
 export function getSurfaceAudioFamily(
   tileKind: SurfaceKind | undefined
@@ -380,7 +382,7 @@ export function createSoundEffectController(
   let lastSteamWhistleSignature = '';
   let lastAmbientSignature = '';
   let previousJumping = false;
-  let footstepVariant = 0;
+  const variationSelector = createSoundVariationSelector();
 
   function createProceduralEffect(
     kind: SoundEffectKind,
@@ -392,9 +394,20 @@ export function createSoundEffectController(
     identityVariant?: string
   ): ProceduralSoundEffect {
     const profile = getSurfaceAudioProfile(tileKind);
-    const variationIndex = footstepVariant;
-    const variantOffset = variationIndex % 2 === 0 ? -8 : 6;
-    footstepVariant += 1;
+    const recipeId = buildProceduralSoundRecipeId(
+      kind,
+      tileKind,
+      identityVariant
+    );
+    const variationIndex = variationSelector.select(
+      recipeId,
+      nowMs,
+      resolveSoundVariationPolicy(kind)
+    );
+    const variantOffset =
+      VARIATION_OFFSET_SEQUENCE[
+        variationIndex % VARIATION_OFFSET_SEQUENCE.length
+      ] ?? 0;
     return proceduralSoundEffectGenerator.generate({
       kind,
       nowMs,
@@ -1195,6 +1208,41 @@ function resolveInteractionWaveform(
     return 'triangle';
   }
   return fallback;
+}
+
+function resolveSoundVariationPolicy(kind: SoundEffectKind): {
+  frequentWindowMs?: number;
+  recognition: 'low' | 'medium' | 'high';
+} {
+  switch (kind) {
+    case 'advancement':
+    case 'open':
+    case 'close':
+    case 'train-whistle':
+    case 'steam-whistle':
+      return {
+        frequentWindowMs: 1600,
+        recognition: 'high',
+      };
+    case 'forest-ambience':
+    case 'plains-ambience':
+    case 'mountain-ambience':
+    case 'cave-ambience':
+    case 'settlement-ambience':
+    case 'ruins-ambience':
+    case 'ocean':
+    case 'river-ambience':
+    case 'wind':
+      return {
+        frequentWindowMs: 2400,
+        recognition: 'low',
+      };
+    default:
+      return {
+        frequentWindowMs: 1200,
+        recognition: 'medium',
+      };
+  }
 }
 
 function resolveAdvancementFrequency(level?: number): number {

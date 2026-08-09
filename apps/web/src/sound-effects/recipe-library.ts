@@ -644,7 +644,7 @@ function resolveProceduralSoundTremolo(kind: SoundEffectKind) {
       return {
         rateHz: 4.2,
         depth: 0.28,
-        waveform: 'sine' as const,
+        waveform: ['sine', 'triangle'] as const,
         rateVariation: 0.08,
         depthVariation: 0.06,
       };
@@ -652,7 +652,7 @@ function resolveProceduralSoundTremolo(kind: SoundEffectKind) {
       return {
         rateHz: 5.4,
         depth: 0.18,
-        waveform: 'triangle' as const,
+        waveform: ['triangle', 'sine'] as const,
         rateVariation: 0.05,
         depthVariation: 0.05,
       };
@@ -667,7 +667,7 @@ function resolveProceduralSoundVibrato(kind: SoundEffectKind) {
       return {
         rateHz: 5.6,
         depthHz: 18,
-        waveform: 'sine' as const,
+        waveform: ['sine', 'triangle'] as const,
         rateVariation: 0.04,
         depthVariation: 0.08,
       };
@@ -675,7 +675,7 @@ function resolveProceduralSoundVibrato(kind: SoundEffectKind) {
       return {
         rateHz: 6.8,
         depthHz: 10,
-        waveform: 'triangle' as const,
+        waveform: ['triangle', 'sine'] as const,
         rateVariation: 0.05,
         depthVariation: 0.08,
       };
@@ -690,7 +690,7 @@ function resolveProceduralSoundFrequencyModulation(kind: SoundEffectKind) {
       return {
         modulatorFrequencyHz: 312,
         depthHz: 24,
-        waveform: 'sine' as const,
+        waveform: ['sine', 'triangle'] as const,
         rateVariation: 0.03,
         depthVariation: 0.08,
       };
@@ -698,7 +698,7 @@ function resolveProceduralSoundFrequencyModulation(kind: SoundEffectKind) {
       return {
         modulatorFrequencyHz: 168,
         depthHz: 42,
-        waveform: 'triangle' as const,
+        waveform: ['triangle', 'sine'] as const,
         rateVariation: 0.05,
         depthVariation: 0.1,
       };
@@ -713,7 +713,7 @@ function resolveProceduralSoundRingModulation(kind: SoundEffectKind) {
       return {
         modulatorFrequencyHz: 92,
         depth: 0.68,
-        waveform: 'square' as const,
+        waveform: ['square', 'triangle'] as const,
         rateVariation: 0.05,
         depthVariation: 0.08,
       };
@@ -721,7 +721,7 @@ function resolveProceduralSoundRingModulation(kind: SoundEffectKind) {
       return {
         modulatorFrequencyHz: 48,
         depth: 0.42,
-        waveform: 'triangle' as const,
+        waveform: ['triangle', 'sine'] as const,
         rateVariation: 0.04,
         depthVariation: 0.06,
       };
@@ -832,7 +832,7 @@ function resolveProceduralSoundLayers(
       return [
         {
           id: 'wind-noise-bed',
-          waveform: 'triangle' as const,
+          waveform: ['triangle', 'sine'] as const,
           noiseColor: 'brown' as const,
           frequencyMultiplier: 0.72,
           durationMultiplier: 1,
@@ -842,12 +842,61 @@ function resolveProceduralSoundLayers(
           volumeVariation: 0.06,
           variationDepth: 1,
         },
+        {
+          id: 'wind-edge-whistle',
+          waveform: ['sine', 'triangle'] as const,
+          frequencyMultiplier: 1.18,
+          durationMultiplier: 0.84,
+          volumeMultiplier: 0.18,
+          startOffsetMs: 36,
+          startOffsetVariation: 0.28,
+          frequencyVariation: 0.024,
+          durationVariation: 0.09,
+          volumeVariation: 0.08,
+          variationDepth: 0.72,
+          tremolo: {
+            rateHz: 5.1,
+            depth: 0.16,
+            waveform: ['sine', 'triangle'] as const,
+            rateVariation: 0.05,
+            depthVariation: 0.06,
+          },
+        },
+      ] as const;
+    case 'river-ambience':
+      return [
+        {
+          id: 'river-current-bed',
+          waveform: ['triangle', 'sine'] as const,
+          noiseColor: ['white', 'pink'] as const,
+          frequencyMultiplier: 0.78,
+          durationMultiplier: 1,
+          volumeMultiplier: 0.54,
+          frequencyVariation: 0.024,
+          durationVariation: 0.12,
+          volumeVariation: 0.07,
+          variationDepth: 0.94,
+        },
+        {
+          id: 'river-splash-detail',
+          waveform: ['sine', 'square'] as const,
+          noiseColor: 'white' as const,
+          frequencyMultiplier: 1.46,
+          durationMultiplier: 0.62,
+          volumeMultiplier: 0.16,
+          startOffsetMs: 28,
+          startOffsetVariation: 0.4,
+          frequencyVariation: 0.03,
+          durationVariation: 0.16,
+          volumeVariation: 0.1,
+          variationDepth: 0.82,
+        },
       ] as const;
     case 'forest-ambience':
       return [
         {
           id: 'forest-noise-bed',
-          waveform: 'triangle' as const,
+          waveform: ['triangle', 'sine'] as const,
           noiseColor: 'pink' as const,
           frequencyMultiplier: 0.8,
           durationMultiplier: 1,
@@ -856,6 +905,65 @@ function resolveProceduralSoundLayers(
           durationVariation: 0.12,
           volumeVariation: 0.08,
           variationDepth: 1,
+        },
+        {
+          id: 'forest-canopy-rustle',
+          waveform: ['sine', 'triangle'] as const,
+          noiseColor: ['pink', 'brown'] as const,
+          frequencyMultiplier: 1.24,
+          durationMultiplier: 0.88,
+          volumeMultiplier: 0.2,
+          startOffsetMs: 44,
+          startOffsetVariation: 0.34,
+          frequencyVariation: 0.026,
+          durationVariation: 0.11,
+          volumeVariation: 0.08,
+          variationDepth: 0.78,
+          filters: [
+            {
+              type: 'bandpass' as const,
+              frequency: 980,
+              q: 0.9,
+              frequencyVariation: 0.04,
+              qVariation: 0.05,
+            },
+          ] as const,
+        },
+      ] as const;
+    case 'cave-ambience':
+      return [
+        {
+          id: 'cave-hollow-bed',
+          waveform: ['sine', 'triangle'] as const,
+          noiseColor: 'brown' as const,
+          frequencyMultiplier: 0.76,
+          durationMultiplier: 1,
+          volumeMultiplier: 0.52,
+          frequencyVariation: 0.018,
+          durationVariation: 0.1,
+          volumeVariation: 0.06,
+          variationDepth: 0.86,
+        },
+        {
+          id: 'cave-drip-echo',
+          waveform: ['sine', 'triangle'] as const,
+          frequencyMultiplier: 1.62,
+          durationMultiplier: 0.52,
+          volumeMultiplier: 0.13,
+          startOffsetMs: 80,
+          startOffsetVariation: 0.42,
+          frequencyVariation: 0.028,
+          durationVariation: 0.14,
+          volumeVariation: 0.1,
+          variationDepth: 0.74,
+          delay: {
+            timeMs: 124,
+            feedback: 0.22,
+            mix: 0.16,
+            timeVariation: 0.06,
+            feedbackVariation: 0.07,
+            mixVariation: 0.08,
+          },
         },
       ] as const;
     default:

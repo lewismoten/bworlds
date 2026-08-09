@@ -120,6 +120,92 @@ describe('sound recipe library', () => {
     ).toBe(true);
   });
 
+  it('uses narrow oscillator palettes for modulation-heavy identity sounds', () => {
+    const steamWhistleRecipe = buildProceduralSoundRecipe({
+      kind: 'steam-whistle',
+      profile: DEFAULT_SURFACE_PROFILE,
+      variantOffset: 0,
+      resolveAdvancementFrequency: () => 300,
+      resolveAmbientSoundFrequency: () => 180,
+      resolveInteractionFrequency: () => 128,
+      resolveInteractionWaveform: (_tileKind, fallback) => fallback,
+      resolvePaddleBoatCalliopeFrequency: () => 520,
+      resolveSteamWhistleFrequency: () => 360,
+    });
+    const advancementRecipe = buildProceduralSoundRecipe({
+      kind: 'advancement',
+      profile: DEFAULT_SURFACE_PROFILE,
+      variantOffset: 0,
+      resolveAdvancementFrequency: () => 300,
+      resolveAmbientSoundFrequency: () => 180,
+      resolveInteractionFrequency: () => 128,
+      resolveInteractionWaveform: (_tileKind, fallback) => fallback,
+      resolvePaddleBoatCalliopeFrequency: () => 520,
+      resolveSteamWhistleFrequency: () => 360,
+    });
+
+    expect(steamWhistleRecipe.tremolo?.waveform).toEqual(['triangle', 'sine']);
+    expect(steamWhistleRecipe.vibrato?.waveform).toEqual(['sine', 'triangle']);
+    expect(advancementRecipe.frequencyModulation?.waveform).toEqual([
+      'sine',
+      'triangle',
+    ]);
+  });
+
+  it('builds multiple independently varying layers for ambient identities', () => {
+    const generator = createProceduralSoundEffectGenerator();
+    const recipe = buildProceduralSoundRecipe({
+      kind: 'forest-ambience',
+      profile: DEFAULT_SURFACE_PROFILE,
+      variantOffset: 6,
+      resolveAdvancementFrequency: () => 300,
+      resolveAmbientSoundFrequency: () => 172,
+      resolveInteractionFrequency: () => 128,
+      resolveInteractionWaveform: (_tileKind, fallback) => fallback,
+      resolvePaddleBoatCalliopeFrequency: () => 520,
+      resolveSteamWhistleFrequency: () => 360,
+    });
+    const first = generator.generate({
+      kind: 'forest-ambience',
+      nowMs: 0,
+      seed: 11,
+      recipe,
+    });
+    const second = generator.generate({
+      kind: 'forest-ambience',
+      nowMs: 0,
+      seed: 29,
+      recipe,
+    });
+
+    expect(recipe.layers).toHaveLength(2);
+    expect(first.layers).toHaveLength(2);
+    expect(second.layers).toHaveLength(2);
+    expect(first.layers?.map((layer) => layer.id)).toEqual([
+      'forest-noise-bed',
+      'forest-canopy-rustle',
+    ]);
+    expect(second.layers?.map((layer) => layer.id)).toEqual([
+      'forest-noise-bed',
+      'forest-canopy-rustle',
+    ]);
+    expect(first.layers?.[0]?.frequency).not.toBe(first.layers?.[1]?.frequency);
+    expect(first.layers?.[0]?.startOffsetMs).not.toBe(
+      first.layers?.[1]?.startOffsetMs
+    );
+    expect(
+      first.layers?.[0]?.frequency !== second.layers?.[0]?.frequency ||
+        first.layers?.[0]?.durationMs !== second.layers?.[0]?.durationMs
+    ).toBe(true);
+    expect(
+      first.layers?.[1]?.frequency !== second.layers?.[1]?.frequency ||
+        first.layers?.[1]?.durationMs !== second.layers?.[1]?.durationMs
+    ).toBe(true);
+    expect(first.layers?.[0]?.frequency).not.toBe(
+      second.layers?.[1]?.frequency
+    );
+  });
+
   it('lets related movement sounds inherit the same family identity while keeping different signatures', () => {
     expect(getSoundIdentityDescriptor('footstep').family).toBe('movement');
     expect(getSoundIdentityDescriptor('jump').family).toBe('movement');

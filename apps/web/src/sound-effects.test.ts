@@ -2888,6 +2888,9 @@ describe('sound effects', () => {
       'footstep',
     ]);
     expect(played[0]?.waveform).toBe('square');
+    expect(played[0]?.recipeId).toBe('footstep:road');
+    expect(played[1]?.recipeId).toBe('footstep:road');
+    expect(played[0]?.frequency).not.toBe(played[1]?.frequency);
   });
 
   it('plays jump and landing sounds once around a jump arc', () => {
@@ -3724,7 +3727,7 @@ describe('sound effects', () => {
       getMovementSoundDurationMs(
         'footstep',
         getSurfaceAudioProfile('cave-floor')
-      ) * 1.08
+      ) * 1.1
     );
     expect((caveStep?.durationMs ?? 0) > (roadStep?.durationMs ?? 0)).toBe(
       true
