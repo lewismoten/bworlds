@@ -1290,6 +1290,72 @@ function resolveProceduralSoundLayers(
           },
         ] as const;
       }
+      if (identityVariant === 'sandstorm') {
+        return [
+          {
+            id: 'wind-sandstorm-bed',
+            waveform: ['triangle', 'sawtooth'] as const,
+            noiseColor: ['brown', 'white'] as const,
+            frequencyMultiplier: 0.78,
+            durationMultiplier: 1,
+            volumeMultiplier: 0.7,
+            frequencyVariation: 0.028,
+            durationVariation: 0.14,
+            volumeVariation: 0.08,
+            variationDepth: 1,
+          },
+          {
+            id: 'wind-sand-grit',
+            waveform: ['square', 'triangle'] as const,
+            noiseColor: 'white' as const,
+            frequencyMultiplier: 1.5,
+            durationMultiplier: 0.82,
+            volumeMultiplier: 0.24,
+            startOffsetMs: 18,
+            startOffsetVariation: 0.22,
+            frequencyVariation: 0.03,
+            durationVariation: 0.1,
+            volumeVariation: 0.08,
+            variationDepth: 0.82,
+          },
+        ] as const;
+      }
+      if (identityVariant === 'cyclone') {
+        return [
+          {
+            id: 'wind-cyclone-bed',
+            waveform: ['sawtooth', 'triangle'] as const,
+            noiseColor: 'brown' as const,
+            frequencyMultiplier: 0.62,
+            durationMultiplier: 1,
+            volumeMultiplier: 0.74,
+            frequencyVariation: 0.03,
+            durationVariation: 0.16,
+            volumeVariation: 0.08,
+            variationDepth: 1,
+          },
+          {
+            id: 'wind-cyclone-whirl',
+            waveform: ['sine', 'sawtooth'] as const,
+            frequencyMultiplier: 1.22,
+            durationMultiplier: 0.92,
+            volumeMultiplier: 0.22,
+            startOffsetMs: 24,
+            startOffsetVariation: 0.2,
+            frequencyVariation: 0.026,
+            durationVariation: 0.1,
+            volumeVariation: 0.08,
+            variationDepth: 0.8,
+            tremolo: {
+              rateHz: 6.2,
+              depth: 0.24,
+              waveform: ['triangle', 'sine'] as const,
+              rateVariation: 0.06,
+              depthVariation: 0.06,
+            },
+          },
+        ] as const;
+      }
       if (identityVariant === 'crossdraft') {
         return [
           {
@@ -3332,15 +3398,19 @@ function resolveBaseSoundEffectFrequency(
     case 'wind':
       return (
         190 +
-        (options.identityVariant === 'canopy'
-          ? 16
-          : options.identityVariant === 'crossdraft'
-            ? 30
-            : options.identityVariant === 'stormfront'
-              ? 10
-              : options.tileKind === 'forest'
-                ? 16
-                : 0) +
+        (options.identityVariant === 'sandstorm'
+          ? 38
+          : options.identityVariant === 'cyclone'
+            ? -22
+            : options.identityVariant === 'canopy'
+              ? 16
+              : options.identityVariant === 'crossdraft'
+                ? 30
+                : options.identityVariant === 'stormfront'
+                  ? 10
+                  : options.tileKind === 'forest'
+                    ? 16
+                    : 0) +
         options.variantOffset * 0.4
       );
     case 'ocean':

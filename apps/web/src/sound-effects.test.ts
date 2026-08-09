@@ -3024,6 +3024,39 @@ describe('sound effects', () => {
     expect(winds[1]?.recipeId).toBe('wind:door:crossdraft');
   });
 
+  it('plays sandstorm and cyclone wind variants when strong winds hit exposed terrain', () => {
+    const played: ProceduralSoundEffect[] = [];
+    const controller = createSoundEffectController({
+      play(effect) {
+        played.push(effect);
+      },
+    });
+
+    controller.update({
+      nowMs: 0,
+      walking: false,
+      isJumping: false,
+      viewMode: '3d',
+      tileKind: 'sand',
+      weatherKind: 'wind',
+      windStrength: 0.72,
+    });
+    controller.update({
+      nowMs: getForestWindCadenceMs(0.72) + 40,
+      walking: false,
+      isJumping: false,
+      viewMode: '3d',
+      tileKind: 'plains',
+      weatherKind: 'wind',
+      windStrength: 0.96,
+    });
+
+    const winds = played.filter((effect) => effect.kind === 'wind');
+    expect(winds).toHaveLength(2);
+    expect(winds[0]?.recipeId).toBe('wind:sand:sandstorm');
+    expect(winds[1]?.recipeId).toBe('wind:plains:cyclone');
+  });
+
   it('plays snowstorm ambience only during snowy high-wind conditions', () => {
     const played: ProceduralSoundEffect[] = [];
     const controller = createSoundEffectController({
@@ -3757,6 +3790,12 @@ describe('sound effects', () => {
     expect(resolveWindIdentityVariant('canopy', 'clouds')).toBe('canopy');
     expect(resolveWindIdentityVariant('canopy', 'wind')).toBe('stormfront');
     expect(resolveWindIdentityVariant('crossdraft', 'wind')).toBe('crossdraft');
+    expect(resolveWindIdentityVariant('open-air', 'wind', 'sand', 0.72)).toBe(
+      'sandstorm'
+    );
+    expect(resolveWindIdentityVariant('open-air', 'wind', 'plains', 0.96)).toBe(
+      'cyclone'
+    );
   });
 
   it('scales hail and snowstorm helper timing and volume with weather intensity', () => {

@@ -354,6 +354,44 @@ describe('sound recipe library', () => {
     ]);
   });
 
+  it('supports sandstorm and cyclone wind variants for harsh weather', () => {
+    const sandstormRecipe = buildProceduralSoundRecipe({
+      kind: 'wind',
+      identityVariant: 'sandstorm',
+      profile: DEFAULT_SURFACE_PROFILE,
+      variantOffset: 0,
+      resolveAdvancementFrequency: () => 300,
+      resolveAmbientSoundFrequency: () => 172,
+      resolveInteractionFrequency: () => 128,
+      resolveInteractionWaveform: (_tileKind, fallback) => fallback,
+      resolvePaddleBoatCalliopeFrequency: () => 520,
+      resolveSteamWhistleFrequency: () => 360,
+    });
+    const cycloneRecipe = buildProceduralSoundRecipe({
+      kind: 'wind',
+      identityVariant: 'cyclone',
+      profile: DEFAULT_SURFACE_PROFILE,
+      variantOffset: 0,
+      resolveAdvancementFrequency: () => 300,
+      resolveAmbientSoundFrequency: () => 172,
+      resolveInteractionFrequency: () => 128,
+      resolveInteractionWaveform: (_tileKind, fallback) => fallback,
+      resolvePaddleBoatCalliopeFrequency: () => 520,
+      resolveSteamWhistleFrequency: () => 360,
+    });
+
+    expect(sandstormRecipe.id).toBe('wind:sandstorm');
+    expect(sandstormRecipe.layers?.map((layer) => layer.id)).toEqual([
+      'wind-sandstorm-bed',
+      'wind-sand-grit',
+    ]);
+    expect(cycloneRecipe.id).toBe('wind:cyclone');
+    expect(cycloneRecipe.layers?.map((layer) => layer.id)).toEqual([
+      'wind-cyclone-bed',
+      'wind-cyclone-whirl',
+    ]);
+  });
+
   it('supports snowstorm and hail variants for winter weather surfaces', () => {
     const flurryRecipe = buildProceduralSoundRecipe({
       kind: 'snowstorm',

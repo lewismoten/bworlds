@@ -1004,7 +1004,12 @@ export function createSoundEffectController(
             listener,
             weatherAcousticGain * ambienceDuckingGain,
             getWindSoundDurationMs(windAudioIntensity),
-            resolveWindIdentityVariant(windSurface, weatherKind)
+            resolveWindIdentityVariant(
+              windSurface,
+              weatherKind,
+              tileKind,
+              windStrength
+            )
           );
         }
       } else {
@@ -1091,8 +1096,25 @@ export function shouldPlayWindSound(
 
 export function resolveWindIdentityVariant(
   surface: 'open-air' | 'canopy' | 'crossdraft',
-  weatherKind?: string
-): 'stormfront' | 'canopy' | 'crossdraft' {
+  weatherKind?: string,
+  tileKind?: SurfaceKind,
+  windStrength?: number
+): 'stormfront' | 'canopy' | 'crossdraft' | 'sandstorm' | 'cyclone' {
+  const normalizedWindStrength = clampValue(windStrength ?? 0, 0, 1);
+  if (
+    weatherKind === 'wind' &&
+    normalizedWindStrength >= 0.92 &&
+    surface !== 'crossdraft'
+  ) {
+    return 'cyclone';
+  }
+  if (
+    surface === 'open-air' &&
+    (tileKind === 'sand' || tileKind === 'shore') &&
+    normalizedWindStrength >= 0.58
+  ) {
+    return 'sandstorm';
+  }
   if (surface === 'crossdraft') {
     return 'crossdraft';
   }

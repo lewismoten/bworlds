@@ -208,8 +208,8 @@
 - [x] Generate wind whistling around buildings and openings.
 - [x] Generate snowstorm ambience.
 - [x] Generate hail impacts according to surrounding materials.
-- [ ] Generate sandstorm ambience.
-- [ ] Generate tornado or extreme-wind sounds where applicable.
+- [x] Generate sandstorm ambience.
+- [x] Generate tornado or extreme-wind sounds where applicable.
 - [x] Make weather acoustically quieter inside buildings.
 - [x] Allow weather sounds to enter through open windows and doors.
 
