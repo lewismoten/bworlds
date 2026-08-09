@@ -1120,10 +1120,38 @@ function resolveAdvancementFrequency(level?: number): number {
 }
 
 type AudioContextCtor = new () => AudioContext;
+type ActiveSoundVoice = {
+  kind: SoundEffectKind;
+  priority: number;
+  loudness: number;
+  oscillator: OscillatorNode;
+  gain: GainNode;
+  panner: StereoPannerNode | null;
+};
+
+const MAX_ACTIVE_SOUND_VOICES = 10;
+
+const MAX_SIMULTANEOUS_SOUND_VOICES_BY_KIND: Partial<
+  Record<SoundEffectKind, number>
+> = {
+  ocean: 1,
+  'river-ambience': 1,
+  'forest-ambience': 1,
+  'plains-ambience': 1,
+  'mountain-ambience': 1,
+  'cave-ambience': 1,
+  'settlement-ambience': 1,
+  'ruins-ambience': 1,
+  'train-engine': 1,
+  'paddle-calliope': 1,
+  wind: 1,
+  footstep: 2,
+};
 
 export function createWebAudioSoundEffectSink(): SoundEffectSink {
   let audioContext: AudioContext | null = null;
   let activeSourceCount = 0;
+  const activeVoices = new Set<ActiveSoundVoice>();
 
   function getAudioContext(): AudioContext | null {
     if (audioContext) {
@@ -1140,6 +1168,26 @@ export function createWebAudioSoundEffectSink(): SoundEffectSink {
     }
     audioContext = new ContextCtor();
     return audioContext;
+  }
+
+  function removeVoice(voice: ActiveSoundVoice): void {
+    if (!activeVoices.delete(voice)) {
+      return;
+    }
+    activeSourceCount = Math.max(0, activeSourceCount - 1);
+    voice.oscillator.onended = null;
+    voice.oscillator.disconnect?.();
+    voice.gain.disconnect?.();
+    voice.panner?.disconnect?.();
+  }
+
+  function stopVoice(voice: ActiveSoundVoice): void {
+    try {
+      voice.oscillator.stop();
+    } catch {
+      // Ignore invalid repeated stop calls from already-ending voices.
+    }
+    removeVoice(voice);
   }
 
   return {
@@ -1164,6 +1212,42 @@ export function createWebAudioSoundEffectSink(): SoundEffectSink {
         typeof context.createStereoPanner === 'function'
           ? context.createStereoPanner()
           : null;
+      const loudness = effect.volume * spatialMix.gainMultiplier;
+      const priority = resolveSoundEffectPriority(effect.kind);
+      const voice: ActiveSoundVoice = {
+        kind: effect.kind,
+        priority,
+        loudness,
+        oscillator,
+        gain,
+        panner,
+      };
+      const sameKindVoices = [...activeVoices].filter(
+        (activeVoice) => activeVoice.kind === effect.kind
+      );
+      const sameKindLimit =
+        MAX_SIMULTANEOUS_SOUND_VOICES_BY_KIND[effect.kind] ?? Infinity;
+      if (sameKindVoices.length >= sameKindLimit) {
+        const weakestSameKindVoice = sameKindVoices.reduce((weakest, active) =>
+          compareActiveSoundVoices(active, weakest) < 0 ? active : weakest
+        );
+        if (
+          compareIncomingSoundToActiveVoice(voice, weakestSameKindVoice) <= 0
+        ) {
+          return;
+        }
+        stopVoice(weakestSameKindVoice);
+      }
+      if (activeVoices.size >= MAX_ACTIVE_SOUND_VOICES) {
+        const weakestActiveVoice = [...activeVoices].reduce(
+          (weakest, active) =>
+            compareActiveSoundVoices(active, weakest) < 0 ? active : weakest
+        );
+        if (compareIncomingSoundToActiveVoice(voice, weakestActiveVoice) <= 0) {
+          return;
+        }
+        stopVoice(weakestActiveVoice);
+      }
       oscillator.type = effect.waveform;
       oscillator.frequency.setValueAtTime(effect.frequency, startAt);
       if (effect.kind === 'jump') {
@@ -1246,9 +1330,10 @@ export function createWebAudioSoundEffectSink(): SoundEffectSink {
       } else {
         gain.connect(context.destination);
       }
+      activeVoices.add(voice);
       activeSourceCount += 1;
       oscillator.onended = () => {
-        activeSourceCount = Math.max(0, activeSourceCount - 1);
+        removeVoice(voice);
       };
       oscillator.start(startAt);
       oscillator.stop(startAt + durationSeconds);
@@ -1257,6 +1342,64 @@ export function createWebAudioSoundEffectSink(): SoundEffectSink {
       return activeSourceCount;
     },
   };
+}
+
+function compareIncomingSoundToActiveVoice(
+  incoming: Pick<ActiveSoundVoice, 'priority' | 'loudness'>,
+  active: Pick<ActiveSoundVoice, 'priority' | 'loudness'>
+): number {
+  const incomingScore = resolveActiveSoundVoiceScore(incoming);
+  const activeScore = resolveActiveSoundVoiceScore(active);
+  return incomingScore - activeScore;
+}
+
+function compareActiveSoundVoices(
+  left: Pick<ActiveSoundVoice, 'priority' | 'loudness'>,
+  right: Pick<ActiveSoundVoice, 'priority' | 'loudness'>
+): number {
+  return (
+    resolveActiveSoundVoiceScore(left) - resolveActiveSoundVoiceScore(right)
+  );
+}
+
+function resolveActiveSoundVoiceScore(
+  voice: Pick<ActiveSoundVoice, 'priority' | 'loudness'>
+): number {
+  return voice.priority * 1000 + voice.loudness;
+}
+
+function resolveSoundEffectPriority(kind: SoundEffectKind): number {
+  switch (kind) {
+    case 'combat-weapon':
+    case 'combat-magic':
+    case 'advancement':
+    case 'steam-whistle':
+    case 'train-whistle':
+      return 6;
+    case 'jump':
+    case 'landing':
+    case 'blocked':
+    case 'open':
+    case 'close':
+      return 5;
+    case 'footstep':
+      return 4;
+    case 'train-engine':
+    case 'paddle-calliope':
+      return 2;
+    case 'wind':
+    case 'ocean':
+    case 'river-ambience':
+    case 'forest-ambience':
+    case 'plains-ambience':
+    case 'mountain-ambience':
+    case 'cave-ambience':
+    case 'settlement-ambience':
+    case 'ruins-ambience':
+      return 1;
+    default:
+      return 3;
+  }
 }
 
 function clampValue(value: number, min: number, max: number): number {

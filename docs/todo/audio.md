@@ -488,13 +488,13 @@
 
 - [ ] Establish sound categories such as UI, speech, combat, environment, creatures, and music.
 - [ ] Provide separate player volume controls for major audio categories.
-- [ ] Give critical gameplay sounds higher priority.
+- [x] Give critical gameplay sounds higher priority.
 - [x] Reduce unimportant ambience when important sounds occur.
 - [ ] Duck music slightly during important dialogue.
-- [ ] Prevent large numbers of identical nearby sounds from overwhelming the mix.
+- [x] Prevent large numbers of identical nearby sounds from overwhelming the mix.
 - [ ] Combine very dense environmental events into aggregate ambience where appropriate.
-- [ ] Limit simultaneous voices through a priority system.
-- [ ] Stop inaudible low-priority sounds first when reaching voice limits.
+- [x] Limit simultaneous voices through a priority system.
+- [x] Stop inaudible low-priority sounds first when reaching voice limits.
 - [ ] Prevent clipping when many sounds occur simultaneously.
 - [ ] Normalize generated sounds to reasonable loudness ranges.
 - [ ] Reserve dynamic range for major events.

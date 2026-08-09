@@ -36,6 +36,7 @@ describe('sound effects', () => {
         linearRampToValueAtTime: ReturnType<typeof vi.fn>;
       };
       connect: ReturnType<typeof vi.fn>;
+      disconnect: ReturnType<typeof vi.fn>;
       start: ReturnType<typeof vi.fn>;
       stop: ReturnType<typeof vi.fn>;
     }> = [];
@@ -54,6 +55,7 @@ describe('sound effects', () => {
             linearRampToValueAtTime: vi.fn(),
           },
           connect: vi.fn(),
+          disconnect: vi.fn(),
           start: vi.fn(),
           stop: vi.fn(),
           finish() {
@@ -70,6 +72,7 @@ describe('sound effects', () => {
             exponentialRampToValueAtTime: vi.fn(),
           },
           connect: vi.fn(),
+          disconnect: vi.fn(),
         } as unknown as GainNode;
       }
       createStereoPanner() {
@@ -78,6 +81,7 @@ describe('sound effects', () => {
             setValueAtTime: vi.fn(),
           },
           connect: vi.fn(),
+          disconnect: vi.fn(),
         } as unknown as StereoPannerNode;
       }
       resume() {
@@ -102,6 +106,332 @@ describe('sound effects', () => {
       expect(sink.getActiveSourceCount?.()).toBe(1);
       createdOscillators[0]?.finish();
       expect(sink.getActiveSourceCount?.()).toBe(0);
+    } finally {
+      if (originalAudioContext) {
+        vi.stubGlobal('AudioContext', originalAudioContext);
+      } else {
+        vi.unstubAllGlobals();
+      }
+    }
+  });
+
+  it('limits identical low-priority ambient voices in the web audio sink', () => {
+    const createdOscillators: Array<{
+      onended: ((event: Event) => void) | null;
+      finish(): void;
+      type: string;
+      frequency: {
+        setValueAtTime: ReturnType<typeof vi.fn>;
+        exponentialRampToValueAtTime: ReturnType<typeof vi.fn>;
+        linearRampToValueAtTime: ReturnType<typeof vi.fn>;
+      };
+      connect: ReturnType<typeof vi.fn>;
+      disconnect: ReturnType<typeof vi.fn>;
+      start: ReturnType<typeof vi.fn>;
+      stop: ReturnType<typeof vi.fn>;
+    }> = [];
+
+    class FakeAudioContext {
+      state: AudioContextState = 'running';
+      currentTime = 0;
+      destination = {};
+      createOscillator() {
+        const oscillator = {
+          onended: null as ((event: Event) => void) | null,
+          type: 'sine',
+          frequency: {
+            setValueAtTime: vi.fn(),
+            exponentialRampToValueAtTime: vi.fn(),
+            linearRampToValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+          start: vi.fn(),
+          stop: vi.fn(),
+          finish() {
+            this.onended?.(new Event('ended'));
+          },
+        };
+        createdOscillators.push(oscillator);
+        return oscillator as unknown as OscillatorNode;
+      }
+      createGain() {
+        return {
+          gain: {
+            setValueAtTime: vi.fn(),
+            exponentialRampToValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+        } as unknown as GainNode;
+      }
+      createStereoPanner() {
+        return {
+          pan: {
+            setValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+        } as unknown as StereoPannerNode;
+      }
+      resume() {
+        return Promise.resolve();
+      }
+    }
+
+    const originalAudioContext = globalThis.AudioContext;
+    vi.stubGlobal('AudioContext', FakeAudioContext);
+
+    try {
+      const sink = createWebAudioSoundEffectSink();
+      sink.play({
+        kind: 'forest-ambience',
+        nowMs: 0,
+        frequency: 180,
+        durationMs: 1600,
+        volume: 0.018,
+        waveform: 'triangle',
+      });
+      sink.play({
+        kind: 'forest-ambience',
+        nowMs: 10,
+        frequency: 182,
+        durationMs: 1600,
+        volume: 0.019,
+        waveform: 'triangle',
+      });
+
+      expect(createdOscillators).toHaveLength(2);
+      expect(createdOscillators[0]!.stop).toHaveBeenCalled();
+      expect(sink.getActiveSourceCount?.()).toBe(1);
+    } finally {
+      if (originalAudioContext) {
+        vi.stubGlobal('AudioContext', originalAudioContext);
+      } else {
+        vi.unstubAllGlobals();
+      }
+    }
+  });
+
+  it('replaces weaker ambient voices with higher-priority gameplay sounds in the sink', () => {
+    const createdOscillators: Array<{
+      onended: ((event: Event) => void) | null;
+      finish(): void;
+      type: string;
+      frequency: {
+        setValueAtTime: ReturnType<typeof vi.fn>;
+        exponentialRampToValueAtTime: ReturnType<typeof vi.fn>;
+        linearRampToValueAtTime: ReturnType<typeof vi.fn>;
+      };
+      connect: ReturnType<typeof vi.fn>;
+      disconnect: ReturnType<typeof vi.fn>;
+      start: ReturnType<typeof vi.fn>;
+      stop: ReturnType<typeof vi.fn>;
+    }> = [];
+
+    class FakeAudioContext {
+      state: AudioContextState = 'running';
+      currentTime = 0;
+      destination = {};
+      createOscillator() {
+        const oscillator = {
+          onended: null as ((event: Event) => void) | null,
+          type: 'sine',
+          frequency: {
+            setValueAtTime: vi.fn(),
+            exponentialRampToValueAtTime: vi.fn(),
+            linearRampToValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+          start: vi.fn(),
+          stop: vi.fn(),
+          finish() {
+            this.onended?.(new Event('ended'));
+          },
+        };
+        createdOscillators.push(oscillator);
+        return oscillator as unknown as OscillatorNode;
+      }
+      createGain() {
+        return {
+          gain: {
+            setValueAtTime: vi.fn(),
+            exponentialRampToValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+        } as unknown as GainNode;
+      }
+      createStereoPanner() {
+        return {
+          pan: {
+            setValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+        } as unknown as StereoPannerNode;
+      }
+      resume() {
+        return Promise.resolve();
+      }
+    }
+
+    const originalAudioContext = globalThis.AudioContext;
+    vi.stubGlobal('AudioContext', FakeAudioContext);
+
+    try {
+      const sink = createWebAudioSoundEffectSink();
+      for (let index = 0; index < 10; index += 1) {
+        sink.play({
+          kind: index % 2 === 0 ? 'forest-ambience' : 'plains-ambience',
+          nowMs: index * 10,
+          frequency: 180 + index,
+          durationMs: 1600,
+          volume: 0.016,
+          waveform: 'triangle',
+          emitter: { x: 20 + index, y: 0 },
+          listener: { x: 0, y: 0 },
+        });
+      }
+
+      expect(sink.getActiveSourceCount?.()).toBe(2);
+
+      sink.play({
+        kind: 'combat-weapon',
+        nowMs: 200,
+        frequency: 220,
+        durationMs: 160,
+        volume: 0.056,
+        waveform: 'sawtooth',
+        emitter: { x: 0, y: 0 },
+        listener: { x: 0, y: 0 },
+      });
+
+      expect(sink.getActiveSourceCount?.()).toBe(3);
+      expect(
+        createdOscillators.some(
+          (oscillator) => oscillator.stop.mock.calls.length > 0
+        )
+      ).toBe(true);
+    } finally {
+      if (originalAudioContext) {
+        vi.stubGlobal('AudioContext', originalAudioContext);
+      } else {
+        vi.unstubAllGlobals();
+      }
+    }
+  });
+
+  it('drops the quieter low-priority voice first when the sink is crowded', () => {
+    const createdOscillators: Array<{
+      onended: ((event: Event) => void) | null;
+      finish(): void;
+      type: string;
+      frequency: {
+        setValueAtTime: ReturnType<typeof vi.fn>;
+        exponentialRampToValueAtTime: ReturnType<typeof vi.fn>;
+        linearRampToValueAtTime: ReturnType<typeof vi.fn>;
+      };
+      connect: ReturnType<typeof vi.fn>;
+      disconnect: ReturnType<typeof vi.fn>;
+      start: ReturnType<typeof vi.fn>;
+      stop: ReturnType<typeof vi.fn>;
+    }> = [];
+
+    class FakeAudioContext {
+      state: AudioContextState = 'running';
+      currentTime = 0;
+      destination = {};
+      createOscillator() {
+        const oscillator = {
+          onended: null as ((event: Event) => void) | null,
+          type: 'sine',
+          frequency: {
+            setValueAtTime: vi.fn(),
+            exponentialRampToValueAtTime: vi.fn(),
+            linearRampToValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+          start: vi.fn(),
+          stop: vi.fn(),
+          finish() {
+            this.onended?.(new Event('ended'));
+          },
+        };
+        createdOscillators.push(oscillator);
+        return oscillator as unknown as OscillatorNode;
+      }
+      createGain() {
+        return {
+          gain: {
+            setValueAtTime: vi.fn(),
+            exponentialRampToValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+        } as unknown as GainNode;
+      }
+      createStereoPanner() {
+        return {
+          pan: {
+            setValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+        } as unknown as StereoPannerNode;
+      }
+      resume() {
+        return Promise.resolve();
+      }
+    }
+
+    const originalAudioContext = globalThis.AudioContext;
+    vi.stubGlobal('AudioContext', FakeAudioContext);
+
+    try {
+      const sink = createWebAudioSoundEffectSink();
+      const fillerKinds: ProceduralSoundEffect['kind'][] = [
+        'ocean',
+        'river-ambience',
+        'forest-ambience',
+        'plains-ambience',
+        'mountain-ambience',
+        'cave-ambience',
+        'settlement-ambience',
+        'ruins-ambience',
+        'train-engine',
+        'wind',
+      ];
+
+      fillerKinds.forEach((kind, index) => {
+        sink.play({
+          kind,
+          nowMs: index * 10,
+          frequency: 140 + index,
+          durationMs: 1600,
+          volume: 0.018,
+          waveform: kind === 'train-engine' ? 'sawtooth' : 'triangle',
+          emitter:
+            kind === 'ocean' ? { x: 40, y: 0 } : { x: 1 + index * 0.1, y: 0 },
+          listener: { x: 0, y: 0 },
+        });
+      });
+
+      sink.play({
+        kind: 'footstep',
+        nowMs: 200,
+        frequency: 160,
+        durationMs: 90,
+        volume: 0.04,
+        waveform: 'triangle',
+        emitter: { x: 0, y: 0 },
+        listener: { x: 0, y: 0 },
+      });
+
+      expect(sink.getActiveSourceCount?.()).toBe(10);
+      expect(createdOscillators[0]!.stop).toHaveBeenCalled();
     } finally {
       if (originalAudioContext) {
         vi.stubGlobal('AudioContext', originalAudioContext);
