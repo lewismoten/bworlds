@@ -62,6 +62,27 @@ describe('tree support', () => {
     });
   });
 
+  it('supports consumer-specific capabilities and sensible fallback values', () => {
+    const base = createTreeGeneratorBase({
+      seed: 55,
+      capabilities: (query) => ({
+        branches: query?.consumer === 'gameplay' ? false : true,
+        damage: query?.consumer === 'gameplay',
+      }),
+    });
+
+    expect(base.supports('branches', { consumer: 'render-3d' })).toBe(true);
+    expect(base.supports('branches', { consumer: 'gameplay' })).toBe(false);
+    expect(base.supports('damage', { consumer: 'gameplay' })).toBe(true);
+    expect(base.getCapabilityOrFallback('wind')).toEqual({
+      trunk: false,
+      branches: false,
+      leaves: false,
+    });
+    expect(base.getCapabilityOrFallback('lod')).toEqual({ levels: 1 });
+    expect(base.getCapabilityOrFallback('flowers')).toBe(false);
+  });
+
   it('lets generators advertise capabilities without generating a tree', () => {
     let generated = 0;
     const base = createTreeGeneratorBase({

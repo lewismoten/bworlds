@@ -1744,8 +1744,8 @@ type ForestTreeSpeciesDefinition = {
 const forestTreeGeneratorBase = createTreeGeneratorBase({
   seed: FOREST_TREE_DESCRIPTOR_SEED,
   capabilities: (query) => ({
-    branches: true,
-    foliage: true,
+    branches: query?.consumer === 'gameplay' ? false : true,
+    foliage: query?.consumer === 'gameplay' ? false : true,
     flowers: true,
     seasonalLeaves: true,
     wind: {
@@ -1753,10 +1753,16 @@ const forestTreeGeneratorBase = createTreeGeneratorBase({
       branches: true,
       leaves: true,
     },
-    hollows: query?.detailLevel === 'low' ? false : true,
+    hollows:
+      query?.detailLevel === 'low' || query?.consumer === 'render-2d'
+        ? false
+        : true,
     nests: true,
-    carvings: query?.detailLevel === 'low' ? false : true,
-    attachments: true,
+    carvings:
+      query?.detailLevel === 'low' || query?.consumer === 'render-2d'
+        ? false
+        : true,
+    attachments: query?.consumer === 'gameplay' ? false : true,
     damage: true,
     fallen: true,
     lod: {

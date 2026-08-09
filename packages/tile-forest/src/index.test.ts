@@ -661,10 +661,23 @@ describe('tile forest', () => {
 
     expect(generator.supports('branches')).toBe(true);
     expect(generator.supports('foliage')).toBe(true);
+    expect(generator.supports('branches', { consumer: 'gameplay' })).toBe(false);
+    expect(generator.supports('foliage', { consumer: 'gameplay' })).toBe(false);
     expect(generator.supports('hollows', { detailLevel: 'full' })).toBe(true);
     expect(generator.supports('hollows', { detailLevel: 'low' })).toBe(false);
+    expect(generator.supports('hollows', { consumer: 'render-2d' })).toBe(false);
+    expect(generator.supports('carvings', { consumer: 'render-2d' })).toBe(false);
+    expect(generator.supports('carvings', { consumer: 'gameplay' })).toBe(true);
     expect(generator.getCapability('lod')).toEqual({ levels: 2 });
     expect(generator.getCapability('wind')).toEqual({
+      trunk: false,
+      branches: true,
+      leaves: true,
+    });
+    expect(generator.getCapabilityOrFallback('attachments', { consumer: 'gameplay' })).toBe(
+      false
+    );
+    expect(generator.getCapabilityOrFallback('wind', { consumer: 'gameplay' })).toEqual({
       trunk: false,
       branches: true,
       leaves: true,

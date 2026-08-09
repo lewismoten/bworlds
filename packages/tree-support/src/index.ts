@@ -26,7 +26,10 @@ export type TreeCapabilityValue =
   | readonly string[]
   | Record<string, unknown>;
 
+export type TreeCapabilityConsumer = 'render-2d' | 'render-3d' | 'gameplay';
+
 export type TreeCapabilityQuery = {
+  consumer?: TreeCapabilityConsumer;
   detailLevel?: 'full' | 'low';
   [key: string]: unknown;
 };
@@ -87,6 +90,10 @@ export interface TreeGeneratorBase {
     capability: TreeCapability,
     query?: TreeCapabilityQuery
   ): TreeCapabilityValue | undefined;
+  getCapabilityOrFallback(
+    capability: TreeCapability,
+    query?: TreeCapabilityQuery
+  ): TreeCapabilityValue;
   supports(capability: TreeCapability, query?: TreeCapabilityQuery): boolean;
 }
 
@@ -98,6 +105,10 @@ export interface TreeGenerator<TTree, TContext> {
     capability: TreeCapability,
     query?: TreeCapabilityQuery
   ): TreeCapabilityValue | undefined;
+  getCapabilityOrFallback(
+    capability: TreeCapability,
+    query?: TreeCapabilityQuery
+  ): TreeCapabilityValue;
   supports(capability: TreeCapability, query?: TreeCapabilityQuery): boolean;
 }
 
@@ -155,6 +166,10 @@ export function createTreeGeneratorBase({
     getCapability(capability, query) {
       return getResolvedCapabilities(query)[capability];
     },
+    getCapabilityOrFallback(capability, query) {
+      const value = getResolvedCapabilities(query)[capability];
+      return value ?? getTreeCapabilityFallback(capability);
+    },
     supports(capability, query) {
       return isSupportedTreeCapabilityValue(
         getResolvedCapabilities(query)[capability]
@@ -182,6 +197,9 @@ export function createTreeGenerator<TTree, TContext>({
     },
     getCapability(capability, query) {
       return base.getCapability(capability, query);
+    },
+    getCapabilityOrFallback(capability, query) {
+      return base.getCapabilityOrFallback(capability, query);
     },
     supports(capability, query) {
       return base.supports(capability, query);
@@ -249,6 +267,9 @@ export function createTreeFamily<TTree, TContext>({
     getCapability(capability, query) {
       return base.getCapability(capability, query);
     },
+    getCapabilityOrFallback(capability, query) {
+      return base.getCapabilityOrFallback(capability, query);
+    },
     supports(capability, query) {
       return base.supports(capability, query);
     },
@@ -268,6 +289,23 @@ export function createTreeFamily<TTree, TContext>({
       return resolved.generate(context);
     },
   };
+}
+
+export function getTreeCapabilityFallback(
+  capability: TreeCapability
+): TreeCapabilityValue {
+  switch (capability) {
+    case 'wind':
+      return {
+        trunk: false,
+        branches: false,
+        leaves: false,
+      };
+    case 'lod':
+      return { levels: 1 };
+    default:
+      return false;
+  }
 }
 
 function resolveTreeCapabilities(

@@ -41,8 +41,8 @@ For example, an oak and a pine both support `age`, but aging them should produce
 * [ ] Preserve persistent changes such as carvings, damage, harvesting, and fire.
 * [ ] Avoid regenerating persistent tree state from scratch after the player modifies it.
 * [X] Allow generators to advertise optional capabilities.
-* [ ] Keep older tree generators functional when new capabilities are introduced.
-* [ ] Provide sensible fallbacks when a generator does not support a feature.
+* [X] Keep older tree generators functional when new capabilities are introduced.
+* [X] Provide sensible fallbacks when a generator does not support a feature.
 
 # Tree Generator Capability / `supports` System
 
@@ -54,8 +54,8 @@ I would definitely implement the feature-support idea.
 * [X] Allow capabilities to contain levels or metadata rather than only `true/false` where useful.
 * [X] Provide default behavior when a capability is unsupported.
 * [X] Ensure adding a new capability does not break existing generators.
-* [ ] Allow renderer-specific capabilities.
-* [ ] Allow gameplay capabilities independent of renderer capabilities.
+* [X] Allow renderer-specific capabilities.
+* [X] Allow gameplay capabilities independent of renderer capabilities.
 * [ ] Allow capabilities to differ by tree state.
 * [X] Allow capabilities to differ by LOD.
 
