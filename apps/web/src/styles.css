@@ -36,7 +36,7 @@ body {
 .shell {
   width: min(1440px, calc(100vw - 2rem));
   margin: 0 auto;
-  padding: 1.5rem 0 2rem;
+  padding: 1.5rem 0 calc(18rem + env(safe-area-inset-bottom, 0px));
 }
 
 .hero {
@@ -91,7 +91,16 @@ h1 {
 }
 
 .control-dock {
-  margin-top: 1rem;
+  position: fixed;
+  left: 50%;
+  bottom: max(0.75rem, env(safe-area-inset-bottom, 0px));
+  z-index: 20;
+  width: min(1440px, calc(100vw - 1rem));
+  max-height: min(42vh, 20rem);
+  margin-top: 0;
+  overflow: auto;
+  transform: translateX(-50%);
+  overscroll-behavior: contain;
 }
 
 .build-controls {
@@ -835,6 +844,11 @@ ul {
 }
 
 @media (max-width: 720px) {
+  .shell {
+    width: min(100vw - 1rem, 1440px);
+    padding-bottom: calc(22rem + env(safe-area-inset-bottom, 0px));
+  }
+
   .controls {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
@@ -877,5 +891,11 @@ ul {
   .build-controls select,
   .build-controls button {
     width: 100%;
+  }
+
+  .control-dock {
+    width: calc(100vw - 0.5rem);
+    bottom: max(0.25rem, env(safe-area-inset-bottom, 0px));
+    max-height: min(50vh, 26rem);
   }
 }

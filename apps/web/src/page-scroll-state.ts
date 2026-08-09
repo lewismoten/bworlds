@@ -47,6 +47,7 @@ export function restorePersistedPageScrollY(
   environment: {
     requestAnimationFrame?: typeof globalThis.requestAnimationFrame;
     scrollTo?: typeof globalThis.scrollTo;
+    setTimeout?: typeof globalThis.setTimeout;
   } = {}
 ): void {
   const normalizedScrollY = normalizePageScrollY(scrollY);
@@ -60,10 +61,22 @@ export function restorePersistedPageScrollY(
   const scrollTo =
     environment.scrollTo?.bind(globalThis) ??
     globalThis.scrollTo?.bind(globalThis);
+  const scheduleTimeout =
+    environment.setTimeout?.bind(globalThis) ??
+    globalThis.setTimeout?.bind(globalThis);
   if (!scrollTo) {
     return;
   }
-  schedule(() => {
+  const applyScrollRestore = () => {
     scrollTo(0, normalizedScrollY);
+  };
+  schedule(() => {
+    applyScrollRestore();
+    schedule(() => {
+      applyScrollRestore();
+    });
   });
+  scheduleTimeout?.(() => {
+    applyScrollRestore();
+  }, 48);
 }
