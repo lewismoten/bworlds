@@ -83,6 +83,7 @@ describe('render budget', () => {
       severeFrameStreak: 12,
       drawCalls: 0,
       maxChunkDrawCalls: 0,
+      maxChunkObjectCount: 0,
       maxChunkMeshes: 0,
       maxChunkTriangleCount: 0,
       materialCount: 0,
@@ -310,6 +311,10 @@ describe('render budget', () => {
         soft: 160,
         hard: 240,
       },
+      chunkObjects: {
+        soft: 140,
+        hard: 220,
+      },
       chunkMeshes: {
         soft: 96,
         hard: 144,
@@ -356,6 +361,10 @@ describe('render budget', () => {
       pendingBuildTiles: {
         soft: 4,
         hard: 2,
+      },
+      chunkObjects: {
+        soft: 140,
+        hard: 220,
       },
       chunkTriangles: {
         soft: 24000,
@@ -664,6 +673,90 @@ describe('render budget', () => {
     ).toEqual([
       `Visibility radius reduced to ${MIN_VISIBILITY_RADIUS}`,
       'Chunk draw calls exceeded the hard cap',
+    ]);
+  });
+
+  it('reduces draw distance when one visible chunk contains too many objects', () => {
+    let state = DEFAULT_RENDER_BUDGET_STATE;
+
+    state = advanceRenderBudgetState(state, {
+      deltaMs: 16.67,
+      active3d: true,
+      weatherVisibility: 1,
+      drawCalls: 200,
+      maxChunkDrawCalls: 0,
+      maxChunkObjectCount: 150,
+      maxChunkMeshes: 0,
+      maxChunkTriangleCount: 0,
+      materialCount: 0,
+      textureCount: 0,
+      visibleObjectCount: 0,
+      visibleVertexCount: 0,
+      visibleMeshCount: 0,
+    });
+    expect(state.visibilityRadius).toBe(REDUCED_VISIBILITY_RADIUS);
+
+    state = advanceRenderBudgetState(state, {
+      deltaMs: 16.67,
+      active3d: true,
+      weatherVisibility: 1,
+      drawCalls: 200,
+      maxChunkDrawCalls: 0,
+      maxChunkObjectCount: 230,
+      maxChunkMeshes: 0,
+      maxChunkTriangleCount: 0,
+      materialCount: 0,
+      textureCount: 0,
+      visibleObjectCount: 0,
+      visibleVertexCount: 0,
+      visibleMeshCount: 0,
+    });
+    expect(state.visibilityRadius).toBe(MIN_VISIBILITY_RADIUS);
+  });
+
+  it('reports chunk object pressure in the active limiter list', () => {
+    expect(
+      getRenderQualityLimiters({
+        smoothedFrameMs: 16.67,
+        visibilityRadius: REDUCED_VISIBILITY_RADIUS,
+        weatherVisibilityRadiusCap: DEFAULT_VISIBILITY_RADIUS,
+        targetFps: 60,
+        severeFrameStreak: 0,
+        drawCalls: 0,
+        maxChunkDrawCalls: 0,
+        maxChunkObjectCount: 150,
+        maxChunkMeshes: 0,
+        materialCount: 0,
+        textureCount: 0,
+        visibleObjectCount: 0,
+        visibleVertexCount: 0,
+        visibleMeshCount: 0,
+      })
+    ).toEqual([
+      `Visibility radius reduced to ${REDUCED_VISIBILITY_RADIUS}`,
+      'Chunk objects exceeded the soft cap',
+    ]);
+
+    expect(
+      getRenderQualityLimiters({
+        smoothedFrameMs: 16.67,
+        visibilityRadius: MIN_VISIBILITY_RADIUS,
+        weatherVisibilityRadiusCap: DEFAULT_VISIBILITY_RADIUS,
+        targetFps: 60,
+        severeFrameStreak: 0,
+        drawCalls: 0,
+        maxChunkDrawCalls: 0,
+        maxChunkObjectCount: 230,
+        maxChunkMeshes: 0,
+        materialCount: 0,
+        textureCount: 0,
+        visibleObjectCount: 0,
+        visibleVertexCount: 0,
+        visibleMeshCount: 0,
+      })
+    ).toEqual([
+      `Visibility radius reduced to ${MIN_VISIBILITY_RADIUS}`,
+      'Chunk objects exceeded the hard cap',
     ]);
   });
 

@@ -106,6 +106,10 @@ type DebugSnapshotExportOptions = {
         soft: number;
         hard: number;
       };
+      chunkObjects: {
+        soft: number;
+        hard: number;
+      };
       chunkMeshes: {
         soft: number;
         hard: number;

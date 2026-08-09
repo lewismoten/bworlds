@@ -19,6 +19,7 @@ export function collectVisibleTileResourceStats<TEntry extends VisibleTileResour
 ): {
   chunkCount: number;
   maxChunkDrawCallCount: number;
+  maxChunkObjectCount: number;
   maxChunkMeshCount: number;
   maxChunkTriangleCount: number;
   totalVisibleObjectCount: number;
@@ -32,9 +33,11 @@ export function collectVisibleTileResourceStats<TEntry extends VisibleTileResour
 } {
   const size = Math.max(1, Math.floor(chunkTileSize));
   const chunkDrawCalls = new Map<string, number>();
+  const chunkObjects = new Map<string, number>();
   const chunkMeshes = new Map<string, number>();
   const chunkTriangles = new Map<string, number>();
   let maxChunkDrawCallCount = 0;
+  let maxChunkObjectCount = 0;
   let maxChunkMeshCount = 0;
   let maxChunkTriangleCount = 0;
   let totalVisibleObjectCount = 0;
@@ -55,6 +58,9 @@ export function collectVisibleTileResourceStats<TEntry extends VisibleTileResour
       maxChunkDrawCallCount = nextDrawCalls;
     }
 
+    const nextObjectCount =
+      (chunkObjects.get(key) ?? 0) + Math.max(0, Math.floor(entry.visibleObjectCount ?? 0));
+    chunkObjects.set(key, nextObjectCount);
     const nextMeshCount =
       (chunkMeshes.get(key) ?? 0) + Math.max(0, Math.floor(entry.visibleMeshCount ?? 0));
     chunkMeshes.set(key, nextMeshCount);
@@ -71,6 +77,9 @@ export function collectVisibleTileResourceStats<TEntry extends VisibleTileResour
       0,
       Math.floor(entry.textureMemoryEstimateBytes ?? 0)
     );
+    if (nextObjectCount > maxChunkObjectCount) {
+      maxChunkObjectCount = nextObjectCount;
+    }
     if (nextMeshCount > maxChunkMeshCount) {
       maxChunkMeshCount = nextMeshCount;
     }
@@ -82,6 +91,7 @@ export function collectVisibleTileResourceStats<TEntry extends VisibleTileResour
   return {
     chunkCount: chunkDrawCalls.size,
     maxChunkDrawCallCount,
+    maxChunkObjectCount,
     maxChunkMeshCount,
     maxChunkTriangleCount,
     totalVisibleObjectCount,

@@ -224,6 +224,7 @@ type Render3DController = {
     visibleTileCount: number;
     loadedChunkCount: number;
     maxChunkDrawCallCount: number;
+    maxChunkObjectCount: number;
     maxChunkMeshCount: number;
     maxChunkTriangleCount: number;
     visibleTreeCount: number;
@@ -307,6 +308,7 @@ type Render3DController = {
   };
   getDrawCalls(): number;
   getMaxChunkDrawCalls(): number;
+  getMaxChunkObjects(): number;
   getMaxChunkMeshes(): number;
   getMaxChunkTriangles(): number;
   getMaterialCount(): number;
@@ -2034,6 +2036,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       visibleTileCount: visibleTileNodes.size,
       loadedChunkCount: visibleTileResourceStats.chunkCount,
       maxChunkDrawCallCount: visibleTileResourceStats.maxChunkDrawCallCount,
+      maxChunkObjectCount: visibleTileResourceStats.maxChunkObjectCount,
       maxChunkMeshCount: visibleTileResourceStats.maxChunkMeshCount,
       maxChunkTriangleCount: visibleTileResourceStats.maxChunkTriangleCount,
       visibleTreeCount: sceneResourceStats.treeCount,
@@ -2133,6 +2136,10 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
 
   function getMaxChunkDrawCalls(): number {
     return collectVisibleTileResourceStats(visibleTileNodes.values()).maxChunkDrawCallCount;
+  }
+
+  function getMaxChunkObjects(): number {
+    return collectVisibleTileResourceStats(visibleTileNodes.values()).maxChunkObjectCount;
   }
 
   function getMaxChunkMeshes(): number {
@@ -2910,6 +2917,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     canOccupy,
     getDrawCalls,
     getMaxChunkDrawCalls,
+    getMaxChunkObjects,
     getMaxChunkMeshes,
     getMaxChunkTriangles,
     getMaterialCount,

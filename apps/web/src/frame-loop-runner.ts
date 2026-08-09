@@ -10,6 +10,7 @@ type FrameLoopRunnerOptions<T> = {
   renderBudgetState: RenderBudgetState;
   getDrawCalls: () => number;
   getMaxChunkDrawCalls: () => number;
+  getMaxChunkObjects: () => number;
   getMaxChunkMeshes: () => number;
   getMaxChunkTriangles: () => number;
   getMaterialCount: () => number;
@@ -36,6 +37,7 @@ export function createFrameLoopRunner<T>(
       deltaMs,
       drawCalls: options.getDrawCalls(),
       maxChunkDrawCalls: options.getMaxChunkDrawCalls(),
+      maxChunkObjectCount: options.getMaxChunkObjects(),
       maxChunkMeshes: options.getMaxChunkMeshes(),
       maxChunkTriangleCount: options.getMaxChunkTriangles(),
       materialCount: options.getMaterialCount(),
