@@ -20,6 +20,7 @@ import {
   getBoundaryPriority,
   getFarLandModelOpacity,
   getFacingVisibilityBucket,
+  freezeStaticObjectTransforms,
   getRemainingFrameTimeBudgetMs,
   getWorldCurvatureOffset,
   getWeatherFogRange,
@@ -893,6 +894,68 @@ describe('render3d visibility helpers', () => {
     expect(collectSceneResourceStats(root as never).clonedMaterialCount).toBe(1);
   });
 
+  it('freezes static transform subtrees while leaving dynamic responders and lights alone', () => {
+    const staticLeaf = createMockObject3D(
+      createMockMaterial(),
+      [],
+      createMockGeometry(4),
+      {},
+      'Mesh',
+      false,
+      false,
+      true,
+      true
+    );
+    const dynamicLeaf = createMockObject3D(
+      createMockMaterial(),
+      [],
+      createMockGeometry(6),
+      {
+        poiWindResponder: {
+          axis: 'z',
+        },
+      },
+      'Mesh',
+      false,
+      false,
+      true,
+      true
+    );
+    const lightNode = createMockObject3D(
+      undefined,
+      [],
+      undefined,
+      {},
+      'PointLight',
+      true,
+      false,
+      true,
+      true
+    );
+    const root = createMockObject3D(
+      undefined,
+      [staticLeaf, dynamicLeaf, lightNode],
+      undefined,
+      {},
+      'Group',
+      false,
+      false,
+      true,
+      true
+    );
+
+    freezeStaticObjectTransforms(root as never);
+
+    expect(root.matrixAutoUpdate).toBe(false);
+    expect(staticLeaf.matrixAutoUpdate).toBe(false);
+    expect(dynamicLeaf.matrixAutoUpdate).toBe(true);
+    expect(lightNode.matrixAutoUpdate).toBe(true);
+    expect(root.updateMatrix).toHaveBeenCalledTimes(1);
+    expect(staticLeaf.updateMatrix).toHaveBeenCalledTimes(1);
+    expect(dynamicLeaf.updateMatrix).not.toHaveBeenCalled();
+    expect(lightNode.updateMatrix).not.toHaveBeenCalled();
+  });
+
   it('applies distance fade opacity to prepared materials without dropping baseline flags', () => {
     const sourceMaterial = createMockMaterial({
       opacity: 0.6,
@@ -1603,6 +1666,7 @@ function createMockObject3D(
     isLight,
     castShadow,
     matrixAutoUpdate,
+    updateMatrix: vi.fn(),
     userData,
     material,
     geometry,

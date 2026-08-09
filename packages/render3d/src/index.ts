@@ -548,7 +548,9 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     const variant = getTileVariantIndex(tile.kind, x, y);
     const surfaceHeight = buildCache.getSurfaceProfile(x, y, tile).surfaceHeight;
 
-    tileNode.add(createFloorMesh(state, tile, x, y, variant, buildCache));
+    const floorMesh = createFloorMesh(state, tile, x, y, variant, buildCache);
+    freezeStaticObjectTransforms(floorMesh);
+    tileNode.add(floorMesh);
 
     const tilePlugin = registry.getTilePlugin(tile.kind);
     const pluginModel = tilePlugin?.create3DModel?.({
@@ -569,6 +571,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       if (definition.walkable && !isWaterKind(tile.kind)) {
         prepareObjectForDistanceFade(pluginModel);
       }
+      freezeStaticObjectTransforms(pluginModel);
       tileNode.add(pluginModel);
     } else if (!isWaterKind(tile.kind) && definition.wallHeight > 0.08) {
       const wallHeight = Math.max(definition.wallHeight * 1.9, 0.18);
@@ -583,6 +586,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       );
       wallMesh.castShadow = true;
       wallMesh.receiveShadow = true;
+      freezeStaticObjectTransforms(wallMesh);
       tileNode.add(wallMesh);
     }
 
@@ -2005,6 +2009,19 @@ export function pickCornerBoundaryProfile<
   }
 
   return bestBoundary;
+}
+
+export function freezeStaticObjectTransforms(root: THREE.Object3D): void {
+  root.traverse((node) => {
+    if (!isLikelyStaticTransformObject(node)) {
+      return;
+    }
+    if (node.matrixAutoUpdate === false) {
+      return;
+    }
+    node.matrixAutoUpdate = false;
+    node.updateMatrix?.();
+  });
 }
 
 export function prepareObjectForDistanceFade(root: THREE.Object3D): void {
