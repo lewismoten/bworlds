@@ -22,6 +22,7 @@ import {
   getPlanetaryOrbitProgress,
   getWorldDaylightCycle,
   getWorldTimeMs,
+  registerPoiNameType,
   toGps,
   WORLD_TILES_WIDE,
 } from './index.ts';
@@ -340,10 +341,19 @@ describe('core utilities', () => {
 
   it('keeps custom point-of-interest type label registration deterministic', () => {
     const seedHash = registerHashLabel('custom-poi-spec');
+    registerPoiNameType('stronghold');
     const left = generatePoiName(seedHash, 'stronghold', 7, -14);
     const right = generatePoiName(seedHash, 'stronghold', 7, -14);
 
     expect(left).toBe(right);
+  });
+
+  it('requires custom point-of-interest types to be registered before use', () => {
+    const seedHash = registerHashLabel('custom-poi-unregistered-spec');
+
+    expect(() => generatePoiName(seedHash, 'skyport', 2, 3)).toThrow(
+      'Unknown point-of-interest name type "skyport". Register it with registerPoiNameType() during setup.'
+    );
   });
 
   it('exposes periodic planets, meteor showers, and comets', () => {

@@ -6,6 +6,7 @@ import {
   hash2DWithSeed,
   normalizeHash,
   resolveHashSeed,
+  resolveHashSeedInput,
   registerHashLabel,
   registerHashSeed,
   registerHashSeeds,
@@ -61,6 +62,11 @@ describe('hash seeds', () => {
   it('passes numeric seeds through the shared hash boundary helper', () => {
     expect(resolveHashSeed(0x100000000)).toBe(0);
     expect(resolveHashSeed(-1)).toBe(0xFFFFFFFF);
+  });
+
+  it('normalizes both numeric and string seed inputs through one helper', () => {
+    expect(resolveHashSeedInput(0x100000000)).toBe(0);
+    expect(resolveHashSeedInput('weather-front')).toBe(registerHashSeed('weather-front'));
   });
 
   it('registers setup-time seeds through the shared hash module cache', () => {

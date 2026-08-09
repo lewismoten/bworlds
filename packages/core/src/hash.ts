@@ -5,6 +5,7 @@ const HASH_PART_SEPARATOR = 58;
 const UINT32_RANGE = 2 ** 32;
 
 export type HashSeed = number;
+export type HashSeedInput = HashSeed | string;
 export { registerHashLabel, registerHashLabels } from './hash-labels.ts';
 
 export function registerHashSeed(label: string): HashSeed {
@@ -23,6 +24,10 @@ export function createHashSeed(seed: number): HashSeed {
 
 export function resolveHashSeed(seed: HashSeed): HashSeed {
   return createHashSeed(seed);
+}
+
+export function resolveHashSeedInput(seed: HashSeedInput): HashSeed {
+  return typeof seed === 'number' ? resolveHashSeed(seed) : registerHashSeed(seed);
 }
 
 export function appendHashSeedPart(seedHash: HashSeed, value: number): HashSeed {

@@ -4,6 +4,7 @@ import {
   createHashSeed,
   hash2D,
   hash2DWithSeed,
+  resolveHashSeedInput,
   type HashSeed,
   registerHashLabel,
   registerHashSeed,
@@ -18,6 +19,7 @@ export {
   createHashSeed,
   hash2D,
   hash2DWithSeed,
+  resolveHashSeedInput,
   type HashSeed,
   registerHashLabel,
   registerHashSeed,
@@ -251,7 +253,11 @@ const POI_NAME_TYPE_LABELS = registerHashLabels([
   'lighthouse',
   'ship',
   'observatory',
+  'station',
 ] as const);
+const registeredPoiNameTypeLabels = new Map<string, number>(
+  Object.entries(POI_NAME_TYPE_LABELS)
+);
 
 function getPlanetSkyProfile(name: string, fallbackIndex = 0): PlanetSkyProfile {
   const index = PLANET_NAMES.indexOf(name);
@@ -411,6 +417,7 @@ export type PoiNameType =
       | 'lighthouse'
       | 'ship'
       | 'observatory'
+      | 'station'
     )
   | (string & {});
 type CardinalDirection = 'N' | 'S' | 'E' | 'W';
@@ -1852,12 +1859,25 @@ export function generatePoiName(
   return `${prefix}${suffix}`;
 }
 
-function getPoiNameTypeLabel(type: PoiNameType): number {
-  const knownTypeLabel = POI_NAME_TYPE_LABELS[type as keyof typeof POI_NAME_TYPE_LABELS];
+export function registerPoiNameType(type: string): number {
+  const knownTypeLabel = registeredPoiNameTypeLabels.get(type);
   if (knownTypeLabel !== undefined) {
     return knownTypeLabel;
   }
-  return registerHashLabel(type);
+
+  const typeLabel = registerHashLabel(type);
+  registeredPoiNameTypeLabels.set(type, typeLabel);
+  return typeLabel;
+}
+
+function getPoiNameTypeLabel(type: PoiNameType): number {
+  const knownTypeLabel = registeredPoiNameTypeLabels.get(type);
+  if (knownTypeLabel !== undefined) {
+    return knownTypeLabel;
+  }
+  throw new Error(
+    `Unknown point-of-interest name type "${type}". Register it with registerPoiNameType() during setup.`
+  );
 }
 
 export const DEFAULT_TILE_DEFINITION: CoreTileDefinitionLike = {

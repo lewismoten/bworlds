@@ -17,8 +17,7 @@ import {
   hash2D,
   hash2DWithSeed,
   registerHashLabel,
-  registerHashSeed,
-  resolveHashSeed,
+  resolveHashSeedInput,
 } from '@bworlds/core/hash';
 import type {
   ClassifyOverworldTileContext,
@@ -133,7 +132,7 @@ const overworldGenerationSnapshotCaches = new WeakMap<
 >();
 
 function normalizeSeedHash(seed: Seed): number {
-  return typeof seed === 'number' ? resolveHashSeed(seed) : registerHashSeed(seed);
+  return resolveHashSeedInput(seed);
 }
 
 function getOverworldGenerationSnapshotCacheStore(

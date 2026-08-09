@@ -5,8 +5,7 @@ import {
   hash2DWithSeed,
   octaveNoise2D,
   registerHashLabel,
-  registerHashSeed,
-  resolveHashSeed,
+  resolveHashSeedInput,
 } from '@bworlds/core';
 import { createPlainsBackedTilePainter } from '@bworlds/paint-support';
 import { createTilePlugin } from '@bworlds/plugin-api';
@@ -402,7 +401,7 @@ export function createWaterTilePlugin(): RuntimePlugin {
         y,
         tile,
       }: DecorateOverworldTileContext) {
-        const seedHash = typeof seed === 'number' ? resolveHashSeed(seed) : registerHashSeed(seed);
+        const seedHash = resolveHashSeedInput(seed);
         const continentSeed = appendHashSeedLabel(seedHash, CONTINENT_NEIGHBOR_SEED);
         const neighboringSeaSignal = Math.min(
           octaveNoise2D(continentSeed, (x + 1) / 160, y / 160, {
