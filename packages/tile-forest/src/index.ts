@@ -1031,6 +1031,10 @@ const treeGeometryCache = new WeakMap<
     foliage: ThreeGeometryLike;
   }
 >();
+const forestTrunkGeometryCache = new WeakMap<
+  object,
+  Map<string, ThreeGeometryLike>
+>();
 type TreeGeometry = NonNullable<ReturnType<typeof treeGeometryCache.get>>;
 
 export function createForestTilePlugin(): RuntimePlugin {
@@ -1182,9 +1186,16 @@ export function createForestTilePlugin(): RuntimePlugin {
               : {}),
           };
 
-          const trunk = new three.Mesh(geometry.trunk, style.trunkMaterial);
+          const trunk = new three.Mesh(
+            getForestTrunkGeometry(
+              three,
+              structure.trunkTopRadius / Math.max(0.0001, structure.radius)
+            ),
+            style.trunkMaterial
+          );
+          const trunkRadiusScale = structure.radius / 0.1;
           trunk.position.y = structure.trunkHeight * 0.5;
-          trunk.scale.y = structure.trunkHeight;
+          trunk.scale.set(trunkRadiusScale, structure.trunkHeight, trunkRadiusScale);
           tree.add(trunk);
 
           for (const branch of structure.branches) {
@@ -1632,6 +1643,27 @@ function getTreeGeometry(three: ThreeHostLike): TreeGeometry {
   return treeGeometryCache.get(three)!;
 }
 
+function getForestTrunkGeometry(
+  three: ThreeHostLike,
+  taperRatio: number
+): ThreeGeometryLike {
+  let geometryCache = forestTrunkGeometryCache.get(three);
+  if (!geometryCache) {
+    geometryCache = new Map<string, ThreeGeometryLike>();
+    forestTrunkGeometryCache.set(three, geometryCache);
+  }
+
+  const resolvedRatio = Math.max(0.32, Math.min(0.92, taperRatio));
+  const cacheKey = resolvedRatio.toFixed(2);
+  let geometry = geometryCache.get(cacheKey);
+  if (!geometry) {
+    const quantizedRatio = Number(cacheKey);
+    geometry = new three.CylinderGeometry(0.1 * quantizedRatio, 0.1, 1, 6);
+    geometryCache.set(cacheKey, geometry);
+  }
+  return geometry;
+}
+
 function getForestTreeDescriptors(
   tileX: number,
   tileY: number
@@ -1952,13 +1984,18 @@ export function getForestTreeTrunkProfiles(
   speciesId: ForestTreeSpeciesId;
   trunkHeight: number;
   radius: number;
+  trunkTopRadius: number;
 }> {
-  return getForestTreeDescriptors(tileX, tileY).map((descriptor) => ({
-    form: descriptor.form,
-    speciesId: descriptor.speciesId,
-    trunkHeight: descriptor.trunkHeight,
-    radius: descriptor.radius,
-  }));
+  return getForestTreeDescriptors(tileX, tileY).map((descriptor) => {
+    const structure = getTreeStructuralState(descriptor);
+    return {
+      form: descriptor.form,
+      speciesId: descriptor.speciesId,
+      trunkHeight: descriptor.trunkHeight,
+      radius: descriptor.radius,
+      trunkTopRadius: structure.trunkTopRadius,
+    };
+  });
 }
 
 export function getForestTreeDamageProfiles(
@@ -2531,9 +2568,13 @@ function createForestTreeDescriptorFromSpecies(
   const trunkRadius =
     (definition.trunkRadiusMin + appearanceRandom() * definition.trunkRadiusRange) *
     (0.62 + maturity * 0.72);
+  const trunkTaperRatio =
+    definition.form === 'pine'
+      ? 0.44 + appearanceRandom() * 0.12
+      : 0.5 + appearanceRandom() * 0.16;
   const structure: TreeStructuralState = {
     radius: trunkRadius,
-    trunkTopRadius: trunkRadius * 0.72,
+    trunkTopRadius: trunkRadius * trunkTaperRatio,
     scale: (0.72 + appearanceRandom() * 0.48) * (0.62 + maturity * 0.72),
     trunkHeight,
     branches,
@@ -3188,6 +3229,7 @@ function addLowDetailForestTreeInstances(
       forestTreeLowDetailInstancedPart: 'trunk',
     };
     bucket.forEach((descriptor, index) => {
+      const trunkRadiusScale = Math.max(0.04, descriptor.radius) * descriptor.scale / 0.1;
       trunkInstances.setMatrixAt(
         index,
         createLowDetailTreeMatrix(
@@ -3195,9 +3237,9 @@ function addLowDetailForestTreeInstances(
           tileX + descriptor.x,
           descriptor.trunkHeight * descriptor.scale * 0.5,
           tileY + descriptor.y,
-          descriptor.scale,
+          trunkRadiusScale,
           descriptor.trunkHeight * descriptor.scale,
-          descriptor.scale
+          trunkRadiusScale
         )
       );
     });

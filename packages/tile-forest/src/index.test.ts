@@ -39,7 +39,10 @@ import {
 
 class FakeGeometry {
   attributes: Record<string, unknown> = {};
-  constructor(..._args: number[]) {}
+  args: number[];
+  constructor(...args: number[]) {
+    this.args = args;
+  }
   setAttribute(name: string, attribute: unknown) {
     this.attributes[name] = attribute;
     return this;
@@ -878,16 +881,32 @@ describe('tile forest', () => {
     const pineHeights = new Set(pineTrunks.map((trunk) => trunk.trunkHeight.toFixed(3)));
     const broadleafRadii = new Set(broadleafTrunks.map((trunk) => trunk.radius.toFixed(3)));
     const pineRadii = new Set(pineTrunks.map((trunk) => trunk.radius.toFixed(3)));
+    const broadleafTaperRatios = new Set(
+      broadleafTrunks.map((trunk) => (trunk.trunkTopRadius / trunk.radius).toFixed(3))
+    );
+    const pineTaperRatios = new Set(
+      pineTrunks.map((trunk) => (trunk.trunkTopRadius / trunk.radius).toFixed(3))
+    );
 
     expect(broadleafHeights.size).toBeGreaterThan(1);
     expect(pineHeights.size).toBeGreaterThan(1);
     expect(broadleafRadii.size).toBeGreaterThan(1);
     expect(pineRadii.size).toBeGreaterThan(1);
+    expect(broadleafTaperRatios.size).toBeGreaterThan(1);
+    expect(pineTaperRatios.size).toBeGreaterThan(1);
+    expect(broadleafTrunks.every((trunk) => trunk.trunkTopRadius < trunk.radius)).toBe(true);
+    expect(pineTrunks.every((trunk) => trunk.trunkTopRadius < trunk.radius)).toBe(true);
     expect(
       broadleafTrunks.some((trunk) => trunk.speciesId === 'oak' && trunk.radius > 0.1)
     ).toBe(true);
     expect(
       broadleafTrunks.some((trunk) => trunk.speciesId === 'birch' && trunk.radius < 0.09)
+    ).toBe(true);
+    expect(
+      pineTrunks.some((trunk) => trunk.trunkTopRadius / trunk.radius < 0.5)
+    ).toBe(true);
+    expect(
+      broadleafTrunks.some((trunk) => trunk.trunkTopRadius / trunk.radius > 0.6)
     ).toBe(true);
 
     const first = trunkTiles[0]!;
@@ -1906,6 +1925,46 @@ describe('tile forest', () => {
     expect(firstFoliage?.material).toBe(secondFoliage?.material);
   });
 
+  it('uses tapered full-detail trunk geometry that matches structural trunk width', () => {
+    const plugin = createForestTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'forest');
+    const state = createForestTestState(8, 6);
+    const trunks = getForestTreeTrunkProfiles(8, 6);
+
+    expect(trunks.length).toBeGreaterThan(0);
+
+    const fullModel = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'forest' },
+      tileX: 8,
+      tileY: 6,
+      detailLevel: 'full',
+    }) as FakeGroup;
+
+    const firstTree = fullModel.children.find(
+      (child) => child instanceof FakeGroup && child.userData?.renderStatKind === 'tree'
+    ) as FakeGroup | undefined;
+    const trunkMesh = firstTree?.children.find(
+      (child) =>
+        child instanceof FakeMesh &&
+        child.geometry instanceof FakeGeometry &&
+        child.material instanceof FakeMaterial
+    ) as FakeMesh | undefined;
+
+    expect(trunkMesh).toBeDefined();
+    expect(trunkMesh?.geometry).toBeInstanceOf(FakeGeometry);
+    expect(trunkMesh?.scale.x).toBeCloseTo(trunks[0]!.radius / 0.1);
+    expect(trunkMesh?.scale.z).toBeCloseTo(trunks[0]!.radius / 0.1);
+
+    const trunkGeometry = trunkMesh?.geometry as FakeGeometry;
+    const expectedTaperBucketRadius =
+      Number((trunks[0]!.trunkTopRadius / trunks[0]!.radius).toFixed(2)) * 0.1;
+    expect(trunkGeometry.args[0]).toBeCloseTo(expectedTaperBucketRadius, 5);
+    expect(trunkGeometry.args[1]).toBeCloseTo(0.1, 5);
+    expect(trunkGeometry.args[0]).toBeLessThan(trunkGeometry.args[1]!);
+  });
+
   it('instances low-detail tree trunks and canopies instead of creating one group per tree', () => {
     const plugin = createForestTilePlugin();
     const tile = plugin.tiles?.find((entry) => entry.kind === 'forest');
@@ -1959,6 +2018,9 @@ describe('tile forest', () => {
     expect(instancedTrunks.every((mesh) => mesh.count > 0)).toBe(true);
     expect(instancedCanopies.every((mesh) => mesh.count > 0)).toBe(true);
     expect(instancedTrunks.some((mesh) => mesh.matrices.length > 0)).toBe(true);
+    expect(
+      instancedTrunks.some((mesh) => mesh.matrices.some((matrix) => matrix.scale.x < 1))
+    ).toBe(true);
   });
 
   it('generates an occasional mushroom or stone ring for large forests', () => {
