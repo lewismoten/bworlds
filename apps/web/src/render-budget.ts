@@ -12,6 +12,7 @@ export type RenderBudgetState = {
   drawCalls: number;
   maxChunkDrawCalls: number;
   maxChunkMeshes: number;
+  textureCount: number;
   visibilityRadius: number;
   weatherVisibility: number;
   weatherVisibilityRadiusCap: number;
@@ -60,6 +61,10 @@ export type RenderBudgetCaps = {
     soft: number;
     hard: number;
   };
+  textures: {
+    soft: number;
+    hard: number;
+  };
 };
 
 export type RenderQualityLevel = 'full' | 'reduced' | 'minimal';
@@ -75,6 +80,7 @@ export const DEFAULT_RENDER_BUDGET_STATE: RenderBudgetState = {
   drawCalls: 0,
   maxChunkDrawCalls: 0,
   maxChunkMeshes: 0,
+  textureCount: 0,
   visibilityRadius: DEFAULT_VISIBILITY_RADIUS,
   weatherVisibility: 1,
   weatherVisibilityRadiusCap: DEFAULT_VISIBILITY_RADIUS,
@@ -98,6 +104,8 @@ const SOFT_CHUNK_DRAW_CALL_LIMIT = 160;
 const HARD_CHUNK_DRAW_CALL_LIMIT = 240;
 const SOFT_CHUNK_MESH_LIMIT = 96;
 const HARD_CHUNK_MESH_LIMIT = 144;
+const SOFT_TEXTURE_LIMIT = 48;
+const HARD_TEXTURE_LIMIT = 72;
 
 function resetRenderBudgetStateInPlace(state: RenderBudgetState): RenderBudgetState {
   state.currentFrameMs = 16.67;
@@ -107,6 +115,7 @@ function resetRenderBudgetStateInPlace(state: RenderBudgetState): RenderBudgetSt
   state.drawCalls = 0;
   state.maxChunkDrawCalls = 0;
   state.maxChunkMeshes = 0;
+  state.textureCount = 0;
   state.visibilityRadius = DEFAULT_VISIBILITY_RADIUS;
   state.weatherVisibility = 1;
   state.weatherVisibilityRadiusCap = DEFAULT_VISIBILITY_RADIUS;
@@ -140,6 +149,7 @@ export function updateRenderBudgetStateInPlace(
     drawCalls,
     maxChunkDrawCalls,
     maxChunkMeshes,
+    textureCount,
   }: {
     deltaMs: number;
     active3d: boolean;
@@ -147,6 +157,7 @@ export function updateRenderBudgetStateInPlace(
     drawCalls?: number;
     maxChunkDrawCalls?: number;
     maxChunkMeshes?: number;
+    textureCount?: number;
   }
 ): RenderBudgetState {
   if (!active3d) {
@@ -187,6 +198,10 @@ export function updateRenderBudgetStateInPlace(
     0,
     Math.floor(maxChunkMeshes ?? state.maxChunkMeshes)
   );
+  const normalizedTextureCount = Math.max(
+    0,
+    Math.floor(textureCount ?? state.textureCount)
+  );
   const weatherVisibilityRadiusCap = getWeatherVisibilityRadiusCap(
     normalizedWeatherVisibility
   );
@@ -220,12 +235,18 @@ export function updateRenderBudgetStateInPlace(
   } else if (normalizedMaxChunkMeshes >= SOFT_CHUNK_MESH_LIMIT) {
     visibilityRadius = Math.min(visibilityRadius, REDUCED_VISIBILITY_RADIUS);
   }
+  if (normalizedTextureCount >= HARD_TEXTURE_LIMIT) {
+    visibilityRadius = Math.min(visibilityRadius, MIN_VISIBILITY_RADIUS);
+  } else if (normalizedTextureCount >= SOFT_TEXTURE_LIMIT) {
+    visibilityRadius = Math.min(visibilityRadius, REDUCED_VISIBILITY_RADIUS);
+  }
 
   state.currentFrameMs = clampedDeltaMs;
   state.smoothedFrameMs = smoothedFrameMs;
   state.drawCalls = normalizedDrawCalls;
   state.maxChunkDrawCalls = normalizedMaxChunkDrawCalls;
   state.maxChunkMeshes = normalizedMaxChunkMeshes;
+  state.textureCount = normalizedTextureCount;
   state.visibilityRadius = Math.min(visibilityRadius, weatherVisibilityRadiusCap);
   state.weatherVisibility = normalizedWeatherVisibility;
   state.weatherVisibilityRadiusCap = weatherVisibilityRadiusCap;
@@ -245,6 +266,7 @@ export function advanceRenderBudgetState(
     drawCalls,
     maxChunkDrawCalls,
     maxChunkMeshes,
+    textureCount,
   }: {
     deltaMs: number;
     active3d: boolean;
@@ -252,6 +274,7 @@ export function advanceRenderBudgetState(
     drawCalls?: number;
     maxChunkDrawCalls?: number;
     maxChunkMeshes?: number;
+    textureCount?: number;
   }
 ): RenderBudgetState {
   return updateRenderBudgetStateInPlace(
@@ -266,6 +289,7 @@ export function advanceRenderBudgetState(
       drawCalls,
       maxChunkDrawCalls,
       maxChunkMeshes,
+      textureCount,
     }
   );
 }
@@ -334,6 +358,10 @@ export function getRenderBudgetCaps(
       soft: SOFT_CHUNK_MESH_LIMIT,
       hard: HARD_CHUNK_MESH_LIMIT,
     },
+    textures: {
+      soft: SOFT_TEXTURE_LIMIT,
+      hard: HARD_TEXTURE_LIMIT,
+    },
   };
 }
 
@@ -396,6 +424,7 @@ export function getRenderQualityLimiters(
     | 'drawCalls'
     | 'maxChunkDrawCalls'
     | 'maxChunkMeshes'
+    | 'textureCount'
   >
 ): string[] {
   const limiters: string[] = [];
@@ -428,6 +457,11 @@ export function getRenderQualityLimiters(
     limiters.push('Chunk meshes exceeded the hard cap');
   } else if (state.maxChunkMeshes >= SOFT_CHUNK_MESH_LIMIT) {
     limiters.push('Chunk meshes exceeded the soft cap');
+  }
+  if (state.textureCount >= HARD_TEXTURE_LIMIT) {
+    limiters.push('Active textures exceeded the hard cap');
+  } else if (state.textureCount >= SOFT_TEXTURE_LIMIT) {
+    limiters.push('Active textures exceeded the soft cap');
   }
   if (state.smoothedFrameMs >= CRITICAL_FPS_FRAME_MS) {
     limiters.push('Critical frame pressure');

@@ -34,6 +34,7 @@ describe('render budget', () => {
     expect(state.drawCalls).toBe(0);
     expect(state.maxChunkDrawCalls).toBe(0);
     expect(state.maxChunkMeshes).toBe(0);
+    expect(state.textureCount).toBe(0);
     expect(state.currentFrameMs).toBeCloseTo(16.67, 2);
     expect(state.averageFps).toBeCloseTo(60, 0);
     expect(state.worstRecentFrameMs).toBeCloseTo(16.67, 2);
@@ -76,6 +77,7 @@ describe('render budget', () => {
       drawCalls: 0,
       maxChunkDrawCalls: 0,
       maxChunkMeshes: 0,
+      textureCount: 0,
       weatherVisibility: 1,
       weatherVisibilityRadiusCap: DEFAULT_VISIBILITY_RADIUS,
     };
@@ -132,6 +134,7 @@ describe('render budget', () => {
         drawCalls: 912,
         maxChunkDrawCalls: 184,
         maxChunkMeshes: 88,
+        textureCount: 36,
       })
     ).toBe(state);
     expect(state.recentFrameMs).toBe(recentFrameMs);
@@ -139,6 +142,7 @@ describe('render budget', () => {
     expect(state.drawCalls).toBe(912);
     expect(state.maxChunkDrawCalls).toBe(184);
     expect(state.maxChunkMeshes).toBe(88);
+    expect(state.textureCount).toBe(36);
     expect(state.weatherVisibility).toBe(0.8);
 
     for (let index = 0; index < 80; index += 1) {
@@ -282,6 +286,10 @@ describe('render budget', () => {
         soft: 96,
         hard: 144,
       },
+      textures: {
+        soft: 48,
+        hard: 72,
+      },
     });
 
     expect(getRenderBudgetCaps({ targetFps: 30 })).toMatchObject({
@@ -357,6 +365,7 @@ describe('render budget', () => {
         drawCalls: 0,
         maxChunkDrawCalls: 0,
         maxChunkMeshes: 0,
+        textureCount: 0,
       })
     ).toEqual(['None']);
 
@@ -370,6 +379,7 @@ describe('render budget', () => {
         drawCalls: 0,
         maxChunkDrawCalls: 0,
         maxChunkMeshes: 0,
+        textureCount: 0,
       })
     ).toEqual([
       'Target FPS reduced to 30',
@@ -387,6 +397,7 @@ describe('render budget', () => {
         drawCalls: 0,
         maxChunkDrawCalls: 0,
         maxChunkMeshes: 0,
+        textureCount: 0,
       })
     ).toEqual([
       'Target FPS reduced to 30',
@@ -405,6 +416,7 @@ describe('render budget', () => {
         drawCalls: 0,
         maxChunkDrawCalls: 0,
         maxChunkMeshes: 0,
+        textureCount: 0,
       })
     ).toEqual([
       'Visibility radius reduced to 12.5',
@@ -422,6 +434,7 @@ describe('render budget', () => {
       drawCalls: 950,
       maxChunkDrawCalls: 0,
       maxChunkMeshes: 0,
+      textureCount: 0,
     });
     expect(state.visibilityRadius).toBe(REDUCED_VISIBILITY_RADIUS);
     expect(getRenderQualityLevel(state)).toBe('reduced');
@@ -433,6 +446,7 @@ describe('render budget', () => {
       drawCalls: 1300,
       maxChunkDrawCalls: 0,
       maxChunkMeshes: 0,
+      textureCount: 0,
     });
     expect(state.visibilityRadius).toBe(MIN_VISIBILITY_RADIUS);
   });
@@ -448,6 +462,7 @@ describe('render budget', () => {
         drawCalls: 950,
         maxChunkDrawCalls: 0,
         maxChunkMeshes: 0,
+        textureCount: 0,
       })
     ).toEqual([
       `Visibility radius reduced to ${REDUCED_VISIBILITY_RADIUS}`,
@@ -464,6 +479,7 @@ describe('render budget', () => {
         drawCalls: 1300,
         maxChunkDrawCalls: 0,
         maxChunkMeshes: 0,
+        textureCount: 0,
       })
     ).toEqual([
       `Visibility radius reduced to ${MIN_VISIBILITY_RADIUS}`,
@@ -481,6 +497,7 @@ describe('render budget', () => {
       drawCalls: 200,
       maxChunkDrawCalls: 170,
       maxChunkMeshes: 0,
+      textureCount: 0,
     });
     expect(state.visibilityRadius).toBe(REDUCED_VISIBILITY_RADIUS);
 
@@ -491,6 +508,7 @@ describe('render budget', () => {
       drawCalls: 200,
       maxChunkDrawCalls: 250,
       maxChunkMeshes: 0,
+      textureCount: 0,
     });
     expect(state.visibilityRadius).toBe(MIN_VISIBILITY_RADIUS);
   });
@@ -506,6 +524,7 @@ describe('render budget', () => {
         drawCalls: 0,
         maxChunkDrawCalls: 170,
         maxChunkMeshes: 0,
+        textureCount: 0,
       })
     ).toEqual([
       `Visibility radius reduced to ${REDUCED_VISIBILITY_RADIUS}`,
@@ -522,6 +541,7 @@ describe('render budget', () => {
         drawCalls: 0,
         maxChunkDrawCalls: 250,
         maxChunkMeshes: 0,
+        textureCount: 0,
       })
     ).toEqual([
       `Visibility radius reduced to ${MIN_VISIBILITY_RADIUS}`,
@@ -539,6 +559,7 @@ describe('render budget', () => {
       drawCalls: 200,
       maxChunkDrawCalls: 0,
       maxChunkMeshes: 100,
+      textureCount: 0,
     });
     expect(state.visibilityRadius).toBe(REDUCED_VISIBILITY_RADIUS);
 
@@ -549,6 +570,7 @@ describe('render budget', () => {
       drawCalls: 200,
       maxChunkDrawCalls: 0,
       maxChunkMeshes: 150,
+      textureCount: 0,
     });
     expect(state.visibilityRadius).toBe(MIN_VISIBILITY_RADIUS);
   });
@@ -564,6 +586,7 @@ describe('render budget', () => {
         drawCalls: 0,
         maxChunkDrawCalls: 0,
         maxChunkMeshes: 100,
+        textureCount: 0,
       })
     ).toEqual([
       `Visibility radius reduced to ${REDUCED_VISIBILITY_RADIUS}`,
@@ -580,10 +603,73 @@ describe('render budget', () => {
         drawCalls: 0,
         maxChunkDrawCalls: 0,
         maxChunkMeshes: 150,
+        textureCount: 0,
       })
     ).toEqual([
       `Visibility radius reduced to ${MIN_VISIBILITY_RADIUS}`,
       'Chunk meshes exceeded the hard cap',
+    ]);
+  });
+
+  it('reduces draw distance when active texture pressure gets too high', () => {
+    let state = DEFAULT_RENDER_BUDGET_STATE;
+
+    state = advanceRenderBudgetState(state, {
+      deltaMs: 16.67,
+      active3d: true,
+      weatherVisibility: 1,
+      drawCalls: 200,
+      maxChunkDrawCalls: 0,
+      maxChunkMeshes: 0,
+      textureCount: 52,
+    });
+    expect(state.visibilityRadius).toBe(REDUCED_VISIBILITY_RADIUS);
+
+    state = advanceRenderBudgetState(state, {
+      deltaMs: 16.67,
+      active3d: true,
+      weatherVisibility: 1,
+      drawCalls: 200,
+      maxChunkDrawCalls: 0,
+      maxChunkMeshes: 0,
+      textureCount: 80,
+    });
+    expect(state.visibilityRadius).toBe(MIN_VISIBILITY_RADIUS);
+  });
+
+  it('reports texture pressure in the active limiter list', () => {
+    expect(
+      getRenderQualityLimiters({
+        smoothedFrameMs: 16.67,
+        visibilityRadius: REDUCED_VISIBILITY_RADIUS,
+        weatherVisibilityRadiusCap: DEFAULT_VISIBILITY_RADIUS,
+        targetFps: 60,
+        severeFrameStreak: 0,
+        drawCalls: 0,
+        maxChunkDrawCalls: 0,
+        maxChunkMeshes: 0,
+        textureCount: 52,
+      })
+    ).toEqual([
+      `Visibility radius reduced to ${REDUCED_VISIBILITY_RADIUS}`,
+      'Active textures exceeded the soft cap',
+    ]);
+
+    expect(
+      getRenderQualityLimiters({
+        smoothedFrameMs: 16.67,
+        visibilityRadius: MIN_VISIBILITY_RADIUS,
+        weatherVisibilityRadiusCap: DEFAULT_VISIBILITY_RADIUS,
+        targetFps: 60,
+        severeFrameStreak: 0,
+        drawCalls: 0,
+        maxChunkDrawCalls: 0,
+        maxChunkMeshes: 0,
+        textureCount: 80,
+      })
+    ).toEqual([
+      `Visibility radius reduced to ${MIN_VISIBILITY_RADIUS}`,
+      'Active textures exceeded the hard cap',
     ]);
   });
 

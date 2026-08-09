@@ -109,6 +109,10 @@ type DebugSnapshotExportOptions = {
         soft: number;
         hard: number;
       };
+      textures: {
+        soft: number;
+        hard: number;
+      };
     };
   };
   lod: {

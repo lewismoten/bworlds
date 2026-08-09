@@ -17,6 +17,7 @@ describe('frame loop runner', () => {
       getDrawCalls: () => 456,
       getMaxChunkDrawCalls: () => 96,
       getMaxChunkMeshes: () => 72,
+      getTextureCount: () => 24,
       getWeatherVisibility: () => 0.7,
       is3dViewActive: () => true,
       isTimeFrozen: () => false,
@@ -33,6 +34,7 @@ describe('frame loop runner', () => {
     expect(renderBudgetState.drawCalls).toBe(456);
     expect(renderBudgetState.maxChunkDrawCalls).toBe(96);
     expect(renderBudgetState.maxChunkMeshes).toBe(72);
+    expect(renderBudgetState.textureCount).toBe(24);
     expect(renderBudgetState.weatherVisibility).toBe(0.7);
     expect(renderBudgetState.smoothedFrameMs).toBeGreaterThan(
       DEFAULT_RENDER_BUDGET_STATE.smoothedFrameMs
@@ -51,6 +53,7 @@ describe('frame loop runner', () => {
       getDrawCalls: () => 0,
       getMaxChunkDrawCalls: () => 0,
       getMaxChunkMeshes: () => 0,
+      getTextureCount: () => 0,
       getWeatherVisibility: () => 1,
       is3dViewActive: () => false,
       isTimeFrozen: () => true,
