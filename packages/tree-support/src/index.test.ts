@@ -4,6 +4,7 @@ import {
   createTreeGenerator,
   createTreeGeneratorBase,
   createTreeSpecies,
+  resolveTreeSeason,
   type TreeLogicalState,
 } from './index.ts';
 
@@ -81,6 +82,15 @@ describe('tree support', () => {
     });
     expect(base.getCapabilityOrFallback('lod')).toEqual({ levels: 1 });
     expect(base.getCapabilityOrFallback('flowers')).toBe(false);
+  });
+
+  it('resolves seasonal tree state from direct season or year progress', () => {
+    expect(resolveTreeSeason({ season: 'winter' })).toBe('winter');
+    expect(resolveTreeSeason({ yearProgress: 0.02 })).toBe('spring');
+    expect(resolveTreeSeason({ yearProgress: 0.3 })).toBe('summer');
+    expect(resolveTreeSeason({ yearProgress: 0.6 })).toBe('autumn');
+    expect(resolveTreeSeason({ yearProgress: 0.9 })).toBe('winter');
+    expect(resolveTreeSeason()).toBeUndefined();
   });
 
   it('lets generators advertise capabilities without generating a tree', () => {

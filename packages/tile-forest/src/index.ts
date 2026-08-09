@@ -26,6 +26,7 @@ import {
   createTreeGenerator,
   createTreeGeneratorBase,
   createTreeSpecies,
+  resolveTreeSeason,
   type TreeBranchState,
   type TreeFamily,
   type TreeFoliageState,
@@ -1774,10 +1775,11 @@ const forestTreeGeneratorBase = createTreeGeneratorBase({
 const forestBroadleafFamilyBase = createTreeGeneratorBase({
   seed: FOREST_TREE_DESCRIPTOR_SEED,
   parent: forestTreeGeneratorBase,
-  capabilities: {
+  capabilities: (query) => ({
     seasonalLeaves: true,
-    flowers: true,
-  },
+    foliage: resolveTreeSeason(query) === 'winter' ? false : true,
+    flowers: false,
+  }),
 });
 
 const forestConiferFamilyBase = createTreeGeneratorBase({
@@ -1786,6 +1788,7 @@ const forestConiferFamilyBase = createTreeGeneratorBase({
   capabilities: {
     seasonalLeaves: false,
     flowers: false,
+    foliage: true,
   },
 });
 
@@ -1830,10 +1833,10 @@ const forestBirchSpecies = createTreeSpecies<
   familyId: 'broadleaf',
   id: 'birch',
   parentBase: forestBroadleafFamilyBase,
-  capabilities: {
-    flowers: true,
+  capabilities: (query) => ({
+    flowers: resolveTreeSeason(query) === 'spring',
     hollows: false,
-  },
+  }),
   generate(context, base) {
     return createForestTreeDescriptorFromSpecies(context, base, {
       seed: FOREST_TREE_BIRCH_SEED,

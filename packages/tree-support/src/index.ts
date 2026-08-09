@@ -27,10 +27,13 @@ export type TreeCapabilityValue =
   | Record<string, unknown>;
 
 export type TreeCapabilityConsumer = 'render-2d' | 'render-3d' | 'gameplay';
+export type TreeSeason = 'spring' | 'summer' | 'autumn' | 'winter';
 
 export type TreeCapabilityQuery = {
   consumer?: TreeCapabilityConsumer;
   detailLevel?: 'full' | 'low';
+  season?: TreeSeason;
+  yearProgress?: number;
   [key: string]: unknown;
 };
 
@@ -306,6 +309,28 @@ export function getTreeCapabilityFallback(
     default:
       return false;
   }
+}
+
+export function resolveTreeSeason(
+  query?: Pick<TreeCapabilityQuery, 'season' | 'yearProgress'>
+): TreeSeason | undefined {
+  if (query?.season) {
+    return query.season;
+  }
+  if (typeof query?.yearProgress !== 'number') {
+    return undefined;
+  }
+  const normalized = ((query.yearProgress % 1) + 1) % 1;
+  if (normalized < 0.25) {
+    return 'spring';
+  }
+  if (normalized < 0.5) {
+    return 'summer';
+  }
+  if (normalized < 0.75) {
+    return 'autumn';
+  }
+  return 'winter';
 }
 
 function resolveTreeCapabilities(

@@ -56,7 +56,7 @@ I would definitely implement the feature-support idea.
 * [X] Ensure adding a new capability does not break existing generators.
 * [X] Allow renderer-specific capabilities.
 * [X] Allow gameplay capabilities independent of renderer capabilities.
-* [ ] Allow capabilities to differ by tree state.
+* [X] Allow capabilities to differ by tree state.
 * [X] Allow capabilities to differ by LOD.
 
 Something along these lines:
@@ -118,12 +118,12 @@ interface TreeCapabilities {
 * [X] Define tree families.
 * [X] Define individual species.
 * [X] Allow species to inherit characteristics from families.
-* [ ] Define deciduous trees.
-* [ ] Define evergreen trees.
-* [ ] Define conifers.
+* [X] Define deciduous trees.
+* [X] Define evergreen trees.
+* [X] Define conifers.
 * [ ] Define palms.
 * [ ] Define fruit trees.
-* [ ] Define flowering trees.
+* [X] Define flowering trees.
 * [ ] Define swamp trees.
 * [ ] Define tropical trees.
 * [ ] Define desert trees.

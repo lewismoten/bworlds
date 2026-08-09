@@ -706,10 +706,29 @@ describe('tile forest', () => {
     expect(oak?.supports('seasonalLeaves')).toBe(true);
     expect(oak?.supports('flowers')).toBe(false);
     expect(oak?.supports('hollows')).toBe(true);
-    expect(birch?.supports('flowers')).toBe(true);
+    expect(birch?.supports('flowers', { season: 'spring' })).toBe(true);
+    expect(birch?.supports('flowers', { season: 'autumn' })).toBe(false);
     expect(birch?.supports('hollows')).toBe(false);
     expect(pine?.supports('seasonalLeaves')).toBe(false);
     expect(pine?.supports('flowers')).toBe(false);
+  });
+
+  it('lets forest family capabilities differ by seasonal tree state', () => {
+    const broadleafFamily = getForestTreeFamilies().find(
+      (family) => family.familyId === 'broadleaf'
+    );
+    const coniferFamily = getForestTreeFamilies().find(
+      (family) => family.familyId === 'conifer'
+    );
+
+    expect(broadleafFamily).toBeDefined();
+    expect(coniferFamily).toBeDefined();
+    expect(broadleafFamily?.supports('foliage', { season: 'summer' })).toBe(true);
+    expect(broadleafFamily?.supports('foliage', { season: 'winter' })).toBe(false);
+    expect(coniferFamily?.supports('foliage', { season: 'winter' })).toBe(true);
+    expect(
+      broadleafFamily?.supports('foliage', { yearProgress: 0.95 })
+    ).toBe(false);
   });
 
   it('keeps forest species selection deterministic across tiles', () => {
