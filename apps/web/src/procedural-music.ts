@@ -24,6 +24,7 @@ import {
   type ProceduralThemeMotif,
 } from './procedural-music-theme-motif.ts';
 import { resolveProceduralMeterAccent } from './procedural-music-meter.ts';
+import { blendThemeMotifWithImportantNpcMotif } from './procedural-music-npc-motif.ts';
 type MusicPosition = { x: number; y: number };
 type TileKind = string;
 type ContextType = string;
@@ -387,13 +388,21 @@ export function resolveMusicTheme(
   return {
     ...theme,
     vocabulary: resolveMusicThemeVocabulary(theme.id, clusterX, clusterY),
-    motif: resolveProceduralThemeMotif({
-      themeId: theme.id,
-      contextType,
-      tileKind: resolvedKind,
-      clusterX,
-      clusterY,
-    }),
+    motif: blendThemeMotifWithImportantNpcMotif(
+      resolveProceduralThemeMotif({
+        themeId: theme.id,
+        contextType,
+        tileKind: resolvedKind,
+        clusterX,
+        clusterY,
+      }),
+      {
+        contextType,
+        tileKind: resolvedKind,
+        clusterX,
+        clusterY,
+      }
+    ),
   };
 }
 

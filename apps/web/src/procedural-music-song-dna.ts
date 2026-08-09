@@ -10,6 +10,7 @@ import {
   resolveProceduralLeadMotif,
 } from './procedural-music-harmony.ts';
 import { resolveProceduralMusicBlueprint } from './procedural-music-blueprint.ts';
+import { resolveImportantMusicNpcMotifs } from './procedural-music-npc-motif.ts';
 
 export type ProceduralSongDna = {
   identityId: string;
@@ -28,6 +29,12 @@ export type ProceduralSongDna = {
   leadContour: readonly string[];
   blueprintId: ReturnType<typeof resolveProceduralMusicBlueprint>['id'];
   blueprintLabel: string;
+  importantNpcMotifs: Array<{
+    npcId: string;
+    npcName: string;
+    professionLabel: string;
+    motifDegreeOffsets: readonly number[];
+  }>;
   instrumentation: Record<'lead' | 'harmony' | 'bass' | 'percussion', string>;
   encounterMode: MusicEncounterMode;
 };
@@ -64,6 +71,7 @@ export function createProceduralSongDna(
     clusterX,
     clusterY
   ).map((step) => `${step.stage}:${step.degreeOffset}`);
+  const importantNpcMotifs = resolveImportantMusicNpcMotifs(options);
   const variantLabel = resolveSongDnaVariantLabel(
     options.tileKind,
     options.contextType
@@ -95,6 +103,7 @@ export function createProceduralSongDna(
     leadContour,
     blueprintId: blueprint.id,
     blueprintLabel: blueprint.label,
+    importantNpcMotifs,
     instrumentation: {
       lead: instrumentBank.instruments.lead.family,
       harmony: instrumentBank.instruments.harmony.family,

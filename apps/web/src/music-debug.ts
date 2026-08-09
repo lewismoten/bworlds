@@ -480,6 +480,9 @@ export function buildMusicDebugSummaryMarkup(
       <span>Lead Motif ${snapshot.leadMotif.map((degree) => degree + 1).join(' - ')}</span>
     </div>
     <div class="music-debug-role-counts">
+      <span>NPC Motifs ${formatMusicDebugNpcMotifs(snapshot.songDna.importantNpcMotifs)}</span>
+    </div>
+    <div class="music-debug-role-counts">
       <span>Lead Contour ${snapshot.leadContour.join(' / ')}</span>
     </div>
     <div class="music-debug-role-counts">
@@ -733,4 +736,21 @@ function normalizeWeatherKind(
 
 function clampTimelineOffset(value: number, durationMs: number): number {
   return Math.min(durationMs, Math.max(0, Math.round(value)));
+}
+
+function formatMusicDebugNpcMotifs(
+  motifs: MusicDebugSnapshot['songDna']['importantNpcMotifs']
+): string {
+  if (motifs.length === 0) {
+    return 'none';
+  }
+
+  return motifs
+    .map(
+      (motif) =>
+        `${motif.npcName} (${motif.professionLabel}) ${motif.motifDegreeOffsets
+          .map((degree) => degree + 1)
+          .join(' - ')}`
+    )
+    .join(' | ');
 }

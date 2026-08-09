@@ -116,6 +116,7 @@ describe('music debug', () => {
     expect(summary).toContain('Chords');
     expect(summary).toContain('Shared Motif');
     expect(summary).toContain('Lead Motif');
+    expect(summary).toContain('NPC Motifs');
     expect(summary).toContain('Lead Contour');
     expect(summary).toContain('Lead Cadence');
     expect(summary).toContain('Lead Max Leap');
@@ -124,6 +125,9 @@ describe('music debug', () => {
     expect(summary).toContain(snapshot.theme.vocabulary.modeLabel);
     expect(summary).toContain(snapshot.theme.motif.adaptationLabel);
     expect(summary).toContain(snapshot.songDna.identityId);
+    expect(summary).toContain(
+      snapshot.songDna.importantNpcMotifs[0]?.npcName ?? ''
+    );
     expect(summary).toContain('Hz</li>');
   });
 
