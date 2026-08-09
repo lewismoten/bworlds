@@ -52,8 +52,8 @@ Operates at several levels: per model, per LOD, per plugin, per chunk, and per e
 * [X] Cap triangle count per model.
 * [X] Cap line-segment count.
 * [X] Cap point count.
-* [ ] Cap geometry groups.
-* [ ] Cap separate draw ranges.
+* [X] Cap geometry groups.
+* [X] Cap separate draw ranges.
 * [X] Cap attributes per geometry.
 * [X] Cap custom vertex attributes.
 * [X] Cap vertex attribute byte size.

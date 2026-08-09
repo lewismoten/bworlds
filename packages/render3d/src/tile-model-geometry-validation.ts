@@ -155,6 +155,11 @@ export type GeometryAttributeBudgetStats = {
   maxVertexAttributeByteSize: number;
 };
 
+export type GeometryStructureBudgetStats = {
+  maxGeometryGroupCount: number;
+  maxGeometryDrawRangeCount: number;
+};
+
 export function getGeometryAttributeBudgetStats(
   root: TraversableObjectLike
 ): GeometryAttributeBudgetStats {
@@ -185,6 +190,34 @@ export function getGeometryAttributeBudgetStats(
     maxAttributeCount,
     maxCustomAttributeCount,
     maxVertexAttributeByteSize,
+  };
+}
+
+export function getGeometryStructureBudgetStats(
+  root: TraversableObjectLike
+): GeometryStructureBudgetStats {
+  const geometries = new Set<unknown>();
+  let maxGeometryGroupCount = 0;
+  let maxGeometryDrawRangeCount = 0;
+
+  traverseSceneGraph(root, (child) => {
+    if (!child.geometry || geometries.has(child.geometry)) {
+      return;
+    }
+    geometries.add(child.geometry);
+    maxGeometryGroupCount = Math.max(
+      maxGeometryGroupCount,
+      getGeometryGroupCount(child.geometry)
+    );
+    maxGeometryDrawRangeCount = Math.max(
+      maxGeometryDrawRangeCount,
+      getGeometryDrawRangeCount(child.geometry)
+    );
+  });
+
+  return {
+    maxGeometryGroupCount,
+    maxGeometryDrawRangeCount,
   };
 }
 
@@ -329,6 +362,36 @@ function getGeometryTriangleCount(geometry: unknown): number {
     return Math.floor(indexCount / 3);
   }
   return Math.floor(getGeometryVertexCount(geometry) / 3);
+}
+
+function getGeometryGroupCount(geometry: unknown): number {
+  const groups = (
+    geometry as {
+      groups?: unknown;
+    }
+  )?.groups;
+  return Array.isArray(groups) ? groups.length : 0;
+}
+
+function getGeometryDrawRangeCount(geometry: unknown): number {
+  const drawRange = (
+    geometry as {
+      drawRange?: {
+        start?: unknown;
+        count?: unknown;
+      };
+    }
+  )?.drawRange;
+  if (
+    typeof drawRange?.start === 'number' &&
+    typeof drawRange?.count === 'number' &&
+    Number.isFinite(drawRange.start) &&
+    Number.isFinite(drawRange.count) &&
+    drawRange.count >= 0
+  ) {
+    return 1;
+  }
+  return 0;
 }
 
 function getGeometryAttributeNames(geometry: unknown): string[] {

@@ -37,6 +37,7 @@ import {
   countLineSegments,
   countPointVertices,
   getGeometryAttributeBudgetStats,
+  getGeometryStructureBudgetStats,
   getMaxGeometryTriangleCount,
   getGeometryVertexCount,
 } from './tile-model-geometry-validation.ts';
@@ -247,6 +248,8 @@ const FULL_DETAIL_TILE_MODEL_HARD_LIMITS: TileModelHardLimits = {
   maxGeometryAttributeCount: 10,
   maxCustomGeometryAttributeCount: 4,
   maxGeometryVertexAttributeByteSize: 1_200_000,
+  maxGeometryGroupCount: 12,
+  maxGeometryDrawRangeCount: 0,
   materialCount: 16,
   textureCount: 16,
   lightCount: 4,
@@ -274,6 +277,8 @@ const LOW_DETAIL_TILE_MODEL_HARD_LIMITS: TileModelHardLimits = {
   maxGeometryAttributeCount: 6,
   maxCustomGeometryAttributeCount: 2,
   maxGeometryVertexAttributeByteSize: 192_000,
+  maxGeometryGroupCount: 4,
+  maxGeometryDrawRangeCount: 0,
   materialCount: 3,
   textureCount: 4,
   lightCount: 1,
@@ -299,6 +304,7 @@ export function validateTileModelAgainstRenderBudget(
       : FULL_DETAIL_MAX_GEOMETRY_AXIS_SPAN;
   const sceneResourceStats = collectSceneResourceStats(root);
   const geometryAttributeBudgetStats = getGeometryAttributeBudgetStats(root);
+  const geometryStructureBudgetStats = getGeometryStructureBudgetStats(root);
   const stats = {
     ...sceneResourceStats,
     invalidPositionCoordinateCount: countInvalidGeometryCoordinateSets(root),
@@ -317,6 +323,9 @@ export function validateTileModelAgainstRenderBudget(
       geometryAttributeBudgetStats.maxCustomAttributeCount,
     maxGeometryVertexAttributeByteSize:
       geometryAttributeBudgetStats.maxVertexAttributeByteSize,
+    maxGeometryGroupCount: geometryStructureBudgetStats.maxGeometryGroupCount,
+    maxGeometryDrawRangeCount:
+      geometryStructureBudgetStats.maxGeometryDrawRangeCount,
   };
   const limits = getTileModelHardLimits(detailLevel);
   const violations: TileModelBudgetViolation[] = [];
@@ -340,6 +349,8 @@ export function validateTileModelAgainstRenderBudget(
     'maxGeometryAttributeCount',
     'maxCustomGeometryAttributeCount',
     'maxGeometryVertexAttributeByteSize',
+    'maxGeometryGroupCount',
+    'maxGeometryDrawRangeCount',
     'materialCount',
     'textureCount',
     'lightCount',
@@ -542,6 +553,8 @@ type TileModelHardLimits = {
   maxGeometryAttributeCount: number;
   maxCustomGeometryAttributeCount: number;
   maxGeometryVertexAttributeByteSize: number;
+  maxGeometryGroupCount: number;
+  maxGeometryDrawRangeCount: number;
   materialCount: number;
   textureCount: number;
   lightCount: number;
@@ -569,6 +582,8 @@ type TileModelBudgetValidation = {
     maxGeometryAttributeCount: number;
     maxCustomGeometryAttributeCount: number;
     maxGeometryVertexAttributeByteSize: number;
+    maxGeometryGroupCount: number;
+    maxGeometryDrawRangeCount: number;
   };
   limits: TileModelHardLimits;
   violations: TileModelBudgetViolation[];
