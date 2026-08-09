@@ -8,7 +8,10 @@ import {
   RENDER_BUDGET_PART_PRIORITIES,
 } from '@bworlds/plugin-api';
 import { describe, expect, it } from 'vitest';
-import { createLighthouseTilePlugin } from './index.ts';
+import {
+  createLighthouseTilePlugin,
+  LIGHTHOUSE_STYLE_CACHE_MAX_ENTRIES,
+} from './index.ts';
 
 class FakeGeometry {
   args: number[];
@@ -238,6 +241,50 @@ describe('tile lighthouse', () => {
       secondPivot?.userData?.lighthouseBeamRotationDirection
     );
     expect(signatures.size).toBeGreaterThan(1);
+  });
+
+  it('recreates lighthouse regional styles deterministically after bounded cache eviction churn', () => {
+    const plugin = createLighthouseTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'lighthouse');
+    const baseline = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state: {} as never,
+      tile: { kind: 'lighthouse' } as never,
+      tileX: 4,
+      tileY: 5,
+    }) as FakeNode | undefined;
+
+    for (let index = 0; index < LIGHTHOUSE_STYLE_CACHE_MAX_ENTRIES + 48; index += 1) {
+      tile?.create3DModel?.({
+        three: fakeThree as never,
+        state: {} as never,
+        tile: { kind: 'lighthouse' } as never,
+        tileX: index * 18,
+        tileY: 0,
+      });
+    }
+
+    const resolved = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state: {} as never,
+      tile: { kind: 'lighthouse' } as never,
+      tileX: 4,
+      tileY: 5,
+    }) as FakeNode | undefined;
+    const baselineBeams = collectBeamMeshes(baseline);
+    const resolvedBeams = collectBeamMeshes(resolved);
+    const baselinePivot = findBeamPivot(baseline);
+    const resolvedPivot = findBeamPivot(resolved);
+
+    expect((resolvedBeams[0]?.material as FakeMaterial | undefined)?.options.color).toBe(
+      (baselineBeams[0]?.material as FakeMaterial | undefined)?.options.color
+    );
+    expect(resolvedPivot?.userData?.lighthouseBeamRotationDurationMs).toBe(
+      baselinePivot?.userData?.lighthouseBeamRotationDurationMs
+    );
+    expect(resolvedPivot?.userData?.lighthouseBeamRotationDirection).toBe(
+      baselinePivot?.userData?.lighthouseBeamRotationDirection
+    );
   });
 
   it('reports a cheaper low-detail lighthouse cost estimate before model generation', () => {

@@ -1,4 +1,5 @@
 import { hash2D, registerHashLabel, smoothstep } from '@bworlds/core';
+import { createBoundedCache } from '@bworlds/cache-support';
 import { createPlainsBackedTilePainter } from '@bworlds/paint-support';
 import {
   createAnchoredEnterablePoiTilePlugin,
@@ -41,6 +42,7 @@ const LIGHTHOUSE_BALCONY_KEY = 'lighthouseBalcony';
 const LIGHTHOUSE_BALCONY_RAIL_KEY = 'lighthouseBalconyRail';
 const LIGHTHOUSE_WALL_GLOW_KEY = 'lighthouseWallGlow';
 const LIGHTHOUSE_REGION_SIZE = 18;
+export const LIGHTHOUSE_STYLE_CACHE_MAX_ENTRIES = 96;
 const LIGHTHOUSE_BEAM_COLOR_SEED = registerHashLabel('lighthouse-beam-color');
 const LIGHTHOUSE_PANE_COLOR_SEED = registerHashLabel('lighthouse-pane-color');
 const LIGHTHOUSE_ROTATION_SPEED_SEED = registerHashLabel('lighthouse-rotation-speed');
@@ -77,14 +79,14 @@ const LIGHTHOUSE_LOW_DETAIL_COST_ESTIMATE: Model3DResourceCostEstimate = {
   vertexCount: 144,
   triangleCount: 48,
 };
-const lighthouseStyleCache = new Map<
+const lighthouseStyleCache = createBoundedCache<
   string,
   {
     createMaterials(
       three: Create3DModelContext['three']
     ): LighthouseStyleMaterials;
   }
->();
+>(LIGHTHOUSE_STYLE_CACHE_MAX_ENTRIES);
 
 type BeamMaterialLike = ThreeMaterialLike & {
   opacity?: number;
