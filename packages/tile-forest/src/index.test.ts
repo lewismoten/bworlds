@@ -1042,6 +1042,44 @@ describe('tile forest', () => {
     expect(average(ancientScores)).toBeGreaterThan(average(matureScores));
   });
 
+  it('gives older forest trees more dead branches', () => {
+    const samples: Array<{
+      age: ReturnType<typeof getForestTreeAgeProfiles>[number];
+      branches: ReturnType<typeof getForestTreeBranchProfiles>[number];
+    }> = [];
+
+    for (let tileY = 0; tileY < 64; tileY += 1) {
+      for (let tileX = 0; tileX < 64; tileX += 1) {
+        const ages = getForestTreeAgeProfiles(tileX, tileY);
+        const branches = getForestTreeBranchProfiles(tileX, tileY);
+        for (let index = 0; index < ages.length; index += 1) {
+          const age = ages[index];
+          const branch = branches[index];
+          if (age && branch) {
+            samples.push({ age, branches: branch });
+          }
+        }
+      }
+    }
+
+    const countDeadBranches = (sample: (typeof samples)[number]) =>
+      sample.branches.branches.filter((branch) => branch.dead).length;
+    const matureCounts = samples
+      .filter((sample) => sample.age.lifeStage === 'mature')
+      .map(countDeadBranches);
+    const ancientCounts = samples
+      .filter((sample) => sample.age.lifeStage === 'ancient')
+      .map(countDeadBranches);
+
+    expect(matureCounts.length).toBeGreaterThan(0);
+    expect(ancientCounts.length).toBeGreaterThan(0);
+
+    const average = (values: number[]) =>
+      values.reduce((sum, value) => sum + value, 0) / values.length;
+
+    expect(average(ancientCounts)).toBeGreaterThan(average(matureCounts));
+  });
+
   it('generates more tree-like branch profiles for broadleaf and pine forms', () => {
     const branchTiles: Array<{
       x: number;

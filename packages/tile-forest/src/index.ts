@@ -2143,6 +2143,12 @@ function createForestTreeDescriptorFromSpecies(
         : biological.lifeStage === 'mature'
           ? 2
           : 3);
+  const deadBranchBudget =
+    biological.lifeStage === 'ancient'
+      ? 1 + Math.floor(appearanceRandom() * Math.max(2, branchCount * 0.4))
+      : biological.lifeStage === 'mature'
+        ? Math.floor(appearanceRandom() * Math.max(1, branchCount * 0.2))
+        : 0;
   const branches = new Array<ForestBranchDescriptor>(branchCount);
   const foliageCount =
     definition.form === 'pine'
@@ -2171,6 +2177,13 @@ function createForestTreeDescriptorFromSpecies(
 
   for (let branchIndex = 0; branchIndex < branchCount; branchIndex += 1) {
     const branchProgress = branchCount <= 1 ? 0 : branchIndex / (branchCount - 1);
+    const deadBranchThreshold =
+      branchCount <= 1 ? 1 : 1 - deadBranchBudget / Math.max(1, branchCount);
+    const dead =
+      deadBranchBudget > 0 &&
+      branchProgress >= deadBranchThreshold &&
+      appearanceRandom() >
+        (biological.lifeStage === 'ancient' ? 0.14 : 0.58);
     const irregularWobbleX = (appearanceRandom() - 0.5) * irregularity;
     const irregularWobbleZ = (appearanceRandom() - 0.5) * irregularity;
     const irregularPitch = (appearanceRandom() - 0.5) * irregularity * 0.7;
@@ -2212,6 +2225,7 @@ function createForestTreeDescriptorFromSpecies(
             appearanceRandom() * 0.14 +
             irregularPitch,
       roll: -1.25 + appearanceRandom() * Math.PI * 0.9 + irregularRoll,
+      dead,
     };
   }
 

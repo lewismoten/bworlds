@@ -185,7 +185,7 @@ interface TreeCapabilities {
 * [X] Generate mature trees.
 * [X] Generate ancient trees.
 * [X] Make very old trees more irregular.
-* [ ] Give older trees more dead branches.
+* [X] Give older trees more dead branches.
 * [X] Increase hollow probability with age.
 * [ ] Increase bark damage with age.
 * [ ] Increase branch loss with age.
