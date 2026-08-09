@@ -89,7 +89,7 @@ describe('debug snapshot', () => {
           lowDetailEnterDistance: 6.5,
           lowDetailExitDistance: 6,
           hysteresisDistance: 0.5,
-          pendingBuildFullDetailDistance: 3,
+          pendingBuildFullDetailDistance: 1.5,
           syncMovementDistance: 0.18,
         },
       },
@@ -454,7 +454,7 @@ describe('debug snapshot', () => {
         lowDetailEnterDistance: 6.5,
         lowDetailExitDistance: 6,
         hysteresisDistance: 0.5,
-        pendingBuildFullDetailDistance: 3,
+        pendingBuildFullDetailDistance: 1.5,
         syncMovementDistance: 0.18,
       },
     });

@@ -41,7 +41,7 @@ Always run tests to make sure all tests pass
 - [ ] Consolidate river and route calculations.
    The trace still shows `getCachedRiverCurvePoints()`, `getCachedRiverForkPath()`, `getDistanceToLineSegment()`, route connectivity checks, rail-network resolution, and terrain classification in the generation path. Resolve those once per relevant region/tile and share the result instead of having multiple plugins rediscover them.
 
-- [ ] Generate 3D content nearest-first and low-detail-first.
+- [X] Generate 3D content nearest-first and low-detail-first.
    On entering 3D, immediately render cheap terrain and low LOD models. Queue high-detail trees, decorations, river details, distant objects, etc. afterward. The player should get a responsive frame before the entire render radius is complete.
 
 - [ ] Move deterministic world-generation computation into workers.
