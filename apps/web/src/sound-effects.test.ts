@@ -544,6 +544,91 @@ describe('sound effects', () => {
     }
   });
 
+  it('applies category volume to environment sounds before playback', () => {
+    const createdGains: Array<{
+      gain: {
+        setValueAtTime: ReturnType<typeof vi.fn>;
+        exponentialRampToValueAtTime: ReturnType<typeof vi.fn>;
+      };
+      connect: ReturnType<typeof vi.fn>;
+      disconnect: ReturnType<typeof vi.fn>;
+    }> = [];
+
+    class FakeAudioContext {
+      state: AudioContextState = 'running';
+      currentTime = 0;
+      destination = {};
+      createOscillator() {
+        return {
+          onended: null as ((event: Event) => void) | null,
+          type: 'sine',
+          frequency: {
+            setValueAtTime: vi.fn(),
+            exponentialRampToValueAtTime: vi.fn(),
+            linearRampToValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+          start: vi.fn(),
+          stop: vi.fn(),
+        } as unknown as OscillatorNode;
+      }
+      createGain() {
+        const gain = {
+          gain: {
+            setValueAtTime: vi.fn(),
+            exponentialRampToValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+        };
+        createdGains.push(gain);
+        return gain as unknown as GainNode;
+      }
+      createStereoPanner() {
+        return {
+          pan: {
+            setValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+        } as unknown as StereoPannerNode;
+      }
+      resume() {
+        return Promise.resolve();
+      }
+    }
+
+    const originalAudioContext = globalThis.AudioContext;
+    vi.stubGlobal('AudioContext', FakeAudioContext);
+
+    try {
+      const sink = createWebAudioSoundEffectSink({
+        getCategoryVolume(category) {
+          return category === 'environment' ? 0.4 : 1;
+        },
+      });
+      sink.play({
+        kind: 'footstep',
+        nowMs: 0,
+        frequency: 160,
+        durationMs: 90,
+        volume: 0.04,
+        waveform: 'triangle',
+      });
+
+      const envelopeCalls =
+        createdGains[1]?.gain.exponentialRampToValueAtTime.mock.calls ?? [];
+      expect(envelopeCalls[0]?.[0]).toBeCloseTo(0.016, 6);
+    } finally {
+      if (originalAudioContext) {
+        vi.stubGlobal('AudioContext', originalAudioContext);
+      } else {
+        vi.unstubAllGlobals();
+      }
+    }
+  });
+
   it('schedules footsteps on a cadence while walking in 3d', () => {
     const played: ProceduralSoundEffect[] = [];
     const controller = createSoundEffectController({

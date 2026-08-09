@@ -486,8 +486,8 @@
 
 # Audio Importance and Mixing
 
-- [ ] Establish sound categories such as UI, speech, combat, environment, creatures, and music.
-- [ ] Provide separate player volume controls for major audio categories.
+- [x] Establish sound categories such as UI, speech, combat, environment, creatures, and music.
+- [x] Provide separate player volume controls for major audio categories.
 - [x] Give critical gameplay sounds higher priority.
 - [x] Reduce unimportant ambience when important sounds occur.
 - [x] Duck music slightly during important dialogue.

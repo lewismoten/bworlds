@@ -70,6 +70,14 @@ describe('session state', () => {
       musicEnabled: false,
       soundEnabled: true,
       ambianceEnabled: false,
+      categoryVolumes: {
+        music: 0.7,
+        ui: 0.9,
+        speech: 0.6,
+        combat: 0.8,
+        environment: 0.5,
+        creatures: 0.4,
+      },
       compassHeadingAngle: -Math.PI / 2,
       cameraPitch: -0.22,
       playerLevel: 4,
@@ -121,6 +129,14 @@ describe('session state', () => {
         musicEnabled: false,
         soundEnabled: true,
         ambianceEnabled: false,
+        categoryVolumes: {
+          music: 0.7,
+          ui: 0.9,
+          speech: 0.6,
+          combat: 0.8,
+          environment: 0.5,
+          creatures: 0.4,
+        },
         compassHeadingAngle: -Math.PI / 2,
         cameraPitch: -0.22,
         playerLevel: 4,
@@ -155,6 +171,16 @@ describe('session state', () => {
           player: { x: 0, y: 0, facing: 0 },
           stack: [{ id: 'overworld', depth: 0 }],
           ambianceEnabled: 'off',
+        })
+      )
+    ).toBeNull();
+
+    expect(
+      parseSavedSession(
+        JSON.stringify({
+          player: { x: 0, y: 0, facing: 0 },
+          stack: [{ id: 'overworld', depth: 0 }],
+          categoryVolumes: 'loud',
         })
       )
     ).toBeNull();
@@ -434,6 +460,14 @@ describe('session state', () => {
       musicEnabled: true,
       soundEnabled: true,
       ambianceEnabled: true,
+      categoryVolumes: {
+        music: 1,
+        ui: 1,
+        speech: 1,
+        combat: 1,
+        environment: 1,
+        creatures: 1,
+      },
       compassHeadingAngle: null,
       cameraPitch: -0.08,
       playerLevel: 3,

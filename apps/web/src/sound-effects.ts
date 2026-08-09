@@ -1,3 +1,5 @@
+import type { AudioCategory } from './audio-categories.ts';
+import { resolveSoundEffectCategory } from './audio-categories.ts';
 import type { NearbyAmbientKind } from './nearby-ambient.ts';
 
 type ViewModeLike = '2d' | '3d' | 'text';
@@ -63,6 +65,10 @@ export type SoundEffectSink = {
   resume?(): void;
   play(effect: ProceduralSoundEffect): void;
   getActiveSourceCount?(): number;
+};
+
+type SoundEffectSinkOptions = {
+  getCategoryVolume?: (category: AudioCategory) => number;
 };
 
 type SoundEffectVolumeBounds = {
@@ -1161,7 +1167,9 @@ const AMBIENT_SOUND_VOLUME_BOUNDS: SoundEffectVolumeBounds = {
   max: 0.032,
 };
 
-export function createWebAudioSoundEffectSink(): SoundEffectSink {
+export function createWebAudioSoundEffectSink(
+  options: SoundEffectSinkOptions = {}
+): SoundEffectSink {
   let audioContext: AudioContext | null = null;
   let activeSourceCount = 0;
   let outputGainNode: GainNode | null = null;
@@ -1256,6 +1264,15 @@ export function createWebAudioSoundEffectSink(): SoundEffectSink {
       if (!context) {
         return;
       }
+      const categoryVolume = clampValue(
+        options.getCategoryVolume?.(resolveSoundEffectCategory(effect.kind)) ??
+          1,
+        0,
+        1
+      );
+      if (categoryVolume <= 0) {
+        return;
+      }
       const outputGain = getOutputGainNode(context);
       const spatialMix = getSoundSpatialMix(effect.emitter, effect.listener);
       const normalizedVolume = normalizeSoundEffectVolume(
@@ -1271,7 +1288,8 @@ export function createWebAudioSoundEffectSink(): SoundEffectSink {
         typeof context.createStereoPanner === 'function'
           ? context.createStereoPanner()
           : null;
-      const loudness = normalizedVolume * spatialMix.gainMultiplier;
+      const loudness =
+        normalizedVolume * categoryVolume * spatialMix.gainMultiplier;
       const priority = resolveSoundEffectPriority(effect.kind);
       const voice: ActiveSoundVoice = {
         kind: effect.kind,
@@ -1378,7 +1396,7 @@ export function createWebAudioSoundEffectSink(): SoundEffectSink {
       }
       gain.gain.setValueAtTime(0.0001, startAt);
       gain.gain.exponentialRampToValueAtTime(
-        normalizedVolume * spatialMix.gainMultiplier,
+        normalizedVolume * categoryVolume * spatialMix.gainMultiplier,
         startAt + durationSeconds * 0.2
       );
       gain.gain.exponentialRampToValueAtTime(0.0001, startAt + durationSeconds);

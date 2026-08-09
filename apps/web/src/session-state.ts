@@ -6,6 +6,10 @@ import type {
   ModelPreviewMode,
   TimekeeperDisplayMode,
 } from './time-controls.ts';
+import {
+  isAudioCategoryVolumeMapLike,
+  type AudioCategoryVolumes,
+} from './audio-categories.ts';
 import { normalizeAudioPreferences } from './audio-preferences.ts';
 import {
   parsePlayerPlacedPois,
@@ -66,6 +70,7 @@ export type SavedSession = {
   musicEnabled?: boolean;
   soundEnabled?: boolean;
   ambianceEnabled?: boolean;
+  categoryVolumes?: Partial<AudioCategoryVolumes>;
   compassHeadingAngle?: number | null;
   cameraPitch?: number;
   playerLevel?: number;
@@ -101,6 +106,7 @@ export type SessionSnapshot = {
   musicEnabled: boolean;
   soundEnabled: boolean;
   ambianceEnabled: boolean;
+  categoryVolumes: AudioCategoryVolumes;
   compassHeadingAngle: number | null;
   cameraPitch: number;
   playerLevel: number;
@@ -255,6 +261,12 @@ export function parseSavedSession(raw: string | null): SavedSession | null {
       return null;
     }
     if (
+      typeof parsed?.categoryVolumes !== 'undefined' &&
+      !isAudioCategoryVolumeMapLike(parsed.categoryVolumes)
+    ) {
+      return null;
+    }
+    if (
       typeof parsed?.frozenWorldTimeMs !== 'undefined' &&
       parsed.frozenWorldTimeMs !== null &&
       typeof parsed.frozenWorldTimeMs !== 'number'
@@ -338,6 +350,7 @@ export function parseSavedSession(raw: string | null): SavedSession | null {
       musicEnabled: audioPreferences.musicEnabled,
       soundEnabled: audioPreferences.soundEnabled,
       ambianceEnabled: audioPreferences.ambianceEnabled,
+      categoryVolumes: audioPreferences.categoryVolumes,
     } as SavedSession;
   } catch {
     return null;

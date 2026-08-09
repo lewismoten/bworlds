@@ -79,11 +79,18 @@ import {
   serializeSessionSnapshot,
 } from './session-state.ts';
 import {
+  AUDIO_CATEGORIES,
+  getAudioCategoryLabel,
+  type AudioCategory,
+} from './audio-categories.ts';
+import {
   DEFAULT_AUDIO_PREFERENCES,
+  formatAudioCategoryVolumeLabel,
   formatAmbianceToggleLabel,
   formatMusicToggleLabel,
   formatSoundToggleLabel,
   normalizeAudioPreferences,
+  setAudioCategoryVolume,
   toggleAudioPreference,
 } from './audio-preferences.ts';
 import {
@@ -342,6 +349,50 @@ root.innerHTML = `
         <button id="toggle-music" type="button">Music: On</button>
         <button id="toggle-sound" type="button">Sound: On</button>
         <button id="toggle-ambiance" type="button">Ambiance: On</button>
+        <div class="audio-volume-controls" aria-label="Audio volume controls">
+          <label class="audio-volume-control" for="audio-volume-music">
+            <span>Music Volume</span>
+            <div class="audio-volume-row">
+              <input id="audio-volume-music" type="range" min="0" max="100" step="5" value="100" />
+              <output id="audio-volume-music-value" for="audio-volume-music">100%</output>
+            </div>
+          </label>
+          <label class="audio-volume-control" for="audio-volume-ui">
+            <span>UI Volume</span>
+            <div class="audio-volume-row">
+              <input id="audio-volume-ui" type="range" min="0" max="100" step="5" value="100" />
+              <output id="audio-volume-ui-value" for="audio-volume-ui">100%</output>
+            </div>
+          </label>
+          <label class="audio-volume-control" for="audio-volume-speech">
+            <span>Speech Volume</span>
+            <div class="audio-volume-row">
+              <input id="audio-volume-speech" type="range" min="0" max="100" step="5" value="100" />
+              <output id="audio-volume-speech-value" for="audio-volume-speech">100%</output>
+            </div>
+          </label>
+          <label class="audio-volume-control" for="audio-volume-combat">
+            <span>Combat Volume</span>
+            <div class="audio-volume-row">
+              <input id="audio-volume-combat" type="range" min="0" max="100" step="5" value="100" />
+              <output id="audio-volume-combat-value" for="audio-volume-combat">100%</output>
+            </div>
+          </label>
+          <label class="audio-volume-control" for="audio-volume-environment">
+            <span>Environment Volume</span>
+            <div class="audio-volume-row">
+              <input id="audio-volume-environment" type="range" min="0" max="100" step="5" value="100" />
+              <output id="audio-volume-environment-value" for="audio-volume-environment">100%</output>
+            </div>
+          </label>
+          <label class="audio-volume-control" for="audio-volume-creatures">
+            <span>Creatures Volume</span>
+            <div class="audio-volume-row">
+              <input id="audio-volume-creatures" type="range" min="0" max="100" step="5" value="100" />
+              <output id="audio-volume-creatures-value" for="audio-volume-creatures">100%</output>
+            </div>
+          </label>
+        </div>
         <button id="zoom-out-minimap" type="button">Map -</button>
         <button id="zoom-in-minimap" type="button">Map +</button>
         <div class="build-controls">
@@ -722,6 +773,26 @@ const toggleSoundButton =
   document.querySelector<HTMLButtonElement>('#toggle-sound');
 const toggleAmbianceButton =
   document.querySelector<HTMLButtonElement>('#toggle-ambiance');
+const audioCategoryVolumeInputs = new Map<
+  AudioCategory,
+  HTMLInputElement | null
+>(
+  AUDIO_CATEGORIES.map((category) => [
+    category,
+    document.querySelector<HTMLInputElement>(`#audio-volume-${category}`),
+  ])
+);
+const audioCategoryVolumeOutputs = new Map<
+  AudioCategory,
+  HTMLOutputElement | null
+>(
+  AUDIO_CATEGORIES.map((category) => [
+    category,
+    document.querySelector<HTMLOutputElement>(
+      `#audio-volume-${category}-value`
+    ),
+  ])
+);
 const zoomOutMinimapButton =
   document.querySelector<HTMLButtonElement>('#zoom-out-minimap');
 const zoomInMinimapButton =
@@ -1073,13 +1144,24 @@ const renderer3d = create3DRenderer(viewport3d);
 const audioPreferenceState = {
   ...normalizeAudioPreferences(savedSession ?? DEFAULT_AUDIO_PREFERENCES),
 };
+function getAudioCategoryVolume(category: AudioCategory): number {
+  return audioPreferenceState.categoryVolumes[category];
+}
 const soundEffects = createEnabledSoundEffectController(
-  createSoundEffectController(createWebAudioSoundEffectSink()),
+  createSoundEffectController(
+    createWebAudioSoundEffectSink({
+      getCategoryVolume: getAudioCategoryVolume,
+    })
+  ),
   () => audioPreferenceState.soundEnabled
 );
 const gateSoundUpdate = createSoundUpdateGate();
 const musicController = createEnabledMusicController(
-  createMusicController(createWebAudioMusicSink()),
+  createMusicController(
+    createWebAudioMusicSink({
+      getCategoryVolume: getAudioCategoryVolume,
+    })
+  ),
   () => audioPreferenceState.musicEnabled
 );
 const gateMusicUpdate = createMusicUpdateGate();
@@ -1305,8 +1387,6 @@ function updateStatus(
     tile,
     contextLabel: context.label,
   });
-  const dialogueIntensity =
-    resolveDialogueMusicDuckingIntensity(interactionPrompt);
   const statusSignature = getStatusSignature({
     viewMode: state.viewMode,
     playerLevel,
@@ -1584,6 +1664,23 @@ function updateAudioPreferenceUi(): void {
       audioPreferenceState.ambianceEnabled
     );
   }
+  AUDIO_CATEGORIES.forEach((category) => {
+    const input = audioCategoryVolumeInputs.get(category);
+    const output = audioCategoryVolumeOutputs.get(category);
+    const value = audioPreferenceState.categoryVolumes[category];
+    if (input) {
+      input.value = String(Math.round(value * 100));
+      input.setAttribute(
+        'aria-label',
+        `${getAudioCategoryLabel(category)} volume`
+      );
+    }
+    if (output) {
+      const label = formatAudioCategoryVolumeLabel(value);
+      output.value = label;
+      output.textContent = label;
+    }
+  });
 }
 
 function toggleAudioPreferenceSetting(
@@ -1593,9 +1690,27 @@ function toggleAudioPreferenceSetting(
   audioPreferenceState.musicEnabled = nextPreferences.musicEnabled;
   audioPreferenceState.soundEnabled = nextPreferences.soundEnabled;
   audioPreferenceState.ambianceEnabled = nextPreferences.ambianceEnabled;
+  audioPreferenceState.categoryVolumes = nextPreferences.categoryVolumes;
   updateAudioPreferenceUi();
   saveSession();
   requestRender();
+}
+
+function setAudioCategoryVolumeSetting(
+  category: AudioCategory,
+  nextValue: number
+): void {
+  const nextPreferences = setAudioCategoryVolume(
+    audioPreferenceState,
+    category,
+    nextValue
+  );
+  audioPreferenceState.musicEnabled = nextPreferences.musicEnabled;
+  audioPreferenceState.soundEnabled = nextPreferences.soundEnabled;
+  audioPreferenceState.ambianceEnabled = nextPreferences.ambianceEnabled;
+  audioPreferenceState.categoryVolumes = nextPreferences.categoryVolumes;
+  updateAudioPreferenceUi();
+  saveSession();
 }
 
 function updateCelestialEventModeUi(): void {
@@ -3748,6 +3863,17 @@ toggleSoundButton?.addEventListener('click', () => {
 toggleAmbianceButton?.addEventListener('click', () => {
   toggleAudioPreferenceSetting('ambianceEnabled');
 });
+AUDIO_CATEGORIES.forEach((category) => {
+  audioCategoryVolumeInputs
+    .get(category)
+    ?.addEventListener('input', (event) => {
+      const target = event.currentTarget;
+      if (!(target instanceof HTMLInputElement)) {
+        return;
+      }
+      setAudioCategoryVolumeSetting(category, Number(target.value) / 100);
+    });
+});
 zoomOutMinimapButton?.addEventListener('click', () => adjustMinimapZoom(-0.1));
 zoomInMinimapButton?.addEventListener('click', () => adjustMinimapZoom(0.1));
 freezeTimeButton?.addEventListener('click', toggleTimeFreeze);
@@ -4020,6 +4146,7 @@ function flushSessionSave(): void {
       musicEnabled: audioPreferenceState.musicEnabled,
       soundEnabled: audioPreferenceState.soundEnabled,
       ambianceEnabled: audioPreferenceState.ambianceEnabled,
+      categoryVolumes: audioPreferenceState.categoryVolumes,
       compassHeadingAngle: compassHeadingState.angle,
       cameraPitch: mouseLookState.pitch,
       worldSeed: currentWorldSeed,

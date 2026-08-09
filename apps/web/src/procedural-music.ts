@@ -37,6 +37,7 @@ import {
   resolveMusicSpaceProfile,
   type MusicSpaceProfile,
 } from './procedural-music-space.ts';
+import type { AudioCategory } from './audio-categories.ts';
 type MusicPosition = { x: number; y: number };
 type TileKind = string;
 type ContextType = string;
@@ -226,6 +227,10 @@ export type MusicSink = {
   play(note: ProceduralMusicNote): void;
   stopAll?(): void;
   getActiveSourceCount?(): number;
+};
+
+type MusicSinkOptions = {
+  getCategoryVolume?: (category: AudioCategory) => number;
 };
 
 export type MusicController = {
@@ -893,7 +898,9 @@ type SharedReverbBus = {
   output: GainNode;
 };
 
-export function createWebAudioMusicSink(): MusicSink {
+export function createWebAudioMusicSink(
+  options: MusicSinkOptions = {}
+): MusicSink {
   let audioContext: AudioContext | null = null;
   let activeSourceCount = 0;
   const activeOscillators = new Set<OscillatorNode>();
@@ -927,6 +934,14 @@ export function createWebAudioMusicSink(): MusicSink {
     play(note) {
       const context = getAudioContext();
       if (!context) {
+        return;
+      }
+      const categoryVolume = clamp(
+        options.getCategoryVolume?.('music') ?? 1,
+        0,
+        1
+      );
+      if (categoryVolume <= 0) {
         return;
       }
       const nowMs = performance.now();
@@ -977,7 +992,8 @@ export function createWebAudioMusicSink(): MusicSink {
       );
       gain.gain.setValueAtTime(0.0001, startAt);
       harmonicGain.gain.setValueAtTime(0.0001, startAt);
-      const sustainVolume = note.volume * spatial.gainMultiplier;
+      const sustainVolume =
+        note.volume * categoryVolume * spatial.gainMultiplier;
       gain.gain.exponentialRampToValueAtTime(
         sustainVolume,
         startAt + note.attackMs / 1000

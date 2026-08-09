@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import {
   DEFAULT_AUDIO_PREFERENCES,
+  formatAudioCategoryVolumeLabel,
   formatAmbianceToggleLabel,
   formatMusicToggleLabel,
   formatSoundToggleLabel,
   normalizeAudioPreferences,
+  setAudioCategoryVolume,
   toggleAudioPreference,
 } from './audio-preferences.ts';
 
@@ -15,6 +17,7 @@ describe('audio preferences', () => {
       musicEnabled: false,
       soundEnabled: true,
       ambianceEnabled: true,
+      categoryVolumes: DEFAULT_AUDIO_PREFERENCES.categoryVolumes,
     });
   });
 
@@ -30,16 +33,19 @@ describe('audio preferences', () => {
       musicEnabled: false,
       soundEnabled: true,
       ambianceEnabled: true,
+      categoryVolumes: DEFAULT_AUDIO_PREFERENCES.categoryVolumes,
     });
     expect(second).toEqual({
       musicEnabled: false,
       soundEnabled: false,
       ambianceEnabled: true,
+      categoryVolumes: DEFAULT_AUDIO_PREFERENCES.categoryVolumes,
     });
     expect(third).toEqual({
       musicEnabled: false,
       soundEnabled: false,
       ambianceEnabled: false,
+      categoryVolumes: DEFAULT_AUDIO_PREFERENCES.categoryVolumes,
     });
   });
 
@@ -50,5 +56,17 @@ describe('audio preferences', () => {
     expect(formatSoundToggleLabel(false)).toBe('Sound: Off');
     expect(formatAmbianceToggleLabel(true)).toBe('Ambiance: On');
     expect(formatAmbianceToggleLabel(false)).toBe('Ambiance: Off');
+  });
+
+  it('stores normalized per-category volume preferences', () => {
+    const next = setAudioCategoryVolume(
+      DEFAULT_AUDIO_PREFERENCES,
+      'combat',
+      1.4
+    );
+
+    expect(next.categoryVolumes.combat).toBe(1);
+    expect(next.categoryVolumes.music).toBe(1);
+    expect(formatAudioCategoryVolumeLabel(0.455)).toBe('46%');
   });
 });

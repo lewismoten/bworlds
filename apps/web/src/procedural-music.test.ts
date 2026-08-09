@@ -303,6 +303,123 @@ describe('procedural music', () => {
     }
   });
 
+  it('applies the music category volume before scheduling gain envelopes', () => {
+    const createdGains: Array<{
+      gain: {
+        setValueAtTime: ReturnType<typeof vi.fn>;
+        exponentialRampToValueAtTime: ReturnType<typeof vi.fn>;
+      };
+      connect: ReturnType<typeof vi.fn>;
+    }> = [];
+
+    class FakeAudioContext {
+      state: AudioContextState = 'running';
+      currentTime = 0;
+      destination = {};
+      createOscillator() {
+        return {
+          onended: null,
+          type: 'sine',
+          frequency: {
+            setValueAtTime: vi.fn(),
+            exponentialRampToValueAtTime: vi.fn(),
+          },
+          detune: {
+            setValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+          start: vi.fn(),
+          stop: vi.fn(),
+        } as unknown as OscillatorNode;
+      }
+      createGain() {
+        const gain = {
+          gain: {
+            setValueAtTime: vi.fn(),
+            exponentialRampToValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+        };
+        createdGains.push(gain);
+        return gain as unknown as GainNode;
+      }
+      createBiquadFilter() {
+        return {
+          type: 'lowpass' as BiquadFilterType,
+          frequency: {
+            setValueAtTime: vi.fn(),
+          },
+          Q: {
+            setValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+        } as unknown as BiquadFilterNode;
+      }
+      createStereoPanner() {
+        return {
+          pan: {
+            setValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+        } as unknown as StereoPannerNode;
+      }
+      createDelay() {
+        return {
+          delayTime: {
+            setValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+        } as unknown as DelayNode;
+      }
+      resume() {
+        return Promise.resolve();
+      }
+    }
+
+    const originalAudioContext = globalThis.AudioContext;
+    vi.stubGlobal('AudioContext', FakeAudioContext);
+
+    try {
+      const sink = createWebAudioMusicSink({
+        getCategoryVolume() {
+          return 0.5;
+        },
+      });
+      sink.play({
+        themeId: 'frontier-plains',
+        instrumentId: 'lead',
+        role: 'lead',
+        startMs: 0,
+        durationMs: 240,
+        frequency: 440,
+        volume: 0.05,
+        waveform: 'sine',
+        timbre: {
+          harmonicWaveform: 'triangle',
+          harmonicRatio: 2,
+          filterType: 'lowpass',
+          filterCutoffHz: 1200,
+          filterQ: 0.8,
+        },
+        attackMs: 20,
+        releaseMs: 80,
+        detuneCents: 0,
+        harmonicGain: 0.4,
+        pulseRate: 1,
+      });
+
+      const envelopeCalls =
+        createdGains[0]?.gain.exponentialRampToValueAtTime.mock.calls ?? [];
+      expect(envelopeCalls[0]?.[0]).toBeCloseTo(0.025, 6);
+    } finally {
+      if (originalAudioContext) {
+        vi.stubGlobal('AudioContext', originalAudioContext);
+      } else {
+        vi.unstubAllGlobals();
+      }
+    }
+  });
+
   it('shares one reverb bus per environment profile and lengthens cave ambience', () => {
     const createdDelays: Array<{
       delayTime: {
