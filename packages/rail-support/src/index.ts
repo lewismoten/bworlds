@@ -32,6 +32,12 @@ export type RailTrainPlacement = {
   to: string;
 };
 
+type RailRegionSnapshot = {
+  stations: StationAnchorLike[];
+  connections: RailConnection[];
+  tileMap: Map<string, TileLike>;
+};
+
 const STATION_CELL_SIZE = 24;
 const STATION_SCAN_RADIUS_CELLS = 4;
 const MIN_RAIL_DISTANCE = 18;
@@ -49,7 +55,7 @@ const RAIL_CURVE_OFFSET_LABEL = registerHashLabel('rail-curve-offset');
 const RAIL_TRAIN_PHASE_LABEL = registerHashLabel('rail-train-phase');
 
 const anchorPlugin = createOverworldAnchorsRuntimePlugin();
-const railRegionCache = createBoundedCache<string, Map<string, TileLike>>(
+const railRegionCache = createBoundedCache<string, RailRegionSnapshot>(
   RAIL_REGION_CACHE_LIMIT
 );
 const railTrainCache = createBoundedCache<string, RailTrainPlacement[]>(
@@ -69,18 +75,13 @@ export function resolveRailTile({
 }): TileLike | null {
   const regionX = Math.floor(x / STATION_CELL_SIZE);
   const regionY = Math.floor(y / STATION_CELL_SIZE);
-  const regionKey = `${seed}:${regionX}:${regionY}`;
   return (
-    railRegionCache
-      .getOrCreate(regionKey, () =>
-        buildRailRegionTileMap({
-          seed,
-          x,
-          y,
-          sampleTerrainSignals,
-        })
-      )
-      .get(`${x},${y}`) ?? null
+    getRailRegionSnapshot({
+      seed,
+      regionX,
+      regionY,
+      sampleTerrainSignals,
+    }).tileMap.get(`${x},${y}`) ?? null
   );
 }
 
@@ -211,13 +212,13 @@ export function getRailTrainPlacements({
   const timeBucket = Math.floor(timeMs / 2000);
   const cacheKey = `${seed}:${regionX}:${regionY}:${timeBucket}`;
   return railTrainCache.getOrCreate(cacheKey, () => {
-    const stations = collectNearbyStationAnchors(seed, x, y, sampleTerrainSignals);
-    const connections = buildRailConnections({
+    const snapshot = getRailRegionSnapshot({
       seed,
-      stationAnchors: stations,
+      regionX,
+      regionY,
       sampleTerrainSignals,
     });
-    return connections
+    return snapshot.connections
       .map((connection, index) =>
         resolveRailTrainPlacement(seed, timeMs, connection, index)
       )
@@ -410,7 +411,29 @@ function getRailTileAtPoint(
   return null;
 }
 
-function buildRailRegionTileMap({
+function getRailRegionSnapshot({
+  seed,
+  regionX,
+  regionY,
+  sampleTerrainSignals,
+}: {
+  seed: Seed;
+  regionX: number;
+  regionY: number;
+  sampleTerrainSignals: SampleTerrainSignalsLike;
+}): RailRegionSnapshot {
+  const regionKey = `${seed}:${regionX}:${regionY}`;
+  return railRegionCache.getOrCreate(regionKey, () =>
+    buildRailRegionSnapshot({
+      seed,
+      x: regionX * STATION_CELL_SIZE,
+      y: regionY * STATION_CELL_SIZE,
+      sampleTerrainSignals,
+    })
+  );
+}
+
+function buildRailRegionSnapshot({
   seed,
   x,
   y,
@@ -420,7 +443,7 @@ function buildRailRegionTileMap({
   x: number;
   y: number;
   sampleTerrainSignals: SampleTerrainSignalsLike;
-}): Map<string, TileLike> {
+}): RailRegionSnapshot {
   const stations = collectNearbyStationAnchors(seed, x, y, sampleTerrainSignals);
   const connections = buildRailConnections({
     seed,
@@ -442,7 +465,11 @@ function buildRailRegionTileMap({
     });
   }
 
-  return tileMap;
+  return {
+    stations,
+    connections,
+    tileMap,
+  };
 }
 
 function resolveRailTrainPlacement(

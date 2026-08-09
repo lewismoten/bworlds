@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import {
   buildRailConnections,
   buildRailCurvePoints,
+  getRailTrainPlacements,
+  resolveRailTile,
 } from './index.ts';
 
 describe('rail support', () => {
@@ -66,6 +68,39 @@ describe('rail support', () => {
     for (const degree of degrees.values()) {
       expect(degree).toBeLessThanOrEqual(2);
     }
+  });
+
+  it('reuses shared regional rail analysis across tile and train queries', () => {
+    let signalCalls = 0;
+    const sampleTerrainSignals = () => {
+      signalCalls += 1;
+      return {
+        continent: 0.62,
+        elevation: 0.28,
+        moisture: 0.44,
+        riverSignal: 0.16,
+        roadSignal: 0.58,
+      };
+    };
+
+    const tile = resolveRailTile({
+      seed: 'spec-seed',
+      x: 24,
+      y: 24,
+      sampleTerrainSignals,
+    });
+    const callsAfterTile = signalCalls;
+    const placements = getRailTrainPlacements({
+      seed: 'spec-seed',
+      timeMs: 0,
+      x: 24,
+      y: 24,
+      sampleTerrainSignals,
+    });
+
+    expect(tile === null || tile.kind === 'rail').toBe(true);
+    expect(signalCalls).toBe(callsAfterTile);
+    expect(Array.isArray(placements)).toBe(true);
   });
 });
 
