@@ -1564,7 +1564,7 @@ describe('render3d visibility helpers', () => {
       lowDetailEnterDistance: 6.5,
       lowDetailExitDistance: 6,
       hysteresisDistance: 0.5,
-      pendingBuildFullDetailDistance: 1.5,
+      pendingBuildFullDetailDistance: 3,
       syncMovementDistance: 0.18,
     });
   });
@@ -1594,8 +1594,9 @@ describe('render3d visibility helpers', () => {
   it('uses low detail for non-near pending builds while the queue is still draining', () => {
     expect(getPendingWorldBuildDetailLevel('low', 4, 10)).toBe('low');
     expect(getPendingWorldBuildDetailLevel('full', 2, 10)).toBe('full');
-    expect(getPendingWorldBuildDetailLevel('full', 4, 10)).toBe('low');
-    expect(getPendingWorldBuildDetailLevel('full', 16, 10)).toBe('low');
+    expect(getPendingWorldBuildDetailLevel('full', 4, 10)).toBe('full');
+    expect(getPendingWorldBuildDetailLevel('full', 16, 10)).toBe('full');
+    expect(getPendingWorldBuildDetailLevel('full', 16, 40)).toBe('low');
     expect(getPendingWorldBuildDetailLevel('full', 16, 0)).toBe('full');
   });
 

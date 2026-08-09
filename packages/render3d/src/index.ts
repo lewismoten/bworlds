@@ -526,9 +526,10 @@ const LOW_DETAIL_EXIT_DISTANCE =
   LOW_DETAIL_MODEL_DISTANCE - LOD_DETAIL_HYSTERESIS_DISTANCE;
 const LOW_DETAIL_EXIT_DISTANCE_SQUARED =
   LOW_DETAIL_EXIT_DISTANCE * LOW_DETAIL_EXIT_DISTANCE;
-const PENDING_BUILD_FULL_DETAIL_DISTANCE = 1.5;
+const PENDING_BUILD_FULL_DETAIL_DISTANCE = 3;
 const PENDING_BUILD_FULL_DETAIL_DISTANCE_SQUARED =
   PENDING_BUILD_FULL_DETAIL_DISTANCE * PENDING_BUILD_FULL_DETAIL_DISTANCE;
+const PENDING_BUILD_LOW_DETAIL_QUEUE_THRESHOLD = 28;
 const LOD_SYNC_MOVEMENT_DISTANCE = 0.18;
 const LOD_SYNC_MOVEMENT_DISTANCE_SQUARED =
   LOD_SYNC_MOVEMENT_DISTANCE * LOD_SYNC_MOVEMENT_DISTANCE;
@@ -2174,12 +2175,13 @@ export function getPendingWorldBuildDetailLevel(
   desiredDetailLevel: 'full' | 'low',
   distanceSquared: number,
   remainingQueueLength: number,
-  fullDetailDistanceSquared = PENDING_BUILD_FULL_DETAIL_DISTANCE_SQUARED
+  fullDetailDistanceSquared = PENDING_BUILD_FULL_DETAIL_DISTANCE_SQUARED,
+  lowDetailQueueThreshold = PENDING_BUILD_LOW_DETAIL_QUEUE_THRESHOLD
 ): 'full' | 'low' {
   if (desiredDetailLevel === 'low') {
     return 'low';
   }
-  if (remainingQueueLength <= 0) {
+  if (remainingQueueLength <= lowDetailQueueThreshold) {
     return 'full';
   }
   return distanceSquared <= fullDetailDistanceSquared ? 'full' : 'low';
