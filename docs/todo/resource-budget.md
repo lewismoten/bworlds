@@ -37,7 +37,7 @@ Operates at several levels: per model, per LOD, per plugin, per chunk, and per e
 * [X] Cap total shadow-casting lights.
 * [X] Cap total animation mixers.
 * [X] Cap total skeletons.
-* [ ] Cap total bones.
+* [X] Cap total bones.
 * [ ] Cap total morph targets.
 * [ ] Cap total model attachments.
 * [ ] Cap total collision shapes.

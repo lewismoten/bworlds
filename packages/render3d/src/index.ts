@@ -394,6 +394,7 @@ const FULL_DETAIL_TILE_MODEL_HARD_LIMITS: TileModelHardLimits = {
   shadowLightCount: 1,
   animationMixerCount: 4,
   skeletonCount: 2,
+  boneCount: 100,
   vertexCount: 50_000,
 };
 
@@ -430,6 +431,7 @@ const LOW_DETAIL_TILE_MODEL_HARD_LIMITS: TileModelHardLimits = {
   shadowLightCount: 0,
   animationMixerCount: 0,
   skeletonCount: 0,
+  boneCount: 60,
   vertexCount: 8_000,
 };
 
@@ -528,6 +530,7 @@ export function validateTileModelAgainstRenderBudget(
         shadowLightCount: safetyPrecheck.stats.shadowLightCount,
         animationMixerCount: countAnimationMixers(root),
         skeletonCount: countSkeletons(root),
+        boneCount: countBones(root),
         invalidPositionCoordinateCount: 0,
         pointVertexCount: safetyPrecheck.stats.pointVertexCount,
         particleEmitterCount: safetyPrecheck.stats.particleEmitterCount,
@@ -589,6 +592,7 @@ export function validateTileModelAgainstRenderBudget(
     }),
     animationMixerCount: countAnimationMixers(root),
     skeletonCount: countSkeletons(root),
+    boneCount: countBones(root),
   };
   const violations: TileModelBudgetViolation[] = [];
   const metrics: Array<keyof TileModelHardLimits> = [
@@ -624,6 +628,7 @@ export function validateTileModelAgainstRenderBudget(
     'shadowLightCount',
     'animationMixerCount',
     'skeletonCount',
+    'boneCount',
     'vertexCount',
   ];
 
@@ -726,6 +731,7 @@ export function getTileModelCostEstimateLimits(
     shadowLightCount: limits.shadowLightCount,
     animationMixerCount: limits.animationMixerCount,
     skeletonCount: limits.skeletonCount,
+    boneCount: limits.boneCount,
     vertexCount: limits.vertexCount,
     triangleCount: limits.triangleCount,
   };
@@ -875,6 +881,7 @@ type SceneResourceStats = {
   shadowLightCount: number;
   animationMixerCount: number;
   skeletonCount: number;
+  boneCount: number;
   triangleCount: number;
   vertexCount: number;
   materialRefCount: number;
@@ -939,6 +946,7 @@ type TileModelHardLimits = {
   shadowLightCount: number;
   animationMixerCount: number;
   skeletonCount: number;
+  boneCount: number;
   vertexCount: number;
 };
 
@@ -1033,6 +1041,7 @@ function createEmptySceneResourceStats(): SceneResourceStats {
     shadowLightCount: 0,
     animationMixerCount: 0,
     skeletonCount: 0,
+    boneCount: 0,
     triangleCount: 0,
     vertexCount: 0,
     materialRefCount: 0,
@@ -1124,6 +1133,28 @@ function countSkeletons(root: Pick<THREE.Object3D, 'traverse'>): number {
   });
 
   return skeletons.size;
+}
+
+function countBones(root: Pick<THREE.Object3D, 'traverse'>): number {
+  const bones = new Set<unknown>();
+
+  root.traverse((child) => {
+    const skeleton = (child as THREE.Object3D & {
+      skeleton?: { bones?: unknown };
+    }).skeleton;
+    const skeletonBones = skeleton?.bones;
+    if (!Array.isArray(skeletonBones)) {
+      return;
+    }
+    for (const bone of skeletonBones) {
+      if (!bone || typeof bone !== 'object') {
+        continue;
+      }
+      bones.add(bone);
+    }
+  });
+
+  return bones.size;
 }
 
 type FrameTimeBudget = {
@@ -3556,6 +3587,7 @@ export function collectSceneResourceStats(
   let shadowLightCount = 0;
   let animationMixerCount = 0;
   const skeletons = new Set<unknown>();
+  const bones = new Set<unknown>();
   let triangleCount = 0;
   let vertexCount = 0;
   let materialRefCount = 0;
@@ -3665,6 +3697,15 @@ export function collectSceneResourceStats(
     const skeleton = (child as THREE.Object3D & { skeleton?: unknown }).skeleton;
     if (skeleton && typeof skeleton === 'object') {
       skeletons.add(skeleton);
+      const skeletonBones = (skeleton as { bones?: unknown }).bones;
+      if (Array.isArray(skeletonBones)) {
+        for (const bone of skeletonBones) {
+          if (!bone || typeof bone !== 'object') {
+            continue;
+          }
+          bones.add(bone);
+        }
+      }
     }
 
     const renderable = child as THREE.Object3D & {
@@ -3756,6 +3797,7 @@ export function collectSceneResourceStats(
     shadowLightCount,
     animationMixerCount,
     skeletonCount: skeletons.size,
+    boneCount: bones.size,
     triangleCount,
     vertexCount,
     materialRefCount,
