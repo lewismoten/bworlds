@@ -4,6 +4,7 @@ import {
   createHashSeed,
   hash2D,
   hash2DWithSeed,
+  resolveHashSeed,
   registerHashLabel,
 } from './hash.ts';
 
@@ -13,6 +14,7 @@ export {
   createHashSeed,
   hash2D,
   hash2DWithSeed,
+  resolveHashSeed,
   registerHashLabel,
 } from './hash.ts';
 
@@ -687,7 +689,7 @@ export function getDaylightCycleState(
     0.82,
     Math.max(night, solarEclipse.coverage * 0.72)
   );
-  const constellationSeedHash = registerHashLabel(constellationSeed);
+  const constellationSeedHash = resolveHashSeed(constellationSeed);
   const moonPhaseIndex =
     ((dayNumber % MOON_PHASE_NAMES.length) + MOON_PHASE_NAMES.length) %
     MOON_PHASE_NAMES.length;

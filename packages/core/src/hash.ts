@@ -34,6 +34,10 @@ export function createHashSeed(seed: number): HashSeed {
   return seed >>> 0;
 }
 
+export function resolveHashSeed(seed: number | string): HashSeed {
+  return typeof seed === 'number' ? createHashSeed(seed) : registerHashLabel(seed);
+}
+
 export function appendHashSeedPart(seedHash: HashSeed, value: number): HashSeed {
   return appendHashSeedNumber(seedHash, value);
 }

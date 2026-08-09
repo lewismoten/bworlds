@@ -122,4 +122,18 @@ describe('runtime player poi', () => {
       })
     );
   });
+
+  it('accepts numeric seeds through the shared hash boundary', () => {
+    const state = createState();
+    const built = buildPlayerPoi(state as never, 12345, 'town');
+
+    expect(built).toEqual(
+      expect.objectContaining({
+        poi: expect.objectContaining({
+          type: 'town',
+          name: expect.any(String),
+        }),
+      })
+    );
+  });
 });

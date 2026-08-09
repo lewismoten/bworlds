@@ -5,6 +5,7 @@ import {
   hash2D,
   hash2DWithSeed,
   normalizeHash,
+  resolveHashSeed,
   registerHashLabel,
 } from './hash.ts';
 import { describe, expect, it } from 'vitest';
@@ -43,6 +44,13 @@ describe('hash seeds', () => {
 
     expect(createHashSeed(seedHash)).toBe(seedHash >>> 0);
     expect(hash2DWithSeed(seedHash, 4, 9)).toBe(hash2D(seedHash, 4, 9));
+  });
+
+  it('resolves string and numeric seeds through one boundary helper', () => {
+    const seedHash = registerHashLabel('seed');
+
+    expect(resolveHashSeed('seed')).toBe(seedHash);
+    expect(resolveHashSeed(seedHash)).toBe(seedHash >>> 0);
   });
 
   it('keeps composed numeric seed paths deterministic', () => {

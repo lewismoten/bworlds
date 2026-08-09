@@ -1,8 +1,8 @@
 import {
   appendHashSeedLabel,
-  createHashSeed,
   hash2DWithSeed,
   registerHashLabel,
+  resolveHashSeed,
 } from '@bworlds/core/hash';
 import {
   createContextMapPlugin,
@@ -66,8 +66,7 @@ export function resolveTrainCarTypes(
   seed: string | number,
   context: Pick<TrainContext, 'origin' | 'lineName'>
 ): TrainCarType[] {
-  const seedHash =
-    typeof seed === 'number' ? createHashSeed(seed) : registerHashLabel(seed);
+  const seedHash = resolveHashSeed(seed);
   const middleCountSeed = appendHashSeedLabel(seedHash, TRAIN_MIDDLE_COUNT_SEED);
   const middleCarSeed = appendHashSeedLabel(
     appendHashSeedLabel(seedHash, TRAIN_MIDDLE_CAR_SEED),
