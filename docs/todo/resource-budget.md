@@ -104,9 +104,9 @@ Given the heap issue you just saw, I would take this very seriously.
 
 # Texture Dimension Caps
 
-* [ ] Set maximum texture width.
-* [ ] Set maximum texture height.
-* [ ] Set maximum texture pixel count.
+* [X] Set maximum texture width.
+* [X] Set maximum texture height.
+* [X] Set maximum texture pixel count.
 * [ ] Set maximum texture count per model.
 * [ ] Set maximum texture count per material.
 * [ ] Set lower texture limits for distant LODs.

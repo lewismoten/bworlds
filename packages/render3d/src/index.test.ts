@@ -468,6 +468,9 @@ describe('render3d visibility helpers', () => {
       materialsCreatedDuringSamplingWindow: 0,
       materialsDisposedDuringSamplingWindow: 0,
       maxMaterialTextureSlotCount: 1,
+      maxTextureWidth: 32,
+      maxTextureHeight: 16,
+      maxTexturePixelCount: 512,
       geometryCount: 2,
       sharedGeometryCount: 1,
       geometryBytes: 432,
@@ -801,6 +804,9 @@ describe('render3d visibility helpers', () => {
       materialsCreatedDuringSamplingWindow: 0,
       materialsDisposedDuringSamplingWindow: 0,
       maxMaterialTextureSlotCount: 0,
+      maxTextureWidth: 0,
+      maxTextureHeight: 0,
+      maxTexturePixelCount: 0,
       geometryCount: 3,
       sharedGeometryCount: 0,
       geometryBytes: 216,
@@ -897,6 +903,9 @@ describe('render3d visibility helpers', () => {
       materialsCreatedDuringSamplingWindow: 0,
       materialsDisposedDuringSamplingWindow: 0,
       maxMaterialTextureSlotCount: 0,
+      maxTextureWidth: 0,
+      maxTextureHeight: 0,
+      maxTexturePixelCount: 0,
       geometryCount: 2,
       sharedGeometryCount: 0,
       geometryBytes: 300,
@@ -1043,6 +1052,9 @@ describe('render3d visibility helpers', () => {
       materialsCreatedDuringSamplingWindow: 0,
       materialsDisposedDuringSamplingWindow: 0,
       maxMaterialTextureSlotCount: 0,
+      maxTextureWidth: 0,
+      maxTextureHeight: 0,
+      maxTexturePixelCount: 0,
       geometryCount: 2,
       sharedGeometryCount: 0,
       geometryBytes: 312,
@@ -1133,6 +1145,9 @@ describe('render3d visibility helpers', () => {
       materialsCreatedDuringSamplingWindow: 0,
       materialsDisposedDuringSamplingWindow: 0,
       maxMaterialTextureSlotCount: 0,
+      maxTextureWidth: 0,
+      maxTextureHeight: 0,
+      maxTexturePixelCount: 0,
       geometryCount: 2,
       sharedGeometryCount: 0,
       geometryBytes: 96,
@@ -1255,6 +1270,9 @@ describe('render3d visibility helpers', () => {
       materialsCreatedDuringSamplingWindow: 0,
       materialsDisposedDuringSamplingWindow: 0,
       maxMaterialTextureSlotCount: 0,
+      maxTextureWidth: 0,
+      maxTextureHeight: 0,
+      maxTexturePixelCount: 0,
       geometryCount: 2,
       sharedGeometryCount: 0,
       geometryBytes: 120,
@@ -1511,6 +1529,9 @@ describe('render3d visibility helpers', () => {
       materialCount: 16,
       textureCount: 16,
       maxMaterialTextureSlotCount: 6,
+      maxTextureWidth: 2_048,
+      maxTextureHeight: 2_048,
+      maxTexturePixelCount: 4_194_304,
       lightCount: 4,
       shadowLightCount: 1,
       animationMixerCount: 4,
@@ -1552,6 +1573,9 @@ describe('render3d visibility helpers', () => {
       materialCount: 3,
       textureCount: 4,
       maxMaterialTextureSlotCount: 4,
+      maxTextureWidth: 512,
+      maxTextureHeight: 512,
+      maxTexturePixelCount: 262_144,
       lightCount: 1,
       shadowLightCount: 0,
       animationMixerCount: 0,
@@ -1691,6 +1715,9 @@ describe('render3d visibility helpers', () => {
         ultraDenseTinyGeometryCount: 0,
         materialCount: 1,
         textureCount: 1,
+        maxTextureWidth: 16,
+        maxTextureHeight: 16,
+        maxTexturePixelCount: 256,
         lightCount: 0,
         shadowLightCount: 0,
         animationMixerCount: 0,
@@ -1745,6 +1772,94 @@ describe('render3d visibility helpers', () => {
             limit: 1_500,
           },
         ],
+      })
+    );
+  });
+
+  it('rejects textures that exceed the low-detail width cap', () => {
+    const root = createMockObject3D(
+      createMockMaterial({ map: createMockTexture(513, 256) }),
+      [],
+      createMockStatGeometry('texture-width-cap', 24)
+    );
+
+    expect(validateTileModelAgainstRenderBudget(root as never, 'low')).toEqual(
+      expect.objectContaining({
+        accepted: false,
+        stats: expect.objectContaining({
+          maxTextureWidth: 513,
+          maxTextureHeight: 256,
+          maxTexturePixelCount: 131_328,
+        }),
+        violations: expect.arrayContaining([
+          {
+            metric: 'maxTextureWidth',
+            actual: 513,
+            limit: 512,
+          },
+        ]),
+      })
+    );
+  });
+
+  it('rejects textures that exceed the low-detail height cap', () => {
+    const root = createMockObject3D(
+      createMockMaterial({ map: createMockTexture(256, 700) }),
+      [],
+      createMockStatGeometry('texture-height-cap', 24)
+    );
+
+    expect(validateTileModelAgainstRenderBudget(root as never, 'low')).toEqual(
+      expect.objectContaining({
+        accepted: false,
+        stats: expect.objectContaining({
+          maxTextureWidth: 256,
+          maxTextureHeight: 700,
+          maxTexturePixelCount: 179_200,
+        }),
+        violations: expect.arrayContaining([
+          {
+            metric: 'maxTextureHeight',
+            actual: 700,
+            limit: 512,
+          },
+        ]),
+      })
+    );
+  });
+
+  it('rejects textures that exceed the low-detail pixel-count cap', () => {
+    const root = createMockObject3D(
+      createMockMaterial({ map: createMockTexture(513, 513) }),
+      [],
+      createMockStatGeometry('texture-pixel-cap', 24)
+    );
+
+    expect(validateTileModelAgainstRenderBudget(root as never, 'low')).toEqual(
+      expect.objectContaining({
+        accepted: false,
+        stats: expect.objectContaining({
+          maxTextureWidth: 513,
+          maxTextureHeight: 513,
+          maxTexturePixelCount: 263_169,
+        }),
+        violations: expect.arrayContaining([
+          {
+            metric: 'maxTextureWidth',
+            actual: 513,
+            limit: 512,
+          },
+          {
+            metric: 'maxTextureHeight',
+            actual: 513,
+            limit: 512,
+          },
+          {
+            metric: 'maxTexturePixelCount',
+            actual: 263_169,
+            limit: 262_144,
+          },
+        ]),
       })
     );
   });

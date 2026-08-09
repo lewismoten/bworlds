@@ -83,6 +83,10 @@ import {
   countEquivalentShareableMaterials,
 } from './material-equivalence.ts';
 import {
+  getTextureDimensions,
+  getTexturePixelCount,
+} from './texture-dimension-stats.ts';
+import {
   disposeOwnedObject3DMaterials,
   getRecentOwnedMaterialLifecycleCounts,
   trackOwnedObject3DMaterials,
@@ -143,6 +147,10 @@ export {
   collectMaterialTexturesInto,
   countMaterialTextureSlots,
 } from './material-texture-collector.ts';
+export {
+  getTextureDimensions,
+  getTexturePixelCount,
+} from './texture-dimension-stats.ts';
 export {
   countColorVariantShareableMaterials,
   countEquivalentShareableMaterials,
@@ -345,6 +353,9 @@ type Render3DController = {
     averageVerticesPerGeometry: number;
     largestGeometryVertexCount: number;
     largestGeometryBytes: number;
+    maxTextureWidth: number;
+    maxTextureHeight: number;
+    maxTexturePixelCount: number;
     textureMemoryEstimateBytes: number;
     gpuGeometryCount: number;
     treeObjectCount: number;
@@ -438,6 +449,9 @@ const FULL_DETAIL_TILE_MODEL_HARD_LIMITS: TileModelHardLimits = {
   materialCount: 16,
   textureCount: 16,
   maxMaterialTextureSlotCount: 6,
+  maxTextureWidth: 2_048,
+  maxTextureHeight: 2_048,
+  maxTexturePixelCount: 4_194_304,
   lightCount: 4,
   shadowLightCount: 1,
   animationMixerCount: 4,
@@ -480,6 +494,9 @@ const LOW_DETAIL_TILE_MODEL_HARD_LIMITS: TileModelHardLimits = {
   materialCount: 3,
   textureCount: 4,
   maxMaterialTextureSlotCount: 4,
+  maxTextureWidth: 512,
+  maxTextureHeight: 512,
+  maxTexturePixelCount: 262_144,
   lightCount: 1,
   shadowLightCount: 0,
   animationMixerCount: 0,
@@ -655,6 +672,9 @@ export function validateTileModelAgainstRenderBudget(
     'materialCount',
     'textureCount',
     'maxMaterialTextureSlotCount',
+    'maxTextureWidth',
+    'maxTextureHeight',
+    'maxTexturePixelCount',
     'lightCount',
     'shadowLightCount',
     'animationMixerCount',
@@ -923,6 +943,9 @@ type SceneResourceStats = {
   averageVerticesPerGeometry: number;
   largestGeometryVertexCount: number;
   largestGeometryBytes: number;
+  maxTextureWidth: number;
+  maxTextureHeight: number;
+  maxTexturePixelCount: number;
   textureCount: number;
   textureMemoryEstimateBytes: number;
   treeCount: number;
@@ -961,6 +984,9 @@ type TileModelHardLimits = {
   materialCount: number;
   textureCount: number;
   maxMaterialTextureSlotCount: number;
+  maxTextureWidth: number;
+  maxTextureHeight: number;
+  maxTexturePixelCount: number;
   lightCount: number;
   shadowLightCount: number;
   animationMixerCount: number;
@@ -1094,6 +1120,9 @@ function createEmptySceneResourceStats(): SceneResourceStats {
     averageVerticesPerGeometry: 0,
     largestGeometryVertexCount: 0,
     largestGeometryBytes: 0,
+    maxTextureWidth: 0,
+    maxTextureHeight: 0,
+    maxTexturePixelCount: 0,
     textureCount: 0,
     textureMemoryEstimateBytes: 0,
     treeCount: 0,
@@ -2320,6 +2349,9 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       averageVerticesPerGeometry: sceneResourceStats.averageVerticesPerGeometry,
       largestGeometryVertexCount: sceneResourceStats.largestGeometryVertexCount,
       largestGeometryBytes: sceneResourceStats.largestGeometryBytes,
+      maxTextureWidth: sceneResourceStats.maxTextureWidth,
+      maxTextureHeight: sceneResourceStats.maxTextureHeight,
+      maxTexturePixelCount: sceneResourceStats.maxTexturePixelCount,
       textureMemoryEstimateBytes: sceneResourceStats.textureMemoryEstimateBytes,
       gpuGeometryCount: renderer.info.memory.geometries,
       treeObjectCount: sceneResourceStats.treeObjectCount,
@@ -3701,6 +3733,9 @@ export function collectSceneResourceStats(
   let indexBufferBytes = 0;
   let largestGeometryVertexCount = 0;
   let largestGeometryBytes = 0;
+  let maxTextureWidth = 0;
+  let maxTextureHeight = 0;
+  let maxTexturePixelCount = 0;
   let textureMemoryEstimateBytes = 0;
   let maxMaterialTextureSlotCount = 0;
   let treeCount = 0;
@@ -3901,6 +3936,13 @@ export function collectSceneResourceStats(
           continue;
         }
         textures.add(texture);
+        const textureDimensions = getTextureDimensions(texture);
+        maxTextureWidth = Math.max(maxTextureWidth, textureDimensions.width);
+        maxTextureHeight = Math.max(maxTextureHeight, textureDimensions.height);
+        maxTexturePixelCount = Math.max(
+          maxTexturePixelCount,
+          getTexturePixelCount(texture)
+        );
         textureMemoryEstimateBytes += getTextureMemoryEstimateBytes(texture);
       }
     }
@@ -3971,6 +4013,9 @@ export function collectSceneResourceStats(
       geometries.size > 0 ? vertexCount / geometries.size : 0,
     largestGeometryVertexCount,
     largestGeometryBytes,
+    maxTextureWidth,
+    maxTextureHeight,
+    maxTexturePixelCount,
     textureCount: textures.size,
     textureMemoryEstimateBytes,
     treeCount,
@@ -4133,17 +4178,7 @@ function getInstancedMeshCount(object: unknown): number {
 }
 
 function getTextureMemoryEstimateBytes(texture: unknown): number {
-  const image = (texture as {
-    image?: {
-      width?: number;
-      height?: number;
-      videoWidth?: number;
-      videoHeight?: number;
-    };
-    generateMipmaps?: boolean;
-  }).image;
-  const width = image?.width ?? image?.videoWidth ?? 0;
-  const height = image?.height ?? image?.videoHeight ?? 0;
+  const { width, height } = getTextureDimensions(texture);
   if (width <= 0 || height <= 0) {
     return 0;
   }
