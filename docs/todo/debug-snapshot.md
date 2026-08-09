@@ -429,7 +429,7 @@ Immediately you know where to look.
 * [X] Include highest utilization observed during sampling.
 * [X] Include which limits caused quality reductions.
 * [ ] Include which optional features were dropped.
-* [ ] Include models automatically lowered to another LOD.
+* [X] Include models automatically lowered to another LOD.
 * [X] Include plugin requests rejected due to budget.
 * [X] Include dynamic quality changes during sampling.
 

@@ -445,6 +445,7 @@ describe('debug snapshot', () => {
           rejectedModelsPerSecond: 1,
         },
       ],
+      modelsAutomaticallyLoweredToAnotherLodPerSecond: 3,
       dynamicQualityChanges: [
         {
           t: -2,

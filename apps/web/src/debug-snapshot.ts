@@ -199,6 +199,7 @@ export type DebugSnapshotExport = {
       plugin: string;
       rejectedModelsPerSecond: number;
     }>;
+    modelsAutomaticallyLoweredToAnotherLodPerSecond: number;
     dynamicQualityChanges: Array<{
       t: number;
       targetFps: 60 | 30;
@@ -551,6 +552,8 @@ function buildResourceBudgetSnapshot(
     pluginRequestsRejectedDueToBudget: parseRejectedPluginSummary(
       options.snapshot.tileModelBudgetViolationSummary
     ),
+    modelsAutomaticallyLoweredToAnotherLodPerSecond:
+      options.snapshot.lodReplacementsPerSecond,
     dynamicQualityChanges: collectDynamicQualityChanges(options.history),
     limits: {
       frameMs: {
