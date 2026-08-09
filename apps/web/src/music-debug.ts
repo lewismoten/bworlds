@@ -51,6 +51,7 @@ export type MusicDebugSnapshot = {
   durationMs: number;
   loopStartOffsetMs: number;
   loopEndOffsetMs: number;
+  leadMaxLeapSemitones: number;
   roleCounts: Record<ProceduralMusicNote['role'], number>;
 };
 
@@ -183,9 +184,20 @@ export function createMusicDebugSnapshot(
     bass: 0,
     percussion: 0,
   };
+  let leadMaxLeapSemitones = 0;
+  let previousLeadFrequency: number | null = null;
 
   for (const note of song.notes) {
     roleCounts[note.role] += 1;
+    if (note.role !== 'lead') {
+      continue;
+    }
+    if (previousLeadFrequency !== null) {
+      const leapSemitones =
+        Math.abs(Math.log2(note.frequency / previousLeadFrequency)) * 12;
+      leadMaxLeapSemitones = Math.max(leadMaxLeapSemitones, leapSemitones);
+    }
+    previousLeadFrequency = note.frequency;
   }
 
   return {
@@ -202,6 +214,7 @@ export function createMusicDebugSnapshot(
     durationMs,
     loopStartOffsetMs: song.loopStartOffsetMs,
     loopEndOffsetMs: song.loopEndOffsetMs,
+    leadMaxLeapSemitones,
     roleCounts,
   };
 }
@@ -335,6 +348,7 @@ export function buildMusicDebugSummaryMarkup(
       <div><dt>Loop Range</dt><dd>${formatMusicDebugLoopRange(snapshot.loopStartOffsetMs, snapshot.loopEndOffsetMs)}</dd></div>
       <div><dt>Tempo</dt><dd>${snapshot.mood.tempoMultiplier.toFixed(2)}x</dd></div>
       <div><dt>Brightness</dt><dd>${snapshot.mood.brightness.toFixed(2)}x</dd></div>
+      <div><dt>Lead Max Leap</dt><dd>${snapshot.leadMaxLeapSemitones.toFixed(1)} st</dd></div>
     </div>
     <div class="music-debug-role-counts">
       <span>Bass ${snapshot.roleCounts.bass}</span>

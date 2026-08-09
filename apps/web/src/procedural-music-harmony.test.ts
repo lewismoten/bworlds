@@ -89,7 +89,12 @@ describe('procedural music harmony', () => {
     const answerSteps = [7, 15];
 
     for (const stepIndex of questionSteps) {
-      const chord = resolveProceduralChordAtStep(cadenceTheme, stepIndex, 3, -2);
+      const chord = resolveProceduralChordAtStep(
+        cadenceTheme,
+        stepIndex,
+        3,
+        -2
+      );
       const semitones = resolveProceduralInstrumentSemitones({
         theme: cadenceTheme,
         role: 'lead',
@@ -106,7 +111,12 @@ describe('procedural music harmony', () => {
     }
 
     for (const stepIndex of answerSteps) {
-      const chord = resolveProceduralChordAtStep(cadenceTheme, stepIndex, 3, -2);
+      const chord = resolveProceduralChordAtStep(
+        cadenceTheme,
+        stepIndex,
+        3,
+        -2
+      );
       const semitones = resolveProceduralInstrumentSemitones({
         theme: cadenceTheme,
         role: 'lead',
@@ -119,6 +129,33 @@ describe('procedural music harmony', () => {
         'answer'
       );
       expect(semitones).toBe(chord.rootSemitones);
+    }
+  });
+
+  it('limits large melodic jumps and pulls the next step back afterward', () => {
+    const semitones = Array.from({ length: 24 }, (_, stepIndex) =>
+      resolveProceduralInstrumentSemitones({
+        theme: TEST_THEME,
+        role: 'lead',
+        stepIndex,
+        clusterX: 3,
+        clusterY: -2,
+      })
+    );
+    const intervals = semitones
+      .slice(1)
+      .map((note, index) => note - semitones[index]!);
+    const largeLeapIndexes = intervals
+      .map((interval, index) => ({ interval, index }))
+      .filter(({ interval }) => Math.abs(interval) > 7);
+
+    expect(largeLeapIndexes.length).toBeLessThanOrEqual(1);
+
+    for (const leap of largeLeapIndexes) {
+      const recovery = intervals[leap.index + 1];
+      expect(recovery).toBeDefined();
+      expect(Math.sign(recovery!)).toBe(-Math.sign(leap.interval));
+      expect(Math.abs(recovery!)).toBeLessThan(Math.abs(leap.interval));
     }
   });
 });
