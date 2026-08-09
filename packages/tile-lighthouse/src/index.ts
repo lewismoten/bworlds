@@ -28,6 +28,8 @@ const LIGHTHOUSE_BEAM_KEY = 'lighthouseBeam';
 const LIGHTHOUSE_LENS_KEY = 'lighthouseLens';
 const LIGHTHOUSE_GLASS_KEY = 'lighthouseGlass';
 const LIGHTHOUSE_FRAME_KEY = 'lighthouseFrame';
+const LIGHTHOUSE_BALCONY_KEY = 'lighthouseBalcony';
+const LIGHTHOUSE_BALCONY_RAIL_KEY = 'lighthouseBalconyRail';
 const LIGHTHOUSE_REGION_SIZE = 18;
 const LIGHTHOUSE_BEAM_COLOR_SEED = registerHashLabel('lighthouse-beam-color');
 const LIGHTHOUSE_PANE_COLOR_SEED = registerHashLabel('lighthouse-pane-color');
@@ -65,6 +67,7 @@ type LighthouseStyleMaterials = {
   glassMaterial: ThreeMaterialLike;
   frameMaterial: ThreeMaterialLike;
   lensMaterial: ThreeMaterialLike;
+  balconyMaterial: ThreeMaterialLike;
   beamColor: string;
   rotationDurationMs: number;
   rotationDirection: 1 | -1;
@@ -139,6 +142,11 @@ const resolveRegionalLighthouseStyle = createRegionalMaterialResolver(
           roughness: 0.18,
           metalness: 0.04,
         }),
+        balconyMaterial: new three.MeshStandardMaterial({
+          color: '#8b7358',
+          roughness: 0.84,
+          metalness: 0.08,
+        }),
         beamColor,
         rotationDurationMs,
         rotationDirection,
@@ -193,6 +201,7 @@ export function createLighthouseTilePlugin(): RuntimePlugin {
         glassMaterial,
         frameMaterial,
         lensMaterial,
+        balconyMaterial,
         beamColor,
         rotationDurationMs,
         rotationDirection,
@@ -291,6 +300,46 @@ export function createLighthouseTilePlugin(): RuntimePlugin {
       };
       lens.position.set(tileX, 1.86, tileY);
       group.add(lens);
+
+      const balconyDeck = new three.Mesh(
+        getSharedCylinderGeometry(three, 0.38, 0.38, 0.05, 12),
+        balconyMaterial
+      );
+      balconyDeck.userData = {
+        ...(balconyDeck.userData ?? {}),
+        [LIGHTHOUSE_BALCONY_KEY]: true,
+      };
+      balconyDeck.position.set(tileX, 1.67, tileY);
+      group.add(balconyDeck);
+
+      const balconyRailRing = new three.Mesh(
+        getSharedCylinderGeometry(three, 0.41, 0.41, 0.03, 12),
+        frameMaterial
+      );
+      balconyRailRing.userData = {
+        ...(balconyRailRing.userData ?? {}),
+        [LIGHTHOUSE_BALCONY_RAIL_KEY]: true,
+      };
+      balconyRailRing.position.set(tileX, 1.83, tileY);
+      group.add(balconyRailRing);
+
+      for (const offset of [
+        { x: 0.34, z: 0 },
+        { x: -0.34, z: 0 },
+        { x: 0, z: 0.34 },
+        { x: 0, z: -0.34 },
+      ]) {
+        const balconyRailPost = new three.Mesh(
+          getSharedBoxGeometry(three, 0.03, 0.18, 0.03),
+          frameMaterial
+        );
+        balconyRailPost.userData = {
+          ...(balconyRailPost.userData ?? {}),
+          [LIGHTHOUSE_BALCONY_RAIL_KEY]: true,
+        };
+        balconyRailPost.position.set(tileX + offset.x, 1.75, tileY + offset.z);
+        group.add(balconyRailPost);
+      }
 
       for (const offset of [
         { x: 0.22, z: 0 },

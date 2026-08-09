@@ -285,10 +285,14 @@ describe('tile lighthouse', () => {
     const glassMeshes = collectTaggedMeshes(model, 'lighthouseGlass');
     const frameMeshes = collectTaggedMeshes(model, 'lighthouseFrame');
     const lensMeshes = collectTaggedMeshes(model, 'lighthouseLens');
+    const balconyMeshes = collectTaggedMeshes(model, 'lighthouseBalcony');
+    const balconyRailMeshes = collectTaggedMeshes(model, 'lighthouseBalconyRail');
 
     expect(glassMeshes).toHaveLength(1);
     expect(frameMeshes).toHaveLength(6);
     expect(lensMeshes).toHaveLength(1);
+    expect(balconyMeshes).toHaveLength(1);
+    expect(balconyRailMeshes).toHaveLength(5);
     expect((glassMeshes[0]?.material as FakeMaterial | undefined)?.options.transparent).toBe(true);
     expect((glassMeshes[0]?.material as FakeMaterial | undefined)?.options.opacity).toBeCloseTo(
       0.42,
@@ -298,6 +302,13 @@ describe('tile lighthouse', () => {
     expect((lensMeshes[0]?.material as FakeMaterial | undefined)?.options.emissive).toBe(
       '#ffe9a8'
     );
+    expect((balconyMeshes[0]?.material as FakeMaterial | undefined)?.options.color).toBe(
+      '#8b7358'
+    );
+    expect((balconyRailMeshes[0]?.material as FakeMaterial | undefined)?.options.color).toBe(
+      '#5d6673'
+    );
+    expect(balconyMeshes[0]?.position.y).toBeLessThan(glassMeshes[0]?.position.y ?? Infinity);
   });
 
   it('sweeps and fades the beam by distance at night', () => {
