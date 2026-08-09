@@ -23,13 +23,16 @@ import {
   resolvePluginPackDefinition,
   getRenderAnimationMixerMetadata,
   getRenderBudgetPartMetadata,
+  getRenderCollisionShapeMetadata,
   getRenderModelAttachmentMetadata,
   getRenderParticleEmitterMetadata,
   hasRenderAnimationMixerMetadata,
   hasRenderBudgetPartMetadata,
+  hasRenderCollisionShapeMetadata,
   hasRenderModelAttachmentMetadata,
   hasRenderParticleEmitterMetadata,
   markRenderAnimationMixer,
+  markRenderCollisionShape,
   markRenderModelAttachment,
   markOptionalDecorativeRenderBudgetPart,
   markRenderParticleEmitter,
@@ -171,6 +174,19 @@ describe('plugin registry', () => {
       label: 'hanging-signs',
     });
     expect(hasRenderModelAttachmentMetadata(target)).toBe(true);
+  });
+
+  it('marks reusable collision-shape metadata on render objects', () => {
+    const target = markRenderCollisionShape(
+      { userData: {} },
+      { count: 2, label: 'trunk-colliders' }
+    );
+
+    expect(getRenderCollisionShapeMetadata(target)).toEqual({
+      count: 2,
+      label: 'trunk-colliders',
+    });
+    expect(hasRenderCollisionShapeMetadata(target)).toBe(true);
   });
 
   it('registers content packs in map, runtime, then tile order', () => {

@@ -100,6 +100,7 @@ import { createLighthouseTilePlugin } from '@bworlds/tile-lighthouse';
 import { createTownTilePlugin } from '@bworlds/tile-town';
 import {
   markRenderModelAttachment,
+  markRenderCollisionShape,
   markRenderAnimationMixer,
   setRenderBudgetPartMetadata,
 } from '@bworlds/plugin-api';
@@ -435,6 +436,7 @@ describe('render3d visibility helpers', () => {
       boneCount: 0,
       morphTargetCount: 0,
       attachmentCount: 0,
+      collisionShapeCount: 0,
       triangleCount: 0,
       vertexCount: 36,
       materialRefCount: 4,
@@ -596,6 +598,7 @@ describe('render3d visibility helpers', () => {
       boneCount: 0,
       morphTargetCount: 0,
       attachmentCount: 0,
+      collisionShapeCount: 0,
       triangleCount: 0,
       vertexCount: 18,
       materialRefCount: 3,
@@ -688,6 +691,7 @@ describe('render3d visibility helpers', () => {
       boneCount: 0,
       morphTargetCount: 0,
       attachmentCount: 0,
+      collisionShapeCount: 0,
       triangleCount: 0,
       vertexCount: 25,
       materialRefCount: 2,
@@ -830,6 +834,7 @@ describe('render3d visibility helpers', () => {
       boneCount: 0,
       morphTargetCount: 0,
       attachmentCount: 0,
+      collisionShapeCount: 0,
       triangleCount: 0,
       vertexCount: 26,
       materialRefCount: 2,
@@ -916,6 +921,7 @@ describe('render3d visibility helpers', () => {
       boneCount: 0,
       morphTargetCount: 0,
       attachmentCount: 0,
+      collisionShapeCount: 0,
       triangleCount: 0,
       vertexCount: 8,
       materialRefCount: 2,
@@ -1034,6 +1040,7 @@ describe('render3d visibility helpers', () => {
       boneCount: 0,
       morphTargetCount: 0,
       attachmentCount: 0,
+      collisionShapeCount: 0,
       triangleCount: 0,
       vertexCount: 10,
       materialRefCount: 2,
@@ -1311,6 +1318,7 @@ describe('render3d visibility helpers', () => {
       boneCount: 100,
       morphTargetCount: 16,
       attachmentCount: 16,
+      collisionShapeCount: 12,
       vertexCount: 50_000,
     });
     expect(getTileModelHardLimits('low')).toEqual({
@@ -1349,6 +1357,7 @@ describe('render3d visibility helpers', () => {
       boneCount: 60,
       morphTargetCount: 4,
       attachmentCount: 4,
+      collisionShapeCount: 4,
       vertexCount: 8_000,
     });
   });
@@ -1440,6 +1449,7 @@ describe('render3d visibility helpers', () => {
         boneCount: 0,
         morphTargetCount: 0,
         attachmentCount: 0,
+        collisionShapeCount: 0,
         vertexCount: 72,
       }),
       violations: [],
@@ -1750,6 +1760,59 @@ describe('render3d visibility helpers', () => {
             metric: 'attachmentCount',
             actual: 17,
             limit: 16,
+          },
+        ]),
+      })
+    );
+  });
+
+  it('tracks collision-shape counts and rejects models above the cap', () => {
+    const material = createMockMaterial();
+    const root = createMockObject3D(undefined, [
+      markRenderCollisionShape(
+        createMockObject3D(
+          material,
+          [],
+          createMockStatGeometry('mesh-collision-a', 48)
+        ),
+        { count: 7, label: 'wall-colliders' }
+      ),
+      markRenderCollisionShape(
+        createMockObject3D(
+          material,
+          [],
+          createMockStatGeometry('mesh-collision-b', 48)
+        ),
+        { count: 6, label: 'door-colliders' }
+      ),
+    ]);
+
+    expect(collectSceneResourceStats(root as never).collisionShapeCount).toBe(13);
+    expect(validateTileModelAgainstRenderBudget(root as never, 'full')).toEqual(
+      expect.objectContaining({
+        accepted: false,
+        violations: expect.arrayContaining([
+          {
+            metric: 'collisionShapeCount',
+            actual: 13,
+            limit: 12,
+          },
+        ]),
+      })
+    );
+    expect(
+      validateTileModelCostEstimateAgainstRenderBudget(
+        { collisionShapeCount: 13 },
+        'full'
+      )
+    ).toEqual(
+      expect.objectContaining({
+        accepted: false,
+        violations: expect.arrayContaining([
+          {
+            metric: 'collisionShapeCount',
+            actual: 13,
+            limit: 12,
           },
         ]),
       })

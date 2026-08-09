@@ -25,6 +25,7 @@ import { isWaterKind } from '@bworlds/tile-support';
 import {
   getActivePluginRegistry,
   getRenderAnimationMixerMetadata,
+  getRenderCollisionShapeMetadata,
   getRenderModelAttachmentMetadata,
   getRenderParticleEmitterMetadata,
   getRenderBudgetPartMetadata,
@@ -398,6 +399,7 @@ const FULL_DETAIL_TILE_MODEL_HARD_LIMITS: TileModelHardLimits = {
   boneCount: 100,
   morphTargetCount: 16,
   attachmentCount: 16,
+  collisionShapeCount: 12,
   vertexCount: 50_000,
 };
 
@@ -437,6 +439,7 @@ const LOW_DETAIL_TILE_MODEL_HARD_LIMITS: TileModelHardLimits = {
   boneCount: 60,
   morphTargetCount: 4,
   attachmentCount: 4,
+  collisionShapeCount: 4,
   vertexCount: 8_000,
 };
 
@@ -538,6 +541,7 @@ export function validateTileModelAgainstRenderBudget(
         boneCount: countBones(root),
         morphTargetCount: countMorphTargets(root),
         attachmentCount: countModelAttachments(root),
+        collisionShapeCount: countCollisionShapes(root),
         invalidPositionCoordinateCount: 0,
         pointVertexCount: safetyPrecheck.stats.pointVertexCount,
         particleEmitterCount: safetyPrecheck.stats.particleEmitterCount,
@@ -602,6 +606,7 @@ export function validateTileModelAgainstRenderBudget(
     boneCount: countBones(root),
     morphTargetCount: countMorphTargets(root),
     attachmentCount: countModelAttachments(root),
+    collisionShapeCount: countCollisionShapes(root),
   };
   const violations: TileModelBudgetViolation[] = [];
   const metrics: Array<keyof TileModelHardLimits> = [
@@ -640,6 +645,7 @@ export function validateTileModelAgainstRenderBudget(
     'boneCount',
     'morphTargetCount',
     'attachmentCount',
+    'collisionShapeCount',
     'vertexCount',
   ];
 
@@ -745,6 +751,7 @@ export function getTileModelCostEstimateLimits(
     boneCount: limits.boneCount,
     morphTargetCount: limits.morphTargetCount,
     attachmentCount: limits.attachmentCount,
+    collisionShapeCount: limits.collisionShapeCount,
     vertexCount: limits.vertexCount,
     triangleCount: limits.triangleCount,
   };
@@ -897,6 +904,7 @@ type SceneResourceStats = {
   boneCount: number;
   morphTargetCount: number;
   attachmentCount: number;
+  collisionShapeCount: number;
   triangleCount: number;
   vertexCount: number;
   materialRefCount: number;
@@ -964,6 +972,7 @@ type TileModelHardLimits = {
   boneCount: number;
   morphTargetCount: number;
   attachmentCount: number;
+  collisionShapeCount: number;
   vertexCount: number;
 };
 
@@ -1061,6 +1070,7 @@ function createEmptySceneResourceStats(): SceneResourceStats {
     boneCount: 0,
     morphTargetCount: 0,
     attachmentCount: 0,
+    collisionShapeCount: 0,
     triangleCount: 0,
     vertexCount: 0,
     materialRefCount: 0,
@@ -1222,6 +1232,22 @@ function countModelAttachments(root: Pick<THREE.Object3D, 'traverse'>): number {
   });
 
   return attachmentCount;
+}
+
+function countCollisionShapes(root: Pick<THREE.Object3D, 'traverse'>): number {
+  let collisionShapeCount = 0;
+
+  root.traverse((child) => {
+    const metadata = getRenderCollisionShapeMetadata(
+      child as Pick<THREE.Object3D, 'userData'>
+    );
+    if (!metadata) {
+      return;
+    }
+    collisionShapeCount += metadata.count ?? 1;
+  });
+
+  return collisionShapeCount;
 }
 
 type FrameTimeBudget = {
@@ -3657,6 +3683,7 @@ export function collectSceneResourceStats(
   const bones = new Set<unknown>();
   let morphTargetCount = 0;
   let attachmentCount = 0;
+  let collisionShapeCount = 0;
   let triangleCount = 0;
   let vertexCount = 0;
   let materialRefCount = 0;
@@ -3768,6 +3795,12 @@ export function collectSceneResourceStats(
     );
     if (attachmentMetadata) {
       attachmentCount += attachmentMetadata.count ?? 1;
+    }
+    const collisionShapeMetadata = getRenderCollisionShapeMetadata(
+      child as Pick<THREE.Object3D, 'userData'>
+    );
+    if (collisionShapeMetadata) {
+      collisionShapeCount += collisionShapeMetadata.count ?? 1;
     }
     const skeleton = (child as THREE.Object3D & { skeleton?: unknown }).skeleton;
     if (skeleton && typeof skeleton === 'object') {
@@ -3892,6 +3925,7 @@ export function collectSceneResourceStats(
     boneCount: bones.size,
     morphTargetCount,
     attachmentCount,
+    collisionShapeCount,
     triangleCount,
     vertexCount,
     materialRefCount,

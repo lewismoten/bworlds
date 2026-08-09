@@ -636,6 +636,7 @@ export interface Model3DResourceCostEstimate {
   boneCount?: number;
   morphTargetCount?: number;
   attachmentCount?: number;
+  collisionShapeCount?: number;
   vertexCount?: number;
   triangleCount?: number;
 }

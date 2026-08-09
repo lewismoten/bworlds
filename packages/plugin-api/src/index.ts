@@ -61,6 +61,13 @@ export {
   markRenderModelAttachment,
   RENDER_MODEL_ATTACHMENT_USER_DATA_KEY,
 } from './render-model-attachments';
+export type { RenderCollisionShapeMetadata } from './render-collision-shapes';
+export {
+  getRenderCollisionShapeMetadata,
+  hasRenderCollisionShapeMetadata,
+  markRenderCollisionShape,
+  RENDER_COLLISION_SHAPE_USER_DATA_KEY,
+} from './render-collision-shapes';
 import {
   attemptCall,
   dedupePluginPackIds,
