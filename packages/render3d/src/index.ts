@@ -24,6 +24,7 @@ import {
 import { isWaterKind } from '@bworlds/tile-support';
 import {
   getActivePluginRegistry,
+  getRenderAnimationMixerMetadata,
   getRenderParticleEmitterMetadata,
   getRenderBudgetPartMetadata,
   hasRenderBudgetPartMetadata,
@@ -391,6 +392,7 @@ const FULL_DETAIL_TILE_MODEL_HARD_LIMITS: TileModelHardLimits = {
   textureCount: 16,
   lightCount: 4,
   shadowLightCount: 1,
+  animationMixerCount: 4,
   vertexCount: 50_000,
 };
 
@@ -425,6 +427,7 @@ const LOW_DETAIL_TILE_MODEL_HARD_LIMITS: TileModelHardLimits = {
   textureCount: 4,
   lightCount: 1,
   shadowLightCount: 0,
+  animationMixerCount: 0,
   vertexCount: 8_000,
 };
 
@@ -521,6 +524,7 @@ export function validateTileModelAgainstRenderBudget(
         geometryCount: safetyPrecheck.stats.geometryCount,
         lightCount: safetyPrecheck.stats.lightCount,
         shadowLightCount: safetyPrecheck.stats.shadowLightCount,
+        animationMixerCount: countAnimationMixers(root),
         invalidPositionCoordinateCount: 0,
         pointVertexCount: safetyPrecheck.stats.pointVertexCount,
         particleEmitterCount: safetyPrecheck.stats.particleEmitterCount,
@@ -580,6 +584,7 @@ export function validateTileModelAgainstRenderBudget(
       maximumAxisSpan: ULTRA_DENSE_GEOMETRY_MAX_AXIS_SPAN,
       minimumTriangleCount: ULTRA_DENSE_GEOMETRY_MIN_TRIANGLES,
     }),
+    animationMixerCount: countAnimationMixers(root),
   };
   const violations: TileModelBudgetViolation[] = [];
   const metrics: Array<keyof TileModelHardLimits> = [
@@ -613,6 +618,7 @@ export function validateTileModelAgainstRenderBudget(
     'textureCount',
     'lightCount',
     'shadowLightCount',
+    'animationMixerCount',
     'vertexCount',
   ];
 
@@ -713,6 +719,7 @@ export function getTileModelCostEstimateLimits(
     textureCount: limits.textureCount,
     lightCount: limits.lightCount,
     shadowLightCount: limits.shadowLightCount,
+    animationMixerCount: limits.animationMixerCount,
     vertexCount: limits.vertexCount,
     triangleCount: limits.triangleCount,
   };
@@ -860,6 +867,7 @@ type SceneResourceStats = {
   hemisphereLightCount: number;
   dynamicLightCount: number;
   shadowLightCount: number;
+  animationMixerCount: number;
   triangleCount: number;
   vertexCount: number;
   materialRefCount: number;
@@ -922,6 +930,7 @@ type TileModelHardLimits = {
   textureCount: number;
   lightCount: number;
   shadowLightCount: number;
+  animationMixerCount: number;
   vertexCount: number;
 };
 
@@ -1014,6 +1023,7 @@ function createEmptySceneResourceStats(): SceneResourceStats {
     hemisphereLightCount: 0,
     dynamicLightCount: 0,
     shadowLightCount: 0,
+    animationMixerCount: 0,
     triangleCount: 0,
     vertexCount: 0,
     materialRefCount: 0,
@@ -1075,6 +1085,22 @@ function countParticleEmitters(root: Pick<THREE.Object3D, 'traverse'>): number {
   });
 
   return emitterCount;
+}
+
+function countAnimationMixers(root: Pick<THREE.Object3D, 'traverse'>): number {
+  let mixerCount = 0;
+
+  root.traverse((child) => {
+    const metadata = getRenderAnimationMixerMetadata(
+      child as Pick<THREE.Object3D, 'userData'>
+    );
+    if (!metadata) {
+      return;
+    }
+    mixerCount += metadata.count ?? 1;
+  });
+
+  return mixerCount;
 }
 
 type FrameTimeBudget = {
@@ -3505,6 +3531,7 @@ export function collectSceneResourceStats(
   let hemisphereLightCount = 0;
   let dynamicLightCount = 0;
   let shadowLightCount = 0;
+  let animationMixerCount = 0;
   let triangleCount = 0;
   let vertexCount = 0;
   let materialRefCount = 0;
@@ -3605,6 +3632,12 @@ export function collectSceneResourceStats(
       treeMeshCount += treeStats.meshCount;
       treeMaterialRefCount += treeStats.materialRefCount;
     }
+    const animationMixerMetadata = getRenderAnimationMixerMetadata(
+      child as Pick<THREE.Object3D, 'userData'>
+    );
+    if (animationMixerMetadata) {
+      animationMixerCount += animationMixerMetadata.count ?? 1;
+    }
 
     const renderable = child as THREE.Object3D & {
       geometry?: unknown;
@@ -3693,6 +3726,7 @@ export function collectSceneResourceStats(
     hemisphereLightCount,
     dynamicLightCount,
     shadowLightCount,
+    animationMixerCount,
     triangleCount,
     vertexCount,
     materialRefCount,

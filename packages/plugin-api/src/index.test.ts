@@ -21,10 +21,13 @@ import {
   PluginRegistry,
   resolveTileDefinitionFromPlugins,
   resolvePluginPackDefinition,
+  getRenderAnimationMixerMetadata,
   getRenderBudgetPartMetadata,
   getRenderParticleEmitterMetadata,
+  hasRenderAnimationMixerMetadata,
   hasRenderBudgetPartMetadata,
   hasRenderParticleEmitterMetadata,
+  markRenderAnimationMixer,
   markOptionalDecorativeRenderBudgetPart,
   markRenderParticleEmitter,
   markStructuralRenderBudgetPart,
@@ -139,6 +142,19 @@ describe('plugin registry', () => {
       label: 'fireflies',
     });
     expect(hasRenderParticleEmitterMetadata(target)).toBe(true);
+  });
+
+  it('marks reusable animation-mixer metadata on render objects', () => {
+    const target = markRenderAnimationMixer(
+      { userData: {} },
+      { count: 2, label: 'beacon-spin' }
+    );
+
+    expect(getRenderAnimationMixerMetadata(target)).toEqual({
+      count: 2,
+      label: 'beacon-spin',
+    });
+    expect(hasRenderAnimationMixerMetadata(target)).toBe(true);
   });
 
   it('registers content packs in map, runtime, then tile order', () => {

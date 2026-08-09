@@ -98,7 +98,10 @@ import { createForestTilePlugin } from '@bworlds/tile-forest';
 import { createDungeonTilePlugin } from '@bworlds/tile-dungeon';
 import { createLighthouseTilePlugin } from '@bworlds/tile-lighthouse';
 import { createTownTilePlugin } from '@bworlds/tile-town';
-import { setRenderBudgetPartMetadata } from '@bworlds/plugin-api';
+import {
+  markRenderAnimationMixer,
+  setRenderBudgetPartMetadata,
+} from '@bworlds/plugin-api';
 import {
   acceptTilePluginModelForRenderBudget,
   acceptTilePluginModelForRenderBudgetWithResult,
@@ -426,6 +429,7 @@ describe('render3d visibility helpers', () => {
       hemisphereLightCount: 0,
       dynamicLightCount: 0,
       shadowLightCount: 0,
+      animationMixerCount: 0,
       triangleCount: 0,
       vertexCount: 36,
       materialRefCount: 4,
@@ -582,6 +586,7 @@ describe('render3d visibility helpers', () => {
       hemisphereLightCount: 1,
       dynamicLightCount: 2,
       shadowLightCount: 1,
+      animationMixerCount: 0,
       triangleCount: 0,
       vertexCount: 18,
       materialRefCount: 3,
@@ -669,6 +674,7 @@ describe('render3d visibility helpers', () => {
       hemisphereLightCount: 0,
       dynamicLightCount: 0,
       shadowLightCount: 0,
+      animationMixerCount: 0,
       triangleCount: 0,
       vertexCount: 25,
       materialRefCount: 2,
@@ -806,6 +812,7 @@ describe('render3d visibility helpers', () => {
       hemisphereLightCount: 0,
       dynamicLightCount: 0,
       shadowLightCount: 0,
+      animationMixerCount: 0,
       triangleCount: 0,
       vertexCount: 26,
       materialRefCount: 2,
@@ -887,6 +894,7 @@ describe('render3d visibility helpers', () => {
       hemisphereLightCount: 0,
       dynamicLightCount: 0,
       shadowLightCount: 0,
+      animationMixerCount: 0,
       triangleCount: 0,
       vertexCount: 8,
       materialRefCount: 2,
@@ -1000,6 +1008,7 @@ describe('render3d visibility helpers', () => {
       hemisphereLightCount: 0,
       dynamicLightCount: 0,
       shadowLightCount: 0,
+      animationMixerCount: 0,
       triangleCount: 0,
       vertexCount: 10,
       materialRefCount: 2,
@@ -1272,6 +1281,7 @@ describe('render3d visibility helpers', () => {
       textureCount: 16,
       lightCount: 4,
       shadowLightCount: 1,
+      animationMixerCount: 4,
       vertexCount: 50_000,
     });
     expect(getTileModelHardLimits('low')).toEqual({
@@ -1305,6 +1315,7 @@ describe('render3d visibility helpers', () => {
       textureCount: 4,
       lightCount: 1,
       shadowLightCount: 0,
+      animationMixerCount: 0,
       vertexCount: 8_000,
     });
   });
@@ -1391,6 +1402,7 @@ describe('render3d visibility helpers', () => {
         textureCount: 1,
         lightCount: 0,
         shadowLightCount: 0,
+        animationMixerCount: 0,
         vertexCount: 72,
       }),
       violations: [],
@@ -1436,6 +1448,34 @@ describe('render3d visibility helpers', () => {
             limit: 1_500,
           },
         ],
+      })
+    );
+  });
+
+  it('tracks animation-mixer counts in scene stats and rejects models above the cap', () => {
+    const material = createMockMaterial();
+    const root = createMockObject3D(undefined, [
+      markRenderAnimationMixer(
+        createMockObject3D(material, [], createMockStatGeometry('mesh-a', 48)),
+        { count: 2, label: 'banner-wave' }
+      ),
+      markRenderAnimationMixer(
+        createMockObject3D(material, [], createMockStatGeometry('mesh-b', 48)),
+        { count: 3, label: 'beacon-spin' }
+      ),
+    ]);
+
+    expect(collectSceneResourceStats(root as never).animationMixerCount).toBe(5);
+    expect(validateTileModelAgainstRenderBudget(root as never, 'full')).toEqual(
+      expect.objectContaining({
+        accepted: false,
+        violations: expect.arrayContaining([
+          {
+            metric: 'animationMixerCount',
+            actual: 5,
+            limit: 4,
+          },
+        ]),
       })
     );
   });

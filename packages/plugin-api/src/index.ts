@@ -47,6 +47,13 @@ export {
   markRenderParticleEmitter,
   RENDER_PARTICLE_EMITTER_USER_DATA_KEY,
 } from './render-particle-emitters';
+export type { RenderAnimationMixerMetadata } from './render-animation-mixers';
+export {
+  getRenderAnimationMixerMetadata,
+  hasRenderAnimationMixerMetadata,
+  markRenderAnimationMixer,
+  RENDER_ANIMATION_MIXER_USER_DATA_KEY,
+} from './render-animation-mixers';
 import {
   attemptCall,
   dedupePluginPackIds,
