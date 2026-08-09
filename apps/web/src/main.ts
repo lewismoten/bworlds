@@ -346,23 +346,6 @@ const initialMainPageScrollY =
 
 root.innerHTML = `
   <main class="shell">
-    <section class="hero">
-      <div>
-        <p class="eyebrow">Infinite Procedural Explorer</p>
-        <h1>bworlds</h1>
-        <p class="lede">
-          Walk a deterministic world, jump between 2D and 3D instantly, and enter
-          towns, dungeons, caves, and buildings that generate on demand.
-        </p>
-        <p class="eyebrow" id="content-pack-label"></p>
-        <div
-          id="hmr-notice"
-          class="hmr-notice is-hidden"
-          aria-live="polite"
-          hidden
-        ></div>
-      </div>
-    </section>
     <section class="dashboard">
       <div class="viewport-panel">
         <div id="viewport-stage" class="viewport-stage">
@@ -712,32 +695,6 @@ root.innerHTML = `
         </div>
       </aside>
     </section>
-    <section class="utility-panels">
-      <div class="card">
-        <h2>Content Packs</h2>
-        <form id="content-pack-form" class="pack-form"></form>
-      </div>
-      <div class="card">
-        <h2>Status</h2>
-        <dl id="status"></dl>
-      </div>
-      <div class="card">
-        <h2>Legend</h2>
-        <canvas id="atlas" width="256" height="256"></canvas>
-      </div>
-      <div class="card">
-        <h2>Controls</h2>
-        <ul>
-          <li>In 2D, up/down move forward and reverse through the rotating map</li>
-          <li>In 2D, left/right rotate unless Shift is held to strafe</li>
-          <li>In 3D, left/right rotate unless Shift is held to strafe</li>
-          <li>Q/E also rotate in both 2D and 3D</li>
-          <li>In 3D, Space jumps and Enter interacts</li>
-          <li>V to toggle 2D and 3D</li>
-          <li>X to leave a place when standing on its exit</li>
-        </ul>
-      </div>
-    </section>
     <section class="control-dock card">
       <div class="controls controls-compact">
         <div class="dock-cluster" aria-label="Quick controls">
@@ -808,6 +765,18 @@ root.innerHTML = `
           </button>
         </div>
       </div>
+    </section>
+    <section class="support-tray" hidden aria-hidden="true">
+      <p class="eyebrow" id="content-pack-label"></p>
+      <div
+        id="hmr-notice"
+        class="hmr-notice is-hidden"
+        aria-live="polite"
+        hidden
+      ></div>
+      <form id="content-pack-form" class="pack-form"></form>
+      <dl id="status"></dl>
+      <canvas id="atlas" width="256" height="256"></canvas>
     </section>
     <dialog id="view-dialog" class="control-dialog">
       <form method="dialog" class="control-dialog-shell">

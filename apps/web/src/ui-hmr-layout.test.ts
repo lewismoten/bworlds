@@ -7,16 +7,16 @@ function readSource(relativePath: string): string {
 }
 
 describe('main layout and hmr wiring', () => {
-  it('keeps celestial tabs in the sidebar while moving secondary controls below the dashboard', () => {
+  it('keeps the game viewport first while preserving the sidebar and compact dock controls', () => {
     const source = readSource('apps/web/src/main.ts');
 
+    expect(source).not.toContain('<section class="hero">');
     expect(source).toContain('<aside class="sidebar">');
     expect(source).toContain('<div class="card" id="celestial-tools-card">');
-    expect(source).toContain('<section class="utility-panels">');
-    expect(source).toContain('<h2>Content Packs</h2>');
-    expect(source).toContain('<h2>Status</h2>');
-    expect(source).toContain('<h2>Legend</h2>');
-    expect(source).toContain('<h2>Controls</h2>');
+    expect(source).not.toContain('<section class="utility-panels">');
+    expect(source).toContain('<section class="control-dock card">');
+    expect(source).toContain('<div class="dock-cluster" aria-label="Quick controls">');
+    expect(source).toContain('<section class="support-tray" hidden aria-hidden="true">');
   });
 
   it('cleans up global main-page listeners during hot replacement', () => {

@@ -9,7 +9,7 @@
   --border: rgba(255, 255, 255, 0.1);
   --shadow: 0 30px 80px rgba(0, 0, 0, 0.35);
   --control-dock-offset: max(0.75rem, env(safe-area-inset-bottom, 0px));
-  --control-dock-height: clamp(9rem, 16vh, 13rem);
+  --control-dock-height: clamp(4.5rem, 9vh, 6rem);
 }
 
 * {
@@ -38,13 +38,7 @@ body {
 .shell {
   width: min(1440px, calc(100vw - 2rem));
   margin: 0 auto;
-  padding: 1.5rem 0
-    calc(var(--control-dock-height) + var(--control-dock-offset) + 1rem);
-}
-
-.hero {
-  display: block;
-  padding: 1rem 0 1.5rem;
+  padding: 0 0 calc(var(--control-dock-height) + var(--control-dock-offset) + 0.75rem);
 }
 
 .eyebrow {
@@ -74,23 +68,14 @@ body {
   box-shadow: 0 18px 34px rgba(0, 0, 0, 0.22);
 }
 
-h1 {
-  margin: 0.35rem 0;
-  font-size: clamp(2.5rem, 6vw, 5rem);
-  line-height: 0.95;
-}
-
-.lede {
-  max-width: 52rem;
-  margin: 0;
-  color: var(--muted);
-  font-size: 1.05rem;
-}
-
 .controls {
   display: flex;
   gap: 0.75rem;
   flex-wrap: wrap;
+}
+
+.controls-compact {
+  width: 100%;
 }
 
 .control-dock {
@@ -100,12 +85,57 @@ h1 {
   bottom: var(--control-dock-offset);
   z-index: 20;
   width: min(1440px, calc(100vw - 1rem));
-  max-height: min(42vh, 20rem);
   margin-top: 0;
-  overflow: auto;
+  overflow: hidden;
   transform: translateX(-50%);
-  overscroll-behavior: contain;
-  scrollbar-gutter: stable both-edges;
+}
+
+.dock-cluster {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 0.1rem;
+  scrollbar-width: thin;
+}
+
+.dock-split-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.32rem;
+  flex: 0 0 auto;
+}
+
+.dock-icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 2.9rem;
+  height: 2.9rem;
+  padding: 0;
+  font-size: 1.05rem;
+  line-height: 1;
+}
+
+.dock-icon-button-arrow {
+  width: 2.45rem;
+  font-size: 0.88rem;
+}
+
+.dock-icon-button-emphasis {
+  border-color: rgba(255, 191, 105, 0.42);
+  background:
+    linear-gradient(180deg, rgba(255, 191, 105, 0.22), transparent),
+    rgba(255, 255, 255, 0.04);
+}
+
+.support-tray {
+  display: none;
 }
 
 .build-controls {
@@ -425,13 +455,6 @@ button:hover {
   gap: 1rem;
 }
 
-.utility-panels {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 1rem;
-  margin-top: 1rem;
-}
-
 .card {
   padding: 1rem 1.1rem;
 }
@@ -704,37 +727,6 @@ button:hover {
   cursor: pointer;
 }
 
-.pack-form {
-  display: grid;
-  gap: 0.75rem;
-}
-
-.pack-option {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 0.35rem 0.7rem;
-  align-items: start;
-  padding: 0.7rem 0.8rem;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.03);
-}
-
-.pack-option input {
-  margin-top: 0.2rem;
-}
-
-.pack-name {
-  font-weight: 600;
-}
-
-.pack-description {
-  grid-column: 2;
-  color: var(--muted);
-  font-size: 0.9rem;
-  line-height: 1.4;
-}
-
 .time-toggle-row {
   margin: 0 0 0.75rem;
 }
@@ -764,20 +756,6 @@ dt {
 
 dd {
   margin: 0.15rem 0 0;
-}
-
-ul {
-  margin: 0;
-  padding-left: 1.1rem;
-  color: var(--muted);
-}
-
-#atlas {
-  width: 100%;
-  max-width: 256px;
-  image-rendering: pixelated;
-  background: rgba(255, 255, 255, 0.04);
-  border-radius: 14px;
 }
 
 #time-wheel {
@@ -835,18 +813,9 @@ ul {
 }
 
 @media (max-width: 1024px) {
-  .hero,
   .dashboard {
     grid-template-columns: 1fr;
     display: grid;
-  }
-
-  .utility-panels {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .hero {
-    align-items: start;
   }
 
   .time-skip-controls {
@@ -863,11 +832,7 @@ ul {
 @media (max-width: 720px) {
   .shell {
     width: min(100vw - 1rem, 1440px);
-    padding-bottom: calc(12rem + env(safe-area-inset-bottom, 0px));
-  }
-
-  .utility-panels {
-    grid-template-columns: minmax(0, 1fr);
+    padding-bottom: calc(var(--control-dock-height) + env(safe-area-inset-bottom, 0px) + 0.75rem);
   }
 
   .controls {
@@ -918,7 +883,10 @@ ul {
     width: calc(100vw - 0.5rem);
     right: 0.25rem;
     bottom: max(0.25rem, env(safe-area-inset-bottom, 0px));
-    max-height: min(50vh, 26rem);
+  }
+
+  .dock-cluster {
+    justify-content: flex-start;
   }
 }
 .control-dialog {
