@@ -1,4 +1,4 @@
-import { getOrCreateMapValue } from '@bworlds/cache-support';
+import { createBoundedCache } from '@bworlds/cache-support';
 import { createExitMapAction } from '@bworlds/map-support';
 import {
   composeOverworldTileFromPlugins,
@@ -32,7 +32,12 @@ type WatercraftTilePredicate = (options: {
   state?: WorldStateLike;
 }) => boolean;
 
-const watercraftSearchOffsetsCache = new Map<number, Point[]>();
+export const WATERCRAFT_TILE_CACHE_MAX_ENTRIES = 512;
+export const WATERCRAFT_SEARCH_OFFSETS_CACHE_MAX_ENTRIES = 16;
+
+const watercraftSearchOffsetsCache = createBoundedCache<number, Point[]>(
+  WATERCRAFT_SEARCH_OFFSETS_CACHE_MAX_ENTRIES
+);
 
 export function createWatercraftMap({
   context,
@@ -41,6 +46,7 @@ export function createWatercraftMap({
   isNavigableTile,
   landingSearchRadius,
   canLandTileKind,
+  tileCacheMaxEntries = WATERCRAFT_TILE_CACHE_MAX_ENTRIES,
 }: {
   context: WatercraftContext;
   seed: Seed;
@@ -48,8 +54,9 @@ export function createWatercraftMap({
   isNavigableTile: WatercraftTilePredicate;
   landingSearchRadius: number;
   canLandTileKind?: (kind: Kind) => boolean;
+  tileCacheMaxEntries?: number;
 }): WorldMapLike {
-  const cache = new Map<string, TileLike>();
+  const cache = createBoundedCache<string, TileLike>(tileCacheMaxEntries);
   const sampleTerrainSignals = createOverworldTerrainSignalSampler(seed);
   const defaultTileKind = plugins.getDefaultTileKind();
   let activeRevision = -1;
@@ -81,7 +88,7 @@ export function createWatercraftMap({
       activeRevision = nextRevision;
     }
     const key = `${localX}:${localY}`;
-    return getOrCreateMapValue(cache, key, () =>
+    return cache.getOrCreate(key, () =>
       classifyGlobalTile(
         context.origin.x + localX,
         context.origin.y + localY,

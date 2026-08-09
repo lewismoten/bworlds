@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  createWatercraftMap,
   findNearestWatercraftLandingPoint,
   findNearestWatercraftLaunchPoint,
   hasNearbyKind,
@@ -80,5 +81,80 @@ describe('watercraft support', () => {
 
     expect(nearbyWater).toBe(true);
     expect(centerOnlyWater).toBe(false);
+  });
+
+  it('recreates deterministic watercraft tiles after bounded cache eviction churn', () => {
+    const map = createWatercraftMap({
+      seed: 'cache-spec',
+      context: {
+        id: 'boat:cache',
+        label: 'Boat',
+        type: 'boat',
+        depth: 1,
+        origin: { x: 10, y: -5 },
+      },
+      plugins: {
+        getDefaultTileKind() {
+          return 'plains';
+        },
+        getTileDefinition(kind: string) {
+          return {
+            name: kind,
+            color: '#000',
+            miniColor: '#111',
+            walkable: kind !== 'ocean' && kind !== 'river',
+            wallHeight: 0,
+          };
+        },
+        resolveOverworldTile() {
+          return null;
+        },
+        resolveOverworldAnchors() {
+          return {
+            townAnchors: [],
+            bridgeAnchors: [],
+            poiAnchors: [],
+          };
+        },
+        classifyTerrainTile() {
+          return null;
+        },
+        classifyOverworldTile({ x, y }: { x: number; y: number }) {
+          if ((x + y) % 7 === 0) {
+            return { kind: 'river', note: `current:${x}:${y}` };
+          }
+          if ((x - y) % 5 === 0) {
+            return { kind: 'shore', note: `shore:${x}:${y}` };
+          }
+          return { kind: 'forest', note: `forest:${x}:${y}` };
+        },
+        decorateOverworldTile({ tile }: { tile: TileLike }) {
+          return tile;
+        },
+        decorateTownTile({ tile }: { tile: TileLike }) {
+          return tile;
+        },
+        decorateBuildingTile({ tile }: { tile: TileLike }) {
+          return tile;
+        },
+        decorateDepthTile({ tile }: { tile: TileLike }) {
+          return tile;
+        },
+      } as never,
+      isNavigableTile({ sampleTile, x, y, state }) {
+        const kind = sampleTile(x, y, state).kind;
+        return kind === 'river' || kind === 'shore';
+      },
+      landingSearchRadius: 3,
+      tileCacheMaxEntries: 4,
+    });
+
+    const baseline = map.getTile(2, 3);
+
+    for (let index = 0; index < 8; index += 1) {
+      map.getTile(index - 4, index + 2);
+    }
+
+    expect(map.getTile(2, 3)).toEqual(baseline);
   });
 });
