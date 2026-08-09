@@ -1,4 +1,11 @@
-import { hash2D, octaveNoise2D } from '@bworlds/core';
+import {
+  appendHashSeedLabel,
+  appendHashSeedPart,
+  hash2D,
+  hash2DWithSeed,
+  octaveNoise2D,
+  registerHashLabel,
+} from '@bworlds/core';
 import { createPlainsBackedTilePainter } from '@bworlds/paint-support';
 import { createTilePlugin } from '@bworlds/plugin-api';
 import {
@@ -29,6 +36,100 @@ import type {
 
 const TILE_PIXEL_SIZE = 16;
 const RIVER_SURFACE_HEIGHT = -0.115;
+const OCEAN_SHIMMER_SEED = registerHashLabel('ocean-shimmer');
+const RIVER_BEND_SEED = registerHashLabel('river-bend');
+const RIVER_SWAY_SEED = registerHashLabel('river-sway');
+const RIVER_BRANCH_SWAY_SEED = registerHashLabel('river-branch-sway');
+const RIVER_RIBBON_SEED = registerHashLabel('river-ribbon');
+const RIVER_RIBBON_STUB_SEED = registerHashLabel('stub');
+const RIVER_RIBBON_HIGHLIGHT_SEED = registerHashLabel('highlight');
+const RIVER_RIBBON_BRANCH_SEED = registerHashLabel('branch');
+const RIVER_RIBBON_RIVER_SEED = registerHashLabel('river');
+const RIVER_CONNECTION_DIRECTION_SEEDS: Record<string, number> = {
+  north: registerHashLabel('north'),
+  east: registerHashLabel('east'),
+  south: registerHashLabel('south'),
+  west: registerHashLabel('west'),
+  northeast: registerHashLabel('northeast'),
+  southeast: registerHashLabel('southeast'),
+  southwest: registerHashLabel('southwest'),
+  northwest: registerHashLabel('northwest'),
+  stub: registerHashLabel('stub'),
+};
+const RIVER_DIRECTIONS: RiverConnection[] = [
+  {
+    id: 'north',
+    dx: 0,
+    dy: -1,
+    edgeX: 0,
+    edgeZ: -0.5,
+    inwardX: 0,
+    inwardZ: -0.24,
+  },
+  {
+    id: 'east',
+    dx: 1,
+    dy: 0,
+    edgeX: 0.5,
+    edgeZ: 0,
+    inwardX: 0.24,
+    inwardZ: 0,
+  },
+  {
+    id: 'south',
+    dx: 0,
+    dy: 1,
+    edgeX: 0,
+    edgeZ: 0.5,
+    inwardX: 0,
+    inwardZ: 0.24,
+  },
+  {
+    id: 'west',
+    dx: -1,
+    dy: 0,
+    edgeX: -0.5,
+    edgeZ: 0,
+    inwardX: -0.24,
+    inwardZ: 0,
+  },
+  {
+    id: 'northeast',
+    dx: 1,
+    dy: -1,
+    edgeX: 0.5,
+    edgeZ: -0.5,
+    inwardX: 0.28,
+    inwardZ: -0.28,
+  },
+  {
+    id: 'southeast',
+    dx: 1,
+    dy: 1,
+    edgeX: 0.5,
+    edgeZ: 0.5,
+    inwardX: 0.28,
+    inwardZ: 0.28,
+  },
+  {
+    id: 'southwest',
+    dx: -1,
+    dy: 1,
+    edgeX: -0.5,
+    edgeZ: 0.5,
+    inwardX: -0.28,
+    inwardZ: 0.28,
+  },
+  {
+    id: 'northwest',
+    dx: -1,
+    dy: -1,
+    edgeX: -0.5,
+    edgeZ: -0.5,
+    inwardX: -0.28,
+    inwardZ: -0.28,
+  },
+];
 const classifyOceanTile = createThresholdTerrainClassifier({
   kind: 'ocean',
   threshold: 0.38,
@@ -100,7 +201,11 @@ export function createWaterTilePlugin(): RuntimePlugin {
           }
 
           const time = timeMs * 0.0012;
-          const seed = hash2D(`ocean-shimmer:${variant}`, worldX, worldY);
+          const seed = hash2D(
+            appendHashSeedPart(OCEAN_SHIMMER_SEED, variant),
+            worldX,
+            worldY
+          );
           const drift = (seed - 0.5) * 1.8;
 
           context.save();
@@ -438,6 +543,7 @@ function createRiverGroup(
   tileY: number
 ) {
   const connections = getRiverConnections(state, tileX, tileY);
+  const tileSeed = createRiverTileSeed(tileX, tileY);
   const group = new three.Group();
   group.position.set(tileX, 0, tileY);
 
@@ -474,7 +580,7 @@ function createRiverGroup(
         stub,
         0.34,
         riverMaterial,
-        `${tileX}:${tileY}:stub`,
+        appendHashSeedLabel(tileSeed, RIVER_RIBBON_STUB_SEED),
         0.12
       )
     );
@@ -484,7 +590,10 @@ function createRiverGroup(
         stub,
         0.12,
         highlightMaterial,
-        `${tileX}:${tileY}:stub:highlight`,
+        appendHashSeedLabel(
+          appendHashSeedLabel(tileSeed, RIVER_RIBBON_STUB_SEED),
+          RIVER_RIBBON_HIGHLIGHT_SEED
+        ),
         0.06,
         0.008
       )
@@ -514,7 +623,7 @@ function createRiverGroup(
         curve,
         0.36,
         riverMaterial,
-        `${tileX}:${tileY}:river`,
+        appendHashSeedLabel(tileSeed, RIVER_RIBBON_RIVER_SEED),
         0.12
       )
     );
@@ -524,7 +633,10 @@ function createRiverGroup(
         curve,
         0.12,
         highlightMaterial,
-        `${tileX}:${tileY}:river:highlight`,
+        appendHashSeedLabel(
+          appendHashSeedLabel(tileSeed, RIVER_RIBBON_RIVER_SEED),
+          RIVER_RIBBON_HIGHLIGHT_SEED
+        ),
         0.04,
         0.008
       )
@@ -534,13 +646,17 @@ function createRiverGroup(
 
   connections.forEach((connection, index) => {
     const branch = createRiverBranch(three, tileX, tileY, connection, index);
+    const branchSeed = appendHashSeedLabel(
+      appendHashSeedLabel(tileSeed, RIVER_RIBBON_BRANCH_SEED),
+      RIVER_CONNECTION_DIRECTION_SEEDS[connection.id] ?? registerHashLabel(connection.id)
+    );
     group.add(
       createRiverRibbonMesh(
         three,
         branch,
         0.32,
         riverMaterial,
-        `${tileX}:${tileY}:branch:${connection.id}`,
+        branchSeed,
         0.12
       )
     );
@@ -550,7 +666,7 @@ function createRiverGroup(
         branch,
         0.11,
         highlightMaterial,
-        `${tileX}:${tileY}:branch:${connection.id}:highlight`,
+        appendHashSeedLabel(branchSeed, RIVER_RIBBON_HIGHLIGHT_SEED),
         0.04,
         0.008
       )
@@ -565,94 +681,28 @@ function getRiverConnections(
   tileX: number,
   tileY: number
 ) {
-  const directions = [
-    {
-      id: 'north',
-      dx: 0,
-      dy: -1,
-      edgeX: 0,
-      edgeZ: -0.5,
-      inwardX: 0,
-      inwardZ: -0.24,
-    },
-    {
-      id: 'east',
-      dx: 1,
-      dy: 0,
-      edgeX: 0.5,
-      edgeZ: 0,
-      inwardX: 0.24,
-      inwardZ: 0,
-    },
-    {
-      id: 'south',
-      dx: 0,
-      dy: 1,
-      edgeX: 0,
-      edgeZ: 0.5,
-      inwardX: 0,
-      inwardZ: 0.24,
-    },
-    {
-      id: 'west',
-      dx: -1,
-      dy: 0,
-      edgeX: -0.5,
-      edgeZ: 0,
-      inwardX: -0.24,
-      inwardZ: 0,
-    },
-    {
-      id: 'northeast',
-      dx: 1,
-      dy: -1,
-      edgeX: 0.5,
-      edgeZ: -0.5,
-      inwardX: 0.28,
-      inwardZ: -0.28,
-    },
-    {
-      id: 'southeast',
-      dx: 1,
-      dy: 1,
-      edgeX: 0.5,
-      edgeZ: 0.5,
-      inwardX: 0.28,
-      inwardZ: 0.28,
-    },
-    {
-      id: 'southwest',
-      dx: -1,
-      dy: 1,
-      edgeX: -0.5,
-      edgeZ: 0.5,
-      inwardX: -0.28,
-      inwardZ: 0.28,
-    },
-    {
-      id: 'northwest',
-      dx: -1,
-      dy: -1,
-      edgeX: -0.5,
-      edgeZ: -0.5,
-      inwardX: -0.28,
-      inwardZ: -0.28,
-    },
-  ];
+  const directions: RiverConnection[] = [];
+  for (let index = 0; index < RIVER_DIRECTIONS.length; index += 1) {
+    const direction = RIVER_DIRECTIONS[index]!;
+    if (isRiverNetworkKind(state.getCurrentTile(tileX + direction.dx, tileY + direction.dy).kind)) {
+      directions.push(direction);
+    }
+  }
 
-  return directions
-    .filter(({ dx, dy }) =>
-      isRiverNetworkKind(state.getCurrentTile(tileX + dx, tileY + dy).kind)
-    )
-    .sort(
-      (left, right) =>
-        Math.atan2(left.edgeZ, left.edgeX) -
-        Math.atan2(right.edgeZ, right.edgeX)
-    );
+  directions.sort(
+    (left, right) =>
+      Math.atan2(left.edgeZ, left.edgeX) -
+      Math.atan2(right.edgeZ, right.edgeX)
+  );
+  return directions;
 }
 
 function isRiverNetworkKind(kind: Kind): boolean {
   return isWaterOrCrossingKind(kind);
+}
+
+function createRiverTileSeed(tileX: number, tileY: number): number {
+  return appendHashSeedPart(appendHashSeedPart(RIVER_RIBBON_SEED, tileX), tileY);
 }
 
 function createRiverCurve(
@@ -672,8 +722,8 @@ function createRiverCurve(
     RIVER_SURFACE_HEIGHT,
     end.edgeZ
   );
-  const bend = (hash2D('river-bend', tileX, tileY) - 0.5) * 0.34;
-  const sway = (hash2D('river-sway', tileX, tileY) - 0.5) * 0.22;
+  const bend = (hash2D(RIVER_BEND_SEED, tileX, tileY) - 0.5) * 0.34;
+  const sway = (hash2D(RIVER_SWAY_SEED, tileX, tileY) - 0.5) * 0.22;
   const opposite = start.dx === -end.dx && start.dy === -end.dy;
   const controlA = opposite
     ? new three.Vector3(
@@ -715,7 +765,7 @@ function createRiverBranch(
     connection.edgeZ
   );
   const sway =
-    (hash2D('river-branch-sway', tileX * 7 + index, tileY * 11) - 0.5) * 0.24;
+    (hash2D(RIVER_BRANCH_SWAY_SEED, tileX * 7 + index, tileY * 11) - 0.5) * 0.24;
   const controlA = new three.Vector3(
     connection.inwardX * 0.42,
     RIVER_SURFACE_HEIGHT,
@@ -752,16 +802,13 @@ function createRiverRibbonMesh(
   points: RiverVectorLike[],
   width: number,
   material: ThreeMaterialLike,
-  seedKey: string,
+  seedHash: number,
   rippleStrength: number,
   yOffset = 0
 ) {
   return createRibbonMesh(three, points, width, material, {
     widthNoise(index, total) {
-      return (
-        1 +
-        (hash2D(`river-width:${seedKey}`, index, total) - 0.5) * rippleStrength
-      );
+      return 1 + (hash2DWithSeed(seedHash, index, total) - 0.5) * rippleStrength;
     },
     yOffset,
   });
