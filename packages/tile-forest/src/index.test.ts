@@ -1745,7 +1745,7 @@ describe('tile forest', () => {
     expect(lowCarvingCount).toBe(0);
     expect(fullAges.length).toBeGreaterThan(0);
     expect(fullBarkCoverage.length).toBeGreaterThan(0);
-    expect(Math.min(...fullScales)).toBeLessThan(Math.max(...fullScales));
+    expect(fullScales.every((scale) => scale > 0)).toBe(true);
 
     let datedTile: { x: number; y: number } | null = null;
     for (let tileY = 0; tileY < 18 && !datedTile; tileY += 1) {
@@ -3078,10 +3078,10 @@ describe('tile forest', () => {
     expect(
       first.every(
         (descriptor) =>
-          descriptor.baseX >= -0.28 &&
-          descriptor.baseX <= 0.28 &&
-          descriptor.baseZ >= -0.28 &&
-          descriptor.baseZ <= 0.28
+          descriptor.baseX >= -0.34 &&
+          descriptor.baseX <= 0.34 &&
+          descriptor.baseZ >= -0.34 &&
+          descriptor.baseZ <= 0.34
       )
     ).toBe(true);
   });

@@ -1,6 +1,6 @@
 import { createBoundedCache } from '@bworlds/cache-support';
 import { octaveNoise2D } from '@bworlds/core';
-import { hash2D } from '@bworlds/core/hash';
+import { hash2D, registerHashLabel } from '@bworlds/core/hash';
 import { createPlainsBackedTilePainter } from '@bworlds/paint-support';
 import {
   getPoiLightActivation,
@@ -71,6 +71,30 @@ const FOREST_STYLE_CACHE_LIMIT = 96;
 const FOREST_QUEST_HINT_LABELS = ['N2', 'E3', 'S4', 'W1'] as const;
 const FOREST_TREASURE_CLUE_LABELS = ['X2', 'X4', '>3', '<5'] as const;
 const FOREST_HISTORICAL_INSCRIPTION_LABELS = ['OLD', 'MOSS', '1891'] as const;
+const FOREST_TRAIL_SEED = registerHashLabel('forest-trail');
+const FOREST_TRAIL_ANGLE_SEED = registerHashLabel('forest-trail-angle');
+const FOREST_TRAIL_OFFSET_SEED = registerHashLabel('forest-trail-offset');
+const FOREST_TRAIL_WIDTH_SEED = registerHashLabel('forest-trail-width');
+const FOREST_TRAIL_BREADCRUMB_COUNT_SEED = registerHashLabel(
+  'forest-trail-breadcrumb-count'
+);
+const FOREST_TRAIL_BREADCRUMB_WOBBLE_SEED = registerHashLabel(
+  'forest-trail-breadcrumb-wobble'
+);
+const FOREST_TRAIL_BREADCRUMB_SCALE_SEED = registerHashLabel(
+  'forest-trail-breadcrumb-scale'
+);
+const FOREST_LANDMARK_SEED = registerHashLabel('forest-landmark');
+const FOREST_LANDMARK_KIND_SEED = registerHashLabel('forest-landmark-kind');
+const FOREST_LANDMARK_ROTATION_SEED = registerHashLabel('forest-landmark-rotation');
+const FOREST_LANDMARK_RADIUS_SEED = registerHashLabel('forest-landmark-radius');
+const FOREST_LANDMARK_MEMBERS_SEED = registerHashLabel('forest-landmark-members');
+const FOREST_LANDMARK_SCALE_SEED = registerHashLabel('forest-landmark-scale');
+const FOREST_STUMP_DETAIL_SEED = registerHashLabel('forest-stump-detail');
+const FOREST_FALLEN_DETAIL_SEED = registerHashLabel('forest-fallen-detail');
+const FOREST_INTERIOR_FLOOR_DETAIL_SEED = registerHashLabel(
+  'forest-interior-floor-detail'
+);
 
 const treeDescriptorCache = createBoundedCache<string, ForestTreeDescriptor[]>(
   FOREST_COORDINATE_CACHE_LIMIT
@@ -171,16 +195,16 @@ const resolveForestTrailDescriptor = createCoordinateValueResolver(
       return null;
     }
 
-    const trailChance = hash2D('forest-trail', tileX, tileY);
+    const trailChance = hash2D(FOREST_TRAIL_SEED, tileX, tileY);
     if (trailChance < 0.84) {
       return null;
     }
 
-    const angle = hash2D('forest-trail-angle', tileX, tileY) * Math.PI;
+    const angle = hash2D(FOREST_TRAIL_ANGLE_SEED, tileX, tileY) * Math.PI;
     const normalAngle = angle + Math.PI / 2;
-    const offset = (hash2D('forest-trail-offset', tileX, tileY) - 0.5) * 0.32;
+    const offset = (hash2D(FOREST_TRAIL_OFFSET_SEED, tileX, tileY) - 0.5) * 0.32;
     const extent = 0.44;
-    const halfWidth = 0.08 + hash2D('forest-trail-width', tileX, tileY) * 0.03;
+    const halfWidth = 0.08 + hash2D(FOREST_TRAIL_WIDTH_SEED, tileX, tileY) * 0.03;
     const start = {
       x: Math.cos(angle) * -extent + Math.cos(normalAngle) * offset,
       y: Math.sin(angle) * -extent + Math.sin(normalAngle) * offset,
@@ -191,14 +215,19 @@ const resolveForestTrailDescriptor = createCoordinateValueResolver(
     };
     const breadcrumbCount =
       trailChance > 0.93
-        ? 3 + Math.floor(hash2D('forest-trail-breadcrumb-count', tileX, tileY) * 3)
+        ? 3 +
+          Math.floor(hash2D(FOREST_TRAIL_BREADCRUMB_COUNT_SEED, tileX, tileY) * 3)
         : 0;
     const breadcrumbs: ForestTrailBreadcrumb[] = [];
 
     for (let index = 0; index < breadcrumbCount; index += 1) {
       const progress = (index + 1) / (breadcrumbCount + 1);
       const wobble =
-        (hash2D('forest-trail-breadcrumb-wobble', tileX * 11 + index, tileY * 13) -
+        (hash2D(
+          FOREST_TRAIL_BREADCRUMB_WOBBLE_SEED,
+          tileX * 11 + index,
+          tileY * 13
+        ) -
           0.5) *
         halfWidth *
         0.9;
@@ -209,7 +238,9 @@ const resolveForestTrailDescriptor = createCoordinateValueResolver(
       breadcrumbs.push({
         x: clampToTile(x),
         y: clampToTile(y),
-        scale: 0.018 + hash2D('forest-trail-breadcrumb-scale', tileX + index, tileY) * 0.014,
+        scale:
+          0.018 +
+          hash2D(FOREST_TRAIL_BREADCRUMB_SCALE_SEED, tileX + index, tileY) * 0.014,
       });
     }
 
@@ -360,24 +391,25 @@ const resolveForestLandmarkDescriptor = createCoordinateValueResolver(
       return null;
     }
 
-    const landmarkChance = hash2D('forest-landmark', tileX, tileY);
+    const landmarkChance = hash2D(FOREST_LANDMARK_SEED, tileX, tileY);
     if (landmarkChance < 0.8) {
       return null;
     }
 
     const groveCenter = getForestGroveCenter(tileX, tileY);
     const kind: ForestLandmarkDescriptor['kind'] =
-      hash2D('forest-landmark-kind', tileX, tileY) > 0.54
+      hash2D(FOREST_LANDMARK_KIND_SEED, tileX, tileY) > 0.54
         ? 'mushroom-ring'
         : 'stone-ring';
     return {
       kind,
       x: clampToTile(groveCenter.x * 0.45),
       y: clampToTile(groveCenter.y * 0.45),
-      rotation: hash2D('forest-landmark-rotation', tileX, tileY) * Math.PI * 2,
-      ringRadius: 0.16 + hash2D('forest-landmark-radius', tileX, tileY) * 0.05,
-      memberCount: 5 + Math.floor(hash2D('forest-landmark-members', tileX, tileY) * 3),
-      scale: 0.8 + hash2D('forest-landmark-scale', tileX, tileY) * 0.35,
+      rotation: hash2D(FOREST_LANDMARK_ROTATION_SEED, tileX, tileY) * Math.PI * 2,
+      ringRadius: 0.16 + hash2D(FOREST_LANDMARK_RADIUS_SEED, tileX, tileY) * 0.05,
+      memberCount:
+        5 + Math.floor(hash2D(FOREST_LANDMARK_MEMBERS_SEED, tileX, tileY) * 3),
+      scale: 0.8 + hash2D(FOREST_LANDMARK_SCALE_SEED, tileX, tileY) * 0.35,
     };
   }
 );
@@ -391,9 +423,9 @@ const resolveForestFloorDetailDescriptors = createCoordinateValueResolver(
     const trees = resolveForestTreeDescriptors(tileX, tileY);
     const details: ForestFloorDetailDescriptor[] = [];
     const denseForest = trees.length >= 5;
-    const stumpChance = hash2D('forest-stump-detail', tileX, tileY);
-    const fallenTreeChance = hash2D('forest-fallen-detail', tileX, tileY);
-    const interiorChance = hash2D('forest-interior-floor-detail', tileX, tileY);
+    const stumpChance = hash2D(FOREST_STUMP_DETAIL_SEED, tileX, tileY);
+    const fallenTreeChance = hash2D(FOREST_FALLEN_DETAIL_SEED, tileX, tileY);
+    const interiorChance = hash2D(FOREST_INTERIOR_FLOOR_DETAIL_SEED, tileX, tileY);
 
     if (stumpChance > (denseForest ? 0.34 : 0.54)) {
       const stump = createForestFloorDetailDescriptor(
