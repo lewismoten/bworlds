@@ -34,6 +34,7 @@ describe('render budget', () => {
     expect(state.drawCalls).toBe(0);
     expect(state.maxChunkDrawCalls).toBe(0);
     expect(state.maxChunkMeshes).toBe(0);
+    expect(state.materialCount).toBe(0);
     expect(state.textureCount).toBe(0);
     expect(state.visibleMeshCount).toBe(0);
     expect(state.currentFrameMs).toBeCloseTo(16.67, 2);
@@ -78,6 +79,7 @@ describe('render budget', () => {
       drawCalls: 0,
       maxChunkDrawCalls: 0,
       maxChunkMeshes: 0,
+      materialCount: 0,
       textureCount: 0,
       visibleMeshCount: 0,
       weatherVisibility: 1,
@@ -136,6 +138,7 @@ describe('render budget', () => {
         drawCalls: 912,
         maxChunkDrawCalls: 184,
         maxChunkMeshes: 88,
+        materialCount: 30,
         textureCount: 36,
         visibleMeshCount: 420,
       })
@@ -145,6 +148,7 @@ describe('render budget', () => {
     expect(state.drawCalls).toBe(912);
     expect(state.maxChunkDrawCalls).toBe(184);
     expect(state.maxChunkMeshes).toBe(88);
+    expect(state.materialCount).toBe(30);
     expect(state.textureCount).toBe(36);
     expect(state.visibleMeshCount).toBe(420);
     expect(state.weatherVisibility).toBe(0.8);
@@ -294,6 +298,10 @@ describe('render budget', () => {
         soft: 48,
         hard: 72,
       },
+      materials: {
+        soft: 32,
+        hard: 48,
+      },
       visibleMeshes: {
         soft: 640,
         hard: 960,
@@ -373,6 +381,7 @@ describe('render budget', () => {
         drawCalls: 0,
         maxChunkDrawCalls: 0,
         maxChunkMeshes: 0,
+        materialCount: 0,
         textureCount: 0,
         visibleMeshCount: 0,
       })
@@ -388,6 +397,7 @@ describe('render budget', () => {
         drawCalls: 0,
         maxChunkDrawCalls: 0,
         maxChunkMeshes: 0,
+        materialCount: 0,
         textureCount: 0,
         visibleMeshCount: 0,
       })
@@ -407,6 +417,7 @@ describe('render budget', () => {
         drawCalls: 0,
         maxChunkDrawCalls: 0,
         maxChunkMeshes: 0,
+        materialCount: 0,
         textureCount: 0,
         visibleMeshCount: 0,
       })
@@ -427,6 +438,7 @@ describe('render budget', () => {
         drawCalls: 0,
         maxChunkDrawCalls: 0,
         maxChunkMeshes: 0,
+        materialCount: 0,
         textureCount: 0,
         visibleMeshCount: 0,
       })
@@ -446,6 +458,7 @@ describe('render budget', () => {
       drawCalls: 950,
       maxChunkDrawCalls: 0,
       maxChunkMeshes: 0,
+      materialCount: 0,
       textureCount: 0,
       visibleMeshCount: 0,
     });
@@ -459,6 +472,7 @@ describe('render budget', () => {
       drawCalls: 1300,
       maxChunkDrawCalls: 0,
       maxChunkMeshes: 0,
+      materialCount: 0,
       textureCount: 0,
       visibleMeshCount: 0,
     });
@@ -476,6 +490,7 @@ describe('render budget', () => {
         drawCalls: 950,
         maxChunkDrawCalls: 0,
         maxChunkMeshes: 0,
+        materialCount: 0,
         textureCount: 0,
         visibleMeshCount: 0,
       })
@@ -494,6 +509,7 @@ describe('render budget', () => {
         drawCalls: 1300,
         maxChunkDrawCalls: 0,
         maxChunkMeshes: 0,
+        materialCount: 0,
         textureCount: 0,
         visibleMeshCount: 0,
       })
@@ -513,6 +529,7 @@ describe('render budget', () => {
       drawCalls: 200,
       maxChunkDrawCalls: 170,
       maxChunkMeshes: 0,
+      materialCount: 0,
       textureCount: 0,
       visibleMeshCount: 0,
     });
@@ -525,6 +542,7 @@ describe('render budget', () => {
       drawCalls: 200,
       maxChunkDrawCalls: 250,
       maxChunkMeshes: 0,
+      materialCount: 0,
       textureCount: 0,
       visibleMeshCount: 0,
     });
@@ -542,6 +560,7 @@ describe('render budget', () => {
         drawCalls: 0,
         maxChunkDrawCalls: 170,
         maxChunkMeshes: 0,
+        materialCount: 0,
         textureCount: 0,
         visibleMeshCount: 0,
       })
@@ -560,6 +579,7 @@ describe('render budget', () => {
         drawCalls: 0,
         maxChunkDrawCalls: 250,
         maxChunkMeshes: 0,
+        materialCount: 0,
         textureCount: 0,
         visibleMeshCount: 0,
       })
@@ -579,6 +599,7 @@ describe('render budget', () => {
       drawCalls: 200,
       maxChunkDrawCalls: 0,
       maxChunkMeshes: 100,
+      materialCount: 0,
       textureCount: 0,
       visibleMeshCount: 0,
     });
@@ -591,6 +612,7 @@ describe('render budget', () => {
       drawCalls: 200,
       maxChunkDrawCalls: 0,
       maxChunkMeshes: 150,
+      materialCount: 0,
       textureCount: 0,
       visibleMeshCount: 0,
     });
@@ -608,6 +630,7 @@ describe('render budget', () => {
         drawCalls: 0,
         maxChunkDrawCalls: 0,
         maxChunkMeshes: 100,
+        materialCount: 0,
         textureCount: 0,
         visibleMeshCount: 0,
       })
@@ -626,6 +649,7 @@ describe('render budget', () => {
         drawCalls: 0,
         maxChunkDrawCalls: 0,
         maxChunkMeshes: 150,
+        materialCount: 0,
         textureCount: 0,
         visibleMeshCount: 0,
       })
@@ -645,6 +669,7 @@ describe('render budget', () => {
       drawCalls: 200,
       maxChunkDrawCalls: 0,
       maxChunkMeshes: 0,
+      materialCount: 0,
       textureCount: 52,
       visibleMeshCount: 0,
     });
@@ -657,6 +682,7 @@ describe('render budget', () => {
       drawCalls: 200,
       maxChunkDrawCalls: 0,
       maxChunkMeshes: 0,
+      materialCount: 0,
       textureCount: 80,
       visibleMeshCount: 0,
     });
@@ -674,6 +700,7 @@ describe('render budget', () => {
         drawCalls: 0,
         maxChunkDrawCalls: 0,
         maxChunkMeshes: 0,
+        materialCount: 0,
         textureCount: 52,
         visibleMeshCount: 0,
       })
@@ -692,12 +719,83 @@ describe('render budget', () => {
         drawCalls: 0,
         maxChunkDrawCalls: 0,
         maxChunkMeshes: 0,
+        materialCount: 0,
         textureCount: 80,
         visibleMeshCount: 0,
       })
     ).toEqual([
       `Visibility radius reduced to ${MIN_VISIBILITY_RADIUS}`,
       'Active textures exceeded the hard cap',
+    ]);
+  });
+
+  it('reduces draw distance when scene material pressure gets too high', () => {
+    let state = DEFAULT_RENDER_BUDGET_STATE;
+
+    state = advanceRenderBudgetState(state, {
+      deltaMs: 16.67,
+      active3d: true,
+      weatherVisibility: 1,
+      drawCalls: 200,
+      maxChunkDrawCalls: 0,
+      maxChunkMeshes: 0,
+      materialCount: 36,
+      textureCount: 0,
+      visibleMeshCount: 0,
+    });
+    expect(state.visibilityRadius).toBe(REDUCED_VISIBILITY_RADIUS);
+
+    state = advanceRenderBudgetState(state, {
+      deltaMs: 16.67,
+      active3d: true,
+      weatherVisibility: 1,
+      drawCalls: 200,
+      maxChunkDrawCalls: 0,
+      maxChunkMeshes: 0,
+      materialCount: 52,
+      textureCount: 0,
+      visibleMeshCount: 0,
+    });
+    expect(state.visibilityRadius).toBe(MIN_VISIBILITY_RADIUS);
+  });
+
+  it('reports scene material pressure in the active limiter list', () => {
+    expect(
+      getRenderQualityLimiters({
+        smoothedFrameMs: 16.67,
+        visibilityRadius: REDUCED_VISIBILITY_RADIUS,
+        weatherVisibilityRadiusCap: DEFAULT_VISIBILITY_RADIUS,
+        targetFps: 60,
+        severeFrameStreak: 0,
+        drawCalls: 0,
+        maxChunkDrawCalls: 0,
+        maxChunkMeshes: 0,
+        materialCount: 36,
+        textureCount: 0,
+        visibleMeshCount: 0,
+      })
+    ).toEqual([
+      `Visibility radius reduced to ${REDUCED_VISIBILITY_RADIUS}`,
+      'Scene materials exceeded the soft cap',
+    ]);
+
+    expect(
+      getRenderQualityLimiters({
+        smoothedFrameMs: 16.67,
+        visibilityRadius: MIN_VISIBILITY_RADIUS,
+        weatherVisibilityRadiusCap: DEFAULT_VISIBILITY_RADIUS,
+        targetFps: 60,
+        severeFrameStreak: 0,
+        drawCalls: 0,
+        maxChunkDrawCalls: 0,
+        maxChunkMeshes: 0,
+        materialCount: 52,
+        textureCount: 0,
+        visibleMeshCount: 0,
+      })
+    ).toEqual([
+      `Visibility radius reduced to ${MIN_VISIBILITY_RADIUS}`,
+      'Scene materials exceeded the hard cap',
     ]);
   });
 
@@ -711,6 +809,7 @@ describe('render budget', () => {
       drawCalls: 200,
       maxChunkDrawCalls: 0,
       maxChunkMeshes: 0,
+      materialCount: 0,
       textureCount: 0,
       visibleMeshCount: 700,
     });
@@ -723,6 +822,7 @@ describe('render budget', () => {
       drawCalls: 200,
       maxChunkDrawCalls: 0,
       maxChunkMeshes: 0,
+      materialCount: 0,
       textureCount: 0,
       visibleMeshCount: 980,
     });
@@ -740,6 +840,7 @@ describe('render budget', () => {
         drawCalls: 0,
         maxChunkDrawCalls: 0,
         maxChunkMeshes: 0,
+        materialCount: 0,
         textureCount: 0,
         visibleMeshCount: 700,
       })
@@ -758,6 +859,7 @@ describe('render budget', () => {
         drawCalls: 0,
         maxChunkDrawCalls: 0,
         maxChunkMeshes: 0,
+        materialCount: 0,
         textureCount: 0,
         visibleMeshCount: 980,
       })

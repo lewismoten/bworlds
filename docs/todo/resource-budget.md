@@ -265,7 +265,7 @@ This is critical because individually valid models can still overwhelm the rende
 * [ ] Cap total visible triangles.
 * [ ] Cap total visible vertices.
 * [ ] Cap total scene draw calls.
-* [ ] Cap total scene materials.
+* [X] Cap total scene materials.
 * [X] Cap total active textures.
 * [ ] Cap estimated GPU memory.
 * [ ] Cap total animated characters.

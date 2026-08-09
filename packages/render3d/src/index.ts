@@ -307,6 +307,7 @@ type Render3DController = {
   getDrawCalls(): number;
   getMaxChunkDrawCalls(): number;
   getMaxChunkMeshes(): number;
+  getMaterialCount(): number;
   getTextureCount(): number;
   getVisibleMeshCount(): number;
   render(state: Render3DState, options?: Render3DOptions): void;
@@ -769,6 +770,7 @@ type DynamicTileNode = {
   tileY: number;
   drawCallCount: number;
   visibleMeshCount: number;
+  materialCount: number;
   node: THREE.Group;
   model: unknown;
   modelRoot?: THREE.Object3D | null;
@@ -1602,6 +1604,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       tileY: y,
       drawCallCount: finalSceneResourceStats.drawCallCount,
       visibleMeshCount: finalSceneResourceStats.visibleMeshCount,
+      materialCount: finalSceneResourceStats.materialCount,
       node: tileNode,
       model: pluginModel ?? tileNode,
       modelRoot: pluginModel ?? null,
@@ -2119,6 +2122,10 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
 
   function getTextureCount(): number {
     return renderer.info.memory.textures;
+  }
+
+  function getMaterialCount(): number {
+    return collectVisibleTileResourceStats(visibleTileNodes.values()).totalMaterialCount;
   }
 
   function getVisibleMeshCount(): number {
@@ -2863,6 +2870,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     getDrawCalls,
     getMaxChunkDrawCalls,
     getMaxChunkMeshes,
+    getMaterialCount,
     getTextureCount,
     getVisibleMeshCount,
     getStats,

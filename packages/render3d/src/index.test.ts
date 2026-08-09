@@ -1994,10 +1994,10 @@ describe('render3d visibility helpers', () => {
 
   it('aggregates visible tile budget pressure by chunk', () => {
     const entries = [
-      { tileX: 0, tileY: 0, drawCallCount: 6, visibleMeshCount: 4 },
-      { tileX: 1, tileY: 2, drawCallCount: 5, visibleMeshCount: 3 },
-      { tileX: 4, tileY: 0, drawCallCount: 8, visibleMeshCount: 6 },
-      { tileX: -1, tileY: -1, drawCallCount: 7, visibleMeshCount: 5 },
+      { tileX: 0, tileY: 0, drawCallCount: 6, visibleMeshCount: 4, materialCount: 2 },
+      { tileX: 1, tileY: 2, drawCallCount: 5, visibleMeshCount: 3, materialCount: 3 },
+      { tileX: 4, tileY: 0, drawCallCount: 8, visibleMeshCount: 6, materialCount: 4 },
+      { tileX: -1, tileY: -1, drawCallCount: 7, visibleMeshCount: 5, materialCount: 2 },
     ];
 
     expect(collectChunkDrawCallStats(entries, 4)).toEqual({
@@ -2008,6 +2008,8 @@ describe('render3d visibility helpers', () => {
       chunkCount: 3,
       maxChunkDrawCallCount: 11,
       maxChunkMeshCount: 7,
+      totalVisibleMeshCount: 18,
+      totalMaterialCount: 11,
     });
   });
 
@@ -2800,6 +2802,7 @@ describe('render3d visibility helpers', () => {
           tileY: 0,
           drawCallCount: 1,
           visibleMeshCount: 1,
+          materialCount: 1,
           node: {} as never,
           model: root as never,
           modelRoot: root as never,
@@ -3291,6 +3294,7 @@ describe('render3d visibility helpers', () => {
           tileY: 5,
           drawCallCount: 3,
           visibleMeshCount: 2,
+          materialCount: 2,
           node: {} as never,
           model: { id: 'model-town' },
           sync3DModel({ tileX, tileY, cycle, environment }) {
@@ -3360,6 +3364,7 @@ describe('render3d visibility helpers', () => {
           tileY: 2,
           drawCallCount: 2,
           visibleMeshCount: 1,
+          materialCount: 1,
           node: {} as never,
           model: { id: 'model-forest' },
           modelRoot: null,
