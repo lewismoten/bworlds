@@ -205,6 +205,10 @@ import {
   getNearbyOverworldQueryState,
 } from './nearby-overworld-query.ts';
 import {
+  findNearbyAmbientProfile,
+  type NearbyAmbientProfile,
+} from './nearby-ambient.ts';
+import {
   buildSextantMarkup,
   buildEventSummaryMarkup,
   buildTextViewportMarkup,
@@ -1045,18 +1049,9 @@ const nearbyPaddleBoatAudioState = {
     emitter: { x: number; y: number };
   },
 };
-const nearbyOceanAudioState = {
-  cache: createBoundedCache<
-    string,
-    null | {
-      intensity?: number;
-      emitter: { x: number; y: number };
-    }
-  >(48),
-  profile: null as null | {
-    intensity?: number;
-    emitter: { x: number; y: number };
-  },
+const nearbyAmbientAudioState = {
+  cache: createBoundedCache<string, NearbyAmbientProfile | null>(48),
+  profile: null as NearbyAmbientProfile | null,
 };
 const MOON_PHASE_NAMES = [
   'New Moon',
@@ -2443,59 +2438,30 @@ function getNearbyPaddleBoatAudioProfile() {
   return nearbyPaddleBoatAudioState.profile;
 }
 
-function getNearbyOceanAudioProfile() {
+function getNearbyAmbientAudioProfile() {
   const queryState = resolveCachedNearbyOverworldQueryState(state);
   if (!queryState) {
-    nearbyOceanAudioState.cache.clear();
-    nearbyOceanAudioState.profile = null;
+    nearbyAmbientAudioState.cache.clear();
+    nearbyAmbientAudioState.profile = null;
     return null;
   }
 
   const { centerX, centerY, contextId } = queryState;
   const cacheKey = `${currentWorldSeed}:${contextId}:${centerX}:${centerY}`;
-  const cachedProfile = nearbyOceanAudioState.cache.get(cacheKey);
+  const cachedProfile = nearbyAmbientAudioState.cache.get(cacheKey);
   if (cachedProfile !== undefined) {
-    nearbyOceanAudioState.profile = cachedProfile ?? null;
-    return nearbyOceanAudioState.profile;
+    nearbyAmbientAudioState.profile = cachedProfile ?? null;
+    return nearbyAmbientAudioState.profile;
   }
 
-  const searchRadius = 8;
-  let best: null | {
-    intensity: number;
-    emitter: { x: number; y: number };
-    distance: number;
-  } = null;
-
-  for (let y = centerY - searchRadius; y <= centerY + searchRadius; y += 1) {
-    for (let x = centerX - searchRadius; x <= centerX + searchRadius; x += 1) {
-      const tile = state.getCurrentTile(x, y);
-      if (tile.kind !== 'ocean') {
-        continue;
-      }
-      const distance = Math.hypot(state.player.x - x, state.player.y - y);
-      const intensity = Math.max(0, 1 - distance / (searchRadius + 1));
-      if (intensity <= 0.08) {
-        continue;
-      }
-      if (best && distance >= best.distance) {
-        continue;
-      }
-      best = {
-        intensity,
-        emitter: { x, y },
-        distance,
-      };
-    }
-  }
-
-  nearbyOceanAudioState.profile = best
-    ? {
-        intensity: best.intensity,
-        emitter: best.emitter,
-      }
-    : null;
-  nearbyOceanAudioState.cache.set(cacheKey, nearbyOceanAudioState.profile);
-  return nearbyOceanAudioState.profile;
+  nearbyAmbientAudioState.profile = findNearbyAmbientProfile({
+    state,
+    centerX,
+    centerY,
+    searchRadius: 8,
+  });
+  nearbyAmbientAudioState.cache.set(cacheKey, nearbyAmbientAudioState.profile);
+  return nearbyAmbientAudioState.profile;
 }
 
 function attemptMove(stepX: number, stepY: number): void {
@@ -2997,8 +2963,8 @@ function updateMovement(deltaMs: number): void {
   const nearbyPaddleBoatAudio = shouldResolveSoundContext
     ? getNearbyPaddleBoatAudioProfile()
     : null;
-  const nearbyOceanAudio = shouldResolveSoundContext
-    ? getNearbyOceanAudioProfile()
+  const nearbyAmbientAudio = shouldResolveSoundContext
+    ? getNearbyAmbientAudioProfile()
     : null;
   const soundUpdate = gateSoundUpdate({
     nowMs,
@@ -3012,7 +2978,7 @@ function updateMovement(deltaMs: number): void {
     windStrength: currentWeather?.windStrength,
     nearbyTrain: nearbyTrainAudio,
     nearbyPaddleBoat: nearbyPaddleBoatAudio,
-    nearbyOcean: nearbyOceanAudio,
+    nearbyAmbient: nearbyAmbientAudio,
     emitterX: state.player.x,
     emitterY: state.player.y,
     listenerX: state.player.x,

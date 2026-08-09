@@ -3,7 +3,7 @@ import type { SoundEffectController } from './sound-effects.ts';
 type SoundUpdateOptions = Parameters<SoundEffectController['update']>[0];
 type NearbyTrainLike = NonNullable<SoundUpdateOptions['nearbyTrain']>;
 type NearbyPaddleBoatLike = NonNullable<SoundUpdateOptions['nearbyPaddleBoat']>;
-type NearbyOceanLike = NonNullable<SoundUpdateOptions['nearbyOcean']>;
+type NearbyAmbientLike = NonNullable<SoundUpdateOptions['nearbyAmbient']>;
 
 type SoundUpdateSignatureState = {
   ambient: string;
@@ -34,8 +34,8 @@ export type SoundUpdatePayloadInput = {
         emitter?: { x: number; y: number };
       })
     | null;
-  nearbyOcean:
-    | (Omit<NearbyOceanLike, 'listener'> & {
+  nearbyAmbient:
+    | (Omit<NearbyAmbientLike, 'listener'> & {
         emitter?: { x: number; y: number };
       })
     | null;
@@ -54,7 +54,7 @@ export function createSoundUpdatePayloadBuilder(): (
     listener: { x: 0, y: 0 },
     nearbyTrain: null,
     nearbyPaddleBoat: null,
-    nearbyOcean: null,
+    nearbyAmbient: null,
   };
   const nearbyTrainPayload: NearbyTrainLike = {
     progress: undefined,
@@ -67,7 +67,8 @@ export function createSoundUpdatePayloadBuilder(): (
     emitter: { x: 0, y: 0 },
     listener: { x: 0, y: 0 },
   };
-  const nearbyOceanPayload: NearbyOceanLike = {
+  const nearbyAmbientPayload: NearbyAmbientLike = {
+    kind: 'ocean',
     intensity: undefined,
     emitter: { x: 0, y: 0 },
     listener: { x: 0, y: 0 },
@@ -126,19 +127,20 @@ export function createSoundUpdatePayloadBuilder(): (
       payload.nearbyPaddleBoat = null;
     }
 
-    if (input.nearbyOcean) {
-      nearbyOceanPayload.intensity = input.nearbyOcean.intensity;
-      if (nearbyOceanPayload.emitter) {
-        nearbyOceanPayload.emitter.x = input.nearbyOcean.emitter?.x ?? 0;
-        nearbyOceanPayload.emitter.y = input.nearbyOcean.emitter?.y ?? 0;
+    if (input.nearbyAmbient) {
+      nearbyAmbientPayload.kind = input.nearbyAmbient.kind;
+      nearbyAmbientPayload.intensity = input.nearbyAmbient.intensity;
+      if (nearbyAmbientPayload.emitter) {
+        nearbyAmbientPayload.emitter.x = input.nearbyAmbient.emitter?.x ?? 0;
+        nearbyAmbientPayload.emitter.y = input.nearbyAmbient.emitter?.y ?? 0;
       }
-      if (nearbyOceanPayload.listener) {
-        nearbyOceanPayload.listener.x = input.listenerX;
-        nearbyOceanPayload.listener.y = input.listenerY;
+      if (nearbyAmbientPayload.listener) {
+        nearbyAmbientPayload.listener.x = input.listenerX;
+        nearbyAmbientPayload.listener.y = input.listenerY;
       }
-      payload.nearbyOcean = nearbyOceanPayload;
+      payload.nearbyAmbient = nearbyAmbientPayload;
     } else {
-      payload.nearbyOcean = null;
+      payload.nearbyAmbient = null;
     }
 
     return payload;
@@ -158,7 +160,7 @@ export function getSoundUpdateInputSignature(
     | 'windStrength'
     | 'nearbyTrain'
     | 'nearbyPaddleBoat'
-    | 'nearbyOcean'
+    | 'nearbyAmbient'
   >
 ): SoundUpdateSignatureState {
   return {
@@ -180,8 +182,8 @@ export function getSoundUpdateInputSignature(
         ? Math.round((input.nearbyPaddleBoat.progress ?? 0) * 100)
         : '',
       input.nearbyPaddleBoat?.whistlePhase ?? '',
-      input.nearbyOcean
-        ? `${Math.round((input.nearbyOcean.intensity ?? 0) * 100)}:${Math.round(input.nearbyOcean.emitter?.x ?? 0)}:${Math.round(input.nearbyOcean.emitter?.y ?? 0)}`
+      input.nearbyAmbient
+        ? `${input.nearbyAmbient.kind}:${Math.round((input.nearbyAmbient.intensity ?? 0) * 100)}:${Math.round(input.nearbyAmbient.emitter?.x ?? 0)}:${Math.round(input.nearbyAmbient.emitter?.y ?? 0)}`
         : '',
     ].join('|'),
   };

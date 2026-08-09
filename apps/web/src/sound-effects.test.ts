@@ -485,7 +485,7 @@ describe('sound effects', () => {
     expect(shouldPlayForestWindSound('road', 'wind', 0.9)).toBe(false);
   });
 
-  it('plays a debounced ocean ambience cue when nearby ocean tiles are audible', () => {
+  it('plays a debounced ocean ambience cue when nearby ambient water is audible', () => {
     const played: ProceduralSoundEffect[] = [];
     const controller = createSoundEffectController({
       play(effect) {
@@ -499,7 +499,8 @@ describe('sound effects', () => {
       isJumping: false,
       viewMode: '3d',
       tileKind: 'shore',
-      nearbyOcean: {
+      nearbyAmbient: {
+        kind: 'ocean',
         intensity: 0.75,
         emitter: { x: 4, y: 0 },
         listener: { x: 0, y: 0 },
@@ -512,7 +513,8 @@ describe('sound effects', () => {
       isJumping: false,
       viewMode: '3d',
       tileKind: 'shore',
-      nearbyOcean: {
+      nearbyAmbient: {
+        kind: 'ocean',
         intensity: 0.75,
         emitter: { x: 4, y: 0 },
         listener: { x: 0, y: 0 },
@@ -525,7 +527,8 @@ describe('sound effects', () => {
       isJumping: false,
       viewMode: '3d',
       tileKind: 'shore',
-      nearbyOcean: {
+      nearbyAmbient: {
+        kind: 'ocean',
         intensity: 0.75,
         emitter: { x: 4, y: 0 },
         listener: { x: 0, y: 0 },
@@ -790,7 +793,8 @@ describe('sound effects', () => {
       tileKind: 'shore',
       weatherKind: 'wind',
       windStrength: 0.9,
-      nearbyOcean: {
+      nearbyAmbient: {
+        kind: 'settlement',
         intensity: 0.8,
         emitter: { x: 3, y: 0 },
       },
@@ -803,5 +807,90 @@ describe('sound effects', () => {
     });
 
     expect(played.map((effect) => effect.kind)).toEqual(['footstep']);
+  });
+
+  it('maps different ambient source kinds into distinct emitted ambience effects', () => {
+    const played: ProceduralSoundEffect[] = [];
+    const controller = createSoundEffectController({
+      play(effect) {
+        played.push(effect);
+      },
+    });
+
+    controller.update({
+      nowMs: 0,
+      walking: false,
+      isJumping: false,
+      viewMode: '3d',
+      nearbyAmbient: {
+        kind: 'cave',
+        intensity: 0.6,
+        emitter: { x: 1, y: 0 },
+      },
+    });
+    controller.update({
+      nowMs: 1000,
+      walking: false,
+      isJumping: false,
+      viewMode: '3d',
+      nearbyAmbient: {
+        kind: 'settlement',
+        intensity: 0.6,
+        emitter: { x: 1, y: 0 },
+      },
+    });
+    controller.update({
+      nowMs: 2000,
+      walking: false,
+      isJumping: false,
+      viewMode: '3d',
+      nearbyAmbient: {
+        kind: 'river',
+        intensity: 0.6,
+        emitter: { x: 2, y: 0 },
+      },
+    });
+    controller.update({
+      nowMs: 3000,
+      walking: false,
+      isJumping: false,
+      viewMode: '3d',
+      nearbyAmbient: {
+        kind: 'plains',
+        intensity: 0.6,
+        emitter: { x: 3, y: 0 },
+      },
+    });
+    controller.update({
+      nowMs: 4000,
+      walking: false,
+      isJumping: false,
+      viewMode: '3d',
+      nearbyAmbient: {
+        kind: 'mountain',
+        intensity: 0.6,
+        emitter: { x: 4, y: 0 },
+      },
+    });
+    controller.update({
+      nowMs: 5000,
+      walking: false,
+      isJumping: false,
+      viewMode: '3d',
+      nearbyAmbient: {
+        kind: 'ruins',
+        intensity: 0.6,
+        emitter: { x: 1, y: 0 },
+      },
+    });
+
+    expect(played.map((effect) => effect.kind)).toEqual([
+      'cave-ambience',
+      'settlement-ambience',
+      'river-ambience',
+      'plains-ambience',
+      'mountain-ambience',
+      'ruins-ambience',
+    ]);
   });
 });

@@ -19,7 +19,7 @@ describe('sound update gate', () => {
       listenerY: 0,
       nearbyTrain: null,
       nearbyPaddleBoat: null,
-      nearbyOcean: null,
+      nearbyAmbient: null,
     });
     const second = gateUpdate({
       nowMs: 50,
@@ -34,7 +34,7 @@ describe('sound update gate', () => {
       listenerY: 2,
       nearbyTrain: null,
       nearbyPaddleBoat: null,
-      nearbyOcean: null,
+      nearbyAmbient: null,
     });
 
     expect(first).not.toBeNull();
@@ -58,7 +58,7 @@ describe('sound update gate', () => {
       listenerY: 0,
       nearbyTrain: null,
       nearbyPaddleBoat: null,
-      nearbyOcean: null,
+      nearbyAmbient: null,
     });
 
     expect(
@@ -75,7 +75,7 @@ describe('sound update gate', () => {
         listenerY: 0.25,
         nearbyTrain: null,
         nearbyPaddleBoat: null,
-        nearbyOcean: null,
+        nearbyAmbient: null,
       })
     ).toBeNull();
   });
@@ -96,7 +96,7 @@ describe('sound update gate', () => {
       listenerY: 0,
       nearbyTrain: null,
       nearbyPaddleBoat: null,
-      nearbyOcean: null,
+      nearbyAmbient: null,
     });
 
     const changed = gateUpdate({
@@ -112,7 +112,7 @@ describe('sound update gate', () => {
       listenerY: 0.25,
       nearbyTrain: null,
       nearbyPaddleBoat: null,
-      nearbyOcean: null,
+      nearbyAmbient: null,
     });
 
     expect(changed).not.toBeNull();
@@ -139,7 +139,7 @@ describe('sound update gate', () => {
         whistlePhase: 'arrival',
         emitter: { x: 2, y: 0 },
       },
-      nearbyOcean: null,
+      nearbyAmbient: null,
     });
 
     const changed = gateUpdate({
@@ -159,7 +159,7 @@ describe('sound update gate', () => {
         whistlePhase: 'departure',
         emitter: { x: 2, y: 0 },
       },
-      nearbyOcean: null,
+      nearbyAmbient: null,
     });
 
     expect(changed).not.toBeNull();
@@ -187,7 +187,8 @@ describe('sound update gate', () => {
       listenerY: 0,
       nearbyTrain: null,
       nearbyPaddleBoat: null,
-      nearbyOcean: {
+      nearbyAmbient: {
+        kind: 'ocean',
         intensity: 0.35,
         emitter: { x: 3, y: 0 },
       },
@@ -206,7 +207,8 @@ describe('sound update gate', () => {
       listenerY: 0,
       nearbyTrain: null,
       nearbyPaddleBoat: null,
-      nearbyOcean: {
+      nearbyAmbient: {
+        kind: 'settlement',
         intensity: 0.7,
         emitter: { x: 4, y: 0 },
       },
@@ -214,8 +216,9 @@ describe('sound update gate', () => {
 
     expect(changed).not.toBeNull();
     expect(changed?.ambianceEnabled).toBe(false);
-    expect(changed?.nearbyOcean).toEqual(
+    expect(changed?.nearbyAmbient).toEqual(
       expect.objectContaining({
+        kind: 'settlement',
         intensity: 0.7,
         emitter: { x: 4, y: 0 },
       })

@@ -28,7 +28,8 @@ describe('sound update payload builder', () => {
         whistlePhase: 'arrival',
         emitter: { x: 8, y: -6 },
       },
-      nearbyOcean: {
+      nearbyAmbient: {
+        kind: 'settlement',
         intensity: 0.65,
         emitter: { x: 14, y: -7 },
       },
@@ -56,7 +57,8 @@ describe('sound update payload builder', () => {
         whistlePhase: 'departure',
         emitter: { x: 10, y: -8 },
       },
-      nearbyOcean: {
+      nearbyAmbient: {
+        kind: 'ocean',
         intensity: 0.25,
         emitter: { x: 15, y: -9 },
       },
@@ -67,7 +69,7 @@ describe('sound update payload builder', () => {
     expect(second.listener).toBe(first.listener);
     expect(second.nearbyTrain).toBe(first.nearbyTrain);
     expect(second.nearbyPaddleBoat).toBe(first.nearbyPaddleBoat);
-    expect(second.nearbyOcean).toBe(first.nearbyOcean);
+    expect(second.nearbyAmbient).toBe(first.nearbyAmbient);
     expect(second.ambianceEnabled).toBe(false);
     expect(second.emitter).toEqual({ x: 13.5, y: -5.5 });
     expect(second.listener).toEqual({ x: 13.5, y: -5.5 });
@@ -86,8 +88,9 @@ describe('sound update payload builder', () => {
         listener: { x: 13.5, y: -5.5 },
       })
     );
-    expect(second.nearbyOcean).toEqual(
+    expect(second.nearbyAmbient).toEqual(
       expect.objectContaining({
+        kind: 'ocean',
         intensity: 0.25,
         emitter: { x: 15, y: -9 },
         listener: { x: 13.5, y: -5.5 },
@@ -118,7 +121,8 @@ describe('sound update payload builder', () => {
         whistlePhase: 'arrival',
         emitter: { x: -2, y: 3 },
       },
-      nearbyOcean: {
+      nearbyAmbient: {
+        kind: 'ocean',
         intensity: 0.8,
         emitter: { x: 5, y: 0 },
       },
@@ -136,13 +140,13 @@ describe('sound update payload builder', () => {
       listenerY: 2,
       nearbyTrain: null,
       nearbyPaddleBoat: null,
-      nearbyOcean: null,
+      nearbyAmbient: null,
     });
 
     expect(second).toBe(first);
     expect(second.nearbyTrain).toBeNull();
     expect(second.nearbyPaddleBoat).toBeNull();
-    expect(second.nearbyOcean).toBeNull();
+    expect(second.nearbyAmbient).toBeNull();
     expect(second.ambianceEnabled).toBe(false);
     expect(second.listener).toEqual({ x: 1, y: 2 });
   });
