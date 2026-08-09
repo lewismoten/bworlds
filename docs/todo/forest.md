@@ -204,7 +204,7 @@ interface TreeCapabilities {
 * [X] Add slight curvature.
 * [X] Add directional lean.
 * [X] Allow terrain slope to influence lean.
-* [ ] Allow wind exposure to influence lean.
+* [X] Allow wind exposure to influence lean.
 * [ ] Generate buttress roots for appropriate species.
 * [ ] Generate trunk forks.
 * [ ] Generate multiple trunks for appropriate species.

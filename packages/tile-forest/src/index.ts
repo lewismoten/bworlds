@@ -149,6 +149,7 @@ const FOREST_HISTORICAL_TREE_RECORD_OPENERS = [
   'Kept in the grove records for',
 ] as const;
 const FOREST_TERRAIN_ELEVATION_SEED = registerHashSeed('forest-terrain-elevation');
+const FOREST_WIND_DIRECTION_SEED = registerHashSeed('forest-wind-direction');
 const FOREST_HISTORICAL_TREE_RECORD_EVENTS = [
   'sheltering travelers',
   'marking the safest trail bend',
@@ -537,6 +538,32 @@ const resolveForestTerrainSlope = createCoordinateValueResolver(
     return {
       x: slopeX,
       y: slopeY,
+      strength,
+    };
+  }
+);
+const forestWindExposureCache = createBoundedCache<
+  string,
+  { x: number; y: number; strength: number }
+>(FOREST_COORDINATE_CACHE_LIMIT);
+const resolveForestWindExposure = createCoordinateValueResolver(
+  forestWindExposureCache,
+  ({ tileX, tileY }) => {
+    const count = getForestTreeCount(tileX, tileY);
+    const northCount = getForestTreeCount(tileX, tileY - 1);
+    const southCount = getForestTreeCount(tileX, tileY + 1);
+    const eastCount = getForestTreeCount(tileX + 1, tileY);
+    const westCount = getForestTreeCount(tileX - 1, tileY);
+    const localDensity = count / 6;
+    const neighborDensity = (northCount + southCount + eastCount + westCount) / 24;
+    const isolation = Math.max(0, neighborDensity - localDensity);
+    const loneTreeBoost = hasForestLoneTree(tileX, tileY) ? 0.45 : 0;
+    const sparseBoost = Math.max(0, (4 - count) / 4) * 0.22;
+    const strength = Math.min(1, isolation * 1.6 + loneTreeBoost + sparseBoost);
+    const prevailingAngle = hash2D(FOREST_WIND_DIRECTION_SEED, tileX, tileY) * Math.PI * 2;
+    return {
+      x: Math.cos(prevailingAngle),
+      y: Math.sin(prevailingAngle),
       strength,
     };
   }
@@ -2135,6 +2162,14 @@ export function getForestTerrainSlopeProfile(tileX: number, tileY: number): {
   return resolveForestTerrainSlope(tileX, tileY);
 }
 
+export function getForestWindExposureProfile(tileX: number, tileY: number): {
+  x: number;
+  y: number;
+  strength: number;
+} {
+  return resolveForestWindExposure(tileX, tileY);
+}
+
 export function getForestTreeDamageProfiles(
   tileX: number,
   tileY: number
@@ -2727,17 +2762,23 @@ function createForestTreeDescriptorFromSpecies(
   const slopeLeanInfluence =
     Math.min(0.04, terrainSlope.strength * (definition.form === 'pine' ? 0.034 : 0.03)) *
     (0.62 + maturity * 0.5);
+  const windExposure = resolveForestWindExposure(context.tileX, context.tileY);
+  const windLeanInfluence =
+    Math.min(0.035, windExposure.strength * (definition.form === 'pine' ? 0.034 : 0.026)) *
+    (0.58 + maturity * 0.45);
   const randomLeanX = Math.cos(trunkLeanAngle) * resolvedTrunkLeanMagnitude;
   const randomLeanZ = Math.sin(trunkLeanAngle) * resolvedTrunkLeanMagnitude;
   const terrainLeanX = (-terrainSlope.x / terrainSlopeLength) * slopeLeanInfluence;
   const terrainLeanZ = (-terrainSlope.y / terrainSlopeLength) * slopeLeanInfluence;
+  const windLeanX = windExposure.x * windLeanInfluence;
+  const windLeanZ = windExposure.y * windLeanInfluence;
   const structure: TreeStructuralState = {
     radius: trunkRadius,
     trunkTopRadius: trunkRadius * trunkTaperRatio,
     trunkCurveX: Math.cos(trunkCurveAngle) * resolvedTrunkCurveMagnitude,
     trunkCurveZ: Math.sin(trunkCurveAngle) * resolvedTrunkCurveMagnitude,
-    trunkLeanX: randomLeanX * 0.4 + terrainLeanX,
-    trunkLeanZ: randomLeanZ * 0.4 + terrainLeanZ,
+    trunkLeanX: randomLeanX * 0.28 + terrainLeanX + windLeanX,
+    trunkLeanZ: randomLeanZ * 0.28 + terrainLeanZ + windLeanZ,
     scale: (0.72 + appearanceRandom() * 0.48) * (0.62 + maturity * 0.72),
     trunkHeight,
     branches,
