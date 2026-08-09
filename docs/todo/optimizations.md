@@ -159,7 +159,7 @@ This is especially relevant given the heap profile you were examining earlier.
 * [ ] Pool short-lived objects when profiling demonstrates a benefit.
 * [X] Reuse arrays by clearing them rather than repeatedly replacing them.
 * [X] Reuse vector objects.
-* [ ] Reuse matrices.
+* [X] Reuse matrices.
 * [ ] Reuse raycasting result buffers where possible.
 * [X] Avoid unnecessary object spreads.
 * [X] Avoid unnecessary `map()`, `filter()`, and `reduce()` chains inside hot loops.

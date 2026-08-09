@@ -21,6 +21,7 @@ import {
   createCoordinateValueResolver,
   tintHexColor,
 } from '@bworlds/procedural-style';
+import { writeLowDetailInstancedMatrix } from './low-detail-instanced-matrix.ts';
 import {
   createTreeBiologicalState,
   createTreeLogicalState,
@@ -3424,6 +3425,7 @@ function addLowDetailForestTreeInstances(
     trunkBuckets.get(styleKey)!.push(descriptor);
   }
 
+  const lowDetailMatrixScratch = new three.Matrix4();
   for (const [styleKey, bucket] of trunkBuckets.entries()) {
     const style = getTreeStyle(three, tileX, tileY, Number(styleKey));
     const form = bucket[0]?.form ?? 'broadleaf';
@@ -3442,8 +3444,8 @@ function addLowDetailForestTreeInstances(
       const trunkRadiusScale = Math.max(0.04, descriptor.radius) * descriptor.scale / 0.1;
       trunkInstances.setMatrixAt(
         index,
-        createLowDetailTreeMatrix(
-          three,
+        writeLowDetailInstancedMatrix(
+          lowDetailMatrixScratch,
           tileX + descriptor.x,
           descriptor.trunkHeight * descriptor.scale * 0.5,
           tileY + descriptor.y,
@@ -3469,8 +3471,8 @@ function addLowDetailForestTreeInstances(
     bucket.forEach((descriptor, index) => {
       canopyInstances.setMatrixAt(
         index,
-        createLowDetailTreeMatrix(
-          three,
+        writeLowDetailInstancedMatrix(
+          lowDetailMatrixScratch,
           tileX + descriptor.x,
           descriptor.trunkHeight *
             descriptor.scale *
@@ -3484,18 +3486,6 @@ function addLowDetailForestTreeInstances(
     });
     group.add(canopyInstances);
   }
-}
-
-function createLowDetailTreeMatrix(
-  three: ThreeHostLike,
-  x: number,
-  y: number,
-  z: number,
-  scaleX: number,
-  scaleY: number,
-  scaleZ: number
-): ThreeMatrix4Like {
-  return new three.Matrix4().makeScale(scaleX, scaleY, scaleZ).setPosition(x, y, z);
 }
 
 function addForestMeadowFlowerInstances(
@@ -3520,11 +3510,12 @@ function addForestMeadowFlowerInstances(
     ...(stemInstances.userData ?? {}),
     [MEADOW_KEY]: 'flower-stem',
   };
+  const stemMatrixScratch = new three.Matrix4();
   meadow.flowers.forEach((flower, index) => {
     stemInstances.setMatrixAt(
       index,
-      createLowDetailTreeMatrix(
-        three,
+      writeLowDetailInstancedMatrix(
+        stemMatrixScratch,
         tileX + meadow.x + flower.x,
         0.08,
         tileY + meadow.y + flower.y,
@@ -3556,11 +3547,12 @@ function addForestMeadowFlowerInstances(
       ...(bloomInstances.userData ?? {}),
       [MEADOW_KEY]: color,
     };
+    const bloomMatrixScratch = new three.Matrix4();
     flowers.forEach((flower, index) => {
       bloomInstances.setMatrixAt(
         index,
-        createLowDetailTreeMatrix(
-          three,
+        writeLowDetailInstancedMatrix(
+          bloomMatrixScratch,
           tileX + meadow.x + flower.x,
           0.12 + flower.height,
           tileY + meadow.y + flower.y,
@@ -3596,11 +3588,12 @@ function addForestBushInstances(
     ...(bushInstances.userData ?? {}),
     [BUSH_KEY]: true,
   };
+  const bushMatrixScratch = new three.Matrix4();
   bushes.forEach((bush, index) => {
     bushInstances.setMatrixAt(
       index,
-      createLowDetailTreeMatrix(
-        three,
+      writeLowDetailInstancedMatrix(
+        bushMatrixScratch,
         tileX + bush.x,
         bush.height,
         tileY + bush.y,
@@ -3635,11 +3628,12 @@ function addForestBreadcrumbInstances(
     ...(breadcrumbInstances.userData ?? {}),
     [TRAIL_KEY]: 'breadcrumb',
   };
+  const breadcrumbMatrixScratch = new three.Matrix4();
   trail.breadcrumbs.forEach((breadcrumb, index) => {
     breadcrumbInstances.setMatrixAt(
       index,
-      createLowDetailTreeMatrix(
-        three,
+      writeLowDetailInstancedMatrix(
+        breadcrumbMatrixScratch,
         tileX + breadcrumb.x,
         0.03,
         tileY + breadcrumb.y,
@@ -3676,6 +3670,7 @@ function addForestWebInstances(
     [WEB_KEY]: true,
   };
 
+  const webMatrixScratch = new three.Matrix4();
   let strandIndex = 0;
   webs.forEach((web, webIndex) => {
     for (let index = 0; index < web.strandCount; index += 1) {
@@ -3690,8 +3685,8 @@ function addForestWebInstances(
           : 0.007 + hash2D(FOREST_WEB_SCALE_SEED, webIndex, index) * 0.005;
       webInstances.setMatrixAt(
         strandIndex,
-        createLowDetailTreeMatrix(
-          three,
+        writeLowDetailInstancedMatrix(
+          webMatrixScratch,
           tileX + web.x + Math.cos(angle) * distance,
           web.y + Math.sin(angle * 1.7) * web.radius * 0.16,
           tileY + web.z + Math.sin(angle) * distance,
@@ -3729,11 +3724,12 @@ function addForestSpiderInstances(
     ...(bodyInstances.userData ?? {}),
     [SPIDER_KEY]: 'body',
   };
+  const spiderBodyMatrixScratch = new three.Matrix4();
   spiders.forEach((spider, index) => {
     bodyInstances.setMatrixAt(
       index,
-      createLowDetailTreeMatrix(
-        three,
+      writeLowDetailInstancedMatrix(
+        spiderBodyMatrixScratch,
         tileX + spider.x,
         spider.y,
         tileY + spider.z,
@@ -3754,11 +3750,12 @@ function addForestSpiderInstances(
     ...(legInstances.userData ?? {}),
     [SPIDER_KEY]: 'legs',
   };
+  const spiderLegMatrixScratch = new three.Matrix4();
   spiders.forEach((spider, index) => {
     legInstances.setMatrixAt(
       index * 2,
-      createLowDetailTreeMatrix(
-        three,
+      writeLowDetailInstancedMatrix(
+        spiderLegMatrixScratch,
         tileX + spider.x - spider.legSpan * 0.24,
         spider.y,
         tileY + spider.z,
@@ -3769,8 +3766,8 @@ function addForestSpiderInstances(
     );
     legInstances.setMatrixAt(
       index * 2 + 1,
-      createLowDetailTreeMatrix(
-        three,
+      writeLowDetailInstancedMatrix(
+        spiderLegMatrixScratch,
         tileX + spider.x + spider.legSpan * 0.24,
         spider.y,
         tileY + spider.z,
@@ -3806,6 +3803,7 @@ function addForestBeaverDamageInstances(
     ...(chewInstances.userData ?? {}),
     [BEAVER_DAMAGE_KEY]: 'chew',
   };
+  const chewMatrixScratch = new three.Matrix4();
 
   const branchDebrisCount = damages.reduce(
     (sum, damage) => sum + damage.strippedBranchCount,
@@ -3824,6 +3822,7 @@ function addForestBeaverDamageInstances(
     ...(debrisInstances.userData ?? {}),
     [BEAVER_DAMAGE_KEY]: 'debris',
   };
+  const debrisMatrixScratch = new three.Matrix4();
 
   let debrisIndex = 0;
   damages.forEach((damage, index) => {
@@ -3842,8 +3841,8 @@ function addForestBeaverDamageInstances(
           : 1);
     chewInstances.setMatrixAt(
       index,
-      createLowDetailTreeMatrix(
-        three,
+      writeLowDetailInstancedMatrix(
+        chewMatrixScratch,
         tileX + tree.x,
         chewHeight * 0.5,
         tileY + tree.y,
@@ -3868,8 +3867,8 @@ function addForestBeaverDamageInstances(
           0.08;
       debrisInstances.setMatrixAt(
         debrisIndex,
-        createLowDetailTreeMatrix(
-          three,
+        writeLowDetailInstancedMatrix(
+          debrisMatrixScratch,
           tileX + tree.x + Math.cos(angle) * distance,
           0.05,
           tileY + tree.y + Math.sin(angle) * distance,

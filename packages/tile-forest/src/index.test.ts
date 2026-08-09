@@ -142,6 +142,12 @@ class FakeMatrix4 {
     this.position = { x, y, z };
     return this;
   }
+  clone() {
+    const next = new FakeMatrix4();
+    next.scale = { ...this.scale };
+    next.position = { ...this.position };
+    return next;
+  }
 }
 class FakeFloat32BufferAttribute {
   array: number[];
@@ -160,7 +166,7 @@ class FakeInstancedMesh extends FakeNode {
     super();
   }
   setMatrixAt(index: number, matrix: FakeMatrix4) {
-    this.matrices[index] = matrix;
+    this.matrices[index] = matrix.clone();
   }
 }
 class FakePoints extends FakeNode {
