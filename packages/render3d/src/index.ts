@@ -139,7 +139,10 @@ export {
   reconcilePendingWorldBuildQueueWithScratch,
 } from './pending-world-build-queue.ts';
 export { shouldProcessPendingWorldBuildEntryWithinBudget } from './pending-world-build-processing.ts';
-export { collectMaterialTexturesInto } from './material-texture-collector.ts';
+export {
+  collectMaterialTexturesInto,
+  countMaterialTextureSlots,
+} from './material-texture-collector.ts';
 export {
   countColorVariantShareableMaterials,
   countEquivalentShareableMaterials,
@@ -325,6 +328,7 @@ type Render3DController = {
     sharedMaterialCount: number;
     clonedMaterialCount: number;
     colorVariantMaterialCount: number;
+    maxMaterialTextureSlotCount: number;
     transparentMaterialCount: number;
     alphaTestMaterialCount: number;
     doubleSidedMaterialCount: number;
@@ -433,6 +437,7 @@ const FULL_DETAIL_TILE_MODEL_HARD_LIMITS: TileModelHardLimits = {
   ultraDenseTinyGeometryCount: 0,
   materialCount: 16,
   textureCount: 16,
+  maxMaterialTextureSlotCount: 6,
   lightCount: 4,
   shadowLightCount: 1,
   animationMixerCount: 4,
@@ -474,6 +479,7 @@ const LOW_DETAIL_TILE_MODEL_HARD_LIMITS: TileModelHardLimits = {
   ultraDenseTinyGeometryCount: 0,
   materialCount: 3,
   textureCount: 4,
+  maxMaterialTextureSlotCount: 4,
   lightCount: 1,
   shadowLightCount: 0,
   animationMixerCount: 0,
@@ -648,6 +654,7 @@ export function validateTileModelAgainstRenderBudget(
     'ultraDenseTinyGeometryCount',
     'materialCount',
     'textureCount',
+    'maxMaterialTextureSlotCount',
     'lightCount',
     'shadowLightCount',
     'animationMixerCount',
@@ -899,6 +906,7 @@ type SceneResourceStats = {
   sharedMaterialCount: number;
   clonedMaterialCount: number;
   colorVariantMaterialCount: number;
+  maxMaterialTextureSlotCount: number;
   transparentMaterialCount: number;
   alphaTestMaterialCount: number;
   doubleSidedMaterialCount: number;
@@ -952,6 +960,7 @@ type TileModelHardLimits = {
   ultraDenseTinyGeometryCount: number;
   materialCount: number;
   textureCount: number;
+  maxMaterialTextureSlotCount: number;
   lightCount: number;
   shadowLightCount: number;
   animationMixerCount: number;
@@ -1068,6 +1077,7 @@ function createEmptySceneResourceStats(): SceneResourceStats {
     sharedMaterialCount: 0,
     clonedMaterialCount: 0,
     colorVariantMaterialCount: 0,
+    maxMaterialTextureSlotCount: 0,
     transparentMaterialCount: 0,
     alphaTestMaterialCount: 0,
     doubleSidedMaterialCount: 0,
@@ -2293,6 +2303,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       sharedMaterialCount: sceneResourceStats.sharedMaterialCount,
       clonedMaterialCount: sceneResourceStats.clonedMaterialCount,
       colorVariantMaterialCount: sceneResourceStats.colorVariantMaterialCount,
+      maxMaterialTextureSlotCount: sceneResourceStats.maxMaterialTextureSlotCount,
       transparentMaterialCount: sceneResourceStats.transparentMaterialCount,
       alphaTestMaterialCount: sceneResourceStats.alphaTestMaterialCount,
       doubleSidedMaterialCount: sceneResourceStats.doubleSidedMaterialCount,
@@ -3691,6 +3702,7 @@ export function collectSceneResourceStats(
   let largestGeometryVertexCount = 0;
   let largestGeometryBytes = 0;
   let textureMemoryEstimateBytes = 0;
+  let maxMaterialTextureSlotCount = 0;
   let treeCount = 0;
   let treeObjectCount = 0;
   let treeMeshCount = 0;
@@ -3880,6 +3892,9 @@ export function collectSceneResourceStats(
         material,
         materialTexturesBuffer
       );
+      if (materialTextures.length > maxMaterialTextureSlotCount) {
+        maxMaterialTextureSlotCount = materialTextures.length;
+      }
       for (let index = 0; index < materialTextures.length; index += 1) {
         const texture = materialTextures[index];
         if (textures.has(texture)) {
@@ -3938,6 +3953,7 @@ export function collectSceneResourceStats(
     sharedMaterialCount: Math.max(0, materialRefCount - materials.size),
     clonedMaterialCount: countEquivalentShareableMaterials(materials),
     colorVariantMaterialCount: countColorVariantShareableMaterials(materials),
+    maxMaterialTextureSlotCount,
     transparentMaterialCount: countMaterialsMatching(materials, isTransparentMaterial),
     alphaTestMaterialCount: countMaterialsMatching(materials, usesAlphaTest),
     doubleSidedMaterialCount: countMaterialsMatching(materials, isDoubleSidedMaterial),

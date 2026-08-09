@@ -19,6 +19,13 @@ export function collectMaterialTexturesInto(
   return target;
 }
 
+export function countMaterialTextureSlots(
+  material: THREE.Material,
+  target: unknown[] = []
+): number {
+  return collectMaterialTexturesInto(material, target).length;
+}
+
 function isTextureLike(value: unknown): boolean {
   if (!value || typeof value !== 'object') {
     return false;

@@ -467,6 +467,7 @@ describe('render3d visibility helpers', () => {
       materialTypes: 'MeshStandardMaterial:1, ShaderMaterial:1',
       materialsCreatedDuringSamplingWindow: 0,
       materialsDisposedDuringSamplingWindow: 0,
+      maxMaterialTextureSlotCount: 1,
       geometryCount: 2,
       sharedGeometryCount: 1,
       geometryBytes: 432,
@@ -799,6 +800,7 @@ describe('render3d visibility helpers', () => {
       materialTypes: 'Material:3',
       materialsCreatedDuringSamplingWindow: 0,
       materialsDisposedDuringSamplingWindow: 0,
+      maxMaterialTextureSlotCount: 0,
       geometryCount: 3,
       sharedGeometryCount: 0,
       geometryBytes: 216,
@@ -894,6 +896,7 @@ describe('render3d visibility helpers', () => {
       materialTypes: 'Material:2',
       materialsCreatedDuringSamplingWindow: 0,
       materialsDisposedDuringSamplingWindow: 0,
+      maxMaterialTextureSlotCount: 0,
       geometryCount: 2,
       sharedGeometryCount: 0,
       geometryBytes: 300,
@@ -1039,6 +1042,7 @@ describe('render3d visibility helpers', () => {
       materialTypes: 'Material:2',
       materialsCreatedDuringSamplingWindow: 0,
       materialsDisposedDuringSamplingWindow: 0,
+      maxMaterialTextureSlotCount: 0,
       geometryCount: 2,
       sharedGeometryCount: 0,
       geometryBytes: 312,
@@ -1128,6 +1132,7 @@ describe('render3d visibility helpers', () => {
       materialTypes: 'Material:2',
       materialsCreatedDuringSamplingWindow: 0,
       materialsDisposedDuringSamplingWindow: 0,
+      maxMaterialTextureSlotCount: 0,
       geometryCount: 2,
       sharedGeometryCount: 0,
       geometryBytes: 96,
@@ -1249,6 +1254,7 @@ describe('render3d visibility helpers', () => {
       materialTypes: 'Material:2',
       materialsCreatedDuringSamplingWindow: 0,
       materialsDisposedDuringSamplingWindow: 0,
+      maxMaterialTextureSlotCount: 0,
       geometryCount: 2,
       sharedGeometryCount: 0,
       geometryBytes: 120,
@@ -1504,6 +1510,7 @@ describe('render3d visibility helpers', () => {
       ultraDenseTinyGeometryCount: 0,
       materialCount: 16,
       textureCount: 16,
+      maxMaterialTextureSlotCount: 6,
       lightCount: 4,
       shadowLightCount: 1,
       animationMixerCount: 4,
@@ -1544,6 +1551,7 @@ describe('render3d visibility helpers', () => {
       ultraDenseTinyGeometryCount: 0,
       materialCount: 3,
       textureCount: 4,
+      maxMaterialTextureSlotCount: 4,
       lightCount: 1,
       shadowLightCount: 0,
       animationMixerCount: 0,
@@ -3295,6 +3303,46 @@ describe('render3d visibility helpers', () => {
             limit: 3,
           },
         ]),
+      })
+    );
+  });
+
+  it('rejects models whose single material uses too many texture slots', () => {
+    const root = createMockObject3D(
+      createMockMaterial({
+        map: createMockTexture(16, 16),
+        normalMap: createMockTexture(16, 16),
+        roughnessMap: createMockTexture(16, 16),
+        metalnessMap: createMockTexture(16, 16),
+        emissiveMap: createMockTexture(16, 16),
+      }),
+      [],
+      createMockStatGeometry('texture-slot-cap', 24)
+    );
+
+    expect(validateTileModelAgainstRenderBudget(root as never, 'low')).toEqual(
+      expect.objectContaining({
+        accepted: false,
+        stats: expect.objectContaining({
+          maxMaterialTextureSlotCount: 5,
+        }),
+        violations: expect.arrayContaining([
+          {
+            metric: 'maxMaterialTextureSlotCount',
+            actual: 5,
+            limit: 4,
+          },
+        ]),
+      })
+    );
+
+    expect(validateTileModelAgainstRenderBudget(root as never, 'full')).toEqual(
+      expect.objectContaining({
+        accepted: true,
+        stats: expect.objectContaining({
+          maxMaterialTextureSlotCount: 5,
+        }),
+        violations: [],
       })
     );
   });
