@@ -115,6 +115,7 @@ import {
 import { getFrameLoopActivity } from './frame-loop.ts';
 import { createFrameLoopRunner } from './frame-loop-runner.ts';
 import { createAnimationFrameRunner } from './frame-scheduler.ts';
+import { loadHmrState, saveHmrState } from './hmr-state.ts';
 import { advanceHeadBobState, DEFAULT_HEAD_BOB_STATE } from './head-bob.ts';
 import {
   buildDebugMarkup,
@@ -326,13 +327,17 @@ const builtinPackCatalog = createBuiltinContentPackCatalog();
 const builtinPackManifests = builtinPackCatalog.list();
 const REQUIRED_PACK_ID = 'default-content-pack';
 const MAIN_PAGE_SCROLL_STORAGE_KEY = 'bworlds:main-page-scroll';
+const MAIN_PAGE_HMR_STATE_KEY = 'bworlds:main-page-hmr';
 
 const root = document.querySelector<HTMLElement>('#app');
 const mainPageScrollStorage = globalThis.sessionStorage ?? null;
-const initialMainPageScrollY = loadPersistedPageScrollY(
-  mainPageScrollStorage,
-  MAIN_PAGE_SCROLL_STORAGE_KEY
-);
+const initialMainPageHmrState = loadHmrState<{
+  scrollY: number;
+  sessionSnapshot: string | null;
+}>(import.meta.hot, MAIN_PAGE_HMR_STATE_KEY);
+const initialMainPageScrollY =
+  initialMainPageHmrState?.scrollY ??
+  loadPersistedPageScrollY(mainPageScrollStorage, MAIN_PAGE_SCROLL_STORAGE_KEY);
 
 root.innerHTML = `
   <main class="shell">
@@ -947,7 +952,9 @@ const worldMapStorage = createWorldMapStorageCoordinator({
 });
 const urlSearchParams = new URLSearchParams(window.location.search);
 
-const savedSession = loadSession();
+const savedSession = loadSession(
+  initialMainPageHmrState?.sessionSnapshot ?? null
+);
 const savedCharacterProfile = loadCharacterProfile(savedSession);
 const savedInventoryProfile = loadInventoryProfile(savedSession);
 const savedWorldMapProfile = loadWorldMapProfile(savedSession);
@@ -3735,6 +3742,7 @@ window.addEventListener('pagehide', () => {
     window.scrollY
   );
   sessionPersistence.flush();
+  persistMainPageHmrState();
 });
 
 import.meta.hot?.on('vite:beforeUpdate', () => {
@@ -3745,6 +3753,7 @@ import.meta.hot?.on('vite:beforeUpdate', () => {
   );
   saveSession();
   sessionPersistence.flush();
+  persistMainPageHmrState();
   showHmrNotice(getHmrNoticeText('before-update'));
 });
 
@@ -3764,6 +3773,7 @@ import.meta.hot?.dispose(() => {
   }
   saveSession();
   sessionPersistence.flush();
+  persistMainPageHmrState();
 });
 
 window.addEventListener(
@@ -4228,8 +4238,18 @@ function flushSessionSave(): void {
   }
 }
 
-function loadSession(): ReturnType<typeof parseSavedSession> {
-  const raw = window.localStorage.getItem(SESSION_STORAGE_KEY);
+function persistMainPageHmrState(): void {
+  saveHmrState(import.meta.hot, MAIN_PAGE_HMR_STATE_KEY, {
+    scrollY: Math.max(0, Math.round(window.scrollY ?? 0)),
+    sessionSnapshot: lastSavedSnapshot || null,
+  });
+}
+
+function loadSession(
+  preferredSnapshot: string | null = null
+): ReturnType<typeof parseSavedSession> {
+  const raw =
+    preferredSnapshot ?? window.localStorage.getItem(SESSION_STORAGE_KEY);
   const parsed = parseSavedSession(raw);
   if (!parsed) {
     return null;

@@ -76,13 +76,16 @@ const cancelAnimationFrameFallback =
   globalThis.cancelAnimationFrame?.bind(globalThis) ??
   ((handle: number) => clearTimeout(handle));
 const persistedState = loadMusicDebugPagePersistenceState(
-  globalThis.localStorage ?? null
+  globalThis.localStorage ?? null,
+  undefined,
+  import.meta.hot
 );
 let previewOffsetMs = 0;
 let playbackVisualState: MusicDebugPlaybackVisualState | null = null;
 let playbackFrameHandle: number | null = null;
 const pagePersistence = createMusicDebugPagePersistenceController({
   storage: globalThis.localStorage ?? null,
+  hmr: import.meta.hot,
 });
 
 applyPersistedPageState();

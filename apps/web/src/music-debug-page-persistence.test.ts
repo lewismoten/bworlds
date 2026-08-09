@@ -39,6 +39,7 @@ describe('music debug page persistence', () => {
   it('round-trips persisted page state through the storage controller', () => {
     vi.useFakeTimers();
     const saved = new Map<string, string>();
+    const hot = { data: {} as Record<string, unknown> };
     const controller = createMusicDebugPagePersistenceController({
       storage: {
         getItem(key) {
@@ -49,6 +50,7 @@ describe('music debug page persistence', () => {
         },
       },
       debounceDelayMs: 60,
+      hmr: hot,
     });
 
     controller.save({
@@ -80,7 +82,8 @@ describe('music debug page persistence', () => {
           },
           setItem() {},
         },
-        'bworlds:music-debug-page'
+        'bworlds:music-debug-page',
+        hot
       )
     ).toEqual(
       expect.objectContaining({
@@ -91,6 +94,66 @@ describe('music debug page persistence', () => {
         options: expect.objectContaining({
           clusterX: 12,
           clusterY: -7,
+        }),
+      })
+    );
+  });
+
+  it('prefers hot state over stale storage during vite updates', () => {
+    const storage = {
+      getItem() {
+        return JSON.stringify({
+          loopEnabled: false,
+          previewOffsetMs: 100,
+          shouldResume: false,
+          scrollY: 10,
+          options: {
+            tileKind: 'plains',
+            contextType: 'overworld',
+          },
+        });
+      },
+      setItem() {},
+    };
+    const hot = {
+      data: {
+        'bworlds:music-debug-page': {
+          loopEnabled: true,
+          previewOffsetMs: 4_200,
+          shouldResume: true,
+          scrollY: 310,
+          options: {
+            tileKind: 'forest',
+            contextType: 'overworld',
+            encounterMode: 'ambient',
+            weatherKind: 'clear',
+            weatherIntensity: 0,
+            combatIntensity: 0,
+            dayProgress: 0.5,
+            yearProgress: 0.25,
+            clusterX: 3,
+            clusterY: 4,
+          },
+        },
+      } as Record<string, unknown>,
+    };
+
+    expect(
+      loadMusicDebugPagePersistenceState(
+        storage,
+        'bworlds:music-debug-page',
+        hot
+      )
+    ).toEqual(
+      expect.objectContaining({
+        loopEnabled: true,
+        previewOffsetMs: 4_200,
+        shouldResume: true,
+        scrollY: 310,
+        options: expect.objectContaining({
+          tileKind: 'forest',
+          clusterX: 3,
+          clusterY: 4,
         }),
       })
     );

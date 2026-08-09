@@ -1,5 +1,10 @@
 import { createDebouncedPersistence } from './debounced-persistence.ts';
 import {
+  loadHmrState,
+  saveHmrState,
+  type HmrStateContext,
+} from './hmr-state.ts';
+import {
   normalizeTreeDebugOptions,
   type TreeDebugOptions,
 } from './tree-debug.ts';
@@ -25,8 +30,11 @@ export function createTreeDebugPagePersistenceController(options: {
   storage: TreeDebugPagePersistenceStorage | null;
   key?: string;
   debounceDelayMs?: number;
+  hmr?: HmrStateContext | null;
+  hmrKey?: string;
 }): TreeDebugPagePersistenceController {
   const key = options.key ?? TREE_DEBUG_PAGE_STORAGE_KEY;
+  const hmrKey = options.hmrKey ?? key;
   let pendingState: TreeDebugPagePersistenceState | null = null;
   const debouncedPersistence = createDebouncedPersistence(() => {
     if (!options.storage || !pendingState) {
@@ -38,6 +46,7 @@ export function createTreeDebugPagePersistenceController(options: {
   return {
     save(state) {
       pendingState = normalizeTreeDebugPagePersistenceState(state);
+      saveHmrState(options.hmr, hmrKey, pendingState);
       debouncedPersistence.schedule();
     },
     flush() {
@@ -48,8 +57,14 @@ export function createTreeDebugPagePersistenceController(options: {
 
 export function loadTreeDebugPagePersistenceState(
   storage: TreeDebugPagePersistenceStorage | null,
-  key = TREE_DEBUG_PAGE_STORAGE_KEY
+  key = TREE_DEBUG_PAGE_STORAGE_KEY,
+  hmr?: HmrStateContext | null,
+  hmrKey = key
 ): TreeDebugPagePersistenceState | null {
+  const hmrState = loadHmrState<TreeDebugPagePersistenceState>(hmr, hmrKey);
+  if (hmrState) {
+    return normalizeTreeDebugPagePersistenceState(hmrState);
+  }
   if (!storage) {
     return null;
   }

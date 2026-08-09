@@ -1,6 +1,7 @@
 import { resolveAppBootstrapRoute } from './app-bootstrap-route.ts';
+import { registerAppEntryHmr } from './app-entry-hmr.ts';
 
-async function bootstrap(): Promise<void> {
+export async function bootstrap(): Promise<void> {
   const route = resolveAppBootstrapRoute(window.location);
 
   if (route.canonicalUrl) {
@@ -25,3 +26,4 @@ async function bootstrap(): Promise<void> {
 }
 
 void bootstrap();
+registerAppEntryHmr(bootstrap, import.meta.hot);

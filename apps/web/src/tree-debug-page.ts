@@ -15,10 +15,13 @@ import {
 
 const root = document.querySelector<HTMLElement>('#app');
 const persistedState = loadTreeDebugPagePersistenceState(
-  globalThis.sessionStorage ?? null
+  globalThis.sessionStorage ?? null,
+  undefined,
+  import.meta.hot
 );
 const pagePersistence = createTreeDebugPagePersistenceController({
   storage: globalThis.sessionStorage ?? null,
+  hmr: import.meta.hot,
 });
 let snapshot = createTreeDebugSnapshot(persistedState?.options);
 

@@ -1,5 +1,10 @@
 import { createDebouncedPersistence } from './debounced-persistence.ts';
 import {
+  loadHmrState,
+  saveHmrState,
+  type HmrStateContext,
+} from './hmr-state.ts';
+import {
   normalizeMusicDebugOptions,
   type MusicDebugOptions,
   type MusicDebugSnapshot,
@@ -30,8 +35,11 @@ export function createMusicDebugPagePersistenceController(options: {
   storage: MusicDebugPagePersistenceStorage | null;
   key?: string;
   debounceDelayMs?: number;
+  hmr?: HmrStateContext | null;
+  hmrKey?: string;
 }): MusicDebugPagePersistenceController {
   const key = options.key ?? MUSIC_DEBUG_PAGE_STORAGE_KEY;
+  const hmrKey = options.hmrKey ?? key;
   let pendingState: MusicDebugPagePersistenceState | null = null;
   const debouncedPersistence = createDebouncedPersistence(() => {
     if (!options.storage || !pendingState) {
@@ -49,6 +57,7 @@ export function createMusicDebugPagePersistenceController(options: {
   return {
     save(state) {
       pendingState = normalizeMusicDebugPagePersistenceState(state);
+      saveHmrState(options.hmr, hmrKey, pendingState);
       debouncedPersistence.schedule();
     },
     flush() {
@@ -59,8 +68,14 @@ export function createMusicDebugPagePersistenceController(options: {
 
 export function loadMusicDebugPagePersistenceState(
   storage: MusicDebugPagePersistenceStorage | null,
-  key = MUSIC_DEBUG_PAGE_STORAGE_KEY
+  key = MUSIC_DEBUG_PAGE_STORAGE_KEY,
+  hmr?: HmrStateContext | null,
+  hmrKey = key
 ): MusicDebugPagePersistenceState | null {
+  const hmrState = loadHmrState<MusicDebugPagePersistenceState>(hmr, hmrKey);
+  if (hmrState) {
+    return normalizeMusicDebugPagePersistenceState(hmrState);
+  }
   if (!storage) {
     return null;
   }

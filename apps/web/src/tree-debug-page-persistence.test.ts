@@ -31,6 +31,7 @@ describe('tree debug page persistence', () => {
   it('round-trips tree page state through the storage controller', () => {
     vi.useFakeTimers();
     const saved = new Map<string, string>();
+    const hot = { data: {} as Record<string, unknown> };
     const controller = createTreeDebugPagePersistenceController({
       storage: {
         getItem(key) {
@@ -41,6 +42,7 @@ describe('tree debug page persistence', () => {
         },
       },
       debounceDelayMs: 60,
+      hmr: hot,
     });
 
     controller.save({
@@ -66,8 +68,54 @@ describe('tree debug page persistence', () => {
           },
           setItem() {},
         },
-        'bworlds:tree-debug-page'
+        'bworlds:tree-debug-page',
+        hot
       )
+    ).toEqual(
+      expect.objectContaining({
+        scrollY: 280,
+        options: expect.objectContaining({
+          tileX: -14,
+          tileY: 33,
+          speciesMode: 'birch',
+        }),
+      })
+    );
+  });
+
+  it('prefers hot tree state over stale storage during vite updates', () => {
+    const storage = {
+      getItem() {
+        return JSON.stringify({
+          scrollY: 20,
+          options: {
+            tileX: 1,
+            tileY: 2,
+            speciesMode: 'oak',
+          },
+        });
+      },
+      setItem() {},
+    };
+    const hot = {
+      data: {
+        'bworlds:tree-debug-page': {
+          scrollY: 280,
+          options: {
+            tileX: -14,
+            tileY: 33,
+            yearProgress: 0.7,
+            detailLevel: 'low',
+            consumer: 'gameplay',
+            speciesMode: 'birch',
+            treeIndex: 4,
+          },
+        },
+      } as Record<string, unknown>,
+    };
+
+    expect(
+      loadTreeDebugPagePersistenceState(storage, 'bworlds:tree-debug-page', hot)
     ).toEqual(
       expect.objectContaining({
         scrollY: 280,
