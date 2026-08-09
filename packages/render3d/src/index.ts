@@ -114,6 +114,7 @@ type Render3DController = {
     tileModelBudgetViolationsPerSecond: number;
     tileModelBudgetViolationTopPluginLabel: string;
     tileModelBudgetViolationSummary: string;
+    recentEvents: Render3DDebugEvent[];
     tileNodeBuildsPerSecond: number;
     tileBuildsPerSecond: number;
     pendingCancelledEntriesPerSecond: number;
@@ -181,6 +182,16 @@ type Render3DController = {
   };
   render(state: Render3DState, options?: Render3DOptions): void;
   resize(width: number, height: number, pixelRatio?: number): void;
+};
+
+export type Render3DDebugEvent = {
+  nowMs: number;
+  type: 'lod-changed' | 'model-rejected' | 'plugin-exceeded-budget';
+  tileKey?: string;
+  plugin?: string;
+  summary?: string;
+  fromDetailLevel?: RenderBudgetDetailLevel;
+  toDetailLevel?: RenderBudgetDetailLevel;
 };
 
 export function createTilePluginRenderBudget(
@@ -281,6 +292,44 @@ export function acceptTilePluginModelForRenderBudget<
   }
   disposeObject3DResources(model);
   return null;
+}
+
+export function summarizeTileModelBudgetViolations(
+  violations: TileModelBudgetViolation[]
+): string {
+  return violations
+    .map((violation) => `${violation.metric} ${violation.actual}>${violation.limit}`)
+    .join(', ');
+}
+
+export function recordRenderDebugEvent(
+  events: Render3DDebugEvent[],
+  event: Render3DDebugEvent,
+  maxEntries = MAX_RENDER_DEBUG_EVENTS
+): void {
+  events.push(event);
+  if (events.length > maxEntries) {
+    events.splice(0, events.length - maxEntries);
+  }
+}
+
+export function getRecentRenderDebugEvents(
+  events: Render3DDebugEvent[],
+  nowMs: number,
+  {
+    windowMs = RENDER_DEBUG_EVENT_WINDOW_MS,
+    maxEntries = MAX_RENDER_DEBUG_EVENTS,
+  }: {
+    windowMs?: number;
+    maxEntries?: number;
+  } = {}
+): Render3DDebugEvent[] {
+  const minimumTime = nowMs - windowMs;
+  const recentEvents = events.filter((event) => event.nowMs >= minimumTime);
+  if (recentEvents.length <= maxEntries) {
+    return recentEvents;
+  }
+  return recentEvents.slice(-maxEntries);
 }
 
 type DynamicTileNode = {
@@ -431,6 +480,9 @@ type RecentCountSample = {
 type RecentLabeledCountSample = RecentCountSample & {
   label: string;
 };
+
+const MAX_RENDER_DEBUG_EVENTS = 64;
+const RENDER_DEBUG_EVENT_WINDOW_MS = 30_000;
 
 type FrameTimeBudget = {
   budgetMs: number;
@@ -656,6 +708,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     tilePluginBuildDurations: [] as RecentLabeledDurationSample[],
     tileModelBudgetViolations: [] as RecentLabeledCountSample[],
   } satisfies RenderChurnMetrics;
+  const recentDebugEvents: Render3DDebugEvent[] = [];
 
   function resize(width, height, pixelRatio = window.devicePixelRatio || 1) {
     const safeWidth = Math.max(1, Math.floor(width));
@@ -732,10 +785,27 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
         detailLevel
       );
       if (!modelBudgetValidation.accepted) {
+        const violationSummary = summarizeTileModelBudgetViolations(
+          modelBudgetValidation.violations
+        );
         recordRecentLabeledCountMetric(renderChurnMetrics.tileModelBudgetViolations, {
           nowMs: pluginBuildStartMs,
           count: 1,
           label: tilePluginOwnerLabel,
+        });
+        recordRenderDebugEvent(recentDebugEvents, {
+          nowMs: pluginBuildStartMs,
+          type: 'plugin-exceeded-budget',
+          tileKey: `${x}:${y}`,
+          plugin: tilePluginOwnerLabel,
+          summary: violationSummary,
+        });
+        recordRenderDebugEvent(recentDebugEvents, {
+          nowMs: pluginBuildStartMs,
+          type: 'model-rejected',
+          tileKey: `${x}:${y}`,
+          plugin: tilePluginOwnerLabel,
+          summary: violationSummary,
         });
         pluginModel = acceptTilePluginModelForRenderBudget(pluginModel, detailLevel);
       }
@@ -1135,6 +1205,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       renderChurnMetrics.tileModelBudgetViolations,
       nowMs
     );
+    const recentEvents = getRecentRenderDebugEvents(recentDebugEvents, nowMs);
     const renderChurnStats = getRenderChurnStats(renderChurnMetrics, nowMs);
     return {
       drawCalls: renderer.info.render.calls,
@@ -1158,6 +1229,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
         recentTileModelBudgetViolationStats.topLabel,
       tileModelBudgetViolationSummary:
         recentTileModelBudgetViolationStats.summary,
+      recentEvents,
       tileNodeBuildsPerSecond: renderChurnStats.tileNodeBuildsPerSecond,
       tileBuildsPerSecond: renderChurnStats.tileBuildsPerSecond,
       pendingCancelledEntriesPerSecond:
@@ -1286,6 +1358,13 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       disposeObject3DResources(entry.node);
       worldRoot.add(nextEntry.node);
       visibleWorldMutationVersion += 1;
+      recordRenderDebugEvent(recentDebugEvents, {
+        nowMs,
+        type: 'lod-changed',
+        tileKey: key,
+        fromDetailLevel: entry.detailLevel ?? 'full',
+        toDetailLevel: desiredDetailLevel,
+      });
       recordRecentMetric(renderChurnMetrics.lodReplacements, nowMs);
     }
     return processedEntryCount;

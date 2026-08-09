@@ -131,6 +131,7 @@ import {
 import {
   buildDebugSnapshotExport,
   formatDebugSnapshotFilename,
+  type DebugSnapshotRecentEvent,
 } from './debug-snapshot.ts';
 import { shouldCollectDebugSnapshot } from './debug-sampling.ts';
 import { collectGraphicsCapabilities } from './graphics-capabilities.ts';
@@ -1093,6 +1094,11 @@ const debugSnapshotState = {
   latestSnapshot: null as DebugSnapshot | null,
   lastSampleNowMs: null as number | null,
 };
+const MAX_DEBUG_RECENT_EVENTS = 64;
+const DEBUG_RECENT_EVENT_WINDOW_MS = 30_000;
+const debugRecentEventsState = {
+  events: [] as DebugSnapshotRecentEvent[],
+};
 const debugResourceTrendState = {
   materialSamples: [] as Array<{
     nowMs: number;
@@ -1916,6 +1922,28 @@ function collectCurrentDebugSnapshot(
     ...(stationaryTileBuildWarning ? [stationaryTileBuildWarning] : []),
   ];
 
+  const previousSnapshot = debugSnapshotState.latestSnapshot;
+  if (
+    options.recordDiagnostics &&
+    previousSnapshot &&
+    (
+      previousSnapshot.targetFps !== debugSnapshot.targetFps ||
+      previousSnapshot.visibilityRadius !== debugSnapshot.visibilityRadius ||
+      previousSnapshot.renderQualityLevel !== debugSnapshot.renderQualityLevel
+    )
+  ) {
+    recordDebugRecentEvent({
+      nowMs,
+      type: 'graphics-quality-changed',
+      fromTargetFps: previousSnapshot.targetFps,
+      targetFps: debugSnapshot.targetFps,
+      fromVisibilityRadius: previousSnapshot.visibilityRadius,
+      visibilityRadius: debugSnapshot.visibilityRadius,
+      fromRenderQualityLevel: previousSnapshot.renderQualityLevel,
+      renderQualityLevel: debugSnapshot.renderQualityLevel,
+    });
+  }
+
   if (options.recordDiagnostics) {
     recordPerformanceHistorySample(debugResourceTrendState.performanceSamples, {
       nowMs,
@@ -1951,11 +1979,13 @@ function collectCurrentDebugSnapshot(
 }
 
 function downloadCurrentDebugSnapshot(): void {
+  const nowMs = performance.now();
   const latestSnapshot = collectCurrentDebugSnapshot(
-    performance.now(),
+    nowMs,
     getPlayerSpatialSummary(state),
     { recordDiagnostics: false }
   );
+  const rendererStats = renderer3d.getStats();
 
   const timestamp = new Date();
   const currentContext = state.getCurrentContext();
@@ -2018,6 +2048,7 @@ function downloadCurrentDebugSnapshot(): void {
     lod: {
       thresholds: lodThresholds,
     },
+    recentEvents: collectMergedRecentDebugEvents(nowMs, rendererStats.recentEvents),
     snapshot: latestSnapshot,
     history: debugResourceTrendState.performanceSamples,
   });
@@ -2030,6 +2061,35 @@ function downloadCurrentDebugSnapshot(): void {
   anchor.download = formatDebugSnapshotFilename(timestamp);
   anchor.click();
   URL.revokeObjectURL(url);
+}
+
+function recordDebugRecentEvent(event: DebugSnapshotRecentEvent): void {
+  debugRecentEventsState.events.push(event);
+  if (debugRecentEventsState.events.length > MAX_DEBUG_RECENT_EVENTS) {
+    debugRecentEventsState.events.splice(
+      0,
+      debugRecentEventsState.events.length - MAX_DEBUG_RECENT_EVENTS
+    );
+  }
+}
+
+function collectMergedRecentDebugEvents(
+  nowMs: number,
+  rendererEvents: Array<{
+    nowMs: number;
+    type: 'lod-changed' | 'model-rejected' | 'plugin-exceeded-budget';
+    tileKey?: string;
+    plugin?: string;
+    summary?: string;
+    fromDetailLevel?: string;
+    toDetailLevel?: string;
+  }>
+): DebugSnapshotRecentEvent[] {
+  const minimumTime = nowMs - DEBUG_RECENT_EVENT_WINDOW_MS;
+  return [...debugRecentEventsState.events, ...rendererEvents]
+    .filter((event) => event.nowMs >= minimumTime)
+    .sort((left, right) => left.nowMs - right.nowMs)
+    .slice(-MAX_DEBUG_RECENT_EVENTS);
 }
 
 function canLandOnOverworldTile(x: number, y: number): boolean {

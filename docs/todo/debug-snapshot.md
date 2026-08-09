@@ -509,16 +509,16 @@ Also export a short diagnostic event log.
 * [ ] Tile generated.
 * [ ] Tile unloaded.
 * [ ] Tile rebuilt.
-* [ ] LOD changed.
-* [ ] Model rejected.
-* [ ] Plugin exceeded budget.
+* [X] LOD changed.
+* [X] Model rejected.
+* [X] Plugin exceeded budget.
 * [ ] Texture loaded.
 * [ ] Geometry generated.
 * [ ] Material cloned.
 * [ ] Shader program compiled.
 * [ ] Chunk loaded.
 * [ ] Chunk unloaded.
-* [ ] Graphics quality changed.
+* [X] Graphics quality changed.
 * [ ] Long frame detected.
 * [ ] Cache eviction occurred.
 * [ ] Large allocation detected where trackable.
@@ -586,7 +586,7 @@ Important: the debugging system itself shouldn't freeze the game.
 * [ ] Export summaries and identifiers instead.
 * [ ] Avoid circular references.
 * [ ] Cap diagnostic arrays.
-* [ ] Cap event history.
+* [X] Cap event history.
 * [ ] Cap top-offender lists.
 
 The snapshot should be perhaps hundreds of KB or a few MB—not a 200 MB dump of your scene.

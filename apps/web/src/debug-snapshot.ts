@@ -26,6 +26,26 @@ type PlayerSnapshot = {
   facing: number;
 };
 
+export type DebugSnapshotRecentEvent = {
+  nowMs: number;
+  type:
+    | 'graphics-quality-changed'
+    | 'lod-changed'
+    | 'model-rejected'
+    | 'plugin-exceeded-budget';
+  tileKey?: string;
+  plugin?: string | null;
+  summary?: string;
+  fromDetailLevel?: string;
+  toDetailLevel?: string;
+  fromTargetFps?: 60 | 30;
+  targetFps?: 60 | 30;
+  fromVisibilityRadius?: number;
+  visibilityRadius?: number;
+  fromRenderQualityLevel?: string;
+  renderQualityLevel?: string;
+};
+
 type DebugSnapshotExportOptions = {
   timestamp: Date;
   gameVersion: string;
@@ -81,6 +101,7 @@ type DebugSnapshotExportOptions = {
   lod: {
     thresholds: LodThresholdSummary;
   };
+  recentEvents: DebugSnapshotRecentEvent[];
   snapshot: DebugSnapshot;
   history: PerformanceHistorySample[];
 };
@@ -191,6 +212,11 @@ export type DebugSnapshotExport = {
     topRejectedPlugin: string | null;
     rejectionSummary: string;
   };
+  recentEvents: Array<
+    Omit<DebugSnapshotRecentEvent, 'nowMs'> & {
+      t: number;
+    }
+  >;
   resourceBudget: {
     currentUtilizationPct: number;
     highestUtilizationPctObserved: number;
@@ -464,6 +490,10 @@ export function buildDebugSnapshotExport(
         options.snapshot.tileModelBudgetViolationTopPluginLabel?.trim() || null,
       rejectionSummary: options.snapshot.tileModelBudgetViolationSummary ?? '',
     },
+    recentEvents: options.recentEvents.map(({ nowMs, ...event }) => ({
+      ...event,
+      t: roundTenths((nowMs - latestHistoryTime) / 1000),
+    })),
     resourceBudget: resourceBudgetSnapshot,
     history: options.history.map((sample) => ({
       t: roundTenths((sample.nowMs - latestHistoryTime) / 1000),
@@ -724,7 +754,8 @@ function collectDynamicQualityChanges(
 }
 
 function roundTenths(value: number): number {
-  return Math.round(value * 10) / 10;
+  const rounded = Math.round(value * 10) / 10;
+  return Object.is(rounded, -0) ? 0 : rounded;
 }
 
 function getAverage(values: number[]): number {

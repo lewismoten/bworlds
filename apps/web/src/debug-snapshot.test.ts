@@ -93,6 +93,39 @@ describe('debug snapshot', () => {
           syncMovementDistance: 0.18,
         },
       },
+      recentEvents: [
+        {
+          nowMs: 750,
+          type: 'graphics-quality-changed',
+          fromTargetFps: 60,
+          targetFps: 30,
+          fromVisibilityRadius: 18,
+          visibilityRadius: 14,
+          fromRenderQualityLevel: 'Full',
+          renderQualityLevel: 'Reduced',
+        },
+        {
+          nowMs: 1600,
+          type: 'lod-changed',
+          tileKey: '14:-9',
+          fromDetailLevel: 'full',
+          toDetailLevel: 'low',
+        },
+        {
+          nowMs: 1900,
+          type: 'plugin-exceeded-budget',
+          tileKey: '15:-9',
+          plugin: 'tile-forest',
+          summary: 'vertexCount 10000>8000',
+        },
+        {
+          nowMs: 1950,
+          type: 'model-rejected',
+          tileKey: '15:-9',
+          plugin: 'tile-forest',
+          summary: 'vertexCount 10000>8000',
+        },
+      ],
       snapshot: {
         fps: 44.6,
         averageFps: 46.2,
@@ -431,6 +464,39 @@ describe('debug snapshot', () => {
       topRejectedPlugin: 'tile-forest',
       rejectionSummary: 'tile-forest:2, tile-town:1',
     });
+    expect(result.recentEvents).toEqual([
+      {
+        t: -1.2,
+        type: 'graphics-quality-changed',
+        fromTargetFps: 60,
+        targetFps: 30,
+        fromVisibilityRadius: 18,
+        visibilityRadius: 14,
+        fromRenderQualityLevel: 'Full',
+        renderQualityLevel: 'Reduced',
+      },
+      {
+        t: -0.4,
+        type: 'lod-changed',
+        tileKey: '14:-9',
+        fromDetailLevel: 'full',
+        toDetailLevel: 'low',
+      },
+      {
+        t: -0.1,
+        type: 'plugin-exceeded-budget',
+        tileKey: '15:-9',
+        plugin: 'tile-forest',
+        summary: 'vertexCount 10000>8000',
+      },
+      {
+        t: 0,
+        type: 'model-rejected',
+        tileKey: '15:-9',
+        plugin: 'tile-forest',
+        summary: 'vertexCount 10000>8000',
+      },
+    ]);
     expect(result.resourceBudget).toEqual({
       currentUtilizationPct: 62.7,
       highestUtilizationPctObserved: 62.7,

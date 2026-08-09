@@ -9,6 +9,7 @@ import {
   createTilePluginRenderBudget,
   DEFAULT_CAMERA_PITCH,
   getTileModelHardLimits,
+  getRecentRenderDebugEvents,
   getRecentLabeledCountStats,
   getRecentCountStats,
   getRecentDurationStats,
@@ -45,6 +46,7 @@ import {
   pickCornerBoundaryProfile,
   prepareObjectForDistanceFade,
   reconcilePendingWorldBuildQueue,
+  recordRenderDebugEvent,
   recordRecentCountMetric,
   recordRecentLabeledCountMetric,
   recordRecentMetric,
@@ -1046,6 +1048,63 @@ describe('render3d visibility helpers', () => {
       topLabel: '',
       summary: '',
     });
+  });
+
+  it('records bounded recent debug events and filters them to the active window', () => {
+    const events = [
+      {
+        nowMs: 100,
+        type: 'lod-changed' as const,
+        tileKey: '1:1',
+        fromDetailLevel: 'full' as const,
+        toDetailLevel: 'low' as const,
+      },
+    ];
+
+    recordRenderDebugEvent(events, {
+      nowMs: 200,
+      type: 'plugin-exceeded-budget',
+      tileKey: '2:1',
+      plugin: 'tile-forest',
+      summary: 'vertexCount 10000>8000',
+    });
+    recordRenderDebugEvent(events, {
+      nowMs: 300,
+      type: 'model-rejected',
+      tileKey: '2:1',
+      plugin: 'tile-forest',
+      summary: 'vertexCount 10000>8000',
+    });
+
+    expect(getRecentRenderDebugEvents(events, 350, { windowMs: 30000 })).toEqual(events);
+    expect(getRecentRenderDebugEvents(events, 30150, { windowMs: 30000 })).toEqual([
+      {
+        nowMs: 200,
+        type: 'plugin-exceeded-budget',
+        tileKey: '2:1',
+        plugin: 'tile-forest',
+        summary: 'vertexCount 10000>8000',
+      },
+      {
+        nowMs: 300,
+        type: 'model-rejected',
+        tileKey: '2:1',
+        plugin: 'tile-forest',
+        summary: 'vertexCount 10000>8000',
+      },
+    ]);
+
+    const bounded: Array<{
+      nowMs: number;
+      type: 'lod-changed';
+    }> = [];
+    recordRenderDebugEvent(bounded, { nowMs: 1, type: 'lod-changed' }, 2);
+    recordRenderDebugEvent(bounded, { nowMs: 2, type: 'lod-changed' }, 2);
+    recordRenderDebugEvent(bounded, { nowMs: 3, type: 'lod-changed' }, 2);
+    expect(bounded).toEqual([
+      { nowMs: 2, type: 'lod-changed' },
+      { nowMs: 3, type: 'lod-changed' },
+    ]);
   });
 
   it('rebuilds the pending world-build queue without visible or duplicate tile requests', () => {
