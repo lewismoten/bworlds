@@ -51,6 +51,19 @@ describe('core utilities', () => {
     ).toBe(hash2D('seed:river-control:angle-delta', -12, 7));
   });
 
+  it('keeps integer seed-part mixing equivalent for zero and negative coordinates', () => {
+    const seededHash = appendHashSeedPart(createHashSeed('seed'), -14);
+
+    expect(hash2DWithSeed(seededHash, 0, -9)).toBe(hash2D('seed:-14', 0, -9));
+    expect(
+      hash2DWithSeed(
+        appendHashSeedPart(seededHash, 0),
+        -27,
+        0
+      )
+    ).toBe(hash2D('seed:-14:0', -27, 0));
+  });
+
   it('maps world coordinates to GPS coordinates', () => {
     expect(toGps(0, 0)).toEqual({ latitude: 0, longitude: 0 });
     expect(toGps(WORLD_TILES_WIDE / 4, 0).longitude).toBeCloseTo(90);

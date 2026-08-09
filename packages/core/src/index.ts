@@ -1578,15 +1578,15 @@ export function appendHashSeedPart(
   seedHash: number,
   value: string | number
 ): number {
-  return mixHashString(mixHashCharacter(seedHash, 58), value);
+  return mixHashValue(mixHashCharacter(seedHash, 58), value);
 }
 
 export function hash2DWithSeed(seedHash: number, x: number, y: number): number {
   let hash = seedHash;
   hash = mixHashCharacter(hash, 58);
-  hash = mixHashString(hash, x);
+  hash = mixHashValue(hash, x);
   hash = mixHashCharacter(hash, 58);
-  hash = mixHashString(hash, y);
+  hash = mixHashValue(hash, y);
   return (hash >>> 0) / 4294967295;
 }
 
@@ -1600,7 +1600,7 @@ function getCachedHashSeed(seed: string | number): number {
     return cached;
   }
   let hash = 2166136261;
-  hash = mixHashString(hash, seed);
+  hash = mixHashValue(hash, seed);
   hash2dSeedCache.set(seed, hash);
   if (hash2dSeedCache.size > HASH_2D_SEED_CACHE_LIMIT) {
     const oldest = hash2dSeedCache.keys().next().value;
@@ -1611,10 +1611,40 @@ function getCachedHashSeed(seed: string | number): number {
   return hash;
 }
 
+function mixHashValue(hash: number, value: string | number): number {
+  if (typeof value === 'number' && Number.isFinite(value) && Number.isInteger(value)) {
+    return mixHashInteger(hash, value);
+  }
+  return mixHashString(hash, value);
+}
+
 function mixHashString(hash: number, value: string | number): number {
   const text = String(value);
   for (let index = 0; index < text.length; index += 1) {
     hash = mixHashCharacter(hash, text.charCodeAt(index));
+  }
+  return hash;
+}
+
+function mixHashInteger(hash: number, value: number): number {
+  if (value === 0) {
+    return mixHashCharacter(hash, 48);
+  }
+
+  let remaining = value;
+  if (remaining < 0) {
+    hash = mixHashCharacter(hash, 45);
+    remaining = -remaining;
+  }
+
+  const digits: number[] = [];
+  while (remaining > 0) {
+    digits.push(48 + (remaining % 10));
+    remaining = Math.floor(remaining / 10);
+  }
+
+  for (let index = digits.length - 1; index >= 0; index -= 1) {
+    hash = mixHashCharacter(hash, digits[index] as number);
   }
   return hash;
 }
