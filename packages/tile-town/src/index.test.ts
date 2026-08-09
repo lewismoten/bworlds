@@ -141,6 +141,78 @@ const fakeThree = {
   DoubleSide: 2,
 } as const;
 
+function createTownState() {
+  return {
+    player: { x: 0, y: 0, facing: 0 },
+    getCurrentContext() {
+      return { id: 'overworld', type: 'overworld', depth: 0 };
+    },
+    getCurrentTile() {
+      return { kind: 'town' };
+    },
+    getTileDefinition() {
+      return {
+        name: 'Town',
+        color: '#000000',
+        miniColor: '#111111',
+        walkable: true,
+        wallHeight: 0.5,
+      };
+    },
+  };
+}
+
+function normalizeMaterialOptions(options: Record<string, unknown> | undefined) {
+  if (!options) {
+    return undefined;
+  }
+
+  const normalized: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(options)) {
+    if (typeof value === 'function') {
+      continue;
+    }
+    normalized[key] = value;
+  }
+  return normalized;
+}
+
+function createModelSignature(model: FakeGroup) {
+  const signature: Array<Record<string, unknown>> = [];
+  model.traverse((node) => {
+    signature.push({
+      type: node.constructor.name,
+      x: node.position.x,
+      y: node.position.y,
+      z: node.position.z,
+      rotationX: node.rotation.x,
+      rotationY: node.rotation.y,
+      rotationZ: node.rotation.z,
+      visible: node.visible,
+      childCount: node.children.length,
+      material:
+        node instanceof FakeMesh
+          ? Array.isArray(node.material)
+            ? node.material.map((material) =>
+                normalizeMaterialOptions(material.options)
+              )
+            : normalizeMaterialOptions(node.material?.options)
+          : undefined,
+      light:
+        node instanceof FakeLight
+          ? {
+              color: node.color,
+              intensity: node.intensity,
+              distance: node.distance,
+              decay: node.decay,
+            }
+          : undefined,
+      userData: node.userData,
+    });
+  });
+  return signature;
+}
+
 describe('tile town', () => {
   it('scales town night lights with town size', () => {
     expect(getTownNightLightCount(3)).toBe(1);
@@ -154,24 +226,7 @@ describe('tile town', () => {
   it('creates a lower-detail distant town model', () => {
     const plugin = createTownTilePlugin();
     const tile = plugin.tiles?.find((entry) => entry.kind === 'town');
-    const state = {
-      player: { x: 0, y: 0, facing: 0 },
-      getCurrentContext() {
-        return { id: 'overworld', type: 'overworld', depth: 0 };
-      },
-      getCurrentTile() {
-        return { kind: 'town' };
-      },
-      getTileDefinition() {
-        return {
-          name: 'Town',
-          color: '#000000',
-          miniColor: '#111111',
-          walkable: true,
-          wallHeight: 0.5,
-        };
-      },
-    };
+    const state = createTownState();
 
     const fullModel = tile?.create3DModel?.({
       three: fakeThree as never,
@@ -197,32 +252,24 @@ describe('tile town', () => {
   });
 
   it('uses the shared town profile to scale overworld building counts by town', () => {
+    const counts = new Set(
+      [
+        [3, 7],
+        [18, -11],
+        [25, 9],
+        [48, -16],
+      ].map(([x, y]) => getTownBuildingCount(x, y))
+    );
+
     expect(getTownBuildingCount(3, 7)).toBeGreaterThan(0);
     expect(getTownBuildingCount(3, 7)).toBe(getTownBuildingCount(3, 7));
-    expect(getTownBuildingCount(3, 7)).not.toBe(getTownBuildingCount(18, -11));
+    expect(counts.size).toBeGreaterThan(1);
   });
 
   it('activates town night lights after dark', () => {
     const plugin = createTownTilePlugin();
     const tile = plugin.tiles?.find((entry) => entry.kind === 'town');
-    const state = {
-      player: { x: 0, y: 0, facing: 0 },
-      getCurrentContext() {
-        return { id: 'overworld', type: 'overworld', depth: 0 };
-      },
-      getCurrentTile() {
-        return { kind: 'town' };
-      },
-      getTileDefinition() {
-        return {
-          name: 'Town',
-          color: '#000000',
-          miniColor: '#111111',
-          walkable: true,
-          wallHeight: 0.5,
-        };
-      },
-    };
+    const state = createTownState();
 
     const model = tile?.create3DModel?.({
       three: fakeThree as never,
@@ -276,24 +323,7 @@ describe('tile town', () => {
   it('adds windy banners to full-detail town models and sways them with weather strength', () => {
     const plugin = createTownTilePlugin();
     const tile = plugin.tiles?.find((entry) => entry.kind === 'town');
-    const state = {
-      player: { x: 0, y: 0, facing: 0 },
-      getCurrentContext() {
-        return { id: 'overworld', type: 'overworld', depth: 0 };
-      },
-      getCurrentTile() {
-        return { kind: 'town' };
-      },
-      getTileDefinition() {
-        return {
-          name: 'Town',
-          color: '#000000',
-          miniColor: '#111111',
-          walkable: true,
-          wallHeight: 0.5,
-        };
-      },
-    };
+    const state = createTownState();
 
     const fullModel = tile?.create3DModel?.({
       three: fakeThree as never,
@@ -364,5 +394,42 @@ describe('tile town', () => {
     expect(Math.abs(windyRotation - baseRotation)).toBeGreaterThan(
       Math.abs(calmRotation - baseRotation)
     );
+  });
+
+  it('keeps full-detail town model signatures stable after regional churn', () => {
+    const plugin = createTownTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'town');
+    const state = createTownState();
+
+    const baseline = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'town', poi: { type: 'town', name: 'Oakcross' } } as never,
+      tileX: 3,
+      tileY: 7,
+      detailLevel: 'full',
+    }) as FakeGroup;
+
+    for (let index = 0; index < 144; index += 1) {
+      tile?.create3DModel?.({
+        three: fakeThree as never,
+        state,
+        tile: { kind: 'town', poi: { type: 'town', name: `Town ${index}` } } as never,
+        tileX: index * 18,
+        tileY: 18,
+        detailLevel: 'full',
+      });
+    }
+
+    const resolved = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'town', poi: { type: 'town', name: 'Oakcross' } } as never,
+      tileX: 3,
+      tileY: 7,
+      detailLevel: 'full',
+    }) as FakeGroup;
+
+    expect(createModelSignature(resolved)).toEqual(createModelSignature(baseline));
   });
 });

@@ -1,5 +1,10 @@
 import { createBoundedCache } from '@bworlds/cache-support';
-import { hash2D } from '@bworlds/core';
+import {
+  appendHashSeedPart,
+  hash2D,
+  hash2DWithSeed,
+  registerHashLabel,
+} from '@bworlds/core';
 import {
   createAnchoredEnterablePoiTilePlugin,
   markPoiLightEmitter,
@@ -38,6 +43,30 @@ const TOWN_BANNER_KEY = 'townBanner';
 const TOWN_DESCRIPTOR_CACHE_LIMIT = 256;
 const TOWN_STYLE_CACHE_LIMIT = 96;
 const TOWN_SIGN_LABEL_CACHE_LIMIT = 192;
+const TOWN_BUILDING_SEED = registerHashLabel('town-building');
+const TOWN_WALL_TONE_SEED = registerHashLabel('town-wall-tone');
+const TOWN_ROOF_TONE_SEED = registerHashLabel('town-roof-tone');
+const TOWN_TRIM_TONE_SEED = registerHashLabel('town-trim-tone');
+const TOWN_WINDOW_TONE_SEED = registerHashLabel('town-window-tone');
+const TOWN_SIGN_BASE_SEED = registerHashLabel('town-sign-base');
+const TOWN_SIGN_ROTATION_SEED = registerHashLabel('town-sign-rotation');
+const TOWN_BANNER_SPEED_SEED = registerHashLabel('town-banner-speed');
+const TOWN_BANNER_GUST_SPEED_SEED = registerHashLabel('town-banner-gust-speed');
+const TOWN_BANNER_PHASE_SEED = registerHashLabel('town-banner-phase');
+const TOWN_BANNER_GUST_PHASE_SEED = registerHashLabel('town-banner-gust-phase');
+const TOWN_BANNER_COUNT_SEED = registerHashLabel('town-banner-count');
+const TOWN_BANNER_WIDTH_SEED = registerHashLabel('town-banner-width');
+const TOWN_BANNER_LENGTH_SEED = registerHashLabel('town-banner-length');
+const TOWN_BANNER_HEIGHT_SEED = registerHashLabel('town-banner-height');
+const TOWN_BANNER_ROTATION_SEED = registerHashLabel('town-banner-rotation');
+const TOWN_BANNER_BASE_ROTATION_SEED = registerHashLabel('town-banner-base-rotation');
+const TOWN_BANNER_COLOR_SEED = registerHashLabel('town-banner-color');
+const TOWN_WALL_CRACK_X_SEED = registerHashLabel('town-wall-crack-x');
+const TOWN_WALL_CRACK_Y_SEED = registerHashLabel('town-wall-crack-y');
+const TOWN_WALL_CRACK_WIDTH_SEED = registerHashLabel('town-wall-crack-w');
+const TOWN_WALL_BEAM_X_SEED = registerHashLabel('town-wall-beam-x');
+const TOWN_ROOF_CHIP_X_SEED = registerHashLabel('town-roof-chip-x');
+const TOWN_ROOF_CHIP_Y_SEED = registerHashLabel('town-roof-chip-y');
 const signLabelCache = createBoundedCache<string, ThreeTextureLike>(
   TOWN_SIGN_LABEL_CACHE_LIMIT
 );
@@ -54,24 +83,30 @@ const resolveTownDescriptors = createCoordinateValueResolver(
     const descriptors: TownDescriptor[] = [];
 
     for (let index = 0; index < count; index += 1) {
-      const baseSeed = `town-building:${tileX}:${tileY}:${index}`;
-      const width = 0.28 + hash2D(baseSeed, 1, 0) * 0.22;
-      const depth = 0.26 + hash2D(baseSeed, 2, 0) * 0.24;
-      const height = 0.55 + hash2D(baseSeed, 3, 0) * 0.55;
+      const baseSeed = appendHashSeedPart(
+        appendHashSeedPart(
+          appendHashSeedPart(TOWN_BUILDING_SEED, tileX),
+          tileY
+        ),
+        index
+      );
+      const width = 0.28 + hash2DWithSeed(baseSeed, 1, 0) * 0.22;
+      const depth = 0.26 + hash2DWithSeed(baseSeed, 2, 0) * 0.24;
+      const height = 0.55 + hash2DWithSeed(baseSeed, 3, 0) * 0.55;
       const descriptor: TownDescriptor = {
-        x: (hash2D(baseSeed, 4, 0) - 0.5) * 0.54,
-        y: (hash2D(baseSeed, 5, 0) - 0.5) * 0.54,
+        x: (hash2DWithSeed(baseSeed, 4, 0) - 0.5) * 0.54,
+        y: (hash2DWithSeed(baseSeed, 5, 0) - 0.5) * 0.54,
         width,
         depth,
         height,
-        rotation: hash2D(baseSeed, 6, 0) > 0.5 ? 0 : Math.PI * 0.5,
+        rotation: hash2DWithSeed(baseSeed, 6, 0) > 0.5 ? 0 : Math.PI * 0.5,
         roofRadius:
-          Math.max(width, depth) * (0.96 + hash2D(baseSeed, 7, 0) * 0.26),
-        roofHeight: 0.18 + hash2D(baseSeed, 8, 0) * 0.2,
+          Math.max(width, depth) * (0.96 + hash2DWithSeed(baseSeed, 7, 0) * 0.26),
+        roofHeight: 0.18 + hash2DWithSeed(baseSeed, 8, 0) * 0.2,
         windows: [],
       };
 
-      const windowCount = 1 + Math.floor(hash2D(baseSeed, 9, 0) * 3);
+      const windowCount = 1 + Math.floor(hash2DWithSeed(baseSeed, 9, 0) * 3);
       for (let windowIndex = 0; windowIndex < windowCount; windowIndex += 1) {
         descriptor.windows.push({
           x:
@@ -80,7 +115,7 @@ const resolveTownDescriptors = createCoordinateValueResolver(
             0.75,
           y:
             descriptor.height *
-            (0.48 + hash2D(baseSeed, 10 + windowIndex, 0) * 0.16),
+            (0.48 + hash2DWithSeed(baseSeed, 10 + windowIndex, 0) * 0.16),
           width: descriptor.width * 0.12,
           height: descriptor.height * 0.14,
         });
@@ -101,31 +136,31 @@ const resolveTownStyle = createRegionalMaterialResolver(
   TOWN_REGION_SIZE,
   ({ regionX, regionY, key }) => {
     const wallColor = pickThresholdColor(
-      hash2D('town-wall-tone', regionX, regionY),
+      hash2D(TOWN_WALL_TONE_SEED, regionX, regionY),
       0.5,
       '#ece6dc',
       '#d8cfbf'
     );
     const roofColor = pickThresholdColor(
-      hash2D('town-roof-tone', regionX, regionY),
+      hash2D(TOWN_ROOF_TONE_SEED, regionX, regionY),
       0.5,
       '#b64b3b',
       '#7b4032'
     );
     const trimColor = pickThresholdColor(
-      hash2D('town-trim-tone', regionX, regionY),
+      hash2D(TOWN_TRIM_TONE_SEED, regionX, regionY),
       0.45,
       '#73563f',
       '#54402f'
     );
     const windowColor = pickThresholdColor(
-      hash2D('town-window-tone', regionX, regionY),
+      hash2D(TOWN_WINDOW_TONE_SEED, regionX, regionY),
       0.55,
       '#d9f4ff',
       '#fef3c7'
     );
     const signBaseColor = pickThresholdColor(
-      hash2D('town-sign-base', regionX, regionY),
+      hash2D(TOWN_SIGN_BASE_SEED, regionX, regionY),
       0.5,
       '#f0d9a6',
       '#e8c889'
@@ -442,7 +477,7 @@ function createTownNameSign(
   sign.add(backLabel);
 
   sign.position.set(tileX - 0.34, 0, tileY + 0.34);
-  sign.rotation.y = hash2D('town-sign-rotation', tileX, tileY) * 0.35 - 0.18;
+  sign.rotation.y = hash2D(TOWN_SIGN_ROTATION_SEED, tileX, tileY) * 0.35 - 0.18;
   return sign;
 }
 
@@ -505,11 +540,13 @@ function createTownBanner(
       idleAmplitude: 0.018,
       windAmplitude: 0.13,
       gustAmplitude: 0.05,
-      speed: 1.3 + hash2D('town-banner-speed', tileX + index, tileY) * 0.7,
-      gustSpeed: 2 + hash2D('town-banner-gust-speed', tileX, tileY + index) * 0.8,
-      phase: hash2D('town-banner-phase', tileX + index, tileY - index) * Math.PI * 2,
+      speed: 1.3 + hash2D(TOWN_BANNER_SPEED_SEED, tileX + index, tileY) * 0.7,
+      gustSpeed:
+        2 + hash2D(TOWN_BANNER_GUST_SPEED_SEED, tileX, tileY + index) * 0.8,
+      phase:
+        hash2D(TOWN_BANNER_PHASE_SEED, tileX + index, tileY - index) * Math.PI * 2,
       gustPhase:
-        hash2D('town-banner-gust-phase', tileX - index, tileY + index) *
+        hash2D(TOWN_BANNER_GUST_PHASE_SEED, tileX - index, tileY + index) *
         Math.PI *
         2,
     }
@@ -528,22 +565,34 @@ function createTownBannerDescriptors(
   tileY: number
 ): TownBannerDescriptor[] {
   const palette = ['#fb7185', '#f59e0b', '#38bdf8', '#34d399'];
-  const count = 1 + Math.floor(hash2D('town-banner-count', tileX, tileY) * 2);
-  return Array.from({ length: count }, (_, index) => ({
-    x: -0.38 + index * 0.28,
-    y: 0,
-    z: 0.32 - index * 0.16,
-    width: 0.14 + hash2D('town-banner-width', tileX + index, tileY) * 0.05,
-    length: 0.22 + hash2D('town-banner-length', tileX, tileY + index) * 0.07,
-    height: 0.82 + hash2D('town-banner-height', tileX - index, tileY) * 0.18,
-    rotationY:
-      hash2D('town-banner-rotation', tileX + index, tileY - index) * 0.45 - 0.22,
-    baseRotation: 0.03 + hash2D('town-banner-base-rotation', tileX, tileY + index) * 0.03,
-    color:
-      palette[
-        Math.floor(hash2D('town-banner-color', tileX + index, tileY + index) * palette.length)
-      ] ?? palette[0],
-  }));
+  const count = 1 + Math.floor(hash2D(TOWN_BANNER_COUNT_SEED, tileX, tileY) * 2);
+  const descriptors: TownBannerDescriptor[] = [];
+  for (let index = 0; index < count; index += 1) {
+    descriptors.push({
+      x: -0.38 + index * 0.28,
+      y: 0,
+      z: 0.32 - index * 0.16,
+      width: 0.14 + hash2D(TOWN_BANNER_WIDTH_SEED, tileX + index, tileY) * 0.05,
+      length:
+        0.22 + hash2D(TOWN_BANNER_LENGTH_SEED, tileX, tileY + index) * 0.07,
+      height:
+        0.82 + hash2D(TOWN_BANNER_HEIGHT_SEED, tileX - index, tileY) * 0.18,
+      rotationY:
+        hash2D(TOWN_BANNER_ROTATION_SEED, tileX + index, tileY - index) * 0.45 -
+        0.22,
+      baseRotation:
+        0.03 +
+        hash2D(TOWN_BANNER_BASE_ROTATION_SEED, tileX, tileY + index) * 0.03,
+      color:
+        palette[
+          Math.floor(
+            hash2D(TOWN_BANNER_COLOR_SEED, tileX + index, tileY + index) *
+              palette.length
+          )
+        ] ?? palette[0],
+    });
+  }
+  return descriptors;
 }
 
 function getTownLabelTexture(
@@ -598,15 +647,25 @@ function paintTownWallTexture(
   }
 
   for (let index = 0; index < 24; index += 1) {
-    const x = Math.floor(hash2D('town-wall-crack-x', regionX + index, regionY) * canvas.width);
-    const y = Math.floor(hash2D('town-wall-crack-y', regionY + index, regionX) * canvas.height);
-    const width = 2 + Math.floor(hash2D('town-wall-crack-w', regionX, regionY + index) * 4);
+    const x = Math.floor(
+      hash2D(TOWN_WALL_CRACK_X_SEED, regionX + index, regionY) * canvas.width
+    );
+    const y = Math.floor(
+      hash2D(TOWN_WALL_CRACK_Y_SEED, regionY + index, regionX) * canvas.height
+    );
+    const width =
+      2 +
+      Math.floor(
+        hash2D(TOWN_WALL_CRACK_WIDTH_SEED, regionX, regionY + index) * 4
+      );
     context.fillStyle = 'rgba(90, 72, 58, 0.18)';
     context.fillRect(x, y, width, 1);
   }
 
   for (let index = 0; index < 12; index += 1) {
-    const x = Math.floor(hash2D('town-wall-beam-x', regionX + index, regionY) * canvas.width);
+    const x = Math.floor(
+      hash2D(TOWN_WALL_BEAM_X_SEED, regionX + index, regionY) * canvas.width
+    );
     context.fillStyle = trimColor;
     context.fillRect(x, 0, 2, canvas.height);
   }
@@ -630,8 +689,12 @@ function paintTownRoofTexture(
   }
 
   for (let index = 0; index < 36; index += 1) {
-    const x = Math.floor(hash2D('town-roof-chip-x', regionX + index, regionY) * canvas.width);
-    const y = Math.floor(hash2D('town-roof-chip-y', regionY + index, regionX) * canvas.height);
+    const x = Math.floor(
+      hash2D(TOWN_ROOF_CHIP_X_SEED, regionX + index, regionY) * canvas.width
+    );
+    const y = Math.floor(
+      hash2D(TOWN_ROOF_CHIP_Y_SEED, regionY + index, regionX) * canvas.height
+    );
     context.fillStyle = 'rgba(30, 20, 18, 0.16)';
     context.fillRect(x, y, 2, 1);
   }
