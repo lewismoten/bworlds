@@ -868,6 +868,36 @@ function resolveProceduralSoundLayers(
         },
       ] as const;
     case 'river-ambience':
+      if (identityVariant === 'water-splashes') {
+        return [
+          {
+            id: 'river-splash-bed',
+            waveform: ['triangle', 'sine'] as const,
+            noiseColor: ['white', 'pink'] as const,
+            frequencyMultiplier: 0.82,
+            durationMultiplier: 1,
+            volumeMultiplier: 0.42,
+            frequencyVariation: 0.024,
+            durationVariation: 0.12,
+            volumeVariation: 0.07,
+            variationDepth: 0.88,
+          },
+          {
+            id: 'river-splash-pop',
+            waveform: ['sine', 'square'] as const,
+            noiseColor: 'white' as const,
+            frequencyMultiplier: 1.64,
+            durationMultiplier: 0.5,
+            volumeMultiplier: 0.18,
+            startOffsetMs: 22,
+            startOffsetVariation: 0.34,
+            frequencyVariation: 0.034,
+            durationVariation: 0.16,
+            volumeVariation: 0.1,
+            variationDepth: 0.82,
+          },
+        ] as const;
+      }
       return [
         {
           id: 'river-current-bed',
@@ -897,6 +927,253 @@ function resolveProceduralSoundLayers(
         },
       ] as const;
     case 'forest-ambience':
+      if (identityVariant === 'nearby-birds') {
+        return [
+          {
+            id: 'forest-near-birdsong',
+            waveform: ['sine', 'triangle'] as const,
+            noiseColor: 'white' as const,
+            frequencyMultiplier: 1.46,
+            durationMultiplier: 0.66,
+            volumeMultiplier: 0.24,
+            frequencyVariation: 0.038,
+            durationVariation: 0.18,
+            volumeVariation: 0.1,
+            variationDepth: 0.9,
+          },
+          {
+            id: 'forest-bird-rustle',
+            waveform: ['triangle', 'sine'] as const,
+            noiseColor: ['pink', 'brown'] as const,
+            frequencyMultiplier: 0.92,
+            durationMultiplier: 0.94,
+            volumeMultiplier: 0.2,
+            startOffsetMs: 18,
+            startOffsetVariation: 0.22,
+            frequencyVariation: 0.022,
+            durationVariation: 0.12,
+            volumeVariation: 0.08,
+            variationDepth: 0.8,
+          },
+        ] as const;
+      }
+      if (identityVariant === 'distant-birds') {
+        return [
+          {
+            id: 'forest-distant-birdsong',
+            waveform: ['sine', 'triangle'] as const,
+            noiseColor: 'white' as const,
+            frequencyMultiplier: 1.28,
+            durationMultiplier: 0.72,
+            volumeMultiplier: 0.14,
+            frequencyVariation: 0.032,
+            durationVariation: 0.16,
+            volumeVariation: 0.08,
+            variationDepth: 0.84,
+          },
+          {
+            id: 'forest-far-air-bed',
+            waveform: ['triangle', 'sine'] as const,
+            noiseColor: ['brown', 'pink'] as const,
+            frequencyMultiplier: 0.78,
+            durationMultiplier: 1,
+            volumeMultiplier: 0.28,
+            startOffsetMs: 42,
+            startOffsetVariation: 0.26,
+            frequencyVariation: 0.02,
+            durationVariation: 0.14,
+            volumeVariation: 0.08,
+            variationDepth: 0.78,
+          },
+        ] as const;
+      }
+      if (identityVariant === 'branch-creak') {
+        return [
+          {
+            id: 'forest-branch-creak',
+            waveform: ['square', 'triangle'] as const,
+            noiseColor: 'white' as const,
+            frequencyMultiplier: 0.98,
+            durationMultiplier: 0.82,
+            volumeMultiplier: 0.18,
+            frequencyVariation: 0.026,
+            durationVariation: 0.16,
+            volumeVariation: 0.08,
+            variationDepth: 0.8,
+          },
+          {
+            id: 'forest-bough-rustle',
+            waveform: ['triangle', 'sine'] as const,
+            noiseColor: ['brown', 'pink'] as const,
+            frequencyMultiplier: 0.82,
+            durationMultiplier: 1,
+            volumeMultiplier: 0.32,
+            startOffsetMs: 34,
+            startOffsetVariation: 0.24,
+            frequencyVariation: 0.022,
+            durationVariation: 0.14,
+            volumeVariation: 0.08,
+            variationDepth: 0.8,
+          },
+        ] as const;
+      }
+      if (identityVariant === 'animal-calls') {
+        return [
+          {
+            id: 'forest-animal-call',
+            waveform: ['sine', 'triangle'] as const,
+            noiseColor: 'white' as const,
+            frequencyMultiplier: 1.02,
+            durationMultiplier: 0.86,
+            volumeMultiplier: 0.16,
+            frequencyVariation: 0.028,
+            durationVariation: 0.18,
+            volumeVariation: 0.08,
+            variationDepth: 0.8,
+          },
+          {
+            id: 'forest-animal-distance-bed',
+            waveform: ['triangle', 'sine'] as const,
+            noiseColor: ['brown', 'pink'] as const,
+            frequencyMultiplier: 0.76,
+            durationMultiplier: 1,
+            volumeMultiplier: 0.26,
+            startOffsetMs: 46,
+            startOffsetVariation: 0.28,
+            frequencyVariation: 0.02,
+            durationVariation: 0.14,
+            volumeVariation: 0.08,
+            variationDepth: 0.76,
+          },
+        ] as const;
+      }
+      if (identityVariant === 'vegetation-rustle') {
+        return [
+          {
+            id: 'forest-vegetation-bed',
+            waveform: ['triangle', 'sine'] as const,
+            noiseColor: ['pink', 'brown'] as const,
+            frequencyMultiplier: 0.84,
+            durationMultiplier: 1,
+            volumeMultiplier: 0.38,
+            frequencyVariation: 0.022,
+            durationVariation: 0.14,
+            volumeVariation: 0.08,
+            variationDepth: 0.82,
+          },
+          {
+            id: 'forest-fern-shift',
+            waveform: ['square', 'triangle'] as const,
+            noiseColor: 'white' as const,
+            frequencyMultiplier: 1.08,
+            durationMultiplier: 0.72,
+            volumeMultiplier: 0.12,
+            startOffsetMs: 26,
+            startOffsetVariation: 0.2,
+            frequencyVariation: 0.028,
+            durationVariation: 0.14,
+            volumeVariation: 0.08,
+            variationDepth: 0.76,
+          },
+        ] as const;
+      }
+      if (identityVariant === 'mystery-hint') {
+        return [
+          {
+            id: 'forest-mystery-tone',
+            waveform: ['sine', 'triangle'] as const,
+            frequencyMultiplier: 1.14,
+            durationMultiplier: 0.92,
+            volumeMultiplier: 0.1,
+            frequencyVariation: 0.02,
+            durationVariation: 0.12,
+            volumeVariation: 0.06,
+            variationDepth: 0.68,
+            delay: {
+              timeMs: 148,
+              feedback: 0.18,
+              mix: 0.14,
+              timeVariation: 0.05,
+              feedbackVariation: 0.06,
+              mixVariation: 0.08,
+            },
+          },
+          {
+            id: 'forest-mystery-bed',
+            waveform: ['triangle', 'sine'] as const,
+            noiseColor: 'brown' as const,
+            frequencyMultiplier: 0.7,
+            durationMultiplier: 1,
+            volumeMultiplier: 0.22,
+            startOffsetMs: 52,
+            startOffsetVariation: 0.24,
+            frequencyVariation: 0.018,
+            durationVariation: 0.12,
+            volumeVariation: 0.06,
+            variationDepth: 0.7,
+          },
+        ] as const;
+      }
+      if (identityVariant === 'migrating-birds') {
+        return [
+          {
+            id: 'forest-migration-calls',
+            waveform: ['sine', 'triangle'] as const,
+            noiseColor: 'white' as const,
+            frequencyMultiplier: 1.36,
+            durationMultiplier: 0.7,
+            volumeMultiplier: 0.16,
+            frequencyVariation: 0.034,
+            durationVariation: 0.18,
+            volumeVariation: 0.08,
+            variationDepth: 0.84,
+          },
+          {
+            id: 'forest-open-sky-bed',
+            waveform: ['triangle', 'sine'] as const,
+            noiseColor: ['pink', 'white'] as const,
+            frequencyMultiplier: 0.8,
+            durationMultiplier: 1,
+            volumeMultiplier: 0.24,
+            startOffsetMs: 36,
+            startOffsetVariation: 0.24,
+            frequencyVariation: 0.02,
+            durationVariation: 0.12,
+            volumeVariation: 0.08,
+            variationDepth: 0.76,
+          },
+        ] as const;
+      }
+      if (identityVariant === 'autumn-leaves') {
+        return [
+          {
+            id: 'forest-autumn-leaf-bed',
+            waveform: ['triangle', 'sine'] as const,
+            noiseColor: ['brown', 'white'] as const,
+            frequencyMultiplier: 0.82,
+            durationMultiplier: 1,
+            volumeMultiplier: 0.36,
+            frequencyVariation: 0.022,
+            durationVariation: 0.14,
+            volumeVariation: 0.08,
+            variationDepth: 0.8,
+          },
+          {
+            id: 'forest-dry-leaf-fall',
+            waveform: ['square', 'triangle'] as const,
+            noiseColor: 'white' as const,
+            frequencyMultiplier: 1.04,
+            durationMultiplier: 0.74,
+            volumeMultiplier: 0.14,
+            startOffsetMs: 28,
+            startOffsetVariation: 0.22,
+            frequencyVariation: 0.028,
+            durationVariation: 0.14,
+            volumeVariation: 0.08,
+            variationDepth: 0.76,
+          },
+        ] as const;
+      }
       if (identityVariant === 'dawn-birds') {
         return [
           {
@@ -1217,6 +1494,186 @@ function resolveProceduralSoundLayers(
         },
       ] as const;
     case 'plains-ambience':
+      if (identityVariant === 'nearby-birds') {
+        return [
+          {
+            id: 'plains-near-birdsong',
+            waveform: ['sine', 'triangle'] as const,
+            noiseColor: 'white' as const,
+            frequencyMultiplier: 1.4,
+            durationMultiplier: 0.66,
+            volumeMultiplier: 0.22,
+            frequencyVariation: 0.034,
+            durationVariation: 0.18,
+            volumeVariation: 0.08,
+            variationDepth: 0.86,
+          },
+          {
+            id: 'plains-bird-grass-bed',
+            waveform: ['triangle', 'sine'] as const,
+            noiseColor: ['pink', 'white'] as const,
+            frequencyMultiplier: 0.84,
+            durationMultiplier: 1,
+            volumeMultiplier: 0.28,
+            startOffsetMs: 20,
+            startOffsetVariation: 0.2,
+            frequencyVariation: 0.022,
+            durationVariation: 0.12,
+            volumeVariation: 0.08,
+            variationDepth: 0.78,
+          },
+        ] as const;
+      }
+      if (identityVariant === 'distant-birds') {
+        return [
+          {
+            id: 'plains-distant-birdsong',
+            waveform: ['sine', 'triangle'] as const,
+            noiseColor: 'white' as const,
+            frequencyMultiplier: 1.2,
+            durationMultiplier: 0.72,
+            volumeMultiplier: 0.12,
+            frequencyVariation: 0.03,
+            durationVariation: 0.16,
+            volumeVariation: 0.08,
+            variationDepth: 0.8,
+          },
+          {
+            id: 'plains-distance-bed',
+            waveform: ['triangle', 'sine'] as const,
+            noiseColor: ['pink', 'white'] as const,
+            frequencyMultiplier: 0.78,
+            durationMultiplier: 1,
+            volumeMultiplier: 0.24,
+            startOffsetMs: 42,
+            startOffsetVariation: 0.24,
+            frequencyVariation: 0.02,
+            durationVariation: 0.12,
+            volumeVariation: 0.08,
+            variationDepth: 0.76,
+          },
+        ] as const;
+      }
+      if (identityVariant === 'animal-calls') {
+        return [
+          {
+            id: 'plains-animal-call',
+            waveform: ['sine', 'triangle'] as const,
+            noiseColor: 'white' as const,
+            frequencyMultiplier: 1,
+            durationMultiplier: 0.82,
+            volumeMultiplier: 0.14,
+            frequencyVariation: 0.028,
+            durationVariation: 0.16,
+            volumeVariation: 0.08,
+            variationDepth: 0.78,
+          },
+          {
+            id: 'plains-herd-distance-bed',
+            waveform: ['triangle', 'sine'] as const,
+            noiseColor: ['brown', 'pink'] as const,
+            frequencyMultiplier: 0.76,
+            durationMultiplier: 1,
+            volumeMultiplier: 0.24,
+            startOffsetMs: 40,
+            startOffsetVariation: 0.24,
+            frequencyVariation: 0.02,
+            durationVariation: 0.12,
+            volumeVariation: 0.08,
+            variationDepth: 0.74,
+          },
+        ] as const;
+      }
+      if (identityVariant === 'vegetation-rustle') {
+        return [
+          {
+            id: 'plains-vegetation-bed',
+            waveform: ['triangle', 'sine'] as const,
+            noiseColor: ['pink', 'white'] as const,
+            frequencyMultiplier: 0.82,
+            durationMultiplier: 1,
+            volumeMultiplier: 0.34,
+            frequencyVariation: 0.022,
+            durationVariation: 0.12,
+            volumeVariation: 0.08,
+            variationDepth: 0.78,
+          },
+          {
+            id: 'plains-stalk-shift',
+            waveform: ['square', 'triangle'] as const,
+            noiseColor: 'white' as const,
+            frequencyMultiplier: 1.02,
+            durationMultiplier: 0.7,
+            volumeMultiplier: 0.1,
+            startOffsetMs: 24,
+            startOffsetVariation: 0.22,
+            frequencyVariation: 0.026,
+            durationVariation: 0.14,
+            volumeVariation: 0.08,
+            variationDepth: 0.74,
+          },
+        ] as const;
+      }
+      if (identityVariant === 'migrating-birds') {
+        return [
+          {
+            id: 'plains-migration-calls',
+            waveform: ['sine', 'triangle'] as const,
+            noiseColor: 'white' as const,
+            frequencyMultiplier: 1.28,
+            durationMultiplier: 0.68,
+            volumeMultiplier: 0.14,
+            frequencyVariation: 0.032,
+            durationVariation: 0.16,
+            volumeVariation: 0.08,
+            variationDepth: 0.8,
+          },
+          {
+            id: 'plains-open-sky-bed',
+            waveform: ['triangle', 'sine'] as const,
+            noiseColor: ['white', 'pink'] as const,
+            frequencyMultiplier: 0.78,
+            durationMultiplier: 1,
+            volumeMultiplier: 0.22,
+            startOffsetMs: 36,
+            startOffsetVariation: 0.24,
+            frequencyVariation: 0.02,
+            durationVariation: 0.12,
+            volumeVariation: 0.08,
+            variationDepth: 0.74,
+          },
+        ] as const;
+      }
+      if (identityVariant === 'autumn-leaves') {
+        return [
+          {
+            id: 'plains-autumn-grass-bed',
+            waveform: ['triangle', 'sine'] as const,
+            noiseColor: ['brown', 'white'] as const,
+            frequencyMultiplier: 0.8,
+            durationMultiplier: 1,
+            volumeMultiplier: 0.32,
+            frequencyVariation: 0.022,
+            durationVariation: 0.12,
+            volumeVariation: 0.08,
+            variationDepth: 0.76,
+          },
+          {
+            id: 'plains-dry-leaf-scatter',
+            waveform: ['square', 'triangle'] as const,
+            noiseColor: 'white' as const,
+            frequencyMultiplier: 1.04,
+            durationMultiplier: 0.7,
+            volumeMultiplier: 0.12,
+            startOffsetMs: 22,
+            startOffsetVariation: 0.22,
+            frequencyVariation: 0.026,
+            durationVariation: 0.14,
+            volumeVariation: 0.08,
+            variationDepth: 0.74,
+          },
+        ] as const;
+      }
       if (identityVariant === 'dawn-birds') {
         return [
           {
@@ -1426,6 +1883,125 @@ function resolveProceduralSoundLayers(
         },
       ] as const;
     case 'mountain-ambience':
+      if (identityVariant === 'falling-rocks') {
+        return [
+          {
+            id: 'mountain-fall-bed',
+            waveform: ['triangle', 'sawtooth'] as const,
+            noiseColor: ['brown', 'white'] as const,
+            frequencyMultiplier: 0.78,
+            durationMultiplier: 1,
+            volumeMultiplier: 0.4,
+            frequencyVariation: 0.024,
+            durationVariation: 0.16,
+            volumeVariation: 0.08,
+            variationDepth: 0.84,
+          },
+          {
+            id: 'mountain-rockfall-clack',
+            waveform: ['square', 'triangle'] as const,
+            noiseColor: 'white' as const,
+            frequencyMultiplier: 1.16,
+            durationMultiplier: 0.68,
+            volumeMultiplier: 0.18,
+            startOffsetMs: 54,
+            startOffsetVariation: 0.24,
+            frequencyVariation: 0.03,
+            durationVariation: 0.16,
+            volumeVariation: 0.08,
+            variationDepth: 0.8,
+          },
+        ] as const;
+      }
+      if (identityVariant === 'animal-calls') {
+        return [
+          {
+            id: 'mountain-animal-call',
+            waveform: ['sine', 'triangle'] as const,
+            noiseColor: 'white' as const,
+            frequencyMultiplier: 1.08,
+            durationMultiplier: 0.84,
+            volumeMultiplier: 0.14,
+            frequencyVariation: 0.03,
+            durationVariation: 0.16,
+            volumeVariation: 0.08,
+            variationDepth: 0.78,
+          },
+          {
+            id: 'mountain-far-air-bed',
+            waveform: ['triangle', 'sawtooth'] as const,
+            noiseColor: ['white', 'brown'] as const,
+            frequencyMultiplier: 0.74,
+            durationMultiplier: 1,
+            volumeMultiplier: 0.28,
+            startOffsetMs: 40,
+            startOffsetVariation: 0.24,
+            frequencyVariation: 0.02,
+            durationVariation: 0.14,
+            volumeVariation: 0.08,
+            variationDepth: 0.76,
+          },
+        ] as const;
+      }
+      if (identityVariant === 'migrating-birds') {
+        return [
+          {
+            id: 'mountain-migration-calls',
+            waveform: ['sine', 'triangle'] as const,
+            noiseColor: 'white' as const,
+            frequencyMultiplier: 1.46,
+            durationMultiplier: 0.66,
+            volumeMultiplier: 0.14,
+            frequencyVariation: 0.034,
+            durationVariation: 0.16,
+            volumeVariation: 0.08,
+            variationDepth: 0.8,
+          },
+          {
+            id: 'mountain-open-ridge-bed',
+            waveform: ['triangle', 'sawtooth'] as const,
+            noiseColor: ['white', 'brown'] as const,
+            frequencyMultiplier: 0.76,
+            durationMultiplier: 1,
+            volumeMultiplier: 0.24,
+            startOffsetMs: 36,
+            startOffsetVariation: 0.22,
+            frequencyVariation: 0.02,
+            durationVariation: 0.14,
+            volumeVariation: 0.08,
+            variationDepth: 0.74,
+          },
+        ] as const;
+      }
+      if (identityVariant === 'mystery-hint') {
+        return [
+          {
+            id: 'mountain-mystery-tone',
+            waveform: ['sine', 'triangle'] as const,
+            frequencyMultiplier: 1.18,
+            durationMultiplier: 0.88,
+            volumeMultiplier: 0.1,
+            frequencyVariation: 0.02,
+            durationVariation: 0.12,
+            volumeVariation: 0.06,
+            variationDepth: 0.7,
+          },
+          {
+            id: 'mountain-void-bed',
+            waveform: ['triangle', 'sawtooth'] as const,
+            noiseColor: 'brown' as const,
+            frequencyMultiplier: 0.72,
+            durationMultiplier: 1,
+            volumeMultiplier: 0.2,
+            startOffsetMs: 56,
+            startOffsetVariation: 0.24,
+            frequencyVariation: 0.018,
+            durationVariation: 0.12,
+            volumeVariation: 0.06,
+            variationDepth: 0.68,
+          },
+        ] as const;
+      }
       if (identityVariant === 'highland-birds') {
         return [
           {
@@ -1646,6 +2222,36 @@ function resolveProceduralSoundLayers(
         },
       ] as const;
     case 'settlement-ambience':
+      if (identityVariant === 'nearby-birds') {
+        return [
+          {
+            id: 'settlement-courtyard-birds',
+            waveform: ['sine', 'triangle'] as const,
+            noiseColor: 'white' as const,
+            frequencyMultiplier: 1.3,
+            durationMultiplier: 0.66,
+            volumeMultiplier: 0.16,
+            frequencyVariation: 0.03,
+            durationVariation: 0.16,
+            volumeVariation: 0.08,
+            variationDepth: 0.78,
+          },
+          {
+            id: 'settlement-eaves-rustle',
+            waveform: ['triangle', 'sine'] as const,
+            noiseColor: ['pink', 'white'] as const,
+            frequencyMultiplier: 0.84,
+            durationMultiplier: 1,
+            volumeMultiplier: 0.22,
+            startOffsetMs: 22,
+            startOffsetVariation: 0.2,
+            frequencyVariation: 0.022,
+            durationVariation: 0.12,
+            volumeVariation: 0.08,
+            variationDepth: 0.74,
+          },
+        ] as const;
+      }
       if (identityVariant === 'rooster-bells') {
         return [
           {
@@ -1800,6 +2406,36 @@ function resolveProceduralSoundLayers(
         },
       ] as const;
     case 'ocean':
+      if (identityVariant === 'water-splashes') {
+        return [
+          {
+            id: 'ocean-splash-bed',
+            waveform: ['sine', 'triangle'] as const,
+            noiseColor: 'brown' as const,
+            frequencyMultiplier: 0.76,
+            durationMultiplier: 1,
+            volumeMultiplier: 0.44,
+            frequencyVariation: 0.024,
+            durationVariation: 0.14,
+            volumeVariation: 0.08,
+            variationDepth: 0.88,
+          },
+          {
+            id: 'ocean-splash-break',
+            waveform: ['triangle', 'square'] as const,
+            noiseColor: 'white' as const,
+            frequencyMultiplier: 1.18,
+            durationMultiplier: 0.68,
+            volumeMultiplier: 0.18,
+            startOffsetMs: 30,
+            startOffsetVariation: 0.24,
+            frequencyVariation: 0.03,
+            durationVariation: 0.16,
+            volumeVariation: 0.08,
+            variationDepth: 0.8,
+          },
+        ] as const;
+      }
       if (identityVariant === 'seabirds') {
         return [
           {
@@ -1893,6 +2529,101 @@ function resolveProceduralSoundLayers(
           durationVariation: 0.16,
           volumeVariation: 0.08,
           variationDepth: 0.82,
+        },
+      ] as const;
+    case 'ruins-ambience':
+      if (identityVariant === 'landmark-hint') {
+        return [
+          {
+            id: 'ruins-landmark-tone',
+            waveform: ['sine', 'triangle'] as const,
+            frequencyMultiplier: 1.22,
+            durationMultiplier: 0.86,
+            volumeMultiplier: 0.1,
+            frequencyVariation: 0.02,
+            durationVariation: 0.12,
+            volumeVariation: 0.06,
+            variationDepth: 0.7,
+            delay: {
+              timeMs: 164,
+              feedback: 0.2,
+              mix: 0.16,
+              timeVariation: 0.05,
+              feedbackVariation: 0.06,
+              mixVariation: 0.08,
+            },
+          },
+          {
+            id: 'ruins-stone-hum',
+            waveform: ['triangle', 'sine'] as const,
+            noiseColor: 'brown' as const,
+            frequencyMultiplier: 0.72,
+            durationMultiplier: 1,
+            volumeMultiplier: 0.22,
+            startOffsetMs: 48,
+            startOffsetVariation: 0.24,
+            frequencyVariation: 0.018,
+            durationVariation: 0.12,
+            volumeVariation: 0.06,
+            variationDepth: 0.68,
+          },
+        ] as const;
+      }
+      if (identityVariant === 'migrating-birds') {
+        return [
+          {
+            id: 'ruins-migration-calls',
+            waveform: ['sine', 'triangle'] as const,
+            noiseColor: 'white' as const,
+            frequencyMultiplier: 1.26,
+            durationMultiplier: 0.7,
+            volumeMultiplier: 0.12,
+            frequencyVariation: 0.03,
+            durationVariation: 0.16,
+            volumeVariation: 0.08,
+            variationDepth: 0.76,
+          },
+          {
+            id: 'ruins-open-court-bed',
+            waveform: ['triangle', 'sine'] as const,
+            noiseColor: ['white', 'brown'] as const,
+            frequencyMultiplier: 0.76,
+            durationMultiplier: 1,
+            volumeMultiplier: 0.2,
+            startOffsetMs: 36,
+            startOffsetVariation: 0.22,
+            frequencyVariation: 0.02,
+            durationVariation: 0.12,
+            volumeVariation: 0.08,
+            variationDepth: 0.72,
+          },
+        ] as const;
+      }
+      return [
+        {
+          id: 'ruins-mystery-tone',
+          waveform: ['sine', 'triangle'] as const,
+          frequencyMultiplier: 1.16,
+          durationMultiplier: 0.9,
+          volumeMultiplier: 0.1,
+          frequencyVariation: 0.02,
+          durationVariation: 0.12,
+          volumeVariation: 0.06,
+          variationDepth: 0.7,
+        },
+        {
+          id: 'ruins-ghost-bed',
+          waveform: ['triangle', 'sine'] as const,
+          noiseColor: 'brown' as const,
+          frequencyMultiplier: 0.7,
+          durationMultiplier: 1,
+          volumeMultiplier: 0.22,
+          startOffsetMs: 50,
+          startOffsetVariation: 0.24,
+          frequencyVariation: 0.018,
+          durationVariation: 0.12,
+          volumeVariation: 0.06,
+          variationDepth: 0.68,
         },
       ] as const;
     default:

@@ -86,8 +86,12 @@ describe('ambient soundscape', () => {
       yearProgress: 0.5,
     })[0];
 
-    expect(dawn?.identityVariant).toBe('dawn-birds');
-    expect(['night-crickets', 'owl']).toContain(night?.identityVariant);
+    expect(['dawn-birds', 'nearby-birds', 'distant-birds']).toContain(
+      dawn?.identityVariant
+    );
+    expect(['night-crickets', 'owl', 'animal-calls']).toContain(
+      night?.identityVariant
+    );
     expect((night?.volumeMultiplier ?? 0) < (dawn?.volumeMultiplier ?? 0)).toBe(
       true
     );
@@ -178,11 +182,56 @@ describe('ambient soundscape', () => {
     expect(['spring-frogs', 'wildlife']).toContain(
       springForest?.identityVariant
     );
-    expect(summerPlains?.identityVariant).toBe('summer-insects');
-    expect(winterForest?.identityVariant).toBe('winter-quiet');
+    expect(['summer-insects', 'nearby-birds', 'distant-birds']).toContain(
+      summerPlains?.identityVariant
+    );
+    expect(['winter-quiet', 'mystery-hint']).toContain(
+      winterForest?.identityVariant
+    );
     expect(
       (winterForest?.volumeMultiplier ?? 0) <
         (springForest?.volumeMultiplier ?? 0)
     ).toBe(true);
+  });
+
+  it('introduces rarer migration, splash, and mystery variants for living ambient events', () => {
+    const autumnForest = resolveAmbientPlaybackLayers({
+      profile: {
+        kind: 'forest',
+        intensity: 0.7,
+        emitter: { x: 7, y: 0 },
+      },
+      nowMs: 2_200,
+      dayProgress: 0.24,
+      yearProgress: 0.7,
+    })[0];
+    const river = resolveAmbientPlaybackLayers({
+      profile: {
+        kind: 'river',
+        intensity: 0.7,
+        emitter: { x: 8, y: 0 },
+      },
+      nowMs: 2_200,
+    })[0];
+    const ruins = resolveAmbientPlaybackLayers({
+      profile: {
+        kind: 'ruins',
+        intensity: 0.7,
+        emitter: { x: 9, y: 0 },
+      },
+      nowMs: 4_400,
+      dayProgress: 0.92,
+      yearProgress: 0.7,
+    })[0];
+
+    expect(
+      ['dawn-birds', 'migrating-birds', 'vegetation-rustle'].includes(
+        autumnForest?.identityVariant ?? ''
+      )
+    ).toBe(true);
+    expect(['current', 'water-splashes']).toContain(river?.identityVariant);
+    expect(['mystery-hint', 'landmark-hint', 'migrating-birds']).toContain(
+      ruins?.identityVariant
+    );
   });
 });

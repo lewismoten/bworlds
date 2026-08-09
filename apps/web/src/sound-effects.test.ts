@@ -3575,9 +3575,16 @@ describe('sound effects', () => {
     expect(played.map((effect) => effect.recipeId)).toContain(
       'steam-whistle:paddle-boat:departure'
     );
-    expect(played.map((effect) => effect.recipeId)).toContain(
-      'river-ambience:river'
-    );
+    expect(
+      played
+        .map((effect) => effect.recipeId)
+        .some(
+          (recipeId) =>
+            recipeId === 'river-ambience:river:current' ||
+            recipeId === 'river-ambience:river' ||
+            recipeId === 'river-ambience:river:water-splashes'
+        )
+    ).toBe(true);
   });
 
   it('only whistles when trains are near station approach progress', () => {
@@ -4054,11 +4061,29 @@ describe('sound effects', () => {
       .filter((effect) => effect.kind === 'forest-ambience')
       .map((effect) => effect.recipeId);
 
-    expect(forestRecipes).toContain('forest-ambience:forest:dawn-birds');
-    expect(forestRecipes).toContain('forest-ambience:forest:summer-insects');
+    expect(
+      forestRecipes.some((recipeId) =>
+        [
+          'forest-ambience:forest:dawn-birds',
+          'forest-ambience:forest:nearby-birds',
+          'forest-ambience:forest:distant-birds',
+        ].includes(recipeId ?? '')
+      )
+    ).toBe(true);
+    expect(
+      forestRecipes.some((recipeId) =>
+        [
+          'forest-ambience:forest:summer-insects',
+          'forest-ambience:forest:nearby-birds',
+          'forest-ambience:forest:distant-birds',
+          'forest-ambience:forest:branch-creak',
+        ].includes(recipeId ?? '')
+      )
+    ).toBe(true);
     expect(
       forestRecipes.includes('forest-ambience:forest:night-crickets') ||
-        forestRecipes.includes('forest-ambience:forest:owl')
+        forestRecipes.includes('forest-ambience:forest:owl') ||
+        forestRecipes.includes('forest-ambience:forest:animal-calls')
     ).toBe(true);
   });
 
@@ -4129,5 +4154,76 @@ describe('sound effects', () => {
       'settlement-ambience:settlement:tavern',
       'settlement-ambience:settlement:quiet-lanterns',
     ]);
+  });
+
+  it('emits living ambient event recipe ids for migration, splashes, and mystery hints', () => {
+    const played: ProceduralSoundEffect[] = [];
+    const controller = createSoundEffectController({
+      play(effect) {
+        played.push(effect);
+      },
+    });
+
+    controller.update({
+      nowMs: 2_200,
+      walking: false,
+      isJumping: false,
+      viewMode: '3d',
+      dayProgress: 0.24,
+      yearProgress: 0.7,
+      nearbyAmbient: {
+        kind: 'forest',
+        intensity: 0.7,
+        emitter: { x: 7, y: 0 },
+      },
+    });
+    controller.update({
+      nowMs: 4_400,
+      walking: false,
+      isJumping: false,
+      viewMode: '3d',
+      nearbyAmbient: {
+        kind: 'river',
+        intensity: 0.7,
+        emitter: { x: 8, y: 0 },
+      },
+    });
+    controller.update({
+      nowMs: 8_800,
+      walking: false,
+      isJumping: false,
+      viewMode: '3d',
+      dayProgress: 0.92,
+      yearProgress: 0.7,
+      nearbyAmbient: {
+        kind: 'ruins',
+        intensity: 0.7,
+        emitter: { x: 9, y: 0 },
+      },
+    });
+
+    const recipeIds = played.map((effect) => effect.recipeId);
+
+    expect(
+      recipeIds.some(
+        (recipeId) =>
+          recipeId === 'forest-ambience:forest:dawn-birds' ||
+          recipeId === 'forest-ambience:forest:migrating-birds' ||
+          recipeId === 'forest-ambience:forest:vegetation-rustle'
+      )
+    ).toBe(true);
+    expect(
+      recipeIds.includes('river-ambience:river') ||
+        recipeIds.includes('river-ambience:river:current') ||
+        recipeIds.includes('river-ambience:river:water-splashes')
+    ).toBe(true);
+    expect(
+      recipeIds.some(
+        (recipeId) =>
+          recipeId === 'ruins-ambience:ruins:mystery-hint' ||
+          recipeId === 'ruins-ambience:ruins:landmark-hint' ||
+          recipeId === 'ruins-ambience:ruins:migrating-birds'
+      )
+    ).toBe(true);
   });
 });

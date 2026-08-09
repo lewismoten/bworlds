@@ -178,16 +178,16 @@
 
 ### Living Ambient Events
 
-- [ ] Generate occasional nearby bird calls.
-- [ ] Generate occasional distant bird calls.
-- [ ] Generate insect activity appropriate to location and season.
-- [ ] Generate branches moving or breaking.
-- [ ] Generate distant animal calls.
-- [ ] Generate rustling vegetation.
-- [ ] Generate falling rocks in mountainous environments.
-- [ ] Generate random water splashes near bodies of water.
-- [ ] Generate distant unexplained sounds to encourage exploration.
-- [ ] Allow rare ambient sounds to hint at nearby creatures, landmarks, or events.
+- [x] Generate occasional nearby bird calls.
+- [x] Generate occasional distant bird calls.
+- [x] Generate insect activity appropriate to location and season.
+- [x] Generate branches moving or breaking.
+- [x] Generate distant animal calls.
+- [x] Generate rustling vegetation.
+- [x] Generate falling rocks in mountainous environments.
+- [x] Generate random water splashes near bodies of water.
+- [x] Generate distant unexplained sounds to encourage exploration.
+- [x] Allow rare ambient sounds to hint at nearby creatures, landmarks, or events.
 
 ---
 
@@ -235,16 +235,16 @@
 
 - [x] Change animal sounds according to season.
 - [x] Change insect populations according to season.
-- [ ] Change bird populations through migration.
+- [x] Change bird populations through migration.
 - [x] Add spring frog and insect activity.
 - [x] Increase summer insects.
-- [ ] Add autumn leaf sounds.
+- [x] Add autumn leaf sounds.
 - [ ] Generate dry-leaf footsteps during autumn.
 - [ ] Generate snow footsteps during winter.
 - [ ] Generate ice cracking and frozen-water ambience.
 - [x] Reduce wildlife activity during harsh winter conditions.
 - [ ] Generate seasonal storms.
-- [ ] Associate certain rare ambient sounds with particular seasons.
+- [x] Associate certain rare ambient sounds with particular seasons.
 
 ---
 

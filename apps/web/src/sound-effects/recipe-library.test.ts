@@ -299,6 +299,61 @@ describe('sound recipe library', () => {
     ]);
   });
 
+  it('supports living ambient event variants and seasonal landmark cues', () => {
+    const forestMigrationRecipe = buildProceduralSoundRecipe({
+      kind: 'forest-ambience',
+      identityVariant: 'migrating-birds',
+      profile: DEFAULT_SURFACE_PROFILE,
+      variantOffset: 3,
+      resolveAdvancementFrequency: () => 300,
+      resolveAmbientSoundFrequency: () => 172,
+      resolveInteractionFrequency: () => 128,
+      resolveInteractionWaveform: (_tileKind, fallback) => fallback,
+      resolvePaddleBoatCalliopeFrequency: () => 520,
+      resolveSteamWhistleFrequency: () => 360,
+    });
+    const riverSplashRecipe = buildProceduralSoundRecipe({
+      kind: 'river-ambience',
+      identityVariant: 'water-splashes',
+      profile: DEFAULT_SURFACE_PROFILE,
+      variantOffset: 0,
+      resolveAdvancementFrequency: () => 300,
+      resolveAmbientSoundFrequency: () => 172,
+      resolveInteractionFrequency: () => 128,
+      resolveInteractionWaveform: (_tileKind, fallback) => fallback,
+      resolvePaddleBoatCalliopeFrequency: () => 520,
+      resolveSteamWhistleFrequency: () => 360,
+    });
+    const ruinsLandmarkRecipe = buildProceduralSoundRecipe({
+      kind: 'ruins-ambience',
+      identityVariant: 'landmark-hint',
+      profile: DEFAULT_SURFACE_PROFILE,
+      variantOffset: -1,
+      resolveAdvancementFrequency: () => 300,
+      resolveAmbientSoundFrequency: () => 172,
+      resolveInteractionFrequency: () => 128,
+      resolveInteractionWaveform: (_tileKind, fallback) => fallback,
+      resolvePaddleBoatCalliopeFrequency: () => 520,
+      resolveSteamWhistleFrequency: () => 360,
+    });
+
+    expect(forestMigrationRecipe.id).toBe('forest-ambience:migrating-birds');
+    expect(forestMigrationRecipe.layers?.map((layer) => layer.id)).toEqual([
+      'forest-migration-calls',
+      'forest-open-sky-bed',
+    ]);
+    expect(riverSplashRecipe.id).toBe('river-ambience:water-splashes');
+    expect(riverSplashRecipe.layers?.map((layer) => layer.id)).toEqual([
+      'river-splash-bed',
+      'river-splash-pop',
+    ]);
+    expect(ruinsLandmarkRecipe.id).toBe('ruins-ambience:landmark-hint');
+    expect(ruinsLandmarkRecipe.layers?.map((layer) => layer.id)).toEqual([
+      'ruins-landmark-tone',
+      'ruins-stone-hum',
+    ]);
+  });
+
   it('lets related movement sounds inherit the same family identity while keeping different signatures', () => {
     expect(getSoundIdentityDescriptor('footstep').family).toBe('movement');
     expect(getSoundIdentityDescriptor('jump').family).toBe('movement');
