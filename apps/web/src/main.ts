@@ -198,7 +198,10 @@ import { createBoundedCache } from './bounded-cache.ts';
 import { getPlayerSpatialSummary } from './player-spatial-summary.ts';
 import { createPlayerSpatialSummaryCache } from './player-spatial-summary-cache.ts';
 import { resolveCompassFrameState } from './compass-frame-state.ts';
-import { getNearbyOverworldQueryState } from './nearby-overworld-query.ts';
+import {
+  createNearbyOverworldQueryStateCache,
+  getNearbyOverworldQueryState,
+} from './nearby-overworld-query.ts';
 import {
   buildSextantMarkup,
   buildEventSummaryMarkup,
@@ -1167,6 +1170,9 @@ const resolveCachedCycle = createCycleFrameCache(
 );
 const resolveCachedPlayerSpatialSummary = createPlayerSpatialSummaryCache(
   getPlayerSpatialSummary
+);
+const resolveCachedNearbyOverworldQueryState = createNearbyOverworldQueryStateCache(
+  getNearbyOverworldQueryState
 );
 let latestEnvironment: WorldEnvironmentLike = getCurrentEnvironment();
 
@@ -2183,7 +2189,7 @@ function getBridgeAxis(): 'ew' | 'ns' | null {
 }
 
 function getNearbyPoiMusicProfile() {
-  const queryState = getNearbyOverworldQueryState(state);
+  const queryState = resolveCachedNearbyOverworldQueryState(state);
   if (!queryState) {
     nearbyPoiMusicState.cache.clear();
     nearbyPoiMusicState.profile = null;
@@ -2257,7 +2263,7 @@ function getNearbyPoiMusicProfile() {
 }
 
 function getNearbyTrainAudioProfile() {
-  const queryState = getNearbyOverworldQueryState(state);
+  const queryState = resolveCachedNearbyOverworldQueryState(state);
   if (!queryState) {
     nearbyTrainAudioState.cache.clear();
     nearbyTrainAudioState.profile = null;
@@ -2295,7 +2301,7 @@ function getNearbyTrainAudioProfile() {
 }
 
 function getNearbyPaddleBoatAudioProfile() {
-  const queryState = getNearbyOverworldQueryState(state);
+  const queryState = resolveCachedNearbyOverworldQueryState(state);
   if (!queryState) {
     nearbyPaddleBoatAudioState.cache.clear();
     nearbyPaddleBoatAudioState.profile = null;
