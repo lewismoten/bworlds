@@ -2468,10 +2468,23 @@ function createForestTreeDescriptorFromSpecies(
         ? Math.floor(appearanceRandom() * Math.max(1, branchCount * 0.2))
         : 0;
   const branches = new Array<ForestBranchDescriptor>(branchCount);
+  const senescentFoliageFactor = biological.lifeStage === 'ancient' ? 0.78 : 1;
   const foliageCount =
     definition.form === 'pine'
-      ? 2 + Math.floor(maturity * 3) + Math.floor(appearanceRandom() * 2)
-      : 1 + Math.floor(maturity * 4) + Math.floor(appearanceRandom() * 2);
+      ? Math.max(
+          1,
+          Math.floor(
+            (2 + Math.floor(maturity * 3) + Math.floor(appearanceRandom() * 2)) *
+              senescentFoliageFactor
+          )
+        )
+      : Math.max(
+          1,
+          Math.floor(
+            (1 + Math.floor(maturity * 4) + Math.floor(appearanceRandom() * 2)) *
+              senescentFoliageFactor
+          )
+        );
   const foliage = new Array<ForestFoliageDescriptor>(foliageCount);
   const barkMarkCount =
     biological.lifeStage === 'ancient'

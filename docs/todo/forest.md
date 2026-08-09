@@ -193,7 +193,7 @@ interface TreeCapabilities {
 * [X] Allow especially old trees to receive unique procedural names or records.
 * [X] Adjust fruit production according to maturity.
 * [X] Prevent seedlings from producing mature fruit.
-* [ ] Allow senescent trees to produce less foliage or fruit.
+* [X] Allow senescent trees to produce less foliage or fruit.
 
 # Trunk Generation
 

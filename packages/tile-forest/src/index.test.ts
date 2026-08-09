@@ -1322,6 +1322,56 @@ describe('tile forest', () => {
     ).toBe(true);
   });
 
+  it('lets senescent forest trees produce less foliage or fruit than mature ones', () => {
+    const matureFoliageCounts: number[] = [];
+    const ancientFoliageCounts: number[] = [];
+    const matureFruitCounts: number[] = [];
+    const ancientFruitCounts: number[] = [];
+
+    for (
+      let tileY = 0;
+      tileY < 64 &&
+      (matureFoliageCounts.length < 24 || ancientFoliageCounts.length < 24);
+      tileY += 1
+    ) {
+      for (
+        let tileX = 0;
+        tileX < 64 &&
+        (matureFoliageCounts.length < 24 || ancientFoliageCounts.length < 24);
+        tileX += 1
+      ) {
+        const ages = getForestTreeAgeProfiles(tileX, tileY);
+        const canopies = getForestTreeCanopyProfiles(tileX, tileY);
+        const fruits = getForestTreeFruitProfiles(tileX, tileY);
+        for (let index = 0; index < ages.length; index += 1) {
+          const age = ages[index];
+          const canopy = canopies[index];
+          const fruit = fruits[index];
+          if (!age || !canopy || !fruit) {
+            continue;
+          }
+          if (age.lifeStage === 'mature' && matureFoliageCounts.length < 24) {
+            matureFoliageCounts.push(canopy.foliage.length);
+            matureFruitCounts.push(fruit.count);
+          }
+          if (age.lifeStage === 'ancient' && ancientFoliageCounts.length < 24) {
+            ancientFoliageCounts.push(canopy.foliage.length);
+            ancientFruitCounts.push(fruit.count);
+          }
+        }
+      }
+    }
+
+    expect(matureFoliageCounts.length).toBeGreaterThan(0);
+    expect(ancientFoliageCounts.length).toBeGreaterThan(0);
+
+    const average = (values: number[]) =>
+      values.reduce((sum, value) => sum + value, 0) / values.length;
+
+    expect(average(ancientFoliageCounts)).toBeLessThan(average(matureFoliageCounts));
+    expect(average(ancientFruitCounts)).toBeLessThan(average(matureFruitCounts));
+  });
+
   it('generates more tree-like branch profiles for broadleaf and pine forms', () => {
     const branchTiles: Array<{
       x: number;
