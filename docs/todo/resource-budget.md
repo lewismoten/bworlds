@@ -87,7 +87,7 @@ Given the heap issue you just saw, I would take this very seriously.
 * [X] Cap materials per LOD.
 * [ ] Cap unique materials per plugin.
 * [X] Cap total unique materials in the active scene.
-* [ ] Encourage plugins to request materials from a shared material registry.
+* [X] Encourage plugins to request materials from a shared material registry.
 * [ ] Prefer shared material references instead of `material.clone()`.
 * [ ] Detect identical or equivalent materials that could be shared.
 * [X] Warn when a plugin creates a material for every object instance.

@@ -1,10 +1,10 @@
-import { getOrCreateWeakMapValue } from '@bworlds/cache-support';
 import { createPlainsBackedTilePainter } from '@bworlds/paint-support';
 import {
   createAnchoredEnterablePoiTilePlugin,
   markPoiLightEmitter,
   syncPoiLightEmitters,
 } from '@bworlds/poi-support';
+import { createHostMaterialResolver } from '@bworlds/procedural-style';
 import {
   createBasicMaterial,
   getSharedBoxGeometry,
@@ -16,16 +16,6 @@ import type {
   RuntimePlugin,
   ThreeMaterialLike,
 } from '@bworlds/plugin-api';
-
-const stationMaterialCache = new WeakMap<
-  object,
-  {
-    wallMaterial: ThreeMaterialLike;
-    roofMaterial: ThreeMaterialLike;
-    trimMaterial: ThreeMaterialLike;
-    lampMaterial: ThreeMaterialLike;
-  }
->();
 
 export function createStationTilePlugin(): RuntimePlugin {
   return createAnchoredEnterablePoiTilePlugin({
@@ -118,20 +108,25 @@ export function createStationTilePlugin(): RuntimePlugin {
 }
 
 function getStationSharedMaterials(three: Create3DModelContext['three']) {
-  return getOrCreateWeakMapValue(
-    stationMaterialCache,
-    three as object,
-    () => ({
-      wallMaterial: createBasicMaterial(three, { color: '#8d6044' }),
-      roofMaterial: createBasicMaterial(three, { color: '#5e4537' }),
-      trimMaterial: createBasicMaterial(three, { color: '#d1b28a' }),
-      lampMaterial: new three.MeshStandardMaterial({
-        color: '#f59e0b',
-        emissive: '#f59e0b',
-        emissiveIntensity: 0.02,
-        roughness: 0.36,
-        metalness: 0.04,
-      }),
-    })
-  );
+  return stationSharedMaterials.createMaterials(three);
 }
+
+const stationSharedMaterials = createHostMaterialResolver(
+  (three: Create3DModelContext['three']): {
+    wallMaterial: ThreeMaterialLike;
+    roofMaterial: ThreeMaterialLike;
+    trimMaterial: ThreeMaterialLike;
+    lampMaterial: ThreeMaterialLike;
+  } => ({
+    wallMaterial: createBasicMaterial(three, { color: '#8d6044' }),
+    roofMaterial: createBasicMaterial(three, { color: '#5e4537' }),
+    trimMaterial: createBasicMaterial(three, { color: '#d1b28a' }),
+    lampMaterial: new three.MeshStandardMaterial({
+      color: '#f59e0b',
+      emissive: '#f59e0b',
+      emissiveIntensity: 0.02,
+      roughness: 0.36,
+      metalness: 0.04,
+    }),
+  })
+);

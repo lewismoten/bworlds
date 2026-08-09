@@ -1,10 +1,10 @@
-import { getOrCreateWeakMapValue } from '@bworlds/cache-support';
 import { createPlainsBackedTilePainter } from '@bworlds/paint-support';
 import {
   createAnchoredEnterablePoiTilePlugin,
   markPoiLightEmitter,
   syncPoiLightEmitters,
 } from '@bworlds/poi-support';
+import { createHostMaterialResolver } from '@bworlds/procedural-style';
 import {
   createBasicMaterial,
   getSharedBoxGeometry,
@@ -17,16 +17,6 @@ import type {
   RuntimePlugin,
   ThreeMaterialLike,
 } from '@bworlds/plugin-api';
-
-const towerMaterialCache = new WeakMap<
-  object,
-  {
-    stoneMaterial: ThreeMaterialLike;
-    trimMaterial: ThreeMaterialLike;
-    roofMaterial: ThreeMaterialLike;
-    lampMaterial: ThreeMaterialLike;
-  }
->();
 
 export function createTowerTilePlugin(): RuntimePlugin {
   return createAnchoredEnterablePoiTilePlugin({
@@ -138,18 +128,25 @@ export function createTowerTilePlugin(): RuntimePlugin {
 }
 
 function getTowerSharedMaterials(three: Create3DModelContext['three']) {
-  return getOrCreateWeakMapValue(towerMaterialCache, three as object, () => {
-    return {
-      stoneMaterial: createBasicMaterial(three, { color: '#9b9085' }),
-      trimMaterial: createBasicMaterial(three, { color: '#645b54' }),
-      roofMaterial: createBasicMaterial(three, { color: '#4d423b' }),
-      lampMaterial: new three.MeshStandardMaterial({
-        color: '#fbbf24',
-        emissive: '#fbbf24',
-        emissiveIntensity: 0.02,
-        roughness: 0.34,
-        metalness: 0.04,
-      }),
-    };
-  });
+  return towerSharedMaterials.createMaterials(three);
 }
+
+const towerSharedMaterials = createHostMaterialResolver(
+  (three: Create3DModelContext['three']): {
+    stoneMaterial: ThreeMaterialLike;
+    trimMaterial: ThreeMaterialLike;
+    roofMaterial: ThreeMaterialLike;
+    lampMaterial: ThreeMaterialLike;
+  } => ({
+    stoneMaterial: createBasicMaterial(three, { color: '#9b9085' }),
+    trimMaterial: createBasicMaterial(three, { color: '#645b54' }),
+    roofMaterial: createBasicMaterial(three, { color: '#4d423b' }),
+    lampMaterial: new three.MeshStandardMaterial({
+      color: '#fbbf24',
+      emissive: '#fbbf24',
+      emissiveIntensity: 0.02,
+      roughness: 0.34,
+      metalness: 0.04,
+    }),
+  })
+);
