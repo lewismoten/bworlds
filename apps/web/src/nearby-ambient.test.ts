@@ -182,6 +182,35 @@ describe('nearby ambient', () => {
     expect(ruinsProfile?.intensity).toBeLessThan(0.7);
   });
 
+  it('maps snow and ice tiles into a dedicated snowfield ambience family', () => {
+    const profile = findNearbyAmbientProfile({
+      state: {
+        player: { x: -2, y: -4 },
+        getCurrentTile(x: number, y: number) {
+          if (x === -2 && y === -4) {
+            return { kind: 'snow' };
+          }
+          if (x === -1 && y === -4) {
+            return { kind: 'ice' };
+          }
+          return { kind: 'plains' };
+        },
+      },
+      centerX: -2,
+      centerY: -4,
+      searchRadius: 1,
+    });
+
+    expect(resolveAmbientBiologicalActivity('snowfield')).toBeLessThan(
+      resolveAmbientBiologicalActivity('plains')
+    );
+    expect(profile).toEqual(
+      expect.objectContaining({
+        kind: 'snowfield',
+      })
+    );
+  });
+
   it('returns null when no nearby base tiles or POIs advertise ambience', () => {
     const profile = findNearbyAmbientProfile({
       state: {

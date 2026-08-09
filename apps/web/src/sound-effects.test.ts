@@ -4540,6 +4540,17 @@ describe('sound effects', () => {
       isJumping: false,
       viewMode: '3d',
       nearbyAmbient: {
+        kind: 'snowfield',
+        intensity: 0.6,
+        emitter: { x: 6, y: 0 },
+      },
+    });
+    controller.update({
+      nowMs: 5000,
+      walking: false,
+      isJumping: false,
+      viewMode: '3d',
+      nearbyAmbient: {
         kind: 'mountain',
         intensity: 0.6,
         emitter: { x: 4, y: 0 },
@@ -4562,6 +4573,7 @@ describe('sound effects', () => {
       'settlement-ambience',
       'river-ambience',
       'plains-ambience',
+      'snowfield-ambience',
       'mountain-ambience',
       'ruins-ambience',
     ]);
@@ -4782,6 +4794,81 @@ describe('sound effects', () => {
           recipeId === 'ruins-ambience:ruins:landmark-hint' ||
           recipeId === 'ruins-ambience:ruins:migrating-birds'
       )
+    ).toBe(true);
+  });
+
+  it('changes snowfield ambience across thaw, daylight gusts, and winter night', () => {
+    const played: ProceduralSoundEffect[] = [];
+    const controller = createSoundEffectController({
+      play(effect) {
+        played.push(effect);
+      },
+    });
+
+    controller.update({
+      nowMs: 0,
+      walking: false,
+      isJumping: false,
+      viewMode: '3d',
+      dayProgress: 0.26,
+      yearProgress: 0.12,
+      nearbyAmbient: {
+        kind: 'snowfield',
+        intensity: 0.72,
+        emitter: { x: 7, y: 0 },
+      },
+    });
+    controller.update({
+      nowMs: 3200,
+      walking: false,
+      isJumping: false,
+      viewMode: '3d',
+      dayProgress: 0.52,
+      yearProgress: 0.62,
+      nearbyAmbient: {
+        kind: 'snowfield',
+        intensity: 0.72,
+        emitter: { x: 8, y: 0 },
+      },
+    });
+    controller.update({
+      nowMs: 6400,
+      walking: false,
+      isJumping: false,
+      viewMode: '3d',
+      dayProgress: 0.9,
+      yearProgress: 0.88,
+      nearbyAmbient: {
+        kind: 'snowfield',
+        intensity: 0.72,
+        emitter: { x: 7, y: 0 },
+      },
+    });
+
+    const snowfieldRecipes = played
+      .filter((effect) => effect.kind === 'snowfield-ambience')
+      .map((effect) => effect.recipeId);
+
+    expect(
+      snowfieldRecipes.includes('snowfield-ambience:snowfield:ice-creaks') ||
+        snowfieldRecipes.includes(
+          'snowfield-ambience:snowfield:muffled-open'
+        ) ||
+        snowfieldRecipes.includes('snowfield-ambience:snowfield:distant-birds')
+    ).toBe(true);
+    expect(
+      snowfieldRecipes.includes('snowfield-ambience:snowfield:winter-quiet') ||
+        snowfieldRecipes.includes(
+          'snowfield-ambience:snowfield:winter-gusts'
+        ) ||
+        snowfieldRecipes.includes('snowfield-ambience:snowfield:muffled-open')
+    ).toBe(true);
+    expect(
+      snowfieldRecipes.includes('snowfield-ambience:snowfield:ice-creaks') ||
+        snowfieldRecipes.includes(
+          'snowfield-ambience:snowfield:mystery-hint'
+        ) ||
+        snowfieldRecipes.includes('snowfield-ambience:snowfield:winter-quiet')
     ).toBe(true);
   });
 });

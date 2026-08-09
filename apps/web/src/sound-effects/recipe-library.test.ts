@@ -688,6 +688,61 @@ describe('sound recipe library', () => {
     ]);
   });
 
+  it('supports snowfield ambience variants for creaks, gusts, and muffled snow drift', () => {
+    const snowfieldCreakRecipe = buildProceduralSoundRecipe({
+      kind: 'snowfield-ambience',
+      identityVariant: 'ice-creaks',
+      profile: DEFAULT_SURFACE_PROFILE,
+      variantOffset: 0,
+      resolveAdvancementFrequency: () => 300,
+      resolveAmbientSoundFrequency: () => 172,
+      resolveInteractionFrequency: () => 128,
+      resolveInteractionWaveform: (_tileKind, fallback) => fallback,
+      resolvePaddleBoatCalliopeFrequency: () => 520,
+      resolveSteamWhistleFrequency: () => 360,
+    });
+    const snowfieldGustRecipe = buildProceduralSoundRecipe({
+      kind: 'snowfield-ambience',
+      identityVariant: 'winter-gusts',
+      profile: DEFAULT_SURFACE_PROFILE,
+      variantOffset: 0,
+      resolveAdvancementFrequency: () => 300,
+      resolveAmbientSoundFrequency: () => 172,
+      resolveInteractionFrequency: () => 128,
+      resolveInteractionWaveform: (_tileKind, fallback) => fallback,
+      resolvePaddleBoatCalliopeFrequency: () => 520,
+      resolveSteamWhistleFrequency: () => 360,
+    });
+    const snowfieldMuffleRecipe = buildProceduralSoundRecipe({
+      kind: 'snowfield-ambience',
+      identityVariant: 'muffled-open',
+      profile: DEFAULT_SURFACE_PROFILE,
+      variantOffset: 0,
+      resolveAdvancementFrequency: () => 300,
+      resolveAmbientSoundFrequency: () => 172,
+      resolveInteractionFrequency: () => 128,
+      resolveInteractionWaveform: (_tileKind, fallback) => fallback,
+      resolvePaddleBoatCalliopeFrequency: () => 520,
+      resolveSteamWhistleFrequency: () => 360,
+    });
+
+    expect(snowfieldCreakRecipe.id).toBe('snowfield-ambience:ice-creaks');
+    expect(snowfieldCreakRecipe.layers?.map((layer) => layer.id)).toEqual([
+      'snowfield-ice-bed',
+      'snowfield-ice-creak',
+    ]);
+    expect(snowfieldGustRecipe.id).toBe('snowfield-ambience:winter-gusts');
+    expect(snowfieldGustRecipe.layers?.map((layer) => layer.id)).toEqual([
+      'snowfield-gust-bed',
+      'snowfield-drift-shear',
+    ]);
+    expect(snowfieldMuffleRecipe.id).toBe('snowfield-ambience:muffled-open');
+    expect(snowfieldMuffleRecipe.layers?.map((layer) => layer.id)).toEqual([
+      'snowfield-muffle-bed',
+      'snowfield-soft-drift',
+    ]);
+  });
+
   it('supports living ambient event variants and seasonal landmark cues', () => {
     const forestMigrationRecipe = buildProceduralSoundRecipe({
       kind: 'forest-ambience',

@@ -9,6 +9,7 @@ const BASE_AMBIENT_IDENTITY_VARIANTS: Record<
   river: ['current', 'water-splashes'],
   forest: ['canopy', 'insects', 'branches', 'wildlife', 'vegetation-rustle'],
   plains: ['breeze', 'wildlife', 'vegetation-rustle'],
+  snowfield: ['winter-quiet', 'ice-creaks', 'winter-gusts', 'muffled-open'],
   mountain: ['gusts', 'stone', 'highland-birds', 'falling-rocks'],
   cave: ['drips', 'echo', 'underground-wind'],
   settlement: ['market'],
@@ -25,6 +26,8 @@ export function resolveAmbientIdentityVariants(
       return resolveForestVariants(dayPhase, season);
     case 'plains':
       return resolvePlainsVariants(dayPhase, season);
+    case 'snowfield':
+      return resolveSnowfieldVariants(dayPhase, season);
     case 'settlement':
       return resolveSettlementVariants(dayPhase);
     case 'mountain':
@@ -57,6 +60,7 @@ export function resolveAmbientIdentityVariantModifiers(options: {
   if (
     options.kind === 'forest' ||
     options.kind === 'plains' ||
+    options.kind === 'snowfield' ||
     options.kind === 'settlement'
   ) {
     if (options.dayPhase === 'night') {
@@ -103,6 +107,18 @@ export function resolveAmbientIdentityVariantModifiers(options: {
     case 'autumn-leaves':
       cadenceMultiplier *= 1.22;
       volumeMultiplier *= 0.92;
+      break;
+    case 'ice-creaks':
+      cadenceMultiplier *= 1.78;
+      volumeMultiplier *= 0.84;
+      break;
+    case 'winter-gusts':
+      cadenceMultiplier *= 1.08;
+      volumeMultiplier *= 1.04;
+      break;
+    case 'muffled-open':
+      cadenceMultiplier *= 1.26;
+      volumeMultiplier *= 0.76;
       break;
     case 'summer-insects':
       cadenceMultiplier *= 0.92;
@@ -186,6 +202,22 @@ function resolvePlainsVariants(
     return ['autumn-leaves', 'migrating-birds', 'animal-calls'];
   }
   return ['breeze', 'nearby-birds', 'distant-birds', 'animal-calls'];
+}
+
+function resolveSnowfieldVariants(
+  dayPhase: AmbientDayPhase,
+  season: AmbientSeason
+): readonly string[] {
+  if (dayPhase === 'night') {
+    return ['winter-quiet', 'ice-creaks', 'mystery-hint'];
+  }
+  if (dayPhase === 'dawn') {
+    return ['winter-gusts', 'ice-creaks', 'distant-birds'];
+  }
+  if (season === 'spring') {
+    return ['ice-creaks', 'muffled-open', 'distant-birds'];
+  }
+  return ['winter-quiet', 'winter-gusts', 'muffled-open'];
 }
 
 function resolveSettlementVariants(

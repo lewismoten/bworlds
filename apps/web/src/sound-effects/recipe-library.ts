@@ -58,6 +58,7 @@ type ResolveSoundRecipeOptions = {
       | 'river'
       | 'forest'
       | 'plains'
+      | 'snowfield'
       | 'mountain'
       | 'cave'
       | 'settlement'
@@ -147,6 +148,10 @@ export const SOUND_IDENTITY_DESCRIPTORS: Record<
   'plains-ambience': {
     family: 'ambient-wilds',
     signature: 'open grassland wash with sparse bright movement',
+  },
+  'snowfield-ambience': {
+    family: 'ambient-wilds',
+    signature: 'cold open hush with ice strain, powder drift, and muffled air',
   },
   'mountain-ambience': {
     family: 'ambient-wilds',
@@ -2873,6 +2878,185 @@ function resolveProceduralSoundLayers(
           variationDepth: 0.76,
         },
       ] as const;
+    case 'snowfield-ambience':
+      if (identityVariant === 'ice-creaks') {
+        return [
+          {
+            id: 'snowfield-ice-bed',
+            waveform: ['triangle', 'sine'] as const,
+            noiseColor: ['white', 'brown'] as const,
+            frequencyMultiplier: 0.72,
+            durationMultiplier: 1,
+            volumeMultiplier: 0.34,
+            frequencyVariation: 0.02,
+            durationVariation: 0.12,
+            volumeVariation: 0.06,
+            variationDepth: 0.76,
+          },
+          {
+            id: 'snowfield-ice-creak',
+            waveform: ['square', 'triangle'] as const,
+            noiseColor: 'white' as const,
+            frequencyMultiplier: 0.96,
+            durationMultiplier: 0.82,
+            volumeMultiplier: 0.12,
+            startOffsetMs: 48,
+            startOffsetVariation: 0.26,
+            frequencyVariation: 0.026,
+            durationVariation: 0.16,
+            volumeVariation: 0.08,
+            variationDepth: 0.78,
+          },
+        ] as const;
+      }
+      if (identityVariant === 'winter-gusts') {
+        return [
+          {
+            id: 'snowfield-gust-bed',
+            waveform: ['triangle', 'sine'] as const,
+            noiseColor: ['white', 'pink'] as const,
+            frequencyMultiplier: 0.76,
+            durationMultiplier: 1,
+            volumeMultiplier: 0.4,
+            frequencyVariation: 0.022,
+            durationVariation: 0.12,
+            volumeVariation: 0.08,
+            variationDepth: 0.8,
+          },
+          {
+            id: 'snowfield-drift-shear',
+            waveform: ['sine', 'triangle'] as const,
+            noiseColor: 'white' as const,
+            frequencyMultiplier: 1.08,
+            durationMultiplier: 0.84,
+            volumeMultiplier: 0.14,
+            startOffsetMs: 34,
+            startOffsetVariation: 0.24,
+            frequencyVariation: 0.026,
+            durationVariation: 0.14,
+            volumeVariation: 0.08,
+            variationDepth: 0.76,
+          },
+        ] as const;
+      }
+      if (identityVariant === 'muffled-open') {
+        return [
+          {
+            id: 'snowfield-muffle-bed',
+            waveform: ['triangle', 'sine'] as const,
+            noiseColor: ['white', 'brown'] as const,
+            frequencyMultiplier: 0.68,
+            durationMultiplier: 1,
+            volumeMultiplier: 0.36,
+            frequencyVariation: 0.018,
+            durationVariation: 0.12,
+            volumeVariation: 0.06,
+            variationDepth: 0.74,
+          },
+          {
+            id: 'snowfield-soft-drift',
+            waveform: ['square', 'triangle'] as const,
+            noiseColor: 'white' as const,
+            frequencyMultiplier: 0.9,
+            durationMultiplier: 0.78,
+            volumeMultiplier: 0.1,
+            startOffsetMs: 28,
+            startOffsetVariation: 0.22,
+            frequencyVariation: 0.024,
+            durationVariation: 0.14,
+            volumeVariation: 0.08,
+            variationDepth: 0.72,
+          },
+        ] as const;
+      }
+      if (identityVariant === 'distant-birds') {
+        return [
+          {
+            id: 'snowfield-high-birds',
+            waveform: ['sine', 'triangle'] as const,
+            noiseColor: 'white' as const,
+            frequencyMultiplier: 1.22,
+            durationMultiplier: 0.7,
+            volumeMultiplier: 0.1,
+            frequencyVariation: 0.028,
+            durationVariation: 0.16,
+            volumeVariation: 0.08,
+            variationDepth: 0.78,
+          },
+          {
+            id: 'snowfield-cold-air-bed',
+            waveform: ['triangle', 'sine'] as const,
+            noiseColor: ['white', 'brown'] as const,
+            frequencyMultiplier: 0.74,
+            durationMultiplier: 1,
+            volumeMultiplier: 0.28,
+            startOffsetMs: 40,
+            startOffsetVariation: 0.24,
+            frequencyVariation: 0.02,
+            durationVariation: 0.12,
+            volumeVariation: 0.08,
+            variationDepth: 0.74,
+          },
+        ] as const;
+      }
+      if (identityVariant === 'mystery-hint') {
+        return [
+          {
+            id: 'snowfield-ice-tone',
+            waveform: ['sine', 'triangle'] as const,
+            noiseColor: 'white' as const,
+            frequencyMultiplier: 1.18,
+            durationMultiplier: 0.9,
+            volumeMultiplier: 0.12,
+            frequencyVariation: 0.022,
+            durationVariation: 0.14,
+            volumeVariation: 0.08,
+            variationDepth: 0.72,
+          },
+          {
+            id: 'snowfield-far-hush',
+            waveform: ['triangle', 'sine'] as const,
+            noiseColor: ['white', 'brown'] as const,
+            frequencyMultiplier: 0.7,
+            durationMultiplier: 1,
+            volumeMultiplier: 0.24,
+            startOffsetMs: 52,
+            startOffsetVariation: 0.26,
+            frequencyVariation: 0.02,
+            durationVariation: 0.14,
+            volumeVariation: 0.08,
+            variationDepth: 0.7,
+          },
+        ] as const;
+      }
+      return [
+        {
+          id: 'snowfield-winter-hush',
+          waveform: ['triangle', 'sine'] as const,
+          noiseColor: ['white', 'brown'] as const,
+          frequencyMultiplier: 0.7,
+          durationMultiplier: 1,
+          volumeMultiplier: 0.42,
+          frequencyVariation: 0.018,
+          durationVariation: 0.12,
+          volumeVariation: 0.06,
+          variationDepth: 0.78,
+        },
+        {
+          id: 'snowfield-powder-shift',
+          waveform: ['square', 'triangle'] as const,
+          noiseColor: 'white' as const,
+          frequencyMultiplier: 0.92,
+          durationMultiplier: 0.82,
+          volumeMultiplier: 0.12,
+          startOffsetMs: 32,
+          startOffsetVariation: 0.24,
+          frequencyVariation: 0.024,
+          durationVariation: 0.14,
+          volumeVariation: 0.08,
+          variationDepth: 0.74,
+        },
+      ] as const;
     case 'mountain-ambience':
       if (identityVariant === 'falling-rocks') {
         return [
@@ -3747,6 +3931,8 @@ function resolveBaseSoundEffectFrequency(
       return options.resolveAmbientSoundFrequency('forest', undefined);
     case 'plains-ambience':
       return options.resolveAmbientSoundFrequency('plains', undefined);
+    case 'snowfield-ambience':
+      return options.resolveAmbientSoundFrequency('snowfield', undefined);
     case 'mountain-ambience':
       return options.resolveAmbientSoundFrequency('mountain', undefined);
     case 'cave-ambience':
@@ -3822,6 +4008,7 @@ function resolveBaseSoundEffectDurationMs(kind: SoundEffectKind): number {
     case 'river-ambience':
     case 'forest-ambience':
     case 'plains-ambience':
+    case 'snowfield-ambience':
     case 'mountain-ambience':
     case 'cave-ambience':
     case 'settlement-ambience':
@@ -3893,6 +4080,8 @@ function resolveBaseSoundEffectVolume(
       return 0.018;
     case 'plains-ambience':
       return 0.016;
+    case 'snowfield-ambience':
+      return 0.017;
     case 'mountain-ambience':
       return 0.02;
     case 'cave-ambience':
@@ -3973,6 +4162,8 @@ function resolveBaseSoundEffectWaveform(
       return ['triangle', 'sine', 'square'];
     case 'plains-ambience':
       return ['sine', 'triangle'];
+    case 'snowfield-ambience':
+      return ['triangle', 'sine'];
     case 'mountain-ambience':
       return ['sawtooth', 'triangle'];
     case 'cave-ambience':
@@ -4038,6 +4229,8 @@ function resolveBaseSoundEffectNoiseColor(
       return ['pink', 'brown'];
     case 'plains-ambience':
       return ['white', 'pink'];
+    case 'snowfield-ambience':
+      return ['white', 'brown'];
     case 'mountain-ambience':
       return ['white', 'brown'];
     case 'cave-ambience':
