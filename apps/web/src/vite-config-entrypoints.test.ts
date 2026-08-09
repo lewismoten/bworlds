@@ -14,6 +14,19 @@ describe('web vite config', () => {
       expect.objectContaining({
         debug: path.join(process.cwd(), 'apps/web', 'debug', 'index.html'),
         debugAlias: path.join(process.cwd(), 'apps/web', 'debug.html'),
+        debugAudio: path.join(
+          process.cwd(),
+          'apps/web',
+          'debug',
+          'audio',
+          'index.html'
+        ),
+        debugAudioAlias: path.join(
+          process.cwd(),
+          'apps/web',
+          'debug',
+          'audio.html'
+        ),
         debugMusic: path.join(
           process.cwd(),
           'apps/web',

@@ -63,7 +63,7 @@ describe('music debug midi', () => {
       author: 'bworlds test suite',
       arranger: 'music debug page',
       createdAt: new Date('2026-08-09T12:34:56.000Z'),
-      website: 'https://example.test/debug/music/',
+      website: 'https://example.test/debug/audio/',
       source: 'forest preview source',
       sequencer: 'bworlds midi tests',
     });
@@ -74,7 +74,7 @@ describe('music debug midi', () => {
     expect(conductorTexts).toContain('Arranger: music debug page');
     expect(conductorTexts).toContain('Created Date: 2026-08-09');
     expect(conductorTexts).toContain(
-      'Website: https://example.test/debug/music/'
+      'Website: https://example.test/debug/audio/'
     );
     expect(conductorTexts).toContain('Source: forest preview source');
     expect(conductorTexts).toContain('Sequencer: bworlds midi tests');

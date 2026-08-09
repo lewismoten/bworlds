@@ -11,7 +11,7 @@ async function bootstrap(): Promise<void> {
     case '/debug/':
       await import('./debug-directory-page.ts');
       return;
-    case '/debug/music/':
+    case '/debug/audio/':
       await import('./music-debug-page.ts');
       return;
     case '/debug/trees/':

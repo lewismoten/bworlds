@@ -5,6 +5,8 @@ import { describe, expect, it } from 'vitest';
 const DEBUG_HTML_ENTRY_PATHS = [
   'apps/web/debug.html',
   'apps/web/debug/index.html',
+  'apps/web/debug/audio.html',
+  'apps/web/debug/audio/index.html',
   'apps/web/debug/music.html',
   'apps/web/debug/music/index.html',
   'apps/web/debug/trees.html',

@@ -18,7 +18,7 @@ describe('debug route guard', () => {
       buildCanonicalDebugRouteUrl({
         pathname: '/debug/music',
       })
-    ).toBe('/debug/music/');
+    ).toBe('/debug/audio/');
 
     expect(
       buildCanonicalDebugRouteUrl({

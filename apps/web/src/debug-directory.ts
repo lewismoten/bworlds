@@ -36,10 +36,10 @@ export const DEBUG_DIRECTORY_ENTRIES: DebugDirectoryEntry[] = [
       'Shows the live GPS, world coordinates, and navigation-related values tied to the current player position.',
   },
   {
-    id: 'music-laboratory',
-    title: 'Music Laboratory',
-    href: '/debug/music/',
-    routeLabel: '/debug/music/',
+    id: 'audio-laboratory',
+    title: 'Audio Laboratory',
+    href: '/debug/audio/',
+    routeLabel: '/debug/audio/',
     category: 'Dedicated Debug Page',
     description:
       'Generates procedural music previews, shows the chosen instruments and arrangement mix, and draws a note timeline you can audition.',

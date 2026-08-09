@@ -489,7 +489,7 @@ function resolveMusicDebugMidiMetadata(
     author: options.author?.trim() || 'bworlds',
     arranger: options.arranger?.trim() || 'bworlds music debug page',
     createdDate: formatMidiMetadataDate(createdAt),
-    website: options.website?.trim() || '/debug/music/',
+    website: options.website?.trim() || '/debug/audio/',
     source:
       options.source?.trim() ||
       `Theme ${snapshot.theme.id} at (${snapshot.options.clusterX}, ${snapshot.options.clusterY})`,

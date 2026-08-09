@@ -30,11 +30,22 @@ describe('app bootstrap route', () => {
   it('resolves canonical debug entry pages without forcing another redirect', () => {
     expect(
       resolveAppBootstrapRoute({
-        pathname: '/debug/music/',
+        pathname: '/debug/audio/',
       })
     ).toEqual({
       canonicalUrl: null,
-      pagePath: '/debug/music/',
+      pagePath: '/debug/audio/',
+    });
+  });
+
+  it('redirects the legacy music debug path onto the canonical audio route', () => {
+    expect(
+      resolveAppBootstrapRoute({
+        pathname: '/debug/music/',
+      })
+    ).toEqual({
+      canonicalUrl: '/debug/audio/',
+      pagePath: '/debug/audio/',
     });
   });
 

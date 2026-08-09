@@ -1,6 +1,6 @@
 export const ROOT_ENTRY_PAGE_PATHS = [
   '/debug/',
-  '/debug/music/',
+  '/debug/audio/',
   '/debug/trees/',
 ] as const;
 
@@ -27,14 +27,18 @@ const ROOT_ENTRY_ROUTE_DEFINITIONS: readonly RootEntryRouteDefinition[] = [
     entryHtmlPath: '/debug/index.html',
   },
   {
-    pagePath: '/debug/music/',
+    pagePath: '/debug/audio/',
     aliases: [
+      '/debug/audio',
+      '/debug/audio/',
+      '/debug/audio.html',
+      '/debug/audio/index.html',
       '/debug/music',
       '/debug/music/',
       '/debug/music.html',
       '/debug/music/index.html',
     ],
-    entryHtmlPath: '/debug/music/index.html',
+    entryHtmlPath: '/debug/audio/index.html',
   },
   {
     pagePath: '/debug/trees/',
