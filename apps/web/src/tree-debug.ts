@@ -10,6 +10,7 @@ import {
   getForestTreeHistoricalProfiles,
   getForestTreeHollows,
   getForestTreeInhabitants,
+  getForestTreeSpeciesPreview,
   getForestTreeSpeciesIds,
   getForestTreeTrunkProfiles,
   getForestWindExposureProfile,
@@ -20,6 +21,7 @@ import { randomizeDebugCoordinatePair } from './debug-seed.ts';
 
 export type TreeDebugDetailLevel = 'full' | 'low';
 export type TreeDebugConsumer = 'render-3d' | 'render-2d' | 'gameplay';
+export type TreeDebugSpeciesMode = 'tile' | 'oak' | 'birch' | 'pine';
 
 export type TreeDebugOptions = {
   tileX: number;
@@ -27,6 +29,7 @@ export type TreeDebugOptions = {
   yearProgress: number;
   detailLevel: TreeDebugDetailLevel;
   consumer: TreeDebugConsumer;
+  speciesMode: TreeDebugSpeciesMode;
 };
 
 export type TreeDebugSnapshot = {
@@ -46,6 +49,7 @@ export type TreeDebugSnapshot = {
     decorationCount: number;
     inhabitantCount: number;
     hollowCount: number;
+    previewSpeciesCount: number;
   };
   trees: Array<{
     index: number;
@@ -79,6 +83,7 @@ export const DEFAULT_TREE_DEBUG_OPTIONS: TreeDebugOptions = {
   yearProgress: 0.25,
   detailLevel: 'full',
   consumer: 'render-3d',
+  speciesMode: 'tile',
 };
 
 export function normalizeTreeDebugOptions(
@@ -92,6 +97,7 @@ export function normalizeTreeDebugOptions(
     ),
     detailLevel: normalizeTreeDebugDetailLevel(value?.detailLevel),
     consumer: normalizeTreeDebugConsumer(value?.consumer),
+    speciesMode: normalizeTreeDebugSpeciesMode(value?.speciesMode),
   };
 }
 
@@ -112,20 +118,18 @@ export function createTreeDebugSnapshot(
     familyId: family.familyId,
     speciesIds: family.listSpecies().map((species) => species.speciesId),
   }));
-  const speciesIds = getForestTreeSpeciesIds(options.tileX, options.tileY);
-  const ages = getForestTreeAgeProfiles(options.tileX, options.tileY);
-  const branches = getForestTreeBranchProfiles(options.tileX, options.tileY);
-  const canopies = getForestTreeCanopyProfiles(options.tileX, options.tileY);
-  const trunks = getForestTreeTrunkProfiles(options.tileX, options.tileY);
-  const damages = getForestTreeDamageProfiles(options.tileX, options.tileY);
-  const fruit = getForestTreeFruitProfiles(options.tileX, options.tileY);
-  const historical = getForestTreeHistoricalProfiles(
-    options.tileX,
-    options.tileY
-  );
-  const hollows = getForestTreeHollows(options.tileX, options.tileY);
-  const decorations = getForestTreeDecorations(options.tileX, options.tileY);
-  const inhabitants = getForestTreeInhabitants(options.tileX, options.tileY);
+  const treeSource = resolveTreeDebugTreeSource(options);
+  const speciesIds = treeSource.speciesIds;
+  const ages = treeSource.ages;
+  const branches = treeSource.branches;
+  const canopies = treeSource.canopies;
+  const trunks = treeSource.trunks;
+  const damages = treeSource.damages;
+  const fruit = treeSource.fruit;
+  const historical = treeSource.historical;
+  const hollows = treeSource.hollows;
+  const decorations = treeSource.decorations;
+  const inhabitants = treeSource.inhabitants;
   const slope = getForestTerrainSlopeProfile(options.tileX, options.tileY);
   const wind = getForestWindExposureProfile(options.tileX, options.tileY);
 
@@ -143,6 +147,7 @@ export function createTreeDebugSnapshot(
       decorationCount: decorations.length,
       inhabitantCount: inhabitants.length,
       hollowCount: hollows.length,
+      previewSpeciesCount: speciesIds.length,
     },
     trees: speciesIds.map((speciesId, index) => {
       const age = ages[index];
@@ -321,6 +326,15 @@ export function buildTreeDebugMarkup(
                 )}
               </select>
             </label>
+            <label>
+              <span>Species</span>
+              <select name="speciesMode">
+                ${buildTreeSelectOptions(
+                  ['tile', 'oak', 'birch', 'pine'],
+                  snapshot.options.speciesMode
+                )}
+              </select>
+            </label>
           </div>
           <div class="tree-debug-actions">
             <button id="tree-debug-generate" type="submit">Generate</button>
@@ -358,11 +372,115 @@ export function buildTreeDebugSummaryMarkup(
       <div><dt>Decorations</dt><dd>${snapshot.tileSummary.decorationCount}</dd></div>
       <div><dt>Inhabitants</dt><dd>${snapshot.tileSummary.inhabitantCount}</dd></div>
       <div><dt>Hollows</dt><dd>${snapshot.tileSummary.hollowCount}</dd></div>
+      <div><dt>Preview</dt><dd>${escapeHtml(snapshot.options.speciesMode)} (${snapshot.tileSummary.previewSpeciesCount})</dd></div>
       <div><dt>Slope / Wind</dt><dd>${snapshot.tileSummary.slopeStrength.toFixed(
         2
       )} / ${snapshot.tileSummary.windStrength.toFixed(2)}</dd></div>
     </div>
   `;
+}
+
+function resolveTreeDebugTreeSource(options: TreeDebugOptions): {
+  speciesIds: string[];
+  ages: ReturnType<typeof getForestTreeAgeProfiles>;
+  branches: ReturnType<typeof getForestTreeBranchProfiles>;
+  canopies: ReturnType<typeof getForestTreeCanopyProfiles>;
+  trunks: ReturnType<typeof getForestTreeTrunkProfiles>;
+  damages: ReturnType<typeof getForestTreeDamageProfiles>;
+  fruit: ReturnType<typeof getForestTreeFruitProfiles>;
+  historical: ReturnType<typeof getForestTreeHistoricalProfiles>;
+  hollows: ReturnType<typeof getForestTreeHollows>;
+  decorations: ReturnType<typeof getForestTreeDecorations>;
+  inhabitants: ReturnType<typeof getForestTreeInhabitants>;
+} {
+  if (options.speciesMode === 'tile') {
+    return {
+      speciesIds: getForestTreeSpeciesIds(options.tileX, options.tileY),
+      ages: getForestTreeAgeProfiles(options.tileX, options.tileY),
+      branches: getForestTreeBranchProfiles(options.tileX, options.tileY),
+      canopies: getForestTreeCanopyProfiles(options.tileX, options.tileY),
+      trunks: getForestTreeTrunkProfiles(options.tileX, options.tileY),
+      damages: getForestTreeDamageProfiles(options.tileX, options.tileY),
+      fruit: getForestTreeFruitProfiles(options.tileX, options.tileY),
+      historical: getForestTreeHistoricalProfiles(options.tileX, options.tileY),
+      hollows: getForestTreeHollows(options.tileX, options.tileY),
+      decorations: getForestTreeDecorations(options.tileX, options.tileY),
+      inhabitants: getForestTreeInhabitants(options.tileX, options.tileY),
+    };
+  }
+
+  const descriptor = getForestTreeSpeciesPreview(
+    options.speciesMode,
+    options.tileX,
+    options.tileY
+  );
+
+  return {
+    speciesIds: [descriptor.speciesId],
+    ages: [
+      {
+        form: descriptor.form,
+        speciesId: descriptor.speciesId,
+        ageYears: descriptor.biological?.ageYears ?? 0,
+        lifeStage: descriptor.biological?.lifeStage ?? 'sapling',
+      },
+    ],
+    branches: [
+      {
+        form: descriptor.form,
+        branches: descriptor.structure?.branches ?? descriptor.branches ?? [],
+      },
+    ],
+    canopies: [
+      {
+        form: descriptor.form,
+        foliage: descriptor.canopy?.foliage ?? descriptor.foliage ?? [],
+      },
+    ],
+    trunks: [
+      {
+        form: descriptor.form,
+        speciesId: descriptor.speciesId,
+        trunkHeight: descriptor.trunkHeight,
+        radius: descriptor.radius,
+        trunkTopRadius:
+          descriptor.structure?.trunkTopRadius ?? descriptor.radius,
+        trunkCurveX: descriptor.structure?.trunkCurveX ?? 0,
+        trunkCurveZ: descriptor.structure?.trunkCurveZ ?? 0,
+        trunkLeanX: descriptor.structure?.trunkLeanX ?? 0,
+        trunkLeanZ: descriptor.structure?.trunkLeanZ ?? 0,
+      },
+    ],
+    damages: [
+      {
+        form: descriptor.form,
+        barkMarks: descriptor.damage?.barkMarks ?? [],
+      },
+    ],
+    fruit: [
+      {
+        form: descriptor.form,
+        speciesId: descriptor.speciesId,
+        kind: descriptor.fruit?.kind ?? '',
+        count: descriptor.fruit?.count ?? 0,
+        ripeness: descriptor.fruit?.ripeness ?? 0,
+        mature: descriptor.fruit?.mature ?? false,
+      },
+    ],
+    historical: [
+      {
+        form: descriptor.form,
+        speciesId: descriptor.speciesId,
+        landmark: descriptor.historical?.landmark ?? false,
+        title: descriptor.historical?.title ?? '',
+        record: descriptor.historical?.record ?? '',
+        prominence: descriptor.historical?.prominence ?? 0,
+      },
+    ],
+    hollows: [],
+    decorations: [],
+    inhabitants: [],
+  };
 }
 
 function buildTreePreviewMarkup(options: {
@@ -462,6 +580,15 @@ function normalizeTreeDebugConsumer(
     return value;
   }
   return 'render-3d';
+}
+
+function normalizeTreeDebugSpeciesMode(
+  value: TreeDebugOptions['speciesMode'] | undefined
+): TreeDebugSpeciesMode {
+  if (value === 'oak' || value === 'birch' || value === 'pine') {
+    return value;
+  }
+  return 'tile';
 }
 
 function clampProgress(value: number): number {

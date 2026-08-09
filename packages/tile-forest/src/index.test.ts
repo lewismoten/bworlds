@@ -2,7 +2,8 @@ import { describe, expect, it, vi } from 'vitest';
 import { getRenderParticleEmitterMetadata } from '@bworlds/plugin-api';
 
 vi.mock('@bworlds/three-support', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@bworlds/three-support')>();
+  const actual =
+    await importOriginal<typeof import('@bworlds/three-support')>();
   return {
     ...actual,
     createPaintedCanvasTexture() {
@@ -28,6 +29,7 @@ import {
   getForestTreeDamageProfiles,
   getForestTreeFruitProfiles,
   getForestTreeHistoricalProfiles,
+  getForestTreeSpeciesPreview,
   getForestTreeTrunkProfiles,
   getForestCarvings,
   getForestFloorDetails,
@@ -156,7 +158,10 @@ class FakeMatrix4 {
 class FakeFloat32BufferAttribute {
   array: number[];
   needsUpdate = false;
-  constructor(values: ArrayLike<number> | number[], public itemSize: number) {
+  constructor(
+    values: ArrayLike<number> | number[],
+    public itemSize: number
+  ) {
     this.array = Array.from(values);
   }
 }
@@ -345,7 +350,8 @@ describe('tile forest', () => {
     expect(
       sampleTiles.some(({ hollows }) =>
         hollows.every(
-          (hollow) => hollow.height > 0.2 && hollow.scale > 0.1 && hollow.depth > 0.07
+          (hollow) =>
+            hollow.height > 0.2 && hollow.scale > 0.1 && hollow.depth > 0.07
         )
       )
     ).toBe(true);
@@ -374,7 +380,8 @@ describe('tile forest', () => {
     expect(
       sampleTiles.some(({ owls }) =>
         owls.every(
-          (owl) => owl.bodyScale > 0.07 && owl.eyeSpread > 0.02 && owl.perchOffset > 0
+          (owl) =>
+            owl.bodyScale > 0.07 && owl.eyeSpread > 0.02 && owl.perchOffset > 0
         )
       )
     ).toBe(true);
@@ -422,8 +429,7 @@ describe('tile forest', () => {
       sampleTiles.some(({ carvings }) =>
         carvings.some(
           (carving) =>
-            carving.motif === 'date' &&
-            /^(18\d{2}|19\d{2})$/.test(carving.text)
+            carving.motif === 'date' && /^(18\d{2}|19\d{2})$/.test(carving.text)
         )
       )
     ).toBe(true);
@@ -669,12 +675,10 @@ describe('tile forest', () => {
     }
 
     expect(sampleTiles.length).toBeGreaterThan(0);
-    expect(
-      sampleTiles.some(({ forms }) => forms.includes('pine'))
-    ).toBe(true);
-    expect(
-      sampleTiles.some(({ forms }) => forms.includes('broadleaf'))
-    ).toBe(true);
+    expect(sampleTiles.some(({ forms }) => forms.includes('pine'))).toBe(true);
+    expect(sampleTiles.some(({ forms }) => forms.includes('broadleaf'))).toBe(
+      true
+    );
 
     const first = sampleTiles[0];
     expect(getForestTreeForms(first.x, first.y)).toEqual(first.forms);
@@ -685,12 +689,18 @@ describe('tile forest', () => {
 
     expect(generator.supports('branches')).toBe(true);
     expect(generator.supports('foliage')).toBe(true);
-    expect(generator.supports('branches', { consumer: 'gameplay' })).toBe(false);
+    expect(generator.supports('branches', { consumer: 'gameplay' })).toBe(
+      false
+    );
     expect(generator.supports('foliage', { consumer: 'gameplay' })).toBe(false);
     expect(generator.supports('hollows', { detailLevel: 'full' })).toBe(true);
     expect(generator.supports('hollows', { detailLevel: 'low' })).toBe(false);
-    expect(generator.supports('hollows', { consumer: 'render-2d' })).toBe(false);
-    expect(generator.supports('carvings', { consumer: 'render-2d' })).toBe(false);
+    expect(generator.supports('hollows', { consumer: 'render-2d' })).toBe(
+      false
+    );
+    expect(generator.supports('carvings', { consumer: 'render-2d' })).toBe(
+      false
+    );
     expect(generator.supports('carvings', { consumer: 'gameplay' })).toBe(true);
     expect(generator.getCapability('lod')).toEqual({ levels: 2 });
     expect(generator.getCapability('wind')).toEqual({
@@ -699,10 +709,12 @@ describe('tile forest', () => {
       leaves: true,
     });
     expect(generator.supports('fruit')).toBe(true);
-    expect(generator.getCapabilityOrFallback('attachments', { consumer: 'gameplay' })).toBe(
-      false
-    );
-    expect(generator.getCapabilityOrFallback('wind', { consumer: 'gameplay' })).toEqual({
+    expect(
+      generator.getCapabilityOrFallback('attachments', { consumer: 'gameplay' })
+    ).toBe(false);
+    expect(
+      generator.getCapabilityOrFallback('wind', { consumer: 'gameplay' })
+    ).toEqual({
       trunk: false,
       branches: true,
       leaves: true,
@@ -716,13 +728,12 @@ describe('tile forest', () => {
       'broadleaf',
       'conifer',
     ]);
-    expect(families[0].listSpecies().map((species) => species.speciesId)).toEqual([
-      'oak',
-      'birch',
-    ]);
-    expect(families[1].listSpecies().map((species) => species.speciesId)).toEqual([
-      'pine',
-    ]);
+    expect(
+      families[0].listSpecies().map((species) => species.speciesId)
+    ).toEqual(['oak', 'birch']);
+    expect(
+      families[1].listSpecies().map((species) => species.speciesId)
+    ).toEqual(['pine']);
 
     const oak = families[0].getSpecies('oak');
     const birch = families[0].getSpecies('birch');
@@ -751,12 +762,16 @@ describe('tile forest', () => {
 
     expect(broadleafFamily).toBeDefined();
     expect(coniferFamily).toBeDefined();
-    expect(broadleafFamily?.supports('foliage', { season: 'summer' })).toBe(true);
-    expect(broadleafFamily?.supports('foliage', { season: 'winter' })).toBe(false);
+    expect(broadleafFamily?.supports('foliage', { season: 'summer' })).toBe(
+      true
+    );
+    expect(broadleafFamily?.supports('foliage', { season: 'winter' })).toBe(
+      false
+    );
     expect(coniferFamily?.supports('foliage', { season: 'winter' })).toBe(true);
-    expect(
-      broadleafFamily?.supports('foliage', { yearProgress: 0.95 })
-    ).toBe(false);
+    expect(broadleafFamily?.supports('foliage', { yearProgress: 0.95 })).toBe(
+      false
+    );
   });
 
   it('keeps forest species selection deterministic across tiles', () => {
@@ -776,15 +791,15 @@ describe('tile forest', () => {
     }
 
     expect(speciesByTile.length).toBeGreaterThan(0);
-    expect(
-      speciesByTile.some(({ species }) => species.includes('oak'))
-    ).toBe(true);
-    expect(
-      speciesByTile.some(({ species }) => species.includes('birch'))
-    ).toBe(true);
-    expect(
-      speciesByTile.some(({ species }) => species.includes('pine'))
-    ).toBe(true);
+    expect(speciesByTile.some(({ species }) => species.includes('oak'))).toBe(
+      true
+    );
+    expect(speciesByTile.some(({ species }) => species.includes('birch'))).toBe(
+      true
+    );
+    expect(speciesByTile.some(({ species }) => species.includes('pine'))).toBe(
+      true
+    );
 
     const first = speciesByTile[0];
     expect(getForestTreeSpeciesIds(first.x, first.y)).toEqual(first.species);
@@ -829,6 +844,21 @@ describe('tile forest', () => {
     expect(oak.foliage).not.toEqual(birch.foliage);
   });
 
+  it('can generate a deterministic preview for any specific forest species', () => {
+    const oak = getForestTreeSpeciesPreview('oak', 12, 8, 1);
+    const birch = getForestTreeSpeciesPreview('birch', 12, 8, 1);
+    const pine = getForestTreeSpeciesPreview('pine', 12, 8, 1);
+
+    expect(oak.speciesId).toBe('oak');
+    expect(birch.speciesId).toBe('birch');
+    expect(pine.speciesId).toBe('pine');
+    expect(oak.x).toBe(birch.x);
+    expect(oak.y).toBe(birch.y);
+    expect(oak.trunkHeight).not.toBe(birch.trunkHeight);
+    expect(pine.form).toBe('pine');
+    expect(getForestTreeSpeciesPreview('oak', 12, 8, 1)).toEqual(oak);
+  });
+
   it('separates forest structural profiles from canopy profiles', () => {
     const branchTiles: Array<{
       x: number;
@@ -853,14 +883,16 @@ describe('tile forest', () => {
     expect(first.branches.map((entry) => entry.form)).toEqual(
       first.canopies.map((entry) => entry.form)
     );
-    expect(
-      first.branches.some((entry) => entry.branches.length > 0)
-    ).toBe(true);
-    expect(
-      first.canopies.some((entry) => entry.foliage.length > 0)
-    ).toBe(true);
-    expect(getForestTreeBranchProfiles(first.x, first.y)).toEqual(first.branches);
-    expect(getForestTreeCanopyProfiles(first.x, first.y)).toEqual(first.canopies);
+    expect(first.branches.some((entry) => entry.branches.length > 0)).toBe(
+      true
+    );
+    expect(first.canopies.some((entry) => entry.foliage.length > 0)).toBe(true);
+    expect(getForestTreeBranchProfiles(first.x, first.y)).toEqual(
+      first.branches
+    );
+    expect(getForestTreeCanopyProfiles(first.x, first.y)).toEqual(
+      first.canopies
+    );
   });
 
   it('generates variable trunk heights for forest trees', () => {
@@ -882,7 +914,9 @@ describe('tile forest', () => {
     expect(trunkTiles.length).toBeGreaterThan(0);
 
     const allTrunks = trunkTiles.flatMap(({ trunks }) => trunks);
-    const broadleafTrunks = allTrunks.filter((trunk) => trunk.form === 'broadleaf');
+    const broadleafTrunks = allTrunks.filter(
+      (trunk) => trunk.form === 'broadleaf'
+    );
     const pineTrunks = allTrunks.filter((trunk) => trunk.form === 'pine');
 
     expect(broadleafTrunks.length).toBeGreaterThan(0);
@@ -891,14 +925,24 @@ describe('tile forest', () => {
     const broadleafHeights = new Set(
       broadleafTrunks.map((trunk) => trunk.trunkHeight.toFixed(3))
     );
-    const pineHeights = new Set(pineTrunks.map((trunk) => trunk.trunkHeight.toFixed(3)));
-    const broadleafRadii = new Set(broadleafTrunks.map((trunk) => trunk.radius.toFixed(3)));
-    const pineRadii = new Set(pineTrunks.map((trunk) => trunk.radius.toFixed(3)));
+    const pineHeights = new Set(
+      pineTrunks.map((trunk) => trunk.trunkHeight.toFixed(3))
+    );
+    const broadleafRadii = new Set(
+      broadleafTrunks.map((trunk) => trunk.radius.toFixed(3))
+    );
+    const pineRadii = new Set(
+      pineTrunks.map((trunk) => trunk.radius.toFixed(3))
+    );
     const broadleafTaperRatios = new Set(
-      broadleafTrunks.map((trunk) => (trunk.trunkTopRadius / trunk.radius).toFixed(3))
+      broadleafTrunks.map((trunk) =>
+        (trunk.trunkTopRadius / trunk.radius).toFixed(3)
+      )
     );
     const pineTaperRatios = new Set(
-      pineTrunks.map((trunk) => (trunk.trunkTopRadius / trunk.radius).toFixed(3))
+      pineTrunks.map((trunk) =>
+        (trunk.trunkTopRadius / trunk.radius).toFixed(3)
+      )
     );
     const broadleafCurves = new Set(
       broadleafTrunks.map(
@@ -908,17 +952,20 @@ describe('tile forest', () => {
     );
     const pineCurves = new Set(
       pineTrunks.map(
-        (trunk) => `${trunk.trunkCurveX.toFixed(3)}:${trunk.trunkCurveZ.toFixed(3)}`
+        (trunk) =>
+          `${trunk.trunkCurveX.toFixed(3)}:${trunk.trunkCurveZ.toFixed(3)}`
       )
     );
     const broadleafLeans = new Set(
       broadleafTrunks.map(
-        (trunk) => `${trunk.trunkLeanX.toFixed(3)}:${trunk.trunkLeanZ.toFixed(3)}`
+        (trunk) =>
+          `${trunk.trunkLeanX.toFixed(3)}:${trunk.trunkLeanZ.toFixed(3)}`
       )
     );
     const pineLeans = new Set(
       pineTrunks.map(
-        (trunk) => `${trunk.trunkLeanX.toFixed(3)}:${trunk.trunkLeanZ.toFixed(3)}`
+        (trunk) =>
+          `${trunk.trunkLeanX.toFixed(3)}:${trunk.trunkLeanZ.toFixed(3)}`
       )
     );
 
@@ -932,33 +979,45 @@ describe('tile forest', () => {
     expect(pineCurves.size).toBeGreaterThan(1);
     expect(broadleafLeans.size).toBeGreaterThan(1);
     expect(pineLeans.size).toBeGreaterThan(1);
-    expect(broadleafTrunks.every((trunk) => trunk.trunkTopRadius < trunk.radius)).toBe(true);
-    expect(pineTrunks.every((trunk) => trunk.trunkTopRadius < trunk.radius)).toBe(true);
+    expect(
+      broadleafTrunks.every((trunk) => trunk.trunkTopRadius < trunk.radius)
+    ).toBe(true);
+    expect(
+      pineTrunks.every((trunk) => trunk.trunkTopRadius < trunk.radius)
+    ).toBe(true);
     expect(
       broadleafTrunks.some(
-        (trunk) => Math.abs(trunk.trunkCurveX) + Math.abs(trunk.trunkCurveZ) > 0.015
+        (trunk) =>
+          Math.abs(trunk.trunkCurveX) + Math.abs(trunk.trunkCurveZ) > 0.015
       )
     ).toBe(true);
     expect(
       pineTrunks.some(
-        (trunk) => Math.abs(trunk.trunkCurveX) + Math.abs(trunk.trunkCurveZ) > 0.01
+        (trunk) =>
+          Math.abs(trunk.trunkCurveX) + Math.abs(trunk.trunkCurveZ) > 0.01
       )
     ).toBe(true);
     expect(
       broadleafTrunks.some(
-        (trunk) => Math.abs(trunk.trunkLeanX) + Math.abs(trunk.trunkLeanZ) > 0.01
+        (trunk) =>
+          Math.abs(trunk.trunkLeanX) + Math.abs(trunk.trunkLeanZ) > 0.01
       )
     ).toBe(true);
     expect(
       pineTrunks.some(
-        (trunk) => Math.abs(trunk.trunkLeanX) + Math.abs(trunk.trunkLeanZ) > 0.012
+        (trunk) =>
+          Math.abs(trunk.trunkLeanX) + Math.abs(trunk.trunkLeanZ) > 0.012
       )
     ).toBe(true);
     expect(
-      broadleafTrunks.some((trunk) => trunk.speciesId === 'oak' && trunk.radius > 0.1)
+      broadleafTrunks.some(
+        (trunk) => trunk.speciesId === 'oak' && trunk.radius > 0.1
+      )
     ).toBe(true);
     expect(
-      broadleafTrunks.some((trunk) => trunk.speciesId === 'birch' && trunk.radius < 0.09)
+      broadleafTrunks.some(
+        (trunk) => trunk.speciesId === 'birch' && trunk.radius < 0.09
+      )
     ).toBe(true);
     expect(
       pineTrunks.some((trunk) => trunk.trunkTopRadius / trunk.radius < 0.5)
@@ -1007,8 +1066,12 @@ describe('tile forest', () => {
     ).toBe(true);
 
     const first = sampleTiles[0]!;
-    expect(getForestTreeDecorations(first.x, first.y)).toEqual(first.decorations);
-    expect(getForestTreeInhabitants(first.x, first.y)).toEqual(first.inhabitants);
+    expect(getForestTreeDecorations(first.x, first.y)).toEqual(
+      first.decorations
+    );
+    expect(getForestTreeInhabitants(first.x, first.y)).toEqual(
+      first.inhabitants
+    );
   });
 
   it('generates deterministic age profiles that influence forest tree stages', () => {
@@ -1029,13 +1092,19 @@ describe('tile forest', () => {
 
     expect(ageTiles.length).toBeGreaterThan(0);
     expect(
-      ageTiles.some(({ ages }) => ages.some((entry) => entry.lifeStage === 'sapling'))
+      ageTiles.some(({ ages }) =>
+        ages.some((entry) => entry.lifeStage === 'sapling')
+      )
     ).toBe(true);
     expect(
-      ageTiles.some(({ ages }) => ages.some((entry) => entry.lifeStage === 'mature'))
+      ageTiles.some(({ ages }) =>
+        ages.some((entry) => entry.lifeStage === 'mature')
+      )
     ).toBe(true);
     expect(
-      ageTiles.some(({ ages }) => ages.some((entry) => entry.lifeStage === 'ancient'))
+      ageTiles.some(({ ages }) =>
+        ages.some((entry) => entry.lifeStage === 'ancient')
+      )
     ).toBe(true);
     expect(
       ageTiles.every(({ ages }) => ages.every((entry) => entry.ageYears >= 0))
@@ -1068,8 +1137,12 @@ describe('tile forest', () => {
       }
     }
 
-    const sapling = samples.find((sample) => sample.age.lifeStage === 'sapling');
-    const ancient = samples.find((sample) => sample.age.lifeStage === 'ancient');
+    const sapling = samples.find(
+      (sample) => sample.age.lifeStage === 'sapling'
+    );
+    const ancient = samples.find(
+      (sample) => sample.age.lifeStage === 'ancient'
+    );
 
     expect(sapling).toBeDefined();
     expect(ancient).toBeDefined();
@@ -1082,8 +1155,14 @@ describe('tile forest', () => {
   });
 
   it('makes hollows more likely in older forest trees than in saplings', () => {
-    const ageByTile = new Map<string, ReturnType<typeof getForestTreeAgeProfiles>>();
-    const hollowsByTile = new Map<string, ReturnType<typeof getForestTreeHollows>>();
+    const ageByTile = new Map<
+      string,
+      ReturnType<typeof getForestTreeAgeProfiles>
+    >();
+    const hollowsByTile = new Map<
+      string,
+      ReturnType<typeof getForestTreeHollows>
+    >();
 
     for (let tileY = 0; tileY < 64; tileY += 1) {
       for (let tileX = 0; tileX < 64; tileX += 1) {
@@ -1338,12 +1417,16 @@ describe('tile forest', () => {
       )
     ).toBe(true);
     expect(
-      landmarks.some((sample) => sample.historical.title.trim().split(/\s+/).length >= 3)
+      landmarks.some(
+        (sample) => sample.historical.title.trim().split(/\s+/).length >= 3
+      )
     ).toBe(true);
   });
 
   it('gives especially old historical trees unique procedural names or records', () => {
-    const especiallyOld: Array<ReturnType<typeof getForestTreeHistoricalProfiles>[number]> = [];
+    const especiallyOld: Array<
+      ReturnType<typeof getForestTreeHistoricalProfiles>[number]
+    > = [];
 
     for (let tileY = 0; tileY < 96 && especiallyOld.length < 3; tileY += 1) {
       for (let tileX = 0; tileX < 96 && especiallyOld.length < 3; tileX += 1) {
@@ -1434,16 +1517,24 @@ describe('tile forest', () => {
       }
     }
 
-    const saplings = samples.filter((sample) => sample.age.lifeStage === 'sapling');
-    const matureTrees = samples.filter((sample) => sample.age.lifeStage === 'mature');
+    const saplings = samples.filter(
+      (sample) => sample.age.lifeStage === 'sapling'
+    );
+    const matureTrees = samples.filter(
+      (sample) => sample.age.lifeStage === 'mature'
+    );
 
     expect(saplings.length).toBeGreaterThan(0);
     expect(matureTrees.length).toBeGreaterThan(0);
     expect(
-      saplings.every((sample) => sample.fruit.count === 0 && sample.fruit.mature === false)
+      saplings.every(
+        (sample) => sample.fruit.count === 0 && sample.fruit.mature === false
+      )
     ).toBe(true);
     expect(
-      matureTrees.some((sample) => sample.fruit.count > 0 && sample.fruit.mature)
+      matureTrees.some(
+        (sample) => sample.fruit.count > 0 && sample.fruit.mature
+      )
     ).toBe(true);
   });
 
@@ -1493,8 +1584,12 @@ describe('tile forest', () => {
     const average = (values: number[]) =>
       values.reduce((sum, value) => sum + value, 0) / values.length;
 
-    expect(average(ancientFoliageCounts)).toBeLessThan(average(matureFoliageCounts));
-    expect(average(ancientFruitCounts)).toBeLessThan(average(matureFruitCounts));
+    expect(average(ancientFoliageCounts)).toBeLessThan(
+      average(matureFoliageCounts)
+    );
+    expect(average(ancientFruitCounts)).toBeLessThan(
+      average(matureFruitCounts)
+    );
   });
 
   it('generates more tree-like branch profiles for broadleaf and pine forms', () => {
@@ -1507,7 +1602,9 @@ describe('tile forest', () => {
     for (let tileY = 0; tileY < 24; tileY += 1) {
       for (let tileX = 0; tileX < 24; tileX += 1) {
         const profiles = getForestTreeBranchProfiles(tileX, tileY);
-        const hasBroadleaf = profiles.some((profile) => profile.form === 'broadleaf');
+        const hasBroadleaf = profiles.some(
+          (profile) => profile.form === 'broadleaf'
+        );
         const hasPine = profiles.some((profile) => profile.form === 'pine');
         if (hasBroadleaf && hasPine) {
           branchTiles.push({ x: tileX, y: tileY, profiles });
@@ -1519,29 +1616,45 @@ describe('tile forest', () => {
 
     const broadleaf = branchTiles
       .flatMap(({ profiles }) => profiles)
-      .find((profile) => profile.form === 'broadleaf' && profile.branches.length >= 3);
+      .find(
+        (profile) =>
+          profile.form === 'broadleaf' && profile.branches.length >= 3
+      );
     const pine = branchTiles
       .flatMap(({ profiles }) => profiles)
-      .find((profile) => profile.form === 'pine' && profile.branches.length >= 3);
+      .find(
+        (profile) => profile.form === 'pine' && profile.branches.length >= 3
+      );
 
     expect(broadleaf).toBeDefined();
     expect(pine).toBeDefined();
 
-    const broadleafBranches = [...broadleaf!.branches].sort((a, b) => a.y - b.y);
+    const broadleafBranches = [...broadleaf!.branches].sort(
+      (a, b) => a.y - b.y
+    );
     const pineBranches = [...pine!.branches].sort((a, b) => a.y - b.y);
 
-    expect(broadleafBranches[0].length).toBeGreaterThan(broadleafBranches.at(-1)!.length);
-    expect(broadleafBranches[0].pitch).toBeLessThan(broadleafBranches.at(-1)!.pitch);
+    expect(broadleafBranches[0].length).toBeGreaterThan(
+      broadleafBranches.at(-1)!.length
+    );
+    expect(broadleafBranches[0].pitch).toBeLessThan(
+      broadleafBranches.at(-1)!.pitch
+    );
     expect(pineBranches.length).toBeGreaterThanOrEqual(3);
     expect(pineBranches.every((branch) => branch.pitch >= 1)).toBe(true);
 
     const first = branchTiles[0];
-    expect(getForestTreeBranchProfiles(first.x, first.y)).toEqual(first.profiles);
+    expect(getForestTreeBranchProfiles(first.x, first.y)).toEqual(
+      first.profiles
+    );
   });
 
   it('keeps tree branch profiles deterministic after bounded descriptor cache eviction churn', () => {
-    let target: { x: number; y: number; profiles: ReturnType<typeof getForestTreeBranchProfiles> } | null =
-      null;
+    let target: {
+      x: number;
+      y: number;
+      profiles: ReturnType<typeof getForestTreeBranchProfiles>;
+    } | null = null;
 
     for (let tileY = 0; tileY < 24 && !target; tileY += 1) {
       for (let tileX = 0; tileX < 24; tileX += 1) {
@@ -1556,10 +1669,15 @@ describe('tile forest', () => {
     expect(target).not.toBeNull();
 
     for (let index = 0; index < 800; index += 1) {
-      getForestTreeBranchProfiles((index % 80) - 40, Math.floor(index / 80) - 5);
+      getForestTreeBranchProfiles(
+        (index % 80) - 40,
+        Math.floor(index / 80) - 5
+      );
     }
 
-    expect(getForestTreeBranchProfiles(target!.x, target!.y)).toEqual(target!.profiles);
+    expect(getForestTreeBranchProfiles(target!.x, target!.y)).toEqual(
+      target!.profiles
+    );
   });
 
   it('generates deterministic birds for some forest tiles', () => {
@@ -1617,9 +1735,9 @@ describe('tile forest', () => {
         ({ trail }) => trail.halfWidth > 0.08 && trail.start.x !== trail.end.x
       )
     ).toBe(true);
-    expect(
-      sampleTiles.some(({ trail }) => trail.breadcrumbs.length > 0)
-    ).toBe(true);
+    expect(sampleTiles.some(({ trail }) => trail.breadcrumbs.length > 0)).toBe(
+      true
+    );
 
     const first = sampleTiles[0];
     expect(getForestTrail(first.x, first.y)).toEqual(first.trail);
@@ -1649,12 +1767,15 @@ describe('tile forest', () => {
       sampleTiles.some(({ webs }) => webs.some((web) => web.kind === 'hollow'))
     ).toBe(true);
     expect(
-      sampleTiles.some(({ webs }) => webs.some((web) => web.kind === 'deadwood'))
+      sampleTiles.some(({ webs }) =>
+        webs.some((web) => web.kind === 'deadwood')
+      )
     ).toBe(true);
     expect(
-      sampleTiles.some(({ webs }) =>
-        webs.filter((web) => web.kind === 'deadwood').length >=
-        webs.filter((web) => web.kind === 'hollow').length
+      sampleTiles.some(
+        ({ webs }) =>
+          webs.filter((web) => web.kind === 'deadwood').length >=
+          webs.filter((web) => web.kind === 'hollow').length
       )
     ).toBe(true);
 
@@ -1710,8 +1831,11 @@ describe('tile forest', () => {
   });
 
   it('generates beaver damage only for some forest tiles near active river beaver habitat', () => {
-    let targetTile: { x: number; y: number; rivers: Record<string, { kind: string }> } | null =
-      null;
+    let targetTile: {
+      x: number;
+      y: number;
+      rivers: Record<string, { kind: string }>;
+    } | null = null;
     for (let tileY = 0; tileY < 24 && !targetTile; tileY += 1) {
       for (let tileX = 0; tileX < 24; tileX += 1) {
         const rivers = {
@@ -1739,8 +1863,16 @@ describe('tile forest', () => {
     );
     const dryState = createForestTestState(targetTile!.x, targetTile!.y);
 
-    const wetDamage = getForestBeaverDamage(wetState as never, targetTile!.x, targetTile!.y);
-    const dryDamage = getForestBeaverDamage(dryState as never, targetTile!.x, targetTile!.y);
+    const wetDamage = getForestBeaverDamage(
+      wetState as never,
+      targetTile!.x,
+      targetTile!.y
+    );
+    const dryDamage = getForestBeaverDamage(
+      dryState as never,
+      targetTile!.x,
+      targetTile!.y
+    );
 
     expect(wetDamage.length).toBeGreaterThan(0);
     expect(dryDamage).toHaveLength(0);
@@ -1766,8 +1898,11 @@ describe('tile forest', () => {
   });
 
   it('generates beaver populations only for some river-adjacent forest tiles', () => {
-    let activeTile: { x: number; y: number; rivers: Record<string, { kind: string }> } | null =
-      null;
+    let activeTile: {
+      x: number;
+      y: number;
+      rivers: Record<string, { kind: string }>;
+    } | null = null;
     for (let tileY = 0; tileY < 24 && !activeTile; tileY += 1) {
       for (let tileX = 0; tileX < 24; tileX += 1) {
         const rivers = {
@@ -1801,7 +1936,7 @@ describe('tile forest', () => {
     expect(['lodge-sign', 'resident-pair', 'active-colony']).toContain(
       population?.density
     );
-    expect((population?.activity ?? 0)).toBeGreaterThan(0.4);
+    expect(population?.activity ?? 0).toBeGreaterThan(0.4);
     expect(
       getForestBeaverPopulation(dryState as never, activeTile!.x, activeTile!.y)
     ).toBeNull();
@@ -1847,11 +1982,13 @@ describe('tile forest', () => {
     }) as FakeGroup;
 
     expect(lowModel.children.length).toBeLessThan(fullModel.children.length);
+    expect(lowModel.children.every((node) => node.children.length === 0)).toBe(
+      true
+    );
     expect(
-      lowModel.children.every((node) => node.children.length === 0)
-    ).toBe(true);
-    expect(
-      lowModel.children.every((node) => node.userData?.renderStatKind === 'tree')
+      lowModel.children.every(
+        (node) => node.userData?.renderStatKind === 'tree'
+      )
     ).toBe(true);
     expect(
       lowModel.children.every((node) => node instanceof FakeInstancedMesh)
@@ -1918,12 +2055,8 @@ describe('tile forest', () => {
 
     expect(fullPines.length).toBeGreaterThan(0);
     expect(lowPines.length).toBeGreaterThan(0);
-    expect(
-      fullPines.some((tree) => tree.children.length > 3)
-    ).toBe(true);
-    expect(
-      lowPines.every((tree) => tree.children.length === 0)
-    ).toBe(true);
+    expect(fullPines.some((tree) => tree.children.length > 3)).toBe(true);
+    expect(lowPines.every((tree) => tree.children.length === 0)).toBe(true);
   });
 
   it('reuses pine family materials across distant forest regions', () => {
@@ -2001,7 +2134,8 @@ describe('tile forest', () => {
     }) as FakeGroup;
 
     const firstTree = fullModel.children.find(
-      (child) => child instanceof FakeGroup && child.userData?.renderStatKind === 'tree'
+      (child) =>
+        child instanceof FakeGroup && child.userData?.renderStatKind === 'tree'
     ) as FakeGroup | undefined;
     const lowerTrunkMesh = firstTree?.children.find(
       (child) =>
@@ -2047,7 +2181,8 @@ describe('tile forest', () => {
     }) as FakeGroup;
 
     const firstTree = fullModel.children.find(
-      (child) => child instanceof FakeGroup && child.userData?.renderStatKind === 'tree'
+      (child) =>
+        child instanceof FakeGroup && child.userData?.renderStatKind === 'tree'
     ) as FakeGroup | undefined;
     const lowerTrunkMesh = firstTree?.children.find(
       (child) => child.userData?.forestTreeTrunkSegment === 'lower'
@@ -2058,14 +2193,21 @@ describe('tile forest', () => {
 
     expect(lowerTrunkMesh).toBeDefined();
     expect(upperTrunkMesh).toBeDefined();
-    expect(firstTree?.children.filter((child) => child.userData?.forestTreeTrunkSegment).length)
-      .toBe(2);
+    expect(
+      firstTree?.children.filter(
+        (child) => child.userData?.forestTreeTrunkSegment
+      ).length
+    ).toBe(2);
 
     const lowerGeometry = lowerTrunkMesh?.geometry as FakeGeometry;
     const upperGeometry = upperTrunkMesh?.geometry as FakeGeometry;
     expect(lowerGeometry.args[0]).not.toBeCloseTo(upperGeometry.args[1], 5);
-    expect(upperTrunkMesh?.scale.x).toBeLessThan(lowerTrunkMesh?.scale.x ?? Infinity);
-    expect(upperTrunkMesh?.position.y).toBeGreaterThan(lowerTrunkMesh?.position.y ?? -Infinity);
+    expect(upperTrunkMesh?.scale.x).toBeLessThan(
+      lowerTrunkMesh?.scale.x ?? Infinity
+    );
+    expect(upperTrunkMesh?.position.y).toBeGreaterThan(
+      lowerTrunkMesh?.position.y ?? -Infinity
+    );
   });
 
   it('adds slight curvature to full-detail forest trunks from shared structural state', () => {
@@ -2074,7 +2216,8 @@ describe('tile forest', () => {
     const state = createForestTestState(8, 6);
     const trunks = getForestTreeTrunkProfiles(8, 6);
     const curvedIndex = trunks.findIndex(
-      (trunk) => Math.abs(trunk.trunkCurveX) + Math.abs(trunk.trunkCurveZ) > 0.01
+      (trunk) =>
+        Math.abs(trunk.trunkCurveX) + Math.abs(trunk.trunkCurveZ) > 0.01
     );
 
     expect(curvedIndex).toBeGreaterThanOrEqual(0);
@@ -2089,7 +2232,8 @@ describe('tile forest', () => {
     }) as FakeGroup;
 
     const curvedTree = fullModel.children.filter(
-      (child) => child instanceof FakeGroup && child.userData?.renderStatKind === 'tree'
+      (child) =>
+        child instanceof FakeGroup && child.userData?.renderStatKind === 'tree'
     )[curvedIndex] as FakeGroup | undefined;
     const lowerTrunkMesh = curvedTree?.children.find(
       (child) => child.userData?.forestTreeTrunkSegment === 'lower'
@@ -2107,10 +2251,17 @@ describe('tile forest', () => {
       Math.abs(lowerTrunkMesh?.position.z ?? 0)
     );
     expect(
-      Math.abs(upperTrunkMesh?.position.x ?? 0) + Math.abs(upperTrunkMesh?.position.z ?? 0)
+      Math.abs(upperTrunkMesh?.position.x ?? 0) +
+        Math.abs(upperTrunkMesh?.position.z ?? 0)
     ).toBeGreaterThan(0.01);
-    expect(upperTrunkMesh?.position.x).toBeCloseTo(trunks[curvedIndex]!.trunkCurveX, 3);
-    expect(upperTrunkMesh?.position.z).toBeCloseTo(trunks[curvedIndex]!.trunkCurveZ, 3);
+    expect(upperTrunkMesh?.position.x).toBeCloseTo(
+      trunks[curvedIndex]!.trunkCurveX,
+      3
+    );
+    expect(upperTrunkMesh?.position.z).toBeCloseTo(
+      trunks[curvedIndex]!.trunkCurveZ,
+      3
+    );
   });
 
   it('adds directional lean to full-detail forest trees from shared structural state', () => {
@@ -2134,18 +2285,27 @@ describe('tile forest', () => {
     }) as FakeGroup;
 
     const leaningTree = fullModel.children.filter(
-      (child) => child instanceof FakeGroup && child.userData?.renderStatKind === 'tree'
+      (child) =>
+        child instanceof FakeGroup && child.userData?.renderStatKind === 'tree'
     )[leaningIndex] as FakeGroup | undefined;
 
     expect(leaningTree).toBeDefined();
-    expect(Math.abs(leaningTree?.rotation.x ?? 0) + Math.abs(leaningTree?.rotation.z ?? 0))
-      .toBeGreaterThan(0.005);
+    expect(
+      Math.abs(leaningTree?.rotation.x ?? 0) +
+        Math.abs(leaningTree?.rotation.z ?? 0)
+    ).toBeGreaterThan(0.005);
     expect(leaningTree?.rotation.x).toBeCloseTo(
-      Math.atan2(trunks[leaningIndex]!.trunkLeanZ, trunks[leaningIndex]!.trunkHeight),
+      Math.atan2(
+        trunks[leaningIndex]!.trunkLeanZ,
+        trunks[leaningIndex]!.trunkHeight
+      ),
       3
     );
     expect(leaningTree?.rotation.z).toBeCloseTo(
-      -Math.atan2(trunks[leaningIndex]!.trunkLeanX, trunks[leaningIndex]!.trunkHeight),
+      -Math.atan2(
+        trunks[leaningIndex]!.trunkLeanX,
+        trunks[leaningIndex]!.trunkHeight
+      ),
       3
     );
   });
@@ -2183,7 +2343,9 @@ describe('tile forest', () => {
       return downhillDot > 0.25;
     });
 
-    expect(alignedLeanSamples.length).toBeGreaterThan(Math.floor(sampled.length * 0.6));
+    expect(alignedLeanSamples.length).toBeGreaterThan(
+      Math.floor(sampled.length * 0.6)
+    );
 
     const first = sampled[0]!;
     expect(getForestTerrainSlopeProfile(first.x, first.y)).toEqual(first.slope);
@@ -2215,13 +2377,18 @@ describe('tile forest', () => {
         return false;
       }
       const windDot =
-        (exposure.x * trunk.trunkLeanX + exposure.y * trunk.trunkLeanZ) / leanLength;
+        (exposure.x * trunk.trunkLeanX + exposure.y * trunk.trunkLeanZ) /
+        leanLength;
       return windDot > 0.2;
     });
 
-    expect(alignedLeanSamples.length).toBeGreaterThan(Math.floor(sampled.length * 0.55));
+    expect(alignedLeanSamples.length).toBeGreaterThan(
+      Math.floor(sampled.length * 0.55)
+    );
 
-    const strongerExposure = sampled.filter(({ exposure }) => exposure.strength >= 0.45);
+    const strongerExposure = sampled.filter(
+      ({ exposure }) => exposure.strength >= 0.45
+    );
     const weakerExposure = sampled.filter(
       ({ exposure }) => exposure.strength >= 0.22 && exposure.strength < 0.35
     );
@@ -2235,7 +2402,8 @@ describe('tile forest', () => {
       }>
     ) =>
       entries.reduce(
-        (sum, entry) => sum + Math.hypot(entry.trunk.trunkLeanX, entry.trunk.trunkLeanZ),
+        (sum, entry) =>
+          sum + Math.hypot(entry.trunk.trunkLeanX, entry.trunk.trunkLeanZ),
         0
       ) / entries.length;
 
@@ -2244,7 +2412,9 @@ describe('tile forest', () => {
     );
 
     const first = sampled[0]!;
-    expect(getForestWindExposureProfile(first.x, first.y)).toEqual(first.exposure);
+    expect(getForestWindExposureProfile(first.x, first.y)).toEqual(
+      first.exposure
+    );
   });
 
   it('instances low-detail tree trunks and canopies instead of creating one group per tree', () => {
@@ -2278,7 +2448,9 @@ describe('tile forest', () => {
       detailLevel: 'low',
     }) as FakeGroup;
 
-    const groupedTrees = lowModel.children.filter((child) => child instanceof FakeGroup);
+    const groupedTrees = lowModel.children.filter(
+      (child) => child instanceof FakeGroup
+    );
     const taggedTreeMeshes = lowModel.children.filter(
       (child) => child.userData?.renderStatKind === 'tree'
     );
@@ -2301,7 +2473,9 @@ describe('tile forest', () => {
     expect(instancedCanopies.every((mesh) => mesh.count > 0)).toBe(true);
     expect(instancedTrunks.some((mesh) => mesh.matrices.length > 0)).toBe(true);
     expect(
-      instancedTrunks.some((mesh) => mesh.matrices.some((matrix) => matrix.scale.x < 1))
+      instancedTrunks.some((mesh) =>
+        mesh.matrices.some((matrix) => matrix.scale.x < 1)
+      )
     ).toBe(true);
   });
 
@@ -2826,7 +3000,10 @@ describe('tile forest', () => {
       if (typeof node.userData?.forestCarvingBarkCoverage === 'number') {
         fullBarkCoverage.push(node.userData.forestCarvingBarkCoverage);
       }
-      if (typeof node.userData?.forestCarvingAge === 'number' && node.scale?.x) {
+      if (
+        typeof node.userData?.forestCarvingAge === 'number' &&
+        node.scale?.x
+      ) {
         fullScales.push(node.scale.x);
       }
     });
@@ -2965,7 +3142,10 @@ describe('tile forest', () => {
     const extendedSymbolLabels = new Set<string>();
     extendedSymbolModel.traverse((node) => {
       const carving = node.userData?.forestCarving;
-      if (typeof carving === 'string' && ['O', '+', 'G+', '!'].includes(carving)) {
+      if (
+        typeof carving === 'string' &&
+        ['O', '+', 'G+', '!'].includes(carving)
+      ) {
         extendedSymbolLabels.add(carving);
       }
     });
@@ -3006,9 +3186,19 @@ describe('tile forest', () => {
       const carving = node.userData?.forestCarving;
       if (
         typeof carving === 'string' &&
-        ['N2', 'E3', 'S4', 'W1', 'X2', 'X4', '>3', '<5', 'OLD', 'MOSS', '1891'].includes(
-          carving
-        )
+        [
+          'N2',
+          'E3',
+          'S4',
+          'W1',
+          'X2',
+          'X4',
+          '>3',
+          '<5',
+          'OLD',
+          'MOSS',
+          '1891',
+        ].includes(carving)
       ) {
         clueLabels.add(carving);
       }
@@ -3063,7 +3253,8 @@ describe('tile forest', () => {
           getForestCarvings(tileX, tileY).some(
             (carving) =>
               carving.preserved &&
-              (carving.motif === 'quest-hint' || carving.motif === 'treasure-map-clue')
+              (carving.motif === 'quest-hint' ||
+                carving.motif === 'treasure-map-clue')
           )
         ) {
           preservedClueTile = { x: tileX, y: tileY };
@@ -3201,7 +3392,11 @@ describe('tile forest', () => {
     let targetTile: { x: number; y: number } | null = null;
     for (let tileY = 0; tileY < 64 && !targetTile; tileY += 1) {
       for (let tileX = 0; tileX < 64; tileX += 1) {
-        if (getForestTreeHistoricalProfiles(tileX, tileY).some((entry) => entry.landmark)) {
+        if (
+          getForestTreeHistoricalProfiles(tileX, tileY).some(
+            (entry) => entry.landmark
+          )
+        ) {
           targetTile = { x: tileX, y: tileY };
           break;
         }
@@ -3249,7 +3444,9 @@ describe('tile forest', () => {
 
     expect(fullTitles.size).toBeGreaterThan(0);
     expect(fullRecords.size).toBeGreaterThan(0);
-    expect([...fullTitles].some((title) => /Oak|Birch|Pine/.test(title))).toBe(true);
+    expect([...fullTitles].some((title) => /Oak|Birch|Pine/.test(title))).toBe(
+      true
+    );
     expect(lowHistoricalCount).toBe(0);
   });
 
@@ -3347,7 +3544,11 @@ describe('tile forest', () => {
     let targetTile: { x: number; y: number } | null = null;
     for (let tileY = 0; tileY < 24 && !targetTile; tileY += 1) {
       for (let tileX = 0; tileX < 24; tileX += 1) {
-        if (getForestMeadows(tileX, tileY).some((meadow) => meadow.flowers.length > 0)) {
+        if (
+          getForestMeadows(tileX, tileY).some(
+            (meadow) => meadow.flowers.length > 0
+          )
+        ) {
           targetTile = { x: tileX, y: tileY };
           break;
         }
@@ -3597,8 +3798,11 @@ describe('tile forest', () => {
   it('renders beaver damage only near river habitat with a nearby beaver population in full-detail close forest models', () => {
     const plugin = createForestTilePlugin();
     const tile = plugin.tiles?.find((entry) => entry.kind === 'forest');
-    let targetTile: { x: number; y: number; rivers: Record<string, { kind: string }> } | null =
-      null;
+    let targetTile: {
+      x: number;
+      y: number;
+      rivers: Record<string, { kind: string }>;
+    } | null = null;
     for (let tileY = 0; tileY < 24 && !targetTile; tileY += 1) {
       for (let tileX = 0; tileX < 24; tileX += 1) {
         const rivers = {
@@ -3680,8 +3884,12 @@ describe('tile forest', () => {
     };
 
     expect(countTaggedNodes(wetModel, 'forestBeaverDamage')).toBeGreaterThan(0);
-    expect(countTaggedValue(wetModel, 'forestBeaverDamage', 'chew')).toBeGreaterThan(0);
-    expect(countTaggedValue(wetModel, 'forestBeaverDamage', 'debris')).toBeGreaterThan(0);
+    expect(
+      countTaggedValue(wetModel, 'forestBeaverDamage', 'chew')
+    ).toBeGreaterThan(0);
+    expect(
+      countTaggedValue(wetModel, 'forestBeaverDamage', 'debris')
+    ).toBeGreaterThan(0);
     expect(countTaggedNodes(dryModel, 'forestBeaverDamage')).toBe(0);
     expect(countTaggedNodes(farModel, 'forestBeaverDamage')).toBe(0);
     expect(countTaggedNodes(lowModel, 'forestBeaverDamage')).toBe(0);
@@ -3691,8 +3899,11 @@ describe('tile forest', () => {
     const plugin = createForestTilePlugin();
     const tile = plugin.tiles?.find((entry) => entry.kind === 'forest');
 
-    let targetTile: { x: number; y: number; rivers: Record<string, { kind: string }> } | null =
-      null;
+    let targetTile: {
+      x: number;
+      y: number;
+      rivers: Record<string, { kind: string }>;
+    } | null = null;
 
     for (let tileY = 0; tileY < 24 && !targetTile; tileY += 1) {
       for (let tileX = 0; tileX < 24; tileX += 1) {
@@ -3743,8 +3954,11 @@ describe('tile forest', () => {
     const plugin = createForestTilePlugin();
     const tile = plugin.tiles?.find((entry) => entry.kind === 'forest');
 
-    let targetTile: { x: number; y: number; rivers: Record<string, { kind: string }> } | null =
-      null;
+    let targetTile: {
+      x: number;
+      y: number;
+      rivers: Record<string, { kind: string }>;
+    } | null = null;
 
     for (let tileY = 0; tileY < 24 && !targetTile; tileY += 1) {
       for (let tileX = 0; tileX < 24; tileX += 1) {
@@ -3897,8 +4111,8 @@ describe('tile forest', () => {
     });
 
     const wetMaterial = webInstances[0]?.material as FakeMaterial | undefined;
-    expect((wetMaterial?.opacity ?? 0)).toBeGreaterThan(dryOpacity);
-    expect((wetMaterial?.emissiveIntensity ?? 0)).toBeGreaterThan(dryEmissive);
+    expect(wetMaterial?.opacity ?? 0).toBeGreaterThan(dryOpacity);
+    expect(wetMaterial?.emissiveIntensity ?? 0).toBeGreaterThan(dryEmissive);
   });
 
   it('renders spiders only in nearby full-detail forest models', () => {
@@ -3959,7 +4173,9 @@ describe('tile forest', () => {
     };
 
     expect(nearSpiderInstances).toHaveLength(2);
-    expect(nearSpiderInstances.every((instance) => instance.count > 0)).toBe(true);
+    expect(nearSpiderInstances.every((instance) => instance.count > 0)).toBe(
+      true
+    );
     expect(countTaggedNodes(farModel, 'forestSpider')).toBe(0);
     expect(countTaggedNodes(lowModel, 'forestSpider')).toBe(0);
   });
@@ -3987,8 +4203,10 @@ describe('tile forest', () => {
 
     expect(fireflyPoints).toHaveLength(1);
     expect(
-      (fireflyPoints[0]?.geometry?.attributes.position as FakeFloat32BufferAttribute | undefined)
-        ?.array.length
+      (
+        fireflyPoints[0]?.geometry?.attributes.position as
+          FakeFloat32BufferAttribute | undefined
+      )?.array.length
     ).toBeGreaterThan(0);
 
     tile?.sync3DModel?.({
@@ -4003,7 +4221,9 @@ describe('tile forest', () => {
       environment: {},
     });
 
-    expect(fireflyPoints.every((points) => points.visible === false)).toBe(true);
+    expect(fireflyPoints.every((points) => points.visible === false)).toBe(
+      true
+    );
     expect(
       fireflyPoints.every(
         (points) => ((points.material as FakeMaterial)?.opacity ?? 0) <= 0.01
@@ -4029,20 +4249,17 @@ describe('tile forest', () => {
       )
     ).toBe(true);
     expect(
-      (
-        fireflyPoints[0]?.material as FakeMaterial | undefined
-      )?.uniforms?.uTimeMs?.value
+      (fireflyPoints[0]?.material as FakeMaterial | undefined)?.uniforms
+        ?.uTimeMs?.value
     ).toBe(1200);
     expect(
-      (
-        fireflyPoints[0]?.material as FakeMaterial | undefined
-      )?.uniforms?.uActivation?.value
+      (fireflyPoints[0]?.material as FakeMaterial | undefined)?.uniforms
+        ?.uActivation?.value
     ).toBe(1);
     expect(
       (
         fireflyPoints[0]?.geometry?.attributes.position as
-          | FakeFloat32BufferAttribute
-          | undefined
+          FakeFloat32BufferAttribute | undefined
       )?.needsUpdate
     ).not.toBe(true);
   });
@@ -4082,7 +4299,9 @@ describe('tile forest', () => {
       environment: {},
     });
 
-    expect(fireflyPoints.every((points) => points.visible === false)).toBe(true);
+    expect(fireflyPoints.every((points) => points.visible === false)).toBe(
+      true
+    );
     expect(
       fireflyPoints.every(
         (points) => ((points.material as FakeMaterial)?.opacity ?? 0) <= 0.01
@@ -4161,14 +4380,12 @@ describe('tile forest', () => {
     const particleCount =
       (
         fireflyPoints?.userData?.forestFirefly as
-          | { particleCount?: number }
-          | undefined
+          { particleCount?: number } | undefined
       )?.particleCount ?? 0;
     const positionCount =
       (
         fireflyPoints?.geometry?.attributes.position as
-          | FakeFloat32BufferAttribute
-          | undefined
+          FakeFloat32BufferAttribute | undefined
       )?.array.length ?? 0;
 
     expect(fireflyNodes).toHaveLength(1);
@@ -4213,7 +4430,9 @@ describe('tile forest', () => {
     expect(firstPoints).toBeDefined();
     expect(secondPoints).toBeDefined();
     expect(firstPoints?.material).toBe(secondPoints?.material);
-    expect((firstPoints?.material as FakeMaterial | undefined)?.options).toMatchObject({
+    expect(
+      (firstPoints?.material as FakeMaterial | undefined)?.options
+    ).toMatchObject({
       uniforms: expect.objectContaining({
         uTimeMs: expect.objectContaining({ value: expect.any(Number) }),
         uActivation: expect.objectContaining({ value: expect.any(Number) }),
@@ -4225,7 +4444,9 @@ describe('tile forest', () => {
       transparent: true,
       depthWrite: false,
     });
-    expect((firstPoints?.material as FakeMaterial | undefined)?.options.map).toBeUndefined();
+    expect(
+      (firstPoints?.material as FakeMaterial | undefined)?.options.map
+    ).toBeUndefined();
   });
 
   it('scales firefly particle density down for farther close-detail forest tiles', () => {
@@ -4261,14 +4482,12 @@ describe('tile forest', () => {
     const nearCount =
       (
         nearPoints?.geometry?.attributes.position as
-          | FakeFloat32BufferAttribute
-          | undefined
+          FakeFloat32BufferAttribute | undefined
       )?.array.length ?? 0;
     const midCount =
       (
         midPoints?.geometry?.attributes.position as
-          | FakeFloat32BufferAttribute
-          | undefined
+          FakeFloat32BufferAttribute | undefined
       )?.array.length ?? 0;
 
     expect(nearPoints).toBeDefined();
@@ -4395,7 +4614,10 @@ describe('tile forest', () => {
 
     expect(humidTile).not.toBeNull();
 
-    const [leadFirefly] = getForestFireflyDescriptors(humidTile!.x, humidTile!.y);
+    const [leadFirefly] = getForestFireflyDescriptors(
+      humidTile!.x,
+      humidTile!.y
+    );
     expect(leadFirefly).toBeDefined();
     expect(leadFirefly?.habitatKind).not.toBe('tree');
   });

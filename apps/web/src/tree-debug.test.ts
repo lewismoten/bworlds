@@ -16,6 +16,7 @@ describe('tree debug', () => {
         yearProgress: 2,
         detailLevel: 'low',
         consumer: 'gameplay',
+        speciesMode: 'pine',
       })
     ).toEqual({
       tileX: 13,
@@ -23,6 +24,7 @@ describe('tree debug', () => {
       yearProgress: 1,
       detailLevel: 'low',
       consumer: 'gameplay',
+      speciesMode: 'pine',
     });
   });
 
@@ -49,6 +51,26 @@ describe('tree debug', () => {
     ).toBe(true);
   });
 
+  it('can preview a specific forest species independent of the tile mix', () => {
+    const oak = createTreeDebugSnapshot({
+      tileX: 8,
+      tileY: 6,
+      speciesMode: 'oak',
+    });
+    const pine = createTreeDebugSnapshot({
+      tileX: 8,
+      tileY: 6,
+      speciesMode: 'pine',
+    });
+
+    expect(oak.trees).toHaveLength(1);
+    expect(oak.trees[0]?.speciesId).toBe('oak');
+    expect(oak.tileSummary.previewSpeciesCount).toBe(1);
+    expect(pine.trees).toHaveLength(1);
+    expect(pine.trees[0]?.speciesId).toBe('pine');
+    expect(pine.trees[0]?.form).toBe('pine');
+  });
+
   it('renders markup and summary content for the tree conservatory page', () => {
     const snapshot = createTreeDebugSnapshot();
     const markup = buildTreeDebugMarkup(snapshot);
@@ -57,8 +79,10 @@ describe('tree debug', () => {
     expect(markup).toContain('Tree Conservatory');
     expect(markup).toContain('tree-debug-form');
     expect(markup).toContain('tree-debug-randomize');
+    expect(markup).toContain('Species');
     expect(markup).toContain('Generated trees');
     expect(summary).toContain('Season');
+    expect(summary).toContain('Preview');
     expect(summary).toContain('Slope / Wind');
   });
 

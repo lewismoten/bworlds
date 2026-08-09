@@ -23,6 +23,7 @@ function collectOptions(
     yearProgress: Number(data.get('yearProgress') ?? 0),
     detailLevel: String(data.get('detailLevel') ?? ''),
     consumer: String(data.get('consumer') ?? ''),
+    speciesMode: String(data.get('speciesMode') ?? ''),
   } as Partial<TreeDebugOptions>;
 }
 
