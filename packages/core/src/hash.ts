@@ -2,6 +2,7 @@ const FNV_OFFSET_BASIS = 2166136261;
 const FNV_PRIME = 16777619;
 const HASH_PART_SEPARATOR = 58;
 const HASH_LABEL_CACHE_LIMIT = 4096;
+const UINT32_RANGE = 2 ** 32;
 
 const registeredHashLabels = new Map<string, number>();
 
@@ -53,7 +54,7 @@ export function hash2D(seed: HashSeedInput, x: number, y: number): number {
 export function hash2DWithSeed(seedHash: number, x: number, y: number): number {
   let hash = appendHashSeedNumber(seedHash, x);
   hash = appendHashSeedNumber(hash, y);
-  return (hash >>> 0) / 4294967296;
+  return (hash >>> 0) / UINT32_RANGE;
 }
 
 function mixHashCharacter(hash: number, charCode: number): number {
