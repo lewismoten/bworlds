@@ -7,6 +7,7 @@ import {
   getCombatSoundVolume,
   getForestWindCadenceMs,
   getPaddleBoatCalliopeCadenceMs,
+  resolveAmbienceDuckingGain,
   getSurfaceAudioFamily,
   getSurfaceAudioProfile,
   getSoundSpatialMix,
@@ -346,6 +347,91 @@ describe('sound effects', () => {
     expect(controller.getRecentPrioritySoundIntensity(100)).toBe(0.9);
     expect(controller.getRecentPrioritySoundIntensity(1200)).toBeLessThan(0.5);
     expect(controller.getRecentPrioritySoundIntensity(3000)).toBe(0);
+  });
+
+  it('reduces low-priority ambience while recent important sounds are active', () => {
+    const baseline: ProceduralSoundEffect[] = [];
+    const ducked: ProceduralSoundEffect[] = [];
+    const baselineController = createSoundEffectController({
+      play(effect) {
+        baseline.push(effect);
+      },
+    });
+    const duckedController = createSoundEffectController({
+      play(effect) {
+        ducked.push(effect);
+      },
+    });
+
+    baselineController.update({
+      nowMs: 0,
+      walking: false,
+      isJumping: false,
+      viewMode: '3d',
+      tileKind: 'forest',
+      weatherKind: 'wind',
+      windStrength: 0.9,
+      nearbyAmbient: {
+        kind: 'forest',
+        intensity: 0.7,
+        emitter: { x: 2, y: 0 },
+      },
+      nearbyTrain: {
+        progress: 0.3,
+        emitter: { x: 4, y: 0 },
+      },
+      nearbyPaddleBoat: {
+        progress: 0.5,
+        emitter: { x: 5, y: 0 },
+      },
+    });
+
+    duckedController.triggerProgression({
+      nowMs: 0,
+      emitter: { x: 0, y: 0 },
+    });
+    duckedController.update({
+      nowMs: 0,
+      walking: false,
+      isJumping: false,
+      viewMode: '3d',
+      tileKind: 'forest',
+      weatherKind: 'wind',
+      windStrength: 0.9,
+      nearbyAmbient: {
+        kind: 'forest',
+        intensity: 0.7,
+        emitter: { x: 2, y: 0 },
+      },
+      nearbyTrain: {
+        progress: 0.3,
+        emitter: { x: 4, y: 0 },
+      },
+      nearbyPaddleBoat: {
+        progress: 0.5,
+        emitter: { x: 5, y: 0 },
+      },
+    });
+
+    expect(duckedController.getRecentPrioritySoundIntensity(0)).toBe(0.9);
+    expect(resolveAmbienceDuckingGain(0.9)).toBeLessThan(1);
+    expect(baseline.map((effect) => effect.kind)).toEqual([
+      'train-engine',
+      'paddle-calliope',
+      'forest-ambience',
+      'wind',
+    ]);
+    expect(ducked.map((effect) => effect.kind)).toEqual([
+      'advancement',
+      'train-engine',
+      'paddle-calliope',
+      'forest-ambience',
+      'wind',
+    ]);
+    expect(ducked[1]!.volume).toBeLessThan(baseline[0]!.volume);
+    expect(ducked[2]!.volume).toBeLessThan(baseline[1]!.volume);
+    expect(ducked[3]!.volume).toBeLessThan(baseline[2]!.volume);
+    expect(ducked[4]!.volume).toBeLessThan(baseline[3]!.volume);
   });
 
   it('plays reusable open and close interaction sounds for doors and exits', () => {

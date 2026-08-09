@@ -289,17 +289,17 @@ export function createSoundEffectController(
   let previousJumping = false;
   let footstepVariant = 0;
 
-  function play(
+  function createProceduralEffect(
     kind: SoundEffectKind,
     nowMs: number,
     tileKind?: SurfaceKind,
     emitter?: SoundPosition,
     listener?: SoundPosition
-  ) {
+  ): ProceduralSoundEffect {
     const profile = getSurfaceAudioProfile(tileKind);
     const variantOffset = footstepVariant % 2 === 0 ? -8 : 6;
     footstepVariant += 1;
-    sink.play({
+    return {
       kind,
       nowMs,
       frequency:
@@ -488,6 +488,27 @@ export function createSoundEffectController(
                                             : profile.waveform,
       emitter,
       listener,
+    };
+  }
+
+  function play(
+    kind: SoundEffectKind,
+    nowMs: number,
+    tileKind?: SurfaceKind,
+    emitter?: SoundPosition,
+    listener?: SoundPosition,
+    volumeMultiplier = 1
+  ) {
+    const effect = createProceduralEffect(
+      kind,
+      nowMs,
+      tileKind,
+      emitter,
+      listener
+    );
+    sink.play({
+      ...effect,
+      volume: effect.volume * volumeMultiplier,
     });
   }
 
@@ -612,6 +633,9 @@ export function createSoundEffectController(
       }
 
       if (ambianceEnabled !== false) {
+        const ambienceDuckingGain = resolveAmbienceDuckingGain(
+          this.getRecentPrioritySoundIntensity(nowMs)
+        );
         if (
           nearbyTrain &&
           nearbyTrain.emitter &&
@@ -623,7 +647,8 @@ export function createSoundEffectController(
             nowMs,
             'rail',
             nearbyTrain.emitter,
-            nearbyTrain.listener ?? listener
+            nearbyTrain.listener ?? listener,
+            ambienceDuckingGain
           );
         }
         if (
@@ -654,7 +679,7 @@ export function createSoundEffectController(
               nearbyPaddleBoat.progress
             ),
             durationMs: 1180,
-            volume: 0.034,
+            volume: 0.034 * ambienceDuckingGain,
             waveform: 'triangle',
             emitter: nearbyPaddleBoat.emitter,
             listener: nearbyPaddleBoat.listener ?? listener,
@@ -715,10 +740,11 @@ export function createSoundEffectController(
               nearbyAmbient.intensity
             ),
             durationMs: 1680,
-            volume: getAmbientSoundVolume(
-              nearbyAmbient.kind,
-              nearbyAmbient.intensity
-            ),
+            volume:
+              getAmbientSoundVolume(
+                nearbyAmbient.kind,
+                nearbyAmbient.intensity
+              ) * ambienceDuckingGain,
             waveform: resolveAmbientSoundWaveform(nearbyAmbient.kind),
             emitter: nearbyAmbient.emitter,
             listener: nearbyAmbient.listener ?? listener,
@@ -733,7 +759,7 @@ export function createSoundEffectController(
             getForestWindCadenceMs(windStrength ?? weatherIntensity ?? 0)
         ) {
           lastWindAtMs = nowMs;
-          play('wind', nowMs, tileKind, emitter, listener);
+          play('wind', nowMs, tileKind, emitter, listener, ambienceDuckingGain);
         }
       } else {
         lastSteamWhistleSignature = '';
@@ -782,6 +808,13 @@ export function shouldPlayForestWindSound(
 
 export function getForestWindCadenceMs(windStrength: number): number {
   return Math.round(clampValue(2600 - windStrength * 1200, 1200, 2600));
+}
+
+export function resolveAmbienceDuckingGain(
+  prioritySoundIntensity: number
+): number {
+  const clamped = clampValue(prioritySoundIntensity, 0, 1);
+  return 1 - clamped * 0.55;
 }
 
 export function getAmbientSoundCadenceMs(
