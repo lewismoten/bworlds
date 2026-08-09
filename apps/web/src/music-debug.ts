@@ -9,6 +9,7 @@ import {
 } from './procedural-music.ts';
 import {
   isProceduralSemitoneInScale,
+  resolveProceduralLeadContour,
   resolveProceduralChordProgression,
   resolveProceduralLeadMotif,
   resolveProceduralLeadPhraseCadence,
@@ -46,6 +47,7 @@ export type MusicDebugSnapshot = {
   instrumentBank: ReturnType<typeof createProceduralInstrumentBank>;
   chordProgression: number[];
   leadMotif: number[];
+  leadContour: string[];
   leadPhraseCadence: string[];
   song: ProceduralMusicSong;
   notes: ProceduralMusicNote[];
@@ -164,6 +166,11 @@ export function createMusicDebugSnapshot(
     ...resolveProceduralLeadMotif(theme, options.clusterX, options.clusterY)
       .degreeOffsets,
   ];
+  const leadContour = resolveProceduralLeadContour(
+    theme,
+    options.clusterX,
+    options.clusterY
+  ).map((step) => `${step.stage}:${step.degreeOffset}`);
   const leadPhraseCadence = Array.from(
     { length: Math.max(1, theme.stepPattern.length) },
     (_, stepIndex) => resolveProceduralLeadPhraseCadence(theme, stepIndex)
@@ -218,6 +225,7 @@ export function createMusicDebugSnapshot(
     instrumentBank,
     chordProgression,
     leadMotif,
+    leadContour,
     leadPhraseCadence,
     song,
     notes: song.notes,
@@ -378,6 +386,9 @@ export function buildMusicDebugSummaryMarkup(
     </div>
     <div class="music-debug-role-counts">
       <span>Lead Motif ${snapshot.leadMotif.map((degree) => degree + 1).join(' - ')}</span>
+    </div>
+    <div class="music-debug-role-counts">
+      <span>Lead Contour ${snapshot.leadContour.join(' / ')}</span>
     </div>
     <div class="music-debug-role-counts">
       <span>Lead Cadence ${snapshot.leadPhraseCadence.join(' / ')}</span>

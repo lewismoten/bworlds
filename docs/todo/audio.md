@@ -34,7 +34,7 @@
 - [x] Add ability for bass to primarily play chord roots, occasionally fifths, octaves, and passing tones
 - [ ] Generator(s) for the different layers should be aware of each layer, and work with each-other - set tempo + meter, chord progression, bass + harmony, work out melody, then percussion reacts to the structure
 - [x] Songs should have structural bluebrints before generating notes (intro 8 bars, A16, A'16, B16, A16, Outro 8)
-- [ ] Generate a melodic contour before generating pitches (start low, rise gradually, reach climax, descend, resolve)
+- [x] Generate a melodic contour before generating pitches (start low, rise gradually, reach climax, descend, resolve)
 - [ ] Every tile type (forest, ruins, plains) should have a music vocabulary (tempo, mode, instruments, melody range, rhythm density, preferred intervals)
 - [ ] Larger regions/bioms can influence the vocabulary
 - [ ] A region/biome may use a common four-note motif, but a town uses it slowly, battle theme is aggressive, kings castle ceremonially, ruins uses it in minor, etc.

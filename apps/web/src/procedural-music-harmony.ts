@@ -23,10 +23,19 @@ export type ProceduralLeadMotif = {
 
 export type ProceduralLeadPhraseCadence = 'neutral' | 'question' | 'answer';
 
+export type ProceduralLeadContourStage =
+  'start' | 'rise' | 'climax' | 'descend' | 'resolve';
+
+export type ProceduralLeadContourStep = {
+  stage: ProceduralLeadContourStage;
+  degreeOffset: number;
+};
+
 const MUSIC_PROGRESSION_SEED = registerHashLabel('music-progression');
 const MUSIC_MOTIF_SEED = registerHashLabel('music-lead-motif');
 const MUSIC_LEAP_SEED = registerHashLabel('music-leap-motion');
 const MUSIC_ACCIDENTAL_SEED = registerHashLabel('music-accidental-motion');
+const MUSIC_CONTOUR_SEED = registerHashLabel('music-lead-contour');
 const PROGRESSION_PATTERNS = [
   [0, 3, 4, 0],
   [0, 4, 5, 0],
@@ -92,6 +101,54 @@ export function resolveProceduralLeadPhraseCadence(
     return 'answer';
   }
   return 'neutral';
+}
+
+export function resolveProceduralLeadContour(
+  theme: ProceduralHarmonyTheme,
+  clusterX: number,
+  clusterY: number
+): readonly ProceduralLeadContourStep[] {
+  const phraseLength = Math.max(1, theme.stepPattern.length);
+  const contourBias =
+    hash2DWithSeed(
+      MUSIC_CONTOUR_SEED,
+      clusterX + theme.id.length * 23,
+      clusterY - theme.id.length * 31
+    ) > 0.5
+      ? 1
+      : 0;
+  const climaxIndex = Math.max(1, Math.floor(phraseLength * 0.6));
+  const resolveIndex = phraseLength - 1;
+  const contour: ProceduralLeadContourStep[] = [];
+
+  for (let stepIndex = 0; stepIndex < phraseLength; stepIndex += 1) {
+    let stage: ProceduralLeadContourStage = 'rise';
+    let degreeOffset = 1 + contourBias;
+
+    if (stepIndex === 0) {
+      stage = 'start';
+      degreeOffset = 0;
+    } else if (stepIndex >= resolveIndex) {
+      stage = 'resolve';
+      degreeOffset = 0;
+    } else if (stepIndex === climaxIndex) {
+      stage = 'climax';
+      degreeOffset = 4 + contourBias;
+    } else if (stepIndex > climaxIndex) {
+      stage = 'descend';
+      degreeOffset = Math.max(1, 3 + contourBias - (stepIndex - climaxIndex));
+    } else {
+      stage = 'rise';
+      degreeOffset = Math.min(3 + contourBias, 1 + stepIndex);
+    }
+
+    contour.push({
+      stage,
+      degreeOffset,
+    });
+  }
+
+  return contour;
 }
 
 export function isProceduralSemitoneInScale(
@@ -287,11 +344,14 @@ function resolveLeadSemitonePlan(
   strongLeadBeat: boolean;
 } {
   const motif = resolveProceduralLeadMotif(theme, clusterX, clusterY);
+  const contour = resolveProceduralLeadContour(theme, clusterX, clusterY);
   const phraseStep = stepIndex % theme.stepPattern.length;
   const cadence = resolveProceduralLeadPhraseCadence(theme, stepIndex);
+  const contourStep = contour[phraseStep] ?? contour[0];
   const melodyPatternIndex =
     chord.degreeIndex +
-    (motif.degreeOffsets[phraseStep % motif.degreeOffsets.length] ?? 0);
+    (motif.degreeOffsets[phraseStep % motif.degreeOffsets.length] ?? 0) +
+    (contourStep?.degreeOffset ?? 0);
   const leadScaleSemitones = getScaleDegreeSemitones(
     theme.scale,
     melodyPatternIndex

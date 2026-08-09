@@ -3,6 +3,7 @@ import {
   isProceduralSemitoneInScale,
   resolveProceduralChordAtStep,
   resolveProceduralChordProgression,
+  resolveProceduralLeadContour,
   resolveProceduralInstrumentSemitones,
   resolveProceduralLeadMotif,
   resolveProceduralLeadPhraseCadence,
@@ -174,5 +175,22 @@ describe('procedural music harmony', () => {
 
     expect(accidentalCount).toBeGreaterThan(0);
     expect(accidentalCount).toBeLessThan(semitones.length / 4);
+  });
+
+  it('builds a deterministic melodic contour that rises, peaks, and resolves', () => {
+    const contour = resolveProceduralLeadContour(TEST_THEME, 3, -2);
+    const repeated = resolveProceduralLeadContour(TEST_THEME, 3, -2);
+
+    expect(contour).toEqual(repeated);
+    expect(contour).toHaveLength(TEST_THEME.stepPattern.length);
+    expect(contour[0]?.stage).toBe('start');
+    expect(contour.at(-1)?.stage).toBe('resolve');
+    expect(contour.some((step) => step.stage === 'climax')).toBe(true);
+
+    const climax = contour.find((step) => step.stage === 'climax');
+    const start = contour[0];
+    const end = contour.at(-1);
+    expect(climax?.degreeOffset).toBeGreaterThan(start?.degreeOffset ?? 0);
+    expect(end?.degreeOffset).toBeLessThanOrEqual(climax?.degreeOffset ?? 0);
   });
 });

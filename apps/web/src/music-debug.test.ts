@@ -57,6 +57,7 @@ describe('music debug', () => {
     expect(first.instrumentBank).toEqual(second.instrumentBank);
     expect(first.chordProgression).toEqual(second.chordProgression);
     expect(first.leadMotif).toEqual(second.leadMotif);
+    expect(first.leadContour).toEqual(second.leadContour);
     expect(first.leadPhraseCadence).toEqual(second.leadPhraseCadence);
     expect(first.leadMaxLeapSemitones).toBe(second.leadMaxLeapSemitones);
     expect(first.accidentalNoteCount).toBe(second.accidentalNoteCount);
@@ -94,6 +95,7 @@ describe('music debug', () => {
     expect(summary).toContain('Loop Range');
     expect(summary).toContain('Chords');
     expect(summary).toContain('Lead Motif');
+    expect(summary).toContain('Lead Contour');
     expect(summary).toContain('Lead Cadence');
     expect(summary).toContain('Lead Max Leap');
     expect(summary).toContain('Accidentals');
