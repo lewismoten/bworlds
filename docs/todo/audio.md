@@ -52,6 +52,20 @@
 - [x] Add a Download button to download the song as a MIDI file
 - [ ] A play marker line should show where in the song is currently playing
 - [ ] Graphical track layers should appear near the top of the debug panel
+- [ ] Graphical track should show a time of 00:00 (minutes/seconds) of where the position is currently at, as well as buttons to jump to the beginning, or jump betwen each section.
+- [ ] Graphical track should visually show/label each section
+- [ ] Clicking anywhere on the graphical track should move the play-head to that location
+- [ ] All instrument sounds used to play the music should be listed along with their track, name, graphical wave form, and ability to play on their own.
+- [ ] MIDI download should let each instrument (ie melody, harmony, bass, drums) be represented as individual tracks and labeled as such.
+- [ ] MIDI download should have meta markers to indicate which section is being played
+- [ ] MIDI duration should match the generated song duration
+- [ ] MIDI should include tempo event(s)
+- [ ] MIDI should include time signature(s)
+- [ ] MIDI should include key signature(s)
+- [ ] MIDI should include channel volume(s)
+- [ ] MIDI should include pans(s)
+- [ ] MIDI should include bank select MSB(s)
+- [ ] MIDI should include bank select LSB(s)
 
 # Sound Effects
 

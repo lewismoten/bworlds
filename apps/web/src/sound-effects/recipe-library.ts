@@ -1,0 +1,1072 @@
+import type {
+  ProceduralNoiseColor,
+  ProceduralSoundRecipe,
+  SoundEffectKind,
+  SoundWaveform,
+} from '../procedural-sound-effect-generator.ts';
+
+export type SoundRecipeSurfaceProfile = {
+  cadenceMs: number;
+  footstepFrequency: number;
+  landingFrequency: number;
+  footstepVolume: number;
+  landingVolume: number;
+  waveform: SoundWaveform;
+};
+
+export type SoundRecipeFamily =
+  | 'movement'
+  | 'interaction'
+  | 'ambient-wind'
+  | 'ambient-water'
+  | 'ambient-wilds'
+  | 'ambient-shelter'
+  | 'progression'
+  | 'vehicle-engine'
+  | 'vehicle-whistle'
+  | 'vehicle-melody'
+  | 'combat-weapon'
+  | 'combat-magic';
+
+export type SoundIdentityDescriptor = {
+  family: SoundRecipeFamily;
+  signature: string;
+};
+
+type SoundVariationProfile = {
+  frequencyVariation: number;
+  durationVariation: number;
+  volumeVariation: number;
+  variationDepth: number;
+  frequencyRangeRatio: number;
+  durationRangeRatio: number;
+  volumeRangeRatio: number;
+};
+
+type ResolveSoundRecipeOptions = {
+  kind: SoundEffectKind;
+  tileKind?: string;
+  profile: SoundRecipeSurfaceProfile;
+  variantOffset: number;
+  durationMsOverride?: number;
+  resolveAdvancementFrequency(level?: number): number;
+  resolveAmbientSoundFrequency(
+    kind:
+      | 'ocean'
+      | 'river'
+      | 'forest'
+      | 'plains'
+      | 'mountain'
+      | 'cave'
+      | 'settlement'
+      | 'ruins',
+    intensity?: number
+  ): number;
+  resolveInteractionFrequency(
+    event: 'open' | 'close',
+    tileKind: string | undefined,
+    profile: SoundRecipeSurfaceProfile,
+    variantOffset: number
+  ): number;
+  resolveInteractionWaveform(
+    tileKind: string | undefined,
+    fallback: SoundWaveform
+  ): SoundWaveform;
+  resolvePaddleBoatCalliopeFrequency(progress?: number): number;
+  resolveSteamWhistleFrequency(whistlePhase?: 'arrival' | 'departure'): number;
+};
+
+type SoundLayerRecipe = NonNullable<ProceduralSoundRecipe['layers']>;
+
+export const SOUND_IDENTITY_DESCRIPTORS: Record<
+  SoundEffectKind,
+  SoundIdentityDescriptor
+> = {
+  footstep: {
+    family: 'movement',
+    signature: 'short percussive footfall matched to the current surface',
+  },
+  jump: {
+    family: 'movement',
+    signature: 'lighter rising movement cue built from the same surface family',
+  },
+  landing: {
+    family: 'movement',
+    signature: 'heavier impact that resolves the matching movement surface',
+  },
+  blocked: {
+    family: 'movement',
+    signature: 'dry abrasive impact for movement obstruction feedback',
+  },
+  open: {
+    family: 'interaction',
+    signature: 'brief mechanical or wooden opening gesture',
+  },
+  close: {
+    family: 'interaction',
+    signature: 'brief mechanical or wooden closing gesture',
+  },
+  wind: {
+    family: 'ambient-wind',
+    signature: 'broad airy wash with low drifting noise movement',
+  },
+  ocean: {
+    family: 'ambient-water',
+    signature: 'deep rolling surf with a warm low-frequency wash',
+  },
+  'river-ambience': {
+    family: 'ambient-water',
+    signature: 'quicker flowing water with a lighter textured splash bed',
+  },
+  'forest-ambience': {
+    family: 'ambient-wilds',
+    signature: 'leafy rustle with soft insect and branch-like texture',
+  },
+  'plains-ambience': {
+    family: 'ambient-wilds',
+    signature: 'open grassland wash with sparse bright movement',
+  },
+  'mountain-ambience': {
+    family: 'ambient-wilds',
+    signature: 'thin high air with rougher exposed terrain texture',
+  },
+  'cave-ambience': {
+    family: 'ambient-shelter',
+    signature: 'enclosed hollow ambience with darker resonant motion',
+  },
+  'settlement-ambience': {
+    family: 'ambient-shelter',
+    signature: 'soft organized bustle with restrained tonal body',
+  },
+  'ruins-ambience': {
+    family: 'ambient-shelter',
+    signature: 'brittle decayed ambience with sparse ghostly texture',
+  },
+  advancement: {
+    family: 'progression',
+    signature: 'clear rising celebratory chime for progression feedback',
+  },
+  'train-engine': {
+    family: 'vehicle-engine',
+    signature: 'steady saturated chug with mechanical weight',
+  },
+  'train-whistle': {
+    family: 'vehicle-whistle',
+    signature: 'bold square whistle carrying above nearby ambience',
+  },
+  'paddle-calliope': {
+    family: 'vehicle-melody',
+    signature: 'playful bright riverboat melody with a looping flourish',
+  },
+  'steam-whistle': {
+    family: 'vehicle-whistle',
+    signature: 'piercing industrial whistle with a slightly unstable sustain',
+  },
+  'combat-weapon': {
+    family: 'combat-weapon',
+    signature: 'short aggressive impact for physical combat exchanges',
+  },
+  'combat-magic': {
+    family: 'combat-magic',
+    signature: 'charged unstable magical burst with modulated bloom',
+  },
+};
+
+const SOUND_FAMILY_VARIATION_PROFILES: Record<
+  SoundRecipeFamily,
+  SoundVariationProfile
+> = {
+  movement: {
+    frequencyVariation: 0.02,
+    durationVariation: 0.08,
+    volumeVariation: 0.06,
+    variationDepth: 1,
+    frequencyRangeRatio: 0.05,
+    durationRangeRatio: 0.12,
+    volumeRangeRatio: 0.1,
+  },
+  interaction: {
+    frequencyVariation: 0.015,
+    durationVariation: 0.04,
+    volumeVariation: 0.04,
+    variationDepth: 0.8,
+    frequencyRangeRatio: 0.035,
+    durationRangeRatio: 0.08,
+    volumeRangeRatio: 0.08,
+  },
+  'ambient-wind': {
+    frequencyVariation: 0.03,
+    durationVariation: 0.14,
+    volumeVariation: 0.08,
+    variationDepth: 1,
+    frequencyRangeRatio: 0.06,
+    durationRangeRatio: 0.2,
+    volumeRangeRatio: 0.12,
+  },
+  'ambient-water': {
+    frequencyVariation: 0.028,
+    durationVariation: 0.12,
+    volumeVariation: 0.07,
+    variationDepth: 0.95,
+    frequencyRangeRatio: 0.055,
+    durationRangeRatio: 0.18,
+    volumeRangeRatio: 0.1,
+  },
+  'ambient-wilds': {
+    frequencyVariation: 0.03,
+    durationVariation: 0.14,
+    volumeVariation: 0.08,
+    variationDepth: 1,
+    frequencyRangeRatio: 0.06,
+    durationRangeRatio: 0.2,
+    volumeRangeRatio: 0.12,
+  },
+  'ambient-shelter': {
+    frequencyVariation: 0.022,
+    durationVariation: 0.12,
+    volumeVariation: 0.07,
+    variationDepth: 0.85,
+    frequencyRangeRatio: 0.045,
+    durationRangeRatio: 0.18,
+    volumeRangeRatio: 0.1,
+  },
+  progression: {
+    frequencyVariation: 0.012,
+    durationVariation: 0.03,
+    volumeVariation: 0.025,
+    variationDepth: 0.5,
+    frequencyRangeRatio: 0.03,
+    durationRangeRatio: 0.06,
+    volumeRangeRatio: 0.05,
+  },
+  'vehicle-engine': {
+    frequencyVariation: 0.015,
+    durationVariation: 0.05,
+    volumeVariation: 0.04,
+    variationDepth: 0.75,
+    frequencyRangeRatio: 0.035,
+    durationRangeRatio: 0.09,
+    volumeRangeRatio: 0.08,
+  },
+  'vehicle-whistle': {
+    frequencyVariation: 0.015,
+    durationVariation: 0.05,
+    volumeVariation: 0.04,
+    variationDepth: 0.75,
+    frequencyRangeRatio: 0.035,
+    durationRangeRatio: 0.09,
+    volumeRangeRatio: 0.08,
+  },
+  'vehicle-melody': {
+    frequencyVariation: 0.015,
+    durationVariation: 0.05,
+    volumeVariation: 0.04,
+    variationDepth: 0.75,
+    frequencyRangeRatio: 0.035,
+    durationRangeRatio: 0.09,
+    volumeRangeRatio: 0.08,
+  },
+  'combat-weapon': {
+    frequencyVariation: 0.018,
+    durationVariation: 0.04,
+    volumeVariation: 0.05,
+    variationDepth: 0.7,
+    frequencyRangeRatio: 0.04,
+    durationRangeRatio: 0.08,
+    volumeRangeRatio: 0.08,
+  },
+  'combat-magic': {
+    frequencyVariation: 0.02,
+    durationVariation: 0.05,
+    volumeVariation: 0.05,
+    variationDepth: 0.7,
+    frequencyRangeRatio: 0.045,
+    durationRangeRatio: 0.09,
+    volumeRangeRatio: 0.08,
+  },
+};
+
+export function getSoundIdentityDescriptor(
+  kind: SoundEffectKind
+): SoundIdentityDescriptor {
+  return SOUND_IDENTITY_DESCRIPTORS[kind];
+}
+
+export function buildProceduralSoundRecipe(
+  options: ResolveSoundRecipeOptions
+): ProceduralSoundRecipe {
+  const identity = getSoundIdentityDescriptor(options.kind);
+  const baseFrequency = resolveBaseSoundEffectFrequency(options);
+  const baseDurationMs =
+    options.durationMsOverride ??
+    resolveBaseSoundEffectDurationMs(options.kind);
+  const baseVolume = resolveBaseSoundEffectVolume(
+    options.kind,
+    options.profile
+  );
+
+  return applyFamilyVariationProfile(
+    {
+      id: options.kind,
+      baseFrequency,
+      baseDurationMs,
+      baseVolume,
+      waveform: resolveBaseSoundEffectWaveform(
+        options.kind,
+        options.tileKind,
+        options.profile,
+        options.resolveInteractionWaveform
+      ),
+      noiseColor: resolveBaseSoundEffectNoiseColor(options.kind),
+      envelope: resolveProceduralSoundEnvelope(options.kind),
+      pitchEnvelope: resolveProceduralSoundPitchEnvelope(options.kind),
+      filters: resolveProceduralSoundFilters(options.kind),
+      distortion: resolveProceduralSoundDistortion(options.kind),
+      delay: resolveProceduralSoundDelay(options.kind),
+      reverb: resolveProceduralSoundReverb(options.kind),
+      tremolo: resolveProceduralSoundTremolo(options.kind),
+      vibrato: resolveProceduralSoundVibrato(options.kind),
+      frequencyModulation: resolveProceduralSoundFrequencyModulation(
+        options.kind
+      ),
+      ringModulation: resolveProceduralSoundRingModulation(options.kind),
+      sweeps: resolveProceduralSoundSweeps(options.kind),
+      layers: resolveProceduralSoundLayers(options.kind),
+    },
+    identity.family
+  );
+}
+
+function applyFamilyVariationProfile(
+  recipe: ProceduralSoundRecipe,
+  family: SoundRecipeFamily
+): ProceduralSoundRecipe {
+  const profile = SOUND_FAMILY_VARIATION_PROFILES[family];
+  return {
+    ...recipe,
+    frequencyVariation: profile.frequencyVariation,
+    durationVariation: profile.durationVariation,
+    volumeVariation: profile.volumeVariation,
+    variationDepth: profile.variationDepth,
+    minFrequency: clampMinimum(
+      recipe.baseFrequency,
+      profile.frequencyRangeRatio
+    ),
+    maxFrequency: recipe.baseFrequency * (1 + profile.frequencyRangeRatio),
+    minDurationMs: clampMinimum(
+      recipe.baseDurationMs,
+      profile.durationRangeRatio
+    ),
+    maxDurationMs: recipe.baseDurationMs * (1 + profile.durationRangeRatio),
+    minVolume: clampMinimum(recipe.baseVolume, profile.volumeRangeRatio),
+    maxVolume: Math.min(1, recipe.baseVolume * (1 + profile.volumeRangeRatio)),
+  };
+}
+
+function clampMinimum(baseValue: number, rangeRatio: number): number {
+  return Math.max(0.0001, baseValue * (1 - rangeRatio));
+}
+
+function resolveProceduralSoundEnvelope(kind: SoundEffectKind) {
+  switch (kind) {
+    case 'jump':
+      return { attackMs: 10, decayMs: 38, sustainLevel: 0.58, releaseMs: 30 };
+    case 'landing':
+      return { attackMs: 6, decayMs: 36, sustainLevel: 0.42, releaseMs: 44 };
+    case 'blocked':
+      return { attackMs: 4, decayMs: 26, sustainLevel: 0.34, releaseMs: 36 };
+    case 'open':
+    case 'close':
+      return { attackMs: 5, decayMs: 28, sustainLevel: 0.48, releaseMs: 40 };
+    case 'wind':
+    case 'ocean':
+    case 'river-ambience':
+    case 'forest-ambience':
+    case 'plains-ambience':
+    case 'mountain-ambience':
+    case 'cave-ambience':
+    case 'settlement-ambience':
+    case 'ruins-ambience':
+      return {
+        attackMs: 120,
+        decayMs: 220,
+        sustainLevel: 0.76,
+        releaseMs: 180,
+      };
+    case 'advancement':
+      return { attackMs: 14, decayMs: 46, sustainLevel: 0.66, releaseMs: 70 };
+    case 'train-engine':
+      return { attackMs: 28, decayMs: 110, sustainLevel: 0.72, releaseMs: 90 };
+    case 'train-whistle':
+    case 'steam-whistle':
+      return {
+        attackMs: 18,
+        decayMs: 120,
+        sustainLevel: 0.82,
+        releaseMs: 120,
+      };
+    case 'paddle-calliope':
+      return { attackMs: 20, decayMs: 60, sustainLevel: 0.74, releaseMs: 110 };
+    case 'combat-weapon':
+      return { attackMs: 4, decayMs: 24, sustainLevel: 0.28, releaseMs: 34 };
+    case 'combat-magic':
+      return { attackMs: 12, decayMs: 54, sustainLevel: 0.62, releaseMs: 68 };
+    case 'footstep':
+    default:
+      return { attackMs: 4, decayMs: 22, sustainLevel: 0.38, releaseMs: 24 };
+  }
+}
+
+function resolveProceduralSoundPitchEnvelope(kind: SoundEffectKind) {
+  switch (kind) {
+    case 'jump':
+      return {
+        attackMs: 10,
+        decayMs: 24,
+        peakMultiplier: 1.08,
+        sustainMultiplier: 0.98,
+        releaseMs: 30,
+        releaseTargetMultiplier: 1.04,
+      };
+    case 'combat-magic':
+      return {
+        attackMs: 18,
+        decayMs: 44,
+        peakMultiplier: 1.05,
+        sustainMultiplier: 0.94,
+        releaseMs: 62,
+        releaseTargetMultiplier: 0.9,
+      };
+    case 'steam-whistle':
+      return {
+        attackMs: 28,
+        decayMs: 90,
+        peakMultiplier: 1.04,
+        sustainMultiplier: 1,
+        releaseMs: 120,
+        releaseTargetMultiplier: 0.96,
+      };
+    default:
+      return undefined;
+  }
+}
+
+function resolveProceduralSoundFilters(kind: SoundEffectKind) {
+  switch (kind) {
+    case 'combat-magic':
+      return [
+        {
+          type: 'bandpass' as const,
+          frequency: 1_420,
+          q: 1.1,
+          frequencyVariation: 0.05,
+          qVariation: 0.08,
+          envelope: {
+            attackMs: 18,
+            decayMs: 44,
+            releaseMs: 62,
+            peakFrequencyMultiplier: 1.16,
+            sustainFrequencyMultiplier: 0.92,
+            releaseFrequencyMultiplier: 0.82,
+            peakQMultiplier: 1.18,
+            sustainQMultiplier: 1.05,
+            releaseQMultiplier: 0.9,
+          },
+        },
+      ] as const;
+    case 'ocean':
+    case 'river-ambience':
+      return [
+        {
+          type: 'lowpass' as const,
+          frequency: 1_600,
+          q: 0.7,
+          frequencyVariation: 0.04,
+        },
+      ] as const;
+    case 'wind':
+      return [
+        {
+          type: 'highpass' as const,
+          frequency: 340,
+          q: 0.9,
+          frequencyVariation: 0.05,
+        },
+      ] as const;
+    default:
+      return undefined;
+  }
+}
+
+function resolveProceduralSoundDistortion(kind: SoundEffectKind) {
+  switch (kind) {
+    case 'combat-weapon':
+      return {
+        mode: 'distortion' as const,
+        amount: 0.42,
+        outputGain: 0.76,
+        amountVariation: 0.08,
+        outputGainVariation: 0.05,
+      };
+    case 'combat-magic':
+      return {
+        mode: 'saturation' as const,
+        amount: 0.28,
+        outputGain: 0.84,
+        amountVariation: 0.06,
+        outputGainVariation: 0.04,
+      };
+    case 'train-engine':
+      return {
+        mode: 'saturation' as const,
+        amount: 0.22,
+        outputGain: 0.88,
+        amountVariation: 0.05,
+        outputGainVariation: 0.03,
+      };
+    default:
+      return undefined;
+  }
+}
+
+function resolveProceduralSoundDelay(kind: SoundEffectKind) {
+  switch (kind) {
+    case 'combat-magic':
+      return {
+        timeMs: 118,
+        feedback: 0.32,
+        mix: 0.24,
+        timeVariation: 0.05,
+        feedbackVariation: 0.08,
+        mixVariation: 0.06,
+      };
+    case 'steam-whistle':
+      return {
+        timeMs: 164,
+        feedback: 0.26,
+        mix: 0.22,
+        timeVariation: 0.04,
+        feedbackVariation: 0.06,
+        mixVariation: 0.05,
+      };
+    case 'cave-ambience':
+      return {
+        timeMs: 210,
+        feedback: 0.38,
+        mix: 0.18,
+        timeVariation: 0.03,
+        feedbackVariation: 0.04,
+        mixVariation: 0.04,
+      };
+    default:
+      return undefined;
+  }
+}
+
+function resolveProceduralSoundReverb(kind: SoundEffectKind) {
+  switch (kind) {
+    case 'cave-ambience':
+      return {
+        profileId: 'cavern-chamber',
+        decayMs: 1480,
+        mix: 0.34,
+        preDelayMs: 24,
+        toneHz: 3200,
+        decayVariation: 0.05,
+        mixVariation: 0.04,
+        preDelayVariation: 0.08,
+        toneVariation: 0.06,
+      };
+    case 'combat-magic':
+      return {
+        profileId: 'arcane-burst',
+        decayMs: 820,
+        mix: 0.22,
+        preDelayMs: 18,
+        toneHz: 4200,
+        decayVariation: 0.06,
+        mixVariation: 0.05,
+        preDelayVariation: 0.08,
+        toneVariation: 0.05,
+      };
+    case 'steam-whistle':
+      return {
+        profileId: 'industrial-yard',
+        decayMs: 960,
+        mix: 0.18,
+        preDelayMs: 16,
+        toneHz: 3600,
+        decayVariation: 0.04,
+        mixVariation: 0.04,
+        preDelayVariation: 0.05,
+        toneVariation: 0.05,
+      };
+    default:
+      return undefined;
+  }
+}
+
+function resolveProceduralSoundTremolo(kind: SoundEffectKind) {
+  switch (kind) {
+    case 'wind':
+      return {
+        rateHz: 4.2,
+        depth: 0.28,
+        waveform: 'sine' as const,
+        rateVariation: 0.08,
+        depthVariation: 0.06,
+      };
+    case 'steam-whistle':
+      return {
+        rateHz: 5.4,
+        depth: 0.18,
+        waveform: 'triangle' as const,
+        rateVariation: 0.05,
+        depthVariation: 0.05,
+      };
+    default:
+      return undefined;
+  }
+}
+
+function resolveProceduralSoundVibrato(kind: SoundEffectKind) {
+  switch (kind) {
+    case 'steam-whistle':
+      return {
+        rateHz: 5.6,
+        depthHz: 18,
+        waveform: 'sine' as const,
+        rateVariation: 0.04,
+        depthVariation: 0.08,
+      };
+    case 'combat-magic':
+      return {
+        rateHz: 6.8,
+        depthHz: 10,
+        waveform: 'triangle' as const,
+        rateVariation: 0.05,
+        depthVariation: 0.08,
+      };
+    default:
+      return undefined;
+  }
+}
+
+function resolveProceduralSoundFrequencyModulation(kind: SoundEffectKind) {
+  switch (kind) {
+    case 'advancement':
+      return {
+        modulatorFrequencyHz: 312,
+        depthHz: 24,
+        waveform: 'sine' as const,
+        rateVariation: 0.03,
+        depthVariation: 0.08,
+      };
+    case 'combat-magic':
+      return {
+        modulatorFrequencyHz: 168,
+        depthHz: 42,
+        waveform: 'triangle' as const,
+        rateVariation: 0.05,
+        depthVariation: 0.1,
+      };
+    default:
+      return undefined;
+  }
+}
+
+function resolveProceduralSoundRingModulation(kind: SoundEffectKind) {
+  switch (kind) {
+    case 'combat-magic':
+      return {
+        modulatorFrequencyHz: 92,
+        depth: 0.68,
+        waveform: 'square' as const,
+        rateVariation: 0.05,
+        depthVariation: 0.08,
+      };
+    case 'train-engine':
+      return {
+        modulatorFrequencyHz: 48,
+        depth: 0.42,
+        waveform: 'triangle' as const,
+        rateVariation: 0.04,
+        depthVariation: 0.06,
+      };
+    default:
+      return undefined;
+  }
+}
+
+function resolveProceduralSoundSweeps(kind: SoundEffectKind) {
+  switch (kind) {
+    case 'jump':
+      return [
+        {
+          curve: 'exponential' as const,
+          targetMultiplier: 1.35,
+          atProgress: 1,
+        },
+      ] as const;
+    case 'landing':
+      return [
+        {
+          curve: 'exponential' as const,
+          targetMultiplier: 0.78,
+          atProgress: 1,
+        },
+      ] as const;
+    case 'advancement':
+      return [
+        {
+          curve: 'exponential' as const,
+          targetMultiplier: 1.5,
+          atProgress: 0.55,
+        },
+      ] as const;
+    case 'train-engine':
+      return [
+        {
+          curve: 'exponential' as const,
+          targetMultiplier: 0.82,
+          atProgress: 1,
+        },
+      ] as const;
+    case 'train-whistle':
+      return [
+        {
+          curve: 'exponential' as const,
+          targetMultiplier: 1.28,
+          atProgress: 0.72,
+        },
+      ] as const;
+    case 'paddle-calliope':
+      return [
+        {
+          curve: 'linear' as const,
+          targetMultiplier: 1.08,
+          atProgress: 0.32,
+        },
+        {
+          curve: 'linear' as const,
+          targetMultiplier: 0.94,
+          atProgress: 0.88,
+        },
+      ] as const;
+    case 'steam-whistle':
+      return [
+        {
+          curve: 'exponential' as const,
+          targetMultiplier: 1.22,
+          atProgress: 0.22,
+        },
+        {
+          curve: 'exponential' as const,
+          targetMultiplier: 0.92,
+          atProgress: 1,
+        },
+      ] as const;
+    case 'combat-weapon':
+      return [
+        {
+          curve: 'exponential' as const,
+          targetMultiplier: 0.64,
+          atProgress: 1,
+        },
+      ] as const;
+    case 'combat-magic':
+      return [
+        {
+          curve: 'linear' as const,
+          targetMultiplier: 1.18,
+          atProgress: 0.3,
+        },
+        {
+          curve: 'linear' as const,
+          targetMultiplier: 0.86,
+          atProgress: 1,
+        },
+      ] as const;
+    default:
+      return undefined;
+  }
+}
+
+function resolveProceduralSoundLayers(
+  kind: SoundEffectKind
+): SoundLayerRecipe | undefined {
+  switch (kind) {
+    case 'wind':
+      return [
+        {
+          id: 'wind-noise-bed',
+          waveform: 'triangle' as const,
+          noiseColor: 'brown' as const,
+          frequencyMultiplier: 0.72,
+          durationMultiplier: 1,
+          volumeMultiplier: 0.58,
+          frequencyVariation: 0.02,
+          durationVariation: 0.12,
+          volumeVariation: 0.06,
+          variationDepth: 1,
+        },
+      ] as const;
+    case 'forest-ambience':
+      return [
+        {
+          id: 'forest-noise-bed',
+          waveform: 'triangle' as const,
+          noiseColor: 'pink' as const,
+          frequencyMultiplier: 0.8,
+          durationMultiplier: 1,
+          volumeMultiplier: 0.5,
+          frequencyVariation: 0.02,
+          durationVariation: 0.12,
+          volumeVariation: 0.08,
+          variationDepth: 1,
+        },
+      ] as const;
+    default:
+      return undefined;
+  }
+}
+
+function resolveBaseSoundEffectFrequency(
+  options: ResolveSoundRecipeOptions
+): number {
+  switch (options.kind) {
+    case 'jump':
+      return options.profile.footstepFrequency + 72;
+    case 'wind':
+      return (
+        190 +
+        (options.tileKind === 'forest' ? 16 : 0) +
+        options.variantOffset * 0.4
+      );
+    case 'ocean':
+      return options.resolveAmbientSoundFrequency('ocean', undefined);
+    case 'river-ambience':
+      return options.resolveAmbientSoundFrequency('river', undefined);
+    case 'forest-ambience':
+      return options.resolveAmbientSoundFrequency('forest', undefined);
+    case 'plains-ambience':
+      return options.resolveAmbientSoundFrequency('plains', undefined);
+    case 'mountain-ambience':
+      return options.resolveAmbientSoundFrequency('mountain', undefined);
+    case 'cave-ambience':
+      return options.resolveAmbientSoundFrequency('cave', undefined);
+    case 'settlement-ambience':
+      return options.resolveAmbientSoundFrequency('settlement', undefined);
+    case 'ruins-ambience':
+      return options.resolveAmbientSoundFrequency('ruins', undefined);
+    case 'advancement':
+      return options.resolveAdvancementFrequency();
+    case 'train-engine':
+      return 74 + options.variantOffset * 0.35;
+    case 'train-whistle':
+      return 356 + options.variantOffset * 0.6;
+    case 'paddle-calliope':
+      return options.resolvePaddleBoatCalliopeFrequency(undefined);
+    case 'steam-whistle':
+      return options.resolveSteamWhistleFrequency();
+    case 'combat-weapon':
+      return 148 + options.variantOffset * 0.5;
+    case 'combat-magic':
+      return 244 + options.variantOffset * 0.5;
+    case 'open':
+      return options.resolveInteractionFrequency(
+        'open',
+        options.tileKind,
+        options.profile,
+        options.variantOffset
+      );
+    case 'close':
+      return options.resolveInteractionFrequency(
+        'close',
+        options.tileKind,
+        options.profile,
+        options.variantOffset
+      );
+    case 'blocked':
+      return Math.max(
+        58,
+        options.profile.landingFrequency - 18 + options.variantOffset
+      );
+    case 'landing':
+      return options.profile.landingFrequency + options.variantOffset;
+    case 'footstep':
+    default:
+      return options.profile.footstepFrequency + options.variantOffset;
+  }
+}
+
+function resolveBaseSoundEffectDurationMs(kind: SoundEffectKind): number {
+  switch (kind) {
+    case 'jump':
+      return 140;
+    case 'wind':
+      return 680;
+    case 'ocean':
+    case 'river-ambience':
+    case 'forest-ambience':
+    case 'plains-ambience':
+    case 'mountain-ambience':
+    case 'cave-ambience':
+    case 'settlement-ambience':
+    case 'ruins-ambience':
+      return 1680;
+    case 'advancement':
+      return 260;
+    case 'train-engine':
+      return 420;
+    case 'train-whistle':
+      return 880;
+    case 'paddle-calliope':
+      return 1180;
+    case 'steam-whistle':
+      return 1050;
+    case 'combat-weapon':
+      return 160;
+    case 'combat-magic':
+      return 320;
+    case 'landing':
+      return 120;
+    case 'blocked':
+      return 105;
+    case 'open':
+    case 'close':
+      return 135;
+    case 'footstep':
+    default:
+      return 90;
+  }
+}
+
+function resolveBaseSoundEffectVolume(
+  kind: SoundEffectKind,
+  profile: SoundRecipeSurfaceProfile
+): number {
+  switch (kind) {
+    case 'jump':
+      return profile.footstepVolume * 1.2;
+    case 'wind':
+      return 0.018;
+    case 'ocean':
+      return 0.026;
+    case 'river-ambience':
+      return 0.022;
+    case 'forest-ambience':
+      return 0.018;
+    case 'plains-ambience':
+      return 0.016;
+    case 'mountain-ambience':
+      return 0.02;
+    case 'cave-ambience':
+      return 0.022;
+    case 'settlement-ambience':
+      return 0.017;
+    case 'ruins-ambience':
+      return 0.019;
+    case 'advancement':
+      return 0.052;
+    case 'train-engine':
+      return 0.03;
+    case 'train-whistle':
+      return 0.042;
+    case 'paddle-calliope':
+      return 0.034;
+    case 'steam-whistle':
+      return 0.048;
+    case 'combat-weapon':
+      return 0.056;
+    case 'combat-magic':
+      return 0.05;
+    case 'open':
+    case 'close':
+      return profile.landingVolume * 0.8;
+    case 'blocked':
+      return profile.landingVolume * 0.7;
+    case 'landing':
+      return profile.landingVolume;
+    case 'footstep':
+    default:
+      return profile.footstepVolume;
+  }
+}
+
+function resolveBaseSoundEffectWaveform(
+  kind: SoundEffectKind,
+  tileKind: string | undefined,
+  profile: SoundRecipeSurfaceProfile,
+  resolveInteractionWaveform: ResolveSoundRecipeOptions['resolveInteractionWaveform']
+): SoundWaveform | readonly SoundWaveform[] {
+  switch (kind) {
+    case 'blocked':
+      return 'sawtooth';
+    case 'wind':
+      return 'triangle';
+    case 'ocean':
+      return 'sine';
+    case 'river-ambience':
+      return ['triangle', 'sine'];
+    case 'forest-ambience':
+      return ['triangle', 'sine', 'square'];
+    case 'plains-ambience':
+      return ['sine', 'triangle'];
+    case 'mountain-ambience':
+      return ['sawtooth', 'triangle'];
+    case 'cave-ambience':
+      return ['sine', 'triangle'];
+    case 'settlement-ambience':
+      return ['square', 'triangle'];
+    case 'ruins-ambience':
+      return ['triangle', 'sawtooth'];
+    case 'advancement':
+      return ['sine', 'triangle'];
+    case 'train-engine':
+      return 'sawtooth';
+    case 'train-whistle':
+      return 'square';
+    case 'paddle-calliope':
+      return ['triangle', 'sine', 'square'];
+    case 'steam-whistle':
+      return ['square', 'sawtooth'];
+    case 'combat-weapon':
+      return 'sawtooth';
+    case 'combat-magic':
+      return ['triangle', 'sine', 'square'];
+    case 'open':
+    case 'close':
+      return resolveInteractionWaveform(tileKind, profile.waveform);
+    case 'footstep':
+    case 'jump':
+    case 'landing':
+    default:
+      return profile.waveform;
+  }
+}
+
+function resolveBaseSoundEffectNoiseColor(
+  kind: SoundEffectKind
+): ProceduralNoiseColor | readonly ProceduralNoiseColor[] | undefined {
+  switch (kind) {
+    case 'wind':
+      return 'brown';
+    case 'ocean':
+      return 'brown';
+    case 'river-ambience':
+      return ['white', 'pink'];
+    case 'forest-ambience':
+      return ['pink', 'brown'];
+    case 'plains-ambience':
+      return ['white', 'pink'];
+    case 'mountain-ambience':
+      return ['white', 'brown'];
+    case 'cave-ambience':
+      return 'brown';
+    case 'ruins-ambience':
+      return 'pink';
+    default:
+      return undefined;
+  }
+}
