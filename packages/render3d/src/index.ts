@@ -30,6 +30,7 @@ import {
   type WorldStateLike,
 } from '@bworlds/plugin-api';
 import {
+  countGeometriesExceedingBounds,
   countInvalidGeometryCoordinateSets,
   countLineSegments,
   countPointVertices,
@@ -234,6 +235,7 @@ const FULL_DETAIL_TILE_MODEL_HARD_LIMITS: TileModelHardLimits = {
   invalidPositionCoordinateCount: 0,
   pointVertexCount: 1_024,
   lineSegmentCount: 1_024,
+  oversizedGeometryBoundsCount: 0,
   materialCount: 16,
   textureCount: 16,
   lightCount: 4,
@@ -253,6 +255,7 @@ const LOW_DETAIL_TILE_MODEL_HARD_LIMITS: TileModelHardLimits = {
   invalidPositionCoordinateCount: 0,
   pointVertexCount: 128,
   lineSegmentCount: 128,
+  oversizedGeometryBoundsCount: 0,
   materialCount: 3,
   textureCount: 4,
   lightCount: 1,
@@ -272,11 +275,19 @@ export function validateTileModelAgainstRenderBudget(
   root: Pick<THREE.Object3D, 'traverse' | 'children' | 'type'>,
   detailLevel: RenderBudgetDetailLevel = 'full'
 ): TileModelBudgetValidation {
+  const maximumGeometryAxisSpan =
+    detailLevel === 'low'
+      ? LOW_DETAIL_MAX_GEOMETRY_AXIS_SPAN
+      : FULL_DETAIL_MAX_GEOMETRY_AXIS_SPAN;
   const stats = {
     ...collectSceneResourceStats(root),
     invalidPositionCoordinateCount: countInvalidGeometryCoordinateSets(root),
     pointVertexCount: countPointVertices(root),
     lineSegmentCount: countLineSegments(root),
+    oversizedGeometryBoundsCount: countGeometriesExceedingBounds(
+      root,
+      maximumGeometryAxisSpan
+    ),
   };
   const limits = getTileModelHardLimits(detailLevel);
   const violations: TileModelBudgetViolation[] = [];
@@ -292,6 +303,7 @@ export function validateTileModelAgainstRenderBudget(
     'invalidPositionCoordinateCount',
     'pointVertexCount',
     'lineSegmentCount',
+    'oversizedGeometryBoundsCount',
     'materialCount',
     'textureCount',
     'lightCount',
@@ -486,6 +498,7 @@ type TileModelHardLimits = {
   invalidPositionCoordinateCount: number;
   pointVertexCount: number;
   lineSegmentCount: number;
+  oversizedGeometryBoundsCount: number;
   materialCount: number;
   textureCount: number;
   lightCount: number;
@@ -505,6 +518,7 @@ type TileModelBudgetValidation = {
     invalidPositionCoordinateCount: number;
     pointVertexCount: number;
     lineSegmentCount: number;
+    oversizedGeometryBoundsCount: number;
   };
   limits: TileModelHardLimits;
   violations: TileModelBudgetViolation[];
@@ -530,6 +544,8 @@ type RecentLabeledCountSample = RecentCountSample & {
 
 const MAX_RENDER_DEBUG_EVENTS = 64;
 const RENDER_DEBUG_EVENT_WINDOW_MS = 30_000;
+const FULL_DETAIL_MAX_GEOMETRY_AXIS_SPAN = 24;
+const LOW_DETAIL_MAX_GEOMETRY_AXIS_SPAN = 16;
 
 type FrameTimeBudget = {
   budgetMs: number;

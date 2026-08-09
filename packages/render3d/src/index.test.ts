@@ -1205,6 +1205,7 @@ describe('render3d visibility helpers', () => {
       invalidPositionCoordinateCount: 0,
       pointVertexCount: 1_024,
       lineSegmentCount: 1_024,
+      oversizedGeometryBoundsCount: 0,
       materialCount: 16,
       textureCount: 16,
       lightCount: 4,
@@ -1223,6 +1224,7 @@ describe('render3d visibility helpers', () => {
       invalidPositionCoordinateCount: 0,
       pointVertexCount: 128,
       lineSegmentCount: 128,
+      oversizedGeometryBoundsCount: 0,
       materialCount: 3,
       textureCount: 4,
       lightCount: 1,
@@ -1253,6 +1255,7 @@ describe('render3d visibility helpers', () => {
         invalidPositionCoordinateCount: 0,
         pointVertexCount: 0,
         lineSegmentCount: 0,
+        oversizedGeometryBoundsCount: 0,
         materialCount: 1,
         textureCount: 1,
         lightCount: 0,
@@ -1351,6 +1354,7 @@ describe('render3d visibility helpers', () => {
         invalidPositionCoordinateCount: 0,
         pointVertexCount: 36,
         lineSegmentCount: 25,
+        oversizedGeometryBoundsCount: 0,
       }),
       violations: [
         {
@@ -1411,6 +1415,7 @@ describe('render3d visibility helpers', () => {
       stats: expect.objectContaining({
         pointVertexCount: 129,
         lineSegmentCount: 129,
+        oversizedGeometryBoundsCount: 0,
       }),
       violations: [
         {
@@ -1445,10 +1450,35 @@ describe('render3d visibility helpers', () => {
         invalidPositionCoordinateCount: 1,
         pointVertexCount: 0,
         lineSegmentCount: 0,
+        oversizedGeometryBoundsCount: 0,
       }),
       violations: [
         {
           metric: 'invalidPositionCoordinateCount',
+          actual: 1,
+          limit: 0,
+        },
+      ],
+    });
+  });
+
+  it('rejects models containing geometry with unreasonable bounds', () => {
+    const geometry = createMockPositionGeometry([
+      0, 0, 0,
+      18, 0, 0,
+      0, 1, 0,
+    ]);
+    const root = createMockObject3D(createMockMaterial(), [], geometry);
+
+    expect(validateTileModelAgainstRenderBudget(root as never, 'low')).toEqual({
+      accepted: false,
+      limits: getTileModelHardLimits('low'),
+      stats: expect.objectContaining({
+        oversizedGeometryBoundsCount: 1,
+      }),
+      violations: [
+        {
+          metric: 'oversizedGeometryBoundsCount',
           actual: 1,
           limit: 0,
         },
@@ -2673,6 +2703,18 @@ function createMockStatGeometry(id: string, vertexCount: number) {
       position: {
         count: vertexCount,
         array: new Float32Array(vertexCount * 3),
+      },
+    },
+  };
+}
+
+function createMockPositionGeometry(values: number[], itemSize = 3) {
+  return {
+    attributes: {
+      position: {
+        count: values.length / itemSize,
+        itemSize,
+        array: new Float32Array(values),
       },
     },
   };

@@ -83,6 +83,26 @@ export function countLineSegments(root: TraversableObjectLike): number {
   return lineSegmentCount;
 }
 
+export function countGeometriesExceedingBounds(
+  root: TraversableObjectLike,
+  maximumAxisSpan: number
+): number {
+  const geometries = new Set<unknown>();
+  let oversizedGeometryCount = 0;
+
+  traverseSceneGraph(root, (child) => {
+    if (!child.geometry || geometries.has(child.geometry)) {
+      return;
+    }
+    geometries.add(child.geometry);
+    if (geometryExceedsMaximumAxisSpan(child.geometry, maximumAxisSpan)) {
+      oversizedGeometryCount += 1;
+    }
+  });
+
+  return oversizedGeometryCount;
+}
+
 function hasInvalidGeometryPositionCoordinates(geometry: unknown): boolean {
   const positionArray = (
     geometry as {
@@ -104,6 +124,77 @@ function hasInvalidGeometryPositionCoordinates(geometry: unknown): boolean {
     return true;
   }
   return false;
+}
+
+function geometryExceedsMaximumAxisSpan(
+  geometry: unknown,
+  maximumAxisSpan: number
+): boolean {
+  const positionArray = (
+    geometry as {
+      attributes?: {
+        position?: {
+          array?: ArrayLike<unknown>;
+          itemSize?: unknown;
+        };
+      };
+    }
+  )?.attributes?.position?.array;
+  if (!positionArray || typeof positionArray.length !== 'number') {
+    return false;
+  }
+  const itemSize = getGeometryPositionItemSize(geometry);
+  if (itemSize < 3) {
+    return false;
+  }
+
+  let minX = Number.POSITIVE_INFINITY;
+  let minY = Number.POSITIVE_INFINITY;
+  let minZ = Number.POSITIVE_INFINITY;
+  let maxX = Number.NEGATIVE_INFINITY;
+  let maxY = Number.NEGATIVE_INFINITY;
+  let maxZ = Number.NEGATIVE_INFINITY;
+
+  for (let index = 0; index <= positionArray.length - itemSize; index += itemSize) {
+    const x = positionArray[index];
+    const y = positionArray[index + 1];
+    const z = positionArray[index + 2];
+    if (
+      typeof x !== 'number' ||
+      typeof y !== 'number' ||
+      typeof z !== 'number' ||
+      !Number.isFinite(x) ||
+      !Number.isFinite(y) ||
+      !Number.isFinite(z)
+    ) {
+      return false;
+    }
+    minX = Math.min(minX, x);
+    minY = Math.min(minY, y);
+    minZ = Math.min(minZ, z);
+    maxX = Math.max(maxX, x);
+    maxY = Math.max(maxY, y);
+    maxZ = Math.max(maxZ, z);
+  }
+
+  return (
+    maxX - minX > maximumAxisSpan ||
+    maxY - minY > maximumAxisSpan ||
+    maxZ - minZ > maximumAxisSpan
+  );
+}
+
+function getGeometryPositionItemSize(geometry: unknown): number {
+  const itemSize = (
+    geometry as {
+      attributes?: {
+        position?: {
+          itemSize?: unknown;
+        };
+      };
+    }
+  )?.attributes?.position?.itemSize;
+  return typeof itemSize === 'number' && itemSize > 0 ? itemSize : 3;
 }
 
 function traverseSceneGraph(
