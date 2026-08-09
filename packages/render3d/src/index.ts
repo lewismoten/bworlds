@@ -220,6 +220,11 @@ const FULL_DETAIL_TILE_MODEL_HARD_LIMITS: TileModelHardLimits = {
   object3dCount: 128,
   groupCount: 64,
   meshCount: 96,
+  instancedMeshCount: 16,
+  pointsCount: 8,
+  lineObjectCount: 12,
+  spriteCount: 12,
+  geometryCount: 96,
   materialCount: 16,
   textureCount: 16,
   lightCount: 4,
@@ -231,6 +236,11 @@ const LOW_DETAIL_TILE_MODEL_HARD_LIMITS: TileModelHardLimits = {
   object3dCount: 32,
   groupCount: 16,
   meshCount: 16,
+  instancedMeshCount: 4,
+  pointsCount: 2,
+  lineObjectCount: 4,
+  spriteCount: 2,
+  geometryCount: 16,
   materialCount: 3,
   textureCount: 4,
   lightCount: 1,
@@ -257,6 +267,11 @@ export function validateTileModelAgainstRenderBudget(
     'object3dCount',
     'groupCount',
     'meshCount',
+    'instancedMeshCount',
+    'pointsCount',
+    'lineObjectCount',
+    'spriteCount',
+    'geometryCount',
     'materialCount',
     'textureCount',
     'lightCount',
@@ -443,6 +458,11 @@ type TileModelHardLimits = {
   object3dCount: number;
   groupCount: number;
   meshCount: number;
+  instancedMeshCount: number;
+  pointsCount: number;
+  lineObjectCount: number;
+  spriteCount: number;
+  geometryCount: number;
   materialCount: number;
   textureCount: number;
   lightCount: number;

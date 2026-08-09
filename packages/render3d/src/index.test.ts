@@ -1197,6 +1197,11 @@ describe('render3d visibility helpers', () => {
       object3dCount: 128,
       groupCount: 64,
       meshCount: 96,
+      instancedMeshCount: 16,
+      pointsCount: 8,
+      lineObjectCount: 12,
+      spriteCount: 12,
+      geometryCount: 96,
       materialCount: 16,
       textureCount: 16,
       lightCount: 4,
@@ -1207,6 +1212,11 @@ describe('render3d visibility helpers', () => {
       object3dCount: 32,
       groupCount: 16,
       meshCount: 16,
+      instancedMeshCount: 4,
+      pointsCount: 2,
+      lineObjectCount: 4,
+      spriteCount: 2,
+      geometryCount: 16,
       materialCount: 3,
       textureCount: 4,
       lightCount: 1,
@@ -1229,6 +1239,11 @@ describe('render3d visibility helpers', () => {
       stats: expect.objectContaining({
         object3dCount: 3,
         meshCount: 2,
+        instancedMeshCount: 0,
+        pointsCount: 0,
+        lineObjectCount: 0,
+        spriteCount: 0,
+        geometryCount: 2,
         materialCount: 1,
         textureCount: 1,
         lightCount: 0,
@@ -1285,6 +1300,76 @@ describe('render3d visibility helpers', () => {
           metric: 'vertexCount',
           actual: 10_000,
           limit: 8_000,
+        },
+      ],
+    });
+  });
+
+  it('rejects models that exceed instanced, points, line, sprite, and geometry caps', () => {
+    const sharedMaterial = createMockMaterial();
+    const children = [
+      createMockObject3D(sharedMaterial, [], createMockStatGeometry('instanced-a', 24), {}, 'InstancedMesh'),
+      createMockObject3D(sharedMaterial, [], createMockStatGeometry('instanced-b', 24), {}, 'InstancedMesh'),
+      createMockObject3D(sharedMaterial, [], createMockStatGeometry('instanced-c', 24), {}, 'InstancedMesh'),
+      createMockObject3D(sharedMaterial, [], createMockStatGeometry('instanced-d', 24), {}, 'InstancedMesh'),
+      createMockObject3D(sharedMaterial, [], createMockStatGeometry('instanced-e', 24), {}, 'InstancedMesh'),
+      createMockObject3D(sharedMaterial, [], createMockStatGeometry('points-a', 12), {}, 'Points'),
+      createMockObject3D(sharedMaterial, [], createMockStatGeometry('points-b', 12), {}, 'Points'),
+      createMockObject3D(sharedMaterial, [], createMockStatGeometry('points-c', 12), {}, 'Points'),
+      createMockObject3D(sharedMaterial, [], createMockStatGeometry('line-a', 6), {}, 'Line'),
+      createMockObject3D(sharedMaterial, [], createMockStatGeometry('line-b', 6), {}, 'LineLoop'),
+      createMockObject3D(sharedMaterial, [], createMockStatGeometry('line-c', 6), {}, 'LineSegments'),
+      createMockObject3D(sharedMaterial, [], createMockStatGeometry('line-d', 6), {}, 'Line'),
+      createMockObject3D(sharedMaterial, [], createMockStatGeometry('line-e', 6), {}, 'LineLoop'),
+      createMockObject3D(sharedMaterial, [], createMockStatGeometry('sprite-a', 4), {}, 'Sprite'),
+      createMockObject3D(sharedMaterial, [], createMockStatGeometry('sprite-b', 4), {}, 'Sprite'),
+      createMockObject3D(sharedMaterial, [], createMockStatGeometry('sprite-c', 4), {}, 'Sprite'),
+      createMockObject3D(sharedMaterial, [], createMockStatGeometry('geometry-16', 4)),
+      createMockObject3D(sharedMaterial, [], createMockStatGeometry('geometry-17', 4)),
+    ];
+    const root = createMockObject3D(undefined, children);
+
+    expect(validateTileModelAgainstRenderBudget(root as never, 'low')).toEqual({
+      accepted: false,
+      limits: getTileModelHardLimits('low'),
+      stats: expect.objectContaining({
+        meshCount: 18,
+        instancedMeshCount: 5,
+        pointsCount: 3,
+        lineObjectCount: 5,
+        spriteCount: 3,
+        geometryCount: 18,
+      }),
+      violations: [
+        {
+          metric: 'meshCount',
+          actual: 18,
+          limit: 16,
+        },
+        {
+          metric: 'instancedMeshCount',
+          actual: 5,
+          limit: 4,
+        },
+        {
+          metric: 'pointsCount',
+          actual: 3,
+          limit: 2,
+        },
+        {
+          metric: 'lineObjectCount',
+          actual: 5,
+          limit: 4,
+        },
+        {
+          metric: 'spriteCount',
+          actual: 3,
+          limit: 2,
+        },
+        {
+          metric: 'geometryCount',
+          actual: 18,
+          limit: 16,
         },
       ],
     });

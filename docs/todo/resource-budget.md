@@ -25,12 +25,12 @@ Operates at several levels: per model, per LOD, per plugin, per chunk, and per e
 * [X] Cap total `Object3D` count per generated model.
 * [X] Cap total `Group` count.
 * [X] Cap total mesh count.
-* [ ] Cap total instanced-mesh count.
-* [ ] Cap total sprite count.
-* [ ] Cap total `Points` objects.
-* [ ] Cap total line objects.
+* [X] Cap total instanced-mesh count.
+* [X] Cap total sprite count.
+* [X] Cap total `Points` objects.
+* [X] Cap total line objects.
 * [ ] Cap total particle emitters.
-* [ ] Cap total geometry objects.
+* [X] Cap total geometry objects.
 * [X] Cap total materials.
 * [X] Cap total textures.
 * [X] Cap total lights.
