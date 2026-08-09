@@ -74,6 +74,11 @@ export interface TreeCanopyState {
   foliage: TreeFoliageState[];
 }
 
+export interface TreeCollisionState {
+  radius: number;
+  height: number;
+}
+
 export interface TreeDecorationState<TKind extends string = string> {
   kind: TKind;
   treeIndex?: number;
@@ -95,6 +100,7 @@ export interface TreeLogicalState<TForm extends string = string> {
   foliage: TreeFoliageState[];
   structure?: TreeStructuralState;
   canopy?: TreeCanopyState;
+  collision?: TreeCollisionState;
 }
 
 type TreeCapabilitySource =
@@ -166,13 +172,19 @@ export function createTreeLogicalState<TForm extends string = string>({
   form,
   structure,
   canopy,
+  collision,
 }: {
   x: number;
   y: number;
   form: TForm;
   structure: TreeStructuralState;
   canopy: TreeCanopyState;
+  collision?: TreeCollisionState;
 }): TreeLogicalState<TForm> {
+  const collisionState = collision ?? {
+    radius: structure.radius,
+    height: structure.trunkHeight,
+  };
   return {
     x,
     y,
@@ -184,6 +196,7 @@ export function createTreeLogicalState<TForm extends string = string>({
     foliage: canopy.foliage,
     structure,
     canopy,
+    collision: collisionState,
   };
 }
 
@@ -204,6 +217,17 @@ export function getTreeCanopyState<TForm extends string = string>(
   tree: TreeLogicalState<TForm>
 ): TreeCanopyState {
   return tree.canopy ?? { foliage: tree.foliage };
+}
+
+export function getTreeCollisionState<TForm extends string = string>(
+  tree: TreeLogicalState<TForm>
+): TreeCollisionState {
+  return (
+    tree.collision ?? {
+      radius: tree.radius,
+      height: tree.trunkHeight,
+    }
+  );
 }
 
 export function createTreeSceneState<

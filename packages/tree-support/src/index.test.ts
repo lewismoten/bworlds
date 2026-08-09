@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  getTreeCollisionState,
   createTreeSceneState,
   createTreeLogicalState,
   createTreeFamily,
@@ -111,6 +112,10 @@ describe('tree support', () => {
       canopy: {
         foliage: [{ x: 0, y: 1.4, z: 0, scaleX: 0.8, scaleY: 0.7, scaleZ: 0.8 }],
       },
+      collision: {
+        radius: 0.16,
+        height: 1.4,
+      },
     });
 
     expect(tree.radius).toBe(0.2);
@@ -118,6 +123,7 @@ describe('tree support', () => {
     expect(tree.foliage).toHaveLength(1);
     expect(getTreeStructuralState(tree)).toEqual(tree.structure);
     expect(getTreeCanopyState(tree)).toEqual(tree.canopy);
+    expect(getTreeCollisionState(tree)).toEqual(tree.collision);
   });
 
   it('derives structural and canopy state for older tree shapes', () => {
@@ -139,6 +145,10 @@ describe('tree support', () => {
       branches: [],
     });
     expect(getTreeCanopyState(legacy)).toEqual({ foliage: [] });
+    expect(getTreeCollisionState(legacy)).toEqual({
+      radius: 0.18,
+      height: 1.3,
+    });
   });
 
   it('groups trees, decorations, and inhabitants into a separate scene state', () => {

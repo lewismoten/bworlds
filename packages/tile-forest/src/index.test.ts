@@ -795,6 +795,8 @@ describe('tile forest', () => {
     expect(oak.y).toBe(birch.y);
     expect(oak.structure?.branches).toEqual(oak.branches);
     expect(oak.canopy?.foliage).toEqual(oak.foliage);
+    expect(oak.collision?.radius).toBeLessThan(oak.radius);
+    expect(oak.collision?.height).toBe(oak.trunkHeight);
     expect(oak.speciesId).toBe('oak');
     expect(birch.speciesId).toBe('birch');
     expect(oak.trunkHeight).not.toBe(birch.trunkHeight);

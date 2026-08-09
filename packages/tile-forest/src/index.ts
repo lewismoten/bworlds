@@ -28,11 +28,13 @@ import {
   createTreeGenerator,
   createTreeGeneratorBase,
   createTreeSpecies,
+  getTreeCollisionState,
   getTreeCanopyState,
   getTreeStructuralState,
   resolveTreeSeason,
   type TreeBranchState,
   type TreeCanopyState,
+  type TreeCollisionState,
   type TreeFamily,
   type TreeFoliageState,
   type TreeGenerator,
@@ -1465,11 +1467,11 @@ export function createForestTilePlugin(): RuntimePlugin {
       }: CanOccupy3DContext) {
         const descriptors = getForestTreeDescriptors(tileX, tileY);
         for (const descriptor of descriptors) {
-          const structure = getTreeStructuralState(descriptor);
+          const collision = getTreeCollisionState(descriptor);
           const dx = nextX - (tileX + descriptor.x);
           const dy = nextY - (tileY + descriptor.y);
           const distance = Math.hypot(dx, dy);
-          if (distance < structure.radius + playerRadius) {
+          if (distance < collision.radius + playerRadius) {
             return false;
           }
         }
@@ -2098,6 +2100,10 @@ function createForestTreeDescriptorFromSpecies(
   const canopy: TreeCanopyState = {
     foliage,
   };
+  const collision: TreeCollisionState = {
+    radius: structure.radius * 0.88,
+    height: structure.trunkHeight,
+  };
 
   for (let branchIndex = 0; branchIndex < branchCount; branchIndex += 1) {
     const branchProgress = branchCount <= 1 ? 0 : branchIndex / (branchCount - 1);
@@ -2167,6 +2173,7 @@ function createForestTreeDescriptorFromSpecies(
       form: definition.form,
       structure,
       canopy,
+      collision,
     }),
     familyId: definition.familyId,
     speciesId: definition.speciesId,
