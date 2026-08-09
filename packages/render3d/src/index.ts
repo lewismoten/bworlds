@@ -54,6 +54,13 @@ import {
   type TileModelCostEstimateBudgetViolation,
   type TileModelCostEstimateLimits,
 } from './tile-model-cost-estimate-validation.ts';
+import {
+  buildPendingWorldBuildQueue,
+  createPendingWorldBuildQueueScratch,
+  reconcilePendingWorldBuildQueue,
+  reconcilePendingWorldBuildQueueWithScratch,
+  type PendingWorldBuildEntry,
+} from './pending-world-build-queue.ts';
 import { getRenderEffectQualityProfile } from './render-effect-quality.ts';
 import {
   createSkyLightingColorState,
@@ -71,6 +78,12 @@ export {
   fillWrappedBatchWindow,
   getWrappedBatchWindow,
 } from './reusable-batch-window.ts';
+export {
+  buildPendingWorldBuildQueue,
+  createPendingWorldBuildQueueScratch,
+  reconcilePendingWorldBuildQueue,
+  reconcilePendingWorldBuildQueueWithScratch,
+} from './pending-world-build-queue.ts';
 
 const LAND_MODEL_REVEAL_SEED = registerHashLabel('render3d:land-model-reveal');
 
@@ -617,7 +630,6 @@ type DynamicTileNode = {
   detailLevel?: RenderBudgetDetailLevel;
   sync3DModel?: NonNullable<TilePlugin['sync3DModel']>;
 };
-type PendingWorldBuildEntry = { key: string; x: number; y: number };
 type ConstellationStarLike = NonNullable<
   NonNullable<DaylightCycleState['constellations']>[number]
 >['stars'][number];
@@ -1094,6 +1106,9 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
   const visibleTileNodes = new Map<string, DynamicTileNode>();
   const lodSyncVisibleEntriesBuffer: Array<[string, DynamicTileNode]> = [];
   const lodSyncBatchBuffer: Array<[string, DynamicTileNode]> = [];
+  const visibleWorldNextVisibleKeysBuffer = new Set<string>();
+  const visibleWorldVisibleTileKeysBuffer = new Set<string>();
+  const pendingWorldBuildQueueScratch = createPendingWorldBuildQueueScratch();
   const backgroundColor = new THREE.Color(SKY_DAY_COLOR);
   const twilightColor = new THREE.Color(SKY_SUNSET_COLOR);
   const nightColor = new THREE.Color(SKY_NIGHT_COLOR);
@@ -1398,7 +1413,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     const centerX = Math.round(state.player.x);
     const centerY = Math.round(state.player.y);
     const facingBucket = getFacingVisibilityBucket(state.player.facing);
-    const nextVisibleKeys = new Set();
+    visibleWorldNextVisibleKeysBuffer.clear();
     const nextQueue = getVisibleWorldTileBuildOrder({
       playerTileX: centerX,
       playerTileY: centerY,
@@ -1407,11 +1422,11 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     });
 
     for (const entry of nextQueue) {
-      nextVisibleKeys.add(entry.key);
+      visibleWorldNextVisibleKeysBuffer.add(entry.key);
     }
 
     for (const [key, tileNode] of visibleTileNodes.entries()) {
-      if (nextVisibleKeys.has(key)) {
+      if (visibleWorldNextVisibleKeysBuffer.has(key)) {
         continue;
       }
       worldRoot.remove(tileNode.node);
@@ -1420,10 +1435,16 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       visibleWorldMutationVersion += 1;
     }
 
-    const nextPendingWorldBuild = reconcilePendingWorldBuildQueue(
+    visibleWorldVisibleTileKeysBuffer.clear();
+    for (const key of visibleTileNodes.keys()) {
+      visibleWorldVisibleTileKeysBuffer.add(key);
+    }
+
+    const nextPendingWorldBuild = reconcilePendingWorldBuildQueueWithScratch(
       nextQueue,
-      new Set(visibleTileNodes.keys()),
-      pendingWorldBuild.queue
+      visibleWorldVisibleTileKeysBuffer,
+      pendingWorldBuild.queue,
+      pendingWorldBuildQueueScratch
     );
     pendingWorldBuild = {
       contextId: context.id,
@@ -3847,65 +3868,6 @@ export function getRenderChurnStats(
       nowMs,
       windowMs
     ),
-  };
-}
-
-export function buildPendingWorldBuildQueue(
-  nextQueue: PendingWorldBuildEntry[],
-  visibleTileKeys: ReadonlySet<string>
-): PendingWorldBuildEntry[] {
-  const pendingQueue: PendingWorldBuildEntry[] = [];
-  const queuedKeys = new Set<string>();
-
-  for (const entry of nextQueue) {
-    if (visibleTileKeys.has(entry.key) || queuedKeys.has(entry.key)) {
-      continue;
-    }
-    queuedKeys.add(entry.key);
-    pendingQueue.push(entry);
-  }
-
-  return pendingQueue;
-}
-
-export function reconcilePendingWorldBuildQueue(
-  nextQueue: PendingWorldBuildEntry[],
-  visibleTileKeys: ReadonlySet<string>,
-  previousQueue: PendingWorldBuildEntry[] = []
-): {
-  queue: PendingWorldBuildEntry[];
-  cancelledEntryCount: number;
-} {
-  const queue = buildPendingWorldBuildQueue(nextQueue, visibleTileKeys);
-  if (previousQueue.length === 0) {
-    return {
-      queue,
-      cancelledEntryCount: 0,
-    };
-  }
-
-  const survivingKeys = new Set<string>();
-  for (const entry of queue) {
-    survivingKeys.add(entry.key);
-  }
-
-  let cancelledEntryCount = 0;
-  const countedCancelledKeys = new Set<string>();
-  for (const entry of previousQueue) {
-    if (
-      visibleTileKeys.has(entry.key) ||
-      survivingKeys.has(entry.key) ||
-      countedCancelledKeys.has(entry.key)
-    ) {
-      continue;
-    }
-    countedCancelledKeys.add(entry.key);
-    cancelledEntryCount += 1;
-  }
-
-  return {
-    queue,
-    cancelledEntryCount,
   };
 }
 
