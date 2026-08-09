@@ -31,6 +31,7 @@ const randomizeButton = document.querySelector<HTMLButtonElement>(
 const downloadButton = document.querySelector<HTMLButtonElement>(
   '#music-debug-download'
 );
+const loopInput = document.querySelector<HTMLInputElement>('#music-debug-loop');
 const clusterXInput = document.querySelector<HTMLInputElement>(
   'input[name="clusterX"]'
 );
@@ -98,7 +99,9 @@ playButton?.addEventListener('click', () => {
     return;
   }
   renderSnapshot();
-  playbackController.start(snapshot);
+  playbackController.start(snapshot, {
+    loop: loopInput?.checked === true,
+  });
 });
 
 randomizeButton?.addEventListener('click', () => {

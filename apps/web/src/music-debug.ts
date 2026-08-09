@@ -60,8 +60,16 @@ export type MusicDebugTimelineLayout = {
 };
 
 export type MusicDebugSongPlayback = {
-  play(snapshot: MusicDebugSnapshot): void;
+  play(
+    snapshot: MusicDebugSnapshot,
+    region?: MusicDebugPlaybackRegion | null
+  ): void;
   stop(): void;
+};
+
+export type MusicDebugPlaybackRegion = {
+  startOffsetMs: number;
+  endOffsetMs: number;
 };
 
 export const DEFAULT_MUSIC_DEBUG_OPTIONS: MusicDebugOptions = {
@@ -267,6 +275,10 @@ export function buildMusicDebugMarkup(
             <button id="music-debug-randomize" type="button">🎲 Generate</button>
             <button id="music-debug-play" type="button">Play Song</button>
             <button id="music-debug-download" type="button">Download MIDI</button>
+            <label class="music-debug-toggle">
+              <input id="music-debug-loop" type="checkbox" />
+              <span>Loop Song</span>
+            </label>
           </div>
         </form>
         <section class="music-debug-card">
@@ -416,15 +428,47 @@ export function playMusicDebugSong(snapshot: MusicDebugSnapshot): void {
   createMusicDebugSongPlayback().play(snapshot);
 }
 
+export function resolveMusicDebugPlaybackRegion(
+  snapshot: MusicDebugSnapshot,
+  region?: MusicDebugPlaybackRegion | null
+): MusicDebugPlaybackRegion {
+  const startOffsetMs = clampTimelineOffset(
+    region?.startOffsetMs ?? 0,
+    snapshot.durationMs
+  );
+  const endOffsetMs = clampTimelineOffset(
+    region?.endOffsetMs ?? snapshot.durationMs,
+    snapshot.durationMs
+  );
+
+  return {
+    startOffsetMs,
+    endOffsetMs: Math.max(startOffsetMs, endOffsetMs),
+  };
+}
+
+export function resolveMusicDebugPlaybackDurationMs(
+  snapshot: MusicDebugSnapshot,
+  region?: MusicDebugPlaybackRegion | null
+): number {
+  const resolved = resolveMusicDebugPlaybackRegion(snapshot, region);
+  return Math.max(0, resolved.endOffsetMs - resolved.startOffsetMs);
+}
+
 export function createMusicDebugSongPlayback(
   sink: MusicSink = createWebAudioMusicSink()
 ): MusicDebugSongPlayback {
   return {
-    play(snapshot) {
+    play(snapshot, region) {
+      const playbackRegion = resolveMusicDebugPlaybackRegion(snapshot, region);
       const startMs = performance.now() + 120;
-      const offsetMs = snapshot.song.startMs;
+      const offsetMs = snapshot.song.startMs + playbackRegion.startOffsetMs;
+      const endMs = snapshot.song.startMs + playbackRegion.endOffsetMs;
       sink.resume?.();
       for (const note of snapshot.notes) {
+        if (note.startMs < offsetMs || note.startMs >= endMs) {
+          continue;
+        }
         sink.play({
           ...note,
           startMs: startMs + (note.startMs - offsetMs),
@@ -500,4 +544,8 @@ function normalizeWeatherKind(
     return value;
   }
   return 'clear';
+}
+
+function clampTimelineOffset(value: number, durationMs: number): number {
+  return Math.min(durationMs, Math.max(0, Math.round(value)));
 }

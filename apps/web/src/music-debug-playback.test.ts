@@ -28,7 +28,7 @@ describe('music debug playback controller', () => {
 
     controller.start(snapshot);
     expect(controller.isPlaying()).toBe(true);
-    expect(playback.play).toHaveBeenCalledWith(snapshot);
+    expect(playback.play).toHaveBeenCalledWith(snapshot, null);
 
     vi.advanceTimersByTime(snapshot.durationMs + 120);
 
@@ -74,13 +74,57 @@ describe('music debug playback controller', () => {
     controller.start(second);
 
     expect(controller.isPlaying()).toBe(true);
-    expect(playback.play).toHaveBeenNthCalledWith(1, first);
-    expect(playback.play).toHaveBeenNthCalledWith(2, second);
+    expect(playback.play).toHaveBeenNthCalledWith(1, first, null);
+    expect(playback.play).toHaveBeenNthCalledWith(2, second, null);
     expect(playback.stop).toHaveBeenCalledTimes(1);
 
     vi.advanceTimersByTime(second.durationMs + 120);
 
     expect(controller.isPlaying()).toBe(false);
     expect(playback.stop).toHaveBeenCalledTimes(2);
+  });
+
+  it('repeats the loopable middle section when looping is enabled', () => {
+    vi.useFakeTimers();
+    const snapshot = createMusicDebugSnapshot({
+      tileKind: 'forest',
+      contextType: 'overworld',
+      clusterX: 3,
+      clusterY: -2,
+    });
+    const playback = {
+      play: vi.fn(),
+      stop: vi.fn(),
+    };
+    const controller = createMusicDebugPlaybackController({
+      playback,
+    });
+
+    controller.start(snapshot, { loop: true });
+
+    expect(playback.play).toHaveBeenNthCalledWith(
+      1,
+      snapshot,
+      expect.objectContaining({
+        startOffsetMs: 0,
+        endOffsetMs: snapshot.loopEndOffsetMs,
+      })
+    );
+
+    vi.advanceTimersByTime(snapshot.loopEndOffsetMs + 120);
+
+    expect(playback.play).toHaveBeenNthCalledWith(
+      2,
+      snapshot,
+      expect.objectContaining({
+        startOffsetMs: snapshot.loopStartOffsetMs,
+        endOffsetMs: snapshot.loopEndOffsetMs,
+      })
+    );
+    expect(controller.isPlaying()).toBe(true);
+
+    controller.stop();
+    expect(playback.stop).toHaveBeenCalledTimes(1);
+    expect(controller.isPlaying()).toBe(false);
   });
 });

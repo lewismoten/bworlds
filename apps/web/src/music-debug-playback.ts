@@ -1,15 +1,22 @@
-import type { MusicDebugSnapshot } from './music-debug.ts';
+import {
+  resolveMusicDebugPlaybackDurationMs,
+  type MusicDebugPlaybackRegion,
+  type MusicDebugSnapshot,
+} from './music-debug.ts';
 
 export type MusicDebugPlaybackAdapter = {
-  play(snapshot: MusicDebugSnapshot): void;
+  play(
+    snapshot: MusicDebugSnapshot,
+    region?: MusicDebugPlaybackRegion | null
+  ): void;
   stop(): void;
 };
 
 export type MusicDebugPlaybackController = {
   isPlaying(): boolean;
-  start(snapshot: MusicDebugSnapshot): void;
+  start(snapshot: MusicDebugSnapshot, options?: { loop?: boolean }): void;
   stop(): void;
-  toggle(snapshot: MusicDebugSnapshot): void;
+  toggle(snapshot: MusicDebugSnapshot, options?: { loop?: boolean }): void;
 };
 
 type TimeoutHandle = ReturnType<typeof setTimeout>;
@@ -49,19 +56,75 @@ export function createMusicDebugPlaybackController(options: {
     setPlaying(false);
   }
 
-  function start(snapshot: MusicDebugSnapshot): void {
+  function schedulePlaybackStop(options: {
+    snapshot: MusicDebugSnapshot;
+    region?: MusicDebugPlaybackRegion | null;
+    repeatRegion?: MusicDebugPlaybackRegion | null;
+  }): void {
+    const durationMs = resolveMusicDebugPlaybackDurationMs(
+      options.snapshot,
+      options.region
+    );
+
+    timeoutHandle = scheduleTimeout(() => {
+      timeoutHandle = null;
+      if (!playing) {
+        return;
+      }
+
+      if (options.repeatRegion) {
+        playbackStart(options.snapshot, options.repeatRegion);
+        schedulePlaybackStop({
+          snapshot: options.snapshot,
+          region: options.repeatRegion,
+          repeatRegion: options.repeatRegion,
+        });
+        return;
+      }
+
+      stop();
+    }, durationMs + playbackLeadMs);
+  }
+
+  function playbackStart(
+    snapshot: MusicDebugSnapshot,
+    region?: MusicDebugPlaybackRegion | null
+  ): void {
+    options.playback.play(snapshot, region);
+  }
+
+  function start(
+    snapshot: MusicDebugSnapshot,
+    startOptions?: { loop?: boolean }
+  ): void {
     clearPlaybackTimeout();
     if (playing) {
       options.playback.stop();
     }
 
-    options.playback.play(snapshot);
+    const loopEnabled = startOptions?.loop === true;
+    const loopRegion: MusicDebugPlaybackRegion | null =
+      snapshot.loopEndOffsetMs > snapshot.loopStartOffsetMs
+        ? {
+            startOffsetMs: snapshot.loopStartOffsetMs,
+            endOffsetMs: snapshot.loopEndOffsetMs,
+          }
+        : null;
+    const introRegion: MusicDebugPlaybackRegion | null =
+      loopEnabled && loopRegion
+        ? {
+            startOffsetMs: 0,
+            endOffsetMs: loopRegion.endOffsetMs,
+          }
+        : null;
+
+    playbackStart(snapshot, introRegion);
     setPlaying(true);
-    timeoutHandle = scheduleTimeout(() => {
-      timeoutHandle = null;
-      options.playback.stop();
-      setPlaying(false);
-    }, snapshot.durationMs + playbackLeadMs);
+    schedulePlaybackStop({
+      snapshot,
+      region: introRegion,
+      repeatRegion: loopEnabled ? loopRegion : null,
+    });
   }
 
   return {
@@ -70,12 +133,12 @@ export function createMusicDebugPlaybackController(options: {
     },
     start,
     stop,
-    toggle(snapshot) {
+    toggle(snapshot, toggleOptions) {
       if (playing) {
         stop();
         return;
       }
-      start(snapshot);
+      start(snapshot, toggleOptions);
     },
   };
 }

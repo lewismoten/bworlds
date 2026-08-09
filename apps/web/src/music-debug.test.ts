@@ -81,6 +81,7 @@ describe('music debug', () => {
     expect(markup).toContain('music-debug-randomize');
     expect(markup).toContain('Play Song');
     expect(markup).toContain('Download MIDI');
+    expect(markup).toContain('Loop Song');
     expect(summary).toContain('Scheduled Notes');
     expect(summary).toContain('Song Length');
     expect(summary).toContain('Loop Range');
@@ -91,6 +92,27 @@ describe('music debug', () => {
     expect(formatMusicDebugDuration(0)).toBe('0:00');
     expect(formatMusicDebugDuration(62_000)).toBe('1:02');
     expect(formatMusicDebugLoopRange(8_000, 136_000)).toBe('0:08 - 2:16');
+  });
+
+  it('resolves playback regions and durations from loop metadata', async () => {
+    const module = await import('./music-debug.ts');
+    const snapshot = createMusicDebugSnapshot({
+      tileKind: 'forest',
+      contextType: 'overworld',
+      clusterX: 3,
+      clusterY: -2,
+    });
+
+    expect(module.resolveMusicDebugPlaybackRegion(snapshot)).toEqual({
+      startOffsetMs: 0,
+      endOffsetMs: snapshot.durationMs,
+    });
+    expect(
+      module.resolveMusicDebugPlaybackDurationMs(snapshot, {
+        startOffsetMs: snapshot.loopStartOffsetMs,
+        endOffsetMs: snapshot.loopEndOffsetMs,
+      })
+    ).toBe(snapshot.loopEndOffsetMs - snapshot.loopStartOffsetMs);
   });
 
   it('randomizes generator seed coordinates within the supported debug range', () => {

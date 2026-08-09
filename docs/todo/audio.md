@@ -19,7 +19,7 @@
 - [x] Exploration or town music should be 2-3 minutes long
 - [ ] Battle tracks are around 1-2 minutes long
 - [ ] Major boss themese or cinematic pieces can run 3-6 (or more) minutes
-- [ ] Songs should support looping
+- [x] Songs should support looping
 - [x] Song structures should have things like intro (4-8 measures), section a (16-32 measures), section b (16-32 measures), variation (16-32 measures), return (8-16) measures, and loop as an example of a 2 minute range (100-120 BPM 4/4 time)
 - [ ] lean toward shorter modular layers where rhythm, bass, harmony, melody are each built fromo 16-32 measure phrases, then recombine or mute them dynamically to make 2 minutes feel like 10-20 minutes before repetition is noticed
 - [ ] A song should choose a key and stay mostly inside it. Outside notes may be used occasionally deliberately
