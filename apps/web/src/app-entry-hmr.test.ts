@@ -3,8 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { registerAppEntryHmr } from './app-entry-hmr.ts';
 
 describe('app entry hmr', () => {
-  it('re-runs bootstrap when Vite accepts an update', async () => {
-    vi.useFakeTimers();
+  it('registers a hot accept boundary without forcing bootstrap reruns', () => {
     let callback: (() => void) | null = null;
     const bootstrap = vi.fn();
 
@@ -14,33 +13,26 @@ describe('app entry hmr', () => {
       },
     });
 
+    expect(callback).toBeTypeOf('function');
     callback?.();
-    await vi.advanceTimersByTimeAsync(80);
-    await Promise.resolve();
-
-    expect(bootstrap).toHaveBeenCalledTimes(1);
-    vi.useRealTimers();
+    expect(bootstrap).not.toHaveBeenCalled();
   });
 
-  it('coalesces rapid Vite updates into a single remount', async () => {
-    vi.useFakeTimers();
-    let callback: (() => void) | null = null;
+  it('keeps the active page mounted across repeated accepted updates', () => {
+    let acceptCallCount = 0;
     const bootstrap = vi.fn();
 
     registerAppEntryHmr(bootstrap, {
       accept(nextCallback) {
-        callback = nextCallback;
+        acceptCallCount += 1;
+        nextCallback?.();
+        nextCallback?.();
+        nextCallback?.();
       },
     });
 
-    callback?.();
-    callback?.();
-    callback?.();
-    await vi.advanceTimersByTimeAsync(80);
-    await Promise.resolve();
-
-    expect(bootstrap).toHaveBeenCalledTimes(1);
-    vi.useRealTimers();
+    expect(acceptCallCount).toBe(1);
+    expect(bootstrap).not.toHaveBeenCalled();
   });
 
   it('does nothing when hot context is unavailable', () => {

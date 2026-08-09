@@ -12,9 +12,11 @@ describe('audio layout styles', () => {
     expect(stylesheet).toContain('@media (max-width: 720px)');
     expect(stylesheet).toContain('.control-dock');
     expect(stylesheet).toContain('position: fixed;');
-    expect(stylesheet).toContain(
-      'bottom: max(0.75rem, env(safe-area-inset-bottom, 0px));'
-    );
+    expect(stylesheet).toContain('--control-dock-offset: max(0.75rem, env(safe-area-inset-bottom, 0px));');
+    expect(stylesheet).toContain('--control-dock-height: clamp(9rem, 16vh, 13rem);');
+    expect(stylesheet).toContain('bottom: var(--control-dock-offset);');
+    expect(stylesheet).toContain('padding: 1.5rem 0');
+    expect(stylesheet).toContain('calc(var(--control-dock-height) + var(--control-dock-offset) + 1rem)');
     expect(stylesheet).toContain('.audio-volume-controls');
     expect(stylesheet).toContain('grid-template-columns: minmax(0, 1fr);');
     expect(stylesheet).toContain('.audio-volume-row output');
