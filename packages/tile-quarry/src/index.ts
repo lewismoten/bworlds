@@ -13,6 +13,7 @@ import {
 import type {
   Create3DModelContext,
   RuntimePlugin,
+  ThreeMaterialLike,
 } from '@bworlds/plugin-api';
 
 const TILE_PIXEL_SIZE = 16;
@@ -21,6 +22,16 @@ const QUARRY_STONE_HEIGHT_SEED = registerHashLabel('quarry-stone-h');
 const QUARRY_STONE_DEPTH_SEED = registerHashLabel('quarry-stone-d');
 const QUARRY_STONE_ROTATION_SEED = registerHashLabel('quarry-stone-rot');
 const QUARRY_FACING_SEED = registerHashLabel('quarry-facing');
+const quarryMaterialCache = new WeakMap<
+  object,
+  {
+    timberMaterial: ThreeMaterialLike;
+    ropeMaterial: ThreeMaterialLike;
+    rubbleMaterial: ThreeMaterialLike;
+    darkMetalMaterial: ThreeMaterialLike;
+    lanternMaterial: ThreeMaterialLike;
+  }
+>();
 
 export function createQuarryTilePlugin(): RuntimePlugin {
   return createAnchoredEnterablePoiTilePlugin({
@@ -45,10 +56,13 @@ export function createQuarryTilePlugin(): RuntimePlugin {
     }),
     create3DModel({ three, state, tileX, tileY }: Create3DModelContext) {
       const { mountainMaterial } = createMountainTerrainMaterials(three);
-      const timberMaterial = createBasicMaterial(three, { color: '#7c5a3b' });
-      const ropeMaterial = createBasicMaterial(three, { color: '#d2b48c' });
-      const rubbleMaterial = createBasicMaterial(three, { color: '#9c9186' });
-      const darkMetalMaterial = createBasicMaterial(three, { color: '#2f261f' });
+      const {
+        timberMaterial,
+        ropeMaterial,
+        rubbleMaterial,
+        darkMetalMaterial,
+        lanternMaterial,
+      } = getQuarrySharedMaterials(three);
 
       const group = new three.Group();
       const facing = getQuarryFacing(state, tileX, tileY);
@@ -141,13 +155,7 @@ export function createQuarryTilePlugin(): RuntimePlugin {
       const lanternCore = markPoiLightEmitter(
         new three.Mesh(
           new three.SphereGeometry(0.03, 6, 6),
-          new three.MeshStandardMaterial({
-            color: '#f59e0b',
-            emissive: '#f59e0b',
-            emissiveIntensity: 0.02,
-            roughness: 0.34,
-            metalness: 0.04,
-          })
+          lanternMaterial
         ),
         {
           kind: 'emissive-mesh',
@@ -206,6 +214,27 @@ export function createQuarryTilePlugin(): RuntimePlugin {
       }
     },
   });
+}
+
+function getQuarrySharedMaterials(three: Create3DModelContext['three']) {
+  let cached = quarryMaterialCache.get(three as object);
+  if (!cached) {
+    cached = {
+      timberMaterial: createBasicMaterial(three, { color: '#7c5a3b' }),
+      ropeMaterial: createBasicMaterial(three, { color: '#d2b48c' }),
+      rubbleMaterial: createBasicMaterial(three, { color: '#9c9186' }),
+      darkMetalMaterial: createBasicMaterial(three, { color: '#2f261f' }),
+      lanternMaterial: new three.MeshStandardMaterial({
+        color: '#f59e0b',
+        emissive: '#f59e0b',
+        emissiveIntensity: 0.02,
+        roughness: 0.34,
+        metalness: 0.04,
+      }),
+    };
+    quarryMaterialCache.set(three as object, cached);
+  }
+  return cached;
 }
 
 function getQuarryFacing(

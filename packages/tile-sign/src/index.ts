@@ -91,8 +91,13 @@ const resolveRegionalSignStyle = createRegionalMaterialResolver(
     const textColor = '#24150c';
 
     return {
+      materialCache: new WeakMap<object, SignStyle>(),
       createMaterials(three: ThreeHostLike): SignStyle {
-        return {
+        const cached = this.materialCache.get(three as object);
+        if (cached) {
+          return cached;
+        }
+        const style = {
           key,
           postHeight,
           postThickness,
@@ -120,7 +125,16 @@ const resolveRegionalSignStyle = createRegionalMaterialResolver(
             roughness: 0.86,
             metalness: 0.03,
           }),
+          lanternMaterial: new three.MeshStandardMaterial({
+            color: '#f7d38a',
+            emissive: '#f7d38a',
+            emissiveIntensity: 0.04,
+            roughness: 0.52,
+            metalness: 0.02,
+          }),
         };
+        this.materialCache.set(three as object, style);
+        return style;
       },
     };
   }
@@ -407,13 +421,7 @@ function createSignLantern(three: ThreeHostLike, style: SignStyle) {
         style.postThickness * 1.35,
         style.postThickness * 1.05
       ),
-      new three.MeshStandardMaterial({
-        color: '#f7d38a',
-        emissive: '#f7d38a',
-        emissiveIntensity: 0.04,
-        roughness: 0.52,
-        metalness: 0.02,
-      })
+      style.lanternMaterial
     ),
     {
       kind: 'emissive-mesh',
@@ -588,8 +596,10 @@ interface SignStyle {
   postMaterial: ThreeMaterialLike;
   placardMaterial: ThreeMaterialLike;
   trimMaterial: ThreeMaterialLike;
+  lanternMaterial: ThreeMaterialLike;
 }
 
 interface SignStyleBlueprint {
+  materialCache: WeakMap<object, SignStyle>;
   createMaterials(three: ThreeHostLike): SignStyle;
 }

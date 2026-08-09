@@ -186,6 +186,28 @@ describe('tile quarry', () => {
     expect(createModelSignature(second)).toEqual(createModelSignature(first));
   });
 
+  it('reuses shared quarry materials across repeated model builds', () => {
+    const plugin = createQuarryTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'quarry');
+    const state = createQuarryState();
+    const first = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'quarry' } as never,
+      tileX: 8,
+      tileY: 8,
+    }) as FakeNode | undefined;
+    const second = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'quarry' } as never,
+      tileX: 9,
+      tileY: 8,
+    }) as FakeNode | undefined;
+
+    expect(countSharedMaterialReferences(first, second)).toBeGreaterThanOrEqual(5);
+  });
+
   it('lights quarry lanterns at night', () => {
     const plugin = createQuarryTilePlugin();
     const tile = plugin.tiles?.find((entry) => entry.kind === 'quarry');
@@ -244,3 +266,34 @@ describe('tile quarry', () => {
     expect(pointLight?.visible).toBe(true);
   });
 });
+
+function countSharedMaterialReferences(
+  left: FakeNode | undefined,
+  right: FakeNode | undefined
+): number {
+  const leftMaterials = collectMeshMaterials(left);
+  const rightMaterials = collectMeshMaterials(right);
+  let sharedCount = 0;
+
+  leftMaterials.forEach((material) => {
+    if (rightMaterials.has(material)) {
+      sharedCount += 1;
+    }
+  });
+
+  return sharedCount;
+}
+
+function collectMeshMaterials(root: FakeNode | undefined): Set<FakeMaterial> {
+  const materials = new Set<FakeMaterial>();
+  root?.traverse((node) => {
+    if (node instanceof FakeMesh) {
+      if (Array.isArray(node.material)) {
+        node.material.forEach((material) => materials.add(material));
+      } else if (node.material) {
+        materials.add(node.material);
+      }
+    }
+  });
+  return materials;
+}
