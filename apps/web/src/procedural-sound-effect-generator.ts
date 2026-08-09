@@ -25,6 +25,7 @@ export type SoundEffectKind =
   | 'combat-magic';
 
 export type SoundWaveform = OscillatorType;
+export type ProceduralNoiseColor = 'white' | 'pink' | 'brown';
 
 export type SoundPosition = { x: number; y: number };
 
@@ -35,6 +36,7 @@ export type ProceduralSoundEffect = {
   durationMs: number;
   volume: number;
   waveform: SoundWaveform;
+  noiseColor?: ProceduralNoiseColor;
   emitter?: SoundPosition;
   listener?: SoundPosition;
   seed?: number;
@@ -47,6 +49,7 @@ export type ProceduralSoundRecipe = {
   baseDurationMs: number;
   baseVolume: number;
   waveform: SoundWaveform | readonly SoundWaveform[];
+  noiseColor?: ProceduralNoiseColor | readonly ProceduralNoiseColor[];
   frequencyVariation?: number;
   durationVariation?: number;
   volumeVariation?: number;
@@ -76,6 +79,7 @@ export function createProceduralSoundEffectGenerator(): ProceduralSoundEffectGen
       const random = createRandom(seed);
       const variationDepth = clampVariationDepth(recipe.variationDepth ?? 1);
       const waveform = resolveWaveform(recipe.waveform, random);
+      const noiseColor = resolveNoiseColor(recipe.noiseColor, random);
       const frequency = clampValue(
         varyScalar(
           recipe.baseFrequency,
@@ -116,6 +120,7 @@ export function createProceduralSoundEffectGenerator(): ProceduralSoundEffectGen
         durationMs,
         volume,
         waveform,
+        noiseColor,
         emitter,
         listener,
         seed,
@@ -143,6 +148,29 @@ function resolveWaveform(
   }
 
   return waveform as SoundWaveform;
+}
+
+function resolveNoiseColor(
+  noiseColor:
+    ProceduralNoiseColor | readonly ProceduralNoiseColor[] | undefined,
+  random: () => number
+): ProceduralNoiseColor | undefined {
+  if (!noiseColor) {
+    return undefined;
+  }
+
+  if (Array.isArray(noiseColor)) {
+    if (noiseColor.length === 0) {
+      return undefined;
+    }
+    const index = Math.min(
+      noiseColor.length - 1,
+      Math.floor(random() * noiseColor.length)
+    );
+    return noiseColor[index];
+  }
+
+  return noiseColor as ProceduralNoiseColor;
 }
 
 function varyScalar(

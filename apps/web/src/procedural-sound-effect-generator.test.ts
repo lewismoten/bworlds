@@ -39,6 +39,7 @@ describe('procedural sound effect generator', () => {
       baseDurationMs: 800,
       baseVolume: 0.02,
       waveform: ['triangle', 'sine', 'sawtooth'] as const,
+      noiseColor: ['white', 'pink', 'brown'] as const,
       frequencyVariation: 0.03,
       durationVariation: 0.1,
       volumeVariation: 0.08,
@@ -58,6 +59,7 @@ describe('procedural sound effect generator', () => {
     expect(effect.volume).toBeGreaterThanOrEqual(0.02 * 0.92);
     expect(effect.volume).toBeLessThanOrEqual(0.02 * 1.08);
     expect(['triangle', 'sine', 'sawtooth']).toContain(effect.waveform);
+    expect(['white', 'pink', 'brown']).toContain(effect.noiseColor);
   });
 
   it('can disable variation depth for identity-critical sounds', () => {

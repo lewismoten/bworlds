@@ -5,11 +5,13 @@ import { resolveSoundEffectCategory } from './audio-categories.ts';
 import type { NearbyAmbientKind } from './nearby-ambient.ts';
 import {
   createProceduralSoundEffectGenerator,
+  type ProceduralNoiseColor,
   type ProceduralSoundEffect,
   type SoundEffectKind,
   type SoundPosition,
   type SoundWaveform,
 } from './procedural-sound-effect-generator.ts';
+import { createProceduralNoiseSamples } from './procedural-sound-noise.ts';
 
 type ViewModeLike = '2d' | '3d' | 'text';
 type SurfaceKind = string;
@@ -309,6 +311,7 @@ function resolveProceduralSoundRecipe(
     baseDurationMs: resolveBaseSoundEffectDurationMs(kind),
     baseVolume: resolveBaseSoundEffectVolume(kind, profile),
     waveform: resolveBaseSoundEffectWaveform(kind, tileKind, profile),
+    noiseColor: resolveBaseSoundEffectNoiseColor(kind),
     ...resolveProceduralSoundVariation(kind),
   };
 }
@@ -520,6 +523,31 @@ function resolveBaseSoundEffectWaveform(
     case 'landing':
     default:
       return profile.waveform;
+  }
+}
+
+function resolveBaseSoundEffectNoiseColor(
+  kind: SoundEffectKind
+): ProceduralNoiseColor | readonly ProceduralNoiseColor[] | undefined {
+  switch (kind) {
+    case 'wind':
+      return 'brown';
+    case 'ocean':
+      return 'brown';
+    case 'river-ambience':
+      return ['white', 'pink'];
+    case 'forest-ambience':
+      return ['pink', 'brown'];
+    case 'plains-ambience':
+      return ['white', 'pink'];
+    case 'mountain-ambience':
+      return ['white', 'brown'];
+    case 'cave-ambience':
+      return 'brown';
+    case 'ruins-ambience':
+      return 'pink';
+    default:
+      return undefined;
   }
 }
 
@@ -1277,11 +1305,15 @@ function resolveAdvancementFrequency(level?: number): number {
 }
 
 type AudioContextCtor = new () => AudioContext;
+type AudioBufferSourceNodeLike = AudioBufferSourceNode & {
+  buffer: AudioBuffer | null;
+};
+type ScheduledSoundSourceNode = OscillatorNode | AudioBufferSourceNodeLike;
 type ActiveSoundVoice = {
   kind: SoundEffectKind;
   priority: number;
   loudness: number;
-  oscillator: OscillatorNode;
+  source: ScheduledSoundSourceNode;
   gain: GainNode;
   mixGain: GainNode;
   panner: StereoPannerNode | null;
@@ -1318,6 +1350,7 @@ export function createWebAudioSoundEffectSink(
   let activeSourceCount = 0;
   let outputGainNode: GainNode | null = null;
   const activeVoices = new Set<ActiveSoundVoice>();
+  const noiseBufferCache = new Map<string, AudioBuffer>();
 
   function getAudioContext(): AudioContext | null {
     if (audioContext) {
@@ -1376,8 +1409,8 @@ export function createWebAudioSoundEffectSink(
       return;
     }
     activeSourceCount = Math.max(0, activeSourceCount - 1);
-    voice.oscillator.onended = null;
-    voice.oscillator.disconnect?.();
+    voice.source.onended = null;
+    voice.source.disconnect?.();
     voice.gain.disconnect?.();
     voice.mixGain.disconnect?.();
     voice.panner?.disconnect?.();
@@ -1389,9 +1422,9 @@ export function createWebAudioSoundEffectSink(
   function stopVoice(voice: ActiveSoundVoice, stopAt?: number): void {
     try {
       if (typeof stopAt === 'number') {
-        voice.oscillator.stop(stopAt);
+        voice.source.stop(stopAt);
       } else {
-        voice.oscillator.stop();
+        voice.source.stop();
       }
     } catch {
       // Ignore invalid repeated stop calls from already-ending voices.
@@ -1429,7 +1462,11 @@ export function createWebAudioSoundEffectSink(
       );
       const startAt = context.currentTime;
       const durationSeconds = effect.durationMs / 1000;
-      const oscillator = context.createOscillator();
+      const source = createScheduledSoundSource(
+        context,
+        effect,
+        noiseBufferCache
+      );
       const gain = context.createGain();
       const mixGain = context.createGain();
       const panner =
@@ -1443,7 +1480,7 @@ export function createWebAudioSoundEffectSink(
         kind: effect.kind,
         priority,
         loudness,
-        oscillator,
+        source,
         gain,
         mixGain,
         panner,
@@ -1474,81 +1511,14 @@ export function createWebAudioSoundEffectSink(
         }
         stopVoice(weakestActiveVoice);
       }
-      oscillator.type = effect.waveform;
-      oscillator.frequency.setValueAtTime(effect.frequency, startAt);
-      if (effect.kind === 'jump') {
-        oscillator.frequency.exponentialRampToValueAtTime(
-          effect.frequency * 1.35,
-          startAt + durationSeconds
-        );
-      }
-      if (effect.kind === 'landing') {
-        oscillator.frequency.exponentialRampToValueAtTime(
-          Math.max(40, effect.frequency * 0.78),
-          startAt + durationSeconds
-        );
-      }
-      if (effect.kind === 'advancement') {
-        oscillator.frequency.exponentialRampToValueAtTime(
-          effect.frequency * 1.5,
-          startAt + durationSeconds * 0.55
-        );
-      }
-      if (effect.kind === 'train-engine') {
-        oscillator.frequency.exponentialRampToValueAtTime(
-          Math.max(48, effect.frequency * 0.82),
-          startAt + durationSeconds
-        );
-      }
-      if (effect.kind === 'train-whistle') {
-        oscillator.frequency.exponentialRampToValueAtTime(
-          effect.frequency * 1.28,
-          startAt + durationSeconds * 0.72
-        );
-      }
-      if (effect.kind === 'paddle-calliope') {
-        oscillator.frequency.linearRampToValueAtTime(
-          effect.frequency * 1.08,
-          startAt + durationSeconds * 0.32
-        );
-        oscillator.frequency.linearRampToValueAtTime(
-          effect.frequency * 0.94,
-          startAt + durationSeconds * 0.88
-        );
-      }
-      if (effect.kind === 'steam-whistle') {
-        oscillator.frequency.exponentialRampToValueAtTime(
-          effect.frequency * 1.22,
-          startAt + durationSeconds * 0.22
-        );
-        oscillator.frequency.exponentialRampToValueAtTime(
-          effect.frequency * 0.92,
-          startAt + durationSeconds
-        );
-      }
-      if (effect.kind === 'combat-weapon') {
-        oscillator.frequency.exponentialRampToValueAtTime(
-          Math.max(60, effect.frequency * 0.64),
-          startAt + durationSeconds
-        );
-      }
-      if (effect.kind === 'combat-magic') {
-        oscillator.frequency.linearRampToValueAtTime(
-          effect.frequency * 1.18,
-          startAt + durationSeconds * 0.3
-        );
-        oscillator.frequency.linearRampToValueAtTime(
-          effect.frequency * 0.86,
-          startAt + durationSeconds
-        );
-      }
+      applySoundEffectSourceShape(source, effect, startAt, durationSeconds);
       gain.gain.setValueAtTime(0.0001, startAt);
       gain.gain.exponentialRampToValueAtTime(
         normalizedVolume * categoryVolume * spatialMix.gainMultiplier,
         startAt + durationSeconds * 0.2
       );
       gain.gain.exponentialRampToValueAtTime(0.0001, startAt + durationSeconds);
-      oscillator.connect(gain);
+      source.connect(gain);
       if (panner) {
         panner.pan.setValueAtTime(spatialMix.pan, startAt);
         gain.connect(mixGain);
@@ -1561,11 +1531,11 @@ export function createWebAudioSoundEffectSink(
       activeVoices.add(voice);
       activeSourceCount += 1;
       updateOutputGain(context);
-      oscillator.onended = () => {
+      source.onended = () => {
         removeVoice(voice);
       };
-      oscillator.start(startAt);
-      oscillator.stop(startAt + durationSeconds);
+      source.start(startAt);
+      source.stop(startAt + durationSeconds);
     },
     stopAll() {
       for (const voice of [...activeVoices]) {
@@ -1577,6 +1547,132 @@ export function createWebAudioSoundEffectSink(
       return activeSourceCount;
     },
   };
+}
+
+function createScheduledSoundSource(
+  context: AudioContext,
+  effect: ProceduralSoundEffect,
+  noiseBufferCache: Map<string, AudioBuffer>
+): ScheduledSoundSourceNode {
+  if (
+    effect.noiseColor &&
+    typeof context.createBuffer === 'function' &&
+    typeof context.createBufferSource === 'function'
+  ) {
+    const source = context.createBufferSource() as AudioBufferSourceNodeLike;
+    source.buffer = getOrCreateNoiseBuffer(context, effect, noiseBufferCache);
+    return source;
+  }
+
+  return context.createOscillator();
+}
+
+function getOrCreateNoiseBuffer(
+  context: AudioContext,
+  effect: ProceduralSoundEffect,
+  noiseBufferCache: Map<string, AudioBuffer>
+): AudioBuffer {
+  const seed = effect.seed ?? 0;
+  const frameCount = Math.max(
+    1,
+    Math.ceil(context.sampleRate * (effect.durationMs / 1000))
+  );
+  const cacheKey = `${effect.noiseColor ?? 'none'}:${seed}:${frameCount}`;
+  const cached = noiseBufferCache.get(cacheKey);
+  if (cached) {
+    return cached;
+  }
+
+  const buffer = context.createBuffer(1, frameCount, context.sampleRate);
+  const channelData = buffer.getChannelData(0);
+  const samples = createProceduralNoiseSamples({
+    color: effect.noiseColor ?? 'white',
+    frameCount,
+    seed,
+  });
+  channelData.set(samples);
+  noiseBufferCache.set(cacheKey, buffer);
+  return buffer;
+}
+
+function applySoundEffectSourceShape(
+  source: ScheduledSoundSourceNode,
+  effect: ProceduralSoundEffect,
+  startAt: number,
+  durationSeconds: number
+): void {
+  if (!('frequency' in source)) {
+    return;
+  }
+
+  source.type = effect.waveform;
+  source.frequency.setValueAtTime(effect.frequency, startAt);
+  if (effect.kind === 'jump') {
+    source.frequency.exponentialRampToValueAtTime(
+      effect.frequency * 1.35,
+      startAt + durationSeconds
+    );
+  }
+  if (effect.kind === 'landing') {
+    source.frequency.exponentialRampToValueAtTime(
+      Math.max(40, effect.frequency * 0.78),
+      startAt + durationSeconds
+    );
+  }
+  if (effect.kind === 'advancement') {
+    source.frequency.exponentialRampToValueAtTime(
+      effect.frequency * 1.5,
+      startAt + durationSeconds * 0.55
+    );
+  }
+  if (effect.kind === 'train-engine') {
+    source.frequency.exponentialRampToValueAtTime(
+      Math.max(48, effect.frequency * 0.82),
+      startAt + durationSeconds
+    );
+  }
+  if (effect.kind === 'train-whistle') {
+    source.frequency.exponentialRampToValueAtTime(
+      effect.frequency * 1.28,
+      startAt + durationSeconds * 0.72
+    );
+  }
+  if (effect.kind === 'paddle-calliope') {
+    source.frequency.linearRampToValueAtTime(
+      effect.frequency * 1.08,
+      startAt + durationSeconds * 0.32
+    );
+    source.frequency.linearRampToValueAtTime(
+      effect.frequency * 0.94,
+      startAt + durationSeconds * 0.88
+    );
+  }
+  if (effect.kind === 'steam-whistle') {
+    source.frequency.exponentialRampToValueAtTime(
+      effect.frequency * 1.22,
+      startAt + durationSeconds * 0.22
+    );
+    source.frequency.exponentialRampToValueAtTime(
+      effect.frequency * 0.92,
+      startAt + durationSeconds
+    );
+  }
+  if (effect.kind === 'combat-weapon') {
+    source.frequency.exponentialRampToValueAtTime(
+      Math.max(60, effect.frequency * 0.64),
+      startAt + durationSeconds
+    );
+  }
+  if (effect.kind === 'combat-magic') {
+    source.frequency.linearRampToValueAtTime(
+      effect.frequency * 1.18,
+      startAt + durationSeconds * 0.3
+    );
+    source.frequency.linearRampToValueAtTime(
+      effect.frequency * 0.86,
+      startAt + durationSeconds
+    );
+  }
 }
 
 function compareIncomingSoundToActiveVoice(
