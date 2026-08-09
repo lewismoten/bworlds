@@ -17,11 +17,13 @@ import {
   getSharedSphereGeometry,
 } from '@bworlds/three-support';
 import { createLowDetailLighthouseModel } from './low-detail.ts';
+import { getLighthouseBeamWeatherProfile } from './weather-response.ts';
 import type {
   Create3DModelContext,
   RuntimePlugin,
   ThreeMaterialLike,
   ThreeObject3DLike,
+  WorldEnvironmentLike,
 } from '@bworlds/plugin-api';
 
 const LIGHTHOUSE_BEAM_PIVOT_KEY = 'lighthouseBeamPivot';
@@ -471,12 +473,12 @@ export function createLighthouseTilePlugin(): RuntimePlugin {
 
       return group;
     },
-    sync3DModel({ model, cycle, timeMs }) {
+    sync3DModel({ model, cycle, timeMs, environment }) {
       if (!model || typeof model !== 'object') {
         return;
       }
       syncPoiLightEmitters(model as Parameters<typeof syncPoiLightEmitters>[0], cycle);
-      syncLighthouseBeam(model as ThreeObject3DLike, cycle, timeMs ?? 0);
+      syncLighthouseBeam(model as ThreeObject3DLike, cycle, timeMs ?? 0, environment);
     },
   });
 }
@@ -507,9 +509,14 @@ function pickLighthousePaneColor(signal: number, beamColor: string): string {
 function syncLighthouseBeam(
   root: ThreeObject3DLike,
   cycle: { daylight: number; twilight: number; night: number; sunAltitude?: number },
-  timeMs: number
+  timeMs: number,
+  environment: WorldEnvironmentLike = {}
 ): void {
-  const activation = getLighthouseBeamActivation(cycle);
+  const weatherProfile = getLighthouseBeamWeatherProfile(
+    cycle,
+    getPoiLightActivation(cycle),
+    environment
+  );
 
   root.traverse?.((node) => {
     if (node.userData?.[LIGHTHOUSE_BEAM_PIVOT_KEY]) {
@@ -530,8 +537,10 @@ function syncLighthouseBeam(
     }
 
     node.visible =
-      activation > 0.01 &&
-      (typeof cycle.sunAltitude !== 'number' || cycle.sunAltitude < 0.02);
+      weatherProfile.activation > 0.01 &&
+      (typeof cycle.sunAltitude !== 'number' ||
+        cycle.sunAltitude < 0.02 ||
+        weatherProfile.usesWeatherOverride);
     const beamNode = node as BeamNodeLike;
     const materials = Array.isArray(beamNode.material)
       ? beamNode.material
@@ -539,32 +548,44 @@ function syncLighthouseBeam(
         ? [beamNode.material]
         : [];
     materials.forEach((material) => {
-      const opacityScale =
+      const baseOpacityScale =
         typeof node.userData?.lighthouseBeamOpacity === 'number'
           ? node.userData.lighthouseBeamOpacity
           : 0.1;
-      material.opacity = activation * opacityScale;
+      const weatherOpacityScale = getLighthouseBeamSegmentScale(node, {
+        near: weatherProfile.nearOpacityScale,
+        mid: weatherProfile.midOpacityScale,
+        far: weatherProfile.farOpacityScale,
+      });
+      material.opacity =
+        weatherProfile.activation * baseOpacityScale * weatherOpacityScale;
       if (typeof material.emissiveIntensity === 'number') {
-        const emissiveScale =
+        const baseEmissiveScale =
           typeof node.userData?.lighthouseBeamEmissiveIntensity === 'number'
             ? node.userData.lighthouseBeamEmissiveIntensity
             : 0.6;
-        material.emissiveIntensity = activation * emissiveScale;
+        const weatherEmissiveScale = getLighthouseBeamSegmentScale(node, {
+          near: weatherProfile.nearEmissiveScale,
+          mid: weatherProfile.midEmissiveScale,
+          far: weatherProfile.farEmissiveScale,
+        });
+        material.emissiveIntensity =
+          weatherProfile.activation * baseEmissiveScale * weatherEmissiveScale;
       }
     });
   });
 }
 
-function getLighthouseBeamActivation(cycle: {
-  daylight: number;
-  twilight: number;
-  night: number;
-  sunAltitude?: number;
-}): number {
-  const baseActivation = getPoiLightActivation(cycle);
-  const solarSuppression =
-    typeof cycle.sunAltitude === 'number'
-      ? 1 - smoothstep(-0.2, 0.08, cycle.sunAltitude)
-      : 1 - smoothstep(0.06, 0.22, cycle.daylight);
-  return Math.max(0, Math.min(1, baseActivation * solarSuppression));
+function getLighthouseBeamSegmentScale(
+  node: ThreeObject3DLike,
+  scales: { near: number; mid: number; far: number }
+) {
+  const emissiveScale = Number(node.userData?.lighthouseBeamEmissiveIntensity ?? 0);
+  if (emissiveScale >= 1) {
+    return scales.near;
+  }
+  if (emissiveScale >= 0.75) {
+    return scales.mid;
+  }
+  return scales.far;
 }

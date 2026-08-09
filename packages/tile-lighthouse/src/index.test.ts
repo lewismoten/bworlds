@@ -351,6 +351,151 @@ describe('tile lighthouse', () => {
     expect(findBeamPivot(low)).not.toBeNull();
   });
 
+  it('activates the lighthouse beam early in dense fog near daytime', () => {
+    const plugin = createLighthouseTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'lighthouse');
+    const model = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state: {} as never,
+      tile: { kind: 'lighthouse' } as never,
+      tileX: 4,
+      tileY: 5,
+      detailLevel: 'low',
+    }) as FakeNode | undefined;
+
+    const beamNodes = collectBeamMeshes(model);
+    expect(beamNodes).toHaveLength(2);
+
+    tile?.sync3DModel?.({
+      three: fakeThree as never,
+      state: {} as never,
+      tile: { kind: 'lighthouse' },
+      tileX: 4,
+      tileY: 5,
+      model,
+      timeMs: 0,
+      cycle: { daylight: 1, twilight: 0, night: 0, sunAltitude: 0.18 } as never,
+      environment: {
+        weather: {
+          current: createWeatherCondition({
+            kind: 'fog',
+            intensity: 0.95,
+            visibility: 0.12,
+          }),
+        },
+      },
+    });
+
+    expect(beamNodes.some((beam) => beam.visible)).toBe(true);
+    expect(
+      beamNodes.some((beam) => ((beam.material as FakeMaterial).opacity ?? 0) > 0.02)
+    ).toBe(true);
+  });
+
+  it('keeps clear daytime lighthouse beams effectively suppressed', () => {
+    const plugin = createLighthouseTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'lighthouse');
+    const model = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state: {} as never,
+      tile: { kind: 'lighthouse' } as never,
+      tileX: 4,
+      tileY: 5,
+    }) as FakeNode | undefined;
+
+    const beamNodes = collectBeamMeshes(model);
+    tile?.sync3DModel?.({
+      three: fakeThree as never,
+      state: {} as never,
+      tile: { kind: 'lighthouse' },
+      tileX: 4,
+      tileY: 5,
+      model,
+      timeMs: 0,
+      cycle: { daylight: 1, twilight: 0, night: 0, sunAltitude: 0.52 } as never,
+      environment: {
+        weather: {
+          current: createWeatherCondition({
+            kind: 'clouds',
+            intensity: 0.05,
+            visibility: 1,
+          }),
+        },
+      },
+    });
+
+    expect(beamNodes.every((beam) => beam.visible === false)).toBe(true);
+    expect(
+      beamNodes.every((beam) => ((beam.material as FakeMaterial).opacity ?? 0) <= 0.001)
+    ).toBe(true);
+  });
+
+  it('reduces far beam intensity during heavy storms while fog boosts nearer scattering', () => {
+    const plugin = createLighthouseTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'lighthouse');
+    const model = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state: {} as never,
+      tile: { kind: 'lighthouse' } as never,
+      tileX: 4,
+      tileY: 5,
+    }) as FakeNode | undefined;
+    const beamNodes = collectBeamMeshes(model);
+    const [nearBeam, , farBeam] = beamNodes;
+
+    tile?.sync3DModel?.({
+      three: fakeThree as never,
+      state: {} as never,
+      tile: { kind: 'lighthouse' },
+      tileX: 4,
+      tileY: 5,
+      model,
+      timeMs: 0,
+      cycle: { daylight: 0, twilight: 0.2, night: 0.8, sunAltitude: -0.18 } as never,
+      environment: {
+        weather: {
+          current: createWeatherCondition({
+            kind: 'fog',
+            intensity: 0.92,
+            visibility: 0.16,
+          }),
+        },
+      },
+    });
+
+    const fogNearOpacity = (nearBeam?.material as FakeMaterial | undefined)?.opacity ?? 0;
+    const fogFarEmissive =
+      (farBeam?.material as FakeMaterial | undefined)?.emissiveIntensity ?? 0;
+
+    tile?.sync3DModel?.({
+      three: fakeThree as never,
+      state: {} as never,
+      tile: { kind: 'lighthouse' },
+      tileX: 4,
+      tileY: 5,
+      model,
+      timeMs: 0,
+      cycle: { daylight: 0, twilight: 0.2, night: 0.8, sunAltitude: -0.18 } as never,
+      environment: {
+        weather: {
+          current: createWeatherCondition({
+            kind: 'heavy-rain',
+            intensity: 0.95,
+            visibility: 0.18,
+          }),
+        },
+      },
+    });
+
+    const stormNearOpacity = (nearBeam?.material as FakeMaterial | undefined)?.opacity ?? 0;
+    const stormFarEmissive =
+      (farBeam?.material as FakeMaterial | undefined)?.emissiveIntensity ?? 0;
+
+    expect(fogNearOpacity).toBeGreaterThan(0.02);
+    expect(stormNearOpacity).toBeGreaterThan(0.01);
+    expect(stormFarEmissive).toBeLessThan(fogFarEmissive);
+  });
+
   it('sweeps and fades the beam by distance at night', () => {
     const plugin = createLighthouseTilePlugin();
     const tile = plugin.tiles?.find((entry) => entry.kind === 'lighthouse');
@@ -777,4 +922,41 @@ function getCycleOffsetFromBoundary(
       yearLengthDays: DEFAULT_YEAR_LENGTH_DAYS,
     }
   );
+}
+
+function createWeatherCondition(
+  overrides: Partial<{
+    kind: string;
+    intensity: number;
+    visibility: number;
+  }> = {}
+) {
+  const intensity = overrides.intensity ?? 0.5;
+  const visibility = overrides.visibility ?? 0.8;
+  return {
+    kind: (overrides.kind ?? 'clouds') as
+      | 'clouds'
+      | 'wind'
+      | 'fog'
+      | 'light-rain'
+      | 'heavy-rain'
+      | 'snow'
+      | 'hail',
+    label: 'Weather',
+    intensity,
+    cloudCover: intensity,
+    windStrength: intensity,
+    precipitation: intensity,
+    visibility,
+    temperature: 54,
+    front: {
+      id: 'front',
+      kind: 'cold' as const,
+      intensity,
+      humidityShift: 0,
+      temperatureShift: 0,
+      windDirectionDegrees: 180,
+      speed: intensity,
+    },
+  };
 }
