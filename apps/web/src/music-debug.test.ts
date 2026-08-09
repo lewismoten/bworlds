@@ -294,6 +294,45 @@ describe('music debug', () => {
     );
   });
 
+  it('caps debug playback note envelopes to keep note attacks responsive', () => {
+    const snapshot = createMusicDebugSnapshot(
+      {
+        tileKind: 'forest',
+        contextType: 'overworld',
+        clusterX: 2,
+        clusterY: -1,
+      },
+      2_000
+    );
+    const play = vi.fn();
+    const playback = createMusicDebugSongPlayback(
+      {
+        resume: vi.fn(),
+        play,
+        stopAll: vi.fn(),
+      },
+      {
+        now: () => 1_000,
+        scheduleAheadMs: 12,
+        scheduleWindowMs: 10_000,
+      }
+    );
+
+    playback.play(snapshot);
+
+    const scheduledLead = play.mock.calls.find(
+      ([note]) => note.role === 'lead'
+    )?.[0];
+    const scheduledHarmony = play.mock.calls.find(
+      ([note]) => note.role === 'harmony'
+    )?.[0];
+
+    expect(scheduledLead?.attackMs).toBeLessThanOrEqual(24);
+    expect(scheduledLead?.releaseMs).toBeLessThanOrEqual(180);
+    expect(scheduledHarmony?.attackMs).toBeLessThanOrEqual(24);
+    expect(scheduledHarmony?.releaseMs).toBeLessThanOrEqual(180);
+  });
+
   it('schedules debug song playback in rolling batches instead of all at once', () => {
     vi.useFakeTimers();
     let currentNowMs = 1_000;

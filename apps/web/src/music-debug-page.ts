@@ -26,6 +26,7 @@ import {
   formatMusicDebugDuration,
   type MusicDebugOptions,
 } from './music-debug.ts';
+import { MUSIC_DEBUG_PLAYBACK_CONTROLLER_LEAD_MS } from './music-debug-playback-profile.ts';
 import {
   drawMusicDebugTimeline,
   resolveMusicDebugTimelineSeekOffset,
@@ -258,7 +259,7 @@ const playbackController = createMusicDebugPlaybackController({
     renderPlaybackUi();
     persistPageState(false);
   },
-  playbackLeadMs: 8,
+  playbackLeadMs: MUSIC_DEBUG_PLAYBACK_CONTROLLER_LEAD_MS,
 });
 
 function warmMusicDebugPlayback(): void {

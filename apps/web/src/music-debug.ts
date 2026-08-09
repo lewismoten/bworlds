@@ -23,6 +23,12 @@ import {
 import { randomizeDebugCoordinatePair } from './debug-seed.ts';
 import { buildMusicDebugInstrumentPanelMarkup } from './music-debug-instrument-panel.ts';
 import { describeSongSectionLayerArrangement } from './procedural-music-song-layers.ts';
+import {
+  createMusicDebugScheduledPlaybackNote,
+  MUSIC_DEBUG_PLAYBACK_SCHEDULE_AHEAD_MS,
+  MUSIC_DEBUG_PLAYBACK_SCHEDULE_TICK_MS,
+  MUSIC_DEBUG_PLAYBACK_SCHEDULE_WINDOW_MS,
+} from './music-debug-playback-profile.ts';
 
 export type MusicDebugTileKind =
   | 'plains'
@@ -589,12 +595,16 @@ export function createMusicDebugSongPlayback(
   options: MusicDebugSongPlaybackOptions = {}
 ): MusicDebugSongPlayback {
   const now = options.now ?? performance.now.bind(performance);
-  const scheduleAheadMs = options.scheduleAheadMs ?? 12;
+  const scheduleAheadMs =
+    options.scheduleAheadMs ?? MUSIC_DEBUG_PLAYBACK_SCHEDULE_AHEAD_MS;
   const scheduleWindowMs = Math.max(
     scheduleAheadMs,
-    options.scheduleWindowMs ?? 120
+    options.scheduleWindowMs ?? MUSIC_DEBUG_PLAYBACK_SCHEDULE_WINDOW_MS
   );
-  const scheduleTickMs = Math.max(8, options.scheduleTickMs ?? 24);
+  const scheduleTickMs = Math.max(
+    8,
+    options.scheduleTickMs ?? MUSIC_DEBUG_PLAYBACK_SCHEDULE_TICK_MS
+  );
   const scheduleTimeout = options.scheduleTimeout ?? setTimeout;
   const clearScheduledTimeout = options.clearScheduledTimeout ?? clearTimeout;
   let scheduledBatchHandle: ReturnType<typeof setTimeout> | null = null;
@@ -639,10 +649,9 @@ export function createMusicDebugSongPlayback(
           if (scheduledStartMs > windowEndMs) {
             break;
           }
-          sink.play({
-            ...note,
-            startMs: scheduledStartMs,
-          });
+          sink.play(
+            createMusicDebugScheduledPlaybackNote(note, scheduledStartMs)
+          );
           noteIndex += 1;
         }
 

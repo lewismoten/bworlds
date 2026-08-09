@@ -1,4 +1,5 @@
 import type { MusicDebugSnapshot } from './music-debug.ts';
+import { createMusicDebugInstrumentPreviewPlaybackNote } from './music-debug-playback-profile.ts';
 import type {
   ProceduralInstrument,
   ProceduralMusicNote,
@@ -43,17 +44,11 @@ export function resolveMusicDebugInstrumentPreviewNote(
     return null;
   }
 
-  return {
-    ...source,
-    instrumentId: snapshot.instrumentBank.instruments[role].id,
-    startMs: nowMs + 12,
-    durationMs: Math.max(
-      180,
-      Math.min(720, Math.round(source.durationMs * 0.9))
-    ),
-    releaseMs: Math.max(40, Math.min(220, source.releaseMs)),
-    volume: Math.min(0.06, source.volume * 1.15),
-  };
+  return createMusicDebugInstrumentPreviewPlaybackNote(
+    source,
+    snapshot.instrumentBank.instruments[role].id,
+    nowMs
+  );
 }
 
 function buildMusicDebugInstrumentCardMarkup(options: {

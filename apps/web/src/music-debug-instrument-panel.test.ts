@@ -41,10 +41,12 @@ describe('music debug instrument panel', () => {
       expect.objectContaining({
         role: 'lead',
         instrumentId: snapshot.instrumentBank.instruments.lead.id,
-        startMs: 5_012,
+        startMs: 5_004,
       })
     );
-    expect(note?.durationMs).toBeGreaterThanOrEqual(180);
-    expect(note?.durationMs).toBeLessThanOrEqual(720);
+    expect(note?.durationMs).toBeGreaterThanOrEqual(140);
+    expect(note?.durationMs).toBeLessThanOrEqual(420);
+    expect(note?.attackMs).toBeLessThanOrEqual(14);
+    expect(note?.releaseMs).toBeLessThanOrEqual(140);
   });
 });
