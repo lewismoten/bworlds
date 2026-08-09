@@ -128,4 +128,231 @@ describe('tile cave', () => {
       })
     );
   });
+
+  it('reuses shared cave portal materials across repeated builds on the same host', () => {
+    const previousDocument = globalThis.document;
+    globalThis.document = createFakeDocument() as never;
+
+    const three = createFakeThree() as never;
+    const modelTile = plugin.tiles?.find((tile) => tile.kind === 'cave');
+    const state = {
+      getCurrentTile() {
+        return { kind: 'plains' };
+      },
+      getTileDefinition() {
+        return { walkable: true };
+      },
+    } as never;
+    try {
+      const first = modelTile?.create3DModel?.({
+        tile: { kind: 'cave' },
+        three,
+        state,
+        tileX: 4,
+        tileY: 6,
+      }) as { children?: Array<{ children?: Array<{ material?: unknown }> }> } | null | undefined;
+      const second = modelTile?.create3DModel?.({
+        tile: { kind: 'cave' },
+        three,
+        state,
+        tileX: 8,
+        tileY: 9,
+      }) as { children?: Array<{ children?: Array<{ material?: unknown }> }> } | null | undefined;
+
+      const firstPortalChildren = findPortalChildren(first?.children);
+      const secondPortalChildren = findPortalChildren(second?.children);
+      const findMaterialByColor = (
+        children: Array<{ material?: { options?: { color?: unknown } } }>,
+        color: string
+      ) =>
+        children.find((child) => child.material?.options?.color === color)?.material;
+
+      expect(findMaterialByColor(firstPortalChildren, '#010308')).toBe(
+        findMaterialByColor(secondPortalChildren, '#010308')
+      );
+      expect(findMaterialByColor(firstPortalChildren, '#03060a')).toBe(
+        findMaterialByColor(secondPortalChildren, '#03060a')
+      );
+      expect(findMaterialByColor(firstPortalChildren, '#f59e0b')).toBe(
+        findMaterialByColor(secondPortalChildren, '#f59e0b')
+      );
+    } finally {
+      globalThis.document = previousDocument;
+    }
+  });
+
+  it('reuses shared cave mushroom materials across repeated builds on the same host', () => {
+    const three = createFakeThree() as never;
+    const mushroomTile = plugin.tiles?.find((tile) => tile.kind === 'cave-mushrooms');
+
+    const first = mushroomTile?.create3DModel?.({
+      tile: { kind: 'cave-mushrooms' },
+      three,
+      state: {} as never,
+      tileX: 2,
+      tileY: 3,
+    }) as { children?: Array<{ material?: unknown }> } | null | undefined;
+    const second = mushroomTile?.create3DModel?.({
+      tile: { kind: 'cave-mushrooms' },
+      three,
+      state: {} as never,
+      tileX: 6,
+      tileY: 7,
+    }) as { children?: Array<{ material?: unknown }> } | null | undefined;
+
+    expect(first?.children?.[0]?.material).toBe(second?.children?.[0]?.material);
+    expect(first?.children?.[1]?.material).toBe(second?.children?.[1]?.material);
+  });
 });
+
+function createFakeThree() {
+  class Group {
+    children: unknown[] = [];
+    position = {
+      set() {
+        return undefined;
+      },
+    };
+    rotation = { x: 0, y: 0, z: 0 };
+    add(child: unknown) {
+      this.children.push(child);
+    }
+  }
+  class Mesh {
+    position = {
+      set() {
+        return undefined;
+      },
+    };
+    rotation = { x: 0, y: 0, z: 0 };
+    scale = {
+      set() {
+        return undefined;
+      },
+    };
+    userData: Record<string, unknown> = {};
+    constructor(
+      public geometry: unknown,
+      public material: unknown
+    ) {}
+  }
+  class PointLight {
+    position = {
+      set() {
+        return undefined;
+      },
+    };
+    visible = true;
+    userData: Record<string, unknown> = {};
+    constructor(
+      public color: unknown,
+      public intensity: unknown,
+      public distance: unknown,
+      public decay: unknown
+    ) {}
+  }
+  class MeshBasicMaterial {
+    constructor(public options: unknown) {}
+  }
+  class MeshStandardMaterial {
+    constructor(public options: unknown) {}
+  }
+  class CanvasTexture {
+    colorSpace: unknown;
+    magFilter: unknown;
+    minFilter: unknown;
+    generateMipmaps = false;
+    needsUpdate = false;
+    wrapS: unknown;
+    wrapT: unknown;
+    repeat = {
+      set() {
+        return undefined;
+      },
+    };
+    constructor(public canvas: unknown) {}
+  }
+  class SphereGeometry {
+    constructor(..._args: unknown[]) {}
+  }
+  class CircleGeometry {
+    constructor(..._args: unknown[]) {}
+  }
+  class PlaneGeometry {
+    constructor(..._args: unknown[]) {}
+  }
+  class TorusGeometry {
+    constructor(..._args: unknown[]) {}
+  }
+  class CylinderGeometry {
+    constructor(..._args: unknown[]) {}
+  }
+  class ConeGeometry {
+    constructor(..._args: unknown[]) {}
+  }
+
+  return {
+    Group,
+    Mesh,
+    PointLight,
+    CanvasTexture,
+    MeshBasicMaterial,
+    MeshStandardMaterial,
+    SphereGeometry,
+    CircleGeometry,
+    PlaneGeometry,
+    TorusGeometry,
+    CylinderGeometry,
+    ConeGeometry,
+    DoubleSide: 2,
+    SRGBColorSpace: 'srgb',
+    NearestFilter: 'nearest',
+    RepeatWrapping: 'repeat',
+  };
+}
+
+function findPortalChildren(
+  children: Array<{ children?: Array<{ material?: { options?: { color?: unknown } } }> }> | undefined
+) {
+  return (
+    children?.find(
+      (child) =>
+        Array.isArray(child.children) &&
+        child.children.some((grandchild) => grandchild.material?.options?.color === '#010308')
+    )?.children ?? []
+  );
+}
+
+function createFakeDocument() {
+  return {
+    createElement(tagName: string) {
+      if (tagName !== 'canvas') {
+        throw new Error(`Unsupported element: ${tagName}`);
+      }
+      return {
+        width: 0,
+        height: 0,
+        getContext(kind: string) {
+          if (kind !== '2d') {
+            return null;
+          }
+          return {
+            fillStyle: '',
+            beginPath() {
+              return undefined;
+            },
+            arc() {
+              return undefined;
+            },
+            fill() {
+              return undefined;
+            },
+            fillRect() {
+              return undefined;
+            },
+          };
+        },
+      };
+    },
+  };
+}

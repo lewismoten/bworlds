@@ -20,6 +20,7 @@ import type {
   RuntimePlugin,
   TileLike,
   TilePlugin,
+  ThreeMaterialLike,
 } from '@bworlds/plugin-api';
 
 const TILE_PIXEL_SIZE = 16;
@@ -51,6 +52,18 @@ const CAVE_OBSTACLE_COUNT_SEED = registerHashLabel('cave-obstacle-count');
 const CAVE_OBSTACLE_SCALE_SEED = registerHashLabel('cave-obstacle-scale');
 const CAVE_OBSTACLE_X_SEED = registerHashLabel('cave-obstacle-x');
 const CAVE_OBSTACLE_Z_SEED = registerHashLabel('cave-obstacle-z');
+const caveMaterialCache = new WeakMap<
+  object,
+  {
+    mouthVoidMaterial: ThreeMaterialLike;
+    tunnelBackMaterial: ThreeMaterialLike;
+    tunnelCeilingMaterial: ThreeMaterialLike;
+    tunnelFloorMaterial: ThreeMaterialLike;
+    lanternCoreMaterial: ThreeMaterialLike;
+    mushroomCapMaterial: ThreeMaterialLike;
+    mushroomStemMaterial: ThreeMaterialLike;
+  }
+>();
 
 export function createCaveTilePlugin(): RuntimePlugin {
   const basePlugin = createEnterablePoiTilePlugin({
@@ -126,6 +139,13 @@ export function createCaveTilePlugin(): RuntimePlugin {
       tileY,
     }: Create3DModelContext) {
       const { mountainMaterial } = createMountainTerrainMaterials(three);
+      const {
+        mouthVoidMaterial,
+        tunnelBackMaterial,
+        tunnelCeilingMaterial,
+        tunnelFloorMaterial,
+        lanternCoreMaterial,
+      } = getCaveSharedMaterials(three);
 
       const group = new three.Group();
       const entrance = getCaveEntranceDirection(state, tileX, tileY);
@@ -204,30 +224,21 @@ export function createCaveTilePlugin(): RuntimePlugin {
 
       const mouthVoid = new three.Mesh(
         new three.CircleGeometry(0.18, 20),
-        createBasicMaterial(three, {
-          color: '#010308',
-          side: three.DoubleSide,
-        })
+        mouthVoidMaterial
       );
       mouthVoid.position.set(0, 0.2, 0.22);
       portal.add(mouthVoid);
 
       const tunnelBack = new three.Mesh(
         new three.CircleGeometry(0.12, 18),
-        createBasicMaterial(three, {
-          color: '#000000',
-          side: three.DoubleSide,
-        })
+        tunnelBackMaterial
       );
       tunnelBack.position.set(0, 0.19, -0.16);
       portal.add(tunnelBack);
 
       const tunnelCeiling = new three.Mesh(
         new three.PlaneGeometry(0.24, 0.46),
-        createBasicMaterial(three, {
-          color: '#03060a',
-          side: three.DoubleSide,
-        })
+        tunnelCeilingMaterial
       );
       tunnelCeiling.position.set(0, 0.26, 0.01);
       tunnelCeiling.rotation.x = Math.PI * 0.5;
@@ -235,10 +246,7 @@ export function createCaveTilePlugin(): RuntimePlugin {
 
       const tunnelFloor = new three.Mesh(
         new three.PlaneGeometry(0.22, 0.34),
-        createBasicMaterial(three, {
-          color: '#080b10',
-          side: three.DoubleSide,
-        })
+        tunnelFloorMaterial
       );
       tunnelFloor.position.set(0, 0.04, 0.02);
       tunnelFloor.rotation.x = -Math.PI * 0.5;
@@ -279,13 +287,7 @@ export function createCaveTilePlugin(): RuntimePlugin {
       const lanternCore = markPoiLightEmitter(
         new three.Mesh(
           new three.SphereGeometry(0.035, 6, 6),
-          new three.MeshStandardMaterial({
-            color: '#f59e0b',
-            emissive: '#f59e0b',
-            emissiveIntensity: 0.02,
-            roughness: 0.28,
-            metalness: 0.04,
-          })
+          lanternCoreMaterial
         ),
         {
           kind: 'emissive-mesh',
@@ -592,28 +594,17 @@ function createCaveMushroomGroup(
   tileY: number
 ) {
   const group = new three.Group();
-  const capMaterial = new three.MeshStandardMaterial({
-    color: '#8fffd2',
-    emissive: '#64f2c3',
-    emissiveIntensity: 0.95,
-    roughness: 0.42,
-    metalness: 0.02,
-  });
-  const stemMaterial = new three.MeshStandardMaterial({
-    color: '#d7d2c8',
-    roughness: 0.88,
-    metalness: 0.01,
-  });
+  const { mushroomCapMaterial, mushroomStemMaterial } = getCaveSharedMaterials(three);
   const count = 3 + Math.floor(hash2D(CAVE_MUSHROOM_COUNT_SEED, tileX, tileY) * 3);
 
   for (let index = 0; index < count; index += 1) {
     const stem = new three.Mesh(
       new three.CylinderGeometry(0.025, 0.04, 0.12, 6),
-      stemMaterial
+      mushroomStemMaterial
     );
     const cap = new three.Mesh(
       new three.SphereGeometry(0.075, 8, 6),
-      capMaterial
+      mushroomCapMaterial
     );
     const offsetX =
       (hash2D(CAVE_MUSHROOM_X_SEED, tileX * 11 + index, tileY) - 0.5) * 0.45;
@@ -628,6 +619,51 @@ function createCaveMushroomGroup(
   }
 
   return group;
+}
+
+function getCaveSharedMaterials(three: Create3DModelContext['three']) {
+  let cached = caveMaterialCache.get(three as object);
+  if (!cached) {
+    cached = {
+      mouthVoidMaterial: createBasicMaterial(three, {
+        color: '#010308',
+        side: three.DoubleSide,
+      }),
+      tunnelBackMaterial: createBasicMaterial(three, {
+        color: '#000000',
+        side: three.DoubleSide,
+      }),
+      tunnelCeilingMaterial: createBasicMaterial(three, {
+        color: '#03060a',
+        side: three.DoubleSide,
+      }),
+      tunnelFloorMaterial: createBasicMaterial(three, {
+        color: '#080b10',
+        side: three.DoubleSide,
+      }),
+      lanternCoreMaterial: new three.MeshStandardMaterial({
+        color: '#f59e0b',
+        emissive: '#f59e0b',
+        emissiveIntensity: 0.02,
+        roughness: 0.28,
+        metalness: 0.04,
+      }),
+      mushroomCapMaterial: new three.MeshStandardMaterial({
+        color: '#8fffd2',
+        emissive: '#64f2c3',
+        emissiveIntensity: 0.95,
+        roughness: 0.42,
+        metalness: 0.02,
+      }),
+      mushroomStemMaterial: new three.MeshStandardMaterial({
+        color: '#d7d2c8',
+        roughness: 0.88,
+        metalness: 0.01,
+      }),
+    };
+    caveMaterialCache.set(three as object, cached);
+  }
+  return cached;
 }
 
 function createCaveDripstoneGroup(
