@@ -166,6 +166,34 @@ const TREE_LEAF_X_SEED = registerHashLabel('tree-leaf-x');
 const TREE_LEAF_Y_SEED = registerHashLabel('tree-leaf-y');
 const TREE_LEAF_SIZE_SEED = registerHashLabel('tree-leaf-s');
 const TREE_LEAF_BRIGHTNESS_SEED = registerHashLabel('tree-leaf-b');
+const FOREST_BUSH_COUNT_SEED = registerHashLabel('forest-bush-count');
+const FOREST_SPIDER_WEB_SEED = registerHashLabel('forest-spider-web');
+const FOREST_SPIDER_ANGLE_SEED = registerHashLabel('forest-spider-angle');
+const FOREST_SPIDER_DISTANCE_SEED = registerHashLabel('forest-spider-distance');
+const FOREST_SPIDER_SIZE_SEED = registerHashLabel('forest-spider-size');
+const FOREST_SPIDER_LEGS_SEED = registerHashLabel('forest-spider-legs');
+const FOREST_BEAVER_CHEW_HEIGHT_SEED = registerHashLabel('forest-beaver-chew-height');
+const FOREST_BEAVER_CHEW_RADIUS_SEED = registerHashLabel('forest-beaver-chew-radius');
+const FOREST_BEAVER_CONE_SEED = registerHashLabel('forest-beaver-cone');
+const FOREST_BEAVER_LEAN_DIRECTION_SEED = registerHashLabel(
+  'forest-beaver-lean-direction'
+);
+const FOREST_BEAVER_POPULATION_SEED = registerHashLabel('forest-beaver-population');
+const FOREST_GROVE_CENTER_X_SEED = registerHashLabel('forest-grove-center-x');
+const FOREST_GROVE_CENTER_Y_SEED = registerHashLabel('forest-grove-center-y');
+const FOREST_LONE_TREE_SEED = registerHashLabel('forest-lone-tree');
+const FOREST_TREE_COUNT_SEED = registerHashLabel('forest-tree-count');
+const FOREST_BEAVER_DEBRIS_ANGLE_SEED = registerHashLabel('forest-beaver-debris-angle');
+const FOREST_BEAVER_DEBRIS_DISTANCE_SEED = registerHashLabel(
+  'forest-beaver-debris-distance'
+);
+const FOREST_BEAVER_DEBRIS_LENGTH_SEED = registerHashLabel('forest-beaver-debris-length');
+const FOREST_FOLIAGE_WIND_SEED = registerHashLabel('forest-foliage-wind');
+const FOREST_FOLIAGE_GUST_SEED = registerHashLabel('forest-foliage-gust');
+const FOREST_FOLIAGE_SPEED_SEED = registerHashLabel('forest-foliage-speed');
+const FOREST_FOLIAGE_GUST_SPEED_SEED = registerHashLabel('forest-foliage-gust-speed');
+const FOREST_FOLIAGE_PHASE_SEED = registerHashLabel('forest-foliage-phase');
+const FOREST_FOLIAGE_GUST_PHASE_SEED = registerHashLabel('forest-foliage-gust-phase');
 
 const treeDescriptorCache = createBoundedCache<string, ForestTreeDescriptor[]>(
   FOREST_COORDINATE_CACHE_LIMIT
@@ -554,7 +582,7 @@ const resolveForestBushDescriptors = createCoordinateValueResolver(
     const trees = resolveForestTreeDescriptors(tileX, tileY);
     const floorDetails = resolveForestFloorDetailDescriptors(tileX, tileY);
     const landmark = getForestLandmark(tileX, tileY);
-    const count = Math.floor(hash2D('forest-bush-count', tileX, tileY) * 3);
+    const count = Math.floor(hash2D(FOREST_BUSH_COUNT_SEED, tileX, tileY) * 3);
     const bushes: ForestBushDescriptor[] = [];
 
     for (let index = 0; index < count; index += 1) {
@@ -908,7 +936,7 @@ const resolveForestSpiderDescriptors = createCoordinateValueResolver(
     const spiders: ForestSpiderDescriptor[] = [];
 
     webs.forEach((web, webIndex) => {
-      const chance = hash2D('forest-spider-web', tileX * 59 + webIndex, tileY * 61);
+      const chance = hash2D(FOREST_SPIDER_WEB_SEED, tileX * 59 + webIndex, tileY * 61);
       const threshold =
         web.kind === 'deadwood' ? 0.26 : web.kind === 'branch' ? 0.58 : 0.42;
       if (chance < threshold) {
@@ -919,7 +947,7 @@ const resolveForestSpiderDescriptors = createCoordinateValueResolver(
       for (let spiderIndex = 0; spiderIndex < count; spiderIndex += 1) {
         const angle =
           hash2D(
-            'forest-spider-angle',
+            FOREST_SPIDER_ANGLE_SEED,
             tileX * 67 + webIndex * 7 + spiderIndex,
             tileY * 71 - webIndex * 5 - spiderIndex
           ) *
@@ -929,7 +957,7 @@ const resolveForestSpiderDescriptors = createCoordinateValueResolver(
           web.radius *
           (0.12 +
             hash2D(
-              'forest-spider-distance',
+              FOREST_SPIDER_DISTANCE_SEED,
               tileX + webIndex + spiderIndex,
               tileY - webIndex - spiderIndex
             ) *
@@ -942,8 +970,10 @@ const resolveForestSpiderDescriptors = createCoordinateValueResolver(
             Math.sin(angle * 1.3) * web.radius * 0.08 +
             spiderIndex * 0.006,
           z: web.z + Math.sin(angle) * distance,
-          bodyScale: 0.018 + hash2D('forest-spider-size', webIndex, spiderIndex) * 0.01,
-          legSpan: 0.032 + hash2D('forest-spider-legs', webIndex, spiderIndex) * 0.016,
+          bodyScale:
+            0.018 + hash2D(FOREST_SPIDER_SIZE_SEED, webIndex, spiderIndex) * 0.01,
+          legSpan:
+            0.032 + hash2D(FOREST_SPIDER_LEGS_SEED, webIndex, spiderIndex) * 0.016,
         });
       }
     });
@@ -1583,11 +1613,11 @@ export function getForestBeaverDamage(
         damages.push({
           treeIndex,
           chewHeight:
-            0.08 + hash2D('forest-beaver-chew-height', treeIndex, tileY) * 0.05,
+            0.08 + hash2D(FOREST_BEAVER_CHEW_HEIGHT_SEED, treeIndex, tileY) * 0.05,
           chewRadiusScale:
-            0.82 + hash2D('forest-beaver-chew-radius', tileX, treeIndex) * 0.14,
+            0.82 + hash2D(FOREST_BEAVER_CHEW_RADIUS_SEED, tileX, treeIndex) * 0.14,
           coneScale:
-            0.55 + hash2D('forest-beaver-cone', tileX + treeIndex, tileY) * 0.18,
+            0.55 + hash2D(FOREST_BEAVER_CONE_SEED, tileX + treeIndex, tileY) * 0.18,
           severity:
             chance > 0.975
               ? 'felled'
@@ -1599,7 +1629,7 @@ export function getForestBeaverDamage(
           strippedBranchCount:
             chance > 0.975 ? 4 : chance > 0.9 ? 3 : chance > 0.84 ? 2 : 1,
           leanDirection:
-            hash2D('forest-beaver-lean-direction', tileX + treeIndex, tileY) > 0.5
+            hash2D(FOREST_BEAVER_LEAN_DIRECTION_SEED, tileX + treeIndex, tileY) > 0.5
               ? 1
               : -1,
         });
@@ -1623,7 +1653,7 @@ export function getForestBeaverPopulation(
     if (!habitatSignature.includes('river')) {
       forestBeaverPopulationCache.set(cacheKey, null);
     } else {
-      const chance = hash2D('forest-beaver-population', tileX * 83, tileY * 89);
+      const chance = hash2D(FOREST_BEAVER_POPULATION_SEED, tileX * 83, tileY * 89);
       if (chance < 0.38) {
         forestBeaverPopulationCache.set(cacheKey, null);
       } else {
@@ -1669,22 +1699,22 @@ export function getForestTreeBranchProfiles(
 
 function getForestGroveCenter(tileX: number, tileY: number) {
   return {
-    x: (hash2D('forest-grove-center-x', tileX, tileY) - 0.5) * 0.36,
-    y: (hash2D('forest-grove-center-y', tileX, tileY) - 0.5) * 0.36,
+    x: (hash2D(FOREST_GROVE_CENTER_X_SEED, tileX, tileY) - 0.5) * 0.36,
+    y: (hash2D(FOREST_GROVE_CENTER_Y_SEED, tileX, tileY) - 0.5) * 0.36,
   };
 }
 
 function hasForestLoneTree(tileX: number, tileY: number) {
   return (
-    hash2D('forest-lone-tree', tileX, tileY) > 0.9 &&
-    hash2D('forest-tree-count', tileX, tileY) < 0.25
+    hash2D(FOREST_LONE_TREE_SEED, tileX, tileY) > 0.9 &&
+    hash2D(FOREST_TREE_COUNT_SEED, tileX, tileY) < 0.25
   );
 }
 
 function getForestTreeCount(tileX: number, tileY: number) {
   return hasForestLoneTree(tileX, tileY)
     ? 1
-    : 3 + Math.floor(hash2D('forest-tree-count', tileX, tileY) * 4);
+    : 3 + Math.floor(hash2D(FOREST_TREE_COUNT_SEED, tileX, tileY) * 4);
 }
 
 function getTreeVarietyIndex(
@@ -2596,13 +2626,17 @@ function addForestBeaverDamageInstances(
 
     for (let branchIndex = 0; branchIndex < damage.strippedBranchCount; branchIndex += 1) {
       const angle =
-        hash2D('forest-beaver-debris-angle', damage.treeIndex, branchIndex) *
+        hash2D(FOREST_BEAVER_DEBRIS_ANGLE_SEED, damage.treeIndex, branchIndex) *
         Math.PI *
         2;
       const distance =
-        tree.radius * (0.65 + hash2D('forest-beaver-debris-distance', index, branchIndex) * 0.28);
+        tree.radius *
+        (0.65 +
+          hash2D(FOREST_BEAVER_DEBRIS_DISTANCE_SEED, index, branchIndex) * 0.28);
       const length =
-        0.12 + hash2D('forest-beaver-debris-length', damage.treeIndex, branchIndex) * 0.08;
+        0.12 +
+        hash2D(FOREST_BEAVER_DEBRIS_LENGTH_SEED, damage.treeIndex, branchIndex) *
+          0.08;
       debrisInstances.setMatrixAt(
         debrisIndex,
         createLowDetailTreeMatrix(
@@ -3501,18 +3535,25 @@ function tagForestFoliageWind(
   return markPoiWindResponder(node, {
     axis: 'z',
     idleAmplitude: 0.012,
-    windAmplitude: 0.065 + hash2D('forest-foliage-wind', tileX + variety, tileY) * 0.035,
+    windAmplitude:
+      0.065 + hash2D(FOREST_FOLIAGE_WIND_SEED, tileX + variety, tileY) * 0.035,
     gustAmplitude:
-      0.024 + hash2D('forest-foliage-gust', tileX, tileY + variety) * 0.018,
-    speed: 0.75 + hash2D('forest-foliage-speed', tileX + offsetSeed, tileY) * 0.7,
+      0.024 + hash2D(FOREST_FOLIAGE_GUST_SEED, tileX, tileY + variety) * 0.018,
+    speed:
+      0.75 + hash2D(FOREST_FOLIAGE_SPEED_SEED, tileX + offsetSeed, tileY) * 0.7,
     gustSpeed:
-      1.6 + hash2D('forest-foliage-gust-speed', tileX, tileY + offsetSeed) * 0.8,
+      1.6 +
+      hash2D(FOREST_FOLIAGE_GUST_SPEED_SEED, tileX, tileY + offsetSeed) * 0.8,
     phase:
-      hash2D('forest-foliage-phase', tileX * 7 + variety, tileY + offsetSeed) *
+      hash2D(FOREST_FOLIAGE_PHASE_SEED, tileX * 7 + variety, tileY + offsetSeed) *
       Math.PI *
       2,
     gustPhase:
-      hash2D('forest-foliage-gust-phase', tileX + offsetSeed, tileY * 11 + variety) *
+      hash2D(
+        FOREST_FOLIAGE_GUST_PHASE_SEED,
+        tileX + offsetSeed,
+        tileY * 11 + variety
+      ) *
       Math.PI *
       2,
   });
