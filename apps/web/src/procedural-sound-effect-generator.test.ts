@@ -537,4 +537,37 @@ describe('procedural sound effect generator', () => {
     expect(effect.frequencyModulation?.depthHz).toBeGreaterThan(37);
     expect(effect.frequencyModulation?.depthHz).toBeLessThan(47);
   });
+
+  it('preserves deterministic ring modulation settings', () => {
+    const generator = createProceduralSoundEffectGenerator();
+    const effect = generator.generate({
+      kind: 'combat-magic',
+      nowMs: 2700,
+      seed: 149,
+      recipe: {
+        id: 'combat-magic-ring-mod',
+        baseFrequency: 244,
+        baseDurationMs: 320,
+        baseVolume: 0.05,
+        waveform: 'triangle',
+        ringModulation: {
+          modulatorFrequencyHz: 92,
+          depth: 0.68,
+          waveform: 'square',
+          rateVariation: 0.05,
+          depthVariation: 0.08,
+        },
+      },
+    });
+
+    expect(effect.ringModulation).toEqual({
+      modulatorFrequencyHz: expect.any(Number),
+      depth: expect.any(Number),
+      waveform: 'square',
+    });
+    expect(effect.ringModulation?.modulatorFrequencyHz).toBeGreaterThan(87);
+    expect(effect.ringModulation?.modulatorFrequencyHz).toBeLessThan(97);
+    expect(effect.ringModulation?.depth).toBeGreaterThan(0.62);
+    expect(effect.ringModulation?.depth).toBeLessThan(0.74);
+  });
 });

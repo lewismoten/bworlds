@@ -1953,6 +1953,131 @@ describe('sound effects', () => {
     }
   });
 
+  it('routes procedural sound effects through ring modulation stages', () => {
+    const createdOscillators: Array<{
+      onended: ((event: Event) => void) | null;
+      type: string;
+      frequency: {
+        setValueAtTime: ReturnType<typeof vi.fn>;
+        exponentialRampToValueAtTime: ReturnType<typeof vi.fn>;
+        linearRampToValueAtTime: ReturnType<typeof vi.fn>;
+      };
+      connect: ReturnType<typeof vi.fn>;
+      disconnect: ReturnType<typeof vi.fn>;
+      start: ReturnType<typeof vi.fn>;
+      stop: ReturnType<typeof vi.fn>;
+    }> = [];
+    const createdGains: Array<{
+      gain: {
+        setValueAtTime: ReturnType<typeof vi.fn>;
+        exponentialRampToValueAtTime: ReturnType<typeof vi.fn>;
+      };
+      connect: ReturnType<typeof vi.fn>;
+      disconnect: ReturnType<typeof vi.fn>;
+    }> = [];
+
+    class FakeAudioContext {
+      state: AudioContextState = 'running';
+      currentTime = 0;
+      destination = {};
+      createOscillator() {
+        const oscillator = {
+          onended: null as ((event: Event) => void) | null,
+          type: 'sine',
+          frequency: {
+            setValueAtTime: vi.fn(),
+            exponentialRampToValueAtTime: vi.fn(),
+            linearRampToValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+          start: vi.fn(),
+          stop: vi.fn(),
+        };
+        createdOscillators.push(oscillator);
+        return oscillator as unknown as OscillatorNode;
+      }
+      createGain() {
+        const gain = {
+          gain: {
+            setValueAtTime: vi.fn(),
+            exponentialRampToValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+        };
+        createdGains.push(gain);
+        return gain as unknown as GainNode;
+      }
+      createStereoPanner() {
+        return {
+          pan: {
+            setValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+        } as unknown as StereoPannerNode;
+      }
+      resume() {
+        return Promise.resolve();
+      }
+    }
+
+    const originalAudioContext = globalThis.AudioContext;
+    vi.stubGlobal('AudioContext', FakeAudioContext);
+
+    try {
+      const sink = createWebAudioSoundEffectSink();
+      sink.play({
+        kind: 'combat-magic',
+        nowMs: 0,
+        frequency: 244,
+        durationMs: 320,
+        volume: 0.05,
+        waveform: 'triangle',
+        ringModulation: {
+          modulatorFrequencyHz: 92,
+          depth: 0.68,
+          waveform: 'square',
+        },
+      });
+
+      expect(createdOscillators).toHaveLength(2);
+      const sourceOscillator = createdOscillators[0];
+      const ringOscillator = createdOscillators[1];
+      expect(ringOscillator?.type).toBe('square');
+      expect(ringOscillator?.frequency.setValueAtTime).toHaveBeenCalledWith(
+        92,
+        0
+      );
+      expect(ringOscillator?.start).toHaveBeenCalledWith(0);
+      expect(ringOscillator?.stop).toHaveBeenCalledWith(0.32);
+      const depthGain = createdGains.find((gain) =>
+        gain.gain.setValueAtTime.mock.calls.some(
+          (call) => call[0] === 0.68 && call[1] === 0
+        )
+      );
+      const carrierGain = createdGains.find((gain) =>
+        gain.gain.setValueAtTime.mock.calls.some(
+          (call) => call[0] === 0 && call[1] === 0
+        )
+      );
+
+      expect(depthGain).toBeDefined();
+      expect(carrierGain).toBeDefined();
+      expect(ringOscillator?.connect).toHaveBeenCalledWith(depthGain);
+      expect(depthGain?.connect).toHaveBeenCalledWith(carrierGain?.gain);
+      expect(sourceOscillator?.connect).toHaveBeenCalledWith(carrierGain);
+      expect(carrierGain?.connect).toHaveBeenCalled();
+    } finally {
+      if (originalAudioContext) {
+        vi.stubGlobal('AudioContext', originalAudioContext);
+      } else {
+        vi.unstubAllGlobals();
+      }
+    }
+  });
+
   it('limits identical low-priority ambient voices in the web audio sink', () => {
     const createdOscillators: Array<{
       onended: ((event: Event) => void) | null;

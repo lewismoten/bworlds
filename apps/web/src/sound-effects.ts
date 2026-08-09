@@ -17,6 +17,7 @@ import {
   type ProceduralSoundTremolo,
   type ProceduralSoundVibrato,
   type ProceduralSoundFrequencyModulation,
+  type ProceduralSoundRingModulation,
   type ProceduralSoundEffectLayer,
   type ProceduralSoundFilter,
   type ProceduralPitchEnvelope,
@@ -335,6 +336,7 @@ function resolveProceduralSoundRecipe(
     tremolo: resolveProceduralSoundTremolo(kind),
     vibrato: resolveProceduralSoundVibrato(kind),
     frequencyModulation: resolveProceduralSoundFrequencyModulation(kind),
+    ringModulation: resolveProceduralSoundRingModulation(kind),
     sweeps: resolveProceduralSoundSweeps(kind),
     layers: resolveProceduralSoundLayers(kind),
     ...resolveProceduralSoundVariation(kind),
@@ -643,6 +645,29 @@ function resolveProceduralSoundFrequencyModulation(kind: SoundEffectKind) {
         waveform: 'triangle' as const,
         rateVariation: 0.05,
         depthVariation: 0.1,
+      };
+    default:
+      return undefined;
+  }
+}
+
+function resolveProceduralSoundRingModulation(kind: SoundEffectKind) {
+  switch (kind) {
+    case 'combat-magic':
+      return {
+        modulatorFrequencyHz: 92,
+        depth: 0.68,
+        waveform: 'square' as const,
+        rateVariation: 0.05,
+        depthVariation: 0.08,
+      };
+    case 'train-engine':
+      return {
+        modulatorFrequencyHz: 48,
+        depth: 0.42,
+        waveform: 'triangle' as const,
+        rateVariation: 0.04,
+        depthVariation: 0.06,
       };
     default:
       return undefined;
@@ -1817,6 +1842,12 @@ type ActiveSoundFrequencyModulation = {
   depthGain: GainNode;
   config: ProceduralSoundFrequencyModulation;
 };
+type ActiveSoundRingModulation = {
+  oscillator: OscillatorNode;
+  depthGain: GainNode;
+  carrierGain: GainNode;
+  config: ProceduralSoundRingModulation;
+};
 type ActiveSoundSource = {
   source: ScheduledSoundSourceNode;
   filters: ActiveSoundFilter[];
@@ -1826,6 +1857,7 @@ type ActiveSoundSource = {
   tremolo: ActiveSoundTremolo | null;
   vibrato: ActiveSoundVibrato | null;
   frequencyModulation: ActiveSoundFrequencyModulation | null;
+  ringModulation: ActiveSoundRingModulation | null;
   gain: GainNode;
   effect: ProceduralSoundEffect;
 };
@@ -1959,6 +1991,9 @@ export function createWebAudioSoundEffectSink(
       source.vibrato?.depthGain.disconnect?.();
       source.frequencyModulation?.oscillator.disconnect?.();
       source.frequencyModulation?.depthGain.disconnect?.();
+      source.ringModulation?.oscillator.disconnect?.();
+      source.ringModulation?.depthGain.disconnect?.();
+      source.ringModulation?.carrierGain.disconnect?.();
       source.gain.disconnect?.();
     }
     voice.mixGain.disconnect?.();
@@ -1976,11 +2011,13 @@ export function createWebAudioSoundEffectSink(
           source.tremolo?.oscillator.stop(stopAt);
           source.vibrato?.oscillator.stop(stopAt);
           source.frequencyModulation?.oscillator.stop(stopAt);
+          source.ringModulation?.oscillator.stop(stopAt);
         } else {
           source.source.stop();
           source.tremolo?.oscillator.stop();
           source.vibrato?.oscillator.stop();
           source.frequencyModulation?.oscillator.stop();
+          source.ringModulation?.oscillator.stop();
         }
       } catch {
         // Ignore invalid repeated stop calls from already-ending voices.
@@ -2120,6 +2157,10 @@ export function createWebAudioSoundEffectSink(
         source.frequencyModulation?.oscillator.stop(
           startAt + source.effect.durationMs / 1000
         );
+        source.ringModulation?.oscillator.start(startAt);
+        source.ringModulation?.oscillator.stop(
+          startAt + source.effect.durationMs / 1000
+        );
         source.source.start(startAt);
         source.source.stop(startAt + source.effect.durationMs / 1000);
       }
@@ -2180,6 +2221,7 @@ function createActiveSoundSource(
     tremolo: createSoundEffectTremolo(context, effect),
     vibrato: createSoundEffectVibrato(context, effect),
     frequencyModulation: createSoundEffectFrequencyModulation(context, effect),
+    ringModulation: createSoundEffectRingModulation(context, effect),
     gain: context.createGain(),
     effect,
   };
@@ -2206,6 +2248,7 @@ function createLayeredSoundEffect(
     vibrato: layer.vibrato ?? effect.vibrato,
     frequencyModulation:
       layer.frequencyModulation ?? effect.frequencyModulation,
+    ringModulation: layer.ringModulation ?? effect.ringModulation,
     sweeps: layer.sweeps ?? effect.sweeps,
     layers: undefined,
   };
@@ -2450,6 +2493,41 @@ function createSoundEffectFrequencyModulation(
   };
 }
 
+function createSoundEffectRingModulation(
+  context: AudioContext,
+  effect: ProceduralSoundEffect
+): ActiveSoundRingModulation | null {
+  if (
+    typeof context.createOscillator !== 'function' ||
+    typeof context.createGain !== 'function' ||
+    !effect.ringModulation
+  ) {
+    return null;
+  }
+
+  const oscillator = context.createOscillator();
+  const depthGain = context.createGain();
+  const carrierGain = context.createGain();
+
+  oscillator.type = effect.ringModulation.waveform;
+  oscillator.frequency.setValueAtTime(
+    effect.ringModulation.modulatorFrequencyHz,
+    context.currentTime
+  );
+  depthGain.gain.setValueAtTime(
+    effect.ringModulation.depth,
+    context.currentTime
+  );
+  carrierGain.gain.setValueAtTime(0, context.currentTime);
+
+  return {
+    oscillator,
+    depthGain,
+    carrierGain,
+    config: effect.ringModulation,
+  };
+}
+
 function getOrCreateReverbImpulseBuffer(
   context: AudioContext,
   effect: ProceduralSoundEffect,
@@ -2507,14 +2585,16 @@ function connectSoundEffectSourceChain(source: ActiveSoundSource): void {
   const reverbInput =
     source.reverb?.preDelay ?? source.reverb?.convolver ?? null;
   const dryOutput = source.distortion?.postGain ?? lastFilter ?? null;
-  const finalOutput = source.tremolo?.output ?? source.gain;
+  const amplitudeOutput = source.tremolo?.output ?? source.gain;
+  const finalOutput = source.ringModulation?.carrierGain ?? amplitudeOutput;
 
   if (
     source.filters.length === 0 &&
     !source.distortion &&
     !source.delay &&
     !source.reverb &&
-    !source.tremolo
+    !source.tremolo &&
+    !source.ringModulation
   ) {
     source.source.connect(source.gain);
     return;
@@ -2543,7 +2623,7 @@ function connectSoundEffectSourceChain(source: ActiveSoundSource): void {
   if (
     !firstFilter &&
     !source.distortion &&
-    (delayInput || source.reverb || source.tremolo)
+    (delayInput || source.reverb || source.tremolo || source.ringModulation)
   ) {
     source.source.connect(finalOutput);
   }
@@ -2584,6 +2664,14 @@ function connectSoundEffectSourceChain(source: ActiveSoundSource): void {
     source.tremolo.oscillator.connect(source.tremolo.depthGain);
     source.tremolo.depthGain.connect(source.tremolo.output.gain);
     source.tremolo.output.connect(source.gain);
+  }
+
+  if (source.ringModulation) {
+    source.ringModulation.oscillator.connect(source.ringModulation.depthGain);
+    source.ringModulation.depthGain.connect(
+      source.ringModulation.carrierGain.gain
+    );
+    source.ringModulation.carrierGain.connect(amplitudeOutput);
   }
 }
 
