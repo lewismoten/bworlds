@@ -1,4 +1,11 @@
-import { clamp, generatePoiName, hash2D } from '@bworlds/core';
+import {
+  appendHashSeedLabel,
+  clamp,
+  createHashSeed,
+  generatePoiName,
+  hash2DWithSeed,
+  registerHashLabel,
+} from '@bworlds/core';
 import { createRouteTraversalProfile } from '@bworlds/tile-support';
 import type {
   ClassifyOverworldTileContext,
@@ -149,6 +156,12 @@ type PoiWindResponderOptions = {
 };
 const POI_LIGHT_EMITTER_KEY = 'poiNightLightEmitter';
 const POI_WIND_RESPONDER_KEY = 'poiWindResponder';
+const LANDMARK_FACING_DIRECTION_SEEDS: Record<string, number> = {
+  north: registerHashLabel('north'),
+  east: registerHashLabel('east'),
+  south: registerHashLabel('south'),
+  west: registerHashLabel('west'),
+};
 const poiWindResponderProfileCache = new Map<
   string,
   Required<PoiWindResponderOptions>
@@ -641,6 +654,7 @@ export function pickPreferredLandmarkFacing({
   seedKey: string;
   preferLandFacing?: boolean;
 }): LandmarkFacingScore {
+  const seedHash = createHashSeed(seedKey);
   return CARDINAL_DIRECTIONS.map((direction) => {
     const adjacentTile = state.getCurrentTile(
       tileX + direction.dx,
@@ -660,14 +674,22 @@ export function pickPreferredLandmarkFacing({
 
     return {
       ...direction,
-        score:
+      score:
         (routeDistance === 1 ? 8 : 0) +
         (routeDistance > 1 && Number.isFinite(routeDistance)
           ? Math.max(0, 6 - routeDistance)
           : 0) +
         (preferLandFacing && landFacing ? 4 : 0) +
         (walkable ? 2 : 0) +
-        hash2D(`${seedKey}:${direction.label}`, tileX, tileY),
+        hash2DWithSeed(
+          appendHashSeedLabel(
+            seedHash,
+            LANDMARK_FACING_DIRECTION_SEEDS[direction.label] ??
+              registerHashLabel(direction.label)
+          ),
+          tileX,
+          tileY
+        ),
     };
   }).sort((left, right) => right.score - left.score)[0];
 }
