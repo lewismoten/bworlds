@@ -6,6 +6,7 @@ import {
   registerHashSeed,
   resolveHashSeed,
 } from '@bworlds/core/hash';
+import { createBoundedCache } from '@bworlds/cache-support';
 import { createPlainsBackedTilePainter } from '@bworlds/paint-support';
 import {
   DEFAULT_LAND_POI_BLOCKED_KINDS,
@@ -61,6 +62,7 @@ const RUINS_CRACK_Y_SEED = registerHashLabel('ruins-crack-y');
 const RUINS_CRACK_LENGTH_SEED = registerHashLabel('ruins-crack-l');
 const RUINS_REGION_BIAS_SEED = registerHashLabel('ruins-region');
 const RUINS_LOCAL_BIAS_SEED = registerHashLabel('ruins-local');
+export const RUINS_STYLE_CACHE_MAX_ENTRIES = 96;
 const RUINS_BLOCKED_KINDS = new Set([
   ...DEFAULT_LAND_POI_BLOCKED_KINDS,
   'road',
@@ -70,7 +72,9 @@ const RUINS_BLOCKED_KINDS = new Set([
   'dungeon',
   'sign',
 ]);
-const ruinsStyleCache = new Map<string, RuinsStyleBlueprint>();
+const ruinsStyleCache = createBoundedCache<string, RuinsStyleBlueprint>(
+  RUINS_STYLE_CACHE_MAX_ENTRIES
+);
 const resolveRuinsStyle = createRegionalMaterialResolver(
   ruinsStyleCache,
   RUINS_REGION_SIZE,

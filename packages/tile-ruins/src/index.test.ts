@@ -9,7 +9,10 @@ vi.mock('@bworlds/three-support', () => ({
   },
 }));
 
-import { createRuinsTilePlugin } from './index.ts';
+import {
+  createRuinsTilePlugin,
+  RUINS_STYLE_CACHE_MAX_ENTRIES,
+} from './index.ts';
 
 class FakeGeometry {
   constructor(..._args: number[]) {}
@@ -221,7 +224,7 @@ describe('tile ruins', () => {
       tileY: 4,
     }) as FakeGroup;
 
-    for (let index = 0; index < 160; index += 1) {
+    for (let index = 0; index < RUINS_STYLE_CACHE_MAX_ENTRIES + 64; index += 1) {
       tile?.create3DModel?.({
         three: fakeThree as never,
         state,
