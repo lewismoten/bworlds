@@ -4,29 +4,19 @@ import {
   resolveMusicArrangement,
   resolveMusicMood,
   resolveMusicTheme,
-  scheduleProceduralMusicNotes,
   type ProceduralMusicNote,
 } from './procedural-music.ts';
+import {
+  createProceduralMusicSong,
+  type ProceduralMusicSong,
+} from './procedural-music-song.ts';
 
 export type MusicDebugTileKind =
-  | 'plains'
-  | 'forest'
-  | 'shore'
-  | 'town'
-  | 'mountain'
-  | 'cave'
-  | 'floor';
+  'plains' | 'forest' | 'shore' | 'town' | 'mountain' | 'cave' | 'floor';
 export type MusicDebugContextType =
-  | 'overworld'
-  | 'town'
-  | 'building'
-  | 'cave'
-  | 'dungeon';
+  'overworld' | 'town' | 'building' | 'cave' | 'dungeon';
 export type MusicDebugWeatherKind =
-  | 'clear'
-  | 'fog'
-  | 'light-rain'
-  | 'heavy-rain';
+  'clear' | 'fog' | 'light-rain' | 'heavy-rain';
 
 export type MusicDebugOptions = {
   tileKind: MusicDebugTileKind;
@@ -45,8 +35,11 @@ export type MusicDebugSnapshot = {
   mood: ReturnType<typeof resolveMusicMood>;
   arrangement: ReturnType<typeof resolveMusicArrangement>;
   instrumentBank: ReturnType<typeof createProceduralInstrumentBank>;
+  song: ProceduralMusicSong;
   notes: ProceduralMusicNote[];
   durationMs: number;
+  loopStartOffsetMs: number;
+  loopEndOffsetMs: number;
   roleCounts: Record<ProceduralMusicNote['role'], number>;
 };
 
@@ -85,8 +78,12 @@ export function normalizeMusicDebugOptions(
     yearProgress: clampMusicDebugProgress(
       value?.yearProgress ?? DEFAULT_MUSIC_DEBUG_OPTIONS.yearProgress
     ),
-    clusterX: Math.round(value?.clusterX ?? DEFAULT_MUSIC_DEBUG_OPTIONS.clusterX),
-    clusterY: Math.round(value?.clusterY ?? DEFAULT_MUSIC_DEBUG_OPTIONS.clusterY),
+    clusterX: Math.round(
+      value?.clusterX ?? DEFAULT_MUSIC_DEBUG_OPTIONS.clusterX
+    ),
+    clusterY: Math.round(
+      value?.clusterY ?? DEFAULT_MUSIC_DEBUG_OPTIONS.clusterY
+    ),
   };
 }
 
@@ -115,7 +112,7 @@ export function createMusicDebugSnapshot(
     options.clusterY,
     options
   );
-  const scheduled = scheduleProceduralMusicNotes({
+  const song = createProceduralMusicSong({
     nowMs,
     tileKind: options.tileKind,
     contextType: options.contextType,
@@ -127,10 +124,7 @@ export function createMusicDebugSnapshot(
     clusterX: options.clusterX,
     clusterY: options.clusterY,
   });
-  const lastNote = scheduled.notes[scheduled.notes.length - 1];
-  const durationMs = lastNote
-    ? Math.max(0, lastNote.startMs + lastNote.durationMs - nowMs)
-    : 0;
+  const durationMs = song.durationMs;
   const roleCounts: MusicDebugSnapshot['roleCounts'] = {
     lead: 0,
     harmony: 0,
@@ -138,7 +132,7 @@ export function createMusicDebugSnapshot(
     percussion: 0,
   };
 
-  for (const note of scheduled.notes) {
+  for (const note of song.notes) {
     roleCounts[note.role] += 1;
   }
 
@@ -148,9 +142,24 @@ export function createMusicDebugSnapshot(
     mood,
     arrangement,
     instrumentBank,
-    notes: scheduled.notes,
+    song,
+    notes: song.notes,
     durationMs,
+    loopStartOffsetMs: song.loopStartOffsetMs,
+    loopEndOffsetMs: song.loopEndOffsetMs,
     roleCounts,
+  };
+}
+
+export function randomizeMusicDebugSeed(
+  rawOptions?: Partial<MusicDebugOptions> | null,
+  random = Math.random
+): MusicDebugOptions {
+  const options = normalizeMusicDebugOptions(rawOptions);
+  return {
+    ...options,
+    clusterX: createRandomDebugCoordinate(random),
+    clusterY: createRandomDebugCoordinate(random),
   };
 }
 
@@ -173,7 +182,15 @@ export function buildMusicDebugMarkup(
               <span>Tile</span>
               <select name="tileKind">
                 ${buildSelectOptions(
-                  ['plains', 'forest', 'shore', 'town', 'mountain', 'cave', 'floor'],
+                  [
+                    'plains',
+                    'forest',
+                    'shore',
+                    'town',
+                    'mountain',
+                    'cave',
+                    'floor',
+                  ],
                   snapshot.options.tileKind
                 )}
               </select>
@@ -219,7 +236,8 @@ export function buildMusicDebugMarkup(
           </div>
           <div class="music-debug-actions">
             <button id="music-debug-generate" type="submit">Generate</button>
-            <button id="music-debug-play" type="button">Play Preview</button>
+            <button id="music-debug-randomize" type="button">🎲 Generate</button>
+            <button id="music-debug-play" type="button">Play Song</button>
           </div>
         </form>
         <section class="music-debug-card">
@@ -246,7 +264,8 @@ export function buildMusicDebugSummaryMarkup(
       <div><dt>Theme</dt><dd>${snapshot.theme.id}</dd></div>
       <div><dt>Root Hz</dt><dd>${snapshot.theme.rootHz.toFixed(2)}</dd></div>
       <div><dt>Scheduled Notes</dt><dd>${snapshot.notes.length}</dd></div>
-      <div><dt>Preview Length</dt><dd>${formatMusicDebugDuration(snapshot.durationMs)}</dd></div>
+      <div><dt>Song Length</dt><dd>${formatMusicDebugDuration(snapshot.durationMs)}</dd></div>
+      <div><dt>Loop Range</dt><dd>${formatMusicDebugLoopRange(snapshot.loopStartOffsetMs, snapshot.loopEndOffsetMs)}</dd></div>
       <div><dt>Tempo</dt><dd>${snapshot.mood.tempoMultiplier.toFixed(2)}x</dd></div>
       <div><dt>Brightness</dt><dd>${snapshot.mood.brightness.toFixed(2)}x</dd></div>
     </div>
@@ -255,6 +274,9 @@ export function buildMusicDebugSummaryMarkup(
       <span>Harmony ${snapshot.roleCounts.harmony}</span>
       <span>Lead ${snapshot.roleCounts.lead}</span>
       <span>Percussion ${snapshot.roleCounts.percussion}</span>
+    </div>
+    <div class="music-debug-role-counts">
+      <span>Sections ${snapshot.song.sections.map((section) => section.label).join(' / ')}</span>
     </div>
     <ul class="music-debug-instruments">${instruments}</ul>
   `;
@@ -314,7 +336,8 @@ export function drawMusicDebugTimeline(
     const roleIndex = roleOrder.indexOf(note.role);
     const startRatio = (note.startMs - snapshot.notes[0]!.startMs) / durationMs;
     const endRatio =
-      (note.startMs + note.durationMs - snapshot.notes[0]!.startMs) / durationMs;
+      (note.startMs + note.durationMs - snapshot.notes[0]!.startMs) /
+      durationMs;
     const x = leftPad + startRatio * (width - leftPad - rightPad);
     const barWidth = Math.max(
       2,
@@ -328,10 +351,10 @@ export function drawMusicDebugTimeline(
   }
 }
 
-export function playMusicDebugPreview(snapshot: MusicDebugSnapshot): void {
+export function playMusicDebugSong(snapshot: MusicDebugSnapshot): void {
   const sink = createWebAudioMusicSink();
   const startMs = performance.now() + 120;
-  const offsetMs = snapshot.notes[0]?.startMs ?? 0;
+  const offsetMs = snapshot.song.startMs;
   sink.resume?.();
   for (const note of snapshot.notes) {
     sink.play({
@@ -346,6 +369,13 @@ export function formatMusicDebugDuration(durationMs: number): string {
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = totalSeconds % 60;
   return `${minutes}:${String(seconds).padStart(2, '0')}`;
+}
+
+export function formatMusicDebugLoopRange(
+  startOffsetMs: number,
+  endOffsetMs: number
+): string {
+  return `${formatMusicDebugDuration(startOffsetMs)} - ${formatMusicDebugDuration(endOffsetMs)}`;
 }
 
 function buildSelectOptions(
@@ -393,12 +423,12 @@ function normalizeContextType(
 function normalizeWeatherKind(
   value: MusicDebugOptions['weatherKind'] | undefined
 ): MusicDebugWeatherKind {
-  if (
-    value === 'fog' ||
-    value === 'light-rain' ||
-    value === 'heavy-rain'
-  ) {
+  if (value === 'fog' || value === 'light-rain' || value === 'heavy-rain') {
     return value;
   }
   return 'clear';
+}
+
+function createRandomDebugCoordinate(random: () => number): number {
+  return Math.round((random() * 2 - 1) * 9_999);
 }

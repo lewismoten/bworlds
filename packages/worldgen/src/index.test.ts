@@ -297,7 +297,9 @@ describe('world generator', () => {
       generator.samplePreviewOverworld(x, y);
     }
 
-    expect(generator.samplePreviewSurfaceKind(10, 20)).toBe(baselinePreviewKind);
+    expect(generator.samplePreviewSurfaceKind(10, 20)).toBe(
+      baselinePreviewKind
+    );
     expect(generator.samplePreviewOverworld(10, 20)).toEqual(baselinePreview);
     expect(generator.sampleOverworld(3, 2)).toEqual(baselineOverworld);
     expect(generator.samplePreviewOverworld(3, 2).kind).not.toBe('bridge');
@@ -324,17 +326,11 @@ describe('world generator', () => {
 
   it('creates enterable points of interest somewhere near the origin', () => {
     const generator = createGenerator();
-    let found = null;
-    for (let y = -300; y <= 300 && !found; y += 1) {
-      for (let x = -300; x <= 300; x += 1) {
-        const tile = generator.sampleOverworld(x, y);
-        if (tile.poi) {
-          found = tile;
-          break;
-        }
-      }
-    }
-    expect(found?.poi?.type).toMatch(/town|dungeon|cave|quarry|ship|observatory/);
+    const found = generator.sampleOverworld(5, 4);
+
+    expect(found.poi?.type).toMatch(
+      /town|dungeon|cave|quarry|ship|observatory/
+    );
   });
 
   it('enters poi instances and exits back to the overworld facing away from the entrance', () => {
@@ -344,14 +340,15 @@ describe('world generator', () => {
     });
     const state = runtime.state;
     const poiLocation = { x: 5, y: 4 };
-    const action = state.getCurrentMap().getAction?.(
-      poiLocation.x,
-      poiLocation.y,
-      state
-    ) as WorldActionLike | null | undefined;
+    const action = state
+      .getCurrentMap()
+      .getAction?.(poiLocation.x, poiLocation.y, state) as
+      WorldActionLike | null | undefined;
 
     if (action?.type !== 'enter' || action.context?.type !== 'town') {
-      throw new Error('Expected a deterministic town entry near the overworld origin.');
+      throw new Error(
+        'Expected a deterministic town entry near the overworld origin.'
+      );
     }
 
     state.player.x = poiLocation.x;
@@ -626,7 +623,9 @@ describe('world generator', () => {
     const boardingSpawn = getTrainBoardingSpawn('spec', trainContext);
 
     expect(trainMap.getTile(0, boardingSpawn.y).kind).toBe('interior');
-    expect(trainMap.getTile(0, boardingSpawn.y).note).toContain(trainContext.toStation);
+    expect(trainMap.getTile(0, boardingSpawn.y).note).toContain(
+      trainContext.toStation
+    );
     expect(trainMap.getTile(0, boardingSpawn.y - 5).note).not.toBe(
       trainMap.getTile(0, boardingSpawn.y).note
     );
@@ -654,9 +653,7 @@ describe('world generator', () => {
           state,
         });
         const action = state.getCurrentMap().getAction?.(x, y, state) as
-          | WorldActionLike
-          | null
-          | undefined;
+          WorldActionLike | null | undefined;
         if (launch && action?.context?.type === 'canoe') {
           launchSite = { x, y };
           break;
@@ -665,7 +662,9 @@ describe('world generator', () => {
     }
 
     if (!launchSite) {
-      throw new Error('Expected to find a canoe launch site near the origin band.');
+      throw new Error(
+        'Expected to find a canoe launch site near the origin band.'
+      );
     }
 
     state.player.x = launchSite.x;
@@ -674,12 +673,16 @@ describe('world generator', () => {
 
     expect(state.interact()).toBe(true);
     expect(state.getCurrentContext().type).toBe('canoe');
-    expect(['river', 'dock', 'shore', 'ocean']).toContain(state.getCurrentTile().kind);
+    expect(['river', 'dock', 'shore', 'ocean']).toContain(
+      state.getCurrentTile().kind
+    );
     expect(state.canWalk(state.player.x, state.player.y)).toBe(true);
 
     expect(state.tryExit()).toBe(true);
     expect(state.getCurrentContext().type).toBe('overworld');
-    expect(state.getTileDefinition(state.getCurrentTile().kind).walkable).toBe(true);
+    expect(state.getTileDefinition(state.getCurrentTile().kind).walkable).toBe(
+      true
+    );
   });
 
   it('lets the player launch a boat from the coast and travel the open ocean', () => {
@@ -690,8 +693,8 @@ describe('world generator', () => {
     const state = runtime.state;
     let launchSite: { x: number; y: number } | null = null;
 
-    for (let y = -120; y <= 120 && !launchSite; y += 1) {
-      for (let x = -120; x <= 120; x += 1) {
+    for (let y = -4; y <= 4 && !launchSite; y += 1) {
+      for (let x = 4; x <= 12; x += 1) {
         const launch = findNearestBoatLaunchPoint({
           x,
           y,
@@ -700,9 +703,7 @@ describe('world generator', () => {
           state,
         });
         const action = state.getCurrentMap().getAction?.(x, y, state) as
-          | WorldActionLike
-          | null
-          | undefined;
+          WorldActionLike | null | undefined;
         if (launch && action?.context?.type === 'boat') {
           launchSite = { x, y };
           break;
@@ -711,7 +712,9 @@ describe('world generator', () => {
     }
 
     if (!launchSite) {
-      throw new Error('Expected to find a boat launch site near the origin band.');
+      throw new Error(
+        'Expected to find a boat launch site near the starter docks.'
+      );
     }
 
     state.player.x = launchSite.x;
@@ -743,7 +746,8 @@ describe('world generator', () => {
 
     for (let seedIndex = 0; seedIndex < 12 && !quarryAnchor; seedIndex += 1) {
       quarrySeed = `quarry-worldgen-spec:${seedIndex}`;
-      const sampleTerrainSignals = createOverworldTerrainSignalSampler(quarrySeed);
+      const sampleTerrainSignals =
+        createOverworldTerrainSignalSampler(quarrySeed);
       for (let y = -320; y <= 320 && !quarryAnchor; y += 32) {
         for (let x = -320; x <= 320; x += 32) {
           const anchors = registry.resolveOverworldAnchors({
@@ -752,7 +756,9 @@ describe('world generator', () => {
             y,
             sampleTerrainSignals,
           });
-          const found = anchors.poiAnchors.find((anchor) => anchor.type === 'quarry');
+          const found = anchors.poiAnchors.find(
+            (anchor) => anchor.type === 'quarry'
+          );
           if (found) {
             quarryAnchor = { x: found.x, y: found.y };
             break;
@@ -767,13 +773,16 @@ describe('world generator', () => {
       plugins: registry,
     });
 
-    const quarryTile = generator.sampleOverworld(quarryAnchor!.x, quarryAnchor!.y);
+    const quarryTile = generator.sampleOverworld(
+      quarryAnchor!.x,
+      quarryAnchor!.y
+    );
 
     expect(quarryTile.poi?.type).toBe('quarry');
     expect(quarryTile.poi?.name).toMatch(
       /\b(Quarry|Cut|Excavation|Pit|Works|Stone)\b/
     );
-  });
+  }, 1_000);
 
   it('creates lighthouse points of interest somewhere near the origin', () => {
     const generator = createGenerator();
@@ -792,7 +801,8 @@ describe('world generator', () => {
 
     for (let seedIndex = 0; seedIndex < 24 && !towerAnchor; seedIndex += 1) {
       towerSeed = `tower-worldgen-spec:${seedIndex}`;
-      const sampleTerrainSignals = createOverworldTerrainSignalSampler(towerSeed);
+      const sampleTerrainSignals =
+        createOverworldTerrainSignalSampler(towerSeed);
       for (let y = -320; y <= 320 && !towerAnchor; y += 32) {
         for (let x = -320; x <= 320; x += 32) {
           const anchors = registry.resolveOverworldAnchors({
@@ -801,7 +811,9 @@ describe('world generator', () => {
             y,
             sampleTerrainSignals,
           });
-          const found = anchors.poiAnchors.find((anchor) => anchor.type === 'tower');
+          const found = anchors.poiAnchors.find(
+            (anchor) => anchor.type === 'tower'
+          );
           if (found) {
             towerAnchor = { x: found.x, y: found.y };
             break;
@@ -818,8 +830,16 @@ describe('world generator', () => {
 
     let towerTile = generator.sampleOverworld(towerAnchor!.x, towerAnchor!.y);
     if (towerTile.poi?.type !== 'tower') {
-      for (let offsetY = -2; offsetY <= 2 && towerTile.poi?.type !== 'tower'; offsetY += 1) {
-        for (let offsetX = -2; offsetX <= 2 && towerTile.poi?.type !== 'tower'; offsetX += 1) {
+      for (
+        let offsetY = -2;
+        offsetY <= 2 && towerTile.poi?.type !== 'tower';
+        offsetY += 1
+      ) {
+        for (
+          let offsetX = -2;
+          offsetX <= 2 && towerTile.poi?.type !== 'tower';
+          offsetX += 1
+        ) {
           towerTile = generator.sampleOverworld(
             towerAnchor!.x + offsetX,
             towerAnchor!.y + offsetY
@@ -850,7 +870,8 @@ describe('world generator', () => {
 
     for (let seedIndex = 0; seedIndex < 24 && !stationAnchor; seedIndex += 1) {
       stationSeed = `station-worldgen-spec:${seedIndex}`;
-      const sampleTerrainSignals = createOverworldTerrainSignalSampler(stationSeed);
+      const sampleTerrainSignals =
+        createOverworldTerrainSignalSampler(stationSeed);
       for (let y = -320; y <= 320 && !stationAnchor; y += 32) {
         for (let x = -320; x <= 320; x += 32) {
           const anchors = registry.resolveOverworldAnchors({
@@ -859,7 +880,9 @@ describe('world generator', () => {
             y,
             sampleTerrainSignals,
           });
-          const found = anchors.poiAnchors.find((anchor) => anchor.type === 'station');
+          const found = anchors.poiAnchors.find(
+            (anchor) => anchor.type === 'station'
+          );
           if (found) {
             stationAnchor = { x: found.x, y: found.y };
             break;
@@ -874,7 +897,10 @@ describe('world generator', () => {
       plugins: registry,
     });
 
-    const stationTile = generator.sampleOverworld(stationAnchor!.x, stationAnchor!.y);
+    const stationTile = generator.sampleOverworld(
+      stationAnchor!.x,
+      stationAnchor!.y
+    );
 
     expect(stationTile.poi?.type).toBe('station');
     expect(stationTile.poi?.name).toMatch(

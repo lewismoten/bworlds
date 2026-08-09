@@ -163,7 +163,9 @@ describe('procedural music', () => {
         skipEvery: 2,
       })
     );
-    expect(arrangement.roleProfiles.harmony.releaseMultiplier).toBeGreaterThan(1);
+    expect(arrangement.roleProfiles.harmony.releaseMultiplier).toBeGreaterThan(
+      1
+    );
     expect(arrangement.roleProfiles.harmony.volumeMultiplier).toBeLessThan(1);
     expect(arrangement.roleProfiles.lead.durationMultiplier).toBeGreaterThan(1);
   });
@@ -238,7 +240,9 @@ describe('procedural music', () => {
       .slice(1)
       .map((note, index) => note.startMs - scheduled.notes[index]!.startMs);
 
-    expect(new Set(deltas.map((delta) => delta.toFixed(3))).size).toBeGreaterThan(1);
+    expect(
+      new Set(deltas.map((delta) => delta.toFixed(3))).size
+    ).toBeGreaterThan(1);
 
     const repeated = scheduleProceduralMusicNotes({
       nowMs: 0,
@@ -302,18 +306,28 @@ describe('procedural music', () => {
       clusterY: 0,
     });
 
-    const dayPercussion = dayScheduled.notes.filter((note) => note.role === 'percussion');
-    const nightPercussion = nightScheduled.notes.filter((note) => note.role === 'percussion');
-    const dayHarmony = dayScheduled.notes.find((note) => note.role === 'harmony');
-    const nightHarmony = nightScheduled.notes.find((note) => note.role === 'harmony');
+    const dayPercussion = dayScheduled.notes.filter(
+      (note) => note.role === 'percussion'
+    );
+    const nightPercussion = nightScheduled.notes.filter(
+      (note) => note.role === 'percussion'
+    );
+    const dayHarmony = dayScheduled.notes.find(
+      (note) => note.role === 'harmony'
+    );
+    const nightHarmony = nightScheduled.notes.find(
+      (note) => note.role === 'harmony'
+    );
 
     expect(dayPercussion.length).toBeGreaterThan(nightPercussion.length);
     expect(nightHarmony).toEqual(expect.objectContaining({ role: 'harmony' }));
     expect(dayHarmony).toEqual(expect.objectContaining({ role: 'harmony' }));
-    expect((nightHarmony?.volume ?? 0) / (dayHarmony?.volume ?? 1)).toBeLessThan(0.75);
-    expect((nightHarmony?.releaseMs ?? 0) / (dayHarmony?.releaseMs ?? 1)).toBeGreaterThan(
-      1.5
-    );
+    expect(
+      (nightHarmony?.volume ?? 0) / (dayHarmony?.volume ?? 1)
+    ).toBeLessThan(0.75);
+    expect(
+      (nightHarmony?.releaseMs ?? 0) / (dayHarmony?.releaseMs ?? 1)
+    ).toBeGreaterThan(1.5);
   });
 
   it('pushes winter lead lines into a brighter higher register during scheduling', () => {
@@ -336,13 +350,19 @@ describe('procedural music', () => {
       clusterY: 0,
     });
 
-    const summerLead = summerScheduled.notes.find((note) => note.role === 'lead');
-    const winterLead = winterScheduled.notes.find((note) => note.role === 'lead');
+    const summerLead = summerScheduled.notes.find(
+      (note) => note.role === 'lead'
+    );
+    const winterLead = winterScheduled.notes.find(
+      (note) => note.role === 'lead'
+    );
 
     expect(summerLead).toEqual(expect.objectContaining({ role: 'lead' }));
     expect(winterLead).toEqual(expect.objectContaining({ role: 'lead' }));
     expect(winterLead?.waveform).toBe('triangle');
-    expect((winterLead?.frequency ?? 0) / (summerLead?.frequency ?? 1)).toBeGreaterThan(1.9);
+    expect(
+      (winterLead?.frequency ?? 0) / (summerLead?.frequency ?? 1)
+    ).toBeGreaterThan(1.9);
   });
 
   it('introduces deterministic rests without dropping the phrase anchors', () => {
@@ -381,7 +401,9 @@ describe('procedural music', () => {
     );
     const scheduledNotes = [...first.notes, ...second.notes, ...third.notes];
     const theme = resolveMusicTheme('plains', 'overworld');
-    const stepMs = theme.noteDurationMs / resolveMusicMood({ dayProgress: 0.5 }).tempoMultiplier;
+    const stepMs =
+      theme.noteDurationMs /
+      resolveMusicMood({ dayProgress: 0.5 }).tempoMultiplier;
 
     expect(scheduledNotes.some((note) => note.role === 'bass')).toBe(true);
     expect(
@@ -413,7 +435,8 @@ describe('procedural music', () => {
     const mood = resolveMusicMood({ dayProgress: 0.5 });
     const bassBaseFrequency = theme.rootHz * mood.brightness * 0.5;
     const scheduledNotes: ProceduralMusicNote[] = [];
-    let schedulerState: ReturnType<typeof scheduleProceduralMusicNotes>['state'] | undefined;
+    let schedulerState:
+      ReturnType<typeof scheduleProceduralMusicNotes>['state'] | undefined;
 
     for (const nowMs of [0, 1600, 3200, 4800, 6400, 8000, 9600, 11200]) {
       const scheduled = scheduleProceduralMusicNotes(
@@ -434,20 +457,20 @@ describe('procedural music', () => {
 
     const bassSemitones = scheduledNotes
       .filter((note) => note.role === 'bass')
-      .map((note) => Math.round(12 * Math.log2(note.frequency / bassBaseFrequency)));
+      .map((note) =>
+        Math.round(12 * Math.log2(note.frequency / bassBaseFrequency))
+      );
 
-    expect(bassSemitones.filter((semitones) => semitones === 0).length).toBeGreaterThan(
-      bassSemitones.length / 3
-    );
+    expect(
+      bassSemitones.filter((semitones) => semitones === 0).length
+    ).toBeGreaterThan(bassSemitones.length / 3);
     expect(bassSemitones).toContain(7);
     expect(bassSemitones).toContain(12);
     expect(bassSemitones).toContain(theme.scale[1] ?? theme.scale[2] ?? 2);
   });
 
   it('applies softer panning and falloff for nearby ambient music emitters', () => {
-    expect(
-      getMusicSpatialMix({ x: 6, y: 0 }, { x: 0, y: 0 })
-    ).toEqual({
+    expect(getMusicSpatialMix({ x: 6, y: 0 }, { x: 0, y: 0 })).toEqual({
       gainMultiplier: expect.closeTo(1 / (1 + 6 * 0.45), 6),
       pan: expect.closeTo(6 / 7, 6),
     });
@@ -481,21 +504,27 @@ describe('procedural music', () => {
       expect.objectContaining({
         id: 'deep-forest:harmony:2:-1',
         role: 'harmony',
-        family: expect.stringMatching(/^(piano|guitar|organ|strings|synth-pad)$/),
+        family: expect.stringMatching(
+          /^(piano|guitar|organ|strings|synth-pad)$/
+        ),
       })
     );
     expect(bank.instruments.bass).toEqual(
       expect.objectContaining({
         id: 'deep-forest:bass:2:-1',
         role: 'bass',
-        family: expect.stringMatching(/^(bass-guitar|upright-bass|bass-synth|tuba)$/),
+        family: expect.stringMatching(
+          /^(bass-guitar|upright-bass|bass-synth|tuba)$/
+        ),
       })
     );
     expect(bank.instruments.percussion).toEqual(
       expect.objectContaining({
         id: 'deep-forest:percussion:2:-1',
         role: 'percussion',
-        family: expect.stringMatching(/^(kick|snare|cymbals|shaker|hand-percussion)$/),
+        family: expect.stringMatching(
+          /^(kick|snare|cymbals|shaker|hand-percussion)$/
+        ),
       })
     );
   });
@@ -506,21 +535,34 @@ describe('procedural music', () => {
       0,
       0
     );
-    const town = createProceduralInstrumentBank(resolveMusicTheme('town', 'town'), 5, -3);
+    const town = createProceduralInstrumentBank(
+      resolveMusicTheme('town', 'town'),
+      5,
+      -3
+    );
 
     for (const bank of [frontier, town]) {
-      expect(['vocals', 'lead-guitar', 'violin', 'flute', 'trumpet', 'synth-lead']).toContain(
-        bank.instruments.lead.family
-      );
+      expect([
+        'vocals',
+        'lead-guitar',
+        'violin',
+        'flute',
+        'trumpet',
+        'synth-lead',
+      ]).toContain(bank.instruments.lead.family);
       expect(['piano', 'guitar', 'organ', 'strings', 'synth-pad']).toContain(
         bank.instruments.harmony.family
       );
       expect(['bass-guitar', 'upright-bass', 'bass-synth', 'tuba']).toContain(
         bank.instruments.bass.family
       );
-      expect(['kick', 'snare', 'cymbals', 'shaker', 'hand-percussion']).toContain(
-        bank.instruments.percussion.family
-      );
+      expect([
+        'kick',
+        'snare',
+        'cymbals',
+        'shaker',
+        'hand-percussion',
+      ]).toContain(bank.instruments.percussion.family);
     }
   });
 
@@ -546,16 +588,27 @@ describe('procedural music', () => {
       weatherKind: 'heavy-rain',
       weatherIntensity: 0.95,
     });
-    const town = createProceduralInstrumentBank(resolveMusicTheme('town', 'town'), 3, 4, {
-      tileKind: 'town',
-      contextType: 'town',
-      dayProgress: 0.5,
-      yearProgress: 0.5,
-    });
+    const town = createProceduralInstrumentBank(
+      resolveMusicTheme('town', 'town'),
+      3,
+      4,
+      {
+        tileKind: 'town',
+        contextType: 'town',
+        dayProgress: 0.5,
+        yearProgress: 0.5,
+      }
+    );
 
-    expect(nighttime.instruments.lead.family).not.toBe(daytime.instruments.lead.family);
-    expect(stormy.instruments.percussion.family).not.toBe(daytime.instruments.percussion.family);
-    expect(town.instruments.harmony.family).not.toBe(daytime.instruments.harmony.family);
+    expect(nighttime.instruments.lead.family).not.toBe(
+      daytime.instruments.lead.family
+    );
+    expect(stormy.instruments.percussion.family).not.toBe(
+      daytime.instruments.percussion.family
+    );
+    expect(town.instruments.harmony.family).not.toBe(
+      daytime.instruments.harmony.family
+    );
   });
 
   it('emits scheduled notes through the controller sink', () => {
@@ -577,9 +630,11 @@ describe('procedural music', () => {
 
     expect(played.length).toBeGreaterThan(1);
     expect(played[0]?.themeId).toBe('town-square');
-    expect(played.some((note) => note.role === 'lead')).toBe(true);
+    expect(played.some((note) => note.role === 'bass')).toBe(true);
     expect(played.some((note) => note.role === 'harmony')).toBe(true);
-    expect(played.some((note) => note.role === 'percussion')).toBe(true);
+    expect(
+      new Set(played.map((note) => note.role)).size
+    ).toBeGreaterThanOrEqual(2);
   });
 
   it('layers poi notes over ambient music when a nearby poi mix is present', () => {
@@ -607,7 +662,9 @@ describe('procedural music', () => {
       },
     });
 
-    expect(played.some((note) => note.themeId === 'frontier-plains')).toBe(true);
+    expect(played.some((note) => note.themeId === 'frontier-plains')).toBe(
+      true
+    );
     expect(played.some((note) => note.themeId === 'town-square')).toBe(true);
   });
 

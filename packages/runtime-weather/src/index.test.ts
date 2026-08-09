@@ -23,7 +23,12 @@ function createEnvironmentPayload(
     state: {
       player: { x, y, facing: 0 },
       getCurrentContext() {
-        return { id: 'overworld', type: 'overworld', depth: 0, label: 'Overworld' };
+        return {
+          id: 'overworld',
+          type: 'overworld',
+          depth: 0,
+          label: 'Overworld',
+        };
       },
       getCurrentTile() {
         return { kind: 'plains' };
@@ -64,10 +69,12 @@ describe('runtime weather', () => {
         }),
       })
     );
-    expect(resolved && 'weather' in resolved ? resolved.weather?.forecast : undefined).toHaveLength(7);
-    expect(plugin.resolveWorldEnvironment?.(createEnvironmentPayload(0, 0, 0))).toEqual(
-      resolved
-    );
+    expect(
+      resolved && 'weather' in resolved ? resolved.weather?.forecast : undefined
+    ).toHaveLength(7);
+    expect(
+      plugin.resolveWorldEnvironment?.(createEnvironmentPayload(0, 0, 0))
+    ).toEqual(resolved);
   });
 
   it('changes forecast shape by region and season while remaining stable for the same seed', () => {
@@ -120,7 +127,7 @@ describe('runtime weather', () => {
         timeMs: 3 * 24 * 60 * 60 * 1000,
       })
     ).toEqual(baseline);
-  });
+  }, 1_000);
 
   it('resolves fronts with direction and intensity metadata', () => {
     const front = resolveWeatherFront({
@@ -197,9 +204,16 @@ describe('runtime weather', () => {
       dayProgress: 0.4,
     });
 
-    expect(['snow', 'hail', 'clouds', 'fog', 'light-rain', 'heavy-rain', 'wind', 'clear']).toContain(
-      condition.kind
-    );
+    expect([
+      'snow',
+      'hail',
+      'clouds',
+      'fog',
+      'light-rain',
+      'heavy-rain',
+      'wind',
+      'clear',
+    ]).toContain(condition.kind);
     expect(condition.visibility).toBeGreaterThan(0);
     expect(condition.visibility).toBeLessThanOrEqual(1);
   });

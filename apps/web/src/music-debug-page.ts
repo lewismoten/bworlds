@@ -4,7 +4,8 @@ import {
   buildMusicDebugSummaryMarkup,
   createMusicDebugSnapshot,
   drawMusicDebugTimeline,
-  playMusicDebugPreview,
+  playMusicDebugSong,
+  randomizeMusicDebugSeed,
   type MusicDebugOptions,
 } from './music-debug.ts';
 
@@ -17,8 +18,20 @@ if (root) {
 
 const form = document.querySelector<HTMLFormElement>('#music-debug-form');
 const summary = document.querySelector<HTMLElement>('#music-debug-summary');
-const timeline = document.querySelector<HTMLCanvasElement>('#music-debug-timeline');
-const playButton = document.querySelector<HTMLButtonElement>('#music-debug-play');
+const timeline = document.querySelector<HTMLCanvasElement>(
+  '#music-debug-timeline'
+);
+const playButton =
+  document.querySelector<HTMLButtonElement>('#music-debug-play');
+const randomizeButton = document.querySelector<HTMLButtonElement>(
+  '#music-debug-randomize'
+);
+const clusterXInput = document.querySelector<HTMLInputElement>(
+  'input[name="clusterX"]'
+);
+const clusterYInput = document.querySelector<HTMLInputElement>(
+  'input[name="clusterY"]'
+);
 
 function collectOptions(): Partial<MusicDebugOptions> {
   if (!form) {
@@ -38,7 +51,10 @@ function collectOptions(): Partial<MusicDebugOptions> {
 }
 
 function renderSnapshot(): void {
-  snapshot = createMusicDebugSnapshot(collectOptions(), performance.now() + 120);
+  snapshot = createMusicDebugSnapshot(
+    collectOptions(),
+    performance.now() + 120
+  );
   if (summary) {
     summary.innerHTML = buildMusicDebugSummaryMarkup(snapshot);
   }
@@ -63,5 +79,16 @@ form?.addEventListener('input', () => {
 
 playButton?.addEventListener('click', () => {
   renderSnapshot();
-  playMusicDebugPreview(snapshot);
+  playMusicDebugSong(snapshot);
+});
+
+randomizeButton?.addEventListener('click', () => {
+  const randomized = randomizeMusicDebugSeed(collectOptions());
+  if (clusterXInput) {
+    clusterXInput.value = String(randomized.clusterX);
+  }
+  if (clusterYInput) {
+    clusterYInput.value = String(randomized.clusterY);
+  }
+  renderSnapshot();
 });
