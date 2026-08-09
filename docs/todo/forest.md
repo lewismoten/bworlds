@@ -25,9 +25,9 @@ For example, an oak and a pine both support `age`, but aging them should produce
 
 # Tree Generator Architecture
 
-* [ ] Create a common `TreeGenerator` interface used by every tree implementation.
-* [ ] Create a shared base generator containing reusable tree-generation utilities.
-* [ ] Allow specialized tree generators to extend or compose the shared functionality.
+* [X] Create a common `TreeGenerator` interface used by every tree implementation.
+* [X] Create a shared base generator containing reusable tree-generation utilities.
+* [X] Allow specialized tree generators to extend or compose the shared functionality.
 * [ ] Allow one generator to represent a family of closely related trees.
 * [ ] Allow individual species to override family behavior.
 * [ ] Separate tree biological state from rendered geometry.
@@ -40,7 +40,7 @@ For example, an oak and a pine both support `age`, but aging them should produce
 * [ ] Generate trees deterministically from world seed and location.
 * [ ] Preserve persistent changes such as carvings, damage, harvesting, and fire.
 * [ ] Avoid regenerating persistent tree state from scratch after the player modifies it.
-* [ ] Allow generators to advertise optional capabilities.
+* [X] Allow generators to advertise optional capabilities.
 * [ ] Keep older tree generators functional when new capabilities are introduced.
 * [ ] Provide sensible fallbacks when a generator does not support a feature.
 
@@ -48,16 +48,16 @@ For example, an oak and a pine both support `age`, but aging them should produce
 
 I would definitely implement the feature-support idea.
 
-* [ ] Define named tree capabilities.
-* [ ] Allow generators to report whether they support each capability.
-* [ ] Allow capabilities to be queried without actually generating the tree.
-* [ ] Allow capabilities to contain levels or metadata rather than only `true/false` where useful.
-* [ ] Provide default behavior when a capability is unsupported.
-* [ ] Ensure adding a new capability does not break existing generators.
+* [X] Define named tree capabilities.
+* [X] Allow generators to report whether they support each capability.
+* [X] Allow capabilities to be queried without actually generating the tree.
+* [X] Allow capabilities to contain levels or metadata rather than only `true/false` where useful.
+* [X] Provide default behavior when a capability is unsupported.
+* [X] Ensure adding a new capability does not break existing generators.
 * [ ] Allow renderer-specific capabilities.
 * [ ] Allow gameplay capabilities independent of renderer capabilities.
 * [ ] Allow capabilities to differ by tree state.
-* [ ] Allow capabilities to differ by LOD.
+* [X] Allow capabilities to differ by LOD.
 
 Something along these lines:
 

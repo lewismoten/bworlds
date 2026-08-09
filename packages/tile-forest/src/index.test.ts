@@ -13,6 +13,7 @@ import {
   getForestBirds,
   getForestBushes,
   getForestFireflyDescriptors,
+  getForestTreeGenerator,
   getForestTreeBranchProfiles,
   getForestCarvings,
   getForestFloorDetails,
@@ -651,6 +652,21 @@ describe('tile forest', () => {
 
     const first = sampleTiles[0];
     expect(getForestTreeForms(first.x, first.y)).toEqual(first.forms);
+  });
+
+  it('exposes shared tree generator capabilities without generating tree descriptors', () => {
+    const generator = getForestTreeGenerator();
+
+    expect(generator.supports('branches')).toBe(true);
+    expect(generator.supports('foliage')).toBe(true);
+    expect(generator.supports('hollows', { detailLevel: 'full' })).toBe(true);
+    expect(generator.supports('hollows', { detailLevel: 'low' })).toBe(false);
+    expect(generator.getCapability('lod')).toEqual({ levels: 2 });
+    expect(generator.getCapability('wind')).toEqual({
+      trunk: false,
+      branches: true,
+      leaves: true,
+    });
   });
 
   it('generates more tree-like branch profiles for broadleaf and pine forms', () => {
