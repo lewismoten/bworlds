@@ -1,4 +1,4 @@
-import { createBoundedCache } from '@bworlds/cache-support';
+import { createBoundedCache, createCoordinateCache } from '@bworlds/cache-support';
 import { resolveDockBoatRoute } from '@bworlds/dock-route-support';
 import { hash2D } from '@bworlds/core';
 import { findNearestBoatLaunchPoint } from '@bworlds/map-boat';
@@ -67,18 +67,14 @@ type BridgeTextureLayer = 'deck' | 'rail' | 'cover' | 'pillar';
 const bridgeStyleCache = createBoundedCache<string, BridgeStyle>(
   ROUTE_STYLE_CACHE_LIMIT
 );
-const bridgeClusterCache = createBoundedCache<string, BridgeClusterInfo>(
-  ROUTE_CLUSTER_CACHE_LIMIT
-);
+const bridgeClusterCache = createCoordinateCache<BridgeClusterInfo>();
 const dockStyleCache = createBoundedCache<string, DockStyle>(
   ROUTE_STYLE_CACHE_LIMIT
 );
 const dockRouteLabelCache = createBoundedCache<string, ThreeTextureLike>(
   ROUTE_LABEL_CACHE_LIMIT
 );
-const dockClusterCache = createBoundedCache<string, DockClusterInfo>(
-  ROUTE_CLUSTER_CACHE_LIMIT
-);
+const dockClusterCache = createCoordinateCache<DockClusterInfo>();
 const roadStyleCache = createBoundedCache<string, RoadStyleBlueprint>(
   ROUTE_STYLE_CACHE_LIMIT
 );
@@ -1551,13 +1547,13 @@ function getDockClusterInfo(
   tileX: number,
   tileY: number
 ) {
-  const key = `${tileX}:${tileY}`;
-  if (dockClusterCache.has(key)) {
-    return dockClusterCache.get(key)!;
+  if (dockClusterCache.has(tileX, tileY)) {
+    return dockClusterCache.get(tileX, tileY)!;
   }
 
   const queue = [[tileX, tileY]];
-  const visited = new Set([key]);
+  const visited = createCoordinateCache<true>();
+  visited.set(tileX, tileY, true);
   const tiles: Array<{ x: number; y: number }> = [];
 
   while (queue.length > 0) {
@@ -1571,10 +1567,9 @@ function getDockClusterInfo(
     ]) {
       const nextX = currentX + dx;
       const nextY = currentY + dy;
-      const nextKey = `${nextX}:${nextY}`;
-      if (visited.has(nextKey)) continue;
+      if (visited.has(nextX, nextY)) continue;
       if (state.getCurrentTile(nextX, nextY).kind !== 'dock') continue;
-      visited.add(nextKey);
+      visited.set(nextX, nextY, true);
       queue.push([nextX, nextY]);
     }
   }
@@ -1604,23 +1599,27 @@ function getDockClusterInfo(
 
   for (let index = 0; index < orderedTiles.length; index += 1) {
     const tile = orderedTiles[index];
-    const negativeKey =
-      axis === 'ew' ? `${tile.x - 1}:${tile.y}` : `${tile.x}:${tile.y - 1}`;
-    const positiveKey =
-      axis === 'ew' ? `${tile.x + 1}:${tile.y}` : `${tile.x}:${tile.y + 1}`;
-    dockClusterCache.set(`${tile.x}:${tile.y}`, {
+    const negativeConnected =
+      axis === 'ew'
+        ? visited.has(tile.x - 1, tile.y)
+        : visited.has(tile.x, tile.y - 1);
+    const positiveConnected =
+      axis === 'ew'
+        ? visited.has(tile.x + 1, tile.y)
+        : visited.has(tile.x, tile.y + 1);
+    dockClusterCache.set(tile.x, tile.y, {
       axis,
       clusterKey,
       anchorX: anchor.x,
       anchorY: anchor.y,
       length: orderedTiles.length,
       segmentIndex: index,
-      connectNegative: visited.has(negativeKey),
-      connectPositive: visited.has(positiveKey),
+      connectNegative: negativeConnected,
+      connectPositive: positiveConnected,
     });
   }
 
-  return dockClusterCache.get(key)!;
+  return dockClusterCache.get(tileX, tileY)!;
 }
 
 function getDockStyle(
@@ -2109,13 +2108,13 @@ function getBridgeClusterInfo(
   tileX: number,
   tileY: number
 ) {
-  const key = `${tileX}:${tileY}`;
-  if (bridgeClusterCache.has(key)) {
-    return bridgeClusterCache.get(key);
+  if (bridgeClusterCache.has(tileX, tileY)) {
+    return bridgeClusterCache.get(tileX, tileY);
   }
 
   const queue = [[tileX, tileY]];
-  const visited = new Set([key]);
+  const visited = createCoordinateCache<true>();
+  visited.set(tileX, tileY, true);
   const tiles: { x: number; y: number }[] = [];
 
   while (queue.length > 0) {
@@ -2129,10 +2128,9 @@ function getBridgeClusterInfo(
     ]) {
       const nextX = currentX + dx;
       const nextY = currentY + dy;
-      const nextKey = `${nextX}:${nextY}`;
-      if (visited.has(nextKey)) continue;
+      if (visited.has(nextX, nextY)) continue;
       if (state.getCurrentTile(nextX, nextY).kind !== 'bridge') continue;
-      visited.add(nextKey);
+      visited.set(nextX, nextY, true);
       queue.push([nextX, nextY]);
     }
   }
@@ -2162,23 +2160,27 @@ function getBridgeClusterInfo(
 
   for (let index = 0; index < orderedTiles.length; index += 1) {
     const tile = orderedTiles[index];
-    const negativeKey =
-      axis === 'ew' ? `${tile.x - 1}:${tile.y}` : `${tile.x}:${tile.y - 1}`;
-    const positiveKey =
-      axis === 'ew' ? `${tile.x + 1}:${tile.y}` : `${tile.x}:${tile.y + 1}`;
-    bridgeClusterCache.set(`${tile.x}:${tile.y}`, {
+    const negativeConnected =
+      axis === 'ew'
+        ? visited.has(tile.x - 1, tile.y)
+        : visited.has(tile.x, tile.y - 1);
+    const positiveConnected =
+      axis === 'ew'
+        ? visited.has(tile.x + 1, tile.y)
+        : visited.has(tile.x, tile.y + 1);
+    bridgeClusterCache.set(tile.x, tile.y, {
       axis,
       clusterKey,
       anchorX: anchor.x,
       anchorY: anchor.y,
       length: orderedTiles.length,
       segmentIndex: index,
-      connectNegative: visited.has(negativeKey),
-      connectPositive: visited.has(positiveKey),
+      connectNegative: negativeConnected,
+      connectPositive: positiveConnected,
     });
   }
 
-  return bridgeClusterCache.get(key);
+  return bridgeClusterCache.get(tileX, tileY);
 }
 
 function getBridgeStyle(
