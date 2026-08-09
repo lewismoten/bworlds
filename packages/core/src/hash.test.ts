@@ -51,6 +51,9 @@ describe('hash seeds', () => {
 
     expect(resolveHashSeed('seed')).toBe(seedHash);
     expect(resolveHashSeed(seedHash)).toBe(seedHash >>> 0);
+    expect(createHashSeed(0)).toBe(0);
+    expect(createHashSeed(0xFFFFFFFF)).toBe(0xFFFFFFFF);
+    expect(createHashSeed(0x100000000)).toBe(0);
     expect(createHashSeed(-1)).toBe(0xFFFFFFFF);
   });
 
