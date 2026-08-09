@@ -395,6 +395,7 @@ const FULL_DETAIL_TILE_MODEL_HARD_LIMITS: TileModelHardLimits = {
   animationMixerCount: 4,
   skeletonCount: 2,
   boneCount: 100,
+  morphTargetCount: 16,
   vertexCount: 50_000,
 };
 
@@ -432,6 +433,7 @@ const LOW_DETAIL_TILE_MODEL_HARD_LIMITS: TileModelHardLimits = {
   animationMixerCount: 0,
   skeletonCount: 0,
   boneCount: 60,
+  morphTargetCount: 4,
   vertexCount: 8_000,
 };
 
@@ -531,6 +533,7 @@ export function validateTileModelAgainstRenderBudget(
         animationMixerCount: countAnimationMixers(root),
         skeletonCount: countSkeletons(root),
         boneCount: countBones(root),
+        morphTargetCount: countMorphTargets(root),
         invalidPositionCoordinateCount: 0,
         pointVertexCount: safetyPrecheck.stats.pointVertexCount,
         particleEmitterCount: safetyPrecheck.stats.particleEmitterCount,
@@ -593,6 +596,7 @@ export function validateTileModelAgainstRenderBudget(
     animationMixerCount: countAnimationMixers(root),
     skeletonCount: countSkeletons(root),
     boneCount: countBones(root),
+    morphTargetCount: countMorphTargets(root),
   };
   const violations: TileModelBudgetViolation[] = [];
   const metrics: Array<keyof TileModelHardLimits> = [
@@ -629,6 +633,7 @@ export function validateTileModelAgainstRenderBudget(
     'animationMixerCount',
     'skeletonCount',
     'boneCount',
+    'morphTargetCount',
     'vertexCount',
   ];
 
@@ -732,6 +737,7 @@ export function getTileModelCostEstimateLimits(
     animationMixerCount: limits.animationMixerCount,
     skeletonCount: limits.skeletonCount,
     boneCount: limits.boneCount,
+    morphTargetCount: limits.morphTargetCount,
     vertexCount: limits.vertexCount,
     triangleCount: limits.triangleCount,
   };
@@ -882,6 +888,7 @@ type SceneResourceStats = {
   animationMixerCount: number;
   skeletonCount: number;
   boneCount: number;
+  morphTargetCount: number;
   triangleCount: number;
   vertexCount: number;
   materialRefCount: number;
@@ -947,6 +954,7 @@ type TileModelHardLimits = {
   animationMixerCount: number;
   skeletonCount: number;
   boneCount: number;
+  morphTargetCount: number;
   vertexCount: number;
 };
 
@@ -1042,6 +1050,7 @@ function createEmptySceneResourceStats(): SceneResourceStats {
     animationMixerCount: 0,
     skeletonCount: 0,
     boneCount: 0,
+    morphTargetCount: 0,
     triangleCount: 0,
     vertexCount: 0,
     materialRefCount: 0,
@@ -1155,6 +1164,38 @@ function countBones(root: Pick<THREE.Object3D, 'traverse'>): number {
   });
 
   return bones.size;
+}
+
+function countMorphTargets(root: Pick<THREE.Object3D, 'traverse'>): number {
+  const geometries = new Set<unknown>();
+  let morphTargetCount = 0;
+
+  root.traverse((child) => {
+    const geometry = (child as THREE.Object3D & { geometry?: unknown }).geometry;
+    if (!geometry || geometries.has(geometry)) {
+      return;
+    }
+    geometries.add(geometry);
+    const morphAttributes = (geometry as { morphAttributes?: unknown }).morphAttributes;
+    if (!morphAttributes || typeof morphAttributes !== 'object') {
+      return;
+    }
+    let geometryMorphTargetCount = 0;
+    for (const attributeTargets of Object.values(
+      morphAttributes as Record<string, unknown>
+    )) {
+      if (!Array.isArray(attributeTargets)) {
+        continue;
+      }
+      geometryMorphTargetCount = Math.max(
+        geometryMorphTargetCount,
+        attributeTargets.length
+      );
+    }
+    morphTargetCount += geometryMorphTargetCount;
+  });
+
+  return morphTargetCount;
 }
 
 type FrameTimeBudget = {
@@ -3588,6 +3629,7 @@ export function collectSceneResourceStats(
   let animationMixerCount = 0;
   const skeletons = new Set<unknown>();
   const bones = new Set<unknown>();
+  let morphTargetCount = 0;
   let triangleCount = 0;
   let vertexCount = 0;
   let materialRefCount = 0;
@@ -3723,6 +3765,23 @@ export function collectSceneResourceStats(
         geometryBytes += geometryMemory.totalBytes;
         vertexBufferBytes += geometryMemory.vertexBufferBytes;
         indexBufferBytes += geometryMemory.indexBufferBytes;
+        const morphAttributes = (renderable.geometry as { morphAttributes?: unknown })
+          .morphAttributes;
+        if (morphAttributes && typeof morphAttributes === 'object') {
+          let geometryMorphTargetCount = 0;
+          for (const attributeTargets of Object.values(
+            morphAttributes as Record<string, unknown>
+          )) {
+            if (!Array.isArray(attributeTargets)) {
+              continue;
+            }
+            geometryMorphTargetCount = Math.max(
+              geometryMorphTargetCount,
+              attributeTargets.length
+            );
+          }
+          morphTargetCount += geometryMorphTargetCount;
+        }
         largestGeometryVertexCount = Math.max(
           largestGeometryVertexCount,
           geometryVertexCount
@@ -3798,6 +3857,7 @@ export function collectSceneResourceStats(
     animationMixerCount,
     skeletonCount: skeletons.size,
     boneCount: bones.size,
+    morphTargetCount,
     triangleCount,
     vertexCount,
     materialRefCount,

@@ -432,6 +432,7 @@ describe('render3d visibility helpers', () => {
       animationMixerCount: 0,
       skeletonCount: 0,
       boneCount: 0,
+      morphTargetCount: 0,
       triangleCount: 0,
       vertexCount: 36,
       materialRefCount: 4,
@@ -591,6 +592,7 @@ describe('render3d visibility helpers', () => {
       animationMixerCount: 0,
       skeletonCount: 0,
       boneCount: 0,
+      morphTargetCount: 0,
       triangleCount: 0,
       vertexCount: 18,
       materialRefCount: 3,
@@ -681,6 +683,7 @@ describe('render3d visibility helpers', () => {
       animationMixerCount: 0,
       skeletonCount: 0,
       boneCount: 0,
+      morphTargetCount: 0,
       triangleCount: 0,
       vertexCount: 25,
       materialRefCount: 2,
@@ -821,6 +824,7 @@ describe('render3d visibility helpers', () => {
       animationMixerCount: 0,
       skeletonCount: 0,
       boneCount: 0,
+      morphTargetCount: 0,
       triangleCount: 0,
       vertexCount: 26,
       materialRefCount: 2,
@@ -905,6 +909,7 @@ describe('render3d visibility helpers', () => {
       animationMixerCount: 0,
       skeletonCount: 0,
       boneCount: 0,
+      morphTargetCount: 0,
       triangleCount: 0,
       vertexCount: 8,
       materialRefCount: 2,
@@ -1021,6 +1026,7 @@ describe('render3d visibility helpers', () => {
       animationMixerCount: 0,
       skeletonCount: 0,
       boneCount: 0,
+      morphTargetCount: 0,
       triangleCount: 0,
       vertexCount: 10,
       materialRefCount: 2,
@@ -1296,6 +1302,7 @@ describe('render3d visibility helpers', () => {
       animationMixerCount: 4,
       skeletonCount: 2,
       boneCount: 100,
+      morphTargetCount: 16,
       vertexCount: 50_000,
     });
     expect(getTileModelHardLimits('low')).toEqual({
@@ -1332,6 +1339,7 @@ describe('render3d visibility helpers', () => {
       animationMixerCount: 0,
       skeletonCount: 0,
       boneCount: 60,
+      morphTargetCount: 4,
       vertexCount: 8_000,
     });
   });
@@ -1421,6 +1429,7 @@ describe('render3d visibility helpers', () => {
         animationMixerCount: 0,
         skeletonCount: 0,
         boneCount: 0,
+        morphTargetCount: 0,
         vertexCount: 72,
       }),
       violations: [],
@@ -1618,6 +1627,66 @@ describe('render3d visibility helpers', () => {
             metric: 'boneCount',
             actual: 101,
             limit: 100,
+          },
+        ]),
+      })
+    );
+  });
+
+  it('tracks morph target counts per unique geometry and rejects models above the cap', () => {
+    const material = createMockMaterial();
+    const sharedGeometry = createMockStatGeometry('mesh-morph-shared', 48) as {
+      morphAttributes?: Record<string, unknown[]>;
+    };
+    sharedGeometry.morphAttributes = {
+      position: Array.from({ length: 10 }, () => ({ count: 48 })),
+      normal: Array.from({ length: 10 }, () => ({ count: 48 })),
+    };
+    const uniqueGeometryA = createMockStatGeometry('mesh-morph-a', 48) as {
+      morphAttributes?: Record<string, unknown[]>;
+    };
+    uniqueGeometryA.morphAttributes = {
+      position: Array.from({ length: 7 }, () => ({ count: 48 })),
+    };
+    const uniqueGeometryB = createMockStatGeometry('mesh-morph-b', 48) as {
+      morphAttributes?: Record<string, unknown[]>;
+    };
+    uniqueGeometryB.morphAttributes = {
+      position: Array.from({ length: 1 }, () => ({ count: 48 })),
+    };
+    const root = createMockObject3D(undefined, [
+      createMockObject3D(material, [], sharedGeometry),
+      createMockObject3D(material, [], sharedGeometry),
+      createMockObject3D(material, [], uniqueGeometryA),
+      createMockObject3D(material, [], uniqueGeometryB),
+    ]);
+
+    expect(collectSceneResourceStats(root as never).morphTargetCount).toBe(18);
+    expect(validateTileModelAgainstRenderBudget(root as never, 'full')).toEqual(
+      expect.objectContaining({
+        accepted: false,
+        violations: expect.arrayContaining([
+          {
+            metric: 'morphTargetCount',
+            actual: 18,
+            limit: 16,
+          },
+        ]),
+      })
+    );
+    expect(
+      validateTileModelCostEstimateAgainstRenderBudget(
+        { morphTargetCount: 17 },
+        'full'
+      )
+    ).toEqual(
+      expect.objectContaining({
+        accepted: false,
+        violations: expect.arrayContaining([
+          {
+            metric: 'morphTargetCount',
+            actual: 17,
+            limit: 16,
           },
         ]),
       })
