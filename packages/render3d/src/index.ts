@@ -140,6 +140,7 @@ export {
 export {
   getTileModelDrawCallRatioWarning,
   getTileModelMaterialGroupWarning,
+  getTileModelTinyMeshWarning,
   getTileModelPerformanceWarnings,
 } from './tile-model-performance-warnings.ts';
 export {

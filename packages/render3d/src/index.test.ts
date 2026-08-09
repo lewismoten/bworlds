@@ -152,6 +152,7 @@ import {
   getTileModelDrawCallRatioWarning,
   getTileModelMaterialGroupWarning,
   getTileModelPerformanceWarnings,
+  getTileModelTinyMeshWarning,
   getWrappedBatchWindow,
   getTwilightSkyPalette,
   getTileModelDetailLevel,
@@ -2645,6 +2646,9 @@ describe('render3d visibility helpers', () => {
           drawCallCount: 24,
           triangleCount: 96,
           maxGeometryGroupCount: 6,
+          meshCount: 6,
+          materialCount: 1,
+          sharedMaterialCount: 5,
         },
         'full'
       )
@@ -2659,10 +2663,85 @@ describe('render3d visibility helpers', () => {
           drawCallCount: 8,
           triangleCount: 256,
           maxGeometryGroupCount: 2,
+          meshCount: 4,
+          materialCount: 1,
+          sharedMaterialCount: 3,
         },
         'full'
       )
     ).toEqual([]);
+  });
+
+  it('warns when a plugin model uses many tiny meshes without sharing materials enough', () => {
+    expect(
+      getTileModelTinyMeshWarning(
+        {
+          meshCount: 12,
+          materialCount: 6,
+          sharedMaterialCount: 2,
+          triangleCount: 96,
+        },
+        'full'
+      )
+    ).toBe(
+      'meshCount 12 with materialCount 6 and sharedMaterialCount 2 for triangleCount 96 (8.0 triangles/mesh)'
+    );
+
+    expect(
+      getTileModelTinyMeshWarning(
+        {
+          meshCount: 6,
+          materialCount: 3,
+          sharedMaterialCount: 1,
+          triangleCount: 48,
+        },
+        'low'
+      )
+    ).toBe(
+      'meshCount 6 with materialCount 3 and sharedMaterialCount 1 for triangleCount 48 (8.0 triangles/mesh)'
+    );
+
+    expect(
+      getTileModelTinyMeshWarning(
+        {
+          meshCount: 12,
+          materialCount: 1,
+          sharedMaterialCount: 11,
+          triangleCount: 96,
+        },
+        'full'
+      )
+    ).toBeNull();
+
+    expect(
+      getTileModelTinyMeshWarning(
+        {
+          meshCount: 12,
+          materialCount: 6,
+          sharedMaterialCount: 8,
+          triangleCount: 480,
+        },
+        'full'
+      )
+    ).toBeNull();
+  });
+
+  it('collects plugin performance warnings for tiny meshes with weak material sharing', () => {
+    expect(
+      getTileModelPerformanceWarnings(
+        {
+          drawCallCount: 10,
+          triangleCount: 96,
+          maxGeometryGroupCount: 2,
+          meshCount: 12,
+          materialCount: 6,
+          sharedMaterialCount: 2,
+        },
+        'full'
+      )
+    ).toEqual([
+      'meshCount 12 with materialCount 6 and sharedMaterialCount 2 for triangleCount 96 (8.0 triangles/mesh)',
+    ]);
   });
 
   it('rejects models whose geometry uses too many separate draw ranges', () => {

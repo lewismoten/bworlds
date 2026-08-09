@@ -8,6 +8,13 @@ const FULL_DETAIL_MATERIAL_GROUP_WARNING_MIN_GROUPS = 6;
 const LOW_DETAIL_MATERIAL_GROUP_WARNING_MIN_GROUPS = 3;
 const FULL_DETAIL_MATERIAL_GROUP_WARNING_MIN_TRIANGLES_PER_GROUP = 48;
 const LOW_DETAIL_MATERIAL_GROUP_WARNING_MIN_TRIANGLES_PER_GROUP = 32;
+const FULL_DETAIL_TINY_MESH_WARNING_MIN_MESHES = 12;
+const LOW_DETAIL_TINY_MESH_WARNING_MIN_MESHES = 6;
+const FULL_DETAIL_TINY_MESH_WARNING_MIN_MATERIALS = 4;
+const LOW_DETAIL_TINY_MESH_WARNING_MIN_MATERIALS = 2;
+const FULL_DETAIL_TINY_MESH_WARNING_MIN_TRIANGLES_PER_MESH = 24;
+const LOW_DETAIL_TINY_MESH_WARNING_MIN_TRIANGLES_PER_MESH = 16;
+const TINY_MESH_WARNING_MAX_SHARED_MATERIAL_RATIO = 0.5;
 
 export function getTileModelDrawCallRatioWarning(
   {
@@ -71,17 +78,68 @@ export function getTileModelMaterialGroupWarning(
   return `maxGeometryGroupCount ${maxGeometryGroupCount} for triangleCount ${triangleCount} (${trianglesPerGroup.toFixed(1)} triangles/group)`;
 }
 
+export function getTileModelTinyMeshWarning(
+  {
+    meshCount,
+    materialCount,
+    sharedMaterialCount,
+    triangleCount,
+  }: {
+    meshCount: number;
+    materialCount: number;
+    sharedMaterialCount: number;
+    triangleCount: number;
+  },
+  detailLevel: RenderBudgetDetailLevel = 'full'
+): string | null {
+  const minimumMeshes =
+    detailLevel === 'low'
+      ? LOW_DETAIL_TINY_MESH_WARNING_MIN_MESHES
+      : FULL_DETAIL_TINY_MESH_WARNING_MIN_MESHES;
+  if (meshCount < minimumMeshes) {
+    return null;
+  }
+
+  const minimumMaterials =
+    detailLevel === 'low'
+      ? LOW_DETAIL_TINY_MESH_WARNING_MIN_MATERIALS
+      : FULL_DETAIL_TINY_MESH_WARNING_MIN_MATERIALS;
+  if (materialCount < minimumMaterials) {
+    return null;
+  }
+
+  const minimumTrianglesPerMesh =
+    detailLevel === 'low'
+      ? LOW_DETAIL_TINY_MESH_WARNING_MIN_TRIANGLES_PER_MESH
+      : FULL_DETAIL_TINY_MESH_WARNING_MIN_TRIANGLES_PER_MESH;
+  const trianglesPerMesh = meshCount > 0 ? triangleCount / meshCount : 0;
+  if (trianglesPerMesh >= minimumTrianglesPerMesh) {
+    return null;
+  }
+
+  const sharedMaterialRatio = meshCount > 0 ? sharedMaterialCount / meshCount : 0;
+  if (sharedMaterialRatio > TINY_MESH_WARNING_MAX_SHARED_MATERIAL_RATIO) {
+    return null;
+  }
+
+  return `meshCount ${meshCount} with materialCount ${materialCount} and sharedMaterialCount ${sharedMaterialCount} for triangleCount ${triangleCount} (${trianglesPerMesh.toFixed(1)} triangles/mesh)`;
+}
+
 export function getTileModelPerformanceWarnings(
   stats: {
     drawCallCount: number;
     triangleCount: number;
     maxGeometryGroupCount: number;
+    meshCount: number;
+    materialCount: number;
+    sharedMaterialCount: number;
   },
   detailLevel: RenderBudgetDetailLevel = 'full'
 ): string[] {
   const warnings = [
     getTileModelDrawCallRatioWarning(stats, detailLevel),
     getTileModelMaterialGroupWarning(stats, detailLevel),
+    getTileModelTinyMeshWarning(stats, detailLevel),
   ];
 
   return warnings.filter((warning): warning is string => typeof warning === 'string');
