@@ -100,6 +100,13 @@ export interface TreeHistoricalState {
   prominence: number;
 }
 
+export interface TreeFruitState<TKind extends string = string> {
+  kind: TKind;
+  count: number;
+  ripeness: number;
+  mature: boolean;
+}
+
 export type TreeLifeStage =
   | 'sapling'
   | 'adolescent'
@@ -138,6 +145,7 @@ export interface TreeLogicalState<TForm extends string = string> {
   biological?: TreeBiologicalState;
   damage?: TreeDamageState;
   historical?: TreeHistoricalState;
+  fruit?: TreeFruitState;
 }
 
 type TreeCapabilitySource =
@@ -213,6 +221,7 @@ export function createTreeLogicalState<TForm extends string = string>({
   biological,
   damage,
   historical,
+  fruit,
 }: {
   x: number;
   y: number;
@@ -223,6 +232,7 @@ export function createTreeLogicalState<TForm extends string = string>({
   biological?: TreeBiologicalState;
   damage?: TreeDamageState;
   historical?: TreeHistoricalState;
+  fruit?: TreeFruitState;
 }): TreeLogicalState<TForm> {
   const collisionState = collision ?? {
     radius: structure.radius,
@@ -243,6 +253,7 @@ export function createTreeLogicalState<TForm extends string = string>({
     biological,
     damage,
     historical,
+    fruit,
   };
 }
 
@@ -328,6 +339,19 @@ export function getTreeHistoricalState<TForm extends string = string>(
       title: '',
       record: '',
       prominence: 0,
+    }
+  );
+}
+
+export function getTreeFruitState<TForm extends string = string>(
+  tree: TreeLogicalState<TForm>
+): TreeFruitState {
+  return (
+    tree.fruit ?? {
+      kind: '',
+      count: 0,
+      ripeness: 0,
+      mature: false,
     }
   );
 }

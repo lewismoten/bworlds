@@ -11,6 +11,7 @@ import {
   getTreeBiologicalState,
   getTreeCanopyState,
   getTreeDamageState,
+  getTreeFruitState,
   getTreeHistoricalState,
   getTreeStructuralState,
   resolveTreeSeason,
@@ -135,6 +136,12 @@ describe('tree support', () => {
         record: 'Remembered for sheltering travelers.',
         prominence: 0.78,
       },
+      fruit: {
+        kind: 'acorn',
+        count: 12,
+        ripeness: 0.7,
+        mature: true,
+      },
     });
 
     expect(tree.radius).toBe(0.2);
@@ -146,6 +153,7 @@ describe('tree support', () => {
     expect(getTreeBiologicalState(tree)).toEqual(tree.biological);
     expect(getTreeDamageState(tree)).toEqual(tree.damage);
     expect(getTreeHistoricalState(tree)).toEqual(tree.historical);
+    expect(getTreeFruitState(tree)).toEqual(tree.fruit);
   });
 
   it('derives structural and canopy state for older tree shapes', () => {
@@ -183,6 +191,12 @@ describe('tree support', () => {
       title: '',
       record: '',
       prominence: 0,
+    });
+    expect(getTreeFruitState(legacy)).toEqual({
+      kind: '',
+      count: 0,
+      ripeness: 0,
+      mature: false,
     });
   });
 

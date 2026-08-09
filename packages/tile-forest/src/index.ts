@@ -33,6 +33,7 @@ import {
   getTreeCollisionState,
   getTreeCanopyState,
   getTreeDamageState,
+  getTreeFruitState,
   getTreeHistoricalState,
   getTreeStructuralState,
   resolveTreeSeason,
@@ -44,6 +45,7 @@ import {
   type TreeDamageState,
   type TreeFamily,
   type TreeFoliageState,
+  type TreeFruitState,
   type TreeGenerator,
   type TreeHistoricalState,
   type TreeLogicalState,
@@ -1979,6 +1981,30 @@ export function getForestTreeHistoricalProfiles(
   });
 }
 
+export function getForestTreeFruitProfiles(
+  tileX: number,
+  tileY: number
+): Array<{
+  form: ForestTreeForm;
+  speciesId: ForestTreeSpeciesId;
+  kind: string;
+  count: number;
+  ripeness: number;
+  mature: boolean;
+}> {
+  return getForestTreeDescriptors(tileX, tileY).map((descriptor) => {
+    const fruit = getTreeFruitState(descriptor);
+    return {
+      form: descriptor.form,
+      speciesId: descriptor.speciesId,
+      kind: fruit.kind,
+      count: fruit.count,
+      ripeness: fruit.ripeness,
+      mature: fruit.mature,
+    };
+  });
+}
+
 function getForestGroveCenter(tileX: number, tileY: number) {
   return {
     x: (hash2D(FOREST_GROVE_CENTER_X_SEED, tileX, tileY) - 0.5) * 0.36,
@@ -2076,6 +2102,39 @@ function getForestHistoricalTreeRecord(
   return `${title}, noted since ${year}, is ${opener.toLowerCase()} ${event}, ${closer}`;
 }
 
+function createForestFruitState(
+  definition: ForestTreeSpeciesDefinition,
+  biological: TreeBiologicalState,
+  appearanceRandom: () => number
+): TreeFruitState {
+  if (biological.lifeStage === 'sapling') {
+    return {
+      kind: definition.fruitKind,
+      count: 0,
+      ripeness: 0,
+      mature: false,
+    };
+  }
+
+  const countBase =
+    definition.fruitKind === 'acorn' ? 4 : definition.fruitKind === 'samara' ? 6 : 3;
+  const countRange =
+    definition.fruitKind === 'acorn' ? 6 : definition.fruitKind === 'samara' ? 8 : 5;
+  const productivity =
+    biological.lifeStage === 'adolescent'
+      ? 0.28 + appearanceRandom() * 0.16
+      : biological.lifeStage === 'mature'
+        ? 0.72 + appearanceRandom() * 0.2
+        : 0.46 + appearanceRandom() * 0.18;
+  const mature = biological.lifeStage !== 'adolescent';
+  return {
+    kind: definition.fruitKind,
+    count: Math.max(0, Math.floor((countBase + appearanceRandom() * countRange) * productivity)),
+    ripeness: mature ? 0.58 + appearanceRandom() * 0.38 : 0.16 + appearanceRandom() * 0.24,
+    mature,
+  };
+}
+
 function hasForestLoneTree(tileX: number, tileY: number) {
   return (
     hash2D(FOREST_LONE_TREE_SEED, tileX, tileY) > 0.9 &&
@@ -2133,6 +2192,7 @@ type ForestTreeSpeciesDefinition = {
   familyId: ForestTreeFamilyId;
   variety: number;
   form: ForestTreeForm;
+  fruitKind: 'acorn' | 'samara' | 'cone';
   maximumAgeYears: number;
   trunkHeightMin: number;
   trunkHeightRange: number;
@@ -2154,6 +2214,7 @@ const forestTreeGeneratorBase = createTreeGeneratorBase({
     branches: query?.consumer === 'gameplay' ? false : true,
     foliage: query?.consumer === 'gameplay' ? false : true,
     flowers: true,
+    fruit: true,
     seasonalLeaves: true,
     wind: {
       trunk: false,
@@ -2184,6 +2245,7 @@ const forestBroadleafFamilyBase = createTreeGeneratorBase({
   capabilities: (query) => ({
     seasonalLeaves: true,
     foliage: resolveTreeSeason(query) === 'winter' ? false : true,
+    fruit: resolveTreeSeason(query) === 'autumn',
     flowers: false,
   }),
 });
@@ -2195,6 +2257,7 @@ const forestConiferFamilyBase = createTreeGeneratorBase({
     seasonalLeaves: false,
     flowers: false,
     foliage: true,
+    fruit: true,
   },
 });
 
@@ -2207,6 +2270,7 @@ const forestOakSpecies = createTreeSpecies<
   parentBase: forestBroadleafFamilyBase,
   capabilities: {
     hollows: true,
+    fruit: true,
     flowers: false,
   },
   generate(context, base) {
@@ -2216,6 +2280,7 @@ const forestOakSpecies = createTreeSpecies<
       familyId: 'broadleaf',
       variety: 0,
       form: 'broadleaf',
+      fruitKind: 'acorn',
       maximumAgeYears: 240,
       trunkHeightMin: 0.76,
       trunkHeightRange: 0.42,
@@ -2242,6 +2307,7 @@ const forestBirchSpecies = createTreeSpecies<
   parentBase: forestBroadleafFamilyBase,
   capabilities: (query) => ({
     flowers: resolveTreeSeason(query) === 'spring',
+    fruit: resolveTreeSeason(query) === 'summer' || resolveTreeSeason(query) === 'autumn',
     hollows: false,
   }),
   generate(context, base) {
@@ -2251,6 +2317,7 @@ const forestBirchSpecies = createTreeSpecies<
       familyId: 'broadleaf',
       variety: 1,
       form: 'broadleaf',
+      fruitKind: 'samara',
       maximumAgeYears: 140,
       trunkHeightMin: 0.82,
       trunkHeightRange: 0.52,
@@ -2277,6 +2344,7 @@ const forestPineSpecies = createTreeSpecies<
   parentBase: forestConiferFamilyBase,
   capabilities: {
     hollows: false,
+    fruit: true,
     flowers: false,
   },
   generate(context, base) {
@@ -2286,6 +2354,7 @@ const forestPineSpecies = createTreeSpecies<
       familyId: 'conifer',
       variety: 2,
       form: 'pine',
+      fruitKind: 'cone',
       maximumAgeYears: 210,
       trunkHeightMin: 0.72,
       trunkHeightRange: 0.45,
@@ -2437,6 +2506,7 @@ function createForestTreeDescriptorFromSpecies(
   const damage: TreeDamageState = {
     barkMarks,
   };
+  const fruit = createForestFruitState(definition, biological, appearanceRandom);
   const historical = createForestHistoricalTreeState(
     definition.speciesId,
     biological,
@@ -2600,6 +2670,7 @@ function createForestTreeDescriptorFromSpecies(
       collision,
       biological,
       damage,
+      fruit,
       historical,
     }),
     familyId: definition.familyId,

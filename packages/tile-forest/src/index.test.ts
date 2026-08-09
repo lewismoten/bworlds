@@ -21,6 +21,7 @@ import {
   getForestTreeAgeProfiles,
   getForestTreeBranchProfiles,
   getForestTreeDamageProfiles,
+  getForestTreeFruitProfiles,
   getForestTreeHistoricalProfiles,
   getForestCarvings,
   getForestFloorDetails,
@@ -680,6 +681,7 @@ describe('tile forest', () => {
       branches: true,
       leaves: true,
     });
+    expect(generator.supports('fruit')).toBe(true);
     expect(generator.getCapabilityOrFallback('attachments', { consumer: 'gameplay' })).toBe(
       false
     );
@@ -712,11 +714,14 @@ describe('tile forest', () => {
     expect(oak?.supports('seasonalLeaves')).toBe(true);
     expect(oak?.supports('flowers')).toBe(false);
     expect(oak?.supports('hollows')).toBe(true);
+    expect(oak?.supports('fruit')).toBe(true);
     expect(birch?.supports('flowers', { season: 'spring' })).toBe(true);
     expect(birch?.supports('flowers', { season: 'autumn' })).toBe(false);
+    expect(birch?.supports('fruit', { season: 'summer' })).toBe(true);
     expect(birch?.supports('hollows')).toBe(false);
     expect(pine?.supports('seasonalLeaves')).toBe(false);
     expect(pine?.supports('flowers')).toBe(false);
+    expect(pine?.supports('fruit')).toBe(true);
   });
 
   it('lets forest family capabilities differ by seasonal tree state', () => {
@@ -1083,36 +1088,39 @@ describe('tile forest', () => {
   });
 
   it('increases bark damage with age in forest trees', () => {
-    const samples: Array<{
-      age: ReturnType<typeof getForestTreeAgeProfiles>[number];
-      damage: ReturnType<typeof getForestTreeDamageProfiles>[number];
-    }> = [];
+    const matureScores: number[] = [];
+    const ancientScores: number[] = [];
 
-    for (let tileY = 0; tileY < 64; tileY += 1) {
-      for (let tileX = 0; tileX < 64; tileX += 1) {
+    for (
+      let tileY = 0;
+      tileY < 64 && (matureScores.length < 24 || ancientScores.length < 24);
+      tileY += 1
+    ) {
+      for (
+        let tileX = 0;
+        tileX < 64 && (matureScores.length < 24 || ancientScores.length < 24);
+        tileX += 1
+      ) {
         const ages = getForestTreeAgeProfiles(tileX, tileY);
         const damages = getForestTreeDamageProfiles(tileX, tileY);
         for (let index = 0; index < ages.length; index += 1) {
           const age = ages[index];
           const damage = damages[index];
           if (age && damage) {
-            samples.push({ age, damage });
+            const score = damage.barkMarks.reduce(
+              (sum, mark) => sum + mark.severity + mark.scale,
+              0
+            );
+            if (age.lifeStage === 'mature' && matureScores.length < 24) {
+              matureScores.push(score);
+            }
+            if (age.lifeStage === 'ancient' && ancientScores.length < 24) {
+              ancientScores.push(score);
+            }
           }
         }
       }
     }
-
-    const barkDamageScore = (sample: (typeof samples)[number]) =>
-      sample.damage.barkMarks.reduce(
-        (sum, mark) => sum + mark.severity + mark.scale,
-        0
-      );
-    const matureScores = samples
-      .filter((sample) => sample.age.lifeStage === 'mature')
-      .map(barkDamageScore);
-    const ancientScores = samples
-      .filter((sample) => sample.age.lifeStage === 'ancient')
-      .map(barkDamageScore);
 
     expect(matureScores.length).toBeGreaterThan(0);
     expect(ancientScores.length).toBeGreaterThan(0);
@@ -1125,33 +1133,39 @@ describe('tile forest', () => {
   });
 
   it('increases branch loss with age in forest trees', () => {
-    const samples: Array<{
-      age: ReturnType<typeof getForestTreeAgeProfiles>[number];
-      branches: ReturnType<typeof getForestTreeBranchProfiles>[number];
-    }> = [];
+    const matureScores: number[] = [];
+    const ancientScores: number[] = [];
 
-    for (let tileY = 0; tileY < 64; tileY += 1) {
-      for (let tileX = 0; tileX < 64; tileX += 1) {
+    for (
+      let tileY = 0;
+      tileY < 64 && (matureScores.length < 24 || ancientScores.length < 24);
+      tileY += 1
+    ) {
+      for (
+        let tileX = 0;
+        tileX < 64 && (matureScores.length < 24 || ancientScores.length < 24);
+        tileX += 1
+      ) {
         const ages = getForestTreeAgeProfiles(tileX, tileY);
         const branches = getForestTreeBranchProfiles(tileX, tileY);
         for (let index = 0; index < ages.length; index += 1) {
           const age = ages[index];
           const branch = branches[index];
           if (age && branch) {
-            samples.push({ age, branches: branch });
+            const score = branch.branches.reduce(
+              (sum, entry) => sum + (entry.loss ?? 0),
+              0
+            );
+            if (age.lifeStage === 'mature' && matureScores.length < 24) {
+              matureScores.push(score);
+            }
+            if (age.lifeStage === 'ancient' && ancientScores.length < 24) {
+              ancientScores.push(score);
+            }
           }
         }
       }
     }
-
-    const branchLossScore = (sample: (typeof samples)[number]) =>
-      sample.branches.branches.reduce((sum, branch) => sum + (branch.loss ?? 0), 0);
-    const matureScores = samples
-      .filter((sample) => sample.age.lifeStage === 'mature')
-      .map(branchLossScore);
-    const ancientScores = samples
-      .filter((sample) => sample.age.lifeStage === 'ancient')
-      .map(branchLossScore);
 
     expect(matureScores.length).toBeGreaterThan(0);
     expect(ancientScores.length).toBeGreaterThan(0);
@@ -1164,26 +1178,27 @@ describe('tile forest', () => {
   });
 
   it('allows ancient forest trees to become historical landmarks', () => {
-    const samples: Array<{
+    const landmarks: Array<{
       age: ReturnType<typeof getForestTreeAgeProfiles>[number];
       historical: ReturnType<typeof getForestTreeHistoricalProfiles>[number];
     }> = [];
 
-    for (let tileY = 0; tileY < 64; tileY += 1) {
-      for (let tileX = 0; tileX < 64; tileX += 1) {
+    for (let tileY = 0; tileY < 64 && landmarks.length < 8; tileY += 1) {
+      for (let tileX = 0; tileX < 64 && landmarks.length < 8; tileX += 1) {
         const ages = getForestTreeAgeProfiles(tileX, tileY);
         const historical = getForestTreeHistoricalProfiles(tileX, tileY);
         for (let index = 0; index < ages.length; index += 1) {
           const age = ages[index];
           const entry = historical[index];
-          if (age && entry) {
-            samples.push({ age, historical: entry });
+          if (age && entry?.landmark) {
+            landmarks.push({ age, historical: entry });
+            if (landmarks.length >= 8) {
+              break;
+            }
           }
         }
       }
     }
-
-    const landmarks = samples.filter((sample) => sample.historical.landmark);
 
     expect(landmarks.length).toBeGreaterThan(0);
     expect(
@@ -1231,6 +1246,79 @@ describe('tile forest', () => {
           /\b(18[2-9]\d|19\d{2})\b/.test(entry.record) &&
           entry.record.includes(entry.title)
       )
+    ).toBe(true);
+  });
+
+  it('adjusts forest fruit production according to tree maturity', () => {
+    const samples: Array<{
+      age: ReturnType<typeof getForestTreeAgeProfiles>[number];
+      fruit: ReturnType<typeof getForestTreeFruitProfiles>[number];
+    }> = [];
+
+    for (let tileY = 0; tileY < 64; tileY += 1) {
+      for (let tileX = 0; tileX < 64; tileX += 1) {
+        const ages = getForestTreeAgeProfiles(tileX, tileY);
+        const fruits = getForestTreeFruitProfiles(tileX, tileY);
+        for (let index = 0; index < ages.length; index += 1) {
+          const age = ages[index];
+          const fruit = fruits[index];
+          if (age && fruit) {
+            samples.push({ age, fruit });
+          }
+        }
+      }
+    }
+
+    const average = (values: number[]) =>
+      values.reduce((sum, value) => sum + value, 0) / values.length;
+
+    const adolescentCounts = samples
+      .filter((sample) => sample.age.lifeStage === 'adolescent')
+      .map((sample) => sample.fruit.count);
+    const matureCounts = samples
+      .filter((sample) => sample.age.lifeStage === 'mature')
+      .map((sample) => sample.fruit.count);
+    const ancientCounts = samples
+      .filter((sample) => sample.age.lifeStage === 'ancient')
+      .map((sample) => sample.fruit.count);
+
+    expect(adolescentCounts.length).toBeGreaterThan(0);
+    expect(matureCounts.length).toBeGreaterThan(0);
+    expect(ancientCounts.length).toBeGreaterThan(0);
+    expect(average(matureCounts)).toBeGreaterThan(average(adolescentCounts));
+    expect(average(ancientCounts)).toBeLessThan(average(matureCounts));
+  });
+
+  it('prevents saplings from producing mature forest fruit', () => {
+    const samples: Array<{
+      age: ReturnType<typeof getForestTreeAgeProfiles>[number];
+      fruit: ReturnType<typeof getForestTreeFruitProfiles>[number];
+    }> = [];
+
+    for (let tileY = 0; tileY < 64; tileY += 1) {
+      for (let tileX = 0; tileX < 64; tileX += 1) {
+        const ages = getForestTreeAgeProfiles(tileX, tileY);
+        const fruits = getForestTreeFruitProfiles(tileX, tileY);
+        for (let index = 0; index < ages.length; index += 1) {
+          const age = ages[index];
+          const fruit = fruits[index];
+          if (age && fruit) {
+            samples.push({ age, fruit });
+          }
+        }
+      }
+    }
+
+    const saplings = samples.filter((sample) => sample.age.lifeStage === 'sapling');
+    const matureTrees = samples.filter((sample) => sample.age.lifeStage === 'mature');
+
+    expect(saplings.length).toBeGreaterThan(0);
+    expect(matureTrees.length).toBeGreaterThan(0);
+    expect(
+      saplings.every((sample) => sample.fruit.count === 0 && sample.fruit.mature === false)
+    ).toBe(true);
+    expect(
+      matureTrees.some((sample) => sample.fruit.count > 0 && sample.fruit.mature)
     ).toBe(true);
   });
 

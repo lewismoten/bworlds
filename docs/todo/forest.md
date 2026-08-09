@@ -191,8 +191,8 @@ interface TreeCapabilities {
 * [X] Increase branch loss with age.
 * [X] Allow old trees to become historically significant landmarks.
 * [X] Allow especially old trees to receive unique procedural names or records.
-* [ ] Adjust fruit production according to maturity.
-* [ ] Prevent seedlings from producing mature fruit.
+* [X] Adjust fruit production according to maturity.
+* [X] Prevent seedlings from producing mature fruit.
 * [ ] Allow senescent trees to produce less foliage or fruit.
 
 # Trunk Generation
