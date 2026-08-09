@@ -114,10 +114,7 @@ export function collectNearbyStationAnchors(
     }
   }
 
-  return [...anchors.values()].sort(
-    (left, right) =>
-      left.x - right.x || left.y - right.y || left.name.localeCompare(right.name)
-  );
+  return [...anchors.values()].sort(compareStationAnchors);
 }
 
 export function buildRailConnections({
@@ -132,10 +129,7 @@ export function buildRailConnections({
   const connections: RailConnection[] = [];
   const degrees = new Map<string, number>();
   const claimed = new Set<string>();
-  const sortedStations = [...stationAnchors].sort(
-    (left, right) =>
-      left.x - right.x || left.y - right.y || left.name.localeCompare(right.name)
-  );
+  const sortedStations = [...stationAnchors].sort(compareStationAnchors);
 
   for (const station of sortedStations) {
     const stationKey = `${station.x},${station.y}`;
@@ -162,8 +156,7 @@ export function buildRailConnections({
     candidates.sort(
       (left, right) =>
         left.distance - right.distance ||
-        left.other.x - right.other.x ||
-        left.other.y - right.other.y
+        compareStationAnchors(left.other, right.other)
     );
 
     for (const { other } of candidates) {
@@ -218,11 +211,15 @@ export function getRailTrainPlacements({
       regionY,
       sampleTerrainSignals,
     });
-    return snapshot.connections
-      .map((connection, index) =>
-        resolveRailTrainPlacement(seed, timeMs, connection, index)
-      )
-      .filter((placement): placement is RailTrainPlacement => placement !== null);
+    const placements: RailTrainPlacement[] = [];
+    for (let index = 0; index < snapshot.connections.length; index += 1) {
+      const connection = snapshot.connections[index]!;
+      const placement = resolveRailTrainPlacement(seed, timeMs, connection, index);
+      if (placement) {
+        placements.push(placement);
+      }
+    }
+    return placements;
   });
 }
 
@@ -379,38 +376,6 @@ function isRailPathSuitable(
   return !(from.x === to.x && from.y === to.y);
 }
 
-function getRailTileAtPoint(
-  x: number,
-  y: number,
-  connections: RailConnection[]
-): TileLike | null {
-  for (const connection of connections) {
-    const pointIndex = connection.points.findIndex(
-      (point) => point.x === x && point.y === y
-    );
-    if (pointIndex === -1) {
-      continue;
-    }
-    const terminal =
-      (x === connection.from.x && y === connection.from.y) ||
-      (x === connection.to.x && y === connection.to.y);
-    if (terminal) {
-      return null;
-    }
-    return {
-      kind: 'rail',
-      note: `Curved rails link ${connection.from.name} and ${connection.to.name}.`,
-      railConnection: {
-        from: connection.from.name,
-        to: connection.to.name,
-        segmentIndex: pointIndex,
-      },
-    };
-  }
-
-  return null;
-}
-
 function getRailRegionSnapshot({
   seed,
   regionX,
@@ -453,16 +418,19 @@ function buildRailRegionSnapshot({
   const tileMap = new Map<string, TileLike>();
 
   for (const connection of connections) {
-    connection.points.forEach((point, index) => {
-      const tile = getRailTileAtPoint(point.x, point.y, [connection]);
-      if (!tile) {
-        return;
-      }
+    for (let index = 1; index < connection.points.length - 1; index += 1) {
+      const point = connection.points[index]!;
+      const tile: TileLike = {
+        kind: 'rail',
+        note: `Curved rails link ${connection.from.name} and ${connection.to.name}.`,
+        railConnection: {
+          from: connection.from.name,
+          to: connection.to.name,
+          segmentIndex: index,
+        },
+      };
       tileMap.set(`${point.x},${point.y}`, tile);
-      if (index === 0 || index === connection.points.length - 1) {
-        tileMap.delete(`${point.x},${point.y}`);
-      }
-    });
+    }
   }
 
   return {
@@ -516,4 +484,11 @@ function resolveRailTrainPlacement(
     from: connection.from.name,
     to: connection.to.name,
   };
+}
+
+function compareStationAnchors(
+  left: Pick<StationAnchorLike, 'x' | 'y' | 'name'>,
+  right: Pick<StationAnchorLike, 'x' | 'y' | 'name'>
+): number {
+  return left.x - right.x || left.y - right.y || left.name.localeCompare(right.name);
 }

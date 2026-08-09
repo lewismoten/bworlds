@@ -70,6 +70,44 @@ describe('rail support', () => {
     }
   });
 
+  it('keeps rail connections deterministic even when station input order changes', () => {
+    const stations = [
+      createStation('Aster', 0, 0),
+      createStation('Birch', 24, 0),
+      createStation('Cinder', 48, 0),
+      createStation('Dawn', 24, 24),
+    ];
+
+    const forward = buildRailConnections({
+      seed: 'spec-seed',
+      stationAnchors: stations,
+      sampleTerrainSignals() {
+        return {
+          continent: 0.62,
+          elevation: 0.28,
+          moisture: 0.44,
+          riverSignal: 0.16,
+          roadSignal: 0.58,
+        };
+      },
+    });
+    const reversed = buildRailConnections({
+      seed: 'spec-seed',
+      stationAnchors: [...stations].reverse(),
+      sampleTerrainSignals() {
+        return {
+          continent: 0.62,
+          elevation: 0.28,
+          moisture: 0.44,
+          riverSignal: 0.16,
+          roadSignal: 0.58,
+        };
+      },
+    });
+
+    expect(reversed).toEqual(forward);
+  });
+
   it('reuses shared regional rail analysis across tile and train queries', () => {
     let signalCalls = 0;
     const sampleTerrainSignals = () => {
