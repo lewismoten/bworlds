@@ -109,6 +109,7 @@ describe('music debug', () => {
     expect(summary).toContain('Combat');
     expect(summary).toContain('Mode');
     expect(summary).toContain('Region');
+    expect(summary).toContain('Location');
     expect(summary).toContain('Preferred Intervals');
     expect(summary).toContain('Vocabulary');
     expect(summary).toContain('SongDNA');
@@ -116,6 +117,7 @@ describe('music debug', () => {
     expect(summary).toContain('Chords');
     expect(summary).toContain('Shared Motif');
     expect(summary).toContain('Lead Motif');
+    expect(summary).toContain('Location Motif');
     expect(summary).toContain('Faction Motifs');
     expect(summary).toContain('Faction Interaction');
     expect(summary).toContain('NPC Motifs');
@@ -127,6 +129,8 @@ describe('music debug', () => {
     expect(summary).toContain(snapshot.theme.vocabulary.modeLabel);
     expect(summary).toContain(snapshot.theme.motif.adaptationLabel);
     expect(summary).toContain(snapshot.songDna.identityId);
+    expect(summary).toContain(snapshot.songDna.locationIdentityId);
+    expect(summary).toContain(snapshot.songDna.recognitionLabel);
     expect(summary).toContain(
       snapshot.songDna.factionMotifs[0]?.factionName ?? ''
     );

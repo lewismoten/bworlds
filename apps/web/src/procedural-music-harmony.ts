@@ -11,6 +11,7 @@ export type ProceduralHarmonyTheme = {
   };
   motif?: {
     adaptedDegreeOffsets?: readonly number[];
+    recognitionDegreeOffsets?: readonly number[];
     sharedDegreeOffsets?: readonly number[];
   };
 };
@@ -90,6 +91,12 @@ export function resolveProceduralLeadMotif(
   clusterX: number,
   clusterY: number
 ): ProceduralLeadMotif {
+  if (theme.motif?.recognitionDegreeOffsets?.length) {
+    return {
+      degreeOffsets: theme.motif.recognitionDegreeOffsets,
+    };
+  }
+
   const candidatePatterns = getPreferredMotifPatterns(theme);
   const patternIndex = Math.floor(
     hash2DWithSeed(

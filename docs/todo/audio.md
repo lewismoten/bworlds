@@ -853,7 +853,7 @@ This is where procedural music could become particularly valuable in an MMORPG.
 - [x] Generate historical or ruined versions of familiar themes.
 - [x] Let important NPCs have musical motifs that can appear inside other music.
 - [x] Let factions have motifs that can be combined when factions interact.
-- [ ] Allow players to recognize locations from musical themes even when the exact generated performance differs.
+- [x] Allow players to recognize locations from musical themes even when the exact generated performance differs.
 
 ---
 

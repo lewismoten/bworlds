@@ -13,6 +13,7 @@ import {
   resolveProceduralLeadContour,
   resolveProceduralLeadMotif,
 } from './procedural-music-harmony.ts';
+import { resolveProceduralMusicLocationMemory } from './procedural-music-location-memory.ts';
 import { resolveProceduralMusicBlueprint } from './procedural-music-blueprint.ts';
 import { resolveImportantMusicNpcMotifs } from './procedural-music-npc-motif.ts';
 
@@ -23,6 +24,8 @@ export type ProceduralSongDna = {
   biomeLabel: string;
   regionLabel: string;
   rootHz: number;
+  locationIdentityId: string;
+  recognitionLabel: string;
   modeLabel: string;
   tempoBandLabel: string;
   meterLabel: '4/4';
@@ -30,6 +33,7 @@ export type ProceduralSongDna = {
   progression: readonly number[];
   leadMotif: readonly number[];
   sharedMotif: readonly number[];
+  locationRecognitionMotif: readonly number[];
   leadContour: readonly string[];
   blueprintId: ReturnType<typeof resolveProceduralMusicBlueprint>['id'];
   blueprintLabel: string;
@@ -74,6 +78,7 @@ export function createProceduralSongDna(
   const progression = [
     ...resolveProceduralChordProgression(theme, clusterX, clusterY),
   ];
+  const locationMemory = resolveProceduralMusicLocationMemory(options);
   const leadMotif = [
     ...resolveProceduralLeadMotif(theme, clusterX, clusterY).degreeOffsets,
   ];
@@ -103,6 +108,8 @@ export function createProceduralSongDna(
     biomeLabel: theme.vocabulary.biomeLabel,
     regionLabel: theme.vocabulary.regionLabel,
     rootHz: theme.rootHz,
+    locationIdentityId: locationMemory.locationIdentityId,
+    recognitionLabel: locationMemory.recognitionLabel,
     modeLabel: formatVariantModeLabel(theme.vocabulary.modeLabel, variantLabel),
     tempoBandLabel: formatVariantTempoLabel(
       theme.vocabulary.tempoBandLabel,
@@ -113,6 +120,7 @@ export function createProceduralSongDna(
     progression,
     leadMotif,
     sharedMotif: [...theme.motif.sharedDegreeOffsets],
+    locationRecognitionMotif: [...locationMemory.recognitionDegreeOffsets],
     leadContour,
     blueprintId: blueprint.id,
     blueprintLabel: blueprint.label,

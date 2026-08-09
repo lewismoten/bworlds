@@ -132,4 +132,38 @@ describe('procedural music song dna', () => {
       second.factionInteractionMotif
     );
   });
+
+  it('preserves a stable location identity and recognition motif across the same place', () => {
+    const town = createProceduralSongDna({
+      tileKind: 'town',
+      contextType: 'town',
+      clusterX: 3,
+      clusterY: -2,
+      encounterMode: 'ambient',
+    });
+    const building = createProceduralSongDna({
+      tileKind: 'floor',
+      contextType: 'building',
+      clusterX: 3,
+      clusterY: -2,
+      encounterMode: 'battle',
+    });
+    const nearbyTown = createProceduralSongDna({
+      tileKind: 'town',
+      contextType: 'town',
+      clusterX: 4,
+      clusterY: -2,
+      encounterMode: 'ambient',
+    });
+
+    expect(building.locationIdentityId).toBe(town.locationIdentityId);
+    expect(building.locationRecognitionMotif).toEqual(
+      town.locationRecognitionMotif
+    );
+    expect(building.leadMotif).toEqual(town.leadMotif);
+    expect(nearbyTown.locationIdentityId).not.toBe(town.locationIdentityId);
+    expect(nearbyTown.locationRecognitionMotif).not.toEqual(
+      town.locationRecognitionMotif
+    );
+  });
 });

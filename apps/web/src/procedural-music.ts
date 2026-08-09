@@ -24,6 +24,7 @@ import {
   type ProceduralThemeMotif,
 } from './procedural-music-theme-motif.ts';
 import { blendThemeMotifWithFactionInteraction } from './procedural-music-faction-motif.ts';
+import { resolveProceduralMusicLocationMemory } from './procedural-music-location-memory.ts';
 import { resolveProceduralMeterAccent } from './procedural-music-meter.ts';
 import { blendThemeMotifWithImportantNpcMotif } from './procedural-music-npc-motif.ts';
 type MusicPosition = { x: number; y: number };
@@ -386,18 +387,33 @@ export function resolveMusicTheme(
     theme = THEME_LIBRARY['ridge-pass'];
   }
 
+  const locationMemory = resolveProceduralMusicLocationMemory({
+    contextType,
+    tileKind: resolvedKind,
+    clusterX,
+    clusterY,
+  });
+
   return {
     ...theme,
     vocabulary: resolveMusicThemeVocabulary(theme.id, clusterX, clusterY),
-    motif: blendThemeMotifWithImportantNpcMotif(
-      blendThemeMotifWithFactionInteraction(
-        resolveProceduralThemeMotif({
-          themeId: theme.id,
-          contextType,
-          tileKind: resolvedKind,
-          clusterX,
-          clusterY,
-        }),
+    motif: {
+      ...blendThemeMotifWithImportantNpcMotif(
+        blendThemeMotifWithFactionInteraction(
+          resolveProceduralThemeMotif({
+            themeId: theme.id,
+            contextType,
+            tileKind: resolvedKind,
+            clusterX,
+            clusterY,
+          }),
+          {
+            contextType,
+            tileKind: resolvedKind,
+            clusterX,
+            clusterY,
+          }
+        ),
         {
           contextType,
           tileKind: resolvedKind,
@@ -405,13 +421,9 @@ export function resolveMusicTheme(
           clusterY,
         }
       ),
-      {
-        contextType,
-        tileKind: resolvedKind,
-        clusterX,
-        clusterY,
-      }
-    ),
+      recognitionDegreeOffsets: locationMemory.recognitionDegreeOffsets,
+      recognitionLabel: locationMemory.recognitionLabel,
+    },
   };
 }
 

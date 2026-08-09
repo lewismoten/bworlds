@@ -447,13 +447,14 @@ export function buildMusicDebugSummaryMarkup(
       <div><dt>Combat</dt><dd>${snapshot.options.combatIntensity.toFixed(2)}</dd></div>
       <div><dt>Mode</dt><dd>${snapshot.theme.vocabulary.modeLabel}</dd></div>
       <div><dt>Region</dt><dd>${snapshot.theme.vocabulary.regionLabel}</dd></div>
+      <div><dt>Location</dt><dd>${snapshot.songDna.recognitionLabel}</dd></div>
       <div><dt>Rhythm</dt><dd>${snapshot.theme.vocabulary.rhythmDensityLabel}</dd></div>
       <div><dt>Preferred Intervals</dt><dd>${snapshot.theme.vocabulary.preferredIntervals.join(', ')}</dd></div>
       <div><dt>Lead Max Leap</dt><dd>${snapshot.leadMaxLeapSemitones.toFixed(1)} st</dd></div>
       <div><dt>Accidentals</dt><dd>${snapshot.accidentalNoteCount}</dd></div>
     </div>
     <div class="music-debug-role-counts">
-      <span>SongDNA ${snapshot.songDna.identityId} / ${snapshot.songDna.variantLabel} / ${snapshot.songDna.blueprintId} / ${snapshot.songDna.meterLabel}</span>
+      <span>SongDNA ${snapshot.songDna.identityId} / ${snapshot.songDna.locationIdentityId} / ${snapshot.songDna.variantLabel} / ${snapshot.songDna.blueprintId} / ${snapshot.songDna.meterLabel}</span>
     </div>
     <div class="music-debug-role-counts">
       <span>Vocabulary ${snapshot.vocabularySummary.join(' | ')}</span>
@@ -478,6 +479,9 @@ export function buildMusicDebugSummaryMarkup(
     </div>
     <div class="music-debug-role-counts">
       <span>Lead Motif ${snapshot.leadMotif.map((degree) => degree + 1).join(' - ')}</span>
+    </div>
+    <div class="music-debug-role-counts">
+      <span>Location Motif ${formatMusicDebugDegreeMotif(snapshot.songDna.locationRecognitionMotif)}</span>
     </div>
     <div class="music-debug-role-counts">
       <span>Faction Motifs ${formatMusicDebugFactionMotifs(snapshot.songDna.factionMotifs)}</span>

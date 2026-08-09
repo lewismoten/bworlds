@@ -5,6 +5,8 @@ export type ProceduralThemeMotif = {
   sharedDegreeOffsets: readonly [number, number, number, number];
   adaptedDegreeOffsets: readonly number[];
   adaptationLabel: string;
+  recognitionDegreeOffsets?: readonly number[];
+  recognitionLabel?: string;
 };
 
 const MUSIC_THEME_MOTIF_SEED = registerHashLabel('music-theme-motif');
