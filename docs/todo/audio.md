@@ -36,6 +36,10 @@
 - [x] Seasons may influence music - ie winter: same motif, bells, sparser arrangement, higher register
 - [ ] Compat may influence music - ie same motif, faster rhythm, lower bass, strong percussion, changed harmony
 
+# Debug
+- [ ] List all debug pages under /debug
+- [ ] Create a page to generate, visualize, and listen to music - consider the MIDI visualizer from my repo here: https://github.com/lewismoten/Athens-Acropolis-4507/tree/master/soundtrack
+
 # Sound Effects
 - [x] Add sound effects for walking / jumping
 - [x] Add sound effects for walking into a tree
