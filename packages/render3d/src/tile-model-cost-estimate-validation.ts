@@ -4,6 +4,7 @@ export const TILE_MODEL_COST_ESTIMATE_METRICS = [
   'object3dCount',
   'groupCount',
   'meshCount',
+  'drawCallCount',
   'instancedMeshCount',
   'pointsCount',
   'lineObjectCount',

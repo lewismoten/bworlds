@@ -239,6 +239,7 @@ type Render3DController = {
     visibleInstancedMeshCount: number;
     renderedInstanceCount: number;
     visibleMeshCount: number;
+    drawCallCount: number;
     maxHierarchyDepth: number;
     averageHierarchyDepth: number;
     emptyGroupCount: number;
@@ -330,6 +331,7 @@ const FULL_DETAIL_TILE_MODEL_HARD_LIMITS: TileModelHardLimits = {
   object3dCount: 128,
   groupCount: 64,
   meshCount: 96,
+  drawCallCount: 80,
   instancedMeshCount: 16,
   pointsCount: 8,
   particleEmitterCount: 2,
@@ -363,6 +365,7 @@ const LOW_DETAIL_TILE_MODEL_HARD_LIMITS: TileModelHardLimits = {
   object3dCount: 32,
   groupCount: 16,
   meshCount: 16,
+  drawCallCount: 16,
   instancedMeshCount: 4,
   pointsCount: 2,
   particleEmitterCount: 1,
@@ -414,6 +417,7 @@ export function validateTileModelAgainstRenderBudget(
         object3dCount: safetyPrecheck.stats.object3dCount,
         groupCount: safetyPrecheck.stats.groupCount,
         meshCount: safetyPrecheck.stats.meshCount,
+        drawCallCount: 0,
         instancedMeshCount: safetyPrecheck.stats.instancedMeshCount,
         pointsCount: safetyPrecheck.stats.pointsCount,
         lineObjectCount: safetyPrecheck.stats.lineObjectCount,
@@ -452,6 +456,7 @@ export function validateTileModelAgainstRenderBudget(
   const geometryStructureBudgetStats = getGeometryStructureBudgetStats(root);
   const stats = {
     ...sceneResourceStats,
+    drawCallCount: sceneResourceStats.drawCallCount,
     invalidPositionCoordinateCount: countInvalidGeometryCoordinateSets(root),
     pointVertexCount: countPointVertices(root),
     particleEmitterCount: countParticleEmitters(root),
@@ -485,6 +490,7 @@ export function validateTileModelAgainstRenderBudget(
     'object3dCount',
     'groupCount',
     'meshCount',
+    'drawCallCount',
     'instancedMeshCount',
     'pointsCount',
     'lineObjectCount',
@@ -601,6 +607,7 @@ export function getTileModelCostEstimateLimits(
     object3dCount: limits.object3dCount,
     groupCount: limits.groupCount,
     meshCount: limits.meshCount,
+    drawCallCount: limits.drawCallCount,
     instancedMeshCount: limits.instancedMeshCount,
     pointsCount: limits.pointsCount,
     lineObjectCount: limits.lineObjectCount,
@@ -722,6 +729,7 @@ type SceneResourceStats = {
   invisibleObjectCount: number;
   groupCount: number;
   meshCount: number;
+  drawCallCount: number;
   instancedMeshCount: number;
   visibleInstancedMeshCount: number;
   renderedInstanceCount: number;
@@ -780,6 +788,7 @@ type TileModelHardLimits = {
   object3dCount: number;
   groupCount: number;
   meshCount: number;
+  drawCallCount: number;
   instancedMeshCount: number;
   pointsCount: number;
   particleEmitterCount: number;
@@ -818,6 +827,7 @@ type TileModelBudgetViolation = {
 type TileModelBudgetValidation = {
   accepted: boolean;
   stats: SceneResourceStats & {
+    drawCallCount: number;
     invalidPositionCoordinateCount: number;
     pointVertexCount: number;
     particleEmitterCount: number;
@@ -876,6 +886,7 @@ function createEmptySceneResourceStats(): SceneResourceStats {
     visibleInstancedMeshCount: 0,
     renderedInstanceCount: 0,
     visibleMeshCount: 0,
+    drawCallCount: 0,
     maxHierarchyDepth: 0,
     averageHierarchyDepth: 0,
     emptyGroupCount: 0,
@@ -1866,6 +1877,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       visibleInstancedMeshCount: sceneResourceStats.visibleInstancedMeshCount,
       renderedInstanceCount: sceneResourceStats.renderedInstanceCount,
       visibleMeshCount: sceneResourceStats.visibleMeshCount,
+      drawCallCount: sceneResourceStats.drawCallCount,
       maxHierarchyDepth: sceneResourceStats.maxHierarchyDepth,
       averageHierarchyDepth: sceneResourceStats.averageHierarchyDepth,
       emptyGroupCount: sceneResourceStats.emptyGroupCount,
@@ -3192,6 +3204,7 @@ export function collectSceneResourceStats(
   let visibleInstancedMeshCount = 0;
   let renderedInstanceCount = 0;
   let visibleMeshCount = 0;
+  let drawCallCount = 0;
   let totalHierarchyDepth = 0;
   let maxHierarchyDepth = 0;
   let emptyGroupCount = 0;
@@ -3341,6 +3354,10 @@ export function collectSceneResourceStats(
     materialRefCount += childMaterials.length;
     if (childMaterials.length > 0 && renderable.geometry) {
       meshCount += 1;
+      drawCallCount += getRenderableEstimatedDrawCallCount(
+        renderable,
+        childMaterials.length
+      );
       if (renderable.visible !== false) {
         visibleMeshCount += 1;
       }
@@ -3372,6 +3389,7 @@ export function collectSceneResourceStats(
     visibleInstancedMeshCount,
     renderedInstanceCount,
     visibleMeshCount,
+    drawCallCount,
     maxHierarchyDepth,
     averageHierarchyDepth:
       object3dCount > 0 ? totalHierarchyDepth / object3dCount : 0,
@@ -3431,6 +3449,22 @@ function isDynamicLightType(type: string): boolean {
     type === 'SpotLight' ||
     type === 'RectAreaLight'
   );
+}
+
+function getRenderableEstimatedDrawCallCount(
+  renderable: THREE.Object3D & {
+    geometry?: unknown;
+  },
+  materialCount: number
+): number {
+  if (materialCount <= 0 || !renderable.geometry) {
+    return 0;
+  }
+  const groups = (renderable.geometry as { groups?: ArrayLike<unknown> }).groups;
+  if (groups && groups.length > 0) {
+    return groups.length;
+  }
+  return 1;
 }
 
 function isAmbientLightType(type: string): boolean {

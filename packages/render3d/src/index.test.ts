@@ -400,6 +400,7 @@ describe('render3d visibility helpers', () => {
       visibleInstancedMeshCount: 0,
       renderedInstanceCount: 0,
       visibleMeshCount: 3,
+      drawCallCount: 3,
       maxHierarchyDepth: 1,
       averageHierarchyDepth: 0.75,
       emptyGroupCount: 0,
@@ -554,6 +555,7 @@ describe('render3d visibility helpers', () => {
       visibleInstancedMeshCount: 1,
       renderedInstanceCount: 24,
       visibleMeshCount: 2,
+      drawCallCount: 3,
       maxHierarchyDepth: 1,
       averageHierarchyDepth: 13 / 14,
       emptyGroupCount: 0,
@@ -639,6 +641,7 @@ describe('render3d visibility helpers', () => {
       visibleInstancedMeshCount: 0,
       renderedInstanceCount: 0,
       visibleMeshCount: 1,
+      drawCallCount: 2,
       maxHierarchyDepth: 1,
       averageHierarchyDepth: 2 / 3,
       emptyGroupCount: 0,
@@ -774,6 +777,7 @@ describe('render3d visibility helpers', () => {
       visibleInstancedMeshCount: 0,
       renderedInstanceCount: 0,
       visibleMeshCount: 2,
+      drawCallCount: 2,
       maxHierarchyDepth: 2,
       averageHierarchyDepth: 1.25,
       emptyGroupCount: 0,
@@ -853,6 +857,7 @@ describe('render3d visibility helpers', () => {
       visibleInstancedMeshCount: 0,
       renderedInstanceCount: 0,
       visibleMeshCount: 2,
+      drawCallCount: 2,
       maxHierarchyDepth: 3,
       averageHierarchyDepth: 10 / 7,
       emptyGroupCount: 1,
@@ -964,6 +969,7 @@ describe('render3d visibility helpers', () => {
       visibleInstancedMeshCount: 0,
       renderedInstanceCount: 0,
       visibleMeshCount: 2,
+      drawCallCount: 2,
       maxHierarchyDepth: 2,
       averageHierarchyDepth: 1,
       emptyGroupCount: 0,
@@ -1228,6 +1234,7 @@ describe('render3d visibility helpers', () => {
       object3dCount: 128,
       groupCount: 64,
       meshCount: 96,
+      drawCallCount: 80,
       instancedMeshCount: 16,
       pointsCount: 8,
       particleEmitterCount: 2,
@@ -1260,6 +1267,7 @@ describe('render3d visibility helpers', () => {
       object3dCount: 32,
       groupCount: 16,
       meshCount: 16,
+      drawCallCount: 16,
       instancedMeshCount: 4,
       pointsCount: 2,
       particleEmitterCount: 1,
@@ -1295,6 +1303,7 @@ describe('render3d visibility helpers', () => {
       validateTileModelCostEstimateAgainstRenderBudget(
         {
           meshCount: 20,
+          drawCallCount: 17,
           triangleCount: 4_000,
         },
         'low'
@@ -1303,16 +1312,23 @@ describe('render3d visibility helpers', () => {
       accepted: false,
       estimate: {
         meshCount: 20,
+        drawCallCount: 17,
         triangleCount: 4_000,
       },
       limits: expect.objectContaining({
         meshCount: 16,
+        drawCallCount: 16,
         triangleCount: 3_000,
       }),
       violations: [
         {
           metric: 'meshCount',
           actual: 20,
+          limit: 16,
+        },
+        {
+          metric: 'drawCallCount',
+          actual: 17,
           limit: 16,
         },
         {
@@ -1343,6 +1359,7 @@ describe('render3d visibility helpers', () => {
         lineObjectCount: 0,
         spriteCount: 0,
         geometryCount: 2,
+        drawCallCount: 2,
         invalidPositionCoordinateCount: 0,
         pointVertexCount: 0,
         lineSegmentCount: 0,
@@ -1903,6 +1920,44 @@ describe('render3d visibility helpers', () => {
           metric: 'maxGeometryGroupCount',
           actual: 5,
           limit: 4,
+        },
+      ],
+    });
+  });
+
+  it('rejects models whose estimated draw calls exceed the per-model cap', () => {
+    const sharedMaterial = createMockMaterial();
+    const root = createMockObject3D(
+      undefined,
+      Array.from({ length: 5 }, (_unused, index) =>
+        createMockObject3D(
+          sharedMaterial,
+          [],
+          createMockGroupedGeometry(24, 4),
+          {
+            drawCallIndex: index,
+          }
+        )
+      )
+    );
+
+    expect(validateTileModelAgainstRenderBudget(root as never, 'low')).toEqual({
+      accepted: false,
+      limits: getTileModelHardLimits('low'),
+      stats: expect.objectContaining({
+        meshCount: 5,
+        drawCallCount: 20,
+        maxGeometryGroupCount: 4,
+        maxGeometryDrawRangeCount: 0,
+        invalidGeometryIndexTypeCount: 0,
+        invalidRenderBudgetPartMetadataCount: 0,
+        ultraDenseTinyGeometryCount: 0,
+      }),
+      violations: [
+        {
+          metric: 'drawCallCount',
+          actual: 20,
+          limit: 16,
         },
       ],
     });

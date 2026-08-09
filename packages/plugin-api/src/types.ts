@@ -621,6 +621,7 @@ export interface Model3DResourceCostEstimate {
   object3dCount?: number;
   groupCount?: number;
   meshCount?: number;
+  drawCallCount?: number;
   instancedMeshCount?: number;
   pointsCount?: number;
   lineObjectCount?: number;
