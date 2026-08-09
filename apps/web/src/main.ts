@@ -178,7 +178,7 @@ import {
   shouldPlayBlockedMovementSound,
 } from './sound-effects.ts';
 import { shouldResolve3dSoundContext } from './sound-update-context.ts';
-import { createSoundUpdatePayloadBuilder } from './sound-update-payload.ts';
+import { createSoundUpdateGate } from './sound-update-gate.ts';
 import { findNearestTrafficProfile } from './nearby-traffic.ts';
 import {
   getPlayerLevelChange,
@@ -1040,7 +1040,7 @@ const soundEffects = createEnabledSoundEffectController(
   createSoundEffectController(createWebAudioSoundEffectSink()),
   () => audioPreferenceState.soundEnabled
 );
-const buildSoundUpdatePayload = createSoundUpdatePayloadBuilder();
+const gateSoundUpdate = createSoundUpdateGate();
 const musicController = createEnabledMusicController(
   createMusicController(createWebAudioMusicSink()),
   () => audioPreferenceState.musicEnabled
@@ -2814,7 +2814,7 @@ function updateMovement(deltaMs: number): void {
   const nearbyPaddleBoatAudio = shouldResolveSoundContext
     ? getNearbyPaddleBoatAudioProfile()
     : null;
-  soundEffects.update(buildSoundUpdatePayload({
+  const soundUpdate = gateSoundUpdate({
     nowMs,
     walking,
     isJumping: motion.isJumping,
@@ -2829,7 +2829,10 @@ function updateMovement(deltaMs: number): void {
     emitterY: state.player.y,
     listenerX: state.player.x,
     listenerY: state.player.y,
-  }));
+  });
+  if (soundUpdate) {
+    soundEffects.update(soundUpdate);
+  }
 
   if (
     previousX !== state.player.x ||

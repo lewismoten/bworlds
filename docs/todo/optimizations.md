@@ -116,7 +116,7 @@ State/events only
 * [ ] Avoid string construction inside hot loops.
 * [ ] Avoid object spreading in per-frame operations.
 * [ ] Avoid repeatedly cloning game state.
-* [ ] Separate high-frequency and low-frequency updates.
+* [X] Separate high-frequency and low-frequency updates.
 * [X] Run expensive nonvisual updates less frequently than rendering.
 * [ ] Process large queues incrementally.
 * [ ] Establish maximum work allowed from background systems during one frame.

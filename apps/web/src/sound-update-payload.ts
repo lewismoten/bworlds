@@ -4,7 +4,12 @@ type SoundUpdateOptions = Parameters<SoundEffectController['update']>[0];
 type NearbyTrainLike = NonNullable<SoundUpdateOptions['nearbyTrain']>;
 type NearbyPaddleBoatLike = NonNullable<SoundUpdateOptions['nearbyPaddleBoat']>;
 
-type SoundUpdatePayloadInput = {
+type SoundUpdateSignatureState = {
+  ambient: string;
+  traffic: string;
+};
+
+export type SoundUpdatePayloadInput = {
   nowMs: number;
   walking: boolean;
   isJumping: boolean;
@@ -102,5 +107,39 @@ export function createSoundUpdatePayloadBuilder(): (
     }
 
     return payload;
+  };
+}
+
+export function getSoundUpdateInputSignature(
+  input: Pick<
+    SoundUpdatePayloadInput,
+    | 'walking'
+    | 'isJumping'
+    | 'viewMode'
+    | 'tileKind'
+    | 'weatherKind'
+    | 'weatherIntensity'
+    | 'windStrength'
+    | 'nearbyTrain'
+    | 'nearbyPaddleBoat'
+  >
+): SoundUpdateSignatureState {
+  return {
+    ambient: [
+      input.walking ? 1 : 0,
+      input.isJumping ? 1 : 0,
+      input.viewMode,
+      input.tileKind ?? '',
+      input.weatherKind ?? '',
+      Math.round((input.weatherIntensity ?? 0) * 10),
+      Math.round((input.windStrength ?? 0) * 10),
+    ].join('|'),
+    traffic: [
+      input.nearbyTrain ? Math.round((input.nearbyTrain.progress ?? 0) * 100) : '',
+      input.nearbyPaddleBoat
+        ? Math.round((input.nearbyPaddleBoat.progress ?? 0) * 100)
+        : '',
+      input.nearbyPaddleBoat?.whistlePhase ?? '',
+    ].join('|'),
   };
 }
