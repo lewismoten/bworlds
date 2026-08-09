@@ -1,6 +1,6 @@
 # UI
-- [ ] Add ability to toggle Music
-- [ ] Add ability to toggle Sound
+- [x] Add ability to toggle Music
+- [x] Add ability to toggle Sound
 
 # Music
 - [x] Add procedurally generated music that changes based on region or cluster (deep forest may have different music)

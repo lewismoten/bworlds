@@ -73,6 +73,17 @@ import {
   serializeSessionSnapshot,
 } from './session-state.ts';
 import {
+  DEFAULT_AUDIO_PREFERENCES,
+  formatMusicToggleLabel,
+  formatSoundToggleLabel,
+  normalizeAudioPreferences,
+  toggleAudioPreference,
+} from './audio-preferences.ts';
+import {
+  createEnabledMusicController,
+  createEnabledSoundEffectController,
+} from './audio-controller-gates.ts';
+import {
   advanceDisplayedCompassHeading,
   advanceCompassState,
   drawCompassDial,
@@ -305,6 +316,8 @@ root.innerHTML = `
         <button id="toggle-timekeeper-display" type="button">HUD Time: Time + Date</button>
         <button id="toggle-compass-display" type="button">HUD Compass: Letters</button>
         <button id="toggle-minimap-display" type="button">Mini Map: Hidden</button>
+        <button id="toggle-music" type="button">Music: On</button>
+        <button id="toggle-sound" type="button">Sound: On</button>
         <button id="zoom-out-minimap" type="button">Map -</button>
         <button id="zoom-in-minimap" type="button">Map +</button>
         <div class="build-controls">
@@ -674,6 +687,10 @@ const toggleCompassDisplayButton =
   document.querySelector<HTMLButtonElement>('#toggle-compass-display');
 const toggleMinimapDisplayButton =
   document.querySelector<HTMLButtonElement>('#toggle-minimap-display');
+const toggleMusicButton =
+  document.querySelector<HTMLButtonElement>('#toggle-music');
+const toggleSoundButton =
+  document.querySelector<HTMLButtonElement>('#toggle-sound');
 const zoomOutMinimapButton =
   document.querySelector<HTMLButtonElement>('#zoom-out-minimap');
 const zoomInMinimapButton =
@@ -1004,11 +1021,18 @@ const MOON_PHASE_ILLUMINATIONS = [0, 0.25, 0.5, 0.75, 1, 0.75, 0.5, 0.25] as con
 
 drawAtlas(atlasCanvas.getContext('2d'));
 const renderer3d = create3DRenderer(viewport3d);
-const soundEffects = createSoundEffectController(
-  createWebAudioSoundEffectSink()
+const audioPreferenceState = {
+  ...normalizeAudioPreferences(savedSession ?? DEFAULT_AUDIO_PREFERENCES),
+};
+const soundEffects = createEnabledSoundEffectController(
+  createSoundEffectController(createWebAudioSoundEffectSink()),
+  () => audioPreferenceState.soundEnabled
 );
 const buildSoundUpdatePayload = createSoundUpdatePayloadBuilder();
-const musicController = createMusicController(createWebAudioMusicSink());
+const musicController = createEnabledMusicController(
+  createMusicController(createWebAudioMusicSink()),
+  () => audioPreferenceState.musicEnabled
+);
 const buildMusicUpdatePayload = createMusicUpdatePayloadBuilder();
 const sessionPersistence = createDebouncedPersistence(flushSessionSave);
 const celestialPreview = createCelestialPreviewRenderer(celestialPreviewHost, {
@@ -1118,6 +1142,7 @@ updateViewModeUi();
 updateTimekeeperDisplayModeUi();
 updateCompassDisplayModeUi();
 updateMinimapDisplayModeUi();
+updateAudioPreferenceUi();
 if (debugSeedInput) {
   debugSeedInput.value = currentWorldSeed;
 }
@@ -1404,6 +1429,32 @@ function updateMinimapDisplayModeUi(): void {
   if (zoomInMinimapButton) {
     zoomInMinimapButton.disabled = activeMinimapDisplayMode === 'hidden' || minimapZoom >= 2;
   }
+}
+
+function updateAudioPreferenceUi(): void {
+  if (toggleMusicButton) {
+    toggleMusicButton.textContent = formatMusicToggleLabel(
+      audioPreferenceState.musicEnabled
+    );
+    toggleMusicButton.classList.toggle('is-active', audioPreferenceState.musicEnabled);
+  }
+  if (toggleSoundButton) {
+    toggleSoundButton.textContent = formatSoundToggleLabel(
+      audioPreferenceState.soundEnabled
+    );
+    toggleSoundButton.classList.toggle('is-active', audioPreferenceState.soundEnabled);
+  }
+}
+
+function toggleAudioPreferenceSetting(
+  key: 'musicEnabled' | 'soundEnabled'
+): void {
+  const nextPreferences = toggleAudioPreference(audioPreferenceState, key);
+  audioPreferenceState.musicEnabled = nextPreferences.musicEnabled;
+  audioPreferenceState.soundEnabled = nextPreferences.soundEnabled;
+  updateAudioPreferenceUi();
+  saveSession();
+  requestRender();
 }
 
 function updateCelestialEventModeUi(): void {
@@ -3457,6 +3508,12 @@ toggleCompassDisplayButton?.addEventListener('click', () => {
 toggleMinimapDisplayButton?.addEventListener('click', () => {
   setMinimapDisplayMode(cycleMinimapDisplayMode(activeMinimapDisplayMode));
 });
+toggleMusicButton?.addEventListener('click', () => {
+  toggleAudioPreferenceSetting('musicEnabled');
+});
+toggleSoundButton?.addEventListener('click', () => {
+  toggleAudioPreferenceSetting('soundEnabled');
+});
 zoomOutMinimapButton?.addEventListener('click', () => adjustMinimapZoom(-0.1));
 zoomInMinimapButton?.addEventListener('click', () => adjustMinimapZoom(0.1));
 freezeTimeButton?.addEventListener('click', toggleTimeFreeze);
@@ -3722,6 +3779,8 @@ function flushSessionSave(): void {
       inspectorTab: activeInspectorTab,
       modelPreviewMode: activeModelPreviewMode,
       celestialEventMode: celestialEventModeState.mode,
+      musicEnabled: audioPreferenceState.musicEnabled,
+      soundEnabled: audioPreferenceState.soundEnabled,
       compassHeadingAngle: compassHeadingState.angle,
       cameraPitch: mouseLookState.pitch,
       worldSeed: currentWorldSeed,

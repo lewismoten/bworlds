@@ -64,6 +64,8 @@ describe('session state', () => {
       inspectorTab: 'compass',
       modelPreviewMode: 'split',
       celestialEventMode: 'aurora',
+      musicEnabled: false,
+      soundEnabled: true,
       compassHeadingAngle: -Math.PI / 2,
       cameraPitch: -0.22,
       playerLevel: 4,
@@ -110,6 +112,8 @@ describe('session state', () => {
         timeFrozen: true,
         frozenWorldTimeMs: 123456,
         inspectorTab: 'compass',
+        musicEnabled: false,
+        soundEnabled: true,
         compassHeadingAngle: -Math.PI / 2,
         cameraPitch: -0.22,
         playerLevel: 4,
@@ -154,6 +158,26 @@ describe('session state', () => {
   });
 
   it('rejects invalid persisted inspector tabs and event modes', () => {
+    expect(
+      parseSavedSession(
+        JSON.stringify({
+          player: { x: 0, y: 0, facing: 0 },
+          stack: [{ id: 'overworld', depth: 0 }],
+          musicEnabled: 'off',
+        })
+      )
+    ).toBeNull();
+
+    expect(
+      parseSavedSession(
+        JSON.stringify({
+          player: { x: 0, y: 0, facing: 0 },
+          stack: [{ id: 'overworld', depth: 0 }],
+          soundEnabled: 'off',
+        })
+      )
+    ).toBeNull();
+
     expect(
       parseSavedSession(
         JSON.stringify({
@@ -390,6 +414,8 @@ describe('session state', () => {
       inspectorTab: 'timekeeper',
       modelPreviewMode: 'world',
       celestialEventMode: 'auto',
+      musicEnabled: true,
+      soundEnabled: true,
       compassHeadingAngle: null,
       cameraPitch: -0.08,
       playerLevel: 3,

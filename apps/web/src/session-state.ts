@@ -7,6 +7,9 @@ import type {
   TimekeeperDisplayMode,
 } from './time-controls.ts';
 import {
+  normalizeAudioPreferences,
+} from './audio-preferences.ts';
+import {
   parsePlayerPlacedPois,
   type PlayerPlacedPoiLike,
 } from '@bworlds/runtime-player-poi';
@@ -62,6 +65,8 @@ export type SavedSession = {
   inspectorTab?: InspectorTab;
   modelPreviewMode?: ModelPreviewMode;
   celestialEventMode?: CelestialEventMode;
+  musicEnabled?: boolean;
+  soundEnabled?: boolean;
   compassHeadingAngle?: number | null;
   cameraPitch?: number;
   playerLevel?: number;
@@ -94,6 +99,8 @@ export type SessionSnapshot = {
   inspectorTab: InspectorTab;
   modelPreviewMode: ModelPreviewMode;
   celestialEventMode: CelestialEventMode;
+  musicEnabled: boolean;
+  soundEnabled: boolean;
   compassHeadingAngle: number | null;
   cameraPitch: number;
   playerLevel: number;
@@ -228,6 +235,18 @@ export function parseSavedSession(raw: string | null): SavedSession | null {
       return null;
     }
     if (
+      typeof parsed?.musicEnabled !== 'undefined' &&
+      typeof parsed.musicEnabled !== 'boolean'
+    ) {
+      return null;
+    }
+    if (
+      typeof parsed?.soundEnabled !== 'undefined' &&
+      typeof parsed.soundEnabled !== 'boolean'
+    ) {
+      return null;
+    }
+    if (
       typeof parsed?.frozenWorldTimeMs !== 'undefined' &&
       parsed.frozenWorldTimeMs !== null &&
       typeof parsed.frozenWorldTimeMs !== 'number'
@@ -302,7 +321,13 @@ export function parseSavedSession(raw: string | null): SavedSession | null {
     if (typeof parsed?.playerLevel !== 'undefined') {
       parsed.playerLevel = normalizePlayerLevel(parsed.playerLevel);
     }
-    return parsed as SavedSession;
+    const audioPreferences = normalizeAudioPreferences(parsed);
+
+    return {
+      ...parsed,
+      musicEnabled: audioPreferences.musicEnabled,
+      soundEnabled: audioPreferences.soundEnabled,
+    } as SavedSession;
   } catch {
     return null;
   }
