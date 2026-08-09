@@ -1,4 +1,4 @@
-import { createBoundedCache } from '@bworlds/cache-support';
+import { createBoundedCache, createCoordinateCache } from '@bworlds/cache-support';
 import {
   createPlayer,
   createWorldState,
@@ -73,9 +73,7 @@ export function createWorldGenerator({
 } {
   const mapCache = createBoundedCache<string, WorldMapLike>(MAP_CACHE_LIMIT);
   const terrainSignals = createOverworldTerrainSignalSampler(seed);
-  const previewTileCache = createBoundedCache<string, SpawnTile>(
-    PREVIEW_TILE_CACHE_LIMIT
-  );
+  const previewTileCache = createCoordinateCache<SpawnTile>();
   const getMap = (context: Context) => {
     const key = makeKey(context.id, context.depth);
     if (!mapCache.has(key)) {
@@ -100,8 +98,7 @@ export function createWorldGenerator({
       return getMap(OVERWORLD_CONTEXT).getTile(x, y) as SpawnTile;
     },
     samplePreviewOverworld(x: number, y: number) {
-      const key = makeKey('preview-overworld', x, y);
-      if (!previewTileCache.has(key)) {
+      if (!previewTileCache.has(x, y)) {
         const startingTile = {
           kind: plugins.getDefaultTileKind?.('plains') ?? 'plains',
         };
@@ -113,7 +110,8 @@ export function createWorldGenerator({
           sign: getOverworldPlacementChance(seed, 'sign', x, y),
         };
         previewTileCache.set(
-          key,
+          x,
+          y,
           (plugins.classifyTerrainTile({
             seed,
             x,
@@ -140,7 +138,7 @@ export function createWorldGenerator({
             startingTile) as SpawnTile
         );
       }
-      return previewTileCache.get(key) as SpawnTile;
+      return previewTileCache.get(x, y) as SpawnTile;
     },
   };
 }
