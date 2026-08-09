@@ -7,27 +7,15 @@ type DaylightCycleLike = {
 
 export type TimePreset = 'dawn' | 'noon' | 'dusk' | 'midnight';
 export type InspectorTab =
-  | 'timekeeper'
-  | 'model'
-  | 'events'
-  | 'compass'
-  | 'sextant'
-  | 'debug';
+  'timekeeper' | 'build' | 'model' | 'events' | 'compass' | 'sextant' | 'debug';
 export type InspectorSection = InspectorTab | 'viewport-compass';
 export type ModelPreviewMode = 'world' | 'solar-system' | 'split';
 export type TimekeeperDisplayMode =
-  | 'hidden'
-  | 'time'
-  | 'time-date'
-  | 'graphical';
+  'hidden' | 'time' | 'time-date' | 'graphical';
 export type CompassDisplayMode = 'hidden' | 'letters' | 'graphical';
 export type MinimapDisplayMode = 'hidden' | 'graphical';
 export type CelestialEventMode =
-  | 'auto'
-  | 'aurora'
-  | 'meteor-shower'
-  | 'comet'
-  | 'eclipse';
+  'auto' | 'aurora' | 'meteor-shower' | 'comet' | 'eclipse';
 
 export function getNextViewMode(modeId: string | undefined): ViewMode {
   if (modeId === '3d' || modeId === 'text') {
@@ -69,6 +57,7 @@ export function getTimePresetProgress(
 
 export function getNextInspectorTab(tabId: string | undefined): InspectorTab {
   if (
+    tabId === 'build' ||
     tabId === 'model' ||
     tabId === 'events' ||
     tabId === 'compass' ||
@@ -85,6 +74,7 @@ export function getInitialInspectorTab(
   overrideTabId: string | undefined
 ): InspectorTab {
   if (
+    overrideTabId === 'build' ||
     overrideTabId === 'model' ||
     overrideTabId === 'events' ||
     overrideTabId === 'compass' ||

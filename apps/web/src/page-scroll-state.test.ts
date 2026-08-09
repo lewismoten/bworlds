@@ -39,7 +39,7 @@ describe('page scroll state', () => {
     const setTimeout = vi.fn(
       (callback: (...args: Array<unknown>) => void, _delay?: number) => {
         callback();
-        return 2 as ReturnType<typeof globalThis.setTimeout>;
+        return 2 as unknown as ReturnType<typeof globalThis.setTimeout>;
       }
     );
     const scrollTo = vi.fn();
@@ -47,7 +47,7 @@ describe('page scroll state', () => {
     restorePersistedPageScrollY(320, {
       requestAnimationFrame,
       scrollTo,
-      setTimeout,
+      setTimeout: setTimeout as unknown as typeof globalThis.setTimeout,
     });
 
     expect(requestAnimationFrame).toHaveBeenCalledTimes(2);

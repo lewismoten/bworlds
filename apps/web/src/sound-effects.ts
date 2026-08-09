@@ -794,8 +794,21 @@ export function createSoundEffectController(
           lastSteamWhistleSignature = '';
         }
 
+        const ambientProfile =
+          nearbyAmbient &&
+          typeof nearbyAmbient.intensity === 'number' &&
+          nearbyAmbient.emitter
+            ? {
+                kind: nearbyAmbient.kind,
+                intensity: nearbyAmbient.intensity,
+                emitter: nearbyAmbient.emitter,
+                listener: nearbyAmbient.listener ?? listener,
+                blendedLayers: nearbyAmbient.blendedLayers,
+              }
+            : null;
+
         const ambientLayers = resolveAmbientPlaybackLayers({
-          profile: nearbyAmbient ?? null,
+          profile: ambientProfile,
           listener,
           nowMs,
           dayProgress,

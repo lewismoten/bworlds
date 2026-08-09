@@ -1903,7 +1903,7 @@ function resolveProceduralSoundLayers(
             variationDepth: 0.9,
             vibrato: {
               rateHz: 5.8,
-              depth: 0.04,
+              depthHz: 0.04,
               waveform: ['sine', 'triangle'] as const,
               rateVariation: 0.05,
               depthVariation: 0.04,
@@ -2014,7 +2014,7 @@ function resolveProceduralSoundLayers(
             variationDepth: 0.76,
             vibrato: {
               rateHz: 4.2,
-              depth: 0.04,
+              depthHz: 0.04,
               waveform: ['sine', 'triangle'] as const,
               rateVariation: 0.05,
               depthVariation: 0.05,
@@ -2731,7 +2731,7 @@ function resolveProceduralSoundLayers(
             variationDepth: 0.86,
             vibrato: {
               rateHz: 5.8,
-              depth: 0.05,
+              depthHz: 0.05,
               waveform: ['sine', 'triangle'] as const,
               rateVariation: 0.05,
               depthVariation: 0.05,
@@ -3053,7 +3053,7 @@ function resolveProceduralSoundLayers(
             variationDepth: 0.76,
             vibrato: {
               rateHz: 5.1,
-              depth: 0.04,
+              depthHz: 0.04,
               waveform: ['sine', 'triangle'] as const,
               rateVariation: 0.05,
               depthVariation: 0.05,
@@ -3165,7 +3165,7 @@ function resolveProceduralSoundLayers(
             variationDepth: 0.9,
             vibrato: {
               rateHz: 5.4,
-              depth: 0.04,
+              depthHz: 0.04,
               waveform: 'sine' as const,
               rateVariation: 0.05,
               depthVariation: 0.05,

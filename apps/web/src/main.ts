@@ -9,6 +9,7 @@ import {
   getWorldTimeMs,
   getDaylightCycleState,
   HALF_WORLD_TILES,
+  WORLD_TILES_WIDE,
   cardinalFromAngle,
   normalizeAngle,
   snapWorldCoordinate,
@@ -78,6 +79,11 @@ import {
   parseSavedSession,
   serializeSessionSnapshot,
 } from './session-state.ts';
+import {
+  createTeleportPin,
+  normalizeTeleportPins,
+  type TeleportPin,
+} from './teleport-pins.ts';
 import {
   AUDIO_CATEGORIES,
   getAudioCategoryLabel,
@@ -250,7 +256,6 @@ import {
   getNextModelPreviewMode,
   getNextTimekeeperDisplayMode,
   getNextViewMode,
-  getViewModeToggleLabel,
   isInspectorSectionVisible,
   isModelPreviewVisible,
   getTimePresetProgress,
@@ -399,6 +404,15 @@ root.innerHTML = `
             aria-hidden="true"
             hidden
           ></canvas>
+          <div
+            id="viewport-minimap-controls"
+            class="viewport-minimap-controls is-hidden"
+            aria-hidden="true"
+            hidden
+          >
+            <button id="zoom-in-minimap" type="button" title="Zoom the mini map in">+</button>
+            <button id="zoom-out-minimap" type="button" title="Zoom the mini map out">-</button>
+          </div>
           <div id="viewport-hud" class="viewport-hud"></div>
         </div>
       </div>
@@ -415,6 +429,16 @@ root.innerHTML = `
                 aria-controls="panel-timekeeper"
               >
                 Timekeeper
+              </button>
+              <button
+                id="tab-build"
+                class="inspector-tab"
+                type="button"
+                role="tab"
+                aria-selected="false"
+                aria-controls="panel-build"
+              >
+                Build
               </button>
               <button
                 id="tab-model"
@@ -471,6 +495,15 @@ root.innerHTML = `
           <section id="panel-timekeeper" class="inspector-panel" role="tabpanel">
             <canvas id="time-wheel" width="320" height="320"></canvas>
             <div class="time-toggle-row">
+              <button
+                id="toggle-timekeeper-display"
+                class="inspector-icon-button"
+                type="button"
+                title="Toggle the timekeeper HUD display"
+                aria-label="Toggle the timekeeper HUD display"
+              >
+                ⏲
+              </button>
               <button id="time-freeze-toggle" type="button">Freeze Time</button>
             </div>
             <div class="time-skip-controls">
@@ -489,6 +522,29 @@ root.innerHTML = `
               <button data-time-preset="dusk" type="button">Sunset</button>
               <button data-time-preset="midnight" type="button">Midnight</button>
             </div>
+          </section>
+          <section
+            id="panel-build"
+            class="inspector-panel is-hidden"
+            role="tabpanel"
+            aria-hidden="true"
+            hidden
+          >
+            <div class="build-controls build-controls-panel">
+              <select id="build-poi-kind" aria-label="Build point of interest">
+                <option value="town">Build Town</option>
+                <option value="cave">Build Cave</option>
+                <option value="dungeon">Build Dungeon</option>
+                <option value="quarry">Build Quarry</option>
+                <option value="lighthouse">Build Lighthouse</option>
+                <option value="ship">Build Ship</option>
+                <option value="observatory">Build Observatory</option>
+              </select>
+              <button id="build-poi" type="button">Build Here</button>
+            </div>
+            <p class="inspector-note">
+              Build a nearby landmark or settlement on a valid overworld tile.
+            </p>
           </section>
           <section
             id="panel-model"
@@ -582,6 +638,17 @@ root.innerHTML = `
             hidden
           >
             <canvas id="compass-dial" class="compass-dial" width="320" height="320"></canvas>
+            <div class="time-toggle-row">
+              <button
+                id="toggle-compass-display"
+                class="inspector-icon-button"
+                type="button"
+                title="Toggle the compass HUD display"
+                aria-label="Toggle the compass HUD display"
+              >
+                ⊕
+              </button>
+            </div>
             <p class="inspector-note">
               The needle eases into place as you turn, then settles back onto north.
             </p>
@@ -672,17 +739,180 @@ root.innerHTML = `
       </div>
     </section>
     <section class="control-dock card">
-      <div class="controls">
-        <button id="toggle-view" type="button">Switch to 3D</button>
-        <button id="action" type="button">Interact</button>
-        <button id="jump-random" type="button">Random Plains</button>
-        <button id="jump-home" type="button">Go Home</button>
-        <button id="toggle-timekeeper-display" type="button">HUD Time: Time + Date</button>
-        <button id="toggle-compass-display" type="button">HUD Compass: Letters</button>
-        <button id="toggle-minimap-display" type="button">Mini Map: Hidden</button>
-        <button id="toggle-music" type="button">Music: On</button>
-        <button id="toggle-sound" type="button">Sound: On</button>
-        <button id="toggle-ambiance" type="button">Ambiance: On</button>
+      <div class="controls controls-compact">
+        <div class="dock-cluster" aria-label="Quick controls">
+          <button
+            id="view-menu-button"
+            class="dock-icon-button"
+            type="button"
+            title="Choose a viewport mode"
+            aria-label="Choose a viewport mode"
+          >
+            ▣
+          </button>
+          <button
+            id="action"
+            class="dock-icon-button dock-icon-button-emphasis"
+            type="button"
+            title="Interact with the current tile"
+            aria-label="Interact with the current tile"
+          >
+            ✦
+          </button>
+          <div class="dock-split-button">
+            <button
+              id="jump-random"
+              class="dock-icon-button"
+              type="button"
+              title="Jump to a random location"
+              aria-label="Jump to a random location"
+            >
+              ⤮
+            </button>
+            <button
+              id="jump-random-menu-button"
+              class="dock-icon-button dock-icon-button-arrow"
+              type="button"
+              title="Choose a random destination type"
+              aria-label="Choose a random destination type"
+            >
+              ▾
+            </button>
+          </div>
+          <button
+            id="teleport-menu-button"
+            class="dock-icon-button"
+            type="button"
+            title="Open teleport destinations"
+            aria-label="Open teleport destinations"
+          >
+            ⌖
+          </button>
+          <button
+            id="toggle-minimap-display"
+            class="dock-icon-button"
+            type="button"
+            title="Toggle the mini map HUD"
+            aria-label="Toggle the mini map HUD"
+          >
+            ▤
+          </button>
+          <button
+            id="settings-button"
+            class="dock-icon-button"
+            type="button"
+            title="Open settings"
+            aria-label="Open settings"
+          >
+            ⚙
+          </button>
+        </div>
+      </div>
+    </section>
+    <dialog id="view-dialog" class="control-dialog">
+      <form method="dialog" class="control-dialog-shell">
+        <div class="control-dialog-head">
+          <div>
+            <h2>View Modes</h2>
+            <p>Choose the active viewport. More experimental modes can slot in here later.</p>
+          </div>
+          <button type="submit" class="dialog-close-button" aria-label="Close view modes">✕</button>
+        </div>
+        <div class="view-mode-grid">
+          <button id="view-mode-2d" type="button" class="view-mode-card" data-view-mode="2d">2D Map</button>
+          <button id="view-mode-3d" type="button" class="view-mode-card" data-view-mode="3d">3D World</button>
+          <button id="view-mode-text" type="button" class="view-mode-card" data-view-mode="text">Text</button>
+          <button type="button" class="view-mode-card" disabled title="Coming later">Ortho</button>
+          <button type="button" class="view-mode-card" disabled title="Coming later">Blobber</button>
+          <button type="button" class="view-mode-card" disabled title="Coming later">Zoom Map</button>
+        </div>
+      </form>
+    </dialog>
+    <dialog id="random-dialog" class="control-dialog">
+      <form method="dialog" class="control-dialog-shell">
+        <div class="control-dialog-head">
+          <div>
+            <h2>Random Destination</h2>
+            <p>Jump anywhere or bias the search toward a specific terrain.</p>
+          </div>
+          <button type="submit" class="dialog-close-button" aria-label="Close random destinations">✕</button>
+        </div>
+        <div class="view-mode-grid">
+          <button id="random-any" type="button" class="view-mode-card">Anywhere</button>
+          <button id="random-plains" type="button" class="view-mode-card">Plains</button>
+          <button id="random-forest" type="button" class="view-mode-card">Forest</button>
+          <button id="random-mountain" type="button" class="view-mode-card">Mountain</button>
+          <button id="random-river" type="button" class="view-mode-card">River</button>
+          <button id="random-ocean" type="button" class="view-mode-card">Ocean</button>
+          <button id="random-town" type="button" class="view-mode-card">Town</button>
+          <button id="random-ruins" type="button" class="view-mode-card">Ruins</button>
+        </div>
+      </form>
+    </dialog>
+    <dialog id="teleport-dialog" class="control-dialog">
+      <form method="dialog" class="control-dialog-shell">
+        <div class="control-dialog-head">
+          <div>
+            <h2>Teleport</h2>
+            <p>Jump home, use saved pins, or enter world or GPS coordinates.</p>
+          </div>
+          <button type="submit" class="dialog-close-button" aria-label="Close teleport">✕</button>
+        </div>
+        <div class="teleport-actions">
+          <button id="teleport-home" type="button">Home</button>
+        </div>
+        <div class="teleport-grid">
+          <label class="teleport-field">
+            <span>World X</span>
+            <input id="teleport-world-x" type="number" step="0.1" />
+          </label>
+          <label class="teleport-field">
+            <span>World Y</span>
+            <input id="teleport-world-y" type="number" step="0.1" />
+          </label>
+          <button id="teleport-world-submit" type="button">Jump To World</button>
+          <label class="teleport-field">
+            <span>Latitude</span>
+            <input id="teleport-gps-latitude" type="number" step="0.0001" min="-90" max="90" />
+          </label>
+          <label class="teleport-field">
+            <span>Longitude</span>
+            <input id="teleport-gps-longitude" type="number" step="0.0001" min="-180" max="180" />
+          </label>
+          <button id="teleport-gps-submit" type="button">Jump To GPS</button>
+        </div>
+        <div class="teleport-save-grid">
+          <label class="teleport-field teleport-field-wide">
+            <span>Save Current Location</span>
+            <input
+              id="teleport-pin-name"
+              type="text"
+              maxlength="40"
+              placeholder="Camp, Cave Entrance, Hidden Tower..."
+            />
+          </label>
+          <button id="teleport-pin-save" type="button">Save Pin</button>
+        </div>
+        <div class="teleport-pin-list-shell">
+          <h3>Pinned Locations</h3>
+          <div id="teleport-pin-list" class="teleport-pin-list"></div>
+        </div>
+      </form>
+    </dialog>
+    <dialog id="settings-dialog" class="control-dialog">
+      <form method="dialog" class="control-dialog-shell">
+        <div class="control-dialog-head">
+          <div>
+            <h2>Settings</h2>
+            <p>Audio, HUD, and comfort controls live here instead of the main dock.</p>
+          </div>
+          <button type="submit" class="dialog-close-button" aria-label="Close settings">✕</button>
+        </div>
+        <div class="settings-toggle-grid">
+          <button id="toggle-music" type="button">Music: On</button>
+          <button id="toggle-sound" type="button">Sound: On</button>
+          <button id="toggle-ambiance" type="button">Ambiance: On</button>
+        </div>
         <div class="audio-volume-controls" aria-label="Audio volume controls">
           <label class="audio-volume-control" for="audio-volume-music">
             <span>Music Volume</span>
@@ -727,22 +957,8 @@ root.innerHTML = `
             </div>
           </label>
         </div>
-        <button id="zoom-out-minimap" type="button">Map -</button>
-        <button id="zoom-in-minimap" type="button">Map +</button>
-        <div class="build-controls">
-          <select id="build-poi-kind" aria-label="Build point of interest">
-            <option value="town">Build Town</option>
-            <option value="cave">Build Cave</option>
-            <option value="dungeon">Build Dungeon</option>
-            <option value="quarry">Build Quarry</option>
-            <option value="lighthouse">Build Lighthouse</option>
-            <option value="ship">Build Ship</option>
-            <option value="observatory">Build Observatory</option>
-          </select>
-          <button id="build-poi" type="button">Build Here</button>
-        </div>
-      </div>
-    </section>
+      </form>
+    </dialog>
   </main>
 `;
 
@@ -790,7 +1006,26 @@ const faceSouthButton =
 const faceWestButton = document.querySelector<HTMLButtonElement>('#face-west');
 const status = document.querySelector<HTMLElement>('#status');
 const statusView = status ? createStatusView(status) : null;
-const toggleButton = document.querySelector<HTMLButtonElement>('#toggle-view');
+const viewMenuButton =
+  document.querySelector<HTMLButtonElement>('#view-menu-button');
+const viewDialog = document.querySelector<HTMLDialogElement>('#view-dialog');
+const viewModeButtons = Array.from(
+  document.querySelectorAll<HTMLButtonElement>('[data-view-mode]')
+);
+const randomMenuButton = document.querySelector<HTMLButtonElement>(
+  '#jump-random-menu-button'
+);
+const randomDialog =
+  document.querySelector<HTMLDialogElement>('#random-dialog');
+const teleportMenuButton = document.querySelector<HTMLButtonElement>(
+  '#teleport-menu-button'
+);
+const teleportDialog =
+  document.querySelector<HTMLDialogElement>('#teleport-dialog');
+const settingsButton =
+  document.querySelector<HTMLButtonElement>('#settings-button');
+const settingsDialog =
+  document.querySelector<HTMLDialogElement>('#settings-dialog');
 const toggleTimekeeperDisplayButton = document.querySelector<HTMLButtonElement>(
   '#toggle-timekeeper-display'
 );
@@ -830,6 +1065,9 @@ const zoomOutMinimapButton =
   document.querySelector<HTMLButtonElement>('#zoom-out-minimap');
 const zoomInMinimapButton =
   document.querySelector<HTMLButtonElement>('#zoom-in-minimap');
+const viewportMinimapControls = document.querySelector<HTMLElement>(
+  '#viewport-minimap-controls'
+);
 const actionButton = document.querySelector<HTMLButtonElement>('#action');
 const buildPoiButton = document.querySelector<HTMLButtonElement>('#build-poi');
 const buildPoiKindSelect =
@@ -838,7 +1076,30 @@ const contentPackForm =
   document.querySelector<HTMLFormElement>('#content-pack-form');
 const randomJumpButton =
   document.querySelector<HTMLButtonElement>('#jump-random');
-const homeJumpButton = document.querySelector<HTMLButtonElement>('#jump-home');
+const teleportHomeButton =
+  document.querySelector<HTMLButtonElement>('#teleport-home');
+const teleportWorldXInput =
+  document.querySelector<HTMLInputElement>('#teleport-world-x');
+const teleportWorldYInput =
+  document.querySelector<HTMLInputElement>('#teleport-world-y');
+const teleportWorldSubmitButton = document.querySelector<HTMLButtonElement>(
+  '#teleport-world-submit'
+);
+const teleportGpsLatitudeInput = document.querySelector<HTMLInputElement>(
+  '#teleport-gps-latitude'
+);
+const teleportGpsLongitudeInput = document.querySelector<HTMLInputElement>(
+  '#teleport-gps-longitude'
+);
+const teleportGpsSubmitButton = document.querySelector<HTMLButtonElement>(
+  '#teleport-gps-submit'
+);
+const teleportPinNameInput =
+  document.querySelector<HTMLInputElement>('#teleport-pin-name');
+const teleportPinSaveButton =
+  document.querySelector<HTMLButtonElement>('#teleport-pin-save');
+const teleportPinList =
+  document.querySelector<HTMLElement>('#teleport-pin-list');
 const plusHourButton =
   document.querySelector<HTMLButtonElement>('#time-plus-hour');
 const plusSixButton =
@@ -929,6 +1190,7 @@ const sidebarCards = Array.from(
 );
 const inspectorPanels = {
   timekeeper: document.querySelector<HTMLElement>('#panel-timekeeper'),
+  build: document.querySelector<HTMLElement>('#panel-build'),
   model: document.querySelector<HTMLElement>('#panel-model'),
   events: document.querySelector<HTMLElement>('#panel-events'),
   compass: document.querySelector<HTMLElement>('#panel-compass'),
@@ -1227,6 +1489,7 @@ let activeMinimapDisplayMode = getNextMinimapDisplayMode(
   savedSession?.minimapDisplayMode
 );
 let minimapZoom = clamp(savedSession?.minimapZoom ?? 1, 0.7, 2);
+let teleportPins = normalizeTeleportPins(savedSession?.teleportPins);
 const celestialEventModeState = {
   mode: getNextCelestialEventMode(savedSession?.celestialEventMode),
 };
@@ -1375,9 +1638,12 @@ if (debugSeedInput) {
 updateDebugTeleportOptions();
 
 function updateViewModeUi(): void {
-  if (toggleButton) {
-    toggleButton.textContent = getViewModeToggleLabel(state.viewMode);
-  }
+  viewModeButtons.forEach((button) => {
+    const mode = button.dataset.viewMode;
+    const isActive = mode === state.viewMode;
+    button.classList.toggle('is-active', isActive);
+    button.setAttribute('aria-pressed', String(isActive));
+  });
 }
 
 function updateStatus(
@@ -1621,9 +1887,16 @@ function cycleTimekeeperDisplayMode(
 
 function updateTimekeeperDisplayModeUi(): void {
   if (toggleTimekeeperDisplayButton) {
-    toggleTimekeeperDisplayButton.textContent = `HUD Time: ${formatTimekeeperDisplayModeLabel(
+    const label = `HUD Time: ${formatTimekeeperDisplayModeLabel(
       activeTimekeeperDisplayMode
     )}`;
+    toggleTimekeeperDisplayButton.textContent = '⏲';
+    toggleTimekeeperDisplayButton.title = label;
+    toggleTimekeeperDisplayButton.setAttribute('aria-label', label);
+    toggleTimekeeperDisplayButton.classList.toggle(
+      'is-active',
+      activeTimekeeperDisplayMode !== 'hidden'
+    );
   }
 }
 
@@ -1641,9 +1914,16 @@ function cycleCompassDisplayMode(mode: CompassDisplayMode): CompassDisplayMode {
 
 function updateCompassDisplayModeUi(): void {
   if (toggleCompassDisplayButton) {
-    toggleCompassDisplayButton.textContent = `HUD Compass: ${formatCompassDisplayModeLabel(
+    const label = `HUD Compass: ${formatCompassDisplayModeLabel(
       activeCompassDisplayMode
     )}`;
+    toggleCompassDisplayButton.textContent = '⊕';
+    toggleCompassDisplayButton.title = label;
+    toggleCompassDisplayButton.setAttribute('aria-label', label);
+    toggleCompassDisplayButton.classList.toggle(
+      'is-active',
+      activeCompassDisplayMode !== 'hidden'
+    );
   }
 }
 
@@ -1657,9 +1937,23 @@ function cycleMinimapDisplayMode(mode: MinimapDisplayMode): MinimapDisplayMode {
 
 function updateMinimapDisplayModeUi(): void {
   if (toggleMinimapDisplayButton) {
-    toggleMinimapDisplayButton.textContent = `Mini Map: ${formatMinimapDisplayModeLabel(
+    const label = `Mini Map: ${formatMinimapDisplayModeLabel(
       activeMinimapDisplayMode
     )}`;
+    toggleMinimapDisplayButton.textContent = '▤';
+    toggleMinimapDisplayButton.title = label;
+    toggleMinimapDisplayButton.setAttribute('aria-label', label);
+    toggleMinimapDisplayButton.classList.toggle(
+      'is-active',
+      activeMinimapDisplayMode !== 'hidden'
+    );
+  }
+  if (viewportMinimapControls) {
+    const showMinimap =
+      state.viewMode === '3d' && activeMinimapDisplayMode === 'graphical';
+    viewportMinimapControls.classList.toggle('is-hidden', !showMinimap);
+    viewportMinimapControls.hidden = !showMinimap;
+    viewportMinimapControls.setAttribute('aria-hidden', String(!showMinimap));
   }
   if (zoomOutMinimapButton) {
     zoomOutMinimapButton.disabled =
@@ -1673,27 +1967,29 @@ function updateMinimapDisplayModeUi(): void {
 
 function updateAudioPreferenceUi(): void {
   if (toggleMusicButton) {
-    toggleMusicButton.textContent = formatMusicToggleLabel(
-      audioPreferenceState.musicEnabled
-    );
+    const label = formatMusicToggleLabel(audioPreferenceState.musicEnabled);
+    toggleMusicButton.textContent = label;
+    toggleMusicButton.title = label;
     toggleMusicButton.classList.toggle(
       'is-active',
       audioPreferenceState.musicEnabled
     );
   }
   if (toggleSoundButton) {
-    toggleSoundButton.textContent = formatSoundToggleLabel(
-      audioPreferenceState.soundEnabled
-    );
+    const label = formatSoundToggleLabel(audioPreferenceState.soundEnabled);
+    toggleSoundButton.textContent = label;
+    toggleSoundButton.title = label;
     toggleSoundButton.classList.toggle(
       'is-active',
       audioPreferenceState.soundEnabled
     );
   }
   if (toggleAmbianceButton) {
-    toggleAmbianceButton.textContent = formatAmbianceToggleLabel(
+    const label = formatAmbianceToggleLabel(
       audioPreferenceState.ambianceEnabled
     );
+    toggleAmbianceButton.textContent = label;
+    toggleAmbianceButton.title = label;
     toggleAmbianceButton.classList.toggle(
       'is-active',
       audioPreferenceState.ambianceEnabled
@@ -1816,17 +2112,25 @@ function setCelestialEventMode(modeId: string | undefined): void {
   requestRender();
 }
 
-function toggleView(): void {
+function setViewMode(modeId: string | undefined): void {
+  const nextMode = getNextViewMode(modeId);
+  if (state.viewMode === nextMode) {
+    return;
+  }
   if (state.viewMode === '3d' && mouseLookState.dragging) {
     mouseLookState.dragging = false;
     mouseLookState.pointerId = -1;
     viewportStage?.classList.remove('is-mouse-looking');
   }
-  state.viewMode = cycleViewMode(state.viewMode);
+  state.viewMode = nextMode;
   syncViewportModeUi();
   restore3dViewportKeyboardFocus(state.viewMode, viewport3d);
   saveSession();
   requestRender();
+}
+
+function toggleView(): void {
+  setViewMode(cycleViewMode(state.viewMode));
 }
 
 function syncViewportModeUi(): void {
@@ -2803,8 +3107,135 @@ function jumpToRandomPlains(): void {
   travelToOverworld(destination.x, destination.y);
 }
 
+function jumpToRandomDestination(targetKind?: string): void {
+  const destination = targetKind
+    ? findRandomTileDestination(targetKind, {
+        sampleOverworld: generator.sampleOverworld,
+        canLandAt: canLandOnOverworldTile,
+      })
+    : findRandomLandingDestination();
+  if (!destination) {
+    showHmrNotice(
+      targetKind
+        ? `Unable to find a random ${targetKind} destination right now.`
+        : 'Unable to find a random destination right now.'
+    );
+    return;
+  }
+  travelToOverworld(destination.x, destination.y);
+  closeDialog(randomDialog);
+}
+
 function jumpHome(): void {
   travelToOverworld(0, 0, 0);
+}
+
+function findRandomLandingDestination(maxAttempts = 1200): WorldPoint | null {
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    const x = Math.floor((Math.random() * 2 - 1) * HALF_WORLD_TILES);
+    const y = Math.floor((Math.random() * 2 - 1) * HALF_WORLD_TILES * 0.5);
+    if (canLandOnOverworldTile(x, y)) {
+      return { x, y };
+    }
+  }
+  return null;
+}
+
+function teleportToWorldCoordinates(
+  x: number,
+  y: number,
+  facing = state.player.facing
+): void {
+  if (!Number.isFinite(x) || !Number.isFinite(y)) {
+    showHmrNotice('Enter valid world coordinates first.');
+    return;
+  }
+  travelToOverworld(x, y, facing);
+  closeDialog(teleportDialog);
+}
+
+function teleportToGpsCoordinates(latitude: number, longitude: number): void {
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+    showHmrNotice('Enter valid GPS coordinates first.');
+    return;
+  }
+  const x = (longitude / 360) * WORLD_TILES_WIDE;
+  const y = (-latitude / 180) * WORLD_TILES_WIDE;
+  teleportToWorldCoordinates(x, y);
+}
+
+function saveCurrentTeleportPin(): void {
+  const rawName = teleportPinNameInput?.value.trim() ?? '';
+  if (!rawName) {
+    showHmrNotice('Name the pin before saving it.');
+    return;
+  }
+  const pin = createTeleportPin({
+    id: `pin-${Date.now()}-${Math.round(state.player.x)}-${Math.round(
+      state.player.y
+    )}`,
+    name: rawName,
+    x: state.player.x,
+    y: state.player.y,
+    facing: state.player.facing,
+  });
+  teleportPins = [pin, ...teleportPins.filter((entry) => entry.id !== pin.id)];
+  if (teleportPinNameInput) {
+    teleportPinNameInput.value = '';
+  }
+  renderTeleportPins();
+  saveSession();
+  showHmrNotice(`Saved pin "${pin.name}".`);
+}
+
+function removeTeleportPin(pinId: string): void {
+  teleportPins = teleportPins.filter((pin) => pin.id !== pinId);
+  renderTeleportPins();
+  saveSession();
+}
+
+function renderTeleportPins(): void {
+  if (!teleportPinList) {
+    return;
+  }
+  teleportPinList.innerHTML = '';
+  if (teleportPins.length === 0) {
+    teleportPinList.innerHTML =
+      '<p class="inspector-note">No pinned destinations yet.</p>';
+    return;
+  }
+  teleportPins.forEach((pin) => {
+    const row = document.createElement('div');
+    row.className = 'teleport-pin-row';
+    const jumpButton = document.createElement('button');
+    jumpButton.type = 'button';
+    jumpButton.textContent = `${pin.name} (${pin.x.toFixed(1)}, ${pin.y.toFixed(
+      1
+    )})`;
+    jumpButton.addEventListener('click', () => {
+      teleportToWorldCoordinates(pin.x, pin.y, pin.facing);
+    });
+    const removeButton = document.createElement('button');
+    removeButton.type = 'button';
+    removeButton.className = 'teleport-pin-remove';
+    removeButton.textContent = 'Remove';
+    removeButton.addEventListener('click', () => {
+      removeTeleportPin(pin.id);
+    });
+    row.append(jumpButton, removeButton);
+    teleportPinList.append(row);
+  });
+}
+
+function openDialog(dialog: HTMLDialogElement | null): void {
+  if (!dialog) {
+    return;
+  }
+  dialog.showModal?.();
+}
+
+function closeDialog(dialog: HTMLDialogElement | null): void {
+  dialog?.close?.();
 }
 
 function teleportToSelectedTileKind(): void {
@@ -2897,7 +3328,13 @@ function setInspectorTab(tabId: string | undefined): void {
     const isActive = isInspectorSectionVisible(
       activeInspectorTab,
       panelId as
-        'timekeeper' | 'model' | 'events' | 'compass' | 'sextant' | 'debug'
+        | 'timekeeper'
+        | 'build'
+        | 'model'
+        | 'events'
+        | 'compass'
+        | 'sextant'
+        | 'debug'
     );
     panel?.classList.toggle('is-hidden', !isActive);
     panel?.setAttribute('aria-hidden', String(!isActive));
@@ -3000,6 +3437,7 @@ function jump(): void {
 function updateMovement(deltaMs: number): void {
   state.timeMs = getCurrentWorldTimeMs();
   const nowMs = performance.now();
+  const actualCycle = getCurrentCycle(latestEnvironment, state.timeMs);
   const previousX = state.player.x;
   const previousY = state.player.y;
   const previousFacing = state.player.facing;
@@ -3853,7 +4291,6 @@ window.addEventListener(
   pageLifecycleSignal ? { capture: true, signal: pageLifecycleSignal } : true
 );
 
-toggleButton.addEventListener('click', toggleView);
 actionButton.addEventListener('click', handleInteraction);
 buildPoiButton?.addEventListener('click', handleBuildPoi);
 contentPackForm?.addEventListener('change', () => {
@@ -3874,8 +4311,55 @@ contentPackForm?.addEventListener('change', () => {
     .map((pack) => pack.id);
   rebuildRuntime(selectedPackIds);
 });
-randomJumpButton.addEventListener('click', jumpToRandomPlains);
-homeJumpButton.addEventListener('click', jumpHome);
+viewMenuButton?.addEventListener('click', () => openDialog(viewDialog));
+randomJumpButton?.addEventListener('click', () => jumpToRandomDestination());
+randomMenuButton?.addEventListener('click', () => openDialog(randomDialog));
+teleportMenuButton?.addEventListener('click', () => openDialog(teleportDialog));
+settingsButton?.addEventListener('click', () => openDialog(settingsDialog));
+teleportHomeButton?.addEventListener('click', jumpHome);
+teleportWorldSubmitButton?.addEventListener('click', () => {
+  teleportToWorldCoordinates(
+    Number(teleportWorldXInput?.value),
+    Number(teleportWorldYInput?.value)
+  );
+});
+teleportGpsSubmitButton?.addEventListener('click', () => {
+  teleportToGpsCoordinates(
+    Number(teleportGpsLatitudeInput?.value),
+    Number(teleportGpsLongitudeInput?.value)
+  );
+});
+teleportPinSaveButton?.addEventListener('click', saveCurrentTeleportPin);
+document
+  .querySelector<HTMLButtonElement>('#random-any')
+  ?.addEventListener('click', () => jumpToRandomDestination());
+document
+  .querySelector<HTMLButtonElement>('#random-plains')
+  ?.addEventListener('click', () => jumpToRandomDestination('plains'));
+document
+  .querySelector<HTMLButtonElement>('#random-forest')
+  ?.addEventListener('click', () => jumpToRandomDestination('forest'));
+document
+  .querySelector<HTMLButtonElement>('#random-mountain')
+  ?.addEventListener('click', () => jumpToRandomDestination('mountain'));
+document
+  .querySelector<HTMLButtonElement>('#random-river')
+  ?.addEventListener('click', () => jumpToRandomDestination('river'));
+document
+  .querySelector<HTMLButtonElement>('#random-ocean')
+  ?.addEventListener('click', () => jumpToRandomDestination('ocean'));
+document
+  .querySelector<HTMLButtonElement>('#random-town')
+  ?.addEventListener('click', () => jumpToRandomDestination('town'));
+document
+  .querySelector<HTMLButtonElement>('#random-ruins')
+  ?.addEventListener('click', () => jumpToRandomDestination('ruins'));
+viewModeButtons.forEach((button) => {
+  button.addEventListener('click', () => {
+    setViewMode(button.dataset.viewMode);
+    closeDialog(viewDialog);
+  });
+});
 plusHourButton?.addEventListener('click', () => skipTimeByHours(1));
 plusSixButton?.addEventListener('click', () => skipTimeByHours(6));
 plusTwelveButton?.addEventListener('click', () => skipTimeByHours(12));
@@ -4186,6 +4670,7 @@ updateTimekeeperDisplayModeUi();
 updateCompassDisplayModeUi();
 updateMinimapDisplayModeUi();
 updateCelestialEventModeUi();
+renderTeleportPins();
 restore3dViewportKeyboardFocus(state.viewMode, viewport3d);
 requestRender();
 
@@ -4249,6 +4734,7 @@ function flushSessionSave(): void {
       completedQuestIds: [...(state.completedQuestIds ?? [])],
       inventory: [...(state.inventory ?? [])],
       playerPlacedPois: getSavedPlayerPlacedPois(),
+      teleportPins,
     });
     if (snapshot === lastSavedSnapshot) return;
     window.localStorage.setItem(SESSION_STORAGE_KEY, snapshot);

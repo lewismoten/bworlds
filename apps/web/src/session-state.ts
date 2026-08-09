@@ -29,6 +29,7 @@ import {
   parseSavedWorldMapProfile,
   type SavedWorldMapProfile,
 } from './world-map-storage.ts';
+import { normalizeTeleportPins, type TeleportPin } from './teleport-pins.ts';
 
 type SessionViewMode = '2d' | '3d' | 'text';
 
@@ -78,6 +79,7 @@ export type SavedSession = {
   completedQuestIds?: string[];
   inventory?: import('@bworlds/plugin-api').InventoryItemLike[];
   playerPlacedPois?: PlayerPlacedPoiLike[];
+  teleportPins?: TeleportPin[];
 };
 
 export type SessionSnapshot = {
@@ -114,6 +116,7 @@ export type SessionSnapshot = {
   completedQuestIds: string[];
   inventory: import('@bworlds/plugin-api').InventoryItemLike[];
   playerPlacedPois: PlayerPlacedPoiLike[];
+  teleportPins: TeleportPin[];
 };
 
 export function serializeSessionSnapshot(snapshot: SessionSnapshot): string {
@@ -319,6 +322,14 @@ export function parseSavedSession(raw: string | null): SavedSession | null {
     ) {
       return null;
     }
+    if (
+      typeof parsed?.teleportPins !== 'undefined' &&
+      (!Array.isArray(parsed.teleportPins) ||
+        normalizeTeleportPins(parsed.teleportPins).length !==
+          parsed.teleportPins.length)
+    ) {
+      return null;
+    }
     if (typeof parsed?.characterProfile !== 'undefined') {
       parsed.characterProfile = parseSavedCharacterProfile(
         JSON.stringify(parsed.characterProfile)
@@ -339,6 +350,9 @@ export function parseSavedSession(raw: string | null): SavedSession | null {
     }
     if (typeof parsed?.playerPlacedPois !== 'undefined') {
       parsed.playerPlacedPois = parsePlayerPlacedPois(parsed.playerPlacedPois);
+    }
+    if (typeof parsed?.teleportPins !== 'undefined') {
+      parsed.teleportPins = normalizeTeleportPins(parsed.teleportPins);
     }
     if (typeof parsed?.playerLevel !== 'undefined') {
       parsed.playerLevel = normalizePlayerLevel(parsed.playerLevel);

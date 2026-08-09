@@ -82,6 +82,7 @@ describe('session state', () => {
       cameraPitch: -0.22,
       playerLevel: 4,
       completedQuestIds: ['tower:1'],
+      teleportPins: [],
       inventory: [
         { id: 'rope', quantity: 2, label: 'Coil of Rope', kind: 'gear' },
       ],
@@ -468,6 +469,7 @@ describe('session state', () => {
         environment: 1,
         creatures: 1,
       },
+      teleportPins: [],
       compassHeadingAngle: null,
       cameraPitch: -0.08,
       playerLevel: 3,

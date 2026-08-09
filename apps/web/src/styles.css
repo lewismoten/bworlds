@@ -921,3 +921,7 @@ ul {
     max-height: min(50vh, 26rem);
   }
 }
+.control-dialog {
+  background-color: #02060b;
+  color: #778899;
+}

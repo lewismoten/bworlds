@@ -33,6 +33,7 @@ describe('time controls', () => {
   });
 
   it('normalizes the inspector tab id to a supported tab', () => {
+    expect(getNextInspectorTab('build')).toBe('build');
     expect(getNextInspectorTab('compass')).toBe('compass');
     expect(getNextInspectorTab('debug')).toBe('debug');
     expect(getNextInspectorTab('events')).toBe('events');
@@ -43,6 +44,7 @@ describe('time controls', () => {
   });
 
   it('lets a supported URL override choose the initial inspector tab', () => {
+    expect(getInitialInspectorTab('timekeeper', 'build')).toBe('build');
     expect(getInitialInspectorTab('timekeeper', 'debug')).toBe('debug');
     expect(getInitialInspectorTab('sextant', 'events')).toBe('events');
     expect(getInitialInspectorTab('debug', 'unknown')).toBe('debug');
@@ -100,11 +102,15 @@ describe('time controls', () => {
   });
 
   it('shows only the active inspector section and reserves the viewport compass for compass mode', () => {
+    expect(isInspectorSectionVisible('build', 'build')).toBe(true);
+    expect(isInspectorSectionVisible('build', 'timekeeper')).toBe(false);
     expect(isInspectorSectionVisible('timekeeper', 'timekeeper')).toBe(true);
     expect(isInspectorSectionVisible('timekeeper', 'model')).toBe(false);
     expect(isInspectorSectionVisible('timekeeper', 'events')).toBe(false);
     expect(isInspectorSectionVisible('timekeeper', 'compass')).toBe(false);
-    expect(isInspectorSectionVisible('timekeeper', 'viewport-compass')).toBe(false);
+    expect(isInspectorSectionVisible('timekeeper', 'viewport-compass')).toBe(
+      false
+    );
     expect(isInspectorSectionVisible('events', 'events')).toBe(true);
     expect(isInspectorSectionVisible('events', 'debug')).toBe(false);
     expect(isInspectorSectionVisible('compass', 'viewport-compass')).toBe(true);
