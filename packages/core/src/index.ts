@@ -963,21 +963,30 @@ export function generateConstellations(
   } = {}
 ): ConstellationLike[] {
   const count = Math.max(1, Math.floor(options.count ?? DEFAULT_CONSTELLATION_COUNT));
+  const seedHash = createHashSeed(seed);
+  const starsSeed = appendHashSeedPart(seedHash, 'stars');
+  const radialSeed = appendHashSeedPart(seedHash, 'r');
+  const thetaSeed = appendHashSeedPart(seedHash, 'theta');
+  const stretchSeed = appendHashSeedPart(seedHash, 'stretch');
+  const brightnessSeed = appendHashSeedPart(seedHash, 'b');
+  const daylightBiasSeed = appendHashSeedPart(seedHash, 'bias');
+  const symbolRotationSeed = appendHashSeedPart(seedHash, 'symbol-rotation');
+  const ringJitterSeed = appendHashSeedPart(seedHash, 'ring-jitter');
   const usedNames = new Set<string>();
   const prefixCounts = new Map<string, number>();
   const suffixCounts = new Map<string, number>();
   const figureCounts = new Map<string, number>();
 
   return Array.from({ length: count }, (_, index) => {
-    const starCount = 5 + Math.floor(hash2D(`${seed}:stars`, index, count) * 4);
-    const archetype = getConstellationArchetype(seed, index);
+    const starCount = 5 + Math.floor(hash2DWithSeed(starsSeed, index, count) * 4);
+    const archetype = getConstellationArchetype(seedHash, index);
     const stars = Array.from({ length: starCount }, (_, starIndex) => {
       const blueprint = archetype.points[starIndex % archetype.points.length];
       const radial =
-        blueprint.radial * (0.82 + hash2D(`${seed}:r`, index, starIndex) * 0.36);
+        blueprint.radial * (0.82 + hash2DWithSeed(radialSeed, index, starIndex) * 0.36);
       const angle =
         blueprint.angle +
-        hash2D(`${seed}:theta`, index, starIndex) * 0.72 +
+        hash2DWithSeed(thetaSeed, index, starIndex) * 0.72 +
         archetype.rotation;
       return {
         id: `${index}:${starIndex}`,
@@ -987,15 +996,15 @@ export function generateConstellations(
           Math.sin(angle) *
             radial *
             archetype.verticalScale *
-            (0.8 + hash2D(`${seed}:stretch`, index, starIndex) * 0.46),
-        brightness: 0.45 + hash2D(`${seed}:b`, index, starIndex) * 0.55,
+            (0.8 + hash2DWithSeed(stretchSeed, index, starIndex) * 0.46),
+        brightness: 0.45 + hash2DWithSeed(brightnessSeed, index, starIndex) * 0.55,
       };
     }).sort((left, right) => left.x - right.x);
 
     const connections = buildConstellationConnections(stars.length, archetype.connectionStyle);
 
     let name = createConstellationName(
-      seed,
+      seedHash,
       index,
       prefixCounts,
       suffixCounts,
@@ -1011,14 +1020,14 @@ export function generateConstellations(
       name,
       stars,
       connections,
-      daylightBias: -0.12 + hash2D(`${seed}:bias`, index, count) * 0.24,
-      symbolRotation: hash2D(`${seed}:symbol-rotation`, index, count) * Math.PI * 2,
-      ringJitter: (hash2D(`${seed}:ring-jitter`, index, count) * 2 - 1) * 0.28,
+      daylightBias: -0.12 + hash2DWithSeed(daylightBiasSeed, index, count) * 0.24,
+      symbolRotation: hash2DWithSeed(symbolRotationSeed, index, count) * Math.PI * 2,
+      ringJitter: (hash2DWithSeed(ringJitterSeed, index, count) * 2 - 1) * 0.28,
     };
   });
 }
 
-function getConstellationArchetype(seed: string, index: number): ConstellationArchetype {
+function getConstellationArchetype(seedHash: number, index: number): ConstellationArchetype {
   const baseArchetypes = [
     {
       points: [
@@ -1065,14 +1074,16 @@ function getConstellationArchetype(seed: string, index: number): ConstellationAr
       connectionStyle: 'kite',
     },
   ] as const;
+  const archetypeSeed = appendHashSeedPart(seedHash, 'constellation-archetype');
+  const rotationSeed = appendHashSeedPart(seedHash, 'constellation-rotation');
 
   const base =
     baseArchetypes[
-      Math.floor(hash2D(`${seed}:constellation-archetype`, index, 0) * baseArchetypes.length)
+      Math.floor(hash2DWithSeed(archetypeSeed, index, 0) * baseArchetypes.length)
     ];
   return {
     ...base,
-    rotation: hash2D(`${seed}:constellation-rotation`, index, 1) * Math.PI * 2,
+    rotation: hash2DWithSeed(rotationSeed, index, 1) * Math.PI * 2,
   };
 }
 
@@ -1101,19 +1112,24 @@ function buildConstellationConnections(
 }
 
 export function createConstellationName(
-  seed: string,
+  seed: string | number,
   index: number,
   prefixCounts = new Map<string, number>(),
   suffixCounts = new Map<string, number>(),
   figureCounts = new Map<string, number>()
 ) {
-  const useFigure = hash2D(`${seed}:constellation-form`, index, 0) < 0.28;
+  const seedHash = typeof seed === 'number' ? seed : createHashSeed(seed);
+  const formSeed = appendHashSeedPart(seedHash, 'constellation-form');
+  const figureSeed = appendHashSeedPart(seedHash, 'constellation-figure');
+  const prefixSeed = appendHashSeedPart(seedHash, 'constellation-prefix');
+  const suffixSeed = appendHashSeedPart(seedHash, 'constellation-suffix');
+  const useFigure = hash2DWithSeed(formSeed, index, 0) < 0.28;
   if (useFigure) {
     const figure = pickLimitedNamePart(
       CONSTELLATION_FIGURES,
       figureCounts,
       2,
-      hash2D(`${seed}:constellation-figure`, index, 0)
+      hash2DWithSeed(figureSeed, index, 0)
     );
     return figure;
   }
@@ -1122,13 +1138,13 @@ export function createConstellationName(
     CONSTELLATION_PREFIXES,
     prefixCounts,
     2,
-    hash2D(`${seed}:constellation-prefix`, index, 0)
+    hash2DWithSeed(prefixSeed, index, 0)
   );
   const suffix = pickLimitedNamePart(
     CONSTELLATION_SUFFIXES,
     suffixCounts,
     2,
-    hash2D(`${seed}:constellation-suffix`, 0, index)
+    hash2DWithSeed(suffixSeed, 0, index)
   );
   return `${prefix} ${suffix}`;
 }
@@ -1225,13 +1241,15 @@ export function getCelestialEventsForDay(
       progress: orbitProgress,
       intensity:
         profile.intensityBase +
-        hash2D('planet-intensity', index, dayNumber % orbitLength) * profile.intensitySwing,
+        hash2DWithSeed(PLANET_INTENSITY_SEED, index, dayNumber % orbitLength) *
+          profile.intensitySwing,
       visibility: getCelestialEventVisibility({
         type: 'planet',
         altitude: orbitState.altitude,
         intensity:
           profile.intensityBase +
-          hash2D('planet-intensity', index, dayNumber % orbitLength) * profile.intensitySwing,
+          hash2DWithSeed(PLANET_INTENSITY_SEED, index, dayNumber % orbitLength) *
+            profile.intensitySwing,
         daylight,
         night,
         starsOpacity,
@@ -1574,6 +1592,7 @@ export function hash2DWithSeed(seedHash: number, x: number, y: number): number {
 
 const HASH_2D_SEED_CACHE_LIMIT = 4096;
 const hash2dSeedCache = new Map<string | number, number>();
+const PLANET_INTENSITY_SEED = createHashSeed('planet-intensity');
 
 function getCachedHashSeed(seed: string | number): number {
   const cached = hash2dSeedCache.get(seed);
@@ -1731,6 +1750,9 @@ export function getRegionalPoiNameStyle(
     ['bridge', 'field', 'keep', 'pass', 'reach', 'ward'],
     ['den', 'depths', 'hall', 'rift', 'spire', 'way'],
   ];
+  const seedHash = createHashSeed(seed);
+  const prefixSetSeed = appendHashSeedPart(seedHash, 'name-prefix-set');
+  const suffixSetSeed = appendHashSeedPart(seedHash, 'name-suffix-set');
 
   return {
     regionX,
@@ -1738,14 +1760,14 @@ export function getRegionalPoiNameStyle(
     prefixes:
       prefixSets[
         Math.floor(
-          hash2D(`${seed}:name-prefix-set`, regionX, regionY) *
+          hash2DWithSeed(prefixSetSeed, regionX, regionY) *
             prefixSets.length
         )
       ],
     suffixes:
       suffixSets[
         Math.floor(
-          hash2D(`${seed}:name-suffix-set`, regionX, regionY) *
+          hash2DWithSeed(suffixSetSeed, regionX, regionY) *
             suffixSets.length
         )
       ],
@@ -1759,9 +1781,16 @@ export function generatePoiName(
   y: number
 ) {
   const style = getRegionalPoiNameStyle(seed, x, y);
-  const stem = `${seed}:${type}:${x}:${y}`;
-  const prefix = pickFrom(style.prefixes, hash2D(`${stem}:prefix`, x, y));
-  const suffix = pickFrom(style.suffixes, hash2D(`${stem}:suffix`, y, x));
+  const seedHash = createHashSeed(seed);
+  const typeSeed = appendHashSeedPart(seedHash, type);
+  const stemSeed = appendHashSeedPart(appendHashSeedPart(typeSeed, x), y);
+  const prefixSeed = appendHashSeedPart(stemSeed, 'prefix');
+  const suffixSeed = appendHashSeedPart(stemSeed, 'suffix');
+  const tailSeed = appendHashSeedPart(stemSeed, 'tail');
+  const formSeed = appendHashSeedPart(stemSeed, 'form');
+  const nounSeed = appendHashSeedPart(stemSeed, 'noun');
+  const prefix = pickFrom(style.prefixes, hash2DWithSeed(prefixSeed, x, y));
+  const suffix = pickFrom(style.suffixes, hash2DWithSeed(suffixSeed, y, x));
 
   if (type === 'town') {
     const forms = [
@@ -1769,50 +1798,50 @@ export function generatePoiName(
       `${prefix} ${suffix}`,
       `${prefix}${pickFrom(
         ['haven', 'stead', 'wick', 'port'],
-        hash2D(`${stem}:tail`, x + y, y)
+        hash2DWithSeed(tailSeed, x + y, y)
       )}`,
     ];
-    return pickFrom(forms, hash2D(`${stem}:form`, x - y, y - x));
+    return pickFrom(forms, hash2DWithSeed(formSeed, x - y, y - x));
   }
 
   if (type === 'cave') {
     const nouns = ['Cave', 'Grotto', 'Hollow', 'Mouth', 'Den', 'Sink'];
-    return `${prefix} ${pickFrom(nouns, hash2D(`${stem}:noun`, x, y))}`;
+    return `${prefix} ${pickFrom(nouns, hash2DWithSeed(nounSeed, x, y))}`;
   }
 
   if (type === 'dungeon') {
     const nouns = ['Barrow', 'Crypt', 'Depths', 'Hall', 'Vault', 'Warren'];
-    return `${prefix} ${pickFrom(nouns, hash2D(`${stem}:noun`, x, y))}`;
+    return `${prefix} ${pickFrom(nouns, hash2DWithSeed(nounSeed, x, y))}`;
   }
 
   if (type === 'ruins') {
     const nouns = ['Ruins', 'Forum', 'Temple', 'Sanctum', 'Court', 'Stones'];
-    return `${prefix} ${pickFrom(nouns, hash2D(`${stem}:noun`, x, y))}`;
+    return `${prefix} ${pickFrom(nouns, hash2DWithSeed(nounSeed, x, y))}`;
   }
 
   if (type === 'quarry') {
     const nouns = ['Quarry', 'Cut', 'Excavation', 'Pit', 'Works', 'Stone'];
-    return `${prefix} ${pickFrom(nouns, hash2D(`${stem}:noun`, x, y))}`;
+    return `${prefix} ${pickFrom(nouns, hash2DWithSeed(nounSeed, x, y))}`;
   }
 
   if (type === 'lighthouse') {
     const nouns = ['Beacon', 'Light', 'Watch', 'Lantern', 'Signal', 'Point'];
-    return `${prefix} ${pickFrom(nouns, hash2D(`${stem}:noun`, x, y))}`;
+    return `${prefix} ${pickFrom(nouns, hash2DWithSeed(nounSeed, x, y))}`;
   }
 
   if (type === 'ship') {
     const nouns = ['Mariner', 'Brig', 'Galleon', 'Hulk', 'Harbor', 'Mast'];
-    return `${prefix} ${pickFrom(nouns, hash2D(`${stem}:noun`, x, y))}`;
+    return `${prefix} ${pickFrom(nouns, hash2DWithSeed(nounSeed, x, y))}`;
   }
 
   if (type === 'observatory') {
     const nouns = ['Observatory', 'Dome', 'Lens', 'Crown', 'Apex', 'Spire'];
-    return `${prefix} ${pickFrom(nouns, hash2D(`${stem}:noun`, x, y))}`;
+    return `${prefix} ${pickFrom(nouns, hash2DWithSeed(nounSeed, x, y))}`;
   }
 
   if (type === 'station') {
     const nouns = ['Station', 'Depot', 'Platform', 'Junction', 'Terminal', 'Rail'];
-    return `${prefix} ${pickFrom(nouns, hash2D(`${stem}:noun`, x, y))}`;
+    return `${prefix} ${pickFrom(nouns, hash2DWithSeed(nounSeed, x, y))}`;
   }
 
   return `${prefix}${suffix}`;
