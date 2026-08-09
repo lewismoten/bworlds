@@ -136,6 +136,47 @@ export function countIndexedVertices(root: TraversableObjectLike): number {
   return indexedVertexCount;
 }
 
+export function countGeometryTriangles(root: TraversableObjectLike): number {
+  let triangleCount = 0;
+  const geometries = new Set<unknown>();
+
+  traverseSceneGraph(root, (child) => {
+    if (
+      !child.geometry ||
+      geometries.has(child.geometry) ||
+      !isTriangleGeometryObjectType(child.type)
+    ) {
+      return;
+    }
+    geometries.add(child.geometry);
+    triangleCount += getGeometryTriangleCount(child.geometry);
+  });
+
+  return triangleCount;
+}
+
+export function getMaxGeometryTriangleCount(root: TraversableObjectLike): number {
+  let maximumTriangleCount = 0;
+  const geometries = new Set<unknown>();
+
+  traverseSceneGraph(root, (child) => {
+    if (
+      !child.geometry ||
+      geometries.has(child.geometry) ||
+      !isTriangleGeometryObjectType(child.type)
+    ) {
+      return;
+    }
+    geometries.add(child.geometry);
+    maximumTriangleCount = Math.max(
+      maximumTriangleCount,
+      getGeometryTriangleCount(child.geometry)
+    );
+  });
+
+  return maximumTriangleCount;
+}
+
 function hasInvalidGeometryPositionCoordinates(geometry: unknown): boolean {
   const positionArray = (
     geometry as {
@@ -230,6 +271,14 @@ function getGeometryPositionItemSize(geometry: unknown): number {
   return typeof itemSize === 'number' && itemSize > 0 ? itemSize : 3;
 }
 
+function getGeometryTriangleCount(geometry: unknown): number {
+  const indexCount = getGeometryIndexCount(geometry);
+  if (indexCount > 0) {
+    return Math.floor(indexCount / 3);
+  }
+  return Math.floor(getGeometryVertexCount(geometry) / 3);
+}
+
 function traverseSceneGraph(
   root: TraversableObjectLike,
   callback: (child: TraversableObjectLike) => void
@@ -246,4 +295,8 @@ function traverseSceneGraph(
 
 function isLineObjectType(type: string): boolean {
   return type === 'Line' || type === 'LineLoop' || type === 'LineSegments';
+}
+
+function isTriangleGeometryObjectType(type: string): boolean {
+  return type.endsWith('Mesh');
 }

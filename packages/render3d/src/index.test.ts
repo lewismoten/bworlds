@@ -1208,6 +1208,8 @@ describe('render3d visibility helpers', () => {
       oversizedGeometryBoundsCount: 0,
       maxGeometryVertexCount: 25_000,
       indexedVertexCount: 75_000,
+      maxGeometryTriangleCount: 25_000,
+      triangleCount: 50_000,
       materialCount: 16,
       textureCount: 16,
       lightCount: 4,
@@ -1229,6 +1231,8 @@ describe('render3d visibility helpers', () => {
       oversizedGeometryBoundsCount: 0,
       maxGeometryVertexCount: 1_500,
       indexedVertexCount: 12_000,
+      maxGeometryTriangleCount: 1_000,
+      triangleCount: 3_000,
       materialCount: 3,
       textureCount: 4,
       lightCount: 1,
@@ -1262,6 +1266,8 @@ describe('render3d visibility helpers', () => {
         oversizedGeometryBoundsCount: 0,
         maxGeometryVertexCount: 48,
         indexedVertexCount: 0,
+        maxGeometryTriangleCount: 16,
+        triangleCount: 24,
         materialCount: 1,
         textureCount: 1,
         lightCount: 0,
@@ -1304,12 +1310,19 @@ describe('render3d visibility helpers', () => {
         vertexCount: 10_000,
         maxGeometryVertexCount: 2_500,
         indexedVertexCount: 0,
+        maxGeometryTriangleCount: 833,
+        triangleCount: 3_332,
       }),
       violations: [
         {
           metric: 'maxGeometryVertexCount',
           actual: 2_500,
           limit: 1_500,
+        },
+        {
+          metric: 'triangleCount',
+          actual: 3_332,
+          limit: 3_000,
         },
         {
           metric: 'materialCount',
@@ -1370,6 +1383,8 @@ describe('render3d visibility helpers', () => {
         oversizedGeometryBoundsCount: 0,
         maxGeometryVertexCount: 24,
         indexedVertexCount: 0,
+        maxGeometryTriangleCount: 8,
+        triangleCount: 42,
       }),
       violations: [
         {
@@ -1433,6 +1448,8 @@ describe('render3d visibility helpers', () => {
         oversizedGeometryBoundsCount: 0,
         maxGeometryVertexCount: 130,
         indexedVertexCount: 0,
+        maxGeometryTriangleCount: 0,
+        triangleCount: 0,
       }),
       violations: [
         {
@@ -1470,6 +1487,8 @@ describe('render3d visibility helpers', () => {
         oversizedGeometryBoundsCount: 0,
         maxGeometryVertexCount: 3,
         indexedVertexCount: 0,
+        maxGeometryTriangleCount: 1,
+        triangleCount: 1,
       }),
       violations: [
         {
@@ -1496,6 +1515,8 @@ describe('render3d visibility helpers', () => {
       stats: expect.objectContaining({
         maxGeometryVertexCount: 1_501,
         indexedVertexCount: 0,
+        maxGeometryTriangleCount: 500,
+        triangleCount: 500,
       }),
       violations: [
         {
@@ -1521,6 +1542,8 @@ describe('render3d visibility helpers', () => {
       stats: expect.objectContaining({
         oversizedGeometryBoundsCount: 1,
         indexedVertexCount: 0,
+        maxGeometryTriangleCount: 1,
+        triangleCount: 1,
       }),
       violations: [
         {
@@ -1541,12 +1564,87 @@ describe('render3d visibility helpers', () => {
       limits: getTileModelHardLimits('low'),
       stats: expect.objectContaining({
         indexedVertexCount: 12_001,
+        maxGeometryTriangleCount: 4_000,
+        triangleCount: 4_000,
       }),
       violations: [
         {
           metric: 'indexedVertexCount',
           actual: 12_001,
           limit: 12_000,
+        },
+        {
+          metric: 'maxGeometryTriangleCount',
+          actual: 4_000,
+          limit: 1_000,
+        },
+        {
+          metric: 'triangleCount',
+          actual: 4_000,
+          limit: 3_000,
+        },
+      ],
+    });
+  });
+
+  it('rejects models whose largest geometry exceeds the per-mesh triangle cap', () => {
+    const geometry = createMockIndexedGeometry(64, 3_003);
+    const root = createMockObject3D(createMockMaterial(), [], geometry);
+
+    expect(validateTileModelAgainstRenderBudget(root as never, 'low')).toEqual({
+      accepted: false,
+      limits: getTileModelHardLimits('low'),
+      stats: expect.objectContaining({
+        maxGeometryTriangleCount: 1_001,
+        triangleCount: 1_001,
+      }),
+      violations: [
+        {
+          metric: 'maxGeometryTriangleCount',
+          actual: 1_001,
+          limit: 1_000,
+        },
+      ],
+    });
+  });
+
+  it('rejects models whose total triangle count exceeds the model cap', () => {
+    const sharedMaterial = createMockMaterial();
+    const root = createMockObject3D(undefined, [
+      createMockObject3D(
+        sharedMaterial,
+        [],
+        createMockIndexedGeometry(64, 2_400)
+      ),
+      createMockObject3D(
+        sharedMaterial,
+        [],
+        createMockIndexedGeometry(64, 2_400)
+      ),
+      createMockObject3D(
+        sharedMaterial,
+        [],
+        createMockIndexedGeometry(64, 2_400)
+      ),
+      createMockObject3D(
+        sharedMaterial,
+        [],
+        createMockIndexedGeometry(64, 2_400)
+      ),
+    ]);
+
+    expect(validateTileModelAgainstRenderBudget(root as never, 'low')).toEqual({
+      accepted: false,
+      limits: getTileModelHardLimits('low'),
+      stats: expect.objectContaining({
+        maxGeometryTriangleCount: 800,
+        triangleCount: 3_200,
+      }),
+      violations: [
+        {
+          metric: 'triangleCount',
+          actual: 3_200,
+          limit: 3_000,
         },
       ],
     });

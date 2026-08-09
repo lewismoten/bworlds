@@ -31,10 +31,12 @@ import {
 } from '@bworlds/plugin-api';
 import {
   countGeometriesExceedingBounds,
+  countGeometryTriangles,
   countInvalidGeometryCoordinateSets,
   countIndexedVertices,
   countLineSegments,
   countPointVertices,
+  getMaxGeometryTriangleCount,
   getGeometryVertexCount,
 } from './tile-model-geometry-validation.ts';
 
@@ -239,6 +241,8 @@ const FULL_DETAIL_TILE_MODEL_HARD_LIMITS: TileModelHardLimits = {
   oversizedGeometryBoundsCount: 0,
   maxGeometryVertexCount: 25_000,
   indexedVertexCount: 75_000,
+  maxGeometryTriangleCount: 25_000,
+  triangleCount: 50_000,
   materialCount: 16,
   textureCount: 16,
   lightCount: 4,
@@ -261,6 +265,8 @@ const LOW_DETAIL_TILE_MODEL_HARD_LIMITS: TileModelHardLimits = {
   oversizedGeometryBoundsCount: 0,
   maxGeometryVertexCount: 1_500,
   indexedVertexCount: 12_000,
+  maxGeometryTriangleCount: 1_000,
+  triangleCount: 3_000,
   materialCount: 3,
   textureCount: 4,
   lightCount: 1,
@@ -296,6 +302,8 @@ export function validateTileModelAgainstRenderBudget(
     ),
     maxGeometryVertexCount: sceneResourceStats.largestGeometryVertexCount,
     indexedVertexCount: countIndexedVertices(root),
+    maxGeometryTriangleCount: getMaxGeometryTriangleCount(root),
+    triangleCount: countGeometryTriangles(root),
   };
   const limits = getTileModelHardLimits(detailLevel);
   const violations: TileModelBudgetViolation[] = [];
@@ -314,6 +322,8 @@ export function validateTileModelAgainstRenderBudget(
     'oversizedGeometryBoundsCount',
     'maxGeometryVertexCount',
     'indexedVertexCount',
+    'maxGeometryTriangleCount',
+    'triangleCount',
     'materialCount',
     'textureCount',
     'lightCount',
@@ -511,6 +521,8 @@ type TileModelHardLimits = {
   oversizedGeometryBoundsCount: number;
   maxGeometryVertexCount: number;
   indexedVertexCount: number;
+  maxGeometryTriangleCount: number;
+  triangleCount: number;
   materialCount: number;
   textureCount: number;
   lightCount: number;
@@ -533,6 +545,8 @@ type TileModelBudgetValidation = {
     oversizedGeometryBoundsCount: number;
     maxGeometryVertexCount: number;
     indexedVertexCount: number;
+    maxGeometryTriangleCount: number;
+    triangleCount: number;
   };
   limits: TileModelHardLimits;
   violations: TileModelBudgetViolation[];
