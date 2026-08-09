@@ -1,4 +1,7 @@
-import { createBoundedCache } from '@bworlds/cache-support';
+import {
+  createBoundedCache,
+  type CacheLike,
+} from '@bworlds/cache-support';
 import { octaveNoise2D } from '@bworlds/core';
 import {
   appendHashSeedLabel,
@@ -55,7 +58,10 @@ import {
   type TreeSpecies,
 } from '@bworlds/tree-support';
 import { createThresholdTerrainClassifier } from '@bworlds/tile-support';
-import { createPaintedCanvasTexture } from '@bworlds/three-support';
+import {
+  createPaintedCanvasTexture,
+  getSharedCylinderGeometry,
+} from '@bworlds/three-support';
 import type {
   CanOccupy3DContext,
   ClassifyOverworldTileContext,
@@ -1093,10 +1099,6 @@ const treeGeometryCache = new WeakMap<
     foliage: ThreeGeometryLike;
   }
 >();
-const forestTrunkGeometryCache = new WeakMap<
-  object,
-  Map<string, ThreeGeometryLike>
->();
 type TreeGeometry = NonNullable<ReturnType<typeof treeGeometryCache.get>>;
 
 export function createForestTilePlugin(): RuntimePlugin {
@@ -1729,21 +1731,9 @@ function getForestTrunkGeometry(
   three: ThreeHostLike,
   taperRatio: number
 ): ThreeGeometryLike {
-  let geometryCache = forestTrunkGeometryCache.get(three);
-  if (!geometryCache) {
-    geometryCache = new Map<string, ThreeGeometryLike>();
-    forestTrunkGeometryCache.set(three, geometryCache);
-  }
-
   const resolvedRatio = Math.max(0.32, Math.min(0.92, taperRatio));
-  const cacheKey = resolvedRatio.toFixed(2);
-  let geometry = geometryCache.get(cacheKey);
-  if (!geometry) {
-    const quantizedRatio = Number(cacheKey);
-    geometry = new three.CylinderGeometry(0.1 * quantizedRatio, 0.1, 1, 6);
-    geometryCache.set(cacheKey, geometry);
-  }
-  return geometry;
+  const quantizedRatio = Number(resolvedRatio.toFixed(2));
+  return getSharedCylinderGeometry(three, 0.1 * quantizedRatio, 0.1, 1, 6);
 }
 
 function getForestTrunkMidRadius(

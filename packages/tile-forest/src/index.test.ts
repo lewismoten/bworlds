@@ -1,11 +1,15 @@
 import { describe, expect, it, vi } from 'vitest';
 import { getRenderParticleEmitterMetadata } from '@bworlds/plugin-api';
 
-vi.mock('@bworlds/three-support', () => ({
-  createPaintedCanvasTexture() {
-    return { colorSpace: '', needsUpdate: false };
-  },
-}));
+vi.mock('@bworlds/three-support', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@bworlds/three-support')>();
+  return {
+    ...actual,
+    createPaintedCanvasTexture() {
+      return { colorSpace: '', needsUpdate: false };
+    },
+  };
+});
 
 import {
   getForestBeaverDamage,
