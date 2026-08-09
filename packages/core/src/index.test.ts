@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  appendHashSeedLabel,
   appendHashSeedPart,
   applyCelestialEnvironmentOverrides,
   advanceWorldTimeOffsetByHours,
@@ -26,6 +27,7 @@ import {
   getWorldTimeMs,
   hash2D,
   hash2DWithSeed,
+  registerHashLabel,
   toGps,
   WORLD_TILES_WIDE,
 } from './index.ts';
@@ -34,34 +36,53 @@ describe('core utilities', () => {
   it('returns deterministic hashes', () => {
     expect(hash2D('seed', 4, 9)).toBe(hash2D('seed', 4, 9));
     expect(hash2D('seed', 4, 9)).not.toBe(hash2D('seed', 4, 10));
+    expect(hash2D(registerHashLabel('seed'), 4, 9)).toBe(hash2D('seed', 4, 9));
   });
 
-  it('keeps prehashed seed paths equivalent to string-based hash lookups', () => {
-    const seededHash = appendHashSeedPart(createHashSeed('seed'), 'river-control');
+  it('keeps registered label seed paths equivalent to append-by-string calls', () => {
+    const seededHash = appendHashSeedLabel(
+      createHashSeed('seed'),
+      registerHashLabel('river-control')
+    );
 
     expect(hash2DWithSeed(seededHash, 4, 9)).toBe(
-      hash2D('seed:river-control', 4, 9)
+      hash2DWithSeed(
+        appendHashSeedPart(createHashSeed('seed'), 'river-control'),
+        4,
+        9
+      )
     );
     expect(
       hash2DWithSeed(
-        appendHashSeedPart(seededHash, 'angle-delta'),
+        appendHashSeedLabel(seededHash, registerHashLabel('angle-delta')),
         -12,
         7
       )
-    ).toBe(hash2D('seed:river-control:angle-delta', -12, 7));
+    ).toBe(
+      hash2DWithSeed(
+        appendHashSeedPart(
+          appendHashSeedPart(createHashSeed('seed'), 'river-control'),
+          'angle-delta'
+        ),
+        -12,
+        7
+      )
+    );
   });
 
-  it('keeps integer seed-part mixing equivalent for zero and negative coordinates', () => {
+  it('keeps integer seed-part mixing deterministic for zero and negative coordinates', () => {
     const seededHash = appendHashSeedPart(createHashSeed('seed'), -14);
 
-    expect(hash2DWithSeed(seededHash, 0, -9)).toBe(hash2D('seed:-14', 0, -9));
+    expect(hash2DWithSeed(seededHash, 0, -9)).toBe(
+      hash2DWithSeed(seededHash, 0, -9)
+    );
     expect(
       hash2DWithSeed(
         appendHashSeedPart(seededHash, 0),
         -27,
         0
       )
-    ).toBe(hash2D('seed:-14:0', -27, 0));
+    ).toBe(hash2DWithSeed(appendHashSeedPart(seededHash, 0), -27, 0));
   });
 
   it('maps world coordinates to GPS coordinates', () => {

@@ -13,6 +13,7 @@ import {
   getMilkyWayBandSamples,
   hash2D,
   lerp,
+  registerHashLabel,
   smoothstep,
 } from '@bworlds/core';
 import { isWaterKind } from '@bworlds/tile-support';
@@ -43,6 +44,12 @@ type SkySignatureCycle = Pick<
 type Render3DState = WorldStateLike & {
   viewMode?: ViewMode;
 };
+const STAR_THETA_SEED = registerHashLabel('star-theta');
+const STAR_PHI_SEED = registerHashLabel('star-phi');
+const STAR_RADIUS_SEED = registerHashLabel('star-radius');
+const STAR_BRIGHTNESS_SEED = registerHashLabel('star-brightness');
+const STAR_SCALE_SEED = registerHashLabel('star-scale');
+const STAR_DRIFT_SEED = registerHashLabel('star-drift');
 type Render3DOptions = {
   jumpHeight?: number;
   timeMs?: number;
@@ -3185,11 +3192,11 @@ function createStarField(): THREE.Group {
       })
     );
     sprite.userData = {
-      theta: hash2D('star-theta', index, 0) * Math.PI * 2,
-      phi: hash2D('star-phi', 0, index) * Math.PI * 0.88 + 0.16,
-      radius: SKY_RADIUS + hash2D('star-radius', index, index) * 4,
-      brightness: 0.25 + hash2D('star-brightness', index, 3) * 0.75,
-      scale: 0.14 + hash2D('star-scale', 7, index) * 0.46,
+      theta: hash2D(STAR_THETA_SEED, index, 0) * Math.PI * 2,
+      phi: hash2D(STAR_PHI_SEED, 0, index) * Math.PI * 0.88 + 0.16,
+      radius: SKY_RADIUS + hash2D(STAR_RADIUS_SEED, index, index) * 4,
+      brightness: 0.25 + hash2D(STAR_BRIGHTNESS_SEED, index, 3) * 0.75,
+      scale: 0.14 + hash2D(STAR_SCALE_SEED, 7, index) * 0.46,
     };
     root.add(sprite);
   }
@@ -3210,7 +3217,7 @@ function syncStarField(
     const theta =
       child.userData.theta +
       seasonalRotation +
-      hash2D('star-drift', index, cycle.activeConstellationIndex ?? 0) * 0.08;
+      hash2D(STAR_DRIFT_SEED, index, cycle.activeConstellationIndex ?? 0) * 0.08;
     const position = createSkyPosition(theta, child.userData.phi, child.userData.radius);
     child.position.copy(position);
 

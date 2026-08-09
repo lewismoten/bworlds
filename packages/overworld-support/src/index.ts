@@ -5,6 +5,7 @@ import {
   type CacheLike,
 } from '@bworlds/cache-support';
 import {
+  appendHashSeedLabel,
   appendHashSeedPart,
   clamp,
   createHashSeed,
@@ -12,6 +13,7 @@ import {
   hash2D,
   hash2DWithSeed,
   octaveNoise2D,
+  registerHashLabel,
   ridgedNoise2D,
   type PoiNameType,
 } from '@bworlds/core';
@@ -38,6 +40,23 @@ export type RiverControlPoint = {
   x: number;
   y: number;
 };
+
+const RIVER_CONTROL_POINT_COUNT_LABEL = registerHashLabel('river-control-point-count');
+const RIVER_CONTROL_START_X_LABEL = registerHashLabel('river-control-start-x');
+const RIVER_CONTROL_START_Y_LABEL = registerHashLabel('river-control-start-y');
+const RIVER_CONTROL_MEANDER_SIGN_LABEL = registerHashLabel('river-control-meander-sign');
+const RIVER_CONTROL_MEANDER_STRENGTH_LABEL = registerHashLabel('river-control-meander-strength');
+const RIVER_CONTROL_MEANDER_PHASE_LABEL = registerHashLabel('river-control-meander-phase');
+const RIVER_CONTROL_ANGLE_LABEL = registerHashLabel('river-control-angle');
+const RIVER_CONTROL_DISTANCE_LABEL = registerHashLabel('river-control-distance');
+const RIVER_CONTROL_ANGLE_DELTA_LABEL = registerHashLabel('river-control-angle-delta');
+const RIVER_FORK_CHANCE_LABEL = registerHashLabel('river-fork-chance');
+const RIVER_FORK_TRUNK_START_LABEL = registerHashLabel('river-fork-trunk-start');
+const RIVER_FORK_TRUNK_SPAN_LABEL = registerHashLabel('river-fork-trunk-span');
+const RIVER_FORK_ANGLE_SIGN_LABEL = registerHashLabel('river-fork-angle-sign');
+const RIVER_FORK_ANGLE_DELTA_LABEL = registerHashLabel('river-fork-angle-delta');
+const RIVER_FORK_POINT_COUNT_LABEL = registerHashLabel('river-fork-point-count');
+const RIVER_FORK_MID_SWAY_LABEL = registerHashLabel('river-fork-mid-sway');
 
 export type RiverForkPath = {
   trunkStartIndex: number;
@@ -183,15 +202,15 @@ export function createRiverControlPoints(
   cellY: number
 ): RiverControlPoint[] {
   const seedHash = createHashSeed(seed);
-  const pointCountSeed = appendHashSeedPart(seedHash, 'river-control-point-count');
-  const startXSeed = appendHashSeedPart(seedHash, 'river-control-start-x');
-  const startYSeed = appendHashSeedPart(seedHash, 'river-control-start-y');
-  const meanderSignSeed = appendHashSeedPart(seedHash, 'river-control-meander-sign');
-  const meanderStrengthSeed = appendHashSeedPart(seedHash, 'river-control-meander-strength');
-  const meanderPhaseSeed = appendHashSeedPart(seedHash, 'river-control-meander-phase');
-  const angleSeed = appendHashSeedPart(seedHash, 'river-control-angle');
-  const distanceSeed = appendHashSeedPart(seedHash, 'river-control-distance');
-  const angleDeltaSeed = appendHashSeedPart(seedHash, 'river-control-angle-delta');
+  const pointCountSeed = appendHashSeedLabel(seedHash, RIVER_CONTROL_POINT_COUNT_LABEL);
+  const startXSeed = appendHashSeedLabel(seedHash, RIVER_CONTROL_START_X_LABEL);
+  const startYSeed = appendHashSeedLabel(seedHash, RIVER_CONTROL_START_Y_LABEL);
+  const meanderSignSeed = appendHashSeedLabel(seedHash, RIVER_CONTROL_MEANDER_SIGN_LABEL);
+  const meanderStrengthSeed = appendHashSeedLabel(seedHash, RIVER_CONTROL_MEANDER_STRENGTH_LABEL);
+  const meanderPhaseSeed = appendHashSeedLabel(seedHash, RIVER_CONTROL_MEANDER_PHASE_LABEL);
+  const angleSeed = appendHashSeedLabel(seedHash, RIVER_CONTROL_ANGLE_LABEL);
+  const distanceSeed = appendHashSeedLabel(seedHash, RIVER_CONTROL_DISTANCE_LABEL);
+  const angleDeltaSeed = appendHashSeedLabel(seedHash, RIVER_CONTROL_ANGLE_DELTA_LABEL);
   const cellOriginX = cellX * RIVER_CONTROL_CELL_SIZE;
   const cellOriginY = cellY * RIVER_CONTROL_CELL_SIZE;
   const padding = RIVER_MAX_CONTROL_STEP + 1;
@@ -356,13 +375,13 @@ export function createRiverForkPath(
   controlPoints: RiverControlPoint[]
 ): RiverForkPath | null {
   const seedHash = createHashSeed(seed);
-  const chanceSeed = appendHashSeedPart(seedHash, 'river-fork-chance');
-  const trunkStartSeed = appendHashSeedPart(seedHash, 'river-fork-trunk-start');
-  const trunkSpanSeed = appendHashSeedPart(seedHash, 'river-fork-trunk-span');
-  const angleSignSeed = appendHashSeedPart(seedHash, 'river-fork-angle-sign');
-  const angleDeltaSeed = appendHashSeedPart(seedHash, 'river-fork-angle-delta');
-  const pointCountSeed = appendHashSeedPart(seedHash, 'river-fork-point-count');
-  const midSwaySeed = appendHashSeedPart(seedHash, 'river-fork-mid-sway');
+  const chanceSeed = appendHashSeedLabel(seedHash, RIVER_FORK_CHANCE_LABEL);
+  const trunkStartSeed = appendHashSeedLabel(seedHash, RIVER_FORK_TRUNK_START_LABEL);
+  const trunkSpanSeed = appendHashSeedLabel(seedHash, RIVER_FORK_TRUNK_SPAN_LABEL);
+  const angleSignSeed = appendHashSeedLabel(seedHash, RIVER_FORK_ANGLE_SIGN_LABEL);
+  const angleDeltaSeed = appendHashSeedLabel(seedHash, RIVER_FORK_ANGLE_DELTA_LABEL);
+  const pointCountSeed = appendHashSeedLabel(seedHash, RIVER_FORK_POINT_COUNT_LABEL);
+  const midSwaySeed = appendHashSeedLabel(seedHash, RIVER_FORK_MID_SWAY_LABEL);
   if (controlPoints.length < 4) {
     return null;
   }

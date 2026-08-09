@@ -2,7 +2,7 @@ import {
   createBoundedCache,
   type CacheLike,
 } from '@bworlds/cache-support';
-import { hash2D } from '@bworlds/core';
+import { hash2D, registerHashLabel } from '@bworlds/core';
 import type { WorldStateLike } from '@bworlds/plugin-api';
 
 type Point = { x: number; y: number };
@@ -60,6 +60,14 @@ type DockRouteGeometry = {
   segments: DockRouteSegment[];
 };
 
+type RouteSearchNode = {
+  x: number;
+  y: number;
+  distance: number;
+  key: string;
+  parent: RouteSearchNode | null;
+};
+
 const DEFAULT_SEARCH_RADIUS = 72;
 const MIN_ROUTE_DISTANCE = 20;
 const MAX_ROUTE_DISTANCE = 60;
@@ -68,6 +76,8 @@ const DOCK_STOP_SEARCH_RADIUS = 12;
 const PADDLE_BOAT_TIME_BUCKET_MS = 2_000;
 const DOCK_WHISTLE_WINDOW = 0.08;
 const DOCK_ROUTE_CACHE_LIMIT = 256;
+const DOCK_ROUTE_PREFIX_SEED = registerHashLabel('dock-route-prefix');
+const DOCK_ROUTE_SUFFIX_SEED = registerHashLabel('dock-route-suffix');
 const routeCache = new WeakMap<
   WorldStateLike,
   CacheLike<string, DockBoatRoute | null>
@@ -76,6 +86,12 @@ const routeGeometryCache = new WeakMap<
   WorldStateLike,
   CacheLike<string, DockRouteGeometry | null>
 >();
+const CARDINAL_DIRECTIONS = [
+  { x: 1, y: 0 },
+  { x: -1, y: 0 },
+  { x: 0, y: 1 },
+  { x: 0, y: -1 },
+] as const;
 
 export function resolveDockBoatRoute(
   state: WorldStateLike,
@@ -310,65 +326,63 @@ function findOceanRouteBetweenClusters(
   to: DockCluster
 ): { distance: number; pathKeys: Set<string>; pathPoints: Point[] } | null {
   const blocked = new Set<string>();
-  const queue: Array<{
-    x: number;
-    y: number;
-    distance: number;
-    pathKeys: string[];
-    pathPoints: Point[];
-  }> = [];
+  const queue: RouteSearchNode[] = [];
   const sourceKeys = new Set(from.tiles.map((tile) => toPointKey(tile.x, tile.y)));
   const targetKeys = new Set(to.tiles.map((tile) => toPointKey(tile.x, tile.y)));
 
   for (const edgeTile of from.edgeTiles) {
+    const key = toPointKey(edgeTile.x, edgeTile.y);
     queue.push({
       x: edgeTile.x,
       y: edgeTile.y,
       distance: 0,
-      pathKeys: [],
-      pathPoints: [],
+      key,
+      parent: null,
     });
-    blocked.add(toPointKey(edgeTile.x, edgeTile.y));
+    blocked.add(key);
   }
 
-  while (queue.length > 0) {
-    const current = queue.shift()!;
+  let queueIndex = 0;
+  while (queueIndex < queue.length) {
+    const current = queue[queueIndex]!;
+    queueIndex += 1;
     if (current.distance > MAX_ROUTE_DISTANCE) {
       continue;
     }
-    const currentKey = toPointKey(current.x, current.y);
-    if (current.distance >= MIN_ROUTE_DISTANCE && targetKeys.has(currentKey)) {
-      return {
-        distance: current.distance,
-        pathKeys: new Set(current.pathKeys),
-        pathPoints: current.pathPoints,
-      };
+    if (current.distance >= MIN_ROUTE_DISTANCE && targetKeys.has(current.key)) {
+      const pathKeys = new Set<string>();
+      const pathPoints: Point[] = [];
+      let cursor = current.parent;
+      while (cursor) {
+        if (!targetKeys.has(cursor.key)) {
+          pathKeys.add(cursor.key);
+          pathPoints.push({ x: cursor.x, y: cursor.y });
+        }
+        cursor = cursor.parent;
+      }
+      pathPoints.reverse();
+      return { distance: current.distance, pathKeys, pathPoints };
     }
 
-    for (const neighbor of [
-      { x: current.x + 1, y: current.y },
-      { x: current.x - 1, y: current.y },
-      { x: current.x, y: current.y + 1 },
-      { x: current.x, y: current.y - 1 },
-    ]) {
-      const neighborKey = toPointKey(neighbor.x, neighbor.y);
+    for (let directionIndex = 0; directionIndex < CARDINAL_DIRECTIONS.length; directionIndex += 1) {
+      const direction = CARDINAL_DIRECTIONS[directionIndex]!;
+      const neighborX = current.x + direction.x;
+      const neighborY = current.y + direction.y;
+      const neighborKey = toPointKey(neighborX, neighborY);
       if (blocked.has(neighborKey) || sourceKeys.has(neighborKey)) {
         continue;
       }
-      const kind = state.getCurrentTile(neighbor.x, neighbor.y).kind;
+      const kind = state.getCurrentTile(neighborX, neighborY).kind;
       if (!isBoatTravelKind(kind)) {
         continue;
       }
       blocked.add(neighborKey);
-      const reachesTarget = targetKeys.has(neighborKey);
       queue.push({
-        x: neighbor.x,
-        y: neighbor.y,
+        x: neighborX,
+        y: neighborY,
         distance: current.distance + 1,
-        pathKeys: reachesTarget ? current.pathKeys : [...current.pathKeys, neighborKey],
-        pathPoints: reachesTarget
-          ? current.pathPoints
-          : [...current.pathPoints, { x: neighbor.x, y: neighbor.y }],
+        key: neighborKey,
+        parent: current,
       });
     }
   }
@@ -413,21 +427,21 @@ function getDockClusterFromTile(
   const visited = new Set([toPointKey(tileX, tileY)]);
   const tiles: Point[] = [];
 
-  while (queue.length > 0) {
-    const current = queue.shift()!;
+  let queueIndex = 0;
+  while (queueIndex < queue.length) {
+    const current = queue[queueIndex]!;
+    queueIndex += 1;
     tiles.push({ x: current.x, y: current.y });
-    for (const neighbor of [
-      { x: current.x + 1, y: current.y },
-      { x: current.x - 1, y: current.y },
-      { x: current.x, y: current.y + 1 },
-      { x: current.x, y: current.y - 1 },
-    ]) {
-      const key = toPointKey(neighbor.x, neighbor.y);
-      if (visited.has(key) || state.getCurrentTile(neighbor.x, neighbor.y).kind !== 'dock') {
+    for (let directionIndex = 0; directionIndex < CARDINAL_DIRECTIONS.length; directionIndex += 1) {
+      const direction = CARDINAL_DIRECTIONS[directionIndex]!;
+      const neighborX = current.x + direction.x;
+      const neighborY = current.y + direction.y;
+      const key = toPointKey(neighborX, neighborY);
+      if (visited.has(key) || state.getCurrentTile(neighborX, neighborY).kind !== 'dock') {
         continue;
       }
       visited.add(key);
-      queue.push(neighbor);
+      queue.push({ x: neighborX, y: neighborY });
     }
   }
 
@@ -435,14 +449,21 @@ function getDockClusterFromTile(
     left.y === right.y ? left.x - right.x : left.y - right.y
   );
   const anchor = tiles[0]!;
-  const edgeTiles = tiles.filter((tile) =>
-    [
-      state.getCurrentTile(tile.x + 1, tile.y).kind,
-      state.getCurrentTile(tile.x - 1, tile.y).kind,
-      state.getCurrentTile(tile.x, tile.y + 1).kind,
-      state.getCurrentTile(tile.x, tile.y - 1).kind,
-    ].some((kind) => isBoatTravelKind(kind))
-  );
+  const edgeTiles: Point[] = [];
+  for (let index = 0; index < tiles.length; index += 1) {
+    const tile = tiles[index]!;
+    let isEdgeTile = false;
+    for (let directionIndex = 0; directionIndex < CARDINAL_DIRECTIONS.length; directionIndex += 1) {
+      const direction = CARDINAL_DIRECTIONS[directionIndex]!;
+      if (isBoatTravelKind(state.getCurrentTile(tile.x + direction.x, tile.y + direction.y).kind)) {
+        isEdgeTile = true;
+        break;
+      }
+    }
+    if (isEdgeTile) {
+      edgeTiles.push(tile);
+    }
+  }
   const stopName = findNearestDockStopName(state, tiles) ?? `Dock ${anchor.x},${anchor.y}`;
 
   return {
@@ -473,9 +494,14 @@ function findNearestDockStopName(
       if (!poiName) {
         continue;
       }
-      const distance = Math.min(
-        ...tiles.map((dockTile) => Math.hypot(x - dockTile.x, y - dockTile.y))
-      );
+      let distance = Number.POSITIVE_INFINITY;
+      for (let index = 0; index < tiles.length; index += 1) {
+        const dockTile = tiles[index]!;
+        const candidateDistance = Math.hypot(x - dockTile.x, y - dockTile.y);
+        if (candidateDistance < distance) {
+          distance = candidateDistance;
+        }
+      }
       if (!best || distance < best.distance || (distance === best.distance && poiName < best.name)) {
         best = { name: poiName, distance };
       }
@@ -497,10 +523,10 @@ function generateBoatRouteName(anchorX: number, anchorY: number): string {
   const prefixes = ['Harbor', 'Compass', 'Mast', 'Lantern', 'Tide', 'Mariner'];
   const suffixes = ['Circle', 'Circuit', 'Run', 'Line', 'Loop', 'Crown'];
   const prefix =
-    prefixes[Math.floor(hash2D('dock-route-prefix', anchorX, anchorY) * prefixes.length)] ??
+    prefixes[Math.floor(hash2D(DOCK_ROUTE_PREFIX_SEED, anchorX, anchorY) * prefixes.length)] ??
     prefixes[0]!;
   const suffix =
-    suffixes[Math.floor(hash2D('dock-route-suffix', anchorX, anchorY) * suffixes.length)] ??
+    suffixes[Math.floor(hash2D(DOCK_ROUTE_SUFFIX_SEED, anchorX, anchorY) * suffixes.length)] ??
     suffixes[0]!;
   return `${prefix} ${suffix}`;
 }

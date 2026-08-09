@@ -1,3 +1,21 @@
+import {
+  appendHashSeedLabel,
+  appendHashSeedPart,
+  createHashSeed,
+  hash2D,
+  hash2DWithSeed,
+  registerHashLabel,
+} from './hash.ts';
+
+export {
+  appendHashSeedLabel,
+  appendHashSeedPart,
+  createHashSeed,
+  hash2D,
+  hash2DWithSeed,
+  registerHashLabel,
+} from './hash.ts';
+
 export const CHUNK_SIZE = 32;
 export const EARTH_CIRCUMFERENCE_METERS = 40075017;
 export const TILE_METERS = 250;
@@ -189,6 +207,28 @@ const COMET_ORRERY_PROFILES = [
 ] as const;
 type PlanetSkyProfile = (typeof PLANET_SKY_PROFILES)[number];
 type CometOrreryProfile = (typeof COMET_ORRERY_PROFILES)[number];
+const CONSTELLATION_STARS_LABEL = registerHashLabel('stars');
+const CONSTELLATION_RADIAL_LABEL = registerHashLabel('r');
+const CONSTELLATION_THETA_LABEL = registerHashLabel('theta');
+const CONSTELLATION_STRETCH_LABEL = registerHashLabel('stretch');
+const CONSTELLATION_BRIGHTNESS_LABEL = registerHashLabel('b');
+const CONSTELLATION_DAYLIGHT_BIAS_LABEL = registerHashLabel('bias');
+const CONSTELLATION_SYMBOL_ROTATION_LABEL = registerHashLabel('symbol-rotation');
+const CONSTELLATION_RING_JITTER_LABEL = registerHashLabel('ring-jitter');
+const CONSTELLATION_ARCHETYPE_LABEL = registerHashLabel('constellation-archetype');
+const CONSTELLATION_ROTATION_LABEL = registerHashLabel('constellation-rotation');
+const CONSTELLATION_FORM_LABEL = registerHashLabel('constellation-form');
+const CONSTELLATION_FIGURE_LABEL = registerHashLabel('constellation-figure');
+const CONSTELLATION_PREFIX_LABEL = registerHashLabel('constellation-prefix');
+const CONSTELLATION_SUFFIX_LABEL = registerHashLabel('constellation-suffix');
+const PLANET_INTENSITY_SEED = registerHashLabel('planet-intensity');
+const POI_NAME_PREFIX_SET_LABEL = registerHashLabel('name-prefix-set');
+const POI_NAME_SUFFIX_SET_LABEL = registerHashLabel('name-suffix-set');
+const POI_NAME_PREFIX_LABEL = registerHashLabel('prefix');
+const POI_NAME_SUFFIX_LABEL = registerHashLabel('suffix');
+const POI_NAME_TAIL_LABEL = registerHashLabel('tail');
+const POI_NAME_FORM_LABEL = registerHashLabel('form');
+const POI_NAME_NOUN_LABEL = registerHashLabel('noun');
 
 function getPlanetSkyProfile(name: string, fallbackIndex = 0): PlanetSkyProfile {
   const index = PLANET_NAMES.indexOf(name);
@@ -964,14 +1004,14 @@ export function generateConstellations(
 ): ConstellationLike[] {
   const count = Math.max(1, Math.floor(options.count ?? DEFAULT_CONSTELLATION_COUNT));
   const seedHash = createHashSeed(seed);
-  const starsSeed = appendHashSeedPart(seedHash, 'stars');
-  const radialSeed = appendHashSeedPart(seedHash, 'r');
-  const thetaSeed = appendHashSeedPart(seedHash, 'theta');
-  const stretchSeed = appendHashSeedPart(seedHash, 'stretch');
-  const brightnessSeed = appendHashSeedPart(seedHash, 'b');
-  const daylightBiasSeed = appendHashSeedPart(seedHash, 'bias');
-  const symbolRotationSeed = appendHashSeedPart(seedHash, 'symbol-rotation');
-  const ringJitterSeed = appendHashSeedPart(seedHash, 'ring-jitter');
+  const starsSeed = appendHashSeedLabel(seedHash, CONSTELLATION_STARS_LABEL);
+  const radialSeed = appendHashSeedLabel(seedHash, CONSTELLATION_RADIAL_LABEL);
+  const thetaSeed = appendHashSeedLabel(seedHash, CONSTELLATION_THETA_LABEL);
+  const stretchSeed = appendHashSeedLabel(seedHash, CONSTELLATION_STRETCH_LABEL);
+  const brightnessSeed = appendHashSeedLabel(seedHash, CONSTELLATION_BRIGHTNESS_LABEL);
+  const daylightBiasSeed = appendHashSeedLabel(seedHash, CONSTELLATION_DAYLIGHT_BIAS_LABEL);
+  const symbolRotationSeed = appendHashSeedLabel(seedHash, CONSTELLATION_SYMBOL_ROTATION_LABEL);
+  const ringJitterSeed = appendHashSeedLabel(seedHash, CONSTELLATION_RING_JITTER_LABEL);
   const usedNames = new Set<string>();
   const prefixCounts = new Map<string, number>();
   const suffixCounts = new Map<string, number>();
@@ -1074,8 +1114,8 @@ function getConstellationArchetype(seedHash: number, index: number): Constellati
       connectionStyle: 'kite',
     },
   ] as const;
-  const archetypeSeed = appendHashSeedPart(seedHash, 'constellation-archetype');
-  const rotationSeed = appendHashSeedPart(seedHash, 'constellation-rotation');
+  const archetypeSeed = appendHashSeedLabel(seedHash, CONSTELLATION_ARCHETYPE_LABEL);
+  const rotationSeed = appendHashSeedLabel(seedHash, CONSTELLATION_ROTATION_LABEL);
 
   const base =
     baseArchetypes[
@@ -1119,10 +1159,10 @@ export function createConstellationName(
   figureCounts = new Map<string, number>()
 ) {
   const seedHash = typeof seed === 'number' ? seed : createHashSeed(seed);
-  const formSeed = appendHashSeedPart(seedHash, 'constellation-form');
-  const figureSeed = appendHashSeedPart(seedHash, 'constellation-figure');
-  const prefixSeed = appendHashSeedPart(seedHash, 'constellation-prefix');
-  const suffixSeed = appendHashSeedPart(seedHash, 'constellation-suffix');
+  const formSeed = appendHashSeedLabel(seedHash, CONSTELLATION_FORM_LABEL);
+  const figureSeed = appendHashSeedLabel(seedHash, CONSTELLATION_FIGURE_LABEL);
+  const prefixSeed = appendHashSeedLabel(seedHash, CONSTELLATION_PREFIX_LABEL);
+  const suffixSeed = appendHashSeedLabel(seedHash, CONSTELLATION_SUFFIX_LABEL);
   const useFigure = hash2DWithSeed(formSeed, index, 0) < 0.28;
   if (useFigure) {
     const figure = pickLimitedNamePart(
@@ -1566,94 +1606,6 @@ export function getOrbitalSkyPosition({
   };
 }
 
-export function hash2D(seed: string | number, x: number, y: number): number {
-  return hash2DWithSeed(getCachedHashSeed(seed), x, y);
-}
-
-export function createHashSeed(seed: string | number): number {
-  return getCachedHashSeed(seed);
-}
-
-export function appendHashSeedPart(
-  seedHash: number,
-  value: string | number
-): number {
-  return mixHashValue(mixHashCharacter(seedHash, 58), value);
-}
-
-export function hash2DWithSeed(seedHash: number, x: number, y: number): number {
-  let hash = seedHash;
-  hash = mixHashCharacter(hash, 58);
-  hash = mixHashValue(hash, x);
-  hash = mixHashCharacter(hash, 58);
-  hash = mixHashValue(hash, y);
-  return (hash >>> 0) / 4294967295;
-}
-
-const HASH_2D_SEED_CACHE_LIMIT = 4096;
-const hash2dSeedCache = new Map<string | number, number>();
-const PLANET_INTENSITY_SEED = createHashSeed('planet-intensity');
-
-function getCachedHashSeed(seed: string | number): number {
-  const cached = hash2dSeedCache.get(seed);
-  if (cached !== undefined) {
-    return cached;
-  }
-  let hash = 2166136261;
-  hash = mixHashValue(hash, seed);
-  hash2dSeedCache.set(seed, hash);
-  if (hash2dSeedCache.size > HASH_2D_SEED_CACHE_LIMIT) {
-    const oldest = hash2dSeedCache.keys().next().value;
-    if (oldest !== undefined) {
-      hash2dSeedCache.delete(oldest);
-    }
-  }
-  return hash;
-}
-
-function mixHashValue(hash: number, value: string | number): number {
-  if (typeof value === 'number' && Number.isFinite(value) && Number.isInteger(value)) {
-    return mixHashInteger(hash, value);
-  }
-  return mixHashString(hash, value);
-}
-
-function mixHashString(hash: number, value: string | number): number {
-  const text = String(value);
-  for (let index = 0; index < text.length; index += 1) {
-    hash = mixHashCharacter(hash, text.charCodeAt(index));
-  }
-  return hash;
-}
-
-function mixHashInteger(hash: number, value: number): number {
-  if (value === 0) {
-    return mixHashCharacter(hash, 48);
-  }
-
-  let remaining = value;
-  if (remaining < 0) {
-    hash = mixHashCharacter(hash, 45);
-    remaining = -remaining;
-  }
-
-  const digits: number[] = [];
-  while (remaining > 0) {
-    digits.push(48 + (remaining % 10));
-    remaining = Math.floor(remaining / 10);
-  }
-
-  for (let index = digits.length - 1; index >= 0; index -= 1) {
-    hash = mixHashCharacter(hash, digits[index] as number);
-  }
-  return hash;
-}
-
-function mixHashCharacter(hash: number, charCode: number): number {
-  hash ^= charCode;
-  return Math.imul(hash, 16777619);
-}
-
 function normalizeTurns(value: number): number {
   return ((value % 1) + 1) % 1;
 }
@@ -1781,8 +1733,8 @@ export function getRegionalPoiNameStyle(
     ['den', 'depths', 'hall', 'rift', 'spire', 'way'],
   ];
   const seedHash = createHashSeed(seed);
-  const prefixSetSeed = appendHashSeedPart(seedHash, 'name-prefix-set');
-  const suffixSetSeed = appendHashSeedPart(seedHash, 'name-suffix-set');
+  const prefixSetSeed = appendHashSeedLabel(seedHash, POI_NAME_PREFIX_SET_LABEL);
+  const suffixSetSeed = appendHashSeedLabel(seedHash, POI_NAME_SUFFIX_SET_LABEL);
 
   return {
     regionX,
@@ -1812,13 +1764,13 @@ export function generatePoiName(
 ) {
   const style = getRegionalPoiNameStyle(seed, x, y);
   const seedHash = createHashSeed(seed);
-  const typeSeed = appendHashSeedPart(seedHash, type);
+  const typeSeed = appendHashSeedPart(seedHash, registerHashLabel(type));
   const stemSeed = appendHashSeedPart(appendHashSeedPart(typeSeed, x), y);
-  const prefixSeed = appendHashSeedPart(stemSeed, 'prefix');
-  const suffixSeed = appendHashSeedPart(stemSeed, 'suffix');
-  const tailSeed = appendHashSeedPart(stemSeed, 'tail');
-  const formSeed = appendHashSeedPart(stemSeed, 'form');
-  const nounSeed = appendHashSeedPart(stemSeed, 'noun');
+  const prefixSeed = appendHashSeedLabel(stemSeed, POI_NAME_PREFIX_LABEL);
+  const suffixSeed = appendHashSeedLabel(stemSeed, POI_NAME_SUFFIX_LABEL);
+  const tailSeed = appendHashSeedLabel(stemSeed, POI_NAME_TAIL_LABEL);
+  const formSeed = appendHashSeedLabel(stemSeed, POI_NAME_FORM_LABEL);
+  const nounSeed = appendHashSeedLabel(stemSeed, POI_NAME_NOUN_LABEL);
   const prefix = pickFrom(style.prefixes, hash2DWithSeed(prefixSeed, x, y));
   const suffix = pickFrom(style.suffixes, hash2DWithSeed(suffixSeed, y, x));
 
