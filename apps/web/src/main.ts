@@ -134,6 +134,7 @@ import {
   formatDebugSnapshotFilename,
   type DebugSnapshotRecentEvent,
 } from './debug-snapshot.ts';
+import { collectMergedRecentDebugEvents } from './recent-debug-events.ts';
 import { shouldCollectDebugSnapshot } from './debug-sampling.ts';
 import { collectGraphicsCapabilities } from './graphics-capabilities.ts';
 import {
@@ -2085,7 +2086,15 @@ function downloadCurrentDebugSnapshot(): void {
     lod: {
       thresholds: lodThresholds,
     },
-    recentEvents: collectMergedRecentDebugEvents(nowMs, rendererStats.recentEvents),
+    recentEvents: collectMergedRecentDebugEvents(
+      debugRecentEventsState.events,
+      rendererStats.recentEvents,
+      nowMs,
+      {
+        windowMs: DEBUG_RECENT_EVENT_WINDOW_MS,
+        maxEntries: MAX_DEBUG_RECENT_EVENTS,
+      }
+    ),
     snapshot: latestSnapshot,
     history: debugResourceTrendState.performanceSamples,
   });
@@ -2108,25 +2117,6 @@ function recordDebugRecentEvent(event: DebugSnapshotRecentEvent): void {
       debugRecentEventsState.events.length - MAX_DEBUG_RECENT_EVENTS
     );
   }
-}
-
-function collectMergedRecentDebugEvents(
-  nowMs: number,
-  rendererEvents: Array<{
-    nowMs: number;
-    type: 'lod-changed' | 'model-rejected' | 'plugin-exceeded-budget';
-    tileKey?: string;
-    plugin?: string;
-    summary?: string;
-    fromDetailLevel?: string;
-    toDetailLevel?: string;
-  }>
-): DebugSnapshotRecentEvent[] {
-  const minimumTime = nowMs - DEBUG_RECENT_EVENT_WINDOW_MS;
-  return [...debugRecentEventsState.events, ...rendererEvents]
-    .filter((event) => event.nowMs >= minimumTime)
-    .sort((left, right) => left.nowMs - right.nowMs)
-    .slice(-MAX_DEBUG_RECENT_EVENTS);
 }
 
 function canLandOnOverworldTile(x: number, y: number): boolean {

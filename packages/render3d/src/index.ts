@@ -61,6 +61,7 @@ import {
   reconcilePendingWorldBuildQueueWithScratch,
   type PendingWorldBuildEntry,
 } from './pending-world-build-queue.ts';
+import { collectRecentWindowedEvents } from './recent-windowed-events.ts';
 import { getRenderEffectQualityProfile } from './render-effect-quality.ts';
 import {
   createVisibleWorldBuildOrderScratch,
@@ -88,6 +89,7 @@ export {
   reconcilePendingWorldBuildQueue,
   reconcilePendingWorldBuildQueueWithScratch,
 } from './pending-world-build-queue.ts';
+export { collectRecentWindowedEvents } from './recent-windowed-events.ts';
 export {
   createVisibleWorldBuildOrderScratch,
   fillVisibleWorldTileBuildOrder,
@@ -617,12 +619,10 @@ export function getRecentRenderDebugEvents(
     maxEntries?: number;
   } = {}
 ): Render3DDebugEvent[] {
-  const minimumTime = nowMs - windowMs;
-  const recentEvents = events.filter((event) => event.nowMs >= minimumTime);
-  if (recentEvents.length <= maxEntries) {
-    return recentEvents;
-  }
-  return recentEvents.slice(-maxEntries);
+  return collectRecentWindowedEvents(events, nowMs, {
+    windowMs,
+    maxEntries,
+  });
 }
 
 type DynamicTileNode = {
