@@ -50,6 +50,7 @@ export type MusicDebugSnapshot = {
   song: ProceduralMusicSong;
   notes: ProceduralMusicNote[];
   durationMs: number;
+  blueprintLabel: string;
   loopStartOffsetMs: number;
   loopEndOffsetMs: number;
   leadMaxLeapSemitones: number;
@@ -221,6 +222,7 @@ export function createMusicDebugSnapshot(
     song,
     notes: song.notes,
     durationMs,
+    blueprintLabel: song.blueprint.label,
     loopStartOffsetMs: song.loopStartOffsetMs,
     loopEndOffsetMs: song.loopEndOffsetMs,
     leadMaxLeapSemitones,
@@ -355,6 +357,7 @@ export function buildMusicDebugSummaryMarkup(
       <div><dt>Root Hz</dt><dd>${snapshot.theme.rootHz.toFixed(2)}</dd></div>
       <div><dt>Scheduled Notes</dt><dd>${snapshot.notes.length}</dd></div>
       <div><dt>Song Length</dt><dd>${formatMusicDebugDuration(snapshot.durationMs)}</dd></div>
+      <div><dt>Blueprint</dt><dd>${snapshot.blueprintLabel}</dd></div>
       <div><dt>Loop Range</dt><dd>${formatMusicDebugLoopRange(snapshot.loopStartOffsetMs, snapshot.loopEndOffsetMs)}</dd></div>
       <div><dt>Tempo</dt><dd>${snapshot.mood.tempoMultiplier.toFixed(2)}x</dd></div>
       <div><dt>Brightness</dt><dd>${snapshot.mood.brightness.toFixed(2)}x</dd></div>

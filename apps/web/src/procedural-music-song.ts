@@ -1,14 +1,17 @@
 import { hash2DWithSeed, registerHashLabel } from '@bworlds/core/hash';
 import {
+  resolveProceduralMusicBlueprint,
+  type ProceduralMusicBlueprint,
+  type ProceduralMusicSongSectionId,
+  type ProceduralMusicSongSectionTemplate,
+} from './procedural-music-blueprint.ts';
+import {
   resolveMusicTheme,
   scheduleProceduralMusicNotes,
   type MusicUpdateOptions,
   type ProceduralMusicNote,
 } from './procedural-music.ts';
 import { transformSongSectionNote } from './procedural-music-song-variation.ts';
-
-export type ProceduralMusicSongSectionId =
-  'intro' | 'a' | 'a-prime' | 'b' | 'variation' | 'return' | 'outro';
 
 export type ProceduralMusicSongSection = {
   id: ProceduralMusicSongSectionId;
@@ -23,48 +26,20 @@ export type ProceduralMusicSong = {
   durationMs: number;
   loopStartOffsetMs: number;
   loopEndOffsetMs: number;
+  blueprint: ProceduralMusicBlueprint;
   sections: ProceduralMusicSongSection[];
   notes: ProceduralMusicNote[];
 };
 
-type SongSectionTemplate = {
-  id: ProceduralMusicSongSectionId;
-  label: string;
-  baseDurationMs: number;
-  loopEligible: boolean;
-};
-
 const MUSIC_SONG_DURATION_SEED = registerHashLabel('music-song-duration');
-const SONG_SECTION_TEMPLATES: readonly SongSectionTemplate[] = [
-  { id: 'intro', label: 'Intro', baseDurationMs: 8_000, loopEligible: false },
-  { id: 'a', label: 'Section A', baseDurationMs: 24_000, loopEligible: true },
-  {
-    id: 'a-prime',
-    label: "Section A'",
-    baseDurationMs: 24_000,
-    loopEligible: true,
-  },
-  { id: 'b', label: 'Section B', baseDurationMs: 24_000, loopEligible: true },
-  {
-    id: 'variation',
-    label: 'Variation',
-    baseDurationMs: 24_000,
-    loopEligible: true,
-  },
-  { id: 'return', label: 'Return', baseDurationMs: 16_000, loopEligible: true },
-  { id: 'outro', label: 'Outro', baseDurationMs: 8_000, loopEligible: false },
-];
-const SONG_STRUCTURE_BASE_DURATION_MS = SONG_SECTION_TEMPLATES.reduce(
-  (total, section) => total + section.baseDurationMs,
-  0
-);
 
 export function createProceduralMusicSong(
   options: MusicUpdateOptions
 ): ProceduralMusicSong {
   const startMs = options.nowMs;
   const durationMs = resolveProceduralMusicSongDurationMs(options);
-  const sections = buildProceduralMusicSongSections(durationMs);
+  const blueprint = resolveProceduralMusicBlueprint(options);
+  const sections = buildProceduralMusicSongSections(blueprint, durationMs);
   const baseNotes = collectProceduralMusicSongNotes(options, durationMs);
   const notes = applySongSectionsToNotes(baseNotes, sections, startMs);
   const loopStartOffsetMs = sections[1]?.startOffsetMs ?? 0;
@@ -78,6 +53,7 @@ export function createProceduralMusicSong(
     durationMs,
     loopStartOffsetMs,
     loopEndOffsetMs,
+    blueprint,
     sections,
     notes,
   };
@@ -119,15 +95,21 @@ function getMusicSongDurationRange(
 }
 
 function buildProceduralMusicSongSections(
+  blueprint: ProceduralMusicBlueprint,
   durationMs: number
 ): ProceduralMusicSongSection[] {
-  const scale = durationMs / SONG_STRUCTURE_BASE_DURATION_MS;
+  const baseDurationMs = blueprint.sections.reduce(
+    (total, section) => total + section.baseDurationMs,
+    0
+  );
+  const scale = durationMs / baseDurationMs;
   const sections: ProceduralMusicSongSection[] = [];
   let cursorMs = 0;
 
-  for (let index = 0; index < SONG_SECTION_TEMPLATES.length; index += 1) {
-    const template = SONG_SECTION_TEMPLATES[index]!;
-    const isLast = index === SONG_SECTION_TEMPLATES.length - 1;
+  for (let index = 0; index < blueprint.sections.length; index += 1) {
+    const template: ProceduralMusicSongSectionTemplate =
+      blueprint.sections[index]!;
+    const isLast = index === blueprint.sections.length - 1;
     const durationForSection = isLast
       ? Math.max(1_000, durationMs - cursorMs)
       : Math.max(

@@ -54,6 +54,7 @@ describe('procedural music song', () => {
       'return',
       'outro',
     ]);
+    expect(first.blueprint.id).toBe('exploration-cycle');
     expect(first.loopStartOffsetMs).toBe(first.sections[1]?.startOffsetMs);
     expect(first.loopEndOffsetMs).toBe(
       first.sections[first.sections.length - 1]!.startOffsetMs
@@ -83,6 +84,7 @@ describe('procedural music song', () => {
     expect(sectionA).toBeDefined();
     expect(sectionAPrime).toBeDefined();
     expect(sectionVariation).toBeDefined();
+    expect(song.blueprint.label).toContain('A16');
 
     const extractLeadSignature = (sectionId: 'a' | 'a-prime' | 'variation') => {
       const section = sectionById.get(sectionId)!;

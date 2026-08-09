@@ -60,18 +60,19 @@ describe('music debug', () => {
     expect(first.leadPhraseCadence).toEqual(second.leadPhraseCadence);
     expect(first.leadMaxLeapSemitones).toBe(second.leadMaxLeapSemitones);
     expect(first.accidentalNoteCount).toBe(second.accidentalNoteCount);
+    expect(first.blueprintLabel).toBe(second.blueprintLabel);
     expect(first.notes).toEqual(second.notes);
     expect(first.durationMs).toBeGreaterThanOrEqual(120_000);
     expect(first.durationMs).toBeLessThanOrEqual(180_000);
     expect(first.song.sections.map((section) => section.id)).toEqual([
       'intro',
       'a',
-      'a-prime',
       'b',
-      'variation',
+      'a-prime',
       'return',
       'outro',
     ]);
+    expect(first.blueprintLabel).toContain("A'16");
     expect(first.roleCounts.bass).toBeGreaterThan(0);
   });
 
@@ -89,6 +90,7 @@ describe('music debug', () => {
     expect(markup).toContain('Loop Song');
     expect(summary).toContain('Scheduled Notes');
     expect(summary).toContain('Song Length');
+    expect(summary).toContain('Blueprint');
     expect(summary).toContain('Loop Range');
     expect(summary).toContain('Chords');
     expect(summary).toContain('Lead Motif');
