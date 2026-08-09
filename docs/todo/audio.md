@@ -67,20 +67,20 @@
 - [x] MIDI should include time signature(s)
 - [x] MIDI should include key signature(s)
 - [x] MIDI should include Division
-- [ ] MIDI should include an Author
-- [ ] MIDI should include Arranger
-- [ ] MIDI should include Created Date
-- [ ] MIDI should include Website
-- [ ] MIDI should include source
-- [ ] MIDI should include sequencer
-- [ ] MIDI should include instrument names
-- [ ] MIDI should include comments
-- [ ] MIDI may include multiple "More comments" (ie plugin, seed, parameters)
+- [x] MIDI should include an Author
+- [x] MIDI should include Arranger
+- [x] MIDI should include Created Date
+- [x] MIDI should include Website
+- [x] MIDI should include source
+- [x] MIDI should include sequencer
+- [x] MIDI should include instrument names
+- [x] MIDI should include comments
+- [x] MIDI may include multiple "More comments" (ie plugin, seed, parameters)
 - [ ] MIDI may include lyrics if any were generated for the song
-- [ ] MIDI should include channel volume(s)
-- [ ] MIDI should include pans(s)
-- [ ] MIDI should include bank select MSB(s)
-- [ ] MIDI should include bank select LSB(s)
+- [x] MIDI should include channel volume(s)
+- [x] MIDI should include pans(s)
+- [x] MIDI should include bank select MSB(s)
+- [x] MIDI should include bank select LSB(s)
 - [ ] MIDI Drum channel should include any use of sample sounds such as Closed HH, Cabasa, Open HH, Tambourine, Ride, Crash
 
 # Sound Effects

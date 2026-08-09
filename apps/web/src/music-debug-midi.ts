@@ -1,4 +1,5 @@
 import type { ProceduralInstrument } from './procedural-music.ts';
+import { resolveMusicStereoPan } from './procedural-music-mix.ts';
 import type { MusicDebugSnapshot } from './music-debug.ts';
 
 const MIDI_HEADER_CHUNK_ID = [0x4d, 0x54, 0x68, 0x64];
@@ -77,6 +78,15 @@ export type MusicDebugMidiFile = {
   mimeType: string;
 };
 
+export type MusicDebugMidiMetadataOptions = {
+  author?: string;
+  arranger?: string;
+  createdAt?: Date;
+  website?: string;
+  source?: string;
+  sequencer?: string;
+};
+
 type MusicDebugMidiDownloadEnvironment = {
   createObjectURL: (blob: Blob) => string;
   revokeObjectURL: (url: string) => void;
@@ -99,9 +109,11 @@ type BrowserMidiDownloadEnvironment = {
 };
 
 export function createMusicDebugMidiFile(
-  snapshot: MusicDebugSnapshot
+  snapshot: MusicDebugSnapshot,
+  metadataOptions: MusicDebugMidiMetadataOptions = {}
 ): MusicDebugMidiFile {
-  const tracks = buildMidiTracks(snapshot);
+  const metadata = resolveMusicDebugMidiMetadata(snapshot, metadataOptions);
+  const tracks = buildMidiTracks(snapshot, metadata);
   const encodedTracks = tracks.map((track) => {
     const trackBytes = encodeTrackEvents(track.events);
     return [
@@ -128,9 +140,10 @@ export function createMusicDebugMidiFile(
 
 export function downloadMusicDebugMidiFile(
   snapshot: MusicDebugSnapshot,
-  environment: MusicDebugMidiDownloadEnvironment = createBrowserMidiDownloadEnvironment()
+  environment: MusicDebugMidiDownloadEnvironment = createBrowserMidiDownloadEnvironment(),
+  metadataOptions: MusicDebugMidiMetadataOptions = {}
 ): void {
-  const file = createMusicDebugMidiFile(snapshot);
+  const file = createMusicDebugMidiFile(snapshot, metadataOptions);
   const blob = new Blob([file.bytes], { type: file.mimeType });
   const url = environment.createObjectURL(blob);
   const anchor = environment.createAnchor();
@@ -142,14 +155,18 @@ export function downloadMusicDebugMidiFile(
   environment.revokeObjectURL(url);
 }
 
-function buildMidiTracks(snapshot: MusicDebugSnapshot): MusicDebugMidiTrack[] {
-  const conductorTrack = buildConductorTrack(snapshot);
+function buildMidiTracks(
+  snapshot: MusicDebugSnapshot,
+  metadata: ResolvedMusicDebugMidiMetadata
+): MusicDebugMidiTrack[] {
+  const conductorTrack = buildConductorTrack(snapshot, metadata);
   const roleTracks = buildRoleTracks(snapshot);
   return [conductorTrack, ...roleTracks];
 }
 
 function buildConductorTrack(
-  snapshot: MusicDebugSnapshot
+  snapshot: MusicDebugSnapshot,
+  metadata: ResolvedMusicDebugMidiMetadata
 ): MusicDebugMidiTrack {
   const events: MidiTrackEvent[] = [];
   const bpm = resolveSongTempoBpm(snapshot);
@@ -168,11 +185,57 @@ function buildConductorTrack(
   events.push({
     tick: 0,
     order: 1,
-    data: [0xff, 0x51, 0x03, ...encodeUint24(microsecondsPerQuarter)],
+    data: [0xff, 0x01, ...encodeText(`Author: ${metadata.author}`)],
   });
   events.push({
     tick: 0,
     order: 2,
+    data: [0xff, 0x01, ...encodeText(`Arranger: ${metadata.arranger}`)],
+  });
+  events.push({
+    tick: 0,
+    order: 3,
+    data: [0xff, 0x01, ...encodeText(`Created Date: ${metadata.createdDate}`)],
+  });
+  events.push({
+    tick: 0,
+    order: 4,
+    data: [0xff, 0x01, ...encodeText(`Website: ${metadata.website}`)],
+  });
+  events.push({
+    tick: 0,
+    order: 5,
+    data: [0xff, 0x01, ...encodeText(`Source: ${metadata.source}`)],
+  });
+  events.push({
+    tick: 0,
+    order: 6,
+    data: [0xff, 0x01, ...encodeText(`Sequencer: ${metadata.sequencer}`)],
+  });
+  events.push({
+    tick: 0,
+    order: 7,
+    data: [0xff, 0x01, ...encodeText(`Comments: ${metadata.comments}`)],
+  });
+  for (let index = 0; index < metadata.moreComments.length; index += 1) {
+    events.push({
+      tick: 0,
+      order: 8 + index,
+      data: [
+        0xff,
+        0x01,
+        ...encodeText(`More comments: ${metadata.moreComments[index]!}`),
+      ],
+    });
+  }
+  events.push({
+    tick: 0,
+    order: 20,
+    data: [0xff, 0x51, 0x03, ...encodeUint24(microsecondsPerQuarter)],
+  });
+  events.push({
+    tick: 0,
+    order: 21,
     data: [
       0xff,
       0x58,
@@ -185,7 +248,7 @@ function buildConductorTrack(
   });
   events.push({
     tick: 0,
-    order: 3,
+    order: 22,
     data: [
       0xff,
       0x59,
@@ -198,7 +261,7 @@ function buildConductorTrack(
     const section = snapshot.song.sections[index]!;
     events.push({
       tick: msToTicks(section.startOffsetMs),
-      order: 10 + index,
+      order: 30 + index,
       data: [0xff, 0x06, ...encodeText(section.label)],
     });
   }
@@ -227,11 +290,56 @@ function buildRoleTracks(snapshot: MusicDebugSnapshot): MusicDebugMidiTrack[] {
       order: 0,
       data: [0xff, 0x03, ...encodeText(roleLabel)],
     });
+    events.push({
+      tick: 0,
+      order: 1,
+      data: [
+        0xff,
+        0x04,
+        ...encodeText(formatInstrumentName(instrument.family)),
+      ],
+    });
+    events.push({
+      tick: 0,
+      order: 2,
+      data: createControllerEvent(
+        channel,
+        0,
+        resolveBankSelectMsb(instrument.family)
+      ),
+    });
+    events.push({
+      tick: 0,
+      order: 3,
+      data: createControllerEvent(
+        channel,
+        32,
+        resolveBankSelectLsb(instrument.family)
+      ),
+    });
+    events.push({
+      tick: 0,
+      order: 4,
+      data: createControllerEvent(
+        channel,
+        7,
+        resolveChannelVolume(snapshot, role)
+      ),
+    });
+    events.push({
+      tick: 0,
+      order: 5,
+      data: createControllerEvent(
+        channel,
+        10,
+        resolveChannelPan(role, instrument)
+      ),
+    });
     if (!isPercussionFamily(instrument.family)) {
-      events.push(createProgramChangeEvent(channel, instrument.family, 1));
+      events.push(createProgramChangeEvent(channel, instrument.family, 6));
     }
 
-    let noteOrder = 10;
+    let noteOrder = 20;
     for (let index = 0; index < snapshot.notes.length; index += 1) {
       const note = snapshot.notes[index]!;
       if (note.role !== role) {
@@ -282,6 +390,14 @@ function createProgramChangeEvent(
   };
 }
 
+function createControllerEvent(
+  channel: number,
+  controller: number,
+  value: number
+): number[] {
+  return [0xb0 | channel, controller, clamp(Math.round(value), 0, 127)];
+}
+
 function encodeTrackEvents(events: readonly MidiTrackEvent[]): number[] {
   const sorted = [...events].sort((left, right) => {
     if (left.tick !== right.tick) {
@@ -320,6 +436,13 @@ function formatRoleTrackLabel(
   return `${roleLabel}: ${familyLabel}`;
 }
 
+function formatInstrumentName(family: ProceduralInstrument['family']): string {
+  return family
+    .split('-')
+    .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
+    .join(' ');
+}
+
 function createBrowserMidiDownloadEnvironment(): MusicDebugMidiDownloadEnvironment {
   const browserEnvironment: BrowserMidiDownloadEnvironment = {
     createObjectURL(blob) {
@@ -344,6 +467,52 @@ function resolveSongTempoBpm(snapshot: MusicDebugSnapshot): number {
   const adjustedQuarterMs =
     baseQuarterMs / Math.max(0.1, snapshot.mood.tempoMultiplier);
   return MICROSECONDS_PER_MINUTE / Math.max(1, adjustedQuarterMs * 1000);
+}
+
+type ResolvedMusicDebugMidiMetadata = {
+  author: string;
+  arranger: string;
+  createdDate: string;
+  website: string;
+  source: string;
+  sequencer: string;
+  comments: string;
+  moreComments: string[];
+};
+
+function resolveMusicDebugMidiMetadata(
+  snapshot: MusicDebugSnapshot,
+  options: MusicDebugMidiMetadataOptions
+): ResolvedMusicDebugMidiMetadata {
+  const createdAt = options.createdAt ?? new Date();
+  return {
+    author: options.author?.trim() || 'bworlds',
+    arranger: options.arranger?.trim() || 'bworlds music debug page',
+    createdDate: formatMidiMetadataDate(createdAt),
+    website: options.website?.trim() || '/debug/music/',
+    source:
+      options.source?.trim() ||
+      `Theme ${snapshot.theme.id} at (${snapshot.options.clusterX}, ${snapshot.options.clusterY})`,
+    sequencer:
+      options.sequencer?.trim() || 'bworlds procedural music midi exporter',
+    comments: [
+      snapshot.blueprintLabel,
+      `${snapshot.songDna.modeLabel} ${snapshot.songDna.meterLabel}`,
+    ].join(' | '),
+    moreComments: [
+      `Seed ${snapshot.options.clusterX},${snapshot.options.clusterY}`,
+      `Tile ${snapshot.options.tileKind} / Context ${snapshot.options.contextType}`,
+      `Mood tempo ${snapshot.mood.tempoMultiplier.toFixed(2)}x / brightness ${snapshot.mood.brightness.toFixed(2)}x / Encounter ${snapshot.options.encounterMode}`,
+      `Vocabulary ${snapshot.vocabularySummary.join(', ')}`,
+    ],
+  };
+}
+
+function formatMidiMetadataDate(date: Date): string {
+  const year = date.getUTCFullYear();
+  const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(date.getUTCDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
 function resolveMidiTimeSignature(snapshot: MusicDebugSnapshot): {
@@ -414,6 +583,91 @@ function resolveVelocity(
           ? 0.9
           : 0.82;
   return clamp(Math.round(volume * roleBias * 2048), 24, 127);
+}
+
+function resolveChannelVolume(
+  snapshot: MusicDebugSnapshot,
+  role: keyof typeof ROLE_CHANNELS
+): number {
+  let loudestVolume = 0;
+  for (let index = 0; index < snapshot.notes.length; index += 1) {
+    const note = snapshot.notes[index]!;
+    if (note.role === role) {
+      loudestVolume = Math.max(loudestVolume, note.volume);
+    }
+  }
+
+  const fallback =
+    role === 'lead'
+      ? 110
+      : role === 'harmony'
+        ? 102
+        : role === 'bass'
+          ? 100
+          : 108;
+  return loudestVolume > 0
+    ? clamp(Math.round(loudestVolume * 2048), 72, 127)
+    : fallback;
+}
+
+function resolveChannelPan(
+  role: keyof typeof ROLE_CHANNELS,
+  instrument: Pick<ProceduralInstrument, 'id'>
+): number {
+  const pan = resolveMusicStereoPan({ role, instrumentId: instrument.id }, 0);
+  return Math.round((pan + 1) * 63.5);
+}
+
+function resolveBankSelectMsb(family: ProceduralInstrument['family']): number {
+  if (isPercussionFamily(family)) {
+    return 1;
+  }
+  if (
+    family === 'vocals' ||
+    family === 'lead-guitar' ||
+    family === 'violin' ||
+    family === 'flute' ||
+    family === 'trumpet' ||
+    family === 'synth-lead'
+  ) {
+    return 0;
+  }
+  if (
+    family === 'piano' ||
+    family === 'guitar' ||
+    family === 'organ' ||
+    family === 'strings' ||
+    family === 'synth-pad'
+  ) {
+    return 2;
+  }
+  return 3;
+}
+
+function resolveBankSelectLsb(family: ProceduralInstrument['family']): number {
+  const familyOrder: ProceduralInstrument['family'][] = [
+    'vocals',
+    'lead-guitar',
+    'violin',
+    'flute',
+    'trumpet',
+    'synth-lead',
+    'piano',
+    'guitar',
+    'organ',
+    'strings',
+    'synth-pad',
+    'bass-guitar',
+    'upright-bass',
+    'bass-synth',
+    'tuba',
+    'kick',
+    'snare',
+    'cymbals',
+    'shaker',
+    'hand-percussion',
+  ];
+  return Math.max(0, familyOrder.indexOf(family));
 }
 
 function msToTicks(milliseconds: number): number {

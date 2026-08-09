@@ -16,7 +16,9 @@ describe('music debug midi', () => {
       yearProgress: 0.75,
     });
 
-    const file = createMusicDebugMidiFile(snapshot);
+    const file = createMusicDebugMidiFile(snapshot, {
+      createdAt: new Date('2026-08-09T00:00:00.000Z'),
+    });
 
     expect(file.fileName).toBe('bworlds-town-square-3--2.mid');
     expect(file.mimeType).toBe('audio/midi');
@@ -49,6 +51,45 @@ describe('music debug midi', () => {
     expect(file.bytes.length).toBeGreaterThan(256);
   });
 
+  it('adds descriptive metadata text and instrument names to exported tracks', () => {
+    const snapshot = createMusicDebugSnapshot({
+      tileKind: 'forest',
+      contextType: 'overworld',
+      clusterX: 4,
+      clusterY: -1,
+    });
+
+    const file = createMusicDebugMidiFile(snapshot, {
+      author: 'bworlds test suite',
+      arranger: 'music debug page',
+      createdAt: new Date('2026-08-09T12:34:56.000Z'),
+      website: 'https://example.test/debug/music/',
+      source: 'forest preview source',
+      sequencer: 'bworlds midi tests',
+    });
+    const chunks = parseMidiChunks(file.bytes);
+    const conductorTexts = readTrackMetaTexts(chunks.tracks[0]!, 0x01);
+
+    expect(conductorTexts).toContain('Author: bworlds test suite');
+    expect(conductorTexts).toContain('Arranger: music debug page');
+    expect(conductorTexts).toContain('Created Date: 2026-08-09');
+    expect(conductorTexts).toContain(
+      'Website: https://example.test/debug/music/'
+    );
+    expect(conductorTexts).toContain('Source: forest preview source');
+    expect(conductorTexts).toContain('Sequencer: bworlds midi tests');
+    expect(conductorTexts.some((text) => text.startsWith('Comments: '))).toBe(
+      true
+    );
+    expect(
+      conductorTexts.filter((text) => text.startsWith('More comments: '))
+    ).toHaveLength(4);
+    expect(readTrackMetaTexts(chunks.tracks[1]!, 0x04)).toHaveLength(1);
+    expect(readTrackMetaTexts(chunks.tracks[2]!, 0x04)).toHaveLength(1);
+    expect(readTrackMetaTexts(chunks.tracks[3]!, 0x04)).toHaveLength(1);
+    expect(readTrackMetaTexts(chunks.tracks[4]!, 0x04)).toHaveLength(1);
+  });
+
   it('adds section marker meta events to the conductor track', () => {
     const snapshot = createMusicDebugSnapshot({
       tileKind: 'forest',
@@ -64,6 +105,27 @@ describe('music debug midi', () => {
     expect(markers).toContain(snapshot.song.sections[0]?.label);
     expect(markers).toContain(snapshot.song.sections[1]?.label);
     expect(markers).toContain(snapshot.song.sections.at(-1)?.label);
+  });
+
+  it('adds role setup controller events for bank select, volume, and pan', () => {
+    const snapshot = createMusicDebugSnapshot({
+      tileKind: 'town',
+      contextType: 'town',
+      clusterX: 3,
+      clusterY: -2,
+    });
+
+    const file = createMusicDebugMidiFile(snapshot, {
+      createdAt: new Date('2026-08-09T00:00:00.000Z'),
+    });
+    const chunks = parseMidiChunks(file.bytes);
+
+    for (const track of chunks.tracks.slice(1)) {
+      expect(readControllerValue(track!, 0)).not.toBeNull();
+      expect(readControllerValue(track!, 32)).not.toBeNull();
+      expect(readControllerValue(track!, 7)).not.toBeNull();
+      expect(readControllerValue(track!, 10)).not.toBeNull();
+    }
   });
 
   it('downloads the encoded midi file through a blob url', () => {
@@ -236,6 +298,42 @@ function readTrackEndTick(track: Uint8Array): number {
   }
 
   return tick;
+}
+
+function readControllerValue(
+  track: Uint8Array,
+  controller: number
+): number | null {
+  let offset = 0;
+
+  while (offset < track.length) {
+    const delta = readVariableLengthQuantity(track, offset);
+    offset += delta.length;
+    const status = track[offset++];
+    if (status === undefined) {
+      break;
+    }
+    if (status === 0xff) {
+      const lengthInfo = readVariableLengthQuantity(track, offset + 1);
+      offset += 1 + lengthInfo.length + lengthInfo.value;
+      continue;
+    }
+    if ((status & 0xf0) === 0xb0) {
+      const controllerNumber = track[offset++];
+      const value = track[offset++];
+      if (controllerNumber === controller) {
+        return value ?? null;
+      }
+      continue;
+    }
+    if ((status & 0xf0) === 0xc0 || (status & 0xf0) === 0xd0) {
+      offset += 1;
+      continue;
+    }
+    offset += 2;
+  }
+
+  return null;
 }
 
 function readUint16(bytes: Uint8Array, offset: number): number {
