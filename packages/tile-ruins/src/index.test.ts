@@ -238,4 +238,34 @@ describe('tile ruins', () => {
 
     expect(createModelSignature(resolved)).toEqual(createModelSignature(baseline));
   });
+
+  it('reuses the cached glow material for ruins in the same region', () => {
+    const plugin = createRuinsTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'ruins');
+    const state = createRuinsState();
+
+    const leftModel = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'ruins' },
+      tileX: 6,
+      tileY: 4,
+    }) as FakeGroup;
+    const rightModel = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'ruins' },
+      tileX: 11,
+      tileY: 9,
+    }) as FakeGroup;
+
+    const leftGlow = leftModel.children.find(
+      (node) => node instanceof FakeMesh && node.userData?.poiNightLightEmitter
+    ) as FakeMesh | undefined;
+    const rightGlow = rightModel.children.find(
+      (node) => node instanceof FakeMesh && node.userData?.poiNightLightEmitter
+    ) as FakeMesh | undefined;
+
+    expect(leftGlow?.material).toBe(rightGlow?.material);
+  });
 });

@@ -84,8 +84,14 @@ const resolveRuinsStyle = createRegionalMaterialResolver(
     );
 
     return {
+      materialCache: new WeakMap<object, RuinsStyle>(),
       createMaterials(three: ThreeHostLike) {
-        return {
+        const cached = this.materialCache.get(three as object);
+        if (cached) {
+          return cached;
+        }
+
+        const style = {
           stoneMaterial: createPaintedStandardMaterial(three, {
             color: stoneColor,
             roughness: 0.96,
@@ -124,7 +130,16 @@ const resolveRuinsStyle = createRegionalMaterialResolver(
               );
             },
           }),
+          glowMaterial: new three.MeshStandardMaterial({
+            color: '#93c5fd',
+            emissive: '#93c5fd',
+            emissiveIntensity: 0.01,
+            roughness: 0.28,
+            metalness: 0.04,
+          }),
         };
+        this.materialCache.set(three as object, style);
+        return style;
       },
     };
   }
@@ -277,13 +292,7 @@ export function createRuinsTilePlugin(): RuntimePlugin {
           const glowCore = markPoiLightEmitter(
             new three.Mesh(
               new three.SphereGeometry(0.05, 8, 8),
-              new three.MeshStandardMaterial({
-                color: '#93c5fd',
-                emissive: '#93c5fd',
-                emissiveIntensity: 0.01,
-                roughness: 0.28,
-                metalness: 0.04,
-              })
+              style.glowMaterial
             ),
             {
               kind: 'emissive-mesh',
@@ -392,8 +401,10 @@ function withAlpha(hex: string, alpha: number): string {
 type RuinsStyle = {
   stoneMaterial: ThreeMaterialLike;
   accentMaterial: ThreeMaterialLike;
+  glowMaterial: ThreeMaterialLike;
 };
 
 type RuinsStyleBlueprint = {
+  materialCache: WeakMap<object, RuinsStyle>;
   createMaterials(three: ThreeHostLike): RuinsStyle;
 };
