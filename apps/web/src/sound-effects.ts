@@ -9,6 +9,7 @@ import { resolveSoundEffectCategory } from './audio-categories.ts';
 import type { NearbyAmbientKind } from './nearby-ambient.ts';
 import type { NearbyAmbientProfile } from './nearby-ambient.ts';
 import { resolveAmbientPlaybackLayers } from './ambient-soundscape.ts';
+import { resolveAmbientSeason } from './ambient-cycle.ts';
 import {
   buildRenderedProceduralSoundBufferKey,
   canRenderProceduralSoundToBuffer,
@@ -406,6 +407,38 @@ export function getSurfaceAudioProfile(
   tileKind: SurfaceKind | undefined
 ): SurfaceAudioProfile {
   return SURFACE_AUDIO_PROFILES[getSurfaceAudioFamily(tileKind)];
+}
+
+export function resolveMovementIdentityVariant(options: {
+  kind: 'footstep' | 'landing';
+  tileKind: SurfaceKind | undefined;
+  yearProgress?: number;
+}): string | undefined {
+  const season = resolveAmbientSeason(options.yearProgress);
+  const family = getSurfaceAudioFamily(options.tileKind);
+  if (season === 'autumn' && (family === 'grass' || family === 'vegetation')) {
+    return 'dry-leaves';
+  }
+  if (season === 'winter' && family === 'snow') {
+    return 'winter-snow';
+  }
+  return undefined;
+}
+
+export function resolveAmbientIdentityVariant(options: {
+  ambientKind: NearbyAmbientKind;
+  tileKind: SurfaceKind | undefined;
+  yearProgress?: number;
+  fallback?: string;
+}): string | undefined {
+  if (
+    resolveAmbientSeason(options.yearProgress) === 'winter' &&
+    options.tileKind === 'ice' &&
+    (options.ambientKind === 'ocean' || options.ambientKind === 'river')
+  ) {
+    return 'frozen';
+  }
+  return options.fallback;
 }
 
 function createProceduralEffectSeed(
@@ -850,7 +883,12 @@ export function createSoundEffectController(
               recipeId: buildProceduralSoundRecipeId(
                 resolveAmbientEffectKind(layer.kind),
                 layer.kind,
-                layer.identityVariant
+                resolveAmbientIdentityVariant({
+                  ambientKind: layer.kind,
+                  tileKind,
+                  yearProgress,
+                  fallback: layer.identityVariant,
+                })
               ),
             });
           }
@@ -1035,6 +1073,11 @@ export function createSoundEffectController(
       }
 
       if (previousJumping && !isJumping) {
+        const landingIdentityVariant = resolveMovementIdentityVariant({
+          kind: 'landing',
+          tileKind,
+          yearProgress,
+        });
         play(
           'landing',
           nowMs,
@@ -1045,7 +1088,8 @@ export function createSoundEffectController(
           getMovementSoundDurationMs(
             'landing',
             getSurfaceAudioProfile(tileKind)
-          )
+          ),
+          landingIdentityVariant
         );
       }
       previousJumping = isJumping;
@@ -1059,6 +1103,11 @@ export function createSoundEffectController(
         return;
       }
       lastFootstepAtMs = nowMs;
+      const footstepIdentityVariant = resolveMovementIdentityVariant({
+        kind: 'footstep',
+        tileKind,
+        yearProgress,
+      });
       play(
         'footstep',
         nowMs,
@@ -1066,7 +1115,8 @@ export function createSoundEffectController(
         emitter,
         listener,
         1,
-        getMovementSoundDurationMs('footstep', profile)
+        getMovementSoundDurationMs('footstep', profile),
+        footstepIdentityVariant
       );
     },
   };

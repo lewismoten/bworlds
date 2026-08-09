@@ -239,9 +239,9 @@
 - [x] Add spring frog and insect activity.
 - [x] Increase summer insects.
 - [x] Add autumn leaf sounds.
-- [ ] Generate dry-leaf footsteps during autumn.
-- [ ] Generate snow footsteps during winter.
-- [ ] Generate ice cracking and frozen-water ambience.
+- [x] Generate dry-leaf footsteps during autumn.
+- [x] Generate snow footsteps during winter.
+- [x] Generate ice cracking and frozen-water ambience.
 - [x] Reduce wildlife activity during harsh winter conditions.
 - [ ] Generate seasonal storms.
 - [x] Associate certain rare ambient sounds with particular seasons.
@@ -250,19 +250,19 @@
 
 # Footsteps and Movement
 
-- [ ] Generate footsteps based on terrain material.
+- [x] Generate footsteps based on terrain material.
 - [ ] Support dirt footsteps.
-- [ ] Support grass footsteps.
-- [ ] Support mud footsteps.
-- [ ] Support sand footsteps.
-- [ ] Support gravel footsteps.
-- [ ] Support rock footsteps.
-- [ ] Support wood footsteps.
-- [ ] Support metal footsteps.
-- [ ] Support stone-floor footsteps.
-- [ ] Support snow footsteps.
-- [ ] Support shallow-water footsteps.
-- [ ] Support vegetation footsteps.
+- [x] Support grass footsteps.
+- [x] Support mud footsteps.
+- [x] Support sand footsteps.
+- [x] Support gravel footsteps.
+- [x] Support rock footsteps.
+- [x] Support wood footsteps.
+- [x] Support metal footsteps.
+- [x] Support stone-floor footsteps.
+- [x] Support snow footsteps.
+- [x] Support shallow-water footsteps.
+- [x] Support vegetation footsteps.
 - [ ] Change footsteps based on walking speed.
 - [ ] Change footsteps when running.
 - [ ] Change footsteps when sneaking.
@@ -272,7 +272,7 @@
 - [ ] Add armor rattling proportional to armor type.
 - [ ] Add backpack or inventory movement when appropriate.
 - [ ] Generate landing sounds according to fall distance.
-- [ ] Generate jumping sounds.
+- [x] Generate jumping sounds.
 - [ ] Generate climbing sounds based on surface.
 - [ ] Generate swimming strokes.
 - [ ] Generate wading sounds based on water depth.

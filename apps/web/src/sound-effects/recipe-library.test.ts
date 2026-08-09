@@ -464,6 +464,80 @@ describe('sound recipe library', () => {
     ]);
   });
 
+  it('supports frozen water and seasonal movement recipe variants', () => {
+    const frozenRiverRecipe = buildProceduralSoundRecipe({
+      kind: 'river-ambience',
+      identityVariant: 'frozen',
+      profile: DEFAULT_SURFACE_PROFILE,
+      variantOffset: 0,
+      resolveAdvancementFrequency: () => 300,
+      resolveAmbientSoundFrequency: () => 172,
+      resolveInteractionFrequency: () => 128,
+      resolveInteractionWaveform: (_tileKind, fallback) => fallback,
+      resolvePaddleBoatCalliopeFrequency: () => 520,
+      resolveSteamWhistleFrequency: () => 360,
+    });
+    const frozenOceanRecipe = buildProceduralSoundRecipe({
+      kind: 'ocean',
+      identityVariant: 'frozen',
+      profile: DEFAULT_SURFACE_PROFILE,
+      variantOffset: 0,
+      resolveAdvancementFrequency: () => 300,
+      resolveAmbientSoundFrequency: () => 172,
+      resolveInteractionFrequency: () => 128,
+      resolveInteractionWaveform: (_tileKind, fallback) => fallback,
+      resolvePaddleBoatCalliopeFrequency: () => 520,
+      resolveSteamWhistleFrequency: () => 360,
+    });
+    const leafStepRecipe = buildProceduralSoundRecipe({
+      kind: 'footstep',
+      tileKind: 'forest',
+      identityVariant: 'dry-leaves',
+      profile: DEFAULT_SURFACE_PROFILE,
+      variantOffset: 0,
+      resolveAdvancementFrequency: () => 300,
+      resolveAmbientSoundFrequency: () => 172,
+      resolveInteractionFrequency: () => 128,
+      resolveInteractionWaveform: (_tileKind, fallback) => fallback,
+      resolvePaddleBoatCalliopeFrequency: () => 520,
+      resolveSteamWhistleFrequency: () => 360,
+    });
+    const winterLandingRecipe = buildProceduralSoundRecipe({
+      kind: 'landing',
+      tileKind: 'snow',
+      identityVariant: 'winter-snow',
+      profile: DEFAULT_SURFACE_PROFILE,
+      variantOffset: 0,
+      resolveAdvancementFrequency: () => 300,
+      resolveAmbientSoundFrequency: () => 172,
+      resolveInteractionFrequency: () => 128,
+      resolveInteractionWaveform: (_tileKind, fallback) => fallback,
+      resolvePaddleBoatCalliopeFrequency: () => 520,
+      resolveSteamWhistleFrequency: () => 360,
+    });
+
+    expect(frozenRiverRecipe.id).toBe('river-ambience:frozen');
+    expect(frozenRiverRecipe.layers?.map((layer) => layer.id)).toEqual([
+      'river-frozen-bed',
+      'river-ice-cracks',
+    ]);
+    expect(frozenOceanRecipe.id).toBe('ocean:frozen');
+    expect(frozenOceanRecipe.layers?.map((layer) => layer.id)).toEqual([
+      'ocean-frozen-surge',
+      'ocean-ice-shear',
+    ]);
+    expect(leafStepRecipe.id).toBe('footstep:forest:dry-leaves');
+    expect(leafStepRecipe.waveform).toEqual(['triangle', 'square']);
+    expect(leafStepRecipe.noiseColor).toEqual(['brown', 'pink']);
+    expect(leafStepRecipe.baseFrequency).toBeGreaterThan(
+      DEFAULT_SURFACE_PROFILE.footstepFrequency
+    );
+    expect(winterLandingRecipe.id).toBe('landing:snow:winter-snow');
+    expect(winterLandingRecipe.baseFrequency).toBeLessThan(
+      DEFAULT_SURFACE_PROFILE.landingFrequency
+    );
+  });
+
   it('supports thunder variants with crack, rumble, and reflection layers', () => {
     const overheadRecipe = buildProceduralSoundRecipe({
       kind: 'thunder',

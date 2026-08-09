@@ -2935,6 +2935,47 @@ describe('sound effects', () => {
     expect(played[0]?.frequency).toBeGreaterThan(played[1]?.frequency ?? 0);
   });
 
+  it('uses seasonal dry-leaf and winter-snow movement variants when appropriate', () => {
+    const played: ProceduralSoundEffect[] = [];
+    const controller = createSoundEffectController({
+      play(effect) {
+        played.push(effect);
+      },
+    });
+
+    controller.update({
+      nowMs: 0,
+      walking: true,
+      isJumping: false,
+      viewMode: '3d',
+      tileKind: 'forest',
+      yearProgress: 0.7,
+    });
+    controller.update({
+      nowMs: 400,
+      walking: false,
+      isJumping: true,
+      viewMode: '3d',
+      tileKind: 'snow',
+      yearProgress: 0.96,
+    });
+    controller.update({
+      nowMs: 800,
+      walking: false,
+      isJumping: false,
+      viewMode: '3d',
+      tileKind: 'snow',
+      yearProgress: 0.96,
+    });
+
+    expect(played.map((effect) => effect.recipeId)).toEqual([
+      'footstep:forest:dry-leaves',
+      'landing:snow:winter-snow',
+    ]);
+    expect(['triangle', 'square']).toContain(played[0]?.waveform ?? '');
+    expect(played[1]?.volume).toBeLessThanOrEqual(0.06);
+  });
+
   it('does not emit movement sounds outside 3d mode', () => {
     const play = vi.fn();
     const controller = createSoundEffectController({ play });
@@ -3876,6 +3917,35 @@ describe('sound effects', () => {
     expect(played.map((effect) => effect.kind)).toEqual(['ocean', 'ocean']);
     expect(played[0]?.waveform).toBe('sine');
     expect(played[0]?.recipeId).toMatch(/^ocean:ocean:/);
+  });
+
+  it('uses frozen water ambience variants while standing on winter ice', () => {
+    const played: ProceduralSoundEffect[] = [];
+    const controller = createSoundEffectController({
+      play(effect) {
+        played.push(effect);
+      },
+    });
+
+    controller.update({
+      nowMs: 0,
+      walking: false,
+      isJumping: false,
+      viewMode: '3d',
+      tileKind: 'ice',
+      yearProgress: 0.96,
+      nearbyAmbient: {
+        kind: 'river',
+        intensity: 0.8,
+        emitter: { x: 2, y: 0 },
+        listener: { x: 0, y: 0 },
+      },
+      listener: { x: 0, y: 0 },
+    });
+
+    expect(played.map((effect) => effect.recipeId)).toContain(
+      'river-ambience:river:frozen'
+    );
   });
 
   it('blends nearby forest and coastal ambience instead of replacing one outright', () => {

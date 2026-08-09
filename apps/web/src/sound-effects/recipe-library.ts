@@ -333,7 +333,8 @@ export function buildProceduralSoundRecipe(
     resolveBaseSoundEffectDurationMs(options.kind);
   const baseVolume = resolveBaseSoundEffectVolume(
     options.kind,
-    options.profile
+    options.profile,
+    options.identityVariant
   );
 
   return applyFamilyVariationProfile(
@@ -350,9 +351,13 @@ export function buildProceduralSoundRecipe(
         options.kind,
         options.tileKind,
         options.profile,
-        options.resolveInteractionWaveform
+        options.resolveInteractionWaveform,
+        options.identityVariant
       ),
-      noiseColor: resolveBaseSoundEffectNoiseColor(options.kind),
+      noiseColor: resolveBaseSoundEffectNoiseColor(
+        options.kind,
+        options.identityVariant
+      ),
       envelope: resolveProceduralSoundEnvelope(options.kind),
       pitchEnvelope: resolveProceduralSoundPitchEnvelope(options.kind),
       filters: resolveProceduralSoundFilters(options.kind),
@@ -566,6 +571,19 @@ function resolveProceduralSoundFilters(kind: SoundEffectKind) {
       ] as const;
     default:
       return undefined;
+  }
+}
+
+function resolveMovementIdentityVariantOffset(
+  identityVariant: string | undefined
+): number {
+  switch (identityVariant) {
+    case 'dry-leaves':
+      return 14;
+    case 'winter-snow':
+      return -10;
+    default:
+      return 0;
   }
 }
 
@@ -1582,6 +1600,36 @@ function resolveProceduralSoundLayers(
         },
       ] as const;
     case 'river-ambience':
+      if (identityVariant === 'frozen') {
+        return [
+          {
+            id: 'river-frozen-bed',
+            waveform: ['triangle', 'square'] as const,
+            noiseColor: ['white', 'brown'] as const,
+            frequencyMultiplier: 0.74,
+            durationMultiplier: 1,
+            volumeMultiplier: 0.4,
+            frequencyVariation: 0.02,
+            durationVariation: 0.12,
+            volumeVariation: 0.08,
+            variationDepth: 0.78,
+          },
+          {
+            id: 'river-ice-cracks',
+            waveform: ['square', 'triangle'] as const,
+            noiseColor: 'white' as const,
+            frequencyMultiplier: 1.22,
+            durationMultiplier: 0.72,
+            volumeMultiplier: 0.18,
+            startOffsetMs: 28,
+            startOffsetVariation: 0.22,
+            frequencyVariation: 0.028,
+            durationVariation: 0.16,
+            volumeVariation: 0.08,
+            variationDepth: 0.72,
+          },
+        ] as const;
+      }
       if (identityVariant === 'water-splashes') {
         return [
           {
@@ -3120,6 +3168,36 @@ function resolveProceduralSoundLayers(
         },
       ] as const;
     case 'ocean':
+      if (identityVariant === 'frozen') {
+        return [
+          {
+            id: 'ocean-frozen-surge',
+            waveform: ['triangle', 'square'] as const,
+            noiseColor: ['white', 'brown'] as const,
+            frequencyMultiplier: 0.72,
+            durationMultiplier: 1,
+            volumeMultiplier: 0.42,
+            frequencyVariation: 0.022,
+            durationVariation: 0.14,
+            volumeVariation: 0.08,
+            variationDepth: 0.8,
+          },
+          {
+            id: 'ocean-ice-shear',
+            waveform: ['square', 'triangle'] as const,
+            noiseColor: 'white' as const,
+            frequencyMultiplier: 1.16,
+            durationMultiplier: 0.76,
+            volumeMultiplier: 0.16,
+            startOffsetMs: 32,
+            startOffsetVariation: 0.24,
+            frequencyVariation: 0.026,
+            durationVariation: 0.16,
+            volumeVariation: 0.08,
+            variationDepth: 0.74,
+          },
+        ] as const;
+      }
       if (identityVariant === 'water-splashes') {
         return [
           {
@@ -3414,9 +3492,15 @@ function resolveBaseSoundEffectFrequency(
         options.variantOffset * 0.4
       );
     case 'ocean':
-      return options.resolveAmbientSoundFrequency('ocean', undefined);
+      return (
+        options.resolveAmbientSoundFrequency('ocean', undefined) +
+        (options.identityVariant === 'frozen' ? 18 : 0)
+      );
     case 'river-ambience':
-      return options.resolveAmbientSoundFrequency('river', undefined);
+      return (
+        options.resolveAmbientSoundFrequency('river', undefined) +
+        (options.identityVariant === 'frozen' ? 22 : 0)
+      );
     case 'forest-ambience':
       return options.resolveAmbientSoundFrequency('forest', undefined);
     case 'plains-ambience':
@@ -3463,10 +3547,18 @@ function resolveBaseSoundEffectFrequency(
         options.profile.landingFrequency - 18 + options.variantOffset
       );
     case 'landing':
-      return options.profile.landingFrequency + options.variantOffset;
+      return (
+        options.profile.landingFrequency +
+        options.variantOffset +
+        resolveMovementIdentityVariantOffset(options.identityVariant)
+      );
     case 'footstep':
     default:
-      return options.profile.footstepFrequency + options.variantOffset;
+      return (
+        options.profile.footstepFrequency +
+        options.variantOffset +
+        resolveMovementIdentityVariantOffset(options.identityVariant)
+      );
   }
 }
 
@@ -3522,7 +3614,8 @@ function resolveBaseSoundEffectDurationMs(kind: SoundEffectKind): number {
 
 function resolveBaseSoundEffectVolume(
   kind: SoundEffectKind,
-  profile: SoundRecipeSurfaceProfile
+  profile: SoundRecipeSurfaceProfile,
+  identityVariant?: string
 ): number {
   switch (kind) {
     case 'jump':
@@ -3538,9 +3631,9 @@ function resolveBaseSoundEffectVolume(
     case 'wind':
       return 0.018;
     case 'ocean':
-      return 0.026;
+      return identityVariant === 'frozen' ? 0.022 : 0.026;
     case 'river-ambience':
-      return 0.022;
+      return identityVariant === 'frozen' ? 0.019 : 0.022;
     case 'forest-ambience':
       return 0.018;
     case 'plains-ambience':
@@ -3573,10 +3666,18 @@ function resolveBaseSoundEffectVolume(
     case 'blocked':
       return profile.landingVolume * 0.7;
     case 'landing':
-      return profile.landingVolume;
+      return identityVariant === 'winter-snow'
+        ? profile.landingVolume * 0.9
+        : identityVariant === 'dry-leaves'
+          ? profile.landingVolume * 0.96
+          : profile.landingVolume;
     case 'footstep':
     default:
-      return profile.footstepVolume;
+      return identityVariant === 'winter-snow'
+        ? profile.footstepVolume * 0.92
+        : identityVariant === 'dry-leaves'
+          ? profile.footstepVolume * 0.98
+          : profile.footstepVolume;
   }
 }
 
@@ -3584,7 +3685,8 @@ function resolveBaseSoundEffectWaveform(
   kind: SoundEffectKind,
   tileKind: string | undefined,
   profile: SoundRecipeSurfaceProfile,
-  resolveInteractionWaveform: ResolveSoundRecipeOptions['resolveInteractionWaveform']
+  resolveInteractionWaveform: ResolveSoundRecipeOptions['resolveInteractionWaveform'],
+  identityVariant?: string
 ): SoundWaveform | readonly SoundWaveform[] {
   switch (kind) {
     case 'blocked':
@@ -3600,9 +3702,11 @@ function resolveBaseSoundEffectWaveform(
     case 'wind':
       return 'triangle';
     case 'ocean':
-      return 'sine';
+      return identityVariant === 'frozen' ? ['triangle', 'square'] : 'sine';
     case 'river-ambience':
-      return ['triangle', 'sine'];
+      return identityVariant === 'frozen'
+        ? ['triangle', 'square']
+        : ['triangle', 'sine'];
     case 'forest-ambience':
       return ['triangle', 'sine', 'square'];
     case 'plains-ambience':
@@ -3636,12 +3740,15 @@ function resolveBaseSoundEffectWaveform(
     case 'jump':
     case 'landing':
     default:
-      return profile.waveform;
+      return identityVariant === 'dry-leaves'
+        ? ['triangle', 'square']
+        : profile.waveform;
   }
 }
 
 function resolveBaseSoundEffectNoiseColor(
-  kind: SoundEffectKind
+  kind: SoundEffectKind,
+  identityVariant?: string
 ): ProceduralNoiseColor | readonly ProceduralNoiseColor[] | undefined {
   switch (kind) {
     case 'thunder':
@@ -3655,9 +3762,11 @@ function resolveBaseSoundEffectNoiseColor(
     case 'wind':
       return 'brown';
     case 'ocean':
-      return 'brown';
+      return identityVariant === 'frozen' ? ['white', 'brown'] : 'brown';
     case 'river-ambience':
-      return ['white', 'pink'];
+      return identityVariant === 'frozen'
+        ? ['white', 'brown']
+        : ['white', 'pink'];
     case 'forest-ambience':
       return ['pink', 'brown'];
     case 'plains-ambience':
@@ -3669,6 +3778,6 @@ function resolveBaseSoundEffectNoiseColor(
     case 'ruins-ambience':
       return 'pink';
     default:
-      return undefined;
+      return identityVariant === 'dry-leaves' ? ['brown', 'pink'] : undefined;
   }
 }
