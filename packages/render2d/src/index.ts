@@ -1,3 +1,4 @@
+import { getOrCreateMapValue } from '@bworlds/cache-support';
 import { drawTileSprite, getTileVariantIndex } from '@bworlds/atlas';
 import { getDaylightCycleState } from '@bworlds/core';
 import type {
@@ -140,10 +141,7 @@ export function createViewportTileSampler(state: Render2DState): TileSampler {
   const tileCache = new Map<string, TileLike>();
   return (worldX: number, worldY: number) => {
     const key = `${worldX}:${worldY}`;
-    if (!tileCache.has(key)) {
-      tileCache.set(key, state.getCurrentTile(worldX, worldY));
-    }
-    return tileCache.get(key) ?? { kind: 'unknown' };
+    return getOrCreateMapValue(tileCache, key, () => state.getCurrentTile(worldX, worldY));
   };
 }
 

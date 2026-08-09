@@ -1,3 +1,4 @@
+import { getOrCreateMapValue } from '@bworlds/cache-support';
 import {
   clamp,
   generatePoiName,
@@ -336,11 +337,7 @@ function getPoiWindResponderProfile(
     normalized.gustPhase,
   ].join(':');
 
-  if (!poiWindResponderProfileCache.has(key)) {
-    poiWindResponderProfileCache.set(key, normalized);
-  }
-
-  return poiWindResponderProfileCache.get(key)!;
+  return getOrCreateMapValue(poiWindResponderProfileCache, key, () => normalized);
 }
 
 export function canPlaceLandPoi(

@@ -166,6 +166,7 @@ This is especially relevant given the heap profile you were examining earlier.
 * [ ] Prefer a single iteration when several array operations can be combined.
 * [ ] Avoid large temporary arrays.
 * [ ] Avoid repeatedly converting between object representations.
+* [X] Remove `has()` + `get()` double cache lookups.
 * [ ] Cache deterministic calculations.
 * [ ] Bound every cache.
 * [ ] Monitor garbage-collection pauses.

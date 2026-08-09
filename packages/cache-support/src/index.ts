@@ -24,6 +24,34 @@ type CacheEntry<Value> = {
   value: Value;
 };
 
+export function getOrCreateCacheValue<Key, Value>(
+  cache: CacheLike<Key, Value>,
+  key: Key,
+  create: () => Value
+): Value {
+  const cached = cache.get(key);
+  if (cached !== undefined) {
+    return cached;
+  }
+  const value = create();
+  cache.set(key, value);
+  return value;
+}
+
+export function getOrCreateMapValue<Key, Value>(
+  cache: Map<Key, Value>,
+  key: Key,
+  create: () => Value
+): Value {
+  const cached = cache.get(key);
+  if (cached !== undefined) {
+    return cached;
+  }
+  const value = create();
+  cache.set(key, value);
+  return value;
+}
+
 export function createBoundedCache<Key, Value>(
   maxEntries = 32
 ): BoundedCache<Key, Value> {
@@ -86,10 +114,13 @@ export function createBoundedCache<Key, Value>(
 }
 
 export function createCoordinateCache<Value>(): CoordinateCache<Value> {
-  const rows = new Map<number, Map<number, Value>>();
+  const rows = new Map<number, Map<number, CacheEntry<Value>>>();
   let entryCount = 0;
 
-  const lookupRow = (x: number): Map<number, Value> | undefined => rows.get(x);
+  const lookupRow = (x: number): Map<number, CacheEntry<Value>> | undefined =>
+    rows.get(x);
+  const lookupEntry = (x: number, y: number): CacheEntry<Value> | undefined =>
+    lookupRow(x)?.get(y);
 
   return {
     clear() {
@@ -97,26 +128,29 @@ export function createCoordinateCache<Value>(): CoordinateCache<Value> {
       entryCount = 0;
     },
     get(x, y) {
-      return lookupRow(x)?.get(y);
+      return lookupEntry(x, y)?.value;
     },
     has(x, y) {
-      return lookupRow(x)?.has(y) ?? false;
+      return lookupEntry(x, y) !== undefined;
     },
     set(x, y, value) {
       let row = lookupRow(x);
       if (!row) {
-        row = new Map<number, Value>();
+        row = new Map<number, CacheEntry<Value>>();
         rows.set(x, row);
       }
-      if (!row.has(y)) {
+      const entry = row.get(y);
+      if (entry === undefined) {
         entryCount += 1;
+        row.set(y, { value });
+        return;
       }
-      row.set(y, value);
+      entry.value = value;
     },
     getOrCreate(x, y, create) {
-      const cached = lookupRow(x)?.get(y);
-      if (cached !== undefined || this.has(x, y)) {
-        return cached as Value;
+      const cached = lookupEntry(x, y);
+      if (cached !== undefined) {
+        return cached.value;
       }
       const value = create();
       this.set(x, y, value);

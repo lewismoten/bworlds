@@ -1,4 +1,8 @@
-import type { CacheLike } from '@bworlds/cache-support';
+import {
+  getOrCreateCacheValue,
+  getOrCreateMapValue,
+  type CacheLike,
+} from '@bworlds/cache-support';
 import type { ThreeHostLike } from '@bworlds/plugin-api';
 
 export function createRegionKey(
@@ -31,10 +35,9 @@ export function getOrCreateRegionalValue<T>(
   }) => T
 ): T {
   const context = createRegionKey(tileX, tileY, regionSize);
-  if (!cache.has(context.key)) {
-    cache.set(context.key, createValue(context));
-  }
-  return cache.get(context.key)!;
+  return cache instanceof Map
+    ? getOrCreateMapValue(cache, context.key, () => createValue(context))
+    : getOrCreateCacheValue(cache, context.key, () => createValue(context));
 }
 
 export function createRegionalValueResolver<T>(
@@ -76,17 +79,21 @@ export function createCoordinateValueResolver<T>(
 ) {
   return function resolveCoordinateValue(tileX: number, tileY: number): T {
     const key = `${tileX}:${tileY}`;
-    if (!cache.has(key)) {
-      cache.set(
-        key,
-        createValue({
-          key,
-          tileX,
-          tileY,
-        })
-      );
-    }
-    return cache.get(key)!;
+    return cache instanceof Map
+      ? getOrCreateMapValue(cache, key, () =>
+          createValue({
+            key,
+            tileX,
+            tileY,
+          })
+        )
+      : getOrCreateCacheValue(cache, key, () =>
+          createValue({
+            key,
+            tileX,
+            tileY,
+          })
+        );
   };
 }
 

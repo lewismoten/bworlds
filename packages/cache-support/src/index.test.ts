@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { createBoundedCache, createCoordinateCache } from './index.ts';
+import {
+  createBoundedCache,
+  createCoordinateCache,
+  getOrCreateCacheValue,
+  getOrCreateMapValue,
+} from './index.ts';
 
 describe('cache support', () => {
   it('stores and retrieves values while tracking presence separately from null values', () => {
@@ -97,6 +102,42 @@ describe('cache support', () => {
     expect(calls).toBe(1);
   });
 
+  it('reuses defined cache-like values without a separate presence check', () => {
+    const cache = createBoundedCache<string, string>(2);
+    let calls = 0;
+
+    const first = getOrCreateCacheValue(cache, 'alpha', () => {
+      calls += 1;
+      return 'value';
+    });
+    const second = getOrCreateCacheValue(cache, 'alpha', () => {
+      calls += 1;
+      return 'other';
+    });
+
+    expect(first).toBe('value');
+    expect(second).toBe('value');
+    expect(calls).toBe(1);
+  });
+
+  it('reuses defined map values without a separate has lookup', () => {
+    const cache = new Map<string, number>();
+    let calls = 0;
+
+    const first = getOrCreateMapValue(cache, 'alpha', () => {
+      calls += 1;
+      return 42;
+    });
+    const second = getOrCreateMapValue(cache, 'alpha', () => {
+      calls += 1;
+      return 7;
+    });
+
+    expect(first).toBe(42);
+    expect(second).toBe(42);
+    expect(calls).toBe(1);
+  });
+
   it('stores 2d coordinate values without allocating composite string keys', () => {
     const cache = createCoordinateCache<string | undefined>();
 
@@ -132,5 +173,24 @@ describe('cache support', () => {
 
     expect(cache.size()).toBe(0);
     expect(cache.has(7, 3)).toBe(false);
+  });
+
+  it('preserves explicit undefined coordinate entries without recreating them', () => {
+    const cache = createCoordinateCache<string | undefined>();
+    let calls = 0;
+
+    const first = cache.getOrCreate(2, 5, () => {
+      calls += 1;
+      return undefined;
+    });
+    const second = cache.getOrCreate(2, 5, () => {
+      calls += 1;
+      return 'unexpected';
+    });
+
+    expect(first).toBeUndefined();
+    expect(second).toBeUndefined();
+    expect(cache.has(2, 5)).toBe(true);
+    expect(calls).toBe(1);
   });
 });

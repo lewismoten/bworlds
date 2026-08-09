@@ -1,3 +1,4 @@
+import { getOrCreateMapValue } from '@bworlds/cache-support';
 import { createExitMapAction } from '@bworlds/map-support';
 import {
   composeOverworldTileFromPlugins,
@@ -78,17 +79,13 @@ export function createWatercraftMap({
       activeRevision = nextRevision;
     }
     const key = `${localX}:${localY}`;
-    if (!cache.has(key)) {
-      cache.set(
-        key,
-        classifyGlobalTile(
-          context.origin.x + localX,
-          context.origin.y + localY,
-          state
-        )
-      );
-    }
-    return cache.get(key) ?? { kind: defaultTileKind };
+    return getOrCreateMapValue(cache, key, () =>
+      classifyGlobalTile(
+        context.origin.x + localX,
+        context.origin.y + localY,
+        state
+      )
+    );
   }
 
   function canWalk(localX: number, localY: number, state?: WorldStateLike) {

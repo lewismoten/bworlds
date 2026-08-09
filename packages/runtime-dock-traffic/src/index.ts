@@ -1,3 +1,4 @@
+import { getOrCreateMapValue } from '@bworlds/cache-support';
 import { getDockBoatPlacements } from '@bworlds/dock-route-support';
 import { createRuntimePlugin } from '@bworlds/plugin-api';
 import type { RuntimePlugin } from '@bworlds/plugin-api';
@@ -28,25 +29,22 @@ export function createDockTrafficRuntimePlugin(): RuntimePlugin {
       const contextId = state.getCurrentContext().id;
       const cacheKey = `${seed}:${contextId}:${regionX}:${regionY}:${timeBucket}`;
 
-      if (!cache.has(cacheKey)) {
+      const placements = getOrCreateMapValue(cache, cacheKey, () => {
         resolvingPlacements = true;
         try {
-          cache.set(
-            cacheKey,
-            getDockBoatPlacements(
-              state,
-              state.timeMs,
-              regionX * REGION_SIZE,
-              regionY * REGION_SIZE,
-              SEARCH_RADIUS
-            )
+          return getDockBoatPlacements(
+            state,
+            state.timeMs,
+            regionX * REGION_SIZE,
+            regionY * REGION_SIZE,
+            SEARCH_RADIUS
           );
         } finally {
           resolvingPlacements = false;
         }
-      }
+      });
 
-      const boat = cache.get(cacheKey)?.find((placement) => placement.x === x && placement.y === y);
+      const boat = placements.find((placement) => placement.x === x && placement.y === y);
       if (!boat) {
         return tile;
       }

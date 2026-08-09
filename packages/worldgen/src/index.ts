@@ -76,7 +76,7 @@ export function createWorldGenerator({
   const previewTileCache = createCoordinateCache<SpawnTile>();
   const getMap = (context: Context) => {
     const key = makeKey(context.id, context.depth);
-    if (!mapCache.has(key)) {
+    return mapCache.getOrCreate(key, () => {
       const map = plugins.createMap({
         context,
         seed,
@@ -87,9 +87,8 @@ export function createWorldGenerator({
           `No map plugin registered for context type "${context.type}"`
         );
       }
-      mapCache.set(key, map);
-    }
-    return mapCache.get(key) as WorldMapLike;
+      return map;
+    });
   };
 
   return {
@@ -98,7 +97,7 @@ export function createWorldGenerator({
       return getMap(OVERWORLD_CONTEXT).getTile(x, y) as SpawnTile;
     },
     samplePreviewOverworld(x: number, y: number) {
-      if (!previewTileCache.has(x, y)) {
+      return previewTileCache.getOrCreate(x, y, () => {
         const startingTile = {
           kind: plugins.getDefaultTileKind?.('plains') ?? 'plains',
         };
@@ -109,9 +108,7 @@ export function createWorldGenerator({
           dungeon: getOverworldPlacementChance(seed, 'dungeon', x, y),
           sign: getOverworldPlacementChance(seed, 'sign', x, y),
         };
-        previewTileCache.set(
-          x,
-          y,
+        return (
           (plugins.classifyTerrainTile({
             seed,
             x,
@@ -137,8 +134,7 @@ export function createWorldGenerator({
           }) ??
             startingTile) as SpawnTile
         );
-      }
-      return previewTileCache.get(x, y) as SpawnTile;
+      });
     },
   };
 }

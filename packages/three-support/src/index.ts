@@ -1,4 +1,4 @@
-import type { CacheLike } from '@bworlds/cache-support';
+import { getOrCreateCacheValue, type CacheLike } from '@bworlds/cache-support';
 import type {
   ThreeBufferGeometryLike,
   ThreeGeometryLike,
@@ -122,10 +122,9 @@ export function getOrCreatePaintedCanvasTexture(
     ) => void;
   }
 ): ThreeTextureLike {
-  if (!cache.has(key)) {
-    cache.set(key, createPaintedCanvasTexture(three, options));
-  }
-  return cache.get(key)!;
+  return getOrCreateCacheValue(cache, key, () =>
+    createPaintedCanvasTexture(three, options)
+  );
 }
 
 export function getOrCreatePaintedCanvasTextureTyped<TTexture extends ThreeTextureLike>(
@@ -144,10 +143,9 @@ export function getOrCreatePaintedCanvasTextureTyped<TTexture extends ThreeTextu
     ) => void;
   }
 ): TTexture {
-  if (!cache.has(key)) {
-    cache.set(key, createPaintedCanvasTexture(three, options));
-  }
-  return cache.get(key)!;
+  return getOrCreateCacheValue(cache, key, () =>
+    createPaintedCanvasTexture(three, options)
+  );
 }
 
 export function createPaintedStandardMaterial(
