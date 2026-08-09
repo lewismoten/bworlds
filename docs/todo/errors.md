@@ -18,7 +18,7 @@ Always run tests to make sure all tests pass
 - [ ] Eliminate the remaining 500 ms and 150 ms frame stalls.
   - [ ] Convert long plugin loops to generators that yield work to the scheduler.
   - [ ] Resume unfinished generators on later frames.
-  - [ ] Prioritize nearby and visible generation jobs first.
+  - [X] Prioritize nearby and visible generation jobs first.
   - [ ] Allow queued generators to be cancelled when no longer relevant.
   - [ ] Let generators yield progress without creating final Three.js objects yet.
   - [X] Warn when a plugin performs long synchronous work between yields.
@@ -27,7 +27,7 @@ Always run tests to make sure all tests pass
 - [ ] Reduce unique materials and shader program variants.
 - [ ] Stop cloning materials when shared materials can be reused.
 - [ ] Reduce Object3D count and unnecessary scene hierarchy depth.
-- [ ] Disable matrix updates for static objects and static subtrees.
+- [X] Disable matrix updates for static objects and static subtrees.
 - [X] Remove has() + get() double cache lookups.
 - [X] Cache nearby overworld anchor queries by region or tile.
 - [X] Reduce repeated syncWorldCurvature() work each frame.

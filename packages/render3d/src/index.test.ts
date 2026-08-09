@@ -40,6 +40,7 @@ import {
   getVisibleWorldTileBuildOrder,
   pickCornerBoundaryProfile,
   prepareObjectForDistanceFade,
+  reconcilePendingWorldBuildQueue,
   recordRecentCountMetric,
   recordRecentMetric,
   recordRecentDurationMetric,
@@ -842,6 +843,31 @@ describe('render3d visibility helpers', () => {
       { key: '1:0', x: 1, y: 0 },
       { key: '2:0', x: 2, y: 0 },
     ]);
+  });
+
+  it('cancels stale pending world-build entries when visibility priorities change', () => {
+    expect(
+      reconcilePendingWorldBuildQueue(
+        [
+          { key: '0:0', x: 0, y: 0 },
+          { key: '1:0', x: 1, y: 0 },
+          { key: '2:0', x: 2, y: 0 },
+        ],
+        new Set(['0:0']),
+        [
+          { key: '0:0', x: 0, y: 0 },
+          { key: '-4:0', x: -4, y: 0 },
+          { key: '-3:1', x: -3, y: 1 },
+          { key: '2:0', x: 2, y: 0 },
+        ]
+      )
+    ).toEqual({
+      queue: [
+        { key: '1:0', x: 1, y: 0 },
+        { key: '2:0', x: 2, y: 0 },
+      ],
+      cancelledEntryCount: 2,
+    });
   });
 
   it('tracks recent tile build durations with rolling average and max stats', () => {

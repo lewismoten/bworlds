@@ -188,6 +188,7 @@ type DynamicTileNode = {
   detailLevel?: 'full' | 'low';
   sync3DModel?: NonNullable<TilePlugin['sync3DModel']>;
 };
+type PendingWorldBuildEntry = { key: string; x: number; y: number };
 type ConstellationStarLike = NonNullable<
   NonNullable<DaylightCycleState['constellations']>[number]
 >['stars'][number];
@@ -675,14 +676,16 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       visibleWorldMutationVersion += 1;
     }
 
+    const nextPendingWorldBuild = reconcilePendingWorldBuildQueue(
+      nextQueue,
+      new Set(visibleTileNodes.keys()),
+      pendingWorldBuild.queue
+    );
     pendingWorldBuild = {
       contextId: context.id,
       centerKey: `${centerX}:${centerY}`,
       facingBucket: String(facingBucket),
-      queue: buildPendingWorldBuildQueue(
-        nextQueue,
-        new Set(visibleTileNodes.keys())
-      ),
+      queue: nextPendingWorldBuild.queue,
     };
 
     lastCenterKey = `${centerX}:${centerY}`;
@@ -2986,10 +2989,10 @@ export function getRenderChurnStats(
 }
 
 export function buildPendingWorldBuildQueue(
-  nextQueue: Array<{ key: string; x: number; y: number }>,
+  nextQueue: PendingWorldBuildEntry[],
   visibleTileKeys: ReadonlySet<string>
-): Array<{ key: string; x: number; y: number }> {
-  const pendingQueue: Array<{ key: string; x: number; y: number }> = [];
+): PendingWorldBuildEntry[] {
+  const pendingQueue: PendingWorldBuildEntry[] = [];
   const queuedKeys = new Set<string>();
 
   for (const entry of nextQueue) {
@@ -3001,6 +3004,47 @@ export function buildPendingWorldBuildQueue(
   }
 
   return pendingQueue;
+}
+
+export function reconcilePendingWorldBuildQueue(
+  nextQueue: PendingWorldBuildEntry[],
+  visibleTileKeys: ReadonlySet<string>,
+  previousQueue: PendingWorldBuildEntry[] = []
+): {
+  queue: PendingWorldBuildEntry[];
+  cancelledEntryCount: number;
+} {
+  const queue = buildPendingWorldBuildQueue(nextQueue, visibleTileKeys);
+  if (previousQueue.length === 0) {
+    return {
+      queue,
+      cancelledEntryCount: 0,
+    };
+  }
+
+  const survivingKeys = new Set<string>();
+  for (const entry of queue) {
+    survivingKeys.add(entry.key);
+  }
+
+  let cancelledEntryCount = 0;
+  const countedCancelledKeys = new Set<string>();
+  for (const entry of previousQueue) {
+    if (
+      visibleTileKeys.has(entry.key) ||
+      survivingKeys.has(entry.key) ||
+      countedCancelledKeys.has(entry.key)
+    ) {
+      continue;
+    }
+    countedCancelledKeys.add(entry.key);
+    cancelledEntryCount += 1;
+  }
+
+  return {
+    queue,
+    cancelledEntryCount,
+  };
 }
 
 export function shouldProcessPendingWorldBuildEntry(
