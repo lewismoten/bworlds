@@ -1,3 +1,7 @@
+import {
+  isMidiPercussionFamily,
+  resolveMidiPercussionNoteNumber,
+} from './music-debug-midi-drums.ts';
 import type { ProceduralInstrument } from './procedural-music.ts';
 import { resolveMusicStereoPan } from './procedural-music-mix.ts';
 import type { MusicDebugSnapshot } from './music-debug.ts';
@@ -36,29 +40,6 @@ const INSTRUMENT_PROGRAMS: Record<ProceduralInstrument['family'], number> = {
   cymbals: 0,
   shaker: 0,
   'hand-percussion': 0,
-};
-
-const PERCUSSION_NOTES: Record<ProceduralInstrument['family'], number> = {
-  vocals: 60,
-  'lead-guitar': 60,
-  violin: 60,
-  flute: 72,
-  trumpet: 64,
-  'synth-lead': 76,
-  piano: 60,
-  guitar: 60,
-  organ: 60,
-  strings: 60,
-  'synth-pad': 60,
-  'bass-guitar': 40,
-  'upright-bass': 43,
-  'bass-synth': 36,
-  tuba: 38,
-  kick: 36,
-  snare: 38,
-  cymbals: 49,
-  shaker: 70,
-  'hand-percussion': 60,
 };
 
 type MidiTrackEvent = {
@@ -335,17 +316,24 @@ function buildRoleTracks(snapshot: MusicDebugSnapshot): MusicDebugMidiTrack[] {
         resolveChannelPan(role, instrument)
       ),
     });
-    if (!isPercussionFamily(instrument.family)) {
+    if (!isMidiPercussionFamily(instrument.family)) {
       events.push(createProgramChangeEvent(channel, instrument.family, 6));
     }
 
     let noteOrder = 20;
+    let roleNoteIndex = 0;
     for (let index = 0; index < snapshot.notes.length; index += 1) {
       const note = snapshot.notes[index]!;
       if (note.role !== role) {
         continue;
       }
-      const midiNote = resolveMidiNoteNumber(note.frequency, instrument.family);
+      const midiNote = isMidiPercussionFamily(instrument.family)
+        ? resolveMidiPercussionNoteNumber({
+            note,
+            family: instrument.family,
+            noteIndex: roleNoteIndex,
+          })
+        : resolveMidiNoteNumber(note.frequency);
       const velocity = resolveVelocity(note.volume, note.role);
       const startTick = msToTicks(note.startMs - snapshot.song.startMs);
       const endTick = msToTicks(
@@ -363,6 +351,7 @@ function buildRoleTracks(snapshot: MusicDebugSnapshot): MusicDebugMidiTrack[] {
         data: [0x80 | channel, midiNote, 0],
       });
       noteOrder += 2;
+      roleNoteIndex += 1;
     }
 
     events.push({
@@ -546,28 +535,9 @@ function resolveMidiKeySignature(snapshot: MusicDebugSnapshot): {
   };
 }
 
-function resolveMidiNoteNumber(
-  frequency: number,
-  family: ProceduralInstrument['family']
-): number {
-  if (family in PERCUSSION_NOTES && isPercussionFamily(family)) {
-    return PERCUSSION_NOTES[family];
-  }
-
+function resolveMidiNoteNumber(frequency: number): number {
   const midi = Math.round(69 + 12 * Math.log2(Math.max(frequency, 1) / 440));
   return clamp(midi, 0, 127);
-}
-
-function isPercussionFamily(
-  family: ProceduralInstrument['family']
-): family is 'kick' | 'snare' | 'cymbals' | 'shaker' | 'hand-percussion' {
-  return (
-    family === 'kick' ||
-    family === 'snare' ||
-    family === 'cymbals' ||
-    family === 'shaker' ||
-    family === 'hand-percussion'
-  );
 }
 
 function resolveVelocity(
@@ -619,7 +589,7 @@ function resolveChannelPan(
 }
 
 function resolveBankSelectMsb(family: ProceduralInstrument['family']): number {
-  if (isPercussionFamily(family)) {
+  if (isMidiPercussionFamily(family)) {
     return 1;
   }
   if (

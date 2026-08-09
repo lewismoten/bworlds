@@ -81,7 +81,7 @@
 - [x] MIDI should include pans(s)
 - [x] MIDI should include bank select MSB(s)
 - [x] MIDI should include bank select LSB(s)
-- [ ] MIDI Drum channel should include any use of sample sounds such as Closed HH, Cabasa, Open HH, Tambourine, Ride, Crash
+- [x] MIDI Drum channel should include any use of sample sounds such as Closed HH, Cabasa, Open HH, Tambourine, Ride, Crash
 
 # Sound Effects
 

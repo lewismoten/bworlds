@@ -128,6 +128,35 @@ describe('music debug midi', () => {
     }
   });
 
+  it('uses richer GM drum note mappings on the percussion channel export', () => {
+    const snapshot = createMusicDebugSnapshot({
+      tileKind: 'shore',
+      contextType: 'overworld',
+      clusterX: 8,
+      clusterY: -4,
+      dayProgress: 0.85,
+      weatherKind: 'heavy-rain',
+      weatherIntensity: 1,
+    });
+
+    const file = createMusicDebugMidiFile(snapshot, {
+      createdAt: new Date('2026-08-09T00:00:00.000Z'),
+    });
+    const chunks = parseMidiChunks(file.bytes);
+    const percussionNotes = readMidiNoteOns(chunks.tracks[4]!);
+    const percussionFamily =
+      snapshot.instrumentBank.instruments.percussion.family;
+    const expectedFamilyNotes =
+      resolveExpectedPercussionMidiNotes(percussionFamily);
+
+    expect(percussionNotes.length).toBeGreaterThan(0);
+    expect(new Set(percussionNotes).size).toBeGreaterThan(1);
+    expect(expectedFamilyNotes.length).toBeGreaterThan(0);
+    expect(
+      percussionNotes.every((note) => expectedFamilyNotes.includes(note))
+    ).toBe(true);
+  });
+
   it('downloads the encoded midi file through a blob url', () => {
     const snapshot = createMusicDebugSnapshot({
       tileKind: 'forest',
@@ -334,6 +363,57 @@ function readControllerValue(
   }
 
   return null;
+}
+
+function readMidiNoteOns(track: Uint8Array): number[] {
+  const notes: number[] = [];
+  let offset = 0;
+
+  while (offset < track.length) {
+    const delta = readVariableLengthQuantity(track, offset);
+    offset += delta.length;
+    const status = track[offset++];
+    if (status === undefined) {
+      break;
+    }
+    if (status === 0xff) {
+      const lengthInfo = readVariableLengthQuantity(track, offset + 1);
+      offset += 1 + lengthInfo.length + lengthInfo.value;
+      continue;
+    }
+    if ((status & 0xf0) === 0x90) {
+      const note = track[offset++];
+      const velocity = track[offset++];
+      if ((velocity ?? 0) > 0) {
+        notes.push(note ?? 0);
+      }
+      continue;
+    }
+    if ((status & 0xf0) === 0xc0 || (status & 0xf0) === 0xd0) {
+      offset += 1;
+      continue;
+    }
+    offset += 2;
+  }
+
+  return notes;
+}
+
+function resolveExpectedPercussionMidiNotes(family: string): number[] {
+  switch (family) {
+    case 'kick':
+      return [35, 36, 41];
+    case 'snare':
+      return [37, 38, 39, 40];
+    case 'cymbals':
+      return [42, 46, 49, 51];
+    case 'shaker':
+      return [42, 54, 69, 70];
+    case 'hand-percussion':
+      return [54, 60, 61, 69];
+    default:
+      return [];
+  }
 }
 
 function readUint16(bytes: Uint8Array, offset: number): number {
