@@ -10,6 +10,7 @@ import {
   getOrCreatePaintedCanvasTexture,
   getOrCreatePaintedCanvasTextureTyped,
   getSharedPlaneGeometry,
+  SHARED_HOST_GEOMETRY_CACHE_MAX_ENTRIES,
   getSharedSphereGeometry,
 } from './index.ts';
 
@@ -320,6 +321,55 @@ describe('three support', () => {
     expect(getSharedSphereGeometry(host, 0.4, 6, 5)).not.toBe(
       getSharedSphereGeometry(host, 0.5, 6, 5)
     );
+
+    const baselineBox = getSharedBoxGeometry(host, 1, 2, 3) as FakeBoxGeometry;
+    const baselineSphere = getSharedSphereGeometry(
+      host,
+      0.4,
+      6,
+      5
+    ) as FakeSphereGeometry;
+
+    for (
+      let index = 0;
+      index < SHARED_HOST_GEOMETRY_CACHE_MAX_ENTRIES + 32;
+      index += 1
+    ) {
+      getSharedBoxGeometry(host, 1 + index * 0.01, 2, 3);
+      getSharedConeGeometry(host, 0.5 + index * 0.01, 1.5, 8);
+      getSharedCylinderGeometry(host, 0.5, 0.7 + index * 0.01, 1.2, 6);
+      getSharedPlaneGeometry(host, 2 + index * 0.01, 1);
+      getSharedSphereGeometry(host, 0.4 + index * 0.01, 6, 5);
+    }
+
+    const resolvedBox = getSharedBoxGeometry(host, 1, 2, 3) as FakeBoxGeometry;
+    const resolvedSphere = getSharedSphereGeometry(
+      host,
+      0.4,
+      6,
+      5
+    ) as FakeSphereGeometry;
+
+    expect(resolvedBox).not.toBe(baselineBox);
+    expect(resolvedSphere).not.toBe(baselineSphere);
+    expect({
+      width: resolvedBox.width,
+      height: resolvedBox.height,
+      depth: resolvedBox.depth,
+    }).toEqual({
+      width: baselineBox.width,
+      height: baselineBox.height,
+      depth: baselineBox.depth,
+    });
+    expect({
+      radius: resolvedSphere.radius,
+      widthSegments: resolvedSphere.widthSegments,
+      heightSegments: resolvedSphere.heightSegments,
+    }).toEqual({
+      radius: baselineSphere.radius,
+      widthSegments: baselineSphere.widthSegments,
+      heightSegments: baselineSphere.heightSegments,
+    });
   });
 
   it('creates shared basic materials for simple flat surfaces', () => {

@@ -1,4 +1,5 @@
 import {
+  createBoundedCache,
   getOrCreateCacheValue,
   getOrCreateMapValue,
   type CacheLike,
@@ -40,11 +41,27 @@ const mountainTerrainMaterialCache = new WeakMap<
     snowMaterial: ThreeMaterialLike;
   }
 >();
-const sharedBoxGeometryCache = new WeakMap<object, Map<string, ThreeGeometryLike>>();
-const sharedConeGeometryCache = new WeakMap<object, Map<string, ThreeGeometryLike>>();
-const sharedCylinderGeometryCache = new WeakMap<object, Map<string, ThreeGeometryLike>>();
-const sharedPlaneGeometryCache = new WeakMap<object, Map<string, ThreeGeometryLike>>();
-const sharedSphereGeometryCache = new WeakMap<object, Map<string, ThreeGeometryLike>>();
+export const SHARED_HOST_GEOMETRY_CACHE_MAX_ENTRIES = 128;
+const sharedBoxGeometryCache = new WeakMap<
+  object,
+  CacheLike<string, ThreeGeometryLike>
+>();
+const sharedConeGeometryCache = new WeakMap<
+  object,
+  CacheLike<string, ThreeGeometryLike>
+>();
+const sharedCylinderGeometryCache = new WeakMap<
+  object,
+  CacheLike<string, ThreeGeometryLike>
+>();
+const sharedPlaneGeometryCache = new WeakMap<
+  object,
+  CacheLike<string, ThreeGeometryLike>
+>();
+const sharedSphereGeometryCache = new WeakMap<
+  object,
+  CacheLike<string, ThreeGeometryLike>
+>();
 const MOUNTAIN_TEXTURE_X_SEED = registerHashLabel('mountain-texture-x');
 const MOUNTAIN_TEXTURE_Y_SEED = registerHashLabel('mountain-texture-y');
 const MOUNTAIN_TEXTURE_LENGTH_SEED = registerHashLabel('mountain-texture-l');
@@ -239,12 +256,14 @@ export function createTexturedPlaneMesh<
 }
 
 function getHostGeometryCache(
-  store: WeakMap<object, Map<string, ThreeGeometryLike>>,
+  store: WeakMap<object, CacheLike<string, ThreeGeometryLike>>,
   three: object
-): Map<string, ThreeGeometryLike> {
+): CacheLike<string, ThreeGeometryLike> {
   let cache = store.get(three);
   if (!cache) {
-    cache = new Map();
+    cache = createBoundedCache<string, ThreeGeometryLike>(
+      SHARED_HOST_GEOMETRY_CACHE_MAX_ENTRIES
+    );
     store.set(three, cache);
   }
   return cache;
@@ -257,7 +276,7 @@ export function getSharedBoxGeometry(
   depth: number
 ): ThreeGeometryLike {
   const key = `${width}:${height}:${depth}`;
-  return getOrCreateMapValue(
+  return getOrCreateCacheValue(
     getHostGeometryCache(sharedBoxGeometryCache, three as object),
     key,
     () => new three.BoxGeometry(width, height, depth)
@@ -271,7 +290,7 @@ export function getSharedConeGeometry(
   radialSegments: number
 ): ThreeGeometryLike {
   const key = `${radius}:${height}:${radialSegments}`;
-  return getOrCreateMapValue(
+  return getOrCreateCacheValue(
     getHostGeometryCache(sharedConeGeometryCache, three as object),
     key,
     () => new three.ConeGeometry(radius, height, radialSegments)
@@ -286,7 +305,7 @@ export function getSharedCylinderGeometry(
   radialSegments: number
 ): ThreeGeometryLike {
   const key = `${radiusTop}:${radiusBottom}:${height}:${radialSegments}`;
-  return getOrCreateMapValue(
+  return getOrCreateCacheValue(
     getHostGeometryCache(sharedCylinderGeometryCache, three as object),
     key,
     () =>
@@ -305,7 +324,7 @@ export function getSharedPlaneGeometry(
   height: number
 ): ThreeGeometryLike {
   const key = `${width}:${height}`;
-  return getOrCreateMapValue(
+  return getOrCreateCacheValue(
     getHostGeometryCache(sharedPlaneGeometryCache, three as object),
     key,
     () => new three.PlaneGeometry(width, height)
@@ -319,7 +338,7 @@ export function getSharedSphereGeometry(
   heightSegments: number
 ): ThreeGeometryLike {
   const key = `${radius}:${widthSegments}:${heightSegments}`;
-  return getOrCreateMapValue(
+  return getOrCreateCacheValue(
     getHostGeometryCache(sharedSphereGeometryCache, three as object),
     key,
     () => new three.SphereGeometry(radius, widthSegments, heightSegments)
