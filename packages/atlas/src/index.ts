@@ -19,6 +19,7 @@ const VARIANT_GRID_SIZE = 3;
 const VARIANTS_PER_TILE = VARIANT_GRID_SIZE * VARIANT_GRID_SIZE;
 const KIND_COLUMNS = 4;
 const atlasCache = new Map<'default', HTMLCanvasElement>();
+const atlasKindSeedCache = new Map<Kind, number>();
 const TILE_VARIANT_LABEL = registerHashLabel('tile-variant');
 const ATLAS_LABEL = registerHashLabel('atlas');
 const MOTIF_LABEL = registerHashLabel('motif');
@@ -292,14 +293,14 @@ function createVariantMotif(kind: Kind, variant: number): VariantMotif {
 }
 
 function createTileVariantSeed(kind: Kind): number {
-  return appendHashSeedLabel(registerHashLabel(kind), TILE_VARIANT_LABEL);
+  return appendHashSeedLabel(getAtlasKindSeed(kind), TILE_VARIANT_LABEL);
 }
 
 function createVariantMotifSeed(kind: Kind, variant: number): {
   seedHash: number;
   motifHash: number;
 } {
-  const kindSeed = registerHashLabel(kind);
+  const kindSeed = getAtlasKindSeed(kind);
   return {
     seedHash: appendHashSeedLabel(kindSeed, ATLAS_LABEL),
     motifHash: appendHashSeedPart(
@@ -307,6 +308,17 @@ function createVariantMotifSeed(kind: Kind, variant: number): {
       variant
     ),
   };
+}
+
+function getAtlasKindSeed(kind: Kind): number {
+  const cached = atlasKindSeedCache.get(kind);
+  if (cached !== undefined) {
+    return cached;
+  }
+
+  const seedHash = registerHashLabel(kind);
+  atlasKindSeedCache.set(kind, seedHash);
+  return seedHash;
 }
 
 function getTileDefinitionEntries(): Array<[Kind, TileDefinitionLike]> {

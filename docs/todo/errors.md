@@ -1,6 +1,6 @@
 # High Priority
 
-- [ ] Optimize the hash-seed pipeline, not just `hash2D()` itself.
+- [X] Optimize the hash-seed pipeline, not just `hash2D()` itself.
    The bottleneck has moved into:
 
    * `mixHashCharacter()` ~8.6%
@@ -9,7 +9,7 @@
 
    Together those are over **22% of sampled CPU time**. Stop repeatedly hashing strings in hot world-generation paths. Convert stable strings/plugin IDs/seeds into numeric hash seeds once and reuse them.
 
-- [ ] Eliminate string-based procedural hashing inside inner loops.
+- [X] Eliminate string-based procedural hashing inside inner loops.
    Pre-hash things like `"forest"`, `"river"`, `"height"`, `"branch"`, plugin IDs, world seed components, etc. A tile generator should mostly combine integers once it enters its hot loops.
 
 - [ ] Eliminate the remaining 500 ms and 150 ms frame stalls.

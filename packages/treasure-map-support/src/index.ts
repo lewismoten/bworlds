@@ -1,5 +1,6 @@
 import {
   appendHashSeedLabel,
+  createHashSeed,
   hash2DWithSeed,
   registerHashLabel,
 } from '@bworlds/core/hash';
@@ -54,6 +55,10 @@ const TREASURE_MAP_GLYPH_SEED = registerHashLabel('treasure-map-glyph');
 const TREASURE_MAP_GPS_FRAGMENT_SEED = registerHashLabel('treasure-map-gps-fragment');
 const TREASURE_MAP_EDGE_SEED = registerHashLabel('treasure-map-edge');
 
+function normalizeTreasureMapSeed(seed: string | number): number {
+  return typeof seed === 'number' ? createHashSeed(seed) : registerHashLabel(seed);
+}
+
 export function createTreasureMap({
   seed,
   digSite,
@@ -69,7 +74,10 @@ export function createTreasureMap({
 }): TreasureMapDocument {
   const safeWidth = Math.max(9, width | 1);
   const safeHeight = Math.max(7, height | 1);
-  const edge = pickMapEdge(seed, digSite);
+  const seedHash = normalizeTreasureMapSeed(seed);
+  const glyphSeed = appendHashSeedLabel(seedHash, TREASURE_MAP_GLYPH_SEED);
+  const edgeSeed = appendHashSeedLabel(seedHash, TREASURE_MAP_EDGE_SEED);
+  const edge = pickMapEdge(edgeSeed, digSite);
   const pathEntry = createPathEntry(digSite, safeWidth, safeHeight, edge);
   const path = traceTreasurePath(pathEntry, digSite);
   const areaCenter = getTreasureMapAreaCenter(
@@ -97,7 +105,7 @@ export function createTreasureMap({
         worldY,
         terrain,
         glyph: resolveTreasureGlyph({
-          seed,
+          glyphSeed,
           terrain,
           x: worldX,
           y: worldY,
@@ -174,7 +182,13 @@ export function splitTreasureMapIntoFragments(
     Math.min(fragmentCount, map.height)
   );
   const boundaries = createFragmentRowBoundaries(map.height, safeFragmentCount);
-  const gpsFragmentIndex = pickGpsFragmentIndex(map.seed, safeFragmentCount);
+  const gpsFragmentIndex = pickGpsFragmentIndex(
+    appendHashSeedLabel(
+      normalizeTreasureMapSeed(map.seed),
+      TREASURE_MAP_GPS_FRAGMENT_SEED
+    ),
+    safeFragmentCount
+  );
 
   return boundaries.map(([rowStart, rowEnd], fragmentIndex) => ({
     mapId: createTreasureMapId(map),
@@ -277,21 +291,20 @@ export function createTreasureMapFragmentInventoryItem({
 }
 
 function resolveTreasureGlyph({
-  seed,
+  glyphSeed,
   terrain,
   x,
   y,
   isPath,
   isDigSite,
 }: {
-  seed: string;
+  glyphSeed: number;
   terrain: string;
   x: number;
   y: number;
   isPath: boolean;
   isDigSite: boolean;
 }): string {
-  const glyphSeed = appendHashSeedLabel(registerHashLabel(seed), TREASURE_MAP_GLYPH_SEED);
   if (isDigSite) {
     return 'X';
   }
@@ -325,11 +338,7 @@ function createTreasureMapId(map: TreasureMapDocument): string {
   return `${map.seed}:${map.digSite.x}:${map.digSite.y}:${map.width}:${map.height}`;
 }
 
-function pickGpsFragmentIndex(seed: string, fragmentCount: number): number {
-  const fragmentSeed = appendHashSeedLabel(
-    registerHashLabel(seed),
-    TREASURE_MAP_GPS_FRAGMENT_SEED
-  );
+function pickGpsFragmentIndex(fragmentSeed: number, fragmentCount: number): number {
   return Math.min(
     fragmentCount - 1,
     Math.floor(hash2DWithSeed(fragmentSeed, fragmentCount, 0) * fragmentCount)
@@ -355,8 +364,7 @@ function createFragmentRowBoundaries(
   return boundaries;
 }
 
-function pickMapEdge(seed: string, digSite: Point): 'north' | 'east' | 'south' | 'west' {
-  const edgeSeed = appendHashSeedLabel(registerHashLabel(seed), TREASURE_MAP_EDGE_SEED);
+function pickMapEdge(edgeSeed: number, digSite: Point): 'north' | 'east' | 'south' | 'west' {
   const roll = hash2DWithSeed(edgeSeed, digSite.x, digSite.y);
   if (roll < 0.25) {
     return 'west';
