@@ -21,7 +21,9 @@ import {
   PluginRegistry,
   resolveTileDefinitionFromPlugins,
   resolvePluginPackDefinition,
+  getRenderBudgetPartMetadata,
   selectPluginPackManifests,
+  setRenderBudgetPartMetadata,
   withDefaultTileKind,
   withOverworldTileClassifier,
   withPluginOrder,
@@ -68,6 +70,34 @@ function createClassifyOverworldPayload(): ClassifyOverworldTileContext {
 }
 
 describe('plugin registry', () => {
+  it('stores reusable render-budget part metadata on object userData', () => {
+    const target = { userData: {} };
+
+    setRenderBudgetPartMetadata(target, {
+      optional: true,
+      priority: 5,
+      label: 'window-boxes',
+    });
+
+    expect(getRenderBudgetPartMetadata(target)).toEqual({
+      optional: true,
+      priority: 5,
+      label: 'window-boxes',
+    });
+  });
+
+  it('ignores malformed render-budget part metadata', () => {
+    expect(
+      getRenderBudgetPartMetadata({
+        userData: {
+          renderBudgetPart: {
+            optional: true,
+          },
+        },
+      })
+    ).toBeNull();
+  });
+
   it('registers content packs in map, runtime, then tile order', () => {
     const registry = new PluginRegistry();
     registry.registerPack({

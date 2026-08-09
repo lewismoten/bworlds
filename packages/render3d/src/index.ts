@@ -43,6 +43,7 @@ import {
   getMaxGeometryTriangleCount,
   getGeometryVertexCount,
 } from './tile-model-geometry-validation.ts';
+import { pruneTileModelOptionalPartsForBudget } from './tile-model-budget-pruning.ts';
 
 const LAND_MODEL_REVEAL_SEED = registerHashLabel('render3d:land-model-reveal');
 
@@ -395,6 +396,13 @@ export function acceptTilePluginModelForRenderBudget<
 ): TObject | null {
   const validation = validateTileModelAgainstRenderBudget(model, detailLevel);
   if (validation.accepted) {
+    return model;
+  }
+  const pruned = pruneTileModelOptionalPartsForBudget(
+    model as TObject & Pick<THREE.Object3D, 'userData'>,
+    (candidate) => validateTileModelAgainstRenderBudget(candidate, detailLevel)
+  );
+  if (pruned.validation.accepted) {
     return model;
   }
   disposeObject3DResources(model);

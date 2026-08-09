@@ -9,7 +9,7 @@ Operates at several levels: per model, per LOD, per plugin, per chunk, and per e
 * [X] Let plugins receive the current budget before generating a model.
 * [X] Validate every generated model against hard limits before accepting it.
 * [X] Allow the renderer to reject an entire model when required limits are exceeded.
-* [ ] Allow the renderer to discard optional model parts when budgets are exceeded.
+* [X] Allow the renderer to discard optional model parts when budgets are exceeded.
 * [ ] Require generated model parts to have explicit priorities.
 * [ ] Treat higher-priority parts as more important to preserve.
 * [ ] Require optional decorations to have lower priority than structural geometry.

@@ -98,6 +98,7 @@ import { createForestTilePlugin } from '@bworlds/tile-forest';
 import { createDungeonTilePlugin } from '@bworlds/tile-dungeon';
 import { createLighthouseTilePlugin } from '@bworlds/tile-lighthouse';
 import { createTownTilePlugin } from '@bworlds/tile-town';
+import { setRenderBudgetPartMetadata } from '@bworlds/plugin-api';
 import {
   acceptTilePluginModelForRenderBudget,
   collectSceneResourceStats,
@@ -1916,6 +1917,69 @@ describe('render3d visibility helpers', () => {
     const root = createMockObject3D(rootMaterial, [child], createMockGeometry(0));
 
     expect(acceptTilePluginModelForRenderBudget(root as never, 'low')).toBeNull();
+  });
+
+  it('drops the lowest-priority optional model parts before rejecting a model', () => {
+    const sharedMaterial = createMockMaterial();
+    const sharedGeometry = createMockStatGeometry('shared-budget-prune', 24);
+    const lowPriorityOptional = setRenderBudgetPartMetadata(
+      createMockObject3D(
+        sharedMaterial,
+        [],
+        sharedGeometry
+      ),
+      {
+        optional: true,
+        priority: 1,
+        label: 'optional-low',
+      }
+    );
+    const highPriorityOptional = setRenderBudgetPartMetadata(
+      createMockObject3D(
+        sharedMaterial,
+        [],
+        sharedGeometry
+      ),
+      {
+        optional: true,
+        priority: 10,
+        label: 'optional-high',
+      }
+    );
+    const root = createMockObject3D(undefined, [
+      ...Array.from({ length: 15 }, (_unused, index) =>
+        createMockObject3D(
+          sharedMaterial,
+          [],
+          sharedGeometry,
+          {
+            requiredMeshIndex: index,
+          }
+        )
+      ),
+      lowPriorityOptional,
+      highPriorityOptional,
+    ]);
+
+    expect(validateTileModelAgainstRenderBudget(root as never, 'low')).toEqual(
+      expect.objectContaining({
+        accepted: false,
+        violations: [
+          {
+            metric: 'meshCount',
+            actual: 17,
+            limit: 16,
+          },
+        ],
+      })
+    );
+
+    const accepted = acceptTilePluginModelForRenderBudget(root as never, 'low');
+
+    expect(accepted).toBe(root);
+    expect(root.children).toHaveLength(16);
+    expect(root.children.includes(lowPriorityOptional)).toBe(false);
+    expect(root.children.includes(highPriorityOptional)).toBe(true);
   });
 
   it('accepts representative nearby world tile models at full detail', () => {
