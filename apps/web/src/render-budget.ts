@@ -15,6 +15,7 @@ export type RenderBudgetState = {
   maxChunkMeshes: number;
   maxChunkTriangleCount: number;
   totalLightCount: number;
+  totalShadowLightCount: number;
   materialCount: number;
   textureCount: number;
   visibleObjectCount: number;
@@ -82,6 +83,10 @@ export type RenderBudgetCaps = {
     soft: number;
     hard: number;
   };
+  shadowLights: {
+    soft: number;
+    hard: number;
+  };
   textures: {
     soft: number;
     hard: number;
@@ -128,6 +133,7 @@ export const DEFAULT_RENDER_BUDGET_STATE: RenderBudgetState = {
   maxChunkMeshes: 0,
   maxChunkTriangleCount: 0,
   totalLightCount: 0,
+  totalShadowLightCount: 0,
   materialCount: 0,
   textureCount: 0,
   visibleObjectCount: 0,
@@ -164,6 +170,8 @@ const SOFT_CHUNK_TRIANGLE_LIMIT = 24_000;
 const HARD_CHUNK_TRIANGLE_LIMIT = 36_000;
 const SOFT_LIGHT_LIMIT = 14;
 const HARD_LIGHT_LIMIT = 20;
+const SOFT_SHADOW_LIGHT_LIMIT = 2;
+const HARD_SHADOW_LIGHT_LIMIT = 3;
 const SOFT_TEXTURE_LIMIT = 48;
 const HARD_TEXTURE_LIMIT = 72;
 const SOFT_ESTIMATED_GPU_MEMORY_BYTES = 96 * 1024 * 1024;
@@ -190,6 +198,7 @@ function resetRenderBudgetStateInPlace(state: RenderBudgetState): RenderBudgetSt
   state.maxChunkMeshes = 0;
   state.maxChunkTriangleCount = 0;
   state.totalLightCount = 0;
+  state.totalShadowLightCount = 0;
   state.materialCount = 0;
   state.textureCount = 0;
   state.visibleObjectCount = 0;
@@ -233,6 +242,7 @@ export function updateRenderBudgetStateInPlace(
     maxChunkMeshes,
     maxChunkTriangleCount,
     totalLightCount,
+    totalShadowLightCount,
     materialCount,
     textureCount,
     visibleObjectCount,
@@ -250,6 +260,7 @@ export function updateRenderBudgetStateInPlace(
     maxChunkMeshes?: number;
     maxChunkTriangleCount?: number;
     totalLightCount?: number;
+    totalShadowLightCount?: number;
     materialCount?: number;
     textureCount?: number;
     visibleObjectCount?: number;
@@ -308,6 +319,10 @@ export function updateRenderBudgetStateInPlace(
   const normalizedTotalLightCount = Math.max(
     0,
     Math.floor(totalLightCount ?? state.totalLightCount)
+  );
+  const normalizedTotalShadowLightCount = Math.max(
+    0,
+    Math.floor(totalShadowLightCount ?? state.totalShadowLightCount)
   );
   const normalizedTextureCount = Math.max(
     0,
@@ -385,6 +400,11 @@ export function updateRenderBudgetStateInPlace(
   } else if (normalizedTotalLightCount >= SOFT_LIGHT_LIMIT) {
     visibilityRadius = Math.min(visibilityRadius, REDUCED_VISIBILITY_RADIUS);
   }
+  if (normalizedTotalShadowLightCount >= HARD_SHADOW_LIGHT_LIMIT) {
+    visibilityRadius = Math.min(visibilityRadius, MIN_VISIBILITY_RADIUS);
+  } else if (normalizedTotalShadowLightCount >= SOFT_SHADOW_LIGHT_LIMIT) {
+    visibilityRadius = Math.min(visibilityRadius, REDUCED_VISIBILITY_RADIUS);
+  }
   if (normalizedTextureCount >= HARD_TEXTURE_LIMIT) {
     visibilityRadius = Math.min(visibilityRadius, MIN_VISIBILITY_RADIUS);
   } else if (normalizedTextureCount >= SOFT_TEXTURE_LIMIT) {
@@ -429,6 +449,7 @@ export function updateRenderBudgetStateInPlace(
   state.maxChunkMeshes = normalizedMaxChunkMeshes;
   state.maxChunkTriangleCount = normalizedMaxChunkTriangleCount;
   state.totalLightCount = normalizedTotalLightCount;
+  state.totalShadowLightCount = normalizedTotalShadowLightCount;
   state.materialCount = normalizedMaterialCount;
   state.textureCount = normalizedTextureCount;
   state.visibleObjectCount = normalizedVisibleObjectCount;
@@ -458,6 +479,7 @@ export function advanceRenderBudgetState(
     maxChunkMeshes,
     maxChunkTriangleCount,
     totalLightCount,
+    totalShadowLightCount,
     materialCount,
     textureCount,
     visibleObjectCount,
@@ -475,6 +497,7 @@ export function advanceRenderBudgetState(
     maxChunkMeshes?: number;
     maxChunkTriangleCount?: number;
     totalLightCount?: number;
+    totalShadowLightCount?: number;
     materialCount?: number;
     textureCount?: number;
     visibleObjectCount?: number;
@@ -499,6 +522,7 @@ export function advanceRenderBudgetState(
       maxChunkMeshes,
       maxChunkTriangleCount,
       totalLightCount,
+      totalShadowLightCount,
       materialCount,
       textureCount,
       visibleObjectCount,
@@ -585,6 +609,10 @@ export function getRenderBudgetCaps(
     lights: {
       soft: SOFT_LIGHT_LIMIT,
       hard: HARD_LIGHT_LIMIT,
+    },
+    shadowLights: {
+      soft: SOFT_SHADOW_LIGHT_LIMIT,
+      hard: HARD_SHADOW_LIGHT_LIMIT,
     },
     textures: {
       soft: SOFT_TEXTURE_LIMIT,
@@ -688,6 +716,7 @@ export function getRenderQualityLimiters(
         | 'maxChunkObjectCount'
         | 'maxChunkTriangleCount'
         | 'totalLightCount'
+        | 'totalShadowLightCount'
         | 'visibleTriangleCount'
         | 'estimatedGpuMemoryBytes'
       >
@@ -697,6 +726,7 @@ export function getRenderQualityLimiters(
   const maxChunkObjectCount = Math.max(0, state.maxChunkObjectCount ?? 0);
   const maxChunkTriangleCount = Math.max(0, state.maxChunkTriangleCount ?? 0);
   const totalLightCount = Math.max(0, state.totalLightCount ?? 0);
+  const totalShadowLightCount = Math.max(0, state.totalShadowLightCount ?? 0);
   const visibleTriangleCount = Math.max(0, state.visibleTriangleCount ?? 0);
   const estimatedGpuMemoryBytes = Math.max(
     0,
@@ -746,6 +776,11 @@ export function getRenderQualityLimiters(
     limiters.push('Active lights exceeded the hard cap');
   } else if (totalLightCount >= SOFT_LIGHT_LIMIT) {
     limiters.push('Active lights exceeded the soft cap');
+  }
+  if (totalShadowLightCount >= HARD_SHADOW_LIGHT_LIMIT) {
+    limiters.push('Shadow lights exceeded the hard cap');
+  } else if (totalShadowLightCount >= SOFT_SHADOW_LIGHT_LIMIT) {
+    limiters.push('Shadow lights exceeded the soft cap');
   }
   if (state.textureCount >= HARD_TEXTURE_LIMIT) {
     limiters.push('Active textures exceeded the hard cap');

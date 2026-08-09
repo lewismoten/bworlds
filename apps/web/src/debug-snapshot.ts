@@ -122,6 +122,10 @@ type DebugSnapshotExportOptions = {
         soft: number;
         hard: number;
       };
+      shadowLights: {
+        soft: number;
+        hard: number;
+      };
       textures: {
         soft: number;
         hard: number;

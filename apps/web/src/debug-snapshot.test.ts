@@ -106,6 +106,10 @@ describe('debug snapshot', () => {
             soft: 14,
             hard: 20,
           },
+          shadowLights: {
+            soft: 2,
+            hard: 3,
+          },
           textures: {
             soft: 48,
             hard: 72,
@@ -418,6 +422,10 @@ describe('debug snapshot', () => {
         lights: {
           soft: 14,
           hard: 20,
+        },
+        shadowLights: {
+          soft: 2,
+          hard: 3,
         },
         estimatedGpuMemoryBytes: {
           soft: 96 * 1024 * 1024,

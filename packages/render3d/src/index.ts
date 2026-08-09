@@ -312,6 +312,7 @@ type Render3DController = {
   getMaxChunkMeshes(): number;
   getMaxChunkTriangles(): number;
   getLightCount(): number;
+  getShadowLightCount(): number;
   getMaterialCount(): number;
   getTextureCount(): number;
   getVisibleObjectCount(): number;
@@ -780,6 +781,7 @@ type DynamicTileNode = {
   drawCallCount: number;
   visibleObjectCount: number;
   lightCount: number;
+  shadowLightCount: number;
   visibleMeshCount: number;
   materialCount: number;
   vertexCount: number;
@@ -1279,7 +1281,9 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
   const materialCache = new Map();
   const tilePluginOwnerCache = new Map<string, string>();
   const visibleTileNodes = new Map<string, DynamicTileNode>();
-  const persistentSceneLightCount = collectSceneResourceStats(scene).lightCount;
+  const persistentSceneResourceStats = collectSceneResourceStats(scene);
+  const persistentSceneLightCount = persistentSceneResourceStats.lightCount;
+  const persistentSceneShadowLightCount = persistentSceneResourceStats.shadowLightCount;
   const lodSyncVisibleEntriesBuffer: Array<[string, DynamicTileNode]> = [];
   const lodSyncBatchBuffer: Array<[string, DynamicTileNode]> = [];
   const visibleWorldNextVisibleKeysBuffer = new Set<string>();
@@ -1623,6 +1627,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       drawCallCount: finalSceneResourceStats.drawCallCount,
       visibleObjectCount: finalSceneResourceStats.visibleObjectCount,
       lightCount: finalSceneResourceStats.lightCount,
+      shadowLightCount: finalSceneResourceStats.shadowLightCount,
       visibleMeshCount: finalSceneResourceStats.visibleMeshCount,
       materialCount: finalSceneResourceStats.materialCount,
       vertexCount: finalSceneResourceStats.vertexCount,
@@ -2162,6 +2167,13 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     return (
       persistentSceneLightCount +
       collectVisibleTileResourceStats(visibleTileNodes.values()).totalLightCount
+    );
+  }
+
+  function getShadowLightCount(): number {
+    return (
+      persistentSceneShadowLightCount +
+      collectVisibleTileResourceStats(visibleTileNodes.values()).totalShadowLightCount
     );
   }
 
@@ -2932,6 +2944,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     getMaxChunkMeshes,
     getMaxChunkTriangles,
     getLightCount,
+    getShadowLightCount,
     getMaterialCount,
     getTextureCount,
     getVisibleObjectCount,

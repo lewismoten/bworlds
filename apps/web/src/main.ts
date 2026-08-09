@@ -1194,6 +1194,7 @@ const runLoopFrame = createFrameLoopRunner({
   getMaxChunkMeshes: () => renderer3d.getMaxChunkMeshes(),
   getMaxChunkTriangles: () => renderer3d.getMaxChunkTriangles(),
   getLightCount: () => renderer3d.getLightCount(),
+  getShadowLightCount: () => renderer3d.getShadowLightCount(),
   getMaterialCount: () => renderer3d.getMaterialCount(),
   getTextureCount: () => renderer3d.getTextureCount(),
   getVisibleObjectCount: () => renderer3d.getVisibleObjectCount(),

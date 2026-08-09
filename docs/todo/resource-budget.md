@@ -273,7 +273,7 @@ This is critical because individually valid models can still overwhelm the rende
 * [ ] Cap total bones being evaluated per frame.
 * [ ] Cap total particle count.
 * [X] Cap total lights.
-* [ ] Cap total shadow lights.
+* [X] Cap total shadow lights.
 * [ ] Cap total active audio emitters.
 * [ ] Cap total reflection surfaces.
 * [ ] Cap total expensive shader instances.

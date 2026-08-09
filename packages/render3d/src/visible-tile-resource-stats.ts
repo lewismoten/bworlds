@@ -6,6 +6,7 @@ export type VisibleTileResourceStatsEntry = {
   drawCallCount: number;
   visibleObjectCount?: number;
   lightCount?: number;
+  shadowLightCount?: number;
   visibleMeshCount?: number;
   materialCount?: number;
   vertexCount?: number;
@@ -25,6 +26,7 @@ export function collectVisibleTileResourceStats<TEntry extends VisibleTileResour
   maxChunkTriangleCount: number;
   totalVisibleObjectCount: number;
   totalLightCount: number;
+  totalShadowLightCount: number;
   totalVisibleMeshCount: number;
   totalMaterialCount: number;
   totalVertexCount: number;
@@ -44,6 +46,7 @@ export function collectVisibleTileResourceStats<TEntry extends VisibleTileResour
   let maxChunkTriangleCount = 0;
   let totalVisibleObjectCount = 0;
   let totalLightCount = 0;
+  let totalShadowLightCount = 0;
   let totalVisibleMeshCount = 0;
   let totalMaterialCount = 0;
   let totalVertexCount = 0;
@@ -72,6 +75,7 @@ export function collectVisibleTileResourceStats<TEntry extends VisibleTileResour
     chunkTriangles.set(key, nextTriangleCount);
     totalVisibleObjectCount += Math.max(0, Math.floor(entry.visibleObjectCount ?? 0));
     totalLightCount += Math.max(0, Math.floor(entry.lightCount ?? 0));
+    totalShadowLightCount += Math.max(0, Math.floor(entry.shadowLightCount ?? 0));
     totalVisibleMeshCount += Math.max(0, Math.floor(entry.visibleMeshCount ?? 0));
     totalMaterialCount += Math.max(0, Math.floor(entry.materialCount ?? 0));
     totalVertexCount += Math.max(0, Math.floor(entry.vertexCount ?? 0));
@@ -100,6 +104,7 @@ export function collectVisibleTileResourceStats<TEntry extends VisibleTileResour
     maxChunkTriangleCount,
     totalVisibleObjectCount,
     totalLightCount,
+    totalShadowLightCount,
     totalVisibleMeshCount,
     totalMaterialCount,
     totalVertexCount,
