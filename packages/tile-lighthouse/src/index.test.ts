@@ -2,17 +2,25 @@ import { describe, expect, it } from 'vitest';
 import { createLighthouseTilePlugin } from './index.ts';
 
 class FakeGeometry {
-  constructor(..._args: number[]) {}
+  args: number[];
+
+  constructor(...args: number[]) {
+    this.args = args;
+  }
 }
 
 class FakeMaterial {
   opacity?: number;
+  emissiveIntensity?: number;
   options: Record<string, unknown>;
 
   constructor(options: Record<string, unknown> = {}) {
     this.options = options;
     if (typeof options.opacity === 'number') {
       this.opacity = options.opacity;
+    }
+    if (typeof options.emissiveIntensity === 'number') {
+      this.emissiveIntensity = options.emissiveIntensity;
     }
   }
 }
@@ -63,6 +71,9 @@ class FakeNode {
 class FakeGroup extends FakeNode {}
 
 class FakeMesh extends FakeNode {
+  castShadow?: boolean;
+  receiveShadow?: boolean;
+
   constructor(
     public geometry?: object,
     public material?: FakeMaterial | FakeMaterial[]
@@ -121,16 +132,55 @@ describe('tile lighthouse', () => {
     const secondChildren = second?.children as FakeMesh[] | undefined;
     const firstBeamPivot = firstChildren?.[5] as FakeGroup | undefined;
     const secondBeamPivot = secondChildren?.[5] as FakeGroup | undefined;
+    const firstBeamMeshes = collectBeamMeshes(first);
+    const secondBeamMeshes = collectBeamMeshes(second);
 
     expect(sharedCount).toBeGreaterThanOrEqual(5);
-    expect(findBeamMaterial(first)).toBe(findBeamMaterial(second));
+    expect(firstBeamMeshes).toHaveLength(3);
+    expect(firstBeamMeshes[0]?.material).toBe(secondBeamMeshes[0]?.material);
     expect(firstChildren?.[0]?.geometry).toBe(secondChildren?.[0]?.geometry);
     expect((firstBeamPivot?.children[0] as FakeMesh | undefined)?.geometry).toBe(
       (secondBeamPivot?.children[0] as FakeMesh | undefined)?.geometry
     );
   });
 
-  it('sweeps and reveals the beam at night', () => {
+  it('builds a tapered emissive beam from the lantern room without beam shadows', () => {
+    const plugin = createLighthouseTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'lighthouse');
+    const model = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state: {} as never,
+      tile: { kind: 'lighthouse' } as never,
+      tileX: 4,
+      tileY: 5,
+    }) as FakeNode | undefined;
+    const beamMeshes = collectBeamMeshes(model);
+
+    expect(beamMeshes).toHaveLength(3);
+    expect(beamMeshes.map((beam) => beam.rotation.z)).toEqual(
+      expect.arrayContaining([Math.PI / 2])
+    );
+    expect(beamMeshes.map((beam) => beam.position.x)).toEqual(
+      expect.arrayContaining([
+        expect.closeTo(0.69, 6),
+        expect.closeTo(1.81, 6),
+        expect.closeTo(3.12, 6),
+      ])
+    );
+    expect(
+      beamMeshes.map((beam) => (beam.geometry as FakeGeometry | undefined)?.args[0])
+    ).toEqual([0.1, 0.19, 0.32]);
+    expect(
+      beamMeshes.map((beam) => (beam.geometry as FakeGeometry | undefined)?.args[1])
+    ).toEqual([1.1, 1.22, 1.48]);
+    beamMeshes.forEach((beam) => {
+      expect(beam.castShadow).toBe(false);
+      expect(beam.receiveShadow).toBe(false);
+      expect((beam.material as FakeMaterial)?.options.emissive).toBe('#ffe9a8');
+    });
+  });
+
+  it('sweeps and fades the beam by distance at night', () => {
     const plugin = createLighthouseTilePlugin();
     const tile = plugin.tiles?.find((entry) => entry.kind === 'lighthouse');
     const model = tile?.create3DModel?.({
@@ -161,18 +211,18 @@ describe('tile lighthouse', () => {
       tileY: 5,
     });
 
-    let beamNode: FakeMesh | null = null;
+    const beamNodes: FakeMesh[] = [];
     let beamPivot: FakeGroup | null = null;
     (model as FakeNode)?.traverse((node) => {
       if (node.userData?.lighthouseBeam) {
-        beamNode = node as FakeMesh;
+        beamNodes.push(node as FakeMesh);
       }
       if (node.userData?.lighthouseBeamPivot) {
         beamPivot = node as FakeGroup;
       }
     });
 
-    expect(beamNode).not.toBeNull();
+    expect(beamNodes).toHaveLength(3);
     expect(beamPivot).not.toBeNull();
 
     tile?.sync3DModel?.({
@@ -204,8 +254,13 @@ describe('tile lighthouse', () => {
       environment: {},
     });
 
-    expect(beamNode?.visible).toBe(false);
-    expect((beamNode?.material as FakeMaterial)?.opacity ?? 0).toBeLessThanOrEqual(0.03);
+    beamNodes.forEach((beamNode) => {
+      expect(beamNode.visible).toBe(false);
+      expect((beamNode.material as FakeMaterial)?.opacity ?? 0).toBeLessThanOrEqual(0.01);
+      expect((beamNode.material as FakeMaterial)?.emissiveIntensity ?? 0).toBeLessThanOrEqual(
+        0.01
+      );
+    });
 
     tile?.sync3DModel?.({
       three: fakeThree as never,
@@ -236,8 +291,18 @@ describe('tile lighthouse', () => {
       environment: {},
     });
 
-    expect(beamNode?.visible).toBe(true);
-    expect((beamNode?.material as FakeMaterial)?.opacity).toBeGreaterThan(0.2);
+    beamNodes.forEach((beamNode) => {
+      expect(beamNode.visible).toBe(true);
+    });
+    expect((beamNodes[0]?.material as FakeMaterial)?.opacity ?? 0).toBeGreaterThan(
+      (beamNodes[1]?.material as FakeMaterial)?.opacity ?? 0
+    );
+    expect((beamNodes[1]?.material as FakeMaterial)?.opacity ?? 0).toBeGreaterThan(
+      (beamNodes[2]?.material as FakeMaterial)?.opacity ?? 0
+    );
+    expect(
+      (beamNodes[0]?.material as FakeMaterial)?.emissiveIntensity ?? 0
+    ).toBeGreaterThan((beamNodes[2]?.material as FakeMaterial)?.emissiveIntensity ?? 0);
     expect(beamPivot?.rotation.y).toBeCloseTo(1, 6);
   });
 });
@@ -273,12 +338,12 @@ function collectMeshMaterials(root: FakeNode | undefined): Set<FakeMaterial> {
   return materials;
 }
 
-function findBeamMaterial(root: FakeNode | undefined): FakeMaterial | FakeMaterial[] | undefined {
-  let beamMaterial: FakeMaterial | FakeMaterial[] | undefined;
+function collectBeamMeshes(root: FakeNode | undefined): FakeMesh[] {
+  const beams: FakeMesh[] = [];
   root?.traverse((node) => {
     if (node.userData?.lighthouseBeam) {
-      beamMaterial = (node as FakeMesh).material;
+      beams.push(node as FakeMesh);
     }
   });
-  return beamMaterial;
+  return beams;
 }

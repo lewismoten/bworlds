@@ -6,7 +6,6 @@ import {
   syncPoiLightEmitters,
 } from '@bworlds/poi-support';
 import {
-  createBasicMaterial,
   getSharedConeGeometry,
   getSharedCylinderGeometry,
 } from '@bworlds/three-support';
@@ -19,6 +18,12 @@ import type {
 
 const LIGHTHOUSE_BEAM_PIVOT_KEY = 'lighthouseBeamPivot';
 const LIGHTHOUSE_BEAM_KEY = 'lighthouseBeam';
+const LIGHTHOUSE_BEAM_START_OFFSET = 0.14;
+const LIGHTHOUSE_BEAM_SEGMENTS = [
+  { key: 'near', radius: 0.1, length: 1.1, opacity: 0.24, emissiveIntensity: 1.2 },
+  { key: 'mid', radius: 0.19, length: 1.22, opacity: 0.16, emissiveIntensity: 0.9 },
+  { key: 'far', radius: 0.32, length: 1.48, opacity: 0.08, emissiveIntensity: 0.58 },
+] as const;
 const lighthouseMaterialCache = new WeakMap<
   object,
   {
@@ -26,15 +31,21 @@ const lighthouseMaterialCache = new WeakMap<
     stripeMaterial: ThreeMaterialLike;
     stoneMaterial: ThreeMaterialLike;
     paneMaterial: ThreeMaterialLike;
-    beamMaterial: ThreeMaterialLike;
+    beamMaterials: Record<
+      (typeof LIGHTHOUSE_BEAM_SEGMENTS)[number]['key'],
+      ThreeMaterialLike
+    >;
   }
 >();
 
 type BeamMaterialLike = ThreeMaterialLike & {
   opacity?: number;
+  emissiveIntensity?: number;
 };
 type BeamNodeLike = ThreeObject3DLike & {
   material?: BeamMaterialLike | BeamMaterialLike[];
+  castShadow?: boolean;
+  receiveShadow?: boolean;
 };
 
 export function createLighthouseTilePlugin(): RuntimePlugin {
@@ -59,7 +70,7 @@ export function createLighthouseTilePlugin(): RuntimePlugin {
     }),
     create3DModel({ three, tileX, tileY }: Create3DModelContext) {
       const group = new three.Group();
-      const { wallMaterial, stripeMaterial, stoneMaterial, paneMaterial, beamMaterial } =
+      const { wallMaterial, stripeMaterial, stoneMaterial, paneMaterial, beamMaterials } =
         getLighthouseSharedMaterials(three);
 
       const base = new three.Mesh(
@@ -125,18 +136,26 @@ export function createLighthouseTilePlugin(): RuntimePlugin {
       };
       beamPivot.position.set(tileX, 1.88, tileY);
 
-      const beam = new three.Mesh(
-        getSharedConeGeometry(three, 0.32, 3.8, 12),
-        beamMaterial
-      ) as BeamNodeLike;
-      beam.userData = {
-        ...(beam.userData ?? {}),
-        [LIGHTHOUSE_BEAM_KEY]: true,
-      };
-      beam.rotation.z = -Math.PI / 2;
-      beam.position.set(1.9, 0, 0);
-      beam.visible = false;
-      beamPivot.add(beam);
+      let beamOffset = LIGHTHOUSE_BEAM_START_OFFSET;
+      for (const segment of LIGHTHOUSE_BEAM_SEGMENTS) {
+        const beam = new three.Mesh(
+          getSharedConeGeometry(three, segment.radius, segment.length, 12),
+          beamMaterials[segment.key]
+        ) as BeamNodeLike;
+        beam.userData = {
+          ...(beam.userData ?? {}),
+          [LIGHTHOUSE_BEAM_KEY]: true,
+          lighthouseBeamOpacity: segment.opacity,
+          lighthouseBeamEmissiveIntensity: segment.emissiveIntensity,
+        };
+        beam.rotation.z = Math.PI / 2;
+        beam.position.set(beamOffset + segment.length * 0.5, 0, 0);
+        beam.castShadow = false;
+        beam.receiveShadow = false;
+        beam.visible = false;
+        beamPivot.add(beam);
+        beamOffset += segment.length - 0.04;
+      }
       group.add(beamPivot);
 
       const beacon = markPoiLightEmitter(
@@ -190,14 +209,23 @@ function getLighthouseSharedMaterials(three: Create3DModelContext['three']) {
         metalness: 0.02,
         side: three.DoubleSide,
       }),
-      beamMaterial: createBasicMaterial(three, {
-        color: '#ffe9a8',
-        transparent: true,
-        depthWrite: false,
-        side: three.DoubleSide,
-      }),
+      beamMaterials: Object.fromEntries(
+        LIGHTHOUSE_BEAM_SEGMENTS.map((segment) => [
+          segment.key,
+          new three.MeshStandardMaterial({
+            color: '#ffe9a8',
+            emissive: '#ffe9a8',
+            emissiveIntensity: 0,
+            transparent: true,
+            opacity: 0,
+            depthWrite: false,
+            roughness: 0.18,
+            metalness: 0,
+            side: three.DoubleSide,
+          }),
+        ])
+      ) as Record<(typeof LIGHTHOUSE_BEAM_SEGMENTS)[number]['key'], ThreeMaterialLike>,
     };
-    (cached.beamMaterial as BeamMaterialLike).opacity = 0;
     lighthouseMaterialCache.set(three as object, cached);
   }
   return cached;
@@ -227,7 +255,18 @@ function syncLighthouseBeam(
         ? [beamNode.material]
         : [];
     materials.forEach((material) => {
-      material.opacity = 0.02 + activation * 0.24;
+      const opacityScale =
+        typeof node.userData?.lighthouseBeamOpacity === 'number'
+          ? node.userData.lighthouseBeamOpacity
+          : 0.1;
+      material.opacity = activation * opacityScale;
+      if (typeof material.emissiveIntensity === 'number') {
+        const emissiveScale =
+          typeof node.userData?.lighthouseBeamEmissiveIntensity === 'number'
+            ? node.userData.lighthouseBeamEmissiveIntensity
+            : 0.6;
+        material.emissiveIntensity = activation * emissiveScale;
+      }
     });
   });
 }

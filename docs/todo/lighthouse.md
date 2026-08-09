@@ -4,16 +4,16 @@ Here’s a focused lighthouse checklist that covers the current visual bugs, day
 
 ## Lighthouse Beam Fixes
 
-* [ ] Reverse the light cone so the wide end points away from the lighthouse.
-* [ ] Align the beam origin with the lantern room at the top of the tower.
-* [ ] Make the beam narrowest at the lighthouse lens.
-* [ ] Increase beam width gradually with distance.
-* [ ] Fade beam opacity toward zero with distance.
-* [ ] Fade beam intensity near the far end.
-* [ ] Prevent the beam mesh from casting shadows.
-* [ ] Prevent the beam mesh from receiving shadows if visually unnecessary.
-* [ ] Use an emissive material for the visible beam.
-* [ ] Keep the beam independent from the actual scene-light shadow system.
+* [X] Reverse the light cone so the wide end points away from the lighthouse.
+* [X] Align the beam origin with the lantern room at the top of the tower.
+* [X] Make the beam narrowest at the lighthouse lens.
+* [X] Increase beam width gradually with distance.
+* [X] Fade beam opacity toward zero with distance.
+* [X] Fade beam intensity near the far end.
+* [X] Prevent the beam mesh from casting shadows.
+* [X] Prevent the beam mesh from receiving shadows if visually unnecessary.
+* [X] Use an emissive material for the visible beam.
+* [X] Keep the beam independent from the actual scene-light shadow system.
 * [ ] Add bloom to the emissive beam.
 * [ ] Make bloom visible from several tiles away.
 * [ ] Reduce bloom intensity at close range if it overwhelms the scene.
