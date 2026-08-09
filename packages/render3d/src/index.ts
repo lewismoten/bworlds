@@ -98,9 +98,6 @@ import {
 } from './reusable-batch-window.ts';
 import { runTileModelSafetyPrecheck } from './tile-model-safety-precheck.ts';
 import {
-  createConstellationPoint,
-  createSkyAltitudePosition,
-  createSkyPosition,
   writeConstellationPoint,
   writeSkyAltitudePosition,
   writeSkyPosition,
@@ -4673,7 +4670,7 @@ function syncAuroraBands(
     const end = band.azimuthCenter + band.span * 0.5;
     const positions: number[] = [];
     const indices: number[] = [];
-    const crestPoints: THREE.Vector3[] = [];
+    const crestPositions: number[] = [];
 
     for (let index = 0; index <= samples; index += 1) {
       const progress = index / samples;
@@ -4700,7 +4697,7 @@ function syncAuroraBands(
         band.altitude + band.height * 0.58 + wave,
         SKY_RADIUS - 5.45
       );
-      crestPoints.push(crestScratch.clone());
+      crestPositions.push(crestScratch.x, crestScratch.y, crestScratch.z);
       positions.push(
         lowerScratch.x,
         lowerScratch.y,
@@ -4807,7 +4804,10 @@ function syncAuroraBands(
     );
 
     const crest = new THREE.Line(
-      new THREE.BufferGeometry().setFromPoints(crestPoints),
+      new THREE.BufferGeometry().setAttribute(
+        'position',
+        new THREE.Float32BufferAttribute(crestPositions, 3)
+      ),
       new THREE.LineBasicMaterial({
         color: band.colorB,
         transparent: true,
