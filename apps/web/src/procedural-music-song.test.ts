@@ -83,6 +83,9 @@ describe('procedural music song', () => {
       'outro',
     ]);
     expect(first.blueprint.id).toBe('exploration-cycle');
+    expect(first.dna.identityId).toBe(second.dna.identityId);
+    expect(first.dna.progression).toEqual(second.dna.progression);
+    expect(first.dna.leadMotif).toEqual(second.dna.leadMotif);
     expect(first.loopStartOffsetMs).toBe(first.sections[1]?.startOffsetMs);
     expect(first.loopEndOffsetMs).toBe(
       first.sections[first.sections.length - 1]!.startOffsetMs
@@ -90,6 +93,47 @@ describe('procedural music song', () => {
     expect(first.durationMs).toBeGreaterThan(100_000);
     expect(first.durationMs).toBe(second.durationMs);
     expect(first.notes).toEqual(second.notes);
+  });
+
+  it('shares the same song dna across ambient, battle, and boss arrangements', () => {
+    const ambient = createProceduralMusicSong({
+      nowMs: 1_000,
+      tileKind: 'forest',
+      contextType: 'overworld',
+      encounterMode: 'ambient',
+      combatIntensity: 0,
+      dayProgress: 0.45,
+      yearProgress: 0.25,
+      clusterX: 3,
+      clusterY: -2,
+    });
+    const battle = createProceduralMusicSong({
+      nowMs: 1_000,
+      tileKind: 'forest',
+      contextType: 'overworld',
+      encounterMode: 'battle',
+      combatIntensity: 0.6,
+      dayProgress: 0.9,
+      yearProgress: 0.25,
+      clusterX: 3,
+      clusterY: -2,
+    });
+    const boss = createProceduralMusicSong({
+      nowMs: 1_000,
+      tileKind: 'forest',
+      contextType: 'overworld',
+      encounterMode: 'boss',
+      combatIntensity: 0.95,
+      dayProgress: 0.45,
+      yearProgress: 0,
+      clusterX: 3,
+      clusterY: -2,
+    });
+
+    expect(battle.dna.identityId).toBe(ambient.dna.identityId);
+    expect(battle.dna.progression).toEqual(ambient.dna.progression);
+    expect(battle.dna.sharedMotif).toEqual(ambient.dna.sharedMotif);
+    expect(boss.dna.leadContour).toEqual(ambient.dna.leadContour);
   });
 
   it('repeats song sections with deterministic melodic and rhythmic variation', () => {

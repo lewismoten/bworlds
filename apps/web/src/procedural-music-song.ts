@@ -6,6 +6,10 @@ import {
   type ProceduralMusicSongSectionTemplate,
 } from './procedural-music-blueprint.ts';
 import {
+  createProceduralSongDna,
+  type ProceduralSongDna,
+} from './procedural-music-song-dna.ts';
+import {
   resolveMusicEncounterMode,
   resolveMusicTheme,
   scheduleProceduralMusicNotes,
@@ -28,6 +32,7 @@ export type ProceduralMusicSong = {
   durationMs: number;
   loopStartOffsetMs: number;
   loopEndOffsetMs: number;
+  dna: ProceduralSongDna;
   blueprint: ProceduralMusicBlueprint;
   sections: ProceduralMusicSongSection[];
   notes: ProceduralMusicNote[];
@@ -39,6 +44,7 @@ export function createProceduralMusicSong(
   options: MusicUpdateOptions
 ): ProceduralMusicSong {
   const startMs = options.nowMs;
+  const dna = createProceduralSongDna(options);
   const durationMs = resolveProceduralMusicSongDurationMs(options);
   const blueprint = resolveProceduralMusicBlueprint(options);
   const sections = buildProceduralMusicSongSections(blueprint, durationMs);
@@ -55,6 +61,7 @@ export function createProceduralMusicSong(
     durationMs,
     loopStartOffsetMs,
     loopEndOffsetMs,
+    dna,
     blueprint,
     sections,
     notes,

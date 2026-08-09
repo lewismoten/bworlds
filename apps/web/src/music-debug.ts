@@ -50,6 +50,7 @@ export type MusicDebugSnapshot = {
   mood: ReturnType<typeof resolveMusicMood>;
   arrangement: ReturnType<typeof resolveMusicArrangement>;
   instrumentBank: ReturnType<typeof createProceduralInstrumentBank>;
+  songDna: ProceduralMusicSong['dna'];
   chordProgression: number[];
   leadMotif: number[];
   leadContour: string[];
@@ -252,6 +253,7 @@ export function createMusicDebugSnapshot(
     mood,
     arrangement,
     instrumentBank,
+    songDna: song.dna,
     chordProgression,
     leadMotif,
     leadContour,
@@ -433,6 +435,9 @@ export function buildMusicDebugSummaryMarkup(
       <div><dt>Preferred Intervals</dt><dd>${snapshot.theme.vocabulary.preferredIntervals.join(', ')}</dd></div>
       <div><dt>Lead Max Leap</dt><dd>${snapshot.leadMaxLeapSemitones.toFixed(1)} st</dd></div>
       <div><dt>Accidentals</dt><dd>${snapshot.accidentalNoteCount}</dd></div>
+    </div>
+    <div class="music-debug-role-counts">
+      <span>SongDNA ${snapshot.songDna.identityId} / ${snapshot.songDna.blueprintId} / ${snapshot.songDna.meterLabel}</span>
     </div>
     <div class="music-debug-role-counts">
       <span>Vocabulary ${snapshot.vocabularySummary.join(' | ')}</span>

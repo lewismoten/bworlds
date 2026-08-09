@@ -842,14 +842,14 @@ This is where procedural music could become particularly valuable in an MMORPG.
 
 # Procedural Song Memory and Identity
 
-- [ ] Generate a persistent `SongDNA` description for important songs.
-- [ ] Store key, mode, tempo, meter, motifs, progression, and instrumentation in the song identity.
-- [ ] Regenerate the same core song from its seed.
-- [ ] Allow variations to share the original SongDNA.
-- [ ] Preserve recognizable melodies across arrangements.
-- [ ] Generate night versions from the same underlying composition.
-- [ ] Generate combat versions from the same underlying composition.
-- [ ] Generate seasonal versions from the same underlying composition.
+- [x] Generate a persistent `SongDNA` description for important songs.
+- [x] Store key, mode, tempo, meter, motifs, progression, and instrumentation in the song identity.
+- [x] Regenerate the same core song from its seed.
+- [x] Allow variations to share the original SongDNA.
+- [x] Preserve recognizable melodies across arrangements.
+- [x] Generate night versions from the same underlying composition.
+- [x] Generate combat versions from the same underlying composition.
+- [x] Generate seasonal versions from the same underlying composition.
 - [ ] Generate historical or ruined versions of familiar themes.
 - [ ] Let important NPCs have musical motifs that can appear inside other music.
 - [ ] Let factions have motifs that can be combined when factions interact.

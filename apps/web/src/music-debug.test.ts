@@ -68,6 +68,7 @@ describe('music debug', () => {
     expect(first.blueprintLabel).toBe(second.blueprintLabel);
     expect(first.theme.vocabulary).toEqual(second.theme.vocabulary);
     expect(first.theme.motif).toEqual(second.theme.motif);
+    expect(first.songDna).toEqual(second.songDna);
     expect(first.vocabularySummary).toEqual(second.vocabularySummary);
     expect(first.sharedMotif).toEqual(second.sharedMotif);
     expect(first.sectionLayerArrangement).toEqual(
@@ -110,6 +111,7 @@ describe('music debug', () => {
     expect(summary).toContain('Region');
     expect(summary).toContain('Preferred Intervals');
     expect(summary).toContain('Vocabulary');
+    expect(summary).toContain('SongDNA');
     expect(summary).toContain('Layer Mix');
     expect(summary).toContain('Chords');
     expect(summary).toContain('Shared Motif');
@@ -121,6 +123,7 @@ describe('music debug', () => {
     expect(summary).toContain(snapshot.theme.id);
     expect(summary).toContain(snapshot.theme.vocabulary.modeLabel);
     expect(summary).toContain(snapshot.theme.motif.adaptationLabel);
+    expect(summary).toContain(snapshot.songDna.identityId);
     expect(summary).toContain('Hz</li>');
   });
 
