@@ -20,6 +20,7 @@ describe('frame loop runner', () => {
       getMaterialCount: () => 28,
       getTextureCount: () => 24,
       getVisibleObjectCount: () => 260,
+      getVisibleVertexCount: () => 14432,
       getVisibleMeshCount: () => 180,
       getWeatherVisibility: () => 0.7,
       is3dViewActive: () => true,
@@ -40,6 +41,7 @@ describe('frame loop runner', () => {
     expect(renderBudgetState.materialCount).toBe(28);
     expect(renderBudgetState.textureCount).toBe(24);
     expect(renderBudgetState.visibleObjectCount).toBe(260);
+    expect(renderBudgetState.visibleVertexCount).toBe(14432);
     expect(renderBudgetState.visibleMeshCount).toBe(180);
     expect(renderBudgetState.weatherVisibility).toBe(0.7);
     expect(renderBudgetState.smoothedFrameMs).toBeGreaterThan(
@@ -62,6 +64,7 @@ describe('frame loop runner', () => {
       getMaterialCount: () => 0,
       getTextureCount: () => 0,
       getVisibleObjectCount: () => 0,
+      getVisibleVertexCount: () => 0,
       getVisibleMeshCount: () => 0,
       getWeatherVisibility: () => 1,
       is3dViewActive: () => false,

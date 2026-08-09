@@ -2011,6 +2011,7 @@ describe('render3d visibility helpers', () => {
       totalVisibleObjectCount: 0,
       totalVisibleMeshCount: 18,
       totalMaterialCount: 11,
+      totalVertexCount: 0,
     });
   });
 
@@ -2805,6 +2806,7 @@ describe('render3d visibility helpers', () => {
           visibleObjectCount: 1,
           visibleMeshCount: 1,
           materialCount: 1,
+          vertexCount: 1,
           node: {} as never,
           model: root as never,
           modelRoot: root as never,
@@ -3298,6 +3300,7 @@ describe('render3d visibility helpers', () => {
           visibleObjectCount: 2,
           visibleMeshCount: 2,
           materialCount: 2,
+          vertexCount: 2,
           node: {} as never,
           model: { id: 'model-town' },
           sync3DModel({ tileX, tileY, cycle, environment }) {
@@ -3369,6 +3372,7 @@ describe('render3d visibility helpers', () => {
           visibleObjectCount: 1,
           visibleMeshCount: 1,
           materialCount: 1,
+          vertexCount: 1,
           node: {} as never,
           model: { id: 'model-forest' },
           modelRoot: null,

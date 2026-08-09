@@ -14,6 +14,7 @@ type FrameLoopRunnerOptions<T> = {
   getMaterialCount: () => number;
   getTextureCount: () => number;
   getVisibleObjectCount: () => number;
+  getVisibleVertexCount: () => number;
   getVisibleMeshCount: () => number;
   getWeatherVisibility: () => number | undefined;
   is3dViewActive: () => boolean;
@@ -36,6 +37,7 @@ export function createFrameLoopRunner<T>(
       materialCount: options.getMaterialCount(),
       textureCount: options.getTextureCount(),
       visibleObjectCount: options.getVisibleObjectCount(),
+      visibleVertexCount: options.getVisibleVertexCount(),
       visibleMeshCount: options.getVisibleMeshCount(),
       active3d: options.is3dViewActive(),
       weatherVisibility: options.getWeatherVisibility(),

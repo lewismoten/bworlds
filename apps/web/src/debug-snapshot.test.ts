@@ -105,6 +105,10 @@ describe('debug snapshot', () => {
             soft: 1200,
             hard: 1800,
           },
+          visibleVertices: {
+            soft: 120000,
+            hard: 180000,
+          },
           visibleMeshes: {
             soft: 640,
             hard: 960,
@@ -392,6 +396,10 @@ describe('debug snapshot', () => {
         visibleObjects: {
           soft: 1200,
           hard: 1800,
+        },
+        visibleVertices: {
+          soft: 120000,
+          hard: 180000,
         },
         visibleMeshes: {
           soft: 640,

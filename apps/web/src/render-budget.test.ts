@@ -37,6 +37,7 @@ describe('render budget', () => {
     expect(state.materialCount).toBe(0);
     expect(state.textureCount).toBe(0);
     expect(state.visibleObjectCount).toBe(0);
+    expect(state.visibleVertexCount).toBe(0);
     expect(state.visibleMeshCount).toBe(0);
     expect(state.currentFrameMs).toBeCloseTo(16.67, 2);
     expect(state.averageFps).toBeCloseTo(60, 0);
@@ -83,6 +84,7 @@ describe('render budget', () => {
       materialCount: 0,
       textureCount: 0,
       visibleObjectCount: 0,
+      visibleVertexCount: 0,
       visibleMeshCount: 0,
       weatherVisibility: 1,
       weatherVisibilityRadiusCap: DEFAULT_VISIBILITY_RADIUS,
@@ -143,6 +145,7 @@ describe('render budget', () => {
         materialCount: 30,
         textureCount: 36,
         visibleObjectCount: 640,
+        visibleVertexCount: 82000,
         visibleMeshCount: 420,
       })
     ).toBe(state);
@@ -154,6 +157,7 @@ describe('render budget', () => {
     expect(state.materialCount).toBe(30);
     expect(state.textureCount).toBe(36);
     expect(state.visibleObjectCount).toBe(640);
+    expect(state.visibleVertexCount).toBe(82000);
     expect(state.visibleMeshCount).toBe(420);
     expect(state.weatherVisibility).toBe(0.8);
 
@@ -310,6 +314,10 @@ describe('render budget', () => {
         soft: 1200,
         hard: 1800,
       },
+      visibleVertices: {
+        soft: 120000,
+        hard: 180000,
+      },
       visibleMeshes: {
         soft: 640,
         hard: 960,
@@ -392,6 +400,7 @@ describe('render budget', () => {
         materialCount: 0,
         textureCount: 0,
         visibleObjectCount: 0,
+        visibleVertexCount: 0,
         visibleMeshCount: 0,
       })
     ).toEqual(['None']);
@@ -409,6 +418,7 @@ describe('render budget', () => {
         materialCount: 0,
         textureCount: 0,
         visibleObjectCount: 0,
+        visibleVertexCount: 0,
         visibleMeshCount: 0,
       })
     ).toEqual([
@@ -430,6 +440,7 @@ describe('render budget', () => {
         materialCount: 0,
         textureCount: 0,
         visibleObjectCount: 0,
+        visibleVertexCount: 0,
         visibleMeshCount: 0,
       })
     ).toEqual([
@@ -452,6 +463,7 @@ describe('render budget', () => {
         materialCount: 0,
         textureCount: 0,
         visibleObjectCount: 0,
+        visibleVertexCount: 0,
         visibleMeshCount: 0,
       })
     ).toEqual([
@@ -473,6 +485,7 @@ describe('render budget', () => {
       materialCount: 0,
       textureCount: 0,
       visibleObjectCount: 0,
+      visibleVertexCount: 0,
       visibleMeshCount: 0,
     });
     expect(state.visibilityRadius).toBe(REDUCED_VISIBILITY_RADIUS);
@@ -488,6 +501,7 @@ describe('render budget', () => {
       materialCount: 0,
       textureCount: 0,
       visibleObjectCount: 0,
+      visibleVertexCount: 0,
       visibleMeshCount: 0,
     });
     expect(state.visibilityRadius).toBe(MIN_VISIBILITY_RADIUS);
@@ -507,6 +521,7 @@ describe('render budget', () => {
         materialCount: 0,
         textureCount: 0,
         visibleObjectCount: 0,
+        visibleVertexCount: 0,
         visibleMeshCount: 0,
       })
     ).toEqual([
@@ -527,6 +542,7 @@ describe('render budget', () => {
         materialCount: 0,
         textureCount: 0,
         visibleObjectCount: 0,
+        visibleVertexCount: 0,
         visibleMeshCount: 0,
       })
     ).toEqual([
@@ -548,6 +564,7 @@ describe('render budget', () => {
       materialCount: 0,
       textureCount: 0,
       visibleObjectCount: 0,
+      visibleVertexCount: 0,
       visibleMeshCount: 0,
     });
     expect(state.visibilityRadius).toBe(REDUCED_VISIBILITY_RADIUS);
@@ -562,6 +579,7 @@ describe('render budget', () => {
       materialCount: 0,
       textureCount: 0,
       visibleObjectCount: 0,
+      visibleVertexCount: 0,
       visibleMeshCount: 0,
     });
     expect(state.visibilityRadius).toBe(MIN_VISIBILITY_RADIUS);
@@ -581,6 +599,7 @@ describe('render budget', () => {
         materialCount: 0,
         textureCount: 0,
         visibleObjectCount: 0,
+        visibleVertexCount: 0,
         visibleMeshCount: 0,
       })
     ).toEqual([
@@ -601,6 +620,7 @@ describe('render budget', () => {
         materialCount: 0,
         textureCount: 0,
         visibleObjectCount: 0,
+        visibleVertexCount: 0,
         visibleMeshCount: 0,
       })
     ).toEqual([
@@ -622,6 +642,7 @@ describe('render budget', () => {
       materialCount: 0,
       textureCount: 0,
       visibleObjectCount: 0,
+      visibleVertexCount: 0,
       visibleMeshCount: 0,
     });
     expect(state.visibilityRadius).toBe(REDUCED_VISIBILITY_RADIUS);
@@ -636,6 +657,7 @@ describe('render budget', () => {
       materialCount: 0,
       textureCount: 0,
       visibleObjectCount: 0,
+      visibleVertexCount: 0,
       visibleMeshCount: 0,
     });
     expect(state.visibilityRadius).toBe(MIN_VISIBILITY_RADIUS);
@@ -655,6 +677,7 @@ describe('render budget', () => {
         materialCount: 0,
         textureCount: 0,
         visibleObjectCount: 0,
+        visibleVertexCount: 0,
         visibleMeshCount: 0,
       })
     ).toEqual([
@@ -675,6 +698,7 @@ describe('render budget', () => {
         materialCount: 0,
         textureCount: 0,
         visibleObjectCount: 0,
+        visibleVertexCount: 0,
         visibleMeshCount: 0,
       })
     ).toEqual([
@@ -696,6 +720,7 @@ describe('render budget', () => {
       materialCount: 0,
       textureCount: 52,
       visibleObjectCount: 0,
+      visibleVertexCount: 0,
       visibleMeshCount: 0,
     });
     expect(state.visibilityRadius).toBe(REDUCED_VISIBILITY_RADIUS);
@@ -710,6 +735,7 @@ describe('render budget', () => {
       materialCount: 0,
       textureCount: 80,
       visibleObjectCount: 0,
+      visibleVertexCount: 0,
       visibleMeshCount: 0,
     });
     expect(state.visibilityRadius).toBe(MIN_VISIBILITY_RADIUS);
@@ -729,6 +755,7 @@ describe('render budget', () => {
         materialCount: 0,
         textureCount: 52,
         visibleObjectCount: 0,
+        visibleVertexCount: 0,
         visibleMeshCount: 0,
       })
     ).toEqual([
@@ -749,6 +776,7 @@ describe('render budget', () => {
         materialCount: 0,
         textureCount: 80,
         visibleObjectCount: 0,
+        visibleVertexCount: 0,
         visibleMeshCount: 0,
       })
     ).toEqual([
@@ -770,6 +798,7 @@ describe('render budget', () => {
       materialCount: 36,
       textureCount: 0,
       visibleObjectCount: 0,
+      visibleVertexCount: 0,
       visibleMeshCount: 0,
     });
     expect(state.visibilityRadius).toBe(REDUCED_VISIBILITY_RADIUS);
@@ -784,6 +813,7 @@ describe('render budget', () => {
       materialCount: 52,
       textureCount: 0,
       visibleObjectCount: 0,
+      visibleVertexCount: 0,
       visibleMeshCount: 0,
     });
     expect(state.visibilityRadius).toBe(MIN_VISIBILITY_RADIUS);
@@ -803,6 +833,7 @@ describe('render budget', () => {
         materialCount: 36,
         textureCount: 0,
         visibleObjectCount: 0,
+        visibleVertexCount: 0,
         visibleMeshCount: 0,
       })
     ).toEqual([
@@ -823,6 +854,7 @@ describe('render budget', () => {
         materialCount: 52,
         textureCount: 0,
         visibleObjectCount: 0,
+        visibleVertexCount: 0,
         visibleMeshCount: 0,
       })
     ).toEqual([
@@ -844,6 +876,7 @@ describe('render budget', () => {
       materialCount: 0,
       textureCount: 0,
       visibleObjectCount: 1300,
+      visibleVertexCount: 0,
       visibleMeshCount: 0,
     });
     expect(state.visibilityRadius).toBe(REDUCED_VISIBILITY_RADIUS);
@@ -858,6 +891,7 @@ describe('render budget', () => {
       materialCount: 0,
       textureCount: 0,
       visibleObjectCount: 1900,
+      visibleVertexCount: 0,
       visibleMeshCount: 0,
     });
     expect(state.visibilityRadius).toBe(MIN_VISIBILITY_RADIUS);
@@ -877,6 +911,7 @@ describe('render budget', () => {
         materialCount: 0,
         textureCount: 0,
         visibleObjectCount: 1300,
+        visibleVertexCount: 0,
         visibleMeshCount: 0,
       })
     ).toEqual([
@@ -897,11 +932,90 @@ describe('render budget', () => {
         materialCount: 0,
         textureCount: 0,
         visibleObjectCount: 1900,
+        visibleVertexCount: 0,
         visibleMeshCount: 0,
       })
     ).toEqual([
       `Visibility radius reduced to ${MIN_VISIBILITY_RADIUS}`,
       'Visible objects exceeded the hard cap',
+    ]);
+  });
+
+  it('reduces draw distance when too many vertices are visible at once', () => {
+    let state = DEFAULT_RENDER_BUDGET_STATE;
+
+    state = advanceRenderBudgetState(state, {
+      deltaMs: 16.67,
+      active3d: true,
+      weatherVisibility: 1,
+      drawCalls: 200,
+      maxChunkDrawCalls: 0,
+      maxChunkMeshes: 0,
+      materialCount: 0,
+      textureCount: 0,
+      visibleObjectCount: 0,
+      visibleVertexCount: 130000,
+      visibleMeshCount: 0,
+    });
+    expect(state.visibilityRadius).toBe(REDUCED_VISIBILITY_RADIUS);
+
+    state = advanceRenderBudgetState(state, {
+      deltaMs: 16.67,
+      active3d: true,
+      weatherVisibility: 1,
+      drawCalls: 200,
+      maxChunkDrawCalls: 0,
+      maxChunkMeshes: 0,
+      materialCount: 0,
+      textureCount: 0,
+      visibleObjectCount: 0,
+      visibleVertexCount: 190000,
+      visibleMeshCount: 0,
+    });
+    expect(state.visibilityRadius).toBe(MIN_VISIBILITY_RADIUS);
+  });
+
+  it('reports visible vertex pressure in the active limiter list', () => {
+    expect(
+      getRenderQualityLimiters({
+        smoothedFrameMs: 16.67,
+        visibilityRadius: REDUCED_VISIBILITY_RADIUS,
+        weatherVisibilityRadiusCap: DEFAULT_VISIBILITY_RADIUS,
+        targetFps: 60,
+        severeFrameStreak: 0,
+        drawCalls: 0,
+        maxChunkDrawCalls: 0,
+        maxChunkMeshes: 0,
+        materialCount: 0,
+        textureCount: 0,
+        visibleObjectCount: 0,
+        visibleVertexCount: 130000,
+        visibleMeshCount: 0,
+      })
+    ).toEqual([
+      `Visibility radius reduced to ${REDUCED_VISIBILITY_RADIUS}`,
+      'Visible vertices exceeded the soft cap',
+    ]);
+
+    expect(
+      getRenderQualityLimiters({
+        smoothedFrameMs: 16.67,
+        visibilityRadius: MIN_VISIBILITY_RADIUS,
+        weatherVisibilityRadiusCap: DEFAULT_VISIBILITY_RADIUS,
+        targetFps: 60,
+        severeFrameStreak: 0,
+        drawCalls: 0,
+        maxChunkDrawCalls: 0,
+        maxChunkMeshes: 0,
+        materialCount: 0,
+        textureCount: 0,
+        visibleObjectCount: 0,
+        visibleVertexCount: 190000,
+        visibleMeshCount: 0,
+      })
+    ).toEqual([
+      `Visibility radius reduced to ${MIN_VISIBILITY_RADIUS}`,
+      'Visible vertices exceeded the hard cap',
     ]);
   });
 
@@ -918,6 +1032,7 @@ describe('render budget', () => {
       materialCount: 0,
       textureCount: 0,
       visibleObjectCount: 700,
+      visibleVertexCount: 0,
       visibleMeshCount: 700,
     });
     expect(state.visibilityRadius).toBe(REDUCED_VISIBILITY_RADIUS);
@@ -932,6 +1047,7 @@ describe('render budget', () => {
       materialCount: 0,
       textureCount: 0,
       visibleObjectCount: 980,
+      visibleVertexCount: 0,
       visibleMeshCount: 980,
     });
     expect(state.visibilityRadius).toBe(MIN_VISIBILITY_RADIUS);
@@ -951,6 +1067,7 @@ describe('render budget', () => {
         materialCount: 0,
         textureCount: 0,
         visibleObjectCount: 700,
+        visibleVertexCount: 0,
         visibleMeshCount: 700,
       })
     ).toEqual([
@@ -971,6 +1088,7 @@ describe('render budget', () => {
         materialCount: 0,
         textureCount: 0,
         visibleObjectCount: 980,
+        visibleVertexCount: 0,
         visibleMeshCount: 980,
       })
     ).toEqual([

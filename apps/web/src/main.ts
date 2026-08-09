@@ -1194,6 +1194,7 @@ const runLoopFrame = createFrameLoopRunner({
   getMaterialCount: () => renderer3d.getMaterialCount(),
   getTextureCount: () => renderer3d.getTextureCount(),
   getVisibleObjectCount: () => renderer3d.getVisibleObjectCount(),
+  getVisibleVertexCount: () => renderer3d.getVisibleVertexCount(),
   getVisibleMeshCount: () => renderer3d.getVisibleMeshCount(),
   getWeatherVisibility: () => latestEnvironment.weather?.current?.visibility,
   is3dViewActive: () => state.viewMode === '3d',
