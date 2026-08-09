@@ -70,18 +70,18 @@ export function resolveRailTile({
   const regionX = Math.floor(x / STATION_CELL_SIZE);
   const regionY = Math.floor(y / STATION_CELL_SIZE);
   const regionKey = `${seed}:${regionX}:${regionY}`;
-  if (!railRegionCache.has(regionKey)) {
-    railRegionCache.set(
-      regionKey,
-      buildRailRegionTileMap({
-        seed,
-        x,
-        y,
-        sampleTerrainSignals,
-      })
-    );
-  }
-  return railRegionCache.get(regionKey)?.get(`${x},${y}`) ?? null;
+  return (
+    railRegionCache
+      .getOrCreate(regionKey, () =>
+        buildRailRegionTileMap({
+          seed,
+          x,
+          y,
+          sampleTerrainSignals,
+        })
+      )
+      .get(`${x},${y}`) ?? null
+  );
 }
 
 export function collectNearbyStationAnchors(
@@ -210,24 +210,19 @@ export function getRailTrainPlacements({
   const regionY = Math.floor(y / STATION_CELL_SIZE);
   const timeBucket = Math.floor(timeMs / 2000);
   const cacheKey = `${seed}:${regionX}:${regionY}:${timeBucket}`;
-  if (railTrainCache.has(cacheKey)) {
-    return railTrainCache.get(cacheKey) ?? [];
-  }
-
-  const stations = collectNearbyStationAnchors(seed, x, y, sampleTerrainSignals);
-  const connections = buildRailConnections({
-    seed,
-    stationAnchors: stations,
-    sampleTerrainSignals,
+  return railTrainCache.getOrCreate(cacheKey, () => {
+    const stations = collectNearbyStationAnchors(seed, x, y, sampleTerrainSignals);
+    const connections = buildRailConnections({
+      seed,
+      stationAnchors: stations,
+      sampleTerrainSignals,
+    });
+    return connections
+      .map((connection, index) =>
+        resolveRailTrainPlacement(seed, timeMs, connection, index)
+      )
+      .filter((placement): placement is RailTrainPlacement => placement !== null);
   });
-  const placements = connections
-    .map((connection, index) =>
-      resolveRailTrainPlacement(seed, timeMs, connection, index)
-    )
-    .filter((placement): placement is RailTrainPlacement => placement !== null);
-
-  railTrainCache.set(cacheKey, placements);
-  return placements;
 }
 
 export function buildRailCurvePoints(

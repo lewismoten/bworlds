@@ -1,5 +1,6 @@
 import {
   createBoundedCache,
+  type BoundedCache,
   type CacheLike,
 } from '@bworlds/cache-support';
 import {
@@ -86,11 +87,11 @@ const DOCK_ROUTE_SUFFIX_SEED = registerHashLabel('dock-route-suffix');
 const dockBoatPhaseSeedCache = new Map<string, number>();
 const routeCache = new WeakMap<
   WorldStateLike,
-  CacheLike<string, DockBoatRoute | null>
+  BoundedCache<string, DockBoatRoute | null>
 >();
 const routeGeometryCache = new WeakMap<
   WorldStateLike,
-  CacheLike<string, DockRouteGeometry | null>
+  BoundedCache<string, DockRouteGeometry | null>
 >();
 const CARDINAL_DIRECTIONS = [
   { x: 1, y: 0 },
@@ -121,14 +122,15 @@ export function resolveDockBoatRoute(
     );
     routeCache.set(state, stateCache);
   }
-  if (stateCache.has(cacheKey)) {
-    return stateCache.get(cacheKey) ?? null;
-  }
-
-  const clusters = collectDockClusters(state, cluster.anchorX, cluster.anchorY, searchRadius);
-  const route = buildDockBoatRoute(clusters, cluster.key);
-  stateCache.set(cacheKey, route);
-  return route;
+  return stateCache.getOrCreate(cacheKey, () => {
+    const clusters = collectDockClusters(
+      state,
+      cluster.anchorX,
+      cluster.anchorY,
+      searchRadius
+    );
+    return buildDockBoatRoute(clusters, cluster.key);
+  });
 }
 
 export function getDockBoatPlacements(
@@ -625,37 +627,32 @@ function getDockBoatRouteGeometry(
     routeGeometryCache.set(state, stateCache);
   }
   const routeKey = getCanonicalRouteKey(route);
-  if (stateCache.has(routeKey)) {
-    return stateCache.get(routeKey) ?? null;
-  }
-
-  const segments: DockRouteSegment[] = [];
-  for (let index = 0; index < route.stops.length; index += 1) {
-    const from = route.stops[index]!;
-    const to = route.stops[(index + 1) % route.stops.length];
-    if (!to) {
-      continue;
+  return stateCache.getOrCreate(routeKey, () => {
+    const segments: DockRouteSegment[] = [];
+    for (let index = 0; index < route.stops.length; index += 1) {
+      const from = route.stops[index]!;
+      const to = route.stops[(index + 1) % route.stops.length];
+      if (!to) {
+        continue;
+      }
+      const fromCluster = getDockClusterFromTile(state, from.x, from.y);
+      const toCluster = getDockClusterFromTile(state, to.x, to.y);
+      const path = findOceanRouteBetweenClusters(state, fromCluster, toCluster);
+      if (!path || path.pathPoints.length === 0) {
+        return null;
+      }
+      segments.push({
+        from,
+        to,
+        path: path.pathPoints,
+      });
     }
-    const fromCluster = getDockClusterFromTile(state, from.x, from.y);
-    const toCluster = getDockClusterFromTile(state, to.x, to.y);
-    const path = findOceanRouteBetweenClusters(state, fromCluster, toCluster);
-    if (!path || path.pathPoints.length === 0) {
-      stateCache.set(routeKey, null);
-      return null;
-    }
-    segments.push({
-      from,
-      to,
-      path: path.pathPoints,
-    });
-  }
 
-  const geometry = {
-    segments,
-    points: segments.flatMap((segment) => segment.path),
-  };
-  stateCache.set(routeKey, geometry);
-  return geometry;
+    return {
+      segments,
+      points: segments.flatMap((segment) => segment.path),
+    };
+  });
 }
 
 function getCanonicalRouteKey(route: DockBoatRoute): string {

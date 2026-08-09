@@ -25,7 +25,7 @@
 - [ ] Stop cloning materials when shared materials can be reused.
 - [ ] Reduce Object3D count and unnecessary scene hierarchy depth.
 - [ ] Disable matrix updates for static objects and static subtrees.
-- [ ] Remove has() + get() double cache lookups.
+- [X] Remove has() + get() double cache lookups.
 - [X] Cache nearby overworld anchor queries by region or tile.
 - [X] Reduce repeated syncWorldCurvature() work each frame.
 - [X] Cache sky-position calculations unless celestial state changes.

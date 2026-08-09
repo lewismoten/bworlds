@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { createCoordinateCache } from '@bworlds/cache-support';
+import { createCoordinateCache, getOrCreateMapValue } from '@bworlds/cache-support';
 import {
   getTileAtlasCanvas,
   getTilePixelSize,
@@ -1106,7 +1106,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
 
   function getTileMaterial(kind, variant) {
     const key = `${kind}:${variant}`;
-    if (!materialCache.has(key)) {
+    return getOrCreateMapValue(materialCache, key, () => {
       const rect = getTileSpriteRect(kind, variant);
       const pixelSize = getTilePixelSize();
       const texture = atlasTexture.clone();
@@ -1125,16 +1125,12 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       texture.minFilter = THREE.NearestFilter;
       texture.generateMipmaps = false;
 
-      materialCache.set(
-        key,
-        new THREE.MeshStandardMaterial({
-          map: texture,
-          roughness: 0.92,
-          metalness: 0.04,
-        })
-      );
-    }
-    return materialCache.get(key);
+      return new THREE.MeshStandardMaterial({
+        map: texture,
+        roughness: 0.92,
+        metalness: 0.04,
+      });
+    });
   }
 
   function createFloorMesh(
@@ -2096,10 +2092,11 @@ export function getSharedBoxGeometry(
   depth: number
 ): THREE.BoxGeometry {
   const key = `${width}:${height}:${depth}`;
-  if (!sharedBoxGeometryCache.has(key)) {
-    sharedBoxGeometryCache.set(key, new THREE.BoxGeometry(width, height, depth));
-  }
-  return sharedBoxGeometryCache.get(key)!;
+  return getOrCreateMapValue(
+    sharedBoxGeometryCache,
+    key,
+    () => new THREE.BoxGeometry(width, height, depth)
+  );
 }
 
 export function getSharedPlaneGeometry(
@@ -2107,10 +2104,11 @@ export function getSharedPlaneGeometry(
   height: number
 ): THREE.PlaneGeometry {
   const key = `${width}:${height}`;
-  if (!sharedPlaneGeometryCache.has(key)) {
-    sharedPlaneGeometryCache.set(key, new THREE.PlaneGeometry(width, height));
-  }
-  return sharedPlaneGeometryCache.get(key)!;
+  return getOrCreateMapValue(
+    sharedPlaneGeometryCache,
+    key,
+    () => new THREE.PlaneGeometry(width, height)
+  );
 }
 
 function getDistanceFadeTargets(root: THREE.Object3D): DistanceFadeTargets {

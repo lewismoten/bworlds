@@ -55,9 +55,7 @@ function createStationMap(
       return null;
     }
     const bucket = Math.floor(timeMs / 30_000);
-    if (!serviceCache.has(bucket)) {
-      serviceCache.set(
-        bucket,
+    return serviceCache.getOrCreate(bucket, () =>
         findBoardableTrainService(
           getRailTrainPlacements({
             seed,
@@ -68,9 +66,7 @@ function createStationMap(
           }),
           context.label
         )
-      );
-    }
-    return serviceCache.get(bucket) ?? null;
+    );
   }
 
   function getTile(x: number, y: number, state?: WorldStateLike): TileLike {

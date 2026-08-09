@@ -1610,81 +1610,79 @@ function getDockClusterInfo(
   tileX: number,
   tileY: number
 ) {
-  if (dockClusterCache.has(tileX, tileY)) {
-    return dockClusterCache.get(tileX, tileY)!;
-  }
+  return dockClusterCache.getOrCreate(tileX, tileY, () => {
+    const queue = [[tileX, tileY]];
+    const visited = createCoordinateCache<true>();
+    visited.set(tileX, tileY, true);
+    const tiles: Array<{ x: number; y: number }> = [];
+    let queueIndex = 0;
 
-  const queue = [[tileX, tileY]];
-  const visited = createCoordinateCache<true>();
-  visited.set(tileX, tileY, true);
-  const tiles: Array<{ x: number; y: number }> = [];
-  let queueIndex = 0;
-
-  while (queueIndex < queue.length) {
-    const [currentX, currentY] = queue[queueIndex]!;
-    queueIndex += 1;
-    tiles.push({ x: currentX, y: currentY });
-    for (const [dx, dy] of [
-      [0, -1],
-      [1, 0],
-      [0, 1],
-      [-1, 0],
-    ]) {
-      const nextX = currentX + dx;
-      const nextY = currentY + dy;
-      if (visited.has(nextX, nextY)) continue;
-      if (state.getCurrentTile(nextX, nextY).kind !== 'dock') continue;
-      visited.set(nextX, nextY, true);
-      queue.push([nextX, nextY]);
+    while (queueIndex < queue.length) {
+      const [currentX, currentY] = queue[queueIndex]!;
+      queueIndex += 1;
+      tiles.push({ x: currentX, y: currentY });
+      for (const [dx, dy] of [
+        [0, -1],
+        [1, 0],
+        [0, 1],
+        [-1, 0],
+      ]) {
+        const nextX = currentX + dx;
+        const nextY = currentY + dy;
+        if (visited.has(nextX, nextY)) continue;
+        if (state.getCurrentTile(nextX, nextY).kind !== 'dock') continue;
+        visited.set(nextX, nextY, true);
+        queue.push([nextX, nextY]);
+      }
     }
-  }
 
-  tiles.sort((left, right) =>
-    left.y === right.y ? left.x - right.x : left.y - right.y
-  );
-  const bounds = tiles.reduce(
-    (acc, tile) => ({
-      minX: Math.min(acc.minX, tile.x),
-      maxX: Math.max(acc.maxX, tile.x),
-      minY: Math.min(acc.minY, tile.y),
-      maxY: Math.max(acc.maxY, tile.y),
-    }),
-    { minX: Infinity, maxX: -Infinity, minY: Infinity, maxY: -Infinity }
-  );
-  const spanX = bounds.maxX - bounds.minX + 1;
-  const spanY = bounds.maxY - bounds.minY + 1;
-  const axis = spanX >= spanY ? 'ew' : 'ns';
-  tiles.sort((left, right) =>
-    axis === 'ew'
-      ? left.x - right.x || left.y - right.y
-      : left.y - right.y || left.x - right.x
-  );
-  const anchor = tiles[0]!;
-  const clusterKey = `dock:${axis}:${anchor.x}:${anchor.y}`;
-
-  for (let index = 0; index < tiles.length; index += 1) {
-    const tile = tiles[index]!;
-    const negativeConnected =
+    tiles.sort((left, right) =>
+      left.y === right.y ? left.x - right.x : left.y - right.y
+    );
+    const bounds = tiles.reduce(
+      (acc, tile) => ({
+        minX: Math.min(acc.minX, tile.x),
+        maxX: Math.max(acc.maxX, tile.x),
+        minY: Math.min(acc.minY, tile.y),
+        maxY: Math.max(acc.maxY, tile.y),
+      }),
+      { minX: Infinity, maxX: -Infinity, minY: Infinity, maxY: -Infinity }
+    );
+    const spanX = bounds.maxX - bounds.minX + 1;
+    const spanY = bounds.maxY - bounds.minY + 1;
+    const axis = spanX >= spanY ? 'ew' : 'ns';
+    tiles.sort((left, right) =>
       axis === 'ew'
-        ? visited.has(tile.x - 1, tile.y)
-        : visited.has(tile.x, tile.y - 1);
-    const positiveConnected =
-      axis === 'ew'
-        ? visited.has(tile.x + 1, tile.y)
-        : visited.has(tile.x, tile.y + 1);
-    dockClusterCache.set(tile.x, tile.y, {
-      axis,
-      clusterKey,
-      anchorX: anchor.x,
-      anchorY: anchor.y,
-      length: tiles.length,
-      segmentIndex: index,
-      connectNegative: negativeConnected,
-      connectPositive: positiveConnected,
-    });
-  }
+        ? left.x - right.x || left.y - right.y
+        : left.y - right.y || left.x - right.x
+    );
+    const anchor = tiles[0]!;
+    const clusterKey = `dock:${axis}:${anchor.x}:${anchor.y}`;
 
-  return dockClusterCache.get(tileX, tileY)!;
+    for (let index = 0; index < tiles.length; index += 1) {
+      const tile = tiles[index]!;
+      const negativeConnected =
+        axis === 'ew'
+          ? visited.has(tile.x - 1, tile.y)
+          : visited.has(tile.x, tile.y - 1);
+      const positiveConnected =
+        axis === 'ew'
+          ? visited.has(tile.x + 1, tile.y)
+          : visited.has(tile.x, tile.y + 1);
+      dockClusterCache.set(tile.x, tile.y, {
+        axis,
+        clusterKey,
+        anchorX: anchor.x,
+        anchorY: anchor.y,
+        length: tiles.length,
+        segmentIndex: index,
+        connectNegative: negativeConnected,
+        connectPositive: positiveConnected,
+      });
+    }
+
+    return dockClusterCache.get(tileX, tileY)!;
+  });
 }
 
 function getDockStyle(
@@ -1693,7 +1691,7 @@ function getDockStyle(
   tileX: number,
   tileY: number
 ) {
-  if (!dockStyleCache.has(clusterKey)) {
+  return dockStyleCache.getOrCreate(clusterKey, () => {
     const regionX = Math.floor(tileX / DOCK_REGION_SIZE);
     const regionY = Math.floor(tileY / DOCK_REGION_SIZE);
     const palette =
@@ -1714,7 +1712,7 @@ function getDockStyle(
             sail: '#cbb89d',
             trim: '#d4a86f',
           };
-    dockStyleCache.set(clusterKey, {
+    return {
       deckMaterial: new three.MeshStandardMaterial({
         color: palette.deck,
         roughness: 0.92,
@@ -1745,10 +1743,8 @@ function getDockStyle(
         roughness: 0.85,
         metalness: 0.02,
       }),
-    });
-  }
-
-  return dockStyleCache.get(clusterKey)!;
+    };
+  });
 }
 
 function shouldRenderDockBoat(
@@ -2173,81 +2169,79 @@ function getBridgeClusterInfo(
   tileX: number,
   tileY: number
 ) {
-  if (bridgeClusterCache.has(tileX, tileY)) {
-    return bridgeClusterCache.get(tileX, tileY);
-  }
+  return bridgeClusterCache.getOrCreate(tileX, tileY, () => {
+    const queue = [[tileX, tileY]];
+    const visited = createCoordinateCache<true>();
+    visited.set(tileX, tileY, true);
+    const tiles: { x: number; y: number }[] = [];
+    let queueIndex = 0;
 
-  const queue = [[tileX, tileY]];
-  const visited = createCoordinateCache<true>();
-  visited.set(tileX, tileY, true);
-  const tiles: { x: number; y: number }[] = [];
-  let queueIndex = 0;
-
-  while (queueIndex < queue.length) {
-    const [currentX, currentY] = queue[queueIndex]!;
-    queueIndex += 1;
-    tiles.push({ x: currentX, y: currentY });
-    for (const [dx, dy] of [
-      [0, -1],
-      [1, 0],
-      [0, 1],
-      [-1, 0],
-    ]) {
-      const nextX = currentX + dx;
-      const nextY = currentY + dy;
-      if (visited.has(nextX, nextY)) continue;
-      if (state.getCurrentTile(nextX, nextY).kind !== 'bridge') continue;
-      visited.set(nextX, nextY, true);
-      queue.push([nextX, nextY]);
+    while (queueIndex < queue.length) {
+      const [currentX, currentY] = queue[queueIndex]!;
+      queueIndex += 1;
+      tiles.push({ x: currentX, y: currentY });
+      for (const [dx, dy] of [
+        [0, -1],
+        [1, 0],
+        [0, 1],
+        [-1, 0],
+      ]) {
+        const nextX = currentX + dx;
+        const nextY = currentY + dy;
+        if (visited.has(nextX, nextY)) continue;
+        if (state.getCurrentTile(nextX, nextY).kind !== 'bridge') continue;
+        visited.set(nextX, nextY, true);
+        queue.push([nextX, nextY]);
+      }
     }
-  }
 
-  tiles.sort((left, right) =>
-    left.y === right.y ? left.x - right.x : left.y - right.y
-  );
-  const bounds = tiles.reduce(
-    (acc, tile) => ({
-      minX: Math.min(acc.minX, tile.x),
-      maxX: Math.max(acc.maxX, tile.x),
-      minY: Math.min(acc.minY, tile.y),
-      maxY: Math.max(acc.maxY, tile.y),
-    }),
-    { minX: Infinity, maxX: -Infinity, minY: Infinity, maxY: -Infinity }
-  );
-  const spanX = bounds.maxX - bounds.minX + 1;
-  const spanY = bounds.maxY - bounds.minY + 1;
-  const axis = spanX >= spanY ? 'ew' : 'ns';
-  tiles.sort((left, right) =>
-    axis === 'ew'
-      ? left.x - right.x || left.y - right.y
-      : left.y - right.y || left.x - right.x
-  );
-  const anchor = tiles[0]!;
-  const clusterKey = `${axis}:${anchor.x}:${anchor.y}`;
-
-  for (let index = 0; index < tiles.length; index += 1) {
-    const tile = tiles[index]!;
-    const negativeConnected =
+    tiles.sort((left, right) =>
+      left.y === right.y ? left.x - right.x : left.y - right.y
+    );
+    const bounds = tiles.reduce(
+      (acc, tile) => ({
+        minX: Math.min(acc.minX, tile.x),
+        maxX: Math.max(acc.maxX, tile.x),
+        minY: Math.min(acc.minY, tile.y),
+        maxY: Math.max(acc.maxY, tile.y),
+      }),
+      { minX: Infinity, maxX: -Infinity, minY: Infinity, maxY: -Infinity }
+    );
+    const spanX = bounds.maxX - bounds.minX + 1;
+    const spanY = bounds.maxY - bounds.minY + 1;
+    const axis = spanX >= spanY ? 'ew' : 'ns';
+    tiles.sort((left, right) =>
       axis === 'ew'
-        ? visited.has(tile.x - 1, tile.y)
-        : visited.has(tile.x, tile.y - 1);
-    const positiveConnected =
-      axis === 'ew'
-        ? visited.has(tile.x + 1, tile.y)
-        : visited.has(tile.x, tile.y + 1);
-    bridgeClusterCache.set(tile.x, tile.y, {
-      axis,
-      clusterKey,
-      anchorX: anchor.x,
-      anchorY: anchor.y,
-      length: tiles.length,
-      segmentIndex: index,
-      connectNegative: negativeConnected,
-      connectPositive: positiveConnected,
-    });
-  }
+        ? left.x - right.x || left.y - right.y
+        : left.y - right.y || left.x - right.x
+    );
+    const anchor = tiles[0]!;
+    const clusterKey = `${axis}:${anchor.x}:${anchor.y}`;
 
-  return bridgeClusterCache.get(tileX, tileY);
+    for (let index = 0; index < tiles.length; index += 1) {
+      const tile = tiles[index]!;
+      const negativeConnected =
+        axis === 'ew'
+          ? visited.has(tile.x - 1, tile.y)
+          : visited.has(tile.x, tile.y - 1);
+      const positiveConnected =
+        axis === 'ew'
+          ? visited.has(tile.x + 1, tile.y)
+          : visited.has(tile.x, tile.y + 1);
+      bridgeClusterCache.set(tile.x, tile.y, {
+        axis,
+        clusterKey,
+        anchorX: anchor.x,
+        anchorY: anchor.y,
+        length: tiles.length,
+        segmentIndex: index,
+        connectNegative: negativeConnected,
+        connectPositive: positiveConnected,
+      });
+    }
+
+    return bridgeClusterCache.get(tileX, tileY)!;
+  });
 }
 
 function getBridgeStyle(
@@ -2256,7 +2250,7 @@ function getBridgeStyle(
   tileX: number,
   tileY: number
 ) {
-  if (!bridgeStyleCache.has(clusterKey)) {
+  return bridgeStyleCache.getOrCreate(clusterKey, () => {
     const regionX = Math.floor(tileX / BRIDGE_REGION_SIZE);
     const regionY = Math.floor(tileY / BRIDGE_REGION_SIZE);
     const typeIndex = Math.floor(hash2D(BRIDGE_TYPE_SEED, tileX, tileY) * 4);
@@ -2299,7 +2293,7 @@ function getBridgeStyle(
       tileX,
       tileY
     );
-    bridgeStyleCache.set(clusterKey, {
+    return {
       type,
       covered: covered && !drawbridge,
       drawbridge,
@@ -2341,10 +2335,8 @@ function getBridgeStyle(
         roughness: 0.92,
         metalness: type === 'metal' ? 0.18 : 0.02,
       }),
-    });
-  }
-
-  return bridgeStyleCache.get(clusterKey);
+    };
+  });
 }
 
 function createBridgeTexture(
