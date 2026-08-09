@@ -13,6 +13,7 @@ export type VisibleTileResourceStatsEntry = {
   triangleCount?: number;
   geometryBytes?: number;
   textureMemoryEstimateBytes?: number;
+  gpuTextureMemoryEstimateBytes?: number;
 };
 
 export function collectVisibleTileResourceStats<TEntry extends VisibleTileResourceStatsEntry>(
@@ -33,6 +34,7 @@ export function collectVisibleTileResourceStats<TEntry extends VisibleTileResour
   totalTriangleCount: number;
   totalGeometryBytes: number;
   totalTextureMemoryEstimateBytes: number;
+  totalGpuTextureMemoryEstimateBytes: number;
   totalEstimatedGpuMemoryBytes: number;
 } {
   const size = Math.max(1, Math.floor(chunkTileSize));
@@ -53,6 +55,7 @@ export function collectVisibleTileResourceStats<TEntry extends VisibleTileResour
   let totalTriangleCount = 0;
   let totalGeometryBytes = 0;
   let totalTextureMemoryEstimateBytes = 0;
+  let totalGpuTextureMemoryEstimateBytes = 0;
 
   for (const entry of entries) {
     const chunkX = Math.floor(entry.tileX / size);
@@ -85,6 +88,12 @@ export function collectVisibleTileResourceStats<TEntry extends VisibleTileResour
       0,
       Math.floor(entry.textureMemoryEstimateBytes ?? 0)
     );
+    totalGpuTextureMemoryEstimateBytes += Math.max(
+      0,
+      Math.floor(
+        entry.gpuTextureMemoryEstimateBytes ?? entry.textureMemoryEstimateBytes ?? 0
+      )
+    );
     if (nextObjectCount > maxChunkObjectCount) {
       maxChunkObjectCount = nextObjectCount;
     }
@@ -111,8 +120,9 @@ export function collectVisibleTileResourceStats<TEntry extends VisibleTileResour
     totalTriangleCount,
     totalGeometryBytes,
     totalTextureMemoryEstimateBytes,
+    totalGpuTextureMemoryEstimateBytes,
     totalEstimatedGpuMemoryBytes:
-      totalGeometryBytes + totalTextureMemoryEstimateBytes,
+      totalGeometryBytes + totalGpuTextureMemoryEstimateBytes,
   };
 }
 

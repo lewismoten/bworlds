@@ -483,6 +483,7 @@ describe('render3d visibility helpers', () => {
       largestGeometryBytes: 288,
       textureCount: 2,
       textureMemoryEstimateBytes: 2987,
+      gpuTextureMemoryEstimateBytes: 2987,
       treeCount: 1,
       treeObjectCount: 1,
       treeMeshCount: 1,
@@ -821,6 +822,7 @@ describe('render3d visibility helpers', () => {
       largestGeometryBytes: 96,
       textureCount: 0,
       textureMemoryEstimateBytes: 0,
+      gpuTextureMemoryEstimateBytes: 0,
       treeCount: 0,
       treeObjectCount: 0,
       treeMeshCount: 0,
@@ -922,6 +924,7 @@ describe('render3d visibility helpers', () => {
       largestGeometryBytes: 216,
       textureCount: 0,
       textureMemoryEstimateBytes: 0,
+      gpuTextureMemoryEstimateBytes: 0,
       treeCount: 0,
       treeObjectCount: 0,
       treeMeshCount: 0,
@@ -1073,6 +1076,7 @@ describe('render3d visibility helpers', () => {
       largestGeometryBytes: 192,
       textureCount: 0,
       textureMemoryEstimateBytes: 0,
+      gpuTextureMemoryEstimateBytes: 0,
       treeCount: 1,
       treeObjectCount: 3,
       treeMeshCount: 2,
@@ -1168,6 +1172,7 @@ describe('render3d visibility helpers', () => {
       largestGeometryBytes: 60,
       textureCount: 0,
       textureMemoryEstimateBytes: 0,
+      gpuTextureMemoryEstimateBytes: 0,
       treeCount: 0,
       treeObjectCount: 0,
       treeMeshCount: 0,
@@ -1295,6 +1300,7 @@ describe('render3d visibility helpers', () => {
       largestGeometryBytes: 72,
       textureCount: 0,
       textureMemoryEstimateBytes: 0,
+      gpuTextureMemoryEstimateBytes: 0,
       treeCount: 0,
       treeObjectCount: 0,
       treeMeshCount: 0,
@@ -3092,6 +3098,7 @@ describe('render3d visibility helpers', () => {
         triangleCount: 10,
         geometryBytes: 512,
         textureMemoryEstimateBytes: 1024,
+        gpuTextureMemoryEstimateBytes: 1024,
       },
       {
         tileX: 1,
@@ -3104,6 +3111,7 @@ describe('render3d visibility helpers', () => {
         triangleCount: 12,
         geometryBytes: 768,
         textureMemoryEstimateBytes: 2048,
+        gpuTextureMemoryEstimateBytes: 2048,
       },
       {
         tileX: 4,
@@ -3116,6 +3124,7 @@ describe('render3d visibility helpers', () => {
         triangleCount: 18,
         geometryBytes: 1024,
         textureMemoryEstimateBytes: 4096,
+        gpuTextureMemoryEstimateBytes: 4096,
       },
       {
         tileX: -1,
@@ -3128,6 +3137,7 @@ describe('render3d visibility helpers', () => {
         triangleCount: 14,
         geometryBytes: 640,
         textureMemoryEstimateBytes: 512,
+        gpuTextureMemoryEstimateBytes: 512,
       },
     ];
 
@@ -3150,6 +3160,7 @@ describe('render3d visibility helpers', () => {
       totalTriangleCount: 54,
       totalGeometryBytes: 2944,
       totalTextureMemoryEstimateBytes: 7680,
+      totalGpuTextureMemoryEstimateBytes: 7680,
       totalEstimatedGpuMemoryBytes: 10624,
     });
   });

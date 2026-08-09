@@ -88,7 +88,10 @@ import {
   getTextureDimensions,
   getTexturePixelCount,
 } from './texture-dimension-stats.ts';
-import { getTextureMemoryEstimateBytes } from './texture-memory-estimate.ts';
+import {
+  getDecodedTextureMemoryEstimateBytes,
+  getGpuTextureMemoryEstimateBytes,
+} from './texture-memory-estimate.ts';
 import {
   disposeOwnedObject3DMaterials,
   getRecentOwnedMaterialLifecycleCounts,
@@ -375,6 +378,7 @@ type Render3DController = {
     maxTextureHeight: number;
     maxTexturePixelCount: number;
     textureMemoryEstimateBytes: number;
+    gpuTextureMemoryEstimateBytes: number;
     gpuGeometryCount: number;
     treeObjectCount: number;
     treeMeshCount: number;
@@ -864,6 +868,7 @@ type DynamicTileNode = {
   triangleCount: number;
   geometryBytes: number;
   textureMemoryEstimateBytes: number;
+  gpuTextureMemoryEstimateBytes?: number;
   node: THREE.Group;
   model: unknown;
   modelRoot?: THREE.Object3D | null;
@@ -976,6 +981,7 @@ type SceneResourceStats = {
   maxTexturePixelCount: number;
   textureCount: number;
   textureMemoryEstimateBytes: number;
+  gpuTextureMemoryEstimateBytes: number;
   treeCount: number;
   treeObjectCount: number;
   treeMeshCount: number;
@@ -1157,6 +1163,7 @@ function createEmptySceneResourceStats(): SceneResourceStats {
     maxTexturePixelCount: 0,
     textureCount: 0,
     textureMemoryEstimateBytes: 0,
+    gpuTextureMemoryEstimateBytes: 0,
     treeCount: 0,
     treeObjectCount: 0,
     treeMeshCount: 0,
@@ -1928,6 +1935,8 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       triangleCount: finalSceneResourceStats.triangleCount,
       geometryBytes: finalSceneResourceStats.geometryBytes,
       textureMemoryEstimateBytes: finalSceneResourceStats.textureMemoryEstimateBytes,
+      gpuTextureMemoryEstimateBytes:
+        finalSceneResourceStats.gpuTextureMemoryEstimateBytes,
       node: tileNode,
       model: pluginModel ?? tileNode,
       modelRoot: pluginModel ?? null,
@@ -2426,6 +2435,8 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       maxTextureHeight: sceneResourceStats.maxTextureHeight,
       maxTexturePixelCount: sceneResourceStats.maxTexturePixelCount,
       textureMemoryEstimateBytes: sceneResourceStats.textureMemoryEstimateBytes,
+      gpuTextureMemoryEstimateBytes:
+        sceneResourceStats.gpuTextureMemoryEstimateBytes,
       gpuGeometryCount: renderer.info.memory.geometries,
       treeObjectCount: sceneResourceStats.treeObjectCount,
       treeMeshCount: sceneResourceStats.treeMeshCount,
@@ -3799,6 +3810,7 @@ export function collectSceneResourceStats(
   let maxTextureHeight = 0;
   let maxTexturePixelCount = 0;
   let textureMemoryEstimateBytes = 0;
+  let gpuTextureMemoryEstimateBytes = 0;
   let maxMaterialTextureSlotCount = 0;
   let treeCount = 0;
   let treeObjectCount = 0;
@@ -4005,7 +4017,8 @@ export function collectSceneResourceStats(
           maxTexturePixelCount,
           getTexturePixelCount(texture)
         );
-        textureMemoryEstimateBytes += getTextureMemoryEstimateBytes(texture);
+        textureMemoryEstimateBytes += getDecodedTextureMemoryEstimateBytes(texture);
+        gpuTextureMemoryEstimateBytes += getGpuTextureMemoryEstimateBytes(texture);
       }
     }
   });
@@ -4082,6 +4095,7 @@ export function collectSceneResourceStats(
     maxTexturePixelCount,
     textureCount: textures.size,
     textureMemoryEstimateBytes,
+    gpuTextureMemoryEstimateBytes,
     treeCount,
     treeObjectCount,
     treeMeshCount,
