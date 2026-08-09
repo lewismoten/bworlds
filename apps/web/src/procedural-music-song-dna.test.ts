@@ -49,10 +49,42 @@ describe('procedural music song dna', () => {
     });
 
     expect(battle.identityId).toBe(ambient.identityId);
+    expect(battle.sourceIdentityId).toBe(ambient.sourceIdentityId);
     expect(battle.progression).toEqual(ambient.progression);
     expect(battle.leadMotif).toEqual(ambient.leadMotif);
     expect(boss.sharedMotif).toEqual(ambient.sharedMotif);
     expect(battle.encounterMode).toBe('battle');
     expect(boss.encounterMode).toBe('boss');
+  });
+
+  it('derives ruined and historical variants from familiar source identities', () => {
+    const base = createProceduralSongDna({
+      tileKind: 'plains',
+      contextType: 'overworld',
+      clusterX: 12,
+      clusterY: -8,
+      encounterMode: 'ambient',
+    });
+    const ruined = createProceduralSongDna({
+      tileKind: 'ruins',
+      contextType: 'overworld',
+      clusterX: 12,
+      clusterY: -8,
+      encounterMode: 'ambient',
+    });
+    const historical = createProceduralSongDna({
+      tileKind: 'tower',
+      contextType: 'overworld',
+      clusterX: 12,
+      clusterY: -8,
+      encounterMode: 'ambient',
+    });
+
+    expect(ruined.sourceIdentityId).toBe(base.sourceIdentityId);
+    expect(ruined.variantLabel).toBe('ruined');
+    expect(ruined.modeLabel).toContain('weathered');
+    expect(historical.sourceIdentityId).toBe(base.sourceIdentityId);
+    expect(historical.variantLabel).toBe('historical');
+    expect(historical.tempoBandLabel).toContain('ceremonial');
   });
 });

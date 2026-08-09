@@ -13,6 +13,7 @@ import { resolveProceduralMusicBlueprint } from './procedural-music-blueprint.ts
 
 export type ProceduralSongDna = {
   identityId: string;
+  sourceIdentityId: string;
   themeId: ReturnType<typeof resolveMusicTheme>['id'];
   biomeLabel: string;
   regionLabel: string;
@@ -20,6 +21,7 @@ export type ProceduralSongDna = {
   modeLabel: string;
   tempoBandLabel: string;
   meterLabel: '4/4';
+  variantLabel: 'standard' | 'historical' | 'ruined';
   progression: readonly number[];
   leadMotif: readonly number[];
   sharedMotif: readonly number[];
@@ -62,21 +64,31 @@ export function createProceduralSongDna(
     clusterX,
     clusterY
   ).map((step) => `${step.stage}:${step.degreeOffset}`);
+  const variantLabel = resolveSongDnaVariantLabel(
+    options.tileKind,
+    options.contextType
+  );
+  const sourceIdentityId = [
+    theme.id,
+    options.contextType ?? 'overworld',
+    clusterX,
+    clusterY,
+  ].join(':');
 
   return {
-    identityId: [
-      theme.id,
-      options.contextType ?? 'overworld',
-      clusterX,
-      clusterY,
-    ].join(':'),
+    identityId: sourceIdentityId,
+    sourceIdentityId,
     themeId: theme.id,
     biomeLabel: theme.vocabulary.biomeLabel,
     regionLabel: theme.vocabulary.regionLabel,
     rootHz: theme.rootHz,
-    modeLabel: theme.vocabulary.modeLabel,
-    tempoBandLabel: theme.vocabulary.tempoBandLabel,
+    modeLabel: formatVariantModeLabel(theme.vocabulary.modeLabel, variantLabel),
+    tempoBandLabel: formatVariantTempoLabel(
+      theme.vocabulary.tempoBandLabel,
+      variantLabel
+    ),
     meterLabel: '4/4',
+    variantLabel,
     progression,
     leadMotif,
     sharedMotif: [...theme.motif.sharedDegreeOffsets],
@@ -91,4 +103,52 @@ export function createProceduralSongDna(
     },
     encounterMode: options.encounterMode ?? 'ambient',
   };
+}
+
+function resolveSongDnaVariantLabel(
+  tileKind: MusicUpdateOptions['tileKind'],
+  contextType: MusicUpdateOptions['contextType']
+): ProceduralSongDna['variantLabel'] {
+  if (
+    tileKind === 'ruins' ||
+    tileKind === 'quarry' ||
+    contextType === 'dungeon'
+  ) {
+    return 'ruined';
+  }
+  if (
+    tileKind === 'tower' ||
+    tileKind === 'stronghold' ||
+    tileKind === 'observatory' ||
+    tileKind === 'lighthouse'
+  ) {
+    return 'historical';
+  }
+  return 'standard';
+}
+
+function formatVariantModeLabel(
+  modeLabel: string,
+  variantLabel: ProceduralSongDna['variantLabel']
+): string {
+  if (variantLabel === 'ruined') {
+    return `${modeLabel} (weathered)`;
+  }
+  if (variantLabel === 'historical') {
+    return `${modeLabel} (ancestral)`;
+  }
+  return modeLabel;
+}
+
+function formatVariantTempoLabel(
+  tempoBandLabel: string,
+  variantLabel: ProceduralSongDna['variantLabel']
+): string {
+  if (variantLabel === 'ruined') {
+    return `eroded ${tempoBandLabel}`;
+  }
+  if (variantLabel === 'historical') {
+    return `ceremonial ${tempoBandLabel}`;
+  }
+  return tempoBandLabel;
 }

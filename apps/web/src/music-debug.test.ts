@@ -127,6 +127,24 @@ describe('music debug', () => {
     expect(summary).toContain('Hz</li>');
   });
 
+  it('surfaces ruined and historical SongDNA variants on the debug page', () => {
+    const ruined = createMusicDebugSnapshot({
+      tileKind: 'ruins',
+      contextType: 'overworld',
+      encounterMode: 'ambient',
+    });
+    const historical = createMusicDebugSnapshot({
+      tileKind: 'tower',
+      contextType: 'overworld',
+      encounterMode: 'ambient',
+    });
+
+    expect(ruined.songDna.variantLabel).toBe('ruined');
+    expect(ruined.songDna.modeLabel).toContain('weathered');
+    expect(historical.songDna.variantLabel).toBe('historical');
+    expect(historical.songDna.tempoBandLabel).toContain('ceremonial');
+  });
+
   it('formats song durations and loop ranges as minute-second labels', () => {
     expect(formatMusicDebugDuration(0)).toBe('0:00');
     expect(formatMusicDebugDuration(62_000)).toBe('1:02');

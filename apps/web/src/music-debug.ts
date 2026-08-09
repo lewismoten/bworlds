@@ -25,7 +25,18 @@ import { createMusicDebugScaleOverlay } from './music-debug-scale.ts';
 import { describeSongSectionLayerArrangement } from './procedural-music-song-layers.ts';
 
 export type MusicDebugTileKind =
-  'plains' | 'forest' | 'shore' | 'town' | 'mountain' | 'cave' | 'floor';
+  | 'plains'
+  | 'forest'
+  | 'shore'
+  | 'town'
+  | 'mountain'
+  | 'cave'
+  | 'floor'
+  | 'ruins'
+  | 'tower'
+  | 'stronghold'
+  | 'observatory'
+  | 'lighthouse';
 export type MusicDebugContextType =
   'overworld' | 'town' | 'building' | 'cave' | 'dungeon';
 export type MusicDebugWeatherKind =
@@ -330,6 +341,11 @@ export function buildMusicDebugMarkup(
                     'mountain',
                     'cave',
                     'floor',
+                    'ruins',
+                    'tower',
+                    'stronghold',
+                    'observatory',
+                    'lighthouse',
                   ],
                   snapshot.options.tileKind
                 )}
@@ -437,7 +453,7 @@ export function buildMusicDebugSummaryMarkup(
       <div><dt>Accidentals</dt><dd>${snapshot.accidentalNoteCount}</dd></div>
     </div>
     <div class="music-debug-role-counts">
-      <span>SongDNA ${snapshot.songDna.identityId} / ${snapshot.songDna.blueprintId} / ${snapshot.songDna.meterLabel}</span>
+      <span>SongDNA ${snapshot.songDna.identityId} / ${snapshot.songDna.variantLabel} / ${snapshot.songDna.blueprintId} / ${snapshot.songDna.meterLabel}</span>
     </div>
     <div class="music-debug-role-counts">
       <span>Vocabulary ${snapshot.vocabularySummary.join(' | ')}</span>
@@ -666,7 +682,12 @@ function normalizeTileKind(
     value === 'town' ||
     value === 'mountain' ||
     value === 'cave' ||
-    value === 'floor'
+    value === 'floor' ||
+    value === 'ruins' ||
+    value === 'tower' ||
+    value === 'stronghold' ||
+    value === 'observatory' ||
+    value === 'lighthouse'
   ) {
     return value;
   }

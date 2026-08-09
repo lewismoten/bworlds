@@ -850,7 +850,7 @@ This is where procedural music could become particularly valuable in an MMORPG.
 - [x] Generate night versions from the same underlying composition.
 - [x] Generate combat versions from the same underlying composition.
 - [x] Generate seasonal versions from the same underlying composition.
-- [ ] Generate historical or ruined versions of familiar themes.
+- [x] Generate historical or ruined versions of familiar themes.
 - [ ] Let important NPCs have musical motifs that can appear inside other music.
 - [ ] Let factions have motifs that can be combined when factions interact.
 - [ ] Allow players to recognize locations from musical themes even when the exact generated performance differs.
