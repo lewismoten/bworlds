@@ -152,6 +152,7 @@ import {
   getRenderBudgetCaps,
   getRenderQualityLevel,
   getRenderQualityLimiters,
+  updateRenderBudgetStateInPlace,
 } from './render-budget.ts';
 import { getMouseLookAngles } from './mouse-look.ts';
 import {
@@ -3450,22 +3451,11 @@ function loop(timestamp: number): void {
     pageHidden: pageVisibilityState.hidden,
     requestNextFrame: () => requestRender(),
     runFrame: (deltaMs) => {
-      const nextBudgetState = advanceRenderBudgetState(renderBudgetState, {
+      updateRenderBudgetStateInPlace(renderBudgetState, {
         deltaMs,
         active3d: state.viewMode === '3d',
         weatherVisibility: latestEnvironment.weather?.current?.visibility,
       });
-      renderBudgetState.smoothedFrameMs = nextBudgetState.smoothedFrameMs;
-      renderBudgetState.visibilityRadius = nextBudgetState.visibilityRadius;
-      renderBudgetState.weatherVisibility = nextBudgetState.weatherVisibility;
-      renderBudgetState.weatherVisibilityRadiusCap =
-        nextBudgetState.weatherVisibilityRadiusCap;
-      renderBudgetState.targetFps = nextBudgetState.targetFps;
-      renderBudgetState.currentFrameMs = nextBudgetState.currentFrameMs;
-      renderBudgetState.recentFrameMs = nextBudgetState.recentFrameMs;
-      renderBudgetState.averageFps = nextBudgetState.averageFps;
-      renderBudgetState.worstRecentFrameMs = nextBudgetState.worstRecentFrameMs;
-      renderBudgetState.severeFrameStreak = nextBudgetState.severeFrameStreak;
       if (
         shouldAdvanceSimulation({
           timeFrozen: timeState.frozen,

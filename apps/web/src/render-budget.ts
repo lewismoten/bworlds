@@ -75,7 +75,36 @@ const SEVERE_FPS_FRAME_MS = 1000 / 24;
 const SEVERE_FRAME_STREAK_THRESHOLD = 10;
 const SEVERE_FRAME_STREAK_RECOVERY_STEP = 2;
 
-export function advanceRenderBudgetState(
+function resetRenderBudgetStateInPlace(state: RenderBudgetState): RenderBudgetState {
+  state.currentFrameMs = 16.67;
+  state.smoothedFrameMs = 16.67;
+  state.recentFrameMs.length = 1;
+  state.recentFrameMs[0] = 16.67;
+  state.visibilityRadius = DEFAULT_VISIBILITY_RADIUS;
+  state.weatherVisibility = 1;
+  state.weatherVisibilityRadiusCap = DEFAULT_VISIBILITY_RADIUS;
+  state.targetFps = 60;
+  state.averageFps = 60;
+  state.worstRecentFrameMs = 16.67;
+  state.severeFrameStreak = 0;
+  return state;
+}
+
+function appendRecentFrameMsInPlace(
+  recentFrameMs: number[],
+  nextFrameMs: number
+): number[] {
+  if (recentFrameMs.length >= RECENT_FRAME_WINDOW_SIZE) {
+    recentFrameMs.copyWithin(0, 1);
+    recentFrameMs[RECENT_FRAME_WINDOW_SIZE - 1] = nextFrameMs;
+    return recentFrameMs;
+  }
+
+  recentFrameMs.push(nextFrameMs);
+  return recentFrameMs;
+}
+
+export function updateRenderBudgetStateInPlace(
   state: RenderBudgetState,
   {
     deltaMs,
@@ -88,35 +117,25 @@ export function advanceRenderBudgetState(
   }
 ): RenderBudgetState {
   if (!active3d) {
-    return {
-      ...state,
-      currentFrameMs: 16.67,
-      recentFrameMs: [16.67],
-      visibilityRadius: DEFAULT_VISIBILITY_RADIUS,
-      weatherVisibility: 1,
-      weatherVisibilityRadiusCap: DEFAULT_VISIBILITY_RADIUS,
-      targetFps: 60,
-      averageFps: 60,
-      worstRecentFrameMs: 16.67,
-      severeFrameStreak: 0,
-    };
+    return resetRenderBudgetStateInPlace(state);
   }
 
   const clampedDeltaMs = Math.min(Math.max(deltaMs, 8), 100);
   const smoothedFrameMs =
     state.smoothedFrameMs +
     (clampedDeltaMs - state.smoothedFrameMs) * FRAME_SMOOTHING;
-  const recentFrameMs = [...state.recentFrameMs, clampedDeltaMs].slice(
-    -RECENT_FRAME_WINDOW_SIZE
-  );
-  const averageFrameMs =
-    recentFrameMs.reduce((total, frameMs) => total + frameMs, 0) /
-    recentFrameMs.length;
+  const recentFrameMs = appendRecentFrameMsInPlace(state.recentFrameMs, clampedDeltaMs);
+  let totalRecentFrameMs = 0;
+  let worstRecentFrameMs = clampedDeltaMs;
+  for (let index = 0; index < recentFrameMs.length; index += 1) {
+    const frameMs = recentFrameMs[index] as number;
+    totalRecentFrameMs += frameMs;
+    if (frameMs > worstRecentFrameMs) {
+      worstRecentFrameMs = frameMs;
+    }
+  }
+  const averageFrameMs = totalRecentFrameMs / recentFrameMs.length;
   const averageFps = 1000 / Math.max(1, averageFrameMs);
-  const worstRecentFrameMs = recentFrameMs.reduce(
-    (worst, frameMs) => Math.max(worst, frameMs),
-    clampedDeltaMs
-  );
   const severeFrameStreak =
     clampedDeltaMs >= SEVERE_FPS_FRAME_MS
       ? state.severeFrameStreak + 1
@@ -144,20 +163,41 @@ export function advanceRenderBudgetState(
     visibilityRadius = state.visibilityRadius;
   }
 
-  visibilityRadius = Math.min(visibilityRadius, weatherVisibilityRadiusCap);
+  state.currentFrameMs = clampedDeltaMs;
+  state.smoothedFrameMs = smoothedFrameMs;
+  state.visibilityRadius = Math.min(visibilityRadius, weatherVisibilityRadiusCap);
+  state.weatherVisibility = normalizedWeatherVisibility;
+  state.weatherVisibilityRadiusCap = weatherVisibilityRadiusCap;
+  state.targetFps = targetFps;
+  state.averageFps = averageFps;
+  state.worstRecentFrameMs = worstRecentFrameMs;
+  state.severeFrameStreak = severeFrameStreak;
+  return state;
+}
 
-  return {
-    currentFrameMs: clampedDeltaMs,
-    smoothedFrameMs,
-    recentFrameMs,
-    visibilityRadius,
-    weatherVisibility: normalizedWeatherVisibility,
-    weatherVisibilityRadiusCap,
-    targetFps,
-    averageFps,
-    worstRecentFrameMs,
-    severeFrameStreak,
-  };
+export function advanceRenderBudgetState(
+  state: RenderBudgetState,
+  {
+    deltaMs,
+    active3d,
+    weatherVisibility,
+  }: {
+    deltaMs: number;
+    active3d: boolean;
+    weatherVisibility?: number;
+  }
+): RenderBudgetState {
+  return updateRenderBudgetStateInPlace(
+    {
+      ...state,
+      recentFrameMs: [...state.recentFrameMs],
+    },
+    {
+      deltaMs,
+      active3d,
+      weatherVisibility,
+    }
+  );
 }
 
 export function getPendingWorldBuildBudget(

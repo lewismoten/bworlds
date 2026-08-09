@@ -12,6 +12,7 @@ import {
   getRenderQualityLimiters,
   MIN_VISIBILITY_RADIUS,
   REDUCED_VISIBILITY_RADIUS,
+  updateRenderBudgetStateInPlace,
   type RenderBudgetState,
 } from './render-budget.ts';
 import { getWeatherVisibilityRadiusCap } from './weather-visibility-budget.ts';
@@ -107,6 +108,37 @@ describe('render budget', () => {
     expect(state.currentFrameMs).toBe(20);
     expect(state.averageFps).toBeCloseTo(50, 0);
     expect(state.worstRecentFrameMs).toBe(20);
+  });
+
+  it('supports in-place frame-budget updates for the RAF loop without replacing the state object', () => {
+    const state: RenderBudgetState = {
+      ...DEFAULT_RENDER_BUDGET_STATE,
+      recentFrameMs: [...DEFAULT_RENDER_BUDGET_STATE.recentFrameMs],
+    };
+    const recentFrameMs = state.recentFrameMs;
+
+    expect(
+      updateRenderBudgetStateInPlace(state, {
+        deltaMs: 27,
+        active3d: true,
+        weatherVisibility: 0.8,
+      })
+    ).toBe(state);
+    expect(state.recentFrameMs).toBe(recentFrameMs);
+    expect(state.currentFrameMs).toBe(27);
+    expect(state.weatherVisibility).toBe(0.8);
+
+    for (let index = 0; index < 80; index += 1) {
+      updateRenderBudgetStateInPlace(state, {
+        deltaMs: 20,
+        active3d: true,
+        weatherVisibility: 1,
+      });
+    }
+
+    expect(state.recentFrameMs).toBe(recentFrameMs);
+    expect(state.recentFrameMs).toHaveLength(60);
+    expect(state.recentFrameMs.at(-1)).toBe(20);
   });
 
   it('allocates more pending world-build time when frames are healthy and less when under pressure', () => {
