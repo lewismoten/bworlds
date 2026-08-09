@@ -1,21 +1,21 @@
 import './music-debug.css';
+import { createMusicDebugPageState } from './music-debug-page-state.ts';
 import { createMusicDebugPlaybackController } from './music-debug-playback.ts';
 import { downloadMusicDebugMidiFile } from './music-debug-midi.ts';
 import {
-  buildMusicDebugMarkup,
+  buildMusicDebugShellMarkup,
+  createCachedMusicDebugSnapshot,
   buildMusicDebugSummaryMarkup,
-  createMusicDebugSongPlayback,
-  createMusicDebugSnapshot,
-  drawMusicDebugTimeline,
   randomizeMusicDebugSeed,
+  createMusicDebugSongPlayback,
+  drawMusicDebugTimeline,
   type MusicDebugOptions,
 } from './music-debug.ts';
 
 const root = document.querySelector<HTMLElement>('#app');
-let snapshot = createMusicDebugSnapshot();
 
 if (root) {
-  root.innerHTML = buildMusicDebugMarkup(snapshot);
+  root.innerHTML = buildMusicDebugShellMarkup();
 }
 
 const form = document.querySelector<HTMLFormElement>('#music-debug-form');
@@ -38,6 +38,17 @@ const clusterXInput = document.querySelector<HTMLInputElement>(
 const clusterYInput = document.querySelector<HTMLInputElement>(
   'input[name="clusterY"]'
 );
+const pageState = createMusicDebugPageState({
+  createSnapshot: () => createCachedMusicDebugSnapshot(collectOptions()),
+  onSnapshot(nextSnapshot) {
+    if (summary) {
+      summary.innerHTML = buildMusicDebugSummaryMarkup(nextSnapshot);
+    }
+    if (timeline) {
+      drawMusicDebugTimeline(timeline, nextSnapshot);
+    }
+  },
+});
 const playbackController = createMusicDebugPlaybackController({
   playback: createMusicDebugSongPlayback(),
   onPlayingChange(playing) {
@@ -45,6 +56,7 @@ const playbackController = createMusicDebugPlaybackController({
       playButton.textContent = playing ? 'Stop Song' : 'Play Song';
     }
   },
+  playbackLeadMs: 8,
 });
 
 function collectOptions(): Partial<MusicDebugOptions> {
@@ -65,30 +77,15 @@ function collectOptions(): Partial<MusicDebugOptions> {
   } as Partial<MusicDebugOptions>;
 }
 
-function renderSnapshot(): void {
-  snapshot = createMusicDebugSnapshot(collectOptions(), performance.now());
-  if (summary) {
-    summary.innerHTML = buildMusicDebugSummaryMarkup(snapshot);
-  }
-  if (timeline) {
-    drawMusicDebugTimeline(timeline, snapshot);
-  }
-}
-
-if (summary && timeline) {
-  summary.innerHTML = buildMusicDebugSummaryMarkup(snapshot);
-  drawMusicDebugTimeline(timeline, snapshot);
-}
-
 form?.addEventListener('submit', (event) => {
   event.preventDefault();
   playbackController.stop();
-  renderSnapshot();
+  pageState.refreshNow();
 });
 
 form?.addEventListener('input', () => {
   playbackController.stop();
-  renderSnapshot();
+  pageState.scheduleRefresh();
 });
 
 playButton?.addEventListener('click', () => {
@@ -96,8 +93,8 @@ playButton?.addEventListener('click', () => {
     playbackController.stop();
     return;
   }
-  renderSnapshot();
-  playbackController.start(snapshot, {
+  const currentSnapshot = pageState.refreshNow();
+  playbackController.start(currentSnapshot, {
     loop: loopInput?.checked === true,
   });
 });
@@ -111,11 +108,19 @@ randomizeButton?.addEventListener('click', () => {
   if (clusterYInput) {
     clusterYInput.value = String(randomized.clusterY);
   }
-  renderSnapshot();
+  pageState.refreshNow();
 });
 
 downloadButton?.addEventListener('click', () => {
   playbackController.stop();
-  renderSnapshot();
-  downloadMusicDebugMidiFile(snapshot);
+  downloadMusicDebugMidiFile(pageState.refreshNow());
+});
+
+const scheduleAfterPaint =
+  globalThis.requestAnimationFrame?.bind(globalThis) ??
+  ((callback: FrameRequestCallback) =>
+    setTimeout(() => callback(performance.now()), 0));
+
+scheduleAfterPaint(() => {
+  pageState.refreshNow();
 });

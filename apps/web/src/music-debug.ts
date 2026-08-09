@@ -106,6 +106,8 @@ type MusicDebugSongPlaybackOptions = {
   scheduleAheadMs?: number;
 };
 
+const musicDebugSnapshotCache = new Map<string, MusicDebugSnapshot>();
+
 export type MusicDebugPlaybackRegion = {
   startOffsetMs: number;
   endOffsetMs: number;
@@ -300,6 +302,21 @@ export function createMusicDebugSnapshot(
   };
 }
 
+export function createCachedMusicDebugSnapshot(
+  rawOptions?: Partial<MusicDebugOptions> | null
+): MusicDebugSnapshot {
+  const options = normalizeMusicDebugOptions(rawOptions);
+  const cacheKey = JSON.stringify(options);
+  const cached = musicDebugSnapshotCache.get(cacheKey);
+  if (cached) {
+    return cached;
+  }
+
+  const snapshot = createMusicDebugSnapshot(options, 0);
+  musicDebugSnapshotCache.set(cacheKey, snapshot);
+  return snapshot;
+}
+
 export function randomizeMusicDebugSeed(
   rawOptions?: Partial<MusicDebugOptions> | null,
   random = Math.random
@@ -322,6 +339,18 @@ export function randomizeMusicDebugSeed(
 export function buildMusicDebugMarkup(
   snapshot: MusicDebugSnapshot = createMusicDebugSnapshot()
 ): string {
+  return buildMusicDebugShellMarkup(
+    snapshot.options,
+    buildMusicDebugSummaryMarkup(snapshot)
+  );
+}
+
+export function buildMusicDebugShellMarkup(
+  rawOptions?: Partial<MusicDebugOptions> | null,
+  summaryMarkup = buildMusicDebugPendingSummaryMarkup()
+): string {
+  const options = normalizeMusicDebugOptions(rawOptions);
+
   return `
     <main class="music-debug-shell">
       <section class="music-debug-hero">
@@ -352,7 +381,7 @@ export function buildMusicDebugMarkup(
                     'observatory',
                     'lighthouse',
                   ],
-                  snapshot.options.tileKind
+                  options.tileKind
                 )}
               </select>
             </label>
@@ -361,7 +390,7 @@ export function buildMusicDebugMarkup(
               <select name="contextType">
                 ${buildSelectOptions(
                   ['overworld', 'town', 'building', 'cave', 'dungeon'],
-                  snapshot.options.contextType
+                  options.contextType
                 )}
               </select>
             </label>
@@ -370,7 +399,7 @@ export function buildMusicDebugMarkup(
               <select name="encounterMode">
                 ${buildSelectOptions(
                   ['ambient', 'battle', 'boss'],
-                  snapshot.options.encounterMode
+                  options.encounterMode
                 )}
               </select>
             </label>
@@ -379,33 +408,33 @@ export function buildMusicDebugMarkup(
               <select name="weatherKind">
                 ${buildSelectOptions(
                   ['clear', 'fog', 'light-rain', 'heavy-rain'],
-                  snapshot.options.weatherKind
+                  options.weatherKind
                 )}
               </select>
             </label>
             <label>
               <span>Weather Intensity</span>
-              <input name="weatherIntensity" type="range" min="0" max="1" step="0.05" value="${snapshot.options.weatherIntensity}" />
+              <input name="weatherIntensity" type="range" min="0" max="1" step="0.05" value="${options.weatherIntensity}" />
             </label>
             <label>
               <span>Combat Intensity</span>
-              <input name="combatIntensity" type="range" min="0" max="1" step="0.05" value="${snapshot.options.combatIntensity}" />
+              <input name="combatIntensity" type="range" min="0" max="1" step="0.05" value="${options.combatIntensity}" />
             </label>
             <label>
               <span>Day Progress</span>
-              <input name="dayProgress" type="range" min="0" max="1" step="0.01" value="${snapshot.options.dayProgress}" />
+              <input name="dayProgress" type="range" min="0" max="1" step="0.01" value="${options.dayProgress}" />
             </label>
             <label>
               <span>Year Progress</span>
-              <input name="yearProgress" type="range" min="0" max="1" step="0.01" value="${snapshot.options.yearProgress}" />
+              <input name="yearProgress" type="range" min="0" max="1" step="0.01" value="${options.yearProgress}" />
             </label>
             <label>
               <span>Cluster X</span>
-              <input name="clusterX" type="number" step="1" value="${snapshot.options.clusterX}" />
+              <input name="clusterX" type="number" step="1" value="${options.clusterX}" />
             </label>
             <label>
               <span>Cluster Y</span>
-              <input name="clusterY" type="number" step="1" value="${snapshot.options.clusterY}" />
+              <input name="clusterY" type="number" step="1" value="${options.clusterY}" />
             </label>
           </div>
           <div class="music-debug-actions">
@@ -420,11 +449,19 @@ export function buildMusicDebugMarkup(
           </div>
         </form>
         <section class="music-debug-card">
-          <div id="music-debug-summary">${buildMusicDebugSummaryMarkup(snapshot)}</div>
+          <div id="music-debug-summary">${summaryMarkup}</div>
           <canvas id="music-debug-timeline" width="960" height="320"></canvas>
         </section>
       </section>
     </main>
+  `;
+}
+
+export function buildMusicDebugPendingSummaryMarkup(): string {
+  return `
+    <div class="music-debug-role-counts">
+      <span>Generating preview...</span>
+    </div>
   `;
 }
 
@@ -644,7 +681,7 @@ export function createMusicDebugSongPlayback(
   options: MusicDebugSongPlaybackOptions = {}
 ): MusicDebugSongPlayback {
   const now = options.now ?? performance.now.bind(performance);
-  const scheduleAheadMs = options.scheduleAheadMs ?? 12;
+  const scheduleAheadMs = options.scheduleAheadMs ?? 4;
 
   return {
     play(snapshot, region) {

@@ -1,6 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
   buildMusicDebugMarkup,
+  buildMusicDebugPendingSummaryMarkup,
+  buildMusicDebugShellMarkup,
+  createCachedMusicDebugSnapshot,
   buildMusicDebugSummaryMarkup,
   createMusicDebugSongPlayback,
   createMusicDebugSnapshot,
@@ -139,6 +142,33 @@ describe('music debug', () => {
       snapshot.songDna.importantNpcMotifs[0]?.npcName ?? ''
     );
     expect(summary).toContain('Hz</li>');
+  });
+
+  it('renders a lightweight shell before the generated preview is ready', () => {
+    const markup = buildMusicDebugShellMarkup();
+    const pendingSummary = buildMusicDebugPendingSummaryMarkup();
+
+    expect(markup).toContain('Music Laboratory');
+    expect(markup).toContain('Generating preview...');
+    expect(markup).toContain('music-debug-summary');
+    expect(markup).toContain(pendingSummary.trim());
+  });
+
+  it('reuses cached snapshots for identical debug options', () => {
+    const first = createCachedMusicDebugSnapshot({
+      tileKind: 'forest',
+      contextType: 'overworld',
+      clusterX: 4,
+      clusterY: -2,
+    });
+    const second = createCachedMusicDebugSnapshot({
+      tileKind: 'forest',
+      contextType: 'overworld',
+      clusterX: 4,
+      clusterY: -2,
+    });
+
+    expect(first).toBe(second);
   });
 
   it('surfaces ruined and historical SongDNA variants on the debug page', () => {
