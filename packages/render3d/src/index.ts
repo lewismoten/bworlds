@@ -61,6 +61,7 @@ import {
   reconcilePendingWorldBuildQueueWithScratch,
   type PendingWorldBuildEntry,
 } from './pending-world-build-queue.ts';
+import { shouldProcessPendingWorldBuildEntryWithinBudget } from './pending-world-build-processing.ts';
 import { collectMaterialTexturesInto } from './material-texture-collector.ts';
 import { collectRecentWindowedEvents } from './recent-windowed-events.ts';
 import { getRenderEffectQualityProfile } from './render-effect-quality.ts';
@@ -103,6 +104,7 @@ export {
   reconcilePendingWorldBuildQueue,
   reconcilePendingWorldBuildQueueWithScratch,
 } from './pending-world-build-queue.ts';
+export { shouldProcessPendingWorldBuildEntryWithinBudget } from './pending-world-build-processing.ts';
 export { collectMaterialTexturesInto } from './material-texture-collector.ts';
 export { collectRecentWindowedEvents } from './recent-windowed-events.ts';
 export {
@@ -1571,14 +1573,13 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
 
     while (
       processedEntryCount < pendingWorldBuild.queue.length &&
-      shouldProcessPendingWorldBuildEntry(
+      shouldProcessPendingWorldBuildEntryWithinBudget(
         flushStartMs,
         performance.now(),
         processedEntryCount,
-        {
-          ...effectivePendingWorldBuildBudget,
-          minimumEntriesPerFlush: 0,
-        }
+        effectivePendingWorldBuildBudget.pendingBuildBudgetMs,
+        effectivePendingWorldBuildBudget.maxPendingBuildTiles,
+        0
       )
     ) {
       const entry = pendingWorldBuild.queue[processedEntryCount];
@@ -3910,13 +3911,14 @@ export function shouldProcessPendingWorldBuildEntry(
     minimumEntriesPerFlush?: number;
   } = {}
 ): boolean {
-  if (processedEntryCount >= maxPendingBuildTiles) {
-    return false;
-  }
-  if (processedEntryCount < minimumEntriesPerFlush) {
-    return true;
-  }
-  return currentMs - flushStartMs < pendingBuildBudgetMs;
+  return shouldProcessPendingWorldBuildEntryWithinBudget(
+    flushStartMs,
+    currentMs,
+    processedEntryCount,
+    pendingBuildBudgetMs,
+    maxPendingBuildTiles,
+    minimumEntriesPerFlush
+  );
 }
 
 export function createFrameTimeBudget(

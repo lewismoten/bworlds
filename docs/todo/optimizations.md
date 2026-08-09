@@ -161,7 +161,7 @@ This is especially relevant given the heap profile you were examining earlier.
 * [ ] Reuse vector objects.
 * [ ] Reuse matrices.
 * [ ] Reuse raycasting result buffers where possible.
-* [ ] Avoid unnecessary object spreads.
+* [X] Avoid unnecessary object spreads.
 * [X] Avoid unnecessary `map()`, `filter()`, and `reduce()` chains inside hot loops.
 * [X] Prefer a single iteration when several array operations can be combined.
 * [X] Avoid large temporary arrays.
