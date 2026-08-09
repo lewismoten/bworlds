@@ -8,6 +8,7 @@ import {
   createProceduralSoundEffectGenerator,
   type ProceduralNoiseColor,
   type ProceduralSoundEffectLayer,
+  type ProceduralSoundFilter,
   type ProceduralPitchEnvelope,
   type ProceduralSoundEffect,
   type SoundEffectKind,
@@ -317,6 +318,7 @@ function resolveProceduralSoundRecipe(
     noiseColor: resolveBaseSoundEffectNoiseColor(kind),
     envelope: resolveProceduralSoundEnvelope(kind),
     pitchEnvelope: resolveProceduralSoundPitchEnvelope(kind),
+    filters: resolveProceduralSoundFilters(kind),
     sweeps: resolveProceduralSoundSweeps(kind),
     layers: resolveProceduralSoundLayers(kind),
     ...resolveProceduralSoundVariation(kind),
@@ -402,6 +404,42 @@ function resolveProceduralSoundPitchEnvelope(kind: SoundEffectKind) {
         releaseMs: 120,
         releaseTargetMultiplier: 0.96,
       };
+    default:
+      return undefined;
+  }
+}
+
+function resolveProceduralSoundFilters(kind: SoundEffectKind) {
+  switch (kind) {
+    case 'combat-magic':
+      return [
+        {
+          type: 'bandpass' as const,
+          frequency: 1_420,
+          q: 1.1,
+          frequencyVariation: 0.05,
+          qVariation: 0.08,
+        },
+      ] as const;
+    case 'ocean':
+    case 'river-ambience':
+      return [
+        {
+          type: 'lowpass' as const,
+          frequency: 1_600,
+          q: 0.7,
+          frequencyVariation: 0.04,
+        },
+      ] as const;
+    case 'wind':
+      return [
+        {
+          type: 'highpass' as const,
+          frequency: 340,
+          q: 0.9,
+          frequencyVariation: 0.05,
+        },
+      ] as const;
     default:
       return undefined;
   }
@@ -1533,6 +1571,7 @@ type AudioBufferSourceNodeLike = AudioBufferSourceNode & {
 type ScheduledSoundSourceNode = OscillatorNode | AudioBufferSourceNodeLike;
 type ActiveSoundSource = {
   source: ScheduledSoundSourceNode;
+  filters: BiquadFilterNode[];
   gain: GainNode;
   effect: ProceduralSoundEffect;
 };
@@ -1645,6 +1684,9 @@ export function createWebAudioSoundEffectSink(
     for (const source of voice.sources) {
       source.source.onended = null;
       source.source.disconnect?.();
+      for (const filter of source.filters) {
+        filter.disconnect?.();
+      }
       source.gain.disconnect?.();
     }
     voice.mixGain.disconnect?.();
@@ -1767,7 +1809,7 @@ export function createWebAudioSoundEffectSink(
           startAt,
           durationSeconds
         );
-        source.source.connect(source.gain);
+        connectSoundEffectSourceChain(source);
         source.gain.connect(mixGain);
       }
       if (panner) {
@@ -1828,6 +1870,7 @@ function createActiveSoundSource(
 ): ActiveSoundSource {
   return {
     source: createScheduledSoundSource(context, effect, noiseBufferCache),
+    filters: createSoundEffectFilters(context, effect),
     gain: context.createGain(),
     effect,
   };
@@ -1846,9 +1889,56 @@ function createLayeredSoundEffect(
     noiseColor: layer.noiseColor,
     envelope: layer.envelope ?? effect.envelope,
     pitchEnvelope: layer.pitchEnvelope ?? effect.pitchEnvelope,
+    filters: layer.filters ?? effect.filters,
     sweeps: layer.sweeps ?? effect.sweeps,
     layers: undefined,
   };
+}
+
+function createSoundEffectFilters(
+  context: AudioContext,
+  effect: ProceduralSoundEffect
+): BiquadFilterNode[] {
+  if (
+    typeof context.createBiquadFilter !== 'function' ||
+    !effect.filters ||
+    effect.filters.length === 0
+  ) {
+    return [];
+  }
+
+  return effect.filters.map((filter) =>
+    createSoundEffectFilterNode(context, filter)
+  );
+}
+
+function createSoundEffectFilterNode(
+  context: AudioContext,
+  filter: ProceduralSoundFilter
+): BiquadFilterNode {
+  const node = context.createBiquadFilter();
+  node.type = filter.type;
+  node.frequency.setValueAtTime(filter.frequency, context.currentTime);
+  if (typeof filter.q === 'number') {
+    node.Q.setValueAtTime(filter.q, context.currentTime);
+  }
+  if (typeof filter.gain === 'number') {
+    node.gain.setValueAtTime(filter.gain, context.currentTime);
+  }
+  return node;
+}
+
+function connectSoundEffectSourceChain(source: ActiveSoundSource): void {
+  if (source.filters.length === 0) {
+    source.source.connect(source.gain);
+    return;
+  }
+
+  source.source.connect(source.filters[0]!);
+  for (let index = 0; index < source.filters.length - 1; index += 1) {
+    source.filters[index]!.connect(source.filters[index + 1]!);
+  }
+  source.filters[source.filters.length - 1]!.connect(source.gain);
 }
 
 function createScheduledSoundSource(

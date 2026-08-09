@@ -39,6 +39,7 @@ export type ProceduralSoundEffect = {
   noiseColor?: ProceduralNoiseColor;
   envelope?: ProceduralAmplitudeEnvelope;
   pitchEnvelope?: ProceduralPitchEnvelope;
+  filters?: ProceduralSoundFilter[];
   sweeps?: ProceduralSoundFrequencySweep[];
   layers?: ProceduralSoundEffectLayer[];
   emitter?: SoundPosition;
@@ -56,6 +57,7 @@ export type ProceduralSoundEffectLayer = {
   noiseColor?: ProceduralNoiseColor;
   envelope?: ProceduralAmplitudeEnvelope;
   pitchEnvelope?: ProceduralPitchEnvelope;
+  filters?: ProceduralSoundFilter[];
   sweeps?: ProceduralSoundFrequencySweep[];
 };
 
@@ -76,6 +78,16 @@ export type ProceduralPitchEnvelope = {
 };
 
 export type ProceduralSoundFrequencySweepCurve = 'linear' | 'exponential';
+
+export type ProceduralSoundFilterType =
+  'lowpass' | 'highpass' | 'bandpass' | 'notch';
+
+export type ProceduralSoundFilter = {
+  type: ProceduralSoundFilterType;
+  frequency: number;
+  q?: number;
+  gain?: number;
+};
 
 export type ProceduralSoundFrequencySweep = {
   curve: ProceduralSoundFrequencySweepCurve;
@@ -103,6 +115,7 @@ export type ProceduralSoundRecipe = {
   maxVolume?: number;
   envelope?: ProceduralAmplitudeEnvelopeRecipe;
   pitchEnvelope?: ProceduralPitchEnvelopeRecipe;
+  filters?: readonly ProceduralSoundFilterRecipe[];
   sweeps?: readonly ProceduralSoundFrequencySweepRecipe[];
   layers?: readonly ProceduralSoundLayerRecipe[];
 };
@@ -141,6 +154,16 @@ export type ProceduralSoundFrequencySweepRecipe = {
   atProgress: number;
 };
 
+export type ProceduralSoundFilterRecipe = {
+  type: ProceduralSoundFilterType;
+  frequency: number;
+  q?: number;
+  gain?: number;
+  frequencyVariation?: number;
+  qVariation?: number;
+  gainVariation?: number;
+};
+
 export type ProceduralSoundLayerRecipe = {
   id: string;
   waveform: SoundWaveform | readonly SoundWaveform[];
@@ -161,6 +184,7 @@ export type ProceduralSoundLayerRecipe = {
   maxVolume?: number;
   envelope?: ProceduralAmplitudeEnvelopeRecipe;
   pitchEnvelope?: ProceduralPitchEnvelopeRecipe;
+  filters?: readonly ProceduralSoundFilterRecipe[];
   sweeps?: readonly ProceduralSoundFrequencySweepRecipe[];
 };
 
@@ -240,6 +264,11 @@ export function createProceduralSoundEffectGenerator(): ProceduralSoundEffectGen
         variationDepth,
         random
       );
+      const filters = resolveSoundFilters(
+        recipe.filters,
+        variationDepth,
+        random
+      );
 
       return {
         kind,
@@ -251,6 +280,7 @@ export function createProceduralSoundEffectGenerator(): ProceduralSoundEffectGen
         noiseColor,
         envelope,
         pitchEnvelope,
+        filters,
         sweeps,
         layers,
         emitter,
@@ -339,6 +369,7 @@ function resolveEffectLayers(
         variationDepth,
         random
       ),
+      filters: resolveSoundFilters(layerRecipe.filters, variationDepth, random),
       sweeps: resolveFrequencySweeps(
         layerRecipe.sweeps,
         frequency,
@@ -466,6 +497,60 @@ function resolveAmplitudeEnvelope(
       )
     ),
   };
+}
+
+function resolveSoundFilters(
+  filterRecipes: readonly ProceduralSoundFilterRecipe[] | undefined,
+  variationDepth: number,
+  random: () => number
+): ProceduralSoundFilter[] | undefined {
+  if (!filterRecipes || filterRecipes.length === 0) {
+    return undefined;
+  }
+
+  const filters: ProceduralSoundFilter[] = [];
+  for (const filterRecipe of filterRecipes) {
+    filters.push({
+      type: filterRecipe.type,
+      frequency: clampValue(
+        varyScalar(
+          filterRecipe.frequency,
+          filterRecipe.frequencyVariation ?? 0,
+          variationDepth,
+          random
+        ),
+        40,
+        20_000
+      ),
+      q:
+        typeof filterRecipe.q === 'number'
+          ? Math.max(
+              0.0001,
+              varyScalar(
+                filterRecipe.q,
+                filterRecipe.qVariation ?? 0,
+                variationDepth,
+                random
+              )
+            )
+          : undefined,
+      gain:
+        typeof filterRecipe.gain === 'number'
+          ? clampValue(
+              varyScalar(
+                filterRecipe.gain,
+                filterRecipe.gainVariation ?? 0,
+                variationDepth,
+                random
+              ),
+              -40,
+              40
+            )
+          : undefined,
+    });
+  }
+
+  return filters;
 }
 
 function resolveFrequencySweeps(

@@ -253,4 +253,50 @@ describe('procedural sound effect generator', () => {
       releaseTargetMultiplier: 0.9,
     });
   });
+
+  it('preserves deterministic filter chains on generated sounds', () => {
+    const generator = createProceduralSoundEffectGenerator();
+    const effect = generator.generate({
+      kind: 'wind',
+      nowMs: 1600,
+      seed: 31,
+      recipe: {
+        id: 'wind-filters',
+        baseFrequency: 180,
+        baseDurationMs: 680,
+        baseVolume: 0.018,
+        waveform: 'triangle',
+        filters: [
+          {
+            type: 'highpass',
+            frequency: 320,
+            q: 0.8,
+          },
+          {
+            type: 'notch',
+            frequency: 1100,
+            q: 2.4,
+            frequencyVariation: 0.04,
+            qVariation: 0.1,
+          },
+        ],
+      },
+    });
+
+    expect(effect.filters).toEqual([
+      {
+        type: 'highpass',
+        frequency: 320,
+        q: 0.8,
+        gain: undefined,
+      },
+      expect.objectContaining({
+        type: 'notch',
+        frequency: expect.any(Number),
+        q: expect.any(Number),
+      }),
+    ]);
+    expect(effect.filters?.[1]?.frequency).toBeGreaterThan(1000);
+    expect(effect.filters?.[1]?.q).toBeGreaterThan(2);
+  });
 });

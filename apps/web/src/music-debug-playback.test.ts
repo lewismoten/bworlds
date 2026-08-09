@@ -38,6 +38,36 @@ describe('music debug playback controller', () => {
     expect(playingStates).toEqual([true, false]);
   });
 
+  it('keeps full-song playback running past the loop boundary when looping is off', () => {
+    vi.useFakeTimers();
+    const snapshot = createMusicDebugSnapshot({
+      tileKind: 'forest',
+      contextType: 'overworld',
+      clusterX: 5,
+      clusterY: -3,
+    });
+    const playback = {
+      play: vi.fn(),
+      stop: vi.fn(),
+    };
+    const controller = createMusicDebugPlaybackController({
+      playback,
+    });
+
+    expect(snapshot.durationMs).toBeGreaterThan(snapshot.loopEndOffsetMs);
+
+    controller.start(snapshot);
+    vi.advanceTimersByTime(snapshot.loopEndOffsetMs + 120);
+
+    expect(controller.isPlaying()).toBe(true);
+    expect(playback.play).toHaveBeenCalledWith(snapshot, null);
+
+    vi.advanceTimersByTime(snapshot.durationMs - snapshot.loopEndOffsetMs);
+
+    expect(controller.isPlaying()).toBe(false);
+    expect(playback.stop).toHaveBeenCalledTimes(1);
+  });
+
   it('stops the current song when toggled during playback', () => {
     vi.useFakeTimers();
     const snapshot = createMusicDebugSnapshot();
