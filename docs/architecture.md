@@ -35,6 +35,7 @@
 - Bootstrap openness: worldgen can now compose caller-supplied content-pack definitions through the same runtime/bootstrap API used by the built-in packs
 - Shared contract validation: `npm run typecheck` now validates the workspace TypeScript surface so shared plugin/map/tile APIs stay aligned with actual package usage
 - Workspace-aware bootstrap: the web app auto-discovers `@bworlds/*` workspace aliases from package metadata so newly extracted packages do not require a hand-maintained bundler alias list
+- Shared music timing contract: procedural song sections now flow through one timing builder and one export validator so debug snapshots and MIDI files stay aligned; see [docs/music-debug-timing.md](music-debug-timing.md)
 
 ## Current gameplay slice
 

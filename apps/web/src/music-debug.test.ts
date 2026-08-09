@@ -88,6 +88,9 @@ describe('music debug', () => {
     expect(first.scaleMap.rootMidiNote).toBeGreaterThan(0);
     expect(first.scaleMap.modePitchOffsets.length).toBeGreaterThan(0);
     expect(first.songDna.rootMidiNote).toBe(first.scaleMap.rootMidiNote);
+    expect(first.timingValidation.isValidForMidiExport).toBe(true);
+    expect(first.song.sections[0]?.startTick).toBe(0);
+    expect(first.song.sections[0]?.endTick).toBe(8 * 1920);
     expect(first.song.sections.map((section) => section.id)).toEqual([
       'intro',
       'a',
@@ -135,6 +138,7 @@ describe('music debug', () => {
     expect(summary).toContain('Measures');
     expect(summary).toContain('Blueprint');
     expect(summary).toContain('Loop Range');
+    expect(summary).toContain('Timing Check');
     expect(summary).toContain('Encounter');
     expect(summary).toContain('Combat');
     expect(summary).toContain('Resolved BPM');
@@ -163,6 +167,7 @@ describe('music debug', () => {
     expect(summary).toContain('Pitch Centers');
     expect(summary).toContain('Accidental Rules');
     expect(summary).toContain('Accidental Notes');
+    expect(summary).toContain('Section Measures');
     expect(summary).toContain(snapshot.theme.id);
     expect(summary).toContain(snapshot.theme.vocabulary.modeLabel);
     expect(summary).toContain(snapshot.theme.motif.adaptationLabel);

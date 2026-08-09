@@ -14,6 +14,11 @@ function createSection(
     startOffsetMs: 0,
     durationMs: 24_000,
     loopEligible: true,
+    measureCount: 16,
+    startMeasure: 1,
+    endMeasure: 16,
+    startTick: 0,
+    endTick: 16 * 1920,
   };
 }
 

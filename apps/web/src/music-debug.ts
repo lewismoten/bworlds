@@ -43,6 +43,10 @@ import {
   type MusicDebugPitchClassLabel,
   type MusicDebugPitchValidation,
 } from './music-debug-note-analysis.ts';
+import {
+  type MusicDebugTimingValidation,
+  validateMusicDebugTiming,
+} from './music-debug-timing-validation.ts';
 
 export type MusicDebugTileKind =
   | 'plains'
@@ -110,6 +114,7 @@ export type MusicDebugSnapshot = {
     readonly MusicDebugPitchClassLabel[]
   >;
   midiExportValidation: MusicDebugPitchValidation;
+  timingValidation: MusicDebugTimingValidation;
 };
 
 export type MusicDebugTheme = MusicDebugSnapshot['theme'];
@@ -317,6 +322,14 @@ export function createMusicDebugSnapshot(
     encounterMode: song.dna.encounterMode,
     themeId: theme.id,
   });
+  const timingValidation = validateMusicDebugTiming({
+    durationMs,
+    measureCount,
+    resolvedBpm,
+    loopStartOffsetMs: song.loopStartOffsetMs,
+    loopEndOffsetMs: song.loopEndOffsetMs,
+    song,
+  });
 
   return {
     options,
@@ -361,6 +374,7 @@ export function createMusicDebugSnapshot(
     blackKeyNotesByRole: midiExportValidation.blackKeyNotesByRole,
     dominantPitchClassesByRole: midiExportValidation.dominantPitchClassesByRole,
     midiExportValidation,
+    timingValidation,
   };
 }
 
@@ -551,6 +565,7 @@ export function buildMusicDebugSummaryMarkup(
       <div><dt>Measures</dt><dd>${snapshot.measureCount}</dd></div>
       <div><dt>Blueprint</dt><dd>${snapshot.blueprintLabel}</dd></div>
       <div><dt>Loop Range</dt><dd>${formatMusicDebugLoopRange(snapshot.loopStartOffsetMs, snapshot.loopEndOffsetMs)}</dd></div>
+      <div><dt>Timing Check</dt><dd>${snapshot.timingValidation.isValidForMidiExport ? 'ok' : (snapshot.timingValidation.messages[0] ?? 'invalid')}</dd></div>
       <div><dt>Encounter</dt><dd>${snapshot.options.encounterMode}</dd></div>
       <div><dt>Tempo</dt><dd>${snapshot.mood.tempoMultiplier.toFixed(2)}x</dd></div>
       <div><dt>Resolved BPM</dt><dd>${snapshot.resolvedBpm.toFixed(1)}</dd></div>
@@ -585,6 +600,9 @@ export function buildMusicDebugSummaryMarkup(
     </div>
     <div class="music-debug-role-counts">
       <span>Accidental Notes ${formatMusicDebugAccidentalExamples(snapshot.notePitchDiagnostics)}</span>
+    </div>
+    <div class="music-debug-role-counts">
+      <span>Section Measures ${snapshot.song.sections.map((section) => `${section.label} ${section.startMeasure}-${section.endMeasure}`).join(' | ')}</span>
     </div>
     <div class="music-debug-role-counts">
       <span>Sections ${snapshot.song.sections.map((section) => section.label).join(' / ')}</span>

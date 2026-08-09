@@ -90,6 +90,48 @@ describe('procedural music song', () => {
     expect(first.loopEndOffsetMs).toBe(
       first.sections[first.sections.length - 1]!.startOffsetMs
     );
+    expect(first.sections[0]).toEqual(
+      expect.objectContaining({
+        startMeasure: 1,
+        endMeasure: 8,
+      })
+    );
+    expect(first.sections[1]).toEqual(
+      expect.objectContaining({
+        startMeasure: 9,
+        endMeasure: 24,
+      })
+    );
+    expect(first.sections[2]).toEqual(
+      expect.objectContaining({
+        startMeasure: 25,
+        endMeasure: 40,
+      })
+    );
+    expect(first.sections[3]).toEqual(
+      expect.objectContaining({
+        startMeasure: 41,
+        endMeasure: 56,
+      })
+    );
+    expect(first.sections[4]).toEqual(
+      expect.objectContaining({
+        startMeasure: 57,
+        endMeasure: 72,
+      })
+    );
+    expect(first.sections[5]).toEqual(
+      expect.objectContaining({
+        startMeasure: 73,
+        endMeasure: 80,
+      })
+    );
+    expect(first.sections.at(-1)).toEqual(
+      expect.objectContaining({
+        startMeasure: 81,
+        endMeasure: 88,
+      })
+    );
     expect(first.durationMs).toBeGreaterThan(100_000);
     expect(first.durationMs).toBe(second.durationMs);
     expect(first.notes).toEqual(second.notes);

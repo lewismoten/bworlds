@@ -1,9 +1,8 @@
 import { hash2DWithSeed, registerHashLabel } from '@bworlds/core/hash';
 import {
-  resolveProceduralMusicBlueprint,
   type ProceduralMusicBlueprint,
   type ProceduralMusicSongSectionId,
-  type ProceduralMusicSongSectionTemplate,
+  resolveProceduralMusicBlueprint,
 } from './procedural-music-blueprint.ts';
 import {
   createProceduralSongDna,
@@ -18,6 +17,7 @@ import {
   type ProceduralMusicNote,
 } from './procedural-music.ts';
 import { transformSongSectionNote } from './procedural-music-song-variation.ts';
+import { buildProceduralMusicSongSections } from './procedural-music-song-timing.ts';
 
 export type ProceduralMusicSongSection = {
   id: ProceduralMusicSongSectionId;
@@ -25,6 +25,11 @@ export type ProceduralMusicSongSection = {
   startOffsetMs: number;
   durationMs: number;
   loopEligible: boolean;
+  measureCount: number;
+  startMeasure: number;
+  endMeasure: number;
+  startTick: number;
+  endTick: number;
 };
 
 export type ProceduralMusicSong = {
@@ -124,41 +129,6 @@ function getMusicSongDurationRange(
     return { minDurationMs: 90_000, maxDurationMs: 135_000 };
   }
   return { minDurationMs: 96_000, maxDurationMs: 150_000 };
-}
-
-function buildProceduralMusicSongSections(
-  blueprint: ProceduralMusicBlueprint,
-  durationMs: number
-): ProceduralMusicSongSection[] {
-  const baseDurationMs = blueprint.sections.reduce(
-    (total, section) => total + section.baseDurationMs,
-    0
-  );
-  const scale = durationMs / baseDurationMs;
-  const sections: ProceduralMusicSongSection[] = [];
-  let cursorMs = 0;
-
-  for (let index = 0; index < blueprint.sections.length; index += 1) {
-    const template: ProceduralMusicSongSectionTemplate =
-      blueprint.sections[index]!;
-    const isLast = index === blueprint.sections.length - 1;
-    const durationForSection = isLast
-      ? Math.max(1_000, durationMs - cursorMs)
-      : Math.max(
-          4_000,
-          roundToNearestThousand(template.baseDurationMs * scale)
-        );
-    sections.push({
-      id: template.id,
-      label: template.label,
-      startOffsetMs: cursorMs,
-      durationMs: durationForSection,
-      loopEligible: template.loopEligible,
-    });
-    cursorMs += durationForSection;
-  }
-
-  return sections;
 }
 
 function collectProceduralMusicSongNotes(

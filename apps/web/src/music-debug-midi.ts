@@ -96,10 +96,15 @@ export function createMusicDebugMidiFile(
   snapshot: MusicDebugSnapshot,
   metadataOptions: MusicDebugMidiMetadataOptions = {}
 ): MusicDebugMidiFile {
-  if (!snapshot.midiExportValidation.isValidForMidiExport) {
-    throw new Error(
-      `Cannot export MIDI: ${snapshot.midiExportValidation.messages.join(' ')}`
-    );
+  const validationMessages = [
+    ...snapshot.midiExportValidation.messages,
+    ...snapshot.timingValidation.messages,
+  ];
+  if (
+    !snapshot.midiExportValidation.isValidForMidiExport ||
+    !snapshot.timingValidation.isValidForMidiExport
+  ) {
+    throw new Error(`Cannot export MIDI: ${validationMessages.join(' ')}`);
   }
   const metadata = resolveMusicDebugMidiMetadata(snapshot, metadataOptions);
   const tracks = buildMidiTracks(snapshot, metadata);
@@ -249,7 +254,7 @@ function buildConductorTrack(
   for (let index = 0; index < snapshot.song.sections.length; index += 1) {
     const section = snapshot.song.sections[index]!;
     events.push({
-      tick: msToTicks(section.startOffsetMs, snapshot),
+      tick: section.startTick,
       order: 30 + index,
       data: [0xff, 0x06, ...encodeText(section.label)],
     });

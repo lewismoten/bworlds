@@ -13,6 +13,7 @@ export type MusicDebugPagePersistenceState = {
   loopEnabled: boolean;
   previewOffsetMs: number;
   shouldResume: boolean;
+  scrollY: number;
 };
 
 export type MusicDebugPagePersistenceStorage = Pick<
@@ -89,6 +90,7 @@ export function normalizeMusicDebugPagePersistenceState(
     loopEnabled: value?.loopEnabled === true,
     previewOffsetMs: Math.max(0, Math.round(value?.previewOffsetMs ?? 0)),
     shouldResume: value?.shouldResume === true,
+    scrollY: Math.max(0, Math.round(value?.scrollY ?? 0)),
   };
 }
 

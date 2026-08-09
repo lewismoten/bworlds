@@ -10,6 +10,7 @@ describe('audio layout styles', () => {
     );
 
     expect(stylesheet).toContain('@media (max-width: 720px)');
+    expect(stylesheet).toContain('.control-dock');
     expect(stylesheet).toContain('.audio-volume-controls');
     expect(stylesheet).toContain('grid-template-columns: minmax(0, 1fr);');
     expect(stylesheet).toContain('.audio-volume-row output');

@@ -4,6 +4,7 @@ import {
   loadMusicDebugPagePersistenceState,
   resolveMusicDebugPlaybackResumeOffset,
 } from './music-debug-page-persistence.ts';
+import { restorePersistedPageScrollY } from './page-scroll-state.ts';
 import { createMusicDebugPageState } from './music-debug-page-state.ts';
 import { createMusicDebugPlaybackController } from './music-debug-playback.ts';
 import { downloadMusicDebugMidiFile } from './music-debug-midi.ts';
@@ -337,8 +338,17 @@ function persistPageState(
     loopEnabled: loopInput?.checked === true,
     previewOffsetMs: offsetMs,
     shouldResume,
+    scrollY: Math.max(0, Math.round(globalThis.scrollY ?? 0)),
   });
 }
+
+globalThis.addEventListener?.(
+  'scroll',
+  () => {
+    persistPageState(playbackController.isPlaying());
+  },
+  { passive: true }
+);
 
 form?.addEventListener('submit', (event) => {
   event.preventDefault();
@@ -461,8 +471,20 @@ scheduleAfterPaint(() => {
     });
   }
   updatePreviewOffset(previewOffsetMs);
+  restorePersistedPageScrollY(persistedState?.scrollY ?? 0);
 });
 
 globalThis.addEventListener?.('pagehide', () => {
+  persistPageState(playbackController.isPlaying());
+  pagePersistence.flush();
+});
+
+import.meta.hot?.on('vite:beforeUpdate', () => {
+  persistPageState(playbackController.isPlaying());
+  pagePersistence.flush();
+});
+
+import.meta.hot?.dispose(() => {
+  persistPageState(playbackController.isPlaying());
   pagePersistence.flush();
 });

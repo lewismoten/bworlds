@@ -1,14 +1,26 @@
 import './tree-debug.css';
 import {
+  createTreeDebugPagePersistenceController,
+  loadTreeDebugPagePersistenceState,
+} from './tree-debug-page-persistence.ts';
+import { restorePersistedPageScrollY } from './page-scroll-state.ts';
+import {
   buildTreeDebugMarkup,
   buildTreeDebugSummaryMarkup,
   createTreeDebugSnapshot,
+  normalizeTreeDebugOptions,
   randomizeTreeDebugSeed,
   type TreeDebugOptions,
 } from './tree-debug.ts';
 
 const root = document.querySelector<HTMLElement>('#app');
-let snapshot = createTreeDebugSnapshot();
+const persistedState = loadTreeDebugPagePersistenceState(
+  globalThis.sessionStorage ?? null
+);
+const pagePersistence = createTreeDebugPagePersistenceController({
+  storage: globalThis.sessionStorage ?? null,
+});
+let snapshot = createTreeDebugSnapshot(persistedState?.options);
 
 function collectOptions(
   form: HTMLFormElement | null
@@ -33,6 +45,7 @@ function renderPage(nextSnapshot: typeof snapshot): void {
   if (!root) {
     return;
   }
+  const scrollY = Math.max(0, Math.round(globalThis.scrollY ?? 0));
 
   root.innerHTML = buildTreeDebugMarkup(snapshot);
 
@@ -64,6 +77,7 @@ function renderPage(nextSnapshot: typeof snapshot): void {
     if (summary) {
       summary.innerHTML = buildTreeDebugSummaryMarkup(nextSnapshot);
     }
+    persistPageState(form);
   });
 
   randomizeButton?.addEventListener('click', () => {
@@ -91,6 +105,47 @@ function renderPage(nextSnapshot: typeof snapshot): void {
       })
     );
   });
+
+  persistPageState(form, scrollY);
+  restorePersistedPageScrollY(scrollY);
 }
 
+function persistPageState(
+  form: HTMLFormElement | null,
+  scrollY = Math.max(0, Math.round(globalThis.scrollY ?? 0))
+): void {
+  pagePersistence.save({
+    options: normalizeTreeDebugOptions(collectOptions(form)),
+    scrollY,
+  });
+}
+
+globalThis.addEventListener?.(
+  'scroll',
+  () => {
+    const form = document.querySelector<HTMLFormElement>('#tree-debug-form');
+    persistPageState(form);
+  },
+  { passive: true }
+);
+
 renderPage(snapshot);
+restorePersistedPageScrollY(persistedState?.scrollY ?? 0);
+
+globalThis.addEventListener?.('pagehide', () => {
+  const form = document.querySelector<HTMLFormElement>('#tree-debug-form');
+  persistPageState(form);
+  pagePersistence.flush();
+});
+
+import.meta.hot?.on('vite:beforeUpdate', () => {
+  const form = document.querySelector<HTMLFormElement>('#tree-debug-form');
+  persistPageState(form);
+  pagePersistence.flush();
+});
+
+import.meta.hot?.dispose(() => {
+  const form = document.querySelector<HTMLFormElement>('#tree-debug-form');
+  persistPageState(form);
+  pagePersistence.flush();
+});

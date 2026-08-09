@@ -40,10 +40,7 @@ body {
 }
 
 .hero {
-  display: flex;
-  justify-content: space-between;
-  gap: 1rem;
-  align-items: end;
+  display: block;
   padding: 1rem 0 1.5rem;
 }
 
@@ -91,6 +88,10 @@ h1 {
   display: flex;
   gap: 0.75rem;
   flex-wrap: wrap;
+}
+
+.control-dock {
+  margin-top: 1rem;
 }
 
 .build-controls {

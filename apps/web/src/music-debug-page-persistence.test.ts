@@ -15,6 +15,7 @@ describe('music debug page persistence', () => {
         loopEnabled: true,
         previewOffsetMs: -50,
         shouldResume: true,
+        scrollY: -18,
         options: {
           tileKind: 'forest',
           clusterX: 8,
@@ -25,6 +26,7 @@ describe('music debug page persistence', () => {
         loopEnabled: true,
         previewOffsetMs: 0,
         shouldResume: true,
+        scrollY: 0,
         options: expect.objectContaining({
           tileKind: 'forest',
           clusterX: 8,
@@ -65,6 +67,7 @@ describe('music debug page persistence', () => {
       loopEnabled: true,
       previewOffsetMs: 9_000,
       shouldResume: true,
+      scrollY: 420,
     });
 
     vi.advanceTimersByTime(60);
@@ -84,6 +87,7 @@ describe('music debug page persistence', () => {
         loopEnabled: true,
         previewOffsetMs: 9_000,
         shouldResume: true,
+        scrollY: 420,
         options: expect.objectContaining({
           clusterX: 12,
           clusterY: -7,

@@ -57,24 +57,24 @@ added directly as semitones instead of moving through the selected scale.
 - [x] Show the resolved BPM beside the tempo multiplier.
 - [x] Calculate song length from exported MIDI timing.
 - [ ] Verify the MIDI length matches the reported 2:18.
-- [ ] Verify the loop range exists within the exported file.
-- [ ] Calculate section ticks before generating notes.
-- [ ] Make all section lengths use the same meter.
-- [ ] Validate total measures against the blueprint.
+- [x] Verify the loop range exists within the exported file.
+- [x] Calculate section ticks before generating notes.
+- [x] Make all section lengths use the same meter.
+- [x] Validate total measures against the blueprint.
 - [ ] Reject exports with metadata and timing mismatches.
 
 ## Section Timing
 
-- [ ] Assign exact start and end measures to each section.
-- [ ] Mark every section boundary in the MIDI file.
-- [ ] Ensure Intro receives all eight planned measures.
-- [ ] Ensure A and A' each receive sixteen measures.
-- [ ] Ensure B and Variation each receive sixteen measures.
-- [ ] Ensure Return and Outro each receive eight measures.
+- [x] Assign exact start and end measures to each section.
+- [x] Mark every section boundary in the MIDI file.
+- [x] Ensure Intro receives all eight planned measures.
+- [x] Ensure A and A' each receive sixteen measures.
+- [x] Ensure B and Variation each receive sixteen measures.
+- [x] Ensure Return and Outro each receive eight measures.
 - [ ] Keep note events inside their assigned sections.
 - [ ] Verify section note counts match layer plans.
 - [ ] Apply layer changes exactly at section boundaries.
-- [ ] Export section names as MIDI markers.
+- [x] Export section names as MIDI markers.
 
 ## Lead Leap Control
 
@@ -248,7 +248,7 @@ added directly as semitones instead of moving through the selected scale.
 - [ ] Compare intended mode with exported pitch classes.
 - [ ] Compare intended motifs with exported note sequences.
 - [ ] Compare cadence plans with final phrase notes.
-- [ ] Block export when critical mismatches are found.
+- [x] Block export when critical mismatches are found.
 
 ## Debug Report Improvements
 

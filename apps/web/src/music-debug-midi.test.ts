@@ -116,6 +116,16 @@ describe('music debug midi', () => {
     expect(markers).toContain(snapshot.song.sections[0]?.label);
     expect(markers).toContain(snapshot.song.sections[1]?.label);
     expect(markers).toContain(snapshot.song.sections.at(-1)?.label);
+    expect(readTrackMetaTextTick(chunks.tracks[0]!, 0x06, 'Intro')).toBe(
+      snapshot.song.sections[0]?.startTick
+    );
+    expect(
+      readTrackMetaTextTick(
+        chunks.tracks[0]!,
+        0x06,
+        snapshot.song.sections[1]?.label ?? ''
+      )
+    ).toBe(snapshot.song.sections[1]?.startTick);
   });
 
   it('adds role setup controller events for bank select, volume, and pan', () => {
@@ -175,6 +185,14 @@ describe('music debug midi', () => {
       clusterX: 0,
       clusterY: 0,
     });
+    const exportableSnapshot = {
+      ...snapshot,
+      midiExportValidation: {
+        ...snapshot.midiExportValidation,
+        isValidForMidiExport: true,
+        messages: [],
+      },
+    };
     const remove = vi.fn();
     const click = vi.fn();
     const anchor = {
@@ -187,7 +205,7 @@ describe('music debug midi', () => {
     const createObjectURL = vi.fn(() => 'blob:music');
     const revokeObjectURL = vi.fn();
 
-    downloadMusicDebugMidiFile(snapshot, {
+    downloadMusicDebugMidiFile(exportableSnapshot, {
       createObjectURL,
       revokeObjectURL,
       createAnchor: () => anchor,
@@ -234,6 +252,33 @@ describe('music debug midi', () => {
         },
       })
     ).toThrow('Cannot export MIDI: Found 1 unexplained chromatic note.');
+  });
+
+  it('rejects MIDI export when timing validation fails', () => {
+    const snapshot = createMusicDebugSnapshot({
+      tileKind: 'forest',
+      contextType: 'overworld',
+      clusterX: 0,
+      clusterY: 0,
+    });
+
+    expect(() =>
+      createMusicDebugMidiFile({
+        ...snapshot,
+        midiExportValidation: {
+          ...snapshot.midiExportValidation,
+          isValidForMidiExport: true,
+          messages: [],
+        },
+        timingValidation: {
+          ...snapshot.timingValidation,
+          isValidForMidiExport: false,
+          messages: ['Loop range must stay inside the exported song duration.'],
+        },
+      })
+    ).toThrow(
+      'Cannot export MIDI: Loop range must stay inside the exported song duration.'
+    );
   });
 });
 
@@ -329,6 +374,43 @@ function readTrackMetaEvent(
       offset += lengthInfo.value;
       if (eventType === metaType) {
         return data;
+      }
+      continue;
+    }
+    if ((status & 0xf0) === 0xc0 || (status & 0xf0) === 0xd0) {
+      offset += 1;
+      continue;
+    }
+    offset += 2;
+  }
+
+  return null;
+}
+
+function readTrackMetaTextTick(
+  track: Uint8Array,
+  metaType: number,
+  text: string
+): number | null {
+  let offset = 0;
+  let tick = 0;
+
+  while (offset < track.length) {
+    const delta = readVariableLengthQuantity(track, offset);
+    tick += delta.value;
+    offset += delta.length;
+    const status = track[offset++];
+    if (status === undefined) {
+      break;
+    }
+    if (status === 0xff) {
+      const eventType = track[offset++];
+      const lengthInfo = readVariableLengthQuantity(track, offset);
+      offset += lengthInfo.length;
+      const data = track.slice(offset, offset + lengthInfo.value);
+      offset += lengthInfo.value;
+      if (eventType === metaType && new TextDecoder().decode(data) === text) {
+        return tick;
       }
       continue;
     }

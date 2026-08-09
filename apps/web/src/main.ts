@@ -235,6 +235,11 @@ import {
 } from './ui-signatures.ts';
 import { createStatusView, createViewportHudView } from './status-view.ts';
 import {
+  loadPersistedPageScrollY,
+  restorePersistedPageScrollY,
+  savePersistedPageScrollY,
+} from './page-scroll-state.ts';
+import {
   cycleViewMode,
   getNextCompassDisplayMode,
   getNextCelestialEventMode,
@@ -320,8 +325,14 @@ const DEFAULT_WORLD_SEED = 'bworlds-alpha';
 const builtinPackCatalog = createBuiltinContentPackCatalog();
 const builtinPackManifests = builtinPackCatalog.list();
 const REQUIRED_PACK_ID = 'default-content-pack';
+const MAIN_PAGE_SCROLL_STORAGE_KEY = 'bworlds:main-page-scroll';
 
 const root = document.querySelector<HTMLElement>('#app');
+const mainPageScrollStorage = globalThis.sessionStorage ?? null;
+const initialMainPageScrollY = loadPersistedPageScrollY(
+  mainPageScrollStorage,
+  MAIN_PAGE_SCROLL_STORAGE_KEY
+);
 
 root.innerHTML = `
   <main class="shell">
@@ -340,76 +351,6 @@ root.innerHTML = `
           aria-live="polite"
           hidden
         ></div>
-      </div>
-      <div class="controls">
-        <button id="toggle-view" type="button">Switch to 3D</button>
-        <button id="action" type="button">Interact</button>
-        <button id="jump-random" type="button">Random Plains</button>
-        <button id="jump-home" type="button">Go Home</button>
-        <button id="toggle-timekeeper-display" type="button">HUD Time: Time + Date</button>
-        <button id="toggle-compass-display" type="button">HUD Compass: Letters</button>
-        <button id="toggle-minimap-display" type="button">Mini Map: Hidden</button>
-        <button id="toggle-music" type="button">Music: On</button>
-        <button id="toggle-sound" type="button">Sound: On</button>
-        <button id="toggle-ambiance" type="button">Ambiance: On</button>
-        <div class="audio-volume-controls" aria-label="Audio volume controls">
-          <label class="audio-volume-control" for="audio-volume-music">
-            <span>Music Volume</span>
-            <div class="audio-volume-row">
-              <input id="audio-volume-music" type="range" min="0" max="100" step="5" value="100" />
-              <output id="audio-volume-music-value" for="audio-volume-music">100%</output>
-            </div>
-          </label>
-          <label class="audio-volume-control" for="audio-volume-ui">
-            <span>UI Volume</span>
-            <div class="audio-volume-row">
-              <input id="audio-volume-ui" type="range" min="0" max="100" step="5" value="100" />
-              <output id="audio-volume-ui-value" for="audio-volume-ui">100%</output>
-            </div>
-          </label>
-          <label class="audio-volume-control" for="audio-volume-speech">
-            <span>Speech Volume</span>
-            <div class="audio-volume-row">
-              <input id="audio-volume-speech" type="range" min="0" max="100" step="5" value="100" />
-              <output id="audio-volume-speech-value" for="audio-volume-speech">100%</output>
-            </div>
-          </label>
-          <label class="audio-volume-control" for="audio-volume-combat">
-            <span>Combat Volume</span>
-            <div class="audio-volume-row">
-              <input id="audio-volume-combat" type="range" min="0" max="100" step="5" value="100" />
-              <output id="audio-volume-combat-value" for="audio-volume-combat">100%</output>
-            </div>
-          </label>
-          <label class="audio-volume-control" for="audio-volume-environment">
-            <span>Environment Volume</span>
-            <div class="audio-volume-row">
-              <input id="audio-volume-environment" type="range" min="0" max="100" step="5" value="100" />
-              <output id="audio-volume-environment-value" for="audio-volume-environment">100%</output>
-            </div>
-          </label>
-          <label class="audio-volume-control" for="audio-volume-creatures">
-            <span>Creatures Volume</span>
-            <div class="audio-volume-row">
-              <input id="audio-volume-creatures" type="range" min="0" max="100" step="5" value="100" />
-              <output id="audio-volume-creatures-value" for="audio-volume-creatures">100%</output>
-            </div>
-          </label>
-        </div>
-        <button id="zoom-out-minimap" type="button">Map -</button>
-        <button id="zoom-in-minimap" type="button">Map +</button>
-        <div class="build-controls">
-          <select id="build-poi-kind" aria-label="Build point of interest">
-            <option value="town">Build Town</option>
-            <option value="cave">Build Cave</option>
-            <option value="dungeon">Build Dungeon</option>
-            <option value="quarry">Build Quarry</option>
-            <option value="lighthouse">Build Lighthouse</option>
-            <option value="ship">Build Ship</option>
-            <option value="observatory">Build Observatory</option>
-          </select>
-          <button id="build-poi" type="button">Build Here</button>
-        </div>
       </div>
     </section>
     <section class="dashboard">
@@ -723,6 +664,78 @@ root.innerHTML = `
         </div>
       </aside>
     </section>
+    <section class="control-dock card">
+      <div class="controls">
+        <button id="toggle-view" type="button">Switch to 3D</button>
+        <button id="action" type="button">Interact</button>
+        <button id="jump-random" type="button">Random Plains</button>
+        <button id="jump-home" type="button">Go Home</button>
+        <button id="toggle-timekeeper-display" type="button">HUD Time: Time + Date</button>
+        <button id="toggle-compass-display" type="button">HUD Compass: Letters</button>
+        <button id="toggle-minimap-display" type="button">Mini Map: Hidden</button>
+        <button id="toggle-music" type="button">Music: On</button>
+        <button id="toggle-sound" type="button">Sound: On</button>
+        <button id="toggle-ambiance" type="button">Ambiance: On</button>
+        <div class="audio-volume-controls" aria-label="Audio volume controls">
+          <label class="audio-volume-control" for="audio-volume-music">
+            <span>Music Volume</span>
+            <div class="audio-volume-row">
+              <input id="audio-volume-music" type="range" min="0" max="100" step="5" value="100" />
+              <output id="audio-volume-music-value" for="audio-volume-music">100%</output>
+            </div>
+          </label>
+          <label class="audio-volume-control" for="audio-volume-ui">
+            <span>UI Volume</span>
+            <div class="audio-volume-row">
+              <input id="audio-volume-ui" type="range" min="0" max="100" step="5" value="100" />
+              <output id="audio-volume-ui-value" for="audio-volume-ui">100%</output>
+            </div>
+          </label>
+          <label class="audio-volume-control" for="audio-volume-speech">
+            <span>Speech Volume</span>
+            <div class="audio-volume-row">
+              <input id="audio-volume-speech" type="range" min="0" max="100" step="5" value="100" />
+              <output id="audio-volume-speech-value" for="audio-volume-speech">100%</output>
+            </div>
+          </label>
+          <label class="audio-volume-control" for="audio-volume-combat">
+            <span>Combat Volume</span>
+            <div class="audio-volume-row">
+              <input id="audio-volume-combat" type="range" min="0" max="100" step="5" value="100" />
+              <output id="audio-volume-combat-value" for="audio-volume-combat">100%</output>
+            </div>
+          </label>
+          <label class="audio-volume-control" for="audio-volume-environment">
+            <span>Environment Volume</span>
+            <div class="audio-volume-row">
+              <input id="audio-volume-environment" type="range" min="0" max="100" step="5" value="100" />
+              <output id="audio-volume-environment-value" for="audio-volume-environment">100%</output>
+            </div>
+          </label>
+          <label class="audio-volume-control" for="audio-volume-creatures">
+            <span>Creatures Volume</span>
+            <div class="audio-volume-row">
+              <input id="audio-volume-creatures" type="range" min="0" max="100" step="5" value="100" />
+              <output id="audio-volume-creatures-value" for="audio-volume-creatures">100%</output>
+            </div>
+          </label>
+        </div>
+        <button id="zoom-out-minimap" type="button">Map -</button>
+        <button id="zoom-in-minimap" type="button">Map +</button>
+        <div class="build-controls">
+          <select id="build-poi-kind" aria-label="Build point of interest">
+            <option value="town">Build Town</option>
+            <option value="cave">Build Cave</option>
+            <option value="dungeon">Build Dungeon</option>
+            <option value="quarry">Build Quarry</option>
+            <option value="lighthouse">Build Lighthouse</option>
+            <option value="ship">Build Ship</option>
+            <option value="observatory">Build Observatory</option>
+          </select>
+          <button id="build-poi" type="button">Build Here</button>
+        </div>
+      </div>
+    </section>
   </main>
 `;
 
@@ -742,6 +755,13 @@ const viewportMinimapMini = document.querySelector<HTMLCanvasElement>(
   '#viewport-minimap-mini'
 );
 const hmrNotice = document.querySelector<HTMLElement>('#hmr-notice');
+const scheduleMainAfterPaint =
+  globalThis.requestAnimationFrame?.bind(globalThis) ??
+  ((callback: FrameRequestCallback) =>
+    setTimeout(() => callback(performance.now()), 0));
+scheduleMainAfterPaint(() => {
+  restorePersistedPageScrollY(initialMainPageScrollY);
+});
 const atlasCanvas = document.querySelector<HTMLCanvasElement>('#atlas');
 const timeWheelCanvas =
   document.querySelector<HTMLCanvasElement>('#time-wheel');
@@ -3465,6 +3485,9 @@ function render(): FrameLoopActivityLike {
 
 let lastFrame = 0;
 let pendingFrameHandle = 0;
+const cancelPendingRenderFrame =
+  globalThis.cancelAnimationFrame?.bind(globalThis) ??
+  ((handle: number) => clearTimeout(handle));
 
 function requestRender(): void {
   if (pageVisibilityState.hidden) {
@@ -3706,15 +3729,41 @@ document.addEventListener('visibilitychange', () => {
 });
 
 window.addEventListener('pagehide', () => {
+  savePersistedPageScrollY(
+    mainPageScrollStorage,
+    MAIN_PAGE_SCROLL_STORAGE_KEY,
+    window.scrollY
+  );
   sessionPersistence.flush();
 });
 
 import.meta.hot?.on('vite:beforeUpdate', () => {
+  savePersistedPageScrollY(
+    mainPageScrollStorage,
+    MAIN_PAGE_SCROLL_STORAGE_KEY,
+    window.scrollY
+  );
+  saveSession();
+  sessionPersistence.flush();
   showHmrNotice(getHmrNoticeText('before-update'));
 });
 
 import.meta.hot?.on('vite:afterUpdate', () => {
   showHmrNotice(getHmrNoticeText('after-update'));
+});
+
+import.meta.hot?.dispose(() => {
+  savePersistedPageScrollY(
+    mainPageScrollStorage,
+    MAIN_PAGE_SCROLL_STORAGE_KEY,
+    window.scrollY
+  );
+  if (pendingFrameHandle !== 0) {
+    cancelPendingRenderFrame(pendingFrameHandle);
+    pendingFrameHandle = 0;
+  }
+  saveSession();
+  sessionPersistence.flush();
 });
 
 window.addEventListener(
