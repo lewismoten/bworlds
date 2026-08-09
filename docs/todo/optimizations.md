@@ -158,7 +158,7 @@ This is especially relevant given the heap profile you were examining earlier.
 * [X] Reuse frequently created temporary objects.
 * [ ] Pool short-lived objects when profiling demonstrates a benefit.
 * [X] Reuse arrays by clearing them rather than repeatedly replacing them.
-* [ ] Reuse vector objects.
+* [X] Reuse vector objects.
 * [ ] Reuse matrices.
 * [ ] Reuse raycasting result buffers where possible.
 * [X] Avoid unnecessary object spreads.

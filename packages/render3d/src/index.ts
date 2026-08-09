@@ -92,6 +92,11 @@ import {
   getWrappedBatchWindow,
 } from './reusable-batch-window.ts';
 import { runTileModelSafetyPrecheck } from './tile-model-safety-precheck.ts';
+import {
+  createConstellationPoint,
+  createSkyPosition,
+  writeSkyPosition,
+} from './sky-position.ts';
 
 export {
   collectMapEntriesInto,
@@ -107,6 +112,11 @@ export {
 export { shouldProcessPendingWorldBuildEntryWithinBudget } from './pending-world-build-processing.ts';
 export { collectMaterialTexturesInto } from './material-texture-collector.ts';
 export { collectRecentWindowedEvents } from './recent-windowed-events.ts';
+export {
+  createConstellationPoint,
+  createSkyPosition,
+  writeSkyPosition,
+} from './sky-position.ts';
 export {
   createSortedCountSummaryScratch,
   summarizeSortedCountMap,
@@ -1154,6 +1164,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
   const fogDayColor = new THREE.Color(FOG_DAY_COLOR);
   const fogNightColor = new THREE.Color(FOG_NIGHT_COLOR);
   const skyLightingColorState = createSkyLightingColorState();
+  const starFieldPositionScratch = new THREE.Vector3();
   let lastMoonPhaseIndex = -1;
   const lastVisibleWorldSyncState = createWorldVisibilitySyncState();
   let lastLodSyncPlayerPosition: { x: number; y: number } | null = null;
@@ -2546,7 +2557,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       cachedSkyPose = createCachedSkyPose(cycle);
       lastSkyPositionSignature = skyPositionSignature;
       skyRoot.rotation.z = cachedSkyPose.skyRotationZ;
-      syncStarField(stars, cycle, starDensity);
+      syncStarField(stars, cycle, starDensity, starFieldPositionScratch);
       sunSprite.position.set(
         cachedSkyPose.sunSpriteX,
         cachedSkyPose.sunSpriteY,
@@ -4273,7 +4284,8 @@ function createStarField(): THREE.Group {
 function syncStarField(
   root: THREE.Group,
   cycle: DaylightCycleState,
-  starDensity: number
+  starDensity: number,
+  positionScratch: THREE.Vector3
 ): void {
   const seasonalRotation = cycle.yearProgress * Math.PI * 2;
   root.children.forEach((child, index) => {
@@ -4284,7 +4296,12 @@ function syncStarField(
       child.userData.theta +
       seasonalRotation +
       hash2D(STAR_DRIFT_SEED, index, cycle.activeConstellationIndex ?? 0) * 0.08;
-    const position = createSkyPosition(theta, child.userData.phi, child.userData.radius);
+    const position = writeSkyPosition(
+      positionScratch,
+      theta,
+      child.userData.phi,
+      child.userData.radius
+    );
     child.position.copy(position);
 
     const horizonFade = smoothstep(-1.8, 5.4, position.y);
@@ -4378,30 +4395,6 @@ function syncConstellationSky(
       root.add(sprite);
     });
   });
-}
-
-function createConstellationPoint(
-  anchor: THREE.Vector3,
-  star: ConstellationStarLike
-): THREE.Vector3 {
-  return new THREE.Vector3(
-    anchor.x + (star.x - 0.5) * 10,
-    anchor.y + (0.5 - star.y) * 6,
-    anchor.z
-  );
-}
-
-function createSkyPosition(
-  theta: number,
-  phi: number,
-  radius: number
-): THREE.Vector3 {
-  const sinPhi = Math.sin(phi);
-  return new THREE.Vector3(
-    Math.cos(theta) * sinPhi * radius,
-    Math.cos(phi) * radius,
-    Math.sin(theta) * sinPhi * radius
-  );
 }
 
 function createCachedSkyPose(cycle: DaylightCycleState): CachedSkyPose {
