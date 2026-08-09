@@ -36,6 +36,16 @@ describe('music debug midi', () => {
     expect(readTrackName(chunks.tracks[2]!)).toContain('Harmony:');
     expect(readTrackName(chunks.tracks[3]!)).toContain('Lead:');
     expect(readTrackName(chunks.tracks[4]!)).toContain('Percussion:');
+    expect(readTrackMetaEvent(chunks.tracks[0]!, 0x51)).toEqual([
+      ...encodeExpectedTempoMeta(snapshot),
+    ]);
+    expect(readTrackMetaEvent(chunks.tracks[0]!, 0x58)).toEqual([
+      0x04, 0x02, 24, 8,
+    ]);
+    expect(readTrackMetaEvent(chunks.tracks[0]!, 0x59)).toHaveLength(2);
+    expect(readTrackEndTick(chunks.tracks[0]!)).toBe(
+      msToTicks(snapshot.durationMs)
+    );
     expect(file.bytes.length).toBeGreaterThan(256);
   });
 
@@ -163,6 +173,71 @@ function readTrackMetaTexts(track: Uint8Array, metaType: number): string[] {
   return texts;
 }
 
+function readTrackMetaEvent(
+  track: Uint8Array,
+  metaType: number
+): number[] | null {
+  let offset = 0;
+
+  while (offset < track.length) {
+    const delta = readVariableLengthQuantity(track, offset);
+    offset += delta.length;
+    const status = track[offset++];
+    if (status === undefined) {
+      break;
+    }
+    if (status === 0xff) {
+      const eventType = track[offset++];
+      const lengthInfo = readVariableLengthQuantity(track, offset);
+      offset += lengthInfo.length;
+      const data = Array.from(track.slice(offset, offset + lengthInfo.value));
+      offset += lengthInfo.value;
+      if (eventType === metaType) {
+        return data;
+      }
+      continue;
+    }
+    if ((status & 0xf0) === 0xc0 || (status & 0xf0) === 0xd0) {
+      offset += 1;
+      continue;
+    }
+    offset += 2;
+  }
+
+  return null;
+}
+
+function readTrackEndTick(track: Uint8Array): number {
+  let offset = 0;
+  let tick = 0;
+
+  while (offset < track.length) {
+    const delta = readVariableLengthQuantity(track, offset);
+    tick += delta.value;
+    offset += delta.length;
+    const status = track[offset++];
+    if (status === undefined) {
+      break;
+    }
+    if (status === 0xff) {
+      const eventType = track[offset++];
+      const lengthInfo = readVariableLengthQuantity(track, offset);
+      offset += lengthInfo.length + lengthInfo.value;
+      if (eventType === 0x2f) {
+        return tick;
+      }
+      continue;
+    }
+    if ((status & 0xf0) === 0xc0 || (status & 0xf0) === 0xd0) {
+      offset += 1;
+      continue;
+    }
+    offset += 2;
+  }
+
+  return tick;
+}
+
 function readUint16(bytes: Uint8Array, offset: number): number {
   return (bytes[offset]! << 8) | bytes[offset + 1]!;
 }
@@ -196,4 +271,29 @@ function readVariableLengthQuantity(
     }
   }
   return { value, length };
+}
+
+function msToTicks(milliseconds: number): number {
+  return Math.max(0, Math.round((milliseconds / 1000) * (480 * 2)));
+}
+
+function encodeExpectedTempoMeta(
+  snapshot: ReturnType<typeof createMusicDebugSnapshot>
+): number[] {
+  const microsecondsPerMinute = 60_000_000;
+  const baseQuarterMs = snapshot.theme.noteDurationMs / 1.5;
+  const adjustedQuarterMs =
+    baseQuarterMs / Math.max(0.1, snapshot.mood.tempoMultiplier);
+  const microsecondsPerQuarter = Math.max(
+    1,
+    Math.round(
+      microsecondsPerMinute /
+        (microsecondsPerMinute / (adjustedQuarterMs * 1000))
+    )
+  );
+  return [
+    (microsecondsPerQuarter >> 16) & 0xff,
+    (microsecondsPerQuarter >> 8) & 0xff,
+    microsecondsPerQuarter & 0xff,
+  ];
 }

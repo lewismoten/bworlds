@@ -157,6 +157,8 @@ function buildConductorTrack(
     1,
     Math.round(MICROSECONDS_PER_MINUTE / bpm)
   );
+  const timeSignature = resolveMidiTimeSignature(snapshot);
+  const keySignature = resolveMidiKeySignature(snapshot);
 
   events.push({
     tick: 0,
@@ -167,6 +169,30 @@ function buildConductorTrack(
     tick: 0,
     order: 1,
     data: [0xff, 0x51, 0x03, ...encodeUint24(microsecondsPerQuarter)],
+  });
+  events.push({
+    tick: 0,
+    order: 2,
+    data: [
+      0xff,
+      0x58,
+      0x04,
+      timeSignature.numerator,
+      timeSignature.denominatorPower,
+      24,
+      8,
+    ],
+  });
+  events.push({
+    tick: 0,
+    order: 3,
+    data: [
+      0xff,
+      0x59,
+      0x02,
+      encodeSignedByte(keySignature.accidentalCount),
+      keySignature.isMinor ? 1 : 0,
+    ],
   });
   for (let index = 0; index < snapshot.song.sections.length; index += 1) {
     const section = snapshot.song.sections[index]!;
@@ -320,6 +346,37 @@ function resolveSongTempoBpm(snapshot: MusicDebugSnapshot): number {
   return MICROSECONDS_PER_MINUTE / Math.max(1, adjustedQuarterMs * 1000);
 }
 
+function resolveMidiTimeSignature(snapshot: MusicDebugSnapshot): {
+  numerator: number;
+  denominatorPower: number;
+} {
+  if (snapshot.songDna.meterLabel === '4/4') {
+    return {
+      numerator: 4,
+      denominatorPower: 2,
+    };
+  }
+
+  return {
+    numerator: 4,
+    denominatorPower: 2,
+  };
+}
+
+function resolveMidiKeySignature(snapshot: MusicDebugSnapshot): {
+  accidentalCount: number;
+  isMinor: boolean;
+} {
+  const pitchClass = resolvePitchClassFromFrequency(snapshot.theme.rootHz);
+  const isMinor = snapshot.songDna.modeLabel.toLowerCase().includes('minor');
+  return {
+    accidentalCount: isMinor
+      ? (MINOR_KEY_SIGNATURES[pitchClass] ?? 0)
+      : (MAJOR_KEY_SIGNATURES[pitchClass] ?? 0),
+    isMinor,
+  };
+}
+
 function resolveMidiNoteNumber(
   frequency: number,
   family: ProceduralInstrument['family']
@@ -379,6 +436,10 @@ function encodeUint24(value: number): number[] {
   return [(value >> 16) & 0xff, (value >> 8) & 0xff, value & 0xff];
 }
 
+function encodeSignedByte(value: number): number {
+  return value < 0 ? 0x100 + value : value;
+}
+
 function encodeUint32(value: number): number[] {
   return [
     (value >> 24) & 0xff,
@@ -410,3 +471,38 @@ function encodeVariableLengthQuantity(value: number): number[] {
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
+
+function resolvePitchClassFromFrequency(frequency: number): number {
+  const midi = Math.round(69 + 12 * Math.log2(Math.max(frequency, 1) / 440));
+  return ((midi % 12) + 12) % 12;
+}
+
+const MAJOR_KEY_SIGNATURES: Record<number, number> = {
+  0: 0,
+  1: -5,
+  2: 2,
+  3: -3,
+  4: 4,
+  5: -1,
+  6: 6,
+  7: 1,
+  8: -4,
+  9: 3,
+  10: -2,
+  11: 5,
+};
+
+const MINOR_KEY_SIGNATURES: Record<number, number> = {
+  0: -3,
+  1: 4,
+  2: -1,
+  3: 6,
+  4: 1,
+  5: -4,
+  6: 3,
+  7: -2,
+  8: 5,
+  9: 0,
+  10: -5,
+  11: 2,
+};

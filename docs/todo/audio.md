@@ -62,11 +62,11 @@
 - [x] As the song plays, let me click sections to move the play-head
 - [x] MIDI download should let each instrument (ie melody, harmony, bass, drums) be represented as individual tracks and labeled as such.
 - [x] MIDI download should have meta markers to indicate which section is being played (Meta/Controle Lane Guide)
-- [ ] MIDI duration should match the generated song duration
-- [ ] MIDI should include tempo event(s)
-- [ ] MIDI should include time signature(s)
-- [ ] MIDI should include key signature(s)
-- [ ] MIDI should include Division
+- [x] MIDI duration should match the generated song duration
+- [x] MIDI should include tempo event(s)
+- [x] MIDI should include time signature(s)
+- [x] MIDI should include key signature(s)
+- [x] MIDI should include Division
 - [ ] MIDI should include an Author
 - [ ] MIDI should include Arranger
 - [ ] MIDI should include Created Date
