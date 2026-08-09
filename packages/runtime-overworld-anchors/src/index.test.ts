@@ -200,7 +200,7 @@ describe('runtime overworld anchors', () => {
       poiAnchors: [],
     };
 
-    for (let seedIndex = 0; seedIndex < 12; seedIndex += 1) {
+    for (let seedIndex = 0; seedIndex < 64; seedIndex += 1) {
       anchors =
         (plugin.resolveOverworldAnchors?.(
           createAnchorPayload({

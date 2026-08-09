@@ -26,7 +26,7 @@
 - [ ] Reduce Object3D count and unnecessary scene hierarchy depth.
 - [ ] Disable matrix updates for static objects and static subtrees.
 - [ ] Remove has() + get() double cache lookups.
-- [ ] Cache nearby overworld anchor queries by region or tile.
+- [X] Cache nearby overworld anchor queries by region or tile.
 - [ ] Reduce repeated syncWorldCurvature() work each frame.
 - [ ] Cache sky-position calculations unless celestial state changes.
 - [ ] Instance repeated trees, foliage, rocks, and other static props.

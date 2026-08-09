@@ -1053,27 +1053,43 @@ export function createOverworldAnchorResolver<
     const bridgeAnchors = options.bridge
       ? sampleCollection(options.bridge.spec, bridgeCache, options.bridge)
       : [];
+    const poiBlockingAnchors = options.poi
+      ? options.poi.blockingAnchors?.({
+          townAnchors,
+          bridgeAnchors,
+        }) ?? townAnchors
+      : [];
+    const poiBaseAnchors = options.poi
+      ? options.poi.baseAnchors?.({
+          townAnchors,
+          bridgeAnchors,
+        }) ?? []
+      : [];
     const poiAnchors = options.poi
-      ? collectNearbyOverworldPoiAnchors({
-          seed,
-          x,
-          y,
-          specs: options.poi.specs,
-          caches: poiCaches,
-          sampleTerrainSignals,
-          minSpacing: options.poi.minSpacing,
-          blockingAnchors:
-            options.poi.blockingAnchors?.({
-              townAnchors,
-              bridgeAnchors,
-            }) ?? townAnchors,
-          baseAnchors:
-            options.poi.baseAnchors?.({
-              townAnchors,
-              bridgeAnchors,
-            }) ?? [],
-          evaluationCache: anchorEvaluationCache,
-        })
+      ? nearbyAnchorCollectionCache.getOrCreate(
+          createNearbyPoiAnchorCollectionCacheKey({
+            seed,
+            x,
+            y,
+            specs: options.poi.specs,
+            minSpacing: options.poi.minSpacing ?? 0,
+            blockingAnchors: poiBlockingAnchors,
+            baseAnchors: poiBaseAnchors,
+          }),
+          () =>
+            collectNearbyOverworldPoiAnchors({
+              seed,
+              x,
+              y,
+              specs: options.poi.specs,
+              caches: poiCaches,
+              sampleTerrainSignals,
+              minSpacing: options.poi.minSpacing,
+              blockingAnchors: poiBlockingAnchors,
+              baseAnchors: poiBaseAnchors,
+              evaluationCache: anchorEvaluationCache,
+            }) as OverworldAnchorLike[]
+        ) as TPoiAnchor[]
       : [];
 
     return {
@@ -1110,6 +1126,39 @@ function createNearbyAnchorCollectionCacheKey({
     `${conflictSpecs.map((entry) => entry.id).join(',')}`;
   for (const anchor of blockingAnchors) {
     key += `:${anchor.x},${anchor.y}`;
+  }
+  return key;
+}
+
+function createNearbyPoiAnchorCollectionCacheKey<
+  TPoiType extends string,
+  TAnchor extends GeneratedNamedPoiAnchor = GeneratedNamedPoiAnchor,
+>({
+  seed,
+  x,
+  y,
+  specs,
+  minSpacing,
+  blockingAnchors,
+  baseAnchors,
+}: {
+  seed: Seed;
+  x: number;
+  y: number;
+  specs: Record<TPoiType, OverworldCellAnchorSpec<TAnchor>>;
+  minSpacing: number;
+  blockingAnchors: Array<Pick<OverworldAnchorLike, 'x' | 'y'>>;
+  baseAnchors: Array<Pick<OverworldAnchorLike, 'x' | 'y'>>;
+}) {
+  let key = `${seed}:poi:${x}:${y}:${minSpacing}:`;
+  key += (Object.values(specs) as OverworldCellAnchorSpec<TAnchor>[])
+    .map((spec) => `${spec.id}:${spec.cellSize}`)
+    .join(',');
+  for (const anchor of blockingAnchors) {
+    key += `:block:${anchor.x},${anchor.y}`;
+  }
+  for (const anchor of baseAnchors) {
+    key += `:base:${anchor.x},${anchor.y}`;
   }
   return key;
 }

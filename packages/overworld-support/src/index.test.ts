@@ -637,6 +637,8 @@ describe('overworld support', () => {
     const second = resolver(payload);
 
     expect(first).toEqual(second);
+    expect(second.townAnchors).toBe(first.townAnchors);
+    expect(second.poiAnchors).toBe(first.poiAnchors);
     expect(first.townAnchors.length).toBeGreaterThan(0);
     expect(first.poiAnchors.some((anchor) => anchor.type === 'town')).toBe(true);
     expect(first.poiAnchors.some((anchor) => anchor.type === 'cave')).toBe(true);
