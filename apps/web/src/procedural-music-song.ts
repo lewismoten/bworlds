@@ -65,7 +65,13 @@ export function resolveProceduralMusicSongDurationMs(
     'tileKind' | 'contextType' | 'clusterX' | 'clusterY'
   >
 ): number {
-  const theme = resolveMusicTheme(options.tileKind, options.contextType);
+  const theme = resolveMusicTheme(
+    options.tileKind,
+    options.contextType,
+    undefined,
+    options.clusterX ?? 0,
+    options.clusterY ?? 0
+  );
   const { minDurationMs, maxDurationMs } = getMusicSongDurationRange(options);
   const clusterX = options.clusterX ?? 0;
   const clusterY = options.clusterY ?? 0;

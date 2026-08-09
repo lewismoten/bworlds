@@ -11,21 +11,17 @@ import {
   type MusicWaveform,
   type ProceduralInstrumentTimbre,
 } from './music-instrument-timbres.ts';
+import {
+  resolveMusicThemeVocabulary,
+  type MusicRegionThemeId,
+  type MusicThemeVocabulary,
+} from './procedural-music-vocabulary.ts';
 import { resolveProceduralMeterAccent } from './procedural-music-meter.ts';
 type MusicPosition = { x: number; y: number };
 type TileKind = string;
 type ContextType = string;
 type WeatherKind = string;
 type InstrumentRole = 'lead' | 'harmony' | 'bass' | 'percussion';
-
-type MusicRegionThemeId =
-  | 'frontier-plains'
-  | 'deep-forest'
-  | 'coastal-shore'
-  | 'town-square'
-  | 'ridge-pass'
-  | 'cavern-echo'
-  | 'interior-hall';
 
 type MusicRegionTheme = {
   id: MusicRegionThemeId;
@@ -35,6 +31,7 @@ type MusicRegionTheme = {
   baseVolume: number;
   stepPattern: number[];
   rhythmPattern: number[];
+  vocabulary: MusicThemeVocabulary;
 };
 
 const MUSIC_THEME_SEEDS = registerHashSeeds([
@@ -249,6 +246,7 @@ const THEME_LIBRARY: Record<MusicRegionThemeId, MusicRegionTheme> = {
     baseVolume: 0.028,
     stepPattern: [0, 2, 4, 2, 5, 4, 2, 0],
     rhythmPattern: [1, 0.75, 1.25, 1, 1.5, 0.75, 1, 1.25],
+    vocabulary: resolveMusicThemeVocabulary('frontier-plains'),
   },
   'deep-forest': {
     id: 'deep-forest',
@@ -258,6 +256,7 @@ const THEME_LIBRARY: Record<MusicRegionThemeId, MusicRegionTheme> = {
     baseVolume: 0.026,
     stepPattern: [0, 2, 3, 5, 3, 2, 1, 0],
     rhythmPattern: [1.25, 0.75, 1, 1.25, 0.75, 1, 1.5, 0.75],
+    vocabulary: resolveMusicThemeVocabulary('deep-forest'),
   },
   'coastal-shore': {
     id: 'coastal-shore',
@@ -267,6 +266,7 @@ const THEME_LIBRARY: Record<MusicRegionThemeId, MusicRegionTheme> = {
     baseVolume: 0.027,
     stepPattern: [0, 2, 4, 5, 4, 2, 0, 2],
     rhythmPattern: [1, 1.25, 0.75, 1, 1.25, 0.75, 1.5, 0.75],
+    vocabulary: resolveMusicThemeVocabulary('coastal-shore'),
   },
   'town-square': {
     id: 'town-square',
@@ -276,6 +276,7 @@ const THEME_LIBRARY: Record<MusicRegionThemeId, MusicRegionTheme> = {
     baseVolume: 0.024,
     stepPattern: [0, 2, 4, 5, 4, 2, 5, 4],
     rhythmPattern: [1, 0.5, 1, 0.5, 1.25, 0.75, 1, 1.5],
+    vocabulary: resolveMusicThemeVocabulary('town-square'),
   },
   'ridge-pass': {
     id: 'ridge-pass',
@@ -285,6 +286,7 @@ const THEME_LIBRARY: Record<MusicRegionThemeId, MusicRegionTheme> = {
     baseVolume: 0.024,
     stepPattern: [0, 1, 3, 4, 3, 1, 0, 4],
     rhythmPattern: [1.5, 0.75, 1, 1.25, 0.75, 1, 1.25, 0.75],
+    vocabulary: resolveMusicThemeVocabulary('ridge-pass'),
   },
   'cavern-echo': {
     id: 'cavern-echo',
@@ -294,6 +296,7 @@ const THEME_LIBRARY: Record<MusicRegionThemeId, MusicRegionTheme> = {
     baseVolume: 0.03,
     stepPattern: [0, 2, 4, 2, 5, 2, 1, 0],
     rhythmPattern: [1.5, 1, 0.75, 1.25, 1, 0.75, 1.5, 0.75],
+    vocabulary: resolveMusicThemeVocabulary('cavern-echo'),
   },
   'interior-hall': {
     id: 'interior-hall',
@@ -303,6 +306,7 @@ const THEME_LIBRARY: Record<MusicRegionThemeId, MusicRegionTheme> = {
     baseVolume: 0.022,
     stepPattern: [0, 2, 4, 2, 5, 4, 2, 1],
     rhythmPattern: [1, 0.75, 1, 1.25, 0.75, 1, 1.25, 1],
+    vocabulary: resolveMusicThemeVocabulary('interior-hall'),
   },
 };
 
@@ -321,49 +325,51 @@ const INSTRUMENT_FAMILY_LIBRARY: Record<
 export function resolveMusicTheme(
   tileKind?: TileKind,
   contextType?: ContextType,
-  poiType?: string
+  poiType?: string,
+  clusterX = 0,
+  clusterY = 0
 ): MusicRegionTheme {
   const resolvedKind = poiType ?? tileKind;
+  let theme = THEME_LIBRARY['frontier-plains'];
   if (
     contextType === 'cave' ||
     contextType === 'dungeon' ||
     resolvedKind === 'cave' ||
     resolvedKind === 'dungeon'
   ) {
-    return THEME_LIBRARY['cavern-echo'];
-  }
-  if (
+    theme = THEME_LIBRARY['cavern-echo'];
+  } else if (
     contextType === 'building' ||
     resolvedKind === 'floor' ||
     resolvedKind === 'shop' ||
     resolvedKind === 'stairsUp' ||
     resolvedKind === 'stairsDown'
   ) {
-    return THEME_LIBRARY['interior-hall'];
-  }
-  if (contextType === 'town' || resolvedKind === 'town') {
-    return THEME_LIBRARY['town-square'];
-  }
-  if (resolvedKind === 'forest') {
-    return THEME_LIBRARY['deep-forest'];
-  }
-  if (
+    theme = THEME_LIBRARY['interior-hall'];
+  } else if (contextType === 'town' || resolvedKind === 'town') {
+    theme = THEME_LIBRARY['town-square'];
+  } else if (resolvedKind === 'forest') {
+    theme = THEME_LIBRARY['deep-forest'];
+  } else if (
     resolvedKind === 'shore' ||
     resolvedKind === 'dock' ||
     resolvedKind === 'ocean' ||
     resolvedKind === 'ship' ||
     resolvedKind === 'lighthouse'
   ) {
-    return THEME_LIBRARY['coastal-shore'];
-  }
-  if (
+    theme = THEME_LIBRARY['coastal-shore'];
+  } else if (
     resolvedKind === 'mountain' ||
     resolvedKind === 'observatory' ||
     resolvedKind === 'quarry'
   ) {
-    return THEME_LIBRARY['ridge-pass'];
+    theme = THEME_LIBRARY['ridge-pass'];
   }
-  return THEME_LIBRARY['frontier-plains'];
+
+  return {
+    ...theme,
+    vocabulary: resolveMusicThemeVocabulary(theme.id, clusterX, clusterY),
+  };
 }
 
 export function resolveMusicMood(options: {
@@ -577,7 +583,13 @@ export function getMusicRegionSignature(options: {
   clusterX?: number;
   clusterY?: number;
 }): string {
-  const theme = resolveMusicTheme(options.tileKind, options.contextType);
+  const theme = resolveMusicTheme(
+    options.tileKind,
+    options.contextType,
+    undefined,
+    options.clusterX ?? 0,
+    options.clusterY ?? 0
+  );
   return [
     theme.id,
     options.contextType ?? 'overworld',
@@ -1056,12 +1068,15 @@ function scheduleThemeLayerNotes(
   const theme = resolveMusicTheme(
     options.tileKind,
     options.contextType,
-    options.poiType
+    options.poiType,
+    options.clusterX ?? 0,
+    options.clusterY ?? 0
   );
   const instrumentBank = createProceduralInstrumentBank(
     theme,
     options.clusterX ?? 0,
-    options.clusterY ?? 0
+    options.clusterY ?? 0,
+    options
   );
   const mood = resolveMusicMood({
     dayProgress: options.dayProgress,
@@ -1326,6 +1341,7 @@ function resolveInstrumentFamilyPool(
   role: InstrumentRole,
   options?: ProceduralInstrumentBankOptions
 ): readonly InstrumentFamily[] {
+  const vocabularyFamilies = theme.vocabulary.instrumentFamilies[role];
   const season = resolveSeason(options?.yearProgress ?? 0.25);
   const normalizedDayProgress = normalizeWrappedProgress(
     options?.dayProgress ?? 0.5
@@ -1385,7 +1401,9 @@ function resolveInstrumentFamilyPool(
       return ['shaker', 'hand-percussion', 'cymbals'];
     }
   }
-  return INSTRUMENT_FAMILY_LIBRARY[role];
+  return vocabularyFamilies.length > 0
+    ? vocabularyFamilies
+    : INSTRUMENT_FAMILY_LIBRARY[role];
 }
 
 function resolveInstrumentFamilyContextKey(

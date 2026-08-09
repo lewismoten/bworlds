@@ -35,8 +35,8 @@
 - [ ] Generator(s) for the different layers should be aware of each layer, and work with each-other - set tempo + meter, chord progression, bass + harmony, work out melody, then percussion reacts to the structure
 - [x] Songs should have structural bluebrints before generating notes (intro 8 bars, A16, A'16, B16, A16, Outro 8)
 - [x] Generate a melodic contour before generating pitches (start low, rise gradually, reach climax, descend, resolve)
-- [ ] Every tile type (forest, ruins, plains) should have a music vocabulary (tempo, mode, instruments, melody range, rhythm density, preferred intervals)
-- [ ] Larger regions/bioms can influence the vocabulary
+- [x] Every tile type (forest, ruins, plains) should have a music vocabulary (tempo, mode, instruments, melody range, rhythm density, preferred intervals)
+- [x] Larger regions/bioms can influence the vocabulary
 - [ ] A region/biome may use a common four-note motif, but a town uses it slowly, battle theme is aggressive, kings castle ceremonially, ruins uses it in minor, etc.
 - [x] Time of day may influence music - ie night time: removing/lowering percussion, slow melody, higher reverb, soft harmony
 - [x] Seasons may influence music - ie winter: same motif, bells, sparser arrangement, higher register

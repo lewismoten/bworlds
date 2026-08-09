@@ -54,6 +54,7 @@ export type MusicDebugSnapshot = {
   notes: ProceduralMusicNote[];
   durationMs: number;
   blueprintLabel: string;
+  vocabularySummary: string[];
   sectionLayerArrangement: string[];
   loopStartOffsetMs: number;
   loopEndOffsetMs: number;
@@ -137,7 +138,13 @@ export function createMusicDebugSnapshot(
   nowMs = 0
 ): MusicDebugSnapshot {
   const options = normalizeMusicDebugOptions(rawOptions);
-  const theme = resolveMusicTheme(options.tileKind, options.contextType);
+  const theme = resolveMusicTheme(
+    options.tileKind,
+    options.contextType,
+    undefined,
+    options.clusterX,
+    options.clusterY
+  );
   const mood = resolveMusicMood({
     dayProgress: options.dayProgress,
     weatherKind:
@@ -233,6 +240,16 @@ export function createMusicDebugSnapshot(
     notes: song.notes,
     durationMs,
     blueprintLabel: song.blueprint.label,
+    vocabularySummary: [
+      `Biome ${theme.vocabulary.biomeLabel}`,
+      `Region ${theme.vocabulary.regionLabel}`,
+      `Mode ${theme.vocabulary.modeLabel}`,
+      `Tempo ${theme.vocabulary.tempoBandLabel}`,
+      `Range ${theme.vocabulary.melodyRangeLabel}`,
+      `Rhythm ${theme.vocabulary.rhythmDensityLabel}`,
+      `Intervals ${theme.vocabulary.preferredIntervals.join(', ')}`,
+      `Motif ${theme.vocabulary.motifLabel}`,
+    ],
     sectionLayerArrangement: song.sections.map((section) =>
       describeSongSectionLayerArrangement(section)
     ),
@@ -374,8 +391,15 @@ export function buildMusicDebugSummaryMarkup(
       <div><dt>Loop Range</dt><dd>${formatMusicDebugLoopRange(snapshot.loopStartOffsetMs, snapshot.loopEndOffsetMs)}</dd></div>
       <div><dt>Tempo</dt><dd>${snapshot.mood.tempoMultiplier.toFixed(2)}x</dd></div>
       <div><dt>Brightness</dt><dd>${snapshot.mood.brightness.toFixed(2)}x</dd></div>
+      <div><dt>Mode</dt><dd>${snapshot.theme.vocabulary.modeLabel}</dd></div>
+      <div><dt>Region</dt><dd>${snapshot.theme.vocabulary.regionLabel}</dd></div>
+      <div><dt>Rhythm</dt><dd>${snapshot.theme.vocabulary.rhythmDensityLabel}</dd></div>
+      <div><dt>Preferred Intervals</dt><dd>${snapshot.theme.vocabulary.preferredIntervals.join(', ')}</dd></div>
       <div><dt>Lead Max Leap</dt><dd>${snapshot.leadMaxLeapSemitones.toFixed(1)} st</dd></div>
       <div><dt>Accidentals</dt><dd>${snapshot.accidentalNoteCount}</dd></div>
+    </div>
+    <div class="music-debug-role-counts">
+      <span>Vocabulary ${snapshot.vocabularySummary.join(' | ')}</span>
     </div>
     <div class="music-debug-role-counts">
       <span>Bass ${snapshot.roleCounts.bass}</span>

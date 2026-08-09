@@ -271,6 +271,32 @@ describe('procedural music', () => {
     expect(resolveMusicTheme('plains', 'overworld').id).toBe('frontier-plains');
   });
 
+  it('attaches explicit vocabularies that can shift across larger regions', () => {
+    const nearbyForest = resolveMusicTheme(
+      'forest',
+      'overworld',
+      undefined,
+      4,
+      8
+    );
+    const distantForest = resolveMusicTheme(
+      'forest',
+      'overworld',
+      undefined,
+      260,
+      -160
+    );
+
+    expect(nearbyForest.vocabulary.biomeLabel).toBe('forest');
+    expect(nearbyForest.vocabulary.modeLabel).not.toHaveLength(0);
+    expect(nearbyForest.vocabulary.regionLabel).not.toBe(
+      distantForest.vocabulary.regionLabel
+    );
+    expect(nearbyForest.vocabulary.preferredIntervals).not.toEqual(
+      distantForest.vocabulary.preferredIntervals
+    );
+  });
+
   it('changes tempo and brightness with time of day and weather', () => {
     expect(resolveMusicMood({ dayProgress: 0.5 })).toEqual(
       expect.objectContaining({
