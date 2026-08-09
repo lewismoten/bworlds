@@ -6,6 +6,7 @@ import {
 } from '@bworlds/core/hash';
 import {
   resolveProceduralCompositionStep,
+  resolveProceduralHarmonyVoicing,
   resolveProceduralInstrumentSemitones,
 } from './procedural-music-harmony.ts';
 import {
@@ -1321,7 +1322,7 @@ export function resolvePoiMusicBlendGains(mix: number): {
   };
 }
 
-function createThemeNote(options: {
+function createThemeNotes(options: {
   startMs: number;
   theme: MusicRegionTheme;
   instrumentBank: ProceduralInstrumentBank;
@@ -1334,7 +1335,7 @@ function createThemeNote(options: {
   contextType?: ContextType;
   emitter?: MusicPosition;
   listener?: MusicPosition;
-}): ProceduralMusicNote {
+}): ProceduralMusicNote[] {
   const role = selectInstrumentRole(options.stepIndex);
   const instrument = options.instrumentBank.instruments[role];
   const arrangementProfile = options.arrangement.roleProfiles[role];
@@ -1361,9 +1362,24 @@ function createThemeNote(options: {
     ) > 0.84
       ? 12
       : 0;
-  return {
+  const voiceSemitones =
+    role === 'harmony'
+      ? resolveProceduralHarmonyVoicing({
+          theme: options.theme,
+          stepIndex: options.stepIndex,
+          clusterX: options.clusterX,
+          clusterY: options.clusterY,
+        })
+      : [semitones];
+  const voiceVolumeScale =
+    role === 'harmony' ? 1.2 / Math.max(1, voiceSemitones.length) : 1;
+
+  return voiceSemitones.map((voiceSemitone, voiceIndex) => ({
     themeId: options.theme.id,
-    instrumentId: instrument.id,
+    instrumentId:
+      role === 'harmony'
+        ? `${instrument.id}:voice-${voiceIndex}`
+        : instrument.id,
     role,
     startMs: options.startMs,
     durationMs:
@@ -1380,7 +1396,7 @@ function createThemeNote(options: {
       resolveCompositionDurationMultiplier(role, composition),
     frequency: resolveProceduralNoteFrequency({
       rootHz: options.theme.rootHz,
-      semitones: semitones + octaveBoost,
+      semitones: voiceSemitone + octaveBoost,
       role,
       octaveShiftSemitones: arrangementProfile.octaveShiftSemitones,
     }),
@@ -1391,12 +1407,13 @@ function createThemeNote(options: {
       meterAccent.volumeMultiplier *
       resolveCompositionVolumeMultiplier(role, composition) *
       (role === 'bass'
-        ? 0.86
+        ? 0.8
         : role === 'harmony'
           ? 0.72
           : role === 'percussion'
-            ? 0.52
-            : 1),
+            ? 0.6
+            : 1) *
+      voiceVolumeScale,
     waveform: arrangementProfile.waveformOverride ?? instrument.waveform,
     timbre: instrument.timbre,
     attackMs: instrument.attackMs,
@@ -1418,7 +1435,7 @@ function createThemeNote(options: {
     }),
     emitter: options.emitter,
     listener: options.listener,
-  };
+  }));
 }
 
 function scheduleThemeLayerNotes(
@@ -1501,7 +1518,7 @@ function scheduleThemeLayerNotes(
         stepIndex % arrangementProfile.skipEvery === 0);
 
     if (!shouldSkipRole) {
-      const note = createThemeNote({
+      const createdNotes = createThemeNotes({
         startMs: nextNoteAtMs,
         theme,
         instrumentBank,
@@ -1515,10 +1532,12 @@ function scheduleThemeLayerNotes(
         emitter: options.emitter,
         listener: options.listener,
       });
-      notes.push({
-        ...note,
-        volume: note.volume * options.gainMultiplier,
-      });
+      for (const note of createdNotes) {
+        notes.push({
+          ...note,
+          volume: note.volume * options.gainMultiplier,
+        });
+      }
     }
     nextNoteAtMs +=
       (theme.noteDurationMs *

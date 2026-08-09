@@ -7,8 +7,8 @@ const ROLE_LOUDNESS_WEIGHTS: Record<ProceduralMusicNote['role'], number> = {
   percussion: 0.5,
 };
 
-const MIN_LOUDNESS_GAIN = 0.68;
-const MAX_LOUDNESS_GAIN = 1.75;
+const MIN_LOUDNESS_GAIN = 0.5;
+const MAX_LOUDNESS_GAIN = 2.6;
 const TARGET_LOUDNESS = 0.026;
 
 export function resolveProceduralMusicLoudness(

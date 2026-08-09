@@ -1,4 +1,5 @@
 import { hash2DWithSeed, registerHashLabel } from '@bworlds/core/hash';
+import { resolveProceduralHarmonyChordVoicing } from './procedural-music-harmony-voicing.ts';
 import {
   getProceduralScaleDegreeSemitones,
   isProceduralSemitoneInMode,
@@ -315,6 +316,34 @@ export function resolveProceduralInstrumentSemitones(options: {
     options.clusterX,
     options.clusterY
   );
+}
+
+export function resolveProceduralHarmonyVoicing(options: {
+  theme: ProceduralHarmonyTheme;
+  stepIndex: number;
+  clusterX: number;
+  clusterY: number;
+}): readonly number[] {
+  const chord = resolveProceduralChordAtStep(
+    options.theme,
+    options.stepIndex,
+    options.clusterX,
+    options.clusterY
+  );
+  const previousChord =
+    options.stepIndex > 0
+      ? resolveProceduralChordAtStep(
+          options.theme,
+          options.stepIndex - 1,
+          options.clusterX,
+          options.clusterY
+        )
+      : null;
+
+  return resolveProceduralHarmonyChordVoicing({
+    chord,
+    previousChord,
+  });
 }
 
 function createProceduralChord(

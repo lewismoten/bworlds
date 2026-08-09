@@ -1,7 +1,7 @@
 import type { ProceduralMusicNote } from './procedural-music.ts';
 
 const MIN_COMPRESSION_THRESHOLD = 0.018;
-const COMPRESSION_RATIO = 0.56;
+const COMPRESSION_RATIO = 0.42;
 const QUIET_ROLE_FLOOR: Record<ProceduralMusicNote['role'], number> = {
   lead: 0.72,
   harmony: 0.76,

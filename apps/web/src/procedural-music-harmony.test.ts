@@ -4,6 +4,7 @@ import {
   resolveProceduralChordAtStep,
   resolveProceduralChordProgression,
   resolveProceduralCompositionStep,
+  resolveProceduralHarmonyVoicing,
   resolveProceduralLeadContour,
   resolveProceduralInstrumentSemitones,
   resolveProceduralLeadMotif,
@@ -217,5 +218,39 @@ describe('procedural music harmony', () => {
     const end = contour.at(-1);
     expect(climax?.degreeOffset).toBeGreaterThan(start?.degreeOffset ?? 0);
     expect(end?.degreeOffset).toBeLessThanOrEqual(climax?.degreeOffset ?? 0);
+  });
+
+  it('voices harmony as stable triads instead of single notes', () => {
+    const first = resolveProceduralHarmonyVoicing({
+      theme: TEST_THEME,
+      stepIndex: 1,
+      clusterX: 3,
+      clusterY: -2,
+    });
+    const second = resolveProceduralHarmonyVoicing({
+      theme: TEST_THEME,
+      stepIndex: 5,
+      clusterX: 3,
+      clusterY: -2,
+    });
+    const chord = resolveProceduralChordAtStep(TEST_THEME, 1, 3, -2);
+
+    expect(first).toHaveLength(3);
+    expect(
+      first.every((semitones) =>
+        [
+          chord.rootSemitones % 12,
+          chord.thirdSemitones % 12,
+          chord.fifthSemitones % 12,
+        ].includes(((semitones % 12) + 12) % 12)
+      )
+    ).toBe(true);
+    expect(second).toHaveLength(3);
+    expect(
+      second.every(
+        (semitones, index) =>
+          Math.abs(semitones - (first[index] ?? semitones)) <= 5
+      )
+    ).toBe(true);
   });
 });

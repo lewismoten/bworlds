@@ -1265,6 +1265,26 @@ describe('procedural music', () => {
     ).toBe(true);
   });
 
+  it('emits simultaneous harmony chord tones for voiced triads', () => {
+    const scheduled = scheduleProceduralMusicNotes({
+      nowMs: 0,
+      tileKind: 'plains',
+      contextType: 'overworld',
+      dayProgress: 0.5,
+      yearProgress: 0.5,
+      clusterX: 0,
+      clusterY: 0,
+    });
+    const harmonyStarts = scheduled.notes
+      .filter((note) => note.role === 'harmony')
+      .reduce<Map<number, number>>((counts, note) => {
+        counts.set(note.startMs, (counts.get(note.startMs) ?? 0) + 1);
+        return counts;
+      }, new Map());
+
+    expect([...harmonyStarts.values()].some((count) => count >= 3)).toBe(true);
+  });
+
   it('applies softer panning and falloff for nearby ambient music emitters', () => {
     expect(getMusicSpatialMix({ x: 6, y: 0 }, { x: 0, y: 0 })).toEqual({
       gainMultiplier: expect.closeTo(1 / (1 + 6 * 0.45), 6),
@@ -1621,7 +1641,7 @@ describe('procedural music', () => {
     const spread = Math.max(...volumes) - Math.min(...volumes);
 
     expect(spread).toBeGreaterThan(0.006);
-    expect(spread).toBeLessThan(0.028);
+    expect(spread).toBeLessThan(0.036);
   });
 
   it('lets percussion react to the shared composition structure instead of staying flat', () => {

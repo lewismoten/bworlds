@@ -104,15 +104,15 @@ added directly as semitones instead of moving through the selected scale.
 
 ## Harmony Output
 
-- [ ] Make the strings play simultaneous chord tones.
-- [ ] Generate at least three notes for normal triads.
+- [x] Make the strings play simultaneous chord tones.
+- [x] Generate at least three notes for normal triads.
 - [ ] Sustain chords across meaningful harmonic spans.
-- [ ] Use inversions to reduce chord-to-chord motion.
+- [x] Use inversions to reduce chord-to-chord motion.
 - [ ] Keep common chord tones between changes.
 - [ ] Avoid octave jumping as the main harmony motion.
-- [ ] Separate chord voices into stable registers.
+- [x] Separate chord voices into stable registers.
 - [ ] Match harmony notes to the 1-5-6-1 progression.
-- [ ] Validate that harmony polyphony exceeds one.
+- [x] Validate that harmony polyphony exceeds one.
 - [ ] Reject a harmony track containing only single notes.
 
 ## Chord Progression
