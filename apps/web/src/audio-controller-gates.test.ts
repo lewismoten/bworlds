@@ -10,6 +10,7 @@ describe('audio controller gates', () => {
   it('suppresses sound effect triggers and updates while sound is disabled', () => {
     const controller: SoundEffectController = {
       resume: vi.fn(),
+      stopAll: vi.fn(),
       getActiveSourceCount: vi.fn(() => 3),
       getRecentCombatIntensity: vi.fn(() => 0.4),
       getRecentPrioritySoundIntensity: vi.fn(() => 0.6),
@@ -38,6 +39,8 @@ describe('audio controller gates', () => {
     expect(gated.getActiveSourceCount()).toBe(3);
     expect(gated.getRecentCombatIntensity(12)).toBe(0.4);
     expect(gated.getRecentPrioritySoundIntensity(12)).toBe(0.6);
+    gated.stopAll();
+    expect(controller.stopAll).toHaveBeenCalledTimes(1);
 
     enabled = true;
     gated.resume();
@@ -57,6 +60,7 @@ describe('audio controller gates', () => {
   it('suppresses music scheduling while music is disabled', () => {
     const controller: MusicController = {
       resume: vi.fn(),
+      stopAll: vi.fn(),
       getActiveSourceCount: vi.fn(() => 5),
       update: vi.fn(),
     };
@@ -72,6 +76,8 @@ describe('audio controller gates', () => {
     expect(controller.resume).not.toHaveBeenCalled();
     expect(controller.update).not.toHaveBeenCalled();
     expect(gated.getActiveSourceCount()).toBe(5);
+    gated.stopAll();
+    expect(controller.stopAll).toHaveBeenCalledTimes(1);
 
     enabled = true;
     gated.resume();

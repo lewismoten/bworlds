@@ -516,7 +516,7 @@
 - [ ] Profile garbage collection during heavy combat and ambient scenes.
 - [x] Establish a maximum simultaneous procedural-sound budget.
 - [ ] Reduce sound complexity dynamically when system performance falls.
-- [ ] Suspend audio processing for distant or inactive regions.
+- [x] Suspend audio processing for distant or inactive regions.
 - [ ] Avoid generating detailed sounds server-side unless gameplay synchronization requires it.
 
 ---

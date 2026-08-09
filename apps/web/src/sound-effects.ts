@@ -65,6 +65,7 @@ export type ProceduralSoundEffect = {
 export type SoundEffectSink = {
   resume?(): void;
   play(effect: ProceduralSoundEffect): void;
+  stopAll?(): void;
   getActiveSourceCount?(): number;
 };
 
@@ -79,6 +80,7 @@ type SoundEffectVolumeBounds = {
 
 export type SoundEffectController = {
   resume(): void;
+  stopAll(): void;
   getActiveSourceCount(): number;
   getRecentCombatIntensity(nowMs: number): number;
   getRecentPrioritySoundIntensity(nowMs: number): number;
@@ -528,6 +530,9 @@ export function createSoundEffectController(
   return {
     resume() {
       sink.resume?.();
+    },
+    stopAll() {
+      sink.stopAll?.();
     },
     getActiveSourceCount() {
       return sink.getActiveSourceCount?.() ?? 0;
@@ -1242,9 +1247,13 @@ export function createWebAudioSoundEffectSink(
     }
   }
 
-  function stopVoice(voice: ActiveSoundVoice): void {
+  function stopVoice(voice: ActiveSoundVoice, stopAt?: number): void {
     try {
-      voice.oscillator.stop();
+      if (typeof stopAt === 'number') {
+        voice.oscillator.stop(stopAt);
+      } else {
+        voice.oscillator.stop();
+      }
     } catch {
       // Ignore invalid repeated stop calls from already-ending voices.
     }
@@ -1418,6 +1427,12 @@ export function createWebAudioSoundEffectSink(
       };
       oscillator.start(startAt);
       oscillator.stop(startAt + durationSeconds);
+    },
+    stopAll() {
+      for (const voice of [...activeVoices]) {
+        stopVoice(voice, audioContext?.currentTime ?? 0);
+      }
+      activeSourceCount = 0;
     },
     getActiveSourceCount() {
       return activeSourceCount;

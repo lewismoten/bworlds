@@ -3697,6 +3697,8 @@ document.addEventListener('visibilitychange', () => {
   pageVisibilityState.hidden = document.hidden;
   if (pageVisibilityState.hidden) {
     sessionPersistence.flush();
+    soundEffects.stopAll();
+    musicController.stopAll();
     lastFrame = 0;
     return;
   }

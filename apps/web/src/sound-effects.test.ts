@@ -109,6 +109,95 @@ describe('sound effects', () => {
       expect(sink.getActiveSourceCount?.()).toBe(1);
       createdOscillators[0]?.finish();
       expect(sink.getActiveSourceCount?.()).toBe(0);
+      expect(createdOscillators[0]?.disconnect).toHaveBeenCalled();
+    } finally {
+      if (originalAudioContext) {
+        vi.stubGlobal('AudioContext', originalAudioContext);
+      } else {
+        vi.unstubAllGlobals();
+      }
+    }
+  });
+
+  it('can stop all active web audio sound sources early when audio becomes inactive', () => {
+    const createdOscillators: Array<{
+      onended: ((event: Event) => void) | null;
+      stop: ReturnType<typeof vi.fn>;
+      connect: ReturnType<typeof vi.fn>;
+      disconnect: ReturnType<typeof vi.fn>;
+      frequency: {
+        setValueAtTime: ReturnType<typeof vi.fn>;
+        exponentialRampToValueAtTime: ReturnType<typeof vi.fn>;
+        linearRampToValueAtTime: ReturnType<typeof vi.fn>;
+      };
+      type: string;
+      start: ReturnType<typeof vi.fn>;
+    }> = [];
+
+    class FakeAudioContext {
+      state: AudioContextState = 'running';
+      currentTime = 2;
+      destination = {};
+      createOscillator() {
+        const oscillator = {
+          onended: null as ((event: Event) => void) | null,
+          stop: vi.fn(),
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+          frequency: {
+            setValueAtTime: vi.fn(),
+            exponentialRampToValueAtTime: vi.fn(),
+            linearRampToValueAtTime: vi.fn(),
+          },
+          type: 'sine',
+          start: vi.fn(),
+        };
+        createdOscillators.push(oscillator);
+        return oscillator as unknown as OscillatorNode;
+      }
+      createGain() {
+        return {
+          gain: {
+            setValueAtTime: vi.fn(),
+            exponentialRampToValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+        } as unknown as GainNode;
+      }
+      createStereoPanner() {
+        return {
+          pan: {
+            setValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+        } as unknown as StereoPannerNode;
+      }
+      resume() {
+        return Promise.resolve();
+      }
+    }
+
+    const originalAudioContext = globalThis.AudioContext;
+    vi.stubGlobal('AudioContext', FakeAudioContext);
+
+    try {
+      const sink = createWebAudioSoundEffectSink();
+      sink.play({
+        kind: 'jump',
+        nowMs: 0,
+        frequency: 440,
+        durationMs: 120,
+        volume: 0.05,
+        waveform: 'sine',
+      });
+
+      sink.stopAll?.();
+
+      expect(sink.getActiveSourceCount?.()).toBe(0);
+      expect(createdOscillators[0]?.stop).toHaveBeenCalledWith(2);
+      expect(createdOscillators[0]?.disconnect).toHaveBeenCalled();
     } finally {
       if (originalAudioContext) {
         vi.stubGlobal('AudioContext', originalAudioContext);

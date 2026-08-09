@@ -14,6 +14,9 @@ export function createEnabledSoundEffectController(
       }
       controller.resume();
     },
+    stopAll() {
+      controller.stopAll();
+    },
     getActiveSourceCount() {
       return controller.getActiveSourceCount();
     },
@@ -72,6 +75,9 @@ export function createEnabledMusicController(
         return;
       }
       controller.resume();
+    },
+    stopAll() {
+      controller.stopAll();
     },
     getActiveSourceCount() {
       return controller.getActiveSourceCount();

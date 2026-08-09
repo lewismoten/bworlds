@@ -236,6 +236,7 @@ type MusicSinkOptions = {
 
 export type MusicController = {
   resume(): void;
+  stopAll(): void;
   getActiveSourceCount(): number;
   update(options: MusicUpdateOptions): void;
 };
@@ -772,6 +773,9 @@ export function createMusicController(sink: MusicSink): MusicController {
   return {
     resume() {
       sink.resume?.();
+    },
+    stopAll() {
+      sink.stopAll?.();
     },
     getActiveSourceCount() {
       return sink.getActiveSourceCount?.() ?? 0;
