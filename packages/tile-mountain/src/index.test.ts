@@ -71,6 +71,15 @@ const fakeThree = {
   ConeGeometry: FakeGeometry,
 } as const;
 
+function createFakeThreeHost() {
+  return {
+    Group: FakeGroup,
+    Mesh: FakeMesh,
+    MeshStandardMaterial: FakeMaterial,
+    ConeGeometry: FakeGeometry,
+  } as const;
+}
+
 function createMountainState(kindResolver: (x: number, y: number) => string) {
   return {
     player: { x: 0, y: 0, facing: 0 },
@@ -164,5 +173,35 @@ describe('tile mountain', () => {
 
     expect(isolated?.children).toHaveLength(2);
     expect(surrounded?.children.length ?? 0).toBeGreaterThanOrEqual(4);
+  });
+
+  it('keeps mountain materials scoped to the current Three host', () => {
+    const plugin = createMountainTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'mountain');
+    const state = createMountainState(() => 'plains');
+    const firstHost = createFakeThreeHost();
+    const secondHost = createFakeThreeHost();
+
+    const firstModel = tile?.create3DModel?.({
+      three: firstHost as never,
+      state,
+      tile: { kind: 'mountain' } as never,
+      tileX: 4,
+      tileY: -3,
+    }) as FakeGroup | undefined;
+    const secondModel = tile?.create3DModel?.({
+      three: secondHost as never,
+      state,
+      tile: { kind: 'mountain' } as never,
+      tileX: 4,
+      tileY: -3,
+    }) as FakeGroup | undefined;
+
+    const firstBase = firstModel?.children[0] as FakeMesh | undefined;
+    const secondBase = secondModel?.children[0] as FakeMesh | undefined;
+
+    expect(firstBase?.material).toBeDefined();
+    expect(secondBase?.material).toBeDefined();
+    expect(secondBase?.material).not.toBe(firstBase?.material);
   });
 });

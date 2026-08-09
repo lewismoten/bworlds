@@ -15,7 +15,7 @@ import type {
   WorldStateLike,
 } from '@bworlds/plugin-api';
 
-const styleCache = new Map<string, MountainStyle>();
+const styleCache = new WeakMap<ThreeHostLike, MountainStyle>();
 const MOUNTAIN_WIDTH_SEED = registerHashLabel('mountain-width');
 const MOUNTAIN_DEPTH_SEED = registerHashLabel('mountain-depth');
 const MOUNTAIN_UPPER_SEED = registerHashLabel('mountain-upper');
@@ -191,15 +191,17 @@ function getMountainPeakScale(
 }
 
 function getMountainStyle(three: ThreeHostLike): MountainStyle {
-  if (!styleCache.has('default')) {
+  let style = styleCache.get(three);
+  if (!style) {
     const terrainMaterials = createMountainTerrainMaterials(three);
-    styleCache.set('default', {
+    style = {
       mountainMaterial: terrainMaterials.mountainMaterial,
       snowMaterial: terrainMaterials.snowMaterial,
-    });
+    };
+    styleCache.set(three, style);
   }
 
-  return styleCache.get('default')!;
+  return style;
 }
 
 interface MountainStyle {
