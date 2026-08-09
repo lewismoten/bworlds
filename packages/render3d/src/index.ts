@@ -297,7 +297,11 @@ type Render3DController = {
 
 export type Render3DDebugEvent = {
   nowMs: number;
-  type: 'lod-changed' | 'model-rejected' | 'plugin-exceeded-budget';
+  type:
+    | 'lod-changed'
+    | 'model-rejected'
+    | 'plugin-exceeded-budget'
+    | 'plugin-performance-warning';
   tileKey?: string;
   plugin?: string;
   summary?: string;
@@ -405,6 +409,10 @@ export function getTileModelHardLimits(
 
 const FULL_DETAIL_TILE_DRAW_CALL_LIMIT = 81;
 const LOW_DETAIL_TILE_DRAW_CALL_LIMIT = 17;
+const FULL_DETAIL_DRAW_CALL_WARNING_MIN_DRAW_CALLS = 24;
+const LOW_DETAIL_DRAW_CALL_WARNING_MIN_DRAW_CALLS = 12;
+const FULL_DETAIL_DRAW_CALL_WARNING_MIN_TRIANGLES_PER_DRAW_CALL = 8;
+const LOW_DETAIL_DRAW_CALL_WARNING_MIN_TRIANGLES_PER_DRAW_CALL = 6;
 
 export function getTileDrawCallLimit(
   detailLevel: RenderBudgetDetailLevel = 'full'
@@ -429,6 +437,37 @@ export function validateTileDrawCallBudget(
     drawCallCount,
     limit,
   };
+}
+
+export function getTileModelDrawCallRatioWarning(
+  {
+    drawCallCount,
+    triangleCount,
+  }: {
+    drawCallCount: number;
+    triangleCount: number;
+  },
+  detailLevel: RenderBudgetDetailLevel = 'full'
+): string | null {
+  const minimumDrawCalls =
+    detailLevel === 'low'
+      ? LOW_DETAIL_DRAW_CALL_WARNING_MIN_DRAW_CALLS
+      : FULL_DETAIL_DRAW_CALL_WARNING_MIN_DRAW_CALLS;
+  if (drawCallCount < minimumDrawCalls) {
+    return null;
+  }
+
+  const minimumTrianglesPerDrawCall =
+    detailLevel === 'low'
+      ? LOW_DETAIL_DRAW_CALL_WARNING_MIN_TRIANGLES_PER_DRAW_CALL
+      : FULL_DETAIL_DRAW_CALL_WARNING_MIN_TRIANGLES_PER_DRAW_CALL;
+  const trianglesPerDrawCall =
+    drawCallCount > 0 ? triangleCount / drawCallCount : 0;
+  if (trianglesPerDrawCall >= minimumTrianglesPerDrawCall) {
+    return null;
+  }
+
+  return `drawCallCount ${drawCallCount} for triangleCount ${triangleCount} (${trianglesPerDrawCall.toFixed(1)} triangles/draw call)`;
 }
 
 export function validateTileModelAgainstRenderBudget(
@@ -1387,6 +1426,8 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       }
     }
 
+    let finalPluginModelBudgetValidation: TileModelBudgetValidation | null = null;
+
     if (pluginModel) {
       const modelBudgetValidation = validateTileModelAgainstRenderBudget(
         pluginModel,
@@ -1432,10 +1473,27 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
           });
         }
         pluginModel = acceptedWithBudgetResult.model;
+        finalPluginModelBudgetValidation = pluginModel
+          ? validateTileModelAgainstRenderBudget(pluginModel, detailLevel)
+          : null;
+      } else {
+        finalPluginModelBudgetValidation = modelBudgetValidation;
       }
     }
 
     if (pluginModel) {
+      const drawCallRatioWarning = finalPluginModelBudgetValidation
+        ? getTileModelDrawCallRatioWarning(finalPluginModelBudgetValidation.stats, detailLevel)
+        : null;
+      if (drawCallRatioWarning) {
+        recordRenderDebugEvent(recentDebugEvents, {
+          nowMs: pluginBuildStartMs,
+          type: 'plugin-performance-warning',
+          tileKey: `${x}:${y}`,
+          plugin: tilePluginOwnerLabel,
+          summary: drawCallRatioWarning,
+        });
+      }
       pluginModel.position.y += surfaceHeight;
       applyShadowSettings(pluginModel, {
         castShadow: true,

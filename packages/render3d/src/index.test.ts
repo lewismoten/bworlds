@@ -139,6 +139,7 @@ import {
   getSkyMilkyWaySignature,
   getSkyPositionSignature,
   getTileDrawCallLimit,
+  getTileModelDrawCallRatioWarning,
   getWrappedBatchWindow,
   getTwilightSkyPalette,
   getTileModelDetailLevel,
@@ -1989,6 +1990,47 @@ describe('render3d visibility helpers', () => {
     });
   });
 
+  it('warns when a plugin model uses many draw calls for very little triangle work', () => {
+    expect(
+      getTileModelDrawCallRatioWarning(
+        {
+          drawCallCount: 24,
+          triangleCount: 96,
+        },
+        'full'
+      )
+    ).toBe('drawCallCount 24 for triangleCount 96 (4.0 triangles/draw call)');
+
+    expect(
+      getTileModelDrawCallRatioWarning(
+        {
+          drawCallCount: 12,
+          triangleCount: 36,
+        },
+        'low'
+      )
+    ).toBe('drawCallCount 12 for triangleCount 36 (3.0 triangles/draw call)');
+
+    expect(
+      getTileModelDrawCallRatioWarning(
+        {
+          drawCallCount: 24,
+          triangleCount: 384,
+        },
+        'full'
+      )
+    ).toBeNull();
+    expect(
+      getTileModelDrawCallRatioWarning(
+        {
+          drawCallCount: 10,
+          triangleCount: 20,
+        },
+        'low'
+      )
+    ).toBeNull();
+  });
+
   it('rejects models whose geometry uses too many separate draw ranges', () => {
     const root = createMockObject3D(
       createMockMaterial(),
@@ -2387,6 +2429,13 @@ describe('render3d visibility helpers', () => {
       plugin: 'tile-forest',
       summary: 'vertexCount 10000>8000',
     });
+    recordRenderDebugEvent(events, {
+      nowMs: 320,
+      type: 'plugin-performance-warning',
+      tileKey: '2:1',
+      plugin: 'tile-forest',
+      summary: 'drawCallCount 24 for triangleCount 96 (4.0 triangles/draw call)',
+    });
 
     expect(getRecentRenderDebugEvents(events, 350, { windowMs: 30000 })).toEqual(events);
     expect(getRecentRenderDebugEvents(events, 30150, { windowMs: 30000 })).toEqual([
@@ -2403,6 +2452,13 @@ describe('render3d visibility helpers', () => {
         tileKey: '2:1',
         plugin: 'tile-forest',
         summary: 'vertexCount 10000>8000',
+      },
+      {
+        nowMs: 320,
+        type: 'plugin-performance-warning',
+        tileKey: '2:1',
+        plugin: 'tile-forest',
+        summary: 'drawCallCount 24 for triangleCount 96 (4.0 triangles/draw call)',
       },
     ]);
 

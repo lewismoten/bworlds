@@ -32,7 +32,8 @@ export type DebugSnapshotRecentEvent = {
     | 'graphics-quality-changed'
     | 'lod-changed'
     | 'model-rejected'
-    | 'plugin-exceeded-budget';
+    | 'plugin-exceeded-budget'
+    | 'plugin-performance-warning';
   tileKey?: string;
   plugin?: string | null;
   summary?: string;

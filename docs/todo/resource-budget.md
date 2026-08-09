@@ -77,7 +77,7 @@ Operates at several levels: per model, per LOD, per plugin, per chunk, and per e
 * [ ] Prefer one mesh with one shared material over many tiny meshes.
 * [ ] Encourage instancing when many identical parts are generated.
 * [ ] Automatically reduce distant detail when scene draw-call budget is high.
-* [ ] Add warnings for plugins that produce unusually high draw-call-to-triangle ratios.
+* [X] Add warnings for plugins that produce unusually high draw-call-to-triangle ratios.
 
 # Material Caps
 
