@@ -870,7 +870,7 @@ This is where procedural music could become particularly valuable in an MMORPG.
 - [ ] Use compression carefully rather than flattening all dynamics.
 - [x] Balance procedural music against sound effects.
 - [x] Automatically duck music when particularly important gameplay sounds occur.
-- [ ] Establish consistent loudness across procedurally generated songs.
+- [x] Establish consistent loudness across procedurally generated songs.
 - [ ] Test mixes through headphones, speakers, laptop speakers, and mono playback.
 
 ---

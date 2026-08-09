@@ -29,6 +29,7 @@ import {
   resolveMusicEqStages,
   resolveMusicStereoPan,
 } from './procedural-music-mix.ts';
+import { normalizeProceduralMusicLoudness } from './procedural-music-loudness.ts';
 import { resolveProceduralMeterAccent } from './procedural-music-meter.ts';
 import { blendThemeMotifWithImportantNpcMotif } from './procedural-music-npc-motif.ts';
 import {
@@ -1408,7 +1409,7 @@ function scheduleThemeLayerNotes(
   }
 
   return {
-    notes,
+    notes: normalizeProceduralMusicLoudness(notes),
     state: {
       nextNoteAtMs,
       stepIndex,

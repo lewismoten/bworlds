@@ -19,6 +19,7 @@ import {
   scheduleProceduralMusicNotes,
   type ProceduralMusicNote,
 } from './procedural-music.ts';
+import { resolveProceduralMusicLoudness } from './procedural-music-loudness.ts';
 import { resolveProceduralThemeMotif } from './procedural-music-theme-motif.ts';
 
 describe('procedural music', () => {
@@ -1177,6 +1178,47 @@ describe('procedural music', () => {
     expect(ducked.length).toBe(unducked.length);
     expect(ducked.length).toBeGreaterThan(0);
     expect(ducked[0]!.volume).toBeLessThan(unducked[0]!.volume);
+  });
+
+  it('keeps scheduled songs within a consistent loudness band across themes', () => {
+    const loudnesses = [
+      scheduleProceduralMusicNotes({
+        nowMs: 0,
+        tileKind: 'plains',
+        contextType: 'overworld',
+        dayProgress: 0.45,
+        clusterX: 0,
+        clusterY: 0,
+      }).notes,
+      scheduleProceduralMusicNotes({
+        nowMs: 0,
+        tileKind: 'forest',
+        contextType: 'overworld',
+        dayProgress: 0.45,
+        clusterX: 2,
+        clusterY: -1,
+      }).notes,
+      scheduleProceduralMusicNotes({
+        nowMs: 0,
+        tileKind: 'town',
+        contextType: 'town',
+        dayProgress: 0.45,
+        clusterX: -3,
+        clusterY: 4,
+      }).notes,
+      scheduleProceduralMusicNotes({
+        nowMs: 0,
+        tileKind: 'cave-floor',
+        contextType: 'cave',
+        dayProgress: 0.45,
+        clusterX: 5,
+        clusterY: 3,
+      }).notes,
+    ].map((notes) => resolveProceduralMusicLoudness(notes));
+
+    expect(Math.max(...loudnesses) - Math.min(...loudnesses)).toBeLessThan(
+      0.0035
+    );
   });
 
   it('lets percussion react to the shared composition structure instead of staying flat', () => {
