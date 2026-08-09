@@ -168,16 +168,8 @@ export function createSignTilePlugin(): RuntimePlugin {
           return null;
         }
 
-        const nearestTown = [...townAnchors].sort(
-          (left, right) =>
-            Math.hypot(x - left.x, y - left.y) -
-            Math.hypot(x - right.x, y - right.y)
-        )[0];
-        const nearestPoi = [...(placementContext.poiAnchors ?? [])].sort(
-          (left, right) =>
-            Math.hypot(x - left.x, y - left.y) -
-            Math.hypot(x - right.x, y - right.y)
-        )[0];
+        const nearestTown = findNearestAnchor(townAnchors, x, y);
+        const nearestPoi = findNearestAnchor(placementContext.poiAnchors ?? [], x, y);
         const closeToTown =
           nearestTown &&
           Math.hypot(x - nearestTown.x, y - nearestTown.y) < SIGN_TOWN_BUFFER;
@@ -290,6 +282,34 @@ export function createSignTilePlugin(): RuntimePlugin {
       },
     },
   ]);
+}
+
+function findNearestAnchor<TAnchor extends { x: number; y: number }>(
+  anchors: readonly TAnchor[],
+  x: number,
+  y: number
+): TAnchor | undefined {
+  let nearestAnchor: TAnchor | undefined;
+  let nearestDistanceSquared = Number.POSITIVE_INFINITY;
+
+  for (let index = 0; index < anchors.length; index += 1) {
+    const anchor = anchors[index];
+    if (!anchor) {
+      continue;
+    }
+
+    const dx = x - anchor.x;
+    const dy = y - anchor.y;
+    const distanceSquared = dx * dx + dy * dy;
+    if (distanceSquared >= nearestDistanceSquared) {
+      continue;
+    }
+
+    nearestAnchor = anchor;
+    nearestDistanceSquared = distanceSquared;
+  }
+
+  return nearestAnchor;
 }
 
 function createSignPost(
