@@ -495,7 +495,7 @@
 - [ ] Combine very dense environmental events into aggregate ambience where appropriate.
 - [x] Limit simultaneous voices through a priority system.
 - [x] Stop inaudible low-priority sounds first when reaching voice limits.
-- [ ] Prevent clipping when many sounds occur simultaneously.
+- [x] Prevent clipping when many sounds occur simultaneously.
 - [ ] Normalize generated sounds to reasonable loudness ranges.
 - [ ] Reserve dynamic range for major events.
 - [ ] Ensure extremely close sounds do not become painfully loud.

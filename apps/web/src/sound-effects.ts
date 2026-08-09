@@ -1130,6 +1130,7 @@ type ActiveSoundVoice = {
 };
 
 const MAX_ACTIVE_SOUND_VOICES = 10;
+const SOUND_MIX_HEADROOM_LOUDNESS = 0.14;
 
 const MAX_SIMULTANEOUS_SOUND_VOICES_BY_KIND: Partial<
   Record<SoundEffectKind, number>
@@ -1151,6 +1152,7 @@ const MAX_SIMULTANEOUS_SOUND_VOICES_BY_KIND: Partial<
 export function createWebAudioSoundEffectSink(): SoundEffectSink {
   let audioContext: AudioContext | null = null;
   let activeSourceCount = 0;
+  let outputGainNode: GainNode | null = null;
   const activeVoices = new Set<ActiveSoundVoice>();
 
   function getAudioContext(): AudioContext | null {
@@ -1170,6 +1172,28 @@ export function createWebAudioSoundEffectSink(): SoundEffectSink {
     return audioContext;
   }
 
+  function getOutputGainNode(context: AudioContext): GainNode {
+    if (outputGainNode) {
+      return outputGainNode;
+    }
+    outputGainNode = context.createGain();
+    outputGainNode.gain.setValueAtTime(1, context.currentTime);
+    outputGainNode.connect(context.destination);
+    return outputGainNode;
+  }
+
+  function updateOutputGain(context: AudioContext): void {
+    const totalLoudness = [...activeVoices].reduce(
+      (sum, voice) => sum + voice.loudness,
+      0
+    );
+    const mixGain = resolveSoundMixSafetyGain(totalLoudness);
+    getOutputGainNode(context).gain.setValueAtTime(
+      mixGain,
+      context.currentTime
+    );
+  }
+
   function removeVoice(voice: ActiveSoundVoice): void {
     if (!activeVoices.delete(voice)) {
       return;
@@ -1179,6 +1203,9 @@ export function createWebAudioSoundEffectSink(): SoundEffectSink {
     voice.oscillator.disconnect?.();
     voice.gain.disconnect?.();
     voice.panner?.disconnect?.();
+    if (audioContext) {
+      updateOutputGain(audioContext);
+    }
   }
 
   function stopVoice(voice: ActiveSoundVoice): void {
@@ -1203,6 +1230,7 @@ export function createWebAudioSoundEffectSink(): SoundEffectSink {
       if (!context) {
         return;
       }
+      const outputGain = getOutputGainNode(context);
       const spatialMix = getSoundSpatialMix(effect.emitter, effect.listener);
       const startAt = context.currentTime;
       const durationSeconds = effect.durationMs / 1000;
@@ -1326,12 +1354,13 @@ export function createWebAudioSoundEffectSink(): SoundEffectSink {
       if (panner) {
         panner.pan.setValueAtTime(spatialMix.pan, startAt);
         gain.connect(panner);
-        panner.connect(context.destination);
+        panner.connect(outputGain);
       } else {
-        gain.connect(context.destination);
+        gain.connect(outputGain);
       }
       activeVoices.add(voice);
       activeSourceCount += 1;
+      updateOutputGain(context);
       oscillator.onended = () => {
         removeVoice(voice);
       };
@@ -1400,6 +1429,13 @@ function resolveSoundEffectPriority(kind: SoundEffectKind): number {
     default:
       return 3;
   }
+}
+
+function resolveSoundMixSafetyGain(totalLoudness: number): number {
+  if (totalLoudness <= SOUND_MIX_HEADROOM_LOUDNESS) {
+    return 1;
+  }
+  return clampValue(SOUND_MIX_HEADROOM_LOUDNESS / totalLoudness, 0.38, 1);
 }
 
 function clampValue(value: number, min: number, max: number): number {
