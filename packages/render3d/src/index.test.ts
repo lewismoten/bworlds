@@ -1206,6 +1206,7 @@ describe('render3d visibility helpers', () => {
       pointVertexCount: 1_024,
       lineSegmentCount: 1_024,
       oversizedGeometryBoundsCount: 0,
+      maxGeometryVertexCount: 25_000,
       materialCount: 16,
       textureCount: 16,
       lightCount: 4,
@@ -1225,6 +1226,7 @@ describe('render3d visibility helpers', () => {
       pointVertexCount: 128,
       lineSegmentCount: 128,
       oversizedGeometryBoundsCount: 0,
+      maxGeometryVertexCount: 1_500,
       materialCount: 3,
       textureCount: 4,
       lightCount: 1,
@@ -1256,6 +1258,7 @@ describe('render3d visibility helpers', () => {
         pointVertexCount: 0,
         lineSegmentCount: 0,
         oversizedGeometryBoundsCount: 0,
+        maxGeometryVertexCount: 48,
         materialCount: 1,
         textureCount: 1,
         lightCount: 0,
@@ -1296,8 +1299,14 @@ describe('render3d visibility helpers', () => {
         textureCount: 4,
         shadowLightCount: 1,
         vertexCount: 10_000,
+        maxGeometryVertexCount: 2_500,
       }),
       violations: [
+        {
+          metric: 'maxGeometryVertexCount',
+          actual: 2_500,
+          limit: 1_500,
+        },
         {
           metric: 'materialCount',
           actual: 4,
@@ -1355,6 +1364,7 @@ describe('render3d visibility helpers', () => {
         pointVertexCount: 36,
         lineSegmentCount: 25,
         oversizedGeometryBoundsCount: 0,
+        maxGeometryVertexCount: 24,
       }),
       violations: [
         {
@@ -1416,6 +1426,7 @@ describe('render3d visibility helpers', () => {
         pointVertexCount: 129,
         lineSegmentCount: 129,
         oversizedGeometryBoundsCount: 0,
+        maxGeometryVertexCount: 130,
       }),
       violations: [
         {
@@ -1451,12 +1462,38 @@ describe('render3d visibility helpers', () => {
         pointVertexCount: 0,
         lineSegmentCount: 0,
         oversizedGeometryBoundsCount: 0,
+        maxGeometryVertexCount: 3,
       }),
       violations: [
         {
           metric: 'invalidPositionCoordinateCount',
           actual: 1,
           limit: 0,
+        },
+      ],
+    });
+  });
+
+  it('rejects models whose single largest geometry exceeds the per-mesh vertex cap', () => {
+    const root = createMockObject3D(undefined, [
+      createMockObject3D(
+        createMockMaterial(),
+        [],
+        createMockStatGeometry('too-dense', 1_501)
+      ),
+    ]);
+
+    expect(validateTileModelAgainstRenderBudget(root as never, 'low')).toEqual({
+      accepted: false,
+      limits: getTileModelHardLimits('low'),
+      stats: expect.objectContaining({
+        maxGeometryVertexCount: 1_501,
+      }),
+      violations: [
+        {
+          metric: 'maxGeometryVertexCount',
+          actual: 1_501,
+          limit: 1_500,
         },
       ],
     });

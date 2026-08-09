@@ -236,6 +236,7 @@ const FULL_DETAIL_TILE_MODEL_HARD_LIMITS: TileModelHardLimits = {
   pointVertexCount: 1_024,
   lineSegmentCount: 1_024,
   oversizedGeometryBoundsCount: 0,
+  maxGeometryVertexCount: 25_000,
   materialCount: 16,
   textureCount: 16,
   lightCount: 4,
@@ -256,6 +257,7 @@ const LOW_DETAIL_TILE_MODEL_HARD_LIMITS: TileModelHardLimits = {
   pointVertexCount: 128,
   lineSegmentCount: 128,
   oversizedGeometryBoundsCount: 0,
+  maxGeometryVertexCount: 1_500,
   materialCount: 3,
   textureCount: 4,
   lightCount: 1,
@@ -279,8 +281,9 @@ export function validateTileModelAgainstRenderBudget(
     detailLevel === 'low'
       ? LOW_DETAIL_MAX_GEOMETRY_AXIS_SPAN
       : FULL_DETAIL_MAX_GEOMETRY_AXIS_SPAN;
+  const sceneResourceStats = collectSceneResourceStats(root);
   const stats = {
-    ...collectSceneResourceStats(root),
+    ...sceneResourceStats,
     invalidPositionCoordinateCount: countInvalidGeometryCoordinateSets(root),
     pointVertexCount: countPointVertices(root),
     lineSegmentCount: countLineSegments(root),
@@ -288,6 +291,7 @@ export function validateTileModelAgainstRenderBudget(
       root,
       maximumGeometryAxisSpan
     ),
+    maxGeometryVertexCount: sceneResourceStats.largestGeometryVertexCount,
   };
   const limits = getTileModelHardLimits(detailLevel);
   const violations: TileModelBudgetViolation[] = [];
@@ -304,6 +308,7 @@ export function validateTileModelAgainstRenderBudget(
     'pointVertexCount',
     'lineSegmentCount',
     'oversizedGeometryBoundsCount',
+    'maxGeometryVertexCount',
     'materialCount',
     'textureCount',
     'lightCount',
@@ -499,6 +504,7 @@ type TileModelHardLimits = {
   pointVertexCount: number;
   lineSegmentCount: number;
   oversizedGeometryBoundsCount: number;
+  maxGeometryVertexCount: number;
   materialCount: number;
   textureCount: number;
   lightCount: number;
@@ -519,6 +525,7 @@ type TileModelBudgetValidation = {
     pointVertexCount: number;
     lineSegmentCount: number;
     oversizedGeometryBoundsCount: number;
+    maxGeometryVertexCount: number;
   };
   limits: TileModelHardLimits;
   violations: TileModelBudgetViolation[];
