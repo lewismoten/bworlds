@@ -5,6 +5,8 @@ const HASH_LABEL_CACHE_LIMIT = 4096;
 
 const registeredHashLabels = new Map<string, number>();
 
+export type HashSeed = number;
+
 export function registerHashLabel(label: string): number {
   const cached = registeredHashLabels.get(label);
   if (cached !== undefined) {
@@ -27,26 +29,24 @@ export function registerHashLabel(label: string): number {
   return normalizedHash;
 }
 
-export function createHashSeed(seed: number | string): number {
-  return typeof seed === 'number' ? seed >>> 0 : registerHashLabel(seed);
+export function createHashSeed(seed: number): HashSeed {
+  return seed >>> 0;
 }
 
-export function appendHashSeedPart(seedHash: number, value: number | string): number {
-  return typeof value === 'number'
-    ? appendHashSeedNumber(seedHash, value)
-    : appendHashSeedLabel(seedHash, registerHashLabel(value));
+export function appendHashSeedPart(seedHash: HashSeed, value: number): HashSeed {
+  return appendHashSeedNumber(seedHash, value);
 }
 
-export function appendHashSeedLabel(seedHash: number, labelHash: number): number {
+export function appendHashSeedLabel(seedHash: HashSeed, labelHash: number): HashSeed {
   return mixHashNumber(mixHashCharacter(seedHash >>> 0, HASH_PART_SEPARATOR), labelHash);
 }
 
-export function appendHashSeedNumber(seedHash: number, value: number): number {
+export function appendHashSeedNumber(seedHash: HashSeed, value: number): HashSeed {
   return mixHashNumber(mixHashCharacter(seedHash >>> 0, HASH_PART_SEPARATOR), value);
 }
 
 export function hash2D(seed: number | string, x: number, y: number): number {
-  return hash2DWithSeed(createHashSeed(seed), x, y);
+  return hash2DWithSeed(resolveHashSeed(seed), x, y);
 }
 
 export function hash2DWithSeed(seedHash: number, x: number, y: number): number {
@@ -58,6 +58,10 @@ export function hash2DWithSeed(seedHash: number, x: number, y: number): number {
 function mixHashCharacter(hash: number, charCode: number): number {
   hash ^= charCode;
   return Math.imul(hash, FNV_PRIME);
+}
+
+function resolveHashSeed(seed: number | string): HashSeed {
+  return typeof seed === 'number' ? createHashSeed(seed) : registerHashLabel(seed);
 }
 
 function mixHashNumber(hash: number, value: number): number {

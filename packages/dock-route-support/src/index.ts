@@ -2,7 +2,7 @@ import {
   createBoundedCache,
   type CacheLike,
 } from '@bworlds/cache-support';
-import { hash2D, registerHashLabel } from '@bworlds/core';
+import { hash2D, registerHashLabel } from '@bworlds/core/hash';
 import type { WorldStateLike } from '@bworlds/plugin-api';
 
 type Point = { x: number; y: number };

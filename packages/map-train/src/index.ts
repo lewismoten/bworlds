@@ -1,4 +1,9 @@
-import { hash2D } from '@bworlds/core';
+import {
+  appendHashSeedLabel,
+  createHashSeed,
+  hash2DWithSeed,
+  registerHashLabel,
+} from '@bworlds/core/hash';
 import {
   createContextMapPlugin,
   createReturnMapAction,
@@ -46,6 +51,8 @@ const MIDDLE_CAR_TYPES: TrainCarType[] = [
   'mail',
   'sleeper',
 ];
+const TRAIN_MIDDLE_COUNT_SEED = registerHashLabel('train-middle-count');
+const TRAIN_MIDDLE_CAR_SEED = registerHashLabel('train-middle-car');
 
 export function createTrainMapPlugin(): RuntimePlugin {
   return createContextMapPlugin<TrainContext>({
@@ -59,10 +66,17 @@ export function resolveTrainCarTypes(
   seed: string | number,
   context: Pick<TrainContext, 'origin' | 'lineName'>
 ): TrainCarType[] {
+  const seedHash =
+    typeof seed === 'number' ? createHashSeed(seed) : registerHashLabel(seed);
+  const middleCountSeed = appendHashSeedLabel(seedHash, TRAIN_MIDDLE_COUNT_SEED);
+  const middleCarSeed = appendHashSeedLabel(
+    appendHashSeedLabel(seedHash, TRAIN_MIDDLE_CAR_SEED),
+    registerHashLabel(context.lineName)
+  );
   const middleCount =
     2 +
     Math.floor(
-      hash2D(`${seed}:train-middle-count`, context.origin.x, context.origin.y) *
+      hash2DWithSeed(middleCountSeed, context.origin.x, context.origin.y) *
         3
     );
   const cars: TrainCarType[] = ['engine'];
@@ -70,8 +84,8 @@ export function resolveTrainCarTypes(
   for (let index = 0; index < middleCount; index += 1) {
     const pick = MIDDLE_CAR_TYPES[
       Math.floor(
-        hash2D(
-          `${seed}:train-middle-car:${context.lineName}`,
+        hash2DWithSeed(
+          middleCarSeed,
           context.origin.x + index,
           context.origin.y - index
         ) * MIDDLE_CAR_TYPES.length

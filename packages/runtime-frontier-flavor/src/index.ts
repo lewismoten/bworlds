@@ -1,10 +1,12 @@
 import {
+} from '@bworlds/core';
+import {
   appendHashSeedLabel,
   createHashSeed,
   hash2D,
   hash2DWithSeed,
   registerHashLabel,
-} from '@bworlds/core';
+} from '@bworlds/core/hash';
 import { createRuntimePlugin } from '@bworlds/plugin-api';
 import type { RuntimePlugin } from '@bworlds/plugin-api';
 

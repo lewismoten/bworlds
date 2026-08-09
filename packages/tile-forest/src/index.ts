@@ -1,5 +1,6 @@
 import { createBoundedCache } from '@bworlds/cache-support';
-import { hash2D, octaveNoise2D } from '@bworlds/core';
+import { octaveNoise2D } from '@bworlds/core';
+import { hash2D } from '@bworlds/core/hash';
 import { createPlainsBackedTilePainter } from '@bworlds/paint-support';
 import {
   getPoiLightActivation,

@@ -1,11 +1,13 @@
 import {
-  appendHashSeedLabel,
   clamp,
-  createHashSeed,
   generatePoiName,
+} from '@bworlds/core';
+import {
+  appendHashSeedLabel,
+  createHashSeed,
   hash2DWithSeed,
   registerHashLabel,
-} from '@bworlds/core';
+} from '@bworlds/core/hash';
 import { createRouteTraversalProfile } from '@bworlds/tile-support';
 import type {
   ClassifyOverworldTileContext,
@@ -654,7 +656,8 @@ export function pickPreferredLandmarkFacing({
   seedKey: Seed;
   preferLandFacing?: boolean;
 }): LandmarkFacingScore {
-  const seedHash = createHashSeed(seedKey);
+  const seedHash =
+    typeof seedKey === 'number' ? createHashSeed(seedKey) : registerHashLabel(seedKey);
   return CARDINAL_DIRECTIONS.map((direction) => {
     const adjacentTile = state.getCurrentTile(
       tileX + direction.dx,

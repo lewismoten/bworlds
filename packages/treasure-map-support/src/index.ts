@@ -1,4 +1,4 @@
-import { hash2D } from '@bworlds/core';
+import { hash2D } from '@bworlds/core/hash';
 import type { InventoryItemLike } from '@bworlds/plugin-api';
 
 type Point = { x: number; y: number };

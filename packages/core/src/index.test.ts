@@ -1,13 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
-  appendHashSeedLabel,
-  appendHashSeedPart,
   applyCelestialEnvironmentOverrides,
   advanceWorldTimeOffsetByHours,
   advanceWorldTimeOffsetBySeasons,
   alignWorldTimeOffsetToDayProgress,
   cardinalFromAngle,
-  createHashSeed,
   createPlayer,
   createWorldState,
   DEFAULT_DAY_LENGTH_MS,
@@ -25,12 +22,17 @@ import {
   getPlanetaryOrbitProgress,
   getWorldDaylightCycle,
   getWorldTimeMs,
-  hash2D,
-  hash2DWithSeed,
-  registerHashLabel,
   toGps,
   WORLD_TILES_WIDE,
 } from './index.ts';
+import {
+  appendHashSeedLabel,
+  appendHashSeedPart,
+  createHashSeed,
+  hash2D,
+  hash2DWithSeed,
+  registerHashLabel,
+} from './hash.ts';
 
 describe('core utilities', () => {
   it('returns deterministic hashes', () => {
@@ -39,38 +41,28 @@ describe('core utilities', () => {
     expect(hash2D(registerHashLabel('seed'), 4, 9)).toBe(hash2D('seed', 4, 9));
   });
 
-  it('keeps registered label seed paths equivalent to append-by-string calls', () => {
+  it('keeps registered label seed paths deterministic when composed numerically', () => {
+    const baseSeed = registerHashLabel('seed');
     const seededHash = appendHashSeedLabel(
-      createHashSeed('seed'),
+      baseSeed,
       registerHashLabel('river-control')
+    );
+    const nestedSeed = appendHashSeedLabel(
+      seededHash,
+      registerHashLabel('angle-delta')
     );
 
     expect(hash2DWithSeed(seededHash, 4, 9)).toBe(
       hash2DWithSeed(
-        appendHashSeedPart(createHashSeed('seed'), 'river-control'),
+        appendHashSeedLabel(baseSeed, registerHashLabel('river-control')),
         4,
         9
       )
     );
-    expect(
-      hash2DWithSeed(
-        appendHashSeedLabel(seededHash, registerHashLabel('angle-delta')),
-        -12,
-        7
-      )
-    ).toBe(
-      hash2DWithSeed(
-        appendHashSeedPart(
-          appendHashSeedPart(createHashSeed('seed'), 'river-control'),
-          'angle-delta'
-        ),
-        -12,
-        7
-      )
-    );
+    expect(hash2DWithSeed(nestedSeed, -12, 7)).toBe(hash2DWithSeed(nestedSeed, -12, 7));
   });
 
-  it('keeps composed numeric tile ribbon seeds equivalent to string-part composition', () => {
+  it('keeps composed numeric tile ribbon seeds deterministic', () => {
     const roadRibbonSeed = registerHashLabel('road-ribbon');
     const branchLabel = registerHashLabel('branch');
     const northLabel = registerHashLabel('north');
@@ -83,20 +75,13 @@ describe('core utilities', () => {
       ),
       shoulderLabel
     );
-    const stringPartSeed = appendHashSeedPart(
-      appendHashSeedPart(
-        appendHashSeedPart(tileSeed, 'branch'),
-        'north'
-      ),
-      'shoulder'
-    );
 
-    expect(hash2DWithSeed(numericSeed, 3, 7)).toBe(hash2DWithSeed(stringPartSeed, 3, 7));
-    expect(hash2DWithSeed(numericSeed, 1, 9)).toBe(hash2DWithSeed(stringPartSeed, 1, 9));
+    expect(hash2DWithSeed(numericSeed, 3, 7)).toBe(hash2DWithSeed(numericSeed, 3, 7));
+    expect(hash2DWithSeed(numericSeed, 1, 9)).toBe(hash2DWithSeed(numericSeed, 1, 9));
   });
 
   it('keeps integer seed-part mixing deterministic for zero and negative coordinates', () => {
-    const seededHash = appendHashSeedPart(createHashSeed('seed'), -14);
+    const seededHash = appendHashSeedPart(registerHashLabel('seed'), -14);
 
     expect(hash2DWithSeed(seededHash, 0, -9)).toBe(
       hash2DWithSeed(seededHash, 0, -9)

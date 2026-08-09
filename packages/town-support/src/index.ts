@@ -1,12 +1,14 @@
 import { createBoundedCache } from '@bworlds/cache-support';
 import {
+  getDaylightCycleState,
+} from '@bworlds/core';
+import {
   appendHashSeedLabel,
   appendHashSeedPart,
-  getDaylightCycleState,
   hash2D,
   hash2DWithSeed,
   registerHashLabel,
-} from '@bworlds/core';
+} from '@bworlds/core/hash';
 import {
   getDefaultQuestRegistry,
   type QuestOffer,

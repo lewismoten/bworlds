@@ -13,6 +13,7 @@
     "strict": false,
     "paths": {
       "@bworlds/*": ["packages/*/src/index.ts"],
+      "@bworlds/core/hash": ["packages/core/src/hash.ts"],
       "@bworlds/app": ["apps/web/src/main.ts"]
     },
     "lib": ["ES2022", "DOM"]

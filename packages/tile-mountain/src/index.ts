@@ -1,4 +1,4 @@
-import { hash2D, registerHashLabel } from '@bworlds/core';
+import { hash2D, registerHashLabel } from '@bworlds/core/hash';
 import { createSingleTilePlugin } from '@bworlds/plugin-api';
 import {
   createThresholdTerrainClassifier,

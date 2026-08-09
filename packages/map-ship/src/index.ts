@@ -1,4 +1,9 @@
-import { hash2D } from '@bworlds/core';
+import {
+  appendHashSeedLabel,
+  createHashSeed,
+  hash2DWithSeed,
+  registerHashLabel,
+} from '@bworlds/core/hash';
 import {
   createContextMapPlugin,
   createExitMapAction,
@@ -17,6 +22,7 @@ type ShipContext = WorldContextLike & {
   destination?: Point;
   routeBoatName?: string;
 };
+const SHIP_MAP_VARIANT_SEED = registerHashLabel('ship-map-variant');
 
 export function createShipMapPlugin(): RuntimePlugin {
   return createContextMapPlugin<ShipContext>({
@@ -103,7 +109,10 @@ function getShipMapVariant(
   originX: number,
   originY: number
 ) {
-  return hash2D(`${seed}:ship-map-variant`, originX, originY) > 0.48
+  const seedHash =
+    typeof seed === 'number' ? createHashSeed(seed) : registerHashLabel(seed);
+  const variantSeed = appendHashSeedLabel(seedHash, SHIP_MAP_VARIANT_SEED);
+  return hash2DWithSeed(variantSeed, originX, originY) > 0.48
     ? 'tall-ship'
     : 'broken-ship';
 }

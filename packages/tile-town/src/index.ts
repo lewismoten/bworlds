@@ -1,10 +1,12 @@
 import { createBoundedCache } from '@bworlds/cache-support';
 import {
+} from '@bworlds/core';
+import {
   appendHashSeedPart,
   hash2D,
   hash2DWithSeed,
   registerHashLabel,
-} from '@bworlds/core';
+} from '@bworlds/core/hash';
 import {
   createAnchoredEnterablePoiTilePlugin,
   markPoiLightEmitter,

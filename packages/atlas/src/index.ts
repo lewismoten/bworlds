@@ -1,11 +1,13 @@
 import {
+} from '@bworlds/core';
+import {
   appendHashSeedLabel,
   appendHashSeedPart,
   createHashSeed,
   hash2D,
   hash2DWithSeed,
   registerHashLabel,
-} from '@bworlds/core';
+} from '@bworlds/core/hash';
 import {
   getActivePluginRegistry,
   type Kind,
@@ -290,14 +292,14 @@ function createVariantMotif(kind: Kind, variant: number): VariantMotif {
 }
 
 function createTileVariantSeed(kind: Kind): number {
-  return appendHashSeedLabel(createHashSeed(kind), TILE_VARIANT_LABEL);
+  return appendHashSeedLabel(registerHashLabel(kind), TILE_VARIANT_LABEL);
 }
 
 function createVariantMotifSeed(kind: Kind, variant: number): {
   seedHash: number;
   motifHash: number;
 } {
-  const kindSeed = createHashSeed(kind);
+  const kindSeed = registerHashLabel(kind);
   return {
     seedHash: appendHashSeedLabel(kindSeed, ATLAS_LABEL),
     motifHash: appendHashSeedPart(

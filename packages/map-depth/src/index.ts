@@ -1,5 +1,11 @@
 import { createBoundedCache } from '@bworlds/cache-support';
-import { hash2D } from '@bworlds/core';
+import {
+  appendHashSeedLabel,
+  createHashSeed,
+  hash2D,
+  hash2DWithSeed,
+  registerHashLabel,
+} from '@bworlds/core/hash';
 import {
   createChildContext,
   createContextMapPlugin,
@@ -48,6 +54,25 @@ type DepthEntranceExit = {
 const DEFAULT_DEPTH_SIZE = 21;
 const CAVE_DEPTH_SIZE = 27;
 const DEPTH_LAYOUT_CACHE_LIMIT = 256;
+const CAVE_CHAMBER_WEST_SEED = registerHashLabel('cave-chamber-west');
+const CAVE_CHAMBER_WEST_Y_SEED = registerHashLabel('cave-chamber-west-y');
+const CAVE_CHAMBER_WEST_RADIUS_SEED = registerHashLabel('cave-chamber-west-r');
+const CAVE_CHAMBER_EAST_SEED = registerHashLabel('cave-chamber-east');
+const CAVE_CHAMBER_EAST_Y_SEED = registerHashLabel('cave-chamber-east-y');
+const CAVE_CHAMBER_EAST_RADIUS_SEED = registerHashLabel('cave-chamber-east-r');
+const CAVE_CHAMBER_NORTH_SEED = registerHashLabel('cave-chamber-north');
+const CAVE_CHAMBER_NORTH_RADIUS_SEED = registerHashLabel('cave-chamber-north-r');
+const CAVE_BRIDGE_AXIS_SEED = registerHashLabel('cave-bridge-axis');
+const CAVE_POOL_X_SEED = registerHashLabel('cave-pool-x');
+const CAVE_POOL_Y_SEED = registerHashLabel('cave-pool-y');
+const CAVE_WIDEN_SEED = registerHashLabel('cave-widen');
+const CAVE_FEATURE_KIND_SEEDS: Record<CaveFeatureTileKind, number> = {
+  'cave-floor': registerHashLabel('cave-floor'),
+  'cave-wall': registerHashLabel('cave-wall'),
+  'cave-mushrooms': registerHashLabel('cave-mushrooms'),
+  'cave-dripstone': registerHashLabel('cave-dripstone'),
+  'cave-obstacle': registerHashLabel('cave-obstacle'),
+};
 const depthLayoutCache = createBoundedCache<string, DepthLayout>(
   DEPTH_LAYOUT_CACHE_LIMIT
 );
@@ -64,6 +89,7 @@ export function createCaveDepthLayout(
   context: DepthContext,
   seed: string | number
 ): DepthLayout {
+  const seedHash = resolveDepthSeed(seed);
   const entranceExits = getDepthEntranceExits(context);
   const size = CAVE_DEPTH_SIZE;
   const radius = Math.floor(size / 2);
@@ -89,22 +115,22 @@ export function createCaveDepthLayout(
 
   carvePath(tiles, radius, { x: 0, y: 2 }, stairsDown, 2, { kind: 'cave-floor' });
 
-  const chamberSeeds = createCaveChamberSeeds(context, seed);
+  const chamberSeeds = createCaveChamberSeeds(context, seedHash);
   chamberSeeds.forEach(({ center, chamberRadius }) => {
     carveBrush(tiles, radius, center.x, center.y, chamberRadius, {
       kind: 'cave-floor',
     });
   });
 
-  widenNearbyFloors(tiles, radius, seed, context.depth ?? 1);
+  widenNearbyFloors(tiles, radius, seedHash, context.depth ?? 1);
   const bridgeAxis = addPoolAndBridge(
     tiles,
     radius,
     context,
-    seed,
+    seedHash,
     protectedTiles
   );
-  decorateCaveFeatures(tiles, radius, context, seed, protectedTiles, bridgeAxis);
+  decorateCaveFeatures(tiles, radius, context, seedHash, protectedTiles, bridgeAxis);
 
   entranceExits.forEach((exit) => {
     tiles.set(toTileKey(exit.local.x, exit.local.y), {
@@ -203,6 +229,7 @@ function createDefaultDepthLayout(
   context: DepthContext,
   seed: string | number
 ): DepthLayout {
+  const seedHash = resolveDepthSeed(seed);
   const size = DEFAULT_DEPTH_SIZE;
   const radius = Math.floor(size / 2);
   const stairsDown = { x: 0, y: -6 };
@@ -214,7 +241,7 @@ function createDefaultDepthLayout(
       const chamber =
         Math.abs(x) <= 7 &&
         Math.abs(y) <= 7 &&
-        (Math.abs(x) <= 1 || Math.abs(y) <= 1 || hash2D(seed, x, y) > 0.3);
+        (Math.abs(x) <= 1 || Math.abs(y) <= 1 || hash2D(seedHash, x, y) > 0.3);
       tiles.set(toTileKey(x, y), {
         kind: chamber ? 'floor' : 'wall',
       });
@@ -303,30 +330,38 @@ function createDepthLayoutCacheKey(
 
 function createCaveChamberSeeds(
   context: DepthContext,
-  seed: string | number
+  seedHash: number
 ): Array<{ center: Point; chamberRadius: number }> {
   const bias = typeof context.depth === 'number' ? context.depth : 1;
+  const westSeed = appendHashSeedLabel(seedHash, CAVE_CHAMBER_WEST_SEED);
+  const westYSeed = appendHashSeedLabel(seedHash, CAVE_CHAMBER_WEST_Y_SEED);
+  const westRadiusSeed = appendHashSeedLabel(seedHash, CAVE_CHAMBER_WEST_RADIUS_SEED);
+  const eastSeed = appendHashSeedLabel(seedHash, CAVE_CHAMBER_EAST_SEED);
+  const eastYSeed = appendHashSeedLabel(seedHash, CAVE_CHAMBER_EAST_Y_SEED);
+  const eastRadiusSeed = appendHashSeedLabel(seedHash, CAVE_CHAMBER_EAST_RADIUS_SEED);
+  const northSeed = appendHashSeedLabel(seedHash, CAVE_CHAMBER_NORTH_SEED);
+  const northRadiusSeed = appendHashSeedLabel(seedHash, CAVE_CHAMBER_NORTH_RADIUS_SEED);
   return [
     {
       center: {
-        x: -6 + Math.round((hash2D(`${seed}:cave-chamber-west`, bias, 0) - 0.5) * 4),
-        y: -2 + Math.round((hash2D(`${seed}:cave-chamber-west-y`, bias, 0) - 0.5) * 5),
+        x: -6 + Math.round((hash2DWithSeed(westSeed, bias, 0) - 0.5) * 4),
+        y: -2 + Math.round((hash2DWithSeed(westYSeed, bias, 0) - 0.5) * 5),
       },
-      chamberRadius: 3 + Math.floor(hash2D(`${seed}:cave-chamber-west-r`, bias, 0) * 2),
+      chamberRadius: 3 + Math.floor(hash2DWithSeed(westRadiusSeed, bias, 0) * 2),
     },
     {
       center: {
-        x: 6 + Math.round((hash2D(`${seed}:cave-chamber-east`, bias, 0) - 0.5) * 4),
-        y: -1 + Math.round((hash2D(`${seed}:cave-chamber-east-y`, bias, 0) - 0.5) * 5),
+        x: 6 + Math.round((hash2DWithSeed(eastSeed, bias, 0) - 0.5) * 4),
+        y: -1 + Math.round((hash2DWithSeed(eastYSeed, bias, 0) - 0.5) * 5),
       },
-      chamberRadius: 3 + Math.floor(hash2D(`${seed}:cave-chamber-east-r`, bias, 0) * 2),
+      chamberRadius: 3 + Math.floor(hash2DWithSeed(eastRadiusSeed, bias, 0) * 2),
     },
     {
       center: {
         x: 0,
-        y: -6 + Math.round((hash2D(`${seed}:cave-chamber-north`, bias, 0) - 0.5) * 4),
+        y: -6 + Math.round((hash2DWithSeed(northSeed, bias, 0) - 0.5) * 4),
       },
-      chamberRadius: 3 + Math.floor(hash2D(`${seed}:cave-chamber-north-r`, bias, 0) * 2),
+      chamberRadius: 3 + Math.floor(hash2DWithSeed(northRadiusSeed, bias, 0) * 2),
     },
     {
       center: {
@@ -342,21 +377,24 @@ function addPoolAndBridge(
   tiles: Map<string, DepthTile>,
   radius: number,
   context: DepthContext,
-  seed: string | number,
+  seedHash: number,
   protectedTiles: Set<string>
 ): 'horizontal' | 'vertical' {
+  const bridgeAxisSeed = appendHashSeedLabel(seedHash, CAVE_BRIDGE_AXIS_SEED);
+  const poolXSeed = appendHashSeedLabel(seedHash, CAVE_POOL_X_SEED);
+  const poolYSeed = appendHashSeedLabel(seedHash, CAVE_POOL_Y_SEED);
   const bridgeAxis =
-    hash2D(`${seed}:cave-bridge-axis`, context.depth ?? 1, 0) > 0.5
+    hash2DWithSeed(bridgeAxisSeed, context.depth ?? 1, 0) > 0.5
       ? 'horizontal'
       : 'vertical';
   const poolCenter = {
     x:
       bridgeAxis === 'horizontal'
         ? 0
-        : -1 + Math.round((hash2D(`${seed}:cave-pool-x`, context.depth ?? 1, 0) - 0.5) * 2),
+        : -1 + Math.round((hash2DWithSeed(poolXSeed, context.depth ?? 1, 0) - 0.5) * 2),
     y:
       bridgeAxis === 'horizontal'
-        ? -2 + Math.round((hash2D(`${seed}:cave-pool-y`, context.depth ?? 1, 0) - 0.5) * 2)
+        ? -2 + Math.round((hash2DWithSeed(poolYSeed, context.depth ?? 1, 0) - 0.5) * 2)
         : -1,
   };
   carveBrush(tiles, radius, poolCenter.x, poolCenter.y, 4, { kind: 'cave-floor' });
@@ -410,7 +448,7 @@ function decorateCaveFeatures(
   tiles: Map<string, DepthTile>,
   radius: number,
   context: DepthContext,
-  seed: string | number,
+  seedHash: number,
   protectedTiles: Set<string>,
   bridgeAxis: 'horizontal' | 'vertical'
 ): void {
@@ -448,7 +486,7 @@ function decorateCaveFeatures(
 
   placeFeatureTiles(
     tiles,
-    seed,
+    seedHash,
     context.depth ?? 1,
     mushroomCandidates,
     Math.min(5, Math.max(2, Math.floor(mushroomCandidates.length / 10))),
@@ -457,7 +495,7 @@ function decorateCaveFeatures(
   );
   placeFeatureTiles(
     tiles,
-    seed,
+    seedHash,
     (context.depth ?? 1) + 17,
     dripstoneCandidates,
     Math.min(5, Math.max(2, Math.floor(dripstoneCandidates.length / 12))),
@@ -466,7 +504,7 @@ function decorateCaveFeatures(
   );
   placeFeatureTiles(
     tiles,
-    seed,
+    seedHash,
     (context.depth ?? 1) + 29,
     obstacleCandidates,
     Math.min(4, Math.max(1, Math.floor(obstacleCandidates.length / 14))),
@@ -477,13 +515,18 @@ function decorateCaveFeatures(
 
 function placeFeatureTiles(
   tiles: Map<string, DepthTile>,
-  seed: string | number,
+  seedHash: number,
   salt: number,
   candidates: Point[],
   count: number,
   kind: CaveFeatureTileKind,
   note: string
 ): void {
+  const featureKindSeed = CAVE_FEATURE_KIND_SEEDS[kind];
+  const rankingSeed = appendHashSeedLabel(
+    appendHashSeedLabel(seedHash, featureKindSeed),
+    createHashSeed(salt)
+  );
   const fallbackCandidates =
     candidates.length >= count
       ? candidates
@@ -496,8 +539,8 @@ function placeFeatureTiles(
         ];
   const ranked = [...fallbackCandidates].sort(
     (left, right) =>
-      hash2D(`${seed}:${kind}:${salt}`, left.x, left.y) -
-      hash2D(`${seed}:${kind}:${salt}`, right.x, right.y)
+      hash2DWithSeed(rankingSeed, left.x, left.y) -
+      hash2DWithSeed(rankingSeed, right.x, right.y)
   );
   for (let index = 0; index < Math.min(count, ranked.length); index += 1) {
     const candidate = ranked[index];
@@ -508,9 +551,13 @@ function placeFeatureTiles(
 function widenNearbyFloors(
   tiles: Map<string, DepthTile>,
   radius: number,
-  seed: string | number,
+  seedHash: number,
   depth: number
 ): void {
+  const widenSeed = appendHashSeedLabel(
+    appendHashSeedLabel(seedHash, CAVE_WIDEN_SEED),
+    createHashSeed(depth)
+  );
   const additions: Point[] = [];
   for (let y = -radius + 1; y <= radius - 1; y += 1) {
     for (let x = -radius + 1; x <= radius - 1; x += 1) {
@@ -521,7 +568,7 @@ function widenNearbyFloors(
       const floorNeighbors = countAdjacentKinds(tiles, x, y, new Set(['cave-floor']));
       if (
         floorNeighbors >= 4 ||
-        (floorNeighbors >= 3 && hash2D(`${seed}:cave-widen:${depth}`, x, y) > 0.72)
+        (floorNeighbors >= 3 && hash2DWithSeed(widenSeed, x, y) > 0.72)
       ) {
         additions.push({ x, y });
       }
@@ -559,6 +606,10 @@ function carvePath(
     const y = Math.round(start.y + (end.y - start.y) * t);
     carveBrush(tiles, radius, x, y, thickness, tile);
   }
+}
+
+function resolveDepthSeed(seed: string | number): number {
+  return typeof seed === 'number' ? createHashSeed(seed) : registerHashLabel(seed);
 }
 
 function carveBrush(

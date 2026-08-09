@@ -5,18 +5,20 @@ import {
   type CacheLike,
 } from '@bworlds/cache-support';
 import {
-  appendHashSeedLabel,
-  appendHashSeedPart,
   clamp,
-  createHashSeed,
   generatePoiName,
-  hash2D,
-  hash2DWithSeed,
   octaveNoise2D,
-  registerHashLabel,
   ridgedNoise2D,
   type PoiNameType,
 } from '@bworlds/core';
+import {
+  appendHashSeedLabel,
+  appendHashSeedPart,
+  createHashSeed,
+  hash2D,
+  hash2DWithSeed,
+  registerHashLabel,
+} from '@bworlds/core/hash';
 import type {
   ClassifyOverworldTileContext,
   DecorateOverworldTileContext,
@@ -201,7 +203,7 @@ export function createRiverControlPoints(
   cellX: number,
   cellY: number
 ): RiverControlPoint[] {
-  const seedHash = createHashSeed(seed);
+  const seedHash = typeof seed === 'number' ? createHashSeed(seed) : registerHashLabel(seed);
   const pointCountSeed = appendHashSeedLabel(seedHash, RIVER_CONTROL_POINT_COUNT_LABEL);
   const startXSeed = appendHashSeedLabel(seedHash, RIVER_CONTROL_START_X_LABEL);
   const startYSeed = appendHashSeedLabel(seedHash, RIVER_CONTROL_START_Y_LABEL);
@@ -374,7 +376,7 @@ export function createRiverForkPath(
   cellY: number,
   controlPoints: RiverControlPoint[]
 ): RiverForkPath | null {
-  const seedHash = createHashSeed(seed);
+  const seedHash = typeof seed === 'number' ? createHashSeed(seed) : registerHashLabel(seed);
   const chanceSeed = appendHashSeedLabel(seedHash, RIVER_FORK_CHANCE_LABEL);
   const trunkStartSeed = appendHashSeedLabel(seedHash, RIVER_FORK_TRUNK_START_LABEL);
   const trunkSpanSeed = appendHashSeedLabel(seedHash, RIVER_FORK_TRUNK_SPAN_LABEL);
@@ -668,8 +670,9 @@ export function getOverworldPlacementChance(
   x: number,
   y: number
 ) {
+  const seedHash = typeof seed === 'number' ? createHashSeed(seed) : registerHashLabel(seed);
   return hash2DWithSeed(
-    appendHashSeedPart(createHashSeed(seed), chanceKey),
+    appendHashSeedLabel(seedHash, registerHashLabel(chanceKey)),
     x,
     y
   );
@@ -776,10 +779,10 @@ export function createOverworldCellAnchorCandidate<
   cellY: number,
   spec: OverworldCellAnchorSpec<TAnchor>
 ): OverworldCellAnchorCandidate<TAnchor> {
-  const seedHash = createHashSeed(seed);
-  const chanceSeed = appendHashSeedPart(seedHash, spec.chanceKey);
-  const offsetXSeed = appendHashSeedPart(seedHash, spec.offsetXKey);
-  const offsetYSeed = appendHashSeedPart(seedHash, spec.offsetYKey);
+  const seedHash = typeof seed === 'number' ? createHashSeed(seed) : registerHashLabel(seed);
+  const chanceSeed = appendHashSeedLabel(seedHash, registerHashLabel(spec.chanceKey));
+  const offsetXSeed = appendHashSeedLabel(seedHash, registerHashLabel(spec.offsetXKey));
+  const offsetYSeed = appendHashSeedLabel(seedHash, registerHashLabel(spec.offsetYKey));
   const centerX = cellX * spec.cellSize;
   const centerY = cellY * spec.cellSize;
   const offsetScale = spec.offsetScale ?? 0.34;

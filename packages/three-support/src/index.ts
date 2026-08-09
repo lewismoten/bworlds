@@ -7,7 +7,7 @@ import type {
   ThreeMeshLike,
   ThreeTextureLike,
 } from '@bworlds/plugin-api';
-import { hash2D } from '@bworlds/core';
+import { hash2D, registerHashLabel } from '@bworlds/core/hash';
 
 type TextureHostLike<TTexture> = {
   CanvasTexture: new (canvas: HTMLCanvasElement) => TTexture;
@@ -36,6 +36,13 @@ const mountainTerrainMaterialCache = new WeakMap<
     snowMaterial: ThreeMaterialLike;
   }
 >();
+const MOUNTAIN_TEXTURE_X_SEED = registerHashLabel('mountain-texture-x');
+const MOUNTAIN_TEXTURE_Y_SEED = registerHashLabel('mountain-texture-y');
+const MOUNTAIN_TEXTURE_LENGTH_SEED = registerHashLabel('mountain-texture-l');
+const MOUNTAIN_TEXTURE_BRIGHTNESS_SEED = registerHashLabel('mountain-texture-b');
+const MOUNTAIN_CRACK_X_SEED = registerHashLabel('mountain-crack-x');
+const MOUNTAIN_CRACK_Y_SEED = registerHashLabel('mountain-crack-y');
+const MOUNTAIN_CRACK_LENGTH_SEED = registerHashLabel('mountain-crack-l');
 
 export function createCanvasTexture<TTexture extends ThreeTextureLike>(
   three: TextureHostLike<TTexture>,
@@ -347,28 +354,28 @@ export function createMountainTerrainMaterials(
 
         for (let index = 0; index < 180; index += 1) {
           const x = Math.floor(
-            hash2D('mountain-texture-x', index, 0) * canvas.width
+            hash2D(MOUNTAIN_TEXTURE_X_SEED, index, 0) * canvas.width
           );
           const y = Math.floor(
-            hash2D('mountain-texture-y', index, 0) * canvas.height
+            hash2D(MOUNTAIN_TEXTURE_Y_SEED, index, 0) * canvas.height
           );
           const length =
-            2 + Math.floor(hash2D('mountain-texture-l', index, 0) * 6);
+            2 + Math.floor(hash2D(MOUNTAIN_TEXTURE_LENGTH_SEED, index, 0) * 6);
           const brightness =
-            110 + Math.floor(hash2D('mountain-texture-b', index, 0) * 70);
+            110 + Math.floor(hash2D(MOUNTAIN_TEXTURE_BRIGHTNESS_SEED, index, 0) * 70);
           context.fillStyle = `rgba(${brightness}, ${brightness + 4}, ${brightness + 10}, 0.35)`;
           context.fillRect(x, y, length, 1);
         }
 
         for (let index = 0; index < 120; index += 1) {
           const x = Math.floor(
-            hash2D('mountain-crack-x', index, 0) * canvas.width
+            hash2D(MOUNTAIN_CRACK_X_SEED, index, 0) * canvas.width
           );
           const y = Math.floor(
-            hash2D('mountain-crack-y', index, 0) * canvas.height
+            hash2D(MOUNTAIN_CRACK_Y_SEED, index, 0) * canvas.height
           );
           const depth =
-            1 + Math.floor(hash2D('mountain-crack-l', index, 0) * 4);
+            1 + Math.floor(hash2D(MOUNTAIN_CRACK_LENGTH_SEED, index, 0) * 4);
           context.fillStyle = 'rgba(39, 48, 58, 0.32)';
           context.fillRect(x, y, 1, depth);
         }

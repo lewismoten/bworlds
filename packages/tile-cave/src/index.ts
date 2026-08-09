@@ -1,4 +1,4 @@
-import { hash2D } from '@bworlds/core';
+import { hash2D, registerHashLabel } from '@bworlds/core/hash';
 import { createPlainsBackedTilePainter } from '@bworlds/paint-support';
 import {
   createEnterablePoiTilePlugin,
@@ -26,6 +26,31 @@ const TILE_PIXEL_SIZE = 16;
 const CAVE_TUNNEL_LINK_DISTANCE = 10;
 const CAVE_PASS_ELEVATION_THRESHOLD = 0.72;
 const CAVE_PASS_SAMPLE_COUNT = 5;
+const CAVE_WIDTH_SEED = registerHashLabel('cave-width');
+const CAVE_DEPTH_SEED = registerHashLabel('cave-depth');
+const CAVE_HEIGHT_SEED = registerHashLabel('cave-height');
+const CAVE_BOULDER_COUNT_SEED = registerHashLabel('cave-boulders');
+const CAVE_BOULDER_SCALE_SEED = registerHashLabel('cave-boulder-scale');
+const CAVE_BOULDER_X_SEED = registerHashLabel('cave-boulder-x');
+const CAVE_BOULDER_Z_SEED = registerHashLabel('cave-boulder-z');
+const CAVE_BOULDER_Y_SEED = registerHashLabel('cave-boulder-y');
+const CAVE_CAP_X_SEED = registerHashLabel('cave-cap-x');
+const CAVE_CAP_Z_SEED = registerHashLabel('cave-cap-z');
+const CAVE_FACING_SEED = registerHashLabel('cave-facing');
+const CAVE_MUSHROOM_COUNT_SEED = registerHashLabel('cave-mushroom-count');
+const CAVE_MUSHROOM_X_SEED = registerHashLabel('cave-mushroom-x');
+const CAVE_MUSHROOM_Z_SEED = registerHashLabel('cave-mushroom-z');
+const CAVE_MUSHROOM_HEIGHT_SEED = registerHashLabel('cave-mushroom-h');
+const CAVE_DRIPSTONE_COUNT_SEED = registerHashLabel('cave-dripstone-count');
+const CAVE_DRIPSTONE_HEIGHT_SEED = registerHashLabel('cave-dripstone-height');
+const CAVE_DRIPSTONE_X_SEED = registerHashLabel('cave-dripstone-x');
+const CAVE_DRIPSTONE_Z_SEED = registerHashLabel('cave-dripstone-z');
+const CAVE_DRIPSTONE_HANG_X_SEED = registerHashLabel('cave-dripstone-hang-x');
+const CAVE_DRIPSTONE_HANG_Z_SEED = registerHashLabel('cave-dripstone-hang-z');
+const CAVE_OBSTACLE_COUNT_SEED = registerHashLabel('cave-obstacle-count');
+const CAVE_OBSTACLE_SCALE_SEED = registerHashLabel('cave-obstacle-scale');
+const CAVE_OBSTACLE_X_SEED = registerHashLabel('cave-obstacle-x');
+const CAVE_OBSTACLE_Z_SEED = registerHashLabel('cave-obstacle-z');
 
 export function createCaveTilePlugin(): RuntimePlugin {
   const basePlugin = createEnterablePoiTilePlugin({
@@ -104,11 +129,11 @@ export function createCaveTilePlugin(): RuntimePlugin {
 
       const group = new three.Group();
       const entrance = getCaveEntranceDirection(state, tileX, tileY);
-      const width = 0.9 + hash2D('cave-width', tileX, tileY) * 0.22;
-      const depth = 0.92 + hash2D('cave-depth', tileX, tileY) * 0.24;
-      const height = 0.96 + hash2D('cave-height', tileX, tileY) * 0.26;
+      const width = 0.9 + hash2D(CAVE_WIDTH_SEED, tileX, tileY) * 0.22;
+      const depth = 0.92 + hash2D(CAVE_DEPTH_SEED, tileX, tileY) * 0.24;
+      const height = 0.96 + hash2D(CAVE_HEIGHT_SEED, tileX, tileY) * 0.26;
       const boulderCount =
-        3 + Math.floor(hash2D('cave-boulders', tileX, tileY) * 3);
+        3 + Math.floor(hash2D(CAVE_BOULDER_COUNT_SEED, tileX, tileY) * 3);
 
       for (let index = 0; index < boulderCount; index += 1) {
         const boulder = new three.Mesh(
@@ -117,13 +142,13 @@ export function createCaveTilePlugin(): RuntimePlugin {
         );
         const radiusScale =
           0.9 +
-          hash2D('cave-boulder-scale', tileX * 13 + index, tileY * 17) * 0.45;
+          hash2D(CAVE_BOULDER_SCALE_SEED, tileX * 13 + index, tileY * 17) * 0.45;
         const xOffset =
-          (hash2D('cave-boulder-x', tileX * 19 + index, tileY) - 0.5) * 0.34;
+          (hash2D(CAVE_BOULDER_X_SEED, tileX * 19 + index, tileY) - 0.5) * 0.34;
         const zOffset =
-          (hash2D('cave-boulder-z', tileX, tileY * 23 + index) - 0.5) * 0.32;
+          (hash2D(CAVE_BOULDER_Z_SEED, tileX, tileY * 23 + index) - 0.5) * 0.32;
         const yOffset =
-          0.2 + hash2D('cave-boulder-y', tileX + index, tileY - index) * 0.32;
+          0.2 + hash2D(CAVE_BOULDER_Y_SEED, tileX + index, tileY - index) * 0.32;
         boulder.position.set(tileX + xOffset, yOffset, tileY + zOffset);
         boulder.scale.set(
           width * radiusScale,
@@ -138,9 +163,9 @@ export function createCaveTilePlugin(): RuntimePlugin {
         mountainMaterial
       );
       cap.position.set(
-        tileX + (hash2D('cave-cap-x', tileX, tileY) - 0.5) * 0.08,
+        tileX + (hash2D(CAVE_CAP_X_SEED, tileX, tileY) - 0.5) * 0.08,
         height * 0.82,
-        tileY + (hash2D('cave-cap-z', tileX, tileY) - 0.5) * 0.08
+        tileY + (hash2D(CAVE_CAP_Z_SEED, tileX, tileY) - 0.5) * 0.08
       );
       cap.scale.set(width * 0.88, height * 0.6, depth * 0.82);
       group.add(cap);
@@ -308,7 +333,7 @@ function getCaveEntranceDirection(
     state,
     tileX,
     tileY,
-    seedKey: 'cave-facing',
+    seedKey: CAVE_FACING_SEED,
     preferLandFacing: true,
   });
 }
@@ -579,7 +604,7 @@ function createCaveMushroomGroup(
     roughness: 0.88,
     metalness: 0.01,
   });
-  const count = 3 + Math.floor(hash2D('cave-mushroom-count', tileX, tileY) * 3);
+  const count = 3 + Math.floor(hash2D(CAVE_MUSHROOM_COUNT_SEED, tileX, tileY) * 3);
 
   for (let index = 0; index < count; index += 1) {
     const stem = new three.Mesh(
@@ -591,10 +616,10 @@ function createCaveMushroomGroup(
       capMaterial
     );
     const offsetX =
-      (hash2D('cave-mushroom-x', tileX * 11 + index, tileY) - 0.5) * 0.45;
+      (hash2D(CAVE_MUSHROOM_X_SEED, tileX * 11 + index, tileY) - 0.5) * 0.45;
     const offsetZ =
-      (hash2D('cave-mushroom-z', tileX, tileY * 13 + index) - 0.5) * 0.45;
-    const height = 0.11 + hash2D('cave-mushroom-h', tileX + index, tileY) * 0.05;
+      (hash2D(CAVE_MUSHROOM_Z_SEED, tileX, tileY * 13 + index) - 0.5) * 0.45;
+    const height = 0.11 + hash2D(CAVE_MUSHROOM_HEIGHT_SEED, tileX + index, tileY) * 0.05;
     stem.position.set(tileX + offsetX, height * 0.5, tileY + offsetZ);
     cap.position.set(tileX + offsetX, height, tileY + offsetZ);
     cap.scale.set(1.15, 0.7, 1.15);
@@ -612,18 +637,20 @@ function createCaveDripstoneGroup(
 ) {
   const { mountainMaterial } = createMountainTerrainMaterials(three);
   const group = new three.Group();
-  const spireCount = 3 + Math.floor(hash2D('cave-dripstone-count', tileX, tileY) * 3);
+  const spireCount =
+    3 + Math.floor(hash2D(CAVE_DRIPSTONE_COUNT_SEED, tileX, tileY) * 3);
 
   for (let index = 0; index < spireCount; index += 1) {
-    const height = 0.45 + hash2D('cave-dripstone-height', tileX + index, tileY) * 0.38;
+    const height =
+      0.45 + hash2D(CAVE_DRIPSTONE_HEIGHT_SEED, tileX + index, tileY) * 0.38;
     const spire = new three.Mesh(
       new three.ConeGeometry(0.08, height, 5),
       mountainMaterial
     );
     spire.position.set(
-      tileX + (hash2D('cave-dripstone-x', tileX * 17 + index, tileY) - 0.5) * 0.46,
+      tileX + (hash2D(CAVE_DRIPSTONE_X_SEED, tileX * 17 + index, tileY) - 0.5) * 0.46,
       height * 0.5,
-      tileY + (hash2D('cave-dripstone-z', tileX, tileY * 19 + index) - 0.5) * 0.46
+      tileY + (hash2D(CAVE_DRIPSTONE_Z_SEED, tileX, tileY * 19 + index) - 0.5) * 0.46
     );
     group.add(spire);
   }
@@ -633,9 +660,9 @@ function createCaveDripstoneGroup(
     mountainMaterial
   );
   hanging.position.set(
-    tileX + (hash2D('cave-dripstone-hang-x', tileX, tileY) - 0.5) * 0.3,
+    tileX + (hash2D(CAVE_DRIPSTONE_HANG_X_SEED, tileX, tileY) - 0.5) * 0.3,
     0.92,
-    tileY + (hash2D('cave-dripstone-hang-z', tileX, tileY) - 0.5) * 0.3
+    tileY + (hash2D(CAVE_DRIPSTONE_HANG_Z_SEED, tileX, tileY) - 0.5) * 0.3
   );
   hanging.rotation.x = Math.PI;
   group.add(hanging);
@@ -650,18 +677,18 @@ function createCaveObstacleGroup(
 ) {
   const { mountainMaterial } = createMountainTerrainMaterials(three);
   const group = new three.Group();
-  const count = 2 + Math.floor(hash2D('cave-obstacle-count', tileX, tileY) * 3);
+  const count = 2 + Math.floor(hash2D(CAVE_OBSTACLE_COUNT_SEED, tileX, tileY) * 3);
 
   for (let index = 0; index < count; index += 1) {
     const boulder = new three.Mesh(
       new three.SphereGeometry(0.16, 7, 6),
       mountainMaterial
     );
-    const scale = 0.75 + hash2D('cave-obstacle-scale', tileX + index, tileY) * 0.5;
+    const scale = 0.75 + hash2D(CAVE_OBSTACLE_SCALE_SEED, tileX + index, tileY) * 0.5;
     boulder.position.set(
-      tileX + (hash2D('cave-obstacle-x', tileX * 23 + index, tileY) - 0.5) * 0.34,
+      tileX + (hash2D(CAVE_OBSTACLE_X_SEED, tileX * 23 + index, tileY) - 0.5) * 0.34,
       0.12 + index * 0.04,
-      tileY + (hash2D('cave-obstacle-z', tileX, tileY * 29 + index) - 0.5) * 0.3
+      tileY + (hash2D(CAVE_OBSTACLE_Z_SEED, tileX, tileY * 29 + index) - 0.5) * 0.3
     );
     boulder.scale.set(scale, 0.7 + scale * 0.35, scale);
     group.add(boulder);

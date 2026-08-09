@@ -26,26 +26,36 @@ export function buildWorkspaceAliases(): Record<string, string> {
     ) as WorkspacePackageManifest;
     if (!manifest.name?.startsWith('@bworlds/')) continue;
 
-    const exportPath = resolvePackageExportPath(manifest.exports);
-    if (!exportPath) continue;
-
-    aliases[manifest.name] = path.resolve(
-      path.dirname(manifestPath),
-      exportPath
-    );
+    const exportPaths = resolvePackageExportPaths(manifest.name, manifest.exports);
+    Object.entries(exportPaths).forEach(([specifier, exportPath]) => {
+      aliases[specifier] = path.resolve(path.dirname(manifestPath), exportPath);
+    });
   }
 
   return aliases;
 }
 
-function resolvePackageExportPath(
+function resolvePackageExportPaths(
+  packageName: string,
   exportsField: WorkspacePackageManifest['exports']
-): string | null {
+): Record<string, string> {
   if (typeof exportsField === 'string') {
-    return exportsField;
+    return {
+      [packageName]: exportsField,
+    };
   }
-  if (exportsField && typeof exportsField['.'] === 'string') {
-    return exportsField['.'];
+  if (!exportsField) {
+    return {};
   }
-  return null;
+  const aliases: Record<string, string> = {};
+  Object.entries(exportsField).forEach(([key, value]) => {
+    if (key === '.' || typeof value !== 'string' || !key.startsWith('./')) {
+      return;
+    }
+    aliases[`${packageName}/${key.slice(2)}`] = value;
+  });
+  if (typeof exportsField['.'] === 'string') {
+    aliases[packageName] = exportsField['.'];
+  }
+  return aliases;
 }

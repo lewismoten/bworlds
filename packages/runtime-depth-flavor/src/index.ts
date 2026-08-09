@@ -1,4 +1,4 @@
-import { hash2D } from '@bworlds/core';
+import { hash2D } from '@bworlds/core/hash';
 import { createRuntimePlugin } from '@bworlds/plugin-api';
 import type {
   DecorateDepthTileContext,

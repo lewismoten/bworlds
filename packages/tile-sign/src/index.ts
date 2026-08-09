@@ -1,5 +1,5 @@
 import { createBoundedCache, type CacheLike } from '@bworlds/cache-support';
-import { hash2D, registerHashLabel } from '@bworlds/core';
+import { hash2D, registerHashLabel } from '@bworlds/core/hash';
 import { createPlainsBackedTilePainter } from '@bworlds/paint-support';
 import {
   canPlaceLandPoi,
