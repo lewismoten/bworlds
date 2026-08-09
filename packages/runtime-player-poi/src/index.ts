@@ -1,5 +1,5 @@
 import { generatePoiName, snapWorldCoordinate } from '@bworlds/core';
-import { createHashSeed, registerHashLabel } from '@bworlds/core/hash';
+import { resolveHashSeed } from '@bworlds/core/hash';
 import { createRuntimePlugin } from '@bworlds/plugin-api';
 import type {
   Kind,
@@ -129,7 +129,7 @@ export function buildPlayerPoi(
     poi: {
       type: poiType,
       name: generatePoiName(
-        typeof seed === 'number' ? createHashSeed(seed) : registerHashLabel(seed),
+        resolveHashSeed(seed),
         poiType,
         tileX,
         tileY

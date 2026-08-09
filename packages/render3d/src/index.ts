@@ -2510,7 +2510,6 @@ function isCameraObjectType(object: Pick<THREE.Object3D, 'type'> & { isCamera?: 
 const DYNAMIC_TRANSFORM_USER_DATA_KEYS = new Set([
   'poiWindResponder',
   'lighthouseBeamPivot',
-  'lighthouseBeam',
   'observatoryDome',
   'observatoryTelescope',
   'forestFirefly',

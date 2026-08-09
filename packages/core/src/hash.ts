@@ -7,6 +7,7 @@ const HASH_SEED_LABEL_CACHE_LIMIT = 4096;
 const appendedHashSeedLabelCache = new Map<string, HashSeed>();
 
 export type HashSeed = number;
+export type HashSeedInput = HashSeed | string;
 export { registerHashLabel, registerHashLabels } from './hash-labels.ts';
 
 export function registerHashSeed(label: string): HashSeed {
@@ -21,6 +22,10 @@ export function registerHashSeeds<const TLabels extends readonly string[]>(
 
 export function createHashSeed(seed: number): HashSeed {
   return seed >>> 0;
+}
+
+export function resolveHashSeed(seed: HashSeedInput): HashSeed {
+  return typeof seed === 'number' ? createHashSeed(seed) : registerHashSeed(seed);
 }
 
 export function appendHashSeedPart(seedHash: HashSeed, value: number): HashSeed {

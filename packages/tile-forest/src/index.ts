@@ -3,10 +3,10 @@ import { octaveNoise2D } from '@bworlds/core';
 import {
   appendHashSeedLabel,
   appendHashSeedPart,
-  createHashSeed,
   hash2D,
   hash2DWithSeed,
   registerHashLabel,
+  resolveHashSeed,
 } from '@bworlds/core/hash';
 import { createPlainsBackedTilePainter } from '@bworlds/paint-support';
 import {
@@ -1025,10 +1025,7 @@ export function createForestTilePlugin(): RuntimePlugin {
           return null;
         }
 
-        const seedHash =
-          typeof context.seed === 'number'
-            ? createHashSeed(context.seed)
-            : registerHashLabel(context.seed);
+        const seedHash = resolveHashSeed(context.seed);
         const groveSignal = octaveNoise2D(
           appendHashSeedLabel(seedHash, FOREST_GROVE_NOISE_SEED),
           context.x / 24,

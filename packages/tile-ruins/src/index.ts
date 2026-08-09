@@ -1,9 +1,9 @@
 import {
   appendHashSeedLabel,
-  createHashSeed,
   hash2D,
   hash2DWithSeed,
   registerHashLabel,
+  resolveHashSeed,
 } from '@bworlds/core/hash';
 import { createPlainsBackedTilePainter } from '@bworlds/paint-support';
 import {
@@ -146,10 +146,7 @@ const classifyRuinsTile = createChanceBasedLandPoiClassifier({
   threshold: 0.9925,
   blockedKinds: RUINS_BLOCKED_KINDS,
   getChance(context) {
-    const seedHash =
-      typeof context.seed === 'number'
-        ? createHashSeed(context.seed)
-        : registerHashLabel(context.seed);
+    const seedHash = resolveHashSeed(context.seed);
     const regionalBias =
       hash2DWithSeed(
         appendHashSeedLabel(seedHash, RUINS_REGION_BIAS_SEED),

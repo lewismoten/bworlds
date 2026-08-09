@@ -996,6 +996,55 @@ describe('render3d visibility helpers', () => {
     expect(lightNode.updateMatrix).not.toHaveBeenCalled();
   });
 
+  it('freezes lighthouse beam meshes while keeping the animated sweep pivot dynamic', () => {
+    const beamMesh = createMockObject3D(
+      createMockMaterial(),
+      [],
+      createMockGeometry(6),
+      {
+        lighthouseBeam: true,
+      },
+      'Mesh',
+      false,
+      false,
+      true,
+      true
+    );
+    const beamPivot = createMockObject3D(
+      undefined,
+      [beamMesh],
+      undefined,
+      {
+        lighthouseBeamPivot: true,
+      },
+      'Group',
+      false,
+      false,
+      true,
+      true
+    );
+    const root = createMockObject3D(
+      undefined,
+      [beamPivot],
+      undefined,
+      {},
+      'Group',
+      false,
+      false,
+      true,
+      true
+    );
+
+    freezeStaticObjectTransforms(root as never);
+
+    expect(root.matrixAutoUpdate).toBe(false);
+    expect(beamPivot.matrixAutoUpdate).toBe(true);
+    expect(beamMesh.matrixAutoUpdate).toBe(false);
+    expect(root.updateMatrix).toHaveBeenCalledTimes(1);
+    expect(beamPivot.updateMatrix).not.toHaveBeenCalled();
+    expect(beamMesh.updateMatrix).toHaveBeenCalledTimes(1);
+  });
+
   it('applies distance fade opacity to prepared materials without dropping baseline flags', () => {
     const sourceMaterial = createMockMaterial({
       opacity: 0.6,

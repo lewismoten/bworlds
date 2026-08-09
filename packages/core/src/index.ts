@@ -5,11 +5,13 @@ import {
   createHashSeed,
   hash2D,
   hash2DWithSeed,
+  type HashSeedInput,
   type HashSeed,
   registerHashLabel,
   registerHashSeed,
   registerHashLabels,
   registerHashSeeds,
+  resolveHashSeed,
 } from './hash.ts';
 
 export {
@@ -19,11 +21,13 @@ export {
   createHashSeed,
   hash2D,
   hash2DWithSeed,
+  type HashSeedInput,
   type HashSeed,
   registerHashLabel,
   registerHashSeed,
   registerHashLabels,
   registerHashSeeds,
+  resolveHashSeed,
 } from './hash.ts';
 
 export { createRandom } from './prng.ts';
