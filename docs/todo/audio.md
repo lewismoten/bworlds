@@ -59,7 +59,7 @@
 - [x] All instrument sounds used to play the music should be listed along with their track, name, graphical wave form, and ability to play on their own.
 - [x] When the page refreshes, allow the play-state and play-head persist
 - [x] If the play head is at the end of the song, and I click play, let it jump to the beginning of the song
-- [ ] As the song plays, let me click sections to move the play-head
+- [x] As the song plays, let me click sections to move the play-head
 - [ ] MIDI download should let each instrument (ie melody, harmony, bass, drums) be represented as individual tracks and labeled as such.
 - [ ] MIDI download should have meta markers to indicate which section is being played (Meta/Controle Lane Guide)
 - [ ] MIDI duration should match the generated song duration

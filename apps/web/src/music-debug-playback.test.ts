@@ -221,4 +221,37 @@ describe('music debug playback controller', () => {
       })
     );
   });
+
+  it('can jump to a new section offset while the song is already playing', () => {
+    vi.useFakeTimers();
+    const snapshot = createMusicDebugSnapshot({
+      tileKind: 'forest',
+      contextType: 'overworld',
+      clusterX: 3,
+      clusterY: -2,
+    });
+    const playback = {
+      play: vi.fn(),
+      stop: vi.fn(),
+    };
+    const controller = createMusicDebugPlaybackController({
+      playback,
+    });
+    const nextSection = snapshot.song.sections[2]?.startOffsetMs ?? 0;
+
+    controller.start(snapshot, { startOffsetMs: 0 });
+    controller.start(snapshot, { startOffsetMs: nextSection });
+
+    expect(playback.stop).toHaveBeenCalledTimes(1);
+    expect(playback.play).toHaveBeenNthCalledWith(1, snapshot, null);
+    expect(playback.play).toHaveBeenNthCalledWith(
+      2,
+      snapshot,
+      expect.objectContaining({
+        startOffsetMs: nextSection,
+        endOffsetMs: snapshot.durationMs,
+      })
+    );
+    expect(controller.isPlaying()).toBe(true);
+  });
 });
