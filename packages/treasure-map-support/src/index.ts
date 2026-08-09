@@ -1,8 +1,9 @@
 import {
   appendHashSeedLabel,
   hash2DWithSeed,
-  resolveHashSeed,
   registerHashLabel,
+  registerHashSeed,
+  resolveHashSeed,
 } from '@bworlds/core/hash';
 import type { InventoryItemLike, Seed } from '@bworlds/plugin-api';
 
@@ -56,7 +57,7 @@ const TREASURE_MAP_GPS_FRAGMENT_SEED = registerHashLabel('treasure-map-gps-fragm
 const TREASURE_MAP_EDGE_SEED = registerHashLabel('treasure-map-edge');
 
 function normalizeTreasureMapSeed(seed: Seed): number {
-  return resolveHashSeed(seed);
+  return typeof seed === 'number' ? resolveHashSeed(seed) : registerHashSeed(seed);
 }
 
 export function createTreasureMap({

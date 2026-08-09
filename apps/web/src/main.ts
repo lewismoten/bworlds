@@ -31,6 +31,7 @@ import {
   createBuiltinContentPackCatalog,
   createWorldRuntime,
 } from '@bworlds/worldgen';
+import { registerHashSeed } from '@bworlds/core/hash';
 import type { WorldEnvironmentLike } from '@bworlds/plugin-api';
 import './styles.css';
 import {
@@ -832,11 +833,12 @@ let currentWorldSeed = normalizeWorldSeed(
   savedCharacterProfile?.worldSeed ?? savedSession?.worldSeed,
   DEFAULT_WORLD_SEED
 );
+let currentWorldSeedHash = registerHashSeed(currentWorldSeed);
 let activePackIds = normalizeSelectedPackIds(
   savedCharacterProfile?.packIds ?? savedSession?.packIds
 );
 let runtime = createWorldRuntime({
-  seed: currentWorldSeed,
+  seed: currentWorldSeedHash,
   packIds: activePackIds,
   player: savedCharacterProfile?.player ?? savedSession?.player,
   stack: savedCharacterProfile?.stack ?? savedSession?.stack,
@@ -1604,7 +1606,7 @@ function rebuildRuntime(nextPackIds: string[]): void {
   const placedPois = getSavedPlayerPlacedPois();
   const playerLevel = normalizePlayerLevel(state.playerLevel);
   runtime = createWorldRuntime({
-    seed: currentWorldSeed,
+    seed: currentWorldSeedHash,
     packIds: normalizedPackIds,
     player: {
       x: state.player.x,
@@ -1693,6 +1695,7 @@ function applyWorldSeed(seed: string): void {
     return;
   }
   currentWorldSeed = nextSeed;
+  currentWorldSeedHash = registerHashSeed(currentWorldSeed);
   rebuildRuntime(activePackIds);
   syncDebugSeedInput();
   showHmrNotice(`World seed applied: ${currentWorldSeed}`);
@@ -2354,7 +2357,7 @@ function handleBuildPoi(): void {
     return;
   }
 
-  const built = buildPlayerPoi(state, currentWorldSeed, selectedKind);
+  const built = buildPlayerPoi(state, currentWorldSeedHash, selectedKind);
   if (!built) {
     showHmrNotice('Unable to build here. Move to an open overworld tile without an existing point of interest.');
     return;

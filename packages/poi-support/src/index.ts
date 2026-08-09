@@ -6,8 +6,9 @@ import {
 import {
   appendHashSeedLabel,
   hash2DWithSeed,
-  resolveHashSeed,
   registerHashLabel,
+  registerHashSeed,
+  resolveHashSeed,
 } from '@bworlds/core/hash';
 import { createRouteTraversalProfile } from '@bworlds/tile-support';
 import type {
@@ -93,7 +94,7 @@ interface EnterablePoiTilePluginOptions {
 }
 
 function normalizeSeedHash(seed: Seed): number {
-  return resolveHashSeed(seed);
+  return typeof seed === 'number' ? resolveHashSeed(seed) : registerHashSeed(seed);
 }
 
 interface ChanceBasedEnterablePoiTilePluginOptions
@@ -659,7 +660,8 @@ export function pickPreferredLandmarkFacing({
   seedKey: Seed;
   preferLandFacing?: boolean;
 }): LandmarkFacingScore {
-  const seedHash = resolveHashSeed(seedKey);
+  const seedHash =
+    typeof seedKey === 'number' ? resolveHashSeed(seedKey) : registerHashSeed(seedKey);
   return CARDINAL_DIRECTIONS.map((direction) => {
     const adjacentTile = state.getCurrentTile(
       tileX + direction.dx,

@@ -67,12 +67,25 @@ function createCircularDockRouteState() {
 }
 
 describe('dock route support', () => {
-  it('reuses deterministic boat phase seeds for repeated boat names', () => {
-    expect(getDockBoatPhaseSeed('Harbor Runner')).toBe(
-      getDockBoatPhaseSeed('Harbor Runner')
+  it('reuses deterministic boat phase seeds for repeated stop layouts', () => {
+    const harborRunnerRoute = {
+      stops: [
+        { x: 1, y: 2, name: 'Beacon Point' },
+        { x: 8, y: -3, name: 'Crescent Watch' },
+      ],
+    };
+    const crescentFerryRoute = {
+      stops: [
+        { x: 1, y: 2, name: 'Beacon Point' },
+        { x: 9, y: -3, name: 'Crescent Watch' },
+      ],
+    };
+
+    expect(getDockBoatPhaseSeed(harborRunnerRoute)).toBe(
+      getDockBoatPhaseSeed(harborRunnerRoute)
     );
-    expect(getDockBoatPhaseSeed('Harbor Runner')).not.toBe(
-      getDockBoatPhaseSeed('Crescent Ferry')
+    expect(getDockBoatPhaseSeed(harborRunnerRoute)).not.toBe(
+      getDockBoatPhaseSeed(crescentFerryRoute)
     );
   });
 

@@ -1,11 +1,9 @@
 import {
   appendHashSeedLabel,
-  appendHashSeedRegisteredLabel,
   appendHashSeedPart,
   createHashSeed,
   hash2D,
   hash2DWithSeed,
-  type HashSeedInput,
   type HashSeed,
   registerHashLabel,
   registerHashSeed,
@@ -16,12 +14,10 @@ import {
 
 export {
   appendHashSeedLabel,
-  appendHashSeedRegisteredLabel,
   appendHashSeedPart,
   createHashSeed,
   hash2D,
   hash2DWithSeed,
-  type HashSeedInput,
   type HashSeed,
   registerHashLabel,
   registerHashSeed,

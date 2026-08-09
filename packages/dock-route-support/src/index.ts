@@ -5,7 +5,7 @@ import {
 } from '@bworlds/cache-support';
 import {
   appendHashSeedLabel,
-  appendHashSeedRegisteredLabel,
+  appendHashSeedPart,
   hash2D,
   registerHashLabel,
 } from '@bworlds/core/hash';
@@ -181,8 +181,18 @@ export function getDockBoatPlacements(
   );
 }
 
-export function getDockBoatPhaseSeed(boatName: string): number {
-  return appendHashSeedRegisteredLabel(DOCK_BOAT_PHASE_SEED, boatName);
+export function getDockBoatPhaseSeed(route: Pick<DockBoatRoute, 'stops'>): number {
+  let seed = DOCK_BOAT_PHASE_SEED;
+  for (let index = 0; index < route.stops.length; index += 1) {
+    const stop = route.stops[index];
+    if (!stop) {
+      continue;
+    }
+    seed = appendHashSeedPart(seed, index);
+    seed = appendHashSeedPart(seed, stop.x);
+    seed = appendHashSeedPart(seed, stop.y);
+  }
+  return seed;
 }
 
 function buildDockBoatRoute(
@@ -682,7 +692,7 @@ function resolveDockBoatPlacement(
     Math.max(12, Math.min(30, Math.round(geometry.points.length / 4))) * 60 * 1000;
   const phaseOffset =
     hash2D(
-      getDockBoatPhaseSeed(route.boatName),
+      getDockBoatPhaseSeed(route),
       route.stops[0]?.x ?? 0,
       route.stops[0]?.y ?? 0
     ) * loopDurationMs;

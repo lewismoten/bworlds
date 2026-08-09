@@ -1,5 +1,5 @@
 import { generatePoiName } from '@bworlds/core';
-import { resolveHashSeed } from '@bworlds/core/hash';
+import { registerHashSeed, resolveHashSeed } from '@bworlds/core/hash';
 import { createCachedOverworldTileResolver } from '@bworlds/overworld-support';
 import { createRuntimePlugin } from '@bworlds/plugin-api';
 import type { RuntimePlugin, Seed, TileLike } from '@bworlds/plugin-api';
@@ -95,7 +95,7 @@ function getCuratedTile({
   x: number;
   y: number;
 }) {
-  const seedHash = resolveHashSeed(seed);
+  const seedHash = typeof seed === 'number' ? resolveHashSeed(seed) : registerHashSeed(seed);
   const tile = curatedSpawnTiles.get(`${x},${y}`);
   if (tile) {
     if (tile.kind === 'dungeon' && tile.poi) {

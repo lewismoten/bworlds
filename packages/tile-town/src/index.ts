@@ -1,10 +1,8 @@
 import { createBoundedCache } from '@bworlds/cache-support';
-import {
-} from '@bworlds/core';
+import { createRandom } from '@bworlds/core';
 import {
   appendHashSeedPart,
   hash2D,
-  hash2DWithSeed,
   registerHashLabel,
 } from '@bworlds/core/hash';
 import {
@@ -93,32 +91,30 @@ const resolveTownDescriptors = createCoordinateValueResolver(
         ),
         index
       );
-      const width = 0.28 + hash2DWithSeed(baseSeed, 1, 0) * 0.22;
-      const depth = 0.26 + hash2DWithSeed(baseSeed, 2, 0) * 0.24;
-      const height = 0.55 + hash2DWithSeed(baseSeed, 3, 0) * 0.55;
+      const random = createRandom(baseSeed);
+      const width = 0.28 + random() * 0.22;
+      const depth = 0.26 + random() * 0.24;
+      const height = 0.55 + random() * 0.55;
       const descriptor: TownDescriptor = {
-        x: (hash2DWithSeed(baseSeed, 4, 0) - 0.5) * 0.54,
-        y: (hash2DWithSeed(baseSeed, 5, 0) - 0.5) * 0.54,
+        x: (random() - 0.5) * 0.54,
+        y: (random() - 0.5) * 0.54,
         width,
         depth,
         height,
-        rotation: hash2DWithSeed(baseSeed, 6, 0) > 0.5 ? 0 : Math.PI * 0.5,
-        roofRadius:
-          Math.max(width, depth) * (0.96 + hash2DWithSeed(baseSeed, 7, 0) * 0.26),
-        roofHeight: 0.18 + hash2DWithSeed(baseSeed, 8, 0) * 0.2,
+        rotation: random() > 0.5 ? 0 : Math.PI * 0.5,
+        roofRadius: Math.max(width, depth) * (0.96 + random() * 0.26),
+        roofHeight: 0.18 + random() * 0.2,
         windows: [],
       };
 
-      const windowCount = 1 + Math.floor(hash2DWithSeed(baseSeed, 9, 0) * 3);
+      const windowCount = 1 + Math.floor(random() * 3);
       for (let windowIndex = 0; windowIndex < windowCount; windowIndex += 1) {
         descriptor.windows.push({
           x:
             ((windowIndex + 1) / (windowCount + 1) - 0.5) *
             descriptor.width *
             0.75,
-          y:
-            descriptor.height *
-            (0.48 + hash2DWithSeed(baseSeed, 10 + windowIndex, 0) * 0.16),
+          y: descriptor.height * (0.48 + random() * 0.16),
           width: descriptor.width * 0.12,
           height: descriptor.height * 0.14,
         });

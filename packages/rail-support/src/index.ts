@@ -4,8 +4,9 @@ import {
   appendHashSeedLabel,
   hash2D,
   hash2DWithSeed,
-  resolveHashSeed,
   registerHashLabel,
+  registerHashSeed,
+  resolveHashSeed,
 } from '@bworlds/core/hash';
 import type {
   OverworldAnchors,
@@ -228,7 +229,7 @@ export function buildRailCurvePoints(
   from: StationAnchorLike,
   to: StationAnchorLike
 ): Array<{ x: number; y: number }> {
-  const seedHash = resolveHashSeed(seed);
+  const seedHash = typeof seed === 'number' ? resolveHashSeed(seed) : registerHashSeed(seed);
   const curveDirectionSeed = appendHashSeedLabel(seedHash, RAIL_CURVE_DIRECTION_LABEL);
   const curveOffsetSeed = appendHashSeedLabel(seedHash, RAIL_CURVE_OFFSET_LABEL);
   const deltaX = to.x - from.x;
@@ -454,7 +455,7 @@ function resolveRailTrainPlacement(
     Math.max(6, Math.min(18, Math.round(routeLength / 3))) * 60 * 1000;
   const phaseOffset = hash2DWithSeed(
     appendHashSeedLabel(
-      resolveHashSeed(seed),
+      typeof seed === 'number' ? resolveHashSeed(seed) : registerHashSeed(seed),
       RAIL_TRAIN_PHASE_LABEL
     ),
     index,

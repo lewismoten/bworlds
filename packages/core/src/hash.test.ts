@@ -1,6 +1,5 @@
 import {
   appendHashSeedLabel,
-  appendHashSeedRegisteredLabel,
   appendHashSeedPart,
   createHashSeed,
   hash2D,
@@ -59,11 +58,6 @@ describe('hash seeds', () => {
     expect(createHashSeed(seedHash)).toBe(seedHash >>> 0);
   });
 
-  it('resolves string seeds once through the shared hash boundary helper', () => {
-    expect(resolveHashSeed('weather-front')).toBe(registerHashSeed('weather-front'));
-    expect(resolveHashSeed('weather-front')).not.toBe(resolveHashSeed('river-path'));
-  });
-
   it('passes numeric seeds through the shared hash boundary helper', () => {
     expect(resolveHashSeed(0x100000000)).toBe(0);
     expect(resolveHashSeed(-1)).toBe(0xFFFFFFFF);
@@ -82,14 +76,16 @@ describe('hash seeds', () => {
     expect(registerHashSeed('weather-front')).not.toBe(registerHashSeed('river-path'));
   });
 
-  it('memoizes appended registered labels in the shared hash module', () => {
+  it('keeps explicit registered labels deterministic before appending them', () => {
     const baseSeed = registerHashLabel('dock-phase');
+    const harborRunnerSeed = registerHashLabel('Harbor Runner');
+    const crescentFerrySeed = registerHashLabel('Crescent Ferry');
 
-    expect(appendHashSeedRegisteredLabel(baseSeed, 'Harbor Runner')).toBe(
-      appendHashSeedRegisteredLabel(baseSeed, 'Harbor Runner')
+    expect(appendHashSeedLabel(baseSeed, harborRunnerSeed)).toBe(
+      appendHashSeedLabel(baseSeed, harborRunnerSeed)
     );
-    expect(appendHashSeedRegisteredLabel(baseSeed, 'Harbor Runner')).not.toBe(
-      appendHashSeedRegisteredLabel(baseSeed, 'Crescent Ferry')
+    expect(appendHashSeedLabel(baseSeed, harborRunnerSeed)).not.toBe(
+      appendHashSeedLabel(baseSeed, crescentFerrySeed)
     );
   });
 

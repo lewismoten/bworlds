@@ -1,4 +1,9 @@
-import { hash2DWithSeed, registerHashLabel } from '@bworlds/core/hash';
+import {
+  appendHashSeedLabel,
+  hash2DWithSeed,
+  registerHashLabel,
+  registerHashSeeds,
+} from '@bworlds/core/hash';
 
 type MusicWaveform = OscillatorType;
 type MusicPosition = { x: number; y: number };
@@ -47,6 +52,35 @@ type MusicRegionTheme = {
   rhythmPattern: number[];
 };
 
+const MUSIC_THEME_SEEDS = registerHashSeeds([
+  'frontier-plains',
+  'deep-forest',
+  'coastal-shore',
+  'town-square',
+  'ridge-pass',
+  'cavern-echo',
+  'interior-hall',
+] as const);
+const MUSIC_ROLE_SEEDS = registerHashSeeds([
+  'lead',
+  'harmony',
+  'bass',
+  'percussion',
+] as const);
+const MUSIC_PROPERTY_SEEDS = registerHashSeeds([
+  'octave',
+  'waveform',
+  'attack',
+  'release',
+  'detune',
+  'harmonics',
+  'pulse',
+  'brightness',
+  'family',
+  'rest',
+] as const);
+const musicContextSeedCache = new Map<string, number>();
+
 export type ProceduralInstrument = {
   id: string;
   role: InstrumentRole;
@@ -80,8 +114,50 @@ type MusicMood = {
   volumeMultiplier: number;
 };
 
-function createMusicSeed(...labels: string[]): number {
-  return registerHashLabel(labels.join(':'));
+function getMusicContextSeed(label: string): number {
+  const cached = musicContextSeedCache.get(label);
+  if (cached !== undefined) {
+    return cached;
+  }
+
+  const seed = registerHashLabel(label);
+  musicContextSeedCache.set(label, seed);
+  return seed;
+}
+
+function getThemeSeed(themeId: MusicRegionThemeId): number {
+  return MUSIC_THEME_SEEDS[themeId];
+}
+
+function getThemeRoleSeed(themeId: MusicRegionThemeId, role: InstrumentRole): number {
+  return appendHashSeedLabel(getThemeSeed(themeId), MUSIC_ROLE_SEEDS[role]);
+}
+
+function getThemePropertySeed(
+  themeId: MusicRegionThemeId,
+  property: keyof typeof MUSIC_PROPERTY_SEEDS
+): number {
+  return appendHashSeedLabel(getThemeSeed(themeId), MUSIC_PROPERTY_SEEDS[property]);
+}
+
+function getRolePropertySeed(
+  themeId: MusicRegionThemeId,
+  role: InstrumentRole,
+  property: keyof typeof MUSIC_PROPERTY_SEEDS
+): number {
+  return appendHashSeedLabel(getThemeRoleSeed(themeId, role), MUSIC_PROPERTY_SEEDS[property]);
+}
+
+function getRoleContextPropertySeed(
+  themeId: MusicRegionThemeId,
+  role: InstrumentRole,
+  property: keyof typeof MUSIC_PROPERTY_SEEDS,
+  contextLabel: string
+): number {
+  return appendHashSeedLabel(
+    getRolePropertySeed(themeId, role, property),
+    getMusicContextSeed(contextLabel)
+  );
 }
 
 type MusicArrangementRoleProfile = {
@@ -830,7 +906,7 @@ function createThemeNote(options: {
   const octaveBoost =
     role !== 'bass' &&
     hash2DWithSeed(
-      createMusicSeed(options.theme.id, 'octave'),
+      getThemePropertySeed(options.theme.id, 'octave'),
       options.clusterX + options.stepIndex,
       options.clusterY
     ) > 0.84
@@ -1028,7 +1104,7 @@ function createProceduralInstrument(
   const waveform =
     waveformList[
       Math.floor(
-        hash2DWithSeed(createMusicSeed(theme.id, role, 'waveform'), clusterX, clusterY) *
+        hash2DWithSeed(getRolePropertySeed(theme.id, role, 'waveform'), clusterX, clusterY) *
           waveformList.length
       )
     ] ?? waveformList[0];
@@ -1043,26 +1119,28 @@ function createProceduralInstrument(
     waveform,
     attackMs:
       attackMsBase +
-      Math.round(hash2DWithSeed(createMusicSeed(theme.id, role, 'attack'), clusterX, clusterY) * 24),
+      Math.round(
+        hash2DWithSeed(getRolePropertySeed(theme.id, role, 'attack'), clusterX, clusterY) * 24
+      ),
     releaseMs:
       releaseMsBase +
       Math.round(
-        hash2DWithSeed(createMusicSeed(theme.id, role, 'release'), clusterX, clusterY) * 40
+        hash2DWithSeed(getRolePropertySeed(theme.id, role, 'release'), clusterX, clusterY) * 40
       ),
     detuneCents:
-      (hash2DWithSeed(createMusicSeed(theme.id, role, 'detune'), clusterX, clusterY) - 0.5) *
+      (hash2DWithSeed(getRolePropertySeed(theme.id, role, 'detune'), clusterX, clusterY) - 0.5) *
       (role === 'percussion' ? 10 : 16),
     harmonicGain:
       0.12 +
-      hash2DWithSeed(createMusicSeed(theme.id, role, 'harmonics'), clusterX, clusterY) *
+      hash2DWithSeed(getRolePropertySeed(theme.id, role, 'harmonics'), clusterX, clusterY) *
         (role === 'bass' ? 0.16 : role === 'percussion' ? 0.08 : 0.28),
     pulseRate:
       0.6 +
-      hash2DWithSeed(createMusicSeed(theme.id, role, 'pulse'), clusterX, clusterY) *
+      hash2DWithSeed(getRolePropertySeed(theme.id, role, 'pulse'), clusterX, clusterY) *
         (role === 'percussion' ? 3.2 : role === 'harmony' ? 1.1 : 1.4),
     brightness:
       0.82 +
-      hash2DWithSeed(createMusicSeed(theme.id, role, 'brightness'), clusterX, clusterY) *
+      hash2DWithSeed(getRolePropertySeed(theme.id, role, 'brightness'), clusterX, clusterY) *
         0.34,
   };
 }
@@ -1078,7 +1156,7 @@ function resolveInstrumentFamily(
   const familyContextKey = resolveInstrumentFamilyContextKey(theme, role, options);
   const index = Math.floor(
     hash2DWithSeed(
-      createMusicSeed(theme.id, role, 'family', familyContextKey),
+      getRoleContextPropertySeed(theme.id, role, 'family', familyContextKey),
       clusterX,
       clusterY
     ) * families.length
@@ -1284,7 +1362,7 @@ function shouldRestAtThemeStep(
   }
   const restChance = role === 'lead' ? 0.18 : 0.14;
   const variation =
-    hash2DWithSeed(createMusicSeed(theme.id, role, 'rest'), clusterX + stepIndex, clusterY) +
+    hash2DWithSeed(getRolePropertySeed(theme.id, role, 'rest'), clusterX + stepIndex, clusterY) +
     (theme.stepPattern[phraseStep] ?? 0) * 0.013;
   return variation > 1 - restChance;
 }
