@@ -11,7 +11,9 @@ export default defineConfig({
       input: {
         main: path.join(APP_DIR, 'index.html'),
         debug: path.join(APP_DIR, 'debug', 'index.html'),
+        debugAlias: path.join(APP_DIR, 'debug.html'),
         debugMusic: path.join(APP_DIR, 'debug', 'music', 'index.html'),
+        debugMusicAlias: path.join(APP_DIR, 'debug', 'music.html'),
       },
     },
   },
