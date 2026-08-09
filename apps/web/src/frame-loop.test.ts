@@ -4,6 +4,7 @@ import {
   hasActiveMovementInput,
   isAngleAnimating,
   isWrappedProgressAnimating,
+  shouldAdvanceSimulation,
   shouldContinueFrameLoop,
 } from './frame-loop.ts';
 
@@ -214,5 +215,42 @@ describe('frame loop helpers', () => {
     expect(hidden.hasMovementInput).toBe(true);
     expect(hidden.isTimeRunning).toBe(true);
     expect(shouldContinueFrameLoop(hidden)).toBe(false);
+  });
+
+  it('skips paused simulation work when only render-side easing remains', () => {
+    expect(
+      shouldAdvanceSimulation({
+        timeFrozen: true,
+        keys: [],
+        isJumping: false,
+      })
+    ).toBe(false);
+  });
+
+  it('keeps paused simulation advancing for movement input or active jumps', () => {
+    expect(
+      shouldAdvanceSimulation({
+        timeFrozen: true,
+        keys: ['w'],
+        isJumping: false,
+      })
+    ).toBe(true);
+    expect(
+      shouldAdvanceSimulation({
+        timeFrozen: true,
+        keys: [],
+        isJumping: true,
+      })
+    ).toBe(true);
+  });
+
+  it('continues simulation normally while time is running', () => {
+    expect(
+      shouldAdvanceSimulation({
+        timeFrozen: false,
+        keys: [],
+        isJumping: false,
+      })
+    ).toBe(true);
   });
 });

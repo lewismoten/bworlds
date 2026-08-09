@@ -54,6 +54,12 @@ type FrameLoopActivity = {
   hmrNoticeVisible: boolean;
 };
 
+type SimulationStepOptions = {
+  timeFrozen: boolean;
+  keys: Iterable<string>;
+  isJumping: boolean;
+};
+
 export function hasActiveMovementInput(keys: Iterable<string>): boolean {
   for (const key of keys) {
     if (ACTIVE_MOVEMENT_KEYS.has(key)) {
@@ -136,6 +142,16 @@ export function getFrameLoopActivity(
       typeof options.hmrNoticeVisibleUntilMs === 'number' &&
       (options.nowMs ?? 0) < options.hmrNoticeVisibleUntilMs,
   };
+}
+
+export function shouldAdvanceSimulation(
+  options: SimulationStepOptions
+): boolean {
+  return (
+    !options.timeFrozen ||
+    options.isJumping ||
+    hasActiveMovementInput(options.keys)
+  );
 }
 
 export function shouldContinueFrameLoop(

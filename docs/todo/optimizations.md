@@ -37,7 +37,7 @@ Here’s a development checklist you can work through.
 * [ ] Prioritize work according to how immediately the player needs the result.
 * [ ] Separate rendering frequency from simulation frequency where practical.
 * [ ] Avoid updating systems simply because a render frame occurred.
-* [ ] Pause unnecessary simulation when the game is paused.
+* [X] Pause unnecessary simulation when the game is paused.
 * [X] Suspend expensive systems while the browser tab is hidden.
 * [X] Detect major performance degradation and reduce optional effects dynamically.
 * [X] Maintain performance telemetry during development.

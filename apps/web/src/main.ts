@@ -101,6 +101,7 @@ import {
 } from './compass.ts';
 import {
   getFrameLoopActivity,
+  shouldAdvanceSimulation,
 } from './frame-loop.ts';
 import { runAnimationFrameStep } from './frame-scheduler.ts';
 import {
@@ -3437,7 +3438,15 @@ function loop(timestamp: number): void {
       renderBudgetState.averageFps = nextBudgetState.averageFps;
       renderBudgetState.worstRecentFrameMs = nextBudgetState.worstRecentFrameMs;
       renderBudgetState.severeFrameStreak = nextBudgetState.severeFrameStreak;
-      updateMovement(deltaMs);
+      if (
+        shouldAdvanceSimulation({
+          timeFrozen: timeState.frozen,
+          keys,
+          isJumping: motion.isJumping,
+        })
+      ) {
+        updateMovement(deltaMs);
+      }
       return render();
     },
   });
