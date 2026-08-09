@@ -3,11 +3,15 @@ import type {
   RenderBudgetDetailLevel,
 } from '@bworlds/plugin-api';
 
+import { getWeatherVisibilityRadiusCap } from './weather-visibility-budget.ts';
+
 export type RenderBudgetState = {
   currentFrameMs: number;
   smoothedFrameMs: number;
   recentFrameMs: number[];
   visibilityRadius: number;
+  weatherVisibility: number;
+  weatherVisibilityRadiusCap: number;
   targetFps: 60 | 30;
   averageFps: number;
   worstRecentFrameMs: number;
@@ -53,6 +57,8 @@ export const DEFAULT_RENDER_BUDGET_STATE: RenderBudgetState = {
   smoothedFrameMs: 16.67,
   recentFrameMs: [16.67],
   visibilityRadius: DEFAULT_VISIBILITY_RADIUS,
+  weatherVisibility: 1,
+  weatherVisibilityRadiusCap: DEFAULT_VISIBILITY_RADIUS,
   targetFps: 60,
   averageFps: 60,
   worstRecentFrameMs: 16.67,
@@ -69,9 +75,11 @@ export function advanceRenderBudgetState(
   {
     deltaMs,
     active3d,
+    weatherVisibility,
   }: {
     deltaMs: number;
     active3d: boolean;
+    weatherVisibility?: number;
   }
 ): RenderBudgetState {
   if (!active3d) {
@@ -80,6 +88,8 @@ export function advanceRenderBudgetState(
       currentFrameMs: 16.67,
       recentFrameMs: [16.67],
       visibilityRadius: DEFAULT_VISIBILITY_RADIUS,
+      weatherVisibility: 1,
+      weatherVisibilityRadiusCap: DEFAULT_VISIBILITY_RADIUS,
       targetFps: 60,
       averageFps: 60,
       worstRecentFrameMs: 16.67,
@@ -101,25 +111,38 @@ export function advanceRenderBudgetState(
     (worst, frameMs) => Math.max(worst, frameMs),
     clampedDeltaMs
   );
+  const normalizedWeatherVisibility = clamp(
+    weatherVisibility ?? state.weatherVisibility,
+    0,
+    1
+  );
+  const weatherVisibilityRadiusCap = getWeatherVisibilityRadiusCap(
+    normalizedWeatherVisibility
+  );
 
-  let visibilityRadius = state.visibilityRadius;
+  let visibilityRadius = DEFAULT_VISIBILITY_RADIUS;
   let targetFps = state.targetFps;
   if (smoothedFrameMs >= CRITICAL_FPS_FRAME_MS) {
     visibilityRadius = MIN_VISIBILITY_RADIUS;
     targetFps = 30;
   } else if (smoothedFrameMs >= LOW_FPS_FRAME_MS) {
-    visibilityRadius = Math.min(visibilityRadius, REDUCED_VISIBILITY_RADIUS);
+    visibilityRadius = REDUCED_VISIBILITY_RADIUS;
     targetFps = 30;
   } else if (smoothedFrameMs <= RECOVERED_FPS_FRAME_MS) {
-    visibilityRadius = DEFAULT_VISIBILITY_RADIUS;
     targetFps = 60;
+  } else {
+    visibilityRadius = state.visibilityRadius;
   }
+
+  visibilityRadius = Math.min(visibilityRadius, weatherVisibilityRadiusCap);
 
   return {
     currentFrameMs: clampedDeltaMs,
     smoothedFrameMs,
     recentFrameMs,
     visibilityRadius,
+    weatherVisibility: normalizedWeatherVisibility,
+    weatherVisibilityRadiusCap,
     targetFps,
     averageFps,
     worstRecentFrameMs,
@@ -228,7 +251,13 @@ export function formatRenderQualityLevel(level: RenderQualityLevel): string {
 }
 
 export function getRenderQualityLimiters(
-  state: Pick<RenderBudgetState, 'smoothedFrameMs' | 'visibilityRadius' | 'targetFps'>
+  state: Pick<
+    RenderBudgetState,
+    | 'smoothedFrameMs'
+    | 'visibilityRadius'
+    | 'weatherVisibilityRadiusCap'
+    | 'targetFps'
+  >
 ): string[] {
   const limiters: string[] = [];
   if (state.targetFps === 30) {
@@ -236,6 +265,12 @@ export function getRenderQualityLimiters(
   }
   if (state.visibilityRadius < DEFAULT_VISIBILITY_RADIUS) {
     limiters.push(`Visibility radius reduced to ${state.visibilityRadius}`);
+  }
+  if (
+    state.weatherVisibilityRadiusCap < DEFAULT_VISIBILITY_RADIUS &&
+    state.visibilityRadius <= state.weatherVisibilityRadiusCap + 0.01
+  ) {
+    limiters.push('Weather visibility reduced draw distance');
   }
   if (state.smoothedFrameMs >= CRITICAL_FPS_FRAME_MS) {
     limiters.push('Critical frame pressure');

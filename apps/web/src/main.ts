@@ -3424,10 +3424,18 @@ function loop(timestamp: number): void {
       const nextBudgetState = advanceRenderBudgetState(renderBudgetState, {
         deltaMs,
         active3d: state.viewMode === '3d',
+        weatherVisibility: latestEnvironment.weather?.current?.visibility,
       });
       renderBudgetState.smoothedFrameMs = nextBudgetState.smoothedFrameMs;
       renderBudgetState.visibilityRadius = nextBudgetState.visibilityRadius;
+      renderBudgetState.weatherVisibility = nextBudgetState.weatherVisibility;
+      renderBudgetState.weatherVisibilityRadiusCap =
+        nextBudgetState.weatherVisibilityRadiusCap;
       renderBudgetState.targetFps = nextBudgetState.targetFps;
+      renderBudgetState.currentFrameMs = nextBudgetState.currentFrameMs;
+      renderBudgetState.recentFrameMs = nextBudgetState.recentFrameMs;
+      renderBudgetState.averageFps = nextBudgetState.averageFps;
+      renderBudgetState.worstRecentFrameMs = nextBudgetState.worstRecentFrameMs;
       updateMovement(deltaMs);
       return render();
     },

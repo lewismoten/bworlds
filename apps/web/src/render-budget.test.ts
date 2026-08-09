@@ -14,6 +14,7 @@ import {
   REDUCED_VISIBILITY_RADIUS,
   type RenderBudgetState,
 } from './render-budget.ts';
+import { getWeatherVisibilityRadiusCap } from './weather-visibility-budget.ts';
 
 describe('render budget', () => {
   it('keeps the full visibility radius when frame times are healthy', () => {
@@ -22,6 +23,7 @@ describe('render budget', () => {
       state = advanceRenderBudgetState(state, {
         deltaMs: 16.67,
         active3d: true,
+        weatherVisibility: 1,
       });
     }
 
@@ -38,6 +40,7 @@ describe('render budget', () => {
       state = advanceRenderBudgetState(state, {
         deltaMs: 27,
         active3d: true,
+        weatherVisibility: 1,
       });
     }
     expect(state.visibilityRadius).toBe(REDUCED_VISIBILITY_RADIUS);
@@ -47,6 +50,7 @@ describe('render budget', () => {
       state = advanceRenderBudgetState(state, {
         deltaMs: 40,
         active3d: true,
+        weatherVisibility: 1,
       });
     }
     expect(state.visibilityRadius).toBe(MIN_VISIBILITY_RADIUS);
@@ -63,12 +67,15 @@ describe('render budget', () => {
       targetFps: 30,
       averageFps: 1000 / 36,
       worstRecentFrameMs: 38,
+      weatherVisibility: 1,
+      weatherVisibilityRadiusCap: DEFAULT_VISIBILITY_RADIUS,
     };
 
     for (let index = 0; index < 24; index += 1) {
       state = advanceRenderBudgetState(state, {
         deltaMs: 16.67,
         active3d: true,
+        weatherVisibility: 1,
       });
     }
     expect(state.visibilityRadius).toBe(DEFAULT_VISIBILITY_RADIUS);
@@ -91,6 +98,7 @@ describe('render budget', () => {
       state = advanceRenderBudgetState(state, {
         deltaMs: index === 5 ? 45 : 20,
         active3d: true,
+        weatherVisibility: 1,
       });
     }
 
@@ -121,6 +129,59 @@ describe('render budget', () => {
     expect(criticalBudget.pendingBuildBudgetMs).toBeLessThan(
       reducedBudget.pendingBuildBudgetMs
     );
+  });
+
+  it('caps visibility radius smoothly when weather visibility drops and restores it when skies clear', () => {
+    let state = DEFAULT_RENDER_BUDGET_STATE;
+
+    for (let index = 0; index < 12; index += 1) {
+      state = advanceRenderBudgetState(state, {
+        deltaMs: 16.67,
+        active3d: true,
+        weatherVisibility: 0.35,
+      });
+    }
+
+    expect(state.visibilityRadius).toBeCloseTo(
+      getWeatherVisibilityRadiusCap(0.35),
+      5
+    );
+    expect(state.visibilityRadius).toBeLessThan(DEFAULT_VISIBILITY_RADIUS);
+    expect(state.targetFps).toBe(60);
+    expect(state.weatherVisibilityRadiusCap).toBeCloseTo(state.visibilityRadius, 5);
+
+    for (let index = 0; index < 12; index += 1) {
+      state = advanceRenderBudgetState(state, {
+        deltaMs: 16.67,
+        active3d: true,
+        weatherVisibility: 1,
+      });
+    }
+
+    expect(state.visibilityRadius).toBe(DEFAULT_VISIBILITY_RADIUS);
+    expect(state.weatherVisibilityRadiusCap).toBe(DEFAULT_VISIBILITY_RADIUS);
+  });
+
+  it('combines weather visibility and frame pressure conservatively', () => {
+    let state = DEFAULT_RENDER_BUDGET_STATE;
+
+    for (let index = 0; index < 18; index += 1) {
+      state = advanceRenderBudgetState(state, {
+        deltaMs: 27,
+        active3d: true,
+        weatherVisibility: 0.75,
+      });
+    }
+
+    expect(state.visibilityRadius).toBeLessThanOrEqual(REDUCED_VISIBILITY_RADIUS);
+    expect(state.visibilityRadius).toBeCloseTo(
+      Math.min(
+        REDUCED_VISIBILITY_RADIUS,
+        getWeatherVisibilityRadiusCap(0.75)
+      ),
+      5
+    );
+    expect(state.targetFps).toBe(30);
   });
 
   it('keeps a shared frame-generation budget above pending builds while tightening under pressure', () => {
@@ -204,6 +265,7 @@ describe('render budget', () => {
       getRenderQualityLimiters({
         smoothedFrameMs: 16.67,
         visibilityRadius: DEFAULT_VISIBILITY_RADIUS,
+        weatherVisibilityRadiusCap: DEFAULT_VISIBILITY_RADIUS,
         targetFps: 60,
       })
     ).toEqual(['None']);
@@ -212,6 +274,7 @@ describe('render budget', () => {
       getRenderQualityLimiters({
         smoothedFrameMs: 27,
         visibilityRadius: REDUCED_VISIBILITY_RADIUS,
+        weatherVisibilityRadiusCap: DEFAULT_VISIBILITY_RADIUS,
         targetFps: 30,
       })
     ).toEqual([
@@ -224,12 +287,25 @@ describe('render budget', () => {
       getRenderQualityLimiters({
         smoothedFrameMs: 40,
         visibilityRadius: MIN_VISIBILITY_RADIUS,
+        weatherVisibilityRadiusCap: DEFAULT_VISIBILITY_RADIUS,
         targetFps: 30,
       })
     ).toEqual([
       'Target FPS reduced to 30',
       `Visibility radius reduced to ${MIN_VISIBILITY_RADIUS}`,
       'Critical frame pressure',
+    ]);
+
+    expect(
+      getRenderQualityLimiters({
+        smoothedFrameMs: 16.67,
+        visibilityRadius: 12.5,
+        weatherVisibilityRadiusCap: 12.5,
+        targetFps: 60,
+      })
+    ).toEqual([
+      'Visibility radius reduced to 12.5',
+      'Weather visibility reduced draw distance',
     ]);
   });
 
