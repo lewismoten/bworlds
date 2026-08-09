@@ -57,6 +57,7 @@ const DUNGEON_STONE_CHIP_X_SEED = registerHashLabel('dungeon-stone-chip-x');
 const DUNGEON_STONE_CHIP_Y_SEED = registerHashLabel('dungeon-stone-chip-y');
 const DUNGEON_ROOF_X_SEED = registerHashLabel('dungeon-roof-x');
 const DUNGEON_ROOF_Y_SEED = registerHashLabel('dungeon-roof-y');
+const DUNGEON_GLOW_INTENSITY_STEP = 0.02;
 
 export function createDungeonTilePlugin(): RuntimePlugin {
   return createAnchoredEnterablePoiTilePlugin({
@@ -297,23 +298,37 @@ function getDungeonTowerBeaconDescriptors(
   baseDepth: number
 ): DungeonBeaconDescriptor[] {
   return getDungeonTowerOffsets(tileX, tileY, baseWidth, baseDepth).map(
-    (tower, index) => ({
-      x: tileX + tower.x,
-      y: tower.height + tower.capHeight * 0.42,
-      z: tileY + tower.z,
-      glowScale: 0.034 + hash2D(DUNGEON_BEACON_SCALE_SEED, tileX + index, tileY) * 0.01,
-      pointLightY: tower.height + tower.capHeight * 0.34,
-      pointLightZ: tileY + tower.z,
-      pointLightIntensity:
-        0.46 + hash2D(DUNGEON_BEACON_INTENSITY_SEED, tileX, tileY + index) * 0.18,
-      pointLightDistance:
-        2.2 + hash2D(DUNGEON_BEACON_DISTANCE_SEED, tileX - index, tileY) * 0.4,
-      pointLightDecay: 1.9,
-      glowDayIntensity: 0.01,
-      glowNightIntensity:
-        0.82 + hash2D(DUNGEON_BEACON_GLOW_SEED, tileX + index, tileY - index) * 0.18,
-      label: `tower-${index}`,
-    })
+    (tower, index) => {
+      const glowDayIntensity = quantizeDungeonGlowIntensity(0.01);
+      const glowNightIntensity = quantizeDungeonGlowIntensity(
+        0.82 + hash2D(DUNGEON_BEACON_GLOW_SEED, tileX + index, tileY - index) * 0.18
+      );
+      return {
+        x: tileX + tower.x,
+        y: tower.height + tower.capHeight * 0.42,
+        z: tileY + tower.z,
+        glowScale: 0.034 + hash2D(DUNGEON_BEACON_SCALE_SEED, tileX + index, tileY) * 0.01,
+        pointLightY: tower.height + tower.capHeight * 0.34,
+        pointLightZ: tileY + tower.z,
+        pointLightIntensity:
+          0.46 + hash2D(DUNGEON_BEACON_INTENSITY_SEED, tileX, tileY + index) * 0.18,
+        pointLightDistance:
+          2.2 + hash2D(DUNGEON_BEACON_DISTANCE_SEED, tileX - index, tileY) * 0.4,
+        pointLightDecay: 1.9,
+        glowDayIntensity,
+        glowNightIntensity,
+        label: `tower-${index}`,
+      };
+    }
+  );
+}
+
+function quantizeDungeonGlowIntensity(intensity: number): number {
+  return Number(
+    (
+      Math.round(intensity / DUNGEON_GLOW_INTENSITY_STEP) *
+      DUNGEON_GLOW_INTENSITY_STEP
+    ).toFixed(2)
   );
 }
 
@@ -414,7 +429,9 @@ const resolveDungeonStyle = createRegionalMaterialResolver(
             side: three.DoubleSide,
           }),
           getGlowMaterial(dayIntensity: number, nightIntensity: number) {
-            const cacheKey = `${dayIntensity}:${nightIntensity}`;
+            const resolvedDayIntensity = quantizeDungeonGlowIntensity(dayIntensity);
+            const resolvedNightIntensity = quantizeDungeonGlowIntensity(nightIntensity);
+            const cacheKey = `${resolvedDayIntensity}:${resolvedNightIntensity}`;
             const cachedMaterial = glowMaterialCache.get(cacheKey);
             if (cachedMaterial) {
               return cachedMaterial;
@@ -423,7 +440,7 @@ const resolveDungeonStyle = createRegionalMaterialResolver(
             const material = new three.MeshStandardMaterial({
               color: '#ef4444',
               emissive: '#ef4444',
-              emissiveIntensity: dayIntensity,
+              emissiveIntensity: resolvedDayIntensity,
               roughness: 0.3,
               metalness: 0.04,
             });
@@ -467,6 +484,8 @@ function createDungeonBeacon(
   descriptor: DungeonBeaconDescriptor,
   style: DungeonStyle
 ) {
+  const glowDayIntensity = quantizeDungeonGlowIntensity(descriptor.glowDayIntensity);
+  const glowNightIntensity = quantizeDungeonGlowIntensity(descriptor.glowNightIntensity);
   const brazier = new three.Mesh(
     new three.CylinderGeometry(0.05, 0.06, 0.06, 6),
     style.trimMaterial
@@ -481,15 +500,12 @@ function createDungeonBeacon(
   const glow = markPoiLightEmitter(
     new three.Mesh(
       new three.SphereGeometry(descriptor.glowScale, 6, 6),
-      style.getGlowMaterial(
-        descriptor.glowDayIntensity,
-        descriptor.glowNightIntensity
-      )
+      style.getGlowMaterial(glowDayIntensity, glowNightIntensity)
     ),
     {
       kind: 'emissive-mesh',
-      dayIntensity: descriptor.glowDayIntensity,
-      nightIntensity: descriptor.glowNightIntensity,
+      dayIntensity: glowDayIntensity,
+      nightIntensity: glowNightIntensity,
     }
   );
   glow.position.set(descriptor.x, descriptor.y, descriptor.z);
