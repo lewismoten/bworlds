@@ -1,4 +1,4 @@
-import { hash2D } from '@bworlds/core';
+import { hash2D, registerHashLabel } from '@bworlds/core';
 import { createPlainsBackedTilePainter } from '@bworlds/paint-support';
 import {
   CARDINAL_DIRECTIONS,
@@ -16,6 +16,10 @@ import type {
 } from '@bworlds/plugin-api';
 
 const SHIP_VARIANT_KEY = 'shipPoiVariant';
+const SHIP_POI_VARIANT_SEED = registerHashLabel('ship-poi-variant');
+const SHIP_FACING_LABELS = CARDINAL_DIRECTIONS.map((direction) =>
+  registerHashLabel(`ship-facing:${direction.label}`)
+);
 
 type CardinalFacing = (typeof CARDINAL_DIRECTIONS)[number];
 type ShipVariant = 'tall-ship' | 'broken-ship';
@@ -166,7 +170,7 @@ export function createShipTilePlugin(): RuntimePlugin {
 }
 
 function getShipVariant(tileX: number, tileY: number): ShipVariant {
-  return hash2D('ship-poi-variant', tileX, tileY) > 0.48
+  return hash2D(SHIP_POI_VARIANT_SEED, tileX, tileY) > 0.48
     ? 'tall-ship'
     : 'broken-ship';
 }
@@ -176,7 +180,11 @@ function getShipFacing(
   tileX: number,
   tileY: number
 ): CardinalFacing {
-  const scored = CARDINAL_DIRECTIONS.map((direction) => {
+  let bestDirection = CARDINAL_DIRECTIONS[2]!;
+  let bestScore = Number.NEGATIVE_INFINITY;
+
+  for (let index = 0; index < CARDINAL_DIRECTIONS.length; index += 1) {
+    const direction = CARDINAL_DIRECTIONS[index]!;
     const shoreTile = state.getCurrentTile(tileX + direction.dx, tileY + direction.dy);
     const openWaterTile = state.getCurrentTile(
       tileX + direction.dx * 2,
@@ -189,19 +197,21 @@ function getShipFacing(
     const shoreWalkable = state.getTileDefinition(shoreTile.kind).walkable;
     const openWaterWalkable = state.getTileDefinition(openWaterTile.kind).walkable;
     const landBehindWalkable = state.getTileDefinition(landBehindTile.kind).walkable;
-    return {
-      direction,
-      score:
-        (shoreTile.kind === 'dock' ? 8 : 0) +
-        (shoreTile.kind === 'ocean' || shoreTile.kind === 'river' ? 6 : 0) +
-        (!shoreWalkable ? 4 : 0) +
-        (!openWaterWalkable ? 3 : 0) +
-        (landBehindWalkable ? 2 : 0) +
-        hash2D(`ship-facing:${direction.label}`, tileX, tileY),
-    };
-  }).sort((left, right) => right.score - left.score);
+    const score =
+      (shoreTile.kind === 'dock' ? 8 : 0) +
+      (shoreTile.kind === 'ocean' || shoreTile.kind === 'river' ? 6 : 0) +
+      (!shoreWalkable ? 4 : 0) +
+      (!openWaterWalkable ? 3 : 0) +
+      (landBehindWalkable ? 2 : 0) +
+      hash2D(SHIP_FACING_LABELS[index]!, tileX, tileY);
+    if (score <= bestScore) {
+      continue;
+    }
+    bestScore = score;
+    bestDirection = direction;
+  }
 
-  return scored[0]?.direction ?? CARDINAL_DIRECTIONS[2]!;
+  return bestDirection;
 }
 
 function addTallShipRigging(
