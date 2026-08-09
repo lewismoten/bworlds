@@ -68,6 +68,13 @@ const RIVER_CONNECTION_DIRECTION_SEEDS: Record<RiverConnectionDirectionId, numbe
   northwest: registerHashLabel('northwest'),
   stub: registerHashLabel('stub'),
 };
+const riverMaterialCache = new WeakMap<
+  object,
+  {
+    riverMaterial: ThreeMaterialLike;
+    highlightMaterial: ThreeMaterialLike;
+  }
+>();
 const RIVER_DIRECTIONS: RiverConnection[] = [
   {
     id: 'north',
@@ -560,23 +567,7 @@ function createRiverGroup(
   const tileSeed = createRiverTileSeed(tileX, tileY);
   const group = new three.Group();
   group.position.set(tileX, 0, tileY);
-
-  const riverMaterial = new three.MeshStandardMaterial({
-    color: '#3bb8f5',
-    roughness: 0.24,
-    metalness: 0.02,
-    transparent: true,
-    opacity: 0.94,
-    side: three.DoubleSide,
-  });
-  const highlightMaterial = new three.MeshStandardMaterial({
-    color: '#d7f5ff',
-    roughness: 0.14,
-    metalness: 0.03,
-    transparent: true,
-    opacity: 0.68,
-    side: three.DoubleSide,
-  });
+  const { riverMaterial, highlightMaterial } = getRiverSharedMaterials(three);
 
   if (connections.length === 0) {
     const stub = createRiverBranch(three, tileX, tileY, {
@@ -688,6 +679,32 @@ function createRiverGroup(
   });
 
   return group;
+}
+
+function getRiverSharedMaterials(three: ThreeHostLike) {
+  let cached = riverMaterialCache.get(three as object);
+  if (!cached) {
+    cached = {
+      riverMaterial: new three.MeshStandardMaterial({
+        color: '#3bb8f5',
+        roughness: 0.24,
+        metalness: 0.02,
+        transparent: true,
+        opacity: 0.94,
+        side: three.DoubleSide,
+      }),
+      highlightMaterial: new three.MeshStandardMaterial({
+        color: '#d7f5ff',
+        roughness: 0.14,
+        metalness: 0.03,
+        transparent: true,
+        opacity: 0.68,
+        side: three.DoubleSide,
+      }),
+    };
+    riverMaterialCache.set(three as object, cached);
+  }
+  return cached;
 }
 
 function getRiverConnections(

@@ -134,6 +134,27 @@ function createShipModelSignature(model: FakeNode | undefined) {
 }
 
 describe('tile ship', () => {
+  it('reuses shared ship materials across repeated model builds', () => {
+    const plugin = createShipTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'ship');
+    const first = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state: createShipState(),
+      tile: { kind: 'ship' } as never,
+      tileX: 5,
+      tileY: 5,
+    }) as FakeNode | undefined;
+    const second = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state: createShipState(),
+      tile: { kind: 'ship' } as never,
+      tileX: 5,
+      tileY: 5,
+    }) as FakeNode | undefined;
+
+    expect(countSharedMaterialReferences(first, second)).toBeGreaterThanOrEqual(5);
+  });
+
   it('creates an enterable ship model with a deterministic variant and night light', () => {
     const plugin = createShipTilePlugin();
     const tile = plugin.tiles?.find((entry) => entry.kind === 'ship');
@@ -204,3 +225,34 @@ describe('tile ship', () => {
     );
   });
 });
+
+function countSharedMaterialReferences(
+  left: FakeNode | undefined,
+  right: FakeNode | undefined
+): number {
+  const leftMaterials = collectMeshMaterials(left);
+  const rightMaterials = collectMeshMaterials(right);
+  let sharedCount = 0;
+
+  leftMaterials.forEach((material) => {
+    if (rightMaterials.has(material)) {
+      sharedCount += 1;
+    }
+  });
+
+  return sharedCount;
+}
+
+function collectMeshMaterials(root: FakeNode | undefined): Set<FakeMaterial> {
+  const materials = new Set<FakeMaterial>();
+  root?.traverse((node) => {
+    if (node instanceof FakeMesh) {
+      if (Array.isArray(node.material)) {
+        node.material.forEach((material) => materials.add(material));
+      } else if (node.material) {
+        materials.add(node.material);
+      }
+    }
+  });
+  return materials;
+}

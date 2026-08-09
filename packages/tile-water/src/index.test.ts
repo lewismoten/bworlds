@@ -102,6 +102,33 @@ describe('tile water', () => {
     expect(baseline.length).toBeGreaterThanOrEqual(3);
   });
 
+  it('reuses shared river materials across repeated model builds', () => {
+    const plugin = createWaterTilePlugin();
+    const riverTile = plugin.tiles?.find((tile) => tile.kind === 'river');
+    const state = createRiverState();
+    const first = riverTile?.create3DModel?.({
+      tile: { kind: 'river' } as never,
+      three: createFakeThree() as never,
+      state: state as never,
+      tileX: 0,
+      tileY: 0,
+    }) as FakeGroup | undefined;
+    const second = riverTile?.create3DModel?.({
+      tile: { kind: 'river' } as never,
+      three: createFakeThree() as never,
+      state: state as never,
+      tileX: 1,
+      tileY: 0,
+    }) as FakeGroup | undefined;
+
+    const firstMaterials = collectMeshMaterials(first);
+    const secondMaterials = collectMeshMaterials(second);
+
+    expect(firstMaterials.size).toBeLessThanOrEqual(2);
+    expect(secondMaterials.size).toBeLessThanOrEqual(2);
+    expect([...firstMaterials]).toEqual(expect.arrayContaining([...secondMaterials]));
+  });
+
   it('produces animated ocean overlays only when time is available', () => {
     const plugin = createWaterTilePlugin();
     const oceanTile = plugin.tiles?.find((tile) => tile.kind === 'ocean');
@@ -249,4 +276,21 @@ function createFakeOverlayContext() {
     worldY: 9,
     variant: 2,
   };
+}
+
+function collectMeshMaterials(root: FakeNode | undefined): Set<FakeMaterial> {
+  const materials = new Set<FakeMaterial>();
+  const stack = root ? [root] : [];
+
+  while (stack.length > 0) {
+    const node = stack.pop()!;
+    if (node.material instanceof FakeMaterial) {
+      materials.add(node.material);
+    } else if (Array.isArray(node.material)) {
+      node.material.forEach((material) => materials.add(material));
+    }
+    stack.push(...node.children);
+  }
+
+  return materials;
 }

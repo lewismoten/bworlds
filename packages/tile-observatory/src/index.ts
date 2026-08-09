@@ -14,6 +14,15 @@ import type {
 
 const OBSERVATORY_DOME_KEY = 'observatoryDome';
 const OBSERVATORY_TELESCOPE_KEY = 'observatoryTelescope';
+const observatoryMaterialCache = new WeakMap<
+  object,
+  {
+    wallMaterial: ThreeMaterialLike;
+    trimMaterial: ThreeMaterialLike;
+    domeMaterial: ThreeMaterialLike;
+    telescopeMaterial: ThreeMaterialLike;
+  }
+>();
 
 type ObservatoryNodeLike = ThreeObject3DLike & {
   material?: ThreeMaterialLike | ThreeMaterialLike[];
@@ -56,26 +65,8 @@ export function createObservatoryTilePlugin(): RuntimePlugin {
     }),
     create3DModel({ three, tileX, tileY }: Create3DModelContext) {
       const { mountainMaterial, snowMaterial } = createMountainTerrainMaterials(three);
-      const wallMaterial = new three.MeshStandardMaterial({
-        color: '#dbe5ed',
-        roughness: 0.9,
-        metalness: 0.02,
-      });
-      const trimMaterial = new three.MeshStandardMaterial({
-        color: '#566170',
-        roughness: 0.84,
-        metalness: 0.04,
-      });
-      const domeMaterial = new three.MeshStandardMaterial({
-        color: '#c8d5df',
-        roughness: 0.82,
-        metalness: 0.06,
-      });
-      const telescopeMaterial = new three.MeshStandardMaterial({
-        color: '#2f3945',
-        roughness: 0.58,
-        metalness: 0.32,
-      });
+      const { wallMaterial, trimMaterial, domeMaterial, telescopeMaterial } =
+        getObservatorySharedMaterials(three);
 
       const group = new three.Group();
 
@@ -165,6 +156,36 @@ export function createObservatoryTilePlugin(): RuntimePlugin {
       syncObservatoryModel(model as ThreeObject3DLike, cycle);
     },
   });
+}
+
+function getObservatorySharedMaterials(three: Create3DModelContext['three']) {
+  let cached = observatoryMaterialCache.get(three as object);
+  if (!cached) {
+    cached = {
+      wallMaterial: new three.MeshStandardMaterial({
+        color: '#dbe5ed',
+        roughness: 0.9,
+        metalness: 0.02,
+      }),
+      trimMaterial: new three.MeshStandardMaterial({
+        color: '#566170',
+        roughness: 0.84,
+        metalness: 0.04,
+      }),
+      domeMaterial: new three.MeshStandardMaterial({
+        color: '#c8d5df',
+        roughness: 0.82,
+        metalness: 0.06,
+      }),
+      telescopeMaterial: new three.MeshStandardMaterial({
+        color: '#2f3945',
+        roughness: 0.58,
+        metalness: 0.32,
+      }),
+    };
+    observatoryMaterialCache.set(three as object, cached);
+  }
+  return cached;
 }
 
 function syncObservatoryModel(

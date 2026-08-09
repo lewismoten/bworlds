@@ -20,6 +20,19 @@ const SHIP_POI_VARIANT_SEED = registerHashLabel('ship-poi-variant');
 const SHIP_FACING_LABELS = CARDINAL_DIRECTIONS.map((direction) =>
   registerHashLabel(`ship-facing:${direction.label}`)
 );
+const shipMaterialCache = new WeakMap<
+  object,
+  Map<
+    ShipVariant,
+    {
+      hullMaterial: ShipMaterialLike;
+      trimMaterial: ShipMaterialLike;
+      mastMaterial: ShipMaterialLike;
+      sailMaterial: ShipMaterialLike;
+      lanternMaterial: ShipMaterialLike;
+    }
+  >
+>();
 
 type CardinalFacing = (typeof CARDINAL_DIRECTIONS)[number];
 type ShipVariant = 'tall-ship' | 'broken-ship';
@@ -54,27 +67,13 @@ export function createShipTilePlugin(): RuntimePlugin {
       const group = new three.Group();
       const facing = getShipFacing(state, tileX, tileY);
       const variant = getShipVariant(tileX, tileY);
-      const hullMaterial = new three.MeshStandardMaterial({
-        color: variant === 'tall-ship' ? '#7a4a2f' : '#6b4634',
-        roughness: 0.9,
-        metalness: 0.02,
-      });
-      const trimMaterial = new three.MeshStandardMaterial({
-        color: '#d9bf8f',
-        roughness: 0.82,
-        metalness: 0.02,
-      });
-      const mastMaterial = new three.MeshStandardMaterial({
-        color: '#5a3418',
-        roughness: 0.88,
-        metalness: 0.02,
-      });
-      const sailMaterial = new three.MeshStandardMaterial({
-        color: '#ddd2bb',
-        roughness: 0.97,
-        metalness: 0.01,
-        transparent: true,
-      });
+      const {
+        hullMaterial,
+        trimMaterial,
+        mastMaterial,
+        sailMaterial,
+        lanternMaterial,
+      } = getShipSharedMaterials(three, variant);
 
       group.position.set(tileX, 0, tileY);
       group.rotation.y = facing.rotationY;
@@ -122,13 +121,7 @@ export function createShipTilePlugin(): RuntimePlugin {
       const lantern = markPoiLightEmitter(
         new three.Mesh(
           new three.SphereGeometry(0.04, 6, 6),
-          new three.MeshStandardMaterial({
-            color: '#f59e0b',
-            emissive: '#f59e0b',
-            emissiveIntensity: 0.02,
-            roughness: 0.38,
-            metalness: 0.03,
-          })
+          lanternMaterial
         ),
         {
           kind: 'emissive-mesh',
@@ -173,6 +166,54 @@ function getShipVariant(tileX: number, tileY: number): ShipVariant {
   return hash2D(SHIP_POI_VARIANT_SEED, tileX, tileY) > 0.48
     ? 'tall-ship'
     : 'broken-ship';
+}
+
+function getShipSharedMaterials(
+  three: Create3DModelContext['three'],
+  variant: ShipVariant
+) {
+  let byVariant = shipMaterialCache.get(three as object);
+  if (!byVariant) {
+    byVariant = new Map();
+    shipMaterialCache.set(three as object, byVariant);
+  }
+
+  let cached = byVariant.get(variant);
+  if (!cached) {
+    cached = {
+      hullMaterial: new three.MeshStandardMaterial({
+        color: variant === 'tall-ship' ? '#7a4a2f' : '#6b4634',
+        roughness: 0.9,
+        metalness: 0.02,
+      }),
+      trimMaterial: new three.MeshStandardMaterial({
+        color: '#d9bf8f',
+        roughness: 0.82,
+        metalness: 0.02,
+      }),
+      mastMaterial: new three.MeshStandardMaterial({
+        color: '#5a3418',
+        roughness: 0.88,
+        metalness: 0.02,
+      }),
+      sailMaterial: new three.MeshStandardMaterial({
+        color: '#ddd2bb',
+        roughness: 0.97,
+        metalness: 0.01,
+        transparent: true,
+      }),
+      lanternMaterial: new three.MeshStandardMaterial({
+        color: '#f59e0b',
+        emissive: '#f59e0b',
+        emissiveIntensity: 0.02,
+        roughness: 0.38,
+        metalness: 0.03,
+      }),
+    };
+    byVariant.set(variant, cached);
+  }
+
+  return cached;
 }
 
 function getShipFacing(

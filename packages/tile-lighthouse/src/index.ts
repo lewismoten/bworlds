@@ -15,6 +15,15 @@ import type {
 
 const LIGHTHOUSE_BEAM_PIVOT_KEY = 'lighthouseBeamPivot';
 const LIGHTHOUSE_BEAM_KEY = 'lighthouseBeam';
+const lighthouseMaterialCache = new WeakMap<
+  object,
+  {
+    wallMaterial: ThreeMaterialLike;
+    stripeMaterial: ThreeMaterialLike;
+    stoneMaterial: ThreeMaterialLike;
+    paneMaterial: ThreeMaterialLike;
+  }
+>();
 
 type BeamMaterialLike = ThreeMaterialLike & {
   opacity?: number;
@@ -45,21 +54,8 @@ export function createLighthouseTilePlugin(): RuntimePlugin {
     }),
     create3DModel({ three, tileX, tileY }: Create3DModelContext) {
       const group = new three.Group();
-      const wallMaterial = new three.MeshStandardMaterial({
-        color: '#f7f0e1',
-        roughness: 0.88,
-        metalness: 0.02,
-      });
-      const stripeMaterial = new three.MeshStandardMaterial({
-        color: '#c2410c',
-        roughness: 0.82,
-        metalness: 0.02,
-      });
-      const stoneMaterial = new three.MeshStandardMaterial({
-        color: '#9aa4b2',
-        roughness: 0.96,
-        metalness: 0.02,
-      });
+      const { wallMaterial, stripeMaterial, stoneMaterial, paneMaterial } =
+        getLighthouseSharedMaterials(three);
       const beamMaterial = createBasicMaterial(three, {
         color: '#ffe9a8',
         transparent: true,
@@ -110,17 +106,7 @@ export function createLighthouseTilePlugin(): RuntimePlugin {
         { x: 0, z: -0.22 },
       ]) {
         const pane = markPoiLightEmitter(
-          new three.Mesh(
-            new three.PlaneGeometry(0.16, 0.12),
-            new three.MeshStandardMaterial({
-              color: '#fff1b2',
-              emissive: '#fff1b2',
-              emissiveIntensity: 0.08,
-              roughness: 0.3,
-              metalness: 0.02,
-              side: three.DoubleSide,
-            })
-          ),
+          new three.Mesh(new three.PlaneGeometry(0.16, 0.12), paneMaterial),
           {
             kind: 'emissive-mesh',
             dayIntensity: 0.08,
@@ -177,6 +163,39 @@ export function createLighthouseTilePlugin(): RuntimePlugin {
       syncLighthouseBeam(model as ThreeObject3DLike, cycle, timeMs ?? 0);
     },
   });
+}
+
+function getLighthouseSharedMaterials(three: Create3DModelContext['three']) {
+  let cached = lighthouseMaterialCache.get(three as object);
+  if (!cached) {
+    cached = {
+      wallMaterial: new three.MeshStandardMaterial({
+        color: '#f7f0e1',
+        roughness: 0.88,
+        metalness: 0.02,
+      }),
+      stripeMaterial: new three.MeshStandardMaterial({
+        color: '#c2410c',
+        roughness: 0.82,
+        metalness: 0.02,
+      }),
+      stoneMaterial: new three.MeshStandardMaterial({
+        color: '#9aa4b2',
+        roughness: 0.96,
+        metalness: 0.02,
+      }),
+      paneMaterial: new three.MeshStandardMaterial({
+        color: '#fff1b2',
+        emissive: '#fff1b2',
+        emissiveIntensity: 0.08,
+        roughness: 0.3,
+        metalness: 0.02,
+        side: three.DoubleSide,
+      }),
+    };
+    lighthouseMaterialCache.set(three as object, cached);
+  }
+  return cached;
 }
 
 function syncLighthouseBeam(

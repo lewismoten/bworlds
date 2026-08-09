@@ -76,6 +76,27 @@ const fakeThree = {
 } as const;
 
 describe('tile observatory', () => {
+  it('reuses shared observatory materials across repeated model builds', () => {
+    const plugin = createObservatoryTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'observatory');
+    const first = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state: {} as never,
+      tile: { kind: 'observatory' } as never,
+      tileX: 4,
+      tileY: 5,
+    }) as FakeNode | undefined;
+    const second = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state: {} as never,
+      tile: { kind: 'observatory' } as never,
+      tileX: 8,
+      tileY: 9,
+    }) as FakeNode | undefined;
+
+    expect(countSharedMaterialReferences(first, second)).toBeGreaterThanOrEqual(4);
+  });
+
   it('opens the dome and reveals the telescope at night', () => {
     const plugin = createObservatoryTilePlugin();
     const tile = plugin.tiles?.find((entry) => entry.kind === 'observatory');
@@ -150,3 +171,34 @@ describe('tile observatory', () => {
     expect((telescope?.rotation.x ?? 0)).toBeLessThan(0);
   });
 });
+
+function countSharedMaterialReferences(
+  left: FakeNode | undefined,
+  right: FakeNode | undefined
+): number {
+  const leftMaterials = collectMeshMaterials(left);
+  const rightMaterials = collectMeshMaterials(right);
+  let sharedCount = 0;
+
+  leftMaterials.forEach((material) => {
+    if (rightMaterials.has(material)) {
+      sharedCount += 1;
+    }
+  });
+
+  return sharedCount;
+}
+
+function collectMeshMaterials(root: FakeNode | undefined): Set<FakeMaterial | object> {
+  const materials = new Set<FakeMaterial | object>();
+  root?.traverse((node) => {
+    if (node instanceof FakeMesh) {
+      if (Array.isArray(node.material)) {
+        node.material.forEach((material) => materials.add(material));
+      } else if (node.material) {
+        materials.add(node.material);
+      }
+    }
+  });
+  return materials;
+}
