@@ -18,6 +18,7 @@ import {
   getForestTreeDecorations,
   getForestTreeGenerator,
   getForestTreeInhabitants,
+  getForestTreeAgeProfiles,
   getForestTreeBranchProfiles,
   getForestCarvings,
   getForestFloorDetails,
@@ -876,6 +877,76 @@ describe('tile forest', () => {
     const first = sampleTiles[0]!;
     expect(getForestTreeDecorations(first.x, first.y)).toEqual(first.decorations);
     expect(getForestTreeInhabitants(first.x, first.y)).toEqual(first.inhabitants);
+  });
+
+  it('generates deterministic age profiles that influence forest tree stages', () => {
+    const ageTiles: Array<{
+      x: number;
+      y: number;
+      ages: ReturnType<typeof getForestTreeAgeProfiles>;
+    }> = [];
+
+    for (let tileY = 0; tileY < 48; tileY += 1) {
+      for (let tileX = 0; tileX < 48; tileX += 1) {
+        const ages = getForestTreeAgeProfiles(tileX, tileY);
+        if (ages.length > 0) {
+          ageTiles.push({ x: tileX, y: tileY, ages });
+        }
+      }
+    }
+
+    expect(ageTiles.length).toBeGreaterThan(0);
+    expect(
+      ageTiles.some(({ ages }) => ages.some((entry) => entry.lifeStage === 'sapling'))
+    ).toBe(true);
+    expect(
+      ageTiles.some(({ ages }) => ages.some((entry) => entry.lifeStage === 'mature'))
+    ).toBe(true);
+    expect(
+      ageTiles.some(({ ages }) => ages.some((entry) => entry.lifeStage === 'ancient'))
+    ).toBe(true);
+    expect(
+      ageTiles.every(({ ages }) => ages.every((entry) => entry.ageYears >= 0))
+    ).toBe(true);
+
+    const first = ageTiles[0]!;
+    expect(getForestTreeAgeProfiles(first.x, first.y)).toEqual(first.ages);
+  });
+
+  it('uses tree age to simplify younger trees and enlarge older ones', () => {
+    const samples: Array<{
+      age: ReturnType<typeof getForestTreeAgeProfiles>[number];
+      branches: ReturnType<typeof getForestTreeBranchProfiles>[number];
+      canopy: ReturnType<typeof getForestTreeCanopyProfiles>[number];
+    }> = [];
+
+    for (let tileY = 0; tileY < 64; tileY += 1) {
+      for (let tileX = 0; tileX < 64; tileX += 1) {
+        const ages = getForestTreeAgeProfiles(tileX, tileY);
+        const branches = getForestTreeBranchProfiles(tileX, tileY);
+        const canopies = getForestTreeCanopyProfiles(tileX, tileY);
+        for (let index = 0; index < ages.length; index += 1) {
+          const age = ages[index];
+          const branch = branches[index];
+          const canopy = canopies[index];
+          if (age && branch && canopy) {
+            samples.push({ age, branches: branch, canopy });
+          }
+        }
+      }
+    }
+
+    const sapling = samples.find((sample) => sample.age.lifeStage === 'sapling');
+    const ancient = samples.find((sample) => sample.age.lifeStage === 'ancient');
+
+    expect(sapling).toBeDefined();
+    expect(ancient).toBeDefined();
+    expect(sapling!.branches.branches.length).toBeLessThanOrEqual(
+      ancient!.branches.branches.length
+    );
+    expect(sapling!.canopy.foliage.length).toBeLessThanOrEqual(
+      ancient!.canopy.foliage.length
+    );
   });
 
   it('generates more tree-like branch profiles for broadleaf and pine forms', () => {

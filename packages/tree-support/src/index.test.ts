@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  createTreeBiologicalState,
   getTreeCollisionState,
   createTreeSceneState,
   createTreeLogicalState,
@@ -7,6 +8,7 @@ import {
   createTreeGenerator,
   createTreeGeneratorBase,
   createTreeSpecies,
+  getTreeBiologicalState,
   getTreeCanopyState,
   getTreeStructuralState,
   resolveTreeSeason,
@@ -116,6 +118,12 @@ describe('tree support', () => {
         radius: 0.16,
         height: 1.4,
       },
+      biological: {
+        ageYears: 48,
+        maximumAgeYears: 120,
+        maturity: 0.4,
+        lifeStage: 'adolescent',
+      },
     });
 
     expect(tree.radius).toBe(0.2);
@@ -124,6 +132,7 @@ describe('tree support', () => {
     expect(getTreeStructuralState(tree)).toEqual(tree.structure);
     expect(getTreeCanopyState(tree)).toEqual(tree.canopy);
     expect(getTreeCollisionState(tree)).toEqual(tree.collision);
+    expect(getTreeBiologicalState(tree)).toEqual(tree.biological);
   });
 
   it('derives structural and canopy state for older tree shapes', () => {
@@ -149,6 +158,30 @@ describe('tree support', () => {
       radius: 0.18,
       height: 1.3,
     });
+    expect(getTreeBiologicalState(legacy)).toEqual({
+      ageYears: 0,
+      maximumAgeYears: 1,
+      maturity: 0,
+      lifeStage: 'sapling',
+    });
+  });
+
+  it('creates biological state with deterministic maturity stages', () => {
+    expect(createTreeBiologicalState({ ageYears: 4, maximumAgeYears: 80 })).toEqual({
+      ageYears: 4,
+      maximumAgeYears: 80,
+      maturity: 0.05,
+      lifeStage: 'sapling',
+    });
+    expect(createTreeBiologicalState({ ageYears: 20, maximumAgeYears: 80 }).lifeStage).toBe(
+      'adolescent'
+    );
+    expect(createTreeBiologicalState({ ageYears: 48, maximumAgeYears: 80 }).lifeStage).toBe(
+      'mature'
+    );
+    expect(createTreeBiologicalState({ ageYears: 79, maximumAgeYears: 80 }).lifeStage).toBe(
+      'ancient'
+    );
   });
 
   it('groups trees, decorations, and inhabitants into a separate scene state', () => {

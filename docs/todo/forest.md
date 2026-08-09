@@ -30,7 +30,7 @@ For example, an oak and a pine both support `age`, but aging them should produce
 * [X] Allow specialized tree generators to extend or compose the shared functionality.
 * [X] Allow one generator to represent a family of closely related trees.
 * [X] Allow individual species to override family behavior.
-* [ ] Separate tree biological state from rendered geometry.
+* [X] Separate tree biological state from rendered geometry.
 * [X] Separate tree placement from tree appearance generation.
 * [X] Separate structural geometry from foliage.
 * [X] Separate decorations and inhabitants from the tree itself.
@@ -138,7 +138,7 @@ interface TreeCapabilities {
 * [ ] Give each species characteristic leaves.
 * [ ] Give each species appropriate fruit or nuts.
 * [ ] Give each species appropriate flowering behavior.
-* [ ] Define appropriate maximum age.
+* [X] Define appropriate maximum age.
 * [ ] Define appropriate maximum height.
 * [ ] Define typical habitat.
 * [ ] Define temperature tolerance.
@@ -174,16 +174,16 @@ interface TreeCapabilities {
 
 # Tree Age
 
-* [ ] Generate tree age.
-* [ ] Base trunk thickness partly on age.
-* [ ] Base tree height partly on age.
-* [ ] Increase branching complexity with age.
-* [ ] Increase canopy size with age.
+* [X] Generate tree age.
+* [X] Base trunk thickness partly on age.
+* [X] Base tree height partly on age.
+* [X] Increase branching complexity with age.
+* [X] Increase canopy size with age.
 * [ ] Allow young trees to have simple geometry.
-* [ ] Generate saplings.
-* [ ] Generate adolescent trees.
-* [ ] Generate mature trees.
-* [ ] Generate ancient trees.
+* [X] Generate saplings.
+* [X] Generate adolescent trees.
+* [X] Generate mature trees.
+* [X] Generate ancient trees.
 * [ ] Make very old trees more irregular.
 * [ ] Give older trees more dead branches.
 * [ ] Increase hollow probability with age.

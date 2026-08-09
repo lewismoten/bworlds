@@ -79,6 +79,19 @@ export interface TreeCollisionState {
   height: number;
 }
 
+export type TreeLifeStage =
+  | 'sapling'
+  | 'adolescent'
+  | 'mature'
+  | 'ancient';
+
+export interface TreeBiologicalState {
+  ageYears: number;
+  maximumAgeYears: number;
+  maturity: number;
+  lifeStage: TreeLifeStage;
+}
+
 export interface TreeDecorationState<TKind extends string = string> {
   kind: TKind;
   treeIndex?: number;
@@ -101,6 +114,7 @@ export interface TreeLogicalState<TForm extends string = string> {
   structure?: TreeStructuralState;
   canopy?: TreeCanopyState;
   collision?: TreeCollisionState;
+  biological?: TreeBiologicalState;
 }
 
 type TreeCapabilitySource =
@@ -173,6 +187,7 @@ export function createTreeLogicalState<TForm extends string = string>({
   structure,
   canopy,
   collision,
+  biological,
 }: {
   x: number;
   y: number;
@@ -180,6 +195,7 @@ export function createTreeLogicalState<TForm extends string = string>({
   structure: TreeStructuralState;
   canopy: TreeCanopyState;
   collision?: TreeCollisionState;
+  biological?: TreeBiologicalState;
 }): TreeLogicalState<TForm> {
   const collisionState = collision ?? {
     radius: structure.radius,
@@ -197,6 +213,7 @@ export function createTreeLogicalState<TForm extends string = string>({
     structure,
     canopy,
     collision: collisionState,
+    biological,
   };
 }
 
@@ -227,6 +244,43 @@ export function getTreeCollisionState<TForm extends string = string>(
       radius: tree.radius,
       height: tree.trunkHeight,
     }
+  );
+}
+
+export function createTreeBiologicalState({
+  ageYears,
+  maximumAgeYears,
+}: {
+  ageYears: number;
+  maximumAgeYears: number;
+}): TreeBiologicalState {
+  const resolvedMaximumAgeYears = Math.max(1, maximumAgeYears);
+  const resolvedAgeYears = Math.max(0, Math.min(ageYears, resolvedMaximumAgeYears));
+  const maturity = resolvedAgeYears / resolvedMaximumAgeYears;
+  return {
+    ageYears: resolvedAgeYears,
+    maximumAgeYears: resolvedMaximumAgeYears,
+    maturity,
+    lifeStage:
+      maturity < 0.18
+        ? 'sapling'
+        : maturity < 0.42
+          ? 'adolescent'
+          : maturity < 0.82
+            ? 'mature'
+            : 'ancient',
+  };
+}
+
+export function getTreeBiologicalState<TForm extends string = string>(
+  tree: TreeLogicalState<TForm>
+): TreeBiologicalState {
+  return (
+    tree.biological ??
+    createTreeBiologicalState({
+      ageYears: 0,
+      maximumAgeYears: 1,
+    })
   );
 }
 

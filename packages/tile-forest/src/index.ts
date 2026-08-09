@@ -22,16 +22,19 @@ import {
   tintHexColor,
 } from '@bworlds/procedural-style';
 import {
+  createTreeBiologicalState,
   createTreeLogicalState,
   createTreeSceneState,
   createTreeFamily,
   createTreeGenerator,
   createTreeGeneratorBase,
   createTreeSpecies,
+  getTreeBiologicalState,
   getTreeCollisionState,
   getTreeCanopyState,
   getTreeStructuralState,
   resolveTreeSeason,
+  type TreeBiologicalState,
   type TreeBranchState,
   type TreeCanopyState,
   type TreeCollisionState,
@@ -1784,6 +1787,26 @@ export function getForestTreeCanopyProfiles(
   }));
 }
 
+export function getForestTreeAgeProfiles(
+  tileX: number,
+  tileY: number
+): Array<{
+  form: ForestTreeForm;
+  speciesId: ForestTreeSpeciesId;
+  ageYears: number;
+  lifeStage: TreeBiologicalState['lifeStage'];
+}> {
+  return getForestTreeDescriptors(tileX, tileY).map((descriptor) => {
+    const biological = getTreeBiologicalState(descriptor);
+    return {
+      form: descriptor.form,
+      speciesId: descriptor.speciesId,
+      ageYears: biological.ageYears,
+      lifeStage: biological.lifeStage,
+    };
+  });
+}
+
 function getForestGroveCenter(tileX: number, tileY: number) {
   return {
     x: (hash2D(FOREST_GROVE_CENTER_X_SEED, tileX, tileY) - 0.5) * 0.36,
@@ -1848,6 +1871,7 @@ type ForestTreeSpeciesDefinition = {
   familyId: ForestTreeFamilyId;
   variety: number;
   form: ForestTreeForm;
+  maximumAgeYears: number;
   trunkHeightMin: number;
   trunkHeightRange: number;
   branchCountBase: number;
@@ -1930,6 +1954,7 @@ const forestOakSpecies = createTreeSpecies<
       familyId: 'broadleaf',
       variety: 0,
       form: 'broadleaf',
+      maximumAgeYears: 240,
       trunkHeightMin: 0.76,
       trunkHeightRange: 0.42,
       branchCountBase: 3,
@@ -1964,6 +1989,7 @@ const forestBirchSpecies = createTreeSpecies<
       familyId: 'broadleaf',
       variety: 1,
       form: 'broadleaf',
+      maximumAgeYears: 140,
       trunkHeightMin: 0.82,
       trunkHeightRange: 0.52,
       branchCountBase: 2,
@@ -1998,6 +2024,7 @@ const forestPineSpecies = createTreeSpecies<
       familyId: 'conifer',
       variety: 2,
       form: 'pine',
+      maximumAgeYears: 210,
       trunkHeightMin: 0.72,
       trunkHeightRange: 0.45,
       branchCountBase: 3,
@@ -2075,15 +2102,31 @@ function createForestTreeDescriptorFromSpecies(
   );
   const outlierChance = placementRandom();
   const spread = context.loneTree ? 0.06 : outlierChance > 0.84 ? 0.28 : 0.17;
+  const biological = createTreeBiologicalState({
+    ageYears:
+      definition.maximumAgeYears *
+      Math.pow(appearanceRandom(), definition.form === 'pine' ? 0.78 : 0.66),
+    maximumAgeYears: definition.maximumAgeYears,
+  });
+  const maturity = biological.maturity;
   const trunkHeight =
-    definition.trunkHeightMin + appearanceRandom() * definition.trunkHeightRange;
+    (definition.trunkHeightMin + appearanceRandom() * definition.trunkHeightRange) *
+    (0.55 + maturity * 0.9);
   const branchCount =
-    definition.branchCountBase + Math.floor(appearanceRandom() * definition.branchCountRange);
+    definition.branchCountBase +
+    Math.floor(appearanceRandom() * definition.branchCountRange) +
+    (biological.lifeStage === 'sapling'
+      ? 0
+      : biological.lifeStage === 'adolescent'
+        ? 1
+        : biological.lifeStage === 'mature'
+          ? 2
+          : 3);
   const branches = new Array<ForestBranchDescriptor>(branchCount);
   const foliageCount =
     definition.form === 'pine'
-      ? 4 + Math.floor(appearanceRandom() * 2)
-      : 3 + Math.floor(appearanceRandom() * 3);
+      ? 2 + Math.floor(maturity * 3) + Math.floor(appearanceRandom() * 2)
+      : 1 + Math.floor(maturity * 4) + Math.floor(appearanceRandom() * 2);
   const foliage = new Array<ForestFoliageDescriptor>(foliageCount);
   const x = clampToTile(
     context.groveCenter.x + (placementRandom() - 0.5) * spread * 2
@@ -2093,7 +2136,7 @@ function createForestTreeDescriptorFromSpecies(
   );
   const structure: TreeStructuralState = {
     radius: 0.08 + appearanceRandom() * 0.05,
-    scale: 0.78 + appearanceRandom() * 0.55,
+    scale: (0.72 + appearanceRandom() * 0.48) * (0.62 + maturity * 0.72),
     trunkHeight,
     branches,
   };
@@ -2114,7 +2157,9 @@ function createForestTreeDescriptorFromSpecies(
     const broadleafSpread =
       definition.broadleafSpreadBase - branchProgress * definition.broadleafSpreadDrop;
     const broadleafLengthScale =
-      definition.broadleafLengthBase + appearanceRandom() * definition.broadleafLengthRange;
+      (definition.broadleafLengthBase +
+        appearanceRandom() * definition.broadleafLengthRange) *
+      (1.18 - branchProgress * 0.42);
     branches[branchIndex] = {
       x: (appearanceRandom() - 0.5) * (definition.form === 'pine' ? 0.08 : broadleafSpread),
       y: trunkHeight * branchHeightFactor,
@@ -2174,6 +2219,7 @@ function createForestTreeDescriptorFromSpecies(
       structure,
       canopy,
       collision,
+      biological,
     }),
     familyId: definition.familyId,
     speciesId: definition.speciesId,
