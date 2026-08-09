@@ -2346,7 +2346,6 @@ export function freezeStaticObjectTransforms(root: THREE.Object3D): void {
 }
 
 export function prepareObjectForDistanceFade(root: THREE.Object3D): void {
-  const fadeMaterialCache = new WeakMap<THREE.Material, THREE.Material>();
   const targets = getDistanceFadeTargets(root);
   targets.allNodes.forEach((child) => {
     child.userData.distanceFadeBaseVisible ??= child.visible;
@@ -2356,18 +2355,29 @@ export function prepareObjectForDistanceFade(root: THREE.Object3D): void {
       return;
     }
 
-    renderable.material = Array.isArray(renderable.material)
-      ? renderable.material.map((material) =>
-          getDistanceFadeMaterialVariant(material, fadeMaterialCache)
-        )
-      : getDistanceFadeMaterialVariant(renderable.material, fadeMaterialCache);
     renderable.userData.distanceFadePrepared = true;
+    renderable.userData.distanceFadeOpacity ??= 1;
 
     for (const material of getObjectMaterials(renderable)) {
       material.userData.distanceFadeBaseOpacity ??= material.opacity;
       material.userData.distanceFadeBaseTransparent ??= material.transparent;
       material.userData.distanceFadeBaseDepthWrite ??= material.depthWrite;
     }
+
+    const renderableWithHooks = renderable as THREE.Object3D & {
+      onBeforeRender?: (...args: unknown[]) => void;
+      onAfterRender?: (...args: unknown[]) => void;
+    };
+    const originalBeforeRender = renderableWithHooks.onBeforeRender;
+    const originalAfterRender = renderableWithHooks.onAfterRender;
+    renderableWithHooks.onBeforeRender = (...args: unknown[]) => {
+      applyRenderableDistanceFadeMaterials(renderable);
+      originalBeforeRender?.(...args);
+    };
+    renderableWithHooks.onAfterRender = (...args: unknown[]) => {
+      restoreRenderableDistanceFadeMaterials(renderable);
+      originalAfterRender?.(...args);
+    };
   });
 }
 
@@ -2381,47 +2391,42 @@ export function applyObjectDistanceFade(
     child.visible = baseVisible && opacity > MIN_MODEL_VISIBILITY_OPACITY;
   });
   targets.renderableNodes.forEach((renderable) => {
-    for (const material of getObjectMaterials(renderable)) {
-      const baseOpacity = material.userData.distanceFadeBaseOpacity ?? material.opacity;
-      const baseTransparent =
-        material.userData.distanceFadeBaseTransparent ?? material.transparent;
-      const baseDepthWrite =
-        material.userData.distanceFadeBaseDepthWrite ?? material.depthWrite;
-      material.opacity = baseOpacity * opacity;
-      material.transparent = baseTransparent || opacity < 0.999;
-      material.depthWrite = baseDepthWrite && opacity >= 0.999;
-    }
+    renderable.userData.distanceFadeOpacity = opacity;
+    applyRenderableDistanceFadeMaterials(renderable);
   });
 }
 
-function getDistanceFadeMaterialVariant(
-  material: THREE.Material,
-  cache: WeakMap<THREE.Material, THREE.Material>
-): THREE.Material {
-  const cached = cache.get(material);
-  if (cached) {
-    return cached;
+function applyRenderableDistanceFadeMaterials(
+  renderable: THREE.Object3D & { material: THREE.Material | THREE.Material[] }
+): void {
+  const opacity = renderable.userData.distanceFadeOpacity ?? 1;
+  for (const material of getObjectMaterials(renderable)) {
+    const baseOpacity = material.userData.distanceFadeBaseOpacity ?? material.opacity;
+    const baseTransparent =
+      material.userData.distanceFadeBaseTransparent ?? material.transparent;
+    const baseDepthWrite =
+      material.userData.distanceFadeBaseDepthWrite ?? material.depthWrite;
+    material.opacity = baseOpacity * opacity;
+    material.transparent = baseTransparent || opacity < 0.999;
+    material.depthWrite = baseDepthWrite && opacity >= 0.999;
   }
+}
 
-  const clone = material.clone();
-  clone.userData = {
-    ...(clone.userData ?? {}),
-    [TRACKABLE_CLONED_MATERIAL_KEY]: true,
-  };
-  markOwnedMaterial(clone);
-  cache.set(material, clone);
-  return clone;
+function restoreRenderableDistanceFadeMaterials(
+  renderable: THREE.Object3D & { material: THREE.Material | THREE.Material[] }
+): void {
+  for (const material of getObjectMaterials(renderable)) {
+    material.opacity = material.userData.distanceFadeBaseOpacity ?? material.opacity;
+    material.transparent =
+      material.userData.distanceFadeBaseTransparent ?? material.transparent;
+    material.depthWrite =
+      material.userData.distanceFadeBaseDepthWrite ?? material.depthWrite;
+  }
 }
 
 function markOwnedGeometry<T extends object>(geometry: T): T {
   ownedDisposableGeometries.add(geometry);
   return geometry;
-}
-
-function markOwnedMaterial<T extends object>(material: T): T {
-  ownedDisposableMaterials.add(material);
-  recordRecentMetric(ownedMaterialCreationTimestamps, performance.now());
-  return material;
 }
 
 export function getSharedBoxGeometry(
@@ -2736,7 +2741,7 @@ export function collectSceneResourceStats(
     geometryRefCount,
     materialCount: materials.size,
     sharedMaterialCount: Math.max(0, materialRefCount - materials.size),
-    clonedMaterialCount: countMaterialsMatching(materials, isTrackableClonedMaterial),
+    clonedMaterialCount: 0,
     transparentMaterialCount: countMaterialsMatching(materials, isTransparentMaterial),
     alphaTestMaterialCount: countMaterialsMatching(materials, usesAlphaTest),
     doubleSidedMaterialCount: countMaterialsMatching(materials, isDoubleSidedMaterial),
@@ -2790,8 +2795,6 @@ const DYNAMIC_TRANSFORM_USER_DATA_KEYS = new Set([
   'observatoryTelescope',
   'forestFirefly',
 ]);
-const TRACKABLE_CLONED_MATERIAL_KEY = 'renderStatsMaterialClone';
-
 function isLikelyStaticTransformObject(
   object: THREE.Object3D & { userData?: Record<string, unknown> }
 ): boolean {
@@ -2845,14 +2848,6 @@ function countMaterialsMatching(
     }
   }
   return count;
-}
-
-function isTrackableClonedMaterial(material: THREE.Material): boolean {
-  return (
-    (material.userData as Record<string, unknown> | undefined)?.[
-      TRACKABLE_CLONED_MATERIAL_KEY
-    ] === true
-  );
 }
 
 function isTransparentMaterial(material: THREE.Material): boolean {

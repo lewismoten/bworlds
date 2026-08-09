@@ -25,7 +25,7 @@ Always run tests to make sure all tests pass
   - [ ] Keep simple/cheap plugin methods synchronous where generators add no value.
   - [ ] If enough CPU budget remains in a frame, generator can be called again to do next bit of work
 - [ ] Reduce unique materials and shader program variants.
-- [ ] Stop cloning materials when shared materials can be reused.
+- [X] Stop cloning materials when shared materials can be reused.
 - [ ] Reduce Object3D count and unnecessary scene hierarchy depth.
 - [X] Disable matrix updates for static objects and static subtrees.
 - [X] Remove has() + get() double cache lookups.

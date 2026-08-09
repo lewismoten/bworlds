@@ -175,7 +175,7 @@ describe('render3d visibility helpers', () => {
     expect(otherGeometry.dispose).toHaveBeenCalledTimes(0);
   });
 
-  it('disposes fade-owned material clones without touching shared source materials', () => {
+  it('keeps shared fade materials untouched during disposal when no clones are created', () => {
     const sourceMaterial = createMockMaterial();
     const child = createMockObject3D(sourceMaterial);
     const root = createMockObject3D(undefined, [child]);
@@ -184,10 +184,10 @@ describe('render3d visibility helpers', () => {
     disposeObject3DResources(root as never);
 
     expect(sourceMaterial.dispose).toHaveBeenCalledTimes(0);
-    expect(child.material.dispose).toHaveBeenCalledTimes(1);
+    expect(child.material).toBe(sourceMaterial);
   });
 
-  it('tracks owned material creation and disposal within the recent sampling window', () => {
+  it('does not create owned fade materials while preparing distance-faded models', () => {
     resetOwnedMaterialLifecycleMetrics();
     const nowSpy = vi.spyOn(performance, 'now');
     const sourceMaterial = createMockMaterial();
@@ -197,15 +197,15 @@ describe('render3d visibility helpers', () => {
     nowSpy.mockReturnValue(1000);
     prepareObjectForDistanceFade(root as never);
     expect(getRecentOwnedMaterialLifecycleCounts(1000)).toEqual({
-      createdCount: 1,
+      createdCount: 0,
       disposedCount: 0,
     });
 
     nowSpy.mockReturnValue(1400);
     disposeObject3DResources(root as never);
     expect(getRecentOwnedMaterialLifecycleCounts(1400)).toEqual({
-      createdCount: 1,
-      disposedCount: 1,
+      createdCount: 0,
+      disposedCount: 0,
     });
     expect(getRecentOwnedMaterialLifecycleCounts(2401)).toEqual({
       createdCount: 0,
@@ -1226,18 +1226,27 @@ describe('render3d visibility helpers', () => {
     expect(summarizeVisibleTileKinds([], 4)).toBe('');
   });
 
-  it('reuses one faded material clone per source material within a model root', () => {
+  it('keeps shared source materials and uses render hooks for per-object distance fading', () => {
     const sourceMaterial = createMockMaterial();
     const childA = createMockObject3D(sourceMaterial);
     const childB = createMockObject3D(sourceMaterial);
     const root = createMockObject3D(undefined, [childA, childB]);
 
     prepareObjectForDistanceFade(root as never);
+    applyObjectDistanceFade(root as never, 0.4);
 
-    expect(sourceMaterial.clone).toHaveBeenCalledTimes(1);
+    expect(sourceMaterial.clone).toHaveBeenCalledTimes(0);
     expect(childA.material).toBe(childB.material);
-    expect(childA.material).not.toBe(sourceMaterial);
-    expect(collectSceneResourceStats(root as never).clonedMaterialCount).toBe(1);
+    expect(childA.material).toBe(sourceMaterial);
+    childA.onBeforeRender?.();
+    expect(sourceMaterial.opacity).toBeCloseTo(0.4, 6);
+    expect(sourceMaterial.transparent).toBe(true);
+    expect(sourceMaterial.depthWrite).toBe(false);
+    childA.onAfterRender?.();
+    expect(sourceMaterial.opacity).toBe(1);
+    expect(sourceMaterial.transparent).toBe(false);
+    expect(sourceMaterial.depthWrite).toBe(true);
+    expect(collectSceneResourceStats(root as never).clonedMaterialCount).toBe(0);
   });
 
   it('freezes static transform subtrees while leaving dynamic responders and lights alone', () => {
