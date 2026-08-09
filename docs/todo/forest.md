@@ -1006,6 +1006,7 @@ I would build this much like the character-animation preview page.
 * [ ] Compare several seeds side-by-side.
 * [ ] Generate a grid of trees from one species to judge whether they look sufficiently different.
 * [ ] Generate mixed forests to test whether procedural variation remains visually coherent.
+* [ ] Let me rotate, pan, zoom-in with my mouse, mouse wheel, and holding down shift + mouse
 
 # Automated Tree Quality Tests
 
