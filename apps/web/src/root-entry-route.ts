@@ -9,11 +9,13 @@ export type RootEntryPagePath = (typeof ROOT_ENTRY_PAGE_PATHS)[number];
 type RootEntryRouteDefinition = {
   pagePath: RootEntryPagePath;
   aliases: readonly string[];
+  entryHtmlPath: string;
 };
 
 export type ResolvedRootEntryRoute = {
   pagePath: RootEntryPagePath;
   canonicalPathname: string;
+  entryHtmlPathname: string;
   matchedPathname: string;
   isAlias: boolean;
 };
@@ -22,6 +24,7 @@ const ROOT_ENTRY_ROUTE_DEFINITIONS: readonly RootEntryRouteDefinition[] = [
   {
     pagePath: '/debug/',
     aliases: ['/debug', '/debug/', '/debug.html', '/debug/index.html'],
+    entryHtmlPath: '/debug/index.html',
   },
   {
     pagePath: '/debug/music/',
@@ -31,6 +34,7 @@ const ROOT_ENTRY_ROUTE_DEFINITIONS: readonly RootEntryRouteDefinition[] = [
       '/debug/music.html',
       '/debug/music/index.html',
     ],
+    entryHtmlPath: '/debug/music/index.html',
   },
   {
     pagePath: '/debug/trees/',
@@ -40,6 +44,7 @@ const ROOT_ENTRY_ROUTE_DEFINITIONS: readonly RootEntryRouteDefinition[] = [
       '/debug/trees.html',
       '/debug/trees/index.html',
     ],
+    entryHtmlPath: '/debug/trees/index.html',
   },
 ];
 
@@ -72,6 +77,7 @@ export function resolveRootEntryRoute(
       return {
         pagePath: definition.pagePath,
         canonicalPathname: `${match.prefix}${definition.pagePath}`,
+        entryHtmlPathname: `${match.prefix}${definition.entryHtmlPath}`,
         matchedPathname: `${match.prefix}${alias}`,
         isAlias: alias !== definition.pagePath,
       };
@@ -85,4 +91,8 @@ export function resolveRootEntryPagePath(
   pathname: string
 ): RootEntryPagePath | null {
   return resolveRootEntryRoute(pathname)?.pagePath ?? null;
+}
+
+export function resolveRootEntryHtmlPath(pathname: string): string | null {
+  return resolveRootEntryRoute(pathname)?.entryHtmlPathname ?? null;
 }

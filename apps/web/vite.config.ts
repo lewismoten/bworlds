@@ -2,6 +2,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { defineConfig, type Plugin } from 'vite';
 import { resolveDebugRouteRedirect } from './src/debug-route-aliases.ts';
+import { resolveRootEntryHtmlPath } from './src/root-entry-route.ts';
 import { buildWorkspaceAliases } from './vite.workspace.ts';
 
 const APP_DIR = fileURLToPath(new URL('.', import.meta.url));
@@ -45,20 +46,42 @@ function createDebugRouteRedirectPlugin(): Plugin {
     return true;
   };
 
+  const rewrite = (req: DebugRouteRequest): boolean => {
+    if (!req.url) {
+      return false;
+    }
+
+    const requestUrl = new URL(req.url, 'http://localhost');
+    const htmlPath = resolveRootEntryHtmlPath(requestUrl.pathname);
+    if (!htmlPath) {
+      return false;
+    }
+
+    requestUrl.pathname = htmlPath;
+    req.url = `${requestUrl.pathname}${requestUrl.search}`;
+    return true;
+  };
+
   return {
     name: 'debug-route-redirect',
     configureServer(server: DebugRouteMiddlewareContainer) {
       server.middlewares.use((req, res, next) => {
-        if (!redirect(req.url, res)) {
-          next();
+        if (redirect(req.url, res)) {
+          return;
         }
+
+        rewrite(req);
+        next();
       });
     },
     configurePreviewServer(server: DebugRouteMiddlewareContainer) {
       server.middlewares.use((req, res, next) => {
-        if (!redirect(req.url, res)) {
-          next();
+        if (redirect(req.url, res)) {
+          return;
         }
+
+        rewrite(req);
+        next();
       });
     },
   };
