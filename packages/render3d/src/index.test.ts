@@ -42,6 +42,16 @@ vi.mock('@bworlds/three-support', () => ({
       dispose() {},
     };
   },
+  createBasicMaterial(_three: unknown, options: Record<string, unknown>) {
+    return {
+      ...options,
+      userData: {},
+      clone() {
+        return { ...this, userData: {} };
+      },
+      dispose() {},
+    };
+  },
   getSharedCylinderGeometry(_three: unknown, ..._args: number[]) {
     return {
       attributes: {
@@ -85,6 +95,7 @@ vi.mock('@bworlds/three-support', () => ({
 }));
 
 import { createForestTilePlugin } from '@bworlds/tile-forest';
+import { createDungeonTilePlugin } from '@bworlds/tile-dungeon';
 import { createLighthouseTilePlugin } from '@bworlds/tile-lighthouse';
 import { createTownTilePlugin } from '@bworlds/tile-town';
 import {
@@ -1351,6 +1362,27 @@ describe('render3d visibility helpers', () => {
     expect(
       validateTileModelAgainstRenderBudget(lighthouseModel as never, 'full')
     ).toEqual(
+      expect.objectContaining({
+        accepted: true,
+        violations: [],
+      })
+    );
+  });
+
+  it('accepts representative distant dungeon models at low detail', () => {
+    const dungeonPlugin = createDungeonTilePlugin();
+    const dungeonTile = dungeonPlugin.tiles?.find((entry) => entry.kind === 'dungeon');
+    const state = createPluginRenderState();
+    const dungeonModel = dungeonTile?.create3DModel?.({
+      three: fakePluginThree as never,
+      state,
+      tile: { kind: 'dungeon' },
+      tileX: 5,
+      tileY: 4,
+      detailLevel: 'low',
+    });
+
+    expect(validateTileModelAgainstRenderBudget(dungeonModel as never, 'low')).toEqual(
       expect.objectContaining({
         accepted: true,
         violations: [],

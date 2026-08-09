@@ -18,6 +18,7 @@ import {
   createPaintedCanvasTexture,
   createPaintedStandardMaterial,
 } from '@bworlds/three-support';
+import { createLowDetailDungeonModel } from './low-detail.ts';
 import type {
   Create3DModelContext,
   Paint2DContext,
@@ -84,12 +85,25 @@ export function createDungeonTilePlugin(): RuntimePlugin {
       tileY,
       detailLevel = 'full',
     }: Create3DModelContext) {
-      const group = new three.Group();
       const style = getDungeonStyle(three, tileX, tileY);
       const entrance = getDungeonEntranceDirection(state, tileX, tileY);
       const baseWidth = 0.9 + hash2D(DUNGEON_WIDTH_SEED, tileX, tileY) * 0.16;
       const baseDepth = 0.9 + hash2D(DUNGEON_DEPTH_SEED, tileX, tileY) * 0.18;
       const baseHeight = 0.7 + hash2D(DUNGEON_HEIGHT_SEED, tileX, tileY) * 0.16;
+
+      if (detailLevel === 'low') {
+        return createLowDetailDungeonModel(three, {
+          tileX,
+          tileY,
+          baseWidth,
+          baseDepth,
+          baseHeight,
+          entrance,
+          style,
+        });
+      }
+
+      const group = new three.Group();
 
       const base = new three.Mesh(
         new three.BoxGeometry(baseWidth, baseHeight, baseDepth),
@@ -216,18 +230,16 @@ export function createDungeonTilePlugin(): RuntimePlugin {
 
       group.add(gate);
 
-      if (detailLevel === 'full') {
-        getDungeonTowerBeaconDescriptors(tileX, tileY, baseWidth, baseDepth).forEach(
-          (beacon) => {
-            createDungeonBeacon(three, group, beacon, style);
-          }
-        );
-        getDungeonBannerDescriptors(tileX, tileY, baseWidth, baseDepth).forEach(
-          (banner, index) => {
-            group.add(createDungeonBanner(three, banner, style, tileX, tileY, index));
-          }
-        );
-      }
+      getDungeonTowerBeaconDescriptors(tileX, tileY, baseWidth, baseDepth).forEach(
+        (beacon) => {
+          createDungeonBeacon(three, group, beacon, style);
+        }
+      );
+      getDungeonBannerDescriptors(tileX, tileY, baseWidth, baseDepth).forEach(
+        (banner, index) => {
+          group.add(createDungeonBanner(three, banner, style, tileX, tileY, index));
+        }
+      );
 
       return group;
     },

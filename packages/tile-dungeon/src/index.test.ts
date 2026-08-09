@@ -230,6 +230,31 @@ describe('tile dungeon', () => {
     expect(fullBeacons.size).toBeGreaterThan(lowBeacons.size);
   });
 
+  it('keeps low-detail dungeon silhouettes lighter than full-detail ones', () => {
+    const plugin = createDungeonTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'dungeon');
+    const state = createDungeonState();
+
+    const fullModel = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'dungeon' },
+      tileX: 5,
+      tileY: 4,
+      detailLevel: 'full',
+    }) as FakeGroup;
+    const lowModel = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'dungeon' },
+      tileX: 5,
+      tileY: 4,
+      detailLevel: 'low',
+    }) as FakeGroup;
+
+    expect(lowModel.children.length).toBeLessThan(fullModel.children.length);
+  });
+
   it('intensifies red stronghold beacons at night', () => {
     const plugin = createDungeonTilePlugin();
     const tile = plugin.tiles?.find((entry) => entry.kind === 'dungeon');
@@ -445,7 +470,7 @@ describe('tile dungeon', () => {
       detailLevel: 'low',
     }) as FakeGroup;
 
-    expect(countSharedMaterialReferences(first, second)).toBeGreaterThanOrEqual(4);
+    expect(countSharedMaterialReferences(first, second)).toBeGreaterThanOrEqual(3);
   });
 
   it('reuses full-detail gate, beacon, and banner materials across repeated builds', () => {
