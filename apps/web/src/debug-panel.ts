@@ -137,6 +137,9 @@ export type PerformanceHistorySample = {
   nowMs: number;
   fps: number;
   frameMs: number;
+  targetFps: 60 | 30;
+  visibilityRadius: number;
+  renderQualityLevel: string;
   drawCalls: number;
   triangles: number;
   objectCount: number;

@@ -1116,6 +1116,9 @@ const debugResourceTrendState = {
     nowMs: number;
     fps: number;
     frameMs: number;
+    targetFps: 60 | 30;
+    visibilityRadius: number;
+    renderQualityLevel: string;
     drawCalls: number;
     triangles: number;
     objectCount: number;
@@ -1918,6 +1921,9 @@ function collectCurrentDebugSnapshot(
       nowMs,
       fps: debugSnapshot.fps,
       frameMs: debugSnapshot.frameMs,
+      targetFps: debugSnapshot.targetFps,
+      visibilityRadius: debugSnapshot.visibilityRadius,
+      renderQualityLevel: debugSnapshot.renderQualityLevel,
       drawCalls: debugSnapshot.drawCalls,
       triangles: debugSnapshot.triangles,
       objectCount: debugSnapshot.object3dCount,

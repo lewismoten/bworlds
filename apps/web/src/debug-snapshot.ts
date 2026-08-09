@@ -199,6 +199,12 @@ export type DebugSnapshotExport = {
       plugin: string;
       rejectedModelsPerSecond: number;
     }>;
+    dynamicQualityChanges: Array<{
+      t: number;
+      targetFps: 60 | 30;
+      visibilityRadius: number;
+      renderQualityLevel: string;
+    }>;
     limits: {
       frameMs: {
         current: number;
@@ -261,6 +267,9 @@ export type DebugSnapshotExport = {
     t: number;
     fps: number;
     frameMs: number;
+    targetFps: 60 | 30;
+    visibilityRadius: number;
+    renderQualityLevel: string;
     drawCalls: number;
     triangles: number;
     objectCount: number;
@@ -459,6 +468,9 @@ export function buildDebugSnapshotExport(
       t: roundTenths((sample.nowMs - latestHistoryTime) / 1000),
       fps: sample.fps,
       frameMs: sample.frameMs,
+      targetFps: sample.targetFps,
+      visibilityRadius: sample.visibilityRadius,
+      renderQualityLevel: sample.renderQualityLevel,
       drawCalls: sample.drawCalls,
       triangles: sample.triangles,
       objectCount: sample.objectCount,
@@ -539,6 +551,7 @@ function buildResourceBudgetSnapshot(
     pluginRequestsRejectedDueToBudget: parseRejectedPluginSummary(
       options.snapshot.tileModelBudgetViolationSummary
     ),
+    dynamicQualityChanges: collectDynamicQualityChanges(options.history),
     limits: {
       frameMs: {
         current: options.snapshot.frameMs,
@@ -667,6 +680,44 @@ function parseRejectedPluginSummary(
       };
     })
     .filter((entry): entry is { plugin: string; rejectedModelsPerSecond: number } => entry !== null);
+}
+
+function collectDynamicQualityChanges(
+  history: PerformanceHistorySample[]
+): Array<{
+  t: number;
+  targetFps: 60 | 30;
+  visibilityRadius: number;
+  renderQualityLevel: string;
+}> {
+  if (history.length === 0) {
+    return [];
+  }
+
+  const latestHistoryTime = history[history.length - 1]?.nowMs ?? 0;
+  const changes: Array<{
+    t: number;
+    targetFps: 60 | 30;
+    visibilityRadius: number;
+    renderQualityLevel: string;
+  }> = [];
+  let previousKey = '';
+
+  for (const sample of history) {
+    const key = `${sample.targetFps}|${sample.visibilityRadius}|${sample.renderQualityLevel}`;
+    if (key === previousKey) {
+      continue;
+    }
+    previousKey = key;
+    changes.push({
+      t: roundTenths((sample.nowMs - latestHistoryTime) / 1000),
+      targetFps: sample.targetFps,
+      visibilityRadius: sample.visibilityRadius,
+      renderQualityLevel: sample.renderQualityLevel,
+    });
+  }
+
+  return changes;
 }
 
 function roundTenths(value: number): number {

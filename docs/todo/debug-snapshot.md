@@ -431,7 +431,7 @@ Immediately you know where to look.
 * [ ] Include which optional features were dropped.
 * [ ] Include models automatically lowered to another LOD.
 * [X] Include plugin requests rejected due to budget.
-* [ ] Include dynamic quality changes during sampling.
+* [X] Include dynamic quality changes during sampling.
 
 For example:
 
