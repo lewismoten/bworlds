@@ -136,7 +136,7 @@ Not everything needs 60 updates per second.
 * [ ] Update expensive pathfinding only when paths actually change.
 * [ ] Update UI only when displayed values change.
 * [X] Update minimaps only when necessary.
-* [ ] Avoid recalculating unchanged procedural systems.
+* [X] Avoid recalculating unchanged procedural systems.
 
 You might eventually have:
 

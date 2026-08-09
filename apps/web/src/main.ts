@@ -195,6 +195,7 @@ import { createCycleFrameCache } from './cycle-frame-cache.ts';
 import { createDebouncedPersistence } from './debounced-persistence.ts';
 import { createBoundedCache } from './bounded-cache.ts';
 import { getPlayerSpatialSummary } from './player-spatial-summary.ts';
+import { createPlayerSpatialSummaryCache } from './player-spatial-summary-cache.ts';
 import { resolveCompassFrameState } from './compass-frame-state.ts';
 import { getNearbyOverworldQueryState } from './nearby-overworld-query.ts';
 import {
@@ -1163,6 +1164,9 @@ const resolveCachedCycle = createCycleFrameCache(
       (celestialOverrides ?? {}) as CelestialEnvironmentOverrides
     )
 );
+const resolveCachedPlayerSpatialSummary = createPlayerSpatialSummaryCache(
+  getPlayerSpatialSummary
+);
 let latestEnvironment: WorldEnvironmentLike = getCurrentEnvironment();
 
 (state as typeof state & { celestialEventMode?: string }).celestialEventMode =
@@ -1190,7 +1194,7 @@ function updateViewModeUi(): void {
 }
 
 function updateStatus(
-  spatial = getPlayerSpatialSummary(state),
+  spatial = resolveCachedPlayerSpatialSummary(state),
   environment: WorldEnvironmentLike = getCurrentEnvironment(),
   cycle = getCurrentCycle(environment)
 ) {
@@ -1998,7 +2002,7 @@ function downloadCurrentDebugSnapshot(): void {
   const nowMs = performance.now();
   const latestSnapshot = collectCurrentDebugSnapshot(
     nowMs,
-    getPlayerSpatialSummary(state),
+    resolveCachedPlayerSpatialSummary(state),
     { recordDiagnostics: false }
   );
   const rendererStats = renderer3d.getStats();
@@ -2844,7 +2848,7 @@ function render(): FrameLoopActivityLike {
   latestEnvironment = environment;
   const actualCycle = getCurrentCycle(environment, timeMs);
   const displayCycle = updateDisplayedCycle(actualCycle);
-  const spatial = getPlayerSpatialSummary(state);
+  const spatial = resolveCachedPlayerSpatialSummary(state);
   const context = spatial.context;
   const currentTile = spatial.tile;
   const musicClusterX = Math.floor(spatial.playerX / 12);
