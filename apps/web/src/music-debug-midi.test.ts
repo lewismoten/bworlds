@@ -212,6 +212,26 @@ describe('music debug midi', () => {
     expect(snapshot.lyrics.length).toBeGreaterThan(0);
     expect(leadLyrics).toEqual(snapshot.lyrics.map((line) => line.text));
   });
+
+  it('rejects MIDI export when chromatic-note validation fails', () => {
+    const snapshot = createMusicDebugSnapshot({
+      tileKind: 'forest',
+      contextType: 'overworld',
+      clusterX: 0,
+      clusterY: 0,
+    });
+
+    expect(() =>
+      createMusicDebugMidiFile({
+        ...snapshot,
+        midiExportValidation: {
+          ...snapshot.midiExportValidation,
+          isValidForMidiExport: false,
+          messages: ['Found 1 unexplained chromatic note.'],
+        },
+      })
+    ).toThrow('Cannot export MIDI: Found 1 unexplained chromatic note.');
+  });
 });
 
 function parseMidiChunks(bytes: Uint8Array): {

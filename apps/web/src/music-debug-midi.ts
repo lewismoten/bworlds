@@ -96,6 +96,11 @@ export function createMusicDebugMidiFile(
   snapshot: MusicDebugSnapshot,
   metadataOptions: MusicDebugMidiMetadataOptions = {}
 ): MusicDebugMidiFile {
+  if (!snapshot.midiExportValidation.isValidForMidiExport) {
+    throw new Error(
+      `Cannot export MIDI: ${snapshot.midiExportValidation.messages.join(' ')}`
+    );
+  }
   const metadata = resolveMusicDebugMidiMetadata(snapshot, metadataOptions);
   const tracks = buildMidiTracks(snapshot, metadata);
   const encodedTracks = tracks.map((track) => {

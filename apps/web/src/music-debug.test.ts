@@ -96,6 +96,11 @@ describe('music debug', () => {
     ]);
     expect(first.blueprintLabel).toContain("A'16");
     expect(first.roleCounts.bass).toBeGreaterThan(0);
+    expect(first.notePitchDiagnostics.length).toBe(first.notes.length);
+    expect(first.outOfModeNotesByRole.bass).toBeGreaterThanOrEqual(0);
+    expect(first.midiExportValidation.accidentalNoteCount).toBe(
+      first.accidentalNoteCount
+    );
   });
 
   it('renders markup and summary content for the laboratory page', () => {
@@ -144,6 +149,7 @@ describe('music debug', () => {
     expect(summary).toContain('Lead Cadence');
     expect(summary).toContain('Lead Max Leap');
     expect(summary).toContain('Accidentals');
+    expect(summary).toContain('Out-of-Mode');
     expect(summary).toContain(snapshot.theme.id);
     expect(summary).toContain(snapshot.theme.vocabulary.modeLabel);
     expect(summary).toContain(snapshot.theme.motif.adaptationLabel);

@@ -54,13 +54,17 @@ export type CombatSoundStyle =
   | 'healing';
 type SurfaceAudioFamily =
   | 'default'
-  | 'road'
-  | 'bridge'
-  | 'dock'
-  | 'shore'
-  | 'interior'
-  | 'town'
-  | 'cave';
+  | 'grass'
+  | 'mud'
+  | 'sand'
+  | 'gravel'
+  | 'rock'
+  | 'wood'
+  | 'metal'
+  | 'stone-floor'
+  | 'snow'
+  | 'shallow-water'
+  | 'vegetation';
 
 export type { ProceduralSoundEffect } from './procedural-sound-effect-generator.ts';
 
@@ -168,7 +172,31 @@ const SURFACE_AUDIO_PROFILES: Record<SurfaceAudioFamily, SurfaceAudioProfile> =
       landingVolume: 0.065,
       waveform: 'triangle',
     },
-    road: {
+    grass: {
+      cadenceMs: 315,
+      footstepFrequency: 128,
+      landingFrequency: 94,
+      footstepVolume: 0.036,
+      landingVolume: 0.052,
+      waveform: 'triangle',
+    },
+    mud: {
+      cadenceMs: 342,
+      footstepFrequency: 98,
+      landingFrequency: 76,
+      footstepVolume: 0.046,
+      landingVolume: 0.068,
+      waveform: 'triangle',
+    },
+    sand: {
+      cadenceMs: 322,
+      footstepFrequency: 118,
+      landingFrequency: 88,
+      footstepVolume: 0.034,
+      landingVolume: 0.049,
+      waveform: 'triangle',
+    },
+    gravel: {
       cadenceMs: 265,
       footstepFrequency: 168,
       landingFrequency: 122,
@@ -176,7 +204,15 @@ const SURFACE_AUDIO_PROFILES: Record<SurfaceAudioFamily, SurfaceAudioProfile> =
       landingVolume: 0.056,
       waveform: 'square',
     },
-    bridge: {
+    rock: {
+      cadenceMs: 286,
+      footstepFrequency: 176,
+      landingFrequency: 128,
+      footstepVolume: 0.042,
+      landingVolume: 0.062,
+      waveform: 'square',
+    },
+    wood: {
       cadenceMs: 290,
       footstepFrequency: 188,
       landingFrequency: 132,
@@ -184,57 +220,61 @@ const SURFACE_AUDIO_PROFILES: Record<SurfaceAudioFamily, SurfaceAudioProfile> =
       landingVolume: 0.06,
       waveform: 'square',
     },
-    dock: {
-      cadenceMs: 300,
-      footstepFrequency: 176,
-      landingFrequency: 126,
+    metal: {
+      cadenceMs: 274,
+      footstepFrequency: 214,
+      landingFrequency: 148,
       footstepVolume: 0.04,
       landingVolume: 0.058,
       waveform: 'square',
     },
-    shore: {
-      cadenceMs: 305,
-      footstepFrequency: 132,
-      landingFrequency: 98,
-      footstepVolume: 0.034,
+    'stone-floor': {
+      cadenceMs: 282,
+      footstepFrequency: 146,
+      landingFrequency: 104,
+      footstepVolume: 0.033,
       landingVolume: 0.05,
       waveform: 'triangle',
     },
-    interior: {
-      cadenceMs: 285,
-      footstepFrequency: 146,
-      landingFrequency: 104,
-      footstepVolume: 0.032,
-      landingVolume: 0.048,
+    snow: {
+      cadenceMs: 336,
+      footstepFrequency: 106,
+      landingFrequency: 78,
+      footstepVolume: 0.04,
+      landingVolume: 0.06,
       waveform: 'square',
     },
-    town: {
-      cadenceMs: 275,
-      footstepFrequency: 156,
-      landingFrequency: 112,
-      footstepVolume: 0.036,
-      landingVolume: 0.052,
-      waveform: 'square',
-    },
-    cave: {
+    'shallow-water': {
       cadenceMs: 330,
-      footstepFrequency: 108,
-      landingFrequency: 82,
-      footstepVolume: 0.048,
-      landingVolume: 0.072,
+      footstepFrequency: 114,
+      landingFrequency: 86,
+      footstepVolume: 0.044,
+      landingVolume: 0.064,
+      waveform: 'triangle',
+    },
+    vegetation: {
+      cadenceMs: 324,
+      footstepFrequency: 124,
+      landingFrequency: 90,
+      footstepVolume: 0.039,
+      landingVolume: 0.058,
       waveform: 'triangle',
     },
   };
 
 const SURFACE_AUDIO_FAMILY_SEED_PARTS: Record<SurfaceAudioFamily, number> = {
   default: 0,
-  road: 1,
-  bridge: 2,
-  dock: 3,
-  shore: 4,
-  interior: 5,
-  town: 6,
-  cave: 7,
+  grass: 1,
+  mud: 2,
+  sand: 3,
+  gravel: 4,
+  rock: 5,
+  wood: 6,
+  metal: 7,
+  'stone-floor': 8,
+  snow: 9,
+  'shallow-water': 10,
+  vegetation: 11,
 };
 
 const SOUND_EFFECT_SEEDS = registerHashSeeds([
@@ -271,31 +311,64 @@ export function getSurfaceAudioFamily(
   if (!tileKind) {
     return 'default';
   }
-  if (tileKind === 'cave-floor' || tileKind === 'cave-mushrooms') {
-    return 'cave';
+  if (tileKind === 'river' || tileKind === 'water' || tileKind === 'shallows') {
+    return 'shallow-water';
+  }
+  if (tileKind === 'snow' || tileKind === 'ice') {
+    return 'snow';
+  }
+  if (
+    tileKind === 'forest' ||
+    tileKind === 'cave-mushrooms' ||
+    tileKind === 'vegetation'
+  ) {
+    return 'vegetation';
+  }
+  if (tileKind === 'mud' || tileKind === 'swamp') {
+    return 'mud';
+  }
+  if (tileKind === 'sand' || tileKind === 'shore') {
+    return 'sand';
+  }
+  if (
+    tileKind === 'road' ||
+    tileKind === 'path' ||
+    tileKind === 'gravel' ||
+    tileKind === 'quarry'
+  ) {
+    return 'gravel';
+  }
+  if (
+    tileKind === 'mountain' ||
+    tileKind === 'rock' ||
+    tileKind === 'observatory'
+  ) {
+    return 'rock';
+  }
+  if (
+    tileKind === 'bridge' ||
+    tileKind === 'dock' ||
+    tileKind === 'ship' ||
+    tileKind === 'wood'
+  ) {
+    return 'wood';
+  }
+  if (tileKind === 'rail' || tileKind === 'station' || tileKind === 'metal') {
+    return 'metal';
   }
   if (
     tileKind === 'floor' ||
     tileKind === 'shop' ||
     tileKind === 'stairsUp' ||
-    tileKind === 'stairsDown'
+    tileKind === 'stairsDown' ||
+    tileKind === 'town' ||
+    tileKind === 'cave-floor' ||
+    tileKind === 'stone-floor'
   ) {
-    return 'interior';
+    return 'stone-floor';
   }
-  if (tileKind === 'shore') {
-    return 'shore';
-  }
-  if (tileKind === 'town') {
-    return 'town';
-  }
-  if (tileKind === 'road') {
-    return 'road';
-  }
-  if (tileKind === 'bridge') {
-    return 'bridge';
-  }
-  if (tileKind === 'dock') {
-    return 'dock';
+  if (tileKind === 'plains' || tileKind === 'grass') {
+    return 'grass';
   }
   return 'default';
 }
@@ -1184,11 +1257,11 @@ function resolveInteractionFrequency(
 ): number {
   const family = getSurfaceAudioFamily(tileKind);
   const base =
-    tileKind === 'door' || family === 'interior'
+    tileKind === 'door' || family === 'wood'
       ? 212
-      : family === 'cave'
+      : tileKind === 'cave-floor' || family === 'rock'
         ? 134
-        : family === 'town'
+        : family === 'stone-floor'
           ? 184
           : 166;
   return event === 'open'
@@ -1201,10 +1274,10 @@ function resolveInteractionWaveform(
   fallback: SoundWaveform
 ): SoundWaveform {
   const family = getSurfaceAudioFamily(tileKind);
-  if (tileKind === 'door' || family === 'interior') {
+  if (tileKind === 'door' || family === 'wood') {
     return 'square';
   }
-  if (family === 'cave') {
+  if (tileKind === 'cave-floor' || family === 'rock') {
     return 'triangle';
   }
   return fallback;

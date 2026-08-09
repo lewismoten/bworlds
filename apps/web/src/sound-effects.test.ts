@@ -3271,7 +3271,7 @@ describe('sound effects', () => {
   it('provides cave and bridge audio profiles for later surface-specific effects', () => {
     expect(getSurfaceAudioProfile('cave-floor')).toEqual(
       expect.objectContaining({
-        cadenceMs: 330,
+        cadenceMs: 282,
         waveform: 'triangle',
       })
     );
@@ -3299,18 +3299,34 @@ describe('sound effects', () => {
   });
 
   it('maps walkable tiles into distinct surface families for footsteps', () => {
-    expect(getSurfaceAudioFamily('road')).toBe('road');
-    expect(getSurfaceAudioFamily('bridge')).toBe('bridge');
-    expect(getSurfaceAudioFamily('dock')).toBe('dock');
-    expect(getSurfaceAudioFamily('shore')).toBe('shore');
-    expect(getSurfaceAudioFamily('town')).toBe('town');
-    expect(getSurfaceAudioFamily('floor')).toBe('interior');
-    expect(getSurfaceAudioFamily('shop')).toBe('interior');
-    expect(getSurfaceAudioFamily('stairsUp')).toBe('interior');
-    expect(getSurfaceAudioFamily('cave-mushrooms')).toBe('cave');
+    expect(getSurfaceAudioFamily('plains')).toBe('grass');
+    expect(getSurfaceAudioFamily('forest')).toBe('vegetation');
+    expect(getSurfaceAudioFamily('mud')).toBe('mud');
+    expect(getSurfaceAudioFamily('shore')).toBe('sand');
+    expect(getSurfaceAudioFamily('road')).toBe('gravel');
+    expect(getSurfaceAudioFamily('mountain')).toBe('rock');
+    expect(getSurfaceAudioFamily('bridge')).toBe('wood');
+    expect(getSurfaceAudioFamily('rail')).toBe('metal');
+    expect(getSurfaceAudioFamily('floor')).toBe('stone-floor');
+    expect(getSurfaceAudioFamily('town')).toBe('stone-floor');
+    expect(getSurfaceAudioFamily('snow')).toBe('snow');
+    expect(getSurfaceAudioFamily('river')).toBe('shallow-water');
+    expect(getSurfaceAudioFamily('cave-mushrooms')).toBe('vegetation');
   });
 
-  it('varies cadence and pitch across road, bridge, shore, town, and interior surfaces', () => {
+  it('varies cadence and pitch across terrain material footstep surfaces', () => {
+    expect(getSurfaceAudioProfile('plains')).toEqual(
+      expect.objectContaining({
+        cadenceMs: 315,
+        footstepFrequency: 128,
+      })
+    );
+    expect(getSurfaceAudioProfile('mud')).toEqual(
+      expect.objectContaining({
+        cadenceMs: 342,
+        footstepFrequency: 98,
+      })
+    );
     expect(getSurfaceAudioProfile('road')).toEqual(
       expect.objectContaining({
         cadenceMs: 265,
@@ -3325,20 +3341,38 @@ describe('sound effects', () => {
     );
     expect(getSurfaceAudioProfile('shore')).toEqual(
       expect.objectContaining({
-        cadenceMs: 305,
-        footstepFrequency: 132,
+        cadenceMs: 322,
+        footstepFrequency: 118,
       })
     );
-    expect(getSurfaceAudioProfile('town')).toEqual(
+    expect(getSurfaceAudioProfile('mountain')).toEqual(
       expect.objectContaining({
-        cadenceMs: 275,
-        footstepFrequency: 156,
+        cadenceMs: 286,
+        footstepFrequency: 176,
+      })
+    );
+    expect(getSurfaceAudioProfile('rail')).toEqual(
+      expect.objectContaining({
+        cadenceMs: 274,
+        footstepFrequency: 214,
       })
     );
     expect(getSurfaceAudioProfile('floor')).toEqual(
       expect.objectContaining({
-        cadenceMs: 285,
+        cadenceMs: 282,
         footstepFrequency: 146,
+      })
+    );
+    expect(getSurfaceAudioProfile('snow')).toEqual(
+      expect.objectContaining({
+        cadenceMs: 336,
+        footstepFrequency: 106,
+      })
+    );
+    expect(getSurfaceAudioProfile('river')).toEqual(
+      expect.objectContaining({
+        cadenceMs: 330,
+        footstepFrequency: 114,
       })
     );
   });
@@ -3698,36 +3732,27 @@ describe('sound effects', () => {
       windStrength: 0.95,
     });
 
-    const roadStep = played.find(
-      (effect) => effect.kind === 'footstep' && effect.durationMs < 100
-    );
-    const caveStep = played.find(
-      (effect) => effect.kind === 'footstep' && effect.durationMs >= 100
-    );
+    const roadProfile = getSurfaceAudioProfile('road');
+    const caveProfile = getSurfaceAudioProfile('cave-floor');
+    const footsteps = played.filter((effect) => effect.kind === 'footstep');
+    const roadStep = footsteps[0];
+    const caveStep = footsteps[1];
     const forestAmbient = played.filter(
       (effect) => effect.kind === 'forest-ambience'
     );
     const winds = played.filter((effect) => effect.kind === 'wind');
 
     expect(roadStep?.durationMs).toBeGreaterThanOrEqual(
-      getMovementSoundDurationMs('footstep', getSurfaceAudioProfile('road')) *
-        0.92
+      getMovementSoundDurationMs('footstep', roadProfile) * 0.92
     );
     expect(roadStep?.durationMs).toBeLessThanOrEqual(
-      getMovementSoundDurationMs('footstep', getSurfaceAudioProfile('road')) *
-        1.08
+      getMovementSoundDurationMs('footstep', roadProfile) * 1.08
     );
     expect(caveStep?.durationMs).toBeGreaterThanOrEqual(
-      getMovementSoundDurationMs(
-        'footstep',
-        getSurfaceAudioProfile('cave-floor')
-      ) * 0.92
+      getMovementSoundDurationMs('footstep', caveProfile) * 0.92
     );
     expect(caveStep?.durationMs).toBeLessThanOrEqual(
-      getMovementSoundDurationMs(
-        'footstep',
-        getSurfaceAudioProfile('cave-floor')
-      ) * 1.1
+      getMovementSoundDurationMs('footstep', caveProfile) * 1.1
     );
     expect((caveStep?.durationMs ?? 0) > (roadStep?.durationMs ?? 0)).toBe(
       true

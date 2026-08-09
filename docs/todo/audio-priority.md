@@ -30,7 +30,7 @@ added directly as semitones instead of moving through the selected scale.
 - [x] Make all tracks use the same root and mode mapping.
 - [x] Verify G Mixolydian maps to G A B C D E F.
 - [x] Test scale degrees across several octaves.
-- [ ] Reject unexpected chromatic notes before MIDI export.
+- [x] Reject unexpected chromatic notes before MIDI export.
 - [ ] Trace why bass notes center on G-sharp and F-sharp.
 - [ ] Trace why lead notes center on G-sharp and C-sharp.
 - [x] Verify motif degrees are not treated as semitone offsets.
@@ -44,11 +44,11 @@ added directly as semitones instead of moving through the selected scale.
 - [ ] Store the root as a MIDI note before composing.
 - [x] Store mode pitch offsets once per song.
 - [x] Share one mode definition across all tracks.
-- [ ] Log each note's scale degree and resulting MIDI pitch.
-- [ ] Count out-of-mode notes by track.
-- [ ] Fail validation when accidental counts exceed limits.
+- [x] Log each note's scale degree and resulting MIDI pitch.
+- [x] Count out-of-mode notes by track.
+- [x] Fail validation when accidental counts exceed limits.
 - [ ] Explain every accidental through a named rule.
-- [ ] Lower the accidental budget for ambient plains music.
+- [x] Lower the accidental budget for ambient plains music.
 
 ## Tempo and Duration
 

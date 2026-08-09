@@ -10,7 +10,6 @@ import {
   type ProceduralMusicNote,
 } from './procedural-music.ts';
 import {
-  isProceduralSemitoneInScale,
   resolveProceduralLeadContour,
   resolveProceduralChordProgression,
   resolveProceduralLeadMotif,
@@ -36,6 +35,11 @@ import {
   MUSIC_DEBUG_PLAYBACK_SCHEDULE_WINDOW_MS,
 } from './music-debug-playback-profile.ts';
 import { resolveMusicDebugTempoBpm } from './music-debug-tempo.ts';
+import {
+  analyzeMusicDebugPitches,
+  type MusicDebugNotePitchDiagnostic,
+  type MusicDebugPitchValidation,
+} from './music-debug-note-analysis.ts';
 
 export type MusicDebugTileKind =
   | 'plains'
@@ -95,6 +99,9 @@ export type MusicDebugSnapshot = {
   leadMaxLeapSemitones: number;
   accidentalNoteCount: number;
   roleCounts: Record<ProceduralMusicNote['role'], number>;
+  notePitchDiagnostics: MusicDebugNotePitchDiagnostic[];
+  outOfModeNotesByRole: Record<ProceduralMusicNote['role'], number>;
+  midiExportValidation: MusicDebugPitchValidation;
 };
 
 export type MusicDebugTheme = MusicDebugSnapshot['theme'];
@@ -281,17 +288,10 @@ export function createMusicDebugSnapshot(
     percussion: 0,
   };
   let leadMaxLeapSemitones = 0;
-  let accidentalNoteCount = 0;
   let previousLeadFrequency: number | null = null;
 
   for (const note of song.notes) {
     roleCounts[note.role] += 1;
-    const relativeSemitones = Math.round(
-      Math.log2(note.frequency / Math.max(theme.rootHz, Number.EPSILON)) * 12
-    );
-    if (!isProceduralSemitoneInScale(theme.scale, relativeSemitones)) {
-      accidentalNoteCount += 1;
-    }
     if (note.role !== 'lead') {
       continue;
     }
@@ -302,6 +302,13 @@ export function createMusicDebugSnapshot(
     }
     previousLeadFrequency = note.frequency;
   }
+  const midiExportValidation = analyzeMusicDebugPitches({
+    notes: song.notes,
+    rootHz: theme.rootHz,
+    modePitchOffsets: scaleMap.modePitchOffsets,
+    encounterMode: song.dna.encounterMode,
+    themeId: theme.id,
+  });
 
   return {
     options,
@@ -339,8 +346,11 @@ export function createMusicDebugSnapshot(
     loopStartOffsetMs: song.loopStartOffsetMs,
     loopEndOffsetMs: song.loopEndOffsetMs,
     leadMaxLeapSemitones,
-    accidentalNoteCount,
+    accidentalNoteCount: midiExportValidation.accidentalNoteCount,
     roleCounts,
+    notePitchDiagnostics: midiExportValidation.notePitchDiagnostics,
+    outOfModeNotesByRole: midiExportValidation.outOfModeNotesByRole,
+    midiExportValidation,
   };
 }
 
@@ -544,6 +554,7 @@ export function buildMusicDebugSummaryMarkup(
       <div><dt>Preferred Intervals</dt><dd>${snapshot.theme.vocabulary.preferredIntervals.join(', ')}</dd></div>
       <div><dt>Lead Max Leap</dt><dd>${snapshot.leadMaxLeapSemitones.toFixed(1)} st</dd></div>
       <div><dt>Accidentals</dt><dd>${snapshot.accidentalNoteCount}</dd></div>
+      <div><dt>Out-of-Mode</dt><dd>B ${snapshot.outOfModeNotesByRole.bass} / H ${snapshot.outOfModeNotesByRole.harmony} / L ${snapshot.outOfModeNotesByRole.lead}</dd></div>
     </div>
     <div class="music-debug-role-counts">
       <span>SongDNA ${snapshot.songDna.identityId} / ${snapshot.songDna.locationIdentityId} / ${snapshot.songDna.variantLabel} / ${snapshot.songDna.blueprintId} / ${snapshot.songDna.meterLabel}</span>
