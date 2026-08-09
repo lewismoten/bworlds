@@ -129,7 +129,7 @@ Not everything needs 60 updates per second.
 * [ ] Update nearby combat AI at an appropriate high frequency.
 * [ ] Update ordinary NPC AI less frequently.
 * [ ] Update distant creatures even less frequently.
-* [ ] Update weather simulation periodically rather than every frame.
+* [X] Update weather simulation periodically rather than every frame.
 * [ ] Update economy simulation on long intervals.
 * [ ] Update vegetation growth on very long intervals.
 * [ ] Update day/night calculations incrementally.

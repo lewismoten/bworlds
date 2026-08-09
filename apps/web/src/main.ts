@@ -190,6 +190,7 @@ import {
   resolvePoiMusicMix,
 } from './procedural-music.ts';
 import { createMusicUpdateGate } from './music-update-gate.ts';
+import { createEnvironmentFrameCache } from './environment-frame-cache.ts';
 import { createDebouncedPersistence } from './debounced-persistence.ts';
 import { createBoundedCache } from './bounded-cache.ts';
 import { getPlayerSpatialSummary } from './player-spatial-summary.ts';
@@ -1148,6 +1149,12 @@ const renderBudgetState = {
 const APP_VERSION = appPackage.version;
 const BUILD_ID =
   (import.meta.env as Record<string, string | undefined>).VITE_GIT_COMMIT ?? null;
+const resolveCachedEnvironment = createEnvironmentFrameCache(({ timeMs }) =>
+  registry.resolveWorldEnvironment({
+    state,
+    timeMs,
+  })
+);
 let latestEnvironment: WorldEnvironmentLike = getCurrentEnvironment();
 
 (state as typeof state & { celestialEventMode?: string }).celestialEventMode =
@@ -2117,9 +2124,11 @@ function getCurrentWorldTimeMs(): number {
 function getCurrentEnvironment(
   timeMs = getCurrentWorldTimeMs()
 ): WorldEnvironmentLike {
-  return registry.resolveWorldEnvironment({
-    state,
+  return resolveCachedEnvironment({
     timeMs,
+    contextId: state.getCurrentContext().id,
+    playerTileX: Math.round(state.player.x),
+    playerTileY: Math.round(state.player.y),
   });
 }
 
