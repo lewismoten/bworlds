@@ -1,4 +1,10 @@
-import { hash2D, registerHashLabel } from '@bworlds/core/hash';
+import {
+  appendHashSeedLabel,
+  hash2D,
+  hash2DWithSeed,
+  registerHashLabel,
+  resolveHashSeed,
+} from '@bworlds/core/hash';
 import { createPlainsBackedTilePainter } from '@bworlds/paint-support';
 import {
   DEFAULT_LAND_POI_BLOCKED_KINDS,
@@ -48,6 +54,8 @@ const RUINS_CHIP_ALPHA_SEED = registerHashLabel('ruins-chip-a');
 const RUINS_CRACK_X_SEED = registerHashLabel('ruins-crack-x');
 const RUINS_CRACK_Y_SEED = registerHashLabel('ruins-crack-y');
 const RUINS_CRACK_LENGTH_SEED = registerHashLabel('ruins-crack-l');
+const RUINS_REGION_BIAS_SEED = registerHashLabel('ruins-region');
+const RUINS_LOCAL_BIAS_SEED = registerHashLabel('ruins-local');
 const RUINS_BLOCKED_KINDS = new Set([
   ...DEFAULT_LAND_POI_BLOCKED_KINDS,
   'road',
@@ -128,14 +136,19 @@ const classifyRuinsTile = createChanceBasedLandPoiClassifier({
   threshold: 0.9925,
   blockedKinds: RUINS_BLOCKED_KINDS,
   getChance(context) {
+    const seedHash = resolveHashSeed(context.seed);
     const regionalBias =
-      hash2D(
-        `${context.seed}:ruins-region`,
+      hash2DWithSeed(
+        appendHashSeedLabel(seedHash, RUINS_REGION_BIAS_SEED),
         Math.floor(context.x / 24),
         Math.floor(context.y / 24)
       ) * 0.45;
     const localBias =
-      hash2D(`${context.seed}:ruins-local`, context.x, context.y) * 0.4;
+      hash2DWithSeed(
+        appendHashSeedLabel(seedHash, RUINS_LOCAL_BIAS_SEED),
+        context.x,
+        context.y
+      ) * 0.4;
     const terrainBias =
       context.signals.elevation * 0.22 +
       (1 - context.signals.moisture) * 0.16 +

@@ -8,6 +8,7 @@ import {
   hash2D,
   hash2DWithSeed,
   registerHashLabel,
+  resolveHashSeed,
 } from '@bworlds/core/hash';
 import {
   getDefaultQuestRegistry,
@@ -316,10 +317,7 @@ function pickFromList<T>(
   tileX: number,
   tileY: number
 ): T {
-  const hash =
-    typeof key === 'number'
-      ? hash2DWithSeed(key, tileX, tileY)
-      : hash2D(key, tileX, tileY);
+  const hash = hash2DWithSeed(resolveHashSeed(key), tileX, tileY);
   const index = Math.floor(hash * list.length) % list.length;
   return list[index] as T;
 }

@@ -1,4 +1,4 @@
-import { hash2D } from '@bworlds/core';
+import { hash2DWithSeed, registerHashLabel } from '@bworlds/core/hash';
 
 type MusicWaveform = OscillatorType;
 type MusicPosition = { x: number; y: number };
@@ -79,6 +79,10 @@ type MusicMood = {
   brightness: number;
   volumeMultiplier: number;
 };
+
+function createMusicSeed(...labels: string[]): number {
+  return registerHashLabel(labels.join(':'));
+}
 
 type MusicArrangementRoleProfile = {
   volumeMultiplier: number;
@@ -825,8 +829,8 @@ function createThemeNote(options: {
   );
   const octaveBoost =
     role !== 'bass' &&
-    hash2D(
-      `${options.theme.id}:octave`,
+    hash2DWithSeed(
+      createMusicSeed(options.theme.id, 'octave'),
       options.clusterX + options.stepIndex,
       options.clusterY
     ) > 0.84
@@ -1013,7 +1017,6 @@ function createProceduralInstrument(
   clusterY: number,
   options?: ProceduralInstrumentBankOptions
 ): ProceduralInstrument {
-  const seedKey = `${theme.id}:${role}`;
   const family = resolveInstrumentFamily(theme, role, clusterX, clusterY, options);
   const waveformOptions: Record<InstrumentRole, MusicWaveform[]> = {
     lead: ['triangle', 'sine', 'sawtooth'],
@@ -1024,7 +1027,10 @@ function createProceduralInstrument(
   const waveformList = waveformOptions[role];
   const waveform =
     waveformList[
-      Math.floor(hash2D(`${seedKey}:waveform`, clusterX, clusterY) * waveformList.length)
+      Math.floor(
+        hash2DWithSeed(createMusicSeed(theme.id, role, 'waveform'), clusterX, clusterY) *
+          waveformList.length
+      )
     ] ?? waveformList[0];
   const attackMsBase =
     role === 'lead' ? 28 : role === 'bass' ? 36 : role === 'harmony' ? 52 : 8;
@@ -1035,22 +1041,29 @@ function createProceduralInstrument(
     role,
     family,
     waveform,
-    attackMs: attackMsBase + Math.round(hash2D(`${seedKey}:attack`, clusterX, clusterY) * 24),
+    attackMs:
+      attackMsBase +
+      Math.round(hash2DWithSeed(createMusicSeed(theme.id, role, 'attack'), clusterX, clusterY) * 24),
     releaseMs:
-      releaseMsBase + Math.round(hash2D(`${seedKey}:release`, clusterX, clusterY) * 40),
+      releaseMsBase +
+      Math.round(
+        hash2DWithSeed(createMusicSeed(theme.id, role, 'release'), clusterX, clusterY) * 40
+      ),
     detuneCents:
-      (hash2D(`${seedKey}:detune`, clusterX, clusterY) - 0.5) *
+      (hash2DWithSeed(createMusicSeed(theme.id, role, 'detune'), clusterX, clusterY) - 0.5) *
       (role === 'percussion' ? 10 : 16),
     harmonicGain:
       0.12 +
-      hash2D(`${seedKey}:harmonics`, clusterX, clusterY) *
+      hash2DWithSeed(createMusicSeed(theme.id, role, 'harmonics'), clusterX, clusterY) *
         (role === 'bass' ? 0.16 : role === 'percussion' ? 0.08 : 0.28),
     pulseRate:
       0.6 +
-      hash2D(`${seedKey}:pulse`, clusterX, clusterY) *
+      hash2DWithSeed(createMusicSeed(theme.id, role, 'pulse'), clusterX, clusterY) *
         (role === 'percussion' ? 3.2 : role === 'harmony' ? 1.1 : 1.4),
     brightness:
-      0.82 + hash2D(`${seedKey}:brightness`, clusterX, clusterY) * 0.34,
+      0.82 +
+      hash2DWithSeed(createMusicSeed(theme.id, role, 'brightness'), clusterX, clusterY) *
+        0.34,
   };
 }
 
@@ -1064,8 +1077,11 @@ function resolveInstrumentFamily(
   const families = resolveInstrumentFamilyPool(theme, role, options);
   const familyContextKey = resolveInstrumentFamilyContextKey(theme, role, options);
   const index = Math.floor(
-    hash2D(`${theme.id}:${role}:family:${familyContextKey}`, clusterX, clusterY) *
-      families.length
+    hash2DWithSeed(
+      createMusicSeed(theme.id, role, 'family', familyContextKey),
+      clusterX,
+      clusterY
+    ) * families.length
   );
   return families[index] ?? families[0];
 }
@@ -1259,17 +1275,16 @@ function shouldRestAtThemeStep(
   clusterX: number,
   clusterY: number
 ): boolean {
-  if (stepIndex < 2) {
+  if (role === 'percussion' || stepIndex < 2) {
     return false;
   }
   const phraseStep = stepIndex % theme.stepPattern.length;
   if (phraseStep === 0 || phraseStep === theme.stepPattern.length - 1) {
     return false;
   }
-  const restChance =
-    role === 'lead' ? 0.18 : role === 'harmony' ? 0.14 : 0.22;
+  const restChance = role === 'lead' ? 0.18 : 0.14;
   const variation =
-    hash2D(`${theme.id}:${role}:rest`, clusterX + stepIndex, clusterY) +
+    hash2DWithSeed(createMusicSeed(theme.id, role, 'rest'), clusterX + stepIndex, clusterY) +
     (theme.stepPattern[phraseStep] ?? 0) * 0.013;
   return variation > 1 - restChance;
 }

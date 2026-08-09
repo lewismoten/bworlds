@@ -37,9 +37,11 @@ import {
 
 describe('core utilities', () => {
   it('returns deterministic hashes', () => {
-    expect(hash2D('seed', 4, 9)).toBe(hash2D('seed', 4, 9));
-    expect(hash2D('seed', 4, 9)).not.toBe(hash2D('seed', 4, 10));
-    expect(hash2D(registerHashLabel('seed'), 4, 9)).toBe(hash2D('seed', 4, 9));
+    const seedHash = registerHashLabel('seed');
+
+    expect(hash2D(seedHash, 4, 9)).toBe(hash2D(seedHash, 4, 9));
+    expect(hash2D(seedHash, 4, 9)).not.toBe(hash2D(seedHash, 4, 10));
+    expect(hash2D(registerHashLabel('seed'), 4, 9)).toBe(hash2D(seedHash, 4, 9));
   });
 
   it('normalizes string and numeric seeds once at the boundary', () => {
@@ -47,7 +49,7 @@ describe('core utilities', () => {
 
     expect(seedHash).toBe(registerHashLabel('seed'));
     expect(resolveHashSeed(seedHash)).toBe(createHashSeed(seedHash));
-    expect(hash2DWithSeed(seedHash, 4, 9)).toBe(hash2D('seed', 4, 9));
+    expect(hash2DWithSeed(seedHash, 4, 9)).toBe(hash2D(seedHash, 4, 9));
   });
 
   it('keeps registered label seed paths deterministic when composed numerically', () => {

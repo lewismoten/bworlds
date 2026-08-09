@@ -2,10 +2,15 @@ import {
   createBoundedCache,
   type CacheLike,
 } from '@bworlds/cache-support';
-import { hash2D, registerHashLabel } from '@bworlds/core/hash';
+import {
+  appendHashSeedLabel,
+  hash2D,
+  registerHashLabel,
+} from '@bworlds/core/hash';
 import type { WorldStateLike } from '@bworlds/plugin-api';
 
 type Point = { x: number; y: number };
+const DOCK_BOAT_PHASE_SEED = registerHashLabel('dock-boat-phase');
 
 export type DockRouteStop = {
   x: number;
@@ -545,7 +550,7 @@ function resolveDockBoatPlacement(
     Math.max(12, Math.min(30, Math.round(geometry.points.length / 4))) * 60 * 1000;
   const phaseOffset =
     hash2D(
-      `dock-boat-phase:${route.boatName}`,
+      appendHashSeedLabel(DOCK_BOAT_PHASE_SEED, registerHashLabel(route.boatName)),
       route.stops[0]?.x ?? 0,
       route.stops[0]?.y ?? 0
     ) * loopDurationMs;

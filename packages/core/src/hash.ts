@@ -47,8 +47,8 @@ export function appendHashSeedNumber(seedHash: HashSeed, value: number): HashSee
   return mixHashNumber(mixHashCharacter(seedHash >>> 0, HASH_PART_SEPARATOR), value);
 }
 
-export function hash2D(seed: HashSeedInput, x: number, y: number): number {
-  return hash2DWithSeed(resolveHashSeed(seed), x, y);
+export function hash2D(seedHash: HashSeed, x: number, y: number): number {
+  return hash2DWithSeed(seedHash, x, y);
 }
 
 export function hash2DWithSeed(seedHash: number, x: number, y: number): number {

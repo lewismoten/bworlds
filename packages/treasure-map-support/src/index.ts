@@ -1,4 +1,8 @@
-import { hash2D } from '@bworlds/core/hash';
+import {
+  appendHashSeedLabel,
+  hash2DWithSeed,
+  registerHashLabel,
+} from '@bworlds/core/hash';
 import type { InventoryItemLike } from '@bworlds/plugin-api';
 
 type Point = { x: number; y: number };
@@ -46,6 +50,9 @@ const WATER_KINDS = new Set(['ocean', 'river']);
 const FOREST_KINDS = new Set(['forest']);
 const HILL_KINDS = new Set(['mountain', 'hill', 'quarry']);
 const ROAD_KINDS = new Set(['road', 'bridge', 'dock', 'station', 'ship']);
+const TREASURE_MAP_GLYPH_SEED = registerHashLabel('treasure-map-glyph');
+const TREASURE_MAP_GPS_FRAGMENT_SEED = registerHashLabel('treasure-map-gps-fragment');
+const TREASURE_MAP_EDGE_SEED = registerHashLabel('treasure-map-edge');
 
 export function createTreasureMap({
   seed,
@@ -284,6 +291,7 @@ function resolveTreasureGlyph({
   isPath: boolean;
   isDigSite: boolean;
 }): string {
+  const glyphSeed = appendHashSeedLabel(registerHashLabel(seed), TREASURE_MAP_GLYPH_SEED);
   if (isDigSite) {
     return 'X';
   }
@@ -291,7 +299,7 @@ function resolveTreasureGlyph({
     return ROAD_KINDS.has(terrain) ? '#' : ':';
   }
 
-  const signal = hash2D(`${seed}:treasure-map-glyph`, x, y);
+  const signal = hash2DWithSeed(glyphSeed, x, y);
   if (WATER_KINDS.has(terrain)) {
     return signal > 0.5 ? '~' : '=';
   }
@@ -318,9 +326,13 @@ function createTreasureMapId(map: TreasureMapDocument): string {
 }
 
 function pickGpsFragmentIndex(seed: string, fragmentCount: number): number {
+  const fragmentSeed = appendHashSeedLabel(
+    registerHashLabel(seed),
+    TREASURE_MAP_GPS_FRAGMENT_SEED
+  );
   return Math.min(
     fragmentCount - 1,
-    Math.floor(hash2D(`${seed}:treasure-map-gps-fragment`, fragmentCount, 0) * fragmentCount)
+    Math.floor(hash2DWithSeed(fragmentSeed, fragmentCount, 0) * fragmentCount)
   );
 }
 
@@ -344,7 +356,8 @@ function createFragmentRowBoundaries(
 }
 
 function pickMapEdge(seed: string, digSite: Point): 'north' | 'east' | 'south' | 'west' {
-  const roll = hash2D(`${seed}:treasure-map-edge`, digSite.x, digSite.y);
+  const edgeSeed = appendHashSeedLabel(registerHashLabel(seed), TREASURE_MAP_EDGE_SEED);
+  const roll = hash2DWithSeed(edgeSeed, digSite.x, digSite.y);
   if (roll < 0.25) {
     return 'west';
   }

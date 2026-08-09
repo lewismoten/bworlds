@@ -6,6 +6,7 @@ import {
   hash2D,
   hash2DWithSeed,
   registerHashLabel,
+  resolveHashSeed,
 } from '@bworlds/core/hash';
 import { createPlainsBackedTilePainter } from '@bworlds/paint-support';
 import {
@@ -183,6 +184,12 @@ const FOREST_GROVE_CENTER_X_SEED = registerHashLabel('forest-grove-center-x');
 const FOREST_GROVE_CENTER_Y_SEED = registerHashLabel('forest-grove-center-y');
 const FOREST_LONE_TREE_SEED = registerHashLabel('forest-lone-tree');
 const FOREST_TREE_COUNT_SEED = registerHashLabel('forest-tree-count');
+const FOREST_TREE_DESCRIPTOR_SEED = registerHashLabel('forest-tree-descriptor');
+const FOREST_BUSH_DESCRIPTOR_SEED = registerHashLabel('forest-bush-descriptor');
+const FOREST_LONER_SEED = registerHashLabel('forest-loner');
+const FOREST_BEAVER_DAMAGE_SEED = registerHashLabel('forest-beaver-damage');
+const TREE_CLUSTER_VARIATION_SEED = registerHashLabel('tree-cluster-variation');
+const FOREST_FIREFLY_ANCHOR_SEED = registerHashLabel('forest-firefly-anchor');
 const FOREST_BEAVER_DEBRIS_ANGLE_SEED = registerHashLabel('forest-beaver-debris-angle');
 const FOREST_BEAVER_DEBRIS_DISTANCE_SEED = registerHashLabel(
   'forest-beaver-debris-distance'
@@ -362,7 +369,7 @@ const resolveForestTreeDescriptors = createCoordinateValueResolver(
     const descriptors: ForestTreeDescriptor[] = [];
 
     for (let index = 0; index < count; index += 1) {
-      const baseSeed = `forest-tree:${tileX}:${tileY}:${index}`;
+      const baseSeed = createForestTreeDescriptorSeed(tileX, tileY, index);
       const variety = getTreeVarietyIndex(tileX, tileY, index);
       const outlierChance = hash2D(baseSeed, 0, 0);
       const spread = loneTree ? 0.06 : outlierChance > 0.84 ? 0.28 : 0.17;
@@ -1043,7 +1050,7 @@ export function createForestTilePlugin(): RuntimePlugin {
           groveSignal * 0.28 +
           edgeSignal * 0.08;
         const loneTreeChance = hash2D(
-          `${context.seed}:forest-loner`,
+          appendHashSeedLabel(resolveHashSeed(context.seed), FOREST_LONER_SEED),
           context.x,
           context.y
         );
@@ -1602,7 +1609,7 @@ export function getForestBeaverDamage(
 
       trees.forEach((tree, treeIndex) => {
         const chance = hash2D(
-          'forest-beaver-damage',
+          FOREST_BEAVER_DAMAGE_SEED,
           tileX * 73 + treeIndex,
           tileY * 79
         );
@@ -1728,7 +1735,7 @@ function getTreeVarietyIndex(
     hash2D(TREE_CLUSTER_DOMINANT_SEED, clusterX, clusterY) * 3
   );
   const variationChance = hash2D(
-    'tree-cluster-variation',
+    TREE_CLUSTER_VARIATION_SEED,
     tileX * 13 + treeIndex,
     tileY * 17
   );
@@ -2147,7 +2154,7 @@ function pickForestFireflyHabitatAnchor(
   anchors.forEach((anchor, anchorIndex) => {
     const score =
       hash2D(
-        'forest-firefly-anchor',
+        FOREST_FIREFLY_ANCHOR_SEED,
         tileX * 29 + fireflyIndex * 11 + anchorIndex,
         tileY * 31 - fireflyIndex * 13 - anchorIndex
       ) * anchor.weight;
@@ -2722,7 +2729,14 @@ function createForestFloorDetailDescriptor(
   const trail = getForestTrail(tileX, tileY);
   const maxAttempts = options.preferInterior ? 6 : 4;
   for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
-    const seed = `forest-floor:${kind}:${tileX}:${tileY}:${detailIndex}:${attempt}`;
+    const seed = createForestFloorDetailSeed(
+      kind,
+      tileX,
+      tileY,
+      detailIndex,
+      attempt,
+      options.preferInterior ?? false
+    );
     const spread = options.preferInterior ? 0.24 : 0.56;
     const x = clampToTile((hash2D(seed, 1, 0) - 0.5) * spread);
     const y = clampToTile((hash2D(seed, 2, 0) - 0.5) * spread);
@@ -2789,7 +2803,7 @@ function createForestBushDescriptor(
   const trail = getForestTrail(tileX, tileY);
   const maxAttempts = 4;
   for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
-    const seed = `forest-bush:${tileX}:${tileY}:${bushIndex}:${attempt}`;
+    const seed = createForestBushDescriptorSeed(tileX, tileY, bushIndex, attempt);
     const x = clampToTile((hash2D(seed, 1, 0) - 0.5) * 0.6);
     const y = clampToTile((hash2D(seed, 2, 0) - 0.5) * 0.6);
     const width = 0.26 + hash2D(seed, 3, 0) * 0.12;
@@ -3578,6 +3592,57 @@ function averageMoisture(
 
 function clampToTile(value: number): number {
   return Math.max(-0.34, Math.min(0.34, value));
+}
+
+function createForestTreeDescriptorSeed(tileX: number, tileY: number, index: number): number {
+  return appendHashSeedPart(
+    appendHashSeedPart(
+      appendHashSeedPart(FOREST_TREE_DESCRIPTOR_SEED, tileX),
+      tileY
+    ),
+    index
+  );
+}
+
+function createForestFloorDetailSeed(
+  kind: ForestFloorDetailDescriptor['kind'],
+  tileX: number,
+  tileY: number,
+  detailIndex: number,
+  attempt: number,
+  preferInterior: boolean
+): number {
+  const kindSeed =
+    preferInterior
+      ? FOREST_INTERIOR_FLOOR_DETAIL_SEED
+      : kind === 'stump'
+        ? FOREST_STUMP_DETAIL_SEED
+        : FOREST_FALLEN_DETAIL_SEED;
+  return appendHashSeedPart(
+    appendHashSeedPart(
+      appendHashSeedPart(
+        appendHashSeedPart(kindSeed, tileX),
+        tileY
+      ),
+      detailIndex
+    ),
+    attempt
+  );
+}
+
+function createForestBushDescriptorSeed(
+  tileX: number,
+  tileY: number,
+  bushIndex: number,
+  attempt: number
+): number {
+  return appendHashSeedPart(
+    appendHashSeedPart(
+      appendHashSeedPart(FOREST_BUSH_DESCRIPTOR_SEED, tileX),
+      tileY
+    ),
+    bushIndex * 17 + attempt
+  );
 }
 
 function isPointInsideForestTrail(

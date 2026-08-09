@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { getDaylightCycleState } from '@bworlds/core';
 import {
   getBackgroundStarStates,
+  getSolarSystemBodyRenderState,
   getSolarSystemRenderSignature,
   getSolarSystemBodyPositions,
   getSolarSystemEventMarkerStates,
@@ -44,6 +45,66 @@ describe('solar system preview helpers', () => {
         (entry) => entry.id.startsWith('planet:') && entry.position.length() > 0.5
       )
     ).toBe(true);
+  });
+
+  it('derives reusable marker, glow, and trail states for solar-system bodies', () => {
+    const cycle = {
+      ...getDaylightCycleState(210000, {
+        observerLatitudeDegrees: 24,
+      }),
+      orreryBodies: [
+        {
+          id: 'sun',
+          type: 'sun' as const,
+          angle: 0,
+          orbitRadius: 0,
+          orbitTilt: 0,
+          orbitHeight: 0,
+          orbitEccentricity: 0,
+          orbitRotation: 0,
+          color: '#ffd48a',
+          size: 0.8,
+          trailLength: 0,
+        },
+        {
+          id: 'comet:guest',
+          type: 'comet' as const,
+          angle: 0.35,
+          orbitRadius: 8,
+          orbitTilt: 0.2,
+          orbitHeight: 0.1,
+          orbitEccentricity: 0.18,
+          orbitRotation: 0.4,
+          color: '#dff6ff',
+          size: 0.42,
+          trailLength: 2.8,
+        },
+      ],
+    };
+
+    const state = getSolarSystemBodyRenderState(cycle);
+
+    expect(state.markers).toHaveLength(2);
+    expect(state.glows).toHaveLength(1);
+    expect(state.trails).toHaveLength(1);
+    expect(state.sunLightPosition).toEqual(state.markers[0]?.position);
+    expect(state.markers[1]).toEqual(
+      expect.objectContaining({
+        color: expect.any(String),
+        opacity: expect.any(Number),
+        scale: expect.any(Number),
+        visible: true,
+      })
+    );
+    expect(state.trails[0]).toEqual(
+      expect.objectContaining({
+        start: expect.any(Object),
+        end: expect.any(Object),
+        color: expect.any(String),
+        opacity: expect.any(Number),
+        visible: true,
+      })
+    );
   });
 
   it('maps active aurora, meteor, and comet events into shell markers', () => {

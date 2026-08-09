@@ -28,6 +28,8 @@ import {
   type WorldStateLike,
 } from '@bworlds/plugin-api';
 
+const LAND_MODEL_REVEAL_SEED = registerHashLabel('render3d:land-model-reveal');
+
 type CelestialEnvironmentOverrides = Parameters<
   typeof applyCelestialEnvironmentOverrides
 >[1];
@@ -1740,7 +1742,7 @@ export function getFarLandModelOpacity(
 
   const revealDistance =
     fullVisibilityDistance +
-    sample('render3d:land-model-reveal', tileX, tileY) *
+    sample(LAND_MODEL_REVEAL_SEED, tileX, tileY) *
       revealDistanceVariance;
   if (distance <= revealDistance) {
     return 1;
