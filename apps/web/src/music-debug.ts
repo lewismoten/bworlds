@@ -94,6 +94,7 @@ export type MusicDebugTimelineLayout = {
 };
 
 export type MusicDebugSongPlayback = {
+  prepare?(): void;
   play(
     snapshot: MusicDebugSnapshot,
     region?: MusicDebugPlaybackRegion | null
@@ -104,6 +105,10 @@ export type MusicDebugSongPlayback = {
 type MusicDebugSongPlaybackOptions = {
   now?: () => number;
   scheduleAheadMs?: number;
+  scheduleWindowMs?: number;
+  scheduleTickMs?: number;
+  scheduleTimeout?: typeof setTimeout;
+  clearScheduledTimeout?: typeof clearTimeout;
 };
 
 const musicDebugSnapshotCache = new Map<string, MusicDebugSnapshot>();
@@ -685,26 +690,88 @@ export function createMusicDebugSongPlayback(
   options: MusicDebugSongPlaybackOptions = {}
 ): MusicDebugSongPlayback {
   const now = options.now ?? performance.now.bind(performance);
-  const scheduleAheadMs = options.scheduleAheadMs ?? 4;
+  const scheduleAheadMs = options.scheduleAheadMs ?? 12;
+  const scheduleWindowMs = Math.max(
+    scheduleAheadMs,
+    options.scheduleWindowMs ?? 120
+  );
+  const scheduleTickMs = Math.max(8, options.scheduleTickMs ?? 24);
+  const scheduleTimeout = options.scheduleTimeout ?? setTimeout;
+  const clearScheduledTimeout = options.clearScheduledTimeout ?? clearTimeout;
+  let scheduledBatchHandle: ReturnType<typeof setTimeout> | null = null;
+  let playbackGeneration = 0;
+
+  function clearScheduledBatch(): void {
+    if (scheduledBatchHandle === null) {
+      return;
+    }
+    clearScheduledTimeout(scheduledBatchHandle);
+    scheduledBatchHandle = null;
+  }
 
   return {
+    prepare() {
+      sink.resume?.();
+    },
     play(snapshot, region) {
+      playbackGeneration += 1;
+      clearScheduledBatch();
       const playbackRegion = resolveMusicDebugPlaybackRegion(snapshot, region);
-      const startMs = now() + scheduleAheadMs;
+      const playbackStartMs = now() + scheduleAheadMs;
       const offsetMs = snapshot.song.startMs + playbackRegion.startOffsetMs;
       const endMs = snapshot.song.startMs + playbackRegion.endOffsetMs;
+      let noteIndex = findFirstMusicDebugNoteIndex(snapshot.notes, offsetMs);
+      const generation = playbackGeneration;
       sink.resume?.();
-      for (const note of snapshot.notes) {
-        if (note.startMs < offsetMs || note.startMs >= endMs) {
-          continue;
+
+      const scheduleBatch = () => {
+        if (generation !== playbackGeneration) {
+          return;
         }
-        sink.play({
-          ...note,
-          startMs: startMs + (note.startMs - offsetMs),
-        });
-      }
+        scheduledBatchHandle = null;
+
+        const windowEndMs = now() + scheduleWindowMs;
+        while (noteIndex < snapshot.notes.length) {
+          const note = snapshot.notes[noteIndex]!;
+          if (note.startMs >= endMs) {
+            return;
+          }
+          const scheduledStartMs = playbackStartMs + (note.startMs - offsetMs);
+          if (scheduledStartMs > windowEndMs) {
+            break;
+          }
+          sink.play({
+            ...note,
+            startMs: scheduledStartMs,
+          });
+          noteIndex += 1;
+        }
+
+        if (noteIndex >= snapshot.notes.length) {
+          return;
+        }
+
+        const nextNote = snapshot.notes[noteIndex]!;
+        if (nextNote.startMs >= endMs) {
+          return;
+        }
+        const nextScheduledStartMs =
+          playbackStartMs + (nextNote.startMs - offsetMs);
+        const delayMs = Math.max(
+          0,
+          Math.min(
+            scheduleTickMs,
+            nextScheduledStartMs - now() - scheduleAheadMs
+          )
+        );
+        scheduledBatchHandle = scheduleTimeout(scheduleBatch, delayMs);
+      };
+
+      scheduleBatch();
     },
     stop() {
+      playbackGeneration += 1;
+      clearScheduledBatch();
       sink.stopAll?.();
     },
   };
@@ -796,6 +863,24 @@ function normalizeWeatherKind(
 
 function clampTimelineOffset(value: number, durationMs: number): number {
   return Math.min(durationMs, Math.max(0, Math.round(value)));
+}
+
+function findFirstMusicDebugNoteIndex(
+  notes: readonly ProceduralMusicNote[],
+  startMs: number
+): number {
+  let low = 0;
+  let high = notes.length;
+  while (low < high) {
+    const middle = Math.floor((low + high) / 2);
+    const note = notes[middle]!;
+    if (note.startMs < startMs) {
+      low = middle + 1;
+    } else {
+      high = middle;
+    }
+  }
+  return low;
 }
 
 function formatMusicDebugNpcMotifs(

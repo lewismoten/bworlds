@@ -270,6 +270,7 @@ describe('music debug', () => {
       {
         now: () => 1_000,
         scheduleAheadMs: 12,
+        scheduleWindowMs: 10_000,
       }
     );
 
@@ -284,6 +285,94 @@ describe('music debug', () => {
     expect(secondScheduled?.startMs - firstScheduled?.startMs).toBe(
       (originalSecond?.startMs ?? 0) - (originalFirst?.startMs ?? 0)
     );
+  });
+
+  it('schedules debug song playback in rolling batches instead of all at once', () => {
+    vi.useFakeTimers();
+    let currentNowMs = 1_000;
+    const snapshot = createMusicDebugSnapshot(
+      {
+        tileKind: 'forest',
+        contextType: 'overworld',
+        clusterX: 2,
+        clusterY: -1,
+      },
+      2_000
+    );
+    const play = vi.fn();
+    const playback = createMusicDebugSongPlayback(
+      {
+        resume: vi.fn(),
+        play,
+        stopAll: vi.fn(),
+      },
+      {
+        now: () => currentNowMs,
+        scheduleAheadMs: 12,
+        scheduleWindowMs: 48,
+        scheduleTickMs: 16,
+      }
+    );
+
+    playback.play(snapshot);
+
+    const immediateScheduledCount = play.mock.calls.length;
+    expect(immediateScheduledCount).toBeGreaterThan(0);
+    expect(immediateScheduledCount).toBeLessThan(snapshot.notes.length);
+    const nextDeferredNote = snapshot.notes[immediateScheduledCount];
+    expect(nextDeferredNote).toBeDefined();
+    const nextDeferredStartMs =
+      1_012 +
+      ((nextDeferredNote?.startMs ?? snapshot.song.startMs) -
+        snapshot.song.startMs);
+    const advanceMs = Math.max(
+      32,
+      Math.ceil(nextDeferredStartMs - (1_000 + 48))
+    );
+
+    currentNowMs += advanceMs;
+    vi.advanceTimersByTime(advanceMs);
+
+    expect(play.mock.calls.length).toBeGreaterThan(immediateScheduledCount);
+  });
+
+  it('cancels future debug note batches when playback stops', () => {
+    vi.useFakeTimers();
+    let currentNowMs = 1_000;
+    const snapshot = createMusicDebugSnapshot(
+      {
+        tileKind: 'forest',
+        contextType: 'overworld',
+        clusterX: 2,
+        clusterY: -1,
+      },
+      2_000
+    );
+    const stopAll = vi.fn();
+    const play = vi.fn();
+    const playback = createMusicDebugSongPlayback(
+      {
+        resume: vi.fn(),
+        play,
+        stopAll,
+      },
+      {
+        now: () => currentNowMs,
+        scheduleAheadMs: 12,
+        scheduleWindowMs: 48,
+        scheduleTickMs: 16,
+      }
+    );
+
+    playback.play(snapshot);
+    const scheduledBeforeStop = play.mock.calls.length;
+
+    playback.stop();
+    currentNowMs += 128;
+    vi.advanceTimersByTime(128);
+
+    expect(stopAll).toHaveBeenCalledTimes(1);
+    expect(play.mock.calls.length).toBe(scheduledBeforeStop);
   });
 
   it('provides a theme object that can drive pitch-scale overlays', () => {

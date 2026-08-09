@@ -49,14 +49,28 @@ const pageState = createMusicDebugPageState({
     }
   },
 });
+const playback = createMusicDebugSongPlayback();
 const playbackController = createMusicDebugPlaybackController({
-  playback: createMusicDebugSongPlayback(),
+  playback,
   onPlayingChange(playing) {
     if (playButton) {
       playButton.textContent = playing ? 'Stop Song' : 'Play Song';
     }
   },
   playbackLeadMs: 8,
+});
+
+function warmMusicDebugPlayback(): void {
+  playback.prepare?.();
+}
+
+document.addEventListener('pointerdown', warmMusicDebugPlayback, {
+  passive: true,
+  once: true,
+});
+document.addEventListener('keydown', warmMusicDebugPlayback, {
+  passive: true,
+  once: true,
 });
 
 function collectOptions(): Partial<MusicDebugOptions> {
