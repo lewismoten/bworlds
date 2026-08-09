@@ -101,8 +101,8 @@ import {
 } from './compass.ts';
 import {
   getFrameLoopActivity,
-  shouldContinueFrameLoop,
 } from './frame-loop.ts';
+import { runAnimationFrameStep } from './frame-scheduler.ts';
 import {
   advanceHeadBobState,
   DEFAULT_HEAD_BOB_STATE,
@@ -3415,27 +3415,27 @@ function faceDirection(angle: number): void {
 
 function loop(timestamp: number): void {
   pendingFrameHandle = 0;
-  if (pageVisibilityState.hidden) {
-    lastFrame = 0;
-    return;
-  }
-  const delta =
-    lastFrame === 0 ? 16.67 : Math.min(timestamp - lastFrame, 33.34);
-  const nextBudgetState = advanceRenderBudgetState(renderBudgetState, {
-    deltaMs: delta,
-    active3d: state.viewMode === '3d',
+  const frameStep = runAnimationFrameStep({
+    timestamp,
+    lastFrameTimestamp: lastFrame,
+    pageHidden: pageVisibilityState.hidden,
+    requestNextFrame: () => requestRender(),
+    runFrame: (deltaMs) => {
+      const nextBudgetState = advanceRenderBudgetState(renderBudgetState, {
+        deltaMs,
+        active3d: state.viewMode === '3d',
+      });
+      renderBudgetState.smoothedFrameMs = nextBudgetState.smoothedFrameMs;
+      renderBudgetState.visibilityRadius = nextBudgetState.visibilityRadius;
+      renderBudgetState.targetFps = nextBudgetState.targetFps;
+      updateMovement(deltaMs);
+      return render();
+    },
   });
-  renderBudgetState.smoothedFrameMs = nextBudgetState.smoothedFrameMs;
-  renderBudgetState.visibilityRadius = nextBudgetState.visibilityRadius;
-  renderBudgetState.targetFps = nextBudgetState.targetFps;
-  updateMovement(delta);
-  const activity = render();
-  lastFrame = timestamp;
-  if (shouldContinueFrameLoop(activity)) {
-    requestRender();
+  lastFrame = frameStep.lastFrameTimestamp;
+  if (frameStep.skipped) {
     return;
   }
-  lastFrame = 0;
 }
 
 window.addEventListener('resize', () => {
