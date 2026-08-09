@@ -34,6 +34,9 @@ export type { RenderBudgetPartMetadata } from './render-budget-parts';
 export {
   getRenderBudgetPartMetadata,
   hasRenderBudgetPartMetadata,
+  markOptionalDecorativeRenderBudgetPart,
+  markStructuralRenderBudgetPart,
+  RENDER_BUDGET_PART_PRIORITIES,
   RENDER_BUDGET_PART_USER_DATA_KEY,
   setRenderBudgetPartMetadata,
 } from './render-budget-parts';

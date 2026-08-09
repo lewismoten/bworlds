@@ -12,7 +12,7 @@ Operates at several levels: per model, per LOD, per plugin, per chunk, and per e
 * [X] Allow the renderer to discard optional model parts when budgets are exceeded.
 * [X] Require generated model parts to have explicit priorities.
 * [X] Treat higher-priority parts as more important to preserve.
-* [ ] Require optional decorations to have lower priority than structural geometry.
+* [X] Require optional decorations to have lower priority than structural geometry.
 * [ ] Allow plugins to report estimated resource cost before generating expensive content.
 * [ ] Allow plugins to report actual resource cost after generation.
 * [X] Record budget violations by plugin.

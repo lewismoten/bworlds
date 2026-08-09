@@ -1,6 +1,13 @@
 import type { ThreeObject3DLike } from './types';
 
 export const RENDER_BUDGET_PART_USER_DATA_KEY = 'renderBudgetPart';
+export const RENDER_BUDGET_PART_PRIORITIES = {
+  essentialStructure: 100,
+  structuralDetail: 80,
+  interaction: 70,
+  optionalFeature: 30,
+  optionalDecoration: 10,
+} as const;
 
 export interface RenderBudgetPartMetadata {
   optional: boolean;
@@ -23,6 +30,42 @@ export function setRenderBudgetPartMetadata<TTarget extends RenderBudgetPartTarg
     },
   };
   return target;
+}
+
+export function markStructuralRenderBudgetPart<TTarget extends RenderBudgetPartTarget>(
+  target: TTarget,
+  {
+    label,
+    priority = RENDER_BUDGET_PART_PRIORITIES.essentialStructure,
+  }: {
+    label?: string;
+    priority?: number;
+  } = {}
+): TTarget {
+  return setRenderBudgetPartMetadata(target, {
+    optional: false,
+    priority,
+    ...(typeof label === 'string' ? { label } : {}),
+  });
+}
+
+export function markOptionalDecorativeRenderBudgetPart<
+  TTarget extends RenderBudgetPartTarget,
+>(
+  target: TTarget,
+  {
+    label,
+    priority = RENDER_BUDGET_PART_PRIORITIES.optionalDecoration,
+  }: {
+    label?: string;
+    priority?: number;
+  } = {}
+): TTarget {
+  return setRenderBudgetPartMetadata(target, {
+    optional: true,
+    priority,
+    ...(typeof label === 'string' ? { label } : {}),
+  });
 }
 
 export function getRenderBudgetPartMetadata(

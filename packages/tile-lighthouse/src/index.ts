@@ -25,6 +25,11 @@ import type {
   ThreeObject3DLike,
   WorldEnvironmentLike,
 } from '@bworlds/plugin-api';
+import {
+  markOptionalDecorativeRenderBudgetPart,
+  markStructuralRenderBudgetPart,
+  RENDER_BUDGET_PART_PRIORITIES,
+} from '@bworlds/plugin-api';
 
 const LIGHTHOUSE_BEAM_PIVOT_KEY = 'lighthouseBeamPivot';
 const LIGHTHOUSE_BEAM_KEY = 'lighthouseBeam';
@@ -249,44 +254,68 @@ export function createLighthouseTilePlugin(): RuntimePlugin {
         });
       }
 
-      const base = new three.Mesh(
-        getSharedCylinderGeometry(three, 0.46, 0.6, 0.32, 10),
-        stoneMaterial
+      const base = markStructuralRenderBudgetPart(
+        new three.Mesh(
+          getSharedCylinderGeometry(three, 0.46, 0.6, 0.32, 10),
+          stoneMaterial
+        ),
+        { label: 'base' }
       );
       base.position.set(tileX, 0.16, tileY);
       group.add(base);
 
-      const tower = new three.Mesh(
-        getSharedCylinderGeometry(three, 0.34, 0.42, 1.8, 10),
-        wallMaterial
+      const tower = markStructuralRenderBudgetPart(
+        new three.Mesh(
+          getSharedCylinderGeometry(three, 0.34, 0.42, 1.8, 10),
+          wallMaterial
+        ),
+        { label: 'tower' }
       );
       tower.position.set(tileX, 1.06, tileY);
       group.add(tower);
 
-      const stripe = new three.Mesh(
-        getSharedCylinderGeometry(three, 0.35, 0.41, 0.22, 10),
-        stripeMaterial
+      const stripe = markStructuralRenderBudgetPart(
+        new three.Mesh(
+          getSharedCylinderGeometry(three, 0.35, 0.41, 0.22, 10),
+          stripeMaterial
+        ),
+        {
+          label: 'stripe',
+          priority: RENDER_BUDGET_PART_PRIORITIES.structuralDetail,
+        }
       );
       stripe.position.set(tileX, 0.92, tileY);
       group.add(stripe);
 
-      const cap = new three.Mesh(
-        getSharedConeGeometry(three, 0.42, 0.34, 10),
-        stripeMaterial
+      const cap = markStructuralRenderBudgetPart(
+        new three.Mesh(
+          getSharedConeGeometry(three, 0.42, 0.34, 10),
+          stripeMaterial
+        ),
+        { label: 'cap' }
       );
       cap.position.set(tileX, 2.1, tileY);
       group.add(cap);
 
-      const lanternRoom = new three.Mesh(
-        getSharedCylinderGeometry(three, 0.24, 0.24, 0.28, 8),
-        wallMaterial
+      const lanternRoom = markStructuralRenderBudgetPart(
+        new three.Mesh(
+          getSharedCylinderGeometry(three, 0.24, 0.24, 0.28, 8),
+          wallMaterial
+        ),
+        {
+          label: 'lantern-room',
+          priority: RENDER_BUDGET_PART_PRIORITIES.structuralDetail,
+        }
       );
       lanternRoom.position.set(tileX, 1.86, tileY);
       group.add(lanternRoom);
 
-      const lanternGlass = new three.Mesh(
-        getSharedCylinderGeometry(three, 0.27, 0.27, 0.3, 8),
-        glassMaterial
+      const lanternGlass = markOptionalDecorativeRenderBudgetPart(
+        new three.Mesh(
+          getSharedCylinderGeometry(three, 0.27, 0.27, 0.3, 8),
+          glassMaterial
+        ),
+        { label: 'lantern-glass' }
       );
       lanternGlass.userData = {
         ...(lanternGlass.userData ?? {}),
@@ -296,9 +325,12 @@ export function createLighthouseTilePlugin(): RuntimePlugin {
       group.add(lanternGlass);
 
       for (const yOffset of [-0.13, 0.13]) {
-        const frameRing = new three.Mesh(
-          getSharedCylinderGeometry(three, 0.29, 0.29, 0.03, 8),
-          frameMaterial
+        const frameRing = markOptionalDecorativeRenderBudgetPart(
+          new three.Mesh(
+            getSharedCylinderGeometry(three, 0.29, 0.29, 0.03, 8),
+            frameMaterial
+          ),
+          { label: 'frame-ring' }
         );
         frameRing.userData = {
           ...(frameRing.userData ?? {}),
@@ -314,9 +346,12 @@ export function createLighthouseTilePlugin(): RuntimePlugin {
         { x: 0, z: 0.18 },
         { x: 0, z: -0.18 },
       ]) {
-        const framePost = new three.Mesh(
-          getSharedBoxGeometry(three, 0.03, 0.28, 0.03),
-          frameMaterial
+        const framePost = markOptionalDecorativeRenderBudgetPart(
+          new three.Mesh(
+            getSharedBoxGeometry(three, 0.03, 0.28, 0.03),
+            frameMaterial
+          ),
+          { label: 'frame-post' }
         );
         framePost.userData = {
           ...(framePost.userData ?? {}),
@@ -332,15 +367,21 @@ export function createLighthouseTilePlugin(): RuntimePlugin {
         { x: 0, z: 0.255, width: 0.22, depth: 0.04 },
         { x: 0, z: -0.255, width: 0.22, depth: 0.04 },
       ]) {
-        const wallGlow = markPoiLightEmitter(
-          new three.Mesh(
-            getSharedBoxGeometry(three, offset.width, 0.34, offset.depth),
-            wallGlowMaterial
+        const wallGlow = markOptionalDecorativeRenderBudgetPart(
+          markPoiLightEmitter(
+            new three.Mesh(
+              getSharedBoxGeometry(three, offset.width, 0.34, offset.depth),
+              wallGlowMaterial
+            ),
+            {
+              kind: 'emissive-mesh',
+              dayIntensity: 0.03,
+              nightIntensity: 0.46,
+            }
           ),
           {
-            kind: 'emissive-mesh',
-            dayIntensity: 0.03,
-            nightIntensity: 0.46,
+            label: 'wall-glow',
+            priority: RENDER_BUDGET_PART_PRIORITIES.optionalFeature,
           }
         );
         wallGlow.userData = {
@@ -351,12 +392,18 @@ export function createLighthouseTilePlugin(): RuntimePlugin {
         group.add(wallGlow);
       }
 
-      const lens = markPoiLightEmitter(
-        new three.Mesh(getSharedSphereGeometry(three, 0.08, 10, 8), lensMaterial),
+      const lens = markOptionalDecorativeRenderBudgetPart(
+        markPoiLightEmitter(
+          new three.Mesh(getSharedSphereGeometry(three, 0.08, 10, 8), lensMaterial),
+          {
+            kind: 'emissive-mesh',
+            dayIntensity: 0.12,
+            nightIntensity: 1.9,
+          }
+        ),
         {
-          kind: 'emissive-mesh',
-          dayIntensity: 0.12,
-          nightIntensity: 1.9,
+          label: 'lens',
+          priority: RENDER_BUDGET_PART_PRIORITIES.optionalFeature,
         }
       );
       lens.userData = {
@@ -366,9 +413,12 @@ export function createLighthouseTilePlugin(): RuntimePlugin {
       lens.position.set(tileX, 1.86, tileY);
       group.add(lens);
 
-      const balconyDeck = new three.Mesh(
-        getSharedCylinderGeometry(three, 0.38, 0.38, 0.05, 12),
-        balconyMaterial
+      const balconyDeck = markOptionalDecorativeRenderBudgetPart(
+        new three.Mesh(
+          getSharedCylinderGeometry(three, 0.38, 0.38, 0.05, 12),
+          balconyMaterial
+        ),
+        { label: 'balcony-deck' }
       );
       balconyDeck.userData = {
         ...(balconyDeck.userData ?? {}),
@@ -377,9 +427,12 @@ export function createLighthouseTilePlugin(): RuntimePlugin {
       balconyDeck.position.set(tileX, 1.67, tileY);
       group.add(balconyDeck);
 
-      const balconyRailRing = new three.Mesh(
-        getSharedCylinderGeometry(three, 0.41, 0.41, 0.03, 12),
-        frameMaterial
+      const balconyRailRing = markOptionalDecorativeRenderBudgetPart(
+        new three.Mesh(
+          getSharedCylinderGeometry(three, 0.41, 0.41, 0.03, 12),
+          frameMaterial
+        ),
+        { label: 'balcony-rail-ring' }
       );
       balconyRailRing.userData = {
         ...(balconyRailRing.userData ?? {}),
@@ -394,9 +447,12 @@ export function createLighthouseTilePlugin(): RuntimePlugin {
         { x: 0, z: 0.34 },
         { x: 0, z: -0.34 },
       ]) {
-        const balconyRailPost = new three.Mesh(
-          getSharedBoxGeometry(three, 0.03, 0.18, 0.03),
-          frameMaterial
+        const balconyRailPost = markOptionalDecorativeRenderBudgetPart(
+          new three.Mesh(
+            getSharedBoxGeometry(three, 0.03, 0.18, 0.03),
+            frameMaterial
+          ),
+          { label: 'balcony-rail-post' }
         );
         balconyRailPost.userData = {
           ...(balconyRailPost.userData ?? {}),
@@ -412,12 +468,18 @@ export function createLighthouseTilePlugin(): RuntimePlugin {
         { x: 0, z: 0.22 },
         { x: 0, z: -0.22 },
       ]) {
-        const pane = markPoiLightEmitter(
-          new three.Mesh(new three.PlaneGeometry(0.16, 0.12), paneMaterial),
+        const pane = markOptionalDecorativeRenderBudgetPart(
+          markPoiLightEmitter(
+            new three.Mesh(new three.PlaneGeometry(0.16, 0.12), paneMaterial),
+            {
+              kind: 'emissive-mesh',
+              dayIntensity: 0.08,
+              nightIntensity: 1.3,
+            }
+          ),
           {
-            kind: 'emissive-mesh',
-            dayIntensity: 0.08,
-            nightIntensity: 1.3,
+            label: 'pane',
+            priority: RENDER_BUDGET_PART_PRIORITIES.optionalFeature,
           }
         );
         pane.position.set(tileX + offset.x, 1.86, tileY + offset.z);

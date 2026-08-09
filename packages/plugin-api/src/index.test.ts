@@ -23,6 +23,9 @@ import {
   resolvePluginPackDefinition,
   getRenderBudgetPartMetadata,
   hasRenderBudgetPartMetadata,
+  markOptionalDecorativeRenderBudgetPart,
+  markStructuralRenderBudgetPart,
+  RENDER_BUDGET_PART_PRIORITIES,
   selectPluginPackManifests,
   setRenderBudgetPartMetadata,
   withDefaultTileKind,
@@ -98,6 +101,28 @@ describe('plugin registry', () => {
 
     expect(getRenderBudgetPartMetadata(target)).toBeNull();
     expect(hasRenderBudgetPartMetadata(target)).toBe(true);
+  });
+
+  it('provides shared priority presets for structural and decorative budget parts', () => {
+    const structural = markStructuralRenderBudgetPart({ userData: {} }, { label: 'tower' });
+    const decorative = markOptionalDecorativeRenderBudgetPart(
+      { userData: {} },
+      { label: 'banner' }
+    );
+
+    expect(getRenderBudgetPartMetadata(structural)).toEqual({
+      optional: false,
+      priority: RENDER_BUDGET_PART_PRIORITIES.essentialStructure,
+      label: 'tower',
+    });
+    expect(getRenderBudgetPartMetadata(decorative)).toEqual({
+      optional: true,
+      priority: RENDER_BUDGET_PART_PRIORITIES.optionalDecoration,
+      label: 'banner',
+    });
+    expect(RENDER_BUDGET_PART_PRIORITIES.optionalDecoration).toBeLessThan(
+      RENDER_BUDGET_PART_PRIORITIES.essentialStructure
+    );
   });
 
   it('registers content packs in map, runtime, then tile order', () => {

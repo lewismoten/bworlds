@@ -3,6 +3,10 @@ import {
   DEFAULT_YEAR_LENGTH_DAYS,
   getDaylightCycleState,
 } from '@bworlds/core';
+import {
+  getRenderBudgetPartMetadata,
+  RENDER_BUDGET_PART_PRIORITIES,
+} from '@bworlds/plugin-api';
 import { describe, expect, it } from 'vitest';
 import { createLighthouseTilePlugin } from './index.ts';
 
@@ -314,6 +318,56 @@ describe('tile lighthouse', () => {
     expect((wallGlowMeshes[0]?.material as FakeMaterial | undefined)?.options.emissive).toBe(
       '#f8d7a1'
     );
+  });
+
+  it('assigns lower budget priorities to optional decorations than structural lighthouse geometry', () => {
+    const plugin = createLighthouseTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'lighthouse');
+    const model = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state: {} as never,
+      tile: { kind: 'lighthouse' } as never,
+      tileX: 4,
+      tileY: 5,
+    }) as FakeNode | undefined;
+
+    const base = model?.children[0];
+    const tower = model?.children[1];
+    const glass = collectTaggedMeshes(model, 'lighthouseGlass')[0];
+    const balcony = collectTaggedMeshes(model, 'lighthouseBalcony')[0];
+    const wallGlow = collectTaggedMeshes(model, 'lighthouseWallGlow')[0];
+
+    expect(getRenderBudgetPartMetadata(base)).toEqual({
+      optional: false,
+      priority: RENDER_BUDGET_PART_PRIORITIES.essentialStructure,
+      label: 'base',
+    });
+    expect(getRenderBudgetPartMetadata(tower)).toEqual({
+      optional: false,
+      priority: RENDER_BUDGET_PART_PRIORITIES.essentialStructure,
+      label: 'tower',
+    });
+    expect(getRenderBudgetPartMetadata(glass)).toEqual({
+      optional: true,
+      priority: RENDER_BUDGET_PART_PRIORITIES.optionalDecoration,
+      label: 'lantern-glass',
+    });
+    expect(getRenderBudgetPartMetadata(balcony)).toEqual({
+      optional: true,
+      priority: RENDER_BUDGET_PART_PRIORITIES.optionalDecoration,
+      label: 'balcony-deck',
+    });
+    expect(getRenderBudgetPartMetadata(wallGlow)).toEqual({
+      optional: true,
+      priority: RENDER_BUDGET_PART_PRIORITIES.optionalFeature,
+      label: 'wall-glow',
+    });
+    expect(
+      getRenderBudgetPartMetadata(glass)?.priority ?? Infinity
+    ).toBeLessThan(getRenderBudgetPartMetadata(base)?.priority ?? -Infinity);
+    expect(
+      getRenderBudgetPartMetadata(balcony)?.priority ?? Infinity
+    ).toBeLessThan(getRenderBudgetPartMetadata(tower)?.priority ?? -Infinity);
   });
 
   it('builds a simplified low-detail lighthouse silhouette with a cheap rotating beam and no point light', () => {
