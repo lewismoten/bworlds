@@ -6,6 +6,7 @@ import {
 import type {
   CreateMapContext,
   RuntimePlugin,
+  Seed,
   TileLike,
   WorldContextLike,
   WorldMapLike,
@@ -28,7 +29,7 @@ export function createQuarryMapPlugin(): RuntimePlugin {
 
 function createQuarryMap(
   context: QuarryContext,
-  seed: string | number,
+  seed: Seed,
   plugins: CreateMapContext['plugins']
 ): WorldMapLike {
   const radius = 9;

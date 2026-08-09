@@ -1,21 +1,29 @@
 import {
   appendHashSeedLabel,
+  appendHashSeedRegisteredLabel,
   appendHashSeedPart,
   createHashSeed,
   hash2D,
   hash2DWithSeed,
+  type HashSeed,
+  type HashSeedLike,
   resolveHashSeed,
   registerHashLabel,
+  registerHashLabels,
 } from './hash.ts';
 
 export {
   appendHashSeedLabel,
+  appendHashSeedRegisteredLabel,
   appendHashSeedPart,
   createHashSeed,
   hash2D,
   hash2DWithSeed,
+  type HashSeed,
+  type HashSeedLike,
   resolveHashSeed,
   registerHashLabel,
+  registerHashLabels,
 } from './hash.ts';
 
 export { createRandom } from './prng.ts';
@@ -234,17 +242,16 @@ const POI_NAME_SUFFIX_LABEL = registerHashLabel('suffix');
 const POI_NAME_TAIL_LABEL = registerHashLabel('tail');
 const POI_NAME_FORM_LABEL = registerHashLabel('form');
 const POI_NAME_NOUN_LABEL = registerHashLabel('noun');
-const POI_NAME_TYPE_LABELS = {
-  town: registerHashLabel('town'),
-  cave: registerHashLabel('cave'),
-  dungeon: registerHashLabel('dungeon'),
-  ruins: registerHashLabel('ruins'),
-  quarry: registerHashLabel('quarry'),
-  lighthouse: registerHashLabel('lighthouse'),
-  ship: registerHashLabel('ship'),
-  observatory: registerHashLabel('observatory'),
-} as const;
-const dynamicPoiNameTypeLabels = new Map<string, number>();
+const POI_NAME_TYPE_LABELS = registerHashLabels([
+  'town',
+  'cave',
+  'dungeon',
+  'ruins',
+  'quarry',
+  'lighthouse',
+  'ship',
+  'observatory',
+] as const);
 
 function getPlanetSkyProfile(name: string, fallbackIndex = 0): PlanetSkyProfile {
   const index = PLANET_NAMES.indexOf(name);
@@ -591,7 +598,7 @@ export function getDaylightCycleState(
     offsetMs?: number;
     yearLengthDays?: number;
     constellationCount?: number;
-    constellationSeed?: string | number;
+    constellationSeed?: HashSeedLike;
     seasonDaylightAmplitude?: number;
     observerLatitudeDegrees?: number;
   } = {}
@@ -710,9 +717,7 @@ export function getDaylightCycleState(
   const constellationSeedHash =
     constellationSeed === undefined
       ? DEFAULT_CONSTELLATION_SEED
-      : typeof constellationSeed === 'number'
-        ? resolveHashSeed(constellationSeed)
-        : registerHashLabel(constellationSeed);
+      : resolveHashSeed(constellationSeed);
   const constellations = generateConstellations(constellationSeedHash, {
     count: constellationCount,
   });
@@ -1852,15 +1857,7 @@ function getPoiNameTypeLabel(type: PoiNameType): number {
   if (knownTypeLabel !== undefined) {
     return knownTypeLabel;
   }
-
-  const cached = dynamicPoiNameTypeLabels.get(type);
-  if (cached !== undefined) {
-    return cached;
-  }
-
-  const labelHash = registerHashLabel(type);
-  dynamicPoiNameTypeLabels.set(type, labelHash);
-  return labelHash;
+  return registerHashLabel(type);
 }
 
 export const DEFAULT_TILE_DEFINITION: CoreTileDefinitionLike = {

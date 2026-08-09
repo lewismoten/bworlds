@@ -27,19 +27,9 @@ export function createDepthFlavorRuntimePlugin(): RuntimePlugin {
   });
 }
 
-const depthFlavorContextSeedCache = new Map<string, number>();
-
 export function getDepthFlavorContextSeed(
   depthFlavorSeed: number,
   contextId: string
 ): number {
-  const cacheKey = `${depthFlavorSeed}:${contextId}`;
-  const cached = depthFlavorContextSeedCache.get(cacheKey);
-  if (cached !== undefined) {
-    return cached;
-  }
-
-  const seedHash = appendHashSeedLabel(depthFlavorSeed, registerHashLabel(contextId));
-  depthFlavorContextSeedCache.set(cacheKey, seedHash);
-  return seedHash;
+  return appendHashSeedLabel(depthFlavorSeed, registerHashLabel(contextId));
 }

@@ -26,6 +26,16 @@ export function registerHashLabel(label: string): number {
   return normalizedHash;
 }
 
+export function registerHashLabels<const TLabels extends readonly string[]>(
+  labels: TLabels
+): { [K in TLabels[number]]: number } {
+  const hashes = {} as { [K in TLabels[number]]: number };
+  for (const label of labels) {
+    hashes[label as TLabels[number]] = registerHashLabel(label);
+  }
+  return hashes;
+}
+
 function mixHashCharacter(hash: number, charCode: number): number {
   hash ^= charCode;
   return Math.imul(hash, FNV_PRIME);

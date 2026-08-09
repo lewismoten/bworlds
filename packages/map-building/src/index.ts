@@ -11,6 +11,7 @@ import type { QuestOffer } from '@bworlds/quest-support';
 import type {
   CreateMapContext,
   RuntimePlugin,
+  Seed,
   TileLike,
   WorldContextLike,
   WorldMapLike,
@@ -37,7 +38,7 @@ export function createBuildingMapPlugin(): RuntimePlugin {
 
 function createBuildingMap(
   context: BuildingContext,
-  seed: string | number,
+  seed: Seed,
   plugins: CreateMapContext['plugins']
 ): WorldMapLike {
   const getTile = createDecoratedMapTileGetter<BuildingTile, BuildingContext>({

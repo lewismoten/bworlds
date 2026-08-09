@@ -13,6 +13,7 @@ import {
 import type {
   CreateMapContext,
   RuntimePlugin,
+  Seed,
   TileLike,
   WorldContextLike,
   WorldMapLike,
@@ -39,7 +40,7 @@ export function createStationMapPlugin(): RuntimePlugin {
 
 function createStationMap(
   context: StationContext,
-  seed: string | number,
+  seed: Seed,
   _plugins: CreateMapContext['plugins']
 ): WorldMapLike {
   const sampleTerrainSignals = createOverworldTerrainSignalSampler(seed);

@@ -3,12 +3,13 @@ import {
   DEFAULT_DAY_LENGTH_MS,
   DEFAULT_YEAR_LENGTH_DAYS,
   getDaylightCycleState,
+  registerHashLabel,
   toGps,
 } from '@bworlds/core';
 import { createRuntimePlugin } from '@bworlds/plugin-api';
 import type { RuntimePlugin } from '@bworlds/plugin-api';
 
-const CELESTIAL_SEED = 'bworlds-celestial';
+const CELESTIAL_SEED = registerHashLabel('bworlds-celestial');
 export const CELESTIAL_DAY_LENGTH_MS = DEFAULT_DAY_LENGTH_MS;
 
 type CelestialCycleConfigState = {
@@ -25,7 +26,7 @@ export function resolveCelestialCycleConfig(
   offsetMs: number;
   yearLengthDays: number;
   constellationCount: number;
-  constellationSeed: string | number;
+  constellationSeed: number;
   seasonDaylightAmplitude: number;
   observerLatitudeDegrees: number;
 } {

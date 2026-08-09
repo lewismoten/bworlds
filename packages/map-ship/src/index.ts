@@ -1,8 +1,8 @@
 import {
   appendHashSeedLabel,
-  createHashSeed,
   hash2DWithSeed,
   registerHashLabel,
+  resolveHashSeed,
 } from '@bworlds/core/hash';
 import {
   createContextMapPlugin,
@@ -11,6 +11,7 @@ import {
 import type {
   CreateMapContext,
   RuntimePlugin,
+  Seed,
   TileLike,
   WorldContextLike,
   WorldMapLike,
@@ -34,7 +35,7 @@ export function createShipMapPlugin(): RuntimePlugin {
 
 function createShipMap(
   context: ShipContext,
-  seed: string | number,
+  seed: Seed,
   _plugins: CreateMapContext['plugins']
 ): WorldMapLike {
   const variant = getShipMapVariant(seed, context.origin.x, context.origin.y);
@@ -105,12 +106,11 @@ function createShipMap(
 }
 
 function getShipMapVariant(
-  seed: string | number,
+  seed: Seed,
   originX: number,
   originY: number
 ) {
-  const seedHash =
-    typeof seed === 'number' ? createHashSeed(seed) : registerHashLabel(seed);
+  const seedHash = resolveHashSeed(seed);
   const variantSeed = appendHashSeedLabel(seedHash, SHIP_MAP_VARIANT_SEED);
   return hash2DWithSeed(variantSeed, originX, originY) > 0.48
     ? 'tall-ship'

@@ -1,18 +1,21 @@
-import { registerHashLabel } from './hash-labels.ts';
+import { registerHashLabel, registerHashLabels } from './hash-labels.ts';
 
 const FNV_PRIME = 16777619;
 const HASH_PART_SEPARATOR = 58;
 const UINT32_RANGE = 2 ** 32;
+const HASH_SEED_LABEL_CACHE_LIMIT = 4096;
+const appendedHashSeedLabelCache = new Map<string, HashSeed>();
 
 export type HashSeed = number;
-export { registerHashLabel } from './hash-labels.ts';
+export type HashSeedLike = HashSeed | string;
+export { registerHashLabel, registerHashLabels } from './hash-labels.ts';
 
 export function createHashSeed(seed: number): HashSeed {
   return seed >>> 0;
 }
 
-export function resolveHashSeed(seed: number): HashSeed {
-  return createHashSeed(seed);
+export function resolveHashSeed(seed: HashSeedLike): HashSeed {
+  return typeof seed === 'number' ? createHashSeed(seed) : registerHashLabel(seed);
 }
 
 export function appendHashSeedPart(seedHash: HashSeed, value: number): HashSeed {
@@ -21,6 +24,27 @@ export function appendHashSeedPart(seedHash: HashSeed, value: number): HashSeed 
 
 export function appendHashSeedLabel(seedHash: HashSeed, labelHash: number): HashSeed {
   return mixHashNumber(mixHashCharacter(seedHash >>> 0, HASH_PART_SEPARATOR), labelHash);
+}
+
+export function appendHashSeedRegisteredLabel(
+  seedHash: HashSeed,
+  label: string
+): HashSeed {
+  const cacheKey = `${seedHash}:${label}`;
+  const cached = appendedHashSeedLabelCache.get(cacheKey);
+  if (cached !== undefined) {
+    return cached;
+  }
+
+  const appended = appendHashSeedLabel(seedHash, registerHashLabel(label));
+  appendedHashSeedLabelCache.set(cacheKey, appended);
+  if (appendedHashSeedLabelCache.size > HASH_SEED_LABEL_CACHE_LIMIT) {
+    const oldest = appendedHashSeedLabelCache.keys().next().value;
+    if (oldest !== undefined) {
+      appendedHashSeedLabelCache.delete(oldest);
+    }
+  }
+  return appended;
 }
 
 export function appendHashSeedNumber(seedHash: HashSeed, value: number): HashSeed {

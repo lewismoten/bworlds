@@ -2,6 +2,7 @@ import { createContextMapPlugin, createExitMapAction } from '@bworlds/map-suppor
 import type {
   CreateMapContext,
   RuntimePlugin,
+  Seed,
   TileLike,
   WorldContextLike,
   WorldMapLike,
@@ -22,7 +23,7 @@ export function createObservatoryMapPlugin(): RuntimePlugin {
 
 function createObservatoryMap(
   context: ObservatoryContext,
-  _seed: string | number,
+  _seed: Seed,
   _plugins: CreateMapContext['plugins']
 ): WorldMapLike {
   function getTile(x: number, y: number): TileLike {

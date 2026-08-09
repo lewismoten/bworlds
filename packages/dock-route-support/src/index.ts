@@ -5,6 +5,7 @@ import {
 } from '@bworlds/cache-support';
 import {
   appendHashSeedLabel,
+  appendHashSeedRegisteredLabel,
   hash2D,
   registerHashLabel,
 } from '@bworlds/core/hash';
@@ -73,6 +74,15 @@ type RouteSearchNode = {
   key: string;
   parent: RouteSearchNode | null;
 };
+type SurveyedRange = {
+  startX: number;
+  endX: number;
+};
+type DockClusterSurveyState = {
+  surveyedRows: Map<number, SurveyedRange[]>;
+  clusters: Map<string, DockCluster>;
+  tileToClusterKey: Map<string, string>;
+};
 
 const DEFAULT_SEARCH_RADIUS = 72;
 const MIN_ROUTE_DISTANCE = 20;
@@ -84,7 +94,6 @@ const DOCK_WHISTLE_WINDOW = 0.08;
 const DOCK_ROUTE_CACHE_LIMIT = 256;
 const DOCK_ROUTE_PREFIX_SEED = registerHashLabel('dock-route-prefix');
 const DOCK_ROUTE_SUFFIX_SEED = registerHashLabel('dock-route-suffix');
-const dockBoatPhaseSeedCache = new Map<string, number>();
 const routeCache = new WeakMap<
   WorldStateLike,
   BoundedCache<string, DockBoatRoute | null>
@@ -93,6 +102,7 @@ const routeGeometryCache = new WeakMap<
   WorldStateLike,
   BoundedCache<string, DockRouteGeometry | null>
 >();
+const dockClusterSurveyCache = new WeakMap<WorldStateLike, DockClusterSurveyState>();
 const CARDINAL_DIRECTIONS = [
   { x: 1, y: 0 },
   { x: -1, y: 0 },
@@ -172,17 +182,7 @@ export function getDockBoatPlacements(
 }
 
 export function getDockBoatPhaseSeed(boatName: string): number {
-  const cached = dockBoatPhaseSeedCache.get(boatName);
-  if (cached !== undefined) {
-    return cached;
-  }
-
-  const seedHash = appendHashSeedLabel(
-    DOCK_BOAT_PHASE_SEED,
-    registerHashLabel(boatName)
-  );
-  dockBoatPhaseSeedCache.set(boatName, seedHash);
-  return seedHash;
+  return appendHashSeedRegisteredLabel(DOCK_BOAT_PHASE_SEED, boatName);
 }
 
 function buildDockBoatRoute(
@@ -418,26 +418,141 @@ function collectDockClusters(
   centerY: number,
   searchRadius: number
 ): DockCluster[] {
-  const visited = new Set<string>();
-  const clusters: DockCluster[] = [];
-  for (let y = centerY - searchRadius; y <= centerY + searchRadius; y += 1) {
-    for (let x = centerX - searchRadius; x <= centerX + searchRadius; x += 1) {
-      const key = toPointKey(x, y);
-      if (visited.has(key) || state.getCurrentTile(x, y).kind !== 'dock') {
-        continue;
+  const minX = centerX - searchRadius;
+  const maxX = centerX + searchRadius;
+  const minY = centerY - searchRadius;
+  const maxY = centerY + searchRadius;
+  const survey = getDockClusterSurveyState(state);
+
+  for (let y = minY; y <= maxY; y += 1) {
+    const surveyedRanges = survey.surveyedRows.get(y) ?? [];
+    const unsurveyedRanges = getUnsurveyedRanges(surveyedRanges, minX, maxX);
+
+    for (let rangeIndex = 0; rangeIndex < unsurveyedRanges.length; rangeIndex += 1) {
+      const range = unsurveyedRanges[rangeIndex]!;
+      for (let x = range.startX; x <= range.endX; x += 1) {
+        const key = toPointKey(x, y);
+        if (
+          survey.tileToClusterKey.has(key) ||
+          state.getCurrentTile(x, y).kind !== 'dock'
+        ) {
+          continue;
+        }
+        const cluster = getDockClusterFromTile(state, x, y);
+        survey.clusters.set(cluster.key, cluster);
+        for (let tileIndex = 0; tileIndex < cluster.tiles.length; tileIndex += 1) {
+          const tile = cluster.tiles[tileIndex]!;
+          survey.tileToClusterKey.set(toPointKey(tile.x, tile.y), cluster.key);
+        }
       }
-      const cluster = getDockClusterFromTile(state, x, y);
-      cluster.tiles.forEach((tile) => {
-        visited.add(toPointKey(tile.x, tile.y));
-      });
-      clusters.push(cluster);
+      addSurveyedRange(survey.surveyedRows, y, range.startX, range.endX);
     }
   }
-  return clusters.sort((left, right) =>
+
+  return [...survey.clusters.values()]
+    .filter((cluster) =>
+      cluster.tiles.some(
+        (tile) =>
+          tile.x >= minX &&
+          tile.x <= maxX &&
+          tile.y >= minY &&
+          tile.y <= maxY
+      )
+    )
+    .sort((left, right) =>
     left.anchorY === right.anchorY
       ? left.anchorX - right.anchorX
       : left.anchorY - right.anchorY
   );
+}
+
+function getDockClusterSurveyState(state: WorldStateLike): DockClusterSurveyState {
+  let survey = dockClusterSurveyCache.get(state);
+  if (!survey) {
+    survey = {
+      surveyedRows: new Map(),
+      clusters: new Map(),
+      tileToClusterKey: new Map(),
+    };
+    dockClusterSurveyCache.set(state, survey);
+  }
+  return survey;
+}
+
+function getUnsurveyedRanges(
+  ranges: SurveyedRange[],
+  minX: number,
+  maxX: number
+): SurveyedRange[] {
+  if (ranges.length === 0) {
+    return [{ startX: minX, endX: maxX }];
+  }
+
+  const unsurveyed: SurveyedRange[] = [];
+  let cursor = minX;
+  for (let index = 0; index < ranges.length; index += 1) {
+    const range = ranges[index]!;
+    if (range.endX < cursor) {
+      continue;
+    }
+    if (range.startX > maxX) {
+      break;
+    }
+    if (range.startX > cursor) {
+      unsurveyed.push({
+        startX: cursor,
+        endX: Math.min(maxX, range.startX - 1),
+      });
+    }
+    cursor = Math.max(cursor, range.endX + 1);
+    if (cursor > maxX) {
+      break;
+    }
+  }
+
+  if (cursor <= maxX) {
+    unsurveyed.push({ startX: cursor, endX: maxX });
+  }
+
+  return unsurveyed;
+}
+
+function addSurveyedRange(
+  surveyedRows: Map<number, SurveyedRange[]>,
+  y: number,
+  startX: number,
+  endX: number
+): void {
+  const ranges = surveyedRows.get(y) ?? [];
+  const merged: SurveyedRange[] = [];
+  let nextRange = { startX, endX };
+  let inserted = false;
+
+  for (let index = 0; index < ranges.length; index += 1) {
+    const range = ranges[index]!;
+    if (range.endX + 1 < nextRange.startX) {
+      merged.push(range);
+      continue;
+    }
+    if (nextRange.endX + 1 < range.startX) {
+      if (!inserted) {
+        merged.push(nextRange);
+        inserted = true;
+      }
+      merged.push(range);
+      continue;
+    }
+    nextRange = {
+      startX: Math.min(nextRange.startX, range.startX),
+      endX: Math.max(nextRange.endX, range.endX),
+    };
+  }
+
+  if (!inserted) {
+    merged.push(nextRange);
+  }
+
+  surveyedRows.set(y, merged);
 }
 
 function getDockClusterFromTile(

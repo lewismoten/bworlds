@@ -1,5 +1,6 @@
 import {
   appendHashSeedLabel,
+  appendHashSeedRegisteredLabel,
   appendHashSeedPart,
   createHashSeed,
   hash2D,
@@ -7,6 +8,7 @@ import {
   normalizeHash,
   resolveHashSeed,
   registerHashLabel,
+  registerHashLabels,
 } from './hash.ts';
 import { describe, expect, it } from 'vitest';
 
@@ -50,10 +52,30 @@ describe('hash seeds', () => {
     const seedHash = registerHashLabel('seed');
 
     expect(resolveHashSeed(seedHash)).toBe(seedHash >>> 0);
+    expect(resolveHashSeed('seed')).toBe(seedHash >>> 0);
     expect(createHashSeed(0)).toBe(0);
     expect(createHashSeed(0xFFFFFFFF)).toBe(0xFFFFFFFF);
     expect(createHashSeed(0x100000000)).toBe(0);
     expect(createHashSeed(-1)).toBe(0xFFFFFFFF);
+  });
+
+  it('registers label groups through the shared hash module cache', () => {
+    const labels = registerHashLabels(['north', 'south'] as const);
+
+    expect(labels.north).toBe(registerHashLabel('north'));
+    expect(labels.south).toBe(registerHashLabel('south'));
+    expect(hash2D(labels.north, 3, 4)).toBe(hash2D(registerHashLabel('north'), 3, 4));
+  });
+
+  it('memoizes appended registered labels in the shared hash module', () => {
+    const baseSeed = registerHashLabel('dock-phase');
+
+    expect(appendHashSeedRegisteredLabel(baseSeed, 'Harbor Runner')).toBe(
+      appendHashSeedRegisteredLabel(baseSeed, 'Harbor Runner')
+    );
+    expect(appendHashSeedRegisteredLabel(baseSeed, 'Harbor Runner')).not.toBe(
+      appendHashSeedRegisteredLabel(baseSeed, 'Crescent Ferry')
+    );
   });
 
   it('keeps composed numeric seed paths deterministic', () => {

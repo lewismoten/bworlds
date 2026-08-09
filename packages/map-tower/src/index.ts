@@ -7,6 +7,7 @@ import {
 import type {
   CreateMapContext,
   RuntimePlugin,
+  Seed,
   TileLike,
   WorldContextLike,
   WorldMapLike,
@@ -33,7 +34,7 @@ export function createTowerMapPlugin(): RuntimePlugin {
 
 function createTowerMap(
   context: TowerContext,
-  _seed: string | number,
+  _seed: Seed,
   _plugins: CreateMapContext['plugins']
 ): WorldMapLike {
   function getTile(x: number, y: number): TowerTile {

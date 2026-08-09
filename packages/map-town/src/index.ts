@@ -18,6 +18,7 @@ import type { TownBuilding, TownBuildingRole } from '@bworlds/town-support';
 import type {
   CreateMapContext,
   RuntimePlugin,
+  Seed,
   TileLike,
   WorldContextLike,
   WorldMapLike,
@@ -62,7 +63,7 @@ export function createTownMapPlugin(): RuntimePlugin {
 
 function createTownMap(
   context: TownContext,
-  seed: string | number,
+  seed: Seed,
   plugins: CreateMapContext['plugins']
 ): WorldMapLike {
   const width = TOWN_WIDTH;
