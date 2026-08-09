@@ -10,6 +10,19 @@ export type NearbyAmbientKind =
 
 type AmbientPosition = { x: number; y: number };
 type AmbientSourceTier = 'poi' | 'base';
+type NearbyAmbientCandidate = NearbyAmbientProfile & {
+  distance: number;
+  priority: number;
+};
+type AmbientAggregationGroup = {
+  kind: NearbyAmbientKind;
+  sumIntensity: number;
+  maxIntensity: number;
+  weightedX: number;
+  weightedY: number;
+  nearestDistance: number;
+  count: number;
+};
 
 type AmbientStateLike = {
   player: { x: number; y: number };
@@ -51,12 +64,7 @@ export function findNearbyAmbientProfile(options: {
   searchRadius: number;
 }): NearbyAmbientProfile | null {
   const { state, centerX, centerY, searchRadius } = options;
-  let best:
-    | null
-    | (NearbyAmbientProfile & {
-        distance: number;
-        priority: number;
-      }) = null;
+  const candidates: NearbyAmbientCandidate[] = [];
 
   for (let y = centerY - searchRadius; y <= centerY + searchRadius; y += 1) {
     for (let x = centerX - searchRadius; x <= centerX + searchRadius; x += 1) {
@@ -70,25 +78,15 @@ export function findNearbyAmbientProfile(options: {
       if (!profile) {
         continue;
       }
-      if (
-        best &&
-        (profile.priority < best.priority ||
-          (profile.priority === best.priority &&
-            profile.distance >= best.distance))
-      ) {
-        continue;
-      }
-      best = profile;
+      candidates.push(profile);
     }
   }
 
-  return best
-    ? {
-        kind: best.kind,
-        intensity: best.intensity,
-        emitter: best.emitter,
-      }
-    : null;
+  if (candidates.length === 0) {
+    return null;
+  }
+
+  return aggregateAmbientProfiles(candidates);
 }
 
 export function shouldAdvertiseBaseAmbientSource(
@@ -106,7 +104,7 @@ function resolveAmbientProfileForTile(
   y: number,
   player: { x: number; y: number },
   searchRadius: number
-): (NearbyAmbientProfile & { distance: number; priority: number }) | null {
+): NearbyAmbientCandidate | null {
   const tileKind = typeof tile.kind === 'string' ? tile.kind : '';
   const poiType =
     typeof (tile as { poi?: { type?: unknown } }).poi?.type === 'string'
@@ -217,4 +215,85 @@ function hashAmbientCoordinate(x: number, y: number, salt: number): number {
   hash = (hash + Math.imul(y | 0, 668265263) + salt) | 0;
   hash = Math.imul(hash ^ (hash >>> 13), 1274126177);
   return ((hash ^ (hash >>> 16)) >>> 0) / 0xffffffff;
+}
+
+function aggregateAmbientProfiles(
+  profiles: NearbyAmbientCandidate[]
+): NearbyAmbientProfile {
+  const highestPriority = profiles.reduce(
+    (best, profile) => Math.max(best, profile.priority),
+    0
+  );
+  const eligibleProfiles = profiles.filter(
+    (profile) => profile.priority === highestPriority
+  );
+  const groups = new Map<NearbyAmbientKind, AmbientAggregationGroup>();
+
+  for (const profile of eligibleProfiles) {
+    const existing = groups.get(profile.kind);
+    if (existing) {
+      existing.sumIntensity += profile.intensity;
+      existing.maxIntensity = Math.max(
+        existing.maxIntensity,
+        profile.intensity
+      );
+      existing.weightedX += profile.emitter.x * profile.intensity;
+      existing.weightedY += profile.emitter.y * profile.intensity;
+      existing.nearestDistance = Math.min(
+        existing.nearestDistance,
+        profile.distance
+      );
+      existing.count += 1;
+      continue;
+    }
+    groups.set(profile.kind, {
+      kind: profile.kind,
+      sumIntensity: profile.intensity,
+      maxIntensity: profile.intensity,
+      weightedX: profile.emitter.x * profile.intensity,
+      weightedY: profile.emitter.y * profile.intensity,
+      nearestDistance: profile.distance,
+      count: 1,
+    });
+  }
+
+  let bestGroup: AmbientAggregationGroup | null = null;
+  for (const current of groups.values()) {
+    if (!bestGroup) {
+      bestGroup = current;
+      continue;
+    }
+    if (current.sumIntensity !== bestGroup.sumIntensity) {
+      bestGroup =
+        current.sumIntensity > bestGroup.sumIntensity ? current : bestGroup;
+      continue;
+    }
+    if (current.nearestDistance < bestGroup.nearestDistance) {
+      bestGroup = current;
+    }
+  }
+
+  if (!bestGroup) {
+    return {
+      kind: eligibleProfiles[0]!.kind,
+      intensity: eligibleProfiles[0]!.intensity,
+      emitter: eligibleProfiles[0]!.emitter,
+    };
+  }
+
+  const centroidX = bestGroup.weightedX / bestGroup.sumIntensity;
+  const centroidY = bestGroup.weightedY / bestGroup.sumIntensity;
+  const aggregateBoost = Math.min(
+    0.35,
+    (bestGroup.sumIntensity - bestGroup.maxIntensity) * 0.35
+  );
+
+  return {
+    kind: bestGroup.kind,
+    intensity: Math.min(1, bestGroup.maxIntensity + aggregateBoost),
+    emitter: {
+      x: Math.round(centroidX),
+      y: Math.round(centroidY),
+    },
+  };
 }

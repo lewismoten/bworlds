@@ -57,6 +57,29 @@ describe('nearby ambient', () => {
     });
   });
 
+  it('combines dense nearby ambient sources into one stronger profile', () => {
+    const profile = findNearbyAmbientProfile({
+      state: {
+        player: { x: 2, y: -3 },
+        getCurrentTile(x: number, y: number) {
+          if (x === 2 && y >= -4 && y <= -2) {
+            return { kind: 'forest' };
+          }
+          return { kind: 'plains' };
+        },
+      },
+      centerX: 2,
+      centerY: -3,
+      searchRadius: 1,
+    });
+
+    expect(profile).toEqual({
+      kind: 'forest',
+      intensity: 1,
+      emitter: { x: 2, y: -3 },
+    });
+  });
+
   it('gives unknown POI types a safe fallback ambience family', () => {
     const profile = findNearbyAmbientProfile({
       state: {
