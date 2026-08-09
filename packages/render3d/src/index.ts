@@ -88,6 +88,7 @@ import {
   getTextureDimensions,
   getTexturePixelCount,
 } from './texture-dimension-stats.ts';
+import { getTextureMemoryEstimateBytes } from './texture-memory-estimate.ts';
 import {
   disposeOwnedObject3DMaterials,
   getRecentOwnedMaterialLifecycleCounts,
@@ -4238,17 +4239,6 @@ function getMaterialTypeName(material: THREE.Material): string {
 function getInstancedMeshCount(object: unknown): number {
   const count = (object as { count?: unknown })?.count;
   return typeof count === 'number' && Number.isFinite(count) ? count : 0;
-}
-
-function getTextureMemoryEstimateBytes(texture: unknown): number {
-  const { width, height } = getTextureDimensions(texture);
-  if (width <= 0 || height <= 0) {
-    return 0;
-  }
-
-  const baseBytes = width * height * 4;
-  const usesMipmaps = (texture as { generateMipmaps?: boolean }).generateMipmaps !== false;
-  return usesMipmaps ? Math.round((baseBytes * 4) / 3) : baseBytes;
 }
 
 function getGeometryMemoryEstimate(geometry: unknown): {

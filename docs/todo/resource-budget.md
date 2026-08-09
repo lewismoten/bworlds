@@ -121,8 +121,8 @@ Given the heap issue you just saw, I would take this very seriously.
 
 Do not rely only on file size.
 
-* [ ] Estimate decoded texture memory.
-* [ ] Include mipmap memory in estimates.
+* [X] Estimate decoded texture memory.
+* [X] Include mipmap memory in estimates.
 * [ ] Track GPU texture-memory estimates separately from JavaScript heap.
 * [ ] Cap estimated texture bytes per model.
 * [ ] Cap estimated texture bytes per chunk.
