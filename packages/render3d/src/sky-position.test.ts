@@ -2,8 +2,10 @@ import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
 
 import {
+  createSkyAltitudePosition,
   createConstellationPoint,
   createSkyPosition,
+  writeSkyAltitudePosition,
   writeConstellationPoint,
   writeSkyPosition,
 } from './sky-position.ts';
@@ -43,5 +45,20 @@ describe('sky position helpers', () => {
 
   it('still supports creating standalone sky vectors when needed', () => {
     expect(createSkyPosition(0, 0, 7)).toEqual(new THREE.Vector3(0, 7, 0));
+  });
+
+  it('writes altitude-based sky coordinates into a reusable vector target', () => {
+    const target = new THREE.Vector3(1, 2, 3);
+
+    const result = writeSkyAltitudePosition(target, 0, 0, 5);
+
+    expect(result).toBe(target);
+    expect(target.x).toBeCloseTo(5, 6);
+    expect(target.y).toBeCloseTo(0, 6);
+    expect(target.z).toBeCloseTo(0, 6);
+  });
+
+  it('still supports creating standalone altitude-based sky vectors when needed', () => {
+    expect(createSkyAltitudePosition(0, 1, 7)).toEqual(new THREE.Vector3(0, 7, 0));
   });
 });

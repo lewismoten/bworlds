@@ -99,7 +99,9 @@ import {
 import { runTileModelSafetyPrecheck } from './tile-model-safety-precheck.ts';
 import {
   createConstellationPoint,
+  createSkyAltitudePosition,
   createSkyPosition,
+  writeSkyAltitudePosition,
   writeSkyPosition,
 } from './sky-position.ts';
 
@@ -4459,8 +4461,12 @@ function syncCelestialEvents(
 ): void {
   root.clear();
   const events = cycle.visibleEvents ?? [];
+  const position = new THREE.Vector3();
+  const trailStart = new THREE.Vector3();
+  const trailEnd = new THREE.Vector3();
   events.forEach((event, index) => {
-    const position = createSkyAltitudePosition(
+    writeSkyAltitudePosition(
+      position,
       event.azimuth,
       event.altitude,
       SKY_RADIUS - 6 - Math.min(1.2, index * 0.08)
@@ -4472,21 +4478,31 @@ function syncCelestialEvents(
       for (let streak = 0; streak < streakCount; streak += 1) {
         const lateralDrift = ((streak % 5) - 2) * 0.18;
         const verticalDrift = (streak % 3) * 0.08;
-        const offset = new THREE.Vector3(
-          lateralDrift,
-          verticalDrift,
-          -streak * 0.06
+        trailStart.set(
+          position.x + lateralDrift,
+          position.y + verticalDrift,
+          position.z - streak * 0.06
         );
-        const geometry = new THREE.BufferGeometry().setFromPoints([
-          position.clone().add(offset),
-          position.clone().add(
-            new THREE.Vector3(
-              event.trailLength + streak * 0.22,
-              -0.42 - streak * 0.1,
-              0.16 * (streak - streakCount * 0.5)
-            )
-          ),
-        ]);
+        trailEnd.set(
+          position.x + event.trailLength + streak * 0.22,
+          position.y - 0.42 - streak * 0.1,
+          position.z + 0.16 * (streak - streakCount * 0.5)
+        );
+        const geometry = new THREE.BufferGeometry();
+        geometry.setAttribute(
+          'position',
+          new THREE.Float32BufferAttribute(
+            [
+              trailStart.x,
+              trailStart.y,
+              trailStart.z,
+              trailEnd.x,
+              trailEnd.y,
+              trailEnd.z,
+            ],
+            3
+          )
+        );
         const line = new THREE.Line(
           geometry,
           new THREE.LineBasicMaterial({
@@ -4520,12 +4536,27 @@ function syncCelestialEvents(
     root.add(sprite);
 
     if (event.type === 'comet') {
-      const tail = new THREE.BufferGeometry().setFromPoints([
-        position.clone().add(
-          new THREE.Vector3(-event.trailLength, -event.trailLength * 0.16, 0)
-        ),
-        position.clone(),
-      ]);
+      trailStart.set(
+        position.x - event.trailLength,
+        position.y - event.trailLength * 0.16,
+        position.z
+      );
+      trailEnd.copy(position);
+      const tail = new THREE.BufferGeometry();
+      tail.setAttribute(
+        'position',
+        new THREE.Float32BufferAttribute(
+          [
+            trailStart.x,
+            trailStart.y,
+            trailStart.z,
+            trailEnd.x,
+            trailEnd.y,
+            trailEnd.z,
+          ],
+          3
+        )
+      );
       const line = new THREE.Line(
         tail,
         new THREE.LineBasicMaterial({
@@ -4612,6 +4643,9 @@ function syncAuroraBands(
 ): void {
   root.clear();
   const bands = cycle.auroraBands ?? [];
+  const lowerScratch = new THREE.Vector3();
+  const upperScratch = new THREE.Vector3();
+  const crestScratch = new THREE.Vector3();
   bands.forEach((band) => {
     const samples = 30;
     const start = band.azimuthCenter - band.span * 0.5;
@@ -4627,24 +4661,33 @@ function syncAuroraBands(
         Math.sin(progress * Math.PI * 3 + band.wavePhase * Math.PI * 2) *
         band.height *
         0.22;
-      const lower = createSkyAltitudePosition(
+      writeSkyAltitudePosition(
+        lowerScratch,
         azimuth,
         band.altitude + wave,
         SKY_RADIUS - 6.2
       );
-      const upper = createSkyAltitudePosition(
+      writeSkyAltitudePosition(
+        upperScratch,
         azimuth,
         band.altitude + band.height + wave,
         SKY_RADIUS - 5.6
       );
-      crestPoints.push(
-        createSkyAltitudePosition(
-          azimuth,
-          band.altitude + band.height * 0.58 + wave,
-          SKY_RADIUS - 5.45
-        )
+      writeSkyAltitudePosition(
+        crestScratch,
+        azimuth,
+        band.altitude + band.height * 0.58 + wave,
+        SKY_RADIUS - 5.45
       );
-      positions.push(lower.x, lower.y, lower.z, upper.x, upper.y, upper.z);
+      crestPoints.push(crestScratch.clone());
+      positions.push(
+        lowerScratch.x,
+        lowerScratch.y,
+        lowerScratch.z,
+        upperScratch.x,
+        upperScratch.y,
+        upperScratch.z
+      );
     }
 
     for (let index = 0; index < samples; index += 1) {
@@ -4689,23 +4732,25 @@ function syncAuroraBands(
         Math.sin(progress * Math.PI * 5 + band.wavePhase * Math.PI * 2) *
         band.height *
         0.12;
-      const midLower = createSkyAltitudePosition(
+      writeSkyAltitudePosition(
+        lowerScratch,
         azimuth,
         band.altitude + band.height * 0.2 + wave,
         SKY_RADIUS - 5.9
       );
-      const midUpper = createSkyAltitudePosition(
+      writeSkyAltitudePosition(
+        upperScratch,
         azimuth,
         band.altitude + band.height * 0.78 + wave,
         SKY_RADIUS - 5.5
       );
       innerRibbonPositions.push(
-        midLower.x,
-        midLower.y,
-        midLower.z,
-        midUpper.x,
-        midUpper.y,
-        midUpper.z
+        lowerScratch.x,
+        lowerScratch.y,
+        lowerScratch.z,
+        upperScratch.x,
+        upperScratch.y,
+        upperScratch.z
       );
     }
     for (let index = 0; index < samples; index += 1) {
@@ -4760,18 +4805,35 @@ function syncAuroraBands(
         Math.sin(progress * Math.PI * 4 + band.wavePhase * Math.PI * 2) *
         band.height *
         0.1;
-      const lower = createSkyAltitudePosition(
+      writeSkyAltitudePosition(
+        lowerScratch,
         azimuth,
         band.altitude + sway,
         SKY_RADIUS - 6
       );
-      const upper = createSkyAltitudePosition(
+      writeSkyAltitudePosition(
+        upperScratch,
         azimuth,
         band.altitude + band.height + sway,
         SKY_RADIUS - 5.45
       );
+      const ribGeometry = new THREE.BufferGeometry();
+      ribGeometry.setAttribute(
+        'position',
+        new THREE.Float32BufferAttribute(
+          [
+            lowerScratch.x,
+            lowerScratch.y,
+            lowerScratch.z,
+            upperScratch.x,
+            upperScratch.y,
+            upperScratch.z,
+          ],
+          3
+        )
+      );
       const rib = new THREE.Line(
-        new THREE.BufferGeometry().setFromPoints([lower, upper]),
+        ribGeometry,
         new THREE.LineBasicMaterial({
           color: ribIndex % 2 === 0 ? band.colorA : band.colorB,
           transparent: true,
@@ -4783,15 +4845,6 @@ function syncAuroraBands(
       root.add(rib);
     }
   });
-}
-
-function createSkyAltitudePosition(
-  azimuth: number,
-  altitude: number,
-  radius: number
-): THREE.Vector3 {
-  const phi = ((1 - altitude) * Math.PI) / 2;
-  return createSkyPosition(azimuth, phi, radius);
 }
 
 function createMoonSprite(): THREE.Sprite {

@@ -45,3 +45,21 @@ export function createSkyPosition(
 ): THREE.Vector3 {
   return writeSkyPosition(new THREE.Vector3(), theta, phi, radius);
 }
+
+export function writeSkyAltitudePosition(
+  target: THREE.Vector3,
+  azimuth: number,
+  altitude: number,
+  radius: number
+): THREE.Vector3 {
+  const phi = ((1 - altitude) * Math.PI) / 2;
+  return writeSkyPosition(target, azimuth, phi, radius);
+}
+
+export function createSkyAltitudePosition(
+  azimuth: number,
+  altitude: number,
+  radius: number
+): THREE.Vector3 {
+  return writeSkyAltitudePosition(new THREE.Vector3(), azimuth, altitude, radius);
+}
