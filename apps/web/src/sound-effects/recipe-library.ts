@@ -17,6 +17,7 @@ export type SoundRecipeSurfaceProfile = {
 export type SoundRecipeFamily =
   | 'movement'
   | 'interaction'
+  | 'ambient-rain'
   | 'ambient-wind'
   | 'ambient-water'
   | 'ambient-wilds'
@@ -107,6 +108,11 @@ export const SOUND_IDENTITY_DESCRIPTORS: Record<
     family: 'interaction',
     signature: 'brief mechanical or wooden closing gesture',
   },
+  rain: {
+    family: 'ambient-rain',
+    signature:
+      'layered rainfall with surface-specific impacts and drifting wet texture',
+  },
   wind: {
     family: 'ambient-wind',
     signature: 'broad airy wash with low drifting noise movement',
@@ -194,6 +200,15 @@ const SOUND_FAMILY_VARIATION_PROFILES: Record<
     frequencyRangeRatio: 0.035,
     durationRangeRatio: 0.08,
     volumeRangeRatio: 0.08,
+  },
+  'ambient-rain': {
+    frequencyVariation: 0.026,
+    durationVariation: 0.14,
+    volumeVariation: 0.08,
+    variationDepth: 0.96,
+    frequencyRangeRatio: 0.05,
+    durationRangeRatio: 0.2,
+    volumeRangeRatio: 0.12,
   },
   'ambient-wind': {
     frequencyVariation: 0.03,
@@ -413,6 +428,7 @@ function resolveProceduralSoundEnvelope(kind: SoundEffectKind) {
     case 'open':
     case 'close':
       return { attackMs: 5, decayMs: 28, sustainLevel: 0.48, releaseMs: 40 };
+    case 'rain':
     case 'wind':
     case 'ocean':
     case 'river-ambience':
@@ -511,6 +527,7 @@ function resolveProceduralSoundFilters(kind: SoundEffectKind) {
       ] as const;
     case 'ocean':
     case 'river-ambience':
+    case 'rain':
       return [
         {
           type: 'lowpass' as const,
@@ -832,6 +849,125 @@ function resolveProceduralSoundLayers(
   identityVariant?: string
 ): SoundLayerRecipe | undefined {
   switch (kind) {
+    case 'rain':
+      if (identityVariant === 'roof') {
+        return [
+          {
+            id: 'rain-roof-bed',
+            waveform: ['triangle', 'sine'] as const,
+            noiseColor: ['white', 'pink'] as const,
+            frequencyMultiplier: 0.82,
+            durationMultiplier: 1,
+            volumeMultiplier: 0.48,
+            frequencyVariation: 0.022,
+            durationVariation: 0.12,
+            volumeVariation: 0.08,
+            variationDepth: 0.88,
+          },
+          {
+            id: 'rain-roof-ticks',
+            waveform: ['square', 'triangle'] as const,
+            noiseColor: 'white' as const,
+            frequencyMultiplier: 1.36,
+            durationMultiplier: 0.54,
+            volumeMultiplier: 0.2,
+            startOffsetMs: 18,
+            startOffsetVariation: 0.24,
+            frequencyVariation: 0.034,
+            durationVariation: 0.16,
+            volumeVariation: 0.08,
+            variationDepth: 0.78,
+          },
+        ] as const;
+      }
+      if (identityVariant === 'leaves') {
+        return [
+          {
+            id: 'rain-canopy-bed',
+            waveform: ['triangle', 'sine'] as const,
+            noiseColor: ['pink', 'brown'] as const,
+            frequencyMultiplier: 0.8,
+            durationMultiplier: 1,
+            volumeMultiplier: 0.52,
+            frequencyVariation: 0.024,
+            durationVariation: 0.14,
+            volumeVariation: 0.08,
+            variationDepth: 0.9,
+          },
+          {
+            id: 'rain-leaf-drips',
+            waveform: ['triangle', 'sine'] as const,
+            noiseColor: 'white' as const,
+            frequencyMultiplier: 1.22,
+            durationMultiplier: 0.6,
+            volumeMultiplier: 0.18,
+            startOffsetMs: 44,
+            startOffsetVariation: 0.28,
+            frequencyVariation: 0.03,
+            durationVariation: 0.18,
+            volumeVariation: 0.08,
+            variationDepth: 0.8,
+          },
+        ] as const;
+      }
+      if (identityVariant === 'water') {
+        return [
+          {
+            id: 'rain-water-bed',
+            waveform: ['triangle', 'sine'] as const,
+            noiseColor: ['white', 'pink'] as const,
+            frequencyMultiplier: 0.78,
+            durationMultiplier: 1,
+            volumeMultiplier: 0.5,
+            frequencyVariation: 0.024,
+            durationVariation: 0.14,
+            volumeVariation: 0.08,
+            variationDepth: 0.9,
+          },
+          {
+            id: 'rain-water-ripples',
+            waveform: ['sine', 'triangle'] as const,
+            noiseColor: 'white' as const,
+            frequencyMultiplier: 1.14,
+            durationMultiplier: 0.66,
+            volumeMultiplier: 0.2,
+            startOffsetMs: 26,
+            startOffsetVariation: 0.26,
+            frequencyVariation: 0.03,
+            durationVariation: 0.18,
+            volumeVariation: 0.08,
+            variationDepth: 0.8,
+          },
+        ] as const;
+      }
+      return [
+        {
+          id: 'rain-open-bed',
+          waveform: ['triangle', 'sine'] as const,
+          noiseColor: ['white', 'pink'] as const,
+          frequencyMultiplier: 0.76,
+          durationMultiplier: 1,
+          volumeMultiplier: 0.54,
+          frequencyVariation: 0.024,
+          durationVariation: 0.14,
+          volumeVariation: 0.08,
+          variationDepth: 0.92,
+        },
+        {
+          id: 'rain-open-drops',
+          waveform: ['triangle', 'square'] as const,
+          noiseColor: 'white' as const,
+          frequencyMultiplier: 1.28,
+          durationMultiplier: 0.62,
+          volumeMultiplier: 0.18,
+          startOffsetMs: 24,
+          startOffsetVariation: 0.3,
+          frequencyVariation: 0.03,
+          durationVariation: 0.18,
+          volumeVariation: 0.08,
+          variationDepth: 0.82,
+        },
+      ] as const;
     case 'wind':
       return [
         {
@@ -2637,6 +2773,18 @@ function resolveBaseSoundEffectFrequency(
   switch (options.kind) {
     case 'jump':
       return options.profile.footstepFrequency + 72;
+    case 'rain':
+      return (
+        176 +
+        (options.identityVariant === 'roof'
+          ? -12
+          : options.identityVariant === 'leaves'
+            ? 6
+            : options.identityVariant === 'water'
+              ? 10
+              : 0) +
+        options.variantOffset * 0.35
+      );
     case 'wind':
       return (
         190 +
@@ -2704,6 +2852,8 @@ function resolveBaseSoundEffectDurationMs(kind: SoundEffectKind): number {
   switch (kind) {
     case 'jump':
       return 140;
+    case 'rain':
+      return 1900;
     case 'wind':
       return 680;
     case 'ocean':
@@ -2749,6 +2899,8 @@ function resolveBaseSoundEffectVolume(
   switch (kind) {
     case 'jump':
       return profile.footstepVolume * 1.2;
+    case 'rain':
+      return 0.024;
     case 'wind':
       return 0.018;
     case 'ocean':
@@ -2803,6 +2955,8 @@ function resolveBaseSoundEffectWaveform(
   switch (kind) {
     case 'blocked':
       return 'sawtooth';
+    case 'rain':
+      return ['triangle', 'sine'];
     case 'wind':
       return 'triangle';
     case 'ocean':
@@ -2850,6 +3004,8 @@ function resolveBaseSoundEffectNoiseColor(
   kind: SoundEffectKind
 ): ProceduralNoiseColor | readonly ProceduralNoiseColor[] | undefined {
   switch (kind) {
+    case 'rain':
+      return ['white', 'pink'];
     case 'wind':
       return 'brown';
     case 'ocean':

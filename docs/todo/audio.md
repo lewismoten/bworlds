@@ -193,12 +193,12 @@
 
 # Weather
 
-- [ ] Generate procedural rain sounds.
-- [ ] Adjust rain intensity continuously instead of using only preset light/medium/heavy states.
-- [ ] Change rain sound depending on the surface surrounding the player.
-- [ ] Generate rain impacts on roofs separately from open-air rain.
-- [ ] Generate rain impacts on leaves.
-- [ ] Generate rain impacts on water.
+- [x] Generate procedural rain sounds.
+- [x] Adjust rain intensity continuously instead of using only preset light/medium/heavy states.
+- [x] Change rain sound depending on the surface surrounding the player.
+- [x] Generate rain impacts on roofs separately from open-air rain.
+- [x] Generate rain impacts on leaves.
+- [x] Generate rain impacts on water.
 - [ ] Generate procedural thunder.
 - [ ] Calculate thunder delay from lightning distance.
 - [ ] Change thunder characteristics according to storm distance.

@@ -85,6 +85,7 @@ export function resolveSoundEffectCategory(
     case 'train-whistle':
     case 'paddle-calliope':
     case 'steam-whistle':
+    case 'rain':
     case 'wind':
     case 'ocean':
     case 'river-ambience':

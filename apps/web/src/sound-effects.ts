@@ -21,6 +21,12 @@ import {
 } from './sound-effects/recipe-library.ts';
 import { createSoundVariationSelector } from './sound-effects/variation-selector.ts';
 import {
+  isRainWeatherKind,
+  normalizeWeatherAudioIntensity,
+  resolveWeatherPrecipitationSurface,
+  type WeatherPrecipitationSurface,
+} from './weather-audio.ts';
+import {
   type ProceduralAmplitudeEnvelope,
   type ProceduralSoundDelay,
   createProceduralSoundEffectGenerator,
@@ -289,6 +295,7 @@ const SOUND_EFFECT_SEEDS = registerHashSeeds([
   'blocked',
   'open',
   'close',
+  'rain',
   'wind',
   'ocean',
   'river-ambience',
@@ -450,6 +457,7 @@ export function createSoundEffectController(
   let lastPrioritySoundStrength = 0;
   let lastCombatSignature = '';
   let lastInteractionAtMs = -Infinity;
+  let lastRainAtMs = -Infinity;
   let lastWindAtMs = -Infinity;
   let lastProgressionAtMs = -Infinity;
   const lastAmbientCueAtMsBySignature = new Map<string, number>();
@@ -816,6 +824,32 @@ export function createSoundEffectController(
         }
 
         if (
+          isRainWeatherKind(weatherKind) &&
+          nowMs - lastRainAtMs >=
+            getRainCadenceMs(
+              normalizeWeatherAudioIntensity(weatherIntensity, weatherKind)
+            )
+        ) {
+          const rainIntensity = normalizeWeatherAudioIntensity(
+            weatherIntensity,
+            weatherKind
+          );
+          const precipitationSurface =
+            resolveWeatherPrecipitationSurface(tileKind);
+          lastRainAtMs = nowMs;
+          play(
+            'rain',
+            nowMs,
+            tileKind,
+            emitter,
+            listener,
+            getRainSoundVolume(rainIntensity, precipitationSurface) *
+              ambienceDuckingGain,
+            getRainSoundDurationMs(rainIntensity),
+            precipitationSurface
+          );
+        }
+        if (
           shouldPlayForestWindSound(tileKind, weatherKind, windStrength) &&
           nowMs - lastWindAtMs >=
             getForestWindCadenceMs(windStrength ?? weatherIntensity ?? 0)
@@ -898,6 +932,33 @@ export function shouldPlayForestWindSound(
 
 export function getForestWindCadenceMs(windStrength: number): number {
   return Math.round(clampValue(2600 - windStrength * 1200, 1200, 2600));
+}
+
+export function getRainCadenceMs(intensity: number): number {
+  return Math.round(clampValue(2600 - intensity * 1350, 900, 2600));
+}
+
+export function getRainSoundDurationMs(intensity: number): number {
+  return Math.round(clampValue(1500 + intensity * 900, 1500, 2400));
+}
+
+export function getRainSoundVolume(
+  intensity: number,
+  surface: WeatherPrecipitationSurface
+): number {
+  const clamped = clampValue(intensity, 0, 1);
+  const baseVolume = clampValue(0.012 + clamped * 0.018, 0.012, 0.03);
+  switch (surface) {
+    case 'roof':
+      return baseVolume * 0.72;
+    case 'leaves':
+      return baseVolume * 0.94;
+    case 'water':
+      return baseVolume * 1.08;
+    case 'open':
+    default:
+      return baseVolume;
+  }
 }
 
 export function resolveAmbienceDuckingGain(

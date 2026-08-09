@@ -8,6 +8,7 @@ export type SoundEffectKind =
   | 'blocked'
   | 'open'
   | 'close'
+  | 'rain'
   | 'wind'
   | 'ocean'
   | 'river-ambience'

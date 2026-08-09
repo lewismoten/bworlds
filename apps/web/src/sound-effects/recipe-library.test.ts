@@ -244,6 +244,78 @@ describe('sound recipe library', () => {
     ]);
   });
 
+  it('supports surface-aware rain variants for open air, roofs, leaves, and water', () => {
+    const openRecipe = buildProceduralSoundRecipe({
+      kind: 'rain',
+      identityVariant: 'open',
+      profile: DEFAULT_SURFACE_PROFILE,
+      variantOffset: 0,
+      resolveAdvancementFrequency: () => 300,
+      resolveAmbientSoundFrequency: () => 172,
+      resolveInteractionFrequency: () => 128,
+      resolveInteractionWaveform: (_tileKind, fallback) => fallback,
+      resolvePaddleBoatCalliopeFrequency: () => 520,
+      resolveSteamWhistleFrequency: () => 360,
+    });
+    const roofRecipe = buildProceduralSoundRecipe({
+      kind: 'rain',
+      identityVariant: 'roof',
+      profile: DEFAULT_SURFACE_PROFILE,
+      variantOffset: 0,
+      resolveAdvancementFrequency: () => 300,
+      resolveAmbientSoundFrequency: () => 172,
+      resolveInteractionFrequency: () => 128,
+      resolveInteractionWaveform: (_tileKind, fallback) => fallback,
+      resolvePaddleBoatCalliopeFrequency: () => 520,
+      resolveSteamWhistleFrequency: () => 360,
+    });
+    const leavesRecipe = buildProceduralSoundRecipe({
+      kind: 'rain',
+      identityVariant: 'leaves',
+      profile: DEFAULT_SURFACE_PROFILE,
+      variantOffset: 0,
+      resolveAdvancementFrequency: () => 300,
+      resolveAmbientSoundFrequency: () => 172,
+      resolveInteractionFrequency: () => 128,
+      resolveInteractionWaveform: (_tileKind, fallback) => fallback,
+      resolvePaddleBoatCalliopeFrequency: () => 520,
+      resolveSteamWhistleFrequency: () => 360,
+    });
+    const waterRecipe = buildProceduralSoundRecipe({
+      kind: 'rain',
+      identityVariant: 'water',
+      profile: DEFAULT_SURFACE_PROFILE,
+      variantOffset: 0,
+      resolveAdvancementFrequency: () => 300,
+      resolveAmbientSoundFrequency: () => 172,
+      resolveInteractionFrequency: () => 128,
+      resolveInteractionWaveform: (_tileKind, fallback) => fallback,
+      resolvePaddleBoatCalliopeFrequency: () => 520,
+      resolveSteamWhistleFrequency: () => 360,
+    });
+
+    expect(openRecipe.id).toBe('rain:open');
+    expect(openRecipe.layers?.map((layer) => layer.id)).toEqual([
+      'rain-open-bed',
+      'rain-open-drops',
+    ]);
+    expect(roofRecipe.id).toBe('rain:roof');
+    expect(roofRecipe.layers?.map((layer) => layer.id)).toEqual([
+      'rain-roof-bed',
+      'rain-roof-ticks',
+    ]);
+    expect(leavesRecipe.id).toBe('rain:leaves');
+    expect(leavesRecipe.layers?.map((layer) => layer.id)).toEqual([
+      'rain-canopy-bed',
+      'rain-leaf-drips',
+    ]);
+    expect(waterRecipe.id).toBe('rain:water');
+    expect(waterRecipe.layers?.map((layer) => layer.id)).toEqual([
+      'rain-water-bed',
+      'rain-water-ripples',
+    ]);
+  });
+
   it('supports time-of-day and seasonal ambient variants for plains, forest, and settlements', () => {
     const forestNightRecipe = buildProceduralSoundRecipe({
       kind: 'forest-ambience',

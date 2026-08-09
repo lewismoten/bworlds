@@ -9,6 +9,9 @@ import {
   getAmbientSoundDurationMs,
   getPaddleBoatCalliopeCadenceMs,
   getPaddleBoatCalliopeDurationMs,
+  getRainCadenceMs,
+  getRainSoundDurationMs,
+  getRainSoundVolume,
   getProgressionSoundDurationMs,
   normalizeSoundEffectVolume,
   resolveAmbienceDuckingGain,
@@ -2975,6 +2978,111 @@ describe('sound effects', () => {
     expect(played.map((effect) => effect.kind)).toEqual(['wind', 'wind']);
     expect(played[0]?.waveform).toBe('triangle');
     expect(played[0]?.recipeId).toBe('wind:forest:stormfront');
+  });
+
+  it('plays debounced rain ambience with surface-aware recipe variants', () => {
+    const played: ProceduralSoundEffect[] = [];
+    const controller = createSoundEffectController({
+      play(effect) {
+        played.push(effect);
+      },
+    });
+
+    controller.update({
+      nowMs: 0,
+      walking: false,
+      isJumping: false,
+      viewMode: '3d',
+      tileKind: 'forest',
+      weatherKind: 'light-rain',
+      weatherIntensity: 0.1,
+    });
+    controller.update({
+      nowMs: 300,
+      walking: false,
+      isJumping: false,
+      viewMode: '3d',
+      tileKind: 'interior',
+      weatherKind: 'heavy-rain',
+      weatherIntensity: 0.2,
+    });
+    controller.update({
+      nowMs: getRainCadenceMs(0.7) + 40,
+      walking: false,
+      isJumping: false,
+      viewMode: '3d',
+      tileKind: 'shore',
+      weatherKind: 'heavy-rain',
+      weatherIntensity: 0.85,
+    });
+
+    expect(played.map((effect) => effect.kind)).toEqual(['rain', 'rain']);
+    expect(played[0]?.recipeId).toBe('rain:forest:leaves');
+    expect(played[1]?.recipeId).toBe('rain:shore:water');
+  });
+
+  it('scales rain duration and volume continuously from weather intensity', () => {
+    const played: ProceduralSoundEffect[] = [];
+    const controller = createSoundEffectController({
+      play(effect) {
+        played.push(effect);
+      },
+    });
+
+    controller.update({
+      nowMs: 0,
+      walking: false,
+      isJumping: false,
+      viewMode: '3d',
+      tileKind: 'plains',
+      weatherKind: 'light-rain',
+      weatherIntensity: 0.15,
+    });
+    controller.update({
+      nowMs: getRainCadenceMs(0.25) + 50,
+      walking: false,
+      isJumping: false,
+      viewMode: '3d',
+      tileKind: 'plains',
+      weatherKind: 'heavy-rain',
+      weatherIntensity: 0.95,
+    });
+
+    const rains = played.filter((effect) => effect.kind === 'rain');
+    const lightBaseDuration = getRainSoundDurationMs(0.25);
+    const heavyBaseDuration = getRainSoundDurationMs(0.95);
+    const lightBaseVolume = getRainSoundVolume(0.25, 'open');
+    const heavyBaseVolume = getRainSoundVolume(0.95, 'open');
+    const rainRecipeBaseVolume = 0.024;
+    expect(rains).toHaveLength(2);
+    expect(rains[0]?.durationMs).toBeGreaterThanOrEqual(
+      Math.floor(lightBaseDuration * 0.8)
+    );
+    expect(rains[0]?.durationMs).toBeLessThanOrEqual(
+      Math.ceil(lightBaseDuration * 1.2)
+    );
+    expect(rains[1]?.durationMs).toBeGreaterThanOrEqual(
+      Math.floor(heavyBaseDuration * 0.8)
+    );
+    expect(rains[1]?.durationMs).toBeLessThanOrEqual(
+      Math.ceil(heavyBaseDuration * 1.2)
+    );
+    expect(rains[0]?.volume).toBeGreaterThanOrEqual(
+      rainRecipeBaseVolume * lightBaseVolume * 0.88 * 0.88
+    );
+    expect(rains[0]?.volume).toBeLessThanOrEqual(
+      rainRecipeBaseVolume * lightBaseVolume * 1.12 * 1.12
+    );
+    expect(rains[1]?.volume).toBeGreaterThanOrEqual(
+      rainRecipeBaseVolume * heavyBaseVolume * 0.88 * 0.88
+    );
+    expect(rains[1]?.volume).toBeLessThanOrEqual(
+      rainRecipeBaseVolume * heavyBaseVolume * 1.12 * 1.12
+    );
+    expect((rains[1]?.durationMs ?? 0) > (rains[0]?.durationMs ?? 0)).toBe(
+      true
+    );
+    expect((rains[1]?.volume ?? 0) > (rains[0]?.volume ?? 0)).toBe(true);
   });
 
   it('plays a debounced blocked-movement cue when walking into forest trees', () => {
