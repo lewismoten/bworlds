@@ -12,6 +12,7 @@ export type RenderBudgetState = {
   drawCalls: number;
   maxChunkDrawCalls: number;
   maxChunkMeshes: number;
+  maxChunkTriangleCount: number;
   materialCount: number;
   textureCount: number;
   visibleObjectCount: number;
@@ -67,6 +68,10 @@ export type RenderBudgetCaps = {
     soft: number;
     hard: number;
   };
+  chunkTriangles: {
+    soft: number;
+    hard: number;
+  };
   textures: {
     soft: number;
     hard: number;
@@ -110,6 +115,7 @@ export const DEFAULT_RENDER_BUDGET_STATE: RenderBudgetState = {
   drawCalls: 0,
   maxChunkDrawCalls: 0,
   maxChunkMeshes: 0,
+  maxChunkTriangleCount: 0,
   materialCount: 0,
   textureCount: 0,
   visibleObjectCount: 0,
@@ -140,6 +146,8 @@ const SOFT_CHUNK_DRAW_CALL_LIMIT = 160;
 const HARD_CHUNK_DRAW_CALL_LIMIT = 240;
 const SOFT_CHUNK_MESH_LIMIT = 96;
 const HARD_CHUNK_MESH_LIMIT = 144;
+const SOFT_CHUNK_TRIANGLE_LIMIT = 24_000;
+const HARD_CHUNK_TRIANGLE_LIMIT = 36_000;
 const SOFT_TEXTURE_LIMIT = 48;
 const HARD_TEXTURE_LIMIT = 72;
 const SOFT_ESTIMATED_GPU_MEMORY_BYTES = 96 * 1024 * 1024;
@@ -163,6 +171,7 @@ function resetRenderBudgetStateInPlace(state: RenderBudgetState): RenderBudgetSt
   state.drawCalls = 0;
   state.maxChunkDrawCalls = 0;
   state.maxChunkMeshes = 0;
+  state.maxChunkTriangleCount = 0;
   state.materialCount = 0;
   state.textureCount = 0;
   state.visibleObjectCount = 0;
@@ -203,6 +212,7 @@ export function updateRenderBudgetStateInPlace(
     drawCalls,
     maxChunkDrawCalls,
     maxChunkMeshes,
+    maxChunkTriangleCount,
     materialCount,
     textureCount,
     visibleObjectCount,
@@ -217,6 +227,7 @@ export function updateRenderBudgetStateInPlace(
     drawCalls?: number;
     maxChunkDrawCalls?: number;
     maxChunkMeshes?: number;
+    maxChunkTriangleCount?: number;
     materialCount?: number;
     textureCount?: number;
     visibleObjectCount?: number;
@@ -263,6 +274,10 @@ export function updateRenderBudgetStateInPlace(
   const normalizedMaxChunkMeshes = Math.max(
     0,
     Math.floor(maxChunkMeshes ?? state.maxChunkMeshes)
+  );
+  const normalizedMaxChunkTriangleCount = Math.max(
+    0,
+    Math.floor(maxChunkTriangleCount ?? state.maxChunkTriangleCount)
   );
   const normalizedTextureCount = Math.max(
     0,
@@ -325,6 +340,11 @@ export function updateRenderBudgetStateInPlace(
   } else if (normalizedMaxChunkMeshes >= SOFT_CHUNK_MESH_LIMIT) {
     visibilityRadius = Math.min(visibilityRadius, REDUCED_VISIBILITY_RADIUS);
   }
+  if (normalizedMaxChunkTriangleCount >= HARD_CHUNK_TRIANGLE_LIMIT) {
+    visibilityRadius = Math.min(visibilityRadius, MIN_VISIBILITY_RADIUS);
+  } else if (normalizedMaxChunkTriangleCount >= SOFT_CHUNK_TRIANGLE_LIMIT) {
+    visibilityRadius = Math.min(visibilityRadius, REDUCED_VISIBILITY_RADIUS);
+  }
   if (normalizedTextureCount >= HARD_TEXTURE_LIMIT) {
     visibilityRadius = Math.min(visibilityRadius, MIN_VISIBILITY_RADIUS);
   } else if (normalizedTextureCount >= SOFT_TEXTURE_LIMIT) {
@@ -366,6 +386,7 @@ export function updateRenderBudgetStateInPlace(
   state.drawCalls = normalizedDrawCalls;
   state.maxChunkDrawCalls = normalizedMaxChunkDrawCalls;
   state.maxChunkMeshes = normalizedMaxChunkMeshes;
+  state.maxChunkTriangleCount = normalizedMaxChunkTriangleCount;
   state.materialCount = normalizedMaterialCount;
   state.textureCount = normalizedTextureCount;
   state.visibleObjectCount = normalizedVisibleObjectCount;
@@ -392,6 +413,7 @@ export function advanceRenderBudgetState(
     drawCalls,
     maxChunkDrawCalls,
     maxChunkMeshes,
+    maxChunkTriangleCount,
     materialCount,
     textureCount,
     visibleObjectCount,
@@ -406,6 +428,7 @@ export function advanceRenderBudgetState(
     drawCalls?: number;
     maxChunkDrawCalls?: number;
     maxChunkMeshes?: number;
+    maxChunkTriangleCount?: number;
     materialCount?: number;
     textureCount?: number;
     visibleObjectCount?: number;
@@ -427,6 +450,7 @@ export function advanceRenderBudgetState(
       drawCalls,
       maxChunkDrawCalls,
       maxChunkMeshes,
+      maxChunkTriangleCount,
       materialCount,
       textureCount,
       visibleObjectCount,
@@ -501,6 +525,10 @@ export function getRenderBudgetCaps(
     chunkMeshes: {
       soft: SOFT_CHUNK_MESH_LIMIT,
       hard: HARD_CHUNK_MESH_LIMIT,
+    },
+    chunkTriangles: {
+      soft: SOFT_CHUNK_TRIANGLE_LIMIT,
+      hard: HARD_CHUNK_TRIANGLE_LIMIT,
     },
     textures: {
       soft: SOFT_TEXTURE_LIMIT,
@@ -599,10 +627,16 @@ export function getRenderQualityLimiters(
     | 'visibleMeshCount'
   > &
     Partial<
-      Pick<RenderBudgetState, 'visibleTriangleCount' | 'estimatedGpuMemoryBytes'>
+      Pick<
+        RenderBudgetState,
+        | 'maxChunkTriangleCount'
+        | 'visibleTriangleCount'
+        | 'estimatedGpuMemoryBytes'
+      >
     >
 ): string[] {
   const limiters: string[] = [];
+  const maxChunkTriangleCount = Math.max(0, state.maxChunkTriangleCount ?? 0);
   const visibleTriangleCount = Math.max(0, state.visibleTriangleCount ?? 0);
   const estimatedGpuMemoryBytes = Math.max(
     0,
@@ -637,6 +671,11 @@ export function getRenderQualityLimiters(
     limiters.push('Chunk meshes exceeded the hard cap');
   } else if (state.maxChunkMeshes >= SOFT_CHUNK_MESH_LIMIT) {
     limiters.push('Chunk meshes exceeded the soft cap');
+  }
+  if (maxChunkTriangleCount >= HARD_CHUNK_TRIANGLE_LIMIT) {
+    limiters.push('Chunk triangles exceeded the hard cap');
+  } else if (maxChunkTriangleCount >= SOFT_CHUNK_TRIANGLE_LIMIT) {
+    limiters.push('Chunk triangles exceeded the soft cap');
   }
   if (state.textureCount >= HARD_TEXTURE_LIMIT) {
     limiters.push('Active textures exceeded the hard cap');

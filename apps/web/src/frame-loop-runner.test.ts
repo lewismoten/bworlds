@@ -17,6 +17,7 @@ describe('frame loop runner', () => {
       getDrawCalls: () => 456,
       getMaxChunkDrawCalls: () => 96,
       getMaxChunkMeshes: () => 72,
+      getMaxChunkTriangles: () => 18240,
       getMaterialCount: () => 28,
       getTextureCount: () => 24,
       getVisibleObjectCount: () => 260,
@@ -40,6 +41,7 @@ describe('frame loop runner', () => {
     expect(renderBudgetState.drawCalls).toBe(456);
     expect(renderBudgetState.maxChunkDrawCalls).toBe(96);
     expect(renderBudgetState.maxChunkMeshes).toBe(72);
+    expect(renderBudgetState.maxChunkTriangleCount).toBe(18240);
     expect(renderBudgetState.materialCount).toBe(28);
     expect(renderBudgetState.textureCount).toBe(24);
     expect(renderBudgetState.visibleObjectCount).toBe(260);
@@ -65,6 +67,7 @@ describe('frame loop runner', () => {
       getDrawCalls: () => 0,
       getMaxChunkDrawCalls: () => 0,
       getMaxChunkMeshes: () => 0,
+      getMaxChunkTriangles: () => 0,
       getMaterialCount: () => 0,
       getTextureCount: () => 0,
       getVisibleObjectCount: () => 0,

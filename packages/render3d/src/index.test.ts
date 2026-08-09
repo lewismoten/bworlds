@@ -2050,6 +2050,7 @@ describe('render3d visibility helpers', () => {
       chunkCount: 3,
       maxChunkDrawCallCount: 11,
       maxChunkMeshCount: 7,
+      maxChunkTriangleCount: 22,
       totalVisibleObjectCount: 0,
       totalVisibleMeshCount: 18,
       totalMaterialCount: 11,
