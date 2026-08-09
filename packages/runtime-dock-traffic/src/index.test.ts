@@ -135,4 +135,34 @@ describe('runtime dock traffic', () => {
       } as never)
     ).not.toThrow();
   });
+
+  it('recreates deterministic boat overlays after bounded cache eviction churn', () => {
+    const plugin = createDockTrafficRuntimePlugin({ cacheMaxEntries: 4 });
+    const state = createCircularDockRouteState();
+    const placement = getDockBoatPlacements(state as never, 0, 0, 0)[0]!;
+
+    const resolveTile = (timeMs: number) =>
+      plugin.decorateOverworldTile?.({
+        seed: 'cache-spec',
+        x: placement.x,
+        y: placement.y,
+        tile: { kind: state.getCurrentTile(placement.x, placement.y).kind },
+        state: { ...state, timeMs } as never,
+      } as never);
+
+    const baseline = resolveTile(500);
+
+    for (let index = 0; index < 8; index += 1) {
+      const regionOffset = index + 1;
+      plugin.decorateOverworldTile?.({
+        seed: 'cache-spec',
+        x: regionOffset * 24,
+        y: 0,
+        tile: { kind: 'ocean' },
+        state: { ...state, timeMs: index * 2_000 } as never,
+      } as never);
+    }
+
+    expect(resolveTile(500)).toEqual(baseline);
+  });
 });

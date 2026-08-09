@@ -77,4 +77,32 @@ describe('runtime rail network', () => {
       })
     );
   });
+
+  it('recreates deterministic rail overlays after bounded cache eviction churn', () => {
+    const plugin = createRailNetworkRuntimePlugin({ cacheMaxEntries: 4 });
+    const baseline = plugin.resolveOverworldTile?.({
+      seed: 'cache-spec',
+      x: 24,
+      y: -48,
+      sampleTerrainSignals,
+    } as never);
+
+    for (let index = 0; index < 8; index += 1) {
+      plugin.resolveOverworldTile?.({
+        seed: 'cache-spec',
+        x: index,
+        y: index * 2,
+        sampleTerrainSignals,
+      } as never);
+    }
+
+    const repeated = plugin.resolveOverworldTile?.({
+      seed: 'cache-spec',
+      x: 24,
+      y: -48,
+      sampleTerrainSignals,
+    } as never);
+
+    expect(repeated).toEqual(baseline);
+  });
 });

@@ -1,4 +1,4 @@
-import { getOrCreateMapValue } from '@bworlds/cache-support';
+import { createBoundedCache } from '@bworlds/cache-support';
 import { getDockBoatPlacements } from '@bworlds/dock-route-support';
 import { createRuntimePlugin } from '@bworlds/plugin-api';
 import type { RuntimePlugin } from '@bworlds/plugin-api';
@@ -6,9 +6,16 @@ import type { RuntimePlugin } from '@bworlds/plugin-api';
 const REGION_SIZE = 24;
 const SEARCH_RADIUS = 72;
 const TIME_BUCKET_MS = 2_000;
+export const DOCK_TRAFFIC_CACHE_MAX_ENTRIES = 256;
 
-export function createDockTrafficRuntimePlugin(): RuntimePlugin {
-  const cache = new Map<string, ReturnType<typeof getDockBoatPlacements>>();
+export function createDockTrafficRuntimePlugin({
+  cacheMaxEntries = DOCK_TRAFFIC_CACHE_MAX_ENTRIES,
+}: {
+  cacheMaxEntries?: number;
+} = {}): RuntimePlugin {
+  const cache = createBoundedCache<string, ReturnType<typeof getDockBoatPlacements>>(
+    cacheMaxEntries
+  );
   let resolvingPlacements = false;
 
   return createRuntimePlugin('runtime-dock-traffic', {
@@ -29,7 +36,7 @@ export function createDockTrafficRuntimePlugin(): RuntimePlugin {
       const contextId = state.getCurrentContext().id;
       const cacheKey = `${seed}:${contextId}:${regionX}:${regionY}:${timeBucket}`;
 
-      const placements = getOrCreateMapValue(cache, cacheKey, () => {
+      const placements = cache.getOrCreate(cacheKey, () => {
         resolvingPlacements = true;
         try {
           return getDockBoatPlacements(
