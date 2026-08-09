@@ -76,7 +76,7 @@
 - [x] MIDI should include instrument names
 - [x] MIDI should include comments
 - [x] MIDI may include multiple "More comments" (ie plugin, seed, parameters)
-- [ ] MIDI may include lyrics if any were generated for the song
+- [x] MIDI may include lyrics if any were generated for the song
 - [x] MIDI should include channel volume(s)
 - [x] MIDI should include pans(s)
 - [x] MIDI should include bank select MSB(s)

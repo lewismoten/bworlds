@@ -322,6 +322,16 @@ function buildRoleTracks(snapshot: MusicDebugSnapshot): MusicDebugMidiTrack[] {
     if (!isMidiPercussionFamily(instrument.family)) {
       events.push(createProgramChangeEvent(channel, instrument.family, 6));
     }
+    if (role === 'lead') {
+      for (let index = 0; index < snapshot.lyrics.length; index += 1) {
+        const lyric = snapshot.lyrics[index]!;
+        events.push({
+          tick: msToTicks(lyric.startOffsetMs, snapshot),
+          order: 10 + index,
+          data: [0xff, 0x05, ...encodeText(lyric.text)],
+        });
+      }
+    }
 
     let noteOrder = 20;
     let roleNoteIndex = 0;

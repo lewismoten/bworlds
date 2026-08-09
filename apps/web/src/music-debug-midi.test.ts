@@ -199,6 +199,19 @@ describe('music debug midi', () => {
     expect(revokeObjectURL).toHaveBeenCalledWith('blob:music');
     expect(createObjectURL).toHaveBeenCalledTimes(1);
   });
+
+  it('includes lyric meta events when the generated lead instrument uses vocals', () => {
+    const snapshot = findVocalsSnapshot();
+    const file = createMusicDebugMidiFile(snapshot, {
+      createdAt: new Date('2026-08-09T00:00:00.000Z'),
+    });
+    const chunks = parseMidiChunks(file.bytes);
+    const leadLyrics = readTrackMetaTexts(chunks.tracks[3]!, 0x05);
+
+    expect(snapshot.instrumentBank.instruments.lead.family).toBe('vocals');
+    expect(snapshot.lyrics.length).toBeGreaterThan(0);
+    expect(leadLyrics).toEqual(snapshot.lyrics.map((line) => line.text));
+  });
 });
 
 function parseMidiChunks(bytes: Uint8Array): {
@@ -476,6 +489,26 @@ function encodeExpectedTempoMeta(
     (microsecondsPerQuarter >> 8) & 0xff,
     microsecondsPerQuarter & 0xff,
   ];
+}
+
+function findVocalsSnapshot(): ReturnType<typeof createMusicDebugSnapshot> {
+  for (let clusterX = -8; clusterX <= 8; clusterX += 1) {
+    for (let clusterY = -8; clusterY <= 8; clusterY += 1) {
+      const snapshot = createMusicDebugSnapshot({
+        tileKind: 'town',
+        contextType: 'town',
+        clusterX,
+        clusterY,
+        dayProgress: 0.45,
+        yearProgress: 0.5,
+      });
+      if (snapshot.instrumentBank.instruments.lead.family === 'vocals') {
+        return snapshot;
+      }
+    }
+  }
+
+  throw new Error('Expected to find a vocals snapshot for MIDI lyric export');
 }
 
 function ticksToMilliseconds(

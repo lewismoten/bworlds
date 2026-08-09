@@ -78,6 +78,7 @@ describe('music debug', () => {
     expect(first.sectionLayerArrangement).toEqual(
       second.sectionLayerArrangement
     );
+    expect(first.lyrics).toEqual(second.lyrics);
     expect(first.notes).toEqual(second.notes);
     expect(first.durationMs).toBeGreaterThanOrEqual(120_000);
     expect(first.durationMs).toBeLessThanOrEqual(180_000);

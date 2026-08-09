@@ -23,6 +23,10 @@ import {
 import { resolveProceduralMusicBlueprintMeasureCount } from './procedural-music-blueprint.ts';
 import { randomizeDebugCoordinatePair } from './debug-seed.ts';
 import { buildMusicDebugInstrumentPanelMarkup } from './music-debug-instrument-panel.ts';
+import {
+  createMusicDebugLyrics,
+  type MusicDebugLyricLine,
+} from './music-debug-lyrics.ts';
 import { describeSongSectionLayerArrangement } from './procedural-music-song-layers.ts';
 import { createProceduralScaleMap } from './procedural-music-scale.ts';
 import {
@@ -85,6 +89,7 @@ export type MusicDebugSnapshot = {
   vocabularySummary: string[];
   sharedMotif: number[];
   sectionLayerArrangement: string[];
+  lyrics: MusicDebugLyricLine[];
   loopStartOffsetMs: number;
   loopEndOffsetMs: number;
   leadMaxLeapSemitones: number;
@@ -264,6 +269,11 @@ export function createMusicDebugSnapshot(
   const measureCount = resolveProceduralMusicBlueprintMeasureCount(
     song.blueprint
   );
+  const lyrics = createMusicDebugLyrics({
+    leadFamily: instrumentBank.instruments.lead.family,
+    sections: song.sections,
+    songDna: song.dna,
+  });
   const roleCounts: MusicDebugSnapshot['roleCounts'] = {
     lead: 0,
     harmony: 0,
@@ -325,6 +335,7 @@ export function createMusicDebugSnapshot(
     sectionLayerArrangement: song.sections.map((section) =>
       describeSongSectionLayerArrangement(section)
     ),
+    lyrics,
     loopStartOffsetMs: song.loopStartOffsetMs,
     loopEndOffsetMs: song.loopEndOffsetMs,
     leadMaxLeapSemitones,
