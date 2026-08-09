@@ -57,6 +57,7 @@ export type SoundEffectController = {
   resume(): void;
   getActiveSourceCount(): number;
   getRecentCombatIntensity(nowMs: number): number;
+  getRecentPrioritySoundIntensity(nowMs: number): number;
   triggerProgression(options: {
     nowMs: number;
     level?: number;
@@ -254,6 +255,8 @@ export function createSoundEffectController(
   let lastJumpAtMs = -Infinity;
   let lastBlockedAtMs = -Infinity;
   let lastCombatAtMs = -Infinity;
+  let lastPrioritySoundAtMs = -Infinity;
+  let lastPrioritySoundStrength = 0;
   let lastCombatSignature = '';
   let lastInteractionAtMs = -Infinity;
   let lastWindAtMs = -Infinity;
@@ -419,11 +422,25 @@ export function createSoundEffectController(
 
       return clampValue(1 - elapsedMs / 4000, 0, 1);
     },
+    getRecentPrioritySoundIntensity(nowMs) {
+      const elapsedMs = nowMs - lastPrioritySoundAtMs;
+      if (!Number.isFinite(elapsedMs) || elapsedMs >= 2200) {
+        return 0;
+      }
+
+      return clampValue(
+        lastPrioritySoundStrength * (1 - elapsedMs / 2200),
+        0,
+        1
+      );
+    },
     triggerProgression({ nowMs, level, emitter, listener }) {
       if (nowMs - lastProgressionAtMs < 180) {
         return;
       }
       lastProgressionAtMs = nowMs;
+      lastPrioritySoundAtMs = nowMs;
+      lastPrioritySoundStrength = 0.9;
       sink.play({
         kind: 'advancement',
         nowMs,
@@ -440,6 +457,8 @@ export function createSoundEffectController(
         return;
       }
       lastInteractionAtMs = nowMs;
+      lastPrioritySoundAtMs = nowMs;
+      lastPrioritySoundStrength = event === 'open' ? 0.46 : 0.42;
       play(event, nowMs, tileKind, emitter, listener);
     },
     triggerJump({ nowMs, tileKind, emitter, listener }) {
@@ -447,6 +466,8 @@ export function createSoundEffectController(
         return;
       }
       lastJumpAtMs = nowMs;
+      lastPrioritySoundAtMs = nowMs;
+      lastPrioritySoundStrength = 0.36;
       play('jump', nowMs, tileKind, emitter, listener);
     },
     triggerBlockedMovement({ nowMs, tileKind, emitter, listener }) {
@@ -457,6 +478,8 @@ export function createSoundEffectController(
         return;
       }
       lastBlockedAtMs = nowMs;
+      lastPrioritySoundAtMs = nowMs;
+      lastPrioritySoundStrength = 0.52;
       play('blocked', nowMs, tileKind, emitter, listener);
     },
     triggerCombat({ nowMs, style, emitter, listener }) {
@@ -468,6 +491,8 @@ export function createSoundEffectController(
         return;
       }
       lastCombatAtMs = nowMs;
+      lastPrioritySoundAtMs = nowMs;
+      lastPrioritySoundStrength = style === 'healing' ? 0.45 : 0.82;
       lastCombatSignature = signature;
       const kind = isMagicCombatStyle(style) ? 'combat-magic' : 'combat-weapon';
       sink.play({

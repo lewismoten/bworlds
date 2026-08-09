@@ -12,6 +12,7 @@ describe('audio controller gates', () => {
       resume: vi.fn(),
       getActiveSourceCount: vi.fn(() => 3),
       getRecentCombatIntensity: vi.fn(() => 0.4),
+      getRecentPrioritySoundIntensity: vi.fn(() => 0.6),
       triggerProgression: vi.fn(),
       triggerInteraction: vi.fn(),
       triggerJump: vi.fn(),
@@ -36,6 +37,7 @@ describe('audio controller gates', () => {
     expect(controller.update).not.toHaveBeenCalled();
     expect(gated.getActiveSourceCount()).toBe(3);
     expect(gated.getRecentCombatIntensity(12)).toBe(0.4);
+    expect(gated.getRecentPrioritySoundIntensity(12)).toBe(0.6);
 
     enabled = true;
     gated.resume();

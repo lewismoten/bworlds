@@ -2959,6 +2959,8 @@ function render(): FrameLoopActivityLike {
   const musicClusterY = Math.floor(spatial.playerY / 12);
   const nearbyPoiMusic = getNearbyPoiMusicProfile();
   const combatIntensity = soundEffects.getRecentCombatIntensity(nowMs);
+  const prioritySoundIntensity =
+    soundEffects.getRecentPrioritySoundIntensity(nowMs);
   const encounterMode = resolveMusicEncounterMode({ combatIntensity });
   const musicUpdate = gateMusicUpdate({
     nowMs,
@@ -2969,6 +2971,7 @@ function render(): FrameLoopActivityLike {
     weatherKind: environment.weather?.current?.kind,
     weatherIntensity: environment.weather?.current?.intensity,
     combatIntensity,
+    prioritySoundIntensity,
     encounterMode,
     clusterX: musicClusterX,
     clusterY: musicClusterY,

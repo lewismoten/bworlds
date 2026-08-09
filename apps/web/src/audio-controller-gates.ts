@@ -20,6 +20,9 @@ export function createEnabledSoundEffectController(
     getRecentCombatIntensity(nowMs) {
       return controller.getRecentCombatIntensity(nowMs);
     },
+    getRecentPrioritySoundIntensity(nowMs) {
+      return controller.getRecentPrioritySoundIntensity(nowMs);
+    },
     triggerProgression(options) {
       if (!isEnabled()) {
         return;

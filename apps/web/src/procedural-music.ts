@@ -250,6 +250,7 @@ export type MusicUpdateOptions = {
   weatherKind?: WeatherKind;
   weatherIntensity?: number;
   combatIntensity?: number;
+  prioritySoundIntensity?: number;
   encounterMode?: MusicEncounterMode;
   dayProgress: number;
   yearProgress?: number;
@@ -778,10 +779,13 @@ export function createMusicController(sink: MusicSink): MusicController {
 
       const poiMix = clamp(options.nearbyPoi?.mix ?? 0, 0, 1);
       const gains = resolvePoiMusicBlendGains(poiMix);
+      const duckingGain = resolveMusicDuckingGain(
+        options.prioritySoundIntensity ?? 0
+      );
       const ambientScheduled = scheduleThemeLayerNotes(
         {
           ...options,
-          gainMultiplier: gains.ambientGain,
+          gainMultiplier: gains.ambientGain * duckingGain,
         },
         ambientSchedulerState
       );
@@ -815,7 +819,7 @@ export function createMusicController(sink: MusicSink): MusicController {
           clusterY: options.nearbyPoi.clusterY,
           emitter: options.nearbyPoi.emitter,
           listener: options.nearbyPoi.listener ?? options.listener,
-          gainMultiplier: gains.poiGain,
+          gainMultiplier: gains.poiGain * duckingGain,
           signaturePrefix: 'poi',
         },
         poiSchedulerState
@@ -848,6 +852,7 @@ export function getMusicUpdateSignature(
       options.weatherKind ?? '',
       Math.round((options.weatherIntensity ?? 0) * 10),
       Math.round(clamp(options.combatIntensity ?? 0, 0, 1) * 100),
+      Math.round(clamp(options.prioritySoundIntensity ?? 0, 0, 1) * 100),
       options.encounterMode ?? 'ambient',
       options.clusterX ?? 0,
       options.clusterY ?? 0,
@@ -862,6 +867,7 @@ export function getMusicUpdateSignature(
           options.weatherKind ?? '',
           Math.round((options.weatherIntensity ?? 0) * 10),
           Math.round(clamp(options.combatIntensity ?? 0, 0, 1) * 100),
+          Math.round(clamp(options.prioritySoundIntensity ?? 0, 0, 1) * 100),
           options.encounterMode ?? 'ambient',
           options.nearbyPoi.clusterX ?? 0,
           options.nearbyPoi.clusterY ?? 0,
@@ -1839,4 +1845,9 @@ function resolveSeason(
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
+}
+
+function resolveMusicDuckingGain(prioritySoundIntensity: number): number {
+  const clamped = clamp(prioritySoundIntensity, 0, 1);
+  return 1 - clamped * 0.42;
 }

@@ -1139,6 +1139,46 @@ describe('procedural music', () => {
     ).toBeGreaterThanOrEqual(2);
   });
 
+  it('ducks scheduled music when recent important sound effects are active', () => {
+    const unducked: ProceduralMusicNote[] = [];
+    const ducked: ProceduralMusicNote[] = [];
+    const controller = createMusicController({
+      play(note) {
+        unducked.push(note);
+      },
+    });
+
+    controller.update({
+      nowMs: 0,
+      tileKind: 'town',
+      contextType: 'town',
+      dayProgress: 0.45,
+      prioritySoundIntensity: 0,
+      clusterX: 0,
+      clusterY: 0,
+    });
+
+    const duckedController = createMusicController({
+      play(note) {
+        ducked.push(note);
+      },
+    });
+
+    duckedController.update({
+      nowMs: 0,
+      tileKind: 'town',
+      contextType: 'town',
+      dayProgress: 0.45,
+      prioritySoundIntensity: 1,
+      clusterX: 0,
+      clusterY: 0,
+    });
+
+    expect(ducked.length).toBe(unducked.length);
+    expect(ducked.length).toBeGreaterThan(0);
+    expect(ducked[0]!.volume).toBeLessThan(unducked[0]!.volume);
+  });
+
   it('lets percussion react to the shared composition structure instead of staying flat', () => {
     const first = scheduleProceduralMusicNotes({
       nowMs: 0,

@@ -12,6 +12,7 @@ describe('music update payload builder', () => {
       weatherKind: 'fog',
       weatherIntensity: 0.3,
       combatIntensity: 0.25,
+      prioritySoundIntensity: 0.15,
       encounterMode: 'ambient',
       dayProgress: 0.5,
       yearProgress: 0.05,
@@ -38,6 +39,7 @@ describe('music update payload builder', () => {
       weatherKind: 'light-rain',
       weatherIntensity: 0.6,
       combatIntensity: 0.75,
+      prioritySoundIntensity: 0.65,
       encounterMode: 'battle',
       dayProgress: 0.52,
       yearProgress: 0.55,
@@ -66,6 +68,7 @@ describe('music update payload builder', () => {
     expect(second.clusterX).toBe(2);
     expect(second.yearProgress).toBe(0.55);
     expect(second.combatIntensity).toBe(0.75);
+    expect(second.prioritySoundIntensity).toBe(0.65);
     expect(second.encounterMode).toBe('battle');
     expect(second.emitter).toEqual({ x: 30, y: -6 });
     expect(second.listener).toEqual({ x: 13.5, y: -5.25 });
@@ -93,6 +96,7 @@ describe('music update payload builder', () => {
       dayProgress: 0.5,
       yearProgress: 0.15,
       combatIntensity: 0.5,
+      prioritySoundIntensity: 0.25,
       encounterMode: 'boss',
       clusterX: 0,
       clusterY: 0,
@@ -117,6 +121,7 @@ describe('music update payload builder', () => {
       dayProgress: 0.5,
       yearProgress: 0.15,
       combatIntensity: 0,
+      prioritySoundIntensity: 0,
       encounterMode: 'ambient',
       clusterX: 0,
       clusterY: 0,
@@ -130,6 +135,7 @@ describe('music update payload builder', () => {
     expect(second).toBe(first);
     expect(second.nearbyPoi).toBeNull();
     expect(second.combatIntensity).toBe(0);
+    expect(second.prioritySoundIntensity).toBe(0);
     expect(second.encounterMode).toBe('ambient');
     expect(second.listener).toEqual({ x: 0.5, y: 1 });
   });

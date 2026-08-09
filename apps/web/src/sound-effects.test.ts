@@ -331,6 +331,23 @@ describe('sound effects', () => {
     expect(controller.getRecentCombatIntensity(5000)).toBe(0);
   });
 
+  it('tracks a fading recent priority sound intensity signal for music ducking', () => {
+    const controller = createSoundEffectController({
+      play() {},
+    });
+
+    expect(controller.getRecentPrioritySoundIntensity(100)).toBe(0);
+
+    controller.triggerProgression({
+      nowMs: 100,
+      emitter: { x: 0, y: 0 },
+    });
+
+    expect(controller.getRecentPrioritySoundIntensity(100)).toBe(0.9);
+    expect(controller.getRecentPrioritySoundIntensity(1200)).toBeLessThan(0.5);
+    expect(controller.getRecentPrioritySoundIntensity(3000)).toBe(0);
+  });
+
   it('plays reusable open and close interaction sounds for doors and exits', () => {
     const played: ProceduralSoundEffect[] = [];
     const controller = createSoundEffectController({
