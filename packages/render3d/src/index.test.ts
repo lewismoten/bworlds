@@ -112,6 +112,7 @@ import {
   collectChunkDrawCallStats,
   collectVisibleTileResourceStats,
   countRecentMetricEvents,
+  createTilePluginModelFromCostEstimate,
   disposeObject3DResources,
   applyObjectDistanceFade,
   clampCameraPitch,
@@ -147,6 +148,7 @@ import {
   getSkyMilkyWaySignature,
   getSkyPositionSignature,
   getTileDrawCallLimit,
+  getTileModelCostEstimateLimits,
   getTileModelDrawCallRatioWarning,
   getWrappedBatchWindow,
   getTwilightSkyPalette,
@@ -1408,6 +1410,52 @@ describe('render3d visibility helpers', () => {
           metric: 'triangleCount',
           actual: 4_000,
           limit: 3_000,
+        },
+      ],
+    });
+  });
+
+  it('skips plugin model generation when estimated draw calls already exceed the budget', () => {
+    const estimate3DModelCost = vi.fn(() => ({
+      drawCallCount: 17,
+      triangleCount: 96,
+    }));
+    const create3DModel = vi.fn(() => ({ type: 'Mesh' }));
+
+    const result = createTilePluginModelFromCostEstimate(
+      {
+        estimate3DModelCost,
+        create3DModel,
+      },
+      {
+        three: {} as never,
+        tile: { kind: 'forest' },
+        state: {} as never,
+        tileX: 12,
+        tileY: 8,
+        detailLevel: 'low',
+      } as never,
+      getTileModelCostEstimateLimits('low')
+    );
+
+    expect(estimate3DModelCost).toHaveBeenCalledTimes(1);
+    expect(create3DModel).not.toHaveBeenCalled();
+    expect(result.pluginModel).toBeNull();
+    expect(result.estimateValidation).toEqual({
+      accepted: false,
+      estimate: {
+        drawCallCount: 17,
+        triangleCount: 96,
+      },
+      limits: expect.objectContaining({
+        drawCallCount: 16,
+        triangleCount: 3_000,
+      }),
+      violations: [
+        {
+          metric: 'drawCallCount',
+          actual: 17,
+          limit: 16,
         },
       ],
     });

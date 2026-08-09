@@ -67,7 +67,7 @@ Operates at several levels: per model, per LOD, per plugin, per chunk, and per e
 
 # Draw-Call Budgets
 
-* [ ] Estimate draw calls before adding generated content.
+* [X] Estimate draw calls before adding generated content.
 * [X] Cap draw calls per model.
 * [X] Cap draw calls per tile.
 * [X] Cap draw calls per chunk.

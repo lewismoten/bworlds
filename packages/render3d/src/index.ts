@@ -64,6 +64,11 @@ import {
   type TileModelCostEstimateLimits,
 } from './tile-model-cost-estimate-validation.ts';
 import {
+  createTilePluginModelFromCostEstimate,
+  getTileModelCostEstimateLimitsForDetailLevel,
+  validateTileModelCostEstimateAgainstLimits,
+} from './tile-model-cost-estimate-budget.ts';
+import {
   buildPendingWorldBuildQueue,
   createPendingWorldBuildQueueScratch,
   reconcilePendingWorldBuildQueue,
@@ -126,6 +131,11 @@ export {
 export { shouldProcessPendingWorldBuildEntryWithinBudget } from './pending-world-build-processing.ts';
 export { collectMaterialTexturesInto } from './material-texture-collector.ts';
 export { collectRecentWindowedEvents } from './recent-windowed-events.ts';
+export {
+  createTilePluginModelFromCostEstimate,
+  getTileModelCostEstimateLimitsForDetailLevel,
+  validateTileModelCostEstimateAgainstLimits,
+} from './tile-model-cost-estimate-budget.ts';
 export {
   createConstellationPoint,
   createSkyPosition,
@@ -737,31 +747,7 @@ export function summarizeRemovedTileModelBudgetParts(
 export function getTileModelCostEstimateLimits(
   detailLevel: RenderBudgetDetailLevel = 'full'
 ): TileModelCostEstimateLimits {
-  const limits = getTileModelHardLimits(detailLevel);
-  return {
-    object3dCount: limits.object3dCount,
-    groupCount: limits.groupCount,
-    meshCount: limits.meshCount,
-    drawCallCount: limits.drawCallCount,
-    instancedMeshCount: limits.instancedMeshCount,
-    pointsCount: limits.pointsCount,
-    lineObjectCount: limits.lineObjectCount,
-    spriteCount: limits.spriteCount,
-    geometryCount: limits.geometryCount,
-    materialCount: limits.materialCount,
-    textureCount: limits.textureCount,
-    lightCount: limits.lightCount,
-    shadowLightCount: limits.shadowLightCount,
-    animationMixerCount: limits.animationMixerCount,
-    skeletonCount: limits.skeletonCount,
-    boneCount: limits.boneCount,
-    morphTargetCount: limits.morphTargetCount,
-    attachmentCount: limits.attachmentCount,
-    collisionShapeCount: limits.collisionShapeCount,
-    audioEmitterCount: limits.audioEmitterCount,
-    vertexCount: limits.vertexCount,
-    triangleCount: limits.triangleCount,
-  };
+  return getTileModelCostEstimateLimitsForDetailLevel(detailLevel, getTileModelHardLimits);
 }
 
 export function validateTileModelCostEstimateAgainstRenderBudget(
@@ -773,14 +759,10 @@ export function validateTileModelCostEstimateAgainstRenderBudget(
   limits: TileModelCostEstimateLimits;
   violations: TileModelCostEstimateBudgetViolation[];
 } {
-  const limits = getTileModelCostEstimateLimits(detailLevel);
-  const violations = getTileModelCostEstimateBudgetViolations(estimate, limits);
-  return {
-    accepted: violations.length === 0,
+  return validateTileModelCostEstimateAgainstLimits(
     estimate,
-    limits,
-    violations,
-  };
+    getTileModelCostEstimateLimits(detailLevel)
+  );
 }
 
 export function summarizeTileModelBudgetViolations(
@@ -1587,16 +1569,20 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       detailLevel,
       renderBudget: createTilePluginRenderBudget(renderBudget, detailLevel),
     } as const;
-    const estimatedCost = tilePlugin?.estimate3DModelCost?.(tilePluginRenderContext);
-    const estimateValidation = estimatedCost
-      ? validateTileModelCostEstimateAgainstRenderBudget(estimatedCost, detailLevel)
-      : null;
-    const pluginBuildStartMs = performance.now();
-    let pluginModel =
-      estimateValidation && !estimateValidation.accepted
-        ? null
-        : tilePlugin?.create3DModel?.(tilePluginRenderContext);
-    const pluginBuildDurationMs = performance.now() - pluginBuildStartMs;
+    const {
+      estimateValidation,
+      pluginBuildStartMs,
+      pluginBuildDurationMs,
+      pluginModel: initialPluginModel,
+    } = createTilePluginModelFromCostEstimate(
+      tilePlugin,
+      tilePluginRenderContext,
+      getTileModelCostEstimateLimits(detailLevel)
+    );
+    let pluginModel = initialPluginModel as
+      | (Pick<THREE.Object3D, 'traverse' | 'children' | 'type' | 'position'> &
+          THREE.Object3D)
+      | null;
     if (tilePlugin?.create3DModel) {
       recordRecentLabeledDurationMetric(renderChurnMetrics.tilePluginBuildDurations, {
         nowMs: pluginBuildStartMs,
