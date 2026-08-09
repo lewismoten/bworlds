@@ -508,7 +508,7 @@
 - [ ] Avoid unnecessary allocations during frequently occurring sounds.
 - [ ] Cache complex generated AudioBuffers.
 - [ ] Generate reusable sound families ahead of time when appropriate.
-- [ ] Generate rare sounds only when needed.
+- [x] Generate rare sounds only when needed.
 - [x] Limit active procedural oscillators.
 - [x] Stop and disconnect completed AudioNodes.
 - [x] Prevent orphaned Web Audio nodes.

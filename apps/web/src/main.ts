@@ -187,7 +187,10 @@ import {
   createWebAudioSoundEffectSink,
   shouldPlayBlockedMovementSound,
 } from './sound-effects.ts';
-import { shouldResolve3dSoundContext } from './sound-update-context.ts';
+import {
+  shouldResolveNearbyEnvironmentalAudioWork,
+  shouldResolvePoiMusicWork,
+} from './audio-work-gates.ts';
 import { createSoundUpdateGate } from './sound-update-gate.ts';
 import { findNearestTrafficProfile } from './nearby-traffic.ts';
 import {
@@ -3068,7 +3071,12 @@ function updateMovement(deltaMs: number): void {
     }
   }
 
-  const shouldResolveSoundContext = shouldResolve3dSoundContext(state.viewMode);
+  const shouldResolveSoundContext = shouldResolveNearbyEnvironmentalAudioWork({
+    viewMode: state.viewMode,
+    soundEnabled: audioPreferenceState.soundEnabled,
+    ambianceEnabled: audioPreferenceState.ambianceEnabled,
+    environmentVolume: getAudioCategoryVolume('environment'),
+  });
   const currentTileKind = shouldResolveSoundContext
     ? state.getCurrentTile().kind
     : undefined;
@@ -3128,7 +3136,12 @@ function render(): FrameLoopActivityLike {
   const currentTile = spatial.tile;
   const musicClusterX = Math.floor(spatial.playerX / 12);
   const musicClusterY = Math.floor(spatial.playerY / 12);
-  const nearbyPoiMusic = getNearbyPoiMusicProfile();
+  const nearbyPoiMusic = shouldResolvePoiMusicWork({
+    musicEnabled: audioPreferenceState.musicEnabled,
+    musicVolume: getAudioCategoryVolume('music'),
+  })
+    ? getNearbyPoiMusicProfile()
+    : null;
   const combatIntensity = soundEffects.getRecentCombatIntensity(nowMs);
   const prioritySoundIntensity =
     soundEffects.getRecentPrioritySoundIntensity(nowMs);
