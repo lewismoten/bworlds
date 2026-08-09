@@ -1,3 +1,12 @@
+const ROOT_ENTRY_PAGE_PATH_ALIASES = {
+  '/debug': '/debug/',
+  '/debug/': '/debug/',
+  '/debug/music': '/debug/music/',
+  '/debug/music/': '/debug/music/',
+  '/debug/trees': '/debug/trees/',
+  '/debug/trees/': '/debug/trees/',
+} as const;
+
 export const ROOT_ENTRY_PAGE_PATHS = [
   '/debug/',
   '/debug/music/',
@@ -9,11 +18,5 @@ export type RootEntryPagePath = (typeof ROOT_ENTRY_PAGE_PATHS)[number];
 export function resolveRootEntryPagePath(
   pathname: string
 ): RootEntryPagePath | null {
-  for (const pagePath of ROOT_ENTRY_PAGE_PATHS) {
-    if (pathname === pagePath) {
-      return pagePath;
-    }
-  }
-
-  return null;
+  return ROOT_ENTRY_PAGE_PATH_ALIASES[pathname as keyof typeof ROOT_ENTRY_PAGE_PATH_ALIASES] ?? null;
 }

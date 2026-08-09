@@ -14,10 +14,12 @@ describe('root entry route', () => {
   });
 
   it('resolves dedicated debug pages and leaves the game route alone', () => {
+    expect(resolveRootEntryPagePath('/debug')).toBe('/debug/');
     expect(resolveRootEntryPagePath('/debug/')).toBe('/debug/');
+    expect(resolveRootEntryPagePath('/debug/music')).toBe('/debug/music/');
     expect(resolveRootEntryPagePath('/debug/music/')).toBe('/debug/music/');
+    expect(resolveRootEntryPagePath('/debug/trees')).toBe('/debug/trees/');
     expect(resolveRootEntryPagePath('/debug/trees/')).toBe('/debug/trees/');
     expect(resolveRootEntryPagePath('/')).toBeNull();
-    expect(resolveRootEntryPagePath('/debug')).toBeNull();
   });
 });
