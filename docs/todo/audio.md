@@ -1,3 +1,7 @@
+# UI
+- [ ] Add ability to toggle Music
+- [ ] Add ability to toggle Sound
+
 # Music
 - [x] Add procedurally generated music that changes based on region or cluster (deep forest may have different music)
 - [x] The time of day may change the tempo/mood of the same song
