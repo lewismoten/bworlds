@@ -29,6 +29,12 @@ import {
   type TileDefinitionLike,
   type WorldStateLike,
 } from '@bworlds/plugin-api';
+import {
+  countInvalidGeometryCoordinateSets,
+  countLineSegments,
+  countPointVertices,
+  getGeometryVertexCount,
+} from './tile-model-geometry-validation.ts';
 
 const LAND_MODEL_REVEAL_SEED = registerHashLabel('render3d:land-model-reveal');
 
@@ -226,6 +232,8 @@ const FULL_DETAIL_TILE_MODEL_HARD_LIMITS: TileModelHardLimits = {
   spriteCount: 12,
   geometryCount: 96,
   invalidPositionCoordinateCount: 0,
+  pointVertexCount: 1_024,
+  lineSegmentCount: 1_024,
   materialCount: 16,
   textureCount: 16,
   lightCount: 4,
@@ -243,6 +251,8 @@ const LOW_DETAIL_TILE_MODEL_HARD_LIMITS: TileModelHardLimits = {
   spriteCount: 2,
   geometryCount: 16,
   invalidPositionCoordinateCount: 0,
+  pointVertexCount: 128,
+  lineSegmentCount: 128,
   materialCount: 3,
   textureCount: 4,
   lightCount: 1,
@@ -265,6 +275,8 @@ export function validateTileModelAgainstRenderBudget(
   const stats = {
     ...collectSceneResourceStats(root),
     invalidPositionCoordinateCount: countInvalidGeometryCoordinateSets(root),
+    pointVertexCount: countPointVertices(root),
+    lineSegmentCount: countLineSegments(root),
   };
   const limits = getTileModelHardLimits(detailLevel);
   const violations: TileModelBudgetViolation[] = [];
@@ -278,6 +290,8 @@ export function validateTileModelAgainstRenderBudget(
     'spriteCount',
     'geometryCount',
     'invalidPositionCoordinateCount',
+    'pointVertexCount',
+    'lineSegmentCount',
     'materialCount',
     'textureCount',
     'lightCount',
@@ -470,6 +484,8 @@ type TileModelHardLimits = {
   spriteCount: number;
   geometryCount: number;
   invalidPositionCoordinateCount: number;
+  pointVertexCount: number;
+  lineSegmentCount: number;
   materialCount: number;
   textureCount: number;
   lightCount: number;
@@ -487,6 +503,8 @@ type TileModelBudgetValidation = {
   accepted: boolean;
   stats: SceneResourceStats & {
     invalidPositionCoordinateCount: number;
+    pointVertexCount: number;
+    lineSegmentCount: number;
   };
   limits: TileModelHardLimits;
   violations: TileModelBudgetViolation[];
@@ -3033,31 +3051,6 @@ function getTextureMemoryEstimateBytes(texture: unknown): number {
   return usesMipmaps ? Math.round((baseBytes * 4) / 3) : baseBytes;
 }
 
-function getGeometryVertexCount(geometry: unknown): number {
-  const positionAttribute = (
-    geometry as {
-      attributes?: {
-        position?: {
-          count?: unknown;
-          array?: ArrayLike<unknown>;
-          itemSize?: unknown;
-        };
-      };
-    }
-  )?.attributes?.position;
-  if (typeof positionAttribute?.count === 'number') {
-    return positionAttribute.count;
-  }
-  const itemSize =
-    typeof positionAttribute?.itemSize === 'number' && positionAttribute.itemSize > 0
-      ? positionAttribute.itemSize
-      : 3;
-  if (typeof positionAttribute?.array?.length === 'number') {
-    return Math.floor(positionAttribute.array.length / itemSize);
-  }
-  return 0;
-}
-
 function getGeometryMemoryEstimate(geometry: unknown): {
   totalBytes: number;
   vertexBufferBytes: number;
@@ -3088,49 +3081,6 @@ function getGeometryMemoryEstimate(geometry: unknown): {
     vertexBufferBytes,
     indexBufferBytes,
   };
-}
-
-function countInvalidGeometryCoordinateSets(
-  root: Pick<THREE.Object3D, 'traverse' | 'children' | 'type'>
-): number {
-  const geometries = new Set<unknown>();
-  let invalidGeometryCount = 0;
-
-  traverseSceneGraphWithDepth(root, (child) => {
-    const geometry = (child as THREE.Object3D & { geometry?: unknown }).geometry;
-    if (!geometry || geometries.has(geometry)) {
-      return;
-    }
-    geometries.add(geometry);
-    if (hasInvalidGeometryPositionCoordinates(geometry)) {
-      invalidGeometryCount += 1;
-    }
-  });
-
-  return invalidGeometryCount;
-}
-
-function hasInvalidGeometryPositionCoordinates(geometry: unknown): boolean {
-  const positionArray = (
-    geometry as {
-      attributes?: {
-        position?: {
-          array?: ArrayLike<unknown>;
-        };
-      };
-    }
-  )?.attributes?.position?.array;
-  if (!positionArray || typeof positionArray.length !== 'number') {
-    return false;
-  }
-  for (let index = 0; index < positionArray.length; index += 1) {
-    const value = positionArray[index];
-    if (typeof value === 'number' && Number.isFinite(value)) {
-      continue;
-    }
-    return true;
-  }
-  return false;
 }
 
 function getArrayLikeByteLength(

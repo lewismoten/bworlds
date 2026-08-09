@@ -1203,6 +1203,8 @@ describe('render3d visibility helpers', () => {
       spriteCount: 12,
       geometryCount: 96,
       invalidPositionCoordinateCount: 0,
+      pointVertexCount: 1_024,
+      lineSegmentCount: 1_024,
       materialCount: 16,
       textureCount: 16,
       lightCount: 4,
@@ -1219,6 +1221,8 @@ describe('render3d visibility helpers', () => {
       spriteCount: 2,
       geometryCount: 16,
       invalidPositionCoordinateCount: 0,
+      pointVertexCount: 128,
+      lineSegmentCount: 128,
       materialCount: 3,
       textureCount: 4,
       lightCount: 1,
@@ -1247,6 +1251,8 @@ describe('render3d visibility helpers', () => {
         spriteCount: 0,
         geometryCount: 2,
         invalidPositionCoordinateCount: 0,
+        pointVertexCount: 0,
+        lineSegmentCount: 0,
         materialCount: 1,
         textureCount: 1,
         lightCount: 0,
@@ -1343,6 +1349,8 @@ describe('render3d visibility helpers', () => {
         spriteCount: 3,
         geometryCount: 18,
         invalidPositionCoordinateCount: 0,
+        pointVertexCount: 36,
+        lineSegmentCount: 25,
       }),
       violations: [
         {
@@ -1379,6 +1387,46 @@ describe('render3d visibility helpers', () => {
     });
   });
 
+  it('rejects models that exceed point and line-segment caps', () => {
+    const sharedMaterial = createMockMaterial();
+    const densePoints = createMockObject3D(
+      sharedMaterial,
+      [],
+      createMockStatGeometry('dense-points', 129),
+      {},
+      'Points'
+    );
+    const denseLine = createMockObject3D(
+      sharedMaterial,
+      [],
+      createMockStatGeometry('dense-line', 130),
+      {},
+      'Line'
+    );
+    const root = createMockObject3D(undefined, [densePoints, denseLine]);
+
+    expect(validateTileModelAgainstRenderBudget(root as never, 'low')).toEqual({
+      accepted: false,
+      limits: getTileModelHardLimits('low'),
+      stats: expect.objectContaining({
+        pointVertexCount: 129,
+        lineSegmentCount: 129,
+      }),
+      violations: [
+        {
+          metric: 'pointVertexCount',
+          actual: 129,
+          limit: 128,
+        },
+        {
+          metric: 'lineSegmentCount',
+          actual: 129,
+          limit: 128,
+        },
+      ],
+    });
+  });
+
   it('rejects models containing non-finite geometry coordinates', () => {
     const geometry = createMockStatGeometry('invalid-position', 3);
     (
@@ -1395,6 +1443,8 @@ describe('render3d visibility helpers', () => {
       limits: getTileModelHardLimits('full'),
       stats: expect.objectContaining({
         invalidPositionCoordinateCount: 1,
+        pointVertexCount: 0,
+        lineSegmentCount: 0,
       }),
       violations: [
         {
