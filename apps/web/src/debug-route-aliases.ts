@@ -1,15 +1,24 @@
 export const DEBUG_ROUTE_ALIASES = [
   '/debug',
+  '/debug/index.html',
   '/debug/music',
+  '/debug/music/index.html',
   '/debug/trees',
+  '/debug/trees/index.html',
 ] as const;
 
 export function resolveDebugRouteRedirect(pathname: string): string | null {
-  for (const route of DEBUG_ROUTE_ALIASES) {
-    if (pathname === route) {
-      return `${route}/`;
-    }
+  switch (pathname) {
+    case '/debug':
+    case '/debug/index.html':
+      return '/debug/';
+    case '/debug/music':
+    case '/debug/music/index.html':
+      return '/debug/music/';
+    case '/debug/trees':
+    case '/debug/trees/index.html':
+      return '/debug/trees/';
+    default:
+      return null;
   }
-
-  return null;
 }
