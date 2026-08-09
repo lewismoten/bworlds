@@ -105,6 +105,10 @@ type DebugSnapshotExportOptions = {
         soft: number;
         hard: number;
       };
+      chunkMeshes: {
+        soft: number;
+        hard: number;
+      };
     };
   };
   lod: {

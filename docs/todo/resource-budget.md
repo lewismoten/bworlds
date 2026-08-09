@@ -282,7 +282,7 @@ This is critical because individually valid models can still overwhelm the rende
 # Chunk-Level Caps
 
 * [ ] Cap objects per chunk.
-* [ ] Cap meshes per chunk.
+* [X] Cap meshes per chunk.
 * [ ] Cap triangles per chunk.
 * [ ] Cap foliage count per chunk.
 * [ ] Cap particles per chunk.

@@ -89,6 +89,10 @@ describe('debug snapshot', () => {
             soft: 160,
             hard: 240,
           },
+          chunkMeshes: {
+            soft: 96,
+            hard: 144,
+          },
         },
       },
       lod: {
@@ -356,6 +360,10 @@ describe('debug snapshot', () => {
         chunkDrawCalls: {
           soft: 160,
           hard: 240,
+        },
+        chunkMeshes: {
+          soft: 96,
+          hard: 144,
         },
       },
     });
