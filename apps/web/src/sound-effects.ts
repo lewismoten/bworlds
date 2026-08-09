@@ -1,35 +1,18 @@
+import { appendHashSeedPart, registerHashSeeds } from '@bworlds/core';
 import { MAX_SIMULTANEOUS_PROCEDURAL_SOUND_VOICES } from './audio-budget.ts';
 import type { AudioCategory } from './audio-categories.ts';
 import { resolveSoundEffectCategory } from './audio-categories.ts';
 import type { NearbyAmbientKind } from './nearby-ambient.ts';
+import {
+  createProceduralSoundEffectGenerator,
+  type ProceduralSoundEffect,
+  type SoundEffectKind,
+  type SoundPosition,
+  type SoundWaveform,
+} from './procedural-sound-effect-generator.ts';
 
 type ViewModeLike = '2d' | '3d' | 'text';
 type SurfaceKind = string;
-type SoundEffectKind =
-  | 'footstep'
-  | 'jump'
-  | 'landing'
-  | 'blocked'
-  | 'open'
-  | 'close'
-  | 'wind'
-  | 'ocean'
-  | 'river-ambience'
-  | 'forest-ambience'
-  | 'plains-ambience'
-  | 'mountain-ambience'
-  | 'cave-ambience'
-  | 'settlement-ambience'
-  | 'ruins-ambience'
-  | 'advancement'
-  | 'train-engine'
-  | 'train-whistle'
-  | 'paddle-calliope'
-  | 'steam-whistle'
-  | 'combat-weapon'
-  | 'combat-magic';
-type SoundWaveform = OscillatorType;
-type SoundPosition = { x: number; y: number };
 type AmbientSoundKind = NearbyAmbientKind;
 const MAX_CLOSE_SOUND_GAIN = 0.82;
 export type CombatSoundStyle =
@@ -51,16 +34,7 @@ type SurfaceAudioFamily =
   | 'town'
   | 'cave';
 
-export type ProceduralSoundEffect = {
-  kind: SoundEffectKind;
-  nowMs: number;
-  frequency: number;
-  durationMs: number;
-  volume: number;
-  waveform: SoundWaveform;
-  emitter?: SoundPosition;
-  listener?: SoundPosition;
-};
+export type { ProceduralSoundEffect } from './procedural-sound-effect-generator.ts';
 
 export type SoundEffectSink = {
   resume?(): void;
@@ -224,6 +198,44 @@ const SURFACE_AUDIO_PROFILES: Record<SurfaceAudioFamily, SurfaceAudioProfile> =
     },
   };
 
+const SURFACE_AUDIO_FAMILY_SEED_PARTS: Record<SurfaceAudioFamily, number> = {
+  default: 0,
+  road: 1,
+  bridge: 2,
+  dock: 3,
+  shore: 4,
+  interior: 5,
+  town: 6,
+  cave: 7,
+};
+
+const SOUND_EFFECT_SEEDS = registerHashSeeds([
+  'footstep',
+  'jump',
+  'landing',
+  'blocked',
+  'open',
+  'close',
+  'wind',
+  'ocean',
+  'river-ambience',
+  'forest-ambience',
+  'plains-ambience',
+  'mountain-ambience',
+  'cave-ambience',
+  'settlement-ambience',
+  'ruins-ambience',
+  'advancement',
+  'train-engine',
+  'train-whistle',
+  'paddle-calliope',
+  'steam-whistle',
+  'combat-weapon',
+  'combat-magic',
+] as const);
+
+const proceduralSoundEffectGenerator = createProceduralSoundEffectGenerator();
+
 export function getSurfaceAudioFamily(
   tileKind: SurfaceKind | undefined
 ): SurfaceAudioFamily {
@@ -263,6 +275,309 @@ export function getSurfaceAudioProfile(
   tileKind: SurfaceKind | undefined
 ): SurfaceAudioProfile {
   return SURFACE_AUDIO_PROFILES[getSurfaceAudioFamily(tileKind)];
+}
+
+function createProceduralEffectSeed(
+  kind: SoundEffectKind,
+  nowMs: number,
+  tileKind: SurfaceKind | undefined,
+  variationIndex: number
+): number {
+  let seed = SOUND_EFFECT_SEEDS[kind];
+  seed = appendHashSeedPart(
+    seed,
+    SURFACE_AUDIO_FAMILY_SEED_PARTS[getSurfaceAudioFamily(tileKind)]
+  );
+  seed = appendHashSeedPart(seed, Math.round(nowMs));
+  return appendHashSeedPart(seed, variationIndex);
+}
+
+function resolveProceduralSoundRecipe(
+  kind: SoundEffectKind,
+  tileKind: SurfaceKind | undefined,
+  profile: SurfaceAudioProfile,
+  variantOffset: number
+) {
+  return {
+    id: kind,
+    baseFrequency: resolveBaseSoundEffectFrequency(
+      kind,
+      tileKind,
+      profile,
+      variantOffset
+    ),
+    baseDurationMs: resolveBaseSoundEffectDurationMs(kind),
+    baseVolume: resolveBaseSoundEffectVolume(kind, profile),
+    waveform: resolveBaseSoundEffectWaveform(kind, tileKind, profile),
+    ...resolveProceduralSoundVariation(kind),
+  };
+}
+
+function resolveBaseSoundEffectFrequency(
+  kind: SoundEffectKind,
+  tileKind: SurfaceKind | undefined,
+  profile: SurfaceAudioProfile,
+  variantOffset: number
+): number {
+  switch (kind) {
+    case 'jump':
+      return profile.footstepFrequency + 72;
+    case 'wind':
+      return 190 + (tileKind === 'forest' ? 16 : 0) + variantOffset * 0.4;
+    case 'ocean':
+      return resolveAmbientSoundFrequency('ocean', undefined);
+    case 'river-ambience':
+      return resolveAmbientSoundFrequency('river', undefined);
+    case 'forest-ambience':
+      return resolveAmbientSoundFrequency('forest', undefined);
+    case 'plains-ambience':
+      return resolveAmbientSoundFrequency('plains', undefined);
+    case 'mountain-ambience':
+      return resolveAmbientSoundFrequency('mountain', undefined);
+    case 'cave-ambience':
+      return resolveAmbientSoundFrequency('cave', undefined);
+    case 'settlement-ambience':
+      return resolveAmbientSoundFrequency('settlement', undefined);
+    case 'ruins-ambience':
+      return resolveAmbientSoundFrequency('ruins', undefined);
+    case 'advancement':
+      return resolveAdvancementFrequency();
+    case 'train-engine':
+      return 74 + variantOffset * 0.35;
+    case 'train-whistle':
+      return 356 + variantOffset * 0.6;
+    case 'paddle-calliope':
+      return resolvePaddleBoatCalliopeFrequency(undefined);
+    case 'steam-whistle':
+      return resolveSteamWhistleFrequency();
+    case 'combat-weapon':
+      return 148 + variantOffset * 0.5;
+    case 'combat-magic':
+      return 244 + variantOffset * 0.5;
+    case 'open':
+      return resolveInteractionFrequency(
+        'open',
+        tileKind,
+        profile,
+        variantOffset
+      );
+    case 'close':
+      return resolveInteractionFrequency(
+        'close',
+        tileKind,
+        profile,
+        variantOffset
+      );
+    case 'blocked':
+      return Math.max(58, profile.landingFrequency - 18 + variantOffset);
+    case 'landing':
+      return profile.landingFrequency + variantOffset;
+    case 'footstep':
+    default:
+      return profile.footstepFrequency + variantOffset;
+  }
+}
+
+function resolveBaseSoundEffectDurationMs(kind: SoundEffectKind): number {
+  switch (kind) {
+    case 'jump':
+      return 140;
+    case 'wind':
+      return 680;
+    case 'ocean':
+    case 'river-ambience':
+    case 'forest-ambience':
+    case 'plains-ambience':
+    case 'mountain-ambience':
+    case 'cave-ambience':
+    case 'settlement-ambience':
+    case 'ruins-ambience':
+      return 1680;
+    case 'advancement':
+      return 260;
+    case 'train-engine':
+      return 420;
+    case 'train-whistle':
+      return 880;
+    case 'paddle-calliope':
+      return 1180;
+    case 'steam-whistle':
+      return 1050;
+    case 'combat-weapon':
+      return 160;
+    case 'combat-magic':
+      return 320;
+    case 'landing':
+      return 120;
+    case 'blocked':
+      return 105;
+    case 'open':
+    case 'close':
+      return 135;
+    case 'footstep':
+    default:
+      return 90;
+  }
+}
+
+function resolveBaseSoundEffectVolume(
+  kind: SoundEffectKind,
+  profile: SurfaceAudioProfile
+): number {
+  switch (kind) {
+    case 'jump':
+      return profile.footstepVolume * 1.2;
+    case 'wind':
+      return 0.018;
+    case 'ocean':
+      return 0.026;
+    case 'river-ambience':
+      return 0.022;
+    case 'forest-ambience':
+      return 0.018;
+    case 'plains-ambience':
+      return 0.016;
+    case 'mountain-ambience':
+      return 0.02;
+    case 'cave-ambience':
+      return 0.022;
+    case 'settlement-ambience':
+      return 0.017;
+    case 'ruins-ambience':
+      return 0.019;
+    case 'advancement':
+      return 0.052;
+    case 'train-engine':
+      return 0.03;
+    case 'train-whistle':
+      return 0.042;
+    case 'paddle-calliope':
+      return 0.034;
+    case 'steam-whistle':
+      return 0.048;
+    case 'combat-weapon':
+      return 0.056;
+    case 'combat-magic':
+      return 0.05;
+    case 'open':
+    case 'close':
+      return profile.landingVolume * 0.8;
+    case 'blocked':
+      return profile.landingVolume * 0.7;
+    case 'landing':
+      return profile.landingVolume;
+    case 'footstep':
+    default:
+      return profile.footstepVolume;
+  }
+}
+
+function resolveBaseSoundEffectWaveform(
+  kind: SoundEffectKind,
+  tileKind: SurfaceKind | undefined,
+  profile: SurfaceAudioProfile
+): SoundWaveform | readonly SoundWaveform[] {
+  switch (kind) {
+    case 'blocked':
+      return 'sawtooth';
+    case 'wind':
+      return 'triangle';
+    case 'ocean':
+      return 'sine';
+    case 'river-ambience':
+      return ['triangle', 'sine'];
+    case 'forest-ambience':
+      return ['triangle', 'sine', 'square'];
+    case 'plains-ambience':
+      return ['sine', 'triangle'];
+    case 'mountain-ambience':
+      return ['sawtooth', 'triangle'];
+    case 'cave-ambience':
+      return ['sine', 'triangle'];
+    case 'settlement-ambience':
+      return ['square', 'triangle'];
+    case 'ruins-ambience':
+      return ['triangle', 'sawtooth'];
+    case 'advancement':
+      return ['sine', 'triangle'];
+    case 'train-engine':
+      return 'sawtooth';
+    case 'train-whistle':
+      return 'square';
+    case 'paddle-calliope':
+      return ['triangle', 'sine', 'square'];
+    case 'steam-whistle':
+      return ['square', 'sawtooth'];
+    case 'combat-weapon':
+      return 'sawtooth';
+    case 'combat-magic':
+      return ['triangle', 'sine', 'square'];
+    case 'open':
+    case 'close':
+      return resolveInteractionWaveform(tileKind, profile.waveform);
+    case 'footstep':
+    case 'jump':
+    case 'landing':
+    default:
+      return profile.waveform;
+  }
+}
+
+function resolveProceduralSoundVariation(kind: SoundEffectKind): {
+  frequencyVariation?: number;
+  durationVariation?: number;
+  volumeVariation?: number;
+  variationDepth?: number;
+} {
+  switch (kind) {
+    case 'footstep':
+    case 'jump':
+    case 'landing':
+    case 'blocked':
+      return {
+        frequencyVariation: 0.02,
+        durationVariation: 0.08,
+        volumeVariation: 0.06,
+        variationDepth: 1,
+      };
+    case 'open':
+    case 'close':
+      return {
+        frequencyVariation: 0.015,
+        durationVariation: 0.04,
+        volumeVariation: 0.04,
+        variationDepth: 0.8,
+      };
+    case 'wind':
+    case 'ocean':
+    case 'river-ambience':
+    case 'forest-ambience':
+    case 'plains-ambience':
+    case 'mountain-ambience':
+    case 'cave-ambience':
+    case 'settlement-ambience':
+    case 'ruins-ambience':
+      return {
+        frequencyVariation: 0.03,
+        durationVariation: 0.14,
+        volumeVariation: 0.08,
+        variationDepth: 1,
+      };
+    case 'train-engine':
+    case 'train-whistle':
+    case 'paddle-calliope':
+    case 'steam-whistle':
+      return {
+        frequencyVariation: 0.015,
+        durationVariation: 0.05,
+        volumeVariation: 0.04,
+        variationDepth: 0.75,
+      };
+    default:
+      return {
+        variationDepth: 0,
+      };
+  }
 }
 
 export function getSoundSpatialMix(
@@ -312,198 +627,22 @@ export function createSoundEffectController(
     listener?: SoundPosition
   ): ProceduralSoundEffect {
     const profile = getSurfaceAudioProfile(tileKind);
-    const variantOffset = footstepVariant % 2 === 0 ? -8 : 6;
+    const variationIndex = footstepVariant;
+    const variantOffset = variationIndex % 2 === 0 ? -8 : 6;
     footstepVariant += 1;
-    return {
+    return proceduralSoundEffectGenerator.generate({
       kind,
       nowMs,
-      frequency:
-        kind === 'jump'
-          ? profile.footstepFrequency + 72
-          : kind === 'wind'
-            ? 190 + (tileKind === 'forest' ? 16 : 0) + variantOffset * 0.4
-            : kind === 'ocean'
-              ? resolveAmbientSoundFrequency('ocean', undefined)
-              : kind === 'river-ambience'
-                ? resolveAmbientSoundFrequency('river', undefined)
-                : kind === 'forest-ambience'
-                  ? resolveAmbientSoundFrequency('forest', undefined)
-                  : kind === 'plains-ambience'
-                    ? resolveAmbientSoundFrequency('plains', undefined)
-                    : kind === 'mountain-ambience'
-                      ? resolveAmbientSoundFrequency('mountain', undefined)
-                      : kind === 'cave-ambience'
-                        ? resolveAmbientSoundFrequency('cave', undefined)
-                        : kind === 'settlement-ambience'
-                          ? resolveAmbientSoundFrequency(
-                              'settlement',
-                              undefined
-                            )
-                          : kind === 'ruins-ambience'
-                            ? resolveAmbientSoundFrequency('ruins', undefined)
-                            : kind === 'advancement'
-                              ? resolveAdvancementFrequency()
-                              : kind === 'train-engine'
-                                ? 74 + variantOffset * 0.35
-                                : kind === 'train-whistle'
-                                  ? 356 + variantOffset * 0.6
-                                  : kind === 'paddle-calliope'
-                                    ? resolvePaddleBoatCalliopeFrequency(
-                                        undefined
-                                      )
-                                    : kind === 'steam-whistle'
-                                      ? resolveSteamWhistleFrequency()
-                                      : kind === 'combat-weapon'
-                                        ? 148 + variantOffset * 0.5
-                                        : kind === 'combat-magic'
-                                          ? 244 + variantOffset * 0.5
-                                          : kind === 'open'
-                                            ? resolveInteractionFrequency(
-                                                'open',
-                                                tileKind,
-                                                profile,
-                                                variantOffset
-                                              )
-                                            : kind === 'close'
-                                              ? resolveInteractionFrequency(
-                                                  'close',
-                                                  tileKind,
-                                                  profile,
-                                                  variantOffset
-                                                )
-                                              : kind === 'blocked'
-                                                ? Math.max(
-                                                    58,
-                                                    profile.landingFrequency -
-                                                      18 +
-                                                      variantOffset
-                                                  )
-                                                : kind === 'landing'
-                                                  ? profile.landingFrequency +
-                                                    variantOffset
-                                                  : profile.footstepFrequency +
-                                                    variantOffset,
-      durationMs:
-        kind === 'jump'
-          ? 140
-          : kind === 'wind'
-            ? 680
-            : kind === 'ocean' ||
-                kind === 'river-ambience' ||
-                kind === 'forest-ambience' ||
-                kind === 'plains-ambience' ||
-                kind === 'mountain-ambience' ||
-                kind === 'cave-ambience' ||
-                kind === 'settlement-ambience' ||
-                kind === 'ruins-ambience'
-              ? 1680
-              : kind === 'advancement'
-                ? 260
-                : kind === 'train-engine'
-                  ? 420
-                  : kind === 'train-whistle'
-                    ? 880
-                    : kind === 'paddle-calliope'
-                      ? 1180
-                      : kind === 'steam-whistle'
-                        ? 1050
-                        : kind === 'combat-weapon'
-                          ? 160
-                          : kind === 'combat-magic'
-                            ? 320
-                            : kind === 'landing'
-                              ? 120
-                              : kind === 'blocked'
-                                ? 105
-                                : kind === 'open' || kind === 'close'
-                                  ? 135
-                                  : 90,
-      volume:
-        kind === 'jump'
-          ? profile.footstepVolume * 1.2
-          : kind === 'wind'
-            ? 0.018
-            : kind === 'ocean'
-              ? 0.026
-              : kind === 'river-ambience'
-                ? 0.022
-                : kind === 'forest-ambience'
-                  ? 0.018
-                  : kind === 'plains-ambience'
-                    ? 0.016
-                    : kind === 'mountain-ambience'
-                      ? 0.02
-                      : kind === 'cave-ambience'
-                        ? 0.022
-                        : kind === 'settlement-ambience'
-                          ? 0.017
-                          : kind === 'ruins-ambience'
-                            ? 0.019
-                            : kind === 'advancement'
-                              ? 0.052
-                              : kind === 'train-engine'
-                                ? 0.03
-                                : kind === 'train-whistle'
-                                  ? 0.042
-                                  : kind === 'paddle-calliope'
-                                    ? 0.034
-                                    : kind === 'steam-whistle'
-                                      ? 0.048
-                                      : kind === 'combat-weapon'
-                                        ? 0.056
-                                        : kind === 'combat-magic'
-                                          ? 0.05
-                                          : kind === 'open' || kind === 'close'
-                                            ? profile.landingVolume * 0.8
-                                            : kind === 'blocked'
-                                              ? profile.landingVolume * 0.7
-                                              : kind === 'landing'
-                                                ? profile.landingVolume
-                                                : profile.footstepVolume,
-      waveform:
-        kind === 'blocked'
-          ? 'sawtooth'
-          : kind === 'wind'
-            ? 'triangle'
-            : kind === 'ocean'
-              ? 'sine'
-              : kind === 'river-ambience'
-                ? 'triangle'
-                : kind === 'forest-ambience'
-                  ? 'triangle'
-                  : kind === 'plains-ambience'
-                    ? 'sine'
-                    : kind === 'mountain-ambience'
-                      ? 'sawtooth'
-                      : kind === 'cave-ambience'
-                        ? 'sine'
-                        : kind === 'settlement-ambience'
-                          ? 'square'
-                          : kind === 'ruins-ambience'
-                            ? 'triangle'
-                            : kind === 'advancement'
-                              ? 'sine'
-                              : kind === 'train-engine'
-                                ? 'sawtooth'
-                                : kind === 'train-whistle'
-                                  ? 'square'
-                                  : kind === 'paddle-calliope'
-                                    ? 'triangle'
-                                    : kind === 'steam-whistle'
-                                      ? 'square'
-                                      : kind === 'combat-weapon'
-                                        ? 'sawtooth'
-                                        : kind === 'combat-magic'
-                                          ? 'triangle'
-                                          : kind === 'open' || kind === 'close'
-                                            ? resolveInteractionWaveform(
-                                                tileKind,
-                                                profile.waveform
-                                              )
-                                            : profile.waveform,
+      seed: createProceduralEffectSeed(kind, nowMs, tileKind, variationIndex),
+      recipe: resolveProceduralSoundRecipe(
+        kind,
+        tileKind,
+        profile,
+        variantOffset
+      ),
       emitter,
       listener,
-    };
+    });
   }
 
   function play(
