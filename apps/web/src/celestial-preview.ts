@@ -19,7 +19,12 @@ type OverworldSamplerLike = {
   samplePreviewOverworld?(x: number, y: number): {
     kind?: string;
   };
+  samplePreviewSurfaceKind?(x: number, y: number): string | undefined;
 };
+type PreviewSurfaceKindSampler = (
+  x: number,
+  y: number
+) => PlanetSurfaceKind | undefined;
 
 type PreviewPoint3D = {
   x: number;
@@ -746,7 +751,7 @@ function getDisplayedPreviewMoonPosition(
 }
 
 export function buildPlanetTextureGrid(
-  sampleOverworld: OverworldSamplerLike['sampleOverworld'],
+  sampleSurfaceKind: PreviewSurfaceKindSampler,
   width = 64,
   height = 32
 ): string[][] {
@@ -759,7 +764,9 @@ export function buildPlanetTextureGrid(
       const longitude = x / width;
       const worldX = Math.round((longitude - 0.5) * 256);
       row[x] = brightenPreviewSurfaceColor(
-        getPlanetSurfaceColor(samplePreviewOverworldKind(sampleOverworld, worldX, worldY))
+        getPlanetSurfaceColor(
+          samplePreviewSurfaceKind(sampleSurfaceKind, worldX, worldY)
+        )
       );
     }
     grid[y] = row;
@@ -824,9 +831,9 @@ function syncPreviewPlanetTexture(
   }
 ) {
   const material = world.material as THREE.MeshStandardMaterial;
-  const sampleOverworld = resolvePreviewSampler(overworldSampler);
+  const sampleSurfaceKind = resolvePreviewKindSampler(overworldSampler);
   if (
-    !sampleOverworld ||
+    !sampleSurfaceKind ||
     overworldSampler === textureState.lastSampler
   ) {
     return;
@@ -838,17 +845,7 @@ function syncPreviewPlanetTexture(
   if (!context) {
     return;
   }
-  const grid = buildPlanetTextureGrid(
-    sampleOverworld,
-    canvas.width,
-    canvas.height
-  );
-  grid.forEach((row, y) => {
-    row.forEach((color, x) => {
-      context.fillStyle = color;
-      context.fillRect(x, y, 1, 1);
-    });
-  });
+  paintPlanetTextureCanvas(context, sampleSurfaceKind, canvas.width, canvas.height);
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
   texture.magFilter = THREE.NearestFilter;
@@ -857,6 +854,28 @@ function syncPreviewPlanetTexture(
   material.emissiveMap = texture;
   material.needsUpdate = true;
   textureState.lastSampler = overworldSampler;
+}
+
+function paintPlanetTextureCanvas(
+  context: CanvasRenderingContext2D,
+  sampleSurfaceKind: PreviewSurfaceKindSampler,
+  width: number,
+  height: number
+) {
+  for (let y = 0; y < height; y += 1) {
+    const latitude = y / height;
+    const worldY = Math.round((0.5 - latitude) * 128);
+    for (let x = 0; x < width; x += 1) {
+      const longitude = x / width;
+      const worldX = Math.round((longitude - 0.5) * 256);
+      context.fillStyle = brightenPreviewSurfaceColor(
+        getPlanetSurfaceColor(
+          samplePreviewSurfaceKind(sampleSurfaceKind, worldX, worldY)
+        )
+      );
+      context.fillRect(x, y, 1, 1);
+    }
+  }
 }
 
 export function resolvePreviewSampler(
@@ -874,6 +893,23 @@ export function resolvePreviewSampler(
   return overworldSampler.sampleOverworld.bind(overworldSampler);
 }
 
+export function resolvePreviewKindSampler(
+  overworldSampler: OverworldSamplerLike | null
+): PreviewSurfaceKindSampler | null {
+  if (!overworldSampler) {
+    return null;
+  }
+  if (typeof overworldSampler.samplePreviewSurfaceKind === 'function') {
+    return overworldSampler.samplePreviewSurfaceKind.bind(overworldSampler);
+  }
+  const sampleOverworld = resolvePreviewSampler(overworldSampler);
+  if (!sampleOverworld) {
+    return null;
+  }
+  return (x: number, y: number) =>
+    samplePreviewOverworldKind(sampleOverworld, x, y);
+}
+
 function samplePreviewOverworldKind(
   sampleOverworld: OverworldSamplerLike['sampleOverworld'],
   x: number,
@@ -881,6 +917,18 @@ function samplePreviewOverworldKind(
 ): PlanetSurfaceKind | undefined {
   try {
     return sampleOverworld(x, y)?.kind;
+  } catch {
+    return undefined;
+  }
+}
+
+function samplePreviewSurfaceKind(
+  sampleSurfaceKind: PreviewSurfaceKindSampler,
+  x: number,
+  y: number
+): PlanetSurfaceKind | undefined {
+  try {
+    return sampleSurfaceKind(x, y);
   } catch {
     return undefined;
   }

@@ -273,24 +273,31 @@ describe('world generator', () => {
   it('provides a lightweight preview sampler that is stable and omits route decoration', () => {
     const generator = createGenerator();
 
+    expect(generator.samplePreviewSurfaceKind(10, 20)).toBe(
+      generator.samplePreviewOverworld(10, 20).kind
+    );
     expect(generator.samplePreviewOverworld(10, 20)).toEqual(
       generator.samplePreviewOverworld(10, 20)
     );
+    expect(generator.samplePreviewSurfaceKind(3, 2)).not.toBe('bridge');
     expect(generator.samplePreviewOverworld(3, 2).kind).not.toBe('bridge');
     expect(generator.sampleOverworld(3, 2).kind).toBe('bridge');
   });
 
   it('keeps preview sampling deterministic after bounded cache eviction churn', () => {
     const generator = createGenerator();
+    const baselinePreviewKind = generator.samplePreviewSurfaceKind(10, 20);
     const baselinePreview = generator.samplePreviewOverworld(10, 20);
     const baselineOverworld = generator.sampleOverworld(3, 2);
 
-    for (let index = 0; index < 5000; index += 1) {
-      const x = (index % 100) - 50;
-      const y = Math.floor(index / 100) - 25;
+    for (let index = 0; index < 9000; index += 1) {
+      const x = (index % 150) - 75;
+      const y = Math.floor(index / 150) - 30;
+      generator.samplePreviewSurfaceKind(x, y);
       generator.samplePreviewOverworld(x, y);
     }
 
+    expect(generator.samplePreviewSurfaceKind(10, 20)).toBe(baselinePreviewKind);
     expect(generator.samplePreviewOverworld(10, 20)).toEqual(baselinePreview);
     expect(generator.sampleOverworld(3, 2)).toEqual(baselineOverworld);
     expect(generator.samplePreviewOverworld(3, 2).kind).not.toBe('bridge');

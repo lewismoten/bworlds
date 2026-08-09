@@ -15,6 +15,7 @@ import {
   getPreviewSunShadowCoverageState,
   getPreviewSunOrbitSpec,
   getPlanetSurfaceColor,
+  resolvePreviewKindSampler,
   resolvePreviewSampler,
 } from './celestial-preview.ts';
 import { DEFAULT_DAY_LENGTH_MS, getDaylightCycleState } from '@bworlds/core';
@@ -65,12 +66,12 @@ describe('celestial preview helpers', () => {
   it('builds a deterministic low-resolution texture grid from overworld samples', () => {
     const grid = buildPlanetTextureGrid((x, y) => {
       if (y > 0) {
-        return { kind: 'water' };
+        return 'water';
       }
       if (x > 0) {
-        return { kind: 'plains' };
+        return 'plains';
       }
-      return { kind: 'mountain' };
+      return 'mountain';
     }, 4, 2);
 
     expect(grid).toEqual([
@@ -102,14 +103,16 @@ describe('celestial preview helpers', () => {
     };
 
     const sampleOverworld = resolvePreviewSampler(sampler);
+    const sampleSurfaceKind = resolvePreviewKindSampler(sampler);
 
     expect(sampleOverworld).not.toBeNull();
-    expect(buildPlanetTextureGrid(sampleOverworld!, 2, 1)).toEqual([
+    expect(sampleSurfaceKind).not.toBeNull();
+    expect(buildPlanetTextureGrid(sampleSurfaceKind!, 2, 1)).toEqual([
       ['#35547a', '#7fa569'],
     ]);
   });
 
-  it('prefers lightweight preview samplers when available', () => {
+  it('prefers lightweight preview surface kind samplers when available', () => {
     const sampleOverworld = resolvePreviewSampler({
       sampleOverworld() {
         return { kind: 'mountain' };
@@ -117,10 +120,25 @@ describe('celestial preview helpers', () => {
       samplePreviewOverworld() {
         return { kind: 'forest' };
       },
+      samplePreviewSurfaceKind() {
+        return 'plains';
+      },
+    });
+    const sampleSurfaceKind = resolvePreviewKindSampler({
+      sampleOverworld() {
+        return { kind: 'mountain' };
+      },
+      samplePreviewOverworld() {
+        return { kind: 'forest' };
+      },
+      samplePreviewSurfaceKind() {
+        return 'plains';
+      },
     });
 
     expect(sampleOverworld).not.toBeNull();
-    expect(buildPlanetTextureGrid(sampleOverworld!, 1, 1)).toEqual([['#557c5a']]);
+    expect(sampleSurfaceKind).not.toBeNull();
+    expect(buildPlanetTextureGrid(sampleSurfaceKind!, 1, 1)).toEqual([['#7fa569']]);
   });
 
   it('describes a full sun orbit plus the daylight arc for the preview model', () => {
@@ -268,7 +286,7 @@ describe('celestial preview helpers', () => {
 
   it('uses the planet texture itself as a low-level emissive fill source', () => {
     const grid = buildPlanetTextureGrid(
-      () => ({ kind: 'forest' }),
+      () => 'forest',
       1,
       1
     );
