@@ -520,6 +520,7 @@ const DEFAULT_PENDING_WORLD_BUILD_BUDGET_MS = 2.5;
 const LOW_DETAIL_MODEL_DISTANCE = 6.5;
 const LOW_DETAIL_MODEL_DISTANCE_SQUARED =
   LOW_DETAIL_MODEL_DISTANCE * LOW_DETAIL_MODEL_DISTANCE;
+const LANDMARK_LOW_DETAIL_MODEL_DISTANCE = 10.5;
 const LOD_DETAIL_HYSTERESIS_DISTANCE = 0.5;
 const LOW_DETAIL_ENTER_DISTANCE_SQUARED = LOW_DETAIL_MODEL_DISTANCE_SQUARED;
 const LOW_DETAIL_EXIT_DISTANCE =
@@ -561,6 +562,18 @@ const FALLBACK_TILE_DEFINITION = {
   walkable: true,
   wallHeight: 0,
 };
+const LANDMARK_TILE_KINDS = new Set([
+  'sign',
+  'town',
+  'cave',
+  'dungeon',
+  'tower',
+  'quarry',
+  'lighthouse',
+  'ship',
+  'observatory',
+  'station',
+]);
 const distanceFadeTargetCache = new WeakMap<THREE.Object3D, DistanceFadeTargets>();
 const ownedDisposableGeometries = new WeakSet<object>();
 const ownedDisposableMaterials = new WeakSet<object>();
@@ -1007,13 +1020,16 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       const buildStartMs = performance.now();
       const dx = entry.x - state.player.x;
       const dy = entry.y - state.player.y;
+      const tile = state.getCurrentTile(entry.x, entry.y);
       const desiredDetailLevel = getTileModelDetailLevelFromSquaredDistance(
-        dx * dx + dy * dy
+        dx * dx + dy * dy,
+        tile
       );
       const detailLevel = getPendingWorldBuildDetailLevel(
         desiredDetailLevel,
         dx * dx + dy * dy,
-        pendingWorldBuild.queue.length - processedEntryCount
+        pendingWorldBuild.queue.length - processedEntryCount,
+        tile
       );
       const tileNode = buildTileNode(
         state,
@@ -1328,7 +1344,8 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       if (
         !shouldEvaluateTileModelDetailLevel(
           entry.detailLevel,
-          distanceSquared
+          distanceSquared,
+          entry.tile
         )
       ) {
         continue;
@@ -1336,7 +1353,8 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       recordRecentMetric(renderChurnMetrics.lodChecks, nowMs);
       const desiredDetailLevel = getTileModelDetailLevelWithHysteresis(
         entry.detailLevel,
-        distanceSquared
+        distanceSquared,
+        entry.tile
       );
       if ((entry.detailLevel ?? 'full') === desiredDetailLevel) {
         continue;
@@ -2116,9 +2134,39 @@ export function getFarLandModelOpacity(
   return clamp01(1 - fadeProgress);
 }
 
+export function shouldKeepTileModelFullDetailLonger(
+  tile?: Pick<TileLike, 'kind'>
+): boolean {
+  return tile ? LANDMARK_TILE_KINDS.has(tile.kind) : false;
+}
+
+export function getTileModelLowDetailDistance(
+  tile?: Pick<TileLike, 'kind'>
+): number {
+  return shouldKeepTileModelFullDetailLonger(tile)
+    ? LANDMARK_LOW_DETAIL_MODEL_DISTANCE
+    : LOW_DETAIL_MODEL_DISTANCE;
+}
+
+export function getTileModelLowDetailDistanceSquared(
+  tile?: Pick<TileLike, 'kind'>
+): number {
+  const distance = getTileModelLowDetailDistance(tile);
+  return distance * distance;
+}
+
+export function getTileModelLowDetailExitDistanceSquared(
+  tile?: Pick<TileLike, 'kind'>
+): number {
+  const exitDistance =
+    getTileModelLowDetailDistance(tile) - LOD_DETAIL_HYSTERESIS_DISTANCE;
+  return exitDistance * exitDistance;
+}
+
 export function getTileModelDetailLevel(
   distance: number,
-  lowDetailDistance = LOW_DETAIL_MODEL_DISTANCE
+  tile?: Pick<TileLike, 'kind'>,
+  lowDetailDistance = getTileModelLowDetailDistance(tile)
 ): 'full' | 'low' {
   return distance >= lowDetailDistance ? 'low' : 'full';
 }
@@ -2136,7 +2184,8 @@ export function getLodThresholdSummary(): LodThresholdSummary {
 
 export function getTileModelDetailLevelFromSquaredDistance(
   distanceSquared: number,
-  lowDetailDistanceSquared = LOW_DETAIL_MODEL_DISTANCE_SQUARED
+  tile?: Pick<TileLike, 'kind'>,
+  lowDetailDistanceSquared = getTileModelLowDetailDistanceSquared(tile)
 ): 'full' | 'low' {
   return distanceSquared >= lowDetailDistanceSquared ? 'low' : 'full';
 }
@@ -2144,9 +2193,10 @@ export function getTileModelDetailLevelFromSquaredDistance(
 export function getTileModelDetailLevelWithHysteresis(
   currentDetailLevel: 'full' | 'low' | undefined,
   distanceSquared: number,
+  tile?: Pick<TileLike, 'kind'>,
   {
-    lowDetailEnterDistanceSquared = LOW_DETAIL_ENTER_DISTANCE_SQUARED,
-    lowDetailExitDistanceSquared = LOW_DETAIL_EXIT_DISTANCE_SQUARED,
+    lowDetailEnterDistanceSquared = getTileModelLowDetailDistanceSquared(tile),
+    lowDetailExitDistanceSquared = getTileModelLowDetailExitDistanceSquared(tile),
   }: {
     lowDetailEnterDistanceSquared?: number;
     lowDetailExitDistanceSquared?: number;
@@ -2162,7 +2212,8 @@ export function getTileModelDetailLevelWithHysteresis(
 export function shouldEvaluateTileModelDetailLevel(
   currentDetailLevel: 'full' | 'low' | undefined,
   distanceSquared: number,
-  lowDetailExitDistanceSquared = LOW_DETAIL_EXIT_DISTANCE_SQUARED
+  tile?: Pick<TileLike, 'kind'>,
+  lowDetailExitDistanceSquared = getTileModelLowDetailExitDistanceSquared(tile)
 ): boolean {
   if (currentDetailLevel !== 'low') {
     return true;
@@ -2175,11 +2226,15 @@ export function getPendingWorldBuildDetailLevel(
   desiredDetailLevel: 'full' | 'low',
   distanceSquared: number,
   remainingQueueLength: number,
+  tile?: Pick<TileLike, 'kind'>,
   fullDetailDistanceSquared = PENDING_BUILD_FULL_DETAIL_DISTANCE_SQUARED,
   lowDetailQueueThreshold = PENDING_BUILD_LOW_DETAIL_QUEUE_THRESHOLD
 ): 'full' | 'low' {
   if (desiredDetailLevel === 'low') {
     return 'low';
+  }
+  if (shouldKeepTileModelFullDetailLonger(tile)) {
+    return 'full';
   }
   if (remainingQueueLength <= lowDetailQueueThreshold) {
     return 'full';

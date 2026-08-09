@@ -127,6 +127,7 @@ import {
   getWrappedBatchWindow,
   getTwilightSkyPalette,
   getTileModelDetailLevel,
+  getTileModelLowDetailDistance,
   getTileModelDetailLevelFromSquaredDistance,
   getTileModelDetailLevelWithHysteresis,
   getPendingWorldBuildDetailLevel,
@@ -144,6 +145,7 @@ import {
   isFrameTimeBudgetExhausted,
   shouldProcessPendingWorldBuildEntry,
   shouldEvaluateTileModelDetailLevel,
+  shouldKeepTileModelFullDetailLonger,
   shouldSyncWorldCurvature,
   shouldSyncTileModelDetailLevels,
   summarizeVisibleTileKinds,
@@ -1901,6 +1903,16 @@ describe('render3d visibility helpers', () => {
     expect(getTileModelDetailLevel(10)).toBe('low');
   });
 
+  it('keeps landmark and route-terminal tiles in full detail farther out', () => {
+    expect(shouldKeepTileModelFullDetailLonger({ kind: 'sign' })).toBe(true);
+    expect(shouldKeepTileModelFullDetailLonger({ kind: 'lighthouse' })).toBe(true);
+    expect(shouldKeepTileModelFullDetailLonger({ kind: 'plains' })).toBe(false);
+    expect(getTileModelLowDetailDistance({ kind: 'sign' })).toBe(10.5);
+    expect(getTileModelDetailLevel(10, { kind: 'sign' })).toBe('full');
+    expect(getTileModelDetailLevel(10.5, { kind: 'sign' })).toBe('low');
+    expect(getTileModelDetailLevel(10, { kind: 'plains' })).toBe('low');
+  });
+
   it('describes the current lod threshold policy in one place', () => {
     expect(getLodThresholdSummary()).toEqual({
       lowDetailDistance: 6.5,
@@ -1917,6 +1929,8 @@ describe('render3d visibility helpers', () => {
     expect(getTileModelDetailLevelFromSquaredDistance(42.24)).toBe('full');
     expect(getTileModelDetailLevelFromSquaredDistance(42.25)).toBe('low');
     expect(getTileModelDetailLevelFromSquaredDistance(100)).toBe('low');
+    expect(getTileModelDetailLevelFromSquaredDistance(100, { kind: 'tower' })).toBe('full');
+    expect(getTileModelDetailLevelFromSquaredDistance(110.25, { kind: 'tower' })).toBe('low');
   });
 
   it('uses hysteresis to avoid lod thrash near the boundary', () => {
@@ -1925,6 +1939,12 @@ describe('render3d visibility helpers', () => {
     expect(getTileModelDetailLevelWithHysteresis('low', 40)).toBe('low');
     expect(getTileModelDetailLevelWithHysteresis('low', 35.99)).toBe('full');
     expect(getTileModelDetailLevelWithHysteresis(undefined, 42.25)).toBe('low');
+    expect(getTileModelDetailLevelWithHysteresis('full', 100, { kind: 'cave' })).toBe(
+      'full'
+    );
+    expect(getTileModelDetailLevelWithHysteresis('low', 100.01, { kind: 'cave' })).toBe(
+      'low'
+    );
   });
 
   it('skips obviously distant low-detail chunks during lod reevaluation', () => {
@@ -1941,6 +1961,9 @@ describe('render3d visibility helpers', () => {
     expect(getPendingWorldBuildDetailLevel('full', 16, 10)).toBe('full');
     expect(getPendingWorldBuildDetailLevel('full', 16, 40)).toBe('low');
     expect(getPendingWorldBuildDetailLevel('full', 16, 0)).toBe('full');
+    expect(getPendingWorldBuildDetailLevel('full', 64, 40, { kind: 'dungeon' })).toBe(
+      'full'
+    );
   });
 
   it('lets pending world builds stop immediately when the shared frame budget is already exhausted', () => {
