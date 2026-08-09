@@ -1,5 +1,8 @@
 # High Priority
 
+Always run tests to make sure all tests pass
+
+# Next Highest
 - [X] Optimize the hash-seed pipeline, not just `hash2D()` itself.
    The bottleneck has moved into:
 
