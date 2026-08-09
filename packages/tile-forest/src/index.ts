@@ -1186,17 +1186,13 @@ export function createForestTilePlugin(): RuntimePlugin {
               : {}),
           };
 
-          const trunk = new three.Mesh(
-            getForestTrunkGeometry(
-              three,
-              structure.trunkTopRadius / Math.max(0.0001, structure.radius)
-            ),
-            style.trunkMaterial
+          addForestFullDetailTrunk(
+            three,
+            tree,
+            style.trunkMaterial,
+            descriptor,
+            structure
           );
-          const trunkRadiusScale = structure.radius / 0.1;
-          trunk.position.y = structure.trunkHeight * 0.5;
-          trunk.scale.set(trunkRadiusScale, structure.trunkHeight, trunkRadiusScale);
-          tree.add(trunk);
 
           for (const branch of structure.branches) {
             const limb = new three.Mesh(geometry.branch, style.trunkMaterial);
@@ -1662,6 +1658,67 @@ function getForestTrunkGeometry(
     geometryCache.set(cacheKey, geometry);
   }
   return geometry;
+}
+
+function getForestTrunkMidRadius(
+  descriptor: Pick<ForestTreeDescriptor, 'form' | 'x' | 'y' | 'variety' | 'scale'>,
+  structure: Pick<TreeStructuralState, 'radius' | 'trunkTopRadius'>
+): number {
+  const profileSeed =
+    descriptor.x * 17.3 +
+    descriptor.y * 13.7 +
+    descriptor.variety * 7.1 +
+    descriptor.scale * 5.3;
+  const profileBias = (Math.sin(profileSeed) + 1) * 0.5;
+  const baseRatio =
+    descriptor.form === 'pine'
+      ? 0.72 + profileBias * 0.1
+      : 0.78 + profileBias * 0.18;
+  return Math.max(
+    structure.trunkTopRadius + structure.radius * 0.06,
+    Math.min(structure.radius * 1.02, structure.radius * baseRatio)
+  );
+}
+
+function addForestFullDetailTrunk(
+  three: ThreeHostLike,
+  tree: ThreeObject3DLike,
+  material: ThreeMaterialLike,
+  descriptor: Pick<ForestTreeDescriptor, 'form' | 'x' | 'y' | 'variety' | 'scale'>,
+  structure: TreeStructuralState
+) {
+  const lowerHeight = structure.trunkHeight * 0.58;
+  const upperHeight = Math.max(0.08, structure.trunkHeight - lowerHeight);
+  const midRadius = getForestTrunkMidRadius(descriptor, structure);
+  const bottomRadiusScale = structure.radius / 0.1;
+  const midRadiusScale = midRadius / 0.1;
+
+  const lowerTrunk = new three.Mesh(
+    getForestTrunkGeometry(
+      three,
+      midRadius / Math.max(0.0001, structure.radius)
+    ),
+    material
+  );
+  lowerTrunk.position.y = lowerHeight * 0.5;
+  lowerTrunk.scale.set(bottomRadiusScale, lowerHeight, bottomRadiusScale);
+  lowerTrunk.userData = {
+    ...(lowerTrunk.userData ?? {}),
+    forestTreeTrunkSegment: 'lower',
+  };
+  tree.add(lowerTrunk);
+
+  const upperTrunk = new three.Mesh(
+    getForestTrunkGeometry(three, structure.trunkTopRadius / Math.max(0.0001, midRadius)),
+    material
+  );
+  upperTrunk.position.y = lowerHeight + upperHeight * 0.5;
+  upperTrunk.scale.set(midRadiusScale, upperHeight, midRadiusScale);
+  upperTrunk.userData = {
+    ...(upperTrunk.userData ?? {}),
+    forestTreeTrunkSegment: 'upper',
+  };
+  tree.add(upperTrunk);
 }
 
 function getForestTreeDescriptors(

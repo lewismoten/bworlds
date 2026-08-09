@@ -1945,24 +1945,69 @@ describe('tile forest', () => {
     const firstTree = fullModel.children.find(
       (child) => child instanceof FakeGroup && child.userData?.renderStatKind === 'tree'
     ) as FakeGroup | undefined;
-    const trunkMesh = firstTree?.children.find(
+    const lowerTrunkMesh = firstTree?.children.find(
       (child) =>
         child instanceof FakeMesh &&
         child.geometry instanceof FakeGeometry &&
-        child.material instanceof FakeMaterial
+        child.material instanceof FakeMaterial &&
+        child.userData?.forestTreeTrunkSegment === 'lower'
+    ) as FakeMesh | undefined;
+    const upperTrunkMesh = firstTree?.children.find(
+      (child) =>
+        child instanceof FakeMesh &&
+        child.geometry instanceof FakeGeometry &&
+        child.material instanceof FakeMaterial &&
+        child.userData?.forestTreeTrunkSegment === 'upper'
     ) as FakeMesh | undefined;
 
-    expect(trunkMesh).toBeDefined();
-    expect(trunkMesh?.geometry).toBeInstanceOf(FakeGeometry);
-    expect(trunkMesh?.scale.x).toBeCloseTo(trunks[0]!.radius / 0.1);
-    expect(trunkMesh?.scale.z).toBeCloseTo(trunks[0]!.radius / 0.1);
+    expect(lowerTrunkMesh).toBeDefined();
+    expect(upperTrunkMesh).toBeDefined();
+    expect(lowerTrunkMesh?.geometry).toBeInstanceOf(FakeGeometry);
+    expect(upperTrunkMesh?.geometry).toBeInstanceOf(FakeGeometry);
+    expect(lowerTrunkMesh?.scale.x).toBeCloseTo(trunks[0]!.radius / 0.1);
+    expect(lowerTrunkMesh?.scale.z).toBeCloseTo(trunks[0]!.radius / 0.1);
 
-    const trunkGeometry = trunkMesh?.geometry as FakeGeometry;
-    const expectedTaperBucketRadius =
-      Number((trunks[0]!.trunkTopRadius / trunks[0]!.radius).toFixed(2)) * 0.1;
-    expect(trunkGeometry.args[0]).toBeCloseTo(expectedTaperBucketRadius, 5);
+    const trunkGeometry = upperTrunkMesh?.geometry as FakeGeometry;
+    const resolvedTopRadiusScale =
+      trunkGeometry.args[0] * (upperTrunkMesh?.scale.x ?? 0);
+    expect(resolvedTopRadiusScale).toBeCloseTo(trunks[0]!.trunkTopRadius, 2);
     expect(trunkGeometry.args[1]).toBeCloseTo(0.1, 5);
     expect(trunkGeometry.args[0]).toBeLessThan(trunkGeometry.args[1]!);
+  });
+
+  it('avoids perfectly straight full-detail trunk cylinders by using a segmented trunk profile', () => {
+    const plugin = createForestTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'forest');
+    const state = createForestTestState(8, 6);
+    const fullModel = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'forest' },
+      tileX: 8,
+      tileY: 6,
+      detailLevel: 'full',
+    }) as FakeGroup;
+
+    const firstTree = fullModel.children.find(
+      (child) => child instanceof FakeGroup && child.userData?.renderStatKind === 'tree'
+    ) as FakeGroup | undefined;
+    const lowerTrunkMesh = firstTree?.children.find(
+      (child) => child.userData?.forestTreeTrunkSegment === 'lower'
+    ) as FakeMesh | undefined;
+    const upperTrunkMesh = firstTree?.children.find(
+      (child) => child.userData?.forestTreeTrunkSegment === 'upper'
+    ) as FakeMesh | undefined;
+
+    expect(lowerTrunkMesh).toBeDefined();
+    expect(upperTrunkMesh).toBeDefined();
+    expect(firstTree?.children.filter((child) => child.userData?.forestTreeTrunkSegment).length)
+      .toBe(2);
+
+    const lowerGeometry = lowerTrunkMesh?.geometry as FakeGeometry;
+    const upperGeometry = upperTrunkMesh?.geometry as FakeGeometry;
+    expect(lowerGeometry.args[0]).not.toBeCloseTo(upperGeometry.args[1], 5);
+    expect(upperTrunkMesh?.scale.x).toBeLessThan(lowerTrunkMesh?.scale.x ?? Infinity);
+    expect(upperTrunkMesh?.position.y).toBeGreaterThan(lowerTrunkMesh?.position.y ?? -Infinity);
   });
 
   it('instances low-detail tree trunks and canopies instead of creating one group per tree', () => {
