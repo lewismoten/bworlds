@@ -40,13 +40,13 @@ Here’s a focused lighthouse checklist that covers the current visual bugs, day
 
 ## Sunset and Sunrise Behavior
 
-* [ ] Turn the lighthouse beam on at sunset.
-* [ ] Turn the lighthouse beam off at sunrise.
-* [ ] Use the world timekeeper rather than fixed clock hours.
-* [ ] Respect seasonal changes in sunrise and sunset.
-* [ ] Fade the light in gradually after sunset.
-* [ ] Fade the light out gradually near sunrise.
-* [ ] Avoid abrupt beam popping at the day/night boundary.
+* [X] Turn the lighthouse beam on at sunset.
+* [X] Turn the lighthouse beam off at sunrise.
+* [X] Use the world timekeeper rather than fixed clock hours.
+* [X] Respect seasonal changes in sunrise and sunset.
+* [X] Fade the light in gradually after sunset.
+* [X] Fade the light out gradually near sunrise.
+* [X] Avoid abrupt beam popping at the day/night boundary.
 * [ ] Allow storms or heavy fog to activate the light early.
 * [ ] Allow darkness thresholds to override simple time rules.
 * [ ] Keep abandoned lighthouses dark unless restored.

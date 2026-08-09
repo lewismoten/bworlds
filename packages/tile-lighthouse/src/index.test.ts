@@ -1,3 +1,8 @@
+import {
+  DEFAULT_DAY_LENGTH_MS,
+  DEFAULT_YEAR_LENGTH_DAYS,
+  getDaylightCycleState,
+} from '@bworlds/core';
 import { describe, expect, it } from 'vitest';
 import { createLighthouseTilePlugin } from './index.ts';
 
@@ -401,6 +406,147 @@ describe('tile lighthouse', () => {
       (Math.PI * 2);
     expect(beamPivot?.rotation.y).toBeCloseTo(expectedRotation, 6);
   });
+
+  it('activates from the shared seasonal sunset cycle and stays off after sunrise', () => {
+    const plugin = createLighthouseTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'lighthouse');
+    const model = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state: {} as never,
+      tile: { kind: 'lighthouse' } as never,
+      tileX: 4,
+      tileY: 5,
+    }) as FakeNode | undefined;
+    const beamNodes = collectBeamMeshes(model);
+    const summerDay = Math.floor(DEFAULT_YEAR_LENGTH_DAYS * 0.25);
+    const winterDay = Math.floor(DEFAULT_YEAR_LENGTH_DAYS * 0.75);
+    const summerNoon = getDaylightCycleState(
+      (summerDay + 0.5) * DEFAULT_DAY_LENGTH_MS,
+      {
+        dayLengthMs: DEFAULT_DAY_LENGTH_MS,
+        yearLengthDays: DEFAULT_YEAR_LENGTH_DAYS,
+      }
+    );
+    const summerAfterSunset = getCycleOffsetFromBoundary(summerDay, 'sunset', 0.04);
+    const summerAfterSunrise = getCycleOffsetFromBoundary(summerDay, 'sunrise', 0.08);
+    const winterAfterSunset = getCycleOffsetFromBoundary(winterDay, 'sunset', 0.08);
+
+    tile?.sync3DModel?.({
+      three: fakeThree as never,
+      state: {} as never,
+      tile: { kind: 'lighthouse' } as never,
+      tileX: 4,
+      tileY: 5,
+      model,
+      timeMs: 0,
+      cycle: summerNoon,
+      environment: {},
+    });
+    expect(beamNodes.some((beam) => beam.visible)).toBe(false);
+
+    tile?.sync3DModel?.({
+      three: fakeThree as never,
+      state: {} as never,
+      tile: { kind: 'lighthouse' } as never,
+      tileX: 4,
+      tileY: 5,
+      model,
+      timeMs: 0,
+      cycle: summerAfterSunset,
+      environment: {},
+    });
+    const summerSunsetOpacity = (beamNodes[0]?.material as FakeMaterial | undefined)?.opacity ?? 0;
+    expect(beamNodes.some((beam) => beam.visible)).toBe(true);
+    expect(summerSunsetOpacity).toBeGreaterThan(0);
+
+    tile?.sync3DModel?.({
+      three: fakeThree as never,
+      state: {} as never,
+      tile: { kind: 'lighthouse' } as never,
+      tileX: 4,
+      tileY: 5,
+      model,
+      timeMs: 0,
+      cycle: summerAfterSunrise,
+      environment: {},
+    });
+    expect(beamNodes.some((beam) => beam.visible)).toBe(false);
+
+    tile?.sync3DModel?.({
+      three: fakeThree as never,
+      state: {} as never,
+      tile: { kind: 'lighthouse' } as never,
+      tileX: 4,
+      tileY: 5,
+      model,
+      timeMs: 0,
+      cycle: winterAfterSunset,
+      environment: {},
+    });
+    const winterSunsetOpacity = (beamNodes[0]?.material as FakeMaterial | undefined)?.opacity ?? 0;
+    expect(winterSunsetOpacity).toBeGreaterThan(0);
+    expect(summerAfterSunset.sunsetProgress).toBeGreaterThan(winterAfterSunset.sunsetProgress);
+  });
+
+  it('fades the lighthouse beam gradually across the sunset boundary', () => {
+    const plugin = createLighthouseTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'lighthouse');
+    const model = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state: {} as never,
+      tile: { kind: 'lighthouse' } as never,
+      tileX: 4,
+      tileY: 5,
+    }) as FakeNode | undefined;
+    const beamNodes = collectBeamMeshes(model);
+    const summerDay = Math.floor(DEFAULT_YEAR_LENGTH_DAYS * 0.25);
+    const beforeSunset = getCycleOffsetFromBoundary(summerDay, 'sunset', -0.08);
+    const atSunset = getCycleOffsetFromBoundary(summerDay, 'sunset', -0.02);
+    const afterSunset = getCycleOffsetFromBoundary(summerDay, 'sunset', 0.02);
+
+    tile?.sync3DModel?.({
+      three: fakeThree as never,
+      state: {} as never,
+      tile: { kind: 'lighthouse' } as never,
+      tileX: 4,
+      tileY: 5,
+      model,
+      timeMs: 0,
+      cycle: beforeSunset,
+      environment: {},
+    });
+    const beforeOpacity = (beamNodes[0]?.material as FakeMaterial | undefined)?.opacity ?? 0;
+
+    tile?.sync3DModel?.({
+      three: fakeThree as never,
+      state: {} as never,
+      tile: { kind: 'lighthouse' } as never,
+      tileX: 4,
+      tileY: 5,
+      model,
+      timeMs: 0,
+      cycle: atSunset,
+      environment: {},
+    });
+    const atOpacity = (beamNodes[0]?.material as FakeMaterial | undefined)?.opacity ?? 0;
+
+    tile?.sync3DModel?.({
+      three: fakeThree as never,
+      state: {} as never,
+      tile: { kind: 'lighthouse' } as never,
+      tileX: 4,
+      tileY: 5,
+      model,
+      timeMs: 0,
+      cycle: afterSunset,
+      environment: {},
+    });
+    const afterOpacity = (beamNodes[0]?.material as FakeMaterial | undefined)?.opacity ?? 0;
+
+    expect(beforeOpacity).toBeLessThan(atOpacity);
+    expect(atOpacity).toBeLessThan(afterOpacity);
+    expect(beamNodes.some((beam) => beam.visible)).toBe(true);
+  });
 });
 
 function countSharedMaterialReferences(
@@ -452,4 +598,24 @@ function findBeamPivot(root: FakeNode | undefined): FakeGroup | undefined {
     }
   });
   return pivot;
+}
+
+function getCycleOffsetFromBoundary(
+  dayNumber: number,
+  boundary: 'sunrise' | 'sunset',
+  offsetProgress: number
+) {
+  const anchor = getDaylightCycleState(dayNumber * DEFAULT_DAY_LENGTH_MS, {
+    dayLengthMs: DEFAULT_DAY_LENGTH_MS,
+    yearLengthDays: DEFAULT_YEAR_LENGTH_DAYS,
+  });
+  const progress =
+    boundary === 'sunrise' ? anchor.sunriseProgress : anchor.sunsetProgress;
+  return getDaylightCycleState(
+    (dayNumber + progress + offsetProgress) * DEFAULT_DAY_LENGTH_MS,
+    {
+      dayLengthMs: DEFAULT_DAY_LENGTH_MS,
+      yearLengthDays: DEFAULT_YEAR_LENGTH_DAYS,
+    }
+  );
 }

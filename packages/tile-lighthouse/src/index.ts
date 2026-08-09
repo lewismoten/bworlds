@@ -1,4 +1,4 @@
-import { hash2D, registerHashLabel } from '@bworlds/core';
+import { hash2D, registerHashLabel, smoothstep } from '@bworlds/core';
 import { createPlainsBackedTilePainter } from '@bworlds/paint-support';
 import {
   createAnchoredEnterablePoiTilePlugin,
@@ -302,10 +302,10 @@ function pickLighthousePaneColor(signal: number, beamColor: string): string {
 
 function syncLighthouseBeam(
   root: ThreeObject3DLike,
-  cycle: { daylight: number; twilight: number; night: number },
+  cycle: { daylight: number; twilight: number; night: number; sunAltitude?: number },
   timeMs: number
 ): void {
-  const activation = getPoiLightActivation(cycle);
+  const activation = getLighthouseBeamActivation(cycle);
 
   root.traverse?.((node) => {
     if (node.userData?.[LIGHTHOUSE_BEAM_PIVOT_KEY]) {
@@ -325,7 +325,9 @@ function syncLighthouseBeam(
       return;
     }
 
-    node.visible = activation > 0.08;
+    node.visible =
+      activation > 0.01 &&
+      (typeof cycle.sunAltitude !== 'number' || cycle.sunAltitude < 0.02);
     const beamNode = node as BeamNodeLike;
     const materials = Array.isArray(beamNode.material)
       ? beamNode.material
@@ -347,4 +349,18 @@ function syncLighthouseBeam(
       }
     });
   });
+}
+
+function getLighthouseBeamActivation(cycle: {
+  daylight: number;
+  twilight: number;
+  night: number;
+  sunAltitude?: number;
+}): number {
+  const baseActivation = getPoiLightActivation(cycle);
+  const solarSuppression =
+    typeof cycle.sunAltitude === 'number'
+      ? 1 - smoothstep(-0.2, 0.08, cycle.sunAltitude)
+      : 1 - smoothstep(0.06, 0.22, cycle.daylight);
+  return Math.max(0, Math.min(1, baseActivation * solarSuppression));
 }
