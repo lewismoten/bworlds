@@ -1,4 +1,5 @@
 import { createRandom } from '@bworlds/core';
+import { constrainProceduralSoundCoreVariation } from './procedural-sound-variation.ts';
 
 export type SoundEffectKind =
   | 'footstep'
@@ -389,7 +390,7 @@ export function createProceduralSoundEffectGenerator(): ProceduralSoundEffectGen
       const variationDepth = clampVariationDepth(recipe.variationDepth ?? 1);
       const waveform = resolveWaveform(recipe.waveform, random);
       const noiseColor = resolveNoiseColor(recipe.noiseColor, random);
-      const frequency = clampValue(
+      const unconstrainedFrequency = clampValue(
         varyScalar(
           recipe.baseFrequency,
           recipe.frequencyVariation ?? 0,
@@ -399,7 +400,7 @@ export function createProceduralSoundEffectGenerator(): ProceduralSoundEffectGen
         recipe.minFrequency ?? 20,
         recipe.maxFrequency ?? 20_000
       );
-      const durationMs = clampValue(
+      const unconstrainedDurationMs = clampValue(
         Math.round(
           varyScalar(
             recipe.baseDurationMs,
@@ -411,13 +412,40 @@ export function createProceduralSoundEffectGenerator(): ProceduralSoundEffectGen
         recipe.minDurationMs ?? 20,
         recipe.maxDurationMs ?? Number.POSITIVE_INFINITY
       );
-      const volume = clampValue(
+      const unconstrainedVolume = clampValue(
         varyScalar(
           recipe.baseVolume,
           recipe.volumeVariation ?? 0,
           variationDepth,
           random
         ),
+        recipe.minVolume ?? 0.0001,
+        recipe.maxVolume ?? 1
+      );
+      const constrainedCore = constrainProceduralSoundCoreVariation({
+        baseFrequency: recipe.baseFrequency,
+        baseDurationMs: recipe.baseDurationMs,
+        baseVolume: recipe.baseVolume,
+        frequency: unconstrainedFrequency,
+        durationMs: unconstrainedDurationMs,
+        volume: unconstrainedVolume,
+        frequencyVariation: recipe.frequencyVariation ?? 0,
+        durationVariation: recipe.durationVariation ?? 0,
+        volumeVariation: recipe.volumeVariation ?? 0,
+        variationDepth,
+      });
+      const frequency = clampValue(
+        constrainedCore.frequency,
+        recipe.minFrequency ?? 20,
+        recipe.maxFrequency ?? 20_000
+      );
+      const durationMs = clampValue(
+        Math.round(constrainedCore.durationMs),
+        recipe.minDurationMs ?? 20,
+        recipe.maxDurationMs ?? Number.POSITIVE_INFINITY
+      );
+      const volume = clampValue(
+        constrainedCore.volume,
         recipe.minVolume ?? 0.0001,
         recipe.maxVolume ?? 1
       );
@@ -546,7 +574,7 @@ function resolveEffectLayers(
         random
       )
     );
-    const frequency = clampValue(
+    const unconstrainedFrequency = clampValue(
       varyScalar(
         baseFrequency,
         layerRecipe.frequencyVariation ?? 0,
@@ -556,7 +584,7 @@ function resolveEffectLayers(
       layerRecipe.minFrequency ?? 20,
       layerRecipe.maxFrequency ?? 20_000
     );
-    const durationMs = clampValue(
+    const unconstrainedDurationMs = clampValue(
       Math.round(
         varyScalar(
           baseDurationMs,
@@ -568,13 +596,40 @@ function resolveEffectLayers(
       layerRecipe.minDurationMs ?? 20,
       layerRecipe.maxDurationMs ?? Number.POSITIVE_INFINITY
     );
-    const volume = clampValue(
+    const unconstrainedVolume = clampValue(
       varyScalar(
         baseVolume,
         layerRecipe.volumeVariation ?? 0,
         variationDepth,
         random
       ),
+      layerRecipe.minVolume ?? 0.0001,
+      layerRecipe.maxVolume ?? 1
+    );
+    const constrainedCore = constrainProceduralSoundCoreVariation({
+      baseFrequency,
+      baseDurationMs,
+      baseVolume,
+      frequency: unconstrainedFrequency,
+      durationMs: unconstrainedDurationMs,
+      volume: unconstrainedVolume,
+      frequencyVariation: layerRecipe.frequencyVariation ?? 0,
+      durationVariation: layerRecipe.durationVariation ?? 0,
+      volumeVariation: layerRecipe.volumeVariation ?? 0,
+      variationDepth,
+    });
+    const frequency = clampValue(
+      constrainedCore.frequency,
+      layerRecipe.minFrequency ?? 20,
+      layerRecipe.maxFrequency ?? 20_000
+    );
+    const durationMs = clampValue(
+      Math.round(constrainedCore.durationMs),
+      layerRecipe.minDurationMs ?? 20,
+      layerRecipe.maxDurationMs ?? Number.POSITIVE_INFINITY
+    );
+    const volume = clampValue(
+      constrainedCore.volume,
       layerRecipe.minVolume ?? 0.0001,
       layerRecipe.maxVolume ?? 1
     );

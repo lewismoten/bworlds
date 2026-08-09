@@ -40,4 +40,22 @@ describe('sound variation selector', () => {
     expect(Math.max(...selections)).toBeLessThanOrEqual(2);
     expect(new Set(selections).size).toBeGreaterThanOrEqual(2);
   });
+
+  it('occasionally introduces rare variations for frequently repeated ambient sounds', () => {
+    const selector = createSoundVariationSelector();
+    const selections = Array.from({ length: 10 }, (_, index) =>
+      selector.select('forest-ambience:river', index * 300, {
+        recognition: 'low',
+        variationSlotCount: 8,
+        rareSlotCount: 2,
+        rareEvery: 4,
+        rareCooldownMs: 600,
+      })
+    );
+
+    expect(selections.some((selection) => selection >= 6)).toBe(true);
+    expect(
+      selections.filter((selection) => selection >= 6).length
+    ).toBeLessThanOrEqual(2);
+  });
 });

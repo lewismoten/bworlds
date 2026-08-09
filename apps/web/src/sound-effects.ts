@@ -1213,6 +1213,9 @@ function resolveInteractionWaveform(
 function resolveSoundVariationPolicy(kind: SoundEffectKind): {
   frequentWindowMs?: number;
   recognition: 'low' | 'medium' | 'high';
+  rareCooldownMs?: number;
+  rareEvery?: number;
+  rareSlotCount?: number;
 } {
   switch (kind) {
     case 'advancement':
@@ -1236,6 +1239,9 @@ function resolveSoundVariationPolicy(kind: SoundEffectKind): {
       return {
         frequentWindowMs: 2400,
         recognition: 'low',
+        rareCooldownMs: 7_200,
+        rareEvery: 5,
+        rareSlotCount: 2,
       };
     default:
       return {

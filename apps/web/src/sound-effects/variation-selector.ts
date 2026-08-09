@@ -5,13 +5,19 @@ export type SoundVariationPolicy = {
   frequentWindowMs?: number;
   historySize?: number;
   recognition?: SoundVariationRecognition;
+  rareCooldownMs?: number;
+  rareEvery?: number;
+  rareSlotCount?: number;
   variationSlotCount?: number;
 };
 
 type SoundVariationState = {
   cycleCursor: number;
   lastPlayedAtMs: number;
+  lastRareAtMs: number;
+  playCount: number;
   recentIndexes: number[];
+  rareCursor: number;
 };
 
 type SoundVariationSelector = {
@@ -25,6 +31,8 @@ type SoundVariationSelector = {
 const DEFAULT_VARIATION_SLOT_COUNT = 8;
 const DEFAULT_FREQUENT_WINDOW_MS = 1_200;
 const DEFAULT_HISTORY_SIZE = 3;
+const DEFAULT_RARE_COOLDOWN_MS = 6_000;
+const DEFAULT_RARE_EVERY = 6;
 
 const RECOGNITION_SETTINGS: Record<
   SoundVariationRecognition,
@@ -64,7 +72,10 @@ export function createSoundVariationSelector(): SoundVariationSelector {
     state = {
       cycleCursor: 0,
       lastPlayedAtMs: -Infinity,
+      lastRareAtMs: -Infinity,
+      playCount: 0,
       recentIndexes: [],
+      rareCursor: 0,
     };
     states.set(signature, state);
     return state;
@@ -87,6 +98,11 @@ export function createSoundVariationSelector(): SoundVariationSelector {
       1,
       policy.frequentWindowMs ?? DEFAULT_FREQUENT_WINDOW_MS
     );
+    const rareCooldownMs = Math.max(
+      1,
+      policy.rareCooldownMs ?? DEFAULT_RARE_COOLDOWN_MS
+    );
+    const rareEvery = Math.max(2, policy.rareEvery ?? DEFAULT_RARE_EVERY);
     const intervalMs = nowMs - state.lastPlayedAtMs;
     const frequent = intervalMs <= frequentWindowMs;
     const baseCandidateCount = RECOGNITION_SETTINGS[recognition].candidateCount;
@@ -106,11 +122,37 @@ export function createSoundVariationSelector(): SoundVariationSelector {
         policy.historySize ?? (frequent ? baseHistorySize : baseHistorySize - 1)
       )
     );
+    const rareSlotCount = Math.min(
+      Math.max(0, slotCount - 2),
+      Math.max(0, policy.rareSlotCount ?? (recognition === 'low' ? 1 : 0))
+    );
+    const normalSlotCount = Math.max(2, slotCount - rareSlotCount);
+    const rareEligible =
+      frequent &&
+      rareSlotCount > 0 &&
+      state.playCount > 0 &&
+      state.playCount % rareEvery === 0 &&
+      nowMs - state.lastRareAtMs >= rareCooldownMs;
+
+    if (rareEligible) {
+      const bestRareIndex =
+        normalSlotCount + (state.rareCursor % Math.max(1, rareSlotCount));
+      state.cycleCursor = (bestRareIndex + 1) % normalSlotCount;
+      state.lastPlayedAtMs = nowMs;
+      state.lastRareAtMs = nowMs;
+      state.playCount += 1;
+      state.rareCursor = (state.rareCursor + 1) % Math.max(1, rareSlotCount);
+      state.recentIndexes = [bestRareIndex, ...state.recentIndexes].slice(
+        0,
+        historySize
+      );
+      return bestRareIndex;
+    }
 
     let bestIndex = state.cycleCursor;
     let bestScore = Number.NEGATIVE_INFINITY;
     for (let offset = 0; offset < candidateCount; offset += 1) {
-      const index = (state.cycleCursor + offset) % slotCount;
+      const index = (state.cycleCursor + offset) % normalSlotCount;
       const score = scoreVariationCandidate(index, offset, state, {
         frequent,
         historySize,
@@ -121,8 +163,9 @@ export function createSoundVariationSelector(): SoundVariationSelector {
       }
     }
 
-    state.cycleCursor = (bestIndex + 1) % slotCount;
+    state.cycleCursor = (bestIndex + 1) % normalSlotCount;
     state.lastPlayedAtMs = nowMs;
+    state.playCount += 1;
     state.recentIndexes = [bestIndex, ...state.recentIndexes].slice(
       0,
       historySize

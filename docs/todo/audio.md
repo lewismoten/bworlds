@@ -149,9 +149,9 @@
 - [x] Use less variation for sounds that need strong player recognition.
 - [x] Randomize individual sound layers independently.
 - [x] Support round-robin variation sets generated procedurally.
-- [ ] Occasionally introduce rare variations for commonly heard sounds.
-- [ ] Prevent extreme pitch or timing combinations caused by overlapping random parameters.
-- [ ] Ensure procedural variation remains subtle enough that objects retain a consistent audio identity.
+- [x] Occasionally introduce rare variations for commonly heard sounds.
+- [x] Prevent extreme pitch or timing combinations caused by overlapping random parameters.
+- [x] Ensure procedural variation remains subtle enough that objects retain a consistent audio identity.
 
 ---
 
