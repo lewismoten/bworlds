@@ -544,6 +544,124 @@ describe('sound effects', () => {
     }
   });
 
+  it('applies configured ADSR envelopes to oscillator-backed effects', () => {
+    const createdOscillators: Array<{
+      onended: ((event: Event) => void) | null;
+      type: string;
+      frequency: {
+        setValueAtTime: ReturnType<typeof vi.fn>;
+        exponentialRampToValueAtTime: ReturnType<typeof vi.fn>;
+        linearRampToValueAtTime: ReturnType<typeof vi.fn>;
+      };
+      connect: ReturnType<typeof vi.fn>;
+      disconnect: ReturnType<typeof vi.fn>;
+      start: ReturnType<typeof vi.fn>;
+      stop: ReturnType<typeof vi.fn>;
+    }> = [];
+    const createdGains: Array<{
+      gain: {
+        setValueAtTime: ReturnType<typeof vi.fn>;
+        exponentialRampToValueAtTime: ReturnType<typeof vi.fn>;
+      };
+      connect: ReturnType<typeof vi.fn>;
+      disconnect: ReturnType<typeof vi.fn>;
+    }> = [];
+
+    class FakeAudioContext {
+      state: AudioContextState = 'running';
+      currentTime = 0;
+      destination = {};
+      createOscillator() {
+        const oscillator = {
+          onended: null as ((event: Event) => void) | null,
+          type: 'sine',
+          frequency: {
+            setValueAtTime: vi.fn(),
+            exponentialRampToValueAtTime: vi.fn(),
+            linearRampToValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+          start: vi.fn(),
+          stop: vi.fn(),
+        };
+        createdOscillators.push(oscillator);
+        return oscillator as unknown as OscillatorNode;
+      }
+      createGain() {
+        const gain = {
+          gain: {
+            setValueAtTime: vi.fn(),
+            exponentialRampToValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+        };
+        createdGains.push(gain);
+        return gain as unknown as GainNode;
+      }
+      createStereoPanner() {
+        return {
+          pan: {
+            setValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+        } as unknown as StereoPannerNode;
+      }
+      resume() {
+        return Promise.resolve();
+      }
+    }
+
+    const originalAudioContext = globalThis.AudioContext;
+    vi.stubGlobal('AudioContext', FakeAudioContext);
+
+    try {
+      const sink = createWebAudioSoundEffectSink();
+      sink.play({
+        kind: 'jump',
+        nowMs: 0,
+        frequency: 220,
+        durationMs: 140,
+        volume: 0.05,
+        waveform: 'triangle',
+        envelope: {
+          attackMs: 8,
+          decayMs: 36,
+          sustainLevel: 0.52,
+          releaseMs: 28,
+        },
+      });
+
+      const sourceGain = createdGains[1];
+      expect(sourceGain?.gain.setValueAtTime).toHaveBeenNthCalledWith(
+        1,
+        0.0001,
+        0
+      );
+      expect(
+        sourceGain?.gain.exponentialRampToValueAtTime
+      ).toHaveBeenNthCalledWith(1, 0.05, 0.008);
+      expect(
+        sourceGain?.gain.exponentialRampToValueAtTime.mock.calls[1]
+      ).toEqual([expect.closeTo(0.026, 10), 0.044]);
+      expect(sourceGain?.gain.setValueAtTime.mock.calls[1]).toEqual([
+        expect.closeTo(0.026, 10),
+        0.11200000000000002,
+      ]);
+      expect(
+        sourceGain?.gain.exponentialRampToValueAtTime
+      ).toHaveBeenNthCalledWith(3, 0.0001, 0.14);
+    } finally {
+      if (originalAudioContext) {
+        vi.stubGlobal('AudioContext', originalAudioContext);
+      } else {
+        vi.unstubAllGlobals();
+      }
+    }
+  });
+
   it('limits identical low-priority ambient voices in the web audio sink', () => {
     const createdOscillators: Array<{
       onended: ((event: Event) => void) | null;

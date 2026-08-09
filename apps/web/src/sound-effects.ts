@@ -4,6 +4,7 @@ import type { AudioCategory } from './audio-categories.ts';
 import { resolveSoundEffectCategory } from './audio-categories.ts';
 import type { NearbyAmbientKind } from './nearby-ambient.ts';
 import {
+  type ProceduralAmplitudeEnvelope,
   createProceduralSoundEffectGenerator,
   type ProceduralNoiseColor,
   type ProceduralSoundEffectLayer,
@@ -313,10 +314,61 @@ function resolveProceduralSoundRecipe(
     baseVolume: resolveBaseSoundEffectVolume(kind, profile),
     waveform: resolveBaseSoundEffectWaveform(kind, tileKind, profile),
     noiseColor: resolveBaseSoundEffectNoiseColor(kind),
+    envelope: resolveProceduralSoundEnvelope(kind),
     sweeps: resolveProceduralSoundSweeps(kind),
     layers: resolveProceduralSoundLayers(kind),
     ...resolveProceduralSoundVariation(kind),
   };
+}
+
+function resolveProceduralSoundEnvelope(kind: SoundEffectKind) {
+  switch (kind) {
+    case 'jump':
+      return { attackMs: 10, decayMs: 38, sustainLevel: 0.58, releaseMs: 30 };
+    case 'landing':
+      return { attackMs: 6, decayMs: 36, sustainLevel: 0.42, releaseMs: 44 };
+    case 'blocked':
+      return { attackMs: 4, decayMs: 26, sustainLevel: 0.34, releaseMs: 36 };
+    case 'open':
+    case 'close':
+      return { attackMs: 5, decayMs: 28, sustainLevel: 0.48, releaseMs: 40 };
+    case 'wind':
+    case 'ocean':
+    case 'river-ambience':
+    case 'forest-ambience':
+    case 'plains-ambience':
+    case 'mountain-ambience':
+    case 'cave-ambience':
+    case 'settlement-ambience':
+    case 'ruins-ambience':
+      return {
+        attackMs: 120,
+        decayMs: 220,
+        sustainLevel: 0.76,
+        releaseMs: 180,
+      };
+    case 'advancement':
+      return { attackMs: 14, decayMs: 46, sustainLevel: 0.66, releaseMs: 70 };
+    case 'train-engine':
+      return { attackMs: 28, decayMs: 110, sustainLevel: 0.72, releaseMs: 90 };
+    case 'train-whistle':
+    case 'steam-whistle':
+      return {
+        attackMs: 18,
+        decayMs: 120,
+        sustainLevel: 0.82,
+        releaseMs: 120,
+      };
+    case 'paddle-calliope':
+      return { attackMs: 20, decayMs: 60, sustainLevel: 0.74, releaseMs: 110 };
+    case 'combat-weapon':
+      return { attackMs: 4, decayMs: 24, sustainLevel: 0.28, releaseMs: 34 };
+    case 'combat-magic':
+      return { attackMs: 12, decayMs: 54, sustainLevel: 0.62, releaseMs: 68 };
+    case 'footstep':
+    default:
+      return { attackMs: 4, decayMs: 22, sustainLevel: 0.38, releaseMs: 24 };
+  }
 }
 
 function resolveProceduralSoundSweeps(kind: SoundEffectKind) {
@@ -1443,12 +1495,16 @@ type AudioBufferSourceNodeLike = AudioBufferSourceNode & {
   buffer: AudioBuffer | null;
 };
 type ScheduledSoundSourceNode = OscillatorNode | AudioBufferSourceNodeLike;
+type ActiveSoundSource = {
+  source: ScheduledSoundSourceNode;
+  gain: GainNode;
+  effect: ProceduralSoundEffect;
+};
 type ActiveSoundVoice = {
   kind: SoundEffectKind;
   priority: number;
   loudness: number;
-  sources: ScheduledSoundSourceNode[];
-  gain: GainNode;
+  sources: ActiveSoundSource[];
   mixGain: GainNode;
   panner: StereoPannerNode | null;
 };
@@ -1475,6 +1531,13 @@ const MAX_SIMULTANEOUS_SOUND_VOICES_BY_KIND: Partial<
 const AMBIENT_SOUND_VOLUME_BOUNDS: SoundEffectVolumeBounds = {
   min: 0.012,
   max: 0.032,
+};
+
+const DEFAULT_PROCEDURAL_SOUND_ENVELOPE: ProceduralAmplitudeEnvelope = {
+  attackMs: 4,
+  decayMs: 24,
+  sustainLevel: 0.4,
+  releaseMs: 24,
 };
 
 export function createWebAudioSoundEffectSink(
@@ -1544,10 +1607,10 @@ export function createWebAudioSoundEffectSink(
     }
     activeSourceCount = Math.max(0, activeSourceCount - 1);
     for (const source of voice.sources) {
-      source.onended = null;
-      source.disconnect?.();
+      source.source.onended = null;
+      source.source.disconnect?.();
+      source.gain.disconnect?.();
     }
-    voice.gain.disconnect?.();
     voice.mixGain.disconnect?.();
     voice.panner?.disconnect?.();
     if (audioContext) {
@@ -1559,9 +1622,9 @@ export function createWebAudioSoundEffectSink(
     for (const source of voice.sources) {
       try {
         if (typeof stopAt === 'number') {
-          source.stop(stopAt);
+          source.source.stop(stopAt);
         } else {
-          source.stop();
+          source.source.stop();
         }
       } catch {
         // Ignore invalid repeated stop calls from already-ending voices.
@@ -1599,13 +1662,11 @@ export function createWebAudioSoundEffectSink(
         effect.volume
       );
       const startAt = context.currentTime;
-      const durationSeconds = effect.durationMs / 1000;
       const sources = createScheduledSoundSources(
         context,
         effect,
         noiseBufferCache
       );
-      const gain = context.createGain();
       const mixGain = context.createGain();
       const panner =
         typeof context.createStereoPanner === 'function'
@@ -1624,7 +1685,6 @@ export function createWebAudioSoundEffectSink(
         priority,
         loudness,
         sources,
-        gain,
         mixGain,
         panner,
       };
@@ -1655,36 +1715,42 @@ export function createWebAudioSoundEffectSink(
         stopVoice(weakestActiveVoice);
       }
       for (const source of sources) {
-        applySoundEffectSourceShape(source, effect, startAt, durationSeconds);
-      }
-      gain.gain.setValueAtTime(0.0001, startAt);
-      gain.gain.exponentialRampToValueAtTime(
-        normalizedVolume * categoryVolume * spatialMix.gainMultiplier,
-        startAt + durationSeconds * 0.2
-      );
-      gain.gain.exponentialRampToValueAtTime(0.0001, startAt + durationSeconds);
-      for (const source of sources) {
-        source.connect(gain);
+        const durationSeconds = source.effect.durationMs / 1000;
+        applySoundEffectSourceShape(
+          source.source,
+          source.effect,
+          startAt,
+          durationSeconds
+        );
+        applyAmplitudeEnvelope(
+          source.gain,
+          source.effect,
+          normalizeSoundEffectVolume(source.effect.kind, source.effect.volume) *
+            categoryVolume *
+            spatialMix.gainMultiplier,
+          startAt,
+          durationSeconds
+        );
+        source.source.connect(source.gain);
+        source.gain.connect(mixGain);
       }
       if (panner) {
         panner.pan.setValueAtTime(spatialMix.pan, startAt);
-        gain.connect(mixGain);
         mixGain.connect(panner);
         panner.connect(outputGain);
       } else {
-        gain.connect(mixGain);
         mixGain.connect(outputGain);
       }
       activeVoices.add(voice);
       activeSourceCount += 1;
       updateOutputGain(context);
       const finalSource = sources[sources.length - 1];
-      finalSource.onended = () => {
+      finalSource.source.onended = () => {
         removeVoice(voice);
       };
       for (const source of sources) {
-        source.start(startAt);
-        source.stop(startAt + durationSeconds);
+        source.source.start(startAt);
+        source.source.stop(startAt + source.effect.durationMs / 1000);
       }
     },
     stopAll() {
@@ -1703,14 +1769,12 @@ function createScheduledSoundSources(
   context: AudioContext,
   effect: ProceduralSoundEffect,
   noiseBufferCache: Map<string, AudioBuffer>
-): ScheduledSoundSourceNode[] {
-  const sources = [
-    createScheduledSoundSource(context, effect, noiseBufferCache),
-  ];
+): ActiveSoundSource[] {
+  const sources = [createActiveSoundSource(context, effect, noiseBufferCache)];
 
   for (const layer of effect.layers ?? []) {
     sources.push(
-      createScheduledSoundSource(
+      createActiveSoundSource(
         context,
         createLayeredSoundEffect(effect, layer),
         noiseBufferCache
@@ -1719,6 +1783,18 @@ function createScheduledSoundSources(
   }
 
   return sources;
+}
+
+function createActiveSoundSource(
+  context: AudioContext,
+  effect: ProceduralSoundEffect,
+  noiseBufferCache: Map<string, AudioBuffer>
+): ActiveSoundSource {
+  return {
+    source: createScheduledSoundSource(context, effect, noiseBufferCache),
+    gain: context.createGain(),
+    effect,
+  };
 }
 
 function createLayeredSoundEffect(
@@ -1732,6 +1808,8 @@ function createLayeredSoundEffect(
     volume: layer.volume,
     waveform: layer.waveform,
     noiseColor: layer.noiseColor,
+    envelope: layer.envelope ?? effect.envelope,
+    sweeps: layer.sweeps ?? effect.sweeps,
     layers: undefined,
   };
 }
@@ -1760,6 +1838,41 @@ function resolveTotalSoundEffectVolume(effect: ProceduralSoundEffect): number {
     layerVolume += layer.volume;
   }
   return effect.volume + layerVolume;
+}
+
+function applyAmplitudeEnvelope(
+  gainNode: GainNode,
+  effect: ProceduralSoundEffect,
+  peakGain: number,
+  startAt: number,
+  durationSeconds: number
+): void {
+  const minimumGain = 0.0001;
+  const envelope = effect.envelope ?? DEFAULT_PROCEDURAL_SOUND_ENVELOPE;
+  const attackSeconds = Math.max(0, envelope.attackMs / 1000);
+  const decaySeconds = Math.max(0, envelope.decayMs / 1000);
+  const releaseSeconds = Math.max(0, envelope.releaseMs / 1000);
+  const endAt = startAt + durationSeconds;
+  const attackEndAt = Math.min(endAt, startAt + attackSeconds);
+  const decayEndAt = Math.min(endAt, attackEndAt + decaySeconds);
+  const releaseStartAt = Math.max(decayEndAt, endAt - releaseSeconds);
+  const sustainGain = Math.max(minimumGain, peakGain * envelope.sustainLevel);
+
+  gainNode.gain.setValueAtTime(minimumGain, startAt);
+  if (attackEndAt > startAt) {
+    gainNode.gain.exponentialRampToValueAtTime(peakGain, attackEndAt);
+  } else {
+    gainNode.gain.setValueAtTime(peakGain, startAt);
+  }
+  if (decayEndAt > attackEndAt) {
+    gainNode.gain.exponentialRampToValueAtTime(sustainGain, decayEndAt);
+  } else {
+    gainNode.gain.setValueAtTime(sustainGain, attackEndAt);
+  }
+  if (releaseStartAt > decayEndAt) {
+    gainNode.gain.setValueAtTime(sustainGain, releaseStartAt);
+  }
+  gainNode.gain.exponentialRampToValueAtTime(minimumGain, endAt);
 }
 
 function getOrCreateNoiseBuffer(

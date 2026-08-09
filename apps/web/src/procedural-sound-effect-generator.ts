@@ -37,6 +37,7 @@ export type ProceduralSoundEffect = {
   volume: number;
   waveform: SoundWaveform;
   noiseColor?: ProceduralNoiseColor;
+  envelope?: ProceduralAmplitudeEnvelope;
   sweeps?: ProceduralSoundFrequencySweep[];
   layers?: ProceduralSoundEffectLayer[];
   emitter?: SoundPosition;
@@ -52,7 +53,15 @@ export type ProceduralSoundEffectLayer = {
   volume: number;
   waveform: SoundWaveform;
   noiseColor?: ProceduralNoiseColor;
+  envelope?: ProceduralAmplitudeEnvelope;
   sweeps?: ProceduralSoundFrequencySweep[];
+};
+
+export type ProceduralAmplitudeEnvelope = {
+  attackMs: number;
+  decayMs: number;
+  sustainLevel: number;
+  releaseMs: number;
 };
 
 export type ProceduralSoundFrequencySweepCurve = 'linear' | 'exponential';
@@ -81,8 +90,20 @@ export type ProceduralSoundRecipe = {
   maxDurationMs?: number;
   minVolume?: number;
   maxVolume?: number;
+  envelope?: ProceduralAmplitudeEnvelopeRecipe;
   sweeps?: readonly ProceduralSoundFrequencySweepRecipe[];
   layers?: readonly ProceduralSoundLayerRecipe[];
+};
+
+export type ProceduralAmplitudeEnvelopeRecipe = {
+  attackMs: number;
+  decayMs: number;
+  sustainLevel: number;
+  releaseMs: number;
+  attackVariation?: number;
+  decayVariation?: number;
+  sustainVariation?: number;
+  releaseVariation?: number;
 };
 
 export type ProceduralSoundFrequencySweepRecipe = {
@@ -111,6 +132,7 @@ export type ProceduralSoundLayerRecipe = {
   maxDurationMs?: number;
   minVolume?: number;
   maxVolume?: number;
+  envelope?: ProceduralAmplitudeEnvelopeRecipe;
   sweeps?: readonly ProceduralSoundFrequencySweepRecipe[];
 };
 
@@ -180,6 +202,11 @@ export function createProceduralSoundEffectGenerator(): ProceduralSoundEffectGen
         variationDepth,
         random
       );
+      const envelope = resolveAmplitudeEnvelope(
+        recipe.envelope,
+        variationDepth,
+        random
+      );
 
       return {
         kind,
@@ -189,6 +216,7 @@ export function createProceduralSoundEffectGenerator(): ProceduralSoundEffectGen
         volume,
         waveform,
         noiseColor,
+        envelope,
         sweeps,
         layers,
         emitter,
@@ -267,6 +295,11 @@ function resolveEffectLayers(
       volume,
       waveform,
       noiseColor,
+      envelope: resolveAmplitudeEnvelope(
+        layerRecipe.envelope,
+        variationDepth,
+        random
+      ),
       sweeps: resolveFrequencySweeps(
         layerRecipe.sweeps,
         frequency,
@@ -277,6 +310,56 @@ function resolveEffectLayers(
   }
 
   return layers;
+}
+
+function resolveAmplitudeEnvelope(
+  envelopeRecipe: ProceduralAmplitudeEnvelopeRecipe | undefined,
+  variationDepth: number,
+  random: () => number
+): ProceduralAmplitudeEnvelope | undefined {
+  if (!envelopeRecipe) {
+    return undefined;
+  }
+
+  return {
+    attackMs: Math.max(
+      0,
+      varyScalar(
+        envelopeRecipe.attackMs,
+        envelopeRecipe.attackVariation ?? 0,
+        variationDepth,
+        random
+      )
+    ),
+    decayMs: Math.max(
+      0,
+      varyScalar(
+        envelopeRecipe.decayMs,
+        envelopeRecipe.decayVariation ?? 0,
+        variationDepth,
+        random
+      )
+    ),
+    sustainLevel: clampValue(
+      varyScalar(
+        envelopeRecipe.sustainLevel,
+        envelopeRecipe.sustainVariation ?? 0,
+        variationDepth,
+        random
+      ),
+      0,
+      1
+    ),
+    releaseMs: Math.max(
+      0,
+      varyScalar(
+        envelopeRecipe.releaseMs,
+        envelopeRecipe.releaseVariation ?? 0,
+        variationDepth,
+        random
+      )
+    ),
+  };
 }
 
 function resolveFrequencySweeps(

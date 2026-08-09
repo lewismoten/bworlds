@@ -179,4 +179,33 @@ describe('procedural sound effect generator', () => {
       },
     ]);
   });
+
+  it('preserves resolved amplitude envelopes on generated sounds', () => {
+    const generator = createProceduralSoundEffectGenerator();
+    const effect = generator.generate({
+      kind: 'jump',
+      nowMs: 1200,
+      seed: 8,
+      recipe: {
+        id: 'jump-envelope',
+        baseFrequency: 220,
+        baseDurationMs: 140,
+        baseVolume: 0.05,
+        waveform: 'triangle',
+        envelope: {
+          attackMs: 8,
+          decayMs: 36,
+          sustainLevel: 0.52,
+          releaseMs: 28,
+        },
+      },
+    });
+
+    expect(effect.envelope).toEqual({
+      attackMs: 8,
+      decayMs: 36,
+      sustainLevel: 0.52,
+      releaseMs: 28,
+    });
+  });
 });
