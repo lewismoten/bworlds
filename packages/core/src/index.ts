@@ -18,6 +18,8 @@ export {
   registerHashLabel,
 } from './hash.ts';
 
+export { createRandom } from './prng.ts';
+
 export const CHUNK_SIZE = 32;
 export const EARTH_CIRCUMFERENCE_METERS = 40075017;
 export const TILE_METERS = 250;
