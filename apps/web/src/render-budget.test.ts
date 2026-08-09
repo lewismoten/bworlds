@@ -31,6 +31,7 @@ describe('render budget', () => {
 
     expect(state.visibilityRadius).toBe(DEFAULT_VISIBILITY_RADIUS);
     expect(state.targetFps).toBe(60);
+    expect(state.drawCalls).toBe(0);
     expect(state.currentFrameMs).toBeCloseTo(16.67, 2);
     expect(state.averageFps).toBeCloseTo(60, 0);
     expect(state.worstRecentFrameMs).toBeCloseTo(16.67, 2);
@@ -70,6 +71,7 @@ describe('render budget', () => {
       averageFps: 1000 / 36,
       worstRecentFrameMs: 38,
       severeFrameStreak: 12,
+      drawCalls: 0,
       weatherVisibility: 1,
       weatherVisibilityRadiusCap: DEFAULT_VISIBILITY_RADIUS,
     };
@@ -123,10 +125,12 @@ describe('render budget', () => {
         deltaMs: 27,
         active3d: true,
         weatherVisibility: 0.8,
+        drawCalls: 912,
       })
     ).toBe(state);
     expect(state.recentFrameMs).toBe(recentFrameMs);
     expect(state.currentFrameMs).toBe(27);
+    expect(state.drawCalls).toBe(912);
     expect(state.weatherVisibility).toBe(0.8);
 
     for (let index = 0; index < 80; index += 1) {
@@ -258,6 +262,10 @@ describe('render budget', () => {
         soft: 8,
         hard: 4,
       },
+      drawCalls: {
+        soft: 900,
+        hard: 1200,
+      },
     });
 
     expect(getRenderBudgetCaps({ targetFps: 30 })).toMatchObject({
@@ -330,6 +338,7 @@ describe('render budget', () => {
         weatherVisibilityRadiusCap: DEFAULT_VISIBILITY_RADIUS,
         targetFps: 60,
         severeFrameStreak: 0,
+        drawCalls: 0,
       })
     ).toEqual(['None']);
 
@@ -340,6 +349,7 @@ describe('render budget', () => {
         weatherVisibilityRadiusCap: DEFAULT_VISIBILITY_RADIUS,
         targetFps: 30,
         severeFrameStreak: 0,
+        drawCalls: 0,
       })
     ).toEqual([
       'Target FPS reduced to 30',
@@ -354,6 +364,7 @@ describe('render budget', () => {
         weatherVisibilityRadiusCap: DEFAULT_VISIBILITY_RADIUS,
         targetFps: 30,
         severeFrameStreak: 10,
+        drawCalls: 0,
       })
     ).toEqual([
       'Target FPS reduced to 30',
@@ -369,10 +380,62 @@ describe('render budget', () => {
         weatherVisibilityRadiusCap: 12.5,
         targetFps: 60,
         severeFrameStreak: 0,
+        drawCalls: 0,
       })
     ).toEqual([
       'Visibility radius reduced to 12.5',
       'Weather visibility reduced draw distance',
+    ]);
+  });
+
+  it('reduces draw distance when scene draw calls exceed the soft and hard caps', () => {
+    let state = DEFAULT_RENDER_BUDGET_STATE;
+
+    state = advanceRenderBudgetState(state, {
+      deltaMs: 16.67,
+      active3d: true,
+      weatherVisibility: 1,
+      drawCalls: 950,
+    });
+    expect(state.visibilityRadius).toBe(REDUCED_VISIBILITY_RADIUS);
+    expect(getRenderQualityLevel(state)).toBe('reduced');
+
+    state = advanceRenderBudgetState(state, {
+      deltaMs: 16.67,
+      active3d: true,
+      weatherVisibility: 1,
+      drawCalls: 1300,
+    });
+    expect(state.visibilityRadius).toBe(MIN_VISIBILITY_RADIUS);
+  });
+
+  it('reports scene draw-call pressure in the active limiter list', () => {
+    expect(
+      getRenderQualityLimiters({
+        smoothedFrameMs: 16.67,
+        visibilityRadius: REDUCED_VISIBILITY_RADIUS,
+        weatherVisibilityRadiusCap: DEFAULT_VISIBILITY_RADIUS,
+        targetFps: 60,
+        severeFrameStreak: 0,
+        drawCalls: 950,
+      })
+    ).toEqual([
+      `Visibility radius reduced to ${REDUCED_VISIBILITY_RADIUS}`,
+      'Scene draw calls exceeded the soft cap',
+    ]);
+
+    expect(
+      getRenderQualityLimiters({
+        smoothedFrameMs: 16.67,
+        visibilityRadius: MIN_VISIBILITY_RADIUS,
+        weatherVisibilityRadiusCap: DEFAULT_VISIBILITY_RADIUS,
+        targetFps: 60,
+        severeFrameStreak: 0,
+        drawCalls: 1300,
+      })
+    ).toEqual([
+      `Visibility radius reduced to ${MIN_VISIBILITY_RADIUS}`,
+      'Scene draw calls exceeded the hard cap',
     ]);
   });
 

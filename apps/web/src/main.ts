@@ -1188,6 +1188,7 @@ let latestEnvironment: WorldEnvironmentLike = getCurrentEnvironment();
 const keys = new Set<string>();
 const runLoopFrame = createFrameLoopRunner({
   renderBudgetState,
+  getDrawCalls: () => renderer3d.getDrawCalls(),
   getWeatherVisibility: () => latestEnvironment.weather?.current?.visibility,
   is3dViewActive: () => state.viewMode === '3d',
   isTimeFrozen: () => timeState.frozen,

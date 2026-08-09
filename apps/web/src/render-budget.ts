@@ -9,6 +9,7 @@ export type RenderBudgetState = {
   currentFrameMs: number;
   smoothedFrameMs: number;
   recentFrameMs: number[];
+  drawCalls: number;
   visibilityRadius: number;
   weatherVisibility: number;
   weatherVisibilityRadiusCap: number;
@@ -45,6 +46,10 @@ export type RenderBudgetCaps = {
     soft: number;
     hard: number;
   };
+  drawCalls: {
+    soft: number;
+    hard: number;
+  };
 };
 
 export type RenderQualityLevel = 'full' | 'reduced' | 'minimal';
@@ -57,6 +62,7 @@ export const DEFAULT_RENDER_BUDGET_STATE: RenderBudgetState = {
   currentFrameMs: 16.67,
   smoothedFrameMs: 16.67,
   recentFrameMs: [16.67],
+  drawCalls: 0,
   visibilityRadius: DEFAULT_VISIBILITY_RADIUS,
   weatherVisibility: 1,
   weatherVisibilityRadiusCap: DEFAULT_VISIBILITY_RADIUS,
@@ -74,12 +80,15 @@ const RECOVERED_FPS_FRAME_MS = 1000 / 54;
 const SEVERE_FPS_FRAME_MS = 1000 / 24;
 const SEVERE_FRAME_STREAK_THRESHOLD = 10;
 const SEVERE_FRAME_STREAK_RECOVERY_STEP = 2;
+const SOFT_DRAW_CALL_LIMIT = 900;
+const HARD_DRAW_CALL_LIMIT = 1200;
 
 function resetRenderBudgetStateInPlace(state: RenderBudgetState): RenderBudgetState {
   state.currentFrameMs = 16.67;
   state.smoothedFrameMs = 16.67;
   state.recentFrameMs.length = 1;
   state.recentFrameMs[0] = 16.67;
+  state.drawCalls = 0;
   state.visibilityRadius = DEFAULT_VISIBILITY_RADIUS;
   state.weatherVisibility = 1;
   state.weatherVisibilityRadiusCap = DEFAULT_VISIBILITY_RADIUS;
@@ -110,10 +119,12 @@ export function updateRenderBudgetStateInPlace(
     deltaMs,
     active3d,
     weatherVisibility,
+    drawCalls,
   }: {
     deltaMs: number;
     active3d: boolean;
     weatherVisibility?: number;
+    drawCalls?: number;
   }
 ): RenderBudgetState {
   if (!active3d) {
@@ -145,6 +156,7 @@ export function updateRenderBudgetStateInPlace(
     0,
     1
   );
+  const normalizedDrawCalls = Math.max(0, Math.floor(drawCalls ?? state.drawCalls));
   const weatherVisibilityRadiusCap = getWeatherVisibilityRadiusCap(
     normalizedWeatherVisibility
   );
@@ -163,8 +175,15 @@ export function updateRenderBudgetStateInPlace(
     visibilityRadius = state.visibilityRadius;
   }
 
+  if (normalizedDrawCalls >= HARD_DRAW_CALL_LIMIT) {
+    visibilityRadius = Math.min(visibilityRadius, MIN_VISIBILITY_RADIUS);
+  } else if (normalizedDrawCalls >= SOFT_DRAW_CALL_LIMIT) {
+    visibilityRadius = Math.min(visibilityRadius, REDUCED_VISIBILITY_RADIUS);
+  }
+
   state.currentFrameMs = clampedDeltaMs;
   state.smoothedFrameMs = smoothedFrameMs;
+  state.drawCalls = normalizedDrawCalls;
   state.visibilityRadius = Math.min(visibilityRadius, weatherVisibilityRadiusCap);
   state.weatherVisibility = normalizedWeatherVisibility;
   state.weatherVisibilityRadiusCap = weatherVisibilityRadiusCap;
@@ -181,10 +200,12 @@ export function advanceRenderBudgetState(
     deltaMs,
     active3d,
     weatherVisibility,
+    drawCalls,
   }: {
     deltaMs: number;
     active3d: boolean;
     weatherVisibility?: number;
+    drawCalls?: number;
   }
 ): RenderBudgetState {
   return updateRenderBudgetStateInPlace(
@@ -196,6 +217,7 @@ export function advanceRenderBudgetState(
       deltaMs,
       active3d,
       weatherVisibility,
+      drawCalls,
     }
   );
 }
@@ -252,6 +274,10 @@ export function getRenderBudgetCaps(
           soft: 8,
           hard: 4,
         },
+    drawCalls: {
+      soft: SOFT_DRAW_CALL_LIMIT,
+      hard: HARD_DRAW_CALL_LIMIT,
+    },
   };
 }
 
@@ -311,6 +337,7 @@ export function getRenderQualityLimiters(
     | 'weatherVisibilityRadiusCap'
     | 'targetFps'
     | 'severeFrameStreak'
+    | 'drawCalls'
   >
 ): string[] {
   const limiters: string[] = [];
@@ -328,6 +355,11 @@ export function getRenderQualityLimiters(
   }
   if (state.severeFrameStreak >= SEVERE_FRAME_STREAK_THRESHOLD) {
     limiters.push('Optional effects minimized after sustained frame stalls');
+  }
+  if (state.drawCalls >= HARD_DRAW_CALL_LIMIT) {
+    limiters.push('Scene draw calls exceeded the hard cap');
+  } else if (state.drawCalls >= SOFT_DRAW_CALL_LIMIT) {
+    limiters.push('Scene draw calls exceeded the soft cap');
   }
   if (state.smoothedFrameMs >= CRITICAL_FPS_FRAME_MS) {
     limiters.push('Critical frame pressure');

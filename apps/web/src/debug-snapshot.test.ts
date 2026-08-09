@@ -81,6 +81,10 @@ describe('debug snapshot', () => {
             soft: 4,
             hard: 2,
           },
+          drawCalls: {
+            soft: 900,
+            hard: 1200,
+          },
         },
       },
       lod: {
@@ -340,6 +344,10 @@ describe('debug snapshot', () => {
         pendingBuildTiles: {
           soft: 4,
           hard: 2,
+        },
+        drawCalls: {
+          soft: 900,
+          hard: 1200,
         },
       },
     });

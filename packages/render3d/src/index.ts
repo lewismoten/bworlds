@@ -291,6 +291,7 @@ type Render3DController = {
     textureCount: number;
     programCount: number;
   };
+  getDrawCalls(): number;
   render(state: Render3DState, options?: Render3DOptions): void;
   resize(width: number, height: number, pixelRatio?: number): void;
 };
@@ -2075,6 +2076,10 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     };
   }
 
+  function getDrawCalls(): number {
+    return renderer.info.render.calls;
+  }
+
   function syncTileModelDetailLevels(
     state: Render3DState,
     registry: ReturnType<typeof getActivePluginRegistry>,
@@ -2810,6 +2815,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
 
   return {
     canOccupy,
+    getDrawCalls,
     getStats,
     render,
     resize,

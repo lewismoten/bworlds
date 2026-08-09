@@ -14,6 +14,7 @@ describe('frame loop runner', () => {
     const keys = new Set<string>(['w']);
     const runFrame = createFrameLoopRunner({
       renderBudgetState,
+      getDrawCalls: () => 456,
       getWeatherVisibility: () => 0.7,
       is3dViewActive: () => true,
       isTimeFrozen: () => false,
@@ -27,6 +28,7 @@ describe('frame loop runner', () => {
     expect(updateMovement).toHaveBeenCalledWith(27);
     expect(render).toHaveBeenCalledTimes(1);
     expect(renderBudgetState.currentFrameMs).toBe(27);
+    expect(renderBudgetState.drawCalls).toBe(456);
     expect(renderBudgetState.weatherVisibility).toBe(0.7);
     expect(renderBudgetState.smoothedFrameMs).toBeGreaterThan(
       DEFAULT_RENDER_BUDGET_STATE.smoothedFrameMs
@@ -42,6 +44,7 @@ describe('frame loop runner', () => {
     const render = vi.fn(() => undefined);
     const runFrame = createFrameLoopRunner({
       renderBudgetState,
+      getDrawCalls: () => 0,
       getWeatherVisibility: () => 1,
       is3dViewActive: () => false,
       isTimeFrozen: () => true,

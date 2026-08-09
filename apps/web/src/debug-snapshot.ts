@@ -97,6 +97,10 @@ type DebugSnapshotExportOptions = {
         soft: number;
         hard: number;
       };
+      drawCalls: {
+        soft: number;
+        hard: number;
+      };
     };
   };
   lod: {
