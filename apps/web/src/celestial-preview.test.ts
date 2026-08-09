@@ -5,6 +5,7 @@ import {
   getCelestialPreviewFrameSignature,
   getCelestialPreviewSceneSignatures,
   getPreviewConstellationRenderState,
+  getPreviewEventRenderState,
   getPreviewAuroraBandPath,
   getPreviewBodyPosition,
   getPreviewFacingArrowState,
@@ -231,6 +232,70 @@ describe('celestial preview helpers', () => {
     expect(shiftedState.stars[0]?.position.z).not.toBeCloseTo(
       baseState.stars[0]?.position.z ?? 0,
       6
+    );
+  });
+
+  it('derives preview event marker and line states for comet and meteor layers', () => {
+    const cycle = {
+      ...getDaylightCycleState(120000, {
+        observerLatitudeDegrees: 24,
+      }),
+      visibleEvents: [
+        {
+          type: 'meteor-shower' as const,
+          name: 'Burst',
+          progress: 0.2,
+          intensity: 0.8,
+          visibility: 0.9,
+          azimuth: -0.5,
+          altitude: 0.3,
+          color: '#dff4ff',
+          size: 0.3,
+          trailLength: 2.4,
+        },
+        {
+          type: 'comet' as const,
+          name: 'Guest',
+          progress: 0.5,
+          intensity: 0.7,
+          visibility: 0.85,
+          azimuth: 1.1,
+          altitude: 0.22,
+          color: '#dff6ff',
+          size: 0.48,
+          trailLength: 2.8,
+        },
+      ],
+    };
+
+    const state = getPreviewEventRenderState(cycle);
+
+    expect(state.markers).toHaveLength(2);
+    expect(state.lines.length).toBeGreaterThanOrEqual(5);
+    expect(state.markers[0]).toEqual(
+      expect.objectContaining({
+        color: '#dff4ff',
+        scale: expect.any(Number),
+        opacity: expect.any(Number),
+        visible: true,
+      })
+    );
+    expect(state.lines[0]).toEqual(
+      expect.objectContaining({
+        start: expect.objectContaining({
+          x: expect.any(Number),
+          y: expect.any(Number),
+          z: expect.any(Number),
+        }),
+        end: expect.objectContaining({
+          x: expect.any(Number),
+          y: expect.any(Number),
+          z: expect.any(Number),
+        }),
+        color: expect.any(String),
+        opacity: expect.any(Number),
+        visible: expect.any(Boolean),
+      })
     );
   });
 

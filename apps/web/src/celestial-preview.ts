@@ -98,6 +98,24 @@ type PreviewConstellationRenderState = {
   lines: PreviewConstellationLineState[];
   stars: PreviewConstellationStarState[];
 };
+type PreviewEventMarkerState = {
+  position: PreviewPoint3D;
+  scale: number;
+  color: string;
+  opacity: number;
+  visible: boolean;
+};
+type PreviewEventLineState = {
+  start: PreviewPoint3D;
+  end: PreviewPoint3D;
+  color: string;
+  opacity: number;
+  visible: boolean;
+};
+type PreviewEventRenderState = {
+  markers: PreviewEventMarkerState[];
+  lines: PreviewEventLineState[];
+};
 type PreviewLightRigState = {
   sun: PreviewPoint3D;
   moon: PreviewPoint3D;
@@ -1155,7 +1173,87 @@ function normalizeVector(vector: PreviewPoint3D): PreviewPoint3D {
 }
 
 function syncPreviewEvents(root: THREE.Group, cycle: DaylightCycleLike): void {
-  root.clear();
+  const state = getPreviewEventRenderState(cycle);
+  const rootState = root.userData as {
+    markerPool?: THREE.Mesh[];
+    linePool?: THREE.Line[];
+  };
+  const markerPool = rootState.markerPool ?? (rootState.markerPool = []);
+  const linePool = rootState.linePool ?? (rootState.linePool = []);
+
+  while (markerPool.length < state.markers.length) {
+    const mesh = new THREE.Mesh(
+      new THREE.SphereGeometry(1, 12, 12),
+      new THREE.MeshBasicMaterial(
+        compactThreeMaterialOptions({
+          color: '#dff4ff',
+          transparent: true,
+          opacity: 0,
+        })
+      )
+    );
+    mesh.visible = false;
+    markerPool.push(mesh);
+    root.add(mesh);
+  }
+
+  while (linePool.length < state.lines.length) {
+    const line = new THREE.Line(
+      new THREE.BufferGeometry().setAttribute(
+        'position',
+        new THREE.Float32BufferAttribute(6, 3)
+      ),
+      new THREE.LineBasicMaterial({
+        color: '#dff4ff',
+        transparent: true,
+        opacity: 0,
+      })
+    );
+    line.visible = false;
+    linePool.push(line);
+    root.add(line);
+  }
+
+  markerPool.forEach((mesh, index) => {
+    const markerState = state.markers[index];
+    if (!markerState) {
+      mesh.visible = false;
+      return;
+    }
+    mesh.position.set(
+      markerState.position.x,
+      markerState.position.y,
+      markerState.position.z
+    );
+    mesh.scale.setScalar(markerState.scale);
+    const material = mesh.material as THREE.MeshBasicMaterial;
+    material.color.set(markerState.color);
+    material.opacity = markerState.opacity;
+    mesh.visible = markerState.visible;
+  });
+
+  linePool.forEach((line, index) => {
+    const lineState = state.lines[index];
+    if (!lineState) {
+      line.visible = false;
+      return;
+    }
+    const positions = line.geometry.getAttribute('position') as THREE.BufferAttribute;
+    positions.setXYZ(0, lineState.start.x, lineState.start.y, lineState.start.z);
+    positions.setXYZ(1, lineState.end.x, lineState.end.y, lineState.end.z);
+    positions.needsUpdate = true;
+    const material = line.material as THREE.LineBasicMaterial;
+    material.color.set(lineState.color);
+    material.opacity = lineState.opacity;
+    line.visible = lineState.visible;
+  });
+}
+
+export function getPreviewEventRenderState(
+  cycle: DaylightCycleLike
+): PreviewEventRenderState {
+  const markers: PreviewEventMarkerState[] = [];
+  const lines: PreviewEventLineState[] = [];
   const events = cycle.visibleEvents ?? [];
   events.forEach((event, index) => {
     const point = createPreviewAltitudePoint(
@@ -1163,89 +1261,75 @@ function syncPreviewEvents(root: THREE.Group, cycle: DaylightCycleLike): void {
       event.altitude,
       10.4 - Math.min(1, index * 0.06)
     );
-
-    const mesh = new THREE.Mesh(
-      new THREE.SphereGeometry(Math.max(0.16, event.size * 0.45), 12, 12),
-      new THREE.MeshBasicMaterial(compactThreeMaterialOptions({
-        color: resolveThreeColor(event.color, '#dff4ff'),
-        transparent: true,
-        opacity: (0.34 + event.intensity * 0.38) * event.visibility,
-      }))
-    );
-    mesh.position.copy(point);
-    mesh.visible = (mesh.material as THREE.MeshBasicMaterial).opacity > 0.015;
-    root.add(mesh);
+    const color = resolveThreeColor(event.color, '#dff4ff');
+    const markerOpacity = (0.34 + event.intensity * 0.38) * event.visibility;
+    markers.push({
+      position: point,
+      scale: Math.max(0.16, event.size * 0.45),
+      color,
+      opacity: markerOpacity,
+      visible: markerOpacity > 0.015,
+    });
 
     if (event.type === 'comet') {
-      const tail = new THREE.Line(
-        new THREE.BufferGeometry().setFromPoints([
-          point.clone().add(
-            new THREE.Vector3(-event.trailLength * 0.42, -0.08, 0)
-          ),
-          point,
-        ]),
-        new THREE.LineBasicMaterial({
-          color: resolveThreeColor(event.color, '#dff4ff'),
-          transparent: true,
-          opacity: (0.2 + event.intensity * 0.24) * event.visibility,
-        })
-      );
-      tail.visible = (tail.material as THREE.LineBasicMaterial).opacity > 0.015;
-      root.add(tail);
+      const tailOpacity = (0.2 + event.intensity * 0.24) * event.visibility;
+      lines.push({
+        start: {
+          x: point.x - event.trailLength * 0.42,
+          y: point.y - 0.08,
+          z: point.z,
+        },
+        end: point,
+        color,
+        opacity: tailOpacity,
+        visible: tailOpacity > 0.015,
+      });
     }
 
     if (event.type === 'meteor-shower') {
       const streakCount = Math.max(3, Math.round(3 + event.intensity * 4));
       for (let streakIndex = 0; streakIndex < streakCount; streakIndex += 1) {
-        const streak = new THREE.Line(
-          new THREE.BufferGeometry().setFromPoints([
-            point.clone().add(
-              new THREE.Vector3(
-                event.trailLength * (0.12 + streakIndex * 0.03),
-                0.14 + (streakIndex % 3) * 0.05,
-                -0.14 + ((streakIndex % 5) - 2) * 0.06
-              )
-            ),
-            point.clone().add(
-              new THREE.Vector3(
-                -event.trailLength * (0.28 + streakIndex * 0.025),
-                -0.22 - streakIndex * 0.06,
-                0.1 + ((streakIndex % 4) - 1.5) * 0.04
-              )
-            ),
-          ]),
-          new THREE.LineBasicMaterial({
-            color: resolveThreeColor(event.color, '#dff4ff'),
-            transparent: true,
-            opacity:
-              (0.14 + event.intensity * 0.18) *
-              event.visibility *
-              (1 - streakIndex / Math.max(1, streakCount + 1)),
-          })
-        );
-        streak.visible = (streak.material as THREE.LineBasicMaterial).opacity > 0.015;
-        root.add(streak);
+        const opacity =
+          (0.14 + event.intensity * 0.18) *
+          event.visibility *
+          (1 - streakIndex / Math.max(1, streakCount + 1));
+        lines.push({
+          start: {
+            x: point.x + event.trailLength * (0.12 + streakIndex * 0.03),
+            y: point.y + 0.14 + (streakIndex % 3) * 0.05,
+            z: point.z - 0.14 + ((streakIndex % 5) - 2) * 0.06,
+          },
+          end: {
+            x: point.x - event.trailLength * (0.28 + streakIndex * 0.025),
+            y: point.y - 0.22 - streakIndex * 0.06,
+            z: point.z + 0.1 + ((streakIndex % 4) - 1.5) * 0.04,
+          },
+          color,
+          opacity,
+          visible: opacity > 0.015,
+        });
       }
 
-      const streak = new THREE.Line(
-        new THREE.BufferGeometry().setFromPoints([
-          point.clone().add(
-            new THREE.Vector3(event.trailLength * 0.2, 0.12, -0.08)
-          ),
-          point.clone().add(
-            new THREE.Vector3(-event.trailLength * 0.22, -0.2, 0.08)
-          ),
-        ]),
-        new THREE.LineBasicMaterial({
-          color: resolveThreeColor(event.color, '#dff4ff'),
-          transparent: true,
-          opacity: (0.18 + event.intensity * 0.24) * event.visibility,
-        })
-      );
-      streak.visible = (streak.material as THREE.LineBasicMaterial).opacity > 0.015;
-      root.add(streak);
+      const opacity = (0.18 + event.intensity * 0.24) * event.visibility;
+      lines.push({
+        start: {
+          x: point.x + event.trailLength * 0.2,
+          y: point.y + 0.12,
+          z: point.z - 0.08,
+        },
+        end: {
+          x: point.x - event.trailLength * 0.22,
+          y: point.y - 0.2,
+          z: point.z + 0.08,
+        },
+        color,
+        opacity,
+        visible: opacity > 0.015,
+      });
     }
   });
+
+  return { markers, lines };
 }
 
 function syncMilkyWayBelt(root: THREE.Group, cycle: DaylightCycleLike): void {
