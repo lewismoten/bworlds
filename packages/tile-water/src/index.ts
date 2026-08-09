@@ -1,3 +1,4 @@
+import { getOrCreateWeakMapValue } from '@bworlds/cache-support';
 import {
   appendHashSeedLabel,
   appendHashSeedPart,
@@ -682,9 +683,10 @@ function createRiverGroup(
 }
 
 function getRiverSharedMaterials(three: ThreeHostLike) {
-  let cached = riverMaterialCache.get(three as object);
-  if (!cached) {
-    cached = {
+  return getOrCreateWeakMapValue(
+    riverMaterialCache,
+    three as object,
+    () => ({
       riverMaterial: new three.MeshStandardMaterial({
         color: '#3bb8f5',
         roughness: 0.24,
@@ -701,10 +703,8 @@ function getRiverSharedMaterials(three: ThreeHostLike) {
         opacity: 0.68,
         side: three.DoubleSide,
       }),
-    };
-    riverMaterialCache.set(three as object, cached);
-  }
-  return cached;
+    })
+  );
 }
 
 function getRiverConnections(

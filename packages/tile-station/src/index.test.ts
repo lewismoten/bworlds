@@ -107,22 +107,31 @@ describe('tile station', () => {
   it('reuses shared station materials across repeated model builds', () => {
     const plugin = createStationTilePlugin();
     const tile = plugin.tiles?.find((entry) => entry.kind === 'station');
+    const sharedHost = { ...fakeThree };
     const first = tile?.create3DModel?.({
-      three: fakeThree as never,
+      three: sharedHost as never,
       state: {} as never,
       tile: { kind: 'station' } as never,
       tileX: 4,
       tileY: 5,
     }) as FakeNode | undefined;
     const second = tile?.create3DModel?.({
-      three: fakeThree as never,
+      three: sharedHost as never,
       state: {} as never,
       tile: { kind: 'station' } as never,
       tileX: 8,
       tileY: 9,
     }) as FakeNode | undefined;
+    const otherHost = tile?.create3DModel?.({
+      three: { ...fakeThree } as never,
+      state: {} as never,
+      tile: { kind: 'station' } as never,
+      tileX: 12,
+      tileY: 13,
+    }) as FakeNode | undefined;
 
     expect(countSharedMaterialReferences(first, second)).toBeGreaterThanOrEqual(4);
+    expect(countSharedMaterialReferences(first, otherHost)).toBe(0);
   });
 });
 

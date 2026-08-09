@@ -106,27 +106,37 @@ describe('tile water', () => {
     const plugin = createWaterTilePlugin();
     const riverTile = plugin.tiles?.find((tile) => tile.kind === 'river');
     const state = createRiverState();
+    const sharedHost = createFakeThree();
     const first = riverTile?.create3DModel?.({
       tile: { kind: 'river' } as never,
-      three: createFakeThree() as never,
+      three: sharedHost as never,
       state: state as never,
       tileX: 0,
       tileY: 0,
     }) as FakeGroup | undefined;
     const second = riverTile?.create3DModel?.({
       tile: { kind: 'river' } as never,
-      three: createFakeThree() as never,
+      three: sharedHost as never,
       state: state as never,
       tileX: 1,
+      tileY: 0,
+    }) as FakeGroup | undefined;
+    const otherHost = riverTile?.create3DModel?.({
+      tile: { kind: 'river' } as never,
+      three: createFakeThree() as never,
+      state: state as never,
+      tileX: 2,
       tileY: 0,
     }) as FakeGroup | undefined;
 
     const firstMaterials = collectMeshMaterials(first);
     const secondMaterials = collectMeshMaterials(second);
+    const otherHostMaterials = collectMeshMaterials(otherHost);
 
     expect(firstMaterials.size).toBeLessThanOrEqual(2);
     expect(secondMaterials.size).toBeLessThanOrEqual(2);
     expect([...firstMaterials]).toEqual(expect.arrayContaining([...secondMaterials]));
+    expect([...firstMaterials].some((material) => otherHostMaterials.has(material))).toBe(false);
   });
 
   it('produces animated ocean overlays only when time is available', () => {

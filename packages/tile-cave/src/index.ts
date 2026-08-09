@@ -1,3 +1,4 @@
+import { getOrCreateWeakMapValue } from '@bworlds/cache-support';
 import { hash2D, registerHashLabel } from '@bworlds/core/hash';
 import { createPlainsBackedTilePainter } from '@bworlds/paint-support';
 import {
@@ -641,9 +642,10 @@ function createCaveMushroomGroup(
 }
 
 function getCaveSharedMaterials(three: Create3DModelContext['three']) {
-  let cached = caveMaterialCache.get(three as object);
-  if (!cached) {
-    cached = {
+  return getOrCreateWeakMapValue(
+    caveMaterialCache,
+    three as object,
+    () => ({
       mouthVoidMaterial: createBasicMaterial(three, {
         color: '#010308',
         side: three.DoubleSide,
@@ -679,10 +681,8 @@ function getCaveSharedMaterials(three: Create3DModelContext['three']) {
         roughness: 0.88,
         metalness: 0.01,
       }),
-    };
-    caveMaterialCache.set(three as object, cached);
-  }
-  return cached;
+    })
+  );
 }
 
 function createLowDetailCaveModel(
