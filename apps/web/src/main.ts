@@ -41,6 +41,11 @@ import {
   getMoonOrbitProgress,
   stabilizeDisplayedDaylightAnchors,
 } from './timekeeper.ts';
+import {
+  describeActiveCelestialEvents,
+  getActiveCelestialEventDetails,
+  summarizeCelestialEvents,
+} from './celestial-event-summary.ts';
 import { createCelestialPreviewRenderer } from './celestial-preview.ts';
 import { createSolarSystemPreviewRenderer } from './solar-system-preview.ts';
 import {
@@ -1235,7 +1240,9 @@ function updateStatus(
   const weatherLabel = formatWeatherSummary(environment);
   const forecastLabel = formatForecastSummary(environment);
   const eventModeLabel = formatCelestialEventModeLabel(celestialEventModeState.mode);
-  const eventsLabel = describeActiveCelestialEvents(cycle);
+  const eventsLabel = describeActiveCelestialEvents(
+    summarizeCelestialEvents(cycle)
+  );
   const sunriseLabel = cardinalFromAngle(cycle.sunriseAzimuth);
   const tileLabel = definition?.name ?? tile.kind;
   const playerLevel = normalizePlayerLevel(state.playerLevel);
@@ -3041,9 +3048,10 @@ function render(): FrameLoopActivityLike {
   const sextantInspectorVisible = isInspectorSectionVisible(activeInspectorTab, 'sextant');
   const debugInspectorVisible = isInspectorSectionVisible(activeInspectorTab, 'debug');
   if (eventSummary && eventsInspectorVisible) {
-    const eventDetails = getActiveCelestialEventDetails(displayCycle);
+    const eventSummaryState = summarizeCelestialEvents(displayCycle);
+    const eventDetails = getActiveCelestialEventDetails(eventSummaryState);
     const modeLabel = formatCelestialEventModeLabel(celestialEventModeState.mode);
-    const activeEventsLabel = describeActiveCelestialEvents(displayCycle);
+    const activeEventsLabel = describeActiveCelestialEvents(eventSummaryState);
     const eventSummarySignature = getEventSummarySignature({
       modeLabel,
       activeEventsLabel,
@@ -3240,102 +3248,6 @@ function formatCelestialEventModeLabel(mode: CelestialEventMode): string {
     return 'Eclipse';
   }
   return 'Auto';
-}
-
-function describeActiveCelestialEvents(
-  cycle: ReturnType<typeof getDaylightCycleState> & {
-    auroraBands?: Array<{ intensity: number }>;
-    visibleEvents?: Array<{ type?: string; visibility?: number }>;
-    solarEclipse?: { active?: boolean; coverage?: number };
-  }
-) {
-  const activeEvents: string[] = [];
-  if ((cycle.auroraBands ?? []).some((band) => band.intensity > 0.03)) {
-    activeEvents.push('Aurora active');
-  }
-  if (
-    (cycle.visibleEvents ?? []).some(
-      (event) =>
-        event.type === 'meteor-shower' && (event.visibility ?? 0) > 0.03
-    )
-  ) {
-    activeEvents.push('Meteor shower visible');
-  }
-  if (
-    (cycle.solarEclipse?.active ?? false) &&
-    (cycle.solarEclipse?.coverage ?? 0) > 0.03
-  ) {
-    activeEvents.push('Solar eclipse active');
-  }
-  if (
-    (cycle.visibleEvents ?? []).some(
-      (event) => event.type === 'comet' && (event.visibility ?? 0) > 0.03
-    )
-  ) {
-    activeEvents.push('Comet visible');
-  }
-  return activeEvents.length > 0 ? activeEvents.join(' • ') : 'No active events';
-}
-
-function getActiveCelestialEventDetails(
-  cycle: ReturnType<typeof getDaylightCycleState> & {
-    auroraBands?: Array<{ intensity: number }>;
-    visibleEvents?: Array<{ type?: string; visibility?: number }>;
-    solarEclipse?: { active?: boolean; coverage?: number };
-  }
-) {
-  const details: Array<{
-    kind: 'aurora' | 'meteor-shower' | 'comet' | 'eclipse' | 'none';
-    label: string;
-  }> = [];
-
-  const auroraCount = (cycle.auroraBands ?? []).filter(
-    (band) => band.intensity > 0.03
-  ).length;
-  const meteorCount = (cycle.visibleEvents ?? []).filter(
-    (event) =>
-      event.type === 'meteor-shower' && (event.visibility ?? 0) > 0.03
-  ).length;
-  const cometCount = (cycle.visibleEvents ?? []).filter(
-    (event) => event.type === 'comet' && (event.visibility ?? 0) > 0.03
-  ).length;
-  const eclipseCoverage = cycle.solarEclipse?.active
-    ? cycle.solarEclipse.coverage ?? 0
-    : 0;
-
-  if (auroraCount > 0) {
-    details.push({
-      kind: 'aurora',
-      label: `${auroraCount} aurora band${auroraCount === 1 ? '' : 's'}`,
-    });
-  }
-  if (meteorCount > 0) {
-    details.push({
-      kind: 'meteor-shower',
-      label: `${meteorCount} meteor stream${meteorCount === 1 ? '' : 's'}`,
-    });
-  }
-  if (cometCount > 0) {
-    details.push({
-      kind: 'comet',
-      label: `${cometCount} comet trail${cometCount === 1 ? '' : 's'}`,
-    });
-  }
-  if (eclipseCoverage > 0.03) {
-    details.push({
-      kind: 'eclipse',
-      label: `Eclipse ${(eclipseCoverage * 100).toFixed(0)}%`,
-    });
-  }
-
-  if (details.length === 0) {
-    details.push({
-      kind: 'none',
-      label: 'Switch to Model to inspect sky changes',
-    });
-  }
-
-  return details;
 }
 
 function updateDisplayedCycle(
