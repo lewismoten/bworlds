@@ -90,4 +90,50 @@ describe('procedural sound effect generator', () => {
       })
     );
   });
+
+  it('builds deterministic layered oscillator and noise components', () => {
+    const generator = createProceduralSoundEffectGenerator();
+    const effect = generator.generate({
+      kind: 'wind',
+      nowMs: 750,
+      seed: 21,
+      recipe: {
+        id: 'wind-stack',
+        baseFrequency: 180,
+        baseDurationMs: 680,
+        baseVolume: 0.018,
+        waveform: 'triangle',
+        layers: [
+          {
+            id: 'noise-bed',
+            waveform: 'triangle',
+            noiseColor: 'brown',
+            frequencyMultiplier: 0.72,
+            volumeMultiplier: 0.58,
+          },
+          {
+            id: 'air-whistle',
+            waveform: 'sine',
+            frequencyMultiplier: 1.22,
+            volumeMultiplier: 0.3,
+          },
+        ],
+      },
+    });
+
+    expect(effect.layers).toEqual([
+      expect.objectContaining({
+        id: 'noise-bed',
+        waveform: 'triangle',
+        noiseColor: 'brown',
+      }),
+      expect.objectContaining({
+        id: 'air-whistle',
+        waveform: 'sine',
+        noiseColor: undefined,
+      }),
+    ]);
+    expect(effect.layers?.[0]?.frequency).toBeCloseTo(129.6, 4);
+    expect(effect.layers?.[1]?.frequency).toBeCloseTo(219.6, 4);
+  });
 });

@@ -37,10 +37,20 @@ export type ProceduralSoundEffect = {
   volume: number;
   waveform: SoundWaveform;
   noiseColor?: ProceduralNoiseColor;
+  layers?: ProceduralSoundEffectLayer[];
   emitter?: SoundPosition;
   listener?: SoundPosition;
   seed?: number;
   recipeId?: string;
+};
+
+export type ProceduralSoundEffectLayer = {
+  id: string;
+  frequency: number;
+  durationMs: number;
+  volume: number;
+  waveform: SoundWaveform;
+  noiseColor?: ProceduralNoiseColor;
 };
 
 export type ProceduralSoundRecipe = {
@@ -50,6 +60,27 @@ export type ProceduralSoundRecipe = {
   baseVolume: number;
   waveform: SoundWaveform | readonly SoundWaveform[];
   noiseColor?: ProceduralNoiseColor | readonly ProceduralNoiseColor[];
+  frequencyVariation?: number;
+  durationVariation?: number;
+  volumeVariation?: number;
+  variationDepth?: number;
+  minFrequency?: number;
+  maxFrequency?: number;
+  minDurationMs?: number;
+  maxDurationMs?: number;
+  minVolume?: number;
+  maxVolume?: number;
+  layers?: readonly ProceduralSoundLayerRecipe[];
+};
+
+export type ProceduralSoundLayerRecipe = {
+  id: string;
+  waveform: SoundWaveform | readonly SoundWaveform[];
+  noiseColor?: ProceduralNoiseColor | readonly ProceduralNoiseColor[];
+  frequencyMultiplier?: number;
+  frequencyOffset?: number;
+  durationMultiplier?: number;
+  volumeMultiplier?: number;
   frequencyVariation?: number;
   durationVariation?: number;
   volumeVariation?: number;
@@ -112,6 +143,16 @@ export function createProceduralSoundEffectGenerator(): ProceduralSoundEffectGen
         recipe.minVolume ?? 0.0001,
         recipe.maxVolume ?? 1
       );
+      const layers = resolveEffectLayers(
+        recipe.layers,
+        {
+          frequency,
+          durationMs,
+          volume,
+        },
+        variationDepth,
+        random
+      );
 
       return {
         kind,
@@ -121,6 +162,7 @@ export function createProceduralSoundEffectGenerator(): ProceduralSoundEffectGen
         volume,
         waveform,
         noiseColor,
+        layers,
         emitter,
         listener,
         seed,
@@ -128,6 +170,76 @@ export function createProceduralSoundEffectGenerator(): ProceduralSoundEffectGen
       };
     },
   };
+}
+
+function resolveEffectLayers(
+  layerRecipes: readonly ProceduralSoundLayerRecipe[] | undefined,
+  base: {
+    frequency: number;
+    durationMs: number;
+    volume: number;
+  },
+  parentVariationDepth: number,
+  random: () => number
+): ProceduralSoundEffectLayer[] | undefined {
+  if (!layerRecipes || layerRecipes.length === 0) {
+    return undefined;
+  }
+
+  const layers: ProceduralSoundEffectLayer[] = [];
+  for (const layerRecipe of layerRecipes) {
+    const variationDepth = clampVariationDepth(
+      layerRecipe.variationDepth ?? parentVariationDepth
+    );
+    const waveform = resolveWaveform(layerRecipe.waveform, random);
+    const noiseColor = resolveNoiseColor(layerRecipe.noiseColor, random);
+    const baseFrequency =
+      base.frequency * (layerRecipe.frequencyMultiplier ?? 1) +
+      (layerRecipe.frequencyOffset ?? 0);
+    const baseDurationMs =
+      base.durationMs * (layerRecipe.durationMultiplier ?? 1);
+    const baseVolume = base.volume * (layerRecipe.volumeMultiplier ?? 1);
+
+    layers.push({
+      id: layerRecipe.id,
+      frequency: clampValue(
+        varyScalar(
+          baseFrequency,
+          layerRecipe.frequencyVariation ?? 0,
+          variationDepth,
+          random
+        ),
+        layerRecipe.minFrequency ?? 20,
+        layerRecipe.maxFrequency ?? 20_000
+      ),
+      durationMs: clampValue(
+        Math.round(
+          varyScalar(
+            baseDurationMs,
+            layerRecipe.durationVariation ?? 0,
+            variationDepth,
+            random
+          )
+        ),
+        layerRecipe.minDurationMs ?? 20,
+        layerRecipe.maxDurationMs ?? Number.POSITIVE_INFINITY
+      ),
+      volume: clampValue(
+        varyScalar(
+          baseVolume,
+          layerRecipe.volumeVariation ?? 0,
+          variationDepth,
+          random
+        ),
+        layerRecipe.minVolume ?? 0.0001,
+        layerRecipe.maxVolume ?? 1
+      ),
+      waveform,
+      noiseColor,
+    });
+  }
+
+  return layers;
 }
 
 function resolveWaveform(

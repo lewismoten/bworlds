@@ -75,7 +75,7 @@
 - [x] Support controlled randomness so repeated sounds vary without losing their identity.
 - [x] Support multiple oscillator types including sine, triangle, square, and sawtooth waves.
 - [x] Support white, pink, and brown noise sources for natural and textured sounds.
-- [ ] Support combining multiple oscillators and noise sources into one sound.
+- [x] Support combining multiple oscillators and noise sources into one sound.
 - [ ] Support frequency sweeps for impacts, magic, machinery, movement, and UI effects.
 - [ ] Support amplitude envelopes with configurable attack, decay, sustain, and release.
 - [ ] Support pitch envelopes independent of volume envelopes.
