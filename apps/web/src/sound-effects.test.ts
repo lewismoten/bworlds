@@ -946,6 +946,152 @@ describe('sound effects', () => {
     }
   });
 
+  it('applies filter envelopes independently from oscillator pitch and gain envelopes', () => {
+    const createdFilters: Array<{
+      type: BiquadFilterType;
+      frequency: {
+        setValueAtTime: ReturnType<typeof vi.fn>;
+        linearRampToValueAtTime: ReturnType<typeof vi.fn>;
+      };
+      Q: {
+        setValueAtTime: ReturnType<typeof vi.fn>;
+        linearRampToValueAtTime: ReturnType<typeof vi.fn>;
+      };
+      gain: {
+        setValueAtTime: ReturnType<typeof vi.fn>;
+        linearRampToValueAtTime: ReturnType<typeof vi.fn>;
+      };
+      connect: ReturnType<typeof vi.fn>;
+      disconnect: ReturnType<typeof vi.fn>;
+    }> = [];
+
+    class FakeAudioContext {
+      state: AudioContextState = 'running';
+      currentTime = 0;
+      destination = {};
+      createOscillator() {
+        return {
+          onended: null as ((event: Event) => void) | null,
+          type: 'triangle',
+          frequency: {
+            setValueAtTime: vi.fn(),
+            exponentialRampToValueAtTime: vi.fn(),
+            linearRampToValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+          start: vi.fn(),
+          stop: vi.fn(),
+        } as unknown as OscillatorNode;
+      }
+      createBiquadFilter() {
+        const filter = {
+          type: 'bandpass' as BiquadFilterType,
+          frequency: {
+            setValueAtTime: vi.fn(),
+            linearRampToValueAtTime: vi.fn(),
+          },
+          Q: {
+            setValueAtTime: vi.fn(),
+            linearRampToValueAtTime: vi.fn(),
+          },
+          gain: {
+            setValueAtTime: vi.fn(),
+            linearRampToValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+        };
+        createdFilters.push(filter);
+        return filter as unknown as BiquadFilterNode;
+      }
+      createGain() {
+        return {
+          gain: {
+            setValueAtTime: vi.fn(),
+            exponentialRampToValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+        } as unknown as GainNode;
+      }
+      createStereoPanner() {
+        return {
+          pan: {
+            setValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+        } as unknown as StereoPannerNode;
+      }
+      resume() {
+        return Promise.resolve();
+      }
+    }
+
+    const originalAudioContext = globalThis.AudioContext;
+    vi.stubGlobal('AudioContext', FakeAudioContext);
+
+    try {
+      const sink = createWebAudioSoundEffectSink();
+      sink.play({
+        kind: 'combat-magic',
+        nowMs: 0,
+        frequency: 244,
+        durationMs: 320,
+        volume: 0.05,
+        waveform: 'triangle',
+        filters: [
+          {
+            type: 'bandpass',
+            frequency: 1420,
+            q: 1.1,
+            envelope: {
+              attackMs: 18,
+              decayMs: 44,
+              releaseMs: 62,
+              peakFrequencyMultiplier: 1.16,
+              sustainFrequencyMultiplier: 0.92,
+              releaseFrequencyMultiplier: 0.82,
+              peakQMultiplier: 1.18,
+              sustainQMultiplier: 1.05,
+              releaseQMultiplier: 0.9,
+            },
+          },
+        ],
+      });
+
+      const filter = createdFilters[0];
+      expect(
+        filter?.frequency.linearRampToValueAtTime.mock.calls
+      ).toContainEqual([expect.closeTo(1420 * 1.16, 10), 0.018]);
+      expect(
+        filter?.frequency.linearRampToValueAtTime.mock.calls
+      ).toContainEqual([expect.closeTo(1420 * 0.92, 10), 0.062]);
+      expect(
+        filter?.frequency.linearRampToValueAtTime.mock.calls
+      ).toContainEqual([expect.closeTo(1420 * 0.82, 10), 0.32]);
+      expect(filter?.Q.linearRampToValueAtTime.mock.calls).toContainEqual([
+        expect.closeTo(1.1 * 1.18, 10),
+        0.018,
+      ]);
+      expect(filter?.Q.linearRampToValueAtTime.mock.calls).toContainEqual([
+        expect.closeTo(1.1 * 1.05, 10),
+        0.062,
+      ]);
+      expect(filter?.Q.linearRampToValueAtTime.mock.calls).toContainEqual([
+        expect.closeTo(1.1 * 0.9, 10),
+        0.32,
+      ]);
+    } finally {
+      if (originalAudioContext) {
+        vi.stubGlobal('AudioContext', originalAudioContext);
+      } else {
+        vi.unstubAllGlobals();
+      }
+    }
+  });
+
   it('limits identical low-priority ambient voices in the web audio sink', () => {
     const createdOscillators: Array<{
       onended: ((event: Event) => void) | null;

@@ -87,6 +87,22 @@ export type ProceduralSoundFilter = {
   frequency: number;
   q?: number;
   gain?: number;
+  envelope?: ProceduralSoundFilterEnvelope;
+};
+
+export type ProceduralSoundFilterEnvelope = {
+  attackMs: number;
+  decayMs: number;
+  releaseMs: number;
+  peakFrequencyMultiplier: number;
+  sustainFrequencyMultiplier: number;
+  releaseFrequencyMultiplier: number;
+  peakQMultiplier?: number;
+  sustainQMultiplier?: number;
+  releaseQMultiplier?: number;
+  peakGainMultiplier?: number;
+  sustainGainMultiplier?: number;
+  releaseGainMultiplier?: number;
 };
 
 export type ProceduralSoundFrequencySweep = {
@@ -162,6 +178,34 @@ export type ProceduralSoundFilterRecipe = {
   frequencyVariation?: number;
   qVariation?: number;
   gainVariation?: number;
+  envelope?: ProceduralSoundFilterEnvelopeRecipe;
+};
+
+export type ProceduralSoundFilterEnvelopeRecipe = {
+  attackMs: number;
+  decayMs: number;
+  releaseMs: number;
+  peakFrequencyMultiplier: number;
+  sustainFrequencyMultiplier: number;
+  releaseFrequencyMultiplier: number;
+  peakQMultiplier?: number;
+  sustainQMultiplier?: number;
+  releaseQMultiplier?: number;
+  peakGainMultiplier?: number;
+  sustainGainMultiplier?: number;
+  releaseGainMultiplier?: number;
+  attackVariation?: number;
+  decayVariation?: number;
+  releaseVariation?: number;
+  peakFrequencyVariation?: number;
+  sustainFrequencyVariation?: number;
+  releaseFrequencyVariation?: number;
+  peakQVariation?: number;
+  sustainQVariation?: number;
+  releaseQVariation?: number;
+  peakGainVariation?: number;
+  sustainGainVariation?: number;
+  releaseGainVariation?: number;
 };
 
 export type ProceduralSoundLayerRecipe = {
@@ -547,10 +591,134 @@ function resolveSoundFilters(
               40
             )
           : undefined,
+      envelope: resolveSoundFilterEnvelope(
+        filterRecipe.envelope,
+        variationDepth,
+        random
+      ),
     });
   }
 
   return filters;
+}
+
+function resolveSoundFilterEnvelope(
+  envelopeRecipe: ProceduralSoundFilterEnvelopeRecipe | undefined,
+  variationDepth: number,
+  random: () => number
+): ProceduralSoundFilterEnvelope | undefined {
+  if (!envelopeRecipe) {
+    return undefined;
+  }
+
+  return {
+    attackMs: Math.max(
+      0,
+      varyScalar(
+        envelopeRecipe.attackMs,
+        envelopeRecipe.attackVariation ?? 0,
+        variationDepth,
+        random
+      )
+    ),
+    decayMs: Math.max(
+      0,
+      varyScalar(
+        envelopeRecipe.decayMs,
+        envelopeRecipe.decayVariation ?? 0,
+        variationDepth,
+        random
+      )
+    ),
+    releaseMs: Math.max(
+      0,
+      varyScalar(
+        envelopeRecipe.releaseMs,
+        envelopeRecipe.releaseVariation ?? 0,
+        variationDepth,
+        random
+      )
+    ),
+    peakFrequencyMultiplier: Math.max(
+      0.0001,
+      varyScalar(
+        envelopeRecipe.peakFrequencyMultiplier,
+        envelopeRecipe.peakFrequencyVariation ?? 0,
+        variationDepth,
+        random
+      )
+    ),
+    sustainFrequencyMultiplier: Math.max(
+      0.0001,
+      varyScalar(
+        envelopeRecipe.sustainFrequencyMultiplier,
+        envelopeRecipe.sustainFrequencyVariation ?? 0,
+        variationDepth,
+        random
+      )
+    ),
+    releaseFrequencyMultiplier: Math.max(
+      0.0001,
+      varyScalar(
+        envelopeRecipe.releaseFrequencyMultiplier,
+        envelopeRecipe.releaseFrequencyVariation ?? 0,
+        variationDepth,
+        random
+      )
+    ),
+    peakQMultiplier: resolveOptionalFilterEnvelopeStage(
+      envelopeRecipe.peakQMultiplier,
+      envelopeRecipe.peakQVariation,
+      variationDepth,
+      random
+    ),
+    sustainQMultiplier: resolveOptionalFilterEnvelopeStage(
+      envelopeRecipe.sustainQMultiplier,
+      envelopeRecipe.sustainQVariation,
+      variationDepth,
+      random
+    ),
+    releaseQMultiplier: resolveOptionalFilterEnvelopeStage(
+      envelopeRecipe.releaseQMultiplier,
+      envelopeRecipe.releaseQVariation,
+      variationDepth,
+      random
+    ),
+    peakGainMultiplier: resolveOptionalFilterEnvelopeStage(
+      envelopeRecipe.peakGainMultiplier,
+      envelopeRecipe.peakGainVariation,
+      variationDepth,
+      random
+    ),
+    sustainGainMultiplier: resolveOptionalFilterEnvelopeStage(
+      envelopeRecipe.sustainGainMultiplier,
+      envelopeRecipe.sustainGainVariation,
+      variationDepth,
+      random
+    ),
+    releaseGainMultiplier: resolveOptionalFilterEnvelopeStage(
+      envelopeRecipe.releaseGainMultiplier,
+      envelopeRecipe.releaseGainVariation,
+      variationDepth,
+      random
+    ),
+  };
+}
+
+function resolveOptionalFilterEnvelopeStage(
+  baseValue: number | undefined,
+  variation: number | undefined,
+  variationDepth: number,
+  random: () => number
+): number | undefined {
+  if (typeof baseValue !== 'number') {
+    return undefined;
+  }
+
+  return Math.max(
+    0.0001,
+    varyScalar(baseValue, variation ?? 0, variationDepth, random)
+  );
 }
 
 function resolveFrequencySweeps(

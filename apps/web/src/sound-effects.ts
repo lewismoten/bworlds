@@ -419,6 +419,17 @@ function resolveProceduralSoundFilters(kind: SoundEffectKind) {
           q: 1.1,
           frequencyVariation: 0.05,
           qVariation: 0.08,
+          envelope: {
+            attackMs: 18,
+            decayMs: 44,
+            releaseMs: 62,
+            peakFrequencyMultiplier: 1.16,
+            sustainFrequencyMultiplier: 0.92,
+            releaseFrequencyMultiplier: 0.82,
+            peakQMultiplier: 1.18,
+            sustainQMultiplier: 1.05,
+            releaseQMultiplier: 0.9,
+          },
         },
       ] as const;
     case 'ocean':
@@ -1569,9 +1580,13 @@ type AudioBufferSourceNodeLike = AudioBufferSourceNode & {
   buffer: AudioBuffer | null;
 };
 type ScheduledSoundSourceNode = OscillatorNode | AudioBufferSourceNodeLike;
+type ActiveSoundFilter = {
+  node: BiquadFilterNode;
+  config: ProceduralSoundFilter;
+};
 type ActiveSoundSource = {
   source: ScheduledSoundSourceNode;
-  filters: BiquadFilterNode[];
+  filters: ActiveSoundFilter[];
   gain: GainNode;
   effect: ProceduralSoundEffect;
 };
@@ -1685,7 +1700,7 @@ export function createWebAudioSoundEffectSink(
       source.source.onended = null;
       source.source.disconnect?.();
       for (const filter of source.filters) {
-        filter.disconnect?.();
+        filter.node.disconnect?.();
       }
       source.gain.disconnect?.();
     }
@@ -1800,6 +1815,7 @@ export function createWebAudioSoundEffectSink(
           startAt,
           durationSeconds
         );
+        applySoundEffectFilterEnvelopes(source, startAt, durationSeconds);
         applyAmplitudeEnvelope(
           source.gain,
           source.effect,
@@ -1898,7 +1914,7 @@ function createLayeredSoundEffect(
 function createSoundEffectFilters(
   context: AudioContext,
   effect: ProceduralSoundEffect
-): BiquadFilterNode[] {
+): ActiveSoundFilter[] {
   if (
     typeof context.createBiquadFilter !== 'function' ||
     !effect.filters ||
@@ -1907,9 +1923,10 @@ function createSoundEffectFilters(
     return [];
   }
 
-  return effect.filters.map((filter) =>
-    createSoundEffectFilterNode(context, filter)
-  );
+  return effect.filters.map((filter) => ({
+    node: createSoundEffectFilterNode(context, filter),
+    config: filter,
+  }));
 }
 
 function createSoundEffectFilterNode(
@@ -1934,11 +1951,11 @@ function connectSoundEffectSourceChain(source: ActiveSoundSource): void {
     return;
   }
 
-  source.source.connect(source.filters[0]!);
+  source.source.connect(source.filters[0]!.node);
   for (let index = 0; index < source.filters.length - 1; index += 1) {
-    source.filters[index]!.connect(source.filters[index + 1]!);
+    source.filters[index]!.node.connect(source.filters[index + 1]!.node);
   }
-  source.filters[source.filters.length - 1]!.connect(source.gain);
+  source.filters[source.filters.length - 1]!.node.connect(source.gain);
 }
 
 function createScheduledSoundSource(
@@ -2047,6 +2064,133 @@ function applyPitchEnvelope(
     source.frequency.setValueAtTime(sustainFrequency, releaseStartAt);
   }
   source.frequency.linearRampToValueAtTime(releaseFrequency, endAt);
+}
+
+function applySoundEffectFilterEnvelopes(
+  source: ActiveSoundSource,
+  startAt: number,
+  durationSeconds: number
+): void {
+  for (const filter of source.filters) {
+    applySoundEffectFilterEnvelope(
+      filter.node,
+      filter.config,
+      startAt,
+      durationSeconds
+    );
+  }
+}
+
+function applySoundEffectFilterEnvelope(
+  node: BiquadFilterNode,
+  filter: ProceduralSoundFilter,
+  startAt: number,
+  durationSeconds: number
+): void {
+  const envelope = filter.envelope;
+  if (!envelope) {
+    return;
+  }
+
+  const attackSeconds = Math.max(0, envelope.attackMs / 1000);
+  const decaySeconds = Math.max(0, envelope.decayMs / 1000);
+  const releaseSeconds = Math.max(0, envelope.releaseMs / 1000);
+  const endAt = startAt + durationSeconds;
+  const attackEndAt = Math.min(endAt, startAt + attackSeconds);
+  const decayEndAt = Math.min(endAt, attackEndAt + decaySeconds);
+  const releaseStartAt = Math.max(decayEndAt, endAt - releaseSeconds);
+  const peakFrequency = clampValue(
+    filter.frequency * envelope.peakFrequencyMultiplier,
+    40,
+    20_000
+  );
+  const sustainFrequency = clampValue(
+    filter.frequency * envelope.sustainFrequencyMultiplier,
+    40,
+    20_000
+  );
+  const releaseFrequency = clampValue(
+    filter.frequency * envelope.releaseFrequencyMultiplier,
+    40,
+    20_000
+  );
+
+  applyFilterEnvelopeParam(
+    node.frequency,
+    peakFrequency,
+    sustainFrequency,
+    releaseFrequency,
+    startAt,
+    attackEndAt,
+    decayEndAt,
+    releaseStartAt,
+    endAt
+  );
+
+  if (
+    typeof filter.q === 'number' &&
+    typeof envelope.peakQMultiplier === 'number' &&
+    typeof envelope.sustainQMultiplier === 'number' &&
+    typeof envelope.releaseQMultiplier === 'number'
+  ) {
+    applyFilterEnvelopeParam(
+      node.Q,
+      Math.max(0.0001, filter.q * envelope.peakQMultiplier),
+      Math.max(0.0001, filter.q * envelope.sustainQMultiplier),
+      Math.max(0.0001, filter.q * envelope.releaseQMultiplier),
+      startAt,
+      attackEndAt,
+      decayEndAt,
+      releaseStartAt,
+      endAt
+    );
+  }
+
+  if (
+    typeof filter.gain === 'number' &&
+    typeof envelope.peakGainMultiplier === 'number' &&
+    typeof envelope.sustainGainMultiplier === 'number' &&
+    typeof envelope.releaseGainMultiplier === 'number'
+  ) {
+    applyFilterEnvelopeParam(
+      node.gain,
+      filter.gain * envelope.peakGainMultiplier,
+      filter.gain * envelope.sustainGainMultiplier,
+      filter.gain * envelope.releaseGainMultiplier,
+      startAt,
+      attackEndAt,
+      decayEndAt,
+      releaseStartAt,
+      endAt
+    );
+  }
+}
+
+function applyFilterEnvelopeParam(
+  param: AudioParam,
+  peakValue: number,
+  sustainValue: number,
+  releaseValue: number,
+  startAt: number,
+  attackEndAt: number,
+  decayEndAt: number,
+  releaseStartAt: number,
+  endAt: number
+): void {
+  if (attackEndAt > startAt) {
+    param.linearRampToValueAtTime(peakValue, attackEndAt);
+  } else {
+    param.setValueAtTime(peakValue, startAt);
+  }
+  if (decayEndAt > attackEndAt) {
+    param.linearRampToValueAtTime(sustainValue, decayEndAt);
+  } else {
+    param.setValueAtTime(sustainValue, attackEndAt);
+  }
+  if (releaseStartAt > decayEndAt) {
+    param.setValueAtTime(sustainValue, releaseStartAt);
+  }
+  param.linearRampToValueAtTime(releaseValue, endAt);
 }
 
 function getOrCreateNoiseBuffer(

@@ -80,7 +80,7 @@
 - [x] Support amplitude envelopes with configurable attack, decay, sustain, and release.
 - [x] Support pitch envelopes independent of volume envelopes.
 - [x] Support filters including low-pass, high-pass, band-pass, and notch filters.
-- [ ] Support configurable filter envelopes that change throughout a sound.
+- [x] Support configurable filter envelopes that change throughout a sound.
 - [ ] Support distortion and saturation for impacts, machinery, monsters, and aggressive sounds.
 - [ ] Support delay and echo.
 - [ ] Support procedural reverb or reusable impulse-response environments.

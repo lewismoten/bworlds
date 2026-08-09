@@ -278,6 +278,17 @@ describe('procedural sound effect generator', () => {
             q: 2.4,
             frequencyVariation: 0.04,
             qVariation: 0.1,
+            envelope: {
+              attackMs: 18,
+              decayMs: 30,
+              releaseMs: 42,
+              peakFrequencyMultiplier: 1.2,
+              sustainFrequencyMultiplier: 0.92,
+              releaseFrequencyMultiplier: 0.84,
+              peakQMultiplier: 1.15,
+              sustainQMultiplier: 1.05,
+              releaseQMultiplier: 0.9,
+            },
           },
         ],
       },
@@ -298,5 +309,19 @@ describe('procedural sound effect generator', () => {
     ]);
     expect(effect.filters?.[1]?.frequency).toBeGreaterThan(1000);
     expect(effect.filters?.[1]?.q).toBeGreaterThan(2);
+    expect(effect.filters?.[1]?.envelope).toEqual({
+      attackMs: 18,
+      decayMs: 30,
+      releaseMs: 42,
+      peakFrequencyMultiplier: 1.2,
+      sustainFrequencyMultiplier: 0.92,
+      releaseFrequencyMultiplier: 0.84,
+      peakQMultiplier: 1.15,
+      sustainQMultiplier: 1.05,
+      releaseQMultiplier: 0.9,
+      peakGainMultiplier: undefined,
+      sustainGainMultiplier: undefined,
+      releaseGainMultiplier: undefined,
+    });
   });
 });
