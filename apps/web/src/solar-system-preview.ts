@@ -37,6 +37,24 @@ type BackgroundStarState = {
   y: number;
   z: number;
 };
+type SolarSystemEventGlowState = {
+  position: THREE.Vector3;
+  color: string;
+  opacity: number;
+  scale: number;
+  visible: boolean;
+};
+type SolarSystemEventTrailState = {
+  start: THREE.Vector3;
+  end: THREE.Vector3;
+  color: string;
+  opacity: number;
+  visible: boolean;
+};
+type SolarSystemEventRenderState = {
+  glows: SolarSystemEventGlowState[];
+  trails: SolarSystemEventTrailState[];
+};
 const BACKGROUND_STAR_COUNT = 56;
 const BACKGROUND_STAR_GEOMETRIES = [
   new THREE.SphereGeometry(0.04, 8, 8),
@@ -642,67 +660,139 @@ function syncSolarSystemLabels(root: THREE.Group, cycle: DaylightCycleLike): voi
 }
 
 function syncSolarSystemEvents(root: THREE.Group, cycle: DaylightCycleLike): void {
-  root.clear();
-  const markers = getSolarSystemEventMarkerStates(cycle);
-  markers.forEach((marker, index) => {
+  const state = getSolarSystemEventRenderState(cycle);
+  const rootState = root.userData as {
+    glowPool?: THREE.Sprite[];
+    trailPool?: THREE.Line[];
+  };
+  const glowPool = rootState.glowPool ?? (rootState.glowPool = []);
+  const trailPool = rootState.trailPool ?? (rootState.trailPool = []);
+
+  while (glowPool.length < state.glows.length) {
     const glow = new THREE.Sprite(
       new THREE.SpriteMaterial(compactThreeMaterialOptions({
-        color: resolveThreeColor(marker.color, '#dff4ff'),
+        color: '#dff4ff',
         transparent: true,
-        opacity:
-          marker.type === 'aurora'
-            ? 0.18 + marker.intensity * 0.3
-            : 0.26 + marker.intensity * 0.46,
+        opacity: 0,
         depthWrite: false,
         blending: THREE.AdditiveBlending,
       }))
     );
-    glow.position.copy(marker.position);
+    glow.visible = false;
+    glowPool.push(glow);
+    root.add(glow);
+  }
+
+  while (trailPool.length < state.trails.length) {
+    const trail = new THREE.Line(
+      new THREE.BufferGeometry().setAttribute(
+        'position',
+        new THREE.Float32BufferAttribute(6, 3)
+      ),
+      new THREE.LineBasicMaterial({
+        color: '#dff4ff',
+        transparent: true,
+        opacity: 0,
+      })
+    );
+    trail.visible = false;
+    trailPool.push(trail);
+    root.add(trail);
+  }
+
+  glowPool.forEach((glow, index) => {
+    const glowState = state.glows[index];
+    if (!glowState) {
+      glow.visible = false;
+      return;
+    }
+    glow.position.copy(glowState.position);
+    glow.scale.set(glowState.scale, glowState.scale, 1);
+    const material = glow.material as THREE.SpriteMaterial;
+    material.color.set(glowState.color);
+    material.opacity = glowState.opacity;
+    glow.visible = glowState.visible;
+  });
+
+  trailPool.forEach((trail, index) => {
+    const trailState = state.trails[index];
+    if (!trailState) {
+      trail.visible = false;
+      return;
+    }
+    const positions = trail.geometry.getAttribute('position') as THREE.BufferAttribute;
+    positions.setXYZ(0, trailState.start.x, trailState.start.y, trailState.start.z);
+    positions.setXYZ(1, trailState.end.x, trailState.end.y, trailState.end.z);
+    positions.needsUpdate = true;
+    const material = trail.material as THREE.LineBasicMaterial;
+    material.color.set(trailState.color);
+    material.opacity = trailState.opacity;
+    trail.visible = trailState.visible;
+  });
+}
+
+export function getSolarSystemEventRenderState(
+  cycle: DaylightCycleLike
+): SolarSystemEventRenderState {
+  const markers = getSolarSystemEventMarkerStates(cycle);
+  const glows: SolarSystemEventGlowState[] = [];
+  const trails: SolarSystemEventTrailState[] = [];
+
+  markers.forEach((marker, index) => {
+    const color = resolveThreeColor(marker.color, '#dff4ff');
+    const glowOpacity =
+      marker.type === 'aurora'
+        ? 0.18 + marker.intensity * 0.3
+        : 0.26 + marker.intensity * 0.46;
     const scale =
       marker.type === 'aurora'
         ? 1.8 + marker.intensity * 2.2
         : 0.65 + marker.intensity * 1.25;
-    glow.scale.set(scale, scale, 1);
-    root.add(glow);
+    glows.push({
+      position: marker.position,
+      color,
+      opacity: glowOpacity,
+      scale,
+      visible: glowOpacity > 0.015,
+    });
 
     if (marker.type === 'aurora') {
-      root.add(
-        new THREE.Line(
-          new THREE.BufferGeometry().setFromPoints([
-            marker.position.clone().add(new THREE.Vector3(-1.3, 0.18, 0)),
-            marker.position.clone().add(new THREE.Vector3(0, 0.4, 0)),
-            marker.position.clone().add(new THREE.Vector3(1.3, -0.18, 0)),
-          ]),
-          new THREE.LineBasicMaterial({
-            color: '#c7f8ff',
-            transparent: true,
-            opacity: 0.28 + marker.intensity * 0.34,
-          })
-        )
-      );
+      const points = [
+        marker.position.clone().add(new THREE.Vector3(-1.3, 0.18, 0)),
+        marker.position.clone().add(new THREE.Vector3(0, 0.4, 0)),
+        marker.position.clone().add(new THREE.Vector3(1.3, -0.18, 0)),
+      ];
+      const opacity = 0.28 + marker.intensity * 0.34;
+      for (let index = 1; index < points.length; index += 1) {
+        trails.push({
+          start: points[index - 1]!,
+          end: points[index]!,
+          color: '#c7f8ff',
+          opacity,
+          visible: opacity > 0.015,
+        });
+      }
       return;
     }
 
-    const trail = new THREE.Line(
-      new THREE.BufferGeometry().setFromPoints([
-        marker.position.clone().add(
-          new THREE.Vector3(
-            (marker.type === 'meteor-shower' ? 1 : -1) *
-              Math.max(0.7, (marker.trailLength ?? 1.4) * 0.42),
-            marker.type === 'meteor-shower' ? 0.28 : -0.14,
-            index % 2 === 0 ? 0.2 : -0.2
-          )
-        ),
-        marker.position,
-      ]),
-      new THREE.LineBasicMaterial({
-        color: resolveThreeColor(marker.color, '#dff4ff'),
-        transparent: true,
-        opacity: 0.24 + marker.intensity * 0.42,
-      })
-    );
-    root.add(trail);
+    const opacity = 0.24 + marker.intensity * 0.42;
+    trails.push({
+      start: marker.position.clone().add(
+        new THREE.Vector3(
+          (marker.type === 'meteor-shower' ? 1 : -1) *
+            Math.max(0.7, (marker.trailLength ?? 1.4) * 0.42),
+          marker.type === 'meteor-shower' ? 0.28 : -0.14,
+          index % 2 === 0 ? 0.2 : -0.2
+        )
+      ),
+      end: marker.position,
+      color,
+      opacity,
+      visible: opacity > 0.015,
+    });
   });
+
+  return { glows, trails };
 }
 
 function createSolarSystemOrbitRing(body: OrreryBodyLike): THREE.Vector3[] {
