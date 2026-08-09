@@ -101,6 +101,7 @@ import {
   createConstellationPoint,
   createSkyAltitudePosition,
   createSkyPosition,
+  writeConstellationPoint,
   writeSkyAltitudePosition,
   writeSkyPosition,
 } from './sky-position.ts';
@@ -4345,6 +4346,10 @@ function syncConstellationSky(
     activeIndex,
     (activeIndex + 1) % constellations.length,
   ];
+  const anchor = new THREE.Vector3();
+  const startPoint = new THREE.Vector3();
+  const endPoint = new THREE.Vector3();
+  const starPoint = new THREE.Vector3();
 
   focusIndices.forEach((constellationIndex, slotIndex) => {
     const constellation = constellations[constellationIndex];
@@ -4353,7 +4358,7 @@ function syncConstellationSky(
       (slotIndex - 1) * 0.82 +
       (cycle.dayProgress - cycle.sunriseProgress) * 0.16;
     const slotPhi = 1.18 + (slotIndex - 1) * 0.08;
-    const anchor = createSkyPosition(slotTheta, slotPhi, SKY_RADIUS - 4);
+    writeSkyPosition(anchor, slotTheta, slotPhi, SKY_RADIUS - 4);
 
     constellation.connections.forEach(([startIndex, endIndex]) => {
       const start = constellation.stars[startIndex];
@@ -4361,10 +4366,23 @@ function syncConstellationSky(
       if (!start || !end) {
         return;
       }
-      const geometry = new THREE.BufferGeometry().setFromPoints([
-        createConstellationPoint(anchor, start),
-        createConstellationPoint(anchor, end),
-      ]);
+      writeConstellationPoint(startPoint, anchor, start);
+      writeConstellationPoint(endPoint, anchor, end);
+      const geometry = new THREE.BufferGeometry();
+      geometry.setAttribute(
+        'position',
+        new THREE.Float32BufferAttribute(
+          [
+            startPoint.x,
+            startPoint.y,
+            startPoint.z,
+            endPoint.x,
+            endPoint.y,
+            endPoint.z,
+          ],
+          3
+        )
+      );
       const line = new THREE.Line(
         geometry,
         new THREE.LineBasicMaterial({
@@ -4377,10 +4395,7 @@ function syncConstellationSky(
       const horizonFade = smoothstep(
         -1.6,
         5.8,
-        Math.min(
-          createConstellationPoint(anchor, start).y,
-          createConstellationPoint(anchor, end).y
-        )
+        Math.min(startPoint.y, endPoint.y)
       );
       line.material.opacity *= horizonFade;
       line.visible = line.material.opacity > 0.015;
@@ -4388,8 +4403,8 @@ function syncConstellationSky(
     });
 
     constellation.stars.forEach((star) => {
-      const point = createConstellationPoint(anchor, star);
-      const horizonFade = smoothstep(-1.6, 5.8, point.y);
+      writeConstellationPoint(starPoint, anchor, star);
+      const horizonFade = smoothstep(-1.6, 5.8, starPoint.y);
       const sprite = new THREE.Sprite(
         new THREE.SpriteMaterial({
           color: '#f5fbff',
@@ -4400,7 +4415,7 @@ function syncConstellationSky(
           depthTest: true,
         })
       );
-      sprite.position.copy(point);
+      sprite.position.copy(starPoint);
       const scale = 0.34 + star.brightness * 0.34;
       sprite.scale.set(scale, scale, 1);
       sprite.visible = sprite.material.opacity > 0.015;
@@ -4583,19 +4598,26 @@ function syncMilkyWayBelt(
     return;
   }
   const samples = getMilkyWayBandSamples(belt, cycle.yearProgress, 72);
-  const innerPoints = samples.map((sample) =>
-    createSkyPosition(sample.azimuth, sample.innerPhi, SKY_RADIUS - 5.7)
-  );
-  const outerPoints = samples.map((sample) =>
-    createSkyPosition(sample.azimuth, sample.outerPhi, SKY_RADIUS - 5.4)
-  );
   const positions: number[] = [];
   const indices: number[] = [];
+  const centerLinePositions: number[] = [];
+  const innerPoint = new THREE.Vector3();
+  const outerPoint = new THREE.Vector3();
+  const centerPoint = new THREE.Vector3();
 
-  samples.forEach((sample, index) => {
-    const inner = innerPoints[index];
-    const outer = outerPoints[index];
-    positions.push(inner.x, inner.y, inner.z, outer.x, outer.y, outer.z);
+  samples.forEach((sample) => {
+    writeSkyPosition(innerPoint, sample.azimuth, sample.innerPhi, SKY_RADIUS - 5.7);
+    writeSkyPosition(outerPoint, sample.azimuth, sample.outerPhi, SKY_RADIUS - 5.4);
+    writeSkyPosition(centerPoint, sample.azimuth, sample.centerPhi, SKY_RADIUS - 5.5);
+    positions.push(
+      innerPoint.x,
+      innerPoint.y,
+      innerPoint.z,
+      outerPoint.x,
+      outerPoint.y,
+      outerPoint.z
+    );
+    centerLinePositions.push(centerPoint.x, centerPoint.y, centerPoint.z);
   });
 
   for (let index = 0; index < samples.length - 1; index += 1) {
@@ -4622,10 +4644,9 @@ function syncMilkyWayBelt(
   );
   root.add(
     new THREE.LineLoop(
-      new THREE.BufferGeometry().setFromPoints(
-        samples.map((sample) =>
-          createSkyPosition(sample.azimuth, sample.centerPhi, SKY_RADIUS - 5.5)
-        )
+      new THREE.BufferGeometry().setAttribute(
+        'position',
+        new THREE.Float32BufferAttribute(centerLinePositions, 3)
       ),
       new THREE.LineBasicMaterial({
         color: '#9fbce0',
