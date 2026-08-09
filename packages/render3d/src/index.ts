@@ -68,6 +68,14 @@ import {
   fillVisibleWorldTileBuildOrder,
 } from './visible-world-build-order.ts';
 import {
+  createPendingWorldBuildState,
+  createWorldVisibilitySyncState,
+  matchesPendingWorldBuildState,
+  matchesWorldVisibilitySyncState,
+  updatePendingWorldBuildState,
+  updateWorldVisibilitySyncState,
+} from './world-visibility-sync-state.ts';
+import {
   createSkyLightingColorState,
   updateSkyLightingColorState,
 } from './sky-lighting-colors.ts';
@@ -94,6 +102,14 @@ export {
   createVisibleWorldBuildOrderScratch,
   fillVisibleWorldTileBuildOrder,
 } from './visible-world-build-order.ts';
+export {
+  createPendingWorldBuildState,
+  createWorldVisibilitySyncState,
+  matchesPendingWorldBuildState,
+  matchesWorldVisibilitySyncState,
+  updatePendingWorldBuildState,
+  updateWorldVisibilitySyncState,
+} from './world-visibility-sync-state.ts';
 
 const LAND_MODEL_REVEAL_SEED = registerHashLabel('render3d:land-model-reveal');
 
@@ -1125,10 +1141,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
   const fogNightColor = new THREE.Color(FOG_NIGHT_COLOR);
   const skyLightingColorState = createSkyLightingColorState();
   let lastMoonPhaseIndex = -1;
-  let lastCenterKey = '';
-  let lastContextKey = '';
-  let lastFacingBucket = '';
-  let lastChunkRadius = CHUNK_RADIUS;
+  const lastVisibleWorldSyncState = createWorldVisibilitySyncState();
   let lastLodSyncPlayerPosition: { x: number; y: number } | null = null;
   let lastWorldCurvaturePlayerPosition: { x: number; y: number } | null = null;
   let visibleWorldMutationVersion = 0;
@@ -1141,12 +1154,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
   let lastSkyAuroraSignature = '';
   let lastSkyPositionSignature = '';
   let cachedSkyPose: CachedSkyPose | null = null;
-  let pendingWorldBuild = {
-    contextId: '',
-    centerKey: '',
-    facingBucket: '',
-    queue: [] as Array<{ key: string; x: number; y: number }>,
-  };
+  const pendingWorldBuild = createPendingWorldBuildState();
   const renderChurnMetrics = {
     tileNodeBuilds: [] as number[],
     tileBuilds: [] as number[],
@@ -1180,12 +1188,16 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     cachedSkyPose = null;
     pendingLodSyncChecks = 0;
     lodSyncEntryOffset = 0;
-    pendingWorldBuild = {
-      contextId: '',
-      centerKey: '',
-      facingBucket: '',
-      queue: [],
-    };
+    pendingWorldBuild.contextId = '';
+    pendingWorldBuild.centerX = Number.NaN;
+    pendingWorldBuild.centerY = Number.NaN;
+    pendingWorldBuild.facingBucket = -1;
+    pendingWorldBuild.queue = [];
+    lastVisibleWorldSyncState.contextId = '';
+    lastVisibleWorldSyncState.centerX = Number.NaN;
+    lastVisibleWorldSyncState.centerY = Number.NaN;
+    lastVisibleWorldSyncState.facingBucket = -1;
+    lastVisibleWorldSyncState.chunkRadius = -1;
   }
 
   function buildTileNode(
@@ -1422,6 +1434,13 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     const centerX = Math.round(state.player.x);
     const centerY = Math.round(state.player.y);
     const facingBucket = getFacingVisibilityBucket(state.player.facing);
+    const nextVisibleWorldSyncState = {
+      contextId: context.id,
+      centerX,
+      centerY,
+      facingBucket,
+      chunkRadius,
+    };
     visibleWorldNextVisibleKeysBuffer.clear();
     const nextQueue = fillVisibleWorldTileBuildOrder(visibleWorldBuildOrderScratch, {
       playerTileX: centerX,
@@ -1464,20 +1483,21 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       pendingWorldBuild.queue,
       pendingWorldBuildQueueScratch
     );
-    pendingWorldBuild = {
+    updatePendingWorldBuildState(pendingWorldBuild, {
       contextId: context.id,
-      centerKey: `${centerX}:${centerY}`,
-      facingBucket: String(facingBucket),
+      centerX,
+      centerY,
+      facingBucket,
       queue: nextPendingWorldBuild.queue,
-    };
+    });
     for (let index = 0; index < nextPendingWorldBuild.cancelledEntryCount; index += 1) {
       recordRecentMetric(renderChurnMetrics.pendingCancelledEntries, performance.now());
     }
 
-    lastCenterKey = `${centerX}:${centerY}`;
-    lastContextKey = context.id;
-    lastFacingBucket = String(facingBucket);
-    lastChunkRadius = chunkRadius;
+    updateWorldVisibilitySyncState(
+      lastVisibleWorldSyncState,
+      nextVisibleWorldSyncState
+    );
   }
 
   function flushPendingWorldBuild(
@@ -1493,12 +1513,13 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       return;
     }
     const context = state.getCurrentContext();
-    const centerKey = `${Math.round(state.player.x)}:${Math.round(state.player.y)}`;
-    const facingBucket = String(getFacingVisibilityBucket(state.player.facing));
     if (
-      pendingWorldBuild.contextId !== context.id ||
-      pendingWorldBuild.centerKey !== centerKey ||
-      pendingWorldBuild.facingBucket !== facingBucket
+      !matchesPendingWorldBuildState(pendingWorldBuild, {
+        contextId: context.id,
+        centerX: Math.round(state.player.x),
+        centerY: Math.round(state.player.y),
+        facingBucket: getFacingVisibilityBucket(state.player.facing),
+      })
     ) {
       return;
     }
@@ -1608,18 +1629,23 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
   }
 
   function render(state: Render3DState, options: Render3DOptions = {}): void {
-    const centerKey = `${Math.round(state.player.x)}:${Math.round(state.player.y)}`;
     const contextKey = state.getCurrentContext().id;
-    const facingBucket = String(getFacingVisibilityBucket(state.player.facing));
     const chunkRadius = Math.max(8, Math.floor(options.visibilityRadius ?? CHUNK_RADIUS));
-    if (contextKey !== lastContextKey) {
+    const nextVisibleWorldSyncState = {
+      contextId: contextKey,
+      centerX: Math.round(state.player.x),
+      centerY: Math.round(state.player.y),
+      facingBucket: getFacingVisibilityBucket(state.player.facing),
+      chunkRadius,
+    };
+    if (contextKey !== lastVisibleWorldSyncState.contextId) {
       clearWorld();
     }
     if (
-      centerKey !== lastCenterKey ||
-      contextKey !== lastContextKey ||
-      facingBucket !== lastFacingBucket ||
-      chunkRadius !== lastChunkRadius
+      !matchesWorldVisibilitySyncState(
+        lastVisibleWorldSyncState,
+        nextVisibleWorldSyncState
+      )
     ) {
       syncVisibleWorld(state, chunkRadius, options.renderBudget);
     }

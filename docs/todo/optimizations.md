@@ -113,7 +113,7 @@ State/events only
 * [ ] Avoid repeatedly constructing `Vector2`, `Vector3`, `Matrix4`, or quaternion objects.
 * [X] Reuse temporary math objects.
 * [X] Avoid creating closures inside frequently executed loops.
-* [ ] Avoid string construction inside hot loops.
+* [X] Avoid string construction inside hot loops.
 * [X] Avoid object spreading in per-frame operations.
 * [ ] Avoid repeatedly cloning game state.
 * [X] Separate high-frequency and low-frequency updates.
