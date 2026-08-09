@@ -32,12 +32,15 @@ import {
   getTreeBiologicalState,
   getTreeCollisionState,
   getTreeCanopyState,
+  getTreeDamageState,
   getTreeStructuralState,
   resolveTreeSeason,
   type TreeBiologicalState,
   type TreeBranchState,
   type TreeCanopyState,
   type TreeCollisionState,
+  type TreeDamageMark,
+  type TreeDamageState,
   type TreeFamily,
   type TreeFoliageState,
   type TreeGenerator,
@@ -75,6 +78,7 @@ const LANDMARK_KEY = 'forestLandmark';
 const HOLLOW_KEY = 'forestHollow';
 const OWL_KEY = 'forestOwl';
 const CARVING_KEY = 'forestCarving';
+const BARK_DAMAGE_KEY = 'forestBarkDamage';
 const MEADOW_KEY = 'forestMeadow';
 const BIRD_KEY = 'forestBird';
 const WEB_KEY = 'forestWeb';
@@ -1093,6 +1097,7 @@ export function createForestTilePlugin(): RuntimePlugin {
           const style = getTreeStyle(three, tileX, tileY, descriptor.variety);
           const structure = getTreeStructuralState(descriptor);
           const canopy = getTreeCanopyState(descriptor);
+          const damage = getTreeDamageState(descriptor);
 
           const tree = new three.Group();
           tree.position.set(tileX + descriptor.x, 0, tileY + descriptor.y);
@@ -1132,6 +1137,28 @@ export function createForestTilePlugin(): RuntimePlugin {
               clump.x + clump.y + clump.z
             );
             tree.add(foliage);
+          }
+
+          for (const barkMark of damage.barkMarks) {
+            const mark = new three.Mesh(geometry.foliage, style.carvingMaterial);
+            mark.position.set(
+              barkMark.x,
+              barkMark.y,
+              structure.radius *
+                (barkMark.kind === 'crack' ? 0.92 : 0.82) *
+                (barkMark.x >= 0 ? 1 : -1)
+            );
+            mark.scale.set(
+              barkMark.scale * (barkMark.kind === 'crack' ? 0.35 : 0.48),
+              barkMark.scale * (0.9 + barkMark.severity * 0.6),
+              barkMark.scale * (barkMark.kind === 'crack' ? 0.18 : 0.26)
+            );
+            mark.userData = {
+              ...(mark.userData ?? {}),
+              [BARK_DAMAGE_KEY]: barkMark.kind,
+              forestBarkDamageSeverity: barkMark.severity,
+            };
+            tree.add(mark);
           }
 
           group.add(tree);
@@ -1820,6 +1847,19 @@ export function getForestTreeAgeProfiles(
   });
 }
 
+export function getForestTreeDamageProfiles(
+  tileX: number,
+  tileY: number
+): Array<{
+  form: ForestTreeForm;
+  barkMarks: TreeDamageMark[];
+}> {
+  return getForestTreeDescriptors(tileX, tileY).map((descriptor) => ({
+    form: descriptor.form,
+    barkMarks: getTreeDamageState(descriptor).barkMarks,
+  }));
+}
+
 function getForestGroveCenter(tileX: number, tileY: number) {
   return {
     x: (hash2D(FOREST_GROVE_CENTER_X_SEED, tileX, tileY) - 0.5) * 0.36,
@@ -2155,6 +2195,17 @@ function createForestTreeDescriptorFromSpecies(
       ? 2 + Math.floor(maturity * 3) + Math.floor(appearanceRandom() * 2)
       : 1 + Math.floor(maturity * 4) + Math.floor(appearanceRandom() * 2);
   const foliage = new Array<ForestFoliageDescriptor>(foliageCount);
+  const barkMarkCount =
+    biological.lifeStage === 'ancient'
+      ? 2 + Math.floor(appearanceRandom() * 3)
+      : biological.lifeStage === 'mature'
+        ? 1 + Math.floor(appearanceRandom() * 2)
+        : biological.lifeStage === 'adolescent'
+          ? appearanceRandom() > 0.72
+            ? 1
+            : 0
+          : 0;
+  const barkMarks = new Array<TreeDamageMark>(barkMarkCount);
   const x = clampToTile(
     context.groveCenter.x + (placementRandom() - 0.5) * spread * 2
   );
@@ -2173,6 +2224,9 @@ function createForestTreeDescriptorFromSpecies(
   const collision: TreeCollisionState = {
     radius: structure.radius * 0.88,
     height: structure.trunkHeight,
+  };
+  const damage: TreeDamageState = {
+    barkMarks,
   };
 
   for (let branchIndex = 0; branchIndex < branchCount; branchIndex += 1) {
@@ -2275,6 +2329,38 @@ function createForestTreeDescriptorFromSpecies(
     };
   }
 
+  for (let barkMarkIndex = 0; barkMarkIndex < barkMarkCount; barkMarkIndex += 1) {
+    const severityBase =
+      biological.lifeStage === 'ancient'
+        ? 0.62
+        : biological.lifeStage === 'mature'
+          ? 0.4
+          : 0.22;
+    const severity = Math.min(1, severityBase + appearanceRandom() * 0.28);
+    barkMarks[barkMarkIndex] = {
+      x:
+        (hash2D(TREE_BARK_CRACK_X_SEED, context.tileX * 23 + context.treeIndex, barkMarkIndex) -
+          0.5) *
+        structure.radius *
+        1.6,
+      y:
+        trunkHeight *
+        (0.18 +
+          hash2D(
+            TREE_BARK_CRACK_HEIGHT_SEED,
+            context.tileY * 19 + context.treeIndex,
+            barkMarkIndex
+          ) *
+            0.64),
+      scale: 0.04 + severity * 0.07,
+      severity,
+      kind:
+        barkMarkIndex === 0 || severity > 0.68 || biological.lifeStage === 'ancient'
+          ? 'crack'
+          : 'scar',
+    };
+  }
+
   return {
     ...createTreeLogicalState({
       x,
@@ -2284,6 +2370,7 @@ function createForestTreeDescriptorFromSpecies(
       canopy,
       collision,
       biological,
+      damage,
     }),
     familyId: definition.familyId,
     speciesId: definition.speciesId,

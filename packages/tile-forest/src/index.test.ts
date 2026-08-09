@@ -20,6 +20,7 @@ import {
   getForestTreeInhabitants,
   getForestTreeAgeProfiles,
   getForestTreeBranchProfiles,
+  getForestTreeDamageProfiles,
   getForestCarvings,
   getForestFloorDetails,
   getForestLandmark,
@@ -1078,6 +1079,48 @@ describe('tile forest', () => {
       values.reduce((sum, value) => sum + value, 0) / values.length;
 
     expect(average(ancientCounts)).toBeGreaterThan(average(matureCounts));
+  });
+
+  it('increases bark damage with age in forest trees', () => {
+    const samples: Array<{
+      age: ReturnType<typeof getForestTreeAgeProfiles>[number];
+      damage: ReturnType<typeof getForestTreeDamageProfiles>[number];
+    }> = [];
+
+    for (let tileY = 0; tileY < 64; tileY += 1) {
+      for (let tileX = 0; tileX < 64; tileX += 1) {
+        const ages = getForestTreeAgeProfiles(tileX, tileY);
+        const damages = getForestTreeDamageProfiles(tileX, tileY);
+        for (let index = 0; index < ages.length; index += 1) {
+          const age = ages[index];
+          const damage = damages[index];
+          if (age && damage) {
+            samples.push({ age, damage });
+          }
+        }
+      }
+    }
+
+    const barkDamageScore = (sample: (typeof samples)[number]) =>
+      sample.damage.barkMarks.reduce(
+        (sum, mark) => sum + mark.severity + mark.scale,
+        0
+      );
+    const matureScores = samples
+      .filter((sample) => sample.age.lifeStage === 'mature')
+      .map(barkDamageScore);
+    const ancientScores = samples
+      .filter((sample) => sample.age.lifeStage === 'ancient')
+      .map(barkDamageScore);
+
+    expect(matureScores.length).toBeGreaterThan(0);
+    expect(ancientScores.length).toBeGreaterThan(0);
+
+    const average = (values: number[]) =>
+      values.reduce((sum, value) => sum + value, 0) / values.length;
+
+    expect(average(ancientScores)).toBeGreaterThan(average(matureScores));
+    expect(ancientScores.some((score) => score > 0)).toBe(true);
   });
 
   it('generates more tree-like branch profiles for broadleaf and pine forms', () => {
@@ -2408,6 +2451,88 @@ describe('tile forest', () => {
     });
 
     expect(preservedCoverage.some((coverage) => coverage <= 0.38)).toBe(true);
+  });
+
+  it('renders bark damage markers only for full-detail aged forest trees', () => {
+    const plugin = createForestTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'forest');
+    const state = {
+      player: { x: 0, y: 0, facing: 0 },
+      getCurrentContext() {
+        return { id: 'overworld', type: 'overworld', depth: 0 };
+      },
+      getCurrentTile() {
+        return { kind: 'forest' };
+      },
+      getTileDefinition() {
+        return {
+          name: 'Forest',
+          color: '#000000',
+          miniColor: '#111111',
+          walkable: true,
+          wallHeight: 0.38,
+        };
+      },
+    };
+
+    let targetTile: { x: number; y: number } | null = null;
+    for (let tileY = 0; tileY < 48 && !targetTile; tileY += 1) {
+      for (let tileX = 0; tileX < 48; tileX += 1) {
+        const ages = getForestTreeAgeProfiles(tileX, tileY);
+        const damages = getForestTreeDamageProfiles(tileX, tileY);
+        if (
+          ages.some((age) => age.lifeStage === 'ancient') &&
+          damages.some((damage) => damage.barkMarks.length > 0)
+        ) {
+          targetTile = { x: tileX, y: tileY };
+          break;
+        }
+      }
+    }
+
+    expect(targetTile).not.toBeNull();
+    state.player.x = targetTile!.x;
+    state.player.y = targetTile!.y;
+
+    const fullModel = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'forest' },
+      tileX: targetTile!.x,
+      tileY: targetTile!.y,
+      detailLevel: 'full',
+    }) as FakeGroup;
+    const lowModel = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'forest' },
+      tileX: targetTile!.x,
+      tileY: targetTile!.y,
+      detailLevel: 'low',
+    }) as FakeGroup;
+
+    const fullKinds = new Set<string>();
+    const severities: number[] = [];
+    fullModel.traverse((node) => {
+      if (typeof node.userData?.forestBarkDamageSeverity === 'number') {
+        severities.push(node.userData.forestBarkDamageSeverity);
+      }
+      if (typeof node.userData?.forestBarkDamage === 'string') {
+        fullKinds.add(node.userData.forestBarkDamage);
+      }
+    });
+
+    let lowDamageCount = 0;
+    lowModel.traverse((node) => {
+      if (typeof node.userData?.forestBarkDamageSeverity === 'number') {
+        lowDamageCount += 1;
+      }
+    });
+
+    expect(severities.length).toBeGreaterThan(0);
+    expect(severities.some((severity) => severity >= 0.62)).toBe(true);
+    expect(fullKinds.has('crack')).toBe(true);
+    expect(lowDamageCount).toBe(0);
   });
 
   it('renders flower meadows only in full-detail forest models', () => {

@@ -80,6 +80,18 @@ export interface TreeCollisionState {
   height: number;
 }
 
+export interface TreeDamageMark {
+  x: number;
+  y: number;
+  scale: number;
+  severity: number;
+  kind: 'crack' | 'scar';
+}
+
+export interface TreeDamageState {
+  barkMarks: TreeDamageMark[];
+}
+
 export type TreeLifeStage =
   | 'sapling'
   | 'adolescent'
@@ -116,6 +128,7 @@ export interface TreeLogicalState<TForm extends string = string> {
   canopy?: TreeCanopyState;
   collision?: TreeCollisionState;
   biological?: TreeBiologicalState;
+  damage?: TreeDamageState;
 }
 
 type TreeCapabilitySource =
@@ -189,6 +202,7 @@ export function createTreeLogicalState<TForm extends string = string>({
   canopy,
   collision,
   biological,
+  damage,
 }: {
   x: number;
   y: number;
@@ -197,6 +211,7 @@ export function createTreeLogicalState<TForm extends string = string>({
   canopy: TreeCanopyState;
   collision?: TreeCollisionState;
   biological?: TreeBiologicalState;
+  damage?: TreeDamageState;
 }): TreeLogicalState<TForm> {
   const collisionState = collision ?? {
     radius: structure.radius,
@@ -215,6 +230,7 @@ export function createTreeLogicalState<TForm extends string = string>({
     canopy,
     collision: collisionState,
     biological,
+    damage,
   };
 }
 
@@ -283,6 +299,12 @@ export function getTreeBiologicalState<TForm extends string = string>(
       maximumAgeYears: 1,
     })
   );
+}
+
+export function getTreeDamageState<TForm extends string = string>(
+  tree: TreeLogicalState<TForm>
+): TreeDamageState {
+  return tree.damage ?? { barkMarks: [] };
 }
 
 export function createTreeSceneState<
