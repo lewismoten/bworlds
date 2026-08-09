@@ -1,5 +1,7 @@
 import {
   createBoundedCache,
+  createCoordinateCache,
+  type CoordinateCache,
   type CacheLike,
 } from '@bworlds/cache-support';
 import {
@@ -119,22 +121,13 @@ export function createOverworldTerrainSignalSampler(
   const moistureSeed = `${seed}:moisture`;
   const riverSeed = `${seed}:river`;
   const roadSeed = `${seed}:road`;
-  const signalCache = createBoundedCache<string, OverworldSignals>(
-    OVERWORLD_SIGNAL_CACHE_LIMIT
-  );
-  const riverControlPointCache = createBoundedCache<string, RiverControlPoint[]>(
-    OVERWORLD_RIVER_CACHE_LIMIT
-  );
-  const riverCurvePointCache = createBoundedCache<string, RiverControlPoint[]>(
-    OVERWORLD_RIVER_CACHE_LIMIT
-  );
-  const riverForkPathCache = createBoundedCache<string, RiverForkPath | null>(
-    OVERWORLD_RIVER_CACHE_LIMIT
-  );
+  const signalCache = createCoordinateCache<OverworldSignals>();
+  const riverControlPointCache = createCoordinateCache<RiverControlPoint[]>();
+  const riverCurvePointCache = createCoordinateCache<RiverControlPoint[]>();
+  const riverForkPathCache = createCoordinateCache<RiverForkPath | null>();
 
   return function sampleTerrainSignals(x: number, y: number): OverworldSignals {
-    const signalKey = `${x}:${y}`;
-    return signalCache.getOrCreate(signalKey, () => {
+    return signalCache.getOrCreate(x, y, () => {
       const scaledX = x / 160;
       const scaledY = y / 160;
       const continent = octaveNoise2D(continentSeed, scaledX, scaledY, {
@@ -282,9 +275,9 @@ function sampleRiverControlPathSignal(
   seed: Seed,
   x: number,
   y: number,
-  controlPointCache: CacheLike<string, RiverControlPoint[]>,
-  curvePointCache: CacheLike<string, RiverControlPoint[]>,
-  forkPathCache: CacheLike<string, RiverForkPath | null>
+  controlPointCache: CoordinateCache<RiverControlPoint[]>,
+  curvePointCache: CoordinateCache<RiverControlPoint[]>,
+  forkPathCache: CoordinateCache<RiverForkPath | null>
 ): number {
   const cellX = Math.floor(x / RIVER_CONTROL_CELL_SIZE);
   const cellY = Math.floor(y / RIVER_CONTROL_CELL_SIZE);
@@ -515,15 +508,14 @@ function getCachedRiverControlPoints(
   seed: Seed,
   cellX: number,
   cellY: number,
-  cache: CacheLike<string, RiverControlPoint[]>
+  cache: CoordinateCache<RiverControlPoint[]>
 ): RiverControlPoint[] {
-  const key = `${seed}:${cellX}:${cellY}`;
-  const cached = cache.get(key);
+  const cached = cache.get(cellX, cellY);
   if (cached !== undefined) {
     return cached;
   }
   const points = createRiverControlPoints(seed, cellX, cellY);
-  cache.set(key, points);
+  cache.set(cellX, cellY, points);
   return points;
 }
 
@@ -531,18 +523,17 @@ function getCachedRiverCurvePoints(
   seed: Seed,
   cellX: number,
   cellY: number,
-  controlPointCache: CacheLike<string, RiverControlPoint[]>,
-  curvePointCache: CacheLike<string, RiverControlPoint[]>
+  controlPointCache: CoordinateCache<RiverControlPoint[]>,
+  curvePointCache: CoordinateCache<RiverControlPoint[]>
 ): RiverControlPoint[] {
-  const key = `${seed}:${cellX}:${cellY}`;
-  const cached = curvePointCache.get(key);
+  const cached = curvePointCache.get(cellX, cellY);
   if (cached !== undefined) {
     return cached;
   }
   const points = createRiverCurvePoints(
     getCachedRiverControlPoints(seed, cellX, cellY, controlPointCache)
   );
-  curvePointCache.set(key, points);
+  curvePointCache.set(cellX, cellY, points);
   return points;
 }
 
@@ -550,22 +541,17 @@ function getCachedRiverForkPath(
   seed: Seed,
   cellX: number,
   cellY: number,
-  controlPointCache: CacheLike<string, RiverControlPoint[]>,
-  forkPathCache: CacheLike<string, RiverForkPath | null>
+  controlPointCache: CoordinateCache<RiverControlPoint[]>,
+  forkPathCache: CoordinateCache<RiverForkPath | null>
 ): RiverForkPath | null {
-  const key = `${seed}:${cellX}:${cellY}`;
-  if (!forkPathCache.has(key)) {
-    forkPathCache.set(
-      key,
-      createRiverForkPath(
-        seed,
-        cellX,
-        cellY,
-        getCachedRiverControlPoints(seed, cellX, cellY, controlPointCache)
-      )
-    );
-  }
-  return forkPathCache.get(key) ?? null;
+  return forkPathCache.getOrCreate(cellX, cellY, () =>
+    createRiverForkPath(
+      seed,
+      cellX,
+      cellY,
+      getCachedRiverControlPoints(seed, cellX, cellY, controlPointCache)
+    )
+  );
 }
 
 function getRiverPathSignalAtPoint(
