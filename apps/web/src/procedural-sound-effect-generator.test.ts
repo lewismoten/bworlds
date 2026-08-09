@@ -469,4 +469,37 @@ describe('procedural sound effect generator', () => {
     expect(effect.tremolo?.depth).toBeGreaterThan(0.25);
     expect(effect.tremolo?.depth).toBeLessThan(0.31);
   });
+
+  it('preserves deterministic vibrato modulation settings', () => {
+    const generator = createProceduralSoundEffectGenerator();
+    const effect = generator.generate({
+      kind: 'steam-whistle',
+      nowMs: 2400,
+      seed: 123,
+      recipe: {
+        id: 'steam-whistle-vibrato',
+        baseFrequency: 370,
+        baseDurationMs: 1050,
+        baseVolume: 0.048,
+        waveform: 'square',
+        vibrato: {
+          rateHz: 5.6,
+          depthHz: 18,
+          waveform: 'sine',
+          rateVariation: 0.04,
+          depthVariation: 0.08,
+        },
+      },
+    });
+
+    expect(effect.vibrato).toEqual({
+      rateHz: expect.any(Number),
+      depthHz: expect.any(Number),
+      waveform: 'sine',
+    });
+    expect(effect.vibrato?.rateHz).toBeGreaterThan(5.3);
+    expect(effect.vibrato?.rateHz).toBeLessThan(5.9);
+    expect(effect.vibrato?.depthHz).toBeGreaterThan(16);
+    expect(effect.vibrato?.depthHz).toBeLessThan(20);
+  });
 });

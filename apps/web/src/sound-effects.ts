@@ -15,6 +15,7 @@ import {
   type ProceduralNoiseColor,
   type ProceduralSoundReverb,
   type ProceduralSoundTremolo,
+  type ProceduralSoundVibrato,
   type ProceduralSoundEffectLayer,
   type ProceduralSoundFilter,
   type ProceduralPitchEnvelope,
@@ -593,6 +594,29 @@ function resolveProceduralSoundTremolo(kind: SoundEffectKind) {
         waveform: 'triangle' as const,
         rateVariation: 0.05,
         depthVariation: 0.05,
+      };
+    default:
+      return undefined;
+  }
+}
+
+function resolveProceduralSoundVibrato(kind: SoundEffectKind) {
+  switch (kind) {
+    case 'steam-whistle':
+      return {
+        rateHz: 5.6,
+        depthHz: 18,
+        waveform: 'sine' as const,
+        rateVariation: 0.04,
+        depthVariation: 0.08,
+      };
+    case 'combat-magic':
+      return {
+        rateHz: 6.8,
+        depthHz: 10,
+        waveform: 'triangle' as const,
+        rateVariation: 0.05,
+        depthVariation: 0.08,
       };
     default:
       return undefined;
@@ -1757,6 +1781,11 @@ type ActiveSoundTremolo = {
   output: GainNode;
   config: ProceduralSoundTremolo;
 };
+type ActiveSoundVibrato = {
+  oscillator: OscillatorNode;
+  depthGain: GainNode;
+  config: ProceduralSoundVibrato;
+};
 type ActiveSoundSource = {
   source: ScheduledSoundSourceNode;
   filters: ActiveSoundFilter[];
@@ -1764,6 +1793,7 @@ type ActiveSoundSource = {
   delay: ActiveSoundDelay | null;
   reverb: ActiveSoundReverb | null;
   tremolo: ActiveSoundTremolo | null;
+  vibrato: ActiveSoundVibrato | null;
   gain: GainNode;
   effect: ProceduralSoundEffect;
 };
@@ -1893,6 +1923,8 @@ export function createWebAudioSoundEffectSink(
       source.tremolo?.oscillator.disconnect?.();
       source.tremolo?.depthGain.disconnect?.();
       source.tremolo?.output.disconnect?.();
+      source.vibrato?.oscillator.disconnect?.();
+      source.vibrato?.depthGain.disconnect?.();
       source.gain.disconnect?.();
     }
     voice.mixGain.disconnect?.();
@@ -1908,9 +1940,11 @@ export function createWebAudioSoundEffectSink(
         if (typeof stopAt === 'number') {
           source.source.stop(stopAt);
           source.tremolo?.oscillator.stop(stopAt);
+          source.vibrato?.oscillator.stop(stopAt);
         } else {
           source.source.stop();
           source.tremolo?.oscillator.stop();
+          source.vibrato?.oscillator.stop();
         }
       } catch {
         // Ignore invalid repeated stop calls from already-ending voices.
@@ -2019,6 +2053,7 @@ export function createWebAudioSoundEffectSink(
           startAt,
           durationSeconds
         );
+        connectSoundEffectSourceModulation(source);
         connectSoundEffectSourceChain(source);
         source.gain.connect(mixGain);
       }
@@ -2039,6 +2074,10 @@ export function createWebAudioSoundEffectSink(
       for (const source of sources) {
         source.tremolo?.oscillator.start(startAt);
         source.tremolo?.oscillator.stop(
+          startAt + source.effect.durationMs / 1000
+        );
+        source.vibrato?.oscillator.start(startAt);
+        source.vibrato?.oscillator.stop(
           startAt + source.effect.durationMs / 1000
         );
         source.source.start(startAt);
@@ -2099,6 +2138,7 @@ function createActiveSoundSource(
     delay: createSoundEffectDelay(context, effect),
     reverb: createSoundEffectReverb(context, effect, reverbImpulseCache),
     tremolo: createSoundEffectTremolo(context, effect),
+    vibrato: createSoundEffectVibrato(context, effect),
     gain: context.createGain(),
     effect,
   };
@@ -2122,6 +2162,7 @@ function createLayeredSoundEffect(
     delay: layer.delay ?? effect.delay,
     reverb: layer.reverb ?? effect.reverb,
     tremolo: layer.tremolo ?? effect.tremolo,
+    vibrato: layer.vibrato ?? effect.vibrato,
     sweeps: layer.sweeps ?? effect.sweeps,
     layers: undefined,
   };
@@ -2302,6 +2343,35 @@ function createSoundEffectTremolo(
     depthGain,
     output,
     config: effect.tremolo,
+  };
+}
+
+function createSoundEffectVibrato(
+  context: AudioContext,
+  effect: ProceduralSoundEffect
+): ActiveSoundVibrato | null {
+  if (
+    typeof context.createOscillator !== 'function' ||
+    typeof context.createGain !== 'function' ||
+    !effect.vibrato
+  ) {
+    return null;
+  }
+
+  const oscillator = context.createOscillator();
+  const depthGain = context.createGain();
+
+  oscillator.type = effect.vibrato.waveform;
+  oscillator.frequency.setValueAtTime(
+    effect.vibrato.rateHz,
+    context.currentTime
+  );
+  depthGain.gain.setValueAtTime(effect.vibrato.depthHz, context.currentTime);
+
+  return {
+    oscillator,
+    depthGain,
+    config: effect.vibrato,
   };
 }
 
@@ -2731,6 +2801,13 @@ function applySoundEffectSourceShape(
       continue;
     }
     source.frequency.exponentialRampToValueAtTime(targetFrequency, targetAt);
+  }
+}
+
+function connectSoundEffectSourceModulation(source: ActiveSoundSource): void {
+  if ('frequency' in source.source && source.vibrato) {
+    source.vibrato.oscillator.connect(source.vibrato.depthGain);
+    source.vibrato.depthGain.connect(source.source.frequency);
   }
 }
 

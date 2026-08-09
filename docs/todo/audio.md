@@ -85,7 +85,7 @@
 - [x] Support delay and echo.
 - [x] Support procedural reverb or reusable impulse-response environments.
 - [x] Support tremolo through amplitude modulation.
-- [ ] Support vibrato through frequency modulation.
+- [x] Support vibrato through frequency modulation.
 - [ ] Support frequency modulation for metallic, magical, bell-like, and unusual sounds.
 - [ ] Support ring modulation for unnatural, technological, and magical sounds.
 - [ ] Support layered sounds where individual components start at different times.

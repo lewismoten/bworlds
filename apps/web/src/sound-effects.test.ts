@@ -1716,6 +1716,125 @@ describe('sound effects', () => {
     }
   });
 
+  it('routes procedural sound effects through vibrato frequency modulation', () => {
+    const createdOscillators: Array<{
+      onended: ((event: Event) => void) | null;
+      type: string;
+      frequency: {
+        setValueAtTime: ReturnType<typeof vi.fn>;
+        exponentialRampToValueAtTime: ReturnType<typeof vi.fn>;
+        linearRampToValueAtTime: ReturnType<typeof vi.fn>;
+      };
+      connect: ReturnType<typeof vi.fn>;
+      disconnect: ReturnType<typeof vi.fn>;
+      start: ReturnType<typeof vi.fn>;
+      stop: ReturnType<typeof vi.fn>;
+    }> = [];
+    const createdGains: Array<{
+      gain: {
+        setValueAtTime: ReturnType<typeof vi.fn>;
+        exponentialRampToValueAtTime: ReturnType<typeof vi.fn>;
+      };
+      connect: ReturnType<typeof vi.fn>;
+      disconnect: ReturnType<typeof vi.fn>;
+    }> = [];
+
+    class FakeAudioContext {
+      state: AudioContextState = 'running';
+      currentTime = 0;
+      destination = {};
+      createOscillator() {
+        const oscillator = {
+          onended: null as ((event: Event) => void) | null,
+          type: 'sine',
+          frequency: {
+            setValueAtTime: vi.fn(),
+            exponentialRampToValueAtTime: vi.fn(),
+            linearRampToValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+          start: vi.fn(),
+          stop: vi.fn(),
+        };
+        createdOscillators.push(oscillator);
+        return oscillator as unknown as OscillatorNode;
+      }
+      createGain() {
+        const gain = {
+          gain: {
+            setValueAtTime: vi.fn(),
+            exponentialRampToValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+        };
+        createdGains.push(gain);
+        return gain as unknown as GainNode;
+      }
+      createStereoPanner() {
+        return {
+          pan: {
+            setValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+        } as unknown as StereoPannerNode;
+      }
+      resume() {
+        return Promise.resolve();
+      }
+    }
+
+    const originalAudioContext = globalThis.AudioContext;
+    vi.stubGlobal('AudioContext', FakeAudioContext);
+
+    try {
+      const sink = createWebAudioSoundEffectSink();
+      sink.play({
+        kind: 'steam-whistle',
+        nowMs: 0,
+        frequency: 370,
+        durationMs: 1050,
+        volume: 0.048,
+        waveform: 'square',
+        vibrato: {
+          rateHz: 5.6,
+          depthHz: 18,
+          waveform: 'sine',
+        },
+      });
+
+      expect(createdOscillators).toHaveLength(2);
+      const sourceOscillator = createdOscillators[0];
+      const vibratoOscillator = createdOscillators[1];
+      expect(vibratoOscillator?.type).toBe('sine');
+      expect(vibratoOscillator?.frequency.setValueAtTime).toHaveBeenCalledWith(
+        5.6,
+        0
+      );
+      expect(vibratoOscillator?.start).toHaveBeenCalledWith(0);
+      expect(vibratoOscillator?.stop).toHaveBeenCalledWith(1.05);
+      const depthGain = createdGains.find((gain) =>
+        gain.gain.setValueAtTime.mock.calls.some(
+          (call) => call[0] === 18 && call[1] === 0
+        )
+      );
+
+      expect(depthGain).toBeDefined();
+      expect(vibratoOscillator?.connect).toHaveBeenCalledWith(depthGain);
+      expect(depthGain?.connect).toHaveBeenCalledWith(
+        sourceOscillator?.frequency
+      );
+    } finally {
+      if (originalAudioContext) {
+        vi.stubGlobal('AudioContext', originalAudioContext);
+      } else {
+        vi.unstubAllGlobals();
+      }
+    }
+  });
+
   it('limits identical low-priority ambient voices in the web audio sink', () => {
     const createdOscillators: Array<{
       onended: ((event: Event) => void) | null;
