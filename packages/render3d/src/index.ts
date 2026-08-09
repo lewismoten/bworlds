@@ -82,6 +82,7 @@ import {
   countColorVariantShareableMaterials,
   countEquivalentShareableMaterials,
 } from './material-equivalence.ts';
+import { countUniqueMaterialDefineSignatures } from './material-define-signatures.ts';
 import {
   getTextureDimensions,
   getTexturePixelCount,
@@ -155,6 +156,7 @@ export {
   countColorVariantShareableMaterials,
   countEquivalentShareableMaterials,
 } from './material-equivalence.ts';
+export { countUniqueMaterialDefineSignatures } from './material-define-signatures.ts';
 export {
   getRecentOwnedMaterialLifecycleCounts,
   resetOwnedMaterialLifecycleMetrics,
@@ -336,6 +338,7 @@ type Render3DController = {
     sharedMaterialCount: number;
     clonedMaterialCount: number;
     colorVariantMaterialCount: number;
+    shaderDefineSignatureCount: number;
     maxMaterialTextureSlotCount: number;
     transparentMaterialCount: number;
     alphaTestMaterialCount: number;
@@ -449,6 +452,7 @@ const FULL_DETAIL_TILE_MODEL_HARD_LIMITS: TileModelHardLimits = {
   materialCount: 16,
   textureCount: 16,
   maxMaterialTextureSlotCount: 6,
+  shaderDefineSignatureCount: 4,
   maxTextureWidth: 2_048,
   maxTextureHeight: 2_048,
   maxTexturePixelCount: 4_194_304,
@@ -494,6 +498,7 @@ const LOW_DETAIL_TILE_MODEL_HARD_LIMITS: TileModelHardLimits = {
   materialCount: 3,
   textureCount: 4,
   maxMaterialTextureSlotCount: 4,
+  shaderDefineSignatureCount: 1,
   maxTextureWidth: 512,
   maxTextureHeight: 512,
   maxTexturePixelCount: 262_144,
@@ -672,6 +677,7 @@ export function validateTileModelAgainstRenderBudget(
     'materialCount',
     'textureCount',
     'maxMaterialTextureSlotCount',
+    'shaderDefineSignatureCount',
     'maxTextureWidth',
     'maxTextureHeight',
     'maxTexturePixelCount',
@@ -926,6 +932,7 @@ type SceneResourceStats = {
   sharedMaterialCount: number;
   clonedMaterialCount: number;
   colorVariantMaterialCount: number;
+  shaderDefineSignatureCount: number;
   maxMaterialTextureSlotCount: number;
   transparentMaterialCount: number;
   alphaTestMaterialCount: number;
@@ -984,6 +991,7 @@ type TileModelHardLimits = {
   materialCount: number;
   textureCount: number;
   maxMaterialTextureSlotCount: number;
+  shaderDefineSignatureCount: number;
   maxTextureWidth: number;
   maxTextureHeight: number;
   maxTexturePixelCount: number;
@@ -1103,6 +1111,7 @@ function createEmptySceneResourceStats(): SceneResourceStats {
     sharedMaterialCount: 0,
     clonedMaterialCount: 0,
     colorVariantMaterialCount: 0,
+    shaderDefineSignatureCount: 0,
     maxMaterialTextureSlotCount: 0,
     transparentMaterialCount: 0,
     alphaTestMaterialCount: 0,
@@ -2332,6 +2341,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       sharedMaterialCount: sceneResourceStats.sharedMaterialCount,
       clonedMaterialCount: sceneResourceStats.clonedMaterialCount,
       colorVariantMaterialCount: sceneResourceStats.colorVariantMaterialCount,
+      shaderDefineSignatureCount: sceneResourceStats.shaderDefineSignatureCount,
       maxMaterialTextureSlotCount: sceneResourceStats.maxMaterialTextureSlotCount,
       transparentMaterialCount: sceneResourceStats.transparentMaterialCount,
       alphaTestMaterialCount: sceneResourceStats.alphaTestMaterialCount,
@@ -3995,6 +4005,7 @@ export function collectSceneResourceStats(
     sharedMaterialCount: Math.max(0, materialRefCount - materials.size),
     clonedMaterialCount: countEquivalentShareableMaterials(materials),
     colorVariantMaterialCount: countColorVariantShareableMaterials(materials),
+    shaderDefineSignatureCount: countUniqueMaterialDefineSignatures(materials),
     maxMaterialTextureSlotCount,
     transparentMaterialCount: countMaterialsMatching(materials, isTransparentMaterial),
     alphaTestMaterialCount: countMaterialsMatching(materials, usesAlphaTest),

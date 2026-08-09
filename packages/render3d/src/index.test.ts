@@ -464,6 +464,7 @@ describe('render3d visibility helpers', () => {
       doubleSidedMaterialCount: 1,
       fogMaterialCount: 1,
       customShaderMaterialCount: 1,
+      shaderDefineSignatureCount: 0,
       materialTypes: 'MeshStandardMaterial:1, ShaderMaterial:1',
       materialsCreatedDuringSamplingWindow: 0,
       materialsDisposedDuringSamplingWindow: 0,
@@ -800,6 +801,7 @@ describe('render3d visibility helpers', () => {
       doubleSidedMaterialCount: 0,
       fogMaterialCount: 3,
       customShaderMaterialCount: 0,
+      shaderDefineSignatureCount: 0,
       materialTypes: 'Material:3',
       materialsCreatedDuringSamplingWindow: 0,
       materialsDisposedDuringSamplingWindow: 0,
@@ -899,6 +901,7 @@ describe('render3d visibility helpers', () => {
       doubleSidedMaterialCount: 0,
       fogMaterialCount: 2,
       customShaderMaterialCount: 0,
+      shaderDefineSignatureCount: 0,
       materialTypes: 'Material:2',
       materialsCreatedDuringSamplingWindow: 0,
       materialsDisposedDuringSamplingWindow: 0,
@@ -1048,6 +1051,7 @@ describe('render3d visibility helpers', () => {
       doubleSidedMaterialCount: 0,
       fogMaterialCount: 2,
       customShaderMaterialCount: 0,
+      shaderDefineSignatureCount: 0,
       materialTypes: 'Material:2',
       materialsCreatedDuringSamplingWindow: 0,
       materialsDisposedDuringSamplingWindow: 0,
@@ -1141,6 +1145,7 @@ describe('render3d visibility helpers', () => {
       doubleSidedMaterialCount: 0,
       fogMaterialCount: 2,
       customShaderMaterialCount: 0,
+      shaderDefineSignatureCount: 0,
       materialTypes: 'Material:2',
       materialsCreatedDuringSamplingWindow: 0,
       materialsDisposedDuringSamplingWindow: 0,
@@ -1266,6 +1271,7 @@ describe('render3d visibility helpers', () => {
       doubleSidedMaterialCount: 0,
       fogMaterialCount: 2,
       customShaderMaterialCount: 0,
+      shaderDefineSignatureCount: 0,
       materialTypes: 'Material:2',
       materialsCreatedDuringSamplingWindow: 0,
       materialsDisposedDuringSamplingWindow: 0,
@@ -1529,6 +1535,7 @@ describe('render3d visibility helpers', () => {
       materialCount: 16,
       textureCount: 16,
       maxMaterialTextureSlotCount: 6,
+      shaderDefineSignatureCount: 4,
       maxTextureWidth: 2_048,
       maxTextureHeight: 2_048,
       maxTexturePixelCount: 4_194_304,
@@ -1573,6 +1580,7 @@ describe('render3d visibility helpers', () => {
       materialCount: 3,
       textureCount: 4,
       maxMaterialTextureSlotCount: 4,
+      shaderDefineSignatureCount: 1,
       maxTextureWidth: 512,
       maxTextureHeight: 512,
       maxTexturePixelCount: 262_144,
@@ -1872,6 +1880,106 @@ describe('render3d visibility helpers', () => {
             metric: 'textureCount',
             actual: 5,
             limit: 4,
+          },
+        ]),
+      })
+    );
+  });
+
+  it('rejects materials with too many unique shader define combinations', () => {
+    const root = createMockObject3D(undefined, [
+      createMockObject3D(
+        createMockMaterial({
+          type: 'ShaderMaterial',
+          defines: {
+            USE_GLOW: true,
+          },
+          vertexShader: 'void main() {}',
+          fragmentShader: 'void main() {}',
+        }),
+        [],
+        createMockStatGeometry('define-cap-a', 24)
+      ),
+      createMockObject3D(
+        createMockMaterial({
+          type: 'ShaderMaterial',
+          defines: {
+            USE_FOG: true,
+          },
+          vertexShader: 'void main() {}',
+          fragmentShader: 'void main() {}',
+        }),
+        [],
+        createMockStatGeometry('define-cap-b', 24)
+      ),
+    ]);
+
+    expect(validateTileModelAgainstRenderBudget(root as never, 'low')).toEqual(
+      expect.objectContaining({
+        accepted: false,
+        stats: expect.objectContaining({
+          shaderDefineSignatureCount: 2,
+        }),
+        violations: expect.arrayContaining([
+          {
+            metric: 'shaderDefineSignatureCount',
+            actual: 2,
+            limit: 1,
+          },
+        ]),
+      })
+    );
+  });
+
+  it('uses stricter shader define caps for low-detail models than full-detail models', () => {
+    const root = createMockObject3D(undefined, [
+      createMockObject3D(
+        createMockMaterial({
+          type: 'ShaderMaterial',
+          defines: {
+            USE_GLOW: true,
+          },
+          vertexShader: 'void main() {}',
+          fragmentShader: 'void main() {}',
+        }),
+        [],
+        createMockStatGeometry('lod-define-cap-a', 24)
+      ),
+      createMockObject3D(
+        createMockMaterial({
+          type: 'ShaderMaterial',
+          defines: {
+            USE_FOG: true,
+          },
+          vertexShader: 'void main() {}',
+          fragmentShader: 'void main() {}',
+        }),
+        [],
+        createMockStatGeometry('lod-define-cap-b', 24)
+      ),
+    ]);
+
+    expect(validateTileModelAgainstRenderBudget(root as never, 'full')).toEqual(
+      expect.objectContaining({
+        accepted: true,
+        stats: expect.objectContaining({
+          shaderDefineSignatureCount: 2,
+        }),
+        violations: [],
+      })
+    );
+
+    expect(validateTileModelAgainstRenderBudget(root as never, 'low')).toEqual(
+      expect.objectContaining({
+        accepted: false,
+        stats: expect.objectContaining({
+          shaderDefineSignatureCount: 2,
+        }),
+        violations: expect.arrayContaining([
+          {
+            metric: 'shaderDefineSignatureCount',
+            actual: 2,
+            limit: 1,
           },
         ]),
       })
