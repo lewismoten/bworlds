@@ -1,9 +1,19 @@
-import { hash2D } from '@bworlds/core';
+import {
+  appendHashSeedLabel,
+  createHashSeed,
+  hash2D,
+  hash2DWithSeed,
+  registerHashLabel,
+} from '@bworlds/core';
 import { createRuntimePlugin } from '@bworlds/plugin-api';
 import type { RuntimePlugin } from '@bworlds/plugin-api';
 
 const SKY_DESCRIPTORS = ['clear', 'bright', 'golden', 'windy', 'cool'];
 const LAND_DESCRIPTORS = ['frontier', 'wilds', 'marches', 'reach', 'expanse'];
+const FRONTIER_SKY_LABEL = registerHashLabel('frontier-sky');
+const FRONTIER_LAND_LABEL = registerHashLabel('frontier-land');
+const FRONTIER_WARNING_LABEL = registerHashLabel('frontier-weather-warning');
+const FRONTIER_DELIGHT_LABEL = registerHashLabel('frontier-weather-delight');
 
 export function createFrontierFlavorRuntimePlugin(): RuntimePlugin {
   return createRuntimePlugin('runtime-frontier-flavor', {
@@ -39,14 +49,25 @@ export function createFrontierFlavorRuntimePlugin(): RuntimePlugin {
       };
     },
     decorateOverworldTile({ seed, tile, x, y }) {
+      const seedHash = createHashSeed(seed);
       const sky =
         SKY_DESCRIPTORS[
-          Math.floor(hash2D(`${seed}:frontier-sky`, x, y) * SKY_DESCRIPTORS.length)
+          Math.floor(
+            hash2DWithSeed(
+              appendHashSeedLabel(seedHash, FRONTIER_SKY_LABEL),
+              x,
+              y
+            ) * SKY_DESCRIPTORS.length
+          )
         ];
       const land =
         LAND_DESCRIPTORS[
           Math.floor(
-            hash2D(`${seed}:frontier-land`, Math.floor(x / 24), Math.floor(y / 24)) *
+            hash2DWithSeed(
+              appendHashSeedLabel(seedHash, FRONTIER_LAND_LABEL),
+              Math.floor(x / 24),
+              Math.floor(y / 24)
+            ) *
               LAND_DESCRIPTORS.length
           )
         ];
@@ -63,8 +84,8 @@ export function createFrontierFlavorRuntimePlugin(): RuntimePlugin {
 export function resolveFrontierSkyProfile(playerX: number, playerY: number) {
   const regionX = Math.floor(playerX / 24);
   const regionY = Math.floor(playerY / 24);
-  const warningSignal = hash2D('frontier-weather-warning', regionX, regionY);
-  const delightSignal = hash2D('frontier-weather-delight', regionX, regionY);
+  const warningSignal = hash2D(FRONTIER_WARNING_LABEL, regionX, regionY);
+  const delightSignal = hash2D(FRONTIER_DELIGHT_LABEL, regionX, regionY);
 
   return {
     dawnColor:

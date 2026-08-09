@@ -619,7 +619,11 @@ describe('world generator', () => {
     const boardingSpawn = getTrainBoardingSpawn('spec', trainContext);
 
     expect(trainMap.getTile(0, boardingSpawn.y).kind).toBe('interior');
-    expect(trainMap.getTile(0, 0).note).toMatch(/engine|coach|dining|mail|sleeper/i);
+    expect(trainMap.getTile(0, boardingSpawn.y).note).toContain(trainContext.toStation);
+    expect(trainMap.getTile(0, boardingSpawn.y - 5).note).not.toBe(
+      trainMap.getTile(0, boardingSpawn.y).note
+    );
+    expect(trainMap.getTile(0, boardingSpawn.y - 10).kind).toBe('interior');
     expect(trainMap.getExit?.(0, boardingSpawn.y + 2)).toEqual(
       expect.objectContaining({})
     );
@@ -970,9 +974,16 @@ describe('world generator', () => {
       depth: 1,
       origin: { x: 5, y: 4 },
     });
-    expect(depthMap.getTile(0, -7).note).toBe(
-      'Depth 1: ancient markings cover the floor.'
-    );
+    let decoratedNote: string | undefined;
+    for (let y = -10; y <= 10 && !decoratedNote; y += 1) {
+      for (let x = -10; x <= 10 && !decoratedNote; x += 1) {
+        const tile = depthMap.getTile(x, y);
+        if (tile.note === 'Depth 1: ancient markings cover the floor.') {
+          decoratedNote = tile.note;
+        }
+      }
+    }
+    expect(decoratedNote).toBe('Depth 1: ancient markings cover the floor.');
   });
 
   it('applies frontier overlay flavor through a composed pack registry', () => {

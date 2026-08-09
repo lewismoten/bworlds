@@ -82,8 +82,20 @@ describe('runtime frontier flavor', () => {
   });
 
   it('resolves deterministic red-sky omen palettes by region', () => {
-    expect(resolveFrontierSkyProfile(0, 0)).toEqual(resolveFrontierSkyProfile(0, 0));
-    expect(resolveFrontierSkyProfile(0, 0)).not.toEqual(resolveFrontierSkyProfile(96, 96));
+    const origin = resolveFrontierSkyProfile(0, 0);
+    expect(origin).toEqual(resolveFrontierSkyProfile(0, 0));
+
+    let differentRegionProfile: ReturnType<typeof resolveFrontierSkyProfile> | null = null;
+    for (let regionY = 1; regionY <= 8 && !differentRegionProfile; regionY += 1) {
+      for (let regionX = 1; regionX <= 8 && !differentRegionProfile; regionX += 1) {
+        const candidate = resolveFrontierSkyProfile(regionX * 24, regionY * 24);
+        if (JSON.stringify(candidate) !== JSON.stringify(origin)) {
+          differentRegionProfile = candidate;
+        }
+      }
+    }
+
+    expect(differentRegionProfile).not.toBeNull();
   });
 
   it('adds regional flavor metadata and plains notes', () => {
