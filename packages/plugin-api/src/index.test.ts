@@ -23,11 +23,14 @@ import {
   resolvePluginPackDefinition,
   getRenderAnimationMixerMetadata,
   getRenderBudgetPartMetadata,
+  getRenderModelAttachmentMetadata,
   getRenderParticleEmitterMetadata,
   hasRenderAnimationMixerMetadata,
   hasRenderBudgetPartMetadata,
+  hasRenderModelAttachmentMetadata,
   hasRenderParticleEmitterMetadata,
   markRenderAnimationMixer,
+  markRenderModelAttachment,
   markOptionalDecorativeRenderBudgetPart,
   markRenderParticleEmitter,
   markStructuralRenderBudgetPart,
@@ -155,6 +158,19 @@ describe('plugin registry', () => {
       label: 'beacon-spin',
     });
     expect(hasRenderAnimationMixerMetadata(target)).toBe(true);
+  });
+
+  it('marks reusable model-attachment metadata on render objects', () => {
+    const target = markRenderModelAttachment(
+      { userData: {} },
+      { count: 3, label: 'hanging-signs' }
+    );
+
+    expect(getRenderModelAttachmentMetadata(target)).toEqual({
+      count: 3,
+      label: 'hanging-signs',
+    });
+    expect(hasRenderModelAttachmentMetadata(target)).toBe(true);
   });
 
   it('registers content packs in map, runtime, then tile order', () => {

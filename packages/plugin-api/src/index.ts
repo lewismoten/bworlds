@@ -54,6 +54,13 @@ export {
   markRenderAnimationMixer,
   RENDER_ANIMATION_MIXER_USER_DATA_KEY,
 } from './render-animation-mixers';
+export type { RenderModelAttachmentMetadata } from './render-model-attachments';
+export {
+  getRenderModelAttachmentMetadata,
+  hasRenderModelAttachmentMetadata,
+  markRenderModelAttachment,
+  RENDER_MODEL_ATTACHMENT_USER_DATA_KEY,
+} from './render-model-attachments';
 import {
   attemptCall,
   dedupePluginPackIds,

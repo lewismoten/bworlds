@@ -99,6 +99,7 @@ import { createDungeonTilePlugin } from '@bworlds/tile-dungeon';
 import { createLighthouseTilePlugin } from '@bworlds/tile-lighthouse';
 import { createTownTilePlugin } from '@bworlds/tile-town';
 import {
+  markRenderModelAttachment,
   markRenderAnimationMixer,
   setRenderBudgetPartMetadata,
 } from '@bworlds/plugin-api';
@@ -433,6 +434,7 @@ describe('render3d visibility helpers', () => {
       skeletonCount: 0,
       boneCount: 0,
       morphTargetCount: 0,
+      attachmentCount: 0,
       triangleCount: 0,
       vertexCount: 36,
       materialRefCount: 4,
@@ -593,6 +595,7 @@ describe('render3d visibility helpers', () => {
       skeletonCount: 0,
       boneCount: 0,
       morphTargetCount: 0,
+      attachmentCount: 0,
       triangleCount: 0,
       vertexCount: 18,
       materialRefCount: 3,
@@ -684,6 +687,7 @@ describe('render3d visibility helpers', () => {
       skeletonCount: 0,
       boneCount: 0,
       morphTargetCount: 0,
+      attachmentCount: 0,
       triangleCount: 0,
       vertexCount: 25,
       materialRefCount: 2,
@@ -825,6 +829,7 @@ describe('render3d visibility helpers', () => {
       skeletonCount: 0,
       boneCount: 0,
       morphTargetCount: 0,
+      attachmentCount: 0,
       triangleCount: 0,
       vertexCount: 26,
       materialRefCount: 2,
@@ -910,6 +915,7 @@ describe('render3d visibility helpers', () => {
       skeletonCount: 0,
       boneCount: 0,
       morphTargetCount: 0,
+      attachmentCount: 0,
       triangleCount: 0,
       vertexCount: 8,
       materialRefCount: 2,
@@ -1027,6 +1033,7 @@ describe('render3d visibility helpers', () => {
       skeletonCount: 0,
       boneCount: 0,
       morphTargetCount: 0,
+      attachmentCount: 0,
       triangleCount: 0,
       vertexCount: 10,
       materialRefCount: 2,
@@ -1303,6 +1310,7 @@ describe('render3d visibility helpers', () => {
       skeletonCount: 2,
       boneCount: 100,
       morphTargetCount: 16,
+      attachmentCount: 16,
       vertexCount: 50_000,
     });
     expect(getTileModelHardLimits('low')).toEqual({
@@ -1340,6 +1348,7 @@ describe('render3d visibility helpers', () => {
       skeletonCount: 0,
       boneCount: 60,
       morphTargetCount: 4,
+      attachmentCount: 4,
       vertexCount: 8_000,
     });
   });
@@ -1430,6 +1439,7 @@ describe('render3d visibility helpers', () => {
         skeletonCount: 0,
         boneCount: 0,
         morphTargetCount: 0,
+        attachmentCount: 0,
         vertexCount: 72,
       }),
       violations: [],
@@ -1685,6 +1695,59 @@ describe('render3d visibility helpers', () => {
         violations: expect.arrayContaining([
           {
             metric: 'morphTargetCount',
+            actual: 17,
+            limit: 16,
+          },
+        ]),
+      })
+    );
+  });
+
+  it('tracks model attachment counts and rejects models above the cap', () => {
+    const material = createMockMaterial();
+    const root = createMockObject3D(undefined, [
+      markRenderModelAttachment(
+        createMockObject3D(
+          material,
+          [],
+          createMockStatGeometry('mesh-attachment-a', 48)
+        ),
+        { count: 9, label: 'roof-banners' }
+      ),
+      markRenderModelAttachment(
+        createMockObject3D(
+          material,
+          [],
+          createMockStatGeometry('mesh-attachment-b', 48)
+        ),
+        { count: 8, label: 'wall-lanterns' }
+      ),
+    ]);
+
+    expect(collectSceneResourceStats(root as never).attachmentCount).toBe(17);
+    expect(validateTileModelAgainstRenderBudget(root as never, 'full')).toEqual(
+      expect.objectContaining({
+        accepted: false,
+        violations: expect.arrayContaining([
+          {
+            metric: 'attachmentCount',
+            actual: 17,
+            limit: 16,
+          },
+        ]),
+      })
+    );
+    expect(
+      validateTileModelCostEstimateAgainstRenderBudget(
+        { attachmentCount: 17 },
+        'full'
+      )
+    ).toEqual(
+      expect.objectContaining({
+        accepted: false,
+        violations: expect.arrayContaining([
+          {
+            metric: 'attachmentCount',
             actual: 17,
             limit: 16,
           },

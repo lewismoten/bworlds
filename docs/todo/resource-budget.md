@@ -39,7 +39,7 @@ Operates at several levels: per model, per LOD, per plugin, per chunk, and per e
 * [X] Cap total skeletons.
 * [X] Cap total bones.
 * [X] Cap total morph targets.
-* [ ] Cap total model attachments.
+* [X] Cap total model attachments.
 * [ ] Cap total collision shapes.
 * [ ] Cap total audio emitters associated with one model.
 
