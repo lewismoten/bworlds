@@ -863,7 +863,7 @@ This is where procedural music could become particularly valuable in an MMORPG.
 - [x] Give lead instruments enough space in the frequency spectrum.
 - [x] Keep bass primarily centered.
 - [x] Prevent low-frequency buildup.
-- [ ] Prevent multiple harmony instruments from masking each other.
+- [x] Prevent multiple harmony instruments from masking each other.
 - [x] Apply instrument-specific EQ.
 - [x] Apply shared room reverb to make instruments sound like they occupy the same space.
 - [x] Adjust reverb according to the fictional performance environment.

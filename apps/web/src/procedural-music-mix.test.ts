@@ -37,11 +37,24 @@ describe('procedural music mix', () => {
   });
 
   it('builds instrument-specific eq stages that protect lead space and low end', () => {
-    const lead = resolveMusicEqStages({ role: 'lead', frequency: 440 });
-    const harmony = resolveMusicEqStages({ role: 'harmony', frequency: 330 });
-    const bass = resolveMusicEqStages({ role: 'bass', frequency: 110 });
+    const lead = resolveMusicEqStages({
+      role: 'lead',
+      instrumentId: 'frontier-plains:lead:0:0',
+      frequency: 440,
+    });
+    const harmony = resolveMusicEqStages({
+      role: 'harmony',
+      instrumentId: 'deep-forest:harmony:2:-1',
+      frequency: 330,
+    });
+    const bass = resolveMusicEqStages({
+      role: 'bass',
+      instrumentId: 'frontier-plains:bass:0:0',
+      frequency: 110,
+    });
     const percussion = resolveMusicEqStages({
       role: 'percussion',
+      instrumentId: 'frontier-plains:percussion:0:0',
       frequency: 880,
     });
 
@@ -50,5 +63,25 @@ describe('procedural music mix', () => {
     expect(bass.map((stage) => stage.type)).toEqual(['lowpass']);
     expect(percussion.map((stage) => stage.type)).toEqual(['highpass']);
     expect(lead[0]!.frequencyHz).toBeGreaterThan(bass[0]!.frequencyHz);
+  });
+
+  it('splits overlapping harmony instruments into darker and brighter eq lanes', () => {
+    const darkerHarmony = resolveMusicEqStages({
+      role: 'harmony',
+      instrumentId: 'deep-forest:harmony:2:-1',
+      frequency: 520,
+    });
+    const brighterHarmony = resolveMusicEqStages({
+      role: 'harmony',
+      instrumentId: 'town-square:harmony:3:-2',
+      frequency: 520,
+    });
+
+    expect(darkerHarmony[0]!.frequencyHz).not.toBe(
+      brighterHarmony[0]!.frequencyHz
+    );
+    expect(darkerHarmony[1]!.frequencyHz).not.toBe(
+      brighterHarmony[1]!.frequencyHz
+    );
   });
 });

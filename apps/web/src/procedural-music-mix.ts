@@ -25,7 +25,7 @@ export function resolveMusicStereoPan(
 }
 
 export function resolveMusicEqStages(
-  note: Pick<ProceduralMusicNote, 'role' | 'frequency'>
+  note: Pick<ProceduralMusicNote, 'role' | 'frequency' | 'instrumentId'>
 ): MusicEqStage[] {
   if (note.role === 'bass') {
     return [
@@ -53,15 +53,18 @@ export function resolveMusicEqStages(
   }
 
   if (note.role === 'harmony') {
+    const harmonyBandOffset = resolveHarmonyBandOffset(note.instrumentId);
+    const highpassMultiplier = harmonyBandOffset < 0 ? 0.36 : 0.48;
+    const lowpassMultiplier = harmonyBandOffset < 0 ? 4.4 : 3.2;
     return [
       {
         type: 'highpass',
-        frequencyHz: Math.max(160, note.frequency * 0.42),
+        frequencyHz: Math.max(160, note.frequency * highpassMultiplier),
         q: 0.72,
       },
       {
         type: 'lowpass',
-        frequencyHz: Math.max(1_200, note.frequency * 3.8),
+        frequencyHz: Math.max(1_200, note.frequency * lowpassMultiplier),
         q: 0.76,
       },
     ];
@@ -79,9 +82,10 @@ export function resolveMusicEqStages(
 function resolveRolePanBias(
   note: Pick<ProceduralMusicNote, 'role' | 'instrumentId'>
 ): number {
+  const numericBiasSeed = resolveInstrumentNumericBiasSeed(note.instrumentId);
   const signal = hash2DWithSeed(
     MUSIC_STEREO_BIAS_SEED,
-    note.instrumentId.length * 17,
+    numericBiasSeed,
     note.role.length * 31
   );
   const sign = signal >= 0.5 ? 1 : -1;
@@ -97,6 +101,57 @@ function resolveRolePanBias(
     default:
       return sign * 0.04;
   }
+}
+
+function resolveHarmonyBandOffset(instrumentId: string): number {
+  const parsed = parseInstrumentId(instrumentId);
+  if (!parsed) {
+    return 0;
+  }
+
+  const signal = hash2DWithSeed(
+    MUSIC_STEREO_BIAS_SEED,
+    parsed.clusterX * 19 + parsed.themeWeight,
+    parsed.clusterY * 23 + parsed.roleWeight
+  );
+  return signal >= 0.5 ? 1 : -1;
+}
+
+function resolveInstrumentNumericBiasSeed(instrumentId: string): number {
+  const parsed = parseInstrumentId(instrumentId);
+  if (!parsed) {
+    return instrumentId.length * 17;
+  }
+
+  return (
+    parsed.themeWeight * 7 +
+    parsed.roleWeight * 13 +
+    parsed.clusterX * 17 +
+    parsed.clusterY * 19
+  );
+}
+
+function parseInstrumentId(instrumentId: string): {
+  themeWeight: number;
+  roleWeight: number;
+  clusterX: number;
+  clusterY: number;
+} | null {
+  const [themeId = '', role = '', clusterXLabel = '', clusterYLabel = ''] =
+    instrumentId.split(':');
+  const clusterX = Number.parseInt(clusterXLabel, 10);
+  const clusterY = Number.parseInt(clusterYLabel, 10);
+
+  if (!Number.isFinite(clusterX) || !Number.isFinite(clusterY)) {
+    return null;
+  }
+
+  return {
+    themeWeight: themeId.length,
+    roleWeight: role.length,
+    clusterX,
+    clusterY,
+  };
 }
 
 function clampPan(value: number, maxAbsPan: number): number {
