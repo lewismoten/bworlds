@@ -2967,6 +2967,97 @@ describe('render3d visibility helpers', () => {
     ]);
   });
 
+  it('rejects models whose unique material count exceeds the per-model cap', () => {
+    const root = createMockObject3D(undefined, [
+      createMockObject3D(
+        createMockMaterial(),
+        [],
+        createMockStatGeometry('material-cap-a', 24)
+      ),
+      createMockObject3D(
+        createMockMaterial(),
+        [],
+        createMockStatGeometry('material-cap-b', 24)
+      ),
+      createMockObject3D(
+        createMockMaterial(),
+        [],
+        createMockStatGeometry('material-cap-c', 24)
+      ),
+      createMockObject3D(
+        createMockMaterial(),
+        [],
+        createMockStatGeometry('material-cap-d', 24)
+      ),
+    ]);
+
+    expect(validateTileModelAgainstRenderBudget(root as never, 'low')).toEqual(
+      expect.objectContaining({
+        accepted: false,
+        stats: expect.objectContaining({
+          materialCount: 4,
+        }),
+        violations: expect.arrayContaining([
+          {
+            metric: 'materialCount',
+            actual: 4,
+            limit: 3,
+          },
+        ]),
+      })
+    );
+  });
+
+  it('uses stricter material caps for low-detail models than full-detail models', () => {
+    const root = createMockObject3D(undefined, [
+      createMockObject3D(
+        createMockMaterial(),
+        [],
+        createMockStatGeometry('lod-material-cap-a', 24)
+      ),
+      createMockObject3D(
+        createMockMaterial(),
+        [],
+        createMockStatGeometry('lod-material-cap-b', 24)
+      ),
+      createMockObject3D(
+        createMockMaterial(),
+        [],
+        createMockStatGeometry('lod-material-cap-c', 24)
+      ),
+      createMockObject3D(
+        createMockMaterial(),
+        [],
+        createMockStatGeometry('lod-material-cap-d', 24)
+      ),
+    ]);
+
+    expect(validateTileModelAgainstRenderBudget(root as never, 'full')).toEqual(
+      expect.objectContaining({
+        accepted: true,
+        stats: expect.objectContaining({
+          materialCount: 4,
+        }),
+        violations: [],
+      })
+    );
+    expect(validateTileModelAgainstRenderBudget(root as never, 'low')).toEqual(
+      expect.objectContaining({
+        accepted: false,
+        stats: expect.objectContaining({
+          materialCount: 4,
+        }),
+        violations: expect.arrayContaining([
+          {
+            metric: 'materialCount',
+            actual: 4,
+            limit: 3,
+          },
+        ]),
+      })
+    );
+  });
+
   it('rejects models whose geometry uses too many separate draw ranges', () => {
     const root = createMockObject3D(
       createMockMaterial(),

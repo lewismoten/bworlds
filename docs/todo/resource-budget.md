@@ -83,8 +83,8 @@ Operates at several levels: per model, per LOD, per plugin, per chunk, and per e
 
 Given the heap issue you just saw, I would take this very seriously.
 
-* [ ] Cap materials per model.
-* [ ] Cap materials per LOD.
+* [X] Cap materials per model.
+* [X] Cap materials per LOD.
 * [ ] Cap unique materials per plugin.
 * [ ] Cap total unique materials in the active scene.
 * [ ] Encourage plugins to request materials from a shared material registry.
