@@ -1,0 +1,404 @@
+import {
+  createProceduralInstrumentBank,
+  createWebAudioMusicSink,
+  resolveMusicArrangement,
+  resolveMusicMood,
+  resolveMusicTheme,
+  scheduleProceduralMusicNotes,
+  type ProceduralMusicNote,
+} from './procedural-music.ts';
+
+export type MusicDebugTileKind =
+  | 'plains'
+  | 'forest'
+  | 'shore'
+  | 'town'
+  | 'mountain'
+  | 'cave'
+  | 'floor';
+export type MusicDebugContextType =
+  | 'overworld'
+  | 'town'
+  | 'building'
+  | 'cave'
+  | 'dungeon';
+export type MusicDebugWeatherKind =
+  | 'clear'
+  | 'fog'
+  | 'light-rain'
+  | 'heavy-rain';
+
+export type MusicDebugOptions = {
+  tileKind: MusicDebugTileKind;
+  contextType: MusicDebugContextType;
+  weatherKind: MusicDebugWeatherKind;
+  weatherIntensity: number;
+  dayProgress: number;
+  yearProgress: number;
+  clusterX: number;
+  clusterY: number;
+};
+
+export type MusicDebugSnapshot = {
+  options: MusicDebugOptions;
+  theme: ReturnType<typeof resolveMusicTheme>;
+  mood: ReturnType<typeof resolveMusicMood>;
+  arrangement: ReturnType<typeof resolveMusicArrangement>;
+  instrumentBank: ReturnType<typeof createProceduralInstrumentBank>;
+  notes: ProceduralMusicNote[];
+  durationMs: number;
+  roleCounts: Record<ProceduralMusicNote['role'], number>;
+};
+
+export const DEFAULT_MUSIC_DEBUG_OPTIONS: MusicDebugOptions = {
+  tileKind: 'forest',
+  contextType: 'overworld',
+  weatherKind: 'clear',
+  weatherIntensity: 0,
+  dayProgress: 0.5,
+  yearProgress: 0.25,
+  clusterX: 0,
+  clusterY: 0,
+};
+
+export function clampMusicDebugProgress(value: number): number {
+  return Math.min(1, Math.max(0, value));
+}
+
+export function clampMusicDebugWeatherIntensity(value: number): number {
+  return Math.min(1, Math.max(0, value));
+}
+
+export function normalizeMusicDebugOptions(
+  value: Partial<MusicDebugOptions> | null | undefined
+): MusicDebugOptions {
+  return {
+    tileKind: normalizeTileKind(value?.tileKind),
+    contextType: normalizeContextType(value?.contextType),
+    weatherKind: normalizeWeatherKind(value?.weatherKind),
+    weatherIntensity: clampMusicDebugWeatherIntensity(
+      value?.weatherIntensity ?? DEFAULT_MUSIC_DEBUG_OPTIONS.weatherIntensity
+    ),
+    dayProgress: clampMusicDebugProgress(
+      value?.dayProgress ?? DEFAULT_MUSIC_DEBUG_OPTIONS.dayProgress
+    ),
+    yearProgress: clampMusicDebugProgress(
+      value?.yearProgress ?? DEFAULT_MUSIC_DEBUG_OPTIONS.yearProgress
+    ),
+    clusterX: Math.round(value?.clusterX ?? DEFAULT_MUSIC_DEBUG_OPTIONS.clusterX),
+    clusterY: Math.round(value?.clusterY ?? DEFAULT_MUSIC_DEBUG_OPTIONS.clusterY),
+  };
+}
+
+export function createMusicDebugSnapshot(
+  rawOptions?: Partial<MusicDebugOptions> | null,
+  nowMs = 0
+): MusicDebugSnapshot {
+  const options = normalizeMusicDebugOptions(rawOptions);
+  const theme = resolveMusicTheme(options.tileKind, options.contextType);
+  const mood = resolveMusicMood({
+    dayProgress: options.dayProgress,
+    weatherKind:
+      options.weatherKind === 'clear' ? undefined : options.weatherKind,
+    weatherIntensity: options.weatherIntensity,
+  });
+  const arrangement = resolveMusicArrangement({
+    dayProgress: options.dayProgress,
+    yearProgress: options.yearProgress,
+    weatherKind:
+      options.weatherKind === 'clear' ? undefined : options.weatherKind,
+    weatherIntensity: options.weatherIntensity,
+  });
+  const instrumentBank = createProceduralInstrumentBank(
+    theme,
+    options.clusterX,
+    options.clusterY,
+    options
+  );
+  const scheduled = scheduleProceduralMusicNotes({
+    nowMs,
+    tileKind: options.tileKind,
+    contextType: options.contextType,
+    weatherKind:
+      options.weatherKind === 'clear' ? undefined : options.weatherKind,
+    weatherIntensity: options.weatherIntensity,
+    dayProgress: options.dayProgress,
+    yearProgress: options.yearProgress,
+    clusterX: options.clusterX,
+    clusterY: options.clusterY,
+  });
+  const lastNote = scheduled.notes[scheduled.notes.length - 1];
+  const durationMs = lastNote
+    ? Math.max(0, lastNote.startMs + lastNote.durationMs - nowMs)
+    : 0;
+  const roleCounts: MusicDebugSnapshot['roleCounts'] = {
+    lead: 0,
+    harmony: 0,
+    bass: 0,
+    percussion: 0,
+  };
+
+  for (const note of scheduled.notes) {
+    roleCounts[note.role] += 1;
+  }
+
+  return {
+    options,
+    theme,
+    mood,
+    arrangement,
+    instrumentBank,
+    notes: scheduled.notes,
+    durationMs,
+    roleCounts,
+  };
+}
+
+export function buildMusicDebugMarkup(
+  snapshot: MusicDebugSnapshot = createMusicDebugSnapshot()
+): string {
+  return `
+    <main class="music-debug-shell">
+      <section class="music-debug-hero">
+        <p class="music-debug-kicker">bworlds</p>
+        <h1>Music Laboratory</h1>
+        <p class="music-debug-lede">
+          Generate, visualize, and audition the current procedural score layers for a chosen biome, season, time of day, and weather state.
+        </p>
+      </section>
+      <section class="music-debug-layout">
+        <form id="music-debug-form" class="music-debug-card music-debug-form">
+          <div class="music-debug-grid">
+            <label>
+              <span>Tile</span>
+              <select name="tileKind">
+                ${buildSelectOptions(
+                  ['plains', 'forest', 'shore', 'town', 'mountain', 'cave', 'floor'],
+                  snapshot.options.tileKind
+                )}
+              </select>
+            </label>
+            <label>
+              <span>Context</span>
+              <select name="contextType">
+                ${buildSelectOptions(
+                  ['overworld', 'town', 'building', 'cave', 'dungeon'],
+                  snapshot.options.contextType
+                )}
+              </select>
+            </label>
+            <label>
+              <span>Weather</span>
+              <select name="weatherKind">
+                ${buildSelectOptions(
+                  ['clear', 'fog', 'light-rain', 'heavy-rain'],
+                  snapshot.options.weatherKind
+                )}
+              </select>
+            </label>
+            <label>
+              <span>Weather Intensity</span>
+              <input name="weatherIntensity" type="range" min="0" max="1" step="0.05" value="${snapshot.options.weatherIntensity}" />
+            </label>
+            <label>
+              <span>Day Progress</span>
+              <input name="dayProgress" type="range" min="0" max="1" step="0.01" value="${snapshot.options.dayProgress}" />
+            </label>
+            <label>
+              <span>Year Progress</span>
+              <input name="yearProgress" type="range" min="0" max="1" step="0.01" value="${snapshot.options.yearProgress}" />
+            </label>
+            <label>
+              <span>Cluster X</span>
+              <input name="clusterX" type="number" step="1" value="${snapshot.options.clusterX}" />
+            </label>
+            <label>
+              <span>Cluster Y</span>
+              <input name="clusterY" type="number" step="1" value="${snapshot.options.clusterY}" />
+            </label>
+          </div>
+          <div class="music-debug-actions">
+            <button id="music-debug-generate" type="submit">Generate</button>
+            <button id="music-debug-play" type="button">Play Preview</button>
+          </div>
+        </form>
+        <section class="music-debug-card">
+          <div id="music-debug-summary">${buildMusicDebugSummaryMarkup(snapshot)}</div>
+          <canvas id="music-debug-timeline" width="960" height="320"></canvas>
+        </section>
+      </section>
+    </main>
+  `;
+}
+
+export function buildMusicDebugSummaryMarkup(
+  snapshot: MusicDebugSnapshot
+): string {
+  const instruments = Object.values(snapshot.instrumentBank.instruments)
+    .map(
+      (instrument) =>
+        `<li><strong>${instrument.role}</strong>: ${instrument.family} / ${instrument.waveform}</li>`
+    )
+    .join('');
+
+  return `
+    <div class="music-debug-summary-grid">
+      <div><dt>Theme</dt><dd>${snapshot.theme.id}</dd></div>
+      <div><dt>Root Hz</dt><dd>${snapshot.theme.rootHz.toFixed(2)}</dd></div>
+      <div><dt>Scheduled Notes</dt><dd>${snapshot.notes.length}</dd></div>
+      <div><dt>Preview Length</dt><dd>${formatMusicDebugDuration(snapshot.durationMs)}</dd></div>
+      <div><dt>Tempo</dt><dd>${snapshot.mood.tempoMultiplier.toFixed(2)}x</dd></div>
+      <div><dt>Brightness</dt><dd>${snapshot.mood.brightness.toFixed(2)}x</dd></div>
+    </div>
+    <div class="music-debug-role-counts">
+      <span>Bass ${snapshot.roleCounts.bass}</span>
+      <span>Harmony ${snapshot.roleCounts.harmony}</span>
+      <span>Lead ${snapshot.roleCounts.lead}</span>
+      <span>Percussion ${snapshot.roleCounts.percussion}</span>
+    </div>
+    <ul class="music-debug-instruments">${instruments}</ul>
+  `;
+}
+
+export function drawMusicDebugTimeline(
+  canvas: HTMLCanvasElement,
+  snapshot: MusicDebugSnapshot
+): void {
+  const context = canvas.getContext('2d');
+  if (!context) {
+    return;
+  }
+
+  const width = canvas.width;
+  const height = canvas.height;
+  context.clearRect(0, 0, width, height);
+  context.fillStyle = '#071019';
+  context.fillRect(0, 0, width, height);
+
+  const leftPad = 84;
+  const rightPad = 24;
+  const topPad = 22;
+  const bottomPad = 24;
+  const trackHeight = (height - topPad - bottomPad) / 4;
+  const durationMs = Math.max(snapshot.durationMs, 1);
+  const roleOrder: Array<ProceduralMusicNote['role']> = [
+    'bass',
+    'harmony',
+    'lead',
+    'percussion',
+  ];
+  const roleColors: Record<ProceduralMusicNote['role'], string> = {
+    bass: '#55d6be',
+    harmony: '#86b5ff',
+    lead: '#ffbf69',
+    percussion: '#f27d7d',
+  };
+
+  context.strokeStyle = 'rgba(255,255,255,0.08)';
+  context.lineWidth = 1;
+  for (let index = 0; index <= roleOrder.length; index += 1) {
+    const y = topPad + trackHeight * index;
+    context.beginPath();
+    context.moveTo(leftPad, y);
+    context.lineTo(width - rightPad, y);
+    context.stroke();
+  }
+
+  context.fillStyle = '#9db2bd';
+  context.font = '13px Trebuchet MS';
+  roleOrder.forEach((role, index) => {
+    context.fillText(role.toUpperCase(), 16, topPad + trackHeight * index + 18);
+  });
+
+  for (const note of snapshot.notes) {
+    const roleIndex = roleOrder.indexOf(note.role);
+    const startRatio = (note.startMs - snapshot.notes[0]!.startMs) / durationMs;
+    const endRatio =
+      (note.startMs + note.durationMs - snapshot.notes[0]!.startMs) / durationMs;
+    const x = leftPad + startRatio * (width - leftPad - rightPad);
+    const barWidth = Math.max(
+      2,
+      (endRatio - startRatio) * (width - leftPad - rightPad)
+    );
+    const y = topPad + roleIndex * trackHeight + 10;
+    const barHeight = Math.max(10, trackHeight - 18);
+
+    context.fillStyle = roleColors[note.role];
+    context.fillRect(x, y, barWidth, barHeight);
+  }
+}
+
+export function playMusicDebugPreview(snapshot: MusicDebugSnapshot): void {
+  const sink = createWebAudioMusicSink();
+  const startMs = performance.now() + 120;
+  const offsetMs = snapshot.notes[0]?.startMs ?? 0;
+  sink.resume?.();
+  for (const note of snapshot.notes) {
+    sink.play({
+      ...note,
+      startMs: startMs + (note.startMs - offsetMs),
+    });
+  }
+}
+
+export function formatMusicDebugDuration(durationMs: number): string {
+  const totalSeconds = Math.max(0, Math.round(durationMs / 1000));
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes}:${String(seconds).padStart(2, '0')}`;
+}
+
+function buildSelectOptions(
+  values: readonly string[],
+  selectedValue: string
+): string {
+  return values
+    .map((value) => {
+      const selected = value === selectedValue ? ' selected' : '';
+      return `<option value="${value}"${selected}>${value}</option>`;
+    })
+    .join('');
+}
+
+function normalizeTileKind(
+  value: MusicDebugOptions['tileKind'] | undefined
+): MusicDebugTileKind {
+  if (
+    value === 'forest' ||
+    value === 'shore' ||
+    value === 'town' ||
+    value === 'mountain' ||
+    value === 'cave' ||
+    value === 'floor'
+  ) {
+    return value;
+  }
+  return 'plains';
+}
+
+function normalizeContextType(
+  value: MusicDebugOptions['contextType'] | undefined
+): MusicDebugContextType {
+  if (
+    value === 'town' ||
+    value === 'building' ||
+    value === 'cave' ||
+    value === 'dungeon'
+  ) {
+    return value;
+  }
+  return 'overworld';
+}
+
+function normalizeWeatherKind(
+  value: MusicDebugOptions['weatherKind'] | undefined
+): MusicDebugWeatherKind {
+  if (
+    value === 'fog' ||
+    value === 'light-rain' ||
+    value === 'heavy-rain'
+  ) {
+    return value;
+  }
+  return 'clear';
+}

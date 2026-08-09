@@ -20,6 +20,10 @@ describe('debug directory', () => {
           href: '/?inspector=sextant',
           routeLabel: '/?inspector=sextant',
         }),
+        expect.objectContaining({
+          href: '/debug/music/',
+          routeLabel: '/debug/music/',
+        }),
       ])
     );
   });
@@ -32,5 +36,6 @@ describe('debug directory', () => {
     expect(markup).toContain('World Inspector');
     expect(markup).toContain('Celestial Event Controls');
     expect(markup).toContain('Sextant Readout');
+    expect(markup).toContain('Music Laboratory');
   });
 });
