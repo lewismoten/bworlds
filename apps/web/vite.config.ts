@@ -65,6 +65,7 @@ function createDebugRouteRedirectPlugin(): Plugin {
 }
 
 export default defineConfig({
+  appType: 'mpa',
   plugins: [createDebugRouteRedirectPlugin()],
   build: {
     rollupOptions: {
