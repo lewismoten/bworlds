@@ -1197,6 +1197,41 @@ describe('tile forest', () => {
           sample.historical.prominence >= 0.62
       )
     ).toBe(true);
+    expect(
+      landmarks.some((sample) => sample.historical.title.trim().split(/\s+/).length >= 3)
+    ).toBe(true);
+  });
+
+  it('gives especially old historical trees unique procedural names or records', () => {
+    const especiallyOld: Array<ReturnType<typeof getForestTreeHistoricalProfiles>[number]> = [];
+
+    for (let tileY = 0; tileY < 96 && especiallyOld.length < 3; tileY += 1) {
+      for (let tileX = 0; tileX < 96 && especiallyOld.length < 3; tileX += 1) {
+        for (const entry of getForestTreeHistoricalProfiles(tileX, tileY)) {
+          if (entry.landmark && entry.prominence >= 0.9) {
+            especiallyOld.push(entry);
+            if (especiallyOld.length >= 3) {
+              break;
+            }
+          }
+        }
+      }
+    }
+
+    expect(especiallyOld.length).toBeGreaterThan(1);
+
+    const titles = new Set(especiallyOld.map((entry) => entry.title));
+    const records = new Set(especiallyOld.map((entry) => entry.record));
+
+    expect(titles.size).toBeGreaterThan(1);
+    expect(records.size).toBeGreaterThan(1);
+    expect(
+      especiallyOld.some(
+        (entry) =>
+          /\b(18[2-9]\d|19\d{2})\b/.test(entry.record) &&
+          entry.record.includes(entry.title)
+      )
+    ).toBe(true);
   });
 
   it('generates more tree-like branch profiles for broadleaf and pine forms', () => {

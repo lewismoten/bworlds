@@ -111,11 +111,55 @@ const FOREST_STYLE_CACHE_LIMIT = 96;
 const FOREST_QUEST_HINT_LABELS = ['N2', 'E3', 'S4', 'W1'] as const;
 const FOREST_TREASURE_CLUE_LABELS = ['X2', 'X4', '>3', '<5'] as const;
 const FOREST_HISTORICAL_INSCRIPTION_LABELS = ['OLD', 'MOSS', '1891'] as const;
-const FOREST_HISTORICAL_TREE_RECORDS = [
-  'Remembered as a meeting tree for the old trail.',
-  'Locals say this trunk marked a safe crossing in hard winters.',
-  'Its scarred bark is kept as a witness of an older forest.',
-  'Travelers still use it as a bearing when mist settles in the grove.',
+const FOREST_HISTORICAL_TREE_TITLE_PREFIXES = [
+  'Lantern',
+  'Hollow',
+  'Moss',
+  'Watch',
+  'North',
+  'Quiet',
+  'Weather',
+  'River',
+  'Grey',
+  'Star',
+  'Wayfarer',
+  'Crown',
+] as const;
+const FOREST_HISTORICAL_TREE_TITLE_SUFFIXES = [
+  'Keep',
+  'Marker',
+  'Sentinel',
+  'Mother',
+  'Witness',
+  'Pillar',
+  'Guide',
+  'Memory',
+  'Ward',
+  'Anchor',
+  'Beacon',
+  'Throne',
+] as const;
+const FOREST_HISTORICAL_TREE_RECORD_OPENERS = [
+  'Remembered for',
+  'Known for',
+  'Still named for',
+  'Carried into local stories for',
+  'Kept in the grove records for',
+] as const;
+const FOREST_HISTORICAL_TREE_RECORD_EVENTS = [
+  'sheltering travelers',
+  'marking the safest trail bend',
+  'standing through a long winter flood',
+  'guiding hunters back to the ridge',
+  'holding the old meeting ground together',
+  'bearing the first watch-carvings of the grove',
+] as const;
+const FOREST_HISTORICAL_TREE_RECORD_CLOSERS = [
+  'and locals still point it out in passing.',
+  'and its silhouette is used as a bearing.',
+  'and even now it is treated as a fixed sign.',
+  'and the story remains attached to its bark.',
+  'and old pathfinders still call it by name.',
 ] as const;
 const FOREST_TRAIL_SEED = registerHashLabel('forest-trail');
 const FOREST_TRAIL_ANGLE_SEED = registerHashLabel('forest-trail-angle');
@@ -174,6 +218,12 @@ const FOREST_HISTORICAL_TREE_SEED = registerHashLabel('forest-historical-tree');
 const FOREST_HISTORICAL_TREE_TITLE_SEED = registerHashLabel('forest-historical-tree-title');
 const FOREST_HISTORICAL_TREE_RECORD_SEED = registerHashLabel(
   'forest-historical-tree-record'
+);
+const FOREST_HISTORICAL_TREE_RECORD_EVENT_SEED = registerHashLabel(
+  'forest-historical-tree-record-event'
+);
+const FOREST_HISTORICAL_TREE_RECORD_YEAR_SEED = registerHashLabel(
+  'forest-historical-tree-record-year'
 );
 const FOREST_MEADOW_COUNT_SEED = registerHashLabel('forest-meadow-count');
 const FOREST_MEADOW_SEED = registerHashLabel('forest-meadow');
@@ -1956,16 +2006,12 @@ function createForestHistoricalTreeState(
     };
   }
 
+  const title = getForestHistoricalTreeTitle(speciesId, tileX, tileY, treeIndex);
+  const record = getForestHistoricalTreeRecord(title, tileX, tileY, treeIndex);
   return {
     landmark: true,
-    title: getForestHistoricalTreeTitle(speciesId, tileX, tileY, treeIndex),
-    record: pickForestCarvingLabel(
-      FOREST_HISTORICAL_TREE_RECORDS,
-      FOREST_HISTORICAL_TREE_RECORD_SEED,
-      tileX,
-      tileY,
-      treeIndex
-    ),
+    title,
+    record,
     prominence: 0.62 + chance * 0.38,
   };
 }
@@ -1976,15 +2022,58 @@ function getForestHistoricalTreeTitle(
   tileY: number,
   treeIndex: number
 ) {
-  const qualifier =
-    hash2D(FOREST_HISTORICAL_TREE_TITLE_SEED, tileX + treeIndex, tileY) > 0.66
-      ? 'Elder'
-      : hash2D(FOREST_HISTORICAL_TREE_TITLE_SEED, tileX - treeIndex, tileY + 1) > 0.5
-        ? 'Watch'
-        : 'Old';
+  const prefix = pickForestCarvingLabel(
+    FOREST_HISTORICAL_TREE_TITLE_PREFIXES,
+    FOREST_HISTORICAL_TREE_TITLE_SEED,
+    tileX,
+    tileY,
+    treeIndex
+  );
+  const suffix = pickForestCarvingLabel(
+    FOREST_HISTORICAL_TREE_TITLE_SUFFIXES,
+    FOREST_HISTORICAL_TREE_TITLE_SEED,
+    tileX + 17,
+    tileY - 11,
+    treeIndex + 3
+  );
   const speciesName =
     speciesId === 'oak' ? 'Oak' : speciesId === 'birch' ? 'Birch' : 'Pine';
-  return `${qualifier} ${speciesName}`;
+  return `${prefix} ${suffix} ${speciesName}`;
+}
+
+function getForestHistoricalTreeRecord(
+  title: string,
+  tileX: number,
+  tileY: number,
+  treeIndex: number
+) {
+  const opener = pickForestCarvingLabel(
+    FOREST_HISTORICAL_TREE_RECORD_OPENERS,
+    FOREST_HISTORICAL_TREE_RECORD_SEED,
+    tileX,
+    tileY,
+    treeIndex
+  );
+  const event = pickForestCarvingLabel(
+    FOREST_HISTORICAL_TREE_RECORD_EVENTS,
+    FOREST_HISTORICAL_TREE_RECORD_EVENT_SEED,
+    tileX,
+    tileY,
+    treeIndex
+  );
+  const closer = pickForestCarvingLabel(
+    FOREST_HISTORICAL_TREE_RECORD_CLOSERS,
+    FOREST_HISTORICAL_TREE_RECORD_SEED,
+    tileX - 9,
+    tileY + 13,
+    treeIndex + 5
+  );
+  const year =
+    1820 +
+    Math.floor(
+      hash2D(FOREST_HISTORICAL_TREE_RECORD_YEAR_SEED, tileX * 13 + treeIndex, tileY) * 85
+    );
+  return `${title}, noted since ${year}, is ${opener.toLowerCase()} ${event}, ${closer}`;
 }
 
 function hasForestLoneTree(tileX: number, tileY: number) {
