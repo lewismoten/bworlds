@@ -3,6 +3,7 @@ import {
   createPlayer,
   createWorldState,
 } from '@bworlds/core';
+import { createHashSeed, registerHashLabel } from '@bworlds/core/hash';
 import {
   createFrontierContentPackDefinition,
   frontierContentPackManifest,
@@ -73,8 +74,10 @@ export function createWorldGenerator({
   samplePreviewSurfaceKind(x: number, y: number): SpawnTile['kind'];
   samplePreviewOverworld(x: number, y: number): SpawnTile;
 } {
+  const seedHash =
+    typeof seed === 'number' ? createHashSeed(seed) : registerHashLabel(seed);
   const mapCache = createBoundedCache<string, WorldMapLike>(MAP_CACHE_LIMIT);
-  const terrainSignals = createOverworldTerrainSignalSampler(seed);
+  const terrainSignals = createOverworldTerrainSignalSampler(seedHash);
   const previewTileCache = createBoundedCache<string, SpawnTile>(
     PREVIEW_TILE_CACHE_LIMIT
   );
@@ -87,7 +90,7 @@ export function createWorldGenerator({
     chanceKey: string,
     x: number,
     y: number
-  ) => getOverworldPlacementChance(seed, chanceKey, x, y);
+  ) => getOverworldPlacementChance(seedHash, chanceKey, x, y);
   const samplePreviewSurfaceKind = (x: number, y: number): SpawnTile['kind'] => {
     const key = getPreviewKey(x, y);
     return previewKindCache.getOrCreate(key, () => {
@@ -98,7 +101,7 @@ export function createWorldGenerator({
       const signChance = resolvePreviewPlacementChance('sign', x, y);
       const previewTile =
         plugins.classifyTerrainTile({
-          seed,
+          seed: seedHash,
           x,
           y,
           tile: { kind: defaultPreviewTileKind },
@@ -136,7 +139,7 @@ export function createWorldGenerator({
     return mapCache.getOrCreate(key, () => {
       const map = plugins.createMap({
         context,
-        seed,
+        seed: seedHash,
         plugins,
       });
       if (!map) {

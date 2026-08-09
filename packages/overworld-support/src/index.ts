@@ -14,10 +14,10 @@ import {
 import {
   appendHashSeedLabel,
   appendHashSeedPart,
+  createHashSeed,
   hash2D,
   hash2DWithSeed,
   registerHashLabel,
-  resolveHashSeed,
 } from '@bworlds/core/hash';
 import type {
   ClassifyOverworldTileContext,
@@ -59,6 +59,11 @@ const RIVER_FORK_ANGLE_SIGN_LABEL = registerHashLabel('river-fork-angle-sign');
 const RIVER_FORK_ANGLE_DELTA_LABEL = registerHashLabel('river-fork-angle-delta');
 const RIVER_FORK_POINT_COUNT_LABEL = registerHashLabel('river-fork-point-count');
 const RIVER_FORK_MID_SWAY_LABEL = registerHashLabel('river-fork-mid-sway');
+const OVERWORLD_CONTINENT_NOISE_LABEL = registerHashLabel('continent');
+const OVERWORLD_ELEVATION_NOISE_LABEL = registerHashLabel('elevation');
+const OVERWORLD_MOISTURE_NOISE_LABEL = registerHashLabel('moisture');
+const OVERWORLD_RIVER_NOISE_LABEL = registerHashLabel('river');
+const OVERWORLD_ROAD_NOISE_LABEL = registerHashLabel('road');
 const OVERWORLD_TOWN_PLACEMENT_LABEL = registerHashLabel('town');
 const OVERWORLD_CAVE_PLACEMENT_LABEL = registerHashLabel('cave');
 const OVERWORLD_DUNGEON_PLACEMENT_LABEL = registerHashLabel('dungeon');
@@ -102,6 +107,10 @@ const OVERWORLD_RIVER_CACHE_LIMIT = 1024;
 const OVERWORLD_TILE_CACHE_LIMIT = 4096;
 const OVERWORLD_ANCHOR_CACHE_LIMIT = 1024;
 const OVERWORLD_ANCHOR_EVALUATION_CACHE_LIMIT = 2048;
+
+function normalizeSeedHash(seed: Seed): number {
+  return typeof seed === 'number' ? createHashSeed(seed) : registerHashLabel(seed);
+}
 
 export interface OverworldCellAnchorSpec<
   TAnchor extends OverworldAnchorLike = OverworldAnchorLike,
@@ -150,11 +159,12 @@ export type GeneratedNamedPoiAnchor = PoiAnchorLike & { name: string };
 export function createOverworldTerrainSignalSampler(
   seed: Seed
 ): OverworldTerrainSignalSampler {
-  const continentSeed = `${seed}:continent`;
-  const elevationSeed = `${seed}:elevation`;
-  const moistureSeed = `${seed}:moisture`;
-  const riverSeed = `${seed}:river`;
-  const roadSeed = `${seed}:road`;
+  const seedHash = normalizeSeedHash(seed);
+  const continentSeed = appendHashSeedLabel(seedHash, OVERWORLD_CONTINENT_NOISE_LABEL);
+  const elevationSeed = appendHashSeedLabel(seedHash, OVERWORLD_ELEVATION_NOISE_LABEL);
+  const moistureSeed = appendHashSeedLabel(seedHash, OVERWORLD_MOISTURE_NOISE_LABEL);
+  const riverSeed = appendHashSeedLabel(seedHash, OVERWORLD_RIVER_NOISE_LABEL);
+  const roadSeed = appendHashSeedLabel(seedHash, OVERWORLD_ROAD_NOISE_LABEL);
   const signalCache = createCoordinateCache<OverworldSignals>();
   const riverControlPointCache = createCoordinateCache<RiverControlPoint[]>();
   const riverForkPathCache = createCoordinateCache<RiverForkPath | null>();
@@ -214,7 +224,7 @@ export function createRiverControlPoints(
   cellX: number,
   cellY: number
 ): RiverControlPoint[] {
-  const seedHash = resolveHashSeed(seed);
+  const seedHash = normalizeSeedHash(seed);
   const pointCountSeed = appendHashSeedLabel(seedHash, RIVER_CONTROL_POINT_COUNT_LABEL);
   const startXSeed = appendHashSeedLabel(seedHash, RIVER_CONTROL_START_X_LABEL);
   const startYSeed = appendHashSeedLabel(seedHash, RIVER_CONTROL_START_Y_LABEL);
@@ -385,7 +395,7 @@ export function createRiverForkPath(
   cellY: number,
   controlPoints: RiverControlPoint[]
 ): RiverForkPath | null {
-  const seedHash = resolveHashSeed(seed);
+  const seedHash = normalizeSeedHash(seed);
   const chanceSeed = appendHashSeedLabel(seedHash, RIVER_FORK_CHANCE_LABEL);
   const trunkStartSeed = appendHashSeedLabel(seedHash, RIVER_FORK_TRUNK_START_LABEL);
   const trunkSpanSeed = appendHashSeedLabel(seedHash, RIVER_FORK_TRUNK_SPAN_LABEL);
@@ -731,7 +741,7 @@ export function getOverworldPlacementChance(
   x: number,
   y: number
 ) {
-  const seedHash = resolveHashSeed(seed);
+  const seedHash = normalizeSeedHash(seed);
   return hash2DWithSeed(
     appendHashSeedLabel(seedHash, getOverworldPlacementLabelHash(chanceKey)),
     x,
@@ -786,7 +796,7 @@ export function createGeneratedNamedOverworldCellAnchorSpec<
       return {
         x,
         y,
-        name: generatePoiName(seed, options.nameType, x, y),
+        name: generatePoiName(normalizeSeedHash(seed), options.nameType, x, y),
         ...(options.createAnchorExtras?.({
           seed,
           x,
@@ -840,7 +850,7 @@ export function createOverworldCellAnchorCandidate<
   cellY: number,
   spec: OverworldCellAnchorSpec<TAnchor>
 ): OverworldCellAnchorCandidate<TAnchor> {
-  const seedHash = resolveHashSeed(seed);
+  const seedHash = normalizeSeedHash(seed);
   const chanceSeed = appendHashSeedLabel(
     seedHash,
     spec.chanceKeyHash ?? getOverworldPlacementLabelHash(spec.chanceKey)

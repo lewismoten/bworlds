@@ -5,7 +5,6 @@ import {
   hash2D,
   hash2DWithSeed,
   registerHashLabel,
-  resolveHashSeed,
 } from './hash.ts';
 
 export {
@@ -15,7 +14,6 @@ export {
   hash2D,
   hash2DWithSeed,
   registerHashLabel,
-  resolveHashSeed,
 } from './hash.ts';
 
 export const CHUNK_SIZE = 32;
@@ -689,6 +687,7 @@ export function getDaylightCycleState(
     0.82,
     Math.max(night, solarEclipse.coverage * 0.72)
   );
+  const constellationSeedHash = registerHashLabel(constellationSeed);
   const moonPhaseIndex =
     ((dayNumber % MOON_PHASE_NAMES.length) + MOON_PHASE_NAMES.length) %
     MOON_PHASE_NAMES.length;
@@ -703,7 +702,7 @@ export function getDaylightCycleState(
     0.5,
     0.25,
   ][moonPhaseIndex];
-  const constellations = generateConstellations(constellationSeed, {
+  const constellations = generateConstellations(constellationSeedHash, {
     count: constellationCount,
   });
   const activeConstellationIndex =
@@ -1009,13 +1008,12 @@ export function advanceWorldTimeOffsetBySeasons(
 }
 
 export function generateConstellations(
-  seed: string | number,
+  seedHash: number,
   options: {
     count?: number;
   } = {}
 ): ConstellationLike[] {
   const count = Math.max(1, Math.floor(options.count ?? DEFAULT_CONSTELLATION_COUNT));
-  const seedHash = resolveHashSeed(seed);
   const starsSeed = appendHashSeedLabel(seedHash, CONSTELLATION_STARS_LABEL);
   const radialSeed = appendHashSeedLabel(seedHash, CONSTELLATION_RADIAL_LABEL);
   const thetaSeed = appendHashSeedLabel(seedHash, CONSTELLATION_THETA_LABEL);
@@ -1164,13 +1162,12 @@ function buildConstellationConnections(
 }
 
 export function createConstellationName(
-  seed: string | number,
+  seedHash: number,
   index: number,
   prefixCounts = new Map<string, number>(),
   suffixCounts = new Map<string, number>(),
   figureCounts = new Map<string, number>()
 ) {
-  const seedHash = resolveHashSeed(seed);
   const formSeed = appendHashSeedLabel(seedHash, CONSTELLATION_FORM_LABEL);
   const figureSeed = appendHashSeedLabel(seedHash, CONSTELLATION_FIGURE_LABEL);
   const prefixSeed = appendHashSeedLabel(seedHash, CONSTELLATION_PREFIX_LABEL);
@@ -1623,11 +1620,10 @@ function normalizeTurns(value: number): number {
 }
 
 export function valueNoise2D(
-  seed: string | number,
+  seedHash: number,
   x: number,
   y: number
 ): number {
-  const seedHash = resolveHashSeed(seed);
   const x0 = Math.floor(x);
   const y0 = Math.floor(y);
   const x1 = x0 + 1;
@@ -1644,7 +1640,7 @@ export function valueNoise2D(
 }
 
 export function octaveNoise2D(
-  seed: string | number,
+  seedHash: number,
   x: number,
   y: number,
   options: {
@@ -1662,7 +1658,7 @@ export function octaveNoise2D(
   let normalizer = 0;
 
   for (let octave = 0; octave < octaves; octave += 1) {
-    total += valueNoise2D(seed, x * frequency, y * frequency) * amplitude;
+    total += valueNoise2D(seedHash, x * frequency, y * frequency) * amplitude;
     normalizer += amplitude;
     amplitude *= persistence;
     frequency *= lacunarity;
@@ -1672,7 +1668,7 @@ export function octaveNoise2D(
 }
 
 export function ridgedNoise2D(
-  seed: string | number,
+  seedHash: number,
   x: number,
   y: number,
   options: {
@@ -1681,7 +1677,7 @@ export function ridgedNoise2D(
     lacunarity?: number;
   } = {}
 ) {
-  return 1 - Math.abs(octaveNoise2D(seed, x, y, options) * 2 - 1);
+  return 1 - Math.abs(octaveNoise2D(seedHash, x, y, options) * 2 - 1);
 }
 
 export function wrapLongitude(longitude: number): number {
@@ -1722,7 +1718,7 @@ function pickFrom<T>(list: readonly T[], seedValue: number): T {
 }
 
 export function getRegionalPoiNameStyle(
-  seed: string | number,
+  seedHash: number,
   x: number,
   y: number
 ): {
@@ -1745,7 +1741,6 @@ export function getRegionalPoiNameStyle(
     ['bridge', 'field', 'keep', 'pass', 'reach', 'ward'],
     ['den', 'depths', 'hall', 'rift', 'spire', 'way'],
   ];
-  const seedHash = resolveHashSeed(seed);
   const prefixSetSeed = appendHashSeedLabel(seedHash, POI_NAME_PREFIX_SET_LABEL);
   const suffixSetSeed = appendHashSeedLabel(seedHash, POI_NAME_SUFFIX_SET_LABEL);
 
@@ -1770,13 +1765,12 @@ export function getRegionalPoiNameStyle(
 }
 
 export function generatePoiName(
-  seed: string | number,
+  seedHash: number,
   type: PoiNameType,
   x: number,
   y: number
 ) {
-  const style = getRegionalPoiNameStyle(seed, x, y);
-  const seedHash = resolveHashSeed(seed);
+  const style = getRegionalPoiNameStyle(seedHash, x, y);
   const typeLabel = POI_NAME_TYPE_LABELS[type as keyof typeof POI_NAME_TYPE_LABELS];
   const typeSeed = appendHashSeedLabel(
     seedHash,

@@ -417,14 +417,14 @@ describe('overworld support', () => {
   });
 
   it('raises river signals near river control path segments', () => {
-    const sampleTerrainSignals = createOverworldTerrainSignalSampler('spec-seed');
     const points = createRiverControlPoints('spec-seed', 0, 0);
-    const midpoint = {
-      x: Math.round((points[0].x + points[1].x) * 0.5),
-      y: Math.round((points[0].y + points[1].y) * 0.5),
-    };
-    const nearSignal = sampleTerrainSignals(midpoint.x, midpoint.y).riverSignal;
-    const farSignal = sampleTerrainSignals(midpoint.x + 12, midpoint.y + 12).riverSignal;
+    const anchor = points[0]!;
+    const nearSignal = getRiverControlPathSignalAtPoint(points, anchor.x, anchor.y);
+    const farSignal = getRiverControlPathSignalAtPoint(
+      points,
+      anchor.x + 12,
+      anchor.y + 12
+    );
 
     expect(nearSignal).toBeGreaterThan(farSignal);
     expect(nearSignal - farSignal).toBeGreaterThan(0.08);

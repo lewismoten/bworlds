@@ -1,6 +1,7 @@
 import {
   appendHashSeedLabel,
   appendHashSeedPart,
+  createHashSeed,
   hash2D,
   hash2DWithSeed,
   octaveNoise2D,
@@ -36,6 +37,7 @@ import type {
 
 const TILE_PIXEL_SIZE = 16;
 const RIVER_SURFACE_HEIGHT = -0.115;
+const CONTINENT_NEIGHBOR_SEED = registerHashLabel('continent');
 const OCEAN_SHIMMER_SEED = registerHashLabel('ocean-shimmer');
 const RIVER_BEND_SEED = registerHashLabel('river-bend');
 const RIVER_SWAY_SEED = registerHashLabel('river-sway');
@@ -392,20 +394,23 @@ export function createWaterTilePlugin(): RuntimePlugin {
         y,
         tile,
       }: DecorateOverworldTileContext) {
+        const seedHash =
+          typeof seed === 'number' ? createHashSeed(seed) : registerHashLabel(seed);
+        const continentSeed = appendHashSeedLabel(seedHash, CONTINENT_NEIGHBOR_SEED);
         const neighboringSeaSignal = Math.min(
-          octaveNoise2D(`${seed}:continent`, (x + 1) / 160, y / 160, {
+          octaveNoise2D(continentSeed, (x + 1) / 160, y / 160, {
             octaves: 5,
             persistence: 0.55,
           }),
-          octaveNoise2D(`${seed}:continent`, (x - 1) / 160, y / 160, {
+          octaveNoise2D(continentSeed, (x - 1) / 160, y / 160, {
             octaves: 5,
             persistence: 0.55,
           }),
-          octaveNoise2D(`${seed}:continent`, x / 160, (y + 1) / 160, {
+          octaveNoise2D(continentSeed, x / 160, (y + 1) / 160, {
             octaves: 5,
             persistence: 0.55,
           }),
-          octaveNoise2D(`${seed}:continent`, x / 160, (y - 1) / 160, {
+          octaveNoise2D(continentSeed, x / 160, (y - 1) / 160, {
             octaves: 5,
             persistence: 0.55,
           })

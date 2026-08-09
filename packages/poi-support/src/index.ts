@@ -92,6 +92,10 @@ interface EnterablePoiTilePluginOptions {
   createWorldAction?: TilePlugin['createWorldAction'];
 }
 
+function normalizeSeedHash(seed: Seed): number {
+  return typeof seed === 'number' ? createHashSeed(seed) : registerHashLabel(seed);
+}
+
 interface ChanceBasedEnterablePoiTilePluginOptions
   extends Omit<EnterablePoiTilePluginOptions, 'classifyPoi'> {
   poiType?: PointOfInterestType;
@@ -362,7 +366,8 @@ export function createGeneratedPoiTile({
     kind,
     poi: {
       type: poiType,
-      name: tile?.poi?.name ?? generatePoiName(seed, poiType, x, y),
+      name:
+        tile?.poi?.name ?? generatePoiName(normalizeSeedHash(seed), poiType, x, y),
     },
     note,
   };
@@ -607,7 +612,7 @@ export function createNamedPoi(
 ): PoiLike {
   return {
     type: poiType,
-    name: name ?? generatePoiName(seed, poiType, x, y),
+    name: name ?? generatePoiName(normalizeSeedHash(seed), poiType, x, y),
   };
 }
 

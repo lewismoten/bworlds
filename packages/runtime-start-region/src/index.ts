@@ -1,4 +1,5 @@
 import { generatePoiName } from '@bworlds/core';
+import { createHashSeed, registerHashLabel } from '@bworlds/core/hash';
 import { createCachedOverworldTileResolver } from '@bworlds/overworld-support';
 import { createRuntimePlugin } from '@bworlds/plugin-api';
 import type { RuntimePlugin, TileLike } from '@bworlds/plugin-api';
@@ -94,42 +95,44 @@ function getCuratedTile({
   x: number;
   y: number;
 }) {
+  const seedHash =
+    typeof seed === 'number' ? createHashSeed(seed) : registerHashLabel(seed);
   const tile = curatedSpawnTiles.get(`${x},${y}`);
   if (tile) {
     if (tile.kind === 'dungeon' && tile.poi) {
       return {
         ...tile,
-        poi: { ...tile.poi, name: generatePoiName(seed, 'dungeon', -5, 4) },
+        poi: { ...tile.poi, name: generatePoiName(seedHash, 'dungeon', -5, 4) },
       };
     }
     if (tile.kind === 'cave' && tile.poi) {
       return {
         ...tile,
-        poi: { ...tile.poi, name: generatePoiName(seed, 'cave', -4, 5) },
+        poi: { ...tile.poi, name: generatePoiName(seedHash, 'cave', -4, 5) },
       };
     }
     if (tile.kind === 'town' && tile.poi) {
       return {
         ...tile,
-        poi: { ...tile.poi, name: generatePoiName(seed, 'town', 5, 4) },
+        poi: { ...tile.poi, name: generatePoiName(seedHash, 'town', 5, 4) },
       };
     }
     if (tile.kind === 'lighthouse' && tile.poi) {
       return {
         ...tile,
-        poi: { ...tile.poi, name: generatePoiName(seed, 'lighthouse', 6, 0) },
+        poi: { ...tile.poi, name: generatePoiName(seedHash, 'lighthouse', 6, 0) },
       };
     }
     if (tile.kind === 'ship' && tile.poi) {
       return {
         ...tile,
-        poi: { ...tile.poi, name: generatePoiName(seed, 'ship', 9, 0) },
+        poi: { ...tile.poi, name: generatePoiName(seedHash, 'ship', 9, 0) },
       };
     }
     if (tile.kind === 'observatory' && tile.poi) {
       return {
         ...tile,
-        poi: { ...tile.poi, name: generatePoiName(seed, 'observatory', -6, -2) },
+        poi: { ...tile.poi, name: generatePoiName(seedHash, 'observatory', -6, -2) },
       };
     }
 

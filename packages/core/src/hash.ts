@@ -7,7 +7,6 @@ const UINT32_RANGE = 2 ** 32;
 const registeredHashLabels = new Map<string, number>();
 
 export type HashSeed = number;
-export type HashSeedInput = HashSeed | string;
 
 export function registerHashLabel(label: string): number {
   const cached = registeredHashLabels.get(label);
@@ -64,10 +63,6 @@ export function normalizeHash(hash: number): number {
 function mixHashCharacter(hash: number, charCode: number): number {
   hash ^= charCode;
   return Math.imul(hash, FNV_PRIME);
-}
-
-export function resolveHashSeed(seed: HashSeedInput): HashSeed {
-  return typeof seed === 'number' ? createHashSeed(seed) : registerHashLabel(seed);
 }
 
 function mixHashNumber(hash: number, value: number): number {

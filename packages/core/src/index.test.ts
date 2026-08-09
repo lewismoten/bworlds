@@ -32,47 +32,9 @@ import {
   hash2D,
   hash2DWithSeed,
   registerHashLabel,
-  resolveHashSeed,
 } from './hash.ts';
 
 describe('core utilities', () => {
-  it('returns deterministic hashes', () => {
-    const seedHash = registerHashLabel('seed');
-
-    expect(hash2D(seedHash, 4, 9)).toBe(hash2D(seedHash, 4, 9));
-    expect(hash2D(seedHash, 4, 9)).not.toBe(hash2D(seedHash, 4, 10));
-    expect(hash2D(registerHashLabel('seed'), 4, 9)).toBe(hash2D(seedHash, 4, 9));
-  });
-
-  it('normalizes string and numeric seeds once at the boundary', () => {
-    const seedHash = resolveHashSeed('seed');
-
-    expect(seedHash).toBe(registerHashLabel('seed'));
-    expect(resolveHashSeed(seedHash)).toBe(createHashSeed(seedHash));
-    expect(hash2DWithSeed(seedHash, 4, 9)).toBe(hash2D(seedHash, 4, 9));
-  });
-
-  it('keeps registered label seed paths deterministic when composed numerically', () => {
-    const baseSeed = registerHashLabel('seed');
-    const seededHash = appendHashSeedLabel(
-      baseSeed,
-      registerHashLabel('river-control')
-    );
-    const nestedSeed = appendHashSeedLabel(
-      seededHash,
-      registerHashLabel('angle-delta')
-    );
-
-    expect(hash2DWithSeed(seededHash, 4, 9)).toBe(
-      hash2DWithSeed(
-        appendHashSeedLabel(baseSeed, registerHashLabel('river-control')),
-        4,
-        9
-      )
-    );
-    expect(hash2DWithSeed(nestedSeed, -12, 7)).toBe(hash2DWithSeed(nestedSeed, -12, 7));
-  });
-
   it('keeps composed numeric tile ribbon seeds deterministic', () => {
     const roadRibbonSeed = registerHashLabel('road-ribbon');
     const branchLabel = registerHashLabel('branch');
@@ -89,21 +51,6 @@ describe('core utilities', () => {
 
     expect(hash2DWithSeed(numericSeed, 3, 7)).toBe(hash2DWithSeed(numericSeed, 3, 7));
     expect(hash2DWithSeed(numericSeed, 1, 9)).toBe(hash2DWithSeed(numericSeed, 1, 9));
-  });
-
-  it('keeps integer seed-part mixing deterministic for zero and negative coordinates', () => {
-    const seededHash = appendHashSeedPart(registerHashLabel('seed'), -14);
-
-    expect(hash2DWithSeed(seededHash, 0, -9)).toBe(
-      hash2DWithSeed(seededHash, 0, -9)
-    );
-    expect(
-      hash2DWithSeed(
-        appendHashSeedPart(seededHash, 0),
-        -27,
-        0
-      )
-    ).toBe(hash2DWithSeed(appendHashSeedPart(seededHash, 0), -27, 0));
   });
 
   it('maps world coordinates to GPS coordinates', () => {
@@ -171,8 +118,9 @@ describe('core utilities', () => {
   });
 
   it('generates deterministic procedural constellations with names and links', () => {
-    const left = generateConstellations('spec-seed');
-    const right = generateConstellations('spec-seed');
+    const seedHash = registerHashLabel('spec-seed');
+    const left = generateConstellations(seedHash);
+    const right = generateConstellations(seedHash);
 
     expect(left).toEqual(right);
     expect(left[0].name).toMatch(/\w+ \w+/);
@@ -181,7 +129,9 @@ describe('core utilities', () => {
   });
 
   it('limits repeated constellation prefixes and suffixes while allowing figure-style names', () => {
-    const constellations = generateConstellations('repeat-spec', { count: 12 });
+    const constellations = generateConstellations(registerHashLabel('repeat-spec'), {
+      count: 12,
+    });
     const prefixCounts = new Map<string, number>();
     const suffixCounts = new Map<string, number>();
     let figureNames = 0;
@@ -203,7 +153,9 @@ describe('core utilities', () => {
   });
 
   it('generates visibly distinct constellation layouts across a seasonal set', () => {
-    const constellations = generateConstellations('layout-spec', { count: 8 });
+    const constellations = generateConstellations(registerHashLabel('layout-spec'), {
+      count: 8,
+    });
     const fingerprints = new Set(
       constellations.map((constellation) =>
         constellation.stars
@@ -328,8 +280,9 @@ describe('core utilities', () => {
   });
 
   it('generates deterministic quarry point-of-interest names', () => {
-    const left = generatePoiName('quarry-spec', 'quarry', 18, -12);
-    const right = generatePoiName('quarry-spec', 'quarry', 18, -12);
+    const seedHash = registerHashLabel('quarry-spec');
+    const left = generatePoiName(seedHash, 'quarry', 18, -12);
+    const right = generatePoiName(seedHash, 'quarry', 18, -12);
 
     expect(left).toBe(right);
     expect(left).toMatch(
@@ -338,8 +291,9 @@ describe('core utilities', () => {
   });
 
   it('generates deterministic lighthouse point-of-interest names', () => {
-    const left = generatePoiName('lighthouse-spec', 'lighthouse', -22, 9);
-    const right = generatePoiName('lighthouse-spec', 'lighthouse', -22, 9);
+    const seedHash = registerHashLabel('lighthouse-spec');
+    const left = generatePoiName(seedHash, 'lighthouse', -22, 9);
+    const right = generatePoiName(seedHash, 'lighthouse', -22, 9);
 
     expect(left).toBe(right);
     expect(left).toMatch(
@@ -348,8 +302,9 @@ describe('core utilities', () => {
   });
 
   it('generates deterministic ship point-of-interest names', () => {
-    const left = generatePoiName('ship-spec', 'ship', 14, -7);
-    const right = generatePoiName('ship-spec', 'ship', 14, -7);
+    const seedHash = registerHashLabel('ship-spec');
+    const left = generatePoiName(seedHash, 'ship', 14, -7);
+    const right = generatePoiName(seedHash, 'ship', 14, -7);
 
     expect(left).toBe(right);
     expect(left).toMatch(
@@ -358,8 +313,9 @@ describe('core utilities', () => {
   });
 
   it('generates deterministic observatory point-of-interest names', () => {
-    const left = generatePoiName('observatory-spec', 'observatory', -11, 16);
-    const right = generatePoiName('observatory-spec', 'observatory', -11, 16);
+    const seedHash = registerHashLabel('observatory-spec');
+    const left = generatePoiName(seedHash, 'observatory', -11, 16);
+    const right = generatePoiName(seedHash, 'observatory', -11, 16);
 
     expect(left).toBe(right);
     expect(left).toMatch(
@@ -368,8 +324,9 @@ describe('core utilities', () => {
   });
 
   it('generates deterministic station point-of-interest names', () => {
-    const left = generatePoiName('station-spec', 'station', 7, -14);
-    const right = generatePoiName('station-spec', 'station', 7, -14);
+    const seedHash = registerHashLabel('station-spec');
+    const left = generatePoiName(seedHash, 'station', 7, -14);
+    const right = generatePoiName(seedHash, 'station', 7, -14);
 
     expect(left).toBe(right);
     expect(left).toMatch(

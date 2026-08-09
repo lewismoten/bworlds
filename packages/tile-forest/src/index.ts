@@ -3,10 +3,10 @@ import { octaveNoise2D } from '@bworlds/core';
 import {
   appendHashSeedLabel,
   appendHashSeedPart,
+  createHashSeed,
   hash2D,
   hash2DWithSeed,
   registerHashLabel,
-  resolveHashSeed,
 } from '@bworlds/core/hash';
 import { createPlainsBackedTilePainter } from '@bworlds/paint-support';
 import {
@@ -168,6 +168,8 @@ const TREE_LEAF_Y_SEED = registerHashLabel('tree-leaf-y');
 const TREE_LEAF_SIZE_SEED = registerHashLabel('tree-leaf-s');
 const TREE_LEAF_BRIGHTNESS_SEED = registerHashLabel('tree-leaf-b');
 const FOREST_BUSH_COUNT_SEED = registerHashLabel('forest-bush-count');
+const FOREST_GROVE_NOISE_SEED = registerHashLabel('forest-grove');
+const FOREST_EDGE_NOISE_SEED = registerHashLabel('forest-edge');
 const FOREST_SPIDER_WEB_SEED = registerHashLabel('forest-spider-web');
 const FOREST_SPIDER_ANGLE_SEED = registerHashLabel('forest-spider-angle');
 const FOREST_SPIDER_DISTANCE_SEED = registerHashLabel('forest-spider-distance');
@@ -1023,8 +1025,12 @@ export function createForestTilePlugin(): RuntimePlugin {
           return null;
         }
 
+        const seedHash =
+          typeof context.seed === 'number'
+            ? createHashSeed(context.seed)
+            : registerHashLabel(context.seed);
         const groveSignal = octaveNoise2D(
-          `${context.seed}:forest-grove`,
+          appendHashSeedLabel(seedHash, FOREST_GROVE_NOISE_SEED),
           context.x / 24,
           context.y / 24,
           {
@@ -1033,7 +1039,7 @@ export function createForestTilePlugin(): RuntimePlugin {
           }
         );
         const edgeSignal = octaveNoise2D(
-          `${context.seed}:forest-edge`,
+          appendHashSeedLabel(seedHash, FOREST_EDGE_NOISE_SEED),
           context.x / 9,
           context.y / 9,
           {
@@ -1050,7 +1056,7 @@ export function createForestTilePlugin(): RuntimePlugin {
           groveSignal * 0.28 +
           edgeSignal * 0.08;
         const loneTreeChance = hash2D(
-          appendHashSeedLabel(resolveHashSeed(context.seed), FOREST_LONER_SEED),
+          appendHashSeedLabel(seedHash, FOREST_LONER_SEED),
           context.x,
           context.y
         );
