@@ -4,6 +4,7 @@ import {
   createMusicDebugMidiFile,
   downloadMusicDebugMidiFile,
 } from './music-debug-midi.ts';
+import { msToMusicDebugTicks } from './music-debug-tempo.ts';
 
 describe('music debug midi', () => {
   it('encodes the current generated song as a multitrack midi file with a stable filename', () => {
@@ -46,8 +47,15 @@ describe('music debug midi', () => {
     ]);
     expect(readTrackMetaEvent(chunks.tracks[0]!, 0x59)).toHaveLength(2);
     expect(readTrackEndTick(chunks.tracks[0]!)).toBe(
-      msToTicks(snapshot.durationMs)
+      msToTicks(snapshot.durationMs, snapshot.resolvedBpm)
     );
+    expect(
+      ticksToMilliseconds(
+        readTrackEndTick(chunks.tracks[0]!),
+        chunks.header.ticksPerQuarter,
+        snapshot.resolvedBpm
+      )
+    ).toBeCloseTo(snapshot.durationMs, -1);
     expect(file.bytes.length).toBeGreaterThan(256);
   });
 
@@ -451,27 +459,29 @@ function readVariableLengthQuantity(
   return { value, length };
 }
 
-function msToTicks(milliseconds: number): number {
-  return Math.max(0, Math.round((milliseconds / 1000) * (480 * 2)));
+function msToTicks(milliseconds: number, bpm: number): number {
+  return msToMusicDebugTicks(milliseconds, bpm);
 }
 
 function encodeExpectedTempoMeta(
   snapshot: ReturnType<typeof createMusicDebugSnapshot>
 ): number[] {
   const microsecondsPerMinute = 60_000_000;
-  const baseQuarterMs = snapshot.theme.noteDurationMs / 1.5;
-  const adjustedQuarterMs =
-    baseQuarterMs / Math.max(0.1, snapshot.mood.tempoMultiplier);
   const microsecondsPerQuarter = Math.max(
     1,
-    Math.round(
-      microsecondsPerMinute /
-        (microsecondsPerMinute / (adjustedQuarterMs * 1000))
-    )
+    Math.round(microsecondsPerMinute / snapshot.resolvedBpm)
   );
   return [
     (microsecondsPerQuarter >> 16) & 0xff,
     (microsecondsPerQuarter >> 8) & 0xff,
     microsecondsPerQuarter & 0xff,
   ];
+}
+
+function ticksToMilliseconds(
+  ticks: number,
+  ticksPerQuarter: number,
+  bpm: number
+): number {
+  return (ticks * 60_000) / (Math.max(1, ticksPerQuarter) * Math.max(1, bpm));
 }

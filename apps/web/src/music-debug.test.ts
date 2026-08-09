@@ -81,6 +81,8 @@ describe('music debug', () => {
     expect(first.notes).toEqual(second.notes);
     expect(first.durationMs).toBeGreaterThanOrEqual(120_000);
     expect(first.durationMs).toBeLessThanOrEqual(180_000);
+    expect(first.measureCount).toBe(80);
+    expect(first.resolvedBpm).toBeGreaterThan(100);
     expect(first.song.sections.map((section) => section.id)).toEqual([
       'intro',
       'a',
@@ -113,10 +115,12 @@ describe('music debug', () => {
     expect(markup).toContain('music-debug-instrument-play');
     expect(summary).toContain('Scheduled Notes');
     expect(summary).toContain('Song Length');
+    expect(summary).toContain('Measures');
     expect(summary).toContain('Blueprint');
     expect(summary).toContain('Loop Range');
     expect(summary).toContain('Encounter');
     expect(summary).toContain('Combat');
+    expect(summary).toContain('Resolved BPM');
     expect(summary).toContain('Mode');
     expect(summary).toContain('Region');
     expect(summary).toContain('Location');

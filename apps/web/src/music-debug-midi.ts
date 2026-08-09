@@ -2,6 +2,10 @@ import {
   isMidiPercussionFamily,
   resolveMidiPercussionNoteNumber,
 } from './music-debug-midi-drums.ts';
+import {
+  msToMusicDebugTicks,
+  MUSIC_DEBUG_MIDI_TICKS_PER_QUARTER,
+} from './music-debug-tempo.ts';
 import type { ProceduralInstrument } from './procedural-music.ts';
 import { resolveMusicStereoPan } from './procedural-music-mix.ts';
 import type { MusicDebugSnapshot } from './music-debug.ts';
@@ -9,7 +13,6 @@ import type { MusicDebugSnapshot } from './music-debug.ts';
 const MIDI_HEADER_CHUNK_ID = [0x4d, 0x54, 0x68, 0x64];
 const MIDI_TRACK_CHUNK_ID = [0x4d, 0x54, 0x72, 0x6b];
 const MIDI_FORMAT_MULTI_TRACK = 1;
-const MIDI_TICKS_PER_QUARTER = 480;
 const MICROSECONDS_PER_MINUTE = 60_000_000;
 
 const ROLE_CHANNELS = {
@@ -108,7 +111,7 @@ export function createMusicDebugMidiFile(
     ...encodeUint32(6),
     ...encodeUint16(MIDI_FORMAT_MULTI_TRACK),
     ...encodeUint16(encodedTracks.length),
-    ...encodeUint16(MIDI_TICKS_PER_QUARTER),
+    ...encodeUint16(MUSIC_DEBUG_MIDI_TICKS_PER_QUARTER),
     ...encodedTracks.flat(),
   ]);
 
@@ -150,7 +153,7 @@ function buildConductorTrack(
   metadata: ResolvedMusicDebugMidiMetadata
 ): MusicDebugMidiTrack {
   const events: MidiTrackEvent[] = [];
-  const bpm = resolveSongTempoBpm(snapshot);
+  const bpm = snapshot.resolvedBpm;
   const microsecondsPerQuarter = Math.max(
     1,
     Math.round(MICROSECONDS_PER_MINUTE / bpm)
@@ -241,13 +244,13 @@ function buildConductorTrack(
   for (let index = 0; index < snapshot.song.sections.length; index += 1) {
     const section = snapshot.song.sections[index]!;
     events.push({
-      tick: msToTicks(section.startOffsetMs),
+      tick: msToTicks(section.startOffsetMs, snapshot),
       order: 30 + index,
       data: [0xff, 0x06, ...encodeText(section.label)],
     });
   }
   events.push({
-    tick: msToTicks(snapshot.durationMs),
+    tick: msToTicks(snapshot.durationMs, snapshot),
     order: Number.MAX_SAFE_INTEGER,
     data: [0xff, 0x2f, 0x00],
   });
@@ -335,9 +338,13 @@ function buildRoleTracks(snapshot: MusicDebugSnapshot): MusicDebugMidiTrack[] {
           })
         : resolveMidiNoteNumber(note.frequency);
       const velocity = resolveVelocity(note.volume, note.role);
-      const startTick = msToTicks(note.startMs - snapshot.song.startMs);
+      const startTick = msToTicks(
+        note.startMs - snapshot.song.startMs,
+        snapshot
+      );
       const endTick = msToTicks(
-        note.startMs + note.durationMs - snapshot.song.startMs
+        note.startMs + note.durationMs - snapshot.song.startMs,
+        snapshot
       );
 
       events.push({
@@ -355,7 +362,7 @@ function buildRoleTracks(snapshot: MusicDebugSnapshot): MusicDebugMidiTrack[] {
     }
 
     events.push({
-      tick: msToTicks(snapshot.durationMs),
+      tick: msToTicks(snapshot.durationMs, snapshot),
       order: Number.MAX_SAFE_INTEGER - roleIndex,
       data: [0xff, 0x2f, 0x00],
     });
@@ -451,13 +458,6 @@ function createBrowserMidiDownloadEnvironment(): MusicDebugMidiDownloadEnvironme
   return browserEnvironment;
 }
 
-function resolveSongTempoBpm(snapshot: MusicDebugSnapshot): number {
-  const baseQuarterMs = snapshot.theme.noteDurationMs / 1.5;
-  const adjustedQuarterMs =
-    baseQuarterMs / Math.max(0.1, snapshot.mood.tempoMultiplier);
-  return MICROSECONDS_PER_MINUTE / Math.max(1, adjustedQuarterMs * 1000);
-}
-
 type ResolvedMusicDebugMidiMetadata = {
   author: string;
   arranger: string;
@@ -491,7 +491,7 @@ function resolveMusicDebugMidiMetadata(
     moreComments: [
       `Seed ${snapshot.options.clusterX},${snapshot.options.clusterY}`,
       `Tile ${snapshot.options.tileKind} / Context ${snapshot.options.contextType}`,
-      `Mood tempo ${snapshot.mood.tempoMultiplier.toFixed(2)}x / brightness ${snapshot.mood.brightness.toFixed(2)}x / Encounter ${snapshot.options.encounterMode}`,
+      `Mood tempo ${snapshot.mood.tempoMultiplier.toFixed(2)}x / Resolved BPM ${snapshot.resolvedBpm.toFixed(1)} / brightness ${snapshot.mood.brightness.toFixed(2)}x / Encounter ${snapshot.options.encounterMode}`,
       `Vocabulary ${snapshot.vocabularySummary.join(', ')}`,
     ],
   };
@@ -640,11 +640,11 @@ function resolveBankSelectLsb(family: ProceduralInstrument['family']): number {
   return Math.max(0, familyOrder.indexOf(family));
 }
 
-function msToTicks(milliseconds: number): number {
-  return Math.max(
-    0,
-    Math.round((milliseconds / 1000) * (MIDI_TICKS_PER_QUARTER * 2))
-  );
+function msToTicks(
+  milliseconds: number,
+  snapshot: Pick<MusicDebugSnapshot, 'resolvedBpm'>
+): number {
+  return msToMusicDebugTicks(milliseconds, snapshot.resolvedBpm);
 }
 
 function encodeText(value: string): number[] {

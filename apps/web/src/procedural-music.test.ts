@@ -1088,6 +1088,47 @@ describe('procedural music', () => {
     ).toBeGreaterThan(1.5);
   });
 
+  it('keeps pitched note semitone mapping stable across mood brightness changes', () => {
+    const dayScheduled = scheduleProceduralMusicNotes({
+      nowMs: 0,
+      tileKind: 'town',
+      contextType: 'town',
+      dayProgress: 0.5,
+      yearProgress: 0.5,
+      clusterX: 0,
+      clusterY: 0,
+    });
+    const nightScheduled = scheduleProceduralMusicNotes({
+      nowMs: 0,
+      tileKind: 'town',
+      contextType: 'town',
+      dayProgress: 0.9,
+      yearProgress: 0.5,
+      clusterX: 0,
+      clusterY: 0,
+    });
+    const theme = resolveMusicTheme('town', 'town');
+    const toRelativeSemitones = (frequency: number) =>
+      Math.round(Math.log2(frequency / theme.rootHz) * 12);
+    const firstSemitoneByRole = (
+      notes: typeof dayScheduled.notes
+    ): Record<'lead' | 'harmony' | 'bass', number> => ({
+      lead: toRelativeSemitones(
+        notes.find((note) => note.role === 'lead')?.frequency ?? theme.rootHz
+      ),
+      harmony: toRelativeSemitones(
+        notes.find((note) => note.role === 'harmony')?.frequency ?? theme.rootHz
+      ),
+      bass: toRelativeSemitones(
+        notes.find((note) => note.role === 'bass')?.frequency ?? theme.rootHz
+      ),
+    });
+
+    expect(firstSemitoneByRole(dayScheduled.notes)).toEqual(
+      firstSemitoneByRole(nightScheduled.notes)
+    );
+  });
+
   it('pushes winter lead lines into a brighter higher register during scheduling', () => {
     const summerScheduled = scheduleProceduralMusicNotes({
       nowMs: 0,

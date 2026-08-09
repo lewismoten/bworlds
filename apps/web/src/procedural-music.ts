@@ -38,6 +38,10 @@ import {
   type MusicSpaceProfile,
 } from './procedural-music-space.ts';
 import { MAX_ACTIVE_PROCEDURAL_MUSIC_OSCILLATORS } from './audio-budget.ts';
+import {
+  resolveProceduralNoteFrequency,
+  resolveProceduralNoteHarmonicGain,
+} from './procedural-music-note-shaping.ts';
 import type { AudioCategory } from './audio-categories.ts';
 type MusicPosition = { x: number; y: number };
 type TileKind = string;
@@ -1374,24 +1378,12 @@ function createThemeNote(options: {
       arrangementProfile.durationMultiplier *
       meterAccent.durationMultiplier *
       resolveCompositionDurationMultiplier(role, composition),
-    frequency:
-      options.theme.rootHz *
-      Math.pow(
-        2,
-        (semitones +
-          octaveBoost +
-          (arrangementProfile.octaveShiftSemitones ?? 0)) /
-          12
-      ) *
-      options.mood.brightness *
-      arrangementProfile.brightnessMultiplier *
-      (role === 'bass'
-        ? 0.5
-        : role === 'harmony'
-          ? 0.76
-          : role === 'percussion'
-            ? 1.9
-            : 1),
+    frequency: resolveProceduralNoteFrequency({
+      rootHz: options.theme.rootHz,
+      semitones: semitones + octaveBoost,
+      role,
+      octaveShiftSemitones: arrangementProfile.octaveShiftSemitones,
+    }),
     volume:
       options.theme.baseVolume *
       options.mood.volumeMultiplier *
@@ -1410,8 +1402,12 @@ function createThemeNote(options: {
     attackMs: instrument.attackMs,
     releaseMs: instrument.releaseMs * arrangementProfile.releaseMultiplier,
     detuneCents: instrument.detuneCents,
-    harmonicGain:
-      instrument.harmonicGain * arrangementProfile.harmonicGainMultiplier,
+    harmonicGain: resolveProceduralNoteHarmonicGain({
+      baseHarmonicGain: instrument.harmonicGain,
+      harmonicGainMultiplier: arrangementProfile.harmonicGainMultiplier,
+      moodBrightness: options.mood.brightness,
+      brightnessMultiplier: arrangementProfile.brightnessMultiplier,
+    }),
     pulseRate:
       instrument.pulseRate *
       arrangementProfile.pulseRateMultiplier *

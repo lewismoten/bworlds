@@ -20,6 +20,7 @@ import {
   createProceduralMusicSong,
   type ProceduralMusicSong,
 } from './procedural-music-song.ts';
+import { resolveProceduralMusicBlueprintMeasureCount } from './procedural-music-blueprint.ts';
 import { randomizeDebugCoordinatePair } from './debug-seed.ts';
 import { buildMusicDebugInstrumentPanelMarkup } from './music-debug-instrument-panel.ts';
 import { describeSongSectionLayerArrangement } from './procedural-music-song-layers.ts';
@@ -29,6 +30,7 @@ import {
   MUSIC_DEBUG_PLAYBACK_SCHEDULE_TICK_MS,
   MUSIC_DEBUG_PLAYBACK_SCHEDULE_WINDOW_MS,
 } from './music-debug-playback-profile.ts';
+import { resolveMusicDebugTempoBpm } from './music-debug-tempo.ts';
 
 export type MusicDebugTileKind =
   | 'plains'
@@ -75,6 +77,8 @@ export type MusicDebugSnapshot = {
   song: ProceduralMusicSong;
   notes: ProceduralMusicNote[];
   durationMs: number;
+  resolvedBpm: number;
+  measureCount: number;
   blueprintLabel: string;
   vocabularySummary: string[];
   sharedMotif: number[];
@@ -247,6 +251,13 @@ export function createMusicDebugSnapshot(
     clusterY: options.clusterY,
   });
   const durationMs = song.durationMs;
+  const resolvedBpm = resolveMusicDebugTempoBpm({
+    blueprint: song.blueprint,
+    durationMs,
+  });
+  const measureCount = resolveProceduralMusicBlueprintMeasureCount(
+    song.blueprint
+  );
   const roleCounts: MusicDebugSnapshot['roleCounts'] = {
     lead: 0,
     harmony: 0,
@@ -290,6 +301,8 @@ export function createMusicDebugSnapshot(
     song,
     notes: song.notes,
     durationMs,
+    resolvedBpm,
+    measureCount,
     blueprintLabel: song.blueprint.label,
     vocabularySummary: [
       `Biome ${theme.vocabulary.biomeLabel}`,
@@ -496,10 +509,12 @@ export function buildMusicDebugSummaryMarkup(
       <div><dt>Root Hz</dt><dd>${snapshot.theme.rootHz.toFixed(2)}</dd></div>
       <div><dt>Scheduled Notes</dt><dd>${snapshot.notes.length}</dd></div>
       <div><dt>Song Length</dt><dd>${formatMusicDebugDuration(snapshot.durationMs)}</dd></div>
+      <div><dt>Measures</dt><dd>${snapshot.measureCount}</dd></div>
       <div><dt>Blueprint</dt><dd>${snapshot.blueprintLabel}</dd></div>
       <div><dt>Loop Range</dt><dd>${formatMusicDebugLoopRange(snapshot.loopStartOffsetMs, snapshot.loopEndOffsetMs)}</dd></div>
       <div><dt>Encounter</dt><dd>${snapshot.options.encounterMode}</dd></div>
       <div><dt>Tempo</dt><dd>${snapshot.mood.tempoMultiplier.toFixed(2)}x</dd></div>
+      <div><dt>Resolved BPM</dt><dd>${snapshot.resolvedBpm.toFixed(1)}</dd></div>
       <div><dt>Brightness</dt><dd>${snapshot.mood.brightness.toFixed(2)}x</dd></div>
       <div><dt>Combat</dt><dd>${snapshot.options.combatIntensity.toFixed(2)}</dd></div>
       <div><dt>Mode</dt><dd>${snapshot.theme.vocabulary.modeLabel}</dd></div>

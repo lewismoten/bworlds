@@ -27,8 +27,8 @@ added directly as semitones instead of moving through the selected scale.
 
 ## Highest-Priority Corrections
 
-* [ ] Fix scale-degree conversion for every pitched track.
-* [ ] Make all tracks use the same root and mode mapping.
+* [x] Fix scale-degree conversion for every pitched track.
+* [x] Make all tracks use the same root and mode mapping.
 * [ ] Verify G Mixolydian maps to G A B C D E F.
 * [ ] Test scale degrees across several octaves.
 * [ ] Reject unexpected chromatic notes before MIDI export.
@@ -53,10 +53,10 @@ added directly as semitones instead of moving through the selected scale.
 
 ## Tempo and Duration
 
-* [ ] Fix the mismatch between reported and exported tempo.
-* [ ] Export the intended BPM instead of about 260 BPM.
-* [ ] Show the resolved BPM beside the tempo multiplier.
-* [ ] Calculate song length from exported MIDI timing.
+* [x] Fix the mismatch between reported and exported tempo.
+* [x] Export the intended BPM instead of about 260 BPM.
+* [x] Show the resolved BPM beside the tempo multiplier.
+* [x] Calculate song length from exported MIDI timing.
 * [ ] Verify the MIDI length matches the reported 2:18.
 * [ ] Verify the loop range exists within the exported file.
 * [ ] Calculate section ticks before generating notes.
