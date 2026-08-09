@@ -4551,13 +4551,24 @@ describe('sound effects', () => {
       isJumping: false,
       viewMode: '3d',
       nearbyAmbient: {
+        kind: 'volcanic',
+        intensity: 0.6,
+        emitter: { x: 9, y: 0 },
+      },
+    });
+    controller.update({
+      nowMs: 6000,
+      walking: false,
+      isJumping: false,
+      viewMode: '3d',
+      nearbyAmbient: {
         kind: 'mountain',
         intensity: 0.6,
         emitter: { x: 4, y: 0 },
       },
     });
     controller.update({
-      nowMs: 5000,
+      nowMs: 7000,
       walking: false,
       isJumping: false,
       viewMode: '3d',
@@ -4574,6 +4585,7 @@ describe('sound effects', () => {
       'river-ambience',
       'plains-ambience',
       'snowfield-ambience',
+      'volcanic-ambience',
       'mountain-ambience',
       'ruins-ambience',
     ]);
@@ -4869,6 +4881,72 @@ describe('sound effects', () => {
           'snowfield-ambience:snowfield:mystery-hint'
         ) ||
         snowfieldRecipes.includes('snowfield-ambience:snowfield:winter-quiet')
+    ).toBe(true);
+  });
+
+  it('changes volcanic ambience across steam vents, daylight lava, and night mystery', () => {
+    const played: ProceduralSoundEffect[] = [];
+    const controller = createSoundEffectController({
+      play(effect) {
+        played.push(effect);
+      },
+    });
+
+    controller.update({
+      nowMs: 0,
+      walking: false,
+      isJumping: false,
+      viewMode: '3d',
+      dayProgress: 0.24,
+      nearbyAmbient: {
+        kind: 'volcanic',
+        intensity: 0.74,
+        emitter: { x: 10, y: 0 },
+      },
+    });
+    controller.update({
+      nowMs: 3200,
+      walking: false,
+      isJumping: false,
+      viewMode: '3d',
+      dayProgress: 0.55,
+      nearbyAmbient: {
+        kind: 'volcanic',
+        intensity: 0.74,
+        emitter: { x: 11, y: 0 },
+      },
+    });
+    controller.update({
+      nowMs: 6400,
+      walking: false,
+      isJumping: false,
+      viewMode: '3d',
+      dayProgress: 0.9,
+      nearbyAmbient: {
+        kind: 'volcanic',
+        intensity: 0.74,
+        emitter: { x: 10, y: 0 },
+      },
+    });
+
+    const volcanicRecipes = played
+      .filter((effect) => effect.kind === 'volcanic-ambience')
+      .map((effect) => effect.recipeId);
+
+    expect(
+      volcanicRecipes.includes('volcanic-ambience:volcanic:steam-vents') ||
+        volcanicRecipes.includes('volcanic-ambience:volcanic:stone-cracks') ||
+        volcanicRecipes.includes('volcanic-ambience:volcanic:rumble')
+    ).toBe(true);
+    expect(
+      volcanicRecipes.includes('volcanic-ambience:volcanic:rumble') ||
+        volcanicRecipes.includes('volcanic-ambience:volcanic:steam-vents') ||
+        volcanicRecipes.includes('volcanic-ambience:volcanic:lava-pops')
+    ).toBe(true);
+    expect(
+      volcanicRecipes.includes('volcanic-ambience:volcanic:lava-pops') ||
+        volcanicRecipes.includes('volcanic-ambience:volcanic:rumble') ||
+        volcanicRecipes.includes('volcanic-ambience:volcanic:mystery-hint')
     ).toBe(true);
   });
 });

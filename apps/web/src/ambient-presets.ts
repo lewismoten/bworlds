@@ -10,6 +10,7 @@ const BASE_AMBIENT_IDENTITY_VARIANTS: Record<
   forest: ['canopy', 'insects', 'branches', 'wildlife', 'vegetation-rustle'],
   plains: ['breeze', 'wildlife', 'vegetation-rustle'],
   snowfield: ['winter-quiet', 'ice-creaks', 'winter-gusts', 'muffled-open'],
+  volcanic: ['rumble', 'steam-vents', 'stone-cracks', 'lava-pops'],
   mountain: ['gusts', 'stone', 'highland-birds', 'falling-rocks'],
   cave: ['drips', 'echo', 'underground-wind'],
   settlement: ['market'],
@@ -28,6 +29,8 @@ export function resolveAmbientIdentityVariants(
       return resolvePlainsVariants(dayPhase, season);
     case 'snowfield':
       return resolveSnowfieldVariants(dayPhase, season);
+    case 'volcanic':
+      return resolveVolcanicVariants(dayPhase);
     case 'settlement':
       return resolveSettlementVariants(dayPhase);
     case 'mountain':
@@ -61,6 +64,7 @@ export function resolveAmbientIdentityVariantModifiers(options: {
     options.kind === 'forest' ||
     options.kind === 'plains' ||
     options.kind === 'snowfield' ||
+    options.kind === 'volcanic' ||
     options.kind === 'settlement'
   ) {
     if (options.dayPhase === 'night') {
@@ -119,6 +123,22 @@ export function resolveAmbientIdentityVariantModifiers(options: {
     case 'muffled-open':
       cadenceMultiplier *= 1.26;
       volumeMultiplier *= 0.76;
+      break;
+    case 'rumble':
+      cadenceMultiplier *= 1.42;
+      volumeMultiplier *= 1.08;
+      break;
+    case 'steam-vents':
+      cadenceMultiplier *= 1.12;
+      volumeMultiplier *= 0.96;
+      break;
+    case 'stone-cracks':
+      cadenceMultiplier *= 1.56;
+      volumeMultiplier *= 0.9;
+      break;
+    case 'lava-pops':
+      cadenceMultiplier *= 1.24;
+      volumeMultiplier *= 0.94;
       break;
     case 'summer-insects':
       cadenceMultiplier *= 0.92;
@@ -218,6 +238,16 @@ function resolveSnowfieldVariants(
     return ['ice-creaks', 'muffled-open', 'distant-birds'];
   }
   return ['winter-quiet', 'winter-gusts', 'muffled-open'];
+}
+
+function resolveVolcanicVariants(dayPhase: AmbientDayPhase): readonly string[] {
+  if (dayPhase === 'night') {
+    return ['lava-pops', 'rumble', 'mystery-hint'];
+  }
+  if (dayPhase === 'dawn' || dayPhase === 'dusk') {
+    return ['steam-vents', 'stone-cracks', 'rumble'];
+  }
+  return ['rumble', 'steam-vents', 'lava-pops'];
 }
 
 function resolveSettlementVariants(

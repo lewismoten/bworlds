@@ -743,6 +743,61 @@ describe('sound recipe library', () => {
     ]);
   });
 
+  it('supports volcanic ambience variants for rumble, vents, and lava pops', () => {
+    const volcanicRumbleRecipe = buildProceduralSoundRecipe({
+      kind: 'volcanic-ambience',
+      identityVariant: 'rumble',
+      profile: DEFAULT_SURFACE_PROFILE,
+      variantOffset: 0,
+      resolveAdvancementFrequency: () => 300,
+      resolveAmbientSoundFrequency: () => 172,
+      resolveInteractionFrequency: () => 128,
+      resolveInteractionWaveform: (_tileKind, fallback) => fallback,
+      resolvePaddleBoatCalliopeFrequency: () => 520,
+      resolveSteamWhistleFrequency: () => 360,
+    });
+    const volcanicVentRecipe = buildProceduralSoundRecipe({
+      kind: 'volcanic-ambience',
+      identityVariant: 'steam-vents',
+      profile: DEFAULT_SURFACE_PROFILE,
+      variantOffset: 0,
+      resolveAdvancementFrequency: () => 300,
+      resolveAmbientSoundFrequency: () => 172,
+      resolveInteractionFrequency: () => 128,
+      resolveInteractionWaveform: (_tileKind, fallback) => fallback,
+      resolvePaddleBoatCalliopeFrequency: () => 520,
+      resolveSteamWhistleFrequency: () => 360,
+    });
+    const volcanicLavaRecipe = buildProceduralSoundRecipe({
+      kind: 'volcanic-ambience',
+      identityVariant: 'lava-pops',
+      profile: DEFAULT_SURFACE_PROFILE,
+      variantOffset: 0,
+      resolveAdvancementFrequency: () => 300,
+      resolveAmbientSoundFrequency: () => 172,
+      resolveInteractionFrequency: () => 128,
+      resolveInteractionWaveform: (_tileKind, fallback) => fallback,
+      resolvePaddleBoatCalliopeFrequency: () => 520,
+      resolveSteamWhistleFrequency: () => 360,
+    });
+
+    expect(volcanicRumbleRecipe.id).toBe('volcanic-ambience:rumble');
+    expect(volcanicRumbleRecipe.layers?.map((layer) => layer.id)).toEqual([
+      'volcanic-rumble-bed',
+      'volcanic-deep-pressure',
+    ]);
+    expect(volcanicVentRecipe.id).toBe('volcanic-ambience:steam-vents');
+    expect(volcanicVentRecipe.layers?.map((layer) => layer.id)).toEqual([
+      'volcanic-steam-bed',
+      'volcanic-vent-hiss',
+    ]);
+    expect(volcanicLavaRecipe.id).toBe('volcanic-ambience:lava-pops');
+    expect(volcanicLavaRecipe.layers?.map((layer) => layer.id)).toEqual([
+      'volcanic-lava-bed',
+      'volcanic-lava-pop',
+    ]);
+  });
+
   it('supports living ambient event variants and seasonal landmark cues', () => {
     const forestMigrationRecipe = buildProceduralSoundRecipe({
       kind: 'forest-ambience',

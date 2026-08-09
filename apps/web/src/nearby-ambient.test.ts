@@ -211,6 +211,32 @@ describe('nearby ambient', () => {
     );
   });
 
+  it('maps ashlands tiles into a dedicated volcanic ambience family', () => {
+    const profile = findNearbyAmbientProfile({
+      state: {
+        player: { x: -1, y: -8 },
+        getCurrentTile(x: number, y: number) {
+          if (x === -1 && y === -8) {
+            return { kind: 'ashlands' };
+          }
+          return { kind: 'plains' };
+        },
+      },
+      centerX: -1,
+      centerY: -8,
+      searchRadius: 0,
+    });
+
+    expect(resolveAmbientBiologicalActivity('volcanic')).toBeLessThan(
+      resolveAmbientBiologicalActivity('mountain')
+    );
+    expect(profile).toEqual({
+      kind: 'volcanic',
+      intensity: expect.any(Number),
+      emitter: { x: -1, y: -8 },
+    });
+  });
+
   it('returns null when no nearby base tiles or POIs advertise ambience', () => {
     const profile = findNearbyAmbientProfile({
       state: {

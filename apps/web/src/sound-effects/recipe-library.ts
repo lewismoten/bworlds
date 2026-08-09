@@ -59,6 +59,7 @@ type ResolveSoundRecipeOptions = {
       | 'forest'
       | 'plains'
       | 'snowfield'
+      | 'volcanic'
       | 'mountain'
       | 'cave'
       | 'settlement'
@@ -152,6 +153,11 @@ export const SOUND_IDENTITY_DESCRIPTORS: Record<
   'snowfield-ambience': {
     family: 'ambient-wilds',
     signature: 'cold open hush with ice strain, powder drift, and muffled air',
+  },
+  'volcanic-ambience': {
+    family: 'ambient-wilds',
+    signature:
+      'low volcanic pressure with stone strain, steam, and molten pops',
   },
   'mountain-ambience': {
     family: 'ambient-wilds',
@@ -3057,6 +3063,185 @@ function resolveProceduralSoundLayers(
           variationDepth: 0.74,
         },
       ] as const;
+    case 'volcanic-ambience':
+      if (identityVariant === 'rumble') {
+        return [
+          {
+            id: 'volcanic-rumble-bed',
+            waveform: ['sawtooth', 'triangle'] as const,
+            noiseColor: ['brown', 'white'] as const,
+            frequencyMultiplier: 0.64,
+            durationMultiplier: 1,
+            volumeMultiplier: 0.42,
+            frequencyVariation: 0.02,
+            durationVariation: 0.12,
+            volumeVariation: 0.06,
+            variationDepth: 0.82,
+          },
+          {
+            id: 'volcanic-deep-pressure',
+            waveform: ['triangle', 'sine'] as const,
+            noiseColor: 'brown' as const,
+            frequencyMultiplier: 0.82,
+            durationMultiplier: 0.9,
+            volumeMultiplier: 0.16,
+            startOffsetMs: 44,
+            startOffsetVariation: 0.24,
+            frequencyVariation: 0.024,
+            durationVariation: 0.14,
+            volumeVariation: 0.08,
+            variationDepth: 0.78,
+          },
+        ] as const;
+      }
+      if (identityVariant === 'steam-vents') {
+        return [
+          {
+            id: 'volcanic-steam-bed',
+            waveform: ['triangle', 'sine'] as const,
+            noiseColor: ['white', 'pink'] as const,
+            frequencyMultiplier: 0.78,
+            durationMultiplier: 1,
+            volumeMultiplier: 0.34,
+            frequencyVariation: 0.022,
+            durationVariation: 0.12,
+            volumeVariation: 0.08,
+            variationDepth: 0.76,
+          },
+          {
+            id: 'volcanic-vent-hiss',
+            waveform: ['square', 'triangle'] as const,
+            noiseColor: 'white' as const,
+            frequencyMultiplier: 1.08,
+            durationMultiplier: 0.78,
+            volumeMultiplier: 0.12,
+            startOffsetMs: 36,
+            startOffsetVariation: 0.22,
+            frequencyVariation: 0.026,
+            durationVariation: 0.14,
+            volumeVariation: 0.08,
+            variationDepth: 0.74,
+          },
+        ] as const;
+      }
+      if (identityVariant === 'stone-cracks') {
+        return [
+          {
+            id: 'volcanic-stone-bed',
+            waveform: ['triangle', 'sawtooth'] as const,
+            noiseColor: ['brown', 'pink'] as const,
+            frequencyMultiplier: 0.72,
+            durationMultiplier: 1,
+            volumeMultiplier: 0.32,
+            frequencyVariation: 0.022,
+            durationVariation: 0.12,
+            volumeVariation: 0.08,
+            variationDepth: 0.74,
+          },
+          {
+            id: 'volcanic-stone-crack',
+            waveform: ['square', 'triangle'] as const,
+            noiseColor: 'white' as const,
+            frequencyMultiplier: 1,
+            durationMultiplier: 0.72,
+            volumeMultiplier: 0.14,
+            startOffsetMs: 28,
+            startOffsetVariation: 0.24,
+            frequencyVariation: 0.028,
+            durationVariation: 0.16,
+            volumeVariation: 0.08,
+            variationDepth: 0.76,
+          },
+        ] as const;
+      }
+      if (identityVariant === 'lava-pops') {
+        return [
+          {
+            id: 'volcanic-lava-bed',
+            waveform: ['sawtooth', 'triangle'] as const,
+            noiseColor: ['brown', 'pink'] as const,
+            frequencyMultiplier: 0.76,
+            durationMultiplier: 1,
+            volumeMultiplier: 0.36,
+            frequencyVariation: 0.022,
+            durationVariation: 0.12,
+            volumeVariation: 0.08,
+            variationDepth: 0.78,
+          },
+          {
+            id: 'volcanic-lava-pop',
+            waveform: ['square', 'sine'] as const,
+            noiseColor: 'white' as const,
+            frequencyMultiplier: 1.14,
+            durationMultiplier: 0.68,
+            volumeMultiplier: 0.12,
+            startOffsetMs: 24,
+            startOffsetVariation: 0.22,
+            frequencyVariation: 0.03,
+            durationVariation: 0.16,
+            volumeVariation: 0.08,
+            variationDepth: 0.78,
+          },
+        ] as const;
+      }
+      if (identityVariant === 'mystery-hint') {
+        return [
+          {
+            id: 'volcanic-ember-tone',
+            waveform: ['sine', 'triangle'] as const,
+            noiseColor: 'white' as const,
+            frequencyMultiplier: 1.16,
+            durationMultiplier: 0.88,
+            volumeMultiplier: 0.12,
+            frequencyVariation: 0.022,
+            durationVariation: 0.14,
+            volumeVariation: 0.08,
+            variationDepth: 0.72,
+          },
+          {
+            id: 'volcanic-void-bed',
+            waveform: ['triangle', 'sawtooth'] as const,
+            noiseColor: ['brown', 'pink'] as const,
+            frequencyMultiplier: 0.68,
+            durationMultiplier: 1,
+            volumeMultiplier: 0.22,
+            startOffsetMs: 54,
+            startOffsetVariation: 0.26,
+            frequencyVariation: 0.02,
+            durationVariation: 0.14,
+            volumeVariation: 0.08,
+            variationDepth: 0.7,
+          },
+        ] as const;
+      }
+      return [
+        {
+          id: 'volcanic-heat-bed',
+          waveform: ['sawtooth', 'triangle'] as const,
+          noiseColor: ['brown', 'pink'] as const,
+          frequencyMultiplier: 0.74,
+          durationMultiplier: 1,
+          volumeMultiplier: 0.4,
+          frequencyVariation: 0.02,
+          durationVariation: 0.12,
+          volumeVariation: 0.08,
+          variationDepth: 0.8,
+        },
+        {
+          id: 'volcanic-ash-sift',
+          waveform: ['triangle', 'square'] as const,
+          noiseColor: 'white' as const,
+          frequencyMultiplier: 0.96,
+          durationMultiplier: 0.82,
+          volumeMultiplier: 0.12,
+          startOffsetMs: 34,
+          startOffsetVariation: 0.22,
+          frequencyVariation: 0.024,
+          durationVariation: 0.14,
+          volumeVariation: 0.08,
+          variationDepth: 0.74,
+        },
+      ] as const;
     case 'mountain-ambience':
       if (identityVariant === 'falling-rocks') {
         return [
@@ -3933,6 +4118,8 @@ function resolveBaseSoundEffectFrequency(
       return options.resolveAmbientSoundFrequency('plains', undefined);
     case 'snowfield-ambience':
       return options.resolveAmbientSoundFrequency('snowfield', undefined);
+    case 'volcanic-ambience':
+      return options.resolveAmbientSoundFrequency('volcanic', undefined);
     case 'mountain-ambience':
       return options.resolveAmbientSoundFrequency('mountain', undefined);
     case 'cave-ambience':
@@ -4009,6 +4196,7 @@ function resolveBaseSoundEffectDurationMs(kind: SoundEffectKind): number {
     case 'forest-ambience':
     case 'plains-ambience':
     case 'snowfield-ambience':
+    case 'volcanic-ambience':
     case 'mountain-ambience':
     case 'cave-ambience':
     case 'settlement-ambience':
@@ -4082,6 +4270,8 @@ function resolveBaseSoundEffectVolume(
       return 0.016;
     case 'snowfield-ambience':
       return 0.017;
+    case 'volcanic-ambience':
+      return 0.02;
     case 'mountain-ambience':
       return 0.02;
     case 'cave-ambience':
@@ -4164,6 +4354,8 @@ function resolveBaseSoundEffectWaveform(
       return ['sine', 'triangle'];
     case 'snowfield-ambience':
       return ['triangle', 'sine'];
+    case 'volcanic-ambience':
+      return ['sawtooth', 'triangle'];
     case 'mountain-ambience':
       return ['sawtooth', 'triangle'];
     case 'cave-ambience':
@@ -4231,6 +4423,8 @@ function resolveBaseSoundEffectNoiseColor(
       return ['white', 'pink'];
     case 'snowfield-ambience':
       return ['white', 'brown'];
+    case 'volcanic-ambience':
+      return ['brown', 'pink'];
     case 'mountain-ambience':
       return ['white', 'brown'];
     case 'cave-ambience':

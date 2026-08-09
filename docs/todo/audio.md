@@ -167,7 +167,7 @@
 - [x] Give coastal areas waves, wind, seabirds, and shoreline movement.
 - [x] Give plains grass movement, insects, birds, and distant animals.
 - [x] Give snowy regions wind, snow movement, cracking ice, and muffled ambience.
-- [ ] Give volcanic areas rumbling, cracking stone, steam, and lava activity.
+- [x] Give volcanic areas rumbling, cracking stone, steam, and lava activity.
 - [x] Give caves dripping water, distant movement, echoes, rock sounds, and underground wind.
 - [ ] Give magical environments their own unnatural ambient layers.
 - [x] Generate ambient density based on how biologically active an area should be.
