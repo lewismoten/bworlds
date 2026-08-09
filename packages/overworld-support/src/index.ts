@@ -114,6 +114,11 @@ export type GeneratedNamedPoiAnchor = PoiAnchorLike & { name: string };
 export function createOverworldTerrainSignalSampler(
   seed: Seed
 ): OverworldTerrainSignalSampler {
+  const continentSeed = `${seed}:continent`;
+  const elevationSeed = `${seed}:elevation`;
+  const moistureSeed = `${seed}:moisture`;
+  const riverSeed = `${seed}:river`;
+  const roadSeed = `${seed}:road`;
   const signalCache = createBoundedCache<string, OverworldSignals>(
     OVERWORLD_SIGNAL_CACHE_LIMIT
   );
@@ -132,19 +137,19 @@ export function createOverworldTerrainSignalSampler(
     return signalCache.getOrCreate(signalKey, () => {
       const scaledX = x / 160;
       const scaledY = y / 160;
-      const continent = octaveNoise2D(`${seed}:continent`, scaledX, scaledY, {
+      const continent = octaveNoise2D(continentSeed, scaledX, scaledY, {
         octaves: 5,
         persistence: 0.55,
       });
-      const elevation = octaveNoise2D(`${seed}:elevation`, x / 45, y / 45, {
+      const elevation = octaveNoise2D(elevationSeed, x / 45, y / 45, {
         octaves: 4,
         persistence: 0.5,
       });
-      const moisture = octaveNoise2D(`${seed}:moisture`, x / 65, y / 65, {
+      const moisture = octaveNoise2D(moistureSeed, x / 65, y / 65, {
         octaves: 4,
         persistence: 0.6,
       });
-      const baseRiverSignal = ridgedNoise2D(`${seed}:river`, x / 75, y / 75, {
+      const baseRiverSignal = ridgedNoise2D(riverSeed, x / 75, y / 75, {
         octaves: 3,
         persistence: 0.52,
       });
@@ -170,7 +175,7 @@ export function createOverworldTerrainSignalSampler(
         elevation,
         moisture,
         riverSignal,
-        roadSignal: ridgedNoise2D(`${seed}:road`, x / 42, y / 42, {
+        roadSignal: ridgedNoise2D(roadSeed, x / 42, y / 42, {
           octaves: 2,
           persistence: 0.6,
         }),
