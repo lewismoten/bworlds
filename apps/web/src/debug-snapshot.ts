@@ -195,6 +195,10 @@ export type DebugSnapshotExport = {
     currentUtilizationPct: number;
     highestUtilizationPctObserved: number;
     qualityReductionCauses: string[];
+    pluginRequestsRejectedDueToBudget: Array<{
+      plugin: string;
+      rejectedModelsPerSecond: number;
+    }>;
     limits: {
       frameMs: {
         current: number;
@@ -532,6 +536,9 @@ function buildResourceBudgetSnapshot(
       )
     ),
     qualityReductionCauses: parseQualityLimiterList(options.graphicsQuality.limiters),
+    pluginRequestsRejectedDueToBudget: parseRejectedPluginSummary(
+      options.snapshot.tileModelBudgetViolationSummary
+    ),
     limits: {
       frameMs: {
         current: options.snapshot.frameMs,
@@ -628,6 +635,38 @@ function parseQualityLimiterList(limiters: string): string[] {
     .split(',')
     .map((entry) => entry.trim())
     .filter((entry) => entry.length > 0 && entry !== 'None');
+}
+
+function parseRejectedPluginSummary(
+  summary: string | undefined
+): Array<{
+  plugin: string;
+  rejectedModelsPerSecond: number;
+}> {
+  if (!summary) {
+    return [];
+  }
+
+  return summary
+    .split(',')
+    .map((entry) => entry.trim())
+    .filter((entry) => entry.length > 0)
+    .map((entry) => {
+      const separatorIndex = entry.lastIndexOf(':');
+      if (separatorIndex <= 0 || separatorIndex >= entry.length - 1) {
+        return null;
+      }
+      const plugin = entry.slice(0, separatorIndex).trim();
+      const rejectedModelsPerSecond = Number(entry.slice(separatorIndex + 1).trim());
+      if (!plugin || !Number.isFinite(rejectedModelsPerSecond)) {
+        return null;
+      }
+      return {
+        plugin,
+        rejectedModelsPerSecond,
+      };
+    })
+    .filter((entry): entry is { plugin: string; rejectedModelsPerSecond: number } => entry !== null);
 }
 
 function roundTenths(value: number): number {

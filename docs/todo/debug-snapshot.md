@@ -430,7 +430,7 @@ Immediately you know where to look.
 * [X] Include which limits caused quality reductions.
 * [ ] Include which optional features were dropped.
 * [ ] Include models automatically lowered to another LOD.
-* [ ] Include plugin requests rejected due to budget.
+* [X] Include plugin requests rejected due to budget.
 * [ ] Include dynamic quality changes during sampling.
 
 For example:

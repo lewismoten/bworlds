@@ -426,6 +426,16 @@ describe('debug snapshot', () => {
       currentUtilizationPct: 62.7,
       highestUtilizationPctObserved: 62.7,
       qualityReductionCauses: ['Target FPS reduced to 30'],
+      pluginRequestsRejectedDueToBudget: [
+        {
+          plugin: 'tile-forest',
+          rejectedModelsPerSecond: 2,
+        },
+        {
+          plugin: 'tile-town',
+          rejectedModelsPerSecond: 1,
+        },
+      ],
       limits: {
         frameMs: {
           current: 22.4,
