@@ -65,6 +65,11 @@ import { collectMaterialTexturesInto } from './material-texture-collector.ts';
 import { collectRecentWindowedEvents } from './recent-windowed-events.ts';
 import { getRenderEffectQualityProfile } from './render-effect-quality.ts';
 import {
+  createSortedCountSummaryScratch,
+  summarizeSortedCountMap,
+  summarizeSortedCountMapWithTopLabel,
+} from './sorted-count-summary.ts';
+import {
   createVisibleWorldBuildOrderScratch,
   fillVisibleWorldTileBuildOrder,
 } from './visible-world-build-order.ts';
@@ -100,6 +105,11 @@ export {
 } from './pending-world-build-queue.ts';
 export { collectMaterialTexturesInto } from './material-texture-collector.ts';
 export { collectRecentWindowedEvents } from './recent-windowed-events.ts';
+export {
+  createSortedCountSummaryScratch,
+  summarizeSortedCountMap,
+  summarizeSortedCountMapWithTopLabel,
+} from './sorted-count-summary.ts';
 export {
   createVisibleWorldBuildOrderScratch,
   fillVisibleWorldTileBuildOrder,
@@ -3197,6 +3207,7 @@ export function collectSceneResourceStats(
   const geometries = new Set<unknown>();
   const textures = new Set<unknown>();
   const materialTexturesBuffer: unknown[] = [];
+  const materialTypeSummaryScratch = createSortedCountSummaryScratch();
 
   traverseSceneGraphWithDepth(root, (child, depth) => {
     object3dCount += 1;
@@ -3371,7 +3382,7 @@ export function collectSceneResourceStats(
     doubleSidedMaterialCount: countMaterialsMatching(materials, isDoubleSidedMaterial),
     fogMaterialCount: countMaterialsMatching(materials, receivesFog),
     customShaderMaterialCount: countMaterialsMatching(materials, usesCustomShaders),
-    materialTypes: summarizeMaterialTypes(materials),
+    materialTypes: summarizeMaterialTypes(materials, materialTypeSummaryScratch),
     materialsCreatedDuringSamplingWindow: 0,
     materialsDisposedDuringSamplingWindow: 0,
     geometryCount: geometries.size,
@@ -3506,16 +3517,16 @@ function usesCustomShaders(material: THREE.Material): boolean {
   );
 }
 
-function summarizeMaterialTypes(materials: ReadonlySet<THREE.Material>): string {
+function summarizeMaterialTypes(
+  materials: ReadonlySet<THREE.Material>,
+  scratch = createSortedCountSummaryScratch()
+): string {
   const counts = new Map<string, number>();
   for (const material of materials) {
     const type = getMaterialTypeName(material);
     counts.set(type, (counts.get(type) ?? 0) + 1);
   }
-  return [...counts.entries()]
-    .sort((left, right) => left[0].localeCompare(right[0]))
-    .map(([type, count]) => `${type}:${count}`)
-    .join(', ');
+  return summarizeSortedCountMap(counts, scratch);
 }
 
 function getMaterialTypeName(material: THREE.Material): string {
@@ -3839,29 +3850,13 @@ export function getRecentLabeledCountStats(
     counts.set(sample.label, (counts.get(sample.label) ?? 0) + sample.count);
   }
 
-  let topCount = 0;
-  let topLabel = '';
-  const summary = [...counts.entries()]
-    .sort((left, right) => {
-      if (right[1] !== left[1]) {
-        return right[1] - left[1];
-      }
-      return left[0].localeCompare(right[0]);
-    })
-    .map(([label, count]) => {
-      if (count > topCount) {
-        topCount = count;
-        topLabel = label;
-      }
-      return `${label}:${count}`;
-    })
-    .join(', ');
+  const labeledSummary = summarizeSortedCountMapWithTopLabel(counts);
 
   return {
     totalCount,
-    topCount,
-    topLabel,
-    summary,
+    topCount: labeledSummary.topCount,
+    topLabel: labeledSummary.topLabel,
+    summary: labeledSummary.summary,
   };
 }
 
