@@ -141,13 +141,13 @@ interface TreeCapabilities {
 - [ ] Give each species appropriate flowering behavior.
 - [x] Define appropriate maximum age.
 - [x] Define appropriate maximum height.
-- [ ] Define typical habitat.
-- [ ] Define temperature tolerance.
-- [ ] Define moisture tolerance.
-- [ ] Define altitude preference.
-- [ ] Define soil preference.
-- [ ] Define growth speed.
-- [ ] Define typical spacing from neighboring trees.
+- [x] Define typical habitat.
+- [x] Define temperature tolerance.
+- [x] Define moisture tolerance.
+- [x] Define altitude preference.
+- [x] Define soil preference.
+- [x] Define growth speed.
+- [x] Define typical spacing from neighboring trees.
 
 # Placement-Based Procedural Generation
 
@@ -964,6 +964,7 @@ impostor / billboard
 
 I would build this much like the character-animation preview page.
 
+- [ ] Let me preview one tree at a time, in 3D, near the top of the page next to the input parameters
 - [ ] Create a dedicated tree-generator preview page.
 - [ ] Select tree family.
 - [ ] Select species.

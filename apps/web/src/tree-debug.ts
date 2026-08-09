@@ -80,6 +80,13 @@ export type TreeDebugSnapshot = {
     hollowCount: number;
     decorationKinds: string[];
     inhabitantKinds: string[];
+    habitat: string;
+    temperatureTolerance: string;
+    moistureTolerance: string;
+    altitudePreference: string;
+    soilPreference: string;
+    growthSpeed: string;
+    spacingRadius: number;
     previewMarkup: string;
   }>;
 };
@@ -207,6 +214,13 @@ export function createTreeDebugSnapshot(
         hollowCount: treeHollows.length,
         decorationKinds: treeDecorations,
         inhabitantKinds: treeInhabitants,
+        habitat: speciesMetadata.habitat,
+        temperatureTolerance: speciesMetadata.temperatureTolerance,
+        moistureTolerance: speciesMetadata.moistureTolerance,
+        altitudePreference: speciesMetadata.altitudePreference,
+        soilPreference: speciesMetadata.soilPreference,
+        growthSpeed: speciesMetadata.growthSpeed,
+        spacingRadius: speciesMetadata.spacingRadius,
         previewMarkup: buildTreePreviewMarkup({
           speciesId,
           form: age?.form ?? trunk?.form ?? 'unknown',
@@ -286,8 +300,24 @@ export function buildTreeDebugMarkup(
               Fruit ${escapeHtml(tree.fruitKind || 'none')} (${tree.fruitCount})
             </p>
             <p class="tree-debug-meta">
+              Habitat ${escapeHtml(tree.habitat)} • Growth ${escapeHtml(
+                tree.growthSpeed
+              )} • Spacing ${tree.spacingRadius.toFixed(1)}
+            </p>
+            <p class="tree-debug-meta">
+              Climate ${escapeHtml(tree.temperatureTolerance)} • Moisture ${escapeHtml(
+                tree.moistureTolerance
+              )}
+            </p>
+            <p class="tree-debug-meta">
+              Altitude ${escapeHtml(tree.altitudePreference)} • Soil ${escapeHtml(
+                tree.soilPreference
+              )}
+            </p>
+            <p class="tree-debug-meta">
               Decorations ${escapeHtml(tree.decorationKinds.join(', ') || 'none')}
             </p>
+            <p class="tree-debug-meta">
             <p class="tree-debug-meta">
               Inhabitants ${escapeHtml(tree.inhabitantKinds.join(', ') || 'none')}
             </p>

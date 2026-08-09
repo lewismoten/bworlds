@@ -878,12 +878,22 @@ describe('tile forest', () => {
       fruitKind: 'acorn',
       maximumAgeYears: 240,
       maximumHeight: 2.64,
+      habitat: 'deep temperate groves and sheltered forest clearings',
+      temperatureTolerance: 'cool to warm temperate seasons',
+      moistureTolerance: 'moderate to high moisture',
+      altitudePreference: 'lowland to rolling upland hills',
+      soilPreference: 'deep loam with reliable drainage',
+      growthSpeed: 'slow-steady',
+      spacingRadius: 1.9,
     });
     expect(getForestTreeSpeciesMetadata('birch').maximumHeight).toBeGreaterThan(
       getForestTreeSpeciesMetadata('oak').maximumHeight
     );
     expect(getForestTreeSpeciesMetadata('pine').maximumHeight).toBeGreaterThan(
       getForestTreeSpeciesMetadata('birch').maximumHeight
+    );
+    expect(getForestTreeSpeciesMetadata('pine').altitudePreference).toContain(
+      'upland'
     );
   });
 

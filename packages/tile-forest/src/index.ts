@@ -2321,6 +2321,13 @@ export function getForestTreeSpeciesMetadata(speciesId: ForestTreeSpeciesId): {
   fruitKind: 'acorn' | 'samara' | 'cone';
   maximumAgeYears: number;
   maximumHeight: number;
+  habitat: string;
+  temperatureTolerance: string;
+  moistureTolerance: string;
+  altitudePreference: string;
+  soilPreference: string;
+  growthSpeed: string;
+  spacingRadius: number;
 } {
   const definition = FOREST_TREE_SPECIES_DEFINITIONS[speciesId];
   return {
@@ -2329,6 +2336,13 @@ export function getForestTreeSpeciesMetadata(speciesId: ForestTreeSpeciesId): {
     fruitKind: definition.fruitKind,
     maximumAgeYears: definition.maximumAgeYears,
     maximumHeight: definition.maximumHeight,
+    habitat: definition.habitat,
+    temperatureTolerance: definition.temperatureTolerance,
+    moistureTolerance: definition.moistureTolerance,
+    altitudePreference: definition.altitudePreference,
+    soilPreference: definition.soilPreference,
+    growthSpeed: definition.growthSpeed,
+    spacingRadius: definition.spacingRadius,
   };
 }
 
@@ -2786,6 +2800,13 @@ type ForestTreeSpeciesDefinition = {
   fruitKind: 'acorn' | 'samara' | 'cone';
   maximumAgeYears: number;
   maximumHeight: number;
+  habitat: string;
+  temperatureTolerance: string;
+  moistureTolerance: string;
+  altitudePreference: string;
+  soilPreference: string;
+  growthSpeed: string;
+  spacingRadius: number;
   trunkHeightMin: number;
   trunkHeightRange: number;
   trunkRadiusMin: number;
@@ -2811,6 +2832,13 @@ const FOREST_OAK_SPECIES_DEFINITION = {
   fruitKind: 'acorn',
   maximumAgeYears: 240,
   maximumHeight: 2.64,
+  habitat: 'deep temperate groves and sheltered forest clearings',
+  temperatureTolerance: 'cool to warm temperate seasons',
+  moistureTolerance: 'moderate to high moisture',
+  altitudePreference: 'lowland to rolling upland hills',
+  soilPreference: 'deep loam with reliable drainage',
+  growthSpeed: 'slow-steady',
+  spacingRadius: 1.9,
   trunkHeightMin: 0.76,
   trunkHeightRange: 0.42,
   trunkRadiusMin: 0.09,
@@ -2836,6 +2864,13 @@ const FOREST_BIRCH_SPECIES_DEFINITION = {
   fruitKind: 'samara',
   maximumAgeYears: 140,
   maximumHeight: 2.88,
+  habitat: 'bright forest edges, meadows, and stream approaches',
+  temperatureTolerance: 'cool to mild temperate seasons',
+  moistureTolerance: 'moderate moisture with seasonal wet spells',
+  altitudePreference: 'lowland and lower upland slopes',
+  soilPreference: 'light loam and silty woodland soil',
+  growthSpeed: 'fast',
+  spacingRadius: 1.5,
   trunkHeightMin: 0.82,
   trunkHeightRange: 0.52,
   trunkRadiusMin: 0.07,
@@ -2861,6 +2896,13 @@ const FOREST_PINE_SPECIES_DEFINITION = {
   fruitKind: 'cone',
   maximumAgeYears: 210,
   maximumHeight: 3.18,
+  habitat: 'windy ridges, conifer stands, and rocky clearings',
+  temperatureTolerance: 'cool to cold seasons',
+  moistureTolerance: 'low to moderate moisture',
+  altitudePreference: 'upland slopes and exposed high ground',
+  soilPreference: 'rocky acidic soil with lean nutrients',
+  growthSpeed: 'medium',
+  spacingRadius: 1.7,
   trunkHeightMin: 0.72,
   trunkHeightRange: 0.45,
   trunkRadiusMin: 0.08,

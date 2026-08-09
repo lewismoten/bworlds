@@ -68,6 +68,7 @@ describe('tree debug', () => {
     expect(oak.trees).toHaveLength(1);
     expect(oak.trees[0]?.speciesId).toBe('oak');
     expect(oak.trees[0]?.maximumHeight).toBeGreaterThan(2);
+    expect(oak.trees[0]?.habitat).toContain('temperate');
     expect(oak.tileSummary.previewSpeciesCount).toBe(1);
     expect(pine.trees).toHaveLength(1);
     expect(pine.trees[0]?.speciesId).toBe('pine');
@@ -132,6 +133,9 @@ describe('tree debug', () => {
     expect(markup).toContain('tree-debug-randomize');
     expect(markup).toContain('Generator');
     expect(markup).toContain('Max Height');
+    expect(markup).toContain('Habitat');
+    expect(markup).toContain('Climate');
+    expect(markup).toContain('Soil');
     expect(markup).toContain('Next Tree');
     expect(markup).toContain('Generated trees');
     expect(summary).toContain('Season');
