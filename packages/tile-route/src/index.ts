@@ -1,6 +1,12 @@
 import { createBoundedCache, createCoordinateCache } from '@bworlds/cache-support';
 import { resolveDockBoatRoute } from '@bworlds/dock-route-support';
-import { hash2D } from '@bworlds/core';
+import {
+  appendHashSeedLabel,
+  appendHashSeedPart,
+  hash2D,
+  hash2DWithSeed,
+  registerHashLabel,
+} from '@bworlds/core';
 import { findNearestBoatLaunchPoint } from '@bworlds/map-boat';
 import { createPlainsBackedTilePainter } from '@bworlds/paint-support';
 import { createTilePlugin } from '@bworlds/plugin-api';
@@ -60,6 +66,49 @@ const MAX_RIVER_BRIDGE_SPAN = 4;
 const ROUTE_STYLE_CACHE_LIMIT = 192;
 const ROUTE_CLUSTER_CACHE_LIMIT = 768;
 const ROUTE_LABEL_CACHE_LIMIT = 256;
+const ROAD_TIER_SEED = registerHashLabel('road-tier');
+const ROAD_FOOTPATH_SHOULDER_SEED = registerHashLabel('road-footpath-shoulder');
+const FOREST_RIVER_LOG_BRIDGE_SEED = registerHashLabel('forest-river-log-bridge');
+const ROAD_CURVE_JITTER_SEED = registerHashLabel('road-curve-jitter');
+const ROAD_BRANCH_BEND_SEED = registerHashLabel('road-branch-bend');
+const ROAD_COBBLE_X_SEED = registerHashLabel('road-cobble-x');
+const ROAD_COBBLE_Y_SEED = registerHashLabel('road-cobble-y');
+const ROAD_COBBLE_W_SEED = registerHashLabel('road-cobble-w');
+const ROAD_COBBLE_H_SEED = registerHashLabel('road-cobble-h');
+const ROAD_TRACK_X_SEED = registerHashLabel('road-track-x');
+const ROAD_TRACK_Y_SEED = registerHashLabel('road-track-y');
+const ROAD_SHOULDER_X_SEED = registerHashLabel('road-shoulder-x');
+const ROAD_SHOULDER_Y_SEED = registerHashLabel('road-shoulder-y');
+const ROAD_SHOULDER_S_SEED = registerHashLabel('road-shoulder-s');
+const FOREST_LOG_AXIS_SEED = registerHashLabel('forest-log-axis');
+const DOCK_PALETTE_SEED = registerHashLabel('dock-palette');
+const DOCK_BOAT_SIDE_SEED = registerHashLabel('dock-boat-side');
+const DOCK_BOAT_LENGTH_SEED = registerHashLabel('dock-boat-length');
+const DOCK_BOAT_WIDTH_SEED = registerHashLabel('dock-boat-width');
+const DOCK_BOAT_SAIL_SEED = registerHashLabel('dock-boat-sail');
+const BRIDGE_TYPE_SEED = registerHashLabel('bridge-type');
+const BRIDGE_COVERED_SEED = registerHashLabel('bridge-covered');
+const BRIDGE_PILLAR_SEED = registerHashLabel('bridge-pillar');
+const BRIDGE_WIDTH_SEED = registerHashLabel('bridge-width');
+const BRIDGE_COVER_HEIGHT_SEED = registerHashLabel('bridge-cover-height');
+const BRIDGE_PILLAR_WIDTH_SEED = registerHashLabel('bridge-pillar-width');
+const BRIDGE_RIVET_X_SEED = registerHashLabel('bridge-rivet-x');
+const BRIDGE_RIVET_Y_SEED = registerHashLabel('bridge-rivet-y');
+const ROAD_RIBBON_SEED = registerHashLabel('road-ribbon');
+const ROAD_RIBBON_STUB_SEED = registerHashLabel('stub');
+const ROAD_RIBBON_SHOULDER_SEED = registerHashLabel('shoulder');
+const ROAD_RIBBON_ROAD_SEED = registerHashLabel('road');
+const ROAD_RIBBON_BRANCH_SEED = registerHashLabel('branch');
+const ROAD_CONNECTION_DIRECTION_SEEDS: Record<string, number> = {
+  north: registerHashLabel('north'),
+  east: registerHashLabel('east'),
+  south: registerHashLabel('south'),
+  west: registerHashLabel('west'),
+  northeast: registerHashLabel('northeast'),
+  southeast: registerHashLabel('southeast'),
+  southwest: registerHashLabel('southwest'),
+  northwest: registerHashLabel('northwest'),
+};
 type RoadStyleType = 'footpath' | 'cobble' | 'brick';
 type BridgeTextureType = 'wood' | 'stone' | 'metal' | 'drawbridge' | 'roof' | 'roof-stone';
 type BridgeTextureLayer = 'deck' | 'rail' | 'cover' | 'pillar';
@@ -78,11 +127,85 @@ const dockClusterCache = createCoordinateCache<DockClusterInfo>();
 const roadStyleCache = createBoundedCache<string, RoadStyleBlueprint>(
   ROUTE_STYLE_CACHE_LIMIT
 );
+const ROAD_DIRECTIONS: RoadConnection[] = [
+  {
+    id: 'north',
+    dx: 0,
+    dy: -1,
+    edgeX: 0,
+    edgeZ: -0.5,
+    inwardX: 0,
+    inwardZ: -0.18,
+  },
+  {
+    id: 'east',
+    dx: 1,
+    dy: 0,
+    edgeX: 0.5,
+    edgeZ: 0,
+    inwardX: 0.18,
+    inwardZ: 0,
+  },
+  {
+    id: 'south',
+    dx: 0,
+    dy: 1,
+    edgeX: 0,
+    edgeZ: 0.5,
+    inwardX: 0,
+    inwardZ: 0.18,
+  },
+  {
+    id: 'west',
+    dx: -1,
+    dy: 0,
+    edgeX: -0.5,
+    edgeZ: 0,
+    inwardX: -0.18,
+    inwardZ: 0,
+  },
+  {
+    id: 'northeast',
+    dx: 1,
+    dy: -1,
+    edgeX: 0.5,
+    edgeZ: -0.5,
+    inwardX: 0.22,
+    inwardZ: -0.22,
+  },
+  {
+    id: 'southeast',
+    dx: 1,
+    dy: 1,
+    edgeX: 0.5,
+    edgeZ: 0.5,
+    inwardX: 0.22,
+    inwardZ: 0.22,
+  },
+  {
+    id: 'southwest',
+    dx: -1,
+    dy: 1,
+    edgeX: -0.5,
+    edgeZ: 0.5,
+    inwardX: -0.22,
+    inwardZ: 0.22,
+  },
+  {
+    id: 'northwest',
+    dx: -1,
+    dy: -1,
+    edgeX: -0.5,
+    edgeZ: -0.5,
+    inwardX: -0.22,
+    inwardZ: -0.22,
+  },
+];
 const resolveRoadStyle = createRegionalMaterialResolver(
   roadStyleCache,
   ROAD_REGION_SIZE,
   ({ regionX, regionY }) => {
-    const tier = Math.floor(hash2D('road-tier', regionX, regionY) * 3);
+    const tier = Math.floor(hash2D(ROAD_TIER_SEED, regionX, regionY) * 3);
     const styleType = ['footpath', 'cobble', 'brick'] as const;
     const roadStyleType = styleType[tier] ?? 'brick';
     const palette =
@@ -93,7 +216,7 @@ const resolveRoadStyle = createRegionalMaterialResolver(
           : {
               road: '#8d6a42',
               shoulder: pickThresholdColor(
-                hash2D('road-footpath-shoulder', regionX, regionY),
+                hash2D(ROAD_FOOTPATH_SHOULDER_SEED, regionX, regionY),
                 0.5,
                 '#5f7a4d',
                 '#62724a'
@@ -481,7 +604,7 @@ function classifyForestRiverLogBridge({
   }
 
   const threshold = candidates.length > 1 ? 0.92 : 0.88;
-  return hash2D('forest-river-log-bridge', x, y) >= threshold;
+  return hash2D(FOREST_RIVER_LOG_BRIDGE_SEED, x, y) >= threshold;
 }
 
 function isForestLikeBankSignal(signal: ClassifyOverworldTileContext['signals']) {
@@ -736,6 +859,7 @@ function createRoadGroup(
 ) {
   const style = getRoadStyle(three, tileX, tileY);
   const connections = getRoadConnections(state, tileX, tileY);
+  const tileSeed = createRoadTileSeed(tileX, tileY);
   const group = new three.Group();
   group.position.set(tileX, 0, tileY);
 
@@ -750,7 +874,10 @@ function createRoadGroup(
         ],
         0.18,
         style.shoulderMaterial,
-        `${tileX}:${tileY}:stub:shoulder`,
+        appendHashSeedLabel(
+          appendHashSeedLabel(tileSeed, ROAD_RIBBON_STUB_SEED),
+          ROAD_RIBBON_SHOULDER_SEED
+        ),
         0.04
       )
     );
@@ -764,7 +891,7 @@ function createRoadGroup(
         ],
         0.12,
         style.roadMaterial,
-        `${tileX}:${tileY}:stub`,
+        appendHashSeedLabel(tileSeed, ROAD_RIBBON_STUB_SEED),
         0.028
       )
     );
@@ -793,7 +920,7 @@ function createRoadGroup(
         curve,
         style.shoulderWidth,
         style.shoulderMaterial,
-        `${tileX}:${tileY}:shoulder`,
+        appendHashSeedLabel(tileSeed, ROAD_RIBBON_SHOULDER_SEED),
         0.045
       )
     );
@@ -803,7 +930,7 @@ function createRoadGroup(
         curve,
         style.roadWidth,
         style.roadMaterial,
-        `${tileX}:${tileY}:road`,
+        appendHashSeedLabel(tileSeed, ROAD_RIBBON_ROAD_SEED),
         0.03
       )
     );
@@ -812,13 +939,17 @@ function createRoadGroup(
 
   connections.forEach((connection: RoadConnection, index: number) => {
     const branch = createRoadBranch(three, tileX, tileY, connection, index);
+    const branchSeed = appendHashSeedLabel(
+      appendHashSeedLabel(tileSeed, ROAD_RIBBON_BRANCH_SEED),
+      ROAD_CONNECTION_DIRECTION_SEEDS[connection.id] ?? registerHashLabel(connection.id)
+    );
     group.add(
       createRoadRibbonMesh(
         three,
         branch,
         style.shoulderWidth,
         style.shoulderMaterial,
-        `${tileX}:${tileY}:branch:${connection.id}:shoulder`,
+        appendHashSeedLabel(branchSeed, ROAD_RIBBON_SHOULDER_SEED),
         0.04
       )
     );
@@ -828,7 +959,7 @@ function createRoadGroup(
         branch,
         style.roadWidth,
         style.roadMaterial,
-        `${tileX}:${tileY}:branch:${connection.id}`,
+        branchSeed,
         0.026
       )
     );
@@ -842,90 +973,20 @@ function getRoadConnections(
   tileX: number,
   tileY: number
 ) {
-  const directions: RoadConnection[] = [
-    {
-      id: 'north',
-      dx: 0,
-      dy: -1,
-      edgeX: 0,
-      edgeZ: -0.5,
-      inwardX: 0,
-      inwardZ: -0.18,
-    },
-    {
-      id: 'east',
-      dx: 1,
-      dy: 0,
-      edgeX: 0.5,
-      edgeZ: 0,
-      inwardX: 0.18,
-      inwardZ: 0,
-    },
-    {
-      id: 'south',
-      dx: 0,
-      dy: 1,
-      edgeX: 0,
-      edgeZ: 0.5,
-      inwardX: 0,
-      inwardZ: 0.18,
-    },
-    {
-      id: 'west',
-      dx: -1,
-      dy: 0,
-      edgeX: -0.5,
-      edgeZ: 0,
-      inwardX: -0.18,
-      inwardZ: 0,
-    },
-    {
-      id: 'northeast',
-      dx: 1,
-      dy: -1,
-      edgeX: 0.5,
-      edgeZ: -0.5,
-      inwardX: 0.22,
-      inwardZ: -0.22,
-    },
-    {
-      id: 'southeast',
-      dx: 1,
-      dy: 1,
-      edgeX: 0.5,
-      edgeZ: 0.5,
-      inwardX: 0.22,
-      inwardZ: 0.22,
-    },
-    {
-      id: 'southwest',
-      dx: -1,
-      dy: 1,
-      edgeX: -0.5,
-      edgeZ: 0.5,
-      inwardX: -0.22,
-      inwardZ: 0.22,
-    },
-    {
-      id: 'northwest',
-      dx: -1,
-      dy: -1,
-      edgeX: -0.5,
-      edgeZ: -0.5,
-      inwardX: -0.22,
-      inwardZ: -0.22,
-    },
-  ];
+  const directions: RoadConnection[] = [];
+  for (let index = 0; index < ROAD_DIRECTIONS.length; index += 1) {
+    const direction = ROAD_DIRECTIONS[index]!;
+    if (isRoadNetworkKind(state.getCurrentTile(tileX + direction.dx, tileY + direction.dy).kind)) {
+      directions.push(direction);
+    }
+  }
 
-  return directions
-    .filter(({ dx, dy }) =>
-      isRoadNetworkKind(state.getCurrentTile(tileX + dx, tileY + dy).kind)
-    )
-    .sort(
-      (left, right) =>
-        Math.atan2(left.edgeZ, left.edgeX) -
-        Math.atan2(right.edgeZ, right.edgeX)
-    );
+  directions.sort(
+    (left, right) =>
+      Math.atan2(left.edgeZ, left.edgeX) -
+      Math.atan2(right.edgeZ, right.edgeX)
+  );
+  return directions;
 }
 
 function isRoadNetworkKind(kind: Kind): boolean {
@@ -935,6 +996,10 @@ function isRoadNetworkKind(kind: Kind): boolean {
     kind === 'dock' ||
     isRouteTerminalKind(kind)
   );
+}
+
+function createRoadTileSeed(tileX: number, tileY: number): number {
+  return appendHashSeedPart(appendHashSeedPart(ROAD_RIBBON_SEED, tileX), tileY);
 }
 
 function createRoadCurve(
@@ -950,7 +1015,7 @@ function createRoadCurve(
     start.edgeZ
   );
   const endPoint = new three.Vector3(end.edgeX, ROAD_CORE_HEIGHT, end.edgeZ);
-  const jitter = (hash2D('road-curve-jitter', tileX, tileY) - 0.5) * 0.12;
+  const jitter = (hash2D(ROAD_CURVE_JITTER_SEED, tileX, tileY) - 0.5) * 0.12;
   const opposite = start.dx === -end.dx && start.dy === -end.dy;
   const control = opposite
     ? new three.Vector3(
@@ -981,7 +1046,7 @@ function createRoadBranch(
     connection.edgeZ
   );
   const bend =
-    (hash2D('road-branch-bend', tileX * 11 + index, tileY * 13) - 0.5) * 0.1;
+    (hash2D(ROAD_BRANCH_BEND_SEED, tileX * 11 + index, tileY * 13) - 0.5) * 0.1;
   const control = new three.Vector3(
     connection.inwardX + (connection.dy !== 0 ? bend : 0),
     ROAD_SURFACE_HEIGHT,
@@ -1005,14 +1070,12 @@ function createRoadRibbonMesh(
   points: RoadVectorLike[],
   width: number,
   material: ThreeMaterialLike,
-  seedKey: string,
+  seedHash: number,
   lipDepth: number
 ) {
   return createRibbonMesh(three, points, width, material, {
     widthNoise(index, total) {
-      return (
-        1 + (hash2D(`road-width:${seedKey}`, index, total) - 0.5) * lipDepth
-      );
+      return 1 + (hash2DWithSeed(seedHash, index, total) - 0.5) * lipDepth;
     },
   });
 }
@@ -1058,17 +1121,17 @@ function createRoadTexture(
       } else if (styleType === 'cobble') {
         for (let index = 0; index < 42; index += 1) {
           const x = Math.floor(
-            hash2D('road-cobble-x', regionX * 37 + index, regionY) *
+            hash2D(ROAD_COBBLE_X_SEED, regionX * 37 + index, regionY) *
               canvas.width
           );
           const y = Math.floor(
-            hash2D('road-cobble-y', regionY * 41 + index, regionX) *
+            hash2D(ROAD_COBBLE_Y_SEED, regionY * 41 + index, regionX) *
               canvas.height
           );
           const width =
-            5 + Math.floor(hash2D('road-cobble-w', index, regionX) * 4);
+            5 + Math.floor(hash2D(ROAD_COBBLE_W_SEED, index, regionX) * 4);
           const height =
-            3 + Math.floor(hash2D('road-cobble-h', index, regionY) * 3);
+            3 + Math.floor(hash2D(ROAD_COBBLE_H_SEED, index, regionY) * 3);
           context.fillStyle =
             index % 2 === 0 ? accentColor : 'rgba(255,255,255,0.14)';
           context.fillRect(x, y, width, height);
@@ -1081,10 +1144,10 @@ function createRoadTexture(
         }
         for (let index = 0; index < 80; index += 1) {
           const x = Math.floor(
-            hash2D('road-track-x', regionX, index + regionY) * canvas.width
+            hash2D(ROAD_TRACK_X_SEED, regionX, index + regionY) * canvas.width
           );
           const y = Math.floor(
-            hash2D('road-track-y', regionY, index + regionX) * canvas.height
+            hash2D(ROAD_TRACK_Y_SEED, regionY, index + regionX) * canvas.height
           );
           context.fillStyle = 'rgba(50,30,18,0.16)';
           context.fillRect(x, y, 2, 1);
@@ -1112,16 +1175,16 @@ function createRoadShoulderTexture(
 
       for (let index = 0; index < 140; index += 1) {
         const x = Math.floor(
-          hash2D('road-shoulder-x', regionX * 31 + index, regionY) *
+          hash2D(ROAD_SHOULDER_X_SEED, regionX * 31 + index, regionY) *
             canvas.width
         );
         const y = Math.floor(
-          hash2D('road-shoulder-y', regionY * 29 + index, regionX) *
+          hash2D(ROAD_SHOULDER_Y_SEED, regionY * 29 + index, regionX) *
             canvas.height
         );
         const size =
           1 +
-          Math.floor(hash2D('road-shoulder-s', index, regionX + regionY) * 3);
+          Math.floor(hash2D(ROAD_SHOULDER_S_SEED, index, regionX + regionY) * 3);
         context.fillStyle =
           index % 3 === 0 ? accentColor : 'rgba(255,255,255,0.12)';
         context.fillRect(x, y, size, size);
@@ -1511,10 +1574,10 @@ function getForestLogBridgeAxis(
     return 'ew';
   }
   if (northForest && southForest) {
-    return hash2D('forest-log-axis', tileX, tileY) > 0.5 ? 'ns' : 'ew';
+    return hash2D(FOREST_LOG_AXIS_SEED, tileX, tileY) > 0.5 ? 'ns' : 'ew';
   }
   if (eastForest && westForest) {
-    return hash2D('forest-log-axis', tileX, tileY) > 0.5 ? 'ew' : 'ns';
+    return hash2D(FOREST_LOG_AXIS_SEED, tileX, tileY) > 0.5 ? 'ew' : 'ns';
   }
   return null;
 }
@@ -1634,7 +1697,7 @@ function getDockStyle(
     const regionX = Math.floor(tileX / DOCK_REGION_SIZE);
     const regionY = Math.floor(tileY / DOCK_REGION_SIZE);
     const palette =
-      hash2D('dock-palette', regionX, regionY) > 0.55
+      hash2D(DOCK_PALETTE_SEED, regionX, regionY) > 0.55
         ? {
             deck: '#8f6033',
             rail: '#6e4522',
@@ -1750,7 +1813,7 @@ function getDockBoatSide(
     return waterSides[0]!.side;
   }
 
-  return hash2D('dock-boat-side', tileX, tileY) > 0.5
+  return hash2D(DOCK_BOAT_SIDE_SEED, tileX, tileY) > 0.5
     ? waterSides[0]!.side
     : waterSides[1]!.side;
 }
@@ -1777,8 +1840,8 @@ function createDockBoat(
     dockBoatClusterLength: info.length,
     dockPaddleBoat: paddleBoat,
   };
-  const hullLength = 0.42 + hash2D('dock-boat-length', tileX, tileY) * 0.12;
-  const hullWidth = 0.18 + hash2D('dock-boat-width', tileX, tileY) * 0.04;
+  const hullLength = 0.42 + hash2D(DOCK_BOAT_LENGTH_SEED, tileX, tileY) * 0.12;
+  const hullWidth = 0.18 + hash2D(DOCK_BOAT_WIDTH_SEED, tileX, tileY) * 0.04;
   const hull = new three.Mesh(
     new three.BoxGeometry(alongX ? hullLength : hullWidth, 0.09, alongX ? hullWidth : hullLength),
     style.boatMaterial
@@ -1807,7 +1870,7 @@ function createDockBoat(
       hullLength,
       hullWidth
     );
-  } else if (hash2D('dock-boat-sail', tileX, tileY) > 0.48) {
+  } else if (hash2D(DOCK_BOAT_SAIL_SEED, tileX, tileY) > 0.48) {
     const mast = new three.Mesh(
       new three.BoxGeometry(0.03, 0.34, 0.03),
       style.trimMaterial
@@ -2196,13 +2259,13 @@ function getBridgeStyle(
   if (!bridgeStyleCache.has(clusterKey)) {
     const regionX = Math.floor(tileX / BRIDGE_REGION_SIZE);
     const regionY = Math.floor(tileY / BRIDGE_REGION_SIZE);
-    const typeIndex = Math.floor(hash2D('bridge-type', tileX, tileY) * 4);
+    const typeIndex = Math.floor(hash2D(BRIDGE_TYPE_SEED, tileX, tileY) * 4);
     const type = ['wood', 'stone', 'metal', 'drawbridge'][typeIndex] as
       'wood' | 'stone' | 'metal' | 'drawbridge';
-    const covered = hash2D('bridge-covered', regionX, regionY) > 0.72;
+    const covered = hash2D(BRIDGE_COVERED_SEED, regionX, regionY) > 0.72;
     const drawbridge = type === 'drawbridge';
     const pillarSpacing =
-      2 + Math.floor(hash2D('bridge-pillar', tileX, tileY) * 3);
+      2 + Math.floor(hash2D(BRIDGE_PILLAR_SEED, tileX, tileY) * 3);
     const palette =
       type === 'stone'
         ? { deck: '#c9c2b8', rail: '#8b857d', trim: '#6d655d' }
@@ -2240,10 +2303,10 @@ function getBridgeStyle(
       type,
       covered: covered && !drawbridge,
       drawbridge,
-      widthJitter: hash2D('bridge-width', tileX, tileY) * 0.12,
-      coverHeight: hash2D('bridge-cover-height', tileX, tileY) * 0.16,
+      widthJitter: hash2D(BRIDGE_WIDTH_SEED, tileX, tileY) * 0.12,
+      coverHeight: hash2D(BRIDGE_COVER_HEIGHT_SEED, tileX, tileY) * 0.16,
       pillarSpacing,
-      pillarWidth: 0.14 + hash2D('bridge-pillar-width', tileX, tileY) * 0.09,
+      pillarWidth: 0.14 + hash2D(BRIDGE_PILLAR_WIDTH_SEED, tileX, tileY) * 0.09,
       deckMaterial: new three.MeshStandardMaterial({
         color: '#ffffff',
         map: deckTexture,
@@ -2322,10 +2385,10 @@ function createBridgeTexture(
         }
         for (let index = 0; index < 24; index += 1) {
           const x = Math.floor(
-            hash2D('bridge-rivet-x', tileX, index + tileY) * canvas.width
+            hash2D(BRIDGE_RIVET_X_SEED, tileX, index + tileY) * canvas.width
           );
           const y = Math.floor(
-            hash2D('bridge-rivet-y', tileY, index + tileX) * canvas.height
+            hash2D(BRIDGE_RIVET_Y_SEED, tileY, index + tileX) * canvas.height
           );
           context.fillStyle = 'rgba(255,255,255,0.34)';
           context.fillRect(x, y, 2, 2);

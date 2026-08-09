@@ -70,6 +70,31 @@ describe('core utilities', () => {
     );
   });
 
+  it('keeps composed numeric tile ribbon seeds equivalent to string-part composition', () => {
+    const roadRibbonSeed = registerHashLabel('road-ribbon');
+    const branchLabel = registerHashLabel('branch');
+    const northLabel = registerHashLabel('north');
+    const shoulderLabel = registerHashLabel('shoulder');
+    const tileSeed = appendHashSeedPart(appendHashSeedPart(roadRibbonSeed, 12), -4);
+    const numericSeed = appendHashSeedLabel(
+      appendHashSeedLabel(
+        appendHashSeedLabel(tileSeed, branchLabel),
+        northLabel
+      ),
+      shoulderLabel
+    );
+    const stringPartSeed = appendHashSeedPart(
+      appendHashSeedPart(
+        appendHashSeedPart(tileSeed, 'branch'),
+        'north'
+      ),
+      'shoulder'
+    );
+
+    expect(hash2DWithSeed(numericSeed, 3, 7)).toBe(hash2DWithSeed(stringPartSeed, 3, 7));
+    expect(hash2DWithSeed(numericSeed, 1, 9)).toBe(hash2DWithSeed(stringPartSeed, 1, 9));
+  });
+
   it('keeps integer seed-part mixing deterministic for zero and negative coordinates', () => {
     const seededHash = appendHashSeedPart(createHashSeed('seed'), -14);
 
