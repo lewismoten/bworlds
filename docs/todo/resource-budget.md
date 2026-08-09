@@ -17,7 +17,7 @@ Operates at several levels: per model, per LOD, per plugin, per chunk, and per e
 * [X] Allow plugins to report actual resource cost after generation.
 * [X] Record budget violations by plugin.
 * [X] Expose budget violations in the developer HUD.
-* [ ] Log which portions of a model were removed because of limits.
+* [X] Log which portions of a model were removed because of limits.
 * [ ] Ensure a bad plugin cannot crash or freeze the renderer by generating excessive geometry.
 
 # Per-Model Caps

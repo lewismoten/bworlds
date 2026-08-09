@@ -101,6 +101,7 @@ import { createTownTilePlugin } from '@bworlds/tile-town';
 import { setRenderBudgetPartMetadata } from '@bworlds/plugin-api';
 import {
   acceptTilePluginModelForRenderBudget,
+  acceptTilePluginModelForRenderBudgetWithResult,
   collectSceneResourceStats,
   countRecentMetricEvents,
   disposeObject3DResources,
@@ -161,6 +162,7 @@ import {
   shouldSyncWorldCurvature,
   shouldSyncTileModelDetailLevels,
   summarizeVisibleTileKinds,
+  summarizeRemovedTileModelBudgetParts,
   syncDynamicTileNodes,
   updateFarLandModelVisibility,
   validateTileModelCostEstimateAgainstRenderBudget,
@@ -2059,6 +2061,50 @@ describe('render3d visibility helpers', () => {
     expect(root.children).toHaveLength(16);
     expect(root.children.includes(lowPriorityOptional)).toBe(false);
     expect(root.children.includes(highPriorityOptional)).toBe(true);
+  });
+
+  it('reports which optional model parts were removed to satisfy the budget', () => {
+    const sharedMaterial = createMockMaterial();
+    const sharedGeometry = createMockStatGeometry('shared-budget-prune-report', 24);
+    const lowPriorityOptional = setRenderBudgetPartMetadata(
+      createMockObject3D(sharedMaterial, [], sharedGeometry),
+      {
+        optional: true,
+        priority: 1,
+        label: 'optional-low',
+      }
+    );
+    const highPriorityOptional = setRenderBudgetPartMetadata(
+      createMockObject3D(sharedMaterial, [], sharedGeometry),
+      {
+        optional: true,
+        priority: 10,
+        label: 'optional-high',
+      }
+    );
+    const root = createMockObject3D(undefined, [
+      ...Array.from({ length: 15 }, () =>
+        createMockObject3D(sharedMaterial, [], sharedGeometry)
+      ),
+      lowPriorityOptional,
+      highPriorityOptional,
+    ]);
+
+    expect(acceptTilePluginModelForRenderBudgetWithResult(root as never, 'low')).toEqual({
+      model: root,
+      removedParts: [
+        {
+          label: 'optional-low',
+          priority: 1,
+        },
+      ],
+    });
+    expect(
+      summarizeRemovedTileModelBudgetParts([
+        { label: 'optional-low', priority: 1 },
+        { priority: 4 },
+      ])
+    ).toBe('optional-low@1, unnamed@4');
   });
 
   it('accepts representative nearby world tile models at full detail', () => {

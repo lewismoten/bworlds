@@ -408,19 +408,61 @@ export function acceptTilePluginModelForRenderBudget<
   model: TObject,
   detailLevel: RenderBudgetDetailLevel = 'full'
 ): TObject | null {
+  return acceptTilePluginModelForRenderBudgetWithResult(model, detailLevel).model;
+}
+
+export function acceptTilePluginModelForRenderBudgetWithResult<
+  TObject extends Pick<THREE.Object3D, 'traverse' | 'children' | 'type'>
+>(
+  model: TObject,
+  detailLevel: RenderBudgetDetailLevel = 'full'
+): {
+  model: TObject | null;
+  removedParts: Array<{ label?: string; priority: number }>;
+} {
   const validation = validateTileModelAgainstRenderBudget(model, detailLevel);
   if (validation.accepted) {
-    return model;
+    return {
+      model,
+      removedParts: [],
+    };
   }
   const pruned = pruneTileModelOptionalPartsForBudget(
     model as TObject & Pick<THREE.Object3D, 'userData'>,
     (candidate) => validateTileModelAgainstRenderBudget(candidate, detailLevel)
   );
   if (pruned.validation.accepted) {
-    return model;
+    return {
+      model,
+      removedParts: pruned.removedParts.map((part) => ({
+        priority: part.priority,
+        ...(typeof part.label === 'string' ? { label: part.label } : {}),
+      })),
+    };
   }
   disposeObject3DResources(model);
-  return null;
+  return {
+    model: null,
+    removedParts: pruned.removedParts.map((part) => ({
+      priority: part.priority,
+      ...(typeof part.label === 'string' ? { label: part.label } : {}),
+    })),
+  };
+}
+
+export function summarizeRemovedTileModelBudgetParts(
+  removedParts: Array<{ label?: string; priority: number }>
+): string {
+  if (removedParts.length === 0) {
+    return '';
+  }
+  return removedParts
+    .map((part) =>
+      typeof part.label === 'string'
+        ? `${part.label}@${part.priority}`
+        : `unnamed@${part.priority}`
+    )
+    .join(', ');
 }
 
 export function getTileModelCostEstimateLimits(
@@ -1124,7 +1166,23 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
           plugin: tilePluginOwnerLabel,
           summary: violationSummary,
         });
-        pluginModel = acceptTilePluginModelForRenderBudget(pluginModel, detailLevel);
+        const acceptedWithBudgetResult = acceptTilePluginModelForRenderBudgetWithResult(
+          pluginModel,
+          detailLevel
+        );
+        if (acceptedWithBudgetResult.model && acceptedWithBudgetResult.removedParts.length > 0) {
+          const removedSummary = summarizeRemovedTileModelBudgetParts(
+            acceptedWithBudgetResult.removedParts
+          );
+          recordRenderDebugEvent(recentDebugEvents, {
+            nowMs: pluginBuildStartMs,
+            type: 'model-rejected',
+            tileKey: `${x}:${y}`,
+            plugin: tilePluginOwnerLabel,
+            summary: `removed optional parts ${removedSummary}`,
+          });
+        }
+        pluginModel = acceptedWithBudgetResult.model;
       }
     }
 
