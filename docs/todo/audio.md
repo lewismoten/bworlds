@@ -41,7 +41,7 @@
 - [x] Time of day may influence music - ie night time: removing/lowering percussion, slow melody, higher reverb, soft harmony
 - [x] Seasons may influence music - ie winter: same motif, bells, sparser arrangement, higher register
 - [ ] Compat may influence music - ie same motif, faster rhythm, lower bass, strong percussion, changed harmony
-- [ ] Music should support different instrument types for the tracks rather than just sine, square, sawtooth
+- [x] Music should support different instrument types for the tracks rather than just sine, square, sawtooth
 
 # Debug
 

@@ -4,34 +4,17 @@ import {
   registerHashLabel,
   registerHashSeeds,
 } from '@bworlds/core/hash';
-
-type MusicWaveform = OscillatorType;
+import {
+  resolveProceduralInstrumentTimbre,
+  type InstrumentFamily,
+  type MusicWaveform,
+  type ProceduralInstrumentTimbre,
+} from './music-instrument-timbres.ts';
 type MusicPosition = { x: number; y: number };
 type TileKind = string;
 type ContextType = string;
 type WeatherKind = string;
 type InstrumentRole = 'lead' | 'harmony' | 'bass' | 'percussion';
-type InstrumentFamily =
-  | 'vocals'
-  | 'lead-guitar'
-  | 'violin'
-  | 'flute'
-  | 'trumpet'
-  | 'synth-lead'
-  | 'piano'
-  | 'guitar'
-  | 'organ'
-  | 'strings'
-  | 'synth-pad'
-  | 'bass-guitar'
-  | 'upright-bass'
-  | 'bass-synth'
-  | 'tuba'
-  | 'kick'
-  | 'snare'
-  | 'cymbals'
-  | 'shaker'
-  | 'hand-percussion';
 
 type MusicRegionThemeId =
   | 'frontier-plains'
@@ -86,6 +69,7 @@ export type ProceduralInstrument = {
   role: InstrumentRole;
   family: InstrumentFamily;
   waveform: MusicWaveform;
+  timbre: ProceduralInstrumentTimbre;
   attackMs: number;
   releaseMs: number;
   detuneCents: number;
@@ -205,6 +189,7 @@ export type ProceduralMusicNote = {
   frequency: number;
   volume: number;
   waveform: MusicWaveform;
+  timbre: ProceduralInstrumentTimbre;
   attackMs: number;
   releaseMs: number;
   detuneCents: number;
@@ -737,6 +722,7 @@ export function getMusicUpdateSignature(
 
 type AudioContextCtor = new () => AudioContext;
 type StereoPannerNodeLike = StereoPannerNode;
+type BiquadFilterNodeLike = BiquadFilterNode;
 
 export function createWebAudioMusicSink(): MusicSink {
   let audioContext: AudioContext | null = null;
@@ -779,6 +765,10 @@ export function createWebAudioMusicSink(): MusicSink {
       const harmonicOscillator = context.createOscillator();
       const gain = context.createGain();
       const harmonicGain = context.createGain();
+      const filter =
+        typeof context.createBiquadFilter === 'function'
+          ? (context.createBiquadFilter() as BiquadFilterNodeLike)
+          : null;
       const panner =
         typeof context.createStereoPanner === 'function'
           ? (context.createStereoPanner() as StereoPannerNodeLike)
@@ -790,15 +780,20 @@ export function createWebAudioMusicSink(): MusicSink {
       oscillator.type = note.waveform;
       oscillator.frequency.setValueAtTime(note.frequency, startAt);
       oscillator.detune.setValueAtTime(note.detuneCents, startAt);
-      harmonicOscillator.type = note.waveform;
-      harmonicOscillator.frequency.setValueAtTime(note.frequency * 2, startAt);
+      harmonicOscillator.type = note.timbre.harmonicWaveform;
+      harmonicOscillator.frequency.setValueAtTime(
+        note.frequency * note.timbre.harmonicRatio,
+        startAt
+      );
       harmonicOscillator.detune.setValueAtTime(note.detuneCents * 0.5, startAt);
       oscillator.frequency.exponentialRampToValueAtTime(
         note.frequency * (0.985 + note.pulseRate * 0.002),
         startAt + durationSeconds
       );
       harmonicOscillator.frequency.exponentialRampToValueAtTime(
-        note.frequency * 2 * (0.992 + note.pulseRate * 0.001),
+        note.frequency *
+          note.timbre.harmonicRatio *
+          (0.992 + note.pulseRate * 0.001),
         startAt + durationSeconds
       );
       gain.gain.setValueAtTime(0.0001, startAt);
@@ -836,14 +831,31 @@ export function createWebAudioMusicSink(): MusicSink {
 
       oscillator.connect(gain);
       harmonicOscillator.connect(harmonicGain);
+      if (filter) {
+        filter.type = note.timbre.filterType;
+        filter.frequency.setValueAtTime(note.timbre.filterCutoffHz, startAt);
+        filter.Q.setValueAtTime(note.timbre.filterQ, startAt);
+        gain.connect(filter);
+        harmonicGain.connect(filter);
+      }
+
+      const outputNode = filter ?? null;
       if (panner) {
         panner.pan.setValueAtTime(spatial.pan, startAt);
-        gain.connect(panner);
-        harmonicGain.connect(panner);
+        if (outputNode) {
+          outputNode.connect(panner);
+        } else {
+          gain.connect(panner);
+          harmonicGain.connect(panner);
+        }
         panner.connect(context.destination);
       } else {
-        gain.connect(context.destination);
-        harmonicGain.connect(context.destination);
+        if (outputNode) {
+          outputNode.connect(context.destination);
+        } else {
+          gain.connect(context.destination);
+          harmonicGain.connect(context.destination);
+        }
       }
 
       activeSourceCount += 2;
@@ -1000,6 +1012,7 @@ function createThemeNote(options: {
             ? 0.52
             : 1),
     waveform: arrangementProfile.waveformOverride ?? instrument.waveform,
+    timbre: instrument.timbre,
     attackMs: instrument.attackMs,
     releaseMs: instrument.releaseMs * arrangementProfile.releaseMultiplier,
     detuneCents: instrument.detuneCents,
@@ -1201,11 +1214,34 @@ function createProceduralInstrument(
         : role === 'harmony'
           ? 220
           : 48;
+  const brightness =
+    0.82 +
+    hash2DWithSeed(
+      getRolePropertySeed(theme.id, role, 'brightness'),
+      clusterX,
+      clusterY
+    ) *
+      0.34;
+  const timbre = resolveProceduralInstrumentTimbre({
+    family,
+    brightness,
+    harmonicSignal: hash2DWithSeed(
+      getRolePropertySeed(theme.id, role, 'harmonics'),
+      clusterX,
+      clusterY
+    ),
+    filterSignal: hash2DWithSeed(
+      getThemePropertySeed(theme.id, 'brightness'),
+      clusterX + role.length,
+      clusterY - role.length
+    ),
+  });
   return {
     id: `${theme.id}:${role}:${clusterX}:${clusterY}`,
     role,
     family,
     waveform,
+    timbre,
     attackMs:
       attackMsBase +
       Math.round(
@@ -1248,14 +1284,7 @@ function createProceduralInstrument(
         clusterY
       ) *
         (role === 'percussion' ? 3.2 : role === 'harmony' ? 1.1 : 1.4),
-    brightness:
-      0.82 +
-      hash2DWithSeed(
-        getRolePropertySeed(theme.id, role, 'brightness'),
-        clusterX,
-        clusterY
-      ) *
-        0.34,
+    brightness: brightness,
   };
 }
 

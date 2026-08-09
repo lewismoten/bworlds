@@ -32,6 +32,16 @@ describe('procedural music', () => {
       start: ReturnType<typeof vi.fn>;
       stop: ReturnType<typeof vi.fn>;
     }> = [];
+    const createdFilters: Array<{
+      type: BiquadFilterType;
+      frequency: {
+        setValueAtTime: ReturnType<typeof vi.fn>;
+      };
+      Q: {
+        setValueAtTime: ReturnType<typeof vi.fn>;
+      };
+      connect: ReturnType<typeof vi.fn>;
+    }> = [];
 
     class FakeAudioContext {
       state: AudioContextState = 'running';
@@ -67,6 +77,20 @@ describe('procedural music', () => {
           connect: vi.fn(),
         } as unknown as GainNode;
       }
+      createBiquadFilter() {
+        const filter = {
+          type: 'lowpass' as BiquadFilterType,
+          frequency: {
+            setValueAtTime: vi.fn(),
+          },
+          Q: {
+            setValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+        };
+        createdFilters.push(filter);
+        return filter as unknown as BiquadFilterNode;
+      }
       createStereoPanner() {
         return {
           pan: {
@@ -94,6 +118,13 @@ describe('procedural music', () => {
         frequency: 440,
         volume: 0.05,
         waveform: 'sine',
+        timbre: {
+          harmonicWaveform: 'triangle',
+          harmonicRatio: 2.6,
+          filterType: 'bandpass',
+          filterCutoffHz: 1800,
+          filterQ: 1.7,
+        },
         attackMs: 20,
         releaseMs: 80,
         detuneCents: 0,
@@ -102,6 +133,12 @@ describe('procedural music', () => {
       });
 
       expect(sink.getActiveSourceCount?.()).toBe(2);
+      expect(createdFilters).toHaveLength(1);
+      expect(createdOscillators[1]?.type).toBe('triangle');
+      expect(
+        createdOscillators[1]?.frequency.setValueAtTime
+      ).toHaveBeenCalledWith(440 * 2.6, 0);
+      expect(createdFilters[0]?.type).toBe('bandpass');
       createdOscillators[0]?.finish();
       expect(sink.getActiveSourceCount?.()).toBe(1);
       createdOscillators[1]?.finish();
@@ -152,6 +189,18 @@ describe('procedural music', () => {
           connect: vi.fn(),
         } as unknown as GainNode;
       }
+      createBiquadFilter() {
+        return {
+          type: 'lowpass' as BiquadFilterType,
+          frequency: {
+            setValueAtTime: vi.fn(),
+          },
+          Q: {
+            setValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+        } as unknown as BiquadFilterNode;
+      }
       createStereoPanner() {
         return {
           pan: {
@@ -179,6 +228,13 @@ describe('procedural music', () => {
         frequency: 440,
         volume: 0.05,
         waveform: 'sine',
+        timbre: {
+          harmonicWaveform: 'triangle',
+          harmonicRatio: 2,
+          filterType: 'lowpass',
+          filterCutoffHz: 1200,
+          filterQ: 0.8,
+        },
         attackMs: 20,
         releaseMs: 80,
         detuneCents: 0,
@@ -611,6 +667,13 @@ describe('procedural music', () => {
         family: expect.stringMatching(
           /^(kick|snare|cymbals|shaker|hand-percussion)$/
         ),
+        timbre: expect.objectContaining({
+          harmonicWaveform: expect.any(String),
+          harmonicRatio: expect.any(Number),
+          filterType: expect.any(String),
+          filterCutoffHz: expect.any(Number),
+          filterQ: expect.any(Number),
+        }),
       })
     );
   });
@@ -694,6 +757,35 @@ describe('procedural music', () => {
     );
     expect(town.instruments.harmony.family).not.toBe(
       daytime.instruments.harmony.family
+    );
+  });
+
+  it('assigns distinct timbre profiles to representative instrument families', () => {
+    const town = createProceduralInstrumentBank(
+      resolveMusicTheme('town', 'town'),
+      5,
+      -3,
+      {
+        tileKind: 'town',
+        contextType: 'town',
+        dayProgress: 0.5,
+        yearProgress: 0.5,
+      }
+    );
+
+    const timbres = town.instruments;
+    expect(timbres.lead.timbre.filterCutoffHz).not.toBe(
+      timbres.harmony.timbre.filterCutoffHz
+    );
+    expect(timbres.lead.timbre.harmonicRatio).not.toBe(
+      timbres.harmony.timbre.harmonicRatio
+    );
+    expect(timbres.bass.timbre.filterCutoffHz).toBeLessThan(
+      timbres.lead.timbre.filterCutoffHz
+    );
+    expect(timbres.percussion.timbre.harmonicRatio).toBeGreaterThan(1.5);
+    expect(timbres.percussion.timbre.filterType).not.toBe(
+      timbres.bass.timbre.filterType
     );
   });
 

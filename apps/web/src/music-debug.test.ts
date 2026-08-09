@@ -86,6 +86,7 @@ describe('music debug', () => {
     expect(summary).toContain('Song Length');
     expect(summary).toContain('Loop Range');
     expect(summary).toContain(snapshot.theme.id);
+    expect(summary).toContain('Hz</li>');
   });
 
   it('formats song durations and loop ranges as minute-second labels', () => {

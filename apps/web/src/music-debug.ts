@@ -296,7 +296,7 @@ export function buildMusicDebugSummaryMarkup(
   const instruments = Object.values(snapshot.instrumentBank.instruments)
     .map(
       (instrument) =>
-        `<li><strong>${instrument.role}</strong>: ${instrument.family} / ${instrument.waveform}</li>`
+        `<li><strong>${instrument.role}</strong>: ${instrument.family} / ${instrument.waveform} + ${instrument.timbre.harmonicWaveform} @ ${instrument.timbre.harmonicRatio.toFixed(2)}x / ${instrument.timbre.filterType} ${instrument.timbre.filterCutoffHz.toFixed(0)}Hz</li>`
     )
     .join('');
 
