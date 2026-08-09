@@ -90,6 +90,13 @@ type OverworldCellAnchorEvaluation<
   terrainSuitable: boolean;
 };
 
+type CachedOverworldGenerationSnapshot = Omit<
+  ClassifyOverworldTileContext,
+  'tile'
+> & {
+  getPlacementChance(chanceKey: string): number;
+};
+
 const RIVER_CONTROL_CELL_SIZE = 24;
 const RIVER_MIN_CONTROL_STEP = 2;
 const RIVER_MAX_CONTROL_STEP = 10;
@@ -107,9 +114,145 @@ const OVERWORLD_RIVER_CACHE_LIMIT = 1024;
 const OVERWORLD_TILE_CACHE_LIMIT = 4096;
 const OVERWORLD_ANCHOR_CACHE_LIMIT = 1024;
 const OVERWORLD_ANCHOR_EVALUATION_CACHE_LIMIT = 2048;
+const OVERWORLD_GENERATION_SNAPSHOT_CACHE_LIMIT = 4096;
+
+type OverworldGenerationSnapshotCacheStore = {
+  stateless: ReturnType<
+    typeof createBoundedCache<string, CachedOverworldGenerationSnapshot>
+  >;
+  stateful: WeakMap<
+    WorldStateLike,
+    ReturnType<typeof createBoundedCache<string, CachedOverworldGenerationSnapshot>>
+  >;
+};
+
+const overworldGenerationSnapshotCaches = new WeakMap<
+  PluginRegistryLike,
+  WeakMap<OverworldTerrainSignalSampler, OverworldGenerationSnapshotCacheStore>
+>();
 
 function normalizeSeedHash(seed: Seed): number {
   return typeof seed === 'number' ? createHashSeed(seed) : registerHashLabel(seed);
+}
+
+function getOverworldGenerationSnapshotCacheStore(
+  plugins: PluginRegistryLike,
+  sampleTerrainSignals: OverworldTerrainSignalSampler
+): OverworldGenerationSnapshotCacheStore {
+  let pluginCache = overworldGenerationSnapshotCaches.get(plugins);
+  if (!pluginCache) {
+    pluginCache = new WeakMap();
+    overworldGenerationSnapshotCaches.set(plugins, pluginCache);
+  }
+
+  let store = pluginCache.get(sampleTerrainSignals);
+  if (!store) {
+    store = {
+      stateless: createBoundedCache<string, CachedOverworldGenerationSnapshot>(
+        OVERWORLD_GENERATION_SNAPSHOT_CACHE_LIMIT
+      ),
+      stateful: new WeakMap(),
+    };
+    pluginCache.set(sampleTerrainSignals, store);
+  }
+
+  return store;
+}
+
+function getOverworldGenerationSnapshotCache(
+  plugins: PluginRegistryLike,
+  sampleTerrainSignals: OverworldTerrainSignalSampler,
+  state?: WorldStateLike
+) {
+  const store = getOverworldGenerationSnapshotCacheStore(
+    plugins,
+    sampleTerrainSignals
+  );
+  if (!state) {
+    return store.stateless;
+  }
+
+  let cache = store.stateful.get(state);
+  if (!cache) {
+    cache = createBoundedCache<string, CachedOverworldGenerationSnapshot>(
+      OVERWORLD_GENERATION_SNAPSHOT_CACHE_LIMIT
+    );
+    store.stateful.set(state, cache);
+  }
+  return cache;
+}
+
+function createOverworldGenerationSnapshotCacheKey({
+  seed,
+  x,
+  y,
+  state,
+}: {
+  seed: Seed;
+  x: number;
+  y: number;
+  state?: WorldStateLike;
+}) {
+  const revision =
+    typeof (state as { overworldTileRevision?: unknown } | undefined)
+      ?.overworldTileRevision === 'number'
+      ? ((state as { overworldTileRevision?: number }).overworldTileRevision ?? 0)
+      : 0;
+  return `${seed}:${x}:${y}:${revision}`;
+}
+
+function createOverworldGenerationSnapshot({
+  seed,
+  x,
+  y,
+  plugins,
+  sampleTerrainSignals,
+  state,
+}: {
+  seed: Seed;
+  x: number;
+  y: number;
+  plugins: PluginRegistryLike;
+  sampleTerrainSignals: OverworldTerrainSignalSampler;
+  state?: WorldStateLike;
+}): CachedOverworldGenerationSnapshot {
+  const signals = sampleTerrainSignals(x, y);
+  const anchors = plugins.resolveOverworldAnchors({
+    seed,
+    x,
+    y,
+    sampleTerrainSignals,
+    state,
+  });
+  const placementChances = {
+    town: getOverworldPlacementChance(seed, 'town', x, y),
+    cave: getOverworldPlacementChance(seed, 'cave', x, y),
+    dungeon: getOverworldPlacementChance(seed, 'dungeon', x, y),
+    sign: getOverworldPlacementChance(seed, 'sign', x, y),
+  };
+
+  return {
+    seed,
+    x,
+    y,
+    nearLand: isNearOverworldLand(signals),
+    townChance: placementChances.town,
+    caveChance: placementChances.cave,
+    dungeonChance: placementChances.dungeon,
+    signChance: placementChances.sign,
+    placementChances,
+    getPlacementChance(chanceKey: string) {
+      return (
+        placementChances[chanceKey] ??
+        getOverworldPlacementChance(seed, chanceKey, x, y)
+      );
+    },
+    signals,
+    sampleTerrainSignals,
+    townAnchors: anchors.townAnchors,
+    bridgeAnchors: anchors.bridgeAnchors,
+    poiAnchors: anchors.poiAnchors,
+  };
 }
 
 export interface OverworldCellAnchorSpec<
@@ -1457,44 +1600,32 @@ export function createOverworldGenerationContext({
   sampleTerrainSignals: OverworldTerrainSignalSampler;
   state?: WorldStateLike;
 }): ClassifyOverworldTileContext & { state?: WorldStateLike } {
-  const signals = sampleTerrainSignals(x, y);
-  const anchors = plugins.resolveOverworldAnchors({
-    seed,
-    x,
-    y,
+  const snapshot = getOverworldGenerationSnapshotCache(
+    plugins,
     sampleTerrainSignals,
-    state,
-  });
-  const placementChances = {
-    town: getOverworldPlacementChance(seed, 'town', x, y),
-    cave: getOverworldPlacementChance(seed, 'cave', x, y),
-    dungeon: getOverworldPlacementChance(seed, 'dungeon', x, y),
-    sign: getOverworldPlacementChance(seed, 'sign', x, y),
-  };
+    state
+  ).getOrCreate(
+    createOverworldGenerationSnapshotCacheKey({
+      seed,
+      x,
+      y,
+      state,
+    }),
+    () =>
+      createOverworldGenerationSnapshot({
+        seed,
+        x,
+        y,
+        plugins,
+        sampleTerrainSignals,
+        state,
+      })
+  );
 
   return {
-    seed,
-    x,
-    y,
+    ...snapshot,
     tile,
     state,
-    nearLand: isNearOverworldLand(signals),
-    townChance: placementChances.town,
-    caveChance: placementChances.cave,
-    dungeonChance: placementChances.dungeon,
-    signChance: placementChances.sign,
-    placementChances,
-    getPlacementChance(chanceKey: string) {
-      return (
-        placementChances[chanceKey] ??
-        getOverworldPlacementChance(seed, chanceKey, x, y)
-      );
-    },
-    signals,
-    sampleTerrainSignals,
-    townAnchors: anchors.townAnchors,
-    bridgeAnchors: anchors.bridgeAnchors,
-    poiAnchors: anchors.poiAnchors,
   };
 }
 

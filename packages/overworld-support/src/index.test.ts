@@ -540,6 +540,49 @@ describe('overworld support', () => {
     );
   });
 
+  it('reuses cached generation snapshots while keeping tile payloads isolated', () => {
+    const sampleTerrainSignals = createOverworldTerrainSignalSampler('spec-seed');
+    let anchorCalls = 0;
+    const plugins = createTestPluginRegistry({
+      resolveOverworldAnchors() {
+        anchorCalls += 1;
+        return {
+          townAnchors: [{ x: 4, y: 7 }],
+          bridgeAnchors: [{ x: 5, y: 7 }],
+          poiAnchors: [{ x: 6, y: 7, type: 'town', name: 'Spec Town' }],
+        };
+      },
+    });
+
+    const first = createOverworldGenerationContext(
+      createGenerationContextPayload({
+        x: 4,
+        y: 7,
+        tile: { kind: 'plains' },
+        sampleTerrainSignals,
+        plugins,
+      })
+    );
+    const second = createOverworldGenerationContext(
+      createGenerationContextPayload({
+        x: 4,
+        y: 7,
+        tile: { kind: 'forest' },
+        sampleTerrainSignals,
+        plugins,
+      })
+    );
+
+    expect(anchorCalls).toBe(1);
+    expect(first.tile).toEqual({ kind: 'plains' });
+    expect(second.tile).toEqual({ kind: 'forest' });
+    expect(first.signals).toBe(second.signals);
+    expect(first.townAnchors).toBe(second.townAnchors);
+    expect(first.bridgeAnchors).toBe(second.bridgeAnchors);
+    expect(first.poiAnchors).toBe(second.poiAnchors);
+    expect(first).not.toBe(second);
+  });
+
   it('creates generated named overworld anchor specs with deterministic names', () => {
     const spec = createGeneratedNamedOverworldCellAnchorSpec({
       id: 'town',
@@ -923,6 +966,53 @@ describe('overworld support', () => {
     ]);
     expect(contexts[0]).toBe(contexts[1]);
     expect(contexts[1]).toBe(contexts[2]);
+  });
+
+  it('reuses cached generation snapshots across repeated composition for the same tile', () => {
+    const sampleTerrainSignals = createOverworldTerrainSignalSampler('spec-seed');
+    let anchorCalls = 0;
+    const plugins = createTestPluginRegistry({
+      resolveOverworldTile() {
+        return null;
+      },
+      resolveOverworldAnchors() {
+        anchorCalls += 1;
+        return {
+          townAnchors: [],
+          bridgeAnchors: [],
+          poiAnchors: [],
+        };
+      },
+      classifyTerrainTile(context) {
+        return { kind: context.tile.kind };
+      },
+      classifyOverworldTile() {
+        return null;
+      },
+      decorateOverworldTile(context) {
+        return { ...context.tile };
+      },
+    });
+
+    const first = composeOverworldTileFromPlugins(
+      createComposeOverworldTilePayload({
+        x: 2,
+        y: -4,
+        sampleTerrainSignals,
+        plugins,
+      })
+    );
+    const second = composeOverworldTileFromPlugins(
+      createComposeOverworldTilePayload({
+        x: 2,
+        y: -4,
+        sampleTerrainSignals,
+        plugins,
+      })
+    );
+
+    expect(anchorCalls).toBe(1);
+    expect(second).toEqual(first);
   });
 
   it('uses the plugin-owned default tile kind as the initial overworld tile', () => {

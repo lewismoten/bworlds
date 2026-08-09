@@ -32,7 +32,7 @@
 - [ ] Instance repeated trees, foliage, rocks, and other static props.
 
 
-- [ ] Cache whole generation contexts/results instead of caching tiny calculations individually.
+- [X] Cache whole generation contexts/results instead of caching tiny calculations individually.
    I see `createOverworldGenerationContext()`, terrain sampling, anchor resolution, river paths, route detection, etc. Rather than repeatedly asking multiple small caches about the same coordinate, compute a reusable per-tile/per-cell context once and pass it down through plugins.
 
 - [ ] Consolidate river and route calculations.
