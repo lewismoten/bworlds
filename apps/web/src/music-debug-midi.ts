@@ -525,7 +525,7 @@ function resolveMidiKeySignature(snapshot: MusicDebugSnapshot): {
   accidentalCount: number;
   isMinor: boolean;
 } {
-  const pitchClass = resolvePitchClassFromFrequency(snapshot.theme.rootHz);
+  const pitchClass = snapshot.scaleMap.rootMidiNote % 12;
   const isMinor = snapshot.songDna.modeLabel.toLowerCase().includes('minor');
   return {
     accidentalCount: isMinor
@@ -694,11 +694,6 @@ function encodeVariableLengthQuantity(value: number): number[] {
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
-}
-
-function resolvePitchClassFromFrequency(frequency: number): number {
-  const midi = Math.round(69 + 12 * Math.log2(Math.max(frequency, 1) / 440));
-  return ((midi % 12) + 12) % 12;
 }
 
 const MAJOR_KEY_SIGNATURES: Record<number, number> = {

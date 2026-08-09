@@ -24,6 +24,7 @@ import { resolveProceduralMusicBlueprintMeasureCount } from './procedural-music-
 import { randomizeDebugCoordinatePair } from './debug-seed.ts';
 import { buildMusicDebugInstrumentPanelMarkup } from './music-debug-instrument-panel.ts';
 import { describeSongSectionLayerArrangement } from './procedural-music-song-layers.ts';
+import { createProceduralScaleMap } from './procedural-music-scale.ts';
 import {
   createMusicDebugScheduledPlaybackNote,
   MUSIC_DEBUG_PLAYBACK_SCHEDULE_AHEAD_MS,
@@ -79,6 +80,7 @@ export type MusicDebugSnapshot = {
   durationMs: number;
   resolvedBpm: number;
   measureCount: number;
+  scaleMap: ReturnType<typeof createProceduralScaleMap>;
   blueprintLabel: string;
   vocabularySummary: string[];
   sharedMotif: number[];
@@ -255,6 +257,10 @@ export function createMusicDebugSnapshot(
     blueprint: song.blueprint,
     durationMs,
   });
+  const scaleMap = createProceduralScaleMap({
+    rootHz: theme.rootHz,
+    scale: theme.scale,
+  });
   const measureCount = resolveProceduralMusicBlueprintMeasureCount(
     song.blueprint
   );
@@ -303,6 +309,7 @@ export function createMusicDebugSnapshot(
     durationMs,
     resolvedBpm,
     measureCount,
+    scaleMap,
     blueprintLabel: song.blueprint.label,
     vocabularySummary: [
       `Biome ${theme.vocabulary.biomeLabel}`,
@@ -507,6 +514,7 @@ export function buildMusicDebugSummaryMarkup(
     <div class="music-debug-summary-grid">
       <div><dt>Theme</dt><dd>${snapshot.theme.id}</dd></div>
       <div><dt>Root Hz</dt><dd>${snapshot.theme.rootHz.toFixed(2)}</dd></div>
+      <div><dt>Root MIDI</dt><dd>${snapshot.scaleMap.rootMidiNote}</dd></div>
       <div><dt>Scheduled Notes</dt><dd>${snapshot.notes.length}</dd></div>
       <div><dt>Song Length</dt><dd>${formatMusicDebugDuration(snapshot.durationMs)}</dd></div>
       <div><dt>Measures</dt><dd>${snapshot.measureCount}</dd></div>
@@ -518,6 +526,7 @@ export function buildMusicDebugSummaryMarkup(
       <div><dt>Brightness</dt><dd>${snapshot.mood.brightness.toFixed(2)}x</dd></div>
       <div><dt>Combat</dt><dd>${snapshot.options.combatIntensity.toFixed(2)}</dd></div>
       <div><dt>Mode</dt><dd>${snapshot.theme.vocabulary.modeLabel}</dd></div>
+      <div><dt>Mode Offsets</dt><dd>${snapshot.scaleMap.modePitchOffsets.join(', ')}</dd></div>
       <div><dt>Region</dt><dd>${snapshot.theme.vocabulary.regionLabel}</dd></div>
       <div><dt>Location</dt><dd>${snapshot.songDna.recognitionLabel}</dd></div>
       <div><dt>Rhythm</dt><dd>${snapshot.theme.vocabulary.rhythmDensityLabel}</dd></div>

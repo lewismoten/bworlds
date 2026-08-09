@@ -83,6 +83,8 @@ describe('music debug', () => {
     expect(first.durationMs).toBeLessThanOrEqual(180_000);
     expect(first.measureCount).toBe(80);
     expect(first.resolvedBpm).toBeGreaterThan(100);
+    expect(first.scaleMap.rootMidiNote).toBeGreaterThan(0);
+    expect(first.scaleMap.modePitchOffsets.length).toBeGreaterThan(0);
     expect(first.song.sections.map((section) => section.id)).toEqual([
       'intro',
       'a',
@@ -115,6 +117,7 @@ describe('music debug', () => {
     expect(markup).toContain('music-debug-instrument-play');
     expect(summary).toContain('Scheduled Notes');
     expect(summary).toContain('Song Length');
+    expect(summary).toContain('Root MIDI');
     expect(summary).toContain('Measures');
     expect(summary).toContain('Blueprint');
     expect(summary).toContain('Loop Range');
@@ -122,6 +125,7 @@ describe('music debug', () => {
     expect(summary).toContain('Combat');
     expect(summary).toContain('Resolved BPM');
     expect(summary).toContain('Mode');
+    expect(summary).toContain('Mode Offsets');
     expect(summary).toContain('Region');
     expect(summary).toContain('Location');
     expect(summary).toContain('Preferred Intervals');

@@ -1,4 +1,8 @@
 import { hash2DWithSeed, registerHashLabel } from '@bworlds/core/hash';
+import {
+  getProceduralScaleDegreeSemitones,
+  isProceduralSemitoneInMode,
+} from './procedural-music-scale.ts';
 import { resolveProceduralMeterPosition } from './procedural-music-meter.ts';
 
 export type ProceduralHarmonyTheme = {
@@ -260,10 +264,7 @@ export function isProceduralSemitoneInScale(
   scale: readonly number[],
   semitone: number
 ): boolean {
-  const normalizedSemitone = ((Math.round(semitone) % 12) + 12) % 12;
-  return scale.some(
-    (scaleSemitone) => ((scaleSemitone % 12) + 12) % 12 === normalizedSemitone
-  );
+  return isProceduralSemitoneInMode(scale, semitone);
 }
 
 export function resolveProceduralChordAtStep(
@@ -321,10 +322,19 @@ function createProceduralChord(
   degreeIndex: number,
   progressionIndex: number
 ): ProceduralChord {
-  const rootSemitones = getScaleDegreeSemitones(theme.scale, degreeIndex);
-  const thirdSemitones = getScaleDegreeSemitones(theme.scale, degreeIndex + 2);
-  const fifthSemitones = getScaleDegreeSemitones(theme.scale, degreeIndex + 4);
-  const passingSemitones = getScaleDegreeSemitones(
+  const rootSemitones = getProceduralScaleDegreeSemitones(
+    theme.scale,
+    degreeIndex
+  );
+  const thirdSemitones = getProceduralScaleDegreeSemitones(
+    theme.scale,
+    degreeIndex + 2
+  );
+  const fifthSemitones = getProceduralScaleDegreeSemitones(
+    theme.scale,
+    degreeIndex + 4
+  );
+  const passingSemitones = getProceduralScaleDegreeSemitones(
     theme.scale,
     degreeIndex + 1
   );
@@ -458,7 +468,7 @@ function resolveLeadSemitonePlan(
     chord.degreeIndex +
     composition.motifDegreeOffset +
     composition.contourStep.degreeOffset;
-  const leadScaleSemitones = getScaleDegreeSemitones(
+  const leadScaleSemitones = getProceduralScaleDegreeSemitones(
     theme.scale,
     melodyPatternIndex
   );
@@ -557,18 +567,4 @@ function resolveLeadAccidentalSemitones(
     return upperApproach;
   }
   return null;
-}
-
-function getScaleDegreeSemitones(
-  scale: readonly number[],
-  degreeIndex: number
-): number {
-  if (scale.length === 0) {
-    return 0;
-  }
-
-  const octave = Math.floor(degreeIndex / scale.length);
-  const normalizedDegreeIndex =
-    ((degreeIndex % scale.length) + scale.length) % scale.length;
-  return (scale[normalizedDegreeIndex] ?? 0) + octave * 12;
 }
