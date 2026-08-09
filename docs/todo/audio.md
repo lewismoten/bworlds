@@ -48,7 +48,7 @@
 - [x] List all debug pages under /debug
 - [x] Create a page to generate, visualize, and listen to music - consider the MIDI visualizer from my repo here: https://github.com/lewismoten/Athens-Acropolis-4507/tree/master/soundtrack
 - [x] The "Play Song" button should change to "Stop Song" while it is playing, and change back when its not.
-- [ ] Tracks (other than percussion) should give a visual indication of notes being played on the scale in addition to showing solid bars.
+- [x] Tracks (other than percussion) should give a visual indication of notes being played on the scale in addition to showing solid bars.
 - [x] Add a Download button to download the song as a MIDI file
 
 # Sound Effects

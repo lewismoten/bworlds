@@ -125,4 +125,14 @@ describe('music debug', () => {
       })
     );
   });
+
+  it('provides a theme object that can drive pitch-scale overlays', () => {
+    const snapshot = createMusicDebugSnapshot({
+      tileKind: 'forest',
+      contextType: 'overworld',
+    });
+
+    expect(snapshot.theme.scale.length).toBeGreaterThan(0);
+    expect(snapshot.theme.rootHz).toBeGreaterThan(0);
+  });
 });

@@ -12,6 +12,7 @@ import {
   type ProceduralMusicSong,
 } from './procedural-music-song.ts';
 import { randomizeDebugCoordinatePair } from './debug-seed.ts';
+import { createMusicDebugScaleOverlay } from './music-debug-scale.ts';
 
 export type MusicDebugTileKind =
   'plains' | 'forest' | 'shore' | 'town' | 'mountain' | 'cave' | 'floor';
@@ -43,6 +44,19 @@ export type MusicDebugSnapshot = {
   loopStartOffsetMs: number;
   loopEndOffsetMs: number;
   roleCounts: Record<ProceduralMusicNote['role'], number>;
+};
+
+export type MusicDebugTheme = MusicDebugSnapshot['theme'];
+
+export type MusicDebugTimelineLayout = {
+  width: number;
+  height: number;
+  leftPad: number;
+  rightPad: number;
+  topPad: number;
+  bottomPad: number;
+  trackHeight: number;
+  roleOrder: ProceduralMusicNote['role'][];
 };
 
 export type MusicDebugSongPlayback = {
@@ -330,6 +344,17 @@ export function drawMusicDebugTimeline(
     lead: '#ffbf69',
     percussion: '#f27d7d',
   };
+  const timelineLayout: MusicDebugTimelineLayout = {
+    width,
+    height,
+    leftPad,
+    rightPad,
+    topPad,
+    bottomPad,
+    trackHeight,
+    roleOrder,
+  };
+  const scaleOverlay = createMusicDebugScaleOverlay(snapshot, timelineLayout);
 
   context.strokeStyle = 'rgba(255,255,255,0.08)';
   context.lineWidth = 1;
@@ -363,6 +388,27 @@ export function drawMusicDebugTimeline(
 
     context.fillStyle = roleColors[note.role];
     context.fillRect(x, y, barWidth, barHeight);
+  }
+
+  context.strokeStyle = 'rgba(255,255,255,0.12)';
+  context.lineWidth = 1;
+  for (const guide of scaleOverlay.guides) {
+    context.beginPath();
+    context.moveTo(leftPad, guide.y);
+    context.lineTo(width - rightPad, guide.y);
+    context.stroke();
+  }
+
+  for (const marker of scaleOverlay.markers) {
+    context.beginPath();
+    context.fillStyle = '#f5f7fb';
+    context.arc(marker.x, marker.y, marker.radius, 0, Math.PI * 2);
+    context.fill();
+    context.beginPath();
+    context.strokeStyle = roleColors[marker.role];
+    context.lineWidth = 2;
+    context.arc(marker.x, marker.y, marker.radius + 1.5, 0, Math.PI * 2);
+    context.stroke();
   }
 }
 
