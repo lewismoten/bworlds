@@ -1223,6 +1223,159 @@ describe('sound effects', () => {
     }
   });
 
+  it('routes procedural sound effects through configured delay and echo stages', () => {
+    const createdOscillators: Array<{
+      onended: ((event: Event) => void) | null;
+      type: string;
+      frequency: {
+        setValueAtTime: ReturnType<typeof vi.fn>;
+        exponentialRampToValueAtTime: ReturnType<typeof vi.fn>;
+        linearRampToValueAtTime: ReturnType<typeof vi.fn>;
+      };
+      connect: ReturnType<typeof vi.fn>;
+      disconnect: ReturnType<typeof vi.fn>;
+      start: ReturnType<typeof vi.fn>;
+      stop: ReturnType<typeof vi.fn>;
+    }> = [];
+    const createdDelays: Array<{
+      delayTime: {
+        setValueAtTime: ReturnType<typeof vi.fn>;
+      };
+      connect: ReturnType<typeof vi.fn>;
+      disconnect: ReturnType<typeof vi.fn>;
+    }> = [];
+    const createdGains: Array<{
+      gain: {
+        setValueAtTime: ReturnType<typeof vi.fn>;
+        exponentialRampToValueAtTime: ReturnType<typeof vi.fn>;
+      };
+      connect: ReturnType<typeof vi.fn>;
+      disconnect: ReturnType<typeof vi.fn>;
+    }> = [];
+
+    class FakeAudioContext {
+      state: AudioContextState = 'running';
+      currentTime = 0;
+      destination = {};
+      createOscillator() {
+        const oscillator = {
+          onended: null as ((event: Event) => void) | null,
+          type: 'sine',
+          frequency: {
+            setValueAtTime: vi.fn(),
+            exponentialRampToValueAtTime: vi.fn(),
+            linearRampToValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+          start: vi.fn(),
+          stop: vi.fn(),
+        };
+        createdOscillators.push(oscillator);
+        return oscillator as unknown as OscillatorNode;
+      }
+      createDelay() {
+        const delay = {
+          delayTime: {
+            setValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+        };
+        createdDelays.push(delay);
+        return delay as unknown as DelayNode;
+      }
+      createGain() {
+        const gain = {
+          gain: {
+            setValueAtTime: vi.fn(),
+            exponentialRampToValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+        };
+        createdGains.push(gain);
+        return gain as unknown as GainNode;
+      }
+      createStereoPanner() {
+        return {
+          pan: {
+            setValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+        } as unknown as StereoPannerNode;
+      }
+      resume() {
+        return Promise.resolve();
+      }
+    }
+
+    const originalAudioContext = globalThis.AudioContext;
+    vi.stubGlobal('AudioContext', FakeAudioContext);
+
+    try {
+      const sink = createWebAudioSoundEffectSink();
+      sink.play({
+        kind: 'combat-magic',
+        nowMs: 0,
+        frequency: 244,
+        durationMs: 320,
+        volume: 0.05,
+        waveform: 'triangle',
+        delay: {
+          timeMs: 118,
+          feedback: 0.32,
+          mix: 0.24,
+        },
+      });
+
+      expect(createdDelays).toHaveLength(1);
+      expect(createdDelays[0]?.delayTime.setValueAtTime).toHaveBeenCalledWith(
+        0.118,
+        0
+      );
+      expect(createdOscillators[0]?.connect).toHaveBeenCalledTimes(2);
+      expect(createdOscillators[0]?.connect.mock.calls).toContainEqual([
+        createdDelays[0],
+      ]);
+      expect(
+        createdOscillators[0]?.connect.mock.calls.some(
+          (call) => call[0] !== createdDelays[0]
+        )
+      ).toBe(true);
+      expect(
+        createdGains.some((gain) =>
+          gain.connect.mock.calls.some((call) => call[0] === createdDelays[0])
+        )
+      ).toBe(true);
+      const wetGain = createdGains.find((gain) =>
+        gain.gain.setValueAtTime.mock.calls.some(
+          (call) => call[0] === 0.24 && call[1] === 0
+        )
+      );
+      const feedbackGain = createdGains.find((gain) =>
+        gain.gain.setValueAtTime.mock.calls.some(
+          (call) => call[0] === 0.32 && call[1] === 0
+        )
+      );
+
+      expect(wetGain).toBeDefined();
+      expect(feedbackGain).toBeDefined();
+      expect(createdDelays[0]?.connect.mock.calls).toContainEqual([wetGain]);
+      expect(createdDelays[0]?.connect.mock.calls).toContainEqual([
+        feedbackGain,
+      ]);
+      expect(feedbackGain?.connect).toHaveBeenCalledWith(createdDelays[0]);
+    } finally {
+      if (originalAudioContext) {
+        vi.stubGlobal('AudioContext', originalAudioContext);
+      } else {
+        vi.unstubAllGlobals();
+      }
+    }
+  });
+
   it('limits identical low-priority ambient voices in the web audio sink', () => {
     const createdOscillators: Array<{
       onended: ((event: Event) => void) | null;

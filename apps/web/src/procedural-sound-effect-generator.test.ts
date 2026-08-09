@@ -357,4 +357,40 @@ describe('procedural sound effect generator', () => {
     expect(effect.distortion?.outputGain).toBeGreaterThan(0.72);
     expect(effect.distortion?.outputGain).toBeLessThan(0.8);
   });
+
+  it('preserves deterministic delay and echo settings', () => {
+    const generator = createProceduralSoundEffectGenerator();
+    const effect = generator.generate({
+      kind: 'combat-magic',
+      nowMs: 1900,
+      seed: 77,
+      recipe: {
+        id: 'combat-magic-echo',
+        baseFrequency: 244,
+        baseDurationMs: 320,
+        baseVolume: 0.05,
+        waveform: 'triangle',
+        delay: {
+          timeMs: 118,
+          feedback: 0.32,
+          mix: 0.24,
+          timeVariation: 0.05,
+          feedbackVariation: 0.08,
+          mixVariation: 0.06,
+        },
+      },
+    });
+
+    expect(effect.delay).toEqual({
+      timeMs: expect.any(Number),
+      feedback: expect.any(Number),
+      mix: expect.any(Number),
+    });
+    expect(effect.delay?.timeMs).toBeGreaterThan(112);
+    expect(effect.delay?.timeMs).toBeLessThan(124);
+    expect(effect.delay?.feedback).toBeGreaterThan(0.29);
+    expect(effect.delay?.feedback).toBeLessThan(0.35);
+    expect(effect.delay?.mix).toBeGreaterThan(0.22);
+    expect(effect.delay?.mix).toBeLessThan(0.26);
+  });
 });

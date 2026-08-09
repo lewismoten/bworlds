@@ -5,6 +5,7 @@ import { resolveSoundEffectCategory } from './audio-categories.ts';
 import type { NearbyAmbientKind } from './nearby-ambient.ts';
 import {
   type ProceduralAmplitudeEnvelope,
+  type ProceduralSoundDelay,
   createProceduralSoundEffectGenerator,
   type ProceduralSoundDistortion,
   type ProceduralNoiseColor,
@@ -321,6 +322,7 @@ function resolveProceduralSoundRecipe(
     pitchEnvelope: resolveProceduralSoundPitchEnvelope(kind),
     filters: resolveProceduralSoundFilters(kind),
     distortion: resolveProceduralSoundDistortion(kind),
+    delay: resolveProceduralSoundDelay(kind),
     sweeps: resolveProceduralSoundSweeps(kind),
     layers: resolveProceduralSoundLayers(kind),
     ...resolveProceduralSoundVariation(kind),
@@ -483,6 +485,40 @@ function resolveProceduralSoundDistortion(kind: SoundEffectKind) {
         outputGain: 0.88,
         amountVariation: 0.05,
         outputGainVariation: 0.03,
+      };
+    default:
+      return undefined;
+  }
+}
+
+function resolveProceduralSoundDelay(kind: SoundEffectKind) {
+  switch (kind) {
+    case 'combat-magic':
+      return {
+        timeMs: 118,
+        feedback: 0.32,
+        mix: 0.24,
+        timeVariation: 0.05,
+        feedbackVariation: 0.08,
+        mixVariation: 0.06,
+      };
+    case 'steam-whistle':
+      return {
+        timeMs: 164,
+        feedback: 0.26,
+        mix: 0.22,
+        timeVariation: 0.04,
+        feedbackVariation: 0.06,
+        mixVariation: 0.05,
+      };
+    case 'cave-ambience':
+      return {
+        timeMs: 210,
+        feedback: 0.38,
+        mix: 0.18,
+        timeVariation: 0.03,
+        feedbackVariation: 0.04,
+        mixVariation: 0.04,
       };
     default:
       return undefined;
@@ -1616,6 +1652,7 @@ type ScheduledSoundSourceNode = OscillatorNode | AudioBufferSourceNodeLike;
 type WaveShaperNodeLike = WaveShaperNode & {
   oversample?: OverSampleType;
 };
+type DelayNodeLike = DelayNode;
 type ActiveSoundFilter = {
   node: BiquadFilterNode;
   config: ProceduralSoundFilter;
@@ -1626,10 +1663,17 @@ type ActiveSoundDistortion = {
   postGain: GainNode;
   config: ProceduralSoundDistortion;
 };
+type ActiveSoundDelay = {
+  delay: DelayNodeLike;
+  feedbackGain: GainNode;
+  wetGain: GainNode;
+  config: ProceduralSoundDelay;
+};
 type ActiveSoundSource = {
   source: ScheduledSoundSourceNode;
   filters: ActiveSoundFilter[];
   distortion: ActiveSoundDistortion | null;
+  delay: ActiveSoundDelay | null;
   gain: GainNode;
   effect: ProceduralSoundEffect;
 };
@@ -1748,6 +1792,9 @@ export function createWebAudioSoundEffectSink(
       source.distortion?.preGain.disconnect?.();
       source.distortion?.waveShaper.disconnect?.();
       source.distortion?.postGain.disconnect?.();
+      source.delay?.delay.disconnect?.();
+      source.delay?.feedbackGain.disconnect?.();
+      source.delay?.wetGain.disconnect?.();
       source.gain.disconnect?.();
     }
     voice.mixGain.disconnect?.();
@@ -1934,6 +1981,7 @@ function createActiveSoundSource(
     source: createScheduledSoundSource(context, effect, noiseBufferCache),
     filters: createSoundEffectFilters(context, effect),
     distortion: createSoundEffectDistortion(context, effect),
+    delay: createSoundEffectDelay(context, effect),
     gain: context.createGain(),
     effect,
   };
@@ -1954,6 +2002,7 @@ function createLayeredSoundEffect(
     pitchEnvelope: layer.pitchEnvelope ?? effect.pitchEnvelope,
     filters: layer.filters ?? effect.filters,
     distortion: layer.distortion ?? effect.distortion,
+    delay: layer.delay ?? effect.delay,
     sweeps: layer.sweeps ?? effect.sweeps,
     layers: undefined,
   };
@@ -2024,6 +2073,35 @@ function createSoundEffectDistortion(
   };
 }
 
+function createSoundEffectDelay(
+  context: AudioContext,
+  effect: ProceduralSoundEffect
+): ActiveSoundDelay | null {
+  if (
+    typeof context.createDelay !== 'function' ||
+    typeof context.createGain !== 'function' ||
+    !effect.delay
+  ) {
+    return null;
+  }
+
+  const delay = context.createDelay() as DelayNodeLike;
+  const feedbackGain = context.createGain();
+  const wetGain = context.createGain();
+  delay.delayTime.setValueAtTime(
+    effect.delay.timeMs / 1000,
+    context.currentTime
+  );
+  feedbackGain.gain.setValueAtTime(effect.delay.feedback, context.currentTime);
+  wetGain.gain.setValueAtTime(effect.delay.mix, context.currentTime);
+  return {
+    delay,
+    feedbackGain,
+    wetGain,
+    config: effect.delay,
+  };
+}
+
 function createDistortionCurve(
   distortion: ProceduralSoundDistortion
 ): Float32Array {
@@ -2044,8 +2122,10 @@ function connectSoundEffectSourceChain(source: ActiveSoundSource): void {
   const firstFilter = source.filters[0]?.node ?? null;
   const lastFilter = source.filters[source.filters.length - 1]?.node ?? null;
   const distortionInput = source.distortion?.preGain ?? null;
+  const delayInput = source.delay?.delay ?? null;
+  const dryOutput = source.distortion?.postGain ?? lastFilter ?? null;
 
-  if (source.filters.length === 0 && !source.distortion) {
+  if (source.filters.length === 0 && !source.distortion && !source.delay) {
     source.source.connect(source.gain);
     return;
   }
@@ -2068,6 +2148,22 @@ function connectSoundEffectSourceChain(source: ActiveSoundSource): void {
     source.distortion.preGain.connect(source.distortion.waveShaper);
     source.distortion.waveShaper.connect(source.distortion.postGain);
     source.distortion.postGain.connect(source.gain);
+  }
+
+  if (!firstFilter && !source.distortion && delayInput) {
+    source.source.connect(source.gain);
+  }
+
+  if (source.delay) {
+    if (dryOutput) {
+      dryOutput.connect(source.delay.delay);
+    } else if (!distortionInput && !firstFilter) {
+      source.source.connect(source.delay.delay);
+    }
+    source.delay.delay.connect(source.delay.wetGain);
+    source.delay.wetGain.connect(source.gain);
+    source.delay.delay.connect(source.delay.feedbackGain);
+    source.delay.feedbackGain.connect(source.delay.delay);
   }
 }
 
