@@ -54,6 +54,12 @@ describe('procedural music', () => {
       };
       connect: ReturnType<typeof vi.fn>;
     }> = [];
+    const createdDelays: Array<{
+      delayTime: {
+        setValueAtTime: ReturnType<typeof vi.fn>;
+      };
+      connect: ReturnType<typeof vi.fn>;
+    }> = [];
 
     class FakeAudioContext {
       state: AudioContextState = 'running';
@@ -113,6 +119,16 @@ describe('procedural music', () => {
         createdPanners.push(panner);
         return panner as unknown as StereoPannerNode;
       }
+      createDelay() {
+        const delay = {
+          delayTime: {
+            setValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+        };
+        createdDelays.push(delay);
+        return delay as unknown as DelayNode;
+      }
       resume() {
         return Promise.resolve();
       }
@@ -156,6 +172,7 @@ describe('procedural music', () => {
       expect(createdFilters[1]?.type).toBe('highpass');
       expect(createdFilters[2]?.type).toBe('lowpass');
       expect(createdPanners).toHaveLength(1);
+      expect(createdDelays).toHaveLength(0);
       expect(createdPanners[0]?.pan.setValueAtTime.mock.calls[0]?.[0]).not.toBe(
         0
       );
@@ -229,6 +246,14 @@ describe('procedural music', () => {
           connect: vi.fn(),
         } as unknown as StereoPannerNode;
       }
+      createDelay() {
+        return {
+          delayTime: {
+            setValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+        } as unknown as DelayNode;
+      }
       resume() {
         return Promise.resolve();
       }
@@ -268,6 +293,187 @@ describe('procedural music', () => {
       expect(createdOscillators).toHaveLength(2);
       expect(createdOscillators[0]?.stop).toHaveBeenCalledWith(3);
       expect(createdOscillators[1]?.stop).toHaveBeenCalledWith(3);
+    } finally {
+      if (originalAudioContext) {
+        vi.stubGlobal('AudioContext', originalAudioContext);
+      } else {
+        vi.unstubAllGlobals();
+      }
+    }
+  });
+
+  it('shares one reverb bus per environment profile and lengthens cave ambience', () => {
+    const createdDelays: Array<{
+      delayTime: {
+        setValueAtTime: ReturnType<typeof vi.fn>;
+      };
+      connect: ReturnType<typeof vi.fn>;
+    }> = [];
+
+    class FakeAudioContext {
+      state: AudioContextState = 'running';
+      currentTime = 0;
+      destination = {};
+      createOscillator() {
+        return {
+          onended: null,
+          type: 'sine',
+          frequency: {
+            setValueAtTime: vi.fn(),
+            exponentialRampToValueAtTime: vi.fn(),
+          },
+          detune: {
+            setValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+          start: vi.fn(),
+          stop: vi.fn(),
+        } as unknown as OscillatorNode;
+      }
+      createGain() {
+        return {
+          gain: {
+            setValueAtTime: vi.fn(),
+            exponentialRampToValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+        } as unknown as GainNode;
+      }
+      createBiquadFilter() {
+        return {
+          type: 'lowpass' as BiquadFilterType,
+          frequency: {
+            setValueAtTime: vi.fn(),
+          },
+          Q: {
+            setValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+        } as unknown as BiquadFilterNode;
+      }
+      createStereoPanner() {
+        return {
+          pan: {
+            setValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+        } as unknown as StereoPannerNode;
+      }
+      createDelay() {
+        const delay = {
+          delayTime: {
+            setValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+        };
+        createdDelays.push(delay);
+        return delay as unknown as DelayNode;
+      }
+      resume() {
+        return Promise.resolve();
+      }
+    }
+
+    const originalAudioContext = globalThis.AudioContext;
+    vi.stubGlobal('AudioContext', FakeAudioContext);
+
+    try {
+      const sink = createWebAudioMusicSink();
+      sink.play({
+        themeId: 'town-square',
+        instrumentId: 'town-square:lead:3:-2',
+        role: 'lead',
+        startMs: 0,
+        durationMs: 240,
+        frequency: 440,
+        volume: 0.05,
+        waveform: 'sine',
+        timbre: {
+          harmonicWaveform: 'triangle',
+          harmonicRatio: 2.6,
+          filterType: 'bandpass',
+          filterCutoffHz: 1800,
+          filterQ: 1.7,
+        },
+        attackMs: 20,
+        releaseMs: 80,
+        detuneCents: 0,
+        harmonicGain: 0.4,
+        pulseRate: 1,
+        space: {
+          id: 'settlement-hall',
+          label: 'settlement hall',
+          wetGain: 0.22,
+          delayMs: 92,
+          toneHz: 2100,
+        },
+      });
+      sink.play({
+        themeId: 'town-square',
+        instrumentId: 'town-square:harmony:3:-2',
+        role: 'harmony',
+        startMs: 0,
+        durationMs: 240,
+        frequency: 330,
+        volume: 0.04,
+        waveform: 'triangle',
+        timbre: {
+          harmonicWaveform: 'sine',
+          harmonicRatio: 1.8,
+          filterType: 'lowpass',
+          filterCutoffHz: 1400,
+          filterQ: 0.8,
+        },
+        attackMs: 28,
+        releaseMs: 110,
+        detuneCents: 0,
+        harmonicGain: 0.3,
+        pulseRate: 0.9,
+        space: {
+          id: 'settlement-hall',
+          label: 'settlement hall',
+          wetGain: 0.22,
+          delayMs: 92,
+          toneHz: 2100,
+        },
+      });
+      sink.play({
+        themeId: 'cavern-echo',
+        instrumentId: 'cavern-echo:lead:3:-2',
+        role: 'lead',
+        startMs: 0,
+        durationMs: 240,
+        frequency: 220,
+        volume: 0.05,
+        waveform: 'sine',
+        timbre: {
+          harmonicWaveform: 'triangle',
+          harmonicRatio: 2,
+          filterType: 'bandpass',
+          filterCutoffHz: 1200,
+          filterQ: 1,
+        },
+        attackMs: 20,
+        releaseMs: 100,
+        detuneCents: 0,
+        harmonicGain: 0.35,
+        pulseRate: 1,
+        space: {
+          id: 'cavern-echo',
+          label: 'cavern echo',
+          wetGain: 0.34,
+          delayMs: 148,
+          toneHz: 1650,
+        },
+      });
+
+      expect(createdDelays).toHaveLength(2);
+      expect(
+        createdDelays[0]?.delayTime.setValueAtTime.mock.calls[0]?.[0]
+      ).toBeCloseTo(0.092, 6);
+      expect(
+        createdDelays[1]?.delayTime.setValueAtTime.mock.calls[0]?.[0]
+      ).toBeCloseTo(0.148, 6);
     } finally {
       if (originalAudioContext) {
         vi.stubGlobal('AudioContext', originalAudioContext);

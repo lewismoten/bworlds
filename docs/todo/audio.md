@@ -865,8 +865,8 @@ This is where procedural music could become particularly valuable in an MMORPG.
 - [x] Prevent low-frequency buildup.
 - [ ] Prevent multiple harmony instruments from masking each other.
 - [x] Apply instrument-specific EQ.
-- [ ] Apply shared room reverb to make instruments sound like they occupy the same space.
-- [ ] Adjust reverb according to the fictional performance environment.
+- [x] Apply shared room reverb to make instruments sound like they occupy the same space.
+- [x] Adjust reverb according to the fictional performance environment.
 - [ ] Use compression carefully rather than flattening all dynamics.
 - [ ] Balance procedural music against sound effects.
 - [ ] Automatically duck music when particularly important gameplay sounds occur.

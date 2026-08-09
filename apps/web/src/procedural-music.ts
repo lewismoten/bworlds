@@ -31,6 +31,10 @@ import {
 } from './procedural-music-mix.ts';
 import { resolveProceduralMeterAccent } from './procedural-music-meter.ts';
 import { blendThemeMotifWithImportantNpcMotif } from './procedural-music-npc-motif.ts';
+import {
+  resolveMusicSpaceProfile,
+  type MusicSpaceProfile,
+} from './procedural-music-space.ts';
 type MusicPosition = { x: number; y: number };
 type TileKind = string;
 type ContextType = string;
@@ -210,6 +214,7 @@ export type ProceduralMusicNote = {
   detuneCents: number;
   harmonicGain: number;
   pulseRate: number;
+  space?: MusicSpaceProfile;
   emitter?: MusicPosition;
   listener?: MusicPosition;
 };
@@ -869,11 +874,18 @@ export function getMusicUpdateSignature(
 type AudioContextCtor = new () => AudioContext;
 type StereoPannerNodeLike = StereoPannerNode;
 type BiquadFilterNodeLike = BiquadFilterNode;
+type DelayNodeLike = DelayNode;
+
+type SharedReverbBus = {
+  send: GainNode;
+  output: GainNode;
+};
 
 export function createWebAudioMusicSink(): MusicSink {
   let audioContext: AudioContext | null = null;
   let activeSourceCount = 0;
   const activeOscillators = new Set<OscillatorNode>();
+  const sharedReverbBuses = new Map<string, SharedReverbBus>();
 
   function getAudioContext(): AudioContext | null {
     if (audioContext) {
@@ -908,6 +920,7 @@ export function createWebAudioMusicSink(): MusicSink {
       const nowMs = performance.now();
       const spatial = getMusicSpatialMix(note.emitter, note.listener);
       const resolvedPan = resolveMusicStereoPan(note, spatial.pan);
+      const space = note.space ?? null;
       const oscillator = context.createOscillator();
       const harmonicOscillator = context.createOscillator();
       const gain = context.createGain();
@@ -926,6 +939,7 @@ export function createWebAudioMusicSink(): MusicSink {
         typeof context.createStereoPanner === 'function'
           ? (context.createStereoPanner() as StereoPannerNodeLike)
           : null;
+      const reverbSend = context.createGain();
       const startAt =
         context.currentTime + Math.max(0, (note.startMs - nowMs) / 1000);
       const durationSeconds = note.durationMs / 1000;
@@ -981,6 +995,7 @@ export function createWebAudioMusicSink(): MusicSink {
         0.0001,
         startAt + durationSeconds
       );
+      reverbSend.gain.setValueAtTime(space?.wetGain ?? 0, startAt);
 
       oscillator.connect(gain);
       harmonicOscillator.connect(harmonicGain);
@@ -1016,18 +1031,28 @@ export function createWebAudioMusicSink(): MusicSink {
         panner.pan.setValueAtTime(resolvedPan, startAt);
         if (outputNode) {
           outputNode.connect(panner);
+          outputNode.connect(reverbSend);
         } else {
           gain.connect(panner);
           harmonicGain.connect(panner);
+          gain.connect(reverbSend);
+          harmonicGain.connect(reverbSend);
         }
         panner.connect(context.destination);
       } else {
         if (outputNode) {
           outputNode.connect(context.destination);
+          outputNode.connect(reverbSend);
         } else {
           gain.connect(context.destination);
           harmonicGain.connect(context.destination);
+          gain.connect(reverbSend);
+          harmonicGain.connect(reverbSend);
         }
+      }
+      if (space) {
+        const reverbBus = getSharedReverbBus(context, sharedReverbBuses, space);
+        reverbSend.connect(reverbBus.send);
       }
 
       activeSourceCount += 2;
@@ -1066,6 +1091,58 @@ export function createWebAudioMusicSink(): MusicSink {
       return activeSourceCount;
     },
   };
+}
+
+function getSharedReverbBus(
+  context: AudioContext,
+  buses: Map<string, SharedReverbBus>,
+  profile: MusicSpaceProfile
+): SharedReverbBus {
+  const cached = buses.get(profile.id);
+  if (cached) {
+    return cached;
+  }
+
+  const send = context.createGain();
+  const delay =
+    typeof context.createDelay === 'function'
+      ? (context.createDelay() as DelayNodeLike)
+      : null;
+  const tone =
+    typeof context.createBiquadFilter === 'function'
+      ? (context.createBiquadFilter() as BiquadFilterNodeLike)
+      : null;
+  const wet = context.createGain();
+
+  wet.gain.setValueAtTime(0.24, context.currentTime);
+  if (delay) {
+    delay.delayTime.setValueAtTime(profile.delayMs / 1000, context.currentTime);
+  }
+  if (tone) {
+    tone.type = 'lowpass';
+    tone.frequency.setValueAtTime(profile.toneHz, context.currentTime);
+    tone.Q.setValueAtTime(0.7, context.currentTime);
+  }
+
+  if (delay && tone) {
+    send.connect(delay);
+    delay.connect(tone);
+    tone.connect(wet);
+  } else if (delay) {
+    send.connect(delay);
+    delay.connect(wet);
+  } else if (tone) {
+    send.connect(tone);
+    tone.connect(wet);
+  } else {
+    send.connect(wet);
+  }
+
+  wet.connect(context.destination);
+
+  const bus = { send, output: wet };
+  buses.set(profile.id, bus);
+  return bus;
 }
 
 export function getMusicSpatialMix(
@@ -1119,6 +1196,8 @@ function createThemeNote(options: {
   stepIndex: number;
   clusterX: number;
   clusterY: number;
+  tileKind?: TileKind;
+  contextType?: ContextType;
   emitter?: MusicPosition;
   listener?: MusicPosition;
 }): ProceduralMusicNote {
@@ -1207,6 +1286,10 @@ function createThemeNote(options: {
       instrument.pulseRate *
       arrangementProfile.pulseRateMultiplier *
       meterAccent.pulseRateMultiplier,
+    space: resolveMusicSpaceProfile({
+      tileKind: options.tileKind,
+      contextType: options.contextType,
+    }),
     emitter: options.emitter,
     listener: options.listener,
   };
@@ -1301,6 +1384,8 @@ function scheduleThemeLayerNotes(
         stepIndex,
         clusterX,
         clusterY,
+        tileKind: options.poiType ?? options.tileKind,
+        contextType: options.contextType,
         emitter: options.emitter,
         listener: options.listener,
       });
