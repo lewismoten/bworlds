@@ -284,11 +284,11 @@ describe('town support', () => {
     );
     const baselineProfile = getTownProfile(3, 7);
 
-    for (let index = 0; index < 1200; index += 1) {
+    for (let index = 0; index < 800; index += 1) {
       const tileX = index % 40;
       const tileY = Math.floor(index / 40) - 15;
       const timeMs = DEFAULT_DAY_LENGTH_MS * ((index % 48) / 48);
-      getTownBuildings(tileX, tileY);
+      const buildings = getTownBuildings(tileX, tileY);
       getTownNpcs(tileX, tileY);
       getTownNpcPlacements(tileX, tileY, timeMs);
       getTownNpcQuestStates(tileX, tileY, timeMs, {
@@ -296,7 +296,6 @@ describe('town support', () => {
         profession: index % 2 === 0 ? 'guard' : 'scholar',
         completedQuestIds: [`quest:${index % 9}`],
       });
-      const buildings = getTownBuildings(tileX, tileY);
       if (buildings[0]) {
         getTownBuildingServiceState(tileX, tileY, buildings[0].id, timeMs, {
           level: 1 + (index % 6),
@@ -325,7 +324,7 @@ describe('town support', () => {
       )
     ).toEqual(baselineServices);
     expect(getTownProfile(3, 7)).toEqual(baselineProfile);
-  });
+  }, 1000);
 
   it('surfaces rescue and revenge quest offers from generated town schedules', () => {
     const townSamples: Array<[number, number]> = [

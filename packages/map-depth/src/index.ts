@@ -2,6 +2,7 @@ import { createBoundedCache } from '@bworlds/cache-support';
 import {
   appendHashSeedLabel,
   appendHashSeedPart,
+  createHashSeed,
   hash2D,
   hash2DWithSeed,
   registerHashLabel,
@@ -610,7 +611,7 @@ function carvePath(
 }
 
 function resolveDepthSeed(seed: string | number): number {
-  return resolveHashSeed(seed);
+  return typeof seed === 'number' ? createHashSeed(seed) : resolveHashSeed(seed);
 }
 
 function carveBrush(

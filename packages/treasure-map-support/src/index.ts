@@ -4,7 +4,7 @@ import {
   registerHashLabel,
   resolveHashSeed,
 } from '@bworlds/core/hash';
-import type { InventoryItemLike } from '@bworlds/plugin-api';
+import type { InventoryItemLike, Seed } from '@bworlds/plugin-api';
 
 type Point = { x: number; y: number };
 
@@ -55,7 +55,7 @@ const TREASURE_MAP_GLYPH_SEED = registerHashLabel('treasure-map-glyph');
 const TREASURE_MAP_GPS_FRAGMENT_SEED = registerHashLabel('treasure-map-gps-fragment');
 const TREASURE_MAP_EDGE_SEED = registerHashLabel('treasure-map-edge');
 
-function normalizeTreasureMapSeed(seed: string | number): number {
+function normalizeTreasureMapSeed(seed: Seed): number {
   return resolveHashSeed(seed);
 }
 
@@ -66,7 +66,7 @@ export function createTreasureMap({
   width = 15,
   height = 11,
 }: {
-  seed: string;
+  seed: Seed;
   digSite: Point;
   sampleOverworld: TreasureMapSampler;
   width?: number;
@@ -119,7 +119,7 @@ export function createTreasureMap({
   }
 
   return {
-    seed,
+    seed: String(seed),
     title: `Treasure Map ${formatGps(areaCenter)}`,
     gpsLabel: formatGps(areaCenter),
     areaCenter,

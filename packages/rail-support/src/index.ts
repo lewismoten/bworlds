@@ -485,10 +485,7 @@ function resolveRailTrainPlacement(
   const dwelllessDurationMs =
     Math.max(6, Math.min(18, Math.round(routeLength / 3))) * 60 * 1000;
   const phaseOffset = hash2DWithSeed(
-    appendHashSeedLabel(
-      resolveHashSeed(seed),
-      RAIL_TRAIN_PHASE_LABEL
-    ),
+    appendHashSeedLabel(resolveHashSeed(seed), RAIL_TRAIN_PHASE_LABEL),
     index,
     routeLength
   );

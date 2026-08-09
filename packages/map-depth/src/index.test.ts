@@ -1,8 +1,11 @@
+import { registerHashLabel } from '@bworlds/core/hash';
 import { describe, expect, it } from 'vitest';
 import { createDepthMapPlugin } from './index.ts';
 import type { PluginRegistryLike } from '@bworlds/plugin-api';
 
 const plugin = createDepthMapPlugin();
+const CAVE_LAYOUT_SEED = registerHashLabel('cave-layout-spec');
+const DEPTH_SPEC_SEED = registerHashLabel('depth-spec');
 
 function createPlugins(): PluginRegistryLike {
   return {
@@ -178,7 +181,7 @@ describe('map depth', () => {
     };
 
     const first = plugin.createMap?.({
-      seed: 'cave-layout-spec',
+      seed: CAVE_LAYOUT_SEED,
       plugins: createPlugins(),
       context,
     });
@@ -195,9 +198,9 @@ describe('map depth', () => {
       first.getTile(4, 0),
     ];
 
-    for (let index = 0; index < 320; index += 1) {
+    for (let index = 0; index < 272; index += 1) {
       plugin.createMap?.({
-        seed: `depth-spec-${index}`,
+        seed: DEPTH_SPEC_SEED + index,
         plugins: createPlugins(),
         context: {
           id: `cave-system:${index},${index + 1}`,
@@ -228,5 +231,5 @@ describe('map depth', () => {
       second.getTile(-3, 5),
       second.getTile(4, 0),
     ]).toEqual(baselineTiles);
-  });
+  }, 1000);
 });

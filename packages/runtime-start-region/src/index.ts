@@ -2,7 +2,7 @@ import { generatePoiName } from '@bworlds/core';
 import { resolveHashSeed } from '@bworlds/core/hash';
 import { createCachedOverworldTileResolver } from '@bworlds/overworld-support';
 import { createRuntimePlugin } from '@bworlds/plugin-api';
-import type { RuntimePlugin, TileLike } from '@bworlds/plugin-api';
+import type { RuntimePlugin, Seed, TileLike } from '@bworlds/plugin-api';
 
 const curatedSpawnTiles = new Map<string, TileLike>([
   ['-3,-3', { kind: 'forest', note: 'A thick treeline hems the meadow.' }],
@@ -91,7 +91,7 @@ function getCuratedTile({
   x,
   y,
 }: {
-  seed: string | number;
+  seed: Seed;
   x: number;
   y: number;
 }) {

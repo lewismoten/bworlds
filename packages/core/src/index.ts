@@ -587,7 +587,7 @@ export function getDaylightCycleState(
     offsetMs?: number;
     yearLengthDays?: number;
     constellationCount?: number;
-    constellationSeed?: string;
+    constellationSeed?: string | number;
     seasonDaylightAmplitude?: number;
     observerLatitudeDegrees?: number;
   } = {}
@@ -689,7 +689,6 @@ export function getDaylightCycleState(
     0.82,
     Math.max(night, solarEclipse.coverage * 0.72)
   );
-  const constellationSeedHash = resolveHashSeed(constellationSeed);
   const moonPhaseIndex =
     ((dayNumber % MOON_PHASE_NAMES.length) + MOON_PHASE_NAMES.length) %
     MOON_PHASE_NAMES.length;
@@ -704,6 +703,7 @@ export function getDaylightCycleState(
     0.5,
     0.25,
   ][moonPhaseIndex];
+  const constellationSeedHash = resolveHashSeed(constellationSeed);
   const constellations = generateConstellations(constellationSeedHash, {
     count: constellationCount,
   });

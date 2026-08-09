@@ -313,15 +313,11 @@ function createTownIndexSeed(seedLabel: number, tileX: number, tileY: number, in
 
 function pickFromList<T>(
   list: readonly T[],
-  key: string | number,
+  key: number,
   tileX: number,
   tileY: number
 ): T {
-  const hash = hash2DWithSeed(
-    typeof key === 'number' ? createHashSeed(key) : registerHashLabel(key),
-    tileX,
-    tileY
-  );
+  const hash = hash2DWithSeed(createHashSeed(key), tileX, tileY);
   const index = Math.floor(hash * list.length) % list.length;
   return list[index] as T;
 }
@@ -398,7 +394,7 @@ function createParentIdentity(
 }
 
 function getFirstName(
-  key: string | number,
+  key: number,
   style: NameStyle,
   tileX: number,
   tileY: number
@@ -408,7 +404,7 @@ function getFirstName(
     : pickFromList(MASCULINE_FIRST_NAMES, key, tileX, tileY);
 }
 
-function getLastName(key: string | number, tileX: number, tileY: number): string {
+function getLastName(key: number, tileX: number, tileY: number): string {
   return pickFromList(LAST_NAMES, key, tileX, tileY);
 }
 

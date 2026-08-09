@@ -25,7 +25,7 @@ export function resolveCelestialCycleConfig(
   offsetMs: number;
   yearLengthDays: number;
   constellationCount: number;
-  constellationSeed: string;
+  constellationSeed: string | number;
   seasonDaylightAmplitude: number;
   observerLatitudeDegrees: number;
 } {

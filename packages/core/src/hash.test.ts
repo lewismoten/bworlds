@@ -51,6 +51,7 @@ describe('hash seeds', () => {
 
     expect(resolveHashSeed('seed')).toBe(seedHash);
     expect(resolveHashSeed(seedHash)).toBe(seedHash >>> 0);
+    expect(createHashSeed(-1)).toBe(0xFFFFFFFF);
   });
 
   it('keeps composed numeric seed paths deterministic', () => {

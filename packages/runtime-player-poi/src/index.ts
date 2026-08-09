@@ -128,12 +128,7 @@ export function buildPlayerPoi(
     kind,
     poi: {
       type: poiType,
-      name: generatePoiName(
-        resolveHashSeed(seed),
-        poiType,
-        tileX,
-        tileY
-      ),
+      name: generatePoiName(resolveHashSeed(seed), poiType, tileX, tileY),
     },
     note: getPlayerPoiBuildNote(kind),
   };
