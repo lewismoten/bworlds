@@ -1180,6 +1180,64 @@ describe('procedural music', () => {
     expect(ducked[0]!.volume).toBeLessThan(unducked[0]!.volume);
   });
 
+  it('ducks scheduled music slightly when dialogue is active', () => {
+    const baseline: ProceduralMusicNote[] = [];
+    const dialogueDucked: ProceduralMusicNote[] = [];
+    const priorityDucked: ProceduralMusicNote[] = [];
+
+    createMusicController({
+      play(note) {
+        baseline.push(note);
+      },
+    }).update({
+      nowMs: 0,
+      tileKind: 'town',
+      contextType: 'town',
+      dayProgress: 0.45,
+      dialogueIntensity: 0,
+      prioritySoundIntensity: 0,
+      clusterX: 0,
+      clusterY: 0,
+    });
+
+    createMusicController({
+      play(note) {
+        dialogueDucked.push(note);
+      },
+    }).update({
+      nowMs: 0,
+      tileKind: 'town',
+      contextType: 'town',
+      dayProgress: 0.45,
+      dialogueIntensity: 1,
+      prioritySoundIntensity: 0,
+      clusterX: 0,
+      clusterY: 0,
+    });
+
+    createMusicController({
+      play(note) {
+        priorityDucked.push(note);
+      },
+    }).update({
+      nowMs: 0,
+      tileKind: 'town',
+      contextType: 'town',
+      dayProgress: 0.45,
+      dialogueIntensity: 0,
+      prioritySoundIntensity: 1,
+      clusterX: 0,
+      clusterY: 0,
+    });
+
+    expect(dialogueDucked.length).toBe(baseline.length);
+    expect(priorityDucked.length).toBe(baseline.length);
+    expect(dialogueDucked[0]!.volume).toBeLessThan(baseline[0]!.volume);
+    expect(dialogueDucked[0]!.volume).toBeGreaterThan(
+      priorityDucked[0]!.volume
+    );
+  });
+
   it('keeps scheduled songs within a consistent loudness band across themes', () => {
     const loudnesses = [
       scheduleProceduralMusicNotes({

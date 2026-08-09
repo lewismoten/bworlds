@@ -253,6 +253,7 @@ export type MusicUpdateOptions = {
   weatherIntensity?: number;
   combatIntensity?: number;
   prioritySoundIntensity?: number;
+  dialogueIntensity?: number;
   encounterMode?: MusicEncounterMode;
   dayProgress: number;
   yearProgress?: number;
@@ -782,7 +783,8 @@ export function createMusicController(sink: MusicSink): MusicController {
       const poiMix = clamp(options.nearbyPoi?.mix ?? 0, 0, 1);
       const gains = resolvePoiMusicBlendGains(poiMix);
       const duckingGain = resolveMusicDuckingGain(
-        options.prioritySoundIntensity ?? 0
+        options.prioritySoundIntensity ?? 0,
+        options.dialogueIntensity ?? 0
       );
       const ambientScheduled = scheduleThemeLayerNotes(
         {
@@ -855,6 +857,7 @@ export function getMusicUpdateSignature(
       Math.round((options.weatherIntensity ?? 0) * 10),
       Math.round(clamp(options.combatIntensity ?? 0, 0, 1) * 100),
       Math.round(clamp(options.prioritySoundIntensity ?? 0, 0, 1) * 100),
+      Math.round(clamp(options.dialogueIntensity ?? 0, 0, 1) * 100),
       options.encounterMode ?? 'ambient',
       options.clusterX ?? 0,
       options.clusterY ?? 0,
@@ -870,6 +873,7 @@ export function getMusicUpdateSignature(
           Math.round((options.weatherIntensity ?? 0) * 10),
           Math.round(clamp(options.combatIntensity ?? 0, 0, 1) * 100),
           Math.round(clamp(options.prioritySoundIntensity ?? 0, 0, 1) * 100),
+          Math.round(clamp(options.dialogueIntensity ?? 0, 0, 1) * 100),
           options.encounterMode ?? 'ambient',
           options.nearbyPoi.clusterX ?? 0,
           options.nearbyPoi.clusterY ?? 0,
@@ -1851,7 +1855,11 @@ function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
 
-function resolveMusicDuckingGain(prioritySoundIntensity: number): number {
-  const clamped = clamp(prioritySoundIntensity, 0, 1);
-  return 1 - clamped * 0.42;
+function resolveMusicDuckingGain(
+  prioritySoundIntensity: number,
+  dialogueIntensity: number
+): number {
+  const clampedPriority = clamp(prioritySoundIntensity, 0, 1);
+  const clampedDialogue = clamp(dialogueIntensity, 0, 1);
+  return clamp(1 - clampedPriority * 0.42 - clampedDialogue * 0.12, 0.3, 1);
 }

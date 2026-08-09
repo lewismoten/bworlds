@@ -490,7 +490,7 @@
 - [ ] Provide separate player volume controls for major audio categories.
 - [x] Give critical gameplay sounds higher priority.
 - [x] Reduce unimportant ambience when important sounds occur.
-- [ ] Duck music slightly during important dialogue.
+- [x] Duck music slightly during important dialogue.
 - [x] Prevent large numbers of identical nearby sounds from overwhelming the mix.
 - [x] Combine very dense environmental events into aggregate ambience where appropriate.
 - [x] Limit simultaneous voices through a priority system.

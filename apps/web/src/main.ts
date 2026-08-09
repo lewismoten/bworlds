@@ -174,6 +174,7 @@ import {
   shouldRestore3dViewportKeyboardFocusOnPointerDown,
 } from './viewport-focus.ts';
 import { getInteractionPromptFromResolvedState } from './interaction-prompt.ts';
+import { resolveDialogueMusicDuckingIntensity } from './music-dialogue-ducking.ts';
 import {
   createSoundEffectController,
   createWebAudioSoundEffectSink,
@@ -1304,6 +1305,8 @@ function updateStatus(
     tile,
     contextLabel: context.label,
   });
+  const dialogueIntensity =
+    resolveDialogueMusicDuckingIntensity(interactionPrompt);
   const statusSignature = getStatusSignature({
     viewMode: state.viewMode,
     playerLevel,
@@ -3014,6 +3017,14 @@ function render(): FrameLoopActivityLike {
   const combatIntensity = soundEffects.getRecentCombatIntensity(nowMs);
   const prioritySoundIntensity =
     soundEffects.getRecentPrioritySoundIntensity(nowMs);
+  const dialogueIntensity = resolveDialogueMusicDuckingIntensity(
+    getInteractionPromptFromResolvedState({
+      map: state.getCurrentMap(),
+      player: { x: spatial.playerX, y: spatial.playerY },
+      tile: currentTile,
+      contextLabel: context.label,
+    })
+  );
   const encounterMode = resolveMusicEncounterMode({ combatIntensity });
   const musicUpdate = gateMusicUpdate({
     nowMs,
@@ -3025,6 +3036,7 @@ function render(): FrameLoopActivityLike {
     weatherIntensity: environment.weather?.current?.intensity,
     combatIntensity,
     prioritySoundIntensity,
+    dialogueIntensity,
     encounterMode,
     clusterX: musicClusterX,
     clusterY: musicClusterY,
