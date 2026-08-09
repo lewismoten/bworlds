@@ -37,6 +37,20 @@ type BackgroundStarState = {
   y: number;
   z: number;
 };
+const BACKGROUND_STAR_COUNT = 56;
+const BACKGROUND_STAR_GEOMETRIES = [
+  new THREE.SphereGeometry(0.04, 8, 8),
+  new THREE.SphereGeometry(0.06, 8, 8),
+  new THREE.SphereGeometry(0.08, 8, 8),
+] as const;
+const scratchBackgroundStarState: BackgroundStarState = {
+  color: '#d8e9ff',
+  opacity: 0,
+  radius: 0.04,
+  x: 0,
+  y: 0,
+  z: 0,
+};
 
 export function createSolarSystemPreviewRenderer(
   host: HTMLElement | null,
@@ -364,12 +378,10 @@ export function getSolarSystemSceneSignatures(
 }
 
 function syncBackgroundStars(root: THREE.Group, cycle: DaylightCycleLike): void {
-  const stars = getBackgroundStarStates(cycle);
-  while (root.children.length > stars.length) {
+  while (root.children.length > BACKGROUND_STAR_COUNT) {
     const child = root.children[root.children.length - 1];
     root.remove(child);
     if (child instanceof THREE.Mesh) {
-      child.geometry.dispose();
       if (Array.isArray(child.material)) {
         child.material.forEach((material) => material.dispose());
       } else {
@@ -377,53 +389,72 @@ function syncBackgroundStars(root: THREE.Group, cycle: DaylightCycleLike): void 
       }
     }
   }
-  while (root.children.length < stars.length) {
-    const star = stars[root.children.length];
-    root.add(
-      new THREE.Mesh(
-        new THREE.SphereGeometry(star.radius, 8, 8),
-        new THREE.MeshBasicMaterial({
-          color: star.color,
-          transparent: true,
-          opacity: star.opacity,
-        })
-      )
-    );
+  while (root.children.length < BACKGROUND_STAR_COUNT) {
+    root.add(createBackgroundStarMesh(root.children.length));
   }
-  stars.forEach((star, index) => {
-    const sprite = root.children[index];
-    if (!(sprite instanceof THREE.Mesh)) {
+  for (let index = 0; index < BACKGROUND_STAR_COUNT; index += 1) {
+    const star = getBackgroundStarState(cycle, index, BACKGROUND_STAR_COUNT, scratchBackgroundStarState);
+    const mesh = root.children[index];
+    if (!(mesh instanceof THREE.Mesh)) {
       return;
     }
-    sprite.position.set(star.x, star.y, star.z);
-    const material = sprite.material;
+    mesh.position.set(star.x, star.y, star.z);
+    const material = mesh.material;
     if (material instanceof THREE.MeshBasicMaterial) {
       material.color.set(star.color);
       material.opacity = star.opacity;
     }
-  });
+  }
 }
 
 export function getBackgroundStarStates(
   cycle: DaylightCycleLike,
-  starCount = 56
+  starCount = BACKGROUND_STAR_COUNT
 ): BackgroundStarState[] {
-  const opacity = 0.16 + cycle.starsOpacity * 0.34;
-  const seasonalOffset = cycle.yearProgress * Math.PI * 2 * 0.1;
   const stars: BackgroundStarState[] = new Array(starCount);
   for (let index = 0; index < starCount; index += 1) {
-    const azimuth = (index / starCount) * Math.PI * 2 + seasonalOffset;
-    const radius = 13.2 + ((index * 17) % 5) * 0.9;
-    stars[index] = {
-      color: index % 7 === 0 ? '#fff2ca' : '#d8e9ff',
-      opacity,
-      radius: 0.04 + (index % 3) * 0.02,
-      x: Math.cos(azimuth) * radius,
-      y: -3.2 + ((index * 13) % 7) * 1.04,
-      z: Math.sin(azimuth) * radius,
-    };
+    stars[index] = getBackgroundStarState(cycle, index, starCount);
   }
   return stars;
+}
+
+function createBackgroundStarMesh(index: number): THREE.Mesh {
+  const radiusIndex = index % BACKGROUND_STAR_GEOMETRIES.length;
+  return new THREE.Mesh(
+    BACKGROUND_STAR_GEOMETRIES[radiusIndex]!,
+    new THREE.MeshBasicMaterial({
+      color: '#d8e9ff',
+      transparent: true,
+      opacity: 0,
+    })
+  );
+}
+
+function getBackgroundStarState(
+  cycle: DaylightCycleLike,
+  index: number,
+  starCount: number,
+  target?: BackgroundStarState
+): BackgroundStarState {
+  const opacity = 0.16 + cycle.starsOpacity * 0.34;
+  const seasonalOffset = cycle.yearProgress * Math.PI * 2 * 0.1;
+  const azimuth = (index / starCount) * Math.PI * 2 + seasonalOffset;
+  const radius = 13.2 + ((index * 17) % 5) * 0.9;
+  const star = target ?? {
+    color: '#d8e9ff',
+    opacity: 0,
+    radius: 0.04,
+    x: 0,
+    y: 0,
+    z: 0,
+  };
+  star.color = index % 7 === 0 ? '#fff2ca' : '#d8e9ff';
+  star.opacity = opacity;
+  star.radius = 0.04 + (index % 3) * 0.02;
+  star.x = Math.cos(azimuth) * radius;
+  star.y = -3.2 + ((index * 13) % 7) * 1.04;
+  star.z = Math.sin(azimuth) * radius;
+  return star;
 }
 
 function syncSolarSystemOrbits(
