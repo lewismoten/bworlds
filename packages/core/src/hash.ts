@@ -54,6 +54,10 @@ export function hash2D(seed: HashSeedInput, x: number, y: number): number {
 export function hash2DWithSeed(seedHash: number, x: number, y: number): number {
   let hash = appendHashSeedNumber(seedHash, x);
   hash = appendHashSeedNumber(hash, y);
+  return normalizeHash(hash);
+}
+
+export function normalizeHash(hash: number): number {
   return (hash >>> 0) / UINT32_RANGE;
 }
 
