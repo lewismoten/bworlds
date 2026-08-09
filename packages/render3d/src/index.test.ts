@@ -1776,6 +1776,108 @@ describe('render3d visibility helpers', () => {
     );
   });
 
+  it('rejects models whose unique texture count exceeds the per-model cap', () => {
+    const root = createMockObject3D(undefined, [
+      createMockObject3D(
+        createMockMaterial({ map: createMockTexture(16, 16) }),
+        [],
+        createMockStatGeometry('texture-cap-a', 24)
+      ),
+      createMockObject3D(
+        createMockMaterial({ map: createMockTexture(16, 16) }),
+        [],
+        createMockStatGeometry('texture-cap-b', 24)
+      ),
+      createMockObject3D(
+        createMockMaterial({ map: createMockTexture(16, 16) }),
+        [],
+        createMockStatGeometry('texture-cap-c', 24)
+      ),
+      createMockObject3D(
+        createMockMaterial({ map: createMockTexture(16, 16) }),
+        [],
+        createMockStatGeometry('texture-cap-d', 24)
+      ),
+      createMockObject3D(
+        createMockMaterial({ map: createMockTexture(16, 16) }),
+        [],
+        createMockStatGeometry('texture-cap-e', 24)
+      ),
+    ]);
+
+    expect(validateTileModelAgainstRenderBudget(root as never, 'low')).toEqual(
+      expect.objectContaining({
+        accepted: false,
+        stats: expect.objectContaining({
+          textureCount: 5,
+        }),
+        violations: expect.arrayContaining([
+          {
+            metric: 'textureCount',
+            actual: 5,
+            limit: 4,
+          },
+        ]),
+      })
+    );
+  });
+
+  it('uses stricter texture-count caps for low-detail models than full-detail models', () => {
+    const root = createMockObject3D(undefined, [
+      createMockObject3D(
+        createMockMaterial({ map: createMockTexture(16, 16) }),
+        [],
+        createMockStatGeometry('lod-texture-cap-a', 24)
+      ),
+      createMockObject3D(
+        createMockMaterial({ map: createMockTexture(16, 16) }),
+        [],
+        createMockStatGeometry('lod-texture-cap-b', 24)
+      ),
+      createMockObject3D(
+        createMockMaterial({ map: createMockTexture(16, 16) }),
+        [],
+        createMockStatGeometry('lod-texture-cap-c', 24)
+      ),
+      createMockObject3D(
+        createMockMaterial({ map: createMockTexture(16, 16) }),
+        [],
+        createMockStatGeometry('lod-texture-cap-d', 24)
+      ),
+      createMockObject3D(
+        createMockMaterial({ map: createMockTexture(16, 16) }),
+        [],
+        createMockStatGeometry('lod-texture-cap-e', 24)
+      ),
+    ]);
+
+    expect(validateTileModelAgainstRenderBudget(root as never, 'full')).toEqual(
+      expect.objectContaining({
+        accepted: true,
+        stats: expect.objectContaining({
+          textureCount: 5,
+        }),
+        violations: [],
+      })
+    );
+
+    expect(validateTileModelAgainstRenderBudget(root as never, 'low')).toEqual(
+      expect.objectContaining({
+        accepted: false,
+        stats: expect.objectContaining({
+          textureCount: 5,
+        }),
+        violations: expect.arrayContaining([
+          {
+            metric: 'textureCount',
+            actual: 5,
+            limit: 4,
+          },
+        ]),
+      })
+    );
+  });
+
   it('rejects textures that exceed the low-detail width cap', () => {
     const root = createMockObject3D(
       createMockMaterial({ map: createMockTexture(513, 256) }),
