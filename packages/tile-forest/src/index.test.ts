@@ -983,6 +983,65 @@ describe('tile forest', () => {
     expect(ancientHollows).toBeGreaterThan(saplingHollows);
   });
 
+  it('makes ancient forest trees more irregular than mature ones', () => {
+    const samples: Array<{
+      age: ReturnType<typeof getForestTreeAgeProfiles>[number];
+      branches: ReturnType<typeof getForestTreeBranchProfiles>[number];
+      canopy: ReturnType<typeof getForestTreeCanopyProfiles>[number];
+    }> = [];
+
+    for (let tileY = 0; tileY < 64; tileY += 1) {
+      for (let tileX = 0; tileX < 64; tileX += 1) {
+        const ages = getForestTreeAgeProfiles(tileX, tileY);
+        const branches = getForestTreeBranchProfiles(tileX, tileY);
+        const canopies = getForestTreeCanopyProfiles(tileX, tileY);
+        for (let index = 0; index < ages.length; index += 1) {
+          const age = ages[index];
+          const branch = branches[index];
+          const canopy = canopies[index];
+          if (age && branch && canopy) {
+            samples.push({ age, branches: branch, canopy });
+          }
+        }
+      }
+    }
+
+    const scoreIrregularity = (sample: (typeof samples)[number]) => {
+      const branchOffset = sample.branches.branches.reduce(
+        (sum, branch) => sum + Math.abs(branch.x) + Math.abs(branch.z),
+        0
+      );
+      const branchPitchVariation = sample.branches.branches.reduce(
+        (sum, branch) => sum + Math.abs(branch.pitch - 0.9),
+        0
+      );
+      const foliageOffset = sample.canopy.foliage.reduce(
+        (sum, foliage) => sum + Math.abs(foliage.x) + Math.abs(foliage.z),
+        0
+      );
+      return (
+        branchOffset / Math.max(1, sample.branches.branches.length) +
+        branchPitchVariation / Math.max(1, sample.branches.branches.length) +
+        foliageOffset / Math.max(1, sample.canopy.foliage.length)
+      );
+    };
+
+    const matureScores = samples
+      .filter((sample) => sample.age.lifeStage === 'mature')
+      .map(scoreIrregularity);
+    const ancientScores = samples
+      .filter((sample) => sample.age.lifeStage === 'ancient')
+      .map(scoreIrregularity);
+
+    expect(matureScores.length).toBeGreaterThan(0);
+    expect(ancientScores.length).toBeGreaterThan(0);
+
+    const average = (values: number[]) =>
+      values.reduce((sum, value) => sum + value, 0) / values.length;
+
+    expect(average(ancientScores)).toBeGreaterThan(average(matureScores));
+  });
+
   it('generates more tree-like branch profiles for broadleaf and pine forms', () => {
     const branchTiles: Array<{
       x: number;

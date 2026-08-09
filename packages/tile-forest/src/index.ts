@@ -2122,6 +2122,14 @@ function createForestTreeDescriptorFromSpecies(
     maximumAgeYears: definition.maximumAgeYears,
   });
   const maturity = biological.maturity;
+  const irregularity =
+    biological.lifeStage === 'ancient'
+      ? 0.14 + appearanceRandom() * 0.12
+      : biological.lifeStage === 'mature'
+        ? 0.04 + appearanceRandom() * 0.04
+        : biological.lifeStage === 'adolescent'
+          ? 0.015 + appearanceRandom() * 0.02
+          : 0;
   const trunkHeight =
     (definition.trunkHeightMin + appearanceRandom() * definition.trunkHeightRange) *
     (0.55 + maturity * 0.9);
@@ -2163,64 +2171,93 @@ function createForestTreeDescriptorFromSpecies(
 
   for (let branchIndex = 0; branchIndex < branchCount; branchIndex += 1) {
     const branchProgress = branchCount <= 1 ? 0 : branchIndex / (branchCount - 1);
+    const irregularWobbleX = (appearanceRandom() - 0.5) * irregularity;
+    const irregularWobbleZ = (appearanceRandom() - 0.5) * irregularity;
+    const irregularPitch = (appearanceRandom() - 0.5) * irregularity * 0.7;
+    const irregularRoll = (appearanceRandom() - 0.5) * irregularity * 1.8;
+    const irregularLengthScale =
+      1 + (appearanceRandom() - 0.5) * irregularity * 0.9;
     const branchHeightFactor =
       definition.form === 'pine'
-        ? 0.32 + appearanceRandom() * 0.48
-        : 0.28 + branchProgress * 0.5;
+        ? 0.32 + appearanceRandom() * 0.48 + irregularPitch * 0.2
+        : 0.28 + branchProgress * 0.5 + irregularPitch * 0.24;
     const broadleafSpread =
       definition.broadleafSpreadBase - branchProgress * definition.broadleafSpreadDrop;
     const broadleafLengthScale =
       (definition.broadleafLengthBase +
         appearanceRandom() * definition.broadleafLengthRange) *
-      (1.18 - branchProgress * 0.42);
+      (1.18 - branchProgress * 0.42) *
+      irregularLengthScale;
     branches[branchIndex] = {
-      x: (appearanceRandom() - 0.5) * (definition.form === 'pine' ? 0.08 : broadleafSpread),
-      y: trunkHeight * branchHeightFactor,
-      z: (appearanceRandom() - 0.5) * (definition.form === 'pine' ? 0.08 : broadleafSpread),
+      x:
+        (appearanceRandom() - 0.5) *
+          (definition.form === 'pine' ? 0.08 : broadleafSpread) +
+        irregularWobbleX,
+      y: trunkHeight * Math.max(0.18, branchHeightFactor),
+      z:
+        (appearanceRandom() - 0.5) *
+          (definition.form === 'pine' ? 0.08 : broadleafSpread) +
+        irregularWobbleZ,
       length:
         definition.form === 'pine'
-          ? definition.broadleafLengthBase +
-            appearanceRandom() * definition.broadleafLengthRange
+          ? (definition.broadleafLengthBase +
+              appearanceRandom() * definition.broadleafLengthRange) *
+            irregularLengthScale
           : broadleafLengthScale,
       pitch:
         definition.form === 'pine'
-          ? 1 + appearanceRandom() * 0.28
+          ? 1 + appearanceRandom() * 0.28 + irregularPitch
           : 0.3 +
             branchProgress * 0.38 +
-            appearanceRandom() * 0.14,
-      roll: -1.25 + appearanceRandom() * Math.PI * 0.9,
+            appearanceRandom() * 0.14 +
+            irregularPitch,
+      roll: -1.25 + appearanceRandom() * Math.PI * 0.9 + irregularRoll,
     };
   }
 
   for (let foliageIndex = 0; foliageIndex < foliageCount; foliageIndex += 1) {
     const layerProgress = foliageCount <= 1 ? 0 : foliageIndex / (foliageCount - 1);
     const pineLayerScale = 1 - layerProgress * 0.45;
+    const irregularFoliageX = (appearanceRandom() - 0.5) * irregularity * 1.4;
+    const irregularFoliageY = (appearanceRandom() - 0.5) * irregularity * 0.18;
+    const irregularFoliageZ = (appearanceRandom() - 0.5) * irregularity * 1.4;
+    const irregularFoliageScale =
+      1 + (appearanceRandom() - 0.5) * irregularity * 0.8;
     foliage[foliageIndex] = {
-      x: (appearanceRandom() - 0.5) * (definition.form === 'pine' ? 0.08 : 0.28),
+      x:
+        (appearanceRandom() - 0.5) * (definition.form === 'pine' ? 0.08 : 0.28) +
+        irregularFoliageX,
       y:
         trunkHeight *
-        (definition.form === 'pine'
-          ? definition.canopyHeightBase +
-            layerProgress * definition.canopyHeightRange
-          : definition.canopyHeightBase +
-            appearanceRandom() * definition.canopyHeightRange),
-      z: (appearanceRandom() - 0.5) * (definition.form === 'pine' ? 0.08 : 0.28),
+          (definition.form === 'pine'
+            ? definition.canopyHeightBase +
+              layerProgress * definition.canopyHeightRange
+            : definition.canopyHeightBase +
+              appearanceRandom() * definition.canopyHeightRange) +
+        irregularFoliageY,
+      z:
+        (appearanceRandom() - 0.5) * (definition.form === 'pine' ? 0.08 : 0.28) +
+        irregularFoliageZ,
       scaleX:
         definition.form === 'pine'
-          ? definition.canopyScaleBase * pineLayerScale +
-            appearanceRandom() * definition.canopyScaleRange
-          : definition.canopyScaleBase +
-            appearanceRandom() * definition.canopyScaleRange,
+          ? (definition.canopyScaleBase * pineLayerScale +
+              appearanceRandom() * definition.canopyScaleRange) *
+            irregularFoliageScale
+          : (definition.canopyScaleBase +
+              appearanceRandom() * definition.canopyScaleRange) *
+            irregularFoliageScale,
       scaleY:
         definition.form === 'pine'
-          ? 0.32 + appearanceRandom() * 0.18
-          : 0.58 + appearanceRandom() * 0.48,
+          ? (0.32 + appearanceRandom() * 0.18) * irregularFoliageScale
+          : (0.58 + appearanceRandom() * 0.48) * irregularFoliageScale,
       scaleZ:
         definition.form === 'pine'
-          ? definition.canopyScaleBase * pineLayerScale +
-            appearanceRandom() * definition.canopyScaleRange
-          : definition.canopyScaleBase +
-            appearanceRandom() * definition.canopyScaleRange,
+          ? (definition.canopyScaleBase * pineLayerScale +
+              appearanceRandom() * definition.canopyScaleRange) *
+            irregularFoliageScale
+          : (definition.canopyScaleBase +
+              appearanceRandom() * definition.canopyScaleRange) *
+            irregularFoliageScale,
     };
   }
 
