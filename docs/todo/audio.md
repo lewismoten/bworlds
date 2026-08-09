@@ -50,6 +50,8 @@
 - [x] The "Play Song" button should change to "Stop Song" while it is playing, and change back when its not.
 - [x] Tracks (other than percussion) should give a visual indication of notes being played on the scale in addition to showing solid bars.
 - [x] Add a Download button to download the song as a MIDI file
+- [ ] A play marker line should show where in the song is currently playing
+- [ ] Graphical track layers should appear near the top of the debug panel
 
 # Sound Effects
 

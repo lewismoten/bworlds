@@ -8,6 +8,12 @@ import type { AudioCategory } from './audio-categories.ts';
 import { resolveSoundEffectCategory } from './audio-categories.ts';
 import type { NearbyAmbientKind } from './nearby-ambient.ts';
 import {
+  buildRenderedProceduralSoundBufferKey,
+  canRenderProceduralSoundToBuffer,
+  renderProceduralSoundToBufferData,
+  resolveRenderedSoundFrameCount,
+} from './procedural-sound-render.ts';
+import {
   type ProceduralAmplitudeEnvelope,
   type ProceduralSoundDelay,
   createProceduralSoundEffectGenerator,
@@ -2055,6 +2061,7 @@ export function createWebAudioSoundEffectSink(
   let outputGainNode: GainNode | null = null;
   const activeVoices = new Set<ActiveSoundVoice>();
   const noiseBufferCache = new Map<string, AudioBuffer>();
+  const renderedBufferCache = new Map<string, AudioBuffer>();
   const reverbImpulseCache = new Map<string, AudioBuffer>();
 
   function getAudioContext(): AudioContext | null {
@@ -2205,6 +2212,7 @@ export function createWebAudioSoundEffectSink(
         context,
         effect,
         noiseBufferCache,
+        renderedBufferCache,
         reverbImpulseCache
       );
       const mixGain = context.createGain();
@@ -2330,13 +2338,27 @@ function createScheduledSoundSources(
   context: AudioContext,
   effect: ProceduralSoundEffect,
   noiseBufferCache: Map<string, AudioBuffer>,
+  renderedBufferCache: Map<string, AudioBuffer>,
   reverbImpulseCache: Map<string, AudioBuffer>
 ): ActiveSoundSource[] {
+  if (canRenderProceduralSoundToBuffer(effect)) {
+    return [
+      createActiveSoundSource(
+        context,
+        effect,
+        noiseBufferCache,
+        renderedBufferCache,
+        reverbImpulseCache
+      ),
+    ];
+  }
+
   const sources = [
     createActiveSoundSource(
       context,
       effect,
       noiseBufferCache,
+      renderedBufferCache,
       reverbImpulseCache
     ),
   ];
@@ -2347,6 +2369,7 @@ function createScheduledSoundSources(
         context,
         createLayeredSoundEffect(effect, layer),
         noiseBufferCache,
+        renderedBufferCache,
         reverbImpulseCache
       )
     );
@@ -2359,10 +2382,16 @@ function createActiveSoundSource(
   context: AudioContext,
   effect: ProceduralSoundEffect,
   noiseBufferCache: Map<string, AudioBuffer>,
+  renderedBufferCache: Map<string, AudioBuffer>,
   reverbImpulseCache: Map<string, AudioBuffer>
 ): ActiveSoundSource {
   return {
-    source: createScheduledSoundSource(context, effect, noiseBufferCache),
+    source: createScheduledSoundSource(
+      context,
+      effect,
+      noiseBufferCache,
+      renderedBufferCache
+    ),
     filters: createSoundEffectFilters(context, effect),
     distortion: createSoundEffectDistortion(context, effect),
     delay: createSoundEffectDelay(context, effect),
@@ -2828,8 +2857,23 @@ function connectSoundEffectSourceChain(source: ActiveSoundSource): void {
 function createScheduledSoundSource(
   context: AudioContext,
   effect: ProceduralSoundEffect,
-  noiseBufferCache: Map<string, AudioBuffer>
+  noiseBufferCache: Map<string, AudioBuffer>,
+  renderedBufferCache: Map<string, AudioBuffer>
 ): ScheduledSoundSourceNode {
+  if (
+    canRenderProceduralSoundToBuffer(effect) &&
+    typeof context.createBuffer === 'function' &&
+    typeof context.createBufferSource === 'function'
+  ) {
+    const source = context.createBufferSource() as AudioBufferSourceNodeLike;
+    source.buffer = getOrCreateRenderedSoundBuffer(
+      context,
+      effect,
+      renderedBufferCache
+    );
+    return source;
+  }
+
   if (
     effect.noiseColor &&
     typeof context.createBuffer === 'function' &&
@@ -3085,6 +3129,29 @@ function getOrCreateNoiseBuffer(
   });
   channelData.set(samples);
   noiseBufferCache.set(cacheKey, buffer);
+  return buffer;
+}
+
+function getOrCreateRenderedSoundBuffer(
+  context: AudioContext,
+  effect: ProceduralSoundEffect,
+  renderedBufferCache: Map<string, AudioBuffer>
+): AudioBuffer {
+  const cacheKey = buildRenderedProceduralSoundBufferKey(
+    effect,
+    context.sampleRate
+  );
+  const cached = renderedBufferCache.get(cacheKey);
+  if (cached) {
+    return cached;
+  }
+
+  const frameCount = resolveRenderedSoundFrameCount(effect, context.sampleRate);
+  const buffer = context.createBuffer(1, frameCount, context.sampleRate);
+  const channelData = buffer.getChannelData(0);
+  const samples = renderProceduralSoundToBufferData(effect, context.sampleRate);
+  channelData.set(samples);
+  renderedBufferCache.set(cacheKey, buffer);
   return buffer;
 }
 

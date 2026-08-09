@@ -424,6 +424,14 @@ describe('sound effects', () => {
         durationMs: 1600,
         volume: 0.018,
         waveform: 'triangle',
+        pitchEnvelope: {
+          attackMs: 20,
+          decayMs: 80,
+          peakMultiplier: 1.06,
+          sustainMultiplier: 0.98,
+          releaseMs: 90,
+          releaseTargetMultiplier: 0.94,
+        },
         layers: [
           {
             id: 'noise-bed',
@@ -444,6 +452,250 @@ describe('sound effects', () => {
       expect(createdBufferSources[0]?.stop).toHaveBeenCalledWith(
         expect.closeTo(1.68, 10)
       );
+    } finally {
+      if (originalAudioContext) {
+        vi.stubGlobal('AudioContext', originalAudioContext);
+      } else {
+        vi.unstubAllGlobals();
+      }
+    }
+  });
+
+  it('reuses rendered audio buffers for eligible layered procedural sounds', () => {
+    const createdBufferSources: Array<{
+      buffer: unknown;
+      onended: ((event: Event) => void) | null;
+      connect: ReturnType<typeof vi.fn>;
+      disconnect: ReturnType<typeof vi.fn>;
+      start: ReturnType<typeof vi.fn>;
+      stop: ReturnType<typeof vi.fn>;
+    }> = [];
+    const createdBuffers: Array<{
+      getChannelData: ReturnType<typeof vi.fn>;
+    }> = [];
+    const createdOscillators: Array<unknown> = [];
+
+    class FakeAudioContext {
+      state: AudioContextState = 'running';
+      currentTime = 0;
+      sampleRate = 48_000;
+      destination = {};
+      createOscillator() {
+        const oscillator = {
+          onended: null as ((event: Event) => void) | null,
+          type: 'sine',
+          frequency: {
+            setValueAtTime: vi.fn(),
+            exponentialRampToValueAtTime: vi.fn(),
+            linearRampToValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+          start: vi.fn(),
+          stop: vi.fn(),
+        };
+        createdOscillators.push(oscillator);
+        return oscillator as unknown as OscillatorNode;
+      }
+      createBuffer(_channels: number, length: number) {
+        const channel = new Float32Array(length);
+        const buffer = {
+          getChannelData: vi.fn(() => channel),
+        };
+        createdBuffers.push(buffer);
+        return buffer as unknown as AudioBuffer;
+      }
+      createBufferSource() {
+        const source = {
+          buffer: null,
+          onended: null as ((event: Event) => void) | null,
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+          start: vi.fn(),
+          stop: vi.fn(),
+        };
+        createdBufferSources.push(source);
+        return source as unknown as AudioBufferSourceNode;
+      }
+      createGain() {
+        return {
+          gain: {
+            setValueAtTime: vi.fn(),
+            exponentialRampToValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+        } as unknown as GainNode;
+      }
+      createStereoPanner() {
+        return {
+          pan: {
+            setValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+        } as unknown as StereoPannerNode;
+      }
+      resume() {
+        return Promise.resolve();
+      }
+    }
+
+    const originalAudioContext = globalThis.AudioContext;
+    vi.stubGlobal('AudioContext', FakeAudioContext);
+
+    try {
+      const sink = createWebAudioSoundEffectSink();
+      const effect: ProceduralSoundEffect = {
+        kind: 'forest-ambience',
+        nowMs: 0,
+        frequency: 220,
+        durationMs: 180,
+        volume: 0.05,
+        waveform: 'triangle',
+        seed: 17,
+        envelope: {
+          attackMs: 6,
+          decayMs: 30,
+          sustainLevel: 0.52,
+          releaseMs: 40,
+        },
+        layers: [
+          {
+            id: 'noise-bed',
+            startOffsetMs: 24,
+            frequency: 140,
+            durationMs: 160,
+            volume: 0.018,
+            waveform: 'triangle',
+            noiseColor: 'pink',
+          },
+        ],
+      };
+
+      sink.play(effect);
+      sink.play(effect);
+
+      expect(createdBuffers).toHaveLength(1);
+      expect(createdBufferSources).toHaveLength(2);
+      expect(createdBufferSources[0]?.buffer).toBe(
+        createdBufferSources[1]?.buffer
+      );
+      expect(createdOscillators).toHaveLength(0);
+    } finally {
+      if (originalAudioContext) {
+        vi.stubGlobal('AudioContext', originalAudioContext);
+      } else {
+        vi.unstubAllGlobals();
+      }
+    }
+  });
+
+  it('keeps dynamic modulation effects on the live oscillator path', () => {
+    const createdBufferSources: Array<unknown> = [];
+    const createdBuffers: Array<unknown> = [];
+    const createdOscillators: Array<{
+      onended: ((event: Event) => void) | null;
+      type: string;
+      frequency: {
+        setValueAtTime: ReturnType<typeof vi.fn>;
+        exponentialRampToValueAtTime: ReturnType<typeof vi.fn>;
+        linearRampToValueAtTime: ReturnType<typeof vi.fn>;
+      };
+      connect: ReturnType<typeof vi.fn>;
+      disconnect: ReturnType<typeof vi.fn>;
+      start: ReturnType<typeof vi.fn>;
+      stop: ReturnType<typeof vi.fn>;
+    }> = [];
+
+    class FakeAudioContext {
+      state: AudioContextState = 'running';
+      currentTime = 0;
+      sampleRate = 48_000;
+      destination = {};
+      createOscillator() {
+        const oscillator = {
+          onended: null as ((event: Event) => void) | null,
+          type: 'sine',
+          frequency: {
+            setValueAtTime: vi.fn(),
+            exponentialRampToValueAtTime: vi.fn(),
+            linearRampToValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+          start: vi.fn(),
+          stop: vi.fn(),
+        };
+        createdOscillators.push(oscillator);
+        return oscillator as unknown as OscillatorNode;
+      }
+      createBuffer(_channels: number, length: number) {
+        const channel = new Float32Array(length);
+        const buffer = {
+          getChannelData: vi.fn(() => channel),
+        };
+        createdBuffers.push(buffer);
+        return buffer as unknown as AudioBuffer;
+      }
+      createBufferSource() {
+        const source = {
+          buffer: null,
+          onended: null as ((event: Event) => void) | null,
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+          start: vi.fn(),
+          stop: vi.fn(),
+        };
+        createdBufferSources.push(source);
+        return source as unknown as AudioBufferSourceNode;
+      }
+      createGain() {
+        return {
+          gain: {
+            setValueAtTime: vi.fn(),
+            exponentialRampToValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+        } as unknown as GainNode;
+      }
+      createStereoPanner() {
+        return {
+          pan: {
+            setValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+        } as unknown as StereoPannerNode;
+      }
+      resume() {
+        return Promise.resolve();
+      }
+    }
+
+    const originalAudioContext = globalThis.AudioContext;
+    vi.stubGlobal('AudioContext', FakeAudioContext);
+
+    try {
+      const sink = createWebAudioSoundEffectSink();
+      sink.play({
+        kind: 'wind',
+        nowMs: 0,
+        frequency: 180,
+        durationMs: 680,
+        volume: 0.018,
+        waveform: 'triangle',
+        tremolo: {
+          rateHz: 4.2,
+          depth: 0.28,
+          waveform: 'sine',
+        },
+      });
+
+      expect(createdOscillators.length).toBeGreaterThan(0);
+      expect(createdBufferSources).toHaveLength(0);
+      expect(createdBuffers).toHaveLength(0);
     } finally {
       if (originalAudioContext) {
         vi.stubGlobal('AudioContext', originalAudioContext);
