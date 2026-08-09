@@ -160,6 +160,35 @@ export function createHostMaterialResolver<
   };
 }
 
+export function createHostVariantMaterialResolver<
+  TVariant,
+  TMaterial,
+  THost extends object = ThreeHostLike,
+>(createMaterial: (three: THost, variant: TVariant) => TMaterial): {
+  getMaterial(three: THost, variant: TVariant): TMaterial;
+} {
+  const hostVariantCache = new WeakMap<object, Map<TVariant, TMaterial>>();
+
+  return {
+    getMaterial(three: THost, variant: TVariant): TMaterial {
+      let variantCache = hostVariantCache.get(three as object);
+      if (!variantCache) {
+        variantCache = new Map<TVariant, TMaterial>();
+        hostVariantCache.set(three as object, variantCache);
+      }
+
+      const cached = variantCache.get(variant);
+      if (cached !== undefined) {
+        return cached;
+      }
+
+      const resolved = createMaterial(three, variant);
+      variantCache.set(variant, resolved);
+      return resolved;
+    },
+  };
+}
+
 export function pickThresholdColor(
   signal: number,
   threshold: number,

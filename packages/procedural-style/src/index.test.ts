@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { createBoundedCache } from '@bworlds/cache-support';
 import {
   createHostMaterialResolver,
+  createHostVariantMaterialResolver,
   createCoordinateValueResolver,
   createRegionalMaterialResolver,
   createRegionalValueResolver,
@@ -158,6 +159,41 @@ describe('procedural style helpers', () => {
     expect(first).toBe(second);
     expect(first).toEqual({ host: 'three-a', build: 1 });
     expect(third).toEqual({ host: 'three-b', build: 2 });
+  });
+
+  it('memoizes host-specific material variants through a shared helper', () => {
+    let buildCount = 0;
+    const resolver = createHostVariantMaterialResolver(
+      (three: { label: string }, variant: string) => ({
+        host: three.label,
+        variant,
+        build: ++buildCount,
+      })
+    );
+    const hostA = { label: 'three-a' };
+    const hostB = { label: 'three-b' };
+
+    const first = resolver.getMaterial(hostA, '#ff0000');
+    const second = resolver.getMaterial(hostA, '#ff0000');
+    const third = resolver.getMaterial(hostA, '#00ff00');
+    const fourth = resolver.getMaterial(hostB, '#ff0000');
+
+    expect(first).toBe(second);
+    expect(first).toEqual({
+      host: 'three-a',
+      variant: '#ff0000',
+      build: 1,
+    });
+    expect(third).toEqual({
+      host: 'three-a',
+      variant: '#00ff00',
+      build: 2,
+    });
+    expect(fourth).toEqual({
+      host: 'three-b',
+      variant: '#ff0000',
+      build: 3,
+    });
   });
 
   it('tints hex colors by a multiplier', () => {

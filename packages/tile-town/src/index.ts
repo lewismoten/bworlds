@@ -15,6 +15,7 @@ import {
 import {
   createCoordinateValueResolver,
   createHostMaterialResolver,
+  createHostVariantMaterialResolver,
   createRegionalMaterialResolver,
   pickThresholdColor,
 } from '@bworlds/procedural-style';
@@ -166,7 +167,17 @@ const resolveTownStyle = createRegionalMaterialResolver(
     );
 
     return createHostMaterialResolver((three: ThreeHostLike) => {
-        const bannerMaterialCache = new Map<string, ThreeMaterialLike>();
+        const bannerMaterials = createHostVariantMaterialResolver(
+          (host: ThreeHostLike, color: string): ThreeMaterialLike =>
+            new host.MeshStandardMaterial({
+              color,
+              emissive: color,
+              emissiveIntensity: 0.04,
+              roughness: 0.84,
+              metalness: 0.02,
+              side: host.DoubleSide,
+            })
+        );
         const style = {
           key,
           trimColor,
@@ -223,21 +234,7 @@ const resolveTownStyle = createRegionalMaterialResolver(
             metalness: 0.02,
           }),
           getBannerMaterial(color: string) {
-            const cachedMaterial = bannerMaterialCache.get(color);
-            if (cachedMaterial) {
-              return cachedMaterial;
-            }
-
-            const material = new three.MeshStandardMaterial({
-              color,
-              emissive: color,
-              emissiveIntensity: 0.04,
-              roughness: 0.84,
-              metalness: 0.02,
-              side: three.DoubleSide,
-            });
-            bannerMaterialCache.set(color, material);
-            return material;
+            return bannerMaterials.getMaterial(three, color);
           },
         };
         return style;

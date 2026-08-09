@@ -10,6 +10,7 @@ import {
 } from '@bworlds/poi-support';
 import {
   createHostMaterialResolver,
+  createHostVariantMaterialResolver,
   createRegionalMaterialResolver,
   pickThresholdColor,
 } from '@bworlds/procedural-style';
@@ -372,8 +373,32 @@ const resolveDungeonStyle = createRegionalMaterialResolver(
     );
     return createHostMaterialResolver((three: ThreeHostLike) => {
         const barTexture = createDungeonBarTexture(three);
-        const bannerMaterialCache = new Map<string, ThreeMaterialLike>();
-        const glowMaterialCache = new Map<string, ThreeMaterialLike>();
+        const bannerMaterials = createHostVariantMaterialResolver(
+          (host: ThreeHostLike, color: string): ThreeMaterialLike =>
+            new host.MeshStandardMaterial({
+              color,
+              emissive: color,
+              emissiveIntensity: 0.03,
+              roughness: 0.86,
+              metalness: 0.02,
+              side: host.DoubleSide,
+            })
+        );
+        const glowMaterials = createHostVariantMaterialResolver(
+          (host: ThreeHostLike, cacheKey: string): ThreeMaterialLike => {
+            const separatorIndex = cacheKey.indexOf(':');
+            const resolvedDayIntensity = Number(
+              separatorIndex >= 0 ? cacheKey.slice(0, separatorIndex) : cacheKey
+            );
+            return new host.MeshStandardMaterial({
+              color: '#ef4444',
+              emissive: '#ef4444',
+              emissiveIntensity: resolvedDayIntensity,
+              roughness: 0.3,
+              metalness: 0.04,
+            });
+          }
+        );
         const style = {
           wallMaterial: createPaintedStandardMaterial(three, {
             color: '#ffffff',
@@ -432,37 +457,10 @@ const resolveDungeonStyle = createRegionalMaterialResolver(
             const resolvedDayIntensity = quantizeDungeonGlowIntensity(dayIntensity);
             const resolvedNightIntensity = quantizeDungeonGlowIntensity(nightIntensity);
             const cacheKey = `${resolvedDayIntensity}:${resolvedNightIntensity}`;
-            const cachedMaterial = glowMaterialCache.get(cacheKey);
-            if (cachedMaterial) {
-              return cachedMaterial;
-            }
-
-            const material = new three.MeshStandardMaterial({
-              color: '#ef4444',
-              emissive: '#ef4444',
-              emissiveIntensity: resolvedDayIntensity,
-              roughness: 0.3,
-              metalness: 0.04,
-            });
-            glowMaterialCache.set(cacheKey, material);
-            return material;
+            return glowMaterials.getMaterial(three, cacheKey);
           },
           getBannerMaterial(color: string) {
-            const cachedMaterial = bannerMaterialCache.get(color);
-            if (cachedMaterial) {
-              return cachedMaterial;
-            }
-
-            const material = new three.MeshStandardMaterial({
-              color,
-              emissive: color,
-              emissiveIntensity: 0.03,
-              roughness: 0.86,
-              metalness: 0.02,
-              side: three.DoubleSide,
-            });
-            bannerMaterialCache.set(color, material);
-            return material;
+            return bannerMaterials.getMaterial(three, color);
           },
         };
         return style;
