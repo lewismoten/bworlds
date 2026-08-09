@@ -465,6 +465,7 @@ describe('render3d visibility helpers', () => {
       fogMaterialCount: 1,
       customShaderMaterialCount: 1,
       shaderDefineSignatureCount: 0,
+      maxShaderComplexityClass: 3,
       materialTypes: 'MeshStandardMaterial:1, ShaderMaterial:1',
       materialsCreatedDuringSamplingWindow: 0,
       materialsDisposedDuringSamplingWindow: 0,
@@ -802,6 +803,7 @@ describe('render3d visibility helpers', () => {
       fogMaterialCount: 3,
       customShaderMaterialCount: 0,
       shaderDefineSignatureCount: 0,
+      maxShaderComplexityClass: 1,
       materialTypes: 'Material:3',
       materialsCreatedDuringSamplingWindow: 0,
       materialsDisposedDuringSamplingWindow: 0,
@@ -902,6 +904,7 @@ describe('render3d visibility helpers', () => {
       fogMaterialCount: 2,
       customShaderMaterialCount: 0,
       shaderDefineSignatureCount: 0,
+      maxShaderComplexityClass: 1,
       materialTypes: 'Material:2',
       materialsCreatedDuringSamplingWindow: 0,
       materialsDisposedDuringSamplingWindow: 0,
@@ -1052,6 +1055,7 @@ describe('render3d visibility helpers', () => {
       fogMaterialCount: 2,
       customShaderMaterialCount: 0,
       shaderDefineSignatureCount: 0,
+      maxShaderComplexityClass: 1,
       materialTypes: 'Material:2',
       materialsCreatedDuringSamplingWindow: 0,
       materialsDisposedDuringSamplingWindow: 0,
@@ -1146,6 +1150,7 @@ describe('render3d visibility helpers', () => {
       fogMaterialCount: 2,
       customShaderMaterialCount: 0,
       shaderDefineSignatureCount: 0,
+      maxShaderComplexityClass: 1,
       materialTypes: 'Material:2',
       materialsCreatedDuringSamplingWindow: 0,
       materialsDisposedDuringSamplingWindow: 0,
@@ -1272,6 +1277,7 @@ describe('render3d visibility helpers', () => {
       fogMaterialCount: 2,
       customShaderMaterialCount: 0,
       shaderDefineSignatureCount: 0,
+      maxShaderComplexityClass: 1,
       materialTypes: 'Material:2',
       materialsCreatedDuringSamplingWindow: 0,
       materialsDisposedDuringSamplingWindow: 0,
@@ -1536,6 +1542,7 @@ describe('render3d visibility helpers', () => {
       textureCount: 16,
       maxMaterialTextureSlotCount: 6,
       shaderDefineSignatureCount: 4,
+      maxShaderComplexityClass: 3,
       maxTextureWidth: 2_048,
       maxTextureHeight: 2_048,
       maxTexturePixelCount: 4_194_304,
@@ -1581,6 +1588,7 @@ describe('render3d visibility helpers', () => {
       textureCount: 4,
       maxMaterialTextureSlotCount: 4,
       shaderDefineSignatureCount: 1,
+      maxShaderComplexityClass: 2,
       maxTextureWidth: 512,
       maxTextureHeight: 512,
       maxTexturePixelCount: 262_144,
@@ -1980,6 +1988,72 @@ describe('render3d visibility helpers', () => {
             metric: 'shaderDefineSignatureCount',
             actual: 2,
             limit: 1,
+          },
+        ]),
+      })
+    );
+  });
+
+  it('rejects shader materials above the low-detail shader complexity cap', () => {
+    const root = createMockObject3D(
+      createMockMaterial({
+        type: 'ShaderMaterial',
+        vertexShader: 'void main() {}',
+        fragmentShader: 'void main() {}',
+      }),
+      [],
+      createMockStatGeometry('shader-complexity-cap', 24)
+    );
+
+    expect(validateTileModelAgainstRenderBudget(root as never, 'low')).toEqual(
+      expect.objectContaining({
+        accepted: false,
+        stats: expect.objectContaining({
+          maxShaderComplexityClass: 3,
+        }),
+        violations: expect.arrayContaining([
+          {
+            metric: 'maxShaderComplexityClass',
+            actual: 3,
+            limit: 2,
+          },
+        ]),
+      })
+    );
+  });
+
+  it('uses stricter shader complexity caps for low-detail models than full-detail models', () => {
+    const root = createMockObject3D(
+      createMockMaterial({
+        type: 'ShaderMaterial',
+        vertexShader: 'void main() {}',
+        fragmentShader: 'void main() {}',
+      }),
+      [],
+      createMockStatGeometry('lod-shader-complexity-cap', 24)
+    );
+
+    expect(validateTileModelAgainstRenderBudget(root as never, 'full')).toEqual(
+      expect.objectContaining({
+        accepted: true,
+        stats: expect.objectContaining({
+          maxShaderComplexityClass: 3,
+        }),
+        violations: [],
+      })
+    );
+
+    expect(validateTileModelAgainstRenderBudget(root as never, 'low')).toEqual(
+      expect.objectContaining({
+        accepted: false,
+        stats: expect.objectContaining({
+          maxShaderComplexityClass: 3,
+        }),
+        violations: expect.arrayContaining([
+          {
+            metric: 'maxShaderComplexityClass',
+            actual: 3,
+            limit: 2,
           },
         ]),
       })

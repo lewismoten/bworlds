@@ -83,6 +83,7 @@ import {
   countEquivalentShareableMaterials,
 } from './material-equivalence.ts';
 import { countUniqueMaterialDefineSignatures } from './material-define-signatures.ts';
+import { getMaxMaterialShaderComplexityClass } from './material-shader-complexity.ts';
 import {
   getTextureDimensions,
   getTexturePixelCount,
@@ -157,6 +158,13 @@ export {
   countEquivalentShareableMaterials,
 } from './material-equivalence.ts';
 export { countUniqueMaterialDefineSignatures } from './material-define-signatures.ts';
+export {
+  getMaterialShaderComplexityClass,
+  getMaxMaterialShaderComplexityClass,
+  MATERIAL_SHADER_COMPLEXITY_CUSTOM,
+  MATERIAL_SHADER_COMPLEXITY_LIT,
+  MATERIAL_SHADER_COMPLEXITY_SIMPLE,
+} from './material-shader-complexity.ts';
 export {
   getRecentOwnedMaterialLifecycleCounts,
   resetOwnedMaterialLifecycleMetrics,
@@ -339,6 +347,7 @@ type Render3DController = {
     clonedMaterialCount: number;
     colorVariantMaterialCount: number;
     shaderDefineSignatureCount: number;
+    maxShaderComplexityClass: number;
     maxMaterialTextureSlotCount: number;
     transparentMaterialCount: number;
     alphaTestMaterialCount: number;
@@ -453,6 +462,7 @@ const FULL_DETAIL_TILE_MODEL_HARD_LIMITS: TileModelHardLimits = {
   textureCount: 16,
   maxMaterialTextureSlotCount: 6,
   shaderDefineSignatureCount: 4,
+  maxShaderComplexityClass: 3,
   maxTextureWidth: 2_048,
   maxTextureHeight: 2_048,
   maxTexturePixelCount: 4_194_304,
@@ -499,6 +509,7 @@ const LOW_DETAIL_TILE_MODEL_HARD_LIMITS: TileModelHardLimits = {
   textureCount: 4,
   maxMaterialTextureSlotCount: 4,
   shaderDefineSignatureCount: 1,
+  maxShaderComplexityClass: 2,
   maxTextureWidth: 512,
   maxTextureHeight: 512,
   maxTexturePixelCount: 262_144,
@@ -678,6 +689,7 @@ export function validateTileModelAgainstRenderBudget(
     'textureCount',
     'maxMaterialTextureSlotCount',
     'shaderDefineSignatureCount',
+    'maxShaderComplexityClass',
     'maxTextureWidth',
     'maxTextureHeight',
     'maxTexturePixelCount',
@@ -933,6 +945,7 @@ type SceneResourceStats = {
   clonedMaterialCount: number;
   colorVariantMaterialCount: number;
   shaderDefineSignatureCount: number;
+  maxShaderComplexityClass: number;
   maxMaterialTextureSlotCount: number;
   transparentMaterialCount: number;
   alphaTestMaterialCount: number;
@@ -992,6 +1005,7 @@ type TileModelHardLimits = {
   textureCount: number;
   maxMaterialTextureSlotCount: number;
   shaderDefineSignatureCount: number;
+  maxShaderComplexityClass: number;
   maxTextureWidth: number;
   maxTextureHeight: number;
   maxTexturePixelCount: number;
@@ -1112,6 +1126,7 @@ function createEmptySceneResourceStats(): SceneResourceStats {
     clonedMaterialCount: 0,
     colorVariantMaterialCount: 0,
     shaderDefineSignatureCount: 0,
+    maxShaderComplexityClass: 0,
     maxMaterialTextureSlotCount: 0,
     transparentMaterialCount: 0,
     alphaTestMaterialCount: 0,
@@ -2342,6 +2357,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       clonedMaterialCount: sceneResourceStats.clonedMaterialCount,
       colorVariantMaterialCount: sceneResourceStats.colorVariantMaterialCount,
       shaderDefineSignatureCount: sceneResourceStats.shaderDefineSignatureCount,
+      maxShaderComplexityClass: sceneResourceStats.maxShaderComplexityClass,
       maxMaterialTextureSlotCount: sceneResourceStats.maxMaterialTextureSlotCount,
       transparentMaterialCount: sceneResourceStats.transparentMaterialCount,
       alphaTestMaterialCount: sceneResourceStats.alphaTestMaterialCount,
@@ -4006,6 +4022,7 @@ export function collectSceneResourceStats(
     clonedMaterialCount: countEquivalentShareableMaterials(materials),
     colorVariantMaterialCount: countColorVariantShareableMaterials(materials),
     shaderDefineSignatureCount: countUniqueMaterialDefineSignatures(materials),
+    maxShaderComplexityClass: getMaxMaterialShaderComplexityClass(materials),
     maxMaterialTextureSlotCount,
     transparentMaterialCount: countMaterialsMatching(materials, isTransparentMaterial),
     alphaTestMaterialCount: countMaterialsMatching(materials, usesAlphaTest),

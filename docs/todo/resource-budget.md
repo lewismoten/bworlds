@@ -96,7 +96,7 @@ Given the heap issue you just saw, I would take this very seriously.
 * [ ] Use vertex colors where possible.
 * [ ] Use uniforms for cheap variation where sharing permits it.
 * [X] Cap material texture slots.
-* [ ] Cap shader complexity classes.
+* [X] Cap shader complexity classes.
 * [X] Avoid unique shader `define` combinations unless necessary.
 * [ ] Cache common material variants.
 * [X] Dispose rejected materials immediately.
