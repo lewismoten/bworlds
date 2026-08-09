@@ -169,8 +169,13 @@ const resolveTownStyle = createRegionalMaterialResolver(
     );
 
     return {
+      materialCache: new WeakMap<object, TownStyle>(),
       createMaterials(three: ThreeHostLike) {
-        return {
+        const cached = this.materialCache.get(three as object);
+        if (cached) {
+          return cached;
+        }
+        const style = {
           key,
           trimColor,
           signBaseColor,
@@ -226,6 +231,8 @@ const resolveTownStyle = createRegionalMaterialResolver(
             metalness: 0.02,
           }),
         };
+        this.materialCache.set(three as object, style);
+        return style;
       },
     };
   }
@@ -718,6 +725,7 @@ interface TownStyle {
 }
 
 interface TownStyleBlueprint {
+  materialCache: WeakMap<object, TownStyle>;
   createMaterials(three: ThreeHostLike): TownStyle;
 }
 

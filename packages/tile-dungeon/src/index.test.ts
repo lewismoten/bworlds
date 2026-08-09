@@ -393,7 +393,7 @@ describe('tile dungeon', () => {
       | undefined;
     const firstMaterial = firstBase?.material;
 
-    for (let index = 0; index < 96; index += 1) {
+    for (let index = 0; index <= 96; index += 1) {
       tile?.create3DModel?.({
         three: fakeThree as never,
         state,
@@ -421,6 +421,31 @@ describe('tile dungeon', () => {
     expect(firstMaterial).toBeDefined();
     expect(secondMaterial).toBeDefined();
     expect(secondMaterial).not.toBe(firstMaterial);
+  });
+
+  it('reuses shared dungeon style materials across repeated builds in the same region', () => {
+    const plugin = createDungeonTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'dungeon');
+    const state = createDungeonState();
+
+    const first = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'dungeon' },
+      tileX: 5,
+      tileY: 4,
+      detailLevel: 'low',
+    }) as FakeGroup;
+    const second = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'dungeon' },
+      tileX: 6,
+      tileY: 5,
+      detailLevel: 'low',
+    }) as FakeGroup;
+
+    expect(countSharedMaterialReferences(first, second)).toBeGreaterThanOrEqual(4);
   });
 
   it('keeps full-detail dungeon model signatures stable after regional churn', () => {
@@ -460,3 +485,34 @@ describe('tile dungeon', () => {
     expect(createModelSignature(resolved)).toEqual(createModelSignature(baseline));
   });
 });
+
+function countSharedMaterialReferences(
+  left: FakeGroup,
+  right: FakeGroup
+): number {
+  const leftMaterials = collectMeshMaterials(left);
+  const rightMaterials = collectMeshMaterials(right);
+  let sharedCount = 0;
+
+  leftMaterials.forEach((material) => {
+    if (rightMaterials.has(material)) {
+      sharedCount += 1;
+    }
+  });
+
+  return sharedCount;
+}
+
+function collectMeshMaterials(root: FakeGroup): Set<FakeMaterial> {
+  const materials = new Set<FakeMaterial>();
+  root.traverse((node) => {
+    if (node instanceof FakeMesh) {
+      if (Array.isArray(node.material)) {
+        node.material.forEach((material) => materials.add(material));
+      } else if (node.material) {
+        materials.add(node.material);
+      }
+    }
+  });
+  return materials;
+}

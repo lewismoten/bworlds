@@ -349,9 +349,14 @@ const resolveDungeonStyle = createRegionalMaterialResolver(
       '#1f2937'
     );
     return {
+      materialCache: new WeakMap<object, DungeonStyle>(),
       createMaterials(three: ThreeHostLike) {
+        const cached = this.materialCache.get(three as object);
+        if (cached) {
+          return cached;
+        }
         const barTexture = createDungeonBarTexture(three);
-        return {
+        const style = {
           wallMaterial: createPaintedStandardMaterial(three, {
             color: '#ffffff',
             roughness: 0.95,
@@ -402,6 +407,8 @@ const resolveDungeonStyle = createRegionalMaterialResolver(
             metalness: 0.18,
           }),
         };
+        this.materialCache.set(three as object, style);
+        return style;
       },
     };
   }
@@ -672,6 +679,7 @@ interface DungeonStyle {
 }
 
 interface DungeonStyleBlueprint {
+  materialCache: WeakMap<object, DungeonStyle>;
   createMaterials(three: ThreeHostLike): DungeonStyle;
 }
 

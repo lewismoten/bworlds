@@ -432,4 +432,60 @@ describe('tile town', () => {
 
     expect(createModelSignature(resolved)).toEqual(createModelSignature(baseline));
   });
+
+  it('reuses shared town style materials across repeated builds in the same region', () => {
+    const plugin = createTownTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'town');
+    const state = createTownState();
+
+    const first = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'town', poi: { type: 'town', name: 'Oakcross' } } as never,
+      tileX: 3,
+      tileY: 7,
+      detailLevel: 'full',
+    }) as FakeGroup;
+    const second = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'town', poi: { type: 'town', name: 'Oakcross' } } as never,
+      tileX: 4,
+      tileY: 8,
+      detailLevel: 'full',
+    }) as FakeGroup;
+
+    expect(countSharedMaterialReferences(first, second)).toBeGreaterThanOrEqual(4);
+  });
 });
+
+function countSharedMaterialReferences(
+  left: FakeGroup,
+  right: FakeGroup
+): number {
+  const leftMaterials = collectMeshMaterials(left);
+  const rightMaterials = collectMeshMaterials(right);
+  let sharedCount = 0;
+
+  leftMaterials.forEach((material) => {
+    if (rightMaterials.has(material)) {
+      sharedCount += 1;
+    }
+  });
+
+  return sharedCount;
+}
+
+function collectMeshMaterials(root: FakeGroup): Set<FakeMaterial> {
+  const materials = new Set<FakeMaterial>();
+  root.traverse((node) => {
+    if (node instanceof FakeMesh) {
+      if (Array.isArray(node.material)) {
+        node.material.forEach((material) => materials.add(material));
+      } else if (node.material) {
+        materials.add(node.material);
+      }
+    }
+  });
+  return materials;
+}
