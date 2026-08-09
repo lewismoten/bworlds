@@ -80,6 +80,37 @@ describe('nearby ambient', () => {
     });
   });
 
+  it('keeps secondary biome layers so ambience can blend across boundaries', () => {
+    const profile = findNearbyAmbientProfile({
+      state: {
+        player: { x: 2.25, y: -3 },
+        getCurrentTile(x: number, y: number) {
+          if (x <= 2) {
+            return { kind: 'forest' };
+          }
+          if (x >= 3) {
+            return { kind: 'shore' };
+          }
+          return { kind: 'plains' };
+        },
+      },
+      centerX: 2,
+      centerY: -3,
+      searchRadius: 1,
+    });
+
+    expect(profile).toEqual(
+      expect.objectContaining({
+        kind: 'forest',
+        blendedLayers: [
+          expect.objectContaining({
+            kind: 'ocean',
+          }),
+        ],
+      })
+    );
+  });
+
   it('gives unknown POI types a safe fallback ambience family', () => {
     const profile = findNearbyAmbientProfile({
       state: {

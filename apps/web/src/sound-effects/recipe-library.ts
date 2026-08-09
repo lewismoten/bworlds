@@ -336,7 +336,10 @@ export function buildProceduralSoundRecipe(
       ),
       ringModulation: resolveProceduralSoundRingModulation(options.kind),
       sweeps: resolveProceduralSoundSweeps(options.kind),
-      layers: resolveProceduralSoundLayers(options.kind),
+      layers: resolveProceduralSoundLayers(
+        options.kind,
+        options.identityVariant
+      ),
     },
     identity.family
   );
@@ -825,7 +828,8 @@ function resolveProceduralSoundSweeps(kind: SoundEffectKind) {
 }
 
 function resolveProceduralSoundLayers(
-  kind: SoundEffectKind
+  kind: SoundEffectKind,
+  identityVariant?: string
 ): SoundLayerRecipe | undefined {
   switch (kind) {
     case 'wind':
@@ -893,6 +897,80 @@ function resolveProceduralSoundLayers(
         },
       ] as const;
     case 'forest-ambience':
+      if (identityVariant === 'wildlife') {
+        return [
+          {
+            id: 'forest-bird-bed',
+            waveform: ['sine', 'triangle'] as const,
+            noiseColor: 'pink' as const,
+            frequencyMultiplier: 1.18,
+            durationMultiplier: 0.82,
+            volumeMultiplier: 0.22,
+            frequencyVariation: 0.03,
+            durationVariation: 0.18,
+            volumeVariation: 0.1,
+            variationDepth: 0.9,
+            tremolo: {
+              rateHz: 6.2,
+              depth: 0.18,
+              waveform: ['sine', 'triangle'] as const,
+              rateVariation: 0.06,
+              depthVariation: 0.05,
+            },
+          },
+          {
+            id: 'forest-far-branches',
+            waveform: ['triangle', 'sine'] as const,
+            noiseColor: ['brown', 'pink'] as const,
+            frequencyMultiplier: 0.92,
+            durationMultiplier: 1,
+            volumeMultiplier: 0.38,
+            startOffsetMs: 48,
+            startOffsetVariation: 0.28,
+            frequencyVariation: 0.02,
+            durationVariation: 0.14,
+            volumeVariation: 0.08,
+            variationDepth: 0.82,
+          },
+        ] as const;
+      }
+      if (identityVariant === 'insects') {
+        return [
+          {
+            id: 'forest-insect-bed',
+            waveform: ['square', 'sine'] as const,
+            noiseColor: 'pink' as const,
+            frequencyMultiplier: 1.34,
+            durationMultiplier: 0.74,
+            volumeMultiplier: 0.18,
+            frequencyVariation: 0.032,
+            durationVariation: 0.2,
+            volumeVariation: 0.1,
+            variationDepth: 0.92,
+            tremolo: {
+              rateHz: 8.8,
+              depth: 0.22,
+              waveform: 'square' as const,
+              rateVariation: 0.08,
+              depthVariation: 0.06,
+            },
+          },
+          {
+            id: 'forest-leaf-bed',
+            waveform: ['triangle', 'sine'] as const,
+            noiseColor: ['pink', 'brown'] as const,
+            frequencyMultiplier: 0.88,
+            durationMultiplier: 1,
+            volumeMultiplier: 0.42,
+            startOffsetMs: 32,
+            startOffsetVariation: 0.24,
+            frequencyVariation: 0.022,
+            durationVariation: 0.14,
+            volumeVariation: 0.08,
+            variationDepth: 0.84,
+          },
+        ] as const;
+      }
       return [
         {
           id: 'forest-noise-bed',
@@ -964,6 +1042,102 @@ function resolveProceduralSoundLayers(
             feedbackVariation: 0.07,
             mixVariation: 0.08,
           },
+        },
+      ] as const;
+    case 'ocean':
+      if (identityVariant === 'seabirds') {
+        return [
+          {
+            id: 'ocean-gull-calls',
+            waveform: ['sine', 'triangle'] as const,
+            noiseColor: 'white' as const,
+            frequencyMultiplier: 1.82,
+            durationMultiplier: 0.6,
+            volumeMultiplier: 0.14,
+            frequencyVariation: 0.04,
+            durationVariation: 0.18,
+            volumeVariation: 0.1,
+            variationDepth: 0.9,
+            vibrato: {
+              rateHz: 5.4,
+              depth: 0.04,
+              waveform: 'sine' as const,
+              rateVariation: 0.05,
+              depthVariation: 0.05,
+            },
+          },
+          {
+            id: 'ocean-surf-bed',
+            waveform: ['sine', 'triangle'] as const,
+            noiseColor: 'brown' as const,
+            frequencyMultiplier: 0.76,
+            durationMultiplier: 1,
+            volumeMultiplier: 0.5,
+            startOffsetMs: 40,
+            startOffsetVariation: 0.24,
+            frequencyVariation: 0.024,
+            durationVariation: 0.14,
+            volumeVariation: 0.08,
+            variationDepth: 0.82,
+          },
+        ] as const;
+      }
+      if (identityVariant === 'shoreline') {
+        return [
+          {
+            id: 'shore-wash-bed',
+            waveform: ['sine', 'triangle'] as const,
+            noiseColor: ['brown', 'white'] as const,
+            frequencyMultiplier: 0.72,
+            durationMultiplier: 1,
+            volumeMultiplier: 0.52,
+            frequencyVariation: 0.026,
+            durationVariation: 0.14,
+            volumeVariation: 0.08,
+            variationDepth: 0.92,
+          },
+          {
+            id: 'shore-pebble-shift',
+            waveform: ['triangle', 'square'] as const,
+            noiseColor: 'white' as const,
+            frequencyMultiplier: 1.08,
+            durationMultiplier: 0.72,
+            volumeMultiplier: 0.18,
+            startOffsetMs: 52,
+            startOffsetVariation: 0.26,
+            frequencyVariation: 0.03,
+            durationVariation: 0.18,
+            volumeVariation: 0.1,
+            variationDepth: 0.8,
+          },
+        ] as const;
+      }
+      return [
+        {
+          id: 'ocean-surf-bed',
+          waveform: ['sine', 'triangle'] as const,
+          noiseColor: 'brown' as const,
+          frequencyMultiplier: 0.74,
+          durationMultiplier: 1,
+          volumeMultiplier: 0.54,
+          frequencyVariation: 0.024,
+          durationVariation: 0.14,
+          volumeVariation: 0.08,
+          variationDepth: 0.94,
+        },
+        {
+          id: 'ocean-wind-spray',
+          waveform: ['triangle', 'sine'] as const,
+          noiseColor: ['white', 'pink'] as const,
+          frequencyMultiplier: 1.12,
+          durationMultiplier: 0.84,
+          volumeMultiplier: 0.16,
+          startOffsetMs: 36,
+          startOffsetVariation: 0.3,
+          frequencyVariation: 0.03,
+          durationVariation: 0.16,
+          volumeVariation: 0.08,
+          variationDepth: 0.82,
         },
       ] as const;
     default:

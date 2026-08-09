@@ -72,7 +72,11 @@ export function createSoundUpdatePayloadBuilder(): (
     intensity: undefined,
     emitter: { x: 0, y: 0 },
     listener: { x: 0, y: 0 },
+    blendedLayers: undefined,
   };
+  const nearbyAmbientBlendPayload: NonNullable<
+    NearbyAmbientLike['blendedLayers']
+  > = [];
 
   return (input) => {
     payload.nowMs = input.nowMs;
@@ -138,6 +142,29 @@ export function createSoundUpdatePayloadBuilder(): (
         nearbyAmbientPayload.listener.x = input.listenerX;
         nearbyAmbientPayload.listener.y = input.listenerY;
       }
+      nearbyAmbientBlendPayload.length = 0;
+      for (
+        let index = 0;
+        index < (input.nearbyAmbient.blendedLayers?.length ?? 0);
+        index += 1
+      ) {
+        const layer = input.nearbyAmbient.blendedLayers?.[index];
+        if (!layer) {
+          continue;
+        }
+        nearbyAmbientBlendPayload.push({
+          kind: layer.kind,
+          intensity: layer.intensity,
+          emitter: {
+            x: layer.emitter.x,
+            y: layer.emitter.y,
+          },
+        });
+      }
+      nearbyAmbientPayload.blendedLayers =
+        nearbyAmbientBlendPayload.length > 0
+          ? nearbyAmbientBlendPayload
+          : undefined;
       payload.nearbyAmbient = nearbyAmbientPayload;
     } else {
       payload.nearbyAmbient = null;
@@ -183,7 +210,13 @@ export function getSoundUpdateInputSignature(
         : '',
       input.nearbyPaddleBoat?.whistlePhase ?? '',
       input.nearbyAmbient
-        ? `${input.nearbyAmbient.kind}:${Math.round((input.nearbyAmbient.intensity ?? 0) * 100)}:${Math.round(input.nearbyAmbient.emitter?.x ?? 0)}:${Math.round(input.nearbyAmbient.emitter?.y ?? 0)}`
+        ? [
+            `${input.nearbyAmbient.kind}:${Math.round((input.nearbyAmbient.intensity ?? 0) * 100)}:${Math.round(input.nearbyAmbient.emitter?.x ?? 0)}:${Math.round(input.nearbyAmbient.emitter?.y ?? 0)}`,
+            ...(input.nearbyAmbient.blendedLayers ?? []).map(
+              (layer) =>
+                `${layer.kind}:${Math.round((layer.intensity ?? 0) * 100)}:${Math.round(layer.emitter?.x ?? 0)}:${Math.round(layer.emitter?.y ?? 0)}`
+            ),
+          ].join(',')
         : '',
     ].join('|'),
   };

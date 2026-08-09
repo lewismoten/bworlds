@@ -3443,7 +3443,45 @@ describe('sound effects', () => {
 
     expect(played.map((effect) => effect.kind)).toEqual(['ocean', 'ocean']);
     expect(played[0]?.waveform).toBe('sine');
-    expect(played[0]?.recipeId).toBe('ocean:ocean');
+    expect(played[0]?.recipeId).toMatch(/^ocean:ocean:/);
+  });
+
+  it('blends nearby forest and coastal ambience instead of replacing one outright', () => {
+    const played: ProceduralSoundEffect[] = [];
+    const controller = createSoundEffectController({
+      play(effect) {
+        played.push(effect);
+      },
+    });
+
+    controller.update({
+      nowMs: 900,
+      walking: false,
+      isJumping: false,
+      viewMode: '3d',
+      tileKind: 'shore',
+      nearbyAmbient: {
+        kind: 'forest',
+        intensity: 0.82,
+        emitter: { x: 0, y: 0 },
+        blendedLayers: [
+          {
+            kind: 'ocean',
+            intensity: 0.68,
+            emitter: { x: 1, y: 0 },
+          },
+        ],
+      },
+      listener: { x: 0, y: 0 },
+    });
+
+    expect(played.map((effect) => effect.kind)).toEqual([
+      'forest-ambience',
+      'ocean',
+    ]);
+    expect(played[0]?.recipeId).toMatch(/^forest-ambience:forest:/);
+    expect(played[1]?.recipeId).toMatch(/^ocean:ocean:/);
+    expect((played[1]?.volume ?? 0) < (played[0]?.volume ?? 0)).toBe(true);
   });
 
   it('plays train engine pulses and whistles for nearby active rail traffic', () => {

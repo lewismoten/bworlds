@@ -33,6 +33,13 @@ export type NearbyAmbientProfile = {
   kind: NearbyAmbientKind;
   intensity: number;
   emitter: AmbientPosition;
+  blendedLayers?: NearbyAmbientLayer[];
+};
+
+export type NearbyAmbientLayer = {
+  kind: NearbyAmbientKind;
+  intensity: number;
+  emitter: AmbientPosition;
 };
 
 const AMBIENT_KIND_SALTS: Record<NearbyAmbientKind, number> = {
@@ -257,21 +264,16 @@ function aggregateAmbientProfiles(
     });
   }
 
-  let bestGroup: AmbientAggregationGroup | null = null;
-  for (const current of groups.values()) {
-    if (!bestGroup) {
-      bestGroup = current;
-      continue;
+  const rankedGroups = [...groups.values()].sort((left, right) => {
+    if (left.sumIntensity !== right.sumIntensity) {
+      return right.sumIntensity - left.sumIntensity;
     }
-    if (current.sumIntensity !== bestGroup.sumIntensity) {
-      bestGroup =
-        current.sumIntensity > bestGroup.sumIntensity ? current : bestGroup;
-      continue;
+    if (left.nearestDistance !== right.nearestDistance) {
+      return left.nearestDistance - right.nearestDistance;
     }
-    if (current.nearestDistance < bestGroup.nearestDistance) {
-      bestGroup = current;
-    }
-  }
+    return right.count - left.count;
+  });
+  const bestGroup = rankedGroups[0] ?? null;
 
   if (!bestGroup) {
     return {
@@ -281,19 +283,47 @@ function aggregateAmbientProfiles(
     };
   }
 
-  const centroidX = bestGroup.weightedX / bestGroup.sumIntensity;
-  const centroidY = bestGroup.weightedY / bestGroup.sumIntensity;
-  const aggregateBoost = Math.min(
-    0.35,
-    (bestGroup.sumIntensity - bestGroup.maxIntensity) * 0.35
-  );
+  const primaryProfile = createAmbientLayerFromGroup(bestGroup);
+  const blendedLayers = rankedGroups
+    .slice(1)
+    .filter((group) => shouldBlendAmbientGroup(bestGroup, group))
+    .slice(0, 2)
+    .map((group) => createAmbientLayerFromGroup(group));
 
   return {
-    kind: bestGroup.kind,
-    intensity: Math.min(1, bestGroup.maxIntensity + aggregateBoost),
+    ...primaryProfile,
+    blendedLayers: blendedLayers.length > 0 ? blendedLayers : undefined,
+  };
+}
+
+function createAmbientLayerFromGroup(
+  group: AmbientAggregationGroup
+): NearbyAmbientLayer {
+  const centroidX = group.weightedX / group.sumIntensity;
+  const centroidY = group.weightedY / group.sumIntensity;
+  const aggregateBoost = Math.min(
+    0.35,
+    (group.sumIntensity - group.maxIntensity) * 0.35
+  );
+  return {
+    kind: group.kind,
+    intensity: Math.min(1, group.maxIntensity + aggregateBoost),
     emitter: {
       x: Math.round(centroidX),
       y: Math.round(centroidY),
     },
   };
+}
+
+function shouldBlendAmbientGroup(
+  primary: AmbientAggregationGroup,
+  candidate: AmbientAggregationGroup
+): boolean {
+  if (candidate.kind === primary.kind) {
+    return false;
+  }
+  if (candidate.nearestDistance > primary.nearestDistance + 3) {
+    return false;
+  }
+  return candidate.sumIntensity >= primary.sumIntensity * 0.42;
 }

@@ -7,6 +7,8 @@ import { MAX_SIMULTANEOUS_PROCEDURAL_SOUND_VOICES } from './audio-budget.ts';
 import type { AudioCategory } from './audio-categories.ts';
 import { resolveSoundEffectCategory } from './audio-categories.ts';
 import type { NearbyAmbientKind } from './nearby-ambient.ts';
+import type { NearbyAmbientProfile } from './nearby-ambient.ts';
+import { resolveAmbientPlaybackLayers } from './ambient-soundscape.ts';
 import {
   buildRenderedProceduralSoundBufferKey,
   canRenderProceduralSoundToBuffer,
@@ -447,13 +449,12 @@ export function createSoundEffectController(
   let lastInteractionAtMs = -Infinity;
   let lastWindAtMs = -Infinity;
   let lastProgressionAtMs = -Infinity;
-  let lastOceanAtMs = -Infinity;
+  const lastAmbientCueAtMsBySignature = new Map<string, number>();
   let lastTrainEngineAtMs = -Infinity;
   let lastTrainWhistleAtMs = -Infinity;
   let lastPaddleCalliopeAtMs = -Infinity;
   let lastSteamWhistleAtMs = -Infinity;
   let lastSteamWhistleSignature = '';
-  let lastAmbientSignature = '';
   let previousJumping = false;
   const variationSelector = createSoundVariationSelector();
 
@@ -760,51 +761,51 @@ export function createSoundEffectController(
           lastSteamWhistleSignature = '';
         }
 
-        const ambientSignature = nearbyAmbient?.emitter
-          ? `${nearbyAmbient.kind}:${Math.round(nearbyAmbient.emitter.x)}:${Math.round(nearbyAmbient.emitter.y)}`
-          : '';
-        const ambientChanged =
-          ambientSignature.length > 0 &&
-          ambientSignature !== lastAmbientSignature;
-        const ambientReady = nearbyAmbient?.emitter
-          ? ambientChanged
-            ? nowMs - lastOceanAtMs >= 900
-            : nowMs - lastOceanAtMs >=
-              getAmbientSoundCadenceMs(
-                nearbyAmbient.kind,
-                nearbyAmbient.intensity ?? 0.5
-              )
-          : false;
-
-        if (nearbyAmbient?.emitter && ambientReady) {
-          lastOceanAtMs = nowMs;
-          lastAmbientSignature = ambientSignature;
-          sink.play({
-            kind: resolveAmbientEffectKind(nearbyAmbient.kind),
-            nowMs,
-            frequency: resolveAmbientSoundFrequency(
-              nearbyAmbient.kind,
-              nearbyAmbient.intensity
-            ),
-            durationMs: getAmbientSoundDurationMs(
-              nearbyAmbient.kind,
-              nearbyAmbient.intensity
-            ),
-            volume:
-              getAmbientSoundVolume(
-                nearbyAmbient.kind,
-                nearbyAmbient.intensity
-              ) * ambienceDuckingGain,
-            waveform: resolveAmbientSoundWaveform(nearbyAmbient.kind),
-            emitter: nearbyAmbient.emitter,
-            listener: nearbyAmbient.listener ?? listener,
-            recipeId: buildProceduralSoundRecipeId(
-              resolveAmbientEffectKind(nearbyAmbient.kind),
-              nearbyAmbient.kind
-            ),
-          });
-        } else if (!nearbyAmbient?.emitter) {
-          lastAmbientSignature = '';
+        const ambientLayers = resolveAmbientPlaybackLayers({
+          profile: nearbyAmbient ?? null,
+          listener,
+          nowMs,
+        });
+        if (ambientLayers.length > 0) {
+          for (let index = 0; index < ambientLayers.length; index += 1) {
+            const layer = ambientLayers[index]!;
+            const previousAmbientAtMs =
+              lastAmbientCueAtMsBySignature.get(layer.signature) ?? -Infinity;
+            const ambientReady =
+              previousAmbientAtMs === -Infinity
+                ? true
+                : nowMs - previousAmbientAtMs >=
+                  getAmbientSoundCadenceMs(layer.kind, layer.intensity) *
+                    layer.cadenceMultiplier;
+            if (!ambientReady) {
+              continue;
+            }
+            lastAmbientCueAtMsBySignature.set(layer.signature, nowMs);
+            sink.play({
+              kind: resolveAmbientEffectKind(layer.kind),
+              nowMs,
+              frequency: resolveAmbientSoundFrequency(
+                layer.kind,
+                layer.intensity
+              ),
+              durationMs: getAmbientSoundDurationMs(
+                layer.kind,
+                layer.intensity
+              ),
+              volume:
+                getAmbientSoundVolume(layer.kind, layer.intensity) *
+                ambienceDuckingGain *
+                layer.volumeMultiplier,
+              waveform: resolveAmbientSoundWaveform(layer.kind),
+              emitter: layer.emitter,
+              listener: layer.listener ?? listener,
+              recipeId: buildProceduralSoundRecipeId(
+                resolveAmbientEffectKind(layer.kind),
+                layer.kind,
+                layer.identityVariant
+              ),
+            });
+          }
         }
 
         if (

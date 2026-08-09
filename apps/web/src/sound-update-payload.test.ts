@@ -32,6 +32,13 @@ describe('sound update payload builder', () => {
         kind: 'settlement',
         intensity: 0.65,
         emitter: { x: 14, y: -7 },
+        blendedLayers: [
+          {
+            kind: 'plains',
+            intensity: 0.28,
+            emitter: { x: 12, y: -8 },
+          },
+        ],
       },
     });
     const second = buildPayload({
@@ -61,6 +68,13 @@ describe('sound update payload builder', () => {
         kind: 'ocean',
         intensity: 0.25,
         emitter: { x: 15, y: -9 },
+        blendedLayers: [
+          {
+            kind: 'forest',
+            intensity: 0.4,
+            emitter: { x: 13, y: -8 },
+          },
+        ],
       },
     });
 
@@ -94,6 +108,13 @@ describe('sound update payload builder', () => {
         intensity: 0.25,
         emitter: { x: 15, y: -9 },
         listener: { x: 13.5, y: -5.5 },
+        blendedLayers: [
+          {
+            kind: 'forest',
+            intensity: 0.4,
+            emitter: { x: 13, y: -8 },
+          },
+        ],
       })
     );
   });
