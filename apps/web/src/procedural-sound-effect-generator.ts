@@ -42,6 +42,7 @@ export type ProceduralSoundEffect = {
   filters?: ProceduralSoundFilter[];
   distortion?: ProceduralSoundDistortion;
   delay?: ProceduralSoundDelay;
+  reverb?: ProceduralSoundReverb;
   sweeps?: ProceduralSoundFrequencySweep[];
   layers?: ProceduralSoundEffectLayer[];
   emitter?: SoundPosition;
@@ -62,6 +63,7 @@ export type ProceduralSoundEffectLayer = {
   filters?: ProceduralSoundFilter[];
   distortion?: ProceduralSoundDistortion;
   delay?: ProceduralSoundDelay;
+  reverb?: ProceduralSoundReverb;
   sweeps?: ProceduralSoundFrequencySweep[];
 };
 
@@ -123,6 +125,14 @@ export type ProceduralSoundDelay = {
   mix: number;
 };
 
+export type ProceduralSoundReverb = {
+  profileId: string;
+  decayMs: number;
+  mix: number;
+  preDelayMs: number;
+  toneHz: number;
+};
+
 export type ProceduralSoundFrequencySweep = {
   curve: ProceduralSoundFrequencySweepCurve;
   targetMultiplier?: number;
@@ -152,6 +162,7 @@ export type ProceduralSoundRecipe = {
   filters?: readonly ProceduralSoundFilterRecipe[];
   distortion?: ProceduralSoundDistortionRecipe;
   delay?: ProceduralSoundDelayRecipe;
+  reverb?: ProceduralSoundReverbRecipe;
   sweeps?: readonly ProceduralSoundFrequencySweepRecipe[];
   layers?: readonly ProceduralSoundLayerRecipe[];
 };
@@ -245,6 +256,18 @@ export type ProceduralSoundDelayRecipe = {
   mixVariation?: number;
 };
 
+export type ProceduralSoundReverbRecipe = {
+  profileId: string;
+  decayMs: number;
+  mix: number;
+  preDelayMs: number;
+  toneHz: number;
+  decayVariation?: number;
+  mixVariation?: number;
+  preDelayVariation?: number;
+  toneVariation?: number;
+};
+
 export type ProceduralSoundLayerRecipe = {
   id: string;
   waveform: SoundWaveform | readonly SoundWaveform[];
@@ -268,6 +291,7 @@ export type ProceduralSoundLayerRecipe = {
   filters?: readonly ProceduralSoundFilterRecipe[];
   distortion?: ProceduralSoundDistortionRecipe;
   delay?: ProceduralSoundDelayRecipe;
+  reverb?: ProceduralSoundReverbRecipe;
   sweeps?: readonly ProceduralSoundFrequencySweepRecipe[];
 };
 
@@ -358,6 +382,7 @@ export function createProceduralSoundEffectGenerator(): ProceduralSoundEffectGen
         random
       );
       const delay = resolveSoundDelay(recipe.delay, variationDepth, random);
+      const reverb = resolveSoundReverb(recipe.reverb, variationDepth, random);
 
       return {
         kind,
@@ -372,6 +397,7 @@ export function createProceduralSoundEffectGenerator(): ProceduralSoundEffectGen
         filters,
         distortion,
         delay,
+        reverb,
         sweeps,
         layers,
         emitter,
@@ -467,6 +493,7 @@ function resolveEffectLayers(
         random
       ),
       delay: resolveSoundDelay(layerRecipe.delay, variationDepth, random),
+      reverb: resolveSoundReverb(layerRecipe.reverb, variationDepth, random),
       sweeps: resolveFrequencySweeps(
         layerRecipe.sweeps,
         frequency,
@@ -728,6 +755,60 @@ function resolveSoundDelay(
       ),
       0,
       1
+    ),
+  };
+}
+
+function resolveSoundReverb(
+  reverbRecipe: ProceduralSoundReverbRecipe | undefined,
+  variationDepth: number,
+  random: () => number
+): ProceduralSoundReverb | undefined {
+  if (!reverbRecipe) {
+    return undefined;
+  }
+
+  return {
+    profileId: reverbRecipe.profileId,
+    decayMs: clampValue(
+      varyScalar(
+        reverbRecipe.decayMs,
+        reverbRecipe.decayVariation ?? 0,
+        variationDepth,
+        random
+      ),
+      20,
+      8_000
+    ),
+    mix: clampValue(
+      varyScalar(
+        reverbRecipe.mix,
+        reverbRecipe.mixVariation ?? 0,
+        variationDepth,
+        random
+      ),
+      0,
+      1
+    ),
+    preDelayMs: clampValue(
+      varyScalar(
+        reverbRecipe.preDelayMs,
+        reverbRecipe.preDelayVariation ?? 0,
+        variationDepth,
+        random
+      ),
+      0,
+      1_000
+    ),
+    toneHz: clampValue(
+      varyScalar(
+        reverbRecipe.toneHz,
+        reverbRecipe.toneVariation ?? 0,
+        variationDepth,
+        random
+      ),
+      80,
+      20_000
     ),
   };
 }

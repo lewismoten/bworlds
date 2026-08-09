@@ -393,4 +393,47 @@ describe('procedural sound effect generator', () => {
     expect(effect.delay?.mix).toBeGreaterThan(0.22);
     expect(effect.delay?.mix).toBeLessThan(0.26);
   });
+
+  it('preserves deterministic procedural reverb settings', () => {
+    const generator = createProceduralSoundEffectGenerator();
+    const effect = generator.generate({
+      kind: 'cave-ambience',
+      nowMs: 2100,
+      seed: 91,
+      recipe: {
+        id: 'cave-ambience-reverb',
+        baseFrequency: 118,
+        baseDurationMs: 1680,
+        baseVolume: 0.022,
+        waveform: 'sine',
+        reverb: {
+          profileId: 'cavern-chamber',
+          decayMs: 1480,
+          mix: 0.34,
+          preDelayMs: 24,
+          toneHz: 3200,
+          decayVariation: 0.05,
+          mixVariation: 0.04,
+          preDelayVariation: 0.08,
+          toneVariation: 0.06,
+        },
+      },
+    });
+
+    expect(effect.reverb).toEqual({
+      profileId: 'cavern-chamber',
+      decayMs: expect.any(Number),
+      mix: expect.any(Number),
+      preDelayMs: expect.any(Number),
+      toneHz: expect.any(Number),
+    });
+    expect(effect.reverb?.decayMs).toBeGreaterThan(1400);
+    expect(effect.reverb?.decayMs).toBeLessThan(1560);
+    expect(effect.reverb?.mix).toBeGreaterThan(0.32);
+    expect(effect.reverb?.mix).toBeLessThan(0.36);
+    expect(effect.reverb?.preDelayMs).toBeGreaterThan(22);
+    expect(effect.reverb?.preDelayMs).toBeLessThan(26);
+    expect(effect.reverb?.toneHz).toBeGreaterThan(3000);
+    expect(effect.reverb?.toneHz).toBeLessThan(3400);
+  });
 });

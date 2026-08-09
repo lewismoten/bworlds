@@ -83,7 +83,7 @@
 - [x] Support configurable filter envelopes that change throughout a sound.
 - [x] Support distortion and saturation for impacts, machinery, monsters, and aggressive sounds.
 - [x] Support delay and echo.
-- [ ] Support procedural reverb or reusable impulse-response environments.
+- [x] Support procedural reverb or reusable impulse-response environments.
 - [ ] Support tremolo through amplitude modulation.
 - [ ] Support vibrato through frequency modulation.
 - [ ] Support frequency modulation for metallic, magical, bell-like, and unusual sounds.

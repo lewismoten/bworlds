@@ -1,4 +1,8 @@
-import { appendHashSeedPart, registerHashSeeds } from '@bworlds/core';
+import {
+  appendHashSeedPart,
+  createRandom,
+  registerHashSeeds,
+} from '@bworlds/core';
 import { MAX_SIMULTANEOUS_PROCEDURAL_SOUND_VOICES } from './audio-budget.ts';
 import type { AudioCategory } from './audio-categories.ts';
 import { resolveSoundEffectCategory } from './audio-categories.ts';
@@ -9,6 +13,7 @@ import {
   createProceduralSoundEffectGenerator,
   type ProceduralSoundDistortion,
   type ProceduralNoiseColor,
+  type ProceduralSoundReverb,
   type ProceduralSoundEffectLayer,
   type ProceduralSoundFilter,
   type ProceduralPitchEnvelope,
@@ -323,6 +328,7 @@ function resolveProceduralSoundRecipe(
     filters: resolveProceduralSoundFilters(kind),
     distortion: resolveProceduralSoundDistortion(kind),
     delay: resolveProceduralSoundDelay(kind),
+    reverb: resolveProceduralSoundReverb(kind),
     sweeps: resolveProceduralSoundSweeps(kind),
     layers: resolveProceduralSoundLayers(kind),
     ...resolveProceduralSoundVariation(kind),
@@ -519,6 +525,49 @@ function resolveProceduralSoundDelay(kind: SoundEffectKind) {
         timeVariation: 0.03,
         feedbackVariation: 0.04,
         mixVariation: 0.04,
+      };
+    default:
+      return undefined;
+  }
+}
+
+function resolveProceduralSoundReverb(kind: SoundEffectKind) {
+  switch (kind) {
+    case 'cave-ambience':
+      return {
+        profileId: 'cavern-chamber',
+        decayMs: 1480,
+        mix: 0.34,
+        preDelayMs: 24,
+        toneHz: 3200,
+        decayVariation: 0.05,
+        mixVariation: 0.04,
+        preDelayVariation: 0.08,
+        toneVariation: 0.06,
+      };
+    case 'combat-magic':
+      return {
+        profileId: 'arcane-burst',
+        decayMs: 820,
+        mix: 0.22,
+        preDelayMs: 18,
+        toneHz: 4200,
+        decayVariation: 0.06,
+        mixVariation: 0.05,
+        preDelayVariation: 0.08,
+        toneVariation: 0.05,
+      };
+    case 'steam-whistle':
+      return {
+        profileId: 'industrial-yard',
+        decayMs: 960,
+        mix: 0.18,
+        preDelayMs: 16,
+        toneHz: 3600,
+        decayVariation: 0.04,
+        mixVariation: 0.04,
+        preDelayVariation: 0.05,
+        toneVariation: 0.05,
       };
     default:
       return undefined;
@@ -1653,6 +1702,7 @@ type WaveShaperNodeLike = WaveShaperNode & {
   oversample?: OverSampleType;
 };
 type DelayNodeLike = DelayNode;
+type ConvolverNodeLike = ConvolverNode;
 type ActiveSoundFilter = {
   node: BiquadFilterNode;
   config: ProceduralSoundFilter;
@@ -1669,11 +1719,19 @@ type ActiveSoundDelay = {
   wetGain: GainNode;
   config: ProceduralSoundDelay;
 };
+type ActiveSoundReverb = {
+  preDelay: DelayNodeLike | null;
+  convolver: ConvolverNodeLike;
+  tone: BiquadFilterNode | null;
+  wetGain: GainNode;
+  config: ProceduralSoundReverb;
+};
 type ActiveSoundSource = {
   source: ScheduledSoundSourceNode;
   filters: ActiveSoundFilter[];
   distortion: ActiveSoundDistortion | null;
   delay: ActiveSoundDelay | null;
+  reverb: ActiveSoundReverb | null;
   gain: GainNode;
   effect: ProceduralSoundEffect;
 };
@@ -1725,6 +1783,7 @@ export function createWebAudioSoundEffectSink(
   let outputGainNode: GainNode | null = null;
   const activeVoices = new Set<ActiveSoundVoice>();
   const noiseBufferCache = new Map<string, AudioBuffer>();
+  const reverbImpulseCache = new Map<string, AudioBuffer>();
 
   function getAudioContext(): AudioContext | null {
     if (audioContext) {
@@ -1795,6 +1854,10 @@ export function createWebAudioSoundEffectSink(
       source.delay?.delay.disconnect?.();
       source.delay?.feedbackGain.disconnect?.();
       source.delay?.wetGain.disconnect?.();
+      source.reverb?.preDelay?.disconnect?.();
+      source.reverb?.convolver.disconnect?.();
+      source.reverb?.tone?.disconnect?.();
+      source.reverb?.wetGain.disconnect?.();
       source.gain.disconnect?.();
     }
     voice.mixGain.disconnect?.();
@@ -1851,7 +1914,8 @@ export function createWebAudioSoundEffectSink(
       const sources = createScheduledSoundSources(
         context,
         effect,
-        noiseBufferCache
+        noiseBufferCache,
+        reverbImpulseCache
       );
       const mixGain = context.createGain();
       const panner =
@@ -1955,16 +2019,25 @@ export function createWebAudioSoundEffectSink(
 function createScheduledSoundSources(
   context: AudioContext,
   effect: ProceduralSoundEffect,
-  noiseBufferCache: Map<string, AudioBuffer>
+  noiseBufferCache: Map<string, AudioBuffer>,
+  reverbImpulseCache: Map<string, AudioBuffer>
 ): ActiveSoundSource[] {
-  const sources = [createActiveSoundSource(context, effect, noiseBufferCache)];
+  const sources = [
+    createActiveSoundSource(
+      context,
+      effect,
+      noiseBufferCache,
+      reverbImpulseCache
+    ),
+  ];
 
   for (const layer of effect.layers ?? []) {
     sources.push(
       createActiveSoundSource(
         context,
         createLayeredSoundEffect(effect, layer),
-        noiseBufferCache
+        noiseBufferCache,
+        reverbImpulseCache
       )
     );
   }
@@ -1975,13 +2048,15 @@ function createScheduledSoundSources(
 function createActiveSoundSource(
   context: AudioContext,
   effect: ProceduralSoundEffect,
-  noiseBufferCache: Map<string, AudioBuffer>
+  noiseBufferCache: Map<string, AudioBuffer>,
+  reverbImpulseCache: Map<string, AudioBuffer>
 ): ActiveSoundSource {
   return {
     source: createScheduledSoundSource(context, effect, noiseBufferCache),
     filters: createSoundEffectFilters(context, effect),
     distortion: createSoundEffectDistortion(context, effect),
     delay: createSoundEffectDelay(context, effect),
+    reverb: createSoundEffectReverb(context, effect, reverbImpulseCache),
     gain: context.createGain(),
     effect,
   };
@@ -2003,6 +2078,7 @@ function createLayeredSoundEffect(
     filters: layer.filters ?? effect.filters,
     distortion: layer.distortion ?? effect.distortion,
     delay: layer.delay ?? effect.delay,
+    reverb: layer.reverb ?? effect.reverb,
     sweeps: layer.sweeps ?? effect.sweeps,
     layers: undefined,
   };
@@ -2102,6 +2178,90 @@ function createSoundEffectDelay(
   };
 }
 
+function createSoundEffectReverb(
+  context: AudioContext,
+  effect: ProceduralSoundEffect,
+  reverbImpulseCache: Map<string, AudioBuffer>
+): ActiveSoundReverb | null {
+  if (
+    typeof context.createConvolver !== 'function' ||
+    typeof context.createGain !== 'function' ||
+    !effect.reverb
+  ) {
+    return null;
+  }
+
+  const convolver = context.createConvolver() as ConvolverNodeLike;
+  convolver.buffer = getOrCreateReverbImpulseBuffer(
+    context,
+    effect,
+    reverbImpulseCache
+  );
+  const preDelay =
+    typeof context.createDelay === 'function'
+      ? (context.createDelay() as DelayNodeLike)
+      : null;
+  const tone =
+    typeof context.createBiquadFilter === 'function'
+      ? context.createBiquadFilter()
+      : null;
+  const wetGain = context.createGain();
+
+  if (preDelay) {
+    preDelay.delayTime.setValueAtTime(
+      effect.reverb.preDelayMs / 1000,
+      context.currentTime
+    );
+  }
+  if (tone) {
+    tone.type = 'lowpass';
+    tone.frequency.setValueAtTime(effect.reverb.toneHz, context.currentTime);
+    tone.Q.setValueAtTime(0.7, context.currentTime);
+  }
+  wetGain.gain.setValueAtTime(effect.reverb.mix, context.currentTime);
+
+  return {
+    preDelay,
+    convolver,
+    tone,
+    wetGain,
+    config: effect.reverb,
+  };
+}
+
+function getOrCreateReverbImpulseBuffer(
+  context: AudioContext,
+  effect: ProceduralSoundEffect,
+  cache: Map<string, AudioBuffer>
+): AudioBuffer {
+  const reverb = effect.reverb!;
+  const seed = effect.seed ?? 0;
+  const frameCount = Math.max(
+    1,
+    Math.ceil(context.sampleRate * (reverb.decayMs / 1000))
+  );
+  const cacheKey = `${reverb.profileId}:${seed}:${frameCount}:${Math.round(
+    reverb.toneHz
+  )}`;
+  const cached = cache.get(cacheKey);
+  if (cached) {
+    return cached;
+  }
+
+  const buffer = context.createBuffer(1, frameCount, context.sampleRate);
+  const channel = buffer.getChannelData(0);
+  const random = createRandom(appendHashSeedPart(seed, frameCount));
+  const toneFactor = Math.max(0.1, Math.min(1, reverb.toneHz / 12_000));
+  for (let index = 0; index < frameCount; index += 1) {
+    const progress = index / Math.max(1, frameCount - 1);
+    const decay = Math.pow(1 - progress, 1.6 + (1 - toneFactor) * 1.2);
+    const noise = random() * 2 - 1;
+    channel[index] = noise * decay * toneFactor;
+  }
+  cache.set(cacheKey, buffer);
+  return buffer;
+}
+
 function createDistortionCurve(
   distortion: ProceduralSoundDistortion
 ): Float32Array {
@@ -2123,9 +2283,16 @@ function connectSoundEffectSourceChain(source: ActiveSoundSource): void {
   const lastFilter = source.filters[source.filters.length - 1]?.node ?? null;
   const distortionInput = source.distortion?.preGain ?? null;
   const delayInput = source.delay?.delay ?? null;
+  const reverbInput =
+    source.reverb?.preDelay ?? source.reverb?.convolver ?? null;
   const dryOutput = source.distortion?.postGain ?? lastFilter ?? null;
 
-  if (source.filters.length === 0 && !source.distortion && !source.delay) {
+  if (
+    source.filters.length === 0 &&
+    !source.distortion &&
+    !source.delay &&
+    !source.reverb
+  ) {
     source.source.connect(source.gain);
     return;
   }
@@ -2150,7 +2317,7 @@ function connectSoundEffectSourceChain(source: ActiveSoundSource): void {
     source.distortion.postGain.connect(source.gain);
   }
 
-  if (!firstFilter && !source.distortion && delayInput) {
+  if (!firstFilter && !source.distortion && (delayInput || source.reverb)) {
     source.source.connect(source.gain);
   }
 
@@ -2164,6 +2331,26 @@ function connectSoundEffectSourceChain(source: ActiveSoundSource): void {
     source.delay.wetGain.connect(source.gain);
     source.delay.delay.connect(source.delay.feedbackGain);
     source.delay.feedbackGain.connect(source.delay.delay);
+  }
+
+  if (source.reverb && reverbInput) {
+    if (dryOutput) {
+      dryOutput.connect(reverbInput);
+    } else if (!distortionInput && !firstFilter) {
+      source.source.connect(reverbInput);
+    }
+
+    if (source.reverb.preDelay) {
+      source.reverb.preDelay.connect(source.reverb.convolver);
+    }
+
+    if (source.reverb.tone) {
+      source.reverb.convolver.connect(source.reverb.tone);
+      source.reverb.tone.connect(source.reverb.wetGain);
+    } else {
+      source.reverb.convolver.connect(source.reverb.wetGain);
+    }
+    source.reverb.wetGain.connect(source.gain);
   }
 }
 
