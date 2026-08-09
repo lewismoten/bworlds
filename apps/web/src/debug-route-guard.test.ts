@@ -19,6 +19,13 @@ describe('debug route guard', () => {
         pathname: '/debug/music',
       })
     ).toBe('/debug/music/');
+
+    expect(
+      buildCanonicalDebugRouteUrl({
+        pathname: '/bworlds/debug',
+        search: '?seed=123',
+      })
+    ).toBe('/bworlds/debug/?seed=123');
   });
 
   it('skips non-debug routes and already canonical debug pages', () => {

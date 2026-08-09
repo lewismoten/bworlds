@@ -6,29 +6,83 @@ export const ROOT_ENTRY_PAGE_PATHS = [
 
 export type RootEntryPagePath = (typeof ROOT_ENTRY_PAGE_PATHS)[number];
 
-const ROOT_ENTRY_PAGE_PATH_SET = new Set<string>(ROOT_ENTRY_PAGE_PATHS);
+type RootEntryRouteDefinition = {
+  pagePath: RootEntryPagePath;
+  aliases: readonly string[];
+};
 
-const ROOT_ENTRY_PAGE_PATH_ALIASES = new Map<string, RootEntryPagePath>([
-  ['/debug', '/debug/'],
-  ['/debug/', '/debug/'],
-  ['/debug.html', '/debug/'],
-  ['/debug/index.html', '/debug/'],
-  ['/debug/music', '/debug/music/'],
-  ['/debug/music/', '/debug/music/'],
-  ['/debug/music.html', '/debug/music/'],
-  ['/debug/music/index.html', '/debug/music/'],
-  ['/debug/trees', '/debug/trees/'],
-  ['/debug/trees/', '/debug/trees/'],
-  ['/debug/trees.html', '/debug/trees/'],
-  ['/debug/trees/index.html', '/debug/trees/'],
-]);
+export type ResolvedRootEntryRoute = {
+  pagePath: RootEntryPagePath;
+  canonicalPathname: string;
+  matchedPathname: string;
+  isAlias: boolean;
+};
+
+const ROOT_ENTRY_ROUTE_DEFINITIONS: readonly RootEntryRouteDefinition[] = [
+  {
+    pagePath: '/debug/',
+    aliases: ['/debug', '/debug/', '/debug.html', '/debug/index.html'],
+  },
+  {
+    pagePath: '/debug/music/',
+    aliases: [
+      '/debug/music',
+      '/debug/music/',
+      '/debug/music.html',
+      '/debug/music/index.html',
+    ],
+  },
+  {
+    pagePath: '/debug/trees/',
+    aliases: [
+      '/debug/trees',
+      '/debug/trees/',
+      '/debug/trees.html',
+      '/debug/trees/index.html',
+    ],
+  },
+];
+
+function matchRouteSuffix(
+  pathname: string,
+  suffix: string
+): { prefix: string } | null {
+  if (pathname === suffix) {
+    return { prefix: '' };
+  }
+
+  if (!pathname.endsWith(suffix)) {
+    return null;
+  }
+
+  const prefix = pathname.slice(0, -suffix.length);
+  return prefix.startsWith('/') ? { prefix } : null;
+}
+
+export function resolveRootEntryRoute(
+  pathname: string
+): ResolvedRootEntryRoute | null {
+  for (const definition of ROOT_ENTRY_ROUTE_DEFINITIONS) {
+    for (const alias of definition.aliases) {
+      const match = matchRouteSuffix(pathname, alias);
+      if (!match) {
+        continue;
+      }
+
+      return {
+        pagePath: definition.pagePath,
+        canonicalPathname: `${match.prefix}${definition.pagePath}`,
+        matchedPathname: `${match.prefix}${alias}`,
+        isAlias: alias !== definition.pagePath,
+      };
+    }
+  }
+
+  return null;
+}
 
 export function resolveRootEntryPagePath(
   pathname: string
 ): RootEntryPagePath | null {
-  if (ROOT_ENTRY_PAGE_PATH_SET.has(pathname)) {
-    return pathname as RootEntryPagePath;
-  }
-
-  return ROOT_ENTRY_PAGE_PATH_ALIASES.get(pathname) ?? null;
+  return resolveRootEntryRoute(pathname)?.pagePath ?? null;
 }

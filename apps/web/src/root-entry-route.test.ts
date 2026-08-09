@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   ROOT_ENTRY_PAGE_PATHS,
+  resolveRootEntryRoute,
   resolveRootEntryPagePath,
 } from './root-entry-route.ts';
 
@@ -31,5 +32,22 @@ describe('root entry route', () => {
       '/debug/trees/'
     );
     expect(resolveRootEntryPagePath('/')).toBeNull();
+  });
+
+  it('resolves debug routes mounted under a base path without losing their logical page', () => {
+    expect(resolveRootEntryPagePath('/bworlds/debug')).toBe('/debug/');
+    expect(resolveRootEntryPagePath('/bworlds/debug/music/index.html')).toBe(
+      '/debug/music/'
+    );
+    expect(resolveRootEntryPagePath('/bworlds/debug/trees/')).toBe(
+      '/debug/trees/'
+    );
+
+    expect(resolveRootEntryRoute('/bworlds/debug/index.html')).toEqual({
+      pagePath: '/debug/',
+      canonicalPathname: '/bworlds/debug/',
+      matchedPathname: '/bworlds/debug/index.html',
+      isAlias: true,
+    });
   });
 });

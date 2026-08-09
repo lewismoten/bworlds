@@ -29,6 +29,16 @@ describe('debug route aliases', () => {
     );
   });
 
+  it('preserves a mounted base path when redirecting debug routes', () => {
+    expect(resolveDebugRouteRedirect('/bworlds/debug')).toBe('/bworlds/debug/');
+    expect(resolveDebugRouteRedirect('/bworlds/debug/music')).toBe(
+      '/bworlds/debug/music/'
+    );
+    expect(resolveDebugRouteRedirect('/bworlds/debug/trees/index.html')).toBe(
+      '/bworlds/debug/trees/'
+    );
+  });
+
   it('leaves canonical and unrelated routes alone', () => {
     expect(resolveDebugRouteRedirect('/debug/')).toBeNull();
     expect(resolveDebugRouteRedirect('/debug/music/')).toBeNull();

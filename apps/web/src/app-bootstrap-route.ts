@@ -1,6 +1,6 @@
 import { buildCanonicalDebugRouteUrl } from './debug-route-guard.ts';
 import {
-  resolveRootEntryPagePath,
+  resolveRootEntryRoute,
   type RootEntryPagePath,
 } from './root-entry-route.ts';
 
@@ -19,18 +19,14 @@ export function resolveAppBootstrapRoute(
   location: BootstrapLocationLike
 ): AppBootstrapRoute {
   const canonicalUrl = buildCanonicalDebugRouteUrl(location);
-
-  if (canonicalUrl) {
-    const canonicalPathname = new URL(canonicalUrl, 'http://bworlds.local')
-      .pathname;
-    return {
-      canonicalUrl,
-      pagePath: resolveRootEntryPagePath(canonicalPathname),
-    };
-  }
+  const route = resolveRootEntryRoute(
+    canonicalUrl
+      ? new URL(canonicalUrl, 'http://bworlds.local').pathname
+      : location.pathname
+  );
 
   return {
-    canonicalUrl: null,
-    pagePath: resolveRootEntryPagePath(location.pathname),
+    canonicalUrl: canonicalUrl ?? null,
+    pagePath: route?.pagePath ?? null,
   };
 }

@@ -15,6 +15,18 @@ describe('app bootstrap route', () => {
     });
   });
 
+  it('keeps dedicated debug pages on the debug entry when the app is mounted under a base path', () => {
+    expect(
+      resolveAppBootstrapRoute({
+        pathname: '/bworlds/debug/index.html',
+        search: '?seed=123',
+      })
+    ).toEqual({
+      canonicalUrl: '/bworlds/debug/?seed=123',
+      pagePath: '/debug/',
+    });
+  });
+
   it('resolves canonical debug entry pages without forcing another redirect', () => {
     expect(
       resolveAppBootstrapRoute({

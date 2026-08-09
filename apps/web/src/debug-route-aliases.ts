@@ -1,3 +1,5 @@
+import { resolveRootEntryRoute } from './root-entry-route.ts';
+
 export const DEBUG_ROUTE_ALIASES = [
   '/debug',
   '/debug/index.html',
@@ -8,17 +10,10 @@ export const DEBUG_ROUTE_ALIASES = [
 ] as const;
 
 export function resolveDebugRouteRedirect(pathname: string): string | null {
-  switch (pathname) {
-    case '/debug':
-    case '/debug/index.html':
-      return '/debug/';
-    case '/debug/music':
-    case '/debug/music/index.html':
-      return '/debug/music/';
-    case '/debug/trees':
-    case '/debug/trees/index.html':
-      return '/debug/trees/';
-    default:
-      return null;
+  const route = resolveRootEntryRoute(pathname);
+  if (!route?.isAlias) {
+    return null;
   }
+
+  return route.canonicalPathname;
 }
