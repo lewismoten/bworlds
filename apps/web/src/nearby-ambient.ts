@@ -64,6 +64,17 @@ const BASE_AMBIENT_THRESHOLDS: Record<NearbyAmbientKind, number> = {
   ruins: 0.18,
 };
 
+const AMBIENT_BIOLOGICAL_ACTIVITY: Record<NearbyAmbientKind, number> = {
+  ocean: 0.58,
+  river: 0.68,
+  forest: 1,
+  plains: 0.78,
+  mountain: 0.44,
+  cave: 0.22,
+  settlement: 0.3,
+  ruins: 0.18,
+};
+
 export function findNearbyAmbientProfile(options: {
   state: AmbientStateLike;
   centerX: number;
@@ -101,8 +112,22 @@ export function shouldAdvertiseBaseAmbientSource(
   x: number,
   y: number
 ): boolean {
-  const threshold = BASE_AMBIENT_THRESHOLDS[kind];
+  const threshold = resolveAmbientSourceDensityThreshold(kind);
   return hashAmbientCoordinate(x, y, AMBIENT_KIND_SALTS[kind]) < threshold;
+}
+
+export function resolveAmbientBiologicalActivity(
+  kind: NearbyAmbientKind
+): number {
+  return AMBIENT_BIOLOGICAL_ACTIVITY[kind];
+}
+
+export function resolveAmbientSourceDensityThreshold(
+  kind: NearbyAmbientKind
+): number {
+  const activity = resolveAmbientBiologicalActivity(kind);
+  const densityBoost = 0.55 + activity * 0.9;
+  return Math.min(0.94, BASE_AMBIENT_THRESHOLDS[kind] * densityBoost);
 }
 
 function resolveAmbientProfileForTile(
@@ -133,7 +158,11 @@ function resolveAmbientProfileForTile(
   }
 
   const distance = Math.hypot(player.x - x, player.y - y);
-  const intensity = Math.max(0, 1 - distance / (searchRadius + 1));
+  const biologicalActivity = resolveAmbientBiologicalActivity(ambientKind);
+  const intensityScale =
+    sourceTier === 'poi' ? 1 : 0.55 + biologicalActivity * 0.45;
+  const intensity =
+    Math.max(0, 1 - distance / (searchRadius + 1)) * intensityScale;
   if (intensity <= 0.08) {
     return null;
   }

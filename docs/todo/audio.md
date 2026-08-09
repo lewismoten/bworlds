@@ -170,7 +170,7 @@
 - [ ] Give volcanic areas rumbling, cracking stone, steam, and lava activity.
 - [x] Give caves dripping water, distant movement, echoes, rock sounds, and underground wind.
 - [ ] Give magical environments their own unnatural ambient layers.
-- [ ] Generate ambient density based on how biologically active an area should be.
+- [x] Generate ambient density based on how biologically active an area should be.
 - [ ] Vary ambient sounds according to altitude.
 - [ ] Vary ambient sounds according to nearby terrain.
 - [x] Blend ambience smoothly when traveling between biomes.

@@ -8,6 +8,7 @@ import {
   getForestTreeFamilies,
   getForestTreeFruitProfiles,
   getForestTreeGenerator,
+  getForestTreeSpeciesMetadata,
   getForestTreeHistoricalProfiles,
   getForestTreeHollows,
   getForestTreeInhabitants,
@@ -68,6 +69,7 @@ export type TreeDebugSnapshot = {
     radius: number;
     leanMagnitude: number;
     curveMagnitude: number;
+    maximumHeight: number;
     barkMarkCount: number;
     fruitKind: string;
     fruitCount: number;
@@ -172,6 +174,9 @@ export function createTreeDebugSnapshot(
         hollows,
         index
       );
+      const speciesMetadata = getForestTreeSpeciesMetadata(
+        speciesId as 'oak' | 'birch' | 'pine'
+      );
 
       return {
         index,
@@ -191,6 +196,7 @@ export function createTreeDebugSnapshot(
           trunk?.trunkCurveX ?? 0,
           trunk?.trunkCurveZ ?? 0
         ),
+        maximumHeight: speciesMetadata.maximumHeight,
         barkMarkCount: damage?.barkMarks.length ?? 0,
         fruitKind: fruitProfile?.kind ?? '',
         fruitCount: fruitProfile?.count ?? 0,
@@ -267,6 +273,9 @@ export function buildTreeDebugMarkup(
               <div><dt>Trunk</dt><dd>${tree.trunkHeight.toFixed(2)}h / ${tree.radius.toFixed(
                 2
               )}r</dd></div>
+              <div><dt>Max Height</dt><dd>${tree.maximumHeight.toFixed(
+                2
+              )}</dd></div>
               <div><dt>Branches</dt><dd>${tree.branchCount}</dd></div>
               <div><dt>Foliage</dt><dd>${tree.foliageCount}</dd></div>
               <div><dt>Lean</dt><dd>${tree.leanMagnitude.toFixed(2)}</dd></div>

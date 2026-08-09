@@ -67,10 +67,14 @@ describe('tree debug', () => {
 
     expect(oak.trees).toHaveLength(1);
     expect(oak.trees[0]?.speciesId).toBe('oak');
+    expect(oak.trees[0]?.maximumHeight).toBeGreaterThan(2);
     expect(oak.tileSummary.previewSpeciesCount).toBe(1);
     expect(pine.trees).toHaveLength(1);
     expect(pine.trees[0]?.speciesId).toBe('pine');
     expect(pine.trees[0]?.form).toBe('pine');
+    expect(pine.trees[0]?.maximumHeight).toBeGreaterThan(
+      oak.trees[0]?.maximumHeight ?? 0
+    );
   });
 
   it('supports random and family-level tree generator previews', () => {
@@ -127,6 +131,7 @@ describe('tree debug', () => {
     expect(markup).toContain('tree-debug-form');
     expect(markup).toContain('tree-debug-randomize');
     expect(markup).toContain('Generator');
+    expect(markup).toContain('Max Height');
     expect(markup).toContain('Next Tree');
     expect(markup).toContain('Generated trees');
     expect(summary).toContain('Season');

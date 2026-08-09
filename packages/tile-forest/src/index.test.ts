@@ -31,6 +31,7 @@ import {
   getForestTreeHistoricalProfiles,
   getForestTreeFamilyPreview,
   getForestRandomTreePreview,
+  getForestTreeSpeciesMetadata,
   getForestTreeSpeciesPreview,
   getForestTreeTrunkProfiles,
   getForestCarvings,
@@ -857,8 +858,33 @@ describe('tile forest', () => {
     expect(oak.x).toBe(birch.x);
     expect(oak.y).toBe(birch.y);
     expect(oak.trunkHeight).not.toBe(birch.trunkHeight);
+    expect(oak.maximumHeight).toBe(
+      getForestTreeSpeciesMetadata('oak').maximumHeight
+    );
+    expect(birch.maximumHeight).toBe(
+      getForestTreeSpeciesMetadata('birch').maximumHeight
+    );
+    expect(pine.maximumHeight).toBe(
+      getForestTreeSpeciesMetadata('pine').maximumHeight
+    );
     expect(pine.form).toBe('pine');
     expect(getForestTreeSpeciesPreview('oak', 12, 8, 1)).toEqual(oak);
+  });
+
+  it('exposes shared species metadata including maximum age and height', () => {
+    expect(getForestTreeSpeciesMetadata('oak')).toEqual({
+      familyId: 'broadleaf',
+      form: 'broadleaf',
+      fruitKind: 'acorn',
+      maximumAgeYears: 240,
+      maximumHeight: 2.64,
+    });
+    expect(getForestTreeSpeciesMetadata('birch').maximumHeight).toBeGreaterThan(
+      getForestTreeSpeciesMetadata('oak').maximumHeight
+    );
+    expect(getForestTreeSpeciesMetadata('pine').maximumHeight).toBeGreaterThan(
+      getForestTreeSpeciesMetadata('birch').maximumHeight
+    );
   });
 
   it('can preview family-level and random tree generators deterministically', () => {

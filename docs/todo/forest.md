@@ -140,7 +140,7 @@ interface TreeCapabilities {
 - [ ] Give each species appropriate fruit or nuts.
 - [ ] Give each species appropriate flowering behavior.
 - [x] Define appropriate maximum age.
-- [ ] Define appropriate maximum height.
+- [x] Define appropriate maximum height.
 - [ ] Define typical habitat.
 - [ ] Define temperature tolerance.
 - [ ] Define moisture tolerance.

@@ -2315,6 +2315,23 @@ export function getForestTreeFamilyPreview(
   );
 }
 
+export function getForestTreeSpeciesMetadata(speciesId: ForestTreeSpeciesId): {
+  familyId: ForestTreeFamilyId;
+  form: ForestTreeForm;
+  fruitKind: 'acorn' | 'samara' | 'cone';
+  maximumAgeYears: number;
+  maximumHeight: number;
+} {
+  const definition = FOREST_TREE_SPECIES_DEFINITIONS[speciesId];
+  return {
+    familyId: definition.familyId,
+    form: definition.form,
+    fruitKind: definition.fruitKind,
+    maximumAgeYears: definition.maximumAgeYears,
+    maximumHeight: definition.maximumHeight,
+  };
+}
+
 export function getForestRandomTreePreview(
   tileX: number,
   tileY: number,
@@ -2768,6 +2785,7 @@ type ForestTreeSpeciesDefinition = {
   form: ForestTreeForm;
   fruitKind: 'acorn' | 'samara' | 'cone';
   maximumAgeYears: number;
+  maximumHeight: number;
   trunkHeightMin: number;
   trunkHeightRange: number;
   trunkRadiusMin: number;
@@ -2782,6 +2800,90 @@ type ForestTreeSpeciesDefinition = {
   canopyScaleRange: number;
   canopyHeightBase: number;
   canopyHeightRange: number;
+};
+
+const FOREST_OAK_SPECIES_DEFINITION = {
+  seed: FOREST_TREE_OAK_SEED,
+  speciesId: 'oak',
+  familyId: 'broadleaf',
+  variety: 0,
+  form: 'broadleaf',
+  fruitKind: 'acorn',
+  maximumAgeYears: 240,
+  maximumHeight: 2.64,
+  trunkHeightMin: 0.76,
+  trunkHeightRange: 0.42,
+  trunkRadiusMin: 0.09,
+  trunkRadiusRange: 0.06,
+  branchCountBase: 3,
+  branchCountRange: 2,
+  broadleafSpreadBase: 0.2,
+  broadleafSpreadDrop: 0.065,
+  broadleafLengthBase: 0.7,
+  broadleafLengthRange: 0.3,
+  canopyScaleBase: 0.78,
+  canopyScaleRange: 0.34,
+  canopyHeightBase: 0.84,
+  canopyHeightRange: 0.44,
+} satisfies ForestTreeSpeciesDefinition;
+
+const FOREST_BIRCH_SPECIES_DEFINITION = {
+  seed: FOREST_TREE_BIRCH_SEED,
+  speciesId: 'birch',
+  familyId: 'broadleaf',
+  variety: 1,
+  form: 'broadleaf',
+  fruitKind: 'samara',
+  maximumAgeYears: 140,
+  maximumHeight: 2.88,
+  trunkHeightMin: 0.82,
+  trunkHeightRange: 0.52,
+  trunkRadiusMin: 0.07,
+  trunkRadiusRange: 0.04,
+  branchCountBase: 2,
+  branchCountRange: 2,
+  broadleafSpreadBase: 0.15,
+  broadleafSpreadDrop: 0.045,
+  broadleafLengthBase: 0.56,
+  broadleafLengthRange: 0.24,
+  canopyScaleBase: 0.58,
+  canopyScaleRange: 0.22,
+  canopyHeightBase: 0.88,
+  canopyHeightRange: 0.38,
+} satisfies ForestTreeSpeciesDefinition;
+
+const FOREST_PINE_SPECIES_DEFINITION = {
+  seed: FOREST_TREE_PINE_SEED,
+  speciesId: 'pine',
+  familyId: 'conifer',
+  variety: 2,
+  form: 'pine',
+  fruitKind: 'cone',
+  maximumAgeYears: 210,
+  maximumHeight: 3.18,
+  trunkHeightMin: 0.72,
+  trunkHeightRange: 0.45,
+  trunkRadiusMin: 0.08,
+  trunkRadiusRange: 0.05,
+  branchCountBase: 3,
+  branchCountRange: 3,
+  broadleafSpreadBase: 0.08,
+  broadleafSpreadDrop: 0,
+  broadleafLengthBase: 0.82,
+  broadleafLengthRange: 0.34,
+  canopyScaleBase: 0.58,
+  canopyScaleRange: 0.16,
+  canopyHeightBase: 0.42,
+  canopyHeightRange: 0.52,
+} satisfies ForestTreeSpeciesDefinition;
+
+const FOREST_TREE_SPECIES_DEFINITIONS: Record<
+  ForestTreeSpeciesId,
+  ForestTreeSpeciesDefinition
+> = {
+  oak: FOREST_OAK_SPECIES_DEFINITION,
+  birch: FOREST_BIRCH_SPECIES_DEFINITION,
+  pine: FOREST_PINE_SPECIES_DEFINITION,
 };
 
 const forestTreeGeneratorBase = createTreeGeneratorBase({
@@ -2850,29 +2952,11 @@ const forestOakSpecies = createTreeSpecies<
     flowers: false,
   },
   generate(context, base) {
-    return createForestTreeDescriptorFromSpecies(context, base, {
-      seed: FOREST_TREE_OAK_SEED,
-      speciesId: 'oak',
-      familyId: 'broadleaf',
-      variety: 0,
-      form: 'broadleaf',
-      fruitKind: 'acorn',
-      maximumAgeYears: 240,
-      trunkHeightMin: 0.76,
-      trunkHeightRange: 0.42,
-      trunkRadiusMin: 0.09,
-      trunkRadiusRange: 0.06,
-      branchCountBase: 3,
-      branchCountRange: 2,
-      broadleafSpreadBase: 0.2,
-      broadleafSpreadDrop: 0.065,
-      broadleafLengthBase: 0.7,
-      broadleafLengthRange: 0.3,
-      canopyScaleBase: 0.78,
-      canopyScaleRange: 0.34,
-      canopyHeightBase: 0.84,
-      canopyHeightRange: 0.44,
-    });
+    return createForestTreeDescriptorFromSpecies(
+      context,
+      base,
+      FOREST_OAK_SPECIES_DEFINITION
+    );
   },
 });
 
@@ -2891,29 +2975,11 @@ const forestBirchSpecies = createTreeSpecies<
     hollows: false,
   }),
   generate(context, base) {
-    return createForestTreeDescriptorFromSpecies(context, base, {
-      seed: FOREST_TREE_BIRCH_SEED,
-      speciesId: 'birch',
-      familyId: 'broadleaf',
-      variety: 1,
-      form: 'broadleaf',
-      fruitKind: 'samara',
-      maximumAgeYears: 140,
-      trunkHeightMin: 0.82,
-      trunkHeightRange: 0.52,
-      trunkRadiusMin: 0.07,
-      trunkRadiusRange: 0.04,
-      branchCountBase: 2,
-      branchCountRange: 2,
-      broadleafSpreadBase: 0.15,
-      broadleafSpreadDrop: 0.045,
-      broadleafLengthBase: 0.56,
-      broadleafLengthRange: 0.24,
-      canopyScaleBase: 0.58,
-      canopyScaleRange: 0.22,
-      canopyHeightBase: 0.88,
-      canopyHeightRange: 0.38,
-    });
+    return createForestTreeDescriptorFromSpecies(
+      context,
+      base,
+      FOREST_BIRCH_SPECIES_DEFINITION
+    );
   },
 });
 
@@ -2930,29 +2996,11 @@ const forestPineSpecies = createTreeSpecies<
     flowers: false,
   },
   generate(context, base) {
-    return createForestTreeDescriptorFromSpecies(context, base, {
-      seed: FOREST_TREE_PINE_SEED,
-      speciesId: 'pine',
-      familyId: 'conifer',
-      variety: 2,
-      form: 'pine',
-      fruitKind: 'cone',
-      maximumAgeYears: 210,
-      trunkHeightMin: 0.72,
-      trunkHeightRange: 0.45,
-      trunkRadiusMin: 0.08,
-      trunkRadiusRange: 0.05,
-      branchCountBase: 3,
-      branchCountRange: 3,
-      broadleafSpreadBase: 0.08,
-      broadleafSpreadDrop: 0,
-      broadleafLengthBase: 0.82,
-      broadleafLengthRange: 0.34,
-      canopyScaleBase: 0.58,
-      canopyScaleRange: 0.16,
-      canopyHeightBase: 0.42,
-      canopyHeightRange: 0.52,
-    });
+    return createForestTreeDescriptorFromSpecies(
+      context,
+      base,
+      FOREST_PINE_SPECIES_DEFINITION
+    );
   },
 });
 
@@ -3352,6 +3400,7 @@ function createForestTreeDescriptorFromSpecies(
     familyId: definition.familyId,
     speciesId: definition.speciesId,
     variety: definition.variety,
+    maximumHeight: definition.maximumHeight,
   };
 }
 
@@ -5501,6 +5550,7 @@ interface ForestTreeDescriptor extends TreeLogicalState<ForestTreeForm> {
   familyId: ForestTreeFamilyId;
   speciesId: ForestTreeSpeciesId;
   variety: number;
+  maximumHeight: number;
 }
 
 type ForestTreeForm = 'broadleaf' | 'pine';

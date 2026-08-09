@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
   findNearbyAmbientProfile,
+  resolveAmbientBiologicalActivity,
+  resolveAmbientSourceDensityThreshold,
   shouldAdvertiseBaseAmbientSource,
 } from './nearby-ambient.ts';
 
@@ -139,6 +141,45 @@ describe('nearby ambient', () => {
     expect(shouldAdvertiseBaseAmbientSource('plains', 0, 1)).toBe(false);
     expect(shouldAdvertiseBaseAmbientSource('plains', 0, -1)).toBe(true);
     expect(shouldAdvertiseBaseAmbientSource('plains', 0, -1)).toBe(true);
+  });
+
+  it('increases source density for biologically active biomes', () => {
+    expect(resolveAmbientBiologicalActivity('forest')).toBeGreaterThan(
+      resolveAmbientBiologicalActivity('ruins')
+    );
+    expect(resolveAmbientSourceDensityThreshold('forest')).toBeGreaterThan(
+      resolveAmbientSourceDensityThreshold('ruins')
+    );
+    expect(shouldAdvertiseBaseAmbientSource('forest', -4, -3)).toBe(true);
+    expect(shouldAdvertiseBaseAmbientSource('ruins', -4, -3)).toBe(false);
+  });
+
+  it('softens base-tile intensity in less active areas', () => {
+    const forestProfile = findNearbyAmbientProfile({
+      state: {
+        player: { x: -11, y: -6 },
+        getCurrentTile() {
+          return { kind: 'forest' };
+        },
+      },
+      centerX: -11,
+      centerY: -6,
+      searchRadius: 0,
+    });
+    const ruinsProfile = findNearbyAmbientProfile({
+      state: {
+        player: { x: -11, y: -6 },
+        getCurrentTile() {
+          return { kind: 'ruins' };
+        },
+      },
+      centerX: -11,
+      centerY: -6,
+      searchRadius: 0,
+    });
+
+    expect(forestProfile?.intensity).toBe(1);
+    expect(ruinsProfile?.intensity).toBeLessThan(0.7);
   });
 
   it('returns null when no nearby base tiles or POIs advertise ambience', () => {
