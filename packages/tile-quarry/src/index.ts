@@ -1,4 +1,4 @@
-import { hash2D } from '@bworlds/core';
+import { hash2D, registerHashLabel } from '@bworlds/core';
 import { createPlainsBackedTilePainter } from '@bworlds/paint-support';
 import {
   createAnchoredEnterablePoiTilePlugin,
@@ -16,6 +16,11 @@ import type {
 } from '@bworlds/plugin-api';
 
 const TILE_PIXEL_SIZE = 16;
+const QUARRY_STONE_WIDTH_SEED = registerHashLabel('quarry-stone-w');
+const QUARRY_STONE_HEIGHT_SEED = registerHashLabel('quarry-stone-h');
+const QUARRY_STONE_DEPTH_SEED = registerHashLabel('quarry-stone-d');
+const QUARRY_STONE_ROTATION_SEED = registerHashLabel('quarry-stone-rot');
+const QUARRY_FACING_SEED = registerHashLabel('quarry-facing');
 
 export function createQuarryTilePlugin(): RuntimePlugin {
   return createAnchoredEnterablePoiTilePlugin({
@@ -43,6 +48,7 @@ export function createQuarryTilePlugin(): RuntimePlugin {
       const timberMaterial = createBasicMaterial(three, { color: '#7c5a3b' });
       const ropeMaterial = createBasicMaterial(three, { color: '#d2b48c' });
       const rubbleMaterial = createBasicMaterial(three, { color: '#9c9186' });
+      const darkMetalMaterial = createBasicMaterial(three, { color: '#2f261f' });
 
       const group = new three.Group();
       const facing = getQuarryFacing(state, tileX, tileY);
@@ -56,7 +62,7 @@ export function createQuarryTilePlugin(): RuntimePlugin {
 
       const pit = new three.Mesh(
         new three.CylinderGeometry(0.36, 0.52, 0.12, 8),
-        createBasicMaterial(three, { color: '#2b2622' })
+        darkMetalMaterial
       );
       pit.position.set(tileX, 0.03, tileY);
       group.add(pit);
@@ -65,9 +71,9 @@ export function createQuarryTilePlugin(): RuntimePlugin {
         const angle = (index / 6) * Math.PI * 2;
         const stone = new three.Mesh(
           new three.BoxGeometry(
-            0.14 + hash2D('quarry-stone-w', tileX + index, tileY) * 0.08,
-            0.08 + hash2D('quarry-stone-h', tileX, tileY + index) * 0.05,
-            0.14 + hash2D('quarry-stone-d', tileX - index, tileY) * 0.08
+            0.14 + hash2D(QUARRY_STONE_WIDTH_SEED, tileX + index, tileY) * 0.08,
+            0.08 + hash2D(QUARRY_STONE_HEIGHT_SEED, tileX, tileY + index) * 0.05,
+            0.14 + hash2D(QUARRY_STONE_DEPTH_SEED, tileX - index, tileY) * 0.08
           ),
           rubbleMaterial
         );
@@ -76,7 +82,8 @@ export function createQuarryTilePlugin(): RuntimePlugin {
           0.08,
           tileY + Math.sin(angle) * 0.58
         );
-        stone.rotation.y = hash2D('quarry-stone-rot', tileX + index, tileY - index) * Math.PI;
+        stone.rotation.y =
+          hash2D(QUARRY_STONE_ROTATION_SEED, tileX + index, tileY - index) * Math.PI;
         group.add(stone);
       }
 
@@ -180,7 +187,7 @@ export function createQuarryTilePlugin(): RuntimePlugin {
       for (const wheelOffset of [-0.08, 0.08]) {
         const wheel = new three.Mesh(
           new three.CylinderGeometry(0.04, 0.04, 0.02, 8),
-          createBasicMaterial(three, { color: '#2f261f' })
+          darkMetalMaterial
         );
         wheel.position.set(
           cart.position.x + wheelOffset,
@@ -210,7 +217,7 @@ function getQuarryFacing(
     state,
     tileX,
     tileY,
-    seedKey: 'quarry-facing',
+    seedKey: QUARRY_FACING_SEED,
     preferLandFacing: true,
   });
 }

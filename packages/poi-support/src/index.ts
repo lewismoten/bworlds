@@ -651,7 +651,7 @@ export function pickPreferredLandmarkFacing({
   state: WorldStateLike;
   tileX: number;
   tileY: number;
-  seedKey: string;
+  seedKey: Seed;
   preferLandFacing?: boolean;
 }): LandmarkFacingScore {
   const seedHash = createHashSeed(seedKey);
