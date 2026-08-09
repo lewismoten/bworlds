@@ -143,6 +143,29 @@ const FOREST_FIREFLY_ORBIT_DISTANCE_SEED = registerHashLabel(
 const FOREST_FIREFLY_CANOPY_BIAS_SEED = registerHashLabel('forest-firefly-canopy-bias');
 const FOREST_FIREFLY_PHASE_SEED = registerHashLabel('forest-firefly-phase');
 const FOREST_FIREFLY_DRIFT_SEED = registerHashLabel('forest-firefly-drift');
+const FOREST_WEB_BRANCH_SEED = registerHashLabel('forest-web-branch');
+const FOREST_WEB_HOLLOW_SEED = registerHashLabel('forest-web-hollow');
+const FOREST_WEB_DEADWOOD_SEED = registerHashLabel('forest-web-deadwood');
+const FOREST_WEB_ANGLE_SEED = registerHashLabel('forest-web-angle');
+const FOREST_WEB_RADIUS_SEED = registerHashLabel('forest-web-radius');
+const FOREST_WEB_SCALE_SEED = registerHashLabel('forest-web-scale');
+const TREE_CLUSTER_DOMINANT_SEED = registerHashLabel('tree-cluster-dominant');
+const TREE_BARK_TINT_SEED = registerHashLabel('tree-bark-tint');
+const TREE_FOLIAGE_TINT_SEED = registerHashLabel('tree-foliage-tint');
+const TREE_STONE_TINT_SEED = registerHashLabel('tree-stone-tint');
+const TREE_MUSHROOM_CAP_TINT_SEED = registerHashLabel('tree-mushroom-cap-tint');
+const TREE_MUSHROOM_STEM_TINT_SEED = registerHashLabel('tree-mushroom-stem-tint');
+const TREE_OWL_BODY_TINT_SEED = registerHashLabel('tree-owl-body-tint');
+const TREE_SPIDER_BODY_TINT_SEED = registerHashLabel('tree-spider-body-tint');
+const TREE_MEADOW_GRASS_TINT_SEED = registerHashLabel('tree-meadow-grass-tint');
+const TREE_BREADCRUMB_TINT_SEED = registerHashLabel('tree-breadcrumb-tint');
+const TREE_BARK_CRACK_X_SEED = registerHashLabel('tree-bark-crack-x');
+const TREE_BARK_CRACK_Y_SEED = registerHashLabel('tree-bark-crack-y');
+const TREE_BARK_CRACK_HEIGHT_SEED = registerHashLabel('tree-bark-crack-h');
+const TREE_LEAF_X_SEED = registerHashLabel('tree-leaf-x');
+const TREE_LEAF_Y_SEED = registerHashLabel('tree-leaf-y');
+const TREE_LEAF_SIZE_SEED = registerHashLabel('tree-leaf-s');
+const TREE_LEAF_BRIGHTNESS_SEED = registerHashLabel('tree-leaf-b');
 
 const treeDescriptorCache = createBoundedCache<string, ForestTreeDescriptor[]>(
   FOREST_COORDINATE_CACHE_LIMIT
@@ -800,7 +823,7 @@ const resolveForestWebDescriptors = createCoordinateValueResolver(
         const lower = sortedBranches[branchIndex - 1]!;
         const upper = sortedBranches[branchIndex]!;
         const chance = hash2D(
-          'forest-web-branch',
+          FOREST_WEB_BRANCH_SEED,
           tileX * 37 + treeIndex * 11 + branchIndex,
           tileY * 39 - treeIndex * 13 - branchIndex
         );
@@ -829,7 +852,11 @@ const resolveForestWebDescriptors = createCoordinateValueResolver(
         return;
       }
 
-      const chance = hash2D('forest-web-hollow', tileX * 41 + hollowIndex, tileY * 43);
+      const chance = hash2D(
+        FOREST_WEB_HOLLOW_SEED,
+        tileX * 41 + hollowIndex,
+        tileY * 43
+      );
       if (chance < 0.34) {
         return;
       }
@@ -845,7 +872,11 @@ const resolveForestWebDescriptors = createCoordinateValueResolver(
     });
 
     floorDetails.forEach((detail, detailIndex) => {
-      const chance = hash2D('forest-web-deadwood', tileX * 47 + detailIndex, tileY * 53);
+      const chance = hash2D(
+        FOREST_WEB_DEADWOOD_SEED,
+        tileX * 47 + detailIndex,
+        tileY * 53
+      );
       const threshold = detail.kind === 'fallen-tree' ? 0.18 : 0.28;
       if (chance < threshold) {
         return;
@@ -1664,7 +1695,7 @@ function getTreeVarietyIndex(
   const clusterX = Math.floor(tileX / TREE_CLUSTER_SIZE);
   const clusterY = Math.floor(tileY / TREE_CLUSTER_SIZE);
   const dominant = Math.floor(
-    hash2D('tree-cluster-dominant', clusterX, clusterY) * 3
+    hash2D(TREE_CLUSTER_DOMINANT_SEED, clusterX, clusterY) * 3
   );
   const variationChance = hash2D(
     'tree-cluster-variation',
@@ -1696,11 +1727,12 @@ function getTreeStyle(
   if (!treeStyleCache.has(key)) {
     const barkBase = tintHexColor(
       TREE_BARK_COLOR,
-      0.82 + hash2D('tree-bark-tint', styleSeedX + variety, styleSeedY) * 0.32
+      0.82 + hash2D(TREE_BARK_TINT_SEED, styleSeedX + variety, styleSeedY) * 0.32
     );
     const foliageBase = tintHexColor(
       TREE_FOLIAGE_COLOR,
-      0.82 + hash2D('tree-foliage-tint', styleSeedX, styleSeedY + variety) * 0.34
+      0.82 +
+        hash2D(TREE_FOLIAGE_TINT_SEED, styleSeedX, styleSeedY + variety) * 0.34
     );
 
     const barkTexture = createTreeBarkTexture(
@@ -1735,7 +1767,7 @@ function getTreeStyle(
       stoneMaterial: new three.MeshStandardMaterial({
         color: tintHexColor(
           '#7f847a',
-          0.86 + hash2D('tree-stone-tint', styleSeedX, styleSeedY + variety) * 0.24
+          0.86 + hash2D(TREE_STONE_TINT_SEED, styleSeedX, styleSeedY + variety) * 0.24
         ),
         roughness: 0.99,
         metalness: 0.01,
@@ -1744,7 +1776,9 @@ function getTreeStyle(
       mushroomCapMaterial: new three.MeshStandardMaterial({
         color: tintHexColor(
           '#c75442',
-          0.84 + hash2D('tree-mushroom-cap-tint', styleSeedX + variety, styleSeedY) * 0.28
+          0.84 +
+            hash2D(TREE_MUSHROOM_CAP_TINT_SEED, styleSeedX + variety, styleSeedY) *
+              0.28
         ),
         roughness: 0.88,
         metalness: 0.01,
@@ -1753,7 +1787,9 @@ function getTreeStyle(
       mushroomStemMaterial: new three.MeshStandardMaterial({
         color: tintHexColor(
           '#ded6bb',
-          0.9 + hash2D('tree-mushroom-stem-tint', styleSeedX, styleSeedY + variety) * 0.14
+          0.9 +
+            hash2D(TREE_MUSHROOM_STEM_TINT_SEED, styleSeedX, styleSeedY + variety) *
+              0.14
         ),
         roughness: 0.94,
         metalness: 0.01,
@@ -1766,7 +1802,8 @@ function getTreeStyle(
       owlBodyMaterial: new three.MeshStandardMaterial({
         color: tintHexColor(
           '#6b4d31',
-          0.92 + hash2D('tree-owl-body-tint', styleSeedX, styleSeedY + variety) * 0.18
+          0.92 +
+            hash2D(TREE_OWL_BODY_TINT_SEED, styleSeedX, styleSeedY + variety) * 0.18
         ),
         roughness: 0.98,
         metalness: 0.01,
@@ -1779,7 +1816,9 @@ function getTreeStyle(
       spiderMaterial: new three.MeshStandardMaterial({
         color: tintHexColor(
           '#2c211d',
-          0.9 + hash2D('tree-spider-body-tint', styleSeedX, styleSeedY + variety) * 0.14
+          0.9 +
+            hash2D(TREE_SPIDER_BODY_TINT_SEED, styleSeedX, styleSeedY + variety) *
+              0.14
         ),
         roughness: 0.98,
         metalness: 0.01,
@@ -1799,7 +1838,9 @@ function getTreeStyle(
       meadowGrassMaterial: new three.MeshStandardMaterial({
         color: tintHexColor(
           '#79a85a',
-          0.92 + hash2D('tree-meadow-grass-tint', styleSeedX, styleSeedY + variety) * 0.16
+          0.92 +
+            hash2D(TREE_MEADOW_GRASS_TINT_SEED, styleSeedX, styleSeedY + variety) *
+              0.16
         ),
         roughness: 0.98,
         metalness: 0.01,
@@ -1822,7 +1863,8 @@ function getTreeStyle(
       breadcrumbMaterial: new three.MeshStandardMaterial({
         color: tintHexColor(
           '#e6d6a8',
-          0.92 + hash2D('tree-breadcrumb-tint', styleSeedX + variety, styleSeedY) * 0.12
+          0.92 +
+            hash2D(TREE_BREADCRUMB_TINT_SEED, styleSeedX + variety, styleSeedY) * 0.12
         ),
         roughness: 0.98,
         metalness: 0.01,
@@ -2380,14 +2422,13 @@ function addForestWebInstances(
     for (let index = 0; index < web.strandCount; index += 1) {
       const angle =
         (index / web.strandCount) * Math.PI * 2 +
-        hash2D('forest-web-angle', webIndex, index) * 0.3;
+        hash2D(FOREST_WEB_ANGLE_SEED, webIndex, index) * 0.3;
       const distance =
-        web.radius *
-        (0.24 + hash2D('forest-web-radius', webIndex, index) * 0.76);
+        web.radius * (0.24 + hash2D(FOREST_WEB_RADIUS_SEED, webIndex, index) * 0.76);
       const silkScale =
         web.kind === 'deadwood'
-          ? 0.008 + hash2D('forest-web-scale', webIndex, index) * 0.006
-          : 0.007 + hash2D('forest-web-scale', webIndex, index) * 0.005;
+          ? 0.008 + hash2D(FOREST_WEB_SCALE_SEED, webIndex, index) * 0.006
+          : 0.007 + hash2D(FOREST_WEB_SCALE_SEED, webIndex, index) * 0.005;
       webInstances.setMatrixAt(
         strandIndex,
         createLowDetailTreeMatrix(
@@ -3556,15 +3597,13 @@ function createTreeBarkTexture(
 
       for (let index = 0; index < 120; index += 1) {
         const x = Math.floor(
-          hash2D('tree-bark-crack-x', regionX * 31 + variety, index) *
-            canvas.width
+          hash2D(TREE_BARK_CRACK_X_SEED, regionX * 31 + variety, index) * canvas.width
         );
         const y = Math.floor(
-          hash2D('tree-bark-crack-y', regionY * 29 + variety, index) *
-            canvas.height
+          hash2D(TREE_BARK_CRACK_Y_SEED, regionY * 29 + variety, index) * canvas.height
         );
         const height =
-          3 + Math.floor(hash2D('tree-bark-crack-h', index, variety) * 8);
+          3 + Math.floor(hash2D(TREE_BARK_CRACK_HEIGHT_SEED, index, variety) * 8);
         context.fillStyle = 'rgba(20, 12, 8, 0.22)';
         context.fillRect(x, y, 1, height);
       }
@@ -3590,14 +3629,17 @@ function createTreeFoliageTexture(
 
       for (let index = 0; index < 180; index += 1) {
         const x = Math.floor(
-          hash2D('tree-leaf-x', regionX * 17 + variety, index) * canvas.width
+          hash2D(TREE_LEAF_X_SEED, regionX * 17 + variety, index) * canvas.width
         );
         const y = Math.floor(
-          hash2D('tree-leaf-y', regionY * 19 + variety, index) * canvas.height
+          hash2D(TREE_LEAF_Y_SEED, regionY * 19 + variety, index) * canvas.height
         );
-        const size = 1 + Math.floor(hash2D('tree-leaf-s', index, variety) * 3);
+        const size = 1 + Math.floor(hash2D(TREE_LEAF_SIZE_SEED, index, variety) * 3);
         const tint =
-          90 + Math.floor(hash2D('tree-leaf-b', index, regionX + regionY) * 80);
+          90 +
+          Math.floor(
+            hash2D(TREE_LEAF_BRIGHTNESS_SEED, index, regionX + regionY) * 80
+          );
         context.fillStyle = `rgba(${24 + (tint % 40)}, ${tint}, ${30 + (tint % 30)}, 0.22)`;
         context.fillRect(x, y, size, size);
       }
