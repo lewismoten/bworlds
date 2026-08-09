@@ -637,6 +637,7 @@ export interface Model3DResourceCostEstimate {
   morphTargetCount?: number;
   attachmentCount?: number;
   collisionShapeCount?: number;
+  audioEmitterCount?: number;
   vertexCount?: number;
   triangleCount?: number;
 }

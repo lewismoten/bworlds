@@ -68,6 +68,13 @@ export {
   markRenderCollisionShape,
   RENDER_COLLISION_SHAPE_USER_DATA_KEY,
 } from './render-collision-shapes';
+export type { RenderAudioEmitterMetadata } from './render-audio-emitters';
+export {
+  getRenderAudioEmitterMetadata,
+  hasRenderAudioEmitterMetadata,
+  markRenderAudioEmitter,
+  RENDER_AUDIO_EMITTER_USER_DATA_KEY,
+} from './render-audio-emitters';
 import {
   attemptCall,
   dedupePluginPackIds,

@@ -99,6 +99,7 @@ import { createDungeonTilePlugin } from '@bworlds/tile-dungeon';
 import { createLighthouseTilePlugin } from '@bworlds/tile-lighthouse';
 import { createTownTilePlugin } from '@bworlds/tile-town';
 import {
+  markRenderAudioEmitter,
   markRenderModelAttachment,
   markRenderCollisionShape,
   markRenderAnimationMixer,
@@ -437,6 +438,7 @@ describe('render3d visibility helpers', () => {
       morphTargetCount: 0,
       attachmentCount: 0,
       collisionShapeCount: 0,
+      audioEmitterCount: 0,
       triangleCount: 0,
       vertexCount: 36,
       materialRefCount: 4,
@@ -599,6 +601,7 @@ describe('render3d visibility helpers', () => {
       morphTargetCount: 0,
       attachmentCount: 0,
       collisionShapeCount: 0,
+      audioEmitterCount: 0,
       triangleCount: 0,
       vertexCount: 18,
       materialRefCount: 3,
@@ -692,6 +695,7 @@ describe('render3d visibility helpers', () => {
       morphTargetCount: 0,
       attachmentCount: 0,
       collisionShapeCount: 0,
+      audioEmitterCount: 0,
       triangleCount: 0,
       vertexCount: 25,
       materialRefCount: 2,
@@ -835,6 +839,7 @@ describe('render3d visibility helpers', () => {
       morphTargetCount: 0,
       attachmentCount: 0,
       collisionShapeCount: 0,
+      audioEmitterCount: 0,
       triangleCount: 0,
       vertexCount: 26,
       materialRefCount: 2,
@@ -922,6 +927,7 @@ describe('render3d visibility helpers', () => {
       morphTargetCount: 0,
       attachmentCount: 0,
       collisionShapeCount: 0,
+      audioEmitterCount: 0,
       triangleCount: 0,
       vertexCount: 8,
       materialRefCount: 2,
@@ -1041,6 +1047,7 @@ describe('render3d visibility helpers', () => {
       morphTargetCount: 0,
       attachmentCount: 0,
       collisionShapeCount: 0,
+      audioEmitterCount: 0,
       triangleCount: 0,
       vertexCount: 10,
       materialRefCount: 2,
@@ -1319,6 +1326,7 @@ describe('render3d visibility helpers', () => {
       morphTargetCount: 16,
       attachmentCount: 16,
       collisionShapeCount: 12,
+      audioEmitterCount: 8,
       vertexCount: 50_000,
     });
     expect(getTileModelHardLimits('low')).toEqual({
@@ -1358,6 +1366,7 @@ describe('render3d visibility helpers', () => {
       morphTargetCount: 4,
       attachmentCount: 4,
       collisionShapeCount: 4,
+      audioEmitterCount: 2,
       vertexCount: 8_000,
     });
   });
@@ -1450,6 +1459,7 @@ describe('render3d visibility helpers', () => {
         morphTargetCount: 0,
         attachmentCount: 0,
         collisionShapeCount: 0,
+        audioEmitterCount: 0,
         vertexCount: 72,
       }),
       violations: [],
@@ -1813,6 +1823,59 @@ describe('render3d visibility helpers', () => {
             metric: 'collisionShapeCount',
             actual: 13,
             limit: 12,
+          },
+        ]),
+      })
+    );
+  });
+
+  it('tracks audio-emitter counts and rejects models above the cap', () => {
+    const material = createMockMaterial();
+    const root = createMockObject3D(undefined, [
+      markRenderAudioEmitter(
+        createMockObject3D(
+          material,
+          [],
+          createMockStatGeometry('mesh-audio-a', 48)
+        ),
+        { count: 5, label: 'market-chimes' }
+      ),
+      markRenderAudioEmitter(
+        createMockObject3D(
+          material,
+          [],
+          createMockStatGeometry('mesh-audio-b', 48)
+        ),
+        { count: 4, label: 'harbor-bells' }
+      ),
+    ]);
+
+    expect(collectSceneResourceStats(root as never).audioEmitterCount).toBe(9);
+    expect(validateTileModelAgainstRenderBudget(root as never, 'full')).toEqual(
+      expect.objectContaining({
+        accepted: false,
+        violations: expect.arrayContaining([
+          {
+            metric: 'audioEmitterCount',
+            actual: 9,
+            limit: 8,
+          },
+        ]),
+      })
+    );
+    expect(
+      validateTileModelCostEstimateAgainstRenderBudget(
+        { audioEmitterCount: 9 },
+        'full'
+      )
+    ).toEqual(
+      expect.objectContaining({
+        accepted: false,
+        violations: expect.arrayContaining([
+          {
+            metric: 'audioEmitterCount',
+            actual: 9,
+            limit: 8,
           },
         ]),
       })

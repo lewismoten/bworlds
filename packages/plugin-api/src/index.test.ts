@@ -22,16 +22,19 @@ import {
   resolveTileDefinitionFromPlugins,
   resolvePluginPackDefinition,
   getRenderAnimationMixerMetadata,
+  getRenderAudioEmitterMetadata,
   getRenderBudgetPartMetadata,
   getRenderCollisionShapeMetadata,
   getRenderModelAttachmentMetadata,
   getRenderParticleEmitterMetadata,
   hasRenderAnimationMixerMetadata,
+  hasRenderAudioEmitterMetadata,
   hasRenderBudgetPartMetadata,
   hasRenderCollisionShapeMetadata,
   hasRenderModelAttachmentMetadata,
   hasRenderParticleEmitterMetadata,
   markRenderAnimationMixer,
+  markRenderAudioEmitter,
   markRenderCollisionShape,
   markRenderModelAttachment,
   markOptionalDecorativeRenderBudgetPart,
@@ -187,6 +190,19 @@ describe('plugin registry', () => {
       label: 'trunk-colliders',
     });
     expect(hasRenderCollisionShapeMetadata(target)).toBe(true);
+  });
+
+  it('marks reusable audio-emitter metadata on render objects', () => {
+    const target = markRenderAudioEmitter(
+      { userData: {} },
+      { count: 2, label: 'market-speakers' }
+    );
+
+    expect(getRenderAudioEmitterMetadata(target)).toEqual({
+      count: 2,
+      label: 'market-speakers',
+    });
+    expect(hasRenderAudioEmitterMetadata(target)).toBe(true);
   });
 
   it('registers content packs in map, runtime, then tile order', () => {

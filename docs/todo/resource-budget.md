@@ -41,7 +41,7 @@ Operates at several levels: per model, per LOD, per plugin, per chunk, and per e
 * [X] Cap total morph targets.
 * [X] Cap total model attachments.
 * [X] Cap total collision shapes.
-* [ ] Cap total audio emitters associated with one model.
+* [X] Cap total audio emitters associated with one model.
 
 # Geometry Caps
 

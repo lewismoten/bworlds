@@ -25,6 +25,7 @@ import { isWaterKind } from '@bworlds/tile-support';
 import {
   getActivePluginRegistry,
   getRenderAnimationMixerMetadata,
+  getRenderAudioEmitterMetadata,
   getRenderCollisionShapeMetadata,
   getRenderModelAttachmentMetadata,
   getRenderParticleEmitterMetadata,
@@ -400,6 +401,7 @@ const FULL_DETAIL_TILE_MODEL_HARD_LIMITS: TileModelHardLimits = {
   morphTargetCount: 16,
   attachmentCount: 16,
   collisionShapeCount: 12,
+  audioEmitterCount: 8,
   vertexCount: 50_000,
 };
 
@@ -440,6 +442,7 @@ const LOW_DETAIL_TILE_MODEL_HARD_LIMITS: TileModelHardLimits = {
   morphTargetCount: 4,
   attachmentCount: 4,
   collisionShapeCount: 4,
+  audioEmitterCount: 2,
   vertexCount: 8_000,
 };
 
@@ -542,6 +545,7 @@ export function validateTileModelAgainstRenderBudget(
         morphTargetCount: countMorphTargets(root),
         attachmentCount: countModelAttachments(root),
         collisionShapeCount: countCollisionShapes(root),
+        audioEmitterCount: countAudioEmitters(root),
         invalidPositionCoordinateCount: 0,
         pointVertexCount: safetyPrecheck.stats.pointVertexCount,
         particleEmitterCount: safetyPrecheck.stats.particleEmitterCount,
@@ -607,6 +611,7 @@ export function validateTileModelAgainstRenderBudget(
     morphTargetCount: countMorphTargets(root),
     attachmentCount: countModelAttachments(root),
     collisionShapeCount: countCollisionShapes(root),
+    audioEmitterCount: countAudioEmitters(root),
   };
   const violations: TileModelBudgetViolation[] = [];
   const metrics: Array<keyof TileModelHardLimits> = [
@@ -646,6 +651,7 @@ export function validateTileModelAgainstRenderBudget(
     'morphTargetCount',
     'attachmentCount',
     'collisionShapeCount',
+    'audioEmitterCount',
     'vertexCount',
   ];
 
@@ -752,6 +758,7 @@ export function getTileModelCostEstimateLimits(
     morphTargetCount: limits.morphTargetCount,
     attachmentCount: limits.attachmentCount,
     collisionShapeCount: limits.collisionShapeCount,
+    audioEmitterCount: limits.audioEmitterCount,
     vertexCount: limits.vertexCount,
     triangleCount: limits.triangleCount,
   };
@@ -905,6 +912,7 @@ type SceneResourceStats = {
   morphTargetCount: number;
   attachmentCount: number;
   collisionShapeCount: number;
+  audioEmitterCount: number;
   triangleCount: number;
   vertexCount: number;
   materialRefCount: number;
@@ -973,6 +981,7 @@ type TileModelHardLimits = {
   morphTargetCount: number;
   attachmentCount: number;
   collisionShapeCount: number;
+  audioEmitterCount: number;
   vertexCount: number;
 };
 
@@ -1071,6 +1080,7 @@ function createEmptySceneResourceStats(): SceneResourceStats {
     morphTargetCount: 0,
     attachmentCount: 0,
     collisionShapeCount: 0,
+    audioEmitterCount: 0,
     triangleCount: 0,
     vertexCount: 0,
     materialRefCount: 0,
@@ -1248,6 +1258,22 @@ function countCollisionShapes(root: Pick<THREE.Object3D, 'traverse'>): number {
   });
 
   return collisionShapeCount;
+}
+
+function countAudioEmitters(root: Pick<THREE.Object3D, 'traverse'>): number {
+  let audioEmitterCount = 0;
+
+  root.traverse((child) => {
+    const metadata = getRenderAudioEmitterMetadata(
+      child as Pick<THREE.Object3D, 'userData'>
+    );
+    if (!metadata) {
+      return;
+    }
+    audioEmitterCount += metadata.count ?? 1;
+  });
+
+  return audioEmitterCount;
 }
 
 type FrameTimeBudget = {
@@ -3684,6 +3710,7 @@ export function collectSceneResourceStats(
   let morphTargetCount = 0;
   let attachmentCount = 0;
   let collisionShapeCount = 0;
+  let audioEmitterCount = 0;
   let triangleCount = 0;
   let vertexCount = 0;
   let materialRefCount = 0;
@@ -3801,6 +3828,12 @@ export function collectSceneResourceStats(
     );
     if (collisionShapeMetadata) {
       collisionShapeCount += collisionShapeMetadata.count ?? 1;
+    }
+    const audioEmitterMetadata = getRenderAudioEmitterMetadata(
+      child as Pick<THREE.Object3D, 'userData'>
+    );
+    if (audioEmitterMetadata) {
+      audioEmitterCount += audioEmitterMetadata.count ?? 1;
     }
     const skeleton = (child as THREE.Object3D & { skeleton?: unknown }).skeleton;
     if (skeleton && typeof skeleton === 'object') {
@@ -3926,6 +3959,7 @@ export function collectSceneResourceStats(
     morphTargetCount,
     attachmentCount,
     collisionShapeCount,
+    audioEmitterCount,
     triangleCount,
     vertexCount,
     materialRefCount,
