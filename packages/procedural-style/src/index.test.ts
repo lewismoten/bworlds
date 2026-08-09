@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { createBoundedCache } from '@bworlds/cache-support';
 import {
   createHostMaterialResolver,
@@ -194,6 +194,28 @@ describe('procedural style helpers', () => {
       variant: '#ff0000',
       build: 3,
     });
+  });
+
+  it('reuses the same host material instance instead of cloning variants repeatedly', () => {
+    let buildCount = 0;
+    const clone = vi.fn();
+    const resolver = createHostVariantMaterialResolver(
+      (three: { label: string }, variant: string) => ({
+        host: three.label,
+        variant,
+        build: ++buildCount,
+        clone,
+      })
+    );
+    const host = { label: 'three-a' };
+
+    const first = resolver.getMaterial(host, '#ff0000');
+    const second = resolver.getMaterial(host, '#ff0000');
+
+    expect(first).toBe(second);
+    expect(buildCount).toBe(1);
+    expect(first.clone).toBe(second.clone);
+    expect(clone).toHaveBeenCalledTimes(0);
   });
 
   it('tints hex colors by a multiplier', () => {
