@@ -19,6 +19,7 @@ import {
 import { isWaterKind } from '@bworlds/tile-support';
 import {
   getActivePluginRegistry,
+  getRenderParticleEmitterMetadata,
   getRenderBudgetPartMetadata,
   hasRenderBudgetPartMetadata,
   type Model3DResourceCostEstimate,
@@ -246,6 +247,7 @@ const FULL_DETAIL_TILE_MODEL_HARD_LIMITS: TileModelHardLimits = {
   meshCount: 96,
   instancedMeshCount: 16,
   pointsCount: 8,
+  particleEmitterCount: 2,
   lineObjectCount: 12,
   spriteCount: 12,
   geometryCount: 96,
@@ -278,6 +280,7 @@ const LOW_DETAIL_TILE_MODEL_HARD_LIMITS: TileModelHardLimits = {
   meshCount: 16,
   instancedMeshCount: 4,
   pointsCount: 2,
+  particleEmitterCount: 1,
   lineObjectCount: 4,
   spriteCount: 2,
   geometryCount: 16,
@@ -327,6 +330,7 @@ export function validateTileModelAgainstRenderBudget(
     ...sceneResourceStats,
     invalidPositionCoordinateCount: countInvalidGeometryCoordinateSets(root),
     pointVertexCount: countPointVertices(root),
+    particleEmitterCount: countParticleEmitters(root),
     lineSegmentCount: countLineSegments(root),
     oversizedGeometryBoundsCount: countGeometriesExceedingBounds(
       root,
@@ -365,6 +369,7 @@ export function validateTileModelAgainstRenderBudget(
     'geometryCount',
     'invalidPositionCoordinateCount',
     'pointVertexCount',
+    'particleEmitterCount',
     'lineSegmentCount',
     'oversizedGeometryBoundsCount',
     'maxGeometryVertexCount',
@@ -657,6 +662,7 @@ type TileModelHardLimits = {
   meshCount: number;
   instancedMeshCount: number;
   pointsCount: number;
+  particleEmitterCount: number;
   lineObjectCount: number;
   spriteCount: number;
   geometryCount: number;
@@ -694,6 +700,7 @@ type TileModelBudgetValidation = {
   stats: SceneResourceStats & {
     invalidPositionCoordinateCount: number;
     pointVertexCount: number;
+    particleEmitterCount: number;
     lineSegmentCount: number;
     oversizedGeometryBoundsCount: number;
     maxGeometryVertexCount: number;
@@ -755,6 +762,18 @@ function countInvalidRenderBudgetPartMetadata(
   });
 
   return invalidCount;
+}
+
+function countParticleEmitters(root: Pick<THREE.Object3D, 'traverse'>): number {
+  let emitterCount = 0;
+
+  root.traverse((child) => {
+    if (getRenderParticleEmitterMetadata(child as Pick<THREE.Object3D, 'userData'>)) {
+      emitterCount += 1;
+    }
+  });
+
+  return emitterCount;
 }
 
 type FrameTimeBudget = {

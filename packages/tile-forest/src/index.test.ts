@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import { getRenderParticleEmitterMetadata } from '@bworlds/plugin-api';
 
 vi.mock('@bworlds/three-support', () => ({
   createPaintedCanvasTexture() {
@@ -4164,6 +4165,10 @@ describe('tile forest', () => {
     expect(fireflyPoints).toBeInstanceOf(FakePoints);
     expect(particleCount).toBeGreaterThan(0);
     expect(positionCount).toBe(particleCount * 3);
+    expect(getRenderParticleEmitterMetadata(fireflyPoints)).toEqual({
+      particleCount,
+      label: 'fireflies',
+    });
   });
 
   it('reuses a shared particle material across forest firefly clouds', () => {

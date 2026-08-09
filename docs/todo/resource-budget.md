@@ -29,7 +29,7 @@ Operates at several levels: per model, per LOD, per plugin, per chunk, and per e
 * [X] Cap total sprite count.
 * [X] Cap total `Points` objects.
 * [X] Cap total line objects.
-* [ ] Cap total particle emitters.
+* [X] Cap total particle emitters.
 * [X] Cap total geometry objects.
 * [X] Cap total materials.
 * [X] Cap total textures.

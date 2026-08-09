@@ -22,8 +22,11 @@ import {
   resolveTileDefinitionFromPlugins,
   resolvePluginPackDefinition,
   getRenderBudgetPartMetadata,
+  getRenderParticleEmitterMetadata,
   hasRenderBudgetPartMetadata,
+  hasRenderParticleEmitterMetadata,
   markOptionalDecorativeRenderBudgetPart,
+  markRenderParticleEmitter,
   markStructuralRenderBudgetPart,
   RENDER_BUDGET_PART_PRIORITIES,
   selectPluginPackManifests,
@@ -123,6 +126,19 @@ describe('plugin registry', () => {
     expect(RENDER_BUDGET_PART_PRIORITIES.optionalDecoration).toBeLessThan(
       RENDER_BUDGET_PART_PRIORITIES.essentialStructure
     );
+  });
+
+  it('marks reusable particle-emitter metadata on render objects', () => {
+    const target = markRenderParticleEmitter(
+      { userData: {} },
+      { particleCount: 12, label: 'fireflies' }
+    );
+
+    expect(getRenderParticleEmitterMetadata(target)).toEqual({
+      particleCount: 12,
+      label: 'fireflies',
+    });
+    expect(hasRenderParticleEmitterMetadata(target)).toBe(true);
   });
 
   it('registers content packs in map, runtime, then tile order', () => {

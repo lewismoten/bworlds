@@ -16,7 +16,7 @@ import {
   markPoiWindResponder,
   syncPoiWindResponders,
 } from '@bworlds/poi-support';
-import { createTilePlugin } from '@bworlds/plugin-api';
+import { createTilePlugin, markRenderParticleEmitter } from '@bworlds/plugin-api';
 import {
   createCoordinateValueResolver,
   tintHexColor,
@@ -3200,9 +3200,15 @@ function createForestFireflyParticleCloud(
     new three.Float32BufferAttribute(driftValues, 1) as ThreeBufferGeometryLike
   );
 
-  const points = new three.Points(
-    geometry,
-    getSharedForestFireflyMaterial(three)
+  const points = markRenderParticleEmitter(
+    new three.Points(
+      geometry,
+      getSharedForestFireflyMaterial(three)
+    ),
+    {
+      particleCount: descriptors.length,
+      label: 'fireflies',
+    }
   );
   const material = points.material as ForestFireflyMaterialLike | undefined;
 

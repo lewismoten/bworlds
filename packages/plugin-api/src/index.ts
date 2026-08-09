@@ -40,6 +40,13 @@ export {
   RENDER_BUDGET_PART_USER_DATA_KEY,
   setRenderBudgetPartMetadata,
 } from './render-budget-parts';
+export type { RenderParticleEmitterMetadata } from './render-particle-emitters';
+export {
+  getRenderParticleEmitterMetadata,
+  hasRenderParticleEmitterMetadata,
+  markRenderParticleEmitter,
+  RENDER_PARTICLE_EMITTER_USER_DATA_KEY,
+} from './render-particle-emitters';
 import {
   attemptCall,
   dedupePluginPackIds,

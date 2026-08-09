@@ -1203,6 +1203,7 @@ describe('render3d visibility helpers', () => {
       meshCount: 96,
       instancedMeshCount: 16,
       pointsCount: 8,
+      particleEmitterCount: 2,
       lineObjectCount: 12,
       spriteCount: 12,
       geometryCount: 96,
@@ -1234,6 +1235,7 @@ describe('render3d visibility helpers', () => {
       meshCount: 16,
       instancedMeshCount: 4,
       pointsCount: 2,
+      particleEmitterCount: 1,
       lineObjectCount: 4,
       spriteCount: 2,
       geometryCount: 16,
@@ -1449,6 +1451,7 @@ describe('render3d visibility helpers', () => {
         geometryCount: 18,
         invalidPositionCoordinateCount: 0,
         pointVertexCount: 36,
+        particleEmitterCount: 0,
         lineSegmentCount: 25,
         oversizedGeometryBoundsCount: 0,
         maxGeometryVertexCount: 24,
@@ -1550,6 +1553,65 @@ describe('render3d visibility helpers', () => {
         },
       ],
     });
+  });
+
+  it('rejects models that exceed the particle-emitter cap independently of raw point counts', () => {
+    const sharedMaterial = createMockMaterial();
+    const root = createMockObject3D(undefined, [
+      createMockObject3D(
+        sharedMaterial,
+        [],
+        createMockStatGeometry('particle-a', 12),
+        {
+          renderParticleEmitter: {
+            particleCount: 12,
+            label: 'mist-a',
+          },
+        },
+        'Points'
+      ),
+      createMockObject3D(
+        sharedMaterial,
+        [],
+        createMockStatGeometry('particle-b', 12),
+        {
+          renderParticleEmitter: {
+            particleCount: 12,
+            label: 'mist-b',
+          },
+        },
+        'Points'
+      ),
+      createMockObject3D(
+        sharedMaterial,
+        [],
+        createMockStatGeometry('particle-c', 12),
+        {
+          renderParticleEmitter: {
+            particleCount: 12,
+            label: 'mist-c',
+          },
+        },
+        'Points'
+      ),
+    ]);
+
+    expect(validateTileModelAgainstRenderBudget(root as never, 'full')).toEqual(
+      expect.objectContaining({
+        accepted: false,
+        stats: expect.objectContaining({
+          pointsCount: 3,
+          particleEmitterCount: 3,
+        }),
+        violations: [
+          {
+            metric: 'particleEmitterCount',
+            actual: 3,
+            limit: 2,
+          },
+        ],
+      })
+    );
   });
 
   it('rejects models containing non-finite geometry coordinates', () => {
