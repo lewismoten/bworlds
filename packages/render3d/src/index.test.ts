@@ -1207,6 +1207,7 @@ describe('render3d visibility helpers', () => {
       lineSegmentCount: 1_024,
       oversizedGeometryBoundsCount: 0,
       maxGeometryVertexCount: 25_000,
+      indexedVertexCount: 75_000,
       materialCount: 16,
       textureCount: 16,
       lightCount: 4,
@@ -1227,6 +1228,7 @@ describe('render3d visibility helpers', () => {
       lineSegmentCount: 128,
       oversizedGeometryBoundsCount: 0,
       maxGeometryVertexCount: 1_500,
+      indexedVertexCount: 12_000,
       materialCount: 3,
       textureCount: 4,
       lightCount: 1,
@@ -1259,6 +1261,7 @@ describe('render3d visibility helpers', () => {
         lineSegmentCount: 0,
         oversizedGeometryBoundsCount: 0,
         maxGeometryVertexCount: 48,
+        indexedVertexCount: 0,
         materialCount: 1,
         textureCount: 1,
         lightCount: 0,
@@ -1300,6 +1303,7 @@ describe('render3d visibility helpers', () => {
         shadowLightCount: 1,
         vertexCount: 10_000,
         maxGeometryVertexCount: 2_500,
+        indexedVertexCount: 0,
       }),
       violations: [
         {
@@ -1365,6 +1369,7 @@ describe('render3d visibility helpers', () => {
         lineSegmentCount: 25,
         oversizedGeometryBoundsCount: 0,
         maxGeometryVertexCount: 24,
+        indexedVertexCount: 0,
       }),
       violations: [
         {
@@ -1427,6 +1432,7 @@ describe('render3d visibility helpers', () => {
         lineSegmentCount: 129,
         oversizedGeometryBoundsCount: 0,
         maxGeometryVertexCount: 130,
+        indexedVertexCount: 0,
       }),
       violations: [
         {
@@ -1463,6 +1469,7 @@ describe('render3d visibility helpers', () => {
         lineSegmentCount: 0,
         oversizedGeometryBoundsCount: 0,
         maxGeometryVertexCount: 3,
+        indexedVertexCount: 0,
       }),
       violations: [
         {
@@ -1488,6 +1495,7 @@ describe('render3d visibility helpers', () => {
       limits: getTileModelHardLimits('low'),
       stats: expect.objectContaining({
         maxGeometryVertexCount: 1_501,
+        indexedVertexCount: 0,
       }),
       violations: [
         {
@@ -1512,12 +1520,33 @@ describe('render3d visibility helpers', () => {
       limits: getTileModelHardLimits('low'),
       stats: expect.objectContaining({
         oversizedGeometryBoundsCount: 1,
+        indexedVertexCount: 0,
       }),
       violations: [
         {
           metric: 'oversizedGeometryBoundsCount',
           actual: 1,
           limit: 0,
+        },
+      ],
+    });
+  });
+
+  it('rejects models whose indexed vertex count exceeds the model cap', () => {
+    const geometry = createMockIndexedGeometry(64, 12_001);
+    const root = createMockObject3D(createMockMaterial(), [], geometry);
+
+    expect(validateTileModelAgainstRenderBudget(root as never, 'low')).toEqual({
+      accepted: false,
+      limits: getTileModelHardLimits('low'),
+      stats: expect.objectContaining({
+        indexedVertexCount: 12_001,
+      }),
+      violations: [
+        {
+          metric: 'indexedVertexCount',
+          actual: 12_001,
+          limit: 12_000,
         },
       ],
     });
@@ -2753,6 +2782,22 @@ function createMockPositionGeometry(values: number[], itemSize = 3) {
         itemSize,
         array: new Float32Array(values),
       },
+    },
+  };
+}
+
+function createMockIndexedGeometry(vertexCount: number, indexCount: number) {
+  return {
+    attributes: {
+      position: {
+        count: vertexCount,
+        itemSize: 3,
+        array: new Float32Array(vertexCount * 3),
+      },
+    },
+    index: {
+      count: indexCount,
+      array: new Uint32Array(indexCount),
     },
   };
 }

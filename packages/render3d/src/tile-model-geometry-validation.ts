@@ -29,6 +29,24 @@ export function getGeometryVertexCount(geometry: unknown): number {
   return 0;
 }
 
+export function getGeometryIndexCount(geometry: unknown): number {
+  const indexArray = (
+    geometry as {
+      index?: {
+        count?: unknown;
+        array?: ArrayLike<unknown>;
+      };
+    }
+  )?.index;
+  if (typeof indexArray?.count === 'number') {
+    return indexArray.count;
+  }
+  if (typeof indexArray?.array?.length === 'number') {
+    return indexArray.array.length;
+  }
+  return 0;
+}
+
 export function countInvalidGeometryCoordinateSets(
   root: TraversableObjectLike
 ): number {
@@ -101,6 +119,21 @@ export function countGeometriesExceedingBounds(
   });
 
   return oversizedGeometryCount;
+}
+
+export function countIndexedVertices(root: TraversableObjectLike): number {
+  let indexedVertexCount = 0;
+  const geometries = new Set<unknown>();
+
+  traverseSceneGraph(root, (child) => {
+    if (!child.geometry || geometries.has(child.geometry)) {
+      return;
+    }
+    geometries.add(child.geometry);
+    indexedVertexCount += getGeometryIndexCount(child.geometry);
+  });
+
+  return indexedVertexCount;
 }
 
 function hasInvalidGeometryPositionCoordinates(geometry: unknown): boolean {

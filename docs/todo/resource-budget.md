@@ -47,7 +47,7 @@ Operates at several levels: per model, per LOD, per plugin, per chunk, and per e
 
 * [X] Cap vertices per mesh.
 * [X] Cap vertices per complete generated model.
-* [ ] Cap indexed vertices.
+* [X] Cap indexed vertices.
 * [ ] Cap triangle count per mesh.
 * [ ] Cap triangle count per model.
 * [X] Cap line-segment count.

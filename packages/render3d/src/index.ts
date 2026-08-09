@@ -32,6 +32,7 @@ import {
 import {
   countGeometriesExceedingBounds,
   countInvalidGeometryCoordinateSets,
+  countIndexedVertices,
   countLineSegments,
   countPointVertices,
   getGeometryVertexCount,
@@ -237,6 +238,7 @@ const FULL_DETAIL_TILE_MODEL_HARD_LIMITS: TileModelHardLimits = {
   lineSegmentCount: 1_024,
   oversizedGeometryBoundsCount: 0,
   maxGeometryVertexCount: 25_000,
+  indexedVertexCount: 75_000,
   materialCount: 16,
   textureCount: 16,
   lightCount: 4,
@@ -258,6 +260,7 @@ const LOW_DETAIL_TILE_MODEL_HARD_LIMITS: TileModelHardLimits = {
   lineSegmentCount: 128,
   oversizedGeometryBoundsCount: 0,
   maxGeometryVertexCount: 1_500,
+  indexedVertexCount: 12_000,
   materialCount: 3,
   textureCount: 4,
   lightCount: 1,
@@ -292,6 +295,7 @@ export function validateTileModelAgainstRenderBudget(
       maximumGeometryAxisSpan
     ),
     maxGeometryVertexCount: sceneResourceStats.largestGeometryVertexCount,
+    indexedVertexCount: countIndexedVertices(root),
   };
   const limits = getTileModelHardLimits(detailLevel);
   const violations: TileModelBudgetViolation[] = [];
@@ -309,6 +313,7 @@ export function validateTileModelAgainstRenderBudget(
     'lineSegmentCount',
     'oversizedGeometryBoundsCount',
     'maxGeometryVertexCount',
+    'indexedVertexCount',
     'materialCount',
     'textureCount',
     'lightCount',
@@ -505,6 +510,7 @@ type TileModelHardLimits = {
   lineSegmentCount: number;
   oversizedGeometryBoundsCount: number;
   maxGeometryVertexCount: number;
+  indexedVertexCount: number;
   materialCount: number;
   textureCount: number;
   lightCount: number;
@@ -526,6 +532,7 @@ type TileModelBudgetValidation = {
     lineSegmentCount: number;
     oversizedGeometryBoundsCount: number;
     maxGeometryVertexCount: number;
+    indexedVertexCount: number;
   };
   limits: TileModelHardLimits;
   violations: TileModelBudgetViolation[];
