@@ -51,12 +51,15 @@
 - [x] The "Play Song" button should change to "Stop Song" while it is playing, and change back when its not.
 - [x] Tracks (other than percussion) should give a visual indication of notes being played on the scale in addition to showing solid bars.
 - [x] Add a Download button to download the song as a MIDI file
-- [ ] A play marker line should show where in the song is currently playing
-- [ ] Graphical track layers should appear near the top of the debug panel
-- [ ] Graphical track should show a time of 00:00 (minutes/seconds) of where the position is currently at, as well as buttons to jump to the beginning, or jump betwen each section.
-- [ ] Graphical track should visually show/label each section
-- [ ] Clicking anywhere on the graphical track should move the play-head to that location
+- [x] A play marker line should show where in the song is currently playing
+- [x] Graphical track layers should appear near the top of the debug panel
+- [x] Graphical track should show a time of 00:00 (minutes/seconds) of where the position is currently at, as well as buttons to jump to the beginning, or jump betwen each section.
+- [x] Graphical track should visually show/label each section
+- [x] Clicking anywhere on the graphical track should move the play-head to that location
 - [ ] All instrument sounds used to play the music should be listed along with their track, name, graphical wave form, and ability to play on their own.
+- [ ] When the page refreshes, allow the play-state and play-head persist
+- [ ] If the play head is at the end of the song, and I click play, let it jump to the beginning of the song
+- [ ] As the song plays, let me click sections to move the play-head
 - [ ] MIDI download should let each instrument (ie melody, harmony, bass, drums) be represented as individual tracks and labeled as such.
 - [ ] MIDI download should have meta markers to indicate which section is being played (Meta/Controle Lane Guide)
 - [ ] MIDI duration should match the generated song duration

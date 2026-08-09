@@ -21,7 +21,6 @@ import {
   type ProceduralMusicSong,
 } from './procedural-music-song.ts';
 import { randomizeDebugCoordinatePair } from './debug-seed.ts';
-import { createMusicDebugScaleOverlay } from './music-debug-scale.ts';
 import { describeSongSectionLayerArrangement } from './procedural-music-song-layers.ts';
 
 export type MusicDebugTileKind =
@@ -98,7 +97,7 @@ export type MusicDebugSongPlayback = {
   play(
     snapshot: MusicDebugSnapshot,
     region?: MusicDebugPlaybackRegion | null
-  ): void;
+  ): number | void;
   stop(): void;
 };
 
@@ -458,8 +457,15 @@ export function buildMusicDebugShellMarkup(
           </div>
         </form>
         <section class="music-debug-card">
-          <div id="music-debug-summary">${summaryMarkup}</div>
+          <div class="music-debug-transport">
+            <div class="music-debug-transport-summary">
+              <span id="music-debug-current-time">0:00 / --:--</span>
+              <span id="music-debug-current-section">Not playing</span>
+            </div>
+            <div id="music-debug-section-buttons" class="music-debug-section-buttons"></div>
+          </div>
           <canvas id="music-debug-timeline" width="960" height="320"></canvas>
+          <div id="music-debug-summary">${summaryMarkup}</div>
         </section>
       </section>
     </main>
@@ -551,107 +557,6 @@ export function buildMusicDebugSummaryMarkup(
     </div>
     <ul class="music-debug-instruments">${instruments}</ul>
   `;
-}
-
-export function drawMusicDebugTimeline(
-  canvas: HTMLCanvasElement,
-  snapshot: MusicDebugSnapshot
-): void {
-  const context = canvas.getContext('2d');
-  if (!context) {
-    return;
-  }
-
-  const width = canvas.width;
-  const height = canvas.height;
-  context.clearRect(0, 0, width, height);
-  context.fillStyle = '#071019';
-  context.fillRect(0, 0, width, height);
-
-  const leftPad = 84;
-  const rightPad = 24;
-  const topPad = 22;
-  const bottomPad = 24;
-  const trackHeight = (height - topPad - bottomPad) / 4;
-  const durationMs = Math.max(snapshot.durationMs, 1);
-  const roleOrder: Array<ProceduralMusicNote['role']> = [
-    'bass',
-    'harmony',
-    'lead',
-    'percussion',
-  ];
-  const roleColors: Record<ProceduralMusicNote['role'], string> = {
-    bass: '#55d6be',
-    harmony: '#86b5ff',
-    lead: '#ffbf69',
-    percussion: '#f27d7d',
-  };
-  const timelineLayout: MusicDebugTimelineLayout = {
-    width,
-    height,
-    leftPad,
-    rightPad,
-    topPad,
-    bottomPad,
-    trackHeight,
-    roleOrder,
-  };
-  const scaleOverlay = createMusicDebugScaleOverlay(snapshot, timelineLayout);
-
-  context.strokeStyle = 'rgba(255,255,255,0.08)';
-  context.lineWidth = 1;
-  for (let index = 0; index <= roleOrder.length; index += 1) {
-    const y = topPad + trackHeight * index;
-    context.beginPath();
-    context.moveTo(leftPad, y);
-    context.lineTo(width - rightPad, y);
-    context.stroke();
-  }
-
-  context.fillStyle = '#9db2bd';
-  context.font = '13px Trebuchet MS';
-  roleOrder.forEach((role, index) => {
-    context.fillText(role.toUpperCase(), 16, topPad + trackHeight * index + 18);
-  });
-
-  for (const note of snapshot.notes) {
-    const roleIndex = roleOrder.indexOf(note.role);
-    const startRatio = (note.startMs - snapshot.notes[0]!.startMs) / durationMs;
-    const endRatio =
-      (note.startMs + note.durationMs - snapshot.notes[0]!.startMs) /
-      durationMs;
-    const x = leftPad + startRatio * (width - leftPad - rightPad);
-    const barWidth = Math.max(
-      2,
-      (endRatio - startRatio) * (width - leftPad - rightPad)
-    );
-    const y = topPad + roleIndex * trackHeight + 10;
-    const barHeight = Math.max(10, trackHeight - 18);
-
-    context.fillStyle = roleColors[note.role];
-    context.fillRect(x, y, barWidth, barHeight);
-  }
-
-  context.strokeStyle = 'rgba(255,255,255,0.12)';
-  context.lineWidth = 1;
-  for (const guide of scaleOverlay.guides) {
-    context.beginPath();
-    context.moveTo(leftPad, guide.y);
-    context.lineTo(width - rightPad, guide.y);
-    context.stroke();
-  }
-
-  for (const marker of scaleOverlay.markers) {
-    context.beginPath();
-    context.fillStyle = '#f5f7fb';
-    context.arc(marker.x, marker.y, marker.radius, 0, Math.PI * 2);
-    context.fill();
-    context.beginPath();
-    context.strokeStyle = roleColors[marker.role];
-    context.lineWidth = 2;
-    context.arc(marker.x, marker.y, marker.radius + 1.5, 0, Math.PI * 2);
-    context.stroke();
-  }
 }
 
 export function playMusicDebugSong(snapshot: MusicDebugSnapshot): void {
@@ -768,6 +673,7 @@ export function createMusicDebugSongPlayback(
       };
 
       scheduleBatch();
+      return playbackStartMs;
     },
     stop() {
       playbackGeneration += 1;

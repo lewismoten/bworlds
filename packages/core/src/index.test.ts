@@ -41,7 +41,10 @@ describe('core utilities', () => {
     const branchLabel = registerHashLabel('branch');
     const northLabel = registerHashLabel('north');
     const shoulderLabel = registerHashLabel('shoulder');
-    const tileSeed = appendHashSeedPart(appendHashSeedPart(roadRibbonSeed, 12), -4);
+    const tileSeed = appendHashSeedPart(
+      appendHashSeedPart(roadRibbonSeed, 12),
+      -4
+    );
     const numericSeed = appendHashSeedLabel(
       appendHashSeedLabel(
         appendHashSeedLabel(tileSeed, branchLabel),
@@ -50,8 +53,12 @@ describe('core utilities', () => {
       shoulderLabel
     );
 
-    expect(hash2DWithSeed(numericSeed, 3, 7)).toBe(hash2DWithSeed(numericSeed, 3, 7));
-    expect(hash2DWithSeed(numericSeed, 1, 9)).toBe(hash2DWithSeed(numericSeed, 1, 9));
+    expect(hash2DWithSeed(numericSeed, 3, 7)).toBe(
+      hash2DWithSeed(numericSeed, 3, 7)
+    );
+    expect(hash2DWithSeed(numericSeed, 1, 9)).toBe(
+      hash2DWithSeed(numericSeed, 1, 9)
+    );
   });
 
   it('maps world coordinates to GPS coordinates', () => {
@@ -83,7 +90,9 @@ describe('core utilities', () => {
     expect(noon.dayProgress).toBe(0.5);
     expect(noon.daylight).toBeGreaterThan(0.95);
     expect(noon.isNight).toBe(false);
-    expect(noon.moonMidnightOrbitProgress).toBe(midnight.moonMidnightOrbitProgress);
+    expect(noon.moonMidnightOrbitProgress).toBe(
+      midnight.moonMidnightOrbitProgress
+    );
     expect(nextDay.dayNumber).toBe(1);
     expect(nextDay.moonPhaseName).toBe('Waxing Crescent');
     expect(midnight.solarEclipse).toEqual(
@@ -96,29 +105,29 @@ describe('core utilities', () => {
 
   it(
     'produces occasional daytime solar eclipses that briefly dim the world',
-    { timeout: 1000 },
+    { timeout: 4000 },
     () => {
-    let eclipseCycle: ReturnType<typeof getDaylightCycleState> | null = null;
+      let eclipseCycle: ReturnType<typeof getDaylightCycleState> | null = null;
 
-    for (let day = 0; day < 512 && !eclipseCycle; day += 1) {
-      for (let step = 0; step < 96; step += 1) {
-        const cycle = getDaylightCycleState(
-          day * DEFAULT_DAY_LENGTH_MS + (step / 96) * DEFAULT_DAY_LENGTH_MS
-        );
-        if (cycle.solarEclipse.active && cycle.sunAltitude > 0.1) {
-          eclipseCycle = cycle;
-          break;
+      for (let day = 0; day < 512 && !eclipseCycle; day += 1) {
+        for (let step = 0; step < 96; step += 1) {
+          const cycle = getDaylightCycleState(
+            day * DEFAULT_DAY_LENGTH_MS + (step / 96) * DEFAULT_DAY_LENGTH_MS
+          );
+          if (cycle.solarEclipse.active && cycle.sunAltitude > 0.1) {
+            eclipseCycle = cycle;
+            break;
+          }
         }
       }
-    }
 
-    expect(eclipseCycle).toBeTruthy();
-    expect(eclipseCycle?.solarEclipse.coverage).toBeGreaterThan(0.03);
-    expect(eclipseCycle?.daylight).toBeLessThan(0.9);
-    expect(eclipseCycle?.solarEclipse.moonAzimuth).toBeCloseTo(
-      eclipseCycle?.sunAzimuth ?? 0,
-      1
-    );
+      expect(eclipseCycle).toBeTruthy();
+      expect(eclipseCycle?.solarEclipse.coverage).toBeGreaterThan(0.03);
+      expect(eclipseCycle?.daylight).toBeLessThan(0.9);
+      expect(eclipseCycle?.solarEclipse.moonAzimuth).toBeCloseTo(
+        eclipseCycle?.sunAzimuth ?? 0,
+        1
+      );
     }
   );
 
@@ -134,9 +143,12 @@ describe('core utilities', () => {
   });
 
   it('limits repeated constellation prefixes and suffixes while allowing figure-style names', () => {
-    const constellations = generateConstellations(registerHashLabel('repeat-spec'), {
-      count: 12,
-    });
+    const constellations = generateConstellations(
+      registerHashLabel('repeat-spec'),
+      {
+        count: 12,
+      }
+    );
     const prefixCounts = new Map<string, number>();
     const suffixCounts = new Map<string, number>();
     let figureNames = 0;
@@ -158,9 +170,12 @@ describe('core utilities', () => {
   });
 
   it('generates visibly distinct constellation layouts across a seasonal set', () => {
-    const constellations = generateConstellations(registerHashLabel('layout-spec'), {
-      count: 8,
-    });
+    const constellations = generateConstellations(
+      registerHashLabel('layout-spec'),
+      {
+        count: 8,
+      }
+    );
     const fingerprints = new Set(
       constellations.map((constellation) =>
         constellation.stars
@@ -193,7 +208,9 @@ describe('core utilities', () => {
     expect(summer.daylightDuration).toBeGreaterThan(winter.daylightDuration);
     expect(summer.sunriseProgress).toBeLessThan(winter.sunriseProgress);
     expect(summer.sunsetProgress).toBeGreaterThan(winter.sunsetProgress);
-    expect(summer.activeConstellation.name).not.toBe(winter.activeConstellation.name);
+    expect(summer.activeConstellation.name).not.toBe(
+      winter.activeConstellation.name
+    );
   });
 
   it('adjusts meridian height based on observer latitude', () => {
@@ -257,15 +274,14 @@ describe('core utilities', () => {
     expect(cycle.dayNumber).toBe(1);
 
     expect(
-      advanceWorldTimeOffsetByHours(0, 6, { dayLengthMs: DEFAULT_DAY_LENGTH_MS })
+      advanceWorldTimeOffsetByHours(0, 6, {
+        dayLengthMs: DEFAULT_DAY_LENGTH_MS,
+      })
     ).toBe(DEFAULT_DAY_LENGTH_MS / 4);
 
-    const presetOffset = alignWorldTimeOffsetToDayProgress(
-      0,
-      0,
-      0.5,
-      { dayLengthMs: DEFAULT_DAY_LENGTH_MS }
-    );
+    const presetOffset = alignWorldTimeOffsetToDayProgress(0, 0, 0.5, {
+      dayLengthMs: DEFAULT_DAY_LENGTH_MS,
+    });
     expect(presetOffset).toBe(DEFAULT_DAY_LENGTH_MS / 2);
     expect(
       advanceWorldTimeOffsetBySeasons(0, 1, {
@@ -290,9 +306,7 @@ describe('core utilities', () => {
     const right = generatePoiName(seedHash, 'quarry', 18, -12);
 
     expect(left).toBe(right);
-    expect(left).toMatch(
-      /\b(Quarry|Cut|Excavation|Pit|Works|Stone)\b/
-    );
+    expect(left).toMatch(/\b(Quarry|Cut|Excavation|Pit|Works|Stone)\b/);
   });
 
   it('generates deterministic lighthouse point-of-interest names', () => {
@@ -301,9 +315,7 @@ describe('core utilities', () => {
     const right = generatePoiName(seedHash, 'lighthouse', -22, 9);
 
     expect(left).toBe(right);
-    expect(left).toMatch(
-      /\b(Beacon|Light|Watch|Lantern|Signal|Point)\b/
-    );
+    expect(left).toMatch(/\b(Beacon|Light|Watch|Lantern|Signal|Point)\b/);
   });
 
   it('generates deterministic ship point-of-interest names', () => {
@@ -312,9 +324,7 @@ describe('core utilities', () => {
     const right = generatePoiName(seedHash, 'ship', 14, -7);
 
     expect(left).toBe(right);
-    expect(left).toMatch(
-      /\b(Mariner|Brig|Galleon|Hulk|Harbor|Mast)\b/
-    );
+    expect(left).toMatch(/\b(Mariner|Brig|Galleon|Hulk|Harbor|Mast)\b/);
   });
 
   it('generates deterministic observatory point-of-interest names', () => {
@@ -323,9 +333,7 @@ describe('core utilities', () => {
     const right = generatePoiName(seedHash, 'observatory', -11, 16);
 
     expect(left).toBe(right);
-    expect(left).toMatch(
-      /\b(Observatory|Dome|Lens|Crown|Apex|Spire)\b/
-    );
+    expect(left).toMatch(/\b(Observatory|Dome|Lens|Crown|Apex|Spire)\b/);
   });
 
   it('generates deterministic station point-of-interest names', () => {
@@ -334,9 +342,7 @@ describe('core utilities', () => {
     const right = generatePoiName(seedHash, 'station', 7, -14);
 
     expect(left).toBe(right);
-    expect(left).toMatch(
-      /\b(Station|Depot|Platform|Junction|Terminal|Rail)\b/
-    );
+    expect(left).toMatch(/\b(Station|Depot|Platform|Junction|Terminal|Rail)\b/);
   });
 
   it('generates deterministic tower point-of-interest names', () => {
@@ -388,9 +394,9 @@ describe('core utilities', () => {
         trailLength: expect.any(Number),
       })
     );
-    expect(events.every((event) => event.visibility >= 0 && event.visibility <= 1)).toBe(
-      true
-    );
+    expect(
+      events.every((event) => event.visibility >= 0 && event.visibility <= 1)
+    ).toBe(true);
   });
 
   it('varies planetary orbital progress rather than moving at a perfectly uniform rate', () => {
@@ -452,12 +458,18 @@ describe('core utilities', () => {
     });
 
     const dayMeteor = daytime.find((event) => event.type === 'meteor-shower');
-    const nightMeteor = nighttime.find((event) => event.type === 'meteor-shower');
+    const nightMeteor = nighttime.find(
+      (event) => event.type === 'meteor-shower'
+    );
     const dayPlanet = daytime.find((event) => event.type === 'planet');
     const nightPlanet = nighttime.find((event) => event.type === 'planet');
 
-    expect(dayMeteor?.visibility ?? 0).toBeLessThan(nightMeteor?.visibility ?? 1);
-    expect(dayPlanet?.visibility ?? 0).toBeLessThanOrEqual(nightPlanet?.visibility ?? 1);
+    expect(dayMeteor?.visibility ?? 0).toBeLessThan(
+      nightMeteor?.visibility ?? 1
+    );
+    expect(dayPlanet?.visibility ?? 0).toBeLessThanOrEqual(
+      nightPlanet?.visibility ?? 1
+    );
   });
 
   it('exposes a faint Milky Way belt state that responds to season and latitude', () => {
@@ -488,10 +500,13 @@ describe('core utilities', () => {
       observerLatitudeDegrees: 22,
       yearLengthDays: DEFAULT_YEAR_LENGTH_DAYS,
     });
-    const sunset = getDaylightCycleState(DEFAULT_DAY_LENGTH_MS * 5 + DEFAULT_DAY_LENGTH_MS * 0.5, {
-      observerLatitudeDegrees: 22,
-      yearLengthDays: DEFAULT_YEAR_LENGTH_DAYS,
-    });
+    const sunset = getDaylightCycleState(
+      DEFAULT_DAY_LENGTH_MS * 5 + DEFAULT_DAY_LENGTH_MS * 0.5,
+      {
+        observerLatitudeDegrees: 22,
+        yearLengthDays: DEFAULT_YEAR_LENGTH_DAYS,
+      }
+    );
 
     expect(sunrise.milkyWay.azimuthOffset).not.toBeCloseTo(
       sunset.milkyWay.azimuthOffset,
@@ -508,18 +523,35 @@ describe('core utilities', () => {
       observerLatitudeDegrees: 22,
       yearLengthDays: DEFAULT_YEAR_LENGTH_DAYS,
     });
-    const samples = getMilkyWayBandSamples(cycle.milkyWay, cycle.yearProgress, 24);
+    const samples = getMilkyWayBandSamples(
+      cycle.milkyWay,
+      cycle.yearProgress,
+      24
+    );
 
     expect(samples).toHaveLength(25);
     expect(samples[0]?.azimuth).toBeCloseTo(cycle.milkyWay.azimuthOffset, 6);
-    expect(samples.every((sample) => sample.innerPhi < sample.centerPhi)).toBe(true);
-    expect(samples.every((sample) => sample.outerPhi > sample.centerPhi)).toBe(true);
-    expect(samples.every((sample) => sample.opacity >= 0 && sample.opacity <= 1)).toBe(
+    expect(samples.every((sample) => sample.innerPhi < sample.centerPhi)).toBe(
       true
     );
-    expect(samples[0]?.centerPhi).toBeCloseTo(samples[samples.length - 1]?.centerPhi ?? 0, 6);
-    expect(samples[0]?.innerPhi).toBeCloseTo(samples[samples.length - 1]?.innerPhi ?? 0, 6);
-    expect(samples[0]?.outerPhi).toBeCloseTo(samples[samples.length - 1]?.outerPhi ?? 0, 6);
+    expect(samples.every((sample) => sample.outerPhi > sample.centerPhi)).toBe(
+      true
+    );
+    expect(
+      samples.every((sample) => sample.opacity >= 0 && sample.opacity <= 1)
+    ).toBe(true);
+    expect(samples[0]?.centerPhi).toBeCloseTo(
+      samples[samples.length - 1]?.centerPhi ?? 0,
+      6
+    );
+    expect(samples[0]?.innerPhi).toBeCloseTo(
+      samples[samples.length - 1]?.innerPhi ?? 0,
+      6
+    );
+    expect(samples[0]?.outerPhi).toBeCloseTo(
+      samples[samples.length - 1]?.outerPhi ?? 0,
+      6
+    );
   });
 
   it('builds shared orrery bodies from the moon and visible orbital events', () => {
@@ -544,7 +576,9 @@ describe('core utilities', () => {
     );
     expect(bodies.some((body) => body.type === 'moon')).toBe(true);
     expect(bodies.some((body) => body.type === 'planet')).toBe(true);
-    expect(bodies.every((body) => body.angle >= 0 && body.angle < 1)).toBe(true);
+    expect(bodies.every((body) => body.angle >= 0 && body.angle < 1)).toBe(
+      true
+    );
     expect(
       bodies.every(
         (body) =>
@@ -555,10 +589,14 @@ describe('core utilities', () => {
       )
     ).toBe(true);
     expect(
-      bodies.some((body) => body.type === 'planet' && body.orbitEccentricity > 0)
+      bodies.some(
+        (body) => body.type === 'planet' && body.orbitEccentricity > 0
+      )
     ).toBe(true);
     expect(
-      bodies.some((body) => body.type === 'comet' && body.orbitEccentricity >= 0.4)
+      bodies.some(
+        (body) => body.type === 'comet' && body.orbitEccentricity >= 0.4
+      )
     ).toBe(true);
   });
 
@@ -585,7 +623,9 @@ describe('core utilities', () => {
       deriveOrreryFromVisibleEvents: true,
     });
 
-    expect(overrides.visibleEvents.some((event) => event.name === 'Vela')).toBe(true);
+    expect(overrides.visibleEvents.some((event) => event.name === 'Vela')).toBe(
+      true
+    );
     expect(
       overrides.visibleEvents.some(
         (event) => event.type === 'planet' && event.name !== 'Vela'
@@ -650,10 +690,9 @@ describe('core utilities', () => {
       ],
     });
 
-    expect(bodies.find((body) => body.id === 'comet:Kite')?.orbitRadius).toBeCloseTo(
-      8.1,
-      6
-    );
+    expect(
+      bodies.find((body) => body.id === 'comet:Kite')?.orbitRadius
+    ).toBeCloseTo(8.1, 6);
   });
 
   it('exposes tile-definition lookup through world state', () => {

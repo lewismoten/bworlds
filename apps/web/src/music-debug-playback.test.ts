@@ -38,6 +38,40 @@ describe('music debug playback controller', () => {
     expect(playingStates).toEqual([true, false]);
   });
 
+  it('reports playback cycle timing when a song starts', () => {
+    vi.useFakeTimers();
+    const snapshot = createMusicDebugSnapshot();
+    const cycles: Array<{
+      startOffsetMs: number;
+      endOffsetMs: number;
+      startedAtMs: number;
+    }> = [];
+    const playback = {
+      play: vi.fn(() => 2_048),
+      stop: vi.fn(),
+    };
+    const controller = createMusicDebugPlaybackController({
+      playback,
+      onPlaybackCycle(state) {
+        cycles.push({
+          startOffsetMs: state.region?.startOffsetMs ?? 0,
+          endOffsetMs: state.region?.endOffsetMs ?? snapshot.durationMs,
+          startedAtMs: state.startedAtMs,
+        });
+      },
+    });
+
+    controller.start(snapshot, { startOffsetMs: 12_000 });
+
+    expect(cycles).toEqual([
+      {
+        startOffsetMs: 12_000,
+        endOffsetMs: snapshot.durationMs,
+        startedAtMs: 2_048,
+      },
+    ]);
+  });
+
   it('keeps full-song playback running past the loop boundary when looping is off', () => {
     vi.useFakeTimers();
     const snapshot = createMusicDebugSnapshot({
@@ -156,5 +190,35 @@ describe('music debug playback controller', () => {
     controller.stop();
     expect(playback.stop).toHaveBeenCalledTimes(1);
     expect(controller.isPlaying()).toBe(false);
+  });
+
+  it('starts looped playback from a seek offset before repeating the loop region', () => {
+    vi.useFakeTimers();
+    const snapshot = createMusicDebugSnapshot({
+      tileKind: 'forest',
+      contextType: 'overworld',
+      clusterX: 3,
+      clusterY: -2,
+    });
+    const playback = {
+      play: vi.fn(),
+      stop: vi.fn(),
+    };
+    const controller = createMusicDebugPlaybackController({
+      playback,
+    });
+
+    controller.start(snapshot, {
+      loop: true,
+      startOffsetMs: 8_000,
+    });
+
+    expect(playback.play).toHaveBeenCalledWith(
+      snapshot,
+      expect.objectContaining({
+        startOffsetMs: 8_000,
+        endOffsetMs: snapshot.loopEndOffsetMs,
+      })
+    );
   });
 });

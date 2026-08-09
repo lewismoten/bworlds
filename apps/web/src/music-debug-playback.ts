@@ -8,15 +8,21 @@ export type MusicDebugPlaybackAdapter = {
   play(
     snapshot: MusicDebugSnapshot,
     region?: MusicDebugPlaybackRegion | null
-  ): void;
+  ): number | void;
   stop(): void;
 };
 
 export type MusicDebugPlaybackController = {
   isPlaying(): boolean;
-  start(snapshot: MusicDebugSnapshot, options?: { loop?: boolean }): void;
+  start(
+    snapshot: MusicDebugSnapshot,
+    options?: { loop?: boolean; startOffsetMs?: number }
+  ): void;
   stop(): void;
-  toggle(snapshot: MusicDebugSnapshot, options?: { loop?: boolean }): void;
+  toggle(
+    snapshot: MusicDebugSnapshot,
+    options?: { loop?: boolean; startOffsetMs?: number }
+  ): void;
 };
 
 type TimeoutHandle = ReturnType<typeof setTimeout>;
@@ -24,13 +30,21 @@ type TimeoutHandle = ReturnType<typeof setTimeout>;
 export function createMusicDebugPlaybackController(options: {
   playback: MusicDebugPlaybackAdapter;
   onPlayingChange?: (playing: boolean) => void;
+  onPlaybackCycle?: (state: {
+    snapshot: MusicDebugSnapshot;
+    region: MusicDebugPlaybackRegion | null;
+    startedAtMs: number;
+  }) => void;
+  onPlaybackStop?: () => void;
   scheduleTimeout?: typeof setTimeout;
   clearScheduledTimeout?: typeof clearTimeout;
   playbackLeadMs?: number;
+  now?: () => number;
 }): MusicDebugPlaybackController {
   const scheduleTimeout = options.scheduleTimeout ?? setTimeout;
   const clearScheduledTimeout = options.clearScheduledTimeout ?? clearTimeout;
   const playbackLeadMs = options.playbackLeadMs ?? 8;
+  const now = options.now ?? performance.now.bind(performance);
   let playing = false;
   let timeoutHandle: TimeoutHandle | null = null;
 
@@ -54,6 +68,7 @@ export function createMusicDebugPlaybackController(options: {
     }
     options.playback.stop();
     setPlaying(false);
+    options.onPlaybackStop?.();
   }
 
   function schedulePlaybackStop(options: {
@@ -90,12 +105,18 @@ export function createMusicDebugPlaybackController(options: {
     snapshot: MusicDebugSnapshot,
     region?: MusicDebugPlaybackRegion | null
   ): void {
-    options.playback.play(snapshot, region);
+    const startedAtMs =
+      options.playback.play(snapshot, region) ?? now() + playbackLeadMs;
+    options.onPlaybackCycle?.({
+      snapshot,
+      region: region ?? null,
+      startedAtMs,
+    });
   }
 
   function start(
     snapshot: MusicDebugSnapshot,
-    startOptions?: { loop?: boolean }
+    startOptions?: { loop?: boolean; startOffsetMs?: number }
   ): void {
     clearPlaybackTimeout();
     if (playing) {
@@ -103,6 +124,10 @@ export function createMusicDebugPlaybackController(options: {
     }
 
     const loopEnabled = startOptions?.loop === true;
+    const startOffsetMs = Math.min(
+      snapshot.durationMs,
+      Math.max(0, Math.round(startOptions?.startOffsetMs ?? 0))
+    );
     const loopRegion: MusicDebugPlaybackRegion | null =
       snapshot.loopEndOffsetMs > snapshot.loopStartOffsetMs
         ? {
@@ -113,10 +138,18 @@ export function createMusicDebugPlaybackController(options: {
     const introRegion: MusicDebugPlaybackRegion | null =
       loopEnabled && loopRegion
         ? {
-            startOffsetMs: 0,
-            endOffsetMs: loopRegion.endOffsetMs,
+            startOffsetMs,
+            endOffsetMs:
+              startOffsetMs < loopRegion.endOffsetMs
+                ? loopRegion.endOffsetMs
+                : snapshot.durationMs,
           }
-        : null;
+        : startOffsetMs > 0
+          ? {
+              startOffsetMs,
+              endOffsetMs: snapshot.durationMs,
+            }
+          : null;
 
     playbackStart(snapshot, introRegion);
     setPlaying(true);

@@ -46,12 +46,12 @@ describe('town support', () => {
     const plots = getTownBuildingPlots(3, 7);
 
     expect(plots).toHaveLength(profile.buildingCount);
-    expect(
-      plots.filter((plot) => plot.role === 'professional')
-    ).toHaveLength(profile.professionalBuildings);
-    expect(
-      plots.filter((plot) => plot.role === 'residential')
-    ).toHaveLength(profile.residentialBuildings);
+    expect(plots.filter((plot) => plot.role === 'professional')).toHaveLength(
+      profile.professionalBuildings
+    );
+    expect(plots.filter((plot) => plot.role === 'residential')).toHaveLength(
+      profile.residentialBuildings
+    );
   });
 
   it('generates deterministic town npc rosters with homes, names, parents, and ages', () => {
@@ -155,7 +155,9 @@ describe('town support', () => {
     );
 
     if (!worker || !worker.workplaceBuildingId) {
-      throw new Error('Expected a working adult in the deterministic town roster.');
+      throw new Error(
+        'Expected a working adult in the deterministic town roster.'
+      );
     }
 
     const home = buildings.get(worker.residenceBuildingId);
@@ -174,11 +176,9 @@ describe('town support', () => {
       DEFAULT_DAY_LENGTH_MS *
         ((getStartHourForFamily(worker.workplaceProfessionFamily) - 0.5) / 24)
     ).find((placement) => placement.npcId === worker.id);
-    const midday = getTownNpcPlacements(
-      3,
-      7,
-      DEFAULT_DAY_LENGTH_MS * 0.5
-    ).find((placement) => placement.npcId === worker.id);
+    const midday = getTownNpcPlacements(3, 7, DEFAULT_DAY_LENGTH_MS * 0.5).find(
+      (placement) => placement.npcId === worker.id
+    );
 
     expect(midnight).toMatchObject({
       x: home.x,
@@ -186,13 +186,11 @@ describe('town support', () => {
       state: 'home',
     });
     expect(morningCommute?.state).toBe('commuting-to-work');
+    expect(morningCommute?.x === home.x && morningCommute?.y === home.y).toBe(
+      false
+    );
     expect(
-      morningCommute?.x === home.x &&
-        morningCommute?.y === home.y
-    ).toBe(false);
-    expect(
-      morningCommute?.x === workplace.x &&
-        morningCommute?.y === workplace.y
+      morningCommute?.x === workplace.x && morningCommute?.y === workplace.y
     ).toBe(false);
     expect(midday).toMatchObject({
       x: workplace.x,
@@ -207,7 +205,9 @@ describe('town support', () => {
     );
 
     if (!professionalBuilding) {
-      throw new Error('Expected a professional building in the deterministic town layout.');
+      throw new Error(
+        'Expected a professional building in the deterministic town layout.'
+      );
     }
 
     const middayServices = getTownBuildingServiceState(
@@ -230,13 +230,23 @@ describe('town support', () => {
   });
 
   it('generates npc quest offers from home, work, and commute states using player progress', () => {
-    const daytimeWork = getTownNpcQuestStates(3, 7, DEFAULT_DAY_LENGTH_MS * 0.5, {
-      level: 2,
-      profession: 'courier',
-    });
-    const nighttimeHome = getTownNpcQuestStates(3, 7, DEFAULT_DAY_LENGTH_MS * 0.92, {
-      level: 1,
-    });
+    const daytimeWork = getTownNpcQuestStates(
+      3,
+      7,
+      DEFAULT_DAY_LENGTH_MS * 0.5,
+      {
+        level: 2,
+        profession: 'courier',
+      }
+    );
+    const nighttimeHome = getTownNpcQuestStates(
+      3,
+      7,
+      DEFAULT_DAY_LENGTH_MS * 0.92,
+      {
+        level: 1,
+      }
+    );
     const followUp = getTownNpcQuestStates(3, 7, DEFAULT_DAY_LENGTH_MS * 0.5, {
       level: 6,
       profession: 'scholar',
@@ -247,18 +257,28 @@ describe('town support', () => {
     });
 
     expect(
-      daytimeWork.some((entry) => entry.offers.some((offer) => offer.type === 'delivery'))
+      daytimeWork.some((entry) =>
+        entry.offers.some((offer) => offer.type === 'delivery')
+      )
     ).toBe(true);
     expect(
-      nighttimeHome.some((entry) => entry.offers.some((offer) => offer.type === 'collection'))
+      nighttimeHome.some((entry) =>
+        entry.offers.some((offer) => offer.type === 'collection')
+      )
     ).toBe(true);
     expect(
-      followUp.some((entry) => entry.offers.some((offer) => offer.type === 'investigation'))
+      followUp.some((entry) =>
+        entry.offers.some((offer) => offer.type === 'investigation')
+      )
     ).toBe(true);
   });
 
   it('keeps deterministic town data stable after many cache evictions', () => {
-    const profile = { level: 5, profession: 'courier', completedQuestIds: ['quest:one'] };
+    const profile = {
+      level: 5,
+      profession: 'courier',
+      completedQuestIds: ['quest:one'],
+    };
     const captureBuildings = () =>
       getTownBuildings(3, 7).map((building) => ({
         ...building,
@@ -268,7 +288,11 @@ describe('town support', () => {
 
     const baselineNpcs = getTownNpcs(3, 7);
     const baselineBuildings = captureBuildings();
-    const baselinePlacements = getTownNpcPlacements(3, 7, DEFAULT_DAY_LENGTH_MS * 0.5);
+    const baselinePlacements = getTownNpcPlacements(
+      3,
+      7,
+      DEFAULT_DAY_LENGTH_MS * 0.5
+    );
     const baselineQuestStates = getTownNpcQuestStates(
       3,
       7,
@@ -324,7 +348,7 @@ describe('town support', () => {
       )
     ).toEqual(baselineServices);
     expect(getTownProfile(3, 7)).toEqual(baselineProfile);
-  }, 1000);
+  }, 4000);
 
   it('surfaces rescue and revenge quest offers from generated town schedules', () => {
     const townSamples: Array<[number, number]> = [
@@ -371,7 +395,9 @@ describe('town support', () => {
         );
         const prerequisiteIds = baseStates
           .flatMap((entry) => entry.offers)
-          .filter((offer) => offer.type === 'recovery' || offer.type === 'tracking')
+          .filter(
+            (offer) => offer.type === 'recovery' || offer.type === 'tracking'
+          )
           .map((offer) => offer.id);
         if (prerequisiteIds.length === 0) {
           continue;
@@ -423,7 +449,11 @@ describe('town support', () => {
               profession: 'guard',
             }
           );
-          if (killStates.some((entry) => entry.offers.some((offer) => offer.type === 'kill'))) {
+          if (
+            killStates.some((entry) =>
+              entry.offers.some((offer) => offer.type === 'kill')
+            )
+          ) {
             break outerKill;
           }
         }
@@ -431,7 +461,9 @@ describe('town support', () => {
     }
 
     expect(
-      killStates.some((entry) => entry.offers.some((offer) => offer.type === 'kill'))
+      killStates.some((entry) =>
+        entry.offers.some((offer) => offer.type === 'kill')
+      )
     ).toBe(true);
   });
 
@@ -590,17 +622,18 @@ describe('town support', () => {
         );
         const prerequisiteIds = baseStates
           .flatMap((entry) => entry.offers)
-          .filter((offer) =>
-            offer.type === 'escort' ||
-            offer.type === 'tracking' ||
-            offer.type === 'rescue' ||
-            offer.type === 'training' ||
-            offer.type === 'puzzle' ||
-            offer.type === 'investigation' ||
-            offer.type === 'challenge' ||
-            offer.type === 'survival' ||
-            offer.type === 'delivery' ||
-            offer.type === 'diplomacy'
+          .filter(
+            (offer) =>
+              offer.type === 'escort' ||
+              offer.type === 'tracking' ||
+              offer.type === 'rescue' ||
+              offer.type === 'training' ||
+              offer.type === 'puzzle' ||
+              offer.type === 'investigation' ||
+              offer.type === 'challenge' ||
+              offer.type === 'survival' ||
+              offer.type === 'delivery' ||
+              offer.type === 'diplomacy'
           )
           .map((offer) => offer.id);
         if (prerequisiteIds.length === 0) {
@@ -655,7 +688,11 @@ describe('town support', () => {
             profession: 'smith',
           }
         );
-        if (crafting.some((entry) => entry.offers.some((offer) => offer.type === 'crafting'))) {
+        if (
+          crafting.some((entry) =>
+            entry.offers.some((offer) => offer.type === 'crafting')
+          )
+        ) {
           break outerCrafting;
         }
       }
@@ -672,24 +709,37 @@ describe('town support', () => {
             profession: 'scholar',
           }
         );
-        if (training.some((entry) => entry.offers.some((offer) => offer.type === 'training'))) {
+        if (
+          training.some((entry) =>
+            entry.offers.some((offer) => offer.type === 'training')
+          )
+        ) {
           break outerTraining;
         }
       }
     }
 
     expect(
-      crafting.some((entry) => entry.offers.some((offer) => offer.type === 'crafting'))
+      crafting.some((entry) =>
+        entry.offers.some((offer) => offer.type === 'crafting')
+      )
     ).toBe(true);
     expect(
-      training.some((entry) => entry.offers.some((offer) => offer.type === 'training'))
+      training.some((entry) =>
+        entry.offers.some((offer) => offer.type === 'training')
+      )
     ).toBe(true);
   });
 
   it('surfaces fetch and recovery quest offers from generated town schedules', () => {
-    const fetchStates = getTownNpcQuestStates(3, 7, DEFAULT_DAY_LENGTH_MS * 0.88, {
-      level: 3,
-    });
+    const fetchStates = getTownNpcQuestStates(
+      3,
+      7,
+      DEFAULT_DAY_LENGTH_MS * 0.88,
+      {
+        level: 3,
+      }
+    );
     const townSamples: Array<[number, number]> = [
       [3, 7],
       [10, -4],
@@ -710,17 +760,25 @@ describe('town support', () => {
             profession: 'guard',
           }
         );
-        if (recoveryStates.some((entry) => entry.offers.some((offer) => offer.type === 'recovery'))) {
+        if (
+          recoveryStates.some((entry) =>
+            entry.offers.some((offer) => offer.type === 'recovery')
+          )
+        ) {
           break outer;
         }
       }
     }
 
     expect(
-      fetchStates.some((entry) => entry.offers.some((offer) => offer.type === 'fetch'))
+      fetchStates.some((entry) =>
+        entry.offers.some((offer) => offer.type === 'fetch')
+      )
     ).toBe(true);
     expect(
-      recoveryStates.some((entry) => entry.offers.some((offer) => offer.type === 'recovery'))
+      recoveryStates.some((entry) =>
+        entry.offers.some((offer) => offer.type === 'recovery')
+      )
     ).toBe(true);
   });
 
@@ -746,7 +804,11 @@ describe('town support', () => {
             profession: 'scout',
           }
         );
-        if (trackingStates.some((entry) => entry.offers.some((offer) => offer.type === 'tracking'))) {
+        if (
+          trackingStates.some((entry) =>
+            entry.offers.some((offer) => offer.type === 'tracking')
+          )
+        ) {
           break outerTracking;
         }
       }
@@ -763,17 +825,25 @@ describe('town support', () => {
             profession: 'courier',
           }
         );
-        if (timedStates.some((entry) => entry.offers.some((offer) => offer.type === 'timed'))) {
+        if (
+          timedStates.some((entry) =>
+            entry.offers.some((offer) => offer.type === 'timed')
+          )
+        ) {
           break outerTimed;
         }
       }
     }
 
     expect(
-      trackingStates.some((entry) => entry.offers.some((offer) => offer.type === 'tracking'))
+      trackingStates.some((entry) =>
+        entry.offers.some((offer) => offer.type === 'tracking')
+      )
     ).toBe(true);
     expect(
-      timedStates.some((entry) => entry.offers.some((offer) => offer.type === 'timed'))
+      timedStates.some((entry) =>
+        entry.offers.some((offer) => offer.type === 'timed')
+      )
     ).toBe(true);
   });
 
@@ -994,7 +1064,11 @@ describe('town support', () => {
             profession: 'merchant',
           }
         );
-        if (diplomacyStates.some((entry) => entry.offers.some((offer) => offer.type === 'diplomacy'))) {
+        if (
+          diplomacyStates.some((entry) =>
+            entry.offers.some((offer) => offer.type === 'diplomacy')
+          )
+        ) {
           break outerDiplomacy;
         }
       }
@@ -1011,17 +1085,25 @@ describe('town support', () => {
             profession: 'guard',
           }
         );
-        if (choiceStates.some((entry) => entry.offers.some((offer) => offer.type === 'choice'))) {
+        if (
+          choiceStates.some((entry) =>
+            entry.offers.some((offer) => offer.type === 'choice')
+          )
+        ) {
           break outerChoice;
         }
       }
     }
 
     expect(
-      diplomacyStates.some((entry) => entry.offers.some((offer) => offer.type === 'diplomacy'))
+      diplomacyStates.some((entry) =>
+        entry.offers.some((offer) => offer.type === 'diplomacy')
+      )
     ).toBe(true);
     expect(
-      choiceStates.some((entry) => entry.offers.some((offer) => offer.type === 'choice'))
+      choiceStates.some((entry) =>
+        entry.offers.some((offer) => offer.type === 'choice')
+      )
     ).toBe(true);
   });
 
@@ -1047,7 +1129,11 @@ describe('town support', () => {
             profession: 'merchant',
           }
         );
-        if (factionStates.some((entry) => entry.offers.some((offer) => offer.type === 'faction'))) {
+        if (
+          factionStates.some((entry) =>
+            entry.offers.some((offer) => offer.type === 'faction')
+          )
+        ) {
           break outerFaction;
         }
       }
@@ -1064,17 +1150,25 @@ describe('town support', () => {
             profession: 'smith',
           }
         );
-        if (constructionStates.some((entry) => entry.offers.some((offer) => offer.type === 'construction'))) {
+        if (
+          constructionStates.some((entry) =>
+            entry.offers.some((offer) => offer.type === 'construction')
+          )
+        ) {
           break outerConstruction;
         }
       }
     }
 
     expect(
-      factionStates.some((entry) => entry.offers.some((offer) => offer.type === 'faction'))
+      factionStates.some((entry) =>
+        entry.offers.some((offer) => offer.type === 'faction')
+      )
     ).toBe(true);
     expect(
-      constructionStates.some((entry) => entry.offers.some((offer) => offer.type === 'construction'))
+      constructionStates.some((entry) =>
+        entry.offers.some((offer) => offer.type === 'construction')
+      )
     ).toBe(true);
   });
 

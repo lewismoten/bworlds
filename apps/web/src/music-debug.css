@@ -18,8 +18,16 @@ body {
   color: var(--music-text);
   font-family: 'Trebuchet MS', 'Avenir Next', Avenir, 'Segoe UI', sans-serif;
   background:
-    radial-gradient(circle at top left, rgba(85, 214, 190, 0.16), transparent 28%),
-    radial-gradient(circle at top right, rgba(255, 191, 105, 0.18), transparent 24%),
+    radial-gradient(
+      circle at top left,
+      rgba(85, 214, 190, 0.16),
+      transparent 28%
+    ),
+    radial-gradient(
+      circle at top right,
+      rgba(255, 191, 105, 0.18),
+      transparent 24%
+    ),
     linear-gradient(160deg, #071018 0%, #0f1d2c 60%, #08121c 100%);
 }
 
@@ -121,6 +129,43 @@ body {
   cursor: pointer;
 }
 
+.music-debug-transport {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.music-debug-transport-summary {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.75rem;
+  color: var(--music-accent-2);
+  font-size: 0.9rem;
+}
+
+.music-debug-section-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.music-debug-section-button {
+  appearance: none;
+  border: 1px solid var(--music-border);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--music-text);
+  padding: 0.5rem 0.8rem;
+  font: inherit;
+  cursor: pointer;
+}
+
+.music-debug-section-button[data-active='true'] {
+  border-color: rgba(85, 214, 190, 0.6);
+  background: rgba(85, 214, 190, 0.18);
+  color: #ebfffb;
+}
+
 .music-debug-summary-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -162,6 +207,7 @@ body {
   border-radius: 16px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   background: #071019;
+  cursor: pointer;
 }
 
 @media (max-width: 960px) {
@@ -172,5 +218,12 @@ body {
   .music-debug-grid,
   .music-debug-summary-grid {
     grid-template-columns: 1fr;
+  }
+
+  .music-debug-actions,
+  .music-debug-transport-summary,
+  .music-debug-section-buttons {
+    flex-direction: column;
+    align-items: stretch;
   }
 }

@@ -1,0 +1,249 @@
+import {
+  type MusicDebugPlaybackRegion,
+  type MusicDebugSnapshot,
+  type MusicDebugTimelineLayout,
+} from './music-debug.ts';
+import type { ProceduralMusicNote } from './procedural-music.ts';
+import { createMusicDebugScaleOverlay } from './music-debug-scale.ts';
+
+export const MUSIC_DEBUG_TIMELINE_LEFT_PAD = 84;
+export const MUSIC_DEBUG_TIMELINE_RIGHT_PAD = 24;
+export const MUSIC_DEBUG_TIMELINE_TOP_PAD = 34;
+export const MUSIC_DEBUG_TIMELINE_BOTTOM_PAD = 24;
+
+export function resolveMusicDebugTimelineLayout(
+  width: number,
+  height: number
+): MusicDebugTimelineLayout {
+  return {
+    width,
+    height,
+    leftPad: MUSIC_DEBUG_TIMELINE_LEFT_PAD,
+    rightPad: MUSIC_DEBUG_TIMELINE_RIGHT_PAD,
+    topPad: MUSIC_DEBUG_TIMELINE_TOP_PAD,
+    bottomPad: MUSIC_DEBUG_TIMELINE_BOTTOM_PAD,
+    trackHeight:
+      (height -
+        MUSIC_DEBUG_TIMELINE_TOP_PAD -
+        MUSIC_DEBUG_TIMELINE_BOTTOM_PAD) /
+      4,
+    roleOrder: ['bass', 'harmony', 'lead', 'percussion'],
+  };
+}
+
+export function resolveMusicDebugTimelineXForOffset(
+  layout: MusicDebugTimelineLayout,
+  durationMs: number,
+  offsetMs: number
+): number {
+  const usableWidth = layout.width - layout.leftPad - layout.rightPad;
+  const clampedOffsetMs = Math.min(durationMs, Math.max(0, offsetMs));
+  const ratio = durationMs <= 0 ? 0 : clampedOffsetMs / durationMs;
+  return layout.leftPad + usableWidth * ratio;
+}
+
+export function resolveMusicDebugTimelineOffsetForX(
+  layout: MusicDebugTimelineLayout,
+  durationMs: number,
+  x: number
+): number {
+  const usableWidth = Math.max(
+    1,
+    layout.width - layout.leftPad - layout.rightPad
+  );
+  const clampedX = Math.min(
+    layout.width - layout.rightPad,
+    Math.max(layout.leftPad, x)
+  );
+  const ratio = (clampedX - layout.leftPad) / usableWidth;
+  return Math.round(Math.max(0, Math.min(1, ratio)) * Math.max(0, durationMs));
+}
+
+export function resolveMusicDebugTimelineSeekOffset(options: {
+  snapshot: MusicDebugSnapshot;
+  canvas: Pick<HTMLCanvasElement, 'width' | 'height'>;
+  clientX: number;
+  boundsLeft: number;
+  boundsWidth: number;
+}): number {
+  const layout = resolveMusicDebugTimelineLayout(
+    options.canvas.width,
+    options.canvas.height
+  );
+  const canvasX =
+    ((options.clientX - options.boundsLeft) /
+      Math.max(1, options.boundsWidth)) *
+    options.canvas.width;
+  return resolveMusicDebugTimelineOffsetForX(
+    layout,
+    options.snapshot.durationMs,
+    canvasX
+  );
+}
+
+export function drawMusicDebugTimeline(
+  canvas: HTMLCanvasElement,
+  snapshot: MusicDebugSnapshot,
+  options: {
+    playheadOffsetMs?: number;
+    activeRegion?: MusicDebugPlaybackRegion | null;
+  } = {}
+): void {
+  const context = canvas.getContext('2d');
+  if (!context) {
+    return;
+  }
+
+  const width = canvas.width;
+  const height = canvas.height;
+  const layout = resolveMusicDebugTimelineLayout(width, height);
+  const durationMs = Math.max(snapshot.durationMs, 1);
+  const roleColors: Record<ProceduralMusicNote['role'], string> = {
+    bass: '#55d6be',
+    harmony: '#86b5ff',
+    lead: '#ffbf69',
+    percussion: '#f27d7d',
+  };
+  const scaleOverlay = createMusicDebugScaleOverlay(snapshot, layout);
+  const timelineStartMs = snapshot.notes[0]?.startMs ?? snapshot.song.startMs;
+
+  context.clearRect(0, 0, width, height);
+  context.fillStyle = '#071019';
+  context.fillRect(0, 0, width, height);
+
+  drawMusicDebugSectionBands(context, snapshot, layout, durationMs);
+  drawMusicDebugActiveRegion(context, layout, durationMs, options.activeRegion);
+
+  context.strokeStyle = 'rgba(255,255,255,0.08)';
+  context.lineWidth = 1;
+  for (let index = 0; index <= layout.roleOrder.length; index += 1) {
+    const y = layout.topPad + layout.trackHeight * index;
+    context.beginPath();
+    context.moveTo(layout.leftPad, y);
+    context.lineTo(width - layout.rightPad, y);
+    context.stroke();
+  }
+
+  context.fillStyle = '#9db2bd';
+  context.font = '13px Trebuchet MS';
+  layout.roleOrder.forEach((role, index) => {
+    context.fillText(
+      role.toUpperCase(),
+      16,
+      layout.topPad + layout.trackHeight * index + 18
+    );
+  });
+
+  for (const note of snapshot.notes) {
+    const roleIndex = layout.roleOrder.indexOf(note.role);
+    const startRatio = (note.startMs - timelineStartMs) / durationMs;
+    const endRatio =
+      (note.startMs + note.durationMs - timelineStartMs) / durationMs;
+    const x =
+      layout.leftPad + startRatio * (width - layout.leftPad - layout.rightPad);
+    const barWidth = Math.max(
+      2,
+      (endRatio - startRatio) * (width - layout.leftPad - layout.rightPad)
+    );
+    const y = layout.topPad + roleIndex * layout.trackHeight + 10;
+    const barHeight = Math.max(10, layout.trackHeight - 18);
+
+    context.fillStyle = roleColors[note.role];
+    context.fillRect(x, y, barWidth, barHeight);
+  }
+
+  context.strokeStyle = 'rgba(255,255,255,0.12)';
+  context.lineWidth = 1;
+  for (const guide of scaleOverlay.guides) {
+    context.beginPath();
+    context.moveTo(layout.leftPad, guide.y);
+    context.lineTo(width - layout.rightPad, guide.y);
+    context.stroke();
+  }
+
+  for (const marker of scaleOverlay.markers) {
+    context.beginPath();
+    context.fillStyle = '#f5f7fb';
+    context.arc(marker.x, marker.y, marker.radius, 0, Math.PI * 2);
+    context.fill();
+    context.beginPath();
+    context.strokeStyle = roleColors[marker.role];
+    context.lineWidth = 2;
+    context.arc(marker.x, marker.y, marker.radius + 1.5, 0, Math.PI * 2);
+    context.stroke();
+  }
+
+  if (typeof options.playheadOffsetMs === 'number') {
+    const playheadX = resolveMusicDebugTimelineXForOffset(
+      layout,
+      durationMs,
+      options.playheadOffsetMs
+    );
+    context.strokeStyle = '#f5f7fb';
+    context.lineWidth = 2;
+    context.beginPath();
+    context.moveTo(playheadX, 12);
+    context.lineTo(playheadX, height - layout.bottomPad + 6);
+    context.stroke();
+  }
+}
+
+function drawMusicDebugSectionBands(
+  context: CanvasRenderingContext2D,
+  snapshot: MusicDebugSnapshot,
+  layout: MusicDebugTimelineLayout,
+  durationMs: number
+): void {
+  context.font = '11px Trebuchet MS';
+  for (let index = 0; index < snapshot.song.sections.length; index += 1) {
+    const section = snapshot.song.sections[index]!;
+    const startX = resolveMusicDebugTimelineXForOffset(
+      layout,
+      durationMs,
+      section.startOffsetMs
+    );
+    const endX = resolveMusicDebugTimelineXForOffset(
+      layout,
+      durationMs,
+      section.startOffsetMs + section.durationMs
+    );
+    context.fillStyle =
+      index % 2 === 0 ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.06)';
+    context.fillRect(
+      startX,
+      0,
+      Math.max(1, endX - startX),
+      layout.height - layout.bottomPad + 8
+    );
+    context.fillStyle = '#d5e3ea';
+    context.fillText(section.label, startX + 6, 18);
+  }
+}
+
+function drawMusicDebugActiveRegion(
+  context: CanvasRenderingContext2D,
+  layout: MusicDebugTimelineLayout,
+  durationMs: number,
+  region?: MusicDebugPlaybackRegion | null
+): void {
+  if (!region) {
+    return;
+  }
+  const startX = resolveMusicDebugTimelineXForOffset(
+    layout,
+    durationMs,
+    region.startOffsetMs
+  );
+  const endX = resolveMusicDebugTimelineXForOffset(
+    layout,
+    durationMs,
+    region.endOffsetMs
+  );
+  context.fillStyle = 'rgba(85,214,190,0.08)';
+  context.fillRect(
+    startX,
+    layout.topPad,
+    Math.max(0, endX - startX),
+    layout.height - layout.topPad - layout.bottomPad
+  );
+}
