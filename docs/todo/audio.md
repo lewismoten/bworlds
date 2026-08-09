@@ -60,8 +60,8 @@
 - [x] When the page refreshes, allow the play-state and play-head persist
 - [x] If the play head is at the end of the song, and I click play, let it jump to the beginning of the song
 - [x] As the song plays, let me click sections to move the play-head
-- [ ] MIDI download should let each instrument (ie melody, harmony, bass, drums) be represented as individual tracks and labeled as such.
-- [ ] MIDI download should have meta markers to indicate which section is being played (Meta/Controle Lane Guide)
+- [x] MIDI download should let each instrument (ie melody, harmony, bass, drums) be represented as individual tracks and labeled as such.
+- [x] MIDI download should have meta markers to indicate which section is being played (Meta/Controle Lane Guide)
 - [ ] MIDI duration should match the generated song duration
 - [ ] MIDI should include tempo event(s)
 - [ ] MIDI should include time signature(s)

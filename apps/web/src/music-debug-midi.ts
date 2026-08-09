@@ -3,8 +3,7 @@ import type { MusicDebugSnapshot } from './music-debug.ts';
 
 const MIDI_HEADER_CHUNK_ID = [0x4d, 0x54, 0x68, 0x64];
 const MIDI_TRACK_CHUNK_ID = [0x4d, 0x54, 0x72, 0x6b];
-const MIDI_FORMAT_SINGLE_TRACK = 0;
-const MIDI_TRACK_COUNT = 1;
+const MIDI_FORMAT_MULTI_TRACK = 1;
 const MIDI_TICKS_PER_QUARTER = 480;
 const MICROSECONDS_PER_MINUTE = 60_000_000;
 
@@ -67,6 +66,11 @@ type MidiTrackEvent = {
   data: number[];
 };
 
+type MusicDebugMidiTrack = {
+  name: string;
+  events: MidiTrackEvent[];
+};
+
 export type MusicDebugMidiFile = {
   bytes: Uint8Array;
   fileName: string;
@@ -97,17 +101,22 @@ type BrowserMidiDownloadEnvironment = {
 export function createMusicDebugMidiFile(
   snapshot: MusicDebugSnapshot
 ): MusicDebugMidiFile {
-  const events = buildTrackEvents(snapshot);
-  const trackBytes = encodeTrackEvents(events);
+  const tracks = buildMidiTracks(snapshot);
+  const encodedTracks = tracks.map((track) => {
+    const trackBytes = encodeTrackEvents(track.events);
+    return [
+      ...MIDI_TRACK_CHUNK_ID,
+      ...encodeUint32(trackBytes.length),
+      ...trackBytes,
+    ];
+  });
   const bytes = new Uint8Array([
     ...MIDI_HEADER_CHUNK_ID,
     ...encodeUint32(6),
-    ...encodeUint16(MIDI_FORMAT_SINGLE_TRACK),
-    ...encodeUint16(MIDI_TRACK_COUNT),
+    ...encodeUint16(MIDI_FORMAT_MULTI_TRACK),
+    ...encodeUint16(encodedTracks.length),
     ...encodeUint16(MIDI_TICKS_PER_QUARTER),
-    ...MIDI_TRACK_CHUNK_ID,
-    ...encodeUint32(trackBytes.length),
-    ...trackBytes,
+    ...encodedTracks.flat(),
   ]);
 
   return {
@@ -133,7 +142,15 @@ export function downloadMusicDebugMidiFile(
   environment.revokeObjectURL(url);
 }
 
-function buildTrackEvents(snapshot: MusicDebugSnapshot): MidiTrackEvent[] {
+function buildMidiTracks(snapshot: MusicDebugSnapshot): MusicDebugMidiTrack[] {
+  const conductorTrack = buildConductorTrack(snapshot);
+  const roleTracks = buildRoleTracks(snapshot);
+  return [conductorTrack, ...roleTracks];
+}
+
+function buildConductorTrack(
+  snapshot: MusicDebugSnapshot
+): MusicDebugMidiTrack {
   const events: MidiTrackEvent[] = [];
   const bpm = resolveSongTempoBpm(snapshot);
   const microsecondsPerQuarter = Math.max(
@@ -144,55 +161,87 @@ function buildTrackEvents(snapshot: MusicDebugSnapshot): MidiTrackEvent[] {
   events.push({
     tick: 0,
     order: 0,
-    data: [0xff, 0x03, ...encodeText('bworlds music debug')],
+    data: [0xff, 0x03, ...encodeText('bworlds music debug conductor')],
   });
   events.push({
     tick: 0,
     order: 1,
     data: [0xff, 0x51, 0x03, ...encodeUint24(microsecondsPerQuarter)],
   });
-
-  const instruments = snapshot.instrumentBank.instruments;
-  events.push(
-    createProgramChangeEvent(ROLE_CHANNELS.bass, instruments.bass.family, 2),
-    createProgramChangeEvent(
-      ROLE_CHANNELS.harmony,
-      instruments.harmony.family,
-      3
-    ),
-    createProgramChangeEvent(ROLE_CHANNELS.lead, instruments.lead.family, 4)
-  );
-
-  for (let index = 0; index < snapshot.notes.length; index += 1) {
-    const note = snapshot.notes[index]!;
-    const channel = ROLE_CHANNELS[note.role];
-    const instrument = instruments[note.role];
-    const midiNote = resolveMidiNoteNumber(note.frequency, instrument.family);
-    const velocity = resolveVelocity(note.volume, note.role);
-    const startTick = msToTicks(note.startMs - snapshot.song.startMs);
-    const endTick = msToTicks(
-      note.startMs + note.durationMs - snapshot.song.startMs
-    );
-
+  for (let index = 0; index < snapshot.song.sections.length; index += 1) {
+    const section = snapshot.song.sections[index]!;
     events.push({
-      tick: startTick,
-      order: 10 + index * 2,
-      data: [0x90 | channel, midiNote, velocity],
-    });
-    events.push({
-      tick: Math.max(startTick, endTick),
-      order: 11 + index * 2,
-      data: [0x80 | channel, midiNote, 0],
+      tick: msToTicks(section.startOffsetMs),
+      order: 10 + index,
+      data: [0xff, 0x06, ...encodeText(section.label)],
     });
   }
-
   events.push({
     tick: msToTicks(snapshot.durationMs),
     order: Number.MAX_SAFE_INTEGER,
     data: [0xff, 0x2f, 0x00],
   });
 
-  return events;
+  return {
+    name: 'bworlds music debug conductor',
+    events,
+  };
+}
+
+function buildRoleTracks(snapshot: MusicDebugSnapshot): MusicDebugMidiTrack[] {
+  const roleOrder = ['bass', 'harmony', 'lead', 'percussion'] as const;
+  return roleOrder.map((role, roleIndex) => {
+    const events: MidiTrackEvent[] = [];
+    const instrument = snapshot.instrumentBank.instruments[role];
+    const channel = ROLE_CHANNELS[role];
+    const roleLabel = formatRoleTrackLabel(role, instrument.family);
+
+    events.push({
+      tick: 0,
+      order: 0,
+      data: [0xff, 0x03, ...encodeText(roleLabel)],
+    });
+    if (!isPercussionFamily(instrument.family)) {
+      events.push(createProgramChangeEvent(channel, instrument.family, 1));
+    }
+
+    let noteOrder = 10;
+    for (let index = 0; index < snapshot.notes.length; index += 1) {
+      const note = snapshot.notes[index]!;
+      if (note.role !== role) {
+        continue;
+      }
+      const midiNote = resolveMidiNoteNumber(note.frequency, instrument.family);
+      const velocity = resolveVelocity(note.volume, note.role);
+      const startTick = msToTicks(note.startMs - snapshot.song.startMs);
+      const endTick = msToTicks(
+        note.startMs + note.durationMs - snapshot.song.startMs
+      );
+
+      events.push({
+        tick: startTick,
+        order: noteOrder,
+        data: [0x90 | channel, midiNote, velocity],
+      });
+      events.push({
+        tick: Math.max(startTick, endTick),
+        order: noteOrder + 1,
+        data: [0x80 | channel, midiNote, 0],
+      });
+      noteOrder += 2;
+    }
+
+    events.push({
+      tick: msToTicks(snapshot.durationMs),
+      order: Number.MAX_SAFE_INTEGER - roleIndex,
+      data: [0xff, 0x2f, 0x00],
+    });
+
+    return {
+      name: roleLabel,
+      events,
+    };
+  });
 }
 
 function createProgramChangeEvent(
@@ -231,6 +280,18 @@ function formatMusicDebugMidiFileName(snapshot: MusicDebugSnapshot): string {
   const x = snapshot.options.clusterX;
   const y = snapshot.options.clusterY;
   return `bworlds-${theme}-${x}-${y}.mid`;
+}
+
+function formatRoleTrackLabel(
+  role: keyof typeof ROLE_CHANNELS,
+  family: ProceduralInstrument['family']
+): string {
+  const roleLabel = role.charAt(0).toUpperCase() + role.slice(1);
+  const familyLabel = family
+    .split('-')
+    .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
+    .join(' ');
+  return `${roleLabel}: ${familyLabel}`;
 }
 
 function createBrowserMidiDownloadEnvironment(): MusicDebugMidiDownloadEnvironment {
