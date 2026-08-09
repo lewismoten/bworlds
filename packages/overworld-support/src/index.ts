@@ -59,6 +59,16 @@ const RIVER_FORK_ANGLE_SIGN_LABEL = registerHashLabel('river-fork-angle-sign');
 const RIVER_FORK_ANGLE_DELTA_LABEL = registerHashLabel('river-fork-angle-delta');
 const RIVER_FORK_POINT_COUNT_LABEL = registerHashLabel('river-fork-point-count');
 const RIVER_FORK_MID_SWAY_LABEL = registerHashLabel('river-fork-mid-sway');
+const OVERWORLD_TOWN_PLACEMENT_LABEL = registerHashLabel('town');
+const OVERWORLD_CAVE_PLACEMENT_LABEL = registerHashLabel('cave');
+const OVERWORLD_DUNGEON_PLACEMENT_LABEL = registerHashLabel('dungeon');
+const OVERWORLD_SIGN_PLACEMENT_LABEL = registerHashLabel('sign');
+const overworldPlacementLabelHashes = new Map<string, number>([
+  ['town', OVERWORLD_TOWN_PLACEMENT_LABEL],
+  ['cave', OVERWORLD_CAVE_PLACEMENT_LABEL],
+  ['dungeon', OVERWORLD_DUNGEON_PLACEMENT_LABEL],
+  ['sign', OVERWORLD_SIGN_PLACEMENT_LABEL],
+]);
 
 export type RiverForkPath = {
   trunkStartIndex: number;
@@ -101,6 +111,9 @@ export interface OverworldCellAnchorSpec<
   chanceKey: string;
   offsetXKey: string;
   offsetYKey: string;
+  chanceKeyHash?: number;
+  offsetXKeyHash?: number;
+  offsetYKeyHash?: number;
   threshold: number;
   offsetScale?: number;
   priority?: number;
@@ -720,7 +733,7 @@ export function getOverworldPlacementChance(
 ) {
   const seedHash = resolveHashSeed(seed);
   return hash2DWithSeed(
-    appendHashSeedLabel(seedHash, registerHashLabel(chanceKey)),
+    appendHashSeedLabel(seedHash, getOverworldPlacementLabelHash(chanceKey)),
     x,
     y
   );
@@ -767,7 +780,7 @@ export function createGeneratedNamedOverworldCellAnchorSpec<
     ): Omit<TAnchor, 'x' | 'y' | 'name'>;
   }
 ): OverworldCellAnchorSpec<TAnchor> {
-  return {
+  return withOverworldAnchorSpecHashes({
     ...options,
     createAnchor({ seed, x, y, chance, cellX, cellY }) {
       return {
@@ -784,7 +797,7 @@ export function createGeneratedNamedOverworldCellAnchorSpec<
         }) ?? {}),
       } as TAnchor;
     },
-  };
+  });
 }
 
 export function createGeneratedPoiOverworldCellAnchorSpec<
@@ -828,9 +841,18 @@ export function createOverworldCellAnchorCandidate<
   spec: OverworldCellAnchorSpec<TAnchor>
 ): OverworldCellAnchorCandidate<TAnchor> {
   const seedHash = resolveHashSeed(seed);
-  const chanceSeed = appendHashSeedLabel(seedHash, registerHashLabel(spec.chanceKey));
-  const offsetXSeed = appendHashSeedLabel(seedHash, registerHashLabel(spec.offsetXKey));
-  const offsetYSeed = appendHashSeedLabel(seedHash, registerHashLabel(spec.offsetYKey));
+  const chanceSeed = appendHashSeedLabel(
+    seedHash,
+    spec.chanceKeyHash ?? getOverworldPlacementLabelHash(spec.chanceKey)
+  );
+  const offsetXSeed = appendHashSeedLabel(
+    seedHash,
+    spec.offsetXKeyHash ?? getOverworldPlacementLabelHash(spec.offsetXKey)
+  );
+  const offsetYSeed = appendHashSeedLabel(
+    seedHash,
+    spec.offsetYKeyHash ?? getOverworldPlacementLabelHash(spec.offsetYKey)
+  );
   const centerX = cellX * spec.cellSize;
   const centerY = cellY * spec.cellSize;
   const offsetScale = spec.offsetScale ?? 0.34;
@@ -852,6 +874,28 @@ export function createOverworldCellAnchorCandidate<
         (hash2DWithSeed(offsetYSeed, cellX, cellY) - 0.5) *
           (spec.cellSize * offsetScale)
       ),
+  };
+}
+
+export function getOverworldPlacementLabelHash(chanceKey: string): number {
+  const cached = overworldPlacementLabelHashes.get(chanceKey);
+  if (cached !== undefined) {
+    return cached;
+  }
+
+  const labelHash = registerHashLabel(chanceKey);
+  overworldPlacementLabelHashes.set(chanceKey, labelHash);
+  return labelHash;
+}
+
+function withOverworldAnchorSpecHashes<
+  TAnchor extends OverworldAnchorLike = OverworldAnchorLike,
+>(spec: OverworldCellAnchorSpec<TAnchor>): OverworldCellAnchorSpec<TAnchor> {
+  return {
+    ...spec,
+    chanceKeyHash: spec.chanceKeyHash ?? getOverworldPlacementLabelHash(spec.chanceKey),
+    offsetXKeyHash: spec.offsetXKeyHash ?? getOverworldPlacementLabelHash(spec.offsetXKey),
+    offsetYKeyHash: spec.offsetYKeyHash ?? getOverworldPlacementLabelHash(spec.offsetYKey),
   };
 }
 

@@ -11,7 +11,9 @@ import {
   createOverworldGenerationContext,
   createGeneratedNamedOverworldCellAnchorSpec,
   createGeneratedPoiOverworldCellAnchorSpec,
+  createOverworldCellAnchorCandidate,
   getOverworldPlacementChance,
+  getOverworldPlacementLabelHash,
   getRiverControlPathSignalAtPoint,
   isNearOverworldLand,
   resolveOverworldCellAnchor,
@@ -568,6 +570,9 @@ describe('overworld support', () => {
         name: expect.any(String),
       })
     );
+    expect(spec.chanceKeyHash).toBe(getOverworldPlacementLabelHash('town-anchor'));
+    expect(spec.offsetXKeyHash).toBe(getOverworldPlacementLabelHash('town-anchor-x'));
+    expect(spec.offsetYKeyHash).toBe(getOverworldPlacementLabelHash('town-anchor-y'));
   });
 
   it('collects nearby poi anchors from shared grouped specs and caches', () => {
@@ -805,6 +810,46 @@ describe('overworld support', () => {
 
     expect(sampleCounts.size).toBeGreaterThan(1);
     expect(Math.max(...sampleCounts.values())).toBe(1);
+  });
+
+  it('reuses cached placement label hashes when building anchor candidates', () => {
+    const spec = createGeneratedNamedOverworldCellAnchorSpec({
+      id: 'town',
+      nameType: 'town',
+      cellSize: 20,
+      chanceKey: 'town-anchor',
+      offsetXKey: 'town-anchor-x',
+      offsetYKey: 'town-anchor-y',
+      threshold: 0.5,
+      isSuitableTerrain() {
+        return true;
+      },
+    });
+    const uncachedSpec = {
+      ...spec,
+      chanceKeyHash: undefined,
+      offsetXKeyHash: undefined,
+      offsetYKeyHash: undefined,
+    };
+    const cachedCandidate = createOverworldCellAnchorCandidate(
+      'spec-seed',
+      2,
+      -1,
+      spec
+    );
+    const uncachedCandidate = createOverworldCellAnchorCandidate(
+      'spec-seed',
+      2,
+      -1,
+      uncachedSpec
+    );
+
+    expect(cachedCandidate.chance).toBe(uncachedCandidate.chance);
+    expect(cachedCandidate.x).toBe(uncachedCandidate.x);
+    expect(cachedCandidate.y).toBe(uncachedCandidate.y);
+    expect(getOverworldPlacementLabelHash('sign')).toBe(
+      getOverworldPlacementLabelHash('sign')
+    );
   });
 
   it('composes overworld tiles through the shared plugin pipeline', () => {
