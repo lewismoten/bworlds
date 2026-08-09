@@ -1,5 +1,10 @@
 import * as THREE from 'three';
-import { createCoordinateCache, getOrCreateMapValue } from '@bworlds/cache-support';
+import {
+  createBoundedCache,
+  createCoordinateCache,
+  getOrCreateCacheValue,
+  getOrCreateMapValue,
+} from '@bworlds/cache-support';
 import {
   getTileAtlasCanvas,
   getTilePixelSize,
@@ -1048,8 +1053,13 @@ const ownedDisposableGeometries = new WeakSet<object>();
 const ownedDisposableMaterials = new WeakSet<object>();
 const ownedMaterialCreationTimestamps: number[] = [];
 const ownedMaterialDisposalTimestamps: number[] = [];
-const sharedBoxGeometryCache = new Map<string, THREE.BoxGeometry>();
-const sharedPlaneGeometryCache = new Map<string, THREE.PlaneGeometry>();
+export const SHARED_RENDER_GEOMETRY_CACHE_MAX_ENTRIES = 128;
+const sharedBoxGeometryCache = createBoundedCache<string, THREE.BoxGeometry>(
+  SHARED_RENDER_GEOMETRY_CACHE_MAX_ENTRIES
+);
+const sharedPlaneGeometryCache = createBoundedCache<string, THREE.PlaneGeometry>(
+  SHARED_RENDER_GEOMETRY_CACHE_MAX_ENTRIES
+);
 
 export function getWaterFloorBodyProfile(inset: {
   north: number;
@@ -3075,7 +3085,7 @@ export function getSharedBoxGeometry(
   depth: number
 ): THREE.BoxGeometry {
   const key = `${width}:${height}:${depth}`;
-  return getOrCreateMapValue(
+  return getOrCreateCacheValue(
     sharedBoxGeometryCache,
     key,
     () => new THREE.BoxGeometry(width, height, depth)
@@ -3087,7 +3097,7 @@ export function getSharedPlaneGeometry(
   height: number
 ): THREE.PlaneGeometry {
   const key = `${width}:${height}`;
-  return getOrCreateMapValue(
+  return getOrCreateCacheValue(
     sharedPlaneGeometryCache,
     key,
     () => new THREE.PlaneGeometry(width, height)

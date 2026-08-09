@@ -119,6 +119,7 @@ import {
   getRenderChurnStats,
   getSharedBoxGeometry,
   getSharedPlaneGeometry,
+  SHARED_RENDER_GEOMETRY_CACHE_MAX_ENTRIES,
   getWaterFloorBodyProfile,
   buildPendingWorldBuildQueue,
   createFrameTimeBudget,
@@ -696,6 +697,32 @@ describe('render3d visibility helpers', () => {
     expect(getSharedPlaneGeometry(1, 1)).toBe(getSharedPlaneGeometry(1, 1));
     expect(getSharedBoxGeometry(1, 0.03, 1)).not.toBe(
       getSharedBoxGeometry(1, 0.28, 1)
+    );
+  });
+
+  it('recreates shared geometries deterministically after bounded cache eviction churn', () => {
+    const baselineBox = getSharedBoxGeometry(1, 0.03, 1);
+    const baselinePlane = getSharedPlaneGeometry(1, 1);
+
+    for (
+      let index = 0;
+      index < SHARED_RENDER_GEOMETRY_CACHE_MAX_ENTRIES + 32;
+      index += 1
+    ) {
+      getSharedBoxGeometry(1 + index * 0.01, 0.03 + index * 0.001, 1);
+      getSharedPlaneGeometry(1 + index * 0.01, 1 + index * 0.01);
+    }
+
+    const resolvedBox = getSharedBoxGeometry(1, 0.03, 1);
+    const resolvedPlane = getSharedPlaneGeometry(1, 1);
+
+    expect(resolvedBox).not.toBe(baselineBox);
+    expect(resolvedPlane).not.toBe(baselinePlane);
+    expect((resolvedBox as { parameters?: unknown }).parameters).toEqual(
+      (baselineBox as { parameters?: unknown }).parameters
+    );
+    expect((resolvedPlane as { parameters?: unknown }).parameters).toEqual(
+      (baselinePlane as { parameters?: unknown }).parameters
     );
   });
 
