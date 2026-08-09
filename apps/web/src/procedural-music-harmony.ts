@@ -40,6 +40,14 @@ export type ProceduralLeadContourStep = {
   degreeOffset: number;
 };
 
+export type ProceduralCompositionStep = {
+  chord: ProceduralChord;
+  cadence: ProceduralLeadPhraseCadence;
+  contourStep: ProceduralLeadContourStep;
+  motifDegreeOffset: number;
+  phraseStep: number;
+};
+
 const MUSIC_PROGRESSION_SEED = registerHashLabel('music-progression');
 const MUSIC_MOTIF_SEED = registerHashLabel('music-lead-motif');
 const MUSIC_LEAP_SEED = registerHashLabel('music-leap-motion');
@@ -166,6 +174,28 @@ export function resolveProceduralLeadContour(
   }
 
   return contour;
+}
+
+export function resolveProceduralCompositionStep(
+  theme: ProceduralHarmonyTheme,
+  stepIndex: number,
+  clusterX: number,
+  clusterY: number
+): ProceduralCompositionStep {
+  const motif = resolveProceduralLeadMotif(theme, clusterX, clusterY);
+  const contour = resolveProceduralLeadContour(theme, clusterX, clusterY);
+  const phraseLength = Math.max(1, theme.stepPattern.length);
+  const phraseStep = stepIndex % phraseLength;
+
+  return {
+    chord: resolveProceduralChordAtStep(theme, stepIndex, clusterX, clusterY),
+    cadence: resolveProceduralLeadPhraseCadence(theme, stepIndex),
+    contourStep: contour[phraseStep] ??
+      contour[0] ?? { stage: 'start', degreeOffset: 0 },
+    motifDegreeOffset:
+      motif.degreeOffsets[phraseStep % motif.degreeOffsets.length] ?? 0,
+    phraseStep,
+  };
 }
 
 function getPreferredMotifPatterns(
@@ -411,15 +441,16 @@ function resolveLeadSemitonePlan(
   cadence: ProceduralLeadPhraseCadence;
   strongLeadBeat: boolean;
 } {
-  const motif = resolveProceduralLeadMotif(theme, clusterX, clusterY);
-  const contour = resolveProceduralLeadContour(theme, clusterX, clusterY);
-  const phraseStep = stepIndex % theme.stepPattern.length;
-  const cadence = resolveProceduralLeadPhraseCadence(theme, stepIndex);
-  const contourStep = contour[phraseStep] ?? contour[0];
+  const composition = resolveProceduralCompositionStep(
+    theme,
+    stepIndex,
+    clusterX,
+    clusterY
+  );
   const melodyPatternIndex =
     chord.degreeIndex +
-    (motif.degreeOffsets[phraseStep % motif.degreeOffsets.length] ?? 0) +
-    (contourStep?.degreeOffset ?? 0);
+    composition.motifDegreeOffset +
+    composition.contourStep.degreeOffset;
   const leadScaleSemitones = getScaleDegreeSemitones(
     theme.scale,
     melodyPatternIndex
@@ -437,22 +468,22 @@ function resolveLeadSemitonePlan(
       semitones:
         chordTonePattern[Math.floor(stepIndex / 4) % chordTonePattern.length] ??
         chord.rootSemitones,
-      cadence,
+      cadence: composition.cadence,
       strongLeadBeat,
     };
   }
 
-  if (cadence === 'question') {
+  if (composition.cadence === 'question') {
     return {
       semitones: chord.passingSemitones,
-      cadence,
+      cadence: composition.cadence,
       strongLeadBeat,
     };
   }
-  if (cadence === 'answer') {
+  if (composition.cadence === 'answer') {
     return {
       semitones: chord.rootSemitones,
-      cadence,
+      cadence: composition.cadence,
       strongLeadBeat,
     };
   }
@@ -467,7 +498,7 @@ function resolveLeadSemitonePlan(
   if (accidentalSemitones !== null) {
     return {
       semitones: accidentalSemitones,
-      cadence,
+      cadence: composition.cadence,
       strongLeadBeat,
     };
   }
@@ -480,8 +511,9 @@ function resolveLeadSemitonePlan(
   ];
   return {
     semitones:
-      melodicOptions[phraseStep % melodicOptions.length] ?? leadScaleSemitones,
-    cadence,
+      melodicOptions[composition.phraseStep % melodicOptions.length] ??
+      leadScaleSemitones,
+    cadence: composition.cadence,
     strongLeadBeat,
   };
 }

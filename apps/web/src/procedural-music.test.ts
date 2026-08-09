@@ -898,6 +898,39 @@ describe('procedural music', () => {
     ).toBeGreaterThanOrEqual(2);
   });
 
+  it('lets percussion react to the shared composition structure instead of staying flat', () => {
+    const first = scheduleProceduralMusicNotes({
+      nowMs: 0,
+      tileKind: 'town',
+      contextType: 'town',
+      dayProgress: 0.45,
+      clusterX: 0,
+      clusterY: 0,
+    });
+    const second = scheduleProceduralMusicNotes(
+      {
+        nowMs: first.state.nextNoteAtMs,
+        tileKind: 'town',
+        contextType: 'town',
+        dayProgress: 0.45,
+        clusterX: 0,
+        clusterY: 0,
+      },
+      first.state
+    );
+
+    const percussion = [...first.notes, ...second.notes].filter(
+      (note) => note.role === 'percussion'
+    );
+    expect(percussion.length).toBeGreaterThan(1);
+    expect(
+      new Set(percussion.map((note) => note.volume.toFixed(5))).size
+    ).toBeGreaterThan(1);
+    expect(
+      new Set(percussion.map((note) => Math.round(note.durationMs))).size
+    ).toBeGreaterThan(1);
+  });
+
   it('layers poi notes over ambient music when a nearby poi mix is present', () => {
     const played: ProceduralMusicNote[] = [];
     const controller = createMusicController({

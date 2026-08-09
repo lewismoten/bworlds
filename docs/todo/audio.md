@@ -32,7 +32,7 @@
 - [x] Add ability to have rests/silence
 - [x] Add ability limit melodic jumps so larger leaps are rare and more often followed by movement back in the oppisite direction
 - [x] Add ability for bass to primarily play chord roots, occasionally fifths, octaves, and passing tones
-- [ ] Generator(s) for the different layers should be aware of each layer, and work with each-other - set tempo + meter, chord progression, bass + harmony, work out melody, then percussion reacts to the structure
+- [x] Generator(s) for the different layers should be aware of each layer, and work with each-other - set tempo + meter, chord progression, bass + harmony, work out melody, then percussion reacts to the structure
 - [x] Songs should have structural bluebrints before generating notes (intro 8 bars, A16, A'16, B16, A16, Outro 8)
 - [x] Generate a melodic contour before generating pitches (start low, rise gradually, reach climax, descend, resolve)
 - [x] Every tile type (forest, ruins, plains) should have a music vocabulary (tempo, mode, instruments, melody range, rhythm density, preferred intervals)

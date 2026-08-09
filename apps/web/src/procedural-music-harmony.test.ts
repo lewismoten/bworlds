@@ -3,6 +3,7 @@ import {
   isProceduralSemitoneInScale,
   resolveProceduralChordAtStep,
   resolveProceduralChordProgression,
+  resolveProceduralCompositionStep,
   resolveProceduralLeadContour,
   resolveProceduralInstrumentSemitones,
   resolveProceduralLeadMotif,
@@ -77,6 +78,16 @@ describe('procedural music harmony', () => {
       );
 
     expect(describeCycle([0, 1, 3])).toEqual(describeCycle([16, 17, 19]));
+  });
+
+  it('builds a shared composition step so layers can react to chord, contour, and cadence together', () => {
+    const first = resolveProceduralCompositionStep(TEST_THEME, 7, 3, -2);
+    const second = resolveProceduralCompositionStep(TEST_THEME, 7, 3, -2);
+
+    expect(first).toEqual(second);
+    expect(first.chord.progressionIndex).toBeGreaterThanOrEqual(0);
+    expect(first.cadence).toBe('answer');
+    expect(first.contourStep.stage).toBeDefined();
   });
 
   it('can anchor the lead motif to a shared regional motif when one is provided', () => {

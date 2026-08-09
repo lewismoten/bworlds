@@ -4,7 +4,10 @@ import {
   registerHashLabel,
   registerHashSeeds,
 } from '@bworlds/core/hash';
-import { resolveProceduralInstrumentSemitones } from './procedural-music-harmony.ts';
+import {
+  resolveProceduralCompositionStep,
+  resolveProceduralInstrumentSemitones,
+} from './procedural-music-harmony.ts';
 import {
   resolveProceduralInstrumentTimbre,
   type InstrumentFamily,
@@ -987,6 +990,12 @@ function createThemeNote(options: {
   const instrument = options.instrumentBank.instruments[role];
   const arrangementProfile = options.arrangement.roleProfiles[role];
   const meterAccent = resolveProceduralMeterAccent(role, options.stepIndex);
+  const composition = resolveProceduralCompositionStep(
+    options.theme,
+    options.stepIndex,
+    options.clusterX,
+    options.clusterY
+  );
   const semitones = resolveProceduralInstrumentSemitones({
     theme: options.theme,
     role,
@@ -1018,7 +1027,8 @@ function createThemeNote(options: {
             ? 0.34
             : 0.92) *
       arrangementProfile.durationMultiplier *
-      meterAccent.durationMultiplier,
+      meterAccent.durationMultiplier *
+      resolveCompositionDurationMultiplier(role, composition),
     frequency:
       options.theme.rootHz *
       Math.pow(
@@ -1042,6 +1052,7 @@ function createThemeNote(options: {
       options.mood.volumeMultiplier *
       arrangementProfile.volumeMultiplier *
       meterAccent.volumeMultiplier *
+      resolveCompositionVolumeMultiplier(role, composition) *
       (role === 'bass'
         ? 0.86
         : role === 'harmony'
@@ -1530,6 +1541,49 @@ function shouldRestAtThemeStep(
     ) +
     (theme.stepPattern[phraseStep] ?? 0) * 0.013;
   return variation > 1 - restChance;
+}
+
+function resolveCompositionVolumeMultiplier(
+  role: InstrumentRole,
+  composition: ReturnType<typeof resolveProceduralCompositionStep>
+): number {
+  if (role === 'percussion') {
+    if (composition.cadence === 'answer') {
+      return 1.22;
+    }
+    if (composition.cadence === 'question') {
+      return 0.82;
+    }
+    return composition.chord.progressionIndex % 2 === 0 ? 1.12 : 0.94;
+  }
+  if (role === 'harmony') {
+    return composition.contourStep.stage === 'climax' ? 1.08 : 1;
+  }
+  if (role === 'bass') {
+    return composition.chord.progressionIndex === 0 ? 1.06 : 0.98;
+  }
+
+  return 1;
+}
+
+function resolveCompositionDurationMultiplier(
+  role: InstrumentRole,
+  composition: ReturnType<typeof resolveProceduralCompositionStep>
+): number {
+  if (role === 'percussion') {
+    if (composition.cadence === 'answer') {
+      return 1.12;
+    }
+    if (composition.cadence === 'question') {
+      return 0.88;
+    }
+    return composition.chord.progressionIndex % 2 === 0 ? 1.04 : 0.92;
+  }
+  if (role === 'harmony') {
+    return composition.contourStep.stage === 'resolve' ? 1.08 : 1;
+  }
+
+  return 1;
 }
 
 function resolveRhythmicMotifStepDuration(
