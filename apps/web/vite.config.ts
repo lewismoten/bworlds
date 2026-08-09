@@ -29,7 +29,10 @@ type DebugRouteMiddlewareContainer = {
 };
 
 function createDebugRouteRedirectPlugin(): Plugin {
-  const redirect = (url: string | undefined, res: DebugRouteResponse): boolean => {
+  const redirect = (
+    url: string | undefined,
+    res: DebugRouteResponse
+  ): boolean => {
     const pathname = url ? new URL(url, 'http://localhost').pathname : '';
     const location = resolveDebugRouteRedirect(pathname);
     if (!location) {
@@ -71,6 +74,8 @@ export default defineConfig({
         debugAlias: path.join(APP_DIR, 'debug.html'),
         debugMusic: path.join(APP_DIR, 'debug', 'music', 'index.html'),
         debugMusicAlias: path.join(APP_DIR, 'debug', 'music.html'),
+        debugTrees: path.join(APP_DIR, 'debug', 'trees', 'index.html'),
+        debugTreesAlias: path.join(APP_DIR, 'debug', 'trees.html'),
       },
     },
   },

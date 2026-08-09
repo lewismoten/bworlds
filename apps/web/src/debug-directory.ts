@@ -44,6 +44,15 @@ export const DEBUG_DIRECTORY_ENTRIES: DebugDirectoryEntry[] = [
     description:
       'Generates procedural music previews, shows the chosen instruments and arrangement mix, and draws a note timeline you can audition.',
   },
+  {
+    id: 'tree-conservatory',
+    title: 'Tree Conservatory',
+    href: '/debug/trees/',
+    routeLabel: '/debug/trees/',
+    category: 'Dedicated Debug Page',
+    description:
+      'Generates deterministic forest tree sets for any tile so species, ages, capabilities, and structural profiles can be inspected quickly.',
+  },
 ];
 
 export function buildDebugDirectoryMarkup(

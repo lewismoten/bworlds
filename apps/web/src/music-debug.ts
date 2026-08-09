@@ -10,6 +10,7 @@ import {
   createProceduralMusicSong,
   type ProceduralMusicSong,
 } from './procedural-music-song.ts';
+import { randomizeDebugCoordinatePair } from './debug-seed.ts';
 
 export type MusicDebugTileKind =
   'plains' | 'forest' | 'shore' | 'town' | 'mountain' | 'cave' | 'floor';
@@ -156,10 +157,17 @@ export function randomizeMusicDebugSeed(
   random = Math.random
 ): MusicDebugOptions {
   const options = normalizeMusicDebugOptions(rawOptions);
+  const randomized = randomizeDebugCoordinatePair(
+    {
+      x: options.clusterX,
+      y: options.clusterY,
+    },
+    random
+  );
   return {
     ...options,
-    clusterX: createRandomDebugCoordinate(random),
-    clusterY: createRandomDebugCoordinate(random),
+    clusterX: randomized.x,
+    clusterY: randomized.y,
   };
 }
 
@@ -427,8 +435,4 @@ function normalizeWeatherKind(
     return value;
   }
   return 'clear';
-}
-
-function createRandomDebugCoordinate(random: () => number): number {
-  return Math.round((random() * 2 - 1) * 9_999);
 }

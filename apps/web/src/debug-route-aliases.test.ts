@@ -6,17 +6,23 @@ import {
 
 describe('debug route aliases', () => {
   it('tracks slashless debug entry routes that should redirect to canonical urls', () => {
-    expect(DEBUG_ROUTE_ALIASES).toEqual(['/debug', '/debug/music']);
+    expect(DEBUG_ROUTE_ALIASES).toEqual([
+      '/debug',
+      '/debug/music',
+      '/debug/trees',
+    ]);
   });
 
   it('redirects slashless debug routes to their trailing slash entry pages', () => {
     expect(resolveDebugRouteRedirect('/debug')).toBe('/debug/');
     expect(resolveDebugRouteRedirect('/debug/music')).toBe('/debug/music/');
+    expect(resolveDebugRouteRedirect('/debug/trees')).toBe('/debug/trees/');
   });
 
   it('leaves canonical and unrelated routes alone', () => {
     expect(resolveDebugRouteRedirect('/debug/')).toBeNull();
     expect(resolveDebugRouteRedirect('/debug/music/')).toBeNull();
+    expect(resolveDebugRouteRedirect('/debug/trees/')).toBeNull();
     expect(resolveDebugRouteRedirect('/')).toBeNull();
     expect(resolveDebugRouteRedirect('/town')).toBeNull();
   });

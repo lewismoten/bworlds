@@ -10,8 +10,32 @@ describe('web vite config', () => {
       expect.objectContaining({
         debug: path.join(process.cwd(), 'apps/web', 'debug', 'index.html'),
         debugAlias: path.join(process.cwd(), 'apps/web', 'debug.html'),
-        debugMusic: path.join(process.cwd(), 'apps/web', 'debug', 'music', 'index.html'),
-        debugMusicAlias: path.join(process.cwd(), 'apps/web', 'debug', 'music.html'),
+        debugMusic: path.join(
+          process.cwd(),
+          'apps/web',
+          'debug',
+          'music',
+          'index.html'
+        ),
+        debugMusicAlias: path.join(
+          process.cwd(),
+          'apps/web',
+          'debug',
+          'music.html'
+        ),
+        debugTrees: path.join(
+          process.cwd(),
+          'apps/web',
+          'debug',
+          'trees',
+          'index.html'
+        ),
+        debugTreesAlias: path.join(
+          process.cwd(),
+          'apps/web',
+          'debug',
+          'trees.html'
+        ),
       })
     );
   });

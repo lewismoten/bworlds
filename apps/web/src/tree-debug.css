@@ -1,0 +1,216 @@
+:root {
+  --tree-bg: #08150f;
+  --tree-card: rgba(10, 24, 16, 0.92);
+  --tree-text: #edf7ef;
+  --tree-muted: #9db5a6;
+  --tree-accent: #b8e986;
+  --tree-accent-2: #80d2a5;
+  --tree-border: rgba(255, 255, 255, 0.08);
+}
+
+body {
+  margin: 0;
+  font-family: 'Trebuchet MS', 'Segoe UI', sans-serif;
+  background:
+    radial-gradient(circle at top, rgba(73, 122, 76, 0.18), transparent 42%),
+    linear-gradient(180deg, #07110c 0%, #0b1811 45%, #050a07 100%);
+  color: var(--tree-text);
+}
+
+#app {
+  min-height: 100vh;
+}
+
+.tree-debug-shell {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 32px 24px 48px;
+}
+
+.tree-debug-hero {
+  margin-bottom: 24px;
+}
+
+.tree-debug-kicker {
+  margin: 0 0 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.22em;
+  color: var(--tree-accent-2);
+  font-size: 0.8rem;
+}
+
+.tree-debug-hero h1 {
+  margin: 0;
+  font-size: clamp(2.4rem, 4vw, 4rem);
+}
+
+.tree-debug-lede {
+  max-width: 760px;
+  color: var(--tree-muted);
+  line-height: 1.6;
+}
+
+.tree-debug-layout,
+.tree-debug-library {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  margin-bottom: 18px;
+}
+
+.tree-debug-card {
+  border: 1px solid var(--tree-border);
+  border-radius: 22px;
+  background: var(--tree-card);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.22);
+  padding: 20px;
+}
+
+.tree-debug-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.tree-debug-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tree-debug-form span {
+  font-size: 0.85rem;
+  color: var(--tree-muted);
+}
+
+.tree-debug-form input,
+.tree-debug-form select,
+.tree-debug-form button {
+  font: inherit;
+}
+
+.tree-debug-form input,
+.tree-debug-form select {
+  border: 1px solid var(--tree-border);
+  border-radius: 12px;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--tree-text);
+}
+
+.tree-debug-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.tree-debug-actions button {
+  border: 1px solid var(--tree-border);
+  border-radius: 999px;
+  padding: 11px 16px;
+  background: rgba(184, 233, 134, 0.12);
+  color: var(--tree-text);
+  cursor: pointer;
+}
+
+.tree-debug-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.tree-debug-summary-grid dt {
+  margin: 0 0 4px;
+  color: var(--tree-muted);
+  font-size: 0.82rem;
+}
+
+.tree-debug-summary-grid dd {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.tree-debug-list {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--tree-muted);
+  line-height: 1.5;
+}
+
+.tree-debug-list strong {
+  color: var(--tree-text);
+}
+
+.tree-debug-tree-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 18px;
+}
+
+.tree-debug-preview {
+  margin-bottom: 14px;
+}
+
+.tree-debug-preview svg {
+  width: 100%;
+  height: auto;
+  border-radius: 18px;
+  display: block;
+}
+
+.tree-debug-card-body h2 {
+  margin: 0 0 10px;
+}
+
+.tree-debug-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.tree-debug-badges span {
+  border-radius: 999px;
+  background: rgba(128, 210, 165, 0.12);
+  color: var(--tree-accent);
+  padding: 4px 10px;
+  font-size: 0.82rem;
+}
+
+.tree-debug-tree-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 14px;
+  margin: 0 0 12px;
+}
+
+.tree-debug-tree-stats dt {
+  margin: 0 0 4px;
+  color: var(--tree-muted);
+  font-size: 0.8rem;
+}
+
+.tree-debug-tree-stats dd {
+  margin: 0;
+}
+
+.tree-debug-meta {
+  margin: 6px 0;
+  color: var(--tree-muted);
+  line-height: 1.45;
+}
+
+.tree-debug-landmark {
+  margin: 10px 0 0;
+  line-height: 1.5;
+}
+
+@media (max-width: 900px) {
+  .tree-debug-layout,
+  .tree-debug-library,
+  .tree-debug-grid,
+  .tree-debug-summary-grid {
+    grid-template-columns: 1fr;
+  }
+}
