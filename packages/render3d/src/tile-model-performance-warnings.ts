@@ -22,6 +22,10 @@ const LOW_DETAIL_INSTANCING_WARNING_MIN_SHARED_GEOMETRY = 3;
 const FULL_DETAIL_INSTANCING_WARNING_MIN_RENDERABLES = 12;
 const LOW_DETAIL_INSTANCING_WARNING_MIN_RENDERABLES = 6;
 const INSTANCING_WARNING_MAX_INSTANCED_RATIO = 0.25;
+const FULL_DETAIL_PER_INSTANCE_MATERIAL_WARNING_MIN_MESHES = 10;
+const LOW_DETAIL_PER_INSTANCE_MATERIAL_WARNING_MIN_MESHES = 5;
+const PER_INSTANCE_MATERIAL_WARNING_MIN_UNIQUE_MATERIAL_RATIO = 0.8;
+const PER_INSTANCE_MATERIAL_WARNING_MAX_SHARED_MATERIAL_RATIO = 0.25;
 
 export function getTileModelDrawCallRatioWarning(
   {
@@ -179,6 +183,39 @@ export function getTileModelInstancingWarning(
   return `meshCount ${meshCount} with sharedGeometryCount ${sharedGeometryCount} and instancedMeshCount ${instancedMeshCount} (renderedInstanceCount ${renderedInstanceCount}) suggests instancing repeated parts`;
 }
 
+export function getTileModelPerInstanceMaterialWarning(
+  {
+    meshCount,
+    materialCount,
+    sharedMaterialCount,
+  }: {
+    meshCount: number;
+    materialCount: number;
+    sharedMaterialCount: number;
+  },
+  detailLevel: RenderBudgetDetailLevel = 'full'
+): string | null {
+  const minimumMeshes =
+    detailLevel === 'low'
+      ? LOW_DETAIL_PER_INSTANCE_MATERIAL_WARNING_MIN_MESHES
+      : FULL_DETAIL_PER_INSTANCE_MATERIAL_WARNING_MIN_MESHES;
+  if (meshCount < minimumMeshes) {
+    return null;
+  }
+
+  const uniqueMaterialRatio = meshCount > 0 ? materialCount / meshCount : 0;
+  if (uniqueMaterialRatio < PER_INSTANCE_MATERIAL_WARNING_MIN_UNIQUE_MATERIAL_RATIO) {
+    return null;
+  }
+
+  const sharedMaterialRatio = meshCount > 0 ? sharedMaterialCount / meshCount : 0;
+  if (sharedMaterialRatio > PER_INSTANCE_MATERIAL_WARNING_MAX_SHARED_MATERIAL_RATIO) {
+    return null;
+  }
+
+  return `materialCount ${materialCount} for meshCount ${meshCount} with sharedMaterialCount ${sharedMaterialCount} suggests per-instance materials`;
+}
+
 export function getTileModelPerformanceWarnings(
   stats: {
     drawCallCount: number;
@@ -198,6 +235,7 @@ export function getTileModelPerformanceWarnings(
     getTileModelMaterialGroupWarning(stats, detailLevel),
     getTileModelTinyMeshWarning(stats, detailLevel),
     getTileModelInstancingWarning(stats, detailLevel),
+    getTileModelPerInstanceMaterialWarning(stats, detailLevel),
   ];
 
   return warnings.filter((warning): warning is string => typeof warning === 'string');

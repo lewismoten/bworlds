@@ -152,6 +152,7 @@ import {
   getTileModelDrawCallRatioWarning,
   getTileModelInstancingWarning,
   getTileModelMaterialGroupWarning,
+  getTileModelPerInstanceMaterialWarning,
   getTileModelPerformanceWarnings,
   getTileModelTinyMeshWarning,
   getWrappedBatchWindow,
@@ -2892,6 +2893,77 @@ describe('render3d visibility helpers', () => {
       )
     ).toEqual([
       'meshCount 12 with sharedGeometryCount 8 and instancedMeshCount 0 (renderedInstanceCount 0) suggests instancing repeated parts',
+    ]);
+  });
+
+  it('warns when a plugin creates nearly one unique material per mesh instance', () => {
+    expect(
+      getTileModelPerInstanceMaterialWarning(
+        {
+          meshCount: 10,
+          materialCount: 9,
+          sharedMaterialCount: 1,
+        },
+        'full'
+      )
+    ).toBe(
+      'materialCount 9 for meshCount 10 with sharedMaterialCount 1 suggests per-instance materials'
+    );
+
+    expect(
+      getTileModelPerInstanceMaterialWarning(
+        {
+          meshCount: 5,
+          materialCount: 4,
+          sharedMaterialCount: 1,
+        },
+        'low'
+      )
+    ).toBe(
+      'materialCount 4 for meshCount 5 with sharedMaterialCount 1 suggests per-instance materials'
+    );
+
+    expect(
+      getTileModelPerInstanceMaterialWarning(
+        {
+          meshCount: 10,
+          materialCount: 6,
+          sharedMaterialCount: 4,
+        },
+        'full'
+      )
+    ).toBeNull();
+
+    expect(
+      getTileModelPerInstanceMaterialWarning(
+        {
+          meshCount: 4,
+          materialCount: 4,
+          sharedMaterialCount: 0,
+        },
+        'full'
+      )
+    ).toBeNull();
+  });
+
+  it('collects plugin performance warnings for per-instance material churn', () => {
+    expect(
+      getTileModelPerformanceWarnings(
+        {
+          drawCallCount: 10,
+          triangleCount: 320,
+          maxGeometryGroupCount: 2,
+          meshCount: 10,
+          instancedMeshCount: 0,
+          renderedInstanceCount: 0,
+          materialCount: 9,
+          sharedMaterialCount: 1,
+          sharedGeometryCount: 2,
+        },
+        'full'
+      )
+    ).toEqual([
+      'materialCount 9 for meshCount 10 with sharedMaterialCount 1 suggests per-instance materials',
     ]);
   });
 

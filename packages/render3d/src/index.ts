@@ -151,6 +151,7 @@ export {
   getTileModelDrawCallRatioWarning,
   getTileModelInstancingWarning,
   getTileModelMaterialGroupWarning,
+  getTileModelPerInstanceMaterialWarning,
   getTileModelTinyMeshWarning,
   getTileModelPerformanceWarnings,
 } from './tile-model-performance-warnings.ts';
