@@ -1,9 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import {
   getForestTreeAgeProfiles,
+  getForestTreeBranchProfiles,
+  getForestTreeCanopyProfiles,
   getForestTreeFamilies,
   getForestTreeFruitProfiles,
   getForestTreeGenerator,
+  getForestTreeSpeciesPreview,
+  getForestTreeTrunkProfiles,
 } from '@bworlds/tile-forest';
 
 import { createTreeDebugSnapshot } from './tree-debug.ts';
@@ -161,5 +165,92 @@ describe('tree debug quality', () => {
       true
     );
     expect(coniferFamily?.supports('foliage', { season: 'winter' })).toBe(true);
+  });
+
+  it('keeps generated branch counts within the current forest performance budget', () => {
+    let sampledBranches = 0;
+
+    for (let tileY = 0; tileY < 64; tileY += 1) {
+      for (let tileX = 0; tileX < 64; tileX += 1) {
+        for (const profile of getForestTreeBranchProfiles(tileX, tileY)) {
+          expect(profile.branches.length).toBeGreaterThan(0);
+          expect(profile.branches.length).toBeLessThanOrEqual(8);
+          sampledBranches += profile.branches.length;
+        }
+      }
+    }
+
+    expect(sampledBranches).toBeGreaterThan(0);
+  });
+
+  it('never omits required trunk and collision geometry from generated trees', () => {
+    const speciesPreviews = [
+      getForestTreeSpeciesPreview('oak', 12, 8, 1),
+      getForestTreeSpeciesPreview('birch', 12, 8, 1),
+      getForestTreeSpeciesPreview('pine', 12, 8, 1),
+    ];
+
+    for (const preview of speciesPreviews) {
+      expect(preview.trunkHeight).toBeGreaterThan(0);
+      expect(preview.radius).toBeGreaterThan(0);
+      expect(preview.structure?.trunkTopRadius).toBeGreaterThan(0);
+      expect(preview.structure?.trunkTopRadius).toBeLessThan(preview.radius);
+      expect(preview.collision?.radius).toBeGreaterThan(0);
+      expect(preview.collision?.radius).toBeLessThan(preview.radius);
+      expect(preview.collision?.height).toBe(preview.trunkHeight);
+    }
+  });
+
+  it('keeps branch, canopy, and trunk geometry finite across sampled trees', () => {
+    const assertFinite = (value: number) => {
+      expect(Number.isFinite(value)).toBe(true);
+    };
+
+    for (let tileY = 0; tileY < 12; tileY += 1) {
+      for (let tileX = 0; tileX < 12; tileX += 1) {
+        const branches = getForestTreeBranchProfiles(tileX, tileY);
+        const canopies = getForestTreeCanopyProfiles(tileX, tileY);
+        const trunks = getForestTreeTrunkProfiles(tileX, tileY);
+
+        for (const trunk of trunks) {
+          assertFinite(trunk.trunkHeight);
+          assertFinite(trunk.radius);
+          assertFinite(trunk.trunkTopRadius);
+          assertFinite(trunk.trunkCurveX);
+          assertFinite(trunk.trunkCurveZ);
+          assertFinite(trunk.trunkLeanX);
+          assertFinite(trunk.trunkLeanZ);
+          expect(trunk.trunkHeight).toBeGreaterThan(0);
+          expect(trunk.radius).toBeGreaterThan(0);
+          expect(trunk.trunkTopRadius).toBeGreaterThan(0);
+        }
+
+        for (const profile of branches) {
+          for (const branch of profile.branches) {
+            assertFinite(branch.x);
+            assertFinite(branch.y);
+            assertFinite(branch.z);
+            assertFinite(branch.length);
+            assertFinite(branch.pitch);
+            assertFinite(branch.roll);
+            expect(branch.length).toBeGreaterThan(0);
+          }
+        }
+
+        for (const canopy of canopies) {
+          for (const foliage of canopy.foliage) {
+            assertFinite(foliage.x);
+            assertFinite(foliage.y);
+            assertFinite(foliage.z);
+            assertFinite(foliage.scaleX);
+            assertFinite(foliage.scaleY);
+            assertFinite(foliage.scaleZ);
+            expect(foliage.scaleX).toBeGreaterThan(0);
+            expect(foliage.scaleY).toBeGreaterThan(0);
+            expect(foliage.scaleZ).toBeGreaterThan(0);
+          }
+        }
+      }
+    }
   });
 });
