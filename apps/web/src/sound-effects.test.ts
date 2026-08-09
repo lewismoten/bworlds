@@ -508,8 +508,6 @@ describe('sound effects', () => {
         durationMs: 160,
         volume: 0.056,
         waveform: 'sawtooth',
-        emitter: { x: 0, y: 0 },
-        listener: { x: 0, y: 0 },
       });
       sink.play({
         kind: 'combat-magic',
@@ -518,8 +516,6 @@ describe('sound effects', () => {
         durationMs: 320,
         volume: 0.052,
         waveform: 'triangle',
-        emitter: { x: 0, y: 0 },
-        listener: { x: 0, y: 0 },
       });
       sink.play({
         kind: 'train-whistle',
@@ -528,8 +524,6 @@ describe('sound effects', () => {
         durationMs: 880,
         volume: 0.042,
         waveform: 'square',
-        emitter: { x: 0, y: 0 },
-        listener: { x: 0, y: 0 },
       });
 
       const outputGain = createdGains[0];
@@ -939,6 +933,10 @@ describe('sound effects', () => {
   });
 
   it('computes quieter and panned mixes for distant off-center emitters', () => {
+    expect(getSoundSpatialMix({ x: 0, y: 0 }, { x: 0, y: 0 })).toEqual({
+      gainMultiplier: 0.82,
+      pan: 0,
+    });
     expect(getSoundSpatialMix({ x: 3, y: 0 }, { x: 0, y: 0 })).toEqual({
       gainMultiplier: expect.closeTo(1 / (1 + 3 * 0.85), 6),
       pan: 1,

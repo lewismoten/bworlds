@@ -498,7 +498,7 @@
 - [x] Prevent clipping when many sounds occur simultaneously.
 - [ ] Normalize generated sounds to reasonable loudness ranges.
 - [ ] Reserve dynamic range for major events.
-- [ ] Ensure extremely close sounds do not become painfully loud.
+- [x] Ensure extremely close sounds do not become painfully loud.
 
 ---
 

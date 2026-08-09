@@ -28,6 +28,7 @@ type SoundEffectKind =
 type SoundWaveform = OscillatorType;
 type SoundPosition = { x: number; y: number };
 type AmbientSoundKind = NearbyAmbientKind;
+const MAX_CLOSE_SOUND_GAIN = 0.82;
 export type CombatSoundStyle =
   | 'slash'
   | 'pierce'
@@ -261,7 +262,7 @@ export function getSoundSpatialMix(
   const deltaY = emitter.y - listener.y;
   const distance = Math.hypot(deltaX, deltaY);
   return {
-    gainMultiplier: 1 / (1 + distance * 0.85),
+    gainMultiplier: Math.min(MAX_CLOSE_SOUND_GAIN, 1 / (1 + distance * 0.85)),
     pan: clampValue(deltaX / 2.8, -1, 1),
   };
 }
