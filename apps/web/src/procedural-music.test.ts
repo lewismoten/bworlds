@@ -48,6 +48,12 @@ describe('procedural music', () => {
       };
       connect: ReturnType<typeof vi.fn>;
     }> = [];
+    const createdPanners: Array<{
+      pan: {
+        setValueAtTime: ReturnType<typeof vi.fn>;
+      };
+      connect: ReturnType<typeof vi.fn>;
+    }> = [];
 
     class FakeAudioContext {
       state: AudioContextState = 'running';
@@ -98,12 +104,14 @@ describe('procedural music', () => {
         return filter as unknown as BiquadFilterNode;
       }
       createStereoPanner() {
-        return {
+        const panner = {
           pan: {
             setValueAtTime: vi.fn(),
           },
           connect: vi.fn(),
-        } as unknown as StereoPannerNode;
+        };
+        createdPanners.push(panner);
+        return panner as unknown as StereoPannerNode;
       }
       resume() {
         return Promise.resolve();
@@ -139,12 +147,18 @@ describe('procedural music', () => {
       });
 
       expect(sink.getActiveSourceCount?.()).toBe(2);
-      expect(createdFilters).toHaveLength(1);
+      expect(createdFilters).toHaveLength(3);
       expect(createdOscillators[1]?.type).toBe('triangle');
       expect(
         createdOscillators[1]?.frequency.setValueAtTime
       ).toHaveBeenCalledWith(440 * 2.6, 0);
       expect(createdFilters[0]?.type).toBe('bandpass');
+      expect(createdFilters[1]?.type).toBe('highpass');
+      expect(createdFilters[2]?.type).toBe('lowpass');
+      expect(createdPanners).toHaveLength(1);
+      expect(createdPanners[0]?.pan.setValueAtTime.mock.calls[0]?.[0]).not.toBe(
+        0
+      );
       createdOscillators[0]?.finish();
       expect(sink.getActiveSourceCount?.()).toBe(1);
       createdOscillators[1]?.finish();

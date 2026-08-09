@@ -25,6 +25,10 @@ import {
 } from './procedural-music-theme-motif.ts';
 import { blendThemeMotifWithFactionInteraction } from './procedural-music-faction-motif.ts';
 import { resolveProceduralMusicLocationMemory } from './procedural-music-location-memory.ts';
+import {
+  resolveMusicEqStages,
+  resolveMusicStereoPan,
+} from './procedural-music-mix.ts';
 import { resolveProceduralMeterAccent } from './procedural-music-meter.ts';
 import { blendThemeMotifWithImportantNpcMotif } from './procedural-music-npc-motif.ts';
 type MusicPosition = { x: number; y: number };
@@ -903,14 +907,21 @@ export function createWebAudioMusicSink(): MusicSink {
       }
       const nowMs = performance.now();
       const spatial = getMusicSpatialMix(note.emitter, note.listener);
+      const resolvedPan = resolveMusicStereoPan(note, spatial.pan);
       const oscillator = context.createOscillator();
       const harmonicOscillator = context.createOscillator();
       const gain = context.createGain();
       const harmonicGain = context.createGain();
-      const filter =
+      const timbreFilter =
         typeof context.createBiquadFilter === 'function'
           ? (context.createBiquadFilter() as BiquadFilterNodeLike)
           : null;
+      const eqFilters =
+        typeof context.createBiquadFilter === 'function'
+          ? resolveMusicEqStages(note).map(
+              () => context.createBiquadFilter() as BiquadFilterNodeLike
+            )
+          : [];
       const panner =
         typeof context.createStereoPanner === 'function'
           ? (context.createStereoPanner() as StereoPannerNodeLike)
@@ -973,17 +984,36 @@ export function createWebAudioMusicSink(): MusicSink {
 
       oscillator.connect(gain);
       harmonicOscillator.connect(harmonicGain);
-      if (filter) {
-        filter.type = note.timbre.filterType;
-        filter.frequency.setValueAtTime(note.timbre.filterCutoffHz, startAt);
-        filter.Q.setValueAtTime(note.timbre.filterQ, startAt);
-        gain.connect(filter);
-        harmonicGain.connect(filter);
+      if (timbreFilter) {
+        timbreFilter.type = note.timbre.filterType;
+        timbreFilter.frequency.setValueAtTime(
+          note.timbre.filterCutoffHz,
+          startAt
+        );
+        timbreFilter.Q.setValueAtTime(note.timbre.filterQ, startAt);
+        gain.connect(timbreFilter);
+        harmonicGain.connect(timbreFilter);
       }
 
-      const outputNode = filter ?? null;
+      let outputNode = timbreFilter;
+      const eqStages = resolveMusicEqStages(note);
+      for (let index = 0; index < eqStages.length; index += 1) {
+        const stage = eqStages[index]!;
+        const filter = eqFilters[index]!;
+        filter.type = stage.type;
+        filter.frequency.setValueAtTime(stage.frequencyHz, startAt);
+        filter.Q.setValueAtTime(stage.q, startAt);
+        if (outputNode) {
+          outputNode.connect(filter);
+        } else {
+          gain.connect(filter);
+          harmonicGain.connect(filter);
+        }
+        outputNode = filter;
+      }
+
       if (panner) {
-        panner.pan.setValueAtTime(spatial.pan, startAt);
+        panner.pan.setValueAtTime(resolvedPan, startAt);
         if (outputNode) {
           outputNode.connect(panner);
         } else {

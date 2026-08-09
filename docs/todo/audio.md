@@ -859,12 +859,12 @@ This is where procedural music could become particularly valuable in an MMORPG.
 
 # Mixing Procedural Instruments
 
-- [ ] Place instruments appropriately in the stereo field.
-- [ ] Give lead instruments enough space in the frequency spectrum.
-- [ ] Keep bass primarily centered.
-- [ ] Prevent low-frequency buildup.
+- [x] Place instruments appropriately in the stereo field.
+- [x] Give lead instruments enough space in the frequency spectrum.
+- [x] Keep bass primarily centered.
+- [x] Prevent low-frequency buildup.
 - [ ] Prevent multiple harmony instruments from masking each other.
-- [ ] Apply instrument-specific EQ.
+- [x] Apply instrument-specific EQ.
 - [ ] Apply shared room reverb to make instruments sound like they occupy the same space.
 - [ ] Adjust reverb according to the fictional performance environment.
 - [ ] Use compression carefully rather than flattening all dynamics.
