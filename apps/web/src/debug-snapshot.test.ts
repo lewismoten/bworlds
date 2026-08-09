@@ -122,6 +122,9 @@ describe('debug snapshot', () => {
         maxPendingFlushTiles: 5,
         averageTileBuildMs: 2.4,
         maxTileBuildMs: 6.8,
+        tileModelBudgetViolationsPerSecond: 2,
+        tileModelBudgetViolationTopPluginLabel: 'tile-forest',
+        tileModelBudgetViolationSummary: 'tile-forest:2, tile-town:1',
         tileNodeBuildsPerSecond: 14,
         tileBuildsPerSecond: 11,
         lodChecksPerSecond: 5,
@@ -412,6 +415,12 @@ describe('debug snapshot', () => {
         pendingBuildFullDetailDistance: 3,
         syncMovementDistance: 0.18,
       },
+    });
+    expect(result.budgetViolations).toEqual({
+      hardLimitViolationsPerSecond: 2,
+      rejectedModelsPerSecond: 2,
+      topRejectedPlugin: 'tile-forest',
+      rejectionSummary: 'tile-forest:2, tile-town:1',
     });
     expect(result.resources).toMatchObject({
       uniqueMaterialCount: 24,

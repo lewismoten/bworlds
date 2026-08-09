@@ -401,9 +401,9 @@ For every plugin, include:
 * [ ] Maximum generation time.
 * [ ] Cache hit/miss rate.
 * [ ] Soft-limit violations.
-* [ ] Hard-limit violations.
+* [X] Hard-limit violations.
 * [ ] Dropped model parts.
-* [ ] Rejected models.
+* [X] Rejected models.
 
 Then analysis becomes much easier:
 

@@ -185,6 +185,12 @@ export type DebugSnapshotExport = {
     swapsPerSecond: number;
     thresholds: LodThresholdSummary;
   };
+  budgetViolations: {
+    hardLimitViolationsPerSecond: number;
+    rejectedModelsPerSecond: number;
+    topRejectedPlugin: string | null;
+    rejectionSummary: string;
+  };
   resources: {
     totalMaterialReferences: number;
     uniqueMaterialCount: number;
@@ -402,6 +408,15 @@ export function buildDebugSnapshotExport(
       checksPerSecond: options.snapshot.lodChecksPerSecond,
       swapsPerSecond: options.snapshot.lodReplacementsPerSecond,
       thresholds: options.lod.thresholds,
+    },
+    budgetViolations: {
+      hardLimitViolationsPerSecond:
+        options.snapshot.tileModelBudgetViolationsPerSecond ?? 0,
+      rejectedModelsPerSecond:
+        options.snapshot.tileModelBudgetViolationsPerSecond ?? 0,
+      topRejectedPlugin:
+        options.snapshot.tileModelBudgetViolationTopPluginLabel?.trim() || null,
+      rejectionSummary: options.snapshot.tileModelBudgetViolationSummary ?? '',
     },
     history: options.history.map((sample) => ({
       t: roundTenths((sample.nowMs - latestHistoryTime) / 1000),
