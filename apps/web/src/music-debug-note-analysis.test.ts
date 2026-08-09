@@ -63,6 +63,17 @@ describe('music debug note analysis', () => {
     expect(validation.blackKeyNoteCount).toBe(2);
     expect(validation.blackKeyNotesByRole.lead).toBe(1);
     expect(validation.blackKeyNotesByRole.bass).toBe(1);
+    expect(validation.pitchClassCountsByRole.lead.G).toBe(1);
+    expect(validation.pitchClassCountsByRole.lead['G#']).toBe(1);
+    expect(validation.pitchClassCountsByRole.lead.A).toBe(1);
+    expect(validation.pitchClassCountsByRole.bass.G).toBe(1);
+    expect(validation.pitchClassCountsByRole.bass['A#']).toBe(1);
+    expect(validation.dominantPitchClassesByRole.lead).toEqual([
+      'A',
+      'G',
+      'G#',
+    ]);
+    expect(validation.dominantPitchClassesByRole.bass).toEqual(['A#', 'G']);
     expect(validation.unexplainedAccidentalCount).toBe(1);
     expect(validation.isValidForMidiExport).toBe(true);
   });

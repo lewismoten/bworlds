@@ -31,8 +31,8 @@ added directly as semitones instead of moving through the selected scale.
 - [x] Verify G Mixolydian maps to G A B C D E F.
 - [x] Test scale degrees across several octaves.
 - [x] Reject unexpected chromatic notes before MIDI export.
-- [ ] Trace why bass notes center on G-sharp and F-sharp.
-- [ ] Trace why lead notes center on G-sharp and C-sharp.
+- [x] Trace why bass notes center on G-sharp and F-sharp.
+- [x] Trace why lead notes center on G-sharp and C-sharp.
 - [x] Verify motif degrees are not treated as semitone offsets.
 - [x] Verify preferred intervals use one documented unit.
 - [x] Separate scale degrees from semitone intervals.

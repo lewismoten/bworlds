@@ -101,6 +101,8 @@ describe('music debug', () => {
     expect(first.notePitchDiagnostics.length).toBe(first.notes.length);
     expect(first.outOfModeNotesByRole.bass).toBeGreaterThanOrEqual(0);
     expect(first.blackKeyNotesByRole.lead).toBeGreaterThanOrEqual(0);
+    expect(first.dominantPitchClassesByRole.bass.length).toBeGreaterThan(0);
+    expect(first.dominantPitchClassesByRole.lead.length).toBeGreaterThan(0);
     expect(first.midiExportValidation.accidentalNoteCount).toBe(
       first.accidentalNoteCount
     );
@@ -158,6 +160,7 @@ describe('music debug', () => {
     expect(summary).toContain('Accidentals');
     expect(summary).toContain('Out-of-Mode');
     expect(summary).toContain('Black Keys');
+    expect(summary).toContain('Pitch Centers');
     expect(summary).toContain('Accidental Rules');
     expect(summary).toContain('Accidental Notes');
     expect(summary).toContain(snapshot.theme.id);

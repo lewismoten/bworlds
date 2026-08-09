@@ -40,6 +40,7 @@ import {
   describeMusicDebugAccidentalReason,
   type MusicDebugAccidentalReason,
   type MusicDebugNotePitchDiagnostic,
+  type MusicDebugPitchClassLabel,
   type MusicDebugPitchValidation,
 } from './music-debug-note-analysis.ts';
 
@@ -104,6 +105,10 @@ export type MusicDebugSnapshot = {
   notePitchDiagnostics: MusicDebugNotePitchDiagnostic[];
   outOfModeNotesByRole: Record<ProceduralMusicNote['role'], number>;
   blackKeyNotesByRole: Record<ProceduralMusicNote['role'], number>;
+  dominantPitchClassesByRole: Record<
+    ProceduralMusicNote['role'],
+    readonly MusicDebugPitchClassLabel[]
+  >;
   midiExportValidation: MusicDebugPitchValidation;
 };
 
@@ -354,6 +359,7 @@ export function createMusicDebugSnapshot(
     notePitchDiagnostics: midiExportValidation.notePitchDiagnostics,
     outOfModeNotesByRole: midiExportValidation.outOfModeNotesByRole,
     blackKeyNotesByRole: midiExportValidation.blackKeyNotesByRole,
+    dominantPitchClassesByRole: midiExportValidation.dominantPitchClassesByRole,
     midiExportValidation,
   };
 }
@@ -560,6 +566,7 @@ export function buildMusicDebugSummaryMarkup(
       <div><dt>Accidentals</dt><dd>${snapshot.accidentalNoteCount} chromatic notes outside ${snapshot.theme.vocabulary.modeLabel}</dd></div>
       <div><dt>Out-of-Mode</dt><dd>B ${snapshot.outOfModeNotesByRole.bass} / H ${snapshot.outOfModeNotesByRole.harmony} / L ${snapshot.outOfModeNotesByRole.lead}</dd></div>
       <div><dt>Black Keys</dt><dd>${snapshot.midiExportValidation.blackKeyNoteCount} total; B ${snapshot.blackKeyNotesByRole.bass} / H ${snapshot.blackKeyNotesByRole.harmony} / L ${snapshot.blackKeyNotesByRole.lead}</dd></div>
+      <div><dt>Pitch Centers</dt><dd>B ${formatMusicDebugPitchCenters(snapshot.dominantPitchClassesByRole.bass)} / H ${formatMusicDebugPitchCenters(snapshot.dominantPitchClassesByRole.harmony)} / L ${formatMusicDebugPitchCenters(snapshot.dominantPitchClassesByRole.lead)}</dd></div>
     </div>
     <div class="music-debug-role-counts">
       <span>SongDNA ${snapshot.songDna.identityId} / ${snapshot.songDna.locationIdentityId} / ${snapshot.songDna.variantLabel} / ${snapshot.songDna.blueprintId} / ${snapshot.songDna.meterLabel}</span>
@@ -650,6 +657,12 @@ function formatMusicDebugAccidentalExamples(
       return `${roleLabel}${diagnostic.noteIndex + 1} MIDI ${diagnostic.midiNote ?? '?'} ${diagnostic.accidentalRuleLabel ?? diagnostic.accidentalReason}`;
     })
     .join(' / ');
+}
+
+function formatMusicDebugPitchCenters(
+  pitchClasses: readonly MusicDebugPitchClassLabel[]
+): string {
+  return pitchClasses.length > 0 ? pitchClasses.join(', ') : 'none';
 }
 
 export function playMusicDebugSong(snapshot: MusicDebugSnapshot): void {

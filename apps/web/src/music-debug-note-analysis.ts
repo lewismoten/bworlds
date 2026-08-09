@@ -38,11 +38,37 @@ export type MusicDebugPitchValidation = {
   accidentalReasonCounts: Record<MusicDebugAccidentalReason, number>;
   blackKeyNoteCount: number;
   blackKeyNotesByRole: Record<ProceduralMusicRole, number>;
+  pitchClassCountsByRole: Record<
+    ProceduralMusicRole,
+    Partial<Record<MusicDebugPitchClassLabel, number>>
+  >;
+  dominantPitchClassesByRole: Record<
+    ProceduralMusicRole,
+    readonly MusicDebugPitchClassLabel[]
+  >;
   unexplainedAccidentalCount: number;
   budget: MusicDebugAccidentalBudget;
   isValidForMidiExport: boolean;
   messages: string[];
 };
+
+export type MusicDebugPitchClassLabel =
+  'C' | 'C#' | 'D' | 'D#' | 'E' | 'F' | 'F#' | 'G' | 'G#' | 'A' | 'A#' | 'B';
+
+const MUSIC_DEBUG_PITCH_CLASS_LABELS: readonly MusicDebugPitchClassLabel[] = [
+  'C',
+  'C#',
+  'D',
+  'D#',
+  'E',
+  'F',
+  'F#',
+  'G',
+  'G#',
+  'A',
+  'A#',
+  'B',
+];
 
 export function analyzeMusicDebugPitches(options: {
   notes: readonly ProceduralMusicNote[];
@@ -78,6 +104,7 @@ export function analyzeMusicDebugPitches(options: {
   const outOfModeNotesByRole = createRoleCountMap();
   const blackKeyNotesByRole = createRoleCountMap();
   const accidentalReasonCounts = createAccidentalReasonCountMap();
+  const pitchClassCountsByRole = createPitchClassCountMapByRole();
   let accidentalNoteCount = 0;
   let blackKeyNoteCount = 0;
   let unexplainedAccidentalCount = 0;
@@ -86,6 +113,13 @@ export function analyzeMusicDebugPitches(options: {
     const diagnostic = notePitchDiagnostics[index]!;
     if (diagnostic.role === 'percussion') {
       continue;
+    }
+    if (diagnostic.midiNote !== null) {
+      const pitchClassLabel = resolvePitchClassLabel(diagnostic.midiNote);
+      const currentPitchClassCount =
+        pitchClassCountsByRole[diagnostic.role][pitchClassLabel] ?? 0;
+      pitchClassCountsByRole[diagnostic.role][pitchClassLabel] =
+        currentPitchClassCount + 1;
     }
     if (diagnostic.isBlackKey) {
       blackKeyNoteCount += 1;
@@ -127,6 +161,10 @@ export function analyzeMusicDebugPitches(options: {
     accidentalReasonCounts,
     blackKeyNoteCount,
     blackKeyNotesByRole,
+    pitchClassCountsByRole,
+    dominantPitchClassesByRole: resolveDominantPitchClassesByRole(
+      pitchClassCountsByRole
+    ),
     unexplainedAccidentalCount,
     budget,
     isValidForMidiExport: messages.length === 0,
@@ -369,6 +407,60 @@ export function explainMusicDebugAccidentalReason(
 
 function isBlackKeyMidiNote(midiNote: number): boolean {
   return [1, 3, 6, 8, 10].includes(((midiNote % 12) + 12) % 12);
+}
+
+function createPitchClassCountMapByRole(): Record<
+  ProceduralMusicRole,
+  Partial<Record<MusicDebugPitchClassLabel, number>>
+> {
+  return {
+    lead: {},
+    harmony: {},
+    bass: {},
+    percussion: {},
+  };
+}
+
+function resolveDominantPitchClassesByRole(
+  pitchClassCountsByRole: Record<
+    ProceduralMusicRole,
+    Partial<Record<MusicDebugPitchClassLabel, number>>
+  >
+): Record<ProceduralMusicRole, readonly MusicDebugPitchClassLabel[]> {
+  return {
+    lead: resolveDominantPitchClasses(pitchClassCountsByRole.lead),
+    harmony: resolveDominantPitchClasses(pitchClassCountsByRole.harmony),
+    bass: resolveDominantPitchClasses(pitchClassCountsByRole.bass),
+    percussion: resolveDominantPitchClasses(pitchClassCountsByRole.percussion),
+  };
+}
+
+function resolveDominantPitchClasses(
+  pitchClassCounts: Partial<Record<MusicDebugPitchClassLabel, number>>
+): readonly MusicDebugPitchClassLabel[] {
+  const rankedPitchClasses = MUSIC_DEBUG_PITCH_CLASS_LABELS.map((label) => ({
+    label,
+    count: pitchClassCounts[label] ?? 0,
+  }))
+    .filter((entry) => entry.count > 0)
+    .sort(
+      (left, right) =>
+        right.count - left.count || left.label.localeCompare(right.label)
+    );
+  const topCount = rankedPitchClasses[0]?.count ?? 0;
+  if (topCount <= 0) {
+    return [];
+  }
+  return rankedPitchClasses
+    .filter((entry) => entry.count === topCount)
+    .map((entry) => entry.label);
+}
+
+function resolvePitchClassLabel(midiNote: number): MusicDebugPitchClassLabel {
+  return (
+    MUSIC_DEBUG_PITCH_CLASS_LABELS[((midiNote % 12) + 12) % 12] ??
+    MUSIC_DEBUG_PITCH_CLASS_LABELS[0]
+  );
 }
 
 function normalizePitchClass(semitone: number): number {
