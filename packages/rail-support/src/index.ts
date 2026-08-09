@@ -2,10 +2,10 @@ import { createBoundedCache } from '@bworlds/cache-support';
 import { clamp } from '@bworlds/core';
 import {
   appendHashSeedLabel,
-  createHashSeed,
   hash2D,
   hash2DWithSeed,
   registerHashLabel,
+  resolveHashSeed,
 } from '@bworlds/core/hash';
 import type {
   OverworldAnchors,
@@ -235,7 +235,7 @@ export function buildRailCurvePoints(
   from: StationAnchorLike,
   to: StationAnchorLike
 ): Array<{ x: number; y: number }> {
-  const seedHash = typeof seed === 'number' ? createHashSeed(seed) : registerHashLabel(seed);
+  const seedHash = resolveHashSeed(seed);
   const curveDirectionSeed = appendHashSeedLabel(seedHash, RAIL_CURVE_DIRECTION_LABEL);
   const curveOffsetSeed = appendHashSeedLabel(seedHash, RAIL_CURVE_OFFSET_LABEL);
   const deltaX = to.x - from.x;
@@ -463,10 +463,7 @@ function resolveRailTrainPlacement(
   const dwelllessDurationMs =
     Math.max(6, Math.min(18, Math.round(routeLength / 3))) * 60 * 1000;
   const phaseOffset = hash2DWithSeed(
-    appendHashSeedLabel(
-      typeof seed === 'number' ? createHashSeed(seed) : registerHashLabel(seed),
-      RAIL_TRAIN_PHASE_LABEL
-    ),
+    appendHashSeedLabel(resolveHashSeed(seed), RAIL_TRAIN_PHASE_LABEL),
     index,
     routeLength
   );

@@ -14,10 +14,10 @@ import {
 import {
   appendHashSeedLabel,
   appendHashSeedPart,
-  createHashSeed,
   hash2D,
   hash2DWithSeed,
   registerHashLabel,
+  resolveHashSeed,
 } from '@bworlds/core/hash';
 import type {
   ClassifyOverworldTileContext,
@@ -203,7 +203,7 @@ export function createRiverControlPoints(
   cellX: number,
   cellY: number
 ): RiverControlPoint[] {
-  const seedHash = typeof seed === 'number' ? createHashSeed(seed) : registerHashLabel(seed);
+  const seedHash = resolveHashSeed(seed);
   const pointCountSeed = appendHashSeedLabel(seedHash, RIVER_CONTROL_POINT_COUNT_LABEL);
   const startXSeed = appendHashSeedLabel(seedHash, RIVER_CONTROL_START_X_LABEL);
   const startYSeed = appendHashSeedLabel(seedHash, RIVER_CONTROL_START_Y_LABEL);
@@ -376,7 +376,7 @@ export function createRiverForkPath(
   cellY: number,
   controlPoints: RiverControlPoint[]
 ): RiverForkPath | null {
-  const seedHash = typeof seed === 'number' ? createHashSeed(seed) : registerHashLabel(seed);
+  const seedHash = resolveHashSeed(seed);
   const chanceSeed = appendHashSeedLabel(seedHash, RIVER_FORK_CHANCE_LABEL);
   const trunkStartSeed = appendHashSeedLabel(seedHash, RIVER_FORK_TRUNK_START_LABEL);
   const trunkSpanSeed = appendHashSeedLabel(seedHash, RIVER_FORK_TRUNK_SPAN_LABEL);
@@ -670,7 +670,7 @@ export function getOverworldPlacementChance(
   x: number,
   y: number
 ) {
-  const seedHash = typeof seed === 'number' ? createHashSeed(seed) : registerHashLabel(seed);
+  const seedHash = resolveHashSeed(seed);
   return hash2DWithSeed(
     appendHashSeedLabel(seedHash, registerHashLabel(chanceKey)),
     x,
@@ -779,7 +779,7 @@ export function createOverworldCellAnchorCandidate<
   cellY: number,
   spec: OverworldCellAnchorSpec<TAnchor>
 ): OverworldCellAnchorCandidate<TAnchor> {
-  const seedHash = typeof seed === 'number' ? createHashSeed(seed) : registerHashLabel(seed);
+  const seedHash = resolveHashSeed(seed);
   const chanceSeed = appendHashSeedLabel(seedHash, registerHashLabel(spec.chanceKey));
   const offsetXSeed = appendHashSeedLabel(seedHash, registerHashLabel(spec.offsetXKey));
   const offsetYSeed = appendHashSeedLabel(seedHash, registerHashLabel(spec.offsetYKey));

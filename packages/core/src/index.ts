@@ -5,6 +5,7 @@ import {
   hash2D,
   hash2DWithSeed,
   registerHashLabel,
+  resolveHashSeed,
 } from './hash.ts';
 
 export {
@@ -14,6 +15,7 @@ export {
   hash2D,
   hash2DWithSeed,
   registerHashLabel,
+  resolveHashSeed,
 } from './hash.ts';
 
 export const CHUNK_SIZE = 32;
@@ -229,6 +231,16 @@ const POI_NAME_SUFFIX_LABEL = registerHashLabel('suffix');
 const POI_NAME_TAIL_LABEL = registerHashLabel('tail');
 const POI_NAME_FORM_LABEL = registerHashLabel('form');
 const POI_NAME_NOUN_LABEL = registerHashLabel('noun');
+const POI_NAME_TYPE_LABELS = {
+  town: registerHashLabel('town'),
+  cave: registerHashLabel('cave'),
+  dungeon: registerHashLabel('dungeon'),
+  ruins: registerHashLabel('ruins'),
+  quarry: registerHashLabel('quarry'),
+  lighthouse: registerHashLabel('lighthouse'),
+  ship: registerHashLabel('ship'),
+  observatory: registerHashLabel('observatory'),
+} as const;
 
 function getPlanetSkyProfile(name: string, fallbackIndex = 0): PlanetSkyProfile {
   const index = PLANET_NAMES.indexOf(name);
@@ -997,13 +1009,13 @@ export function advanceWorldTimeOffsetBySeasons(
 }
 
 export function generateConstellations(
-  seed: string,
+  seed: string | number,
   options: {
     count?: number;
   } = {}
 ): ConstellationLike[] {
   const count = Math.max(1, Math.floor(options.count ?? DEFAULT_CONSTELLATION_COUNT));
-  const seedHash = registerHashLabel(seed);
+  const seedHash = resolveHashSeed(seed);
   const starsSeed = appendHashSeedLabel(seedHash, CONSTELLATION_STARS_LABEL);
   const radialSeed = appendHashSeedLabel(seedHash, CONSTELLATION_RADIAL_LABEL);
   const thetaSeed = appendHashSeedLabel(seedHash, CONSTELLATION_THETA_LABEL);
@@ -1158,7 +1170,7 @@ export function createConstellationName(
   suffixCounts = new Map<string, number>(),
   figureCounts = new Map<string, number>()
 ) {
-  const seedHash = typeof seed === 'number' ? seed : registerHashLabel(seed);
+  const seedHash = resolveHashSeed(seed);
   const formSeed = appendHashSeedLabel(seedHash, CONSTELLATION_FORM_LABEL);
   const figureSeed = appendHashSeedLabel(seedHash, CONSTELLATION_FIGURE_LABEL);
   const prefixSeed = appendHashSeedLabel(seedHash, CONSTELLATION_PREFIX_LABEL);
@@ -1615,16 +1627,17 @@ export function valueNoise2D(
   x: number,
   y: number
 ): number {
+  const seedHash = resolveHashSeed(seed);
   const x0 = Math.floor(x);
   const y0 = Math.floor(y);
   const x1 = x0 + 1;
   const y1 = y0 + 1;
   const tx = smoothstep(0, 1, fract(x));
   const ty = smoothstep(0, 1, fract(y));
-  const v00 = hash2D(seed, x0, y0);
-  const v10 = hash2D(seed, x1, y0);
-  const v01 = hash2D(seed, x0, y1);
-  const v11 = hash2D(seed, x1, y1);
+  const v00 = hash2DWithSeed(seedHash, x0, y0);
+  const v10 = hash2DWithSeed(seedHash, x1, y0);
+  const v01 = hash2DWithSeed(seedHash, x0, y1);
+  const v11 = hash2DWithSeed(seedHash, x1, y1);
   const a = lerp(v00, v10, tx);
   const b = lerp(v01, v11, tx);
   return lerp(a, b, ty);
@@ -1732,7 +1745,7 @@ export function getRegionalPoiNameStyle(
     ['bridge', 'field', 'keep', 'pass', 'reach', 'ward'],
     ['den', 'depths', 'hall', 'rift', 'spire', 'way'],
   ];
-  const seedHash = typeof seed === 'number' ? createHashSeed(seed) : registerHashLabel(seed);
+  const seedHash = resolveHashSeed(seed);
   const prefixSetSeed = appendHashSeedLabel(seedHash, POI_NAME_PREFIX_SET_LABEL);
   const suffixSetSeed = appendHashSeedLabel(seedHash, POI_NAME_SUFFIX_SET_LABEL);
 
@@ -1763,8 +1776,12 @@ export function generatePoiName(
   y: number
 ) {
   const style = getRegionalPoiNameStyle(seed, x, y);
-  const seedHash = typeof seed === 'number' ? createHashSeed(seed) : registerHashLabel(seed);
-  const typeSeed = appendHashSeedLabel(seedHash, registerHashLabel(type));
+  const seedHash = resolveHashSeed(seed);
+  const typeLabel = POI_NAME_TYPE_LABELS[type as keyof typeof POI_NAME_TYPE_LABELS];
+  const typeSeed = appendHashSeedLabel(
+    seedHash,
+    typeLabel ?? registerHashLabel(type)
+  );
   const stemSeed = appendHashSeedPart(appendHashSeedPart(typeSeed, x), y);
   const prefixSeed = appendHashSeedLabel(stemSeed, POI_NAME_PREFIX_LABEL);
   const suffixSeed = appendHashSeedLabel(stemSeed, POI_NAME_SUFFIX_LABEL);

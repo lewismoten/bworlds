@@ -1,10 +1,11 @@
 import { createBoundedCache } from '@bworlds/cache-support';
 import {
   appendHashSeedLabel,
-  createHashSeed,
+  appendHashSeedPart,
   hash2D,
   hash2DWithSeed,
   registerHashLabel,
+  resolveHashSeed,
 } from '@bworlds/core/hash';
 import {
   createChildContext,
@@ -523,9 +524,9 @@ function placeFeatureTiles(
   note: string
 ): void {
   const featureKindSeed = CAVE_FEATURE_KIND_SEEDS[kind];
-  const rankingSeed = appendHashSeedLabel(
+  const rankingSeed = appendHashSeedPart(
     appendHashSeedLabel(seedHash, featureKindSeed),
-    createHashSeed(salt)
+    salt
   );
   const fallbackCandidates =
     candidates.length >= count
@@ -554,9 +555,9 @@ function widenNearbyFloors(
   seedHash: number,
   depth: number
 ): void {
-  const widenSeed = appendHashSeedLabel(
+  const widenSeed = appendHashSeedPart(
     appendHashSeedLabel(seedHash, CAVE_WIDEN_SEED),
-    createHashSeed(depth)
+    depth
   );
   const additions: Point[] = [];
   for (let y = -radius + 1; y <= radius - 1; y += 1) {
@@ -609,7 +610,7 @@ function carvePath(
 }
 
 function resolveDepthSeed(seed: string | number): number {
-  return typeof seed === 'number' ? createHashSeed(seed) : registerHashLabel(seed);
+  return resolveHashSeed(seed);
 }
 
 function carveBrush(

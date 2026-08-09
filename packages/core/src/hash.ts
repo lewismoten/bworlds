@@ -6,6 +6,7 @@ const HASH_LABEL_CACHE_LIMIT = 4096;
 const registeredHashLabels = new Map<string, number>();
 
 export type HashSeed = number;
+export type HashSeedInput = HashSeed | string;
 
 export function registerHashLabel(label: string): number {
   const cached = registeredHashLabels.get(label);
@@ -45,14 +46,14 @@ export function appendHashSeedNumber(seedHash: HashSeed, value: number): HashSee
   return mixHashNumber(mixHashCharacter(seedHash >>> 0, HASH_PART_SEPARATOR), value);
 }
 
-export function hash2D(seed: number | string, x: number, y: number): number {
+export function hash2D(seed: HashSeedInput, x: number, y: number): number {
   return hash2DWithSeed(resolveHashSeed(seed), x, y);
 }
 
 export function hash2DWithSeed(seedHash: number, x: number, y: number): number {
   let hash = appendHashSeedNumber(seedHash, x);
   hash = appendHashSeedNumber(hash, y);
-  return (hash >>> 0) / 4294967295;
+  return (hash >>> 0) / 4294967296;
 }
 
 function mixHashCharacter(hash: number, charCode: number): number {
@@ -60,7 +61,7 @@ function mixHashCharacter(hash: number, charCode: number): number {
   return Math.imul(hash, FNV_PRIME);
 }
 
-function resolveHashSeed(seed: number | string): HashSeed {
+export function resolveHashSeed(seed: HashSeedInput): HashSeed {
   return typeof seed === 'number' ? createHashSeed(seed) : registerHashLabel(seed);
 }
 
