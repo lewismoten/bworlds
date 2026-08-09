@@ -59,7 +59,7 @@ Operates at several levels: per model, per LOD, per plugin, per chunk, and per e
 * [X] Cap vertex attribute byte size.
 * [X] Reject geometry containing invalid `NaN` or infinite coordinates.
 * [X] Reject geometry with unreasonable bounding dimensions.
-* [ ] Reject accidental ultra-dense geometry occupying a tiny visual area.
+* [X] Reject accidental ultra-dense geometry occupying a tiny visual area.
 * [ ] Avoid truncating arbitrary triangle/index buffers mid-mesh.
 * [ ] Drop an oversized optional mesh as a whole instead of corrupting its geometry.
 * [ ] Allow plugins to provide a cheaper replacement for oversized meshes.

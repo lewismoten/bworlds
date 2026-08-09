@@ -1216,6 +1216,7 @@ describe('render3d visibility helpers', () => {
       maxGeometryGroupCount: 12,
       maxGeometryDrawRangeCount: 0,
       invalidGeometryIndexTypeCount: 0,
+      ultraDenseTinyGeometryCount: 0,
       materialCount: 16,
       textureCount: 16,
       lightCount: 4,
@@ -1245,6 +1246,7 @@ describe('render3d visibility helpers', () => {
       maxGeometryGroupCount: 4,
       maxGeometryDrawRangeCount: 0,
       invalidGeometryIndexTypeCount: 0,
+      ultraDenseTinyGeometryCount: 0,
       materialCount: 3,
       textureCount: 4,
       lightCount: 1,
@@ -1286,6 +1288,7 @@ describe('render3d visibility helpers', () => {
         maxGeometryGroupCount: 0,
         maxGeometryDrawRangeCount: 0,
         invalidGeometryIndexTypeCount: 0,
+        ultraDenseTinyGeometryCount: 0,
         materialCount: 1,
         textureCount: 1,
         lightCount: 0,
@@ -1336,6 +1339,7 @@ describe('render3d visibility helpers', () => {
         maxGeometryGroupCount: 0,
         maxGeometryDrawRangeCount: 0,
         invalidGeometryIndexTypeCount: 0,
+        ultraDenseTinyGeometryCount: 0,
       }),
       violations: [
         {
@@ -1415,6 +1419,7 @@ describe('render3d visibility helpers', () => {
         maxGeometryGroupCount: 0,
         maxGeometryDrawRangeCount: 0,
         invalidGeometryIndexTypeCount: 0,
+        ultraDenseTinyGeometryCount: 0,
       }),
       violations: [
         {
@@ -1486,6 +1491,7 @@ describe('render3d visibility helpers', () => {
         maxGeometryGroupCount: 0,
         maxGeometryDrawRangeCount: 0,
         invalidGeometryIndexTypeCount: 0,
+        ultraDenseTinyGeometryCount: 0,
       }),
       violations: [
         {
@@ -1531,6 +1537,7 @@ describe('render3d visibility helpers', () => {
         maxGeometryGroupCount: 0,
         maxGeometryDrawRangeCount: 0,
         invalidGeometryIndexTypeCount: 0,
+        ultraDenseTinyGeometryCount: 0,
       }),
       violations: [
         {
@@ -1565,6 +1572,7 @@ describe('render3d visibility helpers', () => {
         maxGeometryGroupCount: 0,
         maxGeometryDrawRangeCount: 0,
         invalidGeometryIndexTypeCount: 0,
+        ultraDenseTinyGeometryCount: 0,
       }),
       violations: [
         {
@@ -1598,6 +1606,7 @@ describe('render3d visibility helpers', () => {
         maxGeometryGroupCount: 0,
         maxGeometryDrawRangeCount: 0,
         invalidGeometryIndexTypeCount: 0,
+        ultraDenseTinyGeometryCount: 0,
       }),
       violations: [
         {
@@ -1626,6 +1635,7 @@ describe('render3d visibility helpers', () => {
         maxGeometryGroupCount: 0,
         maxGeometryDrawRangeCount: 0,
         invalidGeometryIndexTypeCount: 0,
+        ultraDenseTinyGeometryCount: 0,
       }),
       violations: [
         {
@@ -1663,6 +1673,7 @@ describe('render3d visibility helpers', () => {
         maxGeometryGroupCount: 0,
         maxGeometryDrawRangeCount: 0,
         invalidGeometryIndexTypeCount: 0,
+        ultraDenseTinyGeometryCount: 0,
       }),
       violations: [
         {
@@ -1711,6 +1722,7 @@ describe('render3d visibility helpers', () => {
         maxGeometryGroupCount: 0,
         maxGeometryDrawRangeCount: 0,
         invalidGeometryIndexTypeCount: 0,
+        ultraDenseTinyGeometryCount: 0,
       }),
       violations: [
         {
@@ -1746,6 +1758,7 @@ describe('render3d visibility helpers', () => {
         maxGeometryGroupCount: 0,
         maxGeometryDrawRangeCount: 0,
         invalidGeometryIndexTypeCount: 0,
+        ultraDenseTinyGeometryCount: 0,
       }),
       violations: [
         {
@@ -1780,6 +1793,7 @@ describe('render3d visibility helpers', () => {
         maxGeometryGroupCount: 0,
         maxGeometryDrawRangeCount: 0,
         invalidGeometryIndexTypeCount: 0,
+        ultraDenseTinyGeometryCount: 0,
       }),
       violations: [
         {
@@ -1805,6 +1819,7 @@ describe('render3d visibility helpers', () => {
         maxGeometryGroupCount: 5,
         maxGeometryDrawRangeCount: 0,
         invalidGeometryIndexTypeCount: 0,
+        ultraDenseTinyGeometryCount: 0,
       }),
       violations: [
         {
@@ -1829,6 +1844,7 @@ describe('render3d visibility helpers', () => {
       stats: expect.objectContaining({
         maxGeometryDrawRangeCount: 1,
         invalidGeometryIndexTypeCount: 0,
+        ultraDenseTinyGeometryCount: 0,
       }),
       violations: [
         {
@@ -1852,10 +1868,37 @@ describe('render3d visibility helpers', () => {
       limits: getTileModelHardLimits('low'),
       stats: expect.objectContaining({
         invalidGeometryIndexTypeCount: 1,
+        ultraDenseTinyGeometryCount: 0,
       }),
       violations: [
         {
           metric: 'invalidGeometryIndexTypeCount',
+          actual: 1,
+          limit: 0,
+        },
+      ],
+    });
+  });
+
+  it('rejects ultra-dense geometry packed into a tiny visual area', () => {
+    const root = createMockObject3D(
+      createMockMaterial(),
+      [],
+      createMockPositionGeometry(
+        createPackedTriangleStripPositions(270, 0.08),
+        3
+      )
+    );
+
+    expect(validateTileModelAgainstRenderBudget(root as never, 'low')).toEqual({
+      accepted: false,
+      limits: getTileModelHardLimits('low'),
+      stats: expect.objectContaining({
+        ultraDenseTinyGeometryCount: 1,
+      }),
+      violations: [
+        {
+          metric: 'ultraDenseTinyGeometryCount',
           actual: 1,
           limit: 0,
         },
@@ -3095,6 +3138,29 @@ function createMockPositionGeometry(values: number[], itemSize = 3) {
       },
     },
   };
+}
+
+function createPackedTriangleStripPositions(
+  triangleCount: number,
+  maximumAxisSpan: number
+) {
+  const values: number[] = [];
+  const step = maximumAxisSpan / Math.max(1, triangleCount);
+  for (let index = 0; index < triangleCount; index += 1) {
+    const x = index * step;
+    values.push(
+      x,
+      0,
+      0,
+      x + step * 0.4,
+      maximumAxisSpan * 0.3,
+      0,
+      x + step * 0.8,
+      maximumAxisSpan * 0.6,
+      maximumAxisSpan * 0.1
+    );
+  }
+  return values;
 }
 
 function createMockIndexedGeometry(

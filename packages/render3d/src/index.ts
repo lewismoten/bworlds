@@ -37,6 +37,7 @@ import {
   countIndexedVertices,
   countLineSegments,
   countPointVertices,
+  countUltraDenseTinyGeometries,
   getGeometryAttributeBudgetStats,
   getGeometryStructureBudgetStats,
   getMaxGeometryTriangleCount,
@@ -252,6 +253,7 @@ const FULL_DETAIL_TILE_MODEL_HARD_LIMITS: TileModelHardLimits = {
   maxGeometryGroupCount: 12,
   maxGeometryDrawRangeCount: 0,
   invalidGeometryIndexTypeCount: 0,
+  ultraDenseTinyGeometryCount: 0,
   materialCount: 16,
   textureCount: 16,
   lightCount: 4,
@@ -282,6 +284,7 @@ const LOW_DETAIL_TILE_MODEL_HARD_LIMITS: TileModelHardLimits = {
   maxGeometryGroupCount: 4,
   maxGeometryDrawRangeCount: 0,
   invalidGeometryIndexTypeCount: 0,
+  ultraDenseTinyGeometryCount: 0,
   materialCount: 3,
   textureCount: 4,
   lightCount: 1,
@@ -330,6 +333,10 @@ export function validateTileModelAgainstRenderBudget(
     maxGeometryDrawRangeCount:
       geometryStructureBudgetStats.maxGeometryDrawRangeCount,
     invalidGeometryIndexTypeCount: countInvalidGeometryIndexTypes(root),
+    ultraDenseTinyGeometryCount: countUltraDenseTinyGeometries(root, {
+      maximumAxisSpan: ULTRA_DENSE_GEOMETRY_MAX_AXIS_SPAN,
+      minimumTriangleCount: ULTRA_DENSE_GEOMETRY_MIN_TRIANGLES,
+    }),
   };
   const limits = getTileModelHardLimits(detailLevel);
   const violations: TileModelBudgetViolation[] = [];
@@ -356,6 +363,7 @@ export function validateTileModelAgainstRenderBudget(
     'maxGeometryGroupCount',
     'maxGeometryDrawRangeCount',
     'invalidGeometryIndexTypeCount',
+    'ultraDenseTinyGeometryCount',
     'materialCount',
     'textureCount',
     'lightCount',
@@ -561,6 +569,7 @@ type TileModelHardLimits = {
   maxGeometryGroupCount: number;
   maxGeometryDrawRangeCount: number;
   invalidGeometryIndexTypeCount: number;
+  ultraDenseTinyGeometryCount: number;
   materialCount: number;
   textureCount: number;
   lightCount: number;
@@ -591,6 +600,7 @@ type TileModelBudgetValidation = {
     maxGeometryGroupCount: number;
     maxGeometryDrawRangeCount: number;
     invalidGeometryIndexTypeCount: number;
+    ultraDenseTinyGeometryCount: number;
   };
   limits: TileModelHardLimits;
   violations: TileModelBudgetViolation[];
@@ -618,6 +628,8 @@ const MAX_RENDER_DEBUG_EVENTS = 64;
 const RENDER_DEBUG_EVENT_WINDOW_MS = 30_000;
 const FULL_DETAIL_MAX_GEOMETRY_AXIS_SPAN = 24;
 const LOW_DETAIL_MAX_GEOMETRY_AXIS_SPAN = 16;
+const ULTRA_DENSE_GEOMETRY_MAX_AXIS_SPAN = 0.2;
+const ULTRA_DENSE_GEOMETRY_MIN_TRIANGLES = 256;
 
 type FrameTimeBudget = {
   budgetMs: number;
