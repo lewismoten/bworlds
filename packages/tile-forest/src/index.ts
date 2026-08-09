@@ -148,6 +148,7 @@ const FOREST_HISTORICAL_TREE_RECORD_OPENERS = [
   'Carried into local stories for',
   'Kept in the grove records for',
 ] as const;
+const FOREST_TERRAIN_ELEVATION_SEED = registerHashSeed('forest-terrain-elevation');
 const FOREST_HISTORICAL_TREE_RECORD_EVENTS = [
   'sheltering travelers',
   'marking the safest trail bend',
@@ -505,6 +506,39 @@ const resolveForestTreeDescriptors = createCoordinateValueResolver(
     }
 
     return descriptors;
+  }
+);
+const forestTerrainSlopeCache = createBoundedCache<
+  string,
+  { x: number; y: number; strength: number }
+>(FOREST_COORDINATE_CACHE_LIMIT);
+const resolveForestTerrainSlope = createCoordinateValueResolver(
+  forestTerrainSlopeCache,
+  ({ tileX, tileY }) => {
+    const east = octaveNoise2D(FOREST_TERRAIN_ELEVATION_SEED, (tileX + 1) / 45, tileY / 45, {
+      octaves: 4,
+      persistence: 0.5,
+    });
+    const west = octaveNoise2D(FOREST_TERRAIN_ELEVATION_SEED, (tileX - 1) / 45, tileY / 45, {
+      octaves: 4,
+      persistence: 0.5,
+    });
+    const south = octaveNoise2D(FOREST_TERRAIN_ELEVATION_SEED, tileX / 45, (tileY + 1) / 45, {
+      octaves: 4,
+      persistence: 0.5,
+    });
+    const north = octaveNoise2D(FOREST_TERRAIN_ELEVATION_SEED, tileX / 45, (tileY - 1) / 45, {
+      octaves: 4,
+      persistence: 0.5,
+    });
+    const slopeX = east - west;
+    const slopeY = south - north;
+    const strength = Math.min(1, Math.hypot(slopeX, slopeY) * 6.5);
+    return {
+      x: slopeX,
+      y: slopeY,
+      strength,
+    };
   }
 );
 const forestLandmarkCache = createBoundedCache<
@@ -2093,6 +2127,14 @@ export function getForestTreeTrunkProfiles(
   });
 }
 
+export function getForestTerrainSlopeProfile(tileX: number, tileY: number): {
+  x: number;
+  y: number;
+  strength: number;
+} {
+  return resolveForestTerrainSlope(tileX, tileY);
+}
+
 export function getForestTreeDamageProfiles(
   tileX: number,
   tileY: number
@@ -2677,13 +2719,25 @@ function createForestTreeDescriptorFromSpecies(
     (definition.form === 'pine' ? 0.014 : 0.01) +
     appearanceRandom() * (definition.form === 'pine' ? 0.024 : 0.018);
   const resolvedTrunkLeanMagnitude = trunkLeanMagnitude * (0.3 + maturity * 0.85);
+  const terrainSlope = resolveForestTerrainSlope(context.tileX, context.tileY);
+  const terrainSlopeLength = Math.max(
+    0.0001,
+    Math.hypot(terrainSlope.x, terrainSlope.y)
+  );
+  const slopeLeanInfluence =
+    Math.min(0.04, terrainSlope.strength * (definition.form === 'pine' ? 0.034 : 0.03)) *
+    (0.62 + maturity * 0.5);
+  const randomLeanX = Math.cos(trunkLeanAngle) * resolvedTrunkLeanMagnitude;
+  const randomLeanZ = Math.sin(trunkLeanAngle) * resolvedTrunkLeanMagnitude;
+  const terrainLeanX = (-terrainSlope.x / terrainSlopeLength) * slopeLeanInfluence;
+  const terrainLeanZ = (-terrainSlope.y / terrainSlopeLength) * slopeLeanInfluence;
   const structure: TreeStructuralState = {
     radius: trunkRadius,
     trunkTopRadius: trunkRadius * trunkTaperRatio,
     trunkCurveX: Math.cos(trunkCurveAngle) * resolvedTrunkCurveMagnitude,
     trunkCurveZ: Math.sin(trunkCurveAngle) * resolvedTrunkCurveMagnitude,
-    trunkLeanX: Math.cos(trunkLeanAngle) * resolvedTrunkLeanMagnitude,
-    trunkLeanZ: Math.sin(trunkLeanAngle) * resolvedTrunkLeanMagnitude,
+    trunkLeanX: randomLeanX * 0.4 + terrainLeanX,
+    trunkLeanZ: randomLeanZ * 0.4 + terrainLeanZ,
     scale: (0.72 + appearanceRandom() * 0.48) * (0.62 + maturity * 0.72),
     trunkHeight,
     branches,

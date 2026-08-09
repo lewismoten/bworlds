@@ -30,6 +30,7 @@ import {
   getForestMeadows,
   getForestOwls,
   getForestSpiders,
+  getForestTerrainSlopeProfile,
   getForestTrail,
   getForestTreeForms,
   getForestTreeHollows,
@@ -2135,6 +2136,45 @@ describe('tile forest', () => {
       -Math.atan2(trunks[leaningIndex]!.trunkLeanX, trunks[leaningIndex]!.trunkHeight),
       3
     );
+  });
+
+  it('lets terrain slope bias forest trunk lean direction', () => {
+    const sampled: Array<{
+      x: number;
+      y: number;
+      slope: ReturnType<typeof getForestTerrainSlopeProfile>;
+      trunk: ReturnType<typeof getForestTreeTrunkProfiles>[number];
+    }> = [];
+
+    for (let tileY = 0; tileY < 20; tileY += 1) {
+      for (let tileX = 0; tileX < 20; tileX += 1) {
+        const slope = getForestTerrainSlopeProfile(tileX, tileY);
+        const trunks = getForestTreeTrunkProfiles(tileX, tileY);
+        if (slope.strength > 0.08 && trunks.length > 0) {
+          sampled.push({ x: tileX, y: tileY, slope, trunk: trunks[0]! });
+        }
+      }
+    }
+
+    expect(sampled.length).toBeGreaterThan(0);
+
+    const alignedLeanSamples = sampled.filter(({ slope, trunk }) => {
+      const slopeLength = Math.hypot(slope.x, slope.y);
+      const leanLength = Math.hypot(trunk.trunkLeanX, trunk.trunkLeanZ);
+      if (slopeLength <= 0.0001 || leanLength <= 0.0001) {
+        return false;
+      }
+      const downhillDot =
+        ((-slope.x / slopeLength) * trunk.trunkLeanX +
+          (-slope.y / slopeLength) * trunk.trunkLeanZ) /
+        leanLength;
+      return downhillDot > 0.25;
+    });
+
+    expect(alignedLeanSamples.length).toBeGreaterThan(Math.floor(sampled.length * 0.6));
+
+    const first = sampled[0]!;
+    expect(getForestTerrainSlopeProfile(first.x, first.y)).toEqual(first.slope);
   });
 
   it('instances low-detail tree trunks and canopies instead of creating one group per tree', () => {

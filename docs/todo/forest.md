@@ -203,7 +203,7 @@ interface TreeCapabilities {
 * [X] Avoid perfectly straight cylinders.
 * [X] Add slight curvature.
 * [X] Add directional lean.
-* [ ] Allow terrain slope to influence lean.
+* [X] Allow terrain slope to influence lean.
 * [ ] Allow wind exposure to influence lean.
 * [ ] Generate buttress roots for appropriate species.
 * [ ] Generate trunk forks.
