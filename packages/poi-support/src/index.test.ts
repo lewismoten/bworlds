@@ -16,6 +16,7 @@ import {
   getNearestAccessibleRouteDistance,
   markPoiLightEmitter,
   markPoiWindResponder,
+  POI_WIND_RESPONDER_PROFILE_CACHE_MAX_ENTRIES,
   pickPreferredLandmarkFacing,
   resolvePlacementChance,
   syncPoiLightEmitters,
@@ -750,6 +751,97 @@ describe('poi support', () => {
         ?.poiWindResponder
     ).toBe(
       (second.userData as { poiWindResponder?: unknown } | undefined)
+        ?.poiWindResponder
+    );
+  });
+
+  it('recreates identical wind responder metadata after bounded cache eviction churn', () => {
+    const options = {
+      axis: 'z' as const,
+      baseRotation: 0.1,
+      idleAmplitude: 0.01,
+      windAmplitude: 0.08,
+      gustAmplitude: 0.03,
+      speed: 1.2,
+      gustSpeed: 2.7,
+      phase: 0.4,
+      gustPhase: 0.9,
+    };
+    const baseline = markPoiWindResponder(
+      {
+        userData: {},
+        visible: true,
+        position: { x: 0, y: 0, z: 0, set() { return this; } },
+        rotation: { x: 0, y: 0, z: 0 },
+        scale: {
+          x: 1,
+          y: 1,
+          z: 1,
+          set() { return this; },
+          setScalar() { return this; },
+        },
+        add() { return this; },
+      },
+      options
+    );
+
+    for (
+      let index = 0;
+      index < POI_WIND_RESPONDER_PROFILE_CACHE_MAX_ENTRIES + 8;
+      index += 1
+    ) {
+      markPoiWindResponder(
+        {
+          userData: {},
+          visible: true,
+          position: { x: 0, y: 0, z: 0, set() { return this; } },
+          rotation: { x: 0, y: 0, z: 0 },
+          scale: {
+            x: 1,
+            y: 1,
+            z: 1,
+            set() { return this; },
+            setScalar() { return this; },
+          },
+          add() { return this; },
+        },
+        {
+          axis: index % 2 === 0 ? 'z' : 'y',
+          baseRotation: index * 0.01,
+          idleAmplitude: 0.01 + index * 0.001,
+          windAmplitude: 0.08 + index * 0.001,
+          gustAmplitude: 0.03 + index * 0.0005,
+          speed: 1 + index * 0.01,
+          gustSpeed: 2 + index * 0.01,
+          phase: index * 0.02,
+          gustPhase: index * 0.03,
+        }
+      );
+    }
+
+    const repeated = markPoiWindResponder(
+      {
+        userData: {},
+        visible: true,
+        position: { x: 0, y: 0, z: 0, set() { return this; } },
+        rotation: { x: 0, y: 0, z: 0 },
+        scale: {
+          x: 1,
+          y: 1,
+          z: 1,
+          set() { return this; },
+          setScalar() { return this; },
+        },
+        add() { return this; },
+      },
+      options
+    );
+
+    expect(
+      (repeated.userData as { poiWindResponder?: unknown } | undefined)
+        ?.poiWindResponder
+    ).toEqual(
+      (baseline.userData as { poiWindResponder?: unknown } | undefined)
         ?.poiWindResponder
     );
   });

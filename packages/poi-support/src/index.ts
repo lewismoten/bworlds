@@ -1,4 +1,4 @@
-import { getOrCreateMapValue } from '@bworlds/cache-support';
+import { createBoundedCache } from '@bworlds/cache-support';
 import {
   clamp,
   generatePoiName,
@@ -172,10 +172,12 @@ const LANDMARK_FACING_DIRECTION_SEEDS: Record<LandmarkFacingDirectionId, number>
   south: registerHashLabel('south'),
   west: registerHashLabel('west'),
 };
-const poiWindResponderProfileCache = new Map<
+export const POI_WIND_RESPONDER_PROFILE_CACHE_MAX_ENTRIES = 64;
+
+const poiWindResponderProfileCache = createBoundedCache<
   string,
   Required<PoiWindResponderOptions>
->();
+>(POI_WIND_RESPONDER_PROFILE_CACHE_MAX_ENTRIES);
 const poiWindResponderCache = new WeakMap<
   ThreeObject3DLike,
   Array<
@@ -344,7 +346,7 @@ function getPoiWindResponderProfile(
     normalized.gustPhase,
   ].join(':');
 
-  return getOrCreateMapValue(poiWindResponderProfileCache, key, () => normalized);
+  return poiWindResponderProfileCache.getOrCreate(key, () => normalized);
 }
 
 export function canPlaceLandPoi(
