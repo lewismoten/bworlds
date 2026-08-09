@@ -124,10 +124,10 @@ Do not rely only on file size.
 * [X] Estimate decoded texture memory.
 * [X] Include mipmap memory in estimates.
 * [X] Track GPU texture-memory estimates separately from JavaScript heap.
-* [ ] Cap estimated texture bytes per model.
-* [ ] Cap estimated texture bytes per chunk.
-* [ ] Cap estimated texture bytes per plugin.
-* [ ] Cap estimated texture bytes for the active scene.
+* [X] Cap estimated texture bytes per model.
+* [X] Cap estimated texture bytes per chunk.
+* [X] Cap estimated texture bytes per plugin.
+* [X] Cap estimated texture bytes for the active scene.
 * [ ] Prefer compressed texture formats where available.
 * [ ] Reduce texture quality dynamically under memory pressure.
 * [ ] Evict unused texture groups using an LRU strategy.

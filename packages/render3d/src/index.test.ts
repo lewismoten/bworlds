@@ -1549,6 +1549,7 @@ describe('render3d visibility helpers', () => {
       maxMaterialTextureSlotCount: 6,
       shaderDefineSignatureCount: 4,
       maxShaderComplexityClass: 3,
+      textureMemoryEstimateBytes: 25_165_824,
       maxTextureWidth: 2_048,
       maxTextureHeight: 2_048,
       maxTexturePixelCount: 4_194_304,
@@ -1595,6 +1596,7 @@ describe('render3d visibility helpers', () => {
       maxMaterialTextureSlotCount: 4,
       shaderDefineSignatureCount: 1,
       maxShaderComplexityClass: 2,
+      textureMemoryEstimateBytes: 2_097_152,
       maxTextureWidth: 512,
       maxTextureHeight: 512,
       maxTexturePixelCount: 262_144,
@@ -1838,6 +1840,30 @@ describe('render3d visibility helpers', () => {
             metric: 'textureCount',
             actual: 5,
             limit: 4,
+          },
+        ]),
+      })
+    );
+  });
+
+  it('rejects models whose estimated texture bytes exceed the per-model cap', () => {
+    const root = createMockObject3D(
+      createMockMaterial({ map: createMockTexture(2048, 2048) }),
+      [],
+      createMockStatGeometry('texture-memory-cap', 24)
+    );
+
+    expect(validateTileModelAgainstRenderBudget(root as never, 'low')).toEqual(
+      expect.objectContaining({
+        accepted: false,
+        stats: expect.objectContaining({
+          textureMemoryEstimateBytes: 22_369_621,
+        }),
+        violations: expect.arrayContaining([
+          {
+            metric: 'textureMemoryEstimateBytes',
+            actual: 22_369_621,
+            limit: 2_097_152,
           },
         ]),
       })

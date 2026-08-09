@@ -92,6 +92,7 @@ import {
   getDecodedTextureMemoryEstimateBytes,
   getGpuTextureMemoryEstimateBytes,
 } from './texture-memory-estimate.ts';
+import { collectUniqueObjectTextures } from './object-textures.ts';
 import {
   disposeOwnedObject3DMaterials,
   getRecentOwnedMaterialLifecycleCounts,
@@ -118,6 +119,12 @@ import {
   DRAW_CALL_CHUNK_TILE_SIZE,
 } from './visible-tile-resource-stats.ts';
 import { validateVisibleTilePluginMaterialBudget } from './visible-tile-plugin-material-budget.ts';
+import {
+  getTileTextureMemoryLimit,
+  validateVisibleTileChunkTextureBudget,
+  validateVisibleTilePluginTextureBudget,
+  validateVisibleTileSceneTextureBudget,
+} from './visible-tile-texture-budget.ts';
 import {
   createPendingWorldBuildState,
   createWorldVisibilitySyncState,
@@ -473,6 +480,7 @@ const FULL_DETAIL_TILE_MODEL_HARD_LIMITS: TileModelHardLimits = {
   maxMaterialTextureSlotCount: 6,
   shaderDefineSignatureCount: 4,
   maxShaderComplexityClass: 3,
+  textureMemoryEstimateBytes: getTileTextureMemoryLimit('full'),
   maxTextureWidth: 2_048,
   maxTextureHeight: 2_048,
   maxTexturePixelCount: 4_194_304,
@@ -520,6 +528,7 @@ const LOW_DETAIL_TILE_MODEL_HARD_LIMITS: TileModelHardLimits = {
   maxMaterialTextureSlotCount: 4,
   shaderDefineSignatureCount: 1,
   maxShaderComplexityClass: 2,
+  textureMemoryEstimateBytes: getTileTextureMemoryLimit('low'),
   maxTextureWidth: 512,
   maxTextureHeight: 512,
   maxTexturePixelCount: 262_144,
@@ -700,6 +709,7 @@ export function validateTileModelAgainstRenderBudget(
     'maxMaterialTextureSlotCount',
     'shaderDefineSignatureCount',
     'maxShaderComplexityClass',
+    'textureMemoryEstimateBytes',
     'maxTextureWidth',
     'maxTextureHeight',
     'maxTexturePixelCount',
@@ -873,6 +883,8 @@ type DynamicTileNode = {
   model: unknown;
   modelRoot?: THREE.Object3D | null;
   uniqueMaterials?: readonly THREE.Material[];
+  uniqueTextures?: readonly unknown[];
+  pluginUniqueTextures?: readonly unknown[];
   modelVisibilityOpacity?: number;
   distanceFadeEligible?: boolean;
   detailLevel?: RenderBudgetDetailLevel;
@@ -1020,6 +1032,7 @@ type TileModelHardLimits = {
   maxMaterialTextureSlotCount: number;
   shaderDefineSignatureCount: number;
   maxShaderComplexityClass: number;
+  textureMemoryEstimateBytes: number;
   maxTextureWidth: number;
   maxTextureHeight: number;
   maxTexturePixelCount: number;
@@ -1733,6 +1746,37 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
 
     let finalPluginModelBudgetValidation: TileModelBudgetValidation | null = null;
     let pluginUniqueMaterials: readonly THREE.Material[] = [];
+    let pluginUniqueTextures: readonly unknown[] = [];
+
+    const rejectPluginModelForBudget = (summary: string) => {
+      recordRecentLabeledCountMetric(renderChurnMetrics.tileModelBudgetViolations, {
+        nowMs: pluginBuildStartMs,
+        count: 1,
+        label: tilePluginOwnerLabel,
+      });
+      recordRenderDebugEvent(recentDebugEvents, {
+        nowMs: pluginBuildStartMs,
+        type: 'plugin-exceeded-budget',
+        tileKey: `${x}:${y}`,
+        plugin: tilePluginOwnerLabel,
+        summary,
+      });
+      recordRenderDebugEvent(recentDebugEvents, {
+        nowMs: pluginBuildStartMs,
+        type: 'model-rejected',
+        tileKey: `${x}:${y}`,
+        plugin: tilePluginOwnerLabel,
+        summary,
+      });
+      if (pluginModel) {
+        tileNode.remove(pluginModel);
+        disposeObject3DResources(pluginModel);
+      }
+      pluginModel = null;
+      pluginUniqueMaterials = [];
+      pluginUniqueTextures = [];
+      finalPluginModelBudgetValidation = null;
+    };
 
     if (pluginModel) {
       const modelBudgetValidation = validateTileModelAgainstRenderBudget(
@@ -1789,6 +1833,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
 
     if (pluginModel) {
       pluginUniqueMaterials = collectUniqueObjectMaterials<THREE.Material>(pluginModel);
+      pluginUniqueTextures = collectUniqueObjectTextures(pluginModel);
       const pluginMaterialBudget = validateVisibleTilePluginMaterialBudget(
         visibleTileNodes.values(),
         tilePluginOwnerLabel,
@@ -1797,29 +1842,9 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
         `${x}:${y}`
       );
       if (!pluginMaterialBudget.accepted) {
-        const violationSummary =
-          `plugin unique materialCount ${pluginMaterialBudget.materialCount}>${pluginMaterialBudget.limit}`;
-        recordRecentLabeledCountMetric(renderChurnMetrics.tileModelBudgetViolations, {
-          nowMs: pluginBuildStartMs,
-          count: 1,
-          label: tilePluginOwnerLabel,
-        });
-        recordRenderDebugEvent(recentDebugEvents, {
-          nowMs: pluginBuildStartMs,
-          type: 'plugin-exceeded-budget',
-          tileKey: `${x}:${y}`,
-          plugin: tilePluginOwnerLabel,
-          summary: violationSummary,
-        });
-        recordRenderDebugEvent(recentDebugEvents, {
-          nowMs: pluginBuildStartMs,
-          type: 'model-rejected',
-          tileKey: `${x}:${y}`,
-          plugin: tilePluginOwnerLabel,
-          summary: violationSummary,
-        });
-        disposeObject3DResources(pluginModel);
-        pluginModel = null;
+        rejectPluginModelForBudget(
+          `plugin unique materialCount ${pluginMaterialBudget.materialCount}>${pluginMaterialBudget.limit}`
+        );
       }
     }
 
@@ -1888,16 +1913,64 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
             });
           }
         } else {
-          tileNode.remove(pluginModel);
-          disposeObject3DResources(pluginModel);
-          pluginModel = null;
-          recordRenderDebugEvent(recentDebugEvents, {
-            nowMs: pluginBuildStartMs,
-            type: 'model-rejected',
-            tileKey: `${x}:${y}`,
-            plugin: tilePluginOwnerLabel,
-            summary: violationSummary,
-          });
+          rejectPluginModelForBudget(violationSummary);
+        }
+      }
+
+      if (pluginModel) {
+        pluginUniqueTextures = collectUniqueObjectTextures(pluginModel);
+        const pluginTextureBudget = validateVisibleTilePluginTextureBudget(
+          visibleTileNodes.values(),
+          tilePluginOwnerLabel,
+          pluginUniqueTextures,
+          detailLevel,
+          `${x}:${y}`
+        );
+        if (!pluginTextureBudget.accepted) {
+          rejectPluginModelForBudget(
+            `plugin textureMemoryEstimateBytes ${pluginTextureBudget.textureMemoryEstimateBytes}>${pluginTextureBudget.limit}`
+          );
+        }
+      }
+
+      if (pluginModel) {
+        const tileNodeUniqueTextures = collectUniqueObjectTextures(tileNode);
+        const sceneTextureBudget = validateVisibleTileSceneTextureBudget(
+          visibleTileNodes.values(),
+          {
+            key: `${x}:${y}`,
+            tileX: x,
+            tileY: y,
+            uniqueTextures: tileNodeUniqueTextures,
+          },
+          detailLevel,
+          `${x}:${y}`
+        );
+        if (!sceneTextureBudget.accepted) {
+          rejectPluginModelForBudget(
+            `scene textureMemoryEstimateBytes ${sceneTextureBudget.textureMemoryEstimateBytes}>${sceneTextureBudget.limit}`
+          );
+        }
+      }
+
+      if (pluginModel) {
+        const tileNodeUniqueTextures = collectUniqueObjectTextures(tileNode);
+        const chunkTextureBudget = validateVisibleTileChunkTextureBudget(
+          visibleTileNodes.values(),
+          {
+            key: `${x}:${y}`,
+            tileX: x,
+            tileY: y,
+            uniqueTextures: tileNodeUniqueTextures,
+          },
+          detailLevel,
+          `${x}:${y}`,
+          DRAW_CALL_CHUNK_TILE_SIZE
+        );
+        if (!chunkTextureBudget.accepted) {
+          rejectPluginModelForBudget(
+            `chunk textureMemoryEstimateBytes ${chunkTextureBudget.textureMemoryEstimateBytes}>${chunkTextureBudget.limit}`
+          );
         }
       }
     } else if (!isWaterKind(tile.kind) && definition.wallHeight > 0.08) {
@@ -1918,6 +1991,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     }
 
     const finalSceneResourceStats = collectSceneResourceStats(tileNode);
+    const finalUniqueTextures = collectUniqueObjectTextures(tileNode);
 
     return {
       key: `${x}:${y}`,
@@ -1941,6 +2015,8 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       model: pluginModel ?? tileNode,
       modelRoot: pluginModel ?? null,
       uniqueMaterials: pluginUniqueMaterials,
+      uniqueTextures: finalUniqueTextures,
+      pluginUniqueTextures,
       modelVisibilityOpacity: 1,
       distanceFadeEligible:
         Boolean(pluginModel) && definition.walkable && !isWaterKind(tile.kind),
