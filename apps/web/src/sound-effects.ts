@@ -6,6 +6,7 @@ import type { NearbyAmbientKind } from './nearby-ambient.ts';
 import {
   type ProceduralAmplitudeEnvelope,
   createProceduralSoundEffectGenerator,
+  type ProceduralSoundDistortion,
   type ProceduralNoiseColor,
   type ProceduralSoundEffectLayer,
   type ProceduralSoundFilter,
@@ -319,6 +320,7 @@ function resolveProceduralSoundRecipe(
     envelope: resolveProceduralSoundEnvelope(kind),
     pitchEnvelope: resolveProceduralSoundPitchEnvelope(kind),
     filters: resolveProceduralSoundFilters(kind),
+    distortion: resolveProceduralSoundDistortion(kind),
     sweeps: resolveProceduralSoundSweeps(kind),
     layers: resolveProceduralSoundLayers(kind),
     ...resolveProceduralSoundVariation(kind),
@@ -451,6 +453,37 @@ function resolveProceduralSoundFilters(kind: SoundEffectKind) {
           frequencyVariation: 0.05,
         },
       ] as const;
+    default:
+      return undefined;
+  }
+}
+
+function resolveProceduralSoundDistortion(kind: SoundEffectKind) {
+  switch (kind) {
+    case 'combat-weapon':
+      return {
+        mode: 'distortion' as const,
+        amount: 0.42,
+        outputGain: 0.76,
+        amountVariation: 0.08,
+        outputGainVariation: 0.05,
+      };
+    case 'combat-magic':
+      return {
+        mode: 'saturation' as const,
+        amount: 0.28,
+        outputGain: 0.84,
+        amountVariation: 0.06,
+        outputGainVariation: 0.04,
+      };
+    case 'train-engine':
+      return {
+        mode: 'saturation' as const,
+        amount: 0.22,
+        outputGain: 0.88,
+        amountVariation: 0.05,
+        outputGainVariation: 0.03,
+      };
     default:
       return undefined;
   }
@@ -1580,13 +1613,23 @@ type AudioBufferSourceNodeLike = AudioBufferSourceNode & {
   buffer: AudioBuffer | null;
 };
 type ScheduledSoundSourceNode = OscillatorNode | AudioBufferSourceNodeLike;
+type WaveShaperNodeLike = WaveShaperNode & {
+  oversample?: OverSampleType;
+};
 type ActiveSoundFilter = {
   node: BiquadFilterNode;
   config: ProceduralSoundFilter;
 };
+type ActiveSoundDistortion = {
+  preGain: GainNode;
+  waveShaper: WaveShaperNodeLike;
+  postGain: GainNode;
+  config: ProceduralSoundDistortion;
+};
 type ActiveSoundSource = {
   source: ScheduledSoundSourceNode;
   filters: ActiveSoundFilter[];
+  distortion: ActiveSoundDistortion | null;
   gain: GainNode;
   effect: ProceduralSoundEffect;
 };
@@ -1702,6 +1745,9 @@ export function createWebAudioSoundEffectSink(
       for (const filter of source.filters) {
         filter.node.disconnect?.();
       }
+      source.distortion?.preGain.disconnect?.();
+      source.distortion?.waveShaper.disconnect?.();
+      source.distortion?.postGain.disconnect?.();
       source.gain.disconnect?.();
     }
     voice.mixGain.disconnect?.();
@@ -1887,6 +1933,7 @@ function createActiveSoundSource(
   return {
     source: createScheduledSoundSource(context, effect, noiseBufferCache),
     filters: createSoundEffectFilters(context, effect),
+    distortion: createSoundEffectDistortion(context, effect),
     gain: context.createGain(),
     effect,
   };
@@ -1906,6 +1953,7 @@ function createLayeredSoundEffect(
     envelope: layer.envelope ?? effect.envelope,
     pitchEnvelope: layer.pitchEnvelope ?? effect.pitchEnvelope,
     filters: layer.filters ?? effect.filters,
+    distortion: layer.distortion ?? effect.distortion,
     sweeps: layer.sweeps ?? effect.sweeps,
     layers: undefined,
   };
@@ -1945,17 +1993,82 @@ function createSoundEffectFilterNode(
   return node;
 }
 
+function createSoundEffectDistortion(
+  context: AudioContext,
+  effect: ProceduralSoundEffect
+): ActiveSoundDistortion | null {
+  if (
+    typeof context.createWaveShaper !== 'function' ||
+    !effect.distortion ||
+    typeof context.createGain !== 'function'
+  ) {
+    return null;
+  }
+
+  const preGain = context.createGain();
+  const waveShaper = context.createWaveShaper() as WaveShaperNodeLike;
+  const postGain = context.createGain();
+  const amount = clampValue(effect.distortion.amount, 0, 1);
+  preGain.gain.setValueAtTime(1 + amount * 3.5, context.currentTime);
+  waveShaper.curve = createDistortionCurve(effect.distortion);
+  waveShaper.oversample = '2x';
+  postGain.gain.setValueAtTime(
+    effect.distortion.outputGain,
+    context.currentTime
+  );
+  return {
+    preGain,
+    waveShaper,
+    postGain,
+    config: effect.distortion,
+  };
+}
+
+function createDistortionCurve(
+  distortion: ProceduralSoundDistortion
+): Float32Array {
+  const sampleCount = 256;
+  const curve = new Float32Array(sampleCount);
+  const amount = clampValue(distortion.amount, 0, 1);
+  for (let index = 0; index < sampleCount; index += 1) {
+    const input = (index / (sampleCount - 1)) * 2 - 1;
+    curve[index] =
+      distortion.mode === 'saturation'
+        ? Math.tanh(input * (1 + amount * 4))
+        : ((1 + amount * 12) * input) / (1 + amount * 12 * Math.abs(input));
+  }
+  return curve;
+}
+
 function connectSoundEffectSourceChain(source: ActiveSoundSource): void {
-  if (source.filters.length === 0) {
+  const firstFilter = source.filters[0]?.node ?? null;
+  const lastFilter = source.filters[source.filters.length - 1]?.node ?? null;
+  const distortionInput = source.distortion?.preGain ?? null;
+
+  if (source.filters.length === 0 && !source.distortion) {
     source.source.connect(source.gain);
     return;
   }
 
-  source.source.connect(source.filters[0]!.node);
-  for (let index = 0; index < source.filters.length - 1; index += 1) {
-    source.filters[index]!.node.connect(source.filters[index + 1]!.node);
+  if (firstFilter) {
+    source.source.connect(firstFilter);
+    for (let index = 0; index < source.filters.length - 1; index += 1) {
+      source.filters[index]!.node.connect(source.filters[index + 1]!.node);
+    }
+    if (distortionInput) {
+      lastFilter!.connect(distortionInput);
+    } else {
+      lastFilter!.connect(source.gain);
+    }
+  } else if (distortionInput) {
+    source.source.connect(distortionInput);
   }
-  source.filters[source.filters.length - 1]!.node.connect(source.gain);
+
+  if (source.distortion) {
+    source.distortion.preGain.connect(source.distortion.waveShaper);
+    source.distortion.waveShaper.connect(source.distortion.postGain);
+    source.distortion.postGain.connect(source.gain);
+  }
 }
 
 function createScheduledSoundSource(

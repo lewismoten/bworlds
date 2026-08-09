@@ -324,4 +324,37 @@ describe('procedural sound effect generator', () => {
       releaseGainMultiplier: undefined,
     });
   });
+
+  it('preserves deterministic distortion and saturation settings', () => {
+    const generator = createProceduralSoundEffectGenerator();
+    const effect = generator.generate({
+      kind: 'combat-weapon',
+      nowMs: 1750,
+      seed: 52,
+      recipe: {
+        id: 'combat-weapon-drive',
+        baseFrequency: 210,
+        baseDurationMs: 160,
+        baseVolume: 0.056,
+        waveform: 'sawtooth',
+        distortion: {
+          mode: 'distortion',
+          amount: 0.42,
+          outputGain: 0.76,
+          amountVariation: 0.08,
+          outputGainVariation: 0.05,
+        },
+      },
+    });
+
+    expect(effect.distortion).toEqual({
+      mode: 'distortion',
+      amount: expect.any(Number),
+      outputGain: expect.any(Number),
+    });
+    expect(effect.distortion?.amount).toBeGreaterThan(0.38);
+    expect(effect.distortion?.amount).toBeLessThan(0.46);
+    expect(effect.distortion?.outputGain).toBeGreaterThan(0.72);
+    expect(effect.distortion?.outputGain).toBeLessThan(0.8);
+  });
 });

@@ -40,6 +40,7 @@ export type ProceduralSoundEffect = {
   envelope?: ProceduralAmplitudeEnvelope;
   pitchEnvelope?: ProceduralPitchEnvelope;
   filters?: ProceduralSoundFilter[];
+  distortion?: ProceduralSoundDistortion;
   sweeps?: ProceduralSoundFrequencySweep[];
   layers?: ProceduralSoundEffectLayer[];
   emitter?: SoundPosition;
@@ -58,6 +59,7 @@ export type ProceduralSoundEffectLayer = {
   envelope?: ProceduralAmplitudeEnvelope;
   pitchEnvelope?: ProceduralPitchEnvelope;
   filters?: ProceduralSoundFilter[];
+  distortion?: ProceduralSoundDistortion;
   sweeps?: ProceduralSoundFrequencySweep[];
 };
 
@@ -105,6 +107,14 @@ export type ProceduralSoundFilterEnvelope = {
   releaseGainMultiplier?: number;
 };
 
+export type ProceduralSoundDistortionMode = 'distortion' | 'saturation';
+
+export type ProceduralSoundDistortion = {
+  mode: ProceduralSoundDistortionMode;
+  amount: number;
+  outputGain: number;
+};
+
 export type ProceduralSoundFrequencySweep = {
   curve: ProceduralSoundFrequencySweepCurve;
   targetMultiplier?: number;
@@ -132,6 +142,7 @@ export type ProceduralSoundRecipe = {
   envelope?: ProceduralAmplitudeEnvelopeRecipe;
   pitchEnvelope?: ProceduralPitchEnvelopeRecipe;
   filters?: readonly ProceduralSoundFilterRecipe[];
+  distortion?: ProceduralSoundDistortionRecipe;
   sweeps?: readonly ProceduralSoundFrequencySweepRecipe[];
   layers?: readonly ProceduralSoundLayerRecipe[];
 };
@@ -208,6 +219,14 @@ export type ProceduralSoundFilterEnvelopeRecipe = {
   releaseGainVariation?: number;
 };
 
+export type ProceduralSoundDistortionRecipe = {
+  mode: ProceduralSoundDistortionMode;
+  amount: number;
+  outputGain: number;
+  amountVariation?: number;
+  outputGainVariation?: number;
+};
+
 export type ProceduralSoundLayerRecipe = {
   id: string;
   waveform: SoundWaveform | readonly SoundWaveform[];
@@ -229,6 +248,7 @@ export type ProceduralSoundLayerRecipe = {
   envelope?: ProceduralAmplitudeEnvelopeRecipe;
   pitchEnvelope?: ProceduralPitchEnvelopeRecipe;
   filters?: readonly ProceduralSoundFilterRecipe[];
+  distortion?: ProceduralSoundDistortionRecipe;
   sweeps?: readonly ProceduralSoundFrequencySweepRecipe[];
 };
 
@@ -313,6 +333,11 @@ export function createProceduralSoundEffectGenerator(): ProceduralSoundEffectGen
         variationDepth,
         random
       );
+      const distortion = resolveSoundDistortion(
+        recipe.distortion,
+        variationDepth,
+        random
+      );
 
       return {
         kind,
@@ -325,6 +350,7 @@ export function createProceduralSoundEffectGenerator(): ProceduralSoundEffectGen
         envelope,
         pitchEnvelope,
         filters,
+        distortion,
         sweeps,
         layers,
         emitter,
@@ -414,6 +440,11 @@ function resolveEffectLayers(
         random
       ),
       filters: resolveSoundFilters(layerRecipe.filters, variationDepth, random),
+      distortion: resolveSoundDistortion(
+        layerRecipe.distortion,
+        variationDepth,
+        random
+      ),
       sweeps: resolveFrequencySweeps(
         layerRecipe.sweeps,
         frequency,
@@ -600,6 +631,40 @@ function resolveSoundFilters(
   }
 
   return filters;
+}
+
+function resolveSoundDistortion(
+  distortionRecipe: ProceduralSoundDistortionRecipe | undefined,
+  variationDepth: number,
+  random: () => number
+): ProceduralSoundDistortion | undefined {
+  if (!distortionRecipe) {
+    return undefined;
+  }
+
+  return {
+    mode: distortionRecipe.mode,
+    amount: clampValue(
+      varyScalar(
+        distortionRecipe.amount,
+        distortionRecipe.amountVariation ?? 0,
+        variationDepth,
+        random
+      ),
+      0,
+      1
+    ),
+    outputGain: clampValue(
+      varyScalar(
+        distortionRecipe.outputGain,
+        distortionRecipe.outputGainVariation ?? 0,
+        variationDepth,
+        random
+      ),
+      0.05,
+      2
+    ),
+  };
 }
 
 function resolveSoundFilterEnvelope(
