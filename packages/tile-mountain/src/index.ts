@@ -1,4 +1,4 @@
-import { hash2D } from '@bworlds/core';
+import { hash2D, registerHashLabel } from '@bworlds/core';
 import { createSingleTilePlugin } from '@bworlds/plugin-api';
 import {
   createThresholdTerrainClassifier,
@@ -16,6 +16,14 @@ import type {
 } from '@bworlds/plugin-api';
 
 const styleCache = new Map<string, MountainStyle>();
+const MOUNTAIN_WIDTH_SEED = registerHashLabel('mountain-width');
+const MOUNTAIN_DEPTH_SEED = registerHashLabel('mountain-depth');
+const MOUNTAIN_UPPER_SEED = registerHashLabel('mountain-upper');
+const MOUNTAIN_ROTATION_A_SEED = registerHashLabel('mountain-rot-a');
+const MOUNTAIN_ROTATION_B_SEED = registerHashLabel('mountain-rot-b');
+const MOUNTAIN_ROTATION_C_SEED = registerHashLabel('mountain-rot-c');
+const MOUNTAIN_OFFSET_X_SEED = registerHashLabel('mountain-offset-x');
+const MOUNTAIN_OFFSET_Y_SEED = registerHashLabel('mountain-offset-y');
 const classifyMountainTile = createThresholdTerrainClassifier({
   kind: 'mountain',
   threshold: 0.72,
@@ -67,10 +75,10 @@ export function createMountainTilePlugin(): RuntimePlugin {
         const style = getMountainStyle(three);
         const peakScale = getMountainPeakScale(state, tileX, tileY);
         const height = 1.4 * peakScale;
-        const width = 0.9 + hash2D('mountain-width', tileX, tileY) * 0.22;
-        const depth = 0.9 + hash2D('mountain-depth', tileX, tileY) * 0.22;
+        const width = 0.9 + hash2D(MOUNTAIN_WIDTH_SEED, tileX, tileY) * 0.22;
+        const depth = 0.9 + hash2D(MOUNTAIN_DEPTH_SEED, tileX, tileY) * 0.22;
         const upperHeight =
-          height * (0.5 + hash2D('mountain-upper', tileX, tileY) * 0.16);
+          height * (0.5 + hash2D(MOUNTAIN_UPPER_SEED, tileX, tileY) * 0.16);
         const lowerHeight = height - upperHeight * 0.45;
 
         const base = new three.Mesh(
@@ -78,7 +86,7 @@ export function createMountainTilePlugin(): RuntimePlugin {
           style.mountainMaterial
         );
         base.position.set(tileX, lowerHeight * 0.5, tileY);
-        base.rotation.y = hash2D('mountain-rot-a', tileX, tileY) * Math.PI;
+        base.rotation.y = hash2D(MOUNTAIN_ROTATION_A_SEED, tileX, tileY) * Math.PI;
         base.scale.z = depth / width;
         group.add(base);
 
@@ -87,11 +95,11 @@ export function createMountainTilePlugin(): RuntimePlugin {
           style.mountainMaterial
         );
         upper.position.set(
-          tileX + (hash2D('mountain-offset-x', tileX, tileY) - 0.5) * 0.12,
+          tileX + (hash2D(MOUNTAIN_OFFSET_X_SEED, tileX, tileY) - 0.5) * 0.12,
           lowerHeight * 0.62 + upperHeight * 0.5,
-          tileY + (hash2D('mountain-offset-y', tileX, tileY) - 0.5) * 0.12
+          tileY + (hash2D(MOUNTAIN_OFFSET_Y_SEED, tileX, tileY) - 0.5) * 0.12
         );
-        upper.rotation.y = hash2D('mountain-rot-b', tileX, tileY) * Math.PI;
+        upper.rotation.y = hash2D(MOUNTAIN_ROTATION_B_SEED, tileX, tileY) * Math.PI;
         upper.scale.z = depth / width;
         group.add(upper);
 
@@ -109,7 +117,7 @@ export function createMountainTilePlugin(): RuntimePlugin {
             upper.position.y + upperHeight * 0.42,
             upper.position.z
           );
-          crown.rotation.y = hash2D('mountain-rot-c', tileX, tileY) * Math.PI;
+          crown.rotation.y = hash2D(MOUNTAIN_ROTATION_C_SEED, tileX, tileY) * Math.PI;
           crown.scale.z = depth / width;
           group.add(crown);
         }
@@ -145,24 +153,35 @@ function getMountainPeakScale(
   tileY: number
 ) {
   let scale = 1;
-  const neighbors = [
-    state.getCurrentTile(tileX, tileY - 1).kind,
-    state.getCurrentTile(tileX + 1, tileY).kind,
-    state.getCurrentTile(tileX, tileY + 1).kind,
-    state.getCurrentTile(tileX - 1, tileY).kind,
-  ];
-  const surroundingCount = neighbors.filter(
-    (kind) => kind === 'mountain'
-  ).length;
+  let surroundingCount = 0;
+  if (state.getCurrentTile(tileX, tileY - 1).kind === 'mountain') {
+    surroundingCount += 1;
+  }
+  if (state.getCurrentTile(tileX + 1, tileY).kind === 'mountain') {
+    surroundingCount += 1;
+  }
+  if (state.getCurrentTile(tileX, tileY + 1).kind === 'mountain') {
+    surroundingCount += 1;
+  }
+  if (state.getCurrentTile(tileX - 1, tileY).kind === 'mountain') {
+    surroundingCount += 1;
+  }
 
   if (surroundingCount === 4) {
     scale += 0.55;
-    const secondRing = [
-      state.getCurrentTile(tileX, tileY - 2).kind,
-      state.getCurrentTile(tileX + 2, tileY).kind,
-      state.getCurrentTile(tileX, tileY + 2).kind,
-      state.getCurrentTile(tileX - 2, tileY).kind,
-    ].filter((kind) => kind === 'mountain').length;
+    let secondRing = 0;
+    if (state.getCurrentTile(tileX, tileY - 2).kind === 'mountain') {
+      secondRing += 1;
+    }
+    if (state.getCurrentTile(tileX + 2, tileY).kind === 'mountain') {
+      secondRing += 1;
+    }
+    if (state.getCurrentTile(tileX, tileY + 2).kind === 'mountain') {
+      secondRing += 1;
+    }
+    if (state.getCurrentTile(tileX - 2, tileY).kind === 'mountain') {
+      secondRing += 1;
+    }
     scale += secondRing * 0.1;
   } else {
     scale += surroundingCount * 0.12;
