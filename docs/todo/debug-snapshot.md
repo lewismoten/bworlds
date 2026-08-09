@@ -423,11 +423,11 @@ Immediately you know where to look.
 
 # Resource-Budget Snapshot
 
-* [ ] Include every active soft limit.
-* [ ] Include every hard limit.
-* [ ] Include current utilization percentage.
-* [ ] Include highest utilization observed during sampling.
-* [ ] Include which limits caused quality reductions.
+* [X] Include every active soft limit.
+* [X] Include every hard limit.
+* [X] Include current utilization percentage.
+* [X] Include highest utilization observed during sampling.
+* [X] Include which limits caused quality reductions.
 * [ ] Include which optional features were dropped.
 * [ ] Include models automatically lowered to another LOD.
 * [ ] Include plugin requests rejected due to budget.

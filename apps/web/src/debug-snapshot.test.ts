@@ -422,6 +422,37 @@ describe('debug snapshot', () => {
       topRejectedPlugin: 'tile-forest',
       rejectionSummary: 'tile-forest:2, tile-town:1',
     });
+    expect(result.resourceBudget).toEqual({
+      currentUtilizationPct: 62.7,
+      highestUtilizationPctObserved: 62.7,
+      qualityReductionCauses: ['Target FPS reduced to 30'],
+      limits: {
+        frameMs: {
+          current: 22.4,
+          soft: 1000 / 42,
+          hard: 1000 / 28,
+          status: 'ok',
+        },
+        visibilityRadius: {
+          current: 14,
+          soft: 14,
+          hard: 10,
+          status: 'warning',
+        },
+        pendingBuildBudgetMs: {
+          current: 2.25,
+          soft: 2.25,
+          hard: 0.75,
+          status: 'ok',
+        },
+        pendingBuildTiles: {
+          current: 4,
+          soft: 4,
+          hard: 2,
+          status: 'ok',
+        },
+      },
+    });
     expect(result.resources).toMatchObject({
       uniqueMaterialCount: 24,
       totalGeometryReferences: 88,

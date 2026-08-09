@@ -191,6 +191,37 @@ export type DebugSnapshotExport = {
     topRejectedPlugin: string | null;
     rejectionSummary: string;
   };
+  resourceBudget: {
+    currentUtilizationPct: number;
+    highestUtilizationPctObserved: number;
+    qualityReductionCauses: string[];
+    limits: {
+      frameMs: {
+        current: number;
+        soft: number;
+        hard: number;
+        status: 'ok' | 'warning' | 'critical';
+      };
+      visibilityRadius: {
+        current: number;
+        soft: number;
+        hard: number;
+        status: 'ok' | 'warning' | 'critical';
+      };
+      pendingBuildBudgetMs: {
+        current: number;
+        soft: number;
+        hard: number;
+        status: 'ok' | 'warning' | 'critical';
+      };
+      pendingBuildTiles: {
+        current: number;
+        soft: number;
+        hard: number;
+        status: 'ok' | 'warning' | 'critical';
+      };
+    };
+  };
   resources: {
     totalMaterialReferences: number;
     uniqueMaterialCount: number;
@@ -256,6 +287,7 @@ export function buildDebugSnapshotExport(
     options.history.length > 0
       ? options.history.map((sample) => sample.fps)
       : [options.snapshot.fps];
+  const resourceBudgetSnapshot = buildResourceBudgetSnapshot(options);
   return {
     metadata: {
       timestamp: options.timestamp.toISOString(),
@@ -418,6 +450,7 @@ export function buildDebugSnapshotExport(
         options.snapshot.tileModelBudgetViolationTopPluginLabel?.trim() || null,
       rejectionSummary: options.snapshot.tileModelBudgetViolationSummary ?? '',
     },
+    resourceBudget: resourceBudgetSnapshot,
     history: options.history.map((sample) => ({
       t: roundTenths((sample.nowMs - latestHistoryTime) / 1000),
       fps: sample.fps,
@@ -448,6 +481,153 @@ export function formatDebugSnapshotFilename(timestamp: Date): string {
   const minutes = timestamp.getUTCMinutes().toString().padStart(2, '0');
   const seconds = timestamp.getUTCSeconds().toString().padStart(2, '0');
   return `bworlds-debug-${year}${month}${day}-${hours}${minutes}${seconds}.json`;
+}
+
+function buildResourceBudgetSnapshot(
+  options: DebugSnapshotExportOptions
+): DebugSnapshotExport['resourceBudget'] {
+  const frameCurrentUtilizationPct = getIncreasingMetricUtilizationPct(
+    options.snapshot.frameMs,
+    options.performanceBudget.caps.frameMs.hard
+  );
+  const framePeakUtilizationPct = Math.max(
+    frameCurrentUtilizationPct,
+    ...options.history.map((sample) =>
+      getIncreasingMetricUtilizationPct(
+        sample.frameMs,
+        options.performanceBudget.caps.frameMs.hard
+      )
+    )
+  );
+  const visibilityCurrentUtilizationPct = getDecreasingMetricUtilizationPct(
+    options.performanceBudget.visibilityRadius,
+    options.performanceBudget.caps.visibilityRadius.full,
+    options.performanceBudget.caps.visibilityRadius.minimum
+  );
+  const pendingBuildBudgetCurrentUtilizationPct = getDecreasingMetricUtilizationPct(
+    options.performanceBudget.pendingBuildBudgetMs,
+    options.performanceBudget.caps.pendingBuildBudgetMs.maximum,
+    options.performanceBudget.caps.pendingBuildBudgetMs.minimum
+  );
+  const pendingBuildTilesCurrentUtilizationPct = getDecreasingMetricUtilizationPct(
+    options.performanceBudget.maxPendingBuildTiles,
+    options.performanceBudget.caps.pendingBuildTiles.soft,
+    options.performanceBudget.caps.pendingBuildTiles.hard
+  );
+  const currentUtilizationPct = Math.max(
+    frameCurrentUtilizationPct,
+    visibilityCurrentUtilizationPct,
+    pendingBuildBudgetCurrentUtilizationPct,
+    pendingBuildTilesCurrentUtilizationPct
+  );
+
+  return {
+    currentUtilizationPct: roundTenths(currentUtilizationPct),
+    highestUtilizationPctObserved: roundTenths(
+      Math.max(
+        framePeakUtilizationPct,
+        visibilityCurrentUtilizationPct,
+        pendingBuildBudgetCurrentUtilizationPct,
+        pendingBuildTilesCurrentUtilizationPct
+      )
+    ),
+    qualityReductionCauses: parseQualityLimiterList(options.graphicsQuality.limiters),
+    limits: {
+      frameMs: {
+        current: options.snapshot.frameMs,
+        soft: options.performanceBudget.caps.frameMs.soft,
+        hard: options.performanceBudget.caps.frameMs.hard,
+        status: getIncreasingMetricStatus(
+          options.snapshot.frameMs,
+          options.performanceBudget.caps.frameMs.soft,
+          options.performanceBudget.caps.frameMs.hard
+        ),
+      },
+      visibilityRadius: {
+        current: options.performanceBudget.visibilityRadius,
+        soft: options.performanceBudget.caps.visibilityRadius.reduced,
+        hard: options.performanceBudget.caps.visibilityRadius.minimum,
+        status: getDecreasingMetricStatus(
+          options.performanceBudget.visibilityRadius,
+          options.performanceBudget.caps.visibilityRadius.full,
+          options.performanceBudget.caps.visibilityRadius.minimum
+        ),
+      },
+      pendingBuildBudgetMs: {
+        current: options.performanceBudget.pendingBuildBudgetMs,
+        soft: options.performanceBudget.caps.pendingBuildBudgetMs.maximum,
+        hard: options.performanceBudget.caps.pendingBuildBudgetMs.minimum,
+        status: getDecreasingMetricStatus(
+          options.performanceBudget.pendingBuildBudgetMs,
+          options.performanceBudget.caps.pendingBuildBudgetMs.maximum,
+          options.performanceBudget.caps.pendingBuildBudgetMs.minimum
+        ),
+      },
+      pendingBuildTiles: {
+        current: options.performanceBudget.maxPendingBuildTiles,
+        soft: options.performanceBudget.caps.pendingBuildTiles.soft,
+        hard: options.performanceBudget.caps.pendingBuildTiles.hard,
+        status: getDecreasingMetricStatus(
+          options.performanceBudget.maxPendingBuildTiles,
+          options.performanceBudget.caps.pendingBuildTiles.soft,
+          options.performanceBudget.caps.pendingBuildTiles.hard
+        ),
+      },
+    },
+  };
+}
+
+function getIncreasingMetricUtilizationPct(current: number, hardLimit: number): number {
+  if (hardLimit <= 0) {
+    return 0;
+  }
+  return (current / hardLimit) * 100;
+}
+
+function getDecreasingMetricUtilizationPct(
+  current: number,
+  fullValue: number,
+  hardLimit: number
+): number {
+  if (fullValue <= hardLimit) {
+    return 0;
+  }
+  return ((fullValue - current) / (fullValue - hardLimit)) * 100;
+}
+
+function getIncreasingMetricStatus(
+  current: number,
+  softLimit: number,
+  hardLimit: number
+): 'ok' | 'warning' | 'critical' {
+  if (current >= hardLimit) {
+    return 'critical';
+  }
+  if (current >= softLimit) {
+    return 'warning';
+  }
+  return 'ok';
+}
+
+function getDecreasingMetricStatus(
+  current: number,
+  fullValue: number,
+  hardLimit: number
+): 'ok' | 'warning' | 'critical' {
+  if (current <= hardLimit) {
+    return 'critical';
+  }
+  if (current < fullValue) {
+    return 'warning';
+  }
+  return 'ok';
+}
+
+function parseQualityLimiterList(limiters: string): string[] {
+  return limiters
+    .split(',')
+    .map((entry) => entry.trim())
+    .filter((entry) => entry.length > 0 && entry !== 'None');
 }
 
 function roundTenths(value: number): number {
