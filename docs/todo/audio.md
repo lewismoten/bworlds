@@ -84,7 +84,7 @@
 - [x] Support distortion and saturation for impacts, machinery, monsters, and aggressive sounds.
 - [x] Support delay and echo.
 - [x] Support procedural reverb or reusable impulse-response environments.
-- [ ] Support tremolo through amplitude modulation.
+- [x] Support tremolo through amplitude modulation.
 - [ ] Support vibrato through frequency modulation.
 - [ ] Support frequency modulation for metallic, magical, bell-like, and unusual sounds.
 - [ ] Support ring modulation for unnatural, technological, and magical sounds.

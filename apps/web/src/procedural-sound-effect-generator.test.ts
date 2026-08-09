@@ -436,4 +436,37 @@ describe('procedural sound effect generator', () => {
     expect(effect.reverb?.toneHz).toBeGreaterThan(3000);
     expect(effect.reverb?.toneHz).toBeLessThan(3400);
   });
+
+  it('preserves deterministic tremolo modulation settings', () => {
+    const generator = createProceduralSoundEffectGenerator();
+    const effect = generator.generate({
+      kind: 'wind',
+      nowMs: 2250,
+      seed: 111,
+      recipe: {
+        id: 'wind-tremolo',
+        baseFrequency: 180,
+        baseDurationMs: 680,
+        baseVolume: 0.018,
+        waveform: 'triangle',
+        tremolo: {
+          rateHz: 4.2,
+          depth: 0.28,
+          waveform: 'sine',
+          rateVariation: 0.08,
+          depthVariation: 0.06,
+        },
+      },
+    });
+
+    expect(effect.tremolo).toEqual({
+      rateHz: expect.any(Number),
+      depth: expect.any(Number),
+      waveform: 'sine',
+    });
+    expect(effect.tremolo?.rateHz).toBeGreaterThan(3.8);
+    expect(effect.tremolo?.rateHz).toBeLessThan(4.6);
+    expect(effect.tremolo?.depth).toBeGreaterThan(0.25);
+    expect(effect.tremolo?.depth).toBeLessThan(0.31);
+  });
 });

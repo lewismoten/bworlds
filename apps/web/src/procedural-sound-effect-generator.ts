@@ -43,6 +43,7 @@ export type ProceduralSoundEffect = {
   distortion?: ProceduralSoundDistortion;
   delay?: ProceduralSoundDelay;
   reverb?: ProceduralSoundReverb;
+  tremolo?: ProceduralSoundTremolo;
   sweeps?: ProceduralSoundFrequencySweep[];
   layers?: ProceduralSoundEffectLayer[];
   emitter?: SoundPosition;
@@ -64,6 +65,7 @@ export type ProceduralSoundEffectLayer = {
   distortion?: ProceduralSoundDistortion;
   delay?: ProceduralSoundDelay;
   reverb?: ProceduralSoundReverb;
+  tremolo?: ProceduralSoundTremolo;
   sweeps?: ProceduralSoundFrequencySweep[];
 };
 
@@ -133,6 +135,12 @@ export type ProceduralSoundReverb = {
   toneHz: number;
 };
 
+export type ProceduralSoundTremolo = {
+  rateHz: number;
+  depth: number;
+  waveform: SoundWaveform;
+};
+
 export type ProceduralSoundFrequencySweep = {
   curve: ProceduralSoundFrequencySweepCurve;
   targetMultiplier?: number;
@@ -163,6 +171,7 @@ export type ProceduralSoundRecipe = {
   distortion?: ProceduralSoundDistortionRecipe;
   delay?: ProceduralSoundDelayRecipe;
   reverb?: ProceduralSoundReverbRecipe;
+  tremolo?: ProceduralSoundTremoloRecipe;
   sweeps?: readonly ProceduralSoundFrequencySweepRecipe[];
   layers?: readonly ProceduralSoundLayerRecipe[];
 };
@@ -268,6 +277,14 @@ export type ProceduralSoundReverbRecipe = {
   toneVariation?: number;
 };
 
+export type ProceduralSoundTremoloRecipe = {
+  rateHz: number;
+  depth: number;
+  waveform: SoundWaveform | readonly SoundWaveform[];
+  rateVariation?: number;
+  depthVariation?: number;
+};
+
 export type ProceduralSoundLayerRecipe = {
   id: string;
   waveform: SoundWaveform | readonly SoundWaveform[];
@@ -292,6 +309,7 @@ export type ProceduralSoundLayerRecipe = {
   distortion?: ProceduralSoundDistortionRecipe;
   delay?: ProceduralSoundDelayRecipe;
   reverb?: ProceduralSoundReverbRecipe;
+  tremolo?: ProceduralSoundTremoloRecipe;
   sweeps?: readonly ProceduralSoundFrequencySweepRecipe[];
 };
 
@@ -383,6 +401,11 @@ export function createProceduralSoundEffectGenerator(): ProceduralSoundEffectGen
       );
       const delay = resolveSoundDelay(recipe.delay, variationDepth, random);
       const reverb = resolveSoundReverb(recipe.reverb, variationDepth, random);
+      const tremolo = resolveSoundTremolo(
+        recipe.tremolo,
+        variationDepth,
+        random
+      );
 
       return {
         kind,
@@ -398,6 +421,7 @@ export function createProceduralSoundEffectGenerator(): ProceduralSoundEffectGen
         distortion,
         delay,
         reverb,
+        tremolo,
         sweeps,
         layers,
         emitter,
@@ -494,6 +518,7 @@ function resolveEffectLayers(
       ),
       delay: resolveSoundDelay(layerRecipe.delay, variationDepth, random),
       reverb: resolveSoundReverb(layerRecipe.reverb, variationDepth, random),
+      tremolo: resolveSoundTremolo(layerRecipe.tremolo, variationDepth, random),
       sweeps: resolveFrequencySweeps(
         layerRecipe.sweeps,
         frequency,
@@ -810,6 +835,40 @@ function resolveSoundReverb(
       80,
       20_000
     ),
+  };
+}
+
+function resolveSoundTremolo(
+  tremoloRecipe: ProceduralSoundTremoloRecipe | undefined,
+  variationDepth: number,
+  random: () => number
+): ProceduralSoundTremolo | undefined {
+  if (!tremoloRecipe) {
+    return undefined;
+  }
+
+  return {
+    rateHz: clampValue(
+      varyScalar(
+        tremoloRecipe.rateHz,
+        tremoloRecipe.rateVariation ?? 0,
+        variationDepth,
+        random
+      ),
+      0.1,
+      40
+    ),
+    depth: clampValue(
+      varyScalar(
+        tremoloRecipe.depth,
+        tremoloRecipe.depthVariation ?? 0,
+        variationDepth,
+        random
+      ),
+      0,
+      1
+    ),
+    waveform: resolveWaveform(tremoloRecipe.waveform, random),
   };
 }
 
