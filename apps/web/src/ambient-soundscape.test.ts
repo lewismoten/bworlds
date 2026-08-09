@@ -35,10 +35,47 @@ describe('ambient soundscape', () => {
       expect.objectContaining({
         kind: 'ocean',
         intensity: 0.58,
-        cadenceMultiplier: 1.18,
       })
     );
+    expect((layers[1]?.cadenceMultiplier ?? 0) > 1.18).toBe(true);
+    expect(layers[1]?.signature).toContain('terrain:forest');
     expect(layers[0]?.signature).not.toBe(layers[1]?.signature);
+  });
+
+  it('lets nearby terrain subtly influence the primary ambient layer', () => {
+    const isolatedForest = resolveAmbientPlaybackLayers({
+      profile: {
+        kind: 'forest',
+        intensity: 0.9,
+        emitter: { x: 2, y: 0 },
+      },
+      listener: { x: 0, y: 0 },
+      nowMs: 0,
+    })[0];
+    const coastalForest = resolveAmbientPlaybackLayers({
+      profile: {
+        kind: 'forest',
+        intensity: 0.9,
+        emitter: { x: 2, y: 0 },
+        blendedLayers: [
+          {
+            kind: 'ocean',
+            intensity: 0.58,
+            emitter: { x: 3, y: 0 },
+          },
+        ],
+      },
+      listener: { x: 0, y: 0 },
+      nowMs: 0,
+    })[0];
+
+    expect(coastalForest?.cadenceMultiplier).toBeLessThan(
+      isolatedForest?.cadenceMultiplier ?? Infinity
+    );
+    expect(coastalForest?.volumeMultiplier).toBeGreaterThan(
+      isolatedForest?.volumeMultiplier ?? 0
+    );
+    expect(coastalForest?.signature).not.toBe(isolatedForest?.signature);
   });
 
   it('cycles biome identity variants over time for repeated ambience', () => {

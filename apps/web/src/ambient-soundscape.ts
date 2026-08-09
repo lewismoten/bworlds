@@ -13,6 +13,7 @@ import {
   resolveAmbientIdentityVariantModifiers,
   resolveAmbientIdentityVariants,
 } from './ambient-presets.ts';
+import { resolveAmbientNearbyTerrainInfluence } from './ambient-terrain-influence.ts';
 
 export type AmbientPlaybackLayer = {
   kind: NearbyAmbientKind;
@@ -47,11 +48,19 @@ export function resolveAmbientPlaybackLayers(options: {
     nowMs: options.nowMs,
     cadenceMultiplier: 1,
     volumeMultiplier: 1,
+    nearbyKinds: (profile.blendedLayers ?? []).map((layer) => layer.kind),
     dayPhase,
     season,
   });
-  const blendedLayers = (profile.blendedLayers ?? []).map((layer, index) =>
-    createAmbientPlaybackLayer({
+  const blendedKinds = (profile.blendedLayers ?? []).map((layer) => layer.kind);
+  const blendedLayers = (profile.blendedLayers ?? []).map((layer, index) => {
+    const nearbyKinds = [
+      profile.kind,
+      ...blendedKinds.filter(
+        (candidateKind, candidateIndex) => candidateIndex !== index
+      ),
+    ];
+    return createAmbientPlaybackLayer({
       kind: layer.kind,
       intensity: layer.intensity,
       emitter: layer.emitter,
@@ -60,10 +69,11 @@ export function resolveAmbientPlaybackLayers(options: {
       nowMs: options.nowMs,
       cadenceMultiplier: 1.18 + index * 0.08,
       volumeMultiplier: 0.62 - index * 0.08,
+      nearbyKinds,
       dayPhase,
       season,
-    })
-  );
+    });
+  });
   return [primary, ...blendedLayers];
 }
 
@@ -76,6 +86,7 @@ function createAmbientPlaybackLayer(options: {
   nowMs: number;
   cadenceMultiplier: number;
   volumeMultiplier: number;
+  nearbyKinds: readonly NearbyAmbientKind[];
   dayPhase: AmbientDayPhase;
   season: AmbientSeason;
 }): AmbientPlaybackLayer {
@@ -93,6 +104,10 @@ function createAmbientPlaybackLayer(options: {
     season: options.season,
     identityVariant,
   });
+  const terrainInfluence = resolveAmbientNearbyTerrainInfluence({
+    kind: options.kind,
+    nearbyKinds: options.nearbyKinds,
+  });
   const emitterX = Math.round(options.emitter.x);
   const emitterY = Math.round(options.emitter.y);
   return {
@@ -102,10 +117,14 @@ function createAmbientPlaybackLayer(options: {
     listener: options.listener,
     identityVariant,
     cadenceMultiplier:
-      options.cadenceMultiplier * layerModifiers.cadenceMultiplier,
+      options.cadenceMultiplier *
+      layerModifiers.cadenceMultiplier *
+      terrainInfluence.cadenceMultiplier,
     volumeMultiplier: Math.max(
       0.3,
-      options.volumeMultiplier * layerModifiers.volumeMultiplier
+      options.volumeMultiplier *
+        layerModifiers.volumeMultiplier *
+        terrainInfluence.volumeMultiplier
     ),
     signature: [
       options.kind,
@@ -115,6 +134,7 @@ function createAmbientPlaybackLayer(options: {
       options.dayPhase,
       options.season,
       Math.round(options.intensity * 100),
+      terrainInfluence.signatureSuffix,
     ].join(':'),
   };
 }

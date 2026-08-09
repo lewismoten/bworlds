@@ -172,7 +172,7 @@
 - [ ] Give magical environments their own unnatural ambient layers.
 - [x] Generate ambient density based on how biologically active an area should be.
 - [ ] Vary ambient sounds according to altitude.
-- [ ] Vary ambient sounds according to nearby terrain.
+- [x] Vary ambient sounds according to nearby terrain.
 - [x] Blend ambience smoothly when traveling between biomes.
 - [x] Avoid abruptly replacing the entire ambient soundscape at biome boundaries.
 
