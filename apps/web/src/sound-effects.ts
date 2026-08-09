@@ -313,7 +313,8 @@ function resolveProceduralSoundRecipe(
   kind: SoundEffectKind,
   tileKind: SurfaceKind | undefined,
   profile: SurfaceAudioProfile,
-  variantOffset: number
+  variantOffset: number,
+  durationMsOverride?: number
 ) {
   return {
     id: kind,
@@ -323,7 +324,8 @@ function resolveProceduralSoundRecipe(
       profile,
       variantOffset
     ),
-    baseDurationMs: resolveBaseSoundEffectDurationMs(kind),
+    baseDurationMs:
+      durationMsOverride ?? resolveBaseSoundEffectDurationMs(kind),
     baseVolume: resolveBaseSoundEffectVolume(kind, profile),
     waveform: resolveBaseSoundEffectWaveform(kind, tileKind, profile),
     noiseColor: resolveBaseSoundEffectNoiseColor(kind),
@@ -1141,7 +1143,8 @@ export function createSoundEffectController(
     nowMs: number,
     tileKind?: SurfaceKind,
     emitter?: SoundPosition,
-    listener?: SoundPosition
+    listener?: SoundPosition,
+    durationMsOverride?: number
   ): ProceduralSoundEffect {
     const profile = getSurfaceAudioProfile(tileKind);
     const variationIndex = footstepVariant;
@@ -1155,7 +1158,8 @@ export function createSoundEffectController(
         kind,
         tileKind,
         profile,
-        variantOffset
+        variantOffset,
+        durationMsOverride
       ),
       emitter,
       listener,
@@ -1168,14 +1172,16 @@ export function createSoundEffectController(
     tileKind?: SurfaceKind,
     emitter?: SoundPosition,
     listener?: SoundPosition,
-    volumeMultiplier = 1
+    volumeMultiplier = 1,
+    durationMsOverride?: number
   ) {
     const effect = createProceduralEffect(
       kind,
       nowMs,
       tileKind,
       emitter,
-      listener
+      listener,
+      durationMsOverride
     );
     sink.play({
       ...effect,
@@ -1224,7 +1230,7 @@ export function createSoundEffectController(
         kind: 'advancement',
         nowMs,
         frequency: resolveAdvancementFrequency(level),
-        durationMs: 260,
+        durationMs: getProgressionSoundDurationMs(level),
         volume: 0.052,
         waveform: 'sine',
         emitter,
@@ -1247,7 +1253,15 @@ export function createSoundEffectController(
       lastJumpAtMs = nowMs;
       lastPrioritySoundAtMs = nowMs;
       lastPrioritySoundStrength = 0.36;
-      play('jump', nowMs, tileKind, emitter, listener);
+      play(
+        'jump',
+        nowMs,
+        tileKind,
+        emitter,
+        listener,
+        1,
+        getMovementSoundDurationMs('jump', getSurfaceAudioProfile(tileKind))
+      );
     },
     triggerBlockedMovement({ nowMs, tileKind, emitter, listener }) {
       if (!shouldPlayBlockedMovementSound(tileKind)) {
@@ -1259,7 +1273,15 @@ export function createSoundEffectController(
       lastBlockedAtMs = nowMs;
       lastPrioritySoundAtMs = nowMs;
       lastPrioritySoundStrength = 0.52;
-      play('blocked', nowMs, tileKind, emitter, listener);
+      play(
+        'blocked',
+        nowMs,
+        tileKind,
+        emitter,
+        listener,
+        1,
+        getMovementSoundDurationMs('blocked', getSurfaceAudioProfile(tileKind))
+      );
     },
     triggerCombat({ nowMs, style, emitter, listener }) {
       const signature = `${style}:${Math.round(emitter?.x ?? 0)}:${Math.round(emitter?.y ?? 0)}`;
@@ -1322,7 +1344,8 @@ export function createSoundEffectController(
             'rail',
             nearbyTrain.emitter,
             nearbyTrain.listener ?? listener,
-            ambienceDuckingGain
+            ambienceDuckingGain,
+            getTrainEngineDurationMs(nearbyTrain.progress)
           );
         }
         if (
@@ -1337,7 +1360,9 @@ export function createSoundEffectController(
             nowMs,
             'rail',
             nearbyTrain.emitter,
-            nearbyTrain.listener ?? listener
+            nearbyTrain.listener ?? listener,
+            1,
+            getTrainWhistleDurationMs(nearbyTrain.progress)
           );
         }
         if (
@@ -1352,7 +1377,9 @@ export function createSoundEffectController(
             frequency: resolvePaddleBoatCalliopeFrequency(
               nearbyPaddleBoat.progress
             ),
-            durationMs: 1180,
+            durationMs: getPaddleBoatCalliopeDurationMs(
+              nearbyPaddleBoat.progress
+            ),
             volume: 0.034 * ambienceDuckingGain,
             waveform: 'triangle',
             emitter: nearbyPaddleBoat.emitter,
@@ -1376,7 +1403,9 @@ export function createSoundEffectController(
               frequency: resolveSteamWhistleFrequency(
                 nearbyPaddleBoat.whistlePhase
               ),
-              durationMs: 1050,
+              durationMs: getSteamWhistleDurationMs(
+                nearbyPaddleBoat.whistlePhase
+              ),
               volume: 0.048,
               waveform: 'square',
               emitter: nearbyPaddleBoat.emitter,
@@ -1413,7 +1442,10 @@ export function createSoundEffectController(
               nearbyAmbient.kind,
               nearbyAmbient.intensity
             ),
-            durationMs: 1680,
+            durationMs: getAmbientSoundDurationMs(
+              nearbyAmbient.kind,
+              nearbyAmbient.intensity
+            ),
             volume:
               getAmbientSoundVolume(
                 nearbyAmbient.kind,
@@ -1433,7 +1465,15 @@ export function createSoundEffectController(
             getForestWindCadenceMs(windStrength ?? weatherIntensity ?? 0)
         ) {
           lastWindAtMs = nowMs;
-          play('wind', nowMs, tileKind, emitter, listener, ambienceDuckingGain);
+          play(
+            'wind',
+            nowMs,
+            tileKind,
+            emitter,
+            listener,
+            ambienceDuckingGain,
+            getWindSoundDurationMs(windStrength ?? weatherIntensity ?? 0)
+          );
         }
       } else {
         lastSteamWhistleSignature = '';
@@ -1445,7 +1485,18 @@ export function createSoundEffectController(
       }
 
       if (previousJumping && !isJumping) {
-        play('landing', nowMs, tileKind, emitter, listener);
+        play(
+          'landing',
+          nowMs,
+          tileKind,
+          emitter,
+          listener,
+          1,
+          getMovementSoundDurationMs(
+            'landing',
+            getSurfaceAudioProfile(tileKind)
+          )
+        );
       }
       previousJumping = isJumping;
 
@@ -1458,7 +1509,15 @@ export function createSoundEffectController(
         return;
       }
       lastFootstepAtMs = nowMs;
-      play('footstep', nowMs, tileKind, emitter, listener);
+      play(
+        'footstep',
+        nowMs,
+        tileKind,
+        emitter,
+        listener,
+        1,
+        getMovementSoundDurationMs('footstep', profile)
+      );
     },
   };
 }
@@ -1619,6 +1678,74 @@ export function getTrainEngineCadenceMs(): number {
   return 720;
 }
 
+export function getMovementSoundDurationMs(
+  kind: 'footstep' | 'jump' | 'landing' | 'blocked',
+  profile: SurfaceAudioProfile
+): number {
+  switch (kind) {
+    case 'jump':
+      return Math.round(clampValue(profile.cadenceMs * 0.48, 110, 180));
+    case 'landing':
+      return Math.round(clampValue(profile.cadenceMs * 0.42, 95, 165));
+    case 'blocked':
+      return Math.round(clampValue(profile.cadenceMs * 0.38, 85, 145));
+    case 'footstep':
+    default:
+      return Math.round(clampValue(profile.cadenceMs * 0.3, 70, 120));
+  }
+}
+
+export function getAmbientSoundDurationMs(
+  kind: AmbientSoundKind,
+  intensity: number | undefined
+): number {
+  const clamped = clampValue(intensity ?? 0.5, 0, 1);
+  switch (kind) {
+    case 'river':
+      return Math.round(clampValue(1500 + clamped * 420, 1500, 1920));
+    case 'forest':
+      return Math.round(clampValue(1440 + clamped * 400, 1440, 1840));
+    case 'plains':
+      return Math.round(clampValue(1380 + clamped * 360, 1380, 1740));
+    case 'mountain':
+      return Math.round(clampValue(1560 + clamped * 420, 1560, 1980));
+    case 'cave':
+      return Math.round(clampValue(1620 + clamped * 480, 1620, 2100));
+    case 'settlement':
+      return Math.round(clampValue(1480 + clamped * 320, 1480, 1800));
+    case 'ruins':
+      return Math.round(clampValue(1540 + clamped * 360, 1540, 1900));
+    case 'ocean':
+    default:
+      return Math.round(clampValue(1580 + clamped * 420, 1580, 2000));
+  }
+}
+
+export function getWindSoundDurationMs(
+  windStrength: number | undefined
+): number {
+  const clamped = clampValue(windStrength ?? 0, 0, 1);
+  return Math.round(clampValue(520 + clamped * 360, 520, 880));
+}
+
+export function getTrainEngineDurationMs(progress: number | undefined): number {
+  const clamped =
+    typeof progress === 'number'
+      ? clampValue(Math.abs(progress - 0.5) * 2, 0, 1)
+      : 0.5;
+  return Math.round(clampValue(360 + (1 - clamped) * 140, 360, 500));
+}
+
+export function getTrainWhistleDurationMs(
+  progress: number | undefined
+): number {
+  const clamped =
+    typeof progress === 'number'
+      ? clampValue(Math.abs(progress - 0.5) * 2, 0, 1)
+      : 1;
+  return Math.round(clampValue(760 + clamped * 180, 760, 940));
+}
+
 export function shouldPlayTrainWhistle(progress: number | undefined): boolean {
   if (typeof progress !== 'number') {
     return false;
@@ -1628,6 +1755,14 @@ export function shouldPlayTrainWhistle(progress: number | undefined): boolean {
 
 export function getPaddleBoatCalliopeCadenceMs(): number {
   return 2600;
+}
+
+export function getPaddleBoatCalliopeDurationMs(
+  progress: number | undefined
+): number {
+  const normalized =
+    typeof progress === 'number' ? ((progress % 1) + 1) % 1 : 0;
+  return Math.round(clampValue(980 + normalized * 260, 980, 1240));
 }
 
 export function resolvePaddleBoatCalliopeFrequency(
@@ -1651,6 +1786,12 @@ export function shouldPlaySteamWhistle(
   return whistlePhase === 'arrival' || whistlePhase === 'departure';
 }
 
+export function getSteamWhistleDurationMs(
+  whistlePhase?: 'arrival' | 'departure'
+): number {
+  return whistlePhase === 'arrival' ? 1180 : 980;
+}
+
 export function resolveSteamWhistleFrequency(
   whistlePhase?: 'arrival' | 'departure'
 ): number {
@@ -1668,6 +1809,11 @@ export function isMagicCombatStyle(style: CombatSoundStyle): boolean {
 
 export function getCombatSoundCadenceMs(style: CombatSoundStyle): number {
   return isMagicCombatStyle(style) ? 140 : 90;
+}
+
+export function getProgressionSoundDurationMs(level?: number): number {
+  const normalizedLevel = clampValue(Math.round(level ?? 1), 1, 99);
+  return Math.round(clampValue(220 + normalizedLevel * 6, 220, 420));
 }
 
 export function getCombatSoundDurationMs(style: CombatSoundStyle): number {

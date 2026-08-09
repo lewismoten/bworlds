@@ -6,14 +6,22 @@ import {
   getCombatSoundDurationMs,
   getCombatSoundVolume,
   getForestWindCadenceMs,
+  getAmbientSoundDurationMs,
   getPaddleBoatCalliopeCadenceMs,
+  getPaddleBoatCalliopeDurationMs,
+  getProgressionSoundDurationMs,
   normalizeSoundEffectVolume,
   resolveAmbienceDuckingGain,
   resolvePriorityDynamicRangeGain,
   resolveSoundEffectVolumeBounds,
   getSurfaceAudioFamily,
+  getMovementSoundDurationMs,
   getSurfaceAudioProfile,
   getSoundSpatialMix,
+  getSteamWhistleDurationMs,
+  getTrainEngineDurationMs,
+  getTrainWhistleDurationMs,
+  getWindSoundDurationMs,
   isMagicCombatStyle,
   resolveCombatSoundFrequency,
   resolveCombatSoundWaveform,
@@ -2997,6 +3005,7 @@ describe('sound effects', () => {
     expect((played[1]?.frequency ?? 0) > (played[0]?.frequency ?? 0)).toBe(
       true
     );
+    expect(played[1]?.durationMs).toBeGreaterThan(played[0]?.durationMs ?? 0);
   });
 
   it('provides cave and bridge audio profiles for later surface-specific effects', () => {
@@ -3187,6 +3196,18 @@ describe('sound effects', () => {
     expect((played[1]?.frequency ?? 0) > (played[0]?.frequency ?? 0)).toBe(
       true
     );
+    expect(played[0]?.durationMs).toBeGreaterThanOrEqual(
+      getTrainEngineDurationMs(0.04) * 0.95
+    );
+    expect(played[0]?.durationMs).toBeLessThanOrEqual(
+      getTrainEngineDurationMs(0.04) * 1.05
+    );
+    expect(played[1]?.durationMs).toBeGreaterThanOrEqual(
+      getTrainWhistleDurationMs(0.04) * 0.95
+    );
+    expect(played[1]?.durationMs).toBeLessThanOrEqual(
+      getTrainWhistleDurationMs(0.04) * 1.05
+    );
   });
 
   it('only whistles when trains are near station approach progress', () => {
@@ -3252,6 +3273,8 @@ describe('sound effects', () => {
     expect((played[1]?.frequency ?? 0) > (played[0]?.frequency ?? 0)).toBe(
       true
     );
+    expect(played[0]?.durationMs).toBe(getPaddleBoatCalliopeDurationMs(0.18));
+    expect(played[1]?.durationMs).toBe(getPaddleBoatCalliopeDurationMs(0.42));
   });
 
   it('maps paddle-boat progress into a stable calliope melody step', () => {
@@ -3313,9 +3336,128 @@ describe('sound effects', () => {
     });
 
     expect(played.filter((effect) => effect.kind === 'steam-whistle')).toEqual([
-      expect.objectContaining({ kind: 'steam-whistle', frequency: 370 }),
-      expect.objectContaining({ kind: 'steam-whistle', frequency: 294 }),
+      expect.objectContaining({
+        kind: 'steam-whistle',
+        frequency: 370,
+        durationMs: getSteamWhistleDurationMs('departure'),
+      }),
+      expect.objectContaining({
+        kind: 'steam-whistle',
+        frequency: 294,
+        durationMs: getSteamWhistleDurationMs('arrival'),
+      }),
     ]);
+  });
+
+  it('varies procedural movement and ambience durations from event context', () => {
+    const played: ProceduralSoundEffect[] = [];
+    const controller = createSoundEffectController({
+      play(effect) {
+        played.push(effect);
+      },
+    });
+
+    controller.update({
+      nowMs: 300,
+      walking: true,
+      isJumping: false,
+      viewMode: '3d',
+      tileKind: 'road',
+    });
+    controller.update({
+      nowMs: 700,
+      walking: true,
+      isJumping: false,
+      viewMode: '3d',
+      tileKind: 'cave-floor',
+    });
+    controller.update({
+      nowMs: 1000,
+      walking: false,
+      isJumping: false,
+      viewMode: '3d',
+      tileKind: 'forest',
+      nearbyAmbient: {
+        kind: 'forest',
+        intensity: 0.2,
+        emitter: { x: 1, y: 0 },
+      },
+      weatherKind: 'wind',
+      windStrength: 0.25,
+    });
+    controller.update({
+      nowMs: 3600,
+      walking: false,
+      isJumping: false,
+      viewMode: '3d',
+      tileKind: 'forest',
+      nearbyAmbient: {
+        kind: 'forest',
+        intensity: 0.9,
+        emitter: { x: 2, y: 0 },
+      },
+      weatherKind: 'wind',
+      windStrength: 0.95,
+    });
+
+    const roadStep = played.find(
+      (effect) => effect.kind === 'footstep' && effect.durationMs < 100
+    );
+    const caveStep = played.find(
+      (effect) => effect.kind === 'footstep' && effect.durationMs >= 100
+    );
+    const forestAmbient = played.filter(
+      (effect) => effect.kind === 'forest-ambience'
+    );
+    const winds = played.filter((effect) => effect.kind === 'wind');
+
+    expect(roadStep?.durationMs).toBeGreaterThanOrEqual(
+      getMovementSoundDurationMs('footstep', getSurfaceAudioProfile('road')) *
+        0.92
+    );
+    expect(roadStep?.durationMs).toBeLessThanOrEqual(
+      getMovementSoundDurationMs('footstep', getSurfaceAudioProfile('road')) *
+        1.08
+    );
+    expect(caveStep?.durationMs).toBeGreaterThanOrEqual(
+      getMovementSoundDurationMs(
+        'footstep',
+        getSurfaceAudioProfile('cave-floor')
+      ) * 0.92
+    );
+    expect(caveStep?.durationMs).toBeLessThanOrEqual(
+      getMovementSoundDurationMs(
+        'footstep',
+        getSurfaceAudioProfile('cave-floor')
+      ) * 1.08
+    );
+    expect((caveStep?.durationMs ?? 0) > (roadStep?.durationMs ?? 0)).toBe(
+      true
+    );
+    expect(forestAmbient[0]?.durationMs).toBeGreaterThanOrEqual(
+      getAmbientSoundDurationMs('forest', 0.2)
+    );
+    expect(forestAmbient[1]?.durationMs).toBeGreaterThanOrEqual(
+      getAmbientSoundDurationMs('forest', 0.9)
+    );
+    expect(
+      (forestAmbient[1]?.durationMs ?? 0) > (forestAmbient[0]?.durationMs ?? 0)
+    ).toBe(true);
+    expect(winds[0]?.durationMs).toBeGreaterThanOrEqual(
+      getWindSoundDurationMs(0.25) * 0.86
+    );
+    expect(winds[0]?.durationMs).toBeLessThanOrEqual(
+      getWindSoundDurationMs(0.25) * 1.14
+    );
+    expect(winds[1]?.durationMs).toBeGreaterThanOrEqual(
+      getWindSoundDurationMs(0.95) * 0.86
+    );
+    expect(winds[1]?.durationMs).toBeLessThanOrEqual(
+      getWindSoundDurationMs(0.95) * 1.14
+    );
+    expect((winds[1]?.durationMs ?? 0) > (winds[0]?.durationMs ?? 0)).toBe(
+      true
+    );
   });
 
   it('only whistles for explicit arrival or departure phases', () => {
@@ -3333,6 +3475,9 @@ describe('sound effects', () => {
     expect(getCombatSoundCadenceMs('arcane')).toBe(140);
     expect(getCombatSoundDurationMs('blunt')).toBe(180);
     expect(getCombatSoundDurationMs('healing')).toBe(320);
+    expect(getProgressionSoundDurationMs(12)).toBeGreaterThan(
+      getProgressionSoundDurationMs(2)
+    );
     expect(getCombatSoundVolume('bow')).toBeCloseTo(0.048, 6);
     expect(resolveCombatSoundFrequency('frost')).toBe(196);
     expect(resolveCombatSoundWaveform('healing')).toBe('sine');
