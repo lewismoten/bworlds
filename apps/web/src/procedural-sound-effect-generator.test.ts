@@ -208,4 +208,49 @@ describe('procedural sound effect generator', () => {
       releaseMs: 28,
     });
   });
+
+  it('preserves resolved pitch envelopes independently from volume envelopes', () => {
+    const generator = createProceduralSoundEffectGenerator();
+    const effect = generator.generate({
+      kind: 'combat-magic',
+      nowMs: 1400,
+      seed: 13,
+      recipe: {
+        id: 'magic-pitch-envelope',
+        baseFrequency: 244,
+        baseDurationMs: 320,
+        baseVolume: 0.05,
+        waveform: 'triangle',
+        envelope: {
+          attackMs: 12,
+          decayMs: 54,
+          sustainLevel: 0.62,
+          releaseMs: 68,
+        },
+        pitchEnvelope: {
+          attackMs: 18,
+          decayMs: 44,
+          peakMultiplier: 1.05,
+          sustainMultiplier: 0.94,
+          releaseMs: 62,
+          releaseTargetMultiplier: 0.9,
+        },
+      },
+    });
+
+    expect(effect.envelope).toEqual({
+      attackMs: 12,
+      decayMs: 54,
+      sustainLevel: 0.62,
+      releaseMs: 68,
+    });
+    expect(effect.pitchEnvelope).toEqual({
+      attackMs: 18,
+      decayMs: 44,
+      peakMultiplier: 1.05,
+      sustainMultiplier: 0.94,
+      releaseMs: 62,
+      releaseTargetMultiplier: 0.9,
+    });
+  });
 });

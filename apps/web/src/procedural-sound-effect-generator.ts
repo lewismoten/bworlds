@@ -38,6 +38,7 @@ export type ProceduralSoundEffect = {
   waveform: SoundWaveform;
   noiseColor?: ProceduralNoiseColor;
   envelope?: ProceduralAmplitudeEnvelope;
+  pitchEnvelope?: ProceduralPitchEnvelope;
   sweeps?: ProceduralSoundFrequencySweep[];
   layers?: ProceduralSoundEffectLayer[];
   emitter?: SoundPosition;
@@ -54,6 +55,7 @@ export type ProceduralSoundEffectLayer = {
   waveform: SoundWaveform;
   noiseColor?: ProceduralNoiseColor;
   envelope?: ProceduralAmplitudeEnvelope;
+  pitchEnvelope?: ProceduralPitchEnvelope;
   sweeps?: ProceduralSoundFrequencySweep[];
 };
 
@@ -62,6 +64,15 @@ export type ProceduralAmplitudeEnvelope = {
   decayMs: number;
   sustainLevel: number;
   releaseMs: number;
+};
+
+export type ProceduralPitchEnvelope = {
+  attackMs: number;
+  decayMs: number;
+  peakMultiplier: number;
+  sustainMultiplier: number;
+  releaseMs: number;
+  releaseTargetMultiplier: number;
 };
 
 export type ProceduralSoundFrequencySweepCurve = 'linear' | 'exponential';
@@ -91,6 +102,7 @@ export type ProceduralSoundRecipe = {
   minVolume?: number;
   maxVolume?: number;
   envelope?: ProceduralAmplitudeEnvelopeRecipe;
+  pitchEnvelope?: ProceduralPitchEnvelopeRecipe;
   sweeps?: readonly ProceduralSoundFrequencySweepRecipe[];
   layers?: readonly ProceduralSoundLayerRecipe[];
 };
@@ -104,6 +116,21 @@ export type ProceduralAmplitudeEnvelopeRecipe = {
   decayVariation?: number;
   sustainVariation?: number;
   releaseVariation?: number;
+};
+
+export type ProceduralPitchEnvelopeRecipe = {
+  attackMs: number;
+  decayMs: number;
+  peakMultiplier: number;
+  sustainMultiplier: number;
+  releaseMs: number;
+  releaseTargetMultiplier: number;
+  attackVariation?: number;
+  decayVariation?: number;
+  peakVariation?: number;
+  sustainVariation?: number;
+  releaseVariation?: number;
+  releaseTargetVariation?: number;
 };
 
 export type ProceduralSoundFrequencySweepRecipe = {
@@ -133,6 +160,7 @@ export type ProceduralSoundLayerRecipe = {
   minVolume?: number;
   maxVolume?: number;
   envelope?: ProceduralAmplitudeEnvelopeRecipe;
+  pitchEnvelope?: ProceduralPitchEnvelopeRecipe;
   sweeps?: readonly ProceduralSoundFrequencySweepRecipe[];
 };
 
@@ -207,6 +235,11 @@ export function createProceduralSoundEffectGenerator(): ProceduralSoundEffectGen
         variationDepth,
         random
       );
+      const pitchEnvelope = resolvePitchEnvelope(
+        recipe.pitchEnvelope,
+        variationDepth,
+        random
+      );
 
       return {
         kind,
@@ -217,6 +250,7 @@ export function createProceduralSoundEffectGenerator(): ProceduralSoundEffectGen
         waveform,
         noiseColor,
         envelope,
+        pitchEnvelope,
         sweeps,
         layers,
         emitter,
@@ -300,6 +334,11 @@ function resolveEffectLayers(
         variationDepth,
         random
       ),
+      pitchEnvelope: resolvePitchEnvelope(
+        layerRecipe.pitchEnvelope,
+        variationDepth,
+        random
+      ),
       sweeps: resolveFrequencySweeps(
         layerRecipe.sweeps,
         frequency,
@@ -310,6 +349,73 @@ function resolveEffectLayers(
   }
 
   return layers;
+}
+
+function resolvePitchEnvelope(
+  envelopeRecipe: ProceduralPitchEnvelopeRecipe | undefined,
+  variationDepth: number,
+  random: () => number
+): ProceduralPitchEnvelope | undefined {
+  if (!envelopeRecipe) {
+    return undefined;
+  }
+
+  return {
+    attackMs: Math.max(
+      0,
+      varyScalar(
+        envelopeRecipe.attackMs,
+        envelopeRecipe.attackVariation ?? 0,
+        variationDepth,
+        random
+      )
+    ),
+    decayMs: Math.max(
+      0,
+      varyScalar(
+        envelopeRecipe.decayMs,
+        envelopeRecipe.decayVariation ?? 0,
+        variationDepth,
+        random
+      )
+    ),
+    peakMultiplier: Math.max(
+      0.0001,
+      varyScalar(
+        envelopeRecipe.peakMultiplier,
+        envelopeRecipe.peakVariation ?? 0,
+        variationDepth,
+        random
+      )
+    ),
+    sustainMultiplier: Math.max(
+      0.0001,
+      varyScalar(
+        envelopeRecipe.sustainMultiplier,
+        envelopeRecipe.sustainVariation ?? 0,
+        variationDepth,
+        random
+      )
+    ),
+    releaseMs: Math.max(
+      0,
+      varyScalar(
+        envelopeRecipe.releaseMs,
+        envelopeRecipe.releaseVariation ?? 0,
+        variationDepth,
+        random
+      )
+    ),
+    releaseTargetMultiplier: Math.max(
+      0.0001,
+      varyScalar(
+        envelopeRecipe.releaseTargetMultiplier,
+        envelopeRecipe.releaseTargetVariation ?? 0,
+        variationDepth,
+        random
+      )
+    ),
+  };
 }
 
 function resolveAmplitudeEnvelope(

@@ -78,7 +78,7 @@
 - [x] Support combining multiple oscillators and noise sources into one sound.
 - [x] Support frequency sweeps for impacts, magic, machinery, movement, and UI effects.
 - [x] Support amplitude envelopes with configurable attack, decay, sustain, and release.
-- [ ] Support pitch envelopes independent of volume envelopes.
+- [x] Support pitch envelopes independent of volume envelopes.
 - [ ] Support filters including low-pass, high-pass, band-pass, and notch filters.
 - [ ] Support configurable filter envelopes that change throughout a sound.
 - [ ] Support distortion and saturation for impacts, machinery, monsters, and aggressive sounds.

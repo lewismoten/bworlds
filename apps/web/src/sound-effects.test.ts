@@ -662,6 +662,131 @@ describe('sound effects', () => {
     }
   });
 
+  it('applies configured pitch envelopes independently from gain envelopes', () => {
+    const createdOscillators: Array<{
+      onended: ((event: Event) => void) | null;
+      type: string;
+      frequency: {
+        setValueAtTime: ReturnType<typeof vi.fn>;
+        exponentialRampToValueAtTime: ReturnType<typeof vi.fn>;
+        linearRampToValueAtTime: ReturnType<typeof vi.fn>;
+      };
+      connect: ReturnType<typeof vi.fn>;
+      disconnect: ReturnType<typeof vi.fn>;
+      start: ReturnType<typeof vi.fn>;
+      stop: ReturnType<typeof vi.fn>;
+    }> = [];
+    const createdGains: Array<{
+      gain: {
+        setValueAtTime: ReturnType<typeof vi.fn>;
+        exponentialRampToValueAtTime: ReturnType<typeof vi.fn>;
+      };
+      connect: ReturnType<typeof vi.fn>;
+      disconnect: ReturnType<typeof vi.fn>;
+    }> = [];
+
+    class FakeAudioContext {
+      state: AudioContextState = 'running';
+      currentTime = 0;
+      destination = {};
+      createOscillator() {
+        const oscillator = {
+          onended: null as ((event: Event) => void) | null,
+          type: 'sine',
+          frequency: {
+            setValueAtTime: vi.fn(),
+            exponentialRampToValueAtTime: vi.fn(),
+            linearRampToValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+          start: vi.fn(),
+          stop: vi.fn(),
+        };
+        createdOscillators.push(oscillator);
+        return oscillator as unknown as OscillatorNode;
+      }
+      createGain() {
+        const gain = {
+          gain: {
+            setValueAtTime: vi.fn(),
+            exponentialRampToValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+        };
+        createdGains.push(gain);
+        return gain as unknown as GainNode;
+      }
+      createStereoPanner() {
+        return {
+          pan: {
+            setValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+        } as unknown as StereoPannerNode;
+      }
+      resume() {
+        return Promise.resolve();
+      }
+    }
+
+    const originalAudioContext = globalThis.AudioContext;
+    vi.stubGlobal('AudioContext', FakeAudioContext);
+
+    try {
+      const sink = createWebAudioSoundEffectSink();
+      sink.play({
+        kind: 'combat-magic',
+        nowMs: 0,
+        frequency: 244,
+        durationMs: 320,
+        volume: 0.05,
+        waveform: 'triangle',
+        envelope: {
+          attackMs: 12,
+          decayMs: 54,
+          sustainLevel: 0.62,
+          releaseMs: 68,
+        },
+        pitchEnvelope: {
+          attackMs: 18,
+          decayMs: 44,
+          peakMultiplier: 1.05,
+          sustainMultiplier: 0.94,
+          releaseMs: 62,
+          releaseTargetMultiplier: 0.9,
+        },
+      });
+
+      const oscillator = createdOscillators[0];
+      expect(
+        oscillator?.frequency.linearRampToValueAtTime.mock.calls
+      ).toContainEqual([expect.closeTo(244 * 1.05, 10), 0.018]);
+      expect(
+        oscillator?.frequency.linearRampToValueAtTime.mock.calls
+      ).toContainEqual([expect.closeTo(244 * 0.94, 10), 0.062]);
+      expect(
+        oscillator?.frequency.linearRampToValueAtTime.mock.calls
+      ).toContainEqual([expect.closeTo(244 * 0.9, 10), 0.32]);
+
+      const sourceGain = createdGains[1];
+      expect(
+        sourceGain?.gain.exponentialRampToValueAtTime
+      ).toHaveBeenNthCalledWith(1, 0.05, 0.012);
+      expect(
+        sourceGain?.gain.exponentialRampToValueAtTime.mock.calls[1]
+      ).toEqual([expect.closeTo(0.031, 10), 0.066]);
+    } finally {
+      if (originalAudioContext) {
+        vi.stubGlobal('AudioContext', originalAudioContext);
+      } else {
+        vi.unstubAllGlobals();
+      }
+    }
+  });
+
   it('limits identical low-priority ambient voices in the web audio sink', () => {
     const createdOscillators: Array<{
       onended: ((event: Event) => void) | null;

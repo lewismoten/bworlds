@@ -8,6 +8,7 @@ import {
   createProceduralSoundEffectGenerator,
   type ProceduralNoiseColor,
   type ProceduralSoundEffectLayer,
+  type ProceduralPitchEnvelope,
   type ProceduralSoundEffect,
   type SoundEffectKind,
   type SoundPosition,
@@ -315,6 +316,7 @@ function resolveProceduralSoundRecipe(
     waveform: resolveBaseSoundEffectWaveform(kind, tileKind, profile),
     noiseColor: resolveBaseSoundEffectNoiseColor(kind),
     envelope: resolveProceduralSoundEnvelope(kind),
+    pitchEnvelope: resolveProceduralSoundPitchEnvelope(kind),
     sweeps: resolveProceduralSoundSweeps(kind),
     layers: resolveProceduralSoundLayers(kind),
     ...resolveProceduralSoundVariation(kind),
@@ -368,6 +370,40 @@ function resolveProceduralSoundEnvelope(kind: SoundEffectKind) {
     case 'footstep':
     default:
       return { attackMs: 4, decayMs: 22, sustainLevel: 0.38, releaseMs: 24 };
+  }
+}
+
+function resolveProceduralSoundPitchEnvelope(kind: SoundEffectKind) {
+  switch (kind) {
+    case 'jump':
+      return {
+        attackMs: 10,
+        decayMs: 24,
+        peakMultiplier: 1.08,
+        sustainMultiplier: 0.98,
+        releaseMs: 30,
+        releaseTargetMultiplier: 1.04,
+      };
+    case 'combat-magic':
+      return {
+        attackMs: 18,
+        decayMs: 44,
+        peakMultiplier: 1.05,
+        sustainMultiplier: 0.94,
+        releaseMs: 62,
+        releaseTargetMultiplier: 0.9,
+      };
+    case 'steam-whistle':
+      return {
+        attackMs: 28,
+        decayMs: 90,
+        peakMultiplier: 1.04,
+        sustainMultiplier: 1,
+        releaseMs: 120,
+        releaseTargetMultiplier: 0.96,
+      };
+    default:
+      return undefined;
   }
 }
 
@@ -1809,6 +1845,7 @@ function createLayeredSoundEffect(
     waveform: layer.waveform,
     noiseColor: layer.noiseColor,
     envelope: layer.envelope ?? effect.envelope,
+    pitchEnvelope: layer.pitchEnvelope ?? effect.pitchEnvelope,
     sweeps: layer.sweeps ?? effect.sweeps,
     layers: undefined,
   };
@@ -1875,6 +1912,53 @@ function applyAmplitudeEnvelope(
   gainNode.gain.exponentialRampToValueAtTime(minimumGain, endAt);
 }
 
+function applyPitchEnvelope(
+  source: OscillatorNode,
+  effect: ProceduralSoundEffect,
+  startAt: number,
+  durationSeconds: number
+): void {
+  const envelope = effect.pitchEnvelope;
+  if (!envelope) {
+    return;
+  }
+
+  const attackSeconds = Math.max(0, envelope.attackMs / 1000);
+  const decaySeconds = Math.max(0, envelope.decayMs / 1000);
+  const releaseSeconds = Math.max(0, envelope.releaseMs / 1000);
+  const endAt = startAt + durationSeconds;
+  const attackEndAt = Math.min(endAt, startAt + attackSeconds);
+  const decayEndAt = Math.min(endAt, attackEndAt + decaySeconds);
+  const releaseStartAt = Math.max(decayEndAt, endAt - releaseSeconds);
+  const peakFrequency = Math.max(
+    40,
+    effect.frequency * envelope.peakMultiplier
+  );
+  const sustainFrequency = Math.max(
+    40,
+    effect.frequency * envelope.sustainMultiplier
+  );
+  const releaseFrequency = Math.max(
+    40,
+    effect.frequency * envelope.releaseTargetMultiplier
+  );
+
+  if (attackEndAt > startAt) {
+    source.frequency.linearRampToValueAtTime(peakFrequency, attackEndAt);
+  } else {
+    source.frequency.setValueAtTime(peakFrequency, startAt);
+  }
+  if (decayEndAt > attackEndAt) {
+    source.frequency.linearRampToValueAtTime(sustainFrequency, decayEndAt);
+  } else {
+    source.frequency.setValueAtTime(sustainFrequency, attackEndAt);
+  }
+  if (releaseStartAt > decayEndAt) {
+    source.frequency.setValueAtTime(sustainFrequency, releaseStartAt);
+  }
+  source.frequency.linearRampToValueAtTime(releaseFrequency, endAt);
+}
+
 function getOrCreateNoiseBuffer(
   context: AudioContext,
   effect: ProceduralSoundEffect,
@@ -1915,6 +1999,7 @@ function applySoundEffectSourceShape(
 
   source.type = effect.waveform;
   source.frequency.setValueAtTime(effect.frequency, startAt);
+  applyPitchEnvelope(source, effect, startAt, durationSeconds);
   for (const sweep of effect.sweeps ?? []) {
     const targetFrequency = Math.max(
       40,
