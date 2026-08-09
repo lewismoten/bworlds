@@ -29,6 +29,8 @@ import {
   getForestTreeDamageProfiles,
   getForestTreeFruitProfiles,
   getForestTreeHistoricalProfiles,
+  getForestTreeFamilyPreview,
+  getForestRandomTreePreview,
   getForestTreeSpeciesPreview,
   getForestTreeTrunkProfiles,
   getForestCarvings,
@@ -857,6 +859,18 @@ describe('tile forest', () => {
     expect(oak.trunkHeight).not.toBe(birch.trunkHeight);
     expect(pine.form).toBe('pine');
     expect(getForestTreeSpeciesPreview('oak', 12, 8, 1)).toEqual(oak);
+  });
+
+  it('can preview family-level and random tree generators deterministically', () => {
+    const broadleaf = getForestTreeFamilyPreview('broadleaf', 12, 8, 1);
+    const conifer = getForestTreeFamilyPreview('conifer', 12, 8, 1);
+    const random = getForestRandomTreePreview(12, 8, 1);
+
+    expect(['oak', 'birch']).toContain(broadleaf.speciesId);
+    expect(broadleaf.form).toBe('broadleaf');
+    expect(conifer.speciesId).toBe('pine');
+    expect(conifer.form).toBe('pine');
+    expect(getForestRandomTreePreview(12, 8, 1)).toEqual(random);
   });
 
   it('separates forest structural profiles from canopy profiles', () => {

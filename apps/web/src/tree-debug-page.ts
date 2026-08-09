@@ -24,6 +24,7 @@ function collectOptions(
     detailLevel: String(data.get('detailLevel') ?? ''),
     consumer: String(data.get('consumer') ?? ''),
     speciesMode: String(data.get('speciesMode') ?? ''),
+    treeIndex: Number(data.get('treeIndex') ?? 0),
   } as Partial<TreeDebugOptions>;
 }
 
@@ -40,11 +41,16 @@ function renderPage(nextSnapshot: typeof snapshot): void {
   const randomizeButton = document.querySelector<HTMLButtonElement>(
     '#tree-debug-randomize'
   );
+  const cycleButton =
+    document.querySelector<HTMLButtonElement>('#tree-debug-cycle');
   const tileXInput = document.querySelector<HTMLInputElement>(
     'input[name="tileX"]'
   );
   const tileYInput = document.querySelector<HTMLInputElement>(
     'input[name="tileY"]'
+  );
+  const treeIndexInput = document.querySelector<HTMLInputElement>(
+    'input[name="treeIndex"]'
   );
 
   form?.addEventListener('submit', (event) => {
@@ -69,6 +75,21 @@ function renderPage(nextSnapshot: typeof snapshot): void {
       tileYInput.value = String(randomized.tileY);
     }
     renderPage(createTreeDebugSnapshot(randomized));
+  });
+
+  cycleButton?.addEventListener('click', () => {
+    const currentOptions = collectOptions(form);
+    const nextTreeIndex =
+      Math.max(0, Math.round(currentOptions.treeIndex ?? 0)) + 1;
+    if (treeIndexInput) {
+      treeIndexInput.value = String(nextTreeIndex);
+    }
+    renderPage(
+      createTreeDebugSnapshot({
+        ...currentOptions,
+        treeIndex: nextTreeIndex,
+      })
+    );
   });
 }
 

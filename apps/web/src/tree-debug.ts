@@ -4,12 +4,14 @@ import {
   getForestTreeCanopyProfiles,
   getForestTreeDamageProfiles,
   getForestTreeDecorations,
+  getForestTreeFamilyPreview,
   getForestTreeFamilies,
   getForestTreeFruitProfiles,
   getForestTreeGenerator,
   getForestTreeHistoricalProfiles,
   getForestTreeHollows,
   getForestTreeInhabitants,
+  getForestRandomTreePreview,
   getForestTreeSpeciesPreview,
   getForestTreeSpeciesIds,
   getForestTreeTrunkProfiles,
@@ -21,7 +23,8 @@ import { randomizeDebugCoordinatePair } from './debug-seed.ts';
 
 export type TreeDebugDetailLevel = 'full' | 'low';
 export type TreeDebugConsumer = 'render-3d' | 'render-2d' | 'gameplay';
-export type TreeDebugSpeciesMode = 'tile' | 'oak' | 'birch' | 'pine';
+export type TreeDebugSpeciesMode =
+  'tile' | 'random' | 'broadleaf' | 'conifer' | 'oak' | 'birch' | 'pine';
 
 export type TreeDebugOptions = {
   tileX: number;
@@ -30,6 +33,7 @@ export type TreeDebugOptions = {
   detailLevel: TreeDebugDetailLevel;
   consumer: TreeDebugConsumer;
   speciesMode: TreeDebugSpeciesMode;
+  treeIndex: number;
 };
 
 export type TreeDebugSnapshot = {
@@ -50,6 +54,7 @@ export type TreeDebugSnapshot = {
     inhabitantCount: number;
     hollowCount: number;
     previewSpeciesCount: number;
+    focusedTreeIndex: number;
   };
   trees: Array<{
     index: number;
@@ -84,6 +89,7 @@ export const DEFAULT_TREE_DEBUG_OPTIONS: TreeDebugOptions = {
   detailLevel: 'full',
   consumer: 'render-3d',
   speciesMode: 'tile',
+  treeIndex: 0,
 };
 
 export function normalizeTreeDebugOptions(
@@ -98,6 +104,7 @@ export function normalizeTreeDebugOptions(
     detailLevel: normalizeTreeDebugDetailLevel(value?.detailLevel),
     consumer: normalizeTreeDebugConsumer(value?.consumer),
     speciesMode: normalizeTreeDebugSpeciesMode(value?.speciesMode),
+    treeIndex: Math.max(0, Math.round(value?.treeIndex ?? 0)),
   };
 }
 
@@ -148,6 +155,7 @@ export function createTreeDebugSnapshot(
       inhabitantCount: inhabitants.length,
       hollowCount: hollows.length,
       previewSpeciesCount: speciesIds.length,
+      focusedTreeIndex: options.treeIndex,
     },
     trees: speciesIds.map((speciesId, index) => {
       const age = ages[index];
@@ -290,6 +298,10 @@ export function buildTreeDebugMarkup(
   return `
     <main class="tree-debug-shell">
       <section class="tree-debug-hero">
+        <nav class="tree-debug-breadcrumbs" aria-label="Breadcrumb">
+          <a href="/debug/">/debug/</a>
+          <span>/trees/</span>
+        </nav>
         <p class="tree-debug-kicker">bworlds</p>
         <h1>Tree Conservatory</h1>
         <p class="tree-debug-lede">
@@ -327,18 +339,31 @@ export function buildTreeDebugMarkup(
               </select>
             </label>
             <label>
-              <span>Species</span>
+              <span>Generator</span>
               <select name="speciesMode">
                 ${buildTreeSelectOptions(
-                  ['tile', 'oak', 'birch', 'pine'],
+                  [
+                    'tile',
+                    'random',
+                    'broadleaf',
+                    'conifer',
+                    'oak',
+                    'birch',
+                    'pine',
+                  ],
                   snapshot.options.speciesMode
                 )}
               </select>
+            </label>
+            <label>
+              <span>Tree Index</span>
+              <input name="treeIndex" type="number" min="0" step="1" value="${snapshot.options.treeIndex}" />
             </label>
           </div>
           <div class="tree-debug-actions">
             <button id="tree-debug-generate" type="submit">Generate</button>
             <button id="tree-debug-randomize" type="button">🎲 Generate</button>
+            <button id="tree-debug-cycle" type="button">Next Tree</button>
           </div>
         </form>
         <section class="tree-debug-card">
@@ -373,6 +398,7 @@ export function buildTreeDebugSummaryMarkup(
       <div><dt>Inhabitants</dt><dd>${snapshot.tileSummary.inhabitantCount}</dd></div>
       <div><dt>Hollows</dt><dd>${snapshot.tileSummary.hollowCount}</dd></div>
       <div><dt>Preview</dt><dd>${escapeHtml(snapshot.options.speciesMode)} (${snapshot.tileSummary.previewSpeciesCount})</dd></div>
+      <div><dt>Focus</dt><dd>${snapshot.tileSummary.focusedTreeIndex}</dd></div>
       <div><dt>Slope / Wind</dt><dd>${snapshot.tileSummary.slopeStrength.toFixed(
         2
       )} / ${snapshot.tileSummary.windStrength.toFixed(2)}</dd></div>
@@ -394,26 +420,57 @@ function resolveTreeDebugTreeSource(options: TreeDebugOptions): {
   inhabitants: ReturnType<typeof getForestTreeInhabitants>;
 } {
   if (options.speciesMode === 'tile') {
+    const speciesIds = getForestTreeSpeciesIds(options.tileX, options.tileY);
+    const treeCount = speciesIds.length;
+    const orderedIndexes = createTreeDebugOrderedIndexes(
+      treeCount,
+      options.treeIndex
+    );
+    const ages = getForestTreeAgeProfiles(options.tileX, options.tileY);
+    const branches = getForestTreeBranchProfiles(options.tileX, options.tileY);
+    const canopies = getForestTreeCanopyProfiles(options.tileX, options.tileY);
+    const trunks = getForestTreeTrunkProfiles(options.tileX, options.tileY);
+    const damages = getForestTreeDamageProfiles(options.tileX, options.tileY);
+    const fruit = getForestTreeFruitProfiles(options.tileX, options.tileY);
+    const historical = getForestTreeHistoricalProfiles(
+      options.tileX,
+      options.tileY
+    );
     return {
-      speciesIds: getForestTreeSpeciesIds(options.tileX, options.tileY),
-      ages: getForestTreeAgeProfiles(options.tileX, options.tileY),
-      branches: getForestTreeBranchProfiles(options.tileX, options.tileY),
-      canopies: getForestTreeCanopyProfiles(options.tileX, options.tileY),
-      trunks: getForestTreeTrunkProfiles(options.tileX, options.tileY),
-      damages: getForestTreeDamageProfiles(options.tileX, options.tileY),
-      fruit: getForestTreeFruitProfiles(options.tileX, options.tileY),
-      historical: getForestTreeHistoricalProfiles(options.tileX, options.tileY),
+      speciesIds: orderedIndexes.map((index) => speciesIds[index]!),
+      ages: orderedIndexes.map((index) => ages[index]!),
+      branches: orderedIndexes.map((index) => branches[index]!),
+      canopies: orderedIndexes.map((index) => canopies[index]!),
+      trunks: orderedIndexes.map((index) => trunks[index]!),
+      damages: orderedIndexes.map((index) => damages[index]!),
+      fruit: orderedIndexes.map((index) => fruit[index]!),
+      historical: orderedIndexes.map((index) => historical[index]!),
       hollows: getForestTreeHollows(options.tileX, options.tileY),
       decorations: getForestTreeDecorations(options.tileX, options.tileY),
       inhabitants: getForestTreeInhabitants(options.tileX, options.tileY),
     };
   }
 
-  const descriptor = getForestTreeSpeciesPreview(
-    options.speciesMode,
-    options.tileX,
-    options.tileY
-  );
+  const descriptor =
+    options.speciesMode === 'random'
+      ? getForestRandomTreePreview(
+          options.tileX,
+          options.tileY,
+          options.treeIndex
+        )
+      : options.speciesMode === 'broadleaf' || options.speciesMode === 'conifer'
+        ? getForestTreeFamilyPreview(
+            options.speciesMode,
+            options.tileX,
+            options.tileY,
+            options.treeIndex
+          )
+        : getForestTreeSpeciesPreview(
+            options.speciesMode,
+            options.tileX,
+            options.tileY,
+            options.treeIndex
+          );
 
   return {
     speciesIds: [descriptor.speciesId],
@@ -585,10 +642,32 @@ function normalizeTreeDebugConsumer(
 function normalizeTreeDebugSpeciesMode(
   value: TreeDebugOptions['speciesMode'] | undefined
 ): TreeDebugSpeciesMode {
-  if (value === 'oak' || value === 'birch' || value === 'pine') {
+  if (
+    value === 'random' ||
+    value === 'broadleaf' ||
+    value === 'conifer' ||
+    value === 'oak' ||
+    value === 'birch' ||
+    value === 'pine'
+  ) {
     return value;
   }
   return 'tile';
+}
+
+function createTreeDebugOrderedIndexes(
+  count: number,
+  focusedIndex: number
+): number[] {
+  if (count <= 0) {
+    return [];
+  }
+  const startIndex = focusedIndex % count;
+  const ordered: number[] = [];
+  for (let offset = 0; offset < count; offset += 1) {
+    ordered.push((startIndex + offset) % count);
+  }
+  return ordered;
 }
 
 function clampProgress(value: number): number {

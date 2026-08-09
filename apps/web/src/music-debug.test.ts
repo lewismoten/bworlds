@@ -99,6 +99,7 @@ describe('music debug', () => {
     const summary = buildMusicDebugSummaryMarkup(snapshot);
 
     expect(markup).toContain('Music Laboratory');
+    expect(markup).toContain('/debug/');
     expect(markup).toContain('music-debug-form');
     expect(markup).toContain('music-debug-timeline');
     expect(markup).toContain('music-debug-randomize');

@@ -1008,6 +1008,10 @@ I would build this much like the character-animation preview page.
 - [ ] Generate a grid of trees from one species to judge whether they look sufficiently different.
 - [ ] Generate mixed forests to test whether procedural variation remains visually coherent.
 - [ ] Let me rotate, pan, zoom-in with my mouse, mouse wheel, and holding down shift + mouse
+- [x] Let me cycle between different trees
+- [x] Let me choose the type of tree plugin used for generation
+- [x] Let me select the broadleaf and conifer, or let it be random
+- [x] All debug helper pages should link back to the /debug path, and/or it's parent breadcrumb path if one exists.
 
 # Automated Tree Quality Tests
 

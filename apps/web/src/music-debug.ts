@@ -354,6 +354,10 @@ export function buildMusicDebugShellMarkup(
   return `
     <main class="music-debug-shell">
       <section class="music-debug-hero">
+        <nav class="music-debug-breadcrumbs" aria-label="Breadcrumb">
+          <a href="/debug/">/debug/</a>
+          <span>/music/</span>
+        </nav>
         <p class="music-debug-kicker">bworlds</p>
         <h1>Music Laboratory</h1>
         <p class="music-debug-lede">

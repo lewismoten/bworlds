@@ -2284,15 +2284,52 @@ export function getForestTreeSpeciesPreview(
 ): ForestTreeDescriptor {
   const { family, form, variety } =
     resolveForestTreePreviewSpeciesIdentity(speciesId);
-  return family.generateSpecies(speciesId, {
-    tileX,
-    tileY,
-    treeIndex,
-    loneTree: hasForestLoneTree(tileX, tileY),
-    groveCenter: getForestGroveCenter(tileX, tileY),
-    variety,
-    form,
-  });
+  return family.generateSpecies(
+    speciesId,
+    createForestTreePreviewContext(tileX, tileY, treeIndex, variety, form)
+  );
+}
+
+export function getForestTreeFamilyPreview(
+  familyId: 'broadleaf' | 'conifer',
+  tileX: number,
+  tileY: number,
+  treeIndex = 0
+): ForestTreeDescriptor {
+  if (familyId === 'conifer') {
+    return forestConiferFamily.generateSpecies(
+      'pine',
+      createForestTreePreviewContext(tileX, tileY, treeIndex, 2, 'pine')
+    );
+  }
+
+  const variety = resolveForestBroadleafPreviewVariety(tileX, tileY, treeIndex);
+  return forestBroadleafFamily.generate(
+    createForestTreePreviewContext(
+      tileX,
+      tileY,
+      treeIndex,
+      variety,
+      'broadleaf'
+    )
+  );
+}
+
+export function getForestRandomTreePreview(
+  tileX: number,
+  tileY: number,
+  treeIndex = 0
+): ForestTreeDescriptor {
+  const variety = getTreeVarietyIndex(tileX, tileY, treeIndex);
+  return forestTreeGenerator.generate(
+    createForestTreePreviewContext(
+      tileX,
+      tileY,
+      treeIndex,
+      variety,
+      getTreeForm(variety)
+    )
+  );
 }
 
 export function getForestTreeBranchProfiles(
@@ -2689,6 +2726,38 @@ function resolveForestTreePreviewSpeciesIdentity(
         variety: 0,
       };
   }
+}
+
+function createForestTreePreviewContext(
+  tileX: number,
+  tileY: number,
+  treeIndex: number,
+  variety: number,
+  form: ForestTreeForm
+): ForestTreeSpeciesContext {
+  return {
+    tileX,
+    tileY,
+    treeIndex,
+    loneTree: hasForestLoneTree(tileX, tileY),
+    groveCenter: getForestGroveCenter(tileX, tileY),
+    variety,
+    form,
+  };
+}
+
+function resolveForestBroadleafPreviewVariety(
+  tileX: number,
+  tileY: number,
+  treeIndex: number
+): number {
+  return hash2D(
+    FOREST_TREE_DESCRIPTOR_SEED,
+    tileX + treeIndex * 17,
+    tileY - treeIndex * 13
+  ) > 0.5
+    ? 1
+    : 0;
 }
 
 type ForestTreeSpeciesDefinition = {
