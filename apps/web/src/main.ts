@@ -103,7 +103,7 @@ import {
   getFrameLoopActivity,
   shouldAdvanceSimulation,
 } from './frame-loop.ts';
-import { runAnimationFrameStep } from './frame-scheduler.ts';
+import { createAnimationFrameRunner } from './frame-scheduler.ts';
 import {
   advanceHeadBobState,
   DEFAULT_HEAD_BOB_STATE,
@@ -3450,31 +3450,36 @@ function faceDirection(angle: number): void {
   requestRender();
 }
 
+function runLoopFrame(deltaMs: number): FrameLoopActivityLike {
+  updateRenderBudgetStateInPlace(renderBudgetState, {
+    deltaMs,
+    active3d: state.viewMode === '3d',
+    weatherVisibility: latestEnvironment.weather?.current?.visibility,
+  });
+  if (
+    shouldAdvanceSimulation({
+      timeFrozen: timeState.frozen,
+      keys,
+      isJumping: motion.isJumping,
+    })
+  ) {
+    updateMovement(deltaMs);
+  }
+  return render();
+}
+
+const runScheduledAnimationFrame = createAnimationFrameRunner(
+  requestRender,
+  runLoopFrame
+);
+
 function loop(timestamp: number): void {
   pendingFrameHandle = 0;
-  const frameStep = runAnimationFrameStep({
+  const frameStep = runScheduledAnimationFrame(
     timestamp,
-    lastFrameTimestamp: lastFrame,
-    pageHidden: pageVisibilityState.hidden,
-    requestNextFrame: () => requestRender(),
-    runFrame: (deltaMs) => {
-      updateRenderBudgetStateInPlace(renderBudgetState, {
-        deltaMs,
-        active3d: state.viewMode === '3d',
-        weatherVisibility: latestEnvironment.weather?.current?.visibility,
-      });
-      if (
-        shouldAdvanceSimulation({
-          timeFrozen: timeState.frozen,
-          keys,
-          isJumping: motion.isJumping,
-        })
-      ) {
-        updateMovement(deltaMs);
-      }
-      return render();
-    },
-  });
+    lastFrame,
+    pageVisibilityState.hidden
+  );
   lastFrame = frameStep.lastFrameTimestamp;
   if (frameStep.skipped) {
     return;

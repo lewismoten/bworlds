@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
+  createAnimationFrameRunner,
   getAnimationFrameDelta,
   runAnimationFrameStep,
 } from './frame-scheduler.ts';
@@ -91,5 +92,25 @@ describe('frame scheduler', () => {
     ).toThrow('boom');
 
     expect(requestNextFrame).toHaveBeenCalledTimes(1);
+  });
+
+  it('can reuse a stable frame runner across animation frames', () => {
+    const requestNextFrame = vi.fn();
+    const runFrame = vi.fn((deltaMs: number) => `frame:${deltaMs}`);
+    const runScheduledFrame = createAnimationFrameRunner(requestNextFrame, runFrame);
+
+    expect(runScheduledFrame(100, 80, false)).toEqual({
+      lastFrameTimestamp: 100,
+      skipped: false,
+      frameResult: 'frame:20',
+    });
+    expect(runScheduledFrame(140, 100, true)).toEqual({
+      lastFrameTimestamp: 0,
+      skipped: true,
+    });
+
+    expect(requestNextFrame).toHaveBeenCalledTimes(1);
+    expect(runFrame).toHaveBeenCalledTimes(1);
+    expect(runFrame).toHaveBeenCalledWith(20);
   });
 });

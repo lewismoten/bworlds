@@ -12,6 +12,12 @@ type AnimationFrameStepResult<T> = {
   frameResult?: T;
 };
 
+type AnimationFrameRunner<T> = (
+  timestamp: number,
+  lastFrameTimestamp: number,
+  pageHidden: boolean
+) => AnimationFrameStepResult<T>;
+
 export function getAnimationFrameDelta(
   timestamp: number,
   lastFrameTimestamp: number
@@ -43,4 +49,18 @@ export function runAnimationFrameStep<T>(
       getAnimationFrameDelta(options.timestamp, options.lastFrameTimestamp)
     ),
   };
+}
+
+export function createAnimationFrameRunner<T>(
+  requestNextFrame: () => void,
+  runFrame: (deltaMs: number) => T
+): AnimationFrameRunner<T> {
+  return (timestamp, lastFrameTimestamp, pageHidden) =>
+    runAnimationFrameStep({
+      timestamp,
+      lastFrameTimestamp,
+      pageHidden,
+      requestNextFrame,
+      runFrame,
+    });
 }
