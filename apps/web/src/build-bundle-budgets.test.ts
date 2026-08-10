@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import {
   BUILD_BUNDLE_BUDGETS,
   createBundleBudgetReport,
+  loadBundleBudgetBaseline,
   resolveInitialMainRouteBundle,
   resolveMajorChunkSizes,
   resolveWorkerBundleBytes,
@@ -135,5 +136,84 @@ describe('build bundle budgets', () => {
         expect.stringContaining('Major chunk "index"'),
       ])
     );
+  });
+
+  it('fails when tracked bundles grow significantly beyond the committed baseline', () => {
+    const distDir = createFixtureDist({
+      'assets/app-entry.js': 5_000,
+      'assets/main.js': 112_000,
+      'assets/index-large.js': 72_000,
+      'assets/shared-small.js': 3_000,
+      'assets/main.css': 8_500,
+      'assets/worker-demo.js': 2_500,
+    });
+    tmpDirs.push(distDir);
+
+    const report = createBundleBudgetReport(
+      fixtureManifest,
+      distDir,
+      BUILD_BUNDLE_BUDGETS,
+      {
+        initialJavaScript: {
+          baselineBytes: 120_000,
+          maxIncreaseBytes: 4_000,
+        },
+        initialCss: {
+          baselineBytes: 6_000,
+          maxIncreaseBytes: 1_000,
+        },
+        workers: {
+          baselineBytes: 0,
+          maxIncreaseBytes: 1_000,
+        },
+        majorChunks: {
+          minimumTrackedBytes: 64_000,
+          baselineBytesByName: {
+            main: 100_000,
+            index: 65_000,
+          },
+          maxIncreaseBytesByName: {
+            main: 4_000,
+            index: 2_000,
+          },
+        },
+      }
+    );
+
+    expect(report.regressionViolations).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining('Initial JavaScript bundle grew by'),
+        expect.stringContaining('Initial CSS bundle grew by'),
+        expect.stringContaining('Worker JavaScript total grew by'),
+        expect.stringContaining('Major chunk "main" grew by'),
+        expect.stringContaining('Major chunk "index" grew by'),
+      ])
+    );
+  });
+
+  it('loads the committed baseline snapshot for CI regression checks', () => {
+    expect(loadBundleBudgetBaseline()).toMatchObject({
+      initialJavaScript: {
+        baselineBytes: expect.any(Number),
+        maxIncreaseBytes: expect.any(Number),
+      },
+      initialCss: {
+        baselineBytes: expect.any(Number),
+        maxIncreaseBytes: expect.any(Number),
+      },
+      workers: {
+        baselineBytes: expect.any(Number),
+        maxIncreaseBytes: expect.any(Number),
+      },
+      majorChunks: {
+        minimumTrackedBytes: expect.any(Number),
+        baselineBytesByName: expect.objectContaining({
+          main: expect.any(Number),
+        }),
+        maxIncreaseBytesByName: expect.objectContaining({
+          main: expect.any(Number),
+        }),
+      },
+    });
   });
 });

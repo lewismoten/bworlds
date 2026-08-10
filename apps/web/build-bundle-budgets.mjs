@@ -1,13 +1,14 @@
 /* global console, process */
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 export const BUILD_BUNDLE_BUDGETS = {
   initialJavaScript: {
-    maxBytes: 1_720_000,
+    maxBytes: 1_620_000,
   },
   initialCss: {
-    maxBytes: 16_000,
+    maxBytes: 15_000,
   },
   workers: {
     maxBytes: 24_000,
@@ -24,12 +25,22 @@ export const BUILD_BUNDLE_BUDGETS = {
   },
 };
 
+export const DEFAULT_BUILD_BUNDLE_BASELINE_PATH = path.join(
+  path.dirname(fileURLToPath(import.meta.url)),
+  'build-bundle-budgets-baseline.json'
+);
+
 function unique(values) {
   return [...new Set(values)];
 }
 
 function formatKiB(bytes) {
   return `${(bytes / 1024).toFixed(2)} KiB`;
+}
+
+function formatSignedKiB(bytes) {
+  const prefix = bytes >= 0 ? '+' : '-';
+  return `${prefix}${formatKiB(Math.abs(bytes))}`;
 }
 
 function isJavaScriptAsset(fileName) {
@@ -153,32 +164,58 @@ export function resolveMajorChunkSizes(manifest, distDir) {
   return sizesByName;
 }
 
+export function loadBundleBudgetBaseline(
+  baselinePath = DEFAULT_BUILD_BUNDLE_BASELINE_PATH
+) {
+  return JSON.parse(fs.readFileSync(baselinePath, 'utf8'));
+}
+
+function buildRegressionViolation({
+  label,
+  currentBytes,
+  baselineBytes,
+  maxIncreaseBytes,
+}) {
+  const increaseBytes = currentBytes - baselineBytes;
+  if (increaseBytes <= maxIncreaseBytes) {
+    return null;
+  }
+
+  return (
+    `${label} grew by ${formatSignedKiB(increaseBytes)} ` +
+    `from baseline ${formatKiB(baselineBytes)} to ${formatKiB(currentBytes)} ` +
+    `(allowed ${formatSignedKiB(maxIncreaseBytes)}).`
+  );
+}
+
 export function createBundleBudgetReport(
   manifest,
   distDir,
-  budgets = BUILD_BUNDLE_BUDGETS
+  budgets = BUILD_BUNDLE_BUDGETS,
+  regressionBaseline = null
 ) {
-  const violations = [];
+  const budgetViolations = [];
+  const regressionViolations = [];
   const initialBundle = resolveInitialMainRouteBundle(manifest, distDir);
   const workerBytes = resolveWorkerBundleBytes(manifest, distDir);
   const majorChunkSizes = resolveMajorChunkSizes(manifest, distDir);
 
   if (initialBundle.javaScriptBytes > budgets.initialJavaScript.maxBytes) {
-    violations.push(
+    budgetViolations.push(
       `Initial JavaScript bundle is ${formatKiB(initialBundle.javaScriptBytes)} ` +
         `(limit ${formatKiB(budgets.initialJavaScript.maxBytes)}).`
     );
   }
 
   if (initialBundle.cssBytes > budgets.initialCss.maxBytes) {
-    violations.push(
+    budgetViolations.push(
       `Initial CSS bundle is ${formatKiB(initialBundle.cssBytes)} ` +
         `(limit ${formatKiB(budgets.initialCss.maxBytes)}).`
     );
   }
 
   if (workerBytes > budgets.workers.maxBytes) {
-    violations.push(
+    budgetViolations.push(
       `Worker JavaScript totals ${formatKiB(workerBytes)} ` +
         `(limit ${formatKiB(budgets.workers.maxBytes)}).`
     );
@@ -188,17 +225,77 @@ export function createBundleBudgetReport(
     const configuredLimit = budgets.majorChunks.maxBytesByName[name];
     if (configuredLimit === undefined) {
       if (bytes >= budgets.majorChunks.minimumTrackedBytes) {
-        violations.push(
+        budgetViolations.push(
           `Major chunk "${name}" is ${formatKiB(bytes)} but has no configured budget.`
         );
       }
       continue;
     }
     if (bytes > configuredLimit) {
-      violations.push(
+      budgetViolations.push(
         `Major chunk "${name}" is ${formatKiB(bytes)} ` +
           `(limit ${formatKiB(configuredLimit)}).`
       );
+    }
+  }
+
+  if (regressionBaseline) {
+    const initialJavaScriptRegression = buildRegressionViolation({
+      label: 'Initial JavaScript bundle',
+      currentBytes: initialBundle.javaScriptBytes,
+      baselineBytes: regressionBaseline.initialJavaScript.baselineBytes,
+      maxIncreaseBytes: regressionBaseline.initialJavaScript.maxIncreaseBytes,
+    });
+    if (initialJavaScriptRegression) {
+      regressionViolations.push(initialJavaScriptRegression);
+    }
+
+    const initialCssRegression = buildRegressionViolation({
+      label: 'Initial CSS bundle',
+      currentBytes: initialBundle.cssBytes,
+      baselineBytes: regressionBaseline.initialCss.baselineBytes,
+      maxIncreaseBytes: regressionBaseline.initialCss.maxIncreaseBytes,
+    });
+    if (initialCssRegression) {
+      regressionViolations.push(initialCssRegression);
+    }
+
+    const workersRegression = buildRegressionViolation({
+      label: 'Worker JavaScript total',
+      currentBytes: workerBytes,
+      baselineBytes: regressionBaseline.workers.baselineBytes,
+      maxIncreaseBytes: regressionBaseline.workers.maxIncreaseBytes,
+    });
+    if (workersRegression) {
+      regressionViolations.push(workersRegression);
+    }
+
+    for (const [name, bytes] of majorChunkSizes.entries()) {
+      if (bytes < regressionBaseline.majorChunks.minimumTrackedBytes) {
+        continue;
+      }
+
+      const baselineBytes =
+        regressionBaseline.majorChunks.baselineBytesByName[name];
+      const maxIncreaseBytes =
+        regressionBaseline.majorChunks.maxIncreaseBytesByName[name];
+
+      if (baselineBytes === undefined || maxIncreaseBytes === undefined) {
+        regressionViolations.push(
+          `Major chunk "${name}" is ${formatKiB(bytes)} but has no committed regression baseline.`
+        );
+        continue;
+      }
+
+      const majorChunkRegression = buildRegressionViolation({
+        label: `Major chunk "${name}"`,
+        currentBytes: bytes,
+        baselineBytes,
+        maxIncreaseBytes,
+      });
+      if (majorChunkRegression) {
+        regressionViolations.push(majorChunkRegression);
+      }
     }
   }
 
@@ -206,7 +303,9 @@ export function createBundleBudgetReport(
     initialBundle,
     workerBytes,
     majorChunkSizes,
-    violations,
+    budgetViolations,
+    regressionViolations,
+    violations: [...budgetViolations, ...regressionViolations],
   };
 }
 
@@ -218,10 +317,13 @@ export function loadManifestFromDist(distDir) {
 export function runBundleBudgetCheck(options = {}) {
   const distDir = options.distDir ?? path.resolve('dist');
   const manifest = options.manifest ?? loadManifestFromDist(distDir);
+  const regressionBaseline =
+    options.regressionBaseline ?? loadBundleBudgetBaseline();
   const report = createBundleBudgetReport(
     manifest,
     distDir,
-    options.budgets ?? BUILD_BUNDLE_BUDGETS
+    options.budgets ?? BUILD_BUNDLE_BUDGETS,
+    regressionBaseline
   );
 
   const lines = [
