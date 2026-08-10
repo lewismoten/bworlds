@@ -26,7 +26,7 @@
 - [x] Make bass, harmony, and lead read the same chord timeline.
 - [x] Verify detected chords follow the planned progression order.
 - [x] Fix unresolved chromatic notes before MIDI export.
-- [ ] Regenerate a phrase containing unresolved chromatic notes.
+- [x] Regenerate a phrase containing unresolved chromatic notes.
 - [ ] Lower harmony occupancy when the lead is active.
 - [ ] Make each section satisfy its configured layer-emphasis rules. (ie - Make A' more lead-forward than Section A.)
 - [ ] Validate actual layer occupancy against the section blueprint.occupancy. (ie - Make B harmony lighter than Section A.)

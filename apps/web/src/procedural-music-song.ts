@@ -24,6 +24,7 @@ import {
   PROCEDURAL_MUSIC_PHRASE_MEASURE_COUNT,
   repeatProceduralMusicPhraseNotes,
 } from './procedural-music-song-phrase.ts';
+import { regeneratePhrasesContainingUnresolvedChromaticNotes } from './procedural-music-song-chromatic.ts';
 import { resolveSongFinalCadence } from './procedural-music-song-cadence.ts';
 import { stateLeadMotifInFirstASection } from './procedural-music-song-motif.ts';
 
@@ -90,11 +91,18 @@ export function createProceduralMusicSong(
     leadMotif: dna.leadMotif,
     theme,
   });
-  const notes = resolveSongFinalCadence({
+  const cadencedNotes = resolveSongFinalCadence({
     notes: motifStatedNotes,
     sections,
     songStartMs: startMs,
   });
+  const notes = regeneratePhrasesContainingUnresolvedChromaticNotes(
+    cadencedNotes,
+    {
+      songStartMs: startMs,
+      phraseDurationMs,
+    }
+  );
   const loopStartOffsetMs = sections[1]?.startOffsetMs ?? 0;
   const outro = sections[sections.length - 1];
   const loopEndOffsetMs = outro
