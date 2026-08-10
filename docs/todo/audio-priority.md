@@ -171,8 +171,8 @@ added directly as semitones instead of moving through the selected scale.
 
 - [x] Resolve scale-degree chords within G Mixolydian.
 - [x] Document whether chord 6 is major, minor, or modal.
-- [ ] Generate chord pitches before arranging tracks.
-- [ ] Give all tracks the same active chord timeline.
+- [x] Generate chord pitches before arranging tracks.
+- [x] Give all tracks the same active chord timeline.
 - [x] Mark chord changes in the debug MIDI.
 - [ ] Keep chord changes aligned with strong beats.
 - [ ] Add a dominant-like setup before answer cadences.

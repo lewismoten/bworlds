@@ -1,6 +1,9 @@
 import { hash2DWithSeed, registerHashLabel } from '@bworlds/core/hash';
 import { resolveProceduralChordProgression as resolveCuratedProceduralChordProgression } from './procedural-music-chord-progression.ts';
-import { resolveProceduralChordTimelineEntryAtStep } from './procedural-music-chord-timeline.ts';
+import {
+  resolveProceduralHarmonicPlanEntryAtStep,
+  type ProceduralHarmonicPlanEntry,
+} from './procedural-music-harmonic-plan.ts';
 import { resolveProceduralHarmonyChordVoicing } from './procedural-music-harmony-voicing.ts';
 import { blendLeadMotifWithRecognition } from './procedural-music-lead-motif.ts';
 import { scoreProceduralLeadMotionPenalty } from './procedural-music-lead-motion.ts';
@@ -28,14 +31,15 @@ export type ProceduralHarmonyTheme = {
 
 export type ProceduralHarmonyRole = 'lead' | 'harmony' | 'bass' | 'percussion';
 
-export type ProceduralChord = {
-  degreeIndex: number;
-  progressionIndex: number;
-  rootSemitones: number;
-  thirdSemitones: number;
-  fifthSemitones: number;
-  passingSemitones: number;
-};
+export type ProceduralChord = Pick<
+  ProceduralHarmonicPlanEntry,
+  | 'degreeIndex'
+  | 'progressionIndex'
+  | 'rootSemitones'
+  | 'thirdSemitones'
+  | 'fifthSemitones'
+  | 'passingSemitones'
+>;
 
 export type ProceduralLeadMotif = {
   degreeOffsets: readonly number[];
@@ -299,19 +303,21 @@ export function resolveProceduralChordAtStep(
   clusterX: number,
   clusterY: number
 ): ProceduralChord {
-  const timelineEntry = resolveProceduralChordTimelineEntryAtStep({
-    themeId: theme.id,
-    themeStepCount: theme.stepPattern.length,
+  const planEntry = resolveProceduralHarmonicPlanEntryAtStep(
+    theme,
     stepIndex,
     clusterX,
-    clusterY,
-  });
-
-  return createProceduralChord(
-    theme,
-    timelineEntry.degreeIndex,
-    timelineEntry.progressionIndex
+    clusterY
   );
+
+  return {
+    degreeIndex: planEntry.degreeIndex,
+    progressionIndex: planEntry.progressionIndex,
+    rootSemitones: planEntry.rootSemitones,
+    thirdSemitones: planEntry.thirdSemitones,
+    fifthSemitones: planEntry.fifthSemitones,
+    passingSemitones: planEntry.passingSemitones,
+  };
 }
 
 export function resolveProceduralInstrumentSemitones(options: {
@@ -390,38 +396,6 @@ export function resolveProceduralHarmonyVoicing(options: {
     chord,
     previousChord,
   });
-}
-
-function createProceduralChord(
-  theme: ProceduralHarmonyTheme,
-  degreeIndex: number,
-  progressionIndex: number
-): ProceduralChord {
-  const rootSemitones = getProceduralScaleDegreeSemitones(
-    theme.scale,
-    degreeIndex
-  );
-  const thirdSemitones = getProceduralScaleDegreeSemitones(
-    theme.scale,
-    degreeIndex + 2
-  );
-  const fifthSemitones = getProceduralScaleDegreeSemitones(
-    theme.scale,
-    degreeIndex + 4
-  );
-  const passingSemitones = getProceduralScaleDegreeSemitones(
-    theme.scale,
-    degreeIndex + 1
-  );
-
-  return {
-    degreeIndex,
-    progressionIndex,
-    rootSemitones,
-    thirdSemitones,
-    fifthSemitones,
-    passingSemitones,
-  };
 }
 
 function resolveBassSemitones(

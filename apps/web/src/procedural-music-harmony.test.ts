@@ -138,6 +138,18 @@ describe('procedural music harmony', () => {
     );
   });
 
+  it('keeps every role on the same active harmonic block within a measure', () => {
+    const firstBeatChord = resolveProceduralChordAtStep(TEST_THEME, 4, 3, -2);
+    const laterBeatChord = resolveProceduralChordAtStep(TEST_THEME, 7, 3, -2);
+    const nextMeasureChord = resolveProceduralChordAtStep(TEST_THEME, 8, 3, -2);
+
+    expect(laterBeatChord).toEqual(firstBeatChord);
+    expect(nextMeasureChord.progressionIndex).toBe(
+      firstBeatChord.progressionIndex + 1
+    );
+    expect(nextMeasureChord.degreeIndex).not.toBe(firstBeatChord.degreeIndex);
+  });
+
   it('keeps bass notes anchored to nearby roots and fifths without large repeated jumps', () => {
     const semitonePlan = Array.from({ length: 24 }, (_, stepIndex) => ({
       stepIndex,
