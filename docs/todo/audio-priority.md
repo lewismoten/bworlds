@@ -17,15 +17,15 @@
 
 ## Instrument Patch Foundation
 
-- [ ] Stop deriving every instrument from one generic patch shape.
-- [ ] Define a distinct recipe for each instrument family.
+- [x] Stop deriving every instrument from one generic patch shape.
+- [x] Define a distinct recipe for each instrument family.
 - [ ] Give flute patches a breath-noise layer.
 - [ ] Give strings a bowed attack and sustained body.
 - [ ] Give bass patches a clear fundamental and short upper harmonics.
 - [ ] Give struck instruments a separate attack transient.
 - [ ] Change timbre across low, middle, and high registers.
 - [ ] Change timbre based on note velocity.
-- [ ] Limit random patch values to family-safe ranges.
+- [x] Limit random patch values to family-safe ranges.
 - [ ] Add one known-good patch for each core song role.
 - [ ] Compare generated patches against known-good patches.
 - [ ] Reject patches that sound nearly identical across roles.

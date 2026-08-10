@@ -23,6 +23,7 @@ import {
 import { createProceduralMusicSong } from './procedural-music-song.ts';
 import { resolveProceduralMusicLoudness } from './procedural-music-loudness.ts';
 import { resolveProceduralThemeMotif } from './procedural-music-theme-motif.ts';
+import { resolveInstrumentPatchRecipe } from './music-instrument-timbres.ts';
 
 describe('procedural music', () => {
   it('adds shared sound bank registry metadata to generated instruments', () => {
@@ -1776,6 +1777,61 @@ describe('procedural music', () => {
     expect(timbres.percussion.timbre.filterType).not.toBe(
       timbres.bass.timbre.filterType
     );
+  });
+
+  it('keeps generated instrument patches inside their family recipe ranges', () => {
+    const bank = createProceduralInstrumentBank(
+      resolveMusicTheme('forest', 'overworld'),
+      3,
+      -2,
+      {
+        tileKind: 'forest',
+        contextType: 'overworld',
+        dayProgress: 0.45,
+        yearProgress: 0.25,
+      }
+    );
+
+    for (const instrument of Object.values(bank.instruments)) {
+      const recipe = resolveInstrumentPatchRecipe(instrument.family);
+      expect(recipe.waveformOptions).toContain(instrument.waveform);
+      expect(instrument.attackMs).toBeGreaterThanOrEqual(
+        recipe.attackMsRange.min
+      );
+      expect(instrument.attackMs).toBeLessThanOrEqual(recipe.attackMsRange.max);
+      expect(instrument.releaseMs).toBeGreaterThanOrEqual(
+        recipe.releaseMsRange.min
+      );
+      expect(instrument.releaseMs).toBeLessThanOrEqual(
+        recipe.releaseMsRange.max
+      );
+      expect(instrument.brightness).toBeGreaterThanOrEqual(
+        recipe.brightnessRange.min
+      );
+      expect(instrument.brightness).toBeLessThanOrEqual(
+        recipe.brightnessRange.max
+      );
+    }
+  });
+
+  it('derives waveform and envelope shape from the chosen family recipe', () => {
+    const town = createProceduralInstrumentBank(
+      resolveMusicTheme('town', 'town'),
+      5,
+      -3,
+      {
+        tileKind: 'town',
+        contextType: 'town',
+        dayProgress: 0.5,
+        yearProgress: 0.5,
+      }
+    );
+    const leadRecipe = resolveInstrumentPatchRecipe(town.instruments.lead.family);
+    const bassRecipe = resolveInstrumentPatchRecipe(town.instruments.bass.family);
+
+    expect(leadRecipe.waveformOptions).not.toEqual(bassRecipe.waveformOptions);
+    expect(leadRecipe.attackMsRange).not.toEqual(bassRecipe.attackMsRange);
+    expect(leadRecipe.releaseMsRange).not.toEqual(bassRecipe.releaseMsRange);
   });
 
   it('emits scheduled notes through the controller sink', () => {

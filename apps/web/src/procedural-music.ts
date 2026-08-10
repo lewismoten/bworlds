@@ -10,6 +10,7 @@ import {
   resolveProceduralInstrumentSemitones,
 } from './procedural-music-harmony.ts';
 import {
+  resolveInstrumentPatchRecipe,
   resolveProceduralInstrumentTimbre,
   type InstrumentFamily,
   type MusicWaveform,
@@ -1887,13 +1888,8 @@ function createProceduralInstrument(
     clusterY,
     options
   );
-  const waveformOptions: Record<InstrumentRole, MusicWaveform[]> = {
-    lead: ['triangle', 'sine', 'sawtooth'],
-    harmony: ['triangle', 'sawtooth', 'square'],
-    bass: ['sine', 'triangle', 'square'],
-    percussion: ['square', 'sawtooth', 'triangle'],
-  };
-  const waveformList = waveformOptions[role];
+  const patchRecipe = resolveInstrumentPatchRecipe(family);
+  const waveformList = patchRecipe.waveformOptions;
   const waveform =
     waveformList[
       Math.floor(
@@ -1904,24 +1900,15 @@ function createProceduralInstrument(
         ) * waveformList.length
       )
     ] ?? waveformList[0];
-  const attackMsBase =
-    role === 'lead' ? 28 : role === 'bass' ? 36 : role === 'harmony' ? 52 : 8;
-  const releaseMsBase =
-    role === 'lead'
-      ? 130
-      : role === 'bass'
-        ? 180
-        : role === 'harmony'
-          ? 220
-          : 48;
-  const brightness =
-    0.82 +
-    hash2DWithSeed(
-      getRolePropertySeed(theme.id, role, 'brightness'),
-      clusterX,
-      clusterY
-    ) *
-      0.34;
+  const brightnessSignal = hash2DWithSeed(
+    getRolePropertySeed(theme.id, role, 'brightness'),
+    clusterX,
+    clusterY
+  );
+  const brightness = interpolatePatchRange(
+    patchRecipe.brightnessRange,
+    brightnessSignal
+  );
   const timbre = resolveProceduralInstrumentTimbre({
     family,
     brightness,
@@ -1947,50 +1934,59 @@ function createProceduralInstrument(
     family,
     waveform,
     timbre,
-    attackMs:
-      attackMsBase +
-      Math.round(
+    attackMs: Math.round(
+      interpolatePatchRange(
+        patchRecipe.attackMsRange,
         hash2DWithSeed(
           getRolePropertySeed(theme.id, role, 'attack'),
           clusterX,
           clusterY
-        ) * 24
-      ),
-    releaseMs:
-      releaseMsBase +
-      Math.round(
+        )
+      )
+    ),
+    releaseMs: Math.round(
+      interpolatePatchRange(
+        patchRecipe.releaseMsRange,
         hash2DWithSeed(
           getRolePropertySeed(theme.id, role, 'release'),
           clusterX,
           clusterY
-        ) * 40
-      ),
-    detuneCents:
-      (hash2DWithSeed(
+        )
+      )
+    ),
+    detuneCents: interpolatePatchRange(
+      patchRecipe.detuneCentsRange,
+      hash2DWithSeed(
         getRolePropertySeed(theme.id, role, 'detune'),
         clusterX,
         clusterY
-      ) -
-        0.5) *
-      (role === 'percussion' ? 10 : 16),
-    harmonicGain:
-      0.12 +
+      )
+    ),
+    harmonicGain: interpolatePatchRange(
+      patchRecipe.harmonicGainRange,
       hash2DWithSeed(
         getRolePropertySeed(theme.id, role, 'harmonics'),
         clusterX,
         clusterY
-      ) *
-        (role === 'bass' ? 0.16 : role === 'percussion' ? 0.08 : 0.28),
-    pulseRate:
-      0.6 +
+      )
+    ),
+    pulseRate: interpolatePatchRange(
+      patchRecipe.pulseRateRange,
       hash2DWithSeed(
         getRolePropertySeed(theme.id, role, 'pulse'),
         clusterX,
         clusterY
-      ) *
-        (role === 'percussion' ? 3.2 : role === 'harmony' ? 1.1 : 1.4),
-    brightness: brightness,
+      )
+    ),
+    brightness,
   };
+}
+
+function interpolatePatchRange(
+  range: { min: number; max: number },
+  signal: number
+): number {
+  return range.min + (range.max - range.min) * signal;
 }
 
 function createSoundBankInstrumentDefinition(
