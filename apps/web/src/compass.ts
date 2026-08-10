@@ -44,7 +44,7 @@ export function easeAngle(
   target: number,
   factor: number
 ): number {
-  let delta = getCompassDelta(current, target);
+  const delta = getCompassDelta(current, target);
   return current + delta * factor;
 }
 

@@ -510,7 +510,7 @@ function createHouseholdNpcs(
     );
     let age = 0;
     let lifeStage: TownNpcLifeStage = 'child';
-    let style: NameStyle =
+    const style: NameStyle =
       hash2DWithSeed(
         appendHashSeedLabel(memberSeed, TOWN_MEMBER_STYLE_LABEL),
         tileX,
