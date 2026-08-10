@@ -301,6 +301,7 @@ describe('music debug', () => {
     expect(summary).toContain('exact repeats');
     expect(summary).toContain('Motif Matches');
     expect(summary).toContain('Motif Validation');
+    expect(summary).toContain('Chord Measures');
     expect(summary).toContain('Harmony Chords');
     expect(summary).toContain('Bass Progression');
     expect(summary).toContain('Drum Counts');
@@ -320,6 +321,7 @@ describe('music debug', () => {
     expect(summary).toContain(snapshot.songDna.identityId);
     expect(summary).toContain(snapshot.songDna.locationIdentityId);
     expect(summary).toContain(snapshot.songDna.recognitionLabel);
+    expect(summary).toMatch(/Chord Measures .* m\d/);
     expect(summary).toContain(
       snapshot.songDna.factionMotifs[0]?.factionName ?? ''
     );

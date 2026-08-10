@@ -951,6 +951,9 @@ export function buildMusicDebugSummaryMarkup(
       <span>Motif Validation ${snapshot.motifValidation.isValidForMidiExport ? 'ok' : snapshot.motifValidation.messages.join(' | ')}</span>
     </div>
     <div class="music-debug-role-counts">
+      <span>Chord Measures ${formatMusicDebugChordMeasureWindows(snapshot.harmonyChordDetections)}</span>
+    </div>
+    <div class="music-debug-role-counts">
       <span>Harmony Chords ${formatMusicDebugHarmonyChordDetections(snapshot.harmonyChordDetections)}</span>
     </div>
     <div class="music-debug-role-counts">
@@ -1213,6 +1216,30 @@ function formatMusicDebugSectionMotifMatches(
   }
   return matches
     .map((entry) => `${entry.sectionLabel} ${entry.matchCount}`)
+    .join(' | ');
+}
+
+function formatMusicDebugChordMeasureWindows(
+  detections: readonly MusicDebugHarmonyChordDetection[]
+): string {
+  const windows = detections.flatMap((detection) =>
+    detection.measureWindows.map((window) => ({
+      sectionLabel: detection.sectionLabel,
+      ...window,
+    }))
+  );
+  if (windows.length === 0) {
+    return 'none';
+  }
+  return windows
+    .map((window) => {
+      const measureLabel =
+        window.startMeasure === window.endMeasure
+          ? `m${window.startMeasure}`
+          : `m${window.startMeasure}-${window.endMeasure}`;
+      const detected = window.detectedLabel ?? 'missing';
+      return `${window.sectionLabel} ${measureLabel} ${window.plannedLabel} -> ${detected}`;
+    })
     .join(' | ');
 }
 

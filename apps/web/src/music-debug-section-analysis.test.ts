@@ -57,6 +57,7 @@ describe('music debug section analysis', () => {
         plannedChordLabels: [],
         followsPlannedProgression: true,
         driftWindows: [],
+        measureWindows: [],
       },
       {
         sectionId: 'a',
@@ -66,6 +67,7 @@ describe('music debug section analysis', () => {
         plannedChordLabels: [],
         followsPlannedProgression: true,
         driftWindows: [],
+        measureWindows: [],
       },
     ]);
   });
@@ -90,6 +92,36 @@ describe('music debug section analysis', () => {
         plannedChordLabels: ['G-B-D', 'D-F-A', 'E-G-B', 'G-B-D'],
         followsPlannedProgression: true,
         driftWindows: [],
+        measureWindows: [
+          {
+            startMeasure: 1,
+            endMeasure: 1,
+            plannedLabel: 'G-B-D',
+            detectedLabel: 'G-B-D',
+            detectedNoteLabels: ['B3', 'D4', 'G3'],
+          },
+          {
+            startMeasure: 2,
+            endMeasure: 2,
+            plannedLabel: 'D-F-A',
+            detectedLabel: null,
+            detectedNoteLabels: [],
+          },
+          {
+            startMeasure: 3,
+            endMeasure: 3,
+            plannedLabel: 'E-G-B',
+            detectedLabel: null,
+            detectedNoteLabels: [],
+          },
+          {
+            startMeasure: 4,
+            endMeasure: 4,
+            plannedLabel: 'G-B-D',
+            detectedLabel: null,
+            detectedNoteLabels: [],
+          },
+        ],
       })
     );
     expect(analysis[1]).toEqual(
@@ -103,6 +135,36 @@ describe('music debug section analysis', () => {
             detectedLabel: 'C-E-G',
             detectedNoteLabels: ['C4', 'E4', 'G4'],
             plannedLabel: 'G-B-D',
+          },
+        ],
+        measureWindows: [
+          {
+            startMeasure: 5,
+            endMeasure: 5,
+            plannedLabel: 'G-B-D',
+            detectedLabel: 'C-E-G',
+            detectedNoteLabels: ['C4', 'E4', 'G4'],
+          },
+          {
+            startMeasure: 6,
+            endMeasure: 6,
+            plannedLabel: 'D-F-A',
+            detectedLabel: null,
+            detectedNoteLabels: [],
+          },
+          {
+            startMeasure: 7,
+            endMeasure: 7,
+            plannedLabel: 'E-G-B',
+            detectedLabel: null,
+            detectedNoteLabels: [],
+          },
+          {
+            startMeasure: 8,
+            endMeasure: 8,
+            plannedLabel: 'G-B-D',
+            detectedLabel: null,
+            detectedNoteLabels: [],
           },
         ],
       })
@@ -132,6 +194,36 @@ describe('music debug section analysis', () => {
         plannedRootLabels: ['G', 'D', 'E', 'G'],
         followsPlannedProgression: true,
         driftWindows: [],
+        measureWindows: [
+          {
+            startMeasure: 1,
+            endMeasure: 1,
+            plannedLabel: 'G',
+            detectedLabel: 'G',
+            detectedNoteLabels: ['G3'],
+          },
+          {
+            startMeasure: 2,
+            endMeasure: 2,
+            plannedLabel: 'D',
+            detectedLabel: 'D',
+            detectedNoteLabels: ['D3'],
+          },
+          {
+            startMeasure: 3,
+            endMeasure: 3,
+            plannedLabel: 'E',
+            detectedLabel: 'E',
+            detectedNoteLabels: ['E3'],
+          },
+          {
+            startMeasure: 4,
+            endMeasure: 4,
+            plannedLabel: 'G',
+            detectedLabel: 'G',
+            detectedNoteLabels: ['G3'],
+          },
+        ],
       },
       {
         sectionId: 'a',
@@ -167,6 +259,36 @@ describe('music debug section analysis', () => {
             detectedLabel: 'E',
             detectedNoteLabels: ['E3'],
             plannedLabel: 'G',
+          },
+        ],
+        measureWindows: [
+          {
+            startMeasure: 5,
+            endMeasure: 5,
+            plannedLabel: 'G',
+            detectedLabel: 'A',
+            detectedNoteLabels: ['A3'],
+          },
+          {
+            startMeasure: 6,
+            endMeasure: 6,
+            plannedLabel: 'D',
+            detectedLabel: 'C',
+            detectedNoteLabels: ['C3'],
+          },
+          {
+            startMeasure: 7,
+            endMeasure: 7,
+            plannedLabel: 'E',
+            detectedLabel: 'D',
+            detectedNoteLabels: ['D3'],
+          },
+          {
+            startMeasure: 8,
+            endMeasure: 8,
+            plannedLabel: 'G',
+            detectedLabel: 'E',
+            detectedNoteLabels: ['E3'],
           },
         ],
       },

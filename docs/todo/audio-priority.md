@@ -160,7 +160,7 @@
 - [x] Add a melody-only playback option.
 - [x] Add a bass-and-harmony playback option.
 - [x] Add a dry full-song playback option.
-- [ ] Show planned and detected chords by measure.
+- [x] Show planned and detected chords by measure.
 - [ ] Show planned and actual contour on one graph.
 - [ ] Highlight cadence notes that conflict with harmony.
 - [ ] Highlight unexpected percussion substitutions.
