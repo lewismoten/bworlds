@@ -56,6 +56,7 @@ describe('sound bank debug page', () => {
     expect(markup).toContain('sound-bank-debug-master-gain');
     expect(markup).toContain('Instrument Browser');
     expect(markup).toContain('Role Patches');
+    expect(markup).toContain('Program Browser');
     expect(markup).toContain('music-debug-instrument-panel');
     expect(markup).toContain('sound-bank-debug-layout-compact');
     expect(markup).toContain('sound-bank-debug-layout-expanded');
@@ -67,6 +68,13 @@ describe('sound bank debug page', () => {
     expect(normalizedMarkup).toContain('GM name: Lead 1 (square)');
     expect(normalizedMarkup).toContain('GM program: 80');
     expect(normalizedMarkup).toContain('GM program: Percussion kit');
+    expect(normalizedMarkup).toContain('Standard programs 0 through 127');
+    expect(normalizedMarkup).toContain('>Piano<');
+    expect(normalizedMarkup).toContain('>0<');
+    expect(normalizedMarkup).toContain('Acoustic Grand Piano');
+    expect(normalizedMarkup).toContain('>Sound Effects<');
+    expect(normalizedMarkup).toContain('>127<');
+    expect(normalizedMarkup).toContain('Gunshot');
   });
 
   it('renders the selected layout mode in the shell and toggle state', () => {

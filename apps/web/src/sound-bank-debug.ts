@@ -11,6 +11,7 @@ import {
   type MusicDebugSnapshot,
   type MusicDebugTileKind,
 } from './music-debug.ts';
+import { listGeneralMidiProgramsByFamily } from './general-midi.ts';
 import {
   createSoundBankInstrumentRegistry,
   type SoundBankInstrumentRegistration,
@@ -142,6 +143,27 @@ export function buildSoundBankDebugMarkup(
             }
           </p>
         </article>
+      `
+    )
+    .join('');
+  const generalMidiBrowserMarkup = listGeneralMidiProgramsByFamily()
+    .map(
+      (family) => `
+        <section class="sound-bank-debug-midi-family" aria-label="${family.familyName}">
+          <h3>${family.familyName}</h3>
+          <ol start="${family.programs[0]?.programNumber ?? 0}">
+            ${family.programs
+              .map(
+                (program) => `
+                  <li value="${program.programNumber}">
+                    <span class="sound-bank-debug-midi-program-number">${program.programNumber}</span>
+                    <span class="sound-bank-debug-midi-program-name">${program.instrumentName}</span>
+                  </li>
+                `
+              )
+              .join('')}
+          </ol>
+        </section>
       `
     )
     .join('');
@@ -390,6 +412,21 @@ export function buildSoundBankDebugMarkup(
           </div>
         </section>
         ${registryWarningPanel}
+        <section class="sound-bank-debug-panel">
+          <div class="sound-bank-debug-panel-head">
+            <div>
+              <p class="sound-bank-debug-panel-kicker">General MIDI</p>
+              <h2>Program Browser</h2>
+              <p>
+                Standard programs 0 through 127 grouped by family and sorted by
+                program number.
+              </p>
+            </div>
+          </div>
+          <div class="sound-bank-debug-midi-browser">
+            ${generalMidiBrowserMarkup}
+          </div>
+        </section>
         <section class="sound-bank-debug-panel">
           <div class="sound-bank-debug-panel-head">
             <div>
