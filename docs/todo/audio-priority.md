@@ -20,7 +20,7 @@
 - [x] Stop deriving every instrument from one generic patch shape.
 - [x] Define a distinct recipe for each instrument family.
 - [x] Give flute patches a breath-noise layer.
-- [ ] Give strings a bowed attack and sustained body.
+- [x] Give strings a bowed attack and sustained body.
 - [ ] Give bass patches a clear fundamental and short upper harmonics.
 - [ ] Give struck instruments a separate attack transient.
 - [ ] Change timbre across low, middle, and high registers.

@@ -28,6 +28,8 @@ export type ProceduralInstrumentTimbre = {
   filterType: BiquadFilterType;
   filterCutoffHz: number;
   filterQ: number;
+  attackPeakGainMultiplier?: number;
+  bodySustainLevel?: number;
   noiseMix?: number;
   noiseFilterType?: BiquadFilterType;
   noiseFilterCutoffHz?: number;
@@ -58,6 +60,8 @@ type InstrumentTimbreTemplate = {
   cutoffMaxHz: number;
   qMin: number;
   qMax: number;
+  attackPeakGainMultiplier?: number;
+  bodySustainLevel?: number;
   noiseMix?: number;
   noiseFilterType?: BiquadFilterType;
   noiseCutoffMinHz?: number;
@@ -120,6 +124,8 @@ const INSTRUMENT_PATCH_RECIPES: Record<InstrumentFamily, InstrumentPatchRecipe> 
       cutoffMaxHz: 3200,
       qMin: 0.9,
       qMax: 2.4,
+      attackPeakGainMultiplier: 1.08,
+      bodySustainLevel: 0.88,
     },
   },
   flute: {
@@ -252,6 +258,8 @@ const INSTRUMENT_PATCH_RECIPES: Record<InstrumentFamily, InstrumentPatchRecipe> 
       cutoffMaxHz: 2400,
       qMin: 0.8,
       qMax: 2,
+      attackPeakGainMultiplier: 1.1,
+      bodySustainLevel: 0.92,
     },
   },
   'synth-pad': {
@@ -479,6 +487,8 @@ export function resolveProceduralInstrumentTimbre(options: {
       template.qMax,
       clamp(options.filterSignal, 0, 1)
     ),
+    attackPeakGainMultiplier: template.attackPeakGainMultiplier,
+    bodySustainLevel: template.bodySustainLevel,
     noiseMix,
     noiseFilterType: template.noiseFilterType,
     noiseFilterCutoffHz:

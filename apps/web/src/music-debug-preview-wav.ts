@@ -107,30 +107,53 @@ function sampleWaveform(
   }
 }
 
-function resolveEnvelopeGain(
-  note: Pick<ProceduralMusicNote, 'attackMs' | 'releaseMs'>,
+export function resolveEnvelopeGain(
+  note: Pick<ProceduralMusicNote, 'attackMs' | 'releaseMs' | 'timbre'>,
   timeSeconds: number,
   durationSeconds: number
 ): number {
   const attackSeconds = Math.max(0.001, note.attackMs / 1000);
   const releaseSeconds = Math.max(0.001, note.releaseMs / 1000);
+  const attackPeakGainMultiplier = Math.max(
+    1,
+    note.timbre.attackPeakGainMultiplier ?? 1
+  );
+  const bodySustainLevel = Math.max(
+    0.5,
+    Math.min(1, note.timbre.bodySustainLevel ?? 0.74)
+  );
+  const bodySettleSeconds = Math.min(
+    durationSeconds,
+    attackSeconds + Math.min(0.08, Math.max(0.02, attackSeconds * 0.5))
+  );
   if (timeSeconds <= attackSeconds) {
-    return timeSeconds / attackSeconds;
+    return (timeSeconds / attackSeconds) * attackPeakGainMultiplier;
+  }
+
+  if (timeSeconds <= bodySettleSeconds) {
+    const settleProgress =
+      (timeSeconds - attackSeconds) /
+      Math.max(0.001, bodySettleSeconds - attackSeconds);
+    return (
+      attackPeakGainMultiplier +
+      (bodySustainLevel - attackPeakGainMultiplier) * settleProgress
+    );
   }
 
   const releaseStartSeconds = Math.max(
-    attackSeconds,
+    bodySettleSeconds,
     durationSeconds - releaseSeconds
   );
   if (timeSeconds >= releaseStartSeconds) {
     return Math.max(
       0,
-      (durationSeconds - timeSeconds) /
-        Math.max(0.001, durationSeconds - releaseStartSeconds)
+      bodySustainLevel *
+        ((durationSeconds - timeSeconds) /
+          Math.max(0.001, durationSeconds - releaseStartSeconds))
     );
   }
 
-  return 1;
+  return bodySustainLevel;
 }
 
 function advancePhase(currentPhase: number, phaseIncrement: number): number {
