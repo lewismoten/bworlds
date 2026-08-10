@@ -578,10 +578,80 @@ export function resolveProceduralInstrumentTimbre(options: {
   };
 }
 
+export function resolveRegisterShapedInstrumentTimbre(options: {
+  timbre: ProceduralInstrumentTimbre;
+  frequencyHz: number;
+}): ProceduralInstrumentTimbre {
+  const registerSignal = resolveRegisterSignal(options.frequencyHz);
+  const lowWeight = clamp((0.35 - registerSignal) / 0.35, 0, 1);
+  const highWeight = clamp((registerSignal - 0.65) / 0.35, 0, 1);
+  const cutoffMultiplier = 1 - lowWeight * 0.18 + highWeight * 0.22;
+  const harmonicRatioMultiplier = 1 - lowWeight * 0.08 + highWeight * 0.14;
+  const filterQMultiplier = 1 + lowWeight * 0.06 + highWeight * 0.14;
+  const noiseMixMultiplier = 1 - lowWeight * 0.08 + highWeight * 0.12;
+  const transientMixMultiplier = 1 - lowWeight * 0.06 + highWeight * 0.1;
+  const fundamentalMultiplier = 1 + lowWeight * 0.08 - highWeight * 0.05;
+  const harmonicBodyMultiplier = 1 + lowWeight * 0.08 - highWeight * 0.08;
+
+  return {
+    ...options.timbre,
+    harmonicRatio: Math.max(
+      0.5,
+      options.timbre.harmonicRatio * harmonicRatioMultiplier
+    ),
+    filterCutoffHz: Math.max(
+      60,
+      options.timbre.filterCutoffHz * cutoffMultiplier
+    ),
+    filterQ: clamp(options.timbre.filterQ * filterQMultiplier, 0.1, 24),
+    fundamentalGainMultiplier:
+      options.timbre.fundamentalGainMultiplier === undefined
+        ? undefined
+        : clamp(
+            options.timbre.fundamentalGainMultiplier * fundamentalMultiplier,
+            0.5,
+            2
+          ),
+    harmonicBodyLevel:
+      options.timbre.harmonicBodyLevel === undefined
+        ? undefined
+        : clamp(
+            options.timbre.harmonicBodyLevel * harmonicBodyMultiplier,
+            0,
+            1
+          ),
+    transientMix:
+      options.timbre.transientMix === undefined
+        ? undefined
+        : clamp(options.timbre.transientMix * transientMixMultiplier, 0, 0.5),
+    transientFilterCutoffHz:
+      options.timbre.transientFilterCutoffHz === undefined
+        ? undefined
+        : Math.max(
+            80,
+            options.timbre.transientFilterCutoffHz * cutoffMultiplier
+          ),
+    noiseMix:
+      options.timbre.noiseMix === undefined
+        ? undefined
+        : clamp(options.timbre.noiseMix * noiseMixMultiplier, 0, 0.4),
+    noiseFilterCutoffHz:
+      options.timbre.noiseFilterCutoffHz === undefined
+        ? undefined
+        : Math.max(80, options.timbre.noiseFilterCutoffHz * cutoffMultiplier),
+  };
+}
+
 function interpolate(min: number, max: number, signal: number): number {
   return min + (max - min) * signal;
 }
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
+}
+
+function resolveRegisterSignal(frequencyHz: number): number {
+  const safeFrequency = Math.max(27.5, frequencyHz);
+  const normalizedOctaves = (Math.log2(safeFrequency / 27.5) - 2) / 4;
+  return clamp(normalizedOctaves, 0, 1);
 }

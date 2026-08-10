@@ -26,9 +26,43 @@ import { resolveProceduralThemeMotif } from './procedural-music-theme-motif.ts';
 import {
   resolveInstrumentPatchRecipe,
   resolveProceduralInstrumentTimbre,
+  resolveRegisterShapedInstrumentTimbre,
 } from './music-instrument-timbres.ts';
 
 describe('procedural music', () => {
+  it('changes note timbre across low, middle, and high registers', () => {
+    const baseTimbre = resolveProceduralInstrumentTimbre({
+      family: 'flute',
+      brightness: 1.02,
+      harmonicSignal: 0.45,
+      filterSignal: 0.5,
+    });
+
+    const lowTimbre = resolveRegisterShapedInstrumentTimbre({
+      timbre: baseTimbre,
+      frequencyHz: 196,
+    });
+    const middleTimbre = resolveRegisterShapedInstrumentTimbre({
+      timbre: baseTimbre,
+      frequencyHz: 440,
+    });
+    const highTimbre = resolveRegisterShapedInstrumentTimbre({
+      timbre: baseTimbre,
+      frequencyHz: 1_176,
+    });
+
+    expect(lowTimbre.filterCutoffHz).toBeLessThan(middleTimbre.filterCutoffHz);
+    expect(highTimbre.filterCutoffHz).toBeGreaterThan(
+      middleTimbre.filterCutoffHz
+    );
+    expect(lowTimbre.harmonicRatio).toBeLessThan(middleTimbre.harmonicRatio);
+    expect(highTimbre.harmonicRatio).toBeGreaterThan(
+      middleTimbre.harmonicRatio
+    );
+    expect(lowTimbre.noiseMix).toBeLessThan(middleTimbre.noiseMix ?? Infinity);
+    expect(highTimbre.noiseMix).toBeGreaterThan(middleTimbre.noiseMix ?? 0);
+  });
+
   it('adds shared sound bank registry metadata to generated instruments', () => {
     const bank = createProceduralInstrumentBank(
       resolveMusicTheme('forest', 'overworld', undefined, 2, -3),
@@ -1458,6 +1492,35 @@ describe('procedural music', () => {
     expect(
       (winterLead?.frequency ?? 0) / (summerLead?.frequency ?? 1)
     ).toBeGreaterThan(1.9);
+  });
+
+  it('applies register-shaped timbre to scheduled notes from the same instrument patch', () => {
+    const scheduled = scheduleProceduralMusicNotes({
+      nowMs: 0,
+      tileKind: 'town',
+      contextType: 'town',
+      dayProgress: 0.5,
+      yearProgress: 0.5,
+      clusterX: 0,
+      clusterY: 0,
+    });
+
+    const lead = scheduled.notes.find((note) => note.role === 'lead');
+    const bass = scheduled.notes.find((note) => note.role === 'bass');
+
+    expect(lead).toEqual(expect.objectContaining({ role: 'lead' }));
+    expect(bass).toEqual(expect.objectContaining({ role: 'bass' }));
+    expect(lead?.timbre.filterCutoffHz).toBeDefined();
+    expect(bass?.timbre.filterCutoffHz).toBeDefined();
+    expect((lead?.frequency ?? 0) / (bass?.frequency ?? Infinity)).toBeGreaterThan(
+      2
+    );
+    expect((lead?.timbre.filterCutoffHz ?? 0)).toBeGreaterThan(
+      bass?.timbre.filterCutoffHz ?? 0
+    );
+    expect((lead?.timbre.harmonicRatio ?? 0)).toBeGreaterThan(
+      bass?.timbre.harmonicRatio ?? 0
+    );
   });
 
   it('introduces deterministic rests without dropping the phrase anchors', () => {

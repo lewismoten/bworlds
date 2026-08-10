@@ -23,7 +23,7 @@
 - [x] Give strings a bowed attack and sustained body.
 - [x] Give bass patches a clear fundamental and short upper harmonics.
 - [x] Give struck instruments a separate attack transient.
-- [ ] Change timbre across low, middle, and high registers.
+- [x] Change timbre across low, middle, and high registers.
 - [ ] Change timbre based on note velocity.
 - [x] Limit random patch values to family-safe ranges.
 - [ ] Add one known-good patch for each core song role.

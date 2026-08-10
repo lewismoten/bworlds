@@ -12,6 +12,7 @@ import {
 import {
   resolveInstrumentPatchRecipe,
   resolveProceduralInstrumentTimbre,
+  resolveRegisterShapedInstrumentTimbre,
   type InstrumentFamily,
   type MusicWaveform,
   type ProceduralInstrumentTimbre,
@@ -1804,56 +1805,63 @@ function createThemeNotes(options: {
   }
   const voiceVolumeScale =
     role === 'harmony' ? 1.2 / Math.max(1, voiceSemitones.length) : 1;
-  return voiceSemitones.map((voiceSemitone, voiceIndex) => ({
-    themeId: options.theme.id,
-    instrumentId:
-      role === 'harmony'
-        ? `${instrument.id}:voice-${voiceIndex}`
-        : instrument.id,
-    role,
-    startMs: options.startMs,
-    durationMs:
-      options.theme.noteDurationMs *
-      (role === 'bass' ? 1.08 : role === 'harmony' ? 1.18 : 0.92) *
-      arrangementProfile.durationMultiplier *
-      meterAccent.durationMultiplier *
-      resolveCompositionDurationMultiplier(role, composition),
-    frequency: resolveProceduralNoteFrequency({
+  return voiceSemitones.map((voiceSemitone, voiceIndex) => {
+    const frequency = resolveProceduralNoteFrequency({
       rootMidiNote: options.theme.rootMidiNote,
       semitones: voiceSemitone + octaveBoost,
       role,
       octaveShiftSemitones: arrangementProfile.octaveShiftSemitones,
-    }),
-    volume:
-      options.theme.baseVolume *
-      options.mood.volumeMultiplier *
-      arrangementProfile.volumeMultiplier *
-      meterAccent.volumeMultiplier *
-      resolveCompositionVolumeMultiplier(role, composition) *
-      (role === 'bass' ? 0.8 : role === 'harmony' ? 0.72 : 1) *
-      voiceVolumeScale,
-    waveform: arrangementProfile.waveformOverride ?? instrument.waveform,
-    timbre: instrument.timbre,
-    attackMs: instrument.attackMs,
-    releaseMs: instrument.releaseMs * arrangementProfile.releaseMultiplier,
-    detuneCents: instrument.detuneCents,
-    harmonicGain: resolveProceduralNoteHarmonicGain({
-      baseHarmonicGain: instrument.harmonicGain,
-      harmonicGainMultiplier: arrangementProfile.harmonicGainMultiplier,
-      moodBrightness: options.mood.brightness,
-      brightnessMultiplier: arrangementProfile.brightnessMultiplier,
-    }),
-    pulseRate:
-      instrument.pulseRate *
-      arrangementProfile.pulseRateMultiplier *
-      meterAccent.pulseRateMultiplier,
-    space: resolveMusicSpaceProfile({
-      tileKind: options.tileKind,
-      contextType: options.contextType,
-    }),
-    emitter: options.emitter,
-    listener: options.listener,
-  }));
+    });
+
+    return {
+      themeId: options.theme.id,
+      instrumentId:
+        role === 'harmony'
+          ? `${instrument.id}:voice-${voiceIndex}`
+          : instrument.id,
+      role,
+      startMs: options.startMs,
+      durationMs:
+        options.theme.noteDurationMs *
+        (role === 'bass' ? 1.08 : role === 'harmony' ? 1.18 : 0.92) *
+        arrangementProfile.durationMultiplier *
+        meterAccent.durationMultiplier *
+        resolveCompositionDurationMultiplier(role, composition),
+      frequency,
+      volume:
+        options.theme.baseVolume *
+        options.mood.volumeMultiplier *
+        arrangementProfile.volumeMultiplier *
+        meterAccent.volumeMultiplier *
+        resolveCompositionVolumeMultiplier(role, composition) *
+        (role === 'bass' ? 0.8 : role === 'harmony' ? 0.72 : 1) *
+        voiceVolumeScale,
+      waveform: arrangementProfile.waveformOverride ?? instrument.waveform,
+      timbre: resolveRegisterShapedInstrumentTimbre({
+        timbre: instrument.timbre,
+        frequencyHz: frequency,
+      }),
+      attackMs: instrument.attackMs,
+      releaseMs: instrument.releaseMs * arrangementProfile.releaseMultiplier,
+      detuneCents: instrument.detuneCents,
+      harmonicGain: resolveProceduralNoteHarmonicGain({
+        baseHarmonicGain: instrument.harmonicGain,
+        harmonicGainMultiplier: arrangementProfile.harmonicGainMultiplier,
+        moodBrightness: options.mood.brightness,
+        brightnessMultiplier: arrangementProfile.brightnessMultiplier,
+      }),
+      pulseRate:
+        instrument.pulseRate *
+        arrangementProfile.pulseRateMultiplier *
+        meterAccent.pulseRateMultiplier,
+      space: resolveMusicSpaceProfile({
+        tileKind: options.tileKind,
+        contextType: options.contextType,
+      }),
+      emitter: options.emitter,
+      listener: options.listener,
+    };
+  });
 }
 
 function resolveThemeNoteOctaveBoost(options: {
