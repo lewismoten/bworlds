@@ -21,6 +21,7 @@
 - [ ] Move instrument wave form cards to appear just under the MIDI track visualizer.
 
 # Track Role / Color / Listing Order
+
 - [ ] Melody: Order 1, yellow, named as Melody
 - [ ] Counterline: Order 2, orange, named as Counter Melody
 - [ ] Harmony: Order 3, Green, named as Harmony
@@ -73,7 +74,7 @@
 - [x] Use cymbals mainly at section boundaries.
 - [x] Use fills only before meaningful transitions.
 - [x] Vary groove patterns once per phrase.
-- [ ] Keep ambient percussion quieter than pitched tracks.
+- [x] Keep ambient percussion quieter than pitched tracks.
 - [ ] Reduce percussion density during calm sections.
 - [ ] Make drum velocity follow the section energy curve.
 - [ ] Prevent identical drum hits from repeating mechanically.

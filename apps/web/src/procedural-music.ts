@@ -660,7 +660,7 @@ export function resolveMusicArrangement(options: {
           brightnessMultiplier: 0.94,
         },
         percussion: {
-          volumeMultiplier: 0.32,
+          volumeMultiplier: 0.26,
           durationMultiplier: 0.88,
           releaseMultiplier: 1.22,
           harmonicGainMultiplier: 1.24,
@@ -701,7 +701,7 @@ export function resolveMusicArrangement(options: {
           brightnessMultiplier: 0.88,
         },
         percussion: {
-          volumeMultiplier: 0.22,
+          volumeMultiplier: 0.2,
           durationMultiplier: 0.92,
           releaseMultiplier: 0.88,
           harmonicGainMultiplier: 0.72,
@@ -741,7 +741,7 @@ export function resolveMusicArrangement(options: {
           brightnessMultiplier: 0.94,
         },
         percussion: {
-          volumeMultiplier: 0.72,
+          volumeMultiplier: 0.5,
           durationMultiplier: 0.96,
           releaseMultiplier: 0.94,
           harmonicGainMultiplier: 0.88,
@@ -780,7 +780,7 @@ export function resolveMusicArrangement(options: {
         brightnessMultiplier: 1,
       },
       percussion: {
-        volumeMultiplier: 1,
+        volumeMultiplier: 0.62,
         durationMultiplier: 1,
         releaseMultiplier: 1,
         harmonicGainMultiplier: 1,

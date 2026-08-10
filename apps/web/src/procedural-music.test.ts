@@ -1416,7 +1416,7 @@ describe('procedural music', () => {
 
     expect(arrangement.roleProfiles.percussion).toEqual(
       expect.objectContaining({
-        volumeMultiplier: 0.22,
+        volumeMultiplier: 0.2,
         skipEvery: 2,
       })
     );
@@ -1612,6 +1612,49 @@ describe('procedural music', () => {
     expect(
       (nightHarmony?.releaseMs ?? 0) / (dayHarmony?.releaseMs ?? 1)
     ).toBeGreaterThan(1.5);
+  });
+
+  it('keeps ambient forest percussion quieter than the pitched roles', () => {
+    const introScheduled = scheduleProceduralMusicNotes({
+      nowMs: 0,
+      tileKind: 'forest',
+      contextType: 'overworld',
+      dayProgress: 0.5,
+      yearProgress: 0.5,
+      clusterX: 0,
+      clusterY: 0,
+    });
+    const scheduled = scheduleProceduralMusicNotes(
+      {
+        nowMs: introScheduled.state.nextNoteAtMs,
+        tileKind: 'forest',
+        contextType: 'overworld',
+        dayProgress: 0.5,
+        yearProgress: 0.5,
+        clusterX: 0,
+        clusterY: 0,
+      },
+      introScheduled.state
+    );
+
+    const percussionNotes = scheduled.notes.filter(
+      (note) => note.role === 'percussion'
+    );
+    const pitchedNotes = scheduled.notes.filter(
+      (note) => note.role !== 'percussion'
+    );
+    const average = (values: readonly number[]) =>
+      values.reduce((total, value) => total + value, 0) / values.length;
+    const percussionAverageVolume = average(
+      percussionNotes.map((note) => note.volume)
+    );
+    const pitchedAverageVolume = average(
+      pitchedNotes.map((note) => note.volume)
+    );
+
+    expect(percussionNotes.length).toBeGreaterThan(0);
+    expect(pitchedNotes.length).toBeGreaterThan(0);
+    expect(percussionAverageVolume).toBeLessThan(pitchedAverageVolume * 0.7);
   });
 
   it('keeps pitched note semitone mapping stable across mood brightness changes', () => {
@@ -3391,7 +3434,7 @@ describe('procedural music', () => {
     const spread = Math.max(...volumes) - Math.min(...volumes);
 
     expect(spread).toBeGreaterThan(0.006);
-    expect(spread).toBeLessThan(0.039);
+    expect(spread).toBeLessThan(0.041);
   });
 
   it('lets percussion react to the shared composition structure instead of staying flat', () => {
