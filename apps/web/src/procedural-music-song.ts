@@ -174,7 +174,8 @@ function applySongSectionsToNotes(
 ): ProceduralMusicNote[] {
   const transformedNotes: ProceduralMusicNote[] = [];
   let sectionIndex = 0;
-  let noteIndexInSection = 0;
+  let noteIndexesByRoleInSection: Record<ProceduralMusicNote['role'], number> =
+    createSectionRoleNoteIndexMap();
 
   for (let index = 0; index < notes.length; index += 1) {
     const note = notes[index]!;
@@ -187,16 +188,17 @@ function applySongSectionsToNotes(
           sections[sectionIndex]!.durationMs
     ) {
       sectionIndex += 1;
-      noteIndexInSection = 0;
+      noteIndexesByRoleInSection = createSectionRoleNoteIndexMap();
     }
 
     const section = sections[sectionIndex]!;
+    const noteIndexInSection = noteIndexesByRoleInSection[note.role];
     const transformed = transformSongSectionNote(
       note,
       section,
       noteIndexInSection
     );
-    noteIndexInSection += 1;
+    noteIndexesByRoleInSection[note.role] += 1;
 
     if (transformed) {
       transformedNotes.push(transformed);
@@ -208,4 +210,16 @@ function applySongSectionsToNotes(
 
 function roundToNearestThousand(value: number): number {
   return Math.max(1_000, Math.round(value / 1_000) * 1_000);
+}
+
+function createSectionRoleNoteIndexMap(): Record<
+  ProceduralMusicNote['role'],
+  number
+> {
+  return {
+    lead: 0,
+    harmony: 0,
+    bass: 0,
+    percussion: 0,
+  };
 }

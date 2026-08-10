@@ -268,4 +268,91 @@ describe('procedural music song', () => {
     expect(variation.percussion ?? 0).toBeLessThan(sectionA.percussion ?? 0);
     expect(outro.percussion ?? 0).toBe(0);
   });
+
+  it('keeps each exploration-cycle section aligned with its advertised layer plan', () => {
+    const song = createProceduralMusicSong({
+      nowMs: 1_000,
+      tileKind: 'forest',
+      contextType: 'overworld',
+      dayProgress: 0.45,
+      yearProgress: 0.25,
+      clusterX: 3,
+      clusterY: -2,
+    });
+    const sectionById = new Map(
+      song.sections.map((section) => [section.id, section])
+    );
+
+    const summarizeSection = (
+      sectionId: 'intro' | 'a' | 'b' | 'variation' | 'return' | 'outro'
+    ) => {
+      const section = sectionById.get(sectionId)!;
+      const endMs = song.startMs + section.startOffsetMs + section.durationMs;
+      const notes = song.notes.filter(
+        (note) =>
+          note.startMs >= song.startMs + section.startOffsetMs &&
+          note.startMs < endMs
+      );
+      const roleCounts = notes.reduce<Record<string, number>>(
+        (counts, note) => {
+          counts[note.role] = (counts[note.role] ?? 0) + 1;
+          return counts;
+        },
+        {}
+      );
+      const averageDurationByRole = notes.reduce<Record<string, number>>(
+        (totals, note) => {
+          totals[note.role] = (totals[note.role] ?? 0) + note.durationMs;
+          return totals;
+        },
+        {}
+      );
+
+      for (const role of Object.keys(averageDurationByRole)) {
+        averageDurationByRole[role] =
+          averageDurationByRole[role]! / Math.max(1, roleCounts[role] ?? 0);
+      }
+
+      const averageLeadVolume =
+        notes
+          .filter((note) => note.role === 'lead')
+          .reduce((total, note) => total + note.volume, 0) /
+        Math.max(1, roleCounts.lead ?? 0);
+
+      return {
+        roleCounts,
+        averageDurationByRole,
+        averageLeadVolume,
+      };
+    };
+
+    const intro = summarizeSection('intro');
+    const sectionA = summarizeSection('a');
+    const sectionB = summarizeSection('b');
+    const variation = summarizeSection('variation');
+    const sectionReturn = summarizeSection('return');
+    const outro = summarizeSection('outro');
+
+    expect(intro.roleCounts.percussion ?? 0).toBe(0);
+    expect(intro.roleCounts.bass ?? 0).toBeLessThan(
+      sectionA.roleCounts.bass ?? 0
+    );
+    expect(sectionA.roleCounts.bass ?? 0).toBeGreaterThan(0);
+    expect(sectionA.roleCounts.harmony ?? 0).toBeGreaterThan(0);
+    expect(sectionA.roleCounts.lead ?? 0).toBeGreaterThan(0);
+    expect(sectionA.roleCounts.percussion ?? 0).toBeGreaterThan(0);
+    expect(sectionB.roleCounts.harmony ?? 0).toBeLessThan(
+      sectionA.roleCounts.harmony ?? 0
+    );
+    expect(variation.roleCounts.percussion ?? 0).toBeLessThan(
+      sectionA.roleCounts.percussion ?? 0
+    );
+    expect(variation.averageDurationByRole.lead ?? 0).toBeGreaterThan(
+      sectionA.averageDurationByRole.lead ?? 0
+    );
+    expect(sectionReturn.roleCounts.percussion ?? 0).toBeGreaterThan(0);
+    expect(sectionReturn.roleCounts.harmony ?? 0).toBeGreaterThan(0);
+    expect(outro.roleCounts.percussion ?? 0).toBe(0);
+    expect(outro.averageLeadVolume).toBeLessThan(sectionA.averageLeadVolume);
+  });
 });

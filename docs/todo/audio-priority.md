@@ -72,7 +72,7 @@ added directly as semitones instead of moving through the selected scale.
 - [x] Ensure B and Variation each receive sixteen measures.
 - [x] Ensure Return and Outro each receive eight measures.
 - [ ] Keep note events inside their assigned sections.
-- [ ] Verify section note counts match layer plans.
+- [x] Verify section note counts match layer plans.
 - [ ] Apply layer changes exactly at section boundaries.
 - [x] Export section names as MIDI markers.
 
@@ -184,9 +184,9 @@ added directly as semitones instead of moving through the selected scale.
 - [ ] Replace the isolated snare pattern with a groove.
 - [ ] Repeat percussion patterns by measure.
 - [ ] Add fills only before structural changes.
-- [ ] Keep percussion absent during the Intro.
-- [ ] Thin percussion during the Variation section.
-- [ ] Remove percussion during the Outro.
+- [x] Keep percussion absent during the Intro.
+- [x] Thin percussion during the Variation section.
+- [x] Remove percussion during the Outro.
 - [ ] Align drum accents with chord changes.
 - [ ] Validate percussion section rules before export.
 
@@ -194,13 +194,13 @@ added directly as semitones instead of moving through the selected scale.
 
 - [ ] Verify Intro has no percussion.
 - [ ] Verify Intro uses a deliberately thin bass part.
-- [ ] Make Section A contain the full layer stack.
+- [x] Make Section A contain the full layer stack.
 - [ ] Move the lead forward during Section A'.
 - [ ] Reduce harmony density during Section B.
-- [ ] Stretch lead durations during Variation.
-- [ ] Thin percussion during Variation.
+- [x] Stretch lead durations during Variation.
+- [x] Thin percussion during Variation.
 - [ ] Restore all layers during Return.
-- [ ] Fade the lead during Outro.
+- [x] Fade the lead during Outro.
 - [ ] Export actual layer activity by section.
 
 ## Density
@@ -278,4 +278,4 @@ added directly as semitones instead of moving through the selected scale.
 - [x] Verify the exported file lasts about 2:18.
 - [x] Verify the exported BPM matches the easy tempo.
 - [x] Verify all 88 planned measures are exported.
-- [ ] Verify each section follows its layer plan.
+- [x] Verify each section follows its layer plan.
