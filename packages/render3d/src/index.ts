@@ -58,7 +58,6 @@ import {
 } from './tile-model-geometry-validation.ts';
 import { pruneTileModelOptionalPartsForBudget } from './tile-model-budget-pruning.ts';
 import {
-  getTileModelCostEstimateBudgetViolations,
   summarizeTileModelCostEstimateBudgetViolations,
   type TileModelCostEstimateBudgetViolation,
   type TileModelCostEstimateLimits,
@@ -70,11 +69,8 @@ import {
 } from './tile-model-cost-estimate-budget.ts';
 import { getTileModelPerformanceWarnings } from './tile-model-performance-warnings.ts';
 import {
-  buildPendingWorldBuildQueue,
   createPendingWorldBuildQueueScratch,
-  reconcilePendingWorldBuildQueue,
   reconcilePendingWorldBuildQueueWithScratch,
-  type PendingWorldBuildEntry,
 } from './pending-world-build-queue.ts';
 import { shouldProcessPendingWorldBuildEntryWithinBudget } from './pending-world-build-processing.ts';
 import { collectMaterialTexturesInto } from './material-texture-collector.ts';
@@ -114,7 +110,6 @@ import {
   fillVisibleWorldTileBuildOrder,
 } from './visible-world-build-order.ts';
 import {
-  collectChunkDrawCallStats,
   collectVisibleTileResourceStats,
   DRAW_CALL_CHUNK_TILE_SIZE,
 } from './visible-tile-resource-stats.ts';
@@ -140,7 +135,6 @@ import {
 import {
   collectMapEntriesInto,
   fillWrappedBatchWindow,
-  getWrappedBatchWindow,
 } from './reusable-batch-window.ts';
 import { runTileModelSafetyPrecheck } from './tile-model-safety-precheck.ts';
 import {
@@ -940,9 +934,6 @@ type DynamicTileNode = {
   detailLevel?: RenderBudgetDetailLevel;
   sync3DModel?: NonNullable<TilePlugin['sync3DModel']>;
 };
-type ConstellationStarLike = NonNullable<
-  NonNullable<DaylightCycleState['constellations']>[number]
->['stars'][number];
 type ShadowSettingsOptions = {
   castShadow: boolean;
   receiveShadow: boolean;
@@ -1444,15 +1435,10 @@ const WORLD_SYNC_BATCH_SIZE = 28;
 const LOD_SYNC_BATCH_SIZE = 28;
 const DEFAULT_PENDING_WORLD_BUILD_BUDGET_MS = 2.5;
 const LOW_DETAIL_MODEL_DISTANCE = 6.5;
-const LOW_DETAIL_MODEL_DISTANCE_SQUARED =
-  LOW_DETAIL_MODEL_DISTANCE * LOW_DETAIL_MODEL_DISTANCE;
 const LANDMARK_LOW_DETAIL_MODEL_DISTANCE = 13.5;
 const LOD_DETAIL_HYSTERESIS_DISTANCE = 0.5;
-const LOW_DETAIL_ENTER_DISTANCE_SQUARED = LOW_DETAIL_MODEL_DISTANCE_SQUARED;
 const LOW_DETAIL_EXIT_DISTANCE =
   LOW_DETAIL_MODEL_DISTANCE - LOD_DETAIL_HYSTERESIS_DISTANCE;
-const LOW_DETAIL_EXIT_DISTANCE_SQUARED =
-  LOW_DETAIL_EXIT_DISTANCE * LOW_DETAIL_EXIT_DISTANCE;
 const PENDING_BUILD_FULL_DETAIL_DISTANCE = 3;
 const PENDING_BUILD_FULL_DETAIL_DISTANCE_SQUARED =
   PENDING_BUILD_FULL_DETAIL_DISTANCE * PENDING_BUILD_FULL_DETAIL_DISTANCE;
@@ -1626,11 +1612,6 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
   const visibleWorldVisibleTileKeysBuffer = new Set<string>();
   const pendingWorldBuildQueueScratch = createPendingWorldBuildQueueScratch();
   const visibleWorldBuildOrderScratch = createVisibleWorldBuildOrderScratch();
-  const backgroundColor = new THREE.Color(SKY_DAY_COLOR);
-  const twilightColor = new THREE.Color(SKY_SUNSET_COLOR);
-  const nightColor = new THREE.Color(SKY_NIGHT_COLOR);
-  const fogDayColor = new THREE.Color(FOG_DAY_COLOR);
-  const fogNightColor = new THREE.Color(FOG_NIGHT_COLOR);
   const skyLightingColorState = createSkyLightingColorState();
   const starFieldPositionScratch = new THREE.Vector3();
   let lastMoonPhaseIndex = -1;
@@ -2165,8 +2146,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
 
   function syncVisibleWorld(
     state,
-    chunkRadius = CHUNK_RADIUS,
-    renderBudget?: RenderBudget
+    chunkRadius = CHUNK_RADIUS
   ) {
     const context = state.getCurrentContext();
     const centerX = Math.round(state.player.x);
@@ -2399,7 +2379,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
         nextVisibleWorldSyncState
       )
     ) {
-      syncVisibleWorld(state, chunkRadius, options.renderBudget);
+      syncVisibleWorld(state, chunkRadius);
     }
     const frameNowMs = options.timeMs ?? performance.now();
     const generationFrameBudget = createFrameTimeBudget(
@@ -3536,7 +3516,7 @@ export function syncDynamicTileNodes(
     cycle,
     environment,
   }: {
-    three: Render3DState extends { viewMode?: infer _ }
+    three: Render3DState extends { viewMode?: unknown }
       ? Parameters<NonNullable<TilePlugin['sync3DModel']>>[0]['three']
       : never;
     state: Render3DState;
