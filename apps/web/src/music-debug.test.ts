@@ -78,6 +78,7 @@ describe('music debug', () => {
     expect(first.sectionLayerArrangement).toEqual(
       second.sectionLayerArrangement
     );
+    expect(first.sectionLayerActivity).toEqual(second.sectionLayerActivity);
     expect(first.lyrics).toEqual(second.lyrics);
     expect(first.notes).toEqual(second.notes);
     expect(first.durationMs).toBeGreaterThanOrEqual(120_000);
@@ -120,6 +121,13 @@ describe('music debug', () => {
     expect(first.harmonyChordDetections).toHaveLength(
       first.song.sections.length
     );
+    expect(first.sectionLayerActivity).toHaveLength(first.song.sections.length);
+    expect(first.sectionLayerActivity[0]?.sectionLabel).toBe(
+      first.song.sections[0]?.label
+    );
+    expect(
+      first.sectionLayerActivity.some((entry) => entry.roleCounts.lead > 0)
+    ).toBe(true);
     expect(
       first.harmonyChordDetections.some((entry) => entry.chordLabels.length > 0)
     ).toBe(true);
@@ -170,6 +178,7 @@ describe('music debug', () => {
     expect(summary).toContain('Vocabulary');
     expect(summary).toContain('SongDNA');
     expect(summary).toContain('Layer Mix');
+    expect(summary).toContain('Actual Layers');
     expect(summary).toContain('Chords');
     expect(summary).toContain('Shared Motif');
     expect(summary).toContain('Lead Motif');

@@ -201,7 +201,7 @@ added directly as semitones instead of moving through the selected scale.
 - [x] Thin percussion during Variation.
 - [ ] Restore all layers during Return.
 - [x] Fade the lead during Outro.
-- [ ] Export actual layer activity by section.
+- [x] Export actual layer activity by section.
 
 ## Density
 

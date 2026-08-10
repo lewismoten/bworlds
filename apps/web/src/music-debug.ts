@@ -55,8 +55,10 @@ import {
 } from './music-debug-track-stats.ts';
 import {
   createMusicDebugHarmonyChordDetections,
+  createMusicDebugSectionLayerActivity,
   createMusicDebugSectionMotifMatches,
   type MusicDebugHarmonyChordDetection,
+  type MusicDebugSectionLayerActivity,
   type MusicDebugSectionMotifMatch,
 } from './music-debug-section-analysis.ts';
 import {
@@ -116,6 +118,7 @@ export type MusicDebugSnapshot = {
   vocabularySummary: string[];
   sharedMotif: number[];
   sectionLayerArrangement: string[];
+  sectionLayerActivity: MusicDebugSectionLayerActivity[];
   lyrics: MusicDebugLyricLine[];
   loopStartOffsetMs: number;
   loopEndOffsetMs: number;
@@ -365,6 +368,10 @@ export function createMusicDebugSnapshot(
     notePitchDiagnostics: midiExportValidation.notePitchDiagnostics,
     sections: song.sections,
   });
+  const sectionLayerActivity = createMusicDebugSectionLayerActivity({
+    notes: song.notes,
+    sections: song.sections,
+  });
   const snapshotBase = {
     options,
     theme,
@@ -386,6 +393,7 @@ export function createMusicDebugSnapshot(
     vocabularySummary: [],
     sharedMotif: [...theme.motif.sharedDegreeOffsets],
     sectionLayerArrangement: [],
+    sectionLayerActivity: [],
     lyrics,
     loopStartOffsetMs: song.loopStartOffsetMs,
     loopEndOffsetMs: song.loopEndOffsetMs,
@@ -418,6 +426,7 @@ export function createMusicDebugSnapshot(
     sectionLayerArrangement: song.sections.map((section) =>
       describeSongSectionLayerArrangement(section)
     ),
+    sectionLayerActivity,
     midiAudit: {
       exportedBpm: null,
       exportedDurationMs: 0,
@@ -444,6 +453,7 @@ export function createMusicDebugSnapshot(
     sectionLayerArrangement: song.sections.map((section) =>
       describeSongSectionLayerArrangement(section)
     ),
+    sectionLayerActivity,
     midiAudit,
   };
 }
@@ -698,6 +708,9 @@ export function buildMusicDebugSummaryMarkup(
       <span>Layer Mix ${snapshot.sectionLayerArrangement.join(' | ')}</span>
     </div>
     <div class="music-debug-role-counts">
+      <span>Actual Layers ${formatMusicDebugSectionLayerActivity(snapshot.sectionLayerActivity)}</span>
+    </div>
+    <div class="music-debug-role-counts">
       <span>Chords ${snapshot.chordProgression.map((degree) => degree + 1).join(' - ')}</span>
     </div>
     <div class="music-debug-role-counts">
@@ -744,6 +757,31 @@ function formatMusicDebugAccidentalRuleSummary(
     parts.push(`${describeMusicDebugAccidentalReason(reason)} ${count}`);
   }
   return parts.length > 0 ? parts.join(' / ') : 'none';
+}
+
+function formatMusicDebugSectionLayerActivity(
+  sections: readonly MusicDebugSectionLayerActivity[]
+): string {
+  if (sections.length === 0) {
+    return 'none';
+  }
+  return sections
+    .map((section) => {
+      const counts = [
+        `B${section.roleCounts.bass}`,
+        `H${section.roleCounts.harmony}`,
+        `L${section.roleCounts.lead}`,
+        `P${section.roleCounts.percussion}`,
+      ].join('/');
+      const coverage = [
+        `B${Math.round(section.soundingTimePercentageByRole.bass)}%`,
+        `H${Math.round(section.soundingTimePercentageByRole.harmony)}%`,
+        `L${Math.round(section.soundingTimePercentageByRole.lead)}%`,
+        `P${Math.round(section.soundingTimePercentageByRole.percussion)}%`,
+      ].join('/');
+      return `${section.sectionLabel} ${counts} @ ${coverage}`;
+    })
+    .join(' | ');
 }
 
 function formatMusicDebugAccidentalExamples(

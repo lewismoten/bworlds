@@ -16,6 +16,14 @@ export type MusicDebugHarmonyChordDetection = {
   chordLabels: string[];
 };
 
+export type MusicDebugSectionLayerActivity = {
+  sectionId: string;
+  sectionLabel: string;
+  roleCounts: Record<ProceduralMusicRole, number>;
+  soundingTimePercentageByRole: Record<ProceduralMusicRole, number>;
+  averageDurationMsByRole: Record<ProceduralMusicRole, number>;
+};
+
 const MUSIC_DEBUG_PITCH_CLASS_LABELS = [
   'C',
   'C#',
@@ -70,6 +78,66 @@ export function createMusicDebugHarmonyChordDetections(options: {
       section,
     }),
   }));
+}
+
+export function createMusicDebugSectionLayerActivity(options: {
+  notes: readonly ProceduralMusicNote[];
+  sections: readonly ProceduralMusicSongSection[];
+}): MusicDebugSectionLayerActivity[] {
+  const songStartMs = options.notes[0]?.startMs ?? 0;
+  return options.sections.map((section) => {
+    const sectionStart = songStartMs + section.startOffsetMs;
+    const sectionEnd = sectionStart + section.durationMs;
+    const roleCounts = createEmptyRoleMetrics();
+    const totalDurationMs = createEmptyRoleMetrics();
+
+    for (const note of options.notes) {
+      if (note.startMs < sectionStart || note.startMs >= sectionEnd) {
+        continue;
+      }
+      roleCounts[note.role] += 1;
+      const clippedDurationMs = Math.max(
+        0,
+        Math.min(note.startMs + note.durationMs, sectionEnd) - note.startMs
+      );
+      totalDurationMs[note.role] += clippedDurationMs;
+    }
+
+    const soundingTimePercentageByRole = createEmptyRoleMetrics();
+    const averageDurationMsByRole = createEmptyRoleMetrics();
+    for (const role of PROCEDURAL_MUSIC_ROLES) {
+      soundingTimePercentageByRole[role] =
+        section.durationMs <= 0
+          ? 0
+          : (totalDurationMs[role] / section.durationMs) * 100;
+      averageDurationMsByRole[role] =
+        roleCounts[role] > 0 ? totalDurationMs[role] / roleCounts[role] : 0;
+    }
+
+    return {
+      sectionId: section.id,
+      sectionLabel: section.label,
+      roleCounts,
+      soundingTimePercentageByRole,
+      averageDurationMsByRole,
+    };
+  });
+}
+
+const PROCEDURAL_MUSIC_ROLES = [
+  'bass',
+  'harmony',
+  'lead',
+  'percussion',
+] as const satisfies readonly ProceduralMusicRole[];
+
+function createEmptyRoleMetrics(): Record<ProceduralMusicRole, number> {
+  return {
+    bass: 0,
+    harmony: 0,
+    lead: 0,
+    percussion: 0,
+  };
 }
 
 function collectSectionScaleDegrees(options: {

@@ -30,7 +30,11 @@ import {
 import { type MilkyWayBeltLike } from './celestial/milky-way.ts';
 import { clamp, fract, lerp, normalizeAngle, smoothstep } from './math.ts';
 import { getOrreryBodies, type OrreryBodyLike } from './celestial/orrery.ts';
-import { getDaylightCycleState, type AuroraBandLike } from './celestial/getDaylightCycleState.ts';
+import {
+  getDaylightCycleState,
+  type AuroraBandLike,
+} from './celestial/getDaylightCycleState.ts';
+import { getWorldDaylightCycle } from './celestial/daylight.ts';
 
 export {
   appendHashSeedLabel,
@@ -93,6 +97,8 @@ export {
   getWorldTimeMs,
   type PlanetSkyProfile,
 } from './celestial/time.ts';
+export { getWorldDaylightCycle } from './celestial/daylight.ts';
+export { applyCelestialEnvironmentOverrides } from './celestial/applyCelestialEnvironmentOverrides.ts';
 
 const POI_NAME_PREFIX_SET_LABEL = registerHashLabel('name-prefix-set');
 const POI_NAME_SUFFIX_SET_LABEL = registerHashLabel('name-suffix-set');
@@ -117,9 +123,9 @@ const registeredPoiNameTypeLabels = new Map<string, number>(
   Object.entries(POI_NAME_TYPE_LABELS)
 );
 
-export {type CelestialEventLike};
+export { type CelestialEventLike };
 
-export {type AuroraBandLike};
+export { type AuroraBandLike };
 
 export type PoiNameType =
   | (
@@ -293,25 +299,6 @@ type CoreWorldStateLike = {
   interact(): boolean;
   tryExit(): boolean;
 };
-
-export function getWorldDaylightCycle(
-  realTimeMs: number,
-  options: {
-    timeOffsetMs?: number;
-    cycle?: {
-      dayLengthMs?: number;
-      offsetMs?: number;
-    };
-  } = {}
-) {
-  const worldTimeMs = getWorldTimeMs(realTimeMs, {
-    timeOffsetMs: options.timeOffsetMs,
-  });
-  return {
-    worldTimeMs,
-    cycle: getDaylightCycleState(worldTimeMs, options.cycle ?? {}),
-  };
-}
 
 export function advanceWorldTimeOffsetByHours(
   currentOffsetMs: number,

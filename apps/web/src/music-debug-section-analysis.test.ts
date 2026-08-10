@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import type { MusicDebugNotePitchDiagnostic } from './music-debug-note-analysis.ts';
 import {
   createMusicDebugHarmonyChordDetections,
+  createMusicDebugSectionLayerActivity,
   createMusicDebugSectionMotifMatches,
 } from './music-debug-section-analysis.ts';
 import type { ProceduralMusicNote } from './procedural-music.ts';
@@ -48,6 +49,60 @@ describe('music debug section analysis', () => {
         sectionId: 'a',
         sectionLabel: 'Section A',
         chordLabels: ['C-E-G x1'],
+      },
+    ]);
+  });
+
+  it('reports actual role counts and sounding coverage by section', () => {
+    const analysis = createMusicDebugSectionLayerActivity({
+      notes: TEST_NOTES,
+      sections: TEST_SECTIONS,
+    });
+
+    expect(analysis).toEqual([
+      {
+        sectionId: 'intro',
+        sectionLabel: 'Intro',
+        roleCounts: {
+          bass: 0,
+          harmony: 3,
+          lead: 4,
+          percussion: 0,
+        },
+        soundingTimePercentageByRole: {
+          bass: 0,
+          harmony: 18,
+          lead: 24,
+          percussion: 0,
+        },
+        averageDurationMsByRole: {
+          bass: 0,
+          harmony: 240,
+          lead: 240,
+          percussion: 0,
+        },
+      },
+      {
+        sectionId: 'a',
+        sectionLabel: 'Section A',
+        roleCounts: {
+          bass: 0,
+          harmony: 3,
+          lead: 4,
+          percussion: 0,
+        },
+        soundingTimePercentageByRole: {
+          bass: 0,
+          harmony: 18,
+          lead: 24,
+          percussion: 0,
+        },
+        averageDurationMsByRole: {
+          bass: 0,
+          harmony: 240,
+          lead: 240,
+          percussion: 0,
+        },
       },
     ]);
   });
