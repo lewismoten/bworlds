@@ -4,6 +4,7 @@ import type {
 } from './procedural-music.ts';
 import { resolveProceduralLeadRhythmPhraseTemplate } from './procedural-music-lead-rhythm-template.ts';
 import { PROCEDURAL_MUSIC_PHRASE_MEASURE_COUNT } from './procedural-music-phrase-structure.ts';
+import { shapeProceduralPhraseSupportNotes } from './procedural-music-phrase-support.ts';
 import {
   resolveMusicThemeById,
   scheduleProceduralMusicNotes,
@@ -55,12 +56,18 @@ export function collectProceduralMusicPhraseNotes(
     }
   }
 
-  return ensureLeadMeasureAttackDensity(notes, {
-    phraseStartMs: options.nowMs,
-    phraseDurationMs,
-    clusterX: options.clusterX ?? 0,
-    clusterY: options.clusterY ?? 0,
-  });
+  return shapeProceduralPhraseSupportNotes(
+    ensureLeadMeasureAttackDensity(notes, {
+      phraseStartMs: options.nowMs,
+      phraseDurationMs,
+      clusterX: options.clusterX ?? 0,
+      clusterY: options.clusterY ?? 0,
+    }),
+    {
+      phraseStartMs: options.nowMs,
+      phraseDurationMs,
+    }
+  );
 }
 
 export function repeatProceduralMusicPhraseNotes(

@@ -70,6 +70,53 @@ describe('procedural music song base phrase plan', () => {
       expect(secondPhrase).toEqual(firstPhrase);
     }
   });
+
+  it('keeps a harmony anchor active through long lead rests in the base phrase', () => {
+    const music = {
+      nowMs: 1_000,
+      tileKind: 'forest' as const,
+      contextType: 'overworld' as const,
+      dayProgress: 0.45,
+      yearProgress: 0.25,
+      clusterX: 3,
+      clusterY: -2,
+    };
+    const songDurationMs = resolveProceduralMusicSongDurationMs(music);
+    const blueprint = resolveProceduralMusicBlueprint(music);
+    const sections = buildProceduralMusicSongSections(
+      blueprint,
+      songDurationMs
+    );
+    const phraseDurationMs = resolveProceduralMusicPhraseDurationMs(
+      sections,
+      songDurationMs
+    );
+    const plan = buildProceduralMusicBasePhrasePlan({
+      music,
+      sections,
+      songStartMs: music.nowMs,
+      songDurationMs,
+    });
+    const longLeadRests = collectLongLeadRests(
+      plan.basePhraseNotes,
+      music.nowMs,
+      music.nowMs + phraseDurationMs,
+      240
+    );
+    const supportAnchors = plan.basePhraseNotes.filter((note) =>
+      note.instrumentId.includes(':anchor-')
+    );
+
+    expect(longLeadRests.length).toBeGreaterThan(0);
+    expect(supportAnchors.length).toBeGreaterThan(0);
+    expect(
+      supportAnchors.every((anchor) =>
+        longLeadRests.some(
+          (gap) => anchor.startMs >= gap.startMs && anchor.startMs < gap.endMs
+        )
+      )
+    ).toBe(true);
+  });
 });
 
 function readPhraseSignature(
@@ -93,4 +140,41 @@ function readPhraseSignature(
       frequency: Number(note.frequency.toFixed(3)),
       volume: Number(note.volume.toFixed(6)),
     }));
+}
+
+function collectLongLeadRests(
+  notes: ReturnType<
+    typeof buildProceduralMusicBasePhrasePlan
+  >['basePhraseNotes'],
+  phraseStartMs: number,
+  phraseEndMs: number,
+  minimumGapMs: number
+) {
+  const leadNotes = notes
+    .filter((note) => note.role === 'lead')
+    .sort((left, right) => left.startMs - right.startMs);
+  const gaps: Array<{ startMs: number; endMs: number; midpointMs: number }> =
+    [];
+  let cursorMs = phraseStartMs;
+
+  for (const note of leadNotes) {
+    if (note.startMs - cursorMs >= minimumGapMs) {
+      gaps.push({
+        startMs: cursorMs,
+        endMs: note.startMs,
+        midpointMs: cursorMs + (note.startMs - cursorMs) / 2,
+      });
+    }
+    cursorMs = Math.max(cursorMs, note.startMs + note.durationMs);
+  }
+
+  if (phraseEndMs - cursorMs >= minimumGapMs) {
+    gaps.push({
+      startMs: cursorMs,
+      endMs: phraseEndMs,
+      midpointMs: cursorMs + (phraseEndMs - cursorMs) / 2,
+    });
+  }
+
+  return gaps;
 }

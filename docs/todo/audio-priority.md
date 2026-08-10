@@ -218,7 +218,7 @@ added directly as semitones instead of moving through the selected scale.
 
 ## Rhythm and Spacing
 
-- [ ] Reduce the long silent gaps between pitched notes.
+- [x] Reduce the long silent gaps between pitched notes.
 - [ ] Lengthen string notes beyond their current short values.
 - [ ] Let bass notes support more of each harmonic span.
 - [ ] Give the flute connected phrase-level rhythms.
@@ -263,7 +263,7 @@ added directly as semitones instead of moving through the selected scale.
 - [ ] Reduce density during Intro and Outro.
 - [ ] Avoid all tracks entering after unrelated random delays.
 - [ ] Coordinate rests between lead and accompaniment.
-- [ ] Keep at least one harmonic anchor during lead rests.
+- [x] Keep at least one harmonic anchor during lead rests.
 - [x] Report sounding-time percentage for each track.
 
 ## Accidentals
