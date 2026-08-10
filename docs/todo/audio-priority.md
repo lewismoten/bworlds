@@ -190,8 +190,8 @@ added directly as semitones instead of moving through the selected scale.
 - [x] Vary only one motif element at a time.
 - [x] Transpose motifs using chord-aware scale degrees.
 - [x] Keep the motif rhythm recognizable after transposition.
-- [ ] Use motif fragments during B and Variation.
-- [ ] Return to the original motif near the ending.
+- [x] Use motif fragments during B and Variation.
+- [x] Return to the original motif near the ending.
 
 ## Lead Contour
 

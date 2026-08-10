@@ -345,6 +345,79 @@ describe('procedural music song motif', () => {
       }),
     ]);
   });
+
+  it('uses motif fragments in B and Variation, then returns to the original motif near the ending', () => {
+    const notes: ProceduralMusicNote[] = [
+      createLeadNote(40_100, 392),
+      createLeadNote(41_100, 440),
+      createLeadNote(42_100, 493.883),
+      createLeadNote(43_100, 440),
+      createLeadNote(56_100, 392),
+      createLeadNote(57_100, 440),
+      createLeadNote(58_100, 493.883),
+      createLeadNote(59_100, 440),
+      createLeadNote(72_100, 392),
+      createLeadNote(73_100, 440),
+      createLeadNote(74_100, 493.883),
+      createLeadNote(75_100, 440),
+    ];
+    const sections: ProceduralMusicSongSection[] = [
+      createSection('intro', 0, 8_000, 8),
+      {
+        ...createSection('a', 8_000, 16_000, 16),
+        startMeasure: 9,
+        endMeasure: 24,
+      },
+      {
+        ...createSection('a-prime', 24_000, 16_000, 16),
+        startMeasure: 25,
+        endMeasure: 40,
+      },
+      {
+        ...createSection('b', 40_000, 16_000, 16),
+        startMeasure: 41,
+        endMeasure: 56,
+      },
+      {
+        ...createSection('variation', 56_000, 16_000, 16),
+        startMeasure: 57,
+        endMeasure: 72,
+      },
+      {
+        ...createSection('return', 72_000, 8_000, 8),
+        startMeasure: 73,
+        endMeasure: 80,
+      },
+    ];
+    const theme = {
+      rootHz: 196,
+      rootMidiNote: 55,
+      scale: [0, 2, 4, 5, 7, 9, 10],
+      noteDurationMs: 360,
+    };
+
+    const updated = stateLeadMotifInFirstASection({
+      notes,
+      sections,
+      songStartMs: 0,
+      leadMotif: [0, 2, 4, 2],
+      theme,
+    });
+
+    const bLead = collectSectionLeadMidi(updated, 40_000, 56_000).slice(0, 3);
+    const variationLead = collectSectionLeadMidi(updated, 56_000, 72_000).slice(
+      0,
+      3
+    );
+    const returnLead = collectSectionLeadMidi(updated, 72_000, 80_000).slice(
+      0,
+      4
+    );
+
+    expect(bLead).toEqual([67, 71, 74]);
+    expect(variationLead).toEqual([71, 74, 71]);
+    expect(returnLead).toEqual([67, 71, 74, 71]);
+  });
 });
 
 function createSection(
@@ -393,4 +466,19 @@ function createLeadNote(
     harmonicGain: 0.3,
     pulseRate: 1,
   };
+}
+
+function collectSectionLeadMidi(
+  notes: readonly ProceduralMusicNote[],
+  sectionStartMs: number,
+  sectionEndMs: number
+): number[] {
+  return notes
+    .filter(
+      (note) =>
+        note.role === 'lead' &&
+        note.startMs >= sectionStartMs &&
+        note.startMs < sectionEndMs
+    )
+    .map((note) => Math.round(69 + 12 * Math.log2(note.frequency / 440)));
 }

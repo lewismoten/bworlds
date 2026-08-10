@@ -26,6 +26,13 @@ export type ProceduralMusicSongExpectedMotifCoverage = {
   needsRegeneration: boolean;
 };
 
+type ProceduralMusicSongPhraseWindow = {
+  phraseStartMs: number;
+  phraseDurationMs: number;
+  sectionEndMs: number;
+  phraseStartMeasure: number;
+};
+
 export function stateLeadMotifInFirstASection(options: {
   notes: readonly ProceduralMusicNote[];
   sections: readonly ProceduralMusicSongSection[];
@@ -36,6 +43,8 @@ export function stateLeadMotifInFirstASection(options: {
   const updatedNotes = [...options.notes];
   applyLeadMotifPhraseStatements(updatedNotes, options);
   applyLeadMotifVariationInAprimeSection(updatedNotes, options);
+  applyLeadMotifFragmentsInLaterSections(updatedNotes, options);
+  applyLeadMotifReturnNearEnding(updatedNotes, options);
   updatedNotes.sort((left, right) => {
     if (left.startMs !== right.startMs) {
       return left.startMs - right.startMs;
@@ -170,25 +179,13 @@ function applyLeadMotifPhraseStatements(
   if (!sectionA || options.leadMotif.length === 0) {
     return;
   }
-
-  const phraseDurationMs = Math.max(1, Math.round(sectionA.durationMs / 2));
-  const phraseStartMs = options.songStartMs + sectionA.startOffsetMs;
-  const sectionEndMs = phraseStartMs + sectionA.durationMs;
-
   applyMotifToPhraseWindow(notes, {
-    phraseStartMs,
-    phraseDurationMs,
-    sectionEndMs,
-    phraseStartMeasure: sectionA.startMeasure,
+    ...resolveSongSectionPhraseWindow(sectionA, options.songStartMs, 0),
     leadMotif: options.leadMotif,
     theme: options.theme,
   });
   applyMotifToPhraseWindow(notes, {
-    phraseStartMs: phraseStartMs + phraseDurationMs,
-    phraseDurationMs,
-    sectionEndMs,
-    phraseStartMeasure:
-      sectionA.startMeasure + Math.floor(sectionA.measureCount / 2),
+    ...resolveSongSectionPhraseWindow(sectionA, options.songStartMs, 1),
     leadMotif: options.leadMotif,
     theme: options.theme,
   });
@@ -209,37 +206,100 @@ function applyLeadMotifVariationInAprimeSection(
   if (!sectionAPrime || options.leadMotif.length === 0) {
     return;
   }
-
-  const phraseDurationMs = Math.max(
-    1,
-    Math.round(sectionAPrime.durationMs / 2)
+  const firstPhraseWindow = resolveSongSectionPhraseWindow(
+    sectionAPrime,
+    options.songStartMs,
+    0
   );
-  const phraseStartMs = options.songStartMs + sectionAPrime.startOffsetMs;
-  const sectionEndMs = phraseStartMs + sectionAPrime.durationMs;
   const transposedMotif = resolveChordAwareMotifDegrees({
     leadMotif: options.leadMotif,
-    phraseStartMeasure: sectionAPrime.startMeasure,
-    phraseStartMs,
-    phraseDurationMs,
-    sectionEndMs,
+    ...firstPhraseWindow,
     theme: options.theme,
   });
 
   applyMotifToPhraseWindow(notes, {
-    phraseStartMs,
-    phraseDurationMs,
-    sectionEndMs,
-    phraseStartMeasure: sectionAPrime.startMeasure,
+    ...firstPhraseWindow,
     leadMotif: transposedMotif,
     theme: options.theme,
   });
   applyMotifToPhraseWindow(notes, {
-    phraseStartMs: phraseStartMs + phraseDurationMs,
-    phraseDurationMs,
-    sectionEndMs,
-    phraseStartMeasure:
-      sectionAPrime.startMeasure + Math.floor(sectionAPrime.measureCount / 2),
+    ...resolveSongSectionPhraseWindow(sectionAPrime, options.songStartMs, 1),
     leadMotif: transposedMotif,
+    theme: options.theme,
+  });
+}
+
+function applyLeadMotifFragmentsInLaterSections(
+  notes: ProceduralMusicNote[],
+  options: {
+    sections: readonly ProceduralMusicSongSection[];
+    songStartMs: number;
+    leadMotif: readonly number[];
+    theme: ProceduralMusicSongMotifTheme;
+  }
+): void {
+  const fragmentPlans = [
+    {
+      sectionId: 'b' as const,
+      fragment: options.leadMotif.slice(
+        0,
+        Math.min(3, options.leadMotif.length)
+      ),
+    },
+    {
+      sectionId: 'variation' as const,
+      fragment: options.leadMotif.slice(
+        Math.max(0, options.leadMotif.length - 3)
+      ),
+    },
+  ];
+
+  for (const plan of fragmentPlans) {
+    const section = options.sections.find(
+      (candidate) => candidate.id === plan.sectionId
+    );
+    if (!section || plan.fragment.length < 2) {
+      continue;
+    }
+    const phraseWindow = resolveSongSectionPhraseWindow(
+      section,
+      options.songStartMs,
+      0
+    );
+    const fragmentMotif = resolveChordAwareMotifDegrees({
+      leadMotif: plan.fragment,
+      ...phraseWindow,
+      theme: options.theme,
+      fallbackTranspositionDegree: 0,
+    });
+
+    applyMotifToPhraseWindow(notes, {
+      ...phraseWindow,
+      leadMotif: fragmentMotif,
+      theme: options.theme,
+    });
+  }
+}
+
+function applyLeadMotifReturnNearEnding(
+  notes: ProceduralMusicNote[],
+  options: {
+    sections: readonly ProceduralMusicSongSection[];
+    songStartMs: number;
+    leadMotif: readonly number[];
+    theme: ProceduralMusicSongMotifTheme;
+  }
+): void {
+  const returnSection =
+    options.sections.find((section) => section.id === 'return') ??
+    options.sections.find((section) => section.id === 'outro');
+  if (!returnSection || options.leadMotif.length === 0) {
+    return;
+  }
+
+  applyMotifToPhraseWindow(notes, {
+    ...resolveSongSectionPhraseWindow(returnSection, options.songStartMs, 0),
+    leadMotif: options.leadMotif,
     theme: options.theme,
   });
 }
@@ -366,6 +426,25 @@ function resolveLeadMotifRhythmTemplate(options: {
   return steps;
 }
 
+function resolveSongSectionPhraseWindow(
+  section: ProceduralMusicSongSection,
+  songStartMs: number,
+  phraseIndex: 0 | 1
+): ProceduralMusicSongPhraseWindow {
+  const phraseDurationMs = Math.max(1, Math.round(section.durationMs / 2));
+  const phraseStartMs =
+    songStartMs + section.startOffsetMs + phraseDurationMs * phraseIndex;
+
+  return {
+    phraseStartMs,
+    phraseDurationMs,
+    sectionEndMs: songStartMs + section.startOffsetMs + section.durationMs,
+    phraseStartMeasure:
+      section.startMeasure +
+      Math.floor((section.measureCount / 2) * phraseIndex),
+  };
+}
+
 function resolveChordAwareMotifDegrees(options: {
   leadMotif: readonly number[];
   phraseStartMeasure: number;
@@ -373,6 +452,7 @@ function resolveChordAwareMotifDegrees(options: {
   phraseDurationMs: number;
   sectionEndMs: number;
   theme: ProceduralMusicSongMotifTheme;
+  fallbackTranspositionDegree?: number;
 }): number[] {
   const scaleLength = Math.max(1, options.theme.scale.length);
   if (
@@ -380,7 +460,9 @@ function resolveChordAwareMotifDegrees(options: {
     !options.theme.id ||
     !options.theme.stepPatternLength
   ) {
-    return options.leadMotif.map((degree) => mod(degree + 1, scaleLength));
+    return options.leadMotif.map((degree) =>
+      mod(degree + (options.fallbackTranspositionDegree ?? 1), scaleLength)
+    );
   }
 
   const rhythmTemplate = resolveLeadMotifRhythmTemplate({
@@ -424,7 +506,9 @@ function resolveChordAwareMotifDegrees(options: {
           rightCount - leftCount ||
           orderedDegrees.indexOf(left) - orderedDegrees.indexOf(right)
         );
-      })[0] ?? 1;
+      })[0] ??
+    options.fallbackTranspositionDegree ??
+    1;
 
   return options.leadMotif.map((degree) =>
     mod(degree + transpositionDegree, scaleLength)
