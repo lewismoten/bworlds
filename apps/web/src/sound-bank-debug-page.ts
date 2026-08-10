@@ -4,14 +4,17 @@ import {
   buildSoundBankDebugMarkup,
   createSoundBankDebugSnapshot,
   DEFAULT_SOUND_BANK_DEBUG_GENERAL_MIDI_BROWSER_STATE,
+  DEFAULT_SOUND_BANK_DEBUG_PERCUSSION_BROWSER_STATE,
   DEFAULT_SOUND_BANK_DEBUG_OPTIONS,
   normalizeSoundBankDebugGeneralMidiBrowserState,
+  normalizeSoundBankDebugPercussionBrowserState,
   normalizeSoundBankDebugOptions,
   randomizeSoundBankDebugSeed,
   resolveSoundBankDebugPreviewNoteRole,
   type SoundBankDebugGeneralMidiBrowserState,
   type SoundBankDebugLayoutMode,
   type SoundBankDebugOptions,
+  type SoundBankDebugPercussionBrowserState,
   type SoundBankDebugSnapshot,
 } from './sound-bank-debug.ts';
 import { createMusicDebugInstrumentPreviewPlayer } from './music-debug-instrument-preview.ts';
@@ -29,6 +32,7 @@ const instrumentPreviewPlayer = createMusicDebugInstrumentPreviewPlayer();
 let options = DEFAULT_SOUND_BANK_DEBUG_OPTIONS;
 let generalMidiBrowserState =
   DEFAULT_SOUND_BANK_DEBUG_GENERAL_MIDI_BROWSER_STATE;
+let percussionBrowserState = DEFAULT_SOUND_BANK_DEBUG_PERCUSSION_BROWSER_STATE;
 let audioStatus = 'Audio idle';
 let errorMessage: string | null = null;
 let layoutMode: SoundBankDebugLayoutMode = 'expanded';
@@ -212,6 +216,24 @@ function readGeneralMidiBrowserState(): SoundBankDebugGeneralMidiBrowserState {
   });
 }
 
+function readPercussionBrowserState(): SoundBankDebugPercussionBrowserState {
+  const form = document.querySelector<HTMLFormElement>(
+    '#sound-bank-debug-form'
+  );
+  if (!form) {
+    return percussionBrowserState;
+  }
+  const formData = new FormData(form);
+  return normalizeSoundBankDebugPercussionBrowserState({
+    familyFilter:
+      typeof formData.get('percussionFamilyFilter') === 'string'
+        ? (String(
+            formData.get('percussionFamilyFilter')
+          ) as SoundBankDebugPercussionBrowserState['familyFilter'])
+        : percussionBrowserState.familyFilter,
+  });
+}
+
 function isSoundBankPreviewRole(
   value: string | undefined
 ): value is MusicDebugInstrumentPreviewTarget {
@@ -239,6 +261,7 @@ function renderPage(): void {
     layoutMode,
     errorMessage,
     generalMidiBrowserState,
+    percussionBrowserState,
   });
   bindPage(snapshot);
   syncAudioContextUi();
@@ -254,6 +277,7 @@ function bindPage(snapshot: SoundBankDebugSnapshot): void {
         stopPreview();
         options = readFormOptions();
         generalMidiBrowserState = readGeneralMidiBrowserState();
+        percussionBrowserState = readPercussionBrowserState();
         audioStatus = 'Audio idle';
         errorMessage = null;
         renderPage();
@@ -387,6 +411,7 @@ function bindPage(snapshot: SoundBankDebugSnapshot): void {
         options = DEFAULT_SOUND_BANK_DEBUG_OPTIONS;
         generalMidiBrowserState =
           DEFAULT_SOUND_BANK_DEBUG_GENERAL_MIDI_BROWSER_STATE;
+        percussionBrowserState = DEFAULT_SOUND_BANK_DEBUG_PERCUSSION_BROWSER_STATE;
         audioStatus = 'Audio idle';
         errorMessage = null;
         renderPage();
@@ -433,6 +458,17 @@ function bindPage(snapshot: SoundBankDebugSnapshot): void {
         pageLifecycleSignal ? { signal: pageLifecycleSignal } : undefined
       );
     });
+
+  document
+    .querySelector<HTMLSelectElement>('#sound-bank-debug-percussion-family-filter')
+    ?.addEventListener(
+      'change',
+      () => {
+        percussionBrowserState = readPercussionBrowserState();
+        renderPage();
+      },
+      pageLifecycleSignal ? { signal: pageLifecycleSignal } : undefined
+    );
 
   document
     .querySelector<HTMLInputElement>('#sound-bank-debug-midi-search')

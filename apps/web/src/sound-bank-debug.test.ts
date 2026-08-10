@@ -5,6 +5,7 @@ import {
   createSoundBankDebugSnapshot,
   normalizeSoundBankDebugGeneralMidiBrowserState,
   normalizeSoundBankDebugOptions,
+  normalizeSoundBankDebugPercussionBrowserState,
   randomizeSoundBankDebugSeed,
   resolveSoundBankDebugGeneralMidiBrowserModel,
   resolveSoundBankDebugPreviewNoteRole,
@@ -60,6 +61,7 @@ describe('sound bank debug page', () => {
     expect(markup).toContain('Instrument Browser');
     expect(markup).toContain('Role Patches');
     expect(markup).toContain('Percussion Browser');
+    expect(markup).toContain('sound-bank-debug-percussion-family-filter');
     expect(markup).toContain('Program Browser');
     expect(markup).toContain('sound-bank-debug-midi-search');
     expect(markup).toContain('sound-bank-debug-midi-family-filter');
@@ -295,6 +297,23 @@ describe('sound bank debug page', () => {
     });
   });
 
+  it('normalizes percussion browser family filters into supported values', () => {
+    expect(
+      normalizeSoundBankDebugPercussionBrowserState({
+        familyFilter: 'snare',
+      })
+    ).toEqual({
+      familyFilter: 'snare',
+    });
+    expect(
+      normalizeSoundBankDebugPercussionBrowserState({
+        familyFilter: 'drums' as 'all',
+      })
+    ).toEqual({
+      familyFilter: 'all',
+    });
+  });
+
   it('filters, sorts, and tracks selection in the General MIDI browser', () => {
     const snapshot = createSoundBankDebugSnapshot();
     const searchedModel = resolveSoundBankDebugGeneralMidiBrowserModel(
@@ -453,5 +472,23 @@ describe('sound bank debug page', () => {
     expect(note?.durationMs).toBeGreaterThanOrEqual(96);
     expect(note?.attackMs).toBeGreaterThanOrEqual(4);
     expect(note?.releaseMs).toBeGreaterThanOrEqual(24);
+  });
+
+  it('filters the percussion browser to a selected drum family', () => {
+    const snapshot = createSoundBankDebugSnapshot();
+    const markup = buildSoundBankDebugMarkup(snapshot, {
+      audioStatus: 'Audio idle',
+      percussionBrowserState: {
+        familyFilter: 'snare',
+      },
+    }).replace(/\s+/g, ' ');
+    const percussionSection = markup.match(
+      /<h2>Percussion Browser<\/h2>[\s\S]*?<section class="sound-bank-debug-panel"> <div class="sound-bank-debug-panel-head"> <div> <p class="sound-bank-debug-panel-kicker">General MIDI<\/p>/
+    )?.[0] ?? markup;
+
+    expect(percussionSection).toContain('Snare');
+    expect(percussionSection).toContain('Snare Main');
+    expect(percussionSection).not.toContain('Kick Center');
+    expect(percussionSection).not.toContain('Closed Hat');
   });
 });

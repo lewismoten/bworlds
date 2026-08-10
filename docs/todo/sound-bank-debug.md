@@ -88,7 +88,7 @@
 - [x] Show the MIDI note for each drum sound.
 - [x] Show percussion names beside note numbers.
 - [x] Group related percussion sounds.
-- [ ] Add a filter for drum families.
+- [x] Add a filter for drum families.
 - [x] Add a button to play each percussion sound.
 - [ ] Add a small drum pad grid.
 - [ ] Add keyboard shortcuts for drum pads.

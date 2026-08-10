@@ -49,6 +49,7 @@ export type SoundBankDebugSnapshot = {
 
 export type SoundBankDebugLayoutMode = 'compact' | 'expanded';
 export type SoundBankDebugGeneralMidiSortMode = 'program' | 'name' | 'family';
+export type SoundBankDebugPercussionFamilyFilter = 'all' | PercussionFamily;
 
 export type SoundBankDebugGeneralMidiBrowserState = {
   searchQuery: string;
@@ -59,6 +60,10 @@ export type SoundBankDebugGeneralMidiBrowserState = {
   playableMidiNote: string;
   selectedProgramNumber: string;
   sortMode: SoundBankDebugGeneralMidiSortMode;
+};
+
+export type SoundBankDebugPercussionBrowserState = {
+  familyFilter: SoundBankDebugPercussionFamilyFilter;
 };
 
 export type SoundBankDebugGeneralMidiBrowserSection = Readonly<{
@@ -105,6 +110,11 @@ export const DEFAULT_SOUND_BANK_DEBUG_GENERAL_MIDI_BROWSER_STATE: SoundBankDebug
     playableMidiNote: '',
     selectedProgramNumber: '',
     sortMode: 'program',
+  };
+
+export const DEFAULT_SOUND_BANK_DEBUG_PERCUSSION_BROWSER_STATE: SoundBankDebugPercussionBrowserState =
+  {
+    familyFilter: 'all',
   };
 
 export const DEFAULT_SOUND_BANK_DEBUG_OPTIONS: SoundBankDebugOptions = {
@@ -186,6 +196,7 @@ export function buildSoundBankDebugMarkup(
     layoutMode?: SoundBankDebugLayoutMode;
     errorMessage?: string | null;
     generalMidiBrowserState?: Partial<SoundBankDebugGeneralMidiBrowserState>;
+    percussionBrowserState?: Partial<SoundBankDebugPercussionBrowserState>;
   } = {
     audioStatus: 'Audio idle',
   }
@@ -196,6 +207,9 @@ export function buildSoundBankDebugMarkup(
     normalizeSoundBankDebugGeneralMidiBrowserState(
       viewState.generalMidiBrowserState
     );
+  const percussionBrowserState = normalizeSoundBankDebugPercussionBrowserState(
+    viewState.percussionBrowserState
+  );
   const generalMidiBrowserModel = resolveSoundBankDebugGeneralMidiBrowserModel(
     snapshot.instrumentRegistry.entries,
     generalMidiBrowserState
@@ -228,7 +242,9 @@ export function buildSoundBankDebugMarkup(
       `
     )
     .join('');
-  const percussionBrowserSections = createSoundBankDebugPercussionBrowserSections();
+  const percussionBrowserSections = createSoundBankDebugPercussionBrowserSections(
+    percussionBrowserState
+  );
   const generalMidiBrowserMarkup = generalMidiBrowserModel.sections
     .map(
       (section) => `
@@ -547,6 +563,20 @@ export function buildSoundBankDebugMarkup(
               </p>
             </div>
           </div>
+          <div class="sound-bank-debug-midi-controls">
+            <label>
+              <span>Drum family</span>
+              <select
+                id="sound-bank-debug-percussion-family-filter"
+                name="percussionFamilyFilter"
+              >
+                ${renderOptionList(
+                  ['all', ...PERCUSSION_FAMILY_ORDER],
+                  percussionBrowserState.familyFilter
+                )}
+              </select>
+            </label>
+          </div>
           <div class="sound-bank-debug-percussion-browser">
             ${percussionBrowserSections
               .map(
@@ -786,6 +816,23 @@ export function normalizeSoundBankDebugGeneralMidiBrowserState(
   };
 }
 
+export function normalizeSoundBankDebugPercussionBrowserState(
+  value: Partial<SoundBankDebugPercussionBrowserState> | null | undefined
+): SoundBankDebugPercussionBrowserState {
+  const familyFilter =
+    value?.familyFilter === 'kick' ||
+    value?.familyFilter === 'snare' ||
+    value?.familyFilter === 'cymbals' ||
+    value?.familyFilter === 'shaker' ||
+    value?.familyFilter === 'hand-percussion'
+      ? value.familyFilter
+      : 'all';
+
+  return {
+    familyFilter,
+  };
+}
+
 export function resolveSoundBankDebugGeneralMidiBrowserModel(
   registryEntries: readonly SoundBankInstrumentRegistryEntry[],
   browserState: Partial<SoundBankDebugGeneralMidiBrowserState>
@@ -983,8 +1030,12 @@ function createGeneralMidiProgramView(
   };
 }
 
-function createSoundBankDebugPercussionBrowserSections(): readonly SoundBankDebugPercussionBrowserSection[] {
-  return PERCUSSION_FAMILY_ORDER.map((family) => ({
+function createSoundBankDebugPercussionBrowserSections(
+  state: SoundBankDebugPercussionBrowserState
+): readonly SoundBankDebugPercussionBrowserSection[] {
+  return PERCUSSION_FAMILY_ORDER.filter(
+    (family) => state.familyFilter === 'all' || family === state.familyFilter
+  ).map((family) => ({
     family,
     heading: formatLabel(family),
     voices: listPercussionVoicesForFamily(family).map((voice) => ({
