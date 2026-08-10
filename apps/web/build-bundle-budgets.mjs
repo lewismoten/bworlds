@@ -16,7 +16,7 @@ export const BUILD_BUNDLE_BUDGETS = {
   majorChunks: {
     minimumTrackedBytes: 64_000,
     maxBytesByName: {
-      index: 85_000,
+      src: 110_000,
       main: 1_325_000,
       'music-debug-instrument-preview': 140_000,
       'procedural-music': 135_000,

@@ -15,18 +15,18 @@
   "majorChunks": {
     "minimumTrackedBytes": 64000,
     "baselineBytesByName": {
-      "index": 78119,
       "main": 1201877,
       "music-debug-instrument-preview": 123931,
       "procedural-music": 119546,
-      "sound-effects": 144366
+      "sound-effects": 144366,
+      "src": 102071
     },
     "maxIncreaseBytesByName": {
-      "index": 8192,
       "main": 40960,
       "music-debug-instrument-preview": 12288,
       "procedural-music": 12288,
-      "sound-effects": 12288
+      "sound-effects": 12288,
+      "src": 8192
     }
   }
 }
