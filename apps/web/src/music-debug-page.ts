@@ -12,6 +12,7 @@ import { createMusicDebugPageState } from './music-debug-page-state.ts';
 import { createMusicDebugPlaybackController } from './music-debug-playback.ts';
 import { downloadMusicDebugMidiFile } from './music-debug-midi.ts';
 import { normalizeMusicDebugMidiExportVariant } from './music-debug-midi-export-variant.ts';
+import { downloadMusicDebugExportBundle } from './music-debug-export-bundle.ts';
 import { createMusicDebugInstrumentPreviewPlayer } from './music-debug-instrument-preview.ts';
 import { resolveMusicDebugInstrumentPreviewNote } from './music-debug-instrument-panel.ts';
 import { resolveMusicDebugLivePlaybackIntent } from './music-debug-live-playback.ts';
@@ -60,6 +61,9 @@ const randomizeButton = document.querySelector<HTMLButtonElement>(
 );
 const downloadButton = document.querySelector<HTMLButtonElement>(
   '#music-debug-download'
+);
+const downloadBundleButton = document.querySelector<HTMLButtonElement>(
+  '#music-debug-download-bundle'
 );
 const exportVariantSelect = document.querySelector<HTMLSelectElement>(
   '#music-debug-export-variant'
@@ -456,6 +460,14 @@ downloadButton?.addEventListener('click', () => {
   instrumentPreviewPlayer.stop();
   playbackController.stop();
   downloadMusicDebugMidiFile(pageState.refreshNow(), undefined, {
+    variant: normalizeMusicDebugMidiExportVariant(exportVariantSelect?.value),
+  });
+});
+
+downloadBundleButton?.addEventListener('click', () => {
+  instrumentPreviewPlayer.stop();
+  playbackController.stop();
+  downloadMusicDebugExportBundle(pageState.refreshNow(), undefined, {
     variant: normalizeMusicDebugMidiExportVariant(exportVariantSelect?.value),
   });
 });

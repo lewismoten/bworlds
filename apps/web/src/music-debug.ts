@@ -686,6 +686,7 @@ export function buildMusicDebugShellMarkup(
             <button id="music-debug-play" type="button">${MUSIC_DEBUG_FULL_SONG_BUTTON_LABEL}</button>
             <div class="music-debug-export-controls">
               <button id="music-debug-download" type="button">Download MIDI</button>
+              <button id="music-debug-download-bundle" type="button">Download Export ZIP</button>
               <label class="music-debug-export-label">
                 <span class="sr-only">MIDI export variant</span>
                 <select id="music-debug-export-variant" name="exportVariant">

@@ -184,6 +184,7 @@ describe('music debug', () => {
     expect(markup).toContain('music-debug-randomize');
     expect(markup).toContain('Play Full Song');
     expect(markup).toContain('Download MIDI');
+    expect(markup).toContain('Download Export ZIP');
     expect(markup).toContain('music-debug-export-variant');
     expect(markup).toContain('Melody Only MIDI');
     expect(markup).toContain('Harmony + Bass MIDI');

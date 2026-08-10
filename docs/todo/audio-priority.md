@@ -44,7 +44,7 @@
 - [x] Add a harmony-and-bass-only MIDI export for review.
 - [x] Test eight measures before generating all measures.
 - [x] Percussion should be made of multiple percussion instruments (drum set), preferably noise related
-- [ ] Let me download the MIDI, instrument WAV, and parameter report JSON, as a zip file.
+- [x] Let me download the MIDI, instrument WAV, and parameter report JSON, as a zip file.
 - [x] Sections should be embedded in MIDI meta/control flow to help indicate which notes belong to what section (Intro, Section A, section A', Section B, Variation, Retrun, Outro, etc.)
 - [x] Add a [Sound Bank Debug Page](./sound-bank-debug.md)
 
