@@ -15,6 +15,7 @@ import type {
   Create3DModelContext,
   RuntimePlugin,
   ThreeMaterialLike,
+  ThreeObject3DLike,
 } from '@bworlds/plugin-api';
 
 const OBSERVATORY_DOME_KEY = 'observatoryDome';

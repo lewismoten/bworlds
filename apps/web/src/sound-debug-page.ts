@@ -94,7 +94,7 @@ function downloadSnapshot(): void {
     samples: snapshot.samples,
     sampleRate: snapshot.sampleRate,
   });
-  const blob = new Blob([wav], { type: 'audio/wav' });
+  const blob = new Blob([new Uint8Array(wav).buffer], { type: 'audio/wav' });
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement('a');
   anchor.href = url;

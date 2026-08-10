@@ -171,7 +171,9 @@ export function downloadMusicDebugMidiFile(
   metadataOptions: MusicDebugMidiMetadataOptions = {}
 ): void {
   const file = createMusicDebugMidiFile(snapshot, metadataOptions);
-  const blob = new Blob([file.bytes], { type: file.mimeType });
+  const blob = new Blob([new Uint8Array(file.bytes).buffer], {
+    type: file.mimeType,
+  });
   const url = environment.createObjectURL(blob);
   const anchor = environment.createAnchor();
   anchor.href = url;

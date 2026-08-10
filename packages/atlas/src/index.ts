@@ -1,6 +1,7 @@
 import {
   appendHashSeedLabel,
   appendHashSeedPart,
+  hash2D,
   hash2DWithSeed,
   registerHashLabel,
 } from '@bworlds/core/hash';

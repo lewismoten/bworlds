@@ -31,6 +31,7 @@ import {
   createTreeFamily,
   createTreeGenerator,
   createTreeGeneratorBase,
+  createTreeSpecies,
   getTreeBiologicalState,
   getTreeCollisionState,
   getTreeCanopyState,

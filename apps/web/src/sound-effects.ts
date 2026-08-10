@@ -2396,7 +2396,9 @@ function createSoundEffectDistortion(
   const postGain = context.createGain();
   const amount = clampValue(effect.distortion.amount, 0, 1);
   preGain.gain.setValueAtTime(1 + amount * 3.5, context.currentTime);
-  waveShaper.curve = createDistortionCurve(effect.distortion);
+  waveShaper.curve = createDistortionCurve(
+    effect.distortion
+  ) as unknown as Float32Array<ArrayBuffer>;
   waveShaper.oversample = '2x';
   postGain.gain.setValueAtTime(
     effect.distortion.outputGain,

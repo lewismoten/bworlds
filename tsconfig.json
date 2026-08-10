@@ -9,6 +9,7 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
+    "skipLibCheck": true,
     "strict": false,
     "paths": {
       "@bworlds/*": ["./packages/*/src/index.ts"],
@@ -17,5 +18,6 @@
     },
     "lib": ["ES2022", "DOM"]
   },
-  "include": ["apps/**/*.ts", "packages/**/*.ts", "vitest.config.ts"]
+  "include": ["apps/**/*.ts", "packages/**/*.ts", "vitest.config.ts"],
+  "exclude": ["**/node_modules/**"]
 }

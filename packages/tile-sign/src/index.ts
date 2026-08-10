@@ -22,6 +22,7 @@ import {
   getOrCreatePaintedCanvasTexture,
 } from '@bworlds/three-support';
 import type {
+  ClassifyOverworldTileContext,
   Create3DModelContext,
   RuntimePlugin,
   TileLike,
@@ -302,11 +303,9 @@ export function createSignTilePlugin(): RuntimePlugin {
   ]);
 }
 
-function findNearestAnchor<TAnchor extends { x: number; y: number }>(
-  anchors: readonly TAnchor[],
-  x: number,
-  y: number
-): TAnchor | undefined {
+function findNearestAnchor<
+  TAnchor extends { x: number; y: number; name?: string },
+>(anchors: readonly TAnchor[], x: number, y: number): TAnchor | undefined {
   let nearestAnchor: TAnchor | undefined;
   let nearestDistanceSquared = Number.POSITIVE_INFINITY;
 

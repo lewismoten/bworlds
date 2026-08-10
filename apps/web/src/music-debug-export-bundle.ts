@@ -78,7 +78,9 @@ export function downloadMusicDebugExportBundle(
   metadataOptions: MusicDebugMidiMetadataOptions = {}
 ): void {
   const bundle = createMusicDebugExportBundle(snapshot, metadataOptions);
-  const blob = new Blob([bundle.bytes], { type: bundle.mimeType });
+  const blob = new Blob([new Uint8Array(bundle.bytes).buffer], {
+    type: bundle.mimeType,
+  });
   const url = environment.createObjectURL(blob);
   const anchor = environment.createAnchor();
   anchor.href = url;
