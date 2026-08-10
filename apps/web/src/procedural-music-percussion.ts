@@ -256,7 +256,7 @@ export function createProceduralPercussionNotes(options: {
       ),
       frequency: resolveProceduralNoteFrequency({
         rootMidiNote: options.rootMidiNote,
-        semitones: hit.semitones,
+        semitones: hit.semitones + voice.pitchSemitoneOffset,
         role: 'percussion',
       }),
       volume,

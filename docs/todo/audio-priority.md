@@ -36,7 +36,7 @@
 - [x] Map MIDI drum notes to named percussion voices.
 - [x] Give kicks a low pitch sweep and short noise click.
 - [x] Give snares a body tone and filtered noise burst.
-- [ ] Give toms distinct pitches based on drum size.
+- [x] Give toms distinct pitches based on drum size.
 - [x] Give hi-hats short metallic noise envelopes.
 - [x] Give cymbals longer metallic noise envelopes.
 - [x] Give shakers repeated short filtered noise bursts.

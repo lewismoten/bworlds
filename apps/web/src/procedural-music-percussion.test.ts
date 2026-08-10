@@ -9,6 +9,7 @@ import {
   listPercussionVoicesForFamily,
   resolvePercussionVoice,
 } from './procedural-music-percussion-voices.ts';
+import { resolveProceduralNoteFrequency } from './procedural-music-note-shaping.ts';
 
 describe('procedural music percussion', () => {
   it('builds a soft repeating forest pulse with multiple percussion families', () => {
@@ -184,6 +185,43 @@ describe('procedural music percussion', () => {
     expect(snareMain.timbre.filterCutoffMultiplier).not.toBe(
       snareRim.timbre.filterCutoffMultiplier
     );
+  });
+
+  it('gives low-drum voices distinct synthesized pitches based on drum size', () => {
+    const rootMidiNote = 59;
+    const baseSemitones = -12;
+    const kick = resolvePercussionVoice({
+      family: 'kick',
+      noteIndex: 0,
+    });
+    const deepKick = resolvePercussionVoice({
+      family: 'kick',
+      noteIndex: 1,
+    });
+    const floorTom = resolvePercussionVoice({
+      family: 'kick',
+      noteIndex: 3,
+    });
+
+    const kickFrequency = resolveProceduralNoteFrequency({
+      rootMidiNote,
+      semitones: baseSemitones + kick.pitchSemitoneOffset,
+      role: 'percussion',
+    });
+    const deepKickFrequency = resolveProceduralNoteFrequency({
+      rootMidiNote,
+      semitones: baseSemitones + deepKick.pitchSemitoneOffset,
+      role: 'percussion',
+    });
+    const floorTomFrequency = resolveProceduralNoteFrequency({
+      rootMidiNote,
+      semitones: baseSemitones + floorTom.pitchSemitoneOffset,
+      role: 'percussion',
+    });
+
+    expect(deepKickFrequency).toBeLessThan(kickFrequency);
+    expect(floorTomFrequency).toBeGreaterThan(kickFrequency);
+    expect(floorTom.name).toBe('floor-tom');
   });
 
   it('keeps town grooves anchored by a consistent mid-beat snare with supporting hits around it', () => {
