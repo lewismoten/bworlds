@@ -20,7 +20,7 @@ Always run tests to make sure all tests pass
 - [ ] Ensure every promise eventually resolves or rejects.
 - [ ] Clear intervals and timeouts after every test.
 - [ ] Close servers, sockets, workers, and file watchers.
-- [ ] Restore fake timers and mocks after every test.
+- [x] Restore fake timers and mocks after every test.
 - [x] Prevent concurrent full-suite runs in the same project.
 - [ ] Make the agent wait for one test run to finish.
 - [x] Run hanging files alone with one worker and verbose output.

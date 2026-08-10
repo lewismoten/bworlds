@@ -25,4 +25,10 @@ Current timeout defaults still live in [vitest.config.ts](/Users/lewismoten/dev/
 - `testTimeout: 1500`
 - `hookTimeout: 1000`
 
+Shared cleanup now lives in [apps/web/src/test-setup.ts](/Users/lewismoten/dev/bworlds/apps/web/src/test-setup.ts:1):
+
+- restores real timers after each test
+- restores mocks after each test
+- unstubs globals and env vars after each test
+
 That split keeps per-test/hook limits in Vitest itself while the supervisor handles whole-suite process cleanup.
