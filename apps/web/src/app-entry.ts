@@ -15,6 +15,9 @@ export async function bootstrap(): Promise<void> {
     case '/debug/audio/':
       await import('./music-debug-page.ts');
       return;
+    case '/debug/ambience/':
+      await import('./ambience-debug-page.ts');
+      return;
     case '/debug/sounds/':
       await import('./sound-debug-page.ts');
       return;

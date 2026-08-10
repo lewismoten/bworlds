@@ -27,6 +27,19 @@ describe('web vite config', () => {
           'debug',
           'audio.html'
         ),
+        debugAmbience: path.join(
+          process.cwd(),
+          'apps/web',
+          'debug',
+          'ambience',
+          'index.html'
+        ),
+        debugAmbienceAlias: path.join(
+          process.cwd(),
+          'apps/web',
+          'debug',
+          'ambience.html'
+        ),
         debugMusic: path.join(
           process.cwd(),
           'apps/web',

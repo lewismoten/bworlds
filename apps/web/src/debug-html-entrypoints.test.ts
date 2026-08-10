@@ -7,6 +7,8 @@ const DEBUG_HTML_ENTRY_PATHS = [
   'apps/web/debug/index.html',
   'apps/web/debug/audio.html',
   'apps/web/debug/audio/index.html',
+  'apps/web/debug/ambience.html',
+  'apps/web/debug/ambience/index.html',
   'apps/web/debug/music.html',
   'apps/web/debug/music/index.html',
   'apps/web/debug/sounds.html',

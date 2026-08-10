@@ -47,6 +47,9 @@ describe('debug page hot-update persistence', () => {
     const debugDirectorySource = readSource(
       'apps/web/src/debug-directory-page.ts'
     );
+    const ambienceDebugSource = readSource(
+      'apps/web/src/ambience-debug-page.ts'
+    );
     const musicDebugSource = readSource('apps/web/src/music-debug-page.ts');
     const soundDebugSource = readSource('apps/web/src/sound-debug-page.ts');
     const treeDebugSource = readSource('apps/web/src/tree-debug-page.ts');
@@ -55,6 +58,13 @@ describe('debug page hot-update persistence', () => {
       'const pageLifecycleAbortController ='
     );
     expect(debugDirectorySource).toContain(
+      'pageLifecycleAbortController?.abort();'
+    );
+
+    expect(ambienceDebugSource).toContain(
+      'const pageLifecycleAbortController ='
+    );
+    expect(ambienceDebugSource).toContain(
       'pageLifecycleAbortController?.abort();'
     );
 

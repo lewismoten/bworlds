@@ -104,11 +104,11 @@
 - [x] Allow sound to be downloaded as a WAV file
 - [x] Allow sound to be played
 - [x] Show any details related to the selected sound
-- [ ] Create separate debug page for ambiance
-- [ ] Show a list of ambiance to choose from
-- [ ] Allow ambiance to play
-- [ ] Add ability to download any sounds used for the ambiance
-- [ ] Add ability to download a minute of ambiance
+- [x] Create separate debug page for ambiance
+- [x] Show a list of ambiance to choose from
+- [x] Allow ambiance to play
+- [x] Add ability to download any sounds used for the ambiance
+- [x] Add ability to download a minute of ambiance
 
 # Development checklist
 

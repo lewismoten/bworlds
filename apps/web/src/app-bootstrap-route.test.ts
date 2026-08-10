@@ -39,6 +39,15 @@ describe('app bootstrap route', () => {
 
     expect(
       resolveAppBootstrapRoute({
+        pathname: '/debug/ambience/',
+      })
+    ).toEqual({
+      canonicalUrl: null,
+      pagePath: '/debug/ambience/',
+    });
+
+    expect(
+      resolveAppBootstrapRoute({
         pathname: '/debug/sounds/',
       })
     ).toEqual({

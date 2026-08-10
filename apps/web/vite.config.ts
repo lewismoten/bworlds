@@ -98,6 +98,8 @@ export default defineConfig({
         debugAlias: path.join(APP_DIR, 'debug.html'),
         debugAudio: path.join(APP_DIR, 'debug', 'audio', 'index.html'),
         debugAudioAlias: path.join(APP_DIR, 'debug', 'audio.html'),
+        debugAmbience: path.join(APP_DIR, 'debug', 'ambience', 'index.html'),
+        debugAmbienceAlias: path.join(APP_DIR, 'debug', 'ambience.html'),
         debugMusic: path.join(APP_DIR, 'debug', 'music', 'index.html'),
         debugMusicAlias: path.join(APP_DIR, 'debug', 'music.html'),
         debugSounds: path.join(APP_DIR, 'debug', 'sounds', 'index.html'),

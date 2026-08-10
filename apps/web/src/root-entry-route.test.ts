@@ -11,6 +11,7 @@ describe('root entry route', () => {
     expect(ROOT_ENTRY_PAGE_PATHS).toEqual([
       '/debug/',
       '/debug/audio/',
+      '/debug/ambience/',
       '/debug/sounds/',
       '/debug/trees/',
     ]);
@@ -26,6 +27,18 @@ describe('root entry route', () => {
     expect(resolveRootEntryPagePath('/debug/audio.html')).toBe('/debug/audio/');
     expect(resolveRootEntryPagePath('/debug/audio/index.html')).toBe(
       '/debug/audio/'
+    );
+    expect(resolveRootEntryPagePath('/debug/ambience')).toBe(
+      '/debug/ambience/'
+    );
+    expect(resolveRootEntryPagePath('/debug/ambience/')).toBe(
+      '/debug/ambience/'
+    );
+    expect(resolveRootEntryPagePath('/debug/ambience.html')).toBe(
+      '/debug/ambience/'
+    );
+    expect(resolveRootEntryPagePath('/debug/ambience/index.html')).toBe(
+      '/debug/ambience/'
     );
     expect(resolveRootEntryPagePath('/debug/music')).toBe('/debug/audio/');
     expect(resolveRootEntryPagePath('/debug/music/')).toBe('/debug/audio/');
@@ -58,6 +71,9 @@ describe('root entry route', () => {
     expect(resolveRootEntryPagePath('/bworlds/debug/music/index.html')).toBe(
       '/debug/audio/'
     );
+    expect(resolveRootEntryPagePath('/bworlds/debug/ambience/')).toBe(
+      '/debug/ambience/'
+    );
     expect(resolveRootEntryPagePath('/bworlds/debug/sounds/')).toBe(
       '/debug/sounds/'
     );
@@ -78,6 +94,9 @@ describe('root entry route', () => {
     expect(resolveRootEntryHtmlPath('/debug/')).toBe('/debug/index.html');
     expect(resolveRootEntryHtmlPath('/debug/audio/')).toBe(
       '/debug/audio/index.html'
+    );
+    expect(resolveRootEntryHtmlPath('/debug/ambience/')).toBe(
+      '/debug/ambience/index.html'
     );
     expect(resolveRootEntryHtmlPath('/debug/sounds/')).toBe(
       '/debug/sounds/index.html'

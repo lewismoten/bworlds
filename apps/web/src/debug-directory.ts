@@ -45,6 +45,15 @@ export const DEBUG_DIRECTORY_ENTRIES: DebugDirectoryEntry[] = [
       'Generates procedural music previews, shows the chosen instruments and arrangement mix, and draws a note timeline you can audition.',
   },
   {
+    id: 'ambience-debug',
+    title: 'Ambience Debug',
+    href: '/debug/ambience/',
+    routeLabel: '/debug/ambience/',
+    category: 'Dedicated Debug Page',
+    description:
+      'Layers curated ambient presets, lets each cue be auditioned on its own, and exports a full minute of ambience as a WAV file.',
+  },
+  {
     id: 'sound-debug',
     title: 'Sound Debug',
     href: '/debug/sounds/',

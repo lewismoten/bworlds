@@ -12,6 +12,9 @@ describe('debug route aliases', () => {
       '/debug/audio',
       '/debug/audio/index.html',
       '/debug/audio.html',
+      '/debug/ambience',
+      '/debug/ambience/index.html',
+      '/debug/ambience.html',
       '/debug/music',
       '/debug/music/index.html',
       '/debug/music.html',
@@ -32,6 +35,15 @@ describe('debug route aliases', () => {
     );
     expect(resolveDebugRouteRedirect('/debug/audio.html')).toBe(
       '/debug/audio/'
+    );
+    expect(resolveDebugRouteRedirect('/debug/ambience')).toBe(
+      '/debug/ambience/'
+    );
+    expect(resolveDebugRouteRedirect('/debug/ambience/index.html')).toBe(
+      '/debug/ambience/'
+    );
+    expect(resolveDebugRouteRedirect('/debug/ambience.html')).toBe(
+      '/debug/ambience/'
     );
     expect(resolveDebugRouteRedirect('/debug/music')).toBe('/debug/audio/');
     expect(resolveDebugRouteRedirect('/debug/music/index.html')).toBe(
@@ -58,6 +70,9 @@ describe('debug route aliases', () => {
     expect(resolveDebugRouteRedirect('/bworlds/debug/audio')).toBe(
       '/bworlds/debug/audio/'
     );
+    expect(resolveDebugRouteRedirect('/bworlds/debug/ambience')).toBe(
+      '/bworlds/debug/ambience/'
+    );
     expect(resolveDebugRouteRedirect('/bworlds/debug/music')).toBe(
       '/bworlds/debug/audio/'
     );
@@ -72,6 +87,7 @@ describe('debug route aliases', () => {
   it('leaves canonical and unrelated routes alone', () => {
     expect(resolveDebugRouteRedirect('/debug/')).toBeNull();
     expect(resolveDebugRouteRedirect('/debug/audio/')).toBeNull();
+    expect(resolveDebugRouteRedirect('/debug/ambience/')).toBeNull();
     expect(resolveDebugRouteRedirect('/debug/sounds/')).toBeNull();
     expect(resolveDebugRouteRedirect('/debug/trees/')).toBeNull();
     expect(resolveDebugRouteRedirect('/')).toBeNull();

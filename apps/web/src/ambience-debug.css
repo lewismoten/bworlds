@@ -1,0 +1,177 @@
+body {
+  margin: 0;
+  min-height: 100vh;
+  color: #edf5f7;
+  font-family: 'Trebuchet MS', 'Avenir Next', Avenir, 'Segoe UI', sans-serif;
+  background:
+    radial-gradient(
+      circle at top left,
+      rgba(255, 191, 105, 0.16),
+      transparent 28%
+    ),
+    radial-gradient(
+      circle at top right,
+      rgba(140, 214, 255, 0.18),
+      transparent 24%
+    ),
+    linear-gradient(160deg, #061018 0%, #102134 60%, #09111a 100%);
+}
+
+.ambience-debug-shell {
+  width: min(1440px, calc(100vw - 2rem));
+  margin: 0 auto;
+  padding: 1.25rem 0 2rem;
+}
+
+.ambience-debug-hero {
+  margin-bottom: 1.25rem;
+}
+
+.ambience-debug-kicker {
+  margin: 0 0 0.35rem;
+  color: #8cd6ff;
+  font-size: 0.78rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.ambience-debug-hero h1 {
+  margin: 0;
+  font-size: clamp(2rem, 4vw, 3.2rem);
+}
+
+.ambience-debug-lede {
+  max-width: 42rem;
+  color: #bdd0d8;
+  line-height: 1.5;
+}
+
+.ambience-debug-layout {
+  display: grid;
+  grid-template-columns: minmax(260px, 0.7fr) minmax(0, 1.4fr);
+  gap: 1rem;
+}
+
+.ambience-debug-sidebar,
+.ambience-debug-panel {
+  padding: 1rem 1.1rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 24px;
+  background: rgba(12, 22, 34, 0.92);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(16px);
+}
+
+.ambience-debug-preset-list,
+.ambience-debug-cues {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.ambience-debug-preset-button,
+.ambience-debug-cue-card,
+.ambience-debug-actions button,
+.ambience-debug-cue-actions button {
+  appearance: none;
+  font: inherit;
+}
+
+.ambience-debug-preset-button,
+.ambience-debug-cue-card {
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.ambience-debug-preset-button {
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.85rem 1rem;
+  text-align: left;
+  color: inherit;
+  cursor: pointer;
+}
+
+.ambience-debug-preset-button[data-active='true'] {
+  border-color: rgba(140, 214, 255, 0.42);
+  background:
+    linear-gradient(
+      180deg,
+      rgba(140, 214, 255, 0.18),
+      rgba(140, 214, 255, 0.06)
+    ),
+    rgba(255, 255, 255, 0.03);
+}
+
+.ambience-debug-preset-button span,
+.ambience-debug-cue-card p,
+.ambience-debug-panel-head p {
+  color: #bdd0d8;
+  line-height: 1.45;
+}
+
+.ambience-debug-panel-head {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.ambience-debug-panel-meta,
+.ambience-debug-cue-variant {
+  margin: 0;
+  color: #8cd6ff;
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.ambience-debug-actions,
+.ambience-debug-cue-actions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.ambience-debug-actions button,
+.ambience-debug-cue-actions button {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.12), transparent);
+  color: #edf5f7;
+  padding: 0.8rem 1.1rem;
+  cursor: pointer;
+}
+
+.ambience-debug-waveform {
+  margin-top: 1rem;
+}
+
+.ambience-debug-waveform svg {
+  width: 100%;
+  display: block;
+}
+
+.ambience-debug-cues h3 {
+  margin-bottom: 0;
+}
+
+.ambience-debug-cue-card {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.85rem 1rem;
+}
+
+@media (max-width: 960px) {
+  .ambience-debug-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .ambience-debug-panel-head,
+  .ambience-debug-cue-card {
+    flex-direction: column;
+  }
+}
