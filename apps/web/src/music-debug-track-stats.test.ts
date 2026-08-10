@@ -3,7 +3,8 @@ import { describe, expect, it } from 'vitest';
 import { createMusicDebugSnapshot } from './music-debug.ts';
 import {
   createMusicDebugTrackStats,
-  formatMusicDebugTrackStatsSummary,
+  formatMusicDebugTrackPitchSummary,
+  formatMusicDebugTrackTimingSummary,
 } from './music-debug-track-stats.ts';
 
 describe('music debug track stats', () => {
@@ -31,6 +32,9 @@ describe('music debug track stats', () => {
     expect(stats.lead.maxLeapSemitones).toBeGreaterThanOrEqual(
       stats.lead.averageLeapSemitones
     );
+    expect(stats.harmony.averageDurationMs).toBeGreaterThan(0);
+    expect(stats.harmony.averageSilenceMs).toBeGreaterThanOrEqual(0);
+    expect(stats.harmony.maxPolyphony).toBeGreaterThanOrEqual(1);
     expect(stats.bass.outOfModeNoteCount).toBe(
       snapshot.outOfModeNotesByRole.bass
     );
@@ -45,7 +49,8 @@ describe('music debug track stats', () => {
   it('formats one summary line per track for the debug report', () => {
     const snapshot = createMusicDebugSnapshot();
 
-    const summaryLines = formatMusicDebugTrackStatsSummary(snapshot.trackStats);
+    const summaryLines = formatMusicDebugTrackPitchSummary(snapshot.trackStats);
+    const timingLines = formatMusicDebugTrackTimingSummary(snapshot.trackStats);
 
     expect(summaryLines).toHaveLength(4);
     expect(summaryLines[0]).toContain('Bass');
@@ -54,5 +59,9 @@ describe('music debug track stats', () => {
     expect(summaryLines[2]).toContain('Lead');
     expect(summaryLines[3]).toContain('Percussion');
     expect(summaryLines[3]).toContain('out-of-mode 0');
+    expect(timingLines).toHaveLength(4);
+    expect(timingLines[0]).toContain('avg dur');
+    expect(timingLines[1]).toContain('avg gap');
+    expect(timingLines[1]).toContain('peak poly');
   });
 });

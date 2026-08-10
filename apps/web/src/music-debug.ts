@@ -49,7 +49,8 @@ import {
 } from './music-debug-timing-validation.ts';
 import {
   createMusicDebugTrackStats,
-  formatMusicDebugTrackStatsSummary,
+  formatMusicDebugTrackPitchSummary,
+  formatMusicDebugTrackTimingSummary,
   type MusicDebugTrackStats,
 } from './music-debug-track-stats.ts';
 
@@ -613,7 +614,10 @@ export function buildMusicDebugSummaryMarkup(
       <span>Accidental Notes ${formatMusicDebugAccidentalExamples(snapshot.notePitchDiagnostics)}</span>
     </div>
     <div class="music-debug-role-counts">
-      <span>Track Stats ${formatMusicDebugTrackStatsSummary(snapshot.trackStats).join(' | ')}</span>
+      <span>Track Pitch ${formatMusicDebugTrackPitchSummary(snapshot.trackStats).join(' | ')}</span>
+    </div>
+    <div class="music-debug-role-counts">
+      <span>Track Timing ${formatMusicDebugTrackTimingSummary(snapshot.trackStats).join(' | ')}</span>
     </div>
     <div class="music-debug-role-counts">
       <span>Section Measures ${snapshot.song.sections.map((section) => `${section.label} ${section.startMeasure}-${section.endMeasure}`).join(' | ')}</span>

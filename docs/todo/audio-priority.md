@@ -258,9 +258,9 @@ added directly as semitones instead of moving through the selected scale.
 - [x] Show average leap for each track.
 - [x] Show maximum leap for each track.
 - [x] Show out-of-mode notes for each track.
-- [ ] Show maximum harmony polyphony.
-- [ ] Show average note duration by track.
-- [ ] Show average silence between notes by track.
+- [x] Show maximum harmony polyphony.
+- [x] Show average note duration by track.
+- [x] Show average silence between notes by track.
 - [ ] Show motif match counts by section.
 - [ ] Show actual chords detected in the harmony track.
 - [ ] Flag metadata that differs from MIDI output.

@@ -113,6 +113,9 @@ describe('music debug', () => {
     expect(first.trackStats.lead.maxLeapSemitones).toBeGreaterThanOrEqual(
       first.trackStats.lead.averageLeapSemitones
     );
+    expect(first.trackStats.harmony.maxPolyphony).toBeGreaterThanOrEqual(1);
+    expect(first.trackStats.bass.averageDurationMs).toBeGreaterThan(0);
+    expect(first.trackStats.lead.averageSilenceMs).toBeGreaterThanOrEqual(0);
     expect(first.midiExportValidation.accidentalNoteCount).toBe(
       first.accidentalNoteCount
     );
@@ -174,10 +177,14 @@ describe('music debug', () => {
     expect(summary).toContain('Pitch Centers');
     expect(summary).toContain('Accidental Rules');
     expect(summary).toContain('Accidental Notes');
-    expect(summary).toContain('Track Stats');
+    expect(summary).toContain('Track Pitch');
+    expect(summary).toContain('Track Timing');
     expect(summary).toContain('avg leap');
     expect(summary).toContain('max leap');
     expect(summary).toContain('out-of-mode');
+    expect(summary).toContain('avg dur');
+    expect(summary).toContain('avg gap');
+    expect(summary).toContain('peak poly');
     expect(summary).toContain('Section Measures');
     expect(summary).toContain(snapshot.theme.id);
     expect(summary).toContain(snapshot.theme.vocabulary.modeLabel);
