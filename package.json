@@ -8,7 +8,7 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "npm run dev -w @bworlds/app",
+    "start": "npm run dev -w @bworlds/app",
     "build": "npm run build -w @bworlds/app",
     "typecheck": "npm exec -- tsc --noEmit",
     "typecheck:strict": "npm exec -- tsc --noEmit -p tsconfig.strict.json",
@@ -17,9 +17,9 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "coverage": "vitest run --coverage",
-    "format": "prettier --write .",
-    "format:check": "prettier --check .",
-    "check": "npm run format:check && npm run lint && npm run typecheck && npm run test && npm run build"
+    "format:fix": "prettier --write .",
+    "format": "prettier --check .",
+    "check": "npm run format && npm run lint && npm run typecheck && npm run test && npm run build"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
