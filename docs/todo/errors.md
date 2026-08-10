@@ -15,7 +15,10 @@ Always run tests to make sure all tests pass
 - [x] Print the last started test before forced termination.
 - [x] Set a reasonable timeout for each individual test.
 - [x] Set timeouts for `beforeAll` and `afterAll` hooks.
-- [ ] Check tests for infinite loops and unbounded generation.
+- [x] Check tests for infinite loops and unbounded generation.
+      Vitest now runs a repository source audit that rejects unconditional
+      infinite loops in test files plus suspiciously large static fixtures
+      before they can land as hangs.
 - [x] Check async tests for missing `await` statements.
       ESLint now enforces `@typescript-eslint/await-thenable` plus
       `@typescript-eslint/no-floating-promises` across TypeScript files so
