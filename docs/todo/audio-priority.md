@@ -56,7 +56,7 @@
 ## Percussion Composition
 
 - [x] Assign kick, accent, pulse, and texture roles.
-- [ ] Build grooves from roles instead of random drum notes.
+- [x] Build grooves from roles instead of random drum notes.
 - [ ] Keep a stable pulse across related measures.
 - [ ] Place low drums on structurally strong beats.
 - [ ] Place light percussion between strong beats.

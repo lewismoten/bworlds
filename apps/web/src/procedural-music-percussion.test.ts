@@ -199,6 +199,40 @@ describe('procedural music percussion', () => {
     expect(townRoles).toEqual(new Set(['kick', 'accent', 'pulse', 'texture']));
   });
 
+  it('resolves drum families from groove roles and placement instead of hardcoded pattern families', () => {
+    const townAnswer = createProceduralPercussionNotes({
+      themeId: 'town-square',
+      stepIndex: 7,
+      phraseStep: 7,
+      cadence: 'answer',
+      startMs: 0,
+      stepDurationMs: 320,
+      rootMidiNote: 59,
+      baseInstrumentId: 'town-square:percussion:3:-2',
+      baseVolume: 0.02,
+      baseAttackMs: 12,
+      baseReleaseMs: 60,
+      baseDetuneCents: 4,
+      baseHarmonicGain: 0.12,
+      basePulseRate: 1,
+      brightness: 0.92,
+      clusterX: 3,
+      clusterY: -2,
+    });
+    const accentFamilies = townAnswer
+      .filter(
+        (note) =>
+          resolvePercussionGrooveRoleFromInstrumentId(note.instrumentId) ===
+          'accent'
+      )
+      .map((note) =>
+        resolvePercussionFamilyFromInstrumentId(note.instrumentId)
+      );
+
+    expect(accentFamilies).toContain('snare');
+    expect(accentFamilies).toContain('cymbals');
+  });
+
   it('defines separate voice recipes for every used drum note in each percussion family', () => {
     const kickVoices = listPercussionVoicesForFamily('kick');
     const snareVoices = listPercussionVoicesForFamily('snare');
