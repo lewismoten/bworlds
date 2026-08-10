@@ -17,6 +17,7 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "knip": "knip --no-progress",
+    "security": "npm audit --audit-level=high",
     "test": "vitest run",
     "test:watch": "vitest",
     "coverage": "vitest run --coverage",
