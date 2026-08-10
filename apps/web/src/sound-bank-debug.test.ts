@@ -3,8 +3,10 @@ import type { SoundBankInstrumentDefinition } from './procedural-music.ts';
 import {
   buildSoundBankDebugMarkup,
   createSoundBankDebugSnapshot,
+  normalizeSoundBankDebugGeneralMidiBrowserState,
   normalizeSoundBankDebugOptions,
   randomizeSoundBankDebugSeed,
+  resolveSoundBankDebugGeneralMidiSections,
 } from './sound-bank-debug.ts';
 import { registerSoundBankPluginInstruments } from './sound-bank-registry.ts';
 
@@ -57,6 +59,9 @@ describe('sound bank debug page', () => {
     expect(markup).toContain('Instrument Browser');
     expect(markup).toContain('Role Patches');
     expect(markup).toContain('Program Browser');
+    expect(markup).toContain('sound-bank-debug-midi-search');
+    expect(markup).toContain('sound-bank-debug-midi-family-filter');
+    expect(markup).toContain('sound-bank-debug-midi-sort');
     expect(markup).toContain('music-debug-instrument-panel');
     expect(markup).toContain('sound-bank-debug-layout-compact');
     expect(markup).toContain('sound-bank-debug-layout-expanded');
@@ -213,5 +218,58 @@ describe('sound bank debug page', () => {
     expect(normalizedMarkup).toContain(
       'General MIDI instrument name is required.'
     );
+  });
+
+  it('normalizes General MIDI browser controls into safe search, family, and sort values', () => {
+    expect(
+      normalizeSoundBankDebugGeneralMidiBrowserState({
+        searchQuery: '  lead  ',
+        familyFilter: 'Synth Lead',
+        sortMode: 'name',
+      })
+    ).toEqual({
+      searchQuery: 'lead',
+      familyFilter: 'Synth Lead',
+      sortMode: 'name',
+    });
+    expect(
+      normalizeSoundBankDebugGeneralMidiBrowserState({
+        familyFilter: 'Unknown',
+        sortMode: 'sideways' as 'program',
+      })
+    ).toEqual({
+      searchQuery: '',
+      familyFilter: 'all',
+      sortMode: 'program',
+    });
+  });
+
+  it('filters and sorts the General MIDI browser by search query, family, and sort mode', () => {
+    const searchedSections = resolveSoundBankDebugGeneralMidiSections({
+      searchQuery: 'bass',
+      familyFilter: 'all',
+      sortMode: 'name',
+    });
+    const familySections = resolveSoundBankDebugGeneralMidiSections({
+      familyFilter: 'Synth Lead',
+      sortMode: 'program',
+    });
+    const sortedByFamilySections = resolveSoundBankDebugGeneralMidiSections({
+      sortMode: 'family',
+    });
+
+    expect(searchedSections).toHaveLength(1);
+    expect(searchedSections[0]?.heading).toBe('All Matching Programs');
+    expect(
+      searchedSections[0]?.programs.every((program) =>
+        program.instrumentName.toLowerCase().includes('bass')
+      )
+    ).toBe(true);
+    expect(familySections).toHaveLength(1);
+    expect(familySections[0]?.heading).toBe('Synth Lead');
+    expect(familySections[0]?.programs[0]?.programNumber).toBe(80);
+    expect(
+      sortedByFamilySections.map((section) => section.heading).slice(0, 3)
+    ).toEqual(['Bass', 'Brass', 'Chromatic Percussion']);
   });
 });

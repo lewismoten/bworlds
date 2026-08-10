@@ -49,13 +49,13 @@
 - [x] Add all 128 General MIDI program names.
 - [x] Group instruments by General MIDI family.
 - [x] Show program numbers from 0 to 127.
-- [ ] Add a search field for instrument names.
-- [ ] Add a filter for instrument families.
+- [x] Add a search field for instrument names.
+- [x] Add a filter for instrument families.
 - [ ] Add a filter for musical roles.
 - [ ] Add a filter for playable note ranges.
 - [x] Sort instruments by program number.
-- [ ] Allow sorting instruments by name.
-- [ ] Allow sorting instruments by family.
+- [x] Allow sorting instruments by name.
+- [x] Allow sorting instruments by family.
 - [ ] Highlight the selected instrument.
 - [ ] Show unavailable programs as disabled.
 - [ ] Mark programs using placeholder patches.

@@ -11,7 +11,12 @@ import {
   type MusicDebugSnapshot,
   type MusicDebugTileKind,
 } from './music-debug.ts';
-import { listGeneralMidiProgramsByFamily } from './general-midi.ts';
+import {
+  listGeneralMidiFamilyNames,
+  listGeneralMidiPrograms,
+  listGeneralMidiProgramsByFamily,
+  type GeneralMidiProgram,
+} from './general-midi.ts';
 import {
   createSoundBankInstrumentRegistry,
   type SoundBankInstrumentRegistration,
@@ -33,6 +38,25 @@ export type SoundBankDebugSnapshot = {
 };
 
 export type SoundBankDebugLayoutMode = 'compact' | 'expanded';
+export type SoundBankDebugGeneralMidiSortMode = 'program' | 'name' | 'family';
+
+export type SoundBankDebugGeneralMidiBrowserState = {
+  searchQuery: string;
+  familyFilter: string;
+  sortMode: SoundBankDebugGeneralMidiSortMode;
+};
+
+export type SoundBankDebugGeneralMidiBrowserSection = Readonly<{
+  heading: string;
+  programs: readonly GeneralMidiProgram[];
+}>;
+
+export const DEFAULT_SOUND_BANK_DEBUG_GENERAL_MIDI_BROWSER_STATE: SoundBankDebugGeneralMidiBrowserState =
+  {
+    searchQuery: '',
+    familyFilter: 'all',
+    sortMode: 'program',
+  };
 
 export const DEFAULT_SOUND_BANK_DEBUG_OPTIONS: SoundBankDebugOptions = {
   tileKind: DEFAULT_MUSIC_DEBUG_OPTIONS.tileKind,
@@ -112,12 +136,17 @@ export function buildSoundBankDebugMarkup(
     muted?: boolean;
     layoutMode?: SoundBankDebugLayoutMode;
     errorMessage?: string | null;
+    generalMidiBrowserState?: Partial<SoundBankDebugGeneralMidiBrowserState>;
   } = {
     audioStatus: 'Audio idle',
   }
 ): string {
   const { musicSnapshot } = snapshot;
   const instrumentCards = buildMusicDebugInstrumentPanelMarkup(musicSnapshot);
+  const generalMidiBrowserState =
+    normalizeSoundBankDebugGeneralMidiBrowserState(
+      viewState.generalMidiBrowserState
+    );
   const summaryCards = (
     Object.entries(musicSnapshot.instrumentBank.instruments) as Array<
       [
@@ -146,13 +175,15 @@ export function buildSoundBankDebugMarkup(
       `
     )
     .join('');
-  const generalMidiBrowserMarkup = listGeneralMidiProgramsByFamily()
+  const generalMidiBrowserMarkup = resolveSoundBankDebugGeneralMidiSections(
+    generalMidiBrowserState
+  )
     .map(
-      (family) => `
-        <section class="sound-bank-debug-midi-family" aria-label="${family.familyName}">
-          <h3>${family.familyName}</h3>
-          <ol start="${family.programs[0]?.programNumber ?? 0}">
-            ${family.programs
+      (section) => `
+        <section class="sound-bank-debug-midi-family" aria-label="${section.heading}">
+          <h3>${section.heading}</h3>
+          <ol start="${section.programs[0]?.programNumber ?? 0}">
+            ${section.programs
               .map(
                 (program) => `
                   <li value="${program.programNumber}">
@@ -423,6 +454,42 @@ export function buildSoundBankDebugMarkup(
               </p>
             </div>
           </div>
+          <div class="sound-bank-debug-midi-controls">
+            <label>
+              <span>Search</span>
+              <input
+                id="sound-bank-debug-midi-search"
+                name="generalMidiSearchQuery"
+                type="search"
+                value="${escapeAttribute(generalMidiBrowserState.searchQuery)}"
+                placeholder="Search instrument names"
+              />
+            </label>
+            <label>
+              <span>Family</span>
+              <select
+                id="sound-bank-debug-midi-family-filter"
+                name="generalMidiFamilyFilter"
+              >
+                ${renderOptionList(
+                  ['all', ...listGeneralMidiFamilyNames()],
+                  generalMidiBrowserState.familyFilter
+                )}
+              </select>
+            </label>
+            <label>
+              <span>Sort</span>
+              <select
+                id="sound-bank-debug-midi-sort"
+                name="generalMidiSortMode"
+              >
+                ${renderOptionList(
+                  ['program', 'name', 'family'],
+                  generalMidiBrowserState.sortMode
+                )}
+              </select>
+            </label>
+          </div>
           <div class="sound-bank-debug-midi-browser">
             ${generalMidiBrowserMarkup}
           </div>
@@ -457,6 +524,72 @@ export function resolveSoundBankDebugPreviewNoteRole(
   );
 }
 
+export function normalizeSoundBankDebugGeneralMidiBrowserState(
+  value: Partial<SoundBankDebugGeneralMidiBrowserState> | null | undefined
+): SoundBankDebugGeneralMidiBrowserState {
+  const searchQuery = value?.searchQuery?.trim() ?? '';
+  const familyFilter =
+    value?.familyFilter &&
+    listGeneralMidiFamilyNames().includes(value.familyFilter)
+      ? value.familyFilter
+      : 'all';
+  const sortMode =
+    value?.sortMode === 'name' || value?.sortMode === 'family'
+      ? value.sortMode
+      : 'program';
+
+  return {
+    searchQuery,
+    familyFilter,
+    sortMode,
+  };
+}
+
+export function resolveSoundBankDebugGeneralMidiSections(
+  browserState: Partial<SoundBankDebugGeneralMidiBrowserState>
+): readonly SoundBankDebugGeneralMidiBrowserSection[] {
+  const normalizedState =
+    normalizeSoundBankDebugGeneralMidiBrowserState(browserState);
+  const searchQuery = normalizedState.searchQuery.toLowerCase();
+  const visiblePrograms = listGeneralMidiPrograms().filter((program) => {
+    if (
+      normalizedState.familyFilter !== 'all' &&
+      program.familyName !== normalizedState.familyFilter
+    ) {
+      return false;
+    }
+
+    return (
+      searchQuery.length === 0 ||
+      program.instrumentName.toLowerCase().includes(searchQuery)
+    );
+  });
+
+  if (normalizedState.sortMode === 'name') {
+    return [
+      {
+        heading: 'All Matching Programs',
+        programs: [...visiblePrograms].sort((left, right) =>
+          left.instrumentName.localeCompare(right.instrumentName)
+        ),
+      },
+    ];
+  }
+
+  if (normalizedState.sortMode === 'family') {
+    return [...groupProgramsByFamily(visiblePrograms)]
+      .sort((left, right) => left.heading.localeCompare(right.heading))
+      .map((section) => ({
+        heading: section.heading,
+        programs: [...section.programs].sort((left, right) =>
+          left.instrumentName.localeCompare(right.instrumentName)
+        ),
+      }));
+  }
+
+  return groupProgramsByFamily(visiblePrograms);
+}
+
 function renderOptionList(
   values: readonly string[],
   selectedValue: string
@@ -477,4 +610,28 @@ function formatLabel(value: string): string {
     .split('-')
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(' ');
+}
+
+function groupProgramsByFamily(
+  programs: readonly GeneralMidiProgram[]
+): readonly SoundBankDebugGeneralMidiBrowserSection[] {
+  const visibleProgramNumbers = new Set(
+    programs.map((program) => program.programNumber)
+  );
+  return listGeneralMidiProgramsByFamily()
+    .map((family) => ({
+      heading: family.familyName,
+      programs: family.programs.filter((program) =>
+        visibleProgramNumbers.has(program.programNumber)
+      ),
+    }))
+    .filter((section) => section.programs.length > 0);
+}
+
+function escapeAttribute(value: string): string {
+  return value
+    .replaceAll('&', '&amp;')
+    .replaceAll('"', '&quot;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;');
 }

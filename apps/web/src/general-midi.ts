@@ -274,6 +274,10 @@ export function listGeneralMidiPrograms(): readonly GeneralMidiProgram[] {
   return GENERAL_MIDI_PROGRAMS;
 }
 
+export function listGeneralMidiFamilyNames(): readonly string[] {
+  return GENERAL_MIDI_FAMILIES.map((family) => family.familyName);
+}
+
 export function listGeneralMidiProgramsByFamily(): readonly GeneralMidiFamilyGroup[] {
   return GENERAL_MIDI_FAMILIES.map((family) => ({
     familyName: family.familyName,

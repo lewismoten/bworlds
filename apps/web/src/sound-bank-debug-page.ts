@@ -3,10 +3,13 @@ import './sound-bank-debug.css';
 import {
   buildSoundBankDebugMarkup,
   createSoundBankDebugSnapshot,
+  DEFAULT_SOUND_BANK_DEBUG_GENERAL_MIDI_BROWSER_STATE,
   DEFAULT_SOUND_BANK_DEBUG_OPTIONS,
+  normalizeSoundBankDebugGeneralMidiBrowserState,
   normalizeSoundBankDebugOptions,
   randomizeSoundBankDebugSeed,
   resolveSoundBankDebugPreviewNoteRole,
+  type SoundBankDebugGeneralMidiBrowserState,
   type SoundBankDebugLayoutMode,
   type SoundBankDebugOptions,
 } from './sound-bank-debug.ts';
@@ -23,6 +26,8 @@ const pageLifecycleAbortController =
 const pageLifecycleSignal = pageLifecycleAbortController?.signal;
 const instrumentPreviewPlayer = createMusicDebugInstrumentPreviewPlayer();
 let options = DEFAULT_SOUND_BANK_DEBUG_OPTIONS;
+let generalMidiBrowserState =
+  DEFAULT_SOUND_BANK_DEBUG_GENERAL_MIDI_BROWSER_STATE;
 let audioStatus = 'Audio idle';
 let errorMessage: string | null = null;
 let layoutMode: SoundBankDebugLayoutMode = 'expanded';
@@ -167,6 +172,32 @@ function readFormOptions(): SoundBankDebugOptions {
   });
 }
 
+function readGeneralMidiBrowserState(): SoundBankDebugGeneralMidiBrowserState {
+  const form = document.querySelector<HTMLFormElement>(
+    '#sound-bank-debug-form'
+  );
+  if (!form) {
+    return generalMidiBrowserState;
+  }
+  const formData = new FormData(form);
+  return normalizeSoundBankDebugGeneralMidiBrowserState({
+    searchQuery:
+      typeof formData.get('generalMidiSearchQuery') === 'string'
+        ? String(formData.get('generalMidiSearchQuery'))
+        : generalMidiBrowserState.searchQuery,
+    familyFilter:
+      typeof formData.get('generalMidiFamilyFilter') === 'string'
+        ? String(formData.get('generalMidiFamilyFilter'))
+        : generalMidiBrowserState.familyFilter,
+    sortMode:
+      typeof formData.get('generalMidiSortMode') === 'string'
+        ? (String(
+            formData.get('generalMidiSortMode')
+          ) as SoundBankDebugGeneralMidiBrowserState['sortMode'])
+        : generalMidiBrowserState.sortMode,
+  });
+}
+
 function renderPage(): void {
   if (!root) {
     return;
@@ -181,6 +212,7 @@ function renderPage(): void {
     muted: instrumentPreviewPlayer.isMuted(),
     layoutMode,
     errorMessage,
+    generalMidiBrowserState,
   });
   bindPage(snapshot.musicSnapshot);
   syncAudioContextUi();
@@ -195,6 +227,7 @@ function bindPage(musicSnapshot: MusicDebugSnapshot): void {
         event.preventDefault();
         stopPreview();
         options = readFormOptions();
+        generalMidiBrowserState = readGeneralMidiBrowserState();
         audioStatus = 'Audio idle';
         errorMessage = null;
         renderPage();
@@ -311,6 +344,7 @@ function bindPage(musicSnapshot: MusicDebugSnapshot): void {
       () => {
         stopPreview();
         options = randomizeSoundBankDebugSeed(readFormOptions());
+        generalMidiBrowserState = readGeneralMidiBrowserState();
         audioStatus = 'Audio idle';
         errorMessage = null;
         renderPage();
@@ -325,6 +359,8 @@ function bindPage(musicSnapshot: MusicDebugSnapshot): void {
       () => {
         stopPreview();
         options = DEFAULT_SOUND_BANK_DEBUG_OPTIONS;
+        generalMidiBrowserState =
+          DEFAULT_SOUND_BANK_DEBUG_GENERAL_MIDI_BROWSER_STATE;
         audioStatus = 'Audio idle';
         errorMessage = null;
         renderPage();
@@ -370,6 +406,39 @@ function bindPage(musicSnapshot: MusicDebugSnapshot): void {
         pageLifecycleSignal ? { signal: pageLifecycleSignal } : undefined
       );
     });
+
+  document
+    .querySelector<HTMLInputElement>('#sound-bank-debug-midi-search')
+    ?.addEventListener(
+      'input',
+      () => {
+        generalMidiBrowserState = readGeneralMidiBrowserState();
+        renderPage();
+      },
+      pageLifecycleSignal ? { signal: pageLifecycleSignal } : undefined
+    );
+
+  document
+    .querySelector<HTMLSelectElement>('#sound-bank-debug-midi-family-filter')
+    ?.addEventListener(
+      'change',
+      () => {
+        generalMidiBrowserState = readGeneralMidiBrowserState();
+        renderPage();
+      },
+      pageLifecycleSignal ? { signal: pageLifecycleSignal } : undefined
+    );
+
+  document
+    .querySelector<HTMLSelectElement>('#sound-bank-debug-midi-sort')
+    ?.addEventListener(
+      'change',
+      () => {
+        generalMidiBrowserState = readGeneralMidiBrowserState();
+        renderPage();
+      },
+      pageLifecycleSignal ? { signal: pageLifecycleSignal } : undefined
+    );
 }
 
 globalThis.addEventListener?.(
