@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { SoundBankInstrumentDefinition } from './procedural-music-sound-bank.ts';
 import {
   buildSoundBankDebugMarkup,
+  createSoundBankDebugQuietPercussionPatternNotes,
   createSoundBankDebugPercussionRangeAuditionNotes,
   createSoundBankDebugStandardPercussionPatternNotes,
   createSoundBankDebugSnapshot,
@@ -68,6 +69,7 @@ describe('sound bank debug page', () => {
     expect(markup).toContain('sound-bank-debug-percussion-pad');
     expect(markup).toContain('sound-bank-debug-percussion-pad-key');
     expect(markup).toContain('sound-bank-debug-percussion-standard-pattern');
+    expect(markup).toContain('sound-bank-debug-percussion-quiet-pattern');
     expect(markup).toContain('sound-bank-debug-percussion-range-audition');
     expect(markup).toContain('Program Browser');
     expect(markup).toContain('sound-bank-debug-midi-search');
@@ -573,5 +575,42 @@ describe('sound bank debug page', () => {
     expect(notes.map((note) => note.startMs)).toEqual([
       16_004, 16_174, 16_344, 16_514, 16_684, 16_854, 17_024, 17_194,
     ]);
+  });
+
+  it('builds a quieter percussion pattern audition from visible drum voices', () => {
+    const snapshot = createSoundBankDebugSnapshot();
+    const standardNotes = createSoundBankDebugStandardPercussionPatternNotes(
+      snapshot,
+      {
+        familyFilter: 'all',
+      },
+      16_000
+    );
+    const quietNotes = createSoundBankDebugQuietPercussionPatternNotes(
+      snapshot,
+      {
+        familyFilter: 'all',
+      },
+      16_000
+    );
+
+    expect(quietNotes).toHaveLength(8);
+    expect(quietNotes.map((note) => note.instrumentId)).toEqual(
+      standardNotes.map((note) => note.instrumentId)
+    );
+    expect(quietNotes.map((note) => note.startMs)).toEqual(
+      standardNotes.map((note) => note.startMs)
+    );
+    expect(
+      quietNotes.every(
+        (note, index) => note.volume < standardNotes[index]!.volume
+      )
+    ).toBe(true);
+    expect(
+      quietNotes.every(
+        (note, index) =>
+          (note.velocity ?? 0) < (standardNotes[index]!.velocity ?? 0)
+      )
+    ).toBe(true);
   });
 });

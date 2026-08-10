@@ -576,6 +576,12 @@ export function buildSoundBankDebugMarkup(
               >
                 Standard Pattern
               </button>
+              <button
+                id="sound-bank-debug-percussion-quiet-pattern"
+                type="button"
+              >
+                Quiet Pattern
+              </button>
             </div>
           </div>
           <div class="sound-bank-debug-midi-controls">
@@ -851,6 +857,35 @@ export function createSoundBankDebugStandardPercussionPatternNotes(
     );
     return note ? [note] : [];
   });
+}
+
+export function createSoundBankDebugQuietPercussionPatternNotes(
+  snapshot: SoundBankDebugSnapshot,
+  state: Partial<SoundBankDebugPercussionBrowserState>,
+  nowMs: number
+): readonly ProceduralMusicNote[] {
+  return createSoundBankDebugStandardPercussionPatternNotes(
+    snapshot,
+    state,
+    nowMs
+  ).map((note) => ({
+    ...note,
+    volume: Number(
+      Math.max(
+        0.01,
+        Math.min(1, note.volume * QUIET_PERCUSSION_PATTERN_VOLUME_MULTIPLIER)
+      ).toFixed(4)
+    ),
+    velocity:
+      note.velocity === undefined
+        ? note.velocity
+        : Math.max(
+            1,
+            Math.round(
+              note.velocity * QUIET_PERCUSSION_PATTERN_VELOCITY_MULTIPLIER
+            )
+          ),
+  }));
 }
 
 export function normalizeSoundBankDebugGeneralMidiBrowserState(
@@ -1223,6 +1258,8 @@ const STANDARD_PERCUSSION_PATTERN_VOICE_IDS: readonly PercussionVoiceId[] = [
   'snare-38',
   'cymbals-46',
 ];
+const QUIET_PERCUSSION_PATTERN_VOLUME_MULTIPLIER = 0.7;
+const QUIET_PERCUSSION_PATTERN_VELOCITY_MULTIPLIER = 0.64;
 
 const PERCUSSION_PAD_SHORTCUT_KEYS = [
   '1',
