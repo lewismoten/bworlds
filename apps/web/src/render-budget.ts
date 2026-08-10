@@ -3,6 +3,16 @@ import type {
   RenderBudgetDetailLevel,
 } from '@bworlds/plugin-api';
 
+import {
+  DEFAULT_VISIBILITY_RADIUS,
+  MIN_VISIBILITY_RADIUS,
+  REDUCED_VISIBILITY_RADIUS,
+} from './render-visibility-radius.ts';
+export {
+  DEFAULT_VISIBILITY_RADIUS,
+  MIN_VISIBILITY_RADIUS,
+  REDUCED_VISIBILITY_RADIUS,
+} from './render-visibility-radius.ts';
 import { getWeatherVisibilityRadiusCap } from './weather-visibility-budget.ts';
 
 export type RenderBudgetState = {
@@ -118,10 +128,6 @@ export type RenderBudgetCaps = {
 };
 
 export type RenderQualityLevel = 'full' | 'reduced' | 'minimal';
-
-export const DEFAULT_VISIBILITY_RADIUS = 18;
-export const REDUCED_VISIBILITY_RADIUS = 14;
-export const MIN_VISIBILITY_RADIUS = 10;
 
 export const DEFAULT_RENDER_BUDGET_STATE: RenderBudgetState = {
   currentFrameMs: 16.67,

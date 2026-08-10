@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { createMusicDebugSnapshot } from './music-debug.ts';
+import { createMusicDebugMidiFile } from './music-debug-midi-file.ts';
 import {
-  createMusicDebugMidiFile,
   downloadMusicDebugMidiFile,
 } from './music-debug-midi.ts';
 import { resolveMusicDebugMidiExportRoles } from './music-debug-midi-export-variant.ts';

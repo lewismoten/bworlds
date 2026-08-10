@@ -1,5 +1,5 @@
 import type { MusicDebugSnapshot } from './music-debug.ts';
-import { resolveMusicDebugPlaybackResumeOffset } from './music-debug-page-persistence.ts';
+import { resolveMusicDebugPlaybackResumeOffset } from './music-debug-playback-offset.ts';
 
 export const MUSIC_DEBUG_STOP_BUTTON_LABEL = 'Stop Song';
 export const MUSIC_DEBUG_FULL_SONG_BUTTON_LABEL = 'Play Full Song';

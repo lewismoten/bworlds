@@ -7,9 +7,9 @@ import {
 import {
   normalizeMusicDebugOptions,
   type MusicDebugOptions,
-  type MusicDebugSnapshot,
 } from './music-debug.ts';
-import { clampMusicDebugPreviewOffset } from './music-debug-transport.ts';
+import { resolveMusicDebugPlaybackResumeOffset } from './music-debug-playback-offset.ts';
+export { resolveMusicDebugPlaybackResumeOffset } from './music-debug-playback-offset.ts';
 
 const MUSIC_DEBUG_PAGE_STORAGE_KEY = 'bworlds:music-debug-page';
 
@@ -107,18 +107,4 @@ export function normalizeMusicDebugPagePersistenceState(
     shouldResume: value?.shouldResume === true,
     scrollY: Math.max(0, Math.round(value?.scrollY ?? 0)),
   };
-}
-
-export function resolveMusicDebugPlaybackResumeOffset(options: {
-  snapshot: MusicDebugSnapshot;
-  previewOffsetMs: number;
-}): number {
-  const clampedOffsetMs = clampMusicDebugPreviewOffset(
-    options.snapshot,
-    options.previewOffsetMs
-  );
-  if (clampedOffsetMs >= options.snapshot.durationMs) {
-    return 0;
-  }
-  return clampedOffsetMs;
 }

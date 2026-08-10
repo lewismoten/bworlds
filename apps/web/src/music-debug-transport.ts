@@ -3,19 +3,14 @@ import {
   type MusicDebugPlaybackRegion,
   type MusicDebugSnapshot,
 } from './music-debug.ts';
+import { clampMusicDebugPreviewOffset } from './music-debug-playback-offset.ts';
+export { clampMusicDebugPreviewOffset } from './music-debug-playback-offset.ts';
 
 export type MusicDebugPlaybackVisualState = {
   snapshot: MusicDebugSnapshot;
   region: MusicDebugPlaybackRegion | null;
   startedAtMs: number;
 };
-
-export function clampMusicDebugPreviewOffset(
-  snapshot: MusicDebugSnapshot,
-  offsetMs: number
-): number {
-  return Math.min(snapshot.durationMs, Math.max(0, Math.round(offsetMs)));
-}
 
 export function resolveMusicDebugDisplayedOffsetMs(options: {
   playback: MusicDebugPlaybackVisualState | null;

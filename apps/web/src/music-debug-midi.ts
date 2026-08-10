@@ -17,7 +17,6 @@ import { resolveProceduralChordTimelineEntryAtStep } from './procedural-music-ch
 import { resolvePercussionFamilyFromInstrumentId } from './procedural-music-percussion.ts';
 import { resolveMusicStereoPan } from './procedural-music-mix.ts';
 import type { MusicDebugSnapshot } from './music-debug.ts';
-import { inspectMusicDebugMidiBytes } from './music-debug-midi-audit.ts';
 
 const MIDI_HEADER_CHUNK_ID = [0x4d, 0x54, 0x68, 0x64];
 const MIDI_TRACK_CHUNK_ID = [0x4d, 0x54, 0x72, 0x6b];
@@ -102,39 +101,6 @@ type BrowserMidiDownloadEnvironment = {
   appendAnchor: (anchor: HTMLAnchorElement) => void;
 };
 
-export function createMusicDebugMidiFile(
-  snapshot: MusicDebugSnapshot,
-  metadataOptions: MusicDebugMidiMetadataOptions = {}
-): MusicDebugMidiFile {
-  const variant = metadataOptions.variant ?? 'full';
-  const validationMessages = [
-    ...snapshot.midiExportValidation.messages,
-    ...snapshot.motifValidation.messages,
-    ...snapshot.timingValidation.messages,
-    ...snapshot.percussionValidation.messages,
-    ...snapshot.songDnaValidation.messages,
-  ];
-  if (
-    !snapshot.midiExportValidation.isValidForMidiExport ||
-    !snapshot.motifValidation.isValidForMidiExport ||
-    !snapshot.timingValidation.isValidForMidiExport ||
-    !snapshot.percussionValidation.isValidForMidiExport ||
-    !snapshot.songDnaValidation.isValidForMidiExport
-  ) {
-    throw new Error(`Cannot export MIDI: ${validationMessages.join(' ')}`);
-  }
-  const file = createMusicDebugMidiFileUnchecked(snapshot, metadataOptions);
-  const midiAudit = inspectMusicDebugMidiBytes(file.bytes, snapshot, {
-    includedRoles: resolveMusicDebugMidiExportRoles(variant),
-  });
-  if (!midiAudit.isConsistent) {
-    throw new Error(
-      `Cannot export MIDI: ${midiAudit.mismatchMessages.join(' ')}`
-    );
-  }
-  return file;
-}
-
 export function createMusicDebugMidiFileUnchecked(
   snapshot: MusicDebugSnapshot,
   metadataOptions: MusicDebugMidiMetadataOptions = {}
@@ -170,7 +136,7 @@ export function downloadMusicDebugMidiFile(
   environment: MusicDebugMidiDownloadEnvironment = createBrowserMidiDownloadEnvironment(),
   metadataOptions: MusicDebugMidiMetadataOptions = {}
 ): void {
-  const file = createMusicDebugMidiFile(snapshot, metadataOptions);
+  const file = createMusicDebugMidiFileUnchecked(snapshot, metadataOptions);
   const blob = new Blob([new Uint8Array(file.bytes).buffer], {
     type: file.mimeType,
   });

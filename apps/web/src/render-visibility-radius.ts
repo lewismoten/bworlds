@@ -1,0 +1,3 @@
+export const DEFAULT_VISIBILITY_RADIUS = 18;
+export const REDUCED_VISIBILITY_RADIUS = 14;
+export const MIN_VISIBILITY_RADIUS = 10;
