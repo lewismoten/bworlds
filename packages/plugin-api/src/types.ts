@@ -111,8 +111,8 @@ export interface NamedPoint extends Point {
 interface SeededPoint extends Point {
   seed: Seed;
 }
-interface TiledPoint extends Point, Tile {}
-export interface OverworldAnchorLike extends NamedPoint {}
+type TiledPoint = Point & Tile;
+export type OverworldAnchorLike = NamedPoint;
 export interface PoiAnchorLike extends OverworldAnchorLike {
   type: PointOfInterestType;
 }
@@ -417,7 +417,7 @@ export interface ThreeMeshLike extends ThreeObject3DLike {
   material?: ThreeMaterialLike;
 }
 
-export interface ThreeGroupLike extends ThreeObject3DLike {}
+export type ThreeGroupLike = ThreeObject3DLike;
 
 export interface ThreePointsLike extends ThreeObject3DLike {
   geometry?: ThreeBufferGeometryLike;
@@ -676,7 +676,7 @@ export interface SurfaceBoundaryTransition3D {
   bodyInset?: number;
 }
 
-export interface SurfaceProfile3DContext extends TileCoordinate {}
+export type SurfaceProfile3DContext = TileCoordinate;
 
 export interface SurfaceProfile3D {
   surfaceHeight?: number;
@@ -688,14 +688,14 @@ export interface SurfaceProfile3D {
 
 export type TravelSlideAxis3D = 'ew' | 'ns';
 
-export interface TraversalProfile3DContext extends TileCoordinate {}
+export type TraversalProfile3DContext = TileCoordinate;
 
 export interface TraversalProfile3D {
   travelGroup?: string | null;
   slideAxis?: TravelSlideAxis3D | null;
 }
 
-export interface ResolveFloorKind3DContext extends TileCoordinate {}
+export type ResolveFloorKind3DContext = TileCoordinate;
 export interface ResolveWorldEnvironmentContext {
   state: WorldStateLike;
   timeMs?: number;
@@ -713,9 +713,9 @@ export interface DecorateOverworldTileContext extends DecoratedSeedTile {
 interface DecoratedContext extends DecoratedSeedTile {
   context: WorldContextLike;
 }
-export interface DecorateTownTileContext extends DecoratedContext {}
-export interface DecorateBuildingTileContext extends DecoratedContext {}
-export interface DecorateDepthTileContext extends DecoratedContext {}
+export type DecorateTownTileContext = DecoratedContext;
+export type DecorateBuildingTileContext = DecoratedContext;
+export type DecorateDepthTileContext = DecoratedContext;
 
 export interface SampleTerrainSignalsLike {
   (x: number, y: number): OverworldSignals;
