@@ -100,6 +100,45 @@ describe('music debug midi audit', () => {
     ).toBe(true);
   });
 
+  it('rejects exports when the harmony track collapses into single notes', () => {
+    const snapshot = createMusicDebugSnapshot({
+      tileKind: 'forest',
+      contextType: 'overworld',
+      clusterX: 4,
+      clusterY: -1,
+    });
+    const file = createMusicDebugMidiFileUnchecked(snapshot, {
+      createdAt: new Date('2026-08-10T00:00:00.000Z'),
+    });
+
+    const audit = inspectMusicDebugMidiBytes(file.bytes, {
+      ...snapshot,
+      trackStats: {
+        ...snapshot.trackStats,
+        harmony: {
+          ...snapshot.trackStats.harmony,
+          maxPolyphony: 1,
+        },
+      },
+      harmonyChordDetections: snapshot.harmonyChordDetections.map(
+        (section) => ({
+          ...section,
+          chordLabels: [],
+        })
+      ),
+    });
+
+    expect(audit.isConsistent).toBe(false);
+    expect(
+      audit.mismatchMessages.some((message) => message.includes('single notes'))
+    ).toBe(true);
+    expect(
+      audit.mismatchMessages.some((message) =>
+        message.includes('recognizable chord stacks')
+      )
+    ).toBe(true);
+  });
+
   it('flags planned sections when exported midi markers drift from the section plan', () => {
     const snapshot = createMusicDebugSnapshot({
       tileKind: 'forest',

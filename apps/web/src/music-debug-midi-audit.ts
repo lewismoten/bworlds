@@ -26,7 +26,12 @@ export function inspectMusicDebugMidiBytes(
   bytes: Uint8Array,
   snapshot: Pick<
     MusicDebugSnapshot,
-    'durationMs' | 'measureCount' | 'resolvedBpm' | 'song'
+    | 'durationMs'
+    | 'measureCount'
+    | 'resolvedBpm'
+    | 'song'
+    | 'trackStats'
+    | 'harmonyChordDetections'
   >
 ): MusicDebugMidiAudit {
   const chunks = parseMidiChunks(bytes);
@@ -68,6 +73,20 @@ export function inspectMusicDebugMidiBytes(
   if (exportedMeasureCount !== snapshot.measureCount) {
     mismatchMessages.push(
       `MIDI measures ${exportedMeasureCount} do not match ${snapshot.measureCount}.`
+    );
+  }
+  if (snapshot.trackStats.harmony.maxPolyphony <= 1) {
+    mismatchMessages.push(
+      'Harmony track collapsed to single notes instead of sustained chord voicings.'
+    );
+  }
+  if (
+    !snapshot.harmonyChordDetections.some(
+      (section) => section.chordLabels.length > 0
+    )
+  ) {
+    mismatchMessages.push(
+      'Harmony track does not expose recognizable chord stacks in any section.'
     );
   }
   if (markerLabels.length !== snapshot.song.sections.length) {

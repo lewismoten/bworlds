@@ -125,7 +125,7 @@ added directly as semitones instead of moving through the selected scale.
 - [x] Separate chord voices into stable registers.
 - [ ] Match harmony notes to the 1-5-6-1 progression.
 - [x] Validate that harmony polyphony exceeds one.
-- [ ] Reject a harmony track containing only single notes.
+- [x] Reject a harmony track containing only single notes.
 
 ## Chord Progression
 
