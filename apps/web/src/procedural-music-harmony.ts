@@ -1,4 +1,5 @@
 import { hash2DWithSeed, registerHashLabel } from '@bworlds/core/hash';
+import { resolveProceduralChordProgression as resolveCuratedProceduralChordProgression } from './procedural-music-chord-progression.ts';
 import { resolveProceduralHarmonyChordVoicing } from './procedural-music-harmony-voicing.ts';
 import {
   getProceduralScaleDegreeSemitones,
@@ -59,7 +60,6 @@ export type ProceduralCompositionStep = {
   phraseStep: number;
 };
 
-const MUSIC_PROGRESSION_SEED = registerHashLabel('music-progression');
 const MUSIC_MOTIF_SEED = registerHashLabel('music-lead-motif');
 const MUSIC_LEAP_SEED = registerHashLabel('music-leap-motion');
 const MUSIC_ACCIDENTAL_SEED = registerHashLabel('music-accidental-motion');
@@ -72,12 +72,6 @@ const LEAD_MIN_SEMITONES = 0;
 const LEAD_MAX_SEMITONES = 19;
 const LARGE_LEAP_LIMIT_SEMITONES = 7;
 const OCTAVE_LEAP_LIMIT_SEMITONES = 12;
-const PROGRESSION_PATTERNS = [
-  [0, 3, 4, 0],
-  [0, 4, 5, 0],
-  [0, 5, 3, 4],
-  [0, 2, 5, 0],
-] as const;
 const MOTIF_PATTERNS = [
   [0, 1, 0],
   [0, 1, 2, 1],
@@ -104,14 +98,11 @@ export function resolveProceduralChordProgression(
   clusterX: number,
   clusterY: number
 ): readonly number[] {
-  const patternIndex = Math.floor(
-    hash2DWithSeed(
-      MUSIC_PROGRESSION_SEED,
-      clusterX + theme.id.length * 17,
-      clusterY - theme.id.length * 13
-    ) * PROGRESSION_PATTERNS.length
-  );
-  return PROGRESSION_PATTERNS[patternIndex] ?? PROGRESSION_PATTERNS[0];
+  return resolveCuratedProceduralChordProgression({
+    themeId: theme.id,
+    clusterX,
+    clusterY,
+  });
 }
 
 export function resolveProceduralLeadMotif(

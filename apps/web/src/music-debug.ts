@@ -15,6 +15,7 @@ import {
   resolveProceduralLeadMotif,
   resolveProceduralLeadPhraseCadence,
 } from './procedural-music-harmony.ts';
+import { describeProceduralChordProgression } from './procedural-music-chord-progression.ts';
 import {
   createProceduralMusicSong,
   type ProceduralMusicSong,
@@ -730,7 +731,7 @@ export function buildMusicDebugSummaryMarkup(
       <span>Layer Check ${formatMusicDebugSectionLayerComparisons(snapshot.sectionLayerComparisons)}</span>
     </div>
     <div class="music-debug-role-counts">
-      <span>Chords ${snapshot.chordProgression.map((degree) => degree + 1).join(' - ')}</span>
+      <span>Chords ${describeProceduralChordProgression(snapshot.theme.scale, snapshot.chordProgression).join(' - ')}</span>
     </div>
     <div class="music-debug-role-counts">
       <span>Shared Motif ${snapshot.sharedMotif.map((degree) => degree + 1).join(' - ')} (${snapshot.theme.motif.adaptationLabel})</span>

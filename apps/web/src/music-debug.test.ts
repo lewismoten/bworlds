@@ -528,23 +528,27 @@ describe('music debug', () => {
     expect(snapshot.theme.rootHz).toBeGreaterThan(0);
   });
 
-  it('shows battle and boss encounter modes through song length generation', () => {
-    const battle = createMusicDebugSnapshot({
-      tileKind: 'forest',
-      contextType: 'overworld',
-      encounterMode: 'battle',
-      combatIntensity: 0.6,
-    });
-    const boss = createMusicDebugSnapshot({
-      tileKind: 'cave',
-      contextType: 'dungeon',
-      encounterMode: 'boss',
-      combatIntensity: 0.95,
-    });
+  it(
+    'shows battle and boss encounter modes through song length generation',
+    () => {
+      const battle = createMusicDebugSnapshot({
+        tileKind: 'forest',
+        contextType: 'overworld',
+        encounterMode: 'battle',
+        combatIntensity: 0.6,
+      });
+      const boss = createMusicDebugSnapshot({
+        tileKind: 'cave',
+        contextType: 'dungeon',
+        encounterMode: 'boss',
+        combatIntensity: 0.95,
+      });
 
-    expect(battle.durationMs).toBeGreaterThanOrEqual(60_000);
-    expect(battle.durationMs).toBeLessThanOrEqual(120_000);
-    expect(boss.durationMs).toBeGreaterThanOrEqual(180_000);
-    expect(boss.durationMs).toBeLessThanOrEqual(360_000);
-  });
+      expect(battle.durationMs).toBeGreaterThanOrEqual(60_000);
+      expect(battle.durationMs).toBeLessThanOrEqual(120_000);
+      expect(boss.durationMs).toBeGreaterThanOrEqual(180_000);
+      expect(boss.durationMs).toBeLessThanOrEqual(360_000);
+    },
+    5_000
+  );
 });

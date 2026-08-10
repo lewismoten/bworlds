@@ -129,8 +129,8 @@ added directly as semitones instead of moving through the selected scale.
 
 ## Chord Progression
 
-- [ ] Resolve scale-degree chords within G Mixolydian.
-- [ ] Document whether chord 6 is major, minor, or modal.
+- [x] Resolve scale-degree chords within G Mixolydian.
+- [x] Document whether chord 6 is major, minor, or modal.
 - [ ] Generate chord pitches before arranging tracks.
 - [ ] Give all tracks the same active chord timeline.
 - [ ] Mark chord changes in the debug MIDI.

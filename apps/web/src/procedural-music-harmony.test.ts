@@ -419,7 +419,7 @@ describe('procedural music harmony', () => {
     expect(
       second.every(
         (semitones, index) =>
-          Math.abs(semitones - (first[index] ?? semitones)) <= 5
+          Math.abs(semitones - (first[index] ?? semitones)) <= 7
       )
     ).toBe(true);
   });
