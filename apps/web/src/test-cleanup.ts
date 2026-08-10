@@ -9,6 +9,12 @@ type ClosableResource = Partial<
 
 type TrackClosableResourceOptions = {
   methodName?: ClosableMethodName;
+  label?: string;
+};
+
+type RegisterTestCleanupOptions = {
+  label?: string;
+  timeoutMs?: number;
 };
 
 const registeredTestCleanups: TestCleanup[] = [];
@@ -19,9 +25,16 @@ const closableMethodNames: readonly ClosableMethodName[] = [
   'abort',
   'disconnect',
 ];
-
-export function registerTestCleanup(cleanup: TestCleanup): void {
-  registeredTestCleanups.push(cleanup);
+const TEST_CLEANUP_TIMEOUT_MS = 100;
+export function registerTestCleanup(
+  cleanup: TestCleanup,
+  options: RegisterTestCleanupOptions = {}
+): void {
+  const label = options.label ?? 'registered test cleanup';
+  const timeoutMs = options.timeoutMs ?? TEST_CLEANUP_TIMEOUT_MS;
+  registeredTestCleanups.push(() =>
+    settleTestCleanupPromise(Promise.resolve().then(() => cleanup()), label, timeoutMs)
+  );
 }
 
 export function trackClosableTestResource<Resource extends ClosableResource>(
@@ -36,7 +49,10 @@ export function trackClosableTestResource<Resource extends ClosableResource>(
     );
   }
 
-  registerTestCleanup(() => invokeClosableResourceMethod(resource, methodName));
+  const label = options.label ?? `tracked resource ${methodName}()`;
+  registerTestCleanup(() => invokeClosableResourceMethod(resource, methodName, label), {
+    label,
+  });
   return resource;
 }
 
@@ -73,7 +89,8 @@ function resolveClosableMethodName(
 
 async function invokeClosableResourceMethod(
   resource: ClosableResource,
-  methodName: ClosableMethodName
+  methodName: ClosableMethodName,
+  label: string
 ): Promise<void> {
   const method = resource[methodName];
   if (typeof method !== 'function') {
@@ -81,7 +98,7 @@ async function invokeClosableResourceMethod(
   }
 
   if (method.length > 0 && methodName === 'close') {
-    await new Promise<void>((resolve, reject) => {
+    const callbackPromise = new Promise<void>((resolve, reject) => {
       let settled = false;
       const callback = (error?: unknown) => {
         if (settled) {
@@ -101,8 +118,31 @@ async function invokeClosableResourceMethod(
         reject(error);
       }
     });
+    await settleTestCleanupPromise(callbackPromise, label);
     return;
   }
 
-  await method.call(resource);
+  await settleTestCleanupPromise(
+    Promise.resolve().then(() => method.call(resource)),
+    label
+  );
+}
+
+function settleTestCleanupPromise<T>(
+  promise: Promise<T>,
+  label: string,
+  timeoutMs = TEST_CLEANUP_TIMEOUT_MS
+): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) => {
+      setTimeout(() => {
+        reject(
+          new Error(
+            `${label} did not resolve or reject within ${timeoutMs}ms.`
+          )
+        );
+      }, timeoutMs);
+    }),
+  ]);
 }

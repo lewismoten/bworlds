@@ -37,5 +37,6 @@ Tests that open handles with longer lifetimes can register them through
 
 - `registerTestCleanup(() => ...)` for custom teardown logic
 - `trackClosableTestResource(resource)` for callback-style `close()` handles and promise-based `terminate()`/`destroy()` handles
+- cleanup promises that never settle now fail after 100ms instead of hanging the suite teardown
 
 That split keeps per-test/hook limits in Vitest itself while the supervisor handles whole-suite process cleanup.

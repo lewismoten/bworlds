@@ -20,7 +20,10 @@ Always run tests to make sure all tests pass
       ESLint now enforces `@typescript-eslint/await-thenable` plus
       `@typescript-eslint/no-floating-promises` across TypeScript files so
       missing awaits and dropped promises fail lint.
-- [ ] Ensure every promise eventually resolves or rejects.
+- [x] Ensure every promise eventually resolves or rejects.
+      Registered test cleanups and tracked `close()`/`destroy()`/`terminate()`
+      handles now fail fast if they do not settle within 100ms, so leaked async
+      teardown work reports a test failure instead of hanging the suite.
 - [x] Clear intervals and timeouts after every test.
 - [x] Close servers, sockets, workers, and file watchers.
       Shared Vitest cleanup now supports registered teardown callbacks plus
