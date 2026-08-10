@@ -73,6 +73,7 @@ describe('music debug midi audit', () => {
     expect(audit.sectionsMatchPlannedMarkers).toBe(true);
     expect(audit.isConsistent).toBe(true);
     expect(audit.mismatchMessages).toEqual([]);
+    expect(audit.exportedNoteCountsByRole).toEqual(snapshot.roleCounts);
   });
 
   it('flags mismatched snapshot metadata against the exported midi facts', () => {
@@ -268,6 +269,33 @@ describe('music debug midi audit', () => {
     expect(audit.warningMessages).toContain(
       'Outro answer cadence drifted outside the active harmony.'
     );
+  });
+
+  it('flags scheduled-note mismatches when exported role note counts drift', () => {
+    const snapshot = createMusicDebugSnapshot({
+      tileKind: 'forest',
+      contextType: 'overworld',
+      clusterX: 4,
+      clusterY: -1,
+    });
+    const file = createMusicDebugMidiFileUnchecked(snapshot, {
+      createdAt: new Date('2026-08-09T00:00:00.000Z'),
+    });
+
+    const audit = inspectMusicDebugMidiBytes(file.bytes, {
+      ...snapshot,
+      roleCounts: {
+        ...snapshot.roleCounts,
+        lead: snapshot.roleCounts.lead + 1,
+      },
+    });
+
+    expect(audit.isConsistent).toBe(false);
+    expect(
+      audit.mismatchMessages.some((message) =>
+        message.includes('lead note count')
+      )
+    ).toBe(true);
   });
 });
 

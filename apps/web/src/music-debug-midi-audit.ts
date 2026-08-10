@@ -9,6 +9,9 @@ export type MusicDebugMidiAudit = {
   exportedBpm: number | null;
   exportedDurationMs: number;
   exportedMeasureCount: number;
+  exportedNoteCountsByRole: Partial<
+    Record<MusicDebugSnapshot['notes'][number]['role'], number>
+  >;
   markerLabels: string[];
   sectionsMatchPlannedMarkers: boolean;
   mismatchMessages: string[];
@@ -38,6 +41,7 @@ export function inspectMusicDebugMidiBytes(
     | 'resolvedBpm'
     | 'song'
     | 'trackStats'
+    | 'roleCounts'
     | 'harmonyChordDetections'
     | 'bassProgressionDetections'
     | 'cadenceValidation'
@@ -71,6 +75,10 @@ export function inspectMusicDebugMidiBytes(
   const includedRoles = new Set(
     options.includedRoles ?? ['bass', 'harmony', 'lead', 'percussion']
   );
+  const exportedNoteCountsByRole = readExportedNoteCountsByRole(
+    chunks.tracks,
+    includedRoles
+  );
   let sectionsMatchPlannedMarkers = true;
 
   if (
@@ -90,6 +98,18 @@ export function inspectMusicDebugMidiBytes(
     mismatchMessages.push(
       `MIDI measures ${exportedMeasureCount} do not match ${snapshot.measureCount}.`
     );
+  }
+  for (const role of MIDI_AUDIT_ROLE_ORDER) {
+    if (!includedRoles.has(role)) {
+      continue;
+    }
+    const exportedNoteCount = exportedNoteCountsByRole[role] ?? 0;
+    const scheduledNoteCount = snapshot.roleCounts[role] ?? 0;
+    if (exportedNoteCount !== scheduledNoteCount) {
+      mismatchMessages.push(
+        `MIDI ${role} note count ${exportedNoteCount} does not match scheduled ${scheduledNoteCount}.`
+      );
+    }
   }
   if (
     includedRoles.has('harmony') &&
@@ -163,6 +183,7 @@ export function inspectMusicDebugMidiBytes(
     exportedBpm,
     exportedDurationMs,
     exportedMeasureCount,
+    exportedNoteCountsByRole,
     markerLabels,
     sectionsMatchPlannedMarkers,
     mismatchMessages,
@@ -191,6 +212,13 @@ function requiresStrictProgressionAudit(sectionId: string): boolean {
     sectionId === 'outro'
   );
 }
+
+const MIDI_AUDIT_ROLE_ORDER = [
+  'bass',
+  'harmony',
+  'lead',
+  'percussion',
+] as const;
 
 function parseMidiChunks(bytes: Uint8Array): {
   header: {
@@ -222,6 +250,90 @@ function parseMidiChunks(bytes: Uint8Array): {
     },
     tracks,
   };
+}
+
+function readExportedNoteCountsByRole(
+  tracks: readonly Uint8Array[],
+  includedRoles: ReadonlySet<MusicDebugSnapshot['notes'][number]['role']>
+): Partial<Record<MusicDebugSnapshot['notes'][number]['role'], number>> {
+  const counts: Partial<
+    Record<MusicDebugSnapshot['notes'][number]['role'], number>
+  > = {};
+  let trackIndex = 1;
+
+  for (const role of MIDI_AUDIT_ROLE_ORDER) {
+    if (!includedRoles.has(role)) {
+      continue;
+    }
+    counts[role] = countTrackNoteOnEvents(
+      tracks[trackIndex] ?? new Uint8Array()
+    );
+    trackIndex += 1;
+  }
+
+  return counts;
+}
+
+function countTrackNoteOnEvents(track: Uint8Array): number {
+  let offset = 0;
+  let runningStatus: number | null = null;
+  let noteOnCount = 0;
+
+  while (offset < track.length) {
+    const delta = readVariableLengthQuantity(track, offset);
+    offset += delta.length;
+    if (offset >= track.length) {
+      break;
+    }
+
+    let status = track[offset]!;
+    if (status < 0x80) {
+      if (runningStatus === null) {
+        break;
+      }
+      status = runningStatus;
+    } else {
+      offset += 1;
+      if (status < 0xf0) {
+        runningStatus = status;
+      }
+    }
+
+    if (status === 0xff) {
+      if (offset >= track.length) {
+        break;
+      }
+      offset += 1;
+      const metaLength = readVariableLengthQuantity(track, offset);
+      offset += metaLength.length + metaLength.value;
+      continue;
+    }
+
+    if (status === 0xf0 || status === 0xf7) {
+      const sysexLength = readVariableLengthQuantity(track, offset);
+      offset += sysexLength.length + sysexLength.value;
+      continue;
+    }
+
+    const messageType = status & 0xf0;
+    const dataLength = messageType === 0xc0 || messageType === 0xd0 ? 1 : 2;
+    const dataStart = offset;
+    const firstData = track[dataStart];
+    const secondData = dataLength > 1 ? track[dataStart + 1] : undefined;
+
+    if (
+      messageType === 0x90 &&
+      firstData !== undefined &&
+      secondData !== undefined &&
+      secondData > 0
+    ) {
+      noteOnCount += 1;
+    }
+
+    offset += dataLength;
+  }
+
+  return noteOnCount;
 }
 
 function readTrackMetaTexts(track: Uint8Array, metaType: number): string[] {
