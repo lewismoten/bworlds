@@ -157,6 +157,7 @@ function buildMusicDebugParameterReport(
       chordProgression: snapshot.chordProgression,
       leadMotif: snapshot.leadMotif,
       leadContour: snapshot.leadContour,
+      leadContourAnalysis: snapshot.leadContourAnalysis,
       leadPhraseCadence: snapshot.leadPhraseCadence,
       sections: snapshot.song.sections.map((section) => ({
         id: section.id,

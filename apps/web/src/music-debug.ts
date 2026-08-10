@@ -78,6 +78,10 @@ import {
   type MusicDebugMotifValidation,
 } from './music-debug-motif-validation.ts';
 import {
+  createMusicDebugLeadContourAnalysis,
+  type MusicDebugLeadContourAnalysis,
+} from './music-debug-lead-contour.ts';
+import {
   createMusicDebugBassProgressionDetections,
   createMusicDebugHarmonyChordDetections,
   createMusicDebugSectionLayerActivity,
@@ -169,6 +173,7 @@ export type MusicDebugSnapshot = {
   trackStats: Record<ProceduralMusicNote['role'], MusicDebugTrackStats>;
   intervalComparison: MusicDebugIntervalComparison;
   phraseRepetition: MusicDebugPhraseRepetitionAnalysis;
+  leadContourAnalysis: MusicDebugLeadContourAnalysis;
   sectionMotifMatches: MusicDebugSectionMotifMatch[];
   motifValidation: MusicDebugMotifValidation;
   harmonyChordDetections: MusicDebugHarmonyChordDetection[];
@@ -415,6 +420,15 @@ export function createMusicDebugSnapshot(
     songDurationMs: durationMs,
     role: 'lead',
   });
+  const leadContourAnalysis = createMusicDebugLeadContourAnalysis({
+    theme,
+    clusterX: options.clusterX,
+    clusterY: options.clusterY,
+    songStartMs: song.startMs,
+    sections: song.sections,
+    notes: song.notes,
+    diagnostics: midiExportValidation.notePitchDiagnostics,
+  });
   const sectionMotifMatches = createMusicDebugSectionMotifMatches({
     notes: song.notes,
     notePitchDiagnostics: midiExportValidation.notePitchDiagnostics,
@@ -493,6 +507,7 @@ export function createMusicDebugSnapshot(
     trackStats,
     intervalComparison,
     phraseRepetition,
+    leadContourAnalysis,
     sectionMotifMatches,
     motifValidation,
     harmonyChordDetections,
@@ -863,6 +878,9 @@ export function buildMusicDebugSummaryMarkup(
       <span>Lead Contour ${snapshot.leadContour.join(' / ')}</span>
     </div>
     <div class="music-debug-role-counts">
+      <span>Lead Contour Check ${formatMusicDebugLeadContourSummary(snapshot.leadContourAnalysis)}</span>
+    </div>
+    <div class="music-debug-role-counts">
       <span>Lead Cadence ${snapshot.leadPhraseCadence.join(' / ')}</span>
     </div>
     ${buildMusicDebugInstrumentPanelMarkup(snapshot)}
@@ -893,6 +911,13 @@ function formatMusicDebugBassProgressionDetections(
       return `${detection.sectionLabel}: ${detected} (${status} vs ${planned})`;
     })
     .join(' | ');
+}
+
+function formatMusicDebugLeadContourSummary(
+  analysis: MusicDebugLeadContourAnalysis
+): string {
+  const status = analysis.matchesPlannedContour ? 'ok' : 'drift';
+  return `${status}; in-range ${analysis.inRangePointCount}, out-of-range ${analysis.outOfRangePointCount}, missing ${analysis.missingPointCount}, climax ${analysis.climaxNearPlannedPeak ? 'near peak' : 'off peak'}, ending ${analysis.finalResolvesToTonic ? 'tonic' : 'drifted'}`;
 }
 
 function formatMusicDebugAccidentalRuleSummary(

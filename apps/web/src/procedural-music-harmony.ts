@@ -57,6 +57,14 @@ export type ProceduralLeadContourStep = {
   maxDegreeOffset: number;
 };
 
+export type ProceduralLeadContourTargetRange = {
+  stage: ProceduralLeadContourStage;
+  minSemitones: number;
+  targetSemitones: number;
+  maxSemitones: number;
+  cadence: ProceduralLeadPhraseCadence;
+};
+
 export type ProceduralBassFigureStep =
   'root' | 'fifth' | 'passing' | 'octave-root';
 
@@ -236,6 +244,44 @@ export function resolveProceduralCompositionStep(
     motifDegreeOffset:
       motif.degreeOffsets[phraseStep % motif.degreeOffsets.length] ?? 0,
     phraseStep,
+  };
+}
+
+export function resolveProceduralLeadContourTargetRange(
+  theme: ProceduralHarmonyTheme,
+  stepIndex: number,
+  clusterX: number,
+  clusterY: number
+): ProceduralLeadContourTargetRange {
+  const composition = resolveProceduralCompositionStep(
+    theme,
+    stepIndex,
+    clusterX,
+    clusterY,
+    false
+  );
+
+  return {
+    stage: composition.contourStep.stage,
+    minSemitones: getProceduralScaleDegreeSemitones(
+      theme.scale,
+      composition.chord.degreeIndex +
+        composition.motifDegreeOffset +
+        composition.contourStep.minDegreeOffset
+    ),
+    targetSemitones: getProceduralScaleDegreeSemitones(
+      theme.scale,
+      composition.chord.degreeIndex +
+        composition.motifDegreeOffset +
+        composition.contourStep.degreeOffset
+    ),
+    maxSemitones: getProceduralScaleDegreeSemitones(
+      theme.scale,
+      composition.chord.degreeIndex +
+        composition.motifDegreeOffset +
+        composition.contourStep.maxDegreeOffset
+    ),
+    cadence: composition.cadence,
   };
 }
 
@@ -909,25 +955,11 @@ function resolveLeadSemitonePlan(
     clusterY,
     allowLeadAccidentals
   );
-  const melodyPatternIndex =
-    chord.degreeIndex +
-    composition.motifDegreeOffset +
-    composition.contourStep.degreeOffset;
-  const leadScaleSemitones = getProceduralScaleDegreeSemitones(
-    theme.scale,
-    melodyPatternIndex
-  );
-  const minLeadScaleSemitones = getProceduralScaleDegreeSemitones(
-    theme.scale,
-    chord.degreeIndex +
-      composition.motifDegreeOffset +
-      composition.contourStep.minDegreeOffset
-  );
-  const maxLeadScaleSemitones = getProceduralScaleDegreeSemitones(
-    theme.scale,
-    chord.degreeIndex +
-      composition.motifDegreeOffset +
-      composition.contourStep.maxDegreeOffset
+  const contourTargetRange = resolveProceduralLeadContourTargetRange(
+    theme,
+    stepIndex,
+    clusterX,
+    clusterY
   );
   const strongLeadBeat = resolveProceduralMeterPosition(stepIndex).isStrongBeat;
   const structuralAccent =
@@ -938,11 +970,7 @@ function resolveLeadSemitonePlan(
     return {
       semitones: chord.passingSemitones,
       candidateSemitones: [chord.passingSemitones],
-      contourRange: {
-        minSemitones: minLeadScaleSemitones,
-        targetSemitones: leadScaleSemitones,
-        maxSemitones: maxLeadScaleSemitones,
-      },
+      contourRange: contourTargetRange,
       cadence: composition.cadence,
       contourStage: composition.contourStep.stage,
       strongLeadBeat,
@@ -953,11 +981,7 @@ function resolveLeadSemitonePlan(
     return {
       semitones: chord.rootSemitones,
       candidateSemitones: [chord.rootSemitones],
-      contourRange: {
-        minSemitones: minLeadScaleSemitones,
-        targetSemitones: leadScaleSemitones,
-        maxSemitones: maxLeadScaleSemitones,
-      },
+      contourRange: contourTargetRange,
       cadence: composition.cadence,
       contourStage: composition.contourStep.stage,
       strongLeadBeat,
@@ -977,11 +1001,7 @@ function resolveLeadSemitonePlan(
         chordTonePattern[Math.floor(stepIndex / 4) % chordTonePattern.length] ??
         chord.rootSemitones,
       candidateSemitones: chordTonePattern,
-      contourRange: {
-        minSemitones: minLeadScaleSemitones,
-        targetSemitones: leadScaleSemitones,
-        maxSemitones: maxLeadScaleSemitones,
-      },
+      contourRange: contourTargetRange,
       cadence: composition.cadence,
       contourStage: composition.contourStep.stage,
       strongLeadBeat,
@@ -1002,11 +1022,7 @@ function resolveLeadSemitonePlan(
     return {
       semitones: accidentalSemitones,
       candidateSemitones: [accidentalSemitones],
-      contourRange: {
-        minSemitones: minLeadScaleSemitones,
-        targetSemitones: leadScaleSemitones,
-        maxSemitones: maxLeadScaleSemitones,
-      },
+      contourRange: contourTargetRange,
       cadence: composition.cadence,
       contourStage: composition.contourStep.stage,
       strongLeadBeat,
@@ -1015,19 +1031,15 @@ function resolveLeadSemitonePlan(
   }
 
   const melodicOptions = [
-    leadScaleSemitones,
+    contourTargetRange.targetSemitones,
     chord.passingSemitones,
     chord.thirdSemitones,
     chord.fifthSemitones,
   ];
   return {
-    semitones: melodicOptions[0] ?? leadScaleSemitones,
+    semitones: melodicOptions[0] ?? contourTargetRange.targetSemitones,
     candidateSemitones: melodicOptions,
-    contourRange: {
-      minSemitones: minLeadScaleSemitones,
-      targetSemitones: leadScaleSemitones,
-      maxSemitones: maxLeadScaleSemitones,
-    },
+    contourRange: contourTargetRange,
     cadence: composition.cadence,
     contourStage: composition.contourStep.stage,
     strongLeadBeat,

@@ -202,8 +202,8 @@ added directly as semitones instead of moving through the selected scale.
 - [ ] Keep the climax pitch unique within the song.
 - [ ] Descend gradually after the climax.
 - [ ] Resolve the final contour value to the tonic.
-- [ ] Validate actual pitches against the planned contour.
-- [ ] Export planned and actual contour values for review.
+- [x] Validate actual pitches against the planned contour.
+- [x] Export planned and actual contour values for review.
 
 ## Cadences
 

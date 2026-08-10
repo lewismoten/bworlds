@@ -66,6 +66,7 @@ describe('music debug', () => {
     expect(first.chordProgression).toEqual(second.chordProgression);
     expect(first.leadMotif).toEqual(second.leadMotif);
     expect(first.leadContour).toEqual(second.leadContour);
+    expect(first.leadContourAnalysis).toEqual(second.leadContourAnalysis);
     expect(first.leadPhraseCadence).toEqual(second.leadPhraseCadence);
     expect(first.leadMaxLeapSemitones).toBe(second.leadMaxLeapSemitones);
     expect(first.accidentalNoteCount).toBe(second.accidentalNoteCount);
@@ -132,6 +133,12 @@ describe('music debug', () => {
     expect(first.phraseRepetition.averageSimilarityPercentage).toBeGreaterThan(
       0
     );
+    expect(first.leadContourAnalysis.points.length).toBeGreaterThan(0);
+    expect(
+      first.leadContourAnalysis.inRangePointCount +
+        first.leadContourAnalysis.outOfRangePointCount +
+        first.leadContourAnalysis.missingPointCount
+    ).toBe(first.leadContourAnalysis.points.length);
     expect(first.sectionMotifMatches).toHaveLength(first.song.sections.length);
     expect(first.motifValidation.totalMatchCount).toBeGreaterThan(0);
     expect(first.motifValidation.isValidForMidiExport).toBe(true);
@@ -240,6 +247,7 @@ describe('music debug', () => {
     expect(summary).toContain('Faction Interaction');
     expect(summary).toContain('NPC Motifs');
     expect(summary).toContain('Lead Contour');
+    expect(summary).toContain('Lead Contour Check');
     expect(summary).toContain('Lead Cadence');
     expect(summary).toContain('Lead Max Leap');
     expect(summary).toContain('Accidentals');

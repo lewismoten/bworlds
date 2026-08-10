@@ -47,6 +47,14 @@ describe('music debug export bundle', () => {
           clusterX: 4,
           clusterY: -1,
         }),
+        song: expect.objectContaining({
+          leadContourAnalysis: expect.objectContaining({
+            points: expect.any(Array),
+            inRangePointCount: expect.any(Number),
+            outOfRangePointCount: expect.any(Number),
+            finalResolvesToTonic: expect.any(Boolean),
+          }),
+        }),
       })
     );
   });
