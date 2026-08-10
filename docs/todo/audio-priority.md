@@ -164,7 +164,7 @@
 - [x] Show planned and actual contour on one graph.
 - [x] Highlight cadence notes that conflict with harmony.
 - [x] Highlight unexpected percussion substitutions.
-- [ ] Save a report for each rejected song.
+- [x] Save a report for each rejected song.
 - [ ] Keep several known-good seeds for regression tests.
 
 * [x] When changing input parameters, apply to the song immediately, and let it continue playing

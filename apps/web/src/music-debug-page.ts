@@ -22,6 +22,7 @@ import { downloadMusicDebugMidiFile } from './music-debug-midi.ts';
 import { normalizeMusicDebugMidiExportVariant } from './music-debug-midi-export-variant.ts';
 import { downloadMusicDebugExportBundle } from './music-debug-export-bundle.ts';
 import { createMusicDebugInstrumentPreviewPlayer } from './music-debug-instrument-preview.ts';
+import { saveRejectedMusicDebugReport } from './music-debug-rejection-report-storage.ts';
 import {
   resolveMusicDebugInstrumentPreviewNote,
   type MusicDebugInstrumentPreviewTarget,
@@ -277,18 +278,15 @@ function seekToOffset(nextOffsetMs: number): void {
   const snapshot = pageState.refreshNow();
   previewOffsetMs = clampMusicDebugPreviewOffset(snapshot, nextOffsetMs);
   if (playbackController.isPlaying()) {
-    playbackController.start(
-      snapshot,
-      {
-        ...resolveMusicDebugPlaybackIntent({
-          snapshot,
-          previewOffsetMs,
-          loopEnabled: loopInput?.checked === true,
-        }),
-        roles: resolveSelectedPlaybackRoles(),
-        dry: resolveSelectedDryPlaybackEnabled(),
-      }
-    );
+    playbackController.start(snapshot, {
+      ...resolveMusicDebugPlaybackIntent({
+        snapshot,
+        previewOffsetMs,
+        loopEnabled: loopInput?.checked === true,
+      }),
+      roles: resolveSelectedPlaybackRoles(),
+      dry: resolveSelectedDryPlaybackEnabled(),
+    });
     persistPageState(true);
     return;
   }
@@ -300,6 +298,7 @@ const pageState = createMusicDebugPageState({
   createSnapshot: () => {
     const startedAtMs = performance.now();
     const snapshot = createCachedMusicDebugSnapshot(collectOptions());
+    saveRejectedMusicDebugReport(snapshot, globalThis.localStorage ?? null);
     reportMusicDebugRuntimePerformanceSnapshot('song-generated', snapshot, {
       songGenerationMs: performance.now() - startedAtMs,
     });
@@ -310,20 +309,17 @@ const pageState = createMusicDebugPageState({
       summary.innerHTML = buildMusicDebugSummaryMarkup(nextSnapshot);
     }
     if (playbackController.isPlaying()) {
-      playbackController.start(
-        nextSnapshot,
-        {
-          ...resolveMusicDebugLivePlaybackIntent({
-            snapshot: nextSnapshot,
-            playback: playbackVisualState,
-            previewOffsetMs,
-            loopEnabled: loopInput?.checked === true,
+      playbackController.start(nextSnapshot, {
+        ...resolveMusicDebugLivePlaybackIntent({
+          snapshot: nextSnapshot,
+          playback: playbackVisualState,
+          previewOffsetMs,
+          loopEnabled: loopInput?.checked === true,
           nowMs: performance.now(),
         }),
         roles: resolveSelectedPlaybackRoles(),
         dry: resolveSelectedDryPlaybackEnabled(),
-      }
-    );
+      });
       return;
     }
     previewOffsetMs = clampMusicDebugPreviewOffset(
@@ -534,18 +530,15 @@ playButton?.addEventListener('click', () => {
     return;
   }
   const currentSnapshot = pageState.refreshNow();
-  playbackController.start(
-    currentSnapshot,
-    {
-      ...resolveMusicDebugPlaybackIntent({
-        snapshot: currentSnapshot,
-        previewOffsetMs,
-        loopEnabled: loopInput?.checked === true,
-      }),
-      roles: resolveSelectedPlaybackRoles(),
-      dry: resolveSelectedDryPlaybackEnabled(),
-    }
-  );
+  playbackController.start(currentSnapshot, {
+    ...resolveMusicDebugPlaybackIntent({
+      snapshot: currentSnapshot,
+      previewOffsetMs,
+      loopEnabled: loopInput?.checked === true,
+    }),
+    roles: resolveSelectedPlaybackRoles(),
+    dry: resolveSelectedDryPlaybackEnabled(),
+  });
 });
 
 randomizeButton?.addEventListener('click', () => {
@@ -686,18 +679,15 @@ const scheduleAfterPaint =
 scheduleAfterPaint(() => {
   const snapshot = pageState.refreshNow();
   if (persistedState?.shouldResume) {
-    playbackController.start(
-      snapshot,
-      {
-        ...resolveMusicDebugPlaybackIntent({
-          snapshot,
-          previewOffsetMs,
+    playbackController.start(snapshot, {
+      ...resolveMusicDebugPlaybackIntent({
+        snapshot,
+        previewOffsetMs,
         loopEnabled: loopInput?.checked === true,
       }),
       roles: resolveSelectedPlaybackRoles(persistedState.playbackVariant),
       dry: resolveSelectedDryPlaybackEnabled(persistedState.dryPlaybackEnabled),
-    }
-  );
+    });
   }
   updatePreviewOffset(previewOffsetMs);
   syncPlaybackControls(snapshot);

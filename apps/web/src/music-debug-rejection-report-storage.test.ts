@@ -1,0 +1,140 @@
+import { describe, expect, it } from 'vitest';
+
+import { createMusicDebugSnapshot } from './music-debug.ts';
+import {
+  loadRejectedMusicDebugReports,
+  saveRejectedMusicDebugReport,
+} from './music-debug-rejection-report-storage.ts';
+
+describe('music debug rejection report storage', () => {
+  it('saves a report when a snapshot fails export-related validation', () => {
+    const storage = createMemoryStorage();
+    const snapshot = createRejectedSnapshot();
+
+    const saved = saveRejectedMusicDebugReport(snapshot, storage, {
+      createdAt: new Date('2026-08-10T00:00:00.000Z'),
+    });
+
+    expect(saved).toEqual(
+      expect.objectContaining({
+        themeId: snapshot.theme.id,
+        clusterX: snapshot.options.clusterX,
+        clusterY: snapshot.options.clusterY,
+        rejectionReasons: expect.arrayContaining([
+          'Variation percussion should stay thinner than Section A.',
+        ]),
+        report: expect.objectContaining({
+          song: expect.objectContaining({
+            leadContourAnalysis: expect.any(Object),
+          }),
+          percussionValidation: expect.objectContaining({
+            isValidForMidiExport: false,
+          }),
+        }),
+      })
+    );
+    expect(loadRejectedMusicDebugReports(storage)).toHaveLength(1);
+  });
+
+  it('skips saving when the latest rejected report has the same rejection signature', () => {
+    const storage = createMemoryStorage();
+    const snapshot = createRejectedSnapshot();
+
+    saveRejectedMusicDebugReport(snapshot, storage, {
+      createdAt: new Date('2026-08-10T00:00:00.000Z'),
+    });
+    saveRejectedMusicDebugReport(snapshot, storage, {
+      createdAt: new Date('2026-08-10T00:00:01.000Z'),
+    });
+
+    expect(loadRejectedMusicDebugReports(storage)).toHaveLength(1);
+  });
+
+  it('does not save a report for exportable snapshots', () => {
+    const storage = createMemoryStorage();
+    const snapshot = createExportableSnapshot();
+
+    expect(saveRejectedMusicDebugReport(snapshot, storage)).toBeNull();
+    expect(loadRejectedMusicDebugReports(storage)).toEqual([]);
+  });
+});
+
+function createRejectedSnapshot() {
+  const snapshot = createMusicDebugSnapshot({
+    tileKind: 'forest',
+    contextType: 'overworld',
+    clusterX: 4,
+    clusterY: -1,
+  });
+  return {
+    ...snapshot,
+    percussionValidation: {
+      isValidForMidiExport: false,
+      messages: ['Variation percussion should stay thinner than Section A.'],
+    },
+  };
+}
+
+function createExportableSnapshot() {
+  const snapshot = createMusicDebugSnapshot({
+    tileKind: 'forest',
+    contextType: 'overworld',
+    clusterX: 4,
+    clusterY: -1,
+  });
+  return {
+    ...snapshot,
+    midiExportValidation: {
+      ...snapshot.midiExportValidation,
+      isValidForMidiExport: true,
+      messages: [],
+    },
+    motifValidation: {
+      ...snapshot.motifValidation,
+      isValidForMidiExport: true,
+      messages: [],
+    },
+    timingValidation: {
+      ...snapshot.timingValidation,
+      isValidForMidiExport: true,
+      messages: [],
+    },
+    cadenceValidation: {
+      ...snapshot.cadenceValidation,
+      isValidForMidiExport: true,
+      messages: [],
+    },
+    percussionValidation: {
+      ...snapshot.percussionValidation,
+      isValidForMidiExport: true,
+      messages: [],
+    },
+    songDnaValidation: {
+      ...snapshot.songDnaValidation,
+      isValidForMidiExport: true,
+      messages: [],
+    },
+    leadContourAnalysis: {
+      ...snapshot.leadContourAnalysis,
+      finalResolvesToTonic: true,
+      climaxNearPlannedPeak: true,
+      messages: snapshot.leadContourAnalysis.messages.filter(
+        (message) =>
+          !message.includes('climax peaked at') &&
+          !message.includes('resolved to scale degree')
+      ),
+    },
+  };
+}
+
+function createMemoryStorage() {
+  const values = new Map<string, string>();
+  return {
+    getItem(key: string) {
+      return values.get(key) ?? null;
+    },
+    setItem(key: string, value: string) {
+      values.set(key, value);
+    },
+  };
+}

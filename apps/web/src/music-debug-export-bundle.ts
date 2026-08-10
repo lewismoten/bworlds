@@ -2,15 +2,13 @@ import type { MusicDebugSnapshot } from './music-debug.ts';
 import { resolveMusicDebugInstrumentPreviewNote } from './music-debug-instrument-panel.ts';
 import { createMusicDebugMidiFile } from './music-debug-midi-file.ts';
 import { type MusicDebugMidiMetadataOptions } from './music-debug-midi.ts';
+import { buildMusicDebugParameterReport } from './music-debug-report.ts';
 import {
   createMusicDebugPreviewWavFileForNotes,
   createMusicDebugPreviewWavFile,
   type MusicDebugPreviewWavFile,
 } from './music-debug-preview-wav.ts';
-import {
-  createMusicDebugPercussionEventSummaries,
-  createMusicDebugPercussionVoiceCounts,
-} from './music-debug-percussion-report.ts';
+import { createMusicDebugPercussionVoiceCounts } from './music-debug-percussion-report.ts';
 import { createStoredZipArchive } from './zip-file.ts';
 
 export type MusicDebugExportBundleFile = {
@@ -186,75 +184,6 @@ function createMusicDebugParameterReportFile(
     fileName: `${baseName}-report.json`,
     mimeType: 'application/json',
     bytes: new TextEncoder().encode(`${JSON.stringify(report, null, 2)}\n`),
-  };
-}
-
-function buildMusicDebugParameterReport(
-  snapshot: MusicDebugSnapshot,
-  metadataOptions: MusicDebugMidiMetadataOptions
-) {
-  return {
-    exportVariant: metadataOptions.variant ?? 'full',
-    exportedAt: (metadataOptions.createdAt ?? new Date()).toISOString(),
-    options: snapshot.options,
-    theme: {
-      id: snapshot.theme.id,
-      rootHz: snapshot.theme.rootHz,
-      rootMidiNote: snapshot.theme.rootMidiNote,
-      modeLabel: snapshot.theme.vocabulary.modeLabel,
-      motif: snapshot.theme.motif,
-      noteDurationMs: snapshot.theme.noteDurationMs,
-      baseVolume: snapshot.theme.baseVolume,
-    },
-    song: {
-      durationMs: snapshot.durationMs,
-      measureCount: snapshot.measureCount,
-      resolvedBpm: snapshot.resolvedBpm,
-      loopStartOffsetMs: snapshot.loopStartOffsetMs,
-      loopEndOffsetMs: snapshot.loopEndOffsetMs,
-      blueprintLabel: snapshot.blueprintLabel,
-      chordProgression: snapshot.chordProgression,
-      leadMotif: snapshot.leadMotif,
-      leadContour: snapshot.leadContour,
-      leadContourAnalysis: snapshot.leadContourAnalysis,
-      leadPhraseCadence: snapshot.leadPhraseCadence,
-      sections: snapshot.song.sections.map((section) => ({
-        id: section.id,
-        label: section.label,
-        startOffsetMs: section.startOffsetMs,
-        durationMs: section.durationMs,
-        measureCount: section.measureCount,
-        startMeasure: section.startMeasure,
-        endMeasure: section.endMeasure,
-      })),
-    },
-    songDna: snapshot.songDna,
-    instrumentBank: Object.entries(snapshot.instrumentBank.instruments).map(
-      ([role, instrument]) => ({
-        role,
-        id: instrument.id,
-        family: instrument.family,
-        waveform: instrument.waveform,
-        attackMs: instrument.attackMs,
-        releaseMs: instrument.releaseMs,
-        detuneCents: instrument.detuneCents,
-        harmonicGain: instrument.harmonicGain,
-        pulseRate: instrument.pulseRate,
-        brightness: instrument.brightness,
-        timbre: instrument.timbre,
-      })
-    ),
-    trackStats: snapshot.trackStats,
-    motifValidation: snapshot.motifValidation,
-    timingValidation: snapshot.timingValidation,
-    midiAudit: snapshot.midiAudit,
-    roleCounts: snapshot.roleCounts,
-    percussion: {
-      voiceCounts: createMusicDebugPercussionVoiceCounts(snapshot.notes),
-      events: createMusicDebugPercussionEventSummaries(snapshot.notes),
-    },
-    vocabularySummary: snapshot.vocabularySummary,
-    sectionLayerArrangement: snapshot.sectionLayerArrangement,
   };
 }
 
