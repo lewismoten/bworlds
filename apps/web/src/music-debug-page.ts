@@ -13,6 +13,7 @@ import { createMusicDebugPlaybackController } from './music-debug-playback.ts';
 import { downloadMusicDebugMidiFile } from './music-debug-midi.ts';
 import { createMusicDebugInstrumentPreviewPlayer } from './music-debug-instrument-preview.ts';
 import { resolveMusicDebugInstrumentPreviewNote } from './music-debug-instrument-panel.ts';
+import { resolveMusicDebugLivePlaybackIntent } from './music-debug-live-playback.ts';
 import { resolveMusicDebugPlaybackIntent } from './music-debug-playback-intent.ts';
 import {
   clampMusicDebugPreviewOffset,
@@ -248,6 +249,19 @@ const pageState = createMusicDebugPageState({
     if (summary) {
       summary.innerHTML = buildMusicDebugSummaryMarkup(nextSnapshot);
     }
+    if (playbackController.isPlaying()) {
+      playbackController.start(
+        nextSnapshot,
+        resolveMusicDebugLivePlaybackIntent({
+          snapshot: nextSnapshot,
+          playback: playbackVisualState,
+          previewOffsetMs,
+          loopEnabled: loopInput?.checked === true,
+          nowMs: performance.now(),
+        })
+      );
+      return;
+    }
     previewOffsetMs = clampMusicDebugPreviewOffset(
       nextSnapshot,
       previewOffsetMs
@@ -396,15 +410,13 @@ globalThis.addEventListener?.(
 form?.addEventListener('submit', (event) => {
   event.preventDefault();
   instrumentPreviewPlayer.stop();
-  playbackController.stop();
   pageState.refreshNow();
 });
 
 form?.addEventListener('input', () => {
   instrumentPreviewPlayer.stop();
-  playbackController.stop();
   pageState.scheduleRefresh();
-  persistPageState(false);
+  persistPageState(playbackController.isPlaying(), resolveDisplayedOffsetMs());
 });
 
 playButton?.addEventListener('click', () => {
@@ -425,7 +437,6 @@ playButton?.addEventListener('click', () => {
 
 randomizeButton?.addEventListener('click', () => {
   instrumentPreviewPlayer.stop();
-  playbackController.stop();
   const randomized = randomizeMusicDebugSeed(collectOptions());
   if (clusterXInput) {
     clusterXInput.value = String(randomized.clusterX);
@@ -434,7 +445,7 @@ randomizeButton?.addEventListener('click', () => {
     clusterYInput.value = String(randomized.clusterY);
   }
   pageState.refreshNow();
-  persistPageState(false);
+  persistPageState(playbackController.isPlaying(), resolveDisplayedOffsetMs());
 });
 
 downloadButton?.addEventListener('click', () => {
