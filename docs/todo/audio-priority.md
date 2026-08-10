@@ -20,6 +20,16 @@
 - [ ] Show all percussion wave forms with other instruments rather than just one, along with a play button like the others.
 - [ ] Move instrument wave form cards to appear just under the MIDI track visualizer.
 
+# Track Role / Color / Listing Order
+- [ ] Melody: Order 1, yellow, named as Melody
+- [ ] Counterline: Order 2, orange, named as Counter Melody
+- [ ] Harmony: Order 3, Green, named as Harmony
+- [ ] Atmosphere: Order 4, Purple, named as Atmosphere
+- [ ] Bass: Order 5, blue, named as Bass
+- [ ] Rhythm: Order 6, red, named as Percussion (may contain multiple instruments: kick, snare, toms, cymbols, shaker, tambourine, bells, hand percussion)
+- [ ] Effects: Order 7, pink, named Transitions
+- [ ] Ambience: Order 8, teal, named as Ambience
+
 ## Instrument Patch Foundation
 
 - [x] Stop deriving every instrument from one generic patch shape.
