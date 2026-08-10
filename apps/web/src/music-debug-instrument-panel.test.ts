@@ -23,6 +23,11 @@ describe('music debug instrument panel', () => {
     expect(markup).toContain('data-preview-id="bass"');
     expect(markup).toContain('data-preview-id="percussion:');
     expect(markup).toContain('percussion / ');
+    expect(markup).toContain('>Melody<');
+    expect(markup).toContain('>Harmony<');
+    expect(markup).toContain('>Bass<');
+    expect(markup.indexOf('>Melody<')).toBeLessThan(markup.indexOf('>Harmony<'));
+    expect(markup.indexOf('>Harmony<')).toBeLessThan(markup.indexOf('>Bass<'));
     expect(markup).toContain('<svg viewBox=');
   });
 

@@ -10,6 +10,11 @@ import {
 import { resolvePercussionVoiceById } from './procedural-music-percussion-voices.ts';
 import type { ProceduralMusicNote } from './procedural-music.ts';
 import { createMusicDebugScaleOverlay } from './music-debug-scale.ts';
+import {
+  formatMusicDebugDisplayRoleLabel,
+  MUSIC_DEBUG_DISPLAY_ROLE_ORDER,
+  resolveMusicDebugDisplayRoleColor,
+} from './music-debug-role-display.ts';
 
 const MUSIC_DEBUG_TIMELINE_LEFT_PAD = 84;
 const MUSIC_DEBUG_TIMELINE_RIGHT_PAD = 24;
@@ -44,7 +49,7 @@ export function resolveMusicDebugTimelineLayout(
         MUSIC_DEBUG_TIMELINE_TOP_PAD -
         MUSIC_DEBUG_TIMELINE_BOTTOM_PAD) /
       4,
-    roleOrder: ['bass', 'harmony', 'lead', 'percussion'],
+    roleOrder: [...MUSIC_DEBUG_DISPLAY_ROLE_ORDER],
   };
 }
 
@@ -115,12 +120,6 @@ export function drawMusicDebugTimeline(
   const height = canvas.height;
   const layout = resolveMusicDebugTimelineLayout(width, height);
   const durationMs = Math.max(snapshot.durationMs, 1);
-  const roleColors: Record<ProceduralMusicNote['role'], string> = {
-    bass: '#27d3d8',
-    harmony: '#4f8cff',
-    lead: '#ffcc33',
-    percussion: '#ff5a5f',
-  };
   const scaleOverlay = createMusicDebugScaleOverlay(snapshot, layout);
 
   context.clearRect(0, 0, width, height);
@@ -144,7 +143,7 @@ export function drawMusicDebugTimeline(
   context.font = '13px Trebuchet MS';
   layout.roleOrder.forEach((role, index) => {
     context.fillText(
-      role.toUpperCase(),
+      formatMusicDebugDisplayRoleLabel(role).toUpperCase(),
       16,
       layout.topPad + layout.trackHeight * index + 18
     );
@@ -153,7 +152,7 @@ export function drawMusicDebugTimeline(
   const noteBars = resolveMusicDebugTimelineNoteBars(snapshot, layout);
   for (const noteBar of noteBars) {
     context.fillStyle = resolveMusicDebugTimelineNoteBarColor(
-      roleColors[noteBar.role],
+      resolveMusicDebugDisplayRoleColor(noteBar.role),
       noteBar.overlapCount
     );
     context.fillRect(noteBar.x, noteBar.y, noteBar.width, noteBar.height);

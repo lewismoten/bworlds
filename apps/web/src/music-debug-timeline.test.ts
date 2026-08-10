@@ -21,6 +21,12 @@ describe('music debug timeline', () => {
     );
   });
 
+  it('uses the requested visible role order for current generated tracks', () => {
+    const layout = resolveMusicDebugTimelineLayout(960, 320);
+
+    expect(layout.roleOrder).toEqual(['lead', 'harmony', 'bass', 'percussion']);
+  });
+
   it('clamps seek offsets to the visible timeline bounds', () => {
     const snapshot = createMusicDebugSnapshot();
 

@@ -25,6 +25,10 @@ import { resolveProceduralMusicBlueprintMeasureCount } from './procedural-music-
 import { randomizeDebugCoordinatePair } from './debug-seed.ts';
 import { buildMusicDebugInstrumentPanelMarkup } from './music-debug-instrument-panel.ts';
 import {
+  formatMusicDebugDisplayRoleLabel,
+  MUSIC_DEBUG_DISPLAY_ROLE_ORDER,
+} from './music-debug-role-display.ts';
+import {
   createMusicDebugLyrics,
   type MusicDebugLyricLine,
 } from './music-debug-lyrics.ts';
@@ -890,10 +894,10 @@ export function buildMusicDebugSummaryMarkup(
       <span>Vocabulary ${snapshot.vocabularySummary.join(' | ')}</span>
     </div>
     <div class="music-debug-role-counts">
-      <span>Bass ${snapshot.roleCounts.bass}</span>
-      <span>Harmony ${snapshot.roleCounts.harmony}</span>
-      <span>Lead ${snapshot.roleCounts.lead}</span>
-      <span>Percussion ${snapshot.roleCounts.percussion}</span>
+      ${MUSIC_DEBUG_DISPLAY_ROLE_ORDER.map(
+        (role) =>
+          `<span>${formatMusicDebugDisplayRoleLabel(role)} ${snapshot.roleCounts[role]}</span>`
+      ).join('')}
     </div>
     <div class="music-debug-role-counts">
       <span>Accidental Rules ${formatMusicDebugAccidentalRuleSummary(snapshot.midiExportValidation.accidentalReasonCounts)}</span>

@@ -62,23 +62,24 @@ describe('music debug track stats', () => {
     const timingLines = formatMusicDebugTrackTimingSummary(snapshot.trackStats);
 
     expect(summaryLines).toHaveLength(4);
-    expect(summaryLines[0]).toContain('Bass');
+    expect(summaryLines[0]).toContain('Melody');
     expect(summaryLines[0]).toContain('avg leap');
     expect(summaryLines[1]).toContain('Harmony');
-    expect(summaryLines[2]).toContain('Lead');
+    expect(summaryLines[2]).toContain('Bass');
     expect(summaryLines[3]).toContain('Percussion');
     expect(summaryLines[3]).toContain('out-of-mode 0');
     expect(soundingLines).toHaveLength(4);
-    expect(soundingLines[0]).toContain('Bass');
+    expect(soundingLines[0]).toContain('Melody');
     expect(soundingLines[0]).toContain('% sounding');
     expect(soundingLines[1]).toContain('Harmony');
-    expect(soundingLines[2]).toContain('Lead');
+    expect(soundingLines[2]).toContain('Bass');
     expect(soundingLines[3]).toContain('Percussion');
     expect(timingLines).toHaveLength(4);
     expect(timingLines[0]).toContain('occ');
     expect(timingLines[0]).toContain('avg dur');
     expect(timingLines[1]).toContain('avg gap');
     expect(timingLines[1]).toContain('peak poly');
+    expect(summaryLines.join(' | ')).not.toContain('Lead ');
   });
 
   it('keeps sampled lead leap averages controlled and octave jumps rare in generated songs', () => {

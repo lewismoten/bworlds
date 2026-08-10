@@ -236,6 +236,8 @@ describe('music debug', () => {
     expect(markup).toContain('music-debug-section-buttons');
     expect(markup).toContain('music-debug-instrument-panel');
     expect(markup).toContain('music-debug-instrument-play');
+    expect(markup.indexOf('>Melody<')).toBeLessThan(markup.indexOf('>Harmony<'));
+    expect(markup.indexOf('>Harmony<')).toBeLessThan(markup.indexOf('>Bass<'));
     expect(markup.indexOf('id="music-debug-timeline"')).toBeLessThan(
       markup.indexOf('music-debug-instrument-panel')
     );
@@ -289,6 +291,7 @@ describe('music debug', () => {
     expect(summary).toContain('Track Pitch');
     expect(summary).toContain('Track Sounding');
     expect(summary).toContain('Track Timing');
+    expect(summary).toContain('Melody ');
     expect(summary).toContain('exact repeats');
     expect(summary).toContain('Motif Matches');
     expect(summary).toContain('Motif Validation');

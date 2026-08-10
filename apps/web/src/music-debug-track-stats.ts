@@ -1,5 +1,9 @@
 import type { ProceduralMusicNote } from './procedural-music.ts';
 import type { MusicDebugNotePitchDiagnostic } from './music-debug-note-analysis.ts';
+import {
+  formatMusicDebugDisplayRoleLabel,
+  MUSIC_DEBUG_DISPLAY_ROLE_ORDER,
+} from './music-debug-role-display.ts';
 
 type ProceduralMusicRole = ProceduralMusicNote['role'];
 const MAX_CONNECTED_LEAP_GAP_MS = 1_200;
@@ -90,7 +94,7 @@ export function createMusicDebugTrackStats(options: {
     previousMidiByRole[note.role] = diagnostic.midiNote;
   }
 
-  for (const role of MUSIC_DEBUG_TRACK_ROLES) {
+  for (const role of MUSIC_DEBUG_DISPLAY_ROLE_ORDER) {
     const stat = stats[role];
     const leapCount = leapCountsByRole[role] ?? 0;
     const silenceCount = silenceCountsByRole[role] ?? 0;
@@ -120,9 +124,9 @@ export function createMusicDebugTrackStats(options: {
 
 export function formatMusicDebugTrackPitchSummary(
   stats: Record<ProceduralMusicRole, MusicDebugTrackStats>,
-  formatter = formatMusicDebugRoleLabel
+  formatter = formatMusicDebugDisplayRoleLabel
 ): string[] {
-  return MUSIC_DEBUG_TRACK_ROLES.map((role) => {
+  return MUSIC_DEBUG_DISPLAY_ROLE_ORDER.map((role) => {
     const stat = stats[role];
     return `${formatter(role)} ${stat.rangeLabel} | avg leap ${stat.averageLeapSemitones.toFixed(1)} st | max leap ${stat.maxLeapSemitones.toFixed(1)} st | out-of-mode ${stat.outOfModeNoteCount}`;
   });
@@ -130,9 +134,9 @@ export function formatMusicDebugTrackPitchSummary(
 
 export function formatMusicDebugTrackTimingSummary(
   stats: Record<ProceduralMusicRole, MusicDebugTrackStats>,
-  formatter = formatMusicDebugRoleLabel
+  formatter = formatMusicDebugDisplayRoleLabel
 ): string[] {
-  return MUSIC_DEBUG_TRACK_ROLES.map((role) => {
+  return MUSIC_DEBUG_DISPLAY_ROLE_ORDER.map((role) => {
     const stat = stats[role];
     return `${formatter(role)} occ ${Math.round(stat.occupancyPercentage)}% | avg dur ${Math.round(stat.averageDurationMs)} ms | avg gap ${Math.round(stat.averageSilenceMs)} ms | peak poly ${stat.maxPolyphony}`;
   });
@@ -140,20 +144,13 @@ export function formatMusicDebugTrackTimingSummary(
 
 export function formatMusicDebugTrackSoundingSummary(
   stats: Record<ProceduralMusicRole, MusicDebugTrackStats>,
-  formatter = formatMusicDebugRoleLabel
+  formatter = formatMusicDebugDisplayRoleLabel
 ): string[] {
-  return MUSIC_DEBUG_TRACK_ROLES.map((role) => {
+  return MUSIC_DEBUG_DISPLAY_ROLE_ORDER.map((role) => {
     const stat = stats[role];
     return `${formatter(role)} ${Math.round(stat.occupancyPercentage)}% sounding`;
   });
 }
-
-const MUSIC_DEBUG_TRACK_ROLES: readonly ProceduralMusicRole[] = [
-  'bass',
-  'harmony',
-  'lead',
-  'percussion',
-];
 
 function createEmptyTrackStatsMap(): Record<
   ProceduralMusicRole,
@@ -198,21 +195,6 @@ function formatMusicDebugMidiNote(midiNote: number): string {
   const pitchClass = MUSIC_DEBUG_PITCH_CLASS_NAMES[mod(midiNote, 12)] ?? 'C';
   const octave = Math.floor(midiNote / 12) - 1;
   return `${pitchClass}${octave}`;
-}
-
-function formatMusicDebugRoleLabel(role: ProceduralMusicRole): string {
-  switch (role) {
-    case 'bass':
-      return 'Bass';
-    case 'harmony':
-      return 'Harmony';
-    case 'lead':
-      return 'Lead';
-    case 'percussion':
-      return 'Percussion';
-    default:
-      return role;
-  }
 }
 
 function mod(value: number, divisor: number): number {

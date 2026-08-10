@@ -1,6 +1,10 @@
 import type { MusicDebugSnapshot } from './music-debug.ts';
 import { createMusicDebugPercussionVoiceCounts } from './music-debug-percussion-report.ts';
 import { createMusicDebugInstrumentPreviewPlaybackNote } from './music-debug-playback-profile.ts';
+import {
+  formatMusicDebugDisplayRoleLabel,
+  MUSIC_DEBUG_DISPLAY_ROLE_ORDER,
+} from './music-debug-role-display.ts';
 import type {
   ProceduralMusicNote,
 } from './procedural-music.ts';
@@ -13,21 +17,17 @@ export type MusicDebugInstrumentPreviewTarget =
 export function buildMusicDebugInstrumentPanelMarkup(
   snapshot: MusicDebugSnapshot
 ): string {
-  const melodicCards = (
-    Object.entries(snapshot.instrumentBank.instruments) as Array<
-      [
-        keyof MusicDebugSnapshot['instrumentBank']['instruments'],
-        ProceduralInstrument,
-      ]
-    >
+  const melodicCards = MUSIC_DEBUG_DISPLAY_ROLE_ORDER.filter(
+    (role) => role !== 'percussion'
   )
-    .filter(([role]) => role !== 'percussion')
-    .map(([role, instrument]) =>
+    .map((role) =>
       buildMusicDebugInstrumentCardMarkup({
-        trackLabel: role,
-        title: formatInstrumentFamilyLabel(instrument.family),
+        trackLabel: formatMusicDebugDisplayRoleLabel(role),
+        title: formatInstrumentFamilyLabel(
+          snapshot.instrumentBank.instruments[role].family
+        ),
         previewTarget: role,
-        audioSource: instrument,
+        audioSource: snapshot.instrumentBank.instruments[role],
       })
     )
     .join('');
