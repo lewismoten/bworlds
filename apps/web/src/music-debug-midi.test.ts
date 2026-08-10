@@ -1,9 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { createMusicDebugSnapshot } from './music-debug.ts';
 import { createMusicDebugMidiFile } from './music-debug-midi-file.ts';
-import {
-  downloadMusicDebugMidiFile,
-} from './music-debug-midi.ts';
+import { downloadMusicDebugMidiFile } from './music-debug-midi.ts';
 import { resolveMusicDebugMidiExportRoles } from './music-debug-midi-export-variant.ts';
 import { msToMusicDebugTicks } from './music-debug-tempo.ts';
 import { resolvePercussionFamilyFromInstrumentId } from './procedural-music-percussion.ts';

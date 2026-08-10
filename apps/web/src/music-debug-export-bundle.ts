@@ -1,9 +1,7 @@
 import type { MusicDebugSnapshot } from './music-debug.ts';
 import { resolveMusicDebugInstrumentPreviewNote } from './music-debug-instrument-panel.ts';
 import { createMusicDebugMidiFile } from './music-debug-midi-file.ts';
-import {
-  type MusicDebugMidiMetadataOptions,
-} from './music-debug-midi.ts';
+import { type MusicDebugMidiMetadataOptions } from './music-debug-midi.ts';
 import {
   createMusicDebugPreviewWavFile,
   type MusicDebugPreviewWavFile,

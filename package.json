@@ -10,7 +10,7 @@
   "scripts": {
     "start": "npm run dev -w @bworlds/app",
     "build": "npm run build -w @bworlds/app",
-    "depcruise": "npm exec -- depcruise --config .dependency-cruiser.cjs apps packages",
+    "depcruise": "npm exec -- depcruise --config .dependency-cruiser.mjs apps packages",
     "typecheck": "npm exec -- tsc --noEmit",
     "typecheck:strict": "npm exec -- tsc --noEmit -p tsconfig.strict.json",
     "lint": "eslint .",
@@ -21,7 +21,7 @@
     "coverage": "vitest run --coverage",
     "format:fix": "prettier --write .",
     "format": "prettier --check .",
-    "check": "npm run format && npm run lint && npm run knip && npm run typecheck && npm run test && npm run build"
+    "check": "npm run format && npm run lint && npm run depcruise && npm run knip && npm run typecheck && npm run test && npm run build"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

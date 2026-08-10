@@ -8,7 +8,6 @@ import {
   normalizeMusicDebugOptions,
   type MusicDebugOptions,
 } from './music-debug.ts';
-import { resolveMusicDebugPlaybackResumeOffset } from './music-debug-playback-offset.ts';
 export { resolveMusicDebugPlaybackResumeOffset } from './music-debug-playback-offset.ts';
 
 const MUSIC_DEBUG_PAGE_STORAGE_KEY = 'bworlds:music-debug-page';
