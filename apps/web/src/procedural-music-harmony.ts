@@ -72,6 +72,7 @@ const BASS_MAX_SEMITONES = 12;
 const BASS_OCTAVE_MAX_SEMITONES = 9;
 const LEAD_MIN_SEMITONES = 0;
 const LEAD_MAX_SEMITONES = 19;
+const ORDINARY_LEAD_MOTION_LIMIT_SEMITONES = 3;
 const LARGE_LEAP_LIMIT_SEMITONES = 7;
 const OCTAVE_LEAP_LIMIT_SEMITONES = 12;
 const MOTIF_PATTERNS = [
@@ -706,6 +707,14 @@ function resolveLeadSemitonesCached(
             )
         )
       : null;
+  const priorLargeLeapCount = countPriorLargeLeadLeapsInPhrase({
+    theme,
+    stepIndex,
+    clusterX,
+    clusterY,
+    memo,
+    threshold: ORDINARY_LEAD_MOTION_LIMIT_SEMITONES,
+  });
   const selectedCurrentSemitones = selectPreferredLeadSemitoneClass({
     candidates: current.candidateSemitones,
     previousSemitones: previous.semitones,
@@ -714,6 +723,7 @@ function resolveLeadSemitonesCached(
     contourRange: current.contourRange,
     preferredIntervals: theme.vocabulary?.preferredIntervals,
     previousLeapDistance,
+    priorLargeLeapCount,
   });
   const leap = selectedCurrentSemitones - previous.semitones;
   const leapMagnitude = Math.abs(leap);
@@ -776,15 +786,35 @@ function resolveLeadSemitonesCached(
   if (
     current.cadence === 'neutral' &&
     !current.structuralAccent &&
-    leapMagnitude > 4
+    leapMagnitude > ORDINARY_LEAD_MOTION_LIMIT_SEMITONES
   ) {
     return commit(
       resolveNearbyScaleMotion({
         scale: theme.scale,
         previousSemitones: previous.semitones,
         direction: Math.sign(leap),
-        maxDistance: 4,
-        fallbackSemitones: previous.semitones + Math.sign(leap) * 4,
+        maxDistance: ORDINARY_LEAD_MOTION_LIMIT_SEMITONES,
+        fallbackSemitones:
+          previous.semitones +
+          Math.sign(leap) * ORDINARY_LEAD_MOTION_LIMIT_SEMITONES,
+      })
+    );
+  }
+
+  if (
+    leapMagnitude > ORDINARY_LEAD_MOTION_LIMIT_SEMITONES &&
+    priorLargeLeapCount > 0 &&
+    !current.structuralAccent
+  ) {
+    return commit(
+      resolveNearbyScaleMotion({
+        scale: theme.scale,
+        previousSemitones: previous.semitones,
+        direction: Math.sign(leap),
+        maxDistance: ORDINARY_LEAD_MOTION_LIMIT_SEMITONES,
+        fallbackSemitones:
+          previous.semitones +
+          Math.sign(leap) * ORDINARY_LEAD_MOTION_LIMIT_SEMITONES,
       })
     );
   }
@@ -827,18 +857,20 @@ function resolveLeadSemitonesCached(
     };
     const priorLeap = previous.semitones - previousPrevious.semitones;
     if (
-      Math.abs(priorLeap) > LARGE_LEAP_LIMIT_SEMITONES &&
-      (Math.sign(priorLeap) === Math.sign(leap) || Math.abs(leap) <= 1)
+      Math.abs(priorLeap) > ORDINARY_LEAD_MOTION_LIMIT_SEMITONES &&
+      (Math.sign(priorLeap) === Math.sign(leap) ||
+        Math.abs(leap) > 2 ||
+        Math.abs(leap) <= 1)
     ) {
       return commit(
         resolveNearbyScaleMotion({
           scale: theme.scale,
           previousSemitones: previous.semitones,
           direction: -Math.sign(priorLeap),
-          maxDistance: Math.min(4, Math.abs(priorLeap) - 2),
+          maxDistance: Math.min(2, Math.abs(priorLeap) - 1),
           fallbackSemitones:
             previous.semitones -
-            Math.sign(priorLeap) * Math.min(4, Math.abs(priorLeap) - 2),
+            Math.sign(priorLeap) * Math.min(2, Math.abs(priorLeap) - 1),
         })
       );
     }
@@ -1136,4 +1168,56 @@ function resolveLeadAccidentalSemitones(
     return upperApproach;
   }
   return null;
+}
+
+function countPriorLargeLeadLeapsInPhrase(options: {
+  theme: ProceduralHarmonyTheme;
+  stepIndex: number;
+  clusterX: number;
+  clusterY: number;
+  memo: Map<number, number>;
+  threshold: number;
+}): number {
+  const phraseLength = Math.max(1, options.theme.stepPattern.length);
+  const phraseStart =
+    Math.floor(options.stepIndex / phraseLength) * phraseLength;
+  let count = 0;
+
+  for (
+    let index = Math.max(phraseStart + 1, 1);
+    index < options.stepIndex;
+    index += 1
+  ) {
+    const current = resolveLeadSemitonesCached(
+      options.theme,
+      resolveProceduralChordAtStep(
+        options.theme,
+        index,
+        options.clusterX,
+        options.clusterY
+      ),
+      index,
+      options.clusterX,
+      options.clusterY,
+      options.memo
+    );
+    const previous = resolveLeadSemitonesCached(
+      options.theme,
+      resolveProceduralChordAtStep(
+        options.theme,
+        index - 1,
+        options.clusterX,
+        options.clusterY
+      ),
+      index - 1,
+      options.clusterX,
+      options.clusterY,
+      options.memo
+    );
+    if (Math.abs(current - previous) > options.threshold) {
+      count += 1;
+    }
+  }
+
+  return count;
 }

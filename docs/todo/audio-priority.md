@@ -6,9 +6,9 @@
 - [x] Reject seven-note modes with fewer than seven unique offsets.
 - [x] Make lead interval weights affect actual note selection.
 - [x] Penalize repeated minor-sixth jumps in the lead.
-- [ ] Limit ordinary lead motion to three semitones.
-- [ ] Allow larger leaps only once per phrase.
-- [ ] Require stepwise recovery after every large lead leap.
+- [x] Limit ordinary lead motion to three semitones.
+- [x] Allow larger leaps only once per phrase.
+- [x] Require stepwise recovery after every large lead leap.
 - [ ] Generate an eight-measure melody before full arrangement.
 - [ ] State the lead motif clearly in the first A phrase.
 - [ ] Require at least two exact motif matches in Section A.

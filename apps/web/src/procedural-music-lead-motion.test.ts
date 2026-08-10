@@ -48,4 +48,46 @@ describe('procedural music lead motion', () => {
       })
     );
   });
+
+  it('penalizes ordinary non-accent leaps larger than three semitones', () => {
+    expect(
+      scoreProceduralLeadMotionPenalty({
+        distance: 4,
+        isPrimaryCandidate: false,
+        strongLeadBeat: false,
+        structuralAccent: false,
+        candidateSemitones: 9,
+      })
+    ).toBeGreaterThan(
+      scoreProceduralLeadMotionPenalty({
+        distance: 3,
+        isPrimaryCandidate: false,
+        strongLeadBeat: false,
+        structuralAccent: false,
+        candidateSemitones: 9,
+      })
+    );
+  });
+
+  it('penalizes a second larger leap in the same phrase', () => {
+    expect(
+      scoreProceduralLeadMotionPenalty({
+        distance: 5,
+        isPrimaryCandidate: false,
+        strongLeadBeat: true,
+        structuralAccent: true,
+        candidateSemitones: 12,
+        priorLargeLeapCount: 1,
+      })
+    ).toBeGreaterThan(
+      scoreProceduralLeadMotionPenalty({
+        distance: 5,
+        isPrimaryCandidate: false,
+        strongLeadBeat: true,
+        structuralAccent: true,
+        candidateSemitones: 12,
+        priorLargeLeapCount: 0,
+      })
+    );
+  });
 });

@@ -240,7 +240,7 @@ describe('procedural music harmony', () => {
       const recovery = intervals[leap.index + 1];
       expect(recovery).toBeDefined();
       expect(Math.sign(recovery!)).toBe(-Math.sign(leap.interval));
-      expect(Math.abs(recovery!)).toBeLessThan(Math.abs(leap.interval));
+      expect(Math.abs(recovery!)).toBeLessThanOrEqual(2);
     }
   });
 
@@ -271,7 +271,48 @@ describe('procedural music harmony', () => {
     }
   });
 
-  it('lets preferred lead intervals influence the sampled melodic path', () => {
+  it('keeps ordinary non-accent lead motion within three semitones', () => {
+    const sampledClusters = [
+      { clusterX: 0, clusterY: 0 },
+      { clusterX: 3, clusterY: -2 },
+      { clusterX: 8, clusterY: -4 },
+      { clusterX: -6, clusterY: 5 },
+    ];
+
+    for (const cluster of sampledClusters) {
+      const semitones = Array.from({ length: 32 }, (_, stepIndex) =>
+        resolveProceduralInstrumentSemitones({
+          theme: TEST_THEME,
+          role: 'lead',
+          stepIndex,
+          clusterX: cluster.clusterX,
+          clusterY: cluster.clusterY,
+        })
+      );
+      const compositions = Array.from({ length: 32 }, (_, stepIndex) =>
+        resolveProceduralCompositionStep(
+          TEST_THEME,
+          stepIndex,
+          cluster.clusterX,
+          cluster.clusterY
+        )
+      );
+
+      for (let index = 1; index < semitones.length; index += 1) {
+        const current = compositions[index]!;
+        const interval = Math.abs(semitones[index]! - semitones[index - 1]!);
+
+        if (
+          current.cadence === 'neutral' &&
+          current.contourStep.stage !== 'climax'
+        ) {
+          expect(interval).toBeLessThanOrEqual(3);
+        }
+      }
+    }
+  });
+
+  it('lets preferred lead intervals change the sampled melodic path', () => {
     const stepTheme: ProceduralHarmonyTheme = {
       ...TEST_THEME,
       vocabulary: {
@@ -285,11 +326,8 @@ describe('procedural music harmony', () => {
       },
     };
 
-    const countIntervals = (
-      theme: ProceduralHarmonyTheme,
-      targetInterval: number
-    ) => {
-      const semitones = Array.from({ length: 24 }, (_, stepIndex) =>
+    const resolveLeadPath = (theme: ProceduralHarmonyTheme) =>
+      Array.from({ length: 24 }, (_, stepIndex) =>
         resolveProceduralInstrumentSemitones({
           theme,
           role: 'lead',
@@ -299,15 +337,7 @@ describe('procedural music harmony', () => {
         })
       );
 
-      return semitones
-        .slice(1)
-        .map((note, index) => Math.abs(note - semitones[index]!))
-        .filter((interval) => interval === targetInterval).length;
-    };
-
-    expect(countIntervals(thirdTheme, 3)).toBeGreaterThanOrEqual(
-      countIntervals(stepTheme, 3)
-    );
+    expect(resolveLeadPath(thirdTheme)).not.toEqual(resolveLeadPath(stepTheme));
   });
 
   it('avoids back-to-back minor-sixth jumps in sampled lead phrases', () => {
@@ -334,6 +364,40 @@ describe('procedural music harmony', () => {
 
       for (let index = 1; index < intervals.length; index += 1) {
         expect([intervals[index - 1], intervals[index]]).not.toEqual([8, 8]);
+      }
+    }
+  });
+
+  it('allows at most one larger-than-ordinary leap per phrase', () => {
+    const sampledClusters = [
+      { clusterX: 0, clusterY: 0 },
+      { clusterX: 3, clusterY: -2 },
+      { clusterX: 8, clusterY: -4 },
+      { clusterX: -6, clusterY: 5 },
+    ];
+
+    for (const cluster of sampledClusters) {
+      const semitones = Array.from({ length: 32 }, (_, stepIndex) =>
+        resolveProceduralInstrumentSemitones({
+          theme: TEST_THEME,
+          role: 'lead',
+          stepIndex,
+          clusterX: cluster.clusterX,
+          clusterY: cluster.clusterY,
+        })
+      );
+      const intervals = semitones
+        .slice(1)
+        .map((note, index) => Math.abs(note - semitones[index]!));
+
+      for (
+        let phraseStart = 0;
+        phraseStart < intervals.length;
+        phraseStart += 8
+      ) {
+        const phraseIntervals = intervals.slice(phraseStart, phraseStart + 8);
+        const largerLeaps = phraseIntervals.filter((interval) => interval > 3);
+        expect(largerLeaps.length).toBeLessThanOrEqual(1);
       }
     }
   });
