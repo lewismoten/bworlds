@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
+import { resolveProceduralSongDensityMeasureTargets } from './procedural-music-density-rules.ts';
 import { applyProceduralSongDensityPlan } from './procedural-music-song-density.ts';
+import { createProceduralMusicSong } from './procedural-music-song.ts';
 import type { ProceduralMusicSongSection } from './procedural-music-song.ts';
 
 describe('procedural music song density', () => {
@@ -69,6 +71,45 @@ describe('procedural music song density', () => {
       )
     ).toBe(true);
     expect(secondMeasureSupport.length).toBeGreaterThan(0);
+  });
+
+  it('applies phrase-based density targets across a representative full song', () => {
+    const song = createProceduralMusicSong({
+      nowMs: 1_000,
+      tileKind: 'plains',
+      contextType: 'overworld',
+      dayProgress: 0.45,
+      yearProgress: 0.25,
+      clusterX: 0,
+      clusterY: 0,
+    });
+
+    expect(song.notes.length).toBeLessThanOrEqual(620);
+
+    for (const section of song.sections) {
+      for (const role of ['bass', 'harmony', 'lead', 'percussion'] as const) {
+        const targets = resolveProceduralSongDensityMeasureTargets(
+          section.id,
+          role,
+          section.measureCount
+        );
+        if (!targets) {
+          continue;
+        }
+        const counts = countRoleNotesByMeasure(
+          song.notes,
+          song.startMs + section.startOffsetMs,
+          section.durationMs,
+          section.measureCount,
+          role
+        );
+        expect(
+          counts.every(
+            (count, measureIndex) => count <= (targets[measureIndex] ?? 0)
+          )
+        ).toBe(true);
+      }
+    }
   });
 });
 

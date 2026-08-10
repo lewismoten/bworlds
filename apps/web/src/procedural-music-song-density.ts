@@ -1,11 +1,9 @@
 import type { ProceduralMusicNote } from './procedural-music.ts';
+import {
+  resolveProceduralSongDensityMeasureTargets,
+  type ProceduralMusicRole,
+} from './procedural-music-density-rules.ts';
 import type { ProceduralMusicSongSection } from './procedural-music-song.ts';
-
-type ProceduralMusicRole = ProceduralMusicNote['role'];
-
-type MeasureRoleDensityTarget = {
-  maxNoteCount?: number;
-};
 
 export function applyProceduralSongDensityPlan(options: {
   notes: readonly ProceduralMusicNote[];
@@ -59,16 +57,17 @@ function applySectionDensityPlan(
     const accompanimentRestMeasure = leadIndexes.length === 0;
 
     for (const role of SONG_DENSITY_ROLES) {
-      const target = resolveMeasureRoleDensityTarget(
-        options.section,
+      const targets = resolveProceduralSongDensityMeasureTargets(
+        options.section.id,
         role,
-        measureIndex
+        measureCount
       );
+      const maxNoteCount = targets?.[measureIndex];
       const roleIndexes = groupedIndexes[role];
-      if (!target || target.maxNoteCount === undefined) {
+      if (maxNoteCount === undefined) {
         continue;
       }
-      if (roleIndexes.length <= target.maxNoteCount) {
+      if (roleIndexes.length <= maxNoteCount) {
         continue;
       }
       if (accompanimentRestMeasure && (role === 'bass' || role === 'harmony')) {
@@ -76,11 +75,17 @@ function applySectionDensityPlan(
       }
 
       pruneMeasureRoleNotes(notes, roleIndexes, {
-        maxNoteCount: target.maxNoteCount,
-        protectFirstEntry: measureIndex === 0,
+        maxNoteCount,
+        protectFirstEntry: maxNoteCount > 0 && measureIndex === 0,
         protectPhraseBoundary:
-          measureIndex === measureCount - 1 ||
-          isPhraseBoundaryMeasure(measureIndex),
+          maxNoteCount > 0 &&
+          (measureIndex === measureCount - 1 ||
+            isPhraseBoundaryMeasure(measureIndex)),
+        protectedLeadingNoteCount: resolveProtectedLeadingNoteCount(
+          options.section.id,
+          role,
+          measureIndex
+        ),
       });
     }
   }
@@ -117,6 +122,7 @@ function pruneMeasureRoleNotes(
     maxNoteCount: number;
     protectFirstEntry: boolean;
     protectPhraseBoundary: boolean;
+    protectedLeadingNoteCount: number;
   }
 ): void {
   const keepSet = new Set<number>();
@@ -124,8 +130,19 @@ function pruneMeasureRoleNotes(
     return;
   }
 
-  if (options.protectFirstEntry) {
-    keepSet.add(noteIndexes[0]!);
+  const protectedLeadingNoteCount = Math.min(
+    noteIndexes.length,
+    Math.max(
+      options.protectFirstEntry ? 1 : 0,
+      options.protectedLeadingNoteCount
+    )
+  );
+  for (
+    let protectedIndex = 0;
+    protectedIndex < protectedLeadingNoteCount;
+    protectedIndex += 1
+  ) {
+    keepSet.add(noteIndexes[protectedIndex]!);
   }
   if (options.protectPhraseBoundary || options.maxNoteCount > 1) {
     keepSet.add(noteIndexes[noteIndexes.length - 1]!);
@@ -189,19 +206,6 @@ function compareRemovalPriority(
   return right.startMs - left.startMs;
 }
 
-function resolveMeasureRoleDensityTarget(
-  section: ProceduralMusicSongSection,
-  role: ProceduralMusicRole,
-  measureIndex: number
-): MeasureRoleDensityTarget | null {
-  const pattern = SECTION_MEASURE_DENSITY_TARGETS[section.id]?.[role];
-  if (!pattern || pattern.length === 0) {
-    return null;
-  }
-  const maxNoteCount = pattern[measureIndex] ?? pattern[pattern.length - 1]!;
-  return { maxNoteCount };
-}
-
 function isPhraseBoundaryMeasure(measureIndex: number): boolean {
   return (measureIndex + 1) % 4 === 0;
 }
@@ -210,6 +214,21 @@ function isGeneratedRepairNote(
   note: Pick<ProceduralMusicNote, 'instrumentId'>
 ): boolean {
   return note.instrumentId.includes(':measure-');
+}
+
+function resolveProtectedLeadingNoteCount(
+  sectionId: ProceduralMusicSongSection['id'],
+  role: ProceduralMusicRole,
+  measureIndex: number
+): number {
+  if (
+    role === 'lead' &&
+    (sectionId === 'a' || sectionId === 'a-prime') &&
+    measureIndex < 2
+  ) {
+    return 2;
+  }
+  return 0;
 }
 
 function createRoleIndexMap(): Record<ProceduralMusicRole, number[]> {
@@ -227,20 +246,3 @@ const SONG_DENSITY_ROLES: readonly ProceduralMusicRole[] = [
   'lead',
   'percussion',
 ];
-
-const SECTION_MEASURE_DENSITY_TARGETS: Partial<
-  Record<
-    ProceduralMusicSongSection['id'],
-    Partial<Record<ProceduralMusicRole, readonly number[]>>
-  >
-> = {
-  intro: {
-    lead: [1, 2, 2, 2, 3, 3, 3, 2],
-  },
-  variation: {
-    lead: [2, 2, 2, 3, 3, 3, 4, 4, 4, 4, 4, 3, 3, 3, 2, 2],
-  },
-  outro: {
-    lead: [3, 3, 2, 2, 2, 2, 1, 1],
-  },
-};

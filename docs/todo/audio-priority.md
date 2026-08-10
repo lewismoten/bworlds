@@ -258,7 +258,7 @@ added directly as semitones instead of moving through the selected scale.
 ## Density
 
 - [x] Set note-density targets per track and section.
-- [ ] Avoid placing 307 notes without phrase-based density rules.
+- [x] Avoid placing 307 notes without phrase-based density rules.
 - [x] Increase density toward the planned climax.
 - [x] Reduce density during Intro and Outro.
 - [ ] Avoid all tracks entering after unrelated random delays.
@@ -275,7 +275,7 @@ added directly as semitones instead of moving through the selected scale.
 - [x] Permit accidentals only through named embellishments.
 - [x] Limit chromatic passing tones in exploration music.
 - [x] Resolve chromatic notes by step.
-- [ ] Reject chromatic leaps without harmonic support.
+- [x] Reject chromatic leaps without harmonic support.
 - [x] Show accidental reasons in note-level debug output.
 
 ## Shared Track Context
