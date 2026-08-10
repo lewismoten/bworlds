@@ -182,8 +182,8 @@ export function resolveProceduralLeadContour(
   const contour: ProceduralLeadContourStep[] = [];
 
   for (let stepIndex = 0; stepIndex < phraseLength; stepIndex += 1) {
-    let stage: ProceduralLeadContourStage = 'rise';
-    let degreeOffset = 1 + contourBias;
+    let stage: ProceduralLeadContourStage;
+    let degreeOffset: number;
 
     if (stepIndex === 0) {
       stage = 'start';
