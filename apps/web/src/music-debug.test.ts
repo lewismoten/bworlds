@@ -133,6 +133,8 @@ describe('music debug', () => {
       0
     );
     expect(first.sectionMotifMatches).toHaveLength(first.song.sections.length);
+    expect(first.motifValidation.totalMatchCount).toBeGreaterThan(0);
+    expect(first.motifValidation.isValidForMidiExport).toBe(true);
     expect(first.harmonyChordDetections).toHaveLength(
       first.song.sections.length
     );
@@ -208,6 +210,7 @@ describe('music debug', () => {
     expect(summary).toContain('Preferred Intervals');
     expect(summary).toContain('Interval Match');
     expect(summary).toContain('Phrase Similarity');
+    expect(summary).toContain('Motif Check');
     expect(summary).toContain('semitones');
     expect(summary).toContain('Vocabulary');
     expect(summary).toContain('SongDNA');
@@ -234,6 +237,7 @@ describe('music debug', () => {
     expect(summary).toContain('Track Timing');
     expect(summary).toContain('exact repeats');
     expect(summary).toContain('Motif Matches');
+    expect(summary).toContain('Motif Validation');
     expect(summary).toContain('Harmony Chords');
     expect(summary).toContain('MIDI Audit');
     expect(summary).toContain('avg leap');

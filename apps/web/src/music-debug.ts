@@ -70,6 +70,10 @@ import {
   type MusicDebugPhraseRepetitionAnalysis,
 } from './music-debug-phrase-repetition.ts';
 import {
+  validateMusicDebugMotifPresence,
+  type MusicDebugMotifValidation,
+} from './music-debug-motif-validation.ts';
+import {
   createMusicDebugHarmonyChordDetections,
   createMusicDebugSectionLayerActivity,
   createMusicDebugSectionLayerComparisons,
@@ -160,6 +164,7 @@ export type MusicDebugSnapshot = {
   intervalComparison: MusicDebugIntervalComparison;
   phraseRepetition: MusicDebugPhraseRepetitionAnalysis;
   sectionMotifMatches: MusicDebugSectionMotifMatch[];
+  motifValidation: MusicDebugMotifValidation;
   harmonyChordDetections: MusicDebugHarmonyChordDetection[];
   midiAudit: MusicDebugMidiAudit;
   midiExportValidation: MusicDebugPitchValidation;
@@ -410,6 +415,10 @@ export function createMusicDebugSnapshot(
     leadMotif,
     scaleLength: theme.scale.length,
   });
+  const motifValidation = validateMusicDebugMotifPresence({
+    leadMotif,
+    sectionMotifMatches,
+  });
   const harmonyChordDetections = createMusicDebugHarmonyChordDetections({
     notes: song.notes,
     notePitchDiagnostics: midiExportValidation.notePitchDiagnostics,
@@ -470,6 +479,7 @@ export function createMusicDebugSnapshot(
     intervalComparison,
     phraseRepetition,
     sectionMotifMatches,
+    motifValidation,
     harmonyChordDetections,
     midiExportValidation,
     timingValidation,
@@ -731,6 +741,7 @@ export function buildMusicDebugSummaryMarkup(
       <div><dt>Preferred Intervals</dt><dd>${snapshot.theme.vocabulary.preferredIntervals.join(', ')} ${snapshot.theme.vocabulary.preferredIntervalUnit}</dd></div>
       <div><dt>Interval Match</dt><dd>${snapshot.intervalComparison.preferredMatchCount}/${snapshot.intervalComparison.totalIntervalCount} (${Math.round(snapshot.intervalComparison.preferredMatchPercentage)}%)</dd></div>
       <div><dt>Phrase Similarity</dt><dd>${Math.round(snapshot.phraseRepetition.averageSimilarityPercentage)}% avg across ${snapshot.phraseRepetition.phraseCount} phrases</dd></div>
+      <div><dt>Motif Check</dt><dd>${snapshot.motifValidation.isValidForMidiExport ? 'ok' : (snapshot.motifValidation.messages[0] ?? 'invalid')}</dd></div>
       <div><dt>Lead Max Leap</dt><dd>${snapshot.leadMaxLeapSemitones.toFixed(1)} st</dd></div>
       <div><dt>Accidentals</dt><dd>${snapshot.accidentalNoteCount} chromatic notes outside ${snapshot.theme.vocabulary.modeLabel}</dd></div>
       <div><dt>Out-of-Mode</dt><dd>B ${snapshot.outOfModeNotesByRole.bass} / H ${snapshot.outOfModeNotesByRole.harmony} / L ${snapshot.outOfModeNotesByRole.lead}</dd></div>
@@ -769,6 +780,9 @@ export function buildMusicDebugSummaryMarkup(
     </div>
     <div class="music-debug-role-counts">
       <span>Motif Matches ${formatMusicDebugSectionMotifMatches(snapshot.sectionMotifMatches)}</span>
+    </div>
+    <div class="music-debug-role-counts">
+      <span>Motif Validation ${snapshot.motifValidation.isValidForMidiExport ? 'ok' : snapshot.motifValidation.messages.join(' | ')}</span>
     </div>
     <div class="music-debug-role-counts">
       <span>Harmony Chords ${formatMusicDebugHarmonyChordDetections(snapshot.harmonyChordDetections)}</span>

@@ -100,10 +100,12 @@ export function createMusicDebugMidiFile(
 ): MusicDebugMidiFile {
   const validationMessages = [
     ...snapshot.midiExportValidation.messages,
+    ...snapshot.motifValidation.messages,
     ...snapshot.timingValidation.messages,
   ];
   if (
     !snapshot.midiExportValidation.isValidForMidiExport ||
+    !snapshot.motifValidation.isValidForMidiExport ||
     !snapshot.timingValidation.isValidForMidiExport
   ) {
     throw new Error(`Cannot export MIDI: ${validationMessages.join(' ')}`);

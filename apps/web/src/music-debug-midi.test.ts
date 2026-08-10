@@ -183,9 +183,9 @@ describe('music debug midi', () => {
     expect(percussionNotes.length).toBeGreaterThan(0);
     expect(new Set(percussionNotes).size).toBeGreaterThan(1);
     expect(expectedFamilyNotes.size).toBeGreaterThan(0);
-    expect(
-      percussionNotes.every((note) => expectedFamilyNotes.has(note))
-    ).toBe(true);
+    expect(percussionNotes.every((note) => expectedFamilyNotes.has(note))).toBe(
+      true
+    );
   });
 
   it('downloads the encoded midi file through a blob url', () => {
@@ -288,6 +288,30 @@ describe('music debug midi', () => {
       })
     ).toThrow(
       'Cannot export MIDI: Loop range must stay inside the exported song duration.'
+    );
+  });
+
+  it('rejects MIDI export when the configured motif never appears', () => {
+    const snapshot = createMusicDebugSnapshot({
+      tileKind: 'forest',
+      contextType: 'overworld',
+      clusterX: 0,
+      clusterY: 0,
+    });
+
+    expect(() =>
+      createMusicDebugMidiFile({
+        ...snapshot,
+        motifValidation: {
+          ...snapshot.motifValidation,
+          isValidForMidiExport: false,
+          messages: [
+            'Configured lead motif 1-3-5-3 never appears in the generated song.',
+          ],
+        },
+      })
+    ).toThrow(
+      'Cannot export MIDI: Configured lead motif 1-3-5-3 never appears in the generated song.'
     );
   });
 });
