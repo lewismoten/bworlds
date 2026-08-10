@@ -100,7 +100,8 @@ export function resolveSongSectionLayerTreatment(
     case 'variation':
       return {
         muted:
-          (note.role === 'percussion' && noteIndexInSection % 4 === 0) ||
+          (note.role === 'percussion' &&
+            (noteIndexInSection % 4 === 0 || noteIndexInSection % 5 === 4)) ||
           shouldMuteHarmonyForLeadSpace(harmonyLeadSpace, noteIndexInSection),
         volumeMultiplier:
           note.role === 'harmony' ? harmonyLeadSpace.volumeMultiplier : 1,

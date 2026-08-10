@@ -43,19 +43,34 @@ const PERCUSSION_WAVEFORMS: Record<PercussionFamily, MusicWaveform> = {
 
 const FOREST_PULSE_PATTERNS: readonly ProceduralPercussionPattern[] = [
   [
-    createHit('shaker', 0, 0, 0.18, 0.46, 1.16),
-    createHit('hand-percussion', -3, 0.36, 0.18, 0.54, 0.96),
+    createHit('kick', -12, 0, 0.18, 0.54, 0.84, {
+      attackMultiplier: 0.76,
+      releaseMultiplier: 1.28,
+      harmonicGainMultiplier: 0.84,
+    }),
+    createHit('shaker', 0, 0.18, 0.14, 0.4, 1.16),
+    createHit('hand-percussion', -3, 0.42, 0.18, 0.5, 0.96),
     createHit('shaker', 0, 0.7, 0.14, 0.42, 1.2),
   ],
   [
-    createHit('shaker', 0, 0, 0.16, 0.44, 1.2),
-    createHit('shaker', 0, 0.28, 0.12, 0.34, 1.26),
-    createHit('hand-percussion', -3, 0.62, 0.18, 0.52, 0.94),
+    createHit('kick', -12, 0, 0.16, 0.52, 0.82, {
+      attackMultiplier: 0.78,
+      releaseMultiplier: 1.24,
+      harmonicGainMultiplier: 0.86,
+    }),
+    createHit('shaker', 0, 0.24, 0.12, 0.34, 1.2),
+    createHit('shaker', 0, 0.52, 0.12, 0.3, 1.26),
+    createHit('hand-percussion', -3, 0.74, 0.16, 0.46, 0.94),
   ],
   [
-    createHit('hand-percussion', -5, 0, 0.2, 0.52, 0.92),
-    createHit('shaker', 0, 0.34, 0.12, 0.36, 1.24),
-    createHit('shaker', 0, 0.68, 0.14, 0.4, 1.18),
+    createHit('kick', -12, 0, 0.16, 0.5, 0.84, {
+      attackMultiplier: 0.8,
+      releaseMultiplier: 1.22,
+      harmonicGainMultiplier: 0.88,
+    }),
+    createHit('hand-percussion', -5, 0.3, 0.18, 0.46, 0.92),
+    createHit('shaker', 0, 0.56, 0.12, 0.34, 1.24),
+    createHit('shaker', 0, 0.8, 0.12, 0.3, 1.18),
   ],
 ] as const;
 
@@ -183,8 +198,7 @@ export function createProceduralPercussionNotes(options: {
       detuneCents:
         options.baseDetuneCents *
         (hit.family === 'kick' ? 0.5 : hit.family === 'cymbals' ? 1.3 : 1),
-      harmonicGain:
-        options.baseHarmonicGain * hit.harmonicGainMultiplier,
+      harmonicGain: options.baseHarmonicGain * hit.harmonicGainMultiplier,
       pulseRate: options.basePulseRate * hit.pulseRateMultiplier,
       space: options.space,
       emitter: options.emitter,

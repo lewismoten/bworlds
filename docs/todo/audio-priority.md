@@ -231,7 +231,7 @@ added directly as semitones instead of moving through the selected scale.
 
 ## Percussion
 
-- [ ] Add a low drum or kick role to support the pulse.
+- [x] Add a low drum or kick role to support the pulse.
 - [ ] Use snare accents on consistent metric positions.
 - [ ] Replace the isolated snare pattern with a groove.
 - [ ] Repeat percussion patterns by measure.

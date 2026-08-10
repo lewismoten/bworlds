@@ -947,6 +947,12 @@ describe('procedural music song', () => {
     expect(
       percussionNotes.some(
         (note) =>
+          resolvePercussionFamilyFromInstrumentId(note.instrumentId) === 'kick'
+      )
+    ).toBe(true);
+    expect(
+      percussionNotes.some(
+        (note) =>
           resolvePercussionFamilyFromInstrumentId(note.instrumentId) ===
           'shaker'
       )

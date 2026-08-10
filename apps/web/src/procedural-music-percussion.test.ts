@@ -26,7 +26,7 @@ describe('procedural music percussion', () => {
       clusterY: -2,
     });
 
-    expect(notes).toHaveLength(3);
+    expect(notes.length).toBeGreaterThanOrEqual(4);
     expect(
       notes.every(
         (note, index) => index === 0 || note.startMs > notes[index - 1]!.startMs
@@ -42,7 +42,14 @@ describe('procedural music percussion', () => {
     expect(
       notes.some(
         (note) =>
-          resolvePercussionFamilyFromInstrumentId(note.instrumentId) === 'shaker'
+          resolvePercussionFamilyFromInstrumentId(note.instrumentId) === 'kick'
+      )
+    ).toBe(true);
+    expect(
+      notes.some(
+        (note) =>
+          resolvePercussionFamilyFromInstrumentId(note.instrumentId) ===
+          'shaker'
       )
     ).toBe(true);
     expect(
@@ -91,7 +98,8 @@ describe('procedural music percussion', () => {
     expect(
       notes.filter(
         (note) =>
-          resolvePercussionFamilyFromInstrumentId(note.instrumentId) === 'cymbals'
+          resolvePercussionFamilyFromInstrumentId(note.instrumentId) ===
+          'cymbals'
       ).length
     ).toBeLessThan(notes.length);
   });
