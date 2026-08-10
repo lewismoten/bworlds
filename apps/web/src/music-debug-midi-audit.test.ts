@@ -83,7 +83,15 @@ describe('music debug midi audit', () => {
     expect(audit.exportedPitchClassCountsByRole.lead).toEqual(
       snapshot.midiExportValidation.pitchClassCountsByRole.lead
     );
-    expect(Object.keys(audit.exportedPitchClassCountsByRole.percussion)).not.toHaveLength(0);
+    expect(audit.exportedMotifExactMatchCount).toBe(
+      snapshot.motifValidation.exactMatchCount
+    );
+    expect(audit.exportedMotifVariedMatchCount).toBe(
+      snapshot.motifValidation.variedMatchCount
+    );
+    expect(
+      Object.keys(audit.exportedPitchClassCountsByRole.percussion)
+    ).not.toHaveLength(0);
   });
 
   it('flags mismatched snapshot metadata against the exported midi facts', () => {
@@ -327,7 +335,9 @@ describe('music debug midi audit', () => {
           ...snapshot.midiExportValidation.pitchClassCountsByRole,
           lead: {
             ...snapshot.midiExportValidation.pitchClassCountsByRole.lead,
-            G: (snapshot.midiExportValidation.pitchClassCountsByRole.lead.G ?? 0) + 1,
+            G:
+              (snapshot.midiExportValidation.pitchClassCountsByRole.lead.G ??
+                0) + 1,
           },
         },
       },
@@ -337,6 +347,33 @@ describe('music debug midi audit', () => {
     expect(
       audit.mismatchMessages.some((message) =>
         message.includes('lead pitch classes')
+      )
+    ).toBe(true);
+  });
+
+  it('flags motif-sequence mismatches when exported lead notes drift from the motif plan', () => {
+    const snapshot = createMusicDebugSnapshot({
+      tileKind: 'forest',
+      contextType: 'overworld',
+      clusterX: 4,
+      clusterY: -1,
+    });
+    const file = createMusicDebugMidiFileUnchecked(snapshot, {
+      createdAt: new Date('2026-08-09T00:00:00.000Z'),
+    });
+
+    const audit = inspectMusicDebugMidiBytes(file.bytes, {
+      ...snapshot,
+      motifValidation: {
+        ...snapshot.motifValidation,
+        exactMatchCount: snapshot.motifValidation.exactMatchCount + 1,
+      },
+    });
+
+    expect(audit.isConsistent).toBe(false);
+    expect(
+      audit.mismatchMessages.some((message) =>
+        message.includes('motif matches')
       )
     ).toBe(true);
   });

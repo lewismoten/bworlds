@@ -5,6 +5,11 @@ import {
 } from './music-debug-midi.ts';
 import type { MusicDebugMidiExportVariant } from './music-debug-midi-export-variant.ts';
 import {
+  collectMusicDebugScaleDegreesFromMidiNotes,
+  countMusicDebugExactMotifMatches,
+  countMusicDebugVariedMotifMatches,
+} from './music-debug-motif-match.ts';
+import {
   createMusicDebugPitchClassCountMapByRole,
   resolveMusicDebugPitchClassLabel,
   type MusicDebugPitchClassLabel,
@@ -21,6 +26,8 @@ export type MusicDebugMidiAudit = {
     MusicDebugSnapshot['notes'][number]['role'],
     Partial<Record<MusicDebugPitchClassLabel, number>>
   >;
+  exportedMotifExactMatchCount: number;
+  exportedMotifVariedMatchCount: number;
   markerLabels: string[];
   sectionsMatchPlannedMarkers: boolean;
   mismatchMessages: string[];
@@ -51,6 +58,9 @@ export function inspectMusicDebugMidiBytes(
     | 'song'
     | 'trackStats'
     | 'roleCounts'
+    | 'leadMotif'
+    | 'scaleMap'
+    | 'motifValidation'
     | 'midiExportValidation'
     | 'harmonyChordDetections'
     | 'bassProgressionDetections'
@@ -94,6 +104,19 @@ export function inspectMusicDebugMidiBytes(
   );
   const exportedPitchClassCountsByRole = resolveExportedPitchClassCountsByRole(
     exportedTrackSummaries
+  );
+  const exportedLeadDegrees = collectMusicDebugScaleDegreesFromMidiNotes({
+    midiNotes: exportedTrackSummaries.lead?.midiNotes ?? [],
+    rootMidiNote: snapshot.scaleMap.rootMidiNote,
+    modePitchOffsets: snapshot.scaleMap.modePitchOffsets,
+  });
+  const exportedMotifExactMatchCount = countMusicDebugExactMotifMatches(
+    exportedLeadDegrees,
+    snapshot.leadMotif
+  );
+  const exportedMotifVariedMatchCount = countMusicDebugVariedMotifMatches(
+    exportedLeadDegrees,
+    snapshot.leadMotif
   );
   let sectionsMatchPlannedMarkers = true;
 
@@ -183,6 +206,17 @@ export function inspectMusicDebugMidiBytes(
   }
   if (
     includedRoles.has('lead') &&
+    (exportedMotifExactMatchCount !==
+      snapshot.motifValidation.exactMatchCount ||
+      exportedMotifVariedMatchCount !==
+        snapshot.motifValidation.variedMatchCount)
+  ) {
+    mismatchMessages.push(
+      `MIDI lead motif matches ${exportedMotifExactMatchCount} exact / ${exportedMotifVariedMatchCount} varied do not match scheduled ${snapshot.motifValidation.exactMatchCount} exact / ${snapshot.motifValidation.variedMatchCount} varied.`
+    );
+  }
+  if (
+    includedRoles.has('lead') &&
     includedRoles.has('bass') &&
     !snapshot.cadenceValidation.isValidForMidiExport
   ) {
@@ -212,6 +246,8 @@ export function inspectMusicDebugMidiBytes(
     exportedMeasureCount,
     exportedNoteCountsByRole,
     exportedPitchClassCountsByRole,
+    exportedMotifExactMatchCount,
+    exportedMotifVariedMatchCount,
     markerLabels,
     sectionsMatchPlannedMarkers,
     mismatchMessages,
@@ -283,12 +319,15 @@ function parseMidiChunks(bytes: Uint8Array): {
 type MidiTrackSummary = {
   noteOnCount: number;
   pitchClassCounts: Partial<Record<MusicDebugPitchClassLabel, number>>;
+  midiNotes: number[];
 };
 
 function readExportedTrackSummaries(
   tracks: readonly Uint8Array[],
   includedRoles: ReadonlySet<MusicDebugSnapshot['notes'][number]['role']>
-): Partial<Record<MusicDebugSnapshot['notes'][number]['role'], MidiTrackSummary>> {
+): Partial<
+  Record<MusicDebugSnapshot['notes'][number]['role'], MidiTrackSummary>
+> {
   const summaries: Partial<
     Record<MusicDebugSnapshot['notes'][number]['role'], MidiTrackSummary>
   > = {};
@@ -298,7 +337,9 @@ function readExportedTrackSummaries(
     if (!includedRoles.has(role)) {
       continue;
     }
-    summaries[role] = summarizeTrackMidiNotes(tracks[trackIndex] ?? new Uint8Array());
+    summaries[role] = summarizeTrackMidiNotes(
+      tracks[trackIndex] ?? new Uint8Array()
+    );
     trackIndex += 1;
   }
 
@@ -306,7 +347,9 @@ function readExportedTrackSummaries(
 }
 
 function resolveExportedNoteCountsByRole(
-  summaries: Partial<Record<MusicDebugSnapshot['notes'][number]['role'], MidiTrackSummary>>
+  summaries: Partial<
+    Record<MusicDebugSnapshot['notes'][number]['role'], MidiTrackSummary>
+  >
 ): Partial<Record<MusicDebugSnapshot['notes'][number]['role'], number>> {
   const counts: Partial<
     Record<MusicDebugSnapshot['notes'][number]['role'], number>
@@ -318,7 +361,9 @@ function resolveExportedNoteCountsByRole(
 }
 
 function resolveExportedPitchClassCountsByRole(
-  summaries: Partial<Record<MusicDebugSnapshot['notes'][number]['role'], MidiTrackSummary>>
+  summaries: Partial<
+    Record<MusicDebugSnapshot['notes'][number]['role'], MidiTrackSummary>
+  >
 ): Record<
   MusicDebugSnapshot['notes'][number]['role'],
   Partial<Record<MusicDebugPitchClassLabel, number>>
@@ -336,6 +381,7 @@ function summarizeTrackMidiNotes(track: Uint8Array): MidiTrackSummary {
   let noteOnCount = 0;
   const pitchClassCounts: Partial<Record<MusicDebugPitchClassLabel, number>> =
     {};
+  const midiNotes: number[] = [];
 
   while (offset < track.length) {
     const delta = readVariableLengthQuantity(track, offset);
@@ -386,6 +432,7 @@ function summarizeTrackMidiNotes(track: Uint8Array): MidiTrackSummary {
       secondData > 0
     ) {
       noteOnCount += 1;
+      midiNotes.push(firstData);
       const pitchClassLabel = resolveMusicDebugPitchClassLabel(firstData);
       pitchClassCounts[pitchClassLabel] =
         (pitchClassCounts[pitchClassLabel] ?? 0) + 1;
@@ -397,6 +444,7 @@ function summarizeTrackMidiNotes(track: Uint8Array): MidiTrackSummary {
   return {
     noteOnCount,
     pitchClassCounts,
+    midiNotes,
   };
 }
 

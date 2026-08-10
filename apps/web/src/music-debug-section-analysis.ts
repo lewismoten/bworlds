@@ -4,6 +4,10 @@ import type { ProceduralChordTimelineEntry } from './procedural-music-chord-time
 import type { MusicDebugSectionProminence } from './music-debug-section-prominence.ts';
 import type { ProceduralMusicNote } from './procedural-music.ts';
 import type { ProceduralMusicSongSection } from './procedural-music-song.ts';
+import {
+  countMusicDebugExactMotifMatches,
+  countMusicDebugVariedMotifMatches,
+} from './music-debug-motif-match.ts';
 import { getProceduralScaleDegreeSemitones } from './procedural-music-scale.ts';
 
 type ProceduralMusicRole = ProceduralMusicNote['role'];
@@ -71,7 +75,6 @@ export function createMusicDebugSectionMotifMatches(options: {
   leadMotif: readonly number[];
   scaleLength: number;
 }): MusicDebugSectionMotifMatch[] {
-  const targetPattern = createIntervalPattern(options.leadMotif);
   return options.sections.map((section) => {
     const leadDegrees = collectSectionScaleDegrees({
       notes: options.notes,
@@ -80,14 +83,13 @@ export function createMusicDebugSectionMotifMatches(options: {
       role: 'lead',
       scaleLength: options.scaleLength,
     });
-    const exactMatchCount = countExactMotifMatches(
+    const exactMatchCount = countMusicDebugExactMotifMatches(
       leadDegrees,
       options.leadMotif
     );
-    const variedMatchCount = countVariedIntervalPatternMatches(
+    const variedMatchCount = countMusicDebugVariedMotifMatches(
       leadDegrees,
-      options.leadMotif,
-      targetPattern
+      options.leadMotif
     );
 
     return {
