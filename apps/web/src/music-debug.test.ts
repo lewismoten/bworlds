@@ -236,6 +236,12 @@ describe('music debug', () => {
     expect(markup).toContain('music-debug-section-buttons');
     expect(markup).toContain('music-debug-instrument-panel');
     expect(markup).toContain('music-debug-instrument-play');
+    expect(markup.indexOf('id="music-debug-timeline"')).toBeLessThan(
+      markup.indexOf('music-debug-instrument-panel')
+    );
+    expect(markup.indexOf('music-debug-instrument-panel')).toBeLessThan(
+      markup.indexOf('id="music-debug-summary"')
+    );
     expect(summary).toContain('Scheduled Notes');
     expect(summary).toContain('Song Length');
     expect(summary).toContain('Root MIDI');
@@ -311,9 +317,7 @@ describe('music debug', () => {
     expect(summary).toContain(
       snapshot.songDna.importantNpcMotifs[0]?.npcName ?? ''
     );
-    expect(summary).toContain('music-debug-instrument-waveform');
-    expect(summary).toContain('music-debug-instrument-stats');
-    expect(summary).toContain('Hz</dd>');
+    expect(markup).toContain('Hz</dd>');
   });
 
   it('renders a lightweight shell before the generated preview is ready', () => {

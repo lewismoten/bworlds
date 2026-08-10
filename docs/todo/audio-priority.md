@@ -17,8 +17,8 @@
 - [x] Visualization of track bars feel blurry. the bars may be too tall. lets get rid of the transparency, and just make the colors more vibrant when bars overlap
 - [x] Show individual instruments as different levels on percussion track.
 - [x] Show/Play all instrument/samples in the percussion track
-- [ ] Show all percussion wave forms with other instruments rather than just one, along with a play button like the others.
-- [ ] Move instrument wave form cards to appear just under the MIDI track visualizer.
+- [x] Show all percussion wave forms with other instruments rather than just one, along with a play button like the others.
+- [x] Move instrument wave form cards to appear just under the MIDI track visualizer.
 
 # Track Role / Color / Listing Order
 

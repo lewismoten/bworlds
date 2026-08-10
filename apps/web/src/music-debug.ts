@@ -694,13 +694,15 @@ export function buildMusicDebugMarkup(
 ): string {
   return buildMusicDebugShellMarkup(
     snapshot.options,
-    buildMusicDebugSummaryMarkup(snapshot)
+    buildMusicDebugSummaryMarkup(snapshot),
+    buildMusicDebugInstrumentPanelMarkup(snapshot)
   );
 }
 
 export function buildMusicDebugShellMarkup(
   rawOptions?: Partial<MusicDebugOptions> | null,
-  summaryMarkup = buildMusicDebugPendingSummaryMarkup()
+  summaryMarkup = buildMusicDebugPendingSummaryMarkup(),
+  instrumentPanelMarkup = ''
 ): string {
   const options = normalizeMusicDebugOptions(rawOptions);
 
@@ -828,6 +830,7 @@ export function buildMusicDebugShellMarkup(
             <div id="music-debug-section-buttons" class="music-debug-section-buttons"></div>
           </div>
           <canvas id="music-debug-timeline" width="960" height="320"></canvas>
+          ${instrumentPanelMarkup}
           <div id="music-debug-summary">${summaryMarkup}</div>
         </section>
       </section>
@@ -991,7 +994,6 @@ export function buildMusicDebugSummaryMarkup(
     <div class="music-debug-role-counts">
       <span>Lead Cadence ${snapshot.leadPhraseCadence.join(' / ')}</span>
     </div>
-    ${buildMusicDebugInstrumentPanelMarkup(snapshot)}
   `;
 }
 
