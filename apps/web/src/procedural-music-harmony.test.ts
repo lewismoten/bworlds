@@ -37,9 +37,17 @@ describe('procedural music harmony', () => {
   it('changes chords over time using the shared progression', () => {
     const firstChord = resolveProceduralChordAtStep(TEST_THEME, 0, 3, -2);
     const secondChord = resolveProceduralChordAtStep(TEST_THEME, 4, 3, -2);
+    const repeatedPhraseChord = resolveProceduralChordAtStep(
+      TEST_THEME,
+      68,
+      3,
+      -2
+    );
 
     expect(firstChord.progressionIndex).toBe(0);
     expect(secondChord.progressionIndex).toBe(1);
+    expect(repeatedPhraseChord.progressionIndex).toBe(1);
+    expect(repeatedPhraseChord.degreeIndex).toBe(secondChord.degreeIndex);
     expect(secondChord.rootSemitones).not.toBeNaN();
   });
 

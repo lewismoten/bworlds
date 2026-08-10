@@ -1,5 +1,6 @@
 import { hash2DWithSeed, registerHashLabel } from '@bworlds/core/hash';
 import { resolveProceduralChordProgression as resolveCuratedProceduralChordProgression } from './procedural-music-chord-progression.ts';
+import { resolveProceduralChordTimelineEntryAtStep } from './procedural-music-chord-timeline.ts';
 import { resolveProceduralHarmonyChordVoicing } from './procedural-music-harmony-voicing.ts';
 import { blendLeadMotifWithRecognition } from './procedural-music-lead-motif.ts';
 import { scoreProceduralLeadMotionPenalty } from './procedural-music-lead-motion.ts';
@@ -298,15 +299,19 @@ export function resolveProceduralChordAtStep(
   clusterX: number,
   clusterY: number
 ): ProceduralChord {
-  const progression = resolveProceduralChordProgression(
-    theme,
+  const timelineEntry = resolveProceduralChordTimelineEntryAtStep({
+    themeId: theme.id,
+    themeStepCount: theme.stepPattern.length,
+    stepIndex,
     clusterX,
-    clusterY
-  );
-  const progressionIndex = Math.floor(stepIndex / 4) % progression.length;
-  const degreeIndex = progression[progressionIndex] ?? progression[0] ?? 0;
+    clusterY,
+  });
 
-  return createProceduralChord(theme, degreeIndex, progressionIndex);
+  return createProceduralChord(
+    theme,
+    timelineEntry.degreeIndex,
+    timelineEntry.progressionIndex
+  );
 }
 
 export function resolveProceduralInstrumentSemitones(options: {

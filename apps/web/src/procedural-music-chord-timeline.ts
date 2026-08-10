@@ -1,0 +1,93 @@
+import { resolveProceduralChordProgression } from './procedural-music-chord-progression.ts';
+import { PROCEDURAL_MUSIC_PHRASE_MEASURE_COUNT } from './procedural-music-phrase-structure.ts';
+
+export const PROCEDURAL_MUSIC_CHORD_TIMELINE_SPAN_STEPS = 4;
+
+export type ProceduralChordTimelineEntry = {
+  progressionIndex: number;
+  degreeIndex: number;
+  startStepIndex: number;
+  endStepIndex: number;
+};
+
+const proceduralChordTimelineCache = new Map<
+  string,
+  readonly ProceduralChordTimelineEntry[]
+>();
+
+export function resolveProceduralChordTimeline(options: {
+  themeId: string;
+  themeStepCount: number;
+  clusterX: number;
+  clusterY: number;
+}): readonly ProceduralChordTimelineEntry[] {
+  const normalizedThemeStepCount = Math.max(1, options.themeStepCount);
+  const phraseStepCount =
+    normalizedThemeStepCount * PROCEDURAL_MUSIC_PHRASE_MEASURE_COUNT;
+  const cacheKey = [
+    options.themeId,
+    normalizedThemeStepCount,
+    options.clusterX,
+    options.clusterY,
+  ].join(':');
+  const cachedTimeline = proceduralChordTimelineCache.get(cacheKey);
+  if (cachedTimeline) {
+    return cachedTimeline;
+  }
+
+  const progression = resolveProceduralChordProgression({
+    themeId: options.themeId,
+    clusterX: options.clusterX,
+    clusterY: options.clusterY,
+  });
+  const timeline: ProceduralChordTimelineEntry[] = [];
+
+  for (
+    let startStepIndex = 0;
+    startStepIndex < phraseStepCount;
+    startStepIndex += PROCEDURAL_MUSIC_CHORD_TIMELINE_SPAN_STEPS
+  ) {
+    const progressionIndex =
+      Math.floor(startStepIndex / PROCEDURAL_MUSIC_CHORD_TIMELINE_SPAN_STEPS) %
+      progression.length;
+    timeline.push({
+      progressionIndex,
+      degreeIndex: progression[progressionIndex] ?? progression[0] ?? 0,
+      startStepIndex,
+      endStepIndex: Math.min(
+        phraseStepCount,
+        startStepIndex + PROCEDURAL_MUSIC_CHORD_TIMELINE_SPAN_STEPS
+      ),
+    });
+  }
+
+  proceduralChordTimelineCache.set(cacheKey, timeline);
+  return timeline;
+}
+
+export function resolveProceduralChordTimelineEntryAtStep(options: {
+  themeId: string;
+  themeStepCount: number;
+  stepIndex: number;
+  clusterX: number;
+  clusterY: number;
+}): ProceduralChordTimelineEntry {
+  const timeline = resolveProceduralChordTimeline(options);
+  const phraseStepCount =
+    Math.max(1, options.themeStepCount) * PROCEDURAL_MUSIC_PHRASE_MEASURE_COUNT;
+  const normalizedStepIndex =
+    ((options.stepIndex % phraseStepCount) + phraseStepCount) % phraseStepCount;
+  return (
+    timeline.find(
+      (entry) =>
+        normalizedStepIndex >= entry.startStepIndex &&
+        normalizedStepIndex < entry.endStepIndex
+    ) ??
+    timeline[0] ?? {
+      progressionIndex: 0,
+      degreeIndex: 0,
+      startStepIndex: 0,
+      endStepIndex: PROCEDURAL_MUSIC_CHORD_TIMELINE_SPAN_STEPS,
+    }
+  );
+}
