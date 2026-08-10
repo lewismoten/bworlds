@@ -1059,6 +1059,7 @@ function formatMusicDebugAccidentalRuleSummary(
 ): string {
   const parts: string[] = [];
   for (const reason of [
+    'chromatic-passing',
     'lower-approach',
     'upper-approach',
     'unresolved-chromatic',

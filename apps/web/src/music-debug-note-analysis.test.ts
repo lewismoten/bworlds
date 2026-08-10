@@ -10,11 +10,13 @@ import { resolveProceduralScaleDegreeMidiNote } from './procedural-music-scale.t
 describe('music debug note analysis', () => {
   it('classifies in-mode notes, chromatic approaches, and unexplained chromatic notes by role', () => {
     const notes: ProceduralMusicNote[] = [
-      createNote('lead', 196),
       createNote('lead', 207.65),
       createNote('lead', 220),
+      createNote('harmony', 196),
       createNote('bass', 98),
-      createNote('bass', 116.54),
+      createNote('bass', 103.83),
+      createNote('bass', 110),
+      createNote('bass', 138.59),
       createNote('percussion', 180),
     ];
 
@@ -29,24 +31,33 @@ describe('music debug note analysis', () => {
     expect(validation.notePitchDiagnostics[0]).toEqual(
       expect.objectContaining({
         role: 'lead',
-        midiNote: 55,
-        scaleDegree: 1,
-        isBlackKey: false,
-        inMode: true,
-        accidentalReason: 'in-mode',
-        accidentalRuleLabel: 'In mode',
-      })
-    );
-    expect(validation.notePitchDiagnostics[1]).toEqual(
-      expect.objectContaining({
-        role: 'lead',
         isBlackKey: true,
         inMode: false,
         accidentalReason: 'lower-approach',
         accidentalRuleLabel: 'Lower chromatic approach',
       })
     );
+    expect(validation.notePitchDiagnostics[1]).toEqual(
+      expect.objectContaining({
+        role: 'lead',
+        midiNote: 57,
+        scaleDegree: 2,
+        isBlackKey: false,
+        inMode: true,
+        accidentalReason: 'in-mode',
+        accidentalRuleLabel: 'In mode',
+      })
+    );
     expect(validation.notePitchDiagnostics[4]).toEqual(
+      expect.objectContaining({
+        role: 'bass',
+        isBlackKey: true,
+        inMode: false,
+        accidentalReason: 'chromatic-passing',
+        accidentalRuleLabel: 'Chromatic passing tone',
+      })
+    );
+    expect(validation.notePitchDiagnostics[6]).toEqual(
       expect.objectContaining({
         role: 'bass',
         isBlackKey: true,
@@ -55,27 +66,30 @@ describe('music debug note analysis', () => {
         accidentalRuleLabel: 'Unresolved chromatic note',
       })
     );
-    expect(validation.accidentalNoteCount).toBe(2);
+    expect(validation.accidentalNoteCount).toBe(3);
     expect(validation.accidentalsByRole.lead).toBe(1);
-    expect(validation.accidentalsByRole.bass).toBe(1);
+    expect(validation.accidentalsByRole.bass).toBe(2);
     expect(validation.outOfModeNotesByRole.lead).toBe(1);
-    expect(validation.outOfModeNotesByRole.bass).toBe(1);
+    expect(validation.outOfModeNotesByRole.bass).toBe(2);
+    expect(validation.accidentalReasonCounts['chromatic-passing']).toBe(1);
     expect(validation.accidentalReasonCounts['lower-approach']).toBe(1);
     expect(validation.accidentalReasonCounts['unresolved-chromatic']).toBe(1);
-    expect(validation.blackKeyNoteCount).toBe(2);
+    expect(validation.blackKeyNoteCount).toBe(3);
     expect(validation.blackKeyNotesByRole.lead).toBe(1);
-    expect(validation.blackKeyNotesByRole.bass).toBe(1);
-    expect(validation.pitchClassCountsByRole.lead.G).toBe(1);
+    expect(validation.blackKeyNotesByRole.bass).toBe(2);
     expect(validation.pitchClassCountsByRole.lead['G#']).toBe(1);
     expect(validation.pitchClassCountsByRole.lead.A).toBe(1);
     expect(validation.pitchClassCountsByRole.bass.G).toBe(1);
-    expect(validation.pitchClassCountsByRole.bass['A#']).toBe(1);
-    expect(validation.dominantPitchClassesByRole.lead).toEqual([
+    expect(validation.pitchClassCountsByRole.bass.A).toBe(1);
+    expect(validation.pitchClassCountsByRole.bass['G#']).toBe(1);
+    expect(validation.pitchClassCountsByRole.bass['C#']).toBe(1);
+    expect(validation.dominantPitchClassesByRole.lead).toEqual(['A', 'G#']);
+    expect(validation.dominantPitchClassesByRole.bass).toEqual([
       'A',
+      'C#',
       'G',
       'G#',
     ]);
-    expect(validation.dominantPitchClassesByRole.bass).toEqual(['A#', 'G']);
     expect(validation.unexplainedAccidentalCount).toBe(1);
     expect(validation.isValidForMidiExport).toBe(false);
     expect(validation.messages).toEqual([
@@ -91,6 +105,7 @@ describe('music debug note analysis', () => {
       })
     ).toEqual({
       maxExplainedAccidentals: 4,
+      maxChromaticPassingAccidentals: 2,
       maxUnexplainedAccidentals: 0,
     });
     expect(
@@ -100,8 +115,39 @@ describe('music debug note analysis', () => {
       })
     ).toEqual({
       maxExplainedAccidentals: 12,
+      maxChromaticPassingAccidentals: 6,
       maxUnexplainedAccidentals: 0,
     });
+  });
+
+  it('limits chromatic passing tones more tightly in ambient exploration music', () => {
+    const notes: ProceduralMusicNote[] = [
+      createNote('lead', 196),
+      createNote('lead', 207.65),
+      createNote('lead', 220),
+      createNote('lead', 246.94),
+      createNote('lead', 261.63),
+      createNote('lead', 293.66),
+      createNote('lead', 311.13),
+      createNote('lead', 329.63),
+      createNote('lead', 349.23),
+      createNote('lead', 369.99),
+      createNote('lead', 392),
+    ];
+
+    const validation = analyzeMusicDebugPitches({
+      notes,
+      rootHz: 196,
+      modePitchOffsets: [0, 2, 4, 5, 7, 9, 10],
+      encounterMode: 'ambient',
+      themeId: 'frontier-plains',
+    });
+
+    expect(validation.accidentalReasonCounts['chromatic-passing']).toBe(3);
+    expect(validation.isValidForMidiExport).toBe(false);
+    expect(validation.messages).toContain(
+      'Found 3 chromatic passing notes; MIDI export allows 2.'
+    );
   });
 
   it('keeps representative generated songs free of unresolved chromatic notes', () => {

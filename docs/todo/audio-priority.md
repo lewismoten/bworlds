@@ -272,9 +272,9 @@ added directly as semitones instead of moving through the selected scale.
 - [x] Distinguish chromatic notes from MIDI black-key notes.
 - [ ] Count accidentals relative to G Mixolydian.
 - [x] Report accidental counts separately by track.
-- [ ] Permit accidentals only through named embellishments.
-- [ ] Limit chromatic passing tones in exploration music.
-- [ ] Resolve chromatic notes by step.
+- [x] Permit accidentals only through named embellishments.
+- [x] Limit chromatic passing tones in exploration music.
+- [x] Resolve chromatic notes by step.
 - [ ] Reject chromatic leaps without harmonic support.
 - [x] Show accidental reasons in note-level debug output.
 

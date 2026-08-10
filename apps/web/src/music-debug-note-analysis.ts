@@ -13,6 +13,7 @@ type ProceduralMusicRole = ProceduralMusicNote['role'];
 export type MusicDebugAccidentalReason =
   | 'percussion'
   | 'in-mode'
+  | 'chromatic-passing'
   | 'lower-approach'
   | 'upper-approach'
   | 'unresolved-chromatic';
@@ -34,6 +35,7 @@ export type MusicDebugNotePitchDiagnostic = {
 
 export type MusicDebugAccidentalBudget = {
   maxExplainedAccidentals: number;
+  maxChromaticPassingAccidentals: number;
   maxUnexplainedAccidentals: number;
 };
 
@@ -143,6 +145,12 @@ export function analyzeMusicDebugPitches(options: {
       `Found ${explainedAccidentals} explained chromatic notes; MIDI export allows ${budget.maxExplainedAccidentals}.`
     );
   }
+  const chromaticPassingCount = accidentalReasonCounts['chromatic-passing'];
+  if (chromaticPassingCount > budget.maxChromaticPassingAccidentals) {
+    messages.push(
+      `Found ${chromaticPassingCount} chromatic passing notes; MIDI export allows ${budget.maxChromaticPassingAccidentals}.`
+    );
+  }
 
   return {
     notePitchDiagnostics,
@@ -173,17 +181,20 @@ export function resolveMusicDebugAccidentalBudget(options: {
   ) {
     return {
       maxExplainedAccidentals: 4,
+      maxChromaticPassingAccidentals: 2,
       maxUnexplainedAccidentals: 0,
     };
   }
   if ((options.encounterMode ?? 'ambient') === 'ambient') {
     return {
       maxExplainedAccidentals: 10,
+      maxChromaticPassingAccidentals: 4,
       maxUnexplainedAccidentals: 0,
     };
   }
   return {
     maxExplainedAccidentals: 12,
+    maxChromaticPassingAccidentals: 6,
     maxUnexplainedAccidentals: 0,
   };
 }
@@ -279,7 +290,28 @@ function resolveAccidentalReason(
   if (!current) {
     return 'unresolved-chromatic';
   }
+  const previous = findPreviousNoteForRole(
+    diagnostics,
+    noteIndex,
+    current.role
+  );
   const neighbor = findNextNoteForRole(diagnostics, noteIndex, current.role);
+  if (
+    previous &&
+    neighbor &&
+    previous.inMode &&
+    neighbor.inMode &&
+    previous.relativeSemitones !== null &&
+    current.relativeSemitones !== null &&
+    neighbor.relativeSemitones !== null &&
+    Math.abs(current.relativeSemitones - previous.relativeSemitones) === 1 &&
+    Math.abs(neighbor.relativeSemitones - current.relativeSemitones) === 1 &&
+    previous.relativeSemitones !== neighbor.relativeSemitones &&
+    Math.sign(current.relativeSemitones - previous.relativeSemitones) ===
+      Math.sign(neighbor.relativeSemitones - current.relativeSemitones)
+  ) {
+    return 'chromatic-passing';
+  }
   if (
     neighbor &&
     neighbor.relativeSemitones !== null &&
@@ -291,11 +323,6 @@ function resolveAccidentalReason(
       ? 'lower-approach'
       : 'upper-approach';
   }
-  const previous = findPreviousNoteForRole(
-    diagnostics,
-    noteIndex,
-    current.role
-  );
   if (
     previous &&
     previous.relativeSemitones !== null &&
@@ -356,6 +383,7 @@ function createAccidentalReasonCountMap(): Record<
   return {
     percussion: 0,
     'in-mode': 0,
+    'chromatic-passing': 0,
     'lower-approach': 0,
     'upper-approach': 0,
     'unresolved-chromatic': 0,
@@ -366,6 +394,8 @@ export function describeMusicDebugAccidentalReason(
   reason: MusicDebugAccidentalReason
 ): string | null {
   switch (reason) {
+    case 'chromatic-passing':
+      return 'Chromatic passing tone';
     case 'lower-approach':
       return 'Lower chromatic approach';
     case 'upper-approach':
@@ -383,6 +413,8 @@ export function explainMusicDebugAccidentalReason(
   reason: MusicDebugAccidentalReason
 ): string | null {
   switch (reason) {
+    case 'chromatic-passing':
+      return 'Between two in-mode notes and connected by one-step motion.';
     case 'lower-approach':
       return 'One semitone below a nearby in-mode target and resolved by step.';
     case 'upper-approach':
