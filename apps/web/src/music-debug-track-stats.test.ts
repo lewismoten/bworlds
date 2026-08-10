@@ -19,6 +19,7 @@ describe('music debug track stats', () => {
     const stats = createMusicDebugTrackStats({
       notes: snapshot.notes,
       diagnostics: snapshot.notePitchDiagnostics,
+      songDurationMs: snapshot.durationMs,
     });
 
     expect(stats.bass.noteCount).toBe(snapshot.roleCounts.bass);
@@ -32,6 +33,10 @@ describe('music debug track stats', () => {
     expect(stats.lead.maxLeapSemitones).toBeGreaterThanOrEqual(
       stats.lead.averageLeapSemitones
     );
+    expect(stats.bass.occupancyPercentage).toBeGreaterThan(0);
+    expect(stats.bass.occupancyPercentage).toBeLessThanOrEqual(100);
+    expect(stats.harmony.occupancyPercentage).toBeGreaterThan(0);
+    expect(stats.harmony.occupancyPercentage).toBeLessThanOrEqual(100);
     expect(stats.harmony.averageDurationMs).toBeGreaterThan(0);
     expect(stats.harmony.averageSilenceMs).toBeGreaterThanOrEqual(0);
     expect(stats.harmony.maxPolyphony).toBeGreaterThanOrEqual(1);
@@ -60,6 +65,7 @@ describe('music debug track stats', () => {
     expect(summaryLines[3]).toContain('Percussion');
     expect(summaryLines[3]).toContain('out-of-mode 0');
     expect(timingLines).toHaveLength(4);
+    expect(timingLines[0]).toContain('occ');
     expect(timingLines[0]).toContain('avg dur');
     expect(timingLines[1]).toContain('avg gap');
     expect(timingLines[1]).toContain('peak poly');

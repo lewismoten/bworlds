@@ -356,6 +356,7 @@ export function createMusicDebugSnapshot(
   const trackStats = createMusicDebugTrackStats({
     notes: song.notes,
     diagnostics: midiExportValidation.notePitchDiagnostics,
+    songDurationMs: durationMs,
   });
   const sectionMotifMatches = createMusicDebugSectionMotifMatches({
     notes: song.notes,

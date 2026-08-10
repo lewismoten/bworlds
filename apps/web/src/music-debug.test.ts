@@ -115,6 +115,10 @@ describe('music debug', () => {
       first.trackStats.lead.averageLeapSemitones
     );
     expect(first.trackStats.harmony.maxPolyphony).toBeGreaterThanOrEqual(1);
+    expect(first.trackStats.harmony.occupancyPercentage).toBeGreaterThan(0);
+    expect(first.trackStats.harmony.occupancyPercentage).toBeLessThanOrEqual(
+      100
+    );
     expect(first.trackStats.bass.averageDurationMs).toBeGreaterThan(0);
     expect(first.trackStats.lead.averageSilenceMs).toBeGreaterThanOrEqual(0);
     expect(first.sectionMotifMatches).toHaveLength(first.song.sections.length);
@@ -127,6 +131,13 @@ describe('music debug', () => {
     );
     expect(
       first.sectionLayerActivity.some((entry) => entry.roleCounts.lead > 0)
+    ).toBe(true);
+    expect(
+      first.sectionLayerActivity.every((entry) =>
+        Object.values(entry.soundingTimePercentageByRole).every(
+          (value) => value >= 0 && value <= 100
+        )
+      )
     ).toBe(true);
     expect(
       first.harmonyChordDetections.some((entry) => entry.chordLabels.length > 0)

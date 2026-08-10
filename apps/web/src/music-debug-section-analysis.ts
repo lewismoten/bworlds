@@ -89,7 +89,7 @@ export function createMusicDebugSectionLayerActivity(options: {
     const sectionStart = songStartMs + section.startOffsetMs;
     const sectionEnd = sectionStart + section.durationMs;
     const roleCounts = createEmptyRoleMetrics();
-    const totalDurationMs = createEmptyRoleMetrics();
+    const cumulativeDurationMs = createEmptyRoleMetrics();
 
     for (const note of options.notes) {
       if (note.startMs < sectionStart || note.startMs >= sectionEnd) {
@@ -100,7 +100,7 @@ export function createMusicDebugSectionLayerActivity(options: {
         0,
         Math.min(note.startMs + note.durationMs, sectionEnd) - note.startMs
       );
-      totalDurationMs[note.role] += clippedDurationMs;
+      cumulativeDurationMs[note.role] += clippedDurationMs;
     }
 
     const soundingTimePercentageByRole = createEmptyRoleMetrics();
@@ -109,9 +109,18 @@ export function createMusicDebugSectionLayerActivity(options: {
       soundingTimePercentageByRole[role] =
         section.durationMs <= 0
           ? 0
-          : (totalDurationMs[role] / section.durationMs) * 100;
+          : (resolveSectionRoleCoverageMs(
+              options.notes,
+              sectionStart,
+              sectionEnd,
+              role
+            ) /
+              section.durationMs) *
+            100;
       averageDurationMsByRole[role] =
-        roleCounts[role] > 0 ? totalDurationMs[role] / roleCounts[role] : 0;
+        roleCounts[role] > 0
+          ? cumulativeDurationMs[role] / roleCounts[role]
+          : 0;
     }
 
     return {
@@ -122,6 +131,52 @@ export function createMusicDebugSectionLayerActivity(options: {
       averageDurationMsByRole,
     };
   });
+}
+
+function resolveSectionRoleCoverageMs(
+  notes: readonly ProceduralMusicNote[],
+  sectionStartMs: number,
+  sectionEndMs: number,
+  role: ProceduralMusicRole
+): number {
+  const boundaries: Array<{ atMs: number; delta: number }> = [];
+
+  for (const note of notes) {
+    if (note.role !== role) {
+      continue;
+    }
+    const startMs = Math.max(note.startMs, sectionStartMs);
+    const endMs = Math.min(note.startMs + note.durationMs, sectionEndMs);
+    if (startMs >= endMs) {
+      continue;
+    }
+    boundaries.push({ atMs: startMs, delta: 1 }, { atMs: endMs, delta: -1 });
+  }
+
+  boundaries.sort((left, right) => {
+    if (left.atMs === right.atMs) {
+      return right.delta - left.delta;
+    }
+    return left.atMs - right.atMs;
+  });
+
+  let activeCount = 0;
+  let previousAtMs: number | null = null;
+  let totalCoverageMs = 0;
+
+  for (const boundary of boundaries) {
+    if (
+      previousAtMs !== null &&
+      activeCount > 0 &&
+      boundary.atMs > previousAtMs
+    ) {
+      totalCoverageMs += boundary.atMs - previousAtMs;
+    }
+    activeCount += boundary.delta;
+    previousAtMs = boundary.atMs;
+  }
+
+  return totalCoverageMs;
 }
 
 const PROCEDURAL_MUSIC_ROLES = [

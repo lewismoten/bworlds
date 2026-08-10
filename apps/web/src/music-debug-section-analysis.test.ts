@@ -71,7 +71,7 @@ describe('music debug section analysis', () => {
         },
         soundingTimePercentageByRole: {
           bass: 0,
-          harmony: 18,
+          harmony: 6,
           lead: 24,
           percussion: 0,
         },
@@ -93,7 +93,7 @@ describe('music debug section analysis', () => {
         },
         soundingTimePercentageByRole: {
           bass: 0,
-          harmony: 18,
+          harmony: 6,
           lead: 24,
           percussion: 0,
         },

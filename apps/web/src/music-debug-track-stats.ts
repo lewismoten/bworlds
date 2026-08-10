@@ -8,6 +8,7 @@ export type MusicDebugTrackStats = {
   noteCount: number;
   outOfModeNoteCount: number;
   rangeLabel: string;
+  occupancyPercentage: number;
   averageLeapSemitones: number;
   maxLeapSemitones: number;
   averageDurationMs: number;
@@ -18,6 +19,7 @@ export type MusicDebugTrackStats = {
 export function createMusicDebugTrackStats(options: {
   notes: readonly ProceduralMusicNote[];
   diagnostics: readonly MusicDebugNotePitchDiagnostic[];
+  songDurationMs: number;
 }): Record<ProceduralMusicRole, MusicDebugTrackStats> {
   const stats = createEmptyTrackStatsMap();
   const previousMidiByRole: Partial<Record<ProceduralMusicRole, number>> = {};
@@ -98,6 +100,12 @@ export function createMusicDebugTrackStats(options: {
       role === 'percussion'
         ? 'percussion'
         : formatMusicDebugMidiRange(minMidiByRole[role], maxMidiByRole[role]);
+    stat.occupancyPercentage =
+      options.songDurationMs > 0
+        ? (resolveMusicDebugRoleCoverageMs(options.notes, role) /
+            options.songDurationMs) *
+          100
+        : 0;
     stat.maxPolyphony = resolveMusicDebugRoleMaxPolyphony(options.notes, role);
   }
 
@@ -120,7 +128,7 @@ export function formatMusicDebugTrackTimingSummary(
 ): string[] {
   return MUSIC_DEBUG_TRACK_ROLES.map((role) => {
     const stat = stats[role];
-    return `${formatter(role)} avg dur ${Math.round(stat.averageDurationMs)} ms | avg gap ${Math.round(stat.averageSilenceMs)} ms | peak poly ${stat.maxPolyphony}`;
+    return `${formatter(role)} occ ${Math.round(stat.occupancyPercentage)}% | avg dur ${Math.round(stat.averageDurationMs)} ms | avg gap ${Math.round(stat.averageSilenceMs)} ms | peak poly ${stat.maxPolyphony}`;
   });
 }
 
@@ -151,6 +159,7 @@ function createEmptyTrackStats(
     noteCount: 0,
     outOfModeNoteCount: 0,
     rangeLabel: role === 'percussion' ? 'percussion' : 'n/a',
+    occupancyPercentage: 0,
     averageLeapSemitones: 0,
     maxLeapSemitones: 0,
     averageDurationMs: 0,
@@ -198,6 +207,44 @@ function resolveMusicDebugRoleMaxPolyphony(
   notes: readonly ProceduralMusicNote[],
   role: ProceduralMusicRole
 ): number {
+  const boundaries = createRoleBoundaries(notes, role);
+  let activeCount = 0;
+  let maxPolyphony = 0;
+  for (const boundary of boundaries) {
+    activeCount += boundary.delta;
+    maxPolyphony = Math.max(maxPolyphony, activeCount);
+  }
+  return maxPolyphony;
+}
+
+function resolveMusicDebugRoleCoverageMs(
+  notes: readonly ProceduralMusicNote[],
+  role: ProceduralMusicRole
+): number {
+  const boundaries = createRoleBoundaries(notes, role);
+  let activeCount = 0;
+  let previousAtMs: number | null = null;
+  let totalCoverageMs = 0;
+
+  for (const boundary of boundaries) {
+    if (
+      previousAtMs !== null &&
+      activeCount > 0 &&
+      boundary.atMs > previousAtMs
+    ) {
+      totalCoverageMs += boundary.atMs - previousAtMs;
+    }
+    activeCount += boundary.delta;
+    previousAtMs = boundary.atMs;
+  }
+
+  return totalCoverageMs;
+}
+
+function createRoleBoundaries(
+  notes: readonly ProceduralMusicNote[],
+  role: ProceduralMusicRole
+): Array<{ atMs: number; delta: number }> {
   const boundaries: Array<{ atMs: number; delta: number }> = [];
   for (const note of notes) {
     if (note.role !== role) {
@@ -214,14 +261,7 @@ function resolveMusicDebugRoleMaxPolyphony(
     }
     return left.atMs - right.atMs;
   });
-
-  let activeCount = 0;
-  let maxPolyphony = 0;
-  for (const boundary of boundaries) {
-    activeCount += boundary.delta;
-    maxPolyphony = Math.max(maxPolyphony, activeCount);
-  }
-  return maxPolyphony;
+  return boundaries;
 }
 
 const MUSIC_DEBUG_PITCH_CLASS_NAMES = [

@@ -175,7 +175,7 @@ added directly as semitones instead of moving through the selected scale.
 - [ ] Keep rhythmic variation inside phrase templates.
 - [ ] Add rests at phrase ends instead of between all notes.
 - [ ] Use legato articulation for suitable flute phrases.
-- [ ] Validate note occupancy by track and section.
+- [x] Validate note occupancy by track and section.
 
 ## Percussion
 
