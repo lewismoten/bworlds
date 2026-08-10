@@ -6,7 +6,7 @@ import {
   normalizeSoundBankDebugGeneralMidiBrowserState,
   normalizeSoundBankDebugOptions,
   randomizeSoundBankDebugSeed,
-  resolveSoundBankDebugGeneralMidiSections,
+  resolveSoundBankDebugGeneralMidiBrowserModel,
 } from './sound-bank-debug.ts';
 import { registerSoundBankPluginInstruments } from './sound-bank-registry.ts';
 
@@ -63,7 +63,10 @@ describe('sound bank debug page', () => {
     expect(markup).toContain('sound-bank-debug-midi-family-filter');
     expect(markup).toContain('sound-bank-debug-midi-role-filter');
     expect(markup).toContain('sound-bank-debug-midi-range-filter');
+    expect(markup).toContain('sound-bank-debug-midi-selected-program');
     expect(markup).toContain('sound-bank-debug-midi-sort');
+    expect(markup).toContain('sound-bank-debug-midi-previous');
+    expect(markup).toContain('sound-bank-debug-midi-next');
     expect(markup).toContain('music-debug-instrument-panel');
     expect(markup).toContain('sound-bank-debug-layout-compact');
     expect(markup).toContain('sound-bank-debug-layout-expanded');
@@ -231,6 +234,7 @@ describe('sound bank debug page', () => {
         familyFilter: 'Synth Lead',
         roleFilter: 'lead',
         playableMidiNote: ' 80 ',
+        selectedProgramNumber: ' 81 ',
         sortMode: 'name',
       })
     ).toEqual({
@@ -238,6 +242,7 @@ describe('sound bank debug page', () => {
       familyFilter: 'Synth Lead',
       roleFilter: 'lead',
       playableMidiNote: '80',
+      selectedProgramNumber: '81',
       sortMode: 'name',
     });
     expect(
@@ -245,6 +250,7 @@ describe('sound bank debug page', () => {
         familyFilter: 'Unknown',
         roleFilter: 'drums' as 'all',
         playableMidiNote: '999',
+        selectedProgramNumber: '-1',
         sortMode: 'sideways' as 'program',
       })
     ).toEqual({
@@ -252,13 +258,14 @@ describe('sound bank debug page', () => {
       familyFilter: 'all',
       roleFilter: 'all',
       playableMidiNote: '127',
+      selectedProgramNumber: '',
       sortMode: 'program',
     });
   });
 
-  it('filters and sorts the General MIDI browser by search query, family, role, and range', () => {
+  it('filters, sorts, and tracks selection in the General MIDI browser', () => {
     const snapshot = createSoundBankDebugSnapshot();
-    const searchedSections = resolveSoundBankDebugGeneralMidiSections(
+    const searchedModel = resolveSoundBankDebugGeneralMidiBrowserModel(
       snapshot.instrumentRegistry.entries,
       {
         searchQuery: 'bass',
@@ -266,55 +273,75 @@ describe('sound bank debug page', () => {
         sortMode: 'name',
       }
     );
-    const familySections = resolveSoundBankDebugGeneralMidiSections(
+    const familyModel = resolveSoundBankDebugGeneralMidiBrowserModel(
       snapshot.instrumentRegistry.entries,
       {
         familyFilter: 'Synth Lead',
         sortMode: 'program',
       }
     );
-    const roleSections = resolveSoundBankDebugGeneralMidiSections(
+    const roleModel = resolveSoundBankDebugGeneralMidiBrowserModel(
       snapshot.instrumentRegistry.entries,
       {
         roleFilter: 'harmony',
         sortMode: 'program',
       }
     );
-    const rangeSections = resolveSoundBankDebugGeneralMidiSections(
+    const rangeModel = resolveSoundBankDebugGeneralMidiBrowserModel(
       snapshot.instrumentRegistry.entries,
       {
         playableMidiNote: '75',
         sortMode: 'program',
       }
     );
-    const sortedByFamilySections = resolveSoundBankDebugGeneralMidiSections(
+    const sortedByFamilyModel = resolveSoundBankDebugGeneralMidiBrowserModel(
       snapshot.instrumentRegistry.entries,
       {
         sortMode: 'family',
       }
     );
+    const selectedModel = resolveSoundBankDebugGeneralMidiBrowserModel(
+      snapshot.instrumentRegistry.entries,
+      {
+        selectedProgramNumber: '80',
+        sortMode: 'program',
+      }
+    );
 
-    expect(searchedSections).toHaveLength(1);
-    expect(searchedSections[0]?.heading).toBe('All Matching Programs');
+    expect(searchedModel.sections).toHaveLength(1);
+    expect(searchedModel.sections[0]?.heading).toBe('All Matching Programs');
     expect(
-      searchedSections[0]?.programs.every((program) =>
+      searchedModel.sections[0]?.programs.every((program) =>
         program.instrumentName.toLowerCase().includes('bass')
       )
     ).toBe(true);
-    expect(familySections).toHaveLength(1);
-    expect(familySections[0]?.heading).toBe('Synth Lead');
-    expect(familySections[0]?.programs[0]?.programNumber).toBe(80);
-    expect(roleSections).toHaveLength(1);
+    expect(familyModel.sections).toHaveLength(1);
+    expect(familyModel.sections[0]?.heading).toBe('Synth Lead');
+    expect(familyModel.sections[0]?.programs[0]?.programNumber).toBe(80);
+    expect(roleModel.sections).toHaveLength(1);
     expect(
-      roleSections[0]?.programs.map((program) => program.programNumber)
+      roleModel.sections[0]?.programs.map((program) => program.programNumber)
     ).toEqual([48]);
     expect(
-      rangeSections.flatMap((section) =>
+      rangeModel.sections.flatMap((section) =>
         section.programs.map((program) => program.programNumber)
       )
     ).toEqual([48, 80]);
     expect(
-      sortedByFamilySections.map((section) => section.heading).slice(0, 3)
+      sortedByFamilyModel.sections.map((section) => section.heading).slice(0, 3)
     ).toEqual(['Bass', 'Brass', 'Chromatic Percussion']);
+    expect(selectedModel.selectedProgramNumber).toBe(80);
+    expect(selectedModel.previousProgramNumber).toBe(79);
+    expect(selectedModel.nextProgramNumber).toBe(81);
+    expect(
+      selectedModel.sections.flatMap((section) =>
+        section.programs.filter((program) => program.isSelected)
+      )
+    ).toEqual([
+      expect.objectContaining({
+        programNumber: 80,
+        isSelected: true,
+      }),
+    ]);
   });
 });

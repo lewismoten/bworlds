@@ -199,6 +199,10 @@ function readGeneralMidiBrowserState(): SoundBankDebugGeneralMidiBrowserState {
       typeof formData.get('generalMidiPlayableMidiNote') === 'string'
         ? String(formData.get('generalMidiPlayableMidiNote'))
         : generalMidiBrowserState.playableMidiNote,
+    selectedProgramNumber:
+      typeof formData.get('generalMidiSelectedProgramNumber') === 'string'
+        ? String(formData.get('generalMidiSelectedProgramNumber'))
+        : generalMidiBrowserState.selectedProgramNumber,
     sortMode:
       typeof formData.get('generalMidiSortMode') === 'string'
         ? (String(
@@ -462,11 +466,62 @@ function bindPage(musicSnapshot: MusicDebugSnapshot): void {
     );
 
   document
+    .querySelector<HTMLInputElement>('#sound-bank-debug-midi-selected-program')
+    ?.addEventListener(
+      'input',
+      () => {
+        generalMidiBrowserState = readGeneralMidiBrowserState();
+        renderPage();
+      },
+      pageLifecycleSignal ? { signal: pageLifecycleSignal } : undefined
+    );
+
+  document
     .querySelector<HTMLSelectElement>('#sound-bank-debug-midi-sort')
     ?.addEventListener(
       'change',
       () => {
         generalMidiBrowserState = readGeneralMidiBrowserState();
+        renderPage();
+      },
+      pageLifecycleSignal ? { signal: pageLifecycleSignal } : undefined
+    );
+
+  document
+    .querySelector<HTMLButtonElement>('#sound-bank-debug-midi-previous')
+    ?.addEventListener(
+      'click',
+      (event) => {
+        const target = event.currentTarget as HTMLButtonElement;
+        const programNumber = target.dataset.programNumber;
+        if (!programNumber) {
+          return;
+        }
+        generalMidiBrowserState =
+          normalizeSoundBankDebugGeneralMidiBrowserState({
+            ...readGeneralMidiBrowserState(),
+            selectedProgramNumber: programNumber,
+          });
+        renderPage();
+      },
+      pageLifecycleSignal ? { signal: pageLifecycleSignal } : undefined
+    );
+
+  document
+    .querySelector<HTMLButtonElement>('#sound-bank-debug-midi-next')
+    ?.addEventListener(
+      'click',
+      (event) => {
+        const target = event.currentTarget as HTMLButtonElement;
+        const programNumber = target.dataset.programNumber;
+        if (!programNumber) {
+          return;
+        }
+        generalMidiBrowserState =
+          normalizeSoundBankDebugGeneralMidiBrowserState({
+            ...readGeneralMidiBrowserState(),
+            selectedProgramNumber: programNumber,
+          });
         renderPage();
       },
       pageLifecycleSignal ? { signal: pageLifecycleSignal } : undefined

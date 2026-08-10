@@ -48,6 +48,7 @@ export type SoundBankDebugGeneralMidiBrowserState = {
     | 'all'
     | MusicDebugSnapshot['instrumentBank']['instruments'][keyof MusicDebugSnapshot['instrumentBank']['instruments']]['role'];
   playableMidiNote: string;
+  selectedProgramNumber: string;
   sortMode: SoundBankDebugGeneralMidiSortMode;
 };
 
@@ -59,10 +60,18 @@ export type SoundBankDebugGeneralMidiBrowserSection = Readonly<{
 export type SoundBankDebugGeneralMidiProgramView = Readonly<
   GeneralMidiProgram & {
     isAvailable: boolean;
+    isSelected: boolean;
     supportedRoles: readonly string[];
     recommendedRangeSummary: string | null;
   }
 >;
+
+export type SoundBankDebugGeneralMidiBrowserModel = Readonly<{
+  sections: readonly SoundBankDebugGeneralMidiBrowserSection[];
+  selectedProgramNumber: number | null;
+  previousProgramNumber: number | null;
+  nextProgramNumber: number | null;
+}>;
 
 export const DEFAULT_SOUND_BANK_DEBUG_GENERAL_MIDI_BROWSER_STATE: SoundBankDebugGeneralMidiBrowserState =
   {
@@ -70,6 +79,7 @@ export const DEFAULT_SOUND_BANK_DEBUG_GENERAL_MIDI_BROWSER_STATE: SoundBankDebug
     familyFilter: 'all',
     roleFilter: 'all',
     playableMidiNote: '',
+    selectedProgramNumber: '',
     sortMode: 'program',
   };
 
@@ -162,6 +172,10 @@ export function buildSoundBankDebugMarkup(
     normalizeSoundBankDebugGeneralMidiBrowserState(
       viewState.generalMidiBrowserState
     );
+  const generalMidiBrowserModel = resolveSoundBankDebugGeneralMidiBrowserModel(
+    snapshot.instrumentRegistry.entries,
+    generalMidiBrowserState
+  );
   const summaryCards = (
     Object.entries(musicSnapshot.instrumentBank.instruments) as Array<
       [
@@ -190,10 +204,7 @@ export function buildSoundBankDebugMarkup(
       `
     )
     .join('');
-  const generalMidiBrowserMarkup = resolveSoundBankDebugGeneralMidiSections(
-    snapshot.instrumentRegistry.entries,
-    generalMidiBrowserState
-  )
+  const generalMidiBrowserMarkup = generalMidiBrowserModel.sections
     .map(
       (section) => `
         <section class="sound-bank-debug-midi-family" aria-label="${section.heading}">
@@ -202,7 +213,14 @@ export function buildSoundBankDebugMarkup(
             ${section.programs
               .map(
                 (program) => `
-                  <li value="${program.programNumber}">
+                  <li
+                    value="${program.programNumber}"
+                    class="${
+                      program.isSelected
+                        ? 'sound-bank-debug-midi-program-selected'
+                        : ''
+                    }"
+                  >
                     <span
                       class="sound-bank-debug-midi-program-number${
                         program.isAvailable
@@ -216,6 +234,7 @@ export function buildSoundBankDebugMarkup(
                           ? ''
                           : ' sound-bank-debug-midi-program-unavailable'
                       }"
+                      aria-current="${program.isSelected ? 'true' : 'false'}"
                       aria-disabled="${program.isAvailable ? 'false' : 'true'}"
                     >${program.instrumentName}</span>
                     ${
@@ -492,6 +511,30 @@ export function buildSoundBankDebugMarkup(
                 program number.
               </p>
             </div>
+            <div class="sound-bank-debug-actions">
+              <button
+                id="sound-bank-debug-midi-previous"
+                type="button"
+                ${
+                  generalMidiBrowserModel.previousProgramNumber === null
+                    ? 'disabled'
+                    : `data-program-number="${generalMidiBrowserModel.previousProgramNumber}"`
+                }
+              >
+                Previous
+              </button>
+              <button
+                id="sound-bank-debug-midi-next"
+                type="button"
+                ${
+                  generalMidiBrowserModel.nextProgramNumber === null
+                    ? 'disabled'
+                    : `data-program-number="${generalMidiBrowserModel.nextProgramNumber}"`
+                }
+              >
+                Next
+              </button>
+            </div>
           </div>
           <div class="sound-bank-debug-midi-controls">
             <label>
@@ -538,6 +581,22 @@ export function buildSoundBankDebugMarkup(
                 max="127"
                 value="${escapeAttribute(generalMidiBrowserState.playableMidiNote)}"
                 placeholder="Any"
+              />
+            </label>
+            <label>
+              <span>Selected Program</span>
+              <input
+                id="sound-bank-debug-midi-selected-program"
+                name="generalMidiSelectedProgramNumber"
+                type="number"
+                min="0"
+                max="127"
+                value="${
+                  generalMidiBrowserModel.selectedProgramNumber === null
+                    ? ''
+                    : generalMidiBrowserModel.selectedProgramNumber
+                }"
+                placeholder="Visible default"
               />
             </label>
             <label>
@@ -613,20 +672,30 @@ export function normalizeSoundBankDebugGeneralMidiBrowserState(
         Math.max(0, Math.min(127, Number.parseInt(playableMidiNoteValue, 10)))
       )
     : '';
+  const selectedProgramNumberValue = value?.selectedProgramNumber?.trim() ?? '';
+  const selectedProgramNumber = /^\d{1,3}$/.test(selectedProgramNumberValue)
+    ? String(
+        Math.max(
+          0,
+          Math.min(127, Number.parseInt(selectedProgramNumberValue, 10))
+        )
+      )
+    : '';
 
   return {
     searchQuery,
     familyFilter,
     roleFilter,
     playableMidiNote,
+    selectedProgramNumber,
     sortMode,
   };
 }
 
-export function resolveSoundBankDebugGeneralMidiSections(
+export function resolveSoundBankDebugGeneralMidiBrowserModel(
   registryEntries: readonly SoundBankInstrumentRegistryEntry[],
   browserState: Partial<SoundBankDebugGeneralMidiBrowserState>
-): readonly SoundBankDebugGeneralMidiBrowserSection[] {
+): SoundBankDebugGeneralMidiBrowserModel {
   const normalizedState =
     normalizeSoundBankDebugGeneralMidiBrowserState(browserState);
   const searchQuery = normalizedState.searchQuery.toLowerCase();
@@ -667,29 +736,36 @@ export function resolveSoundBankDebugGeneralMidiSections(
     );
   });
 
-  if (normalizedState.sortMode === 'name') {
-    return [
-      {
-        heading: 'All Matching Programs',
-        programs: [...visiblePrograms].sort((left, right) =>
-          left.instrumentName.localeCompare(right.instrumentName)
-        ),
-      },
-    ];
-  }
+  const sortedSections = resolveSortedGeneralMidiSections(
+    visiblePrograms,
+    normalizedState.sortMode
+  );
+  const flatPrograms = sortedSections.flatMap((section) => section.programs);
+  const selectedProgramNumber = resolveSelectedProgramNumber(
+    flatPrograms,
+    normalizedState.selectedProgramNumber
+  );
+  const selectedIndex = flatPrograms.findIndex(
+    (program) => program.programNumber === selectedProgramNumber
+  );
+  const sections = sortedSections.map((section) => ({
+    heading: section.heading,
+    programs: section.programs.map((program) => ({
+      ...program,
+      isSelected: program.programNumber === selectedProgramNumber,
+    })),
+  }));
 
-  if (normalizedState.sortMode === 'family') {
-    return [...groupProgramsByFamily(visiblePrograms)]
-      .sort((left, right) => left.heading.localeCompare(right.heading))
-      .map((section) => ({
-        heading: section.heading,
-        programs: [...section.programs].sort((left, right) =>
-          left.instrumentName.localeCompare(right.instrumentName)
-        ),
-      }));
-  }
-
-  return groupProgramsByFamily(visiblePrograms);
+  return {
+    sections,
+    selectedProgramNumber,
+    previousProgramNumber:
+      selectedIndex > 0 ? flatPrograms[selectedIndex - 1]!.programNumber : null,
+    nextProgramNumber:
+      selectedIndex >= 0 && selectedIndex < flatPrograms.length - 1
+        ? flatPrograms[selectedIndex + 1]!.programNumber
+        : null,
+  };
 }
 
 function renderOptionList(
@@ -725,6 +801,57 @@ function groupProgramsByFamily(
     .filter((section) => section.programs.length > 0);
 }
 
+function resolveSortedGeneralMidiSections(
+  programs: readonly SoundBankDebugGeneralMidiProgramView[],
+  sortMode: SoundBankDebugGeneralMidiSortMode
+): readonly SoundBankDebugGeneralMidiBrowserSection[] {
+  if (sortMode === 'name') {
+    return [
+      {
+        heading: 'All Matching Programs',
+        programs: [...programs].sort((left, right) =>
+          left.instrumentName.localeCompare(right.instrumentName)
+        ),
+      },
+    ];
+  }
+
+  if (sortMode === 'family') {
+    return [...groupProgramsByFamily(programs)]
+      .sort((left, right) => left.heading.localeCompare(right.heading))
+      .map((section) => ({
+        heading: section.heading,
+        programs: [...section.programs].sort((left, right) =>
+          left.instrumentName.localeCompare(right.instrumentName)
+        ),
+      }));
+  }
+
+  return groupProgramsByFamily(programs);
+}
+
+function resolveSelectedProgramNumber(
+  programs: readonly SoundBankDebugGeneralMidiProgramView[],
+  selectedProgramNumber: string
+): number | null {
+  if (programs.length === 0) {
+    return null;
+  }
+
+  const selectedProgram =
+    selectedProgramNumber.length > 0
+      ? Number.parseInt(selectedProgramNumber, 10)
+      : Number.NaN;
+  if (
+    Number.isInteger(selectedProgram) &&
+    programs.some((program) => program.programNumber === selectedProgram)
+  ) {
+    return selectedProgram;
+  }
+
+  return programs[0]!.programNumber;
+}
+
 function escapeAttribute(value: string): string {
   return value
     .replaceAll('&', '&amp;')
@@ -745,6 +872,7 @@ function createGeneralMidiProgramView(
   return {
     ...program,
     isAvailable: matchingEntries.length > 0,
+    isSelected: false,
     supportedRoles: [
       ...new Set(matchingEntries.flatMap((entry) => entry.supportedRoles)),
     ].sort(),

@@ -56,11 +56,11 @@
 - [x] Sort instruments by program number.
 - [x] Allow sorting instruments by name.
 - [x] Allow sorting instruments by family.
-- [ ] Highlight the selected instrument.
+- [x] Highlight the selected instrument.
 - [x] Show unavailable programs as disabled.
 - [ ] Mark programs using placeholder patches.
 - [ ] Mark programs with custom patches.
-- [ ] Add previous and next instrument buttons.
+- [x] Add previous and next instrument buttons.
 
 ## General MIDI Families
 
