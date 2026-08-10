@@ -32,6 +32,7 @@ export type PercussionVoiceDefinition = Readonly<{
   id: PercussionVoiceId;
   family: PercussionFamily;
   midiNote: number;
+  name: string;
   waveform: MusicWaveform;
   brightnessMultiplier: number;
   attackMultiplier: number;
@@ -66,6 +67,7 @@ const PERCUSSION_VOICES: Record<PercussionVoiceId, PercussionVoiceDefinition> = 
     id: 'kick-36',
     family: 'kick',
     midiNote: 36,
+    name: 'kick-center',
     waveform: 'sine',
     brightnessMultiplier: 0.96,
     attackMultiplier: 0.92,
@@ -83,6 +85,7 @@ const PERCUSSION_VOICES: Record<PercussionVoiceId, PercussionVoiceDefinition> = 
     id: 'kick-35',
     family: 'kick',
     midiNote: 35,
+    name: 'kick-deep',
     waveform: 'triangle',
     brightnessMultiplier: 0.82,
     attackMultiplier: 1.04,
@@ -100,6 +103,7 @@ const PERCUSSION_VOICES: Record<PercussionVoiceId, PercussionVoiceDefinition> = 
     id: 'kick-41',
     family: 'kick',
     midiNote: 41,
+    name: 'kick-tight',
     waveform: 'triangle',
     brightnessMultiplier: 1.06,
     attackMultiplier: 0.88,
@@ -117,6 +121,7 @@ const PERCUSSION_VOICES: Record<PercussionVoiceId, PercussionVoiceDefinition> = 
     id: 'snare-38',
     family: 'snare',
     midiNote: 38,
+    name: 'snare-main',
     waveform: 'square',
     brightnessMultiplier: 1,
     attackMultiplier: 0.96,
@@ -134,6 +139,7 @@ const PERCUSSION_VOICES: Record<PercussionVoiceId, PercussionVoiceDefinition> = 
     id: 'snare-37',
     family: 'snare',
     midiNote: 37,
+    name: 'snare-rim',
     waveform: 'triangle',
     brightnessMultiplier: 1.08,
     attackMultiplier: 0.82,
@@ -151,6 +157,7 @@ const PERCUSSION_VOICES: Record<PercussionVoiceId, PercussionVoiceDefinition> = 
     id: 'snare-40',
     family: 'snare',
     midiNote: 40,
+    name: 'snare-electric',
     waveform: 'triangle',
     brightnessMultiplier: 0.88,
     attackMultiplier: 1.12,
@@ -168,6 +175,7 @@ const PERCUSSION_VOICES: Record<PercussionVoiceId, PercussionVoiceDefinition> = 
     id: 'snare-39',
     family: 'snare',
     midiNote: 39,
+    name: 'snare-clap',
     waveform: 'sawtooth',
     brightnessMultiplier: 1.14,
     attackMultiplier: 0.86,
@@ -185,6 +193,7 @@ const PERCUSSION_VOICES: Record<PercussionVoiceId, PercussionVoiceDefinition> = 
     id: 'cymbals-49',
     family: 'cymbals',
     midiNote: 49,
+    name: 'crash',
     waveform: 'sawtooth',
     brightnessMultiplier: 1.14,
     attackMultiplier: 0.84,
@@ -202,6 +211,7 @@ const PERCUSSION_VOICES: Record<PercussionVoiceId, PercussionVoiceDefinition> = 
     id: 'cymbals-51',
     family: 'cymbals',
     midiNote: 51,
+    name: 'ride',
     waveform: 'square',
     brightnessMultiplier: 1.2,
     attackMultiplier: 0.78,
@@ -219,6 +229,7 @@ const PERCUSSION_VOICES: Record<PercussionVoiceId, PercussionVoiceDefinition> = 
     id: 'cymbals-46',
     family: 'cymbals',
     midiNote: 46,
+    name: 'open-hat',
     waveform: 'triangle',
     brightnessMultiplier: 1.08,
     attackMultiplier: 0.9,
@@ -236,6 +247,7 @@ const PERCUSSION_VOICES: Record<PercussionVoiceId, PercussionVoiceDefinition> = 
     id: 'cymbals-42',
     family: 'cymbals',
     midiNote: 42,
+    name: 'closed-hat',
     waveform: 'triangle',
     brightnessMultiplier: 0.98,
     attackMultiplier: 0.74,
@@ -253,6 +265,7 @@ const PERCUSSION_VOICES: Record<PercussionVoiceId, PercussionVoiceDefinition> = 
     id: 'shaker-69',
     family: 'shaker',
     midiNote: 69,
+    name: 'cabasa',
     waveform: 'triangle',
     brightnessMultiplier: 1.06,
     attackMultiplier: 0.82,
@@ -270,6 +283,7 @@ const PERCUSSION_VOICES: Record<PercussionVoiceId, PercussionVoiceDefinition> = 
     id: 'shaker-54',
     family: 'shaker',
     midiNote: 54,
+    name: 'tambourine-jingle',
     waveform: 'square',
     brightnessMultiplier: 0.94,
     attackMultiplier: 0.94,
@@ -287,6 +301,7 @@ const PERCUSSION_VOICES: Record<PercussionVoiceId, PercussionVoiceDefinition> = 
     id: 'shaker-42',
     family: 'shaker',
     midiNote: 42,
+    name: 'hat-shake',
     waveform: 'triangle',
     brightnessMultiplier: 0.9,
     attackMultiplier: 0.76,
@@ -304,6 +319,7 @@ const PERCUSSION_VOICES: Record<PercussionVoiceId, PercussionVoiceDefinition> = 
     id: 'shaker-70',
     family: 'shaker',
     midiNote: 70,
+    name: 'maraca',
     waveform: 'square',
     brightnessMultiplier: 1.16,
     attackMultiplier: 0.72,
@@ -321,6 +337,7 @@ const PERCUSSION_VOICES: Record<PercussionVoiceId, PercussionVoiceDefinition> = 
     id: 'hand-percussion-60',
     family: 'hand-percussion',
     midiNote: 60,
+    name: 'high-bongo',
     waveform: 'square',
     brightnessMultiplier: 0.96,
     attackMultiplier: 0.92,
@@ -338,6 +355,7 @@ const PERCUSSION_VOICES: Record<PercussionVoiceId, PercussionVoiceDefinition> = 
     id: 'hand-percussion-61',
     family: 'hand-percussion',
     midiNote: 61,
+    name: 'low-bongo',
     waveform: 'sawtooth',
     brightnessMultiplier: 1.08,
     attackMultiplier: 0.8,
@@ -355,6 +373,7 @@ const PERCUSSION_VOICES: Record<PercussionVoiceId, PercussionVoiceDefinition> = 
     id: 'hand-percussion-54',
     family: 'hand-percussion',
     midiNote: 54,
+    name: 'tambourine-hit',
     waveform: 'triangle',
     brightnessMultiplier: 0.88,
     attackMultiplier: 1.04,
@@ -372,6 +391,7 @@ const PERCUSSION_VOICES: Record<PercussionVoiceId, PercussionVoiceDefinition> = 
     id: 'hand-percussion-69',
     family: 'hand-percussion',
     midiNote: 69,
+    name: 'cabasa-tap',
     waveform: 'triangle',
     brightnessMultiplier: 1.14,
     attackMultiplier: 0.74,
@@ -411,6 +431,29 @@ export function resolvePercussionVoiceById(
   id: PercussionVoiceId
 ): PercussionVoiceDefinition {
   return PERCUSSION_VOICES[id];
+}
+
+export function resolvePercussionVoiceName(options: {
+  family: PercussionFamily;
+  noteIndex: number;
+  voiceId?: PercussionVoiceId;
+}): string {
+  return options.voiceId
+    ? resolvePercussionVoiceById(options.voiceId).name
+    : resolvePercussionVoice({
+        family: options.family,
+        noteIndex: options.noteIndex,
+      }).name;
+}
+
+export function resolvePercussionVoiceNameByMidiNote(options: {
+  family: PercussionFamily;
+  midiNote: number;
+}): string | null {
+  const match = listPercussionVoicesForFamily(options.family).find(
+    (voice) => voice.midiNote === options.midiNote
+  );
+  return match?.name ?? null;
 }
 
 export function listPercussionVoicesForFamily(

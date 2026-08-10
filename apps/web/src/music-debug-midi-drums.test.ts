@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { resolveMidiPercussionNoteNumber } from './music-debug-midi-drums.ts';
 import {
+  resolvePercussionVoiceName,
+  resolvePercussionVoiceNameByMidiNote,
+} from './procedural-music-percussion-voices.ts';
+import {
   resolvePercussionFamilyFromInstrumentId,
+  resolvePercussionVoiceNameFromInstrumentId,
   resolvePercussionVoiceIdFromInstrumentId,
 } from './procedural-music-percussion.ts';
 
@@ -82,5 +87,31 @@ describe('music debug midi drums', () => {
         voiceId: 'kick-35',
       })
     ).toBe(35);
+  });
+
+  it('maps MIDI drum notes onto named percussion voices', () => {
+    expect(
+      resolvePercussionVoiceName({
+        family: 'cymbals',
+        noteIndex: 0,
+      })
+    ).toBe('crash');
+    expect(
+      resolvePercussionVoiceNameByMidiNote({
+        family: 'cymbals',
+        midiNote: 42,
+      })
+    ).toBe('closed-hat');
+    expect(
+      resolvePercussionVoiceNameByMidiNote({
+        family: 'hand-percussion',
+        midiNote: 61,
+      })
+    ).toBe('low-bongo');
+    expect(
+      resolvePercussionVoiceNameFromInstrumentId(
+        'deep-forest:percussion:3:-2:perc-cymbals-51:0'
+      )
+    ).toBe('ride');
   });
 });

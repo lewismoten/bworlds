@@ -33,7 +33,7 @@
 ## Percussion Kit
 
 - [x] Create a separate recipe for every used drum note.
-- [ ] Map MIDI drum notes to named percussion voices.
+- [x] Map MIDI drum notes to named percussion voices.
 - [ ] Give kicks a low pitch sweep and short noise click.
 - [ ] Give snares a body tone and filtered noise burst.
 - [ ] Give toms distinct pitches based on drum size.

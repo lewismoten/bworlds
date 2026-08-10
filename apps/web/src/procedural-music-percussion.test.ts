@@ -3,6 +3,7 @@ import {
   createProceduralPercussionNotes,
   resolvePercussionFamilyFromInstrumentId,
   resolvePercussionVoiceIdFromInstrumentId,
+  resolvePercussionVoiceNameFromInstrumentId,
 } from './procedural-music-percussion.ts';
 import {
   listPercussionVoicesForFamily,
@@ -128,6 +129,11 @@ describe('procedural music percussion', () => {
         'deep-forest:percussion:3:-2:perc-shaker-69:1'
       )
     ).toBe('shaker-69');
+    expect(
+      resolvePercussionVoiceNameFromInstrumentId(
+        'deep-forest:percussion:3:-2:perc-shaker-69:1'
+      )
+    ).toBe('cabasa');
   });
 
   it('defines separate voice recipes for every used drum note in each percussion family', () => {

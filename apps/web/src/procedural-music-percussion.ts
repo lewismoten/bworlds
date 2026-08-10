@@ -12,6 +12,7 @@ import {
   applyPercussionVoiceToTimbre,
   isPercussionFamily,
   resolvePercussionVoice,
+  resolvePercussionVoiceById,
   type PercussionFamily,
   type PercussionVoiceId,
 } from './procedural-music-percussion-voices.ts';
@@ -381,6 +382,13 @@ export function resolvePercussionVoiceIdFromInstrumentId(
   const voiceId = match[1] as PercussionVoiceId;
   const family = voiceId.replace(/-\d+$/, '');
   return isPercussionFamily(family) ? voiceId : null;
+}
+
+export function resolvePercussionVoiceNameFromInstrumentId(
+  instrumentId: string
+): string | null {
+  const voiceId = resolvePercussionVoiceIdFromInstrumentId(instrumentId);
+  return voiceId ? resolvePercussionVoiceById(voiceId).name : null;
 }
 
 function resolvePercussionDurationScale(themeId: MusicRegionThemeId): number {
