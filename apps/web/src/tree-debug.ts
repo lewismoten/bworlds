@@ -56,6 +56,7 @@ export type TreeDebugSnapshot = {
     hollowCount: number;
     previewSpeciesCount: number;
     focusedTreeIndex: number;
+    generatedTreeCount: number;
   };
   trees: Array<{
     index: number;
@@ -165,6 +166,7 @@ export function createTreeDebugSnapshot(
       hollowCount: hollows.length,
       previewSpeciesCount: speciesIds.length,
       focusedTreeIndex: options.treeIndex,
+      generatedTreeCount: speciesIds.length,
     },
     trees: speciesIds.map((speciesId, index) => {
       const age = ages[index];
@@ -270,7 +272,8 @@ export function buildTreeDebugMarkup(
         )}</li>`
     )
     .join('');
-  const treeCards = snapshot.trees
+  const focusedTrees = snapshot.trees.slice(0, 1);
+  const treeCards = focusedTrees
     .map(
       (tree) => `
         <article class="tree-debug-card" id="tree-debug-${tree.index}">
@@ -281,9 +284,9 @@ export function buildTreeDebugMarkup(
               <span>${escapeHtml(tree.form)}</span>
               <span>${escapeHtml(tree.lifeStage)}</span>
             </div>
-            <h2>Tree ${tree.index + 1}</h2>
+            <h2>Focused Tree ${tree.index + 1}</h2>
             <dl class="tree-debug-tree-stats">
-              <div><dt>Age</dt><dd>${tree.ageYears}</dd></div>
+              <div><dt>Age</dt><dd>${tree.ageYears.toFixed(1)}</dd></div>
               <div><dt>Trunk</dt><dd>${tree.trunkHeight.toFixed(2)}h / ${tree.radius.toFixed(
                 2
               )}r</dd></div>
@@ -344,7 +347,7 @@ export function buildTreeDebugMarkup(
         <p class="tree-debug-kicker">bworlds</p>
         <h1>Tree Conservatory</h1>
         <p class="tree-debug-lede">
-          Generate deterministic forest tree sets for a tile, inspect their ages and structural profiles, and compare season-aware capabilities from the shared tree framework.
+          Generate deterministic forest trees for a tile, inspect one focused specimen at a time, and compare season-aware capabilities from the shared tree framework.
         </p>
       </section>
       <section class="tree-debug-layout">
@@ -419,7 +422,7 @@ export function buildTreeDebugMarkup(
           <ul class="tree-debug-list">${familyMarkup}</ul>
         </article>
       </section>
-      <section class="tree-debug-tree-grid" aria-label="Generated trees">
+      <section class="tree-debug-tree-grid" aria-label="Focused tree preview">
         ${treeCards}
       </section>
     </main>
@@ -432,7 +435,7 @@ export function buildTreeDebugSummaryMarkup(
   return `
     <div class="tree-debug-summary-grid">
       <div><dt>Season</dt><dd>${escapeHtml(snapshot.season)}</dd></div>
-      <div><dt>Trees</dt><dd>${snapshot.trees.length}</dd></div>
+      <div><dt>Trees</dt><dd>${snapshot.tileSummary.generatedTreeCount}</dd></div>
       <div><dt>Decorations</dt><dd>${snapshot.tileSummary.decorationCount}</dd></div>
       <div><dt>Inhabitants</dt><dd>${snapshot.tileSummary.inhabitantCount}</dd></div>
       <div><dt>Hollows</dt><dd>${snapshot.tileSummary.hollowCount}</dd></div>

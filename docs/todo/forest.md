@@ -17,8 +17,8 @@
 - [ ] Touching / knocking on 3-5 trees in a specific order in a small area may reveal a secret treasure or entrance
 
 - [ ] When detailed tree exceeds its budget, fall back to the previous valid tree LOD rather than a plain box
-- [ ] Debug page should only show age with 1 decimal point
-- [ ] Debug page should show only one tree at a time
+- [x] Debug page should only show age with 1 decimal point
+- [x] Debug page should show only one tree at a time
 - [ ] Debug page should show rendered 3D tree with the ability to rotate/pan/zoom with the mouse
 - [ ] Debug page should show the rendered 3D tree at the top next to the input parameters
 - [ ] Debug page should show the ability to override tree type
@@ -346,9 +346,9 @@ This probably deserves several interchangeable strategies.
 - [ ] Support cherry-blossom-like trees.
 - [ ] Support fruit-tree blossoms.
 - [ ] Support hanging flower clusters.
-- [ ] Allow flower petals to fall.
+- [ ] Allow flower petals to fall as particles.
 - [ ] Allow wind to move petals.
-- [ ] Generate petals on nearby ground.
+- [ ] Generate petals on nearby ground as particles.
 - [ ] Attract pollinating insects.
 - [ ] Transition flowers into fruit where appropriate.
 - [ ] Avoid keeping flowers permanently after the flowering period.
@@ -981,11 +981,11 @@ impostor / billboard
 I would build this much like the character-animation preview page.
 
 - [ ] Let me preview one tree at a time, in 3D, near the top of the page next to the input parameters
-- [ ] Create a dedicated tree-generator preview page.
-- [ ] Select tree family.
-- [ ] Select species.
-- [ ] Enter generation seed.
-- [ ] Randomize seed.
+- [x] Create a dedicated tree-generator preview page.
+- [x] Select tree family.
+- [x] Select species.
+- [x] Enter generation seed.
+- [x] Randomize seed.
 - [ ] Change age.
 - [ ] Change season.
 - [ ] Change health.

@@ -137,11 +137,32 @@ describe('tree debug', () => {
     expect(markup).toContain('Climate');
     expect(markup).toContain('Soil');
     expect(markup).toContain('Next Tree');
-    expect(markup).toContain('Generated trees');
+    expect(markup).toContain('Focused tree preview');
+    expect(markup).toContain('Focused Tree 1');
     expect(summary).toContain('Season');
     expect(summary).toContain('Preview');
     expect(summary).toContain('Focus');
     expect(summary).toContain('Slope / Wind');
+  });
+
+  it('renders only the focused tree card and formats age with one decimal place', () => {
+    const snapshot = createTreeDebugSnapshot({
+      tileX: 8,
+      tileY: 6,
+      speciesMode: 'tile',
+      treeIndex: 0,
+    });
+    const markup = buildTreeDebugMarkup(snapshot);
+    const articleMatches = markup.match(
+      /<article class="tree-debug-card" id="tree-debug-/g
+    );
+    const focusedTree = snapshot.trees[0];
+
+    expect(snapshot.trees.length).toBeGreaterThan(1);
+    expect(articleMatches).toHaveLength(1);
+    expect(markup).toContain(
+      `<div><dt>Age</dt><dd>${focusedTree?.ageYears.toFixed(1)}</dd></div>`
+    );
   });
 
   it('randomizes tile coordinates within the supported debug range', () => {
