@@ -75,6 +75,10 @@ import {
   type MusicDebugSectionMotifMatch,
 } from './music-debug-section-analysis.ts';
 import {
+  createMusicDebugSectionProminence,
+  type MusicDebugSectionProminence,
+} from './music-debug-section-prominence.ts';
+import {
   createMusicDebugMidiExportAudit,
   type MusicDebugMidiAudit,
 } from './music-debug-midi-audit.ts';
@@ -132,6 +136,7 @@ export type MusicDebugSnapshot = {
   sharedMotif: number[];
   sectionLayerArrangement: string[];
   sectionLayerActivity: MusicDebugSectionLayerActivity[];
+  sectionProminence: MusicDebugSectionProminence[];
   sectionLayerComparisons: MusicDebugSectionLayerComparison[];
   lyrics: MusicDebugLyricLine[];
   loopStartOffsetMs: number;
@@ -404,9 +409,15 @@ export function createMusicDebugSnapshot(
     notes: song.notes,
     sections: song.sections,
   });
+  const sectionProminence = createMusicDebugSectionProminence({
+    notes: song.notes,
+    sections: song.sections,
+    activities: sectionLayerActivity,
+  });
   const sectionLayerComparisons = createMusicDebugSectionLayerComparisons({
     activities: sectionLayerActivity,
     blueprint: song.blueprint,
+    prominence: sectionProminence,
   });
   const snapshotBase = {
     options,
@@ -430,6 +441,7 @@ export function createMusicDebugSnapshot(
     sharedMotif: [...theme.motif.sharedDegreeOffsets],
     sectionLayerArrangement: [],
     sectionLayerActivity: [],
+    sectionProminence: [],
     sectionLayerComparisons: [],
     lyrics,
     loopStartOffsetMs: song.loopStartOffsetMs,
@@ -465,6 +477,7 @@ export function createMusicDebugSnapshot(
       describeSongSectionLayerArrangement(section)
     ),
     sectionLayerActivity,
+    sectionProminence,
     sectionLayerComparisons,
     midiAudit: {
       exportedBpm: null,
@@ -494,6 +507,7 @@ export function createMusicDebugSnapshot(
       describeSongSectionLayerArrangement(section)
     ),
     sectionLayerActivity,
+    sectionProminence,
     sectionLayerComparisons,
     midiAudit,
   };

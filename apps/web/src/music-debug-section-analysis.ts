@@ -1,6 +1,7 @@
 import type { MusicDebugNotePitchDiagnostic } from './music-debug-note-analysis.ts';
 import type { ProceduralMusicBlueprint } from './procedural-music-blueprint.ts';
 import type { ProceduralChordTimelineEntry } from './procedural-music-chord-timeline.ts';
+import type { MusicDebugSectionProminence } from './music-debug-section-prominence.ts';
 import type { ProceduralMusicNote } from './procedural-music.ts';
 import type { ProceduralMusicSongSection } from './procedural-music-song.ts';
 import { getProceduralScaleDegreeSemitones } from './procedural-music-scale.ts';
@@ -192,6 +193,7 @@ export function createMusicDebugSectionLayerActivity(options: {
 export function createMusicDebugSectionLayerComparisons(options: {
   activities: readonly MusicDebugSectionLayerActivity[];
   blueprint?: ProceduralMusicBlueprint;
+  prominence?: readonly MusicDebugSectionProminence[];
 }): MusicDebugSectionLayerComparison[] {
   const activityById = new Map(
     options.activities.map((activity) => [activity.sectionId, activity])
@@ -208,6 +210,12 @@ export function createMusicDebugSectionLayerComparisons(options: {
     const blueprintSection =
       options.blueprint?.sections.find(
         (section) => section.id === activity.sectionId
+      ) ?? null;
+    const baselineProminence =
+      options.prominence?.find((section) => section.sectionId === 'a') ?? null;
+    const sectionProminence =
+      options.prominence?.find(
+        (section) => section.sectionId === activity.sectionId
       ) ?? null;
 
     switch (activity.sectionId) {
@@ -251,6 +259,15 @@ export function createMusicDebugSectionLayerComparisons(options: {
           matchedRules,
           mismatchRules
         );
+        pushRuleResult(
+          baselineProminence === null ||
+            sectionProminence === null ||
+            sectionProminence.roles.lead.prominenceScore >
+              baselineProminence.roles.lead.prominenceScore,
+          'lead prominence exceeds Section A',
+          matchedRules,
+          mismatchRules
+        );
         break;
       case 'b':
         pushRuleResult(
@@ -264,6 +281,15 @@ export function createMusicDebugSectionLayerComparisons(options: {
             activity.soundingTimePercentageByRole.harmony <
               baseline.soundingTimePercentageByRole.harmony,
           'harmony occupancy lightens from Section A',
+          matchedRules,
+          mismatchRules
+        );
+        pushRuleResult(
+          baselineProminence === null ||
+            sectionProminence === null ||
+            sectionProminence.roles.harmony.prominenceScore <
+              baselineProminence.roles.harmony.prominenceScore,
+          'harmony prominence stays below Section A',
           matchedRules,
           mismatchRules
         );

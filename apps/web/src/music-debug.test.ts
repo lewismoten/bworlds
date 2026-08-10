@@ -620,6 +620,83 @@ describe('music debug', () => {
     );
   });
 
+  it("keeps Section A' lead prominence above Section A in representative snapshots", () => {
+    const forest = createMusicDebugSnapshot({
+      tileKind: 'forest',
+      contextType: 'overworld',
+      clusterX: 4,
+      clusterY: -1,
+    });
+    const town = createMusicDebugSnapshot(
+      {
+        tileKind: 'town',
+        contextType: 'town',
+        clusterX: 3,
+        clusterY: -2,
+        dayProgress: 0.25,
+        yearProgress: 0.75,
+      },
+      1000
+    );
+
+    for (const snapshot of [forest, town]) {
+      const prominenceById = new Map(
+        snapshot.sectionProminence.map((section) => [
+          section.sectionId,
+          section,
+        ])
+      );
+      const sectionA = prominenceById.get('a');
+      const sectionAPrime = prominenceById.get('a-prime');
+
+      expect(sectionA).toBeDefined();
+      expect(sectionAPrime).toBeDefined();
+      expect(sectionAPrime!.roles.lead.prominenceScore).toBeGreaterThan(
+        sectionA!.roles.lead.prominenceScore
+      );
+    }
+  });
+
+  it('keeps Section B harmony prominence below Section A in representative snapshots', () => {
+    const forest = createMusicDebugSnapshot({
+      tileKind: 'forest',
+      contextType: 'overworld',
+      clusterX: 4,
+      clusterY: -1,
+    });
+    const town = createMusicDebugSnapshot(
+      {
+        tileKind: 'town',
+        contextType: 'town',
+        clusterX: 3,
+        clusterY: -2,
+        dayProgress: 0.25,
+        yearProgress: 0.75,
+      },
+      1000
+    );
+
+    for (const snapshot of [forest, town]) {
+      const prominenceById = new Map(
+        snapshot.sectionProminence.map((section) => [
+          section.sectionId,
+          section,
+        ])
+      );
+      const sectionA = prominenceById.get('a');
+      const sectionB = prominenceById.get('b');
+
+      if (!sectionB) {
+        continue;
+      }
+
+      expect(sectionA).toBeDefined();
+      expect(sectionB.roles.harmony.prominenceScore).toBeLessThan(
+        sectionA!.roles.harmony.prominenceScore
+      );
+    }
+  });
+
   it('keeps representative section layer comparisons aligned with the configured emphasis rules', () => {
     const snapshot = createMusicDebugSnapshot({
       tileKind: 'forest',

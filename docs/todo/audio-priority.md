@@ -30,10 +30,10 @@
 - [x] Lower harmony occupancy when the lead is active.
 - [x] Make each section satisfy its configured layer-emphasis rules. (ie - Make A' more lead-forward than Section A.)
 - [x] Validate actual layer occupancy against the section blueprint.occupancy. (ie - Make B harmony lighter than Section A.)
-- [ ] Make A' lead prominence exceed Section A.
-- [ ] Make B harmony prominence lower than Section A.
-- [ ] Measure prominence using density, velocity, and register.
-- [ ] Account for competing layers when scoring prominence.
+- [x] Make A' lead prominence exceed Section A.
+- [x] Make B harmony prominence lower than Section A.
+- [x] Measure prominence using density, velocity, and register.
+- [x] Account for competing layers when scoring prominence.
 - [ ] Add a soft repeating rhythmic pulse for forest music.
 - [ ] Use percussion patterns instead of isolated cymbal events.
 - [x] Compare intended intervals with actual interval counts.
