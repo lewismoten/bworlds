@@ -4,6 +4,7 @@ import {
   resolveMusicDebugAccidentalBudget,
 } from './music-debug-note-analysis.ts';
 import type { ProceduralMusicNote } from './procedural-music.ts';
+import { resolveProceduralScaleDegreeMidiNote } from './procedural-music-scale.ts';
 
 describe('music debug note analysis', () => {
   it('classifies in-mode notes, chromatic approaches, and unexplained chromatic notes by role', () => {
@@ -98,6 +99,59 @@ describe('music debug note analysis', () => {
       maxUnexplainedAccidentals: 12,
     });
   });
+
+  it('keeps degree 1, 3, and 5 on G, B, and D for lead, harmony, and bass tracks', () => {
+    const scaleMap = {
+      rootMidiNote: 55,
+      modePitchOffsets: [0, 2, 4, 5, 7, 9, 10],
+    } as const;
+    const notes: ProceduralMusicNote[] = [
+      createMidiNote(
+        'lead',
+        resolveProceduralScaleDegreeMidiNote({
+          scaleMap,
+          degreeIndex: 0,
+        })
+      ),
+      createMidiNote(
+        'lead',
+        resolveProceduralScaleDegreeMidiNote({
+          scaleMap,
+          degreeIndex: 2,
+        })
+      ),
+      createMidiNote(
+        'lead',
+        resolveProceduralScaleDegreeMidiNote({
+          scaleMap,
+          degreeIndex: 4,
+        })
+      ),
+      createMidiNote('harmony', 55),
+      createMidiNote('harmony', 59),
+      createMidiNote('harmony', 62),
+      createMidiNote('bass', 43),
+      createMidiNote('bass', 47),
+      createMidiNote('bass', 50),
+    ];
+
+    const validation = analyzeMusicDebugPitches({
+      notes,
+      rootHz: 196,
+      modePitchOffsets: scaleMap.modePitchOffsets,
+    });
+
+    expect(validation.pitchClassCountsByRole.lead.G).toBe(1);
+    expect(validation.pitchClassCountsByRole.lead.B).toBe(1);
+    expect(validation.pitchClassCountsByRole.lead.D).toBe(1);
+    expect(validation.pitchClassCountsByRole.harmony.G).toBe(1);
+    expect(validation.pitchClassCountsByRole.harmony.B).toBe(1);
+    expect(validation.pitchClassCountsByRole.harmony.D).toBe(1);
+    expect(validation.pitchClassCountsByRole.bass.G).toBe(1);
+    expect(validation.pitchClassCountsByRole.bass.B).toBe(1);
+    expect(validation.pitchClassCountsByRole.bass.D).toBe(1);
+    expect(validation.accidentalNoteCount).toBe(0);
+  });
 });
 
 function createNote(
@@ -126,4 +180,11 @@ function createNote(
     harmonicGain: 0.4,
     pulseRate: 0,
   };
+}
+
+function createMidiNote(
+  role: ProceduralMusicNote['role'],
+  midiNote: number
+): ProceduralMusicNote {
+  return createNote(role, 440 * Math.pow(2, (midiNote - 69) / 12));
 }

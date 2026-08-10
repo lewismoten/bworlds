@@ -268,9 +268,9 @@ added directly as semitones instead of moving through the selected scale.
 ## Specific Regression Tests
 
 - [x] Verify a 196 Hz root exports as MIDI G3.
-- [ ] Verify degree 1 exports as G in every track.
-- [ ] Verify degree 3 exports as B in every track.
-- [ ] Verify degree 5 exports as D in every track.
+- [x] Verify degree 1 exports as G in every track.
+- [x] Verify degree 3 exports as B in every track.
+- [x] Verify degree 5 exports as D in every track.
 - [x] Verify motif 1-3-5-3 exports as G-B-D-B.
 - [x] Verify G Mixolydian uses G-A-B-C-D-E-F.
 - [x] Verify harmony contains simultaneous notes.
