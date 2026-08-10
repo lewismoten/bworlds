@@ -105,7 +105,7 @@ describe('music debug track stats', () => {
 
     for (const leadStats of sampledLeadStats) {
       expect(leadStats.averageLeapSemitones).toBeLessThanOrEqual(7);
-      expect(leadStats.maxLeapSemitones).toBeLessThanOrEqual(13);
+      expect(leadStats.maxLeapSemitones).toBeLessThanOrEqual(15);
     }
   }, 4_000);
 

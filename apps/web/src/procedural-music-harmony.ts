@@ -11,7 +11,10 @@ import {
   getProceduralScaleDegreeSemitones,
   isProceduralSemitoneInMode,
 } from './procedural-music-scale.ts';
-import { resolveProceduralPhraseCadence } from './procedural-music-phrase-structure.ts';
+import {
+  PROCEDURAL_MUSIC_PHRASE_MEASURE_COUNT,
+  resolveProceduralPhraseCadence,
+} from './procedural-music-phrase-structure.ts';
 import { resolveProceduralMeterPosition } from './procedural-music-meter.ts';
 
 export type ProceduralHarmonyTheme = {
@@ -228,23 +231,83 @@ export function resolveProceduralCompositionStep(
 ): ProceduralCompositionStep {
   const motif = resolveProceduralLeadMotif(theme, clusterX, clusterY);
   const contour = resolveProceduralLeadContour(theme, clusterX, clusterY);
-  const phraseLength = Math.max(1, theme.stepPattern.length);
-  const phraseStep = stepIndex % phraseLength;
+  const motifStepCount = Math.max(1, theme.stepPattern.length);
+  const phraseStep =
+    ((stepIndex % motifStepCount) + motifStepCount) % motifStepCount;
+  const contourPhraseStepCount =
+    motifStepCount * PROCEDURAL_MUSIC_PHRASE_MEASURE_COUNT;
+  const contourPhraseStep =
+    ((stepIndex % contourPhraseStepCount) + contourPhraseStepCount) %
+    contourPhraseStepCount;
 
   return {
     chord: resolveProceduralChordAtStep(theme, stepIndex, clusterX, clusterY),
     cadence: resolveProceduralLeadPhraseCadence(theme, stepIndex),
-    contourStep: contour[phraseStep] ??
-      contour[0] ?? {
-        stage: 'start',
-        minDegreeOffset: 0,
-        degreeOffset: 0,
-        maxDegreeOffset: 0,
-      },
+    contourStep: resolveInterpolatedLeadContourStep(
+      contour,
+      contourPhraseStep,
+      contourPhraseStepCount
+    ),
     motifDegreeOffset:
       motif.degreeOffsets[phraseStep % motif.degreeOffsets.length] ?? 0,
     phraseStep,
   };
+}
+
+function resolveInterpolatedLeadContourStep(
+  contour: readonly ProceduralLeadContourStep[],
+  phraseStep: number,
+  phraseStepCount: number
+): ProceduralLeadContourStep {
+  const fallback = contour[0] ?? {
+    stage: 'start' as const,
+    minDegreeOffset: 0,
+    degreeOffset: 0,
+    maxDegreeOffset: 0,
+  };
+  if (contour.length <= 1 || phraseStepCount <= 1) {
+    return fallback;
+  }
+
+  const progress = phraseStep / Math.max(1, phraseStepCount - 1);
+  const checkpointPosition = progress * (contour.length - 1);
+  const leftIndex = Math.floor(checkpointPosition);
+  const rightIndex = Math.min(
+    contour.length - 1,
+    Math.ceil(checkpointPosition)
+  );
+  const blend = checkpointPosition - leftIndex;
+  const left = contour[leftIndex] ?? fallback;
+  const right = contour[rightIndex] ?? left;
+  const minDegreeOffset = Math.round(
+    interpolate(left.minDegreeOffset, right.minDegreeOffset, blend)
+  );
+  const maxDegreeOffset = Math.round(
+    interpolate(left.maxDegreeOffset, right.maxDegreeOffset, blend)
+  );
+  const degreeOffset = Math.min(
+    maxDegreeOffset,
+    Math.max(
+      minDegreeOffset,
+      Math.round(interpolate(left.degreeOffset, right.degreeOffset, blend))
+    )
+  );
+
+  return {
+    stage:
+      left.stage === right.stage
+        ? left.stage
+        : blend < 0.5
+          ? left.stage
+          : right.stage,
+    minDegreeOffset,
+    degreeOffset,
+    maxDegreeOffset,
+  };
+}
+
+function interpolate(start: number, end: number, blend: number): number {
+  return start + (end - start) * blend;
 }
 
 export function resolveProceduralLeadContourTargetRange(
@@ -866,7 +929,7 @@ function resolveLeadSemitonesCached(
     );
   }
 
-  if (current.cadence !== 'answer' && leapMagnitude > 5) {
+  if (current.cadence === 'neutral' && leapMagnitude > 5) {
     return commit(
       resolveNearbyScaleMotion({
         scale: theme.scale,
@@ -876,6 +939,10 @@ function resolveLeadSemitonesCached(
         fallbackSemitones: previous.semitones + Math.sign(leap) * 4,
       })
     );
+  }
+
+  if (current.cadence !== 'neutral') {
+    return commit(selectedCurrentSemitones);
   }
 
   if (stepIndex > 1) {
@@ -1067,7 +1134,11 @@ function selectPreferredLeadSemitoneClass(options: {
 
   const rankedCandidates = options.candidates
     .flatMap((candidate, index) =>
-      resolveLeadOctaveCandidates(options.previousSemitones ?? 0, candidate)
+      resolveLeadOctaveCandidates(
+        options.previousSemitones ?? 0,
+        candidate,
+        options.contourRange
+      )
         .filter(
           (shiftedCandidate) =>
             shiftedCandidate >= LEAD_MIN_SEMITONES &&
@@ -1110,17 +1181,49 @@ function selectPreferredLeadSemitoneClass(options: {
 
 function resolveLeadOctaveCandidates(
   previousSemitones: number,
-  candidateSemitones: number
+  candidateSemitones: number,
+  contourRange?:
+    | {
+        minSemitones: number;
+        targetSemitones: number;
+        maxSemitones: number;
+      }
+    | undefined
 ): readonly number[] {
-  const candidates: number[] = [];
-  for (let octaveShift = -24; octaveShift <= 24; octaveShift += 12) {
-    candidates.push(candidateSemitones + octaveShift);
-  }
-  candidates.sort(
-    (left, right) =>
+  const rawCandidates = [-12, 0, 12]
+    .map((octaveShift) => candidateSemitones + octaveShift)
+    .filter(
+      (candidate) =>
+        candidate >= LEAD_MIN_SEMITONES && candidate <= LEAD_MAX_SEMITONES
+    );
+  const contourBoundCandidates =
+    contourRange === undefined
+      ? rawCandidates
+      : rawCandidates.filter(
+          (candidate) =>
+            candidate >= contourRange.minSemitones - 2 &&
+            candidate <= contourRange.maxSemitones + 2
+        );
+  const candidates =
+    contourBoundCandidates.length > 0 ? contourBoundCandidates : rawCandidates;
+
+  candidates.sort((left, right) => {
+    const leftContourDistance =
+      contourRange === undefined
+        ? 0
+        : Math.abs(left - contourRange.targetSemitones);
+    const rightContourDistance =
+      contourRange === undefined
+        ? 0
+        : Math.abs(right - contourRange.targetSemitones);
+
+    return (
+      leftContourDistance - rightContourDistance ||
       Math.abs(left - previousSemitones) - Math.abs(right - previousSemitones)
-  );
-  return candidates.slice(0, 3);
+    );
+  });
+
+  return candidates.slice(0, 2);
 }
 
 function clampLeadSemitone(targetSemitones: number): number {

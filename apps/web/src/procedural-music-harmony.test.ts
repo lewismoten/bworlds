@@ -7,6 +7,7 @@ import {
   resolveProceduralCompositionStep,
   resolveProceduralHarmonyVoicing,
   resolveProceduralLeadContour,
+  resolveProceduralLeadContourTargetRange,
   resolveProceduralInstrumentSemitones,
   resolveProceduralLeadMotif,
   resolveProceduralLeadPhraseCadence,
@@ -658,6 +659,43 @@ describe('procedural music harmony', () => {
     expect(climaxStep!.minDegreeOffset).toBeLessThan(
       climaxStep!.maxDegreeOffset
     );
+  });
+
+  it('interpolates lead contour targets across the whole phrase instead of repeating checkpoint jumps every measure', () => {
+    const targetRanges = Array.from({ length: 32 }, (_, stepIndex) =>
+      resolveProceduralLeadContourTargetRange(TEST_THEME, stepIndex, 3, -2)
+    );
+    const uniqueTargets = new Set(
+      targetRanges.map((range) => range.targetSemitones)
+    );
+    const stepToStepMotion = targetRanges
+      .slice(1)
+      .map((range, index) =>
+        Math.abs(range.targetSemitones - targetRanges[index]!.targetSemitones)
+      );
+
+    expect(uniqueTargets.size).toBeGreaterThan(TEST_THEME.stepPattern.length);
+    expect(Math.max(...stepToStepMotion)).toBeLessThan(12);
+  });
+
+  it('keeps resolved lead notes near the planned contour register instead of remapping checkpoints by multiple octaves', () => {
+    const targetRanges = Array.from({ length: 32 }, (_, stepIndex) =>
+      resolveProceduralLeadContourTargetRange(TEST_THEME, stepIndex, 3, -2)
+    );
+
+    for (let stepIndex = 0; stepIndex < targetRanges.length; stepIndex += 1) {
+      const resolvedSemitones = resolveProceduralInstrumentSemitones({
+        theme: TEST_THEME,
+        role: 'lead',
+        stepIndex,
+        clusterX: 3,
+        clusterY: -2,
+      });
+      const target = targetRanges[stepIndex]!;
+
+      expect(resolvedSemitones).toBeGreaterThanOrEqual(target.minSemitones - 7);
+      expect(resolvedSemitones).toBeLessThanOrEqual(target.maxSemitones + 7);
+    }
   });
 
   it('voices harmony as stable triads instead of single notes', () => {

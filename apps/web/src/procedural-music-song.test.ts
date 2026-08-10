@@ -278,8 +278,12 @@ describe('procedural music song', () => {
       .slice(0, 4)
       .map((degreeIndex) => theme.rootMidiNote + degreeIndex);
 
-    expect(sectionALead).toEqual(expectedDegreeMidi);
-    expect(sectionALead).not.toEqual(semitoneInterpretation);
+    expect(sectionALead.map((midiNote) => midiNote % 12)).toEqual(
+      expectedDegreeMidi.map((midiNote) => midiNote % 12)
+    );
+    expect(sectionALead.map((midiNote) => midiNote % 12)).not.toEqual(
+      semitoneInterpretation.map((midiNote) => midiNote % 12)
+    );
   });
 
   it("keeps the motif rhythm recognizable between Section A and Section A'", () => {
@@ -680,6 +684,52 @@ describe('procedural music song', () => {
     expect(variationLead.length).toBeGreaterThan(0);
     expect(aPrimeLead).not.toEqual(aLead);
     expect(variationLead).not.toEqual(aLead);
+  });
+
+  it('keeps repeated phrase boundaries from restarting the lead more than a fifth away', () => {
+    const phraseDurationMs = 16_000;
+    const phraseNotes = collectProceduralMusicPhraseNotes(
+      {
+        nowMs: 1_000,
+        tileKind: 'forest',
+        contextType: 'overworld',
+        dayProgress: 0.45,
+        yearProgress: 0.25,
+        clusterX: 3,
+        clusterY: -2,
+      },
+      phraseDurationMs
+    );
+    const repeated = repeatProceduralMusicPhraseNotes(phraseNotes, {
+      phraseStartMs: 1_000,
+      phraseDurationMs,
+      songStartMs: 1_000,
+      songDurationMs: phraseDurationMs * 3,
+    });
+    const leadStarts = repeated.filter((note) => note.role === 'lead');
+    const firstLeadByPhrase = [0, 1, 2]
+      .map((phraseIndex) =>
+        leadStarts.find(
+          (note) =>
+            note.startMs >= 1_000 + phraseIndex * phraseDurationMs &&
+            note.startMs < 1_000 + (phraseIndex + 1) * phraseDurationMs
+        )
+      )
+      .filter(
+        (note): note is (typeof leadStarts)[number] => note !== undefined
+      );
+
+    expect(firstLeadByPhrase).toHaveLength(3);
+
+    for (let index = 1; index < firstLeadByPhrase.length; index += 1) {
+      const previous = firstLeadByPhrase[index - 1]!;
+      const current = firstLeadByPhrase[index]!;
+      const boundaryLeap = Math.abs(
+        12 * Math.log2(current.frequency / previous.frequency)
+      );
+
+      expect(boundaryLeap).toBeLessThanOrEqual(7);
+    }
   });
 
   it('recombines section layers so later phrases do not keep the same full stack', () => {

@@ -617,15 +617,19 @@ function alignMotifSemitonesToLeadRegister(options: {
         Math.max(options.theme.rootHz, Number.EPSILON)
     ) * 12
   );
-  const octaveCandidates = [-24, -12, 0, 12, 24].map(
+  const octaveCandidates = [-12, 0, 12].map(
     (octaveShift) => targetBaseSemitones + octaveShift
   );
 
-  return octaveCandidates.reduce((best, candidate) =>
+  const bestCandidate = octaveCandidates.reduce((best, candidate) =>
     Math.abs(candidate - currentSemitones) < Math.abs(best - currentSemitones)
       ? candidate
       : best
   );
+
+  return Math.abs(bestCandidate - currentSemitones) > 7
+    ? targetBaseSemitones
+    : bestCandidate;
 }
 
 function resolvePreviousLeadFrequency(

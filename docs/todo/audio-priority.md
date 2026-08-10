@@ -196,8 +196,8 @@ added directly as semitones instead of moving through the selected scale.
 ## Lead Contour
 
 - [x] Map contour values to a bounded melodic register.
-- [ ] Avoid mapping contour values directly to octave leaps.
-- [ ] Interpolate notes between contour checkpoints.
+- [x] Avoid mapping contour values directly to octave leaps.
+- [x] Interpolate notes between contour checkpoints.
 - [ ] Place the climax near the planned section peak.
 - [ ] Keep the climax pitch unique within the song.
 - [ ] Descend gradually after the climax.

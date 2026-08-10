@@ -115,29 +115,9 @@ function resolveRepeatedLeadPhraseOctaveShift(
   notes: readonly ProceduralMusicNote[],
   previousLeadFrequency: number
 ): number {
-  const firstLeadNote = notes.find((note) => note.role === 'lead');
-  if (!firstLeadNote) {
-    return 0;
-  }
-
-  const candidateShifts = [-24, -12, 0, 12, 24];
-  let bestShift = 0;
-  let bestScore = Number.POSITIVE_INFINITY;
-
-  for (let index = 0; index < candidateShifts.length; index += 1) {
-    const shift = candidateShifts[index]!;
-    const shiftedFrequency = firstLeadNote.frequency * 2 ** (shift / 12);
-    const leapSemitones = Math.abs(
-      12 * Math.log2(shiftedFrequency / previousLeadFrequency)
-    );
-    const score = leapSemitones + Math.abs(shift) * 0.05;
-    if (score < bestScore) {
-      bestScore = score;
-      bestShift = shift;
-    }
-  }
-
-  return bestShift;
+  void notes;
+  void previousLeadFrequency;
+  return 0;
 }
 
 function ensureLeadMeasureAttackDensity(
@@ -205,12 +185,16 @@ function ensureLeadMeasureAttackDensity(
         leadNotes,
         repairedStartMs
       );
-      const nextLeadNoteInMeasure = findNextLeadNote(leadNotes, repairedStartMs);
+      const nextLeadNoteInMeasure = findNextLeadNote(
+        leadNotes,
+        repairedStartMs
+      );
       const previousLeadNote =
         previousLeadNoteInMeasure ??
         findPreviousLeadNote(repairedNotes, repairedStartMs);
       const nextLeadNote =
-        nextLeadNoteInMeasure ?? findNextLeadNote(repairedNotes, repairedStartMs);
+        nextLeadNoteInMeasure ??
+        findNextLeadNote(repairedNotes, repairedStartMs);
       const repairedFrequency = resolveRepairedLeadFrequency({
         templateFrequency: templateNote.frequency,
         previousFrequency: previousLeadNote?.frequency ?? null,
@@ -340,8 +324,7 @@ function resolveRepairedLeadFrequency(options: {
       previousLeap === null ? 0 : Math.max(0, previousLeap - 12) * 4;
     const nextOverflowPenalty =
       nextLeap === null ? 0 : Math.max(0, nextLeap - 12) * 3;
-    const continuityScore =
-      (previousLeap ?? 0) * 1.15 + (nextLeap ?? 0) * 0.95;
+    const continuityScore = (previousLeap ?? 0) * 1.15 + (nextLeap ?? 0) * 0.95;
     const totalScore =
       (previousOverflowPenalty + nextOverflowPenalty) * 100 + continuityScore;
 
