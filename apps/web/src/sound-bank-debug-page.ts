@@ -50,6 +50,10 @@ function stopPreview(): void {
   instrumentPreviewPlayer.stop();
 }
 
+function disposePreview(): void {
+  instrumentPreviewPlayer.dispose();
+}
+
 function setAudioFeedback(nextStatus: string, nextError: string | null): void {
   audioStatus = nextStatus;
   errorMessage = nextError;
@@ -190,14 +194,14 @@ function bindPage(musicSnapshot: MusicDebugSnapshot): void {
 globalThis.addEventListener?.(
   'pagehide',
   () => {
-    stopPreview();
+    disposePreview();
   },
   pageLifecycleSignal ? { signal: pageLifecycleSignal } : undefined
 );
 
 import.meta.hot?.dispose(() => {
   pageLifecycleAbortController?.abort();
-  stopPreview();
+  disposePreview();
 });
 
 renderPage();

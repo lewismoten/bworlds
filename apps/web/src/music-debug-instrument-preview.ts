@@ -7,6 +7,7 @@ import {
 export type MusicDebugInstrumentPreviewPlayer = {
   play(note: ProceduralMusicNote): void;
   stop(): void;
+  dispose(): void;
 };
 
 export function createMusicDebugInstrumentPreviewPlayer(
@@ -19,6 +20,10 @@ export function createMusicDebugInstrumentPreviewPlayer(
     },
     stop() {
       sink.stopAll?.();
+    },
+    dispose() {
+      sink.stopAll?.();
+      sink.dispose?.();
     },
   };
 }

@@ -249,6 +249,7 @@ export type MusicSink = {
   resume?(): void;
   play(note: ProceduralMusicNote): void;
   stopAll?(): void;
+  dispose?(): void;
   getActiveSourceCount?(): number;
 };
 
@@ -938,6 +939,8 @@ type DelayNodeLike = DelayNode;
 
 type SharedReverbBus = {
   send: GainNode;
+  delay?: DelayNodeLike | null;
+  tone?: BiquadFilterNodeLike | null;
   output: GainNode;
 };
 
@@ -1053,6 +1056,16 @@ export function createWebAudioMusicSink(
 
     stopVoice(weakestVoice);
     return activeSourceCount + 2 <= MAX_ACTIVE_PROCEDURAL_MUSIC_OSCILLATORS;
+  }
+
+  function disposeSharedReverbBuses(): void {
+    for (const bus of sharedReverbBuses.values()) {
+      bus.send.disconnect?.();
+      bus.delay?.disconnect?.();
+      bus.tone?.disconnect?.();
+      bus.output.disconnect?.();
+    }
+    sharedReverbBuses.clear();
   }
 
   return {
@@ -1255,6 +1268,20 @@ export function createWebAudioMusicSink(
       }
       activeSourceCount = 0;
     },
+    dispose() {
+      const context = audioContext;
+      if (context) {
+        for (const voice of [...activeVoices]) {
+          stopVoice(voice, context.currentTime);
+        }
+      }
+      activeSourceCount = 0;
+      disposeSharedReverbBuses();
+      audioContext = null;
+      if (context && context.state !== 'closed') {
+        void context.close?.();
+      }
+    },
     getActiveSourceCount() {
       return activeSourceCount;
     },
@@ -1308,7 +1335,7 @@ function getSharedReverbBus(
 
   wet.connect(context.destination);
 
-  const bus = { send, output: wet };
+  const bus = { send, delay, tone, output: wet };
   buses.set(profile.id, bus);
   return bus;
 }

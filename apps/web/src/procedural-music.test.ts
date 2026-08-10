@@ -317,6 +317,148 @@ describe('procedural music', () => {
     }
   });
 
+  it('disposes the web audio music sink and closes its audio context', () => {
+    const createdOscillators: Array<{
+      onended: ((event: Event) => void) | null;
+      stop: ReturnType<typeof vi.fn>;
+      connect: ReturnType<typeof vi.fn>;
+      disconnect: ReturnType<typeof vi.fn>;
+      frequency: {
+        setValueAtTime: ReturnType<typeof vi.fn>;
+        exponentialRampToValueAtTime: ReturnType<typeof vi.fn>;
+      };
+      detune: {
+        setValueAtTime: ReturnType<typeof vi.fn>;
+      };
+      type: string;
+      start: ReturnType<typeof vi.fn>;
+    }> = [];
+    const createdGains: Array<{
+      connect: ReturnType<typeof vi.fn>;
+      disconnect: ReturnType<typeof vi.fn>;
+      gain: {
+        setValueAtTime: ReturnType<typeof vi.fn>;
+        exponentialRampToValueAtTime: ReturnType<typeof vi.fn>;
+      };
+    }> = [];
+    const close = vi.fn(() => Promise.resolve());
+
+    class FakeAudioContext {
+      state: AudioContextState = 'running';
+      currentTime = 5;
+      destination = {};
+      close = close;
+      createOscillator() {
+        const oscillator = {
+          onended: null as ((event: Event) => void) | null,
+          type: 'sine',
+          frequency: {
+            setValueAtTime: vi.fn(),
+            exponentialRampToValueAtTime: vi.fn(),
+          },
+          detune: {
+            setValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+          start: vi.fn(),
+          stop: vi.fn(),
+        };
+        createdOscillators.push(oscillator);
+        return oscillator as unknown as OscillatorNode;
+      }
+      createGain() {
+        const gain = {
+          gain: {
+            setValueAtTime: vi.fn(),
+            exponentialRampToValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+        };
+        createdGains.push(gain);
+        return gain as unknown as GainNode;
+      }
+      createBiquadFilter() {
+        return {
+          type: 'lowpass' as BiquadFilterType,
+          frequency: {
+            setValueAtTime: vi.fn(),
+          },
+          Q: {
+            setValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+        } as unknown as BiquadFilterNode;
+      }
+      createStereoPanner() {
+        return {
+          pan: {
+            setValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+        } as unknown as StereoPannerNode;
+      }
+      createDelay() {
+        return {
+          delayTime: {
+            setValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+        } as unknown as DelayNode;
+      }
+      resume() {
+        return Promise.resolve();
+      }
+    }
+
+    const originalAudioContext = globalThis.AudioContext;
+    vi.stubGlobal('AudioContext', FakeAudioContext);
+
+    try {
+      const sink = createWebAudioMusicSink();
+      sink.play({
+        themeId: 'frontier-plains',
+        instrumentId: 'lead',
+        role: 'lead',
+        startMs: 0,
+        durationMs: 240,
+        frequency: 440,
+        volume: 0.05,
+        waveform: 'sine',
+        timbre: {
+          harmonicWaveform: 'triangle',
+          harmonicRatio: 2,
+          filterType: 'lowpass',
+          filterCutoffHz: 1200,
+          filterQ: 0.8,
+        },
+        attackMs: 20,
+        releaseMs: 80,
+        detuneCents: 0,
+        harmonicGain: 0.4,
+        pulseRate: 1,
+      });
+
+      sink.dispose?.();
+
+      expect(createdOscillators[0]?.stop).toHaveBeenCalledWith(5);
+      expect(createdOscillators[1]?.stop).toHaveBeenCalledWith(5);
+      expect(createdGains[0]?.disconnect).toHaveBeenCalled();
+      expect(close).toHaveBeenCalledTimes(1);
+      expect(sink.getActiveSourceCount?.()).toBe(0);
+    } finally {
+      if (originalAudioContext) {
+        vi.stubGlobal('AudioContext', originalAudioContext);
+      } else {
+        vi.unstubAllGlobals();
+      }
+    }
+  });
+
   it('applies the music category volume before scheduling gain envelopes', () => {
     const createdGains: Array<{
       gain: {
