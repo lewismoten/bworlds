@@ -698,6 +698,64 @@ describe('procedural music harmony', () => {
     }
   });
 
+  it('places the actual lead climax near the planned section peak and keeps it unique', () => {
+    const semitones = Array.from({ length: 64 }, (_, stepIndex) =>
+      resolveProceduralInstrumentSemitones({
+        theme: MIXOLYDIAN_THEME,
+        role: 'lead',
+        stepIndex,
+        clusterX: 0,
+        clusterY: 0,
+      })
+    );
+    const ranges = Array.from({ length: 64 }, (_, stepIndex) =>
+      resolveProceduralLeadContourTargetRange(MIXOLYDIAN_THEME, stepIndex, 0, 0)
+    );
+    const actualClimaxSemitones = Math.max(...semitones);
+    const actualClimaxSteps = semitones
+      .map((value, stepIndex) => ({ value, stepIndex }))
+      .filter((entry) => entry.value === actualClimaxSemitones)
+      .map((entry) => entry.stepIndex);
+    const plannedClimaxSteps = ranges
+      .map((range, stepIndex) => ({ stage: range.stage, stepIndex }))
+      .filter((entry) => entry.stage === 'climax')
+      .map((entry) => entry.stepIndex);
+
+    expect(actualClimaxSteps).toHaveLength(1);
+    expect(plannedClimaxSteps.length).toBeGreaterThan(0);
+    expect(
+      Math.abs(actualClimaxSteps[0]! - plannedClimaxSteps[0]!)
+    ).toBeLessThanOrEqual(4);
+  });
+
+  it('descends gradually after the climax and resolves the final contour step to tonic', () => {
+    const semitones = Array.from({ length: 64 }, (_, stepIndex) =>
+      resolveProceduralInstrumentSemitones({
+        theme: MIXOLYDIAN_THEME,
+        role: 'lead',
+        stepIndex,
+        clusterX: 0,
+        clusterY: 0,
+      })
+    );
+    const ranges = Array.from({ length: 64 }, (_, stepIndex) =>
+      resolveProceduralLeadContourTargetRange(MIXOLYDIAN_THEME, stepIndex, 0, 0)
+    );
+    const lastClimaxStep = ranges.reduce(
+      (lastIndex, range, stepIndex) =>
+        range.stage === 'climax' ? stepIndex : lastIndex,
+      -1
+    );
+    const tail = semitones.slice(lastClimaxStep + 1);
+
+    expect(lastClimaxStep).toBeGreaterThanOrEqual(0);
+    for (let index = 1; index < tail.length; index += 1) {
+      expect(tail[index]!).toBeLessThanOrEqual(tail[index - 1]! + 1);
+      expect(tail[index - 1]! - tail[index]!).toBeLessThanOrEqual(3);
+    }
+    expect(((semitones.at(-1)! % 12) + 12) % 12).toBe(0);
+  });
+
   it('voices harmony as stable triads instead of single notes', () => {
     const first = resolveProceduralHarmonyVoicing({
       theme: TEST_THEME,

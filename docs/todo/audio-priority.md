@@ -198,10 +198,10 @@ added directly as semitones instead of moving through the selected scale.
 - [x] Map contour values to a bounded melodic register.
 - [x] Avoid mapping contour values directly to octave leaps.
 - [x] Interpolate notes between contour checkpoints.
-- [ ] Place the climax near the planned section peak.
-- [ ] Keep the climax pitch unique within the song.
-- [ ] Descend gradually after the climax.
-- [ ] Resolve the final contour value to the tonic.
+- [x] Place the climax near the planned section peak.
+- [x] Keep the climax pitch unique within the song.
+- [x] Descend gradually after the climax.
+- [x] Resolve the final contour value to the tonic.
 - [x] Validate actual pitches against the planned contour.
 - [x] Export planned and actual contour values for review.
 

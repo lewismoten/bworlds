@@ -825,7 +825,7 @@ function resolveLeadSemitonesCached(
     memo,
     threshold: ORDINARY_LEAD_MOTION_LIMIT_SEMITONES,
   });
-  const selectedCurrentSemitones = selectPreferredLeadSemitoneClass({
+  let selectedCurrentSemitones = selectPreferredLeadSemitoneClass({
     candidates: current.candidateSemitones,
     previousSemitones: previous.semitones,
     strongLeadBeat: current.strongLeadBeat,
@@ -834,6 +834,19 @@ function resolveLeadSemitonesCached(
     preferredIntervals: theme.vocabulary?.preferredIntervals,
     previousLeapDistance,
     priorLargeLeapCount,
+  });
+  selectedCurrentSemitones = shapeLeadSemitonesForContourStage({
+    theme,
+    stepIndex,
+    clusterX,
+    clusterY,
+    allowLeadAccidentals,
+    memo,
+    selectedSemitones: selectedCurrentSemitones,
+    previousSemitones: previous.semitones,
+    previousContourStage: previous.contourStage,
+    currentContourStage: current.contourStage,
+    currentContourRange: current.contourRange,
   });
   const leap = selectedCurrentSemitones - previous.semitones;
   const leapMagnitude = Math.abs(leap);
@@ -1345,4 +1358,263 @@ function countPriorLargeLeadLeapsInPhrase(options: {
   }
 
   return count;
+}
+
+function shapeLeadSemitonesForContourStage(options: {
+  theme: ProceduralHarmonyTheme;
+  stepIndex: number;
+  clusterX: number;
+  clusterY: number;
+  allowLeadAccidentals: boolean;
+  memo: Map<number, number>;
+  selectedSemitones: number;
+  previousSemitones: number;
+  previousContourStage: ProceduralLeadContourStage;
+  currentContourStage: ProceduralLeadContourStage;
+  currentContourRange: {
+    minSemitones: number;
+    targetSemitones: number;
+    maxSemitones: number;
+  };
+}): number {
+  const phraseStartStep = resolveLeadPhraseStartStep(
+    options.theme,
+    options.stepIndex
+  );
+  const phraseStepCount = resolveLeadPhraseStepCount(options.theme);
+  const phraseEndStep = phraseStartStep + phraseStepCount - 1;
+  const priorPhraseMaxSemitones = resolvePriorLeadPhraseMaxSemitones({
+    theme: options.theme,
+    stepIndex: options.stepIndex,
+    clusterX: options.clusterX,
+    clusterY: options.clusterY,
+    allowLeadAccidentals: options.allowLeadAccidentals,
+    memo: options.memo,
+  });
+  const plannedClimaxWindow = resolveLeadPhraseClimaxWindow({
+    theme: options.theme,
+    phraseStartStep,
+    clusterX: options.clusterX,
+    clusterY: options.clusterY,
+  });
+  let selectedSemitones = options.selectedSemitones;
+
+  if (options.currentContourStage === 'climax') {
+    if (options.previousContourStage !== 'climax') {
+      selectedSemitones =
+        resolveScaleAtOrAbove(
+          options.theme.scale,
+          Math.max(
+            options.currentContourRange.targetSemitones,
+            priorPhraseMaxSemitones + 2
+          ),
+          LEAD_MAX_SEMITONES
+        ) ?? selectedSemitones;
+    } else if (selectedSemitones >= priorPhraseMaxSemitones) {
+      selectedSemitones =
+        resolveScaleAtOrBelow(
+          options.theme.scale,
+          Math.max(
+            options.currentContourRange.minSemitones,
+            priorPhraseMaxSemitones - 1
+          ),
+          LEAD_MIN_SEMITONES
+        ) ?? selectedSemitones;
+    }
+  }
+
+  if (
+    options.stepIndex < plannedClimaxWindow.firstClimaxStep &&
+    selectedSemitones >= plannedClimaxWindow.plannedClimaxTargetSemitones
+  ) {
+    selectedSemitones =
+      resolveScaleAtOrBelow(
+        options.theme.scale,
+        plannedClimaxWindow.plannedClimaxTargetSemitones - 1,
+        LEAD_MIN_SEMITONES
+      ) ?? selectedSemitones;
+  }
+
+  if (
+    options.currentContourStage === 'descend' ||
+    options.currentContourStage === 'resolve'
+  ) {
+    if (selectedSemitones > options.previousSemitones) {
+      selectedSemitones =
+        resolveScaleAtOrBelow(
+          options.theme.scale,
+          options.previousSemitones - 1,
+          LEAD_MIN_SEMITONES
+        ) ?? options.previousSemitones;
+    }
+    if (options.previousSemitones - selectedSemitones > 3) {
+      selectedSemitones = resolveNearbyScaleMotion({
+        scale: options.theme.scale,
+        previousSemitones: options.previousSemitones,
+        direction: -1,
+        maxDistance: 3,
+        fallbackSemitones: options.previousSemitones - 3,
+      });
+    }
+  }
+
+  if (
+    options.currentContourStage === 'resolve' &&
+    options.stepIndex >= phraseEndStep - 1
+  ) {
+    selectedSemitones =
+      resolveNearestTonicAtOrBelow(
+        options.theme.scale,
+        options.previousSemitones
+      ) ?? selectedSemitones;
+  }
+
+  return selectedSemitones;
+}
+
+function resolveLeadPhraseStepCount(theme: ProceduralHarmonyTheme): number {
+  return Math.max(
+    1,
+    theme.stepPattern.length * PROCEDURAL_MUSIC_PHRASE_MEASURE_COUNT
+  );
+}
+
+function resolveLeadPhraseStartStep(
+  theme: ProceduralHarmonyTheme,
+  stepIndex: number
+): number {
+  const phraseStepCount = resolveLeadPhraseStepCount(theme);
+  return Math.floor(stepIndex / phraseStepCount) * phraseStepCount;
+}
+
+function resolvePriorLeadPhraseMaxSemitones(options: {
+  theme: ProceduralHarmonyTheme;
+  stepIndex: number;
+  clusterX: number;
+  clusterY: number;
+  allowLeadAccidentals: boolean;
+  memo: Map<number, number>;
+}): number {
+  const phraseStartStep = resolveLeadPhraseStartStep(
+    options.theme,
+    options.stepIndex
+  );
+  let maxSemitones = LEAD_MIN_SEMITONES;
+
+  for (let index = phraseStartStep; index < options.stepIndex; index += 1) {
+    const semitones = resolveLeadSemitonesCached(
+      options.theme,
+      resolveProceduralChordAtStep(
+        options.theme,
+        index,
+        options.clusterX,
+        options.clusterY
+      ),
+      index,
+      options.clusterX,
+      options.clusterY,
+      options.allowLeadAccidentals,
+      options.memo
+    );
+    maxSemitones = Math.max(maxSemitones, semitones);
+  }
+
+  return maxSemitones;
+}
+
+function resolveLeadPhraseClimaxWindow(options: {
+  theme: ProceduralHarmonyTheme;
+  phraseStartStep: number;
+  clusterX: number;
+  clusterY: number;
+}): {
+  firstClimaxStep: number;
+  lastClimaxStep: number;
+  plannedClimaxTargetSemitones: number;
+} {
+  const phraseStepCount = resolveLeadPhraseStepCount(options.theme);
+  let firstClimaxStep = options.phraseStartStep + phraseStepCount - 1;
+  let lastClimaxStep = firstClimaxStep;
+  let plannedClimaxTargetSemitones = LEAD_MIN_SEMITONES;
+
+  for (
+    let index = options.phraseStartStep;
+    index < options.phraseStartStep + phraseStepCount;
+    index += 1
+  ) {
+    const range = resolveProceduralLeadContourTargetRange(
+      options.theme,
+      index,
+      options.clusterX,
+      options.clusterY
+    );
+    if (range.stage !== 'climax') {
+      continue;
+    }
+    firstClimaxStep = Math.min(firstClimaxStep, index);
+    lastClimaxStep = Math.max(lastClimaxStep, index);
+    plannedClimaxTargetSemitones = Math.max(
+      plannedClimaxTargetSemitones,
+      range.targetSemitones
+    );
+  }
+
+  return {
+    firstClimaxStep,
+    lastClimaxStep,
+    plannedClimaxTargetSemitones,
+  };
+}
+
+function resolveScaleAtOrAbove(
+  scale: readonly number[],
+  minimumSemitones: number,
+  ceilingSemitones: number
+): number | null {
+  for (
+    let semitones = minimumSemitones;
+    semitones <= ceilingSemitones;
+    semitones += 1
+  ) {
+    if (isProceduralSemitoneInScale(scale, semitones)) {
+      return semitones;
+    }
+  }
+  return null;
+}
+
+function resolveScaleAtOrBelow(
+  scale: readonly number[],
+  maximumSemitones: number,
+  floorSemitones: number
+): number | null {
+  for (
+    let semitones = maximumSemitones;
+    semitones >= floorSemitones;
+    semitones -= 1
+  ) {
+    if (isProceduralSemitoneInScale(scale, semitones)) {
+      return semitones;
+    }
+  }
+  return null;
+}
+
+function resolveNearestTonicAtOrBelow(
+  scale: readonly number[],
+  previousSemitones: number
+): number | null {
+  for (
+    let semitones = previousSemitones;
+    semitones >= LEAD_MIN_SEMITONES;
+    semitones -= 1
+  ) {
+    if (
+      isProceduralSemitoneInScale(scale, semitones) &&
+      ((semitones % 12) + 12) % 12 === 0
+    ) {
+      return semitones;
+    }
+  }
+  return null;
 }
