@@ -1875,7 +1875,7 @@ function createThemeNotes(options: {
     return createProceduralPercussionNotes({
       themeId: options.theme.id,
       stepIndex: options.stepIndex,
-      phraseStep: trackContext.phraseState.phraseStep,
+      phraseStep: trackContext.phraseState.phraseCycleStep,
       cadence: trackContext.phraseState.cadence,
       chordChange: trackContext.harmonicState.chordChange,
       startMs: options.startMs,

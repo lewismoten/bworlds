@@ -23,6 +23,7 @@ export type ProceduralTrackContext = {
   };
   phraseState: {
     phraseStep: number;
+    phraseCycleStep: number;
     cadence: ProceduralCompositionStep['cadence'];
   };
   motifState: {
@@ -73,6 +74,7 @@ export function resolveProceduralTrackContext(options: {
     },
     phraseState: {
       phraseStep: composition.phraseStep,
+      phraseCycleStep: composition.phraseCycleStep,
       cadence: composition.cadence,
     },
     motifState: {

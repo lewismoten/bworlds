@@ -33,6 +33,9 @@ describe('procedural music track context', () => {
 
     expect(context.harmonicState.chord).toEqual(context.composition.chord);
     expect(context.phraseState.phraseStep).toBe(context.composition.phraseStep);
+    expect(context.phraseState.phraseCycleStep).toBe(
+      context.composition.phraseCycleStep
+    );
     expect(context.phraseState.cadence).toBe(context.composition.cadence);
     expect(context.motifState.motifDegreeOffset).toBe(
       context.composition.motifDegreeOffset

@@ -72,7 +72,7 @@
 - [x] Place light percussion between strong beats.
 - [x] Use cymbals mainly at section boundaries.
 - [x] Use fills only before meaningful transitions.
-- [ ] Vary groove patterns once per phrase.
+- [x] Vary groove patterns once per phrase.
 - [ ] Keep ambient percussion quieter than pitched tracks.
 - [ ] Reduce percussion density during calm sections.
 - [ ] Make drum velocity follow the section energy curve.

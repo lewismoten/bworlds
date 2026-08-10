@@ -3,6 +3,7 @@ import {
   PROCEDURAL_MUSIC_PHRASE_MEASURE_COUNT,
   PROCEDURAL_MUSIC_STEPS_PER_MEASURE,
   resolveProceduralPhraseCadence,
+  resolveProceduralPhraseStep,
 } from './procedural-music-phrase-structure.ts';
 
 describe('procedural music phrase structure', () => {
@@ -38,5 +39,25 @@ describe('procedural music phrase structure', () => {
           }) === 'answer'
       )
     ).toBe(true);
+  });
+
+  it('wraps phrase-local step positions across phrase boundaries', () => {
+    const themeStepCount = PROCEDURAL_MUSIC_STEPS_PER_MEASURE;
+    const phraseStepCount =
+      PROCEDURAL_MUSIC_PHRASE_MEASURE_COUNT *
+      PROCEDURAL_MUSIC_STEPS_PER_MEASURE;
+
+    expect(
+      resolveProceduralPhraseStep({
+        themeStepCount,
+        stepIndex: phraseStepCount + 5,
+      })
+    ).toBe(5);
+    expect(
+      resolveProceduralPhraseStep({
+        themeStepCount,
+        stepIndex: -1,
+      })
+    ).toBe(phraseStepCount - 1);
   });
 });

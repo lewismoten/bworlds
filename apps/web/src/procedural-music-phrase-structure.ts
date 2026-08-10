@@ -7,10 +7,10 @@ export function resolveProceduralPhraseCadence(options: {
   themeStepCount: number;
   stepIndex: number;
 }): 'question' | 'answer' | 'neutral' {
-  const phraseStepCount =
-    Math.max(1, options.themeStepCount) * PROCEDURAL_MUSIC_PHRASE_MEASURE_COUNT;
-  const phraseStep =
-    ((options.stepIndex % phraseStepCount) + phraseStepCount) % phraseStepCount;
+  const phraseStepCount = resolveProceduralPhraseStepCount(
+    options.themeStepCount
+  );
+  const phraseStep = resolveProceduralPhraseStep(options);
   const questionEndStep = Math.max(0, Math.floor(phraseStepCount / 2) - 1);
   const questionStartStep = Math.max(
     0,
@@ -30,4 +30,22 @@ export function resolveProceduralPhraseCadence(options: {
   }
 
   return 'neutral';
+}
+
+export function resolveProceduralPhraseStepCount(
+  themeStepCount: number
+): number {
+  return Math.max(1, themeStepCount) * PROCEDURAL_MUSIC_PHRASE_MEASURE_COUNT;
+}
+
+export function resolveProceduralPhraseStep(options: {
+  themeStepCount: number;
+  stepIndex: number;
+}): number {
+  const phraseStepCount = resolveProceduralPhraseStepCount(
+    options.themeStepCount
+  );
+  return (
+    ((options.stepIndex % phraseStepCount) + phraseStepCount) % phraseStepCount
+  );
 }

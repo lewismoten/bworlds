@@ -429,6 +429,7 @@ function resolveProceduralPercussionPattern(options: {
   clusterX: number;
   clusterY: number;
   stepIndex: number;
+  phraseStep: number;
 }): ProceduralPercussionPattern {
   if (options.themeId === 'deep-forest') {
     if (isMeaningfulPercussionTransition(options.cadence)) {
@@ -451,13 +452,16 @@ function resolveProceduralPercussionPattern(options: {
     const relatedMeasureIndex = resolvePercussionRelatedMeasureIndex(
       options.stepIndex
     );
-    const index = Math.floor(
+    const baseIndex = Math.floor(
       hash2DWithSeed(
         PERCUSSION_PATTERN_SEED,
         options.clusterX + relatedMeasureIndex * 13,
         options.clusterY - relatedMeasureIndex * 5
       ) * TOWN_PULSE_PATTERNS.length
     );
+    const index =
+      (baseIndex + resolvePercussionPhraseVariationIndex(options.phraseStep)) %
+      TOWN_PULSE_PATTERNS.length;
     return TOWN_PULSE_PATTERNS[index] ?? TOWN_PULSE_PATTERNS[0]!;
   }
 
@@ -465,7 +469,7 @@ function resolveProceduralPercussionPattern(options: {
     return GENERIC_FILL_PATTERNS.answer;
   }
 
-  const index = Math.floor(
+  const baseIndex = Math.floor(
     hash2DWithSeed(
       PERCUSSION_PATTERN_SEED,
       options.clusterX +
@@ -474,6 +478,9 @@ function resolveProceduralPercussionPattern(options: {
         resolvePercussionRelatedMeasureIndex(options.stepIndex) * 3
     ) * GENERIC_PULSE_PATTERNS.length
   );
+  const index =
+    (baseIndex + resolvePercussionPhraseVariationIndex(options.phraseStep)) %
+    GENERIC_PULSE_PATTERNS.length;
   return GENERIC_PULSE_PATTERNS[index] ?? GENERIC_PULSE_PATTERNS[0]!;
 }
 
@@ -515,6 +522,10 @@ function resolvePercussionRelatedMeasureIndex(stepIndex: number): number {
     resolvePercussionMeasureIndex(stepIndex) %
     PROCEDURAL_PERCUSSION_MEASURE_CYCLE_LENGTH
   );
+}
+
+function resolvePercussionPhraseVariationIndex(phraseStep: number): number {
+  return Math.floor(resolvePercussionMeasureIndex(phraseStep) / 4) % 2;
 }
 
 function createHit(

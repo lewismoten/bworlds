@@ -14,6 +14,7 @@ import {
 import {
   PROCEDURAL_MUSIC_PHRASE_MEASURE_COUNT,
   resolveProceduralPhraseCadence,
+  resolveProceduralPhraseStep,
 } from './procedural-music-phrase-structure.ts';
 import { resolveProceduralMeterPosition } from './procedural-music-meter.ts';
 
@@ -77,6 +78,7 @@ export type ProceduralCompositionStep = {
   contourStep: ProceduralLeadContourStep;
   motifDegreeOffset: number;
   phraseStep: number;
+  phraseCycleStep: number;
 };
 
 const MUSIC_MOTIF_SEED = registerHashLabel('music-lead-motif');
@@ -235,6 +237,10 @@ export function resolveProceduralCompositionStep(
   const motifStepCount = Math.max(1, theme.stepPattern.length);
   const phraseStep =
     ((stepIndex % motifStepCount) + motifStepCount) % motifStepCount;
+  const phraseCycleStep = resolveProceduralPhraseStep({
+    themeStepCount: theme.stepPattern.length,
+    stepIndex,
+  });
   const contourPhraseStepCount =
     motifStepCount * PROCEDURAL_MUSIC_PHRASE_MEASURE_COUNT;
   const contourPhraseStep =
@@ -252,6 +258,7 @@ export function resolveProceduralCompositionStep(
     motifDegreeOffset:
       motif.degreeOffsets[phraseStep % motif.degreeOffsets.length] ?? 0,
     phraseStep,
+    phraseCycleStep,
   };
 }
 

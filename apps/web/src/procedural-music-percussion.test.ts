@@ -638,8 +638,8 @@ describe('procedural music percussion', () => {
     });
     const genericMeasureOne = createProceduralPercussionNotes({
       themeId: 'ridge-pass',
-      stepIndex: 8,
-      phraseStep: 8,
+      stepIndex: 16,
+      phraseStep: 16,
       cadence: 'neutral',
       startMs: 0,
       stepDurationMs: 380,
@@ -657,8 +657,8 @@ describe('procedural music percussion', () => {
     });
     const genericMeasureThree = createProceduralPercussionNotes({
       themeId: 'ridge-pass',
-      stepIndex: 16,
-      phraseStep: 16,
+      stepIndex: 24,
+      phraseStep: 24,
       cadence: 'neutral',
       startMs: 0,
       stepDurationMs: 380,
@@ -709,6 +709,104 @@ describe('procedural music percussion', () => {
     ).toEqual(
       genericMeasureThree.map((note) =>
         resolvePercussionFamilyFromInstrumentId(note.instrumentId)
+      )
+    );
+  });
+
+  it('varies town and generic groove patterns once across the phrase halves', () => {
+    const townFirstHalf = createProceduralPercussionNotes({
+      themeId: 'town-square',
+      stepIndex: 4,
+      phraseStep: 4,
+      cadence: 'neutral',
+      startMs: 0,
+      stepDurationMs: 320,
+      rootMidiNote: 59,
+      baseInstrumentId: 'town-square:percussion:3:-2',
+      baseVolume: 0.02,
+      baseAttackMs: 12,
+      baseReleaseMs: 60,
+      baseDetuneCents: 4,
+      baseHarmonicGain: 0.12,
+      basePulseRate: 1,
+      brightness: 0.92,
+      clusterX: 3,
+      clusterY: -2,
+    });
+    const townSecondHalf = createProceduralPercussionNotes({
+      themeId: 'town-square',
+      stepIndex: 20,
+      phraseStep: 20,
+      cadence: 'neutral',
+      startMs: 0,
+      stepDurationMs: 320,
+      rootMidiNote: 59,
+      baseInstrumentId: 'town-square:percussion:3:-2',
+      baseVolume: 0.02,
+      baseAttackMs: 12,
+      baseReleaseMs: 60,
+      baseDetuneCents: 4,
+      baseHarmonicGain: 0.12,
+      basePulseRate: 1,
+      brightness: 0.92,
+      clusterX: 3,
+      clusterY: -2,
+    });
+    const genericFirstHalf = createProceduralPercussionNotes({
+      themeId: 'ridge-pass',
+      stepIndex: 8,
+      phraseStep: 8,
+      cadence: 'neutral',
+      startMs: 0,
+      stepDurationMs: 380,
+      rootMidiNote: 53,
+      baseInstrumentId: 'ridge-pass:percussion:3:-2',
+      baseVolume: 0.02,
+      baseAttackMs: 12,
+      baseReleaseMs: 60,
+      baseDetuneCents: 4,
+      baseHarmonicGain: 0.12,
+      basePulseRate: 1,
+      brightness: 0.92,
+      clusterX: 3,
+      clusterY: -2,
+    });
+    const genericSecondHalf = createProceduralPercussionNotes({
+      themeId: 'ridge-pass',
+      stepIndex: 24,
+      phraseStep: 24,
+      cadence: 'neutral',
+      startMs: 0,
+      stepDurationMs: 380,
+      rootMidiNote: 53,
+      baseInstrumentId: 'ridge-pass:percussion:3:-2',
+      baseVolume: 0.02,
+      baseAttackMs: 12,
+      baseReleaseMs: 60,
+      baseDetuneCents: 4,
+      baseHarmonicGain: 0.12,
+      basePulseRate: 1,
+      brightness: 0.92,
+      clusterX: 3,
+      clusterY: -2,
+    });
+
+    expect(
+      townFirstHalf.map((note) =>
+        resolvePercussionGrooveRoleFromInstrumentId(note.instrumentId)
+      )
+    ).not.toEqual(
+      townSecondHalf.map((note) =>
+        resolvePercussionGrooveRoleFromInstrumentId(note.instrumentId)
+      )
+    );
+    expect(
+      genericFirstHalf.map((note) =>
+        resolvePercussionGrooveRoleFromInstrumentId(note.instrumentId)
+      )
+    ).not.toEqual(
+      genericSecondHalf.map((note) =>
+        resolvePercussionGrooveRoleFromInstrumentId(note.instrumentId)
       )
     );
   });
