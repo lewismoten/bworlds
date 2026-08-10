@@ -1,5 +1,6 @@
 import type { ProceduralMusicNote } from './procedural-music.ts';
 import type { ProceduralMusicSongSection } from './procedural-music-song.ts';
+import { resolvePercussionVoiceIdFromInstrumentId } from './procedural-music-percussion.ts';
 
 export type MusicDebugPercussionValidation = {
   isValidForMidiExport: boolean;
@@ -16,6 +17,7 @@ export function validateMusicDebugPercussion(options: {
     string,
     { noteCount: number; soundingPercentage: number }
   >();
+  const percussionVoiceIds = new Set<string>();
 
   for (const section of options.sections) {
     const sectionStartMs = options.songStartMs + section.startOffsetMs;
@@ -26,6 +28,12 @@ export function validateMusicDebugPercussion(options: {
     for (const note of options.notes) {
       if (note.role !== 'percussion') {
         continue;
+      }
+      const voiceId = resolvePercussionVoiceIdFromInstrumentId(
+        note.instrumentId
+      );
+      if (voiceId) {
+        percussionVoiceIds.add(voiceId);
       }
       if (note.startMs < sectionStartMs || note.startMs >= sectionEndMs) {
         continue;
@@ -59,6 +67,12 @@ export function validateMusicDebugPercussion(options: {
     variation.soundingPercentage >= sectionA.soundingPercentage
   ) {
     messages.push('Variation percussion should stay thinner than Section A.');
+  }
+  if (
+    options.notes.some((note) => note.role === 'percussion') &&
+    percussionVoiceIds.size <= 1
+  ) {
+    messages.push('Percussion should use more than one drum voice.');
   }
 
   return {

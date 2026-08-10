@@ -44,7 +44,7 @@
 - [x] Give bongos different pitches and decay lengths.
 - [x] Show the drum name for every percussion event.
 - [x] Show drum-note counts in the song report.
-- [ ] Reject drum tracks using only one percussion voice.
+- [x] Reject drum tracks using only one percussion voice.
 - [ ] Require at least three drum roles in a full groove.
 - [ ] Export a solo WAV for each drum voice.
 

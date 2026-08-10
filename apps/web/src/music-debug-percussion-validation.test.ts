@@ -13,11 +13,11 @@ describe('music debug percussion validation', () => {
         createSection('outro', 'Outro', 20_000, 4_000, 4),
       ],
       notes: [
-        createPercussionNote('kick', 5_000, 200),
-        createPercussionNote('snare', 5_500, 160),
-        createPercussionNote('kick', 6_000, 200),
-        createPercussionNote('snare', 6_500, 160),
-        createPercussionNote('kick', 13_000, 120),
+        createPercussionNote('kick-36', 5_000, 200),
+        createPercussionNote('snare-38', 5_500, 160),
+        createPercussionNote('kick-35', 6_000, 200),
+        createPercussionNote('snare-37', 6_500, 160),
+        createPercussionNote('kick-36', 13_000, 120),
       ],
     });
 
@@ -35,13 +35,13 @@ describe('music debug percussion validation', () => {
         createSection('outro', 'Outro', 20_000, 4_000, 4),
       ],
       notes: [
-        createPercussionNote('kick', 1_200, 160),
-        createPercussionNote('kick', 5_000, 120),
-        createPercussionNote('snare', 5_250, 120),
-        createPercussionNote('kick', 13_000, 320),
-        createPercussionNote('snare', 13_500, 320),
-        createPercussionNote('shaker', 14_000, 320),
-        createPercussionNote('kick', 21_200, 160),
+        createPercussionNote('kick-36', 1_200, 160),
+        createPercussionNote('kick-36', 5_000, 120),
+        createPercussionNote('snare-38', 5_250, 120),
+        createPercussionNote('kick-36', 13_000, 320),
+        createPercussionNote('snare-38', 13_500, 320),
+        createPercussionNote('shaker-69', 14_000, 320),
+        createPercussionNote('kick-36', 21_200, 160),
       ],
     });
 
@@ -54,6 +54,29 @@ describe('music debug percussion validation', () => {
     );
     expect(validation.messages).toContain(
       'Variation percussion should stay thinner than Section A.'
+    );
+  });
+
+  it('rejects percussion tracks that repeat only one drum voice', () => {
+    const validation = validateMusicDebugPercussion({
+      songStartMs: 1_000,
+      sections: [
+        createSection('intro', 'Intro', 0, 4_000, 4),
+        createSection('a', 'Section A', 4_000, 8_000, 8),
+        createSection('variation', 'Variation', 12_000, 8_000, 8),
+        createSection('outro', 'Outro', 20_000, 4_000, 4),
+      ],
+      notes: [
+        createPercussionNote('kick-36', 5_000, 180),
+        createPercussionNote('kick-36', 5_500, 180),
+        createPercussionNote('kick-36', 6_000, 180),
+        createPercussionNote('kick-36', 13_000, 120),
+      ],
+    });
+
+    expect(validation.isValidForMidiExport).toBe(false);
+    expect(validation.messages).toContain(
+      'Percussion should use more than one drum voice.'
     );
   });
 });
@@ -80,13 +103,13 @@ function createSection(
 }
 
 function createPercussionNote(
-  family: 'kick' | 'snare' | 'shaker',
+  voiceId: 'kick-35' | 'kick-36' | 'snare-37' | 'snare-38' | 'shaker-69',
   startMs: number,
   durationMs: number
 ): ProceduralMusicNote {
   return {
     themeId: 'town-square',
-    instrumentId: `town-square:percussion:0:0:perc-${family}:0`,
+    instrumentId: `town-square:percussion:0:0:perc-${voiceId}:0`,
     role: 'percussion' as const,
     startMs,
     durationMs,
