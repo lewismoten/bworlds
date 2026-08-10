@@ -1022,10 +1022,12 @@ function formatMusicDebugCadenceValidationSummary(
   }
   return validation.detections
     .map((detection) => {
-      const lead = detection.leadPitchLabel ?? 'missing';
-      const bass = detection.bassPitchLabel ?? 'missing';
+      const measure =
+        detection.measureNumber === null ? '?' : `${detection.measureNumber}`;
+      const lead = detection.leadNoteLabel ?? detection.leadPitchLabel ?? 'missing';
+      const bass = detection.bassNoteLabel ?? detection.bassPitchLabel ?? 'missing';
       const harmony = detection.harmonyPitchLabels.join('-') || 'open';
-      return `${detection.sectionLabel} ${detection.kind} L${lead} B${bass} @ ${harmony}`;
+      return `${detection.sectionLabel} ${detection.kind} m${measure} L${lead} B${bass} @ ${harmony}`;
     })
     .join(' | ');
 }

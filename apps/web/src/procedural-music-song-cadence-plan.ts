@@ -6,6 +6,7 @@ export type SongCadenceSection = {
   startOffsetMs: number;
   durationMs: number;
   measureCount: number;
+  startMeasure?: number;
 };
 
 export type SongCadencePoint = {

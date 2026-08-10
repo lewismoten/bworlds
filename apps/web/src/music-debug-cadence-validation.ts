@@ -24,8 +24,11 @@ export type MusicDebugCadenceDetection = {
   sectionId: string;
   sectionLabel: string;
   kind: SongCadenceKind;
+  measureNumber: number | null;
   leadPitchLabel: string | null;
   bassPitchLabel: string | null;
+  leadNoteLabel: string | null;
+  bassNoteLabel: string | null;
   harmonyPitchLabels: string[];
   matchesCadenceTarget: boolean;
   matchesHarmony: boolean;
@@ -62,6 +65,10 @@ export function validateMusicDebugCadences(options: {
       leadNote === null ? null : resolveNotePitchClass(leadNote.frequency);
     const bassPitchClass =
       bassNote === null ? null : resolveNotePitchClass(bassNote.frequency);
+    const cadenceMeasureNumber = resolveCadenceMeasureNumber({
+      section: point.section,
+      boundaryOffsetMs: point.boundaryOffsetMs,
+    });
     const cadenceStartMs = Math.min(
       leadNote?.startMs ?? boundaryMs,
       bassNote?.startMs ?? boundaryMs,
@@ -94,10 +101,15 @@ export function validateMusicDebugCadences(options: {
       sectionId: point.section.id,
       sectionLabel: point.section.label,
       kind: point.kind,
+      measureNumber: cadenceMeasureNumber,
       leadPitchLabel:
         leadPitchClass === null ? null : formatPitchClassLabel(leadPitchClass),
       bassPitchLabel:
         bassPitchClass === null ? null : formatPitchClassLabel(bassPitchClass),
+      leadNoteLabel:
+        leadNote === null ? null : formatAbsoluteNoteLabel(leadNote.frequency),
+      bassNoteLabel:
+        bassNote === null ? null : formatAbsoluteNoteLabel(bassNote.frequency),
       harmonyPitchLabels: harmonyPitchClasses
         .map((pitchClass) => formatPitchClassLabel(pitchClass))
         .sort(),
@@ -109,14 +121,10 @@ export function validateMusicDebugCadences(options: {
 
   for (const detection of detections) {
     if (!detection.matchesCadenceTarget) {
-      messages.push(
-        `${detection.sectionLabel} ${detection.kind} cadence missed its target tones.`
-      );
+      messages.push(createCadenceFailureMessage(detection, 'target'));
     }
     if (!detection.matchesHarmony) {
-      messages.push(
-        `${detection.sectionLabel} ${detection.kind} cadence drifted outside the active harmony.`
-      );
+      messages.push(createCadenceFailureMessage(detection, 'harmony'));
     }
   }
 
@@ -167,6 +175,25 @@ function collectHarmonyPitchClassesInWindow(options: {
   }
 
   return [...pitchClasses];
+}
+
+function createCadenceFailureMessage(
+  detection: MusicDebugCadenceDetection,
+  reason: 'target' | 'harmony'
+): string {
+  const measureLabel =
+    detection.measureNumber === null
+      ? 'an unknown measure'
+      : `measure ${detection.measureNumber}`;
+  const leadLabel = detection.leadNoteLabel ?? 'missing';
+  const bassLabel = detection.bassNoteLabel ?? 'missing';
+
+  if (reason === 'target') {
+    return `${detection.sectionLabel} ${detection.kind} cadence at ${measureLabel} missed its target tones (lead ${leadLabel}, bass ${bassLabel}).`;
+  }
+
+  const harmonyLabel = detection.harmonyPitchLabels.join(', ') || 'open harmony';
+  return `${detection.sectionLabel} ${detection.kind} cadence at ${measureLabel} drifted outside the active harmony (${harmonyLabel}; lead ${leadLabel}, bass ${bassLabel}).`;
 }
 
 function resolveCadenceTargetPitchClasses(options: {
@@ -230,6 +257,38 @@ function resolveNotePitchClass(frequency: number): number {
 
 function formatPitchClassLabel(pitchClass: number): string {
   return MUSIC_DEBUG_PITCH_CLASS_LABELS[mod(pitchClass, 12)] ?? 'C';
+}
+
+function formatAbsoluteNoteLabel(frequency: number): string {
+  const midiNote = resolveMidiNoteFromFrequency(frequency);
+  const pitchClass = formatPitchClassLabel(midiNote);
+  const octave = Math.floor(midiNote / 12) - 1;
+  return `${pitchClass}${octave}`;
+}
+
+function resolveMidiNoteFromFrequency(frequency: number): number {
+  return Math.round(69 + 12 * Math.log2(frequency / 440));
+}
+
+function resolveCadenceMeasureNumber(options: {
+  section: SongCadenceSection;
+  boundaryOffsetMs: number;
+}): number | null {
+  const startMeasure = options.section.startMeasure;
+  if (typeof startMeasure !== 'number') {
+    return null;
+  }
+  const measureDurationMs =
+    options.section.durationMs / Math.max(1, options.section.measureCount);
+  const relativeBoundaryMs = Math.max(
+    0,
+    options.boundaryOffsetMs - options.section.startOffsetMs
+  );
+  const cadenceMeasureOffset = Math.min(
+    Math.max(1, Math.ceil(relativeBoundaryMs / Math.max(1, measureDurationMs))),
+    Math.max(1, options.section.measureCount)
+  );
+  return startMeasure + cadenceMeasureOffset - 1;
 }
 
 function mod(value: number, divisor: number): number {

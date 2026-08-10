@@ -30,16 +30,22 @@ describe('music debug cadence validation', () => {
       expect.objectContaining({
         sectionId: 'return',
         kind: 'loop',
+        measureNumber: 8,
         leadPitchLabel: 'D',
         bassPitchLabel: 'G',
+        leadNoteLabel: 'D4',
+        bassNoteLabel: 'G3',
         matchesCadenceTarget: true,
         matchesHarmony: true,
       }),
       expect.objectContaining({
         sectionId: 'outro',
         kind: 'answer',
+        measureNumber: 16,
         leadPitchLabel: 'C',
         bassPitchLabel: 'C',
+        leadNoteLabel: 'C4',
+        bassNoteLabel: 'C3',
         matchesCadenceTarget: true,
         matchesHarmony: true,
       }),
@@ -63,7 +69,7 @@ describe('music debug cadence validation', () => {
 
     expect(validation.isValidForMidiExport).toBe(false);
     expect(validation.messages).toContain(
-      'Return answer cadence drifted outside the active harmony.'
+      'Return answer cadence at measure 8 drifted outside the active harmony (D, F#, G; lead C4, bass C3).'
     );
   });
 });

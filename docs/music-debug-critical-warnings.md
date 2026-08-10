@@ -7,6 +7,8 @@ warnings.
   rendered MIDI file.
 - `criticalWarningMessages` capture validations that must fail the audit even
   when the bytes themselves are internally consistent, such as cadence drift.
+  Cadence failures now include the exact measure plus the lead and bass note
+  names that triggered the rejection.
 - `warningMessages` remain non-blocking diagnostics for softer issues like
   percussion validation hints and planned-progression drift reports.
 

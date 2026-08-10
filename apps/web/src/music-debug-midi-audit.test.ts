@@ -298,14 +298,16 @@ describe('music debug midi audit', () => {
       cadenceValidation: {
         ...snapshot.cadenceValidation,
         isValidForMidiExport: false,
-        messages: ['Outro answer cadence drifted outside the active harmony.'],
+        messages: [
+          'Outro answer cadence at measure 80 drifted outside the active harmony (C, E, G; lead D4, bass G3).',
+        ],
       },
     });
 
     expect(audit.isConsistent).toBe(false);
     expect(audit.mismatchMessages).toEqual([]);
     expect(audit.criticalWarningMessages).toContain(
-      'Outro answer cadence drifted outside the active harmony.'
+      'Outro answer cadence at measure 80 drifted outside the active harmony (C, E, G; lead D4, bass G3).'
     );
   });
 
