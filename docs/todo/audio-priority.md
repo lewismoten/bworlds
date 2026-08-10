@@ -188,7 +188,7 @@ added directly as semitones instead of moving through the selected scale.
 - [x] State the motif clearly during Section A.
 - [x] Repeat the motif clearly during Section A'.
 - [x] Vary only one motif element at a time.
-- [ ] Transpose motifs using chord-aware scale degrees.
+- [x] Transpose motifs using chord-aware scale degrees.
 - [x] Keep the motif rhythm recognizable after transposition.
 - [ ] Use motif fragments during B and Variation.
 - [ ] Return to the original motif near the ending.

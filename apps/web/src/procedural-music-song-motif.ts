@@ -1,7 +1,19 @@
 import { getProceduralScaleDegreeSemitones } from './procedural-music-scale.ts';
 import { resolveProceduralMidiNoteFrequency } from './procedural-music-scale.ts';
+import { resolveProceduralChordTimeline } from './procedural-music-chord-timeline.ts';
 import type { ProceduralMusicSongSection } from './procedural-music-song.ts';
 import type { ProceduralMusicNote } from './procedural-music.ts';
+
+type ProceduralMusicSongMotifTheme = {
+  id?: string;
+  rootHz: number;
+  rootMidiNote: number;
+  scale: readonly number[];
+  noteDurationMs: number;
+  stepPatternLength?: number;
+  clusterX?: number;
+  clusterY?: number;
+};
 
 export type ProceduralMusicSongExpectedMotifCoverage = {
   sectionId: ProceduralMusicSongSection['id'];
@@ -19,12 +31,7 @@ export function stateLeadMotifInFirstASection(options: {
   sections: readonly ProceduralMusicSongSection[];
   songStartMs: number;
   leadMotif: readonly number[];
-  theme: {
-    rootHz: number;
-    rootMidiNote: number;
-    scale: readonly number[];
-    noteDurationMs: number;
-  };
+  theme: ProceduralMusicSongMotifTheme;
 }): ProceduralMusicNote[] {
   const updatedNotes = [...options.notes];
   applyLeadMotifPhraseStatements(updatedNotes, options);
@@ -47,12 +54,7 @@ export function regenerateSectionsMissingExpectedLeadMotifMatches(
     sections: readonly ProceduralMusicSongSection[];
     songStartMs: number;
     leadMotif: readonly number[];
-    theme: {
-      rootHz: number;
-      rootMidiNote: number;
-      scale: readonly number[];
-      noteDurationMs: number;
-    };
+    theme: ProceduralMusicSongMotifTheme;
   }
 ): ProceduralMusicNote[] {
   const regeneratedNotes = [...notes];
@@ -161,12 +163,7 @@ function applyLeadMotifPhraseStatements(
     sections: readonly ProceduralMusicSongSection[];
     songStartMs: number;
     leadMotif: readonly number[];
-    theme: {
-      rootHz: number;
-      rootMidiNote: number;
-      scale: readonly number[];
-      noteDurationMs: number;
-    };
+    theme: ProceduralMusicSongMotifTheme;
   }
 ): void {
   const sectionA = options.sections.find((section) => section.id === 'a');
@@ -182,6 +179,7 @@ function applyLeadMotifPhraseStatements(
     phraseStartMs,
     phraseDurationMs,
     sectionEndMs,
+    phraseStartMeasure: sectionA.startMeasure,
     leadMotif: options.leadMotif,
     theme: options.theme,
   });
@@ -189,6 +187,8 @@ function applyLeadMotifPhraseStatements(
     phraseStartMs: phraseStartMs + phraseDurationMs,
     phraseDurationMs,
     sectionEndMs,
+    phraseStartMeasure:
+      sectionA.startMeasure + Math.floor(sectionA.measureCount / 2),
     leadMotif: options.leadMotif,
     theme: options.theme,
   });
@@ -200,12 +200,7 @@ function applyLeadMotifVariationInAprimeSection(
     sections: readonly ProceduralMusicSongSection[];
     songStartMs: number;
     leadMotif: readonly number[];
-    theme: {
-      rootHz: number;
-      rootMidiNote: number;
-      scale: readonly number[];
-      noteDurationMs: number;
-    };
+    theme: ProceduralMusicSongMotifTheme;
   }
 ): void {
   const sectionAPrime = options.sections.find(
@@ -221,12 +216,20 @@ function applyLeadMotifVariationInAprimeSection(
   );
   const phraseStartMs = options.songStartMs + sectionAPrime.startOffsetMs;
   const sectionEndMs = phraseStartMs + sectionAPrime.durationMs;
-  const transposedMotif = options.leadMotif.map((degree) => degree + 1);
+  const transposedMotif = resolveChordAwareMotifDegrees({
+    leadMotif: options.leadMotif,
+    phraseStartMeasure: sectionAPrime.startMeasure,
+    phraseStartMs,
+    phraseDurationMs,
+    sectionEndMs,
+    theme: options.theme,
+  });
 
   applyMotifToPhraseWindow(notes, {
     phraseStartMs,
     phraseDurationMs,
     sectionEndMs,
+    phraseStartMeasure: sectionAPrime.startMeasure,
     leadMotif: transposedMotif,
     theme: options.theme,
   });
@@ -234,6 +237,8 @@ function applyLeadMotifVariationInAprimeSection(
     phraseStartMs: phraseStartMs + phraseDurationMs,
     phraseDurationMs,
     sectionEndMs,
+    phraseStartMeasure:
+      sectionAPrime.startMeasure + Math.floor(sectionAPrime.measureCount / 2),
     leadMotif: transposedMotif,
     theme: options.theme,
   });
@@ -245,13 +250,9 @@ function applyMotifToPhraseWindow(
     phraseStartMs: number;
     phraseDurationMs: number;
     sectionEndMs: number;
+    phraseStartMeasure: number;
     leadMotif: readonly number[];
-    theme: {
-      rootHz: number;
-      rootMidiNote: number;
-      scale: readonly number[];
-      noteDurationMs: number;
-    };
+    theme: ProceduralMusicSongMotifTheme;
   }
 ): void {
   const phraseEndMs = options.phraseStartMs + options.phraseDurationMs;
@@ -363,6 +364,99 @@ function resolveLeadMotifRhythmTemplate(options: {
   }
 
   return steps;
+}
+
+function resolveChordAwareMotifDegrees(options: {
+  leadMotif: readonly number[];
+  phraseStartMeasure: number;
+  phraseStartMs: number;
+  phraseDurationMs: number;
+  sectionEndMs: number;
+  theme: ProceduralMusicSongMotifTheme;
+}): number[] {
+  const scaleLength = Math.max(1, options.theme.scale.length);
+  if (
+    options.leadMotif.length === 0 ||
+    !options.theme.id ||
+    !options.theme.stepPatternLength
+  ) {
+    return options.leadMotif.map((degree) => mod(degree + 1, scaleLength));
+  }
+
+  const rhythmTemplate = resolveLeadMotifRhythmTemplate({
+    phraseStartMs: options.phraseStartMs,
+    phraseDurationMs: options.phraseDurationMs,
+    sectionEndMs: options.sectionEndMs,
+    motifLength: options.leadMotif.length,
+    noteDurationMs: options.theme.noteDurationMs,
+  });
+  const measureDurationMs = Math.max(1, options.phraseDurationMs / 8);
+  const chordTimeline = resolveProceduralChordTimeline({
+    themeId: options.theme.id,
+    themeStepCount: options.theme.stepPatternLength,
+    clusterX: options.theme.clusterX ?? 0,
+    clusterY: options.theme.clusterY ?? 0,
+  });
+  const degreeCounts = new Map<number, number>();
+  const orderedDegrees: number[] = [];
+
+  for (const step of rhythmTemplate) {
+    const measureOffset = Math.floor(
+      Math.max(0, step.startMs - options.phraseStartMs) / measureDurationMs
+    );
+    const degreeIndex = resolveChordDegreeAtMeasure(
+      chordTimeline,
+      options.phraseStartMeasure + measureOffset
+    );
+    degreeCounts.set(degreeIndex, (degreeCounts.get(degreeIndex) ?? 0) + 1);
+    if (!orderedDegrees.includes(degreeIndex)) {
+      orderedDegrees.push(degreeIndex);
+    }
+  }
+
+  const transpositionDegree =
+    orderedDegrees
+      .filter((degreeIndex) => degreeIndex !== 0)
+      .sort((left, right) => {
+        const leftCount = degreeCounts.get(left) ?? 0;
+        const rightCount = degreeCounts.get(right) ?? 0;
+        return (
+          rightCount - leftCount ||
+          orderedDegrees.indexOf(left) - orderedDegrees.indexOf(right)
+        );
+      })[0] ?? 1;
+
+  return options.leadMotif.map((degree) =>
+    mod(degree + transpositionDegree, scaleLength)
+  );
+}
+
+function resolveChordDegreeAtMeasure(
+  chordTimeline: readonly {
+    degreeIndex: number;
+    startMeasure: number;
+    endMeasure: number;
+  }[],
+  measure: number
+): number {
+  if (chordTimeline.length === 0) {
+    return 0;
+  }
+
+  const phraseMeasureCount = Math.max(
+    1,
+    ...chordTimeline.map((entry) => entry.endMeasure)
+  );
+  const normalizedMeasure = ((measure - 1) % phraseMeasureCount) + 1;
+  return (
+    chordTimeline.find(
+      (entry) =>
+        normalizedMeasure >= entry.startMeasure &&
+        normalizedMeasure <= entry.endMeasure
+    )?.degreeIndex ??
+    chordTimeline[0]?.degreeIndex ??
+    0
+  );
 }
 
 function preserveLeadMotifStatementLane(

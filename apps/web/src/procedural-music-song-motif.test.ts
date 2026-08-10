@@ -1,11 +1,26 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
   collectExpectedLeadMotifCoverage,
   regenerateSectionsMissingExpectedLeadMotifMatches,
   stateLeadMotifInFirstASection,
 } from './procedural-music-song-motif.ts';
+import { resolveProceduralChordTimeline } from './procedural-music-chord-timeline.ts';
+import { resolveProceduralScaleDegreeMidiNote } from './procedural-music-scale.ts';
 import type { ProceduralMusicSongSection } from './procedural-music-song.ts';
 import type { ProceduralMusicNote } from './procedural-music.ts';
+
+vi.mock('./procedural-music-chord-timeline.ts', async (importOriginal) => {
+  const actual =
+    await importOriginal<
+      typeof import('./procedural-music-chord-timeline.ts')
+    >();
+  return {
+    ...actual,
+    resolveProceduralChordTimeline: vi.fn(
+      actual.resolveProceduralChordTimeline
+    ),
+  };
+});
 
 describe('procedural music song motif', () => {
   it('states the lead motif across the opening notes of section A', () => {
@@ -129,6 +144,122 @@ describe('procedural music song motif', () => {
       { startMs: 33_000, durationMs: 380 },
       { startMs: 33_750, durationMs: 520 },
     ]);
+  });
+
+  it("uses chord-aware scale-degree transposition for Section A' when harmony metadata is available", () => {
+    vi.mocked(resolveProceduralChordTimeline).mockReturnValueOnce([
+      {
+        progressionIndex: 0,
+        degreeIndex: 4,
+        startStepIndex: 0,
+        endStepIndex: 8,
+        startMeasure: 1,
+        endMeasure: 2,
+      },
+      {
+        progressionIndex: 1,
+        degreeIndex: 1,
+        startStepIndex: 8,
+        endStepIndex: 16,
+        startMeasure: 3,
+        endMeasure: 4,
+      },
+      {
+        progressionIndex: 2,
+        degreeIndex: 5,
+        startStepIndex: 16,
+        endStepIndex: 24,
+        startMeasure: 5,
+        endMeasure: 6,
+      },
+      {
+        progressionIndex: 3,
+        degreeIndex: 0,
+        startStepIndex: 24,
+        endStepIndex: 32,
+        startMeasure: 7,
+        endMeasure: 8,
+      },
+    ]);
+
+    const notes: ProceduralMusicNote[] = [
+      createLeadNote(24_100, 392),
+      createLeadNote(25_100, 440),
+      createLeadNote(26_100, 493.883),
+      createLeadNote(27_100, 440),
+      createLeadNote(32_100, 523.251),
+      createLeadNote(33_100, 587.33),
+      createLeadNote(34_100, 659.255),
+      createLeadNote(35_100, 587.33),
+    ];
+    const sections: ProceduralMusicSongSection[] = [
+      createSection('intro', 0, 8_000, 8),
+      {
+        ...createSection('a', 8_000, 16_000, 16),
+        startMeasure: 9,
+        endMeasure: 24,
+      },
+      {
+        ...createSection('a-prime', 24_000, 16_000, 16),
+        startMeasure: 25,
+        endMeasure: 40,
+      },
+    ];
+    const theme = {
+      id: 'frontier-plains',
+      rootHz: 196,
+      rootMidiNote: 55,
+      scale: [0, 2, 4, 5, 7, 9, 10],
+      noteDurationMs: 360,
+      stepPatternLength: 4,
+      clusterX: 0,
+      clusterY: 0,
+    };
+
+    const updated = stateLeadMotifInFirstASection({
+      notes,
+      sections,
+      songStartMs: 0,
+      leadMotif: [0, 2, 4, 2],
+      theme,
+    });
+
+    const expectedVariationPitchClasses = [4, 6, 1, 6].map(
+      (degreeIndex) =>
+        resolveProceduralScaleDegreeMidiNote({
+          scaleMap: {
+            rootMidiNote: theme.rootMidiNote,
+            modePitchOffsets: theme.scale,
+          },
+          degreeIndex,
+        }) % 12
+    );
+    const naivePlusOnePitchClasses = [1, 3, 5, 3].map(
+      (degreeIndex) =>
+        resolveProceduralScaleDegreeMidiNote({
+          scaleMap: {
+            rootMidiNote: theme.rootMidiNote,
+            modePitchOffsets: theme.scale,
+          },
+          degreeIndex,
+        }) % 12
+    );
+    const firstVariation = updated
+      .slice(0, 4)
+      .map((note) => Math.round(69 + 12 * Math.log2(note.frequency / 440)));
+    const secondVariation = updated
+      .slice(4, 8)
+      .map((note) => Math.round(69 + 12 * Math.log2(note.frequency / 440)));
+
+    expect(firstVariation.map((note) => note % 12)).toEqual(
+      expectedVariationPitchClasses
+    );
+    expect(secondVariation.map((note) => note % 12)).toEqual(
+      expectedVariationPitchClasses
+    );
+    expect(firstVariation.map((note) => note % 12)).not.toEqual(
+      naivePlusOnePitchClasses
+    );
   });
 
   it('regenerates expected motif sections when their match counts fall short', () => {
