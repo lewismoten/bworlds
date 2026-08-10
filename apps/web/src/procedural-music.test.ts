@@ -1828,6 +1828,19 @@ describe('procedural music', () => {
     expect(bass.harmonicReleaseLeadMs).toBeGreaterThanOrEqual(60);
   });
 
+  it('gives struck timbres a separate short transient layer', () => {
+    const piano = resolveProceduralInstrumentTimbre({
+      family: 'piano',
+      brightness: 0.98,
+      harmonicSignal: 0.45,
+      filterSignal: 0.4,
+    });
+
+    expect(piano.transientMix).toBeGreaterThan(0.15);
+    expect(piano.transientDurationMs).toBeLessThanOrEqual(40);
+    expect(piano.transientFilterType).toBe('highpass');
+  });
+
   it('keeps generated instrument patches inside their family recipe ranges', () => {
     const bank = createProceduralInstrumentBank(
       resolveMusicTheme('forest', 'overworld'),
@@ -2240,6 +2253,141 @@ describe('procedural music', () => {
       expect(carrierRamps[0]?.[0]).toBeCloseTo(0.058, 4);
       expect(harmonicRamps[1]?.[0]).toBeCloseTo(0.00252, 5);
       expect(harmonicRamps[2]?.[1]).toBeLessThan(carrierRamps[2]?.[1] ?? Infinity);
+    } finally {
+      if (originalAudioContext) {
+        vi.stubGlobal('AudioContext', originalAudioContext);
+      } else {
+        vi.unstubAllGlobals();
+      }
+    }
+  });
+
+  it('plays a separate transient source for struck instrument patches', () => {
+    const createdTransientSources: Array<{
+      buffer: AudioBuffer | null;
+      connect: ReturnType<typeof vi.fn>;
+      disconnect: ReturnType<typeof vi.fn>;
+      start: ReturnType<typeof vi.fn>;
+      stop: ReturnType<typeof vi.fn>;
+    }> = [];
+
+    class FakeAudioContext {
+      state: AudioContextState = 'running';
+      currentTime = 0;
+      destination = {};
+      sampleRate = 48_000;
+      createOscillator() {
+        return {
+          onended: null,
+          type: 'triangle',
+          frequency: {
+            setValueAtTime: vi.fn(),
+            exponentialRampToValueAtTime: vi.fn(),
+          },
+          detune: {
+            setValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+          start: vi.fn(),
+          stop: vi.fn(),
+        } as unknown as OscillatorNode;
+      }
+      createGain() {
+        return {
+          gain: {
+            setValueAtTime: vi.fn(),
+            exponentialRampToValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+        } as unknown as GainNode;
+      }
+      createBiquadFilter() {
+        return {
+          type: 'highpass' as BiquadFilterType,
+          frequency: {
+            setValueAtTime: vi.fn(),
+          },
+          Q: {
+            setValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+        } as unknown as BiquadFilterNode;
+      }
+      createStereoPanner() {
+        return {
+          pan: {
+            setValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+        } as unknown as StereoPannerNode;
+      }
+      createBuffer(channels: number, length: number) {
+        const data = Array.from({ length: channels }, () => new Float32Array(length));
+        return {
+          getChannelData(index: number) {
+            return data[index]!;
+          },
+        } as unknown as AudioBuffer;
+      }
+      createBufferSource() {
+        const source = {
+          buffer: null as AudioBuffer | null,
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+          start: vi.fn(),
+          stop: vi.fn(),
+        };
+        createdTransientSources.push(source);
+        return source as unknown as AudioBufferSourceNode;
+      }
+      resume() {
+        return Promise.resolve();
+      }
+    }
+
+    const originalAudioContext = globalThis.AudioContext;
+    vi.stubGlobal('AudioContext', FakeAudioContext);
+
+    try {
+      const sink = createWebAudioMusicSink();
+      sink.play({
+        themeId: 'town-square',
+        instrumentId: 'piano-transient',
+        role: 'harmony',
+        startMs: 0,
+        durationMs: 420,
+        frequency: 440,
+        volume: 0.05,
+        waveform: 'triangle',
+        timbre: {
+          harmonicWaveform: 'triangle',
+          harmonicRatio: 2,
+          filterType: 'lowpass',
+          filterCutoffHz: 1_800,
+          filterQ: 0.8,
+          transientMix: 0.2,
+          transientDurationMs: 32,
+          transientFilterType: 'highpass',
+          transientFilterCutoffHz: 2_600,
+          transientFilterQ: 0.9,
+        },
+        attackMs: 14,
+        releaseMs: 100,
+        detuneCents: 0,
+        harmonicGain: 0.18,
+        pulseRate: 0.7,
+      });
+
+      expect(createdTransientSources).toHaveLength(1);
+      expect(createdTransientSources[0]?.start).toHaveBeenCalled();
+      expect(createdTransientSources[0]?.stop).toHaveBeenCalled();
+      expect(
+        createdTransientSources[0]?.stop.mock.calls[0]?.[0]
+      ).toBeCloseTo(0.032, 3);
     } finally {
       if (originalAudioContext) {
         vi.stubGlobal('AudioContext', originalAudioContext);

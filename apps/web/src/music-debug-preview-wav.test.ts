@@ -3,6 +3,7 @@ import {
   renderMusicDebugPreviewNoteToSamples,
   resolveEnvelopeGain,
   resolveHarmonicEnvelopeGain,
+  resolveTransientEnvelopeGain,
 } from './music-debug-preview-wav.ts';
 import type { ProceduralMusicNote } from './procedural-music.ts';
 
@@ -79,6 +80,30 @@ describe('music debug preview wav', () => {
     expect(
       renderMusicDebugPreviewNoteToSamples(bassNote, 8_000)
     ).toBeDefined();
+  });
+
+  it('keeps struck transient envelopes short and front-loaded', () => {
+    const struckNote = createPreviewNote({
+      waveform: 'triangle',
+      timbre: {
+        ...createPreviewNote().timbre,
+        transientMix: 0.2,
+        transientDurationMs: 32,
+        transientFilterType: 'highpass',
+        transientFilterCutoffHz: 2_600,
+        transientFilterQ: 0.9,
+      },
+      attackMs: 14,
+      releaseMs: 100,
+    });
+
+    expect(
+      resolveTransientEnvelopeGain(struckNote, 0.004, struckNote.durationMs / 1000)
+    ).toBeGreaterThan(0.5);
+    expect(
+      resolveTransientEnvelopeGain(struckNote, 0.05, struckNote.durationMs / 1000)
+    ).toBe(0);
+    expect(renderMusicDebugPreviewNoteToSamples(struckNote, 8_000)).toBeDefined();
   });
 });
 

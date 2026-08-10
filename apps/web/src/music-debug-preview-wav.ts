@@ -30,11 +30,17 @@ export function renderMusicDebugPreviewNoteToSamples(
   const harmonicPhaseIncrement = (Math.PI * 2 * harmonicFrequency) / sampleRate;
   let previousFilteredNoise = 0;
   const noiseMix = Math.max(0, note.timbre.noiseMix ?? 0);
+  const transientMix = Math.max(0, note.timbre.transientMix ?? 0);
   const noiseCoefficient = resolveNoiseFilterCoefficient(
     note.timbre.noiseFilterCutoffHz ?? 2_400,
     sampleRate
   );
   const noiseMode = note.timbre.noiseFilterType ?? 'highpass';
+  const transientCoefficient = resolveNoiseFilterCoefficient(
+    note.timbre.transientFilterCutoffHz ?? 2_000,
+    sampleRate
+  );
+  const transientMode = note.timbre.transientFilterType ?? 'highpass';
 
   for (let frame = 0; frame < frameCount; frame += 1) {
     const timeSeconds = frame / sampleRate;
@@ -68,7 +74,18 @@ export function renderMusicDebugPreviewNoteToSamples(
       coefficient: noiseCoefficient,
       mode: noiseMode,
     });
+    const transientNoise = filterNoiseSample({
+      input: sampleDeterministicNoise(frame + 97),
+      previousFiltered: previousFilteredNoise,
+      coefficient: transientCoefficient,
+      mode: transientMode,
+    }).nextSample;
     previousFilteredNoise = nextFiltered;
+    const transientEnvelopeGain = resolveTransientEnvelopeGain(
+      note,
+      timeSeconds,
+      note.durationMs / 1000
+    );
     const mixed =
       carrier *
         (1 - harmonicWeight) *
@@ -78,6 +95,7 @@ export function renderMusicDebugPreviewNoteToSamples(
         harmonicWeight *
         pulseModulation *
         harmonicEnvelopeGain +
+      transientNoise * transientMix * transientEnvelopeGain +
       nextSample * noiseMix * carrierEnvelopeGain;
     samples[frame] =
       mixed *
@@ -223,6 +241,29 @@ export function resolveHarmonicEnvelopeGain(
     );
   }
   return harmonicBodyLevel;
+}
+
+export function resolveTransientEnvelopeGain(
+  note: Pick<ProceduralMusicNote, 'timbre'>,
+  timeSeconds: number,
+  durationSeconds: number
+): number {
+  const transientDurationSeconds = Math.max(
+    0.008,
+    Math.min(durationSeconds, (note.timbre.transientDurationMs ?? 0) / 1000)
+  );
+  if ((note.timbre.transientMix ?? 0) <= 0 || timeSeconds > transientDurationSeconds) {
+    return 0;
+  }
+  const peakAt = Math.min(0.006, transientDurationSeconds * 0.35);
+  if (timeSeconds <= peakAt) {
+    return timeSeconds / Math.max(0.001, peakAt);
+  }
+  return Math.max(
+    0,
+    (transientDurationSeconds - timeSeconds) /
+      Math.max(0.001, transientDurationSeconds - peakAt)
+  );
 }
 
 function advancePhase(currentPhase: number, phaseIncrement: number): number {

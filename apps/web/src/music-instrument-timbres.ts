@@ -33,6 +33,11 @@ export type ProceduralInstrumentTimbre = {
   bodySustainLevel?: number;
   harmonicBodyLevel?: number;
   harmonicReleaseLeadMs?: number;
+  transientMix?: number;
+  transientDurationMs?: number;
+  transientFilterType?: BiquadFilterType;
+  transientFilterCutoffHz?: number;
+  transientFilterQ?: number;
   noiseMix?: number;
   noiseFilterType?: BiquadFilterType;
   noiseFilterCutoffHz?: number;
@@ -68,6 +73,13 @@ type InstrumentTimbreTemplate = {
   bodySustainLevel?: number;
   harmonicBodyLevel?: number;
   harmonicReleaseLeadMs?: number;
+  transientMix?: number;
+  transientDurationMs?: number;
+  transientFilterType?: BiquadFilterType;
+  transientCutoffMinHz?: number;
+  transientCutoffMaxHz?: number;
+  transientQMin?: number;
+  transientQMax?: number;
   noiseMix?: number;
   noiseFilterType?: BiquadFilterType;
   noiseCutoffMinHz?: number;
@@ -210,6 +222,13 @@ const INSTRUMENT_PATCH_RECIPES: Record<InstrumentFamily, InstrumentPatchRecipe> 
       cutoffMaxHz: 3000,
       qMin: 0.5,
       qMax: 1.2,
+      transientMix: 0.2,
+      transientDurationMs: 34,
+      transientFilterType: 'highpass',
+      transientCutoffMinHz: 1800,
+      transientCutoffMaxHz: 3600,
+      transientQMin: 0.6,
+      transientQMax: 1.4,
     },
   },
   guitar: {
@@ -228,6 +247,13 @@ const INSTRUMENT_PATCH_RECIPES: Record<InstrumentFamily, InstrumentPatchRecipe> 
       cutoffMaxHz: 3200,
       qMin: 0.5,
       qMax: 1.6,
+      transientMix: 0.16,
+      transientDurationMs: 28,
+      transientFilterType: 'bandpass',
+      transientCutoffMinHz: 1400,
+      transientCutoffMaxHz: 2800,
+      transientQMin: 0.8,
+      transientQMax: 1.8,
     },
   },
   organ: {
@@ -510,6 +536,26 @@ export function resolveProceduralInstrumentTimbre(options: {
     bodySustainLevel: template.bodySustainLevel,
     harmonicBodyLevel: template.harmonicBodyLevel,
     harmonicReleaseLeadMs: template.harmonicReleaseLeadMs,
+    transientMix: template.transientMix,
+    transientDurationMs: template.transientDurationMs,
+    transientFilterType: template.transientFilterType,
+    transientFilterCutoffHz:
+      template.transientCutoffMinHz === undefined ||
+      template.transientCutoffMaxHz === undefined
+        ? undefined
+        : interpolate(
+            template.transientCutoffMinHz,
+            template.transientCutoffMaxHz,
+            clamp(options.filterSignal, 0, 1)
+          ),
+    transientFilterQ:
+      template.transientQMin === undefined || template.transientQMax === undefined
+        ? undefined
+        : interpolate(
+            template.transientQMin,
+            template.transientQMax,
+            clamp(options.filterSignal, 0, 1)
+          ),
     noiseMix,
     noiseFilterType: template.noiseFilterType,
     noiseFilterCutoffHz:
