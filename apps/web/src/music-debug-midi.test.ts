@@ -66,8 +66,9 @@ describe('music debug midi', () => {
       clusterX: 4,
       clusterY: -1,
     });
+    const exportableSnapshot = withValidCadenceValidation(snapshot);
 
-    const file = createMusicDebugMidiFile(snapshot, {
+    const file = createMusicDebugMidiFile(exportableSnapshot, {
       author: 'bworlds test suite',
       arranger: 'music debug page',
       createdAt: new Date('2026-08-09T12:34:56.000Z'),
@@ -111,8 +112,9 @@ describe('music debug midi', () => {
       clusterX: 4,
       clusterY: -1,
     });
+    const exportableSnapshot = withValidCadenceValidation(snapshot);
 
-    const file = createMusicDebugMidiFile(snapshot);
+    const file = createMusicDebugMidiFile(exportableSnapshot);
     const chunks = parseMidiChunks(file.bytes);
     const markers = readTrackMetaTexts(chunks.tracks[0]!, 0x06);
 
@@ -138,8 +140,9 @@ describe('music debug midi', () => {
       clusterX: 3,
       clusterY: -2,
     });
+    const exportableSnapshot = withValidCadenceValidation(snapshot);
 
-    const file = createMusicDebugMidiFile(snapshot);
+    const file = createMusicDebugMidiFile(exportableSnapshot);
     const chunks = parseMidiChunks(file.bytes);
     const chordCues = readTrackMetaTexts(chunks.tracks[0]!, 0x07);
 
@@ -165,8 +168,9 @@ describe('music debug midi', () => {
       clusterX: 3,
       clusterY: -2,
     });
+    const exportableSnapshot = withValidCadenceValidation(snapshot);
 
-    const file = createMusicDebugMidiFile(snapshot, {
+    const file = createMusicDebugMidiFile(exportableSnapshot, {
       createdAt: new Date('2026-08-09T00:00:00.000Z'),
     });
     const chunks = parseMidiChunks(file.bytes);
@@ -189,8 +193,9 @@ describe('music debug midi', () => {
       weatherKind: 'heavy-rain',
       weatherIntensity: 1,
     });
+    const exportableSnapshot = withValidCadenceValidation(snapshot);
 
-    const file = createMusicDebugMidiFile(snapshot, {
+    const file = createMusicDebugMidiFile(exportableSnapshot, {
       createdAt: new Date('2026-08-09T00:00:00.000Z'),
     });
     const chunks = parseMidiChunks(file.bytes);
@@ -349,7 +354,8 @@ describe('music debug midi', () => {
 
   it('includes lyric meta events when the generated lead instrument uses vocals', () => {
     const snapshot = findVocalsSnapshot();
-    const file = createMusicDebugMidiFile(snapshot, {
+    const exportableSnapshot = withValidCadenceValidation(snapshot);
+    const file = createMusicDebugMidiFile(exportableSnapshot, {
       createdAt: new Date('2026-08-09T00:00:00.000Z'),
     });
     const chunks = parseMidiChunks(file.bytes);
@@ -442,6 +448,19 @@ describe('music debug midi', () => {
     }
   );
 });
+
+function withValidCadenceValidation(
+  snapshot: ReturnType<typeof createMusicDebugSnapshot>
+): ReturnType<typeof createMusicDebugSnapshot> {
+  return {
+    ...snapshot,
+    cadenceValidation: {
+      ...snapshot.cadenceValidation,
+      isValidForMidiExport: true,
+      messages: [],
+    },
+  };
+}
 
 function parseMidiChunks(bytes: Uint8Array): {
   header: {

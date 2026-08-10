@@ -34,7 +34,10 @@ export function createMusicDebugMidiFile(
   });
   if (!midiAudit.isConsistent) {
     throw new Error(
-      `Cannot export MIDI: ${midiAudit.mismatchMessages.join(' ')}`
+      `Cannot export MIDI: ${[
+        ...midiAudit.mismatchMessages,
+        ...midiAudit.criticalWarningMessages,
+      ].join(' ')}`
     );
   }
   return file;
