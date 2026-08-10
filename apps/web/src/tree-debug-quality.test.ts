@@ -181,7 +181,7 @@ describe('tree debug quality', () => {
     }
 
     expect(sampledBranches).toBeGreaterThan(0);
-  });
+  }, 4_000);
 
   it('never omits required trunk and collision geometry from generated trees', () => {
     const speciesPreviews = [

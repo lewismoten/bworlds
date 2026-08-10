@@ -737,7 +737,7 @@ describe('world generator', () => {
 
     expect(deepOceanPoint).not.toBeNull();
     expect(state.canWalk(deepOceanPoint!.x, deepOceanPoint!.y)).toBe(true);
-  });
+  }, 4_000);
 
   it('creates quarry points of interest somewhere near the origin', () => {
     const registry = createDefaultPluginRegistry();

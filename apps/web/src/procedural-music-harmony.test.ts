@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   isProceduralSemitoneInScale,
+  resolveProceduralBassFigure,
   resolveProceduralChordAtStep,
   resolveProceduralChordProgression,
   resolveProceduralCompositionStep,
@@ -85,13 +86,29 @@ describe('procedural music harmony', () => {
         entry.chord.passingSemitones % 12,
       ]).toContain(((entry.semitones % 12) + 12) % 12);
       expect(entry.semitones).toBeGreaterThanOrEqual(-5);
-      expect(entry.semitones).toBeLessThanOrEqual(12);
+      expect(entry.semitones).toBeLessThanOrEqual(9);
     }
 
     expect(averageLeap).toBeLessThanOrEqual(5);
     expect(
       Math.max(...leaps.map((leap) => Math.abs(leap)))
     ).toBeLessThanOrEqual(7);
+  });
+
+  it('repeats a stable bass figure across phrase cycles and only uses octave lifts deliberately', () => {
+    const figure = resolveProceduralBassFigure(TEST_THEME, 3, -2);
+
+    expect(figure).toHaveLength(TEST_THEME.stepPattern.length);
+    expect(figure.slice(0, 4)).toEqual(figure.slice(4, 8));
+    expect(figure[0]).toBe('root');
+    expect(figure[4]).toBe('root');
+
+    const octaveIndexes = figure
+      .map((step, index) => ({ step, index }))
+      .filter((entry) => entry.step === 'octave-root')
+      .map((entry) => entry.index);
+
+    expect(octaveIndexes.every((index) => index % 4 === 2)).toBe(true);
   });
 
   it('reuses a deterministic short lead motif across phrase cycles', () => {

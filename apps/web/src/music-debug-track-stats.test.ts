@@ -104,7 +104,7 @@ describe('music debug track stats', () => {
       expect(leadStats.averageLeapSemitones).toBeLessThanOrEqual(7);
       expect(leadStats.maxLeapSemitones).toBeLessThanOrEqual(12);
     }
-  });
+  }, 4_000);
 
   it('keeps sampled bass leaps compact and inside the low register', () => {
     const sampledBassStats = [

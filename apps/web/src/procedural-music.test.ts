@@ -1245,7 +1245,9 @@ describe('procedural music', () => {
 
     expect(
       bassSemitones.filter(
-        (entry) => entry.semitones === entry.chord.rootSemitones
+        (entry) =>
+          ((entry.semitones % 12) + 12) % 12 ===
+          ((entry.chord.rootSemitones % 12) + 12) % 12
       ).length
     ).toBeGreaterThanOrEqual(bassSemitones.length / 3);
     for (const entry of bassSemitones) {

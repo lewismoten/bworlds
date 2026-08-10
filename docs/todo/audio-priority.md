@@ -95,10 +95,10 @@ added directly as semitones instead of moving through the selected scale.
 - [x] Keep strong bass beats on roots or fifths.
 - [x] Reduce repeated 10, 12, 17, and 22 semitone jumps.
 - [x] Keep most bass motion within five semitones.
-- [ ] Use octave movement only as a deliberate pattern.
-- [ ] Repeat a stable bass figure across related measures.
-- [ ] Change bass patterns only at phrase boundaries.
-- [ ] Keep the tuba within a consistent low register.
+- [x] Use octave movement only as a deliberate pattern.
+- [x] Repeat a stable bass figure across related measures.
+- [x] Change bass patterns only at phrase boundaries.
+- [x] Keep the tuba within a consistent low register.
 - [x] Validate bass notes against each active chord.
 - [x] Reject bass lines with excessive leap averages.
 

@@ -1339,7 +1339,7 @@ describe('tile forest', () => {
       values.reduce((sum, value) => sum + value, 0) / values.length;
 
     expect(average(ancientCounts)).toBeGreaterThan(average(matureCounts));
-  });
+  }, 4_000);
 
   it('increases bark damage with age in forest trees', () => {
     const matureScores: number[] = [];

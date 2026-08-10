@@ -48,6 +48,9 @@ export type ProceduralLeadContourStep = {
   maxDegreeOffset: number;
 };
 
+export type ProceduralBassFigureStep =
+  'root' | 'fifth' | 'passing' | 'octave-root';
+
 export type ProceduralCompositionStep = {
   chord: ProceduralChord;
   cadence: ProceduralLeadPhraseCadence;
@@ -61,8 +64,10 @@ const MUSIC_MOTIF_SEED = registerHashLabel('music-lead-motif');
 const MUSIC_LEAP_SEED = registerHashLabel('music-leap-motion');
 const MUSIC_ACCIDENTAL_SEED = registerHashLabel('music-accidental-motion');
 const MUSIC_CONTOUR_SEED = registerHashLabel('music-lead-contour');
+const MUSIC_BASS_FIGURE_SEED = registerHashLabel('music-bass-figure');
 const BASS_MIN_SEMITONES = -7;
 const BASS_MAX_SEMITONES = 12;
+const BASS_OCTAVE_MAX_SEMITONES = 9;
 const LEAD_MIN_SEMITONES = 0;
 const LEAD_MAX_SEMITONES = 19;
 const LARGE_LEAP_LIMIT_SEMITONES = 7;
@@ -83,6 +88,16 @@ const MOTIF_PATTERNS = [
   [0, 2, 1, 3, 2, 1, 0],
   [0, 1, 3, 2, 4, 2, 1, 0],
 ] as const;
+const BASS_FIGURE_PATTERNS = [
+  ['root', 'root', 'fifth', 'passing'],
+  ['root', 'fifth', 'root', 'passing'],
+  ['root', 'fifth', 'octave-root', 'passing'],
+  ['root', 'root', 'octave-root', 'passing'],
+] as const satisfies readonly (readonly ProceduralBassFigureStep[])[];
+const proceduralBassFigureCache = new Map<
+  string,
+  readonly ProceduralBassFigureStep[]
+>();
 
 export function resolveProceduralChordProgression(
   theme: ProceduralHarmonyTheme,
@@ -412,7 +427,13 @@ function resolveBassSemitones(
   clusterX: number,
   clusterY: number
 ): number {
-  const candidates = resolveBassSemitoneCandidates(chord, stepIndex);
+  const candidates = resolveBassSemitoneCandidates(
+    theme,
+    chord,
+    stepIndex,
+    clusterX,
+    clusterY
+  );
   if (stepIndex <= 0) {
     return candidates[0] ?? chord.rootSemitones;
   }
@@ -443,18 +464,24 @@ function resolveBassSemitones(
 }
 
 function resolveBassSemitoneCandidates(
+  theme: ProceduralHarmonyTheme,
   chord: ProceduralChord,
-  stepIndex: number
+  stepIndex: number,
+  clusterX: number,
+  clusterY: number
 ): readonly number[] {
-  const bassPulseIndex = Math.floor(stepIndex / 4);
-  const phrasePulse = bassPulseIndex % 4;
-  if (phrasePulse === 0) {
+  const phraseLength = Math.max(4, theme.stepPattern.length);
+  const phraseStep = stepIndex % phraseLength;
+  const figure = resolveProceduralBassFigure(theme, clusterX, clusterY);
+  const figureStep = figure[phraseStep] ?? 'root';
+
+  if (figureStep === 'root') {
     return [chord.rootSemitones, chord.fifthSemitones];
   }
-  if (phrasePulse === 1) {
+  if (figureStep === 'fifth') {
     return [chord.fifthSemitones, chord.rootSemitones];
   }
-  if (phrasePulse === 2) {
+  if (figureStep === 'octave-root') {
     return [
       chord.rootSemitones + 12,
       chord.rootSemitones,
@@ -462,6 +489,39 @@ function resolveBassSemitoneCandidates(
     ];
   }
   return [chord.passingSemitones, chord.rootSemitones];
+}
+
+export function resolveProceduralBassFigure(
+  theme: ProceduralHarmonyTheme,
+  clusterX: number,
+  clusterY: number
+): readonly ProceduralBassFigureStep[] {
+  const cacheKey = `${theme.id}:${clusterX}:${clusterY}:${theme.stepPattern.length}`;
+  const cachedFigure = proceduralBassFigureCache.get(cacheKey);
+  if (cachedFigure) {
+    return cachedFigure;
+  }
+
+  const phraseLength = Math.max(4, theme.stepPattern.length);
+  const patternIndex = Math.floor(
+    hash2DWithSeed(
+      MUSIC_BASS_FIGURE_SEED,
+      clusterX + theme.id.length * 37,
+      clusterY - theme.id.length * 41
+    ) * BASS_FIGURE_PATTERNS.length
+  );
+  const measurePattern =
+    BASS_FIGURE_PATTERNS[patternIndex] ?? BASS_FIGURE_PATTERNS[0];
+  const figure = Array.from({ length: phraseLength }, (_, stepIndex) => {
+    const pulseInMeasure = stepIndex % 4;
+    if (pulseInMeasure === 0) {
+      return 'root';
+    }
+    return measurePattern[pulseInMeasure] ?? 'root';
+  });
+
+  proceduralBassFigureCache.set(cacheKey, figure);
+  return figure;
 }
 
 function selectBassSemitoneCandidate(options: {
@@ -482,6 +542,14 @@ function selectBassSemitoneCandidate(options: {
     for (let octaveShift = -24; octaveShift <= 24; octaveShift += 12) {
       const candidate = targetSemitones + octaveShift;
       if (candidate < BASS_MIN_SEMITONES || candidate > BASS_MAX_SEMITONES) {
+        continue;
+      }
+      if (
+        priority === 0 &&
+        targetSemitones - (options.targetCandidates[1] ?? targetSemitones) >=
+          7 &&
+        candidate > BASS_OCTAVE_MAX_SEMITONES
+      ) {
         continue;
       }
       candidates.push({ semitones: candidate, priority });
