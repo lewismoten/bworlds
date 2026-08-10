@@ -73,6 +73,71 @@ describe('procedural music harmony', () => {
     }
   });
 
+  it('lets bass, lead, and harmony reuse the same resolved chord context', () => {
+    const stepIndex = 6;
+    const chord = resolveProceduralChordAtStep(TEST_THEME, stepIndex, 3, -2);
+    const previousChord = resolveProceduralChordAtStep(
+      TEST_THEME,
+      stepIndex - 1,
+      3,
+      -2
+    );
+
+    expect(
+      resolveProceduralInstrumentSemitones({
+        theme: TEST_THEME,
+        role: 'bass',
+        stepIndex,
+        clusterX: 3,
+        clusterY: -2,
+        chord,
+      })
+    ).toBe(
+      resolveProceduralInstrumentSemitones({
+        theme: TEST_THEME,
+        role: 'bass',
+        stepIndex,
+        clusterX: 3,
+        clusterY: -2,
+      })
+    );
+    expect(
+      resolveProceduralInstrumentSemitones({
+        theme: TEST_THEME,
+        role: 'lead',
+        stepIndex,
+        clusterX: 3,
+        clusterY: -2,
+        chord,
+      })
+    ).toBe(
+      resolveProceduralInstrumentSemitones({
+        theme: TEST_THEME,
+        role: 'lead',
+        stepIndex,
+        clusterX: 3,
+        clusterY: -2,
+      })
+    );
+    expect(
+      resolveProceduralHarmonyVoicing({
+        theme: TEST_THEME,
+        stepIndex,
+        clusterX: 3,
+        clusterY: -2,
+        chord,
+        previousChord,
+      })
+    ).toEqual(
+      resolveProceduralHarmonyVoicing({
+        theme: TEST_THEME,
+        stepIndex,
+        clusterX: 3,
+        clusterY: -2,
+      })
+    );
+  });
+
   it('keeps bass notes anchored to nearby roots and fifths without large repeated jumps', () => {
     const semitonePlan = Array.from({ length: 24 }, (_, stepIndex) => ({
       stepIndex,

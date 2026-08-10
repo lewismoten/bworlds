@@ -23,7 +23,7 @@
 - [x] Resolve the final cadence to scale degree 1.
 - [x] Build one chord timeline before generating any tracks.
 - [x] Assign each chord an exact measure range.
-- [ ] Make bass, harmony, and lead read the same chord timeline.
+- [x] Make bass, harmony, and lead read the same chord timeline.
 - [ ] Verify detected chords follow the planned progression order.
 - [ ] Fix unresolved chromatic notes before MIDI export.
 - [ ] Regenerate a phrase containing unresolved chromatic notes.

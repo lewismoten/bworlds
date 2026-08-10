@@ -5,6 +5,7 @@ import {
   registerHashSeeds,
 } from '@bworlds/core/hash';
 import {
+  resolveProceduralChordAtStep,
   resolveProceduralCompositionStep,
   resolveProceduralHarmonyVoicing,
   resolveProceduralInstrumentSemitones,
@@ -1386,6 +1387,7 @@ function createThemeNotes(options: {
     clusterX: options.clusterX,
     clusterY: options.clusterY,
     allowLeadAccidentals: options.allowLeadAccidentals,
+    chord: composition.chord,
   });
   const semitones =
     role === 'lead'
@@ -1418,6 +1420,16 @@ function createThemeNotes(options: {
           stepIndex: options.stepIndex,
           clusterX: options.clusterX,
           clusterY: options.clusterY,
+          chord: composition.chord,
+          previousChord:
+            options.stepIndex > 0
+              ? resolveProceduralChordAtStep(
+                  options.theme,
+                  options.stepIndex - 1,
+                  options.clusterX,
+                  options.clusterY
+                )
+              : null,
         })
       : [semitones];
   const voiceVolumeScale =

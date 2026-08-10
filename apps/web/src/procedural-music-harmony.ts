@@ -321,13 +321,16 @@ export function resolveProceduralInstrumentSemitones(options: {
   clusterX: number;
   clusterY: number;
   allowLeadAccidentals?: boolean;
+  chord?: ProceduralChord;
 }): number {
-  const chord = resolveProceduralChordAtStep(
-    options.theme,
-    options.stepIndex,
-    options.clusterX,
-    options.clusterY
-  );
+  const chord =
+    options.chord ??
+    resolveProceduralChordAtStep(
+      options.theme,
+      options.stepIndex,
+      options.clusterX,
+      options.clusterY
+    );
 
   if (options.role === 'bass') {
     return resolveBassSemitones(
@@ -360,22 +363,28 @@ export function resolveProceduralHarmonyVoicing(options: {
   stepIndex: number;
   clusterX: number;
   clusterY: number;
+  chord?: ProceduralChord;
+  previousChord?: ProceduralChord | null;
 }): readonly number[] {
-  const chord = resolveProceduralChordAtStep(
-    options.theme,
-    options.stepIndex,
-    options.clusterX,
-    options.clusterY
-  );
+  const chord =
+    options.chord ??
+    resolveProceduralChordAtStep(
+      options.theme,
+      options.stepIndex,
+      options.clusterX,
+      options.clusterY
+    );
   const previousChord =
-    options.stepIndex > 0
-      ? resolveProceduralChordAtStep(
-          options.theme,
-          options.stepIndex - 1,
-          options.clusterX,
-          options.clusterY
-        )
-      : null;
+    options.previousChord !== undefined
+      ? options.previousChord
+      : options.stepIndex > 0
+        ? resolveProceduralChordAtStep(
+            options.theme,
+            options.stepIndex - 1,
+            options.clusterX,
+            options.clusterY
+          )
+        : null;
 
   return resolveProceduralHarmonyChordVoicing({
     chord,
