@@ -2207,6 +2207,45 @@ describe('procedural music', () => {
     );
   });
 
+  it('gives crash and ride cymbals longer metallic noise envelopes than hi-hats', () => {
+    const cymbals = resolveProceduralInstrumentTimbre({
+      family: 'cymbals',
+      brightness: 1.08,
+      harmonicSignal: 0.55,
+      filterSignal: 0.6,
+    });
+    const closedHat = resolvePercussionVoiceById('cymbals-42');
+    const crash = resolvePercussionVoiceById('cymbals-49');
+    const ride = resolvePercussionVoiceById('cymbals-51');
+    const closedHatTimbre = applyPercussionVoiceToTimbre({
+      voice: closedHat,
+      timbre: cymbals,
+    });
+    const crashTimbre = applyPercussionVoiceToTimbre({
+      voice: crash,
+      timbre: cymbals,
+    });
+    const rideTimbre = applyPercussionVoiceToTimbre({
+      voice: ride,
+      timbre: cymbals,
+    });
+
+    expect(crash.releaseMultiplier).toBeGreaterThan(closedHat.releaseMultiplier);
+    expect(ride.releaseMultiplier).toBeGreaterThan(crash.releaseMultiplier);
+    expect(crashTimbre.noiseMix ?? 0).toBeGreaterThan(
+      closedHatTimbre.noiseMix ?? 0
+    );
+    expect(rideTimbre.noiseMix ?? 0).toBeGreaterThan(
+      crashTimbre.noiseMix ?? 0
+    );
+    expect(crashTimbre.transientMix ?? 0).toBeLessThan(
+      closedHatTimbre.transientMix ?? Infinity
+    );
+    expect(rideTimbre.transientMix ?? 0).toBeLessThan(
+      crashTimbre.transientMix ?? Infinity
+    );
+  });
+
   it('keeps generated instrument patches inside their family recipe ranges', () => {
     const bank = createProceduralInstrumentBank(
       resolveMusicTheme('forest', 'overworld'),

@@ -203,8 +203,10 @@ const PERCUSSION_VOICES: Record<PercussionVoiceId, PercussionVoiceDefinition> = 
     pulseRateMultiplier: 0.92,
     timbre: {
       harmonicRatioMultiplier: 1.14,
-      filterCutoffMultiplier: 1.12,
-      filterQMultiplier: 0.88,
+      filterCutoffMultiplier: 1.06,
+      filterQMultiplier: 0.84,
+      noiseMixMultiplier: 1.44,
+      transientMixMultiplier: 0.84,
     },
   }),
   'cymbals-51': createPercussionVoice({
@@ -221,8 +223,10 @@ const PERCUSSION_VOICES: Record<PercussionVoiceId, PercussionVoiceDefinition> = 
     pulseRateMultiplier: 0.88,
     timbre: {
       harmonicRatioMultiplier: 1.2,
-      filterCutoffMultiplier: 1.2,
-      filterQMultiplier: 0.82,
+      filterCutoffMultiplier: 1.1,
+      filterQMultiplier: 0.78,
+      noiseMixMultiplier: 1.56,
+      transientMixMultiplier: 0.76,
     },
   }),
   'cymbals-46': createPercussionVoice({

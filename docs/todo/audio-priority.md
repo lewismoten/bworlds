@@ -38,7 +38,7 @@
 - [x] Give snares a body tone and filtered noise burst.
 - [ ] Give toms distinct pitches based on drum size.
 - [x] Give hi-hats short metallic noise envelopes.
-- [ ] Give cymbals longer metallic noise envelopes.
+- [x] Give cymbals longer metallic noise envelopes.
 - [ ] Give shakers repeated short filtered noise bursts.
 - [ ] Give tambourines noise plus small metallic transients.
 - [ ] Give bongos different pitches and decay lengths.
