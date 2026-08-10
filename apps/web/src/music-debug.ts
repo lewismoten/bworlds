@@ -1,14 +1,14 @@
 import {
-  createProceduralInstrumentBank,
   type MusicSink,
-  createWebAudioMusicSink,
   resolveMusicEncounterMode,
   resolveMusicArrangement,
   resolveMusicMood,
-  resolveMusicTheme,
   type MusicEncounterMode,
   type ProceduralMusicNote,
 } from './procedural-music.ts';
+import { createWebAudioMusicSink } from './procedural-music-audio-sink.ts';
+import { resolveMusicTheme } from './procedural-music-rich-theme.ts';
+import { createProceduralInstrumentBank } from './procedural-music-sound-bank.ts';
 import {
   resolveProceduralLeadContour,
   resolveProceduralChordProgression,
@@ -60,6 +60,10 @@ import {
   formatMusicDebugTrackTimingSummary,
   type MusicDebugTrackStats,
 } from './music-debug-track-stats.ts';
+import {
+  formatMusicDebugPercussionEvents,
+  formatMusicDebugPercussionVoiceCounts,
+} from './music-debug-percussion-report.ts';
 import {
   createMusicDebugIntervalComparison,
   formatMusicDebugIntervalComparison,
@@ -931,6 +935,12 @@ export function buildMusicDebugSummaryMarkup(
       <span>Percussion Check ${formatMusicDebugPercussionValidationSummary(snapshot.percussionValidation)}</span>
     </div>
     <div class="music-debug-role-counts">
+      <span>Drum Counts ${formatMusicDebugPercussionVoiceCounts(snapshot.notes)}</span>
+    </div>
+    <div class="music-debug-role-counts">
+      <span>Percussion Events ${formatMusicDebugPercussionEvents(snapshot.notes)}</span>
+    </div>
+    <div class="music-debug-role-counts">
       <span>SongDNA Check ${formatMusicDebugSongDnaValidationSummary(snapshot.songDnaValidation)}</span>
     </div>
     <div class="music-debug-role-counts">
@@ -1490,13 +1500,3 @@ function formatMusicDebugDegreeMotif(motif: readonly number[]): string {
 
   return motif.map((degree) => degree + 1).join(' - ');
 }
-import {
-  formatMusicDebugPercussionEvents,
-  formatMusicDebugPercussionVoiceCounts,
-} from './music-debug-percussion-report.ts';
-    <div class="music-debug-role-counts">
-      <span>Drum Counts ${formatMusicDebugPercussionVoiceCounts(snapshot.notes)}</span>
-    </div>
-    <div class="music-debug-role-counts">
-      <span>Percussion Events ${formatMusicDebugPercussionEvents(snapshot.notes)}</span>
-    </div>

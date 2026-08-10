@@ -2,9 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { validateMusicDebugSongDna } from './music-debug-song-dna-validation.ts';
 import {
   createProceduralInstrumentBank,
-  resolveMusicThemeById,
-  type ProceduralInstrumentBank,
-} from './procedural-music.ts';
+} from './procedural-music-sound-bank.ts';
+import type { ProceduralInstrumentBank } from './procedural-music-sound-bank.ts';
+import { resolveMusicThemeById } from './procedural-music.ts';
 import type { ProceduralSongDna } from './procedural-music-song-dna.ts';
 
 describe('music debug SongDNA validation', () => {

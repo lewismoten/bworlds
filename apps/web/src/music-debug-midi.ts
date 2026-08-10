@@ -13,7 +13,7 @@ import {
   msToMusicDebugTicks,
   MUSIC_DEBUG_MIDI_TICKS_PER_QUARTER,
 } from './music-debug-tempo.ts';
-import type { ProceduralInstrument } from './procedural-music.ts';
+import type { ProceduralInstrument } from './procedural-music-sound-bank.ts';
 import { resolveProceduralChordTimelineEntryAtStep } from './procedural-music-chord-timeline.ts';
 import {
   resolvePercussionFamilyFromInstrumentId,

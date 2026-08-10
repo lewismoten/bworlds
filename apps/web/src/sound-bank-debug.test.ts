@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { SoundBankInstrumentDefinition } from './procedural-music.ts';
+import type { SoundBankInstrumentDefinition } from './procedural-music-sound-bank.ts';
 import {
   buildSoundBankDebugMarkup,
   createSoundBankDebugSnapshot,

@@ -6,13 +6,10 @@ import {
 } from './procedural-music-harmony.ts';
 import { resolveProceduralMeterPosition } from './procedural-music-meter.ts';
 import {
-  createProceduralInstrumentBank,
   createMusicController,
   resolveProceduralInstrumentRolePatchDistinctness,
-  createWebAudioMusicSink,
   getMusicUpdateSignature,
   getMusicRegionSignature,
-  getMusicSpatialMix,
   resolvePoiMusicBlendGains,
   resolvePoiMusicMix,
   resolveMusicArrangement,
@@ -20,9 +17,16 @@ import {
   resolveMusicTheme,
   scheduleProceduralMusicNotes,
   type ProceduralMusicNote,
-  type ProceduralInstrument,
   type ProceduralInstrumentRole,
 } from './procedural-music.ts';
+import {
+  createWebAudioMusicSink,
+  getMusicSpatialMix,
+} from './procedural-music-audio-sink.ts';
+import {
+  createProceduralInstrumentBank,
+  type ProceduralInstrument,
+} from './procedural-music-sound-bank.ts';
 import { createProceduralMusicSong } from './procedural-music-song.ts';
 import { resolveProceduralMusicLoudness } from './procedural-music-loudness.ts';
 import { createProceduralPercussionNotes } from './procedural-music-percussion.ts';
@@ -52,7 +56,13 @@ function createDistinctnessTestInstrument(
     id: role,
     role,
     generalMidiProgramNumber:
-      role === 'lead' ? 80 : role === 'harmony' ? 48 : role === 'bass' ? 33 : null,
+      role === 'lead'
+        ? 80
+        : role === 'harmony'
+          ? 48
+          : role === 'bass'
+            ? 33
+            : null,
     generalMidiInstrumentName:
       role === 'lead'
         ? 'Lead 1 (square)'
@@ -86,7 +96,13 @@ function createDistinctnessTestInstrument(
             : { minMidiNote: 36, maxMidiNote: 48 },
     defaultVelocity: role === 'percussion' ? 112 : role === 'lead' ? 108 : 96,
     defaultNoteDurationMs:
-      role === 'lead' ? 240 : role === 'harmony' ? 300 : role === 'bass' ? 360 : 120,
+      role === 'lead'
+        ? 240
+        : role === 'harmony'
+          ? 300
+          : role === 'bass'
+            ? 360
+            : 120,
     knownGoodPatchComparison: compareInstrumentPatchToKnownGoodRolePatch({
       role,
       patch,

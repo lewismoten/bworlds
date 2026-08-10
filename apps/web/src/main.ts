@@ -204,10 +204,10 @@ import {
 } from './player-progression.ts';
 import {
   createMusicController,
-  createWebAudioMusicSink,
   resolveMusicEncounterMode,
   resolvePoiMusicMix,
 } from './procedural-music.ts';
+import { createWebAudioMusicSink } from './procedural-music-audio-sink.ts';
 import { createMusicUpdateGate } from './music-update-gate.ts';
 import { createEnvironmentFrameCache } from './environment-frame-cache.ts';
 import { createCycleFrameCache } from './cycle-frame-cache.ts';

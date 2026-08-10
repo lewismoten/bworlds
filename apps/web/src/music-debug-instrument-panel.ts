@@ -1,9 +1,9 @@
 import type { MusicDebugSnapshot } from './music-debug.ts';
 import { createMusicDebugInstrumentPreviewPlaybackNote } from './music-debug-playback-profile.ts';
 import type {
-  ProceduralInstrument,
   ProceduralMusicNote,
 } from './procedural-music.ts';
+import type { ProceduralInstrument } from './procedural-music-sound-bank.ts';
 
 export function buildMusicDebugInstrumentPanelMarkup(
   snapshot: MusicDebugSnapshot

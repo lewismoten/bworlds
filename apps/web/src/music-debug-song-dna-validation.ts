@@ -3,8 +3,10 @@ import { resolveMusicDebugPitchClassLabel } from './music-debug-pitch-class.ts';
 import { getProceduralScaleDegreeSemitones } from './procedural-music-scale.ts';
 import type { ProceduralMusicSong } from './procedural-music-song.ts';
 import type {
-  ProceduralMusicNote,
   ProceduralInstrumentBank,
+} from './procedural-music-sound-bank.ts';
+import type {
+  ProceduralMusicNote,
 } from './procedural-music.ts';
 
 type ProceduralMusicRole = ProceduralMusicNote['role'];

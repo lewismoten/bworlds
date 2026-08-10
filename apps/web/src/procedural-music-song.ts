@@ -11,11 +11,11 @@ import {
 import { constrainSongSectionNote } from './procedural-music-song-boundaries.ts';
 import {
   resolveMusicEncounterMode,
-  resolveMusicTheme,
   type MusicEncounterMode,
   type MusicUpdateOptions,
   type ProceduralMusicNote,
 } from './procedural-music.ts';
+import { resolveMusicTheme } from './procedural-music-rich-theme.ts';
 import { transformSongSectionNote } from './procedural-music-song-variation.ts';
 import { buildProceduralMusicSongSections } from './procedural-music-song-timing.ts';
 import { buildProceduralMusicBasePhrasePlan } from './procedural-music-song-base.ts';

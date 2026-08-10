@@ -1,9 +1,9 @@
 import {
   createProceduralInstrumentBank,
-  resolveMusicTheme,
   type MusicEncounterMode,
   type MusicUpdateOptions,
 } from './procedural-music.ts';
+import { resolveMusicTheme } from './procedural-music-rich-theme.ts';
 import {
   resolveFactionInteractionMotif,
   resolveMusicFactionMotifs,

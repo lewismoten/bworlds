@@ -1,8 +1,8 @@
 import {
-  createWebAudioMusicSink,
   type MusicSink,
   type ProceduralMusicNote,
 } from './procedural-music.ts';
+import { createWebAudioMusicSink } from './procedural-music-audio-sink.ts';
 
 export type MusicDebugInstrumentPreviewAudioState =
   AudioContextState | 'idle' | 'unavailable';
