@@ -144,7 +144,7 @@
 - [ ] Add a white noise option.
 - [ ] Add a pink noise option if supported.
 - [ ] Add a brown noise option if supported.
-- [ ] Show a preview of the selected waveform.
+- [x] Show a preview of the selected waveform.
 - [ ] Show the harmonic content of each waveform.
 
 ## Envelope Controls

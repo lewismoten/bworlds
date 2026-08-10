@@ -115,7 +115,7 @@ function buildMusicDebugInstrumentCardMarkup(options: {
   `;
 }
 
-function buildMusicDebugInstrumentWaveformMarkup(
+export function buildMusicDebugInstrumentWaveformMarkup(
   instrument: Pick<
     ProceduralInstrument | ProceduralMusicNote,
     'waveform' | 'timbre' | 'harmonicGain'

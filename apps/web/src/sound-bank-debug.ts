@@ -1,6 +1,7 @@
 import { randomizeDebugCoordinatePair } from './debug-seed.ts';
 import { resolveVelocityShapedInstrumentTimbre } from './music-instrument-timbres.ts';
 import {
+  buildMusicDebugInstrumentWaveformMarkup,
   buildMusicDebugInstrumentPanelMarkup,
   resolveMusicDebugInstrumentPreviewNote,
   type MusicDebugInstrumentPreviewTarget,
@@ -1109,6 +1110,9 @@ function buildSelectedInstrumentDetailsMarkup(
   const estimatedComplexity = runtimeInstrument
     ? resolveEstimatedPatchComplexity(runtimeInstrument)
     : 'Unknown';
+  const waveformPreviewMarkup = runtimeInstrument
+    ? buildMusicDebugInstrumentWaveformMarkup(runtimeInstrument)
+    : '<p class="sound-bank-debug-warning" role="status">Waveform preview unavailable for this patch source.</p>';
   const primaryOscillatorType = runtimeInstrument
     ? runtimeInstrument.waveform
     : 'Unknown';
@@ -1123,6 +1127,9 @@ function buildSelectedInstrumentDetailsMarkup(
     : 'Unknown';
 
   return `
+    <div class="music-debug-instrument-waveform">
+      ${waveformPreviewMarkup}
+    </div>
     <dl class="music-debug-instrument-stats">
       <div><dt>Instrument ID</dt><dd>${selectedEntry.id}</dd></div>
       <div><dt>GM Program</dt><dd>${selectedEntry.generalMidiProgramNumber}</dd></div>

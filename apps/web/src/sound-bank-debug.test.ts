@@ -100,6 +100,7 @@ describe('sound bank debug page', () => {
     expect(normalizedMarkup).toContain('Supported Roles');
     expect(normalizedMarkup).toContain('Preferred Range');
     expect(normalizedMarkup).toContain('Playable Range');
+    expect(normalizedMarkup).toContain('music-debug-instrument-waveform');
     expect(normalizedMarkup).toContain('Patch Source');
     expect(normalizedMarkup).toContain('Generated');
     expect(normalizedMarkup).toContain('Primary Oscillator');
@@ -509,6 +510,9 @@ describe('sound bank debug page', () => {
     expect(markup).toContain('Harmonic Oscillator');
     expect(markup).toContain('Active Oscillator Count');
     expect(markup).toContain('Filter Type');
+    expect(markup).toContain(
+      'Waveform preview unavailable for this patch source.'
+    );
     expect(markup).toContain('Uses Samples');
     expect(markup).toContain('Unknown');
     expect(markup).toContain('Uses Synthesis');
@@ -542,6 +546,8 @@ describe('sound bank debug page', () => {
     expect(markup).toContain('64-79');
     expect(markup).toContain('Playable Range');
     expect(markup).toContain('60-84');
+    expect(markup).toContain('music-debug-instrument-waveform');
+    expect(markup).toContain('music-debug-instrument-waveform-shape');
     expect(markup).toContain('Patch Source');
     expect(markup).toContain('core-generated-bank');
     expect(markup).toContain('Generated');
