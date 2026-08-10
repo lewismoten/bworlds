@@ -7,11 +7,13 @@ import {
   resolveMusicDebugMidiExportRoles,
   type MusicDebugMidiExportVariant,
 } from './music-debug-midi-export-variant.ts';
+import { describeProceduralChordQuality } from './procedural-music-chord-progression.ts';
 import {
   msToMusicDebugTicks,
   MUSIC_DEBUG_MIDI_TICKS_PER_QUARTER,
 } from './music-debug-tempo.ts';
 import type { ProceduralInstrument } from './procedural-music.ts';
+import { resolveProceduralChordTimelineEntryAtStep } from './procedural-music-chord-timeline.ts';
 import { resolvePercussionFamilyFromInstrumentId } from './procedural-music-percussion.ts';
 import { resolveMusicStereoPan } from './procedural-music-mix.ts';
 import type { MusicDebugSnapshot } from './music-debug.ts';
@@ -286,6 +288,10 @@ function buildConductorTrack(
       data: [0xff, 0x06, ...encodeText(section.label)],
     });
   }
+  const chordCueEvents = buildChordCueEvents(snapshot);
+  for (let index = 0; index < chordCueEvents.length; index += 1) {
+    events.push(chordCueEvents[index]!);
+  }
   events.push({
     tick: msToTicks(snapshot.durationMs, snapshot),
     order: Number.MAX_SAFE_INTEGER,
@@ -296,6 +302,67 @@ function buildConductorTrack(
     name: 'bworlds music debug conductor',
     events,
   };
+}
+
+function buildChordCueEvents(snapshot: MusicDebugSnapshot): MidiTrackEvent[] {
+  const events: MidiTrackEvent[] = [];
+  let previousLabel: string | null = null;
+
+  for (
+    let measureNumber = 1;
+    measureNumber <= snapshot.measureCount;
+    measureNumber += 1
+  ) {
+    const timelineEntry = resolveProceduralChordTimelineEntryAtStep({
+      themeId: snapshot.theme.id,
+      themeStepCount: snapshot.theme.stepPattern.length,
+      stepIndex: (measureNumber - 1) * 4,
+      clusterX: snapshot.options.clusterX,
+      clusterY: snapshot.options.clusterY,
+    });
+    const cueLabel = formatChordCueLabel(
+      snapshot.theme.scale,
+      timelineEntry.degreeIndex
+    );
+    if (cueLabel === previousLabel) {
+      continue;
+    }
+    previousLabel = cueLabel;
+    events.push({
+      tick: resolveSongMeasureStartTick(snapshot, measureNumber),
+      order: 200 + measureNumber,
+      data: [0xff, 0x07, ...encodeText(cueLabel)],
+    });
+  }
+
+  return events;
+}
+
+function formatChordCueLabel(
+  scale: readonly number[],
+  degreeIndex: number
+): string {
+  return `Chord ${degreeIndex + 1} ${describeProceduralChordQuality(scale, degreeIndex)}`;
+}
+
+function resolveSongMeasureStartTick(
+  snapshot: MusicDebugSnapshot,
+  measureNumber: number
+): number {
+  const section =
+    snapshot.song.sections.find(
+      (candidate) =>
+        measureNumber >= candidate.startMeasure &&
+        measureNumber <= candidate.endMeasure
+    ) ?? snapshot.song.sections[0];
+  if (!section) {
+    return 0;
+  }
+  const sectionMeasureOffset = measureNumber - section.startMeasure;
+  const sectionMeasureCount = Math.max(1, section.measureCount);
+  const ticksPerMeasure =
+    (section.endTick - section.startTick) / sectionMeasureCount;
+  return Math.round(section.startTick + sectionMeasureOffset * ticksPerMeasure);
 }
 
 function buildRoleTracks(

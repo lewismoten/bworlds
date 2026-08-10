@@ -133,6 +133,33 @@ describe('music debug midi', () => {
     ).toBe(snapshot.song.sections[1]?.startTick);
   });
 
+  it('adds chord-change cue points to the conductor track at measure starts', () => {
+    const snapshot = createMusicDebugSnapshot({
+      tileKind: 'plains',
+      contextType: 'overworld',
+      clusterX: 3,
+      clusterY: -2,
+    });
+
+    const file = createMusicDebugMidiFile(snapshot);
+    const chunks = parseMidiChunks(file.bytes);
+    const chordCues = readTrackMetaTexts(chunks.tracks[0]!, 0x07);
+
+    expect(chordCues.slice(0, 4)).toEqual([
+      'Chord 1 major',
+      'Chord 5 minor',
+      'Chord 6 minor',
+      'Chord 1 major',
+    ]);
+    expect(
+      readTrackMetaTextTick(chunks.tracks[0]!, 0x07, 'Chord 1 major')
+    ).toBe(0);
+    expect(
+      readTrackMetaTextTick(chunks.tracks[0]!, 0x07, 'Chord 5 minor')
+    ).toBeGreaterThan(0);
+    expect(chordCues.length).toBeGreaterThanOrEqual(snapshot.measureCount / 4);
+  });
+
   it('adds role setup controller events for bank select, volume, and pan', () => {
     const snapshot = createMusicDebugSnapshot({
       tileKind: 'town',
