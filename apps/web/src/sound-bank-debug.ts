@@ -26,6 +26,8 @@ export type SoundBankDebugSnapshot = {
   musicSnapshot: MusicDebugSnapshot;
 };
 
+export type SoundBankDebugLayoutMode = 'compact' | 'expanded';
+
 export const DEFAULT_SOUND_BANK_DEBUG_OPTIONS: SoundBankDebugOptions = {
   tileKind: DEFAULT_MUSIC_DEBUG_OPTIONS.tileKind,
   contextType: DEFAULT_MUSIC_DEBUG_OPTIONS.contextType,
@@ -84,6 +86,7 @@ export function buildSoundBankDebugMarkup(
   snapshot: SoundBankDebugSnapshot,
   viewState: {
     audioStatus: string;
+    layoutMode?: SoundBankDebugLayoutMode;
     errorMessage?: string | null;
   } = {
     audioStatus: 'Audio idle',
@@ -116,9 +119,10 @@ export function buildSoundBankDebugMarkup(
       </p>
     `
     : '';
+  const layoutMode = viewState.layoutMode ?? 'expanded';
 
   return `
-    <main class="sound-bank-debug-shell">
+    <main class="sound-bank-debug-shell sound-bank-debug-shell-${layoutMode}">
       <section class="sound-bank-debug-hero">
         <p class="sound-bank-debug-kicker">bworlds</p>
         <h1>Sound Bank Debug</h1>
@@ -137,6 +141,26 @@ export function buildSoundBankDebugMarkup(
               <h2>Instrument Source</h2>
             </div>
             <div class="sound-bank-debug-actions">
+              <div
+                class="sound-bank-debug-layout-toggle"
+                role="group"
+                aria-label="Layout mode"
+              >
+                <button
+                  id="sound-bank-debug-layout-compact"
+                  type="button"
+                  aria-pressed="${layoutMode === 'compact'}"
+                >
+                  Compact
+                </button>
+                <button
+                  id="sound-bank-debug-layout-expanded"
+                  type="button"
+                  aria-pressed="${layoutMode === 'expanded'}"
+                >
+                  Expanded
+                </button>
+              </div>
               <button id="sound-bank-debug-generate" type="submit">Generate</button>
               <button id="sound-bank-debug-randomize" type="button">🎲 Generate</button>
               <button id="sound-bank-debug-reset" type="button">Reset</button>

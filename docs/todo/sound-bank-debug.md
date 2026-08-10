@@ -11,7 +11,7 @@
 - [x] Dispose temporary audio nodes on page cleanup.
 - [x] Show an error panel for audio failures.
 - [x] Add a reset-all-controls button.
-- [ ] Add a compact and expanded layout option.
+- [x] Add a compact and expanded layout option.
 
 ## Audio Startup
 

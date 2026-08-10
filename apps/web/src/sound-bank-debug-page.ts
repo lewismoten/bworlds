@@ -7,6 +7,7 @@ import {
   normalizeSoundBankDebugOptions,
   randomizeSoundBankDebugSeed,
   resolveSoundBankDebugPreviewNoteRole,
+  type SoundBankDebugLayoutMode,
   type SoundBankDebugOptions,
 } from './sound-bank-debug.ts';
 import { createMusicDebugInstrumentPreviewPlayer } from './music-debug-instrument-preview.ts';
@@ -24,6 +25,7 @@ const instrumentPreviewPlayer = createMusicDebugInstrumentPreviewPlayer();
 let options = DEFAULT_SOUND_BANK_DEBUG_OPTIONS;
 let audioStatus = 'Audio idle';
 let errorMessage: string | null = null;
+let layoutMode: SoundBankDebugLayoutMode = 'expanded';
 const SOUND_BANK_TILE_KINDS: readonly MusicDebugTileKind[] = [
   'plains',
   'forest',
@@ -109,6 +111,7 @@ function renderPage(): void {
   const snapshot = createSoundBankDebugSnapshot(options);
   root.innerHTML = buildSoundBankDebugMarkup(snapshot, {
     audioStatus,
+    layoutMode,
     errorMessage,
   });
   bindPage(snapshot.musicSnapshot);
@@ -125,6 +128,28 @@ function bindPage(musicSnapshot: MusicDebugSnapshot): void {
         options = readFormOptions();
         audioStatus = 'Audio idle';
         errorMessage = null;
+        renderPage();
+      },
+      pageLifecycleSignal ? { signal: pageLifecycleSignal } : undefined
+    );
+
+  document
+    .querySelector<HTMLButtonElement>('#sound-bank-debug-layout-compact')
+    ?.addEventListener(
+      'click',
+      () => {
+        layoutMode = 'compact';
+        renderPage();
+      },
+      pageLifecycleSignal ? { signal: pageLifecycleSignal } : undefined
+    );
+
+  document
+    .querySelector<HTMLButtonElement>('#sound-bank-debug-layout-expanded')
+    ?.addEventListener(
+      'click',
+      () => {
+        layoutMode = 'expanded';
         renderPage();
       },
       pageLifecycleSignal ? { signal: pageLifecycleSignal } : undefined

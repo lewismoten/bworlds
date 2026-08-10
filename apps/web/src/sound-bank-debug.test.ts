@@ -47,10 +47,25 @@ describe('sound bank debug page', () => {
     expect(markup).toContain('Instrument Browser');
     expect(markup).toContain('Role Patches');
     expect(markup).toContain('music-debug-instrument-panel');
+    expect(markup).toContain('sound-bank-debug-layout-compact');
+    expect(markup).toContain('sound-bank-debug-layout-expanded');
     expect(markup).toContain('Play lead');
     expect(markup).toContain('Play harmony');
     expect(markup).toContain('Play bass');
     expect(markup).toContain('Play percussion');
+  });
+
+  it('renders the selected layout mode in the shell and toggle state', () => {
+    const markup = buildSoundBankDebugMarkup(createSoundBankDebugSnapshot(), {
+      audioStatus: 'Audio idle',
+      layoutMode: 'compact',
+    });
+
+    expect(markup).toContain('sound-bank-debug-shell sound-bank-debug-shell-compact');
+    expect(markup).toContain('id="sound-bank-debug-layout-compact"');
+    expect(markup).toContain('aria-pressed="true"');
+    expect(markup).toContain('id="sound-bank-debug-layout-expanded"');
+    expect(markup).toContain('aria-pressed="false"');
   });
 
   it('randomizes the sound bank seed within the shared debug coordinate range', () => {
