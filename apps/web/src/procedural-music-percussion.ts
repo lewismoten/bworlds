@@ -431,8 +431,8 @@ function resolveProceduralPercussionPattern(options: {
   stepIndex: number;
 }): ProceduralPercussionPattern {
   if (options.themeId === 'deep-forest') {
-    if (options.cadence !== 'neutral') {
-      return FOREST_CADENCE_PATTERNS[options.cadence];
+    if (isMeaningfulPercussionTransition(options.cadence)) {
+      return FOREST_CADENCE_PATTERNS.answer;
     }
     const index = Math.floor(
       hash2DWithSeed(
@@ -445,8 +445,8 @@ function resolveProceduralPercussionPattern(options: {
   }
 
   if (options.themeId === 'town-square') {
-    if (options.cadence !== 'neutral') {
-      return TOWN_FILL_PATTERNS[options.cadence];
+    if (isMeaningfulPercussionTransition(options.cadence)) {
+      return TOWN_FILL_PATTERNS.answer;
     }
     const relatedMeasureIndex = resolvePercussionRelatedMeasureIndex(
       options.stepIndex
@@ -461,8 +461,8 @@ function resolveProceduralPercussionPattern(options: {
     return TOWN_PULSE_PATTERNS[index] ?? TOWN_PULSE_PATTERNS[0]!;
   }
 
-  if (options.cadence !== 'neutral') {
-    return GENERIC_FILL_PATTERNS[options.cadence];
+  if (isMeaningfulPercussionTransition(options.cadence)) {
+    return GENERIC_FILL_PATTERNS.answer;
   }
 
   const index = Math.floor(
@@ -502,6 +502,12 @@ function resolvePercussionFamilyForGrooveRole(options: {
 
 function resolvePercussionMeasureIndex(stepIndex: number): number {
   return Math.floor(stepIndex / 4);
+}
+
+function isMeaningfulPercussionTransition(
+  cadence: ProceduralLeadPhraseCadence
+): boolean {
+  return cadence === 'answer';
 }
 
 function resolvePercussionRelatedMeasureIndex(stepIndex: number): number {

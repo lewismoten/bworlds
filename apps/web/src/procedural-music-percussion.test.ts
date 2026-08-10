@@ -169,8 +169,27 @@ describe('procedural music percussion', () => {
     ).toBe(true);
   });
 
-  it('keeps light forest question percussion between the strong beats', () => {
-    const notes = createProceduralPercussionNotes({
+  it('keeps forest question cadences on the stable pulse instead of adding a fill', () => {
+    const neutral = createProceduralPercussionNotes({
+      themeId: 'deep-forest',
+      stepIndex: 6,
+      phraseStep: 6,
+      cadence: 'neutral',
+      startMs: 0,
+      stepDurationMs: 440,
+      rootMidiNote: 53,
+      baseInstrumentId: 'deep-forest:percussion:3:-2',
+      baseVolume: 0.02,
+      baseAttackMs: 12,
+      baseReleaseMs: 60,
+      baseDetuneCents: 4,
+      baseHarmonicGain: 0.12,
+      basePulseRate: 1,
+      brightness: 0.92,
+      clusterX: 3,
+      clusterY: -2,
+    });
+    const question = createProceduralPercussionNotes({
       themeId: 'deep-forest',
       stepIndex: 6,
       phraseStep: 6,
@@ -191,22 +210,30 @@ describe('procedural music percussion', () => {
     });
 
     expect(
-      notes.some(
+      question.some(
         (note) =>
           resolvePercussionFamilyFromInstrumentId(note.instrumentId) ===
-            'kick' && note.startMs === 0
+          'cymbals'
       )
-    ).toBe(true);
+    ).toBe(false);
     expect(
-      notes
-        .filter((note) => {
-          const grooveRole = resolvePercussionGrooveRoleFromInstrumentId(
-            note.instrumentId
-          );
-          return grooveRole === 'pulse' || grooveRole === 'texture';
-        })
-        .every((note) => note.startMs > 0 && note.startMs < 220)
-    ).toBe(true);
+      question.map((note) =>
+        resolvePercussionGrooveRoleFromInstrumentId(note.instrumentId)
+      )
+    ).toEqual(
+      neutral.map((note) =>
+        resolvePercussionGrooveRoleFromInstrumentId(note.instrumentId)
+      )
+    );
+    expect(
+      question.map((note) =>
+        resolvePercussionFamilyFromInstrumentId(note.instrumentId)
+      )
+    ).toEqual(
+      neutral.map((note) =>
+        resolvePercussionFamilyFromInstrumentId(note.instrumentId)
+      )
+    );
   });
 
   it('parses note-level percussion family overrides from instrument ids', () => {
@@ -736,6 +763,118 @@ describe('procedural music percussion', () => {
     ).toBe(true);
     expect(
       neutral.some(
+        (note) =>
+          resolvePercussionFamilyFromInstrumentId(note.instrumentId) ===
+          'cymbals'
+      )
+    ).toBe(false);
+  });
+
+  it('keeps question cadences on the base groove until the answer transition arrives', () => {
+    const townNeutral = createProceduralPercussionNotes({
+      themeId: 'town-square',
+      stepIndex: 5,
+      phraseStep: 5,
+      cadence: 'neutral',
+      startMs: 0,
+      stepDurationMs: 320,
+      rootMidiNote: 59,
+      baseInstrumentId: 'town-square:percussion:3:-2',
+      baseVolume: 0.02,
+      baseAttackMs: 12,
+      baseReleaseMs: 60,
+      baseDetuneCents: 4,
+      baseHarmonicGain: 0.12,
+      basePulseRate: 1,
+      brightness: 0.92,
+      clusterX: 3,
+      clusterY: -2,
+    });
+    const townQuestion = createProceduralPercussionNotes({
+      themeId: 'town-square',
+      stepIndex: 5,
+      phraseStep: 5,
+      cadence: 'question',
+      startMs: 0,
+      stepDurationMs: 320,
+      rootMidiNote: 59,
+      baseInstrumentId: 'town-square:percussion:3:-2',
+      baseVolume: 0.02,
+      baseAttackMs: 12,
+      baseReleaseMs: 60,
+      baseDetuneCents: 4,
+      baseHarmonicGain: 0.12,
+      basePulseRate: 1,
+      brightness: 0.92,
+      clusterX: 3,
+      clusterY: -2,
+    });
+    const genericNeutral = createProceduralPercussionNotes({
+      themeId: 'ridge-pass',
+      stepIndex: 8,
+      phraseStep: 8,
+      cadence: 'neutral',
+      startMs: 0,
+      stepDurationMs: 380,
+      rootMidiNote: 53,
+      baseInstrumentId: 'ridge-pass:percussion:3:-2',
+      baseVolume: 0.02,
+      baseAttackMs: 12,
+      baseReleaseMs: 60,
+      baseDetuneCents: 4,
+      baseHarmonicGain: 0.12,
+      basePulseRate: 1,
+      brightness: 0.92,
+      clusterX: 3,
+      clusterY: -2,
+    });
+    const genericQuestion = createProceduralPercussionNotes({
+      themeId: 'ridge-pass',
+      stepIndex: 8,
+      phraseStep: 8,
+      cadence: 'question',
+      startMs: 0,
+      stepDurationMs: 380,
+      rootMidiNote: 53,
+      baseInstrumentId: 'ridge-pass:percussion:3:-2',
+      baseVolume: 0.02,
+      baseAttackMs: 12,
+      baseReleaseMs: 60,
+      baseDetuneCents: 4,
+      baseHarmonicGain: 0.12,
+      basePulseRate: 1,
+      brightness: 0.92,
+      clusterX: 3,
+      clusterY: -2,
+    });
+
+    expect(
+      townQuestion.map((note) =>
+        resolvePercussionGrooveRoleFromInstrumentId(note.instrumentId)
+      )
+    ).toEqual(
+      townNeutral.map((note) =>
+        resolvePercussionGrooveRoleFromInstrumentId(note.instrumentId)
+      )
+    );
+    expect(
+      genericQuestion.map((note) =>
+        resolvePercussionGrooveRoleFromInstrumentId(note.instrumentId)
+      )
+    ).toEqual(
+      genericNeutral.map((note) =>
+        resolvePercussionGrooveRoleFromInstrumentId(note.instrumentId)
+      )
+    );
+    expect(
+      townQuestion.some(
+        (note) =>
+          resolvePercussionFamilyFromInstrumentId(note.instrumentId) ===
+          'cymbals'
+      )
+    ).toBe(false);
+    expect(
+      genericQuestion.some(
         (note) =>
           resolvePercussionFamilyFromInstrumentId(note.instrumentId) ===
           'cymbals'
