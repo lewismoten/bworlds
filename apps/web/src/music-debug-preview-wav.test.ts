@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
+  createMusicDebugPreviewWavFileForNotes,
   renderMusicDebugPreviewNoteToSamples,
+  renderMusicDebugPreviewNotesToSamples,
   resolveEnvelopeGain,
   resolveHarmonicEnvelopeGain,
   resolveNoiseBurstEnvelopeGain,
@@ -240,6 +242,44 @@ describe('music debug preview wav', () => {
     expect(
       averageSampleDifference(burstSamples, steadySamples)
     ).toBeGreaterThan(0.003);
+  });
+
+  it('renders multiple preview notes into one solo wav timeline with preserved spacing', () => {
+    const first = createPreviewNote({
+      instrumentId: 'kick-36',
+      role: 'percussion',
+      startMs: 200,
+      durationMs: 120,
+      frequency: 82,
+      waveform: 'sine',
+    });
+    const second = createPreviewNote({
+      instrumentId: 'snare-38',
+      role: 'percussion',
+      startMs: 500,
+      durationMs: 90,
+      frequency: 196,
+      waveform: 'triangle',
+    });
+
+    const mixedSamples = renderMusicDebugPreviewNotesToSamples(
+      [first, second],
+      8_000
+    );
+    const soloWav = createMusicDebugPreviewWavFileForNotes({
+      notes: [first, second],
+      fileName: 'percussion-solo.wav',
+    });
+
+    expect(mixedSamples.length).toBeGreaterThan(
+      renderMusicDebugPreviewNoteToSamples(first, 8_000).length
+    );
+    expect(mixedSamples.some((sample) => Math.abs(sample) > 0.01)).toBe(true);
+    expect(soloWav.fileName).toBe('percussion-solo.wav');
+    expect(soloWav.mimeType).toBe('audio/wav');
+    expect(Array.from(soloWav.bytes.slice(0, 4))).toEqual([
+      0x52, 0x49, 0x46, 0x46,
+    ]);
   });
 });
 

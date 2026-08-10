@@ -3,6 +3,7 @@ import { resolveMusicDebugInstrumentPreviewNote } from './music-debug-instrument
 import { createMusicDebugMidiFile } from './music-debug-midi-file.ts';
 import { type MusicDebugMidiMetadataOptions } from './music-debug-midi.ts';
 import {
+  createMusicDebugPreviewWavFileForNotes,
   createMusicDebugPreviewWavFile,
   type MusicDebugPreviewWavFile,
 } from './music-debug-preview-wav.ts';
@@ -147,6 +148,26 @@ function createMusicDebugInstrumentPreviewWavFiles(
       createMusicDebugPreviewWavFile({
         note: previewNote,
         fileName: `${baseName}-${role}-preview.wav`,
+      })
+    );
+  }
+
+  for (const voiceCount of createMusicDebugPercussionVoiceCounts(
+    snapshot.notes
+  )) {
+    const soloNotes = snapshot.notes.filter(
+      (note) =>
+        note.role === 'percussion' &&
+        voiceCount.voiceId !== null &&
+        note.instrumentId.includes(`perc-${voiceCount.voiceId}:`)
+    );
+    if (soloNotes.length === 0) {
+      continue;
+    }
+    files.push(
+      createMusicDebugPreviewWavFileForNotes({
+        notes: soloNotes,
+        fileName: `${baseName}-percussion-${voiceCount.voiceId}-solo.wav`,
       })
     );
   }

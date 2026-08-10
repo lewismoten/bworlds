@@ -143,9 +143,67 @@ export function createMusicDebugPreviewWavFile(options: {
   fileName: string;
 }): MusicDebugPreviewWavFile {
   const samples = renderMusicDebugPreviewNoteToSamples(options.note);
+  return createMusicDebugPreviewWavFileFromSamples({
+    samples,
+    fileName: options.fileName,
+  });
+}
+
+export function renderMusicDebugPreviewNotesToSamples(
+  notes: readonly ProceduralMusicNote[],
+  sampleRate = MUSIC_DEBUG_PREVIEW_WAV_SAMPLE_RATE
+): Float32Array {
+  if (notes.length === 0) {
+    return new Float32Array(1);
+  }
+  const noteStartMs = Math.min(...notes.map((note) => note.startMs));
+  const noteEndMs = Math.max(
+    ...notes.map((note) => note.startMs + Math.max(1, note.durationMs))
+  );
+  const totalDurationMs = Math.max(1, noteEndMs - noteStartMs);
+  const totalFrameCount = Math.max(
+    1,
+    Math.ceil((totalDurationMs / 1000) * sampleRate)
+  );
+  const mixed = new Float32Array(totalFrameCount);
+
+  for (const note of notes) {
+    const rendered = renderMusicDebugPreviewNoteToSamples(note, sampleRate);
+    const startFrame = Math.max(
+      0,
+      Math.round(((note.startMs - noteStartMs) / 1000) * sampleRate)
+    );
+    for (
+      let frameIndex = 0;
+      frameIndex < rendered.length && startFrame + frameIndex < mixed.length;
+      frameIndex += 1
+    ) {
+      mixed[startFrame + frameIndex] += rendered[frameIndex] ?? 0;
+    }
+  }
+
+  normalizeSamples(mixed);
+  return mixed;
+}
+
+export function createMusicDebugPreviewWavFileForNotes(options: {
+  notes: readonly ProceduralMusicNote[];
+  fileName: string;
+}): MusicDebugPreviewWavFile {
+  const samples = renderMusicDebugPreviewNotesToSamples(options.notes);
+  return createMusicDebugPreviewWavFileFromSamples({
+    samples,
+    fileName: options.fileName,
+  });
+}
+
+function createMusicDebugPreviewWavFileFromSamples(options: {
+  samples: Float32Array;
+  fileName: string;
+}): MusicDebugPreviewWavFile {
   return {
     bytes: encodeMonoPcm16Wav({
-      samples,
+      samples: options.samples,
       sampleRate: MUSIC_DEBUG_PREVIEW_WAV_SAMPLE_RATE,
     }),
     fileName: options.fileName,

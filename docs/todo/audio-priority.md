@@ -51,7 +51,7 @@
 - [x] Show drum-note counts in the song report.
 - [x] Reject drum tracks using only one percussion voice.
 - [x] Require at least three drum roles in a full groove.
-- [ ] Export a solo WAV for each drum voice.
+- [x] Export a solo WAV for each drum voice.
 
 ## Percussion Composition
 
