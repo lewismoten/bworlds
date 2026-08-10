@@ -13,6 +13,8 @@ warnings.
 - Lead-contour ending failures and off-peak climax failures are also treated as
   critical warnings, using the exact measure and note context from the contour
   analysis.
+- Harmony and bass progression drift are now critical warnings too, using the
+  exact measure window plus detected versus planned harmony/root labels.
 - `warningMessages` remain non-blocking diagnostics for softer issues like
   percussion validation hints and planned-progression drift reports. Progression
   drift warnings now include the exact measure window that drifted.

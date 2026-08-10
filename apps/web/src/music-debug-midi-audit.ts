@@ -194,7 +194,7 @@ export function inspectMusicDebugMidiBytes(
             !section.followsPlannedProgression))
     )
   ) {
-    warningMessages.push(
+    criticalWarningMessages.push(
       ...snapshot.harmonyChordDetections
         .filter(
           (section) =>
@@ -228,7 +228,7 @@ export function inspectMusicDebugMidiBytes(
             !section.followsPlannedProgression))
     )
   ) {
-    warningMessages.push(
+    criticalWarningMessages.push(
       ...snapshot.bassProgressionDetections
         .filter(
           (section) =>

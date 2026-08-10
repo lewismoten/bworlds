@@ -16,7 +16,9 @@ describe('music debug midi', () => {
       dayProgress: 0.25,
       yearProgress: 0.75,
     });
-    const exportableSnapshot = withValidLeadContourAnalysis(snapshot);
+    const exportableSnapshot = withValidProgressionDetections(
+      withValidLeadContourAnalysis(snapshot)
+    );
 
     const file = createMusicDebugMidiFile(exportableSnapshot, {
       createdAt: new Date('2026-08-09T00:00:00.000Z'),
@@ -68,7 +70,7 @@ describe('music debug midi', () => {
       clusterY: -1,
     });
     const exportableSnapshot = withValidLeadContourAnalysis(
-      withValidCadenceValidation(snapshot)
+      withValidProgressionDetections(withValidCadenceValidation(snapshot))
     );
 
     const file = createMusicDebugMidiFile(exportableSnapshot, {
@@ -116,7 +118,7 @@ describe('music debug midi', () => {
       clusterY: -1,
     });
     const exportableSnapshot = withValidLeadContourAnalysis(
-      withValidCadenceValidation(snapshot)
+      withValidProgressionDetections(withValidCadenceValidation(snapshot))
     );
 
     const file = createMusicDebugMidiFile(exportableSnapshot);
@@ -146,7 +148,7 @@ describe('music debug midi', () => {
       clusterY: -2,
     });
     const exportableSnapshot = withValidLeadContourAnalysis(
-      withValidCadenceValidation(snapshot)
+      withValidProgressionDetections(withValidCadenceValidation(snapshot))
     );
 
     const file = createMusicDebugMidiFile(exportableSnapshot);
@@ -176,7 +178,7 @@ describe('music debug midi', () => {
       clusterY: -2,
     });
     const exportableSnapshot = withValidLeadContourAnalysis(
-      withValidCadenceValidation(snapshot)
+      withValidProgressionDetections(withValidCadenceValidation(snapshot))
     );
 
     const file = createMusicDebugMidiFile(exportableSnapshot, {
@@ -203,7 +205,7 @@ describe('music debug midi', () => {
       weatherIntensity: 1,
     });
     const exportableSnapshot = withValidLeadContourAnalysis(
-      withValidCadenceValidation(snapshot)
+      withValidProgressionDetections(withValidCadenceValidation(snapshot))
     );
 
     const file = createMusicDebugMidiFile(exportableSnapshot, {
@@ -257,12 +259,16 @@ describe('music debug midi', () => {
   });
 
   it('blocks MIDI export when the final cadence does not resolve to tonic', () => {
-    const snapshot = createMusicDebugSnapshot({
-      tileKind: 'town',
-      contextType: 'town',
-      clusterX: 3,
-      clusterY: -2,
-    });
+    const snapshot = withValidProgressionDetections(
+      withValidLeadContourAnalysis(
+        createMusicDebugSnapshot({
+          tileKind: 'town',
+          contextType: 'town',
+          clusterX: 3,
+          clusterY: -2,
+        })
+      )
+    );
 
     expect(() =>
       createMusicDebugMidiFile({
@@ -281,14 +287,14 @@ describe('music debug midi', () => {
   });
 
   it('blocks MIDI export when the lead contour ending misses its required tonic resolution', () => {
-    const snapshot = withValidCadenceValidation(
+    const snapshot = withValidProgressionDetections(withValidCadenceValidation(
       createMusicDebugSnapshot({
         tileKind: 'town',
         contextType: 'town',
         clusterX: 3,
         clusterY: -2,
       })
-    );
+    ));
 
     expect(() =>
       createMusicDebugMidiFile({
@@ -307,14 +313,14 @@ describe('music debug midi', () => {
   });
 
   it('blocks MIDI export when the lead contour climax occurs in the wrong phrase', () => {
-    const snapshot = withValidCadenceValidation(
+    const snapshot = withValidProgressionDetections(withValidCadenceValidation(
       createMusicDebugSnapshot({
         tileKind: 'town',
         contextType: 'town',
         clusterX: 3,
         clusterY: -2,
       })
-    );
+    ));
 
     expect(() =>
       createMusicDebugMidiFile({
@@ -333,12 +339,12 @@ describe('music debug midi', () => {
   });
 
   it('blocks MIDI export when SongDNA validation fails', () => {
-    const snapshot = withValidLeadContourAnalysis(createMusicDebugSnapshot({
+    const snapshot = withValidProgressionDetections(withValidLeadContourAnalysis(createMusicDebugSnapshot({
       tileKind: 'town',
       contextType: 'town',
       clusterX: 3,
       clusterY: -2,
-    }));
+    })));
 
     expect(() =>
       createMusicDebugMidiFile({
@@ -356,12 +362,12 @@ describe('music debug midi', () => {
   });
 
   it('downloads the encoded midi file through a blob url', () => {
-    const snapshot = withValidLeadContourAnalysis(createMusicDebugSnapshot({
+    const snapshot = withValidProgressionDetections(withValidLeadContourAnalysis(createMusicDebugSnapshot({
       tileKind: 'forest',
       contextType: 'overworld',
       clusterX: 0,
       clusterY: 0,
-    }));
+    })));
     const exportableSnapshot = {
       ...snapshot,
       midiExportValidation: {
@@ -399,12 +405,12 @@ describe('music debug midi', () => {
   });
 
   it('exports a melody-only midi file for rapid lead review', () => {
-    const snapshot = withValidLeadContourAnalysis(createMusicDebugSnapshot({
+    const snapshot = withValidProgressionDetections(withValidLeadContourAnalysis(createMusicDebugSnapshot({
       tileKind: 'forest',
       contextType: 'overworld',
       clusterX: 0,
       clusterY: 0,
-    }));
+    })));
 
     const file = createMusicDebugMidiFile(snapshot, {
       variant: 'melody-only',
@@ -419,12 +425,12 @@ describe('music debug midi', () => {
   });
 
   it('exports a harmony-and-bass midi file for accompaniment review', () => {
-    const snapshot = withValidLeadContourAnalysis(createMusicDebugSnapshot({
+    const snapshot = withValidProgressionDetections(withValidLeadContourAnalysis(createMusicDebugSnapshot({
       tileKind: 'town',
       contextType: 'town',
       clusterX: 3,
       clusterY: -2,
-    }));
+    })));
 
     const file = createMusicDebugMidiFile(snapshot, {
       variant: 'harmony-and-bass',
@@ -442,7 +448,7 @@ describe('music debug midi', () => {
   it('includes lyric meta events when the generated lead instrument uses vocals', () => {
     const snapshot = findVocalsSnapshot();
     const exportableSnapshot = withValidLeadContourAnalysis(
-      withValidCadenceValidation(snapshot)
+      withValidProgressionDetections(withValidCadenceValidation(snapshot))
     );
     const file = createMusicDebugMidiFile(exportableSnapshot, {
       createdAt: new Date('2026-08-09T00:00:00.000Z'),
@@ -456,12 +462,12 @@ describe('music debug midi', () => {
   }, 4_000);
 
   it('rejects MIDI export when chromatic-note validation fails', () => {
-    const snapshot = withValidLeadContourAnalysis(createMusicDebugSnapshot({
+    const snapshot = withValidProgressionDetections(withValidLeadContourAnalysis(createMusicDebugSnapshot({
       tileKind: 'forest',
       contextType: 'overworld',
       clusterX: 0,
       clusterY: 0,
-    }));
+    })));
 
     expect(() =>
       createMusicDebugMidiFile({
@@ -476,12 +482,12 @@ describe('music debug midi', () => {
   });
 
   it('rejects MIDI export when timing validation fails', () => {
-    const snapshot = withValidLeadContourAnalysis(createMusicDebugSnapshot({
+    const snapshot = withValidProgressionDetections(withValidLeadContourAnalysis(createMusicDebugSnapshot({
       tileKind: 'forest',
       contextType: 'overworld',
       clusterX: 0,
       clusterY: 0,
-    }));
+    })));
 
     expect(() =>
       createMusicDebugMidiFile({
@@ -503,12 +509,12 @@ describe('music debug midi', () => {
   });
 
   it('rejects MIDI export when the configured motif never appears', () => {
-    const snapshot = withValidLeadContourAnalysis(createMusicDebugSnapshot({
+    const snapshot = withValidProgressionDetections(withValidLeadContourAnalysis(createMusicDebugSnapshot({
       tileKind: 'forest',
       contextType: 'overworld',
       clusterX: 0,
       clusterY: 0,
-    }));
+    })));
 
     expect(() =>
       createMusicDebugMidiFile({
@@ -567,6 +573,26 @@ function withValidLeadContourAnalysis(
           !message.includes('resolved to scale degree')
       ),
     },
+  };
+}
+
+function withValidProgressionDetections(
+  snapshot: ReturnType<typeof createMusicDebugSnapshot>
+): ReturnType<typeof createMusicDebugSnapshot> {
+  return {
+    ...snapshot,
+    harmonyChordDetections: snapshot.harmonyChordDetections.map((section) => ({
+      ...section,
+      followsPlannedProgression: true,
+      driftWindows: [],
+    })),
+    bassProgressionDetections: snapshot.bassProgressionDetections.map(
+      (section) => ({
+        ...section,
+        followsPlannedProgression: true,
+        driftWindows: [],
+      })
+    ),
   };
 }
 

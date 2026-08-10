@@ -41,7 +41,7 @@ describe('music debug midi audit', () => {
     const snapshot = findSnapshotWithDuration(138_000);
 
     const audit = createMusicDebugMidiExportAudit(
-      withValidLeadContourAnalysis(snapshot),
+      withValidProgressionDetections(withValidLeadContourAnalysis(snapshot)),
       {
       createdAt: new Date('2026-08-09T00:00:00.000Z'),
       }
@@ -70,7 +70,7 @@ describe('music debug midi audit', () => {
       createdAt: new Date('2026-08-09T00:00:00.000Z'),
     });
     const audit = inspectMusicDebugMidiBytes(file.bytes, {
-      ...withValidLeadContourAnalysis(snapshot),
+      ...withValidProgressionDetections(withValidLeadContourAnalysis(snapshot)),
       cadenceValidation: {
         ...snapshot.cadenceValidation,
         isValidForMidiExport: true,
@@ -217,7 +217,7 @@ describe('music debug midi audit', () => {
     });
 
     const audit = inspectMusicDebugMidiBytes(file.bytes, {
-      ...withValidLeadContourAnalysis(snapshot),
+      ...withValidProgressionDetections(withValidLeadContourAnalysis(snapshot)),
       cadenceValidation: {
         ...snapshot.cadenceValidation,
         isValidForMidiExport: true,
@@ -245,10 +245,10 @@ describe('music debug midi audit', () => {
       bassProgressionDetections: snapshot.bassProgressionDetections,
     });
 
-    expect(audit.isConsistent).toBe(true);
+    expect(audit.isConsistent).toBe(false);
     expect(audit.mismatchMessages).toEqual([]);
     expect(
-      audit.warningMessages.some((message) =>
+      audit.criticalWarningMessages.some((message) =>
         message.includes(
           'Intro harmony drifted at measures 1-2 (A-C-E vs G-B-D).'
         )
@@ -268,7 +268,7 @@ describe('music debug midi audit', () => {
     });
 
     const audit = inspectMusicDebugMidiBytes(file.bytes, {
-      ...withValidLeadContourAnalysis(snapshot),
+      ...withValidProgressionDetections(withValidLeadContourAnalysis(snapshot)),
       cadenceValidation: {
         ...snapshot.cadenceValidation,
         isValidForMidiExport: true,
@@ -296,10 +296,10 @@ describe('music debug midi audit', () => {
       harmonyChordDetections: snapshot.harmonyChordDetections,
     });
 
-    expect(audit.isConsistent).toBe(true);
+    expect(audit.isConsistent).toBe(false);
     expect(audit.mismatchMessages).toEqual([]);
     expect(
-      audit.warningMessages.some((message) =>
+      audit.criticalWarningMessages.some((message) =>
         message.includes('Intro bass roots drifted at measures 1-2 (A vs G).')
       )
     ).toBe(true);
@@ -346,7 +346,7 @@ describe('music debug midi audit', () => {
     });
 
     const audit = inspectMusicDebugMidiBytes(file.bytes, {
-      ...withValidLeadContourAnalysis(snapshot),
+      ...withValidProgressionDetections(withValidLeadContourAnalysis(snapshot)),
       cadenceValidation: {
         ...snapshot.cadenceValidation,
         isValidForMidiExport: true,
@@ -379,7 +379,7 @@ describe('music debug midi audit', () => {
     });
 
     const audit = inspectMusicDebugMidiBytes(file.bytes, {
-      ...withValidLeadContourAnalysis(snapshot),
+      ...withValidProgressionDetections(withValidLeadContourAnalysis(snapshot)),
       cadenceValidation: {
         ...snapshot.cadenceValidation,
         isValidForMidiExport: true,
@@ -412,7 +412,7 @@ describe('music debug midi audit', () => {
     });
 
     const audit = inspectMusicDebugMidiBytes(file.bytes, {
-      ...withValidLeadContourAnalysis(snapshot),
+      ...withValidProgressionDetections(withValidLeadContourAnalysis(snapshot)),
       cadenceValidation: {
         ...snapshot.cadenceValidation,
         isValidForMidiExport: true,
@@ -443,7 +443,7 @@ describe('music debug midi audit', () => {
     });
 
     const audit = inspectMusicDebugMidiBytes(file.bytes, {
-      ...withValidLeadContourAnalysis(snapshot),
+      ...withValidProgressionDetections(withValidLeadContourAnalysis(snapshot)),
       cadenceValidation: {
         ...snapshot.cadenceValidation,
         isValidForMidiExport: true,
@@ -600,5 +600,25 @@ function withValidLeadContourAnalysis(
           !message.includes('resolved to scale degree')
       ),
     },
+  };
+}
+
+function withValidProgressionDetections(
+  snapshot: ReturnType<typeof createMusicDebugSnapshot>
+): ReturnType<typeof createMusicDebugSnapshot> {
+  return {
+    ...snapshot,
+    harmonyChordDetections: snapshot.harmonyChordDetections.map((section) => ({
+      ...section,
+      followsPlannedProgression: true,
+      driftWindows: [],
+    })),
+    bassProgressionDetections: snapshot.bassProgressionDetections.map(
+      (section) => ({
+        ...section,
+        followsPlannedProgression: true,
+        driftWindows: [],
+      })
+    ),
   };
 }
