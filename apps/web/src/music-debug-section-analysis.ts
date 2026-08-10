@@ -25,6 +25,14 @@ export type MusicDebugHarmonyChordDetection = {
   followsPlannedProgression: boolean;
 };
 
+export type MusicDebugBassProgressionDetection = {
+  sectionId: string;
+  sectionLabel: string;
+  detectedRootLabels: string[];
+  plannedRootLabels: string[];
+  followsPlannedProgression: boolean;
+};
+
 export type MusicDebugSectionLayerActivity = {
   sectionId: string;
   sectionLabel: string;
@@ -132,6 +140,54 @@ export function createMusicDebugHarmonyChordDetections(options: {
           : doesDetectedChordSequenceFollowPlan(
               detectedChordLabels,
               plannedChordLabels
+            ),
+    };
+  });
+}
+
+export function createMusicDebugBassProgressionDetections(options: {
+  notes: readonly ProceduralMusicNote[];
+  notePitchDiagnostics: readonly MusicDebugNotePitchDiagnostic[];
+  sections: readonly ProceduralMusicSongSection[];
+  scale?: readonly number[];
+  rootMidiNote?: number;
+  chordTimeline?: readonly ProceduralChordTimelineEntry[];
+}): MusicDebugBassProgressionDetection[] {
+  return options.sections.map((section) => {
+    const plannedRootLabels =
+      options.scale && options.chordTimeline
+        ? collectPlannedSectionRootLabels({
+            section,
+            scale: options.scale,
+            rootMidiNote: options.rootMidiNote ?? 60,
+            chordTimeline: options.chordTimeline,
+          })
+        : [];
+    const detectedRootLabels =
+      options.chordTimeline && options.chordTimeline.length > 0
+        ? collectDetectedSectionBassRootLabels({
+            notes: options.notes,
+            notePitchDiagnostics: options.notePitchDiagnostics,
+            section,
+            chordTimeline: options.chordTimeline,
+          })
+        : collectOrderedBassRootLabels({
+            notes: options.notes,
+            notePitchDiagnostics: options.notePitchDiagnostics,
+            section,
+          });
+
+    return {
+      sectionId: section.id,
+      sectionLabel: section.label,
+      detectedRootLabels,
+      plannedRootLabels,
+      followsPlannedProgression:
+        plannedRootLabels.length === 0
+          ? detectedRootLabels.length > 0
+          : doesDetectedRootSequenceFollowPlan(
+              detectedRootLabels,
+              plannedRootLabels
             ),
     };
   });
@@ -739,6 +795,32 @@ function collectPlannedSectionChordLabels(options: {
   return collapseConsecutiveChordLabels(labels);
 }
 
+function collectPlannedSectionRootLabels(options: {
+  section: ProceduralMusicSongSection;
+  scale: readonly number[];
+  rootMidiNote: number;
+  chordTimeline: readonly ProceduralChordTimelineEntry[];
+}): string[] {
+  if (options.chordTimeline.length === 0) {
+    return [];
+  }
+
+  const labels: string[] = [];
+  for (const window of collectSectionChordWindows(
+    options.section,
+    options.chordTimeline
+  )) {
+    labels.push(
+      resolvePitchClassLabel(
+        options.rootMidiNote +
+          getProceduralScaleDegreeSemitones(options.scale, window.degreeIndex)
+      )
+    );
+  }
+
+  return collapseConsecutiveChordLabels(labels);
+}
+
 function collapseConsecutiveChordLabels(labels: readonly string[]): string[] {
   const collapsed: string[] = [];
   for (const label of labels) {
@@ -748,6 +830,174 @@ function collapseConsecutiveChordLabels(labels: readonly string[]): string[] {
     collapsed.push(label);
   }
   return collapsed;
+}
+
+function collectOrderedBassRootLabels(options: {
+  notes: readonly ProceduralMusicNote[];
+  notePitchDiagnostics: readonly MusicDebugNotePitchDiagnostic[];
+  section: ProceduralMusicSongSection;
+}): string[] {
+  const sectionStartMs = options.notes[0]?.startMs ?? 0;
+  const sectionStart = sectionStartMs + options.section.startOffsetMs;
+  const sectionEnd = sectionStart + options.section.durationMs;
+  const labels: string[] = [];
+
+  for (let index = 0; index < options.notes.length; index += 1) {
+    const note = options.notes[index]!;
+    const diagnostic = options.notePitchDiagnostics[index];
+    if (
+      !diagnostic ||
+      note.role !== 'bass' ||
+      diagnostic.midiNote === null ||
+      note.startMs < sectionStart ||
+      note.startMs >= sectionEnd
+    ) {
+      continue;
+    }
+    labels.push(resolvePitchClassLabel(diagnostic.midiNote));
+  }
+
+  return collapseConsecutiveChordLabels(labels);
+}
+
+function collectDetectedSectionBassRootLabels(options: {
+  notes: readonly ProceduralMusicNote[];
+  notePitchDiagnostics: readonly MusicDebugNotePitchDiagnostic[];
+  section: ProceduralMusicSongSection;
+  chordTimeline: readonly ProceduralChordTimelineEntry[];
+}): string[] {
+  const sectionStartMs = options.notes[0]?.startMs ?? 0;
+  const sectionStart = sectionStartMs + options.section.startOffsetMs;
+  const measureDurationMs =
+    options.section.measureCount > 0
+      ? options.section.durationMs / options.section.measureCount
+      : options.section.durationMs;
+  const labels: string[] = [];
+
+  for (const window of collectSectionChordWindows(
+    options.section,
+    options.chordTimeline
+  )) {
+    const startMs =
+      sectionStart + (window.sectionStartMeasure - 1) * measureDurationMs;
+    const endMs = sectionStart + window.sectionEndMeasure * measureDurationMs;
+    const label = detectBassRootLabelForWindow({
+      notes: options.notes,
+      notePitchDiagnostics: options.notePitchDiagnostics,
+      startMs,
+      endMs,
+    });
+    if (label) {
+      labels.push(label);
+    }
+  }
+
+  return collapseConsecutiveChordLabels(labels);
+}
+
+function detectBassRootLabelForWindow(options: {
+  notes: readonly ProceduralMusicNote[];
+  notePitchDiagnostics: readonly MusicDebugNotePitchDiagnostic[];
+  startMs: number;
+  endMs: number;
+}): string | null {
+  let earliestStartMs = Number.POSITIVE_INFINITY;
+  let bestLabel: string | null = null;
+  let bestDuration = -1;
+
+  for (let index = 0; index < options.notes.length; index += 1) {
+    const note = options.notes[index]!;
+    const diagnostic = options.notePitchDiagnostics[index];
+    if (
+      !diagnostic ||
+      note.role !== 'bass' ||
+      diagnostic.midiNote === null ||
+      note.startMs >= options.endMs ||
+      note.startMs + note.durationMs <= options.startMs
+    ) {
+      continue;
+    }
+    const overlapStartMs = Math.max(note.startMs, options.startMs);
+    const overlapEndMs = Math.min(
+      note.startMs + note.durationMs,
+      options.endMs
+    );
+    if (overlapEndMs <= overlapStartMs) {
+      continue;
+    }
+    const label = resolvePitchClassLabel(diagnostic.midiNote);
+    const overlapDurationMs = overlapEndMs - overlapStartMs;
+    if (
+      note.startMs < earliestStartMs ||
+      (note.startMs === earliestStartMs && overlapDurationMs > bestDuration) ||
+      (note.startMs === earliestStartMs &&
+        overlapDurationMs === bestDuration &&
+        bestLabel !== null &&
+        label.localeCompare(bestLabel) < 0)
+    ) {
+      bestLabel = label;
+      bestDuration = overlapDurationMs;
+      earliestStartMs = note.startMs;
+    }
+  }
+
+  return bestLabel;
+}
+
+function collectSectionChordWindows(
+  section: ProceduralMusicSongSection,
+  chordTimeline: readonly ProceduralChordTimelineEntry[]
+): Array<{
+  degreeIndex: number;
+  sectionStartMeasure: number;
+  sectionEndMeasure: number;
+}> {
+  if (chordTimeline.length === 0) {
+    return [];
+  }
+
+  const phraseMeasureCount = Math.max(
+    1,
+    ...chordTimeline.map((entry) => entry.endMeasure)
+  );
+  const windows: Array<{
+    degreeIndex: number;
+    sectionStartMeasure: number;
+    sectionEndMeasure: number;
+  }> = [];
+
+  for (
+    let measure = section.startMeasure;
+    measure <= section.endMeasure;
+    measure += 1
+  ) {
+    const normalizedMeasure = ((measure - 1) % phraseMeasureCount) + 1;
+    const timelineEntry = chordTimeline.find(
+      (entry) =>
+        normalizedMeasure >= entry.startMeasure &&
+        normalizedMeasure <= entry.endMeasure
+    );
+    if (!timelineEntry) {
+      continue;
+    }
+    const sectionMeasure = measure - section.startMeasure + 1;
+    const previous = windows[windows.length - 1];
+    if (
+      previous &&
+      previous.degreeIndex === timelineEntry.degreeIndex &&
+      previous.sectionEndMeasure === sectionMeasure - 1
+    ) {
+      previous.sectionEndMeasure = sectionMeasure;
+      continue;
+    }
+    windows.push({
+      degreeIndex: timelineEntry.degreeIndex,
+      sectionStartMeasure: sectionMeasure,
+      sectionEndMeasure: sectionMeasure,
+    });
+  }
+
+  return windows;
 }
 
 function createPlannedChordLabel(
@@ -785,6 +1035,31 @@ function doesDetectedChordSequenceFollowPlan(
       planIndex += 1;
     }
     if (planIndex >= plannedChordLabels.length) {
+      return false;
+    }
+    planIndex += 1;
+  }
+
+  return true;
+}
+
+function doesDetectedRootSequenceFollowPlan(
+  detectedRootLabels: readonly string[],
+  plannedRootLabels: readonly string[]
+): boolean {
+  if (detectedRootLabels.length === 0 || plannedRootLabels.length === 0) {
+    return false;
+  }
+
+  let planIndex = 0;
+  for (const detectedLabel of detectedRootLabels) {
+    while (
+      planIndex < plannedRootLabels.length &&
+      detectedLabel !== plannedRootLabels[planIndex]
+    ) {
+      planIndex += 1;
+    }
+    if (planIndex >= plannedRootLabels.length) {
       return false;
     }
     planIndex += 1;

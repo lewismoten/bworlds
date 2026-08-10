@@ -30,6 +30,11 @@ describe('music debug midi audit', () => {
         (section) => section.chordLabels.length > 0
       )
     ).toBe(true);
+    expect(
+      snapshot.bassProgressionDetections.some(
+        (section) => section.detectedRootLabels.length > 0
+      )
+    ).toBe(true);
   });
 
   it('keeps the easy plains export aligned with the reported 2:18 duration and bpm', () => {
@@ -191,6 +196,7 @@ describe('music debug midi audit', () => {
               }
             : section
       ),
+      bassProgressionDetections: snapshot.bassProgressionDetections,
     });
 
     expect(audit.isConsistent).toBe(true);
@@ -198,6 +204,42 @@ describe('music debug midi audit', () => {
     expect(
       audit.warningMessages.some((message) =>
         message.includes('planned progression order')
+      )
+    ).toBe(true);
+  });
+
+  it('flags bass detections when bass roots drift from the planned progression order', () => {
+    const snapshot = createMusicDebugSnapshot({
+      tileKind: 'forest',
+      contextType: 'overworld',
+      clusterX: 4,
+      clusterY: -1,
+    });
+    const file = createMusicDebugMidiFileUnchecked(snapshot, {
+      createdAt: new Date('2026-08-09T00:00:00.000Z'),
+    });
+
+    const audit = inspectMusicDebugMidiBytes(file.bytes, {
+      ...snapshot,
+      bassProgressionDetections: snapshot.bassProgressionDetections.map(
+        (section, index) =>
+          index === 0
+            ? {
+                ...section,
+                detectedRootLabels: ['A', 'C', 'E'],
+                plannedRootLabels: ['G', 'D', 'E'],
+                followsPlannedProgression: false,
+              }
+            : section
+      ),
+      harmonyChordDetections: snapshot.harmonyChordDetections,
+    });
+
+    expect(audit.isConsistent).toBe(true);
+    expect(audit.mismatchMessages).toEqual([]);
+    expect(
+      audit.warningMessages.some((message) =>
+        message.includes('bass roots drift')
       )
     ).toBe(true);
   });

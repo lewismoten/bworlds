@@ -94,8 +94,8 @@ const MOTIF_PATTERNS = [
 const BASS_FIGURE_PATTERNS = [
   ['root', 'root', 'fifth', 'passing'],
   ['root', 'fifth', 'root', 'passing'],
-  ['root', 'fifth', 'octave-root', 'passing'],
-  ['root', 'root', 'octave-root', 'passing'],
+  ['root', 'passing', 'root', 'fifth'],
+  ['root', 'root', 'passing', 'fifth'],
 ] as const satisfies readonly (readonly ProceduralBassFigureStep[])[];
 const proceduralBassFigureCache = new Map<
   string,
@@ -423,8 +423,17 @@ function resolveBassSemitones(
     clusterX,
     clusterY
   );
-  const bassPulseIndex = Math.floor(stepIndex / 4);
-  const phrasePulse = bassPulseIndex % 4;
+  const phrasePulse = stepIndex % 4;
+  if (phrasePulse === 0) {
+    const preferredRoot = selectPreferredBassTarget(
+      chord.rootSemitones,
+      previous
+    );
+    if (preferredRoot !== null) {
+      return preferredRoot;
+    }
+    return clampBassFallback(chord.rootSemitones);
+  }
   if (phrasePulse === 1) {
     const preferredFifth = selectPreferredBassTarget(
       chord.fifthSemitones,

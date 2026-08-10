@@ -4,6 +4,7 @@ import type { MusicDebugNotePitchDiagnostic } from './music-debug-note-analysis.
 import type { ProceduralMusicBlueprint } from './procedural-music-blueprint.ts';
 import { resolveProceduralChordTimeline } from './procedural-music-chord-timeline.ts';
 import {
+  createMusicDebugBassProgressionDetections,
   createMusicDebugHarmonyChordDetections,
   createMusicDebugSectionLayerActivity,
   createMusicDebugSectionLayerComparisons,
@@ -94,6 +95,39 @@ describe('music debug section analysis', () => {
         followsPlannedProgression: false,
       })
     );
+  });
+
+  it('verifies the planned progression stays audible in the bass roots', () => {
+    const analysis = createMusicDebugBassProgressionDetections({
+      notes: TEST_BASS_PROGRESS_NOTES,
+      notePitchDiagnostics: TEST_BASS_PROGRESS_DIAGNOSTICS,
+      sections: TEST_SECTIONS,
+      scale: [0, 2, 4, 5, 7, 9, 10],
+      rootMidiNote: 55,
+      chordTimeline: resolveProceduralChordTimeline({
+        themeId: 'frontier-plains',
+        themeStepCount: 8,
+        clusterX: 3,
+        clusterY: -2,
+      }),
+    });
+
+    expect(analysis).toEqual([
+      {
+        sectionId: 'intro',
+        sectionLabel: 'Intro',
+        detectedRootLabels: ['G', 'D', 'E', 'G'],
+        plannedRootLabels: ['G', 'D', 'E', 'G'],
+        followsPlannedProgression: true,
+      },
+      {
+        sectionId: 'a',
+        sectionLabel: 'Section A',
+        detectedRootLabels: ['A', 'C', 'D', 'E'],
+        plannedRootLabels: ['G', 'D', 'E', 'G'],
+        followsPlannedProgression: false,
+      },
+    ]);
   });
 
   it('reports actual role counts and sounding coverage by section', () => {
@@ -520,6 +554,53 @@ const TEST_DIAGNOSTICS: MusicDebugNotePitchDiagnostic[] = [
     midiNote: 67,
     scaleDegree: 1,
   }),
+];
+
+const TEST_BASS_PROGRESS_NOTES: ProceduralMusicNote[] = [
+  createNote({ role: 'bass', startMs: 0, durationMs: 800, frequency: 196 }),
+  createNote({
+    role: 'bass',
+    startMs: 1_000,
+    durationMs: 800,
+    frequency: 146.83,
+  }),
+  createNote({
+    role: 'bass',
+    startMs: 2_000,
+    durationMs: 800,
+    frequency: 164.81,
+  }),
+  createNote({ role: 'bass', startMs: 3_000, durationMs: 800, frequency: 196 }),
+  createNote({ role: 'bass', startMs: 4_000, durationMs: 800, frequency: 220 }),
+  createNote({
+    role: 'bass',
+    startMs: 5_000,
+    durationMs: 800,
+    frequency: 130.81,
+  }),
+  createNote({
+    role: 'bass',
+    startMs: 6_000,
+    durationMs: 800,
+    frequency: 146.83,
+  }),
+  createNote({
+    role: 'bass',
+    startMs: 7_000,
+    durationMs: 800,
+    frequency: 164.81,
+  }),
+];
+
+const TEST_BASS_PROGRESS_DIAGNOSTICS: MusicDebugNotePitchDiagnostic[] = [
+  createDiagnostic({ role: 'bass', midiNote: 55, scaleDegree: 1 }),
+  createDiagnostic({ role: 'bass', midiNote: 50, scaleDegree: 5 }),
+  createDiagnostic({ role: 'bass', midiNote: 52, scaleDegree: 6 }),
+  createDiagnostic({ role: 'bass', midiNote: 55, scaleDegree: 1 }),
+  createDiagnostic({ role: 'bass', midiNote: 57, scaleDegree: 2 }),
+  createDiagnostic({ role: 'bass', midiNote: 48, scaleDegree: 4 }),
+  createDiagnostic({ role: 'bass', midiNote: 50, scaleDegree: 5 }),
+  createDiagnostic({ role: 'bass', midiNote: 52, scaleDegree: 6 }),
 ];
 
 function createNote(

@@ -78,10 +78,12 @@ import {
   type MusicDebugMotifValidation,
 } from './music-debug-motif-validation.ts';
 import {
+  createMusicDebugBassProgressionDetections,
   createMusicDebugHarmonyChordDetections,
   createMusicDebugSectionLayerActivity,
   createMusicDebugSectionLayerComparisons,
   createMusicDebugSectionMotifMatches,
+  type MusicDebugBassProgressionDetection,
   type MusicDebugHarmonyChordDetection,
   type MusicDebugSectionLayerActivity,
   type MusicDebugSectionLayerComparison,
@@ -170,6 +172,7 @@ export type MusicDebugSnapshot = {
   sectionMotifMatches: MusicDebugSectionMotifMatch[];
   motifValidation: MusicDebugMotifValidation;
   harmonyChordDetections: MusicDebugHarmonyChordDetection[];
+  bassProgressionDetections: MusicDebugBassProgressionDetection[];
   midiAudit: MusicDebugMidiAudit;
   midiExportValidation: MusicDebugPitchValidation;
   timingValidation: MusicDebugTimingValidation;
@@ -431,6 +434,14 @@ export function createMusicDebugSnapshot(
     rootMidiNote: theme.rootMidiNote,
     chordTimeline,
   });
+  const bassProgressionDetections = createMusicDebugBassProgressionDetections({
+    notes: song.notes,
+    notePitchDiagnostics: midiExportValidation.notePitchDiagnostics,
+    sections: song.sections,
+    scale: theme.scale,
+    rootMidiNote: theme.rootMidiNote,
+    chordTimeline,
+  });
   const sectionLayerActivity = createMusicDebugSectionLayerActivity({
     notes: song.notes,
     sections: song.sections,
@@ -485,6 +496,7 @@ export function createMusicDebugSnapshot(
     sectionMotifMatches,
     motifValidation,
     harmonyChordDetections,
+    bassProgressionDetections,
     midiExportValidation,
     timingValidation,
   };
@@ -806,6 +818,9 @@ export function buildMusicDebugSummaryMarkup(
       <span>Harmony Chords ${formatMusicDebugHarmonyChordDetections(snapshot.harmonyChordDetections)}</span>
     </div>
     <div class="music-debug-role-counts">
+      <span>Bass Progression ${formatMusicDebugBassProgressionDetections(snapshot.bassProgressionDetections)}</span>
+    </div>
+    <div class="music-debug-role-counts">
       <span>MIDI Audit ${formatMusicDebugMidiAuditSummary(snapshot.midiAudit)}</span>
     </div>
     <div class="music-debug-role-counts">
@@ -862,6 +877,22 @@ function formatMusicDebugMidiAuditSummary(audit: MusicDebugMidiAudit): string {
     return `ok with warnings: ${audit.warningMessages.join(' | ')}`;
   }
   return 'ok';
+}
+
+function formatMusicDebugBassProgressionDetections(
+  detections: readonly MusicDebugBassProgressionDetection[]
+): string {
+  if (detections.length === 0) {
+    return 'missing';
+  }
+  return detections
+    .map((detection) => {
+      const detected = detection.detectedRootLabels.join(' > ') || 'missing';
+      const planned = detection.plannedRootLabels.join(' > ') || 'unplanned';
+      const status = detection.followsPlannedProgression ? 'ok' : 'drift';
+      return `${detection.sectionLabel}: ${detected} (${status} vs ${planned})`;
+    })
+    .join(' | ');
 }
 
 function formatMusicDebugAccidentalRuleSummary(

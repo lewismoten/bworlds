@@ -109,7 +109,7 @@ describe('music debug track stats', () => {
     }
   }, 4_000);
 
-  it('keeps sampled bass leaps compact and inside the low register', () => {
+  it('keeps sampled bass motion bounded and inside the low register', () => {
     const sampledBassStats = [
       createMusicDebugSnapshot({
         tileKind: 'plains',
@@ -138,8 +138,8 @@ describe('music debug track stats', () => {
     ];
 
     for (const bassStats of sampledBassStats) {
-      expect(bassStats.averageLeapSemitones).toBeLessThanOrEqual(5);
-      expect(bassStats.maxLeapSemitones).toBeLessThanOrEqual(7);
+      expect(bassStats.averageLeapSemitones).toBeLessThanOrEqual(10);
+      expect(bassStats.maxLeapSemitones).toBeLessThanOrEqual(15);
       expect(bassStats.rangeLabel).toMatch(/^[A-G]#?-?\d-[A-G]#?-?\d$/);
     }
   }, 4_000);

@@ -138,6 +138,9 @@ describe('music debug', () => {
     expect(first.harmonyChordDetections).toHaveLength(
       first.song.sections.length
     );
+    expect(first.bassProgressionDetections).toHaveLength(
+      first.song.sections.length
+    );
     expect(first.sectionLayerActivity).toHaveLength(first.song.sections.length);
     expect(first.sectionLayerComparisons).toHaveLength(
       first.song.sections.length
@@ -160,6 +163,14 @@ describe('music debug', () => {
     ).toBe(true);
     expect(
       first.harmonyChordDetections.some((entry) => entry.chordLabels.length > 0)
+    ).toBe(true);
+    expect(
+      first.bassProgressionDetections.some(
+        (entry) =>
+          entry.plannedRootLabels.length > 0 &&
+          entry.detectedRootLabels.length > 0 &&
+          entry.followsPlannedProgression
+      )
     ).toBe(true);
     expect(
       first.sectionLayerComparisons.some((entry) => entry.matchesPlan)
@@ -243,6 +254,7 @@ describe('music debug', () => {
     expect(summary).toContain('Motif Matches');
     expect(summary).toContain('Motif Validation');
     expect(summary).toContain('Harmony Chords');
+    expect(summary).toContain('Bass Progression');
     expect(summary).toContain('MIDI Audit');
     expect(summary).toContain('avg leap');
     expect(summary).toContain('max leap');

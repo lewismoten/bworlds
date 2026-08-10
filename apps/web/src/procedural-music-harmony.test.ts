@@ -175,7 +175,7 @@ describe('procedural music harmony', () => {
         entry.chord.fifthSemitones % 12,
         entry.chord.passingSemitones % 12,
       ]).toContain(((entry.semitones % 12) + 12) % 12);
-      expect(entry.semitones).toBeGreaterThanOrEqual(-5);
+      expect(entry.semitones).toBeGreaterThanOrEqual(-7);
       expect(entry.semitones).toBeLessThanOrEqual(12);
     }
 
@@ -185,20 +185,36 @@ describe('procedural music harmony', () => {
     ).toBeLessThanOrEqual(7);
   });
 
-  it('repeats a stable bass figure across phrase cycles and only uses octave lifts deliberately', () => {
+  it('anchors bass downbeats to the active chord root before moving to passing tones', () => {
+    const bassPlan = Array.from({ length: 24 }, (_, stepIndex) => ({
+      stepIndex,
+      semitones: resolveProceduralInstrumentSemitones({
+        theme: MIXOLYDIAN_THEME,
+        role: 'bass',
+        stepIndex,
+        clusterX: 4,
+        clusterY: -1,
+      }),
+      chord: resolveProceduralChordAtStep(MIXOLYDIAN_THEME, stepIndex, 4, -1),
+    }));
+
+    for (const entry of bassPlan.filter((item) => item.stepIndex % 4 === 0)) {
+      expect(((entry.semitones % 12) + 12) % 12).toBe(
+        ((entry.chord.rootSemitones % 12) + 12) % 12
+      );
+    }
+  });
+
+  it('repeats a stable bass figure across phrase cycles without losing the root-first pulse', () => {
     const figure = resolveProceduralBassFigure(TEST_THEME, 3, -2);
 
     expect(figure).toHaveLength(TEST_THEME.stepPattern.length);
     expect(figure.slice(0, 4)).toEqual(figure.slice(4, 8));
     expect(figure[0]).toBe('root');
     expect(figure[4]).toBe('root');
-
-    const octaveIndexes = figure
-      .map((step, index) => ({ step, index }))
-      .filter((entry) => entry.step === 'octave-root')
-      .map((entry) => entry.index);
-
-    expect(octaveIndexes.every((index) => index % 4 === 2)).toBe(true);
+    expect(
+      figure.every((step, index) => index % 4 !== 0 || step === 'root')
+    ).toBe(true);
   });
 
   it('reuses a deterministic short lead motif across phrase cycles', () => {
