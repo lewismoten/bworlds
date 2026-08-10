@@ -76,7 +76,7 @@ export {
   getMilkyWayBeltState,
 } from './celestial/milky-way.ts';
 export { MOON_PHASE_NAMES } from './celestial/moon.ts';
-export { getOrreryBodies } from './celestial/orrery.ts';
+export { getOrreryBodies, type OrreryBodyLike } from './celestial/orrery.ts';
 export { getCometOrbitProgress } from './celestial/comet.ts';
 export { getPlanetaryOrbitProgress } from './celestial/planet.ts';
 export {

@@ -11,6 +11,10 @@ import {
 } from './sound-bank-debug.ts';
 import { createMusicDebugInstrumentPreviewPlayer } from './music-debug-instrument-preview.ts';
 import type { MusicDebugSnapshot } from './music-debug.ts';
+import type {
+  MusicDebugContextType,
+  MusicDebugTileKind,
+} from './music-debug.ts';
 
 const root = document.querySelector<HTMLElement>('#app');
 const pageLifecycleAbortController =
@@ -20,6 +24,27 @@ const instrumentPreviewPlayer = createMusicDebugInstrumentPreviewPlayer();
 let options = DEFAULT_SOUND_BANK_DEBUG_OPTIONS;
 let audioStatus = 'Audio idle';
 let errorMessage: string | null = null;
+const SOUND_BANK_TILE_KINDS: readonly MusicDebugTileKind[] = [
+  'plains',
+  'forest',
+  'shore',
+  'town',
+  'mountain',
+  'cave',
+  'floor',
+  'ruins',
+  'tower',
+  'stronghold',
+  'observatory',
+  'lighthouse',
+];
+const SOUND_BANK_CONTEXT_TYPES: readonly MusicDebugContextType[] = [
+  'overworld',
+  'town',
+  'building',
+  'cave',
+  'dungeon',
+];
 
 function stopPreview(): void {
   instrumentPreviewPlayer.stop();
@@ -53,9 +78,19 @@ function readFormOptions(): SoundBankDebugOptions {
     return options;
   }
   const formData = new FormData(form);
+  const tileKind = formData.get('tileKind');
+  const contextType = formData.get('contextType');
   return normalizeSoundBankDebugOptions({
-    tileKind: formData.get('tileKind'),
-    contextType: formData.get('contextType'),
+    tileKind:
+      typeof tileKind === 'string' &&
+      SOUND_BANK_TILE_KINDS.includes(tileKind as MusicDebugTileKind)
+        ? (tileKind as MusicDebugTileKind)
+        : undefined,
+    contextType:
+      typeof contextType === 'string' &&
+      SOUND_BANK_CONTEXT_TYPES.includes(contextType as MusicDebugContextType)
+        ? (contextType as MusicDebugContextType)
+        : undefined,
     clusterX: Number(formData.get('clusterX') ?? options.clusterX),
     clusterY: Number(formData.get('clusterY') ?? options.clusterY),
     dayProgress: Number(formData.get('dayProgress') ?? options.dayProgress),

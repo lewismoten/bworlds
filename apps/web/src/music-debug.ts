@@ -46,9 +46,9 @@ import {
   describeMusicDebugAccidentalReason,
   type MusicDebugAccidentalReason,
   type MusicDebugNotePitchDiagnostic,
-  type MusicDebugPitchClassLabel,
   type MusicDebugPitchValidation,
 } from './music-debug-note-analysis.ts';
+import type { MusicDebugPitchClassLabel } from './music-debug-pitch-class.ts';
 import {
   type MusicDebugTimingValidation,
   validateMusicDebugTiming,

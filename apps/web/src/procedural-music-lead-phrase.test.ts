@@ -67,7 +67,30 @@ function createLeadNote(overrides: {
   startMs: number;
   durationMs: number;
   releaseMs: number;
-}) {
+}): {
+  themeId: 'frontier-plains';
+  instrumentId: string;
+  role: 'lead';
+  startMs: number;
+  durationMs: number;
+  frequency: number;
+  volume: number;
+  waveform: 'sine';
+  timbre: {
+    harmonicWaveform: 'triangle';
+    harmonicRatio: number;
+    filterType: 'lowpass';
+    filterCutoffHz: number;
+    filterQ: number;
+  };
+  attackMs: number;
+  releaseMs: number;
+  detuneCents: number;
+  harmonicGain: number;
+  pulseRate: number;
+  emitter: { x: number; y: number; z: number };
+  listener: { x: number; y: number; z: number };
+} {
   return {
     themeId: 'frontier-plains',
     instrumentId: 'lead-flute',
@@ -77,7 +100,13 @@ function createLeadNote(overrides: {
     frequency: 440,
     volume: 0.5,
     waveform: 'sine' as const,
-    timbre: 'soft' as const,
+    timbre: {
+      harmonicWaveform: 'triangle',
+      harmonicRatio: 2,
+      filterType: 'lowpass',
+      filterCutoffHz: 1_200,
+      filterQ: 0.8,
+    },
     attackMs: 20,
     releaseMs: overrides.releaseMs,
     detuneCents: 0,

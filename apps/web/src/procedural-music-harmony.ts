@@ -1134,6 +1134,7 @@ function selectPreferredLeadSemitoneClass(options: {
   structuralAccent: boolean;
   preferredIntervals?: readonly number[];
   previousLeapDistance?: number | null;
+  priorLargeLeapCount?: number;
   contourRange?: {
     minSemitones: number;
     targetSemitones: number;

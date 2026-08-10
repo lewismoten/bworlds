@@ -6,6 +6,7 @@ import {
 } from '@bworlds/core/hash';
 import {
   resolveProceduralChordAtStep,
+  resolveProceduralCompositionStep,
   resolveProceduralHarmonyVoicing,
   resolveProceduralInstrumentSemitones,
 } from './procedural-music-harmony.ts';
@@ -1496,9 +1497,7 @@ function createThemeNotes(options: {
         ? 1.08
         : role === 'harmony'
           ? 1.18
-          : role === 'percussion'
-            ? 0.34
-            : 0.92) *
+          : 0.92) *
       arrangementProfile.durationMultiplier *
       meterAccent.durationMultiplier *
       resolveCompositionDurationMultiplier(role, composition),
@@ -1518,9 +1517,7 @@ function createThemeNotes(options: {
         ? 0.8
         : role === 'harmony'
           ? 0.72
-          : role === 'percussion'
-            ? 0.6
-            : 1) *
+          : 1) *
       voiceVolumeScale,
     waveform: arrangementProfile.waveformOverride ?? instrument.waveform,
     timbre: instrument.timbre,
@@ -1549,7 +1546,7 @@ function createThemeNotes(options: {
 function resolveThemeNoteOctaveBoost(options: {
   role: InstrumentRole;
   composition: ReturnType<typeof resolveProceduralCompositionStep>;
-  themeId: string;
+  themeId: MusicRegionThemeId;
   clusterX: number;
   clusterY: number;
   stepIndex: number;

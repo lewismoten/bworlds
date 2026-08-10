@@ -53,7 +53,7 @@ describe('procedural music song chromatic repair', () => {
 });
 
 function createNote(
-  themeId: string,
+  themeId: ProceduralMusicNote['themeId'],
   role: ProceduralMusicNote['role'],
   startMs: number,
   relativeSemitones: number

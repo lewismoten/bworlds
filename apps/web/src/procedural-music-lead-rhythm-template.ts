@@ -57,7 +57,7 @@ const LEAD_MEASURE_PATTERNS: readonly ProceduralLeadRhythmMeasureTemplate[] = [
   },
 ] as const;
 
-const LEAD_PHRASE_PATTERNS: readonly ReadonlyArray<readonly number[]> = [
+const LEAD_PHRASE_PATTERNS: readonly (readonly number[])[] = [
   [0, 1, 0, 2, 1, 0, 1, 2],
   [1, 0, 2, 0, 1, 2, 0, 3],
   [0, 2, 1, 0, 2, 1, 3, 0],

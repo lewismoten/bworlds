@@ -787,7 +787,14 @@ describe('procedural music song', () => {
     );
 
     const summarizeSection = (
-      sectionId: 'intro' | 'a' | 'b' | 'variation' | 'return' | 'outro'
+      sectionId:
+        | 'intro'
+        | 'a'
+        | 'a-prime'
+        | 'b'
+        | 'variation'
+        | 'return'
+        | 'outro'
     ) => {
       const section = sectionById.get(sectionId)!;
       const endMs = song.startMs + section.startOffsetMs + section.durationMs;

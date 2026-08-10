@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { validateMusicDebugPercussion } from './music-debug-percussion-validation.ts';
+import type { ProceduralMusicNote } from './procedural-music.ts';
 
 describe('music debug percussion validation', () => {
   it('accepts percussion that stays out of intro and outro while keeping variation thinner', () => {
@@ -82,7 +83,7 @@ function createPercussionNote(
   family: 'kick' | 'snare' | 'shaker',
   startMs: number,
   durationMs: number
-) {
+): ProceduralMusicNote {
   return {
     themeId: 'town-square',
     instrumentId: `town-square:percussion:0:0:perc-${family}:0`,

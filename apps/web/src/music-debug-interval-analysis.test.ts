@@ -96,9 +96,13 @@ function createLeadDiagnostic(midiNote: number): MusicDebugNotePitchDiagnostic {
     role: 'lead',
     frequency: 0,
     midiNote,
-    pitchClass: 'C',
+    relativeSemitones: midiNote - 60,
+    scaleDegree: 1,
+    scaleDegreeLabel: 'degree 1',
+    isBlackKey: false,
     inMode: true,
-    accidentalReason: 'none',
+    accidentalReason: 'in-mode',
     accidentalRuleLabel: null,
+    accidentalExplanation: null,
   };
 }

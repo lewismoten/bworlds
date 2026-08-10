@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { shapeProceduralPhraseSupportNotes } from './procedural-music-phrase-support.ts';
+import type { ProceduralMusicNote } from './procedural-music.ts';
 
 describe('procedural music phrase support', () => {
   it('extends support notes and keeps an anchor active through long lead rests', () => {
@@ -88,7 +89,7 @@ function createNote(overrides: {
   durationMs: number;
   instrumentId: string;
   frequency: number;
-}) {
+}): ProceduralMusicNote {
   return {
     themeId: 'deep-forest',
     instrumentId: overrides.instrumentId,
@@ -98,7 +99,13 @@ function createNote(overrides: {
     frequency: overrides.frequency,
     volume: 0.5,
     waveform: 'sine' as const,
-    timbre: 'soft' as const,
+    timbre: {
+      harmonicWaveform: 'triangle',
+      harmonicRatio: 2,
+      filterType: 'lowpass',
+      filterCutoffHz: 1_200,
+      filterQ: 0.8,
+    },
     attackMs: 20,
     releaseMs: 120,
     detuneCents: 0,
@@ -108,11 +115,10 @@ function createNote(overrides: {
       id: 'outdoor-air',
       label: 'open air',
       delayMs: 90,
-      feedback: 0.2,
       wetGain: 0.18,
       toneHz: 2400,
     },
-    emitter: { x: 0, y: 0, z: 0 },
-    listener: { x: 0, y: 0, z: 0 },
+    emitter: { x: 0, y: 0 },
+    listener: { x: 0, y: 0 },
   };
 }

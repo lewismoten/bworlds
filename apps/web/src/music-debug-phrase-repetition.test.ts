@@ -85,12 +85,14 @@ function createDiagnostic(
     noteIndex: 0,
     frequency: note.frequency,
     midiNote: 60 + scaleDegree,
-    pitchClass: (((60 + scaleDegree) % 12) + 12) % 12,
-    pitchClassLabel: 'C',
+    relativeSemitones: scaleDegree,
     scaleDegree,
+    scaleDegreeLabel: `degree ${scaleDegree}`,
+    isBlackKey: false,
     inMode: true,
     accidentalReason: 'in-mode',
     accidentalRuleLabel: 'in-mode',
+    accidentalExplanation: null,
   };
 }
 

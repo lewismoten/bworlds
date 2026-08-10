@@ -48,7 +48,8 @@ describe('procedural music song variation', () => {
     const transformed = transformSongSectionNote(
       BASE_NOTE,
       createSection('a-prime'),
-      7
+      7,
+      0
     );
 
     expect(transformed).not.toBeNull();
@@ -60,7 +61,8 @@ describe('procedural music song variation', () => {
     const transformed = transformSongSectionNote(
       BASE_NOTE,
       createSection('variation'),
-      4
+      4,
+      0
     );
 
     expect(transformed).not.toBeNull();
@@ -78,12 +80,14 @@ describe('procedural music song variation', () => {
     const aPrime = transformSongSectionNote(
       repairedLeadNote,
       createSection('a-prime'),
-      7
+      7,
+      0
     );
     const variation = transformSongSectionNote(
       repairedLeadNote,
       createSection('variation'),
-      4
+      4,
+      0
     );
 
     expect(aPrime).not.toBeNull();
@@ -93,7 +97,7 @@ describe('procedural music song variation', () => {
   });
 
   it('keeps the base A section unchanged', () => {
-    expect(transformSongSectionNote(BASE_NOTE, createSection('a'), 3)).toEqual(
+    expect(transformSongSectionNote(BASE_NOTE, createSection('a'), 3, 0)).toEqual(
       BASE_NOTE
     );
   });

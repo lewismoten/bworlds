@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { validateMusicDebugSongDna } from './music-debug-song-dna-validation.ts';
+import {
+  createProceduralInstrumentBank,
+  resolveMusicThemeById,
+  type ProceduralInstrumentBank,
+} from './procedural-music.ts';
+import type { ProceduralSongDna } from './procedural-music-song-dna.ts';
 
 describe('music debug SongDNA validation', () => {
   it('accepts a shared root, mode, and instrumentation across tracks', () => {
@@ -84,7 +90,7 @@ describe('music debug SongDNA validation', () => {
   });
 });
 
-function createSongDna() {
+function createSongDna(): ProceduralSongDna {
   return {
     identityId: 'frontier-plains:overworld:3:-2',
     sourceIdentityId: 'frontier-plains:overworld:3:-2',
@@ -104,8 +110,8 @@ function createSongDna() {
     sharedMotif: [0, 2, 4, 2],
     locationRecognitionMotif: [0, 2, 4, 2],
     leadContour: ['start:0', 'rise:2', 'climax:4', 'resolve:0'],
-    blueprintId: 'easy-exploration',
-    blueprintLabel: 'Easy Exploration',
+    blueprintId: 'exploration-cycle',
+    blueprintLabel: 'Exploration Cycle',
     factionMotifs: [],
     factionInteractionMotif: [],
     importantNpcMotifs: [],
@@ -119,14 +125,6 @@ function createSongDna() {
   };
 }
 
-function createInstrumentBank() {
-  return {
-    themeId: 'frontier-plains' as const,
-    instruments: {
-      lead: { family: 'flute' },
-      harmony: { family: 'organ' },
-      bass: { family: 'tuba' },
-      percussion: { family: 'shaker' },
-    },
-  };
+function createInstrumentBank(): ProceduralInstrumentBank {
+  return createProceduralInstrumentBank(resolveMusicThemeById('frontier-plains'), 0, 0);
 }
