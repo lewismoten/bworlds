@@ -113,6 +113,62 @@ describe('procedural music percussion', () => {
     ).toBeLessThan(notes.length);
   });
 
+  it('reserves cymbals for answer cadences instead of question turns', () => {
+    const question = createProceduralPercussionNotes({
+      themeId: 'deep-forest',
+      stepIndex: 6,
+      phraseStep: 6,
+      cadence: 'question',
+      startMs: 0,
+      stepDurationMs: 440,
+      rootMidiNote: 53,
+      baseInstrumentId: 'deep-forest:percussion:3:-2',
+      baseVolume: 0.02,
+      baseAttackMs: 12,
+      baseReleaseMs: 60,
+      baseDetuneCents: 4,
+      baseHarmonicGain: 0.12,
+      basePulseRate: 1,
+      brightness: 0.92,
+      clusterX: 3,
+      clusterY: -2,
+    });
+    const answer = createProceduralPercussionNotes({
+      themeId: 'deep-forest',
+      stepIndex: 7,
+      phraseStep: 7,
+      cadence: 'answer',
+      startMs: 0,
+      stepDurationMs: 440,
+      rootMidiNote: 53,
+      baseInstrumentId: 'deep-forest:percussion:3:-2',
+      baseVolume: 0.02,
+      baseAttackMs: 12,
+      baseReleaseMs: 60,
+      baseDetuneCents: 4,
+      baseHarmonicGain: 0.12,
+      basePulseRate: 1,
+      brightness: 0.92,
+      clusterX: 3,
+      clusterY: -2,
+    });
+
+    expect(
+      question.some(
+        (note) =>
+          resolvePercussionFamilyFromInstrumentId(note.instrumentId) ===
+          'cymbals'
+      )
+    ).toBe(false);
+    expect(
+      answer.some(
+        (note) =>
+          resolvePercussionFamilyFromInstrumentId(note.instrumentId) ===
+          'cymbals'
+      )
+    ).toBe(true);
+  });
+
   it('keeps light forest question percussion between the strong beats', () => {
     const notes = createProceduralPercussionNotes({
       themeId: 'deep-forest',
@@ -144,10 +200,10 @@ describe('procedural music percussion', () => {
     expect(
       notes
         .filter((note) => {
-          const family = resolvePercussionFamilyFromInstrumentId(
+          const grooveRole = resolvePercussionGrooveRoleFromInstrumentId(
             note.instrumentId
           );
-          return family === 'shaker' || family === 'hand-percussion';
+          return grooveRole === 'pulse' || grooveRole === 'texture';
         })
         .every((note) => note.startMs > 0 && note.startMs < 220)
     ).toBe(true);

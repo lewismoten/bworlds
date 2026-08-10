@@ -491,10 +491,7 @@ function resolvePercussionFamilyForGrooveRole(options: {
     case 'texture':
       return 'hand-percussion';
     case 'accent':
-      if (
-        options.offsetRatio >= 0.74 &&
-        (options.cadence === 'question' || options.cadence === 'answer')
-      ) {
+      if (options.offsetRatio >= 0.74 && options.cadence === 'answer') {
         return 'cymbals';
       }
       return options.themeId === 'deep-forest' ? 'hand-percussion' : 'snare';

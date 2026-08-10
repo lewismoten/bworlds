@@ -70,7 +70,7 @@
 - [x] Keep a stable pulse across related measures.
 - [x] Place low drums on structurally strong beats.
 - [x] Place light percussion between strong beats.
-- [ ] Use cymbals mainly at section boundaries.
+- [x] Use cymbals mainly at section boundaries.
 - [ ] Use fills only before meaningful transitions.
 - [ ] Vary groove patterns once per phrase.
 - [ ] Keep ambient percussion quieter than pitched tracks.
