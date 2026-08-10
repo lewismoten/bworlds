@@ -244,6 +244,7 @@ describe('music debug', () => {
     expect(markup).toContain('music-debug-instrument-play');
     expect(markup).toContain('music-debug-contour-graph');
     expect(markup).toContain('music-debug-cadence-conflicts');
+    expect(markup).toContain('music-debug-percussion-substitutions');
     expect(markup.indexOf('>Melody<')).toBeLessThan(
       markup.indexOf('>Harmony<')
     );
@@ -310,6 +311,7 @@ describe('music debug', () => {
     expect(summary).toContain('Harmony Chords');
     expect(summary).toContain('Bass Progression');
     expect(summary).toContain('Cadence Harmony Conflicts');
+    expect(summary).toContain('Percussion Substitutions');
     expect(summary).toContain('Drum Counts');
     expect(summary).toContain('Percussion Events');
     expect(summary).toContain('MIDI Audit');

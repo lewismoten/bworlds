@@ -73,6 +73,7 @@ import {
   formatMusicDebugPercussionEvents,
   formatMusicDebugPercussionVoiceCounts,
 } from './music-debug-percussion-report.ts';
+import { buildMusicDebugPercussionSubstitutionPanelMarkup } from './music-debug-percussion-substitution-panel.ts';
 import {
   createMusicDebugIntervalComparison,
   formatMusicDebugIntervalComparison,
@@ -972,6 +973,7 @@ export function buildMusicDebugSummaryMarkup(
     <div class="music-debug-role-counts">
       <span>Percussion Check ${formatMusicDebugPercussionValidationSummary(snapshot.percussionValidation)}</span>
     </div>
+    ${buildMusicDebugPercussionSubstitutionPanelMarkup(snapshot.notes)}
     <div class="music-debug-role-counts">
       <span>Drum Counts ${formatMusicDebugPercussionVoiceCounts(snapshot.notes)}</span>
     </div>
