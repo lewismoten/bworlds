@@ -58,6 +58,12 @@ describe('procedural music song layers', () => {
     const bHarmonyAlternate = resolveSongSectionLayerTreatment(
       createContext(createSection('b'), { role: 'harmony' }, 1)
     );
+    const bPercussion = resolveSongSectionLayerTreatment(
+      createContext(createSection('b'), { role: 'percussion' }, 2, 1_600)
+    );
+    const bPercussionAlternate = resolveSongSectionLayerTreatment(
+      createContext(createSection('b'), { role: 'percussion' }, 1, 100)
+    );
     const variationPercussion = resolveSongSectionLayerTreatment(
       createContext(createSection('variation'), { role: 'percussion' }, 4)
     );
@@ -89,6 +95,9 @@ describe('procedural music song layers', () => {
     expect(bHarmonyAlternate.durationMultiplier).toBeLessThan(
       aHarmony.durationMultiplier
     );
+    expect(bPercussion.muted).toBe(true);
+    expect(bPercussionAlternate.muted).toBe(false);
+    expect(bPercussionAlternate.volumeMultiplier).toBeLessThan(1);
     expect(variationPercussion.muted).toBe(true);
     expect(returnLead.muted).toBe(false);
     expect(returnLead.volumeMultiplier).toBeLessThan(1);
@@ -113,19 +122,23 @@ describe('procedural music song layers', () => {
     expect(
       describeSongSectionLayerArrangement(createSection('variation'))
     ).toContain('stretched lead');
+    expect(describeSongSectionLayerArrangement(createSection('b'))).toContain(
+      'thinner percussion'
+    );
   });
 });
 
 function createContext(
   section: ProceduralMusicSongSection,
   note: { role: 'lead' | 'harmony' | 'bass' | 'percussion' },
-  noteIndexInSection: number
+  noteIndexInSection: number,
+  startMs = noteIndexInSection * 250
 ) {
   return createProceduralMusicSongSectionContext({
     section,
     note: {
       role: note.role,
-      startMs: noteIndexInSection * 250,
+      startMs,
       instrumentId: `${note.role}-test`,
     },
     noteIndexInSection,

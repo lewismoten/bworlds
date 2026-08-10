@@ -75,7 +75,7 @@
 - [x] Use fills only before meaningful transitions.
 - [x] Vary groove patterns once per phrase.
 - [x] Keep ambient percussion quieter than pitched tracks.
-- [ ] Reduce percussion density during calm sections.
+- [x] Reduce percussion density during calm sections.
 - [ ] Make drum velocity follow the section energy curve.
 - [ ] Prevent identical drum hits from repeating mechanically.
 

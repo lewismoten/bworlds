@@ -24,7 +24,7 @@ export function describeSongSectionLayerArrangement(
     case 'a-prime':
       return `${section.label}: lead-forward reprise`;
     case 'b':
-      return `${section.label}: lighter harmony`;
+      return `${section.label}: lighter harmony, thinner percussion`;
     case 'variation':
       return `${section.label}: thinner percussion, stretched lead`;
     case 'return':
@@ -40,7 +40,7 @@ export function describeSongSectionLayerArrangement(
 export function resolveSongSectionLayerTreatment(
   context: Pick<
     ProceduralMusicSongSectionContext,
-    'section' | 'note' | 'noteIndexInSection'
+    'section' | 'note' | 'noteIndexInSection' | 'measureIndex'
   >
 ): ProceduralSongLayerTreatment {
   const harmonyLeadSpace = resolveHarmonyLeadSpaceConfig(
@@ -89,13 +89,15 @@ export function resolveSongSectionLayerTreatment(
             harmonyLeadSpace,
             context.noteIndexInSection
           ) ||
+          (context.note.role === 'percussion' &&
+            context.measureIndex % 2 === 1) ||
           (context.note.role === 'harmony' &&
             context.noteIndexInSection % 2 === 0),
         volumeMultiplier:
           context.note.role === 'lead'
             ? 1.08
             : context.note.role === 'percussion'
-              ? 0.88
+              ? 0.68
               : context.note.role === 'harmony'
                 ? harmonyLeadSpace.volumeMultiplier
                 : 1,

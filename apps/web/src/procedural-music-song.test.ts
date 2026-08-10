@@ -852,6 +852,9 @@ describe('procedural music song', () => {
     expect(sectionB.roleCounts.harmony ?? 0).toBeLessThan(
       sectionA.roleCounts.harmony ?? 0
     );
+    expect(sectionB.roleCounts.percussion ?? 0).toBeLessThan(
+      sectionA.roleCounts.percussion ?? 0
+    );
     expect(variation.roleCounts.percussion ?? 0).toBeLessThan(
       sectionA.roleCounts.percussion ?? 0
     );
