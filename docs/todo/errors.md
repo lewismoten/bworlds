@@ -18,7 +18,7 @@ Always run tests to make sure all tests pass
 - [ ] Check tests for infinite loops and unbounded generation.
 - [ ] Check async tests for missing `await` statements.
 - [ ] Ensure every promise eventually resolves or rejects.
-- [ ] Clear intervals and timeouts after every test.
+- [x] Clear intervals and timeouts after every test.
 - [ ] Close servers, sockets, workers, and file watchers.
 - [x] Restore fake timers and mocks after every test.
 - [x] Prevent concurrent full-suite runs in the same project.

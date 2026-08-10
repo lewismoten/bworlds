@@ -1,11 +1,23 @@
 import { describe, expect, it, vi } from 'vitest';
 
 describe('vitest test setup', () => {
+  let leakedTimeoutFired = false;
+  let leakedIntervalCount = 0;
+
   it('intentionally leaves fake timers and mocks active inside one test', () => {
     vi.useFakeTimers();
     vi.spyOn(Date, 'now').mockReturnValue(123);
 
     expect(Date.now()).toBe(123);
+  });
+
+  it('intentionally leaves real timers active inside one test', () => {
+    setTimeout(() => {
+      leakedTimeoutFired = true;
+    }, 0);
+    setInterval(() => {
+      leakedIntervalCount += 1;
+    }, 0);
   });
 
   it('restores fake timers and mocks before the next test starts', async () => {
@@ -17,6 +29,13 @@ describe('vitest test setup', () => {
     });
 
     expect(fired).toBe(true);
+  });
+
+  it('clears leaked real timers before the next test starts', async () => {
+    await awaitRealTimer(() => {});
+
+    expect(leakedTimeoutFired).toBe(false);
+    expect(leakedIntervalCount).toBe(0);
   });
 });
 
