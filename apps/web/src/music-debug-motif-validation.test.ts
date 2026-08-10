@@ -57,4 +57,33 @@ describe('music debug motif validation', () => {
     expect(validation.isValidForMidiExport).toBe(true);
     expect(validation.messages).toEqual([]);
   });
+
+  it('prefers whole-song motif counts when section summaries miss a boundary-spanning match', () => {
+    const validation = validateMusicDebugMotifPresence({
+      leadMotif: [0, 2, 4, 2],
+      sectionMotifMatches: [
+        {
+          sectionId: 'a',
+          sectionLabel: 'Section A',
+          exactMatchCount: 1,
+          variedMatchCount: 0,
+          matchCount: 1,
+        },
+        {
+          sectionId: 'a-prime',
+          sectionLabel: "Section A'",
+          exactMatchCount: 2,
+          variedMatchCount: 1,
+          matchCount: 3,
+        },
+      ],
+      overallExactMatchCount: 4,
+      overallVariedMatchCount: 1,
+    });
+
+    expect(validation.totalMatchCount).toBe(5);
+    expect(validation.exactMatchCount).toBe(4);
+    expect(validation.variedMatchCount).toBe(1);
+    expect(validation.isValidForMidiExport).toBe(true);
+  });
 });

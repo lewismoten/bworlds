@@ -79,6 +79,10 @@ import {
   type MusicDebugMotifValidation,
 } from './music-debug-motif-validation.ts';
 import {
+  countMusicDebugExactMotifMatches,
+  countMusicDebugVariedMotifMatches,
+} from './music-debug-motif-match.ts';
+import {
   createMusicDebugLeadContourAnalysis,
   type MusicDebugLeadContourAnalysis,
 } from './music-debug-lead-contour.ts';
@@ -461,9 +465,22 @@ export function createMusicDebugSnapshot(
     leadMotif,
     scaleLength: theme.scale.length,
   });
+  const leadDegrees = collectMusicDebugLeadScaleDegrees({
+    notes: song.notes,
+    diagnostics: midiExportValidation.notePitchDiagnostics,
+    scaleLength: theme.scale.length,
+  });
   const motifValidation = validateMusicDebugMotifPresence({
     leadMotif,
     sectionMotifMatches,
+    overallExactMatchCount: countMusicDebugExactMotifMatches(
+      leadDegrees,
+      leadMotif
+    ),
+    overallVariedMatchCount: countMusicDebugVariedMotifMatches(
+      leadDegrees,
+      leadMotif
+    ),
   });
   const harmonyChordDetections = createMusicDebugHarmonyChordDetections({
     notes: song.notes,
@@ -1391,6 +1408,36 @@ function findFirstMusicDebugNoteIndex(
     }
   }
   return low;
+}
+
+function collectMusicDebugLeadScaleDegrees(options: {
+  notes: readonly ProceduralMusicNote[];
+  diagnostics: readonly MusicDebugNotePitchDiagnostic[];
+  scaleLength: number;
+}): number[] {
+  const degrees: number[] = [];
+
+  for (let index = 0; index < options.notes.length; index += 1) {
+    const note = options.notes[index]!;
+    const diagnostic = options.diagnostics[index];
+    if (
+      note.role !== 'lead' ||
+      diagnostic?.scaleDegree === null ||
+      diagnostic?.scaleDegree === undefined
+    ) {
+      continue;
+    }
+    degrees.push(mod(diagnostic.scaleDegree - 1, options.scaleLength));
+  }
+
+  return degrees;
+}
+
+function mod(value: number, divisor: number): number {
+  if (divisor <= 0) {
+    return value;
+  }
+  return ((value % divisor) + divisor) % divisor;
 }
 
 function formatMusicDebugNpcMotifs(

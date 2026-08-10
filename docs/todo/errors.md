@@ -2,15 +2,9 @@
 
 Always run tests to make sure all tests pass
 
-music-debug-midi.ts:131 Uncaught Error: Cannot export MIDI: MIDI lead motif matches 4 exact / 2 varied do not match scheduled 3 exact / 2 varied.
-at createMusicDebugMidiFile (music-debug-midi.ts:131:11
-at createMusicDebugExportBundle (music-debug-export-bundle.ts:48:20
-at downloadMusicDebugExportBundle (music-debug-export-bundle.ts:80:18
-at HTMLButtonElement.<anonymous> (music-debug-page.ts:470:3
-(anonymous) @ music-debug-midi.ts:131
-(anonymous) @ music-debug-export-bundle.ts:48
-(anonymous) @ music-debug-export-bundle.ts:80
-(anonymous) @ music-debug-page.ts:470
+- [x] Fix the MIDI export motif mismatch when a lead motif spans a section boundary.
+      Whole-song motif validation now uses the continuous lead-note sequence so
+      bundle export stays aligned with the MIDI audit.
 
 # Prevent Runaway Vitest Processes
 

@@ -11,15 +11,21 @@ export type MusicDebugMotifValidation = {
 export function validateMusicDebugMotifPresence(options: {
   leadMotif: readonly number[];
   sectionMotifMatches: readonly MusicDebugSectionMotifMatch[];
+  overallExactMatchCount?: number;
+  overallVariedMatchCount?: number;
 }): MusicDebugMotifValidation {
-  const exactMatchCount = options.sectionMotifMatches.reduce(
-    (sum, section) => sum + section.exactMatchCount,
-    0
-  );
-  const variedMatchCount = options.sectionMotifMatches.reduce(
-    (sum, section) => sum + section.variedMatchCount,
-    0
-  );
+  const exactMatchCount =
+    options.overallExactMatchCount ??
+    options.sectionMotifMatches.reduce(
+      (sum, section) => sum + section.exactMatchCount,
+      0
+    );
+  const variedMatchCount =
+    options.overallVariedMatchCount ??
+    options.sectionMotifMatches.reduce(
+      (sum, section) => sum + section.variedMatchCount,
+      0
+    );
   const totalMatchCount = exactMatchCount + variedMatchCount;
   const messages: string[] = [];
 
