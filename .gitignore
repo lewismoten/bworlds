@@ -6,3 +6,4 @@ coverage/
 /*.md
 !/README.md
 .runtime-performance-snapshots/
+dist-analyze*/
