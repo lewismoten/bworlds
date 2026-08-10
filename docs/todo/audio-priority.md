@@ -28,7 +28,7 @@
 - [x] Fix unresolved chromatic notes before MIDI export.
 - [x] Regenerate a phrase containing unresolved chromatic notes.
 - [x] Lower harmony occupancy when the lead is active.
-- [ ] Make each section satisfy its configured layer-emphasis rules. (ie - Make A' more lead-forward than Section A.)
+- [x] Make each section satisfy its configured layer-emphasis rules. (ie - Make A' more lead-forward than Section A.)
 - [ ] Validate actual layer occupancy against the section blueprint.occupancy. (ie - Make B harmony lighter than Section A.)
 - [ ] Make A' lead prominence exceed Section A.
 - [ ] Make B harmony prominence lower than Section A.

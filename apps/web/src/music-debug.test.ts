@@ -619,4 +619,22 @@ describe('music debug', () => {
       sectionA!.soundingTimePercentageByRole.harmony
     );
   });
+
+  it('keeps representative section layer comparisons aligned with the configured emphasis rules', () => {
+    const snapshot = createMusicDebugSnapshot({
+      tileKind: 'forest',
+      contextType: 'overworld',
+      clusterX: 4,
+      clusterY: -1,
+    });
+
+    expect(snapshot.sectionLayerComparisons).toHaveLength(
+      snapshot.song.sections.length
+    );
+    expect(
+      snapshot.sectionLayerComparisons.every(
+        (comparison) => comparison.matchesPlan
+      )
+    ).toBe(true);
+  });
 });
