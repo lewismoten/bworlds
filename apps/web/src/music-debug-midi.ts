@@ -15,7 +15,10 @@ import {
 } from './music-debug-tempo.ts';
 import type { ProceduralInstrument } from './procedural-music.ts';
 import { resolveProceduralChordTimelineEntryAtStep } from './procedural-music-chord-timeline.ts';
-import { resolvePercussionFamilyFromInstrumentId } from './procedural-music-percussion.ts';
+import {
+  resolvePercussionFamilyFromInstrumentId,
+  resolvePercussionVoiceIdFromInstrumentId,
+} from './procedural-music-percussion.ts';
 import { resolveMusicStereoPan } from './procedural-music-mix.ts';
 import type { MusicDebugSnapshot } from './music-debug.ts';
 
@@ -427,11 +430,16 @@ function buildRoleTracks(
           role === 'percussion'
             ? resolvePercussionFamilyFromInstrumentId(note.instrumentId)
             : null;
+        const notePercussionVoiceId =
+          role === 'percussion'
+            ? resolvePercussionVoiceIdFromInstrumentId(note.instrumentId)
+            : null;
         const midiNote = isMidiPercussionFamily(instrument.family)
           ? resolveMidiPercussionNoteNumber({
               note,
               family: notePercussionFamily ?? instrument.family,
               noteIndex: roleNoteIndex,
+              voiceId: notePercussionVoiceId ?? undefined,
             })
           : resolveMidiNoteNumber(note.frequency);
         const velocity =

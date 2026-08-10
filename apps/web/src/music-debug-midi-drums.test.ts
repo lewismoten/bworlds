@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { resolveMidiPercussionNoteNumber } from './music-debug-midi-drums.ts';
-import { resolvePercussionFamilyFromInstrumentId } from './procedural-music-percussion.ts';
+import {
+  resolvePercussionFamilyFromInstrumentId,
+  resolvePercussionVoiceIdFromInstrumentId,
+} from './procedural-music-percussion.ts';
 
 describe('music debug midi drums', () => {
   it('maps cymbal-family percussion notes onto multiple GM drum samples', () => {
@@ -55,13 +58,29 @@ describe('music debug midi drums', () => {
   it('supports note-level percussion family overrides encoded in instrument ids', () => {
     expect(
       resolvePercussionFamilyFromInstrumentId(
-        'deep-forest:percussion:3:-2:perc-cymbals:0'
+        'deep-forest:percussion:3:-2:perc-cymbals-49:0'
       )
     ).toBe('cymbals');
     expect(
       resolvePercussionFamilyFromInstrumentId(
-        'deep-forest:percussion:3:-2:perc-kick:0'
+        'deep-forest:percussion:3:-2:perc-kick-36:0'
       )
     ).toBe('kick');
+    expect(
+      resolvePercussionVoiceIdFromInstrumentId(
+        'deep-forest:percussion:3:-2:perc-kick-36:0'
+      )
+    ).toBe('kick-36');
+  });
+
+  it('prefers an explicit percussion voice id over note-index rotation', () => {
+    expect(
+      resolveMidiPercussionNoteNumber({
+        note: { frequency: 440, startMs: 120 },
+        family: 'kick',
+        noteIndex: 3,
+        voiceId: 'kick-35',
+      })
+    ).toBe(35);
   });
 });

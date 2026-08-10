@@ -1752,10 +1752,10 @@ describe('procedural music', () => {
     });
 
     const quietKick = quietNotes.find((note) =>
-      note.instrumentId.includes(':perc-kick:')
+      note.instrumentId.includes(':perc-kick-')
     );
     const loudKick = loudNotes.find((note) =>
-      note.instrumentId.includes(':perc-kick:')
+      note.instrumentId.includes(':perc-kick-')
     );
 
     expect(quietKick).toEqual(expect.objectContaining({ role: 'percussion' }));

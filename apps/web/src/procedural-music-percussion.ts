@@ -2,22 +2,22 @@ import { hash2DWithSeed, registerHashLabel } from '@bworlds/core/hash';
 import {
   resolveProceduralInstrumentTimbre,
   resolveVelocityShapedInstrumentTimbre,
-  type InstrumentFamily,
-  type MusicWaveform,
 } from './music-instrument-timbres.ts';
 import type { ProceduralLeadPhraseCadence } from './procedural-music-harmony.ts';
 import {
   resolveProceduralNoteFrequency,
   resolveProceduralNoteVelocity,
 } from './procedural-music-note-shaping.ts';
+import {
+  applyPercussionVoiceToTimbre,
+  isPercussionFamily,
+  resolvePercussionVoice,
+  type PercussionFamily,
+  type PercussionVoiceId,
+} from './procedural-music-percussion-voices.ts';
 import type { ProceduralMusicNote } from './procedural-music.ts';
 import type { MusicSpaceProfile } from './procedural-music-space.ts';
 import type { MusicRegionThemeId } from './procedural-music-vocabulary.ts';
-
-export type PercussionFamily = Extract<
-  InstrumentFamily,
-  'kick' | 'snare' | 'cymbals' | 'shaker' | 'hand-percussion'
->;
 
 type ProceduralPercussionHit = {
   family: PercussionFamily;
@@ -36,14 +36,6 @@ type ProceduralPercussionPattern = readonly ProceduralPercussionHit[];
 
 const PERCUSSION_PATTERN_SEED = registerHashLabel('music-percussion-pattern');
 const PERCUSSION_TIMBRE_SEED = registerHashLabel('music-percussion-timbre');
-
-const PERCUSSION_WAVEFORMS: Record<PercussionFamily, MusicWaveform> = {
-  kick: 'sine',
-  snare: 'square',
-  cymbals: 'sawtooth',
-  shaker: 'triangle',
-  'hand-percussion': 'square',
-};
 
 const FOREST_PULSE_PATTERNS: readonly ProceduralPercussionPattern[] = [
   [
@@ -218,6 +210,10 @@ export function createProceduralPercussionNotes(options: {
 
   for (let index = 0; index < pattern.length; index += 1) {
     const hit = pattern[index]!;
+    const voice = resolvePercussionVoice({
+      family: hit.family,
+      noteIndex: index,
+    });
     const harmonicSignal = hash2DWithSeed(
       PERCUSSION_TIMBRE_SEED,
       options.clusterX + options.stepIndex * 17 + index * 31,
@@ -230,9 +226,16 @@ export function createProceduralPercussionNotes(options: {
     );
     const timbre = resolveProceduralInstrumentTimbre({
       family: hit.family,
-      brightness: options.brightness * hit.brightnessMultiplier,
+      brightness:
+        options.brightness *
+        hit.brightnessMultiplier *
+        voice.brightnessMultiplier,
       harmonicSignal,
       filterSignal,
+    });
+    const voiceTimbre = applyPercussionVoiceToTimbre({
+      voice,
+      timbre,
     });
     const volume = options.baseVolume * hit.volumeMultiplier;
     const velocity = resolveProceduralNoteVelocity({
@@ -241,7 +244,7 @@ export function createProceduralPercussionNotes(options: {
     });
     notes.push({
       themeId: options.themeId,
-      instrumentId: `${options.baseInstrumentId}:perc-${hit.family}:${index}`,
+      instrumentId: `${options.baseInstrumentId}:perc-${voice.id}:${index}`,
       role: 'percussion',
       startMs: Math.round(
         options.startMs + options.stepDurationMs * hit.offsetRatio
@@ -257,18 +260,33 @@ export function createProceduralPercussionNotes(options: {
       }),
       volume,
       velocity,
-      waveform: PERCUSSION_WAVEFORMS[hit.family],
+      waveform: voice.waveform,
       timbre: resolveVelocityShapedInstrumentTimbre({
-        timbre,
+        timbre: voiceTimbre,
         velocity,
       }),
-      attackMs: Math.max(4, options.baseAttackMs * hit.attackMultiplier),
-      releaseMs: Math.max(18, options.baseReleaseMs * hit.releaseMultiplier),
+      attackMs: Math.max(
+        4,
+        options.baseAttackMs * hit.attackMultiplier * voice.attackMultiplier
+      ),
+      releaseMs: Math.max(
+        18,
+        options.baseReleaseMs *
+          hit.releaseMultiplier *
+          voice.releaseMultiplier
+      ),
       detuneCents:
         options.baseDetuneCents *
-        (hit.family === 'kick' ? 0.5 : hit.family === 'cymbals' ? 1.3 : 1),
-      harmonicGain: options.baseHarmonicGain * hit.harmonicGainMultiplier,
-      pulseRate: options.basePulseRate * hit.pulseRateMultiplier,
+        (hit.family === 'kick' ? 0.5 : hit.family === 'cymbals' ? 1.3 : 1) *
+        voice.detuneMultiplier,
+      harmonicGain:
+        options.baseHarmonicGain *
+        hit.harmonicGainMultiplier *
+        voice.harmonicGainMultiplier,
+      pulseRate:
+        options.basePulseRate *
+        hit.pulseRateMultiplier *
+        voice.pulseRateMultiplier,
       space: options.space,
       emitter: options.emitter,
       listener: options.listener,
@@ -316,22 +334,53 @@ function alignPercussionHitsToChordChange(
 export function resolvePercussionFamilyFromInstrumentId(
   instrumentId: string
 ): PercussionFamily | null {
-  if (instrumentId.includes(':perc-kick')) {
+  const voiceId = resolvePercussionVoiceIdFromInstrumentId(instrumentId);
+  if (!voiceId) {
+    if (instrumentId.includes(':perc-kick:')) {
+      return 'kick';
+    }
+    if (instrumentId.includes(':perc-snare:')) {
+      return 'snare';
+    }
+    if (instrumentId.includes(':perc-cymbals:')) {
+      return 'cymbals';
+    }
+    if (instrumentId.includes(':perc-shaker:')) {
+      return 'shaker';
+    }
+    if (instrumentId.includes(':perc-hand-percussion:')) {
+      return 'hand-percussion';
+    }
+    return null;
+  }
+  if (voiceId.startsWith('kick-')) {
     return 'kick';
   }
-  if (instrumentId.includes(':perc-snare')) {
+  if (voiceId.startsWith('snare-')) {
     return 'snare';
   }
-  if (instrumentId.includes(':perc-cymbals')) {
+  if (voiceId.startsWith('cymbals-')) {
     return 'cymbals';
   }
-  if (instrumentId.includes(':perc-shaker')) {
+  if (voiceId.startsWith('shaker-')) {
     return 'shaker';
   }
-  if (instrumentId.includes(':perc-hand-percussion')) {
+  if (voiceId.startsWith('hand-percussion-')) {
     return 'hand-percussion';
   }
   return null;
+}
+
+export function resolvePercussionVoiceIdFromInstrumentId(
+  instrumentId: string
+): PercussionVoiceId | null {
+  const match = instrumentId.match(/:perc-([a-z-]+-\d+):/);
+  if (!match) {
+    return null;
+  }
+  const voiceId = match[1] as PercussionVoiceId;
+  const family = voiceId.replace(/-\d+$/, '');
+  return isPercussionFamily(family) ? voiceId : null;
 }
 
 function resolvePercussionDurationScale(themeId: MusicRegionThemeId): number {

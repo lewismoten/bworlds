@@ -2,7 +2,12 @@ import { describe, expect, it } from 'vitest';
 import {
   createProceduralPercussionNotes,
   resolvePercussionFamilyFromInstrumentId,
+  resolvePercussionVoiceIdFromInstrumentId,
 } from './procedural-music-percussion.ts';
+import {
+  listPercussionVoicesForFamily,
+  resolvePercussionVoice,
+} from './procedural-music-percussion-voices.ts';
 
 describe('procedural music percussion', () => {
   it('builds a soft repeating forest pulse with multiple percussion families', () => {
@@ -118,6 +123,55 @@ describe('procedural music percussion', () => {
     expect(
       resolvePercussionFamilyFromInstrumentId('deep-forest:percussion:3:-2')
     ).toBeNull();
+    expect(
+      resolvePercussionVoiceIdFromInstrumentId(
+        'deep-forest:percussion:3:-2:perc-shaker-69:1'
+      )
+    ).toBe('shaker-69');
+  });
+
+  it('defines separate voice recipes for every used drum note in each percussion family', () => {
+    const kickVoices = listPercussionVoicesForFamily('kick');
+    const snareVoices = listPercussionVoicesForFamily('snare');
+    const cymbalVoices = listPercussionVoicesForFamily('cymbals');
+    const shakerVoices = listPercussionVoicesForFamily('shaker');
+    const handVoices = listPercussionVoicesForFamily('hand-percussion');
+
+    expect(kickVoices.map((voice) => voice.midiNote)).toEqual([36, 35, 41]);
+    expect(snareVoices.map((voice) => voice.midiNote)).toEqual([38, 37, 40, 39]);
+    expect(cymbalVoices.map((voice) => voice.midiNote)).toEqual([49, 51, 46, 42]);
+    expect(shakerVoices.map((voice) => voice.midiNote)).toEqual([69, 54, 42, 70]);
+    expect(handVoices.map((voice) => voice.midiNote)).toEqual([60, 61, 54, 69]);
+  });
+
+  it('gives different used drum notes within a family their own synthesis recipe', () => {
+    const kickCenter = resolvePercussionVoice({
+      family: 'kick',
+      noteIndex: 0,
+    });
+    const kickDeep = resolvePercussionVoice({
+      family: 'kick',
+      noteIndex: 1,
+    });
+    const snareMain = resolvePercussionVoice({
+      family: 'snare',
+      noteIndex: 0,
+    });
+    const snareRim = resolvePercussionVoice({
+      family: 'snare',
+      noteIndex: 1,
+    });
+
+    expect(kickCenter.midiNote).toBe(36);
+    expect(kickDeep.midiNote).toBe(35);
+    expect(kickCenter.waveform).not.toBe(kickDeep.waveform);
+    expect(kickCenter.releaseMultiplier).not.toBe(kickDeep.releaseMultiplier);
+    expect(snareMain.midiNote).toBe(38);
+    expect(snareRim.midiNote).toBe(37);
+    expect(snareMain.waveform).not.toBe(snareRim.waveform);
+    expect(snareMain.timbre.filterCutoffMultiplier).not.toBe(
+      snareRim.timbre.filterCutoffMultiplier
+    );
   });
 
   it('keeps town grooves anchored by a consistent mid-beat snare with supporting hits around it', () => {
