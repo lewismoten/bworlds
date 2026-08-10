@@ -264,7 +264,7 @@ added directly as semitones instead of moving through the selected scale.
 - [ ] Avoid all tracks entering after unrelated random delays.
 - [ ] Coordinate rests between lead and accompaniment.
 - [ ] Keep at least one harmonic anchor during lead rests.
-- [ ] Report sounding-time percentage for each track.
+- [x] Report sounding-time percentage for each track.
 
 ## Accidentals
 

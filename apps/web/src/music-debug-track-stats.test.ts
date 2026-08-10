@@ -4,6 +4,7 @@ import { createMusicDebugSnapshot } from './music-debug.ts';
 import {
   createMusicDebugTrackStats,
   formatMusicDebugTrackPitchSummary,
+  formatMusicDebugTrackSoundingSummary,
   formatMusicDebugTrackTimingSummary,
 } from './music-debug-track-stats.ts';
 
@@ -55,6 +56,9 @@ describe('music debug track stats', () => {
     const snapshot = createMusicDebugSnapshot();
 
     const summaryLines = formatMusicDebugTrackPitchSummary(snapshot.trackStats);
+    const soundingLines = formatMusicDebugTrackSoundingSummary(
+      snapshot.trackStats
+    );
     const timingLines = formatMusicDebugTrackTimingSummary(snapshot.trackStats);
 
     expect(summaryLines).toHaveLength(4);
@@ -64,6 +68,12 @@ describe('music debug track stats', () => {
     expect(summaryLines[2]).toContain('Lead');
     expect(summaryLines[3]).toContain('Percussion');
     expect(summaryLines[3]).toContain('out-of-mode 0');
+    expect(soundingLines).toHaveLength(4);
+    expect(soundingLines[0]).toContain('Bass');
+    expect(soundingLines[0]).toContain('% sounding');
+    expect(soundingLines[1]).toContain('Harmony');
+    expect(soundingLines[2]).toContain('Lead');
+    expect(soundingLines[3]).toContain('Percussion');
     expect(timingLines).toHaveLength(4);
     expect(timingLines[0]).toContain('occ');
     expect(timingLines[0]).toContain('avg dur');

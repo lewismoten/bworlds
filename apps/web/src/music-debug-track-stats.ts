@@ -138,6 +138,16 @@ export function formatMusicDebugTrackTimingSummary(
   });
 }
 
+export function formatMusicDebugTrackSoundingSummary(
+  stats: Record<ProceduralMusicRole, MusicDebugTrackStats>,
+  formatter = formatMusicDebugRoleLabel
+): string[] {
+  return MUSIC_DEBUG_TRACK_ROLES.map((role) => {
+    const stat = stats[role];
+    return `${formatter(role)} ${Math.round(stat.occupancyPercentage)}% sounding`;
+  });
+}
+
 const MUSIC_DEBUG_TRACK_ROLES: readonly ProceduralMusicRole[] = [
   'bass',
   'harmony',

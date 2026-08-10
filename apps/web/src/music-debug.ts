@@ -54,6 +54,7 @@ import {
   validateMusicDebugTiming,
 } from './music-debug-timing-validation.ts';
 import {
+  formatMusicDebugTrackSoundingSummary,
   createMusicDebugTrackStats,
   formatMusicDebugTrackPitchSummary,
   formatMusicDebugTrackTimingSummary,
@@ -842,6 +843,9 @@ export function buildMusicDebugSummaryMarkup(
     </div>
     <div class="music-debug-role-counts">
       <span>Track Pitch ${formatMusicDebugTrackPitchSummary(snapshot.trackStats).join(' | ')}</span>
+    </div>
+    <div class="music-debug-role-counts">
+      <span>Track Sounding ${formatMusicDebugTrackSoundingSummary(snapshot.trackStats).join(' | ')}</span>
     </div>
     <div class="music-debug-role-counts">
       <span>Track Timing ${formatMusicDebugTrackTimingSummary(snapshot.trackStats).join(' | ')}</span>

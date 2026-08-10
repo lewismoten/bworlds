@@ -263,6 +263,7 @@ describe('music debug', () => {
     expect(summary).toContain('Accidental Rules');
     expect(summary).toContain('Accidental Notes');
     expect(summary).toContain('Track Pitch');
+    expect(summary).toContain('Track Sounding');
     expect(summary).toContain('Track Timing');
     expect(summary).toContain('exact repeats');
     expect(summary).toContain('Motif Matches');
@@ -273,6 +274,7 @@ describe('music debug', () => {
     expect(summary).toContain('avg leap');
     expect(summary).toContain('max leap');
     expect(summary).toContain('out-of-mode');
+    expect(summary).toContain('% sounding');
     expect(summary).toContain('avg dur');
     expect(summary).toContain('avg gap');
     expect(summary).toContain('peak poly');
