@@ -1,5 +1,5 @@
 import { getDaylightCycleState } from './getDaylightCycleState';
-import { getWorldTimeMs } from './time';
+import { DEFAULT_DAY_LENGTH_MS, getWorldTimeMs } from './time';
 
 export function getWorldDaylightCycle(
   realTimeMs: number,
@@ -38,4 +38,15 @@ export function alignWorldTimeOffsetToDayProgress(
     deltaMs += cycle.dayLengthMs;
   }
   return currentOffsetMs + deltaMs;
+}
+
+export function advanceWorldTimeOffsetByHours(
+  currentOffsetMs: number,
+  hours: number,
+  options: {
+    dayLengthMs?: number;
+  } = {}
+) {
+  const dayLengthMs = options.dayLengthMs ?? DEFAULT_DAY_LENGTH_MS;
+  return currentOffsetMs + (hours / 24) * dayLengthMs;
 }

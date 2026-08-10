@@ -328,6 +328,7 @@ describe('procedural music song', () => {
 
     const intro = summarizeSection('intro');
     const sectionA = summarizeSection('a');
+    const sectionAPrime = summarizeSection('a-prime');
     const sectionB = summarizeSection('b');
     const variation = summarizeSection('variation');
     const sectionReturn = summarizeSection('return');
@@ -341,6 +342,9 @@ describe('procedural music song', () => {
     expect(sectionA.roleCounts.harmony ?? 0).toBeGreaterThan(0);
     expect(sectionA.roleCounts.lead ?? 0).toBeGreaterThan(0);
     expect(sectionA.roleCounts.percussion ?? 0).toBeGreaterThan(0);
+    expect(sectionAPrime.averageLeadVolume).toBeGreaterThan(
+      sectionA.averageLeadVolume
+    );
     expect(sectionB.roleCounts.harmony ?? 0).toBeLessThan(
       sectionA.roleCounts.harmony ?? 0
     );
@@ -351,7 +355,9 @@ describe('procedural music song', () => {
       sectionA.averageDurationByRole.lead ?? 0
     );
     expect(sectionReturn.roleCounts.percussion ?? 0).toBeGreaterThan(0);
+    expect(sectionReturn.roleCounts.bass ?? 0).toBeGreaterThan(0);
     expect(sectionReturn.roleCounts.harmony ?? 0).toBeGreaterThan(0);
+    expect(sectionReturn.roleCounts.lead ?? 0).toBeGreaterThan(0);
     expect(outro.roleCounts.percussion ?? 0).toBe(0);
     expect(outro.averageLeadVolume).toBeLessThan(sectionA.averageLeadVolume);
   });

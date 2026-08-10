@@ -82,7 +82,10 @@ export {
   type SolarEclipseLike,
 } from './celestial/eclipse.ts';
 export { formatCelestialDate } from './celestial/formatCelestialDate.ts';
-export { getCelestialEventsForDay } from './celestial/getCelestialEventsForDay.ts';
+export {
+  getCelestialEventsForDay,
+  getOrbitalSkyPosition,
+} from './celestial/getCelestialEventsForDay.ts';
 export { getDaylightCycleState } from './celestial/getDaylightCycleState.ts';
 export {
   getMilkyWayBandSamples,
@@ -97,7 +100,11 @@ export {
   getWorldTimeMs,
   type PlanetSkyProfile,
 } from './celestial/time.ts';
-export { getWorldDaylightCycle } from './celestial/daylight.ts';
+export {
+  alignWorldTimeOffsetToDayProgress,
+  advanceWorldTimeOffsetByHours,
+  getWorldDaylightCycle,
+} from './celestial/daylight.ts';
 export { applyCelestialEnvironmentOverrides } from './celestial/applyCelestialEnvironmentOverrides.ts';
 
 const POI_NAME_PREFIX_SET_LABEL = registerHashLabel('name-prefix-set');
@@ -318,97 +325,6 @@ export function advanceWorldTimeOffsetBySeasons(
   const seasonLengthDays = yearLengthDays / constellationCount;
   return currentOffsetMs + seasons * seasonLengthDays * dayLengthMs;
 }
-
-function getCelestialEventVisibility({
-  type,
-  altitude,
-  intensity,
-  daylight,
-  night,
-  starsOpacity,
-}: {
-  type: CelestialEventLike['type'];
-  altitude: number;
-  intensity: number;
-  daylight: number;
-  night: number;
-  starsOpacity: number;
-}) {
-  const horizonVisibility = smoothstep(-0.12, 0.18, altitude);
-  const twilightVisibility = smoothstep(0.12, 0.82, starsOpacity);
-  const daySuppression = 1 - smoothstep(0.18, 0.92, daylight);
-
-  if (type === 'meteor-shower') {
-    return clamp(
-      horizonVisibility *
-        twilightVisibility *
-        night *
-        (0.55 + intensity * 0.45),
-      0,
-      1
-    );
-  }
-
-  if (type === 'comet') {
-    return clamp(
-      horizonVisibility *
-        (0.18 + twilightVisibility * 0.82) *
-        (0.4 + intensity * 0.6) *
-        (0.25 + daySuppression * 0.75),
-      0,
-      1
-    );
-  }
-
-  return clamp(
-    horizonVisibility *
-      (0.22 + intensity * 0.22) *
-      Math.max(0.18, 1 - daylight * 0.72) *
-      (0.2 + twilightVisibility * 0.8),
-    0,
-    1
-  );
-}
-
-export function getOrbitalSkyPosition({
-  orbitProgress,
-  observerLatitudeDegrees,
-  declination,
-  sunriseAzimuth,
-  sunsetAzimuth,
-  azimuthShift = 0,
-}: {
-  orbitProgress: number;
-  observerLatitudeDegrees: number;
-  declination: number;
-  sunriseAzimuth: number;
-  sunsetAzimuth: number;
-  azimuthShift?: number;
-}) {
-  const latitudeRadians = (observerLatitudeDegrees / 180) * Math.PI;
-  const hourAngle = orbitProgress * Math.PI * 2 - Math.PI;
-  const altitudeAngle = Math.asin(
-    clamp(
-      Math.sin(latitudeRadians) * Math.sin(declination) +
-        Math.cos(latitudeRadians) * Math.cos(declination) * Math.cos(hourAngle),
-      -1,
-      1
-    )
-  );
-  return {
-    altitude: altitudeAngle / (Math.PI / 2),
-    azimuth: normalizeAngle(
-      lerp(sunriseAzimuth, sunsetAzimuth, clamp(orbitProgress, 0, 1)) +
-        Math.PI * orbitProgress +
-        azimuthShift
-    ),
-  };
-}
-
-function normalizeTurns(value: number): number {
-  return ((value % 1) + 1) % 1;
-}
-
 export function valueNoise2D(seedHash: number, x: number, y: number): number {
   const x0 = Math.floor(x);
   const y0 = Math.floor(y);

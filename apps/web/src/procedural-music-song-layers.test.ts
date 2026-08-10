@@ -48,6 +48,11 @@ describe('procedural music song layers', () => {
   });
 
   it('recombines section layers by muting or softening different roles per section', () => {
+    const aPrimeLead = resolveSongSectionLayerTreatment(
+      createSection('a-prime'),
+      { role: 'lead' },
+      0
+    );
     const bHarmony = resolveSongSectionLayerTreatment(
       createSection('b'),
       { role: 'harmony' },
@@ -63,11 +68,31 @@ describe('procedural music song layers', () => {
       { role: 'lead' },
       0
     );
+    const returnBass = resolveSongSectionLayerTreatment(
+      createSection('return'),
+      { role: 'bass' },
+      0
+    );
+    const returnHarmony = resolveSongSectionLayerTreatment(
+      createSection('return'),
+      { role: 'harmony' },
+      0
+    );
+    const returnPercussion = resolveSongSectionLayerTreatment(
+      createSection('return'),
+      { role: 'percussion' },
+      0
+    );
 
+    expect(aPrimeLead.muted).toBe(false);
+    expect(aPrimeLead.volumeMultiplier).toBeGreaterThan(1);
     expect(bHarmony.muted).toBe(true);
     expect(variationPercussion.muted).toBe(true);
     expect(returnLead.muted).toBe(false);
     expect(returnLead.volumeMultiplier).toBeLessThan(1);
+    expect(returnBass.muted).toBe(false);
+    expect(returnHarmony.muted).toBe(false);
+    expect(returnPercussion.muted).toBe(false);
   });
 
   it('describes the layer arrangement used by each section for debug inspection', () => {

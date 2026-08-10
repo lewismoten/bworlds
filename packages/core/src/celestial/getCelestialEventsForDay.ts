@@ -78,7 +78,7 @@ function getCelestialEventVisibility({
   );
 }
 
-function getOrbitalSkyPosition({
+export function getOrbitalSkyPosition({
   orbitProgress,
   observerLatitudeDegrees = 0,
   declination = 0,

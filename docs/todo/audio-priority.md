@@ -192,14 +192,14 @@ added directly as semitones instead of moving through the selected scale.
 
 ## Layer Plan Enforcement
 
-- [ ] Verify Intro has no percussion.
-- [ ] Verify Intro uses a deliberately thin bass part.
+- [x] Verify Intro has no percussion.
+- [x] Verify Intro uses a deliberately thin bass part.
 - [x] Make Section A contain the full layer stack.
-- [ ] Move the lead forward during Section A'.
-- [ ] Reduce harmony density during Section B.
+- [x] Move the lead forward during Section A'.
+- [x] Reduce harmony density during Section B.
 - [x] Stretch lead durations during Variation.
 - [x] Thin percussion during Variation.
-- [ ] Restore all layers during Return.
+- [x] Restore all layers during Return.
 - [x] Fade the lead during Outro.
 - [x] Export actual layer activity by section.
 
