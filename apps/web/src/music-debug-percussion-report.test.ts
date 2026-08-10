@@ -6,6 +6,7 @@ import {
   formatMusicDebugPercussionEvents,
   formatMusicDebugPercussionVoiceCounts,
 } from './music-debug-percussion-report.ts';
+import type { ProceduralMusicNote } from './procedural-music.ts';
 
 describe('music debug percussion report', () => {
   it('lists every percussion event with its resolved drum name', () => {
@@ -68,7 +69,10 @@ describe('music debug percussion report', () => {
   });
 });
 
-function createPercussionNote(instrumentId: string, startMs: number) {
+function createPercussionNote(
+  instrumentId: string,
+  startMs: number
+): ProceduralMusicNote {
   return {
     themeId: 'deep-forest',
     instrumentId,

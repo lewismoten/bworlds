@@ -32,9 +32,7 @@ export function resolveProceduralPhraseCadence(options: {
   return 'neutral';
 }
 
-export function resolveProceduralPhraseStepCount(
-  themeStepCount: number
-): number {
+function resolveProceduralPhraseStepCount(themeStepCount: number): number {
   return Math.max(1, themeStepCount) * PROCEDURAL_MUSIC_PHRASE_MEASURE_COUNT;
 }
 

@@ -12,6 +12,7 @@ const NO_ORPHAN_PATH_NOT = [
   '(^|/)(?:babel|webpack)\\.config\\.(?:js|cjs|mjs|ts|json)$',
   '[.](?:spec|test)\\.(?:js|mjs|cjs|jsx|ts|mts|cts|tsx)$',
   '^packages/plugin-api/src/types\\.ts$',
+  '^apps/web/src/test-setup\\.ts$',
 ];
 
 const noOrphans = {

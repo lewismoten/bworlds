@@ -321,7 +321,7 @@ function alignPercussionHitsToChordChange(
 
   const alignedHits = pattern.map((hit) => ({ ...hit }));
   const downbeatKickIndex = alignedHits.findIndex(
-    (hit) => hit.family === 'kick' && hit.offsetRatio <= 0.08
+    (hit) => hit.grooveRole === 'kick' && hit.offsetRatio <= 0.08
   );
 
   if (downbeatKickIndex >= 0) {
