@@ -13,7 +13,6 @@ import {
   cardinalFromAngle,
   normalizeAngle,
   snapWorldCoordinate,
-  toGps,
 } from '@bworlds/core';
 import { buildTextViewportGrid, render2D } from '@bworlds/render2d';
 import {
@@ -39,7 +38,6 @@ import {
   drawTimeWheel,
   getCelestialDateLabel,
   getMoonMidnightOrbitProgress,
-  getMoonOrbitProgress,
   stabilizeDisplayedDaylightAnchors,
 } from './timekeeper.ts';
 import {
@@ -82,7 +80,6 @@ import {
 import {
   createTeleportPin,
   normalizeTeleportPins,
-  type TeleportPin,
 } from './teleport-pins.ts';
 import {
   AUDIO_CATEGORIES,
@@ -107,16 +104,13 @@ import {
   advanceDisplayedCompassHeading,
   advanceCompassState,
   drawCompassDial,
-  easeAngle,
   formatCompassHeading,
   getCompassDialFacingAngle,
   getCompassDialInteractionMode,
   getCompassDialRadius,
   getCompassHeadingDragPreview,
   getCompassWobbleBoost,
-  isCompassHeadingDragSignificant,
   resolveCompassHeadingRelease,
-  shouldToggleCompassHeading,
 } from './compass.ts';
 import { getFrameLoopActivity } from './frame-loop.ts';
 import { createFrameLoopRunner } from './frame-loop-runner.ts';
@@ -159,7 +153,6 @@ import {
 import { resetStateToOverworld } from './overworld-travel.ts';
 import { getDebugWorldStats } from './debug-world-stats.ts';
 import {
-  advanceRenderBudgetState,
   createRenderBudgetBuilder,
   DEFAULT_RENDER_BUDGET_STATE,
   getFrameGenerationBudget,
@@ -263,13 +256,11 @@ import {
 type CelestialEnvironmentOverrides = Parameters<
   typeof applyCelestialEnvironmentOverrides
 >[1];
-type CardinalFacing = ReturnType<typeof cardinalFromAngle>;
 type CompassDisplayMode = ReturnType<typeof getNextCompassDisplayMode>;
 type MinimapDisplayMode = ReturnType<typeof getNextMinimapDisplayMode>;
 type ModelPreviewMode = ReturnType<typeof getNextModelPreviewMode>;
 type TimekeeperDisplayMode = ReturnType<typeof getNextTimekeeperDisplayMode>;
 type CelestialEventMode = ReturnType<typeof getNextCelestialEventMode>;
-type InspectorTab = ReturnType<typeof getNextInspectorTab>;
 type WorldPoint = {
   x: number;
   y: number;
@@ -292,35 +283,6 @@ type PerformanceWithMemory = Performance & {
     jsHeapSizeLimit: number;
   };
 };
-
-function getInspectionHint(
-  state: {
-    inspection?: {
-      contextId: string;
-      x: number;
-      y: number;
-      note: string;
-    } | null;
-    getCurrentContext(): { id: string };
-  },
-  playerX: number,
-  playerY: number
-) {
-  const inspection = state.inspection;
-  if (!inspection) {
-    return null;
-  }
-  if (inspection.contextId !== state.getCurrentContext().id) {
-    return null;
-  }
-  if (
-    inspection.x !== snapWorldCoordinate(playerX) ||
-    inspection.y !== snapWorldCoordinate(playerY)
-  ) {
-    return null;
-  }
-  return inspection.note;
-}
 
 const SESSION_STORAGE_KEY = 'bworlds:session';
 const CHARACTER_STORAGE_KEY = 'bworlds:character';
@@ -1606,35 +1568,10 @@ function updateStatus(
 ) {
   const nowMs = performance.now();
   const tile = spatial.tile;
-  const definition = registry.resolveTileDefinition(
-    tile.kind,
-    state.getTileDefinition(tile.kind)
-  );
-  const gps = spatial.gps;
   const context = spatial.context;
   const facing = cardinalFromAngle(spatial.facing);
-  const gridX = spatial.gridX;
-  const gridY = spatial.gridY;
   const timeLabel = formatCycleTime(cycle.dayProgress);
   const dateLabel = getCelestialDateLabel(cycle);
-  const cycleLabel = timeState.frozen ? 'Frozen' : 'Running';
-  const seasonLabel = cycle.activeConstellation.name;
-  const moonLabel = cycle.moonPhaseName;
-  const weatherLabel = formatWeatherSummary(environment);
-  const forecastLabel = formatForecastSummary(environment);
-  const eventModeLabel = formatCelestialEventModeLabel(
-    celestialEventModeState.mode
-  );
-  const eventsLabel = describeActiveCelestialEvents(
-    summarizeCelestialEvents(cycle)
-  );
-  const sunriseLabel = cardinalFromAngle(cycle.sunriseAzimuth);
-  const tileLabel = definition?.name ?? tile.kind;
-  const playerLevel = normalizePlayerLevel(state.playerLevel);
-  const hint =
-    getInspectionHint(state, spatial.playerX, spatial.playerY) ??
-    tile.note ??
-    'Explore the frontier.';
   const interactionPrompt = getInteractionPromptFromResolvedState({
     map: state.getCurrentMap(),
     player: { x: spatial.playerX, y: spatial.playerY },
@@ -2960,14 +2897,6 @@ function travelToOverworld(
   requestRender();
 }
 
-function jumpToRandomPlains(): void {
-  const destination = findRandomTileDestination('plains', {
-    sampleOverworld: generator.sampleOverworld,
-    canLandAt: canLandOnOverworldTile,
-  }) ?? { x: 0, y: 0 };
-  travelToOverworld(destination.x, destination.y);
-}
-
 function jumpToRandomDestination(targetKind?: string): void {
   const destination = targetKind
     ? findRandomTileDestination(targetKind, {
@@ -3843,39 +3772,6 @@ function formatCycleTime(dayProgress: number): string {
     .padStart(2, '0');
   const minutes = (totalMinutes % 60).toString().padStart(2, '0');
   return `${hours}:${minutes}`;
-}
-
-function renderCompass(facing: CardinalFacing): string {
-  return ['N', 'E', 'S', 'W']
-    .map((direction) =>
-      direction === facing
-        ? `<span class="is-active">${direction}</span>`
-        : `<span>${direction}</span>`
-    )
-    .join('');
-}
-
-function formatWeatherSummary(environment: WorldEnvironmentLike): string {
-  const current = environment.weather?.current;
-  if (!current) {
-    return 'Clear';
-  }
-  return `${current.label} ${Math.round(current.temperature)}\u00b0F, wind ${Math.round(
-    current.front.windDirectionDegrees
-  )}\u00b0`;
-}
-
-function formatForecastSummary(environment: WorldEnvironmentLike): string {
-  const forecast = environment.weather?.forecast ?? [];
-  if (forecast.length === 0) {
-    return 'No forecast available';
-  }
-  return forecast
-    .map(
-      (day) =>
-        `${day.label} ${day.condition.label} ${day.highTemperature}\u00b0/${day.lowTemperature}\u00b0F`
-    )
-    .join(' • ');
 }
 
 function formatCelestialEventModeLabel(mode: CelestialEventMode): string {
