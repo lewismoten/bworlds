@@ -1,5 +1,8 @@
 import { randomizeDebugCoordinatePair } from './debug-seed.ts';
-import { resolveVelocityShapedInstrumentTimbre } from './music-instrument-timbres.ts';
+import {
+  resolveVelocityShapedInstrumentTimbre,
+  type MusicWaveform,
+} from './music-instrument-timbres.ts';
 import {
   buildMusicDebugInstrumentWaveformMarkup,
   buildMusicDebugInstrumentPanelMarkup,
@@ -1119,6 +1122,12 @@ function buildSelectedInstrumentDetailsMarkup(
   const harmonicOscillatorType = runtimeInstrument
     ? runtimeInstrument.timbre.harmonicWaveform
     : 'Unknown';
+  const primaryHarmonicContent = runtimeInstrument
+    ? describeWaveformHarmonicContent(runtimeInstrument.waveform)
+    : 'Unknown';
+  const harmonicOscillatorContent = runtimeInstrument
+    ? describeWaveformHarmonicContent(runtimeInstrument.timbre.harmonicWaveform)
+    : 'Unknown';
   const activeOscillatorCount = runtimeInstrument
     ? String(resolveActiveOscillatorCount(runtimeInstrument))
     : 'Unknown';
@@ -1141,7 +1150,9 @@ function buildSelectedInstrumentDetailsMarkup(
       <div><dt>Patch Source</dt><dd>${selectedEntry.sourcePlugin}</dd></div>
       <div><dt>Generated</dt><dd>${selectedEntry.sourcePlugin === 'core-generated-bank' ? 'Yes' : 'No'}</dd></div>
       <div><dt>Primary Oscillator</dt><dd>${primaryOscillatorType}</dd></div>
+      <div><dt>Primary Harmonics</dt><dd>${primaryHarmonicContent}</dd></div>
       <div><dt>Harmonic Oscillator</dt><dd>${harmonicOscillatorType}</dd></div>
+      <div><dt>Harmonic Content</dt><dd>${harmonicOscillatorContent}</dd></div>
       <div><dt>Active Oscillator Count</dt><dd>${activeOscillatorCount}</dd></div>
       <div><dt>Filter Type</dt><dd>${filterType}</dd></div>
       <div><dt>Uses Samples</dt><dd>${usesSamples}</dd></div>
@@ -1172,6 +1183,23 @@ function resolveActiveOscillatorCount(
   instrument: SoundBankDebugSnapshot['musicSnapshot']['instrumentBank']['instruments'][keyof SoundBankDebugSnapshot['musicSnapshot']['instrumentBank']['instruments']]
 ): number {
   return instrument.harmonicGain > 0 ? 2 : 1;
+}
+
+function describeWaveformHarmonicContent(
+  waveform: MusicWaveform
+): string {
+  switch (waveform) {
+    case 'sine':
+      return 'Fundamental only';
+    case 'triangle':
+      return 'Odd harmonics with gentle rolloff';
+    case 'square':
+      return 'Odd harmonics with strong presence';
+    case 'sawtooth':
+      return 'Full harmonic series';
+    default:
+      return 'Custom harmonic profile';
+  }
 }
 
 function resolveEstimatedPatchComplexity(

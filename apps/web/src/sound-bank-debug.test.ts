@@ -104,7 +104,9 @@ describe('sound bank debug page', () => {
     expect(normalizedMarkup).toContain('Patch Source');
     expect(normalizedMarkup).toContain('Generated');
     expect(normalizedMarkup).toContain('Primary Oscillator');
+    expect(normalizedMarkup).toContain('Primary Harmonics');
     expect(normalizedMarkup).toContain('Harmonic Oscillator');
+    expect(normalizedMarkup).toContain('Harmonic Content');
     expect(normalizedMarkup).toContain('Active Oscillator Count');
     expect(normalizedMarkup).toContain('Filter Type');
     expect(normalizedMarkup).toContain('Uses Samples');
@@ -507,7 +509,9 @@ describe('sound bank debug page', () => {
     expect(markup).toContain('>No<');
     expect(markup).toContain('Primary Oscillator');
     expect(markup).toContain('Unknown');
+    expect(markup).toContain('Primary Harmonics');
     expect(markup).toContain('Harmonic Oscillator');
+    expect(markup).toContain('Harmonic Content');
     expect(markup).toContain('Active Oscillator Count');
     expect(markup).toContain('Filter Type');
     expect(markup).toContain(
@@ -553,8 +557,18 @@ describe('sound bank debug page', () => {
     expect(markup).toContain('Generated');
     expect(markup).toContain('>Yes<');
     expect(markup).toContain('Primary Oscillator');
-    expect(markup).toContain('sawtooth');
+    expect(markup).toContain(
+      snapshot.musicSnapshot.instrumentBank.instruments.lead.waveform
+    );
+    expect(markup).toContain('Primary Harmonics');
+    expect(markup).toMatch(
+      /Fundamental only|Odd harmonics with gentle rolloff|Odd harmonics with strong presence|Full harmonic series|Custom harmonic profile/
+    );
     expect(markup).toContain('Harmonic Oscillator');
+    expect(markup).toContain('Harmonic Content');
+    expect(markup).toMatch(
+      /Fundamental only|Odd harmonics with gentle rolloff|Odd harmonics with strong presence|Full harmonic series|Custom harmonic profile/
+    );
     expect(markup).toContain('Active Oscillator Count');
     expect(markup).toContain('>2<');
     expect(markup).toContain('Filter Type');
