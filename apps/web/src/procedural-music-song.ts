@@ -19,11 +19,7 @@ import {
 } from './procedural-music.ts';
 import { transformSongSectionNote } from './procedural-music-song-variation.ts';
 import { buildProceduralMusicSongSections } from './procedural-music-song-timing.ts';
-import {
-  collectProceduralMusicPhraseNotes,
-  PROCEDURAL_MUSIC_PHRASE_MEASURE_COUNT,
-  repeatProceduralMusicPhraseNotes,
-} from './procedural-music-song-phrase.ts';
+import { buildProceduralMusicBasePhrasePlan } from './procedural-music-song-base.ts';
 import { regeneratePhrasesContainingUnresolvedChromaticNotes } from './procedural-music-song-chromatic.ts';
 import { resolveSongFinalCadence } from './procedural-music-song-cadence.ts';
 import { stateLeadMotifInFirstASection } from './procedural-music-song-motif.ts';
@@ -69,21 +65,17 @@ export function createProceduralMusicSong(
   );
   const blueprint = resolveProceduralMusicBlueprint(options);
   const sections = buildProceduralMusicSongSections(blueprint, durationMs);
-  const phraseDurationMs = resolveProceduralMusicPhraseDurationMs(
+  const basePhrasePlan = buildProceduralMusicBasePhrasePlan({
+    music: options,
     sections,
-    durationMs
-  );
-  const basePhraseNotes = collectProceduralMusicPhraseNotes(
-    options,
-    phraseDurationMs
-  );
-  const baseNotes = repeatProceduralMusicPhraseNotes(basePhraseNotes, {
-    phraseStartMs: startMs,
-    phraseDurationMs,
     songStartMs: startMs,
     songDurationMs: durationMs,
   });
-  const arrangedNotes = applySongSectionsToNotes(baseNotes, sections, startMs);
+  const arrangedNotes = applySongSectionsToNotes(
+    basePhrasePlan.repeatedNotes,
+    sections,
+    startMs
+  );
   const motifStatedNotes = stateLeadMotifInFirstASection({
     notes: arrangedNotes,
     sections,
@@ -100,7 +92,7 @@ export function createProceduralMusicSong(
     cadencedNotes,
     {
       songStartMs: startMs,
-      phraseDurationMs,
+      phraseDurationMs: basePhrasePlan.phraseDurationMs,
     }
   );
   const loopStartOffsetMs = sections[1]?.startOffsetMs ?? 0;
@@ -232,22 +224,6 @@ function applySongSectionsToNotes(
   });
 
   return transformedNotes;
-}
-
-function resolveProceduralMusicPhraseDurationMs(
-  sections: readonly ProceduralMusicSongSection[],
-  durationMs: number
-): number {
-  const totalMeasures = Math.max(
-    1,
-    sections.reduce((sum, section) => sum + section.measureCount, 0)
-  );
-  return Math.max(
-    1_000,
-    Math.round(
-      (durationMs / totalMeasures) * PROCEDURAL_MUSIC_PHRASE_MEASURE_COUNT
-    )
-  );
 }
 
 function roundToNearestThousand(value: number): number {
