@@ -123,7 +123,7 @@ added directly as semitones instead of moving through the selected scale.
 - [x] Keep common chord tones between changes.
 - [x] Avoid octave jumping as the main harmony motion.
 - [x] Separate chord voices into stable registers.
-- [ ] Match harmony notes to the 1-5-6-1 progression.
+- [x] Match harmony notes to the 1-5-6-1 progression.
 - [x] Validate that harmony polyphony exceeds one.
 - [x] Reject a harmony track containing only single notes.
 

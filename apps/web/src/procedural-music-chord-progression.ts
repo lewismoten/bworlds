@@ -37,10 +37,7 @@ export const PROCEDURAL_CHORD_PROGRESSION_PROFILES = [
 ] as const satisfies readonly ProceduralChordProgressionProfile[];
 
 const THEME_PROGRESSIONS: Record<string, readonly string[]> = {
-  'frontier-plains': [
-    'tonic-dominant-submediant-tonic',
-    'tonic-subdominant-dominant-tonic',
-  ],
+  'frontier-plains': ['tonic-dominant-submediant-tonic'],
   'deep-forest': [
     'tonic-subdominant-dominant-tonic',
     'tonic-dominant-submediant-tonic',

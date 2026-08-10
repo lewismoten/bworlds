@@ -22,14 +22,14 @@ describe('procedural music chord progression', () => {
     expect(progression.at(-1)).toBe(0);
   });
 
-  it('biases plains progressions toward the 1-5-6-1 cadence family', () => {
+  it('locks plains progressions to the 1-5-6-1 cadence profile', () => {
     const profile = resolveProceduralChordProgressionProfile({
       themeId: 'frontier-plains',
       clusterX: 3,
       clusterY: -2,
     });
 
-    expect(['1-5-6-1', '1-4-5-1']).toContain(profile.label);
+    expect(profile.label).toBe('1-5-6-1');
   });
 
   it('describes chord 5 and chord 6 in G Mixolydian as minor triads', () => {
