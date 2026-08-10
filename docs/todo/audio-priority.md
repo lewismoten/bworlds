@@ -157,8 +157,8 @@
 - [ ] Add solo controls for every drum voice.
 - [ ] Add mute controls for every drum voice.
 - [ ] Add a drum-kit audition pattern.
-- [ ] Add a melody-only playback option.
-- [ ] Add a bass-and-harmony playback option.
+- [x] Add a melody-only playback option.
+- [x] Add a bass-and-harmony playback option.
 - [ ] Add a dry full-song playback option.
 - [ ] Show planned and detected chords by measure.
 - [ ] Show planned and actual contour on one graph.

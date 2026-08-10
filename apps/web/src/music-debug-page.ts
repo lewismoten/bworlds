@@ -29,6 +29,10 @@ import {
 import { resolveMusicDebugLivePlaybackIntent } from './music-debug-live-playback.ts';
 import { resolveMusicDebugPlaybackIntent } from './music-debug-playback-intent.ts';
 import {
+  normalizeMusicDebugPlaybackVariant,
+  resolveMusicDebugPlaybackRoles,
+} from './music-debug-playback-variant.ts';
+import {
   clampMusicDebugPreviewOffset,
   resolveMusicDebugDisplayedOffsetMs,
   resolveMusicDebugPlaybackOffsetMs,
@@ -67,6 +71,9 @@ const timeline = document.querySelector<HTMLCanvasElement>(
 );
 const playButton =
   document.querySelector<HTMLButtonElement>('#music-debug-play');
+const playbackVariantSelect = document.querySelector<HTMLSelectElement>(
+  '#music-debug-playback-variant'
+);
 const randomizeButton = document.querySelector<HTMLButtonElement>(
   '#music-debug-randomize'
 );
@@ -209,6 +216,14 @@ function syncPlaybackControls(
     : intent.idleButtonLabel;
 }
 
+function resolveSelectedPlaybackRoles(
+  value = playbackVariantSelect?.value
+): ReturnType<typeof resolveMusicDebugPlaybackRoles> {
+  return resolveMusicDebugPlaybackRoles(
+    normalizeMusicDebugPlaybackVariant(value)
+  );
+}
+
 function stopPlaybackFrameLoop(): void {
   if (playbackFrameHandle === null) {
     return;
@@ -255,11 +270,14 @@ function seekToOffset(nextOffsetMs: number): void {
   if (playbackController.isPlaying()) {
     playbackController.start(
       snapshot,
-      resolveMusicDebugPlaybackIntent({
-        snapshot,
-        previewOffsetMs,
-        loopEnabled: loopInput?.checked === true,
-      })
+      {
+        ...resolveMusicDebugPlaybackIntent({
+          snapshot,
+          previewOffsetMs,
+          loopEnabled: loopInput?.checked === true,
+        }),
+        roles: resolveSelectedPlaybackRoles(),
+      }
     );
     persistPageState(true);
     return;
@@ -284,13 +302,16 @@ const pageState = createMusicDebugPageState({
     if (playbackController.isPlaying()) {
       playbackController.start(
         nextSnapshot,
-        resolveMusicDebugLivePlaybackIntent({
-          snapshot: nextSnapshot,
-          playback: playbackVisualState,
-          previewOffsetMs,
-          loopEnabled: loopInput?.checked === true,
-          nowMs: performance.now(),
-        })
+        {
+          ...resolveMusicDebugLivePlaybackIntent({
+            snapshot: nextSnapshot,
+            playback: playbackVisualState,
+            previewOffsetMs,
+            loopEnabled: loopInput?.checked === true,
+            nowMs: performance.now(),
+          }),
+          roles: resolveSelectedPlaybackRoles(),
+        }
       );
       return;
     }
@@ -451,6 +472,9 @@ function applyPersistedPageState(): void {
   if (loopInput) {
     loopInput.checked = persistedState.loopEnabled;
   }
+  if (playbackVariantSelect) {
+    playbackVariantSelect.value = persistedState.playbackVariant;
+  }
 }
 
 function persistPageState(
@@ -460,6 +484,9 @@ function persistPageState(
   pagePersistence.save({
     options: normalizeMusicDebugOptions(collectOptions()),
     loopEnabled: loopInput?.checked === true,
+    playbackVariant: normalizeMusicDebugPlaybackVariant(
+      playbackVariantSelect?.value
+    ),
     previewOffsetMs: offsetMs,
     shouldResume,
     scrollY: Math.max(0, Math.round(globalThis.scrollY ?? 0)),
@@ -494,11 +521,14 @@ playButton?.addEventListener('click', () => {
   const currentSnapshot = pageState.refreshNow();
   playbackController.start(
     currentSnapshot,
-    resolveMusicDebugPlaybackIntent({
-      snapshot: currentSnapshot,
-      previewOffsetMs,
-      loopEnabled: loopInput?.checked === true,
-    })
+    {
+      ...resolveMusicDebugPlaybackIntent({
+        snapshot: currentSnapshot,
+        previewOffsetMs,
+        loopEnabled: loopInput?.checked === true,
+      }),
+      roles: resolveSelectedPlaybackRoles(),
+    }
   );
 });
 
@@ -579,6 +609,25 @@ loopInput?.addEventListener('change', () => {
   persistPageState(playbackController.isPlaying());
 });
 
+playbackVariantSelect?.addEventListener('change', () => {
+  if (playbackController.isPlaying()) {
+    const snapshot = pageState.refreshNow();
+    playbackController.start(snapshot, {
+      ...resolveMusicDebugLivePlaybackIntent({
+        snapshot,
+        playback: playbackVisualState,
+        previewOffsetMs,
+        loopEnabled: loopInput?.checked === true,
+        nowMs: performance.now(),
+      }),
+      roles: resolveSelectedPlaybackRoles(),
+    });
+    persistPageState(true, resolveDisplayedOffsetMs());
+    return;
+  }
+  persistPageState(false);
+});
+
 timeline?.addEventListener('click', (event) => {
   const bounds = timeline.getBoundingClientRect();
   const snapshot = pageState.refreshNow();
@@ -602,11 +651,14 @@ scheduleAfterPaint(() => {
   if (persistedState?.shouldResume) {
     playbackController.start(
       snapshot,
-      resolveMusicDebugPlaybackIntent({
-        snapshot,
-        previewOffsetMs,
-        loopEnabled: loopInput?.checked === true,
-      })
+      {
+        ...resolveMusicDebugPlaybackIntent({
+          snapshot,
+          previewOffsetMs,
+          loopEnabled: loopInput?.checked === true,
+        }),
+        roles: resolveSelectedPlaybackRoles(persistedState.playbackVariant),
+      }
     );
   }
   updatePreviewOffset(previewOffsetMs);

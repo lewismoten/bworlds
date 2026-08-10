@@ -4,10 +4,13 @@ import {
   type MusicDebugSnapshot,
 } from './music-debug.ts';
 
+export type MusicDebugPlaybackRole = MusicDebugSnapshot['notes'][number]['role'];
+
 export type MusicDebugPlaybackAdapter = {
   play(
     snapshot: MusicDebugSnapshot,
-    region?: MusicDebugPlaybackRegion | null
+    region?: MusicDebugPlaybackRegion | null,
+    options?: { roles?: readonly MusicDebugPlaybackRole[] }
   ): number | void;
   stop(): void;
 };
@@ -16,12 +19,20 @@ export type MusicDebugPlaybackController = {
   isPlaying(): boolean;
   start(
     snapshot: MusicDebugSnapshot,
-    options?: { loop?: boolean; startOffsetMs?: number }
+    options?: {
+      loop?: boolean;
+      startOffsetMs?: number;
+      roles?: readonly MusicDebugPlaybackRole[];
+    }
   ): void;
   stop(): void;
   toggle(
     snapshot: MusicDebugSnapshot,
-    options?: { loop?: boolean; startOffsetMs?: number }
+    options?: {
+      loop?: boolean;
+      startOffsetMs?: number;
+      roles?: readonly MusicDebugPlaybackRole[];
+    }
   ): void;
 };
 
@@ -75,6 +86,7 @@ export function createMusicDebugPlaybackController(options: {
     snapshot: MusicDebugSnapshot;
     region?: MusicDebugPlaybackRegion | null;
     repeatRegion?: MusicDebugPlaybackRegion | null;
+    roles?: readonly MusicDebugPlaybackRole[];
   }): void {
     const durationMs = resolveMusicDebugPlaybackDurationMs(
       options.snapshot,
@@ -88,11 +100,12 @@ export function createMusicDebugPlaybackController(options: {
       }
 
       if (options.repeatRegion) {
-        playbackStart(options.snapshot, options.repeatRegion);
+        playbackStart(options.snapshot, options.repeatRegion, options.roles);
         schedulePlaybackStop({
           snapshot: options.snapshot,
           region: options.repeatRegion,
           repeatRegion: options.repeatRegion,
+          roles: options.roles,
         });
         return;
       }
@@ -103,10 +116,13 @@ export function createMusicDebugPlaybackController(options: {
 
   function playbackStart(
     snapshot: MusicDebugSnapshot,
-    region?: MusicDebugPlaybackRegion | null
+    region?: MusicDebugPlaybackRegion | null,
+    roles?: readonly MusicDebugPlaybackRole[]
   ): void {
     const startedAtMs =
-      options.playback.play(snapshot, region) ?? now() + playbackLeadMs;
+      (roles
+        ? options.playback.play(snapshot, region, { roles })
+        : options.playback.play(snapshot, region)) ?? now() + playbackLeadMs;
     options.onPlaybackCycle?.({
       snapshot,
       region: region ?? null,
@@ -116,7 +132,11 @@ export function createMusicDebugPlaybackController(options: {
 
   function start(
     snapshot: MusicDebugSnapshot,
-    startOptions?: { loop?: boolean; startOffsetMs?: number }
+    startOptions?: {
+      loop?: boolean;
+      startOffsetMs?: number;
+      roles?: readonly MusicDebugPlaybackRole[];
+    }
   ): void {
     clearPlaybackTimeout();
     if (playing) {
@@ -148,15 +168,16 @@ export function createMusicDebugPlaybackController(options: {
           ? {
               startOffsetMs,
               endOffsetMs: snapshot.durationMs,
-            }
-          : null;
+          }
+        : null;
 
-    playbackStart(snapshot, introRegion);
+    playbackStart(snapshot, introRegion, startOptions?.roles);
     setPlaying(true);
     schedulePlaybackStop({
       snapshot,
       region: introRegion,
       repeatRegion: loopEnabled ? loopRegion : null,
+      roles: startOptions?.roles,
     });
   }
 

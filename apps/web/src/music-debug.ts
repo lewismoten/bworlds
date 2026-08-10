@@ -44,6 +44,11 @@ import {
   MUSIC_DEBUG_FULL_SONG_BUTTON_LABEL,
   MUSIC_DEBUG_LOOP_TOGGLE_LABEL,
 } from './music-debug-playback-intent.ts';
+import type { MusicDebugPlaybackRole } from './music-debug-playback.ts';
+import {
+  formatMusicDebugPlaybackVariantLabel,
+  MUSIC_DEBUG_PLAYBACK_VARIANTS,
+} from './music-debug-playback-variant.ts';
 import { resolveMusicDebugTempoBpm } from './music-debug-tempo.ts';
 import {
   analyzeMusicDebugPitches,
@@ -237,7 +242,8 @@ export type MusicDebugSongPlayback = {
   prepare?(): void;
   play(
     snapshot: MusicDebugSnapshot,
-    region?: MusicDebugPlaybackRegion | null
+    region?: MusicDebugPlaybackRegion | null,
+    options?: { roles?: readonly MusicDebugPlaybackRole[] }
   ): number | void;
   stop(): void;
 };
@@ -804,6 +810,17 @@ export function buildMusicDebugShellMarkup(
             <button id="music-debug-generate" type="submit">Generate</button>
             <button id="music-debug-randomize" type="button">🎲 Generate</button>
             <button id="music-debug-play" type="button">${MUSIC_DEBUG_FULL_SONG_BUTTON_LABEL}</button>
+            <label class="music-debug-export-label">
+              <span class="sr-only">Playback variant</span>
+              <select id="music-debug-playback-variant" name="playbackVariant">
+                ${MUSIC_DEBUG_PLAYBACK_VARIANTS.map(
+                  (variant) =>
+                    `<option value="${variant}">${formatMusicDebugPlaybackVariantLabel(
+                      variant
+                    )}</option>`
+                ).join('')}
+              </select>
+            </label>
             <div class="music-debug-export-controls">
               <button id="music-debug-download" type="button">Download MIDI</button>
               <button id="music-debug-download-bundle" type="button">Download Export ZIP</button>
@@ -1265,7 +1282,10 @@ export function createMusicDebugSongPlayback(
     prepare() {
       sink.resume?.();
     },
-    play(snapshot, region) {
+    play(snapshot, region, playbackOptions) {
+      const allowedRoles = playbackOptions?.roles
+        ? new Set(playbackOptions.roles)
+        : null;
       playbackGeneration += 1;
       clearScheduledBatch();
       const playbackRegion = resolveMusicDebugPlaybackRegion(snapshot, region);
@@ -1288,14 +1308,18 @@ export function createMusicDebugSongPlayback(
           if (note.startMs >= endMs) {
             return;
           }
+          noteIndex += 1;
+          if (allowedRoles && !allowedRoles.has(note.role)) {
+            continue;
+          }
           const scheduledStartMs = playbackStartMs + (note.startMs - offsetMs);
           if (scheduledStartMs > windowEndMs) {
+            noteIndex -= 1;
             break;
           }
           sink.play(
             createMusicDebugScheduledPlaybackNote(note, scheduledStartMs)
           );
-          noteIndex += 1;
         }
 
         if (noteIndex >= snapshot.notes.length) {

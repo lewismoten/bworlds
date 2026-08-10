@@ -222,6 +222,50 @@ describe('music debug playback controller', () => {
     );
   });
 
+  it('forwards selected playback roles to the adapter and keeps them on loop repeats', () => {
+    vi.useFakeTimers();
+    const snapshot = createMusicDebugSnapshot({
+      tileKind: 'forest',
+      contextType: 'overworld',
+      clusterX: 3,
+      clusterY: -2,
+    });
+    const playback = {
+      play: vi.fn(),
+      stop: vi.fn(),
+    };
+    const controller = createMusicDebugPlaybackController({
+      playback,
+    });
+
+    controller.start(snapshot, {
+      loop: true,
+      roles: ['lead'],
+    });
+
+    expect(playback.play).toHaveBeenNthCalledWith(
+      1,
+      snapshot,
+      expect.objectContaining({
+        startOffsetMs: 0,
+        endOffsetMs: snapshot.loopEndOffsetMs,
+      }),
+      { roles: ['lead'] }
+    );
+
+    vi.advanceTimersByTime(snapshot.loopEndOffsetMs + 16);
+
+    expect(playback.play).toHaveBeenNthCalledWith(
+      2,
+      snapshot,
+      expect.objectContaining({
+        startOffsetMs: snapshot.loopStartOffsetMs,
+        endOffsetMs: snapshot.loopEndOffsetMs,
+      }),
+      { roles: ['lead'] }
+    );
+  });
+
   it('can jump to a new section offset while the song is already playing', () => {
     vi.useFakeTimers();
     const snapshot = createMusicDebugSnapshot({

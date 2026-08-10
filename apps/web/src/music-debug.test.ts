@@ -225,6 +225,10 @@ describe('music debug', () => {
     expect(markup).toContain('music-debug-timeline');
     expect(markup).toContain('music-debug-randomize');
     expect(markup).toContain('Play Full Song');
+    expect(markup).toContain('music-debug-playback-variant');
+    expect(markup).toContain('Full Song</option>');
+    expect(markup).toContain('Melody Only</option>');
+    expect(markup).toContain('Harmony + Bass</option>');
     expect(markup).toContain('Download MIDI');
     expect(markup).toContain('Download Export ZIP');
     expect(markup).toContain('music-debug-export-variant');
@@ -629,6 +633,38 @@ describe('music debug', () => {
 
     expect(stopAll).toHaveBeenCalledTimes(1);
     expect(play.mock.calls.length).toBe(scheduledBeforeStop);
+  });
+
+  it('can limit debug song playback to a selected role subset', () => {
+    const snapshot = createMusicDebugSnapshot(
+      {
+        tileKind: 'forest',
+        contextType: 'overworld',
+        clusterX: 2,
+        clusterY: -1,
+      },
+      2_000
+    );
+    const play = vi.fn();
+    const playback = createMusicDebugSongPlayback(
+      {
+        resume: vi.fn(),
+        play,
+        stopAll: vi.fn(),
+      },
+      {
+        now: () => 1_000,
+        scheduleAheadMs: 12,
+        scheduleWindowMs: snapshot.durationMs + 1_000,
+      }
+    );
+
+    playback.play(snapshot, null, { roles: ['bass', 'harmony'] });
+
+    expect(play.mock.calls.length).toBeGreaterThan(0);
+    expect(
+      new Set(play.mock.calls.map(([note]) => note.role))
+    ).toEqual(new Set(['bass', 'harmony']));
   });
 
   it('provides a theme object that can drive pitch-scale overlays', () => {
