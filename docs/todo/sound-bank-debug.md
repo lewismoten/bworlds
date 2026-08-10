@@ -83,13 +83,13 @@
 
 ## Percussion Browser
 
-- [ ] Create a separate percussion browser.
-- [ ] Use General MIDI percussion note mappings.
-- [ ] Show the MIDI note for each drum sound.
-- [ ] Show percussion names beside note numbers.
-- [ ] Group related percussion sounds.
+- [x] Create a separate percussion browser.
+- [x] Use General MIDI percussion note mappings.
+- [x] Show the MIDI note for each drum sound.
+- [x] Show percussion names beside note numbers.
+- [x] Group related percussion sounds.
 - [ ] Add a filter for drum families.
-- [ ] Add a button to play each percussion sound.
+- [x] Add a button to play each percussion sound.
 - [ ] Add a small drum pad grid.
 - [ ] Add keyboard shortcuts for drum pads.
 - [ ] Show missing percussion patches.

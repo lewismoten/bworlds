@@ -7,6 +7,7 @@ import {
   normalizeSoundBankDebugOptions,
   randomizeSoundBankDebugSeed,
   resolveSoundBankDebugGeneralMidiBrowserModel,
+  resolveSoundBankDebugPreviewNoteRole,
 } from './sound-bank-debug.ts';
 import { registerSoundBankPluginInstruments } from './sound-bank-registry.ts';
 
@@ -58,6 +59,7 @@ describe('sound bank debug page', () => {
     expect(markup).toContain('sound-bank-debug-master-gain');
     expect(markup).toContain('Instrument Browser');
     expect(markup).toContain('Role Patches');
+    expect(markup).toContain('Percussion Browser');
     expect(markup).toContain('Program Browser');
     expect(markup).toContain('sound-bank-debug-midi-search');
     expect(markup).toContain('sound-bank-debug-midi-family-filter');
@@ -81,6 +83,9 @@ describe('sound bank debug page', () => {
     expect(normalizedMarkup).toContain('GM program: Percussion kit');
     expect(normalizedMarkup).toContain('Standard programs 0 through 127');
     expect(normalizedMarkup).toContain('Placeholder patch');
+    expect(normalizedMarkup).toContain('>Kick<');
+    expect(normalizedMarkup).toContain('>36<');
+    expect(normalizedMarkup).toContain('Kick Center');
     expect(normalizedMarkup).toContain('>Piano<');
     expect(normalizedMarkup).toContain('>0<');
     expect(normalizedMarkup).toContain('Acoustic Grand Piano');
@@ -423,5 +428,30 @@ describe('sound bank debug page', () => {
       }),
     ]);
     expect(markup).toContain('Custom patch');
+  });
+
+  it('builds fallback preview notes for percussion voices outside the current song seed', () => {
+    const snapshot = createSoundBankDebugSnapshot({
+      tileKind: 'forest',
+      contextType: 'overworld',
+    });
+
+    const note = resolveSoundBankDebugPreviewNoteRole(
+      snapshot,
+      'percussion:cymbals-51',
+      9_000
+    );
+
+    expect(note).toEqual(
+      expect.objectContaining({
+        role: 'percussion',
+        instrumentId: expect.stringContaining(':perc-cymbals-51:preview'),
+        startMs: 9_004,
+        waveform: 'square',
+      })
+    );
+    expect(note?.durationMs).toBeGreaterThanOrEqual(96);
+    expect(note?.attackMs).toBeGreaterThanOrEqual(4);
+    expect(note?.releaseMs).toBeGreaterThanOrEqual(24);
   });
 });

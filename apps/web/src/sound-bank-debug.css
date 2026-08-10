@@ -274,6 +274,53 @@ body {
   font-size: 1rem;
 }
 
+.sound-bank-debug-percussion-browser {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.8rem;
+}
+
+.sound-bank-debug-percussion-family {
+  border-radius: 1rem;
+  border: 1px solid rgba(172, 208, 255, 0.16);
+  background: rgba(16, 31, 48, 0.8);
+  padding: 0.85rem 0.9rem;
+}
+
+.sound-bank-debug-percussion-family h3 {
+  margin: 0 0 0.75rem;
+}
+
+.sound-bank-debug-percussion-voice-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.55rem;
+}
+
+.sound-bank-debug-percussion-voice {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 0.65rem;
+  align-items: center;
+}
+
+.sound-bank-debug-percussion-note {
+  min-width: 2.5rem;
+  font-variant-numeric: tabular-nums;
+  color: #9fc0ea;
+}
+
+.sound-bank-debug-percussion-name {
+  min-width: 0;
+  color: #eef5ff;
+}
+
+.sound-bank-debug-percussion-play {
+  padding-inline: 0.8rem;
+}
+
 @media (min-width: 1080px) {
   .sound-bank-debug-shell-expanded .sound-bank-debug-layout {
     grid-template-columns: minmax(320px, 430px) minmax(0, 1fr);

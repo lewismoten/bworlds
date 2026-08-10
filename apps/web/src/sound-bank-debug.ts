@@ -1,4 +1,5 @@
 import { randomizeDebugCoordinatePair } from './debug-seed.ts';
+import { resolveVelocityShapedInstrumentTimbre } from './music-instrument-timbres.ts';
 import {
   buildMusicDebugInstrumentPanelMarkup,
   resolveMusicDebugInstrumentPreviewNote,
@@ -17,6 +18,14 @@ import {
   listGeneralMidiPrograms,
   type GeneralMidiProgram,
 } from './general-midi.ts';
+import {
+  applyPercussionVoiceToTimbre,
+  listPercussionVoicesForFamily,
+  resolvePercussionVoiceById,
+  type PercussionFamily,
+  type PercussionVoiceId,
+} from './procedural-music-percussion-voices.ts';
+import type { ProceduralMusicNote } from './procedural-music.ts';
 import {
   createSoundBankInstrumentRegistry,
   type SoundBankInstrumentRegistryEntry,
@@ -73,6 +82,19 @@ export type SoundBankDebugGeneralMidiBrowserModel = Readonly<{
   selectedProgramNumber: number | null;
   previousProgramNumber: number | null;
   nextProgramNumber: number | null;
+}>;
+
+export type SoundBankDebugPercussionBrowserSection = Readonly<{
+  family: PercussionFamily;
+  heading: string;
+  voices: readonly SoundBankDebugPercussionVoiceView[];
+}>;
+
+export type SoundBankDebugPercussionVoiceView = Readonly<{
+  voiceId: PercussionVoiceId;
+  midiNote: number;
+  name: string;
+  previewTarget: MusicDebugInstrumentPreviewTarget;
 }>;
 
 export const DEFAULT_SOUND_BANK_DEBUG_GENERAL_MIDI_BROWSER_STATE: SoundBankDebugGeneralMidiBrowserState =
@@ -206,6 +228,7 @@ export function buildSoundBankDebugMarkup(
       `
     )
     .join('');
+  const percussionBrowserSections = createSoundBankDebugPercussionBrowserSections();
   const generalMidiBrowserMarkup = generalMidiBrowserModel.sections
     .map(
       (section) => `
@@ -516,6 +539,53 @@ export function buildSoundBankDebugMarkup(
         <section class="sound-bank-debug-panel">
           <div class="sound-bank-debug-panel-head">
             <div>
+              <p class="sound-bank-debug-panel-kicker">Percussion</p>
+              <h2>Percussion Browser</h2>
+              <p>
+                General MIDI drum mappings grouped by family, with a direct
+                preview for each available percussion voice.
+              </p>
+            </div>
+          </div>
+          <div class="sound-bank-debug-percussion-browser">
+            ${percussionBrowserSections
+              .map(
+                (section) => `
+                  <section
+                    class="sound-bank-debug-percussion-family"
+                    aria-label="${section.heading}"
+                  >
+                    <h3>${section.heading}</h3>
+                    <ul class="sound-bank-debug-percussion-voice-list">
+                      ${section.voices
+                        .map(
+                          (voice) => `
+                            <li class="sound-bank-debug-percussion-voice">
+                              <span class="sound-bank-debug-percussion-note">${voice.midiNote}</span>
+                              <span class="sound-bank-debug-percussion-name">${formatLabel(
+                                voice.name
+                              )}</span>
+                              <button
+                                type="button"
+                                class="music-debug-instrument-play sound-bank-debug-percussion-play"
+                                data-preview-id="${voice.previewTarget}"
+                              >
+                                Play
+                              </button>
+                            </li>
+                          `
+                        )
+                        .join('')}
+                    </ul>
+                  </section>
+                `
+              )
+              .join('')}
+          </div>
+        </section>
+        <section class="sound-bank-debug-panel">
+          <div class="sound-bank-debug-panel-head">
+            <div>
               <p class="sound-bank-debug-panel-kicker">General MIDI</p>
               <h2>Program Browser</h2>
               <p>
@@ -651,9 +721,21 @@ export function resolveSoundBankDebugPreviewNoteRole(
   role: MusicDebugInstrumentPreviewTarget,
   nowMs: number
 ) {
-  return resolveMusicDebugInstrumentPreviewNote(
+  const existingPreview = resolveMusicDebugInstrumentPreviewNote(
     snapshot.musicSnapshot,
     role,
+    nowMs
+  );
+  if (existingPreview) {
+    return existingPreview;
+  }
+  if (!role.startsWith('percussion:')) {
+    return null;
+  }
+
+  return createFallbackPercussionPreviewNote(
+    snapshot.musicSnapshot,
+    role.slice('percussion:'.length) as PercussionVoiceId,
     nowMs
   );
 }
@@ -901,6 +983,63 @@ function createGeneralMidiProgramView(
   };
 }
 
+function createSoundBankDebugPercussionBrowserSections(): readonly SoundBankDebugPercussionBrowserSection[] {
+  return PERCUSSION_FAMILY_ORDER.map((family) => ({
+    family,
+    heading: formatLabel(family),
+    voices: listPercussionVoicesForFamily(family).map((voice) => ({
+      voiceId: voice.id,
+      midiNote: voice.midiNote,
+      name: voice.name,
+      previewTarget: `percussion:${voice.id}`,
+    })),
+  }));
+}
+
+function createFallbackPercussionPreviewNote(
+  snapshot: MusicDebugSnapshot,
+  voiceId: PercussionVoiceId,
+  nowMs: number
+): ProceduralMusicNote {
+  const voice = resolvePercussionVoiceById(voiceId);
+  const baseInstrument = snapshot.instrumentBank.instruments.percussion;
+  const velocity = baseInstrument.defaultVelocity;
+  const timbre = resolveVelocityShapedInstrumentTimbre({
+    timbre: applyPercussionVoiceToTimbre({
+      voice,
+      timbre: baseInstrument.timbre,
+    }),
+    velocity,
+  });
+
+  return {
+    themeId: snapshot.theme.id,
+    instrumentId: `${baseInstrument.id}:perc-${voice.id}:preview`,
+    role: 'percussion',
+    startMs: nowMs + 4,
+    durationMs: Math.max(
+      96,
+      Math.min(260, Math.round(baseInstrument.defaultNoteDurationMs * 0.68))
+    ),
+    frequency: resolveFrequencyFromMidiNote(voice.midiNote),
+    volume: 0.06,
+    velocity,
+    waveform: voice.waveform,
+    timbre,
+    attackMs: Math.max(
+      4,
+      Math.round(baseInstrument.attackMs * voice.attackMultiplier)
+    ),
+    releaseMs: Math.max(
+      24,
+      Math.round(baseInstrument.releaseMs * voice.releaseMultiplier * 0.42)
+    ),
+    detuneCents: baseInstrument.detuneCents * voice.detuneMultiplier,
+    harmonicGain: baseInstrument.harmonicGain * voice.harmonicGainMultiplier,
+    pulseRate: baseInstrument.pulseRate * voice.pulseRateMultiplier,
+  };
+}
+
 function summarizeRecommendedRange(
   entries: readonly SoundBankInstrumentRegistryEntry[]
 ): string {
@@ -926,3 +1065,15 @@ function programHasPlayableMidiNote(
       midiNote <= entry.recommendedMidiRange.maxMidiNote
   );
 }
+
+function resolveFrequencyFromMidiNote(midiNote: number): number {
+  return 440 * 2 ** ((midiNote - 69) / 12);
+}
+
+const PERCUSSION_FAMILY_ORDER: readonly PercussionFamily[] = [
+  'kick',
+  'snare',
+  'cymbals',
+  'shaker',
+  'hand-percussion',
+];
