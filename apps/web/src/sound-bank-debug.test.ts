@@ -93,6 +93,13 @@ describe('sound bank debug page', () => {
     expect(normalizedMarkup).toContain('GM program: 80');
     expect(normalizedMarkup).toContain('GM program: Percussion kit');
     expect(normalizedMarkup).toContain('Standard programs 0 through 127');
+    expect(normalizedMarkup).toContain('Selected Program');
+    expect(normalizedMarkup).toContain('Instrument ID');
+    expect(normalizedMarkup).toContain('GM Program');
+    expect(normalizedMarkup).toContain('GM Name');
+    expect(normalizedMarkup).toContain('Supported Roles');
+    expect(normalizedMarkup).toContain('Preferred Range');
+    expect(normalizedMarkup).toContain('Playable Range');
     expect(normalizedMarkup).toContain('Placeholder patch');
     expect(normalizedMarkup).toContain('>Kick<');
     expect(normalizedMarkup).toContain('>36<');
@@ -423,6 +430,14 @@ describe('sound bank debug page', () => {
         usesCustomPatch: false,
       }),
     ]);
+    expect(
+      resolveSoundBankDebugGeneralMidiBrowserModel(
+        snapshot.instrumentRegistry.entries,
+        {
+          sortMode: 'program',
+        }
+      ).selectedProgramNumber
+    ).toBe(33);
   });
 
   it('marks plugin-provided General MIDI mappings as custom patches', () => {
@@ -474,6 +489,34 @@ describe('sound bank debug page', () => {
       }),
     ]);
     expect(markup).toContain('Custom patch');
+  });
+
+  it('shows selected instrument details for the resolved General MIDI program', () => {
+    const snapshot = createSoundBankDebugSnapshot();
+    const markup = buildSoundBankDebugMarkup(snapshot, {
+      audioStatus: 'Audio idle',
+      generalMidiBrowserState: {
+        selectedProgramNumber: '80',
+      },
+    }).replace(/\s+/g, ' ');
+
+    expect(markup).toContain('Selected Program');
+    expect(markup).toContain('Instrument ID');
+    expect(markup).toContain(
+      snapshot.musicSnapshot.instrumentBank.instruments.lead.id
+    );
+    expect(markup).toContain('GM Program');
+    expect(markup).toContain('>80<');
+    expect(markup).toContain('GM Name');
+    expect(markup).toContain('Lead 1 (square)');
+    expect(markup).toContain('Family');
+    expect(markup).toContain('Synth Lead');
+    expect(markup).toContain('Supported Roles');
+    expect(markup).toContain('lead');
+    expect(markup).toContain('Preferred Range');
+    expect(markup).toContain('64-79');
+    expect(markup).toContain('Playable Range');
+    expect(markup).toContain('60-84');
   });
 
   it('builds fallback preview notes for percussion voices outside the current song seed', () => {

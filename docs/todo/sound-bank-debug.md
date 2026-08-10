@@ -100,13 +100,13 @@
 
 ## Instrument Details
 
-- [ ] Show the selected instrument ID.
-- [ ] Show the MIDI program number.
-- [ ] Show the General MIDI name.
-- [ ] Show the instrument family.
-- [ ] Show supported musical roles.
-- [ ] Show the preferred note range.
-- [ ] Show the full playable note range.
+- [x] Show the selected instrument ID.
+- [x] Show the MIDI program number.
+- [x] Show the General MIDI name.
+- [x] Show the instrument family.
+- [x] Show supported musical roles.
+- [x] Show the preferred note range.
+- [x] Show the full playable note range.
 - [ ] Show the current patch variant.
 - [ ] Show the patch source plugin.
 - [ ] Show whether the patch is generated.

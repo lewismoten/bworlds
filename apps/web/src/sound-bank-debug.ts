@@ -249,6 +249,10 @@ export function buildSoundBankDebugMarkup(
   const percussionBrowserSections = createSoundBankDebugPercussionBrowserSections(
     percussionBrowserState
   );
+  const selectedInstrumentDetailsMarkup = buildSelectedInstrumentDetailsMarkup(
+    snapshot.instrumentRegistry.entries,
+    generalMidiBrowserModel.selectedProgramNumber
+  );
   const generalMidiBrowserMarkup = generalMidiBrowserModel.sections
     .map(
       (section) => `
@@ -791,6 +795,19 @@ export function buildSoundBankDebugMarkup(
         <section class="sound-bank-debug-panel">
           <div class="sound-bank-debug-panel-head">
             <div>
+              <p class="sound-bank-debug-panel-kicker">Instrument Details</p>
+              <h2>Selected Program</h2>
+              <p>
+                Details for the currently selected General MIDI program and the
+                resolved patch registration behind it.
+              </p>
+            </div>
+          </div>
+          ${selectedInstrumentDetailsMarkup}
+        </section>
+        <section class="sound-bank-debug-panel">
+          <div class="sound-bank-debug-panel-head">
+            <div>
               <p class="sound-bank-debug-panel-kicker">Instrument Browser</p>
               <h2>Role Patches</h2>
               <p>
@@ -1059,11 +1076,49 @@ function renderOptionList(
     .join('');
 }
 
+function buildSelectedInstrumentDetailsMarkup(
+  registryEntries: readonly SoundBankInstrumentRegistryEntry[],
+  selectedProgramNumber: number | null
+): string {
+  const selectedEntry =
+    selectedProgramNumber === null
+      ? null
+      : registryEntries.find(
+          (entry) =>
+            entry.isValid &&
+            entry.generalMidiProgramNumber === selectedProgramNumber
+        ) ?? null;
+
+  if (!selectedEntry) {
+    return `
+      <p class="sound-bank-debug-warning" role="status">
+        No registered patch is available for the selected General MIDI program.
+      </p>
+    `;
+  }
+
+  return `
+    <dl class="music-debug-instrument-stats">
+      <div><dt>Instrument ID</dt><dd>${selectedEntry.id}</dd></div>
+      <div><dt>GM Program</dt><dd>${selectedEntry.generalMidiProgramNumber}</dd></div>
+      <div><dt>GM Name</dt><dd>${selectedEntry.generalMidiInstrumentName}</dd></div>
+      <div><dt>Family</dt><dd>${selectedEntry.generalMidiFamilyName}</dd></div>
+      <div><dt>Supported Roles</dt><dd>${selectedEntry.supportedRoles.join(', ')}</dd></div>
+      <div><dt>Preferred Range</dt><dd>${formatMidiRange(selectedEntry.preferredMidiRange)}</dd></div>
+      <div><dt>Playable Range</dt><dd>${formatMidiRange(selectedEntry.recommendedMidiRange)}</dd></div>
+    </dl>
+  `;
+}
+
 function formatLabel(value: string): string {
   return value
     .split('-')
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(' ');
+}
+
+function formatMidiRange(range: { minMidiNote: number; maxMidiNote: number }): string {
+  return `${range.minMidiNote}-${range.maxMidiNote}`;
 }
 
 function groupProgramsByFamily(
@@ -1125,7 +1180,10 @@ function resolveSelectedProgramNumber(
     return selectedProgram;
   }
 
-  return programs[0]!.programNumber;
+  return (
+    programs.find((program) => program.isAvailable)?.programNumber ??
+    programs[0]!.programNumber
+  );
 }
 
 function escapeAttribute(value: string): string {
