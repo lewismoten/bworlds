@@ -241,6 +241,8 @@ const PERCUSSION_VOICES: Record<PercussionVoiceId, PercussionVoiceDefinition> = 
       harmonicRatioMultiplier: 0.96,
       filterCutoffMultiplier: 0.92,
       filterQMultiplier: 1.08,
+      noiseMixMultiplier: 1.14,
+      transientMixMultiplier: 1.08,
     },
   }),
   'cymbals-42': createPercussionVoice({
@@ -259,6 +261,8 @@ const PERCUSSION_VOICES: Record<PercussionVoiceId, PercussionVoiceDefinition> = 
       harmonicRatioMultiplier: 0.86,
       filterCutoffMultiplier: 0.8,
       filterQMultiplier: 1.22,
+      noiseMixMultiplier: 1.28,
+      transientMixMultiplier: 1.26,
     },
   }),
   'shaker-69': createPercussionVoice({

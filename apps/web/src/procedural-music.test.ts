@@ -24,6 +24,10 @@ import {
 import { createProceduralMusicSong } from './procedural-music-song.ts';
 import { resolveProceduralMusicLoudness } from './procedural-music-loudness.ts';
 import { createProceduralPercussionNotes } from './procedural-music-percussion.ts';
+import {
+  applyPercussionVoiceToTimbre,
+  resolvePercussionVoiceById,
+} from './procedural-music-percussion-voices.ts';
 import { resolveProceduralThemeMotif } from './procedural-music-theme-motif.ts';
 import {
   compareInstrumentPatchToKnownGoodRolePatch,
@@ -2171,6 +2175,36 @@ describe('procedural music', () => {
     expect(snare.transientDurationMs ?? 0).toBeLessThanOrEqual(32);
     expect(snare.transientFilterType).toBe('bandpass');
     expect(snare.transientFilterCutoffHz ?? 0).toBeGreaterThan(1_500);
+  });
+
+  it('gives hi-hat voices short metallic noise envelopes', () => {
+    const cymbals = resolveProceduralInstrumentTimbre({
+      family: 'cymbals',
+      brightness: 1.08,
+      harmonicSignal: 0.55,
+      filterSignal: 0.6,
+    });
+    const closedHat = resolvePercussionVoiceById('cymbals-42');
+    const openHat = resolvePercussionVoiceById('cymbals-46');
+    const closedHatTimbre = applyPercussionVoiceToTimbre({
+      voice: closedHat,
+      timbre: cymbals,
+    });
+    const openHatTimbre = applyPercussionVoiceToTimbre({
+      voice: openHat,
+      timbre: cymbals,
+    });
+
+    expect(cymbals.noiseMix ?? 0).toBeGreaterThan(0.2);
+    expect(cymbals.transientMix ?? 0).toBeGreaterThan(0.1);
+    expect(cymbals.noiseFilterType).toBe('highpass');
+    expect(closedHat.releaseMultiplier).toBeLessThan(openHat.releaseMultiplier);
+    expect(closedHatTimbre.noiseMix ?? 0).toBeGreaterThan(
+      openHatTimbre.noiseMix ?? 0
+    );
+    expect(closedHatTimbre.transientMix ?? 0).toBeGreaterThan(
+      openHatTimbre.transientMix ?? 0
+    );
   });
 
   it('keeps generated instrument patches inside their family recipe ranges', () => {
