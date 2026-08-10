@@ -10,7 +10,10 @@
     "@bworlds/core": "0.1.0",
     "@bworlds/map-boat": "0.1.0",
     "@bworlds/map-canoe": "0.1.0",
-    "@bworlds/plugin-api": "0.1.0"
+    "@bworlds/map-train": "0.1.0",
+    "@bworlds/overworld-support": "0.1.0",
+    "@bworlds/plugin-api": "0.1.0",
+    "@bworlds/runtime-player-poi": "0.1.0"
   },
   "exports": {
     ".": "./src/index.ts"

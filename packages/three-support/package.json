@@ -4,6 +4,7 @@
   "type": "module",
   "dependencies": {
     "@bworlds/cache-support": "0.1.0",
+    "@bworlds/core": "0.1.0",
     "@bworlds/plugin-api": "0.1.0"
   },
   "exports": {

@@ -6,6 +6,7 @@
     "@bworlds/cache-support": "0.1.0",
     "@bworlds/core": "0.1.0",
     "@bworlds/paint-support": "0.1.0",
+    "@bworlds/poi-support": "0.1.0",
     "@bworlds/procedural-style": "0.1.0",
     "@bworlds/plugin-api": "0.1.0",
     "@bworlds/tree-support": "0.1.0",

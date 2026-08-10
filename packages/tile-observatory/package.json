@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "type": "module",
   "dependencies": {
+    "@bworlds/cache-support": "0.1.0",
     "@bworlds/paint-support": "0.1.0",
     "@bworlds/poi-support": "0.1.0",
     "@bworlds/plugin-api": "0.1.0",

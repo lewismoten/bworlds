@@ -2,6 +2,9 @@
   "name": "@bworlds/plugin-api",
   "version": "0.1.0",
   "type": "module",
+  "dependencies": {
+    "@bworlds/core": "0.1.0"
+  },
   "exports": {
     ".": "./src/index.ts"
   }
