@@ -1,11 +1,15 @@
 import { hash2DWithSeed, registerHashLabel } from '@bworlds/core/hash';
 import {
   resolveProceduralInstrumentTimbre,
+  resolveVelocityShapedInstrumentTimbre,
   type InstrumentFamily,
   type MusicWaveform,
 } from './music-instrument-timbres.ts';
 import type { ProceduralLeadPhraseCadence } from './procedural-music-harmony.ts';
-import { resolveProceduralNoteFrequency } from './procedural-music-note-shaping.ts';
+import {
+  resolveProceduralNoteFrequency,
+  resolveProceduralNoteVelocity,
+} from './procedural-music-note-shaping.ts';
 import type { ProceduralMusicNote } from './procedural-music.ts';
 import type { MusicSpaceProfile } from './procedural-music-space.ts';
 import type { MusicRegionThemeId } from './procedural-music-vocabulary.ts';
@@ -230,6 +234,11 @@ export function createProceduralPercussionNotes(options: {
       harmonicSignal,
       filterSignal,
     });
+    const volume = options.baseVolume * hit.volumeMultiplier;
+    const velocity = resolveProceduralNoteVelocity({
+      volume,
+      role: 'percussion',
+    });
     notes.push({
       themeId: options.themeId,
       instrumentId: `${options.baseInstrumentId}:perc-${hit.family}:${index}`,
@@ -246,9 +255,13 @@ export function createProceduralPercussionNotes(options: {
         semitones: hit.semitones,
         role: 'percussion',
       }),
-      volume: options.baseVolume * hit.volumeMultiplier,
+      volume,
+      velocity,
       waveform: PERCUSSION_WAVEFORMS[hit.family],
-      timbre,
+      timbre: resolveVelocityShapedInstrumentTimbre({
+        timbre,
+        velocity,
+      }),
       attackMs: Math.max(4, options.baseAttackMs * hit.attackMultiplier),
       releaseMs: Math.max(18, options.baseReleaseMs * hit.releaseMultiplier),
       detuneCents:

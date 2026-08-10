@@ -24,7 +24,7 @@
 - [x] Give bass patches a clear fundamental and short upper harmonics.
 - [x] Give struck instruments a separate attack transient.
 - [x] Change timbre across low, middle, and high registers.
-- [ ] Change timbre based on note velocity.
+- [x] Change timbre based on note velocity.
 - [x] Limit random patch values to family-safe ranges.
 - [ ] Add one known-good patch for each core song role.
 - [ ] Compare generated patches against known-good patches.

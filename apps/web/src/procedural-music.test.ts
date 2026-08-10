@@ -22,12 +22,15 @@ import {
 } from './procedural-music.ts';
 import { createProceduralMusicSong } from './procedural-music-song.ts';
 import { resolveProceduralMusicLoudness } from './procedural-music-loudness.ts';
+import { createProceduralPercussionNotes } from './procedural-music-percussion.ts';
 import { resolveProceduralThemeMotif } from './procedural-music-theme-motif.ts';
 import {
   resolveInstrumentPatchRecipe,
   resolveProceduralInstrumentTimbre,
   resolveRegisterShapedInstrumentTimbre,
+  resolveVelocityShapedInstrumentTimbre,
 } from './music-instrument-timbres.ts';
+import { resolveProceduralNoteVelocity } from './procedural-music-note-shaping.ts';
 
 describe('procedural music', () => {
   it('changes note timbre across low, middle, and high registers', () => {
@@ -61,6 +64,36 @@ describe('procedural music', () => {
     );
     expect(lowTimbre.noiseMix).toBeLessThan(middleTimbre.noiseMix ?? Infinity);
     expect(highTimbre.noiseMix).toBeGreaterThan(middleTimbre.noiseMix ?? 0);
+  });
+
+  it('changes note timbre based on note velocity', () => {
+    const baseTimbre = resolveProceduralInstrumentTimbre({
+      family: 'piano',
+      brightness: 1,
+      harmonicSignal: 0.5,
+      filterSignal: 0.5,
+    });
+    const softVelocity = resolveProceduralNoteVelocity({
+      volume: 0.03,
+      role: 'lead',
+    });
+    const loudVelocity = resolveProceduralNoteVelocity({
+      volume: 0.08,
+      role: 'lead',
+    });
+    const softTimbre = resolveVelocityShapedInstrumentTimbre({
+      timbre: baseTimbre,
+      velocity: softVelocity,
+    });
+    const loudTimbre = resolveVelocityShapedInstrumentTimbre({
+      timbre: baseTimbre,
+      velocity: loudVelocity,
+    });
+
+    expect(loudVelocity).toBeGreaterThan(softVelocity);
+    expect(loudTimbre.filterCutoffHz).toBeGreaterThan(softTimbre.filterCutoffHz);
+    expect(loudTimbre.harmonicRatio).toBeGreaterThan(softTimbre.harmonicRatio);
+    expect(loudTimbre.transientMix).toBeGreaterThan(softTimbre.transientMix ?? 0);
   });
 
   it('adds shared sound bank registry metadata to generated instruments', () => {
@@ -1520,6 +1553,66 @@ describe('procedural music', () => {
     );
     expect((lead?.timbre.harmonicRatio ?? 0)).toBeGreaterThan(
       bass?.timbre.harmonicRatio ?? 0
+    );
+  });
+
+  it('applies velocity-shaped timbre to stronger percussion hits', () => {
+    const quietNotes = createProceduralPercussionNotes({
+      themeId: 'town-square',
+      stepIndex: 0,
+      phraseStep: 0,
+      cadence: 'question',
+      chordChange: false,
+      startMs: 0,
+      stepDurationMs: 240,
+      rootMidiNote: 60,
+      baseInstrumentId: 'town-square:percussion:0:0',
+      baseVolume: 0.035,
+      baseAttackMs: 8,
+      baseReleaseMs: 40,
+      baseDetuneCents: 0,
+      baseHarmonicGain: 0.14,
+      basePulseRate: 2.8,
+      brightness: 1,
+      clusterX: 0,
+      clusterY: 0,
+    });
+    const loudNotes = createProceduralPercussionNotes({
+      themeId: 'town-square',
+      stepIndex: 0,
+      phraseStep: 0,
+      cadence: 'question',
+      chordChange: false,
+      startMs: 0,
+      stepDurationMs: 240,
+      rootMidiNote: 60,
+      baseInstrumentId: 'town-square:percussion:0:0',
+      baseVolume: 0.08,
+      baseAttackMs: 8,
+      baseReleaseMs: 40,
+      baseDetuneCents: 0,
+      baseHarmonicGain: 0.14,
+      basePulseRate: 2.8,
+      brightness: 1,
+      clusterX: 0,
+      clusterY: 0,
+    });
+
+    const quietKick = quietNotes.find((note) =>
+      note.instrumentId.includes(':perc-kick:')
+    );
+    const loudKick = loudNotes.find((note) =>
+      note.instrumentId.includes(':perc-kick:')
+    );
+
+    expect(quietKick).toEqual(expect.objectContaining({ role: 'percussion' }));
+    expect(loudKick).toEqual(expect.objectContaining({ role: 'percussion' }));
+    expect(loudKick?.velocity ?? 0).toBeGreaterThan(quietKick?.velocity ?? 0);
+    expect(loudKick?.timbre.filterCutoffHz ?? 0).toBeGreaterThan(
+      quietKick?.timbre.filterCutoffHz ?? 0
+    );
+    expect(loudKick?.timbre.harmonicRatio ?? 0).toBeGreaterThan(
+      quietKick?.timbre.harmonicRatio ?? 0
     );
   });
 

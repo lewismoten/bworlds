@@ -1,3 +1,4 @@
+import { resolveProceduralNoteVelocity } from './procedural-music-note-shaping.ts';
 import {
   isMidiPercussionFamily,
   resolveMidiPercussionNoteNumber,
@@ -433,7 +434,12 @@ function buildRoleTracks(
               noteIndex: roleNoteIndex,
             })
           : resolveMidiNoteNumber(note.frequency);
-        const velocity = resolveVelocity(note.volume, note.role);
+        const velocity =
+          note.velocity ??
+          resolveProceduralNoteVelocity({
+            volume: note.volume,
+            role: note.role,
+          });
         const startTick = msToTicks(
           note.startMs - snapshot.song.startMs,
           snapshot
@@ -644,21 +650,6 @@ function resolveMidiKeySignature(snapshot: MusicDebugSnapshot): {
 function resolveMidiNoteNumber(frequency: number): number {
   const midi = Math.round(69 + 12 * Math.log2(Math.max(frequency, 1) / 440));
   return clamp(midi, 0, 127);
-}
-
-function resolveVelocity(
-  volume: number,
-  role: MusicDebugSnapshot['notes'][number]['role']
-): number {
-  const roleBias =
-    role === 'lead'
-      ? 1
-      : role === 'percussion'
-        ? 0.96
-        : role === 'bass'
-          ? 0.9
-          : 0.82;
-  return clamp(Math.round(volume * roleBias * 2048), 24, 127);
 }
 
 function resolveChannelVolume(

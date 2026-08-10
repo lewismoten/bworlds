@@ -13,6 +13,7 @@ import {
   resolveInstrumentPatchRecipe,
   resolveProceduralInstrumentTimbre,
   resolveRegisterShapedInstrumentTimbre,
+  resolveVelocityShapedInstrumentTimbre,
   type InstrumentFamily,
   type MusicWaveform,
   type ProceduralInstrumentTimbre,
@@ -48,6 +49,7 @@ import {
   normalizeProceduralLeadSemitones,
   resolveProceduralNoteFrequency,
   resolveProceduralNoteHarmonicGain,
+  resolveProceduralNoteVelocity,
 } from './procedural-music-note-shaping.ts';
 import { resolveProceduralRhythmicGridStep } from './procedural-music-rhythm-grid.ts';
 import { resolveProceduralRootMidiNote } from './procedural-music-scale.ts';
@@ -249,6 +251,7 @@ export type ProceduralMusicNote = {
   durationMs: number;
   frequency: number;
   volume: number;
+  velocity?: number;
   waveform: MusicWaveform;
   timbre: ProceduralInstrumentTimbre;
   attackMs: number;
@@ -1812,6 +1815,25 @@ function createThemeNotes(options: {
       role,
       octaveShiftSemitones: arrangementProfile.octaveShiftSemitones,
     });
+    const volume =
+      options.theme.baseVolume *
+      options.mood.volumeMultiplier *
+      arrangementProfile.volumeMultiplier *
+      meterAccent.volumeMultiplier *
+      resolveCompositionVolumeMultiplier(role, composition) *
+      (role === 'bass' ? 0.8 : role === 'harmony' ? 0.72 : 1) *
+      voiceVolumeScale;
+    const velocity = resolveProceduralNoteVelocity({
+      volume,
+      role,
+    });
+    const timbre = resolveVelocityShapedInstrumentTimbre({
+      timbre: resolveRegisterShapedInstrumentTimbre({
+        timbre: instrument.timbre,
+        frequencyHz: frequency,
+      }),
+      velocity,
+    });
 
     return {
       themeId: options.theme.id,
@@ -1828,19 +1850,10 @@ function createThemeNotes(options: {
         meterAccent.durationMultiplier *
         resolveCompositionDurationMultiplier(role, composition),
       frequency,
-      volume:
-        options.theme.baseVolume *
-        options.mood.volumeMultiplier *
-        arrangementProfile.volumeMultiplier *
-        meterAccent.volumeMultiplier *
-        resolveCompositionVolumeMultiplier(role, composition) *
-        (role === 'bass' ? 0.8 : role === 'harmony' ? 0.72 : 1) *
-        voiceVolumeScale,
+      volume,
+      velocity,
       waveform: arrangementProfile.waveformOverride ?? instrument.waveform,
-      timbre: resolveRegisterShapedInstrumentTimbre({
-        timbre: instrument.timbre,
-        frequencyHz: frequency,
-      }),
+      timbre,
       attackMs: instrument.attackMs,
       releaseMs: instrument.releaseMs * arrangementProfile.releaseMultiplier,
       detuneCents: instrument.detuneCents,

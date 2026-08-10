@@ -41,6 +41,22 @@ export function resolveProceduralNoteHarmonicGain(options: {
   );
 }
 
+export function resolveProceduralNoteVelocity(options: {
+  volume: number;
+  role: ProceduralMusicPitchRole;
+}): number {
+  const roleBias =
+    options.role === 'lead'
+      ? 1
+      : options.role === 'percussion'
+        ? 0.96
+        : options.role === 'bass'
+          ? 0.9
+          : 0.82;
+
+  return clamp(Math.round(options.volume * roleBias * 2048), 24, 127);
+}
+
 export function normalizeProceduralLeadSemitones(options: {
   targetSemitones: number;
   melodyRangeSemitones: readonly [number, number];
@@ -123,4 +139,8 @@ function clampLeadRegisterFallback(
     candidate += 12;
   }
   return Math.min(maxSemitones, Math.max(minSemitones, candidate));
+}
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, value));
 }

@@ -642,6 +642,77 @@ export function resolveRegisterShapedInstrumentTimbre(options: {
   };
 }
 
+export function resolveVelocityShapedInstrumentTimbre(options: {
+  timbre: ProceduralInstrumentTimbre;
+  velocity: number;
+}): ProceduralInstrumentTimbre {
+  const velocitySignal = clamp((options.velocity - 24) / 103, 0, 1);
+  const cutoffMultiplier = 0.84 + velocitySignal * 0.36;
+  const harmonicRatioMultiplier = 0.92 + velocitySignal * 0.18;
+  const filterQMultiplier = 1.06 - velocitySignal * 0.12;
+  const attackPeakMultiplier = 0.96 + velocitySignal * 0.14;
+  const bodySustainMultiplier = 1.04 - velocitySignal * 0.08;
+  const harmonicBodyMultiplier = 1.04 - velocitySignal * 0.12;
+  const transientMixMultiplier = 0.68 + velocitySignal * 0.62;
+  const noiseMixMultiplier = 0.72 + velocitySignal * 0.52;
+
+  return {
+    ...options.timbre,
+    harmonicRatio: Math.max(
+      0.5,
+      options.timbre.harmonicRatio * harmonicRatioMultiplier
+    ),
+    filterCutoffHz: Math.max(
+      60,
+      options.timbre.filterCutoffHz * cutoffMultiplier
+    ),
+    filterQ: clamp(options.timbre.filterQ * filterQMultiplier, 0.1, 24),
+    attackPeakGainMultiplier:
+      options.timbre.attackPeakGainMultiplier === undefined
+        ? undefined
+        : clamp(
+            options.timbre.attackPeakGainMultiplier * attackPeakMultiplier,
+            0.75,
+            2
+          ),
+    bodySustainLevel:
+      options.timbre.bodySustainLevel === undefined
+        ? undefined
+        : clamp(
+            options.timbre.bodySustainLevel * bodySustainMultiplier,
+            0.2,
+            1
+          ),
+    harmonicBodyLevel:
+      options.timbre.harmonicBodyLevel === undefined
+        ? undefined
+        : clamp(
+            options.timbre.harmonicBodyLevel * harmonicBodyMultiplier,
+            0,
+            1
+          ),
+    transientMix:
+      options.timbre.transientMix === undefined
+        ? undefined
+        : clamp(options.timbre.transientMix * transientMixMultiplier, 0, 0.5),
+    transientFilterCutoffHz:
+      options.timbre.transientFilterCutoffHz === undefined
+        ? undefined
+        : Math.max(
+            80,
+            options.timbre.transientFilterCutoffHz * cutoffMultiplier
+          ),
+    noiseMix:
+      options.timbre.noiseMix === undefined
+        ? undefined
+        : clamp(options.timbre.noiseMix * noiseMixMultiplier, 0, 0.4),
+    noiseFilterCutoffHz:
+      options.timbre.noiseFilterCutoffHz === undefined
+        ? undefined
+        : Math.max(80, options.timbre.noiseFilterCutoffHz * cutoffMultiplier),
+  };
+}
+
 function interpolate(min: number, max: number, signal: number): number {
   return min + (max - min) * signal;
 }
