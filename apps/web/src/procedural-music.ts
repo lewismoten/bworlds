@@ -1421,26 +1421,84 @@ export function createWebAudioMusicSink(
       }
       if (noiseGain) {
         noiseGain.gain.setValueAtTime(0.0001, startAt);
-        noiseGain.gain.exponentialRampToValueAtTime(
-          sustainVolume * noiseMix * attackPeakGainMultiplier,
-          startAt + Math.max(0.01, attackSeconds * 0.75)
-        );
-        noiseGain.gain.exponentialRampToValueAtTime(
-          sustainVolume * noiseMix * bodySustainLevel,
-          bodySettleAt
-        );
-        noiseGain.gain.exponentialRampToValueAtTime(
-          sustainVolume * noiseMix * Math.max(0.45, bodySustainLevel - 0.12),
-          startAt +
-            Math.max(
-              durationSeconds - note.releaseMs / 1000,
-              bodySettleAt - startAt
-            )
-        );
-        noiseGain.gain.exponentialRampToValueAtTime(
-          0.0001,
-          startAt + durationSeconds
-        );
+        const noiseBurstRate = Math.max(0, note.timbre.noiseBurstRate ?? 0);
+        if (noiseBurstRate <= 0) {
+          noiseGain.gain.exponentialRampToValueAtTime(
+            sustainVolume * noiseMix * attackPeakGainMultiplier,
+            startAt + Math.max(0.01, attackSeconds * 0.75)
+          );
+          noiseGain.gain.exponentialRampToValueAtTime(
+            sustainVolume * noiseMix * bodySustainLevel,
+            bodySettleAt
+          );
+          noiseGain.gain.exponentialRampToValueAtTime(
+            sustainVolume * noiseMix * Math.max(0.45, bodySustainLevel - 0.12),
+            startAt +
+              Math.max(
+                durationSeconds - note.releaseMs / 1000,
+                bodySettleAt - startAt
+              )
+          );
+          noiseGain.gain.exponentialRampToValueAtTime(
+            0.0001,
+            startAt + durationSeconds
+          );
+        } else {
+          const noiseBurstDepth = clamp(
+            note.timbre.noiseBurstDepth ?? 0.75,
+            0,
+            1
+          );
+          const burstPeriodSeconds = 1 / noiseBurstRate;
+          for (
+            let burstStartSeconds = 0;
+            burstStartSeconds < durationSeconds;
+            burstStartSeconds += burstPeriodSeconds
+          ) {
+            const burstStartAt = startAt + burstStartSeconds;
+            const burstPeakAt = Math.min(
+              startAt + durationSeconds,
+              burstStartAt + Math.min(0.01, burstPeriodSeconds * 0.24)
+            );
+            const burstFallAt = Math.min(
+              startAt + durationSeconds,
+              burstStartAt + Math.min(0.028, burstPeriodSeconds * 0.7)
+            );
+            const envelopeLevel = resolveBurstNoiseEnvelopeLevel({
+              attackSeconds,
+              attackPeakGainMultiplier,
+              bodySettleSeconds: bodySettleAt - startAt,
+              bodySustainLevel,
+              durationSeconds,
+              releaseSeconds: note.releaseMs / 1000,
+              timeSeconds: burstStartSeconds,
+            });
+            const floorLevel = Math.max(
+              0.0001,
+              sustainVolume *
+                noiseMix *
+                envelopeLevel *
+                Math.max(0.12, 1 - noiseBurstDepth)
+            );
+            const peakLevel = Math.max(
+              floorLevel,
+              sustainVolume * noiseMix * envelopeLevel
+            );
+            noiseGain.gain.setValueAtTime(floorLevel, burstStartAt);
+            noiseGain.gain.exponentialRampToValueAtTime(
+              peakLevel,
+              burstPeakAt
+            );
+            noiseGain.gain.exponentialRampToValueAtTime(
+              floorLevel,
+              burstFallAt
+            );
+          }
+          noiseGain.gain.exponentialRampToValueAtTime(
+            0.0001,
+            startAt + durationSeconds
+          );
+        }
       }
       reverbSend.gain.setValueAtTime(space?.wetGain ?? 0, startAt);
 
@@ -2717,6 +2775,46 @@ function resolveCompositionDurationMultiplier(
 
 function normalizeWrappedProgress(value: number): number {
   return ((value % 1) + 1) % 1;
+}
+
+function resolveBurstNoiseEnvelopeLevel(options: {
+  attackSeconds: number;
+  attackPeakGainMultiplier: number;
+  bodySettleSeconds: number;
+  bodySustainLevel: number;
+  durationSeconds: number;
+  releaseSeconds: number;
+  timeSeconds: number;
+}): number {
+  if (options.timeSeconds <= options.attackSeconds) {
+    return (
+      (options.timeSeconds / Math.max(0.001, options.attackSeconds)) *
+      options.attackPeakGainMultiplier
+    );
+  }
+  if (options.timeSeconds <= options.bodySettleSeconds) {
+    const settleProgress =
+      (options.timeSeconds - options.attackSeconds) /
+      Math.max(0.001, options.bodySettleSeconds - options.attackSeconds);
+    return (
+      options.attackPeakGainMultiplier +
+      (options.bodySustainLevel - options.attackPeakGainMultiplier) *
+        settleProgress
+    );
+  }
+  const releaseStartSeconds = Math.max(
+    options.bodySettleSeconds,
+    options.durationSeconds - options.releaseSeconds
+  );
+  if (options.timeSeconds >= releaseStartSeconds) {
+    return Math.max(
+      0.12,
+      options.bodySustainLevel *
+        ((options.durationSeconds - options.timeSeconds) /
+          Math.max(0.001, options.durationSeconds - releaseStartSeconds))
+    );
+  }
+  return options.bodySustainLevel;
 }
 
 function resolveSeason(

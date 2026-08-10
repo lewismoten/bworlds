@@ -2476,6 +2476,144 @@ describe('procedural music', () => {
     }
   });
 
+  it('schedules repeated short noise bursts for shaker-style timbres', () => {
+    const createdGains: Array<{
+      gain: {
+        setValueAtTime: ReturnType<typeof vi.fn>;
+        exponentialRampToValueAtTime: ReturnType<typeof vi.fn>;
+      };
+      connect: ReturnType<typeof vi.fn>;
+      disconnect: ReturnType<typeof vi.fn>;
+    }> = [];
+
+    class FakeAudioContext {
+      state: AudioContextState = 'running';
+      currentTime = 0;
+      destination = {};
+      sampleRate = 48_000;
+      createOscillator() {
+        return {
+          onended: null,
+          type: 'triangle',
+          frequency: {
+            setValueAtTime: vi.fn(),
+            exponentialRampToValueAtTime: vi.fn(),
+          },
+          detune: {
+            setValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+          start: vi.fn(),
+          stop: vi.fn(),
+        } as unknown as OscillatorNode;
+      }
+      createGain() {
+        const gain = {
+          gain: {
+            setValueAtTime: vi.fn(),
+            exponentialRampToValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+        };
+        createdGains.push(gain);
+        return gain as unknown as GainNode;
+      }
+      createBiquadFilter() {
+        return {
+          type: 'highpass' as BiquadFilterType,
+          frequency: {
+            setValueAtTime: vi.fn(),
+          },
+          Q: {
+            setValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+        } as unknown as BiquadFilterNode;
+      }
+      createStereoPanner() {
+        return {
+          pan: {
+            setValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+        } as unknown as StereoPannerNode;
+      }
+      createBuffer(channels: number, length: number) {
+        const data = Array.from({ length: channels }, () => new Float32Array(length));
+        return {
+          getChannelData(index: number) {
+            return data[index]!;
+          },
+        } as unknown as AudioBuffer;
+      }
+      createBufferSource() {
+        return {
+          buffer: null as AudioBuffer | null,
+          loop: false,
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+          start: vi.fn(),
+          stop: vi.fn(),
+        } as unknown as AudioBufferSourceNode;
+      }
+      resume() {
+        return Promise.resolve();
+      }
+    }
+
+    const originalAudioContext = globalThis.AudioContext;
+    vi.stubGlobal('AudioContext', FakeAudioContext);
+
+    try {
+      const sink = createWebAudioMusicSink();
+      sink.play({
+        themeId: 'town-square',
+        instrumentId: 'shaker-burst-test',
+        role: 'percussion',
+        startMs: 0,
+        durationMs: 180,
+        frequency: 2_400,
+        volume: 0.04,
+        waveform: 'triangle',
+        timbre: {
+          harmonicWaveform: 'triangle',
+          harmonicRatio: 4,
+          filterType: 'highpass',
+          filterCutoffHz: 3_800,
+          filterQ: 1.2,
+          noiseMix: 0.24,
+          noiseBurstRate: 22,
+          noiseBurstDepth: 0.78,
+          noiseFilterType: 'highpass',
+          noiseFilterCutoffHz: 4_200,
+          noiseFilterQ: 1,
+        },
+        attackMs: 6,
+        releaseMs: 40,
+        detuneCents: 0,
+        harmonicGain: 0.12,
+        pulseRate: 0.9,
+      });
+
+      const noiseGainRamps =
+        createdGains[2]?.gain.exponentialRampToValueAtTime.mock.calls ?? [];
+
+      expect(noiseGainRamps.length).toBeGreaterThan(8);
+      expect(noiseGainRamps[0]?.[1]).toBeLessThan(0.02);
+      expect(noiseGainRamps.at(-1)?.[0]).toBeCloseTo(0.0001, 4);
+    } finally {
+      if (originalAudioContext) {
+        vi.stubGlobal('AudioContext', originalAudioContext);
+      } else {
+        vi.unstubAllGlobals();
+      }
+    }
+  });
+
   it('keeps bowed string voices near their sustain body before release', () => {
     const createdGains: Array<{
       gain: {

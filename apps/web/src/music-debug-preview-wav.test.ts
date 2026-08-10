@@ -3,6 +3,7 @@ import {
   renderMusicDebugPreviewNoteToSamples,
   resolveEnvelopeGain,
   resolveHarmonicEnvelopeGain,
+  resolveNoiseBurstEnvelopeGain,
   resolvePitchSweepFrequencyMultiplier,
   resolveTransientEnvelopeGain,
 } from './music-debug-preview-wav.ts';
@@ -172,6 +173,62 @@ describe('music debug preview wav', () => {
     expect(sweptSamples).not.toEqual(steadySamples);
     expect(averageSampleDifference(sweptSamples, steadySamples)).toBeGreaterThan(
       0.01
+    );
+  });
+
+  it('shapes shaker noise as repeated short filtered bursts', () => {
+    const steadyNoiseNote = createPreviewNote({
+      instrumentId: 'shaker-steady',
+      role: 'percussion',
+      durationMs: 180,
+      attackMs: 6,
+      releaseMs: 40,
+      harmonicGain: 0.12,
+      pulseRate: 0.9,
+      timbre: {
+        ...createPreviewNote().timbre,
+        noiseMix: 0.24,
+        noiseFilterType: 'highpass',
+        noiseFilterCutoffHz: 3_800,
+        noiseFilterQ: 1,
+      },
+    });
+    const burstNoiseNote = createPreviewNote({
+      ...steadyNoiseNote,
+      instrumentId: 'shaker-burst',
+      timbre: {
+        ...steadyNoiseNote.timbre,
+        noiseBurstRate: 22,
+        noiseBurstDepth: 0.78,
+      },
+    });
+
+    expect(
+      resolveNoiseBurstEnvelopeGain(
+        burstNoiseNote,
+        0.011,
+        burstNoiseNote.durationMs / 1000
+      )
+    ).toBeGreaterThan(
+      resolveNoiseBurstEnvelopeGain(
+        burstNoiseNote,
+        0.034,
+        burstNoiseNote.durationMs / 1000
+      )
+    );
+
+    const steadySamples = renderMusicDebugPreviewNoteToSamples(
+      steadyNoiseNote,
+      8_000
+    );
+    const burstSamples = renderMusicDebugPreviewNoteToSamples(
+      burstNoiseNote,
+      8_000
+    );
+
+    expect(burstSamples).not.toEqual(steadySamples);
+    expect(averageSampleDifference(burstSamples, steadySamples)).toBeGreaterThan(
+      0.003
     );
   });
 });

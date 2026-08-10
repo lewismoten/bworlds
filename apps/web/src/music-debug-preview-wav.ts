@@ -93,6 +93,11 @@ export function renderMusicDebugPreviewNoteToSamples(
       timeSeconds,
       note.durationMs / 1000
     );
+    const noiseBurstGain = resolveNoiseBurstEnvelopeGain(
+      note,
+      timeSeconds,
+      note.durationMs / 1000
+    );
     const mixed =
       carrier *
         (1 - harmonicWeight) *
@@ -103,7 +108,7 @@ export function renderMusicDebugPreviewNoteToSamples(
         pulseModulation *
         harmonicEnvelopeGain +
       transientNoise * transientMix * transientEnvelopeGain +
-      nextSample * noiseMix * carrierEnvelopeGain;
+      nextSample * noiseMix * carrierEnvelopeGain * noiseBurstGain;
     samples[frame] =
       mixed *
       Math.max(0.12, note.volume * 14);
@@ -294,6 +299,40 @@ export function resolveTransientEnvelopeGain(
     (transientDurationSeconds - timeSeconds) /
       Math.max(0.001, transientDurationSeconds - peakAt)
   );
+}
+
+export function resolveNoiseBurstEnvelopeGain(
+  note: Pick<ProceduralMusicNote, 'timbre'>,
+  timeSeconds: number,
+  durationSeconds: number
+): number {
+  const burstRate = Math.max(0, note.timbre.noiseBurstRate ?? 0);
+  if ((note.timbre.noiseMix ?? 0) <= 0 || burstRate <= 0) {
+    return 1;
+  }
+  const burstDepth = Math.max(0, Math.min(1, note.timbre.noiseBurstDepth ?? 0.75));
+  const periodSeconds = 1 / burstRate;
+  const cycleProgress =
+    (((timeSeconds % periodSeconds) + periodSeconds) % periodSeconds) /
+    periodSeconds;
+  const pulseShape =
+    cycleProgress <= 0.24
+      ? cycleProgress / 0.24
+      : Math.max(0, 1 - (cycleProgress - 0.24) / 0.46);
+  const floorGain = Math.max(0.12, 1 - burstDepth);
+  const releaseFadeStartSeconds = Math.max(
+    0,
+    durationSeconds - Math.min(0.04, periodSeconds)
+  );
+  const releaseFade =
+    timeSeconds <= releaseFadeStartSeconds
+      ? 1
+      : Math.max(
+          0,
+          (durationSeconds - timeSeconds) /
+            Math.max(0.001, durationSeconds - releaseFadeStartSeconds)
+        );
+  return (floorGain + pulseShape * burstDepth) * releaseFade;
 }
 
 function advancePhase(currentPhase: number, phaseIncrement: number): number {

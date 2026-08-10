@@ -41,6 +41,8 @@ export type ProceduralInstrumentTimbre = {
   transientFilterCutoffHz?: number;
   transientFilterQ?: number;
   noiseMix?: number;
+  noiseBurstRate?: number;
+  noiseBurstDepth?: number;
   noiseFilterType?: BiquadFilterType;
   noiseFilterCutoffHz?: number;
   noiseFilterQ?: number;
@@ -145,6 +147,8 @@ type InstrumentTimbreTemplate = {
   transientQMin?: number;
   transientQMax?: number;
   noiseMix?: number;
+  noiseBurstRate?: number;
+  noiseBurstDepth?: number;
   noiseFilterType?: BiquadFilterType;
   noiseCutoffMinHz?: number;
   noiseCutoffMaxHz?: number;
@@ -564,6 +568,14 @@ const INSTRUMENT_PATCH_RECIPES: Record<InstrumentFamily, InstrumentPatchRecipe> 
       cutoffMaxHz: 4200,
       qMin: 0.9,
       qMax: 2.4,
+      noiseMix: 0.24,
+      noiseBurstRate: 22,
+      noiseBurstDepth: 0.78,
+      noiseFilterType: 'highpass',
+      noiseCutoffMinHz: 2_400,
+      noiseCutoffMaxHz: 5_600,
+      noiseQMin: 0.8,
+      noiseQMax: 1.6,
     },
   },
   'hand-percussion': {
@@ -812,6 +824,8 @@ export function resolveProceduralInstrumentTimbre(options: {
             clamp(options.filterSignal, 0, 1)
           ),
     noiseMix,
+    noiseBurstRate: template.noiseBurstRate,
+    noiseBurstDepth: template.noiseBurstDepth,
     noiseFilterType: template.noiseFilterType,
     noiseFilterCutoffHz:
       template.noiseCutoffMinHz === undefined ||

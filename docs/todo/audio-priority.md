@@ -39,7 +39,7 @@
 - [ ] Give toms distinct pitches based on drum size.
 - [x] Give hi-hats short metallic noise envelopes.
 - [x] Give cymbals longer metallic noise envelopes.
-- [ ] Give shakers repeated short filtered noise bursts.
+- [x] Give shakers repeated short filtered noise bursts.
 - [ ] Give tambourines noise plus small metallic transients.
 - [ ] Give bongos different pitches and decay lengths.
 - [ ] Show the drum name for every percussion event.
