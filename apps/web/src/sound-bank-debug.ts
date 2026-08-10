@@ -14,6 +14,10 @@ import {
   type MusicDebugTileKind,
 } from './music-debug.ts';
 import {
+  listGeneralMidiPercussionNotesForFamily,
+  type GeneralMidiPercussionNote,
+} from './general-midi-percussion.ts';
+import {
   listGeneralMidiFamilyNames,
   listGeneralMidiPrograms,
   type GeneralMidiProgram,
@@ -96,11 +100,12 @@ export type SoundBankDebugPercussionBrowserSection = Readonly<{
 }>;
 
 export type SoundBankDebugPercussionVoiceView = Readonly<{
-  voiceId: PercussionVoiceId;
+  voiceId: PercussionVoiceId | null;
   midiNote: number;
   name: string;
-  previewTarget: MusicDebugInstrumentPreviewTarget;
-  shortcutKey: string;
+  previewTarget: MusicDebugInstrumentPreviewTarget | null;
+  shortcutKey: string | null;
+  isAvailable: boolean;
 }>;
 
 export const DEFAULT_SOUND_BANK_DEBUG_GENERAL_MIDI_BROWSER_STATE: SoundBankDebugGeneralMidiBrowserState =
@@ -620,7 +625,9 @@ export function buildSoundBankDebugMarkup(
               .join('')}
           </div>
           <div class="sound-bank-debug-percussion-browser">
-            ${percussionBrowserSections
+            ${createSoundBankDebugPercussionBrowserDisplaySections(
+              percussionBrowserState
+            )
               .map(
                 (section) => `
                   <section
@@ -637,12 +644,25 @@ export function buildSoundBankDebugMarkup(
                               <span class="sound-bank-debug-percussion-name">${formatLabel(
                                 voice.name
                               )}</span>
+                              ${
+                                voice.isAvailable
+                                  ? ''
+                                  : '<span class="sound-bank-debug-midi-program-badge sound-bank-debug-midi-program-badge-placeholder">Missing patch</span>'
+                              }
                               <button
                                 type="button"
-                                class="music-debug-instrument-play sound-bank-debug-percussion-play"
-                                data-preview-id="${voice.previewTarget}"
+                                class="sound-bank-debug-percussion-play${
+                                  voice.isAvailable
+                                    ? ' music-debug-instrument-play'
+                                    : ''
+                                }"
+                                ${
+                                  voice.previewTarget
+                                    ? `data-preview-id="${voice.previewTarget}"`
+                                    : 'disabled'
+                                }
                               >
-                                Play
+                                ${voice.isAvailable ? 'Play' : 'Unavailable'}
                               </button>
                             </li>
                           `
@@ -1162,8 +1182,28 @@ function createSoundBankDebugPercussionBrowserSections(
       name: voice.name,
       previewTarget: `percussion:${voice.id}`,
       shortcutKey: resolvePercussionPadShortcutKey(voice.id),
+      isAvailable: true,
     })),
   }));
+}
+
+function createSoundBankDebugPercussionBrowserDisplaySections(
+  state: SoundBankDebugPercussionBrowserState
+): readonly SoundBankDebugPercussionBrowserSection[] {
+  return createSoundBankDebugPercussionBrowserSections(state).map((section) => {
+    const availableByMidiNote = new Map(
+      section.voices.map((voice) => [voice.midiNote, voice])
+    );
+    const voices = listGeneralMidiPercussionNotesForFamily(section.family).map(
+      (note) =>
+        availableByMidiNote.get(note.midiNote) ??
+        createMissingPercussionVoiceView(note)
+    );
+    return {
+      ...section,
+      voices,
+    };
+  });
 }
 
 function createFallbackPercussionPreviewNote(
@@ -1207,6 +1247,19 @@ function createFallbackPercussionPreviewNote(
     detuneCents: baseInstrument.detuneCents * voice.detuneMultiplier,
     harmonicGain: baseInstrument.harmonicGain * voice.harmonicGainMultiplier,
     pulseRate: baseInstrument.pulseRate * voice.pulseRateMultiplier,
+  };
+}
+
+function createMissingPercussionVoiceView(
+  note: GeneralMidiPercussionNote
+): SoundBankDebugPercussionVoiceView {
+  return {
+    voiceId: null,
+    midiNote: note.midiNote,
+    name: note.name,
+    previewTarget: null,
+    shortcutKey: null,
+    isAvailable: false,
   };
 }
 

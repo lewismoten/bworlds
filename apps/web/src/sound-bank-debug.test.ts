@@ -97,6 +97,8 @@ describe('sound bank debug page', () => {
     expect(normalizedMarkup).toContain('>Kick<');
     expect(normalizedMarkup).toContain('>36<');
     expect(normalizedMarkup).toContain('Kick Center');
+    expect(normalizedMarkup).toContain('High Floor Tom');
+    expect(normalizedMarkup).toContain('Missing patch');
     expect(normalizedMarkup).toContain('>Piano<');
     expect(normalizedMarkup).toContain('>0<');
     expect(normalizedMarkup).toContain('Acoustic Grand Piano');
@@ -528,6 +530,19 @@ describe('sound bank debug page', () => {
     expect(percussionPadGrid).toContain('data-percussion-key="3"');
     expect(percussionPadGrid).toContain('Kick Center');
     expect(percussionPadGrid).toContain('Floor Tom');
+    expect(percussionPadGrid).not.toContain('High Floor Tom');
+  });
+
+  it('shows missing General MIDI percussion patches as unavailable browser rows', () => {
+    const snapshot = createSoundBankDebugSnapshot();
+    const markup = buildSoundBankDebugMarkup(snapshot, {
+      audioStatus: 'Audio idle',
+      percussionBrowserState: {
+        familyFilter: 'kick',
+      },
+    }).replace(/\s+/g, ' ');
+
+    expect(markup).toMatch(/High Floor Tom[\s\S]*Missing patch[\s\S]*>Unavailable</);
   });
 
   it('builds a percussion range audition from the visible drum-family filter', () => {

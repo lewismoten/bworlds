@@ -92,7 +92,7 @@
 - [x] Add a button to play each percussion sound.
 - [x] Add a small drum pad grid.
 - [x] Add keyboard shortcuts for drum pads.
-- [ ] Show missing percussion patches.
+- [x] Show missing percussion patches.
 - [ ] Prevent percussion from using pitched controls.
 - [x] Add a percussion range audition.
 - [x] Add a standard drum pattern audition.
