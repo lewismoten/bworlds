@@ -1,4 +1,4 @@
-import { createBoundedCache, type CacheLike } from '@bworlds/cache-support';
+import { createBoundedCache } from '@bworlds/cache-support';
 import { octaveNoise2D } from '@bworlds/core';
 import {
   appendHashSeedLabel,
@@ -12,7 +12,6 @@ import {
 import { createPlainsBackedTilePainter } from '@bworlds/paint-support';
 import {
   getPoiLightActivation,
-  markPoiLightEmitter,
   markPoiWindResponder,
   syncPoiWindResponders,
 } from '@bworlds/poi-support';
@@ -32,7 +31,6 @@ import {
   createTreeFamily,
   createTreeGenerator,
   createTreeGeneratorBase,
-  createTreeSpecies,
   getTreeBiologicalState,
   getTreeCollisionState,
   getTreeCanopyState,
@@ -55,9 +53,7 @@ import {
   type TreeLogicalState,
   type TreeSceneState,
   type TreeStructuralState,
-  type TreeSpecies,
 } from '@bworlds/tree-support';
-import { createThresholdTerrainClassifier } from '@bworlds/tile-support';
 import {
   createPaintedCanvasTexture,
   getSharedCylinderGeometry,
@@ -67,19 +63,15 @@ import type {
   ClassifyOverworldTileContext,
   CreateWorldActionContext,
   Create3DModelContext,
-  Paint2DContext,
   RuntimePlugin,
   ThreeBufferGeometryLike,
   ThreeGeometryLike,
   ThreeHostLike,
   ThreeMaterialLike,
-  ThreeMatrix4Like,
   ThreeObject3DLike,
   ThreeTextureLike,
   WorldEnvironmentLike,
 } from '@bworlds/plugin-api';
-
-const TILE_PIXEL_SIZE = 16;
 const TREE_FOLIAGE_COLOR = '#163b20';
 const TREE_BARK_COLOR = '#4a2f1b';
 const FIREFLY_KEY = 'forestFirefly';
@@ -101,7 +93,6 @@ const TREE_FORM_KEY = 'forestTreeForm';
 const TREE_FOLIAGE_KEY = 'forestTreeFoliage';
 const RENDER_STATS_CATEGORY_KEY = 'renderStatKind';
 const TREE_CLUSTER_SIZE = 4;
-const TREE_REGION_SIZE = 14;
 const MAX_FOREST_FIREFLIES = 3;
 const FOREST_CLOSE_DETAIL_DISTANCE = 2.5;
 const FOREST_CLOSE_DETAIL_DISTANCE_SQUARED =

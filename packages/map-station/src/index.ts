@@ -11,7 +11,6 @@ import {
   type RailTrainPlacement,
 } from '@bworlds/rail-support';
 import type {
-  CreateMapContext,
   RuntimePlugin,
   Seed,
   TileLike,

@@ -68,7 +68,6 @@ const LONG_DOCK_BOAT_LENGTH = 3;
 const FOREST_LOG_BRIDGE_KEY = 'forestLogBridge';
 const MAX_RIVER_BRIDGE_SPAN = 4;
 const ROUTE_STYLE_CACHE_LIMIT = 192;
-const ROUTE_CLUSTER_CACHE_LIMIT = 768;
 const ROUTE_LABEL_CACHE_LIMIT = 256;
 const ROAD_TIER_SEED = registerHashLabel('road-tier');
 const ROAD_FOOTPATH_SHOULDER_SEED = registerHashLabel('road-footpath-shoulder');
@@ -1644,29 +1643,6 @@ function getForestLogBridgeAxis(
     return hash2D(FOREST_LOG_AXIS_SEED, tileX, tileY) > 0.5 ? 'ew' : 'ns';
   }
   return null;
-}
-
-function getDockAxis(
-  state: WorldStateLike,
-  tileX: number,
-  tileY: number
-): 'ew' | 'ns' | null {
-  const west = isDockTravelKind(state.getCurrentTile(tileX - 1, tileY).kind);
-  const east = isDockTravelKind(state.getCurrentTile(tileX + 1, tileY).kind);
-  const north = isDockTravelKind(state.getCurrentTile(tileX, tileY - 1).kind);
-  const south = isDockTravelKind(state.getCurrentTile(tileX, tileY + 1).kind);
-
-  if ((west || east) && !(north || south)) {
-    return 'ew';
-  }
-  if ((north || south) && !(west || east)) {
-    return 'ns';
-  }
-  return null;
-}
-
-function isDockTravelKind(kind: Kind): boolean {
-  return kind === 'dock' || kind === 'road' || isRouteTerminalKind(kind);
 }
 
 function getDockClusterInfo(

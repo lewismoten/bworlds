@@ -1115,9 +1115,6 @@ export function getTownNpcQuestStates(
 
   const placements = getTownNpcPlacements(tileX, tileY, timeMs);
   const npcs = new Map(getTownNpcs(tileX, tileY).map((npc) => [npc.id, npc]));
-  const buildings = new Map(
-    getTownBuildings(tileX, tileY).map((building) => [building.id, building])
-  );
   const registry = getDefaultQuestRegistry();
   const completedQuestIds = new Set(profile.completedQuestIds ?? []);
   const playerLevel = Math.max(1, profile.level ?? 1);

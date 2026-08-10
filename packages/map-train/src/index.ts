@@ -9,7 +9,6 @@ import {
   createReturnMapAction,
 } from '@bworlds/map-support';
 import type {
-  CreateMapContext,
   Point,
   RuntimePlugin,
   TileLike,

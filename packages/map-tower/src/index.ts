@@ -5,9 +5,7 @@ import {
   createExitMapAction,
 } from '@bworlds/map-support';
 import type {
-  CreateMapContext,
   RuntimePlugin,
-  Seed,
   TileLike,
   WorldContextLike,
   WorldMapLike,
