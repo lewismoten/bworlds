@@ -23,7 +23,6 @@ import type {
   ThreeMaterialLike,
   ThreeObject3DLike,
   TraversalProfile3D,
-  ViewMode,
   WorldEnvironmentLike,
   WorldActionLike,
   WorldStateLike,

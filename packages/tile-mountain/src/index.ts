@@ -7,7 +7,6 @@ import {
 } from '@bworlds/tile-support';
 import { createMountainTerrainMaterials } from '@bworlds/three-support';
 import type {
-  ClassifyOverworldTileContext,
   Create3DModelContext,
   Paint2DContext,
   RuntimePlugin,

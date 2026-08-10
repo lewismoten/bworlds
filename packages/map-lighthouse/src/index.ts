@@ -27,9 +27,7 @@ export function createLighthouseMapPlugin(): RuntimePlugin {
 }
 
 function createLighthouseMap(
-  context: LighthouseContext,
-  _seed: Seed,
-  _plugins: CreateMapContext['plugins']
+  context: LighthouseContext
 ): WorldMapLike {
   function getTile(x: number, y: number): LighthouseTile {
     if (Math.abs(x) > 4 || Math.abs(y) > 4) {

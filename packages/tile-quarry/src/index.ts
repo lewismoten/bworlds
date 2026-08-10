@@ -17,7 +17,6 @@ import type {
   ThreeMaterialLike,
 } from '@bworlds/plugin-api';
 
-const TILE_PIXEL_SIZE = 16;
 const QUARRY_STONE_WIDTH_SEED = registerHashLabel('quarry-stone-w');
 const QUARRY_STONE_HEIGHT_SEED = registerHashLabel('quarry-stone-h');
 const QUARRY_STONE_DEPTH_SEED = registerHashLabel('quarry-stone-d');

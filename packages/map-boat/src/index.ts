@@ -1,6 +1,5 @@
 import { createContextMapPlugin } from '@bworlds/map-support';
 import type {
-  CreateMapContext,
   Kind,
   RuntimePlugin,
   WorldStateLike,

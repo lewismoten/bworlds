@@ -35,8 +35,7 @@ export function createShipMapPlugin(): RuntimePlugin {
 
 function createShipMap(
   context: ShipContext,
-  seed: Seed,
-  _plugins: CreateMapContext['plugins']
+  seed: Seed
 ): WorldMapLike {
   const variant = getShipMapVariant(seed, context.origin.x, context.origin.y);
 

@@ -119,8 +119,7 @@ function getTrainLineLabelHash(lineName: string): number {
 
 function createTrainMap(
   context: TrainContext,
-  seed: string | number,
-  _plugins: CreateMapContext['plugins']
+  seed: string | number
 ): WorldMapLike {
   const cars = resolveTrainCarTypes(seed, context);
   const layout = getTrainLayout(cars);

@@ -7,7 +7,6 @@ import {
   getTownBuildingLabel,
   getTownBuildingServiceState,
 } from '@bworlds/town-support';
-import type { QuestOffer } from '@bworlds/quest-support';
 import type {
   CreateMapContext,
   RuntimePlugin,

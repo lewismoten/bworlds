@@ -33,7 +33,6 @@ const observatoryMaterialCache = new WeakMap<
 type ObservatoryNodeLike = ThreeObject3DLike & {
   material?: ThreeMaterialLike | ThreeMaterialLike[];
 };
-
 export function createObservatoryTilePlugin(): RuntimePlugin {
   return createEnterablePoiTilePlugin({
     pluginName: 'tile-observatory',

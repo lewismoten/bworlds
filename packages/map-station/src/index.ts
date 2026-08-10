@@ -40,8 +40,7 @@ export function createStationMapPlugin(): RuntimePlugin {
 
 function createStationMap(
   context: StationContext,
-  seed: Seed,
-  _plugins: CreateMapContext['plugins']
+  seed: Seed
 ): WorldMapLike {
   const sampleTerrainSignals = createOverworldTerrainSignalSampler(seed);
   const serviceCache = createBoundedCache<number, RailTrainPlacement | null>(

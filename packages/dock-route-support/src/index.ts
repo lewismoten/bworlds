@@ -1,10 +1,8 @@
 import {
   createBoundedCache,
   type BoundedCache,
-  type CacheLike,
 } from '@bworlds/cache-support';
 import {
-  appendHashSeedLabel,
   appendHashSeedPart,
   hash2D,
   registerHashLabel,
@@ -797,14 +795,12 @@ function resolveDockBoatPlacement(
 
   let remainingIndex = pointIndex;
   let activeSegment = geometry.segments[0]!;
-  let segmentIndex = 0;
   for (const segment of geometry.segments) {
     if (remainingIndex < segment.path.length) {
       activeSegment = segment;
       break;
     }
     remainingIndex -= segment.path.length;
-    segmentIndex += 1;
   }
 
   const segmentLength = Math.max(1, activeSegment.path.length);

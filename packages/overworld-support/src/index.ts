@@ -14,7 +14,6 @@ import {
 import {
   appendHashSeedLabel,
   appendHashSeedPart,
-  hash2D,
   hash2DWithSeed,
   registerHashLabel,
   resolveHashSeedInput,
@@ -127,8 +126,6 @@ const RIVER_FORK_CHANCE_THRESHOLD = 0.63;
 const RIVER_FORK_MAX_ANGLE_DELTA = Math.PI * 0.25;
 const RIVER_CONTROL_MEANDER_BIAS = Math.PI * 0.34;
 const RIVER_CONTROL_MAX_TURN = Math.PI * 0.88;
-const OVERWORLD_SIGNAL_CACHE_LIMIT = 8192;
-const OVERWORLD_RIVER_CACHE_LIMIT = 1024;
 const OVERWORLD_TILE_CACHE_LIMIT = 4096;
 const OVERWORLD_ANCHOR_CACHE_LIMIT = 1024;
 const OVERWORLD_ANCHOR_EVALUATION_CACHE_LIMIT = 2048;

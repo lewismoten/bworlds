@@ -7,7 +7,6 @@ import {
 } from '@bworlds/content-pack-frontier';
 import {
   createRuinsContentPackDefinition,
-  ruinsContentPackManifest,
 } from '@bworlds/content-pack-ruins';
 import {
   createDefaultContentPackDefinition,

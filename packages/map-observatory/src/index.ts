@@ -25,9 +25,7 @@ export function createObservatoryMapPlugin(): RuntimePlugin {
 }
 
 function createObservatoryMap(
-  context: ObservatoryContext,
-  _seed: Seed,
-  _plugins: CreateMapContext['plugins']
+  context: ObservatoryContext
 ): WorldMapLike {
   function getTile(x: number, y: number): TileLike {
     if (Math.abs(x) > 5 || Math.abs(y) > 5) {

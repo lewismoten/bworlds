@@ -18,14 +18,11 @@ import {
   createRouteTraversalProfile,
 } from '@bworlds/tile-support';
 import {
-  createPaintedCanvasTexture,
   createTexturedPlaneMesh,
   getOrCreatePaintedCanvasTexture,
 } from '@bworlds/three-support';
 import type {
-  ClassifyOverworldTileContext,
   Create3DModelContext,
-  Paint2DContext,
   RuntimePlugin,
   TileLike,
   ThreeHostLike,
@@ -35,7 +32,6 @@ import type {
   WorldStateLike,
 } from '@bworlds/plugin-api';
 
-const TILE_PIXEL_SIZE = 16;
 const SIGN_REGION_SIZE = 10;
 const TREE_BARK_COLOR = '#4a2f1b';
 const SIGN_TOWN_BUFFER = 8;

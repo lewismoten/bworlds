@@ -21,14 +21,11 @@ import {
 } from '@bworlds/procedural-style';
 import { getTownProfile } from '@bworlds/town-support';
 import {
-  createPaintedCanvasTexture,
   createTexturedPlaneMesh,
   getOrCreatePaintedCanvasTexture,
   createPaintedStandardMaterial,
 } from '@bworlds/three-support';
 import type {
-  ClassifyOverworldTileContext,
-  CreateWorldActionContext,
   Create3DModelContext,
   Paint2DContext,
   RenderBudgetQualityLevel,
@@ -37,7 +34,6 @@ import type {
   ThreeHostLike,
   ThreeMaterialLike,
   ThreeTextureLike,
-  TraversalProfile3D,
 } from '@bworlds/plugin-api';
 
 const TOWN_REGION_SIZE = 18;

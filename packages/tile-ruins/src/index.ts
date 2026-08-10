@@ -28,16 +28,13 @@ import {
   getSharedSphereGeometry,
 } from '@bworlds/three-support';
 import type {
-  ClassifyOverworldTileContext,
   Create3DModelContext,
-  Paint2DContext,
   RenderBudgetQualityLevel,
   RuntimePlugin,
   ThreeHostLike,
   ThreeMaterialLike,
 } from '@bworlds/plugin-api';
 
-const TILE_PIXEL_SIZE = 16;
 const RUINS_REGION_SIZE = 16;
 const RUINS_STONE_TONE_SEED = registerHashLabel('ruins-stone-tone');
 const RUINS_ACCENT_TONE_SEED = registerHashLabel('ruins-accent-tone');

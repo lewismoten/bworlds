@@ -2,7 +2,6 @@ import { createBoundedCache } from '@bworlds/cache-support';
 import { clamp } from '@bworlds/core';
 import {
   appendHashSeedLabel,
-  hash2D,
   hash2DWithSeed,
   registerHashLabel,
   resolveHashSeedInput,
