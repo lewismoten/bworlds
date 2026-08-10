@@ -110,10 +110,10 @@
 - [ ] Show the current patch variant.
 - [x] Show the patch source plugin.
 - [x] Show whether the patch is generated.
-- [ ] Show whether the patch uses samples.
-- [ ] Show whether the patch uses synthesis.
-- [ ] Show the current polyphony limit.
-- [ ] Show the estimated patch complexity.
+- [x] Show whether the patch uses samples.
+- [x] Show whether the patch uses synthesis.
+- [x] Show the current polyphony limit.
+- [x] Show the estimated patch complexity.
 - [x] Show instrument validation warnings.
 
 ## Oscillator Controls

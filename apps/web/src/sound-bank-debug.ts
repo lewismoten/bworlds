@@ -30,6 +30,7 @@ import {
   type PercussionVoiceId,
 } from './procedural-music-percussion-voices.ts';
 import type { ProceduralMusicNote } from './procedural-music.ts';
+import { MAX_ACTIVE_PROCEDURAL_MUSIC_OSCILLATORS } from './audio-budget.ts';
 import {
   createSoundBankInstrumentRegistry,
   type SoundBankInstrumentRegistryEntry,
@@ -250,6 +251,7 @@ export function buildSoundBankDebugMarkup(
     percussionBrowserState
   );
   const selectedInstrumentDetailsMarkup = buildSelectedInstrumentDetailsMarkup(
+    snapshot,
     snapshot.instrumentRegistry.entries,
     generalMidiBrowserModel.selectedProgramNumber
   );
@@ -1077,6 +1079,7 @@ function renderOptionList(
 }
 
 function buildSelectedInstrumentDetailsMarkup(
+  snapshot: SoundBankDebugSnapshot,
   registryEntries: readonly SoundBankInstrumentRegistryEntry[],
   selectedProgramNumber: number | null
 ): string {
@@ -1097,6 +1100,16 @@ function buildSelectedInstrumentDetailsMarkup(
     `;
   }
 
+  const runtimeInstrument = resolveSelectedRuntimeInstrument(snapshot, selectedEntry.id);
+  const usesSamples = runtimeInstrument ? 'No' : 'Unknown';
+  const usesSynthesis = runtimeInstrument ? 'Yes' : 'Unknown';
+  const polyphonyLimit = runtimeInstrument
+    ? `${resolvePreviewPolyphonyLimit()} voices`
+    : 'Unknown';
+  const estimatedComplexity = runtimeInstrument
+    ? resolveEstimatedPatchComplexity(runtimeInstrument)
+    : 'Unknown';
+
   return `
     <dl class="music-debug-instrument-stats">
       <div><dt>Instrument ID</dt><dd>${selectedEntry.id}</dd></div>
@@ -1108,9 +1121,56 @@ function buildSelectedInstrumentDetailsMarkup(
       <div><dt>Playable Range</dt><dd>${formatMidiRange(selectedEntry.recommendedMidiRange)}</dd></div>
       <div><dt>Patch Source</dt><dd>${selectedEntry.sourcePlugin}</dd></div>
       <div><dt>Generated</dt><dd>${selectedEntry.sourcePlugin === 'core-generated-bank' ? 'Yes' : 'No'}</dd></div>
+      <div><dt>Uses Samples</dt><dd>${usesSamples}</dd></div>
+      <div><dt>Uses Synthesis</dt><dd>${usesSynthesis}</dd></div>
+      <div><dt>Polyphony Limit</dt><dd>${polyphonyLimit}</dd></div>
+      <div><dt>Estimated Complexity</dt><dd>${estimatedComplexity}</dd></div>
       <div><dt>Validation Warnings</dt><dd>${formatValidationWarnings(selectedEntry.validationMessages)}</dd></div>
     </dl>
   `;
+}
+
+function resolveSelectedRuntimeInstrument(
+  snapshot: SoundBankDebugSnapshot,
+  instrumentId: string
+) {
+  return (
+    Object.values(snapshot.musicSnapshot.instrumentBank.instruments).find(
+      (instrument) => instrument.id === instrumentId
+    ) ?? null
+  );
+}
+
+function resolvePreviewPolyphonyLimit(): number {
+  return Math.max(1, Math.floor(MAX_ACTIVE_PROCEDURAL_MUSIC_OSCILLATORS / 2));
+}
+
+function resolveEstimatedPatchComplexity(
+  instrument: SoundBankDebugSnapshot['musicSnapshot']['instrumentBank']['instruments'][keyof SoundBankDebugSnapshot['musicSnapshot']['instrumentBank']['instruments']]
+): 'Low' | 'Medium' | 'High' {
+  let score = 2;
+  if ((instrument.timbre.noiseMix ?? 0) > 0) {
+    score += 2;
+  }
+  if ((instrument.timbre.transientMix ?? 0) > 0) {
+    score += 2;
+  }
+  if ((instrument.timbre.pitchSweepSemitones ?? 0) !== 0) {
+    score += 1;
+  }
+  if (instrument.pulseRate > 1.2) {
+    score += 1;
+  }
+  if (instrument.timbre.filterQ > 1.4) {
+    score += 1;
+  }
+  if (score >= 6) {
+    return 'High';
+  }
+  if (score >= 4) {
+    return 'Medium';
+  }
+  return 'Low';
 }
 
 function formatLabel(value: string): string {

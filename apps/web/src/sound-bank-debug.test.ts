@@ -102,6 +102,10 @@ describe('sound bank debug page', () => {
     expect(normalizedMarkup).toContain('Playable Range');
     expect(normalizedMarkup).toContain('Patch Source');
     expect(normalizedMarkup).toContain('Generated');
+    expect(normalizedMarkup).toContain('Uses Samples');
+    expect(normalizedMarkup).toContain('Uses Synthesis');
+    expect(normalizedMarkup).toContain('Polyphony Limit');
+    expect(normalizedMarkup).toContain('Estimated Complexity');
     expect(normalizedMarkup).toContain('Validation Warnings');
     expect(normalizedMarkup).toContain('Placeholder patch');
     expect(normalizedMarkup).toContain('>Kick<');
@@ -496,6 +500,11 @@ describe('sound bank debug page', () => {
     expect(markup).toContain('custom-bank');
     expect(markup).toContain('Generated');
     expect(markup).toContain('>No<');
+    expect(markup).toContain('Uses Samples');
+    expect(markup).toContain('Unknown');
+    expect(markup).toContain('Uses Synthesis');
+    expect(markup).toContain('Polyphony Limit');
+    expect(markup).toContain('Estimated Complexity');
   });
 
   it('shows selected instrument details for the resolved General MIDI program', () => {
@@ -528,6 +537,13 @@ describe('sound bank debug page', () => {
     expect(markup).toContain('core-generated-bank');
     expect(markup).toContain('Generated');
     expect(markup).toContain('>Yes<');
+    expect(markup).toContain('Uses Samples');
+    expect(markup).toContain('>No<');
+    expect(markup).toContain('Uses Synthesis');
+    expect(markup).toContain('Polyphony Limit');
+    expect(markup).toContain('>12 voices<');
+    expect(markup).toContain('Estimated Complexity');
+    expect(markup).toMatch(/>Low<|>Medium<|>High</);
     expect(markup).toContain('Validation Warnings');
     expect(markup).toContain('None');
   });
