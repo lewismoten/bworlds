@@ -182,18 +182,18 @@ export function resolveMusicDebugAccidentalBudget(options: {
   ) {
     return {
       maxExplainedAccidentals: 4,
-      maxUnexplainedAccidentals: 4,
+      maxUnexplainedAccidentals: 0,
     };
   }
   if ((options.encounterMode ?? 'ambient') === 'ambient') {
     return {
       maxExplainedAccidentals: 10,
-      maxUnexplainedAccidentals: 10,
+      maxUnexplainedAccidentals: 0,
     };
   }
   return {
     maxExplainedAccidentals: 12,
-    maxUnexplainedAccidentals: 12,
+    maxUnexplainedAccidentals: 0,
   };
 }
 

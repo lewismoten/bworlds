@@ -25,7 +25,7 @@
 - [x] Assign each chord an exact measure range.
 - [x] Make bass, harmony, and lead read the same chord timeline.
 - [x] Verify detected chords follow the planned progression order.
-- [ ] Fix unresolved chromatic notes before MIDI export.
+- [x] Fix unresolved chromatic notes before MIDI export.
 - [ ] Regenerate a phrase containing unresolved chromatic notes.
 - [ ] Lower harmony occupancy when the lead is active.
 - [ ] Make each section satisfy its configured layer-emphasis rules. (ie - Make A' more lead-forward than Section A.)

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { createMusicDebugSnapshot } from './music-debug.ts';
 import {
   analyzeMusicDebugPitches,
   resolveMusicDebugAccidentalBudget,
@@ -76,7 +77,10 @@ describe('music debug note analysis', () => {
     ]);
     expect(validation.dominantPitchClassesByRole.bass).toEqual(['A#', 'G']);
     expect(validation.unexplainedAccidentalCount).toBe(1);
-    expect(validation.isValidForMidiExport).toBe(true);
+    expect(validation.isValidForMidiExport).toBe(false);
+    expect(validation.messages).toEqual([
+      'Found 1 unexplained chromatic notes; MIDI export allows 0.',
+    ]);
   });
 
   it('uses a stricter accidental budget for ambient plains exports', () => {
@@ -87,7 +91,7 @@ describe('music debug note analysis', () => {
       })
     ).toEqual({
       maxExplainedAccidentals: 4,
-      maxUnexplainedAccidentals: 4,
+      maxUnexplainedAccidentals: 0,
     });
     expect(
       resolveMusicDebugAccidentalBudget({
@@ -96,8 +100,47 @@ describe('music debug note analysis', () => {
       })
     ).toEqual({
       maxExplainedAccidentals: 12,
-      maxUnexplainedAccidentals: 12,
+      maxUnexplainedAccidentals: 0,
     });
+  });
+
+  it('keeps representative generated songs free of unresolved chromatic notes', () => {
+    const snapshots = [
+      createMusicDebugSnapshot({
+        tileKind: 'plains',
+        contextType: 'overworld',
+        clusterX: 0,
+        clusterY: 0,
+      }),
+      createMusicDebugSnapshot({
+        tileKind: 'forest',
+        contextType: 'overworld',
+        clusterX: 4,
+        clusterY: -1,
+      }),
+      createMusicDebugSnapshot({
+        tileKind: 'town',
+        contextType: 'town',
+        clusterX: 3,
+        clusterY: -2,
+      }),
+      createMusicDebugSnapshot({
+        tileKind: 'cave',
+        contextType: 'dungeon',
+        encounterMode: 'boss',
+        combatIntensity: 0.95,
+        clusterX: 2,
+        clusterY: 5,
+      }),
+    ];
+
+    expect(
+      snapshots.every(
+        (snapshot) =>
+          snapshot.midiExportValidation.unexplainedAccidentalCount === 0 &&
+          snapshot.midiExportValidation.isValidForMidiExport
+      )
+    ).toBe(true);
   });
 
   it('keeps degree 1, 3, and 5 on G, B, and D for lead, harmony, and bass tracks', () => {
