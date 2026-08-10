@@ -19,6 +19,7 @@ describe('main layout and hmr wiring', () => {
     expect(source).toContain(
       '<div class="dock-cluster" aria-label="Quick controls">'
     );
+    expect(source).not.toContain('<div class="controls controls-compact">');
     expect(source).not.toContain('id="content-pack-label"');
     expect(source).not.toContain('id="content-pack-form"');
     expect(source).not.toContain('id="status"');
@@ -30,13 +31,13 @@ describe('main layout and hmr wiring', () => {
     expect(stylesheet).toContain('left: 0.75rem;');
     expect(stylesheet).toContain('right: 0.75rem;');
     expect(stylesheet).toContain('width: min(72rem, calc(100vw - 1.5rem));');
-    expect(stylesheet).toContain('.dock-cluster {\n  display: flex;');
-    expect(stylesheet).toContain('flex-wrap: nowrap;');
-    expect(stylesheet).toContain('.controls-compact {\n  display: flex;');
-    expect(stylesheet).toContain('flex: 1 1 auto;');
-    expect(stylesheet).toContain('.dock-cluster {\n  display: flex;');
+    expect(stylesheet).toContain('.dock-cluster {\n  display: grid;');
+    expect(stylesheet).toContain('grid-auto-flow: column;');
+    expect(stylesheet).not.toContain('.controls-compact {\n  display: flex;');
     expect(stylesheet).toContain('width: 100%;');
     expect(stylesheet).toContain('white-space: nowrap;');
+    expect(stylesheet).toContain('.dashboard {\n  display: grid;');
+    expect(stylesheet).toContain('grid-template-columns: minmax(0, 1fr);');
     expect(stylesheet).toContain('.inspector-header {\n  display: flex;');
     expect(stylesheet).toContain('justify-content: flex-start;');
     expect(stylesheet).toContain('.inspector-tabs {\n  display: flex;');

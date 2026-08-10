@@ -22,6 +22,7 @@ import {
   getPlanetaryOrbitProgress,
   getWorldDaylightCycle,
   getWorldTimeMs,
+  octaveNoise2D,
   registerPoiNameType,
   toGps,
   WORLD_TILES_WIDE,
@@ -70,6 +71,30 @@ describe('core utilities', () => {
     expect(cardinalFromAngle(0)).toBe('E');
     expect(cardinalFromAngle(Math.PI / 2)).toBe('S');
     expect(cardinalFromAngle(Math.PI)).toBe('W');
+  });
+
+  it('re-exports shared octave noise helpers through the core package entrypoint', () => {
+    const noise = octaveNoise2D(
+      registerHashLabel('noise-entrypoint'),
+      1.25,
+      -3.5,
+      {
+        octaves: 3,
+        persistence: 0.6,
+        lacunarity: 2.1,
+      }
+    );
+
+    expect(Number.isFinite(noise)).toBe(true);
+    expect(noise).toBeGreaterThanOrEqual(0);
+    expect(noise).toBeLessThanOrEqual(1);
+    expect(noise).toBe(
+      octaveNoise2D(registerHashLabel('noise-entrypoint'), 1.25, -3.5, {
+        octaves: 3,
+        persistence: 0.6,
+        lacunarity: 2.1,
+      })
+    );
   });
 
   it('computes a shared day-night cycle and moon phase state', () => {

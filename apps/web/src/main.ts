@@ -695,74 +695,72 @@ root.innerHTML = `
       </aside>
     </section>
     <section class="control-dock card">
-      <div class="controls controls-compact">
-        <div class="dock-cluster" aria-label="Quick controls">
+      <div class="dock-cluster" aria-label="Quick controls">
+        <button
+          id="view-menu-button"
+          class="dock-icon-button"
+          type="button"
+          title="Choose a viewport mode"
+          aria-label="Choose a viewport mode"
+        >
+          ▣
+        </button>
+        <button
+          id="action"
+          class="dock-icon-button dock-icon-button-emphasis"
+          type="button"
+          title="Interact with the current tile"
+          aria-label="Interact with the current tile"
+        >
+          ✦
+        </button>
+        <div class="dock-split-button">
           <button
-            id="view-menu-button"
+            id="jump-random"
             class="dock-icon-button"
             type="button"
-            title="Choose a viewport mode"
-            aria-label="Choose a viewport mode"
+            title="Jump to a random location"
+            aria-label="Jump to a random location"
           >
-            ▣
+            ⤮
           </button>
           <button
-            id="action"
-            class="dock-icon-button dock-icon-button-emphasis"
+            id="jump-random-menu-button"
+            class="dock-icon-button dock-icon-button-arrow"
             type="button"
-            title="Interact with the current tile"
-            aria-label="Interact with the current tile"
+            title="Choose a random destination type"
+            aria-label="Choose a random destination type"
           >
-            ✦
-          </button>
-          <div class="dock-split-button">
-            <button
-              id="jump-random"
-              class="dock-icon-button"
-              type="button"
-              title="Jump to a random location"
-              aria-label="Jump to a random location"
-            >
-              ⤮
-            </button>
-            <button
-              id="jump-random-menu-button"
-              class="dock-icon-button dock-icon-button-arrow"
-              type="button"
-              title="Choose a random destination type"
-              aria-label="Choose a random destination type"
-            >
-              ▾
-            </button>
-          </div>
-          <button
-            id="teleport-menu-button"
-            class="dock-icon-button"
-            type="button"
-            title="Open teleport destinations"
-            aria-label="Open teleport destinations"
-          >
-            ⌖
-          </button>
-          <button
-            id="toggle-minimap-display"
-            class="dock-icon-button"
-            type="button"
-            title="Toggle the mini map HUD"
-            aria-label="Toggle the mini map HUD"
-          >
-            ▤
-          </button>
-          <button
-            id="settings-button"
-            class="dock-icon-button"
-            type="button"
-            title="Open settings"
-            aria-label="Open settings"
-          >
-            ⚙
+            ▾
           </button>
         </div>
+        <button
+          id="teleport-menu-button"
+          class="dock-icon-button"
+          type="button"
+          title="Open teleport destinations"
+          aria-label="Open teleport destinations"
+        >
+          ⌖
+        </button>
+        <button
+          id="toggle-minimap-display"
+          class="dock-icon-button"
+          type="button"
+          title="Toggle the mini map HUD"
+          aria-label="Toggle the mini map HUD"
+        >
+          ▤
+        </button>
+        <button
+          id="settings-button"
+          class="dock-icon-button"
+          type="button"
+          title="Open settings"
+          aria-label="Open settings"
+        >
+          ⚙
+        </button>
       </div>
     </section>
     <dialog id="view-dialog" class="control-dialog">

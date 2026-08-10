@@ -1,4 +1,3 @@
-import { type ConstellationLike } from './celestial/constellation.ts';
 import {
   CHUNK_SIZE,
   EARTH_CIRCUMFERENCE_METERS,
@@ -14,11 +13,6 @@ import {
   DEFAULT_YEAR_LENGTH_DAYS,
   getWorldTimeMs,
 } from './celestial/time.ts';
-import {
-  getEclipseAdjustedDaylight,
-  getEclipseAdjustedTwilight,
-  type SolarEclipseLike,
-} from './celestial/eclipse.ts';
 import { type CelestialEventLike } from './celestial/getCelestialEventsForDay.ts';
 import {
   appendHashSeedLabel,
@@ -27,14 +21,8 @@ import {
   registerHashLabel,
   registerHashLabels,
 } from './hash.ts';
-import { type MilkyWayBeltLike } from './celestial/milky-way.ts';
-import { clamp, fract, lerp, normalizeAngle, smoothstep } from './math.ts';
-import { getOrreryBodies, type OrreryBodyLike } from './celestial/orrery.ts';
-import {
-  getDaylightCycleState,
-  type AuroraBandLike,
-} from './celestial/getDaylightCycleState.ts';
-import { getWorldDaylightCycle } from './celestial/daylight.ts';
+import { clamp, normalizeAngle } from './math.ts';
+import { type AuroraBandLike } from './celestial/getDaylightCycleState.ts';
 
 export {
   appendHashSeedLabel,
@@ -53,6 +41,8 @@ export {
 
 export { createRandom } from './prng.ts';
 export { clamp, fract, lerp, normalizeAngle, smoothstep } from './math.ts';
+export { octaveNoise2D, ridgedNoise2D, valueNoise2D } from './noise.ts';
+export { cardinalFromAngle, toGps, wrapLongitude } from './position.ts';
 
 export {
   CHUNK_SIZE,
@@ -105,6 +95,7 @@ export {
   advanceWorldTimeOffsetByHours,
   getWorldDaylightCycle,
 } from './celestial/daylight.ts';
+export { advanceWorldTimeOffsetBySeasons } from './celestial/seasons.ts';
 export { applyCelestialEnvironmentOverrides } from './celestial/applyCelestialEnvironmentOverrides.ts';
 
 const POI_NAME_PREFIX_SET_LABEL = registerHashLabel('name-prefix-set');
@@ -147,7 +138,6 @@ export type PoiNameType =
       | 'station'
     )
   | (string & {});
-type CardinalDirection = 'N' | 'S' | 'E' | 'W';
 type CoreWorldContextType =
   | 'overworld'
   | 'town'
@@ -306,107 +296,6 @@ type CoreWorldStateLike = {
   interact(): boolean;
   tryExit(): boolean;
 };
-
-export function advanceWorldTimeOffsetBySeasons(
-  currentOffsetMs: number,
-  seasons: number,
-  options: {
-    dayLengthMs?: number;
-    yearLengthDays?: number;
-    constellationCount?: number;
-  } = {}
-) {
-  const dayLengthMs = options.dayLengthMs ?? DEFAULT_DAY_LENGTH_MS;
-  const yearLengthDays = options.yearLengthDays ?? DEFAULT_YEAR_LENGTH_DAYS;
-  const constellationCount = Math.max(
-    1,
-    Math.floor(options.constellationCount ?? DEFAULT_CONSTELLATION_COUNT)
-  );
-  const seasonLengthDays = yearLengthDays / constellationCount;
-  return currentOffsetMs + seasons * seasonLengthDays * dayLengthMs;
-}
-export function valueNoise2D(seedHash: number, x: number, y: number): number {
-  const x0 = Math.floor(x);
-  const y0 = Math.floor(y);
-  const x1 = x0 + 1;
-  const y1 = y0 + 1;
-  const tx = smoothstep(0, 1, fract(x));
-  const ty = smoothstep(0, 1, fract(y));
-  const v00 = hash2DWithSeed(seedHash, x0, y0);
-  const v10 = hash2DWithSeed(seedHash, x1, y0);
-  const v01 = hash2DWithSeed(seedHash, x0, y1);
-  const v11 = hash2DWithSeed(seedHash, x1, y1);
-  const a = lerp(v00, v10, tx);
-  const b = lerp(v01, v11, tx);
-  return lerp(a, b, ty);
-}
-
-export function octaveNoise2D(
-  seedHash: number,
-  x: number,
-  y: number,
-  options: {
-    octaves?: number;
-    persistence?: number;
-    lacunarity?: number;
-  } = {}
-) {
-  const octaves = options.octaves ?? 4;
-  const persistence = options.persistence ?? 0.5;
-  const lacunarity = options.lacunarity ?? 2;
-  let amplitude = 1;
-  let frequency = 1;
-  let total = 0;
-  let normalizer = 0;
-
-  for (let octave = 0; octave < octaves; octave += 1) {
-    total += valueNoise2D(seedHash, x * frequency, y * frequency) * amplitude;
-    normalizer += amplitude;
-    amplitude *= persistence;
-    frequency *= lacunarity;
-  }
-
-  return total / normalizer;
-}
-
-export function ridgedNoise2D(
-  seedHash: number,
-  x: number,
-  y: number,
-  options: {
-    octaves?: number;
-    persistence?: number;
-    lacunarity?: number;
-  } = {}
-) {
-  return 1 - Math.abs(octaveNoise2D(seedHash, x, y, options) * 2 - 1);
-}
-
-export function wrapLongitude(longitude: number): number {
-  if (longitude > 180) return longitude - 360;
-  if (longitude < -180) return longitude + 360;
-  return longitude;
-}
-
-export function toGps(
-  x: number,
-  y: number
-): { latitude: number; longitude: number } {
-  const longitude = wrapLongitude((x / WORLD_TILES_WIDE) * 360);
-  const latitude = clamp((-y / WORLD_TILES_WIDE) * 180, -90, 90);
-  return {
-    latitude: Object.is(latitude, -0) ? 0 : latitude,
-    longitude: Object.is(longitude, -0) ? 0 : longitude,
-  };
-}
-
-export function cardinalFromAngle(angle: number): CardinalDirection {
-  const normalized = normalizeAngle(angle);
-  if (normalized < Math.PI * 0.25 || normalized >= Math.PI * 1.75) return 'E';
-  if (normalized < Math.PI * 0.75) return 'S';
-  if (normalized < Math.PI * 1.25) return 'W';
-  return 'N';
-}
 
 function pickFrom<T>(list: readonly T[], seedValue: number): T {
   return list[Math.floor(seedValue * list.length) % list.length];

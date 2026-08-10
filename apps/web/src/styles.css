@@ -69,25 +69,6 @@ body {
   box-shadow: 0 18px 34px rgba(0, 0, 0, 0.22);
 }
 
-.controls {
-  display: flex;
-  gap: 0.75rem;
-  flex-wrap: nowrap;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  max-width: 100%;
-}
-
-.controls-compact {
-  display: flex;
-  flex: 1 1 auto;
-  min-width: 0;
-  width: 100%;
-  max-width: 100%;
-  margin: 0 auto;
-}
-
 .control-dock {
   position: fixed;
   display: flex;
@@ -101,11 +82,13 @@ body {
   max-width: 100%;
   margin-top: 0;
   overflow: hidden;
+  padding: 0.4rem 0.5rem;
 }
 
 .dock-cluster {
-  display: flex;
-  flex-wrap: nowrap;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: max-content;
   align-items: center;
   justify-content: center;
   gap: 0.55rem;
@@ -250,7 +233,7 @@ button:hover {
 
 .dashboard {
   display: grid;
-  grid-template-columns: minmax(0, 1.5fr) minmax(300px, 0.7fr);
+  grid-template-columns: minmax(0, 1fr);
   gap: 1rem;
   align-items: start;
 }
@@ -474,6 +457,7 @@ button:hover {
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  max-width: 100%;
 }
 
 .card {
@@ -864,10 +848,6 @@ dd {
     padding-bottom: calc(
       var(--control-dock-height) + env(safe-area-inset-bottom, 0px) + 0.75rem
     );
-  }
-
-  .controls {
-    gap: 0;
   }
 
   .audio-volume-controls {
