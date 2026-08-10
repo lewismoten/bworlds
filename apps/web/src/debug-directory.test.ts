@@ -33,6 +33,10 @@ describe('debug directory', () => {
           routeLabel: '/debug/sounds/',
         }),
         expect.objectContaining({
+          href: '/debug/sound-bank/',
+          routeLabel: '/debug/sound-bank/',
+        }),
+        expect.objectContaining({
           href: '/debug/trees/',
           routeLabel: '/debug/trees/',
         }),
@@ -51,6 +55,7 @@ describe('debug directory', () => {
     expect(markup).toContain('Audio Laboratory');
     expect(markup).toContain('Ambience Debug');
     expect(markup).toContain('Sound Debug');
+    expect(markup).toContain('Sound Bank Debug');
     expect(markup).toContain('Tree Conservatory');
   });
 });

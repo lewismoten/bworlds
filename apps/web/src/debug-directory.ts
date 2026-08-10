@@ -63,6 +63,15 @@ export const DEBUG_DIRECTORY_ENTRIES: DebugDirectoryEntry[] = [
       'Previews deterministic procedural sound effects, draws rendered waveforms, and exports the chosen preset as a WAV file.',
   },
   {
+    id: 'sound-bank-debug',
+    title: 'Sound Bank Debug',
+    href: '/debug/sound-bank/',
+    routeLabel: '/debug/sound-bank/',
+    category: 'Dedicated Debug Page',
+    description:
+      'Browses the generated music instrument bank, previews each role patch, and checks how biome and season inputs reshape the current sound set.',
+  },
+  {
     id: 'tree-conservatory',
     title: 'Tree Conservatory',
     href: '/debug/trees/',

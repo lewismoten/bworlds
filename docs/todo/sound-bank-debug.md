@@ -2,15 +2,15 @@
 
 ## Page Setup
 
-* [ ] Create a sound bank debug page.
-* [ ] Add the page to the debug navigation.
-* [ ] Add a clear page title and description.
-* [ ] Split the page into small reusable panels.
-* [ ] Keep audio state separate from page layout.
-* [ ] Stop active notes when leaving the page.
+* [x] Create a sound bank debug page.
+* [x] Add the page to the debug navigation.
+* [x] Add a clear page title and description.
+* [x] Split the page into small reusable panels.
+* [x] Keep audio state separate from page layout.
+* [x] Stop active notes when leaving the page.
 * [ ] Dispose temporary audio nodes on page cleanup.
-* [ ] Show an error panel for audio failures.
-* [ ] Add a reset-all-controls button.
+* [x] Show an error panel for audio failures.
+* [x] Add a reset-all-controls button.
 * [ ] Add a compact and expanded layout option.
 
 ## Audio Startup

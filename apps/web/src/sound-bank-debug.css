@@ -1,0 +1,168 @@
+body {
+  margin: 0;
+  background:
+    radial-gradient(circle at top, rgba(111, 176, 248, 0.18), transparent 40%),
+    linear-gradient(180deg, #08121d 0%, #0f1c2a 55%, #162637 100%);
+  color: #eef5ff;
+  font-family: 'Trebuchet MS', 'Avenir Next', 'Segoe UI', sans-serif;
+}
+
+#app {
+  min-height: 100vh;
+}
+
+.sound-bank-debug-shell {
+  width: min(1200px, calc(100vw - 2rem));
+  margin: 0 auto;
+  padding: 2rem 0 3rem;
+}
+
+.sound-bank-debug-hero,
+.sound-bank-debug-panel {
+  border: 1px solid rgba(172, 208, 255, 0.18);
+  background: rgba(10, 21, 34, 0.82);
+  border-radius: 1.25rem;
+  box-shadow: 0 1.2rem 3rem rgba(0, 0, 0, 0.28);
+}
+
+.sound-bank-debug-hero {
+  padding: 1.4rem 1.6rem;
+  margin-bottom: 1rem;
+}
+
+.sound-bank-debug-kicker,
+.sound-bank-debug-panel-kicker,
+.sound-bank-debug-role-label {
+  margin: 0 0 0.35rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.72rem;
+  color: #9fc0ea;
+}
+
+.sound-bank-debug-hero h1,
+.sound-bank-debug-panel h2,
+.sound-bank-debug-role-card h3 {
+  margin: 0;
+}
+
+.sound-bank-debug-lede,
+.sound-bank-debug-breadcrumb,
+.sound-bank-debug-panel p,
+.sound-bank-debug-role-card p {
+  color: #c9d9ef;
+}
+
+.sound-bank-debug-layout {
+  display: grid;
+  gap: 1rem;
+}
+
+.sound-bank-debug-panel {
+  padding: 1.2rem;
+}
+
+.sound-bank-debug-panel-head,
+.sound-bank-debug-actions,
+.sound-bank-debug-status-panel {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.sound-bank-debug-panel-head,
+.sound-bank-debug-status-panel {
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.sound-bank-debug-actions {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.sound-bank-debug-grid,
+.sound-bank-debug-role-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.8rem;
+}
+
+.sound-bank-debug-grid {
+  margin-top: 1rem;
+}
+
+.sound-bank-debug-grid label,
+.sound-bank-debug-role-card {
+  border-radius: 1rem;
+  border: 1px solid rgba(172, 208, 255, 0.16);
+  background: rgba(16, 31, 48, 0.8);
+  padding: 0.85rem 0.9rem;
+}
+
+.sound-bank-debug-grid span {
+  display: block;
+  margin-bottom: 0.35rem;
+  font-size: 0.82rem;
+  color: #b8cae4;
+}
+
+.sound-bank-debug-grid input,
+.sound-bank-debug-grid select,
+.sound-bank-debug-actions button {
+  width: 100%;
+  border-radius: 0.85rem;
+  border: 1px solid rgba(172, 208, 255, 0.24);
+  background: rgba(6, 16, 27, 0.92);
+  color: inherit;
+  font: inherit;
+}
+
+.sound-bank-debug-grid input,
+.sound-bank-debug-grid select {
+  padding: 0.65rem 0.75rem;
+  box-sizing: border-box;
+}
+
+.sound-bank-debug-actions button {
+  width: auto;
+  min-width: 8.25rem;
+  padding: 0.7rem 1rem;
+  cursor: pointer;
+}
+
+.sound-bank-debug-status-panel {
+  margin-top: 1rem;
+  padding: 0.9rem 1rem;
+  border-radius: 1rem;
+  background: rgba(12, 24, 38, 0.9);
+}
+
+.sound-bank-debug-error {
+  margin: 0;
+  color: #ffb8ba;
+}
+
+.sound-bank-debug-role-card h3 {
+  font-size: 1rem;
+}
+
+@media (max-width: 860px) {
+  .sound-bank-debug-shell {
+    width: min(100vw - 1rem, 1200px);
+    padding-top: 1rem;
+  }
+
+  .sound-bank-debug-panel-head,
+  .sound-bank-debug-status-panel {
+    flex-direction: column;
+  }
+
+  .sound-bank-debug-actions {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .sound-bank-debug-actions button {
+    width: 100%;
+  }
+}

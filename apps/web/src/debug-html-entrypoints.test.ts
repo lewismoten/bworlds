@@ -13,6 +13,8 @@ const DEBUG_HTML_ENTRY_PATHS = [
   'apps/web/debug/music/index.html',
   'apps/web/debug/sounds.html',
   'apps/web/debug/sounds/index.html',
+  'apps/web/debug/sound-bank.html',
+  'apps/web/debug/sound-bank/index.html',
   'apps/web/debug/trees.html',
   'apps/web/debug/trees/index.html',
 ] as const;

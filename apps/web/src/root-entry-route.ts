@@ -3,6 +3,7 @@ export const ROOT_ENTRY_PAGE_PATHS = [
   '/debug/audio/',
   '/debug/ambience/',
   '/debug/sounds/',
+  '/debug/sound-bank/',
   '/debug/trees/',
 ] as const;
 
@@ -61,6 +62,16 @@ const ROOT_ENTRY_ROUTE_DEFINITIONS: readonly RootEntryRouteDefinition[] = [
       '/debug/sounds/index.html',
     ],
     entryHtmlPath: '/debug/sounds/index.html',
+  },
+  {
+    pagePath: '/debug/sound-bank/',
+    aliases: [
+      '/debug/sound-bank',
+      '/debug/sound-bank/',
+      '/debug/sound-bank.html',
+      '/debug/sound-bank/index.html',
+    ],
+    entryHtmlPath: '/debug/sound-bank/index.html',
   },
   {
     pagePath: '/debug/trees/',

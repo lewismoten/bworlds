@@ -21,6 +21,9 @@ describe('debug route aliases', () => {
       '/debug/sounds',
       '/debug/sounds/index.html',
       '/debug/sounds.html',
+      '/debug/sound-bank',
+      '/debug/sound-bank/index.html',
+      '/debug/sound-bank.html',
       '/debug/trees',
       '/debug/trees/index.html',
     ]);
@@ -59,6 +62,15 @@ describe('debug route aliases', () => {
     expect(resolveDebugRouteRedirect('/debug/sounds.html')).toBe(
       '/debug/sounds/'
     );
+    expect(resolveDebugRouteRedirect('/debug/sound-bank')).toBe(
+      '/debug/sound-bank/'
+    );
+    expect(resolveDebugRouteRedirect('/debug/sound-bank/index.html')).toBe(
+      '/debug/sound-bank/'
+    );
+    expect(resolveDebugRouteRedirect('/debug/sound-bank.html')).toBe(
+      '/debug/sound-bank/'
+    );
     expect(resolveDebugRouteRedirect('/debug/trees')).toBe('/debug/trees/');
     expect(resolveDebugRouteRedirect('/debug/trees/index.html')).toBe(
       '/debug/trees/'
@@ -79,6 +91,9 @@ describe('debug route aliases', () => {
     expect(resolveDebugRouteRedirect('/bworlds/debug/sounds')).toBe(
       '/bworlds/debug/sounds/'
     );
+    expect(resolveDebugRouteRedirect('/bworlds/debug/sound-bank')).toBe(
+      '/bworlds/debug/sound-bank/'
+    );
     expect(resolveDebugRouteRedirect('/bworlds/debug/trees/index.html')).toBe(
       '/bworlds/debug/trees/'
     );
@@ -89,6 +104,7 @@ describe('debug route aliases', () => {
     expect(resolveDebugRouteRedirect('/debug/audio/')).toBeNull();
     expect(resolveDebugRouteRedirect('/debug/ambience/')).toBeNull();
     expect(resolveDebugRouteRedirect('/debug/sounds/')).toBeNull();
+    expect(resolveDebugRouteRedirect('/debug/sound-bank/')).toBeNull();
     expect(resolveDebugRouteRedirect('/debug/trees/')).toBeNull();
     expect(resolveDebugRouteRedirect('/')).toBeNull();
     expect(resolveDebugRouteRedirect('/town')).toBeNull();

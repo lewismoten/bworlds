@@ -46,7 +46,7 @@
 - [x] Percussion should be made of multiple percussion instruments (drum set), preferably noise related
 - [ ] Let me download the MIDI, instrument WAV, and parameter report JSON, as a zip file.
 - [x] Sections should be embedded in MIDI meta/control flow to help indicate which notes belong to what section (Intro, Section A, section A', Section B, Variation, Retrun, Outro, etc.)
-- [ ] Add a [Sound Bank Debug Page](./sound-bank-debug.md)
+- [x] Add a [Sound Bank Debug Page](./sound-bank-debug.md)
 
 # Medium Priority
 

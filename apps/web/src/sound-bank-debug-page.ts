@@ -1,0 +1,168 @@
+import './music-debug.css';
+import './sound-bank-debug.css';
+import {
+  buildSoundBankDebugMarkup,
+  createSoundBankDebugSnapshot,
+  DEFAULT_SOUND_BANK_DEBUG_OPTIONS,
+  normalizeSoundBankDebugOptions,
+  randomizeSoundBankDebugSeed,
+  resolveSoundBankDebugPreviewNoteRole,
+  type SoundBankDebugOptions,
+} from './sound-bank-debug.ts';
+import { createMusicDebugInstrumentPreviewPlayer } from './music-debug-instrument-preview.ts';
+import type { MusicDebugSnapshot } from './music-debug.ts';
+
+const root = document.querySelector<HTMLElement>('#app');
+const pageLifecycleAbortController =
+  typeof AbortController === 'function' ? new AbortController() : null;
+const pageLifecycleSignal = pageLifecycleAbortController?.signal;
+const instrumentPreviewPlayer = createMusicDebugInstrumentPreviewPlayer();
+let options = DEFAULT_SOUND_BANK_DEBUG_OPTIONS;
+let audioStatus = 'Audio idle';
+let errorMessage: string | null = null;
+
+function stopPreview(): void {
+  instrumentPreviewPlayer.stop();
+}
+
+function setAudioFeedback(nextStatus: string, nextError: string | null): void {
+  audioStatus = nextStatus;
+  errorMessage = nextError;
+  document
+    .querySelector<HTMLElement>('#sound-bank-debug-audio-status')
+    ?.replaceChildren(document.createTextNode(audioStatus));
+  const errorPanel = document.querySelector<HTMLElement>(
+    '.sound-bank-debug-error'
+  );
+  if (nextError) {
+    if (errorPanel) {
+      errorPanel.textContent = nextError;
+      return;
+    }
+    renderPage();
+    return;
+  }
+  errorPanel?.remove();
+}
+
+function readFormOptions(): SoundBankDebugOptions {
+  const form = document.querySelector<HTMLFormElement>(
+    '#sound-bank-debug-form'
+  );
+  if (!form) {
+    return options;
+  }
+  const formData = new FormData(form);
+  return normalizeSoundBankDebugOptions({
+    tileKind: formData.get('tileKind'),
+    contextType: formData.get('contextType'),
+    clusterX: Number(formData.get('clusterX') ?? options.clusterX),
+    clusterY: Number(formData.get('clusterY') ?? options.clusterY),
+    dayProgress: Number(formData.get('dayProgress') ?? options.dayProgress),
+    yearProgress: Number(formData.get('yearProgress') ?? options.yearProgress),
+  });
+}
+
+function renderPage(): void {
+  if (!root) {
+    return;
+  }
+  const snapshot = createSoundBankDebugSnapshot(options);
+  root.innerHTML = buildSoundBankDebugMarkup(snapshot, {
+    audioStatus,
+    errorMessage,
+  });
+  bindPage(snapshot.musicSnapshot);
+}
+
+function bindPage(musicSnapshot: MusicDebugSnapshot): void {
+  document
+    .querySelector<HTMLFormElement>('#sound-bank-debug-form')
+    ?.addEventListener(
+      'submit',
+      (event) => {
+        event.preventDefault();
+        stopPreview();
+        options = readFormOptions();
+        audioStatus = 'Audio idle';
+        errorMessage = null;
+        renderPage();
+      },
+      pageLifecycleSignal ? { signal: pageLifecycleSignal } : undefined
+    );
+
+  document
+    .querySelector<HTMLButtonElement>('#sound-bank-debug-randomize')
+    ?.addEventListener(
+      'click',
+      () => {
+        stopPreview();
+        options = randomizeSoundBankDebugSeed(readFormOptions());
+        audioStatus = 'Audio idle';
+        errorMessage = null;
+        renderPage();
+      },
+      pageLifecycleSignal ? { signal: pageLifecycleSignal } : undefined
+    );
+
+  document
+    .querySelector<HTMLButtonElement>('#sound-bank-debug-reset')
+    ?.addEventListener(
+      'click',
+      () => {
+        stopPreview();
+        options = DEFAULT_SOUND_BANK_DEBUG_OPTIONS;
+        audioStatus = 'Audio idle';
+        errorMessage = null;
+        renderPage();
+      },
+      pageLifecycleSignal ? { signal: pageLifecycleSignal } : undefined
+    );
+
+  document
+    .querySelectorAll<HTMLButtonElement>('.music-debug-instrument-play')
+    .forEach((button) => {
+      button.addEventListener(
+        'click',
+        () => {
+          const role = button.dataset.role as
+            | keyof MusicDebugSnapshot['instrumentBank']['instruments']
+            | undefined;
+          if (!role) {
+            return;
+          }
+          const previewNote = resolveSoundBankDebugPreviewNoteRole(
+            { options, musicSnapshot },
+            role,
+            performance.now()
+          );
+          if (!previewNote) {
+            setAudioFeedback(
+              'Audio unavailable',
+              'No preview note could be resolved for this role.'
+            );
+            return;
+          }
+          stopPreview();
+          instrumentPreviewPlayer.play(previewNote);
+          setAudioFeedback(`Previewing ${role}`, null);
+        },
+        pageLifecycleSignal ? { signal: pageLifecycleSignal } : undefined
+      );
+    });
+}
+
+globalThis.addEventListener?.(
+  'pagehide',
+  () => {
+    stopPreview();
+  },
+  pageLifecycleSignal ? { signal: pageLifecycleSignal } : undefined
+);
+
+import.meta.hot?.dispose(() => {
+  pageLifecycleAbortController?.abort();
+  stopPreview();
+});
+
+renderPage();

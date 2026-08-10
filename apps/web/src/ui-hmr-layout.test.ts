@@ -20,7 +20,9 @@ describe('main layout and hmr wiring', () => {
     );
     expect(source).toContain('<div class="dock-row">');
     expect(source).not.toContain('<div class="controls controls-compact">');
-    expect(source).toContain('<main class="shell">\n    <section class="dashboard">');
+    expect(source).toContain(
+      '<main class="shell">\n    <section class="dashboard">'
+    );
     expect(source).not.toContain('id="content-pack-label"');
     expect(source).not.toContain('id="content-pack-form"');
     expect(source).not.toContain('id="status"');
@@ -71,6 +73,9 @@ describe('debug page hot-update persistence', () => {
       'apps/web/src/ambience-debug-page.ts'
     );
     const musicDebugSource = readSource('apps/web/src/music-debug-page.ts');
+    const soundBankDebugSource = readSource(
+      'apps/web/src/sound-bank-debug-page.ts'
+    );
     const soundDebugSource = readSource('apps/web/src/sound-debug-page.ts');
     const treeDebugSource = readSource('apps/web/src/tree-debug-page.ts');
 
@@ -90,6 +95,13 @@ describe('debug page hot-update persistence', () => {
 
     expect(musicDebugSource).toContain('const pageLifecycleAbortController =');
     expect(musicDebugSource).toContain(
+      'pageLifecycleAbortController?.abort();'
+    );
+
+    expect(soundBankDebugSource).toContain(
+      'const pageLifecycleAbortController ='
+    );
+    expect(soundBankDebugSource).toContain(
       'pageLifecycleAbortController?.abort();'
     );
 

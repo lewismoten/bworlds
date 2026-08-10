@@ -21,6 +21,9 @@ export async function bootstrap(): Promise<void> {
     case '/debug/sounds/':
       await import('./sound-debug-page.ts');
       return;
+    case '/debug/sound-bank/':
+      await import('./sound-bank-debug-page.ts');
+      return;
     case '/debug/trees/':
       await import('./tree-debug-page.ts');
       return;

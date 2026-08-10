@@ -15,6 +15,9 @@ export const DEBUG_ROUTE_ALIASES = [
   '/debug/sounds',
   '/debug/sounds/index.html',
   '/debug/sounds.html',
+  '/debug/sound-bank',
+  '/debug/sound-bank/index.html',
+  '/debug/sound-bank.html',
   '/debug/trees',
   '/debug/trees/index.html',
 ] as const;
