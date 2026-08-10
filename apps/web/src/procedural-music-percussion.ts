@@ -39,6 +39,7 @@ export type ProceduralPercussionGrooveRole =
 
 const PERCUSSION_PATTERN_SEED = registerHashLabel('music-percussion-pattern');
 const PERCUSSION_TIMBRE_SEED = registerHashLabel('music-percussion-timbre');
+const PROCEDURAL_PERCUSSION_MEASURE_CYCLE_LENGTH = 2;
 
 const FOREST_PULSE_PATTERNS: readonly ProceduralPercussionPattern[] = [
   [
@@ -442,12 +443,14 @@ function resolveProceduralPercussionPattern(options: {
     if (options.cadence !== 'neutral') {
       return TOWN_FILL_PATTERNS[options.cadence];
     }
+    const relatedMeasureIndex = resolvePercussionRelatedMeasureIndex(
+      options.stepIndex
+    );
     const index = Math.floor(
       hash2DWithSeed(
         PERCUSSION_PATTERN_SEED,
-        options.clusterX +
-          resolvePercussionMeasureIndex(options.stepIndex) * 13,
-        options.clusterY - resolvePercussionMeasureIndex(options.stepIndex) * 5
+        options.clusterX + relatedMeasureIndex * 13,
+        options.clusterY - relatedMeasureIndex * 5
       ) * TOWN_PULSE_PATTERNS.length
     );
     return TOWN_PULSE_PATTERNS[index] ?? TOWN_PULSE_PATTERNS[0]!;
@@ -460,8 +463,10 @@ function resolveProceduralPercussionPattern(options: {
   const index = Math.floor(
     hash2DWithSeed(
       PERCUSSION_PATTERN_SEED,
-      options.clusterX + resolvePercussionMeasureIndex(options.stepIndex) * 17,
-      options.clusterY - resolvePercussionMeasureIndex(options.stepIndex) * 3
+      options.clusterX +
+        resolvePercussionRelatedMeasureIndex(options.stepIndex) * 17,
+      options.clusterY -
+        resolvePercussionRelatedMeasureIndex(options.stepIndex) * 3
     ) * GENERIC_PULSE_PATTERNS.length
   );
   return GENERIC_PULSE_PATTERNS[index] ?? GENERIC_PULSE_PATTERNS[0]!;
@@ -495,6 +500,13 @@ function resolvePercussionFamilyForGrooveRole(options: {
 
 function resolvePercussionMeasureIndex(stepIndex: number): number {
   return Math.floor(stepIndex / 4);
+}
+
+function resolvePercussionRelatedMeasureIndex(stepIndex: number): number {
+  return (
+    resolvePercussionMeasureIndex(stepIndex) %
+    PROCEDURAL_PERCUSSION_MEASURE_CYCLE_LENGTH
+  );
 }
 
 function createHit(

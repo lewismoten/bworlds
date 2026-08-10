@@ -474,6 +474,122 @@ describe('procedural music percussion', () => {
     );
   });
 
+  it('keeps the same pulse family pattern across related measure slots', () => {
+    const townMeasureOne = createProceduralPercussionNotes({
+      themeId: 'town-square',
+      stepIndex: 4,
+      phraseStep: 4,
+      cadence: 'neutral',
+      startMs: 0,
+      stepDurationMs: 320,
+      rootMidiNote: 59,
+      baseInstrumentId: 'town-square:percussion:3:-2',
+      baseVolume: 0.02,
+      baseAttackMs: 12,
+      baseReleaseMs: 60,
+      baseDetuneCents: 4,
+      baseHarmonicGain: 0.12,
+      basePulseRate: 1,
+      brightness: 0.92,
+      clusterX: 3,
+      clusterY: -2,
+    });
+    const townMeasureThree = createProceduralPercussionNotes({
+      themeId: 'town-square',
+      stepIndex: 12,
+      phraseStep: 12,
+      cadence: 'neutral',
+      startMs: 0,
+      stepDurationMs: 320,
+      rootMidiNote: 59,
+      baseInstrumentId: 'town-square:percussion:3:-2',
+      baseVolume: 0.02,
+      baseAttackMs: 12,
+      baseReleaseMs: 60,
+      baseDetuneCents: 4,
+      baseHarmonicGain: 0.12,
+      basePulseRate: 1,
+      brightness: 0.92,
+      clusterX: 3,
+      clusterY: -2,
+    });
+    const genericMeasureOne = createProceduralPercussionNotes({
+      themeId: 'ridge-pass',
+      stepIndex: 8,
+      phraseStep: 8,
+      cadence: 'neutral',
+      startMs: 0,
+      stepDurationMs: 380,
+      rootMidiNote: 53,
+      baseInstrumentId: 'ridge-pass:percussion:3:-2',
+      baseVolume: 0.02,
+      baseAttackMs: 12,
+      baseReleaseMs: 60,
+      baseDetuneCents: 4,
+      baseHarmonicGain: 0.12,
+      basePulseRate: 1,
+      brightness: 0.92,
+      clusterX: 3,
+      clusterY: -2,
+    });
+    const genericMeasureThree = createProceduralPercussionNotes({
+      themeId: 'ridge-pass',
+      stepIndex: 16,
+      phraseStep: 16,
+      cadence: 'neutral',
+      startMs: 0,
+      stepDurationMs: 380,
+      rootMidiNote: 53,
+      baseInstrumentId: 'ridge-pass:percussion:3:-2',
+      baseVolume: 0.02,
+      baseAttackMs: 12,
+      baseReleaseMs: 60,
+      baseDetuneCents: 4,
+      baseHarmonicGain: 0.12,
+      basePulseRate: 1,
+      brightness: 0.92,
+      clusterX: 3,
+      clusterY: -2,
+    });
+
+    expect(
+      townMeasureOne.map((note) =>
+        resolvePercussionGrooveRoleFromInstrumentId(note.instrumentId)
+      )
+    ).toEqual(
+      townMeasureThree.map((note) =>
+        resolvePercussionGrooveRoleFromInstrumentId(note.instrumentId)
+      )
+    );
+    expect(
+      genericMeasureOne.map((note) =>
+        resolvePercussionGrooveRoleFromInstrumentId(note.instrumentId)
+      )
+    ).toEqual(
+      genericMeasureThree.map((note) =>
+        resolvePercussionGrooveRoleFromInstrumentId(note.instrumentId)
+      )
+    );
+    expect(
+      townMeasureOne.map((note) =>
+        resolvePercussionFamilyFromInstrumentId(note.instrumentId)
+      )
+    ).toEqual(
+      townMeasureThree.map((note) =>
+        resolvePercussionFamilyFromInstrumentId(note.instrumentId)
+      )
+    );
+    expect(
+      genericMeasureOne.map((note) =>
+        resolvePercussionFamilyFromInstrumentId(note.instrumentId)
+      )
+    ).toEqual(
+      genericMeasureThree.map((note) =>
+        resolvePercussionFamilyFromInstrumentId(note.instrumentId)
+      )
+    );
+  });
+
   it('adds denser town fills only on structural cadence steps', () => {
     const neutral = createProceduralPercussionNotes({
       themeId: 'town-square',
@@ -662,7 +778,7 @@ describe('procedural music percussion', () => {
       basePulseRate: 1,
       brightness: 0.92,
       clusterX: 3,
-      clusterY: -2,
+      clusterY: -1,
     });
     const changed = createProceduralPercussionNotes({
       themeId: 'ridge-pass',
@@ -682,7 +798,7 @@ describe('procedural music percussion', () => {
       basePulseRate: 1,
       brightness: 0.92,
       clusterX: 3,
-      clusterY: -2,
+      clusterY: -1,
     });
 
     expect(
