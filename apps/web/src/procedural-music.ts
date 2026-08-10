@@ -5,7 +5,6 @@ import {
   registerHashSeeds,
 } from '@bworlds/core/hash';
 import {
-  resolveProceduralChordAtStep,
   resolveProceduralCompositionStep,
   resolveProceduralHarmonyVoicing,
   resolveProceduralInstrumentSemitones,

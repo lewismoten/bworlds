@@ -3,7 +3,6 @@ import type { Kind, WorldEnvironmentLike } from '@bworlds/plugin-api';
 import {
   type AuroraBandLike,
   getMilkyWayBandSamples,
-  type OrreryBodyLike,
   type getDaylightCycleState,
 } from '@bworlds/core';
 import {
@@ -1664,126 +1663,6 @@ function syncPreviewOrbits(root: THREE.Group, cycle: DaylightCycleLike): void {
   });
 }
 
-function syncPreviewOrrery(root: THREE.Group, cycle: DaylightCycleLike): void {
-  root.clear();
-  const bodies = cycle.orreryBodies ?? [];
-  root.position.set(0, -7.8, 0);
-  root.rotation.x = -Math.PI * 0.42;
-  root.rotation.z = cycle.solarDeclination * 0.08;
-
-  const base = new THREE.Mesh(
-    new THREE.CircleGeometry(7.3, 40),
-    new THREE.MeshBasicMaterial({
-      color: '#081019',
-      transparent: true,
-      opacity: 0.86,
-    })
-  );
-  root.add(base);
-
-  const baseGlow = new THREE.Mesh(
-    new THREE.RingGeometry(6.7, 7.4, 40),
-    new THREE.MeshBasicMaterial({
-      color: '#3e607f',
-      transparent: true,
-      opacity: 0.22,
-      side: THREE.DoubleSide,
-    })
-  );
-  root.add(baseGlow);
-
-  const axis = new THREE.Line(
-    new THREE.BufferGeometry().setFromPoints([
-      new THREE.Vector3(0, -6.2, 0.08),
-      new THREE.Vector3(0, 6.2, 0.08),
-    ]),
-    new THREE.LineBasicMaterial({
-      color: '#5a7da6',
-      transparent: true,
-      opacity: 0.24,
-    })
-  );
-  root.add(axis);
-
-  bodies.forEach((body) => {
-    if (body.orbitRadius > 0) {
-      const orbitRing = new THREE.LineLoop(
-        new THREE.BufferGeometry().setFromPoints(
-          createOrreryRingPoints(
-            body.orbitRadius,
-            body.orbitTilt,
-            body.orbitHeight,
-            body.orbitEccentricity,
-            body.orbitRotation
-          )
-        ),
-        new THREE.LineBasicMaterial({
-          color: body.type === 'moon' ? '#708fbb' : '#4b617a',
-          transparent: true,
-          opacity: body.type === 'moon' ? 0.28 : 0.2,
-        })
-      );
-      root.add(orbitRing);
-    }
-
-    const angle = body.angle * Math.PI * 2 - Math.PI / 2;
-    const position = createOrreryPosition(body, angle);
-    const marker = new THREE.Mesh(
-      new THREE.SphereGeometry(body.size, 14, 14),
-      new THREE.MeshBasicMaterial(
-        compactThreeMaterialOptions({
-          color: resolveThreeColor(body.color, '#8fb7de'),
-          transparent: true,
-          opacity: body.type === 'sun' ? 1 : 0.92,
-        })
-      )
-    );
-    marker.position.copy(position);
-    root.add(marker);
-
-    if (body.type === 'sun') {
-      const glow = new THREE.Mesh(
-        new THREE.SphereGeometry(body.size * 1.9, 14, 14),
-        new THREE.MeshBasicMaterial(
-          compactThreeMaterialOptions({
-            color: resolveThreeColor(body.color, '#8fb7de'),
-            transparent: true,
-            opacity: 0.18,
-          })
-        )
-      );
-      glow.position.copy(position);
-      root.add(glow);
-    }
-
-    root.add(createOrreryLabel(body, position));
-
-    if (body.type === 'comet' && body.trailLength > 0) {
-      root.add(
-        new THREE.Line(
-          new THREE.BufferGeometry().setFromPoints([
-            position
-              .clone()
-              .add(
-                new THREE.Vector3(
-                  -body.trailLength * 0.16,
-                  -body.trailLength * 0.06,
-                  0
-                )
-              ),
-            position,
-          ]),
-          new THREE.LineBasicMaterial({
-            color: resolveThreeColor(body.color, '#8fb7de'),
-            transparent: true,
-            opacity: 0.34,
-          })
-        )
-      );
-    }
-  });
-}
-
 function createPreviewPoint(
   azimuth: number,
   phi: number,
@@ -1835,98 +1714,6 @@ function buildPreviewArc(
   );
 }
 
-function createOrreryRingPoints(
-  radius: number,
-  orbitTilt: number,
-  orbitHeight: number,
-  orbitEccentricity = 0,
-  orbitRotation = 0
-) {
-  const points: THREE.Vector3[] = [];
-  for (let index = 0; index <= 40; index += 1) {
-    const angle = (index / 40) * Math.PI * 2;
-    points.push(
-      createOrreryPosition(
-        {
-          orbitRadius: radius,
-          orbitTilt,
-          orbitHeight,
-          orbitEccentricity,
-          orbitRotation,
-        } as OrreryBodyLike,
-        angle
-      )
-    );
-  }
-  return points;
-}
-
-function createOrreryPosition(
-  body: Pick<
-    OrreryBodyLike,
-    | 'orbitRadius'
-    | 'orbitTilt'
-    | 'orbitHeight'
-    | 'orbitEccentricity'
-    | 'orbitRotation'
-  >,
-  angle: number
-) {
-  const minorRadius =
-    body.orbitRadius * (1 - clamp(body.orbitEccentricity, 0, 0.82));
-  const localX = Math.cos(angle) * body.orbitRadius;
-  const localY = Math.sin(angle) * minorRadius;
-  const rotation = body.orbitRotation ?? 0;
-  const rotatedX = localX * Math.cos(rotation) - localY * Math.sin(rotation);
-  const rotatedY = localX * Math.sin(rotation) + localY * Math.cos(rotation);
-  return new THREE.Vector3(
-    rotatedX,
-    rotatedY * Math.cos(body.orbitTilt) + body.orbitHeight,
-    rotatedY * Math.sin(body.orbitTilt) + 0.12 + body.orbitRadius * 0.01
-  );
-}
-
-function createOrreryLabel(
-  body: OrreryBodyLike,
-  position: THREE.Vector3
-): THREE.Object3D {
-  const canvas = document.createElement('canvas');
-  canvas.width = 160;
-  canvas.height = 42;
-  const context = canvas.getContext('2d');
-  if (!context) {
-    const fallback = new THREE.Group();
-    fallback.position.copy(position);
-    return fallback;
-  }
-  context.clearRect(0, 0, canvas.width, canvas.height);
-  context.fillStyle = 'rgba(8, 16, 25, 0.76)';
-  context.fillRect(0, 8, canvas.width, 26);
-  context.strokeStyle = 'rgba(132, 173, 214, 0.35)';
-  context.strokeRect(0.5, 8.5, canvas.width - 1, 25);
-  context.fillStyle = '#e6f2ff';
-  context.font = '600 18px Trebuchet MS';
-  context.textAlign = 'center';
-  context.textBaseline = 'middle';
-  context.fillText(formatOrreryLabel(body), canvas.width / 2, 21);
-
-  const texture = new THREE.CanvasTexture(canvas);
-  texture.colorSpace = THREE.SRGBColorSpace;
-  const sprite = new THREE.Sprite(
-    new THREE.SpriteMaterial(
-      compactThreeMaterialOptions({
-        map: texture,
-        transparent: true,
-        depthWrite: false,
-        opacity: 0.82,
-      })
-    )
-  );
-  sprite.position.copy(position.clone().add(new THREE.Vector3(0, 0.72, 0)));
-  sprite.scale.set(2.8, 0.72, 1);
-  return sprite;
-}
-
 export function getPreviewAuroraBandPath(
   band: Pick<
     AuroraBandLike,
@@ -1948,17 +1735,6 @@ export function getPreviewAuroraBandPath(
     );
     return { x: point.x, y: point.y, z: point.z };
   });
-}
-
-function formatOrreryLabel(body: OrreryBodyLike): string {
-  if (body.id === 'sun') {
-    return 'Sun';
-  }
-  if (body.id === 'moon') {
-    return 'Moon';
-  }
-  const [, name] = body.id.split(':');
-  return name ?? body.id;
 }
 
 function previewConstellationPoint(
