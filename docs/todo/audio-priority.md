@@ -297,7 +297,7 @@ added directly as semitones instead of moving through the selected scale.
 - [x] Compare scheduled notes with exported notes.
 - [x] Compare planned sections with MIDI markers.
 - [x] Compare planned layers with actual track activity.
-- [ ] Compare intended mode with exported pitch classes.
+- [x] Compare intended mode with exported pitch classes.
 - [ ] Compare intended motifs with exported note sequences.
 - [x] Compare cadence plans with final phrase notes.
 - [x] Block export when critical mismatches are found.

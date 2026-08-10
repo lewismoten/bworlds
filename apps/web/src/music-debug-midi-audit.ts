@@ -4,6 +4,11 @@ import {
   type MusicDebugMidiMetadataOptions,
 } from './music-debug-midi.ts';
 import type { MusicDebugMidiExportVariant } from './music-debug-midi-export-variant.ts';
+import {
+  createMusicDebugPitchClassCountMapByRole,
+  resolveMusicDebugPitchClassLabel,
+  type MusicDebugPitchClassLabel,
+} from './music-debug-pitch-class.ts';
 
 export type MusicDebugMidiAudit = {
   exportedBpm: number | null;
@@ -11,6 +16,10 @@ export type MusicDebugMidiAudit = {
   exportedMeasureCount: number;
   exportedNoteCountsByRole: Partial<
     Record<MusicDebugSnapshot['notes'][number]['role'], number>
+  >;
+  exportedPitchClassCountsByRole: Record<
+    MusicDebugSnapshot['notes'][number]['role'],
+    Partial<Record<MusicDebugPitchClassLabel, number>>
   >;
   markerLabels: string[];
   sectionsMatchPlannedMarkers: boolean;
@@ -42,6 +51,7 @@ export function inspectMusicDebugMidiBytes(
     | 'song'
     | 'trackStats'
     | 'roleCounts'
+    | 'midiExportValidation'
     | 'harmonyChordDetections'
     | 'bassProgressionDetections'
     | 'cadenceValidation'
@@ -75,9 +85,15 @@ export function inspectMusicDebugMidiBytes(
   const includedRoles = new Set(
     options.includedRoles ?? ['bass', 'harmony', 'lead', 'percussion']
   );
-  const exportedNoteCountsByRole = readExportedNoteCountsByRole(
+  const exportedTrackSummaries = readExportedTrackSummaries(
     chunks.tracks,
     includedRoles
+  );
+  const exportedNoteCountsByRole = resolveExportedNoteCountsByRole(
+    exportedTrackSummaries
+  );
+  const exportedPitchClassCountsByRole = resolveExportedPitchClassCountsByRole(
+    exportedTrackSummaries
   );
   let sectionsMatchPlannedMarkers = true;
 
@@ -108,6 +124,17 @@ export function inspectMusicDebugMidiBytes(
     if (exportedNoteCount !== scheduledNoteCount) {
       mismatchMessages.push(
         `MIDI ${role} note count ${exportedNoteCount} does not match scheduled ${scheduledNoteCount}.`
+      );
+    }
+    if (
+      role !== 'percussion' &&
+      !pitchClassCountsMatch(
+        exportedPitchClassCountsByRole[role],
+        snapshot.midiExportValidation.pitchClassCountsByRole[role]
+      )
+    ) {
+      mismatchMessages.push(
+        `MIDI ${role} pitch classes do not match the scheduled mode profile.`
       );
     }
   }
@@ -184,6 +211,7 @@ export function inspectMusicDebugMidiBytes(
     exportedDurationMs,
     exportedMeasureCount,
     exportedNoteCountsByRole,
+    exportedPitchClassCountsByRole,
     markerLabels,
     sectionsMatchPlannedMarkers,
     mismatchMessages,
@@ -252,12 +280,17 @@ function parseMidiChunks(bytes: Uint8Array): {
   };
 }
 
-function readExportedNoteCountsByRole(
+type MidiTrackSummary = {
+  noteOnCount: number;
+  pitchClassCounts: Partial<Record<MusicDebugPitchClassLabel, number>>;
+};
+
+function readExportedTrackSummaries(
   tracks: readonly Uint8Array[],
   includedRoles: ReadonlySet<MusicDebugSnapshot['notes'][number]['role']>
-): Partial<Record<MusicDebugSnapshot['notes'][number]['role'], number>> {
-  const counts: Partial<
-    Record<MusicDebugSnapshot['notes'][number]['role'], number>
+): Partial<Record<MusicDebugSnapshot['notes'][number]['role'], MidiTrackSummary>> {
+  const summaries: Partial<
+    Record<MusicDebugSnapshot['notes'][number]['role'], MidiTrackSummary>
   > = {};
   let trackIndex = 1;
 
@@ -265,19 +298,44 @@ function readExportedNoteCountsByRole(
     if (!includedRoles.has(role)) {
       continue;
     }
-    counts[role] = countTrackNoteOnEvents(
-      tracks[trackIndex] ?? new Uint8Array()
-    );
+    summaries[role] = summarizeTrackMidiNotes(tracks[trackIndex] ?? new Uint8Array());
     trackIndex += 1;
   }
 
+  return summaries;
+}
+
+function resolveExportedNoteCountsByRole(
+  summaries: Partial<Record<MusicDebugSnapshot['notes'][number]['role'], MidiTrackSummary>>
+): Partial<Record<MusicDebugSnapshot['notes'][number]['role'], number>> {
+  const counts: Partial<
+    Record<MusicDebugSnapshot['notes'][number]['role'], number>
+  > = {};
+  for (const role of MIDI_AUDIT_ROLE_ORDER) {
+    counts[role] = summaries[role]?.noteOnCount ?? 0;
+  }
   return counts;
 }
 
-function countTrackNoteOnEvents(track: Uint8Array): number {
+function resolveExportedPitchClassCountsByRole(
+  summaries: Partial<Record<MusicDebugSnapshot['notes'][number]['role'], MidiTrackSummary>>
+): Record<
+  MusicDebugSnapshot['notes'][number]['role'],
+  Partial<Record<MusicDebugPitchClassLabel, number>>
+> {
+  const counts = createMusicDebugPitchClassCountMapByRole();
+  for (const role of MIDI_AUDIT_ROLE_ORDER) {
+    counts[role] = summaries[role]?.pitchClassCounts ?? {};
+  }
+  return counts;
+}
+
+function summarizeTrackMidiNotes(track: Uint8Array): MidiTrackSummary {
   let offset = 0;
   let runningStatus: number | null = null;
   let noteOnCount = 0;
+  const pitchClassCounts: Partial<Record<MusicDebugPitchClassLabel, number>> =
+    {};
 
   while (offset < track.length) {
     const delta = readVariableLengthQuantity(track, offset);
@@ -328,12 +386,33 @@ function countTrackNoteOnEvents(track: Uint8Array): number {
       secondData > 0
     ) {
       noteOnCount += 1;
+      const pitchClassLabel = resolveMusicDebugPitchClassLabel(firstData);
+      pitchClassCounts[pitchClassLabel] =
+        (pitchClassCounts[pitchClassLabel] ?? 0) + 1;
     }
 
     offset += dataLength;
   }
 
-  return noteOnCount;
+  return {
+    noteOnCount,
+    pitchClassCounts,
+  };
+}
+
+function pitchClassCountsMatch(
+  left: Partial<Record<MusicDebugPitchClassLabel, number>>,
+  right: Partial<Record<MusicDebugPitchClassLabel, number>>
+): boolean {
+  for (const label of Object.keys({
+    ...left,
+    ...right,
+  }) as MusicDebugPitchClassLabel[]) {
+    if ((left[label] ?? 0) !== (right[label] ?? 0)) {
+      return false;
+    }
+  }
+  return true;
 }
 
 function readTrackMetaTexts(track: Uint8Array, metaType: number): string[] {

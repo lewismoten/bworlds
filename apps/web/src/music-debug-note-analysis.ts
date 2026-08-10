@@ -1,5 +1,12 @@
 import type { ProceduralMusicNote } from './procedural-music.ts';
 import { isProceduralSemitoneInMode } from './procedural-music-scale.ts';
+import {
+  createMusicDebugPitchClassCountMapByRole,
+  MUSIC_DEBUG_PITCH_CLASS_LABELS,
+  normalizeMusicDebugPitchClassSemitone,
+  resolveMusicDebugPitchClassLabel,
+  type MusicDebugPitchClassLabel,
+} from './music-debug-pitch-class.ts';
 
 type ProceduralMusicRole = ProceduralMusicNote['role'];
 
@@ -52,24 +59,6 @@ export type MusicDebugPitchValidation = {
   messages: string[];
 };
 
-export type MusicDebugPitchClassLabel =
-  'C' | 'C#' | 'D' | 'D#' | 'E' | 'F' | 'F#' | 'G' | 'G#' | 'A' | 'A#' | 'B';
-
-const MUSIC_DEBUG_PITCH_CLASS_LABELS: readonly MusicDebugPitchClassLabel[] = [
-  'C',
-  'C#',
-  'D',
-  'D#',
-  'E',
-  'F',
-  'F#',
-  'G',
-  'G#',
-  'A',
-  'A#',
-  'B',
-];
-
 export function analyzeMusicDebugPitches(options: {
   notes: readonly ProceduralMusicNote[];
   rootHz: number;
@@ -104,7 +93,7 @@ export function analyzeMusicDebugPitches(options: {
   const outOfModeNotesByRole = createRoleCountMap();
   const blackKeyNotesByRole = createRoleCountMap();
   const accidentalReasonCounts = createAccidentalReasonCountMap();
-  const pitchClassCountsByRole = createPitchClassCountMapByRole();
+  const pitchClassCountsByRole = createMusicDebugPitchClassCountMapByRole();
   let accidentalNoteCount = 0;
   let blackKeyNoteCount = 0;
   let unexplainedAccidentalCount = 0;
@@ -115,7 +104,9 @@ export function analyzeMusicDebugPitches(options: {
       continue;
     }
     if (diagnostic.midiNote !== null) {
-      const pitchClassLabel = resolvePitchClassLabel(diagnostic.midiNote);
+      const pitchClassLabel = resolveMusicDebugPitchClassLabel(
+        diagnostic.midiNote
+      );
       const currentPitchClassCount =
         pitchClassCountsByRole[diagnostic.role][pitchClassLabel] ?? 0;
       pitchClassCountsByRole[diagnostic.role][pitchClassLabel] =
@@ -409,18 +400,6 @@ function isBlackKeyMidiNote(midiNote: number): boolean {
   return [1, 3, 6, 8, 10].includes(((midiNote % 12) + 12) % 12);
 }
 
-function createPitchClassCountMapByRole(): Record<
-  ProceduralMusicRole,
-  Partial<Record<MusicDebugPitchClassLabel, number>>
-> {
-  return {
-    lead: {},
-    harmony: {},
-    bass: {},
-    percussion: {},
-  };
-}
-
 function resolveDominantPitchClassesByRole(
   pitchClassCountsByRole: Record<
     ProceduralMusicRole,
@@ -456,13 +435,6 @@ function resolveDominantPitchClasses(
     .map((entry) => entry.label);
 }
 
-function resolvePitchClassLabel(midiNote: number): MusicDebugPitchClassLabel {
-  return (
-    MUSIC_DEBUG_PITCH_CLASS_LABELS[((midiNote % 12) + 12) % 12] ??
-    MUSIC_DEBUG_PITCH_CLASS_LABELS[0]
-  );
-}
-
 function normalizePitchClass(semitone: number): number {
-  return ((Math.round(semitone) % 12) + 12) % 12;
+  return normalizeMusicDebugPitchClassSemitone(semitone);
 }

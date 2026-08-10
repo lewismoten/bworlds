@@ -74,6 +74,16 @@ describe('music debug midi audit', () => {
     expect(audit.isConsistent).toBe(true);
     expect(audit.mismatchMessages).toEqual([]);
     expect(audit.exportedNoteCountsByRole).toEqual(snapshot.roleCounts);
+    expect(audit.exportedPitchClassCountsByRole.bass).toEqual(
+      snapshot.midiExportValidation.pitchClassCountsByRole.bass
+    );
+    expect(audit.exportedPitchClassCountsByRole.harmony).toEqual(
+      snapshot.midiExportValidation.pitchClassCountsByRole.harmony
+    );
+    expect(audit.exportedPitchClassCountsByRole.lead).toEqual(
+      snapshot.midiExportValidation.pitchClassCountsByRole.lead
+    );
+    expect(Object.keys(audit.exportedPitchClassCountsByRole.percussion)).not.toHaveLength(0);
   });
 
   it('flags mismatched snapshot metadata against the exported midi facts', () => {
@@ -294,6 +304,39 @@ describe('music debug midi audit', () => {
     expect(
       audit.mismatchMessages.some((message) =>
         message.includes('lead note count')
+      )
+    ).toBe(true);
+  });
+
+  it('flags pitch-class mismatches when exported notes drift from the mode profile', () => {
+    const snapshot = createMusicDebugSnapshot({
+      tileKind: 'forest',
+      contextType: 'overworld',
+      clusterX: 4,
+      clusterY: -1,
+    });
+    const file = createMusicDebugMidiFileUnchecked(snapshot, {
+      createdAt: new Date('2026-08-09T00:00:00.000Z'),
+    });
+
+    const audit = inspectMusicDebugMidiBytes(file.bytes, {
+      ...snapshot,
+      midiExportValidation: {
+        ...snapshot.midiExportValidation,
+        pitchClassCountsByRole: {
+          ...snapshot.midiExportValidation.pitchClassCountsByRole,
+          lead: {
+            ...snapshot.midiExportValidation.pitchClassCountsByRole.lead,
+            G: (snapshot.midiExportValidation.pitchClassCountsByRole.lead.G ?? 0) + 1,
+          },
+        },
+      },
+    });
+
+    expect(audit.isConsistent).toBe(false);
+    expect(
+      audit.mismatchMessages.some((message) =>
+        message.includes('lead pitch classes')
       )
     ).toBe(true);
   });
