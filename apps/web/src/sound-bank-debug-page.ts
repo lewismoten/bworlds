@@ -15,11 +15,11 @@ import {
   type SoundBankDebugSnapshot,
 } from './sound-bank-debug.ts';
 import { createMusicDebugInstrumentPreviewPlayer } from './music-debug-instrument-preview.ts';
+import type { MusicDebugInstrumentPreviewTarget } from './music-debug-instrument-panel.ts';
 import type {
   MusicDebugContextType,
   MusicDebugTileKind,
 } from './music-debug.ts';
-import type { ProceduralInstrumentRole } from './procedural-music.ts';
 
 const root = document.querySelector<HTMLElement>('#app');
 const pageLifecycleAbortController =
@@ -53,13 +53,6 @@ const SOUND_BANK_CONTEXT_TYPES: readonly MusicDebugContextType[] = [
   'cave',
   'dungeon',
 ];
-const SOUND_BANK_PREVIEW_ROLES: readonly ProceduralInstrumentRole[] = [
-  'lead',
-  'harmony',
-  'bass',
-  'percussion',
-];
-
 function stopPreview(): void {
   instrumentPreviewPlayer.stop();
 }
@@ -221,10 +214,13 @@ function readGeneralMidiBrowserState(): SoundBankDebugGeneralMidiBrowserState {
 
 function isSoundBankPreviewRole(
   value: string | undefined
-): value is ProceduralInstrumentRole {
+): value is MusicDebugInstrumentPreviewTarget {
   return (
-    typeof value === 'string' &&
-    SOUND_BANK_PREVIEW_ROLES.includes(value as ProceduralInstrumentRole)
+    value === 'lead' ||
+    value === 'harmony' ||
+    value === 'bass' ||
+    value === 'percussion' ||
+    (value?.startsWith('percussion:') === true && value.length > 11)
   );
 }
 
@@ -404,8 +400,8 @@ function bindPage(snapshot: SoundBankDebugSnapshot): void {
       button.addEventListener(
         'click',
         () => {
-          const role = button.dataset.role;
-          if (!isSoundBankPreviewRole(role)) {
+          const previewTarget = button.dataset.previewId;
+          if (!isSoundBankPreviewRole(previewTarget)) {
             return;
           }
           if (instrumentPreviewPlayer.getAudioState() === 'unavailable') {
@@ -417,7 +413,7 @@ function bindPage(snapshot: SoundBankDebugSnapshot): void {
           }
           const previewNote = resolveSoundBankDebugPreviewNoteRole(
             snapshot,
-            role,
+            previewTarget,
             performance.now()
           );
           if (!previewNote) {
@@ -429,7 +425,10 @@ function bindPage(snapshot: SoundBankDebugSnapshot): void {
           }
           stopPreview();
           instrumentPreviewPlayer.play(previewNote);
-          setAudioFeedback(`Previewing ${role}`, null);
+          setAudioFeedback(
+            `Previewing ${previewTarget.replace('percussion:', 'percussion / ')}`,
+            null
+          );
         },
         pageLifecycleSignal ? { signal: pageLifecycleSignal } : undefined
       );

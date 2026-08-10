@@ -2,6 +2,7 @@ import { randomizeDebugCoordinatePair } from './debug-seed.ts';
 import {
   buildMusicDebugInstrumentPanelMarkup,
   resolveMusicDebugInstrumentPreviewNote,
+  type MusicDebugInstrumentPreviewTarget,
 } from './music-debug-instrument-panel.ts';
 import {
   createMusicDebugSnapshot,
@@ -635,7 +636,7 @@ export function buildSoundBankDebugMarkup(
 
 export function resolveSoundBankDebugPreviewNoteRole(
   snapshot: SoundBankDebugSnapshot,
-  role: keyof MusicDebugSnapshot['instrumentBank']['instruments'],
+  role: MusicDebugInstrumentPreviewTarget,
   nowMs: number
 ) {
   return resolveMusicDebugInstrumentPreviewNote(

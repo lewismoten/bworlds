@@ -1,14 +1,19 @@
 import type { MusicDebugSnapshot } from './music-debug.ts';
+import { createMusicDebugPercussionVoiceCounts } from './music-debug-percussion-report.ts';
 import { createMusicDebugInstrumentPreviewPlaybackNote } from './music-debug-playback-profile.ts';
 import type {
   ProceduralMusicNote,
 } from './procedural-music.ts';
 import type { ProceduralInstrument } from './procedural-music-sound-bank.ts';
 
+export type MusicDebugInstrumentPreviewTarget =
+  | keyof MusicDebugSnapshot['instrumentBank']['instruments']
+  | `percussion:${string}`;
+
 export function buildMusicDebugInstrumentPanelMarkup(
   snapshot: MusicDebugSnapshot
 ): string {
-  const cards = (
+  const melodicCards = (
     Object.entries(snapshot.instrumentBank.instruments) as Array<
       [
         keyof MusicDebugSnapshot['instrumentBank']['instruments'],
@@ -16,28 +21,50 @@ export function buildMusicDebugInstrumentPanelMarkup(
       ]
     >
   )
+    .filter(([role]) => role !== 'percussion')
     .map(([role, instrument]) =>
       buildMusicDebugInstrumentCardMarkup({
-        role,
-        instrument,
+        trackLabel: role,
+        title: formatInstrumentFamilyLabel(instrument.family),
+        previewTarget: role,
+        audioSource: instrument,
       })
     )
     .join('');
+  const percussionCards = buildMusicDebugPercussionCardsMarkup(snapshot);
 
   return `
     <section class="music-debug-instrument-panel" aria-label="Instrument previews">
-      ${cards}
+      ${melodicCards}${percussionCards}
     </section>
   `;
 }
 
 export function resolveMusicDebugInstrumentPreviewNote(
   snapshot: MusicDebugSnapshot,
-  role: keyof MusicDebugSnapshot['instrumentBank']['instruments'],
+  target: MusicDebugInstrumentPreviewTarget,
   nowMs: number
 ): ProceduralMusicNote | null {
+  if (target.startsWith('percussion:')) {
+    const voiceId = target.slice('percussion:'.length);
+    const source =
+      snapshot.notes.find(
+        (note) =>
+          note.role === 'percussion' &&
+          note.instrumentId.includes(`perc-${voiceId}:`)
+      ) ?? null;
+    if (!source) {
+      return null;
+    }
+    return createMusicDebugInstrumentPreviewPlaybackNote(
+      source,
+      source.instrumentId,
+      nowMs
+    );
+  }
+
   const source =
-    snapshot.notes.find((note) => note.role === role) ??
+    snapshot.notes.find((note) => note.role === target) ??
     snapshot.notes[0] ??
     null;
   if (!source) {
@@ -46,45 +73,53 @@ export function resolveMusicDebugInstrumentPreviewNote(
 
   return createMusicDebugInstrumentPreviewPlaybackNote(
     source,
-    snapshot.instrumentBank.instruments[role].id,
+    snapshot.instrumentBank.instruments[target].id,
     nowMs
   );
 }
 
 function buildMusicDebugInstrumentCardMarkup(options: {
-  role: keyof MusicDebugSnapshot['instrumentBank']['instruments'];
-  instrument: ProceduralInstrument;
+  trackLabel: string;
+  title: string;
+  previewTarget: MusicDebugInstrumentPreviewTarget;
+  audioSource: Pick<
+    ProceduralInstrument | ProceduralMusicNote,
+    'waveform' | 'timbre' | 'attackMs' | 'harmonicGain'
+  >;
 }): string {
   return `
     <article class="music-debug-instrument-card">
       <div class="music-debug-instrument-card-head">
         <div>
-          <p class="music-debug-instrument-track">${options.role}</p>
-          <h3>${formatInstrumentFamilyLabel(options.instrument.family)}</h3>
+          <p class="music-debug-instrument-track">${options.trackLabel}</p>
+          <h3>${options.title}</h3>
         </div>
         <button
           type="button"
           class="music-debug-instrument-play"
-          data-role="${options.role}"
+          data-preview-id="${options.previewTarget}"
         >
-          Play ${options.role}
+          Play ${options.trackLabel}
         </button>
       </div>
       <div class="music-debug-instrument-waveform">
-        ${buildMusicDebugInstrumentWaveformMarkup(options.instrument)}
+        ${buildMusicDebugInstrumentWaveformMarkup(options.audioSource)}
       </div>
       <dl class="music-debug-instrument-stats">
-        <div><dt>Carrier</dt><dd>${options.instrument.waveform}</dd></div>
-        <div><dt>Harmonic</dt><dd>${options.instrument.timbre.harmonicWaveform}</dd></div>
-        <div><dt>Filter</dt><dd>${options.instrument.timbre.filterType} ${options.instrument.timbre.filterCutoffHz.toFixed(0)}Hz</dd></div>
-        <div><dt>Attack</dt><dd>${Math.round(options.instrument.attackMs)}ms</dd></div>
+        <div><dt>Carrier</dt><dd>${options.audioSource.waveform}</dd></div>
+        <div><dt>Harmonic</dt><dd>${options.audioSource.timbre.harmonicWaveform}</dd></div>
+        <div><dt>Filter</dt><dd>${options.audioSource.timbre.filterType} ${options.audioSource.timbre.filterCutoffHz.toFixed(0)}Hz</dd></div>
+        <div><dt>Attack</dt><dd>${Math.round(options.audioSource.attackMs)}ms</dd></div>
       </dl>
     </article>
   `;
 }
 
 function buildMusicDebugInstrumentWaveformMarkup(
-  instrument: ProceduralInstrument
+  instrument: Pick<
+    ProceduralInstrument | ProceduralMusicNote,
+    'waveform' | 'timbre' | 'harmonicGain'
+  >
 ): string {
   const width = 180;
   const height = 56;
@@ -140,6 +175,39 @@ function formatInstrumentFamilyLabel(
   family: ProceduralInstrument['family']
 ): string {
   return family
+    .split('-')
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ');
+}
+
+function buildMusicDebugPercussionCardsMarkup(
+  snapshot: MusicDebugSnapshot
+): string {
+  return createMusicDebugPercussionVoiceCounts(snapshot.notes)
+    .map((voice) => {
+      if (!voice.voiceId) {
+        return '';
+      }
+      const representativeNote = snapshot.notes.find(
+        (note) =>
+          note.role === 'percussion' &&
+          note.instrumentId.includes(`perc-${voice.voiceId}:`)
+      );
+      if (!representativeNote) {
+        return '';
+      }
+      return buildMusicDebugInstrumentCardMarkup({
+        trackLabel: `percussion / ${voice.voiceName}`,
+        title: formatPercussionVoiceTitle(voice.voiceName),
+        previewTarget: `percussion:${voice.voiceId}`,
+        audioSource: representativeNote,
+      });
+    })
+    .join('');
+}
+
+function formatPercussionVoiceTitle(voiceName: string): string {
+  return voiceName
     .split('-')
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(' ');

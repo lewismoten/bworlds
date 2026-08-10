@@ -73,7 +73,8 @@ describe('sound bank debug page', () => {
     expect(markup).toContain('Play lead');
     expect(markup).toContain('Play harmony');
     expect(markup).toContain('Play bass');
-    expect(markup).toContain('Play percussion');
+    expect(markup).toContain('Play percussion / ');
+    expect(markup).toContain('data-preview-id="percussion:');
     expect(normalizedMarkup).toContain('GM family: Synth Lead');
     expect(normalizedMarkup).toContain('GM name: Lead 1 (square)');
     expect(normalizedMarkup).toContain('GM program: 80');

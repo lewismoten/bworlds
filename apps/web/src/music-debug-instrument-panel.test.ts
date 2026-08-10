@@ -18,10 +18,11 @@ describe('music debug instrument panel', () => {
     expect(markup).toContain('music-debug-instrument-card');
     expect(markup).toContain('music-debug-instrument-waveform');
     expect(markup).toContain('music-debug-instrument-play');
-    expect(markup).toContain('data-role="lead"');
-    expect(markup).toContain('data-role="harmony"');
-    expect(markup).toContain('data-role="bass"');
-    expect(markup).toContain('data-role="percussion"');
+    expect(markup).toContain('data-preview-id="lead"');
+    expect(markup).toContain('data-preview-id="harmony"');
+    expect(markup).toContain('data-preview-id="bass"');
+    expect(markup).toContain('data-preview-id="percussion:');
+    expect(markup).toContain('percussion / ');
     expect(markup).toContain('<svg viewBox=');
   });
 
@@ -48,5 +49,31 @@ describe('music debug instrument panel', () => {
     expect(note?.durationMs).toBeLessThanOrEqual(420);
     expect(note?.attackMs).toBeLessThanOrEqual(14);
     expect(note?.releaseMs).toBeLessThanOrEqual(140);
+  });
+
+  it('derives a solo-preview note for a specific percussion voice', () => {
+    const snapshot = createMusicDebugSnapshot({
+      tileKind: 'forest',
+      contextType: 'overworld',
+    });
+    const percussionNote = snapshot.notes.find(
+      (note) =>
+        note.role === 'percussion' && note.instrumentId.includes(':perc-')
+    )!;
+    const voiceId = percussionNote.instrumentId.match(/:perc-([a-z-]+-\d+):/)?.[1]!;
+
+    const note = resolveMusicDebugInstrumentPreviewNote(
+      snapshot,
+      `percussion:${voiceId}`,
+      7_000
+    );
+
+    expect(note).toEqual(
+      expect.objectContaining({
+        role: 'percussion',
+        instrumentId: percussionNote.instrumentId,
+        startMs: 7_004,
+      })
+    );
   });
 });

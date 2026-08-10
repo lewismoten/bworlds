@@ -14,9 +14,9 @@
 - [x] Regenerate only the failed phrase before rebuilding the song.
 - [x] Report the exact measure and note for each failure.
 - [x] Visualization of tracks should show only the bar instead of a dot, and the bar is shorter, and at the level at which the notes are being played (where the dot is now). bars are semi-transparent, in that if multiple notes are playing, they can overlap and become more opaque.
-- [ ] Visualization of track bars feel blurry. the bars may be too tall. lets get rid of the transparency, and just make the colors more vibrant when bars overlap
-- [ ] Show individual instruments as different levels on percussion track.
-- [ ] Show/Play all instrument/samples in the percussion track
+- [x] Visualization of track bars feel blurry. the bars may be too tall. lets get rid of the transparency, and just make the colors more vibrant when bars overlap
+- [x] Show individual instruments as different levels on percussion track.
+- [x] Show/Play all instrument/samples in the percussion track
 - [ ] Show all percussion wave forms with other instruments rather than just one, along with a play button like the others.
 - [ ] Move instrument wave form cards to appear just under the MIDI track visualizer.
 

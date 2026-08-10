@@ -22,7 +22,10 @@ import { downloadMusicDebugMidiFile } from './music-debug-midi.ts';
 import { normalizeMusicDebugMidiExportVariant } from './music-debug-midi-export-variant.ts';
 import { downloadMusicDebugExportBundle } from './music-debug-export-bundle.ts';
 import { createMusicDebugInstrumentPreviewPlayer } from './music-debug-instrument-preview.ts';
-import { resolveMusicDebugInstrumentPreviewNote } from './music-debug-instrument-panel.ts';
+import {
+  resolveMusicDebugInstrumentPreviewNote,
+  type MusicDebugInstrumentPreviewTarget,
+} from './music-debug-instrument-panel.ts';
 import { resolveMusicDebugLivePlaybackIntent } from './music-debug-live-playback.ts';
 import { resolveMusicDebugPlaybackIntent } from './music-debug-playback-intent.ts';
 import {
@@ -543,19 +546,16 @@ summary?.addEventListener('click', (event) => {
   if (!(target instanceof HTMLButtonElement)) {
     return;
   }
-  const role = target.dataset.role;
-  if (
-    role !== 'lead' &&
-    role !== 'harmony' &&
-    role !== 'bass' &&
-    role !== 'percussion'
-  ) {
+  const previewTarget = normalizeInstrumentPreviewTarget(
+    target.dataset.previewId
+  );
+  if (!previewTarget) {
     return;
   }
   const snapshot = pageState.refreshNow();
   const note = resolveMusicDebugInstrumentPreviewNote(
     snapshot,
-    role,
+    previewTarget,
     performance.now()
   );
   if (!note) {
@@ -622,6 +622,23 @@ globalThis.addEventListener?.(
   },
   pageLifecycleSignal ? { signal: pageLifecycleSignal } : undefined
 );
+
+function normalizeInstrumentPreviewTarget(
+  value: string | undefined
+): MusicDebugInstrumentPreviewTarget | null {
+  if (
+    value === 'lead' ||
+    value === 'harmony' ||
+    value === 'bass' ||
+    value === 'percussion'
+  ) {
+    return value;
+  }
+  if (value?.startsWith('percussion:') === true && value.length > 11) {
+    return value as MusicDebugInstrumentPreviewTarget;
+  }
+  return null;
+}
 
 import.meta.hot?.on('vite:beforeUpdate', () => {
   persistPageState(playbackController.isPlaying());
