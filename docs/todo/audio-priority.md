@@ -1,52 +1,202 @@
 # Highest Priority
 
-- [x] When changing input parameters, apply to the song immediately, and let it continue playing
-- [x] Panel to input parameters and click buttons is clipped on the right.
-- [x] Fix natural minor offsets to 0, 2, 3, 5, 7, 8, 10.
-- [x] Reject mode definitions with duplicate scale degrees.
-- [x] Reject seven-note modes with fewer than seven unique offsets.
-- [x] Make lead interval weights affect actual note selection.
-- [x] Penalize repeated minor-sixth jumps in the lead.
-- [x] Limit ordinary lead motion to three semitones.
-- [x] Allow larger leaps only once per phrase.
-- [x] Require stepwise recovery after every large lead leap.
-- [x] Generate an eight-measure melody before full arrangement.
-- [x] State the lead motif clearly in the first A phrase.
-- [x] Require at least two exact motif matches in Section A.
-- [x] Require motif variation rather than unrelated notes in A'.
-- [x] Regenerate any section with zero expected motif matches.
-- [x] Give the lead two to six note attacks per measure.
-- [x] Prevent repeated one-note-per-measure lead patterns.
-- [x] Build reusable lead rhythm templates by phrase.
-- [x] Add rests at phrase boundaries rather than every measure.
-- [x] End each eight-measure phrase on a planned cadence.
-- [x] Resolve the final cadence to scale degree 1.
-- [x] Build one chord timeline before generating any tracks.
-- [x] Assign each chord an exact measure range.
-- [x] Make bass, harmony, and lead read the same chord timeline.
-- [x] Verify detected chords follow the planned progression order.
-- [x] Fix unresolved chromatic notes before MIDI export.
-- [x] Regenerate a phrase containing unresolved chromatic notes.
-- [x] Lower harmony occupancy when the lead is active.
-- [x] Make each section satisfy its configured layer-emphasis rules. (ie - Make A' more lead-forward than Section A.)
-- [x] Validate actual layer occupancy against the section blueprint.occupancy. (ie - Make B harmony lighter than Section A.)
-- [x] Make A' lead prominence exceed Section A.
-- [x] Make B harmony prominence lower than Section A.
-- [x] Measure prominence using density, velocity, and register.
-- [x] Account for competing layers when scoring prominence.
-- [x] Add a soft repeating rhythmic pulse for forest music.
-- [x] Use percussion patterns instead of isolated cymbal events.
-- [x] Compare intended intervals with actual interval counts.
-- [x] Report exact and varied motif matches separately.
-- [x] Score phrase repetition and phrase-level similarity.
-- [x] Reject songs whose configured motif never appears.
-- [x] Add a melody-only MIDI export for rapid evaluation.
-- [x] Add a harmony-and-bass-only MIDI export for review.
-- [x] Test eight measures before generating all measures.
-- [x] Percussion should be made of multiple percussion instruments (drum set), preferably noise related
-- [x] Let me download the MIDI, instrument WAV, and parameter report JSON, as a zip file.
-- [x] Sections should be embedded in MIDI meta/control flow to help indicate which notes belong to what section (Intro, Section A, section A', Section B, Variation, Retrun, Outro, etc.)
-- [x] Add a [Sound Bank Debug Page](./sound-bank-debug.md)
+# Improve Procedural Music Quality
+
+## Critical Validation
+
+- [ ] Fail songs whose final cadence does not reach the tonic.
+- [ ] Fail songs whose lead contour misses its required ending.
+- [ ] Fail songs whose climax occurs in the wrong phrase.
+- [ ] Fail songs whose bass roots drift from the chord plan.
+- [ ] Fail songs whose harmony drifts from the chord plan.
+- [ ] Treat cadence drift as an export failure.
+- [ ] Do not mark a MIDI audit valid when warnings are critical.
+- [ ] Regenerate only the failed phrase before rebuilding the song.
+- [ ] Report the exact measure and note for each failure.
+
+## Instrument Patch Foundation
+
+- [ ] Stop deriving every instrument from one generic patch shape.
+- [ ] Define a distinct recipe for each instrument family.
+- [ ] Give flute patches a breath-noise layer.
+- [ ] Give strings a bowed attack and sustained body.
+- [ ] Give bass patches a clear fundamental and short upper harmonics.
+- [ ] Give struck instruments a separate attack transient.
+- [ ] Change timbre across low, middle, and high registers.
+- [ ] Change timbre based on note velocity.
+- [ ] Limit random patch values to family-safe ranges.
+- [ ] Add one known-good patch for each core song role.
+- [ ] Compare generated patches against known-good patches.
+- [ ] Reject patches that sound nearly identical across roles.
+
+## Percussion Kit
+
+- [ ] Create a separate recipe for every used drum note.
+- [ ] Map MIDI drum notes to named percussion voices.
+- [ ] Give kicks a low pitch sweep and short noise click.
+- [ ] Give snares a body tone and filtered noise burst.
+- [ ] Give toms distinct pitches based on drum size.
+- [ ] Give hi-hats short metallic noise envelopes.
+- [ ] Give cymbals longer metallic noise envelopes.
+- [ ] Give shakers repeated short filtered noise bursts.
+- [ ] Give tambourines noise plus small metallic transients.
+- [ ] Give bongos different pitches and decay lengths.
+- [ ] Show the drum name for every percussion event.
+- [ ] Show drum-note counts in the song report.
+- [ ] Reject drum tracks using only one percussion voice.
+- [ ] Require at least three drum roles in a full groove.
+- [ ] Export a solo WAV for each drum voice.
+
+## Percussion Composition
+
+- [ ] Assign kick, accent, pulse, and texture roles.
+- [ ] Build grooves from roles instead of random drum notes.
+- [ ] Keep a stable pulse across related measures.
+- [ ] Place low drums on structurally strong beats.
+- [ ] Place light percussion between strong beats.
+- [ ] Use cymbals mainly at section boundaries.
+- [ ] Use fills only before meaningful transitions.
+- [ ] Vary groove patterns once per phrase.
+- [ ] Keep ambient percussion quieter than pitched tracks.
+- [ ] Reduce percussion density during calm sections.
+- [ ] Make drum velocity follow the section energy curve.
+- [ ] Prevent identical drum hits from repeating mechanically.
+
+## Melody Shape
+
+- [ ] Build each melody from two or more related phrases.
+- [ ] Give every phrase a clear opening gesture.
+- [ ] Give every phrase a clear closing gesture.
+- [ ] Make motif notes more prominent than filler notes.
+- [ ] Repeat the motif before introducing a variation.
+- [ ] Change only one motif feature in each variation.
+- [ ] Keep filler notes connected to nearby motif notes.
+- [ ] Place phrase peaks near planned contour checkpoints.
+- [ ] Reserve the song's highest note for the main climax.
+- [ ] Descend gradually after the main climax.
+- [ ] End answer phrases on stable chord tones.
+- [ ] End the final phrase on scale degree one.
+
+## Harmony and Bass
+
+- [ ] Build harmony directly from the shared chord timeline.
+- [ ] Build bass directly from the shared chord timeline.
+- [ ] Verify each chord at every planned chord boundary.
+- [ ] Keep chord changes aligned with strong beats.
+- [ ] Use inversions only when they improve voice movement.
+- [ ] Keep harmony below the lead's main register.
+- [ ] Reduce harmony activity during important lead phrases.
+- [ ] Let bass sustain through more of each chord.
+- [ ] Make bass rhythm repeat across related phrases.
+- [ ] Add passing bass notes only between planned roots.
+- [ ] Make cadences coordinate bass, harmony, and lead.
+- [ ] Reject cadences that conflict with active harmony.
+
+## Rhythm and Phrasing
+
+- [ ] Create a small library of phrase rhythm templates.
+- [ ] Assign one rhythm identity to each song section.
+- [ ] Repeat rhythms before adding variation.
+- [ ] Place rests mainly at phrase boundaries.
+- [ ] Avoid constant note activity in every layer.
+- [ ] Avoid every layer resting at the same time.
+- [ ] Give the bass a stable recurring pulse.
+- [ ] Let lead notes connect into short musical sentences.
+- [ ] Use longer notes near phrase endings.
+- [ ] Use shorter notes when building toward a climax.
+- [ ] Make section changes audible through rhythm changes.
+- [ ] Quantize first, then apply controlled humanization.
+
+## Humanization
+
+- [ ] Add small timing offsets by instrument role.
+- [ ] Add small velocity changes within each phrase.
+- [ ] Keep one humanization profile per virtual performer.
+- [ ] Stagger harmony notes by a few milliseconds.
+- [ ] Let bass play slightly ahead or behind the beat.
+- [ ] Let percussion timing vary within strict limits.
+- [ ] Avoid randomizing every note independently.
+- [ ] Keep repeated phrases similar enough to recognize.
+- [ ] Change articulation at musical phrase boundaries.
+- [ ] Add subtle vibrato only to suitable sustained notes.
+
+## Mixing
+
+- [ ] Set a loudness target for each song role.
+- [ ] Measure each track before applying the final mix.
+- [ ] Keep bass centered and below the harmony register.
+- [ ] Keep lead clear of the harmony's strongest frequencies.
+- [ ] Reduce harmony gain while important motifs play.
+- [ ] Pan percussion voices instead of the whole kit.
+- [ ] Use one shared room reverb for the ensemble.
+- [ ] Give each instrument a controlled reverb send.
+- [ ] Prevent long releases from blurring chord changes.
+- [ ] Test the mix in mono.
+- [ ] Test the mix through laptop speakers.
+- [ ] Export dry and processed versions for comparison.
+
+## Debugging Workflow
+
+- [ ] Add solo controls for every drum voice.
+- [ ] Add mute controls for every drum voice.
+- [ ] Add a drum-kit audition pattern.
+- [ ] Add a melody-only playback option.
+- [ ] Add a bass-and-harmony playback option.
+- [ ] Add a dry full-song playback option.
+- [ ] Show planned and detected chords by measure.
+- [ ] Show planned and actual contour on one graph.
+- [ ] Highlight cadence notes that conflict with harmony.
+- [ ] Highlight unexpected percussion substitutions.
+- [ ] Save a report for each rejected song.
+- [ ] Keep several known-good seeds for regression tests.
+
+* [x] When changing input parameters, apply to the song immediately, and let it continue playing
+* [x] Panel to input parameters and click buttons is clipped on the right.
+* [x] Fix natural minor offsets to 0, 2, 3, 5, 7, 8, 10.
+* [x] Reject mode definitions with duplicate scale degrees.
+* [x] Reject seven-note modes with fewer than seven unique offsets.
+* [x] Make lead interval weights affect actual note selection.
+* [x] Penalize repeated minor-sixth jumps in the lead.
+* [x] Limit ordinary lead motion to three semitones.
+* [x] Allow larger leaps only once per phrase.
+* [x] Require stepwise recovery after every large lead leap.
+* [x] Generate an eight-measure melody before full arrangement.
+* [x] State the lead motif clearly in the first A phrase.
+* [x] Require at least two exact motif matches in Section A.
+* [x] Require motif variation rather than unrelated notes in A'.
+* [x] Regenerate any section with zero expected motif matches.
+* [x] Give the lead two to six note attacks per measure.
+* [x] Prevent repeated one-note-per-measure lead patterns.
+* [x] Build reusable lead rhythm templates by phrase.
+* [x] Add rests at phrase boundaries rather than every measure.
+* [x] End each eight-measure phrase on a planned cadence.
+* [x] Resolve the final cadence to scale degree 1.
+* [x] Build one chord timeline before generating any tracks.
+* [x] Assign each chord an exact measure range.
+* [x] Make bass, harmony, and lead read the same chord timeline.
+* [x] Verify detected chords follow the planned progression order.
+* [x] Fix unresolved chromatic notes before MIDI export.
+* [x] Regenerate a phrase containing unresolved chromatic notes.
+* [x] Lower harmony occupancy when the lead is active.
+* [x] Make each section satisfy its configured layer-emphasis rules. (ie - Make A' more lead-forward than Section A.)
+* [x] Validate actual layer occupancy against the section blueprint.occupancy. (ie - Make B harmony lighter than Section A.)
+* [x] Make A' lead prominence exceed Section A.
+* [x] Make B harmony prominence lower than Section A.
+* [x] Measure prominence using density, velocity, and register.
+* [x] Account for competing layers when scoring prominence.
+* [x] Add a soft repeating rhythmic pulse for forest music.
+* [x] Use percussion patterns instead of isolated cymbal events.
+* [x] Compare intended intervals with actual interval counts.
+* [x] Report exact and varied motif matches separately.
+* [x] Score phrase repetition and phrase-level similarity.
+* [x] Reject songs whose configured motif never appears.
+* [x] Add a melody-only MIDI export for rapid evaluation.
+* [x] Add a harmony-and-bass-only MIDI export for review.
+* [x] Test eight measures before generating all measures.
+* [x] Percussion should be made of multiple percussion instruments (drum set), preferably noise related
+* [x] Let me download the MIDI, instrument WAV, and parameter report JSON, as a zip file.
+* [x] Sections should be embedded in MIDI meta/control flow to help indicate which notes belong to what section (Intro, Section A, section A', Section B, Variation, Retrun, Outro, etc.)
+* [x] Add a [Sound Bank Debug Page](./sound-bank-debug.md)
 
 # Medium Priority
 
