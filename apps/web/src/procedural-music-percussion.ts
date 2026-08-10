@@ -21,6 +21,7 @@ import type { MusicSpaceProfile } from './procedural-music-space.ts';
 import type { MusicRegionThemeId } from './procedural-music-vocabulary.ts';
 
 type ProceduralPercussionHit = {
+  grooveRole: ProceduralPercussionGrooveRole;
   family: PercussionFamily;
   semitones: number;
   offsetRatio: number;
@@ -34,40 +35,42 @@ type ProceduralPercussionHit = {
 };
 
 type ProceduralPercussionPattern = readonly ProceduralPercussionHit[];
+export type ProceduralPercussionGrooveRole =
+  'kick' | 'accent' | 'pulse' | 'texture';
 
 const PERCUSSION_PATTERN_SEED = registerHashLabel('music-percussion-pattern');
 const PERCUSSION_TIMBRE_SEED = registerHashLabel('music-percussion-timbre');
 
 const FOREST_PULSE_PATTERNS: readonly ProceduralPercussionPattern[] = [
   [
-    createHit('kick', -12, 0, 0.18, 0.54, 0.84, {
+    createHit('kick', 'kick', -12, 0, 0.18, 0.54, 0.84, {
       attackMultiplier: 0.76,
       releaseMultiplier: 1.28,
       harmonicGainMultiplier: 0.84,
     }),
-    createHit('shaker', 0, 0.18, 0.14, 0.4, 1.16),
-    createHit('hand-percussion', -3, 0.42, 0.18, 0.5, 0.96),
-    createHit('shaker', 0, 0.7, 0.14, 0.42, 1.2),
+    createHit('pulse', 'shaker', 0, 0.18, 0.14, 0.4, 1.16),
+    createHit('texture', 'hand-percussion', -3, 0.42, 0.18, 0.5, 0.96),
+    createHit('pulse', 'shaker', 0, 0.7, 0.14, 0.42, 1.2),
   ],
   [
-    createHit('kick', -12, 0, 0.16, 0.52, 0.82, {
+    createHit('kick', 'kick', -12, 0, 0.16, 0.52, 0.82, {
       attackMultiplier: 0.78,
       releaseMultiplier: 1.24,
       harmonicGainMultiplier: 0.86,
     }),
-    createHit('shaker', 0, 0.24, 0.12, 0.34, 1.2),
-    createHit('shaker', 0, 0.52, 0.12, 0.3, 1.26),
-    createHit('hand-percussion', -3, 0.74, 0.16, 0.46, 0.94),
+    createHit('pulse', 'shaker', 0, 0.24, 0.12, 0.34, 1.2),
+    createHit('pulse', 'shaker', 0, 0.52, 0.12, 0.3, 1.26),
+    createHit('texture', 'hand-percussion', -3, 0.74, 0.16, 0.46, 0.94),
   ],
   [
-    createHit('kick', -12, 0, 0.16, 0.5, 0.84, {
+    createHit('kick', 'kick', -12, 0, 0.16, 0.5, 0.84, {
       attackMultiplier: 0.8,
       releaseMultiplier: 1.22,
       harmonicGainMultiplier: 0.88,
     }),
-    createHit('hand-percussion', -5, 0.3, 0.18, 0.46, 0.92),
-    createHit('shaker', 0, 0.56, 0.12, 0.34, 1.24),
-    createHit('shaker', 0, 0.8, 0.12, 0.3, 1.18),
+    createHit('texture', 'hand-percussion', -5, 0.3, 0.18, 0.46, 0.92),
+    createHit('pulse', 'shaker', 0, 0.56, 0.12, 0.34, 1.24),
+    createHit('pulse', 'shaker', 0, 0.8, 0.12, 0.3, 1.18),
   ],
 ] as const;
 
@@ -76,27 +79,27 @@ const FOREST_CADENCE_PATTERNS: Record<
   ProceduralPercussionPattern
 > = {
   neutral: [
-    createHit('shaker', 0, 0, 0.18, 0.46, 1.18),
-    createHit('hand-percussion', -3, 0.38, 0.18, 0.54, 0.96),
-    createHit('shaker', 0, 0.72, 0.14, 0.4, 1.24),
+    createHit('pulse', 'shaker', 0, 0, 0.18, 0.46, 1.18),
+    createHit('texture', 'hand-percussion', -3, 0.38, 0.18, 0.54, 0.96),
+    createHit('pulse', 'shaker', 0, 0.72, 0.14, 0.4, 1.24),
   ],
   question: [
-    createHit('shaker', 0, 0, 0.16, 0.4, 1.22),
-    createHit('hand-percussion', -3, 0.34, 0.18, 0.48, 0.94),
-    createHit('cymbals', 7, 0.74, 0.18, 0.24, 1.05, {
+    createHit('pulse', 'shaker', 0, 0, 0.16, 0.4, 1.22),
+    createHit('texture', 'hand-percussion', -3, 0.34, 0.18, 0.48, 0.94),
+    createHit('accent', 'cymbals', 7, 0.74, 0.18, 0.24, 1.05, {
       releaseMultiplier: 1.5,
       brightnessMultiplier: 1.18,
     }),
   ],
   answer: [
-    createHit('kick', -12, 0, 0.2, 0.58, 0.86, {
+    createHit('kick', 'kick', -12, 0, 0.2, 0.58, 0.86, {
       attackMultiplier: 0.72,
       releaseMultiplier: 1.35,
       harmonicGainMultiplier: 0.82,
     }),
-    createHit('hand-percussion', -5, 0.32, 0.18, 0.5, 0.94),
-    createHit('shaker', 0, 0.64, 0.14, 0.4, 1.18),
-    createHit('cymbals', 7, 0.82, 0.16, 0.2, 1.02, {
+    createHit('texture', 'hand-percussion', -5, 0.32, 0.18, 0.5, 0.94),
+    createHit('pulse', 'shaker', 0, 0.64, 0.14, 0.4, 1.18),
+    createHit('accent', 'cymbals', 7, 0.82, 0.16, 0.2, 1.02, {
       releaseMultiplier: 1.6,
       brightnessMultiplier: 1.24,
     }),
@@ -105,13 +108,13 @@ const FOREST_CADENCE_PATTERNS: Record<
 
 const TOWN_PULSE_PATTERNS: readonly ProceduralPercussionPattern[] = [
   [
-    createHit('kick', -12, 0, 0.34, 0.58, 0.82),
-    createHit('snare', -1, 0.5, 0.18, 0.5, 1.02),
+    createHit('kick', 'kick', -12, 0, 0.34, 0.58, 0.82),
+    createHit('accent', 'snare', -1, 0.5, 0.18, 0.5, 1.02),
   ],
   [
-    createHit('kick', -12, 0, 0.34, 0.56, 0.84),
-    createHit('shaker', 0, 0.26, 0.12, 0.42, 1.1),
-    createHit('snare', -1, 0.5, 0.18, 0.48, 1.04),
+    createHit('kick', 'kick', -12, 0, 0.34, 0.56, 0.84),
+    createHit('pulse', 'shaker', 0, 0.26, 0.12, 0.42, 1.1),
+    createHit('accent', 'snare', -1, 0.5, 0.18, 0.48, 1.04),
   ],
 ] as const;
 
@@ -121,22 +124,22 @@ const TOWN_FILL_PATTERNS: Record<
 > = {
   neutral: TOWN_PULSE_PATTERNS[0]!,
   question: [
-    createHit('kick', -12, 0, 0.28, 0.56, 0.84),
-    createHit('shaker', 0, 0.22, 0.12, 0.36, 1.14),
-    createHit('snare', -1, 0.5, 0.18, 0.54, 1.08),
-    createHit('hand-percussion', -3, 0.76, 0.14, 0.34, 1.02, {
+    createHit('kick', 'kick', -12, 0, 0.28, 0.56, 0.84),
+    createHit('pulse', 'shaker', 0, 0.22, 0.12, 0.36, 1.14),
+    createHit('accent', 'snare', -1, 0.5, 0.18, 0.54, 1.08),
+    createHit('texture', 'hand-percussion', -3, 0.76, 0.14, 0.34, 1.02, {
       releaseMultiplier: 1.12,
     }),
   ],
   answer: [
-    createHit('kick', -12, 0, 0.3, 0.6, 0.86, {
+    createHit('kick', 'kick', -12, 0, 0.3, 0.6, 0.86, {
       attackMultiplier: 0.88,
       releaseMultiplier: 1.16,
     }),
-    createHit('shaker', 0, 0.24, 0.12, 0.34, 1.12),
-    createHit('snare', -1, 0.5, 0.18, 0.58, 1.1),
-    createHit('hand-percussion', -5, 0.72, 0.16, 0.38, 1.04),
-    createHit('cymbals', 7, 0.86, 0.16, 0.2, 1.06, {
+    createHit('pulse', 'shaker', 0, 0.24, 0.12, 0.34, 1.12),
+    createHit('accent', 'snare', -1, 0.5, 0.18, 0.58, 1.1),
+    createHit('texture', 'hand-percussion', -5, 0.72, 0.16, 0.38, 1.04),
+    createHit('accent', 'cymbals', 7, 0.86, 0.16, 0.2, 1.06, {
       releaseMultiplier: 1.4,
       brightnessMultiplier: 1.16,
     }),
@@ -145,14 +148,14 @@ const TOWN_FILL_PATTERNS: Record<
 
 const GENERIC_PULSE_PATTERNS: readonly ProceduralPercussionPattern[] = [
   [
-    createHit('kick', -12, 0, 0.2, 0.58, 0.86),
-    createHit('hand-percussion', -2, 0.34, 0.16, 0.42, 1),
-    createHit('shaker', 0, 0.68, 0.12, 0.3, 1.14),
+    createHit('kick', 'kick', -12, 0, 0.2, 0.58, 0.86),
+    createHit('texture', 'hand-percussion', -2, 0.34, 0.16, 0.42, 1),
+    createHit('pulse', 'shaker', 0, 0.68, 0.12, 0.3, 1.14),
   ],
   [
-    createHit('hand-percussion', -3, 0, 0.18, 0.48, 0.96),
-    createHit('shaker', 0, 0.3, 0.12, 0.3, 1.16),
-    createHit('snare', -1, 0.62, 0.16, 0.46, 1.04),
+    createHit('texture', 'hand-percussion', -3, 0, 0.18, 0.48, 0.96),
+    createHit('pulse', 'shaker', 0, 0.3, 0.12, 0.3, 1.16),
+    createHit('accent', 'snare', -1, 0.62, 0.16, 0.46, 1.04),
   ],
 ] as const;
 
@@ -162,17 +165,17 @@ const GENERIC_FILL_PATTERNS: Record<
 > = {
   neutral: GENERIC_PULSE_PATTERNS[0]!,
   question: [
-    createHit('kick', -12, 0, 0.22, 0.58, 0.88),
-    createHit('hand-percussion', -2, 0.28, 0.14, 0.4, 1.02),
-    createHit('snare', -1, 0.54, 0.16, 0.48, 1.06),
-    createHit('shaker', 0, 0.8, 0.12, 0.3, 1.18),
+    createHit('kick', 'kick', -12, 0, 0.22, 0.58, 0.88),
+    createHit('texture', 'hand-percussion', -2, 0.28, 0.14, 0.4, 1.02),
+    createHit('accent', 'snare', -1, 0.54, 0.16, 0.48, 1.06),
+    createHit('pulse', 'shaker', 0, 0.8, 0.12, 0.3, 1.18),
   ],
   answer: [
-    createHit('kick', -12, 0, 0.24, 0.62, 0.9),
-    createHit('hand-percussion', -3, 0.3, 0.16, 0.42, 1.04),
-    createHit('snare', -1, 0.56, 0.16, 0.5, 1.08),
-    createHit('shaker', 0, 0.76, 0.12, 0.32, 1.18),
-    createHit('cymbals', 7, 0.88, 0.14, 0.18, 1.08, {
+    createHit('kick', 'kick', -12, 0, 0.24, 0.62, 0.9),
+    createHit('texture', 'hand-percussion', -3, 0.3, 0.16, 0.42, 1.04),
+    createHit('accent', 'snare', -1, 0.56, 0.16, 0.5, 1.08),
+    createHit('pulse', 'shaker', 0, 0.76, 0.12, 0.32, 1.18),
+    createHit('accent', 'cymbals', 7, 0.88, 0.14, 0.18, 1.08, {
       releaseMultiplier: 1.42,
       brightnessMultiplier: 1.18,
     }),
@@ -290,6 +293,8 @@ export function createProceduralPercussionNotes(options: {
       emitter: options.emitter,
       listener: options.listener,
     });
+    notes[notes.length - 1]!.instrumentId =
+      `${notes[notes.length - 1]!.instrumentId}:groove-${hit.grooveRole}`;
   }
 
   return notes;
@@ -321,7 +326,7 @@ function alignPercussionHitsToChordChange(
   }
 
   return [
-    createHit('kick', -12, 0, 0.18, 0.68, 0.92, {
+    createHit('kick', 'kick', -12, 0, 0.18, 0.68, 0.92, {
       attackMultiplier: 0.8,
       releaseMultiplier: 1.16,
       harmonicGainMultiplier: 0.9,
@@ -387,6 +392,13 @@ export function resolvePercussionVoiceNameFromInstrumentId(
 ): string | null {
   const voiceId = resolvePercussionVoiceIdFromInstrumentId(instrumentId);
   return voiceId ? resolvePercussionVoiceById(voiceId).name : null;
+}
+
+export function resolvePercussionGrooveRoleFromInstrumentId(
+  instrumentId: string
+): ProceduralPercussionGrooveRole | null {
+  const match = instrumentId.match(/:groove-(kick|accent|pulse|texture)$/);
+  return (match?.[1] as ProceduralPercussionGrooveRole | undefined) ?? null;
 }
 
 function resolvePercussionDurationScale(themeId: MusicRegionThemeId): number {
@@ -455,6 +467,7 @@ function resolvePercussionMeasureIndex(stepIndex: number): number {
 }
 
 function createHit(
+  grooveRole: ProceduralPercussionGrooveRole,
   family: PercussionFamily,
   semitones: number,
   offsetRatio: number,
@@ -474,6 +487,7 @@ function createHit(
   > = {}
 ): ProceduralPercussionHit {
   return {
+    grooveRole,
     family,
     semitones,
     offsetRatio,

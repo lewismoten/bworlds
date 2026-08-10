@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   createProceduralPercussionNotes,
   resolvePercussionFamilyFromInstrumentId,
+  resolvePercussionGrooveRoleFromInstrumentId,
   resolvePercussionVoiceIdFromInstrumentId,
   resolvePercussionVoiceNameFromInstrumentId,
 } from './procedural-music-percussion.ts';
@@ -136,6 +137,66 @@ describe('procedural music percussion', () => {
         'deep-forest:percussion:3:-2:perc-shaker-69:1'
       )
     ).toBe('cabasa');
+    expect(
+      resolvePercussionGrooveRoleFromInstrumentId(
+        'deep-forest:percussion:3:-2:perc-shaker-69:1:groove-pulse'
+      )
+    ).toBe('pulse');
+  });
+
+  it('assigns explicit kick, accent, pulse, and texture groove roles to percussion hits', () => {
+    const forest = createProceduralPercussionNotes({
+      themeId: 'deep-forest',
+      stepIndex: 3,
+      phraseStep: 3,
+      cadence: 'neutral',
+      startMs: 1_000,
+      stepDurationMs: 440,
+      rootMidiNote: 53,
+      baseInstrumentId: 'deep-forest:percussion:3:-2',
+      baseVolume: 0.02,
+      baseAttackMs: 12,
+      baseReleaseMs: 60,
+      baseDetuneCents: 4,
+      baseHarmonicGain: 0.12,
+      basePulseRate: 1,
+      brightness: 0.92,
+      clusterX: 3,
+      clusterY: -2,
+    });
+    const townAnswer = createProceduralPercussionNotes({
+      themeId: 'town-square',
+      stepIndex: 7,
+      phraseStep: 7,
+      cadence: 'answer',
+      startMs: 0,
+      stepDurationMs: 320,
+      rootMidiNote: 59,
+      baseInstrumentId: 'town-square:percussion:3:-2',
+      baseVolume: 0.02,
+      baseAttackMs: 12,
+      baseReleaseMs: 60,
+      baseDetuneCents: 4,
+      baseHarmonicGain: 0.12,
+      basePulseRate: 1,
+      brightness: 0.92,
+      clusterX: 3,
+      clusterY: -2,
+    });
+
+    const forestRoles = new Set(
+      forest.map((note) =>
+        resolvePercussionGrooveRoleFromInstrumentId(note.instrumentId)
+      )
+    );
+    const townRoles = new Set(
+      townAnswer.map((note) =>
+        resolvePercussionGrooveRoleFromInstrumentId(note.instrumentId)
+      )
+    );
+
+    expect(forestRoles).toEqual(new Set(['kick', 'pulse', 'texture']));
+    expect(townRoles).toEqual(new Set(['kick', 'accent', 'pulse', 'texture']));
   });
 
   it('defines separate voice recipes for every used drum note in each percussion family', () => {
