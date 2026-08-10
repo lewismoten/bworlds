@@ -4,9 +4,10 @@ import { createRuntimePlugin } from '@bworlds/plugin-api';
 import type {
   Kind,
   PointOfInterestType,
+  ResolveOverworldAnchorsContext,
+  ResolveOverworldTileContext,
   RuntimePlugin,
   Seed,
-  TileLike,
   WorldStateLike,
 } from '@bworlds/plugin-api';
 
@@ -38,10 +39,10 @@ const BUILDABLE_POI_KINDS = new Set<Kind>([
 
 export function createPlayerPoiRuntimePlugin(): RuntimePlugin {
   return createRuntimePlugin('runtime-player-poi', {
-    resolveOverworldTile({ x, y, state }) {
+    resolveOverworldTile({ x, y, state }: ResolveOverworldTileContext) {
       return getPlayerPlacedPoi(state, x, y);
     },
-    resolveOverworldAnchors({ state }) {
+    resolveOverworldAnchors({ state }: ResolveOverworldAnchorsContext) {
       const pois = listPlayerPlacedPois(state);
       if (pois.length === 0) {
         return null;

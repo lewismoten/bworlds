@@ -40,6 +40,7 @@ type CoreWorldActionLike = {
 
 type CoreWorldMapLike = {
   getTile(x: number, y: number, state?: CoreWorldStateLike): CoreWorldTileLike;
+  canWalk?(x: number, y: number, state?: CoreWorldStateLike): boolean;
   getAction?(x: number, y: number, state?: CoreWorldStateLike): unknown;
   getExit?(x?: number, y?: number): unknown;
 };

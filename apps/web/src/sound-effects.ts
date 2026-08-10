@@ -336,6 +336,7 @@ const SOUND_EFFECT_SEEDS = registerHashSeeds([
   'volcanic-ambience',
   'mountain-ambience',
   'cave-ambience',
+  'magical-ambience',
   'settlement-ambience',
   'ruins-ambience',
   'advancement',
