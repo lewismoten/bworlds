@@ -1490,3 +1490,13 @@ function formatMusicDebugDegreeMotif(motif: readonly number[]): string {
 
   return motif.map((degree) => degree + 1).join(' - ');
 }
+import {
+  formatMusicDebugPercussionEvents,
+  formatMusicDebugPercussionVoiceCounts,
+} from './music-debug-percussion-report.ts';
+    <div class="music-debug-role-counts">
+      <span>Drum Counts ${formatMusicDebugPercussionVoiceCounts(snapshot.notes)}</span>
+    </div>
+    <div class="music-debug-role-counts">
+      <span>Percussion Events ${formatMusicDebugPercussionEvents(snapshot.notes)}</span>
+    </div>

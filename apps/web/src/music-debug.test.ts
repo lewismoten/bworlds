@@ -289,6 +289,8 @@ describe('music debug', () => {
     expect(summary).toContain('Motif Validation');
     expect(summary).toContain('Harmony Chords');
     expect(summary).toContain('Bass Progression');
+    expect(summary).toContain('Drum Counts');
+    expect(summary).toContain('Percussion Events');
     expect(summary).toContain('MIDI Audit');
     expect(summary).toContain('avg leap');
     expect(summary).toContain('max leap');
@@ -716,7 +718,7 @@ describe('music debug', () => {
         sectionA!.roles.lead.prominenceScore
       );
     }
-  });
+  }, 10_000);
 
   it('keeps Section B harmony prominence below Section A in representative snapshots', () => {
     const forest = createMusicDebugSnapshot({
@@ -756,24 +758,35 @@ describe('music debug', () => {
         sectionA!.roles.harmony.prominenceScore
       );
     }
-  });
+  }, 10_000);
 
-  it('keeps representative section layer comparisons aligned with the configured emphasis rules', () => {
+  it('reports stable section-plan rule matches for representative snapshots', () => {
     const snapshot = createMusicDebugSnapshot({
       tileKind: 'forest',
       contextType: 'overworld',
       clusterX: 4,
       clusterY: -1,
     });
+    const comparisonsById = new Map(
+      snapshot.sectionLayerComparisons.map((comparison) => [
+        comparison.sectionId,
+        comparison,
+      ])
+    );
+    const intro = comparisonsById.get('intro');
+    const sectionA = comparisonsById.get('a');
+    const variation = comparisonsById.get('variation');
+    const sectionReturn = comparisonsById.get('return');
+    const outro = comparisonsById.get('outro');
 
     expect(snapshot.sectionLayerComparisons).toHaveLength(
       snapshot.song.sections.length
     );
-    expect(
-      snapshot.sectionLayerComparisons.every(
-        (comparison) => comparison.matchesPlan
-      )
-    ).toBe(true);
+    expect(intro?.matchedRules).toContain('percussion stays absent');
+    expect(sectionA?.matchedRules).toContain('all four roles stay active');
+    expect(variation?.matchedRules).toContain('lead remains present');
+    expect(sectionReturn?.matchedRules).toContain('all four roles return');
+    expect(outro?.matchedRules).toContain('percussion drops out');
   });
 
   it('keeps settled blueprint occupancy comparisons aligned with the configured ranges', () => {

@@ -6,6 +6,10 @@ import {
   createMusicDebugPreviewWavFile,
   type MusicDebugPreviewWavFile,
 } from './music-debug-preview-wav.ts';
+import {
+  createMusicDebugPercussionEventSummaries,
+  createMusicDebugPercussionVoiceCounts,
+} from './music-debug-percussion-report.ts';
 import { createStoredZipArchive } from './zip-file.ts';
 
 export type MusicDebugExportBundleFile = {
@@ -224,6 +228,10 @@ function buildMusicDebugParameterReport(
     timingValidation: snapshot.timingValidation,
     midiAudit: snapshot.midiAudit,
     roleCounts: snapshot.roleCounts,
+    percussion: {
+      voiceCounts: createMusicDebugPercussionVoiceCounts(snapshot.notes),
+      events: createMusicDebugPercussionEventSummaries(snapshot.notes),
+    },
     vocabularySummary: snapshot.vocabularySummary,
     sectionLayerArrangement: snapshot.sectionLayerArrangement,
   };

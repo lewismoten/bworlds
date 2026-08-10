@@ -157,3 +157,7 @@ function readStoredZipArchiveEntries(archive: Uint8Array) {
 
   return entries;
 }
+        percussion: expect.objectContaining({
+          voiceCounts: expect.any(Array),
+          events: expect.any(Array),
+        }),

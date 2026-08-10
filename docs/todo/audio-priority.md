@@ -42,8 +42,8 @@
 - [x] Give shakers repeated short filtered noise bursts.
 - [x] Give tambourines noise plus small metallic transients.
 - [x] Give bongos different pitches and decay lengths.
-- [ ] Show the drum name for every percussion event.
-- [ ] Show drum-note counts in the song report.
+- [x] Show the drum name for every percussion event.
+- [x] Show drum-note counts in the song report.
 - [ ] Reject drum tracks using only one percussion voice.
 - [ ] Require at least three drum roles in a full groove.
 - [ ] Export a solo WAV for each drum voice.
