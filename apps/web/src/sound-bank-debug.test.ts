@@ -683,7 +683,9 @@ describe('sound bank debug page', () => {
       },
     }).replace(/\s+/g, ' ');
 
-    expect(markup).toMatch(/High Floor Tom[\s\S]*Missing patch[\s\S]*>Unavailable</);
+    expect(markup).toMatch(
+      /High Floor Tom[\s\S]*Missing patch[\s\S]*>Unavailable</
+    );
   });
 
   it('builds a percussion range audition from the visible drum-family filter', () => {
@@ -702,9 +704,7 @@ describe('sound bank debug page', () => {
       expect.stringContaining(':perc-kick-35:'),
       expect.stringContaining(':perc-kick-41:'),
     ]);
-    expect(notes.map((note) => note.startMs)).toEqual([
-      12_004, 12_184, 12_364,
-    ]);
+    expect(notes.map((note) => note.startMs)).toEqual([12_004, 12_184, 12_364]);
   });
 
   it('builds a standard percussion pattern audition from visible drum voices', () => {

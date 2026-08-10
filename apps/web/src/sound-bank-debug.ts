@@ -251,9 +251,8 @@ export function buildSoundBankDebugMarkup(
       `
     )
     .join('');
-  const percussionBrowserSections = createSoundBankDebugPercussionBrowserSections(
-    percussionBrowserState
-  );
+  const percussionBrowserSections =
+    createSoundBankDebugPercussionBrowserSections(percussionBrowserState);
   const selectedInstrumentDetailsMarkup = buildSelectedInstrumentDetailsMarkup(
     snapshot,
     snapshot.instrumentRegistry.entries,
@@ -1090,11 +1089,11 @@ function buildSelectedInstrumentDetailsMarkup(
   const selectedEntry =
     selectedProgramNumber === null
       ? null
-      : registryEntries.find(
+      : (registryEntries.find(
           (entry) =>
             entry.isValid &&
             entry.generalMidiProgramNumber === selectedProgramNumber
-        ) ?? null;
+        ) ?? null);
 
   if (!selectedEntry) {
     return `
@@ -1104,7 +1103,10 @@ function buildSelectedInstrumentDetailsMarkup(
     `;
   }
 
-  const runtimeInstrument = resolveSelectedRuntimeInstrument(snapshot, selectedEntry.id);
+  const runtimeInstrument = resolveSelectedRuntimeInstrument(
+    snapshot,
+    selectedEntry.id
+  );
   const usesSamples = runtimeInstrument ? 'No' : 'Unknown';
   const usesSynthesis = runtimeInstrument ? 'Yes' : 'Unknown';
   const polyphonyLimit = runtimeInstrument
@@ -1213,7 +1215,11 @@ function buildSelectedInstrumentFilterResponseCurveMarkup(
   const cutoffHz = Math.max(40, instrument.timbre.filterCutoffHz);
   const normalizedCutoff = Math.min(
     1,
-    Math.max(0, (Math.log10(cutoffHz) - Math.log10(40)) / (Math.log10(12_000) - Math.log10(40)))
+    Math.max(
+      0,
+      (Math.log10(cutoffHz) - Math.log10(40)) /
+        (Math.log10(12_000) - Math.log10(40))
+    )
   );
   const points: string[] = [];
 
@@ -1264,9 +1270,7 @@ function buildSelectedInstrumentFilterResponseCurveMarkup(
   `;
 }
 
-function describeWaveformHarmonicContent(
-  waveform: MusicWaveform
-): string {
+function describeWaveformHarmonicContent(waveform: MusicWaveform): string {
   switch (waveform) {
     case 'sine':
       return 'Fundamental only';
@@ -1316,7 +1320,10 @@ function formatLabel(value: string): string {
     .join(' ');
 }
 
-function formatMidiRange(range: { minMidiNote: number; maxMidiNote: number }): string {
+function formatMidiRange(range: {
+  minMidiNote: number;
+  maxMidiNote: number;
+}): string {
   return `${range.minMidiNote}-${range.maxMidiNote}`;
 }
 

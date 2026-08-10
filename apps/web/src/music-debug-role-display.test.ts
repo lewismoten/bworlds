@@ -20,9 +20,7 @@ describe('music debug role display', () => {
     expect(formatMusicDebugDisplayRoleLabel('lead')).toBe('Melody');
     expect(formatMusicDebugDisplayRoleLabel('harmony')).toBe('Harmony');
     expect(formatMusicDebugDisplayRoleLabel('bass')).toBe('Bass');
-    expect(formatMusicDebugDisplayRoleLabel('percussion')).toBe(
-      'Percussion'
-    );
+    expect(formatMusicDebugDisplayRoleLabel('percussion')).toBe('Percussion');
     expect(resolveMusicDebugDisplayRoleColor('lead')).toBe('#ffcc33');
     expect(resolveMusicDebugDisplayRoleColor('harmony')).toBe('#58c46b');
     expect(resolveMusicDebugDisplayRoleColor('bass')).toBe('#4f8cff');

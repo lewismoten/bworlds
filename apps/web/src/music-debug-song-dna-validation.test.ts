@@ -1,8 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { validateMusicDebugSongDna } from './music-debug-song-dna-validation.ts';
-import {
-  createProceduralInstrumentBank,
-} from './procedural-music-sound-bank.ts';
+import { createProceduralInstrumentBank } from './procedural-music-sound-bank.ts';
 import type { ProceduralInstrumentBank } from './procedural-music-sound-bank.ts';
 import { resolveMusicThemeById } from './procedural-music.ts';
 import type { ProceduralSongDna } from './procedural-music-song-dna.ts';

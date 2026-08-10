@@ -1,7 +1,10 @@
 import { clamp } from '@bworlds/core';
 import { MAX_ACTIVE_PROCEDURAL_MUSIC_OSCILLATORS } from './audio-budget.ts';
 import type { AudioCategory } from './audio-categories.ts';
-import { resolveMusicEqStages, resolveMusicStereoPan } from './procedural-music-mix.ts';
+import {
+  resolveMusicEqStages,
+  resolveMusicStereoPan,
+} from './procedural-music-mix.ts';
 import type { ProceduralMusicNote, MusicSink } from './procedural-music.ts';
 import type { MusicSpaceProfile } from './procedural-music-space.ts';
 
@@ -294,7 +297,11 @@ export function createWebAudioMusicSink(
         1,
         note.timbre.fundamentalGainMultiplier ?? 1
       );
-      const bodySustainLevel = clamp(note.timbre.bodySustainLevel ?? 0.74, 0.5, 1);
+      const bodySustainLevel = clamp(
+        note.timbre.bodySustainLevel ?? 0.74,
+        0.5,
+        1
+      );
       const harmonicBodyLevel = clamp(
         note.timbre.harmonicBodyLevel ?? Math.max(0.5, bodySustainLevel - 0.06),
         0.2,
@@ -372,7 +379,10 @@ export function createWebAudioMusicSink(
       );
       harmonicOscillator.detune.setValueAtTime(note.detuneCents * 0.5, startAt);
       if (pitchSweepDurationSeconds > 0) {
-        oscillator.frequency.exponentialRampToValueAtTime(note.frequency, sweepEndAt);
+        oscillator.frequency.exponentialRampToValueAtTime(
+          note.frequency,
+          sweepEndAt
+        );
         harmonicOscillator.frequency.exponentialRampToValueAtTime(
           note.frequency * note.timbre.harmonicRatio,
           sweepEndAt
@@ -383,7 +393,9 @@ export function createWebAudioMusicSink(
         startAt + durationSeconds
       );
       harmonicOscillator.frequency.exponentialRampToValueAtTime(
-        note.frequency * note.timbre.harmonicRatio * (0.992 + note.pulseRate * 0.001),
+        note.frequency *
+          note.timbre.harmonicRatio *
+          (0.992 + note.pulseRate * 0.001),
         startAt + durationSeconds
       );
       gain.gain.setValueAtTime(0.0001, startAt);
@@ -406,18 +418,28 @@ export function createWebAudioMusicSink(
       );
       gain.gain.exponentialRampToValueAtTime(
         sustainVolume * fundamentalGainMultiplier * bodySustainLevel,
-        startAt + Math.max(durationSeconds - note.releaseMs / 1000, bodySettleAt - startAt)
+        startAt +
+          Math.max(
+            durationSeconds - note.releaseMs / 1000,
+            bodySettleAt - startAt
+          )
       );
       harmonicGain.gain.exponentialRampToValueAtTime(
         sustainVolume * note.harmonicGain * harmonicBodyLevel,
         harmonicReleaseStartAt
       );
       gain.gain.exponentialRampToValueAtTime(0.0001, startAt + durationSeconds);
-      harmonicGain.gain.exponentialRampToValueAtTime(0.0001, startAt + durationSeconds);
+      harmonicGain.gain.exponentialRampToValueAtTime(
+        0.0001,
+        startAt + durationSeconds
+      );
       if (transientGain) {
         const transientDurationSeconds = Math.max(
           0.008,
-          Math.min(durationSeconds, (note.timbre.transientDurationMs ?? 24) / 1000)
+          Math.min(
+            durationSeconds,
+            (note.timbre.transientDurationMs ?? 24) / 1000
+          )
         );
         transientGain.gain.setValueAtTime(0.0001, startAt);
         transientGain.gain.exponentialRampToValueAtTime(
@@ -443,11 +465,22 @@ export function createWebAudioMusicSink(
           );
           noiseGain.gain.exponentialRampToValueAtTime(
             sustainVolume * noiseMix * Math.max(0.45, bodySustainLevel - 0.12),
-            startAt + Math.max(durationSeconds - note.releaseMs / 1000, bodySettleAt - startAt)
+            startAt +
+              Math.max(
+                durationSeconds - note.releaseMs / 1000,
+                bodySettleAt - startAt
+              )
           );
-          noiseGain.gain.exponentialRampToValueAtTime(0.0001, startAt + durationSeconds);
+          noiseGain.gain.exponentialRampToValueAtTime(
+            0.0001,
+            startAt + durationSeconds
+          );
         } else {
-          const noiseBurstDepth = clamp(note.timbre.noiseBurstDepth ?? 0.75, 0, 1);
+          const noiseBurstDepth = clamp(
+            note.timbre.noiseBurstDepth ?? 0.75,
+            0,
+            1
+          );
           const burstPeriodSeconds = 1 / noiseBurstRate;
           for (
             let burstStartSeconds = 0;
@@ -485,9 +518,15 @@ export function createWebAudioMusicSink(
             );
             noiseGain.gain.setValueAtTime(floorLevel, burstStartAt);
             noiseGain.gain.exponentialRampToValueAtTime(peakLevel, burstPeakAt);
-            noiseGain.gain.exponentialRampToValueAtTime(floorLevel, burstFallAt);
+            noiseGain.gain.exponentialRampToValueAtTime(
+              floorLevel,
+              burstFallAt
+            );
           }
-          noiseGain.gain.exponentialRampToValueAtTime(0.0001, startAt + durationSeconds);
+          noiseGain.gain.exponentialRampToValueAtTime(
+            0.0001,
+            startAt + durationSeconds
+          );
         }
       }
       reverbSend.gain.setValueAtTime(space?.wetGain ?? 0, startAt);
@@ -503,7 +542,10 @@ export function createWebAudioMusicSink(
             note.timbre.transientFilterCutoffHz ?? 2_000,
             startAt
           );
-          transientFilter.Q.setValueAtTime(note.timbre.transientFilterQ ?? 0.8, startAt);
+          transientFilter.Q.setValueAtTime(
+            note.timbre.transientFilterQ ?? 0.8,
+            startAt
+          );
           transientGain.connect(transientFilter);
         }
       }
@@ -517,13 +559,19 @@ export function createWebAudioMusicSink(
             note.timbre.noiseFilterCutoffHz ?? 2_400,
             startAt
           );
-          noiseFilter.Q.setValueAtTime(note.timbre.noiseFilterQ ?? 0.7, startAt);
+          noiseFilter.Q.setValueAtTime(
+            note.timbre.noiseFilterQ ?? 0.7,
+            startAt
+          );
           noiseGain.connect(noiseFilter);
         }
       }
       if (timbreFilter) {
         timbreFilter.type = note.timbre.filterType;
-        timbreFilter.frequency.setValueAtTime(note.timbre.filterCutoffHz, startAt);
+        timbreFilter.frequency.setValueAtTime(
+          note.timbre.filterCutoffHz,
+          startAt
+        );
         timbreFilter.Q.setValueAtTime(note.timbre.filterQ, startAt);
         gain.connect(timbreFilter);
         harmonicGain.connect(timbreFilter);
@@ -637,10 +685,14 @@ export function createWebAudioMusicSink(
       oscillator.stop(startAt + durationSeconds);
       harmonicOscillator.stop(startAt + durationSeconds);
       transientSource?.stop(
-        startAt + Math.max(
-          0.008,
-          Math.min(durationSeconds, (note.timbre.transientDurationMs ?? 24) / 1000)
-        )
+        startAt +
+          Math.max(
+            0.008,
+            Math.min(
+              durationSeconds,
+              (note.timbre.transientDurationMs ?? 24) / 1000
+            )
+          )
       );
       noiseSource?.stop(startAt + durationSeconds);
     },

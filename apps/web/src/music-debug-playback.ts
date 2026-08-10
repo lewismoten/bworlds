@@ -4,7 +4,8 @@ import {
   type MusicDebugSnapshot,
 } from './music-debug.ts';
 
-export type MusicDebugPlaybackRole = MusicDebugSnapshot['notes'][number]['role'];
+export type MusicDebugPlaybackRole =
+  MusicDebugSnapshot['notes'][number]['role'];
 
 export type MusicDebugPlaybackAdapter = {
   play(
@@ -182,8 +183,8 @@ export function createMusicDebugPlaybackController(options: {
           ? {
               startOffsetMs,
               endOffsetMs: snapshot.durationMs,
-          }
-        : null;
+            }
+          : null;
 
     playbackStart(
       snapshot,

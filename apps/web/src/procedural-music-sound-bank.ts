@@ -41,7 +41,10 @@ export function createProceduralInstrumentBank(
       lead: enrichProceduralInstrument(bank.instruments.lead, theme),
       harmony: enrichProceduralInstrument(bank.instruments.harmony, theme),
       bass: enrichProceduralInstrument(bank.instruments.bass, theme),
-      percussion: enrichProceduralInstrument(bank.instruments.percussion, theme),
+      percussion: enrichProceduralInstrument(
+        bank.instruments.percussion,
+        theme
+      ),
     },
   };
 }
@@ -107,7 +110,9 @@ function resolveSoundBankPreferredMidiRange(
   return { minMidiNote: 36, maxMidiNote: 54 };
 }
 
-function resolveSoundBankDefaultVelocity(role: ProceduralInstrumentRole): number {
+function resolveSoundBankDefaultVelocity(
+  role: ProceduralInstrumentRole
+): number {
   if (role === 'lead') {
     return 108;
   }

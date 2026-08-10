@@ -30,9 +30,7 @@ import {
   type ProceduralThemeMotif,
 } from './procedural-music-theme-motif.ts';
 import { resolveProceduralMusicLocationMemory } from './procedural-music-location-memory.ts';
-import {
-  resolveMusicStereoPan,
-} from './procedural-music-mix.ts';
+import { resolveMusicStereoPan } from './procedural-music-mix.ts';
 import { applyGentleProceduralMusicCompression } from './procedural-music-dynamics.ts';
 import { normalizeProceduralMusicLoudness } from './procedural-music-loudness.ts';
 import { resolveProceduralMeterAccent } from './procedural-music-meter.ts';

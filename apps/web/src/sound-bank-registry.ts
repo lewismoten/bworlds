@@ -1,9 +1,5 @@
-import type {
-  ProceduralInstrumentRole,
-} from './procedural-music.ts';
-import type {
-  SoundBankInstrumentDefinition,
-} from './procedural-music-sound-bank.ts';
+import type { ProceduralInstrumentRole } from './procedural-music.ts';
+import type { SoundBankInstrumentDefinition } from './procedural-music-sound-bank.ts';
 
 export type SoundBankInstrumentRegistryWarning = Readonly<{
   instrumentId: string;

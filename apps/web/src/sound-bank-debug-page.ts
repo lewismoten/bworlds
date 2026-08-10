@@ -423,7 +423,8 @@ function bindPage(snapshot: SoundBankDebugSnapshot): void {
         options = DEFAULT_SOUND_BANK_DEBUG_OPTIONS;
         generalMidiBrowserState =
           DEFAULT_SOUND_BANK_DEBUG_GENERAL_MIDI_BROWSER_STATE;
-        percussionBrowserState = DEFAULT_SOUND_BANK_DEBUG_PERCUSSION_BROWSER_STATE;
+        percussionBrowserState =
+          DEFAULT_SOUND_BANK_DEBUG_PERCUSSION_BROWSER_STATE;
         audioStatus = 'Audio idle';
         errorMessage = null;
         renderPage();
@@ -472,7 +473,9 @@ function bindPage(snapshot: SoundBankDebugSnapshot): void {
     });
 
   document
-    .querySelector<HTMLButtonElement>('#sound-bank-debug-percussion-range-audition')
+    .querySelector<HTMLButtonElement>(
+      '#sound-bank-debug-percussion-range-audition'
+    )
     ?.addEventListener(
       'click',
       () => {
@@ -508,7 +511,9 @@ function bindPage(snapshot: SoundBankDebugSnapshot): void {
     );
 
   document
-    .querySelector<HTMLButtonElement>('#sound-bank-debug-percussion-standard-pattern')
+    .querySelector<HTMLButtonElement>(
+      '#sound-bank-debug-percussion-standard-pattern'
+    )
     ?.addEventListener(
       'click',
       () => {
@@ -544,7 +549,9 @@ function bindPage(snapshot: SoundBankDebugSnapshot): void {
     );
 
   document
-    .querySelector<HTMLButtonElement>('#sound-bank-debug-percussion-quiet-pattern')
+    .querySelector<HTMLButtonElement>(
+      '#sound-bank-debug-percussion-quiet-pattern'
+    )
     ?.addEventListener(
       'click',
       () => {
@@ -604,7 +611,9 @@ function bindPage(snapshot: SoundBankDebugSnapshot): void {
   );
 
   document
-    .querySelector<HTMLSelectElement>('#sound-bank-debug-percussion-family-filter')
+    .querySelector<HTMLSelectElement>(
+      '#sound-bank-debug-percussion-family-filter'
+    )
     ?.addEventListener(
       'change',
       () => {

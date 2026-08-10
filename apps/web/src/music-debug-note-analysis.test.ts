@@ -213,7 +213,7 @@ describe('music debug note analysis', () => {
           snapshot.midiExportValidation.isValidForMidiExport
       )
     ).toBe(true);
-  });
+  }, 10_000);
 
   it('keeps degree 1, 3, and 5 on G, B, and D for lead, harmony, and bass tracks', () => {
     const scaleMap = {

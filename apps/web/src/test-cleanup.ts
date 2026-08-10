@@ -33,7 +33,11 @@ export function registerTestCleanup(
   const label = options.label ?? 'registered test cleanup';
   const timeoutMs = options.timeoutMs ?? TEST_CLEANUP_TIMEOUT_MS;
   registeredTestCleanups.push(() =>
-    settleTestCleanupPromise(Promise.resolve().then(() => cleanup()), label, timeoutMs)
+    settleTestCleanupPromise(
+      Promise.resolve().then(() => cleanup()),
+      label,
+      timeoutMs
+    )
   );
 }
 
@@ -50,9 +54,12 @@ export function trackClosableTestResource<Resource extends ClosableResource>(
   }
 
   const label = options.label ?? `tracked resource ${methodName}()`;
-  registerTestCleanup(() => invokeClosableResourceMethod(resource, methodName, label), {
-    label,
-  });
+  registerTestCleanup(
+    () => invokeClosableResourceMethod(resource, methodName, label),
+    {
+      label,
+    }
+  );
   return resource;
 }
 
@@ -138,9 +145,7 @@ function settleTestCleanupPromise<T>(
     new Promise<T>((_, reject) => {
       setTimeout(() => {
         reject(
-          new Error(
-            `${label} did not resolve or reject within ${timeoutMs}ms.`
-          )
+          new Error(`${label} did not resolve or reject within ${timeoutMs}ms.`)
         );
       }, timeoutMs);
     }),

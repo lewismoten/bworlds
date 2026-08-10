@@ -16,12 +16,8 @@ const MUSIC_DEBUG_ROLE_COLORS: Record<MusicDebugDisplayRole, string> = {
   percussion: '#ff5a5f',
 };
 
-export const MUSIC_DEBUG_DISPLAY_ROLE_ORDER: readonly MusicDebugDisplayRole[] = [
-  'lead',
-  'harmony',
-  'bass',
-  'percussion',
-];
+export const MUSIC_DEBUG_DISPLAY_ROLE_ORDER: readonly MusicDebugDisplayRole[] =
+  ['lead', 'harmony', 'bass', 'percussion'];
 
 export function formatMusicDebugDisplayRoleLabel(
   role: MusicDebugDisplayRole
