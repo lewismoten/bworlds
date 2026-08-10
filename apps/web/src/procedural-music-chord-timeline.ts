@@ -2,12 +2,16 @@ import { resolveProceduralChordProgression } from './procedural-music-chord-prog
 import { PROCEDURAL_MUSIC_PHRASE_MEASURE_COUNT } from './procedural-music-phrase-structure.ts';
 
 export const PROCEDURAL_MUSIC_CHORD_TIMELINE_SPAN_STEPS = 4;
+export const PROCEDURAL_MUSIC_STEPS_PER_MEASURE =
+  PROCEDURAL_MUSIC_CHORD_TIMELINE_SPAN_STEPS;
 
 export type ProceduralChordTimelineEntry = {
   progressionIndex: number;
   degreeIndex: number;
   startStepIndex: number;
   endStepIndex: number;
+  startMeasure: number;
+  endMeasure: number;
 };
 
 const proceduralChordTimelineCache = new Map<
@@ -58,6 +62,15 @@ export function resolveProceduralChordTimeline(options: {
         phraseStepCount,
         startStepIndex + PROCEDURAL_MUSIC_CHORD_TIMELINE_SPAN_STEPS
       ),
+      startMeasure:
+        Math.floor(startStepIndex / PROCEDURAL_MUSIC_STEPS_PER_MEASURE) + 1,
+      endMeasure:
+        Math.ceil(
+          Math.min(
+            phraseStepCount,
+            startStepIndex + PROCEDURAL_MUSIC_CHORD_TIMELINE_SPAN_STEPS
+          ) / PROCEDURAL_MUSIC_STEPS_PER_MEASURE
+        ) || 1,
     });
   }
 
@@ -88,6 +101,8 @@ export function resolveProceduralChordTimelineEntryAtStep(options: {
       degreeIndex: 0,
       startStepIndex: 0,
       endStepIndex: PROCEDURAL_MUSIC_CHORD_TIMELINE_SPAN_STEPS,
+      startMeasure: 1,
+      endMeasure: 1,
     }
   );
 }

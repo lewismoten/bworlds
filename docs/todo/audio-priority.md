@@ -22,7 +22,7 @@
 - [x] End each eight-measure phrase on a planned cadence.
 - [x] Resolve the final cadence to scale degree 1.
 - [x] Build one chord timeline before generating any tracks.
-- [ ] Assign each chord an exact measure range.
+- [x] Assign each chord an exact measure range.
 - [ ] Make bass, harmony, and lead read the same chord timeline.
 - [ ] Verify detected chords follow the planned progression order.
 - [ ] Fix unresolved chromatic notes before MIDI export.
