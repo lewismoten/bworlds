@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { SoundBankInstrumentDefinition } from './procedural-music-sound-bank.ts';
 import {
   buildSoundBankDebugMarkup,
+  createSoundBankDebugPercussionRangeAuditionNotes,
   createSoundBankDebugSnapshot,
   normalizeSoundBankDebugGeneralMidiBrowserState,
   normalizeSoundBankDebugOptions,
@@ -65,6 +66,7 @@ describe('sound bank debug page', () => {
     expect(markup).toContain('sound-bank-debug-percussion-pad-grid');
     expect(markup).toContain('sound-bank-debug-percussion-pad');
     expect(markup).toContain('sound-bank-debug-percussion-pad-key');
+    expect(markup).toContain('sound-bank-debug-percussion-range-audition');
     expect(markup).toContain('Program Browser');
     expect(markup).toContain('sound-bank-debug-midi-search');
     expect(markup).toContain('sound-bank-debug-midi-family-filter');
@@ -522,5 +524,26 @@ describe('sound bank debug page', () => {
     expect(percussionPadGrid).toContain('data-percussion-key="3"');
     expect(percussionPadGrid).toContain('Kick Center');
     expect(percussionPadGrid).toContain('Floor Tom');
+  });
+
+  it('builds a percussion range audition from the visible drum-family filter', () => {
+    const snapshot = createSoundBankDebugSnapshot();
+    const notes = createSoundBankDebugPercussionRangeAuditionNotes(
+      snapshot,
+      {
+        familyFilter: 'kick',
+      },
+      12_000
+    );
+
+    expect(notes).toHaveLength(3);
+    expect(notes.map((note) => note.instrumentId)).toEqual([
+      expect.stringContaining(':perc-kick-36:'),
+      expect.stringContaining(':perc-kick-35:'),
+      expect.stringContaining(':perc-kick-41:'),
+    ]);
+    expect(notes.map((note) => note.startMs)).toEqual([
+      12_004, 12_184, 12_364,
+    ]);
   });
 });

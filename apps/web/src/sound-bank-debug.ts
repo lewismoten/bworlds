@@ -563,6 +563,14 @@ export function buildSoundBankDebugMarkup(
                 preview for each available percussion voice.
               </p>
             </div>
+            <div class="sound-bank-debug-actions">
+              <button
+                id="sound-bank-debug-percussion-range-audition"
+                type="button"
+              >
+                Range Audition
+              </button>
+            </div>
           </div>
           <div class="sound-bank-debug-midi-controls">
             <label>
@@ -790,6 +798,27 @@ export function resolveSoundBankDebugPreviewNoteRole(
     role.slice('percussion:'.length) as PercussionVoiceId,
     nowMs
   );
+}
+
+export function createSoundBankDebugPercussionRangeAuditionNotes(
+  snapshot: SoundBankDebugSnapshot,
+  state: Partial<SoundBankDebugPercussionBrowserState>,
+  nowMs: number
+): readonly ProceduralMusicNote[] {
+  const percussionBrowserState =
+    normalizeSoundBankDebugPercussionBrowserState(state);
+  const voices = createSoundBankDebugPercussionBrowserSections(
+    percussionBrowserState
+  ).flatMap((section) => section.voices);
+
+  return voices.flatMap((voice, index) => {
+    const note = resolveSoundBankDebugPreviewNoteRole(
+      snapshot,
+      voice.previewTarget,
+      nowMs + index * 180
+    );
+    return note ? [note] : [];
+  });
 }
 
 export function normalizeSoundBankDebugGeneralMidiBrowserState(
