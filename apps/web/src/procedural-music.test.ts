@@ -2252,6 +2252,51 @@ describe('procedural music', () => {
     );
   });
 
+  it('gives tambourine voices both jingle noise and small metallic transients', () => {
+    const shaker = resolveProceduralInstrumentTimbre({
+      family: 'shaker',
+      brightness: 1.04,
+      harmonicSignal: 0.52,
+      filterSignal: 0.58,
+    });
+    const handPercussion = resolveProceduralInstrumentTimbre({
+      family: 'hand-percussion',
+      brightness: 0.96,
+      harmonicSignal: 0.48,
+      filterSignal: 0.54,
+    });
+    const cabasa = resolvePercussionVoiceById('shaker-69');
+    const tambourineJingle = resolvePercussionVoiceById('shaker-54');
+    const bongo = resolvePercussionVoiceById('hand-percussion-60');
+    const tambourineHit = resolvePercussionVoiceById('hand-percussion-54');
+    const cabasaTimbre = applyPercussionVoiceToTimbre({
+      voice: cabasa,
+      timbre: shaker,
+    });
+    const tambourineJingleTimbre = applyPercussionVoiceToTimbre({
+      voice: tambourineJingle,
+      timbre: shaker,
+    });
+    const bongoTimbre = applyPercussionVoiceToTimbre({
+      voice: bongo,
+      timbre: handPercussion,
+    });
+    const tambourineHitTimbre = applyPercussionVoiceToTimbre({
+      voice: tambourineHit,
+      timbre: handPercussion,
+    });
+
+    expect(tambourineJingleTimbre.noiseMix ?? 0).toBeGreaterThan(
+      cabasaTimbre.noiseMix ?? 0
+    );
+    expect(tambourineJingleTimbre.transientMix ?? 0).toBeGreaterThan(0.1);
+    expect(tambourineHitTimbre.noiseMix ?? 0).toBeGreaterThan(0.1);
+    expect(tambourineHitTimbre.transientMix ?? 0).toBeGreaterThan(0.15);
+    expect(tambourineHitTimbre.transientMix ?? 0).toBeGreaterThan(
+      bongoTimbre.transientMix ?? 0
+    );
+  });
+
   it('keeps generated instrument patches inside their family recipe ranges', () => {
     const bank = createProceduralInstrumentBank(
       resolveMusicTheme('forest', 'overworld'),

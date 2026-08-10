@@ -40,7 +40,7 @@
 - [x] Give hi-hats short metallic noise envelopes.
 - [x] Give cymbals longer metallic noise envelopes.
 - [x] Give shakers repeated short filtered noise bursts.
-- [ ] Give tambourines noise plus small metallic transients.
+- [x] Give tambourines noise plus small metallic transients.
 - [ ] Give bongos different pitches and decay lengths.
 - [ ] Show the drum name for every percussion event.
 - [ ] Show drum-note counts in the song report.

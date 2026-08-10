@@ -45,7 +45,9 @@ export type PercussionVoiceDefinition = Readonly<{
     filterCutoffMultiplier?: number;
     filterQMultiplier?: number;
     noiseMixMultiplier?: number;
+    noiseMixOffset?: number;
     transientMixMultiplier?: number;
+    transientMixOffset?: number;
   }>;
 }>;
 
@@ -320,6 +322,9 @@ const PERCUSSION_VOICES: Record<PercussionVoiceId, PercussionVoiceDefinition> =
         harmonicRatioMultiplier: 0.96,
         filterCutoffMultiplier: 0.94,
         filterQMultiplier: 1.08,
+        noiseMixMultiplier: 1.14,
+        noiseMixOffset: 0.04,
+        transientMixOffset: 0.12,
       },
     }),
     'shaker-42': createPercussionVoice({
@@ -412,9 +417,11 @@ const PERCUSSION_VOICES: Record<PercussionVoiceId, PercussionVoiceDefinition> =
       harmonicGainMultiplier: 0.88,
       pulseRateMultiplier: 0.92,
       timbre: {
-        harmonicRatioMultiplier: 0.92,
-        filterCutoffMultiplier: 0.88,
-        filterQMultiplier: 1.16,
+        harmonicRatioMultiplier: 1.04,
+        filterCutoffMultiplier: 1.18,
+        filterQMultiplier: 1.1,
+        noiseMixOffset: 0.16,
+        transientMixOffset: 0.18,
       },
     }),
     'hand-percussion-69': createPercussionVoice({
@@ -506,6 +513,15 @@ export function applyPercussionVoiceToTimbre(options: {
   voice: PercussionVoiceDefinition;
   timbre: ProceduralInstrumentTimbre;
 }): ProceduralInstrumentTimbre {
+  const baseNoiseMix = options.timbre.noiseMix ?? 0;
+  const shapedNoiseMix =
+    baseNoiseMix * (options.voice.timbre.noiseMixMultiplier ?? 1) +
+    (options.voice.timbre.noiseMixOffset ?? 0);
+  const baseTransientMix = options.timbre.transientMix ?? 0;
+  const shapedTransientMix =
+    baseTransientMix * (options.voice.timbre.transientMixMultiplier ?? 1) +
+    (options.voice.timbre.transientMixOffset ?? 0);
+
   return {
     ...options.timbre,
     harmonicRatio: Math.max(
@@ -523,27 +539,15 @@ export function applyPercussionVoiceToTimbre(options: {
       options.timbre.filterQ * (options.voice.timbre.filterQMultiplier ?? 1)
     ),
     noiseMix:
-      options.timbre.noiseMix === undefined
+      options.timbre.noiseMix === undefined &&
+      (options.voice.timbre.noiseMixOffset ?? 0) <= 0
         ? undefined
-        : Math.max(
-            0,
-            Math.min(
-              0.4,
-              options.timbre.noiseMix *
-                (options.voice.timbre.noiseMixMultiplier ?? 1)
-            )
-          ),
+        : Math.max(0, Math.min(0.4, shapedNoiseMix)),
     transientMix:
-      options.timbre.transientMix === undefined
+      options.timbre.transientMix === undefined &&
+      (options.voice.timbre.transientMixOffset ?? 0) <= 0
         ? undefined
-        : Math.max(
-            0,
-            Math.min(
-              0.5,
-              options.timbre.transientMix *
-                (options.voice.timbre.transientMixMultiplier ?? 1)
-            )
-          ),
+        : Math.max(0, Math.min(0.5, shapedTransientMix)),
   };
 }
 
