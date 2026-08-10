@@ -974,7 +974,8 @@ export function createWebAudioMusicSink(
       AudioContext?: AudioContextCtor;
       webkitAudioContext?: AudioContextCtor;
     };
-    const ContextCtor = globalCtor.AudioContext ?? globalCtor.webkitAudioContext;
+    const ContextCtor =
+      globalCtor.AudioContext ?? globalCtor.webkitAudioContext;
     return ContextCtor ?? null;
   }
 

@@ -1,12 +1,13 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-export const DEFAULT_RUNTIME_PERFORMANCE_SNAPSHOT_DIR = path.resolve(
-  path.dirname(new URL(import.meta.url).pathname),
+const DEFAULT_RUNTIME_PERFORMANCE_SNAPSHOT_DIR = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
   '..',
   '.runtime-performance-snapshots'
 );
-export const MAX_RUNTIME_PERFORMANCE_SNAPSHOTS = 10;
+const MAX_RUNTIME_PERFORMANCE_SNAPSHOTS = 10;
 
 function ensureSnapshotDirectory(snapshotDir) {
   fs.mkdirSync(snapshotDir, { recursive: true });

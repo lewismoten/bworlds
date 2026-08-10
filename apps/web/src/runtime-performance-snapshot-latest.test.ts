@@ -14,13 +14,9 @@ describe('latest runtime performance snapshots', () => {
       expect(typeof snapshot.createdAt).toBe('string');
       expect(Array.isArray(snapshot.violations)).toBe(true);
       expect(snapshot.violations).toHaveLength(0);
-      expect(snapshot.metrics).toEqual(
-        expect.objectContaining({
-          maximumFrameMs: expect.anything(),
-          drawCalls: expect.anything(),
-          audioNodeCount: expect.anything(),
-        })
-      );
+      expect(snapshot.metrics).toHaveProperty('maximumFrameMs');
+      expect(snapshot.metrics).toHaveProperty('drawCalls');
+      expect(snapshot.metrics).toHaveProperty('audioNodeCount');
     }
   });
 });

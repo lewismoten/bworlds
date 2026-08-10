@@ -228,9 +228,7 @@ body {
     align-items: start;
   }
 
-  .sound-bank-debug-shell-expanded
-    .sound-bank-debug-layout
-    > :nth-child(3) {
+  .sound-bank-debug-shell-expanded .sound-bank-debug-layout > :nth-child(3) {
     grid-column: 1 / -1;
   }
 

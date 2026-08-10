@@ -66,7 +66,9 @@ describe('sound bank debug page', () => {
       layoutMode: 'compact',
     });
 
-    expect(markup).toContain('sound-bank-debug-shell sound-bank-debug-shell-compact');
+    expect(markup).toContain(
+      'sound-bank-debug-shell sound-bank-debug-shell-compact'
+    );
     expect(markup).toContain('id="sound-bank-debug-layout-compact"');
     expect(markup).toContain('aria-pressed="true"');
     expect(markup).toContain('id="sound-bank-debug-layout-expanded"');
@@ -74,10 +76,13 @@ describe('sound bank debug page', () => {
   });
 
   it('reflects audio context controls for idle and suspended states', () => {
-    const idleMarkup = buildSoundBankDebugMarkup(createSoundBankDebugSnapshot(), {
-      audioStatus: 'Audio idle',
-      audioContextState: 'idle',
-    });
+    const idleMarkup = buildSoundBankDebugMarkup(
+      createSoundBankDebugSnapshot(),
+      {
+        audioStatus: 'Audio idle',
+        audioContextState: 'idle',
+      }
+    );
     const suspendedMarkup = buildSoundBankDebugMarkup(
       createSoundBankDebugSnapshot(),
       {
@@ -97,12 +102,15 @@ describe('sound bank debug page', () => {
   });
 
   it('shows browser-audio diagnostics and unavailable warnings in the status panel', () => {
-    const runningMarkup = buildSoundBankDebugMarkup(createSoundBankDebugSnapshot(), {
-      audioStatus: 'Audio ready',
-      audioContextState: 'running',
-      audioSampleRateHz: 48_000,
-      outputLatencySeconds: 0.012,
-    });
+    const runningMarkup = buildSoundBankDebugMarkup(
+      createSoundBankDebugSnapshot(),
+      {
+        audioStatus: 'Audio ready',
+        audioContextState: 'running',
+        audioSampleRateHz: 48_000,
+        outputLatencySeconds: 0.012,
+      }
+    );
     const unavailableMarkup = buildSoundBankDebugMarkup(
       createSoundBankDebugSnapshot(),
       {

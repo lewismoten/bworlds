@@ -5,9 +5,7 @@ import {
 } from './procedural-music.ts';
 
 export type MusicDebugInstrumentPreviewAudioState =
-  | AudioContextState
-  | 'idle'
-  | 'unavailable';
+  AudioContextState | 'idle' | 'unavailable';
 
 export type MusicDebugInstrumentPreviewPlayer = {
   getAudioState(): MusicDebugInstrumentPreviewAudioState;

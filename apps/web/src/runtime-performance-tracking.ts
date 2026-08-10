@@ -1,4 +1,4 @@
-export const DEFAULT_RUNTIME_PERFORMANCE_LIMITS = {
+const DEFAULT_RUNTIME_PERFORMANCE_LIMITS = {
   initialWorldGenerationMs: 4_000,
   visibleTileGenerationMs: 16,
   maximumFrameMs: 50,
@@ -11,7 +11,7 @@ export const DEFAULT_RUNTIME_PERFORMANCE_LIMITS = {
   wavExportMs: 2_000,
 } as const;
 
-export const DEFAULT_RUNTIME_PERFORMANCE_TRACKING_PREFERENCES = {
+const DEFAULT_RUNTIME_PERFORMANCE_TRACKING_PREFERENCES = {
   enabled: true,
 } as const;
 

@@ -59,7 +59,8 @@ function disposePreview(): void {
 function syncAudioContextUi(): void {
   const audioContextState = instrumentPreviewPlayer.getAudioState();
   const sampleRate = instrumentPreviewPlayer.getAudioSampleRate();
-  const outputLatencySeconds = instrumentPreviewPlayer.getOutputLatencySeconds();
+  const outputLatencySeconds =
+    instrumentPreviewPlayer.getOutputLatencySeconds();
   document
     .querySelector<HTMLElement>('#sound-bank-debug-context-state')
     ?.replaceChildren(document.createTextNode(audioContextState));
