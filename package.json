@@ -10,6 +10,7 @@
   "scripts": {
     "start": "npm run dev -w @bworlds/app",
     "build": "npm run build -w @bworlds/app",
+    "build:analyze": "npm run build:analyze -w @bworlds/app",
     "depcruise": "npm exec -- depcruise --config .dependency-cruiser.mjs apps packages",
     "typecheck": "npm exec -- tsc --noEmit",
     "typecheck:strict": "npm exec -- tsc --noEmit -p tsconfig.strict.json",
