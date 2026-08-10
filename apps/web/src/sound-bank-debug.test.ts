@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest';
+import type { SoundBankInstrumentDefinition } from './procedural-music.ts';
 import {
   buildSoundBankDebugMarkup,
   createSoundBankDebugSnapshot,
   normalizeSoundBankDebugOptions,
   randomizeSoundBankDebugSeed,
 } from './sound-bank-debug.ts';
+import { registerSoundBankPluginInstruments } from './sound-bank-registry.ts';
 
 describe('sound bank debug page', () => {
   it('normalizes partial debug options into a safe instrument-bank snapshot seed', () => {
@@ -165,6 +167,43 @@ describe('sound bank debug page', () => {
         clusterX: 9_999,
         clusterY: 9_999,
       })
+    );
+  });
+
+  it('shows invalid registered instruments in a warning list', () => {
+    const invalidDefinition: SoundBankInstrumentDefinition = {
+      id: 'plugin:bad:0:0',
+      role: 'lead',
+      generalMidiProgramNumber: 200,
+      generalMidiInstrumentName: '',
+      generalMidiFamilyName: 'Synth Lead',
+      supportedRoles: ['lead'],
+      recommendedMidiRange: { minMidiNote: 60, maxMidiNote: 84 },
+      preferredMidiRange: { minMidiNote: 90, maxMidiNote: 92 },
+      defaultVelocity: 108,
+      defaultNoteDurationMs: 320,
+    };
+    const snapshot = createSoundBankDebugSnapshot(
+      {},
+      {
+        registeredInstruments: registerSoundBankPluginInstruments({
+          pluginName: 'broken-pack',
+          definitions: [invalidDefinition],
+        }),
+      }
+    );
+    const normalizedMarkup = buildSoundBankDebugMarkup(snapshot, {
+      audioStatus: 'Audio idle',
+    }).replace(/\s+/g, ' ');
+
+    expect(normalizedMarkup).toContain('Instrument Validation');
+    expect(normalizedMarkup).toContain('plugin:bad:0:0');
+    expect(normalizedMarkup).toContain('from broken-pack');
+    expect(normalizedMarkup).toContain(
+      'General MIDI program number must be null or 0-127.'
+    );
+    expect(normalizedMarkup).toContain(
+      'General MIDI instrument name is required.'
     );
   });
 });

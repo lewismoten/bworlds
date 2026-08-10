@@ -11,6 +11,10 @@ import {
   type MusicDebugSnapshot,
   type MusicDebugTileKind,
 } from './music-debug.ts';
+import {
+  createSoundBankInstrumentRegistry,
+  type SoundBankInstrumentRegistration,
+} from './sound-bank-registry.ts';
 
 export type SoundBankDebugOptions = {
   tileKind: MusicDebugTileKind;
@@ -24,6 +28,7 @@ export type SoundBankDebugOptions = {
 export type SoundBankDebugSnapshot = {
   options: SoundBankDebugOptions;
   musicSnapshot: MusicDebugSnapshot;
+  instrumentRegistry: ReturnType<typeof createSoundBankInstrumentRegistry>;
 };
 
 export type SoundBankDebugLayoutMode = 'compact' | 'expanded';
@@ -52,15 +57,28 @@ export function normalizeSoundBankDebugOptions(
 }
 
 export function createSoundBankDebugSnapshot(
-  value: Partial<SoundBankDebugOptions> | null | undefined = {}
+  value: Partial<SoundBankDebugOptions> | null | undefined = {},
+  extras: {
+    registeredInstruments?: readonly SoundBankInstrumentRegistration[];
+  } = {}
 ): SoundBankDebugSnapshot {
   const options = normalizeSoundBankDebugOptions(value);
+  const musicSnapshot = createMusicDebugSnapshot({
+    ...DEFAULT_MUSIC_DEBUG_OPTIONS,
+    ...options,
+  });
   return {
     options,
-    musicSnapshot: createMusicDebugSnapshot({
-      ...DEFAULT_MUSIC_DEBUG_OPTIONS,
-      ...options,
-    }),
+    musicSnapshot,
+    instrumentRegistry: createSoundBankInstrumentRegistry([
+      ...(Object.values(musicSnapshot.instrumentBank.instruments).map(
+        (definition) => ({
+          definition,
+          sourcePlugin: 'core-generated-bank',
+        })
+      ) satisfies SoundBankInstrumentRegistration[]),
+      ...(extras.registeredInstruments ?? []),
+    ]),
   };
 }
 
@@ -134,6 +152,31 @@ export function buildSoundBankDebugMarkup(
       </p>
     `
     : '';
+  const registryWarningPanel =
+    snapshot.instrumentRegistry.warnings.length === 0
+      ? ''
+      : `
+      <section class="sound-bank-debug-panel" aria-label="Instrument warnings">
+        <div class="sound-bank-debug-panel-head">
+          <div>
+            <p class="sound-bank-debug-panel-kicker">Registry Warnings</p>
+            <h2>Instrument Validation</h2>
+          </div>
+        </div>
+        <ul class="sound-bank-debug-warning-list">
+          ${snapshot.instrumentRegistry.warnings
+            .map(
+              (warning) => `
+                <li>
+                  <strong>${warning.instrumentId}</strong>
+                  from ${warning.sourcePlugin}: ${warning.message}
+                </li>
+              `
+            )
+            .join('')}
+        </ul>
+      </section>
+    `;
   const layoutMode = viewState.layoutMode ?? 'expanded';
   const audioContextState = viewState.audioContextState ?? 'idle';
   const canStartAudio = audioContextState === 'idle';
@@ -346,6 +389,7 @@ export function buildSoundBankDebugMarkup(
             ${summaryCards}
           </div>
         </section>
+        ${registryWarningPanel}
         <section class="sound-bank-debug-panel">
           <div class="sound-bank-debug-panel-head">
             <div>

@@ -38,11 +38,11 @@
 - [x] Store the preferred MIDI note range.
 - [x] Store the default velocity.
 - [x] Store the default note duration.
-- [ ] Let plugins register sound bank instruments.
-- [ ] Reject duplicate instrument IDs.
-- [ ] Reject duplicate program mappings.
-- [ ] Validate instrument definitions on registration.
-- [ ] Show invalid instruments in a warning list.
+- [x] Let plugins register sound bank instruments.
+- [x] Reject duplicate instrument IDs.
+- [x] Reject duplicate program mappings.
+- [x] Validate instrument definitions on registration.
+- [x] Show invalid instruments in a warning list.
 
 ## General MIDI Instruments
 
