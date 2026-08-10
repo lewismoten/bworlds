@@ -61,6 +61,8 @@ function syncAudioContextUi(): void {
   const sampleRate = instrumentPreviewPlayer.getAudioSampleRate();
   const outputLatencySeconds =
     instrumentPreviewPlayer.getOutputLatencySeconds();
+  const masterGain = instrumentPreviewPlayer.getMasterGain();
+  const muted = instrumentPreviewPlayer.isMuted();
   document
     .querySelector<HTMLElement>('#sound-bank-debug-context-state')
     ?.replaceChildren(document.createTextNode(audioContextState));
@@ -82,6 +84,24 @@ function syncAudioContextUi(): void {
           : 'Unavailable until audio starts'
       )
     );
+  const masterGainInput = document.querySelector<HTMLInputElement>(
+    '#sound-bank-debug-master-gain'
+  );
+  if (masterGainInput) {
+    masterGainInput.value = String(Math.round(masterGain * 100));
+  }
+  document
+    .querySelector<HTMLOutputElement>('#sound-bank-debug-master-gain-value')
+    ?.replaceChildren(
+      document.createTextNode(`${Math.round(masterGain * 100)}%`)
+    );
+  const muteButton = document.querySelector<HTMLButtonElement>(
+    '#sound-bank-debug-toggle-mute'
+  );
+  if (muteButton) {
+    muteButton.ariaPressed = String(muted);
+    muteButton.textContent = muted ? 'Unmute Audio' : 'Mute Audio';
+  }
 
   const startButton = document.querySelector<HTMLButtonElement>(
     '#sound-bank-debug-start-audio'
@@ -157,6 +177,8 @@ function renderPage(): void {
     audioContextState: instrumentPreviewPlayer.getAudioState(),
     audioSampleRateHz: instrumentPreviewPlayer.getAudioSampleRate(),
     outputLatencySeconds: instrumentPreviewPlayer.getOutputLatencySeconds(),
+    masterGain: instrumentPreviewPlayer.getMasterGain(),
+    muted: instrumentPreviewPlayer.isMuted(),
     layoutMode,
     errorMessage,
   });
@@ -198,6 +220,40 @@ function bindPage(musicSnapshot: MusicDebugSnapshot): void {
       () => {
         layoutMode = 'expanded';
         renderPage();
+      },
+      pageLifecycleSignal ? { signal: pageLifecycleSignal } : undefined
+    );
+
+  document
+    .querySelector<HTMLButtonElement>('#sound-bank-debug-toggle-mute')
+    ?.addEventListener(
+      'click',
+      () => {
+        const nextMuted = instrumentPreviewPlayer.setMuted(
+          !instrumentPreviewPlayer.isMuted()
+        );
+        setAudioFeedback(
+          nextMuted ? 'Audio muted' : 'Audio unmuted',
+          errorMessage
+        );
+      },
+      pageLifecycleSignal ? { signal: pageLifecycleSignal } : undefined
+    );
+
+  document
+    .querySelector<HTMLInputElement>('#sound-bank-debug-master-gain')
+    ?.addEventListener(
+      'input',
+      (event) => {
+        const target = event.currentTarget as HTMLInputElement;
+        const nextGain = instrumentPreviewPlayer.setMasterGain(
+          Number(target.value) / 100
+        );
+        const nextStatus =
+          nextGain <= 0
+            ? 'Audio muted'
+            : `Master gain ${Math.round(nextGain * 100)}%`;
+        setAudioFeedback(nextStatus, errorMessage);
       },
       pageLifecycleSignal ? { signal: pageLifecycleSignal } : undefined
     );

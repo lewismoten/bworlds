@@ -8,6 +8,10 @@ describe('music debug instrument preview player', () => {
       getAudioState: vi.fn(() => audioState),
       getAudioSampleRate: vi.fn(() => 48_000),
       getOutputLatencySeconds: vi.fn(() => 0.015),
+      getMasterGain: vi.fn(() => 0.75),
+      setMasterGain: vi.fn((value: number) => value),
+      isMuted: vi.fn(() => false),
+      setMuted: vi.fn((value: boolean) => value),
       resume: vi.fn(() => {
         audioState = 'running';
       }),
@@ -20,6 +24,10 @@ describe('music debug instrument preview player', () => {
     expect(player.getAudioState()).toBe('idle');
     expect(player.getAudioSampleRate()).toBe(48_000);
     expect(player.getOutputLatencySeconds()).toBe(0.015);
+    expect(player.getMasterGain()).toBe(0.75);
+    expect(player.isMuted()).toBe(false);
+    expect(player.setMasterGain(0.4)).toBe(0.4);
+    expect(player.setMuted(true)).toBe(true);
     expect(player.start()).toBe('running');
     expect(player.resume()).toBe('running');
 
@@ -27,6 +35,8 @@ describe('music debug instrument preview player', () => {
 
     expect(sink.resume).toHaveBeenCalledTimes(3);
     expect(sink.play).toHaveBeenCalledTimes(1);
+    expect(sink.setMasterGain).toHaveBeenCalledWith(0.4);
+    expect(sink.setMuted).toHaveBeenCalledWith(true);
   });
 
   it('disposes the preview sink and stops any active notes', () => {
@@ -34,6 +44,10 @@ describe('music debug instrument preview player', () => {
       getAudioState: vi.fn(() => 'running' as const),
       getAudioSampleRate: vi.fn(() => 48_000),
       getOutputLatencySeconds: vi.fn(() => 0.015),
+      getMasterGain: vi.fn(() => 1),
+      setMasterGain: vi.fn((value: number) => value),
+      isMuted: vi.fn(() => false),
+      setMuted: vi.fn((value: boolean) => value),
       resume: vi.fn(),
       play: vi.fn(),
       stopAll: vi.fn(),

@@ -30,6 +30,14 @@ describe('procedural music', () => {
       state: AudioContextState;
       sampleRate: number;
       outputLatency: number;
+      destination: object;
+      createGain: ReturnType<typeof vi.fn>;
+      gainNode: {
+        gain: {
+          setValueAtTime: ReturnType<typeof vi.fn>;
+        };
+        connect: ReturnType<typeof vi.fn>;
+      };
     }> = [];
 
     class FakeAudioContext {
@@ -38,6 +46,13 @@ describe('procedural music', () => {
       destination = {};
       sampleRate = 48_000;
       outputLatency = 0.021;
+      gainNode = {
+        gain: {
+          setValueAtTime: vi.fn(),
+        },
+        connect: vi.fn(),
+      };
+      createGain = vi.fn(() => this.gainNode as unknown as GainNode);
       constructor() {
         contextInstances.push(this);
       }
@@ -56,7 +71,12 @@ describe('procedural music', () => {
       expect(sink.getAudioState?.()).toBe('idle');
       expect(sink.getAudioSampleRate?.()).toBeNull();
       expect(sink.getOutputLatencySeconds?.()).toBeNull();
+      expect(sink.getMasterGain?.()).toBe(1);
+      expect(sink.isMuted?.()).toBe(false);
       expect(contextInstances).toHaveLength(0);
+
+      expect(sink.setMasterGain?.(0.35)).toBe(0.35);
+      expect(sink.setMuted?.(true)).toBe(true);
 
       sink.resume?.();
 
@@ -64,6 +84,10 @@ describe('procedural music', () => {
       expect(sink.getAudioState?.()).toBe('running');
       expect(sink.getAudioSampleRate?.()).toBe(48_000);
       expect(sink.getOutputLatencySeconds?.()).toBe(0.021);
+      expect(sink.getMasterGain?.()).toBe(0.35);
+      expect(sink.isMuted?.()).toBe(true);
+      expect(sink.setMuted?.(false)).toBe(false);
+      expect(sink.isMuted?.()).toBe(false);
     } finally {
       if (originalAudioContext) {
         vi.stubGlobal('AudioContext', originalAudioContext);
@@ -83,6 +107,8 @@ describe('procedural music', () => {
       expect(sink.getAudioState?.()).toBe('unavailable');
       expect(sink.getAudioSampleRate?.()).toBeNull();
       expect(sink.getOutputLatencySeconds?.()).toBeNull();
+      expect(sink.getMasterGain?.()).toBe(1);
+      expect(sink.isMuted?.()).toBe(false);
     } finally {
       if (originalAudioContext) {
         vi.stubGlobal('AudioContext', originalAudioContext);
@@ -134,6 +160,14 @@ describe('procedural music', () => {
       connect: ReturnType<typeof vi.fn>;
       disconnect: ReturnType<typeof vi.fn>;
     }> = [];
+    const createdGains: Array<{
+      gain: {
+        setValueAtTime: ReturnType<typeof vi.fn>;
+        exponentialRampToValueAtTime: ReturnType<typeof vi.fn>;
+      };
+      connect: ReturnType<typeof vi.fn>;
+      disconnect: ReturnType<typeof vi.fn>;
+    }> = [];
 
     class FakeAudioContext {
       state: AudioContextState = 'running';
@@ -162,13 +196,16 @@ describe('procedural music', () => {
         return oscillator as unknown as OscillatorNode;
       }
       createGain() {
-        return {
+        const gain = {
           gain: {
             setValueAtTime: vi.fn(),
             exponentialRampToValueAtTime: vi.fn(),
           },
           connect: vi.fn(),
-        } as unknown as GainNode;
+          disconnect: vi.fn(),
+        };
+        createdGains.push(gain);
+        return gain as unknown as GainNode;
       }
       createBiquadFilter() {
         const filter = {
@@ -253,6 +290,9 @@ describe('procedural music', () => {
       expect(createdDelays).toHaveLength(0);
       expect(createdPanners[0]?.pan.setValueAtTime.mock.calls[0]?.[0]).not.toBe(
         0
+      );
+      expect(createdGains[0]?.connect).toHaveBeenCalledWith(
+        expect.objectContaining({})
       );
       createdOscillators[0]?.finish();
       expect(sink.getActiveSourceCount?.()).toBe(1);

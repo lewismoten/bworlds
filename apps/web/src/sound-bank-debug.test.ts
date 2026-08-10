@@ -49,6 +49,8 @@ describe('sound bank debug page', () => {
     expect(markup).toContain('sound-bank-debug-context-state');
     expect(markup).toContain('sound-bank-debug-sample-rate');
     expect(markup).toContain('sound-bank-debug-output-latency');
+    expect(markup).toContain('sound-bank-debug-toggle-mute');
+    expect(markup).toContain('sound-bank-debug-master-gain');
     expect(markup).toContain('Instrument Browser');
     expect(markup).toContain('Role Patches');
     expect(markup).toContain('music-debug-instrument-panel');
@@ -125,6 +127,26 @@ describe('sound bank debug page', () => {
       'Browser audio is unavailable. Web Audio previews cannot start here.'
     );
     expect(unavailableMarkup).toContain('Unavailable until audio starts');
+  });
+
+  it('shows master gain controls and muted warnings when audio output is muted', () => {
+    const mutedMarkup = buildSoundBankDebugMarkup(
+      createSoundBankDebugSnapshot(),
+      {
+        audioStatus: 'Audio muted',
+        audioContextState: 'running',
+        masterGain: 0,
+        muted: true,
+      }
+    );
+
+    expect(mutedMarkup).toContain('sound-bank-debug-master-gain-value');
+    expect(mutedMarkup).toContain('Unmute Audio');
+    expect(mutedMarkup).toContain(
+      'Audio output is muted. Unmute or raise master gain to hear previews.'
+    );
+    expect(mutedMarkup).toContain('aria-pressed="true"');
+    expect(mutedMarkup).toContain('value="0"');
   });
 
   it('randomizes the sound bank seed within the shared debug coordinate range', () => {

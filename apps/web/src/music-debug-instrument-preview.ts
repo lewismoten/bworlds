@@ -11,6 +11,10 @@ export type MusicDebugInstrumentPreviewPlayer = {
   getAudioState(): MusicDebugInstrumentPreviewAudioState;
   getAudioSampleRate(): number | null;
   getOutputLatencySeconds(): number | null;
+  getMasterGain(): number;
+  setMasterGain(value: number): number;
+  isMuted(): boolean;
+  setMuted(value: boolean): boolean;
   start(): MusicDebugInstrumentPreviewAudioState;
   resume(): MusicDebugInstrumentPreviewAudioState;
   play(note: ProceduralMusicNote): MusicDebugInstrumentPreviewAudioState;
@@ -36,6 +40,18 @@ export function createMusicDebugInstrumentPreviewPlayer(
     },
     getOutputLatencySeconds() {
       return sink.getOutputLatencySeconds?.() ?? null;
+    },
+    getMasterGain() {
+      return sink.getMasterGain?.() ?? 1;
+    },
+    setMasterGain(value) {
+      return sink.setMasterGain?.(value) ?? 1;
+    },
+    isMuted() {
+      return sink.isMuted?.() ?? false;
+    },
+    setMuted(value) {
+      return sink.setMuted?.(value) ?? value;
     },
     start() {
       sink.resume?.();

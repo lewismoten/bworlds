@@ -13,3 +13,8 @@ preview playback and lets the same sink survive rerenders.
 Once the context exists, the same preview API exposes `sampleRate` and
 `outputLatency`, so the page can show runtime diagnostics without creating a
 second context or duplicating browser capability checks.
+
+The preview sink now also owns a small master output stage. That keeps the
+debug page's mute button and master gain slider in sync across rerenders and
+lets the page warn when the preview output is intentionally muted even before a
+note is played.

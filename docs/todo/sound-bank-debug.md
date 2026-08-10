@@ -20,11 +20,11 @@
 - [x] Show the current audio context state.
 - [x] Add a button to resume a suspended context.
 - [x] Warn when browser audio is unavailable.
-- [ ] Warn when audio output is muted.
+- [x] Warn when audio output is muted.
 - [x] Show the current sample rate.
 - [x] Show the current output latency.
-- [ ] Add a master mute button.
-- [ ] Add a master gain control.
+- [x] Add a master mute button.
+- [x] Add a master gain control.
 
 ## Sound Bank Registry
 

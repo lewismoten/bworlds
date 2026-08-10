@@ -249,6 +249,10 @@ export type MusicSink = {
   getAudioState?(): AudioContextState | 'idle' | 'unavailable';
   getAudioSampleRate?(): number | null;
   getOutputLatencySeconds?(): number | null;
+  getMasterGain?(): number;
+  setMasterGain?(value: number): number;
+  isMuted?(): boolean;
+  setMuted?(value: boolean): boolean;
   resume?(): void;
   play(note: ProceduralMusicNote): void;
   stopAll?(): void;
@@ -966,6 +970,9 @@ export function createWebAudioMusicSink(
 ): MusicSink {
   let audioContext: AudioContext | null = null;
   let activeSourceCount = 0;
+  let masterGain = 1;
+  let muted = false;
+  let outputGainNode: GainNode | null = null;
   const activeVoices = new Set<ActiveMusicVoice>();
   const sharedReverbBuses = new Map<string, SharedReverbBus>();
 
@@ -989,6 +996,31 @@ export function createWebAudioMusicSink(
     }
     audioContext = new ContextCtor();
     return audioContext;
+  }
+
+  function getResolvedMasterGain(): number {
+    return muted ? 0 : masterGain;
+  }
+
+  function updateOutputGainNode(context: AudioContext): void {
+    outputGainNode?.gain.setValueAtTime(
+      getResolvedMasterGain(),
+      context.currentTime
+    );
+  }
+
+  function getOutputGainNode(context: AudioContext): GainNode {
+    if (outputGainNode) {
+      updateOutputGainNode(context);
+      return outputGainNode;
+    }
+    outputGainNode = context.createGain();
+    outputGainNode.gain.setValueAtTime(
+      getResolvedMasterGain(),
+      context.currentTime
+    );
+    outputGainNode.connect(context.destination);
+    return outputGainNode;
   }
 
   function removeVoice(voice: ActiveMusicVoice): void {
@@ -1092,6 +1124,26 @@ export function createWebAudioMusicSink(
         ? Math.max(0, latency)
         : null;
     },
+    getMasterGain() {
+      return masterGain;
+    },
+    setMasterGain(value) {
+      masterGain = clamp(value, 0, 1);
+      if (audioContext) {
+        updateOutputGainNode(audioContext);
+      }
+      return masterGain;
+    },
+    isMuted() {
+      return muted;
+    },
+    setMuted(value) {
+      muted = value;
+      if (audioContext) {
+        updateOutputGainNode(audioContext);
+      }
+      return muted;
+    },
     resume() {
       const context = getAudioContext();
       if (!context || context.state === 'running') {
@@ -1143,6 +1195,7 @@ export function createWebAudioMusicSink(
           ? (context.createStereoPanner() as StereoPannerNodeLike)
           : null;
       const reverbSend = context.createGain();
+      const outputGain = getOutputGainNode(context);
 
       oscillator.type = note.waveform;
       oscillator.frequency.setValueAtTime(note.frequency, startAt);
@@ -1237,20 +1290,25 @@ export function createWebAudioMusicSink(
           gain.connect(reverbSend);
           harmonicGain.connect(reverbSend);
         }
-        panner.connect(context.destination);
+        panner.connect(outputGain);
       } else {
         if (outputNode) {
-          outputNode.connect(context.destination);
+          outputNode.connect(outputGain);
           outputNode.connect(reverbSend);
         } else {
-          gain.connect(context.destination);
-          harmonicGain.connect(context.destination);
+          gain.connect(outputGain);
+          harmonicGain.connect(outputGain);
           gain.connect(reverbSend);
           harmonicGain.connect(reverbSend);
         }
       }
       if (space) {
-        const reverbBus = getSharedReverbBus(context, sharedReverbBuses, space);
+        const reverbBus = getSharedReverbBus(
+          context,
+          sharedReverbBuses,
+          space,
+          outputGain
+        );
         reverbSend.connect(reverbBus.send);
       }
 
@@ -1300,6 +1358,8 @@ export function createWebAudioMusicSink(
       }
       activeSourceCount = 0;
       disposeSharedReverbBuses();
+      outputGainNode?.disconnect?.();
+      outputGainNode = null;
       audioContext = null;
       if (context && context.state !== 'closed') {
         void context.close?.();
@@ -1314,7 +1374,8 @@ export function createWebAudioMusicSink(
 function getSharedReverbBus(
   context: AudioContext,
   buses: Map<string, SharedReverbBus>,
-  profile: MusicSpaceProfile
+  profile: MusicSpaceProfile,
+  output: GainNode
 ): SharedReverbBus {
   const cached = buses.get(profile.id);
   if (cached) {
@@ -1356,7 +1417,7 @@ function getSharedReverbBus(
     send.connect(wet);
   }
 
-  wet.connect(context.destination);
+  wet.connect(output);
 
   const bus = { send, delay, tone, output: wet };
   buses.set(profile.id, bus);

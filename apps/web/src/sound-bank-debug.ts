@@ -89,6 +89,8 @@ export function buildSoundBankDebugMarkup(
     audioContextState?: AudioContextState | 'idle' | 'unavailable';
     audioSampleRateHz?: number | null;
     outputLatencySeconds?: number | null;
+    masterGain?: number;
+    muted?: boolean;
     layoutMode?: SoundBankDebugLayoutMode;
     errorMessage?: string | null;
   } = {
@@ -126,9 +128,15 @@ export function buildSoundBankDebugMarkup(
   const audioContextState = viewState.audioContextState ?? 'idle';
   const canStartAudio = audioContextState === 'idle';
   const canResumeAudio = audioContextState === 'suspended';
+  const masterGain = Math.max(0, Math.min(1, viewState.masterGain ?? 1));
+  const muted = viewState.muted ?? false;
   const audioUnavailableWarning =
     audioContextState === 'unavailable'
       ? 'Browser audio is unavailable. Web Audio previews cannot start here.'
+      : null;
+  const audioMutedWarning =
+    muted || masterGain <= 0
+      ? 'Audio output is muted. Unmute or raise master gain to hear previews.'
       : null;
   const audioSampleRateLabel =
     typeof viewState.audioSampleRateHz === 'number'
@@ -251,8 +259,31 @@ export function buildSoundBankDebugMarkup(
                   <dd id="sound-bank-debug-output-latency">${outputLatencyLabel}</dd>
                 </div>
               </dl>
+              <label class="sound-bank-debug-master-gain" for="sound-bank-debug-master-gain">
+                <span>Master gain</span>
+                <div class="sound-bank-debug-master-gain-row">
+                  <input
+                    id="sound-bank-debug-master-gain"
+                    type="range"
+                    min="0"
+                    max="100"
+                    step="5"
+                    value="${Math.round(masterGain * 100)}"
+                  />
+                  <output id="sound-bank-debug-master-gain-value" for="sound-bank-debug-master-gain">
+                    ${Math.round(masterGain * 100)}%
+                  </output>
+                </div>
+              </label>
             </div>
             <div class="sound-bank-debug-audio-actions">
+              <button
+                id="sound-bank-debug-toggle-mute"
+                type="button"
+                aria-pressed="${muted}"
+              >
+                ${muted ? 'Unmute Audio' : 'Mute Audio'}
+              </button>
               <button
                 id="sound-bank-debug-start-audio"
                 type="button"
@@ -273,6 +304,15 @@ export function buildSoundBankDebugMarkup(
                 ? `
               <p class="sound-bank-debug-warning" role="status">
                 ${audioUnavailableWarning}
+              </p>
+            `
+                : ''
+            }
+            ${
+              audioMutedWarning
+                ? `
+              <p class="sound-bank-debug-warning" role="status">
+                ${audioMutedWarning}
               </p>
             `
                 : ''
