@@ -74,14 +74,21 @@ body {
   flex-wrap: nowrap;
   align-items: center;
   justify-content: center;
+  width: fit-content;
+  max-width: 100%;
 }
 
 .controls-compact {
-  width: 100%;
+  width: fit-content;
+  max-width: 100%;
+  margin: 0 auto;
 }
 
 .control-dock {
   position: fixed;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   left: 50%;
   bottom: var(--control-dock-offset);
   z-index: 20;
@@ -96,9 +103,10 @@ body {
   display: flex;
   flex-wrap: nowrap;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: center;
   gap: 0.55rem;
-  width: max-content;
+  width: fit-content;
+  min-width: max-content;
   max-width: 100%;
   overflow-x: auto;
   overflow-y: hidden;
@@ -879,12 +887,13 @@ dd {
   }
 
   .control-dock {
-    width: calc(100vw - 0.5rem);
+    width: fit-content;
+    max-width: calc(100vw - 0.5rem);
     bottom: max(0.25rem, env(safe-area-inset-bottom, 0px));
   }
 
   .dock-cluster {
-    justify-content: flex-start;
+    justify-content: center;
     padding-inline: 0.35rem;
   }
 }
