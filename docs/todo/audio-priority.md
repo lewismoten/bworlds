@@ -69,7 +69,7 @@
 - [x] Build grooves from roles instead of random drum notes.
 - [x] Keep a stable pulse across related measures.
 - [x] Place low drums on structurally strong beats.
-- [ ] Place light percussion between strong beats.
+- [x] Place light percussion between strong beats.
 - [ ] Use cymbals mainly at section boundaries.
 - [ ] Use fills only before meaningful transitions.
 - [ ] Vary groove patterns once per phrase.

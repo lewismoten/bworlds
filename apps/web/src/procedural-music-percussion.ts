@@ -84,8 +84,13 @@ const FOREST_CADENCE_PATTERNS: Record<
     createHit('pulse', 0, 0.72, 0.14, 0.4, 1.24),
   ],
   question: [
-    createHit('pulse', 0, 0, 0.16, 0.4, 1.22),
-    createHit('texture', -3, 0.34, 0.18, 0.48, 0.94),
+    createHit('kick', -12, 0, 0.18, 0.5, 0.84, {
+      attackMultiplier: 0.76,
+      releaseMultiplier: 1.28,
+      harmonicGainMultiplier: 0.84,
+    }),
+    createHit('pulse', 0, 0.22, 0.14, 0.34, 1.18),
+    createHit('texture', -3, 0.46, 0.18, 0.48, 0.94),
     createHit('accent', 7, 0.74, 0.18, 0.24, 1.05, {
       releaseMultiplier: 1.5,
       brightnessMultiplier: 1.18,

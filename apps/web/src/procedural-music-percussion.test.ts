@@ -113,6 +113,46 @@ describe('procedural music percussion', () => {
     ).toBeLessThan(notes.length);
   });
 
+  it('keeps light forest question percussion between the strong beats', () => {
+    const notes = createProceduralPercussionNotes({
+      themeId: 'deep-forest',
+      stepIndex: 6,
+      phraseStep: 6,
+      cadence: 'question',
+      startMs: 0,
+      stepDurationMs: 440,
+      rootMidiNote: 53,
+      baseInstrumentId: 'deep-forest:percussion:3:-2',
+      baseVolume: 0.02,
+      baseAttackMs: 12,
+      baseReleaseMs: 60,
+      baseDetuneCents: 4,
+      baseHarmonicGain: 0.12,
+      basePulseRate: 1,
+      brightness: 0.92,
+      clusterX: 3,
+      clusterY: -2,
+    });
+
+    expect(
+      notes.some(
+        (note) =>
+          resolvePercussionFamilyFromInstrumentId(note.instrumentId) ===
+            'kick' && note.startMs === 0
+      )
+    ).toBe(true);
+    expect(
+      notes
+        .filter((note) => {
+          const family = resolvePercussionFamilyFromInstrumentId(
+            note.instrumentId
+          );
+          return family === 'shaker' || family === 'hand-percussion';
+        })
+        .every((note) => note.startMs > 0 && note.startMs < 220)
+    ).toBe(true);
+  });
+
   it('parses note-level percussion family overrides from instrument ids', () => {
     expect(
       resolvePercussionFamilyFromInstrumentId(
