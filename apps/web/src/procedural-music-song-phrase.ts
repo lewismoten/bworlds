@@ -3,12 +3,13 @@ import type {
   ProceduralMusicNote,
 } from './procedural-music.ts';
 import { resolveProceduralLeadRhythmPhraseTemplate } from './procedural-music-lead-rhythm-template.ts';
+import { PROCEDURAL_MUSIC_PHRASE_MEASURE_COUNT } from './procedural-music-phrase-structure.ts';
 import {
   resolveMusicThemeById,
   scheduleProceduralMusicNotes,
 } from './procedural-music.ts';
 
-export const PROCEDURAL_MUSIC_PHRASE_MEASURE_COUNT = 8;
+export { PROCEDURAL_MUSIC_PHRASE_MEASURE_COUNT } from './procedural-music-phrase-structure.ts';
 
 export function collectProceduralMusicPhraseNotes(
   options: MusicUpdateOptions,
@@ -189,17 +190,6 @@ function ensureLeadMeasureAttackDensity(
     if (!templateNote) {
       continue;
     }
-    const previousLeadNote = findPreviousLeadNote(
-      repairedNotes,
-      measureStartMs
-    );
-    const nextLeadNote = findNextLeadNote(repairedNotes, measureEndMs);
-    const repairedFrequency = resolveRepairedLeadFrequency({
-      templateFrequency: templateNote.frequency,
-      previousFrequency: previousLeadNote?.frequency ?? null,
-      nextFrequency: nextLeadNote?.frequency ?? null,
-    });
-
     const theme = resolveMusicThemeById(templateNote.themeId);
     for (
       let attackIndex = leadNotes.length;
@@ -207,13 +197,29 @@ function ensureLeadMeasureAttackDensity(
       attackIndex += 1
     ) {
       const attackTemplate = targetAttacks[attackIndex] ?? targetAttacks.at(-1);
+      const repairedStartMs = Math.round(
+        measureStartMs +
+          measureDurationMs * (attackTemplate?.offsetRatio ?? 0.58)
+      );
+      const previousLeadNoteInMeasure = findPreviousLeadNote(
+        leadNotes,
+        repairedStartMs
+      );
+      const nextLeadNoteInMeasure = findNextLeadNote(leadNotes, repairedStartMs);
+      const previousLeadNote =
+        previousLeadNoteInMeasure ??
+        findPreviousLeadNote(repairedNotes, repairedStartMs);
+      const nextLeadNote =
+        nextLeadNoteInMeasure ?? findNextLeadNote(repairedNotes, repairedStartMs);
+      const repairedFrequency = resolveRepairedLeadFrequency({
+        templateFrequency: templateNote.frequency,
+        previousFrequency: previousLeadNote?.frequency ?? null,
+        nextFrequency: nextLeadNote?.frequency ?? null,
+      });
       repairedNotes.push({
         ...templateNote,
         instrumentId: `${templateNote.instrumentId}:measure-${measureIndex}-${attackIndex}`,
-        startMs: Math.round(
-          measureStartMs +
-            measureDurationMs * (attackTemplate?.offsetRatio ?? 0.58)
-        ),
+        startMs: repairedStartMs,
         durationMs: Math.max(
           48,
           Math.round(
@@ -275,7 +281,11 @@ function findPreviousLeadNote(
 ): ProceduralMusicNote | null {
   for (let index = notes.length - 1; index >= 0; index -= 1) {
     const note = notes[index];
-    if (note?.role === 'lead' && note.startMs < beforeStartMs) {
+    if (
+      note?.role === 'lead' &&
+      note.startMs < beforeStartMs &&
+      !isGeneratedLeadRepairNote(note)
+    ) {
       return note;
     }
   }
@@ -288,7 +298,11 @@ function findNextLeadNote(
   afterStartMs: number
 ): ProceduralMusicNote | null {
   for (const note of notes) {
-    if (note.role === 'lead' && note.startMs >= afterStartMs) {
+    if (
+      note.role === 'lead' &&
+      note.startMs >= afterStartMs &&
+      !isGeneratedLeadRepairNote(note)
+    ) {
       return note;
     }
   }
@@ -306,37 +320,74 @@ function resolveRepairedLeadFrequency(options: {
   );
   let bestFrequency = options.templateFrequency;
   let bestScore = Number.POSITIVE_INFINITY;
-  let bestWorstLeap = Number.POSITIVE_INFINITY;
 
   for (const candidateFrequency of octaveCandidates) {
-    const leapScores: number[] = [];
-    if (options.previousFrequency !== null) {
-      leapScores.push(
-        Math.abs(12 * Math.log2(candidateFrequency / options.previousFrequency))
-      );
-    }
-    if (options.nextFrequency !== null) {
-      leapScores.push(
-        Math.abs(12 * Math.log2(options.nextFrequency / candidateFrequency))
-      );
-    }
-    if (leapScores.length === 0) {
+    const previousLeap =
+      options.previousFrequency === null
+        ? null
+        : Math.abs(
+            12 * Math.log2(candidateFrequency / options.previousFrequency)
+          );
+    const nextLeap =
+      options.nextFrequency === null
+        ? null
+        : Math.abs(12 * Math.log2(options.nextFrequency / candidateFrequency));
+    if (previousLeap === null && nextLeap === null) {
       return candidateFrequency;
     }
 
-    const worstLeap = Math.max(...leapScores);
-    const totalLeap = leapScores.reduce((sum, leap) => sum + leap, 0);
-    if (
-      worstLeap < bestWorstLeap ||
-      (worstLeap === bestWorstLeap && totalLeap < bestScore)
-    ) {
-      bestWorstLeap = worstLeap;
-      bestScore = totalLeap;
+    const previousOverflowPenalty =
+      previousLeap === null ? 0 : Math.max(0, previousLeap - 12) * 4;
+    const nextOverflowPenalty =
+      nextLeap === null ? 0 : Math.max(0, nextLeap - 12) * 3;
+    const continuityScore =
+      (previousLeap ?? 0) * 1.15 + (nextLeap ?? 0) * 0.95;
+    const totalScore =
+      (previousOverflowPenalty + nextOverflowPenalty) * 100 + continuityScore;
+
+    if (totalScore < bestScore) {
+      bestScore = totalScore;
       bestFrequency = candidateFrequency;
     }
   }
 
-  return bestFrequency;
+  return clampRepairedLeadFrequencyToNeighborLeap({
+    frequency: bestFrequency,
+    previousFrequency: options.previousFrequency,
+    nextFrequency: options.nextFrequency,
+  });
+}
+
+function clampRepairedLeadFrequencyToNeighborLeap(options: {
+  frequency: number;
+  previousFrequency: number | null;
+  nextFrequency: number | null;
+}): number {
+  const previousLeap =
+    options.previousFrequency === null
+      ? null
+      : Math.abs(12 * Math.log2(options.frequency / options.previousFrequency));
+  const nextLeap =
+    options.nextFrequency === null
+      ? null
+      : Math.abs(12 * Math.log2(options.nextFrequency / options.frequency));
+
+  if (
+    previousLeap !== null &&
+    previousLeap > 12 &&
+    (nextLeap === null || nextLeap <= 12)
+  ) {
+    return options.previousFrequency!;
+  }
+  if (
+    nextLeap !== null &&
+    nextLeap > 12 &&
+    (previousLeap === null || previousLeap <= 12)
+  ) {
+    return options.nextFrequency!;
+  }
+
+  return options.frequency;
 }
 
 function isGeneratedLeadRepairNote(

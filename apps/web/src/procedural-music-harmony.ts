@@ -7,6 +7,7 @@ import {
   getProceduralScaleDegreeSemitones,
   isProceduralSemitoneInMode,
 } from './procedural-music-scale.ts';
+import { resolveProceduralPhraseCadence } from './procedural-music-phrase-structure.ts';
 import { resolveProceduralMeterPosition } from './procedural-music-meter.ts';
 
 export type ProceduralHarmonyTheme = {
@@ -136,18 +137,10 @@ export function resolveProceduralLeadPhraseCadence(
   theme: ProceduralHarmonyTheme,
   stepIndex: number
 ): ProceduralLeadPhraseCadence {
-  const phraseLength = Math.max(1, theme.stepPattern.length);
-  const phraseStep = stepIndex % phraseLength;
-  const questionStep = Math.max(0, Math.floor(phraseLength / 2) - 1);
-  const answerStep = phraseLength - 1;
-
-  if (phraseStep === questionStep) {
-    return 'question';
-  }
-  if (phraseStep === answerStep) {
-    return 'answer';
-  }
-  return 'neutral';
+  return resolveProceduralPhraseCadence({
+    themeStepCount: theme.stepPattern.length,
+    stepIndex,
+  });
 }
 
 export function resolveProceduralLeadContour(
@@ -944,30 +937,6 @@ function resolveLeadSemitonePlan(
     composition.cadence === 'answer' ||
     composition.contourStep.stage === 'climax';
 
-  if (strongLeadBeat) {
-    const chordTonePattern = [
-      chord.rootSemitones,
-      chord.thirdSemitones,
-      chord.fifthSemitones,
-      chord.thirdSemitones,
-    ];
-    return {
-      semitones:
-        chordTonePattern[Math.floor(stepIndex / 4) % chordTonePattern.length] ??
-        chord.rootSemitones,
-      candidateSemitones: chordTonePattern,
-      contourRange: {
-        minSemitones: minLeadScaleSemitones,
-        targetSemitones: leadScaleSemitones,
-        maxSemitones: maxLeadScaleSemitones,
-      },
-      cadence: composition.cadence,
-      contourStage: composition.contourStep.stage,
-      strongLeadBeat,
-      structuralAccent,
-    };
-  }
-
   if (composition.cadence === 'question') {
     return {
       semitones: chord.passingSemitones,
@@ -987,6 +956,30 @@ function resolveLeadSemitonePlan(
     return {
       semitones: chord.rootSemitones,
       candidateSemitones: [chord.rootSemitones],
+      contourRange: {
+        minSemitones: minLeadScaleSemitones,
+        targetSemitones: leadScaleSemitones,
+        maxSemitones: maxLeadScaleSemitones,
+      },
+      cadence: composition.cadence,
+      contourStage: composition.contourStep.stage,
+      strongLeadBeat,
+      structuralAccent,
+    };
+  }
+
+  if (strongLeadBeat) {
+    const chordTonePattern = [
+      chord.rootSemitones,
+      chord.thirdSemitones,
+      chord.fifthSemitones,
+      chord.thirdSemitones,
+    ];
+    return {
+      semitones:
+        chordTonePattern[Math.floor(stepIndex / 4) % chordTonePattern.length] ??
+        chord.rootSemitones,
+      candidateSemitones: chordTonePattern,
       contourRange: {
         minSemitones: minLeadScaleSemitones,
         targetSemitones: leadScaleSemitones,

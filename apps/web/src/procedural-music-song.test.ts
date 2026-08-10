@@ -286,6 +286,39 @@ describe('procedural music song', () => {
     }
   });
 
+  it('keeps repaired lead phrase attacks within an octave of nearby natural notes', () => {
+    const options = {
+      nowMs: 1_000,
+      tileKind: 'forest' as const,
+      contextType: 'overworld' as const,
+      dayProgress: 0.45,
+      yearProgress: 0.25,
+      clusterX: 3,
+      clusterY: -2,
+    };
+    const durationMs = resolveProceduralMusicSongDurationMs(options);
+    const blueprint = resolveProceduralMusicBlueprint(options);
+    const sections = buildProceduralMusicSongSections(blueprint, durationMs);
+    const totalMeasures = sections.reduce(
+      (sum, section) => sum + section.measureCount,
+      0
+    );
+    const phraseDurationMs = Math.round(
+      (durationMs / totalMeasures) * PROCEDURAL_MUSIC_PHRASE_MEASURE_COUNT
+    );
+    const leadNotes = collectProceduralMusicPhraseNotes(options, phraseDurationMs)
+      .filter((note) => note.role === 'lead')
+      .map((note) => Math.round(69 + 12 * Math.log2(note.frequency / 440)));
+
+    expect(leadNotes.length).toBeGreaterThan(2);
+
+    for (let index = 1; index < leadNotes.length; index += 1) {
+      expect(Math.abs(leadNotes[index]! - leadNotes[index - 1]!)).toBeLessThanOrEqual(
+        12
+      );
+    }
+  });
+
   it('shares the same song dna across ambient, battle, and boss arrangements', () => {
     const ambient = createProceduralMusicSong({
       nowMs: 1_000,

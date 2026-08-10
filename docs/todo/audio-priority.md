@@ -19,7 +19,7 @@
 - [x] Prevent repeated one-note-per-measure lead patterns.
 - [x] Build reusable lead rhythm templates by phrase.
 - [x] Add rests at phrase boundaries rather than every measure.
-- [ ] End each eight-measure phrase on a planned cadence.
+- [x] End each eight-measure phrase on a planned cadence.
 - [ ] Resolve the final cadence to scale degree 1.
 - [ ] Build one chord timeline before generating any tracks.
 - [ ] Assign each chord an exact measure range.
@@ -42,7 +42,7 @@
 - [ ] Reject songs whose configured motif never appears.
 - [ ] Add a melody-only MIDI export for rapid evaluation.
 - [ ] Add a harmony-and-bass-only MIDI export for review.
-- [ ] Test eight measures before generating all 88 measures.
+- [ ] Test eight measures before generating all measures.
 - [ ] Percussion should be made of multiple percussion instruments (drum set), preferably noise related
 - [ ] Let me download the MIDI, instrument WAV, and parameter report JSON, as a zip file.
 - [ ] Sections should be embedded in MIDI meta/control flow to help indicate which notes belong to what section (Intro, Section A, section A', Section B, Variation, Retrun, Outro, etc.)

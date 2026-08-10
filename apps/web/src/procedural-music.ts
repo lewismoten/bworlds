@@ -633,7 +633,7 @@ export function resolveMusicArrangement(options: {
           brightnessMultiplier: 0.92,
         },
         harmony: {
-          volumeMultiplier: 0.58,
+          volumeMultiplier: 0.54,
           durationMultiplier: 1.22,
           releaseMultiplier: 1.7,
           harmonicGainMultiplier: 1.16,

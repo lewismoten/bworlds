@@ -135,8 +135,8 @@ describe('procedural music harmony', () => {
   });
 
   it('builds a shared composition step so layers can react to chord, contour, and cadence together', () => {
-    const first = resolveProceduralCompositionStep(TEST_THEME, 7, 3, -2);
-    const second = resolveProceduralCompositionStep(TEST_THEME, 7, 3, -2);
+    const first = resolveProceduralCompositionStep(TEST_THEME, 62, 3, -2);
+    const second = resolveProceduralCompositionStep(TEST_THEME, 62, 3, -2);
 
     expect(first).toEqual(second);
     expect(first.chord.progressionIndex).toBeGreaterThanOrEqual(0);
@@ -164,8 +164,8 @@ describe('procedural music harmony', () => {
       scale: [0, 2, 4, 5, 7, 9, 11],
       stepPattern: [0, 2, 4, 2, 5, 4, 2, 0],
     };
-    const questionSteps = [3, 11];
-    const answerSteps = [7, 15];
+    const questionSteps = [30, 94];
+    const answerSteps = [62, 126];
 
     for (const stepIndex of questionSteps) {
       const chord = resolveProceduralChordAtStep(
@@ -215,6 +215,13 @@ describe('procedural music harmony', () => {
         ((chord.rootSemitones % 12) + 12) % 12
       );
     }
+
+    expect(resolveProceduralLeadPhraseCadence(cadenceTheme, 27)).toBe(
+      'neutral'
+    );
+    expect(resolveProceduralLeadPhraseCadence(cadenceTheme, 59)).toBe(
+      'neutral'
+    );
   });
 
   it('limits large melodic jumps and pulls the next step back afterward', () => {
