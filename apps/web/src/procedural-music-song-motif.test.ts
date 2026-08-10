@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { stateLeadMotifInFirstASection } from './procedural-music-song-motif.ts';
+import {
+  collectExpectedLeadMotifCoverage,
+  regenerateSectionsMissingExpectedLeadMotifMatches,
+  stateLeadMotifInFirstASection,
+} from './procedural-music-song-motif.ts';
 import type { ProceduralMusicSongSection } from './procedural-music-song.ts';
 import type { ProceduralMusicNote } from './procedural-music.ts';
 
@@ -85,6 +89,90 @@ describe('procedural music song motif', () => {
 
     expect(firstVariation).toEqual([69, 72, 76, 72]);
     expect(secondVariation).toEqual([69, 72, 76, 72]);
+  });
+
+  it('regenerates expected motif sections when their match counts fall short', () => {
+    const notes: ProceduralMusicNote[] = [
+      createLeadNote(8_100, 392),
+      createLeadNote(9_100, 392),
+      createLeadNote(10_100, 392),
+      createLeadNote(11_100, 392),
+      createLeadNote(16_100, 392),
+      createLeadNote(17_100, 392),
+      createLeadNote(18_100, 392),
+      createLeadNote(19_100, 392),
+      createLeadNote(24_100, 392),
+      createLeadNote(25_100, 392),
+      createLeadNote(26_100, 392),
+      createLeadNote(27_100, 392),
+      createLeadNote(32_100, 392),
+      createLeadNote(33_100, 392),
+      createLeadNote(34_100, 392),
+      createLeadNote(35_100, 392),
+    ];
+    const sections: ProceduralMusicSongSection[] = [
+      createSection('intro', 0, 8_000, 8),
+      createSection('a', 8_000, 16_000, 16),
+      createSection('a-prime', 24_000, 16_000, 16),
+    ];
+    const theme = {
+      rootHz: 196,
+      rootMidiNote: 55,
+      scale: [0, 2, 4, 5, 7, 9, 10],
+      noteDurationMs: 360,
+    };
+    const leadMotif = [0, 2, 4, 2];
+
+    expect(
+      collectExpectedLeadMotifCoverage({
+        notes,
+        sections,
+        songStartMs: 0,
+        leadMotif,
+        theme,
+      })
+    ).toEqual([
+      expect.objectContaining({
+        sectionId: 'a',
+        exactMatchCount: 0,
+        needsRegeneration: true,
+      }),
+      expect.objectContaining({
+        sectionId: 'a-prime',
+        variedMatchCount: 0,
+        needsRegeneration: true,
+      }),
+    ]);
+
+    const regenerated = regenerateSectionsMissingExpectedLeadMotifMatches(
+      notes,
+      {
+        sections,
+        songStartMs: 0,
+        leadMotif,
+        theme,
+      }
+    );
+    const repairedCoverage = collectExpectedLeadMotifCoverage({
+      notes: regenerated,
+      sections,
+      songStartMs: 0,
+      leadMotif,
+      theme,
+    });
+
+    expect(repairedCoverage).toEqual([
+      expect.objectContaining({
+        sectionId: 'a',
+        exactMatchCount: 2,
+        needsRegeneration: false,
+      }),
+      expect.objectContaining({
+        sectionId: 'a-prime',
+        variedMatchCount: 2,
+        needsRegeneration: false,
+      }),
+    ]);
   });
 });
 

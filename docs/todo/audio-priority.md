@@ -13,7 +13,7 @@
 - [x] State the lead motif clearly in the first A phrase.
 - [x] Require at least two exact motif matches in Section A.
 - [x] Require motif variation rather than unrelated notes in A'.
-- [ ] Regenerate any section with zero expected motif matches.
+- [x] Regenerate any section with zero expected motif matches.
 - [ ] Give the lead two to six note attacks per measure.
 - [ ] Prevent repeated one-note-per-measure lead patterns.
 - [ ] Build reusable lead rhythm templates by phrase.

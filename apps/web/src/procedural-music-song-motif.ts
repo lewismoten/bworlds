@@ -3,6 +3,17 @@ import { resolveProceduralMidiNoteFrequency } from './procedural-music-scale.ts'
 import type { ProceduralMusicSongSection } from './procedural-music-song.ts';
 import type { ProceduralMusicNote } from './procedural-music.ts';
 
+export type ProceduralMusicSongExpectedMotifCoverage = {
+  sectionId: ProceduralMusicSongSection['id'];
+  sectionLabel: string;
+  exactMatchCount: number;
+  variedMatchCount: number;
+  matchCount: number;
+  expectedMatchKind: 'exact' | 'varied';
+  minimumMatchCount: number;
+  needsRegeneration: boolean;
+};
+
 export function stateLeadMotifInFirstASection(options: {
   notes: readonly ProceduralMusicNote[];
   sections: readonly ProceduralMusicSongSection[];
@@ -18,8 +29,124 @@ export function stateLeadMotifInFirstASection(options: {
   const updatedNotes = [...options.notes];
   applyLeadMotifPhraseStatements(updatedNotes, options);
   applyLeadMotifVariationInAprimeSection(updatedNotes, options);
+  return regenerateSectionsMissingExpectedLeadMotifMatches(
+    updatedNotes,
+    options
+  );
+}
 
-  return updatedNotes;
+export function regenerateSectionsMissingExpectedLeadMotifMatches(
+  notes: readonly ProceduralMusicNote[],
+  options: {
+    sections: readonly ProceduralMusicSongSection[];
+    songStartMs: number;
+    leadMotif: readonly number[];
+    theme: {
+      rootHz: number;
+      rootMidiNote: number;
+      scale: readonly number[];
+      noteDurationMs: number;
+    };
+  }
+): ProceduralMusicNote[] {
+  const regeneratedNotes = [...notes];
+
+  for (let pass = 0; pass < 2; pass += 1) {
+    const expectedCoverage = collectExpectedLeadMotifCoverage({
+      notes: regeneratedNotes,
+      sections: options.sections,
+      songStartMs: options.songStartMs,
+      leadMotif: options.leadMotif,
+      theme: options.theme,
+    });
+    const shouldRepairSectionA = expectedCoverage.some(
+      (coverage) => coverage.sectionId === 'a' && coverage.needsRegeneration
+    );
+    const shouldRepairSectionAPrime = expectedCoverage.some(
+      (coverage) =>
+        coverage.sectionId === 'a-prime' && coverage.needsRegeneration
+    );
+
+    if (!shouldRepairSectionA && !shouldRepairSectionAPrime) {
+      break;
+    }
+    if (shouldRepairSectionA) {
+      applyLeadMotifPhraseStatements(regeneratedNotes, options);
+    }
+    if (shouldRepairSectionAPrime) {
+      applyLeadMotifVariationInAprimeSection(regeneratedNotes, options);
+    }
+  }
+
+  return regeneratedNotes;
+}
+
+export function collectExpectedLeadMotifCoverage(options: {
+  notes: readonly ProceduralMusicNote[];
+  sections: readonly ProceduralMusicSongSection[];
+  songStartMs: number;
+  leadMotif: readonly number[];
+  theme: {
+    rootHz: number;
+    scale: readonly number[];
+  };
+}): ProceduralMusicSongExpectedMotifCoverage[] {
+  const expectedSections = [
+    {
+      sectionId: 'a' as const,
+      expectedMatchKind: 'exact' as const,
+      minimumMatchCount: 2,
+    },
+    {
+      sectionId: 'a-prime' as const,
+      expectedMatchKind: 'varied' as const,
+      minimumMatchCount: 1,
+    },
+  ];
+
+  return expectedSections.flatMap((expectedSection) => {
+    const section = options.sections.find(
+      (candidate) => candidate.id === expectedSection.sectionId
+    );
+    if (!section) {
+      return [];
+    }
+
+    const leadDegrees = collectSectionLeadScaleDegrees({
+      notes: options.notes,
+      section,
+      songStartMs: options.songStartMs,
+      theme: options.theme,
+    });
+    const normalizedLeadMotif = options.leadMotif.map((degree) =>
+      mod(degree, options.theme.scale.length)
+    );
+    const exactMatchCount = countExactMotifMatches(
+      leadDegrees,
+      normalizedLeadMotif
+    );
+    const variedMatchCount = countVariedIntervalPatternMatches(
+      leadDegrees,
+      normalizedLeadMotif
+    );
+    const actualMatchCount =
+      expectedSection.expectedMatchKind === 'exact'
+        ? exactMatchCount
+        : variedMatchCount;
+
+    return [
+      {
+        sectionId: section.id,
+        sectionLabel: section.label,
+        exactMatchCount,
+        variedMatchCount,
+        matchCount: exactMatchCount + variedMatchCount,
+        expectedMatchKind: expectedSection.expectedMatchKind,
+        minimumMatchCount: expectedSection.minimumMatchCount,
+        needsRegeneration: actualMatchCount < expectedSection.minimumMatchCount,
+      },
+    ];
+  });
 }
 
 function applyLeadMotifPhraseStatements(
@@ -201,4 +328,164 @@ function resolvePreviousLeadFrequency(
     }
   }
   return null;
+}
+
+function collectSectionLeadScaleDegrees(options: {
+  notes: readonly ProceduralMusicNote[];
+  section: ProceduralMusicSongSection;
+  songStartMs: number;
+  theme: {
+    rootHz: number;
+    scale: readonly number[];
+  };
+}): number[] {
+  const sectionStartMs = options.songStartMs + options.section.startOffsetMs;
+  const sectionEndMs = sectionStartMs + options.section.durationMs;
+  const leadDegrees: number[] = [];
+
+  for (const note of options.notes) {
+    if (
+      note.role !== 'lead' ||
+      note.startMs < sectionStartMs ||
+      note.startMs >= sectionEndMs
+    ) {
+      continue;
+    }
+    const scaleDegree = resolveScaleDegreeFromFrequency(
+      note.frequency,
+      options.theme
+    );
+    if (scaleDegree !== null) {
+      leadDegrees.push(mod(scaleDegree, options.theme.scale.length));
+    }
+  }
+
+  return leadDegrees;
+}
+
+function resolveScaleDegreeFromFrequency(
+  frequency: number,
+  theme: {
+    rootHz: number;
+    scale: readonly number[];
+  }
+): number | null {
+  const relativeSemitones = Math.round(
+    Math.log2(frequency / Math.max(theme.rootHz, Number.EPSILON)) * 12
+  );
+  const pitchClass = normalizePitchClass(relativeSemitones);
+  const octave = Math.floor(relativeSemitones / 12);
+
+  for (let index = 0; index < theme.scale.length; index += 1) {
+    const offset = theme.scale[index];
+    if (offset === undefined || offset >= 12) {
+      continue;
+    }
+    if (normalizePitchClass(offset) === pitchClass) {
+      return octave * theme.scale.length + index;
+    }
+  }
+
+  return null;
+}
+
+function countExactMotifMatches(
+  sequence: readonly number[],
+  targetMotif: readonly number[]
+): number {
+  if (targetMotif.length === 0 || sequence.length < targetMotif.length) {
+    return 0;
+  }
+
+  let matches = 0;
+  for (
+    let startIndex = 0;
+    startIndex <= sequence.length - targetMotif.length;
+    startIndex += 1
+  ) {
+    let exactMatch = true;
+    for (let offset = 0; offset < targetMotif.length; offset += 1) {
+      if (sequence[startIndex + offset] !== targetMotif[offset]) {
+        exactMatch = false;
+        break;
+      }
+    }
+    if (exactMatch) {
+      matches += 1;
+    }
+  }
+
+  return matches;
+}
+
+function countVariedIntervalPatternMatches(
+  sequence: readonly number[],
+  targetMotif: readonly number[]
+): number {
+  if (targetMotif.length === 0 || sequence.length < targetMotif.length) {
+    return 0;
+  }
+
+  const targetPattern = createIntervalPattern(targetMotif);
+  if (targetPattern.length === 0) {
+    return 0;
+  }
+
+  let matches = 0;
+  for (
+    let startIndex = 0;
+    startIndex <= sequence.length - targetMotif.length;
+    startIndex += 1
+  ) {
+    const phrase = sequence.slice(startIndex, startIndex + targetMotif.length);
+    if (phrasesMatchExactly(phrase, targetMotif)) {
+      continue;
+    }
+    if (phrasesMatchExactly(createIntervalPattern(phrase), targetPattern)) {
+      matches += 1;
+    }
+  }
+
+  return matches;
+}
+
+function createIntervalPattern(sequence: readonly number[]): number[] {
+  if (sequence.length < 2) {
+    return [];
+  }
+  const pattern: number[] = [];
+
+  for (let index = 1; index < sequence.length; index += 1) {
+    pattern.push(sequence[index]! - sequence[index - 1]!);
+  }
+
+  return pattern;
+}
+
+function phrasesMatchExactly(
+  left: readonly number[],
+  right: readonly number[]
+): boolean {
+  if (left.length !== right.length) {
+    return false;
+  }
+
+  for (let index = 0; index < left.length; index += 1) {
+    if (left[index] !== right[index]) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+function normalizePitchClass(semitone: number): number {
+  return ((Math.round(semitone) % 12) + 12) % 12;
+}
+
+function mod(value: number, divisor: number): number {
+  if (divisor <= 0) {
+    return value;
+  }
+  return ((value % divisor) + divisor) % divisor;
 }
