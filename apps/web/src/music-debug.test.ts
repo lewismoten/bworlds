@@ -73,6 +73,7 @@ describe('music debug', () => {
     expect(first.densitySections).toEqual(second.densitySections);
     expect(first.densityValidation).toEqual(second.densityValidation);
     expect(first.percussionValidation).toEqual(second.percussionValidation);
+    expect(first.songDnaValidation).toEqual(second.songDnaValidation);
     expect(first.leadMaxLeapSemitones).toBe(second.leadMaxLeapSemitones);
     expect(first.accidentalNoteCount).toBe(second.accidentalNoteCount);
     expect(first.blueprintLabel).toBe(second.blueprintLabel);
@@ -102,6 +103,7 @@ describe('music debug', () => {
     expect(first.cadenceValidation.isValidForMidiExport).toBe(true);
     expect(first.densityValidation.isValidForMidiExport).toBe(true);
     expect(first.percussionValidation.isValidForMidiExport).toBe(true);
+    expect(first.songDnaValidation.isValidForMidiExport).toBe(true);
     expect(first.song.sections[0]?.startTick).toBe(0);
     expect(first.song.sections[0]?.endTick).toBe(8 * 1920);
     expect(first.song.sections.map((section) => section.id)).toEqual([

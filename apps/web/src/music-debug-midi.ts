@@ -112,12 +112,14 @@ export function createMusicDebugMidiFile(
     ...snapshot.motifValidation.messages,
     ...snapshot.timingValidation.messages,
     ...snapshot.percussionValidation.messages,
+    ...snapshot.songDnaValidation.messages,
   ];
   if (
     !snapshot.midiExportValidation.isValidForMidiExport ||
     !snapshot.motifValidation.isValidForMidiExport ||
     !snapshot.timingValidation.isValidForMidiExport ||
-    !snapshot.percussionValidation.isValidForMidiExport
+    !snapshot.percussionValidation.isValidForMidiExport ||
+    !snapshot.songDnaValidation.isValidForMidiExport
   ) {
     throw new Error(`Cannot export MIDI: ${validationMessages.join(' ')}`);
   }

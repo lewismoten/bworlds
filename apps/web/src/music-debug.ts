@@ -116,6 +116,10 @@ import {
   validateMusicDebugPercussion,
   type MusicDebugPercussionValidation,
 } from './music-debug-percussion-validation.ts';
+import {
+  validateMusicDebugSongDna,
+  type MusicDebugSongDnaValidation,
+} from './music-debug-song-dna-validation.ts';
 
 export type MusicDebugTileKind =
   | 'plains'
@@ -197,6 +201,7 @@ export type MusicDebugSnapshot = {
   cadenceValidation: MusicDebugCadenceValidation;
   densityValidation: MusicDebugDensityValidation;
   percussionValidation: MusicDebugPercussionValidation;
+  songDnaValidation: MusicDebugSongDnaValidation;
   densitySections: MusicDebugSectionDensityValidation[];
   midiAudit: MusicDebugMidiAudit;
   midiExportValidation: MusicDebugPitchValidation;
@@ -506,6 +511,15 @@ export function createMusicDebugSnapshot(
     sections: song.sections,
     songStartMs: song.startMs,
   });
+  const songDnaValidation = validateMusicDebugSongDna({
+    songDna: song.dna,
+    rootMidiNote: scaleMap.rootMidiNote,
+    modePitchOffsets: scaleMap.modePitchOffsets,
+    instrumentBank,
+    roleCounts,
+    outOfModeNotesByRole: midiExportValidation.outOfModeNotesByRole,
+    dominantPitchClassesByRole: midiExportValidation.dominantPitchClassesByRole,
+  });
   const snapshotBase = {
     options,
     theme,
@@ -552,6 +566,7 @@ export function createMusicDebugSnapshot(
     cadenceValidation,
     densityValidation,
     percussionValidation,
+    songDnaValidation,
     densitySections: densityValidation.sections,
     midiExportValidation,
     timingValidation,
@@ -899,6 +914,9 @@ export function buildMusicDebugSummaryMarkup(
       <span>Percussion Check ${formatMusicDebugPercussionValidationSummary(snapshot.percussionValidation)}</span>
     </div>
     <div class="music-debug-role-counts">
+      <span>SongDNA Check ${formatMusicDebugSongDnaValidationSummary(snapshot.songDnaValidation)}</span>
+    </div>
+    <div class="music-debug-role-counts">
       <span>MIDI Audit ${formatMusicDebugMidiAuditSummary(snapshot.midiAudit)}</span>
     </div>
     <div class="music-debug-role-counts">
@@ -1013,6 +1031,15 @@ function formatMusicDebugDensityValidationSummary(
 
 function formatMusicDebugPercussionValidationSummary(
   validation: MusicDebugPercussionValidation
+): string {
+  if (!validation.isValidForMidiExport) {
+    return validation.messages.join(' | ');
+  }
+  return 'ok';
+}
+
+function formatMusicDebugSongDnaValidationSummary(
+  validation: MusicDebugSongDnaValidation
 ): string {
   if (!validation.isValidForMidiExport) {
     return validation.messages.join(' | ');

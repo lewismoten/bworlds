@@ -242,6 +242,29 @@ describe('music debug midi', () => {
     );
   });
 
+  it('blocks MIDI export when SongDNA validation fails', () => {
+    const snapshot = createMusicDebugSnapshot({
+      tileKind: 'town',
+      contextType: 'town',
+      clusterX: 3,
+      clusterY: -2,
+    });
+
+    expect(() =>
+      createMusicDebugMidiFile({
+        ...snapshot,
+        songDnaValidation: {
+          isValidForMidiExport: false,
+          messages: [
+            'SongDNA lead instrument trumpet does not match bank family flute.',
+          ],
+        },
+      })
+    ).toThrow(
+      'Cannot export MIDI: SongDNA lead instrument trumpet does not match bank family flute.'
+    );
+  });
+
   it('downloads the encoded midi file through a blob url', () => {
     const snapshot = createMusicDebugSnapshot({
       tileKind: 'forest',

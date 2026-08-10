@@ -287,7 +287,7 @@ added directly as semitones instead of moving through the selected scale.
 - [x] Pass active chord to every track generator.
 - [x] Pass motif state to every track generator.
 - [ ] Prevent tracks from selecting independent tonal centers.
-- [ ] Validate all tracks against shared SongDNA.
+- [x] Validate all tracks against shared SongDNA.
 
 ## MIDI Export Validation
 
