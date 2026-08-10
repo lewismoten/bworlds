@@ -182,8 +182,8 @@ added directly as semitones instead of moving through the selected scale.
 
 ## Motif Translation
 
-- [ ] Render 1-3-5-3 as G-B-D-B in the selected mode.
-- [ ] Confirm motif notes use degrees rather than semitones.
+- [x] Render 1-3-5-3 as G-B-D-B in the selected mode.
+- [x] Confirm motif notes use degrees rather than semitones.
 - [ ] Give the motif one recognizable rhythm.
 - [ ] State the motif clearly during Section A.
 - [ ] Repeat the motif clearly during Section A'.

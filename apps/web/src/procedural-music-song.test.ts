@@ -13,6 +13,7 @@ import { resolvePercussionFamilyFromInstrumentId } from './procedural-music-perc
 import { resolveMusicTheme } from './procedural-music.ts';
 import { buildProceduralMusicSongSections } from './procedural-music-song-timing.ts';
 import { resolveProceduralMusicBlueprint } from './procedural-music-blueprint.ts';
+import { resolveProceduralScaleDegreeMidiNote } from './procedural-music-scale.ts';
 
 describe('procedural music song', () => {
   it('keeps overworld and town songs in the two-to-three-minute range', () => {
@@ -145,6 +146,92 @@ describe('procedural music song', () => {
     expect(first.durationMs).toBeGreaterThan(100_000);
     expect(first.durationMs).toBe(second.durationMs);
     expect(first.notes).toEqual(second.notes);
+  });
+
+  it('renders the plains 1-3-5-3 motif as scale degrees inside the opening Section A lead phrase', () => {
+    const song = createProceduralMusicSong({
+      nowMs: 1_000,
+      tileKind: 'plains',
+      contextType: 'overworld',
+      dayProgress: 0.45,
+      yearProgress: 0.25,
+      clusterX: 0,
+      clusterY: 0,
+    });
+    const theme = resolveMusicTheme('plains', 'overworld', undefined, 0, 0);
+    const sectionA = song.sections.find((section) => section.id === 'a')!;
+    const sectionALead = song.notes
+      .filter(
+        (note) =>
+          note.role === 'lead' &&
+          note.startMs >= song.startMs + sectionA.startOffsetMs &&
+          note.startMs <
+            song.startMs + sectionA.startOffsetMs + sectionA.durationMs
+      )
+      .slice(0, 4)
+      .map((note) => resolveMidiNote(note.frequency));
+
+    expect(song.dna.leadMotif.slice(0, 4)).toEqual([0, 2, 4, 2]);
+    expect(sectionALead).toEqual(
+      [0, 2, 4, 2].map((degreeIndex) =>
+        resolveProceduralScaleDegreeMidiNote({
+          scaleMap: {
+            rootMidiNote: theme.rootMidiNote,
+            modePitchOffsets: theme.scale,
+          },
+          degreeIndex,
+        })
+      )
+    );
+  });
+
+  it('renders motif notes through the selected mode instead of treating degrees as semitone offsets', () => {
+    const clusterX = 3;
+    const clusterY = -2;
+    const song = createProceduralMusicSong({
+      nowMs: 1_000,
+      tileKind: 'forest',
+      contextType: 'overworld',
+      dayProgress: 0.45,
+      yearProgress: 0.25,
+      clusterX,
+      clusterY,
+    });
+    const theme = resolveMusicTheme(
+      'forest',
+      'overworld',
+      undefined,
+      clusterX,
+      clusterY
+    );
+    const sectionA = song.sections.find((section) => section.id === 'a')!;
+    const sectionALead = song.notes
+      .filter(
+        (note) =>
+          note.role === 'lead' &&
+          note.startMs >= song.startMs + sectionA.startOffsetMs &&
+          note.startMs <
+            song.startMs + sectionA.startOffsetMs + sectionA.durationMs
+      )
+      .slice(0, 4)
+      .map((note) => resolveMidiNote(note.frequency));
+    const expectedDegreeMidi = song.dna.leadMotif
+      .slice(0, 4)
+      .map((degreeIndex) =>
+        resolveProceduralScaleDegreeMidiNote({
+          scaleMap: {
+            rootMidiNote: theme.rootMidiNote,
+            modePitchOffsets: theme.scale,
+          },
+          degreeIndex,
+        })
+      );
+    const semitoneInterpretation = song.dna.leadMotif
+      .slice(0, 4)
+      .map((degreeIndex) => theme.rootMidiNote + degreeIndex);
+
+    expect(sectionALead).toEqual(expectedDegreeMidi);
+    expect(sectionALead).not.toEqual(semitoneInterpretation);
   });
 
   it('builds an eight-measure phrase before repeating it across the full song', () => {
@@ -669,7 +756,9 @@ describe('procedural music song', () => {
     expect(
       new Set(
         percussionNotes
-          .map((note) => resolvePercussionFamilyFromInstrumentId(note.instrumentId))
+          .map((note) =>
+            resolvePercussionFamilyFromInstrumentId(note.instrumentId)
+          )
           .filter((family) => family !== null)
       ).size
     ).toBeGreaterThan(1);
@@ -687,7 +776,9 @@ describe('procedural music song', () => {
     expect(repeatedPulseClusters).toBeGreaterThan(3);
     expect(
       percussionNotes.some(
-        (note) => resolvePercussionFamilyFromInstrumentId(note.instrumentId) === 'shaker'
+        (note) =>
+          resolvePercussionFamilyFromInstrumentId(note.instrumentId) ===
+          'shaker'
       )
     ).toBe(true);
     expect(
@@ -699,3 +790,7 @@ describe('procedural music song', () => {
     ).toBe(true);
   });
 });
+
+function resolveMidiNote(frequency: number): number {
+  return Math.round(69 + 12 * Math.log2(frequency / 440));
+}
