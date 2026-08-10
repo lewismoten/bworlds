@@ -8,23 +8,23 @@ Always run tests to make sure all tests pass
 
 # Prevent Runaway Vitest Processes
 
-- [ ] Keep parallel workers enabled for the normal test suite.
-- [ ] Fail the full test suite after 60 seconds.
-- [ ] Kill all Vitest workers when the suite timeout expires.
-- [ ] Print active test files before forced termination.
-- [ ] Print the last started test before forced termination.
-- [ ] Set a reasonable timeout for each individual test.
-- [ ] Set timeouts for `beforeAll` and `afterAll` hooks.
+- [x] Keep parallel workers enabled for the normal test suite.
+- [x] Fail the full test suite after 60 seconds.
+- [x] Kill all Vitest workers when the suite timeout expires.
+- [x] Print active test files before forced termination.
+- [x] Print the last started test before forced termination.
+- [x] Set a reasonable timeout for each individual test.
+- [x] Set timeouts for `beforeAll` and `afterAll` hooks.
 - [ ] Check tests for infinite loops and unbounded generation.
 - [ ] Check async tests for missing `await` statements.
 - [ ] Ensure every promise eventually resolves or rejects.
 - [ ] Clear intervals and timeouts after every test.
 - [ ] Close servers, sockets, workers, and file watchers.
 - [ ] Restore fake timers and mocks after every test.
-- [ ] Prevent concurrent full-suite runs in the same project.
+- [x] Prevent concurrent full-suite runs in the same project.
 - [ ] Make the agent wait for one test run to finish.
-- [ ] Run hanging files alone with one worker and verbose output.
-- [ ] Record worker PIDs when the full suite starts.
+- [x] Run hanging files alone with one worker and verbose output.
+- [x] Record worker PIDs when the full suite starts.
 - [ ] Add a regression test after finding each hang.
 
 # Next Highest
