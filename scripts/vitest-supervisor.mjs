@@ -7,6 +7,7 @@ import { promisify } from 'node:util';
 const execFileAsync = promisify(execFile);
 const DEFAULT_SUITE_TIMEOUT_MS = 60_000;
 const LOCK_FILE_NAME = '.vitest-full-suite.lock';
+const LOCK_WAIT_POLL_MS = 500;
 const TEST_FILE_PATTERN = /[A-Za-z0-9_./-]+\.test\.[cm]?[jt]sx?/g;
 
 export function parseSupervisorArgs(argv) {
@@ -151,12 +152,50 @@ async function acquireFullSuiteLock(lockFilePath) {
   };
 }
 
-async function readExistingLockMetadata(lockFilePath) {
+export async function readExistingLockMetadata(lockFilePath) {
   try {
     const contents = await readFile(lockFilePath, 'utf8');
     return JSON.parse(contents);
   } catch {
     return null;
+  }
+}
+
+export function isProcessActive(pid) {
+  if (!Number.isInteger(pid) || pid <= 0) {
+    return false;
+  }
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (error) {
+    return error?.code === 'EPERM';
+  }
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+export async function waitForFullSuiteLock(lockFilePath, options = {}) {
+  const pollMs = options.pollMs ?? LOCK_WAIT_POLL_MS;
+  const onWait = options.onWait ?? (() => {});
+  const isProcessActiveFn = options.isProcessActive ?? isProcessActive;
+  const sleepFn = options.sleep ?? sleep;
+
+  while (true) {
+    try {
+      return await acquireFullSuiteLock(lockFilePath);
+    } catch {
+      const metadata = await readExistingLockMetadata(lockFilePath);
+      if (metadata?.pid && !isProcessActiveFn(metadata.pid)) {
+        await rm(lockFilePath, { force: true });
+        continue;
+      }
+
+      onWait(metadata);
+      await sleepFn(pollMs);
+    }
   }
 }
 
@@ -221,16 +260,19 @@ async function runVitest(argv = process.argv.slice(2)) {
   let releaseLock = null;
 
   if (args.isFullSuiteRun) {
-    try {
-      releaseLock = await acquireFullSuiteLock(lockFilePath);
-    } catch {
-      const metadata = await readExistingLockMetadata(lockFilePath);
-      const owner = metadata?.pid ? ` by PID ${metadata.pid}` : '';
-      console.error(
-        `Vitest supervisor: another full-suite run is already active${owner}. Wait for it to finish before starting a new one.`
-      );
-      return 1;
-    }
+    let announcedWait = false;
+    releaseLock = await waitForFullSuiteLock(lockFilePath, {
+      onWait(metadata) {
+        if (announcedWait) {
+          return;
+        }
+        announcedWait = true;
+        const owner = metadata?.pid ? ` by PID ${metadata.pid}` : '';
+        console.error(
+          `Vitest supervisor: another full-suite run is already active${owner}. Waiting for it to finish.`
+        );
+      },
+    });
   }
 
   const child = spawn(

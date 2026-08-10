@@ -22,7 +22,7 @@ Always run tests to make sure all tests pass
 - [ ] Close servers, sockets, workers, and file watchers.
 - [x] Restore fake timers and mocks after every test.
 - [x] Prevent concurrent full-suite runs in the same project.
-- [ ] Make the agent wait for one test run to finish.
+- [x] Make the agent wait for one test run to finish.
 - [x] Run hanging files alone with one worker and verbose output.
 - [x] Record worker PIDs when the full suite starts.
 - [ ] Add a regression test after finding each hang.
