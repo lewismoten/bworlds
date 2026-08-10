@@ -1,5 +1,6 @@
 import { resolveProceduralChordProgression } from './procedural-music-chord-progression.ts';
 import { PROCEDURAL_MUSIC_PHRASE_MEASURE_COUNT } from './procedural-music-phrase-structure.ts';
+import { resolveProceduralPhraseCadence } from './procedural-music-phrase-structure.ts';
 
 export const PROCEDURAL_MUSIC_CHORD_TIMELINE_SPAN_STEPS = 4;
 export const PROCEDURAL_MUSIC_STEPS_PER_MEASURE =
@@ -54,28 +55,49 @@ export function resolveProceduralChordTimeline(options: {
     const progressionIndex =
       Math.floor(startStepIndex / PROCEDURAL_MUSIC_CHORD_TIMELINE_SPAN_STEPS) %
       progression.length;
+    const endStepIndex = Math.min(
+      phraseStepCount,
+      startStepIndex + PROCEDURAL_MUSIC_CHORD_TIMELINE_SPAN_STEPS
+    );
+    const degreeIndex = progression[progressionIndex] ?? progression[0] ?? 0;
+
     timeline.push({
       progressionIndex,
-      degreeIndex: progression[progressionIndex] ?? progression[0] ?? 0,
+      degreeIndex: isDominantLikeAnswerSetupEntry({
+        themeStepCount: normalizedThemeStepCount,
+        startStepIndex,
+        endStepIndex,
+      })
+        ? 4
+        : degreeIndex,
       startStepIndex,
-      endStepIndex: Math.min(
-        phraseStepCount,
-        startStepIndex + PROCEDURAL_MUSIC_CHORD_TIMELINE_SPAN_STEPS
-      ),
+      endStepIndex,
       startMeasure:
         Math.floor(startStepIndex / PROCEDURAL_MUSIC_STEPS_PER_MEASURE) + 1,
       endMeasure:
-        Math.ceil(
-          Math.min(
-            phraseStepCount,
-            startStepIndex + PROCEDURAL_MUSIC_CHORD_TIMELINE_SPAN_STEPS
-          ) / PROCEDURAL_MUSIC_STEPS_PER_MEASURE
-        ) || 1,
+        Math.ceil(endStepIndex / PROCEDURAL_MUSIC_STEPS_PER_MEASURE) || 1,
     });
   }
 
   proceduralChordTimelineCache.set(cacheKey, timeline);
   return timeline;
+}
+
+function isDominantLikeAnswerSetupEntry(options: {
+  themeStepCount: number;
+  startStepIndex: number;
+  endStepIndex: number;
+}): boolean {
+  return (
+    resolveProceduralPhraseCadence({
+      themeStepCount: options.themeStepCount,
+      stepIndex: options.endStepIndex,
+    }) === 'answer' &&
+    resolveProceduralPhraseCadence({
+      themeStepCount: options.themeStepCount,
+      stepIndex: options.startStepIndex,
+    }) !== 'answer'
+  );
 }
 
 export function resolveProceduralChordTimelineEntryAtStep(options: {

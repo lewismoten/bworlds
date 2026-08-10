@@ -91,6 +91,32 @@ describe('procedural music chord timeline', () => {
     ).toBe(true);
   });
 
+  it('replaces the last pre-answer block with a dominant-like setup before the tonic answer', () => {
+    const timeline = resolveProceduralChordTimeline({
+      themeId: 'frontier-plains',
+      themeStepCount: 8,
+      clusterX: 3,
+      clusterY: -2,
+    });
+
+    expect(timeline[14]).toEqual({
+      progressionIndex: 2,
+      degreeIndex: 4,
+      startStepIndex: 56,
+      endStepIndex: 60,
+      startMeasure: 15,
+      endMeasure: 15,
+    });
+    expect(timeline[15]).toEqual({
+      progressionIndex: 3,
+      degreeIndex: 0,
+      startStepIndex: 60,
+      endStepIndex: 64,
+      startMeasure: 16,
+      endMeasure: 16,
+    });
+  });
+
   it('starts every chord change on a strong beat at the start of a measure', () => {
     const timeline = resolveProceduralChordTimeline({
       themeId: 'frontier-plains',

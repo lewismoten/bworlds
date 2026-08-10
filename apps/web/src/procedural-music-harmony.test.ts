@@ -325,6 +325,32 @@ describe('procedural music harmony', () => {
     );
   });
 
+  it('uses a dominant-like chord setup immediately before the answer cadence tonic', () => {
+    const setupChord = resolveProceduralChordAtStep(
+      MIXOLYDIAN_THEME,
+      59,
+      3,
+      -2
+    );
+    const answerChord = resolveProceduralChordAtStep(
+      MIXOLYDIAN_THEME,
+      60,
+      3,
+      -2
+    );
+
+    expect(resolveProceduralLeadPhraseCadence(MIXOLYDIAN_THEME, 59)).toBe(
+      'neutral'
+    );
+    expect(resolveProceduralLeadPhraseCadence(MIXOLYDIAN_THEME, 60)).toBe(
+      'answer'
+    );
+    expect(setupChord.degreeIndex).toBe(4);
+    expect(answerChord.degreeIndex).toBe(0);
+    expect(((setupChord.rootSemitones % 12) + 12) % 12).toBe(7);
+    expect(((answerChord.rootSemitones % 12) + 12) % 12).toBe(0);
+  });
+
   it('limits large melodic jumps and pulls the next step back afterward', () => {
     const semitones = Array.from({ length: 24 }, (_, stepIndex) =>
       resolveProceduralInstrumentSemitones({

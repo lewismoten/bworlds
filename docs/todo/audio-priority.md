@@ -175,7 +175,7 @@ added directly as semitones instead of moving through the selected scale.
 - [x] Give all tracks the same active chord timeline.
 - [x] Mark chord changes in the debug MIDI.
 - [x] Keep chord changes aligned with strong beats.
-- [ ] Add a dominant-like setup before answer cadences.
+- [x] Add a dominant-like setup before answer cadences.
 - [x] Strengthen harmony during the Return section.
 - [x] Simplify harmony during the stated lighter B section.
 - [x] Verify the progression is audible in the bass.

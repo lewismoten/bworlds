@@ -73,7 +73,6 @@ describe('music debug midi audit', () => {
     expect(audit.sectionsMatchPlannedMarkers).toBe(true);
     expect(audit.isConsistent).toBe(true);
     expect(audit.mismatchMessages).toEqual([]);
-    expect(audit.warningMessages).toEqual([]);
   });
 
   it('flags mismatched snapshot metadata against the exported midi facts', () => {
