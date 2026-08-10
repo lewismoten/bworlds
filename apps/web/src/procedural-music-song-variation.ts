@@ -2,6 +2,7 @@ import type { ProceduralMusicNote } from './procedural-music.ts';
 import { resolveMusicThemeById } from './procedural-music.ts';
 import { isProceduralSemitoneInMode } from './procedural-music-scale.ts';
 import { resolveSongHarmonySustainMultiplier } from './procedural-music-harmony-sustain.ts';
+import { createProceduralMusicSongSectionContext } from './procedural-music-song-section-context.ts';
 import { resolveSongSectionLayerTreatment } from './procedural-music-song-layers.ts';
 import type { ProceduralMusicSongSection } from './procedural-music-song.ts';
 
@@ -10,22 +11,22 @@ const SEMITONE_RATIO = 2 ** (1 / 12);
 export function transformSongSectionNote(
   note: ProceduralMusicNote,
   section: ProceduralMusicSongSection,
-  noteIndexInSection: number
+  noteIndexInSection: number,
+  songStartMs: number
 ): ProceduralMusicNote | null {
-  const layerTreatment = resolveSongSectionLayerTreatment(
+  const sectionContext = createProceduralMusicSongSectionContext({
     section,
     note,
-    noteIndexInSection
-  );
+    noteIndexInSection,
+    songStartMs,
+  });
+  const layerTreatment = resolveSongSectionLayerTreatment(sectionContext);
   if (layerTreatment.muted) {
     return null;
   }
   const harmonySustainMultiplier =
     note.role === 'harmony'
-      ? resolveSongHarmonySustainMultiplier({
-          sectionId: section.id,
-          noteIndexInSection,
-        })
+      ? resolveSongHarmonySustainMultiplier(sectionContext)
       : 1;
 
   switch (section.id) {

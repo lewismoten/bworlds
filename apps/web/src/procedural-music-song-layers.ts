@@ -1,4 +1,5 @@
 import type { ProceduralMusicNote } from './procedural-music.ts';
+import type { ProceduralMusicSongSectionContext } from './procedural-music-song-section-context.ts';
 import type { ProceduralMusicSongSection } from './procedural-music-song.ts';
 
 export type ProceduralSongLayerTreatment = {
@@ -37,21 +38,26 @@ export function describeSongSectionLayerArrangement(
 }
 
 export function resolveSongSectionLayerTreatment(
-  section: ProceduralMusicSongSection,
-  note: Pick<ProceduralMusicNote, 'role'>,
-  noteIndexInSection: number
+  context: Pick<
+    ProceduralMusicSongSectionContext,
+    'section' | 'note' | 'noteIndexInSection'
+  >
 ): ProceduralSongLayerTreatment {
-  const harmonyLeadSpace = resolveHarmonyLeadSpaceConfig(section.id, note.role);
+  const harmonyLeadSpace = resolveHarmonyLeadSpaceConfig(
+    context.section.id,
+    context.note.role
+  );
 
-  switch (section.id) {
+  switch (context.section.id) {
     case 'intro':
       return {
         muted:
-          note.role === 'percussion' ||
-          (note.role === 'bass' && noteIndexInSection % 2 === 1),
-        volumeMultiplier: note.role === 'lead' ? 0.84 : 0.68,
+          context.note.role === 'percussion' ||
+          (context.note.role === 'bass' &&
+            context.noteIndexInSection % 2 === 1),
+        volumeMultiplier: context.note.role === 'lead' ? 0.84 : 0.68,
         durationMultiplier:
-          note.role === 'harmony'
+          context.note.role === 'harmony'
             ? 1.14 * harmonyLeadSpace.durationMultiplier
             : 1,
         releaseMultiplier: 1.12,
@@ -60,18 +66,18 @@ export function resolveSongSectionLayerTreatment(
       return {
         muted: shouldMuteHarmonyForLeadSpace(
           harmonyLeadSpace,
-          noteIndexInSection
+          context.noteIndexInSection
         ),
         volumeMultiplier:
-          note.role === 'lead'
+          context.note.role === 'lead'
             ? 1.06
-            : note.role === 'harmony'
+            : context.note.role === 'harmony'
               ? harmonyLeadSpace.volumeMultiplier
               : 1,
         durationMultiplier:
-          note.role === 'lead'
+          context.note.role === 'lead'
             ? 1.08
-            : note.role === 'harmony'
+            : context.note.role === 'harmony'
               ? 1.08 * harmonyLeadSpace.durationMultiplier
               : 1,
         releaseMultiplier: 1,
@@ -79,20 +85,24 @@ export function resolveSongSectionLayerTreatment(
     case 'b':
       return {
         muted:
-          shouldMuteHarmonyForLeadSpace(harmonyLeadSpace, noteIndexInSection) ||
-          (note.role === 'harmony' && noteIndexInSection % 2 === 0),
+          shouldMuteHarmonyForLeadSpace(
+            harmonyLeadSpace,
+            context.noteIndexInSection
+          ) ||
+          (context.note.role === 'harmony' &&
+            context.noteIndexInSection % 2 === 0),
         volumeMultiplier:
-          note.role === 'lead'
+          context.note.role === 'lead'
             ? 1.08
-            : note.role === 'percussion'
+            : context.note.role === 'percussion'
               ? 0.88
-              : note.role === 'harmony'
+              : context.note.role === 'harmony'
                 ? harmonyLeadSpace.volumeMultiplier
                 : 1,
         durationMultiplier:
-          note.role === 'bass'
+          context.note.role === 'bass'
             ? 1.06
-            : note.role === 'harmony'
+            : context.note.role === 'harmony'
               ? harmonyLeadSpace.durationMultiplier
               : 1,
         releaseMultiplier: 1,
@@ -100,45 +110,56 @@ export function resolveSongSectionLayerTreatment(
     case 'variation':
       return {
         muted:
-          (note.role === 'percussion' &&
-            (noteIndexInSection % 4 === 0 || noteIndexInSection % 5 === 4)) ||
-          shouldMuteHarmonyForLeadSpace(harmonyLeadSpace, noteIndexInSection),
+          (context.note.role === 'percussion' &&
+            (context.noteIndexInSection % 4 === 0 ||
+              context.noteIndexInSection % 5 === 4)) ||
+          shouldMuteHarmonyForLeadSpace(
+            harmonyLeadSpace,
+            context.noteIndexInSection
+          ),
         volumeMultiplier:
-          note.role === 'harmony' ? harmonyLeadSpace.volumeMultiplier : 1,
+          context.note.role === 'harmony'
+            ? harmonyLeadSpace.volumeMultiplier
+            : 1,
         durationMultiplier:
-          note.role === 'lead'
+          context.note.role === 'lead'
             ? 1.78
-            : note.role === 'harmony'
+            : context.note.role === 'harmony'
               ? 1.1 * harmonyLeadSpace.durationMultiplier
               : 1,
-        releaseMultiplier: note.role === 'lead' ? 1.18 : 1,
+        releaseMultiplier: context.note.role === 'lead' ? 1.18 : 1,
       };
     case 'return':
       return {
         muted: false,
         volumeMultiplier:
-          note.role === 'lead'
+          context.note.role === 'lead'
             ? 0.94
-            : note.role === 'harmony'
+            : context.note.role === 'harmony'
               ? harmonyLeadSpace.volumeMultiplier
               : 1.02,
         durationMultiplier:
-          note.role === 'harmony'
+          context.note.role === 'harmony'
             ? harmonyLeadSpace.durationMultiplier
-            : note.role === 'bass'
+            : context.note.role === 'bass'
               ? 1.06
               : 1,
         releaseMultiplier:
-          note.role === 'harmony' ? 1.08 : note.role === 'lead' ? 1.02 : 1,
+          context.note.role === 'harmony'
+            ? 1.08
+            : context.note.role === 'lead'
+              ? 1.02
+              : 1,
       };
     case 'outro':
       return {
         muted:
-          note.role === 'percussion' ||
-          (note.role === 'lead' && noteIndexInSection % 2 === 1),
+          context.note.role === 'percussion' ||
+          (context.note.role === 'lead' &&
+            context.noteIndexInSection % 2 === 1),
         volumeMultiplier: 0.72,
         durationMultiplier:
-          note.role === 'harmony'
+          context.note.role === 'harmony'
             ? 1.2 * harmonyLeadSpace.durationMultiplier
             : 1.08,
         releaseMultiplier: 1.24,
@@ -148,9 +169,13 @@ export function resolveSongSectionLayerTreatment(
       return {
         muted: false,
         volumeMultiplier:
-          note.role === 'harmony' ? harmonyLeadSpace.volumeMultiplier : 1,
+          context.note.role === 'harmony'
+            ? harmonyLeadSpace.volumeMultiplier
+            : 1,
         durationMultiplier:
-          note.role === 'harmony' ? harmonyLeadSpace.durationMultiplier : 1,
+          context.note.role === 'harmony'
+            ? harmonyLeadSpace.durationMultiplier
+            : 1,
         releaseMultiplier: 1,
       };
   }

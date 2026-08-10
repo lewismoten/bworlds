@@ -200,7 +200,8 @@ function applySongSectionsToNotes(
     const transformed = transformSongSectionNote(
       note,
       section,
-      noteIndexInSection
+      noteIndexInSection,
+      songStartMs
     );
     noteIndexesByRoleInSection[note.role] += 1;
 

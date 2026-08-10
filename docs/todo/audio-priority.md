@@ -282,7 +282,7 @@ added directly as semitones instead of moving through the selected scale.
 
 - [x] Build one harmonic timeline before generating tracks.
 - [x] Build one rhythmic grid before generating tracks.
-- [ ] Pass section state to every track generator.
+- [x] Pass section state to every track generator.
 - [x] Pass phrase state to every track generator.
 - [x] Pass active chord to every track generator.
 - [x] Pass motif state to every track generator.

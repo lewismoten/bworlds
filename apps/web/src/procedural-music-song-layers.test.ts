@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { createProceduralMusicSongSectionContext } from './procedural-music-song-section-context.ts';
 import {
   describeSongSectionLayerArrangement,
   resolveSongSectionLayerTreatment,
@@ -26,77 +27,51 @@ describe('procedural music song layers', () => {
   it('thins instrumentation in the intro and outro sections', () => {
     expect(
       resolveSongSectionLayerTreatment(
-        createSection('intro'),
-        { role: 'percussion' },
-        0
+        createContext(createSection('intro'), { role: 'percussion' }, 0)
       ).muted
     ).toBe(true);
     expect(
       resolveSongSectionLayerTreatment(
-        createSection('intro'),
-        { role: 'bass' },
-        1
+        createContext(createSection('intro'), { role: 'bass' }, 1)
       ).muted
     ).toBe(true);
     expect(
       resolveSongSectionLayerTreatment(
-        createSection('outro'),
-        { role: 'lead' },
-        1
+        createContext(createSection('outro'), { role: 'lead' }, 1)
       ).muted
     ).toBe(true);
   });
 
   it('recombines section layers by muting or softening different roles per section', () => {
     const aPrimeLead = resolveSongSectionLayerTreatment(
-      createSection('a-prime'),
-      { role: 'lead' },
-      0
+      createContext(createSection('a-prime'), { role: 'lead' }, 0)
     );
     const aHarmony = resolveSongSectionLayerTreatment(
-      createSection('a'),
-      { role: 'harmony' },
-      6
+      createContext(createSection('a'), { role: 'harmony' }, 6)
     );
     const aPrimeHarmony = resolveSongSectionLayerTreatment(
-      createSection('a-prime'),
-      { role: 'harmony' },
-      4
+      createContext(createSection('a-prime'), { role: 'harmony' }, 4)
     );
     const bHarmony = resolveSongSectionLayerTreatment(
-      createSection('b'),
-      { role: 'harmony' },
-      2
+      createContext(createSection('b'), { role: 'harmony' }, 2)
     );
     const bHarmonyAlternate = resolveSongSectionLayerTreatment(
-      createSection('b'),
-      { role: 'harmony' },
-      1
+      createContext(createSection('b'), { role: 'harmony' }, 1)
     );
     const variationPercussion = resolveSongSectionLayerTreatment(
-      createSection('variation'),
-      { role: 'percussion' },
-      4
+      createContext(createSection('variation'), { role: 'percussion' }, 4)
     );
     const returnLead = resolveSongSectionLayerTreatment(
-      createSection('return'),
-      { role: 'lead' },
-      0
+      createContext(createSection('return'), { role: 'lead' }, 0)
     );
     const returnBass = resolveSongSectionLayerTreatment(
-      createSection('return'),
-      { role: 'bass' },
-      0
+      createContext(createSection('return'), { role: 'bass' }, 0)
     );
     const returnHarmony = resolveSongSectionLayerTreatment(
-      createSection('return'),
-      { role: 'harmony' },
-      0
+      createContext(createSection('return'), { role: 'harmony' }, 0)
     );
     const returnPercussion = resolveSongSectionLayerTreatment(
-      createSection('return'),
-      { role: 'percussion' },
-      0
+      createContext(createSection('return'), { role: 'percussion' }, 0)
     );
 
     expect(aPrimeLead.muted).toBe(false);
@@ -140,3 +115,20 @@ describe('procedural music song layers', () => {
     ).toContain('stretched lead');
   });
 });
+
+function createContext(
+  section: ProceduralMusicSongSection,
+  note: { role: 'lead' | 'harmony' | 'bass' | 'percussion' },
+  noteIndexInSection: number
+) {
+  return createProceduralMusicSongSectionContext({
+    section,
+    note: {
+      role: note.role,
+      startMs: noteIndexInSection * 250,
+      instrumentId: `${note.role}-test`,
+    },
+    noteIndexInSection,
+    songStartMs: 0,
+  });
+}

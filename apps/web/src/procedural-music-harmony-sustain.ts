@@ -1,17 +1,19 @@
-import type { ProceduralMusicSongSectionId } from './procedural-music-song.ts';
+import type { ProceduralMusicSongSectionContext } from './procedural-music-song-section-context.ts';
 
-export function resolveSongHarmonySustainMultiplier(options: {
-  sectionId: ProceduralMusicSongSectionId;
-  noteIndexInSection: number;
-}): number {
-  const chordIndexInSection = Math.floor(options.noteIndexInSection / 3);
+export function resolveSongHarmonySustainMultiplier(
+  context: Pick<
+    ProceduralMusicSongSectionContext,
+    'section' | 'noteIndexInSection'
+  >
+): number {
+  const chordIndexInSection = Math.floor(context.noteIndexInSection / 3);
   const phrasePulse = chordIndexInSection % 4;
   const base =
-    options.sectionId === 'intro' || options.sectionId === 'outro'
+    context.section.id === 'intro' || context.section.id === 'outro'
       ? 3.1
-      : options.sectionId === 'b'
+      : context.section.id === 'b'
         ? 2.5
-        : options.sectionId === 'variation'
+        : context.section.id === 'variation'
           ? 2.7
           : 2.85;
 
