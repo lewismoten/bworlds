@@ -23,6 +23,10 @@ import { regeneratePhrasesContainingUnresolvedChromaticNotes } from './procedura
 import { resolveSongFinalCadence } from './procedural-music-song-cadence.ts';
 import { applyProceduralSongDensityPlan } from './procedural-music-song-density.ts';
 import { stateLeadMotifInFirstASection } from './procedural-music-song-motif.ts';
+import {
+  collectCriticalFailurePhraseIndexes,
+  regenerateProceduralMusicSongPhrases,
+} from './procedural-music-song-repair.ts';
 
 export type ProceduralMusicSongSection = {
   id: ProceduralMusicSongSectionId;
@@ -71,34 +75,38 @@ export function createProceduralMusicSong(
     songStartMs: startMs,
     songDurationMs: durationMs,
   });
-  const arrangedNotes = applySongSectionsToNotes(
-    basePhrasePlan.repeatedNotes,
-    sections,
-    startMs
-  );
-  const motifStatedNotes = stateLeadMotifInFirstASection({
-    notes: arrangedNotes,
+  const initialNotes = finalizeProceduralMusicSongNotes({
+    notes: basePhrasePlan.repeatedNotes,
     sections,
     songStartMs: startMs,
+    phraseDurationMs: basePhrasePlan.phraseDurationMs,
     leadMotif: dna.leadMotif,
     theme,
   });
-  const cadencedNotes = resolveSongFinalCadence({
-    notes: motifStatedNotes,
+  const failedPhraseIndexes = collectCriticalFailurePhraseIndexes({
+    notes: initialNotes,
     sections,
+    phraseDurationMs: basePhrasePlan.phraseDurationMs,
     songStartMs: startMs,
+    music: options,
   });
-  const chromaticNotes = regeneratePhrasesContainingUnresolvedChromaticNotes(
-    cadencedNotes,
+  const repairedRepeatedNotes = regenerateProceduralMusicSongPhrases(
+    basePhrasePlan.repeatedNotes,
     {
-      songStartMs: startMs,
+      affectedPhraseIndexes: failedPhraseIndexes,
+      music: options,
       phraseDurationMs: basePhrasePlan.phraseDurationMs,
+      songStartMs: startMs,
+      songDurationMs: durationMs,
     }
   );
-  const notes = applyProceduralSongDensityPlan({
-    notes: chromaticNotes,
+  const notes = finalizeProceduralMusicSongNotes({
+    notes: repairedRepeatedNotes,
     sections,
     songStartMs: startMs,
+    phraseDurationMs: basePhrasePlan.phraseDurationMs,
+    leadMotif: dna.leadMotif,
+    theme,
   });
   const loopStartOffsetMs = sections[1]?.startOffsetMs ?? 0;
   const outro = sections[sections.length - 1];
@@ -116,6 +124,45 @@ export function createProceduralMusicSong(
     sections,
     notes,
   };
+}
+
+function finalizeProceduralMusicSongNotes(options: {
+  notes: readonly ProceduralMusicNote[];
+  sections: readonly ProceduralMusicSongSection[];
+  songStartMs: number;
+  phraseDurationMs: number;
+  leadMotif: readonly number[];
+  theme: ReturnType<typeof resolveMusicTheme>;
+}): ProceduralMusicNote[] {
+  const arrangedNotes = applySongSectionsToNotes(
+    options.notes,
+    options.sections,
+    options.songStartMs
+  );
+  const motifStatedNotes = stateLeadMotifInFirstASection({
+    notes: arrangedNotes,
+    sections: options.sections,
+    songStartMs: options.songStartMs,
+    leadMotif: options.leadMotif,
+    theme: options.theme,
+  });
+  const cadencedNotes = resolveSongFinalCadence({
+    notes: motifStatedNotes,
+    sections: options.sections,
+    songStartMs: options.songStartMs,
+  });
+  const chromaticNotes = regeneratePhrasesContainingUnresolvedChromaticNotes(
+    cadencedNotes,
+    {
+      songStartMs: options.songStartMs,
+      phraseDurationMs: options.phraseDurationMs,
+    }
+  );
+  return applyProceduralSongDensityPlan({
+    notes: chromaticNotes,
+    sections: options.sections,
+    songStartMs: options.songStartMs,
+  });
 }
 
 export function resolveProceduralMusicSongDurationMs(
