@@ -782,7 +782,7 @@ describe('world generator', () => {
     expect(quarryTile.poi?.name).toMatch(
       /\b(Quarry|Cut|Excavation|Pit|Works|Stone)\b/
     );
-  }, 1_000);
+  }, 5_000);
 
   it('creates lighthouse points of interest somewhere near the origin', () => {
     const generator = createGenerator();

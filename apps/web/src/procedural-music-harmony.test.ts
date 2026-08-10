@@ -52,10 +52,10 @@ describe('procedural music harmony', () => {
 
     for (const entry of strongBeatSemitones) {
       expect([
-        entry.chord.rootSemitones,
-        entry.chord.thirdSemitones,
-        entry.chord.fifthSemitones,
-      ]).toContain(entry.semitones);
+        entry.chord.rootSemitones % 12,
+        entry.chord.thirdSemitones % 12,
+        entry.chord.fifthSemitones % 12,
+      ]).toContain(((entry.semitones % 12) + 12) % 12);
     }
   });
 
@@ -103,14 +103,10 @@ describe('procedural music harmony', () => {
     expect(first.degreeOffsets.length).toBeLessThanOrEqual(8);
 
     const describeCycle = (steps: number[]) =>
-      steps.map((stepIndex) =>
-        resolveProceduralInstrumentSemitones({
-          theme: TEST_THEME,
-          role: 'lead',
-          stepIndex,
-          clusterX: 3,
-          clusterY: -2,
-        })
+      steps.map(
+        (stepIndex) =>
+          resolveProceduralCompositionStep(TEST_THEME, stepIndex, 3, -2)
+            .motifDegreeOffset
       );
 
     expect(describeCycle([0, 1, 3])).toEqual(describeCycle([16, 17, 19]));
@@ -167,8 +163,12 @@ describe('procedural music harmony', () => {
       expect(resolveProceduralLeadPhraseCadence(cadenceTheme, stepIndex)).toBe(
         'question'
       );
-      expect(semitones).toBe(chord.passingSemitones);
-      expect(semitones).not.toBe(chord.rootSemitones);
+      expect(((semitones % 12) + 12) % 12).toBe(
+        ((chord.passingSemitones % 12) + 12) % 12
+      );
+      expect(((semitones % 12) + 12) % 12).not.toBe(
+        ((chord.rootSemitones % 12) + 12) % 12
+      );
     }
 
     for (const stepIndex of answerSteps) {
@@ -189,7 +189,9 @@ describe('procedural music harmony', () => {
       expect(resolveProceduralLeadPhraseCadence(cadenceTheme, stepIndex)).toBe(
         'answer'
       );
-      expect(semitones).toBe(chord.rootSemitones);
+      expect(((semitones % 12) + 12) % 12).toBe(
+        ((chord.rootSemitones % 12) + 12) % 12
+      );
     }
   });
 
@@ -244,6 +246,30 @@ describe('procedural music harmony', () => {
       const compactIntervals = intervals.filter((interval) => interval <= 4);
 
       expect(compactIntervals.length * 2).toBeGreaterThan(intervals.length);
+    }
+  });
+
+  it('keeps the lead inside a narrower active register across sampled phrases', () => {
+    const sampledClusters = [
+      { clusterX: 0, clusterY: 0 },
+      { clusterX: 3, clusterY: -2 },
+      { clusterX: 8, clusterY: -4 },
+      { clusterX: -6, clusterY: 5 },
+    ];
+
+    for (const cluster of sampledClusters) {
+      const semitones = Array.from({ length: 32 }, (_, stepIndex) =>
+        resolveProceduralInstrumentSemitones({
+          theme: TEST_THEME,
+          role: 'lead',
+          stepIndex,
+          clusterX: cluster.clusterX,
+          clusterY: cluster.clusterY,
+        })
+      );
+
+      expect(Math.min(...semitones)).toBeGreaterThanOrEqual(0);
+      expect(Math.max(...semitones)).toBeLessThanOrEqual(19);
     }
   });
 
@@ -318,12 +344,33 @@ describe('procedural music harmony', () => {
     expect(contour[0]?.stage).toBe('start');
     expect(contour.at(-1)?.stage).toBe('resolve');
     expect(contour.some((step) => step.stage === 'climax')).toBe(true);
+    expect(
+      contour.some((step) => step.minDegreeOffset !== step.maxDegreeOffset)
+    ).toBe(true);
 
     const climax = contour.find((step) => step.stage === 'climax');
     const start = contour[0];
     const end = contour.at(-1);
     expect(climax?.degreeOffset).toBeGreaterThan(start?.degreeOffset ?? 0);
     expect(end?.degreeOffset).toBeLessThanOrEqual(climax?.degreeOffset ?? 0);
+
+    for (const step of contour) {
+      expect(step.minDegreeOffset).toBeLessThanOrEqual(step.degreeOffset);
+      expect(step.degreeOffset).toBeLessThanOrEqual(step.maxDegreeOffset);
+    }
+  });
+
+  it('treats contour targets as bounded ranges instead of exact offsets', () => {
+    const contour = resolveProceduralLeadContour(TEST_THEME, 3, -2);
+    const riseStep = contour.find((step) => step.stage === 'rise');
+    const climaxStep = contour.find((step) => step.stage === 'climax');
+
+    expect(riseStep).toBeDefined();
+    expect(climaxStep).toBeDefined();
+    expect(riseStep!.minDegreeOffset).toBeLessThan(riseStep!.maxDegreeOffset);
+    expect(climaxStep!.minDegreeOffset).toBeLessThan(
+      climaxStep!.maxDegreeOffset
+    );
   });
 
   it('voices harmony as stable triads instead of single notes', () => {

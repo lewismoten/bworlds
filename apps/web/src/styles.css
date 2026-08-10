@@ -78,22 +78,22 @@ body {
   right: 0.75rem;
   bottom: var(--control-dock-offset);
   z-index: 20;
-  width: calc(100vw - 1.5rem);
-  max-width: 72rem;
+  width: auto;
+  max-width: none;
   margin-top: 0;
   overflow: hidden;
   padding: 0.5rem 0.65rem;
 }
 
 .dock-row {
-  display: flex;
-  flex-wrap: nowrap;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: max-content;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
   gap: 0.55rem;
   width: 100%;
   min-width: 0;
-  max-width: 100%;
   overflow-x: auto;
   overflow-y: hidden;
   padding-inline: 0.1rem;
@@ -882,7 +882,7 @@ dd {
   .control-dock {
     left: 0.25rem;
     right: 0.25rem;
-    width: calc(100vw - 0.5rem);
+    width: auto;
     bottom: max(0.25rem, env(safe-area-inset-bottom, 0px));
   }
 

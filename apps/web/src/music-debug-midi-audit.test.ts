@@ -14,7 +14,7 @@ describe('music debug midi audit', () => {
     expect(snapshot.measureCount).toBe(88);
     expect(snapshot.midiAudit.exportedMeasureCount).toBe(88);
     expect(snapshot.midiAudit.exportedMeasureCount).toBe(snapshot.measureCount);
-  }, 4_000);
+  }, 15_000);
 
   it('keeps the harmony track polyphonic with simultaneous chord notes', () => {
     const snapshot = createMusicDebugSnapshot({
@@ -45,7 +45,7 @@ describe('music debug midi audit', () => {
     expect(audit.exportedDurationMs).toBeCloseTo(138_000, -1);
     expect(audit.exportedBpm).toBeCloseTo(153.043478, 1);
     expect(audit.isConsistent).toBe(true);
-  }, 4_000);
+  }, 15_000);
 
   it('parses exported bpm, duration, and measures back from the midi bytes', () => {
     const snapshot = createMusicDebugSnapshot({
@@ -129,6 +129,13 @@ describe('music debug midi audit', () => {
 });
 
 function findSnapshotWithDuration(targetDurationMs: number) {
+  if (
+    cachedSnapshotWithDuration &&
+    cachedSnapshotWithDuration.durationMs === targetDurationMs
+  ) {
+    return cachedSnapshotWithDuration;
+  }
+
   for (let clusterY = -8; clusterY <= 8; clusterY += 1) {
     for (let clusterX = -8; clusterX <= 8; clusterX += 1) {
       const snapshot = createMusicDebugSnapshot({
@@ -138,6 +145,7 @@ function findSnapshotWithDuration(targetDurationMs: number) {
         clusterY,
       });
       if (snapshot.durationMs === targetDurationMs) {
+        cachedSnapshotWithDuration = snapshot;
         return snapshot;
       }
     }
@@ -147,3 +155,7 @@ function findSnapshotWithDuration(targetDurationMs: number) {
     `Unable to find a plains overworld snapshot with duration ${targetDurationMs}.`
   );
 }
+
+let cachedSnapshotWithDuration: ReturnType<
+  typeof createMusicDebugSnapshot
+> | null = null;

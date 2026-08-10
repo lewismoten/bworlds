@@ -1545,7 +1545,7 @@ describe('tile forest', () => {
     expect(ancientCounts.length).toBeGreaterThan(0);
     expect(average(matureCounts)).toBeGreaterThan(average(adolescentCounts));
     expect(average(ancientCounts)).toBeLessThan(average(matureCounts));
-  });
+  }, 4_000);
 
   it('prevents saplings from producing mature forest fruit', () => {
     const samples: Array<{
@@ -1586,7 +1586,7 @@ describe('tile forest', () => {
         (sample) => sample.fruit.count > 0 && sample.fruit.mature
       )
     ).toBe(true);
-  });
+  }, 4_000);
 
   it('lets senescent forest trees produce less foliage or fruit than mature ones', () => {
     const matureFoliageCounts: number[] = [];

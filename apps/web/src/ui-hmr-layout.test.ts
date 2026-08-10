@@ -30,13 +30,13 @@ describe('main layout and hmr wiring', () => {
     expect(stylesheet).toContain('display: flex;');
     expect(stylesheet).toContain('left: 0.75rem;');
     expect(stylesheet).toContain('right: 0.75rem;');
-    expect(stylesheet).toContain('width: calc(100vw - 1.5rem);');
-    expect(stylesheet).toContain('max-width: 72rem;');
-    expect(stylesheet).toContain('.dock-row {\n  display: flex;');
-    expect(stylesheet).toContain('flex-wrap: nowrap;');
+    expect(stylesheet).toContain('width: auto;');
+    expect(stylesheet).toContain('max-width: none;');
+    expect(stylesheet).toContain('.dock-row {\n  display: grid;');
+    expect(stylesheet).toContain('grid-auto-flow: column;');
     expect(stylesheet).not.toContain('.controls-compact {\n  display: flex;');
     expect(stylesheet).toContain('width: 100%;');
-    expect(stylesheet).toContain('justify-content: space-between;');
+    expect(stylesheet).toContain('justify-content: center;');
     expect(stylesheet).toContain('.dashboard {\n  display: grid;');
     expect(stylesheet).toContain('grid-template-columns: minmax(0, 1fr);');
     expect(stylesheet).toContain('.inspector-header {\n  display: flex;');
@@ -45,6 +45,7 @@ describe('main layout and hmr wiring', () => {
     expect(stylesheet).toContain('overflow-x: auto;');
     expect(stylesheet).toContain('.inspector-tab {');
     expect(stylesheet).toContain('flex: 0 0 auto;');
+    expect(stylesheet).not.toContain('id="content-pack-label"');
   });
 
   it('cleans up global main-page listeners during hot replacement', () => {

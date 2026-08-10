@@ -252,5 +252,5 @@ describe('tree debug quality', () => {
         }
       }
     }
-  });
+  }, 4_000);
 });

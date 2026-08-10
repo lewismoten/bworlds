@@ -84,9 +84,9 @@ added directly as semitones instead of moving through the selected scale.
 - [x] Penalize leaps larger than a perfect fifth.
 - [x] Require recovery after every large leap.
 - [x] Keep most lead motion stepwise or by thirds.
-- [ ] Use contour targets as ranges, not exact pitch jumps.
-- [ ] Smooth the path between contour target points.
-- [ ] Keep the flute within a narrower active register.
+- [x] Use contour targets as ranges, not exact pitch jumps.
+- [x] Smooth the path between contour target points.
+- [x] Keep the flute within a narrower active register.
 - [x] Score average and maximum lead leap before export.
 
 ## Bass Movement

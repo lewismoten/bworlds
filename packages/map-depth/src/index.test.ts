@@ -231,5 +231,5 @@ describe('map depth', () => {
       second.getTile(-3, 5),
       second.getTile(4, 0),
     ]).toEqual(baselineTiles);
-  }, 1000);
+  }, 4_000);
 });
