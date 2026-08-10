@@ -38,6 +38,7 @@ import {
   resolveMusicSpaceProfile,
   type MusicSpaceProfile,
 } from './procedural-music-space.ts';
+import { shouldUsePhraseBoundaryRest } from './procedural-music-rest-pattern.ts';
 import { MAX_ACTIVE_PROCEDURAL_MUSIC_OSCILLATORS } from './audio-budget.ts';
 import {
   normalizeProceduralLeadSemitones,
@@ -2011,14 +2012,22 @@ function shouldRestAtThemeStep(
   if (phraseStep === 0 || phraseStep === theme.stepPattern.length - 1) {
     return false;
   }
-  const restChance = role === 'lead' ? 0.18 : 0.14;
-  const variation =
-    hash2DWithSeed(
-      getRolePropertySeed(theme.id, role, 'rest'),
-      clusterX + stepIndex,
-      clusterY
-    ) +
-    (theme.stepPattern[phraseStep] ?? 0) * 0.013;
+  if (role === 'lead' || role === 'harmony') {
+    return shouldUsePhraseBoundaryRest({
+      themeId: theme.id,
+      role,
+      phraseStep,
+      phraseLength: theme.stepPattern.length,
+      clusterX,
+      clusterY,
+    });
+  }
+  const restChance = 0.14;
+  const variation = hash2DWithSeed(
+    getRolePropertySeed(theme.id, role, 'rest'),
+    clusterX + stepIndex,
+    clusterY
+  );
   return variation > 1 - restChance;
 }
 

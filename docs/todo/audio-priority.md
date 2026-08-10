@@ -18,7 +18,7 @@
 - [x] Give the lead two to six note attacks per measure.
 - [x] Prevent repeated one-note-per-measure lead patterns.
 - [x] Build reusable lead rhythm templates by phrase.
-- [ ] Add rests at phrase boundaries rather than every measure.
+- [x] Add rests at phrase boundaries rather than every measure.
 - [ ] End each eight-measure phrase on a planned cadence.
 - [ ] Resolve the final cadence to scale degree 1.
 - [ ] Build one chord timeline before generating any tracks.

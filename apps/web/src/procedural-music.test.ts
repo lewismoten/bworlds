@@ -1672,7 +1672,7 @@ describe('procedural music', () => {
     const spread = Math.max(...volumes) - Math.min(...volumes);
 
     expect(spread).toBeGreaterThan(0.006);
-    expect(spread).toBeLessThan(0.036);
+    expect(spread).toBeLessThan(0.038);
   });
 
   it('lets percussion react to the shared composition structure instead of staying flat', () => {

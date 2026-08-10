@@ -1,7 +1,8 @@
 import type { ProceduralMusicNote } from './procedural-music.ts';
 
 const MIN_COMPRESSION_THRESHOLD = 0.018;
-const COMPRESSION_RATIO = 0.42;
+const COMPRESSION_RATIO = 0.3;
+const COMPRESSION_THRESHOLD_MULTIPLIER = 1.28;
 const QUIET_ROLE_FLOOR: Record<ProceduralMusicNote['role'], number> = {
   lead: 0.72,
   harmony: 0.76,
@@ -43,5 +44,8 @@ function resolveCompressionThreshold(
   const medianVolume =
     sortedVolumes[Math.floor(sortedVolumes.length / 2)] ??
     MIN_COMPRESSION_THRESHOLD;
-  return Math.max(MIN_COMPRESSION_THRESHOLD, medianVolume * 1.34);
+  return Math.max(
+    MIN_COMPRESSION_THRESHOLD,
+    medianVolume * COMPRESSION_THRESHOLD_MULTIPLIER
+  );
 }
