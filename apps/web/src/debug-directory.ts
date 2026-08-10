@@ -45,6 +45,15 @@ export const DEBUG_DIRECTORY_ENTRIES: DebugDirectoryEntry[] = [
       'Generates procedural music previews, shows the chosen instruments and arrangement mix, and draws a note timeline you can audition.',
   },
   {
+    id: 'sound-debug',
+    title: 'Sound Debug',
+    href: '/debug/sounds/',
+    routeLabel: '/debug/sounds/',
+    category: 'Dedicated Debug Page',
+    description:
+      'Previews deterministic procedural sound effects, draws rendered waveforms, and exports the chosen preset as a WAV file.',
+  },
+  {
     id: 'tree-conservatory',
     title: 'Tree Conservatory',
     href: '/debug/trees/',

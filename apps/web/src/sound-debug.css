@@ -1,0 +1,218 @@
+body {
+  margin: 0;
+  min-height: 100vh;
+  color: #edf5f7;
+  font-family: 'Trebuchet MS', 'Avenir Next', Avenir, 'Segoe UI', sans-serif;
+  background:
+    radial-gradient(
+      circle at top left,
+      rgba(85, 214, 190, 0.16),
+      transparent 28%
+    ),
+    radial-gradient(
+      circle at top right,
+      rgba(255, 191, 105, 0.18),
+      transparent 24%
+    ),
+    linear-gradient(160deg, #071019 0%, #102134 60%, #09111a 100%);
+}
+
+.sound-debug-shell {
+  width: min(1440px, calc(100vw - 2rem));
+  margin: 0 auto;
+  padding: 1.25rem 0 2rem;
+}
+
+.sound-debug-hero {
+  margin-bottom: 1.25rem;
+}
+
+.sound-debug-kicker {
+  margin: 0 0 0.35rem;
+  color: #55d6be;
+  font-size: 0.78rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.sound-debug-hero h1 {
+  margin: 0;
+  font-size: clamp(2rem, 4vw, 3.2rem);
+}
+
+.sound-debug-lede {
+  max-width: 42rem;
+  color: #bdd0d8;
+  line-height: 1.5;
+}
+
+.sound-debug-layout {
+  display: grid;
+  grid-template-columns: minmax(260px, 0.7fr) minmax(0, 1.4fr);
+  gap: 1rem;
+}
+
+.sound-debug-sidebar,
+.sound-debug-panel {
+  padding: 1rem 1.1rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 24px;
+  background: rgba(12, 22, 34, 0.92);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(16px);
+}
+
+.sound-debug-sidebar h2,
+.sound-debug-panel h2 {
+  margin: 0 0 0.8rem;
+}
+
+.sound-debug-preset-list {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.sound-debug-preset-button {
+  display: grid;
+  gap: 0.25rem;
+  text-align: left;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.sound-debug-preset-button[data-active='true'] {
+  border-color: rgba(255, 191, 105, 0.4);
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255, 191, 105, 0.18),
+      rgba(255, 191, 105, 0.06)
+    ),
+    rgba(255, 255, 255, 0.03);
+}
+
+.sound-debug-preset-button span {
+  color: #bdd0d8;
+  font-size: 0.88rem;
+  line-height: 1.35;
+}
+
+.sound-debug-preset-category,
+.sound-debug-panel-category {
+  margin: 0;
+  color: #55d6be;
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.sound-debug-panel-head {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.sound-debug-panel-head p {
+  margin: 0.25rem 0 0;
+  color: #bdd0d8;
+  line-height: 1.5;
+}
+
+.sound-debug-actions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.sound-debug-actions button {
+  appearance: none;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.12), transparent);
+  color: #edf5f7;
+  padding: 0.8rem 1.1rem;
+  font: inherit;
+  cursor: pointer;
+}
+
+.sound-debug-waveform {
+  margin-top: 1rem;
+}
+
+.sound-debug-waveform svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.sound-debug-waveform rect {
+  fill: rgba(255, 255, 255, 0.03);
+  stroke: rgba(255, 255, 255, 0.08);
+}
+
+.sound-debug-waveform-axis {
+  stroke: rgba(255, 255, 255, 0.16);
+  stroke-width: 1.25;
+}
+
+.sound-debug-waveform-shape {
+  fill: none;
+  stroke: #ffbf69;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.sound-debug-details {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.7rem 0.9rem;
+  margin-top: 1rem;
+}
+
+.sound-debug-details div {
+  padding: 0.8rem 0.9rem;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.sound-debug-details dt {
+  color: #95afb8;
+  font-size: 0.76rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.sound-debug-details dd {
+  margin: 0.3rem 0 0;
+  color: #edf5f7;
+  line-height: 1.4;
+}
+
+.sound-debug-details-wide {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 960px) {
+  .sound-debug-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .sound-debug-panel-head {
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 720px) {
+  .sound-debug-shell {
+    width: min(100vw - 1rem, 1440px);
+  }
+
+  .sound-debug-details {
+    grid-template-columns: 1fr;
+  }
+}

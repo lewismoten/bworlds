@@ -40,6 +40,19 @@ describe('web vite config', () => {
           'debug',
           'music.html'
         ),
+        debugSounds: path.join(
+          process.cwd(),
+          'apps/web',
+          'debug',
+          'sounds',
+          'index.html'
+        ),
+        debugSoundsAlias: path.join(
+          process.cwd(),
+          'apps/web',
+          'debug',
+          'sounds.html'
+        ),
         debugTrees: path.join(
           process.cwd(),
           'apps/web',

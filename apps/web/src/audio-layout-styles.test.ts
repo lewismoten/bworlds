@@ -17,8 +17,9 @@ describe('audio layout styles', () => {
     expect(stylesheet).toContain('bottom: var(--control-dock-offset);');
     expect(stylesheet).toContain('padding: 0 0 calc(var(--control-dock-height) + var(--control-dock-offset) + 0.75rem);');
     expect(stylesheet).toContain('.dock-cluster');
+    expect(stylesheet).toContain('display: flex;');
     expect(stylesheet).toContain('flex-wrap: nowrap;');
-    expect(stylesheet).toContain('grid-auto-flow: column;');
+    expect(stylesheet).toContain('width: fit-content;');
     expect(stylesheet).toContain('.dock-icon-button');
     expect(stylesheet).toContain('overflow-x: auto;');
     expect(stylesheet).toContain('.audio-volume-controls');

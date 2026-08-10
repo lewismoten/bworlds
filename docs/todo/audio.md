@@ -1,3 +1,5 @@
+- [ ] Complete [audio-priorty.md](./audio-priority.md) first
+
 # UI
 
 - [x] Add ability to toggle Music
@@ -96,12 +98,12 @@
 - [x] Allow the user to toggle ambiance sounds
 - [x] All tiles and POI support ambiance. Base tiles have a lower chance of playing ambiance as a sound source so that only 1 or two are within the players hearing distance.
 - [x] Make sure parameters fit in the panel, or conform to a responsive layout for skinny screens
-- [ ] Create separate debug page for sounds
-- [ ] Show a list of sounds to choose from
-- [ ] Show wave form of selected sound
-- [ ] Allow sound to be downloaded as a WAV file
-- [ ] Allow sound to be played
-- [ ] Show any details related to the selected sound
+- [x] Create separate debug page for sounds
+- [x] Show a list of sounds to choose from
+- [x] Show wave form of selected sound
+- [x] Allow sound to be downloaded as a WAV file
+- [x] Allow sound to be played
+- [x] Show any details related to the selected sound
 - [ ] Create separate debug page for ambiance
 - [ ] Show a list of ambiance to choose from
 - [ ] Allow ambiance to play

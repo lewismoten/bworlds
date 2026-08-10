@@ -9,6 +9,9 @@ export const DEBUG_ROUTE_ALIASES = [
   '/debug/music',
   '/debug/music/index.html',
   '/debug/music.html',
+  '/debug/sounds',
+  '/debug/sounds/index.html',
+  '/debug/sounds.html',
   '/debug/trees',
   '/debug/trees/index.html',
 ] as const;

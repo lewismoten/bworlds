@@ -9,14 +9,26 @@ function readSource(relativePath: string): string {
 describe('main layout and hmr wiring', () => {
   it('keeps the game viewport first while preserving the sidebar and compact dock controls', () => {
     const source = readSource('apps/web/src/main.ts');
+    const stylesheet = readSource('apps/web/src/styles.css');
 
     expect(source).not.toContain('<section class="hero">');
     expect(source).toContain('<aside class="sidebar">');
     expect(source).toContain('<div class="card" id="celestial-tools-card">');
     expect(source).not.toContain('<section class="utility-panels">');
     expect(source).toContain('<section class="control-dock card">');
-    expect(source).toContain('<div class="dock-cluster" aria-label="Quick controls">');
-    expect(source).toContain('</main>\n  <section class="support-tray" hidden aria-hidden="true">');
+    expect(source).toContain(
+      '<div class="dock-cluster" aria-label="Quick controls">'
+    );
+    expect(source).not.toContain('id="content-pack-label"');
+    expect(source).not.toContain('id="content-pack-form"');
+    expect(source).not.toContain('id="status"');
+    expect(source).toContain(
+      '</main>\n  <div class="app-utility-storage" aria-hidden="true">'
+    );
+    expect(stylesheet).toContain('.control-dock {\n  position: fixed;');
+    expect(stylesheet).toContain('width: fit-content;');
+    expect(stylesheet).toContain('.dock-cluster {\n  display: flex;');
+    expect(stylesheet).toContain('flex-wrap: nowrap;');
   });
 
   it('cleans up global main-page listeners during hot replacement', () => {
@@ -36,6 +48,7 @@ describe('debug page hot-update persistence', () => {
       'apps/web/src/debug-directory-page.ts'
     );
     const musicDebugSource = readSource('apps/web/src/music-debug-page.ts');
+    const soundDebugSource = readSource('apps/web/src/sound-debug-page.ts');
     const treeDebugSource = readSource('apps/web/src/tree-debug-page.ts');
 
     expect(debugDirectorySource).toContain(
@@ -47,6 +60,11 @@ describe('debug page hot-update persistence', () => {
 
     expect(musicDebugSource).toContain('const pageLifecycleAbortController =');
     expect(musicDebugSource).toContain(
+      'pageLifecycleAbortController?.abort();'
+    );
+
+    expect(soundDebugSource).toContain('const pageLifecycleAbortController =');
+    expect(soundDebugSource).toContain(
       'pageLifecycleAbortController?.abort();'
     );
 
