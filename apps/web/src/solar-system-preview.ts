@@ -23,9 +23,6 @@ type SolarSystemPreviewController = {
   render(cycle?: DaylightCycleLike): void;
   isInteracting(): boolean;
 };
-type SolarSystemEventMarkerState = ReturnType<
-  typeof getSolarSystemEventMarkerStates
->[number];
 type ConstellationStarLike = NonNullable<
   NonNullable<DaylightCycleLike['constellations']>[number]
 >['stars'][number];

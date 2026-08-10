@@ -1,10 +1,3 @@
-type FocusableLike =
-  | {
-      focus: (options?: FocusOptions) => void;
-    }
-  | null
-  | undefined;
-
 type ViewportHostLike =
   | {
       focus: (options?: FocusOptions) => void;

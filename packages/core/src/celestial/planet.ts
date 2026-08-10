@@ -84,7 +84,6 @@ export function appendPlanetEvents(options: {
     events,
     dayNumber,
     dayProgress,
-    yearLengthDays,
     observerLatitudeDegrees,
     solarDeclination,
     sunriseAzimuth,

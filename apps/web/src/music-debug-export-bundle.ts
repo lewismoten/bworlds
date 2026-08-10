@@ -8,7 +8,7 @@ import {
   createMusicDebugPreviewWavFile,
   type MusicDebugPreviewWavFile,
 } from './music-debug-preview-wav.ts';
-import { createStoredZipArchive, type ZipArchiveEntry } from './zip-file.ts';
+import { createStoredZipArchive } from './zip-file.ts';
 
 export type MusicDebugExportBundleFile = {
   fileName: string;

@@ -37,7 +37,7 @@ describe('page scroll state', () => {
       return 1;
     });
     const setTimeout = vi.fn(
-      (callback: (...args: Array<unknown>) => void, _delay?: number) => {
+      (callback: (...args: Array<unknown>) => void) => {
         callback();
         return 2 as unknown as ReturnType<typeof globalThis.setTimeout>;
       }

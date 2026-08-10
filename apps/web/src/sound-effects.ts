@@ -46,7 +46,6 @@ import {
   type ProceduralSoundDelay,
   createProceduralSoundEffectGenerator,
   type ProceduralSoundDistortion,
-  type ProceduralNoiseColor,
   type ProceduralSoundReverb,
   type ProceduralSoundTremolo,
   type ProceduralSoundVibrato,
@@ -54,7 +53,6 @@ import {
   type ProceduralSoundRingModulation,
   type ProceduralSoundEffectLayer,
   type ProceduralSoundFilter,
-  type ProceduralPitchEnvelope,
   type ProceduralSoundEffect,
   type SoundEffectKind,
   type SoundPosition,
@@ -2123,10 +2121,6 @@ export function createWebAudioSoundEffectSink(
       }
       const outputGain = getOutputGainNode(context);
       const spatialMix = getSoundSpatialMix(effect.emitter, effect.listener);
-      const normalizedVolume = normalizeSoundEffectVolume(
-        effect.kind,
-        effect.volume
-      );
       const startAt = context.currentTime;
       const sources = createScheduledSoundSources(
         context,

@@ -11,7 +11,7 @@ describe('nearby ambient', () => {
     const profile = findNearbyAmbientProfile({
       state: {
         player: { x: -1, y: 1 },
-        getCurrentTile(x: number, y: number) {
+        getCurrentTile(x: number) {
           if (x === -1 && y === 1) {
             return { kind: 'forest' };
           }

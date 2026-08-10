@@ -1418,15 +1418,6 @@ function createThemeNotes(options: {
       12
       ? 0
       : resolvedOctaveBoost;
-  const previousChord =
-    options.stepIndex > 0
-      ? resolveProceduralChordAtStep(
-          options.theme,
-          options.stepIndex - 1,
-          options.clusterX,
-          options.clusterY
-        )
-      : null;
   const voiceSemitones =
     role === 'harmony'
       ? resolveProceduralHarmonyVoicing({

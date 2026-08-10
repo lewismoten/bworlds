@@ -30,8 +30,6 @@ import {
 import {
   appendHashSeedLabel,
   appendHashSeedPart,
-  createHashSeed,
-  hash2D,
   hash2DWithSeed,
   registerHashLabel,
 } from './hash.ts';

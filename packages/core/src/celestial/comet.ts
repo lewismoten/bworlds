@@ -83,7 +83,6 @@ export function appendCometEvents(options: {
     events,
     dayNumber,
     dayProgress,
-    yearLengthDays,
     observerLatitudeDegrees,
     solarDeclination,
     sunriseAzimuth,

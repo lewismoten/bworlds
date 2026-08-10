@@ -12,7 +12,6 @@ import { constrainSongSectionNote } from './procedural-music-song-boundaries.ts'
 import {
   resolveMusicEncounterMode,
   resolveMusicTheme,
-  scheduleProceduralMusicNotes,
   type MusicEncounterMode,
   type MusicUpdateOptions,
   type ProceduralMusicNote,

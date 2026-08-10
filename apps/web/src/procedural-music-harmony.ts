@@ -229,6 +229,7 @@ export function resolveProceduralCompositionStep(
   clusterY: number,
   _allowLeadAccidentals = true
 ): ProceduralCompositionStep {
+  void _allowLeadAccidentals;
   const motif = resolveProceduralLeadMotif(theme, clusterX, clusterY);
   const contour = resolveProceduralLeadContour(theme, clusterX, clusterY);
   const motifStepCount = Math.max(1, theme.stepPattern.length);
