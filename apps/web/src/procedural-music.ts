@@ -152,11 +152,12 @@ export type ProceduralInstrumentBank = {
   rolePatchDistinctness: ProceduralInstrumentRolePatchDistinctness;
 };
 
-export type ProceduralInstrumentRolePatchComparison = InstrumentPatchSimilarity &
-  Readonly<{
-    leftRole: NonPercussionInstrumentRole;
-    rightRole: NonPercussionInstrumentRole;
-  }>;
+export type ProceduralInstrumentRolePatchComparison =
+  InstrumentPatchSimilarity &
+    Readonly<{
+      leftRole: NonPercussionInstrumentRole;
+      rightRole: NonPercussionInstrumentRole;
+    }>;
 
 export type ProceduralInstrumentRolePatchDistinctness = Readonly<{
   isValid: boolean;
@@ -1255,7 +1256,10 @@ export function createWebAudioMusicSink(
       const attackSeconds = Math.max(0.001, note.attackMs / 1000);
       const pitchSweepDurationSeconds = Math.max(
         0,
-        Math.min(durationSeconds, (note.timbre.pitchSweepDurationMs ?? 0) / 1000)
+        Math.min(
+          durationSeconds,
+          (note.timbre.pitchSweepDurationMs ?? 0) / 1000
+        )
       );
       const pitchSweepMultiplier =
         pitchSweepDurationSeconds > 0
@@ -1285,7 +1289,8 @@ export function createWebAudioMusicSink(
         1,
         note.timbre.attackPeakGainMultiplier ?? 1
       );
-      const bodySettleAt = startAt + Math.min(0.08, Math.max(0.02, attackSeconds * 1.5));
+      const bodySettleAt =
+        startAt + Math.min(0.08, Math.max(0.02, attackSeconds * 1.5));
       const harmonicReleaseStartAt =
         startAt +
         Math.max(
@@ -1300,8 +1305,7 @@ export function createWebAudioMusicSink(
       const oscillator = context.createOscillator();
       const harmonicOscillator = context.createOscillator();
       const transientMix = Math.max(0, note.timbre.transientMix ?? 0);
-      const transientGain =
-        transientMix > 0 ? context.createGain() : null;
+      const transientGain = transientMix > 0 ? context.createGain() : null;
       const transientFilter =
         transientMix > 0 && typeof context.createBiquadFilter === 'function'
           ? (context.createBiquadFilter() as BiquadFilterNodeLike)
@@ -1313,8 +1317,7 @@ export function createWebAudioMusicSink(
       const gain = context.createGain();
       const harmonicGain = context.createGain();
       const noiseMix = Math.max(0, note.timbre.noiseMix ?? 0);
-      const noiseGain =
-        noiseMix > 0 ? context.createGain() : null;
+      const noiseGain = noiseMix > 0 ? context.createGain() : null;
       const noiseFilter =
         noiseMix > 0 && typeof context.createBiquadFilter === 'function'
           ? (context.createBiquadFilter() as BiquadFilterNodeLike)
@@ -1407,7 +1410,10 @@ export function createWebAudioMusicSink(
       if (transientGain) {
         const transientDurationSeconds = Math.max(
           0.008,
-          Math.min(durationSeconds, (note.timbre.transientDurationMs ?? 24) / 1000)
+          Math.min(
+            durationSeconds,
+            (note.timbre.transientDurationMs ?? 24) / 1000
+          )
         );
         transientGain.gain.setValueAtTime(0.0001, startAt);
         transientGain.gain.exponentialRampToValueAtTime(
@@ -1485,10 +1491,7 @@ export function createWebAudioMusicSink(
               sustainVolume * noiseMix * envelopeLevel
             );
             noiseGain.gain.setValueAtTime(floorLevel, burstStartAt);
-            noiseGain.gain.exponentialRampToValueAtTime(
-              peakLevel,
-              burstPeakAt
-            );
+            noiseGain.gain.exponentialRampToValueAtTime(peakLevel, burstPeakAt);
             noiseGain.gain.exponentialRampToValueAtTime(
               floorLevel,
               burstFallAt
@@ -1530,7 +1533,10 @@ export function createWebAudioMusicSink(
             note.timbre.noiseFilterCutoffHz ?? 2_400,
             startAt
           );
-          noiseFilter.Q.setValueAtTime(note.timbre.noiseFilterQ ?? 0.7, startAt);
+          noiseFilter.Q.setValueAtTime(
+            note.timbre.noiseFilterQ ?? 0.7,
+            startAt
+          );
           noiseGain.connect(noiseFilter);
         }
       }
@@ -1656,7 +1662,10 @@ export function createWebAudioMusicSink(
         startAt +
           Math.max(
             0.008,
-            Math.min(durationSeconds, (note.timbre.transientDurationMs ?? 24) / 1000)
+            Math.min(
+              durationSeconds,
+              (note.timbre.transientDurationMs ?? 24) / 1000
+            )
           )
       );
       noiseSource?.stop(startAt + durationSeconds);
@@ -2178,11 +2187,14 @@ export function createProceduralInstrumentBank(
     options,
     roleVariants
   );
-  let rolePatchDistinctness = resolveProceduralInstrumentRolePatchDistinctness(
-    instruments
-  );
+  let rolePatchDistinctness =
+    resolveProceduralInstrumentRolePatchDistinctness(instruments);
 
-  for (let attempt = 0; attempt < 8 && !rolePatchDistinctness.isValid; attempt += 1) {
+  for (
+    let attempt = 0;
+    attempt < 8 && !rolePatchDistinctness.isValid;
+    attempt += 1
+  ) {
     const rejectedComparison = rolePatchDistinctness.rejectedComparisons[0];
     if (!rejectedComparison) {
       break;
@@ -2196,9 +2208,8 @@ export function createProceduralInstrumentBank(
       options,
       roleVariants
     );
-    rolePatchDistinctness = resolveProceduralInstrumentRolePatchDistinctness(
-      instruments
-    );
+    rolePatchDistinctness =
+      resolveProceduralInstrumentRolePatchDistinctness(instruments);
   }
 
   return {
@@ -2389,7 +2400,9 @@ function createProceduralInstrument(
 export function resolveProceduralInstrumentRolePatchDistinctness(
   instruments: Record<InstrumentRole, ProceduralInstrument>
 ): ProceduralInstrumentRolePatchDistinctness {
-  const rolePairs: Array<[NonPercussionInstrumentRole, NonPercussionInstrumentRole]> = [
+  const rolePairs: Array<
+    [NonPercussionInstrumentRole, NonPercussionInstrumentRole]
+  > = [
     ['lead', 'harmony'],
     ['lead', 'bass'],
     ['harmony', 'bass'],

@@ -49,9 +49,9 @@ describe('music debug timeline', () => {
     const noteBars = resolveMusicDebugTimelineNoteBars(snapshot, layout);
 
     expect(noteBars.length).toBe(snapshot.notes.length);
-    expect(
-      noteBars.every((bar) => bar.height < layout.trackHeight * 0.5)
-    ).toBe(true);
+    expect(noteBars.every((bar) => bar.height < layout.trackHeight * 0.5)).toBe(
+      true
+    );
     expect(
       noteBars.some((bar) => {
         if (bar.role === 'percussion') {

@@ -1,9 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { buildProceduralMusicBasePhrasePlan } from './procedural-music-song-base.ts';
 import { resolveProceduralMusicBlueprint } from './procedural-music-blueprint.ts';
-import {
-  regenerateProceduralMusicSongPhrases,
-} from './procedural-music-song-repair.ts';
+import { regenerateProceduralMusicSongPhrases } from './procedural-music-song-repair.ts';
 import { buildProceduralMusicSongSections } from './procedural-music-song-timing.ts';
 import { resolveProceduralMusicSongDurationMs } from './procedural-music-song.ts';
 

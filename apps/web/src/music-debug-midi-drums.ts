@@ -5,7 +5,10 @@ import {
   type PercussionFamily,
   type PercussionVoiceId,
 } from './procedural-music-percussion-voices.ts';
-import type { ProceduralInstrument, ProceduralMusicNote } from './procedural-music.ts';
+import type {
+  ProceduralInstrument,
+  ProceduralMusicNote,
+} from './procedural-music.ts';
 
 const DEFAULT_MELODIC_MIDI_NOTE = 60;
 

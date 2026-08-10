@@ -116,7 +116,6 @@ export function drawMusicDebugTimeline(
     percussion: '#f27d7d',
   };
   const scaleOverlay = createMusicDebugScaleOverlay(snapshot, layout);
-  const timelineStartMs = snapshot.notes[0]?.startMs ?? snapshot.song.startMs;
 
   context.clearRect(0, 0, width, height);
   context.fillStyle = '#071019';
@@ -197,8 +196,9 @@ export function resolveMusicDebugTimelineNoteBars(
     const marker =
       note.role === 'percussion'
         ? null
-        : markerQueueByRole[note.role as Exclude<ProceduralMusicNote['role'], 'percussion'>]
-            ?.shift() ?? null;
+        : (markerQueueByRole[
+            note.role as Exclude<ProceduralMusicNote['role'], 'percussion'>
+          ]?.shift() ?? null);
     const startRatio = (note.startMs - timelineStartMs) / durationMs;
     const endRatio =
       (note.startMs + note.durationMs - timelineStartMs) / durationMs;

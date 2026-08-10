@@ -83,11 +83,19 @@ describe('music debug lead contour', () => {
       sections: [sectionA],
       notes: [
         createLeadNote(
-          withPointStartMs(sectionA, snapshot.theme.stepPattern.length, offPeakPoint!),
+          withPointStartMs(
+            sectionA,
+            snapshot.theme.stepPattern.length,
+            offPeakPoint!
+          ),
           72
         ),
         createLeadNote(
-          withPointStartMs(sectionA, snapshot.theme.stepPattern.length, finalPoint!),
+          withPointStartMs(
+            sectionA,
+            snapshot.theme.stepPattern.length,
+            finalPoint!
+          ),
           62
         ),
       ],

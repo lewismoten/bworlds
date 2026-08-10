@@ -123,7 +123,10 @@ export function createMusicDebugHarmonyChordDetections(options: {
   chordTimeline?: readonly ProceduralChordTimelineEntry[];
 }): MusicDebugHarmonyChordDetection[] {
   return options.sections.map((section) => {
-    const chordWindows = collectSectionChordWindows(section, options.chordTimeline ?? []);
+    const chordWindows = collectSectionChordWindows(
+      section,
+      options.chordTimeline ?? []
+    );
     const detectedChordLabels = collectOrderedHarmonyChordLabels({
       notes: options.notes,
       notePitchDiagnostics: options.notePitchDiagnostics,
@@ -182,7 +185,10 @@ export function createMusicDebugBassProgressionDetections(options: {
   chordTimeline?: readonly ProceduralChordTimelineEntry[];
 }): MusicDebugBassProgressionDetection[] {
   return options.sections.map((section) => {
-    const chordWindows = collectSectionChordWindows(section, options.chordTimeline ?? []);
+    const chordWindows = collectSectionChordWindows(
+      section,
+      options.chordTimeline ?? []
+    );
     const plannedRootLabels =
       options.scale && options.chordTimeline
         ? collectPlannedSectionRootLabels({
@@ -831,10 +837,8 @@ function collectDetectedSectionBassRootLabels(options: {
       : options.section.durationMs;
   const labels: string[] = [];
 
-  for (const window of options.chordWindows ?? collectSectionChordWindows(
-    options.section,
-    options.chordTimeline
-  )) {
+  for (const window of options.chordWindows ??
+    collectSectionChordWindows(options.section, options.chordTimeline)) {
     const startMs =
       sectionStart + (window.sectionStartMeasure - 1) * measureDurationMs;
     const endMs = sectionStart + window.sectionEndMeasure * measureDurationMs;
@@ -893,7 +897,8 @@ function collectHarmonyChordDriftWindows(options: {
       !doesDetectedChordLabelFitPlannedChord(detectedLabel, plannedLabel)
     ) {
       drifts.push({
-        startMeasure: options.section.startMeasure + window.sectionStartMeasure - 1,
+        startMeasure:
+          options.section.startMeasure + window.sectionStartMeasure - 1,
         endMeasure: options.section.startMeasure + window.sectionEndMeasure - 1,
         detectedLabel,
         detectedNoteLabels: resolveHarmonyNoteLabelsForWindow({
@@ -947,7 +952,8 @@ function collectBassRootDriftWindows(options: {
     });
     if (detectedLabel !== null && detectedLabel !== plannedLabel) {
       drifts.push({
-        startMeasure: options.section.startMeasure + window.sectionStartMeasure - 1,
+        startMeasure:
+          options.section.startMeasure + window.sectionStartMeasure - 1,
         endMeasure: options.section.startMeasure + window.sectionEndMeasure - 1,
         detectedLabel,
         detectedNoteLabels: resolveBassNoteLabelsForWindow({

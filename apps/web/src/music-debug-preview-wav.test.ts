@@ -53,7 +53,9 @@ describe('music debug preview wav', () => {
     const bowedSamples = renderMusicDebugPreviewNoteToSamples(bowedNote, 8_000);
 
     expect(bowedSamples).not.toEqual(plainSamples);
-    expect(resolveEnvelopeGain(bowedNote, 0.12, bowedNote.durationMs / 1000)).toBeGreaterThan(
+    expect(
+      resolveEnvelopeGain(bowedNote, 0.12, bowedNote.durationMs / 1000)
+    ).toBeGreaterThan(
       resolveEnvelopeGain(plainNote, 0.12, plainNote.durationMs / 1000)
     );
   });
@@ -79,9 +81,7 @@ describe('music debug preview wav', () => {
     ).toBeLessThan(
       resolveEnvelopeGain(bassNote, 0.12, bassNote.durationMs / 1000)
     );
-    expect(
-      renderMusicDebugPreviewNoteToSamples(bassNote, 8_000)
-    ).toBeDefined();
+    expect(renderMusicDebugPreviewNoteToSamples(bassNote, 8_000)).toBeDefined();
   });
 
   it('keeps struck transient envelopes short and front-loaded', () => {
@@ -100,12 +100,22 @@ describe('music debug preview wav', () => {
     });
 
     expect(
-      resolveTransientEnvelopeGain(struckNote, 0.004, struckNote.durationMs / 1000)
+      resolveTransientEnvelopeGain(
+        struckNote,
+        0.004,
+        struckNote.durationMs / 1000
+      )
     ).toBeGreaterThan(0.5);
     expect(
-      resolveTransientEnvelopeGain(struckNote, 0.05, struckNote.durationMs / 1000)
+      resolveTransientEnvelopeGain(
+        struckNote,
+        0.05,
+        struckNote.durationMs / 1000
+      )
     ).toBe(0);
-    expect(renderMusicDebugPreviewNoteToSamples(struckNote, 8_000)).toBeDefined();
+    expect(
+      renderMusicDebugPreviewNoteToSamples(struckNote, 8_000)
+    ).toBeDefined();
   });
 
   it('sweeps kick preview pitch down quickly before settling to the body tone', () => {
@@ -171,9 +181,9 @@ describe('music debug preview wav', () => {
     );
 
     expect(sweptSamples).not.toEqual(steadySamples);
-    expect(averageSampleDifference(sweptSamples, steadySamples)).toBeGreaterThan(
-      0.01
-    );
+    expect(
+      averageSampleDifference(sweptSamples, steadySamples)
+    ).toBeGreaterThan(0.01);
   });
 
   it('shapes shaker noise as repeated short filtered bursts', () => {
@@ -227,9 +237,9 @@ describe('music debug preview wav', () => {
     );
 
     expect(burstSamples).not.toEqual(steadySamples);
-    expect(averageSampleDifference(burstSamples, steadySamples)).toBeGreaterThan(
-      0.003
-    );
+    expect(
+      averageSampleDifference(burstSamples, steadySamples)
+    ).toBeGreaterThan(0.003);
   });
 });
 

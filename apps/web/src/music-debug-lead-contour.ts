@@ -224,7 +224,8 @@ function formatLeadContourMeasureAndNote(
   measure: number | null,
   noteLabel: string | null
 ): string {
-  const measureLabel = measure === null ? 'an unknown measure' : `measure ${measure}`;
+  const measureLabel =
+    measure === null ? 'an unknown measure' : `measure ${measure}`;
   return noteLabel === null ? measureLabel : `${measureLabel} on ${noteLabel}`;
 }
 

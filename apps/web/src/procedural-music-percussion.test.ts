@@ -144,9 +144,15 @@ describe('procedural music percussion', () => {
     const handVoices = listPercussionVoicesForFamily('hand-percussion');
 
     expect(kickVoices.map((voice) => voice.midiNote)).toEqual([36, 35, 41]);
-    expect(snareVoices.map((voice) => voice.midiNote)).toEqual([38, 37, 40, 39]);
-    expect(cymbalVoices.map((voice) => voice.midiNote)).toEqual([49, 51, 46, 42]);
-    expect(shakerVoices.map((voice) => voice.midiNote)).toEqual([69, 54, 42, 70]);
+    expect(snareVoices.map((voice) => voice.midiNote)).toEqual([
+      38, 37, 40, 39,
+    ]);
+    expect(cymbalVoices.map((voice) => voice.midiNote)).toEqual([
+      49, 51, 46, 42,
+    ]);
+    expect(shakerVoices.map((voice) => voice.midiNote)).toEqual([
+      69, 54, 42, 70,
+    ]);
     expect(handVoices.map((voice) => voice.midiNote)).toEqual([60, 61, 54, 69]);
   });
 

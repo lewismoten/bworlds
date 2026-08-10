@@ -43,7 +43,7 @@ describe('music debug midi audit', () => {
     const audit = createMusicDebugMidiExportAudit(
       withValidProgressionDetections(withValidLeadContourAnalysis(snapshot)),
       {
-      createdAt: new Date('2026-08-09T00:00:00.000Z'),
+        createdAt: new Date('2026-08-09T00:00:00.000Z'),
       }
     );
 

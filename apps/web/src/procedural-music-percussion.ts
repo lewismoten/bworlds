@@ -272,9 +272,7 @@ export function createProceduralPercussionNotes(options: {
       ),
       releaseMs: Math.max(
         18,
-        options.baseReleaseMs *
-          hit.releaseMultiplier *
-          voice.releaseMultiplier
+        options.baseReleaseMs * hit.releaseMultiplier * voice.releaseMultiplier
       ),
       detuneCents:
         options.baseDetuneCents *

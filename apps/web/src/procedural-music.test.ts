@@ -100,9 +100,13 @@ describe('procedural music', () => {
     });
 
     expect(loudVelocity).toBeGreaterThan(softVelocity);
-    expect(loudTimbre.filterCutoffHz).toBeGreaterThan(softTimbre.filterCutoffHz);
+    expect(loudTimbre.filterCutoffHz).toBeGreaterThan(
+      softTimbre.filterCutoffHz
+    );
     expect(loudTimbre.harmonicRatio).toBeGreaterThan(softTimbre.harmonicRatio);
-    expect(loudTimbre.transientMix).toBeGreaterThan(softTimbre.transientMix ?? 0);
+    expect(loudTimbre.transientMix).toBeGreaterThan(
+      softTimbre.transientMix ?? 0
+    );
   });
 
   it('defines one known-good patch for each core song role', () => {
@@ -131,7 +135,9 @@ describe('procedural music', () => {
       expect(patch.detuneCents).toBeGreaterThanOrEqual(
         recipe.detuneCentsRange.min
       );
-      expect(patch.detuneCents).toBeLessThanOrEqual(recipe.detuneCentsRange.max);
+      expect(patch.detuneCents).toBeLessThanOrEqual(
+        recipe.detuneCentsRange.max
+      );
       expect(patch.harmonicGain).toBeGreaterThanOrEqual(
         recipe.harmonicGainRange.min
       );
@@ -1702,13 +1708,13 @@ describe('procedural music', () => {
     expect(bass).toEqual(expect.objectContaining({ role: 'bass' }));
     expect(lead?.timbre.filterCutoffHz).toBeDefined();
     expect(bass?.timbre.filterCutoffHz).toBeDefined();
-    expect((lead?.frequency ?? 0) / (bass?.frequency ?? Infinity)).toBeGreaterThan(
-      2
-    );
-    expect((lead?.timbre.filterCutoffHz ?? 0)).toBeGreaterThan(
+    expect(
+      (lead?.frequency ?? 0) / (bass?.frequency ?? Infinity)
+    ).toBeGreaterThan(2);
+    expect(lead?.timbre.filterCutoffHz ?? 0).toBeGreaterThan(
       bass?.timbre.filterCutoffHz ?? 0
     );
-    expect((lead?.timbre.harmonicRatio ?? 0)).toBeGreaterThan(
+    expect(lead?.timbre.harmonicRatio ?? 0).toBeGreaterThan(
       bass?.timbre.harmonicRatio ?? 0
     );
   });
@@ -2230,14 +2236,14 @@ describe('procedural music', () => {
       timbre: cymbals,
     });
 
-    expect(crash.releaseMultiplier).toBeGreaterThan(closedHat.releaseMultiplier);
+    expect(crash.releaseMultiplier).toBeGreaterThan(
+      closedHat.releaseMultiplier
+    );
     expect(ride.releaseMultiplier).toBeGreaterThan(crash.releaseMultiplier);
     expect(crashTimbre.noiseMix ?? 0).toBeGreaterThan(
       closedHatTimbre.noiseMix ?? 0
     );
-    expect(rideTimbre.noiseMix ?? 0).toBeGreaterThan(
-      crashTimbre.noiseMix ?? 0
-    );
+    expect(rideTimbre.noiseMix ?? 0).toBeGreaterThan(crashTimbre.noiseMix ?? 0);
     expect(crashTimbre.transientMix ?? 0).toBeLessThan(
       closedHatTimbre.transientMix ?? Infinity
     );
@@ -2293,8 +2299,12 @@ describe('procedural music', () => {
         yearProgress: 0.5,
       }
     );
-    const leadRecipe = resolveInstrumentPatchRecipe(town.instruments.lead.family);
-    const bassRecipe = resolveInstrumentPatchRecipe(town.instruments.bass.family);
+    const leadRecipe = resolveInstrumentPatchRecipe(
+      town.instruments.lead.family
+    );
+    const bassRecipe = resolveInstrumentPatchRecipe(
+      town.instruments.bass.family
+    );
 
     expect(leadRecipe.waveformOptions).not.toEqual(bassRecipe.waveformOptions);
     expect(leadRecipe.attackMsRange).not.toEqual(bassRecipe.attackMsRange);
@@ -2314,15 +2324,15 @@ describe('procedural music', () => {
       }
     );
 
-    expect(town.instruments.lead.knownGoodPatchComparison.similarityScore).toBeGreaterThan(
-      0.55
-    );
+    expect(
+      town.instruments.lead.knownGoodPatchComparison.similarityScore
+    ).toBeGreaterThan(0.55);
     expect(
       town.instruments.harmony.knownGoodPatchComparison.similarityScore
     ).toBeGreaterThan(0.55);
-    expect(town.instruments.bass.knownGoodPatchComparison.similarityScore).toBeGreaterThan(
-      0.6
-    );
+    expect(
+      town.instruments.bass.knownGoodPatchComparison.similarityScore
+    ).toBeGreaterThan(0.6);
     expect(
       town.instruments.percussion.knownGoodPatchComparison.similarityScore
     ).toBeGreaterThan(0.55);
@@ -2407,7 +2417,10 @@ describe('procedural music', () => {
         } as unknown as StereoPannerNode;
       }
       createBuffer(channels: number, length: number) {
-        const data = Array.from({ length: channels }, () => new Float32Array(length));
+        const data = Array.from(
+          { length: channels },
+          () => new Float32Array(length)
+        );
         return {
           getChannelData(index: number) {
             return data[index]!;
@@ -2543,7 +2556,10 @@ describe('procedural music', () => {
         } as unknown as StereoPannerNode;
       }
       createBuffer(channels: number, length: number) {
-        const data = Array.from({ length: channels }, () => new Float32Array(length));
+        const data = Array.from(
+          { length: channels },
+          () => new Float32Array(length)
+        );
         return {
           getChannelData(index: number) {
             return data[index]!;
@@ -2836,7 +2852,9 @@ describe('procedural music', () => {
 
       expect(carrierRamps[0]?.[0]).toBeCloseTo(0.058, 4);
       expect(harmonicRamps[1]?.[0]).toBeCloseTo(0.00252, 5);
-      expect(harmonicRamps[2]?.[1]).toBeLessThan(carrierRamps[2]?.[1] ?? Infinity);
+      expect(harmonicRamps[2]?.[1]).toBeLessThan(
+        carrierRamps[2]?.[1] ?? Infinity
+      );
     } finally {
       if (originalAudioContext) {
         vi.stubGlobal('AudioContext', originalAudioContext);
@@ -2910,7 +2928,10 @@ describe('procedural music', () => {
         } as unknown as StereoPannerNode;
       }
       createBuffer(channels: number, length: number) {
-        const data = Array.from({ length: channels }, () => new Float32Array(length));
+        const data = Array.from(
+          { length: channels },
+          () => new Float32Array(length)
+        );
         return {
           getChannelData(index: number) {
             return data[index]!;
@@ -2969,9 +2990,10 @@ describe('procedural music', () => {
       expect(createdTransientSources).toHaveLength(1);
       expect(createdTransientSources[0]?.start).toHaveBeenCalled();
       expect(createdTransientSources[0]?.stop).toHaveBeenCalled();
-      expect(
-        createdTransientSources[0]?.stop.mock.calls[0]?.[0]
-      ).toBeCloseTo(0.032, 3);
+      expect(createdTransientSources[0]?.stop.mock.calls[0]?.[0]).toBeCloseTo(
+        0.032,
+        3
+      );
     } finally {
       if (originalAudioContext) {
         vi.stubGlobal('AudioContext', originalAudioContext);
@@ -3054,7 +3076,10 @@ describe('procedural music', () => {
         } as unknown as StereoPannerNode;
       }
       createBuffer(channels: number, length: number) {
-        const data = Array.from({ length: channels }, () => new Float32Array(length));
+        const data = Array.from(
+          { length: channels },
+          () => new Float32Array(length)
+        );
         return {
           getChannelData(index: number) {
             return data[index]!;
@@ -3123,13 +3148,16 @@ describe('procedural music', () => {
         harmonicOscillator.frequency.setValueAtTime.mock.calls[0]?.[0]
       ).toBeCloseTo(64 * expectedSweepMultiplier * 1.3, 4);
       expect(
-        carrierOscillator.frequency.exponentialRampToValueAtTime.mock.calls[0]?.[0]
+        carrierOscillator.frequency.exponentialRampToValueAtTime.mock
+          .calls[0]?.[0]
       ).toBeCloseTo(64, 4);
       expect(
-        carrierOscillator.frequency.exponentialRampToValueAtTime.mock.calls[0]?.[1]
+        carrierOscillator.frequency.exponentialRampToValueAtTime.mock
+          .calls[0]?.[1]
       ).toBeCloseTo(0.044, 4);
       expect(
-        harmonicOscillator.frequency.exponentialRampToValueAtTime.mock.calls[0]?.[0]
+        harmonicOscillator.frequency.exponentialRampToValueAtTime.mock
+          .calls[0]?.[0]
       ).toBeCloseTo(64 * 1.3, 4);
     } finally {
       if (originalAudioContext) {

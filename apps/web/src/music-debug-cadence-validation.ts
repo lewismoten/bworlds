@@ -192,7 +192,8 @@ function createCadenceFailureMessage(
     return `${detection.sectionLabel} ${detection.kind} cadence at ${measureLabel} missed its target tones (lead ${leadLabel}, bass ${bassLabel}).`;
   }
 
-  const harmonyLabel = detection.harmonyPitchLabels.join(', ') || 'open harmony';
+  const harmonyLabel =
+    detection.harmonyPitchLabels.join(', ') || 'open harmony';
   return `${detection.sectionLabel} ${detection.kind} cadence at ${measureLabel} drifted outside the active harmony (${harmonyLabel}; lead ${leadLabel}, bass ${bassLabel}).`;
 }
 

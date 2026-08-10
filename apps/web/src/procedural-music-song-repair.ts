@@ -61,7 +61,10 @@ export function regenerateProceduralMusicSongPhrases(
       )
       .map((note) => ({
         ...note,
-        durationMs: Math.min(note.durationMs, Math.max(1, phraseEndMs - note.startMs)),
+        durationMs: Math.min(
+          note.durationMs,
+          Math.max(1, phraseEndMs - note.startMs)
+        ),
       }));
 
     repairedNotes.push(...regeneratedPhrase);

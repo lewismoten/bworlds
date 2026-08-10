@@ -987,10 +987,9 @@ export function buildMusicDebugSummaryMarkup(
 
 function formatMusicDebugMidiAuditSummary(audit: MusicDebugMidiAudit): string {
   if (!audit.isConsistent) {
-    return [
-      ...audit.mismatchMessages,
-      ...audit.criticalWarningMessages,
-    ].join(' | ');
+    return [...audit.mismatchMessages, ...audit.criticalWarningMessages].join(
+      ' | '
+    );
   }
   if (audit.warningMessages.length > 0) {
     return `ok with warnings: ${audit.warningMessages.join(' | ')}`;
@@ -1024,8 +1023,10 @@ function formatMusicDebugCadenceValidationSummary(
     .map((detection) => {
       const measure =
         detection.measureNumber === null ? '?' : `${detection.measureNumber}`;
-      const lead = detection.leadNoteLabel ?? detection.leadPitchLabel ?? 'missing';
-      const bass = detection.bassNoteLabel ?? detection.bassPitchLabel ?? 'missing';
+      const lead =
+        detection.leadNoteLabel ?? detection.leadPitchLabel ?? 'missing';
+      const bass =
+        detection.bassNoteLabel ?? detection.bassPitchLabel ?? 'missing';
       const harmony = detection.harmonyPitchLabels.join('-') || 'open';
       return `${detection.sectionLabel} ${detection.kind} m${measure} L${lead} B${bass} @ ${harmony}`;
     })

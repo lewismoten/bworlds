@@ -287,14 +287,16 @@ describe('music debug midi', () => {
   });
 
   it('blocks MIDI export when the lead contour ending misses its required tonic resolution', () => {
-    const snapshot = withValidProgressionDetections(withValidCadenceValidation(
-      createMusicDebugSnapshot({
-        tileKind: 'town',
-        contextType: 'town',
-        clusterX: 3,
-        clusterY: -2,
-      })
-    ));
+    const snapshot = withValidProgressionDetections(
+      withValidCadenceValidation(
+        createMusicDebugSnapshot({
+          tileKind: 'town',
+          contextType: 'town',
+          clusterX: 3,
+          clusterY: -2,
+        })
+      )
+    );
 
     expect(() =>
       createMusicDebugMidiFile({
@@ -313,14 +315,16 @@ describe('music debug midi', () => {
   });
 
   it('blocks MIDI export when the lead contour climax occurs in the wrong phrase', () => {
-    const snapshot = withValidProgressionDetections(withValidCadenceValidation(
-      createMusicDebugSnapshot({
-        tileKind: 'town',
-        contextType: 'town',
-        clusterX: 3,
-        clusterY: -2,
-      })
-    ));
+    const snapshot = withValidProgressionDetections(
+      withValidCadenceValidation(
+        createMusicDebugSnapshot({
+          tileKind: 'town',
+          contextType: 'town',
+          clusterX: 3,
+          clusterY: -2,
+        })
+      )
+    );
 
     expect(() =>
       createMusicDebugMidiFile({
@@ -339,12 +343,16 @@ describe('music debug midi', () => {
   });
 
   it('blocks MIDI export when SongDNA validation fails', () => {
-    const snapshot = withValidProgressionDetections(withValidLeadContourAnalysis(createMusicDebugSnapshot({
-      tileKind: 'town',
-      contextType: 'town',
-      clusterX: 3,
-      clusterY: -2,
-    })));
+    const snapshot = withValidProgressionDetections(
+      withValidLeadContourAnalysis(
+        createMusicDebugSnapshot({
+          tileKind: 'town',
+          contextType: 'town',
+          clusterX: 3,
+          clusterY: -2,
+        })
+      )
+    );
 
     expect(() =>
       createMusicDebugMidiFile({
@@ -362,12 +370,16 @@ describe('music debug midi', () => {
   });
 
   it('downloads the encoded midi file through a blob url', () => {
-    const snapshot = withValidProgressionDetections(withValidLeadContourAnalysis(createMusicDebugSnapshot({
-      tileKind: 'forest',
-      contextType: 'overworld',
-      clusterX: 0,
-      clusterY: 0,
-    })));
+    const snapshot = withValidProgressionDetections(
+      withValidLeadContourAnalysis(
+        createMusicDebugSnapshot({
+          tileKind: 'forest',
+          contextType: 'overworld',
+          clusterX: 0,
+          clusterY: 0,
+        })
+      )
+    );
     const exportableSnapshot = {
       ...snapshot,
       midiExportValidation: {
@@ -405,12 +417,16 @@ describe('music debug midi', () => {
   });
 
   it('exports a melody-only midi file for rapid lead review', () => {
-    const snapshot = withValidProgressionDetections(withValidLeadContourAnalysis(createMusicDebugSnapshot({
-      tileKind: 'forest',
-      contextType: 'overworld',
-      clusterX: 0,
-      clusterY: 0,
-    })));
+    const snapshot = withValidProgressionDetections(
+      withValidLeadContourAnalysis(
+        createMusicDebugSnapshot({
+          tileKind: 'forest',
+          contextType: 'overworld',
+          clusterX: 0,
+          clusterY: 0,
+        })
+      )
+    );
 
     const file = createMusicDebugMidiFile(snapshot, {
       variant: 'melody-only',
@@ -425,12 +441,16 @@ describe('music debug midi', () => {
   });
 
   it('exports a harmony-and-bass midi file for accompaniment review', () => {
-    const snapshot = withValidProgressionDetections(withValidLeadContourAnalysis(createMusicDebugSnapshot({
-      tileKind: 'town',
-      contextType: 'town',
-      clusterX: 3,
-      clusterY: -2,
-    })));
+    const snapshot = withValidProgressionDetections(
+      withValidLeadContourAnalysis(
+        createMusicDebugSnapshot({
+          tileKind: 'town',
+          contextType: 'town',
+          clusterX: 3,
+          clusterY: -2,
+        })
+      )
+    );
 
     const file = createMusicDebugMidiFile(snapshot, {
       variant: 'harmony-and-bass',
@@ -462,12 +482,16 @@ describe('music debug midi', () => {
   }, 4_000);
 
   it('rejects MIDI export when chromatic-note validation fails', () => {
-    const snapshot = withValidProgressionDetections(withValidLeadContourAnalysis(createMusicDebugSnapshot({
-      tileKind: 'forest',
-      contextType: 'overworld',
-      clusterX: 0,
-      clusterY: 0,
-    })));
+    const snapshot = withValidProgressionDetections(
+      withValidLeadContourAnalysis(
+        createMusicDebugSnapshot({
+          tileKind: 'forest',
+          contextType: 'overworld',
+          clusterX: 0,
+          clusterY: 0,
+        })
+      )
+    );
 
     expect(() =>
       createMusicDebugMidiFile({
@@ -482,12 +506,16 @@ describe('music debug midi', () => {
   });
 
   it('rejects MIDI export when timing validation fails', () => {
-    const snapshot = withValidProgressionDetections(withValidLeadContourAnalysis(createMusicDebugSnapshot({
-      tileKind: 'forest',
-      contextType: 'overworld',
-      clusterX: 0,
-      clusterY: 0,
-    })));
+    const snapshot = withValidProgressionDetections(
+      withValidLeadContourAnalysis(
+        createMusicDebugSnapshot({
+          tileKind: 'forest',
+          contextType: 'overworld',
+          clusterX: 0,
+          clusterY: 0,
+        })
+      )
+    );
 
     expect(() =>
       createMusicDebugMidiFile({
@@ -509,12 +537,16 @@ describe('music debug midi', () => {
   });
 
   it('rejects MIDI export when the configured motif never appears', () => {
-    const snapshot = withValidProgressionDetections(withValidLeadContourAnalysis(createMusicDebugSnapshot({
-      tileKind: 'forest',
-      contextType: 'overworld',
-      clusterX: 0,
-      clusterY: 0,
-    })));
+    const snapshot = withValidProgressionDetections(
+      withValidLeadContourAnalysis(
+        createMusicDebugSnapshot({
+          tileKind: 'forest',
+          contextType: 'overworld',
+          clusterX: 0,
+          clusterY: 0,
+        })
+      )
+    );
 
     expect(() =>
       createMusicDebugMidiFile({

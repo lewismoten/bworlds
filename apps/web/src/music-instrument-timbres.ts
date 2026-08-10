@@ -65,10 +65,7 @@ export type InstrumentPatchRecipe = {
 };
 
 export type KnownGoodInstrumentPatchRole =
-  | 'lead'
-  | 'harmony'
-  | 'bass'
-  | 'percussion';
+  'lead' | 'harmony' | 'bass' | 'percussion';
 
 export type KnownGoodInstrumentPatch = Readonly<{
   role: KnownGoodInstrumentPatchRole;
@@ -156,8 +153,10 @@ type InstrumentTimbreTemplate = {
   noiseQMax?: number;
 };
 
-const INSTRUMENT_PATCH_RECIPES: Record<InstrumentFamily, InstrumentPatchRecipe> =
-  {
+const INSTRUMENT_PATCH_RECIPES: Record<
+  InstrumentFamily,
+  InstrumentPatchRecipe
+> = {
   vocals: {
     waveformOptions: ['sine', 'triangle'],
     attackMsRange: { min: 22, max: 44 },
@@ -740,7 +739,10 @@ export function compareInstrumentPatches(options: {
   left: ComparableInstrumentPatch;
   right: ComparableInstrumentPatch;
 }): InstrumentPatchSimilarity {
-  const dimensions = collectPatchSimilarityDimensions(options.left, options.right);
+  const dimensions = collectPatchSimilarityDimensions(
+    options.left,
+    options.right
+  );
   const dimensionEntries = Object.entries(dimensions);
   const similarityScore =
     dimensionEntries.reduce((total, [, score]) => total + score, 0) /
@@ -777,7 +779,8 @@ export function resolveProceduralInstrumentTimbre(options: {
     template.noiseMix === undefined
       ? undefined
       : clamp(
-          template.noiseMix * (0.92 + clamp(options.harmonicSignal, 0, 1) * 0.16),
+          template.noiseMix *
+            (0.92 + clamp(options.harmonicSignal, 0, 1) * 0.16),
           0,
           0.4
         );
@@ -816,7 +819,8 @@ export function resolveProceduralInstrumentTimbre(options: {
             clamp(options.filterSignal, 0, 1)
           ),
     transientFilterQ:
-      template.transientQMin === undefined || template.transientQMax === undefined
+      template.transientQMin === undefined ||
+      template.transientQMax === undefined
         ? undefined
         : interpolate(
             template.transientQMin,
@@ -1031,7 +1035,11 @@ function collectPatchSimilarityDimensions(
       left.timbre.filterCutoffHz,
       right.timbre.filterCutoffHz
     ),
-    filterQ: scoreLinearSimilarity(left.timbre.filterQ, right.timbre.filterQ, 3),
+    filterQ: scoreLinearSimilarity(
+      left.timbre.filterQ,
+      right.timbre.filterQ,
+      3
+    ),
     noiseMix: scoreOptionalLinearSimilarity(
       left.timbre.noiseMix,
       right.timbre.noiseMix,
@@ -1107,7 +1115,10 @@ function collectProminentDifferences(
     filterCutoffHz: [left.timbre.filterCutoffHz, right.timbre.filterCutoffHz],
     filterQ: [left.timbre.filterQ, right.timbre.filterQ],
     noiseMix: [left.timbre.noiseMix ?? 0, right.timbre.noiseMix ?? 0],
-    transientMix: [left.timbre.transientMix ?? 0, right.timbre.transientMix ?? 0],
+    transientMix: [
+      left.timbre.transientMix ?? 0,
+      right.timbre.transientMix ?? 0,
+    ],
     bodySustainLevel: [
       left.timbre.bodySustainLevel ?? 0,
       right.timbre.bodySustainLevel ?? 0,

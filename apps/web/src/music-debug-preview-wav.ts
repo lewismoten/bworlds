@@ -103,15 +103,10 @@ export function renderMusicDebugPreviewNoteToSamples(
         (1 - harmonicWeight) *
         Math.max(1, note.timbre.fundamentalGainMultiplier ?? 1) *
         carrierEnvelopeGain +
-      harmonic *
-        harmonicWeight *
-        pulseModulation *
-        harmonicEnvelopeGain +
+      harmonic * harmonicWeight * pulseModulation * harmonicEnvelopeGain +
       transientNoise * transientMix * transientEnvelopeGain +
       nextSample * noiseMix * carrierEnvelopeGain * noiseBurstGain;
-    samples[frame] =
-      mixed *
-      Math.max(0.12, note.volume * 14);
+    samples[frame] = mixed * Math.max(0.12, note.volume * 14);
     carrierPhase = advancePhase(carrierPhase, carrierPhaseIncrement);
     harmonicPhase = advancePhase(harmonicPhase, harmonicPhaseIncrement);
   }
@@ -252,7 +247,9 @@ export function resolveHarmonicEnvelopeGain(
   );
   const harmonicReleaseStartSeconds = Math.max(
     bodySettleSeconds,
-    durationSeconds - Math.max(0.001, note.releaseMs / 1000) - harmonicReleaseLeadSeconds
+    durationSeconds -
+      Math.max(0.001, note.releaseMs / 1000) -
+      harmonicReleaseLeadSeconds
   );
 
   if (timeSeconds <= attackSeconds) {
@@ -287,7 +284,10 @@ export function resolveTransientEnvelopeGain(
     0.008,
     Math.min(durationSeconds, (note.timbre.transientDurationMs ?? 0) / 1000)
   );
-  if ((note.timbre.transientMix ?? 0) <= 0 || timeSeconds > transientDurationSeconds) {
+  if (
+    (note.timbre.transientMix ?? 0) <= 0 ||
+    timeSeconds > transientDurationSeconds
+  ) {
     return 0;
   }
   const peakAt = Math.min(0.006, transientDurationSeconds * 0.35);
@@ -310,7 +310,10 @@ export function resolveNoiseBurstEnvelopeGain(
   if ((note.timbre.noiseMix ?? 0) <= 0 || burstRate <= 0) {
     return 1;
   }
-  const burstDepth = Math.max(0, Math.min(1, note.timbre.noiseBurstDepth ?? 0.75));
+  const burstDepth = Math.max(
+    0,
+    Math.min(1, note.timbre.noiseBurstDepth ?? 0.75)
+  );
   const periodSeconds = 1 / burstRate;
   const cycleProgress =
     (((timeSeconds % periodSeconds) + periodSeconds) % periodSeconds) /

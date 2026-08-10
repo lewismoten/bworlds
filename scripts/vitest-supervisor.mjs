@@ -162,7 +162,10 @@ async function readExistingLockMetadata(lockFilePath) {
 
 async function getWorkerPids(rootPid) {
   try {
-    const { stdout } = await execFileAsync('ps', ['-Ao', 'pid=,ppid=,command=']);
+    const { stdout } = await execFileAsync('ps', [
+      '-Ao',
+      'pid=,ppid=,command=',
+    ]);
     return collectDescendantProcessIds(parseProcessTable(stdout), rootPid);
   } catch {
     return [];
@@ -230,12 +233,23 @@ async function runVitest(argv = process.argv.slice(2)) {
     }
   }
 
-  const child = spawn('npm', ['exec', '--', 'vitest', 'run', '--reporter=verbose', ...args.passthroughArgs], {
-    cwd: rootDir,
-    env: process.env,
-    detached: true,
-    stdio: ['ignore', 'pipe', 'pipe'],
-  });
+  const child = spawn(
+    'npm',
+    [
+      'exec',
+      '--',
+      'vitest',
+      'run',
+      '--reporter=verbose',
+      ...args.passthroughArgs,
+    ],
+    {
+      cwd: rootDir,
+      env: process.env,
+      detached: true,
+      stdio: ['ignore', 'pipe', 'pipe'],
+    }
+  );
   const state = createVitestSupervisorState();
   const handleOutputLine = (line) => {
     updateVitestSupervisorState(state, line);
@@ -268,8 +282,8 @@ async function runVitest(argv = process.argv.slice(2)) {
   let timedOut = false;
   const suiteTimeout = args.isFullSuiteRun
     ? setTimeout(async () => {
-      timedOut = true;
-      state.workerPids = await getWorkerPids(child.pid);
+        timedOut = true;
+        state.workerPids = await getWorkerPids(child.pid);
         printTimeoutSummary(state, args.suiteTimeoutMs);
         await killVitestProcessGroup(child);
       }, args.suiteTimeoutMs)
