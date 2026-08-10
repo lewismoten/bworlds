@@ -6,7 +6,6 @@ import {
 } from '@bworlds/core/hash';
 import {
   resolveProceduralChordAtStep,
-  resolveProceduralCompositionStep,
   resolveProceduralHarmonyVoicing,
   resolveProceduralInstrumentSemitones,
 } from './procedural-music-harmony.ts';
@@ -36,6 +35,7 @@ import { normalizeProceduralMusicLoudness } from './procedural-music-loudness.ts
 import { resolveProceduralMeterAccent } from './procedural-music-meter.ts';
 import { blendThemeMotifWithImportantNpcMotif } from './procedural-music-npc-motif.ts';
 import { createProceduralPercussionNotes } from './procedural-music-percussion.ts';
+import { resolveProceduralTrackContext } from './procedural-music-track-context.ts';
 import {
   resolveMusicSpaceProfile,
   type MusicSpaceProfile,
@@ -47,6 +47,7 @@ import {
   resolveProceduralNoteFrequency,
   resolveProceduralNoteHarmonicGain,
 } from './procedural-music-note-shaping.ts';
+import { resolveProceduralRhythmicGridStep } from './procedural-music-rhythm-grid.ts';
 import { resolveProceduralRootMidiNote } from './procedural-music-scale.ts';
 import {
   PROCEDURAL_MODE_FORMAL_MAJOR,
@@ -1374,13 +1375,15 @@ function createThemeNotes(options: {
   const instrument = options.instrumentBank.instruments[role];
   const arrangementProfile = options.arrangement.roleProfiles[role];
   const meterAccent = resolveProceduralMeterAccent(role, options.stepIndex);
-  const composition = resolveProceduralCompositionStep(
-    options.theme,
-    options.stepIndex,
-    options.clusterX,
-    options.clusterY,
-    options.allowLeadAccidentals
-  );
+  const trackContext = resolveProceduralTrackContext({
+    theme: options.theme,
+    stepIndex: options.stepIndex,
+    clusterX: options.clusterX,
+    clusterY: options.clusterY,
+    tempoMultiplier: options.mood.tempoMultiplier,
+    allowLeadAccidentals: options.allowLeadAccidentals,
+  });
+  const composition = trackContext.composition;
   const resolvedSemitones = resolveProceduralInstrumentSemitones({
     theme: options.theme,
     role,
@@ -1430,24 +1433,19 @@ function createThemeNotes(options: {
           stepIndex: options.stepIndex,
           clusterX: options.clusterX,
           clusterY: options.clusterY,
-          chord: composition.chord,
-          previousChord,
+          chord: trackContext.harmonicState.chord,
+          previousChord: trackContext.harmonicState.previousChord,
         })
       : [semitones];
   if (role === 'percussion') {
     return createProceduralPercussionNotes({
       themeId: options.theme.id,
       stepIndex: options.stepIndex,
-      phraseStep: composition.phraseStep,
-      cadence: composition.cadence,
-      chordChange:
-        previousChord === null ||
-        previousChord.progressionIndex !== composition.chord.progressionIndex,
+      phraseStep: trackContext.phraseState.phraseStep,
+      cadence: trackContext.phraseState.cadence,
+      chordChange: trackContext.harmonicState.chordChange,
       startMs: options.startMs,
-      stepDurationMs:
-        (options.theme.noteDurationMs *
-          resolveRhythmicMotifStepDuration(options.theme, options.stepIndex)) /
-        options.mood.tempoMultiplier,
+      stepDurationMs: trackContext.rhythmicGrid.stepDurationMs,
       rootMidiNote: options.theme.rootMidiNote,
       baseInstrumentId: instrument.id,
       baseVolume:
@@ -1662,10 +1660,11 @@ function scheduleThemeLayerNotes(
   while (nextNoteAtMs < options.nowMs + LOOKAHEAD_MS) {
     const role = selectInstrumentRole(stepIndex);
     const arrangementProfile = arrangement.roleProfiles[role];
-    const stepDurationMs =
-      (theme.noteDurationMs *
-        resolveRhythmicMotifStepDuration(theme, stepIndex)) /
-      mood.tempoMultiplier;
+    const stepDurationMs = resolveProceduralRhythmicGridStep({
+      theme,
+      stepIndex,
+      tempoMultiplier: mood.tempoMultiplier,
+    }).stepDurationMs;
     const shouldRest =
       role !== 'bass' &&
       shouldRestAtThemeStep(theme, role, stepIndex, clusterX, clusterY);
@@ -2134,13 +2133,6 @@ function resolveCompositionDurationMultiplier(
   }
 
   return 1;
-}
-
-function resolveRhythmicMotifStepDuration(
-  theme: MusicRegionTheme,
-  stepIndex: number
-): number {
-  return theme.rhythmPattern[stepIndex % theme.rhythmPattern.length] ?? 1;
 }
 
 function normalizeWrappedProgress(value: number): number {

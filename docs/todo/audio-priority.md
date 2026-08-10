@@ -280,12 +280,12 @@ added directly as semitones instead of moving through the selected scale.
 
 ## Shared Track Context
 
-- [ ] Build one harmonic timeline before generating tracks.
-- [ ] Build one rhythmic grid before generating tracks.
+- [x] Build one harmonic timeline before generating tracks.
+- [x] Build one rhythmic grid before generating tracks.
 - [ ] Pass section state to every track generator.
-- [ ] Pass phrase state to every track generator.
-- [ ] Pass active chord to every track generator.
-- [ ] Pass motif state to every track generator.
+- [x] Pass phrase state to every track generator.
+- [x] Pass active chord to every track generator.
+- [x] Pass motif state to every track generator.
 - [ ] Prevent tracks from selecting independent tonal centers.
 - [ ] Validate all tracks against shared SongDNA.
 
