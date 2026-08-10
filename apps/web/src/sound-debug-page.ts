@@ -56,7 +56,7 @@ function playSnapshot(): void {
   }
 
   audioContext = nextAudioContext;
-  audioContext.resume?.();
+  void audioContext.resume?.();
   stopPlayback();
 
   const buffer = audioContext.createBuffer(

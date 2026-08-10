@@ -14,7 +14,6 @@ import {
 import {
   listGeneralMidiFamilyNames,
   listGeneralMidiPrograms,
-  listGeneralMidiProgramsByFamily,
   type GeneralMidiProgram,
 } from './general-midi.ts';
 import {

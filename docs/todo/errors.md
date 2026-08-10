@@ -16,7 +16,10 @@ Always run tests to make sure all tests pass
 - [x] Set a reasonable timeout for each individual test.
 - [x] Set timeouts for `beforeAll` and `afterAll` hooks.
 - [ ] Check tests for infinite loops and unbounded generation.
-- [ ] Check async tests for missing `await` statements.
+- [x] Check async tests for missing `await` statements.
+      ESLint now enforces `@typescript-eslint/await-thenable` plus
+      `@typescript-eslint/no-floating-promises` across TypeScript files so
+      missing awaits and dropped promises fail lint.
 - [ ] Ensure every promise eventually resolves or rejects.
 - [x] Clear intervals and timeouts after every test.
 - [x] Close servers, sockets, workers, and file watchers.
