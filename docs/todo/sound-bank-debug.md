@@ -156,8 +156,8 @@
 - [ ] Add an attack curve selector.
 - [ ] Add a decay curve selector.
 - [ ] Add a release curve selector.
-- [ ] Show envelope values in milliseconds.
-- [ ] Show sustain as a normalized value.
+- [x] Show envelope values in milliseconds.
+- [x] Show sustain as a normalized value.
 - [ ] Add a visual ADSR envelope.
 - [ ] Update the envelope preview live.
 - [ ] Warn when attack is unusually long.

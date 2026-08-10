@@ -1116,6 +1116,15 @@ function buildSelectedInstrumentDetailsMarkup(
   const waveformPreviewMarkup = runtimeInstrument
     ? buildMusicDebugInstrumentWaveformMarkup(runtimeInstrument)
     : '<p class="sound-bank-debug-warning" role="status">Waveform preview unavailable for this patch source.</p>';
+  const attackMs = runtimeInstrument
+    ? `${Math.round(runtimeInstrument.attackMs)} ms`
+    : 'Unknown';
+  const releaseMs = runtimeInstrument
+    ? `${Math.round(runtimeInstrument.releaseMs)} ms`
+    : 'Unknown';
+  const sustainLevel = runtimeInstrument
+    ? formatNormalizedValue(runtimeInstrument.timbre.bodySustainLevel ?? 0.74)
+    : 'Unknown';
   const primaryOscillatorType = runtimeInstrument
     ? runtimeInstrument.waveform
     : 'Unknown';
@@ -1149,6 +1158,9 @@ function buildSelectedInstrumentDetailsMarkup(
       <div><dt>Playable Range</dt><dd>${formatMidiRange(selectedEntry.recommendedMidiRange)}</dd></div>
       <div><dt>Patch Source</dt><dd>${selectedEntry.sourcePlugin}</dd></div>
       <div><dt>Generated</dt><dd>${selectedEntry.sourcePlugin === 'core-generated-bank' ? 'Yes' : 'No'}</dd></div>
+      <div><dt>Attack</dt><dd>${attackMs}</dd></div>
+      <div><dt>Release</dt><dd>${releaseMs}</dd></div>
+      <div><dt>Sustain</dt><dd>${sustainLevel}</dd></div>
       <div><dt>Primary Oscillator</dt><dd>${primaryOscillatorType}</dd></div>
       <div><dt>Primary Harmonics</dt><dd>${primaryHarmonicContent}</dd></div>
       <div><dt>Harmonic Oscillator</dt><dd>${harmonicOscillatorType}</dd></div>
@@ -1243,6 +1255,10 @@ function formatMidiRange(range: { minMidiNote: number; maxMidiNote: number }): s
 
 function formatValidationWarnings(messages: readonly string[]): string {
   return messages.length === 0 ? 'None' : messages.join(' | ');
+}
+
+function formatNormalizedValue(value: number): string {
+  return value.toFixed(2);
 }
 
 function groupProgramsByFamily(

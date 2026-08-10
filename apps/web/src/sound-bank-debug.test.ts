@@ -103,6 +103,9 @@ describe('sound bank debug page', () => {
     expect(normalizedMarkup).toContain('music-debug-instrument-waveform');
     expect(normalizedMarkup).toContain('Patch Source');
     expect(normalizedMarkup).toContain('Generated');
+    expect(normalizedMarkup).toContain('Attack');
+    expect(normalizedMarkup).toContain('Release');
+    expect(normalizedMarkup).toContain('Sustain');
     expect(normalizedMarkup).toContain('Primary Oscillator');
     expect(normalizedMarkup).toContain('Primary Harmonics');
     expect(normalizedMarkup).toContain('Harmonic Oscillator');
@@ -507,6 +510,10 @@ describe('sound bank debug page', () => {
     expect(markup).toContain('custom-bank');
     expect(markup).toContain('Generated');
     expect(markup).toContain('>No<');
+    expect(markup).toContain('Attack');
+    expect(markup).toContain('Unknown');
+    expect(markup).toContain('Release');
+    expect(markup).toContain('Sustain');
     expect(markup).toContain('Primary Oscillator');
     expect(markup).toContain('Unknown');
     expect(markup).toContain('Primary Harmonics');
@@ -556,6 +563,11 @@ describe('sound bank debug page', () => {
     expect(markup).toContain('core-generated-bank');
     expect(markup).toContain('Generated');
     expect(markup).toContain('>Yes<');
+    expect(markup).toContain('Attack');
+    expect(markup).toMatch(/>\d+ ms</);
+    expect(markup).toContain('Release');
+    expect(markup).toContain('Sustain');
+    expect(markup).toContain('0.74');
     expect(markup).toContain('Primary Oscillator');
     expect(markup).toContain(
       snapshot.musicSnapshot.instrumentBank.instruments.lead.waveform
