@@ -383,6 +383,7 @@ export function createMusicDebugSnapshot(
     notePitchDiagnostics: midiExportValidation.notePitchDiagnostics,
     sections: song.sections,
     leadMotif,
+    scaleLength: theme.scale.length,
   });
   const harmonyChordDetections = createMusicDebugHarmonyChordDetections({
     notes: song.notes,

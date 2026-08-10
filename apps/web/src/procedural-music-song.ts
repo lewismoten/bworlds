@@ -24,6 +24,7 @@ import {
   PROCEDURAL_MUSIC_PHRASE_MEASURE_COUNT,
   repeatProceduralMusicPhraseNotes,
 } from './procedural-music-song-phrase.ts';
+import { stateLeadMotifInFirstASection } from './procedural-music-song-motif.ts';
 
 export type ProceduralMusicSongSection = {
   id: ProceduralMusicSongSectionId;
@@ -57,6 +58,13 @@ export function createProceduralMusicSong(
   const startMs = options.nowMs;
   const dna = createProceduralSongDna(options);
   const durationMs = resolveProceduralMusicSongDurationMs(options);
+  const theme = resolveMusicTheme(
+    options.tileKind,
+    options.contextType,
+    undefined,
+    options.clusterX ?? 0,
+    options.clusterY ?? 0
+  );
   const blueprint = resolveProceduralMusicBlueprint(options);
   const sections = buildProceduralMusicSongSections(blueprint, durationMs);
   const phraseDurationMs = resolveProceduralMusicPhraseDurationMs(
@@ -73,7 +81,14 @@ export function createProceduralMusicSong(
     songStartMs: startMs,
     songDurationMs: durationMs,
   });
-  const notes = applySongSectionsToNotes(baseNotes, sections, startMs);
+  const arrangedNotes = applySongSectionsToNotes(baseNotes, sections, startMs);
+  const notes = stateLeadMotifInFirstASection({
+    notes: arrangedNotes,
+    sections,
+    songStartMs: startMs,
+    leadMotif: dna.leadMotif,
+    theme,
+  });
   const loopStartOffsetMs = sections[1]?.startOffsetMs ?? 0;
   const outro = sections[sections.length - 1];
   const loopEndOffsetMs = outro

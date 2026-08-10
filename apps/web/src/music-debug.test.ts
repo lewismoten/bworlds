@@ -324,6 +324,7 @@ describe('music debug', () => {
         matchCount: expect.any(Number),
       })
     );
+    expect(sectionA?.exactMatchCount ?? 0).toBeGreaterThan(0);
     expect(sectionAPrime).toEqual(
       expect.objectContaining({
         exactMatchCount: expect.any(Number),

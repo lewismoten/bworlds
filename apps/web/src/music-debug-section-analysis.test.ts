@@ -17,6 +17,7 @@ describe('music debug section analysis', () => {
       notePitchDiagnostics: TEST_DIAGNOSTICS,
       sections: TEST_SECTIONS,
       leadMotif: [0, 2, 4, 2],
+      scaleLength: 7,
     });
 
     expect(analysis).toEqual([

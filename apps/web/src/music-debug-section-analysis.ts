@@ -54,6 +54,7 @@ export function createMusicDebugSectionMotifMatches(options: {
   notePitchDiagnostics: readonly MusicDebugNotePitchDiagnostic[];
   sections: readonly ProceduralMusicSongSection[];
   leadMotif: readonly number[];
+  scaleLength: number;
 }): MusicDebugSectionMotifMatch[] {
   const targetPattern = createIntervalPattern(options.leadMotif);
   return options.sections.map((section) => {
@@ -62,6 +63,7 @@ export function createMusicDebugSectionMotifMatches(options: {
       notePitchDiagnostics: options.notePitchDiagnostics,
       section,
       role: 'lead',
+      scaleLength: options.scaleLength,
     });
     const exactMatchCount = countExactMotifMatches(
       leadDegrees,
@@ -461,6 +463,7 @@ function collectSectionScaleDegrees(options: {
   notePitchDiagnostics: readonly MusicDebugNotePitchDiagnostic[];
   section: ProceduralMusicSongSection;
   role: ProceduralMusicRole;
+  scaleLength: number;
 }): number[] {
   const degrees: number[] = [];
   const sectionStartMs = options.notes[0]?.startMs ?? 0;
@@ -480,10 +483,17 @@ function collectSectionScaleDegrees(options: {
     ) {
       continue;
     }
-    degrees.push(diagnostic.scaleDegree - 1);
+    degrees.push(mod(diagnostic.scaleDegree - 1, options.scaleLength));
   }
 
   return degrees;
+}
+
+function mod(value: number, divisor: number): number {
+  if (divisor <= 0) {
+    return value;
+  }
+  return ((value % divisor) + divisor) % divisor;
 }
 
 function collectHarmonyChordLabels(options: {
