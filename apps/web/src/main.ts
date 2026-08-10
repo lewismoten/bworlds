@@ -235,12 +235,11 @@ import {
   getEventSummarySignature,
   getMinimapMiniSignature,
   getSextantSignature,
-  getStatusSignature,
   getTextViewportSignature,
   getTimekeeperMiniSignature,
   getViewportHudSignature,
 } from './ui-signatures.ts';
-import { createStatusView, createViewportHudView } from './status-view.ts';
+import { createViewportHudView } from './status-view.ts';
 import {
   loadPersistedPageScrollY,
   restorePersistedPageScrollY,
@@ -970,8 +969,6 @@ const faceEastButton = document.querySelector<HTMLButtonElement>('#face-east');
 const faceSouthButton =
   document.querySelector<HTMLButtonElement>('#face-south');
 const faceWestButton = document.querySelector<HTMLButtonElement>('#face-west');
-const status = document.querySelector<HTMLElement>('#status');
-const statusView = status ? createStatusView(status) : null;
 const viewMenuButton =
   document.querySelector<HTMLButtonElement>('#view-menu-button');
 const viewDialog = document.querySelector<HTMLDialogElement>('#view-dialog');
@@ -1038,8 +1035,6 @@ const actionButton = document.querySelector<HTMLButtonElement>('#action');
 const buildPoiButton = document.querySelector<HTMLButtonElement>('#build-poi');
 const buildPoiKindSelect =
   document.querySelector<HTMLSelectElement>('#build-poi-kind');
-const contentPackForm =
-  document.querySelector<HTMLFormElement>('#content-pack-form');
 const randomJumpButton =
   document.querySelector<HTMLButtonElement>('#jump-random');
 const teleportHomeButton =
@@ -1268,8 +1263,6 @@ const timeState = {
       : null,
 };
 
-const contentPackLabel = document.querySelector('#content-pack-label');
-
 const motion = {
   jumpHeight: 0,
   isJumping: false,
@@ -1460,8 +1453,6 @@ const celestialEventModeState = {
   mode: getNextCelestialEventMode(savedSession?.celestialEventMode),
 };
 const uiRenderState = {
-  lastStatusSignature: '',
-  lastStatusUpdateNowMs: Number.NEGATIVE_INFINITY,
   lastViewportHudSignature: '',
   lastViewportHudUpdateNowMs: Number.NEGATIVE_INFINITY,
   lastEventSummarySignature: '',
@@ -1474,7 +1465,7 @@ const uiRenderState = {
   lastCompassMiniSignature: '',
   lastMinimapMiniSignature: '',
 };
-const STATUS_DOM_UPDATE_INTERVAL_MS = 250;
+const VIEWPORT_HUD_DOM_UPDATE_INTERVAL_MS = 250;
 const hmrNoticeState = {
   message: '',
   visibleUntilMs: null as number | null,
@@ -1590,8 +1581,6 @@ const runLoopFrame = createFrameLoopRunner({
   render,
 });
 
-renderContentPackControls();
-updateContentPackLabel();
 updateFreezeTimeButton();
 updateViewModeUi();
 updateTimekeeperDisplayModeUi();
@@ -1654,65 +1643,6 @@ function updateStatus(
     tile,
     contextLabel: context.label,
   });
-  const statusSignature = getStatusSignature({
-    viewMode: state.viewMode,
-    playerLevel,
-    contextLabel: context.label,
-    tileLabel,
-    facing,
-    playerX: spatial.playerX,
-    playerY: spatial.playerY,
-    gridX,
-    gridY,
-    latitude: gps.latitude,
-    longitude: gps.longitude,
-    timeLabel,
-    dateLabel,
-    cycleLabel,
-    seasonLabel,
-    moonLabel,
-    weatherLabel,
-    forecastLabel,
-    eventModeLabel,
-    eventsLabel,
-    sunriseLabel,
-    depth: context.depth,
-    hint,
-  });
-  if (
-    statusView &&
-    statusSignature !== uiRenderState.lastStatusSignature &&
-    nowMs - uiRenderState.lastStatusUpdateNowMs >= STATUS_DOM_UPDATE_INTERVAL_MS
-  ) {
-    statusView.update({
-      viewMode: state.viewMode,
-      playerLevel,
-      contextLabel: context.label,
-      tileLabel,
-      facing,
-      playerX: spatial.playerX,
-      playerY: spatial.playerY,
-      gridX,
-      gridY,
-      latitude: gps.latitude,
-      longitude: gps.longitude,
-      timeLabel,
-      dateLabel,
-      cycleLabel,
-      seasonLabel,
-      moonLabel,
-      weatherLabel,
-      forecastLabel,
-      eventModeLabel,
-      eventsLabel,
-      sunriseLabel,
-      depth: context.depth,
-      hint,
-    });
-    uiRenderState.lastStatusSignature = statusSignature;
-    uiRenderState.lastStatusUpdateNowMs = nowMs;
-  }
-
   if (viewportHudView) {
     const showViewportCompass = isInspectorSectionVisible(
       activeInspectorTab,
@@ -1732,7 +1662,7 @@ function updateStatus(
     if (
       viewportHudSignature !== uiRenderState.lastViewportHudSignature &&
       nowMs - uiRenderState.lastViewportHudUpdateNowMs >=
-        STATUS_DOM_UPDATE_INTERVAL_MS
+        VIEWPORT_HUD_DOM_UPDATE_INTERVAL_MS
     ) {
       viewportHudView.update({
         timekeeperDisplayMode: activeTimekeeperDisplayMode,
@@ -2113,37 +2043,6 @@ function syncViewportModeUi(): void {
   updateViewModeUi();
 }
 
-function updateContentPackLabel(): void {
-  if (!contentPackLabel) return;
-  contentPackLabel.textContent = `Content Packs: ${activePacks.map((pack) => pack.name).join(' + ')}`;
-}
-
-function renderContentPackControls(): void {
-  if (!contentPackForm) return;
-  contentPackForm.innerHTML = builtinPackManifests
-    .map((pack) => {
-      const checked = activePackIds.includes(pack.id) ? 'checked' : '';
-      const disabled = pack.id === REQUIRED_PACK_ID ? 'disabled' : '';
-      const description = pack.description
-        ? `<span class="pack-description">${pack.description}</span>`
-        : '';
-      return `
-        <label class="pack-option">
-          <input
-            type="checkbox"
-            name="content-pack"
-            value="${pack.id}"
-            ${checked}
-            ${disabled}
-          />
-          <span class="pack-name">${pack.name}</span>
-          ${description}
-        </label>
-      `;
-    })
-    .join('');
-}
-
 function normalizeSelectedPackIds(packIds?: unknown): string[] {
   const selectedIds = Array.isArray(packIds)
     ? packIds.filter((packId): packId is string => typeof packId === 'string')
@@ -2176,8 +2075,6 @@ function rebuildRuntime(nextPackIds: string[]): void {
     celestialEventModeState.mode;
   activePackIds = normalizedPackIds;
   drawAtlas(atlasCanvas.getContext('2d'));
-  renderContentPackControls();
-  updateContentPackLabel();
   updateDebugTeleportOptions();
   saveSession();
   requestRender();
@@ -4259,24 +4156,6 @@ window.addEventListener(
 
 actionButton.addEventListener('click', handleInteraction);
 buildPoiButton?.addEventListener('click', handleBuildPoi);
-contentPackForm?.addEventListener('change', () => {
-  const selectedPackIds = builtinPackManifests
-    .filter((pack) => {
-      const input = contentPackForm.elements.namedItem('content-pack');
-      if (!(input instanceof RadioNodeList)) {
-        return pack.id === REQUIRED_PACK_ID;
-      }
-      const controls = Array.from(input).filter(
-        (control): control is HTMLInputElement =>
-          control instanceof HTMLInputElement
-      );
-      return controls.some(
-        (control) => control.value === pack.id && control.checked
-      );
-    })
-    .map((pack) => pack.id);
-  rebuildRuntime(selectedPackIds);
-});
 viewMenuButton?.addEventListener('click', () => openDialog(viewDialog));
 randomJumpButton?.addEventListener('click', () => jumpToRandomDestination());
 randomMenuButton?.addEventListener('click', () => openDialog(randomDialog));

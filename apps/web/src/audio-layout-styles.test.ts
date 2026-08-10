@@ -27,9 +27,10 @@ describe('audio layout styles', () => {
     expect(stylesheet).toContain('flex-wrap: nowrap;');
     expect(stylesheet).toContain('left: 0.75rem;');
     expect(stylesheet).toContain('right: 0.75rem;');
-    expect(stylesheet).toContain('width: 100%;');
+    expect(stylesheet).toContain('width: min(72rem, calc(100vw - 1.5rem));');
     expect(stylesheet).toContain('.dock-icon-button');
     expect(stylesheet).toContain('overflow-x: auto;');
+    expect(stylesheet).toContain('white-space: nowrap;');
     expect(stylesheet).toContain('.audio-volume-controls');
     expect(stylesheet).toContain('grid-template-columns: minmax(0, 1fr);');
     expect(stylesheet).toContain('.audio-volume-row output');

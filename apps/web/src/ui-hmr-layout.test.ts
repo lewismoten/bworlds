@@ -29,12 +29,14 @@ describe('main layout and hmr wiring', () => {
     expect(stylesheet).toContain('display: flex;');
     expect(stylesheet).toContain('left: 0.75rem;');
     expect(stylesheet).toContain('right: 0.75rem;');
-    expect(stylesheet).toContain('width: auto;');
+    expect(stylesheet).toContain('width: min(72rem, calc(100vw - 1.5rem));');
     expect(stylesheet).toContain('.dock-cluster {\n  display: flex;');
     expect(stylesheet).toContain('flex-wrap: nowrap;');
-    expect(stylesheet).toContain('.controls-compact {\n  width: 100%;');
+    expect(stylesheet).toContain('.controls-compact {\n  display: flex;');
+    expect(stylesheet).toContain('flex: 1 1 auto;');
     expect(stylesheet).toContain('.dock-cluster {\n  display: flex;');
     expect(stylesheet).toContain('width: 100%;');
+    expect(stylesheet).toContain('white-space: nowrap;');
   });
 
   it('cleans up global main-page listeners during hot replacement', () => {
