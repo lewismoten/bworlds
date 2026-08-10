@@ -17,7 +17,7 @@
 - [x] Regenerate any section with zero expected motif matches.
 - [x] Give the lead two to six note attacks per measure.
 - [x] Prevent repeated one-note-per-measure lead patterns.
-- [ ] Build reusable lead rhythm templates by phrase.
+- [x] Build reusable lead rhythm templates by phrase.
 - [ ] Add rests at phrase boundaries rather than every measure.
 - [ ] End each eight-measure phrase on a planned cadence.
 - [ ] Resolve the final cadence to scale degree 1.

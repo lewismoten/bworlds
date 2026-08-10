@@ -2,6 +2,7 @@ import type {
   MusicUpdateOptions,
   ProceduralMusicNote,
 } from './procedural-music.ts';
+import { resolveProceduralLeadRhythmPhraseTemplate } from './procedural-music-lead-rhythm-template.ts';
 import {
   resolveMusicThemeById,
   scheduleProceduralMusicNotes,
@@ -56,6 +57,8 @@ export function collectProceduralMusicPhraseNotes(
   return ensureLeadMeasureAttackDensity(notes, {
     phraseStartMs: options.nowMs,
     phraseDurationMs,
+    clusterX: options.clusterX ?? 0,
+    clusterY: options.clusterY ?? 0,
   });
 }
 
@@ -141,11 +144,22 @@ function ensureLeadMeasureAttackDensity(
   options: {
     phraseStartMs: number;
     phraseDurationMs: number;
+    clusterX: number;
+    clusterY: number;
   }
 ): ProceduralMusicNote[] {
   const repairedNotes = [...notes];
   const measureDurationMs =
     options.phraseDurationMs / PROCEDURAL_MUSIC_PHRASE_MEASURE_COUNT;
+  const leadThemeId =
+    repairedNotes.find((note) => note.role === 'lead')?.themeId ??
+    'frontier-plains';
+  const phraseTemplate = resolveProceduralLeadRhythmPhraseTemplate({
+    themeId: leadThemeId,
+    clusterX: options.clusterX,
+    clusterY: options.clusterY,
+    measureCount: PROCEDURAL_MUSIC_PHRASE_MEASURE_COUNT,
+  });
 
   for (
     let measureIndex = 0;
@@ -166,6 +180,9 @@ function ensureLeadMeasureAttackDensity(
       continue;
     }
 
+    const measureTemplate =
+      phraseTemplate.measures[measureIndex] ?? phraseTemplate.measures[0];
+    const targetAttacks = measureTemplate?.attacks ?? [];
     const templateNote =
       leadNotes[0] ??
       findLeadMeasureTemplate(repairedNotes, measureStartMs, measureEndMs);
@@ -184,30 +201,31 @@ function ensureLeadMeasureAttackDensity(
     });
 
     const theme = resolveMusicThemeById(templateNote.themeId);
-    const attackOffsets = [0.24, 0.58];
     for (
       let attackIndex = leadNotes.length;
-      attackIndex < 2;
+      attackIndex < Math.max(2, targetAttacks.length);
       attackIndex += 1
     ) {
+      const attackTemplate = targetAttacks[attackIndex] ?? targetAttacks.at(-1);
       repairedNotes.push({
         ...templateNote,
         instrumentId: `${templateNote.instrumentId}:measure-${measureIndex}-${attackIndex}`,
         startMs: Math.round(
           measureStartMs +
-            measureDurationMs * (attackOffsets[attackIndex] ?? 0.58)
+            measureDurationMs * (attackTemplate?.offsetRatio ?? 0.58)
         ),
         durationMs: Math.max(
           48,
           Math.round(
             Math.min(
               theme.noteDurationMs * 0.72,
-              measureDurationMs * (attackIndex === 0 ? 0.28 : 0.24)
+              measureDurationMs * (attackTemplate?.durationRatio ?? 0.24)
             )
           )
         ),
         frequency: repairedFrequency,
-        volume: templateNote.volume * (attackIndex === 0 ? 0.86 : 0.76),
+        volume:
+          templateNote.volume * (attackTemplate?.volumeMultiplier ?? 0.76),
       });
     }
   }
