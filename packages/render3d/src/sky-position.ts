@@ -61,5 +61,10 @@ export function createSkyAltitudePosition(
   altitude: number,
   radius: number
 ): THREE.Vector3 {
-  return writeSkyAltitudePosition(new THREE.Vector3(), azimuth, altitude, radius);
+  return writeSkyAltitudePosition(
+    new THREE.Vector3(),
+    azimuth,
+    altitude,
+    radius
+  );
 }

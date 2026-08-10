@@ -69,7 +69,10 @@ export function hasActiveMovementInput(keys: Iterable<string>): boolean {
   return false;
 }
 
-export function getWrappedProgressDelta(current: number, target: number): number {
+export function getWrappedProgressDelta(
+  current: number,
+  target: number
+): number {
   let delta = target - current;
   if (delta > 0.5) delta -= 1;
   if (delta < -0.5) delta += 1;
@@ -98,7 +101,8 @@ export function isAngleAnimating(
 export function getFrameLoopActivity(
   options: FrameLoopActivityOptions
 ): FrameLoopActivity {
-  const displayedMoonProgress = options.displayedCycle.moonMidnightOrbitProgress ?? 0;
+  const displayedMoonProgress =
+    options.displayedCycle.moonMidnightOrbitProgress ?? 0;
   const actualMoonProgress = options.actualCycle.moonMidnightOrbitProgress ?? 0;
   const dialSettling =
     isWrappedProgressAnimating(
@@ -119,7 +123,8 @@ export function getFrameLoopActivity(
       options.actualCycle.sunsetProgress
     ) ||
     Math.abs(
-      options.displayedCycle.daylightDuration - options.actualCycle.daylightDuration
+      options.displayedCycle.daylightDuration -
+        options.actualCycle.daylightDuration
     ) > 0.002;
 
   return {
@@ -159,11 +164,7 @@ export function shouldAdvanceSimulationState(
   keys: Iterable<string>,
   isJumping: boolean
 ): boolean {
-  return (
-    !timeFrozen ||
-    isJumping ||
-    hasActiveMovementInput(keys)
-  );
+  return !timeFrozen || isJumping || hasActiveMovementInput(keys);
 }
 
 export function shouldContinueFrameLoop(

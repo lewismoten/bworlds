@@ -609,7 +609,10 @@ export function validateTileModelAgainstRenderBudget(
   detailLevel: RenderBudgetDetailLevel = 'full',
   hardwareConstraints?: TileModelHardwareConstraints
 ): TileModelBudgetValidation {
-  const limits = getEffectiveTileModelHardLimits(detailLevel, hardwareConstraints);
+  const limits = getEffectiveTileModelHardLimits(
+    detailLevel,
+    hardwareConstraints
+  );
   const safetyPrecheck = runTileModelSafetyPrecheck(root as never, limits);
   if (safetyPrecheck.exceeded) {
     return {
@@ -767,7 +770,7 @@ export function validateTileModelAgainstRenderBudget(
 }
 
 export function acceptTilePluginModelForRenderBudget<
-  TObject extends Pick<THREE.Object3D, 'traverse' | 'children' | 'type'>
+  TObject extends Pick<THREE.Object3D, 'traverse' | 'children' | 'type'>,
 >(
   model: TObject,
   detailLevel: RenderBudgetDetailLevel = 'full',
@@ -781,7 +784,7 @@ export function acceptTilePluginModelForRenderBudget<
 }
 
 export function acceptTilePluginModelForRenderBudgetWithResult<
-  TObject extends Pick<THREE.Object3D, 'traverse' | 'children' | 'type'>
+  TObject extends Pick<THREE.Object3D, 'traverse' | 'children' | 'type'>,
 >(
   model: TObject,
   detailLevel: RenderBudgetDetailLevel = 'full',
@@ -809,7 +812,8 @@ export function acceptTilePluginModelForRenderBudgetWithResult<
         detailLevel,
         hardwareConstraints
       ),
-    (removedNode) => disposeObject3DResources(removedNode as Pick<THREE.Object3D, 'traverse'>)
+    (removedNode) =>
+      disposeObject3DResources(removedNode as Pick<THREE.Object3D, 'traverse'>)
   );
   if (pruned.validation.accepted) {
     return {
@@ -848,7 +852,10 @@ export function summarizeRemovedTileModelBudgetParts(
 export function getTileModelCostEstimateLimits(
   detailLevel: RenderBudgetDetailLevel = 'full'
 ): TileModelCostEstimateLimits {
-  return getTileModelCostEstimateLimitsForDetailLevel(detailLevel, getTileModelHardLimits);
+  return getTileModelCostEstimateLimitsForDetailLevel(
+    detailLevel,
+    getTileModelHardLimits
+  );
 }
 
 export function validateTileModelCostEstimateAgainstRenderBudget(
@@ -870,7 +877,10 @@ export function summarizeTileModelBudgetViolations(
   violations: TileModelBudgetViolation[]
 ): string {
   return violations
-    .map((violation) => `${violation.metric} ${violation.actual}>${violation.limit}`)
+    .map(
+      (violation) =>
+        `${violation.metric} ${violation.actual}>${violation.limit}`
+    )
     .join(', ');
 }
 
@@ -1251,7 +1261,11 @@ function countParticleEmitters(root: Pick<THREE.Object3D, 'traverse'>): number {
   let emitterCount = 0;
 
   root.traverse((child) => {
-    if (getRenderParticleEmitterMetadata(child as Pick<THREE.Object3D, 'userData'>)) {
+    if (
+      getRenderParticleEmitterMetadata(
+        child as Pick<THREE.Object3D, 'userData'>
+      )
+    ) {
       emitterCount += 1;
     }
   });
@@ -1279,7 +1293,8 @@ function countSkeletons(root: Pick<THREE.Object3D, 'traverse'>): number {
   const skeletons = new Set<unknown>();
 
   root.traverse((child) => {
-    const skeleton = (child as THREE.Object3D & { skeleton?: unknown }).skeleton;
+    const skeleton = (child as THREE.Object3D & { skeleton?: unknown })
+      .skeleton;
     if (!skeleton || typeof skeleton !== 'object') {
       return;
     }
@@ -1293,9 +1308,11 @@ function countBones(root: Pick<THREE.Object3D, 'traverse'>): number {
   const bones = new Set<unknown>();
 
   root.traverse((child) => {
-    const skeleton = (child as THREE.Object3D & {
-      skeleton?: { bones?: unknown };
-    }).skeleton;
+    const skeleton = (
+      child as THREE.Object3D & {
+        skeleton?: { bones?: unknown };
+      }
+    ).skeleton;
     const skeletonBones = skeleton?.bones;
     if (!Array.isArray(skeletonBones)) {
       return;
@@ -1316,12 +1333,14 @@ function countMorphTargets(root: Pick<THREE.Object3D, 'traverse'>): number {
   let morphTargetCount = 0;
 
   root.traverse((child) => {
-    const geometry = (child as THREE.Object3D & { geometry?: unknown }).geometry;
+    const geometry = (child as THREE.Object3D & { geometry?: unknown })
+      .geometry;
     if (!geometry || geometries.has(geometry)) {
       return;
     }
     geometries.add(geometry);
-    const morphAttributes = (geometry as { morphAttributes?: unknown }).morphAttributes;
+    const morphAttributes = (geometry as { morphAttributes?: unknown })
+      .morphAttributes;
     if (!morphAttributes || typeof morphAttributes !== 'object') {
       return;
     }
@@ -1481,15 +1500,19 @@ const LANDMARK_TILE_KINDS = new Set([
   'observatory',
   'station',
 ]);
-const distanceFadeTargetCache = new WeakMap<THREE.Object3D, DistanceFadeTargets>();
+const distanceFadeTargetCache = new WeakMap<
+  THREE.Object3D,
+  DistanceFadeTargets
+>();
 const ownedDisposableGeometries = new WeakSet<object>();
 export const SHARED_RENDER_GEOMETRY_CACHE_MAX_ENTRIES = 128;
 const sharedBoxGeometryCache = createBoundedCache<string, THREE.BoxGeometry>(
   SHARED_RENDER_GEOMETRY_CACHE_MAX_ENTRIES
 );
-const sharedPlaneGeometryCache = createBoundedCache<string, THREE.PlaneGeometry>(
-  SHARED_RENDER_GEOMETRY_CACHE_MAX_ENTRIES
-);
+const sharedPlaneGeometryCache = createBoundedCache<
+  string,
+  THREE.PlaneGeometry
+>(SHARED_RENDER_GEOMETRY_CACHE_MAX_ENTRIES);
 
 export function getWaterFloorBodyProfile(inset: {
   north: number;
@@ -1595,7 +1618,8 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
   const visibleTileNodes = new Map<string, DynamicTileNode>();
   const persistentSceneResourceStats = collectSceneResourceStats(scene);
   const persistentSceneLightCount = persistentSceneResourceStats.lightCount;
-  const persistentSceneShadowLightCount = persistentSceneResourceStats.shadowLightCount;
+  const persistentSceneShadowLightCount =
+    persistentSceneResourceStats.shadowLightCount;
   const lodSyncVisibleEntriesBuffer: Array<[string, DynamicTileNode]> = [];
   const lodSyncBatchBuffer: Array<[string, DynamicTileNode]> = [];
   const visibleWorldNextVisibleKeysBuffer = new Set<string>();
@@ -1683,7 +1707,11 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     const tile = buildCache.getTile(x, y);
     const definition = getTileDefinitionFromRegistry(tile.kind);
     const variant = getTileVariantIndex(tile.kind, x, y);
-    const surfaceHeight = buildCache.getSurfaceProfile(x, y, tile).surfaceHeight;
+    const surfaceHeight = buildCache.getSurfaceProfile(
+      x,
+      y,
+      tile
+    ).surfaceHeight;
 
     const floorMesh = createFloorMesh(state, tile, x, y, variant, buildCache);
     freezeStaticObjectTransforms(floorMesh);
@@ -1718,22 +1746,28 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       trackOwnedObject3DMaterials(pluginModel);
     }
     if (tilePlugin?.create3DModel) {
-      recordRecentLabeledDurationMetric(renderChurnMetrics.tilePluginBuildDurations, {
-        nowMs: pluginBuildStartMs,
-        durationMs: pluginBuildDurationMs,
-        label: tilePluginOwnerLabel,
-      });
+      recordRecentLabeledDurationMetric(
+        renderChurnMetrics.tilePluginBuildDurations,
+        {
+          nowMs: pluginBuildStartMs,
+          durationMs: pluginBuildDurationMs,
+          label: tilePluginOwnerLabel,
+        }
+      );
     }
 
     if (estimateValidation && !estimateValidation.accepted) {
       const violationSummary = summarizeTileModelCostEstimateBudgetViolations(
         estimateValidation.violations
       );
-      recordRecentLabeledCountMetric(renderChurnMetrics.tileModelBudgetViolations, {
-        nowMs: pluginBuildStartMs,
-        count: 1,
-        label: tilePluginOwnerLabel,
-      });
+      recordRecentLabeledCountMetric(
+        renderChurnMetrics.tileModelBudgetViolations,
+        {
+          nowMs: pluginBuildStartMs,
+          count: 1,
+          label: tilePluginOwnerLabel,
+        }
+      );
       recordRenderDebugEvent(recentDebugEvents, {
         nowMs: pluginBuildStartMs,
         type: 'plugin-exceeded-budget',
@@ -1761,15 +1795,21 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
             detailLevel
           )
         : null;
-      if (reportedActualCostValidation && !reportedActualCostValidation.accepted) {
+      if (
+        reportedActualCostValidation &&
+        !reportedActualCostValidation.accepted
+      ) {
         const violationSummary = summarizeTileModelCostEstimateBudgetViolations(
           reportedActualCostValidation.violations
         );
-        recordRecentLabeledCountMetric(renderChurnMetrics.tileModelBudgetViolations, {
-          nowMs: pluginBuildStartMs,
-          count: 1,
-          label: tilePluginOwnerLabel,
-        });
+        recordRecentLabeledCountMetric(
+          renderChurnMetrics.tileModelBudgetViolations,
+          {
+            nowMs: pluginBuildStartMs,
+            count: 1,
+            label: tilePluginOwnerLabel,
+          }
+        );
         recordRenderDebugEvent(recentDebugEvents, {
           nowMs: pluginBuildStartMs,
           type: 'plugin-exceeded-budget',
@@ -1789,16 +1829,20 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       }
     }
 
-    let finalPluginModelBudgetValidation: TileModelBudgetValidation | null = null;
+    let finalPluginModelBudgetValidation: TileModelBudgetValidation | null =
+      null;
     let pluginUniqueMaterials: readonly THREE.Material[] = [];
     let pluginUniqueTextures: readonly unknown[] = [];
 
     const rejectPluginModelForBudget = (summary: string) => {
-      recordRecentLabeledCountMetric(renderChurnMetrics.tileModelBudgetViolations, {
-        nowMs: pluginBuildStartMs,
-        count: 1,
-        label: tilePluginOwnerLabel,
-      });
+      recordRecentLabeledCountMetric(
+        renderChurnMetrics.tileModelBudgetViolations,
+        {
+          nowMs: pluginBuildStartMs,
+          count: 1,
+          label: tilePluginOwnerLabel,
+        }
+      );
       recordRenderDebugEvent(recentDebugEvents, {
         nowMs: pluginBuildStartMs,
         type: 'plugin-exceeded-budget',
@@ -1833,11 +1877,14 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
         const violationSummary = summarizeTileModelBudgetViolations(
           modelBudgetValidation.violations
         );
-        recordRecentLabeledCountMetric(renderChurnMetrics.tileModelBudgetViolations, {
-          nowMs: pluginBuildStartMs,
-          count: 1,
-          label: tilePluginOwnerLabel,
-        });
+        recordRecentLabeledCountMetric(
+          renderChurnMetrics.tileModelBudgetViolations,
+          {
+            nowMs: pluginBuildStartMs,
+            count: 1,
+            label: tilePluginOwnerLabel,
+          }
+        );
         recordRenderDebugEvent(recentDebugEvents, {
           nowMs: pluginBuildStartMs,
           type: 'plugin-exceeded-budget',
@@ -1852,12 +1899,16 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
           plugin: tilePluginOwnerLabel,
           summary: violationSummary,
         });
-        const acceptedWithBudgetResult = acceptTilePluginModelForRenderBudgetWithResult(
-          pluginModel,
-          detailLevel,
-          tileModelHardwareConstraints
-        );
-        if (acceptedWithBudgetResult.model && acceptedWithBudgetResult.removedParts.length > 0) {
+        const acceptedWithBudgetResult =
+          acceptTilePluginModelForRenderBudgetWithResult(
+            pluginModel,
+            detailLevel,
+            tileModelHardwareConstraints
+          );
+        if (
+          acceptedWithBudgetResult.model &&
+          acceptedWithBudgetResult.removedParts.length > 0
+        ) {
           const removedSummary = summarizeRemovedTileModelBudgetParts(
             acceptedWithBudgetResult.removedParts
           );
@@ -1883,7 +1934,8 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     }
 
     if (pluginModel) {
-      pluginUniqueMaterials = collectUniqueObjectMaterials<THREE.Material>(pluginModel);
+      pluginUniqueMaterials =
+        collectUniqueObjectMaterials<THREE.Material>(pluginModel);
       pluginUniqueTextures = collectUniqueObjectTextures(pluginModel);
       const pluginMaterialBudget = validateVisibleTilePluginMaterialBudget(
         visibleTileNodes.values(),
@@ -1901,7 +1953,10 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
 
     if (pluginModel) {
       const performanceWarnings = finalPluginModelBudgetValidation
-        ? getTileModelPerformanceWarnings(finalPluginModelBudgetValidation.stats, detailLevel)
+        ? getTileModelPerformanceWarnings(
+            finalPluginModelBudgetValidation.stats,
+            detailLevel
+          )
         : [];
       for (const warning of performanceWarnings) {
         recordRenderDebugEvent(recentDebugEvents, {
@@ -1923,14 +1978,20 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       freezeStaticObjectTransforms(pluginModel);
       tileNode.add(pluginModel);
 
-      const tileDrawCallBudget = validateTileDrawCallBudget(tileNode, detailLevel);
+      const tileDrawCallBudget = validateTileDrawCallBudget(
+        tileNode,
+        detailLevel
+      );
       if (!tileDrawCallBudget.accepted) {
         const violationSummary = `tile drawCallCount ${tileDrawCallBudget.drawCallCount}>${tileDrawCallBudget.limit}`;
-        recordRecentLabeledCountMetric(renderChurnMetrics.tileModelBudgetViolations, {
-          nowMs: pluginBuildStartMs,
-          count: 1,
-          label: tilePluginOwnerLabel,
-        });
+        recordRecentLabeledCountMetric(
+          renderChurnMetrics.tileModelBudgetViolations,
+          {
+            nowMs: pluginBuildStartMs,
+            count: 1,
+            label: tilePluginOwnerLabel,
+          }
+        );
         recordRenderDebugEvent(recentDebugEvents, {
           nowMs: pluginBuildStartMs,
           type: 'plugin-exceeded-budget',
@@ -1942,17 +2003,22 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
         const pruned = pruneTileModelOptionalPartsForBudget(
           tileNode as typeof tileNode & Pick<THREE.Object3D, 'userData'>,
           (candidate) => ({
-            accepted: validateTileDrawCallBudget(candidate, detailLevel).accepted,
+            accepted: validateTileDrawCallBudget(candidate, detailLevel)
+              .accepted,
           }),
           (removedNode) =>
-            disposeObject3DResources(removedNode as Pick<THREE.Object3D, 'traverse'>)
+            disposeObject3DResources(
+              removedNode as Pick<THREE.Object3D, 'traverse'>
+            )
         );
         if (pruned.validation.accepted) {
           if (pruned.removedParts.length > 0) {
             const removedSummary = summarizeRemovedTileModelBudgetParts(
               pruned.removedParts.map((part) => ({
                 priority: part.priority,
-                ...(typeof part.label === 'string' ? { label: part.label } : {}),
+                ...(typeof part.label === 'string'
+                  ? { label: part.label }
+                  : {}),
               }))
             );
             recordRenderDebugEvent(recentDebugEvents, {
@@ -2059,7 +2125,8 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       vertexCount: finalSceneResourceStats.vertexCount,
       triangleCount: finalSceneResourceStats.triangleCount,
       geometryBytes: finalSceneResourceStats.geometryBytes,
-      textureMemoryEstimateBytes: finalSceneResourceStats.textureMemoryEstimateBytes,
+      textureMemoryEstimateBytes:
+        finalSceneResourceStats.textureMemoryEstimateBytes,
       gpuTextureMemoryEstimateBytes:
         finalSceneResourceStats.gpuTextureMemoryEstimateBytes,
       node: tileNode,
@@ -2113,21 +2180,24 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       chunkRadius,
     };
     visibleWorldNextVisibleKeysBuffer.clear();
-    const nextQueue = fillVisibleWorldTileBuildOrder(visibleWorldBuildOrderScratch, {
-      playerTileX: centerX,
-      playerTileY: centerY,
-      facingAngle: state.player.facing,
-      chunkRadius,
-      shouldRenderWorldTile: (tileX, tileY) =>
-        shouldRenderWorldTile({
-          playerTileX: centerX,
-          playerTileY: centerY,
-          tileX,
-          tileY,
-          facingAngle: state.player.facing,
-          chunkRadius,
-        }),
-    });
+    const nextQueue = fillVisibleWorldTileBuildOrder(
+      visibleWorldBuildOrderScratch,
+      {
+        playerTileX: centerX,
+        playerTileY: centerY,
+        facingAngle: state.player.facing,
+        chunkRadius,
+        shouldRenderWorldTile: (tileX, tileY) =>
+          shouldRenderWorldTile({
+            playerTileX: centerX,
+            playerTileY: centerY,
+            tileX,
+            tileY,
+            facingAngle: state.player.facing,
+            chunkRadius,
+          }),
+      }
+    );
 
     for (const entry of nextQueue) {
       visibleWorldNextVisibleKeysBuffer.add(entry.key);
@@ -2161,8 +2231,15 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       facingBucket,
       queue: nextPendingWorldBuild.queue,
     });
-    for (let index = 0; index < nextPendingWorldBuild.cancelledEntryCount; index += 1) {
-      recordRecentMetric(renderChurnMetrics.pendingCancelledEntries, performance.now());
+    for (
+      let index = 0;
+      index < nextPendingWorldBuild.cancelledEntryCount;
+      index += 1
+    ) {
+      recordRecentMetric(
+        renderChurnMetrics.pendingCancelledEntries,
+        performance.now()
+      );
     }
 
     updateWorldVisibilitySyncState(
@@ -2206,26 +2283,28 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       renderChurnMetrics.tileBuildDurations,
       nowMs
     );
-    const effectivePendingWorldBuildBudget = getEffectivePendingWorldBuildBudget({
-      pendingBuildBudgetMs: Math.max(
-        0.25,
-        Math.min(
-          options.pendingBuildBudgetMs ?? DEFAULT_PENDING_WORLD_BUILD_BUDGET_MS,
-          remainingFrameBudgetMs
-        )
-      ),
-      maxPendingBuildTiles: Math.max(
-        1,
-        Math.min(
-          WORLD_SYNC_BATCH_SIZE,
-          Math.floor(options.maxPendingBuildTiles ?? WORLD_SYNC_BATCH_SIZE)
-        )
-      ),
-      pendingQueueLength: pendingWorldBuild.queue.length,
-      visibleTileCount: visibleTileNodes.size,
-      recentTileBuildAverageMs: recentTileBuildStats.averageMs,
-      recentTileBuildMaxMs: recentTileBuildStats.maxMs,
-    });
+    const effectivePendingWorldBuildBudget =
+      getEffectivePendingWorldBuildBudget({
+        pendingBuildBudgetMs: Math.max(
+          0.25,
+          Math.min(
+            options.pendingBuildBudgetMs ??
+              DEFAULT_PENDING_WORLD_BUILD_BUDGET_MS,
+            remainingFrameBudgetMs
+          )
+        ),
+        maxPendingBuildTiles: Math.max(
+          1,
+          Math.min(
+            WORLD_SYNC_BATCH_SIZE,
+            Math.floor(options.maxPendingBuildTiles ?? WORLD_SYNC_BATCH_SIZE)
+          )
+        ),
+        pendingQueueLength: pendingWorldBuild.queue.length,
+        visibleTileCount: visibleTileNodes.size,
+        recentTileBuildAverageMs: recentTileBuildStats.averageMs,
+        recentTileBuildMaxMs: recentTileBuildStats.maxMs,
+      });
     let processedEntryCount = 0;
 
     while (
@@ -2300,7 +2379,10 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
 
   function render(state: Render3DState, options: Render3DOptions = {}): void {
     const contextKey = state.getCurrentContext().id;
-    const chunkRadius = Math.max(8, Math.floor(options.visibilityRadius ?? CHUNK_RADIUS));
+    const chunkRadius = Math.max(
+      8,
+      Math.floor(options.visibilityRadius ?? CHUNK_RADIUS)
+    );
     const nextVisibleWorldSyncState = {
       contextId: contextKey,
       centerX: Math.round(state.player.x),
@@ -2321,7 +2403,9 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     }
     const frameNowMs = options.timeMs ?? performance.now();
     const generationFrameBudget = createFrameTimeBudget(
-      options.generationBudgetMs ?? options.pendingBuildBudgetMs ?? DEFAULT_PENDING_WORLD_BUILD_BUDGET_MS,
+      options.generationBudgetMs ??
+        options.pendingBuildBudgetMs ??
+        DEFAULT_PENDING_WORLD_BUILD_BUDGET_MS,
       performance.now()
     );
     flushPendingWorldBuild(state, frameNowMs, options, generationFrameBudget);
@@ -2394,7 +2478,8 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
           );
           if (visibleEntries.length > 0 && processedEntryCount > 0) {
             lodSyncEntryOffset =
-              (lodSyncEntryOffset + processedEntryCount) % visibleEntries.length;
+              (lodSyncEntryOffset + processedEntryCount) %
+              visibleEntries.length;
             pendingLodSyncChecks = Math.max(
               0,
               pendingLodSyncChecks - processedEntryCount
@@ -2417,7 +2502,11 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     renderer.render(scene, camera);
   }
 
-  function canOccupy(state: Render3DState, nextX: number, nextY: number): boolean {
+  function canOccupy(
+    state: Render3DState,
+    nextX: number,
+    nextY: number
+  ): boolean {
     const tileX = Math.round(nextX);
     const tileY = Math.round(nextY);
     for (let y = tileY - 1; y <= tileY + 1; y += 1) {
@@ -2465,7 +2554,8 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       renderChurnMetrics.tileModelBudgetViolations,
       nowMs
     );
-    const ownedMaterialLifecycleCounts = getRecentOwnedMaterialLifecycleCounts(nowMs);
+    const ownedMaterialLifecycleCounts =
+      getRecentOwnedMaterialLifecycleCounts(nowMs);
     const recentEvents = getRecentRenderDebugEvents(recentDebugEvents, nowMs);
     const renderChurnStats = getRenderChurnStats(renderChurnMetrics, nowMs);
     return {
@@ -2517,7 +2607,8 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       emptyGroupCount: sceneResourceStats.emptyGroupCount,
       oneChildGroupCount: sceneResourceStats.oneChildGroupCount,
       matrixAutoUpdateCount: sceneResourceStats.matrixAutoUpdateCount,
-      staticMatrixAutoUpdateCount: sceneResourceStats.staticMatrixAutoUpdateCount,
+      staticMatrixAutoUpdateCount:
+        sceneResourceStats.staticMatrixAutoUpdateCount,
       pointsCount: sceneResourceStats.pointsCount,
       lineObjectCount: sceneResourceStats.lineObjectCount,
       cameraCount: sceneResourceStats.cameraCount,
@@ -2541,15 +2632,18 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       colorVariantMaterialCount: sceneResourceStats.colorVariantMaterialCount,
       shaderDefineSignatureCount: sceneResourceStats.shaderDefineSignatureCount,
       maxShaderComplexityClass: sceneResourceStats.maxShaderComplexityClass,
-      maxMaterialTextureSlotCount: sceneResourceStats.maxMaterialTextureSlotCount,
+      maxMaterialTextureSlotCount:
+        sceneResourceStats.maxMaterialTextureSlotCount,
       transparentMaterialCount: sceneResourceStats.transparentMaterialCount,
       alphaTestMaterialCount: sceneResourceStats.alphaTestMaterialCount,
       doubleSidedMaterialCount: sceneResourceStats.doubleSidedMaterialCount,
       fogMaterialCount: sceneResourceStats.fogMaterialCount,
       customShaderMaterialCount: sceneResourceStats.customShaderMaterialCount,
       materialTypes: sceneResourceStats.materialTypes,
-      materialsCreatedDuringSamplingWindow: ownedMaterialLifecycleCounts.createdCount,
-      materialsDisposedDuringSamplingWindow: ownedMaterialLifecycleCounts.disposedCount,
+      materialsCreatedDuringSamplingWindow:
+        ownedMaterialLifecycleCounts.createdCount,
+      materialsDisposedDuringSamplingWindow:
+        ownedMaterialLifecycleCounts.disposedCount,
       geometryCount: sceneResourceStats.geometryCount,
       sharedGeometryCount: sceneResourceStats.sharedGeometryCount,
       geometryBytes: sceneResourceStats.geometryBytes,
@@ -2568,7 +2662,9 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       treeObjectCount: sceneResourceStats.treeObjectCount,
       treeMeshCount: sceneResourceStats.treeMeshCount,
       treeMaterialRefCount: sceneResourceStats.treeMaterialRefCount,
-      visibleTileKindSummary: summarizeVisibleTileKinds(visibleTileNodes.values()),
+      visibleTileKindSummary: summarizeVisibleTileKinds(
+        visibleTileNodes.values()
+      ),
       textureCount: renderer.info.memory.textures,
       programCount: rendererInfo.programs?.length ?? 0,
     };
@@ -2579,19 +2675,23 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
   }
 
   function getMaxChunkDrawCalls(): number {
-    return collectVisibleTileResourceStats(visibleTileNodes.values()).maxChunkDrawCallCount;
+    return collectVisibleTileResourceStats(visibleTileNodes.values())
+      .maxChunkDrawCallCount;
   }
 
   function getMaxChunkObjects(): number {
-    return collectVisibleTileResourceStats(visibleTileNodes.values()).maxChunkObjectCount;
+    return collectVisibleTileResourceStats(visibleTileNodes.values())
+      .maxChunkObjectCount;
   }
 
   function getMaxChunkMeshes(): number {
-    return collectVisibleTileResourceStats(visibleTileNodes.values()).maxChunkMeshCount;
+    return collectVisibleTileResourceStats(visibleTileNodes.values())
+      .maxChunkMeshCount;
   }
 
   function getMaxChunkTriangles(): number {
-    return collectVisibleTileResourceStats(visibleTileNodes.values()).maxChunkTriangleCount;
+    return collectVisibleTileResourceStats(visibleTileNodes.values())
+      .maxChunkTriangleCount;
   }
 
   function getTextureCount(): number {
@@ -2608,34 +2708,39 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
   function getShadowLightCount(): number {
     return (
       persistentSceneShadowLightCount +
-      collectVisibleTileResourceStats(visibleTileNodes.values()).totalShadowLightCount
+      collectVisibleTileResourceStats(visibleTileNodes.values())
+        .totalShadowLightCount
     );
   }
 
   function getMaterialCount(): number {
-    return collectVisibleTileResourceStats(visibleTileNodes.values()).totalMaterialCount;
+    return collectVisibleTileResourceStats(visibleTileNodes.values())
+      .totalMaterialCount;
   }
 
   function getVisibleObjectCount(): number {
-    return collectVisibleTileResourceStats(visibleTileNodes.values()).totalVisibleObjectCount;
+    return collectVisibleTileResourceStats(visibleTileNodes.values())
+      .totalVisibleObjectCount;
   }
 
   function getEstimatedGpuMemoryBytes(): number {
-    return collectVisibleTileResourceStats(
-      visibleTileNodes.values()
-    ).totalEstimatedGpuMemoryBytes;
+    return collectVisibleTileResourceStats(visibleTileNodes.values())
+      .totalEstimatedGpuMemoryBytes;
   }
 
   function getVisibleVertexCount(): number {
-    return collectVisibleTileResourceStats(visibleTileNodes.values()).totalVertexCount;
+    return collectVisibleTileResourceStats(visibleTileNodes.values())
+      .totalVertexCount;
   }
 
   function getVisibleTriangleCount(): number {
-    return collectVisibleTileResourceStats(visibleTileNodes.values()).totalTriangleCount;
+    return collectVisibleTileResourceStats(visibleTileNodes.values())
+      .totalTriangleCount;
   }
 
   function getVisibleMeshCount(): number {
-    return collectVisibleTileResourceStats(visibleTileNodes.values()).totalVisibleMeshCount;
+    return collectVisibleTileResourceStats(visibleTileNodes.values())
+      .totalVisibleMeshCount;
   }
 
   function syncTileModelDetailLevels(
@@ -2740,14 +2845,21 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     };
   }
 
-  function getTileSurfaceProfile(state, tile, tileX, tileY): TileSurfaceProfile {
+  function getTileSurfaceProfile(
+    state,
+    tile,
+    tileX,
+    tileY
+  ): TileSurfaceProfile {
     const pluginProfile =
       (getActivePluginRegistry().getSurfaceProfile3D({
         state,
         tile,
         tileX,
         tileY,
-      }) || null) ?? {};
+      }) ||
+        null) ??
+      {};
     const surfaceHeight =
       typeof pluginProfile.surfaceHeight === 'number'
         ? pluginProfile.surfaceHeight
@@ -2822,10 +2934,16 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       getTileVariantIndex(floorKind, tileX, tileY)
     );
     const surfaceHeight = surfaceProfile.surfaceHeight;
-    const riverNeighbors = getAdjacentBoundaryNeighbors(state, tileX, tileY, {
-      ...surfaceProfile,
-      kind: floorKind,
-    }, buildCache);
+    const riverNeighbors = getAdjacentBoundaryNeighbors(
+      state,
+      tileX,
+      tileY,
+      {
+        ...surfaceProfile,
+        kind: floorKind,
+      },
+      buildCache
+    );
 
     if (!riverNeighbors || riverNeighbors.count === 0) {
       if (isWaterKind(floorKind)) {
@@ -2837,10 +2955,9 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
           buildCache
         );
       }
-      const floorThickness =
-        isWaterKind(floorKind)
-          ? WATER_FLOOR_THICKNESS
-          : FLOOR_THICKNESS;
+      const floorThickness = isWaterKind(floorKind)
+        ? WATER_FLOOR_THICKNESS
+        : FLOOR_THICKNESS;
       const floorMesh = new THREE.Mesh(
         getSharedBoxGeometry(TILE_SIZE, floorThickness, TILE_SIZE),
         material
@@ -2861,22 +2978,26 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       sw: surfaceHeight,
     };
 
-    cornerHeights.nw = getCornerSurfaceHeight(
-      surfaceHeight,
-      [riverNeighbors.north, riverNeighbors.west, riverNeighbors.northwest]
-    );
-    cornerHeights.ne = getCornerSurfaceHeight(
-      surfaceHeight,
-      [riverNeighbors.north, riverNeighbors.east, riverNeighbors.northeast]
-    );
-    cornerHeights.se = getCornerSurfaceHeight(
-      surfaceHeight,
-      [riverNeighbors.south, riverNeighbors.east, riverNeighbors.southeast]
-    );
-    cornerHeights.sw = getCornerSurfaceHeight(
-      surfaceHeight,
-      [riverNeighbors.south, riverNeighbors.west, riverNeighbors.southwest]
-    );
+    cornerHeights.nw = getCornerSurfaceHeight(surfaceHeight, [
+      riverNeighbors.north,
+      riverNeighbors.west,
+      riverNeighbors.northwest,
+    ]);
+    cornerHeights.ne = getCornerSurfaceHeight(surfaceHeight, [
+      riverNeighbors.north,
+      riverNeighbors.east,
+      riverNeighbors.northeast,
+    ]);
+    cornerHeights.se = getCornerSurfaceHeight(surfaceHeight, [
+      riverNeighbors.south,
+      riverNeighbors.east,
+      riverNeighbors.southeast,
+    ]);
+    cornerHeights.sw = getCornerSurfaceHeight(surfaceHeight, [
+      riverNeighbors.south,
+      riverNeighbors.west,
+      riverNeighbors.southwest,
+    ]);
 
     const group = new THREE.Group();
     group.position.set(tileX * TILE_SIZE, 0, tileY * TILE_SIZE);
@@ -2967,18 +3088,11 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
 
   function createUnderlayFloor(tileX, tileY, kind, surfaceHeight) {
     if (isWaterKind(kind)) {
-      return createWaterFloorMesh(
-        tileX,
-        tileY,
-        kind,
-        surfaceHeight,
-        null
-      );
+      return createWaterFloorMesh(tileX, tileY, kind, surfaceHeight, null);
     }
-    const floorThickness =
-      isWaterKind(kind)
-        ? WATER_FLOOR_THICKNESS
-        : FLOOR_THICKNESS;
+    const floorThickness = isWaterKind(kind)
+      ? WATER_FLOOR_THICKNESS
+      : FLOOR_THICKNESS;
     const floorMesh = new THREE.Mesh(
       getSharedBoxGeometry(TILE_SIZE, floorThickness, TILE_SIZE),
       getTileMaterial(kind, getTileVariantIndex(kind, tileX, tileY))
@@ -2999,7 +3113,10 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     surfaceHeight,
     buildCache: TileBuildCache | null
   ) {
-    const material = getTileMaterial(kind, getTileVariantIndex(kind, tileX, tileY));
+    const material = getTileMaterial(
+      kind,
+      getTileVariantIndex(kind, tileX, tileY)
+    );
     const body = getWaterFloorBodyProfile(
       getWaterBodyInset(tileX, tileY, kind, buildCache)
     );
@@ -3072,7 +3189,12 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     group.add(mesh);
   }
 
-  function getWaterBodyInset(tileX, tileY, kind, buildCache: TileBuildCache | null) {
+  function getWaterBodyInset(
+    tileX,
+    tileY,
+    kind,
+    buildCache: TileBuildCache | null
+  ) {
     if (!buildCache) {
       return { north: 0, east: 0, south: 0, west: 0 };
     }
@@ -3101,7 +3223,12 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     };
   }
 
-  function shouldInsetWaterEdge(tileX, tileY, kind, buildCache: TileBuildCache) {
+  function shouldInsetWaterEdge(
+    tileX,
+    tileY,
+    kind,
+    buildCache: TileBuildCache
+  ) {
     const neighborTile = buildCache.getTile(tileX, tileY);
     const profile = buildCache.getSurfaceProfile(tileX, tileY, neighborTile);
     if (profile.underlayKind && isWaterKind(profile.underlayKind)) {
@@ -3128,46 +3255,14 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     }
 
     const neighbors = {
-      north: getBoundaryProfile(
-        tileX,
-        tileY - 1,
-        buildCache
-      ),
-      northeast: getBoundaryProfile(
-        tileX + 1,
-        tileY - 1,
-        buildCache
-      ),
-      east: getBoundaryProfile(
-        tileX + 1,
-        tileY,
-        buildCache
-      ),
-      southeast: getBoundaryProfile(
-        tileX + 1,
-        tileY + 1,
-        buildCache
-      ),
-      south: getBoundaryProfile(
-        tileX,
-        tileY + 1,
-        buildCache
-      ),
-      southwest: getBoundaryProfile(
-        tileX - 1,
-        tileY + 1,
-        buildCache
-      ),
-      west: getBoundaryProfile(
-        tileX - 1,
-        tileY,
-        buildCache
-      ),
-      northwest: getBoundaryProfile(
-        tileX - 1,
-        tileY - 1,
-        buildCache
-      ),
+      north: getBoundaryProfile(tileX, tileY - 1, buildCache),
+      northeast: getBoundaryProfile(tileX + 1, tileY - 1, buildCache),
+      east: getBoundaryProfile(tileX + 1, tileY, buildCache),
+      southeast: getBoundaryProfile(tileX + 1, tileY + 1, buildCache),
+      south: getBoundaryProfile(tileX, tileY + 1, buildCache),
+      southwest: getBoundaryProfile(tileX - 1, tileY + 1, buildCache),
+      west: getBoundaryProfile(tileX - 1, tileY, buildCache),
+      northwest: getBoundaryProfile(tileX - 1, tileY - 1, buildCache),
       count: 0,
     };
     neighbors.count =
@@ -3200,7 +3295,10 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     if (!boundaryProfile) {
       return 0;
     }
-    return getBoundaryEdgeHeight(surfaceHeight, boundaryProfile) - boundaryProfile.surfaceHeight;
+    return (
+      getBoundaryEdgeHeight(surfaceHeight, boundaryProfile) -
+      boundaryProfile.surfaceHeight
+    );
   }
 
   function getBoundaryEdgeHeight(surfaceHeight, boundaryProfile) {
@@ -3237,7 +3335,11 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     renderer.shadowMap.enabled = renderEffectQuality.shadowMapEnabled;
     const starDensity =
       (environment.stars?.density ?? 1) *
-      clamp(1 - weatherCloudCover * 0.42 - (1 - weatherVisibility) * 0.58, 0.08, 1) *
+      clamp(
+        1 - weatherCloudCover * 0.42 - (1 - weatherVisibility) * 0.58,
+        0.08,
+        1
+      ) *
       renderEffectQuality.starDensityMultiplier;
     const skyPositionSignature = getSkyPositionSignature(cycle, starDensity);
     const twilightPalette = getTwilightSkyPalette(sky, cycle);
@@ -3406,7 +3508,9 @@ function applyPixelArtTextureSampling<
   return texture;
 }
 
-export function getDecoratedTileSurfaceHeight(tile: DecoratedSurfaceTile): number {
+export function getDecoratedTileSurfaceHeight(
+  tile: DecoratedSurfaceTile
+): number {
   return typeof tile.surfaceHeight === 'number' ? tile.surfaceHeight : 0;
 }
 
@@ -3432,9 +3536,9 @@ export function syncDynamicTileNodes(
     cycle,
     environment,
   }: {
-    three: Render3DState extends { viewMode?: infer _ } ? Parameters<
-      NonNullable<TilePlugin['sync3DModel']>
-    >[0]['three'] : never;
+    three: Render3DState extends { viewMode?: infer _ }
+      ? Parameters<NonNullable<TilePlugin['sync3DModel']>>[0]['three']
+      : never;
     state: Render3DState;
     timeMs?: number;
     cycle: Parameters<NonNullable<TilePlugin['sync3DModel']>>[0]['cycle'];
@@ -3481,13 +3585,13 @@ export function getFarLandModelOpacity(
 
   const revealDistance =
     fullVisibilityDistance +
-    sample(LAND_MODEL_REVEAL_SEED, tileX, tileY) *
-      revealDistanceVariance;
+    sample(LAND_MODEL_REVEAL_SEED, tileX, tileY) * revealDistanceVariance;
   if (distance <= revealDistance) {
     return 1;
   }
 
-  const fadeProgress = (distance - revealDistance) / Math.max(0.001, fadeDistance);
+  const fadeProgress =
+    (distance - revealDistance) / Math.max(0.001, fadeDistance);
   return clamp01(1 - fadeProgress);
 }
 
@@ -3553,7 +3657,9 @@ export function getTileModelDetailLevelWithHysteresis(
   tile?: Pick<TileLike, 'kind'>,
   {
     lowDetailEnterDistanceSquared = getTileModelLowDetailDistanceSquared(tile),
-    lowDetailExitDistanceSquared = getTileModelLowDetailExitDistanceSquared(tile),
+    lowDetailExitDistanceSquared = getTileModelLowDetailExitDistanceSquared(
+      tile
+    ),
   }: {
     lowDetailEnterDistanceSquared?: number;
     lowDetailExitDistanceSquared?: number;
@@ -3647,7 +3753,9 @@ export function getWorldCurvatureOffset(
     return 0;
   }
   const usableDistance = Math.max(flatDistance + 0.001, farDistance);
-  const progress = clamp01((distance - flatDistance) / (usableDistance - flatDistance));
+  const progress = clamp01(
+    (distance - flatDistance) / (usableDistance - flatDistance)
+  );
   return -maxDrop * progress * progress;
 }
 
@@ -3791,7 +3899,8 @@ function applyRenderableDistanceFadeMaterials(
 ): void {
   const opacity = renderable.userData.distanceFadeOpacity ?? 1;
   for (const material of getObjectMaterials(renderable)) {
-    const baseOpacity = material.userData.distanceFadeBaseOpacity ?? material.opacity;
+    const baseOpacity =
+      material.userData.distanceFadeBaseOpacity ?? material.opacity;
     const baseTransparent =
       material.userData.distanceFadeBaseTransparent ?? material.transparent;
     const baseDepthWrite =
@@ -3806,7 +3915,8 @@ function restoreRenderableDistanceFadeMaterials(
   renderable: THREE.Object3D & { material: THREE.Material | THREE.Material[] }
 ): void {
   for (const material of getObjectMaterials(renderable)) {
-    material.opacity = material.userData.distanceFadeBaseOpacity ?? material.opacity;
+    material.opacity =
+      material.userData.distanceFadeBaseOpacity ?? material.opacity;
     material.transparent =
       material.userData.distanceFadeBaseTransparent ?? material.transparent;
     material.depthWrite =
@@ -3971,7 +4081,10 @@ export function collectSceneResourceStats(
     } else {
       invisibleObjectCount += 1;
     }
-    if ((child as THREE.Object3D & { matrixAutoUpdate?: boolean }).matrixAutoUpdate) {
+    if (
+      (child as THREE.Object3D & { matrixAutoUpdate?: boolean })
+        .matrixAutoUpdate
+    ) {
       matrixAutoUpdateCount += 1;
       if (isLikelyStaticTransformObject(child as THREE.Object3D)) {
         staticMatrixAutoUpdateCount += 1;
@@ -4037,7 +4150,9 @@ export function collectSceneResourceStats(
     }
     if ((child as THREE.Object3D).userData?.renderStatKind === 'tree') {
       treeCount += 1;
-      const treeStats = collectTaggedTreeStats(child as Pick<THREE.Object3D, 'traverse'>);
+      const treeStats = collectTaggedTreeStats(
+        child as Pick<THREE.Object3D, 'traverse'>
+      );
       treeObjectCount += treeStats.objectCount;
       treeMeshCount += treeStats.meshCount;
       treeMaterialRefCount += treeStats.materialRefCount;
@@ -4066,7 +4181,8 @@ export function collectSceneResourceStats(
     if (audioEmitterMetadata) {
       audioEmitterCount += audioEmitterMetadata.count ?? 1;
     }
-    const skeleton = (child as THREE.Object3D & { skeleton?: unknown }).skeleton;
+    const skeleton = (child as THREE.Object3D & { skeleton?: unknown })
+      .skeleton;
     if (skeleton && typeof skeleton === 'object') {
       skeletons.add(skeleton);
       const skeletonBones = (skeleton as { bones?: unknown }).bones;
@@ -4095,8 +4211,9 @@ export function collectSceneResourceStats(
         geometryBytes += geometryMemory.totalBytes;
         vertexBufferBytes += geometryMemory.vertexBufferBytes;
         indexBufferBytes += geometryMemory.indexBufferBytes;
-        const morphAttributes = (renderable.geometry as { morphAttributes?: unknown })
-          .morphAttributes;
+        const morphAttributes = (
+          renderable.geometry as { morphAttributes?: unknown }
+        ).morphAttributes;
         if (morphAttributes && typeof morphAttributes === 'object') {
           let geometryMorphTargetCount = 0;
           for (const attributeTargets of Object.values(
@@ -4157,8 +4274,10 @@ export function collectSceneResourceStats(
           maxTexturePixelCount,
           getTexturePixelCount(texture)
         );
-        textureMemoryEstimateBytes += getDecodedTextureMemoryEstimateBytes(texture);
-        gpuTextureMemoryEstimateBytes += getGpuTextureMemoryEstimateBytes(texture);
+        textureMemoryEstimateBytes +=
+          getDecodedTextureMemoryEstimateBytes(texture);
+        gpuTextureMemoryEstimateBytes +=
+          getGpuTextureMemoryEstimateBytes(texture);
       }
     }
   });
@@ -4213,12 +4332,24 @@ export function collectSceneResourceStats(
     shaderDefineSignatureCount: countUniqueMaterialDefineSignatures(materials),
     maxShaderComplexityClass: getMaxMaterialShaderComplexityClass(materials),
     maxMaterialTextureSlotCount,
-    transparentMaterialCount: countMaterialsMatching(materials, isTransparentMaterial),
+    transparentMaterialCount: countMaterialsMatching(
+      materials,
+      isTransparentMaterial
+    ),
     alphaTestMaterialCount: countMaterialsMatching(materials, usesAlphaTest),
-    doubleSidedMaterialCount: countMaterialsMatching(materials, isDoubleSidedMaterial),
+    doubleSidedMaterialCount: countMaterialsMatching(
+      materials,
+      isDoubleSidedMaterial
+    ),
     fogMaterialCount: countMaterialsMatching(materials, receivesFog),
-    customShaderMaterialCount: countMaterialsMatching(materials, usesCustomShaders),
-    materialTypes: summarizeMaterialTypes(materials, materialTypeSummaryScratch),
+    customShaderMaterialCount: countMaterialsMatching(
+      materials,
+      usesCustomShaders
+    ),
+    materialTypes: summarizeMaterialTypes(
+      materials,
+      materialTypeSummaryScratch
+    ),
     materialsCreatedDuringSamplingWindow: 0,
     materialsDisposedDuringSamplingWindow: 0,
     geometryCount: geometries.size,
@@ -4255,9 +4386,7 @@ function normalizeMaxTextureDimension(
 
 function isDynamicLightType(type: string): boolean {
   return (
-    type === 'PointLight' ||
-    type === 'SpotLight' ||
-    type === 'RectAreaLight'
+    type === 'PointLight' || type === 'SpotLight' || type === 'RectAreaLight'
   );
 }
 
@@ -4270,7 +4399,8 @@ function getRenderableEstimatedDrawCallCount(
   if (materialCount <= 0 || !renderable.geometry) {
     return 0;
   }
-  const groups = (renderable.geometry as { groups?: ArrayLike<unknown> }).groups;
+  const groups = (renderable.geometry as { groups?: ArrayLike<unknown> })
+    .groups;
   if (groups && groups.length > 0) {
     return groups.length;
   }
@@ -4285,7 +4415,9 @@ function isLineObjectType(type: string): boolean {
   return type === 'Line' || type === 'LineLoop' || type === 'LineSegments';
 }
 
-function isCameraObjectType(object: Pick<THREE.Object3D, 'type'> & { isCamera?: boolean }): boolean {
+function isCameraObjectType(
+  object: Pick<THREE.Object3D, 'type'> & { isCamera?: boolean }
+): boolean {
   return object.isCamera === true || object.type.endsWith('Camera');
 }
 
@@ -4325,7 +4457,8 @@ function traverseSceneGraphWithDepth(
 ): void {
   const visit = (node: THREE.Object3D, depth: number) => {
     callback(node, depth);
-    const children = ((node as unknown as { children?: unknown }).children ?? []) as unknown[];
+    const children = ((node as unknown as { children?: unknown }).children ??
+      []) as unknown[];
     for (const child of children) {
       visit(child as THREE.Object3D, depth + 1);
     }
@@ -4352,11 +4485,15 @@ function countMaterialsMatching(
 }
 
 function isTransparentMaterial(material: THREE.Material): boolean {
-  return (material as THREE.Material & { transparent?: boolean }).transparent === true;
+  return (
+    (material as THREE.Material & { transparent?: boolean }).transparent ===
+    true
+  );
 }
 
 function usesAlphaTest(material: THREE.Material): boolean {
-  const alphaTest = (material as THREE.Material & { alphaTest?: number }).alphaTest;
+  const alphaTest = (material as THREE.Material & { alphaTest?: number })
+    .alphaTest;
   return typeof alphaTest === 'number' && alphaTest > 0;
 }
 
@@ -4412,7 +4549,10 @@ function getGeometryMemoryEstimate(geometry: unknown): {
 } {
   const attributes = (
     geometry as {
-      attributes?: Record<string, { array?: ArrayLike<unknown> & { byteLength?: number } }>;
+      attributes?: Record<
+        string,
+        { array?: ArrayLike<unknown> & { byteLength?: number } }
+      >;
     }
   )?.attributes;
   let vertexBufferBytes = 0;
@@ -4459,9 +4599,7 @@ type DistanceFadeTargets = {
   >;
 };
 
-function collectTaggedTreeStats(
-  root: Pick<THREE.Object3D, 'traverse'>
-): {
+function collectTaggedTreeStats(root: Pick<THREE.Object3D, 'traverse'>): {
   objectCount: number;
   meshCount: number;
   materialRefCount: number;
@@ -4706,7 +4844,11 @@ export function getRenderChurnStats(
       nowMs,
       windowMs
     ),
-    lodChecksPerSecond: countRecentMetricEvents(metrics.lodChecks, nowMs, windowMs),
+    lodChecksPerSecond: countRecentMetricEvents(
+      metrics.lodChecks,
+      nowMs,
+      windowMs
+    ),
     lodReplacementsPerSecond: countRecentMetricEvents(
       metrics.lodReplacements,
       nowMs,
@@ -4795,7 +4937,10 @@ export function getEffectivePendingWorldBuildBudget({
   ) {
     nextBudgetMs = Math.min(
       nextBudgetMs,
-      Math.max(0.25, recentTileBuildAverageMs || recentTileBuildMaxMs || nextBudgetMs)
+      Math.max(
+        0.25,
+        recentTileBuildAverageMs || recentTileBuildMaxMs || nextBudgetMs
+      )
     );
     nextMaxPendingBuildTiles = 1;
   }
@@ -4813,7 +4958,10 @@ function pruneRecentMetricTimestamps(
 ): void {
   const minimumTime = nowMs - windowMs;
   let removeCount = 0;
-  while (removeCount < timestamps.length && timestamps[removeCount] < minimumTime) {
+  while (
+    removeCount < timestamps.length &&
+    timestamps[removeCount] < minimumTime
+  ) {
     removeCount += 1;
   }
   if (removeCount > 0) {
@@ -4828,7 +4976,10 @@ function pruneRecentDurationSamples(
 ): void {
   const minimumTime = nowMs - windowMs;
   let removeCount = 0;
-  while (removeCount < samples.length && samples[removeCount]!.nowMs < minimumTime) {
+  while (
+    removeCount < samples.length &&
+    samples[removeCount]!.nowMs < minimumTime
+  ) {
     removeCount += 1;
   }
   if (removeCount > 0) {
@@ -4843,7 +4994,10 @@ function pruneRecentCountSamples(
 ): void {
   const minimumTime = nowMs - windowMs;
   let removeCount = 0;
-  while (removeCount < samples.length && samples[removeCount]!.nowMs < minimumTime) {
+  while (
+    removeCount < samples.length &&
+    samples[removeCount]!.nowMs < minimumTime
+  ) {
     removeCount += 1;
   }
   if (removeCount > 0) {
@@ -4982,11 +5136,11 @@ export function getTwilightSkyPalette(
   const dawnSide = cycle.dayProgress < 0.5;
   return {
     skyColor: dawnSide
-      ? sky.dawnColor ?? sky.sunsetColor ?? SKY_SUNSET_COLOR
-      : sky.duskColor ?? sky.sunsetColor ?? SKY_SUNSET_COLOR,
+      ? (sky.dawnColor ?? sky.sunsetColor ?? SKY_SUNSET_COLOR)
+      : (sky.duskColor ?? sky.sunsetColor ?? SKY_SUNSET_COLOR),
     fogColor: dawnSide
-      ? sky.fogDawnColor ?? sky.fogDayColor ?? FOG_DAY_COLOR
-      : sky.fogDuskColor ?? sky.fogDayColor ?? FOG_DAY_COLOR,
+      ? (sky.fogDawnColor ?? sky.fogDayColor ?? FOG_DAY_COLOR)
+      : (sky.fogDuskColor ?? sky.fogDayColor ?? FOG_DAY_COLOR),
   };
 }
 
@@ -5102,7 +5256,8 @@ function syncStarField(
     const theta =
       child.userData.theta +
       seasonalRotation +
-      hash2D(STAR_DRIFT_SEED, index, cycle.activeConstellationIndex ?? 0) * 0.08;
+      hash2D(STAR_DRIFT_SEED, index, cycle.activeConstellationIndex ?? 0) *
+        0.08;
     const position = writeSkyPosition(
       positionScratch,
       theta,
@@ -5119,7 +5274,8 @@ function syncStarField(
       Math.max(0.72, Math.min(1.6, starDensity));
     child.material.opacity = opacity;
     child.visible = opacity > 0.015;
-    const scale = child.userData.scale * Math.max(0.75, Math.min(1.8, starDensity));
+    const scale =
+      child.userData.scale * Math.max(0.75, Math.min(1.8, starDensity));
     child.scale.set(scale, scale, 1);
   });
 }
@@ -5224,10 +5380,12 @@ function createCachedSkyPose(cycle: DaylightCycleState): CachedSkyPose {
   const sunOrbitX = Math.cos(cycle.sunAzimuth) * sunDistance;
   const sunOrbitY = 5 + Math.max(0, sunHeight) * 18;
   const sunOrbitZ = Math.sin(cycle.sunAzimuth) * sunDistance * 0.65;
-  const displayedMoonAzimuth =
-    cycle.solarEclipse?.active ? cycle.solarEclipse.moonAzimuth : cycle.moonAzimuth;
-  const displayedMoonAltitude =
-    cycle.solarEclipse?.active ? cycle.solarEclipse.moonAltitude : cycle.moonAltitude;
+  const displayedMoonAzimuth = cycle.solarEclipse?.active
+    ? cycle.solarEclipse.moonAzimuth
+    : cycle.moonAzimuth;
+  const displayedMoonAltitude = cycle.solarEclipse?.active
+    ? cycle.solarEclipse.moonAltitude
+    : cycle.moonAltitude;
   const moonDistance = 22;
   const moonOrbitX = Math.cos(displayedMoonAzimuth) * moonDistance;
   const moonOrbitY = 6 + Math.max(0, displayedMoonAltitude) * 12;
@@ -5260,7 +5418,8 @@ function createCachedSkyPose(cycle: DaylightCycleState): CachedSkyPose {
         0,
         (cycle.night * 0.82 + (displayedMoonAltitude > -0.08 ? 0.16 : 0)) *
           (0.22 + cycle.moonIllumination * 0.78)
-      ) + (cycle.solarEclipse?.coverage ?? 0) * 0.46,
+      ) +
+      (cycle.solarEclipse?.coverage ?? 0) * 0.46,
   };
 }
 
@@ -5382,10 +5541,7 @@ function syncCelestialEvents(
   });
 }
 
-function syncMilkyWayBelt(
-  root: THREE.Group,
-  cycle: DaylightCycleState
-): void {
+function syncMilkyWayBelt(root: THREE.Group, cycle: DaylightCycleState): void {
   root.clear();
   const belt = cycle.milkyWay;
   if (!belt) {
@@ -5400,9 +5556,24 @@ function syncMilkyWayBelt(
   const centerPoint = new THREE.Vector3();
 
   samples.forEach((sample) => {
-    writeSkyPosition(innerPoint, sample.azimuth, sample.innerPhi, SKY_RADIUS - 5.7);
-    writeSkyPosition(outerPoint, sample.azimuth, sample.outerPhi, SKY_RADIUS - 5.4);
-    writeSkyPosition(centerPoint, sample.azimuth, sample.centerPhi, SKY_RADIUS - 5.5);
+    writeSkyPosition(
+      innerPoint,
+      sample.azimuth,
+      sample.innerPhi,
+      SKY_RADIUS - 5.7
+    );
+    writeSkyPosition(
+      outerPoint,
+      sample.azimuth,
+      sample.outerPhi,
+      SKY_RADIUS - 5.4
+    );
+    writeSkyPosition(
+      centerPoint,
+      sample.azimuth,
+      sample.centerPhi,
+      SKY_RADIUS - 5.5
+    );
     positions.push(
       innerPoint.x,
       innerPoint.y,
@@ -5420,7 +5591,10 @@ function syncMilkyWayBelt(
   }
 
   const geometry = new THREE.BufferGeometry();
-  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  geometry.setAttribute(
+    'position',
+    new THREE.Float32BufferAttribute(positions, 3)
+  );
   geometry.setIndex(indices);
   root.add(
     new THREE.Mesh(
@@ -5452,10 +5626,7 @@ function syncMilkyWayBelt(
   );
 }
 
-function syncAuroraBands(
-  root: THREE.Group,
-  cycle: DaylightCycleState
-): void {
+function syncAuroraBands(root: THREE.Group, cycle: DaylightCycleState): void {
   root.clear();
   const bands = cycle.auroraBands ?? [];
   const lowerScratch = new THREE.Vector3();
@@ -5707,7 +5878,14 @@ function buildSunCanvas(): HTMLCanvasElement {
     throw new Error('Unable to create sun canvas.');
   }
   const center = canvas.width / 2;
-  const glow = context.createRadialGradient(center, center, 4, center, center, 54);
+  const glow = context.createRadialGradient(
+    center,
+    center,
+    4,
+    center,
+    center,
+    54
+  );
   glow.addColorStop(0, 'rgba(255, 247, 200, 1)');
   glow.addColorStop(0.25, 'rgba(255, 217, 125, 0.96)');
   glow.addColorStop(0.55, 'rgba(255, 176, 88, 0.45)');

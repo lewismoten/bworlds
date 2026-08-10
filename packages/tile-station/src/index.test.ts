@@ -90,7 +90,9 @@ describe('tile station', () => {
       y: 4,
       nearLand: true,
       tile: { kind: 'plains' },
-      poiAnchors: [{ x: 6, y: 4, type: 'station', name: 'Copper Lantern Station' }],
+      poiAnchors: [
+        { x: 6, y: 4, type: 'station', name: 'Copper Lantern Station' },
+      ],
     } as never);
 
     expect(classified).toEqual(
@@ -130,7 +132,9 @@ describe('tile station', () => {
       tileY: 13,
     }) as FakeNode | undefined;
 
-    expect(countSharedMaterialReferences(first, second)).toBeGreaterThanOrEqual(4);
+    expect(countSharedMaterialReferences(first, second)).toBeGreaterThanOrEqual(
+      4
+    );
     expect(countSharedMaterialReferences(first, otherHost)).toBe(0);
   });
 });

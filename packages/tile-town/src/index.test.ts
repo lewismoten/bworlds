@@ -7,7 +7,12 @@ vi.mock('@bworlds/three-support', () => ({
   getOrCreatePaintedCanvasTexture() {
     return { colorSpace: '', needsUpdate: false };
   },
-  createTexturedPlaneMesh(_three: unknown, _texture: unknown, width: number, height: number) {
+  createTexturedPlaneMesh(
+    _three: unknown,
+    _texture: unknown,
+    width: number,
+    height: number
+  ) {
     return {
       position: {
         x: 0,
@@ -31,7 +36,10 @@ vi.mock('@bworlds/three-support', () => ({
       },
     };
   },
-  createPaintedStandardMaterial(_three: unknown, options: Record<string, unknown>) {
+  createPaintedStandardMaterial(
+    _three: unknown,
+    options: Record<string, unknown>
+  ) {
     return { options };
   },
 }));
@@ -162,7 +170,9 @@ function createTownState() {
   };
 }
 
-function normalizeMaterialOptions(options: Record<string, unknown> | undefined) {
+function normalizeMaterialOptions(
+  options: Record<string, unknown> | undefined
+) {
   if (!options) {
     return undefined;
   }
@@ -371,14 +381,20 @@ describe('tile town', () => {
 
     const fullBanners: FakeMesh[] = [];
     fullModel.traverse((node) => {
-      if (node instanceof FakeMesh && typeof node.userData?.townBanner === 'number') {
+      if (
+        node instanceof FakeMesh &&
+        typeof node.userData?.townBanner === 'number'
+      ) {
         fullBanners.push(node);
       }
     });
 
     const lowBanners: FakeMesh[] = [];
     lowModel.traverse((node) => {
-      if (node instanceof FakeMesh && typeof node.userData?.townBanner === 'number') {
+      if (
+        node instanceof FakeMesh &&
+        typeof node.userData?.townBanner === 'number'
+      ) {
         lowBanners.push(node);
       }
     });
@@ -441,7 +457,10 @@ describe('tile town', () => {
       tile?.create3DModel?.({
         three: fakeThree as never,
         state,
-        tile: { kind: 'town', poi: { type: 'town', name: `Town ${index}` } } as never,
+        tile: {
+          kind: 'town',
+          poi: { type: 'town', name: `Town ${index}` },
+        } as never,
         tileX: index * 18,
         tileY: 18,
         detailLevel: 'full',
@@ -457,7 +476,9 @@ describe('tile town', () => {
       detailLevel: 'full',
     }) as FakeGroup;
 
-    expect(createModelSignature(resolved)).toEqual(createModelSignature(baseline));
+    expect(createModelSignature(resolved)).toEqual(
+      createModelSignature(baseline)
+    );
   });
 
   it('reuses shared town style materials across repeated builds in the same region', () => {
@@ -482,7 +503,9 @@ describe('tile town', () => {
       detailLevel: 'full',
     }) as FakeGroup;
 
-    expect(countSharedMaterialReferences(first, second)).toBeGreaterThanOrEqual(4);
+    expect(countSharedMaterialReferences(first, second)).toBeGreaterThanOrEqual(
+      4
+    );
   });
 
   it('reuses full-detail banner cloth materials across repeated builds', () => {
@@ -508,7 +531,9 @@ describe('tile town', () => {
     }) as FakeGroup;
 
     expect(findTownBannerMaterial(first)).toBe(findTownBannerMaterial(second));
-    expect(countSharedMaterialReferences(first, second)).toBeGreaterThanOrEqual(5);
+    expect(countSharedMaterialReferences(first, second)).toBeGreaterThanOrEqual(
+      5
+    );
   });
 });
 

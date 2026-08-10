@@ -105,7 +105,9 @@ describe('debug panel', () => {
       ],
     };
 
-    expect(getDebugSignature(snapshot)).toBe(getDebugSignature({ ...snapshot }));
+    expect(getDebugSignature(snapshot)).toBe(
+      getDebugSignature({ ...snapshot })
+    );
     expect(buildDebugMarkup(snapshot)).toContain('Draw Calls');
     expect(buildDebugMarkup(snapshot)).toContain('Avg FPS');
     expect(buildDebugMarkup(snapshot)).toContain('Frame Target');

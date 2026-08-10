@@ -13,24 +13,24 @@ import {
 } from './hash.ts';
 import { describe, expect, it } from 'vitest';
 
-describe("normalizeHash", () => {
-  it("maps zero to zero", () => {
+describe('normalizeHash', () => {
+  it('maps zero to zero', () => {
     expect(normalizeHash(0)).toBe(0);
   });
 
-  it("keeps the maximum uint32 below one", () => {
-    const value = normalizeHash(0xFFFFFFFF);
+  it('keeps the maximum uint32 below one', () => {
+    const value = normalizeHash(0xffffffff);
 
     expect(value).toBeLessThan(1);
-    expect(value).toBe(0xFFFFFFFF / 2 ** 32);
+    expect(value).toBe(0xffffffff / 2 ** 32);
   });
 
-  it("wraps 2^32 back to zero", () => {
+  it('wraps 2^32 back to zero', () => {
     expect(normalizeHash(2 ** 32)).toBe(0);
   });
 
-  it("treats -1 as the maximum uint32", () => {
-    expect(normalizeHash(-1)).toBe(0xFFFFFFFF / 2 ** 32);
+  it('treats -1 as the maximum uint32', () => {
+    expect(normalizeHash(-1)).toBe(0xffffffff / 2 ** 32);
   });
 });
 
@@ -39,7 +39,9 @@ describe('hash seeds', () => {
     const seedHash = registerHashLabel('seed');
 
     expect(hash2D(seedHash, 4, 9)).toBe(hash2D(seedHash, 4, 9));
-    expect(hash2D(registerHashLabel('seed'), 4, 9)).toBe(hash2D(seedHash, 4, 9));
+    expect(hash2D(registerHashLabel('seed'), 4, 9)).toBe(
+      hash2D(seedHash, 4, 9)
+    );
   });
 
   it('normalizes numeric seeds at the boundary', () => {
@@ -53,20 +55,22 @@ describe('hash seeds', () => {
     const seedHash = registerHashLabel('seed');
 
     expect(createHashSeed(0)).toBe(0);
-    expect(createHashSeed(0xFFFFFFFF)).toBe(0xFFFFFFFF);
+    expect(createHashSeed(0xffffffff)).toBe(0xffffffff);
     expect(createHashSeed(0x100000000)).toBe(0);
-    expect(createHashSeed(-1)).toBe(0xFFFFFFFF);
+    expect(createHashSeed(-1)).toBe(0xffffffff);
     expect(createHashSeed(seedHash)).toBe(seedHash >>> 0);
   });
 
   it('passes numeric seeds through the shared hash boundary helper', () => {
     expect(resolveHashSeed(0x100000000)).toBe(0);
-    expect(resolveHashSeed(-1)).toBe(0xFFFFFFFF);
+    expect(resolveHashSeed(-1)).toBe(0xffffffff);
   });
 
   it('normalizes both numeric and string seed inputs through one helper', () => {
     expect(resolveHashSeedInput(0x100000000)).toBe(0);
-    expect(resolveHashSeedInput('weather-front')).toBe(registerHashSeed('weather-front'));
+    expect(resolveHashSeedInput('weather-front')).toBe(
+      registerHashSeed('weather-front')
+    );
   });
 
   it('registers setup-time seeds through the shared hash module cache', () => {
@@ -74,12 +78,18 @@ describe('hash seeds', () => {
 
     expect(labels.north).toBe(registerHashSeed('north'));
     expect(labels.south).toBe(registerHashSeed('south'));
-    expect(hash2D(labels.north, 3, 4)).toBe(hash2D(registerHashLabel('north'), 3, 4));
+    expect(hash2D(labels.north, 3, 4)).toBe(
+      hash2D(registerHashLabel('north'), 3, 4)
+    );
   });
 
   it('keeps direct seed registration deterministic', () => {
-    expect(registerHashSeed('weather-front')).toBe(registerHashSeed('weather-front'));
-    expect(registerHashSeed('weather-front')).not.toBe(registerHashSeed('river-path'));
+    expect(registerHashSeed('weather-front')).toBe(
+      registerHashSeed('weather-front')
+    );
+    expect(registerHashSeed('weather-front')).not.toBe(
+      registerHashSeed('river-path')
+    );
   });
 
   it('keeps explicit registered labels deterministic before appending them', () => {
@@ -114,7 +124,9 @@ describe('hash seeds', () => {
         9
       )
     );
-    expect(hash2DWithSeed(nestedSeed, -12, 7)).toBe(hash2DWithSeed(nestedSeed, -12, 7));
+    expect(hash2DWithSeed(nestedSeed, -12, 7)).toBe(
+      hash2DWithSeed(nestedSeed, -12, 7)
+    );
     expect(hash2DWithSeed(appendHashSeedPart(tileSeed, 0), -27, 0)).toBe(
       hash2DWithSeed(appendHashSeedPart(tileSeed, 0), -27, 0)
     );

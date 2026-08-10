@@ -1,5 +1,8 @@
 import { cardinalFromAngle } from '@bworlds/core';
-import { createContextMapPlugin, createExitMapAction } from '@bworlds/map-support';
+import {
+  createContextMapPlugin,
+  createExitMapAction,
+} from '@bworlds/map-support';
 import type {
   CreateMapContext,
   Kind,
@@ -19,10 +22,19 @@ const GLIDER_LAUNCH_SUPPORT_KINDS = new Set([
   'lighthouse',
   'quarry',
 ]);
-const GLIDER_BLOCKED_LANDING_KINDS = new Set(['ocean', 'river', 'mountain', 'wall']);
+const GLIDER_BLOCKED_LANDING_KINDS = new Set([
+  'ocean',
+  'river',
+  'mountain',
+  'wall',
+]);
 
 type Point = { x: number; y: number };
-type TileSampler = (x: number, y: number, state?: WorldStateLike) => { kind: Kind };
+type TileSampler = (
+  x: number,
+  y: number,
+  state?: WorldStateLike
+) => { kind: Kind };
 
 export type GliderContext = WorldContextLike & {
   origin: Point;
@@ -62,7 +74,10 @@ export function createGliderMap(context: GliderContext): WorldMapLike {
         note: 'The glider frame shudders softly in the rushing air.',
       };
     }
-    return { kind: 'wall', note: 'Open sky drops away beyond the glider frame.' };
+    return {
+      kind: 'wall',
+      note: 'Open sky drops away beyond the glider frame.',
+    };
   }
 
   function getAction() {
@@ -96,7 +111,11 @@ export function isGliderLaunchableLandTile({
   if (!isWalkable(tile.kind) || GLIDER_BLOCKED_LANDING_KINDS.has(tile.kind)) {
     return false;
   }
-  for (let offsetY = -GLIDER_LAUNCH_SEARCH_RADIUS; offsetY <= GLIDER_LAUNCH_SEARCH_RADIUS; offsetY += 1) {
+  for (
+    let offsetY = -GLIDER_LAUNCH_SEARCH_RADIUS;
+    offsetY <= GLIDER_LAUNCH_SEARCH_RADIUS;
+    offsetY += 1
+  ) {
     for (
       let offsetX = -GLIDER_LAUNCH_SEARCH_RADIUS;
       offsetX <= GLIDER_LAUNCH_SEARCH_RADIUS;
@@ -105,7 +124,11 @@ export function isGliderLaunchableLandTile({
       if (offsetX === 0 && offsetY === 0) {
         continue;
       }
-      if (GLIDER_LAUNCH_SUPPORT_KINDS.has(sampleTile(x + offsetX, y + offsetY, state).kind)) {
+      if (
+        GLIDER_LAUNCH_SUPPORT_KINDS.has(
+          sampleTile(x + offsetX, y + offsetY, state).kind
+        )
+      ) {
         return true;
       }
     }
@@ -141,7 +164,10 @@ export function findGliderLandingPoint({
         const sampleX = x + direction.x * distance + lateral.x * offset * sign;
         const sampleY = y + direction.y * distance + lateral.y * offset * sign;
         const tile = sampleTile(sampleX, sampleY, state);
-        if (!isWalkable(tile.kind) || GLIDER_BLOCKED_LANDING_KINDS.has(tile.kind)) {
+        if (
+          !isWalkable(tile.kind) ||
+          GLIDER_BLOCKED_LANDING_KINDS.has(tile.kind)
+        ) {
           continue;
         }
         return { x: sampleX, y: sampleY };
@@ -151,7 +177,9 @@ export function findGliderLandingPoint({
   return null;
 }
 
-function getDirectionVector(cardinal: ReturnType<typeof cardinalFromAngle>): Point {
+function getDirectionVector(
+  cardinal: ReturnType<typeof cardinalFromAngle>
+): Point {
   if (cardinal === 'N') {
     return { x: 0, y: -1 };
   }

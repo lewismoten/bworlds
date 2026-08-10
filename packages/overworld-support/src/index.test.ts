@@ -61,7 +61,10 @@ function getAccumulatedTurn(points: { x: number; y: number }[]): number {
     const previous = points[index - 1];
     const current = points[index];
     const next = points[index + 1];
-    const entryAngle = Math.atan2(current.y - previous.y, current.x - previous.x);
+    const entryAngle = Math.atan2(
+      current.y - previous.y,
+      current.x - previous.x
+    );
     const exitAngle = Math.atan2(next.y - current.y, next.x - current.x);
     totalTurn += Math.abs(normalizeAngleDelta(exitAngle - entryAngle));
   }
@@ -88,8 +91,12 @@ function getLegacyRiverPathSignalAtPoint(
   return strongestSignal;
 }
 
-type GenerationContextPayload = Parameters<typeof createOverworldGenerationContext>[0];
-type ComposeOverworldTilePayload = Parameters<typeof composeOverworldTileFromPlugins>[0];
+type GenerationContextPayload = Parameters<
+  typeof createOverworldGenerationContext
+>[0];
+type ComposeOverworldTilePayload = Parameters<
+  typeof composeOverworldTileFromPlugins
+>[0];
 type ResolveOverworldAnchorsPayload = Parameters<
   ReturnType<typeof createOverworldAnchorResolver>
 >[0];
@@ -212,7 +219,8 @@ describe('overworld support', () => {
   });
 
   it('reuses cached terrain signal objects for repeated coordinate samples', () => {
-    const sampleTerrainSignals = createOverworldTerrainSignalSampler('spec-seed');
+    const sampleTerrainSignals =
+      createOverworldTerrainSignalSampler('spec-seed');
     const first = sampleTerrainSignals(12, -9);
     const second = sampleTerrainSignals(12, -9);
 
@@ -220,7 +228,8 @@ describe('overworld support', () => {
   });
 
   it('regenerates identical terrain signals after bounded cache eviction churn', () => {
-    const sampleTerrainSignals = createOverworldTerrainSignalSampler('spec-seed');
+    const sampleTerrainSignals =
+      createOverworldTerrainSignalSampler('spec-seed');
     const baseline = sampleTerrainSignals(12, -9);
 
     for (let index = 0; index < 9000; index += 1) {
@@ -238,7 +247,10 @@ describe('overworld support', () => {
     for (let index = 1; index < points.length; index += 1) {
       const previous = points[index - 1];
       const current = points[index];
-      const distance = Math.hypot(current.x - previous.x, current.y - previous.y);
+      const distance = Math.hypot(
+        current.x - previous.x,
+        current.y - previous.y
+      );
       expect(distance).toBeGreaterThanOrEqual(2);
       expect(distance).toBeLessThanOrEqual(10);
     }
@@ -300,9 +312,18 @@ describe('overworld support', () => {
 
     for (const location of sampleLocations) {
       expect(
-        getRiverControlPathSignalAtPoint(controlPoints, location.x, location.y, 5)
+        getRiverControlPathSignalAtPoint(
+          controlPoints,
+          location.x,
+          location.y,
+          5
+        )
       ).toBeCloseTo(
-        getLegacyRiverPathSignalAtPoint(sampledCurvePoints, location.x, location.y),
+        getLegacyRiverPathSignalAtPoint(
+          sampledCurvePoints,
+          location.x,
+          location.y
+        ),
         12
       );
     }
@@ -313,7 +334,11 @@ describe('overworld support', () => {
 
     for (let cellY = -8; cellY <= 8 && !foundCurvyPath; cellY += 1) {
       for (let cellX = -8; cellX <= 8; cellX += 1) {
-        const controlPoints = createRiverControlPoints('spec-seed', cellX, cellY);
+        const controlPoints = createRiverControlPoints(
+          'spec-seed',
+          cellX,
+          cellY
+        );
         if (controlPoints.length < 4) {
           continue;
         }
@@ -330,13 +355,27 @@ describe('overworld support', () => {
 
   it('creates deterministic fork paths that branch away from the main river', () => {
     let forkSeedCell:
-      | { seed: string; cellX: number; cellY: number; controlPoints: { x: number; y: number }[] }
+      | {
+          seed: string;
+          cellX: number;
+          cellY: number;
+          controlPoints: { x: number; y: number }[];
+        }
       | undefined;
 
     for (let cellY = -4; cellY <= 4 && !forkSeedCell; cellY += 1) {
       for (let cellX = -4; cellX <= 4; cellX += 1) {
-        const controlPoints = createRiverControlPoints('spec-seed', cellX, cellY);
-        const fork = createRiverForkPath('spec-seed', cellX, cellY, controlPoints);
+        const controlPoints = createRiverControlPoints(
+          'spec-seed',
+          cellX,
+          cellY
+        );
+        const fork = createRiverForkPath(
+          'spec-seed',
+          cellX,
+          cellY,
+          controlPoints
+        );
         if (fork) {
           forkSeedCell = { seed: 'spec-seed', cellX, cellY, controlPoints };
           break;
@@ -370,9 +409,9 @@ describe('overworld support', () => {
     const trunkStart = forkSeedCell!.controlPoints[fork!.trunkStartIndex];
     const trunkEnd = forkSeedCell!.controlPoints[fork!.trunkEndIndex];
     const maxOffset = Math.max(
-      ...fork!.points.slice(1, -1).map((point) =>
-        getDistanceToSegment(point, trunkStart, trunkEnd)
-      ),
+      ...fork!.points
+        .slice(1, -1)
+        .map((point) => getDistanceToSegment(point, trunkStart, trunkEnd)),
       0
     );
     expect(maxOffset).toBeGreaterThan(0.4);
@@ -380,13 +419,27 @@ describe('overworld support', () => {
 
   it('keeps fork join segments within 45 degrees of the trunk heading', () => {
     let forkSeedCell:
-      | { seed: string; cellX: number; cellY: number; controlPoints: { x: number; y: number }[] }
+      | {
+          seed: string;
+          cellX: number;
+          cellY: number;
+          controlPoints: { x: number; y: number }[];
+        }
       | undefined;
 
     for (let cellY = -4; cellY <= 4 && !forkSeedCell; cellY += 1) {
       for (let cellX = -4; cellX <= 4; cellX += 1) {
-        const controlPoints = createRiverControlPoints('spec-seed', cellX, cellY);
-        const fork = createRiverForkPath('spec-seed', cellX, cellY, controlPoints);
+        const controlPoints = createRiverControlPoints(
+          'spec-seed',
+          cellX,
+          cellY
+        );
+        const fork = createRiverForkPath(
+          'spec-seed',
+          cellX,
+          cellY,
+          controlPoints
+        );
         if (fork && fork.points.length >= 2) {
           forkSeedCell = { seed: 'spec-seed', cellX, cellY, controlPoints };
           break;
@@ -404,7 +457,10 @@ describe('overworld support', () => {
 
     const joinSegments = [
       [fork!.points[0], fork!.points[1]],
-      [fork!.points[fork!.points.length - 2], fork!.points[fork!.points.length - 1]],
+      [
+        fork!.points[fork!.points.length - 2],
+        fork!.points[fork!.points.length - 1],
+      ],
     ] as const;
 
     for (const [start, end] of joinSegments) {
@@ -419,7 +475,11 @@ describe('overworld support', () => {
   it('raises river signals near river control path segments', () => {
     const points = createRiverControlPoints('spec-seed', 0, 0);
     const anchor = points[0]!;
-    const nearSignal = getRiverControlPathSignalAtPoint(points, anchor.x, anchor.y);
+    const nearSignal = getRiverControlPathSignalAtPoint(
+      points,
+      anchor.x,
+      anchor.y
+    );
     const farSignal = getRiverControlPathSignalAtPoint(
       points,
       anchor.x + 12,
@@ -511,19 +571,22 @@ describe('overworld support', () => {
   });
 
   it('builds reusable overworld generation contexts from shared samplers and plugins', () => {
-    const sampleTerrainSignals = createOverworldTerrainSignalSampler('spec-seed');
-    const context = createOverworldGenerationContext(createGenerationContextPayload({
-      sampleTerrainSignals,
-      plugins: createTestPluginRegistry({
-        resolveOverworldAnchors() {
-          return {
-            townAnchors: [{ x: 10, y: -2, name: 'Spec Town' }],
-            bridgeAnchors: [{ x: 6, y: -4 }],
-            poiAnchors: [],
-          };
-        },
-      }),
-    }));
+    const sampleTerrainSignals =
+      createOverworldTerrainSignalSampler('spec-seed');
+    const context = createOverworldGenerationContext(
+      createGenerationContextPayload({
+        sampleTerrainSignals,
+        plugins: createTestPluginRegistry({
+          resolveOverworldAnchors() {
+            return {
+              townAnchors: [{ x: 10, y: -2, name: 'Spec Town' }],
+              bridgeAnchors: [{ x: 6, y: -4 }],
+              poiAnchors: [],
+            };
+          },
+        }),
+      })
+    );
 
     expect(context.tile.kind).toBe('plains');
     expect(context.signals).toEqual(sampleTerrainSignals(8, -3));
@@ -541,7 +604,8 @@ describe('overworld support', () => {
   });
 
   it('reuses cached generation snapshots while keeping tile payloads isolated', () => {
-    const sampleTerrainSignals = createOverworldTerrainSignalSampler('spec-seed');
+    const sampleTerrainSignals =
+      createOverworldTerrainSignalSampler('spec-seed');
     let anchorCalls = 0;
     const plugins = createTestPluginRegistry({
       resolveOverworldAnchors() {
@@ -613,9 +677,15 @@ describe('overworld support', () => {
         name: expect.any(String),
       })
     );
-    expect(spec.chanceKeyHash).toBe(getOverworldPlacementLabelHash('town-anchor'));
-    expect(spec.offsetXKeyHash).toBe(getOverworldPlacementLabelHash('town-anchor-x'));
-    expect(spec.offsetYKeyHash).toBe(getOverworldPlacementLabelHash('town-anchor-y'));
+    expect(spec.chanceKeyHash).toBe(
+      getOverworldPlacementLabelHash('town-anchor')
+    );
+    expect(spec.offsetXKeyHash).toBe(
+      getOverworldPlacementLabelHash('town-anchor-x')
+    );
+    expect(spec.offsetYKeyHash).toBe(
+      getOverworldPlacementLabelHash('town-anchor-y')
+    );
   });
 
   it('collects nearby poi anchors from shared grouped specs and caches', () => {
@@ -734,8 +804,12 @@ describe('overworld support', () => {
     expect(second.townAnchors).toBe(first.townAnchors);
     expect(second.poiAnchors).toBe(first.poiAnchors);
     expect(first.townAnchors.length).toBeGreaterThan(0);
-    expect(first.poiAnchors.some((anchor) => anchor.type === 'town')).toBe(true);
-    expect(first.poiAnchors.some((anchor) => anchor.type === 'cave')).toBe(true);
+    expect(first.poiAnchors.some((anchor) => anchor.type === 'town')).toBe(
+      true
+    );
+    expect(first.poiAnchors.some((anchor) => anchor.type === 'cave')).toBe(
+      true
+    );
   });
 
   it('keeps grouped overworld anchor resolvers deterministic after bounded eviction churn', () => {
@@ -896,7 +970,8 @@ describe('overworld support', () => {
   });
 
   it('composes overworld tiles through the shared plugin pipeline', () => {
-    const sampleTerrainSignals = createOverworldTerrainSignalSampler('spec-seed');
+    const sampleTerrainSignals =
+      createOverworldTerrainSignalSampler('spec-seed');
     const calls: string[] = [];
     const contexts: object[] = [];
     const state = {
@@ -912,44 +987,46 @@ describe('overworld support', () => {
         return null;
       },
     };
-    const tile = composeOverworldTileFromPlugins(createComposeOverworldTilePayload({
-      sampleTerrainSignals,
-      state,
-      plugins: createTestPluginRegistry({
-        resolveOverworldTile() {
-          calls.push('resolve');
-          return null;
-        },
-        resolveOverworldAnchors() {
-          calls.push('anchors');
-          return {
-            townAnchors: [],
-            bridgeAnchors: [],
-            poiAnchors: [],
-          };
-        },
-        classifyTerrainTile(context) {
-          contexts.push(context);
-          calls.push(`terrain:${context.tile.kind}`);
-          return { kind: 'river' };
-        },
-        classifyOverworldTile(context) {
-          contexts.push(context);
-          calls.push(`overworld:${context.tile.kind}`);
-          return { kind: 'bridge' };
-        },
-        decorateOverworldTile(context) {
-          contexts.push(context);
-          calls.push(`decorate:${context.tile.kind}`);
-          calls.push(`time:${context.state?.timeMs ?? 'none'}`);
-          calls.push(
-            `sampler:${typeof context.sampleTerrainSignals === 'function' ? 'yes' : 'no'}`
-          );
-          context.tile.note = 'decorated';
-          return context.tile;
-        },
-      }),
-    }));
+    const tile = composeOverworldTileFromPlugins(
+      createComposeOverworldTilePayload({
+        sampleTerrainSignals,
+        state,
+        plugins: createTestPluginRegistry({
+          resolveOverworldTile() {
+            calls.push('resolve');
+            return null;
+          },
+          resolveOverworldAnchors() {
+            calls.push('anchors');
+            return {
+              townAnchors: [],
+              bridgeAnchors: [],
+              poiAnchors: [],
+            };
+          },
+          classifyTerrainTile(context) {
+            contexts.push(context);
+            calls.push(`terrain:${context.tile.kind}`);
+            return { kind: 'river' };
+          },
+          classifyOverworldTile(context) {
+            contexts.push(context);
+            calls.push(`overworld:${context.tile.kind}`);
+            return { kind: 'bridge' };
+          },
+          decorateOverworldTile(context) {
+            contexts.push(context);
+            calls.push(`decorate:${context.tile.kind}`);
+            calls.push(`time:${context.state?.timeMs ?? 'none'}`);
+            calls.push(
+              `sampler:${typeof context.sampleTerrainSignals === 'function' ? 'yes' : 'no'}`
+            );
+            context.tile.note = 'decorated';
+            return context.tile;
+          },
+        }),
+      })
+    );
 
     expect(tile).toEqual({
       kind: 'bridge',
@@ -969,7 +1046,8 @@ describe('overworld support', () => {
   });
 
   it('reuses cached generation snapshots across repeated composition for the same tile', () => {
-    const sampleTerrainSignals = createOverworldTerrainSignalSampler('spec-seed');
+    const sampleTerrainSignals =
+      createOverworldTerrainSignalSampler('spec-seed');
     let anchorCalls = 0;
     const plugins = createTestPluginRegistry({
       resolveOverworldTile() {
@@ -1016,62 +1094,68 @@ describe('overworld support', () => {
   });
 
   it('uses the plugin-owned default tile kind as the initial overworld tile', () => {
-    const sampleTerrainSignals = createOverworldTerrainSignalSampler('spec-seed');
-    const tile = composeOverworldTileFromPlugins(createComposeOverworldTilePayload({
-      sampleTerrainSignals,
-      plugins: createTestPluginRegistry({
-        getDefaultTileKind() {
-          return 'ashlands';
-        },
-        resolveOverworldTile() {
-          return null;
-        },
-        resolveOverworldAnchors() {
-          return {
-            townAnchors: [],
-            bridgeAnchors: [],
-            poiAnchors: [],
-          };
-        },
-        classifyTerrainTile(context) {
-          return { kind: context.tile.kind };
-        },
-        classifyOverworldTile() {
-          return null;
-        },
-        decorateOverworldTile(context) {
-          return context.tile;
-        },
-      }),
-    }));
+    const sampleTerrainSignals =
+      createOverworldTerrainSignalSampler('spec-seed');
+    const tile = composeOverworldTileFromPlugins(
+      createComposeOverworldTilePayload({
+        sampleTerrainSignals,
+        plugins: createTestPluginRegistry({
+          getDefaultTileKind() {
+            return 'ashlands';
+          },
+          resolveOverworldTile() {
+            return null;
+          },
+          resolveOverworldAnchors() {
+            return {
+              townAnchors: [],
+              bridgeAnchors: [],
+              poiAnchors: [],
+            };
+          },
+          classifyTerrainTile(context) {
+            return { kind: context.tile.kind };
+          },
+          classifyOverworldTile() {
+            return null;
+          },
+          decorateOverworldTile(context) {
+            return context.tile;
+          },
+        }),
+      })
+    );
 
     expect(tile).toEqual({ kind: 'ashlands' });
   });
 
   it('short-circuits the plugin pipeline when a curated tile is resolved', () => {
-    const sampleTerrainSignals = createOverworldTerrainSignalSampler('spec-seed');
-    const tile = composeOverworldTileFromPlugins(createComposeOverworldTilePayload({
-      x: 0,
-      y: 0,
-      sampleTerrainSignals,
-      plugins: createTestPluginRegistry({
-        resolveOverworldTile() {
-          return { kind: 'town', note: 'curated' };
-        },
-        resolveOverworldAnchors() {
-          throw new Error('should not resolve anchors');
-        },
-        classifyTerrainTile() {
-          throw new Error('should not classify terrain');
-        },
-        classifyOverworldTile() {
-          throw new Error('should not classify overworld');
-        },
-        decorateOverworldTile() {
-          throw new Error('should not decorate');
-        },
-      }),
-    }));
+    const sampleTerrainSignals =
+      createOverworldTerrainSignalSampler('spec-seed');
+    const tile = composeOverworldTileFromPlugins(
+      createComposeOverworldTilePayload({
+        x: 0,
+        y: 0,
+        sampleTerrainSignals,
+        plugins: createTestPluginRegistry({
+          resolveOverworldTile() {
+            return { kind: 'town', note: 'curated' };
+          },
+          resolveOverworldAnchors() {
+            throw new Error('should not resolve anchors');
+          },
+          classifyTerrainTile() {
+            throw new Error('should not classify terrain');
+          },
+          classifyOverworldTile() {
+            throw new Error('should not classify overworld');
+          },
+          decorateOverworldTile() {
+            throw new Error('should not decorate');
+          },
+        }),
+      })
+    );
 
     expect(tile).toEqual({
       kind: 'town',

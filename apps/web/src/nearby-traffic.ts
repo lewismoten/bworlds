@@ -27,15 +27,14 @@ export function findNearestTrafficProfile<
   selectTraffic(tile: Record<string, unknown>): TTraffic | undefined;
   mapProfile?: (traffic: TTraffic, x: number, y: number) => TExtra;
 }): (NearbyTrafficProfile & TExtra) | null {
-  const { state, centerX, centerY, searchRadius, selectTraffic, mapProfile } = options;
-  let best:
-    | null
-    | {
-        distance: number;
-        progress?: number;
-        emitter: TrafficPosition;
-        extras: TExtra;
-      } = null;
+  const { state, centerX, centerY, searchRadius, selectTraffic, mapProfile } =
+    options;
+  let best: null | {
+    distance: number;
+    progress?: number;
+    emitter: TrafficPosition;
+    extras: TExtra;
+  } = null;
 
   for (let y = centerY - searchRadius; y <= centerY + searchRadius; y += 1) {
     for (let x = centerX - searchRadius; x <= centerX + searchRadius; x += 1) {

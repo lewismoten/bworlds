@@ -1,5 +1,4 @@
-import {
-} from '@bworlds/core';
+import {} from '@bworlds/core';
 import {
   appendHashSeedLabel,
   appendHashSeedPart,
@@ -296,7 +295,10 @@ function createTileVariantSeed(kind: Kind): number {
   return appendHashSeedLabel(getAtlasKindSeed(kind), TILE_VARIANT_LABEL);
 }
 
-function createVariantMotifSeed(kind: Kind, variant: number): {
+function createVariantMotifSeed(
+  kind: Kind,
+  variant: number
+): {
   seedHash: number;
   motifHash: number;
 } {

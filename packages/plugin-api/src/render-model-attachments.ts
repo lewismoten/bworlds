@@ -9,10 +9,9 @@ export interface RenderModelAttachmentMetadata {
 
 type RenderModelAttachmentTarget = Pick<ThreeObject3DLike, 'userData'>;
 
-export function markRenderModelAttachment<TTarget extends RenderModelAttachmentTarget>(
-  target: TTarget,
-  metadata: RenderModelAttachmentMetadata = {}
-): TTarget {
+export function markRenderModelAttachment<
+  TTarget extends RenderModelAttachmentTarget,
+>(target: TTarget, metadata: RenderModelAttachmentMetadata = {}): TTarget {
   const normalizedCount =
     typeof metadata.count === 'number' && Number.isFinite(metadata.count)
       ? Math.max(1, Math.floor(metadata.count))

@@ -1,5 +1,8 @@
 import { cardinalFromAngle } from '@bworlds/core';
-import { createContextMapPlugin, createExitMapAction } from '@bworlds/map-support';
+import {
+  createContextMapPlugin,
+  createExitMapAction,
+} from '@bworlds/map-support';
 import type {
   Kind,
   RuntimePlugin,
@@ -18,10 +21,19 @@ const BALLOON_LAUNCH_SUPPORT_KINDS = new Set([
   'station',
   'shore',
 ]);
-const BALLOON_BLOCKED_TILE_KINDS = new Set(['ocean', 'river', 'mountain', 'wall']);
+const BALLOON_BLOCKED_TILE_KINDS = new Set([
+  'ocean',
+  'river',
+  'mountain',
+  'wall',
+]);
 
 type Point = { x: number; y: number };
-type TileSampler = (x: number, y: number, state?: WorldStateLike) => { kind: Kind };
+type TileSampler = (
+  x: number,
+  y: number,
+  state?: WorldStateLike
+) => { kind: Kind };
 
 export type BalloonContext = WorldContextLike & {
   origin: Point;
@@ -61,7 +73,10 @@ export function createBalloonMap(context: BalloonContext): WorldMapLike {
         note: 'Ropes creak softly while the balloon drifts along the breeze.',
       };
     }
-    return { kind: 'wall', note: 'Open air stretches away beyond the basket rim.' };
+    return {
+      kind: 'wall',
+      note: 'Open air stretches away beyond the basket rim.',
+    };
   }
 
   function getAction() {
@@ -108,7 +123,11 @@ export function isBalloonLaunchableLandTile({
       if (offsetX === 0 && offsetY === 0) {
         continue;
       }
-      if (BALLOON_LAUNCH_SUPPORT_KINDS.has(sampleTile(x + offsetX, y + offsetY, state).kind)) {
+      if (
+        BALLOON_LAUNCH_SUPPORT_KINDS.has(
+          sampleTile(x + offsetX, y + offsetY, state).kind
+        )
+      ) {
         return true;
       }
     }
@@ -144,7 +163,10 @@ export function findBalloonLandingPoint({
         const sampleX = x + direction.x * distance + lateral.x * offset * sign;
         const sampleY = y + direction.y * distance + lateral.y * offset * sign;
         const tile = sampleTile(sampleX, sampleY, state);
-        if (!isWalkable(tile.kind) || BALLOON_BLOCKED_TILE_KINDS.has(tile.kind)) {
+        if (
+          !isWalkable(tile.kind) ||
+          BALLOON_BLOCKED_TILE_KINDS.has(tile.kind)
+        ) {
           continue;
         }
         return { x: sampleX, y: sampleY };
@@ -154,7 +176,9 @@ export function findBalloonLandingPoint({
   return null;
 }
 
-function getDirectionVector(cardinal: ReturnType<typeof cardinalFromAngle>): Point {
+function getDirectionVector(
+  cardinal: ReturnType<typeof cardinalFromAngle>
+): Point {
   if (cardinal === 'N') {
     return { x: 0, y: -1 };
   }

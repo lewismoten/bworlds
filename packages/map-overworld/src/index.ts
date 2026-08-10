@@ -19,7 +19,10 @@ import {
   findNearestBoatLaunchPoint,
   isBoatLaunchableLandTile,
 } from '@bworlds/map-boat';
-import { type CanoeContext, findNearestCanoeLaunchPoint } from '@bworlds/map-canoe';
+import {
+  type CanoeContext,
+  findNearestCanoeLaunchPoint,
+} from '@bworlds/map-canoe';
 import {
   type GliderContext,
   findGliderLandingPoint,
@@ -31,7 +34,10 @@ import {
   isPlaneLaunchableLandTile,
 } from '@bworlds/map-plane';
 import { normalizeAngle } from '@bworlds/core';
-import { createContextMapPlugin, createEnterMapAction } from '@bworlds/map-support';
+import {
+  createContextMapPlugin,
+  createEnterMapAction,
+} from '@bworlds/map-support';
 import {
   composeOverworldTileFromPlugins,
   createOverworldTerrainSignalSampler,
@@ -91,7 +97,8 @@ function createOverworldMap(
     const nextRevision =
       typeof (state as { overworldTileRevision?: unknown } | undefined)
         ?.overworldTileRevision === 'number'
-        ? ((state as { overworldTileRevision?: number }).overworldTileRevision ?? 0)
+        ? ((state as { overworldTileRevision?: number })
+            .overworldTileRevision ?? 0)
         : 0;
     if (nextRevision !== activeRevision) {
       cache.clear();

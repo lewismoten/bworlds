@@ -39,7 +39,11 @@ export interface CompassState {
   initialized: boolean;
 }
 
-export function easeAngle(current: number, target: number, factor: number): number {
+export function easeAngle(
+  current: number,
+  target: number,
+  factor: number
+): number {
   let delta = getCompassDelta(current, target);
   return current + delta * factor;
 }
@@ -73,7 +77,8 @@ export function getCompassHeadingLabelState(
   padding = 24
 ): CompassHeadingLabelState {
   const degrees = getCompassHeadingDegrees(headingAngle);
-  const quadrant = (((headingAngle + Math.PI / 2) / (Math.PI / 2)) % 4 + 4) % 4;
+  const quadrant =
+    ((((headingAngle + Math.PI / 2) / (Math.PI / 2)) % 4) + 4) % 4;
   const cornerIndex = Math.floor(quadrant);
   const corners: CompassHeadingLabelState[] = [
     { degrees, x: width - padding, y: padding, textAlign: 'right' },
@@ -102,8 +107,12 @@ export function getCompassHeadingMarkerState(
     arcEndAngle: headingAngle + arcSpan,
     tipX: Math.cos(headingAngle) * tipRadius,
     tipY: Math.sin(headingAngle) * tipRadius,
-    leftX: Math.cos(headingAngle + Math.PI / 2) * 10 + Math.cos(headingAngle) * baseRadius,
-    leftY: Math.sin(headingAngle + Math.PI / 2) * 10 + Math.sin(headingAngle) * baseRadius,
+    leftX:
+      Math.cos(headingAngle + Math.PI / 2) * 10 +
+      Math.cos(headingAngle) * baseRadius,
+    leftY:
+      Math.sin(headingAngle + Math.PI / 2) * 10 +
+      Math.sin(headingAngle) * baseRadius,
     rightX:
       Math.cos(headingAngle - Math.PI / 2) * 10 +
       Math.cos(headingAngle) * baseRadius,
@@ -121,7 +130,10 @@ export function shouldToggleCompassHeading(
   if (typeof currentHeadingAngle !== 'number') {
     return false;
   }
-  return Math.abs(getCompassDelta(currentHeadingAngle, nextHeadingAngle)) <= thresholdRadians;
+  return (
+    Math.abs(getCompassDelta(currentHeadingAngle, nextHeadingAngle)) <=
+    thresholdRadians
+  );
 }
 
 export function isCompassHeadingDragSignificant(
@@ -129,7 +141,10 @@ export function isCompassHeadingDragSignificant(
   nextHeadingAngle: number,
   thresholdRadians = Math.PI / 90
 ): boolean {
-  return Math.abs(getCompassDelta(startHeadingAngle, nextHeadingAngle)) > thresholdRadians;
+  return (
+    Math.abs(getCompassDelta(startHeadingAngle, nextHeadingAngle)) >
+    thresholdRadians
+  );
 }
 
 export function getCompassHeadingDragPreview(
@@ -150,7 +165,8 @@ export function resolveCompassHeadingRelease(
   nextHeadingAngle: number,
   draggedHeading: boolean
 ): number | null {
-  return !draggedHeading && shouldToggleCompassHeading(startHeadingAngle, nextHeadingAngle)
+  return !draggedHeading &&
+    shouldToggleCompassHeading(startHeadingAngle, nextHeadingAngle)
     ? null
     : nextHeadingAngle;
 }
@@ -268,7 +284,14 @@ export function drawCompassDial(
   context.save();
   context.translate(centerX, centerY);
 
-  const halo = context.createRadialGradient(0, 0, radius * 0.18, 0, 0, radius * 1.22);
+  const halo = context.createRadialGradient(
+    0,
+    0,
+    radius * 0.18,
+    0,
+    0,
+    radius * 1.22
+  );
   halo.addColorStop(0, 'rgba(85, 214, 190, 0.18)');
   halo.addColorStop(1, 'rgba(8, 16, 25, 0)');
   context.fillStyle = halo;
@@ -334,8 +357,15 @@ export function drawCompassDial(
   });
 
   if (typeof headingAngle === 'number') {
-    const headingLabel = getCompassHeadingLabelState(headingAngle, width, height);
-    const headingMarker = getCompassHeadingMarkerState(headingAngle, bezelRadius);
+    const headingLabel = getCompassHeadingLabelState(
+      headingAngle,
+      width,
+      height
+    );
+    const headingMarker = getCompassHeadingMarkerState(
+      headingAngle,
+      bezelRadius
+    );
     context.strokeStyle = 'rgba(85, 214, 190, 0.38)';
     context.lineWidth = 5;
     context.beginPath();
@@ -359,7 +389,9 @@ export function drawCompassDial(
     context.beginPath();
     roundedRectPath(
       context,
-      headingLabel.textAlign === 'right' ? headingLabel.x - 44 : headingLabel.x - 6,
+      headingLabel.textAlign === 'right'
+        ? headingLabel.x - 44
+        : headingLabel.x - 6,
       headingLabel.y - 14,
       50,
       28,
@@ -374,7 +406,9 @@ export function drawCompassDial(
     context.textAlign = headingLabel.textAlign;
     context.fillText(
       `${headingLabel.degrees.toString().padStart(3, '0')}°`,
-      headingLabel.textAlign === 'right' ? headingLabel.x - 8 : headingLabel.x + 8,
+      headingLabel.textAlign === 'right'
+        ? headingLabel.x - 8
+        : headingLabel.x + 8,
       headingLabel.y
     );
     context.textAlign = 'center';
@@ -427,7 +461,12 @@ function roundedRectPath(
   context.lineTo(x + width - radius, y);
   context.quadraticCurveTo(x + width, y, x + width, y + radius);
   context.lineTo(x + width, y + height - radius);
-  context.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+  context.quadraticCurveTo(
+    x + width,
+    y + height,
+    x + width - radius,
+    y + height
+  );
   context.lineTo(x + radius, y + height);
   context.quadraticCurveTo(x, y + height, x, y + height - radius);
   context.lineTo(x, y + radius);

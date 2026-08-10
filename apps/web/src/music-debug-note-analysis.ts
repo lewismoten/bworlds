@@ -364,7 +364,8 @@ function hasUnsupportedChromaticLeap(
   }
 
   const previousLeap =
-    previous?.relativeSemitones === null || previous?.relativeSemitones === undefined
+    previous?.relativeSemitones === null ||
+    previous?.relativeSemitones === undefined
       ? false
       : Math.abs(current.relativeSemitones - previous.relativeSemitones) > 1;
   const nextLeap =
@@ -535,8 +536,7 @@ function isUnexplainedAccidentalReason(
   reason: MusicDebugAccidentalReason
 ): boolean {
   return (
-    reason === 'unresolved-chromatic' ||
-    reason === 'unsupported-chromatic-leap'
+    reason === 'unresolved-chromatic' || reason === 'unsupported-chromatic-leap'
   );
 }
 

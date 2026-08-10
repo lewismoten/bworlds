@@ -1,1 +1,1 @@
-- [X] Add light head bobbing when walking
+- [x] Add light head bobbing when walking

@@ -94,7 +94,9 @@ export function parseSavedCharacterProfile(
     if (
       typeof parsed?.completedQuestIds !== 'undefined' &&
       (!Array.isArray(parsed.completedQuestIds) ||
-        parsed.completedQuestIds.some((value: unknown) => typeof value !== 'string'))
+        parsed.completedQuestIds.some(
+          (value: unknown) => typeof value !== 'string'
+        ))
     ) {
       return null;
     }
@@ -115,7 +117,9 @@ export function parseSavedCharacterProfile(
       parsed.playerPlacedPois = parsePlayerPlacedPois(parsed.playerPlacedPois);
     }
     if (typeof parsed?.characterRoster !== 'undefined') {
-      parsed.characterRoster = parsePlayerCharacterRoster(parsed.characterRoster);
+      parsed.characterRoster = parsePlayerCharacterRoster(
+        parsed.characterRoster
+      );
     }
     if (typeof parsed?.playerLevel !== 'undefined') {
       parsed.playerLevel = normalizePlayerLevel(parsed.playerLevel);

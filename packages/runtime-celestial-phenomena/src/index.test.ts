@@ -44,18 +44,24 @@ describe('runtime celestial phenomena', () => {
   it('adds latitude-sensitive aurora data on qualifying nights', () => {
     let environment: WorldEnvironmentLike | undefined;
 
-    for (let day = 0; day < 160 && !environment?.celestial?.auroraBands?.length; day += 1) {
-      environment = plugin.resolveWorldEnvironment?.(createCelestialPhenomenaPayload({
-        state: {
-          ...createCelestialPhenomenaPayload().state,
-          player: {
-            x: 0,
-            y: -50000,
-            facing: 0,
+    for (
+      let day = 0;
+      day < 160 && !environment?.celestial?.auroraBands?.length;
+      day += 1
+    ) {
+      environment = plugin.resolveWorldEnvironment?.(
+        createCelestialPhenomenaPayload({
+          state: {
+            ...createCelestialPhenomenaPayload().state,
+            player: {
+              x: 0,
+              y: -50000,
+              facing: 0,
+            },
           },
-        },
-        timeMs: day * DEFAULT_DAY_LENGTH_MS + NIGHT_SAMPLE_OFFSET_MS,
-      })) as WorldEnvironmentLike | undefined;
+          timeMs: day * DEFAULT_DAY_LENGTH_MS + NIGHT_SAMPLE_OFFSET_MS,
+        })
+      ) as WorldEnvironmentLike | undefined;
     }
 
     expect(environment?.celestial?.auroraBands).toEqual(
@@ -81,17 +87,19 @@ describe('runtime celestial phenomena', () => {
       );
       day += 1
     ) {
-      environment = plugin.resolveWorldEnvironment?.(createCelestialPhenomenaPayload({
-        state: {
-          ...createCelestialPhenomenaPayload().state,
-          player: {
-            x: 0,
-            y: 40,
-            facing: 0,
+      environment = plugin.resolveWorldEnvironment?.(
+        createCelestialPhenomenaPayload({
+          state: {
+            ...createCelestialPhenomenaPayload().state,
+            player: {
+              x: 0,
+              y: 40,
+              facing: 0,
+            },
           },
-        },
-        timeMs: day * DEFAULT_DAY_LENGTH_MS + NIGHT_SAMPLE_OFFSET_MS,
-      })) as WorldEnvironmentLike | undefined;
+          timeMs: day * DEFAULT_DAY_LENGTH_MS + NIGHT_SAMPLE_OFFSET_MS,
+        })
+      ) as WorldEnvironmentLike | undefined;
     }
 
     expect(environment?.celestial?.visibleEventsAppend).toEqual(
@@ -118,8 +126,7 @@ describe('runtime celestial phenomena', () => {
       timeMs: 37 * DEFAULT_DAY_LENGTH_MS + NIGHT_SAMPLE_OFFSET_MS,
     });
     const baseline = plugin.resolveWorldEnvironment?.(payload) as
-      | WorldEnvironmentLike
-      | undefined;
+      WorldEnvironmentLike | undefined;
 
     for (let day = 0; day < 96; day += 1) {
       plugin.resolveWorldEnvironment?.(
@@ -186,11 +193,13 @@ describe('runtime celestial phenomena', () => {
         })
       ) as WorldEnvironmentLike | undefined;
 
-      for (const event of equatorialEnvironment?.celestial?.visibleEventsAppend ?? []) {
-        const match = (northernEnvironment?.celestial?.visibleEventsAppend ?? []).find(
+      for (const event of equatorialEnvironment?.celestial
+        ?.visibleEventsAppend ?? []) {
+        const match = (
+          northernEnvironment?.celestial?.visibleEventsAppend ?? []
+        ).find(
           (candidate) =>
-            candidate.type === event.type &&
-            candidate.name === event.name
+            candidate.type === event.type && candidate.name === event.name
         );
         if (match) {
           matchedEquatorialEvent = event;
@@ -239,7 +248,8 @@ describe('runtime celestial phenomena', () => {
     expect(environment?.celestial?.auroraBands).toHaveLength(5);
     expect(
       (environment?.celestial?.auroraBands ?? []).every(
-        (band) => band.intensity >= 0.6 && band.span > 1.4 && band.height >= 0.34
+        (band) =>
+          band.intensity >= 0.6 && band.span > 1.4 && band.height >= 0.34
       )
     ).toBe(true);
     expect(
@@ -329,9 +339,9 @@ describe('runtime celestial phenomena', () => {
         trailLength: 3.8,
       })
     );
-    expect((environment?.celestial?.visibleEventsAppend?.[0]?.altitude ?? 0)).toBeGreaterThan(
-      0.5
-    );
+    expect(
+      environment?.celestial?.visibleEventsAppend?.[0]?.altitude ?? 0
+    ).toBeGreaterThan(0.5);
   });
 
   it('can force a solar eclipse that darkens daylight and aligns the moon with the sun', () => {
@@ -358,7 +368,11 @@ describe('runtime celestial phenomena', () => {
         daylightReduction: expect.any(Number),
       })
     );
-    expect(environment?.celestial?.solarEclipse?.coverage ?? 0).toBeGreaterThan(0.75);
-    expect(environment?.celestial?.solarEclipse?.daylightReduction ?? 0).toBeGreaterThan(0.5);
+    expect(environment?.celestial?.solarEclipse?.coverage ?? 0).toBeGreaterThan(
+      0.75
+    );
+    expect(
+      environment?.celestial?.solarEclipse?.daylightReduction ?? 0
+    ).toBeGreaterThan(0.5);
   });
 });

@@ -94,7 +94,7 @@ export function appendCometEvents(options: {
     getOrbitalSkyPosition,
     getCelestialEventVisibility,
   } = options;
-  
+
   COMET_NAMES.forEach((name, index) => {
     const cycleLength = 20 + index * 12;
     const cycleDay = ((dayNumber % cycleLength) + cycleLength) % cycleLength;
@@ -137,6 +137,5 @@ export function appendCometEvents(options: {
         trailLength: 2.2 + index * 0.35,
       });
     }
-  }
-);
- }
+  });
+}

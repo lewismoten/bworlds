@@ -20,9 +20,7 @@ export function buildCanonicalDebugRouteUrl(location: {
   return `${redirectPath}${location.search ?? ''}${location.hash ?? ''}`;
 }
 
-export function redirectToCanonicalDebugRoute(
-  location: LocationLike
-): boolean {
+export function redirectToCanonicalDebugRoute(location: LocationLike): boolean {
   const redirectUrl = buildCanonicalDebugRouteUrl(location);
   if (!redirectUrl) {
     return false;

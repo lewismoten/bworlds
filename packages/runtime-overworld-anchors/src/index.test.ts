@@ -74,10 +74,10 @@ describe('runtime overworld anchors', () => {
         },
       })
     ) ?? {
-        townAnchors: [],
-        bridgeAnchors: [],
-        poiAnchors: [],
-      }) as OverworldAnchorSet;
+      townAnchors: [],
+      bridgeAnchors: [],
+      poiAnchors: [],
+    }) as OverworldAnchorSet;
     const pois = anchors.poiAnchors ?? [];
 
     for (let index = 0; index < pois.length; index += 1) {
@@ -117,7 +117,9 @@ describe('runtime overworld anchors', () => {
       })
     ) as OverworldAnchorSet;
 
-    const caves = (anchors.poiAnchors ?? []).filter((anchor) => anchor.type === 'cave');
+    const caves = (anchors.poiAnchors ?? []).filter(
+      (anchor) => anchor.type === 'cave'
+    );
     expect(caves.length).toBeGreaterThan(0);
     caves.forEach((anchor) => {
       const adjacentElevations = [
@@ -126,15 +128,15 @@ describe('runtime overworld anchors', () => {
         [anchor.x, anchor.y + 1],
         [anchor.x, anchor.y - 1],
       ].map(([x, y]) => sampleTerrainSignals(x, y).elevation);
-      expect(adjacentElevations.some((elevation) => elevation > 0.72)).toBe(true);
+      expect(adjacentElevations.some((elevation) => elevation > 0.72)).toBe(
+        true
+      );
     });
   });
 
   it('only places dungeon anchors inside dense forest-like terrain clusters', () => {
-    const sampleTerrainSignals = (
-      _x: number,
-      _y: number
-    ): OverworldSignals => createDenseForestSignals();
+    const sampleTerrainSignals = (_x: number, _y: number): OverworldSignals =>
+      createDenseForestSignals();
     let anchors: OverworldAnchorSet = {
       townAnchors: [],
       bridgeAnchors: [],
@@ -150,7 +152,9 @@ describe('runtime overworld anchors', () => {
             sampleTerrainSignals,
           })
         ) as OverworldAnchorSet) ?? anchors;
-      if ((anchors.poiAnchors ?? []).some((anchor) => anchor.type === 'dungeon')) {
+      if (
+        (anchors.poiAnchors ?? []).some((anchor) => anchor.type === 'dungeon')
+      ) {
         break;
       }
     }
@@ -163,7 +167,11 @@ describe('runtime overworld anchors', () => {
       let forestLikeCount = 0;
       let sampleCount = 0;
       for (let sampleY = anchor.y - 2; sampleY <= anchor.y + 2; sampleY += 1) {
-        for (let sampleX = anchor.x - 2; sampleX <= anchor.x + 2; sampleX += 1) {
+        for (
+          let sampleX = anchor.x - 2;
+          sampleX <= anchor.x + 2;
+          sampleX += 1
+        ) {
           sampleCount += 1;
           const terrain = sampleTerrainSignals(sampleX, sampleY);
           if (terrain.moisture >= 0.6) {
@@ -171,7 +179,9 @@ describe('runtime overworld anchors', () => {
           }
         }
       }
-      expect(forestLikeCount).toBeGreaterThanOrEqual(Math.ceil(sampleCount * 0.68));
+      expect(forestLikeCount).toBeGreaterThanOrEqual(
+        Math.ceil(sampleCount * 0.68)
+      );
     });
   });
 
@@ -210,7 +220,9 @@ describe('runtime overworld anchors', () => {
             sampleTerrainSignals,
           })
         ) as OverworldAnchorSet) ?? anchors;
-      if ((anchors.poiAnchors ?? []).some((anchor) => anchor.type === 'quarry')) {
+      if (
+        (anchors.poiAnchors ?? []).some((anchor) => anchor.type === 'quarry')
+      ) {
         break;
       }
     }
@@ -220,10 +232,16 @@ describe('runtime overworld anchors', () => {
     );
     expect(quarries.length).toBeGreaterThan(0);
     quarries.forEach((anchor) => {
-      expect(sampleTerrainSignals(anchor.x, anchor.y).moisture).toBeLessThan(0.58);
+      expect(sampleTerrainSignals(anchor.x, anchor.y).moisture).toBeLessThan(
+        0.58
+      );
       let foundMountain = false;
       for (let sampleY = anchor.y - 2; sampleY <= anchor.y + 2; sampleY += 1) {
-        for (let sampleX = anchor.x - 2; sampleX <= anchor.x + 2; sampleX += 1) {
+        for (
+          let sampleX = anchor.x - 2;
+          sampleX <= anchor.x + 2;
+          sampleX += 1
+        ) {
           if (sampleTerrainSignals(sampleX, sampleY).elevation > 0.72) {
             foundMountain = true;
           }
@@ -268,7 +286,9 @@ describe('runtime overworld anchors', () => {
             sampleTerrainSignals,
           })
         ) as OverworldAnchorSet) ?? anchors;
-      if ((anchors.poiAnchors ?? []).some((anchor) => anchor.type === 'tower')) {
+      if (
+        (anchors.poiAnchors ?? []).some((anchor) => anchor.type === 'tower')
+      ) {
         break;
       }
     }
@@ -320,7 +340,11 @@ describe('runtime overworld anchors', () => {
             sampleTerrainSignals,
           })
         ) as OverworldAnchorSet) ?? anchors;
-      if ((anchors.poiAnchors ?? []).some((anchor) => anchor.type === 'lighthouse')) {
+      if (
+        (anchors.poiAnchors ?? []).some(
+          (anchor) => anchor.type === 'lighthouse'
+        )
+      ) {
         break;
       }
     }
@@ -330,7 +354,9 @@ describe('runtime overworld anchors', () => {
     );
     expect(lighthouses.length).toBeGreaterThan(0);
     lighthouses.forEach((anchor) => {
-      expect(sampleTerrainSignals(anchor.x, anchor.y).continent).toBeGreaterThanOrEqual(0.42);
+      expect(
+        sampleTerrainSignals(anchor.x, anchor.y).continent
+      ).toBeGreaterThanOrEqual(0.42);
       let foundOcean = false;
       for (let offsetY = -2; offsetY <= 2; offsetY += 1) {
         for (let offsetX = -2; offsetX <= 2; offsetX += 1) {
@@ -338,7 +364,10 @@ describe('runtime overworld anchors', () => {
           if (distance === 0 || distance > 2) {
             continue;
           }
-          if (sampleTerrainSignals(anchor.x + offsetX, anchor.y + offsetY).continent <= 0.38) {
+          if (
+            sampleTerrainSignals(anchor.x + offsetX, anchor.y + offsetY)
+              .continent <= 0.38
+          ) {
             foundOcean = true;
           }
         }
@@ -351,7 +380,10 @@ describe('runtime overworld anchors', () => {
     const sampleTerrainSignals = (x: number, y: number): OverworldSignals => {
       const summitCenterX = Math.round(x / 6) * 6;
       const summitCenterY = Math.round(y / 6) * 6;
-      if (Math.abs(x - summitCenterX) <= 1 && Math.abs(y - summitCenterY) <= 1) {
+      if (
+        Math.abs(x - summitCenterX) <= 1 &&
+        Math.abs(y - summitCenterY) <= 1
+      ) {
         return {
           continent: 0.72,
           elevation: 0.9,
@@ -384,7 +416,11 @@ describe('runtime overworld anchors', () => {
             sampleTerrainSignals,
           })
         ) as OverworldAnchorSet) ?? anchors;
-      if ((anchors.poiAnchors ?? []).some((anchor) => anchor.type === 'observatory')) {
+      if (
+        (anchors.poiAnchors ?? []).some(
+          (anchor) => anchor.type === 'observatory'
+        )
+      ) {
         break;
       }
     }
@@ -394,10 +430,16 @@ describe('runtime overworld anchors', () => {
     );
     expect(observatories.length).toBeGreaterThan(0);
     observatories.forEach((anchor) => {
-      expect(sampleTerrainSignals(anchor.x, anchor.y).elevation).toBeGreaterThanOrEqual(0.78);
+      expect(
+        sampleTerrainSignals(anchor.x, anchor.y).elevation
+      ).toBeGreaterThanOrEqual(0.78);
       let elevatedSamples = 0;
       for (let sampleY = anchor.y - 1; sampleY <= anchor.y + 1; sampleY += 1) {
-        for (let sampleX = anchor.x - 1; sampleX <= anchor.x + 1; sampleX += 1) {
+        for (
+          let sampleX = anchor.x - 1;
+          sampleX <= anchor.x + 1;
+          sampleX += 1
+        ) {
           if (sampleTerrainSignals(sampleX, sampleY).elevation > 0.72) {
             elevatedSamples += 1;
           }
@@ -471,7 +513,9 @@ describe('runtime overworld anchors', () => {
     );
     expect(ships.length).toBeGreaterThan(0);
     ships.forEach((anchor) => {
-      expect(sampleTerrainSignals(anchor.x, anchor.y).continent).toBeGreaterThanOrEqual(0.42);
+      expect(
+        sampleTerrainSignals(anchor.x, anchor.y).continent
+      ).toBeGreaterThanOrEqual(0.42);
       let foundOcean = false;
       for (let offsetY = -2; offsetY <= 2; offsetY += 1) {
         for (let offsetX = -2; offsetX <= 2; offsetX += 1) {
@@ -479,7 +523,10 @@ describe('runtime overworld anchors', () => {
           if (distance === 0 || distance > 2) {
             continue;
           }
-          if (sampleTerrainSignals(anchor.x + offsetX, anchor.y + offsetY).continent <= 0.38) {
+          if (
+            sampleTerrainSignals(anchor.x + offsetX, anchor.y + offsetY)
+              .continent <= 0.38
+          ) {
             foundOcean = true;
           }
         }
@@ -522,7 +569,9 @@ describe('runtime overworld anchors', () => {
             sampleTerrainSignals,
           })
         ) as OverworldAnchorSet) ?? anchors;
-      if ((anchors.poiAnchors ?? []).some((anchor) => anchor.type === 'station')) {
+      if (
+        (anchors.poiAnchors ?? []).some((anchor) => anchor.type === 'station')
+      ) {
         break;
       }
     }

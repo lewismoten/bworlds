@@ -1,4 +1,7 @@
-import { createContextMapPlugin, createExitMapAction } from '@bworlds/map-support';
+import {
+  createContextMapPlugin,
+  createExitMapAction,
+} from '@bworlds/map-support';
 import type {
   CreateMapContext,
   RuntimePlugin,
@@ -31,10 +34,16 @@ function createObservatoryMap(
       return { kind: 'wall' };
     }
     if (x === 0 && y === 5) {
-      return { kind: 'door', note: 'Press X to step back onto the summit path.' };
+      return {
+        kind: 'door',
+        note: 'Press X to step back onto the summit path.',
+      };
     }
     if (Math.abs(x) === 5 || Math.abs(y) === 5) {
-      return { kind: 'wall', note: 'Stone braces the observatory against the mountain wind.' };
+      return {
+        kind: 'wall',
+        note: 'Stone braces the observatory against the mountain wind.',
+      };
     }
     if (x === 0 && y === 0) {
       return {

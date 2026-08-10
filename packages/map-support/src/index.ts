@@ -18,9 +18,10 @@ type DecoratedTileContext =
   | DecorateBuildingTileContext
   | DecorateDepthTileContext;
 
-type ContextualWorldLike<TContextType extends WorldContextType> = WorldContextLike & {
-  type?: TContextType;
-};
+type ContextualWorldLike<TContextType extends WorldContextType> =
+  WorldContextLike & {
+    type?: TContextType;
+  };
 
 function hasMatchingContextType(
   context: WorldContextLike,
@@ -117,7 +118,9 @@ export function createDecoratedMapTileGetter<
   };
 }
 
-export function createContextMapPlugin<TContext extends WorldContextLike>(options: {
+export function createContextMapPlugin<
+  TContext extends WorldContextLike,
+>(options: {
   name: string;
   contextType: WorldContextType | readonly WorldContextType[];
   createMap(

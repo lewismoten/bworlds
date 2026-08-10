@@ -132,7 +132,8 @@ export function getTileModelTinyMeshWarning(
     return null;
   }
 
-  const sharedMaterialRatio = meshCount > 0 ? sharedMaterialCount / meshCount : 0;
+  const sharedMaterialRatio =
+    meshCount > 0 ? sharedMaterialCount / meshCount : 0;
   if (sharedMaterialRatio > TINY_MESH_WARNING_MAX_SHARED_MATERIAL_RATIO) {
     return null;
   }
@@ -179,7 +180,8 @@ export function getTileModelInstancingWarning(
     return null;
   }
 
-  const instancedRatio = renderableCount > 0 ? renderedInstanceCount / renderableCount : 0;
+  const instancedRatio =
+    renderableCount > 0 ? renderedInstanceCount / renderableCount : 0;
   if (instancedRatio > INSTANCING_WARNING_MAX_INSTANCED_RATIO) {
     return null;
   }
@@ -208,12 +210,19 @@ export function getTileModelPerInstanceMaterialWarning(
   }
 
   const uniqueMaterialRatio = meshCount > 0 ? materialCount / meshCount : 0;
-  if (uniqueMaterialRatio < PER_INSTANCE_MATERIAL_WARNING_MIN_UNIQUE_MATERIAL_RATIO) {
+  if (
+    uniqueMaterialRatio <
+    PER_INSTANCE_MATERIAL_WARNING_MIN_UNIQUE_MATERIAL_RATIO
+  ) {
     return null;
   }
 
-  const sharedMaterialRatio = meshCount > 0 ? sharedMaterialCount / meshCount : 0;
-  if (sharedMaterialRatio > PER_INSTANCE_MATERIAL_WARNING_MAX_SHARED_MATERIAL_RATIO) {
+  const sharedMaterialRatio =
+    meshCount > 0 ? sharedMaterialCount / meshCount : 0;
+  if (
+    sharedMaterialRatio >
+    PER_INSTANCE_MATERIAL_WARNING_MAX_SHARED_MATERIAL_RATIO
+  ) {
     return null;
   }
 
@@ -286,5 +295,7 @@ export function getTileModelPerformanceWarnings(
     getTileModelColorVariantMaterialWarning(stats, detailLevel),
   ];
 
-  return warnings.filter((warning): warning is string => typeof warning === 'string');
+  return warnings.filter(
+    (warning): warning is string => typeof warning === 'string'
+  );
 }

@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_DAY_LENGTH_MINUTES, DEFAULT_DAY_LENGTH_MS } from '@bworlds/core';
+import {
+  DEFAULT_DAY_LENGTH_MINUTES,
+  DEFAULT_DAY_LENGTH_MS,
+} from '@bworlds/core';
 import {
   CELESTIAL_DAY_LENGTH_MS,
   createCelestialRuntimePlugin,

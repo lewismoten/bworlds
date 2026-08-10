@@ -3,12 +3,21 @@ import { createSignTilePlugin } from './index.ts';
 import type { OverworldSignals } from '@bworlds/plugin-api';
 
 const getOrCreatePaintedCanvasTextureMock = vi.hoisted(() =>
-  vi.fn((cache: { has(key: string): boolean; get(key: string): unknown; set(key: string, value: unknown): void }, key: string) => {
-    if (!cache.has(key)) {
-      cache.set(key, { colorSpace: '', needsUpdate: false });
+  vi.fn(
+    (
+      cache: {
+        has(key: string): boolean;
+        get(key: string): unknown;
+        set(key: string, value: unknown): void;
+      },
+      key: string
+    ) => {
+      if (!cache.has(key)) {
+        cache.set(key, { colorSpace: '', needsUpdate: false });
+      }
+      return cache.get(key);
     }
-    return cache.get(key);
-  })
+  )
 );
 
 vi.mock('@bworlds/three-support', () => ({
@@ -146,8 +155,9 @@ const fakeThree = {
 } as const;
 
 const plugin = createSignTilePlugin();
-const classifier = plugin.tiles?.find((tile) => tile.kind === 'sign')
-  ?.classifyOverworldTile;
+const classifier = plugin.tiles?.find(
+  (tile) => tile.kind === 'sign'
+)?.classifyOverworldTile;
 const signTile = plugin.tiles?.find((tile) => tile.kind === 'sign');
 type SignClassifierPayload = Parameters<NonNullable<typeof classifier>>[0];
 
@@ -238,91 +248,104 @@ function createModelSignature(model: FakeGroup | undefined) {
 
 describe('tile sign', () => {
   it('prefers placing signs beside crossroads', () => {
-    const tile = classifier?.(createSignClassifierPayload({
-      sampleTerrainSignals(x, y) {
-        if ((x === 1 && (y === 0 || y === 2)) || (y === 1 && (x === 0 || x === 2))) {
-          return createSignSignals(0.96);
-        }
-        return createSignSignals();
-      },
-    }));
+    const tile = classifier?.(
+      createSignClassifierPayload({
+        sampleTerrainSignals(x, y) {
+          if (
+            (x === 1 && (y === 0 || y === 2)) ||
+            (y === 1 && (x === 0 || x === 2))
+          ) {
+            return createSignSignals(0.96);
+          }
+          return createSignSignals();
+        },
+      })
+    );
 
     expect(tile?.kind).toBe('sign');
   });
 
   it('gives forks a fairly high chance of getting a sign beside the road', () => {
-    const tile = classifier?.(createSignClassifierPayload({
-      seed: 'fork-spec',
-      x: 10,
-      y: 10,
-      signChance: 0.986,
-      sampleTerrainSignals(x, y) {
-        if ((x === 10 && (y === 9 || y === 11)) || (y === 10 && x === 11)) {
-          return createSignSignals(0.96);
-        }
-        return createSignSignals();
-      },
-      townAnchors: [{ x: 18, y: 10, name: 'Forkwatch' }],
-      poiAnchors: [{ x: 18, y: 10, type: 'town', name: 'Forkwatch' }],
-    }));
+    const tile = classifier?.(
+      createSignClassifierPayload({
+        seed: 'fork-spec',
+        x: 10,
+        y: 10,
+        signChance: 0.986,
+        sampleTerrainSignals(x, y) {
+          if ((x === 10 && (y === 9 || y === 11)) || (y === 10 && x === 11)) {
+            return createSignSignals(0.96);
+          }
+          return createSignSignals();
+        },
+        townAnchors: [{ x: 18, y: 10, name: 'Forkwatch' }],
+        poiAnchors: [{ x: 18, y: 10, type: 'town', name: 'Forkwatch' }],
+      })
+    );
 
     expect(tile?.kind).toBe('sign');
   });
 
   it('detects forks when the sign sits beside the approach road', () => {
-    const tile = classifier?.(createSignClassifierPayload({
-      seed: 'fork-approach-spec',
-      x: 9,
-      y: 10,
-      signChance: 0.99,
-      sampleTerrainSignals(x, y) {
-        if (
-          (x === 10 && y === 10) ||
-          (x === 10 && (y === 9 || y === 11)) ||
-          (x === 11 && y === 10)
-        ) {
-          return createSignSignals(0.96);
-        }
-        return createSignSignals();
-      },
-      townAnchors: [{ x: 18, y: 10, name: 'Forkwatch' }],
-      poiAnchors: [{ x: 18, y: 10, type: 'town', name: 'Forkwatch' }],
-    }));
+    const tile = classifier?.(
+      createSignClassifierPayload({
+        seed: 'fork-approach-spec',
+        x: 9,
+        y: 10,
+        signChance: 0.99,
+        sampleTerrainSignals(x, y) {
+          if (
+            (x === 10 && y === 10) ||
+            (x === 10 && (y === 9 || y === 11)) ||
+            (x === 11 && y === 10)
+          ) {
+            return createSignSignals(0.96);
+          }
+          return createSignSignals();
+        },
+        townAnchors: [{ x: 18, y: 10, name: 'Forkwatch' }],
+        poiAnchors: [{ x: 18, y: 10, type: 'town', name: 'Forkwatch' }],
+      })
+    );
 
     expect(tile?.kind).toBe('sign');
   });
 
   it('keeps roadside signs sparse away from junctions', () => {
-    const tile = classifier?.(createSignClassifierPayload({
-      x: 4,
-      y: 4,
-      sampleTerrainSignals(x, y) {
-        if (y === 4 && (x === 3 || x === 5)) {
-          return createSignSignals(0.95);
-        }
-        return createSignSignals();
-      },
-      townAnchors: [{ x: 20, y: 20, name: 'Farwatch' }],
-    }));
+    const tile = classifier?.(
+      createSignClassifierPayload({
+        x: 4,
+        y: 4,
+        sampleTerrainSignals(x, y) {
+          if (y === 4 && (x === 3 || x === 5)) {
+            return createSignSignals(0.95);
+          }
+          return createSignSignals();
+        },
+        townAnchors: [{ x: 20, y: 20, name: 'Farwatch' }],
+      })
+    );
 
     expect(tile).toBeNull();
   });
 
   it('allows occasional signs along long roads that point toward nearby poi', () => {
-    const tile = classifier?.(createSignClassifierPayload({
-      seed: 'long-road-spec',
-      x: 30,
-      y: 30,
-      signChance: 0.998,
-      sampleTerrainSignals(x, y) {
-        if (y === 31 && x >= 24 && x <= 36) {
-          return createSignSignals(0.96);
-        }
-        return createSignSignals();
-      },
-      townAnchors: [{ x: 40, y: 31, name: 'Longford' }],
-      poiAnchors: [{ x: 40, y: 31, type: 'town', name: 'Longford' }],
-    }));
+    const tile = classifier?.(
+      createSignClassifierPayload({
+        seed: 'long-road-spec',
+        x: 30,
+        y: 30,
+        signChance: 0.998,
+        sampleTerrainSignals(x, y) {
+          if (y === 31 && x >= 24 && x <= 36) {
+            return createSignSignals(0.96);
+          }
+          return createSignSignals();
+        },
+        townAnchors: [{ x: 40, y: 31, name: 'Longford' }],
+        poiAnchors: [{ x: 40, y: 31, type: 'town', name: 'Longford' }],
+      })
+    );
 
     expect(tile).toEqual(
       expect.objectContaining({
@@ -347,7 +370,10 @@ describe('tile sign', () => {
       if (node instanceof FakeMesh && node.userData?.poiNightLightEmitter) {
         glowMesh = node;
       }
-      if (node instanceof FakePointLight && node.userData?.poiNightLightEmitter) {
+      if (
+        node instanceof FakePointLight &&
+        node.userData?.poiNightLightEmitter
+      ) {
         pointLight = node;
       }
     });
@@ -367,7 +393,9 @@ describe('tile sign', () => {
       environment: {},
     });
 
-    expect((glowMesh?.material as FakeMaterial)?.emissiveIntensity ?? 0).toBeCloseTo(0.04, 6);
+    expect(
+      (glowMesh?.material as FakeMaterial)?.emissiveIntensity ?? 0
+    ).toBeCloseTo(0.04, 6);
     expect(pointLight?.intensity ?? 0).toBeCloseTo(0, 6);
     expect(pointLight?.visible).toBe(false);
 
@@ -383,7 +411,9 @@ describe('tile sign', () => {
       environment: {},
     });
 
-    expect((glowMesh?.material as FakeMaterial)?.emissiveIntensity ?? 0).toBeGreaterThan(1);
+    expect(
+      (glowMesh?.material as FakeMaterial)?.emissiveIntensity ?? 0
+    ).toBeGreaterThan(1);
     expect(pointLight?.intensity ?? 0).toBeCloseTo(0.75, 6);
     expect(pointLight?.visible).toBe(true);
   });
@@ -399,7 +429,8 @@ describe('tile sign', () => {
       tileY: 8,
     });
 
-    const firstTexture = getOrCreatePaintedCanvasTextureMock.mock.results[0]?.value;
+    const firstTexture =
+      getOrCreatePaintedCanvasTextureMock.mock.results[0]?.value;
 
     for (let index = 0; index < 192; index += 1) {
       signTile?.create3DModel?.({
@@ -454,7 +485,9 @@ describe('tile sign', () => {
       tileY: 8,
     }) as FakeGroup | undefined;
 
-    expect(createModelSignature(resolved)).toEqual(createModelSignature(baseline));
+    expect(createModelSignature(resolved)).toEqual(
+      createModelSignature(baseline)
+    );
   });
 
   it('reuses shared regional sign materials across repeated model builds', () => {
@@ -473,7 +506,9 @@ describe('tile sign', () => {
       tileY: 9,
     }) as FakeGroup | undefined;
 
-    expect(countSharedMaterialReferences(first, second)).toBeGreaterThanOrEqual(4);
+    expect(countSharedMaterialReferences(first, second)).toBeGreaterThanOrEqual(
+      4
+    );
   });
 
   it('builds a simpler low-detail sign silhouette without lantern or label sprites', () => {
@@ -501,7 +536,9 @@ describe('tile sign', () => {
       }
     });
 
-    expect((low?.children.length ?? 0)).toBeLessThan(full?.children.length ?? Infinity);
+    expect(low?.children.length ?? 0).toBeLessThan(
+      full?.children.length ?? Infinity
+    );
     expect(lowPointLightCount).toBe(0);
   });
 });

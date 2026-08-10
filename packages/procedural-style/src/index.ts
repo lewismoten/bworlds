@@ -28,11 +28,7 @@ export function getOrCreateRegionalValue<T>(
   tileX: number,
   tileY: number,
   regionSize: number,
-  createValue: (context: {
-    regionX: number;
-    regionY: number;
-    key: string;
-  }) => T
+  createValue: (context: { regionX: number; regionY: number; key: string }) => T
 ): T {
   const context = createRegionKey(tileX, tileY, regionSize);
   return cache instanceof Map
@@ -71,11 +67,7 @@ export function createRegionalValueResolver<T>(
 
 export function createCoordinateValueResolver<T>(
   cache: CacheLike<string, T>,
-  createValue: (context: {
-    key: string;
-    tileX: number;
-    tileY: number;
-  }) => T
+  createValue: (context: { key: string; tileX: number; tileY: number }) => T
 ) {
   return function resolveCoordinateValue(tileX: number, tileY: number): T {
     const key = `${tileX}:${tileY}`;
@@ -101,17 +93,19 @@ export function createRegionalMaterialResolver<
   TMaterial,
   THost extends object = ThreeHostLike,
 >(
-  cache: Map<
-    string,
-    {
-      createMaterials(three: THost): TMaterial;
-    }
-  > | CacheLike<
-    string,
-    {
-      createMaterials(three: THost): TMaterial;
-    }
-  >,
+  cache:
+    | Map<
+        string,
+        {
+          createMaterials(three: THost): TMaterial;
+        }
+      >
+    | CacheLike<
+        string,
+        {
+          createMaterials(three: THost): TMaterial;
+        }
+      >,
   regionSize: number,
   createValue: (context: {
     regionX: number;
@@ -141,7 +135,9 @@ export function createRegionalMaterialResolver<
 export function createHostMaterialResolver<
   TMaterial,
   THost extends object = ThreeHostLike,
->(createMaterials: (three: THost) => TMaterial): {
+>(
+  createMaterials: (three: THost) => TMaterial
+): {
   createMaterials(three: THost): TMaterial;
 } {
   const materialCache = new WeakMap<object, TMaterial>();
@@ -164,7 +160,9 @@ export function createHostVariantMaterialResolver<
   TVariant,
   TMaterial,
   THost extends object = ThreeHostLike,
->(createMaterial: (three: THost, variant: TVariant) => TMaterial): {
+>(
+  createMaterial: (three: THost, variant: TVariant) => TMaterial
+): {
   getMaterial(three: THost, variant: TVariant): TMaterial;
 } {
   const hostVariantCache = new WeakMap<object, Map<TVariant, TMaterial>>();
@@ -193,7 +191,9 @@ export function createHostVariantValueResolver<
   TVariant,
   TValue,
   THost extends object = ThreeHostLike,
->(createValue: (three: THost, variant: TVariant) => TValue): {
+>(
+  createValue: (three: THost, variant: TVariant) => TValue
+): {
   getValue(three: THost, variant: TVariant): TValue;
 } {
   const hostVariantCache = new WeakMap<object, Map<TVariant, TValue>>();

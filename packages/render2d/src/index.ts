@@ -96,7 +96,15 @@ export function render2D(
       });
 
       if (tile.kind === 'river') {
-        drawRiverOverlay(context, tileAt, worldX, worldY, drawX, drawY, tileSize);
+        drawRiverOverlay(
+          context,
+          tileAt,
+          worldX,
+          worldY,
+          drawX,
+          drawY,
+          tileSize
+        );
       }
 
       drawReliefOverlay(context, tile, drawX, drawY, tileSize);
@@ -117,7 +125,10 @@ export function render2D(
     viewport.facingAngle
   );
 
-  if (viewport.showTimeOverlay !== false && typeof viewport.timeMs === 'number') {
+  if (
+    viewport.showTimeOverlay !== false &&
+    typeof viewport.timeMs === 'number'
+  ) {
     drawTimeOfDayOverlay(
       context,
       viewport,
@@ -141,7 +152,9 @@ export function createViewportTileSampler(state: Render2DState): TileSampler {
   const tileCache = new Map<string, TileLike>();
   return (worldX: number, worldY: number) => {
     const key = `${worldX}:${worldY}`;
-    return getOrCreateMapValue(tileCache, key, () => state.getCurrentTile(worldX, worldY));
+    return getOrCreateMapValue(tileCache, key, () =>
+      state.getCurrentTile(worldX, worldY)
+    );
   };
 }
 
@@ -186,7 +199,8 @@ export function buildTextViewportGrid(
 }
 
 export function getTextViewportGlyph(kind: string, tileName?: string): string {
-  const fallbackGlyph = tileName?.trim().charAt(0) || kind.trim().charAt(0) || '?';
+  const fallbackGlyph =
+    tileName?.trim().charAt(0) || kind.trim().charAt(0) || '?';
   const glyph = ASCII_TILE_GLYPHS[kind] ?? fallbackGlyph;
   return glyph.toUpperCase();
 }
@@ -201,7 +215,8 @@ export function getTileReliefStrength(tile: ReliefTile): number {
   ) {
     return 0;
   }
-  const height = typeof tile.surfaceHeight === 'number' ? tile.surfaceHeight : 0;
+  const height =
+    typeof tile.surfaceHeight === 'number' ? tile.surfaceHeight : 0;
   return Math.max(0, Math.min(1, height / 0.36));
 }
 
@@ -215,7 +230,10 @@ function resolveTileDefinition(
   return state.getTileDefinition(kind) ?? null;
 }
 
-function resolveTileName(state: Render2DState, kind: string): string | undefined {
+function resolveTileName(
+  state: Render2DState,
+  kind: string
+): string | undefined {
   return resolveTileDefinition(state, kind)?.name;
 }
 
@@ -320,7 +338,12 @@ function drawBoatOverlay(
     hullHeight * 0.8
   );
   context.fillStyle = '#e2e8f0';
-  context.fillRect(hullX - wheelSize * 0.25, hullY + hullHeight * 0.15, wheelSize, wheelSize);
+  context.fillRect(
+    hullX - wheelSize * 0.25,
+    hullY + hullHeight * 0.15,
+    wheelSize,
+    wheelSize
+  );
   context.fillRect(
     hullX + hullWidth - wheelSize * 0.75,
     hullY + hullHeight * 0.15,
@@ -393,9 +416,7 @@ export function getRiverOverlayConnections(
 
   return directions
     .filter(({ dx, dy }) =>
-      RIVER_OVERLAY_NETWORK_KINDS.has(
-        tileAt(worldX + dx, worldY + dy).kind
-      )
+      RIVER_OVERLAY_NETWORK_KINDS.has(tileAt(worldX + dx, worldY + dy).kind)
     )
     .sort((left, right) => left.angle - right.angle);
 }

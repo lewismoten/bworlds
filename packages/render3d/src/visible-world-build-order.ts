@@ -40,8 +40,16 @@ export function fillVisibleWorldTileBuildOrder(
   const forwardX = Math.cos(facingAngle);
   const forwardY = Math.sin(facingAngle);
 
-  for (let y = playerTileY - chunkRadius; y <= playerTileY + chunkRadius; y += 1) {
-    for (let x = playerTileX - chunkRadius; x <= playerTileX + chunkRadius; x += 1) {
+  for (
+    let y = playerTileY - chunkRadius;
+    y <= playerTileY + chunkRadius;
+    y += 1
+  ) {
+    for (
+      let x = playerTileX - chunkRadius;
+      x <= playerTileX + chunkRadius;
+      x += 1
+    ) {
       if (!shouldRenderWorldTile(x, y)) {
         continue;
       }
@@ -54,7 +62,9 @@ export function fillVisibleWorldTileBuildOrder(
         y,
         distance,
         facingDot:
-          distance === 0 ? 1 : forwardX * (deltaX / distance) + forwardY * (deltaY / distance),
+          distance === 0
+            ? 1
+            : forwardX * (deltaX / distance) + forwardY * (deltaY / distance),
       });
     }
   }

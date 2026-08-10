@@ -119,7 +119,10 @@ describe('plugin registry', () => {
   });
 
   it('provides shared priority presets for structural and decorative budget parts', () => {
-    const structural = markStructuralRenderBudgetPart({ userData: {} }, { label: 'tower' });
+    const structural = markStructuralRenderBudgetPart(
+      { userData: {} },
+      { label: 'tower' }
+    );
     const decorative = markOptionalDecorativeRenderBudgetPart(
       { userData: {} },
       { label: 'banner' }
@@ -335,7 +338,9 @@ describe('plugin registry', () => {
       },
     ]);
 
-    expect(listTileDefinitionsFromPlugins([basePlugin, overlayPlugin])).toContainEqual([
+    expect(
+      listTileDefinitionsFromPlugins([basePlugin, overlayPlugin])
+    ).toContainEqual([
       'ashlands',
       expect.objectContaining({ name: 'Ashlands' }),
     ]);
@@ -515,10 +520,7 @@ describe('plugin registry', () => {
           kind: 'forest',
           canOccupy3D({ tileX, tileY, nextX, nextY }) {
             return (
-              tileX === 4 &&
-              tileY === 5 &&
-              nextX === 4.25 &&
-              nextY === 5.5
+              tileX === 4 && tileY === 5 && nextX === 4.25 && nextY === 5.5
             );
           },
           getSurfaceProfile3D({ tileX, tileY }) {
@@ -533,10 +535,7 @@ describe('plugin registry', () => {
           },
           paint2DOverlay({ worldX, worldY, variant, timeMs }) {
             return (
-              worldX === 4 &&
-              worldY === 5 &&
-              variant === 2 &&
-              timeMs === 1234
+              worldX === 4 && worldY === 5 && variant === 2 && timeMs === 1234
             );
           },
           resolveFloorKind3D({ tileX, tileY }) {
@@ -872,8 +871,9 @@ describe('plugin registry', () => {
     expect(
       dedupePluginPackIds(['catalog-pack', 'catalog-pack', 'other-pack'])
     ).toEqual(['catalog-pack', 'other-pack']);
-    expect(selectPluginPackManifests(['catalog-pack', 'catalog-pack'], [pack]))
-      .toEqual([pack.manifest]);
+    expect(
+      selectPluginPackManifests(['catalog-pack', 'catalog-pack'], [pack])
+    ).toEqual([pack.manifest]);
   });
 
   it('creates reusable pack catalogs with default selections', () => {

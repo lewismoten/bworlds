@@ -98,6 +98,8 @@ describe('frame loop runner', () => {
     expect(updateMovement).not.toHaveBeenCalled();
     expect(render).toHaveBeenCalledTimes(1);
     expect(renderBudgetState.targetFps).toBe(60);
-    expect(renderBudgetState.visibilityRadius).toBe(DEFAULT_RENDER_BUDGET_STATE.visibilityRadius);
+    expect(renderBudgetState.visibilityRadius).toBe(
+      DEFAULT_RENDER_BUDGET_STATE.visibilityRadius
+    );
   });
 });

@@ -1,5 +1,8 @@
 import { cardinalFromAngle } from '@bworlds/core';
-import { createContextMapPlugin, createExitMapAction } from '@bworlds/map-support';
+import {
+  createContextMapPlugin,
+  createExitMapAction,
+} from '@bworlds/map-support';
 import type {
   Kind,
   RuntimePlugin,
@@ -12,10 +15,19 @@ const AIRSHIP_LAUNCH_SEARCH_RADIUS = 1;
 const AIRSHIP_MIN_FLIGHT_DISTANCE = 18;
 const AIRSHIP_MAX_FLIGHT_DISTANCE = 42;
 const AIRSHIP_LAUNCH_SUPPORT_KINDS = new Set(['ship']);
-const AIRSHIP_BLOCKED_TILE_KINDS = new Set(['ocean', 'river', 'mountain', 'wall']);
+const AIRSHIP_BLOCKED_TILE_KINDS = new Set([
+  'ocean',
+  'river',
+  'mountain',
+  'wall',
+]);
 
 type Point = { x: number; y: number };
-type TileSampler = (x: number, y: number, state?: WorldStateLike) => { kind: Kind };
+type TileSampler = (
+  x: number,
+  y: number,
+  state?: WorldStateLike
+) => { kind: Kind };
 
 export type AirshipContext = WorldContextLike & {
   origin: Point;
@@ -55,7 +67,10 @@ export function createAirshipMap(context: AirshipContext): WorldMapLike {
         note: 'Deck planks tremble while the propellers pull the ship through the clouds.',
       };
     }
-    return { kind: 'wall', note: 'Open air yawns past the rail and turning propellers.' };
+    return {
+      kind: 'wall',
+      note: 'Open air yawns past the rail and turning propellers.',
+    };
   }
 
   function getAction() {
@@ -102,7 +117,11 @@ export function isAirshipLaunchableLandTile({
       if (offsetX === 0 && offsetY === 0) {
         continue;
       }
-      if (AIRSHIP_LAUNCH_SUPPORT_KINDS.has(sampleTile(x + offsetX, y + offsetY, state).kind)) {
+      if (
+        AIRSHIP_LAUNCH_SUPPORT_KINDS.has(
+          sampleTile(x + offsetX, y + offsetY, state).kind
+        )
+      ) {
         return true;
       }
     }
@@ -138,7 +157,10 @@ export function findAirshipLandingPoint({
         const sampleX = x + direction.x * distance + lateral.x * offset * sign;
         const sampleY = y + direction.y * distance + lateral.y * offset * sign;
         const tile = sampleTile(sampleX, sampleY, state);
-        if (!isWalkable(tile.kind) || AIRSHIP_BLOCKED_TILE_KINDS.has(tile.kind)) {
+        if (
+          !isWalkable(tile.kind) ||
+          AIRSHIP_BLOCKED_TILE_KINDS.has(tile.kind)
+        ) {
           continue;
         }
         return { x: sampleX, y: sampleY };
@@ -148,7 +170,9 @@ export function findAirshipLandingPoint({
   return null;
 }
 
-function getDirectionVector(cardinal: ReturnType<typeof cardinalFromAngle>): Point {
+function getDirectionVector(
+  cardinal: ReturnType<typeof cardinalFromAngle>
+): Point {
   if (cardinal === 'N') {
     return { x: 0, y: -1 };
   }

@@ -13,15 +13,18 @@ export function createDockTrafficRuntimePlugin({
 }: {
   cacheMaxEntries?: number;
 } = {}): RuntimePlugin {
-  const cache = createBoundedCache<string, ReturnType<typeof getDockBoatPlacements>>(
-    cacheMaxEntries
-  );
+  const cache = createBoundedCache<
+    string,
+    ReturnType<typeof getDockBoatPlacements>
+  >(cacheMaxEntries);
   let resolvingPlacements = false;
 
   return createRuntimePlugin('runtime-dock-traffic', {
     decorateOverworldTile({ seed, x, y, tile, state }) {
       if (
-        (tile.kind !== 'ocean' && tile.kind !== 'bridge' && tile.kind !== 'dock') ||
+        (tile.kind !== 'ocean' &&
+          tile.kind !== 'bridge' &&
+          tile.kind !== 'dock') ||
         typeof state?.timeMs !== 'number'
       ) {
         return tile;
@@ -51,7 +54,9 @@ export function createDockTrafficRuntimePlugin({
         }
       });
 
-      const boat = placements.find((placement) => placement.x === x && placement.y === y);
+      const boat = placements.find(
+        (placement) => placement.x === x && placement.y === y
+      );
       if (!boat) {
         return tile;
       }

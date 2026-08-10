@@ -1,4 +1,3 @@
-
 export interface AuroraBandLike {
   id: string;
   azimuthCenter: number;

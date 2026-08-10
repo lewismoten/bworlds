@@ -16,6 +16,7 @@ add a outer globe of stars in the sky that appear at night with procedurally gen
 - [x] Commets, meteor showers, and planets should have their own cycles, appearing in the sky of stars sometimes
 
 # Issues
+
 - [x] Should not see constellations/stars overlaying 2D map
 - [x] Unable to see stars/constellations in 3d mode
 - [x] Constellation names need to feel more celestial
@@ -118,7 +119,7 @@ add a outer globe of stars in the sky that appear at night with procedurally gen
 - [x] When I click the bezel of the compass to set a heading, the arrow appears there, but a different bezel is highlighted about 90 degrees off.
 - [x] Clicking the bezel should show the degrees that it is at.
 - [x] Clicking the same bezel should toggle the arrow off.
-- [x] In the celestial model, the planet is still very dark. it may need some emissive light or omnidirectional light applied. 
+- [x] In the celestial model, the planet is still very dark. it may need some emissive light or omnidirectional light applied.
 - [x] In the celestial model, the sun is not emitting light onto the planet and casing shadows on the moon
 - [x] The arrows shouldn't rotate the celestial model. instead, it should rotate the players orientation in the model.
 - [x] There appears to be two suns in the celestial model. There is a bunch of "junk" below the planet, appearing to be a black hold swallowing a few planets.

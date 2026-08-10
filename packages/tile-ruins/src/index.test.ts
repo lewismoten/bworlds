@@ -1,7 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
 
 vi.mock('@bworlds/three-support', () => ({
-  createPaintedStandardMaterial(_three: unknown, options: Record<string, unknown>) {
+  createPaintedStandardMaterial(
+    _three: unknown,
+    options: Record<string, unknown>
+  ) {
     return { options };
   },
   getSharedSphereGeometry(_three: unknown, ...args: number[]) {
@@ -103,7 +106,9 @@ function createRuinsState() {
   };
 }
 
-function normalizeMaterialOptions(options: Record<string, unknown> | undefined) {
+function normalizeMaterialOptions(
+  options: Record<string, unknown> | undefined
+) {
   if (!options) {
     return undefined;
   }
@@ -196,7 +201,10 @@ describe('tile ruins', () => {
       if (node instanceof FakeMesh && node.userData?.poiNightLightEmitter) {
         glowMesh = node;
       }
-      if (node instanceof FakePointLight && node.userData?.poiNightLightEmitter) {
+      if (
+        node instanceof FakePointLight &&
+        node.userData?.poiNightLightEmitter
+      ) {
         pointLight = node;
       }
     });
@@ -216,7 +224,9 @@ describe('tile ruins', () => {
       environment: {},
     });
 
-    expect((glowMesh?.material as FakeMaterial)?.emissiveIntensity ?? 0).toBeCloseTo(0.01, 6);
+    expect(
+      (glowMesh?.material as FakeMaterial)?.emissiveIntensity ?? 0
+    ).toBeCloseTo(0.01, 6);
     expect(pointLight?.intensity ?? 0).toBeCloseTo(0, 6);
     expect(pointLight?.visible).toBe(false);
 
@@ -232,7 +242,9 @@ describe('tile ruins', () => {
       environment: {},
     });
 
-    expect((glowMesh?.material as FakeMaterial)?.emissiveIntensity ?? 0).toBeGreaterThan(0.5);
+    expect(
+      (glowMesh?.material as FakeMaterial)?.emissiveIntensity ?? 0
+    ).toBeGreaterThan(0.5);
     expect(pointLight?.intensity ?? 0).toBeCloseTo(0.38, 6);
     expect(pointLight?.visible).toBe(true);
   });
@@ -250,7 +262,11 @@ describe('tile ruins', () => {
       tileY: 4,
     }) as FakeGroup;
 
-    for (let index = 0; index < RUINS_STYLE_CACHE_MAX_ENTRIES + 64; index += 1) {
+    for (
+      let index = 0;
+      index < RUINS_STYLE_CACHE_MAX_ENTRIES + 64;
+      index += 1
+    ) {
       tile?.create3DModel?.({
         three: fakeThree as never,
         state,
@@ -268,7 +284,9 @@ describe('tile ruins', () => {
       tileY: 4,
     }) as FakeGroup;
 
-    expect(createModelSignature(resolved)).toEqual(createModelSignature(baseline));
+    expect(createModelSignature(resolved)).toEqual(
+      createModelSignature(baseline)
+    );
   });
 
   it('reuses the cached glow material for ruins in the same region', () => {

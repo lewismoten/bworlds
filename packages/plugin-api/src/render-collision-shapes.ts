@@ -9,10 +9,9 @@ export interface RenderCollisionShapeMetadata {
 
 type RenderCollisionShapeTarget = Pick<ThreeObject3DLike, 'userData'>;
 
-export function markRenderCollisionShape<TTarget extends RenderCollisionShapeTarget>(
-  target: TTarget,
-  metadata: RenderCollisionShapeMetadata = {}
-): TTarget {
+export function markRenderCollisionShape<
+  TTarget extends RenderCollisionShapeTarget,
+>(target: TTarget, metadata: RenderCollisionShapeMetadata = {}): TTarget {
   const normalizedCount =
     typeof metadata.count === 'number' && Number.isFinite(metadata.count)
       ? Math.max(1, Math.floor(metadata.count))

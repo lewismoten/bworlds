@@ -86,7 +86,9 @@ export function createWeatherRuntimePlugin(): RuntimePlugin {
         },
         stars: {
           density: clamp(
-            1.08 - weather.current.cloudCover * 0.75 - weather.current.precipitation * 0.22,
+            1.08 -
+              weather.current.cloudCover * 0.75 -
+              weather.current.precipitation * 0.22,
             0.12,
             1.1
           ),
@@ -128,17 +130,20 @@ export function resolveWeatherProfile(options: {
   const forecast: WorldEnvironmentWeatherForecastDayLike[] = [];
   for (let index = 0; index < FORECAST_DAYS; index += 1) {
     const dayTimeMs =
-      (cycle.dayNumber + index) * cycleConfig.dayLengthMs + cycleConfig.dayLengthMs * 0.5;
+      (cycle.dayNumber + index) * cycleConfig.dayLengthMs +
+      cycleConfig.dayLengthMs * 0.5;
     const dayCycle = getDaylightCycleState(dayTimeMs, cycleConfig);
-    forecast.push(resolveForecastDay({
-      regionX,
-      regionY,
-      dayNumber: cycle.dayNumber + index,
-      yearProgress: dayCycle.yearProgress,
-      latitudeDegrees: dayCycle.observerLatitudeDegrees,
-      label:
-        index === 0 ? 'Today' : index === 1 ? 'Tomorrow' : `Day ${index + 1}`,
-    }));
+    forecast.push(
+      resolveForecastDay({
+        regionX,
+        regionY,
+        dayNumber: cycle.dayNumber + index,
+        yearProgress: dayCycle.yearProgress,
+        latitudeDegrees: dayCycle.observerLatitudeDegrees,
+        label:
+          index === 0 ? 'Today' : index === 1 ? 'Tomorrow' : `Day ${index + 1}`,
+      })
+    );
   }
 
   return {
@@ -225,7 +230,8 @@ export function resolveWeatherCondition(
   const windStrength = clamp(
     0.18 +
       front.speed * 0.62 +
-      hash2D(WEATHER_WIND_EXPOSURE_SEED, options.regionX, options.regionY) * 0.22,
+      hash2D(WEATHER_WIND_EXPOSURE_SEED, options.regionX, options.regionY) *
+        0.22,
     0,
     1
   );
@@ -252,7 +258,12 @@ export function resolveWeatherCondition(
     cloudCover,
     front,
   });
-  const visibility = resolveVisibility(kind, cloudCover, precipitation, fogBias);
+  const visibility = resolveVisibility(
+    kind,
+    cloudCover,
+    precipitation,
+    fogBias
+  );
 
   return {
     kind,
@@ -293,9 +304,11 @@ export function resolveWeatherFront(
     const laneScale = 7 + seed * 6;
     const laneAngle = seed * Math.PI * 0.9 + index * 0.42;
     const lanePosition =
-      options.regionX * Math.cos(laneAngle) + options.regionY * Math.sin(laneAngle);
+      options.regionX * Math.cos(laneAngle) +
+      options.regionY * Math.sin(laneAngle);
     const frontTravel =
-      options.dayNumber * (0.22 + seed * 0.18) + options.dayProgress * (0.9 + seed * 0.5);
+      options.dayNumber * (0.22 + seed * 0.18) +
+      options.dayProgress * (0.9 + seed * 0.5);
     const wave = fract(lanePosition / laneScale - frontTravel * 0.18 + seed);
     const distance = Math.abs(wave - 0.5) * 2;
     const intensity = 1 - smoothstep(0.06, 0.58, distance);
@@ -311,16 +324,26 @@ export function resolveWeatherFront(
     const kind =
       kindSignal < 0.34 ? 'warm' : kindSignal < 0.68 ? 'cold' : 'occluded';
     const humidityShift =
-      kind === 'warm' ? 0.26 + seed * 0.24 : kind === 'cold' ? 0.12 + seed * 0.14 : 0.34;
+      kind === 'warm'
+        ? 0.26 + seed * 0.24
+        : kind === 'cold'
+          ? 0.12 + seed * 0.14
+          : 0.34;
     const temperatureShift =
-      kind === 'warm' ? 0.2 + seed * 0.12 : kind === 'cold' ? -0.26 - seed * 0.14 : -0.04;
+      kind === 'warm'
+        ? 0.2 + seed * 0.12
+        : kind === 'cold'
+          ? -0.26 - seed * 0.14
+          : -0.04;
     strongest = {
       id: `front-${options.regionX}-${options.regionY}-${options.dayNumber}-${index}`,
       kind,
       intensity,
       humidityShift,
       temperatureShift,
-      windDirectionDegrees: Math.round(((laneAngle / (Math.PI * 2)) * 360 + 360) % 360),
+      windDirectionDegrees: Math.round(
+        ((laneAngle / (Math.PI * 2)) * 360 + 360) % 360
+      ),
       speed: clamp(0.28 + intensity * 0.46 + seed * 0.18, 0, 1),
     };
   }
@@ -423,8 +446,14 @@ function resolveFreezeFactor(
     Math.cos((options.yearProgress - 0.25) * Math.PI * 2) *
     (options.latitudeDegrees >= 0 ? 1 : -1);
   const baseCold = (1 - equatorWarmth) * 0.62;
-  const seasonCold = clamp(-hemisphereSeason, 0, 1) * (0.1 + Math.abs(options.latitudeDegrees) / 90 * 0.42);
-  return clamp(baseCold + seasonCold + Math.max(0, -front.temperatureShift) * 0.9, 0, 1);
+  const seasonCold =
+    clamp(-hemisphereSeason, 0, 1) *
+    (0.1 + (Math.abs(options.latitudeDegrees) / 90) * 0.42);
+  return clamp(
+    baseCold + seasonCold + Math.max(0, -front.temperatureShift) * 0.9,
+    0,
+    1
+  );
 }
 
 function resolveTemperatureF(
@@ -435,7 +464,8 @@ function resolveTemperatureF(
   const hemisphereSeason =
     Math.cos((options.yearProgress - 0.25) * Math.PI * 2) *
     (options.latitudeDegrees >= 0 ? 1 : -1);
-  const dailyWarmth = Math.sin((options.dayProgress - 0.25) * Math.PI * 2) * 0.5 + 0.5;
+  const dailyWarmth =
+    Math.sin((options.dayProgress - 0.25) * Math.PI * 2) * 0.5 + 0.5;
   const baseF = lerp(22, 82, equatorWarmth);
   const seasonF = hemisphereSeason * lerp(6, 20, 1 - equatorWarmth);
   const daylightF = lerp(-8, 7, dailyWarmth);
@@ -450,11 +480,7 @@ function resolveFogBias(
   cloudCover: number
 ) {
   const dawnFactor =
-    1 -
-    Math.min(
-      1,
-      Math.abs(options.dayProgress - 0.22) / 0.14
-    );
+    1 - Math.min(1, Math.abs(options.dayProgress - 0.22) / 0.14);
   return clamp(
     humidity * 0.62 +
       dawnFactor * 0.34 +
@@ -483,7 +509,9 @@ function resolveVisibility(
   return clamp(0.72 + (1 - cloudCover) * 0.22, 0.62, 0.94);
 }
 
-function resolveWeatherSkyPalette(condition: WorldEnvironmentWeatherConditionLike) {
+function resolveWeatherSkyPalette(
+  condition: WorldEnvironmentWeatherConditionLike
+) {
   const haze = condition.cloudCover * 0.48 + (1 - condition.visibility) * 0.42;
   const gray = Math.round(118 + haze * 56)
     .toString(16)
@@ -502,14 +530,23 @@ function resolveWeatherSkyPalette(condition: WorldEnvironmentWeatherConditionLik
           ? '#b58f7d'
           : '#e59b72',
     fogDayColor:
-      condition.kind === 'snow' || condition.kind === 'hail' ? '#d9e4ef' : '#a8bfce',
+      condition.kind === 'snow' || condition.kind === 'hail'
+        ? '#d9e4ef'
+        : '#a8bfce',
     fogNightColor:
-      condition.kind === 'fog' ? '#0d1b28' : condition.kind === 'heavy-rain' ? '#0b1724' : '#0a1524',
+      condition.kind === 'fog'
+        ? '#0d1b28'
+        : condition.kind === 'heavy-rain'
+          ? '#0b1724'
+          : '#0a1524',
   };
 }
 
-function resolveWeatherLighting(condition: WorldEnvironmentWeatherConditionLike) {
-  const cloudDimming = condition.cloudCover * 0.4 + condition.precipitation * 0.22;
+function resolveWeatherLighting(
+  condition: WorldEnvironmentWeatherConditionLike
+) {
+  const cloudDimming =
+    condition.cloudCover * 0.4 + condition.precipitation * 0.22;
   return {
     ambientDayColor: condition.kind === 'snow' ? '#f4fbff' : '#dce8f2',
     groundDayColor:

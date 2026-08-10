@@ -45,20 +45,15 @@ export function composeTilePainter(
   };
 }
 
-export function createPlainsBackedTilePainter(
-  paint?: TilePainter2D
-) {
-  return composeTilePainter(
-    (context) => {
-      paintPlainsBackdrop({
-        context: context.context,
-        x: context.x,
-        y: context.y,
-        motif: context.motif,
-        fillRect: context.fillRect,
-      });
-      return true;
-    },
-    paint
-  );
+export function createPlainsBackedTilePainter(paint?: TilePainter2D) {
+  return composeTilePainter((context) => {
+    paintPlainsBackdrop({
+      context: context.context,
+      x: context.x,
+      y: context.y,
+      motif: context.motif,
+      fillRect: context.fillRect,
+    });
+    return true;
+  }, paint);
 }

@@ -1,4 +1,3 @@
-
 export function createPlayer(
   overrides: {
     x?: number;

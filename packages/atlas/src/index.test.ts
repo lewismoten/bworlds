@@ -58,7 +58,9 @@ const fakeCanvas = {
   },
 };
 
-(globalThis as { document?: { createElement(tag: string): unknown } }).document = {
+(
+  globalThis as { document?: { createElement(tag: string): unknown } }
+).document = {
   createElement(tag: string) {
     if (tag !== 'canvas') {
       throw new Error(`Unexpected element request: ${tag}`);

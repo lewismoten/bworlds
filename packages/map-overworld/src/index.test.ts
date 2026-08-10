@@ -66,7 +66,9 @@ describe('map overworld glider travel', () => {
       } as never,
     });
     if (!map) {
-      throw new Error('Expected overworld map plugin to create an overworld map.');
+      throw new Error(
+        'Expected overworld map plugin to create an overworld map.'
+      );
     }
 
     const action = map.getAction?.(0, 0, {
@@ -151,7 +153,9 @@ describe('map overworld balloon travel', () => {
       } as never,
     });
     if (!map) {
-      throw new Error('Expected overworld map plugin to create an overworld map.');
+      throw new Error(
+        'Expected overworld map plugin to create an overworld map.'
+      );
     }
 
     const action = map.getAction?.(0, 0, {
@@ -236,7 +240,9 @@ describe('map overworld blimp travel', () => {
       } as never,
     });
     if (!map) {
-      throw new Error('Expected overworld map plugin to create an overworld map.');
+      throw new Error(
+        'Expected overworld map plugin to create an overworld map.'
+      );
     }
 
     const action = map.getAction?.(0, 0, {
@@ -321,7 +327,9 @@ describe('map overworld plane travel', () => {
       } as never,
     });
     if (!map) {
-      throw new Error('Expected overworld map plugin to create an overworld map.');
+      throw new Error(
+        'Expected overworld map plugin to create an overworld map.'
+      );
     }
 
     const action = map.getAction?.(0, 0, {
@@ -406,7 +414,9 @@ describe('map overworld airship travel', () => {
       } as never,
     });
     if (!map) {
-      throw new Error('Expected overworld map plugin to create an overworld map.');
+      throw new Error(
+        'Expected overworld map plugin to create an overworld map.'
+      );
     }
 
     const action = map.getAction?.(0, 0, {
@@ -497,7 +507,9 @@ describe('map overworld caching', () => {
       } as never,
     });
     if (!map) {
-      throw new Error('Expected overworld map plugin to create an overworld map.');
+      throw new Error(
+        'Expected overworld map plugin to create an overworld map.'
+      );
     }
 
     const baseline = map.getTile(13, 17);

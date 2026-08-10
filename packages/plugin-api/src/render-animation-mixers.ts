@@ -9,10 +9,9 @@ export interface RenderAnimationMixerMetadata {
 
 type RenderAnimationMixerTarget = Pick<ThreeObject3DLike, 'userData'>;
 
-export function markRenderAnimationMixer<TTarget extends RenderAnimationMixerTarget>(
-  target: TTarget,
-  metadata: RenderAnimationMixerMetadata = {}
-): TTarget {
+export function markRenderAnimationMixer<
+  TTarget extends RenderAnimationMixerTarget,
+>(target: TTarget, metadata: RenderAnimationMixerMetadata = {}): TTarget {
   const normalizedCount =
     typeof metadata.count === 'number' && Number.isFinite(metadata.count)
       ? Math.max(1, Math.floor(metadata.count))

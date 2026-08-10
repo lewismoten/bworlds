@@ -82,10 +82,7 @@ function findNearbyLanding(
   for (let radius = 1; radius <= nearbySearchRadius; radius += 1) {
     for (let offsetY = -radius; offsetY <= radius; offsetY += 1) {
       for (let offsetX = -radius; offsetX <= radius; offsetX += 1) {
-        if (
-          Math.abs(offsetX) !== radius &&
-          Math.abs(offsetY) !== radius
-        ) {
+        if (Math.abs(offsetX) !== radius && Math.abs(offsetY) !== radius) {
           continue;
         }
         const x = centerX + offsetX;

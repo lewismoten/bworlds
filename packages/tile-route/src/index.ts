@@ -1,4 +1,7 @@
-import { createBoundedCache, createCoordinateCache } from '@bworlds/cache-support';
+import {
+  createBoundedCache,
+  createCoordinateCache,
+} from '@bworlds/cache-support';
 import { resolveDockBoatRoute } from '@bworlds/dock-route-support';
 import {
   appendHashSeedLabel,
@@ -69,7 +72,9 @@ const ROUTE_CLUSTER_CACHE_LIMIT = 768;
 const ROUTE_LABEL_CACHE_LIMIT = 256;
 const ROAD_TIER_SEED = registerHashLabel('road-tier');
 const ROAD_FOOTPATH_SHOULDER_SEED = registerHashLabel('road-footpath-shoulder');
-const FOREST_RIVER_LOG_BRIDGE_SEED = registerHashLabel('forest-river-log-bridge');
+const FOREST_RIVER_LOG_BRIDGE_SEED = registerHashLabel(
+  'forest-river-log-bridge'
+);
 const ROAD_CURVE_JITTER_SEED = registerHashLabel('road-curve-jitter');
 const ROAD_BRANCH_BEND_SEED = registerHashLabel('road-branch-bend');
 const ROAD_COBBLE_X_SEED = registerHashLabel('road-cobble-x');
@@ -111,7 +116,8 @@ const ROAD_CONNECTION_DIRECTION_SEEDS: Record<RoadConnection['id'], number> = {
   northwest: registerHashLabel('northwest'),
 };
 type RoadStyleType = 'footpath' | 'cobble' | 'brick';
-type BridgeTextureType = 'wood' | 'stone' | 'metal' | 'drawbridge' | 'roof' | 'roof-stone';
+type BridgeTextureType =
+  'wood' | 'stone' | 'metal' | 'drawbridge' | 'roof' | 'roof-stone';
 type BridgeTextureLayer = 'deck' | 'rail' | 'cover' | 'pillar';
 
 const bridgeStyleCache = createBoundedCache<string, BridgeStyleBlueprint>(
@@ -233,48 +239,48 @@ const resolveRoadStyle = createRegionalMaterialResolver(
             };
 
     return createHostMaterialResolver((three: ThreeHostLike): RoadStyle => {
-        const roadTexture = createRoadTexture(
-          three,
-          palette.road,
-          palette.accent,
-          roadStyleType,
-          regionX,
-          regionY
-        );
-        const shoulderTexture = createRoadShoulderTexture(
-          three,
-          palette.shoulder,
-          palette.road,
-          regionX,
-          regionY
-        );
+      const roadTexture = createRoadTexture(
+        three,
+        palette.road,
+        palette.accent,
+        roadStyleType,
+        regionX,
+        regionY
+      );
+      const shoulderTexture = createRoadShoulderTexture(
+        three,
+        palette.shoulder,
+        palette.road,
+        regionX,
+        regionY
+      );
 
-        const style = {
-          roadWidth: roadStyleType === 'footpath' ? 0.24 : 0.3,
-          shoulderWidth: roadStyleType === 'footpath' ? 0.36 : 0.42,
-          roadMaterial: new three.MeshStandardMaterial({
-            color: '#ffffff',
-            map: roadTexture,
-            roughness: 0.95,
-            metalness: roadStyleType === 'cobble' ? 0.04 : 0.02,
-            polygonOffset: true,
-            polygonOffsetFactor: -2,
-            polygonOffsetUnits: -2,
-            side: three.DoubleSide,
-          }),
-          shoulderMaterial: new three.MeshStandardMaterial({
-            color: '#ffffff',
-            map: shoulderTexture,
-            roughness: 0.98,
-            metalness: 0.01,
-            polygonOffset: true,
-            polygonOffsetFactor: -1,
-            polygonOffsetUnits: -1,
-            side: three.DoubleSide,
-          }),
-        };
-        return style;
-      });
+      const style = {
+        roadWidth: roadStyleType === 'footpath' ? 0.24 : 0.3,
+        shoulderWidth: roadStyleType === 'footpath' ? 0.36 : 0.42,
+        roadMaterial: new three.MeshStandardMaterial({
+          color: '#ffffff',
+          map: roadTexture,
+          roughness: 0.95,
+          metalness: roadStyleType === 'cobble' ? 0.04 : 0.02,
+          polygonOffset: true,
+          polygonOffsetFactor: -2,
+          polygonOffsetUnits: -2,
+          side: three.DoubleSide,
+        }),
+        shoulderMaterial: new three.MeshStandardMaterial({
+          color: '#ffffff',
+          map: shoulderTexture,
+          roughness: 0.98,
+          metalness: 0.01,
+          polygonOffset: true,
+          polygonOffsetFactor: -1,
+          polygonOffsetUnits: -1,
+          side: three.DoubleSide,
+        }),
+      };
+      return style;
+    });
   }
 );
 
@@ -322,12 +328,14 @@ export function createRouteTilePlugin(): RuntimePlugin {
 
         return { kind: noiseRoadKind };
       },
-      paint2D: createPlainsBackedTilePainter(({ context, x, y, motif, fillRect }) => {
-        const roadY = 5 + motif.int(0, 2);
-        fillRect(context, x, y + roadY, TILE_PIXEL_SIZE, 4, '#8a5a19');
-        fillRect(context, x, y + roadY + 1, TILE_PIXEL_SIZE, 1, '#d7b172');
-        return true;
-      }),
+      paint2D: createPlainsBackedTilePainter(
+        ({ context, x, y, motif, fillRect }) => {
+          const roadY = 5 + motif.int(0, 2);
+          fillRect(context, x, y + roadY, TILE_PIXEL_SIZE, 4, '#8a5a19');
+          fillRect(context, x, y + roadY + 1, TILE_PIXEL_SIZE, 1, '#d7b172');
+          return true;
+        }
+      ),
       create3DModel({ three, state, tileX, tileY }: Create3DModelContext) {
         if (state.getCurrentContext().type !== 'overworld') {
           return null;
@@ -341,10 +349,7 @@ export function createRouteTilePlugin(): RuntimePlugin {
         return (
           resolveDominantNeighborFloorKind3D(context, {
             isExcludedKind(kind) {
-              return (
-                kind === 'road' ||
-                isWaterOrCrossingKind(kind)
-              );
+              return kind === 'road' || isWaterOrCrossingKind(kind);
             },
           }) ?? 'plains'
         );
@@ -614,7 +619,9 @@ function classifyForestRiverLogBridge({
   return hash2D(FOREST_RIVER_LOG_BRIDGE_SEED, x, y) >= threshold;
 }
 
-function isForestLikeBankSignal(signal: ClassifyOverworldTileContext['signals']) {
+function isForestLikeBankSignal(
+  signal: ClassifyOverworldTileContext['signals']
+) {
   return (
     signal.continent > 0.42 &&
     signal.continent < 0.9 &&
@@ -718,7 +725,9 @@ function getBridgeCrossingAxis(
   x: number,
   y: number,
   signals: ClassifyOverworldTileContext['signals'],
-  sampleTerrainSignals: NonNullable<ClassifyOverworldTileContext['sampleTerrainSignals']>
+  sampleTerrainSignals: NonNullable<
+    ClassifyOverworldTileContext['sampleTerrainSignals']
+  >
 ): 'ew' | 'ns' | null {
   const roadSignal = signals.roadSignal;
   const north = sampleTerrainSignals(x, y - 1).roadSignal;
@@ -739,12 +748,12 @@ function canClassifyRiverBridgeSpan(
   x: number,
   y: number,
   axis: 'ew' | 'ns',
-  sampleTerrainSignals: NonNullable<ClassifyOverworldTileContext['sampleTerrainSignals']>
+  sampleTerrainSignals: NonNullable<
+    ClassifyOverworldTileContext['sampleTerrainSignals']
+  >
 ) {
-  const alongNegative =
-    axis === 'ew' ? { dx: -1, dy: 0 } : { dx: 0, dy: -1 };
-  const alongPositive =
-    axis === 'ew' ? { dx: 1, dy: 0 } : { dx: 0, dy: 1 };
+  const alongNegative = axis === 'ew' ? { dx: -1, dy: 0 } : { dx: 0, dy: -1 };
+  const alongPositive = axis === 'ew' ? { dx: 1, dy: 0 } : { dx: 0, dy: 1 };
   let negativeSpan = 0;
   let positiveSpan = 0;
 
@@ -781,10 +790,7 @@ function canClassifyRiverBridgeSpan(
     y + alongPositive.dy * (positiveSpan + 1)
   );
 
-  return (
-    isBridgeBankSignal(negativeBank) &&
-    isBridgeBankSignal(positiveBank)
-  );
+  return isBridgeBankSignal(negativeBank) && isBridgeBankSignal(positiveBank);
 }
 
 function isBridgeableRiverCrossingSignal(
@@ -810,7 +816,9 @@ function hasParallelLandWithinBridgeSpan(
   x: number,
   y: number,
   axis: 'ew' | 'ns',
-  sampleTerrainSignals: NonNullable<ClassifyOverworldTileContext['sampleTerrainSignals']>
+  sampleTerrainSignals: NonNullable<
+    ClassifyOverworldTileContext['sampleTerrainSignals']
+  >
 ) {
   const along =
     axis === 'ew'
@@ -983,15 +991,18 @@ function getRoadConnections(
   const directions: RoadConnection[] = [];
   for (let index = 0; index < ROAD_DIRECTIONS.length; index += 1) {
     const direction = ROAD_DIRECTIONS[index]!;
-    if (isRoadNetworkKind(state.getCurrentTile(tileX + direction.dx, tileY + direction.dy).kind)) {
+    if (
+      isRoadNetworkKind(
+        state.getCurrentTile(tileX + direction.dx, tileY + direction.dy).kind
+      )
+    ) {
       directions.push(direction);
     }
   }
 
   directions.sort(
     (left, right) =>
-      Math.atan2(left.edgeZ, left.edgeX) -
-      Math.atan2(right.edgeZ, right.edgeX)
+      Math.atan2(left.edgeZ, left.edgeX) - Math.atan2(right.edgeZ, right.edgeX)
   );
   return directions;
 }
@@ -1191,7 +1202,9 @@ function createRoadShoulderTexture(
         );
         const size =
           1 +
-          Math.floor(hash2D(ROAD_SHOULDER_S_SEED, index, regionX + regionY) * 3);
+          Math.floor(
+            hash2D(ROAD_SHOULDER_S_SEED, index, regionX + regionY) * 3
+          );
         context.fillStyle =
           index % 3 === 0 ? accentColor : 'rgba(255,255,255,0.12)';
         context.fillRect(x, y, size, size);
@@ -1287,7 +1300,9 @@ function createForestLogBridgeGroup(
   group.add(trunk);
 
   const supportOffsets =
-    axis === 'ew' ? [-0.42, 0.42].map((x) => ({ x, z: 0 })) : [-0.42, 0.42].map((z) => ({ x: 0, z }));
+    axis === 'ew'
+      ? [-0.42, 0.42].map((x) => ({ x, z: 0 }))
+      : [-0.42, 0.42].map((z) => ({ x: 0, z }));
   supportOffsets.forEach((offset) => {
     const support = new three.Mesh(
       new three.CylinderGeometry(0.04, 0.05, 0.18, 6),
@@ -1331,7 +1346,12 @@ function createDockGroup(
   tileY: number
 ) {
   const info = getDockClusterInfo(state, tileX, tileY);
-  const style = getDockStyle(three, info.clusterKey, info.anchorX, info.anchorY);
+  const style = getDockStyle(
+    three,
+    info.clusterKey,
+    info.anchorX,
+    info.anchorY
+  );
   const alongX = info.axis === 'ew';
   const group = new three.Group();
   group.position.set(tileX, 0, tileY);
@@ -1378,7 +1398,15 @@ function createDockGroup(
   }
 
   if (shouldRenderDockBoat(state, tileX, tileY, info)) {
-    const boat = createDockBoat(three, state, style, alongX, tileX, tileY, info);
+    const boat = createDockBoat(
+      three,
+      state,
+      style,
+      alongX,
+      tileX,
+      tileY,
+      info
+    );
     if (boat) {
       group.add(boat);
     }
@@ -1386,7 +1414,15 @@ function createDockGroup(
 
   const route = resolveDockBoatRoute(state, tileX, tileY);
   if (route && info.segmentIndex === 0) {
-    const sign = createDockRouteSign(three, state, style, alongX, tileX, tileY, route);
+    const sign = createDockRouteSign(
+      three,
+      state,
+      style,
+      alongX,
+      tileX,
+      tileY,
+      route
+    );
     if (sign) {
       group.add(sign);
     }
@@ -1503,11 +1539,19 @@ function createDockRouteLabelPlane(
         context.textBaseline = 'middle';
         if (options.stopName.length === 0) {
           context.font = 'bold 26px sans-serif';
-          context.fillText(options.boatName, canvas.width * 0.5, canvas.height * 0.5);
+          context.fillText(
+            options.boatName,
+            canvas.width * 0.5,
+            canvas.height * 0.5
+          );
           return;
         }
         context.font = 'bold 24px sans-serif';
-        context.fillText(options.stopName, canvas.width * 0.5, canvas.height * 0.5);
+        context.fillText(
+          options.stopName,
+          canvas.width * 0.5,
+          canvas.height * 0.5
+        );
       },
     }
   );
@@ -1711,28 +1755,29 @@ function getDockStyle(
   tileX: number,
   tileY: number
 ) {
-  return dockStyleCache.getOrCreate(clusterKey, () => {
-    const regionX = Math.floor(tileX / DOCK_REGION_SIZE);
-    const regionY = Math.floor(tileY / DOCK_REGION_SIZE);
-    const palette =
-      hash2D(DOCK_PALETTE_SEED, regionX, regionY) > 0.55
-        ? {
-            deck: '#8f6033',
-            rail: '#6e4522',
-            pile: '#543114',
-            boat: '#6f4431',
-            sail: '#d9ccb1',
-            trim: '#d6b27e',
-          }
-        : {
-            deck: '#7f5330',
-            rail: '#603a1d',
-            pile: '#492a13',
-            boat: '#7c4e2e',
-            sail: '#cbb89d',
-            trim: '#d4a86f',
-          };
-    return createHostMaterialResolver((host: ThreeHostLike): DockStyle => {
+  return dockStyleCache
+    .getOrCreate(clusterKey, () => {
+      const regionX = Math.floor(tileX / DOCK_REGION_SIZE);
+      const regionY = Math.floor(tileY / DOCK_REGION_SIZE);
+      const palette =
+        hash2D(DOCK_PALETTE_SEED, regionX, regionY) > 0.55
+          ? {
+              deck: '#8f6033',
+              rail: '#6e4522',
+              pile: '#543114',
+              boat: '#6f4431',
+              sail: '#d9ccb1',
+              trim: '#d6b27e',
+            }
+          : {
+              deck: '#7f5330',
+              rail: '#603a1d',
+              pile: '#492a13',
+              boat: '#7c4e2e',
+              sail: '#cbb89d',
+              trim: '#d4a86f',
+            };
+      return createHostMaterialResolver((host: ThreeHostLike): DockStyle => {
         const style = {
           deckMaterial: new host.MeshStandardMaterial({
             color: palette.deck,
@@ -1767,7 +1812,8 @@ function getDockStyle(
         };
         return style;
       });
-  }).createMaterials(three);
+    })
+    .createMaterials(three);
 }
 
 function shouldRenderDockBoat(
@@ -1793,7 +1839,10 @@ function shouldRenderDockBoat(
     eligibleSegments.add(
       Math.min(
         info.length - 1,
-        Math.max(1, Math.round((remainingSegments * index) / targetSegmentCount))
+        Math.max(
+          1,
+          Math.round((remainingSegments * index) / targetSegmentCount)
+        )
       )
     );
   }
@@ -1862,14 +1911,22 @@ function createDockBoat(
   const hullLength = 0.42 + hash2D(DOCK_BOAT_LENGTH_SEED, tileX, tileY) * 0.12;
   const hullWidth = 0.18 + hash2D(DOCK_BOAT_WIDTH_SEED, tileX, tileY) * 0.04;
   const hull = new three.Mesh(
-    new three.BoxGeometry(alongX ? hullLength : hullWidth, 0.09, alongX ? hullWidth : hullLength),
+    new three.BoxGeometry(
+      alongX ? hullLength : hullWidth,
+      0.09,
+      alongX ? hullWidth : hullLength
+    ),
     style.boatMaterial
   );
   hull.position.y = -0.07;
   group.add(hull);
 
   const prow = new three.Mesh(
-    new three.BoxGeometry(alongX ? 0.08 : hullWidth * 0.72, 0.1, alongX ? hullWidth * 0.72 : 0.08),
+    new three.BoxGeometry(
+      alongX ? 0.08 : hullWidth * 0.72,
+      0.1,
+      alongX ? hullWidth * 0.72 : 0.08
+    ),
     style.trimMaterial
   );
   if (alongX) {
@@ -1946,14 +2003,22 @@ function addDockPaddleBoatDetails(
   }
 
   const cabin = new three.Mesh(
-    new three.BoxGeometry(alongX ? hullLength * 0.48 : hullWidth * 0.72, 0.14, alongX ? hullWidth * 0.72 : hullLength * 0.48),
+    new three.BoxGeometry(
+      alongX ? hullLength * 0.48 : hullWidth * 0.72,
+      0.14,
+      alongX ? hullWidth * 0.72 : hullLength * 0.48
+    ),
     style.deckMaterial
   );
   cabin.position.y = 0.05;
   group.add(cabin);
 
   const ramp = new three.Mesh(
-    new three.BoxGeometry(alongX ? 0.18 : hullWidth * 0.66, 0.03, alongX ? hullWidth * 0.66 : 0.18),
+    new three.BoxGeometry(
+      alongX ? 0.18 : hullWidth * 0.66,
+      0.03,
+      alongX ? hullWidth * 0.66 : 0.18
+    ),
     style.deckMaterial
   );
   ramp.userData = {
@@ -1961,10 +2026,18 @@ function addDockPaddleBoatDetails(
     dockPaddleBoatRampLowered: true,
   };
   if (alongX) {
-    ramp.position.set(side > 0 ? hullLength * 0.38 : -hullLength * 0.38, -0.09, 0);
+    ramp.position.set(
+      side > 0 ? hullLength * 0.38 : -hullLength * 0.38,
+      -0.09,
+      0
+    );
     ramp.rotation.z = side > 0 ? -0.42 : 0.42;
   } else {
-    ramp.position.set(0, -0.09, side > 0 ? hullLength * 0.38 : -hullLength * 0.38);
+    ramp.position.set(
+      0,
+      -0.09,
+      side > 0 ? hullLength * 0.38 : -hullLength * 0.38
+    );
     ramp.rotation.x = side > 0 ? 0.42 : -0.42;
   }
   group.add(ramp);
@@ -2273,102 +2346,105 @@ function getBridgeStyle(
   tileX: number,
   tileY: number
 ) {
-  return bridgeStyleCache.getOrCreate(clusterKey, () => {
-    const regionX = Math.floor(tileX / BRIDGE_REGION_SIZE);
-    const regionY = Math.floor(tileY / BRIDGE_REGION_SIZE);
-    const typeIndex = Math.floor(hash2D(BRIDGE_TYPE_SEED, tileX, tileY) * 4);
-    const type = ['wood', 'stone', 'metal', 'drawbridge'][typeIndex] as
-      'wood' | 'stone' | 'metal' | 'drawbridge';
-    const covered = hash2D(BRIDGE_COVERED_SEED, regionX, regionY) > 0.72;
-    const drawbridge = type === 'drawbridge';
-    const pillarSpacing =
-      2 + Math.floor(hash2D(BRIDGE_PILLAR_SEED, tileX, tileY) * 3);
-    const palette =
-      type === 'stone'
-        ? { deck: '#c9c2b8', rail: '#8b857d', trim: '#6d655d' }
-        : type === 'metal'
-          ? { deck: '#9b6b3d', rail: '#8e9aa7', trim: '#4b5563' }
-          : { deck: '#8b5a2b', rail: '#6f4a28', trim: '#4a2f1b' };
-    const deckTexture = createBridgeTexture(
-      three,
-      palette.deck,
-      palette.trim,
-      type,
-      'deck',
-      tileX,
-      tileY
-    );
-    const railTexture = createBridgeTexture(
-      three,
-      palette.rail,
-      palette.trim,
-      type,
-      'rail',
-      tileX,
-      tileY
-    );
-    const coverTexture = createBridgeTexture(
-      three,
-      palette.deck,
-      palette.trim,
-      type === 'stone' ? 'roof-stone' : 'roof',
-      'cover',
-      tileX,
-      tileY
-    );
-    const sharedStyle = {
-      type,
-      covered: covered && !drawbridge,
-      drawbridge,
-      widthJitter: hash2D(BRIDGE_WIDTH_SEED, tileX, tileY) * 0.12,
-      coverHeight: hash2D(BRIDGE_COVER_HEIGHT_SEED, tileX, tileY) * 0.16,
-      pillarSpacing,
-      pillarWidth: 0.14 + hash2D(BRIDGE_PILLAR_WIDTH_SEED, tileX, tileY) * 0.09,
-    };
-    return {
-      ...sharedStyle,
-      ...createHostMaterialResolver((host: ThreeHostLike): BridgeStyle => {
-        const style = {
-          ...sharedStyle,
-          deckMaterial: new host.MeshStandardMaterial({
-            color: '#ffffff',
-            map: deckTexture,
-            roughness: 0.9,
-            metalness: type === 'metal' ? 0.28 : 0.04,
-          }),
-          railMaterial: new host.MeshStandardMaterial({
-            color: '#ffffff',
-            map: railTexture,
-            roughness: 0.86,
-            metalness: type === 'metal' ? 0.36 : 0.05,
-          }),
-          postMaterial: new host.MeshStandardMaterial({
-            color: palette.trim,
-            roughness: 0.88,
-            metalness: type === 'metal' ? 0.22 : 0.03,
-          }),
-          trimMaterial: new host.MeshStandardMaterial({
-            color: palette.trim,
-            roughness: 0.82,
-            metalness: type === 'metal' ? 0.34 : 0.04,
-          }),
-          coverMaterial: new host.MeshStandardMaterial({
-            color: '#ffffff',
-            map: coverTexture,
-            roughness: 0.9,
-            metalness: 0.03,
-          }),
-          pillarMaterial: new host.MeshStandardMaterial({
-            color: '#ffffff',
-            map: railTexture,
-            roughness: 0.92,
-            metalness: type === 'metal' ? 0.18 : 0.02,
-          }),
-        };
-        return style;
-      }),
-    };
-  }).createMaterials(three);
+  return bridgeStyleCache
+    .getOrCreate(clusterKey, () => {
+      const regionX = Math.floor(tileX / BRIDGE_REGION_SIZE);
+      const regionY = Math.floor(tileY / BRIDGE_REGION_SIZE);
+      const typeIndex = Math.floor(hash2D(BRIDGE_TYPE_SEED, tileX, tileY) * 4);
+      const type = ['wood', 'stone', 'metal', 'drawbridge'][typeIndex] as
+        'wood' | 'stone' | 'metal' | 'drawbridge';
+      const covered = hash2D(BRIDGE_COVERED_SEED, regionX, regionY) > 0.72;
+      const drawbridge = type === 'drawbridge';
+      const pillarSpacing =
+        2 + Math.floor(hash2D(BRIDGE_PILLAR_SEED, tileX, tileY) * 3);
+      const palette =
+        type === 'stone'
+          ? { deck: '#c9c2b8', rail: '#8b857d', trim: '#6d655d' }
+          : type === 'metal'
+            ? { deck: '#9b6b3d', rail: '#8e9aa7', trim: '#4b5563' }
+            : { deck: '#8b5a2b', rail: '#6f4a28', trim: '#4a2f1b' };
+      const deckTexture = createBridgeTexture(
+        three,
+        palette.deck,
+        palette.trim,
+        type,
+        'deck',
+        tileX,
+        tileY
+      );
+      const railTexture = createBridgeTexture(
+        three,
+        palette.rail,
+        palette.trim,
+        type,
+        'rail',
+        tileX,
+        tileY
+      );
+      const coverTexture = createBridgeTexture(
+        three,
+        palette.deck,
+        palette.trim,
+        type === 'stone' ? 'roof-stone' : 'roof',
+        'cover',
+        tileX,
+        tileY
+      );
+      const sharedStyle = {
+        type,
+        covered: covered && !drawbridge,
+        drawbridge,
+        widthJitter: hash2D(BRIDGE_WIDTH_SEED, tileX, tileY) * 0.12,
+        coverHeight: hash2D(BRIDGE_COVER_HEIGHT_SEED, tileX, tileY) * 0.16,
+        pillarSpacing,
+        pillarWidth:
+          0.14 + hash2D(BRIDGE_PILLAR_WIDTH_SEED, tileX, tileY) * 0.09,
+      };
+      return {
+        ...sharedStyle,
+        ...createHostMaterialResolver((host: ThreeHostLike): BridgeStyle => {
+          const style = {
+            ...sharedStyle,
+            deckMaterial: new host.MeshStandardMaterial({
+              color: '#ffffff',
+              map: deckTexture,
+              roughness: 0.9,
+              metalness: type === 'metal' ? 0.28 : 0.04,
+            }),
+            railMaterial: new host.MeshStandardMaterial({
+              color: '#ffffff',
+              map: railTexture,
+              roughness: 0.86,
+              metalness: type === 'metal' ? 0.36 : 0.05,
+            }),
+            postMaterial: new host.MeshStandardMaterial({
+              color: palette.trim,
+              roughness: 0.88,
+              metalness: type === 'metal' ? 0.22 : 0.03,
+            }),
+            trimMaterial: new host.MeshStandardMaterial({
+              color: palette.trim,
+              roughness: 0.82,
+              metalness: type === 'metal' ? 0.34 : 0.04,
+            }),
+            coverMaterial: new host.MeshStandardMaterial({
+              color: '#ffffff',
+              map: coverTexture,
+              roughness: 0.9,
+              metalness: 0.03,
+            }),
+            pillarMaterial: new host.MeshStandardMaterial({
+              color: '#ffffff',
+              map: railTexture,
+              roughness: 0.92,
+              metalness: type === 'metal' ? 0.18 : 0.02,
+            }),
+          };
+          return style;
+        }),
+      };
+    })
+    .createMaterials(three);
 }
 
 function createBridgeTexture(
@@ -2494,16 +2570,15 @@ interface BridgeStyle {
   pillarMaterial: ThreeMaterialLike;
 }
 
-interface BridgeStyleBlueprint
-  extends Omit<
-    BridgeStyle,
-    | 'deckMaterial'
-    | 'railMaterial'
-    | 'postMaterial'
-    | 'trimMaterial'
-    | 'coverMaterial'
-    | 'pillarMaterial'
-  > {
+interface BridgeStyleBlueprint extends Omit<
+  BridgeStyle,
+  | 'deckMaterial'
+  | 'railMaterial'
+  | 'postMaterial'
+  | 'trimMaterial'
+  | 'coverMaterial'
+  | 'pillarMaterial'
+> {
   createMaterials(three: ThreeHostLike): BridgeStyle;
 }
 

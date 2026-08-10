@@ -6,7 +6,9 @@ export const MATERIAL_SHADER_COMPLEXITY_SIMPLE = 1;
 export const MATERIAL_SHADER_COMPLEXITY_LIT = 2;
 export const MATERIAL_SHADER_COMPLEXITY_CUSTOM = 3;
 
-export function getMaterialShaderComplexityClass(material: THREE.Material): number {
+export function getMaterialShaderComplexityClass(
+  material: THREE.Material
+): number {
   const candidate = material as MaterialLike;
   if (usesCustomShaders(candidate)) {
     return MATERIAL_SHADER_COMPLEXITY_CUSTOM;

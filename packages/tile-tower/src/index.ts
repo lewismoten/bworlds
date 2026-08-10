@@ -95,7 +95,10 @@ export function createTowerTilePlugin(): RuntimePlugin {
       group.add(doorway);
 
       const lantern = markPoiLightEmitter(
-        new three.Mesh(getSharedSphereGeometry(three, 0.04, 6, 6), lampMaterial),
+        new three.Mesh(
+          getSharedSphereGeometry(three, 0.04, 6, 6),
+          lampMaterial
+        ),
         {
           kind: 'emissive-mesh',
           dayIntensity: 0.02,
@@ -121,7 +124,10 @@ export function createTowerTilePlugin(): RuntimePlugin {
     },
     sync3DModel({ model, cycle }) {
       if (model && typeof model === 'object') {
-        syncPoiLightEmitters(model as Parameters<typeof syncPoiLightEmitters>[0], cycle);
+        syncPoiLightEmitters(
+          model as Parameters<typeof syncPoiLightEmitters>[0],
+          cycle
+        );
       }
     },
   });
@@ -132,7 +138,9 @@ function getTowerSharedMaterials(three: Create3DModelContext['three']) {
 }
 
 const towerSharedMaterials = createHostMaterialResolver(
-  (three: Create3DModelContext['three']): {
+  (
+    three: Create3DModelContext['three']
+  ): {
     stoneMaterial: ThreeMaterialLike;
     trimMaterial: ThreeMaterialLike;
     roofMaterial: ThreeMaterialLike;

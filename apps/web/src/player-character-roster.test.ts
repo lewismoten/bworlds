@@ -66,7 +66,10 @@ describe('player character roster', () => {
     ).toEqual(
       expect.objectContaining({
         characters: expect.arrayContaining([
-          expect.objectContaining({ id: 'npc:lyra', recruitedNpcId: 'town:lyra' }),
+          expect.objectContaining({
+            id: 'npc:lyra',
+            recruitedNpcId: 'town:lyra',
+          }),
         ]),
         activeCharacterIds: ['player'],
       })
@@ -135,9 +138,9 @@ describe('player character roster', () => {
 
     const dropped = dropOffPlayerCharacter(roster, 'npc:lyra');
     expect(dropped.activeCharacterIds).toEqual(['player']);
-    expect(dropped.characters.find((entry) => entry.id === 'npc:lyra')?.availability).toBe(
-      'dropped'
-    );
+    expect(
+      dropped.characters.find((entry) => entry.id === 'npc:lyra')?.availability
+    ).toBe('dropped');
 
     const pickedUp = pickUpPlayerCharacter(dropped, 'npc:lyra');
     expect(pickedUp.activeCharacterIds).toEqual(['player', 'npc:lyra']);
@@ -270,9 +273,9 @@ describe('player character roster', () => {
       activeCharacterIds: ['player', 'npc:lyra'],
     };
 
-    expect(pickUpPlayerCharacter(roster, 'npc:orin', { maxActiveCharacterCount: 2 })).toEqual(
-      roster
-    );
+    expect(
+      pickUpPlayerCharacter(roster, 'npc:orin', { maxActiveCharacterCount: 2 })
+    ).toEqual(roster);
     expect(DEFAULT_MAX_ACTIVE_PLAYER_CHARACTERS).toBeGreaterThan(1);
   });
 

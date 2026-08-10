@@ -1,5 +1,4 @@
-import {
-} from '@bworlds/core';
+import {} from '@bworlds/core';
 import {
   appendHashSeedLabel,
   createHashSeed,
@@ -69,8 +68,7 @@ export function createFrontierFlavorRuntimePlugin(): RuntimePlugin {
               appendHashSeedLabel(seedHash, FRONTIER_LAND_LABEL),
               Math.floor(x / 24),
               Math.floor(y / 24)
-            ) *
-              LAND_DESCRIPTORS.length
+            ) * LAND_DESCRIPTORS.length
           )
         ];
 
@@ -98,14 +96,8 @@ export function resolveFrontierSkyProfile(playerX: number, playerY: number) {
       delightSignal > 0.58
         ? pickFrontierDelightColor(delightSignal)
         : '#f2a06a',
-    fogDawnColor:
-      warningSignal > 0.64
-        ? '#dba27d'
-        : '#9ed8ff',
-    fogDuskColor:
-      delightSignal > 0.58
-        ? '#e3b18a'
-        : '#9ed8ff',
+    fogDawnColor: warningSignal > 0.64 ? '#dba27d' : '#9ed8ff',
+    fogDuskColor: delightSignal > 0.58 ? '#e3b18a' : '#9ed8ff',
   };
 }
 

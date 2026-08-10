@@ -77,15 +77,17 @@ export function createCaveTilePlugin(): RuntimePlugin {
       walkable: true,
       wallHeight: 0.55,
     },
-    paint2D: createPlainsBackedTilePainter(({ context, x, y, motif, fillRect, speckle }) => {
-      speckle(context, x, y, '#9ecf82', 14, 0.22, motif);
-      context.fillStyle = '#27272a';
-      context.beginPath();
-      context.arc(x + 8 + motif.int(-1, 1), y + 8, 5.5, 0, Math.PI * 2);
-      context.fill();
-      fillRect(context, x + 5, y + 8, 6, 4, '#09090b');
-      return true;
-    }),
+    paint2D: createPlainsBackedTilePainter(
+      ({ context, x, y, motif, fillRect, speckle }) => {
+        speckle(context, x, y, '#9ecf82', 14, 0.22, motif);
+        context.fillStyle = '#27272a';
+        context.beginPath();
+        context.arc(x + 8 + motif.int(-1, 1), y + 8, 5.5, 0, Math.PI * 2);
+        context.fill();
+        fillRect(context, x + 5, y + 8, 6, 4, '#09090b');
+        return true;
+      }
+    ),
     classifyPoi(context: ClassifyOverworldTileContext): TileLike | null {
       const anchor = findPoiAnchor(context, 'cave', 0.55);
       if (!anchor || !context.nearLand) {
@@ -182,13 +184,15 @@ export function createCaveTilePlugin(): RuntimePlugin {
         );
         const radiusScale =
           0.9 +
-          hash2D(CAVE_BOULDER_SCALE_SEED, tileX * 13 + index, tileY * 17) * 0.45;
+          hash2D(CAVE_BOULDER_SCALE_SEED, tileX * 13 + index, tileY * 17) *
+            0.45;
         const xOffset =
           (hash2D(CAVE_BOULDER_X_SEED, tileX * 19 + index, tileY) - 0.5) * 0.34;
         const zOffset =
           (hash2D(CAVE_BOULDER_Z_SEED, tileX, tileY * 23 + index) - 0.5) * 0.32;
         const yOffset =
-          0.2 + hash2D(CAVE_BOULDER_Y_SEED, tileX + index, tileY - index) * 0.32;
+          0.2 +
+          hash2D(CAVE_BOULDER_Y_SEED, tileX + index, tileY - index) * 0.32;
         boulder.position.set(tileX + xOffset, yOffset, tileY + zOffset);
         boulder.scale.set(
           width * radiusScale,
@@ -335,7 +339,10 @@ export function createCaveTilePlugin(): RuntimePlugin {
     },
     sync3DModel({ model, cycle }) {
       if (model && typeof model === 'object') {
-        syncPoiLightEmitters(model as Parameters<typeof syncPoiLightEmitters>[0], cycle);
+        syncPoiLightEmitters(
+          model as Parameters<typeof syncPoiLightEmitters>[0],
+          cycle
+        );
       }
     },
   });
@@ -392,11 +399,7 @@ function resolveLinkedCaveEntrances(
         return;
       }
       if (
-        !sharesMountainPass(
-          current,
-          candidate,
-          context.sampleTerrainSignals
-        )
+        !sharesMountainPass(current, candidate, context.sampleTerrainSignals)
       ) {
         return;
       }
@@ -433,7 +436,9 @@ function sharesMountainPass(
 function hasAdjacentMountainPass(
   x: number,
   y: number,
-  sampleTerrainSignals: NonNullable<ClassifyOverworldTileContext['sampleTerrainSignals']>
+  sampleTerrainSignals: NonNullable<
+    ClassifyOverworldTileContext['sampleTerrainSignals']
+  >
 ): boolean {
   return [
     sampleTerrainSignals(x + 1, y).elevation,
@@ -594,7 +599,14 @@ function paintCaveDripstoneTile(paint: Paint2DContext) {
   const { context, x, y, fillRect, motif } = paint;
   const apex = 7 + motif.int(-1, 1);
   for (let row = 0; row < 5; row += 1) {
-    fillRect(context, x + apex - row, y + 10 - row * 2, row * 2 + 1, 2, '#7a7063');
+    fillRect(
+      context,
+      x + apex - row,
+      y + 10 - row * 2,
+      row * 2 + 1,
+      2,
+      '#7a7063'
+    );
   }
   return true;
 }
@@ -614,8 +626,10 @@ function createCaveMushroomGroup(
   tileY: number
 ) {
   const group = new three.Group();
-  const { mushroomCapMaterial, mushroomStemMaterial } = getCaveSharedMaterials(three);
-  const count = 3 + Math.floor(hash2D(CAVE_MUSHROOM_COUNT_SEED, tileX, tileY) * 3);
+  const { mushroomCapMaterial, mushroomStemMaterial } =
+    getCaveSharedMaterials(three);
+  const count =
+    3 + Math.floor(hash2D(CAVE_MUSHROOM_COUNT_SEED, tileX, tileY) * 3);
 
   for (let index = 0; index < count; index += 1) {
     const stem = new three.Mesh(
@@ -630,7 +644,8 @@ function createCaveMushroomGroup(
       (hash2D(CAVE_MUSHROOM_X_SEED, tileX * 11 + index, tileY) - 0.5) * 0.45;
     const offsetZ =
       (hash2D(CAVE_MUSHROOM_Z_SEED, tileX, tileY * 13 + index) - 0.5) * 0.45;
-    const height = 0.11 + hash2D(CAVE_MUSHROOM_HEIGHT_SEED, tileX + index, tileY) * 0.05;
+    const height =
+      0.11 + hash2D(CAVE_MUSHROOM_HEIGHT_SEED, tileX + index, tileY) * 0.05;
     stem.position.set(tileX + offsetX, height * 0.5, tileY + offsetZ);
     cap.position.set(tileX + offsetX, height, tileY + offsetZ);
     cap.scale.set(1.15, 0.7, 1.15);
@@ -642,47 +657,43 @@ function createCaveMushroomGroup(
 }
 
 function getCaveSharedMaterials(three: Create3DModelContext['three']) {
-  return getOrCreateWeakMapValue(
-    caveMaterialCache,
-    three as object,
-    () => ({
-      mouthVoidMaterial: createBasicMaterial(three, {
-        color: '#010308',
-        side: three.DoubleSide,
-      }),
-      tunnelBackMaterial: createBasicMaterial(three, {
-        color: '#000000',
-        side: three.DoubleSide,
-      }),
-      tunnelCeilingMaterial: createBasicMaterial(three, {
-        color: '#03060a',
-        side: three.DoubleSide,
-      }),
-      tunnelFloorMaterial: createBasicMaterial(three, {
-        color: '#080b10',
-        side: three.DoubleSide,
-      }),
-      lanternCoreMaterial: new three.MeshStandardMaterial({
-        color: '#f59e0b',
-        emissive: '#f59e0b',
-        emissiveIntensity: 0.02,
-        roughness: 0.28,
-        metalness: 0.04,
-      }),
-      mushroomCapMaterial: new three.MeshStandardMaterial({
-        color: '#8fffd2',
-        emissive: '#64f2c3',
-        emissiveIntensity: 0.95,
-        roughness: 0.42,
-        metalness: 0.02,
-      }),
-      mushroomStemMaterial: new three.MeshStandardMaterial({
-        color: '#d7d2c8',
-        roughness: 0.88,
-        metalness: 0.01,
-      }),
-    })
-  );
+  return getOrCreateWeakMapValue(caveMaterialCache, three as object, () => ({
+    mouthVoidMaterial: createBasicMaterial(three, {
+      color: '#010308',
+      side: three.DoubleSide,
+    }),
+    tunnelBackMaterial: createBasicMaterial(three, {
+      color: '#000000',
+      side: three.DoubleSide,
+    }),
+    tunnelCeilingMaterial: createBasicMaterial(three, {
+      color: '#03060a',
+      side: three.DoubleSide,
+    }),
+    tunnelFloorMaterial: createBasicMaterial(three, {
+      color: '#080b10',
+      side: three.DoubleSide,
+    }),
+    lanternCoreMaterial: new three.MeshStandardMaterial({
+      color: '#f59e0b',
+      emissive: '#f59e0b',
+      emissiveIntensity: 0.02,
+      roughness: 0.28,
+      metalness: 0.04,
+    }),
+    mushroomCapMaterial: new three.MeshStandardMaterial({
+      color: '#8fffd2',
+      emissive: '#64f2c3',
+      emissiveIntensity: 0.95,
+      roughness: 0.42,
+      metalness: 0.02,
+    }),
+    mushroomStemMaterial: new three.MeshStandardMaterial({
+      color: '#d7d2c8',
+      roughness: 0.88,
+      metalness: 0.01,
+    }),
+  }));
 }
 
 function createLowDetailCaveModel(
@@ -763,9 +774,11 @@ function createCaveDripstoneGroup(
       mountainMaterial
     );
     spire.position.set(
-      tileX + (hash2D(CAVE_DRIPSTONE_X_SEED, tileX * 17 + index, tileY) - 0.5) * 0.46,
+      tileX +
+        (hash2D(CAVE_DRIPSTONE_X_SEED, tileX * 17 + index, tileY) - 0.5) * 0.46,
       height * 0.5,
-      tileY + (hash2D(CAVE_DRIPSTONE_Z_SEED, tileX, tileY * 19 + index) - 0.5) * 0.46
+      tileY +
+        (hash2D(CAVE_DRIPSTONE_Z_SEED, tileX, tileY * 19 + index) - 0.5) * 0.46
     );
     group.add(spire);
   }
@@ -792,18 +805,22 @@ function createCaveObstacleGroup(
 ) {
   const { mountainMaterial } = createMountainTerrainMaterials(three);
   const group = new three.Group();
-  const count = 2 + Math.floor(hash2D(CAVE_OBSTACLE_COUNT_SEED, tileX, tileY) * 3);
+  const count =
+    2 + Math.floor(hash2D(CAVE_OBSTACLE_COUNT_SEED, tileX, tileY) * 3);
 
   for (let index = 0; index < count; index += 1) {
     const boulder = new three.Mesh(
       new three.SphereGeometry(0.16, 7, 6),
       mountainMaterial
     );
-    const scale = 0.75 + hash2D(CAVE_OBSTACLE_SCALE_SEED, tileX + index, tileY) * 0.5;
+    const scale =
+      0.75 + hash2D(CAVE_OBSTACLE_SCALE_SEED, tileX + index, tileY) * 0.5;
     boulder.position.set(
-      tileX + (hash2D(CAVE_OBSTACLE_X_SEED, tileX * 23 + index, tileY) - 0.5) * 0.34,
+      tileX +
+        (hash2D(CAVE_OBSTACLE_X_SEED, tileX * 23 + index, tileY) - 0.5) * 0.34,
       0.12 + index * 0.04,
-      tileY + (hash2D(CAVE_OBSTACLE_Z_SEED, tileX, tileY * 29 + index) - 0.5) * 0.3
+      tileY +
+        (hash2D(CAVE_OBSTACLE_Z_SEED, tileX, tileY * 29 + index) - 0.5) * 0.3
     );
     boulder.scale.set(scale, 0.7 + scale * 0.35, scale);
     group.add(boulder);

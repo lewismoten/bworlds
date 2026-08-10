@@ -6,14 +6,7 @@ import {
 } from './index.ts';
 
 function createCircularDockRouteState() {
-  const dockTiles = new Set([
-    '0:0',
-    '1:0',
-    '22:0',
-    '23:0',
-    '11:22',
-    '12:22',
-  ]);
+  const dockTiles = new Set(['0:0', '1:0', '22:0', '23:0', '11:22', '12:22']);
   const poiNames: Record<string, string> = {
     '-1:0': 'Beacon Point',
     '24:0': 'Harbor Market',
@@ -162,11 +155,9 @@ describe('dock route support', () => {
   it('reports arrival and departure whistle windows near dock approaches', () => {
     const state = createCircularDockRouteState();
     let departurePlacement:
-      | ReturnType<typeof getDockBoatPlacements>[number]
-      | undefined;
+      ReturnType<typeof getDockBoatPlacements>[number] | undefined;
     let arrivalPlacement:
-      | ReturnType<typeof getDockBoatPlacements>[number]
-      | undefined;
+      ReturnType<typeof getDockBoatPlacements>[number] | undefined;
 
     for (let timeMs = 0; timeMs <= 30 * 60 * 1000; timeMs += 2_000) {
       const placements = getDockBoatPlacements(state as never, timeMs, 0, 0);
@@ -248,7 +239,10 @@ describe('dock route support', () => {
           return { kind: 'shore', poi: { type: 'town', name: 'Beacon Point' } };
         }
         if (x === 24 && y === 0) {
-          return { kind: 'shore', poi: { type: 'town', name: 'Harbor Market' } };
+          return {
+            kind: 'shore',
+            poi: { type: 'town', name: 'Harbor Market' },
+          };
         }
         if (x === 13 && y === 10) {
           return { kind: 'shore', poi: { type: 'town', name: 'Middle Reach' } };

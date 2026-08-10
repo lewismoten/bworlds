@@ -49,13 +49,17 @@ describe('runtime celestial system', () => {
     expect(events).toHaveLength(5);
     expect(new Set(events.map((event) => event.name)).size).toBe(5);
     expect(events.every((event) => event.type === 'planet')).toBe(true);
-    expect(events.every((event) => event.visibility >= 0 && event.visibility <= 1)).toBe(
-      true
-    );
-    expect(events.every((event) => event.altitude >= -1 && event.altitude <= 1)).toBe(true);
-    expect(events.every((event) => event.azimuth >= 0 && event.azimuth <= Math.PI * 2)).toBe(
-      true
-    );
+    expect(
+      events.every((event) => event.visibility >= 0 && event.visibility <= 1)
+    ).toBe(true);
+    expect(
+      events.every((event) => event.altitude >= -1 && event.altitude <= 1)
+    ).toBe(true);
+    expect(
+      events.every(
+        (event) => event.azimuth >= 0 && event.azimuth <= Math.PI * 2
+      )
+    ).toBe(true);
   });
 
   it('uses shared observer-aware orbit math so planet altitude changes with latitude', () => {

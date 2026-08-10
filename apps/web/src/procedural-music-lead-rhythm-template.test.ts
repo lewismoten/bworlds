@@ -34,9 +34,9 @@ describe('procedural music lead rhythm template', () => {
               attack.durationRatio *
                 PROCEDURAL_LEAD_RHYTHM_SUBDIVISION_COUNT ===
                 attack.subdivisionLength
-        ) &&
-        measure.tailRestSubdivisionCount ===
-          ((measureIndex + 1) % 4 === 0 ? 4 : 0)
+          ) &&
+          measure.tailRestSubdivisionCount ===
+            ((measureIndex + 1) % 4 === 0 ? 4 : 0)
       )
     ).toBe(true);
   });

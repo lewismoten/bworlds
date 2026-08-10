@@ -41,7 +41,10 @@ describe('procedural style helpers', () => {
   });
 
   it('creates reusable regional value resolvers for package-local style caches', () => {
-    const cache = new Map<string, { label: string; tileX: number; tileY: number }>();
+    const cache = new Map<
+      string,
+      { label: string; tileX: number; tileY: number }
+    >();
     const resolveValue = createRegionalValueResolver(
       cache,
       8,
@@ -64,7 +67,10 @@ describe('procedural style helpers', () => {
   });
 
   it('creates reusable coordinate value resolvers for per-tile caches', () => {
-    const cache = new Map<string, { key: string; tileX: number; tileY: number }>();
+    const cache = new Map<
+      string,
+      { key: string; tileX: number; tileY: number }
+    >();
     const resolveValue = createCoordinateValueResolver(
       cache,
       ({ key, tileX, tileY }) => ({
@@ -98,7 +104,7 @@ describe('procedural style helpers', () => {
         key,
         tileX,
         tileY,
-        stamp: stamp += 1,
+        stamp: (stamp += 1),
       })
     );
 
@@ -117,7 +123,10 @@ describe('procedural style helpers', () => {
     const cache = new Map<
       string,
       {
-        createMaterials(three: { label: string }): { cacheKey: string; host: string };
+        createMaterials(three: { label: string }): {
+          cacheKey: string;
+          host: string;
+        };
       }
     >();
     const resolveMaterial = createRegionalMaterialResolver(

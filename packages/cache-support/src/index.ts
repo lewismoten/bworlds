@@ -52,10 +52,7 @@ export function getOrCreateMapValue<Key, Value>(
   return value;
 }
 
-export function getOrCreateWeakMapValue<
-  Key extends WeakKey,
-  Value,
->(
+export function getOrCreateWeakMapValue<Key extends WeakKey, Value>(
   cache: WeakMap<Key, Value>,
   key: Key,
   create: () => Value

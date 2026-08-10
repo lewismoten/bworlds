@@ -66,7 +66,9 @@ function createFrontierDecoratePayload(
 
 describe('runtime frontier flavor', () => {
   it('provides a shared overworld environment profile', () => {
-    expect(plugin.resolveWorldEnvironment?.(createFrontierEnvironmentPayload())).toEqual(
+    expect(
+      plugin.resolveWorldEnvironment?.(createFrontierEnvironmentPayload())
+    ).toEqual(
       expect.objectContaining({
         sky: expect.objectContaining({
           dawnColor: expect.any(String),
@@ -85,9 +87,19 @@ describe('runtime frontier flavor', () => {
     const origin = resolveFrontierSkyProfile(0, 0);
     expect(origin).toEqual(resolveFrontierSkyProfile(0, 0));
 
-    let differentRegionProfile: ReturnType<typeof resolveFrontierSkyProfile> | null = null;
-    for (let regionY = 1; regionY <= 8 && !differentRegionProfile; regionY += 1) {
-      for (let regionX = 1; regionX <= 8 && !differentRegionProfile; regionX += 1) {
+    let differentRegionProfile: ReturnType<
+      typeof resolveFrontierSkyProfile
+    > | null = null;
+    for (
+      let regionY = 1;
+      regionY <= 8 && !differentRegionProfile;
+      regionY += 1
+    ) {
+      for (
+        let regionX = 1;
+        regionX <= 8 && !differentRegionProfile;
+        regionX += 1
+      ) {
         const candidate = resolveFrontierSkyProfile(regionX * 24, regionY * 24);
         if (JSON.stringify(candidate) !== JSON.stringify(origin)) {
           differentRegionProfile = candidate;

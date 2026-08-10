@@ -26,7 +26,9 @@ describe('material texture collector', () => {
       visible: true,
     };
 
-    expect(collectMaterialTexturesInto(secondMaterial as never, target)).toBe(target);
+    expect(collectMaterialTexturesInto(secondMaterial as never, target)).toBe(
+      target
+    );
     expect(target).toEqual([emissive]);
   });
 

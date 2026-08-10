@@ -97,7 +97,10 @@ describe('frame scheduler', () => {
   it('can reuse a stable frame runner across animation frames', () => {
     const requestNextFrame = vi.fn();
     const runFrame = vi.fn((deltaMs: number) => `frame:${deltaMs}`);
-    const runScheduledFrame = createAnimationFrameRunner(requestNextFrame, runFrame);
+    const runScheduledFrame = createAnimationFrameRunner(
+      requestNextFrame,
+      runFrame
+    );
 
     expect(runScheduledFrame(100, 80, false)).toEqual({
       lastFrameTimestamp: 100,

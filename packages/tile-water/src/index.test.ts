@@ -77,11 +77,11 @@ describe('tile water', () => {
         geometry: child.geometry?.constructor.name ?? 'unknown',
         opacity:
           child.material && !Array.isArray(child.material)
-            ? child.material.opacity ?? null
+            ? (child.material.opacity ?? null)
             : null,
         color:
           child.material && !Array.isArray(child.material)
-            ? child.material.options.color ?? null
+            ? (child.material.options.color ?? null)
             : null,
       }));
     };
@@ -135,8 +135,12 @@ describe('tile water', () => {
 
     expect(firstMaterials.size).toBeLessThanOrEqual(2);
     expect(secondMaterials.size).toBeLessThanOrEqual(2);
-    expect([...firstMaterials]).toEqual(expect.arrayContaining([...secondMaterials]));
-    expect([...firstMaterials].some((material) => otherHostMaterials.has(material))).toBe(false);
+    expect([...firstMaterials]).toEqual(
+      expect.arrayContaining([...secondMaterials])
+    );
+    expect(
+      [...firstMaterials].some((material) => otherHostMaterials.has(material))
+    ).toBe(false);
   });
 
   it('produces animated ocean overlays only when time is available', () => {
@@ -220,13 +224,7 @@ function createFakeThree() {
 }
 
 function createRiverState() {
-  const riverTiles = new Set([
-    '0:0',
-    '0:-1',
-    '0:1',
-    '-1:0',
-    '1:0',
-  ]);
+  const riverTiles = new Set(['0:0', '0:-1', '0:1', '-1:0', '1:0']);
 
   return {
     getCurrentTile(x: number, y: number) {

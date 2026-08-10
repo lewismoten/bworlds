@@ -51,13 +51,17 @@ export function countColorVariantShareableMaterials(
   return colorVariantCount;
 }
 
-export function getMaterialEquivalenceSignature(material: THREE.Material): string {
+export function getMaterialEquivalenceSignature(
+  material: THREE.Material
+): string {
   return getMaterialSignature(material, {
     includeColorVariation: true,
   });
 }
 
-export function getMaterialColorVariantSignature(material: THREE.Material): string {
+export function getMaterialColorVariantSignature(
+  material: THREE.Material
+): string {
   return getMaterialSignature(material, {
     includeColorVariation: false,
   });

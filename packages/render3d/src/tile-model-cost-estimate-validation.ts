@@ -28,7 +28,10 @@ export const TILE_MODEL_COST_ESTIMATE_METRICS = [
 export type TileModelCostEstimateMetric =
   (typeof TILE_MODEL_COST_ESTIMATE_METRICS)[number];
 
-export type TileModelCostEstimateLimits = Record<TileModelCostEstimateMetric, number>;
+export type TileModelCostEstimateLimits = Record<
+  TileModelCostEstimateMetric,
+  number
+>;
 
 export type TileModelCostEstimateBudgetViolation = {
   metric: TileModelCostEstimateMetric;
@@ -60,6 +63,9 @@ export function summarizeTileModelCostEstimateBudgetViolations(
   violations: TileModelCostEstimateBudgetViolation[]
 ): string {
   return violations
-    .map((violation) => `estimated ${violation.metric} ${violation.actual}>${violation.limit}`)
+    .map(
+      (violation) =>
+        `estimated ${violation.metric} ${violation.actual}>${violation.limit}`
+    )
     .join(', ');
 }

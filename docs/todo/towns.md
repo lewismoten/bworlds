@@ -1,8 +1,7 @@
-- [X] Towns have levels that determine the population and number of residential and professional buildings.
-- [X] All buildings in a town have roads that run past them.
-- [X] All buildings in a town have a sidewalk, path, etc. that lead to the road
-- [X] Some buildings have fences with an opening leading to the entrance
-
+- [x] Towns have levels that determine the population and number of residential and professional buildings.
+- [x] All buildings in a town have roads that run past them.
+- [x] All buildings in a town have a sidewalk, path, etc. that lead to the road
+- [x] Some buildings have fences with an opening leading to the entrance
 
 - [ ] Towns can become a simulation game of their own to level up the town, and various progressions can depend on prior progressions
   - [ ] Progression example: clear nearby wolves, establish logging camp, gather timber, build sawmill, recruit carpenter, build houses, population increases, unlock marketplace, attract traveling merchants
@@ -56,6 +55,6 @@
   - [ ] Maintenance — repair structures, replenish supplies, pay guards, keep roads usable, maintain defenses.
   - [ ] town projects can require both players and NPC's to assist in materials: stone, timber, iron, gold, bandits (safety)
   - [ ] As town improves, safety around town on world map increases, in that lower level chance encounters are closer to town, and higher level chance encounters are further away
-  - [ ] procedurally generated towns are at varrying states of progression to begin with. 
+  - [ ] procedurally generated towns are at varrying states of progression to begin with.
   - [ ] A new player would be offered to start at or near a town that is most preferable for new low-level players
 - [x] When inside a POI map, and teleporting to another POI, forget where you entered the existing POI - ie, I was inside a town, couldn't exit, and when I teleported, i was outside of another town.

@@ -7,7 +7,8 @@ export function getDecodedTextureMemoryEstimateBytes(texture: unknown): number {
   }
 
   const baseBytes = width * height * 4;
-  const usesMipmaps = (texture as { generateMipmaps?: boolean }).generateMipmaps !== false;
+  const usesMipmaps =
+    (texture as { generateMipmaps?: boolean }).generateMipmaps !== false;
   return usesMipmaps ? Math.round((baseBytes * 4) / 3) : baseBytes;
 }
 

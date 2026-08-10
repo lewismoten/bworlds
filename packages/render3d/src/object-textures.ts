@@ -18,7 +18,11 @@ export function collectUniqueObjectTextures(
         materials[index]!,
         materialTexturesBuffer
       );
-      for (let textureIndex = 0; textureIndex < textures.length; textureIndex += 1) {
+      for (
+        let textureIndex = 0;
+        textureIndex < textures.length;
+        textureIndex += 1
+      ) {
         uniqueTextures.add(textures[textureIndex]);
       }
     }

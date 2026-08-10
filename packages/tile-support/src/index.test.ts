@@ -11,7 +11,10 @@ import {
   resolveDominantNeighborFloorKind3D,
   withTerrainTileClassifier,
 } from './index.ts';
-import type { ResolveFloorKind3DContext, TilePlugin } from '@bworlds/plugin-api';
+import type {
+  ResolveFloorKind3DContext,
+  TilePlugin,
+} from '@bworlds/plugin-api';
 
 describe('tile support', () => {
   it('creates a default route traversal profile', () => {
@@ -270,14 +273,11 @@ describe('tile support', () => {
       },
     };
     expect(
-      resolveDominantNeighborFloorKind3D(
-        payload,
-        {
-          isExcludedKind(kind) {
-            return kind === 'road' || kind === 'river';
-          },
-        }
-      )
+      resolveDominantNeighborFloorKind3D(payload, {
+        isExcludedKind(kind) {
+          return kind === 'road' || kind === 'river';
+        },
+      })
     ).toBe('plains');
   });
 });

@@ -3,14 +3,7 @@ import { getDockBoatPlacements } from '@bworlds/dock-route-support';
 import { createDockTrafficRuntimePlugin } from './index.ts';
 
 function createCircularDockRouteState() {
-  const dockTiles = new Set([
-    '0:0',
-    '1:0',
-    '22:0',
-    '23:0',
-    '11:22',
-    '12:22',
-  ]);
+  const dockTiles = new Set(['0:0', '1:0', '22:0', '23:0', '11:22', '12:22']);
   const poiNames: Record<string, string> = {
     '-1:0': 'Beacon Point',
     '24:0': 'Harbor Market',

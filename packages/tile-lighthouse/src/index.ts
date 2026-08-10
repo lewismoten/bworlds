@@ -45,13 +45,35 @@ const LIGHTHOUSE_REGION_SIZE = 18;
 export const LIGHTHOUSE_STYLE_CACHE_MAX_ENTRIES = 96;
 const LIGHTHOUSE_BEAM_COLOR_SEED = registerHashLabel('lighthouse-beam-color');
 const LIGHTHOUSE_PANE_COLOR_SEED = registerHashLabel('lighthouse-pane-color');
-const LIGHTHOUSE_ROTATION_SPEED_SEED = registerHashLabel('lighthouse-rotation-speed');
-const LIGHTHOUSE_ROTATION_DIRECTION_SEED = registerHashLabel('lighthouse-rotation-direction');
+const LIGHTHOUSE_ROTATION_SPEED_SEED = registerHashLabel(
+  'lighthouse-rotation-speed'
+);
+const LIGHTHOUSE_ROTATION_DIRECTION_SEED = registerHashLabel(
+  'lighthouse-rotation-direction'
+);
 const LIGHTHOUSE_BEAM_START_OFFSET = 0.14;
 const LIGHTHOUSE_BEAM_SEGMENTS = [
-  { key: 'near', radius: 0.1, length: 1.1, opacity: 0.24, emissiveIntensity: 1.2 },
-  { key: 'mid', radius: 0.19, length: 1.22, opacity: 0.16, emissiveIntensity: 0.9 },
-  { key: 'far', radius: 0.32, length: 1.48, opacity: 0.08, emissiveIntensity: 0.58 },
+  {
+    key: 'near',
+    radius: 0.1,
+    length: 1.1,
+    opacity: 0.24,
+    emissiveIntensity: 1.2,
+  },
+  {
+    key: 'mid',
+    radius: 0.19,
+    length: 1.22,
+    opacity: 0.16,
+    emissiveIntensity: 0.9,
+  },
+  {
+    key: 'far',
+    radius: 0.32,
+    length: 1.48,
+    opacity: 0.08,
+    emissiveIntensity: 0.58,
+  },
 ] as const;
 const LIGHTHOUSE_LOW_DETAIL_BEAM_SEGMENTS = [
   { radius: 0.14, length: 1.24, opacity: 0.2, emissiveIntensity: 0.92 },
@@ -128,9 +150,14 @@ const resolveRegionalLighthouseStyle = createRegionalMaterialResolver(
       beamColor
     );
     const rotationDurationMs =
-      1800 + Math.round(hash2D(LIGHTHOUSE_ROTATION_SPEED_SEED, regionX, regionY) * 1800);
+      1800 +
+      Math.round(
+        hash2D(LIGHTHOUSE_ROTATION_SPEED_SEED, regionX, regionY) * 1800
+      );
     const rotationDirection =
-      hash2D(LIGHTHOUSE_ROTATION_DIRECTION_SEED, regionX, regionY) >= 0.5 ? 1 : -1;
+      hash2D(LIGHTHOUSE_ROTATION_DIRECTION_SEED, regionX, regionY) >= 0.5
+        ? 1
+        : -1;
 
     return createHostMaterialResolver(
       (three: Create3DModelContext['three']): LighthouseStyleMaterials => ({
@@ -214,7 +241,10 @@ const resolveRegionalLighthouseStyle = createRegionalMaterialResolver(
               side: three.DoubleSide,
             }),
           ])
-        ) as Record<(typeof LIGHTHOUSE_BEAM_SEGMENTS)[number]['key'], ThreeMaterialLike>,
+        ) as Record<
+          (typeof LIGHTHOUSE_BEAM_SEGMENTS)[number]['key'],
+          ThreeMaterialLike
+        >,
       })
     );
   }
@@ -271,8 +301,7 @@ export function createLighthouseTilePlugin(): RuntimePlugin {
         rotationDurationMs,
         rotationDirection,
         beamMaterials,
-      } =
-        resolveRegionalLighthouseStyle(three, tileX, tileY);
+      } = resolveRegionalLighthouseStyle(three, tileX, tileY);
 
       if (detailLevel === 'low') {
         return createLowDetailLighthouseModel(three, tileX, tileY, {
@@ -429,7 +458,10 @@ export function createLighthouseTilePlugin(): RuntimePlugin {
 
       const lens = markOptionalDecorativeRenderBudgetPart(
         markPoiLightEmitter(
-          new three.Mesh(getSharedSphereGeometry(three, 0.08, 10, 8), lensMaterial),
+          new three.Mesh(
+            getSharedSphereGeometry(three, 0.08, 10, 8),
+            lensMaterial
+          ),
           {
             kind: 'emissive-mesh',
             dayIntensity: 0.12,
@@ -574,8 +606,16 @@ export function createLighthouseTilePlugin(): RuntimePlugin {
       if (!model || typeof model !== 'object') {
         return;
       }
-      syncPoiLightEmitters(model as Parameters<typeof syncPoiLightEmitters>[0], cycle);
-      syncLighthouseBeam(model as ThreeObject3DLike, cycle, timeMs ?? 0, environment);
+      syncPoiLightEmitters(
+        model as Parameters<typeof syncPoiLightEmitters>[0],
+        cycle
+      );
+      syncLighthouseBeam(
+        model as ThreeObject3DLike,
+        cycle,
+        timeMs ?? 0,
+        environment
+      );
     },
   });
 }
@@ -605,7 +645,12 @@ function pickLighthousePaneColor(signal: number, beamColor: string): string {
 
 function syncLighthouseBeam(
   root: ThreeObject3DLike,
-  cycle: { daylight: number; twilight: number; night: number; sunAltitude?: number },
+  cycle: {
+    daylight: number;
+    twilight: number;
+    night: number;
+    sunAltitude?: number;
+  },
   timeMs: number,
   environment: WorldEnvironmentLike = {}
 ): void {
@@ -624,7 +669,8 @@ function syncLighthouseBeam(
       const rotationDirection =
         node.userData?.lighthouseBeamRotationDirection === -1 ? -1 : 1;
       const sweepRotation =
-        ((((timeMs / rotationDurationMs) * Math.PI * 2 * rotationDirection) % (Math.PI * 2)) +
+        ((((timeMs / rotationDurationMs) * Math.PI * 2 * rotationDirection) %
+          (Math.PI * 2)) +
           Math.PI * 2) %
         (Math.PI * 2);
       node.rotation.y = sweepRotation;
@@ -677,7 +723,9 @@ function getLighthouseBeamSegmentScale(
   node: ThreeObject3DLike,
   scales: { near: number; mid: number; far: number }
 ) {
-  const emissiveScale = Number(node.userData?.lighthouseBeamEmissiveIntensity ?? 0);
+  const emissiveScale = Number(
+    node.userData?.lighthouseBeamEmissiveIntensity ?? 0
+  );
   if (emissiveScale >= 1) {
     return scales.near;
   }

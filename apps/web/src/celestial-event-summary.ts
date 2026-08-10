@@ -44,8 +44,9 @@ export function summarizeCelestialEvents(
     }
   }
 
-  const eclipseCoverage =
-    cycle.solarEclipse?.active ? (cycle.solarEclipse.coverage ?? 0) : 0;
+  const eclipseCoverage = cycle.solarEclipse?.active
+    ? (cycle.solarEclipse.coverage ?? 0)
+    : 0;
 
   return {
     auroraCount,
@@ -71,7 +72,9 @@ export function describeActiveCelestialEvents(
   if (summary.cometCount > 0) {
     activeEvents.push('Comet visible');
   }
-  return activeEvents.length > 0 ? activeEvents.join(' • ') : 'No active events';
+  return activeEvents.length > 0
+    ? activeEvents.join(' • ')
+    : 'No active events';
 }
 
 export function getActiveCelestialEventDetails(

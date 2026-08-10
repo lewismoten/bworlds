@@ -16,7 +16,10 @@ export function createSortedCountSummaryScratch(): SortedCountSummaryScratch {
 export function summarizeSortedCountMap(
   counts: ReadonlyMap<string, number>,
   scratch = createSortedCountSummaryScratch(),
-  compare: (left: CountEntry, right: CountEntry) => number = compareCountEntriesByLabel
+  compare: (
+    left: CountEntry,
+    right: CountEntry
+  ) => number = compareCountEntriesByLabel
 ): string {
   const entries = fillSortedCountEntries(counts, scratch, compare);
   if (entries.length === 0) {
@@ -37,7 +40,10 @@ export function summarizeSortedCountMap(
 export function summarizeSortedCountMapWithTopLabel(
   counts: ReadonlyMap<string, number>,
   scratch = createSortedCountSummaryScratch(),
-  compare: (left: CountEntry, right: CountEntry) => number = compareCountEntriesByDescendingCount
+  compare: (
+    left: CountEntry,
+    right: CountEntry
+  ) => number = compareCountEntriesByDescendingCount
 ): {
   topCount: number;
   topLabel: string;
@@ -84,11 +90,17 @@ function fillSortedCountEntries(
   return entries;
 }
 
-function compareCountEntriesByLabel(left: CountEntry, right: CountEntry): number {
+function compareCountEntriesByLabel(
+  left: CountEntry,
+  right: CountEntry
+): number {
   return left.label.localeCompare(right.label);
 }
 
-function compareCountEntriesByDescendingCount(left: CountEntry, right: CountEntry): number {
+function compareCountEntriesByDescendingCount(
+  left: CountEntry,
+  right: CountEntry
+): number {
   if (right.count !== left.count) {
     return right.count - left.count;
   }

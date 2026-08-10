@@ -113,8 +113,7 @@ function resolveTowerTile(depth: number, x: number, y: number): TowerTile {
   if (depth === 1 && x === 0 && y === 1) {
     return {
       kind: 'interior',
-      note:
-        'A heavy cabinet has been shoved off its groove, opening the spiral toward the next landing.',
+      note: 'A heavy cabinet has been shoved off its groove, opening the spiral toward the next landing.',
     };
   }
   if (depth === 2 && x === -2 && y === 0) {
@@ -152,21 +151,18 @@ function getTowerFloorCenterTile(depth: number): TowerTile {
   if (depth === 1) {
     return {
       kind: 'tower',
-      note:
-        'The first puzzle floor asks you to push a blocking cabinet aside before climbing higher.',
+      note: 'The first puzzle floor asks you to push a blocking cabinet aside before climbing higher.',
     };
   }
   if (depth === 2) {
     return {
       kind: 'tower',
-      note:
-        'The second floor hides a brass key that opens the locked stair door to the next level.',
+      note: 'The second floor hides a brass key that opens the locked stair door to the next level.',
     };
   }
   return {
     kind: 'tower',
-    note:
-      'The third floor ends in a broken landing where a jump carries you to the top watch room.',
+    note: 'The third floor ends in a broken landing where a jump carries you to the top watch room.',
   };
 }
 

@@ -33,13 +33,14 @@ export function getInteractionPromptFromResolvedState(
 ): string {
   const map = state.map ?? null;
   const action =
-    (map?.getAction?.(state.player.x, state.player.y, state as unknown as WorldStateLike) as
-      | WorldActionLike
-      | null
-      | undefined) ?? null;
+    (map?.getAction?.(
+      state.player.x,
+      state.player.y,
+      state as unknown as WorldStateLike
+    ) as WorldActionLike | null | undefined) ?? null;
   const exit =
-    (map?.getExit?.(state.player.x, state.player.y) as WorldActionLike | null | undefined) ??
-    null;
+    (map?.getExit?.(state.player.x, state.player.y) as
+      WorldActionLike | null | undefined) ?? null;
 
   if (exit) {
     return buildExitPrompt(state.tile, state.contextLabel);

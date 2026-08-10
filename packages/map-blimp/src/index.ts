@@ -1,5 +1,8 @@
 import { cardinalFromAngle } from '@bworlds/core';
-import { createContextMapPlugin, createExitMapAction } from '@bworlds/map-support';
+import {
+  createContextMapPlugin,
+  createExitMapAction,
+} from '@bworlds/map-support';
 import type {
   Kind,
   RuntimePlugin,
@@ -12,10 +15,19 @@ const BLIMP_LAUNCH_SEARCH_RADIUS = 1;
 const BLIMP_MIN_FLIGHT_DISTANCE = 12;
 const BLIMP_MAX_FLIGHT_DISTANCE = 30;
 const BLIMP_LAUNCH_SUPPORT_KINDS = new Set(['dock', 'station', 'town']);
-const BLIMP_BLOCKED_TILE_KINDS = new Set(['ocean', 'river', 'mountain', 'wall']);
+const BLIMP_BLOCKED_TILE_KINDS = new Set([
+  'ocean',
+  'river',
+  'mountain',
+  'wall',
+]);
 
 type Point = { x: number; y: number };
-type TileSampler = (x: number, y: number, state?: WorldStateLike) => { kind: Kind };
+type TileSampler = (
+  x: number,
+  y: number,
+  state?: WorldStateLike
+) => { kind: Kind };
 
 export type BlimpContext = WorldContextLike & {
   origin: Point;
@@ -55,7 +67,10 @@ export function createBlimpMap(context: BlimpContext): WorldMapLike {
         note: 'Rigging lines sway while the blimp cruises above the countryside.',
       };
     }
-    return { kind: 'wall', note: 'Cloud-shadowed sky stretches away beyond the blimp rail.' };
+    return {
+      kind: 'wall',
+      note: 'Cloud-shadowed sky stretches away beyond the blimp rail.',
+    };
   }
 
   function getAction() {
@@ -102,7 +117,11 @@ export function isBlimpLaunchableLandTile({
       if (offsetX === 0 && offsetY === 0) {
         continue;
       }
-      if (BLIMP_LAUNCH_SUPPORT_KINDS.has(sampleTile(x + offsetX, y + offsetY, state).kind)) {
+      if (
+        BLIMP_LAUNCH_SUPPORT_KINDS.has(
+          sampleTile(x + offsetX, y + offsetY, state).kind
+        )
+      ) {
         return true;
       }
     }
@@ -148,7 +167,9 @@ export function findBlimpLandingPoint({
   return null;
 }
 
-function getDirectionVector(cardinal: ReturnType<typeof cardinalFromAngle>): Point {
+function getDirectionVector(
+  cardinal: ReturnType<typeof cardinalFromAngle>
+): Point {
   if (cardinal === 'N') {
     return { x: 0, y: -1 };
   }

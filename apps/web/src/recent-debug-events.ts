@@ -22,7 +22,8 @@ export function collectMergedRecentDebugEvents(
     (localIndex >= 0 || rendererIndex >= 0)
   ) {
     const localEvent = localIndex >= 0 ? localEvents[localIndex] : null;
-    const rendererEvent = rendererIndex >= 0 ? rendererEvents[rendererIndex] : null;
+    const rendererEvent =
+      rendererIndex >= 0 ? rendererEvents[rendererIndex] : null;
     const localNowMs = localEvent?.nowMs ?? Number.NEGATIVE_INFINITY;
     const rendererNowMs = rendererEvent?.nowMs ?? Number.NEGATIVE_INFINITY;
 

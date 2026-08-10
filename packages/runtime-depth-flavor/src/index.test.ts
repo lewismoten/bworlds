@@ -52,7 +52,9 @@ describe('runtime depth flavor', () => {
       }
     }
 
-    expect(decorated?.note).toMatch(/^Depth 3: ancient markings cover the floor\.$/);
+    expect(decorated?.note).toMatch(
+      /^Depth 3: ancient markings cover the floor\.$/
+    );
   });
 
   it('does not decorate non-floor tiles', () => {

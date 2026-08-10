@@ -44,11 +44,7 @@ export const DEFAULT_BRIDGE_WATER_KINDS = new Set<WaterTileKind>([
 export const DEFAULT_WATER_KINDS = new Set<WaterTileKind>(['river', 'ocean']);
 export const DEFAULT_WATER_OR_CROSSING_KINDS = new Set<
   WaterTileKind | CrossingTileKind
->([
-  ...DEFAULT_WATER_KINDS,
-  'bridge',
-  'dock',
-]);
+>([...DEFAULT_WATER_KINDS, 'bridge', 'dock']);
 
 export function isRouteTerminalKind(
   kind: Kind,
@@ -73,7 +69,9 @@ export function isWaterKind(
 
 export function isWaterOrCrossingKind(
   kind: Kind,
-  kinds: ReadonlySet<WaterTileKind | CrossingTileKind> = DEFAULT_WATER_OR_CROSSING_KINDS
+  kinds: ReadonlySet<
+    WaterTileKind | CrossingTileKind
+  > = DEFAULT_WATER_OR_CROSSING_KINDS
 ) {
   return kinds.has(kind as WaterTileKind | CrossingTileKind);
 }
@@ -145,7 +143,9 @@ export function hasConnectedRoutePath({
       if (Math.hypot(a.x - b.x, a.y - b.y) > maxTownPairDistance) {
         continue;
       }
-      if (distanceToLineSegment(x, y, a.x, a.y, b.x, b.y) < townPairPathTolerance) {
+      if (
+        distanceToLineSegment(x, y, a.x, a.y, b.x, b.y) < townPairPathTolerance
+      ) {
         return true;
       }
     }
@@ -175,7 +175,8 @@ export function hasConnectedRoutePath({
   }
 
   return bridgeAnchors.some(
-    (bridge) => Math.hypot(x - bridge.x, y - bridge.y) < bridgeAnchorSnapDistance
+    (bridge) =>
+      Math.hypot(x - bridge.x, y - bridge.y) < bridgeAnchorSnapDistance
   );
 }
 
@@ -426,12 +427,12 @@ export function createThresholdTerrainClassifier(options: {
   comparator?: 'gt' | 'gte' | 'lt' | 'lte';
   allowedBaseKinds?: readonly Kind[];
   blockedKinds?: readonly Kind[];
-  createTile?(
-    context: ClassifyOverworldTileContext
-  ): TileLike | null;
+  createTile?(context: ClassifyOverworldTileContext): TileLike | null;
 }) {
   const comparator = options.comparator ?? 'gt';
-  const allowedBaseKinds: readonly Kind[] = options.allowedBaseKinds ?? ['plains'];
+  const allowedBaseKinds: readonly Kind[] = options.allowedBaseKinds ?? [
+    'plains',
+  ];
   const blockedKinds = new Set<Kind>(options.blockedKinds ?? []);
 
   return function classifyThresholdTerrainTile(

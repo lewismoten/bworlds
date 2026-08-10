@@ -32,9 +32,9 @@ describe('keyboard input helpers', () => {
     );
     expect(isEditableKeyboardTarget({ tagName: 'TEXTAREA' })).toBe(true);
     expect(isEditableKeyboardTarget({ isContentEditable: true })).toBe(true);
-    expect(isEditableKeyboardTarget({ tagName: 'INPUT', type: 'checkbox' })).toBe(
-      false
-    );
+    expect(
+      isEditableKeyboardTarget({ tagName: 'INPUT', type: 'checkbox' })
+    ).toBe(false);
     expect(isEditableKeyboardTarget({ tagName: 'INPUT', type: 'radio' })).toBe(
       false
     );

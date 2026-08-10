@@ -46,7 +46,10 @@ export function parsePlayerCharacterRoster(
     characters?: unknown;
     activeCharacterIds?: unknown;
   };
-  if (!Array.isArray(roster.characters) || !Array.isArray(roster.activeCharacterIds)) {
+  if (
+    !Array.isArray(roster.characters) ||
+    !Array.isArray(roster.activeCharacterIds)
+  ) {
     return null;
   }
   const characters = new Array<PlayerCharacterRosterMember>();
@@ -61,7 +64,11 @@ export function parsePlayerCharacterRoster(
   }
   const activeCharacterIds = new Array<string>();
   for (const entry of roster.activeCharacterIds) {
-    if (typeof entry !== 'string' || !seenIds.has(entry) || activeCharacterIds.includes(entry)) {
+    if (
+      typeof entry !== 'string' ||
+      !seenIds.has(entry) ||
+      activeCharacterIds.includes(entry)
+    ) {
       return null;
     }
     activeCharacterIds.push(entry);
@@ -169,7 +176,11 @@ export function ensurePlayerCharacterRoster(
   roster: PlayerCharacterRosterSnapshot | null,
   fallback: Parameters<typeof createPrimaryPlayerCharacterRoster>[0]
 ): PlayerCharacterRosterSnapshot {
-  if (!roster || roster.characters.length === 0 || roster.activeCharacterIds.length === 0) {
+  if (
+    !roster ||
+    roster.characters.length === 0 ||
+    roster.activeCharacterIds.length === 0
+  ) {
     return createPrimaryPlayerCharacterRoster(fallback);
   }
   return normalizePlayerCharacterRoster(roster);
@@ -232,10 +243,13 @@ export function syncPrimaryPlayerCharacter(
     completedQuestIds?: string[];
   }
 ): PlayerCharacterRosterSnapshot {
-  const primaryCharacterId = roster.activeCharacterIds[0] ?? roster.characters[0]?.id ?? 'player';
+  const primaryCharacterId =
+    roster.activeCharacterIds[0] ?? roster.characters[0]?.id ?? 'player';
   return {
     activeCharacterIds:
-      roster.activeCharacterIds.length > 0 ? [...roster.activeCharacterIds] : [primaryCharacterId],
+      roster.activeCharacterIds.length > 0
+        ? [...roster.activeCharacterIds]
+        : [primaryCharacterId],
     characters: roster.characters.map((character) =>
       character.id === primaryCharacterId
         ? {
@@ -260,7 +274,9 @@ export function dropOffPlayerCharacter(
   if (!roster.activeCharacterIds.includes(characterId)) {
     return roster;
   }
-  const remainingActiveIds = roster.activeCharacterIds.filter((id) => id !== characterId);
+  const remainingActiveIds = roster.activeCharacterIds.filter(
+    (id) => id !== characterId
+  );
   if (remainingActiveIds.length === 0) {
     return roster;
   }
@@ -376,6 +392,7 @@ function resolveFallbackActiveCharacterId(
     return retainedActiveId;
   }
   return (
-    roster.characters.find((character) => character.availability !== 'dropped')?.id ?? null
+    roster.characters.find((character) => character.availability !== 'dropped')
+      ?.id ?? null
   );
 }

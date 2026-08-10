@@ -1,5 +1,9 @@
 import { snapWorldCoordinate, toGps } from '@bworlds/core';
-import type { TileLike, WorldContextLike, WorldStateLike } from '@bworlds/plugin-api';
+import type {
+  TileLike,
+  WorldContextLike,
+  WorldStateLike,
+} from '@bworlds/plugin-api';
 
 export type PlayerSpatialSummary = {
   context: WorldContextLike;
@@ -12,7 +16,10 @@ export type PlayerSpatialSummary = {
   facing: number;
 };
 
-type SpatialState = Pick<WorldStateLike, 'getCurrentContext' | 'getCurrentTile'> & {
+type SpatialState = Pick<
+  WorldStateLike,
+  'getCurrentContext' | 'getCurrentTile'
+> & {
   player: {
     x: number;
     y: number;
@@ -20,7 +27,9 @@ type SpatialState = Pick<WorldStateLike, 'getCurrentContext' | 'getCurrentTile'>
   };
 };
 
-export function getPlayerSpatialSummary(state: SpatialState): PlayerSpatialSummary {
+export function getPlayerSpatialSummary(
+  state: SpatialState
+): PlayerSpatialSummary {
   return {
     context: state.getCurrentContext(),
     tile: state.getCurrentTile(),

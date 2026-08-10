@@ -86,7 +86,10 @@ function resolveBuildingCounterTile(
   }
 ): BuildingTile {
   if (!context.townBuildingId || !context.origin) {
-    return { kind: 'shop', note: 'A service counter waits inside the building.' };
+    return {
+      kind: 'shop',
+      note: 'A service counter waits inside the building.',
+    };
   }
 
   const buildingRole = context.townBuildingRole ?? 'professional';
@@ -130,7 +133,9 @@ function resolveBuildingCounterTile(
     };
   }
 
-  const serviceLabels = serviceState.availableServices.map((service) => service.label);
+  const serviceLabels = serviceState.availableServices.map(
+    (service) => service.label
+  );
   return {
     kind: 'shop',
     note: `${serviceState.presentNpcNames.join(', ')} can help here with ${serviceLabels.join(', ')}.${

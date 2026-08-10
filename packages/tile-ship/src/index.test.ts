@@ -152,7 +152,9 @@ describe('tile ship', () => {
       tileY: 5,
     }) as FakeNode | undefined;
 
-    expect(countSharedMaterialReferences(first, second)).toBeGreaterThanOrEqual(5);
+    expect(countSharedMaterialReferences(first, second)).toBeGreaterThanOrEqual(
+      5
+    );
   });
 
   it('creates an enterable ship model with a deterministic variant and night light', () => {

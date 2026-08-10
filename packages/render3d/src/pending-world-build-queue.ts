@@ -34,10 +34,7 @@ export function fillPendingWorldBuildQueue(
   scratch.queuedKeys.clear();
 
   for (const entry of nextQueue) {
-    if (
-      visibleTileKeys.has(entry.key) ||
-      scratch.queuedKeys.has(entry.key)
-    ) {
+    if (visibleTileKeys.has(entry.key) || scratch.queuedKeys.has(entry.key)) {
       continue;
     }
     scratch.queuedKeys.add(entry.key);

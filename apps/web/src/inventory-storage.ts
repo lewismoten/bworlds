@@ -65,16 +65,10 @@ export function parseInventoryItems(
     if (!Number.isFinite(item.quantity) || item.quantity <= 0) {
       return null;
     }
-    if (
-      typeof item.label !== 'undefined' &&
-      typeof item.label !== 'string'
-    ) {
+    if (typeof item.label !== 'undefined' && typeof item.label !== 'string') {
       return null;
     }
-    if (
-      typeof item.kind !== 'undefined' &&
-      typeof item.kind !== 'string'
-    ) {
+    if (typeof item.kind !== 'undefined' && typeof item.kind !== 'string') {
       return null;
     }
     items.push({

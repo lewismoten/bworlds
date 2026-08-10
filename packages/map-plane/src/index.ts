@@ -1,5 +1,8 @@
 import { cardinalFromAngle } from '@bworlds/core';
-import { createContextMapPlugin, createExitMapAction } from '@bworlds/map-support';
+import {
+  createContextMapPlugin,
+  createExitMapAction,
+} from '@bworlds/map-support';
 import type {
   Kind,
   RuntimePlugin,
@@ -12,10 +15,19 @@ const PLANE_RUNWAY_CHECK_DISTANCE = 3;
 const PLANE_MIN_FLIGHT_DISTANCE = 16;
 const PLANE_MAX_FLIGHT_DISTANCE = 36;
 const PLANE_RUNWAY_SUPPORT_KINDS = new Set(['rail', 'station', 'road']);
-const PLANE_BLOCKED_TILE_KINDS = new Set(['ocean', 'river', 'mountain', 'wall']);
+const PLANE_BLOCKED_TILE_KINDS = new Set([
+  'ocean',
+  'river',
+  'mountain',
+  'wall',
+]);
 
 type Point = { x: number; y: number };
-type TileSampler = (x: number, y: number, state?: WorldStateLike) => { kind: Kind };
+type TileSampler = (
+  x: number,
+  y: number,
+  state?: WorldStateLike
+) => { kind: Kind };
 
 export type PlaneContext = WorldContextLike & {
   origin: Point;
@@ -55,7 +67,10 @@ export function createPlaneMap(context: PlaneContext): WorldMapLike {
         note: 'Wind buffets the fuselage as the plane crosses the open sky.',
       };
     }
-    return { kind: 'wall', note: 'Clouds and distant ground blur beyond the plane canopy.' };
+    return {
+      kind: 'wall',
+      note: 'Clouds and distant ground blur beyond the plane canopy.',
+    };
   }
 
   function getAction() {
@@ -93,11 +108,18 @@ export function isPlaneLaunchableLandTile({
   }
   const direction = getDirectionVector(cardinalFromAngle(facing));
   let sawSupport = PLANE_RUNWAY_SUPPORT_KINDS.has(tile.kind);
-  for (let distance = 1; distance <= PLANE_RUNWAY_CHECK_DISTANCE; distance += 1) {
+  for (
+    let distance = 1;
+    distance <= PLANE_RUNWAY_CHECK_DISTANCE;
+    distance += 1
+  ) {
     const sampleX = x + direction.x * distance;
     const sampleY = y + direction.y * distance;
     const nextTile = sampleTile(sampleX, sampleY, state);
-    if (!isWalkable(nextTile.kind) || PLANE_BLOCKED_TILE_KINDS.has(nextTile.kind)) {
+    if (
+      !isWalkable(nextTile.kind) ||
+      PLANE_BLOCKED_TILE_KINDS.has(nextTile.kind)
+    ) {
       return false;
     }
     if (PLANE_RUNWAY_SUPPORT_KINDS.has(nextTile.kind)) {
@@ -171,7 +193,11 @@ function hasTouchdownRun({
   state?: WorldStateLike;
 }): boolean {
   for (let distance = 0; distance <= 2; distance += 1) {
-    const tile = sampleTile(x + direction.x * distance, y + direction.y * distance, state);
+    const tile = sampleTile(
+      x + direction.x * distance,
+      y + direction.y * distance,
+      state
+    );
     if (!isWalkable(tile.kind) || PLANE_BLOCKED_TILE_KINDS.has(tile.kind)) {
       return false;
     }
@@ -179,7 +205,9 @@ function hasTouchdownRun({
   return true;
 }
 
-function getDirectionVector(cardinal: ReturnType<typeof cardinalFromAngle>): Point {
+function getDirectionVector(
+  cardinal: ReturnType<typeof cardinalFromAngle>
+): Point {
   if (cardinal === 'N') {
     return { x: 0, y: -1 };
   }

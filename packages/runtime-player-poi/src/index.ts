@@ -61,7 +61,8 @@ export function createPlayerPoiRuntimePlugin(): RuntimePlugin {
 export function listPlayerPlacedPois(
   state?: WorldStateLike | null
 ): PlayerPlacedPoiLike[] {
-  const pois = (state as PlayerPoiStateLike | null | undefined)?.playerPlacedPois;
+  const pois = (state as PlayerPoiStateLike | null | undefined)
+    ?.playerPlacedPois;
   return Array.isArray(pois) ? pois : [];
 }
 
@@ -71,7 +72,8 @@ export function getPlayerPlacedPoi(
   y: number
 ): PlayerPlacedPoiLike | null {
   return (
-    listPlayerPlacedPois(state).find((poi) => poi.x === x && poi.y === y) ?? null
+    listPlayerPlacedPois(state).find((poi) => poi.x === x && poi.y === y) ??
+    null
   );
 }
 
@@ -128,12 +130,7 @@ export function buildPlayerPoi(
     kind,
     poi: {
       type: poiType,
-      name: generatePoiName(
-        resolveHashSeedInput(seed),
-        poiType,
-        tileX,
-        tileY
-      ),
+      name: generatePoiName(resolveHashSeedInput(seed), poiType, tileX, tileY),
     },
     note: getPlayerPoiBuildNote(kind),
   };
@@ -144,9 +141,11 @@ export function buildPlayerPoi(
 export function getPlayerPoiBuildNote(kind: Kind): string {
   if (kind === 'town') return 'A newly founded settlement takes shape here.';
   if (kind === 'cave') return 'A fresh cave entrance has been opened here.';
-  if (kind === 'dungeon') return 'A newly raised dungeon gate waits to be explored.';
+  if (kind === 'dungeon')
+    return 'A newly raised dungeon gate waits to be explored.';
   if (kind === 'quarry') return 'Fresh-cut stone marks a newly started quarry.';
-  if (kind === 'lighthouse') return 'A newly built lighthouse now watches the horizon.';
+  if (kind === 'lighthouse')
+    return 'A newly built lighthouse now watches the horizon.';
   if (kind === 'ship') return 'A newly moored ship creaks at its berth.';
   if (kind === 'observatory') {
     return 'A newly raised observatory opens its dome to the sky above.';
@@ -170,8 +169,10 @@ export function parsePlayerPlacedPois(
       typeof (entry as { y?: unknown }).y !== 'number' ||
       typeof (entry as { kind?: unknown }).kind !== 'string' ||
       typeof (entry as { note?: unknown }).note !== 'string' ||
-      typeof (entry as { poi?: { type?: unknown; name?: unknown } }).poi?.type !== 'string' ||
-      typeof (entry as { poi?: { type?: unknown; name?: unknown } }).poi?.name !== 'string'
+      typeof (entry as { poi?: { type?: unknown; name?: unknown } }).poi
+        ?.type !== 'string' ||
+      typeof (entry as { poi?: { type?: unknown; name?: unknown } }).poi
+        ?.name !== 'string'
     ) {
       return null;
     }

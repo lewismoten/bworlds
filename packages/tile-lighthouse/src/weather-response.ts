@@ -87,10 +87,18 @@ function getStormStrength(
     return 0;
   }
   if (weather.kind === 'heavy-rain' || weather.kind === 'hail') {
-    return clamp(weather.intensity * 0.92 + (1 - weather.visibility) * 0.34, 0, 1);
+    return clamp(
+      weather.intensity * 0.92 + (1 - weather.visibility) * 0.34,
+      0,
+      1
+    );
   }
   if (weather.kind === 'snow') {
-    return clamp(weather.intensity * 0.38 + (1 - weather.visibility) * 0.2, 0, 0.5);
+    return clamp(
+      weather.intensity * 0.38 + (1 - weather.visibility) * 0.2,
+      0,
+      0.5
+    );
   }
   return 0;
 }

@@ -84,7 +84,10 @@ export function validateTileModelCostEstimateAgainstLimits(
 }
 
 export function createTilePluginModelFromCostEstimate(
-  tilePlugin: Pick<TilePlugin, 'estimate3DModelCost' | 'create3DModel'> | null | undefined,
+  tilePlugin:
+    | Pick<TilePlugin, 'estimate3DModelCost' | 'create3DModel'>
+    | null
+    | undefined,
   renderContext: Create3DModelContext,
   limits: TileModelCostEstimateLimits
 ): {
@@ -123,7 +126,9 @@ export function createTilePluginModelFromCostEstimate(
 
 export function getTileModelCostEstimateLimitsForDetailLevel(
   detailLevel: RenderBudgetDetailLevel,
-  getHardLimits: (detailLevel: RenderBudgetDetailLevel) => TileModelHardLimitsSubset
+  getHardLimits: (
+    detailLevel: RenderBudgetDetailLevel
+  ) => TileModelHardLimitsSubset
 ): TileModelCostEstimateLimits {
   return getTileModelCostEstimateLimits(getHardLimits(detailLevel));
 }

@@ -8,7 +8,8 @@ import {
 describe('procedural music phrase structure', () => {
   it('reserves the cadence windows for the midpoint and end of each eight-measure phrase', () => {
     const phraseStepCount =
-      PROCEDURAL_MUSIC_PHRASE_MEASURE_COUNT * PROCEDURAL_MUSIC_STEPS_PER_MEASURE;
+      PROCEDURAL_MUSIC_PHRASE_MEASURE_COUNT *
+      PROCEDURAL_MUSIC_STEPS_PER_MEASURE;
 
     expect(
       [27, 32, 59].every(

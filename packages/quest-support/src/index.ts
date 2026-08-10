@@ -1,8 +1,5 @@
 export type QuestNpcState =
-  | 'home'
-  | 'commuting-to-work'
-  | 'working'
-  | 'commuting-home';
+  'home' | 'commuting-to-work' | 'working' | 'commuting-home';
 
 export type QuestOffer = {
   id: string;
@@ -156,8 +153,7 @@ function createHomeNeedQuestPlugin(): QuestTypePlugin {
   return createQuestTypePlugin('collection', (context) => {
     if (
       context.npcState !== 'home' ||
-      context.dayProgress > 0.25 &&
-        context.dayProgress < 0.72
+      (context.dayProgress > 0.25 && context.dayProgress < 0.72)
     ) {
       return null;
     }
@@ -229,7 +225,8 @@ function createKillQuestPlugin(): QuestTypePlugin {
     }
 
     const professionHint =
-      context.playerProfession === 'guard' || context.playerProfession === 'scout'
+      context.playerProfession === 'guard' ||
+      context.playerProfession === 'scout'
         ? ' Your combat patrol experience makes you the right hunter for it.'
         : '';
 
@@ -251,8 +248,7 @@ function createDefenseQuestPlugin(): QuestTypePlugin {
       context.playerLevel < 4 ||
       context.playerLevel > 20 ||
       !(
-        context.npcState === 'working' ||
-        context.npcState === 'commuting-home'
+        context.npcState === 'working' || context.npcState === 'commuting-home'
       ) ||
       !(
         context.professionFamily === 'town-hall' ||
@@ -281,14 +277,14 @@ function createDefenseQuestPlugin(): QuestTypePlugin {
             : seasonLabel === 'Winter'
               ? 'stand with the watch and defend the storehouses through the storm alarm'
               : 'help repel repeated attacks on the outer barricades';
-    const questId =
-      `${context.townKey}:${context.npcId}:defense:${context.professionFamily}:${seasonLabel}:${context.npcState}`;
+    const questId = `${context.townKey}:${context.npcId}:defense:${context.professionFamily}:${seasonLabel}:${context.npcState}`;
     if (context.completedQuestIds.has(questId)) {
       return null;
     }
 
     const professionHint =
-      context.playerProfession === 'guard' || context.playerProfession === 'healer'
+      context.playerProfession === 'guard' ||
+      context.playerProfession === 'healer'
         ? ' Your ability to hold a line under pressure makes you especially valuable.'
         : '';
 
@@ -310,8 +306,7 @@ function createStealthQuestPlugin(): QuestTypePlugin {
       context.playerLevel < 5 ||
       context.playerLevel > 18 ||
       !(
-        context.npcState === 'working' ||
-        context.npcState === 'commuting-home'
+        context.npcState === 'working' || context.npcState === 'commuting-home'
       ) ||
       !(
         context.professionFamily === 'market' ||
@@ -332,14 +327,14 @@ function createStealthQuestPlugin(): QuestTypePlugin {
           : context.professionFamily === 'market'
             ? 'sneak into the smugglers cache and mark which crates belong to the town merchants'
             : 'move through the watch alleys unseen and sabotage the raiders signal posts';
-    const questId =
-      `${context.townKey}:${context.npcId}:stealth:${context.professionFamily}:${seasonLabel}:${context.npcState}`;
+    const questId = `${context.townKey}:${context.npcId}:stealth:${context.professionFamily}:${seasonLabel}:${context.npcState}`;
     if (context.completedQuestIds.has(questId)) {
       return null;
     }
 
     const professionHint =
-      context.playerProfession === 'scout' || context.playerProfession === 'scholar'
+      context.playerProfession === 'scout' ||
+      context.playerProfession === 'scholar'
         ? ' Your quiet footwork should keep the operation from turning into a fight.'
         : '';
 
@@ -380,14 +375,14 @@ function createAssassinationQuestPlugin(): QuestTypePlugin {
           : context.professionFamily === 'market'
             ? 'the broker ordering caravan ambushes from the outer road'
             : 'the raider captain coordinating strikes on the town watch';
-    const questId =
-      `${context.townKey}:${context.npcId}:assassination:${context.professionFamily}:${seasonLabel}`;
+    const questId = `${context.townKey}:${context.npcId}:assassination:${context.professionFamily}:${seasonLabel}`;
     if (context.completedQuestIds.has(questId)) {
       return null;
     }
 
     const professionHint =
-      context.playerProfession === 'guard' || context.playerProfession === 'scout'
+      context.playerProfession === 'guard' ||
+      context.playerProfession === 'scout'
         ? ' Your pursuit skills make you a credible bounty hunter for the job.'
         : '';
 
@@ -428,14 +423,14 @@ function createCaptureQuestPlugin(): QuestTypePlugin {
           : context.professionFamily === 'market'
             ? 'the fence receiving stolen caravan goods'
             : 'the raider scout feeding routes back to the camp';
-    const questId =
-      `${context.townKey}:${context.npcId}:capture:${context.professionFamily}:${seasonLabel}`;
+    const questId = `${context.townKey}:${context.npcId}:capture:${context.professionFamily}:${seasonLabel}`;
     if (context.completedQuestIds.has(questId)) {
       return null;
     }
 
     const professionHint =
-      context.playerProfession === 'guard' || context.playerProfession === 'scout'
+      context.playerProfession === 'guard' ||
+      context.playerProfession === 'scout'
         ? ' Your control in a live pursuit should help bring them in breathing.'
         : '';
 
@@ -455,17 +450,17 @@ function createCompanionQuestPlugin(): QuestTypePlugin {
   return createQuestTypePlugin('companion', (context) => {
     if (
       context.playerLevel < 6 ||
-      !(
-        context.npcState === 'home' ||
-        context.npcState === 'working'
-      ) ||
+      !(context.npcState === 'home' || context.npcState === 'working') ||
       !(
         context.professionFamily === 'inn' ||
         context.professionFamily === 'stable' ||
         context.professionFamily === 'school' ||
         context.professionFamily === 'temple'
       ) ||
-      !hasCompletedQuestTypes(context, companionQuestPrerequisites[context.professionFamily])
+      !hasCompletedQuestTypes(
+        context,
+        companionQuestPrerequisites[context.professionFamily]
+      )
     ) {
       return null;
     }
@@ -523,7 +518,8 @@ function createEscortQuestPlugin(): QuestTypePlugin {
     const destination =
       context.npcState === 'commuting-to-work' ? 'to work' : 'back home';
     const professionHint =
-      context.playerProfession === 'guard' || context.playerProfession === 'scout'
+      context.playerProfession === 'guard' ||
+      context.playerProfession === 'scout'
         ? ' Your experience makes you an ideal escort.'
         : '';
 
@@ -544,8 +540,7 @@ function createRescueQuestPlugin(): QuestTypePlugin {
     if (
       context.playerLevel < 3 ||
       !(
-        context.npcState === 'working' ||
-        context.npcState === 'commuting-home'
+        context.npcState === 'working' || context.npcState === 'commuting-home'
       ) ||
       !(
         context.professionFamily === 'temple' ||
@@ -568,7 +563,8 @@ function createRescueQuestPlugin(): QuestTypePlugin {
     }
 
     const professionHint =
-      context.playerProfession === 'guard' || context.playerProfession === 'healer'
+      context.playerProfession === 'guard' ||
+      context.playerProfession === 'healer'
         ? ' Your calm rescue work makes you the best choice.'
         : '';
 
@@ -669,24 +665,19 @@ function createCraftingQuestPlugin(): QuestTypePlugin {
 function createFetchQuestPlugin(): QuestTypePlugin {
   return createQuestTypePlugin('fetch', (context) => {
     if (
-      !(
-        context.npcState === 'home' ||
-        context.npcState === 'working'
-      ) ||
+      !(context.npcState === 'home' || context.npcState === 'working') ||
       context.playerLevel > 10
     ) {
       return null;
     }
 
     const family = context.professionFamily;
-    if (
-      !(
-        family === 'temple' ||
-        family === 'inn' ||
-        family === 'market' ||
-        family === 'stable'
-      )
-    ) {
+    if (!(
+      family === 'temple' ||
+      family === 'inn' ||
+      family === 'market' ||
+      family === 'stable'
+    )) {
       return null;
     }
 
@@ -745,7 +736,8 @@ function createRecoveryQuestPlugin(): QuestTypePlugin {
     }
 
     const professionHint =
-      context.playerProfession === 'guard' || context.playerProfession === 'scout'
+      context.playerProfession === 'guard' ||
+      context.playerProfession === 'scout'
         ? ' Your patrol experience should help track it down.'
         : '';
 
@@ -791,7 +783,8 @@ function createTrackingQuestPlugin(): QuestTypePlugin {
     }
 
     const professionHint =
-      context.playerProfession === 'guard' || context.playerProfession === 'scout'
+      context.playerProfession === 'guard' ||
+      context.playerProfession === 'scout'
         ? ' Your tracking experience makes you the obvious choice.'
         : '';
 
@@ -800,8 +793,7 @@ function createTrackingQuestPlugin(): QuestTypePlugin {
       type: 'tracking',
       title: 'Lost Trail',
       summary: `${context.npcName} needs help following the signs left by ${clue}.${professionHint}`,
-      availability:
-        context.npcState === 'working' ? 'work' : 'travel',
+      availability: context.npcState === 'working' ? 'work' : 'travel',
       sourceNpcId: context.npcId,
       sourceNpcName: context.npcName,
     };
@@ -838,7 +830,8 @@ function createExplorationQuestPlugin(): QuestTypePlugin {
     }
 
     const professionHint =
-      context.playerProfession === 'scout' || context.playerProfession === 'scholar'
+      context.playerProfession === 'scout' ||
+      context.playerProfession === 'scholar'
         ? ' Your eye for routes and landmarks should make the survey easier.'
         : '';
 
@@ -884,7 +877,8 @@ function createPuzzleQuestPlugin(): QuestTypePlugin {
     }
 
     const professionHint =
-      context.playerProfession === 'scholar' || context.playerProfession === 'smith'
+      context.playerProfession === 'scholar' ||
+      context.playerProfession === 'smith'
         ? ' Your habit of studying patterns should help solve it cleanly.'
         : '';
 
@@ -918,8 +912,7 @@ function createTimedQuestPlugin(): QuestTypePlugin {
     }
 
     const seasonLabel = getSeasonLabel(context.yearProgress);
-    const deadline =
-      context.dayProgress < 0.5 ? 'before noon' : 'before dusk';
+    const deadline = context.dayProgress < 0.5 ? 'before noon' : 'before dusk';
     const objective =
       context.professionFamily === 'town-hall'
         ? 'post a public notice'
@@ -932,7 +925,8 @@ function createTimedQuestPlugin(): QuestTypePlugin {
     }
 
     const professionHint =
-      context.playerProfession === 'courier' || context.playerProfession === 'merchant'
+      context.playerProfession === 'courier' ||
+      context.playerProfession === 'merchant'
         ? ' Your quick feet should give you an advantage.'
         : '';
 
@@ -941,8 +935,7 @@ function createTimedQuestPlugin(): QuestTypePlugin {
       type: 'timed',
       title: `${seasonLabel} Rush Job`,
       summary: `${context.npcName} needs someone to ${objective} ${deadline}.${professionHint}`,
-      availability:
-        context.npcState === 'working' ? 'work' : 'travel',
+      availability: context.npcState === 'working' ? 'work' : 'travel',
       sourceNpcId: context.npcId,
       sourceNpcName: context.npcName,
     };
@@ -954,8 +947,7 @@ function createSurvivalQuestPlugin(): QuestTypePlugin {
     if (
       context.playerLevel < 3 ||
       !(
-        context.npcState === 'working' ||
-        context.npcState === 'commuting-home'
+        context.npcState === 'working' || context.npcState === 'commuting-home'
       ) ||
       !(
         context.professionFamily === 'inn' ||
@@ -990,7 +982,8 @@ function createSurvivalQuestPlugin(): QuestTypePlugin {
     }
 
     const professionHint =
-      context.playerProfession === 'guard' || context.playerProfession === 'healer'
+      context.playerProfession === 'guard' ||
+      context.playerProfession === 'healer'
         ? ' Your steady nerves should help everyone make it through.'
         : '';
 
@@ -1035,7 +1028,8 @@ function createActivationQuestPlugin(): QuestTypePlugin {
     }
 
     const professionHint =
-      context.playerProfession === 'smith' || context.playerProfession === 'healer'
+      context.playerProfession === 'smith' ||
+      context.playerProfession === 'healer'
         ? ' Your steady hands should help bring the system online quickly.'
         : '';
 
@@ -1080,7 +1074,8 @@ function createDestructionQuestPlugin(): QuestTypePlugin {
     }
 
     const professionHint =
-      context.playerProfession === 'smith' || context.playerProfession === 'guard'
+      context.playerProfession === 'smith' ||
+      context.playerProfession === 'guard'
         ? ' Your experience with force and equipment should keep the work controlled.'
         : '';
 
@@ -1132,7 +1127,8 @@ function createRevengeQuestPlugin(): QuestTypePlugin {
           ? 'track down the handler who abandoned the missing horse'
           : 'confront the broker who set the theft in motion';
     const professionHint =
-      context.playerProfession === 'guard' || context.playerProfession === 'scout'
+      context.playerProfession === 'guard' ||
+      context.playerProfession === 'scout'
         ? ' Your sense for pursuit should help settle the score lawfully.'
         : '';
 
@@ -1153,10 +1149,7 @@ function createChallengeQuestPlugin(): QuestTypePlugin {
     if (
       context.playerLevel < 3 ||
       context.playerLevel > 18 ||
-      !(
-        context.npcState === 'working' ||
-        context.npcState === 'home'
-      ) ||
+      !(context.npcState === 'working' || context.npcState === 'home') ||
       !(
         context.professionFamily === 'inn' ||
         context.professionFamily === 'school' ||
@@ -1181,7 +1174,8 @@ function createChallengeQuestPlugin(): QuestTypePlugin {
     }
 
     const professionHint =
-      context.playerProfession === 'scout' || context.playerProfession === 'courier'
+      context.playerProfession === 'scout' ||
+      context.playerProfession === 'courier'
         ? ' Your speed and control could give you the edge.'
         : '';
 
@@ -1201,10 +1195,7 @@ function createDiplomacyQuestPlugin(): QuestTypePlugin {
   return createQuestTypePlugin('diplomacy', (context) => {
     if (
       context.playerLevel < 4 ||
-      !(
-        context.npcState === 'working' ||
-        context.npcState === 'home'
-      ) ||
+      !(context.npcState === 'working' || context.npcState === 'home') ||
       !(
         context.professionFamily === 'town-hall' ||
         context.professionFamily === 'temple' ||
@@ -1335,10 +1326,7 @@ function createConstructionQuestPlugin(): QuestTypePlugin {
   return createQuestTypePlugin('construction', (context) => {
     if (
       context.playerLevel < 3 ||
-      !(
-        context.npcState === 'working' ||
-        context.npcState === 'home'
-      ) ||
+      !(context.npcState === 'working' || context.npcState === 'home') ||
       !(
         context.professionFamily === 'smithy' ||
         context.professionFamily === 'workshop' ||
@@ -1416,7 +1404,9 @@ function createTrainingQuestPlugin(): QuestTypePlugin {
   });
 }
 
-function getSeasonLabel(yearProgress: number): 'Spring' | 'Summer' | 'Autumn' | 'Winter' {
+function getSeasonLabel(
+  yearProgress: number
+): 'Spring' | 'Summer' | 'Autumn' | 'Winter' {
   const normalized = ((yearProgress % 1) + 1) % 1;
   if (normalized < 0.25) {
     return 'Spring';
@@ -1441,7 +1431,9 @@ function hasCompletedQuestTypes(
   context: Pick<QuestOfferContext, 'townKey' | 'npcId' | 'completedQuestIds'>,
   types: readonly string[]
 ): boolean {
-  const prefixes = types.map((type) => `${context.townKey}:${context.npcId}:${type}:`);
+  const prefixes = types.map(
+    (type) => `${context.townKey}:${context.npcId}:${type}:`
+  );
   for (const questId of context.completedQuestIds) {
     if (prefixes.some((prefix) => questId.startsWith(prefix))) {
       return true;

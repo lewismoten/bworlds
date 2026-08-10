@@ -74,7 +74,9 @@ describe('tile tower', () => {
     }) as { children?: unknown[] } | null | undefined;
 
     expect(low?.children).toHaveLength(3);
-    expect((full?.children?.length ?? 0)).toBeGreaterThan(low?.children?.length ?? 0);
+    expect(full?.children?.length ?? 0).toBeGreaterThan(
+      low?.children?.length ?? 0
+    );
   });
 });
 

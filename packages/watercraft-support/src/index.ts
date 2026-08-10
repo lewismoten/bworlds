@@ -81,7 +81,8 @@ export function createWatercraftMap({
     const nextRevision =
       typeof (state as { overworldTileRevision?: unknown } | undefined)
         ?.overworldTileRevision === 'number'
-        ? ((state as { overworldTileRevision?: number }).overworldTileRevision ?? 0)
+        ? ((state as { overworldTileRevision?: number })
+            .overworldTileRevision ?? 0)
         : 0;
     if (nextRevision !== activeRevision) {
       cache.clear();

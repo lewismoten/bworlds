@@ -1,7 +1,4 @@
-import type {
-  DebugSnapshot,
-  PerformanceHistorySample,
-} from './debug-panel.ts';
+import type { DebugSnapshot, PerformanceHistorySample } from './debug-panel.ts';
 import type { GraphicsCapabilitiesSummary } from './graphics-capabilities.ts';
 import type { LodThresholdSummary } from '@bworlds/render3d';
 
@@ -382,7 +379,8 @@ export function buildDebugSnapshotExport(
   options: DebugSnapshotExportOptions
 ): DebugSnapshotExport {
   const latestHistoryTime =
-    options.history[options.history.length - 1]?.nowMs ?? options.snapshot.frameMs;
+    options.history[options.history.length - 1]?.nowMs ??
+    options.snapshot.frameMs;
   const frameSamples =
     options.history.length > 0
       ? options.history.map((sample) => sample.frameMs)
@@ -434,7 +432,8 @@ export function buildDebugSnapshotExport(
       renderHeight: options.snapshot.renderHeight ?? 0,
       devicePixelRatio: options.snapshot.devicePixelRatio ?? 0,
       renderScale: options.snapshot.renderScale ?? 0,
-      visibleInstancedMeshCount: options.snapshot.visibleInstancedMeshCount ?? 0,
+      visibleInstancedMeshCount:
+        options.snapshot.visibleInstancedMeshCount ?? 0,
       renderedInstanceCount: options.snapshot.renderedInstanceCount ?? 0,
       visibleMeshCount: options.snapshot.visibleMeshCount,
     },
@@ -444,13 +443,15 @@ export function buildDebugSnapshotExport(
         options.snapshot.visibleObjectCount ??
         Math.max(
           0,
-          options.snapshot.object3dCount - (options.snapshot.invisibleObjectCount ?? 0)
+          options.snapshot.object3dCount -
+            (options.snapshot.invisibleObjectCount ?? 0)
         ),
       invisibleObjectCount:
         options.snapshot.invisibleObjectCount ??
         Math.max(
           0,
-          options.snapshot.object3dCount - (options.snapshot.visibleObjectCount ?? 0)
+          options.snapshot.object3dCount -
+            (options.snapshot.visibleObjectCount ?? 0)
         ),
       groupCount: options.snapshot.groupCount,
       meshCount: options.snapshot.meshCount,
@@ -476,8 +477,7 @@ export function buildDebugSnapshotExport(
       clonedMaterialCount: options.snapshot.clonedMaterialCount ?? 0,
       transparentMaterialCount: options.snapshot.transparentMaterialCount ?? 0,
       alphaTestMaterialCount: options.snapshot.alphaTestMaterialCount ?? 0,
-      doubleSidedMaterialCount:
-        options.snapshot.doubleSidedMaterialCount ?? 0,
+      doubleSidedMaterialCount: options.snapshot.doubleSidedMaterialCount ?? 0,
       fogMaterialCount: options.snapshot.fogMaterialCount ?? 0,
       customShaderMaterialCount:
         options.snapshot.customShaderMaterialCount ?? 0,
@@ -501,7 +501,8 @@ export function buildDebugSnapshotExport(
       textureCount: options.snapshot.textureCount,
       textureMemoryEstimateMb: options.snapshot.textureMemoryEstimateMb,
       gpuGeometryCount:
-        options.snapshot.gpuGeometryCount ?? options.snapshot.geometryMemoryCount,
+        options.snapshot.gpuGeometryCount ??
+        options.snapshot.geometryMemoryCount,
     },
     textures: {
       textureCount: options.snapshot.textureCount,
@@ -509,7 +510,8 @@ export function buildDebugSnapshotExport(
     },
     particles: {
       activeParticleSystems:
-        options.snapshot.activeParticleSystemCount ?? options.snapshot.pointsCount,
+        options.snapshot.activeParticleSystemCount ??
+        options.snapshot.pointsCount,
       activeParticles: options.snapshot.activeParticleCount,
       maxParticlesDuringSamplingWindow: Math.max(
         options.snapshot.activeParticleCount,
@@ -615,16 +617,18 @@ function buildResourceBudgetSnapshot(
     options.performanceBudget.caps.visibilityRadius.full,
     options.performanceBudget.caps.visibilityRadius.minimum
   );
-  const pendingBuildBudgetCurrentUtilizationPct = getDecreasingMetricUtilizationPct(
-    options.performanceBudget.pendingBuildBudgetMs,
-    options.performanceBudget.caps.pendingBuildBudgetMs.maximum,
-    options.performanceBudget.caps.pendingBuildBudgetMs.minimum
-  );
-  const pendingBuildTilesCurrentUtilizationPct = getDecreasingMetricUtilizationPct(
-    options.performanceBudget.maxPendingBuildTiles,
-    options.performanceBudget.caps.pendingBuildTiles.soft,
-    options.performanceBudget.caps.pendingBuildTiles.hard
-  );
+  const pendingBuildBudgetCurrentUtilizationPct =
+    getDecreasingMetricUtilizationPct(
+      options.performanceBudget.pendingBuildBudgetMs,
+      options.performanceBudget.caps.pendingBuildBudgetMs.maximum,
+      options.performanceBudget.caps.pendingBuildBudgetMs.minimum
+    );
+  const pendingBuildTilesCurrentUtilizationPct =
+    getDecreasingMetricUtilizationPct(
+      options.performanceBudget.maxPendingBuildTiles,
+      options.performanceBudget.caps.pendingBuildTiles.soft,
+      options.performanceBudget.caps.pendingBuildTiles.hard
+    );
   const currentUtilizationPct = Math.max(
     frameCurrentUtilizationPct,
     visibilityCurrentUtilizationPct,
@@ -650,7 +654,9 @@ function buildResourceBudgetSnapshot(
         )
       )
     ),
-    qualityReductionCauses: parseQualityLimiterList(options.graphicsQuality.limiters),
+    qualityReductionCauses: parseQualityLimiterList(
+      options.graphicsQuality.limiters
+    ),
     pluginRequestsRejectedDueToBudget: parseRejectedPluginSummary(
       options.snapshot.tileModelBudgetViolationSummary
     ),
@@ -712,7 +718,10 @@ function buildResourceBudgetSnapshot(
   };
 }
 
-function getIncreasingMetricUtilizationPct(current: number, hardLimit: number): number {
+function getIncreasingMetricUtilizationPct(
+  current: number,
+  hardLimit: number
+): number {
   if (hardLimit <= 0) {
     return 0;
   }
@@ -765,9 +774,7 @@ function parseQualityLimiterList(limiters: string): string[] {
     .filter((entry) => entry.length > 0 && entry !== 'None');
 }
 
-function parseRejectedPluginSummary(
-  summary: string | undefined
-): Array<{
+function parseRejectedPluginSummary(summary: string | undefined): Array<{
   plugin: string;
   rejectedModelsPerSecond: number;
 }> {
@@ -785,7 +792,9 @@ function parseRejectedPluginSummary(
         return null;
       }
       const plugin = entry.slice(0, separatorIndex).trim();
-      const rejectedModelsPerSecond = Number(entry.slice(separatorIndex + 1).trim());
+      const rejectedModelsPerSecond = Number(
+        entry.slice(separatorIndex + 1).trim()
+      );
       if (!plugin || !Number.isFinite(rejectedModelsPerSecond)) {
         return null;
       }
@@ -794,7 +803,10 @@ function parseRejectedPluginSummary(
         rejectedModelsPerSecond,
       };
     })
-    .filter((entry): entry is { plugin: string; rejectedModelsPerSecond: number } => entry !== null);
+    .filter(
+      (entry): entry is { plugin: string; rejectedModelsPerSecond: number } =>
+        entry !== null
+    );
 }
 
 function collectDynamicQualityChanges(
@@ -841,7 +853,10 @@ function roundTenths(value: number): number {
 }
 
 function getAverage(values: number[]): number {
-  return values.reduce((total, value) => total + value, 0) / Math.max(1, values.length);
+  return (
+    values.reduce((total, value) => total + value, 0) /
+    Math.max(1, values.length)
+  );
 }
 
 function getPercentile(values: number[], percentile: number): number {

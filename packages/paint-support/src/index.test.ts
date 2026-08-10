@@ -61,25 +61,27 @@ describe('paint support', () => {
   it('creates plains-backed tile painters that add custom foreground details', () => {
     const calls: Array<[number, number, number, number, string]> = [];
     const overlayPainter: TilePainter2D = ({ context, x, y, fillRect }) => {
-        fillRect(context, x + 4, y + 5, 3, 2, '#123456');
-      };
+      fillRect(context, x + 4, y + 5, 3, 2, '#123456');
+    };
     const paint = createPlainsBackedTilePainter(overlayPainter);
 
     expect(
-      paint(createPaintContext({
-        context: {} as CanvasRenderingContext2D,
-        x: 2,
-        y: 3,
-        motif: {
-          seed: 7,
-          int(min: number) {
-            return min;
+      paint(
+        createPaintContext({
+          context: {} as CanvasRenderingContext2D,
+          x: 2,
+          y: 3,
+          motif: {
+            seed: 7,
+            int(min: number) {
+              return min;
+            },
           },
-        },
-        fillRect(_context, x, y, width, height, color) {
-          calls.push([x, y, width, height, color]);
-        },
-      }))
+          fillRect(_context, x, y, width, height, color) {
+            calls.push([x, y, width, height, color]);
+          },
+        })
+      )
     ).toBe(true);
 
     expect(calls[0]).toEqual([2, 3, 16, 16, '#7fb069']);
@@ -99,9 +101,7 @@ describe('paint support', () => {
       }
     );
 
-    expect(
-      paint(createPaintContext())
-    ).toBe(true);
+    expect(paint(createPaintContext())).toBe(true);
 
     expect(calls).toEqual(['base', 'overlay']);
   });

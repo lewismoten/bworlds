@@ -46,15 +46,17 @@ export function createQuarryTilePlugin(): RuntimePlugin {
       wallHeight: 0.2,
     },
     note: 'An open quarry cuts into the nearby stone.',
-    paint2D: createPlainsBackedTilePainter(({ context, x, y, motif, fillRect, speckle }) => {
-      fillRect(context, x + 2, y + 2, 12, 12, '#8f857b');
-      fillRect(context, x + 4, y + 4, 8, 8, '#5b524b');
-      fillRect(context, x + 6, y + 6, 4, 4, '#2f2a27');
-      fillRect(context, x + 10, y + 2, 2, 10, '#6b4f35');
-      fillRect(context, x + 9, y + 3, 4, 1, '#8d6a46');
-      speckle(context, x, y, '#c7beb4', 10, 0.18, motif);
-      return true;
-    }),
+    paint2D: createPlainsBackedTilePainter(
+      ({ context, x, y, motif, fillRect, speckle }) => {
+        fillRect(context, x + 2, y + 2, 12, 12, '#8f857b');
+        fillRect(context, x + 4, y + 4, 8, 8, '#5b524b');
+        fillRect(context, x + 6, y + 6, 4, 4, '#2f2a27');
+        fillRect(context, x + 10, y + 2, 2, 10, '#6b4f35');
+        fillRect(context, x + 9, y + 3, 4, 1, '#8d6a46');
+        speckle(context, x, y, '#c7beb4', 10, 0.18, motif);
+        return true;
+      }
+    ),
     create3DModel({ three, state, tileX, tileY }: Create3DModelContext) {
       const { mountainMaterial } = createMountainTerrainMaterials(three);
       const {
@@ -87,7 +89,8 @@ export function createQuarryTilePlugin(): RuntimePlugin {
         const stone = new three.Mesh(
           new three.BoxGeometry(
             0.14 + hash2D(QUARRY_STONE_WIDTH_SEED, tileX + index, tileY) * 0.08,
-            0.08 + hash2D(QUARRY_STONE_HEIGHT_SEED, tileX, tileY + index) * 0.05,
+            0.08 +
+              hash2D(QUARRY_STONE_HEIGHT_SEED, tileX, tileY + index) * 0.05,
             0.14 + hash2D(QUARRY_STONE_DEPTH_SEED, tileX - index, tileY) * 0.08
           ),
           rubbleMaterial
@@ -98,7 +101,8 @@ export function createQuarryTilePlugin(): RuntimePlugin {
           tileY + Math.sin(angle) * 0.58
         );
         stone.rotation.y =
-          hash2D(QUARRY_STONE_ROTATION_SEED, tileX + index, tileY - index) * Math.PI;
+          hash2D(QUARRY_STONE_ROTATION_SEED, tileX + index, tileY - index) *
+          Math.PI;
         group.add(stone);
       }
 
@@ -154,10 +158,7 @@ export function createQuarryTilePlugin(): RuntimePlugin {
       derrick.add(bucket);
 
       const lanternCore = markPoiLightEmitter(
-        new three.Mesh(
-          new three.SphereGeometry(0.03, 6, 6),
-          lanternMaterial
-        ),
+        new three.Mesh(new three.SphereGeometry(0.03, 6, 6), lanternMaterial),
         {
           kind: 'emissive-mesh',
           dayIntensity: 0.02,
@@ -211,7 +212,10 @@ export function createQuarryTilePlugin(): RuntimePlugin {
     },
     sync3DModel({ model, cycle }) {
       if (model && typeof model === 'object') {
-        syncPoiLightEmitters(model as Parameters<typeof syncPoiLightEmitters>[0], cycle);
+        syncPoiLightEmitters(
+          model as Parameters<typeof syncPoiLightEmitters>[0],
+          cycle
+        );
       }
     },
   });

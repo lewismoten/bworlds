@@ -20,11 +20,7 @@ export type TreeCapability =
   | 'lod';
 
 export type TreeCapabilityValue =
-  | boolean
-  | number
-  | string
-  | readonly string[]
-  | Record<string, unknown>;
+  boolean | number | string | readonly string[] | Record<string, unknown>;
 
 export type TreeCapabilityConsumer = 'render-2d' | 'render-3d' | 'gameplay';
 export type TreeSeason = 'spring' | 'summer' | 'autumn' | 'winter';
@@ -37,7 +33,9 @@ export type TreeCapabilityQuery = {
   [key: string]: unknown;
 };
 
-export type TreeCapabilityMap = Partial<Record<TreeCapability, TreeCapabilityValue>>;
+export type TreeCapabilityMap = Partial<
+  Record<TreeCapability, TreeCapabilityValue>
+>;
 
 export interface TreeGenerationLocation {
   tileX: number;
@@ -112,11 +110,7 @@ export interface TreeFruitState<TKind extends string = string> {
   mature: boolean;
 }
 
-export type TreeLifeStage =
-  | 'sapling'
-  | 'adolescent'
-  | 'mature'
-  | 'ancient';
+export type TreeLifeStage = 'sapling' | 'adolescent' | 'mature' | 'ancient';
 
 export interface TreeBiologicalState {
   ageYears: number;
@@ -154,8 +148,7 @@ export interface TreeLogicalState<TForm extends string = string> {
 }
 
 type TreeCapabilitySource =
-  | TreeCapabilityMap
-  | ((query?: TreeCapabilityQuery) => TreeCapabilityMap);
+  TreeCapabilityMap | ((query?: TreeCapabilityQuery) => TreeCapabilityMap);
 
 export interface TreeGeneratorBase {
   seed: number;
@@ -194,12 +187,18 @@ export interface TreeGenerator<TTree, TContext> {
   supports(capability: TreeCapability, query?: TreeCapabilityQuery): boolean;
 }
 
-export interface TreeSpecies<TTree, TContext> extends TreeGenerator<TTree, TContext> {
+export interface TreeSpecies<TTree, TContext> extends TreeGenerator<
+  TTree,
+  TContext
+> {
   familyId: string;
   speciesId: string;
 }
 
-export interface TreeFamily<TTree, TContext> extends TreeGenerator<TTree, TContext> {
+export interface TreeFamily<TTree, TContext> extends TreeGenerator<
+  TTree,
+  TContext
+> {
   familyId: string;
   listSpecies(): Array<TreeSpecies<TTree, TContext>>;
   getSpecies(id: string): TreeSpecies<TTree, TContext> | null;
@@ -305,7 +304,10 @@ export function createTreeBiologicalState({
   maximumAgeYears: number;
 }): TreeBiologicalState {
   const resolvedMaximumAgeYears = Math.max(1, maximumAgeYears);
-  const resolvedAgeYears = Math.max(0, Math.min(ageYears, resolvedMaximumAgeYears));
+  const resolvedAgeYears = Math.max(
+    0,
+    Math.min(ageYears, resolvedMaximumAgeYears)
+  );
   const maturity = resolvedAgeYears / resolvedMaximumAgeYears;
   return {
     ageYears: resolvedAgeYears,

@@ -47,19 +47,20 @@ export type GraphicsCapabilitiesSummary = {
 
 export function collectGraphicsCapabilities({
   documentLike = typeof document !== 'undefined' ? document : null,
-  navigatorLike =
-    typeof navigator !== 'undefined'
-      ? (navigator as GraphicsCapabilitiesNavigatorLike)
-      : null,
+  navigatorLike = typeof navigator !== 'undefined'
+    ? (navigator as GraphicsCapabilitiesNavigatorLike)
+    : null,
 }: {
   documentLike?: GraphicsCapabilitiesDocumentLike | null;
   navigatorLike?: GraphicsCapabilitiesNavigatorLike | null;
 } = {}): GraphicsCapabilitiesSummary {
   const canvas = documentLike?.createElement?.('canvas') ?? null;
-  const webgl2Context = canvas?.getContext('webgl2', { antialias: true }) ?? null;
+  const webgl2Context =
+    canvas?.getContext('webgl2', { antialias: true }) ?? null;
   const webglContext =
     webgl2Context ?? canvas?.getContext('webgl', { antialias: true }) ?? null;
-  const debugExtension = webglContext?.getExtension?.('WEBGL_debug_renderer_info') ?? null;
+  const debugExtension =
+    webglContext?.getExtension?.('WEBGL_debug_renderer_info') ?? null;
 
   return {
     webgpuSupported: Boolean(navigatorLike?.gpu),
@@ -73,7 +74,10 @@ export function collectGraphicsCapabilities({
       webglContext,
       debugExtension?.UNMASKED_VENDOR_WEBGL ?? null
     ),
-    maxTextureSize: getOptionalNumber(webglContext, webglContext?.MAX_TEXTURE_SIZE ?? null),
+    maxTextureSize: getOptionalNumber(
+      webglContext,
+      webglContext?.MAX_TEXTURE_SIZE ?? null
+    ),
     maxCubeMapTextureSize: getOptionalNumber(
       webglContext,
       webglContext?.MAX_CUBE_MAP_TEXTURE_SIZE ?? null
@@ -106,7 +110,7 @@ function getOptionalNumber(
     return null;
   }
   const value = context.getParameter?.(parameter);
-  return typeof value === "number" ? value : null;
+  return typeof value === 'number' ? value : null;
 }
 
 function getOptionalString(

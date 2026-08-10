@@ -4,14 +4,16 @@ export type TextureDimensions = {
 };
 
 export function getTextureDimensions(texture: unknown): TextureDimensions {
-  const image = (texture as {
-    image?: {
-      width?: number;
-      height?: number;
-      videoWidth?: number;
-      videoHeight?: number;
-    };
-  }).image;
+  const image = (
+    texture as {
+      image?: {
+        width?: number;
+        height?: number;
+        videoWidth?: number;
+        videoHeight?: number;
+      };
+    }
+  ).image;
   const width = normalizeTextureDimension(image?.width ?? image?.videoWidth);
   const height = normalizeTextureDimension(image?.height ?? image?.videoHeight);
   return {

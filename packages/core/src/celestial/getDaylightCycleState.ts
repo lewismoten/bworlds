@@ -1,13 +1,19 @@
-
 import {
   DEFAULT_CONSTELLATION_COUNT,
   DEFAULT_DAY_LENGTH_MS,
   DEFAULT_SEASON_DAYLIGHT_AMPLITUDE,
   DEFAULT_YEAR_LENGTH_DAYS,
 } from './time';
-import { DEFAULT_CONSTELLATION_SEED, generateConstellations } from './constellation';
+import {
+  DEFAULT_CONSTELLATION_SEED,
+  generateConstellations,
+} from './constellation';
 import { createCelestialRing } from './createCelestialRing';
-import { getEclipseAdjustedDaylight, getEclipseAdjustedTwilight, getSolarEclipseState } from './eclipse';
+import {
+  getEclipseAdjustedDaylight,
+  getEclipseAdjustedTwilight,
+  getSolarEclipseState,
+} from './eclipse';
 import { formatCelestialDate } from './formatCelestialDate';
 import { getCelestialEventsForDay } from './getCelestialEventsForDay';
 import { createHashSeed, type HashSeed } from '../hash';

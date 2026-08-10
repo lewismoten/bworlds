@@ -76,13 +76,7 @@ export function createInteriorTilePlugin(): RuntimePlugin {
   ]);
 }
 
-function paintWallTile({
-  context,
-  x,
-  y,
-  fillRect,
-  motif,
-}: Paint2DContext) {
+function paintWallTile({ context, x, y, fillRect, motif }: Paint2DContext) {
   fillRect(context, x, y, TILE_PIXEL_SIZE, TILE_PIXEL_SIZE, '#475569');
   for (let row = 0; row < TILE_PIXEL_SIZE; row += 4) {
     fillRect(context, x, y + row, TILE_PIXEL_SIZE, 1, '#334155');
@@ -94,13 +88,7 @@ function paintWallTile({
   return true;
 }
 
-function paintFloorTile({
-  context,
-  x,
-  y,
-  fillRect,
-  motif,
-}: Paint2DContext) {
+function paintFloorTile({ context, x, y, fillRect, motif }: Paint2DContext) {
   fillRect(context, x, y, TILE_PIXEL_SIZE, TILE_PIXEL_SIZE, '#b8c5d3');
   const rowOffset = motif.int(0, 1);
   for (let row = rowOffset; row < TILE_PIXEL_SIZE; row += 4) {
@@ -160,13 +148,7 @@ function paintStairsUpOverlay(paint: Paint2DContext): boolean {
   return true;
 }
 
-function paintShopTile({
-  context,
-  x,
-  y,
-  fillRect,
-  motif,
-}: Paint2DContext) {
+function paintShopTile({ context, x, y, fillRect, motif }: Paint2DContext) {
   fillRect(context, x, y, TILE_PIXEL_SIZE, TILE_PIXEL_SIZE, '#8cc071');
   fillRect(context, x + 2, y + 5, 12, 7, '#fff1f2');
   fillRect(context, x + 2, y + 3, 12, 2, '#fb7185');

@@ -33,7 +33,8 @@ export function getGeometryVertexCount(geometry: unknown): number {
     return positionAttribute.count;
   }
   const itemSize =
-    typeof positionAttribute?.itemSize === 'number' && positionAttribute.itemSize > 0
+    typeof positionAttribute?.itemSize === 'number' &&
+    positionAttribute.itemSize > 0
       ? positionAttribute.itemSize
       : 3;
   if (typeof positionAttribute?.array?.length === 'number') {
@@ -231,8 +232,9 @@ export function getGeometryAttributeBudgetStats(
     maxAttributeCount = Math.max(maxAttributeCount, attributeNames.length);
     maxCustomAttributeCount = Math.max(
       maxCustomAttributeCount,
-      attributeNames.filter((name) => !STANDARD_GEOMETRY_ATTRIBUTE_NAMES.has(name))
-        .length
+      attributeNames.filter(
+        (name) => !STANDARD_GEOMETRY_ATTRIBUTE_NAMES.has(name)
+      ).length
     );
     maxVertexAttributeByteSize = Math.max(
       maxVertexAttributeByteSize,
@@ -294,7 +296,9 @@ export function countGeometryTriangles(root: TraversableObjectLike): number {
   return triangleCount;
 }
 
-export function getMaxGeometryTriangleCount(root: TraversableObjectLike): number {
+export function getMaxGeometryTriangleCount(
+  root: TraversableObjectLike
+): number {
   let maximumTriangleCount = 0;
   const geometries = new Set<unknown>();
 
@@ -368,7 +372,11 @@ function geometryExceedsMaximumAxisSpan(
   let maxY = Number.NEGATIVE_INFINITY;
   let maxZ = Number.NEGATIVE_INFINITY;
 
-  for (let index = 0; index <= positionArray.length - itemSize; index += itemSize) {
+  for (
+    let index = 0;
+    index <= positionArray.length - itemSize;
+    index += itemSize
+  ) {
     const x = positionArray[index];
     const y = positionArray[index + 1];
     const z = positionArray[index + 2];
@@ -456,7 +464,11 @@ function hasInvalidGeometryIndexType(geometry: unknown): boolean {
       };
     }
   )?.index?.array;
-  if (!indexArray || typeof indexArray.length !== 'number' || vertexCount <= 0) {
+  if (
+    !indexArray ||
+    typeof indexArray.length !== 'number' ||
+    vertexCount <= 0
+  ) {
     return false;
   }
   const bytesPerElement =
@@ -502,13 +514,11 @@ function getGeometryDrawRangeCount(geometry: unknown): number {
   return 0;
 }
 
-function getGeometryAxisAlignedBounds(geometry: unknown):
-  | {
-      spanX: number;
-      spanY: number;
-      spanZ: number;
-    }
-  | null {
+function getGeometryAxisAlignedBounds(geometry: unknown): {
+  spanX: number;
+  spanY: number;
+  spanZ: number;
+} | null {
   const positionArray = (
     geometry as {
       attributes?: {
@@ -534,7 +544,11 @@ function getGeometryAxisAlignedBounds(geometry: unknown):
   let maxY = Number.NEGATIVE_INFINITY;
   let maxZ = Number.NEGATIVE_INFINITY;
 
-  for (let index = 0; index <= positionArray.length - itemSize; index += itemSize) {
+  for (
+    let index = 0;
+    index <= positionArray.length - itemSize;
+    index += itemSize
+  ) {
     const x = positionArray[index];
     const y = positionArray[index + 1];
     const z = positionArray[index + 2];
@@ -576,7 +590,10 @@ function getGeometryAttributeNames(geometry: unknown): string[] {
 function getGeometryVertexAttributeByteSize(geometry: unknown): number {
   const attributes = (
     geometry as {
-      attributes?: Record<string, { array?: ArrayLike<unknown> & { byteLength?: number } }>;
+      attributes?: Record<
+        string,
+        { array?: ArrayLike<unknown> & { byteLength?: number } }
+      >;
     }
   )?.attributes;
   let totalBytes = 0;

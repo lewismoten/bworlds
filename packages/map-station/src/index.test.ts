@@ -1,8 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  createStationMapPlugin,
-  findBoardableTrainService,
-} from './index.ts';
+import { createStationMapPlugin, findBoardableTrainService } from './index.ts';
 
 describe('map station', () => {
   it('creates a station interior with a central hall and exit back outside', () => {

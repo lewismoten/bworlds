@@ -1,5 +1,10 @@
 import { createContextMapPlugin } from '@bworlds/map-support';
-import type { CreateMapContext, Kind, RuntimePlugin, WorldStateLike } from '@bworlds/plugin-api';
+import type {
+  CreateMapContext,
+  Kind,
+  RuntimePlugin,
+  WorldStateLike,
+} from '@bworlds/plugin-api';
 import {
   createWatercraftMap,
   findNearestWatercraftLaunchPoint,
@@ -84,7 +89,10 @@ export function isBoatLaunchableLandTile({
   state?: WorldStateLike;
 }) {
   const tile = sampleTile(x, y, state);
-  if (!isWalkable(tile.kind) || isBoatNavigableTile({ x, y, sampleTile, state })) {
+  if (
+    !isWalkable(tile.kind) ||
+    isBoatNavigableTile({ x, y, sampleTile, state })
+  ) {
     return false;
   }
   return hasNearbyKind(

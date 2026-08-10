@@ -1,7 +1,7 @@
 const UINT32_RANGE = 2 ** 32;
-const SPLITMIX32_INCREMENT = 0x9E3779B9;
-const SPLITMIX32_MIX_1 = 0x21F0AAAD;
-const SPLITMIX32_MIX_2 = 0x735A2D97;
+const SPLITMIX32_INCREMENT = 0x9e3779b9;
+const SPLITMIX32_MIX_1 = 0x21f0aaad;
+const SPLITMIX32_MIX_2 = 0x735a2d97;
 
 // SplitMix32-style PRNG based on Tommy Ettinger's CC0/public-domain example.
 // JavaScript state-coercion fix based on a correction by GitHub user oisyn.

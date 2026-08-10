@@ -52,9 +52,7 @@ describe('audio categories', () => {
     expect(resolveSoundEffectCategory('hail')).toBe('environment');
     expect(resolveSoundEffectCategory('snowstorm')).toBe('environment');
     expect(resolveSoundEffectCategory('forest-ambience')).toBe('environment');
-    expect(resolveSoundEffectCategory('magical-ambience')).toBe(
-      'environment'
-    );
+    expect(resolveSoundEffectCategory('magical-ambience')).toBe('environment');
   });
 
   it('formats readable category labels for the settings ui', () => {

@@ -88,9 +88,9 @@ describe('music debug note analysis', () => {
     expect(validation.accidentalReasonCounts['chromatic-passing']).toBe(1);
     expect(validation.accidentalReasonCounts['harmonic-color']).toBe(2);
     expect(validation.accidentalReasonCounts['lower-approach']).toBe(1);
-    expect(validation.accidentalReasonCounts['unsupported-chromatic-leap']).toBe(
-      2
-    );
+    expect(
+      validation.accidentalReasonCounts['unsupported-chromatic-leap']
+    ).toBe(2);
     expect(validation.accidentalReasonCounts['unresolved-chromatic']).toBe(0);
     expect(validation.blackKeyNoteCount).toBe(6);
     expect(validation.blackKeyNotesByRole.lead).toBe(3);

@@ -26,7 +26,9 @@ describe('debug snapshot', () => {
         facing: 90,
       },
       rendererMode: '3d',
-      activeContentPacks: [{ id: 'default-content-pack', name: 'Default Pack' }],
+      activeContentPacks: [
+        { id: 'default-content-pack', name: 'Default Pack' },
+      ],
       enabledPlugins: ['tile-forest', 'map-town'],
       graphicsQuality: {
         level: 'Reduced',
@@ -261,7 +263,8 @@ describe('debug snapshot', () => {
         doubleSidedMaterialCount: 9,
         fogMaterialCount: 19,
         customShaderMaterialCount: 2,
-        materialTypes: 'MeshBasicMaterial:4, MeshStandardMaterial:14, ShaderMaterial:2, SpriteMaterial:4',
+        materialTypes:
+          'MeshBasicMaterial:4, MeshStandardMaterial:14, ShaderMaterial:2, SpriteMaterial:4',
         materialsCreatedDuringSamplingWindow: 5,
         materialsDisposedDuringSamplingWindow: 2,
         peakMaterialCount: 29,
@@ -367,7 +370,9 @@ describe('debug snapshot', () => {
     expect(result.metadata.gameVersion).toBe('0.1.0');
     expect(result.metadata.buildId).toBe('abc1234');
     expect(result.metadata.context.id).toBe('town:3:7');
-    expect(result.metadata.activeContentPacks[0]?.id).toBe('default-content-pack');
+    expect(result.metadata.activeContentPacks[0]?.id).toBe(
+      'default-content-pack'
+    );
     expect(result.metadata.enabledPlugins).toEqual(['tile-forest', 'map-town']);
     expect(result.metadata.graphicsCapabilities).toMatchObject({
       webgpuSupported: false,

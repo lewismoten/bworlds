@@ -49,8 +49,12 @@ describe('runtime player poi', () => {
         }),
       })
     );
-    expect((state as { playerPlacedPois?: unknown[] }).playerPlacedPois).toHaveLength(1);
-    expect((state as { overworldTileRevision?: number }).overworldTileRevision).toBe(1);
+    expect(
+      (state as { playerPlacedPois?: unknown[] }).playerPlacedPois
+    ).toHaveLength(1);
+    expect(
+      (state as { overworldTileRevision?: number }).overworldTileRevision
+    ).toBe(1);
   });
 
   it('exposes player-placed poi tiles through the runtime plugin overlay', () => {

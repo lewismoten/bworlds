@@ -13,7 +13,12 @@ vi.mock('@bworlds/three-support', async () => {
     getOrCreatePaintedCanvasTexture() {
       return { colorSpace: '', needsUpdate: false };
     },
-    createQuadraticBezierPoints(_three: unknown, start: unknown, control: unknown, end: unknown) {
+    createQuadraticBezierPoints(
+      _three: unknown,
+      start: unknown,
+      control: unknown,
+      end: unknown
+    ) {
       return [start, control, end];
     },
     createRibbonMesh(
@@ -204,14 +209,7 @@ function createDockModelState() {
 }
 
 function createRoutedDockModelState() {
-  const dockTiles = new Set([
-    '0:0',
-    '1:0',
-    '22:0',
-    '23:0',
-    '11:22',
-    '12:22',
-  ]);
+  const dockTiles = new Set(['0:0', '1:0', '22:0', '23:0', '11:22', '12:22']);
   const poiNames: Record<string, string> = {
     '-1:0': 'Beacon Point',
     '24:0': 'Harbor Market',
@@ -351,7 +349,9 @@ describe('tile route', () => {
           },
           townAnchors: [],
           bridgeAnchors: [],
-          poiAnchors: [{ x: 6, y: 0, type: 'lighthouse', name: 'Beacon Point' }],
+          poiAnchors: [
+            { x: 6, y: 0, type: 'lighthouse', name: 'Beacon Point' },
+          ],
         })
       )
     ).toEqual(
@@ -452,50 +452,51 @@ describe('tile route', () => {
 
     for (let y = 0; y < 20 && !result; y += 1) {
       for (let x = 0; x < 20; x += 1) {
-        result = classifier?.(
-          createRouteClassifierPayload({
-            x,
-            y,
-            tile: { kind: 'river' },
-            signals: {
-              continent: 0.6,
-              elevation: 0.22,
-              moisture: 0.62,
-              riverSignal: 0.86,
-              roadSignal: 0.18,
-            },
-            sampleTerrainSignals(sampleX: number, sampleY: number) {
-              if (sampleX === x && Math.abs(sampleY - y) === 1) {
-                return {
-                  continent: 0.66,
-                  elevation: 0.3,
-                  moisture: 0.78,
-                  riverSignal: 0.18,
-                  roadSignal: 0.22,
-                };
-              }
-              if (Math.abs(sampleX - x) === 1 && sampleY === y) {
+        result =
+          classifier?.(
+            createRouteClassifierPayload({
+              x,
+              y,
+              tile: { kind: 'river' },
+              signals: {
+                continent: 0.6,
+                elevation: 0.22,
+                moisture: 0.62,
+                riverSignal: 0.86,
+                roadSignal: 0.18,
+              },
+              sampleTerrainSignals(sampleX: number, sampleY: number) {
+                if (sampleX === x && Math.abs(sampleY - y) === 1) {
+                  return {
+                    continent: 0.66,
+                    elevation: 0.3,
+                    moisture: 0.78,
+                    riverSignal: 0.18,
+                    roadSignal: 0.22,
+                  };
+                }
+                if (Math.abs(sampleX - x) === 1 && sampleY === y) {
+                  return {
+                    continent: 0.58,
+                    elevation: 0.18,
+                    moisture: 0.64,
+                    riverSignal: 0.88,
+                    roadSignal: 0.12,
+                  };
+                }
                 return {
                   continent: 0.58,
-                  elevation: 0.18,
-                  moisture: 0.64,
-                  riverSignal: 0.88,
-                  roadSignal: 0.12,
+                  elevation: 0.24,
+                  moisture: 0.48,
+                  riverSignal: 0.16,
+                  roadSignal: 0.18,
                 };
-              }
-              return {
-                continent: 0.58,
-                elevation: 0.24,
-                moisture: 0.48,
-                riverSignal: 0.16,
-                roadSignal: 0.18,
-              };
-            },
-            townAnchors: [],
-            bridgeAnchors: [],
-            poiAnchors: [],
-          })
-        ) ?? null;
+              },
+              townAnchors: [],
+              bridgeAnchors: [],
+              poiAnchors: [],
+            })
+          ) ?? null;
         if (result) {
           break;
         }
@@ -650,7 +651,10 @@ describe('tile route', () => {
 
     const paddleBoatMarkers: Array<Record<string, unknown>> = [];
     model.traverse((node) => {
-      if (node.userData?.dockPaddleBoat || node.userData?.dockPaddleBoatRampLowered) {
+      if (
+        node.userData?.dockPaddleBoat ||
+        node.userData?.dockPaddleBoatRampLowered
+      ) {
         paddleBoatMarkers.push(node.userData);
       }
     });
@@ -788,7 +792,9 @@ describe('tile route', () => {
       tileY: 0,
     }) as FakeNode | undefined;
 
-    expect(countSharedMaterialReferences(first, second)).toBeGreaterThanOrEqual(2);
+    expect(countSharedMaterialReferences(first, second)).toBeGreaterThanOrEqual(
+      2
+    );
   });
 
   it('reuses shared dock materials across repeated dock model builds', () => {
@@ -808,7 +814,9 @@ describe('tile route', () => {
       tileY: 0,
     }) as FakeNode | undefined;
 
-    expect(countSharedMaterialReferences(first, second)).toBeGreaterThanOrEqual(3);
+    expect(countSharedMaterialReferences(first, second)).toBeGreaterThanOrEqual(
+      3
+    );
   });
 
   it('reuses shared bridge materials across repeated bridge model builds', () => {
@@ -828,7 +836,9 @@ describe('tile route', () => {
       tileY: 0,
     }) as FakeNode | undefined;
 
-    expect(countSharedMaterialReferences(first, second)).toBeGreaterThanOrEqual(2);
+    expect(countSharedMaterialReferences(first, second)).toBeGreaterThanOrEqual(
+      2
+    );
   });
 
   it('creates a boardable ship action from docks on a valid route', () => {

@@ -48,18 +48,15 @@ export type TileX = number;
 export type TileY = number;
 export type WorldX = number;
 export type WorldY = number;
-export type CardinalDirection = 'E'| 'SE'| 'S'| 'SW'| 'W'| 'NW'| 'N'| 'NE';
-export type AngleSnapCardinal = 0 |  45 | 90 | 135| 180 | 225 | 270 | 315;
+export type CardinalDirection =
+  'E' | 'SE' | 'S' | 'SW' | 'W' | 'NW' | 'N' | 'NE';
+export type AngleSnapCardinal = 0 | 45 | 90 | 135 | 180 | 225 | 270 | 315;
 export type FacingAngle = number;
 export type ViewMode = '2d' | '3d' | 'text';
 export type Color = string;
 export type Seed = string | number;
 export type WorldContextType =
-  | 'overworld'
-  | 'town'
-  | 'building'
-  | 'depth'
-  | (string & {});
+  'overworld' | 'town' | 'building' | 'depth' | (string & {});
 
 type PluginDescription = string;
 type PluginTag = string;
@@ -451,7 +448,9 @@ export interface ThreeCubicBezierCurve3Like {
   getPoints(segments: number): ThreeVector3Like[];
 }
 
-type ThreeGeometryConstructorLike = new (...args: number[]) => ThreeGeometryLike;
+type ThreeGeometryConstructorLike = new (
+  ...args: number[]
+) => ThreeGeometryLike;
 
 export interface ThreeHostLike {
   BufferGeometry: new () => ThreeBufferGeometryLike;
@@ -491,9 +490,7 @@ export interface ThreeHostLike {
     geometry?: ThreeBufferGeometryLike,
     material?: ThreeMaterialLike
   ) => ThreePointsLike;
-  PointsMaterial: new (
-    options?: Record<string, unknown>
-  ) => ThreeMaterialLike;
+  PointsMaterial: new (options?: Record<string, unknown>) => ThreeMaterialLike;
   PointLight: new (
     color?: unknown,
     intensity?: number,
@@ -850,7 +847,9 @@ interface OrderPriority {
   before?: string[];
 }
 
-export interface OrderedPluginFactoryLike<TPlugin extends RuntimePlugin = RuntimePlugin> {
+export interface OrderedPluginFactoryLike<
+  TPlugin extends RuntimePlugin = RuntimePlugin,
+> {
   create(): TPlugin;
   order?: OrderPriority;
 }

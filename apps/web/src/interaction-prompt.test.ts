@@ -9,7 +9,12 @@ describe('interaction prompt', () => {
     const state = {
       player: { x: 4, y: 6 },
       getCurrentContext() {
-        return { id: 'overworld', label: 'Overworld', type: 'overworld', depth: 0 };
+        return {
+          id: 'overworld',
+          label: 'Overworld',
+          type: 'overworld',
+          depth: 0,
+        };
       },
       getCurrentTile() {
         return { kind: 'town', poi: { type: 'town', name: 'Oakcross' } };
@@ -34,7 +39,9 @@ describe('interaction prompt', () => {
       },
     };
 
-    expect(getInteractionPrompt(state as never)).toBe('Press Enter to enter Oakcross');
+    expect(getInteractionPrompt(state as never)).toBe(
+      'Press Enter to enter Oakcross'
+    );
   });
 
   it('shows an exit prompt for exit tiles and prefers it over enter actions', () => {
@@ -69,7 +76,9 @@ describe('interaction prompt', () => {
       },
     };
 
-    expect(getInteractionPrompt(state as never)).toBe('Press X to exit Oakcross');
+    expect(getInteractionPrompt(state as never)).toBe(
+      'Press X to exit Oakcross'
+    );
   });
 
   it('shows a talk prompt for npc interactions', () => {
@@ -101,7 +110,9 @@ describe('interaction prompt', () => {
       },
     };
 
-    expect(getInteractionPrompt(state as never)).toBe('Press Enter to talk to Lyra');
+    expect(getInteractionPrompt(state as never)).toBe(
+      'Press Enter to talk to Lyra'
+    );
   });
 
   it('shows a descend prompt for deeper entrance tiles', () => {
@@ -111,7 +122,10 @@ describe('interaction prompt', () => {
         return { id: 'tower:1', label: 'Old Tower', type: 'tower', depth: 1 };
       },
       getCurrentTile() {
-        return { kind: 'stairs-down', poi: { type: 'cave', name: 'Moss Hollow' } };
+        return {
+          kind: 'stairs-down',
+          poi: { type: 'cave', name: 'Moss Hollow' },
+        };
       },
       getCurrentMap() {
         return {
@@ -142,7 +156,12 @@ describe('interaction prompt', () => {
     const state = {
       player: { x: 2, y: 3 },
       getCurrentContext() {
-        return { id: 'overworld', label: 'Overworld', type: 'overworld', depth: 0 };
+        return {
+          id: 'overworld',
+          label: 'Overworld',
+          type: 'overworld',
+          depth: 0,
+        };
       },
       getCurrentTile() {
         return { kind: 'forest' };
@@ -172,7 +191,12 @@ describe('interaction prompt', () => {
     const state = {
       player: { x: 0, y: 0 },
       getCurrentContext() {
-        return { id: 'overworld', label: 'Overworld', type: 'overworld', depth: 0 };
+        return {
+          id: 'overworld',
+          label: 'Overworld',
+          type: 'overworld',
+          depth: 0,
+        };
       },
       getCurrentTile() {
         return { kind: 'plains' };
@@ -212,7 +236,12 @@ describe('interaction prompt', () => {
         },
       },
       getCurrentContext() {
-        return { id: 'overworld', label: 'Overworld', type: 'overworld', depth: 0 };
+        return {
+          id: 'overworld',
+          label: 'Overworld',
+          type: 'overworld',
+          depth: 0,
+        };
       },
       getCurrentTile() {
         return { kind: 'town', poi: { type: 'town', name: 'Oakcross' } };
@@ -222,7 +251,9 @@ describe('interaction prompt', () => {
       },
     };
 
-    expect(getInteractionPrompt(state as never)).toBe('Press Enter to enter Oakcross');
+    expect(getInteractionPrompt(state as never)).toBe(
+      'Press Enter to enter Oakcross'
+    );
   });
 
   it('can build a prompt from pre-resolved tile and context state', () => {

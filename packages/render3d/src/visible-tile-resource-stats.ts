@@ -16,7 +16,9 @@ export type VisibleTileResourceStatsEntry = {
   gpuTextureMemoryEstimateBytes?: number;
 };
 
-export function collectVisibleTileResourceStats<TEntry extends VisibleTileResourceStatsEntry>(
+export function collectVisibleTileResourceStats<
+  TEntry extends VisibleTileResourceStatsEntry,
+>(
   entries: Iterable<TEntry>,
   chunkTileSize = DRAW_CALL_CHUNK_TILE_SIZE
 ): {
@@ -68,18 +70,30 @@ export function collectVisibleTileResourceStats<TEntry extends VisibleTileResour
     }
 
     const nextObjectCount =
-      (chunkObjects.get(key) ?? 0) + Math.max(0, Math.floor(entry.visibleObjectCount ?? 0));
+      (chunkObjects.get(key) ?? 0) +
+      Math.max(0, Math.floor(entry.visibleObjectCount ?? 0));
     chunkObjects.set(key, nextObjectCount);
     const nextMeshCount =
-      (chunkMeshes.get(key) ?? 0) + Math.max(0, Math.floor(entry.visibleMeshCount ?? 0));
+      (chunkMeshes.get(key) ?? 0) +
+      Math.max(0, Math.floor(entry.visibleMeshCount ?? 0));
     chunkMeshes.set(key, nextMeshCount);
     const nextTriangleCount =
-      (chunkTriangles.get(key) ?? 0) + Math.max(0, Math.floor(entry.triangleCount ?? 0));
+      (chunkTriangles.get(key) ?? 0) +
+      Math.max(0, Math.floor(entry.triangleCount ?? 0));
     chunkTriangles.set(key, nextTriangleCount);
-    totalVisibleObjectCount += Math.max(0, Math.floor(entry.visibleObjectCount ?? 0));
+    totalVisibleObjectCount += Math.max(
+      0,
+      Math.floor(entry.visibleObjectCount ?? 0)
+    );
     totalLightCount += Math.max(0, Math.floor(entry.lightCount ?? 0));
-    totalShadowLightCount += Math.max(0, Math.floor(entry.shadowLightCount ?? 0));
-    totalVisibleMeshCount += Math.max(0, Math.floor(entry.visibleMeshCount ?? 0));
+    totalShadowLightCount += Math.max(
+      0,
+      Math.floor(entry.shadowLightCount ?? 0)
+    );
+    totalVisibleMeshCount += Math.max(
+      0,
+      Math.floor(entry.visibleMeshCount ?? 0)
+    );
     totalMaterialCount += Math.max(0, Math.floor(entry.materialCount ?? 0));
     totalVertexCount += Math.max(0, Math.floor(entry.vertexCount ?? 0));
     totalTriangleCount += Math.max(0, Math.floor(entry.triangleCount ?? 0));
@@ -91,7 +105,9 @@ export function collectVisibleTileResourceStats<TEntry extends VisibleTileResour
     totalGpuTextureMemoryEstimateBytes += Math.max(
       0,
       Math.floor(
-        entry.gpuTextureMemoryEstimateBytes ?? entry.textureMemoryEstimateBytes ?? 0
+        entry.gpuTextureMemoryEstimateBytes ??
+          entry.textureMemoryEstimateBytes ??
+          0
       )
     );
     if (nextObjectCount > maxChunkObjectCount) {
@@ -126,7 +142,9 @@ export function collectVisibleTileResourceStats<TEntry extends VisibleTileResour
   };
 }
 
-export function collectChunkDrawCallStats<TEntry extends VisibleTileResourceStatsEntry>(
+export function collectChunkDrawCallStats<
+  TEntry extends VisibleTileResourceStatsEntry,
+>(
   entries: Iterable<TEntry>,
   chunkTileSize = DRAW_CALL_CHUNK_TILE_SIZE
 ): {

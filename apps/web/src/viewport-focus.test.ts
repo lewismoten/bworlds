@@ -35,9 +35,9 @@ describe('viewport keyboard focus', () => {
       focus: vi.fn(),
     };
 
-    expect(
-      restore3dViewportKeyboardFocusOnPointerDown('3d', 0, viewport)
-    ).toBe(true);
+    expect(restore3dViewportKeyboardFocusOnPointerDown('3d', 0, viewport)).toBe(
+      true
+    );
     expect(viewport.focus).toHaveBeenCalledWith({ preventScroll: true });
   });
 
@@ -88,12 +88,12 @@ describe('viewport keyboard focus', () => {
       focus: vi.fn(),
     };
 
-    expect(
-      restore3dViewportKeyboardFocusOnPointerDown('3d', 1, viewport)
-    ).toBe(false);
-    expect(
-      restore3dViewportKeyboardFocusOnPointerDown('2d', 0, viewport)
-    ).toBe(false);
+    expect(restore3dViewportKeyboardFocusOnPointerDown('3d', 1, viewport)).toBe(
+      false
+    );
+    expect(restore3dViewportKeyboardFocusOnPointerDown('2d', 0, viewport)).toBe(
+      false
+    );
     expect(viewport.focus).not.toHaveBeenCalled();
   });
 });

@@ -67,7 +67,10 @@ export function resolveTrainCarTypes(
   context: Pick<TrainContext, 'origin' | 'lineName'>
 ): TrainCarType[] {
   const seedHash = resolveHashSeedInput(seed);
-  const middleCountSeed = appendHashSeedLabel(seedHash, TRAIN_MIDDLE_COUNT_SEED);
+  const middleCountSeed = appendHashSeedLabel(
+    seedHash,
+    TRAIN_MIDDLE_COUNT_SEED
+  );
   const middleCarSeed = appendHashSeedLabel(
     appendHashSeedLabel(seedHash, TRAIN_MIDDLE_CAR_SEED),
     getTrainLineLabelHash(context.lineName)
@@ -75,21 +78,21 @@ export function resolveTrainCarTypes(
   const middleCount =
     2 +
     Math.floor(
-      hash2DWithSeed(middleCountSeed, context.origin.x, context.origin.y) *
-        3
+      hash2DWithSeed(middleCountSeed, context.origin.x, context.origin.y) * 3
     );
   const cars: TrainCarType[] = ['engine'];
 
   for (let index = 0; index < middleCount; index += 1) {
-    const pick = MIDDLE_CAR_TYPES[
-      Math.floor(
-        hash2DWithSeed(
-          middleCarSeed,
-          context.origin.x + index,
-          context.origin.y - index
-        ) * MIDDLE_CAR_TYPES.length
-      )
-    ];
+    const pick =
+      MIDDLE_CAR_TYPES[
+        Math.floor(
+          hash2DWithSeed(
+            middleCarSeed,
+            context.origin.x + index,
+            context.origin.y - index
+          ) * MIDDLE_CAR_TYPES.length
+        )
+      ];
     cars.push(pick ?? 'coach');
   }
 

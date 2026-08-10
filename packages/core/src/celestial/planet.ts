@@ -95,8 +95,7 @@ export function appendPlanetEvents(options: {
     getOrbitalSkyPosition,
     getCelestialEventVisibility,
   } = options;
-  
-  
+
   PLANET_NAMES.forEach((name, index) => {
     const profile = getPlanetSkyProfile(name, index);
     const orbitLength = profile.orbitLengthDays;
@@ -139,4 +138,4 @@ export function appendPlanetEvents(options: {
       trailLength: 0,
     });
   });
- }
+}

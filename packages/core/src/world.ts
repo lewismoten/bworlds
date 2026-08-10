@@ -1,5 +1,14 @@
-import { snapWorldCoordinate, type FacingPositionLike, type WorldPositionLike } from "./position";
-import { getTileDefinition, type CoreTileDefinitionLike, type CoreWorldTileKind, type CoreWorldTileLike } from "./tile";
+import {
+  snapWorldCoordinate,
+  type FacingPositionLike,
+  type WorldPositionLike,
+} from './position';
+import {
+  getTileDefinition,
+  type CoreTileDefinitionLike,
+  type CoreWorldTileKind,
+  type CoreWorldTileLike,
+} from './tile';
 
 type CoreWorldContextType =
   | 'overworld'

@@ -59,6 +59,8 @@ describe('sky position helpers', () => {
   });
 
   it('still supports creating standalone altitude-based sky vectors when needed', () => {
-    expect(createSkyAltitudePosition(0, 1, 7)).toEqual(new THREE.Vector3(0, 7, 0));
+    expect(createSkyAltitudePosition(0, 1, 7)).toEqual(
+      new THREE.Vector3(0, 7, 0)
+    );
   });
 });

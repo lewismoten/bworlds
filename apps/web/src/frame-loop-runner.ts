@@ -1,6 +1,4 @@
-import {
-  shouldAdvanceSimulationState,
-} from './frame-loop.ts';
+import { shouldAdvanceSimulationState } from './frame-loop.ts';
 import {
   updateRenderBudgetStateInPlace,
   type RenderBudgetState,

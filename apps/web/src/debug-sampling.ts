@@ -8,7 +8,11 @@ export function shouldCollectDebugSnapshot(options: {
   lastSampleNowMs: number | null;
   sampleIntervalMs?: number;
 }): boolean {
-  if (!options.debugInspectorVisible || !options.hasDebugSummary || !options.hasGps) {
+  if (
+    !options.debugInspectorVisible ||
+    !options.hasDebugSummary ||
+    !options.hasGps
+  ) {
     return false;
   }
   if (options.lastSampleNowMs === null) {

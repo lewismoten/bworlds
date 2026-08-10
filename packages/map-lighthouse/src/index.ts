@@ -1,4 +1,7 @@
-import { createContextMapPlugin, createExitMapAction } from '@bworlds/map-support';
+import {
+  createContextMapPlugin,
+  createExitMapAction,
+} from '@bworlds/map-support';
 import type {
   CreateMapContext,
   RuntimePlugin,
@@ -45,7 +48,10 @@ function createLighthouseMap(
       };
     }
     if (Math.abs(x) <= 1 && y <= 0) {
-      return { kind: 'floor', note: 'A spiral stair wraps around the tower wall.' };
+      return {
+        kind: 'floor',
+        note: 'A spiral stair wraps around the tower wall.',
+      };
     }
     return { kind: 'floor', note: 'Salt air drifts through the lantern room.' };
   }

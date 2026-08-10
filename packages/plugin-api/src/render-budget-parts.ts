@@ -17,10 +17,9 @@ export interface RenderBudgetPartMetadata {
 
 type RenderBudgetPartTarget = Pick<ThreeObject3DLike, 'userData'>;
 
-export function setRenderBudgetPartMetadata<TTarget extends RenderBudgetPartTarget>(
-  target: TTarget,
-  metadata: RenderBudgetPartMetadata
-): TTarget {
+export function setRenderBudgetPartMetadata<
+  TTarget extends RenderBudgetPartTarget,
+>(target: TTarget, metadata: RenderBudgetPartMetadata): TTarget {
   target.userData = {
     ...(target.userData ?? {}),
     [RENDER_BUDGET_PART_USER_DATA_KEY]: {
@@ -32,7 +31,9 @@ export function setRenderBudgetPartMetadata<TTarget extends RenderBudgetPartTarg
   return target;
 }
 
-export function markStructuralRenderBudgetPart<TTarget extends RenderBudgetPartTarget>(
+export function markStructuralRenderBudgetPart<
+  TTarget extends RenderBudgetPartTarget,
+>(
   target: TTarget,
   {
     label,

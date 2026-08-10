@@ -32,7 +32,10 @@ export function createRailNetworkRuntimePlugin({
         return tile;
       }
       const timeMs = state?.timeMs;
-      if (typeof timeMs !== 'number' || typeof sampleTerrainSignals !== 'function') {
+      if (
+        typeof timeMs !== 'number' ||
+        typeof sampleTerrainSignals !== 'function'
+      ) {
         return tile;
       }
 

@@ -198,8 +198,12 @@ describe('visible tile texture budget', () => {
   });
 
   it('exposes distinct texture-byte limits by detail level', () => {
-    expect(getTileTextureMemoryLimit('full')).toBe(FULL_DETAIL_TILE_TEXTURE_MEMORY_LIMIT);
-    expect(getTileTextureMemoryLimit('low')).toBe(LOW_DETAIL_TILE_TEXTURE_MEMORY_LIMIT);
+    expect(getTileTextureMemoryLimit('full')).toBe(
+      FULL_DETAIL_TILE_TEXTURE_MEMORY_LIMIT
+    );
+    expect(getTileTextureMemoryLimit('low')).toBe(
+      LOW_DETAIL_TILE_TEXTURE_MEMORY_LIMIT
+    );
     expect(getVisibleChunkTextureMemoryLimit('full')).toBe(
       FULL_DETAIL_VISIBLE_CHUNK_TEXTURE_MEMORY_LIMIT
     );

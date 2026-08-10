@@ -16,7 +16,9 @@ type OptionalBudgetPartCandidate = {
   metadata: RenderBudgetPartMetadata;
 };
 
-export type TileModelBudgetPruneResult<TObject extends RemovableChildObjectLike> = {
+export type TileModelBudgetPruneResult<
+  TObject extends RemovableChildObjectLike,
+> = {
   validation: {
     accepted: boolean;
   };

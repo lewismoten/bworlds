@@ -12,7 +12,9 @@ function createBuildingMap() {
   );
 
   if (!building) {
-    throw new Error('Expected a professional building in the deterministic town layout.');
+    throw new Error(
+      'Expected a professional building in the deterministic town layout.'
+    );
   }
 
   const plugin = createBuildingMapPlugin();

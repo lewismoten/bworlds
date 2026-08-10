@@ -142,7 +142,11 @@ export function normalizePreferredWorldMapServerIds(
   const seen = new Set<string>();
   for (const serverId of preferredServerIds) {
     const normalized = serverId.trim();
-    if (normalized.length === 0 || seen.has(normalized) || !available.has(normalized)) {
+    if (
+      normalized.length === 0 ||
+      seen.has(normalized) ||
+      !available.has(normalized)
+    ) {
       continue;
     }
     ordered.push(normalized);
@@ -212,12 +216,13 @@ export function createWorldMapStorageCoordinator({
       availableServerIds
     );
   const getPreferredPoiPublishTargets = () => {
-    const providerById = new Map(providers.map((provider) => [provider.id, provider] as const));
+    const providerById = new Map(
+      providers.map((provider) => [provider.id, provider] as const)
+    );
     return getPreferredServerIds()
       .map((serverId) => providerById.get(serverId))
-      .filter(
-        (provider): provider is WorldMapStorageProviderLike =>
-          Boolean(provider?.supportsPoiPublishing)
+      .filter((provider): provider is WorldMapStorageProviderLike =>
+        Boolean(provider?.supportsPoiPublishing)
       )
       .map((provider) => ({
         id: provider.id,
@@ -251,7 +256,9 @@ export function createWorldMapStorageCoordinator({
     getPreferredPoiPublishTargets,
     publishPoiToPreferredServers(poi) {
       const targets = getPreferredPoiPublishTargets();
-      const providerById = new Map(providers.map((provider) => [provider.id, provider] as const));
+      const providerById = new Map(
+        providers.map((provider) => [provider.id, provider] as const)
+      );
       targets.forEach((target) => {
         const provider = providerById.get(target.id);
         if (!provider) {

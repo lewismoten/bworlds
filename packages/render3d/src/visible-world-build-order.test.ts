@@ -15,8 +15,7 @@ describe('visible world build order helpers', () => {
       facingAngle: 0,
       chunkRadius: 4,
       shouldRenderWorldTile: (tileX, tileY) =>
-        !(tileX === -4 && tileY === 0) &&
-        Math.hypot(tileX, tileY) <= 4,
+        !(tileX === -4 && tileY === 0) && Math.hypot(tileX, tileY) <= 4,
     });
     const second = fillVisibleWorldTileBuildOrder(scratch, {
       playerTileX: 0,
@@ -24,8 +23,7 @@ describe('visible world build order helpers', () => {
       facingAngle: 0,
       chunkRadius: 2,
       shouldRenderWorldTile: (tileX, tileY) =>
-        !(tileX === -2 && tileY === 0) &&
-        Math.hypot(tileX, tileY) <= 2,
+        !(tileX === -2 && tileY === 0) && Math.hypot(tileX, tileY) <= 2,
     });
 
     expect(second).toBe(first);

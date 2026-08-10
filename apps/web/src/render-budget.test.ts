@@ -203,7 +203,9 @@ describe('render budget', () => {
   });
 
   it('allocates more pending world-build time when frames are healthy and less when under pressure', () => {
-    const healthyBudget = getPendingWorldBuildBudget(DEFAULT_RENDER_BUDGET_STATE);
+    const healthyBudget = getPendingWorldBuildBudget(
+      DEFAULT_RENDER_BUDGET_STATE
+    );
     expect(healthyBudget.pendingBuildBudgetMs).toBeCloseTo(2.7, 1);
     expect(healthyBudget.maxPendingBuildTiles).toBe(8);
 
@@ -242,7 +244,10 @@ describe('render budget', () => {
     );
     expect(state.visibilityRadius).toBeLessThan(DEFAULT_VISIBILITY_RADIUS);
     expect(state.targetFps).toBe(60);
-    expect(state.weatherVisibilityRadiusCap).toBeCloseTo(state.visibilityRadius, 5);
+    expect(state.weatherVisibilityRadiusCap).toBeCloseTo(
+      state.visibilityRadius,
+      5
+    );
 
     for (let index = 0; index < 12; index += 1) {
       state = advanceRenderBudgetState(state, {
@@ -267,12 +272,11 @@ describe('render budget', () => {
       });
     }
 
-    expect(state.visibilityRadius).toBeLessThanOrEqual(REDUCED_VISIBILITY_RADIUS);
+    expect(state.visibilityRadius).toBeLessThanOrEqual(
+      REDUCED_VISIBILITY_RADIUS
+    );
     expect(state.visibilityRadius).toBeCloseTo(
-      Math.min(
-        REDUCED_VISIBILITY_RADIUS,
-        getWeatherVisibilityRadiusCap(0.75)
-      ),
+      Math.min(REDUCED_VISIBILITY_RADIUS, getWeatherVisibilityRadiusCap(0.75)),
       5
     );
     expect(state.targetFps).toBe(30);
@@ -280,7 +284,9 @@ describe('render budget', () => {
 
   it('keeps a shared frame-generation budget above pending builds while tightening under pressure', () => {
     const healthyBudget = getFrameGenerationBudget(DEFAULT_RENDER_BUDGET_STATE);
-    const healthyPendingBudget = getPendingWorldBuildBudget(DEFAULT_RENDER_BUDGET_STATE);
+    const healthyPendingBudget = getPendingWorldBuildBudget(
+      DEFAULT_RENDER_BUDGET_STATE
+    );
     const criticalState = {
       smoothedFrameMs: 40,
       targetFps: 30 as const,
@@ -409,9 +415,11 @@ describe('render budget', () => {
   });
 
   it('derives a stable render quality label from the current budget state', () => {
-    expect(formatRenderQualityLevel(getRenderQualityLevel(DEFAULT_RENDER_BUDGET_STATE))).toBe(
-      'Full'
-    );
+    expect(
+      formatRenderQualityLevel(
+        getRenderQualityLevel(DEFAULT_RENDER_BUDGET_STATE)
+      )
+    ).toBe('Full');
     expect(
       formatRenderQualityLevel(
         getRenderQualityLevel({

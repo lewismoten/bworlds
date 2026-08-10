@@ -34,8 +34,7 @@ describe('runtime rail network', () => {
   it('annotates rail tiles with an active train when traffic reaches that tile', () => {
     const plugin = createRailNetworkRuntimePlugin();
     let placement:
-      | ReturnType<typeof getRailTrainPlacements>[number]
-      | undefined;
+      ReturnType<typeof getRailTrainPlacements>[number] | undefined;
 
     for (let y = -96; y <= 96 && !placement; y += 24) {
       for (let x = -96; x <= 96 && !placement; x += 24) {

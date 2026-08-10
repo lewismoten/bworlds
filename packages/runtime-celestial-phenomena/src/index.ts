@@ -29,11 +29,7 @@ const VISITING_COMET_DAY_SEED = registerHashLabel('visiting-comet-day');
 const VISITING_COMET_OFFSET_SEED = registerHashLabel('visiting-comet-offset');
 
 export type CelestialEventMode =
-  | 'auto'
-  | 'aurora'
-  | 'meteor-shower'
-  | 'comet'
-  | 'eclipse';
+  'auto' | 'aurora' | 'meteor-shower' | 'comet' | 'eclipse';
 
 export function createCelestialPhenomenaRuntimePlugin(): RuntimePlugin {
   return createRuntimePlugin('runtime-celestial-phenomena', {
@@ -99,7 +95,8 @@ export function createCelestialPhenomenaRuntimePlugin(): RuntimePlugin {
 }
 
 function getForcedCelestialEventMode(state: unknown): CelestialEventMode {
-  const mode = (state as { celestialEventMode?: string } | null)?.celestialEventMode;
+  const mode = (state as { celestialEventMode?: string } | null)
+    ?.celestialEventMode;
   if (
     mode === 'aurora' ||
     mode === 'meteor-shower' ||
@@ -135,14 +132,19 @@ function buildForcedSolarEclipse(
     totality,
     daylightReduction: clamp(coverage * (0.62 + totality * 0.28), 0, 1),
     moonAzimuth: normalizeAngle(cycle.sunAzimuth + sweep * offsetScale * 0.08),
-    moonAltitude: clamp(Math.max(cycle.sunAltitude, 0.35) + sweep * offsetScale, -1, 1),
+    moonAltitude: clamp(
+      Math.max(cycle.sunAltitude, 0.35) + sweep * offsetScale,
+      -1,
+      1
+    ),
     shadowOffsetX: sweep * offsetScale,
     shadowOffsetY: Math.cos(timeMs / 22000) * offsetScale * 0.75,
   };
 }
 
 function getForcedFacingAngle(state: unknown): number {
-  const angle = (state as { player?: { facing?: unknown } } | null)?.player?.facing;
+  const angle = (state as { player?: { facing?: unknown } } | null)?.player
+    ?.facing;
   return typeof angle === 'number' ? angle : 0;
 }
 
@@ -179,8 +181,7 @@ function buildAuroraBands(
   const bandCount = forced ? 5 : dayChance > 0.9 ? 3 : dayChance > 0.82 ? 2 : 1;
   const poleAzimuth =
     cycle.observerLatitudeDegrees >= 0 ? -Math.PI / 2 : Math.PI / 2;
-  const facingToPole =
-    Math.cos(facingAngle - poleAzimuth) * 0.3;
+  const facingToPole = Math.cos(facingAngle - poleAzimuth) * 0.3;
   const hemisphereAzimuth = forced
     ? poleAzimuth + facingToPole
     : poleAzimuth + Math.sin(timeMs / 28000) * 0.08;
@@ -310,7 +311,9 @@ function buildVisitingCometEvents(
   const phaseOffset =
     0.41 + hash2D(VISITING_COMET_OFFSET_SEED, cycle.dayNumber, 0) * 0.12;
   const progress = getCometOrbitProgress(
-    (forced ? cycle.dayProgress * visitLengthDays : cycleDay + cycle.dayProgress) +
+    (forced
+      ? cycle.dayProgress * visitLengthDays
+      : cycleDay + cycle.dayProgress) +
       fract(timeMs / 120000) * 0.2,
     visitLengthDays + 3,
     phaseOffset,
@@ -327,7 +330,9 @@ function buildVisitingCometEvents(
         declination: clamp(
           cycle.solarDeclination * -0.42 +
             Math.cos(
-              ((cycle.dayNumber + cycle.dayProgress) / cycleLengthDays) * Math.PI * 2
+              ((cycle.dayNumber + cycle.dayProgress) / cycleLengthDays) *
+                Math.PI *
+                2
             ) *
               0.22,
           -0.72,
@@ -369,10 +374,18 @@ function getTransientVisibility(
 ) {
   const horizonVisibility = smoothstep(-0.12, 0.18, altitude);
   if (forced) {
-    return clamp((0.72 + intensity * 0.28) * Math.max(horizonVisibility, 0.72), 0, 1);
+    return clamp(
+      (0.72 + intensity * 0.28) * Math.max(horizonVisibility, 0.72),
+      0,
+      1
+    );
   }
   const nightVisibility = stronglyNightBound
     ? cycle.night * cycle.starsOpacity
     : 0.22 + cycle.night * 0.78;
-  return clamp(horizonVisibility * nightVisibility * (0.42 + intensity * 0.58), 0, 1);
+  return clamp(
+    horizonVisibility * nightVisibility * (0.42 + intensity * 0.58),
+    0,
+    1
+  );
 }

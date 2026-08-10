@@ -150,14 +150,20 @@ describe('tile cave', () => {
         state,
         tileX: 4,
         tileY: 6,
-      }) as { children?: Array<{ children?: Array<{ material?: unknown }> }> } | null | undefined;
+      }) as
+        | { children?: Array<{ children?: Array<{ material?: unknown }> }> }
+        | null
+        | undefined;
       const second = modelTile?.create3DModel?.({
         tile: { kind: 'cave' },
         three,
         state,
         tileX: 8,
         tileY: 9,
-      }) as { children?: Array<{ children?: Array<{ material?: unknown }> }> } | null | undefined;
+      }) as
+        | { children?: Array<{ children?: Array<{ material?: unknown }> }> }
+        | null
+        | undefined;
 
       const firstPortalChildren = findPortalChildren(first?.children);
       const secondPortalChildren = findPortalChildren(second?.children);
@@ -165,7 +171,8 @@ describe('tile cave', () => {
         children: Array<{ material?: { options?: { color?: unknown } } }>,
         color: string
       ) =>
-        children.find((child) => child.material?.options?.color === color)?.material;
+        children.find((child) => child.material?.options?.color === color)
+          ?.material;
 
       expect(findMaterialByColor(firstPortalChildren, '#010308')).toBe(
         findMaterialByColor(secondPortalChildren, '#010308')
@@ -183,7 +190,9 @@ describe('tile cave', () => {
 
   it('reuses shared cave mushroom materials across repeated builds on the same host', () => {
     const three = createFakeThree() as never;
-    const mushroomTile = plugin.tiles?.find((tile) => tile.kind === 'cave-mushrooms');
+    const mushroomTile = plugin.tiles?.find(
+      (tile) => tile.kind === 'cave-mushrooms'
+    );
 
     const first = mushroomTile?.create3DModel?.({
       tile: { kind: 'cave-mushrooms' },
@@ -200,8 +209,12 @@ describe('tile cave', () => {
       tileY: 7,
     }) as { children?: Array<{ material?: unknown }> } | null | undefined;
 
-    expect(first?.children?.[0]?.material).toBe(second?.children?.[0]?.material);
-    expect(first?.children?.[1]?.material).toBe(second?.children?.[1]?.material);
+    expect(first?.children?.[0]?.material).toBe(
+      second?.children?.[0]?.material
+    );
+    expect(first?.children?.[1]?.material).toBe(
+      second?.children?.[1]?.material
+    );
   });
 
   it('builds a lightweight low-detail cave mouth silhouette for distant rendering', () => {
@@ -236,7 +249,9 @@ describe('tile cave', () => {
         detailLevel: 'low',
       }) as { children?: Array<{ children?: unknown[] }> } | null | undefined;
 
-      expect((low?.children?.length ?? 0)).toBeLessThan(full?.children?.length ?? Infinity);
+      expect(low?.children?.length ?? 0).toBeLessThan(
+        full?.children?.length ?? Infinity
+      );
       expect(low?.children?.[0]?.children).toHaveLength(2);
     } finally {
       globalThis.document = previousDocument;
@@ -351,13 +366,19 @@ function createFakeThree() {
 }
 
 function findPortalChildren(
-  children: Array<{ children?: Array<{ material?: { options?: { color?: unknown } } }> }> | undefined
+  children:
+    | Array<{
+        children?: Array<{ material?: { options?: { color?: unknown } } }>;
+      }>
+    | undefined
 ) {
   return (
     children?.find(
       (child) =>
         Array.isArray(child.children) &&
-        child.children.some((grandchild) => grandchild.material?.options?.color === '#010308')
+        child.children.some(
+          (grandchild) => grandchild.material?.options?.color === '#010308'
+        )
     )?.children ?? []
   );
 }

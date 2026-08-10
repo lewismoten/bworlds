@@ -109,8 +109,16 @@ function hasDenseForestCluster(
   let forestLikeCount = 0;
   let totalSamples = 0;
 
-  for (let sampleY = y - FOREST_CLUSTER_RADIUS; sampleY <= y + FOREST_CLUSTER_RADIUS; sampleY += 1) {
-    for (let sampleX = x - FOREST_CLUSTER_RADIUS; sampleX <= x + FOREST_CLUSTER_RADIUS; sampleX += 1) {
+  for (
+    let sampleY = y - FOREST_CLUSTER_RADIUS;
+    sampleY <= y + FOREST_CLUSTER_RADIUS;
+    sampleY += 1
+  ) {
+    for (
+      let sampleX = x - FOREST_CLUSTER_RADIUS;
+      sampleX <= x + FOREST_CLUSTER_RADIUS;
+      sampleX += 1
+    ) {
       totalSamples += 1;
       if (isForestLikeTerrain(sampleTerrainSignals(sampleX, sampleY))) {
         forestLikeCount += 1;

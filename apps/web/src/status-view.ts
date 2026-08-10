@@ -1,4 +1,7 @@
-import type { CompassDisplayMode, TimekeeperDisplayMode } from './time-controls.ts';
+import type {
+  CompassDisplayMode,
+  TimekeeperDisplayMode,
+} from './time-controls.ts';
 import type { ViewMode } from '@bworlds/plugin-api';
 
 export type StatusViewOptions = {

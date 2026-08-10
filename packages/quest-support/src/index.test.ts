@@ -88,7 +88,9 @@ describe('quest support', () => {
     });
 
     expect(homeOffers.some((offer) => offer.type === 'collection')).toBe(true);
-    expect(homeOffers.some((offer) => offer.title.includes('Winter'))).toBe(true);
+    expect(homeOffers.some((offer) => offer.title.includes('Winter'))).toBe(
+      true
+    );
     expect(commuteOffers.some((offer) => offer.type === 'escort')).toBe(true);
   });
 
@@ -163,7 +165,9 @@ describe('quest support', () => {
 
     expect(defense.some((offer) => offer.type === 'defense')).toBe(true);
     expect(
-      defense.some((offer) => offer.summary.includes('hold a line under pressure'))
+      defense.some((offer) =>
+        offer.summary.includes('hold a line under pressure')
+      )
     ).toBe(true);
     expect(underleveled.some((offer) => offer.type === 'defense')).toBe(false);
   });
@@ -237,9 +241,13 @@ describe('quest support', () => {
       workplaceBuildingId: 'hall',
     });
 
-    expect(assassination.some((offer) => offer.type === 'assassination')).toBe(true);
+    expect(assassination.some((offer) => offer.type === 'assassination')).toBe(
+      true
+    );
     expect(
-      assassination.some((offer) => offer.summary.includes('credible bounty hunter'))
+      assassination.some((offer) =>
+        offer.summary.includes('credible bounty hunter')
+      )
     ).toBe(true);
     expect(underleveled.some((offer) => offer.type === 'assassination')).toBe(
       false
@@ -293,7 +301,9 @@ describe('quest support', () => {
       yearProgress: 0.32,
       playerLevel: 7,
       playerProfession: 'scholar',
-      completedQuestIds: new Set<string>(['3:7:npc:teacher:training:field-notes']),
+      completedQuestIds: new Set<string>([
+        '3:7:npc:teacher:training:field-notes',
+      ]),
       npcState: 'working',
       profession: 'teacher',
       professionFamily: 'school',
@@ -317,7 +327,9 @@ describe('quest support', () => {
 
     expect(companion.some((offer) => offer.type === 'companion')).toBe(true);
     expect(
-      companion.some((offer) => offer.summary.includes('personal part of the story'))
+      companion.some((offer) =>
+        offer.summary.includes('personal part of the story')
+      )
     ).toBe(true);
     expect(locked.some((offer) => offer.type === 'companion')).toBe(false);
   });
@@ -438,10 +450,12 @@ describe('quest support', () => {
     });
 
     expect(schoolOffers.some((offer) => offer.type === 'training')).toBe(true);
-    expect(schoolOffers.some((offer) => offer.summary.includes('field notes'))).toBe(
-      true
+    expect(
+      schoolOffers.some((offer) => offer.summary.includes('field notes'))
+    ).toBe(true);
+    expect(overleveledOffers.some((offer) => offer.type === 'training')).toBe(
+      false
     );
-    expect(overleveledOffers.some((offer) => offer.type === 'training')).toBe(false);
   });
 
   it('offers fetch quests for supported staffed or homebound professions', () => {
@@ -555,11 +569,17 @@ describe('quest support', () => {
       workplaceBuildingId: 'school',
     });
 
-    expect(exploration.some((offer) => offer.type === 'exploration')).toBe(true);
+    expect(exploration.some((offer) => offer.type === 'exploration')).toBe(
+      true
+    );
     expect(
-      exploration.some((offer) => offer.summary.includes('routes and landmarks'))
+      exploration.some((offer) =>
+        offer.summary.includes('routes and landmarks')
+      )
     ).toBe(true);
-    expect(overleveled.some((offer) => offer.type === 'exploration')).toBe(false);
+    expect(overleveled.some((offer) => offer.type === 'exploration')).toBe(
+      false
+    );
   });
 
   it('offers puzzle quests for pattern-solving professions and civic mechanisms', () => {
@@ -632,7 +652,9 @@ describe('quest support', () => {
     });
 
     expect(timed.some((offer) => offer.type === 'timed')).toBe(true);
-    expect(timed.some((offer) => offer.summary.includes('quick feet'))).toBe(true);
+    expect(timed.some((offer) => offer.summary.includes('quick feet'))).toBe(
+      true
+    );
     expect(overleveled.some((offer) => offer.type === 'timed')).toBe(false);
   });
 
@@ -709,7 +731,9 @@ describe('quest support', () => {
     expect(
       activation.some((offer) => offer.summary.includes('steady hands'))
     ).toBe(true);
-    expect(underleveled.some((offer) => offer.type === 'activation')).toBe(false);
+    expect(underleveled.some((offer) => offer.type === 'activation')).toBe(
+      false
+    );
   });
 
   it('offers controlled destruction quests for sanctioned teardown work', () => {
@@ -743,11 +767,15 @@ describe('quest support', () => {
       workplaceBuildingId: 'workshop',
     });
 
-    expect(destruction.some((offer) => offer.type === 'destruction')).toBe(true);
+    expect(destruction.some((offer) => offer.type === 'destruction')).toBe(
+      true
+    );
     expect(
       destruction.some((offer) => offer.summary.includes('force and equipment'))
     ).toBe(true);
-    expect(underleveled.some((offer) => offer.type === 'destruction')).toBe(false);
+    expect(underleveled.some((offer) => offer.type === 'destruction')).toBe(
+      false
+    );
   });
 
   it('offers revenge quests after related recovery or tracking work is completed', () => {
@@ -759,7 +787,9 @@ describe('quest support', () => {
       yearProgress: 0.37,
       playerLevel: 6,
       playerProfession: 'guard',
-      completedQuestIds: new Set<string>(['3:7:npc:merchant:recovery:trade-parcel']),
+      completedQuestIds: new Set<string>([
+        '3:7:npc:merchant:recovery:trade-parcel',
+      ]),
       npcState: 'working',
       profession: 'merchant',
       professionFamily: 'market',
@@ -783,7 +813,9 @@ describe('quest support', () => {
 
     expect(revenge.some((offer) => offer.type === 'revenge')).toBe(true);
     expect(
-      revenge.some((offer) => offer.summary.includes('settle the score lawfully'))
+      revenge.some((offer) =>
+        offer.summary.includes('settle the score lawfully')
+      )
     ).toBe(true);
     expect(locked.some((offer) => offer.type === 'revenge')).toBe(false);
   });
@@ -820,9 +852,9 @@ describe('quest support', () => {
     });
 
     expect(challenge.some((offer) => offer.type === 'challenge')).toBe(true);
-    expect(challenge.some((offer) => offer.summary.includes('speed and control'))).toBe(
-      true
-    );
+    expect(
+      challenge.some((offer) => offer.summary.includes('speed and control'))
+    ).toBe(true);
     expect(overleveled.some((offer) => offer.type === 'challenge')).toBe(false);
   });
 
@@ -881,7 +913,9 @@ describe('quest support', () => {
     });
 
     expect(choice.some((offer) => offer.type === 'choice')).toBe(true);
-    expect(choice.some((offer) => offer.summary.includes('town safety'))).toBe(true);
+    expect(choice.some((offer) => offer.summary.includes('town safety'))).toBe(
+      true
+    );
     expect(underleveled.some((offer) => offer.type === 'choice')).toBe(false);
   });
 
@@ -903,9 +937,9 @@ describe('quest support', () => {
     });
 
     expect(faction.some((offer) => offer.type === 'faction')).toBe(true);
-    expect(
-      faction.some((offer) => offer.summary.includes('trade ties'))
-    ).toBe(true);
+    expect(faction.some((offer) => offer.summary.includes('trade ties'))).toBe(
+      true
+    );
   });
 
   it('offers construction quests for civic and craft repairs', () => {
@@ -939,10 +973,14 @@ describe('quest support', () => {
       workplaceBuildingId: 'forge',
     });
 
-    expect(construction.some((offer) => offer.type === 'construction')).toBe(true);
+    expect(construction.some((offer) => offer.type === 'construction')).toBe(
+      true
+    );
     expect(
       construction.some((offer) => offer.summary.includes('trade skills'))
     ).toBe(true);
-    expect(underleveled.some((offer) => offer.type === 'construction')).toBe(false);
+    expect(underleveled.some((offer) => offer.type === 'construction')).toBe(
+      false
+    );
   });
 });

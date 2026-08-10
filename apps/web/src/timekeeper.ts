@@ -59,7 +59,10 @@ export function getTimeWheelConstellationEntries(
 }
 
 export function getCelestialDateLabel(cycle: DaylightCycleLike): string {
-  return cycle.calendar?.label ?? `${cycle.activeConstellation?.name ?? 'Unknown'} / ${cycle.moonPhaseName}`;
+  return (
+    cycle.calendar?.label ??
+    `${cycle.activeConstellation?.name ?? 'Unknown'} / ${cycle.moonPhaseName}`
+  );
 }
 
 export function getMoonPhaseSymbol(phaseIndex: number): string {
@@ -90,7 +93,10 @@ export function getMoonMidnightOrbitProgress(cycle: DaylightCycleLike): number {
   return getMoonOrbitProgress(cycle);
 }
 
-export function getDialAngle(progress: number, referenceProgress: number): number {
+export function getDialAngle(
+  progress: number,
+  referenceProgress: number
+): number {
   return (progress - referenceProgress) * Math.PI * 2 - Math.PI / 2;
 }
 
@@ -126,11 +132,13 @@ export function stabilizeDisplayedDaylightAnchors(
   threshold = 0.0005
 ): StabilizedDaylightAnchors {
   const sunriseAligned =
-    Math.abs(getWrappedProgressDelta(cycle.dayProgress, cycle.sunriseProgress)) <=
-    threshold;
+    Math.abs(
+      getWrappedProgressDelta(cycle.dayProgress, cycle.sunriseProgress)
+    ) <= threshold;
   const sunsetAligned =
-    Math.abs(getWrappedProgressDelta(cycle.dayProgress, cycle.sunsetProgress)) <=
-    threshold;
+    Math.abs(
+      getWrappedProgressDelta(cycle.dayProgress, cycle.sunsetProgress)
+    ) <= threshold;
 
   return {
     sunriseProgress: sunriseAligned
@@ -286,7 +294,8 @@ export function drawTimeWheel(
     context.stroke();
   }
 
-  const dayCenterProgress = (cycle.sunriseProgress + cycle.daylightDuration * 0.5) % 1;
+  const dayCenterProgress =
+    (cycle.sunriseProgress + cycle.daylightDuration * 0.5) % 1;
   const sunAngle = getDialAngle(dayCenterProgress, cycle.dayProgress);
   context.fillStyle = '#ffcf6b';
   context.beginPath();
@@ -345,7 +354,10 @@ export function drawTimeWheel(
   const windowWidth = daylightInnerRadius * 1.4;
   const windowHeight = daylightInnerRadius * 0.88;
   const windowY = -daylightInnerRadius * 0.06;
-  const windowLayout = getTimeWheelWindowLayout(daylightInnerRadius, windowWidth);
+  const windowLayout = getTimeWheelWindowLayout(
+    daylightInnerRadius,
+    windowWidth
+  );
 
   context.save();
   context.beginPath();
@@ -358,7 +370,12 @@ export function drawTimeWheel(
     18
   );
   context.clip();
-  drawDaylightWindowPreview(context, cycle, daylightOuterRadius, daylightInnerRadius);
+  drawDaylightWindowPreview(
+    context,
+    cycle,
+    daylightOuterRadius,
+    daylightInnerRadius
+  );
   context.restore();
 
   context.strokeStyle = 'rgba(255,255,255,0.22)';
@@ -423,7 +440,8 @@ function drawConstellationRing(
   drawCelestialRingStars(context, innerRadius, outerRadius);
 
   ringEntries.forEach((entry, index) => {
-    const segmentCenter = (index / ringEntries.length) * Math.PI * 2 - Math.PI / 2;
+    const segmentCenter =
+      (index / ringEntries.length) * Math.PI * 2 - Math.PI / 2;
     const startAngle = segmentCenter - segmentSize * 0.5;
     const endAngle = segmentCenter + segmentSize * 0.5;
     context.fillStyle = 'rgba(39, 61, 92, 0.72)';
@@ -437,26 +455,32 @@ function drawConstellationRing(
       context.strokeStyle = 'rgba(220, 238, 255, 0.62)';
       context.lineWidth = 2.4;
       context.beginPath();
-      context.arc(
-        0,
-        0,
-        outerRadius - 4,
-        startAngle + 0.05,
-        endAngle - 0.05
-      );
+      context.arc(0, 0, outerRadius - 4, startAngle + 0.05, endAngle - 0.05);
       context.stroke();
     }
 
     context.strokeStyle = 'rgba(183, 214, 255, 0.28)';
     context.lineWidth = 1.2;
     context.beginPath();
-    context.moveTo(Math.cos(startAngle) * innerRadius, Math.sin(startAngle) * innerRadius);
-    context.lineTo(Math.cos(startAngle) * outerRadius, Math.sin(startAngle) * outerRadius);
+    context.moveTo(
+      Math.cos(startAngle) * innerRadius,
+      Math.sin(startAngle) * innerRadius
+    );
+    context.lineTo(
+      Math.cos(startAngle) * outerRadius,
+      Math.sin(startAngle) * outerRadius
+    );
     context.stroke();
     if (index === ringEntries.length - 1) {
       context.beginPath();
-      context.moveTo(Math.cos(endAngle) * innerRadius, Math.sin(endAngle) * innerRadius);
-      context.lineTo(Math.cos(endAngle) * outerRadius, Math.sin(endAngle) * outerRadius);
+      context.moveTo(
+        Math.cos(endAngle) * innerRadius,
+        Math.sin(endAngle) * innerRadius
+      );
+      context.lineTo(
+        Math.cos(endAngle) * outerRadius,
+        Math.sin(endAngle) * outerRadius
+      );
       context.stroke();
     }
 
@@ -504,7 +528,12 @@ function drawDaylightBand(
 ) {
   const { dawnAngle, duskAngle, dayCenterAngle, nightCenterAngle } =
     getDaylightRingLayout(cycle);
-  const ringGradient = context.createLinearGradient(0, -outerRadius, 0, outerRadius);
+  const ringGradient = context.createLinearGradient(
+    0,
+    -outerRadius,
+    0,
+    outerRadius
+  );
   ringGradient.addColorStop(0, '#3b4f73');
   ringGradient.addColorStop(1, '#07111d');
   context.fillStyle = ringGradient;
@@ -514,8 +543,22 @@ function drawDaylightBand(
   context.closePath();
   context.fill();
 
-  drawNightRingStars(context, cycle, innerRadius, outerRadius, dawnAngle, duskAngle);
-  const daylightGradient = context.createRadialGradient(0, 0, innerRadius, 0, 0, outerRadius);
+  drawNightRingStars(
+    context,
+    cycle,
+    innerRadius,
+    outerRadius,
+    dawnAngle,
+    duskAngle
+  );
+  const daylightGradient = context.createRadialGradient(
+    0,
+    0,
+    innerRadius,
+    0,
+    0,
+    outerRadius
+  );
   daylightGradient.addColorStop(0, '#dff4ff');
   daylightGradient.addColorStop(0.5, '#9fd8ff');
   daylightGradient.addColorStop(1, '#6eb9f4');
@@ -526,13 +569,44 @@ function drawDaylightBand(
   context.closePath();
   context.fill();
   drawNoonSkyBlend(context, cycle, innerRadius, outerRadius);
-  drawDayRingClouds(context, cycle, innerRadius, outerRadius, dawnAngle, duskAngle);
-  drawDayNightTransitionBlend(context, outerRadius, innerRadius, dawnAngle, '#ffe6bf');
-  drawDayNightTransitionBlend(context, outerRadius, innerRadius, duskAngle, '#ffb37a');
+  drawDayRingClouds(
+    context,
+    cycle,
+    innerRadius,
+    outerRadius,
+    dawnAngle,
+    duskAngle
+  );
+  drawDayNightTransitionBlend(
+    context,
+    outerRadius,
+    innerRadius,
+    dawnAngle,
+    '#ffe6bf'
+  );
+  drawDayNightTransitionBlend(
+    context,
+    outerRadius,
+    innerRadius,
+    duskAngle,
+    '#ffb37a'
+  );
 
   if (includeDividers) {
-    drawDayNightDividerGlow(context, outerRadius, innerRadius, dawnAngle, '#ffe6b8');
-    drawDayNightDividerGlow(context, outerRadius, innerRadius, duskAngle, '#f7b98a');
+    drawDayNightDividerGlow(
+      context,
+      outerRadius,
+      innerRadius,
+      dawnAngle,
+      '#ffe6b8'
+    );
+    drawDayNightDividerGlow(
+      context,
+      outerRadius,
+      innerRadius,
+      duskAngle,
+      '#f7b98a'
+    );
     drawDayNightDividerMark(context, outerRadius, innerRadius, dawnAngle);
     drawDayNightDividerMark(context, outerRadius, innerRadius, duskAngle);
   }
@@ -734,7 +808,12 @@ function drawDayNightDividerGlow(
 ) {
   context.save();
   context.rotate(getDialRadialRotation(angle));
-  const feather = context.createLinearGradient(0, -outerRadius, 0, -innerRadius);
+  const feather = context.createLinearGradient(
+    0,
+    -outerRadius,
+    0,
+    -innerRadius
+  );
   feather.addColorStop(0, 'rgba(0, 0, 0, 0)');
   feather.addColorStop(0.2, 'rgba(255, 255, 255, 0.03)');
   feather.addColorStop(0.5, color);
@@ -803,14 +882,16 @@ function drawNightRingStars(
   dawnAngle: number,
   duskAngle: number
 ) {
-  getNightRingStars(innerRadius, outerRadius, dawnAngle, duskAngle).forEach((star) => {
-    const x = Math.cos(star.angle) * star.radius;
-    const y = Math.sin(star.angle) * star.radius;
-    context.fillStyle = star.color;
-    context.beginPath();
-    context.arc(x, y, star.size, 0, Math.PI * 2);
-    context.fill();
-  });
+  getNightRingStars(innerRadius, outerRadius, dawnAngle, duskAngle).forEach(
+    (star) => {
+      const x = Math.cos(star.angle) * star.radius;
+      const y = Math.sin(star.angle) * star.radius;
+      context.fillStyle = star.color;
+      context.beginPath();
+      context.arc(x, y, star.size, 0, Math.PI * 2);
+      context.fill();
+    }
+  );
 }
 
 function drawCelestialRingStars(
@@ -918,7 +999,12 @@ function roundedRectPath(
   context.lineTo(x + width - radius, y);
   context.quadraticCurveTo(x + width, y, x + width, y + radius);
   context.lineTo(x + width, y + height - radius);
-  context.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+  context.quadraticCurveTo(
+    x + width,
+    y + height,
+    x + width - radius,
+    y + height
+  );
   context.lineTo(x + radius, y + height);
   context.quadraticCurveTo(x, y + height, x, y + height - radius);
   context.lineTo(x, y + radius);

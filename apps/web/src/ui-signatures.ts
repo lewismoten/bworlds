@@ -6,12 +6,7 @@ import type {
 } from './time-controls.ts';
 
 export type EventDetailKind =
-  | 'aurora'
-  | 'meteor-shower'
-  | 'comet'
-  | 'eclipse'
-  | 'planet'
-  | 'none';
+  'aurora' | 'meteor-shower' | 'comet' | 'eclipse' | 'planet' | 'none';
 export type EventDetail = { kind: EventDetailKind; label: string };
 
 type StatusSignatureOptions = {
@@ -284,13 +279,11 @@ export function buildViewportHudMarkup(
     `;
 }
 
-export function buildEventSummaryMarkup(
-  options: {
-    modeLabel: string;
-    activeEventsLabel: string;
-    details: EventDetail[];
-  }
-): string {
+export function buildEventSummaryMarkup(options: {
+  modeLabel: string;
+  activeEventsLabel: string;
+  details: EventDetail[];
+}): string {
   return `
       <div class="event-summary-label">Mode: ${options.modeLabel}</div>
       <div class="event-summary-active">${options.activeEventsLabel}</div>

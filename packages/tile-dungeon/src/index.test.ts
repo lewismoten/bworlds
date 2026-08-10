@@ -7,7 +7,10 @@ vi.mock('@bworlds/three-support', () => ({
   createPaintedCanvasTexture() {
     return { colorSpace: '', needsUpdate: false };
   },
-  createPaintedStandardMaterial(_three: unknown, options: Record<string, unknown>) {
+  createPaintedStandardMaterial(
+    _three: unknown,
+    options: Record<string, unknown>
+  ) {
     return { options };
   },
 }));
@@ -114,7 +117,9 @@ const fakeThree = {
   DoubleSide: 2,
 } as const;
 
-function normalizeMaterialOptions(options: Record<string, unknown> | undefined) {
+function normalizeMaterialOptions(
+  options: Record<string, unknown> | undefined
+) {
   if (!options) {
     return undefined;
   }
@@ -301,7 +306,10 @@ describe('tile dungeon', () => {
       if (node instanceof FakeMesh && node.userData?.poiNightLightEmitter) {
         glowMeshes.push(node);
       }
-      if (node instanceof FakePointLight && node.userData?.poiNightLightEmitter) {
+      if (
+        node instanceof FakePointLight &&
+        node.userData?.poiNightLightEmitter
+      ) {
         pointLights.push(node);
       }
     });
@@ -374,14 +382,20 @@ describe('tile dungeon', () => {
 
     const fullBanners: FakeMesh[] = [];
     fullModel.traverse((node) => {
-      if (node instanceof FakeMesh && typeof node.userData?.dungeonBanner === 'string') {
+      if (
+        node instanceof FakeMesh &&
+        typeof node.userData?.dungeonBanner === 'string'
+      ) {
         fullBanners.push(node);
       }
     });
 
     const lowBanners: FakeMesh[] = [];
     lowModel.traverse((node) => {
-      if (node instanceof FakeMesh && typeof node.userData?.dungeonBanner === 'string') {
+      if (
+        node instanceof FakeMesh &&
+        typeof node.userData?.dungeonBanner === 'string'
+      ) {
         lowBanners.push(node);
       }
     });
@@ -440,9 +454,9 @@ describe('tile dungeon', () => {
       detailLevel: 'low',
     }) as FakeGroup;
 
-    const firstBase = firstModel.children.find((child) => child instanceof FakeMesh) as
-      | FakeMesh
-      | undefined;
+    const firstBase = firstModel.children.find(
+      (child) => child instanceof FakeMesh
+    ) as FakeMesh | undefined;
     const firstMaterial = firstBase?.material;
 
     for (let index = 0; index <= 96; index += 1) {
@@ -465,9 +479,9 @@ describe('tile dungeon', () => {
       detailLevel: 'low',
     }) as FakeGroup;
 
-    const secondBase = secondModel.children.find((child) => child instanceof FakeMesh) as
-      | FakeMesh
-      | undefined;
+    const secondBase = secondModel.children.find(
+      (child) => child instanceof FakeMesh
+    ) as FakeMesh | undefined;
     const secondMaterial = secondBase?.material;
 
     expect(firstMaterial).toBeDefined();
@@ -497,7 +511,9 @@ describe('tile dungeon', () => {
       detailLevel: 'low',
     }) as FakeGroup;
 
-    expect(countSharedMaterialReferences(first, second)).toBeGreaterThanOrEqual(3);
+    expect(countSharedMaterialReferences(first, second)).toBeGreaterThanOrEqual(
+      3
+    );
   });
 
   it('reuses full-detail gate, beacon, and banner materials across repeated builds', () => {
@@ -522,9 +538,13 @@ describe('tile dungeon', () => {
       detailLevel: 'full',
     }) as FakeGroup;
 
-    expect(countSharedMaterialReferences(first, second)).toBeGreaterThanOrEqual(7);
+    expect(countSharedMaterialReferences(first, second)).toBeGreaterThanOrEqual(
+      7
+    );
     expect(findBeaconGlowMaterial(first)).toBe(findBeaconGlowMaterial(second));
-    expect(findBannerClothMaterial(first)).toBe(findBannerClothMaterial(second));
+    expect(findBannerClothMaterial(first)).toBe(
+      findBannerClothMaterial(second)
+    );
     expect(findGateVoidMaterial(first)).toBe(findGateVoidMaterial(second));
   });
 
@@ -588,7 +608,9 @@ describe('tile dungeon', () => {
       detailLevel: 'full',
     }) as FakeGroup;
 
-    expect(createModelSignature(resolved)).toEqual(createModelSignature(baseline));
+    expect(createModelSignature(resolved)).toEqual(
+      createModelSignature(baseline)
+    );
   });
 });
 
@@ -634,7 +656,9 @@ function findBeaconGlowMaterial(root: FakeGroup) {
       return;
     }
 
-    const resolved = Array.isArray(node.material) ? node.material[0] : node.material;
+    const resolved = Array.isArray(node.material)
+      ? node.material[0]
+      : node.material;
     if (resolved?.options?.emissive === '#ef4444') {
       material = resolved;
     }
@@ -645,11 +669,16 @@ function findBeaconGlowMaterial(root: FakeGroup) {
 function collectBeaconGlowMaterials(root: FakeGroup): Set<FakeMaterial> {
   const materials = new Set<FakeMaterial>();
   root.traverse((node) => {
-    if (!(node instanceof FakeMesh) || typeof node.userData?.dungeonBeacon !== 'string') {
+    if (
+      !(node instanceof FakeMesh) ||
+      typeof node.userData?.dungeonBeacon !== 'string'
+    ) {
       return;
     }
 
-    const resolved = Array.isArray(node.material) ? node.material[0] : node.material;
+    const resolved = Array.isArray(node.material)
+      ? node.material[0]
+      : node.material;
     if (resolved?.options?.emissive === '#ef4444') {
       materials.add(resolved);
     }
@@ -680,7 +709,9 @@ function findGateVoidMaterial(root: FakeGroup) {
       return;
     }
 
-    const resolved = Array.isArray(node.material) ? node.material[0] : node.material;
+    const resolved = Array.isArray(node.material)
+      ? node.material[0]
+      : node.material;
     if (
       resolved &&
       typeof resolved === 'object' &&

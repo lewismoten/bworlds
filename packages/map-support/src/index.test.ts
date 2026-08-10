@@ -103,16 +103,16 @@ describe('map support', () => {
     });
 
     const townMap = plugin.createMap?.({
-        context: {
-          id: 'town:test',
-          label: 'Town',
-          type: 'town',
-          depth: 1,
-          origin: { x: 1, y: 2 },
-        },
-        seed: 'spec',
-        plugins: {} as CreateMapContext['plugins'],
-      });
+      context: {
+        id: 'town:test',
+        label: 'Town',
+        type: 'town',
+        depth: 1,
+        origin: { x: 1, y: 2 },
+      },
+      seed: 'spec',
+      plugins: {} as CreateMapContext['plugins'],
+    });
 
     if (!townMap) {
       throw new Error('Expected town map plugin to handle town contexts.');

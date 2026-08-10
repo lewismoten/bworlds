@@ -1,5 +1,10 @@
 import { createContextMapPlugin } from '@bworlds/map-support';
-import type { Kind, Point, RuntimePlugin, WorldStateLike } from '@bworlds/plugin-api';
+import type {
+  Kind,
+  Point,
+  RuntimePlugin,
+  WorldStateLike,
+} from '@bworlds/plugin-api';
 import { isWaterKind, isWaterOrCrossingKind } from '@bworlds/tile-support';
 import {
   createWatercraftMap,

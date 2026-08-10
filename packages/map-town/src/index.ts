@@ -243,18 +243,16 @@ export function resolveTownTile(options: {
         : building.residentNpcIds.length > 0
           ? ` Residents: ${building.residentNpcIds.join(', ')}.`
           : '';
-    const services =
-      options.serviceState?.availableServices?.length
-        ? ` Services: ${options.serviceState.availableServices
-            .map((service) => service.label)
-            .join(', ')}.`
-        : '';
-    const questOffers =
-      options.serviceState?.availableQuestOffers?.length
-        ? ` Quest offers: ${options.serviceState.availableQuestOffers
-            .map((offer) => offer.title)
-            .join(', ')}.`
-        : '';
+    const services = options.serviceState?.availableServices?.length
+      ? ` Services: ${options.serviceState.availableServices
+          .map((service) => service.label)
+          .join(', ')}.`
+      : '';
+    const questOffers = options.serviceState?.availableQuestOffers?.length
+      ? ` Quest offers: ${options.serviceState.availableQuestOffers
+          .map((offer) => offer.title)
+          .join(', ')}.`
+      : '';
     return {
       kind: 'shop',
       building: {
@@ -382,9 +380,9 @@ export function isTownFenceTile(offsetX: number, offsetY: number): boolean {
     const leftX = buildingX - TOWN_FENCE_HALF_WIDTH;
     const rightX = buildingX + TOWN_FENCE_HALF_WIDTH;
     const withinY =
-      Math.abs(offsetY) >= Math.abs(frontY) && Math.abs(offsetY) <= Math.abs(backY);
-    const sideFence =
-      withinY && (offsetX === leftX || offsetX === rightX);
+      Math.abs(offsetY) >= Math.abs(frontY) &&
+      Math.abs(offsetY) <= Math.abs(backY);
+    const sideFence = withinY && (offsetX === leftX || offsetX === rightX);
     const backFence =
       offsetY === backY && offsetX >= leftX && offsetX <= rightX;
     const frontFence =

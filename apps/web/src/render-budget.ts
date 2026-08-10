@@ -187,7 +187,9 @@ const HARD_VISIBLE_VERTEX_LIMIT = 180_000;
 const SOFT_VISIBLE_MESH_LIMIT = 640;
 const HARD_VISIBLE_MESH_LIMIT = 960;
 
-function resetRenderBudgetStateInPlace(state: RenderBudgetState): RenderBudgetState {
+function resetRenderBudgetStateInPlace(
+  state: RenderBudgetState
+): RenderBudgetState {
   state.currentFrameMs = 16.67;
   state.smoothedFrameMs = 16.67;
   state.recentFrameMs.length = 1;
@@ -278,7 +280,10 @@ export function updateRenderBudgetStateInPlace(
   const smoothedFrameMs =
     state.smoothedFrameMs +
     (clampedDeltaMs - state.smoothedFrameMs) * FRAME_SMOOTHING;
-  const recentFrameMs = appendRecentFrameMsInPlace(state.recentFrameMs, clampedDeltaMs);
+  const recentFrameMs = appendRecentFrameMsInPlace(
+    state.recentFrameMs,
+    clampedDeltaMs
+  );
   let totalRecentFrameMs = 0;
   let worstRecentFrameMs = clampedDeltaMs;
   for (let index = 0; index < recentFrameMs.length; index += 1) {
@@ -293,13 +298,19 @@ export function updateRenderBudgetStateInPlace(
   const severeFrameStreak =
     clampedDeltaMs >= SEVERE_FPS_FRAME_MS
       ? state.severeFrameStreak + 1
-      : Math.max(0, state.severeFrameStreak - SEVERE_FRAME_STREAK_RECOVERY_STEP);
+      : Math.max(
+          0,
+          state.severeFrameStreak - SEVERE_FRAME_STREAK_RECOVERY_STEP
+        );
   const normalizedWeatherVisibility = clamp(
     weatherVisibility ?? state.weatherVisibility,
     0,
     1
   );
-  const normalizedDrawCalls = Math.max(0, Math.floor(drawCalls ?? state.drawCalls));
+  const normalizedDrawCalls = Math.max(
+    0,
+    Math.floor(drawCalls ?? state.drawCalls)
+  );
   const normalizedMaxChunkDrawCalls = Math.max(
     0,
     Math.floor(maxChunkDrawCalls ?? state.maxChunkDrawCalls)
@@ -412,7 +423,9 @@ export function updateRenderBudgetStateInPlace(
   }
   if (normalizedEstimatedGpuMemoryBytes >= HARD_ESTIMATED_GPU_MEMORY_BYTES) {
     visibilityRadius = Math.min(visibilityRadius, MIN_VISIBILITY_RADIUS);
-  } else if (normalizedEstimatedGpuMemoryBytes >= SOFT_ESTIMATED_GPU_MEMORY_BYTES) {
+  } else if (
+    normalizedEstimatedGpuMemoryBytes >= SOFT_ESTIMATED_GPU_MEMORY_BYTES
+  ) {
     visibilityRadius = Math.min(visibilityRadius, REDUCED_VISIBILITY_RADIUS);
   }
   if (normalizedMaterialCount >= HARD_MATERIAL_LIMIT) {
@@ -457,7 +470,10 @@ export function updateRenderBudgetStateInPlace(
   state.visibleTriangleCount = normalizedVisibleTriangleCount;
   state.visibleVertexCount = normalizedVisibleVertexCount;
   state.visibleMeshCount = normalizedVisibleMeshCount;
-  state.visibilityRadius = Math.min(visibilityRadius, weatherVisibilityRadiusCap);
+  state.visibilityRadius = Math.min(
+    visibilityRadius,
+    weatherVisibilityRadiusCap
+  );
   state.weatherVisibility = normalizedWeatherVisibility;
   state.weatherVisibilityRadiusCap = weatherVisibilityRadiusCap;
   state.targetFps = targetFps;
@@ -577,15 +593,16 @@ export function getRenderBudgetCaps(
       minimum: 0.75,
       maximum: state.targetFps === 60 ? 3.5 : 2.25,
     },
-    pendingBuildTiles: state.targetFps === 30
-      ? {
-          soft: 4,
-          hard: 2,
-        }
-      : {
-          soft: 8,
-          hard: 4,
-        },
+    pendingBuildTiles:
+      state.targetFps === 30
+        ? {
+            soft: 4,
+            hard: 2,
+          }
+        : {
+            soft: 8,
+            hard: 4,
+          },
     drawCalls: {
       soft: SOFT_DRAW_CALL_LIMIT,
       hard: HARD_DRAW_CALL_LIMIT,
@@ -656,7 +673,9 @@ export function getFrameGenerationBudget(
 
   return {
     generationBudgetMs: clamp(
-      pendingBudget.pendingBuildBudgetMs + reserveMs - Math.max(0, framePressure - 1) * 1.5,
+      pendingBudget.pendingBuildBudgetMs +
+        reserveMs -
+        Math.max(0, framePressure - 1) * 1.5,
       pendingBudget.pendingBuildBudgetMs,
       maximumBudgetMs
     ),
@@ -669,9 +688,7 @@ export function getRenderQualityLevel(
     'visibilityRadius' | 'targetFps' | 'smoothedFrameMs' | 'severeFrameStreak'
   >
 ): RenderQualityLevel {
-  if (
-    state.severeFrameStreak >= SEVERE_FRAME_STREAK_THRESHOLD
-  ) {
+  if (state.severeFrameStreak >= SEVERE_FRAME_STREAK_THRESHOLD) {
     return 'minimal';
   }
   if (
@@ -852,9 +869,11 @@ export function createRenderBudget(
     quality: getRenderQualityLevel({
       visibilityRadius: state.visibilityRadius,
       targetFps: state.targetFps,
-      smoothedFrameMs: state.smoothedFrameMs ?? DEFAULT_RENDER_BUDGET_STATE.smoothedFrameMs,
+      smoothedFrameMs:
+        state.smoothedFrameMs ?? DEFAULT_RENDER_BUDGET_STATE.smoothedFrameMs,
       severeFrameStreak:
-        state.severeFrameStreak ?? DEFAULT_RENDER_BUDGET_STATE.severeFrameStreak,
+        state.severeFrameStreak ??
+        DEFAULT_RENDER_BUDGET_STATE.severeFrameStreak,
     }),
     detailLevel,
     targetFps: state.targetFps,
@@ -928,9 +947,11 @@ export function createRenderBudgetBuilder(): (
     budget.quality = getRenderQualityLevel({
       visibilityRadius: state.visibilityRadius,
       targetFps: state.targetFps,
-      smoothedFrameMs: state.smoothedFrameMs ?? DEFAULT_RENDER_BUDGET_STATE.smoothedFrameMs,
+      smoothedFrameMs:
+        state.smoothedFrameMs ?? DEFAULT_RENDER_BUDGET_STATE.smoothedFrameMs,
       severeFrameStreak:
-        state.severeFrameStreak ?? DEFAULT_RENDER_BUDGET_STATE.severeFrameStreak,
+        state.severeFrameStreak ??
+        DEFAULT_RENDER_BUDGET_STATE.severeFrameStreak,
     });
     budget.detailLevel = detailLevel;
     budget.targetFps = state.targetFps;

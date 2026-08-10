@@ -1,4 +1,7 @@
-import { getOrCreateWeakMapValue, getOrCreateMapValue } from '@bworlds/cache-support';
+import {
+  getOrCreateWeakMapValue,
+  getOrCreateMapValue,
+} from '@bworlds/cache-support';
 import { hash2D, registerHashLabel } from '@bworlds/core/hash';
 import { createPlainsBackedTilePainter } from '@bworlds/paint-support';
 import {
@@ -120,10 +123,7 @@ export function createShipTilePlugin(): RuntimePlugin {
       group.add(cabin);
 
       const lantern = markPoiLightEmitter(
-        new three.Mesh(
-          new three.SphereGeometry(0.04, 6, 6),
-          lanternMaterial
-        ),
+        new three.Mesh(new three.SphereGeometry(0.04, 6, 6), lanternMaterial),
         {
           kind: 'emissive-mesh',
           dayIntensity: 0.02,
@@ -146,9 +146,21 @@ export function createShipTilePlugin(): RuntimePlugin {
       group.add(lanternLight);
 
       if (variant === 'tall-ship') {
-        addTallShipRigging(three, group, mastMaterial, sailMaterial, trimMaterial);
+        addTallShipRigging(
+          three,
+          group,
+          mastMaterial,
+          sailMaterial,
+          trimMaterial
+        );
       } else {
-        addBrokenShipDetails(three, group, hullMaterial, mastMaterial, trimMaterial);
+        addBrokenShipDetails(
+          three,
+          group,
+          hullMaterial,
+          mastMaterial,
+          trimMaterial
+        );
       }
 
       return group;
@@ -157,7 +169,10 @@ export function createShipTilePlugin(): RuntimePlugin {
       if (!model || typeof model !== 'object') {
         return;
       }
-      syncPoiLightEmitters(model as Parameters<typeof syncPoiLightEmitters>[0], cycle);
+      syncPoiLightEmitters(
+        model as Parameters<typeof syncPoiLightEmitters>[0],
+        cycle
+      );
       syncShipSails(model as ThreeObject3DLike, cycle);
     },
   });
@@ -176,7 +191,11 @@ function getShipSharedMaterials(
   const byVariant = getOrCreateWeakMapValue(
     shipMaterialCache,
     three as object,
-    () => new Map<ShipVariant, ReturnType<typeof createShipSharedMaterialsForVariant>>()
+    () =>
+      new Map<
+        ShipVariant,
+        ReturnType<typeof createShipSharedMaterialsForVariant>
+      >()
   );
 
   return getOrCreateMapValue(byVariant, variant, () =>
@@ -189,35 +208,35 @@ function createShipSharedMaterialsForVariant(
   variant: ShipVariant
 ) {
   return {
-      hullMaterial: new three.MeshStandardMaterial({
-        color: variant === 'tall-ship' ? '#7a4a2f' : '#6b4634',
-        roughness: 0.9,
-        metalness: 0.02,
-      }),
-      trimMaterial: new three.MeshStandardMaterial({
-        color: '#d9bf8f',
-        roughness: 0.82,
-        metalness: 0.02,
-      }),
-      mastMaterial: new three.MeshStandardMaterial({
-        color: '#5a3418',
-        roughness: 0.88,
-        metalness: 0.02,
-      }),
-      sailMaterial: new three.MeshStandardMaterial({
-        color: '#ddd2bb',
-        roughness: 0.97,
-        metalness: 0.01,
-        transparent: true,
-      }),
-      lanternMaterial: new three.MeshStandardMaterial({
-        color: '#f59e0b',
-        emissive: '#f59e0b',
-        emissiveIntensity: 0.02,
-        roughness: 0.38,
-        metalness: 0.03,
-      }),
-    };
+    hullMaterial: new three.MeshStandardMaterial({
+      color: variant === 'tall-ship' ? '#7a4a2f' : '#6b4634',
+      roughness: 0.9,
+      metalness: 0.02,
+    }),
+    trimMaterial: new three.MeshStandardMaterial({
+      color: '#d9bf8f',
+      roughness: 0.82,
+      metalness: 0.02,
+    }),
+    mastMaterial: new three.MeshStandardMaterial({
+      color: '#5a3418',
+      roughness: 0.88,
+      metalness: 0.02,
+    }),
+    sailMaterial: new three.MeshStandardMaterial({
+      color: '#ddd2bb',
+      roughness: 0.97,
+      metalness: 0.01,
+      transparent: true,
+    }),
+    lanternMaterial: new three.MeshStandardMaterial({
+      color: '#f59e0b',
+      emissive: '#f59e0b',
+      emissiveIntensity: 0.02,
+      roughness: 0.38,
+      metalness: 0.03,
+    }),
+  };
 }
 
 function getShipFacing(
@@ -230,7 +249,10 @@ function getShipFacing(
 
   for (let index = 0; index < CARDINAL_DIRECTIONS.length; index += 1) {
     const direction = CARDINAL_DIRECTIONS[index]!;
-    const shoreTile = state.getCurrentTile(tileX + direction.dx, tileY + direction.dy);
+    const shoreTile = state.getCurrentTile(
+      tileX + direction.dx,
+      tileY + direction.dy
+    );
     const openWaterTile = state.getCurrentTile(
       tileX + direction.dx * 2,
       tileY + direction.dy * 2
@@ -240,8 +262,12 @@ function getShipFacing(
       tileY - direction.dy
     );
     const shoreWalkable = state.getTileDefinition(shoreTile.kind).walkable;
-    const openWaterWalkable = state.getTileDefinition(openWaterTile.kind).walkable;
-    const landBehindWalkable = state.getTileDefinition(landBehindTile.kind).walkable;
+    const openWaterWalkable = state.getTileDefinition(
+      openWaterTile.kind
+    ).walkable;
+    const landBehindWalkable = state.getTileDefinition(
+      landBehindTile.kind
+    ).walkable;
     const score =
       (shoreTile.kind === 'dock' ? 8 : 0) +
       (shoreTile.kind === 'ocean' || shoreTile.kind === 'river' ? 6 : 0) +

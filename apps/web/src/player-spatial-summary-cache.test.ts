@@ -24,7 +24,8 @@ describe('player spatial summary cache', () => {
       playerY: state.player.y,
       facing: state.player.facing,
     }));
-    const resolveCachedSummary = createPlayerSpatialSummaryCache(resolveSummary);
+    const resolveCachedSummary =
+      createPlayerSpatialSummaryCache(resolveSummary);
 
     const first = resolveCachedSummary(state);
     const second = resolveCachedSummary(state);
@@ -54,7 +55,8 @@ describe('player spatial summary cache', () => {
       playerY: state.player.y,
       facing: state.player.facing,
     }));
-    const resolveCachedSummary = createPlayerSpatialSummaryCache(resolveSummary);
+    const resolveCachedSummary =
+      createPlayerSpatialSummaryCache(resolveSummary);
 
     const first = resolveCachedSummary(state);
     state.player.x += 1;
@@ -89,7 +91,8 @@ describe('player spatial summary cache', () => {
       playerY: state.player.y,
       facing: state.player.facing,
     }));
-    const resolveCachedSummary = createPlayerSpatialSummaryCache(resolveSummary);
+    const resolveCachedSummary =
+      createPlayerSpatialSummaryCache(resolveSummary);
 
     const first = resolveCachedSummary(state);
     state.contextId = 'town';

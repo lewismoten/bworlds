@@ -62,7 +62,9 @@ const TOWN_BANNER_WIDTH_SEED = registerHashLabel('town-banner-width');
 const TOWN_BANNER_LENGTH_SEED = registerHashLabel('town-banner-length');
 const TOWN_BANNER_HEIGHT_SEED = registerHashLabel('town-banner-height');
 const TOWN_BANNER_ROTATION_SEED = registerHashLabel('town-banner-rotation');
-const TOWN_BANNER_BASE_ROTATION_SEED = registerHashLabel('town-banner-base-rotation');
+const TOWN_BANNER_BASE_ROTATION_SEED = registerHashLabel(
+  'town-banner-base-rotation'
+);
 const TOWN_BANNER_COLOR_SEED = registerHashLabel('town-banner-color');
 const TOWN_WALL_CRACK_X_SEED = registerHashLabel('town-wall-crack-x');
 const TOWN_WALL_CRACK_Y_SEED = registerHashLabel('town-wall-crack-y');
@@ -167,10 +169,8 @@ const resolveTownStyle = createRegionalValueResolver(
       '#e8c889'
     );
 
-    return createHostVariantValueResolver((
-      three: ThreeHostLike,
-      quality: RenderBudgetQualityLevel
-    ) => {
+    return createHostVariantValueResolver(
+      (three: ThreeHostLike, quality: RenderBudgetQualityLevel) => {
         const bannerMaterials = createHostVariantMaterialResolver(
           (host: ThreeHostLike, color: string): ThreeMaterialLike =>
             new host.MeshStandardMaterial({
@@ -244,7 +244,8 @@ const resolveTownStyle = createRegionalValueResolver(
           },
         };
         return style;
-      });
+      }
+    );
   }
 );
 
@@ -337,8 +338,8 @@ export function createTownTilePlugin(): RuntimePlugin {
         for (const window of descriptor.windows) {
           const pane = markPoiLightEmitter(
             new three.Mesh(
-            new three.BoxGeometry(window.width, window.height, 0.03),
-            style.windowMaterial
+              new three.BoxGeometry(window.width, window.height, 0.03),
+              style.windowMaterial
             ),
             {
               kind: 'emissive-mesh',
@@ -358,7 +359,9 @@ export function createTownTilePlugin(): RuntimePlugin {
       }
 
       if (tile.poi?.name) {
-        group.add(createTownNameSign(three, tile.poi.name, tileX, tileY, style));
+        group.add(
+          createTownNameSign(three, tile.poi.name, tileX, tileY, style)
+        );
       }
       createTownBannerDescriptors(tileX, tileY).forEach((banner, index) => {
         group.add(createTownBanner(three, banner, style, tileX, tileY, index));
@@ -370,7 +373,10 @@ export function createTownTilePlugin(): RuntimePlugin {
     },
     sync3DModel({ model, cycle, environment, timeMs = 0 }) {
       if (model && typeof model === 'object') {
-        syncPoiLightEmitters(model as Parameters<typeof syncPoiLightEmitters>[0], cycle);
+        syncPoiLightEmitters(
+          model as Parameters<typeof syncPoiLightEmitters>[0],
+          cycle
+        );
         syncPoiWindResponders(
           model as Parameters<typeof syncPoiWindResponders>[0],
           environment,
@@ -557,14 +563,20 @@ function createTownBanner(
       gustSpeed:
         2 + hash2D(TOWN_BANNER_GUST_SPEED_SEED, tileX, tileY + index) * 0.8,
       phase:
-        hash2D(TOWN_BANNER_PHASE_SEED, tileX + index, tileY - index) * Math.PI * 2,
+        hash2D(TOWN_BANNER_PHASE_SEED, tileX + index, tileY - index) *
+        Math.PI *
+        2,
       gustPhase:
         hash2D(TOWN_BANNER_GUST_PHASE_SEED, tileX - index, tileY + index) *
         Math.PI *
         2,
     }
   );
-  cloth.position.set(descriptor.width * 0.48, descriptor.height - descriptor.length * 0.5, 0);
+  cloth.position.set(
+    descriptor.width * 0.48,
+    descriptor.height - descriptor.length * 0.5,
+    0
+  );
   cloth.userData = {
     ...(cloth.userData ?? {}),
     [TOWN_BANNER_KEY]: index,
@@ -578,7 +590,8 @@ function createTownBannerDescriptors(
   tileY: number
 ): TownBannerDescriptor[] {
   const palette = ['#fb7185', '#f59e0b', '#38bdf8', '#34d399'];
-  const count = 1 + Math.floor(hash2D(TOWN_BANNER_COUNT_SEED, tileX, tileY) * 2);
+  const count =
+    1 + Math.floor(hash2D(TOWN_BANNER_COUNT_SEED, tileX, tileY) * 2);
   const descriptors: TownBannerDescriptor[] = [];
   for (let index = 0; index < count; index += 1) {
     descriptors.push({
@@ -697,8 +710,7 @@ function paintTownRoofTexture(
   context.fillRect(0, 0, canvas.width, canvas.height);
 
   for (let row = 0; row < canvas.height; row += 6) {
-    context.fillStyle =
-      row % 12 === 0 ? trimColor : 'rgba(255,255,255,0.08)';
+    context.fillStyle = row % 12 === 0 ? trimColor : 'rgba(255,255,255,0.08)';
     context.fillRect(0, row, canvas.width, 2);
   }
 
@@ -731,10 +743,7 @@ interface TownStyle {
 }
 
 interface TownStyleBlueprint {
-  getValue(
-    three: ThreeHostLike,
-    quality: RenderBudgetQualityLevel
-  ): TownStyle;
+  getValue(three: ThreeHostLike, quality: RenderBudgetQualityLevel): TownStyle;
 }
 
 interface TownWindow {

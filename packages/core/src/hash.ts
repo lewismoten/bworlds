@@ -27,19 +27,36 @@ export function resolveHashSeed(seed: HashSeed): HashSeed {
 }
 
 export function resolveHashSeedInput(seed: HashSeedInput): HashSeed {
-  return typeof seed === 'number' ? resolveHashSeed(seed) : registerHashSeed(seed);
+  return typeof seed === 'number'
+    ? resolveHashSeed(seed)
+    : registerHashSeed(seed);
 }
 
-export function appendHashSeedPart(seedHash: HashSeed, value: number): HashSeed {
+export function appendHashSeedPart(
+  seedHash: HashSeed,
+  value: number
+): HashSeed {
   return appendHashSeedNumber(seedHash, value);
 }
 
-export function appendHashSeedLabel(seedHash: HashSeed, labelHash: number): HashSeed {
-  return mixHashNumber(mixHashCharacter(seedHash >>> 0, HASH_PART_SEPARATOR), labelHash);
+export function appendHashSeedLabel(
+  seedHash: HashSeed,
+  labelHash: number
+): HashSeed {
+  return mixHashNumber(
+    mixHashCharacter(seedHash >>> 0, HASH_PART_SEPARATOR),
+    labelHash
+  );
 }
 
-export function appendHashSeedNumber(seedHash: HashSeed, value: number): HashSeed {
-  return mixHashNumber(mixHashCharacter(seedHash >>> 0, HASH_PART_SEPARATOR), value);
+export function appendHashSeedNumber(
+  seedHash: HashSeed,
+  value: number
+): HashSeed {
+  return mixHashNumber(
+    mixHashCharacter(seedHash >>> 0, HASH_PART_SEPARATOR),
+    value
+  );
 }
 
 export function hash2D(seedHash: HashSeed, x: number, y: number): number {

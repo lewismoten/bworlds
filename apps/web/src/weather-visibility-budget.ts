@@ -1,6 +1,9 @@
 import { clamp, lerp, smoothstep } from '@bworlds/core';
 
-import { DEFAULT_VISIBILITY_RADIUS, MIN_VISIBILITY_RADIUS } from './render-budget.ts';
+import {
+  DEFAULT_VISIBILITY_RADIUS,
+  MIN_VISIBILITY_RADIUS,
+} from './render-budget.ts';
 
 const MIN_WEATHER_VISIBILITY = 0.18;
 const MAX_WEATHER_VISIBILITY = 0.96;

@@ -16,7 +16,10 @@ import type {
 } from '@bworlds/plugin-api';
 import { createOverworldAnchorsRuntimePlugin } from '@bworlds/runtime-overworld-anchors';
 
-export type StationAnchorLike = PoiAnchorLike & { type: 'station'; name: string };
+export type StationAnchorLike = PoiAnchorLike & {
+  type: 'station';
+  name: string;
+};
 export type RailConnection = {
   from: StationAnchorLike;
   to: StationAnchorLike;
@@ -95,8 +98,16 @@ export function collectNearbyStationAnchors(
   const centerCellY = Math.floor(y / STATION_CELL_SIZE);
   const anchors = new Map<string, StationAnchorLike>();
 
-  for (let offsetY = -STATION_SCAN_RADIUS_CELLS; offsetY <= STATION_SCAN_RADIUS_CELLS; offsetY += 1) {
-    for (let offsetX = -STATION_SCAN_RADIUS_CELLS; offsetX <= STATION_SCAN_RADIUS_CELLS; offsetX += 1) {
+  for (
+    let offsetY = -STATION_SCAN_RADIUS_CELLS;
+    offsetY <= STATION_SCAN_RADIUS_CELLS;
+    offsetY += 1
+  ) {
+    for (
+      let offsetX = -STATION_SCAN_RADIUS_CELLS;
+      offsetX <= STATION_SCAN_RADIUS_CELLS;
+      offsetX += 1
+    ) {
       const scanX = (centerCellX + offsetX) * STATION_CELL_SIZE;
       const scanY = (centerCellY + offsetY) * STATION_CELL_SIZE;
       const resolved = anchorPlugin.resolveOverworldAnchors?.({
@@ -214,7 +225,12 @@ export function getRailTrainPlacements({
     const placements: RailTrainPlacement[] = [];
     for (let index = 0; index < snapshot.connections.length; index += 1) {
       const connection = snapshot.connections[index]!;
-      const placement = resolveRailTrainPlacement(seed, timeMs, connection, index);
+      const placement = resolveRailTrainPlacement(
+        seed,
+        timeMs,
+        connection,
+        index
+      );
       if (placement) {
         placements.push(placement);
       }
@@ -229,8 +245,14 @@ export function buildRailCurvePoints(
   to: StationAnchorLike
 ): Array<{ x: number; y: number }> {
   const seedHash = resolveHashSeedInput(seed);
-  const curveDirectionSeed = appendHashSeedLabel(seedHash, RAIL_CURVE_DIRECTION_LABEL);
-  const curveOffsetSeed = appendHashSeedLabel(seedHash, RAIL_CURVE_OFFSET_LABEL);
+  const curveDirectionSeed = appendHashSeedLabel(
+    seedHash,
+    RAIL_CURVE_DIRECTION_LABEL
+  );
+  const curveOffsetSeed = appendHashSeedLabel(
+    seedHash,
+    RAIL_CURVE_OFFSET_LABEL
+  );
   const deltaX = to.x - from.x;
   const deltaY = to.y - from.y;
   const distance = Math.hypot(deltaX, deltaY);
@@ -245,11 +267,7 @@ export function buildRailCurvePoints(
   const curveOffset =
     clamp(distance * 0.18, 3.2, 9.5) *
     (0.8 +
-      hash2DWithSeed(
-        curveOffsetSeed,
-        from.x * 13 + to.x,
-        from.y * 17 + to.y
-      ) *
+      hash2DWithSeed(curveOffsetSeed, from.x * 13 + to.x, from.y * 17 + to.y) *
         0.55);
   const control = {
     x: midpointX + perpendicularX * curveOffset * curveDirection,
@@ -261,15 +279,19 @@ export function buildRailCurvePoints(
     const t = index / RAIL_SAMPLE_SEGMENTS;
     const inverse = 1 - t;
     sampled[index] = {
-      x: inverse * inverse * from.x + 2 * inverse * t * control.x + t * t * to.x,
-      y: inverse * inverse * from.y + 2 * inverse * t * control.y + t * t * to.y,
+      x:
+        inverse * inverse * from.x + 2 * inverse * t * control.x + t * t * to.x,
+      y:
+        inverse * inverse * from.y + 2 * inverse * t * control.y + t * t * to.y,
     };
   }
 
   return rasterizePath(sampled);
 }
 
-function rasterizePath(points: Array<{ x: number; y: number }>): Array<{ x: number; y: number }> {
+function rasterizePath(
+  points: Array<{ x: number; y: number }>
+): Array<{ x: number; y: number }> {
   if (points.length === 0) {
     return [];
   }
@@ -408,7 +430,12 @@ function buildRailRegionSnapshot({
   y: number;
   sampleTerrainSignals: SampleTerrainSignalsLike;
 }): RailRegionSnapshot {
-  const stations = collectNearbyStationAnchors(seed, x, y, sampleTerrainSignals);
+  const stations = collectNearbyStationAnchors(
+    seed,
+    x,
+    y,
+    sampleTerrainSignals
+  );
   const connections = buildRailConnections({
     seed,
     stationAnchors: stations,
@@ -453,14 +480,12 @@ function resolveRailTrainPlacement(
   const dwelllessDurationMs =
     Math.max(6, Math.min(18, Math.round(routeLength / 3))) * 60 * 1000;
   const phaseOffset = hash2DWithSeed(
-    appendHashSeedLabel(
-      resolveHashSeedInput(seed),
-      RAIL_TRAIN_PHASE_LABEL
-    ),
+    appendHashSeedLabel(resolveHashSeedInput(seed), RAIL_TRAIN_PHASE_LABEL),
     index,
     routeLength
   );
-  const loopProgress = ((timeMs + dwelllessDurationMs * phaseOffset) % dwelllessDurationMs) /
+  const loopProgress =
+    ((timeMs + dwelllessDurationMs * phaseOffset) % dwelllessDurationMs) /
     dwelllessDurationMs;
   const triangularProgress =
     loopProgress <= 0.5 ? loopProgress * 2 : (1 - loopProgress) * 2;
@@ -489,5 +514,7 @@ function compareStationAnchors(
   left: Pick<StationAnchorLike, 'x' | 'y' | 'name'>,
   right: Pick<StationAnchorLike, 'x' | 'y' | 'name'>
 ): number {
-  return left.x - right.x || left.y - right.y || left.name.localeCompare(right.name);
+  return (
+    left.x - right.x || left.y - right.y || left.name.localeCompare(right.name)
+  );
 }

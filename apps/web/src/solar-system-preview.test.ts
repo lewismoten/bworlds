@@ -10,8 +10,12 @@ import {
   getSolarSystemSceneSignatures,
 } from './solar-system-preview.ts';
 
-type SolarSystemSceneCycleLike = Parameters<typeof getSolarSystemSceneSignatures>[0];
-type SolarSystemEventCycleLike = Parameters<typeof getSolarSystemEventMarkerStates>[0];
+type SolarSystemSceneCycleLike = Parameters<
+  typeof getSolarSystemSceneSignatures
+>[0];
+type SolarSystemEventCycleLike = Parameters<
+  typeof getSolarSystemEventMarkerStates
+>[0];
 
 function cloneSolarSystemCycle(
   cycle: SolarSystemSceneCycleLike,
@@ -23,7 +27,9 @@ function cloneSolarSystemCycle(
   };
 }
 
-function asSolarSystemEventCycle(cycle: SolarSystemSceneCycleLike): SolarSystemEventCycleLike {
+function asSolarSystemEventCycle(
+  cycle: SolarSystemSceneCycleLike
+): SolarSystemEventCycleLike {
   return cycle;
 }
 
@@ -39,10 +45,13 @@ describe('solar system preview helpers', () => {
         id: 'sun',
       })
     );
-    expect(positions.find((entry) => entry.id === 'sun')?.position.length()).toBeCloseTo(0, 6);
+    expect(
+      positions.find((entry) => entry.id === 'sun')?.position.length()
+    ).toBeCloseTo(0, 6);
     expect(
       positions.some(
-        (entry) => entry.id.startsWith('planet:') && entry.position.length() > 0.5
+        (entry) =>
+          entry.id.startsWith('planet:') && entry.position.length() > 0.5
       )
     ).toBe(true);
   });
@@ -153,7 +162,9 @@ describe('solar system preview helpers', () => {
       ],
     };
 
-    const markers = getSolarSystemEventMarkerStates(asSolarSystemEventCycle(cycle));
+    const markers = getSolarSystemEventMarkerStates(
+      asSolarSystemEventCycle(cycle)
+    );
 
     expect(markers.map((marker) => marker.type)).toEqual([
       'aurora',
@@ -210,7 +221,9 @@ describe('solar system preview helpers', () => {
       ],
     };
 
-    const state = getSolarSystemEventRenderState(asSolarSystemEventCycle(cycle));
+    const state = getSolarSystemEventRenderState(
+      asSolarSystemEventCycle(cycle)
+    );
 
     expect(state.glows).toHaveLength(3);
     expect(state.trails.length).toBeGreaterThanOrEqual(4);
@@ -291,7 +304,9 @@ describe('solar system preview helpers', () => {
         radius: 0.06,
       })
     );
-    expect(brighterStars[0]?.opacity).toBeGreaterThan(dimmerStars[0]?.opacity ?? 0);
+    expect(brighterStars[0]?.opacity).toBeGreaterThan(
+      dimmerStars[0]?.opacity ?? 0
+    );
     expect(brighterStars[0]?.x).not.toBeCloseTo(stars[0]?.x ?? 0, 6);
     expect(brighterStars[0]?.z).not.toBeCloseTo(stars[0]?.z ?? 0, 6);
   });

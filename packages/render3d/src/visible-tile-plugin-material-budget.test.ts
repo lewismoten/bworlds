@@ -55,7 +55,7 @@ describe('visible tile plugin material budget', () => {
             tilePluginOwnerLabel: 'tile-dungeon',
             uniqueMaterials: Array.from({
               length: LOW_DETAIL_VISIBLE_TILE_PLUGIN_UNIQUE_MATERIAL_LIMIT,
-            }).map(() => ({} as never)),
+            }).map(() => ({}) as never),
           },
         ],
         'tile-town',
@@ -88,8 +88,7 @@ describe('visible tile plugin material budget', () => {
       )
     ).toEqual({
       accepted: false,
-      materialCount:
-        LOW_DETAIL_VISIBLE_TILE_PLUGIN_UNIQUE_MATERIAL_LIMIT + 1,
+      materialCount: LOW_DETAIL_VISIBLE_TILE_PLUGIN_UNIQUE_MATERIAL_LIMIT + 1,
       limit: LOW_DETAIL_VISIBLE_TILE_PLUGIN_UNIQUE_MATERIAL_LIMIT,
     });
   });

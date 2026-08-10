@@ -1,10 +1,16 @@
-type FocusableLike = {
-  focus: (options?: FocusOptions) => void;
-} | null | undefined;
+type FocusableLike =
+  | {
+      focus: (options?: FocusOptions) => void;
+    }
+  | null
+  | undefined;
 
-type ViewportHostLike = {
-  focus: (options?: FocusOptions) => void;
-} | null | undefined;
+type ViewportHostLike =
+  | {
+      focus: (options?: FocusOptions) => void;
+    }
+  | null
+  | undefined;
 
 export function shouldRestore3dViewportKeyboardFocusOnPointerDown(
   viewMode: '2d' | '3d' | 'text',

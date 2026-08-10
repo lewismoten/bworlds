@@ -279,9 +279,7 @@ export function createSolarSystemPreviewRenderer(
   };
 }
 
-export function getSolarSystemBodyPositions(
-  bodies: OrreryBodyLike[]
-) {
+export function getSolarSystemBodyPositions(bodies: OrreryBodyLike[]) {
   return bodies.map((body) => ({
     id: body.id,
     position: createSolarSystemBodyPosition(body),
@@ -332,10 +330,7 @@ export function getSolarSystemEventMarkerStates(
   });
 
   (cycle.visibleEvents ?? []).forEach((event) => {
-    if (
-      event.type !== 'meteor-shower' &&
-      event.type !== 'comet'
-    ) {
+    if (event.type !== 'meteor-shower' && event.type !== 'comet') {
       return;
     }
     markers.push({
@@ -416,7 +411,10 @@ export function getSolarSystemSceneSignatures(
   };
 }
 
-function syncBackgroundStars(root: THREE.Group, cycle: DaylightCycleLike): void {
+function syncBackgroundStars(
+  root: THREE.Group,
+  cycle: DaylightCycleLike
+): void {
   while (root.children.length > BACKGROUND_STAR_COUNT) {
     const child = root.children[root.children.length - 1];
     root.remove(child);
@@ -432,7 +430,12 @@ function syncBackgroundStars(root: THREE.Group, cycle: DaylightCycleLike): void 
     root.add(createBackgroundStarMesh(root.children.length));
   }
   for (let index = 0; index < BACKGROUND_STAR_COUNT; index += 1) {
-    const star = getBackgroundStarState(cycle, index, BACKGROUND_STAR_COUNT, scratchBackgroundStarState);
+    const star = getBackgroundStarState(
+      cycle,
+      index,
+      BACKGROUND_STAR_COUNT,
+      scratchBackgroundStarState
+    );
     const mesh = root.children[index];
     if (!(mesh instanceof THREE.Mesh)) {
       return;
@@ -618,8 +621,15 @@ function syncSolarSystemBodies(
       trail.visible = false;
       return;
     }
-    const positions = trail.geometry.getAttribute('position') as THREE.BufferAttribute;
-    positions.setXYZ(0, trailState.start.x, trailState.start.y, trailState.start.z);
+    const positions = trail.geometry.getAttribute(
+      'position'
+    ) as THREE.BufferAttribute;
+    positions.setXYZ(
+      0,
+      trailState.start.x,
+      trailState.start.y,
+      trailState.start.z
+    );
     positions.setXYZ(1, trailState.end.x, trailState.end.y, trailState.end.z);
     positions.needsUpdate = true;
     const material = trail.material as THREE.LineBasicMaterial;
@@ -668,9 +678,15 @@ export function getSolarSystemBodyRenderState(
 
     if (body.type === 'comet' && body.trailLength > 0) {
       trails.push({
-        start: position.clone().add(
-          new THREE.Vector3(-body.trailLength * 0.28, body.trailLength * 0.08, 0)
-        ),
+        start: position
+          .clone()
+          .add(
+            new THREE.Vector3(
+              -body.trailLength * 0.28,
+              body.trailLength * 0.08,
+              0
+            )
+          ),
         end: position,
         color,
         opacity: 0.36,
@@ -682,7 +698,10 @@ export function getSolarSystemBodyRenderState(
   return { markers, glows, trails, sunLightPosition };
 }
 
-function syncSolarSystemShell(root: THREE.Group, cycle: DaylightCycleLike): void {
+function syncSolarSystemShell(
+  root: THREE.Group,
+  cycle: DaylightCycleLike
+): void {
   root.clear();
   root.position.set(0, 0, 0);
   const shellRadius = 15.4;
@@ -717,10 +736,20 @@ function syncSolarSystemShell(root: THREE.Group, cycle: DaylightCycleLike): void
     });
     for (let index = 0; index < samples.length - 1; index += 1) {
       const start = index * 2;
-      indices.push(start, start + 1, start + 2, start + 1, start + 3, start + 2);
+      indices.push(
+        start,
+        start + 1,
+        start + 2,
+        start + 1,
+        start + 3,
+        start + 2
+      );
     }
     const geometry = new THREE.BufferGeometry();
-    geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+    geometry.setAttribute(
+      'position',
+      new THREE.Float32BufferAttribute(positions, 3)
+    );
     geometry.setIndex(indices);
     root.add(
       new THREE.Mesh(
@@ -742,7 +771,8 @@ function syncSolarSystemShell(root: THREE.Group, cycle: DaylightCycleLike): void
   const focusIndices = [
     activeIndex,
     (activeIndex + 1) % Math.max(1, constellations.length),
-    (activeIndex + constellations.length - 1) % Math.max(1, constellations.length),
+    (activeIndex + constellations.length - 1) %
+      Math.max(1, constellations.length),
   ];
   focusIndices.forEach((constellationIndex, slotIndex) => {
     const constellation = constellations[constellationIndex];
@@ -753,7 +783,11 @@ function syncSolarSystemShell(root: THREE.Group, cycle: DaylightCycleLike): void
       cycle.sunriseAzimuth +
       (slotIndex - 1) * 0.92 +
       cycle.yearProgress * Math.PI * 2 * 0.06;
-    const anchor = createShellPoint(azimuth, 1.08 + slotIndex * 0.05, shellRadius - 0.8);
+    const anchor = createShellPoint(
+      azimuth,
+      1.08 + slotIndex * 0.05,
+      shellRadius - 0.8
+    );
     constellation.connections.forEach(([startIndex, endIndex]) => {
       const start = constellation.stars[startIndex];
       const end = constellation.stars[endIndex];
@@ -777,9 +811,14 @@ function syncSolarSystemShell(root: THREE.Group, cycle: DaylightCycleLike): void
   });
 }
 
-function syncSolarSystemLabels(root: THREE.Group, cycle: DaylightCycleLike): void {
+function syncSolarSystemLabels(
+  root: THREE.Group,
+  cycle: DaylightCycleLike
+): void {
   root.clear();
-  const topBodies = (cycle.orreryBodies ?? []).filter((body) => body.type !== 'moon').slice(0, 4);
+  const topBodies = (cycle.orreryBodies ?? [])
+    .filter((body) => body.type !== 'moon')
+    .slice(0, 4);
   topBodies.forEach((body, index) => {
     const position = createSolarSystemBodyPosition(body).clone();
     position.y += 5.8 - index * 0.82;
@@ -788,7 +827,10 @@ function syncSolarSystemLabels(root: THREE.Group, cycle: DaylightCycleLike): voi
   });
 }
 
-function syncSolarSystemEvents(root: THREE.Group, cycle: DaylightCycleLike): void {
+function syncSolarSystemEvents(
+  root: THREE.Group,
+  cycle: DaylightCycleLike
+): void {
   const state = getSolarSystemEventRenderState(cycle);
   const rootState = root.userData as {
     glowPool?: THREE.Sprite[];
@@ -799,13 +841,15 @@ function syncSolarSystemEvents(root: THREE.Group, cycle: DaylightCycleLike): voi
 
   while (glowPool.length < state.glows.length) {
     const glow = new THREE.Sprite(
-      new THREE.SpriteMaterial(compactThreeMaterialOptions({
-        color: '#dff4ff',
-        transparent: true,
-        opacity: 0,
-        depthWrite: false,
-        blending: THREE.AdditiveBlending,
-      }))
+      new THREE.SpriteMaterial(
+        compactThreeMaterialOptions({
+          color: '#dff4ff',
+          transparent: true,
+          opacity: 0,
+          depthWrite: false,
+          blending: THREE.AdditiveBlending,
+        })
+      )
     );
     glow.visible = false;
     glowPool.push(glow);
@@ -849,8 +893,15 @@ function syncSolarSystemEvents(root: THREE.Group, cycle: DaylightCycleLike): voi
       trail.visible = false;
       return;
     }
-    const positions = trail.geometry.getAttribute('position') as THREE.BufferAttribute;
-    positions.setXYZ(0, trailState.start.x, trailState.start.y, trailState.start.z);
+    const positions = trail.geometry.getAttribute(
+      'position'
+    ) as THREE.BufferAttribute;
+    positions.setXYZ(
+      0,
+      trailState.start.x,
+      trailState.start.y,
+      trailState.start.z
+    );
     positions.setXYZ(1, trailState.end.x, trailState.end.y, trailState.end.z);
     positions.needsUpdate = true;
     const material = trail.material as THREE.LineBasicMaterial;
@@ -906,14 +957,16 @@ export function getSolarSystemEventRenderState(
 
     const opacity = 0.24 + marker.intensity * 0.42;
     trails.push({
-      start: marker.position.clone().add(
-        new THREE.Vector3(
-          (marker.type === 'meteor-shower' ? 1 : -1) *
-            Math.max(0.7, (marker.trailLength ?? 1.4) * 0.42),
-          marker.type === 'meteor-shower' ? 0.28 : -0.14,
-          index % 2 === 0 ? 0.2 : -0.2
-        )
-      ),
+      start: marker.position
+        .clone()
+        .add(
+          new THREE.Vector3(
+            (marker.type === 'meteor-shower' ? 1 : -1) *
+              Math.max(0.7, (marker.trailLength ?? 1.4) * 0.42),
+            marker.type === 'meteor-shower' ? 0.28 : -0.14,
+            index % 2 === 0 ? 0.2 : -0.2
+          )
+        ),
       end: marker.position,
       color,
       opacity,
@@ -938,7 +991,8 @@ function createSolarSystemBodyPosition(
   angle = body.angle * Math.PI * 2 - Math.PI / 2
 ): THREE.Vector3 {
   const orbitRadius = body.orbitRadius * 1.36;
-  const minorRadius = orbitRadius * (1 - clamp(body.orbitEccentricity, 0, 0.82));
+  const minorRadius =
+    orbitRadius * (1 - clamp(body.orbitEccentricity, 0, 0.82));
   const localX = Math.cos(angle) * orbitRadius;
   const localY = Math.sin(angle) * minorRadius;
   const rotation = body.orbitRotation ?? 0;
@@ -984,7 +1038,10 @@ function createShellConstellationPoint(
   );
 }
 
-function createTextSprite(text: string, position: THREE.Vector3): THREE.Object3D {
+function createTextSprite(
+  text: string,
+  position: THREE.Vector3
+): THREE.Object3D {
   const canvas = document.createElement('canvas');
   canvas.width = 180;
   canvas.height = 38;
@@ -1008,12 +1065,14 @@ function createTextSprite(text: string, position: THREE.Vector3): THREE.Object3D
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
   const sprite = new THREE.Sprite(
-    new THREE.SpriteMaterial(compactThreeMaterialOptions({
-      map: texture,
-      transparent: true,
-      depthWrite: false,
-      opacity: 0.82,
-    }))
+    new THREE.SpriteMaterial(
+      compactThreeMaterialOptions({
+        map: texture,
+        transparent: true,
+        depthWrite: false,
+        opacity: 0.82,
+      })
+    )
   );
   sprite.position.copy(position);
   sprite.scale.set(5.6, 1.15, 1);

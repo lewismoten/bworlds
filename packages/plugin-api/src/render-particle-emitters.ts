@@ -9,10 +9,9 @@ export interface RenderParticleEmitterMetadata {
 
 type RenderParticleEmitterTarget = Pick<ThreeObject3DLike, 'userData'>;
 
-export function markRenderParticleEmitter<TTarget extends RenderParticleEmitterTarget>(
-  target: TTarget,
-  metadata: RenderParticleEmitterMetadata = {}
-): TTarget {
+export function markRenderParticleEmitter<
+  TTarget extends RenderParticleEmitterTarget,
+>(target: TTarget, metadata: RenderParticleEmitterMetadata = {}): TTarget {
   target.userData = {
     ...(target.userData ?? {}),
     [RENDER_PARTICLE_EMITTER_USER_DATA_KEY]: {

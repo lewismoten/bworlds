@@ -54,15 +54,24 @@ function createQuarryMap(
         };
       }
       if (distance <= pitRadius) {
-        return { kind: 'floor', note: 'Cut stone and dust cover the quarry floor.' };
+        return {
+          kind: 'floor',
+          note: 'Cut stone and dust cover the quarry floor.',
+        };
       }
       if (distance <= pitRadius + 1.25) {
         return { kind: 'road', note: 'A terraced haul road circles the pit.' };
       }
       if (distance >= radius - 1) {
-        return { kind: 'mountain', note: 'The quarry walls rise steeply here.' };
+        return {
+          kind: 'mountain',
+          note: 'The quarry walls rise steeply here.',
+        };
       }
-      return { kind: 'plains', note: 'Stacks of stone wait to be hauled away.' };
+      return {
+        kind: 'plains',
+        note: 'Stacks of stone wait to be hauled away.',
+      };
     },
     decorateTile(payload) {
       return plugins.decorateDepthTile(payload);

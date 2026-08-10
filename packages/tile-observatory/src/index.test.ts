@@ -142,13 +142,15 @@ describe('tile observatory', () => {
     const firstDomePivot = firstChildren?.[3] as FakeGroup | undefined;
     const secondDomePivot = secondChildren?.[3] as FakeGroup | undefined;
 
-    expect(countSharedMaterialReferences(first, second)).toBeGreaterThanOrEqual(4);
+    expect(countSharedMaterialReferences(first, second)).toBeGreaterThanOrEqual(
+      4
+    );
     expect((firstChildren?.[0] as FakeMesh | undefined)?.geometry).toBe(
       (secondChildren?.[0] as FakeMesh | undefined)?.geometry
     );
-    expect((firstDomePivot?.children[0] as FakeMesh | undefined)?.geometry).toBe(
-      (secondDomePivot?.children[0] as FakeMesh | undefined)?.geometry
-    );
+    expect(
+      (firstDomePivot?.children[0] as FakeMesh | undefined)?.geometry
+    ).toBe((secondDomePivot?.children[0] as FakeMesh | undefined)?.geometry);
   });
 
   it('opens the dome and reveals the telescope at night', () => {
@@ -220,9 +222,9 @@ describe('tile observatory', () => {
       environment: {},
     });
 
-    expect((domePivot?.rotation.y ?? 0)).toBeGreaterThan(0.8);
+    expect(domePivot?.rotation.y ?? 0).toBeGreaterThan(0.8);
     expect(telescope?.visible).toBe(true);
-    expect((telescope?.rotation.x ?? 0)).toBeLessThan(0);
+    expect(telescope?.rotation.x ?? 0).toBeLessThan(0);
   });
 
   it('keeps observatory materials scoped to the current Three host', () => {
@@ -272,7 +274,9 @@ function countSharedMaterialReferences(
   return sharedCount;
 }
 
-function collectMeshMaterials(root: FakeNode | undefined): Set<FakeMaterial | object> {
+function collectMeshMaterials(
+  root: FakeNode | undefined
+): Set<FakeMaterial | object> {
   const materials = new Set<FakeMaterial | object>();
   root?.traverse((node) => {
     if (node instanceof FakeMesh) {

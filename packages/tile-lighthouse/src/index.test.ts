@@ -153,10 +153,12 @@ describe('tile lighthouse', () => {
     expect(firstBeamMeshes).toHaveLength(3);
     expect(firstBeamMeshes[0]?.material).toBe(secondBeamMeshes[0]?.material);
     expect(firstChildren?.[0]?.geometry).toBe(secondChildren?.[0]?.geometry);
-    expect((firstBeamPivot?.children[0] as FakeMesh | undefined)?.geometry).toBe(
-      (secondBeamPivot?.children[0] as FakeMesh | undefined)?.geometry
-    );
-    expect((firstBeamMeshes[0]?.material as FakeMaterial | undefined)?.options.color).toBe(
+    expect(
+      (firstBeamPivot?.children[0] as FakeMesh | undefined)?.geometry
+    ).toBe((secondBeamPivot?.children[0] as FakeMesh | undefined)?.geometry);
+    expect(
+      (firstBeamMeshes[0]?.material as FakeMaterial | undefined)?.options.color
+    ).toBe(
       (secondBeamMeshes[0]?.material as FakeMaterial | undefined)?.options.color
     );
   });
@@ -181,7 +183,8 @@ describe('tile lighthouse', () => {
         tileY: y,
       }) as FakeNode | undefined;
       const beamMeshes = collectBeamMeshes(model);
-      const color = (beamMeshes[0]?.material as FakeMaterial | undefined)?.options.color;
+      const color = (beamMeshes[0]?.material as FakeMaterial | undefined)
+        ?.options.color;
       if (typeof color === 'string') {
         beamColors.add(color);
       }
@@ -212,14 +215,15 @@ describe('tile lighthouse', () => {
       { x: 40, y: 5 },
       { x: 4, y: 40 },
       { x: 40, y: 40 },
-    ].map(({ x, y }) =>
-      tile?.create3DModel?.({
-        three: fakeThree as never,
-        state: {} as never,
-        tile: { kind: 'lighthouse' } as never,
-        tileX: x,
-        tileY: y,
-      }) as FakeNode | undefined
+    ].map(
+      ({ x, y }) =>
+        tile?.create3DModel?.({
+          three: fakeThree as never,
+          state: {} as never,
+          tile: { kind: 'lighthouse' } as never,
+          tileX: x,
+          tileY: y,
+        }) as FakeNode | undefined
     );
     const firstPivot = findBeamPivot(first);
     const secondPivot = findBeamPivot(second);
@@ -254,7 +258,11 @@ describe('tile lighthouse', () => {
       tileY: 5,
     }) as FakeNode | undefined;
 
-    for (let index = 0; index < LIGHTHOUSE_STYLE_CACHE_MAX_ENTRIES + 48; index += 1) {
+    for (
+      let index = 0;
+      index < LIGHTHOUSE_STYLE_CACHE_MAX_ENTRIES + 48;
+      index += 1
+    ) {
       tile?.create3DModel?.({
         three: fakeThree as never,
         state: {} as never,
@@ -276,7 +284,9 @@ describe('tile lighthouse', () => {
     const baselinePivot = findBeamPivot(baseline);
     const resolvedPivot = findBeamPivot(resolved);
 
-    expect((resolvedBeams[0]?.material as FakeMaterial | undefined)?.options.color).toBe(
+    expect(
+      (resolvedBeams[0]?.material as FakeMaterial | undefined)?.options.color
+    ).toBe(
       (baselineBeams[0]?.material as FakeMaterial | undefined)?.options.color
     );
     expect(resolvedPivot?.userData?.lighthouseBeamRotationDurationMs).toBe(
@@ -330,8 +340,10 @@ describe('tile lighthouse', () => {
       vertexCount: 144,
       triangleCount: 48,
     });
-    expect(lowEstimate && fullEstimate ? lowEstimate.meshCount : Infinity).toBeLessThan(
-      fullEstimate ? fullEstimate.meshCount ?? -Infinity : -Infinity
+    expect(
+      lowEstimate && fullEstimate ? lowEstimate.meshCount : Infinity
+    ).toBeLessThan(
+      fullEstimate ? (fullEstimate.meshCount ?? -Infinity) : -Infinity
     );
   });
 
@@ -394,10 +406,14 @@ describe('tile lighthouse', () => {
       ])
     );
     expect(
-      beamMeshes.map((beam) => (beam.geometry as FakeGeometry | undefined)?.args[0])
+      beamMeshes.map(
+        (beam) => (beam.geometry as FakeGeometry | undefined)?.args[0]
+      )
     ).toEqual([0.1, 0.19, 0.32]);
     expect(
-      beamMeshes.map((beam) => (beam.geometry as FakeGeometry | undefined)?.args[1])
+      beamMeshes.map(
+        (beam) => (beam.geometry as FakeGeometry | undefined)?.args[1]
+      )
     ).toEqual([1.1, 1.22, 1.48]);
     beamMeshes.forEach((beam) => {
       expect(beam.castShadow).toBe(false);
@@ -420,7 +436,10 @@ describe('tile lighthouse', () => {
     const frameMeshes = collectTaggedMeshes(model, 'lighthouseFrame');
     const lensMeshes = collectTaggedMeshes(model, 'lighthouseLens');
     const balconyMeshes = collectTaggedMeshes(model, 'lighthouseBalcony');
-    const balconyRailMeshes = collectTaggedMeshes(model, 'lighthouseBalconyRail');
+    const balconyRailMeshes = collectTaggedMeshes(
+      model,
+      'lighthouseBalconyRail'
+    );
     const wallGlowMeshes = collectTaggedMeshes(model, 'lighthouseWallGlow');
 
     expect(glassMeshes).toHaveLength(1);
@@ -429,25 +448,33 @@ describe('tile lighthouse', () => {
     expect(balconyMeshes).toHaveLength(1);
     expect(balconyRailMeshes).toHaveLength(5);
     expect(wallGlowMeshes).toHaveLength(4);
-    expect((glassMeshes[0]?.material as FakeMaterial | undefined)?.options.transparent).toBe(true);
-    expect((glassMeshes[0]?.material as FakeMaterial | undefined)?.options.opacity).toBeCloseTo(
-      0.42,
-      6
+    expect(
+      (glassMeshes[0]?.material as FakeMaterial | undefined)?.options
+        .transparent
+    ).toBe(true);
+    expect(
+      (glassMeshes[0]?.material as FakeMaterial | undefined)?.options.opacity
+    ).toBeCloseTo(0.42, 6);
+    expect(
+      (frameMeshes[0]?.material as FakeMaterial | undefined)?.options.color
+    ).toBe('#5d6673');
+    expect(
+      (lensMeshes[0]?.material as FakeMaterial | undefined)?.options.emissive
+    ).toBe('#ffe9a8');
+    expect(
+      (balconyMeshes[0]?.material as FakeMaterial | undefined)?.options.color
+    ).toBe('#8b7358');
+    expect(
+      (balconyRailMeshes[0]?.material as FakeMaterial | undefined)?.options
+        .color
+    ).toBe('#5d6673');
+    expect(balconyMeshes[0]?.position.y).toBeLessThan(
+      glassMeshes[0]?.position.y ?? Infinity
     );
-    expect((frameMeshes[0]?.material as FakeMaterial | undefined)?.options.color).toBe('#5d6673');
-    expect((lensMeshes[0]?.material as FakeMaterial | undefined)?.options.emissive).toBe(
-      '#ffe9a8'
-    );
-    expect((balconyMeshes[0]?.material as FakeMaterial | undefined)?.options.color).toBe(
-      '#8b7358'
-    );
-    expect((balconyRailMeshes[0]?.material as FakeMaterial | undefined)?.options.color).toBe(
-      '#5d6673'
-    );
-    expect(balconyMeshes[0]?.position.y).toBeLessThan(glassMeshes[0]?.position.y ?? Infinity);
-    expect((wallGlowMeshes[0]?.material as FakeMaterial | undefined)?.options.emissive).toBe(
-      '#f8d7a1'
-    );
+    expect(
+      (wallGlowMeshes[0]?.material as FakeMaterial | undefined)?.options
+        .emissive
+    ).toBe('#f8d7a1');
   });
 
   it('assigns lower budget priorities to optional decorations than structural lighthouse geometry', () => {
@@ -529,7 +556,9 @@ describe('tile lighthouse', () => {
     });
 
     expect(lowBeamMeshes).toHaveLength(2);
-    expect((low?.children.length ?? 0)).toBeLessThan(full?.children.length ?? Infinity);
+    expect(low?.children.length ?? 0).toBeLessThan(
+      full?.children.length ?? Infinity
+    );
     expect(collectTaggedMeshes(low, 'lighthouseLens')).toHaveLength(0);
     expect(lowPointLights).toHaveLength(0);
     expect(findBeamPivot(low)).not.toBeNull();
@@ -572,7 +601,9 @@ describe('tile lighthouse', () => {
 
     expect(beamNodes.some((beam) => beam.visible)).toBe(true);
     expect(
-      beamNodes.some((beam) => ((beam.material as FakeMaterial).opacity ?? 0) > 0.02)
+      beamNodes.some(
+        (beam) => ((beam.material as FakeMaterial).opacity ?? 0) > 0.02
+      )
     ).toBe(true);
   });
 
@@ -610,7 +641,9 @@ describe('tile lighthouse', () => {
 
     expect(beamNodes.every((beam) => beam.visible === false)).toBe(true);
     expect(
-      beamNodes.every((beam) => ((beam.material as FakeMaterial).opacity ?? 0) <= 0.001)
+      beamNodes.every(
+        (beam) => ((beam.material as FakeMaterial).opacity ?? 0) <= 0.001
+      )
     ).toBe(true);
   });
 
@@ -635,7 +668,12 @@ describe('tile lighthouse', () => {
       tileY: 5,
       model,
       timeMs: 0,
-      cycle: { daylight: 0, twilight: 0.2, night: 0.8, sunAltitude: -0.18 } as never,
+      cycle: {
+        daylight: 0,
+        twilight: 0.2,
+        night: 0.8,
+        sunAltitude: -0.18,
+      } as never,
       environment: {
         weather: {
           current: createWeatherCondition({
@@ -647,7 +685,8 @@ describe('tile lighthouse', () => {
       },
     });
 
-    const fogNearOpacity = (nearBeam?.material as FakeMaterial | undefined)?.opacity ?? 0;
+    const fogNearOpacity =
+      (nearBeam?.material as FakeMaterial | undefined)?.opacity ?? 0;
     const fogFarEmissive =
       (farBeam?.material as FakeMaterial | undefined)?.emissiveIntensity ?? 0;
 
@@ -659,7 +698,12 @@ describe('tile lighthouse', () => {
       tileY: 5,
       model,
       timeMs: 0,
-      cycle: { daylight: 0, twilight: 0.2, night: 0.8, sunAltitude: -0.18 } as never,
+      cycle: {
+        daylight: 0,
+        twilight: 0.2,
+        night: 0.8,
+        sunAltitude: -0.18,
+      } as never,
       environment: {
         weather: {
           current: createWeatherCondition({
@@ -671,7 +715,8 @@ describe('tile lighthouse', () => {
       },
     });
 
-    const stormNearOpacity = (nearBeam?.material as FakeMaterial | undefined)?.opacity ?? 0;
+    const stormNearOpacity =
+      (nearBeam?.material as FakeMaterial | undefined)?.opacity ?? 0;
     const stormFarEmissive =
       (farBeam?.material as FakeMaterial | undefined)?.emissiveIntensity ?? 0;
 
@@ -762,10 +807,12 @@ describe('tile lighthouse', () => {
 
     beamNodes.forEach((beamNode) => {
       expect(beamNode.visible).toBe(false);
-      expect((beamNode.material as FakeMaterial)?.opacity ?? 0).toBeLessThanOrEqual(0.01);
-      expect((beamNode.material as FakeMaterial)?.emissiveIntensity ?? 0).toBeLessThanOrEqual(
-        0.01
-      );
+      expect(
+        (beamNode.material as FakeMaterial)?.opacity ?? 0
+      ).toBeLessThanOrEqual(0.01);
+      expect(
+        (beamNode.material as FakeMaterial)?.emissiveIntensity ?? 0
+      ).toBeLessThanOrEqual(0.01);
     });
 
     tile?.sync3DModel?.({
@@ -800,17 +847,22 @@ describe('tile lighthouse', () => {
     beamNodes.forEach((beamNode) => {
       expect(beamNode.visible).toBe(true);
     });
-    expect((beamNodes[0]?.material as FakeMaterial)?.opacity ?? 0).toBeGreaterThan(
+    expect(
+      (beamNodes[0]?.material as FakeMaterial)?.opacity ?? 0
+    ).toBeGreaterThan((beamNodes[1]?.material as FakeMaterial)?.opacity ?? 0);
+    expect(
       (beamNodes[1]?.material as FakeMaterial)?.opacity ?? 0
-    );
-    expect((beamNodes[1]?.material as FakeMaterial)?.opacity ?? 0).toBeGreaterThan(
-      (beamNodes[2]?.material as FakeMaterial)?.opacity ?? 0
-    );
+    ).toBeGreaterThan((beamNodes[2]?.material as FakeMaterial)?.opacity ?? 0);
     expect(
       (beamNodes[0]?.material as FakeMaterial)?.emissiveIntensity ?? 0
-    ).toBeGreaterThan((beamNodes[2]?.material as FakeMaterial)?.emissiveIntensity ?? 0);
+    ).toBeGreaterThan(
+      (beamNodes[2]?.material as FakeMaterial)?.emissiveIntensity ?? 0
+    );
     const expectedRotation =
-      ((((rotationDurationMs / 3 / rotationDurationMs) * Math.PI * 2 * rotationDirection) %
+      ((((rotationDurationMs / 3 / rotationDurationMs) *
+        Math.PI *
+        2 *
+        rotationDirection) %
         (Math.PI * 2)) +
         Math.PI * 2) %
       (Math.PI * 2);
@@ -837,9 +889,21 @@ describe('tile lighthouse', () => {
         yearLengthDays: DEFAULT_YEAR_LENGTH_DAYS,
       }
     );
-    const summerAfterSunset = getCycleOffsetFromBoundary(summerDay, 'sunset', 0.04);
-    const summerAfterSunrise = getCycleOffsetFromBoundary(summerDay, 'sunrise', 0.08);
-    const winterAfterSunset = getCycleOffsetFromBoundary(winterDay, 'sunset', 0.08);
+    const summerAfterSunset = getCycleOffsetFromBoundary(
+      summerDay,
+      'sunset',
+      0.04
+    );
+    const summerAfterSunrise = getCycleOffsetFromBoundary(
+      summerDay,
+      'sunrise',
+      0.08
+    );
+    const winterAfterSunset = getCycleOffsetFromBoundary(
+      winterDay,
+      'sunset',
+      0.08
+    );
 
     tile?.sync3DModel?.({
       three: fakeThree as never,
@@ -865,7 +929,8 @@ describe('tile lighthouse', () => {
       cycle: summerAfterSunset,
       environment: {},
     });
-    const summerSunsetOpacity = (beamNodes[0]?.material as FakeMaterial | undefined)?.opacity ?? 0;
+    const summerSunsetOpacity =
+      (beamNodes[0]?.material as FakeMaterial | undefined)?.opacity ?? 0;
     expect(beamNodes.some((beam) => beam.visible)).toBe(true);
     expect(summerSunsetOpacity).toBeGreaterThan(0);
 
@@ -893,9 +958,12 @@ describe('tile lighthouse', () => {
       cycle: winterAfterSunset,
       environment: {},
     });
-    const winterSunsetOpacity = (beamNodes[0]?.material as FakeMaterial | undefined)?.opacity ?? 0;
+    const winterSunsetOpacity =
+      (beamNodes[0]?.material as FakeMaterial | undefined)?.opacity ?? 0;
     expect(winterSunsetOpacity).toBeGreaterThan(0);
-    expect(summerAfterSunset.sunsetProgress).toBeGreaterThan(winterAfterSunset.sunsetProgress);
+    expect(summerAfterSunset.sunsetProgress).toBeGreaterThan(
+      winterAfterSunset.sunsetProgress
+    );
   });
 
   it('fades the lighthouse beam gradually across the sunset boundary', () => {
@@ -925,7 +993,8 @@ describe('tile lighthouse', () => {
       cycle: beforeSunset,
       environment: {},
     });
-    const beforeOpacity = (beamNodes[0]?.material as FakeMaterial | undefined)?.opacity ?? 0;
+    const beforeOpacity =
+      (beamNodes[0]?.material as FakeMaterial | undefined)?.opacity ?? 0;
 
     tile?.sync3DModel?.({
       three: fakeThree as never,
@@ -938,7 +1007,8 @@ describe('tile lighthouse', () => {
       cycle: atSunset,
       environment: {},
     });
-    const atOpacity = (beamNodes[0]?.material as FakeMaterial | undefined)?.opacity ?? 0;
+    const atOpacity =
+      (beamNodes[0]?.material as FakeMaterial | undefined)?.opacity ?? 0;
 
     tile?.sync3DModel?.({
       three: fakeThree as never,
@@ -951,7 +1021,8 @@ describe('tile lighthouse', () => {
       cycle: afterSunset,
       environment: {},
     });
-    const afterOpacity = (beamNodes[0]?.material as FakeMaterial | undefined)?.opacity ?? 0;
+    const afterOpacity =
+      (beamNodes[0]?.material as FakeMaterial | undefined)?.opacity ?? 0;
 
     expect(beforeOpacity).toBeLessThan(atOpacity);
     expect(atOpacity).toBeLessThan(afterOpacity);
@@ -988,9 +1059,9 @@ describe('tile lighthouse', () => {
     });
 
     expect(lens?.visible).toBe(true);
-    expect((lens?.material as FakeMaterial | undefined)?.emissiveIntensity ?? 0).toBeGreaterThan(
-      1.5
-    );
+    expect(
+      (lens?.material as FakeMaterial | undefined)?.emissiveIntensity ?? 0
+    ).toBeGreaterThan(1.5);
     expect(beamPivot?.rotation.y).toBeGreaterThanOrEqual(0);
   });
 
@@ -1020,9 +1091,9 @@ describe('tile lighthouse', () => {
 
     expect(wallGlowMeshes).toHaveLength(4);
     wallGlowMeshes.forEach((mesh) => {
-      expect((mesh.material as FakeMaterial | undefined)?.emissiveIntensity ?? 0).toBeGreaterThan(
-        0.4
-      );
+      expect(
+        (mesh.material as FakeMaterial | undefined)?.emissiveIntensity ?? 0
+      ).toBeGreaterThan(0.4);
     });
   });
 });
@@ -1068,7 +1139,10 @@ function collectBeamMeshes(root: FakeNode | undefined): FakeMesh[] {
   return beams;
 }
 
-function collectTaggedMeshes(root: FakeNode | undefined, key: string): FakeMesh[] {
+function collectTaggedMeshes(
+  root: FakeNode | undefined,
+  key: string
+): FakeMesh[] {
   const meshes: FakeMesh[] = [];
   root?.traverse((node) => {
     if (node.userData?.[key]) {
@@ -1119,13 +1193,7 @@ function createWeatherCondition(
   const visibility = overrides.visibility ?? 0.8;
   return {
     kind: (overrides.kind ?? 'clouds') as
-      | 'clouds'
-      | 'wind'
-      | 'fog'
-      | 'light-rain'
-      | 'heavy-rain'
-      | 'snow'
-      | 'hail',
+      'clouds' | 'wind' | 'fog' | 'light-rain' | 'heavy-rain' | 'snow' | 'hail',
     label: 'Weather',
     intensity,
     cloudCover: intensity,

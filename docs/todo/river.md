@@ -1,4 +1,4 @@
-- [x] Rivers should only be 1 tile wide. 
+- [x] Rivers should only be 1 tile wide.
 - [x] Rivers have multiple points set within 2-10 tiles
 - [x] A brazier curve is used to connect river points together
 - [x] A river may fork into two rivers

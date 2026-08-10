@@ -41,21 +41,51 @@ const curatedSpawnTiles = new Map<string, TileLike>([
       note: 'A welcoming town sits just beyond the meadow.',
     },
   ],
-  ['-1,2', { kind: 'road', note: 'A road reaches in from the western meadow.' }],
+  [
+    '-1,2',
+    { kind: 'road', note: 'A road reaches in from the western meadow.' },
+  ],
   ['0,2', { kind: 'road', note: 'A road cuts through the starting plains.' }],
-  ['1,2', { kind: 'road', note: 'Wheel tracks mark the road across the meadow.' }],
-  ['1,1', { kind: 'sign', note: 'The sign points toward town, the cave, and the coast.' }],
+  [
+    '1,2',
+    { kind: 'road', note: 'Wheel tracks mark the road across the meadow.' },
+  ],
+  [
+    '1,1',
+    {
+      kind: 'sign',
+      note: 'The sign points toward town, the cave, and the coast.',
+    },
+  ],
   ['2,2', { kind: 'road', note: 'Cart tracks press into the packed road.' }],
-  ['3,-1', { kind: 'river', note: 'The river begins as a winding stream beyond the meadow.' }],
-  ['4,-1', { kind: 'river', note: 'The river curls south toward the crossing.' }],
-  ['4,0', { kind: 'river', note: 'Water bends around the edge of the plains.' }],
+  [
+    '3,-1',
+    {
+      kind: 'river',
+      note: 'The river begins as a winding stream beyond the meadow.',
+    },
+  ],
+  [
+    '4,-1',
+    { kind: 'river', note: 'The river curls south toward the crossing.' },
+  ],
+  [
+    '4,0',
+    { kind: 'river', note: 'Water bends around the edge of the plains.' },
+  ],
   ['3,1', { kind: 'river', note: 'A narrow river winds through the meadow.' }],
   ['3,2', { kind: 'bridge', note: 'A timber bridge crosses the river.' }],
   ['3,3', { kind: 'river', note: 'The river continues toward the coast.' }],
   ['4,2', { kind: 'road', note: 'The road climbs away from the bridge.' }],
   ['5,2', { kind: 'road', note: 'The road turns toward the town gate.' }],
-  ['5,3', { kind: 'road', note: 'The road leads directly toward the nearby town.' }],
-  ['4,4', { kind: 'river', note: 'The river arcs southeast toward the shore.' }],
+  [
+    '5,3',
+    { kind: 'road', note: 'The road leads directly toward the nearby town.' },
+  ],
+  [
+    '4,4',
+    { kind: 'river', note: 'The river arcs southeast toward the shore.' },
+  ],
   ['5,5', { kind: 'river', note: 'The river widens as it nears the sea.' }],
   [
     '6,0',
@@ -65,8 +95,17 @@ const curatedSpawnTiles = new Map<string, TileLike>([
       note: 'A lighthouse watches over the nearby shoals.',
     },
   ],
-  ['7,0', { kind: 'dock', note: 'The dock begins at the coastal stones below the light.' }],
-  ['8,0', { kind: 'dock', note: 'The dock stretches out above the rolling tide.' }],
+  [
+    '7,0',
+    {
+      kind: 'dock',
+      note: 'The dock begins at the coastal stones below the light.',
+    },
+  ],
+  [
+    '8,0',
+    { kind: 'dock', note: 'The dock stretches out above the rolling tide.' },
+  ],
   [
     '9,0',
     {
@@ -86,15 +125,7 @@ export function createStartRegionRuntimePlugin(): RuntimePlugin {
   });
 }
 
-function getCuratedTile({
-  seed,
-  x,
-  y,
-}: {
-  seed: Seed;
-  x: number;
-  y: number;
-}) {
+function getCuratedTile({ seed, x, y }: { seed: Seed; x: number; y: number }) {
   const seedHash = resolveHashSeedInput(seed);
   const tile = curatedSpawnTiles.get(`${x},${y}`);
   if (tile) {
@@ -119,7 +150,10 @@ function getCuratedTile({
     if (tile.kind === 'lighthouse' && tile.poi) {
       return {
         ...tile,
-        poi: { ...tile.poi, name: generatePoiName(seedHash, 'lighthouse', 6, 0) },
+        poi: {
+          ...tile.poi,
+          name: generatePoiName(seedHash, 'lighthouse', 6, 0),
+        },
       };
     }
     if (tile.kind === 'ship' && tile.poi) {
@@ -131,7 +165,10 @@ function getCuratedTile({
     if (tile.kind === 'observatory' && tile.poi) {
       return {
         ...tile,
-        poi: { ...tile.poi, name: generatePoiName(seedHash, 'observatory', -6, -2) },
+        poi: {
+          ...tile.poi,
+          name: generatePoiName(seedHash, 'observatory', -6, -2),
+        },
       };
     }
 

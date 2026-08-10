@@ -1,5 +1,12 @@
-import { getSharedConeGeometry, getSharedCylinderGeometry } from '@bworlds/three-support';
-import type { ThreeHostLike, ThreeMaterialLike, ThreeObject3DLike } from '@bworlds/plugin-api';
+import {
+  getSharedConeGeometry,
+  getSharedCylinderGeometry,
+} from '@bworlds/three-support';
+import type {
+  ThreeHostLike,
+  ThreeMaterialLike,
+  ThreeObject3DLike,
+} from '@bworlds/plugin-api';
 
 type LighthouseLowDetailBeamSegment = {
   radius: number;

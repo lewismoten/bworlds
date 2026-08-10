@@ -190,16 +190,30 @@ export function validateVisibleTileChunkTextureBudget(
     if (entry.key === excludedTileKey || !entry.uniqueTextures) {
       continue;
     }
-    const chunkKey = getChunkKey(entry.tileX, entry.tileY, normalizedChunkTileSize);
-    const uniqueTextures = getOrCreateChunkTextureSet(chunkTextureSets, chunkKey);
+    const chunkKey = getChunkKey(
+      entry.tileX,
+      entry.tileY,
+      normalizedChunkTileSize
+    );
+    const uniqueTextures = getOrCreateChunkTextureSet(
+      chunkTextureSets,
+      chunkKey
+    );
     const currentBytes = chunkTextureBytes.get(chunkKey) ?? 0;
     chunkTextureBytes.set(
       chunkKey,
-      accumulateUniqueTextureBytes(uniqueTextures, entry.uniqueTextures, currentBytes)
+      accumulateUniqueTextureBytes(
+        uniqueTextures,
+        entry.uniqueTextures,
+        currentBytes
+      )
     );
   }
 
-  const targetTextures = getOrCreateChunkTextureSet(chunkTextureSets, targetChunkKey);
+  const targetTextures = getOrCreateChunkTextureSet(
+    chunkTextureSets,
+    targetChunkKey
+  );
   const targetBytes = chunkTextureBytes.get(targetChunkKey) ?? 0;
   const textureMemoryEstimateBytes = accumulateUniqueTextureBytes(
     targetTextures,
@@ -245,6 +259,10 @@ function getOrCreateChunkTextureSet(
   return chunkTextures;
 }
 
-function getChunkKey(tileX: number, tileY: number, chunkTileSize: number): string {
+function getChunkKey(
+  tileX: number,
+  tileY: number,
+  chunkTileSize: number
+): string {
   return `${Math.floor(tileX / chunkTileSize)}:${Math.floor(tileY / chunkTileSize)}`;
 }

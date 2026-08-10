@@ -55,11 +55,13 @@ describe('compass helpers', () => {
   });
 
   it('lets heading drags follow immediately but eases click retargets into place', () => {
-    expect(advanceDisplayedCompassHeading(-Math.PI / 2, 0, true)).toBeCloseTo(0);
-    expect(advanceDisplayedCompassHeading(null, 0.3, false)).toBeCloseTo(0.3);
-    expect(advanceDisplayedCompassHeading(-Math.PI / 2, 0, false)).toBeGreaterThan(
-      -Math.PI / 2
+    expect(advanceDisplayedCompassHeading(-Math.PI / 2, 0, true)).toBeCloseTo(
+      0
     );
+    expect(advanceDisplayedCompassHeading(null, 0.3, false)).toBeCloseTo(0.3);
+    expect(
+      advanceDisplayedCompassHeading(-Math.PI / 2, 0, false)
+    ).toBeGreaterThan(-Math.PI / 2);
     expect(advanceDisplayedCompassHeading(0.4, null, false)).toBeNull();
   });
 
@@ -70,7 +72,9 @@ describe('compass helpers', () => {
   });
 
   it('treats outer-rim clicks as heading-bezel adjustments', () => {
-    expect(getCompassDialInteractionMode(50, 10, 50, 50, 40)).toBe('heading-bug');
+    expect(getCompassDialInteractionMode(50, 10, 50, 50, 40)).toBe(
+      'heading-bug'
+    );
     expect(getCompassDialInteractionMode(50, 40, 50, 50, 40)).toBe('facing');
     expect(getCompassDialInteractionMode(50, -5, 50, 50, 40)).toBe('none');
   });

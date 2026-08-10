@@ -44,11 +44,9 @@ describe('getRiverOverlayConnections', () => {
     });
     const tileAt = createViewportTileSampler(state);
 
-    expect(getRiverOverlayConnections(tileAt, 0, 0).map(({ id }) => id)).toEqual([
-      'north',
-      'east',
-      'south',
-    ]);
+    expect(
+      getRiverOverlayConnections(tileAt, 0, 0).map(({ id }) => id)
+    ).toEqual(['north', 'east', 'south']);
   });
 
   it('sorts diagonal and cardinal neighbors by angle for stable curve pairing', () => {
@@ -60,12 +58,9 @@ describe('getRiverOverlayConnections', () => {
     });
     const tileAt = createViewportTileSampler(state);
 
-    expect(getRiverOverlayConnections(tileAt, 0, 0).map(({ id }) => id)).toEqual([
-      'northeast',
-      'east',
-      'southeast',
-      'southwest',
-    ]);
+    expect(
+      getRiverOverlayConnections(tileAt, 0, 0).map(({ id }) => id)
+    ).toEqual(['northeast', 'east', 'southeast', 'southwest']);
   });
 
   it('reuses cached tile samples across repeated river connection checks', () => {
@@ -94,7 +89,9 @@ describe('render2D night sky overlay', () => {
   it('scales tile size with viewport zoom', () => {
     expect(getViewportTileSize({ width: 220, height: 220, zoom: 1 })).toBe(14);
     expect(getViewportTileSize({ width: 440, height: 440, zoom: 1 })).toBe(20);
-    expect(getViewportTileSize({ width: 440, height: 440, zoom: 1.5 })).toBe(30);
+    expect(getViewportTileSize({ width: 440, height: 440, zoom: 1.5 })).toBe(
+      30
+    );
   });
 
   it('applies night shading without painting sky stars over the 2d map', () => {
@@ -330,11 +327,12 @@ describe('render2D night sky overlay', () => {
   });
 
   it('derives visible relief strength from decorated hill surface heights', () => {
-    expect(getTileReliefStrength({ kind: 'plains', surfaceHeight: 0.18 })).toBeCloseTo(
-      0.5,
-      1
-    );
-    expect(getTileReliefStrength({ kind: 'mountain', surfaceHeight: 0.3 })).toBe(0);
+    expect(
+      getTileReliefStrength({ kind: 'plains', surfaceHeight: 0.18 })
+    ).toBeCloseTo(0.5, 1);
+    expect(
+      getTileReliefStrength({ kind: 'mountain', surfaceHeight: 0.3 })
+    ).toBe(0);
     expect(getTileReliefStrength({ kind: 'plains' })).toBe(0);
   });
 });

@@ -1,4 +1,3 @@
-
 export interface CelestialCalendarLike {
   month: string;
   week: string;

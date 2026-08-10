@@ -1,4 +1,3 @@
-
 export interface CelestialEventLike {
   type: 'planet' | 'meteor-shower' | 'comet';
   name: string;

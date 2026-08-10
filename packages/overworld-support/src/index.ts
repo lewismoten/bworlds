@@ -43,21 +43,39 @@ export type RiverControlPoint = {
   y: number;
 };
 
-const RIVER_CONTROL_POINT_COUNT_LABEL = registerHashLabel('river-control-point-count');
+const RIVER_CONTROL_POINT_COUNT_LABEL = registerHashLabel(
+  'river-control-point-count'
+);
 const RIVER_CONTROL_START_X_LABEL = registerHashLabel('river-control-start-x');
 const RIVER_CONTROL_START_Y_LABEL = registerHashLabel('river-control-start-y');
-const RIVER_CONTROL_MEANDER_SIGN_LABEL = registerHashLabel('river-control-meander-sign');
-const RIVER_CONTROL_MEANDER_STRENGTH_LABEL = registerHashLabel('river-control-meander-strength');
-const RIVER_CONTROL_MEANDER_PHASE_LABEL = registerHashLabel('river-control-meander-phase');
+const RIVER_CONTROL_MEANDER_SIGN_LABEL = registerHashLabel(
+  'river-control-meander-sign'
+);
+const RIVER_CONTROL_MEANDER_STRENGTH_LABEL = registerHashLabel(
+  'river-control-meander-strength'
+);
+const RIVER_CONTROL_MEANDER_PHASE_LABEL = registerHashLabel(
+  'river-control-meander-phase'
+);
 const RIVER_CONTROL_ANGLE_LABEL = registerHashLabel('river-control-angle');
-const RIVER_CONTROL_DISTANCE_LABEL = registerHashLabel('river-control-distance');
-const RIVER_CONTROL_ANGLE_DELTA_LABEL = registerHashLabel('river-control-angle-delta');
+const RIVER_CONTROL_DISTANCE_LABEL = registerHashLabel(
+  'river-control-distance'
+);
+const RIVER_CONTROL_ANGLE_DELTA_LABEL = registerHashLabel(
+  'river-control-angle-delta'
+);
 const RIVER_FORK_CHANCE_LABEL = registerHashLabel('river-fork-chance');
-const RIVER_FORK_TRUNK_START_LABEL = registerHashLabel('river-fork-trunk-start');
+const RIVER_FORK_TRUNK_START_LABEL = registerHashLabel(
+  'river-fork-trunk-start'
+);
 const RIVER_FORK_TRUNK_SPAN_LABEL = registerHashLabel('river-fork-trunk-span');
 const RIVER_FORK_ANGLE_SIGN_LABEL = registerHashLabel('river-fork-angle-sign');
-const RIVER_FORK_ANGLE_DELTA_LABEL = registerHashLabel('river-fork-angle-delta');
-const RIVER_FORK_POINT_COUNT_LABEL = registerHashLabel('river-fork-point-count');
+const RIVER_FORK_ANGLE_DELTA_LABEL = registerHashLabel(
+  'river-fork-angle-delta'
+);
+const RIVER_FORK_POINT_COUNT_LABEL = registerHashLabel(
+  'river-fork-point-count'
+);
 const RIVER_FORK_MID_SWAY_LABEL = registerHashLabel('river-fork-mid-sway');
 const OVERWORLD_CONTINENT_NOISE_LABEL = registerHashLabel('continent');
 const OVERWORLD_ELEVATION_NOISE_LABEL = registerHashLabel('elevation');
@@ -122,7 +140,9 @@ type OverworldGenerationSnapshotCacheStore = {
   >;
   stateful: WeakMap<
     WorldStateLike,
-    ReturnType<typeof createBoundedCache<string, CachedOverworldGenerationSnapshot>>
+    ReturnType<
+      typeof createBoundedCache<string, CachedOverworldGenerationSnapshot>
+    >
   >;
 };
 
@@ -196,7 +216,8 @@ function createOverworldGenerationSnapshotCacheKey({
   const revision =
     typeof (state as { overworldTileRevision?: unknown } | undefined)
       ?.overworldTileRevision === 'number'
-      ? ((state as { overworldTileRevision?: number }).overworldTileRevision ?? 0)
+      ? ((state as { overworldTileRevision?: number }).overworldTileRevision ??
+        0)
       : 0;
   return `${seed}:${x}:${y}:${revision}`;
 }
@@ -296,16 +317,27 @@ export interface OverworldCellAnchorCandidate<
   chance: number;
 }
 
-export type GeneratedNamedOverworldAnchor = OverworldAnchorLike & { name: string };
+export type GeneratedNamedOverworldAnchor = OverworldAnchorLike & {
+  name: string;
+};
 export type GeneratedNamedPoiAnchor = PoiAnchorLike & { name: string };
 
 export function createOverworldTerrainSignalSampler(
   seed: Seed
 ): OverworldTerrainSignalSampler {
   const seedHash = normalizeSeedHash(seed);
-  const continentSeed = appendHashSeedLabel(seedHash, OVERWORLD_CONTINENT_NOISE_LABEL);
-  const elevationSeed = appendHashSeedLabel(seedHash, OVERWORLD_ELEVATION_NOISE_LABEL);
-  const moistureSeed = appendHashSeedLabel(seedHash, OVERWORLD_MOISTURE_NOISE_LABEL);
+  const continentSeed = appendHashSeedLabel(
+    seedHash,
+    OVERWORLD_CONTINENT_NOISE_LABEL
+  );
+  const elevationSeed = appendHashSeedLabel(
+    seedHash,
+    OVERWORLD_ELEVATION_NOISE_LABEL
+  );
+  const moistureSeed = appendHashSeedLabel(
+    seedHash,
+    OVERWORLD_MOISTURE_NOISE_LABEL
+  );
   const riverSeed = appendHashSeedLabel(seedHash, OVERWORLD_RIVER_NOISE_LABEL);
   const roadSeed = appendHashSeedLabel(seedHash, OVERWORLD_ROAD_NOISE_LABEL);
   const signalCache = createCoordinateCache<OverworldSignals>();
@@ -368,15 +400,33 @@ export function createRiverControlPoints(
   cellY: number
 ): RiverControlPoint[] {
   const seedHash = normalizeSeedHash(seed);
-  const pointCountSeed = appendHashSeedLabel(seedHash, RIVER_CONTROL_POINT_COUNT_LABEL);
+  const pointCountSeed = appendHashSeedLabel(
+    seedHash,
+    RIVER_CONTROL_POINT_COUNT_LABEL
+  );
   const startXSeed = appendHashSeedLabel(seedHash, RIVER_CONTROL_START_X_LABEL);
   const startYSeed = appendHashSeedLabel(seedHash, RIVER_CONTROL_START_Y_LABEL);
-  const meanderSignSeed = appendHashSeedLabel(seedHash, RIVER_CONTROL_MEANDER_SIGN_LABEL);
-  const meanderStrengthSeed = appendHashSeedLabel(seedHash, RIVER_CONTROL_MEANDER_STRENGTH_LABEL);
-  const meanderPhaseSeed = appendHashSeedLabel(seedHash, RIVER_CONTROL_MEANDER_PHASE_LABEL);
+  const meanderSignSeed = appendHashSeedLabel(
+    seedHash,
+    RIVER_CONTROL_MEANDER_SIGN_LABEL
+  );
+  const meanderStrengthSeed = appendHashSeedLabel(
+    seedHash,
+    RIVER_CONTROL_MEANDER_STRENGTH_LABEL
+  );
+  const meanderPhaseSeed = appendHashSeedLabel(
+    seedHash,
+    RIVER_CONTROL_MEANDER_PHASE_LABEL
+  );
   const angleSeed = appendHashSeedLabel(seedHash, RIVER_CONTROL_ANGLE_LABEL);
-  const distanceSeed = appendHashSeedLabel(seedHash, RIVER_CONTROL_DISTANCE_LABEL);
-  const angleDeltaSeed = appendHashSeedLabel(seedHash, RIVER_CONTROL_ANGLE_DELTA_LABEL);
+  const distanceSeed = appendHashSeedLabel(
+    seedHash,
+    RIVER_CONTROL_DISTANCE_LABEL
+  );
+  const angleDeltaSeed = appendHashSeedLabel(
+    seedHash,
+    RIVER_CONTROL_ANGLE_DELTA_LABEL
+  );
   const cellOriginX = cellX * RIVER_CONTROL_CELL_SIZE;
   const cellOriginY = cellY * RIVER_CONTROL_CELL_SIZE;
   const padding = RIVER_MAX_CONTROL_STEP + 1;
@@ -392,12 +442,10 @@ export function createRiverControlPoints(
     );
   const startX =
     cellOriginX +
-    hash2DWithSeed(startXSeed, cellX, cellY) *
-      RIVER_CONTROL_CELL_SIZE;
+    hash2DWithSeed(startXSeed, cellX, cellY) * RIVER_CONTROL_CELL_SIZE;
   const startY =
     cellOriginY +
-    hash2DWithSeed(startYSeed, cellX, cellY) *
-      RIVER_CONTROL_CELL_SIZE;
+    hash2DWithSeed(startYSeed, cellX, cellY) * RIVER_CONTROL_CELL_SIZE;
   const points: RiverControlPoint[] = [
     {
       x: startX,
@@ -407,12 +455,10 @@ export function createRiverControlPoints(
   const meanderSign =
     hash2DWithSeed(meanderSignSeed, cellX, cellY) >= 0.5 ? 1 : -1;
   const meanderStrength =
-    0.24 +
-    hash2DWithSeed(meanderStrengthSeed, cellX, cellY) * 0.42;
+    0.24 + hash2DWithSeed(meanderStrengthSeed, cellX, cellY) * 0.42;
   const meanderPhase =
     hash2DWithSeed(meanderPhaseSeed, cellX, cellY) * Math.PI * 2;
-  let previousAngle =
-    hash2DWithSeed(angleSeed, cellX, cellY) * Math.PI * 2;
+  let previousAngle = hash2DWithSeed(angleSeed, cellX, cellY) * Math.PI * 2;
 
   for (let index = 1; index < pointCount; index += 1) {
     const distance =
@@ -422,7 +468,8 @@ export function createRiverControlPoints(
           (RIVER_MAX_CONTROL_STEP - RIVER_MIN_CONTROL_STEP + 1)
       );
     const rawAngleDelta =
-      (hash2DWithSeed(appendHashSeedPart(angleDeltaSeed, index), cellX, cellY) - 0.5) *
+      (hash2DWithSeed(appendHashSeedPart(angleDeltaSeed, index), cellX, cellY) -
+        0.5) *
       (Math.PI * 0.92);
     const meanderDelta =
       Math.sin(index * 1.15 + meanderPhase) *
@@ -436,16 +483,8 @@ export function createRiverControlPoints(
     );
     const angle = previousAngle + angleDelta;
     const priorPoint = points[index - 1];
-    const nextX = clamp(
-      priorPoint.x + Math.cos(angle) * distance,
-      minX,
-      maxX
-    );
-    const nextY = clamp(
-      priorPoint.y + Math.sin(angle) * distance,
-      minY,
-      maxY
-    );
+    const nextX = clamp(priorPoint.x + Math.cos(angle) * distance, minX, maxX);
+    const nextY = clamp(priorPoint.y + Math.sin(angle) * distance, minY, maxY);
     points.push({
       x: nextX,
       y: nextY,
@@ -520,10 +559,10 @@ export function createRiverCurvePoints(
       curvePoints,
       nextPointIndex,
       start,
-      start.x + ((end.x - previous.x) / 6),
-      start.y + ((end.y - previous.y) / 6),
-      end.x - ((next.x - start.x) / 6),
-      end.y - ((next.y - start.y) / 6),
+      start.x + (end.x - previous.x) / 6,
+      start.y + (end.y - previous.y) / 6,
+      end.x - (next.x - start.x) / 6,
+      end.y - (next.y - start.y) / 6,
       end,
       segmentsPerCurve
     );
@@ -540,19 +579,31 @@ export function createRiverForkPath(
 ): RiverForkPath | null {
   const seedHash = normalizeSeedHash(seed);
   const chanceSeed = appendHashSeedLabel(seedHash, RIVER_FORK_CHANCE_LABEL);
-  const trunkStartSeed = appendHashSeedLabel(seedHash, RIVER_FORK_TRUNK_START_LABEL);
-  const trunkSpanSeed = appendHashSeedLabel(seedHash, RIVER_FORK_TRUNK_SPAN_LABEL);
-  const angleSignSeed = appendHashSeedLabel(seedHash, RIVER_FORK_ANGLE_SIGN_LABEL);
-  const angleDeltaSeed = appendHashSeedLabel(seedHash, RIVER_FORK_ANGLE_DELTA_LABEL);
-  const pointCountSeed = appendHashSeedLabel(seedHash, RIVER_FORK_POINT_COUNT_LABEL);
+  const trunkStartSeed = appendHashSeedLabel(
+    seedHash,
+    RIVER_FORK_TRUNK_START_LABEL
+  );
+  const trunkSpanSeed = appendHashSeedLabel(
+    seedHash,
+    RIVER_FORK_TRUNK_SPAN_LABEL
+  );
+  const angleSignSeed = appendHashSeedLabel(
+    seedHash,
+    RIVER_FORK_ANGLE_SIGN_LABEL
+  );
+  const angleDeltaSeed = appendHashSeedLabel(
+    seedHash,
+    RIVER_FORK_ANGLE_DELTA_LABEL
+  );
+  const pointCountSeed = appendHashSeedLabel(
+    seedHash,
+    RIVER_FORK_POINT_COUNT_LABEL
+  );
   const midSwaySeed = appendHashSeedLabel(seedHash, RIVER_FORK_MID_SWAY_LABEL);
   if (controlPoints.length < 4) {
     return null;
   }
-  if (
-    hash2DWithSeed(chanceSeed, cellX, cellY) <
-    RIVER_FORK_CHANCE_THRESHOLD
-  ) {
+  if (hash2DWithSeed(chanceSeed, cellX, cellY) < RIVER_FORK_CHANCE_THRESHOLD) {
     return null;
   }
 
@@ -571,18 +622,15 @@ export function createRiverForkPath(
     trunkStartIndex +
       2 +
       Math.floor(
-        hash2DWithSeed(trunkSpanSeed, cellX, cellY) *
-          (maxAdditionalSpan + 1)
+        hash2DWithSeed(trunkSpanSeed, cellX, cellY) * (maxAdditionalSpan + 1)
       )
   );
   const pivot = controlPoints[trunkStartIndex];
   const merge = controlPoints[trunkEndIndex];
   const baseAngle = Math.atan2(merge.y - pivot.y, merge.x - pivot.x);
-  const angleSign =
-    hash2DWithSeed(angleSignSeed, cellX, cellY) >= 0.5 ? 1 : -1;
+  const angleSign = hash2DWithSeed(angleSignSeed, cellX, cellY) >= 0.5 ? 1 : -1;
   const angleDelta =
-    (0.25 +
-      hash2DWithSeed(angleDeltaSeed, cellX, cellY) * 0.75) *
+    (0.25 + hash2DWithSeed(angleDeltaSeed, cellX, cellY) * 0.75) *
     RIVER_FORK_MAX_ANGLE_DELTA *
     angleSign;
   const branchAngle = baseAngle + angleDelta;
@@ -732,7 +780,10 @@ function getRiverPathSignalAtPoint(
       points[index - 1],
       points[index]
     );
-    const segmentSignal = Math.max(0, 1 - segmentDistance / RIVER_SEGMENT_FALLOFF);
+    const segmentSignal = Math.max(
+      0,
+      1 - segmentDistance / RIVER_SEGMENT_FALLOFF
+    );
     if (segmentSignal > strongestSignal) {
       strongestSignal = segmentSignal;
     }
@@ -766,7 +817,11 @@ export function getRiverControlPathSignalAtPoint(
 
     let priorX = start.x;
     let priorY = start.y;
-    for (let segmentIndex = 1; segmentIndex <= segmentsPerCurve; segmentIndex += 1) {
+    for (
+      let segmentIndex = 1;
+      segmentIndex <= segmentsPerCurve;
+      segmentIndex += 1
+    ) {
       const t = segmentIndex / segmentsPerCurve;
       const inverseT = 1 - t;
       const curveX =
@@ -787,7 +842,10 @@ export function getRiverControlPathSignalAtPoint(
         curveX,
         curveY
       );
-      const segmentSignal = Math.max(0, 1 - segmentDistance / RIVER_SEGMENT_FALLOFF);
+      const segmentSignal = Math.max(
+        0,
+        1 - segmentDistance / RIVER_SEGMENT_FALLOFF
+      );
       if (segmentSignal > strongestSignal) {
         strongestSignal = segmentSignal;
       }
@@ -916,21 +974,16 @@ export function createCachedOverworldTileResolver(
 export function createGeneratedNamedOverworldCellAnchorSpec<
   TAnchor extends GeneratedNamedOverworldAnchor = GeneratedNamedOverworldAnchor,
 >(
-  options: Omit<
-    OverworldCellAnchorSpec<TAnchor>,
-    'createAnchor'
-  > & {
+  options: Omit<OverworldCellAnchorSpec<TAnchor>, 'createAnchor'> & {
     nameType: PoiNameType;
-    createAnchorExtras?(
-      params: {
-        seed: Seed;
-        x: number;
-        y: number;
-        chance: number;
-        cellX: number;
-        cellY: number;
-      }
-    ): Omit<TAnchor, 'x' | 'y' | 'name'>;
+    createAnchorExtras?(params: {
+      seed: Seed;
+      x: number;
+      y: number;
+      chance: number;
+      cellX: number;
+      cellY: number;
+    }): Omit<TAnchor, 'x' | 'y' | 'name'>;
   }
 ): OverworldCellAnchorSpec<TAnchor> {
   return withOverworldAnchorSpecHashes({
@@ -956,21 +1009,16 @@ export function createGeneratedNamedOverworldCellAnchorSpec<
 export function createGeneratedPoiOverworldCellAnchorSpec<
   TAnchor extends GeneratedNamedPoiAnchor = GeneratedNamedPoiAnchor,
 >(
-  options: Omit<
-    OverworldCellAnchorSpec<TAnchor>,
-    'createAnchor'
-  > & {
+  options: Omit<OverworldCellAnchorSpec<TAnchor>, 'createAnchor'> & {
     poiType: PoiNameType;
-    createAnchorExtras?(
-      params: {
-        seed: Seed;
-        x: number;
-        y: number;
-        chance: number;
-        cellX: number;
-        cellY: number;
-      }
-    ): Omit<TAnchor, 'x' | 'y' | 'name' | 'type'>;
+    createAnchorExtras?(params: {
+      seed: Seed;
+      x: number;
+      y: number;
+      chance: number;
+      cellX: number;
+      cellY: number;
+    }): Omit<TAnchor, 'x' | 'y' | 'name' | 'type'>;
   }
 ): OverworldCellAnchorSpec<TAnchor> {
   return createGeneratedNamedOverworldCellAnchorSpec<TAnchor>({
@@ -1046,9 +1094,12 @@ function withOverworldAnchorSpecHashes<
 >(spec: OverworldCellAnchorSpec<TAnchor>): OverworldCellAnchorSpec<TAnchor> {
   return {
     ...spec,
-    chanceKeyHash: spec.chanceKeyHash ?? getOverworldPlacementLabelHash(spec.chanceKey),
-    offsetXKeyHash: spec.offsetXKeyHash ?? getOverworldPlacementLabelHash(spec.offsetXKey),
-    offsetYKeyHash: spec.offsetYKeyHash ?? getOverworldPlacementLabelHash(spec.offsetYKey),
+    chanceKeyHash:
+      spec.chanceKeyHash ?? getOverworldPlacementLabelHash(spec.chanceKey),
+    offsetXKeyHash:
+      spec.offsetXKeyHash ?? getOverworldPlacementLabelHash(spec.offsetXKey),
+    offsetYKeyHash:
+      spec.offsetYKeyHash ?? getOverworldPlacementLabelHash(spec.offsetYKey),
   };
 }
 
@@ -1076,7 +1127,8 @@ export function hasOverworldAnchorConflict(
   minSpacing: number
 ) {
   return anchors.some(
-    (anchor) => Math.hypot(candidate.x - anchor.x, candidate.y - anchor.y) < minSpacing
+    (anchor) =>
+      Math.hypot(candidate.x - anchor.x, candidate.y - anchor.y) < minSpacing
   );
 }
 
@@ -1243,7 +1295,9 @@ export function createOverworldAnchorResolver<
   const poiCaches = Object.fromEntries(
     Object.keys(options.poi?.specs ?? {}).map((poiType) => [
       poiType,
-      createBoundedCache<string, TPoiAnchor | null>(OVERWORLD_ANCHOR_CACHE_LIMIT),
+      createBoundedCache<string, TPoiAnchor | null>(
+        OVERWORLD_ANCHOR_CACHE_LIMIT
+      ),
     ])
   ) as unknown as Record<TPoiType, CacheLike<string, TPoiAnchor | null>>;
 
@@ -1299,19 +1353,19 @@ export function createOverworldAnchorResolver<
       ? sampleCollection(options.bridge.spec, bridgeCache, options.bridge)
       : [];
     const poiBlockingAnchors = options.poi
-      ? options.poi.blockingAnchors?.({
+      ? (options.poi.blockingAnchors?.({
           townAnchors,
           bridgeAnchors,
-        }) ?? townAnchors
+        }) ?? townAnchors)
       : [];
     const poiBaseAnchors = options.poi
-      ? options.poi.baseAnchors?.({
+      ? (options.poi.baseAnchors?.({
           townAnchors,
           bridgeAnchors,
-        }) ?? []
+        }) ?? [])
       : [];
     const poiAnchors = options.poi
-      ? nearbyAnchorCollectionCache.getOrCreate(
+      ? (nearbyAnchorCollectionCache.getOrCreate(
           createNearbyPoiAnchorCollectionCacheKey({
             seed,
             x,
@@ -1334,7 +1388,7 @@ export function createOverworldAnchorResolver<
               baseAnchors: poiBaseAnchors,
               evaluationCache: anchorEvaluationCache,
             }) as OverworldAnchorLike[]
-        ) as TPoiAnchor[]
+        ) as TPoiAnchor[])
       : [];
 
     return {
@@ -1529,7 +1583,9 @@ function hasHigherPriorityOverworldAnchorConflict({
           continue;
         }
 
-        if (Math.hypot(candidate.x - other.x, candidate.y - other.y) >= minSpacing) {
+        if (
+          Math.hypot(candidate.x - other.x, candidate.y - other.y) >= minSpacing
+        ) {
           continue;
         }
 
@@ -1565,7 +1621,12 @@ function getOverworldCellAnchorEvaluation<
   if (cached !== undefined) {
     return cached as OverworldCellAnchorEvaluation<TAnchor>;
   }
-  const candidate = createOverworldCellAnchorCandidate(seed, cellX, cellY, spec);
+  const candidate = createOverworldCellAnchorCandidate(
+    seed,
+    cellX,
+    cellY,
+    spec
+  );
   const terrain = sampleTerrainSignals(candidate.x, candidate.y);
   const evaluation = {
     candidate,

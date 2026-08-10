@@ -52,7 +52,9 @@ const FOREST_KINDS = new Set(['forest']);
 const HILL_KINDS = new Set(['mountain', 'hill', 'quarry']);
 const ROAD_KINDS = new Set(['road', 'bridge', 'dock', 'station', 'ship']);
 const TREASURE_MAP_GLYPH_SEED = registerHashLabel('treasure-map-glyph');
-const TREASURE_MAP_GPS_FRAGMENT_SEED = registerHashLabel('treasure-map-gps-fragment');
+const TREASURE_MAP_GPS_FRAGMENT_SEED = registerHashLabel(
+  'treasure-map-gps-fragment'
+);
 const TREASURE_MAP_EDGE_SEED = registerHashLabel('treasure-map-edge');
 
 function normalizeTreasureMapSeed(seed: Seed): number {
@@ -177,10 +179,7 @@ export function splitTreasureMapIntoFragments(
   map: TreasureMapDocument,
   fragmentCount = 3
 ): TreasureMapFragment[] {
-  const safeFragmentCount = Math.max(
-    2,
-    Math.min(fragmentCount, map.height)
-  );
+  const safeFragmentCount = Math.max(2, Math.min(fragmentCount, map.height));
   const boundaries = createFragmentRowBoundaries(map.height, safeFragmentCount);
   const gpsFragmentIndex = pickGpsFragmentIndex(
     appendHashSeedLabel(
@@ -230,10 +229,7 @@ export function assembleTreasureMapFragments(
   const ordered = new Map<number, TreasureMapFragment>();
 
   for (const fragment of fragments) {
-    if (
-      fragment.mapId !== mapId ||
-      fragment.fragmentCount !== fragmentCount
-    ) {
+    if (fragment.mapId !== mapId || fragment.fragmentCount !== fragmentCount) {
       return {
         complete: false,
         mapId,
@@ -252,7 +248,11 @@ export function assembleTreasureMapFragments(
   const recoveredRows: string[] = [];
   let gpsLabel: string | null = null;
 
-  for (let fragmentIndex = 0; fragmentIndex < fragmentCount; fragmentIndex += 1) {
+  for (
+    let fragmentIndex = 0;
+    fragmentIndex < fragmentCount;
+    fragmentIndex += 1
+  ) {
     const fragment = ordered.get(fragmentIndex);
     if (!fragment) {
       missingFragmentIndices.push(fragmentIndex);
@@ -338,7 +338,10 @@ function createTreasureMapId(map: TreasureMapDocument): string {
   return `${map.seed}:${map.digSite.x}:${map.digSite.y}:${map.width}:${map.height}`;
 }
 
-function pickGpsFragmentIndex(fragmentSeed: number, fragmentCount: number): number {
+function pickGpsFragmentIndex(
+  fragmentSeed: number,
+  fragmentCount: number
+): number {
   return Math.min(
     fragmentCount - 1,
     Math.floor(hash2DWithSeed(fragmentSeed, fragmentCount, 0) * fragmentCount)
@@ -352,7 +355,11 @@ function createFragmentRowBoundaries(
   const boundaries: Array<[number, number]> = [];
   let rowStart = 0;
 
-  for (let fragmentIndex = 0; fragmentIndex < fragmentCount; fragmentIndex += 1) {
+  for (
+    let fragmentIndex = 0;
+    fragmentIndex < fragmentCount;
+    fragmentIndex += 1
+  ) {
     const remainingRows = rowCount - rowStart;
     const remainingFragments = fragmentCount - fragmentIndex;
     const size = Math.ceil(remainingRows / remainingFragments);
@@ -364,7 +371,10 @@ function createFragmentRowBoundaries(
   return boundaries;
 }
 
-function pickMapEdge(edgeSeed: number, digSite: Point): 'north' | 'east' | 'south' | 'west' {
+function pickMapEdge(
+  edgeSeed: number,
+  digSite: Point
+): 'north' | 'east' | 'south' | 'west' {
   const roll = hash2DWithSeed(edgeSeed, digSite.x, digSite.y);
   if (roll < 0.25) {
     return 'west';

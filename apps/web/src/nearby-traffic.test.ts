@@ -20,7 +20,8 @@ describe('nearby traffic', () => {
       centerY: 0,
       searchRadius: 4,
       selectTraffic(tile) {
-        return tile.train as { x: number; y: number; progress?: number } | undefined;
+        return tile.train as
+          { x: number; y: number; progress?: number } | undefined;
       },
     });
 
@@ -42,7 +43,8 @@ describe('nearby traffic', () => {
       centerY: 0,
       searchRadius: 3,
       selectTraffic(tile) {
-        return tile.boat as { x: number; y: number; progress?: number } | undefined;
+        return tile.boat as
+          { x: number; y: number; progress?: number } | undefined;
       },
     });
 

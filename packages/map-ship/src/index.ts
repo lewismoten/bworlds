@@ -56,10 +56,9 @@ function createShipMap(
         note:
           typeof context.routeBoatName === 'string'
             ? `${context.routeBoatName} is underway to the next dock stop.`
-            :
-          variant === 'tall-ship'
-            ? 'The captain\'s deck rises above neatly kept cargo.'
-            : 'Broken beams and soaked cargo list through the ruined hold.',
+            : variant === 'tall-ship'
+              ? "The captain's deck rises above neatly kept cargo."
+              : 'Broken beams and soaked cargo list through the ruined hold.',
       };
     }
     if (y <= -2 && Math.abs(x) <= 1) {
@@ -105,11 +104,7 @@ function createShipMap(
   return { getTile, getAction, getExit };
 }
 
-function getShipMapVariant(
-  seed: Seed,
-  originX: number,
-  originY: number
-) {
+function getShipMapVariant(seed: Seed, originX: number, originY: number) {
   const seedHash = resolveHashSeedInput(seed);
   const variantSeed = appendHashSeedLabel(seedHash, SHIP_MAP_VARIANT_SEED);
   return hash2DWithSeed(variantSeed, originX, originY) > 0.48

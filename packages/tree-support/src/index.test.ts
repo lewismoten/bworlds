@@ -22,19 +22,28 @@ describe('tree support', () => {
   it('creates deterministic per-instance seeds from a shared base generator', () => {
     const base = createTreeGeneratorBase({ seed: 12345 });
 
-    expect(
+    expect(base.createInstanceSeed({ tileX: 4, tileY: -2, index: 1 })).toBe(
       base.createInstanceSeed({ tileX: 4, tileY: -2, index: 1 })
-    ).toBe(base.createInstanceSeed({ tileX: 4, tileY: -2, index: 1 }));
-    expect(
-      base.createInstanceSeed({ tileX: 4, tileY: -2, index: 1 })
-    ).not.toBe(base.createInstanceSeed({ tileX: 4, tileY: -2, index: 2 }));
+    );
+    expect(base.createInstanceSeed({ tileX: 4, tileY: -2, index: 1 })).not.toBe(
+      base.createInstanceSeed({ tileX: 4, tileY: -2, index: 2 })
+    );
   });
 
   it('creates deterministic per-instance random streams from a shared base generator', () => {
     const base = createTreeGeneratorBase({ seed: 12345 });
-    const first = base.createInstanceRandom({ tileX: 4, tileY: -2, index: 1 }, 9);
-    const second = base.createInstanceRandom({ tileX: 4, tileY: -2, index: 1 }, 9);
-    const other = base.createInstanceRandom({ tileX: 4, tileY: -2, index: 1 }, 10);
+    const first = base.createInstanceRandom(
+      { tileX: 4, tileY: -2, index: 1 },
+      9
+    );
+    const second = base.createInstanceRandom(
+      { tileX: 4, tileY: -2, index: 1 },
+      9
+    );
+    const other = base.createInstanceRandom(
+      { tileX: 4, tileY: -2, index: 1 },
+      10
+    );
 
     expect([first(), first(), first()]).toEqual([second(), second(), second()]);
     expect([first(), first(), first()]).not.toEqual([
@@ -120,7 +129,9 @@ describe('tree support', () => {
         branches: [{ x: 0, y: 1, z: 0, length: 0.5, pitch: 0.4, roll: 0.2 }],
       },
       canopy: {
-        foliage: [{ x: 0, y: 1.4, z: 0, scaleX: 0.8, scaleY: 0.7, scaleZ: 0.8 }],
+        foliage: [
+          { x: 0, y: 1.4, z: 0, scaleX: 0.8, scaleY: 0.7, scaleZ: 0.8 },
+        ],
       },
       collision: {
         radius: 0.16,
@@ -133,7 +144,9 @@ describe('tree support', () => {
         lifeStage: 'adolescent',
       },
       damage: {
-        barkMarks: [{ x: 0.1, y: 0.7, scale: 0.08, severity: 0.6, kind: 'scar' }],
+        barkMarks: [
+          { x: 0.1, y: 0.7, scale: 0.08, severity: 0.6, kind: 'scar' },
+        ],
       },
       historical: {
         landmark: true,
@@ -211,21 +224,23 @@ describe('tree support', () => {
   });
 
   it('creates biological state with deterministic maturity stages', () => {
-    expect(createTreeBiologicalState({ ageYears: 4, maximumAgeYears: 80 })).toEqual({
+    expect(
+      createTreeBiologicalState({ ageYears: 4, maximumAgeYears: 80 })
+    ).toEqual({
       ageYears: 4,
       maximumAgeYears: 80,
       maturity: 0.05,
       lifeStage: 'sapling',
     });
-    expect(createTreeBiologicalState({ ageYears: 20, maximumAgeYears: 80 }).lifeStage).toBe(
-      'adolescent'
-    );
-    expect(createTreeBiologicalState({ ageYears: 48, maximumAgeYears: 80 }).lifeStage).toBe(
-      'mature'
-    );
-    expect(createTreeBiologicalState({ ageYears: 79, maximumAgeYears: 80 }).lifeStage).toBe(
-      'ancient'
-    );
+    expect(
+      createTreeBiologicalState({ ageYears: 20, maximumAgeYears: 80 }).lifeStage
+    ).toBe('adolescent');
+    expect(
+      createTreeBiologicalState({ ageYears: 48, maximumAgeYears: 80 }).lifeStage
+    ).toBe('mature');
+    expect(
+      createTreeBiologicalState({ ageYears: 79, maximumAgeYears: 80 }).lifeStage
+    ).toBe('ancient');
   });
 
   it('groups trees, decorations, and inhabitants into a separate scene state', () => {
@@ -375,7 +390,11 @@ describe('tree support', () => {
     expect(family.getSpecies('oak')?.supports('hollows')).toBe(true);
     expect(family.getSpecies('birch')?.supports('flowers')).toBe(true);
     expect(family.getSpecies('missing')).toBeNull();
-    expect(family.generateSpecies('birch', { tileX: 1, tileY: 2 }).form).toBe('birch');
-    expect(family.generate({ speciesId: 'oak', tileX: 3, tileY: 4 }).form).toBe('oak');
+    expect(family.generateSpecies('birch', { tileX: 1, tileY: 2 }).form).toBe(
+      'birch'
+    );
+    expect(family.generate({ speciesId: 'oak', tileX: 3, tileY: 4 }).form).toBe(
+      'oak'
+    );
   });
 });

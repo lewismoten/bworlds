@@ -2,12 +2,25 @@ import { describe, expect, it, vi } from 'vitest';
 
 vi.mock('@bworlds/three-support', () => ({
   createPaintedCanvasTexture() {
-    return { colorSpace: '', needsUpdate: false, image: { width: 16, height: 16 } };
+    return {
+      colorSpace: '',
+      needsUpdate: false,
+      image: { width: 16, height: 16 },
+    };
   },
   getOrCreatePaintedCanvasTexture() {
-    return { colorSpace: '', needsUpdate: false, image: { width: 16, height: 16 } };
+    return {
+      colorSpace: '',
+      needsUpdate: false,
+      image: { width: 16, height: 16 },
+    };
   },
-  createTexturedPlaneMesh(_three: unknown, _texture: unknown, width: number, height: number) {
+  createTexturedPlaneMesh(
+    _three: unknown,
+    _texture: unknown,
+    width: number,
+    height: number
+  ) {
     return {
       type: 'Mesh',
       position: {
@@ -32,7 +45,10 @@ vi.mock('@bworlds/three-support', () => ({
       },
     };
   },
-  createPaintedStandardMaterial(_three: unknown, options: Record<string, unknown>) {
+  createPaintedStandardMaterial(
+    _three: unknown,
+    options: Record<string, unknown>
+  ) {
     return {
       ...options,
       userData: {},
@@ -728,7 +744,13 @@ describe('render3d visibility helpers', () => {
     );
     (visibleInstancedMesh as { count?: number }).count = 24;
     const root = createMockObject3D(undefined, [
-      createMockObject3D({}, [], createMockStatGeometry('visible-geometry', 8), {}, 'Mesh'),
+      createMockObject3D(
+        {},
+        [],
+        createMockStatGeometry('visible-geometry', 8),
+        {},
+        'Mesh'
+      ),
       createMockObject3D(
         {},
         [],
@@ -745,11 +767,51 @@ describe('render3d visibility helpers', () => {
       createMockObject3D(undefined, [], undefined, {}, 'LineLoop'),
       createMockObject3D(undefined, [], undefined, {}, 'PerspectiveCamera'),
       createMockObject3D(undefined, [], undefined, {}, 'Sprite'),
-      createMockObject3D(undefined, [], undefined, {}, 'AmbientLight', true, false),
-      createMockObject3D(undefined, [], undefined, {}, 'HemisphereLight', true, false),
-      createMockObject3D(undefined, [], undefined, {}, 'SpotLight', true, false),
-      createMockObject3D(undefined, [], undefined, {}, 'PointLight', true, true),
-      createMockObject3D(undefined, [], undefined, {}, 'DirectionalLight', true, false),
+      createMockObject3D(
+        undefined,
+        [],
+        undefined,
+        {},
+        'AmbientLight',
+        true,
+        false
+      ),
+      createMockObject3D(
+        undefined,
+        [],
+        undefined,
+        {},
+        'HemisphereLight',
+        true,
+        false
+      ),
+      createMockObject3D(
+        undefined,
+        [],
+        undefined,
+        {},
+        'SpotLight',
+        true,
+        false
+      ),
+      createMockObject3D(
+        undefined,
+        [],
+        undefined,
+        {},
+        'PointLight',
+        true,
+        true
+      ),
+      createMockObject3D(
+        undefined,
+        [],
+        undefined,
+        {},
+        'DirectionalLight',
+        true,
+        false
+      ),
     ]);
 
     expect(collectSceneResourceStats(root as never)).toEqual({
@@ -1001,9 +1063,14 @@ describe('render3d visibility helpers', () => {
       [],
       createMockStatGeometry('canopy-geometry', 16)
     );
-    const treeRoot = createMockObject3D(undefined, [branch, canopy], undefined, {
-      renderStatKind: 'tree',
-    });
+    const treeRoot = createMockObject3D(
+      undefined,
+      [branch, canopy],
+      undefined,
+      {
+        renderStatKind: 'tree',
+      }
+    );
     const root = createMockObject3D(undefined, [treeRoot]);
 
     expect(collectSceneResourceStats(root as never)).toEqual({
@@ -1100,7 +1167,11 @@ describe('render3d visibility helpers', () => {
     const deepBranch = createMockObject3D(undefined, [
       createMockObject3D(undefined, [deepLeaf]),
     ]);
-    const root = createMockObject3D(undefined, [emptyGroup, oneChildGroup, deepBranch]);
+    const root = createMockObject3D(undefined, [
+      emptyGroup,
+      oneChildGroup,
+      deepBranch,
+    ]);
 
     expect(collectSceneResourceStats(root as never)).toEqual({
       object3dCount: 7,
@@ -2250,7 +2321,9 @@ describe('render3d visibility helpers', () => {
       ),
     ]);
 
-    expect(collectSceneResourceStats(root as never).animationMixerCount).toBe(5);
+    expect(collectSceneResourceStats(root as never).animationMixerCount).toBe(
+      5
+    );
     expect(validateTileModelAgainstRenderBudget(root as never, 'full')).toEqual(
       expect.objectContaining({
         accepted: false,
@@ -2294,12 +2367,7 @@ describe('render3d visibility helpers', () => {
     meshB.skeleton = sharedSkeleton;
     meshC.skeleton = uniqueSkeletonA;
     meshD.skeleton = uniqueSkeletonB;
-    const root = createMockObject3D(undefined, [
-      meshA,
-      meshB,
-      meshC,
-      meshD,
-    ]);
+    const root = createMockObject3D(undefined, [meshA, meshB, meshC, meshD]);
 
     expect(collectSceneResourceStats(root as never).skeletonCount).toBe(3);
     expect(validateTileModelAgainstRenderBudget(root as never, 'full')).toEqual(
@@ -2525,7 +2593,9 @@ describe('render3d visibility helpers', () => {
       ),
     ]);
 
-    expect(collectSceneResourceStats(root as never).collisionShapeCount).toBe(13);
+    expect(collectSceneResourceStats(root as never).collisionShapeCount).toBe(
+      13
+    );
     expect(validateTileModelAgainstRenderBudget(root as never, 'full')).toEqual(
       expect.objectContaining({
         accepted: false,
@@ -2613,24 +2683,128 @@ describe('render3d visibility helpers', () => {
   it('rejects models that exceed instanced, points, line, sprite, and geometry caps', () => {
     const sharedMaterial = createMockMaterial();
     const children = [
-      createMockObject3D(sharedMaterial, [], createMockStatGeometry('instanced-a', 24), {}, 'InstancedMesh'),
-      createMockObject3D(sharedMaterial, [], createMockStatGeometry('instanced-b', 24), {}, 'InstancedMesh'),
-      createMockObject3D(sharedMaterial, [], createMockStatGeometry('instanced-c', 24), {}, 'InstancedMesh'),
-      createMockObject3D(sharedMaterial, [], createMockStatGeometry('instanced-d', 24), {}, 'InstancedMesh'),
-      createMockObject3D(sharedMaterial, [], createMockStatGeometry('instanced-e', 24), {}, 'InstancedMesh'),
-      createMockObject3D(sharedMaterial, [], createMockStatGeometry('points-a', 12), {}, 'Points'),
-      createMockObject3D(sharedMaterial, [], createMockStatGeometry('points-b', 12), {}, 'Points'),
-      createMockObject3D(sharedMaterial, [], createMockStatGeometry('points-c', 12), {}, 'Points'),
-      createMockObject3D(sharedMaterial, [], createMockStatGeometry('line-a', 6), {}, 'Line'),
-      createMockObject3D(sharedMaterial, [], createMockStatGeometry('line-b', 6), {}, 'LineLoop'),
-      createMockObject3D(sharedMaterial, [], createMockStatGeometry('line-c', 6), {}, 'LineSegments'),
-      createMockObject3D(sharedMaterial, [], createMockStatGeometry('line-d', 6), {}, 'Line'),
-      createMockObject3D(sharedMaterial, [], createMockStatGeometry('line-e', 6), {}, 'LineLoop'),
-      createMockObject3D(sharedMaterial, [], createMockStatGeometry('sprite-a', 4), {}, 'Sprite'),
-      createMockObject3D(sharedMaterial, [], createMockStatGeometry('sprite-b', 4), {}, 'Sprite'),
-      createMockObject3D(sharedMaterial, [], createMockStatGeometry('sprite-c', 4), {}, 'Sprite'),
-      createMockObject3D(sharedMaterial, [], createMockStatGeometry('geometry-16', 4)),
-      createMockObject3D(sharedMaterial, [], createMockStatGeometry('geometry-17', 4)),
+      createMockObject3D(
+        sharedMaterial,
+        [],
+        createMockStatGeometry('instanced-a', 24),
+        {},
+        'InstancedMesh'
+      ),
+      createMockObject3D(
+        sharedMaterial,
+        [],
+        createMockStatGeometry('instanced-b', 24),
+        {},
+        'InstancedMesh'
+      ),
+      createMockObject3D(
+        sharedMaterial,
+        [],
+        createMockStatGeometry('instanced-c', 24),
+        {},
+        'InstancedMesh'
+      ),
+      createMockObject3D(
+        sharedMaterial,
+        [],
+        createMockStatGeometry('instanced-d', 24),
+        {},
+        'InstancedMesh'
+      ),
+      createMockObject3D(
+        sharedMaterial,
+        [],
+        createMockStatGeometry('instanced-e', 24),
+        {},
+        'InstancedMesh'
+      ),
+      createMockObject3D(
+        sharedMaterial,
+        [],
+        createMockStatGeometry('points-a', 12),
+        {},
+        'Points'
+      ),
+      createMockObject3D(
+        sharedMaterial,
+        [],
+        createMockStatGeometry('points-b', 12),
+        {},
+        'Points'
+      ),
+      createMockObject3D(
+        sharedMaterial,
+        [],
+        createMockStatGeometry('points-c', 12),
+        {},
+        'Points'
+      ),
+      createMockObject3D(
+        sharedMaterial,
+        [],
+        createMockStatGeometry('line-a', 6),
+        {},
+        'Line'
+      ),
+      createMockObject3D(
+        sharedMaterial,
+        [],
+        createMockStatGeometry('line-b', 6),
+        {},
+        'LineLoop'
+      ),
+      createMockObject3D(
+        sharedMaterial,
+        [],
+        createMockStatGeometry('line-c', 6),
+        {},
+        'LineSegments'
+      ),
+      createMockObject3D(
+        sharedMaterial,
+        [],
+        createMockStatGeometry('line-d', 6),
+        {},
+        'Line'
+      ),
+      createMockObject3D(
+        sharedMaterial,
+        [],
+        createMockStatGeometry('line-e', 6),
+        {},
+        'LineLoop'
+      ),
+      createMockObject3D(
+        sharedMaterial,
+        [],
+        createMockStatGeometry('sprite-a', 4),
+        {},
+        'Sprite'
+      ),
+      createMockObject3D(
+        sharedMaterial,
+        [],
+        createMockStatGeometry('sprite-b', 4),
+        {},
+        'Sprite'
+      ),
+      createMockObject3D(
+        sharedMaterial,
+        [],
+        createMockStatGeometry('sprite-c', 4),
+        {},
+        'Sprite'
+      ),
+      createMockObject3D(
+        sharedMaterial,
+        [],
+        createMockStatGeometry('geometry-16', 4)
+      ),
+      createMockObject3D(
+        sharedMaterial,
+        [],
+        createMockStatGeometry('geometry-17', 4)
+      ),
     ];
     const root = createMockObject3D(undefined, children);
 
@@ -2776,18 +2950,14 @@ describe('render3d visibility helpers', () => {
         },
       }
     );
-    const root = createMockObject3D(
-      createMockMaterial(),
-      [],
-      {
-        attributes: {
-          position: {
-            count: 25_001,
-            array: explosiveArray,
-          },
+    const root = createMockObject3D(createMockMaterial(), [], {
+      attributes: {
+        position: {
+          count: 25_001,
+          array: explosiveArray,
         },
-      }
-    );
+      },
+    });
 
     expect(validateTileModelAgainstRenderBudget(root as never, 'full')).toEqual(
       expect.objectContaining({
@@ -2808,44 +2978,41 @@ describe('render3d visibility helpers', () => {
 
   it('rejects models containing non-finite geometry coordinates', () => {
     const geometry = createMockStatGeometry('invalid-position', 3);
-    (
-      geometry.attributes.position.array as Float32Array
-    )[4] = Number.POSITIVE_INFINITY;
-    const root = createMockObject3D(
-      createMockMaterial(),
-      [],
-      geometry
-    );
+    (geometry.attributes.position.array as Float32Array)[4] =
+      Number.POSITIVE_INFINITY;
+    const root = createMockObject3D(createMockMaterial(), [], geometry);
 
-    expect(validateTileModelAgainstRenderBudget(root as never, 'full')).toEqual({
-      accepted: false,
-      limits: getTileModelHardLimits('full'),
-      stats: expect.objectContaining({
-        invalidPositionCoordinateCount: 1,
-        pointVertexCount: 0,
-        lineSegmentCount: 0,
-        oversizedGeometryBoundsCount: 0,
-        maxGeometryVertexCount: 3,
-        indexedVertexCount: 0,
-        maxGeometryTriangleCount: 1,
-        triangleCount: 1,
-        maxGeometryAttributeCount: 1,
-        maxCustomGeometryAttributeCount: 0,
-        maxGeometryVertexAttributeByteSize: 36,
-        maxGeometryGroupCount: 0,
-        maxGeometryDrawRangeCount: 0,
-        invalidGeometryIndexTypeCount: 0,
-        invalidRenderBudgetPartMetadataCount: 0,
-        ultraDenseTinyGeometryCount: 0,
-      }),
-      violations: [
-        {
-          metric: 'invalidPositionCoordinateCount',
-          actual: 1,
-          limit: 0,
-        },
-      ],
-    });
+    expect(validateTileModelAgainstRenderBudget(root as never, 'full')).toEqual(
+      {
+        accepted: false,
+        limits: getTileModelHardLimits('full'),
+        stats: expect.objectContaining({
+          invalidPositionCoordinateCount: 1,
+          pointVertexCount: 0,
+          lineSegmentCount: 0,
+          oversizedGeometryBoundsCount: 0,
+          maxGeometryVertexCount: 3,
+          indexedVertexCount: 0,
+          maxGeometryTriangleCount: 1,
+          triangleCount: 1,
+          maxGeometryAttributeCount: 1,
+          maxCustomGeometryAttributeCount: 0,
+          maxGeometryVertexAttributeByteSize: 36,
+          maxGeometryGroupCount: 0,
+          maxGeometryDrawRangeCount: 0,
+          invalidGeometryIndexTypeCount: 0,
+          invalidRenderBudgetPartMetadataCount: 0,
+          ultraDenseTinyGeometryCount: 0,
+        }),
+        violations: [
+          {
+            metric: 'invalidPositionCoordinateCount',
+            actual: 1,
+            limit: 0,
+          },
+        ],
+      }
+    );
   });
 
   it('rejects models whose single largest geometry exceeds the per-mesh vertex cap', () => {
@@ -2879,11 +3046,7 @@ describe('render3d visibility helpers', () => {
   });
 
   it('rejects models containing geometry with unreasonable bounds', () => {
-    const geometry = createMockPositionGeometry([
-      0, 0, 0,
-      18, 0, 0,
-      0, 1, 0,
-    ]);
+    const geometry = createMockPositionGeometry([0, 0, 0, 18, 0, 0, 0, 1, 0]);
     const root = createMockObject3D(createMockMaterial(), [], geometry);
 
     expect(validateTileModelAgainstRenderBudget(root as never, 'low')).toEqual({
@@ -3147,7 +3310,11 @@ describe('render3d visibility helpers', () => {
   it('caps total draw calls per tile after floor and model content are combined', () => {
     const sharedMaterial = createMockMaterial();
     const root = createMockObject3D(undefined, [
-      createMockObject3D(sharedMaterial, [], createMockStatGeometry('tile-floor', 24)),
+      createMockObject3D(
+        sharedMaterial,
+        [],
+        createMockStatGeometry('tile-floor', 24)
+      ),
       ...Array.from({ length: 5 }, (_unused, index) =>
         createMockObject3D(
           sharedMaterial,
@@ -3298,7 +3465,9 @@ describe('render3d visibility helpers', () => {
         },
         'full'
       )
-    ).toBe('maxGeometryGroupCount 6 for triangleCount 96 (16.0 triangles/group)');
+    ).toBe(
+      'maxGeometryGroupCount 6 for triangleCount 96 (16.0 triangles/group)'
+    );
 
     expect(
       getTileModelMaterialGroupWarning(
@@ -3308,7 +3477,9 @@ describe('render3d visibility helpers', () => {
         },
         'low'
       )
-    ).toBe('maxGeometryGroupCount 3 for triangleCount 48 (16.0 triangles/group)');
+    ).toBe(
+      'maxGeometryGroupCount 3 for triangleCount 48 (16.0 triangles/group)'
+    );
 
     expect(
       getTileModelMaterialGroupWarning(
@@ -3925,9 +4096,15 @@ describe('render3d visibility helpers', () => {
       [],
       createMockGeometry(9000)
     );
-    const root = createMockObject3D(rootMaterial, [child], createMockGeometry(0));
+    const root = createMockObject3D(
+      rootMaterial,
+      [child],
+      createMockGeometry(0)
+    );
 
-    expect(acceptTilePluginModelForRenderBudget(root as never, 'low')).toBeNull();
+    expect(
+      acceptTilePluginModelForRenderBudget(root as never, 'low')
+    ).toBeNull();
   });
 
   it('rejects malformed render-budget part metadata so priorities stay explicit', () => {
@@ -3962,11 +4139,7 @@ describe('render3d visibility helpers', () => {
     const sharedMaterial = createMockMaterial();
     const sharedGeometry = createMockStatGeometry('shared-budget-prune', 24);
     const lowPriorityOptional = setRenderBudgetPartMetadata(
-      createMockObject3D(
-        sharedMaterial,
-        [],
-        sharedGeometry
-      ),
+      createMockObject3D(sharedMaterial, [], sharedGeometry),
       {
         optional: true,
         priority: 1,
@@ -3974,11 +4147,7 @@ describe('render3d visibility helpers', () => {
       }
     );
     const highPriorityOptional = setRenderBudgetPartMetadata(
-      createMockObject3D(
-        sharedMaterial,
-        [],
-        sharedGeometry
-      ),
+      createMockObject3D(sharedMaterial, [], sharedGeometry),
       {
         optional: true,
         priority: 10,
@@ -3987,14 +4156,9 @@ describe('render3d visibility helpers', () => {
     );
     const root = createMockObject3D(undefined, [
       ...Array.from({ length: 15 }, (_unused, index) =>
-        createMockObject3D(
-          sharedMaterial,
-          [],
-          sharedGeometry,
-          {
-            requiredMeshIndex: index,
-          }
-        )
+        createMockObject3D(sharedMaterial, [], sharedGeometry, {
+          requiredMeshIndex: index,
+        })
       ),
       lowPriorityOptional,
       highPriorityOptional,
@@ -4023,7 +4187,10 @@ describe('render3d visibility helpers', () => {
 
   it('reports which optional model parts were removed to satisfy the budget', () => {
     const sharedMaterial = createMockMaterial();
-    const sharedGeometry = createMockStatGeometry('shared-budget-prune-report', 24);
+    const sharedGeometry = createMockStatGeometry(
+      'shared-budget-prune-report',
+      24
+    );
     const lowPriorityOptional = setRenderBudgetPartMetadata(
       createMockObject3D(sharedMaterial, [], sharedGeometry),
       {
@@ -4048,7 +4215,9 @@ describe('render3d visibility helpers', () => {
       highPriorityOptional,
     ]);
 
-    expect(acceptTilePluginModelForRenderBudgetWithResult(root as never, 'low')).toEqual({
+    expect(
+      acceptTilePluginModelForRenderBudgetWithResult(root as never, 'low')
+    ).toEqual({
       model: root,
       removedParts: [
         {
@@ -4070,7 +4239,10 @@ describe('render3d visibility helpers', () => {
     const nowSpy = vi.spyOn(performance, 'now');
     const requiredMaterial = createMockMaterial();
     const optionalMaterial = createMockMaterial();
-    const sharedGeometry = createMockStatGeometry('shared-budget-prune-dispose', 24);
+    const sharedGeometry = createMockStatGeometry(
+      'shared-budget-prune-dispose',
+      24
+    );
     const lowPriorityOptional = setRenderBudgetPartMetadata(
       createMockObject3D(optionalMaterial, [], sharedGeometry),
       {
@@ -4103,7 +4275,9 @@ describe('render3d visibility helpers', () => {
     });
 
     nowSpy.mockReturnValue(1200);
-    expect(acceptTilePluginModelForRenderBudgetWithResult(root as never, 'low')).toEqual({
+    expect(
+      acceptTilePluginModelForRenderBudgetWithResult(root as never, 'low')
+    ).toEqual({
       model: root,
       removedParts: [
         {
@@ -4126,7 +4300,9 @@ describe('render3d visibility helpers', () => {
 
   it('accepts representative nearby world tile models at full detail', () => {
     const forestPlugin = createForestTilePlugin();
-    const forestTile = forestPlugin.tiles?.find((entry) => entry.kind === 'forest');
+    const forestTile = forestPlugin.tiles?.find(
+      (entry) => entry.kind === 'forest'
+    );
     const townPlugin = createTownTilePlugin();
     const townTile = townPlugin.tiles?.find((entry) => entry.kind === 'town');
     const lighthousePlugin = createLighthouseTilePlugin();
@@ -4169,13 +4345,17 @@ describe('render3d visibility helpers', () => {
       detailLevel: 'full',
     });
 
-    expect(validateTileModelAgainstRenderBudget(forestModel as never, 'full')).toEqual(
+    expect(
+      validateTileModelAgainstRenderBudget(forestModel as never, 'full')
+    ).toEqual(
       expect.objectContaining({
         accepted: true,
         violations: [],
       })
     );
-    expect(validateTileModelAgainstRenderBudget(townModel as never, 'full')).toEqual(
+    expect(
+      validateTileModelAgainstRenderBudget(townModel as never, 'full')
+    ).toEqual(
       expect.objectContaining({
         accepted: true,
         violations: [],
@@ -4206,7 +4386,9 @@ describe('render3d visibility helpers', () => {
       detailLevel: 'low',
     });
 
-    expect(validateTileModelAgainstRenderBudget(lighthouseModel as never, 'low')).toEqual(
+    expect(
+      validateTileModelAgainstRenderBudget(lighthouseModel as never, 'low')
+    ).toEqual(
       expect.objectContaining({
         accepted: true,
         violations: [],
@@ -4216,7 +4398,9 @@ describe('render3d visibility helpers', () => {
 
   it('accepts representative distant dungeon models at low detail', () => {
     const dungeonPlugin = createDungeonTilePlugin();
-    const dungeonTile = dungeonPlugin.tiles?.find((entry) => entry.kind === 'dungeon');
+    const dungeonTile = dungeonPlugin.tiles?.find(
+      (entry) => entry.kind === 'dungeon'
+    );
     const state = createPluginRenderState();
     const dungeonModel = dungeonTile?.create3DModel?.({
       three: fakePluginThree as never,
@@ -4227,7 +4411,9 @@ describe('render3d visibility helpers', () => {
       detailLevel: 'low',
     });
 
-    expect(validateTileModelAgainstRenderBudget(dungeonModel as never, 'low')).toEqual(
+    expect(
+      validateTileModelAgainstRenderBudget(dungeonModel as never, 'low')
+    ).toEqual(
       expect.objectContaining({
         accepted: true,
         violations: [],
@@ -4302,11 +4488,16 @@ describe('render3d visibility helpers', () => {
       type: 'plugin-performance-warning',
       tileKey: '2:1',
       plugin: 'tile-forest',
-      summary: 'drawCallCount 24 for triangleCount 96 (4.0 triangles/draw call)',
+      summary:
+        'drawCallCount 24 for triangleCount 96 (4.0 triangles/draw call)',
     });
 
-    expect(getRecentRenderDebugEvents(events, 350, { windowMs: 30000 })).toEqual(events);
-    expect(getRecentRenderDebugEvents(events, 30150, { windowMs: 30000 })).toEqual([
+    expect(
+      getRecentRenderDebugEvents(events, 350, { windowMs: 30000 })
+    ).toEqual(events);
+    expect(
+      getRecentRenderDebugEvents(events, 30150, { windowMs: 30000 })
+    ).toEqual([
       {
         nowMs: 200,
         type: 'plugin-exceeded-budget',
@@ -4326,7 +4517,8 @@ describe('render3d visibility helpers', () => {
         type: 'plugin-performance-warning',
         tileKey: '2:1',
         plugin: 'tile-forest',
-        summary: 'drawCallCount 24 for triangleCount 96 (4.0 triangles/draw call)',
+        summary:
+          'drawCallCount 24 for triangleCount 96 (4.0 triangles/draw call)',
       },
     ]);
 
@@ -4439,7 +4631,9 @@ describe('render3d visibility helpers', () => {
       durationMs: 3,
       label: 'tile-cave',
     });
-    expect(samples).toEqual([{ nowMs: 2405, durationMs: 3, label: 'tile-cave' }]);
+    expect(samples).toEqual([
+      { nowMs: 2405, durationMs: 3, label: 'tile-cave' },
+    ]);
     expect(getRecentLabeledDurationStats(samples, 2600)).toEqual({
       averageMs: 3,
       maxMs: 3,
@@ -4811,7 +5005,9 @@ describe('render3d visibility helpers', () => {
 
   it('keeps landmark and route-terminal tiles in full detail farther out', () => {
     expect(shouldKeepTileModelFullDetailLonger({ kind: 'sign' })).toBe(true);
-    expect(shouldKeepTileModelFullDetailLonger({ kind: 'lighthouse' })).toBe(true);
+    expect(shouldKeepTileModelFullDetailLonger({ kind: 'lighthouse' })).toBe(
+      true
+    );
     expect(shouldKeepTileModelFullDetailLonger({ kind: 'plains' })).toBe(false);
     expect(getTileModelLowDetailDistance({ kind: 'sign' })).toBe(13.5);
     expect(getTileModelDetailLevel(13, { kind: 'sign' })).toBe('full');
@@ -4835,9 +5031,15 @@ describe('render3d visibility helpers', () => {
     expect(getTileModelDetailLevelFromSquaredDistance(42.24)).toBe('full');
     expect(getTileModelDetailLevelFromSquaredDistance(42.25)).toBe('low');
     expect(getTileModelDetailLevelFromSquaredDistance(100)).toBe('low');
-    expect(getTileModelDetailLevelFromSquaredDistance(100, { kind: 'tower' })).toBe('full');
-    expect(getTileModelDetailLevelFromSquaredDistance(182.24, { kind: 'tower' })).toBe('full');
-    expect(getTileModelDetailLevelFromSquaredDistance(182.25, { kind: 'tower' })).toBe('low');
+    expect(
+      getTileModelDetailLevelFromSquaredDistance(100, { kind: 'tower' })
+    ).toBe('full');
+    expect(
+      getTileModelDetailLevelFromSquaredDistance(182.24, { kind: 'tower' })
+    ).toBe('full');
+    expect(
+      getTileModelDetailLevelFromSquaredDistance(182.25, { kind: 'tower' })
+    ).toBe('low');
   });
 
   it('uses hysteresis to avoid lod thrash near the boundary', () => {
@@ -4846,12 +5048,12 @@ describe('render3d visibility helpers', () => {
     expect(getTileModelDetailLevelWithHysteresis('low', 40)).toBe('low');
     expect(getTileModelDetailLevelWithHysteresis('low', 35.99)).toBe('full');
     expect(getTileModelDetailLevelWithHysteresis(undefined, 42.25)).toBe('low');
-    expect(getTileModelDetailLevelWithHysteresis('full', 100, { kind: 'cave' })).toBe(
-      'full'
-    );
-    expect(getTileModelDetailLevelWithHysteresis('low', 169.01, { kind: 'cave' })).toBe(
-      'low'
-    );
+    expect(
+      getTileModelDetailLevelWithHysteresis('full', 100, { kind: 'cave' })
+    ).toBe('full');
+    expect(
+      getTileModelDetailLevelWithHysteresis('low', 169.01, { kind: 'cave' })
+    ).toBe('low');
   });
 
   it('skips obviously distant low-detail chunks during lod reevaluation', () => {
@@ -4868,9 +5070,9 @@ describe('render3d visibility helpers', () => {
     expect(getPendingWorldBuildDetailLevel('full', 16, 10)).toBe('full');
     expect(getPendingWorldBuildDetailLevel('full', 16, 40)).toBe('low');
     expect(getPendingWorldBuildDetailLevel('full', 16, 0)).toBe('full');
-    expect(getPendingWorldBuildDetailLevel('full', 64, 40, { kind: 'dungeon' })).toBe(
-      'full'
-    );
+    expect(
+      getPendingWorldBuildDetailLevel('full', 64, 40, { kind: 'dungeon' })
+    ).toBe('full');
   });
 
   it('lets pending world builds stop immediately when the shared frame budget is already exhausted', () => {
@@ -4885,7 +5087,9 @@ describe('render3d visibility helpers', () => {
 
   it('only rechecks tile lod after meaningful movement', () => {
     expect(shouldSyncTileModelDetailLevels(null, 0, 0)).toBe(true);
-    expect(shouldSyncTileModelDetailLevels({ x: 0, y: 0 }, 0.05, 0.05)).toBe(false);
+    expect(shouldSyncTileModelDetailLevels({ x: 0, y: 0 }, 0.05, 0.05)).toBe(
+      false
+    );
     expect(shouldSyncTileModelDetailLevels({ x: 0, y: 0 }, 0.18, 0)).toBe(true);
   });
 
@@ -5002,7 +5206,9 @@ describe('render3d visibility helpers', () => {
     expect(getSkyConstellationSignature(nearCycle)).toBe(
       getSkyConstellationSignature(baseCycle)
     );
-    expect(getSkyEventSignature(nearCycle)).toBe(getSkyEventSignature(baseCycle));
+    expect(getSkyEventSignature(nearCycle)).toBe(
+      getSkyEventSignature(baseCycle)
+    );
     expect(getSkyMilkyWaySignature(nearCycle)).toBe(
       getSkyMilkyWaySignature(baseCycle)
     );
@@ -5012,7 +5218,9 @@ describe('render3d visibility helpers', () => {
     expect(getSkyConstellationSignature(farCycle)).not.toBe(
       getSkyConstellationSignature(baseCycle)
     );
-    expect(getSkyEventSignature(farCycle)).not.toBe(getSkyEventSignature(baseCycle));
+    expect(getSkyEventSignature(farCycle)).not.toBe(
+      getSkyEventSignature(baseCycle)
+    );
   });
 
   it('uses a coarse sky-position signature so tiny celestial drift does not recompute sky poses', () => {
@@ -5109,12 +5317,19 @@ describe('render3d visibility helpers', () => {
   });
 
   it('tightens fog range when weather visibility drops', () => {
-    expect(getWeatherFogRange(0.9).far).toBeGreaterThan(getWeatherFogRange(0.3).far);
-    expect(getWeatherFogRange(0.9).near).toBeGreaterThan(getWeatherFogRange(0.3).near);
+    expect(getWeatherFogRange(0.9).far).toBeGreaterThan(
+      getWeatherFogRange(0.3).far
+    );
+    expect(getWeatherFogRange(0.9).near).toBeGreaterThan(
+      getWeatherFogRange(0.3).near
+    );
   });
 
   it('falls back to decorated tile surface height when no explicit profile is provided', () => {
-    expect(getDecoratedTileSurfaceHeight({ surfaceHeight: 0.24 })).toBeCloseTo(0.24, 6);
+    expect(getDecoratedTileSurfaceHeight({ surfaceHeight: 0.24 })).toBeCloseTo(
+      0.24,
+      6
+    );
     expect(getDecoratedTileSurfaceHeight({})).toBe(0);
   });
 
@@ -5129,9 +5344,7 @@ describe('render3d visibility helpers', () => {
     expect(getBoundaryPriority(crossing.boundaryRole)).toBeLessThan(
       getBoundaryPriority(bank.boundaryRole)
     );
-    expect(
-      pickCornerBoundaryProfile([bank, null, crossing, sea])
-    ).toEqual(sea);
+    expect(pickCornerBoundaryProfile([bank, null, crossing, sea])).toEqual(sea);
   });
 
   it('syncs dynamic visible tile nodes through tile plugin hooks from any iterable', () => {
@@ -5172,40 +5385,37 @@ describe('render3d visibility helpers', () => {
         },
       ],
     ]).values();
-    syncDynamicTileNodes(
-      entries,
-      {
-        three: {} as never,
-        state: {
-          player: { x: 0, y: 0, facing: 0 },
-          getCurrentContext() {
-            return { id: 'overworld', type: 'overworld', depth: 0 };
-          },
-          getCurrentTile() {
-            return { kind: 'plains' };
-          },
-          getTileDefinition() {
-            return {
-              name: 'Plains',
-              color: '#000000',
-              miniColor: '#111111',
-              walkable: true,
-              wallHeight: 0,
-            };
-          },
+    syncDynamicTileNodes(entries, {
+      three: {} as never,
+      state: {
+        player: { x: 0, y: 0, facing: 0 },
+        getCurrentContext() {
+          return { id: 'overworld', type: 'overworld', depth: 0 };
         },
-        cycle: {
-          daylight: 0,
-          twilight: 0.2,
-          night: 0.8,
+        getCurrentTile() {
+          return { kind: 'plains' };
         },
-        environment: {
-          sky: {
-            nightColor: '#06111f',
-          },
+        getTileDefinition() {
+          return {
+            name: 'Plains',
+            color: '#000000',
+            miniColor: '#111111',
+            walkable: true,
+            wallHeight: 0,
+          };
         },
-      }
-    );
+      },
+      cycle: {
+        daylight: 0,
+        twilight: 0.2,
+        night: 0.8,
+      },
+      environment: {
+        sky: {
+          nightColor: '#06111f',
+        },
+      },
+    });
 
     expect(calls).toEqual([
       {
@@ -5348,7 +5558,11 @@ function createPluginRenderState() {
   };
 }
 
-function createMockTexture(width: number, height: number, generateMipmaps = true) {
+function createMockTexture(
+  width: number,
+  height: number,
+  generateMipmaps = true
+) {
   return {
     image: { width, height },
     generateMipmaps,
@@ -5421,7 +5635,8 @@ function createPackedTriangleStripPositions(
 function createMockIndexedGeometry(
   vertexCount: number,
   indexCount: number,
-  IndexArray: typeof Uint32Array | typeof Uint16Array | typeof Uint8Array = Uint32Array
+  IndexArray:
+    typeof Uint32Array | typeof Uint16Array | typeof Uint8Array = Uint32Array
 ) {
   return {
     attributes: {
@@ -5442,14 +5657,16 @@ function createMockRichAttributeGeometry(
   vertexCount: number,
   extraAttributes: Record<string, number>
 ) {
-  const attributes: Record<string, { count: number; itemSize: number; array: Float32Array }> =
-    {
-      position: {
-        count: vertexCount,
-        itemSize: 3,
-        array: new Float32Array(vertexCount * 3),
-      },
-    };
+  const attributes: Record<
+    string,
+    { count: number; itemSize: number; array: Float32Array }
+  > = {
+    position: {
+      count: vertexCount,
+      itemSize: 3,
+      array: new Float32Array(vertexCount * 3),
+    },
+  };
   for (const [name, itemSize] of Object.entries(extraAttributes)) {
     attributes[name] = {
       count: vertexCount,
@@ -5477,7 +5694,11 @@ function createMockGroupedGeometry(vertexCount: number, groupCount: number) {
   };
 }
 
-function createMockDrawRangeGeometry(vertexCount: number, start: number, count: number) {
+function createMockDrawRangeGeometry(
+  vertexCount: number,
+  start: number,
+  count: number
+) {
   return {
     attributes: {
       position: {

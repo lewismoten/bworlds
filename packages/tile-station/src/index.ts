@@ -101,7 +101,10 @@ export function createStationTilePlugin(): RuntimePlugin {
     },
     sync3DModel({ model, cycle }) {
       if (model && typeof model === 'object') {
-        syncPoiLightEmitters(model as Parameters<typeof syncPoiLightEmitters>[0], cycle);
+        syncPoiLightEmitters(
+          model as Parameters<typeof syncPoiLightEmitters>[0],
+          cycle
+        );
       }
     },
   });
@@ -112,7 +115,9 @@ function getStationSharedMaterials(three: Create3DModelContext['three']) {
 }
 
 const stationSharedMaterials = createHostMaterialResolver(
-  (three: Create3DModelContext['three']): {
+  (
+    three: Create3DModelContext['three']
+  ): {
     wallMaterial: ThreeMaterialLike;
     roofMaterial: ThreeMaterialLike;
     trimMaterial: ThreeMaterialLike;

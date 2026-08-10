@@ -1,7 +1,7 @@
 import { DEFAULT_YEAR_LENGTH_DAYS } from './time.ts';
 import { clamp, lerp, normalizeAngle, smoothstep } from '../math.ts';
 import { appendPlanetEvents } from './planet.ts';
-import {  appendCometEvents } from './comet.ts';
+import { appendCometEvents } from './comet.ts';
 import { appendMeteorShowerEvents } from './meteor-shower.ts';
 import type { CelestialEventLike } from './types.ts';
 
@@ -114,7 +114,6 @@ export function getCelestialEventsForDay(
   const night = clamp(options.night ?? 1, 0, 1);
   const starsOpacity = clamp(options.starsOpacity ?? night, 0, 1);
   const events: CelestialEventLike[] = [];
-
 
   const o = {
     events,

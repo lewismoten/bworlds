@@ -18,7 +18,11 @@ export function buildWorkspaceAliases(): Record<string, string> {
 
   for (const packageDir of readdirSync(PACKAGES_DIR, { withFileTypes: true })) {
     if (!packageDir.isDirectory()) continue;
-    const manifestPath = path.join(PACKAGES_DIR, packageDir.name, 'package.json');
+    const manifestPath = path.join(
+      PACKAGES_DIR,
+      packageDir.name,
+      'package.json'
+    );
     if (!existsSync(manifestPath)) continue;
 
     const manifest = JSON.parse(
@@ -26,7 +30,10 @@ export function buildWorkspaceAliases(): Record<string, string> {
     ) as WorkspacePackageManifest;
     if (!manifest.name?.startsWith('@bworlds/')) continue;
 
-    const exportPaths = resolvePackageExportPaths(manifest.name, manifest.exports);
+    const exportPaths = resolvePackageExportPaths(
+      manifest.name,
+      manifest.exports
+    );
     Object.entries(exportPaths).forEach(([specifier, exportPath]) => {
       aliases[specifier] = path.resolve(path.dirname(manifestPath), exportPath);
     });

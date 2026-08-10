@@ -62,7 +62,9 @@ const CAVE_CHAMBER_EAST_SEED = registerHashLabel('cave-chamber-east');
 const CAVE_CHAMBER_EAST_Y_SEED = registerHashLabel('cave-chamber-east-y');
 const CAVE_CHAMBER_EAST_RADIUS_SEED = registerHashLabel('cave-chamber-east-r');
 const CAVE_CHAMBER_NORTH_SEED = registerHashLabel('cave-chamber-north');
-const CAVE_CHAMBER_NORTH_RADIUS_SEED = registerHashLabel('cave-chamber-north-r');
+const CAVE_CHAMBER_NORTH_RADIUS_SEED = registerHashLabel(
+  'cave-chamber-north-r'
+);
 const CAVE_BRIDGE_AXIS_SEED = registerHashLabel('cave-bridge-axis');
 const CAVE_POOL_X_SEED = registerHashLabel('cave-pool-x');
 const CAVE_POOL_Y_SEED = registerHashLabel('cave-pool-y');
@@ -101,7 +103,9 @@ export function createCaveDepthLayout(
   fillRect(tiles, radius, -radius, -radius, size, size, { kind: 'cave-wall' });
 
   carveBrush(tiles, radius, 0, 0, 3, { kind: 'cave-floor' });
-  carveBrush(tiles, radius, stairsDown.x, stairsDown.y, 2, { kind: 'cave-floor' });
+  carveBrush(tiles, radius, stairsDown.x, stairsDown.y, 2, {
+    kind: 'cave-floor',
+  });
   markProtected(protectedTiles, stairsDown);
 
   entranceExits.forEach((exit) => {
@@ -114,7 +118,9 @@ export function createCaveDepthLayout(
     markProtected(protectedTiles, exit.local);
   });
 
-  carvePath(tiles, radius, { x: 0, y: 2 }, stairsDown, 2, { kind: 'cave-floor' });
+  carvePath(tiles, radius, { x: 0, y: 2 }, stairsDown, 2, {
+    kind: 'cave-floor',
+  });
 
   const chamberSeeds = createCaveChamberSeeds(context, seedHash);
   chamberSeeds.forEach(({ center, chamberRadius }) => {
@@ -131,7 +137,14 @@ export function createCaveDepthLayout(
     seedHash,
     protectedTiles
   );
-  decorateCaveFeatures(tiles, radius, context, seedHash, protectedTiles, bridgeAxis);
+  decorateCaveFeatures(
+    tiles,
+    radius,
+    context,
+    seedHash,
+    protectedTiles,
+    bridgeAxis
+  );
 
   entranceExits.forEach((exit) => {
     tiles.set(toTileKey(exit.local.x, exit.local.y), {
@@ -275,15 +288,8 @@ function createDefaultDepthLayout(
   };
 }
 
-function getLayoutTile(
-  layout: DepthLayout,
-  x: number,
-  y: number
-): DepthTile {
-  if (
-    Math.abs(x) > layout.radius ||
-    Math.abs(y) > layout.radius
-  ) {
+function getLayoutTile(layout: DepthLayout, x: number, y: number): DepthTile {
+  if (Math.abs(x) > layout.radius || Math.abs(y) > layout.radius) {
     return { kind: 'wall' };
   }
   return layout.tiles.get(toTileKey(x, y)) ?? { kind: 'wall' };
@@ -309,14 +315,13 @@ function getDepthEntranceExits(context: DepthContext): DepthEntranceExit[] {
     { x: 5, y: 3 },
   ];
 
-  return worldEntrances.slice(0, localExitPoints.length).map((world, index) => ({
-    world,
-    local: localExitPoints[index] ?? localExitPoints[0],
-    label:
-      typeof world.name === 'string'
-        ? world.name
-        : undefined,
-  }));
+  return worldEntrances
+    .slice(0, localExitPoints.length)
+    .map((world, index) => ({
+      world,
+      local: localExitPoints[index] ?? localExitPoints[0],
+      label: typeof world.name === 'string' ? world.name : undefined,
+    }));
 }
 
 function createDepthLayoutCacheKey(
@@ -324,8 +329,9 @@ function createDepthLayoutCacheKey(
   seed: string | number
 ): string {
   const entrances =
-    context.entrances?.map(({ x, y, name }) => `${x}:${y}:${name ?? ''}`).join('|') ??
-    '';
+    context.entrances
+      ?.map(({ x, y, name }) => `${x}:${y}:${name ?? ''}`)
+      .join('|') ?? '';
   return [seed, context.type, context.id, context.depth, entrances].join('::');
 }
 
@@ -336,33 +342,45 @@ function createCaveChamberSeeds(
   const bias = typeof context.depth === 'number' ? context.depth : 1;
   const westSeed = appendHashSeedLabel(seedHash, CAVE_CHAMBER_WEST_SEED);
   const westYSeed = appendHashSeedLabel(seedHash, CAVE_CHAMBER_WEST_Y_SEED);
-  const westRadiusSeed = appendHashSeedLabel(seedHash, CAVE_CHAMBER_WEST_RADIUS_SEED);
+  const westRadiusSeed = appendHashSeedLabel(
+    seedHash,
+    CAVE_CHAMBER_WEST_RADIUS_SEED
+  );
   const eastSeed = appendHashSeedLabel(seedHash, CAVE_CHAMBER_EAST_SEED);
   const eastYSeed = appendHashSeedLabel(seedHash, CAVE_CHAMBER_EAST_Y_SEED);
-  const eastRadiusSeed = appendHashSeedLabel(seedHash, CAVE_CHAMBER_EAST_RADIUS_SEED);
+  const eastRadiusSeed = appendHashSeedLabel(
+    seedHash,
+    CAVE_CHAMBER_EAST_RADIUS_SEED
+  );
   const northSeed = appendHashSeedLabel(seedHash, CAVE_CHAMBER_NORTH_SEED);
-  const northRadiusSeed = appendHashSeedLabel(seedHash, CAVE_CHAMBER_NORTH_RADIUS_SEED);
+  const northRadiusSeed = appendHashSeedLabel(
+    seedHash,
+    CAVE_CHAMBER_NORTH_RADIUS_SEED
+  );
   return [
     {
       center: {
         x: -6 + Math.round((hash2DWithSeed(westSeed, bias, 0) - 0.5) * 4),
         y: -2 + Math.round((hash2DWithSeed(westYSeed, bias, 0) - 0.5) * 5),
       },
-      chamberRadius: 3 + Math.floor(hash2DWithSeed(westRadiusSeed, bias, 0) * 2),
+      chamberRadius:
+        3 + Math.floor(hash2DWithSeed(westRadiusSeed, bias, 0) * 2),
     },
     {
       center: {
         x: 6 + Math.round((hash2DWithSeed(eastSeed, bias, 0) - 0.5) * 4),
         y: -1 + Math.round((hash2DWithSeed(eastYSeed, bias, 0) - 0.5) * 5),
       },
-      chamberRadius: 3 + Math.floor(hash2DWithSeed(eastRadiusSeed, bias, 0) * 2),
+      chamberRadius:
+        3 + Math.floor(hash2DWithSeed(eastRadiusSeed, bias, 0) * 2),
     },
     {
       center: {
         x: 0,
         y: -6 + Math.round((hash2DWithSeed(northSeed, bias, 0) - 0.5) * 4),
       },
-      chamberRadius: 3 + Math.floor(hash2DWithSeed(northRadiusSeed, bias, 0) * 2),
+      chamberRadius:
+        3 + Math.floor(hash2DWithSeed(northRadiusSeed, bias, 0) * 2),
     },
     {
       center: {
@@ -392,13 +410,21 @@ function addPoolAndBridge(
     x:
       bridgeAxis === 'horizontal'
         ? 0
-        : -1 + Math.round((hash2DWithSeed(poolXSeed, context.depth ?? 1, 0) - 0.5) * 2),
+        : -1 +
+          Math.round(
+            (hash2DWithSeed(poolXSeed, context.depth ?? 1, 0) - 0.5) * 2
+          ),
     y:
       bridgeAxis === 'horizontal'
-        ? -2 + Math.round((hash2DWithSeed(poolYSeed, context.depth ?? 1, 0) - 0.5) * 2)
+        ? -2 +
+          Math.round(
+            (hash2DWithSeed(poolYSeed, context.depth ?? 1, 0) - 0.5) * 2
+          )
         : -1,
   };
-  carveBrush(tiles, radius, poolCenter.x, poolCenter.y, 4, { kind: 'cave-floor' });
+  carveBrush(tiles, radius, poolCenter.x, poolCenter.y, 4, {
+    kind: 'cave-floor',
+  });
 
   if (bridgeAxis === 'horizontal') {
     for (let x = -5; x <= 5; x += 1) {
@@ -467,7 +493,12 @@ function decorateCaveFeatures(
       if (protectedTiles.has(key)) {
         continue;
       }
-      const adjacentWalls = countAdjacentKinds(tiles, x, y, new Set(['cave-wall']));
+      const adjacentWalls = countAdjacentKinds(
+        tiles,
+        x,
+        y,
+        new Set(['cave-wall'])
+      );
       const adjacentWater = countAdjacentKinds(tiles, x, y, new Set(['river']));
       if (adjacentWater > 0 || adjacentWalls >= 2) {
         mushroomCandidates.push({ x, y });
@@ -535,7 +566,9 @@ function placeFeatureTiles(
           ...candidates,
           ...listAvailableCaveFloorTiles(tiles).filter(
             ({ x, y }) =>
-              !candidates.some((candidate) => candidate.x === x && candidate.y === y)
+              !candidates.some(
+                (candidate) => candidate.x === x && candidate.y === y
+              )
           ),
         ];
   const ranked = [...fallbackCandidates].sort(
@@ -566,7 +599,12 @@ function widenNearbyFloors(
       if ((tiles.get(key)?.kind ?? 'cave-wall') !== 'cave-wall') {
         continue;
       }
-      const floorNeighbors = countAdjacentKinds(tiles, x, y, new Set(['cave-floor']));
+      const floorNeighbors = countAdjacentKinds(
+        tiles,
+        x,
+        y,
+        new Set(['cave-floor'])
+      );
       if (
         floorNeighbors >= 4 ||
         (floorNeighbors >= 3 && hash2DWithSeed(widenSeed, x, y) > 0.72)
@@ -600,7 +638,8 @@ function carvePath(
   thickness: number,
   tile: DepthTile
 ): void {
-  const steps = Math.max(Math.abs(end.x - start.x), Math.abs(end.y - start.y), 1) * 2;
+  const steps =
+    Math.max(Math.abs(end.x - start.x), Math.abs(end.y - start.y), 1) * 2;
   for (let step = 0; step <= steps; step += 1) {
     const t = step / steps;
     const x = Math.round(start.x + (end.x - start.x) * t);

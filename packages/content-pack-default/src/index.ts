@@ -299,7 +299,9 @@ export function createDefaultTilePlugins(): RuntimePlugin[] {
   ]);
 }
 
-export function listDefaultTileDefinitions(): Array<[Kind, TileDefinitionLike]> {
+export function listDefaultTileDefinitions(): Array<
+  [Kind, TileDefinitionLike]
+> {
   return listTileDefinitionsFromPlugins(createDefaultTilePlugins());
 }
 

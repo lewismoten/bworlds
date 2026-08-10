@@ -156,7 +156,10 @@ export type PerformanceHistorySample = {
   generationQueueSize: number;
 };
 
-export function normalizeWorldSeed(seed: string | undefined, fallback: string): string {
+export function normalizeWorldSeed(
+  seed: string | undefined,
+  fallback: string
+): string {
   const trimmed = seed?.trim();
   return trimmed ? trimmed : fallback;
 }
@@ -288,9 +291,10 @@ export function buildDebugMarkup(snapshot: DebugSnapshot): string {
     snapshot.visibleTreeCount > 0
       ? (snapshot.treeMaterialRefCount / snapshot.visibleTreeCount).toFixed(1)
       : '0.0';
-  const warningMarkup = snapshot.resourceWarnings.length > 0
-    ? `<div><dt>Warnings</dt><dd>${snapshot.resourceWarnings.join(' | ')}</dd></div>`
-    : '';
+  const warningMarkup =
+    snapshot.resourceWarnings.length > 0
+      ? `<div><dt>Warnings</dt><dd>${snapshot.resourceWarnings.join(' | ')}</dd></div>`
+      : '';
   return `
     <div><dt>FPS</dt><dd>${snapshot.fps.toFixed(1)}</dd></div>
     <div><dt>Avg FPS</dt><dd>${snapshot.averageFps.toFixed(1)}</dd></div>
@@ -386,7 +390,10 @@ function recordRollingSample<T extends { nowMs: number }>(
 
   const minimumTime = sample.nowMs - historyWindowMs;
   let removeCount = 0;
-  while (removeCount < samples.length && samples[removeCount].nowMs < minimumTime) {
+  while (
+    removeCount < samples.length &&
+    samples[removeCount].nowMs < minimumTime
+  ) {
     removeCount += 1;
   }
   if (removeCount > 0) {
@@ -499,7 +506,10 @@ export function getMaterialGrowthWarning(
   }
 
   for (let index = 1; index < recentSamples.length; index += 1) {
-    if (recentSamples[index]!.materialCount <= recentSamples[index - 1]!.materialCount) {
+    if (
+      recentSamples[index]!.materialCount <=
+      recentSamples[index - 1]!.materialCount
+    ) {
       return null;
     }
   }
@@ -508,7 +518,13 @@ export function getMaterialGrowthWarning(
 }
 
 export function getSceneBudgetWarnings(
-  snapshot: Pick<DebugSnapshot, 'visibleTileCount' | 'visibleTreeCount' | 'object3dCount' | 'treeObjectCount'>,
+  snapshot: Pick<
+    DebugSnapshot,
+    | 'visibleTileCount'
+    | 'visibleTreeCount'
+    | 'object3dCount'
+    | 'treeObjectCount'
+  >,
   {
     maxObjectsPerVisibleTile = 18,
     maxObjectsPerTree = 7,
@@ -519,9 +535,13 @@ export function getSceneBudgetWarnings(
 ): string[] {
   const warnings: string[] = [];
   const objectsPerVisibleTile =
-    snapshot.visibleTileCount > 0 ? snapshot.object3dCount / snapshot.visibleTileCount : 0;
+    snapshot.visibleTileCount > 0
+      ? snapshot.object3dCount / snapshot.visibleTileCount
+      : 0;
   const objectsPerTree =
-    snapshot.visibleTreeCount > 0 ? snapshot.treeObjectCount / snapshot.visibleTreeCount : 0;
+    snapshot.visibleTreeCount > 0
+      ? snapshot.treeObjectCount / snapshot.visibleTreeCount
+      : 0;
 
   if (objectsPerVisibleTile > maxObjectsPerVisibleTile) {
     warnings.push(
@@ -540,8 +560,14 @@ export function getSceneBudgetWarnings(
 export function getPerformanceWarnings(
   snapshot: Pick<
     DebugSnapshot,
-    'frameMs' | 'targetFps' | 'drawCalls' | 'triangles' | 'object3dCount' | 'programCount'
-    | 'shadowLightCount' | 'activeAudioSourceCount'
+    | 'frameMs'
+    | 'targetFps'
+    | 'drawCalls'
+    | 'triangles'
+    | 'object3dCount'
+    | 'programCount'
+    | 'shadowLightCount'
+    | 'activeAudioSourceCount'
   >,
   {
     maxFrameMs = 50,
@@ -619,7 +645,9 @@ export function getPerformanceWarnings(
 export function getWorkQueueWarnings(
   snapshot: Pick<
     DebugSnapshot,
-    'chunkGenerationQueueSize' | 'averagePendingFlushTiles' | 'maxPendingFlushTiles'
+    | 'chunkGenerationQueueSize'
+    | 'averagePendingFlushTiles'
+    | 'maxPendingFlushTiles'
   >,
   {
     maxPendingTileCount = 48,
@@ -642,7 +670,10 @@ export function getWorkQueueWarnings(
 }
 
 export function getSynchronousTileBuildWarnings(
-  snapshot: Pick<DebugSnapshot, 'maxTilePluginBuildMs' | 'slowestTilePluginLabel'>,
+  snapshot: Pick<
+    DebugSnapshot,
+    'maxTilePluginBuildMs' | 'slowestTilePluginLabel'
+  >,
   {
     maxSynchronousTilePluginBuildMs = 8,
   }: {
@@ -654,7 +685,8 @@ export function getSynchronousTileBuildWarnings(
     return [];
   }
 
-  const label = snapshot.slowestTilePluginLabel?.trim() || 'unknown tile plugin';
+  const label =
+    snapshot.slowestTilePluginLabel?.trim() || 'unknown tile plugin';
   return [
     `Synchronous tile build is too slow (${label} took ${maxBuildMs.toFixed(1)} ms > ${maxSynchronousTilePluginBuildMs.toFixed(1)} ms).`,
   ];
@@ -663,7 +695,8 @@ export function getSynchronousTileBuildWarnings(
 export function getRenderBudgetViolationWarnings(
   snapshot: Pick<
     DebugSnapshot,
-    'tileModelBudgetViolationsPerSecond' | 'tileModelBudgetViolationTopPluginLabel'
+    | 'tileModelBudgetViolationsPerSecond'
+    | 'tileModelBudgetViolationTopPluginLabel'
   >,
   {
     maxViolationsPerSecond = 0,
@@ -676,7 +709,9 @@ export function getRenderBudgetViolationWarnings(
     return [];
   }
 
-  const label = snapshot.tileModelBudgetViolationTopPluginLabel?.trim() || 'unknown tile plugin';
+  const label =
+    snapshot.tileModelBudgetViolationTopPluginLabel?.trim() ||
+    'unknown tile plugin';
   return [
     `Render budget is rejecting plugin models (${violationsPerSecond}/s, top plugin ${label}).`,
   ];
@@ -766,7 +801,9 @@ export function getHeapGrowthWarning(
   }
 
   for (let index = 1; index < recentSamples.length; index += 1) {
-    if (recentSamples[index]!.heapUsedMb <= recentSamples[index - 1]!.heapUsedMb) {
+    if (
+      recentSamples[index]!.heapUsedMb <= recentSamples[index - 1]!.heapUsedMb
+    ) {
       return null;
     }
   }
@@ -811,7 +848,9 @@ export function getIdleAllocationWarning(
   }
 
   for (let index = 1; index < recentSamples.length; index += 1) {
-    if (recentSamples[index]!.heapUsedMb <= recentSamples[index - 1]!.heapUsedMb) {
+    if (
+      recentSamples[index]!.heapUsedMb <= recentSamples[index - 1]!.heapUsedMb
+    ) {
       return null;
     }
   }

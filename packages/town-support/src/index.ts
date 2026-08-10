@@ -1,7 +1,5 @@
 import { createBoundedCache } from '@bworlds/cache-support';
-import {
-  getDaylightCycleState,
-} from '@bworlds/core';
+import { getDaylightCycleState } from '@bworlds/core';
 import {
   appendHashSeedLabel,
   appendHashSeedPart,
@@ -73,10 +71,7 @@ export type TownNpc = {
 };
 
 export type TownNpcRoutineState =
-  | 'home'
-  | 'commuting-to-work'
-  | 'working'
-  | 'commuting-home';
+  'home' | 'commuting-to-work' | 'working' | 'commuting-home';
 
 export type TownNpcPlacement = {
   npcId: string;
@@ -87,11 +82,7 @@ export type TownNpcPlacement = {
 };
 
 export type TownServiceKind =
-  | 'trade'
-  | 'training'
-  | 'revival'
-  | 'healing'
-  | 'quests';
+  'trade' | 'training' | 'revival' | 'healing' | 'quests';
 
 export type TownServiceOffer = {
   kind: TownServiceKind;
@@ -144,8 +135,12 @@ const TOWN_RESIDENTIAL_SEED = registerHashLabel('town-residential');
 const TOWN_PROFESSIONAL_SEED = registerHashLabel('town-professional');
 const TOWN_RESIDENCE_LABEL = registerHashLabel('town-residence');
 const TOWN_HOUSEHOLD_SIZE_LABEL = registerHashLabel('town-household-size');
-const TOWN_PROFESSION_FAMILY_LABEL = registerHashLabel('town-profession-family');
-const TOWN_HOUSEHOLD_SURNAME_LABEL = registerHashLabel('town-household-surname');
+const TOWN_PROFESSION_FAMILY_LABEL = registerHashLabel(
+  'town-profession-family'
+);
+const TOWN_HOUSEHOLD_SURNAME_LABEL = registerHashLabel(
+  'town-household-surname'
+);
 const TOWN_ADULT_ONE_AGE_LABEL = registerHashLabel('town-adult-one-age');
 const TOWN_ADULT_TWO_AGE_LABEL = registerHashLabel('town-adult-two-age');
 const TOWN_ADULT_ONE_NAME_LABEL = registerHashLabel('town-adult-one-name');
@@ -282,7 +277,11 @@ function getTownCacheKey(tileX: number, tileY: number): string {
   return `${tileX}:${tileY}`;
 }
 
-function createTownPlotSeed(seedLabel: number, plotX: number, plotY: number): number {
+function createTownPlotSeed(
+  seedLabel: number,
+  plotX: number,
+  plotY: number
+): number {
   return appendHashSeedPart(appendHashSeedPart(seedLabel, plotX), plotY);
 }
 
@@ -304,7 +303,12 @@ function createTownResidenceSeed(
   );
 }
 
-function createTownIndexSeed(seedLabel: number, tileX: number, tileY: number, index: number): number {
+function createTownIndexSeed(
+  seedLabel: number,
+  tileX: number,
+  tileY: number,
+  index: number
+): number {
   return appendHashSeedPart(
     appendHashSeedPart(appendHashSeedPart(seedLabel, tileX), tileY),
     index
@@ -323,7 +327,8 @@ function pickFromList<T>(
 }
 
 function getTownStructure(tileX: number, tileY: number): TownStructure {
-  const level = (1 + Math.floor(hash2D(TOWN_LEVEL_SEED, tileX, tileY) * 4)) as TownLevel;
+  const level = (1 +
+    Math.floor(hash2D(TOWN_LEVEL_SEED, tileX, tileY) * 4)) as TownLevel;
   const residentialBuildings =
     2 + level * 2 + Math.floor(hash2D(TOWN_RESIDENTIAL_SEED, tileX, tileY) * 2);
   const professionalBuildings =
@@ -341,7 +346,12 @@ function getTownStructure(tileX: number, tileY: number): TownStructure {
   };
 }
 
-function getHouseholdSize(tileX: number, tileY: number, plotX: number, plotY: number): number {
+function getHouseholdSize(
+  tileX: number,
+  tileY: number,
+  plotX: number,
+  plotY: number
+): number {
   return (
     3 +
     Math.floor(
@@ -422,8 +432,18 @@ function createHouseholdNpcs(
   tileY: number,
   residence: TownBuilding
 ): TownNpcDraft[] {
-  const residenceSeed = createTownResidenceSeed(tileX, tileY, residence.x, residence.y);
-  const householdSize = getHouseholdSize(tileX, tileY, residence.x, residence.y);
+  const residenceSeed = createTownResidenceSeed(
+    tileX,
+    tileY,
+    residence.x,
+    residence.y
+  );
+  const householdSize = getHouseholdSize(
+    tileX,
+    tileY,
+    residence.x,
+    residence.y
+  );
   const surname = getLastName(
     appendHashSeedLabel(residenceSeed, TOWN_HOUSEHOLD_SURNAME_LABEL),
     tileX,
@@ -617,9 +637,16 @@ function createHouseholdNpcs(
   });
 }
 
-function assignNpcJobs(tileX: number, tileY: number, npcs: TownNpcDraft[], buildings: TownBuilding[]) {
+function assignNpcJobs(
+  tileX: number,
+  tileY: number,
+  npcs: TownNpcDraft[],
+  buildings: TownBuilding[]
+) {
   const professionalBuildings = buildings.filter(
-    (building): building is TownBuilding & { professionFamily: TownProfessionFamily } =>
+    (
+      building
+    ): building is TownBuilding & { professionFamily: TownProfessionFamily } =>
       building.role === 'professional' &&
       typeof building.professionFamily === 'string'
   );
@@ -632,7 +659,8 @@ function assignNpcJobs(tileX: number, tileY: number, npcs: TownNpcDraft[], build
   );
 
   for (const [index, npc] of workingAdults.entries()) {
-    const workplace = professionalBuildings[index % professionalBuildings.length];
+    const workplace =
+      professionalBuildings[index % professionalBuildings.length];
     const template = PROFESSIONS.find(
       (entry) => entry.family === workplace.professionFamily
     );
@@ -640,7 +668,8 @@ function assignNpcJobs(tileX: number, tileY: number, npcs: TownNpcDraft[], build
       continue;
     }
     npc.profession =
-      template.professions[index % template.professions.length] ?? template.professions[0];
+      template.professions[index % template.professions.length] ??
+      template.professions[0];
     npc.workplaceBuildingId = workplace.id;
     npc.workplaceProfessionFamily = template.family;
     workplace.workerNpcIds.push(npc.id);
@@ -711,7 +740,8 @@ function getTownProfessionServiceOffers(
         {
           kind: 'trade',
           label: 'Supplies',
-          description: 'Buy and sell travel goods, meals, and common provisions.',
+          description:
+            'Buy and sell travel goods, meals, and common provisions.',
         },
         {
           kind: 'quests',
@@ -822,11 +852,9 @@ function getTownProfessionServiceOffers(
 
 function getQuestProfileKey(profile: QuestPlayerProfile | undefined): string {
   const completed = [...(profile?.completedQuestIds ?? [])].sort().join(',');
-  return [
-    profile?.level ?? 1,
-    profile?.profession ?? 'any',
-    completed,
-  ].join('|');
+  return [profile?.level ?? 1, profile?.profession ?? 'any', completed].join(
+    '|'
+  );
 }
 
 export function getTownBuildingId(
@@ -854,12 +882,16 @@ export function getTownProfile(tileX: number, tileY: number): TownProfile {
   return profile;
 }
 
-export function getTownBuildingPlots(tileX: number, tileY: number): TownBuildingPlot[] {
+export function getTownBuildingPlots(
+  tileX: number,
+  tileY: number
+): TownBuildingPlot[] {
   const profile = getTownStructure(tileX, tileY);
   const plots = SLOT_ORDER.slice(0, profile.buildingCount);
   return plots.map((slot, index) => ({
     ...slot,
-    role: index < profile.professionalBuildings ? 'professional' : 'residential',
+    role:
+      index < profile.professionalBuildings ? 'professional' : 'residential',
   }));
 }
 
@@ -900,7 +932,9 @@ export function getTownNpcs(tileX: number, tileY: number): TownNpc[] {
     residentNpcIds: [...building.residentNpcIds],
     workerNpcIds: [...building.workerNpcIds],
   }));
-  const residences = buildings.filter((building) => building.role === 'residential');
+  const residences = buildings.filter(
+    (building) => building.role === 'residential'
+  );
   const npcDrafts = residences.flatMap((residence) => {
     const members = createHouseholdNpcs(tileX, tileY, residence);
     residence.residentNpcIds.push(...members.map((npc) => npc.id));
@@ -945,12 +979,22 @@ export function getTownNpcs(tileX: number, tileY: number): TownNpc[] {
   });
 
   for (const building of getTownBuildings(tileX, tileY)) {
-    const resolved = buildings.find((candidate) => candidate.id === building.id);
+    const resolved = buildings.find(
+      (candidate) => candidate.id === building.id
+    );
     if (!resolved) {
       continue;
     }
-    building.residentNpcIds.splice(0, building.residentNpcIds.length, ...resolved.residentNpcIds);
-    building.workerNpcIds.splice(0, building.workerNpcIds.length, ...resolved.workerNpcIds);
+    building.residentNpcIds.splice(
+      0,
+      building.residentNpcIds.length,
+      ...resolved.residentNpcIds
+    );
+    building.workerNpcIds.splice(
+      0,
+      building.workerNpcIds.length,
+      ...resolved.workerNpcIds
+    );
   }
 
   npcCache.set(cacheKey, npcs);
@@ -995,8 +1039,14 @@ export function getTownNpcPlacements(
     const workStartMinute = workWindow.startHour * 60;
     const workEndMinute = workWindow.endHour * 60;
     const commuteDurationMinutes = 60;
-    const commuteToWorkStart = Math.max(0, workStartMinute - commuteDurationMinutes);
-    const commuteHomeEnd = Math.min(24 * 60, workEndMinute + commuteDurationMinutes);
+    const commuteToWorkStart = Math.max(
+      0,
+      workStartMinute - commuteDurationMinutes
+    );
+    const commuteHomeEnd = Math.min(
+      24 * 60,
+      workEndMinute + commuteDurationMinutes
+    );
     const route = getCommuteRoute(home, workplace);
 
     if (minuteOfDay < commuteToWorkStart || minuteOfDay >= commuteHomeEnd) {
@@ -1011,7 +1061,8 @@ export function getTownNpcPlacements(
 
     if (minuteOfDay < workStartMinute) {
       const progress =
-        (minuteOfDay - commuteToWorkStart) / Math.max(1, commuteDurationMinutes);
+        (minuteOfDay - commuteToWorkStart) /
+        Math.max(1, commuteDurationMinutes);
       const point = getRouteWaypoint(route, progress);
       return {
         npcId: npc.id,
@@ -1142,14 +1193,18 @@ export function getTownBuildingServiceState(
   const placements = getTownNpcPlacements(tileX, tileY, timeMs);
   const questStates = getTownNpcQuestStates(tileX, tileY, timeMs, profile);
   const presentNpcNames = placements
-    .filter((placement) => placement.x === building.x && placement.y === building.y)
+    .filter(
+      (placement) => placement.x === building.x && placement.y === building.y
+    )
     .map((placement) => placement.name);
   const availableServices =
     building.role === 'professional' && presentNpcNames.length > 0
       ? getTownProfessionServiceOffers(building.professionFamily)
       : [];
   const availableQuestOffers = questStates
-    .filter((questState) => questState.x === building.x && questState.y === building.y)
+    .filter(
+      (questState) => questState.x === building.x && questState.y === building.y
+    )
     .flatMap((questState) => questState.offers);
 
   const state = {
@@ -1170,7 +1225,7 @@ export function getTownBuildingLabel(
     return 'home';
   }
   return (
-    PROFESSIONS.find((entry) => entry.family === professionFamily)?.buildingLabel ??
-    'workplace'
+    PROFESSIONS.find((entry) => entry.family === professionFamily)
+      ?.buildingLabel ?? 'workplace'
   );
 }

@@ -17,7 +17,10 @@ import {
 } from './timekeeper.ts';
 
 function normalizeTurnAngle(angle: number) {
-  return ((angle + Math.PI) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2) - Math.PI;
+  return (
+    ((((angle + Math.PI) % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2)) -
+    Math.PI
+  );
 }
 
 describe('timekeeper helpers', () => {
@@ -31,7 +34,9 @@ describe('timekeeper helpers', () => {
 
   it('formats the displayed date from constellation month and moon week', () => {
     const cycle = getDaylightCycleState(0);
-    expect(getCelestialDateLabel(cycle)).toContain(cycle.activeConstellation.name);
+    expect(getCelestialDateLabel(cycle)).toContain(
+      cycle.activeConstellation.name
+    );
     expect(getCelestialDateLabel(cycle)).toContain(cycle.moonPhaseName);
   });
 
@@ -73,10 +78,9 @@ describe('timekeeper helpers', () => {
     const layout = getDaylightRingLayout(cycle);
 
     expect(layout.dayCenterAngle).toBeCloseTo(-Math.PI / 2, 6);
-    expect(normalizeTurnAngle(layout.nightCenterAngle - layout.dayCenterAngle)).toBeCloseTo(
-      -Math.PI,
-      6
-    );
+    expect(
+      normalizeTurnAngle(layout.nightCenterAngle - layout.dayCenterAngle)
+    ).toBeCloseTo(-Math.PI, 6);
     expect(layout.dawnAngle).toBeCloseTo(
       getDialAngle(cycle.sunriseProgress, cycle.dayProgress),
       6
@@ -114,27 +118,21 @@ describe('timekeeper helpers', () => {
       dayLengthMs: DEFAULT_DAY_LENGTH_MS,
     });
     sunriseCycle.dayProgress = sunriseCycle.sunriseProgress;
-    const sunriseAnchors = stabilizeDisplayedDaylightAnchors(
-      sunriseCycle,
-      {
-        dayProgress: 0.32,
-        sunriseProgress: 0.27,
-        sunsetProgress: 0.81,
-      }
-    );
+    const sunriseAnchors = stabilizeDisplayedDaylightAnchors(sunriseCycle, {
+      dayProgress: 0.32,
+      sunriseProgress: 0.27,
+      sunsetProgress: 0.81,
+    });
 
     const sunsetCycle = getDaylightCycleState(0, {
       dayLengthMs: DEFAULT_DAY_LENGTH_MS,
     });
     sunsetCycle.dayProgress = sunsetCycle.sunsetProgress;
-    const sunsetAnchors = stabilizeDisplayedDaylightAnchors(
-      sunsetCycle,
-      {
-        dayProgress: 0.78,
-        sunriseProgress: 0.23,
-        sunsetProgress: 0.74,
-      }
-    );
+    const sunsetAnchors = stabilizeDisplayedDaylightAnchors(sunsetCycle, {
+      dayProgress: 0.78,
+      sunriseProgress: 0.23,
+      sunsetProgress: 0.74,
+    });
 
     expect(sunriseAnchors.sunriseProgress).toBe(0.32);
     expect(sunriseAnchors.sunsetProgress).toBe(0.81);

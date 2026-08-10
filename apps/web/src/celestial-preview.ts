@@ -13,10 +13,16 @@ import {
 
 type DaylightCycleLike = ReturnType<typeof getDaylightCycleState>;
 type OverworldSamplerLike = {
-  sampleOverworld(x: number, y: number): {
+  sampleOverworld(
+    x: number,
+    y: number
+  ): {
     kind?: string;
   };
-  samplePreviewOverworld?(x: number, y: number): {
+  samplePreviewOverworld?(
+    x: number,
+    y: number
+  ): {
     kind?: string;
   };
   samplePreviewSurfaceKind?(x: number, y: number): string | undefined;
@@ -339,7 +345,10 @@ export function createCelestialPreviewRenderer(
   });
 
   host.addEventListener('pointermove', (event) => {
-    if (!rotationState.dragging || event.pointerId !== rotationState.pointerId) {
+    if (
+      !rotationState.dragging ||
+      event.pointerId !== rotationState.pointerId
+    ) {
       return;
     }
     const deltaX = event.clientX - rotationState.lastX;
@@ -347,7 +356,11 @@ export function createCelestialPreviewRenderer(
     rotationState.lastX = event.clientX;
     rotationState.lastY = event.clientY;
     rotationState.yaw += deltaX * 0.008;
-    rotationState.pitch = clamp(rotationState.pitch + deltaY * 0.006, -0.9, 0.9);
+    rotationState.pitch = clamp(
+      rotationState.pitch + deltaY * 0.006,
+      -0.9,
+      0.9
+    );
     options.onRenderRequested?.();
   });
 
@@ -393,7 +406,9 @@ export function createCelestialPreviewRenderer(
       return;
     }
     const sampleOverworld = resolvePreviewSampler(overworldSampler);
-    const textureDirty = Boolean(sampleOverworld) && overworldSampler !== planetTextureState.lastSampler;
+    const textureDirty =
+      Boolean(sampleOverworld) &&
+      overworldSampler !== planetTextureState.lastSampler;
     const frameSignature = getCelestialPreviewFrameSignature(
       cycle,
       facingAngle,
@@ -408,13 +423,20 @@ export function createCelestialPreviewRenderer(
       return;
     }
     root.rotation.y = Math.PI + rotationState.yaw;
-    root.rotation.z = getPreviewRootPitch(cycle.observerLatitudeDegrees, rotationState.pitch);
+    root.rotation.z = getPreviewRootPitch(
+      cycle.observerLatitudeDegrees,
+      rotationState.pitch
+    );
     world.rotation.y += 0.002;
     world.rotation.z = cycle.solarDeclination * 0.4;
     syncPreviewPlanetTexture(world, overworldSampler, planetTextureState);
     syncPreviewFacingArrow(facingArrow, facingAngle);
 
-    const sunBody = getPreviewBodyPosition(cycle.sunAzimuth, cycle.sunAltitude, 9.8);
+    const sunBody = getPreviewBodyPosition(
+      cycle.sunAzimuth,
+      cycle.sunAltitude,
+      9.8
+    );
     sun.position.set(sunBody.x, sunBody.y, sunBody.z);
     (sun.material as THREE.MeshBasicMaterial).color.set('#ffd06e');
     sunGlow.position.copy(sun.position);
@@ -455,7 +477,11 @@ export function createCelestialPreviewRenderer(
     sunFill.castShadow = false;
     nightFill.position.set(-sunX * 0.72, 6.5 + cycle.night * 2.8, -sunZ * 0.72);
     nightFill.intensity = lighting.nightFillIntensity;
-    bounceFill.position.set(lightRig.bounce.x, lightRig.bounce.y, lightRig.bounce.z);
+    bounceFill.position.set(
+      lightRig.bounce.x,
+      lightRig.bounce.y,
+      lightRig.bounce.z
+    );
     bounceFill.intensity = lighting.bounceFillIntensity;
     const worldMaterial = world.material as THREE.MeshStandardMaterial;
     worldMaterial.emissiveIntensity = lighting.emissiveIntensity;
@@ -463,13 +489,17 @@ export function createCelestialPreviewRenderer(
     const moonMaterial = moon.material as THREE.MeshStandardMaterial;
     moonMaterial.emissiveIntensity = lighting.moonEmissiveIntensity;
     moonMaterial.emissive.set('#101a28');
-    (worldGlow.material as THREE.MeshBasicMaterial).opacity = lighting.glowOpacity;
-    (sunGlow.material as THREE.MeshBasicMaterial).opacity = lighting.sunGlowOpacity;
-    moon.material.opacity = Math.max(
-      0.24,
-      (cycle.night * 0.8 + (displayedMoon.altitude > -0.08 ? 0.18 : 0)) *
-        (0.24 + cycle.moonIllumination * 0.76)
-    ) + (cycle.solarEclipse?.coverage ?? 0) * 0.44;
+    (worldGlow.material as THREE.MeshBasicMaterial).opacity =
+      lighting.glowOpacity;
+    (sunGlow.material as THREE.MeshBasicMaterial).opacity =
+      lighting.sunGlowOpacity;
+    moon.material.opacity =
+      Math.max(
+        0.24,
+        (cycle.night * 0.8 + (displayedMoon.altitude > -0.08 ? 0.18 : 0)) *
+          (0.24 + cycle.moonIllumination * 0.76)
+      ) +
+      (cycle.solarEclipse?.coverage ?? 0) * 0.44;
     moon.material.transparent = true;
 
     const signatures = getCelestialPreviewSceneSignatures(cycle);
@@ -866,10 +896,7 @@ function syncPreviewPlanetTexture(
 ) {
   const material = world.material as THREE.MeshStandardMaterial;
   const sampleSurfaceKind = resolvePreviewKindSampler(overworldSampler);
-  if (
-    !sampleSurfaceKind ||
-    overworldSampler === textureState.lastSampler
-  ) {
+  if (!sampleSurfaceKind || overworldSampler === textureState.lastSampler) {
     return;
   }
   const canvas = document.createElement('canvas');
@@ -879,7 +906,12 @@ function syncPreviewPlanetTexture(
   if (!context) {
     return;
   }
-  paintPlanetTextureCanvas(context, sampleSurfaceKind, canvas.width, canvas.height);
+  paintPlanetTextureCanvas(
+    context,
+    sampleSurfaceKind,
+    canvas.width,
+    canvas.height
+  );
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
   texture.magFilter = THREE.NearestFilter;
@@ -968,10 +1000,7 @@ function samplePreviewSurfaceKind(
   }
 }
 
-function syncPreviewFacingArrow(
-  mesh: THREE.Mesh,
-  facingAngle: number
-): void {
+function syncPreviewFacingArrow(mesh: THREE.Mesh, facingAngle: number): void {
   const state = getPreviewFacingArrowState(facingAngle);
   mesh.position.set(state.x, state.y, state.z);
   mesh.rotation.x = Math.PI / 2;
@@ -1028,8 +1057,15 @@ function syncPreviewConstellations(
       line.visible = false;
       return;
     }
-    const positions = line.geometry.getAttribute('position') as THREE.BufferAttribute;
-    positions.setXYZ(0, lineState.start.x, lineState.start.y, lineState.start.z);
+    const positions = line.geometry.getAttribute(
+      'position'
+    ) as THREE.BufferAttribute;
+    positions.setXYZ(
+      0,
+      lineState.start.x,
+      lineState.start.y,
+      lineState.start.z
+    );
     positions.setXYZ(1, lineState.end.x, lineState.end.y, lineState.end.z);
     positions.needsUpdate = true;
     const material = line.material as THREE.LineBasicMaterial;
@@ -1115,9 +1151,8 @@ function describeDirectionalShadowFrustum(
     y: targetPosition.y - lightPosition.y,
     z: targetPosition.z - lightPosition.z,
   });
-  const seedUp = Math.abs(forward.y) > 0.94
-    ? { x: 0, y: 0, z: 1 }
-    : { x: 0, y: 1, z: 0 };
+  const seedUp =
+    Math.abs(forward.y) > 0.94 ? { x: 0, y: 0, z: 1 } : { x: 0, y: 1, z: 0 };
   const right = normalizeVector(crossVector(seedUp, forward));
   const up = normalizeVector(crossVector(forward, right));
   return {
@@ -1238,8 +1273,15 @@ function syncPreviewEvents(root: THREE.Group, cycle: DaylightCycleLike): void {
       line.visible = false;
       return;
     }
-    const positions = line.geometry.getAttribute('position') as THREE.BufferAttribute;
-    positions.setXYZ(0, lineState.start.x, lineState.start.y, lineState.start.z);
+    const positions = line.geometry.getAttribute(
+      'position'
+    ) as THREE.BufferAttribute;
+    positions.setXYZ(
+      0,
+      lineState.start.x,
+      lineState.start.y,
+      lineState.start.z
+    );
     positions.setXYZ(1, lineState.end.x, lineState.end.y, lineState.end.z);
     positions.needsUpdate = true;
     const material = line.material as THREE.LineBasicMaterial;
@@ -1360,7 +1402,10 @@ function syncMilkyWayBelt(root: THREE.Group, cycle: DaylightCycleLike): void {
   }
 
   const geometry = new THREE.BufferGeometry();
-  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  geometry.setAttribute(
+    'position',
+    new THREE.Float32BufferAttribute(positions, 3)
+  );
   geometry.setIndex(indices);
   root.add(
     new THREE.Mesh(
@@ -1378,7 +1423,9 @@ function syncMilkyWayBelt(root: THREE.Group, cycle: DaylightCycleLike): void {
   root.add(
     new THREE.LineLoop(
       new THREE.BufferGeometry().setFromPoints(
-        samples.map((sample) => createPreviewPoint(sample.azimuth, sample.centerPhi, 11.85))
+        samples.map((sample) =>
+          createPreviewPoint(sample.azimuth, sample.centerPhi, 11.85)
+        )
       ),
       new THREE.LineBasicMaterial({
         color: '#b7d1f0',
@@ -1519,9 +1566,7 @@ function syncPreviewAuroras(root: THREE.Group, cycle: DaylightCycleLike): void {
             const progress = index / samples;
             const azimuth = start + (end - start) * progress;
             const wave =
-              Math.sin(
-                progress * Math.PI * 3 + band.wavePhase * Math.PI * 2
-              ) *
+              Math.sin(progress * Math.PI * 3 + band.wavePhase * Math.PI * 2) *
               band.height *
               0.18;
             return createPreviewAltitudePoint(
@@ -1672,11 +1717,11 @@ function syncPreviewOrrery(root: THREE.Group, cycle: DaylightCycleLike): void {
             body.orbitRotation
           )
         ),
-      new THREE.LineBasicMaterial({
-        color: body.type === 'moon' ? '#708fbb' : '#4b617a',
-        transparent: true,
-        opacity: body.type === 'moon' ? 0.28 : 0.2,
-      })
+        new THREE.LineBasicMaterial({
+          color: body.type === 'moon' ? '#708fbb' : '#4b617a',
+          transparent: true,
+          opacity: body.type === 'moon' ? 0.28 : 0.2,
+        })
       );
       root.add(orbitRing);
     }
@@ -1685,11 +1730,13 @@ function syncPreviewOrrery(root: THREE.Group, cycle: DaylightCycleLike): void {
     const position = createOrreryPosition(body, angle);
     const marker = new THREE.Mesh(
       new THREE.SphereGeometry(body.size, 14, 14),
-      new THREE.MeshBasicMaterial(compactThreeMaterialOptions({
-        color: resolveThreeColor(body.color, '#8fb7de'),
-        transparent: true,
-        opacity: body.type === 'sun' ? 1 : 0.92,
-      }))
+      new THREE.MeshBasicMaterial(
+        compactThreeMaterialOptions({
+          color: resolveThreeColor(body.color, '#8fb7de'),
+          transparent: true,
+          opacity: body.type === 'sun' ? 1 : 0.92,
+        })
+      )
     );
     marker.position.copy(position);
     root.add(marker);
@@ -1697,11 +1744,13 @@ function syncPreviewOrrery(root: THREE.Group, cycle: DaylightCycleLike): void {
     if (body.type === 'sun') {
       const glow = new THREE.Mesh(
         new THREE.SphereGeometry(body.size * 1.9, 14, 14),
-        new THREE.MeshBasicMaterial(compactThreeMaterialOptions({
-          color: resolveThreeColor(body.color, '#8fb7de'),
-          transparent: true,
-          opacity: 0.18,
-        }))
+        new THREE.MeshBasicMaterial(
+          compactThreeMaterialOptions({
+            color: resolveThreeColor(body.color, '#8fb7de'),
+            transparent: true,
+            opacity: 0.18,
+          })
+        )
       );
       glow.position.copy(position);
       root.add(glow);
@@ -1713,9 +1762,15 @@ function syncPreviewOrrery(root: THREE.Group, cycle: DaylightCycleLike): void {
       root.add(
         new THREE.Line(
           new THREE.BufferGeometry().setFromPoints([
-            position.clone().add(
-              new THREE.Vector3(-body.trailLength * 0.16, -body.trailLength * 0.06, 0)
-            ),
+            position
+              .clone()
+              .add(
+                new THREE.Vector3(
+                  -body.trailLength * 0.16,
+                  -body.trailLength * 0.06,
+                  0
+                )
+              ),
             position,
           ]),
           new THREE.LineBasicMaterial({
@@ -1809,11 +1864,16 @@ function createOrreryRingPoints(
 function createOrreryPosition(
   body: Pick<
     OrreryBodyLike,
-    'orbitRadius' | 'orbitTilt' | 'orbitHeight' | 'orbitEccentricity' | 'orbitRotation'
+    | 'orbitRadius'
+    | 'orbitTilt'
+    | 'orbitHeight'
+    | 'orbitEccentricity'
+    | 'orbitRotation'
   >,
   angle: number
 ) {
-  const minorRadius = body.orbitRadius * (1 - clamp(body.orbitEccentricity, 0, 0.82));
+  const minorRadius =
+    body.orbitRadius * (1 - clamp(body.orbitEccentricity, 0, 0.82));
   const localX = Math.cos(angle) * body.orbitRadius;
   const localY = Math.sin(angle) * minorRadius;
   const rotation = body.orbitRotation ?? 0;
@@ -1822,9 +1882,7 @@ function createOrreryPosition(
   return new THREE.Vector3(
     rotatedX,
     rotatedY * Math.cos(body.orbitTilt) + body.orbitHeight,
-    rotatedY * Math.sin(body.orbitTilt) +
-      0.12 +
-      body.orbitRadius * 0.01
+    rotatedY * Math.sin(body.orbitTilt) + 0.12 + body.orbitRadius * 0.01
   );
 }
 
@@ -1855,12 +1913,14 @@ function createOrreryLabel(
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
   const sprite = new THREE.Sprite(
-    new THREE.SpriteMaterial(compactThreeMaterialOptions({
-      map: texture,
-      transparent: true,
-      depthWrite: false,
-      opacity: 0.82,
-    }))
+    new THREE.SpriteMaterial(
+      compactThreeMaterialOptions({
+        map: texture,
+        transparent: true,
+        depthWrite: false,
+        opacity: 0.82,
+      })
+    )
   );
   sprite.position.copy(position.clone().add(new THREE.Vector3(0, 0.72, 0)));
   sprite.scale.set(2.8, 0.72, 1);
@@ -1876,8 +1936,7 @@ export function getPreviewAuroraBandPath(
 ) {
   return Array.from({ length: samples + 1 }, (_, index) => {
     const progress = index / samples;
-    const azimuth =
-      band.azimuthCenter - band.span * 0.5 + band.span * progress;
+    const azimuth = band.azimuthCenter - band.span * 0.5 + band.span * progress;
     const wave =
       Math.sin(progress * Math.PI * 3 + band.wavePhase * Math.PI * 2) *
       band.height *

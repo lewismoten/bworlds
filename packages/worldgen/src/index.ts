@@ -1,8 +1,5 @@
 import { createBoundedCache } from '@bworlds/cache-support';
-import {
-  createPlayer,
-  createWorldState,
-} from '@bworlds/core';
+import { createPlayer, createWorldState } from '@bworlds/core';
 import { registerHashSeed, resolveHashSeedInput } from '@bworlds/core/hash';
 import {
   createFrontierContentPackDefinition,
@@ -84,13 +81,17 @@ export function createWorldGenerator({
     PREVIEW_TILE_CACHE_LIMIT
   );
   const getPreviewKey = (x: number, y: number) => makeKey('preview', x, y);
-  const defaultPreviewTileKind = plugins.getDefaultTileKind?.('plains') ?? 'plains';
+  const defaultPreviewTileKind =
+    plugins.getDefaultTileKind?.('plains') ?? 'plains';
   const resolvePreviewPlacementChance = (
     chanceKey: string,
     x: number,
     y: number
   ) => getOverworldPlacementChance(seedHash, chanceKey, x, y);
-  const samplePreviewSurfaceKind = (x: number, y: number): SpawnTile['kind'] => {
+  const samplePreviewSurfaceKind = (
+    x: number,
+    y: number
+  ): SpawnTile['kind'] => {
     const key = getPreviewKey(x, y);
     return previewKindCache.getOrCreate(key, () => {
       const signals = terrainSignals(x, y);
@@ -98,37 +99,36 @@ export function createWorldGenerator({
       const caveChance = resolvePreviewPlacementChance('cave', x, y);
       const dungeonChance = resolvePreviewPlacementChance('dungeon', x, y);
       const signChance = resolvePreviewPlacementChance('sign', x, y);
-      const previewTile =
-        plugins.classifyTerrainTile({
-          seed: seedHash,
-          x,
-          y,
-          tile: { kind: defaultPreviewTileKind },
-          nearLand: isNearOverworldLand(signals),
-          townChance,
-          caveChance,
-          dungeonChance,
-          signChance,
-          getPlacementChance(chanceKey: string) {
-            switch (chanceKey) {
-              case 'town':
-                return townChance;
-              case 'cave':
-                return caveChance;
-              case 'dungeon':
-                return dungeonChance;
-              case 'sign':
-                return signChance;
-              default:
-                return resolvePreviewPlacementChance(chanceKey, x, y);
-            }
-          },
-          signals,
-          sampleTerrainSignals: terrainSignals,
-          townAnchors: EMPTY_PREVIEW_ANCHORS,
-          bridgeAnchors: EMPTY_PREVIEW_ANCHORS,
-          poiAnchors: EMPTY_PREVIEW_ANCHORS,
-        }) ?? { kind: defaultPreviewTileKind };
+      const previewTile = plugins.classifyTerrainTile({
+        seed: seedHash,
+        x,
+        y,
+        tile: { kind: defaultPreviewTileKind },
+        nearLand: isNearOverworldLand(signals),
+        townChance,
+        caveChance,
+        dungeonChance,
+        signChance,
+        getPlacementChance(chanceKey: string) {
+          switch (chanceKey) {
+            case 'town':
+              return townChance;
+            case 'cave':
+              return caveChance;
+            case 'dungeon':
+              return dungeonChance;
+            case 'sign':
+              return signChance;
+            default:
+              return resolvePreviewPlacementChance(chanceKey, x, y);
+          }
+        },
+        signals,
+        sampleTerrainSignals: terrainSignals,
+        townAnchors: EMPTY_PREVIEW_ANCHORS,
+        bridgeAnchors: EMPTY_PREVIEW_ANCHORS,
+        poiAnchors: EMPTY_PREVIEW_ANCHORS,
+      }) ?? { kind: defaultPreviewTileKind };
 
       return previewTile.kind;
     });
@@ -174,7 +174,9 @@ export function createDefaultTilePlugins(): RuntimePlugin[] {
 }
 
 export function createDefaultPluginRegistry(): PluginRegistry {
-  return createBuiltinContentPackCatalog().createRegistry(['default-content-pack']);
+  return createBuiltinContentPackCatalog().createRegistry([
+    'default-content-pack',
+  ]);
 }
 
 export function createBuiltinContentPackDefinitions(): PluginPackDefinitionLike[] {

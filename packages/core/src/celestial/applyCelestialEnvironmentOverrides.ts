@@ -7,9 +7,7 @@ import {
   type SolarEclipseLike,
 } from './eclipse';
 import type { CelestialEventLike } from './types';
-import type {
-  getDaylightCycleState,
-} from './getDaylightCycleState';
+import type { getDaylightCycleState } from './getDaylightCycleState';
 import type { MilkyWayBeltLike } from './milky-way';
 import { getOrreryBodies, type OrreryBodyLike } from './orrery';
 

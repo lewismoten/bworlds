@@ -1,7 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  collectGraphicsCapabilities,
-} from './graphics-capabilities.ts';
+import { collectGraphicsCapabilities } from './graphics-capabilities.ts';
 
 describe('graphics capabilities', () => {
   it('collects WebGL and WebGPU capability details when available', () => {
@@ -20,16 +18,18 @@ describe('graphics capabilities', () => {
         };
       },
       getParameter(parameter: number) {
-        return {
-          1: 8192,
-          2: 4096,
-          3: 2048,
-          4: 1024,
-          5: 512,
-          6: 32,
-          7: 'Fake GPU',
-          8: 'Fake Vendor',
-        }[parameter] ?? null;
+        return (
+          {
+            1: 8192,
+            2: 4096,
+            3: 2048,
+            4: 1024,
+            5: 512,
+            6: 32,
+            7: 'Fake GPU',
+            8: 'Fake Vendor',
+          }[parameter] ?? null
+        );
       },
       getContextAttributes() {
         return { antialias: true };

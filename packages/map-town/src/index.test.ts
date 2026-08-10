@@ -123,17 +123,21 @@ describe('map town', () => {
 
   it('adds fenced lots with an opening aligned to the building approach path', () => {
     const map = createTownMap();
-    const fencedPlot = getTownBuildingPlots(TOWN_ORIGIN.x, TOWN_ORIGIN.y).find((plot) =>
-      hasTownFence(plot.x, plot.y)
+    const fencedPlot = getTownBuildingPlots(TOWN_ORIGIN.x, TOWN_ORIGIN.y).find(
+      (plot) => hasTownFence(plot.x, plot.y)
     );
 
     if (!fencedPlot) {
-      throw new Error('Expected a fenced plot in the deterministic town layout.');
+      throw new Error(
+        'Expected a fenced plot in the deterministic town layout.'
+      );
     }
 
     expect(map.getTile(fencedPlot.x, fencedPlot.y)).toMatchObject({
       kind: 'shop',
-      building: { id: `town:${TOWN_ORIGIN.x}:${TOWN_ORIGIN.y}:building:${fencedPlot.x}:${fencedPlot.y}` },
+      building: {
+        id: `town:${TOWN_ORIGIN.x}:${TOWN_ORIGIN.y}:building:${fencedPlot.x}:${fencedPlot.y}`,
+      },
     });
     const pathY = fencedPlot.y > 0 ? fencedPlot.y - 1 : fencedPlot.y + 1;
     const backY = fencedPlot.y > 0 ? fencedPlot.y + 1 : fencedPlot.y - 1;
@@ -180,16 +184,24 @@ describe('map town', () => {
     const map = createTownMap();
     const buildings = getTownBuildings(TOWN_ORIGIN.x, TOWN_ORIGIN.y);
     const npcs = getTownNpcs(TOWN_ORIGIN.x, TOWN_ORIGIN.y);
-    const residence = buildings.find((building) => building.role === 'residential');
-    const workplace = buildings.find((building) => building.role === 'professional');
+    const residence = buildings.find(
+      (building) => building.role === 'residential'
+    );
+    const workplace = buildings.find(
+      (building) => building.role === 'professional'
+    );
 
     if (!residence || !workplace) {
-      throw new Error('Expected the deterministic town layout to include residences and workplaces.');
+      throw new Error(
+        'Expected the deterministic town layout to include residences and workplaces.'
+      );
     }
 
     const residenceTile = map.getTile(residence.x, residence.y);
     const workplaceTile = map.getTile(workplace.x, workplace.y);
-    const residentName = npcs.find((npc) => npc.id === residence.residentNpcIds[0])?.name;
+    const residentName = npcs.find(
+      (npc) => npc.id === residence.residentNpcIds[0]
+    )?.name;
 
     expect(residenceTile.building).toMatchObject({
       id: residence.id,
@@ -219,15 +231,23 @@ describe('map town', () => {
       throw new Error('Expected at least one professional building in town.');
     }
 
-    const workingTile = map.getTile(workplace.x, workplace.y, middayState as never);
+    const workingTile = map.getTile(
+      workplace.x,
+      workplace.y,
+      middayState as never
+    );
     expect(
-      ((workingTile.building as { present?: string[] } | undefined)?.present?.length ?? 0)
+      (workingTile.building as { present?: string[] } | undefined)?.present
+        ?.length ?? 0
     ).toBeGreaterThan(0);
     expect(workingTile.note).toContain('Present:');
 
-    let commuteSample:
-      | { x: number; y: number; name: string; timeMs: number }
-      | null = null;
+    let commuteSample: {
+      x: number;
+      y: number;
+      name: string;
+      timeMs: number;
+    } | null = null;
     for (let minute = 0; minute < 24 * 60; minute += 15) {
       const timeMs = DEFAULT_DAY_LENGTH_MS * (minute / (24 * 60));
       const placement = getTownNpcPlacements(
@@ -252,14 +272,14 @@ describe('map town', () => {
     }
 
     if (!commuteSample) {
-      throw new Error('Expected at least one commuting npc in the deterministic schedule.');
+      throw new Error(
+        'Expected at least one commuting npc in the deterministic schedule.'
+      );
     }
 
-    const commuteTile = map.getTile(
-      commuteSample.x,
-      commuteSample.y,
-      { timeMs: commuteSample.timeMs } as never
-    );
+    const commuteTile = map.getTile(commuteSample.x, commuteSample.y, {
+      timeMs: commuteSample.timeMs,
+    } as never);
 
     expect(commuteTile.kind).toBe('road');
     expect(commuteTile.npcs).toContain(commuteSample.name);
@@ -302,9 +322,7 @@ describe('map town', () => {
 
   it('shows quest offers for commuting npcs on town roads when player progress matches', () => {
     const map = createTownMap();
-    let commuteSample:
-      | { x: number; y: number; timeMs: number }
-      | null = null;
+    let commuteSample: { x: number; y: number; timeMs: number } | null = null;
 
     for (let minute = 0; minute < 24 * 60; minute += 15) {
       const timeMs = DEFAULT_DAY_LENGTH_MS * (minute / (24 * 60));
@@ -314,7 +332,10 @@ describe('map town', () => {
             timeMs,
             playerLevel: 4,
             playerProfession: 'guard',
-          } as never) as { kind: string; questOffers?: Array<{ type: string }> };
+          } as never) as {
+            kind: string;
+            questOffers?: Array<{ type: string }>;
+          };
           if (
             tile.kind === 'road' &&
             tile.questOffers?.some((offer) => offer.type === 'escort')
@@ -333,7 +354,9 @@ describe('map town', () => {
     }
 
     if (!commuteSample) {
-      throw new Error('Expected a commuting escort quest offer in the deterministic town schedule.');
+      throw new Error(
+        'Expected a commuting escort quest offer in the deterministic town schedule.'
+      );
     }
 
     const roadTile = map.getTile(commuteSample.x, commuteSample.y, {

@@ -19,7 +19,10 @@ import {
   createRegionalValueResolver,
   pickThresholdColor,
 } from '@bworlds/procedural-style';
-import { createTilePlugin, withOverworldTileClassifier } from '@bworlds/plugin-api';
+import {
+  createTilePlugin,
+  withOverworldTileClassifier,
+} from '@bworlds/plugin-api';
 import {
   createPaintedStandardMaterial,
   getSharedSphereGeometry,
@@ -93,10 +96,8 @@ const resolveRuinsStyle = createRegionalValueResolver(
       '#8c6d5b'
     );
 
-    return createHostVariantValueResolver((
-      three: ThreeHostLike,
-      quality: RenderBudgetQualityLevel
-    ) => {
+    return createHostVariantValueResolver(
+      (three: ThreeHostLike, quality: RenderBudgetQualityLevel) => {
         const style = {
           stoneMaterial: createPaintedStandardMaterial(three, {
             color: stoneColor,
@@ -147,7 +148,8 @@ const resolveRuinsStyle = createRegionalValueResolver(
           }),
         };
         return style;
-      });
+      }
+    );
   }
 );
 const classifyRuinsTile = createChanceBasedLandPoiClassifier({
@@ -193,18 +195,30 @@ export function createRuinsTilePlugin(): RuntimePlugin {
           walkable: true,
           wallHeight: 0.35,
         },
-        paint2D: createPlainsBackedTilePainter(({ context, x, y, motif, fillRect, speckle }) => {
-          speckle(context, x, y, '#c8c0b5', 12, 0.2, motif);
-          const plinthY = 9 + motif.int(-1, 1);
-          fillRect(context, x + 2, y + plinthY, 12, 3, '#7b7166');
-          fillRect(context, x + 3, y + plinthY - 4, 2, 4, '#a89f93');
-          fillRect(context, x + 11, y + plinthY - 5, 2, 5, '#a89f93');
-          fillRect(context, x + 5, y + plinthY - 6, 5, 2, '#bcb3a7');
-          fillRect(context, x + 6, y + plinthY - 3, 3, 1, '#5a5148');
-          return true;
-        }),
-        create3DModel({ three, tileX, tileY, renderBudget }: Create3DModelContext) {
-          const style = getRuinsStyle(three, tileX, tileY, renderBudget?.quality);
+        paint2D: createPlainsBackedTilePainter(
+          ({ context, x, y, motif, fillRect, speckle }) => {
+            speckle(context, x, y, '#c8c0b5', 12, 0.2, motif);
+            const plinthY = 9 + motif.int(-1, 1);
+            fillRect(context, x + 2, y + plinthY, 12, 3, '#7b7166');
+            fillRect(context, x + 3, y + plinthY - 4, 2, 4, '#a89f93');
+            fillRect(context, x + 11, y + plinthY - 5, 2, 5, '#a89f93');
+            fillRect(context, x + 5, y + plinthY - 6, 5, 2, '#bcb3a7');
+            fillRect(context, x + 6, y + plinthY - 3, 3, 1, '#5a5148');
+            return true;
+          }
+        ),
+        create3DModel({
+          three,
+          tileX,
+          tileY,
+          renderBudget,
+        }: Create3DModelContext) {
+          const style = getRuinsStyle(
+            three,
+            tileX,
+            tileY,
+            renderBudget?.quality
+          );
           const group = new three.Group();
           group.position.set(tileX, 0, tileY);
 
@@ -263,7 +277,8 @@ export function createRuinsTilePlugin(): RuntimePlugin {
               0.5 + hash2D(RUINS_ARCH_HEIGHT_SEED, tileX, tileY) * 0.12,
               (hash2D(RUINS_ARCH_Z_SEED, tileX, tileY) - 0.5) * 0.16
             );
-            arch.rotation.y = hash2D(RUINS_ARCH_ROTATION_SEED, tileX, tileY) * Math.PI;
+            arch.rotation.y =
+              hash2D(RUINS_ARCH_ROTATION_SEED, tileX, tileY) * Math.PI;
             group.add(arch);
           }
 
@@ -287,11 +302,8 @@ export function createRuinsTilePlugin(): RuntimePlugin {
               (hash2D(RUINS_RUBBLE_Z_SEED, tileX, tileY + index) - 0.5) * 0.6
             );
             rubble.rotation.y =
-              hash2D(
-                RUINS_RUBBLE_ROTATION_SEED,
-                tileX + index,
-                tileY - index
-              ) * Math.PI;
+              hash2D(RUINS_RUBBLE_ROTATION_SEED, tileX + index, tileY - index) *
+              Math.PI;
             group.add(rubble);
           }
 
@@ -372,7 +384,8 @@ function paintRuinsTexture(
       hash2D(RUINS_CHIP_Y_SEED, regionY * 37 + index, regionX) * canvas.height
     );
     const size =
-      1 + Math.floor(hash2D(RUINS_CHIP_SIZE_SEED, regionX + index, regionY) * 3);
+      1 +
+      Math.floor(hash2D(RUINS_CHIP_SIZE_SEED, regionX + index, regionY) * 3);
     context.fillStyle = withAlpha(
       '#f2ede5',
       0.18 + hash2D(RUINS_CHIP_ALPHA_SEED, regionX, regionY + index) * 0.16
@@ -389,9 +402,7 @@ function paintRuinsTexture(
     );
     const length =
       3 +
-      Math.floor(
-        hash2D(RUINS_CRACK_LENGTH_SEED, regionX, regionY + index) * 8
-      );
+      Math.floor(hash2D(RUINS_CRACK_LENGTH_SEED, regionX, regionY + index) * 8);
     context.fillStyle = 'rgba(41, 34, 30, 0.22)';
     context.fillRect(x, y, 1, length);
   }
@@ -412,8 +423,5 @@ type RuinsStyle = {
 };
 
 type RuinsStyleBlueprint = {
-  getValue(
-    three: ThreeHostLike,
-    quality: RenderBudgetQualityLevel
-  ): RuinsStyle;
+  getValue(three: ThreeHostLike, quality: RenderBudgetQualityLevel): RuinsStyle;
 };

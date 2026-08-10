@@ -9,7 +9,11 @@ import {
 describe('celestial event summary', () => {
   it('summarizes active aurora, meteor, comet, and eclipse state in one pass', () => {
     const summary = summarizeCelestialEvents({
-      auroraBands: [{ intensity: 0.04 }, { intensity: 0.01 }, { intensity: 0.2 }],
+      auroraBands: [
+        { intensity: 0.04 },
+        { intensity: 0.01 },
+        { intensity: 0.2 },
+      ],
       visibleEvents: [
         { type: 'meteor-shower', visibility: 0.2 },
         { type: 'comet', visibility: 0.5 },

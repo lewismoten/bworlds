@@ -353,7 +353,10 @@ describe('three support', () => {
       ) {}
     }
     class FakePlaneGeometry {
-      constructor(public width: number, public height: number) {}
+      constructor(
+        public width: number,
+        public height: number
+      ) {}
     }
     class FakeSphereGeometry {
       constructor(

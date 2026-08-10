@@ -4,7 +4,10 @@ import type { ThreeHostLike, ThreeMaterialLike } from '@bworlds/plugin-api';
 export type DungeonLowDetailStyle = {
   wallMaterial: ThreeMaterialLike;
   roofMaterial: ThreeMaterialLike;
-  getGlowMaterial(dayIntensity: number, nightIntensity: number): ThreeMaterialLike;
+  getGlowMaterial(
+    dayIntensity: number,
+    nightIntensity: number
+  ): ThreeMaterialLike;
 };
 
 export type DungeonLowDetailEntrance = {
@@ -43,7 +46,11 @@ export function createLowDetailDungeonModel(
   group.add(base);
 
   const keep = new three.Mesh(
-    new three.BoxGeometry(baseWidth * 0.56, baseHeight * 0.54, baseDepth * 0.56),
+    new three.BoxGeometry(
+      baseWidth * 0.56,
+      baseHeight * 0.54,
+      baseDepth * 0.56
+    ),
     style.wallMaterial
   );
   keep.position.set(tileX, baseHeight * 0.78, tileY);

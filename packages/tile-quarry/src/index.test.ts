@@ -205,7 +205,9 @@ describe('tile quarry', () => {
       tileY: 8,
     }) as FakeNode | undefined;
 
-    expect(countSharedMaterialReferences(first, second)).toBeGreaterThanOrEqual(5);
+    expect(countSharedMaterialReferences(first, second)).toBeGreaterThanOrEqual(
+      5
+    );
   });
 
   it('lights quarry lanterns at night', () => {
@@ -225,7 +227,10 @@ describe('tile quarry', () => {
       if (node instanceof FakeMesh && node.userData?.poiNightLightEmitter) {
         glowMesh = node;
       }
-      if (node instanceof FakePointLight && node.userData?.poiNightLightEmitter) {
+      if (
+        node instanceof FakePointLight &&
+        node.userData?.poiNightLightEmitter
+      ) {
         pointLight = node;
       }
     });
@@ -245,7 +250,9 @@ describe('tile quarry', () => {
       environment: {},
     });
 
-    expect((glowMesh?.material as FakeMaterial)?.emissiveIntensity ?? 0).toBeCloseTo(0.02, 6);
+    expect(
+      (glowMesh?.material as FakeMaterial)?.emissiveIntensity ?? 0
+    ).toBeCloseTo(0.02, 6);
     expect(pointLight?.intensity ?? 0).toBeCloseTo(0, 6);
     expect(pointLight?.visible).toBe(false);
 
@@ -261,7 +268,9 @@ describe('tile quarry', () => {
       environment: {},
     });
 
-    expect((glowMesh?.material as FakeMaterial)?.emissiveIntensity ?? 0).toBeGreaterThan(1);
+    expect(
+      (glowMesh?.material as FakeMaterial)?.emissiveIntensity ?? 0
+    ).toBeGreaterThan(1);
     expect(pointLight?.intensity ?? 0).toBeCloseTo(0.76, 6);
     expect(pointLight?.visible).toBe(true);
   });

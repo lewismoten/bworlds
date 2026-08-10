@@ -72,7 +72,9 @@ describe('ui signature helpers', () => {
       { kind: 'meteor-shower', label: '1 meteor stream' },
     ];
 
-    expect(getViewportHudSignature(hud)).toBe(getViewportHudSignature({ ...hud }));
+    expect(getViewportHudSignature(hud)).toBe(
+      getViewportHudSignature({ ...hud })
+    );
     expect(getViewportHudSignature({ ...hud, facing: 'E' })).not.toBe(
       getViewportHudSignature(hud)
     );
@@ -148,12 +150,30 @@ describe('ui signature helpers', () => {
     const grid = {
       rows: [
         [
-          { glyph: '.', color: '#84cc16', kind: 'plains', worldX: 0, worldY: 0 },
+          {
+            glyph: '.',
+            color: '#84cc16',
+            kind: 'plains',
+            worldX: 0,
+            worldY: 0,
+          },
           { glyph: '~', color: '#38bdf8', kind: 'river', worldX: 1, worldY: 0 },
         ],
         [
-          { glyph: '@', color: '#ffbf69', kind: 'player', worldX: 0, worldY: 1 },
-          { glyph: '^', color: '#cbd5e1', kind: 'mountain', worldX: 1, worldY: 1 },
+          {
+            glyph: '@',
+            color: '#ffbf69',
+            kind: 'player',
+            worldX: 0,
+            worldY: 1,
+          },
+          {
+            glyph: '^',
+            color: '#cbd5e1',
+            kind: 'mountain',
+            worldX: 1,
+            worldY: 1,
+          },
         ],
       ],
       centerColumn: 0,

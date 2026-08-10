@@ -18,9 +18,9 @@ export function getObjectMaterials<TMaterial extends ObjectMaterialLike>(
   return Array.isArray(node.material) ? node.material : [node.material];
 }
 
-export function collectUniqueObjectMaterials<TMaterial extends ObjectMaterialLike>(
-  root: Pick<THREE.Object3D, 'traverse'>
-): TMaterial[] {
+export function collectUniqueObjectMaterials<
+  TMaterial extends ObjectMaterialLike,
+>(root: Pick<THREE.Object3D, 'traverse'>): TMaterial[] {
   const uniqueMaterials = new Set<TMaterial>();
 
   root.traverse((child) => {

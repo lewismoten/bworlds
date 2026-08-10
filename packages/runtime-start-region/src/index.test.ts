@@ -44,7 +44,11 @@ describe('runtime start region', () => {
   });
 
   it('preserves curated starter feature tiles inside the meadow band', () => {
-    const samples: Array<{ x: number; y: number; kind: StarterTerrainTileKind }> = [
+    const samples: Array<{
+      x: number;
+      y: number;
+      kind: StarterTerrainTileKind;
+    }> = [
       { x: -1, y: 2, kind: 'road' },
       { x: 0, y: 2, kind: 'road' },
       { x: 1, y: 1, kind: 'sign' },

@@ -1,4 +1,4 @@
-import { clamp, normalizeAngle, smoothstep } from "../math";
+import { clamp, normalizeAngle, smoothstep } from '../math';
 
 export interface SolarEclipseLike {
   active: boolean;

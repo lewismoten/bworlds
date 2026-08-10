@@ -8,10 +8,11 @@ Consider what can be made into a plug-in architecture, and convert things over w
 
 Create new packages in the monorepo when it makes sense. Create interaces for plugin architecture.
 
-- [X] [Seasons](./seasons.md)
+- [x] [Seasons](./seasons.md)
 
 # Other Tasks
-- [X] [POI](./poi.md)
 
-- [X] The moon should be able to eclipse the sun and affect the daylight briefly
-- [X] Setup local storage to remember time of day, season, moon phase, if time is frozen, etc.
+- [x] [POI](./poi.md)
+
+- [x] The moon should be able to eclipse the sun and affect the daylight briefly
+- [x] Setup local storage to remember time of day, season, moon phase, if time is frozen, etc.

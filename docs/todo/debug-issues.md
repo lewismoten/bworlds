@@ -1,6 +1,6 @@
 A few things stand out pretty clearly in this profile.
 
-First, I would **not call this a memory leak yet**. This `.heapprofile` is an allocation-sampling profile: it shows *where memory was allocated*. It does not tell us whether those allocations are still retained after garbage collection. For leak hunting, I’d follow this with two or three **Heap Snapshots** taken after forcing GC and repeating the same activity.
+First, I would **not call this a memory leak yet**. This `.heapprofile` is an allocation-sampling profile: it shows _where memory was allocated_. It does not tell us whether those allocations are still retained after garbage collection. For leak hunting, I’d follow this with two or three **Heap Snapshots** taken after forcing GC and repeating the same activity.
 
 From this profile, though, I’d prioritize these areas:
 
@@ -28,10 +28,10 @@ From this profile, though, I’d prioritize these areas:
 
    If those samples are temporary, consider:
 
-   * reusing a scratch array,
-   * using numeric tuples or typed arrays,
-   * calculating points on demand instead of materializing all of them,
-   * caching the result when the control points are identical.
+   - reusing a scratch array,
+   - using numeric tuples or typed arrays,
+   - calculating points on demand instead of materializing all of them,
+   - caching the result when the control points are identical.
 
 2. **Your celestial preview appears to regenerate a surprising amount of world data.**
    This path was especially interesting:
@@ -57,24 +57,24 @@ From this profile, though, I’d prioritize these areas:
    You might introduce a cheaper preview sampler, for example:
 
    ```ts
-   samplePreviewTerrain(x, y)
+   samplePreviewTerrain(x, y);
    ```
 
    rather than:
 
    ```ts
-   world.getTile({ x, y })
+   world.getTile({ x, y });
    ```
 
    If the planet texture only needs `"forest"`, `"mountain"`, `"water"`, etc., there is probably no reason to calculate:
 
-   * POI anchors,
-   * roads,
-   * railways,
-   * river collision priorities,
-   * flavor decorators,
-   * quests,
-   * detailed relief metadata.
+   - POI anchors,
+   - roads,
+   - railways,
+   - river collision priorities,
+   - flavor decorators,
+   - quests,
+   - detailed relief metadata.
 
 3. **`runtime-frontier-flavor.decorateOverworldTile()` is unusually allocation-heavy.**
    This one accounts for about **592 KiB self-allocation**:
@@ -132,7 +132,7 @@ From this profile, though, I’d prioritize these areas:
    I'd inspect the entire contract around:
 
    ```ts
-   decorateOverworldTile(tile)
+   decorateOverworldTile(tile);
    ```
 
    If you currently have:
@@ -157,7 +157,7 @@ From this profile, though, I’d prioritize these areas:
    If you're repeatedly asking:
 
    ```ts
-   resolveOverworldCellAnchor(world, x, y)
+   resolveOverworldCellAnchor(world, x, y);
    ```
 
    for the same coordinate during one generation/render cycle, memoizing this may save a lot more than optimizing individual object allocations.
@@ -210,7 +210,7 @@ From this profile, though, I’d prioritize these areas:
    If this:
 
    ```ts
-   createStarField()
+   createStarField();
    ```
 
    runs during initialization, I'd mostly ignore it.
@@ -223,7 +223,7 @@ From this profile, though, I’d prioritize these areas:
    If the function is conceptually:
 
    ```ts
-   syncBackgroundStars()
+   syncBackgroundStars();
    ```
 
    but actually does:

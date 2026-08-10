@@ -102,7 +102,10 @@ const routeGeometryCache = new WeakMap<
   WorldStateLike,
   BoundedCache<string, DockRouteGeometry | null>
 >();
-const dockClusterSurveyCache = new WeakMap<WorldStateLike, DockClusterSurveyState>();
+const dockClusterSurveyCache = new WeakMap<
+  WorldStateLike,
+  DockClusterSurveyState
+>();
 const CARDINAL_DIRECTIONS = [
   { x: 1, y: 0 },
   { x: -1, y: 0 },
@@ -159,7 +162,12 @@ export function getDockBoatPlacements(
   const seenRoutes = new Set<string>();
 
   for (const cluster of clusters) {
-    const route = resolveDockBoatRoute(state, cluster.anchorX, cluster.anchorY, searchRadius);
+    const route = resolveDockBoatRoute(
+      state,
+      cluster.anchorX,
+      cluster.anchorY,
+      searchRadius
+    );
     if (!route) {
       continue;
     }
@@ -174,14 +182,17 @@ export function getDockBoatPlacements(
     }
   }
 
-  return placements.sort((left, right) =>
-    left.y - right.y ||
-    left.x - right.x ||
-    left.boatName.localeCompare(right.boatName)
+  return placements.sort(
+    (left, right) =>
+      left.y - right.y ||
+      left.x - right.x ||
+      left.boatName.localeCompare(right.boatName)
   );
 }
 
-export function getDockBoatPhaseSeed(route: Pick<DockBoatRoute, 'stops'>): number {
+export function getDockBoatPhaseSeed(
+  route: Pick<DockBoatRoute, 'stops'>
+): number {
   let seed = DOCK_BOAT_PHASE_SEED;
   for (let index = 0; index < route.stops.length; index += 1) {
     const stop = route.stops[index];
@@ -231,7 +242,10 @@ function buildDockBoatRoute(
     const currentKey = stack[stack.length - 1]!;
     if (stack.length >= 3) {
       const backEdge = edgeMap.get(`${currentKey}->${currentClusterKey}`);
-      if (backEdge && hasUniquePathCoverage(stack, currentClusterKey, edgeMap)) {
+      if (
+        backEdge &&
+        hasUniquePathCoverage(stack, currentClusterKey, edgeMap)
+      ) {
         candidates.push({
           route: [...stack],
           score: createRouteScore(stack, edgeMap),
@@ -270,7 +284,10 @@ function buildDockBoatRoute(
   }
 
   return {
-    boatName: generateBoatRouteName(currentCluster.anchorX, currentCluster.anchorY),
+    boatName: generateBoatRouteName(
+      currentCluster.anchorX,
+      currentCluster.anchorY
+    ),
     currentStopIndex: 0,
     stops: best.route
       .map((clusterKey) => clusterMap.get(clusterKey))
@@ -283,20 +300,27 @@ function buildDockBoatRoute(
   };
 }
 
-function createRouteScore(route: string[], edgeMap: Map<string, DockEdge>): string {
+function createRouteScore(
+  route: string[],
+  edgeMap: Map<string, DockEdge>
+): string {
   const pathDistance = getRouteDistance(route, edgeMap);
   const stopScore = String(MAX_ROUTE_STOPS - route.length).padStart(2, '0');
   const distanceScore = String(pathDistance).padStart(4, '0');
   return `${stopScore}:${distanceScore}:${route.join('|')}`;
 }
 
-function getRouteDistance(route: string[], edgeMap: Map<string, DockEdge>): number {
+function getRouteDistance(
+  route: string[],
+  edgeMap: Map<string, DockEdge>
+): number {
   let total = 0;
   for (let index = 0; index < route.length - 1; index += 1) {
     total += edgeMap.get(`${route[index]}->${route[index + 1]}`)?.distance ?? 0;
   }
   if (route.length > 2) {
-    total += edgeMap.get(`${route[route.length - 1]}->${route[0]}`)?.distance ?? 0;
+    total +=
+      edgeMap.get(`${route[route.length - 1]}->${route[0]}`)?.distance ?? 0;
   }
   return total;
 }
@@ -333,7 +357,11 @@ function collectDockEdges(
 ): DockEdge[] {
   const edges: DockEdge[] = [];
   for (let index = 0; index < clusters.length; index += 1) {
-    for (let otherIndex = index + 1; otherIndex < clusters.length; otherIndex += 1) {
+    for (
+      let otherIndex = index + 1;
+      otherIndex < clusters.length;
+      otherIndex += 1
+    ) {
       const left = clusters[index]!;
       const right = clusters[otherIndex]!;
       const path = findOceanRouteBetweenClusters(state, left, right);
@@ -359,8 +387,12 @@ function findOceanRouteBetweenClusters(
 ): { distance: number; pathKeys: Set<string>; pathPoints: Point[] } | null {
   const blocked = new Set<string>();
   const queue: RouteSearchNode[] = [];
-  const sourceKeys = new Set(from.tiles.map((tile) => toPointKey(tile.x, tile.y)));
-  const targetKeys = new Set(to.tiles.map((tile) => toPointKey(tile.x, tile.y)));
+  const sourceKeys = new Set(
+    from.tiles.map((tile) => toPointKey(tile.x, tile.y))
+  );
+  const targetKeys = new Set(
+    to.tiles.map((tile) => toPointKey(tile.x, tile.y))
+  );
 
   for (const edgeTile of from.edgeTiles) {
     const key = toPointKey(edgeTile.x, edgeTile.y);
@@ -396,7 +428,11 @@ function findOceanRouteBetweenClusters(
       return { distance: current.distance, pathKeys, pathPoints };
     }
 
-    for (let directionIndex = 0; directionIndex < CARDINAL_DIRECTIONS.length; directionIndex += 1) {
+    for (
+      let directionIndex = 0;
+      directionIndex < CARDINAL_DIRECTIONS.length;
+      directionIndex += 1
+    ) {
       const direction = CARDINAL_DIRECTIONS[directionIndex]!;
       const neighborX = current.x + direction.x;
       const neighborY = current.y + direction.y;
@@ -438,7 +474,11 @@ function collectDockClusters(
     const surveyedRanges = survey.surveyedRows.get(y) ?? [];
     const unsurveyedRanges = getUnsurveyedRanges(surveyedRanges, minX, maxX);
 
-    for (let rangeIndex = 0; rangeIndex < unsurveyedRanges.length; rangeIndex += 1) {
+    for (
+      let rangeIndex = 0;
+      rangeIndex < unsurveyedRanges.length;
+      rangeIndex += 1
+    ) {
       const range = unsurveyedRanges[rangeIndex]!;
       for (let x = range.startX; x <= range.endX; x += 1) {
         const key = toPointKey(x, y);
@@ -450,7 +490,11 @@ function collectDockClusters(
         }
         const cluster = getDockClusterFromTile(state, x, y);
         survey.clusters.set(cluster.key, cluster);
-        for (let tileIndex = 0; tileIndex < cluster.tiles.length; tileIndex += 1) {
+        for (
+          let tileIndex = 0;
+          tileIndex < cluster.tiles.length;
+          tileIndex += 1
+        ) {
           const tile = cluster.tiles[tileIndex]!;
           survey.tileToClusterKey.set(toPointKey(tile.x, tile.y), cluster.key);
         }
@@ -463,20 +507,19 @@ function collectDockClusters(
     .filter((cluster) =>
       cluster.tiles.some(
         (tile) =>
-          tile.x >= minX &&
-          tile.x <= maxX &&
-          tile.y >= minY &&
-          tile.y <= maxY
+          tile.x >= minX && tile.x <= maxX && tile.y >= minY && tile.y <= maxY
       )
     )
     .sort((left, right) =>
-    left.anchorY === right.anchorY
-      ? left.anchorX - right.anchorX
-      : left.anchorY - right.anchorY
-  );
+      left.anchorY === right.anchorY
+        ? left.anchorX - right.anchorX
+        : left.anchorY - right.anchorY
+    );
 }
 
-function getDockClusterSurveyState(state: WorldStateLike): DockClusterSurveyState {
+function getDockClusterSurveyState(
+  state: WorldStateLike
+): DockClusterSurveyState {
   let survey = dockClusterSurveyCache.get(state);
   if (!survey) {
     survey = {
@@ -579,12 +622,19 @@ function getDockClusterFromTile(
     const current = queue[queueIndex]!;
     queueIndex += 1;
     tiles.push({ x: current.x, y: current.y });
-    for (let directionIndex = 0; directionIndex < CARDINAL_DIRECTIONS.length; directionIndex += 1) {
+    for (
+      let directionIndex = 0;
+      directionIndex < CARDINAL_DIRECTIONS.length;
+      directionIndex += 1
+    ) {
       const direction = CARDINAL_DIRECTIONS[directionIndex]!;
       const neighborX = current.x + direction.x;
       const neighborY = current.y + direction.y;
       const key = toPointKey(neighborX, neighborY);
-      if (visited.has(key) || state.getCurrentTile(neighborX, neighborY).kind !== 'dock') {
+      if (
+        visited.has(key) ||
+        state.getCurrentTile(neighborX, neighborY).kind !== 'dock'
+      ) {
         continue;
       }
       visited.add(key);
@@ -600,9 +650,17 @@ function getDockClusterFromTile(
   for (let index = 0; index < tiles.length; index += 1) {
     const tile = tiles[index]!;
     let isEdgeTile = false;
-    for (let directionIndex = 0; directionIndex < CARDINAL_DIRECTIONS.length; directionIndex += 1) {
+    for (
+      let directionIndex = 0;
+      directionIndex < CARDINAL_DIRECTIONS.length;
+      directionIndex += 1
+    ) {
       const direction = CARDINAL_DIRECTIONS[directionIndex]!;
-      if (isBoatTravelKind(state.getCurrentTile(tile.x + direction.x, tile.y + direction.y).kind)) {
+      if (
+        isBoatTravelKind(
+          state.getCurrentTile(tile.x + direction.x, tile.y + direction.y).kind
+        )
+      ) {
         isEdgeTile = true;
         break;
       }
@@ -611,7 +669,8 @@ function getDockClusterFromTile(
       edgeTiles.push(tile);
     }
   }
-  const stopName = findNearestDockStopName(state, tiles) ?? `Dock ${anchor.x},${anchor.y}`;
+  const stopName =
+    findNearestDockStopName(state, tiles) ?? `Dock ${anchor.x},${anchor.y}`;
 
   return {
     key: `${anchor.x}:${anchor.y}`,
@@ -634,8 +693,16 @@ function findNearestDockStopName(
     return null;
   }
 
-  for (let y = anchor.y - DOCK_STOP_SEARCH_RADIUS; y <= anchor.y + DOCK_STOP_SEARCH_RADIUS; y += 1) {
-    for (let x = anchor.x - DOCK_STOP_SEARCH_RADIUS; x <= anchor.x + DOCK_STOP_SEARCH_RADIUS; x += 1) {
+  for (
+    let y = anchor.y - DOCK_STOP_SEARCH_RADIUS;
+    y <= anchor.y + DOCK_STOP_SEARCH_RADIUS;
+    y += 1
+  ) {
+    for (
+      let x = anchor.x - DOCK_STOP_SEARCH_RADIUS;
+      x <= anchor.x + DOCK_STOP_SEARCH_RADIUS;
+      x += 1
+    ) {
       const tile = state.getCurrentTile(x, y);
       const poiName = typeof tile.poi?.name === 'string' ? tile.poi.name : null;
       if (!poiName) {
@@ -649,7 +716,11 @@ function findNearestDockStopName(
           distance = candidateDistance;
         }
       }
-      if (!best || distance < best.distance || (distance === best.distance && poiName < best.name)) {
+      if (
+        !best ||
+        distance < best.distance ||
+        (distance === best.distance && poiName < best.name)
+      ) {
         best = { name: poiName, distance };
       }
     }
@@ -670,11 +741,17 @@ function generateBoatRouteName(anchorX: number, anchorY: number): string {
   const prefixes = ['Harbor', 'Compass', 'Mast', 'Lantern', 'Tide', 'Mariner'];
   const suffixes = ['Circle', 'Circuit', 'Run', 'Line', 'Loop', 'Crown'];
   const prefix =
-    prefixes[Math.floor(hash2D(DOCK_ROUTE_PREFIX_SEED, anchorX, anchorY) * prefixes.length)] ??
-    prefixes[0]!;
+    prefixes[
+      Math.floor(
+        hash2D(DOCK_ROUTE_PREFIX_SEED, anchorX, anchorY) * prefixes.length
+      )
+    ] ?? prefixes[0]!;
   const suffix =
-    suffixes[Math.floor(hash2D(DOCK_ROUTE_SUFFIX_SEED, anchorX, anchorY) * suffixes.length)] ??
-    suffixes[0]!;
+    suffixes[
+      Math.floor(
+        hash2D(DOCK_ROUTE_SUFFIX_SEED, anchorX, anchorY) * suffixes.length
+      )
+    ] ?? suffixes[0]!;
   return `${prefix} ${suffix}`;
 }
 
@@ -684,19 +761,26 @@ function resolveDockBoatPlacement(
   route: DockBoatRoute
 ): DockBoatPlacement | null {
   const geometry = getDockBoatRouteGeometry(state, route);
-  if (!geometry || geometry.points.length === 0 || geometry.segments.length === 0) {
+  if (
+    !geometry ||
+    geometry.points.length === 0 ||
+    geometry.segments.length === 0
+  ) {
     return null;
   }
 
   const loopDurationMs =
-    Math.max(12, Math.min(30, Math.round(geometry.points.length / 4))) * 60 * 1000;
+    Math.max(12, Math.min(30, Math.round(geometry.points.length / 4))) *
+    60 *
+    1000;
   const phaseOffset =
     hash2D(
       getDockBoatPhaseSeed(route),
       route.stops[0]?.x ?? 0,
       route.stops[0]?.y ?? 0
     ) * loopDurationMs;
-  const timeBucketStart = Math.floor(timeMs / PADDLE_BOAT_TIME_BUCKET_MS) *
+  const timeBucketStart =
+    Math.floor(timeMs / PADDLE_BOAT_TIME_BUCKET_MS) *
     PADDLE_BOAT_TIME_BUCKET_MS;
   const loopProgress =
     ((((timeBucketStart + phaseOffset) % loopDurationMs) + loopDurationMs) %

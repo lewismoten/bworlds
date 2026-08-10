@@ -7,7 +7,10 @@ type CharacterRosterLike = {
   }>;
 };
 
-type DebugWorldStateLike = Pick<WorldStateLike, 'getCurrentContext' | 'timeMs'> & {
+type DebugWorldStateLike = Pick<
+  WorldStateLike,
+  'getCurrentContext' | 'timeMs'
+> & {
   activeCharacterIds?: string[];
   characterRoster?: CharacterRosterLike;
 };
@@ -18,11 +21,16 @@ export type DebugWorldStats = {
   reducedSimulationEntityCount: number;
 };
 
-export function getDebugWorldStats(state: DebugWorldStateLike): DebugWorldStats {
+export function getDebugWorldStats(
+  state: DebugWorldStateLike
+): DebugWorldStats {
   const activePartyCount = Array.isArray(state.activeCharacterIds)
     ? state.activeCharacterIds.length
     : 1;
-  const activeNpcCount = getContextActiveNpcCount(state.getCurrentContext(), state.timeMs);
+  const activeNpcCount = getContextActiveNpcCount(
+    state.getCurrentContext(),
+    state.timeMs
+  );
   const reducedSimulationEntityCount =
     state.characterRoster?.characters.filter(
       (character) => character.availability === 'available'
@@ -47,5 +55,6 @@ function getContextActiveNpcCount(
     return 0;
   }
 
-  return getTownNpcPlacements(context.origin.x, context.origin.y, timeMs ?? 0).length;
+  return getTownNpcPlacements(context.origin.x, context.origin.y, timeMs ?? 0)
+    .length;
 }

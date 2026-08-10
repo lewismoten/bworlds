@@ -78,7 +78,9 @@ describe('treasure map support', () => {
       map,
     });
 
-    expect(rows.some((row) => row.includes(':') || row.includes('#'))).toBe(true);
+    expect(rows.some((row) => row.includes(':') || row.includes('#'))).toBe(
+      true
+    );
     expect(item).toEqual(
       expect.objectContaining({
         id: 'treasure:one',
@@ -113,7 +115,9 @@ describe('treasure map support', () => {
     ]);
 
     expect(fragments).toHaveLength(3);
-    expect(fragments.map((fragment) => fragment.rows.length)).toEqual([4, 4, 3]);
+    expect(fragments.map((fragment) => fragment.rows.length)).toEqual([
+      4, 4, 3,
+    ]);
     expect(fragments.filter((fragment) => fragment.gpsLabel)).toHaveLength(1);
     expect(assembly).toEqual({
       complete: true,
@@ -138,10 +142,7 @@ describe('treasure map support', () => {
       id: 'treasure:fragment:1',
       fragment: fragments[1],
     });
-    const assembly = assembleTreasureMapFragments([
-      fragments[3],
-      fragments[1],
-    ]);
+    const assembly = assembleTreasureMapFragments([fragments[3], fragments[1]]);
 
     expect(assembly.complete).toBe(false);
     expect(assembly.missingFragmentIndices).toEqual([0, 2]);

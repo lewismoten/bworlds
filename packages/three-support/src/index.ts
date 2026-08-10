@@ -24,9 +24,10 @@ type TextureHostLike<TTexture> = {
   RepeatWrapping: unknown;
 };
 
-type StandardMaterialHostLike<TTexture, TMaterial> = TextureHostLike<TTexture> & {
-  MeshStandardMaterial: new (options?: Record<string, unknown>) => TMaterial;
-};
+type StandardMaterialHostLike<TTexture, TMaterial> =
+  TextureHostLike<TTexture> & {
+    MeshStandardMaterial: new (options?: Record<string, unknown>) => TMaterial;
+  };
 
 type BasicMaterialHostLike<TMaterial> = {
   MeshBasicMaterial: new (options?: Record<string, unknown>) => TMaterial;
@@ -68,7 +69,8 @@ const sharedSphereGeometryCache = new WeakMap<
 const MOUNTAIN_TEXTURE_X_SEED = registerHashLabel('mountain-texture-x');
 const MOUNTAIN_TEXTURE_Y_SEED = registerHashLabel('mountain-texture-y');
 const MOUNTAIN_TEXTURE_LENGTH_SEED = registerHashLabel('mountain-texture-l');
-const MOUNTAIN_TEXTURE_BRIGHTNESS_SEED = registerHashLabel('mountain-texture-b');
+const MOUNTAIN_TEXTURE_BRIGHTNESS_SEED =
+  registerHashLabel('mountain-texture-b');
 const MOUNTAIN_CRACK_X_SEED = registerHashLabel('mountain-crack-x');
 const MOUNTAIN_CRACK_Y_SEED = registerHashLabel('mountain-crack-y');
 const MOUNTAIN_CRACK_LENGTH_SEED = registerHashLabel('mountain-crack-l');
@@ -189,7 +191,9 @@ export function getOrCreatePaintedCanvasTexture(
   );
 }
 
-export function getOrCreatePaintedCanvasTextureTyped<TTexture extends ThreeTextureLike>(
+export function getOrCreatePaintedCanvasTextureTyped<
+  TTexture extends ThreeTextureLike,
+>(
   cache: CacheLike<string, TTexture>,
   key: string,
   three: TextureHostLike<TTexture>,
@@ -235,17 +239,19 @@ export function createPaintedStandardMaterial(
 ): ThreeMaterialLike {
   const texture = createPaintedCanvasTexture(three, options);
   applySurfaceTextureSampling(texture, three, options.quality);
-  return new three.MeshStandardMaterial(compactMaterialOptions({
-    color: options.color ?? '#ffffff',
-    map: texture,
-    roughness: options.roughness,
-    metalness: options.metalness,
-    emissive: options.emissive,
-    emissiveIntensity: options.emissiveIntensity,
-    transparent: options.transparent,
-    opacity: options.opacity,
-    side: options.side,
-  }));
+  return new three.MeshStandardMaterial(
+    compactMaterialOptions({
+      color: options.color ?? '#ffffff',
+      map: texture,
+      roughness: options.roughness,
+      metalness: options.metalness,
+      emissive: options.emissive,
+      emissiveIntensity: options.emissiveIntensity,
+      transparent: options.transparent,
+      opacity: options.opacity,
+      side: options.side,
+    })
+  );
 }
 
 export function createBasicMaterial(
@@ -258,13 +264,15 @@ export function createBasicMaterial(
     side?: unknown;
   } = {}
 ) {
-  return new three.MeshBasicMaterial(compactMaterialOptions({
-    color: options.color,
-    map: options.map,
-    transparent: options.transparent,
-    depthWrite: options.depthWrite,
-    side: options.side,
-  }));
+  return new three.MeshBasicMaterial(
+    compactMaterialOptions({
+      color: options.color,
+      map: options.map,
+      transparent: options.transparent,
+      depthWrite: options.depthWrite,
+      side: options.side,
+    })
+  );
 }
 
 export function createTexturedPlaneMesh<
@@ -393,7 +401,9 @@ export interface PathPointLike {
   distanceTo(other: PathPointLike): number;
 }
 
-function compactMaterialOptions<T extends Record<string, unknown>>(options: T): T {
+function compactMaterialOptions<T extends Record<string, unknown>>(
+  options: T
+): T {
   return Object.fromEntries(
     Object.entries(options).filter(([, value]) => value !== undefined)
   ) as T;
@@ -482,9 +492,7 @@ export function createRibbonMesh(
   return new three.Mesh(geometry, material);
 }
 
-export function createMountainTerrainMaterials(
-  three: ThreeHostLike
-): {
+export function createMountainTerrainMaterials(three: ThreeHostLike): {
   mountainMaterial: ThreeMaterialLike;
   snowMaterial: ThreeMaterialLike;
 } {
@@ -514,7 +522,8 @@ export function createMountainTerrainMaterials(
           const length =
             2 + Math.floor(hash2D(MOUNTAIN_TEXTURE_LENGTH_SEED, index, 0) * 6);
           const brightness =
-            110 + Math.floor(hash2D(MOUNTAIN_TEXTURE_BRIGHTNESS_SEED, index, 0) * 70);
+            110 +
+            Math.floor(hash2D(MOUNTAIN_TEXTURE_BRIGHTNESS_SEED, index, 0) * 70);
           context.fillStyle = `rgba(${brightness}, ${brightness + 4}, ${brightness + 10}, 0.35)`;
           context.fillRect(x, y, length, 1);
         }

@@ -92,44 +92,44 @@ const resolveRegionalSignStyle = createRegionalMaterialResolver(
     const textColor = '#24150c';
 
     return createHostMaterialResolver((three: ThreeHostLike): SignStyle => {
-        const style = {
-          key,
-          postHeight,
-          postThickness,
-          placardWidth,
-          placardHeight,
-          placardDepth,
-          placardColor,
-          trimColor,
-          textColor,
-          labelCache: createBoundedCache<string, ThreeTextureLike>(
-            SIGN_LABEL_CACHE_LIMIT
-          ),
-          postMaterial: new three.MeshStandardMaterial({
-            color: postColor,
-            roughness: 0.94,
-            metalness: 0.02,
-          }),
-          placardMaterial: new three.MeshStandardMaterial({
-            color: placardColor,
-            roughness: 0.88,
-            metalness: 0.02,
-          }),
-          trimMaterial: new three.MeshStandardMaterial({
-            color: trimColor,
-            roughness: 0.86,
-            metalness: 0.03,
-          }),
-          lanternMaterial: new three.MeshStandardMaterial({
-            color: '#f7d38a',
-            emissive: '#f7d38a',
-            emissiveIntensity: 0.04,
-            roughness: 0.52,
-            metalness: 0.02,
-          }),
-        };
-        return style;
-      });
+      const style = {
+        key,
+        postHeight,
+        postThickness,
+        placardWidth,
+        placardHeight,
+        placardDepth,
+        placardColor,
+        trimColor,
+        textColor,
+        labelCache: createBoundedCache<string, ThreeTextureLike>(
+          SIGN_LABEL_CACHE_LIMIT
+        ),
+        postMaterial: new three.MeshStandardMaterial({
+          color: postColor,
+          roughness: 0.94,
+          metalness: 0.02,
+        }),
+        placardMaterial: new three.MeshStandardMaterial({
+          color: placardColor,
+          roughness: 0.88,
+          metalness: 0.02,
+        }),
+        trimMaterial: new three.MeshStandardMaterial({
+          color: trimColor,
+          roughness: 0.86,
+          metalness: 0.03,
+        }),
+        lanternMaterial: new three.MeshStandardMaterial({
+          color: '#f7d38a',
+          emissive: '#f7d38a',
+          emissiveIntensity: 0.04,
+          roughness: 0.52,
+          metalness: 0.02,
+        }),
+      };
+      return style;
+    });
   }
 );
 
@@ -162,7 +162,11 @@ export function createSignTilePlugin(): RuntimePlugin {
         }
 
         const nearestTown = findNearestAnchor(townAnchors, x, y);
-        const nearestPoi = findNearestAnchor(placementContext.poiAnchors ?? [], x, y);
+        const nearestPoi = findNearestAnchor(
+          placementContext.poiAnchors ?? [],
+          x,
+          y
+        );
         const closeToTown =
           nearestTown &&
           Math.hypot(x - nearestTown.x, y - nearestTown.y) < SIGN_TOWN_BUFFER;
@@ -186,7 +190,7 @@ export function createSignTilePlugin(): RuntimePlugin {
           ? JUNCTION_SIGN_THRESHOLD
           : roadProfile.routeSpan >= LONG_ROAD_MIN_SPAN && closeToPoi
             ? LONG_ROAD_SIGN_THRESHOLD
-          : ROADSIDE_SIGN_THRESHOLD;
+            : ROADSIDE_SIGN_THRESHOLD;
         const chance = resolvePlacementChance(
           {
             x,
@@ -215,16 +219,18 @@ export function createSignTilePlugin(): RuntimePlugin {
             ? `A sign points travelers toward ${nearestPoi.name}.`
             : nearestTown
               ? `A sign points travelers toward ${nearestTown.name ?? 'a nearby town'}.`
-            : 'A weathered sign points farther down the road.',
+              : 'A weathered sign points farther down the road.',
         };
       },
-      paint2D: createPlainsBackedTilePainter(({ context, x, y, motif, fillRect }) => {
-        const postX = 6 + motif.int(0, 2);
-        fillRect(context, x + postX, y + 5, 2, 7, '#5b3716');
-        fillRect(context, x + postX - 3, y + 3, 8, 4, '#f3c266');
-        fillRect(context, x + postX - 2, y + 4, 6, 1, '#8a5a19');
-        return true;
-      }),
+      paint2D: createPlainsBackedTilePainter(
+        ({ context, x, y, motif, fillRect }) => {
+          const postX = 6 + motif.int(0, 2);
+          fillRect(context, x + postX, y + 5, 2, 7, '#5b3716');
+          fillRect(context, x + postX - 3, y + 3, 8, 4, '#f3c266');
+          fillRect(context, x + postX - 2, y + 4, 6, 1, '#8a5a19');
+          return true;
+        }
+      ),
       create3DModel({
         three,
         state,
@@ -237,7 +243,8 @@ export function createSignTilePlugin(): RuntimePlugin {
         const nearbyPois = getNearbyPois(state, tileX, tileY);
         const placardCount = Math.max(1, Math.min(3, nearbyPois.length || 1));
         const useSecondPost =
-          placardCount > 2 && hash2D(SIGN_SECOND_POST_SEED, tileX, tileY) > 0.48;
+          placardCount > 2 &&
+          hash2D(SIGN_SECOND_POST_SEED, tileX, tileY) > 0.48;
 
         if (detailLevel === 'low') {
           group.add(
@@ -290,7 +297,10 @@ export function createSignTilePlugin(): RuntimePlugin {
         if (!model || typeof model !== 'object') {
           return;
         }
-        syncPoiLightEmitters(model as Parameters<typeof syncPoiLightEmitters>[0], cycle);
+        syncPoiLightEmitters(
+          model as Parameters<typeof syncPoiLightEmitters>[0],
+          cycle
+        );
       },
     },
   ]);

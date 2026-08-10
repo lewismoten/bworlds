@@ -22,7 +22,10 @@ import {
   syncPoiLightEmitters,
   syncPoiWindResponders,
 } from './index.ts';
-import type { ClassifyOverworldTileContext, WorldStateLike } from '@bworlds/plugin-api';
+import type {
+  ClassifyOverworldTileContext,
+  WorldStateLike,
+} from '@bworlds/plugin-api';
 
 function createWindEnvironment(windStrength: number) {
   return {
@@ -519,31 +522,44 @@ describe('poi support', () => {
   });
 
   it('ramps poi light activation from day through twilight to night', () => {
-    expect(
-      getPoiLightActivation({ daylight: 1, twilight: 0, night: 0 })
-    ).toBe(0);
+    expect(getPoiLightActivation({ daylight: 1, twilight: 0, night: 0 })).toBe(
+      0
+    );
     expect(
       getPoiLightActivation({ daylight: 0.15, twilight: 0.75, night: 0.35 })
     ).toBeGreaterThan(0.3);
-    expect(
-      getPoiLightActivation({ daylight: 0, twilight: 0, night: 1 })
-    ).toBe(1);
+    expect(getPoiLightActivation({ daylight: 0, twilight: 0, night: 1 })).toBe(
+      1
+    );
   });
 
   it('syncs tagged poi emissive meshes and point lights from cycle state', () => {
     const emissiveMesh = markPoiLightEmitter(
       {
         userData: {},
-        position: { x: 0, y: 0, z: 0, set() { return this; } },
+        position: {
+          x: 0,
+          y: 0,
+          z: 0,
+          set() {
+            return this;
+          },
+        },
         rotation: { x: 0, y: 0, z: 0 },
         scale: {
           x: 1,
           y: 1,
           z: 1,
-          set() { return this; },
-          setScalar() { return this; },
+          set() {
+            return this;
+          },
+          setScalar() {
+            return this;
+          },
         },
-        add() { return this; },
+        add() {
+          return this;
+        },
         material: { emissiveIntensity: 0 },
       },
       {
@@ -557,16 +573,29 @@ describe('poi support', () => {
         userData: {},
         visible: false,
         intensity: 0,
-        position: { x: 0, y: 0, z: 0, set() { return this; } },
+        position: {
+          x: 0,
+          y: 0,
+          z: 0,
+          set() {
+            return this;
+          },
+        },
         rotation: { x: 0, y: 0, z: 0 },
         scale: {
           x: 1,
           y: 1,
           z: 1,
-          set() { return this; },
-          setScalar() { return this; },
+          set() {
+            return this;
+          },
+          setScalar() {
+            return this;
+          },
         },
-        add() { return this; },
+        add() {
+          return this;
+        },
       },
       {
         kind: 'point-light',
@@ -574,19 +603,30 @@ describe('poi support', () => {
       }
     );
     const root = {
-      position: { x: 0, y: 0, z: 0, set() { return this; } },
+      position: {
+        x: 0,
+        y: 0,
+        z: 0,
+        set() {
+          return this;
+        },
+      },
       rotation: { x: 0, y: 0, z: 0 },
       scale: {
         x: 1,
         y: 1,
         z: 1,
-        set() { return this; },
-        setScalar() { return this; },
+        set() {
+          return this;
+        },
+        setScalar() {
+          return this;
+        },
       },
-      add() { return this; },
-      traverse(
-        visit: (node: typeof emissiveMesh | typeof pointLight) => void
-      ) {
+      add() {
+        return this;
+      },
+      traverse(visit: (node: typeof emissiveMesh | typeof pointLight) => void) {
         visit(emissiveMesh);
         visit(pointLight);
       },
@@ -604,16 +644,29 @@ describe('poi support', () => {
       {
         userData: {},
         visible: true,
-        position: { x: 0, y: 0, z: 0, set() { return this; } },
+        position: {
+          x: 0,
+          y: 0,
+          z: 0,
+          set() {
+            return this;
+          },
+        },
         rotation: { x: 0, y: 0, z: 0 },
         scale: {
           x: 1,
           y: 1,
           z: 1,
-          set() { return this; },
-          setScalar() { return this; },
+          set() {
+            return this;
+          },
+          setScalar() {
+            return this;
+          },
         },
-        add() { return this; },
+        add() {
+          return this;
+        },
       },
       {
         axis: 'z',
@@ -628,16 +681,29 @@ describe('poi support', () => {
       }
     );
     const root = {
-      position: { x: 0, y: 0, z: 0, set() { return this; } },
+      position: {
+        x: 0,
+        y: 0,
+        z: 0,
+        set() {
+          return this;
+        },
+      },
       rotation: { x: 0, y: 0, z: 0 },
       scale: {
         x: 1,
         y: 1,
         z: 1,
-        set() { return this; },
-        setScalar() { return this; },
+        set() {
+          return this;
+        },
+        setScalar() {
+          return this;
+        },
       },
-      add() { return this; },
+      add() {
+        return this;
+      },
       traverse(visit: (node: typeof banner) => void) {
         visit(banner);
       },
@@ -663,31 +729,57 @@ describe('poi support', () => {
       {
         userData: {},
         visible: true,
-        position: { x: 0, y: 0, z: 0, set() { return this; } },
+        position: {
+          x: 0,
+          y: 0,
+          z: 0,
+          set() {
+            return this;
+          },
+        },
         rotation: { x: 0, y: 0, z: 0 },
         scale: {
           x: 1,
           y: 1,
           z: 1,
-          set() { return this; },
-          setScalar() { return this; },
+          set() {
+            return this;
+          },
+          setScalar() {
+            return this;
+          },
         },
-        add() { return this; },
+        add() {
+          return this;
+        },
       },
       {}
     );
     const root = {
       userData: {},
-      position: { x: 0, y: 0, z: 0, set() { return this; } },
+      position: {
+        x: 0,
+        y: 0,
+        z: 0,
+        set() {
+          return this;
+        },
+      },
       rotation: { x: 0, y: 0, z: 0 },
       scale: {
         x: 1,
         y: 1,
         z: 1,
-        set() { return this; },
-        setScalar() { return this; },
+        set() {
+          return this;
+        },
+        setScalar() {
+          return this;
+        },
       },
-      add() { return this; },
+      add() {
+        return this;
+      },
       traverse: vi.fn((visit: (node: typeof banner) => void) => {
         visit(banner);
       }),
@@ -705,16 +797,29 @@ describe('poi support', () => {
       {
         userData: {},
         visible: true,
-        position: { x: 0, y: 0, z: 0, set() { return this; } },
+        position: {
+          x: 0,
+          y: 0,
+          z: 0,
+          set() {
+            return this;
+          },
+        },
         rotation: { x: 0, y: 0, z: 0 },
         scale: {
           x: 1,
           y: 1,
           z: 1,
-          set() { return this; },
-          setScalar() { return this; },
+          set() {
+            return this;
+          },
+          setScalar() {
+            return this;
+          },
         },
-        add() { return this; },
+        add() {
+          return this;
+        },
       },
       {
         axis: 'z',
@@ -727,16 +832,29 @@ describe('poi support', () => {
       {
         userData: {},
         visible: true,
-        position: { x: 0, y: 0, z: 0, set() { return this; } },
+        position: {
+          x: 0,
+          y: 0,
+          z: 0,
+          set() {
+            return this;
+          },
+        },
         rotation: { x: 0, y: 0, z: 0 },
         scale: {
           x: 1,
           y: 1,
           z: 1,
-          set() { return this; },
-          setScalar() { return this; },
+          set() {
+            return this;
+          },
+          setScalar() {
+            return this;
+          },
         },
-        add() { return this; },
+        add() {
+          return this;
+        },
       },
       {
         axis: 'z',
@@ -771,16 +889,29 @@ describe('poi support', () => {
       {
         userData: {},
         visible: true,
-        position: { x: 0, y: 0, z: 0, set() { return this; } },
+        position: {
+          x: 0,
+          y: 0,
+          z: 0,
+          set() {
+            return this;
+          },
+        },
         rotation: { x: 0, y: 0, z: 0 },
         scale: {
           x: 1,
           y: 1,
           z: 1,
-          set() { return this; },
-          setScalar() { return this; },
+          set() {
+            return this;
+          },
+          setScalar() {
+            return this;
+          },
         },
-        add() { return this; },
+        add() {
+          return this;
+        },
       },
       options
     );
@@ -794,16 +925,29 @@ describe('poi support', () => {
         {
           userData: {},
           visible: true,
-          position: { x: 0, y: 0, z: 0, set() { return this; } },
+          position: {
+            x: 0,
+            y: 0,
+            z: 0,
+            set() {
+              return this;
+            },
+          },
           rotation: { x: 0, y: 0, z: 0 },
           scale: {
             x: 1,
             y: 1,
             z: 1,
-            set() { return this; },
-            setScalar() { return this; },
+            set() {
+              return this;
+            },
+            setScalar() {
+              return this;
+            },
           },
-          add() { return this; },
+          add() {
+            return this;
+          },
         },
         {
           axis: index % 2 === 0 ? 'z' : 'y',
@@ -823,16 +967,29 @@ describe('poi support', () => {
       {
         userData: {},
         visible: true,
-        position: { x: 0, y: 0, z: 0, set() { return this; } },
+        position: {
+          x: 0,
+          y: 0,
+          z: 0,
+          set() {
+            return this;
+          },
+        },
         rotation: { x: 0, y: 0, z: 0 },
         scale: {
           x: 1,
           y: 1,
           z: 1,
-          set() { return this; },
-          setScalar() { return this; },
+          set() {
+            return this;
+          },
+          setScalar() {
+            return this;
+          },
         },
-        add() { return this; },
+        add() {
+          return this;
+        },
       },
       options
     );
@@ -879,7 +1036,9 @@ describe('poi support', () => {
   });
 });
 
-function createMockState(tileMap: Record<string, { kind: string }>): WorldStateLike {
+function createMockState(
+  tileMap: Record<string, { kind: string }>
+): WorldStateLike {
   return {
     player: { x: 0, y: 0, facing: 0 },
     getCurrentContext() {

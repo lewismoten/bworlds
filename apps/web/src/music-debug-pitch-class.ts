@@ -1,18 +1,7 @@
 import type { ProceduralMusicNote } from './procedural-music.ts';
 
 export type MusicDebugPitchClassLabel =
-  | 'C'
-  | 'C#'
-  | 'D'
-  | 'D#'
-  | 'E'
-  | 'F'
-  | 'F#'
-  | 'G'
-  | 'G#'
-  | 'A'
-  | 'A#'
-  | 'B';
+  'C' | 'C#' | 'D' | 'D#' | 'E' | 'F' | 'F#' | 'G' | 'G#' | 'A' | 'A#' | 'B';
 
 export const MUSIC_DEBUG_PITCH_CLASS_LABELS: readonly MusicDebugPitchClassLabel[] =
   ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
@@ -27,7 +16,9 @@ export function resolveMusicDebugPitchClassLabel(
   );
 }
 
-export function normalizeMusicDebugPitchClassSemitone(semitone: number): number {
+export function normalizeMusicDebugPitchClassSemitone(
+  semitone: number
+): number {
   return ((Math.round(semitone) % 12) + 12) % 12;
 }
 

@@ -9,10 +9,9 @@ export interface RenderAudioEmitterMetadata {
 
 type RenderAudioEmitterTarget = Pick<ThreeObject3DLike, 'userData'>;
 
-export function markRenderAudioEmitter<TTarget extends RenderAudioEmitterTarget>(
-  target: TTarget,
-  metadata: RenderAudioEmitterMetadata = {}
-): TTarget {
+export function markRenderAudioEmitter<
+  TTarget extends RenderAudioEmitterTarget,
+>(target: TTarget, metadata: RenderAudioEmitterMetadata = {}): TTarget {
   const normalizedCount =
     typeof metadata.count === 'number' && Number.isFinite(metadata.count)
       ? Math.max(1, Math.floor(metadata.count))

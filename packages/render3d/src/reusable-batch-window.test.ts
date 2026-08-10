@@ -28,7 +28,12 @@ describe('reusable batch window helpers', () => {
   it('fills wrapped batch windows without replacing the target array', () => {
     const target = ['stale'];
 
-    const firstBatch = fillWrappedBatchWindow(['a', 'b', 'c', 'd'], 3, 3, target);
+    const firstBatch = fillWrappedBatchWindow(
+      ['a', 'b', 'c', 'd'],
+      3,
+      3,
+      target
+    );
     expect(firstBatch.items).toBe(target);
     expect(firstBatch).toEqual({
       items: ['d', 'a', 'b'],

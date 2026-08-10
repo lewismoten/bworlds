@@ -15,11 +15,8 @@ export function createDepthFlavorRuntimePlugin(): RuntimePlugin {
     decorateDepthTile({ context, x, y, tile }: DecorateDepthTileContext) {
       if (
         tile.kind === 'floor' &&
-        hash2D(
-          getDepthFlavorContextSeed(depthFlavorSeed, context.id),
-          x,
-          y
-        ) > 0.985
+        hash2D(getDepthFlavorContextSeed(depthFlavorSeed, context.id), x, y) >
+          0.985
       ) {
         tile.note = `Depth ${context.depth}: ancient markings cover the floor.`;
       }

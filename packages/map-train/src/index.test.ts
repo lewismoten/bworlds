@@ -31,7 +31,9 @@ describe('map train', () => {
     const boardingSpawn = getTrainBoardingSpawn('spec', context);
     expect(cars.length).toBeGreaterThanOrEqual(4);
     expect(map.getTile(0, boardingSpawn.y).kind).toBe('interior');
-    expect(map.getTile(0, boardingSpawn.y).note).toContain('brass-railed rear platform');
+    expect(map.getTile(0, boardingSpawn.y).note).toContain(
+      'brass-railed rear platform'
+    );
     expect(map.getTile(0, boardingSpawn.y - 5).note).not.toBe(
       map.getTile(0, boardingSpawn.y).note
     );

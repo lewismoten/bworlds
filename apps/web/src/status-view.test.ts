@@ -169,6 +169,8 @@ describe('status view', () => {
     expect(hostNode.children[4]).toBe(initialCompassNode);
     expect(hostNode.children[0]?.hidden).toBe(true);
     expect(hostNode.children[5]?.hidden).toBe(true);
-    expect(hostNode.children[4]?.children[2]?.classList.contains('is-active')).toBe(true);
+    expect(
+      hostNode.children[4]?.children[2]?.classList.contains('is-active')
+    ).toBe(true);
   });
 });

@@ -1,7 +1,10 @@
 import { createPlainsBackedTilePainter } from '@bworlds/paint-support';
 import { createTilePlugin } from '@bworlds/plugin-api';
 import { createRouteTraversalProfile } from '@bworlds/tile-support';
-import { createBasicMaterial, getSharedBoxGeometry } from '@bworlds/three-support';
+import {
+  createBasicMaterial,
+  getSharedBoxGeometry,
+} from '@bworlds/three-support';
 import type {
   Create3DModelContext,
   Kind,
@@ -60,8 +63,12 @@ function createRailGroup(
   const { sleeperMaterial, railMaterial } = getRailSharedMaterials(three);
   group.position.set(tileX, 0, tileY);
 
-  const horizontal = hasConnection(state, tileX, tileY, 'east') || hasConnection(state, tileX, tileY, 'west');
-  const vertical = hasConnection(state, tileX, tileY, 'north') || hasConnection(state, tileX, tileY, 'south');
+  const horizontal =
+    hasConnection(state, tileX, tileY, 'east') ||
+    hasConnection(state, tileX, tileY, 'west');
+  const vertical =
+    hasConnection(state, tileX, tileY, 'north') ||
+    hasConnection(state, tileX, tileY, 'south');
   const diagonalSlash =
     hasConnection(state, tileX, tileY, 'northeast') ||
     hasConnection(state, tileX, tileY, 'southwest');
@@ -116,7 +123,15 @@ function hasConnection(
   state: Create3DModelContext['state'],
   tileX: number,
   tileY: number,
-  direction: 'north' | 'east' | 'south' | 'west' | 'northeast' | 'southeast' | 'southwest' | 'northwest'
+  direction:
+    | 'north'
+    | 'east'
+    | 'south'
+    | 'west'
+    | 'northeast'
+    | 'southeast'
+    | 'southwest'
+    | 'northwest'
 ) {
   const offsets: Record<typeof direction, { dx: number; dy: number }> = {
     north: { dx: 0, dy: -1 },
@@ -129,7 +144,9 @@ function hasConnection(
     northwest: { dx: -1, dy: -1 },
   };
   const offset = offsets[direction];
-  return isRailNetworkKind(state.getCurrentTile(tileX + offset.dx, tileY + offset.dy).kind);
+  return isRailNetworkKind(
+    state.getCurrentTile(tileX + offset.dx, tileY + offset.dy).kind
+  );
 }
 
 function isRailNetworkKind(kind: Kind): boolean {

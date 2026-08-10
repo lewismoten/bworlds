@@ -132,12 +132,17 @@ export function runTileModelSafetyPrecheck(
       geometries.add(child.geometry);
       stats.geometryCount += 1;
       const vertexCount = getGeometryVertexCount(child.geometry);
-      stats.maxGeometryVertexCount = Math.max(stats.maxGeometryVertexCount, vertexCount);
+      stats.maxGeometryVertexCount = Math.max(
+        stats.maxGeometryVertexCount,
+        vertexCount
+      );
       const indexCount = getGeometryIndexCount(child.geometry);
       stats.indexedVertexCount += indexCount;
       if (isTriangleGeometryObjectType(child.type)) {
         const triangleCount =
-          indexCount > 0 ? Math.floor(indexCount / 3) : Math.floor(vertexCount / 3);
+          indexCount > 0
+            ? Math.floor(indexCount / 3)
+            : Math.floor(vertexCount / 3);
         stats.maxGeometryTriangleCount = Math.max(
           stats.maxGeometryTriangleCount,
           triangleCount

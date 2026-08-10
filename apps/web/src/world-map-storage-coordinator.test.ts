@@ -166,7 +166,11 @@ describe('world map storage coordinator', () => {
     const coordinator = createWorldMapStorageCoordinator({
       settingsStorage,
       providers: [
-        { id: 'local', label: 'Local Play', storage: createMemoryWorldMapStorage('local') },
+        {
+          id: 'local',
+          label: 'Local Play',
+          storage: createMemoryWorldMapStorage('local'),
+        },
         {
           id: 'guild',
           label: 'Guild Atlas',
@@ -227,7 +231,10 @@ describe('world map storage coordinator', () => {
       poi: { type: 'town' as const, name: 'Northpass' },
     };
 
-    expect(coordinator.publishPoiToPreferredServers?.(poi)).toEqual(['guild', 'friends']);
+    expect(coordinator.publishPoiToPreferredServers?.(poi)).toEqual([
+      'guild',
+      'friends',
+    ]);
     expect(guildStorage.loadProfile()?.playerPlacedPois).toEqual([poi]);
     expect(friendsStorage.loadProfile()?.playerPlacedPois).toEqual([poi]);
   });

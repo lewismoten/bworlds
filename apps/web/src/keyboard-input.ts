@@ -49,7 +49,9 @@ export function shouldRestoreViewportFocusForGameplayKey(key: string): boolean {
   return GAMEPLAY_VIEWPORT_FOCUS_KEYS.has(key);
 }
 
-export function isEditableKeyboardTarget(target: EventTarget | EventTargetLike): boolean {
+export function isEditableKeyboardTarget(
+  target: EventTarget | EventTargetLike
+): boolean {
   if (!target || typeof target !== 'object') {
     return false;
   }

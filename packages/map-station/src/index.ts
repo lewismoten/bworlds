@@ -57,16 +57,16 @@ function createStationMap(
     }
     const bucket = Math.floor(timeMs / 30_000);
     return serviceCache.getOrCreate(bucket, () =>
-        findBoardableTrainService(
-          getRailTrainPlacements({
-            seed,
-            timeMs,
-            x: context.origin.x,
-            y: context.origin.y,
-            sampleTerrainSignals,
-          }),
-          context.label
-        )
+      findBoardableTrainService(
+        getRailTrainPlacements({
+          seed,
+          timeMs,
+          x: context.origin.x,
+          y: context.origin.y,
+          sampleTerrainSignals,
+        }),
+        context.label
+      )
     );
   }
 
@@ -75,7 +75,10 @@ function createStationMap(
       return { kind: 'wall' };
     }
     if (x === 0 && y === 4) {
-      return { kind: 'door', note: 'Press X to step back onto the platform road.' };
+      return {
+        kind: 'door',
+        note: 'Press X to step back onto the platform road.',
+      };
     }
     if (x === 0 && y === STATION_PLATFORM_Y) {
       const service = resolveBoardableTrainService(state);
@@ -87,7 +90,10 @@ function createStationMap(
       };
     }
     if (Math.abs(x) === 5 || y === 4 || y === -5) {
-      return { kind: 'wall', note: 'Brick walls hold back the station weather.' };
+      return {
+        kind: 'wall',
+        note: 'Brick walls hold back the station weather.',
+      };
     }
     if (x === 0 && y === 0) {
       return {
@@ -96,7 +102,10 @@ function createStationMap(
       };
     }
     if (Math.abs(x) <= 1 && y <= -1) {
-      return { kind: 'interior', note: 'A ticket counter and telegraph desk line the hall.' };
+      return {
+        kind: 'interior',
+        note: 'A ticket counter and telegraph desk line the hall.',
+      };
     }
     if (Math.abs(x) <= 2 && y <= -3) {
       return {
@@ -105,9 +114,15 @@ function createStationMap(
       };
     }
     if (Math.abs(x) >= 3 && y <= 1) {
-      return { kind: 'floor', note: 'Benches face the empty platform beyond the windows.' };
+      return {
+        kind: 'floor',
+        note: 'Benches face the empty platform beyond the windows.',
+      };
     }
-    return { kind: 'floor', note: 'Travel posters and cargo tags cover the station walls.' };
+    return {
+      kind: 'floor',
+      note: 'Travel posters and cargo tags cover the station walls.',
+    };
   }
 
   function getAction(x: number, y: number, state?: WorldStateLike) {

@@ -58,7 +58,10 @@ type RiverConnectionDirectionId =
   | 'southwest'
   | 'northwest'
   | 'stub';
-const RIVER_CONNECTION_DIRECTION_SEEDS: Record<RiverConnectionDirectionId, number> = {
+const RIVER_CONNECTION_DIRECTION_SEEDS: Record<
+  RiverConnectionDirectionId,
+  number
+> = {
   north: registerHashLabel('north'),
   east: registerHashLabel('east'),
   south: registerHashLabel('south'),
@@ -163,120 +166,123 @@ export function createWaterTilePlugin(): RuntimePlugin {
   return createTilePlugin(
     'tile-water',
     [
-      withTerrainTileClassifier({
-        kind: 'ocean',
-        definition: {
-          name: 'Ocean',
-          color: '#2563eb',
-          miniColor: '#4ea3ff',
-          walkable: false,
-          wallHeight: 0.1,
-        },
-        getSurfaceProfile3D(): SurfaceProfile3D {
-          return createBoundarySurfaceProfile({
-            surfaceHeight: -0.12,
-            boundaryRole: 'sea',
-            boundaryTransition: {
-              maxChamferDrop: 0.05,
-              minBankHeight: 0.05,
-              bodyInset: 0,
-            },
-          });
-        },
-        paint2D({
-          context,
-          x,
-          y,
-          definition,
-          motif,
-          fillRect,
-        }: Paint2DContext) {
-          const waveOffset = motif.int(0, 2);
-          for (let row = waveOffset; row < TILE_PIXEL_SIZE; row += 3) {
-            fillRect(
-              context,
-              x,
-              y + row,
-              TILE_PIXEL_SIZE,
-              1,
-              definition.miniColor
-            );
-          }
-          fillRect(context, x + motif.int(1, 3), y + 3, 4, 1, '#d9f4ff');
-          fillRect(context, x + motif.int(8, 10), y + 9, 5, 1, '#d9f4ff');
-          return true;
-        },
-        paint2DOverlay({
-          context,
-          x,
-          y,
-          size,
-          timeMs,
-          worldX,
-          worldY,
-          variant,
-        }: Paint2DOverlayContext) {
-          if (typeof timeMs !== 'number') {
-            return false;
-          }
-
-          const time = timeMs * 0.0012;
-          const seed = hash2D(
-            appendHashSeedPart(OCEAN_SHIMMER_SEED, variant),
+      withTerrainTileClassifier(
+        {
+          kind: 'ocean',
+          definition: {
+            name: 'Ocean',
+            color: '#2563eb',
+            miniColor: '#4ea3ff',
+            walkable: false,
+            wallHeight: 0.1,
+          },
+          getSurfaceProfile3D(): SurfaceProfile3D {
+            return createBoundarySurfaceProfile({
+              surfaceHeight: -0.12,
+              boundaryRole: 'sea',
+              boundaryTransition: {
+                maxChamferDrop: 0.05,
+                minBankHeight: 0.05,
+                bodyInset: 0,
+              },
+            });
+          },
+          paint2D({
+            context,
+            x,
+            y,
+            definition,
+            motif,
+            fillRect,
+          }: Paint2DContext) {
+            const waveOffset = motif.int(0, 2);
+            for (let row = waveOffset; row < TILE_PIXEL_SIZE; row += 3) {
+              fillRect(
+                context,
+                x,
+                y + row,
+                TILE_PIXEL_SIZE,
+                1,
+                definition.miniColor
+              );
+            }
+            fillRect(context, x + motif.int(1, 3), y + 3, 4, 1, '#d9f4ff');
+            fillRect(context, x + motif.int(8, 10), y + 9, 5, 1, '#d9f4ff');
+            return true;
+          },
+          paint2DOverlay({
+            context,
+            x,
+            y,
+            size,
+            timeMs,
             worldX,
-            worldY
-          );
-          const drift = (seed - 0.5) * 1.8;
+            worldY,
+            variant,
+          }: Paint2DOverlayContext) {
+            if (typeof timeMs !== 'number') {
+              return false;
+            }
 
-          context.save();
-          context.beginPath();
-          context.rect(x, y, size, size);
-          context.clip();
-
-          for (let band = 0; band < 3; band += 1) {
-            const phase = time + band * 1.7 + drift;
-            const centerX = x + (Math.sin(phase) * 0.5 + 0.5) * size;
-            const centerY =
-              y +
-              size * (0.22 + band * 0.22) +
-              Math.cos(phase * 1.3) * size * 0.04;
-            const glow = context.createRadialGradient(
-              centerX,
-              centerY,
-              0,
-              centerX,
-              centerY,
-              size * 0.38
+            const time = timeMs * 0.0012;
+            const seed = hash2D(
+              appendHashSeedPart(OCEAN_SHIMMER_SEED, variant),
+              worldX,
+              worldY
             );
-            glow.addColorStop(0, 'rgba(255,255,255,0.34)');
-            glow.addColorStop(0.35, 'rgba(217,244,255,0.18)');
-            glow.addColorStop(1, 'rgba(217,244,255,0)');
-            context.fillStyle = glow;
-            context.fillRect(x, y, size, size);
-          }
+            const drift = (seed - 0.5) * 1.8;
 
-          context.strokeStyle = 'rgba(255,255,255,0.16)';
-          context.lineWidth = Math.max(1, size * 0.045);
-          for (let streak = 0; streak < 2; streak += 1) {
-            const phase = time * 1.4 + streak * 2.1 + drift;
-            const startX =
-              x + (Math.sin(phase) * 0.5 + 0.5) * size * 0.8 + size * 0.1;
-            const startY = y + size * (0.28 + streak * 0.26);
+            context.save();
             context.beginPath();
-            context.moveTo(startX - size * 0.1, startY);
-            context.quadraticCurveTo(
-              startX + size * 0.06,
-              startY - size * 0.05,
-              startX + size * 0.18,
-              startY
-            );
-            context.stroke();
-          }
+            context.rect(x, y, size, size);
+            context.clip();
 
-          context.restore();
-          return true;
+            for (let band = 0; band < 3; band += 1) {
+              const phase = time + band * 1.7 + drift;
+              const centerX = x + (Math.sin(phase) * 0.5 + 0.5) * size;
+              const centerY =
+                y +
+                size * (0.22 + band * 0.22) +
+                Math.cos(phase * 1.3) * size * 0.04;
+              const glow = context.createRadialGradient(
+                centerX,
+                centerY,
+                0,
+                centerX,
+                centerY,
+                size * 0.38
+              );
+              glow.addColorStop(0, 'rgba(255,255,255,0.34)');
+              glow.addColorStop(0.35, 'rgba(217,244,255,0.18)');
+              glow.addColorStop(1, 'rgba(217,244,255,0)');
+              context.fillStyle = glow;
+              context.fillRect(x, y, size, size);
+            }
+
+            context.strokeStyle = 'rgba(255,255,255,0.16)';
+            context.lineWidth = Math.max(1, size * 0.045);
+            for (let streak = 0; streak < 2; streak += 1) {
+              const phase = time * 1.4 + streak * 2.1 + drift;
+              const startX =
+                x + (Math.sin(phase) * 0.5 + 0.5) * size * 0.8 + size * 0.1;
+              const startY = y + size * (0.28 + streak * 0.26);
+              context.beginPath();
+              context.moveTo(startX - size * 0.1, startY);
+              context.quadraticCurveTo(
+                startX + size * 0.06,
+                startY - size * 0.05,
+                startX + size * 0.18,
+                startY
+              );
+              context.stroke();
+            }
+
+            context.restore();
+            return true;
+          },
         },
-      }, classifyOceanTile),
+        classifyOceanTile
+      ),
       {
         kind: 'shore',
         definition: {
@@ -322,78 +328,77 @@ export function createWaterTilePlugin(): RuntimePlugin {
           return true;
         },
       },
-      withTerrainTileClassifier({
-        kind: 'river',
-        definition: {
-          name: 'River',
-          color: '#38bdf8',
-          miniColor: '#7dd3fc',
-          walkable: false,
-          wallHeight: 0.05,
+      withTerrainTileClassifier(
+        {
+          kind: 'river',
+          definition: {
+            name: 'River',
+            color: '#38bdf8',
+            miniColor: '#7dd3fc',
+            walkable: false,
+            wallHeight: 0.05,
+          },
+          getSurfaceProfile3D(): SurfaceProfile3D {
+            return createBoundarySurfaceProfile({
+              surfaceHeight: -0.12,
+              boundaryRole: 'channel',
+              boundaryTransition: {
+                maxChamferDrop: 0.08,
+                minBankHeight: 0,
+                bodyInset: 0.08,
+              },
+            });
+          },
+          create3DModel({ three, state, tileX, tileY }: Create3DModelContext) {
+            return createRiverGroup(three, state, tileX, tileY);
+          },
+          paint2D: createPlainsBackedTilePainter(
+            ({ context, x, y, definition, motif }: Paint2DContext) => {
+              const startX = 4 + motif.int(-1, 1);
+              const endX = 9 + motif.int(-1, 1);
+              const controlA = 2 + motif.int(-1, 2);
+              const controlB = 13 + motif.int(-2, 1);
+              context.fillStyle = definition.color;
+              context.beginPath();
+              context.moveTo(x + startX, y);
+              context.bezierCurveTo(
+                x + controlA,
+                y + 5,
+                x + controlB,
+                y + 10,
+                x + endX,
+                y + TILE_PIXEL_SIZE
+              );
+              context.lineTo(x + endX - 4, y + TILE_PIXEL_SIZE);
+              context.bezierCurveTo(
+                x + controlB - 4,
+                y + 10,
+                x + controlA - 4,
+                y + 5,
+                x + startX - 4,
+                y
+              );
+              context.closePath();
+              context.fill();
+              context.strokeStyle = '#d9f4ff';
+              context.lineWidth = 1;
+              context.beginPath();
+              context.moveTo(x + startX - 1, y + 1);
+              context.bezierCurveTo(
+                x + controlA,
+                y + 5,
+                x + controlB - 1,
+                y + 10,
+                x + endX - 1,
+                y + TILE_PIXEL_SIZE - 1
+              );
+              context.stroke();
+              return true;
+            }
+          ),
         },
-        getSurfaceProfile3D(): SurfaceProfile3D {
-          return createBoundarySurfaceProfile({
-            surfaceHeight: -0.12,
-            boundaryRole: 'channel',
-            boundaryTransition: {
-              maxChamferDrop: 0.08,
-              minBankHeight: 0,
-              bodyInset: 0.08,
-            },
-          });
-        },
-        create3DModel({ three, state, tileX, tileY }: Create3DModelContext) {
-          return createRiverGroup(three, state, tileX, tileY);
-        },
-        paint2D: createPlainsBackedTilePainter(({
-          context,
-          x,
-          y,
-          definition,
-          motif,
-        }: Paint2DContext) => {
-          const startX = 4 + motif.int(-1, 1);
-          const endX = 9 + motif.int(-1, 1);
-          const controlA = 2 + motif.int(-1, 2);
-          const controlB = 13 + motif.int(-2, 1);
-          context.fillStyle = definition.color;
-          context.beginPath();
-          context.moveTo(x + startX, y);
-          context.bezierCurveTo(
-            x + controlA,
-            y + 5,
-            x + controlB,
-            y + 10,
-            x + endX,
-            y + TILE_PIXEL_SIZE
-          );
-          context.lineTo(x + endX - 4, y + TILE_PIXEL_SIZE);
-          context.bezierCurveTo(
-            x + controlB - 4,
-            y + 10,
-            x + controlA - 4,
-            y + 5,
-            x + startX - 4,
-            y
-          );
-          context.closePath();
-          context.fill();
-          context.strokeStyle = '#d9f4ff';
-          context.lineWidth = 1;
-          context.beginPath();
-          context.moveTo(x + startX - 1, y + 1);
-          context.bezierCurveTo(
-            x + controlA,
-            y + 5,
-            x + controlB - 1,
-            y + 10,
-            x + endX - 1,
-            y + TILE_PIXEL_SIZE - 1
-          );
-          context.stroke();
-          return true;
-        }),
-      }, classifyRiverTile),
+        classifyRiverTile
+      ),
     ],
     {
       decorateOverworldTile({
@@ -403,7 +408,10 @@ export function createWaterTilePlugin(): RuntimePlugin {
         tile,
       }: DecorateOverworldTileContext) {
         const seedHash = resolveHashSeedInput(seed);
-        const continentSeed = appendHashSeedLabel(seedHash, CONTINENT_NEIGHBOR_SEED);
+        const continentSeed = appendHashSeedLabel(
+          seedHash,
+          CONTINENT_NEIGHBOR_SEED
+        );
         const neighboringSeaSignal = Math.min(
           octaveNoise2D(continentSeed, (x + 1) / 160, y / 160, {
             octaves: 5,
@@ -521,10 +529,8 @@ export function isSingleTileRiverCandidate(options: {
   west: number;
 }): boolean {
   const perpendicularMargin = 0.035;
-  const horizontalFlow =
-    options.east >= 0.72 || options.west >= 0.72;
-  const verticalFlow =
-    options.north >= 0.72 || options.south >= 0.72;
+  const horizontalFlow = options.east >= 0.72 || options.west >= 0.72;
+  const verticalFlow = options.north >= 0.72 || options.south >= 0.72;
 
   if (horizontalFlow && !verticalFlow) {
     return (
@@ -683,28 +689,24 @@ function createRiverGroup(
 }
 
 function getRiverSharedMaterials(three: ThreeHostLike) {
-  return getOrCreateWeakMapValue(
-    riverMaterialCache,
-    three as object,
-    () => ({
-      riverMaterial: new three.MeshStandardMaterial({
-        color: '#3bb8f5',
-        roughness: 0.24,
-        metalness: 0.02,
-        transparent: true,
-        opacity: 0.94,
-        side: three.DoubleSide,
-      }),
-      highlightMaterial: new three.MeshStandardMaterial({
-        color: '#d7f5ff',
-        roughness: 0.14,
-        metalness: 0.03,
-        transparent: true,
-        opacity: 0.68,
-        side: three.DoubleSide,
-      }),
-    })
-  );
+  return getOrCreateWeakMapValue(riverMaterialCache, three as object, () => ({
+    riverMaterial: new three.MeshStandardMaterial({
+      color: '#3bb8f5',
+      roughness: 0.24,
+      metalness: 0.02,
+      transparent: true,
+      opacity: 0.94,
+      side: three.DoubleSide,
+    }),
+    highlightMaterial: new three.MeshStandardMaterial({
+      color: '#d7f5ff',
+      roughness: 0.14,
+      metalness: 0.03,
+      transparent: true,
+      opacity: 0.68,
+      side: three.DoubleSide,
+    }),
+  }));
 }
 
 function getRiverConnections(
@@ -715,15 +717,18 @@ function getRiverConnections(
   const directions: RiverConnection[] = [];
   for (let index = 0; index < RIVER_DIRECTIONS.length; index += 1) {
     const direction = RIVER_DIRECTIONS[index]!;
-    if (isRiverNetworkKind(state.getCurrentTile(tileX + direction.dx, tileY + direction.dy).kind)) {
+    if (
+      isRiverNetworkKind(
+        state.getCurrentTile(tileX + direction.dx, tileY + direction.dy).kind
+      )
+    ) {
       directions.push(direction);
     }
   }
 
   directions.sort(
     (left, right) =>
-      Math.atan2(left.edgeZ, left.edgeX) -
-      Math.atan2(right.edgeZ, right.edgeX)
+      Math.atan2(left.edgeZ, left.edgeX) - Math.atan2(right.edgeZ, right.edgeX)
   );
   return directions;
 }
@@ -733,7 +738,10 @@ function isRiverNetworkKind(kind: Kind): boolean {
 }
 
 function createRiverTileSeed(tileX: number, tileY: number): number {
-  return appendHashSeedPart(appendHashSeedPart(RIVER_RIBBON_SEED, tileX), tileY);
+  return appendHashSeedPart(
+    appendHashSeedPart(RIVER_RIBBON_SEED, tileX),
+    tileY
+  );
 }
 
 function createRiverCurve(
@@ -796,7 +804,8 @@ function createRiverBranch(
     connection.edgeZ
   );
   const sway =
-    (hash2D(RIVER_BRANCH_SWAY_SEED, tileX * 7 + index, tileY * 11) - 0.5) * 0.24;
+    (hash2D(RIVER_BRANCH_SWAY_SEED, tileX * 7 + index, tileY * 11) - 0.5) *
+    0.24;
   const controlA = new three.Vector3(
     connection.inwardX * 0.42,
     RIVER_SURFACE_HEIGHT,
@@ -839,7 +848,9 @@ function createRiverRibbonMesh(
 ) {
   return createRibbonMesh(three, points, width, material, {
     widthNoise(index, total) {
-      return 1 + (hash2DWithSeed(seedHash, index, total) - 0.5) * rippleStrength;
+      return (
+        1 + (hash2DWithSeed(seedHash, index, total) - 0.5) * rippleStrength
+      );
     },
     yOffset,
   });

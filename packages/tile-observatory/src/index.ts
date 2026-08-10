@@ -70,7 +70,8 @@ export function createObservatoryTilePlugin(): RuntimePlugin {
       return true;
     }),
     create3DModel({ three, tileX, tileY }: Create3DModelContext) {
-      const { mountainMaterial, snowMaterial } = createMountainTerrainMaterials(three);
+      const { mountainMaterial, snowMaterial } =
+        createMountainTerrainMaterials(three);
       const { wallMaterial, trimMaterial, domeMaterial, telescopeMaterial } =
         getObservatorySharedMaterials(three);
 
@@ -165,30 +166,34 @@ export function createObservatoryTilePlugin(): RuntimePlugin {
 }
 
 function getObservatorySharedMaterials(three: Create3DModelContext['three']) {
-  return getOrCreateWeakMapValue(observatoryMaterialCache, three as object, () => {
-    return {
-      wallMaterial: new three.MeshStandardMaterial({
-        color: '#dbe5ed',
-        roughness: 0.9,
-        metalness: 0.02,
-      }),
-      trimMaterial: new three.MeshStandardMaterial({
-        color: '#566170',
-        roughness: 0.84,
-        metalness: 0.04,
-      }),
-      domeMaterial: new three.MeshStandardMaterial({
-        color: '#c8d5df',
-        roughness: 0.82,
-        metalness: 0.06,
-      }),
-      telescopeMaterial: new three.MeshStandardMaterial({
-        color: '#2f3945',
-        roughness: 0.58,
-        metalness: 0.32,
-      }),
-    };
-  });
+  return getOrCreateWeakMapValue(
+    observatoryMaterialCache,
+    three as object,
+    () => {
+      return {
+        wallMaterial: new three.MeshStandardMaterial({
+          color: '#dbe5ed',
+          roughness: 0.9,
+          metalness: 0.02,
+        }),
+        trimMaterial: new three.MeshStandardMaterial({
+          color: '#566170',
+          roughness: 0.84,
+          metalness: 0.04,
+        }),
+        domeMaterial: new three.MeshStandardMaterial({
+          color: '#c8d5df',
+          roughness: 0.82,
+          metalness: 0.06,
+        }),
+        telescopeMaterial: new three.MeshStandardMaterial({
+          color: '#2f3945',
+          roughness: 0.58,
+          metalness: 0.32,
+        }),
+      };
+    }
+  );
 }
 
 function syncObservatoryModel(

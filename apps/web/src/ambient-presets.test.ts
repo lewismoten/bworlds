@@ -56,9 +56,9 @@ describe('ambient presets', () => {
     expect(resolveAmbientIdentityVariants('magical', 'dawn', 'spring')).toEqual(
       ['astral-chimes', 'glass-resonance', 'arcane-hum']
     );
-    expect(resolveAmbientIdentityVariants('magical', 'night', 'winter')).toEqual(
-      ['void-whispers', 'glass-resonance', 'arcane-hum']
-    );
+    expect(
+      resolveAmbientIdentityVariants('magical', 'night', 'winter')
+    ).toEqual(['void-whispers', 'glass-resonance', 'arcane-hum']);
   });
 
   it('slows rare hints and distant events while keeping nearby calls stronger', () => {

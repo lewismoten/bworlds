@@ -1,8 +1,5 @@
 import { createBoundedCache } from '@bworlds/cache-support';
-import {
-  clamp,
-  generatePoiName,
-} from '@bworlds/core';
+import { clamp, generatePoiName } from '@bworlds/core';
 import {
   appendHashSeedLabel,
   hash2DWithSeed,
@@ -98,8 +95,10 @@ function normalizeSeedHash(seed: Seed): number {
   return resolveHashSeedInput(seed);
 }
 
-interface ChanceBasedEnterablePoiTilePluginOptions
-  extends Omit<EnterablePoiTilePluginOptions, 'classifyPoi'> {
+interface ChanceBasedEnterablePoiTilePluginOptions extends Omit<
+  EnterablePoiTilePluginOptions,
+  'classifyPoi'
+> {
   poiType?: PointOfInterestType;
   note: string;
   threshold: number;
@@ -124,7 +123,8 @@ interface AnchoredLandPoiClassifierOptions {
 }
 
 interface AnchoredEnterablePoiTilePluginOptions
-  extends Omit<EnterablePoiTilePluginOptions, 'classifyPoi'>,
+  extends
+    Omit<EnterablePoiTilePluginOptions, 'classifyPoi'>,
     AnchoredLandPoiClassifierOptions {
   classifyOverworldTile?: (
     context: ClassifyOverworldTileContext
@@ -166,7 +166,10 @@ type PoiWindResponderOptions = {
 const POI_LIGHT_EMITTER_KEY = 'poiNightLightEmitter';
 const POI_WIND_RESPONDER_KEY = 'poiWindResponder';
 type LandmarkFacingDirectionId = 'north' | 'east' | 'south' | 'west';
-const LANDMARK_FACING_DIRECTION_SEEDS: Record<LandmarkFacingDirectionId, number> = {
+const LANDMARK_FACING_DIRECTION_SEEDS: Record<
+  LandmarkFacingDirectionId,
+  number
+> = {
   north: registerHashLabel('north'),
   east: registerHashLabel('east'),
   south: registerHashLabel('south'),
@@ -213,8 +216,7 @@ export function syncPoiLightEmitters(
   const activation = getPoiLightActivation(cycle);
   const visit = (node: ThreeObject3DLike): void => {
     const emitter = node.userData?.[POI_LIGHT_EMITTER_KEY] as
-      | PoiLightEmitterOptions
-      | undefined;
+      PoiLightEmitterOptions | undefined;
     if (!emitter) {
       return;
     }
@@ -223,7 +225,10 @@ export function syncPoiLightEmitters(
       (emitter.dayIntensity ?? 0) +
       (emitter.nightIntensity - (emitter.dayIntensity ?? 0)) * activation;
     const target = node as PoiLightTaggedObject;
-    if (emitter.kind === 'point-light' && typeof target.intensity === 'number') {
+    if (
+      emitter.kind === 'point-light' &&
+      typeof target.intensity === 'number'
+    ) {
       target.intensity = intensity;
       target.visible = intensity > (emitter.visibleThreshold ?? 0.01);
       return;
@@ -261,7 +266,9 @@ export function markPoiWindResponder<TObject extends ThreeObject3DLike>(
   return target;
 }
 
-export function getPoiWindActivation(environment: WorldEnvironmentLike): number {
+export function getPoiWindActivation(
+  environment: WorldEnvironmentLike
+): number {
   return clamp(environment.weather?.current?.windStrength ?? 0.16, 0, 1);
 }
 
@@ -274,8 +281,9 @@ export function syncPoiWindResponders(
   const elapsed = timeMs * 0.001;
   const responders = getPoiWindResponderTargets(root);
   responders.forEach((node) => {
-    const responder = node.userData[POI_WIND_RESPONDER_KEY] as
-      Required<PoiWindResponderOptions>;
+    const responder = node.userData[
+      POI_WIND_RESPONDER_KEY
+    ] as Required<PoiWindResponderOptions>;
     const axis = responder.axis;
     const gust = Math.sin(elapsed * responder.gustSpeed + responder.gustPhase);
     const sway = Math.sin(elapsed * responder.speed + responder.phase);
@@ -371,7 +379,8 @@ export function createGeneratedPoiTile({
     poi: {
       type: poiType,
       name:
-        tile?.poi?.name ?? generatePoiName(normalizeSeedHash(seed), poiType, x, y),
+        tile?.poi?.name ??
+        generatePoiName(normalizeSeedHash(seed), poiType, x, y),
     },
     note,
   };
@@ -387,7 +396,13 @@ export function createAnchoredPoiTile({
 }: AnchoredPoiTileOptions): TileLike {
   return {
     kind,
-    poi: createNamedPoi(seed, poiType, anchor.x, anchor.y, anchor.name ?? tile?.poi?.name),
+    poi: createNamedPoi(
+      seed,
+      poiType,
+      anchor.x,
+      anchor.y,
+      anchor.name ?? tile?.poi?.name
+    ),
     note,
   };
 }
@@ -584,7 +599,8 @@ export function createEnterablePoiTileFeatures(
 export function resolvePlacementChance(
   context: ClassifyOverworldTileContext,
   chanceKey?: string,
-  getChance?: ((context: ClassifyOverworldTileContext) => number | undefined) | null
+  getChance?:
+    ((context: ClassifyOverworldTileContext) => number | undefined) | null
 ): number {
   if (typeof getChance === 'function') {
     const chance = getChance(context);
@@ -641,7 +657,11 @@ export function getNearestAccessibleRouteDistance(
       tileX + direction.dx * distance,
       tileY + direction.dy * distance
     );
-    if (tile.kind === 'road' || tile.kind === 'bridge' || tile.kind === 'dock') {
+    if (
+      tile.kind === 'road' ||
+      tile.kind === 'bridge' ||
+      tile.kind === 'dock'
+    ) {
       return distance;
     }
     if (!state.getTileDefinition(tile.kind).walkable) {
