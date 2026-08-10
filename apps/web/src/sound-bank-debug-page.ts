@@ -3,6 +3,7 @@ import './sound-bank-debug.css';
 import {
   buildSoundBankDebugMarkup,
   createSoundBankDebugPercussionRangeAuditionNotes,
+  createSoundBankDebugStandardPercussionPatternNotes,
   createSoundBankDebugSnapshot,
   DEFAULT_SOUND_BANK_DEBUG_GENERAL_MIDI_BROWSER_STATE,
   DEFAULT_SOUND_BANK_DEBUG_PERCUSSION_BROWSER_STATE,
@@ -499,6 +500,42 @@ function bindPage(snapshot: SoundBankDebugSnapshot): void {
         }
         setAudioFeedback(
           `Previewing percussion range (${notes.length} hits)`,
+          null
+        );
+      },
+      pageLifecycleSignal ? { signal: pageLifecycleSignal } : undefined
+    );
+
+  document
+    .querySelector<HTMLButtonElement>('#sound-bank-debug-percussion-standard-pattern')
+    ?.addEventListener(
+      'click',
+      () => {
+        if (instrumentPreviewPlayer.getAudioState() === 'unavailable') {
+          setAudioFeedback(
+            'Audio unavailable',
+            'This browser does not expose the Web Audio API for previews.'
+          );
+          return;
+        }
+        const notes = createSoundBankDebugStandardPercussionPatternNotes(
+          snapshot,
+          readPercussionBrowserState(),
+          performance.now()
+        );
+        if (notes.length === 0) {
+          setAudioFeedback(
+            'Audio unavailable',
+            'No percussion preview notes could be resolved for the current filter.'
+          );
+          return;
+        }
+        stopPreview();
+        for (const note of notes) {
+          instrumentPreviewPlayer.play(note);
+        }
+        setAudioFeedback(
+          `Previewing standard percussion pattern (${notes.length} hits)`,
           null
         );
       },

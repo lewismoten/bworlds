@@ -3,6 +3,7 @@ import type { SoundBankInstrumentDefinition } from './procedural-music-sound-ban
 import {
   buildSoundBankDebugMarkup,
   createSoundBankDebugPercussionRangeAuditionNotes,
+  createSoundBankDebugStandardPercussionPatternNotes,
   createSoundBankDebugSnapshot,
   normalizeSoundBankDebugGeneralMidiBrowserState,
   normalizeSoundBankDebugOptions,
@@ -66,6 +67,7 @@ describe('sound bank debug page', () => {
     expect(markup).toContain('sound-bank-debug-percussion-pad-grid');
     expect(markup).toContain('sound-bank-debug-percussion-pad');
     expect(markup).toContain('sound-bank-debug-percussion-pad-key');
+    expect(markup).toContain('sound-bank-debug-percussion-standard-pattern');
     expect(markup).toContain('sound-bank-debug-percussion-range-audition');
     expect(markup).toContain('Program Browser');
     expect(markup).toContain('sound-bank-debug-midi-search');
@@ -544,6 +546,32 @@ describe('sound bank debug page', () => {
     ]);
     expect(notes.map((note) => note.startMs)).toEqual([
       12_004, 12_184, 12_364,
+    ]);
+  });
+
+  it('builds a standard percussion pattern audition from visible drum voices', () => {
+    const snapshot = createSoundBankDebugSnapshot();
+    const notes = createSoundBankDebugStandardPercussionPatternNotes(
+      snapshot,
+      {
+        familyFilter: 'all',
+      },
+      16_000
+    );
+
+    expect(notes).toHaveLength(8);
+    expect(notes.map((note) => note.instrumentId)).toEqual([
+      expect.stringContaining(':perc-kick-36:'),
+      expect.stringContaining(':perc-cymbals-42:'),
+      expect.stringContaining(':perc-snare-38:'),
+      expect.stringContaining(':perc-cymbals-42:'),
+      expect.stringContaining(':perc-kick-36:'),
+      expect.stringContaining(':perc-cymbals-42:'),
+      expect.stringContaining(':perc-snare-38:'),
+      expect.stringContaining(':perc-cymbals-46:'),
+    ]);
+    expect(notes.map((note) => note.startMs)).toEqual([
+      16_004, 16_174, 16_344, 16_514, 16_684, 16_854, 17_024, 17_194,
     ]);
   });
 });

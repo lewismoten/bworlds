@@ -570,6 +570,12 @@ export function buildSoundBankDebugMarkup(
               >
                 Range Audition
               </button>
+              <button
+                id="sound-bank-debug-percussion-standard-pattern"
+                type="button"
+              >
+                Standard Pattern
+              </button>
             </div>
           </div>
           <div class="sound-bank-debug-midi-controls">
@@ -816,6 +822,32 @@ export function createSoundBankDebugPercussionRangeAuditionNotes(
       snapshot,
       voice.previewTarget,
       nowMs + index * 180
+    );
+    return note ? [note] : [];
+  });
+}
+
+export function createSoundBankDebugStandardPercussionPatternNotes(
+  snapshot: SoundBankDebugSnapshot,
+  state: Partial<SoundBankDebugPercussionBrowserState>,
+  nowMs: number
+): readonly ProceduralMusicNote[] {
+  const percussionBrowserState =
+    normalizeSoundBankDebugPercussionBrowserState(state);
+  const visibleVoiceIds = new Set(
+    createSoundBankDebugPercussionBrowserSections(percussionBrowserState)
+      .flatMap((section) => section.voices)
+      .map((voice) => voice.voiceId)
+  );
+
+  return STANDARD_PERCUSSION_PATTERN_VOICE_IDS.flatMap((voiceId, index) => {
+    if (!visibleVoiceIds.has(voiceId)) {
+      return [];
+    }
+    const note = resolveSoundBankDebugPreviewNoteRole(
+      snapshot,
+      `percussion:${voiceId}`,
+      nowMs + index * 170
     );
     return note ? [note] : [];
   });
@@ -1179,6 +1211,17 @@ const PERCUSSION_FAMILY_ORDER: readonly PercussionFamily[] = [
   'cymbals',
   'shaker',
   'hand-percussion',
+];
+
+const STANDARD_PERCUSSION_PATTERN_VOICE_IDS: readonly PercussionVoiceId[] = [
+  'kick-36',
+  'cymbals-42',
+  'snare-38',
+  'cymbals-42',
+  'kick-36',
+  'cymbals-42',
+  'snare-38',
+  'cymbals-46',
 ];
 
 const PERCUSSION_PAD_SHORTCUT_KEYS = [

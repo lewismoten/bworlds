@@ -95,7 +95,7 @@
 - [ ] Show missing percussion patches.
 - [ ] Prevent percussion from using pitched controls.
 - [x] Add a percussion range audition.
-- [ ] Add a standard drum pattern audition.
+- [x] Add a standard drum pattern audition.
 - [ ] Add a quiet percussion pattern audition.
 
 ## Instrument Details
