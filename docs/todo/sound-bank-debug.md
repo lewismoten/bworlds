@@ -58,8 +58,8 @@
 - [x] Allow sorting instruments by family.
 - [x] Highlight the selected instrument.
 - [x] Show unavailable programs as disabled.
-- [ ] Mark programs using placeholder patches.
-- [ ] Mark programs with custom patches.
+- [x] Mark programs using placeholder patches.
+- [x] Mark programs with custom patches.
 - [x] Add previous and next instrument buttons.
 
 ## General MIDI Families

@@ -63,6 +63,8 @@ export type SoundBankDebugGeneralMidiProgramView = Readonly<
     isSelected: boolean;
     supportedRoles: readonly string[];
     recommendedRangeSummary: string | null;
+    usesPlaceholderPatch: boolean;
+    usesCustomPatch: boolean;
   }
 >;
 
@@ -245,6 +247,16 @@ export function buildSoundBankDebugMarkup(
                     ${
                       program.recommendedRangeSummary
                         ? `<span class="sound-bank-debug-midi-program-range">${program.recommendedRangeSummary}</span>`
+                        : ''
+                    }
+                    ${
+                      program.usesPlaceholderPatch
+                        ? '<span class="sound-bank-debug-midi-program-badge sound-bank-debug-midi-program-badge-placeholder">Placeholder patch</span>'
+                        : ''
+                    }
+                    ${
+                      program.usesCustomPatch
+                        ? '<span class="sound-bank-debug-midi-program-badge sound-bank-debug-midi-program-badge-custom">Custom patch</span>'
                         : ''
                     }
                   </li>
@@ -880,6 +892,12 @@ function createGeneralMidiProgramView(
       matchingEntries.length === 0
         ? null
         : summarizeRecommendedRange(matchingEntries),
+    usesPlaceholderPatch: matchingEntries.some(
+      (entry) => entry.sourcePlugin === 'core-generated-bank'
+    ),
+    usesCustomPatch: matchingEntries.some(
+      (entry) => entry.sourcePlugin !== 'core-generated-bank'
+    ),
   };
 }
 

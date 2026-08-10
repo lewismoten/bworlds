@@ -80,6 +80,7 @@ describe('sound bank debug page', () => {
     expect(normalizedMarkup).toContain('GM program: 80');
     expect(normalizedMarkup).toContain('GM program: Percussion kit');
     expect(normalizedMarkup).toContain('Standard programs 0 through 127');
+    expect(normalizedMarkup).toContain('Placeholder patch');
     expect(normalizedMarkup).toContain('>Piano<');
     expect(normalizedMarkup).toContain('>0<');
     expect(normalizedMarkup).toContain('Acoustic Grand Piano');
@@ -367,7 +368,60 @@ describe('sound bank debug page', () => {
       expect.objectContaining({
         programNumber: 80,
         isSelected: true,
+        usesPlaceholderPatch: true,
+        usesCustomPatch: false,
       }),
     ]);
+  });
+
+  it('marks plugin-provided General MIDI mappings as custom patches', () => {
+    const customDefinition: SoundBankInstrumentDefinition = {
+      id: 'plugin:piano:0:0',
+      role: 'lead',
+      generalMidiProgramNumber: 0,
+      generalMidiInstrumentName: 'Acoustic Grand Piano',
+      generalMidiFamilyName: 'Piano',
+      supportedRoles: ['lead'],
+      recommendedMidiRange: { minMidiNote: 60, maxMidiNote: 84 },
+      preferredMidiRange: { minMidiNote: 64, maxMidiNote: 79 },
+      defaultVelocity: 104,
+      defaultNoteDurationMs: 320,
+    };
+    const snapshot = createSoundBankDebugSnapshot(
+      {},
+      {
+        registeredInstruments: registerSoundBankPluginInstruments({
+          pluginName: 'custom-bank',
+          definitions: [customDefinition],
+        }),
+      }
+    );
+    const model = resolveSoundBankDebugGeneralMidiBrowserModel(
+      snapshot.instrumentRegistry.entries,
+      {
+        selectedProgramNumber: '0',
+        sortMode: 'program',
+      }
+    );
+    const markup = buildSoundBankDebugMarkup(snapshot, {
+      audioStatus: 'Audio idle',
+      generalMidiBrowserState: {
+        selectedProgramNumber: '0',
+        sortMode: 'program',
+      },
+    }).replace(/\s+/g, ' ');
+
+    expect(
+      model.sections.flatMap((section) =>
+        section.programs.filter((program) => program.programNumber === 0)
+      )
+    ).toEqual([
+      expect.objectContaining({
+        programNumber: 0,
+        usesCustomPatch: true,
+        usesPlaceholderPatch: false,
+      }),
+    ]);
+    expect(markup).toContain('Custom patch');
   });
 });

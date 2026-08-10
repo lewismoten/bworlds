@@ -242,6 +242,29 @@ body {
   color: #ffd58b;
 }
 
+.sound-bank-debug-midi-program-badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 0.2rem 0.55rem;
+  font-size: 0.72rem;
+  line-height: 1.2;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border: 1px solid rgba(172, 208, 255, 0.18);
+  background: rgba(10, 21, 34, 0.72);
+}
+
+.sound-bank-debug-midi-program-badge-placeholder {
+  color: #ffd58b;
+  border-color: rgba(255, 213, 139, 0.28);
+}
+
+.sound-bank-debug-midi-program-badge-custom {
+  color: #9ef0b8;
+  border-color: rgba(158, 240, 184, 0.28);
+}
+
 .sound-bank-debug-error {
   margin: 0;
   color: #ffb8ba;
