@@ -213,7 +213,7 @@ describe('procedural music song', () => {
     expect(secondLeadPhrase).toEqual(firstLeadPhrase);
   });
 
-  it('keeps the lead between two and six attacks per measure in base phrases', () => {
+  it('keeps the lead out of one-note-per-measure bars by holding two to six attacks per measure', () => {
     const optionSets = [
       {
         nowMs: 1_000,

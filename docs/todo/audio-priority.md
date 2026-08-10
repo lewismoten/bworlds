@@ -1,4 +1,5 @@
 # Highest Priority
+
 - [x] When changing input parameters, apply to the song immediately, and let it continue playing
 - [x] Panel to input parameters and click buttons is clipped on the right.
 - [x] Fix natural minor offsets to 0, 2, 3, 5, 7, 8, 10.
@@ -15,7 +16,7 @@
 - [x] Require motif variation rather than unrelated notes in A'.
 - [x] Regenerate any section with zero expected motif matches.
 - [x] Give the lead two to six note attacks per measure.
-- [ ] Prevent repeated one-note-per-measure lead patterns.
+- [x] Prevent repeated one-note-per-measure lead patterns.
 - [ ] Build reusable lead rhythm templates by phrase.
 - [ ] Add rests at phrase boundaries rather than every measure.
 - [ ] End each eight-measure phrase on a planned cadence.
