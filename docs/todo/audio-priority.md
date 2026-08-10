@@ -91,16 +91,16 @@ added directly as semitones instead of moving through the selected scale.
 
 ## Bass Movement
 
-- [ ] Generate bass from the active chord root.
-- [ ] Keep strong bass beats on roots or fifths.
-- [ ] Reduce repeated 10, 12, 17, and 22 semitone jumps.
-- [ ] Keep most bass motion within five semitones.
+- [x] Generate bass from the active chord root.
+- [x] Keep strong bass beats on roots or fifths.
+- [x] Reduce repeated 10, 12, 17, and 22 semitone jumps.
+- [x] Keep most bass motion within five semitones.
 - [ ] Use octave movement only as a deliberate pattern.
 - [ ] Repeat a stable bass figure across related measures.
 - [ ] Change bass patterns only at phrase boundaries.
 - [ ] Keep the tuba within a consistent low register.
-- [ ] Validate bass notes against each active chord.
-- [ ] Reject bass lines with excessive leap averages.
+- [x] Validate bass notes against each active chord.
+- [x] Reject bass lines with excessive leap averages.
 
 ## Harmony Output
 

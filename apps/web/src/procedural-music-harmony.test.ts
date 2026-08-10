@@ -59,6 +59,41 @@ describe('procedural music harmony', () => {
     }
   });
 
+  it('keeps bass notes anchored to nearby roots and fifths without large repeated jumps', () => {
+    const semitonePlan = Array.from({ length: 24 }, (_, stepIndex) => ({
+      stepIndex,
+      semitones: resolveProceduralInstrumentSemitones({
+        theme: TEST_THEME,
+        role: 'bass',
+        stepIndex,
+        clusterX: 3,
+        clusterY: -2,
+      }),
+      chord: resolveProceduralChordAtStep(TEST_THEME, stepIndex, 3, -2),
+    }));
+    const leaps = semitonePlan
+      .slice(1)
+      .map((entry, index) => entry.semitones - semitonePlan[index]!.semitones);
+    const averageLeap =
+      leaps.reduce((total, leap) => total + Math.abs(leap), 0) /
+      Math.max(1, leaps.length);
+
+    for (const entry of semitonePlan) {
+      expect([
+        entry.chord.rootSemitones % 12,
+        entry.chord.fifthSemitones % 12,
+        entry.chord.passingSemitones % 12,
+      ]).toContain(((entry.semitones % 12) + 12) % 12);
+      expect(entry.semitones).toBeGreaterThanOrEqual(-5);
+      expect(entry.semitones).toBeLessThanOrEqual(12);
+    }
+
+    expect(averageLeap).toBeLessThanOrEqual(5);
+    expect(
+      Math.max(...leaps.map((leap) => Math.abs(leap)))
+    ).toBeLessThanOrEqual(7);
+  });
+
   it('reuses a deterministic short lead motif across phrase cycles', () => {
     const first = resolveProceduralLeadMotif(TEST_THEME, 3, -2);
     const second = resolveProceduralLeadMotif(TEST_THEME, 3, -2);

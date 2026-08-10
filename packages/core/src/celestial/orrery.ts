@@ -1,26 +1,13 @@
-import { PLANET_SKY_PROFILES, type PlanetSkyProfile } from './time.ts';
-
-const PLANET_NAMES = ['Aurel', 'Brink', 'Cael', 'Damar', 'Vela'];
-const COMET_NAMES = ['White Lantern', 'Pilgrim Tail'];
+import {
+  COMET_NAMES,
+  PLANET_NAMES,
+  getCometOrreryProfile,
+  getCometOrreryProfileIndex,
+  getPlanetSkyProfile,
+  getPlanetSkyProfileIndex,
+} from './orbitProfiles.ts';
 const PLANET_NAME_SET: ReadonlySet<string> = new Set(PLANET_NAMES);
 const COMET_NAME_SET: ReadonlySet<string> = new Set(COMET_NAMES);
-
-const COMET_ORRERY_PROFILES = [
-  {
-    orbitTilt: 0.46,
-    orbitEccentricity: 0.42,
-    orbitRotation: 0.88,
-    speedExponent: 0.72,
-  },
-  {
-    orbitTilt: -0.38,
-    orbitEccentricity: 0.56,
-    orbitRotation: 1.74,
-    speedExponent: 0.58,
-  },
-] as const;
-
-type CometOrreryProfile = (typeof COMET_ORRERY_PROFILES)[number];
 
 export interface CelestialEventLike {
   type: 'planet' | 'meteor-shower' | 'comet';
@@ -47,34 +34,6 @@ export interface OrreryBodyLike {
   color: string;
   size: number;
   trailLength: number;
-}
-
-function getPlanetSkyProfile(
-  name: string,
-  fallbackIndex = 0
-): PlanetSkyProfile {
-  const index = PLANET_NAMES.indexOf(name);
-  const resolvedIndex = index >= 0 ? index : fallbackIndex;
-  return PLANET_SKY_PROFILES[resolvedIndex % PLANET_SKY_PROFILES.length];
-}
-
-function getPlanetSkyProfileIndex(name: string, fallbackIndex = 0): number {
-  const index = PLANET_NAMES.indexOf(name);
-  return index >= 0 ? index : fallbackIndex % PLANET_SKY_PROFILES.length;
-}
-
-function getCometOrreryProfile(
-  name: string,
-  fallbackIndex = 0
-): CometOrreryProfile {
-  const index = COMET_NAMES.indexOf(name);
-  const resolvedIndex = index >= 0 ? index : fallbackIndex;
-  return COMET_ORRERY_PROFILES[resolvedIndex % COMET_ORRERY_PROFILES.length];
-}
-
-function getCometOrreryProfileIndex(name: string, fallbackIndex = 0): number {
-  const index = COMET_NAMES.indexOf(name);
-  return index >= 0 ? index : fallbackIndex % COMET_ORRERY_PROFILES.length;
 }
 
 function normalizeTurns(value: number): number {

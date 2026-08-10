@@ -37,6 +37,12 @@ describe('main layout and hmr wiring', () => {
     expect(stylesheet).toContain('.dock-cluster {\n  display: flex;');
     expect(stylesheet).toContain('width: 100%;');
     expect(stylesheet).toContain('white-space: nowrap;');
+    expect(stylesheet).toContain('.inspector-header {\n  display: flex;');
+    expect(stylesheet).toContain('justify-content: flex-start;');
+    expect(stylesheet).toContain('.inspector-tabs {\n  display: flex;');
+    expect(stylesheet).toContain('overflow-x: auto;');
+    expect(stylesheet).toContain('.inspector-tab {');
+    expect(stylesheet).toContain('flex: 0 0 auto;');
   });
 
   it('cleans up global main-page listeners during hot replacement', () => {

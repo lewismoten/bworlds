@@ -2,29 +2,17 @@ import { DEFAULT_YEAR_LENGTH_DAYS } from './time.ts';
 import { hash2DWithSeed, registerHashLabel } from '../hash.ts';
 import { clamp, fract, lerp, normalizeAngle, smoothstep } from '../math.ts';
 import { PLANET_SKY_PROFILES, type PlanetSkyProfile } from './time.ts';
-
-const PLANET_NAMES = ['Aurel', 'Brink', 'Cael', 'Damar', 'Vela'];
+import {
+  COMET_NAMES,
+  PLANET_NAMES,
+  getCometOrreryProfile,
+  getPlanetSkyProfile,
+} from './orbitProfiles.ts';
+import { getPlanetaryOrbitProgress } from './planet.ts';
+import { getCometOrbitProgress } from './comet.ts';
 const METEOR_SHOWER_NAMES = ['Silver Wake', 'Ember Rain', 'Northfall'];
-const COMET_NAMES = ['White Lantern', 'Pilgrim Tail'];
-
-const COMET_ORRERY_PROFILES = [
-  {
-    orbitTilt: 0.46,
-    orbitEccentricity: 0.42,
-    orbitRotation: 0.88,
-    speedExponent: 0.72,
-  },
-  {
-    orbitTilt: -0.38,
-    orbitEccentricity: 0.56,
-    orbitRotation: 1.74,
-    speedExponent: 0.58,
-  },
-] as const;
 
 const PLANET_INTENSITY_SEED = registerHashLabel('planet-intensity');
-
-type CometOrreryProfile = (typeof COMET_ORRERY_PROFILES)[number];
 
 export interface CelestialEventLike {
   type: 'planet' | 'meteor-shower' | 'comet';
@@ -37,60 +25,6 @@ export interface CelestialEventLike {
   color: string;
   size: number;
   trailLength: number;
-}
-
-function getPlanetSkyProfile(
-  name: string,
-  fallbackIndex = 0
-): PlanetSkyProfile {
-  const index = PLANET_NAMES.indexOf(name);
-  const resolvedIndex = index >= 0 ? index : fallbackIndex;
-  return PLANET_SKY_PROFILES[resolvedIndex % PLANET_SKY_PROFILES.length];
-}
-
-function getCometOrreryProfile(
-  name: string,
-  fallbackIndex = 0
-): CometOrreryProfile {
-  const index = COMET_NAMES.indexOf(name);
-  const resolvedIndex = index >= 0 ? index : fallbackIndex;
-  return COMET_ORRERY_PROFILES[resolvedIndex % COMET_ORRERY_PROFILES.length];
-}
-
-function getPlanetaryOrbitProgress(
-  elapsedDays: number,
-  profile: {
-    orbitLengthDays: number;
-    wobblePeriodDays: number;
-    wobbleAmplitude: number;
-    wobblePhase: number;
-  }
-) {
-  const baseProgress = elapsedDays / profile.orbitLengthDays;
-  const wobble =
-    Math.sin(
-      (elapsedDays / profile.wobblePeriodDays) * Math.PI * 2 +
-        profile.wobblePhase
-    ) * profile.wobbleAmplitude;
-  const retrogradeBias =
-    Math.sin(
-      (elapsedDays / (profile.orbitLengthDays * 1.4)) * Math.PI * 2 +
-        profile.wobblePhase
-    ) *
-    profile.wobbleAmplitude *
-    0.46;
-  return fract(baseProgress + wobble + retrogradeBias);
-}
-
-function getCometOrbitProgress(
-  elapsedDays: number,
-  cycleLengthDays: number,
-  phaseOffset: number,
-  speedExponent = 0.7
-) {
-  const localProgress = fract(elapsedDays / cycleLengthDays);
-  const curvedProgress = Math.pow(localProgress, speedExponent);
-  return fract(curvedProgress + phaseOffset);
 }
 
 function getCelestialEventVisibility({

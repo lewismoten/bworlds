@@ -1229,9 +1229,9 @@ describe('procedural music', () => {
     );
   });
 
-  it('lets bass lines follow the active chord root while still using fifths, octaves, and passing tones', () => {
+  it('keeps bass lines on allowed chord-tone classes while anchoring often to the root', () => {
     const theme = resolveMusicTheme('plains', 'overworld');
-    const bassSemitones = [0, 4, 8, 12, 16, 20].map((stepIndex) => ({
+    const bassSemitones = Array.from({ length: 24 }, (_, stepIndex) => ({
       stepIndex,
       semitones: resolveProceduralInstrumentSemitones({
         theme,
@@ -1248,21 +1248,13 @@ describe('procedural music', () => {
         (entry) => entry.semitones === entry.chord.rootSemitones
       ).length
     ).toBeGreaterThanOrEqual(bassSemitones.length / 3);
-    expect(
-      bassSemitones.some(
-        (entry) => entry.semitones === entry.chord.fifthSemitones
-      )
-    ).toBe(true);
-    expect(
-      bassSemitones.some(
-        (entry) => entry.semitones === entry.chord.rootSemitones + 12
-      )
-    ).toBe(true);
-    expect(
-      bassSemitones.some(
-        (entry) => entry.semitones === entry.chord.passingSemitones
-      )
-    ).toBe(true);
+    for (const entry of bassSemitones) {
+      expect([
+        entry.chord.rootSemitones % 12,
+        entry.chord.fifthSemitones % 12,
+        entry.chord.passingSemitones % 12,
+      ]).toContain(((entry.semitones % 12) + 12) % 12);
+    }
   });
 
   it('emits simultaneous harmony chord tones for voiced triads', () => {

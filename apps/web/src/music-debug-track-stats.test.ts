@@ -99,4 +99,39 @@ describe('music debug track stats', () => {
       expect(leadStats.maxLeapSemitones).toBeLessThanOrEqual(12);
     }
   });
+
+  it('keeps sampled bass leaps compact and inside the low register', () => {
+    const sampledBassStats = [
+      createMusicDebugSnapshot({
+        tileKind: 'plains',
+        contextType: 'overworld',
+        clusterX: 0,
+        clusterY: 0,
+      }).trackStats.bass,
+      createMusicDebugSnapshot({
+        tileKind: 'forest',
+        contextType: 'overworld',
+        clusterX: 3,
+        clusterY: -2,
+      }).trackStats.bass,
+      createMusicDebugSnapshot({
+        tileKind: 'cave',
+        contextType: 'dungeon',
+        clusterX: 7,
+        clusterY: 4,
+      }).trackStats.bass,
+      createMusicDebugSnapshot({
+        tileKind: 'town',
+        contextType: 'town',
+        clusterX: 3,
+        clusterY: -2,
+      }).trackStats.bass,
+    ];
+
+    for (const bassStats of sampledBassStats) {
+      expect(bassStats.averageLeapSemitones).toBeLessThanOrEqual(5);
+      expect(bassStats.maxLeapSemitones).toBeLessThanOrEqual(7);
+      expect(bassStats.rangeLabel).toMatch(/^[A-G]#?-?\d-[A-G]#?-?\d$/);
+    }
+  });
 });

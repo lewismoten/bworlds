@@ -92,3 +92,12 @@ export const PLANET_SKY_PROFILES = [
   },
 ] as const;
 export type PlanetSkyProfile = (typeof PLANET_SKY_PROFILES)[number];
+
+export function getWorldTimeMs(
+  realTimeMs: number,
+  options: {
+    timeOffsetMs?: number;
+  } = {}
+) {
+  return realTimeMs + (options.timeOffsetMs ?? 0);
+}

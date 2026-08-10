@@ -1,8 +1,4 @@
-import { DEFAULT_CONSTELLATION_SEED } from './celestial/constellation.ts';
-import {
-  generateConstellations,
-  type ConstellationLike,
-} from './celestial/constellation.ts';
+import { type ConstellationLike } from './celestial/constellation.ts';
 import {
   CHUNK_SIZE,
   EARTH_CIRCUMFERENCE_METERS,
@@ -16,41 +12,25 @@ import {
   DEFAULT_DAY_LENGTH_MS,
   DEFAULT_SEASON_DAYLIGHT_AMPLITUDE,
   DEFAULT_YEAR_LENGTH_DAYS,
+  getWorldTimeMs,
 } from './celestial/time.ts';
-import {
-  createCelestialRing,
-} from './celestial/createCelestialRing.ts';
 import {
   getEclipseAdjustedDaylight,
   getEclipseAdjustedTwilight,
-  getSolarEclipseState,
   type SolarEclipseLike,
 } from './celestial/eclipse.ts';
-import { formatCelestialDate } from './celestial/formatCelestialDate.ts';
-import {
-  getCelestialEventsForDay,
-  type CelestialEventLike as SharedCelestialEventLike,
-} from './celestial/getCelestialEventsForDay.ts';
+import { type CelestialEventLike } from './celestial/getCelestialEventsForDay.ts';
 import {
   appendHashSeedLabel,
   appendHashSeedPart,
-  createHashSeed,
   hash2DWithSeed,
-  type HashSeed,
   registerHashLabel,
   registerHashLabels,
 } from './hash.ts';
-import {
-  getMilkyWayBeltState,
-  type MilkyWayBeltLike,
-} from './celestial/milky-way.ts';
-import { MOON_PHASE_NAMES } from './celestial/moon.ts';
+import { type MilkyWayBeltLike } from './celestial/milky-way.ts';
 import { clamp, fract, lerp, normalizeAngle, smoothstep } from './math.ts';
 import { getOrreryBodies, type OrreryBodyLike } from './celestial/orrery.ts';
-import {
-  PLANET_SKY_PROFILES,
-  type PlanetSkyProfile,
-} from './celestial/time.ts';
+import { getDaylightCycleState, type AuroraBandLike } from './celestial/getDaylightCycleState.ts';
 
 export {
   appendHashSeedLabel,
@@ -99,39 +79,21 @@ export {
 } from './celestial/eclipse.ts';
 export { formatCelestialDate } from './celestial/formatCelestialDate.ts';
 export { getCelestialEventsForDay } from './celestial/getCelestialEventsForDay.ts';
+export { getDaylightCycleState } from './celestial/getDaylightCycleState.ts';
 export {
   getMilkyWayBandSamples,
   getMilkyWayBeltState,
 } from './celestial/milky-way.ts';
 export { MOON_PHASE_NAMES } from './celestial/moon.ts';
 export { getOrreryBodies } from './celestial/orrery.ts';
+export { getCometOrbitProgress } from './celestial/comet.ts';
+export { getPlanetaryOrbitProgress } from './celestial/planet.ts';
 export {
   PLANET_SKY_PROFILES,
+  getWorldTimeMs,
   type PlanetSkyProfile,
 } from './celestial/time.ts';
 
-const PLANET_NAMES = ['Aurel', 'Brink', 'Cael', 'Damar', 'Vela'];
-const METEOR_SHOWER_NAMES = ['Silver Wake', 'Ember Rain', 'Northfall'];
-const COMET_NAMES = ['White Lantern', 'Pilgrim Tail'];
-const PLANET_NAME_SET: ReadonlySet<string> = new Set(PLANET_NAMES);
-const COMET_NAME_SET: ReadonlySet<string> = new Set(COMET_NAMES);
-
-const COMET_ORRERY_PROFILES = [
-  {
-    orbitTilt: 0.46,
-    orbitEccentricity: 0.42,
-    orbitRotation: 0.88,
-    speedExponent: 0.72,
-  },
-  {
-    orbitTilt: -0.38,
-    orbitEccentricity: 0.56,
-    orbitRotation: 1.74,
-    speedExponent: 0.58,
-  },
-] as const;
-type CometOrreryProfile = (typeof COMET_ORRERY_PROFILES)[number];
-const PLANET_INTENSITY_SEED = registerHashLabel('planet-intensity');
 const POI_NAME_PREFIX_SET_LABEL = registerHashLabel('name-prefix-set');
 const POI_NAME_SUFFIX_SET_LABEL = registerHashLabel('name-suffix-set');
 const POI_NAME_PREFIX_LABEL = registerHashLabel('prefix');
@@ -155,83 +117,9 @@ const registeredPoiNameTypeLabels = new Map<string, number>(
   Object.entries(POI_NAME_TYPE_LABELS)
 );
 
-function getPlanetSkyProfile(
-  name: string,
-  fallbackIndex = 0
-): PlanetSkyProfile {
-  const index = PLANET_NAMES.indexOf(name);
-  const resolvedIndex = index >= 0 ? index : fallbackIndex;
-  return PLANET_SKY_PROFILES[resolvedIndex % PLANET_SKY_PROFILES.length];
-}
+export {type CelestialEventLike};
 
-function getPlanetSkyProfileIndex(name: string, fallbackIndex = 0): number {
-  const index = PLANET_NAMES.indexOf(name);
-  return index >= 0 ? index : fallbackIndex % PLANET_SKY_PROFILES.length;
-}
-
-function getCometOrreryProfile(
-  name: string,
-  fallbackIndex = 0
-): CometOrreryProfile {
-  const index = COMET_NAMES.indexOf(name);
-  const resolvedIndex = index >= 0 ? index : fallbackIndex;
-  return COMET_ORRERY_PROFILES[resolvedIndex % COMET_ORRERY_PROFILES.length];
-}
-
-function getCometOrreryProfileIndex(name: string, fallbackIndex = 0): number {
-  const index = COMET_NAMES.indexOf(name);
-  return index >= 0 ? index : fallbackIndex % COMET_ORRERY_PROFILES.length;
-}
-
-export function getPlanetaryOrbitProgress(
-  elapsedDays: number,
-  profile: {
-    orbitLengthDays: number;
-    wobblePeriodDays: number;
-    wobbleAmplitude: number;
-    wobblePhase: number;
-  }
-) {
-  const baseProgress = elapsedDays / profile.orbitLengthDays;
-  const wobble =
-    Math.sin(
-      (elapsedDays / profile.wobblePeriodDays) * Math.PI * 2 +
-        profile.wobblePhase
-    ) * profile.wobbleAmplitude;
-  const retrogradeBias =
-    Math.sin(
-      (elapsedDays / (profile.orbitLengthDays * 1.4)) * Math.PI * 2 +
-        profile.wobblePhase
-    ) *
-    profile.wobbleAmplitude *
-    0.46;
-  return fract(baseProgress + wobble + retrogradeBias);
-}
-
-export function getCometOrbitProgress(
-  elapsedDays: number,
-  cycleLengthDays: number,
-  phaseOffset: number,
-  speedExponent = 0.7
-) {
-  const localProgress = fract(elapsedDays / cycleLengthDays);
-  const curvedProgress = Math.pow(localProgress, speedExponent);
-  return fract(curvedProgress + phaseOffset);
-}
-
-export interface CelestialEventLike extends SharedCelestialEventLike {}
-
-export interface AuroraBandLike {
-  id: string;
-  azimuthCenter: number;
-  span: number;
-  altitude: number;
-  height: number;
-  intensity: number;
-  wavePhase: number;
-  colorA: string;
-  colorB: string;
-}
+export {type AuroraBandLike};
 
 export type PoiNameType =
   | (
@@ -405,305 +293,6 @@ type CoreWorldStateLike = {
   interact(): boolean;
   tryExit(): boolean;
 };
-
-export function applyCelestialEnvironmentOverrides(
-  cycle: ReturnType<typeof getDaylightCycleState>,
-  overrides: {
-    constellations?: ConstellationLike[];
-    activeConstellationIndex?: number;
-    visibleEvents?: CelestialEventLike[];
-    visibleEventsAppend?: CelestialEventLike[];
-    removeVisibleEventTypes?: Array<CelestialEventLike['type']>;
-    milkyWay?: MilkyWayBeltLike;
-    auroraBands?: AuroraBandLike[];
-    orreryBodies?: OrreryBodyLike[];
-    deriveOrreryFromVisibleEvents?: boolean;
-    solarEclipse?: SolarEclipseLike;
-  } = {}
-) {
-  const visibleEventsBase = overrides.visibleEvents ?? cycle.visibleEvents;
-  const visibleEventsFiltered =
-    (overrides.removeVisibleEventTypes?.length ?? 0) > 0
-      ? visibleEventsBase.filter(
-          (event) => !overrides.removeVisibleEventTypes?.includes(event.type)
-        )
-      : visibleEventsBase;
-  const visibleEvents = [
-    ...visibleEventsFiltered,
-    ...(overrides.visibleEventsAppend ?? []),
-  ];
-  const derivedOrreryBodies = overrides.deriveOrreryFromVisibleEvents
-    ? getOrreryBodies({
-        moonAngle: cycle.moonAngle,
-        moonIllumination: cycle.moonIllumination,
-        visibleEvents,
-      })
-    : null;
-  const solarEclipse = overrides.solarEclipse ?? cycle.solarEclipse;
-  const rawDaylight = cycle.rawDaylight ?? cycle.daylight;
-  const rawTwilight = cycle.rawTwilight ?? cycle.twilight;
-  const daylight =
-    overrides.solarEclipse != null
-      ? getEclipseAdjustedDaylight(rawDaylight, solarEclipse)
-      : cycle.daylight;
-  const twilight =
-    overrides.solarEclipse != null
-      ? getEclipseAdjustedTwilight(rawTwilight, solarEclipse)
-      : cycle.twilight;
-  const night =
-    overrides.solarEclipse != null
-      ? clamp(1 - twilight + solarEclipse.daylightReduction * 0.28, 0, 1)
-      : cycle.night;
-  const starsOpacity =
-    overrides.solarEclipse != null
-      ? smoothstep(0.08, 0.82, Math.max(night, solarEclipse.coverage * 0.72))
-      : cycle.starsOpacity;
-  return {
-    ...cycle,
-    constellations: overrides.constellations ?? cycle.constellations,
-    activeConstellationIndex:
-      overrides.activeConstellationIndex ?? cycle.activeConstellationIndex,
-    rawDaylight,
-    rawTwilight,
-    daylight,
-    twilight,
-    night,
-    starsOpacity,
-    solarEclipse,
-    visibleEvents,
-    milkyWay: overrides.milkyWay ?? cycle.milkyWay,
-    auroraBands: overrides.auroraBands ?? cycle.auroraBands ?? [],
-    orreryBodies:
-      overrides.orreryBodies ?? derivedOrreryBodies ?? cycle.orreryBodies,
-    isNight: daylight < 0.22,
-  };
-}
-
-export function getDaylightCycleState(
-  timeMs: number,
-  options: {
-    dayLengthMs?: number;
-    offsetMs?: number;
-    yearLengthDays?: number;
-    constellationCount?: number;
-    constellationSeed?: HashSeed;
-    seasonDaylightAmplitude?: number;
-    observerLatitudeDegrees?: number;
-  } = {}
-) {
-  const dayLengthMs = options.dayLengthMs ?? DEFAULT_DAY_LENGTH_MS;
-  const offsetMs = options.offsetMs ?? 0;
-  const cycleTime = timeMs + offsetMs;
-  const dayProgress = fract(cycleTime / dayLengthMs);
-  const dayNumber = Math.floor(cycleTime / dayLengthMs);
-  const yearLengthDays = Math.max(
-    1,
-    options.yearLengthDays ?? DEFAULT_YEAR_LENGTH_DAYS
-  );
-  const constellationCount = Math.max(
-    1,
-    Math.floor(options.constellationCount ?? DEFAULT_CONSTELLATION_COUNT)
-  );
-  const constellationSeed = options.constellationSeed;
-  const seasonDaylightAmplitude =
-    options.seasonDaylightAmplitude ?? DEFAULT_SEASON_DAYLIGHT_AMPLITUDE;
-  const observerLatitudeDegrees = clamp(
-    options.observerLatitudeDegrees ?? 0,
-    -90,
-    90
-  );
-  const yearProgress = fract(dayNumber / yearLengthDays);
-  const seasonAngle = yearProgress * Math.PI * 2;
-  const solarDeclination = Math.sin(seasonAngle) * seasonDaylightAmplitude;
-  const latitudeRadians = (observerLatitudeDegrees / 180) * Math.PI;
-  const hourAngle = dayProgress * Math.PI * 2 - Math.PI;
-  const sunAltitudeAngle = Math.asin(
-    clamp(
-      Math.sin(latitudeRadians) * Math.sin(solarDeclination) +
-        Math.cos(latitudeRadians) *
-          Math.cos(solarDeclination) *
-          Math.cos(hourAngle),
-      -1,
-      1
-    )
-  );
-  const sunAngle = dayProgress * Math.PI * 2 - Math.PI / 2;
-  const sunAltitude = sunAltitudeAngle / (Math.PI / 2);
-  const sunriseOffset = clamp(
-    Math.sin(solarDeclination) * Math.cos(latitudeRadians),
-    -0.92,
-    0.92
-  );
-  const daylightDuration = clamp(0.5 + sunriseOffset * 0.36, 0.22, 0.78);
-  const sunriseProgress = 0.5 - daylightDuration * 0.5;
-  const sunsetProgress = 0.5 + daylightDuration * 0.5;
-  const sunriseAzimuth = sunriseOffset * 0.8;
-  const sunsetAzimuth = Math.PI - sunriseOffset * 0.8;
-  const daylightProgress = clamp(
-    (dayProgress - sunriseProgress) / Math.max(0.0001, daylightDuration),
-    0,
-    1
-  );
-  const sunAzimuth = normalizeAngle(
-    lerp(sunriseAzimuth, sunsetAzimuth, daylightProgress)
-  );
-  const moonOrbitProgress = fract(
-    dayProgress + dayNumber / 29.5 + 0.12 + Math.sin(seasonAngle * 1.7) * 0.02
-  );
-  const moonMidnightOrbitProgress = fract(
-    dayNumber / 29.5 + 0.12 + Math.sin(seasonAngle * 1.7) * 0.02
-  );
-  const moonHourAngle = moonOrbitProgress * Math.PI * 2 - Math.PI;
-  const moonDeclination =
-    -solarDeclination * 0.55 + Math.sin((dayNumber / 17) * Math.PI * 2) * 0.12;
-  const moonAltitudeAngle = Math.asin(
-    clamp(
-      Math.sin(latitudeRadians) * Math.sin(moonDeclination) +
-        Math.cos(latitudeRadians) *
-          Math.cos(moonDeclination) *
-          Math.cos(moonHourAngle),
-      -1,
-      1
-    )
-  );
-  const moonAngle = moonOrbitProgress * Math.PI * 2 - Math.PI / 2;
-  const moonMidnightAngle =
-    moonMidnightOrbitProgress * Math.PI * 2 - Math.PI / 2;
-  const moonAltitude = moonAltitudeAngle / (Math.PI / 2);
-  const moonAzimuth = normalizeAngle(
-    lerp(sunriseAzimuth, sunsetAzimuth, clamp(moonOrbitProgress, 0, 1)) +
-      Math.PI
-  );
-  const solarEclipse = getSolarEclipseState({
-    dayNumber,
-    dayProgress,
-    yearProgress,
-    sunAngle,
-    sunAzimuth,
-    sunAltitude,
-    moonAngle,
-    moonIlluminationHint:
-      1 - Math.min(1, Math.abs(normalizeAngle(moonAngle - sunAngle)) / Math.PI),
-  });
-  const rawDaylight = smoothstep(-0.16, 0.2, sunAltitude);
-  const rawTwilight = smoothstep(-0.28, 0.16, sunAltitude);
-  const daylight = getEclipseAdjustedDaylight(rawDaylight, solarEclipse);
-  const twilight = getEclipseAdjustedTwilight(rawTwilight, solarEclipse);
-  const night = clamp(
-    1 - twilight + solarEclipse.daylightReduction * 0.28,
-    0,
-    1
-  );
-  const starsOpacity = smoothstep(
-    0.08,
-    0.82,
-    Math.max(night, solarEclipse.coverage * 0.72)
-  );
-  const moonPhaseIndex =
-    ((dayNumber % MOON_PHASE_NAMES.length) + MOON_PHASE_NAMES.length) %
-    MOON_PHASE_NAMES.length;
-  const moonPhaseName = MOON_PHASE_NAMES[moonPhaseIndex];
-  const moonIllumination = [0, 0.25, 0.5, 0.75, 1, 0.75, 0.5, 0.25][
-    moonPhaseIndex
-  ];
-  const constellationSeedHash =
-    constellationSeed === undefined
-      ? DEFAULT_CONSTELLATION_SEED
-      : createHashSeed(constellationSeed);
-  const constellations = generateConstellations(constellationSeedHash, {
-    count: constellationCount,
-  });
-  const activeConstellationIndex =
-    ((Math.floor(yearProgress * constellationCount) % constellationCount) +
-      constellationCount) %
-    constellationCount;
-  const activeConstellation = constellations[activeConstellationIndex];
-  const seasonLengthDays = Math.max(1, yearLengthDays / constellationCount);
-  const seasonDay =
-    ((dayNumber % yearLengthDays) + yearLengthDays) % yearLengthDays;
-  const visibleEvents = getCelestialEventsForDay(dayNumber, {
-    yearLengthDays,
-    dayProgress,
-    observerLatitudeDegrees,
-    solarDeclination,
-    sunriseAzimuth,
-    sunsetAzimuth,
-    daylight,
-    night,
-    starsOpacity,
-  });
-  const calendar = formatCelestialDate(
-    activeConstellation?.name ?? 'Unknown',
-    moonPhaseName
-  );
-  const celestialRing = createCelestialRing(constellations);
-  const milkyWay = getMilkyWayBeltState({
-    dayProgress,
-    yearProgress,
-    observerLatitudeDegrees,
-    starsOpacity,
-  });
-  const orreryBodies = getOrreryBodies({
-    moonAngle,
-    moonIllumination,
-    visibleEvents,
-  });
-
-  return {
-    dayLengthMs,
-    cycleTime,
-    dayNumber,
-    dayProgress,
-    yearLengthDays,
-    yearProgress,
-    observerLatitudeDegrees,
-    seasonDay,
-    seasonLengthDays,
-    sunAngle,
-    sunAzimuth,
-    sunAltitude,
-    solarDeclination,
-    moonAngle,
-    moonMidnightAngle,
-    moonAzimuth,
-    moonAltitude,
-    moonMidnightOrbitProgress,
-    sunriseProgress,
-    sunriseAzimuth,
-    sunsetProgress,
-    sunsetAzimuth,
-    daylightDuration,
-    rawDaylight,
-    rawTwilight,
-    daylight,
-    twilight,
-    night,
-    starsOpacity,
-    moonPhaseIndex,
-    moonPhaseName,
-    moonIllumination,
-    solarEclipse,
-    constellations,
-    activeConstellationIndex,
-    activeConstellation,
-    celestialRing,
-    calendar,
-    visibleEvents,
-    milkyWay,
-    auroraBands: [] as AuroraBandLike[],
-    orreryBodies,
-    isNight: daylight < 0.22,
-  };
-}
-
-export function getWorldTimeMs(
-  realTimeMs: number,
-  options: {
-    timeOffsetMs?: number;
-  } = {}
-) {
-  return realTimeMs + (options.timeOffsetMs ?? 0);
-}
 
 export function getWorldDaylightCycle(
   realTimeMs: number,

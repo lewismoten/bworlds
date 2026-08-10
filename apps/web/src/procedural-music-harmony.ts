@@ -59,6 +59,8 @@ const MUSIC_MOTIF_SEED = registerHashLabel('music-lead-motif');
 const MUSIC_LEAP_SEED = registerHashLabel('music-leap-motion');
 const MUSIC_ACCIDENTAL_SEED = registerHashLabel('music-accidental-motion');
 const MUSIC_CONTOUR_SEED = registerHashLabel('music-lead-contour');
+const BASS_MIN_SEMITONES = -7;
+const BASS_MAX_SEMITONES = 12;
 const PROGRESSION_PATTERNS = [
   [0, 3, 4, 0],
   [0, 4, 5, 0],
@@ -300,7 +302,13 @@ export function resolveProceduralInstrumentSemitones(options: {
   );
 
   if (options.role === 'bass') {
-    return resolveBassSemitones(chord, options.stepIndex);
+    return resolveBassSemitones(
+      options.theme,
+      chord,
+      options.stepIndex,
+      options.clusterX,
+      options.clusterY
+    );
   }
   if (options.role === 'harmony') {
     return resolveHarmonySemitones(chord, options.stepIndex);
@@ -379,21 +387,139 @@ function createProceduralChord(
 }
 
 function resolveBassSemitones(
+  theme: ProceduralHarmonyTheme,
+  chord: ProceduralChord,
+  stepIndex: number,
+  clusterX: number,
+  clusterY: number
+): number {
+  const candidates = resolveBassSemitoneCandidates(chord, stepIndex);
+  if (stepIndex <= 0) {
+    return candidates[0] ?? chord.rootSemitones;
+  }
+
+  const previous = resolveBassSemitones(
+    theme,
+    resolveProceduralChordAtStep(theme, stepIndex - 1, clusterX, clusterY),
+    stepIndex - 1,
+    clusterX,
+    clusterY
+  );
+  const bassPulseIndex = Math.floor(stepIndex / 4);
+  const phrasePulse = bassPulseIndex % 4;
+  if (phrasePulse === 1) {
+    const preferredFifth = selectPreferredBassTarget(
+      chord.fifthSemitones,
+      previous
+    );
+    if (preferredFifth !== null) {
+      return preferredFifth;
+    }
+  }
+
+  return selectBassSemitoneCandidate({
+    targetCandidates: candidates,
+    previousBassSemitones: previous,
+  });
+}
+
+function resolveBassSemitoneCandidates(
   chord: ProceduralChord,
   stepIndex: number
-): number {
+): readonly number[] {
   const bassPulseIndex = Math.floor(stepIndex / 4);
-  const bassPattern = [
-    chord.rootSemitones,
-    chord.fifthSemitones,
-    chord.rootSemitones,
-    chord.rootSemitones + 12,
-    chord.rootSemitones,
-    chord.passingSemitones,
-  ];
-  return (
-    bassPattern[bassPulseIndex % bassPattern.length] ?? chord.rootSemitones
+  const phrasePulse = bassPulseIndex % 4;
+  if (phrasePulse === 0) {
+    return [chord.rootSemitones, chord.fifthSemitones];
+  }
+  if (phrasePulse === 1) {
+    return [chord.fifthSemitones, chord.rootSemitones];
+  }
+  if (phrasePulse === 2) {
+    return [
+      chord.rootSemitones + 12,
+      chord.rootSemitones,
+      chord.fifthSemitones,
+    ];
+  }
+  return [chord.passingSemitones, chord.rootSemitones];
+}
+
+function selectBassSemitoneCandidate(options: {
+  targetCandidates: readonly number[];
+  previousBassSemitones: number;
+}): number {
+  const candidates: Array<{ semitones: number; priority: number }> = [];
+  for (
+    let priority = 0;
+    priority < options.targetCandidates.length;
+    priority += 1
+  ) {
+    const targetSemitones =
+      options.targetCandidates[priority] ?? options.targetCandidates[0];
+    if (targetSemitones === undefined) {
+      continue;
+    }
+    for (let octaveShift = -24; octaveShift <= 24; octaveShift += 12) {
+      const candidate = targetSemitones + octaveShift;
+      if (candidate < BASS_MIN_SEMITONES || candidate > BASS_MAX_SEMITONES) {
+        continue;
+      }
+      candidates.push({ semitones: candidate, priority });
+    }
+  }
+  candidates.sort(
+    (left, right) =>
+      Math.abs(left.semitones - options.previousBassSemitones) -
+        Math.abs(right.semitones - options.previousBassSemitones) ||
+      left.priority - right.priority
   );
+
+  const boundedCandidate =
+    candidates.find(
+      (candidate) =>
+        Math.abs(candidate.semitones - options.previousBassSemitones) <= 5
+    ) ?? candidates[0];
+
+  return (
+    boundedCandidate?.semitones ??
+    clampBassFallback(options.targetCandidates[0] ?? 0)
+  );
+}
+
+function selectPreferredBassTarget(
+  targetSemitones: number,
+  previousBassSemitones: number
+): number | null {
+  const candidates: number[] = [];
+  for (let octaveShift = -24; octaveShift <= 24; octaveShift += 12) {
+    const candidate = targetSemitones + octaveShift;
+    if (candidate < BASS_MIN_SEMITONES || candidate > BASS_MAX_SEMITONES) {
+      continue;
+    }
+    candidates.push(candidate);
+  }
+  candidates.sort(
+    (left, right) =>
+      Math.abs(left - previousBassSemitones) -
+      Math.abs(right - previousBassSemitones)
+  );
+  return (
+    candidates.find(
+      (candidate) => Math.abs(candidate - previousBassSemitones) <= 7
+    ) ?? null
+  );
+}
+
+function clampBassFallback(targetSemitones: number): number {
+  let candidate = targetSemitones;
+  while (candidate > BASS_MAX_SEMITONES) {
+    candidate -= 12;
+  }
+  while (candidate < BASS_MIN_SEMITONES) {
+    candidate += 12;
+  }
+  return Math.min(BASS_MAX_SEMITONES, Math.max(BASS_MIN_SEMITONES, candidate));
 }
 
 function resolveHarmonySemitones(
