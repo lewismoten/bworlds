@@ -15,6 +15,8 @@ warnings.
   analysis.
 - Harmony and bass progression drift are now critical warnings too, using the
   exact measure window plus detected versus planned harmony/root labels.
+- Progression drift warnings now also include the concrete played note labels
+  for the offending bass note or harmony chord.
 - `warningMessages` remain non-blocking diagnostics for softer issues like
   percussion validation hints and planned-progression drift reports. Progression
   drift warnings now include the exact measure window that drifted.

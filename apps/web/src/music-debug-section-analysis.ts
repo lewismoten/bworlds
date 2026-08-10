@@ -43,6 +43,7 @@ export type MusicDebugProgressionDriftWindow = {
   startMeasure: number;
   endMeasure: number;
   detectedLabel: string | null;
+  detectedNoteLabels: string[];
   plannedLabel: string;
 };
 
@@ -895,6 +896,12 @@ function collectHarmonyChordDriftWindows(options: {
         startMeasure: options.section.startMeasure + window.sectionStartMeasure - 1,
         endMeasure: options.section.startMeasure + window.sectionEndMeasure - 1,
         detectedLabel,
+        detectedNoteLabels: resolveHarmonyNoteLabelsForWindow({
+          notes: options.notes,
+          notePitchDiagnostics: options.notePitchDiagnostics,
+          startMs,
+          endMs,
+        }),
         plannedLabel,
       });
     }
@@ -943,6 +950,12 @@ function collectBassRootDriftWindows(options: {
         startMeasure: options.section.startMeasure + window.sectionStartMeasure - 1,
         endMeasure: options.section.startMeasure + window.sectionEndMeasure - 1,
         detectedLabel,
+        detectedNoteLabels: resolveBassNoteLabelsForWindow({
+          notes: options.notes,
+          notePitchDiagnostics: options.notePitchDiagnostics,
+          startMs,
+          endMs,
+        }),
         plannedLabel,
       });
     }
@@ -987,6 +1000,75 @@ function detectHarmonyChordLabelForWindow(options: {
     .filter((label): label is string => Boolean(label));
 
   return orderedLabels[0] ?? null;
+}
+
+function resolveHarmonyNoteLabelsForWindow(options: {
+  notes: readonly ProceduralMusicNote[];
+  notePitchDiagnostics: readonly MusicDebugNotePitchDiagnostic[];
+  startMs: number;
+  endMs: number;
+}): string[] {
+  const noteLabels = new Map<number, Set<string>>();
+
+  for (let index = 0; index < options.notes.length; index += 1) {
+    const note = options.notes[index]!;
+    const diagnostic = options.notePitchDiagnostics[index];
+    if (
+      !diagnostic ||
+      note.role !== 'harmony' ||
+      diagnostic.midiNote === null ||
+      note.startMs >= options.endMs ||
+      note.startMs + note.durationMs <= options.startMs
+    ) {
+      continue;
+    }
+
+    const overlapStartMs = Math.max(note.startMs, options.startMs);
+    let labelsAtStart = noteLabels.get(overlapStartMs);
+    if (!labelsAtStart) {
+      labelsAtStart = new Set<string>();
+      noteLabels.set(overlapStartMs, labelsAtStart);
+    }
+    labelsAtStart.add(formatMidiNoteLabel(diagnostic.midiNote));
+  }
+
+  const earliestLabels = [...noteLabels.entries()].sort(
+    (left, right) => left[0] - right[0]
+  )[0]?.[1];
+  return earliestLabels ? [...earliestLabels].sort(compareNoteLabels) : [];
+}
+
+function resolveBassNoteLabelsForWindow(options: {
+  notes: readonly ProceduralMusicNote[];
+  notePitchDiagnostics: readonly MusicDebugNotePitchDiagnostic[];
+  startMs: number;
+  endMs: number;
+}): string[] {
+  let earliestStartMs = Number.POSITIVE_INFINITY;
+  const labels: string[] = [];
+
+  for (let index = 0; index < options.notes.length; index += 1) {
+    const note = options.notes[index]!;
+    const diagnostic = options.notePitchDiagnostics[index];
+    if (
+      !diagnostic ||
+      note.role !== 'bass' ||
+      diagnostic.midiNote === null ||
+      note.startMs >= options.endMs ||
+      note.startMs + note.durationMs <= options.startMs
+    ) {
+      continue;
+    }
+    if (note.startMs < earliestStartMs) {
+      earliestStartMs = note.startMs;
+      labels.length = 0;
+    }
+    if (note.startMs === earliestStartMs) {
+      labels.push(formatMidiNoteLabel(diagnostic.midiNote));
+    }
+  }
+
+  return [...new Set(labels)].sort(compareNoteLabels);
 }
 
 function detectBassRootLabelForWindow(options: {
@@ -1196,4 +1278,12 @@ function normalizeChordLabel(group: string): string | null {
 function resolvePitchClassLabel(midiNote: number) {
   const normalizedPitchClass = ((midiNote % 12) + 12) % 12;
   return MUSIC_DEBUG_PITCH_CLASS_LABELS[normalizedPitchClass] ?? 'C';
+}
+
+function formatMidiNoteLabel(midiNote: number): string {
+  return `${resolvePitchClassLabel(midiNote)}${Math.floor(midiNote / 12) - 1}`;
+}
+
+function compareNoteLabels(left: string, right: string): number {
+  return left.localeCompare(right, undefined, { numeric: true });
 }

@@ -210,7 +210,11 @@ export function inspectMusicDebugMidiBytes(
                   window.startMeasure === window.endMeasure
                     ? `measure ${window.startMeasure}`
                     : `measures ${window.startMeasure}-${window.endMeasure}`;
-                return `${section.sectionLabel} harmony drifted at ${measureLabel} (${window.detectedLabel ?? 'missing'} vs ${window.plannedLabel}).`;
+                const noteLabel =
+                  window.detectedNoteLabels.length > 0
+                    ? `; notes ${window.detectedNoteLabels.join(', ')}`
+                    : '';
+                return `${section.sectionLabel} harmony drifted at ${measureLabel} (${window.detectedLabel ?? 'missing'} vs ${window.plannedLabel}${noteLabel}).`;
               })
             : [
                 `${section.sectionLabel} harmony drifted from the planned progression (${section.detectedChordLabels.join(' > ') || 'missing'} vs ${section.plannedChordLabels.join(' > ') || 'unplanned'}).`,
@@ -244,7 +248,11 @@ export function inspectMusicDebugMidiBytes(
                   window.startMeasure === window.endMeasure
                     ? `measure ${window.startMeasure}`
                     : `measures ${window.startMeasure}-${window.endMeasure}`;
-                return `${section.sectionLabel} bass roots drifted at ${measureLabel} (${window.detectedLabel ?? 'missing'} vs ${window.plannedLabel}).`;
+                const noteLabel =
+                  window.detectedNoteLabels.length > 0
+                    ? `; notes ${window.detectedNoteLabels.join(', ')}`
+                    : '';
+                return `${section.sectionLabel} bass roots drifted at ${measureLabel} (${window.detectedLabel ?? 'missing'} vs ${window.plannedLabel}${noteLabel}).`;
               })
             : [
                 `${section.sectionLabel} bass roots drifted from the planned progression (${section.detectedRootLabels.join(' > ') || 'missing'} vs ${section.plannedRootLabels.join(' > ') || 'unplanned'}).`,

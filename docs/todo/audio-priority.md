@@ -12,7 +12,7 @@
 - [x] Treat cadence drift as an export failure.
 - [x] Do not mark a MIDI audit valid when warnings are critical.
 - [ ] Regenerate only the failed phrase before rebuilding the song.
-- [ ] Report the exact measure and note for each failure.
+- [x] Report the exact measure and note for each failure.
 - [ ] Visualization of tracks should show only the bar instead of a dot, and the bar is shorter, and at the level at which the notes are being played (where the dot is now). bars are semi-transparent, in that if multiple notes are playing, they can overlap and become more opaque.
 
 ## Instrument Patch Foundation
