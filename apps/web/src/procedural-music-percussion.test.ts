@@ -8,6 +8,7 @@ import {
 import {
   listPercussionVoicesForFamily,
   resolvePercussionVoice,
+  resolvePercussionVoiceById,
 } from './procedural-music-percussion-voices.ts';
 import { resolveProceduralNoteFrequency } from './procedural-music-note-shaping.ts';
 
@@ -222,6 +223,21 @@ describe('procedural music percussion', () => {
     expect(deepKickFrequency).toBeLessThan(kickFrequency);
     expect(floorTomFrequency).toBeGreaterThan(kickFrequency);
     expect(floorTom.name).toBe('floor-tom');
+  });
+
+  it('gives high and low bongo voices different pitches and decay lengths', () => {
+    const highBongo = resolvePercussionVoiceById('hand-percussion-60');
+    const lowBongo = resolvePercussionVoiceById('hand-percussion-61');
+
+    expect(highBongo.pitchSemitoneOffset).toBeGreaterThan(
+      lowBongo.pitchSemitoneOffset
+    );
+    expect(highBongo.releaseMultiplier).toBeLessThan(
+      lowBongo.releaseMultiplier
+    );
+    expect(highBongo.timbre.filterCutoffMultiplier ?? 0).toBeGreaterThan(
+      lowBongo.timbre.filterCutoffMultiplier ?? 0
+    );
   });
 
   it('keeps town grooves anchored by a consistent mid-beat snare with supporting hits around it', () => {
