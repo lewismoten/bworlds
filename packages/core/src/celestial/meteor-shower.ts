@@ -1,5 +1,5 @@
 import { clamp, fract } from '../math.ts';
-import type { CelestialEventLike } from './getCelestialEventsForDay.ts';
+import type { CelestialEventLike } from './types.ts';
 
 const METEOR_SHOWER_NAMES = ['Silver Wake', 'Ember Rain', 'Northfall'] as const;
 

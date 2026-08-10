@@ -12,8 +12,8 @@ export {
   DEFAULT_SEASON_DAYLIGHT_AMPLITUDE,
   DEFAULT_YEAR_LENGTH_DAYS,
 } from './celestial/time.ts';
-export { type CelestialEventLike } from './celestial/getCelestialEventsForDay.ts';
-export { type AuroraBandLike } from './celestial/getDaylightCycleState.ts';
+export { type CelestialEventLike } from './celestial/types.ts';
+export { type AuroraBandLike } from './celestial/aurora.ts';
 
 export {
   appendHashSeedLabel,

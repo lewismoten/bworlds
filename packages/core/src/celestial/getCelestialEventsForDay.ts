@@ -1,30 +1,9 @@
 import { DEFAULT_YEAR_LENGTH_DAYS } from './time.ts';
-import { hash2DWithSeed, registerHashLabel } from '../hash.ts';
-import { clamp, fract, lerp, normalizeAngle, smoothstep } from '../math.ts';
-import { PLANET_NAMES, getPlanetSkyProfile } from './planet.ts';
-import { getPlanetaryOrbitProgress } from './planet.ts';
-import {
-  appendCometEvents,
-  COMET_NAMES,
-  getCometOrbitProgress,
-  getCometOrreryProfile,
-} from './comet.ts';
+import { clamp, lerp, normalizeAngle, smoothstep } from '../math.ts';
+import { appendPlanetEvents } from './planet.ts';
+import {  appendCometEvents } from './comet.ts';
 import { appendMeteorShowerEvents } from './meteor-shower.ts';
-
-const PLANET_INTENSITY_SEED = registerHashLabel('planet-intensity');
-
-export interface CelestialEventLike {
-  type: 'planet' | 'meteor-shower' | 'comet';
-  name: string;
-  progress: number;
-  intensity: number;
-  visibility: number;
-  azimuth: number;
-  altitude: number;
-  color: string;
-  size: number;
-  trailLength: number;
-}
+import type { CelestialEventLike } from './types.ts';
 
 function getCelestialEventVisibility({
   type,
@@ -136,48 +115,6 @@ export function getCelestialEventsForDay(
   const starsOpacity = clamp(options.starsOpacity ?? night, 0, 1);
   const events: CelestialEventLike[] = [];
 
-  PLANET_NAMES.forEach((name, index) => {
-    const profile = getPlanetSkyProfile(name, index);
-    const orbitLength = profile.orbitLengthDays;
-    const orbitProgress = getPlanetaryOrbitProgress(
-      dayNumber + dayProgress,
-      profile
-    );
-    const intensity =
-      profile.intensityBase +
-      hash2DWithSeed(PLANET_INTENSITY_SEED, index, dayNumber % orbitLength) *
-        profile.intensitySwing;
-    const orbitState = getOrbitalSkyPosition({
-      orbitProgress,
-      observerLatitudeDegrees,
-      declination:
-        solarDeclination * profile.declinationFactor +
-        Math.sin((dayNumber / profile.declinationWaveDays) * Math.PI * 2) *
-          profile.declinationWaveAmplitude,
-      sunriseAzimuth,
-      sunsetAzimuth,
-      azimuthShift: profile.azimuthShift,
-    });
-    events.push({
-      type: 'planet',
-      name,
-      progress: orbitProgress,
-      intensity,
-      visibility: getCelestialEventVisibility({
-        type: 'planet',
-        altitude: orbitState.altitude,
-        intensity,
-        daylight,
-        night,
-        starsOpacity,
-      }),
-      azimuth: orbitState.azimuth,
-      altitude: orbitState.altitude,
-      color: profile.color,
-      size: profile.size,
-      trailLength: 0,
-    });
-  });
 
   const o = {
     events,
@@ -195,6 +132,7 @@ export function getCelestialEventsForDay(
     getCelestialEventVisibility,
   };
 
+  appendPlanetEvents(o);
   appendMeteorShowerEvents(o);
   appendCometEvents(o);
 

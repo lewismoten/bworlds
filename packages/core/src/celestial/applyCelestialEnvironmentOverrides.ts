@@ -1,13 +1,13 @@
 import { clamp, smoothstep } from '../math';
+import type { AuroraBandLike } from './aurora';
 import type { ConstellationLike } from './constellation';
 import {
   getEclipseAdjustedDaylight,
   getEclipseAdjustedTwilight,
   type SolarEclipseLike,
 } from './eclipse';
-import type { CelestialEventLike } from './getCelestialEventsForDay';
+import type { CelestialEventLike } from './types';
 import type {
-  AuroraBandLike,
   getDaylightCycleState,
 } from './getDaylightCycleState';
 import type { MilkyWayBeltLike } from './milky-way';

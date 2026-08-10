@@ -15,18 +15,7 @@ import { clamp, fract, lerp, normalizeAngle, smoothstep } from '../math';
 import { getMilkyWayBeltState } from './milky-way';
 import { MOON_PHASE_NAMES } from './moon';
 import { getOrreryBodies } from './orrery';
-
-export interface AuroraBandLike {
-  id: string;
-  azimuthCenter: number;
-  span: number;
-  altitude: number;
-  height: number;
-  intensity: number;
-  wavePhase: number;
-  colorA: string;
-  colorB: string;
-}
+import type { AuroraBandLike } from './aurora';
 
 export function getDaylightCycleState(
   timeMs: number,

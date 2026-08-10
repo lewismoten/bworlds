@@ -8,21 +8,9 @@ import {
   getPlanetSkyProfile,
   getPlanetSkyProfileIndex,
 } from './planet.ts';
+import type { CelestialEventLike } from './types.ts';
 const PLANET_NAME_SET: ReadonlySet<string> = new Set(PLANET_NAMES);
 const COMET_NAME_SET: ReadonlySet<string> = new Set(COMET_NAMES);
-
-export interface CelestialEventLike {
-  type: 'planet' | 'meteor-shower' | 'comet';
-  name: string;
-  progress: number;
-  intensity: number;
-  visibility: number;
-  azimuth: number;
-  altitude: number;
-  color: string;
-  size: number;
-  trailLength: number;
-}
 
 export interface OrreryBodyLike {
   id: string;
