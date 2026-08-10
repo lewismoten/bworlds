@@ -2156,6 +2156,23 @@ describe('procedural music', () => {
     expect(piano.transientFilterType).toBe('highpass');
   });
 
+  it('gives snare timbres a body tone plus a filtered noise burst', () => {
+    const snare = resolveProceduralInstrumentTimbre({
+      family: 'snare',
+      brightness: 1,
+      harmonicSignal: 0.5,
+      filterSignal: 0.5,
+    });
+
+    expect(snare.fundamentalGainMultiplier ?? 0).toBeGreaterThan(1);
+    expect(snare.filterType).toBe('bandpass');
+    expect(snare.filterCutoffHz).toBeLessThan(1_200);
+    expect(snare.transientMix ?? 0).toBeGreaterThan(0.2);
+    expect(snare.transientDurationMs ?? 0).toBeLessThanOrEqual(32);
+    expect(snare.transientFilterType).toBe('bandpass');
+    expect(snare.transientFilterCutoffHz ?? 0).toBeGreaterThan(1_500);
+  });
+
   it('keeps generated instrument patches inside their family recipe ranges', () => {
     const bank = createProceduralInstrumentBank(
       resolveMusicTheme('forest', 'overworld'),
