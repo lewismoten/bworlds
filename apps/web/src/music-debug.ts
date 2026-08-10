@@ -987,7 +987,10 @@ export function buildMusicDebugSummaryMarkup(
 
 function formatMusicDebugMidiAuditSummary(audit: MusicDebugMidiAudit): string {
   if (!audit.isConsistent) {
-    return audit.mismatchMessages.join(' | ');
+    return [
+      ...audit.mismatchMessages,
+      ...audit.criticalWarningMessages,
+    ].join(' | ');
   }
   if (audit.warningMessages.length > 0) {
     return `ok with warnings: ${audit.warningMessages.join(' | ')}`;

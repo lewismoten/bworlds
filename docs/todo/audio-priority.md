@@ -9,8 +9,8 @@
 - [ ] Fail songs whose climax occurs in the wrong phrase.
 - [ ] Fail songs whose bass roots drift from the chord plan.
 - [ ] Fail songs whose harmony drifts from the chord plan.
-- [ ] Treat cadence drift as an export failure.
-- [ ] Do not mark a MIDI audit valid when warnings are critical.
+- [x] Treat cadence drift as an export failure.
+- [x] Do not mark a MIDI audit valid when warnings are critical.
 - [ ] Regenerate only the failed phrase before rebuilding the song.
 - [ ] Report the exact measure and note for each failure.
 

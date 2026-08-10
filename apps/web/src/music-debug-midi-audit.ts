@@ -31,6 +31,7 @@ export type MusicDebugMidiAudit = {
   markerLabels: string[];
   sectionsMatchPlannedMarkers: boolean;
   mismatchMessages: string[];
+  criticalWarningMessages: string[];
   warningMessages: string[];
   isConsistent: boolean;
 };
@@ -92,6 +93,7 @@ export function inspectMusicDebugMidiBytes(
     timeSignatureMeta
   );
   const mismatchMessages: string[] = [];
+  const criticalWarningMessages: string[] = [];
   const warningMessages: string[] = [];
   const includedRoles: ReadonlySet<
     MusicDebugSnapshot['notes'][number]['role']
@@ -223,7 +225,7 @@ export function inspectMusicDebugMidiBytes(
     includedRoles.has('bass') &&
     !snapshot.cadenceValidation.isValidForMidiExport
   ) {
-    warningMessages.push(...snapshot.cadenceValidation.messages);
+    criticalWarningMessages.push(...snapshot.cadenceValidation.messages);
   }
   if (
     includedRoles.has('percussion') &&
@@ -260,8 +262,10 @@ export function inspectMusicDebugMidiBytes(
     markerLabels,
     sectionsMatchPlannedMarkers,
     mismatchMessages,
+    criticalWarningMessages,
     warningMessages,
-    isConsistent: mismatchMessages.length === 0,
+    isConsistent:
+      mismatchMessages.length === 0 && criticalWarningMessages.length === 0,
   };
 }
 

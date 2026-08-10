@@ -49,19 +49,28 @@ describe('music debug midi audit', () => {
     expect(snapshot.resolvedBpm).toBeCloseTo(153.043478, 3);
     expect(audit.exportedDurationMs).toBeCloseTo(138_000, -1);
     expect(audit.exportedBpm).toBeCloseTo(153.043478, 1);
-    expect(audit.isConsistent).toBe(true);
+    expect(audit.isConsistent).toBe(
+      snapshot.cadenceValidation.isValidForMidiExport
+    );
   }, 20_000);
 
   it('parses exported bpm, duration, and measures back from the midi bytes', () => {
     const snapshot = createMusicDebugSnapshot({
-      tileKind: 'forest',
-      contextType: 'overworld',
-      clusterX: 4,
-      clusterY: -1,
+      tileKind: 'town',
+      contextType: 'town',
+      clusterX: 3,
+      clusterY: -2,
     });
-
-    const audit = createMusicDebugMidiExportAudit(snapshot, {
+    const file = createMusicDebugMidiFileUnchecked(snapshot, {
       createdAt: new Date('2026-08-09T00:00:00.000Z'),
+    });
+    const audit = inspectMusicDebugMidiBytes(file.bytes, {
+      ...snapshot,
+      cadenceValidation: {
+        ...snapshot.cadenceValidation,
+        isValidForMidiExport: true,
+        messages: [],
+      },
     });
 
     expect(audit.exportedBpm).toBeCloseTo(snapshot.resolvedBpm, 1);
@@ -73,6 +82,7 @@ describe('music debug midi audit', () => {
     expect(audit.sectionsMatchPlannedMarkers).toBe(true);
     expect(audit.isConsistent).toBe(true);
     expect(audit.mismatchMessages).toEqual([]);
+    expect(audit.criticalWarningMessages).toEqual([]);
     expect(audit.exportedNoteCountsByRole).toEqual(snapshot.roleCounts);
     expect(audit.exportedPitchClassCountsByRole.bass).toEqual(
       snapshot.midiExportValidation.pitchClassCountsByRole.bass
@@ -203,6 +213,11 @@ describe('music debug midi audit', () => {
 
     const audit = inspectMusicDebugMidiBytes(file.bytes, {
       ...snapshot,
+      cadenceValidation: {
+        ...snapshot.cadenceValidation,
+        isValidForMidiExport: true,
+        messages: [],
+      },
       harmonyChordDetections: snapshot.harmonyChordDetections.map(
         (section, index) =>
           index === 0
@@ -239,6 +254,11 @@ describe('music debug midi audit', () => {
 
     const audit = inspectMusicDebugMidiBytes(file.bytes, {
       ...snapshot,
+      cadenceValidation: {
+        ...snapshot.cadenceValidation,
+        isValidForMidiExport: true,
+        messages: [],
+      },
       bassProgressionDetections: snapshot.bassProgressionDetections.map(
         (section, index) =>
           index === 0
@@ -282,9 +302,9 @@ describe('music debug midi audit', () => {
       },
     });
 
-    expect(audit.isConsistent).toBe(true);
+    expect(audit.isConsistent).toBe(false);
     expect(audit.mismatchMessages).toEqual([]);
-    expect(audit.warningMessages).toContain(
+    expect(audit.criticalWarningMessages).toContain(
       'Outro answer cadence drifted outside the active harmony.'
     );
   });
@@ -302,6 +322,11 @@ describe('music debug midi audit', () => {
 
     const audit = inspectMusicDebugMidiBytes(file.bytes, {
       ...snapshot,
+      cadenceValidation: {
+        ...snapshot.cadenceValidation,
+        isValidForMidiExport: true,
+        messages: [],
+      },
       percussionValidation: {
         isValidForMidiExport: false,
         messages: ['Intro should not contain percussion notes.'],
@@ -310,6 +335,37 @@ describe('music debug midi audit', () => {
 
     expect(audit.isConsistent).toBe(true);
     expect(audit.mismatchMessages).toEqual([]);
+    expect(audit.warningMessages).toContain(
+      'Intro should not contain percussion notes.'
+    );
+  });
+
+  it('keeps non-critical warnings from invalidating an otherwise consistent midi audit', () => {
+    const snapshot = createMusicDebugSnapshot({
+      tileKind: 'town',
+      contextType: 'town',
+      clusterX: 3,
+      clusterY: -2,
+    });
+    const file = createMusicDebugMidiFileUnchecked(snapshot, {
+      createdAt: new Date('2026-08-10T00:00:00.000Z'),
+    });
+
+    const audit = inspectMusicDebugMidiBytes(file.bytes, {
+      ...snapshot,
+      cadenceValidation: {
+        ...snapshot.cadenceValidation,
+        isValidForMidiExport: true,
+        messages: [],
+      },
+      percussionValidation: {
+        isValidForMidiExport: false,
+        messages: ['Intro should not contain percussion notes.'],
+      },
+    });
+
+    expect(audit.isConsistent).toBe(true);
+    expect(audit.criticalWarningMessages).toEqual([]);
     expect(audit.warningMessages).toContain(
       'Intro should not contain percussion notes.'
     );
