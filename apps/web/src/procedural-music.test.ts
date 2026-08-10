@@ -23,7 +23,10 @@ import {
 import { createProceduralMusicSong } from './procedural-music-song.ts';
 import { resolveProceduralMusicLoudness } from './procedural-music-loudness.ts';
 import { resolveProceduralThemeMotif } from './procedural-music-theme-motif.ts';
-import { resolveInstrumentPatchRecipe } from './music-instrument-timbres.ts';
+import {
+  resolveInstrumentPatchRecipe,
+  resolveProceduralInstrumentTimbre,
+} from './music-instrument-timbres.ts';
 
 describe('procedural music', () => {
   it('adds shared sound bank registry metadata to generated instruments', () => {
@@ -1779,6 +1782,19 @@ describe('procedural music', () => {
     );
   });
 
+  it('gives flute timbres a filtered breath-noise layer', () => {
+    const flute = resolveProceduralInstrumentTimbre({
+      family: 'flute',
+      brightness: 1.08,
+      harmonicSignal: 0.6,
+      filterSignal: 0.4,
+    });
+
+    expect(flute.noiseMix).toBeGreaterThan(0.1);
+    expect(flute.noiseFilterType).toBe('highpass');
+    expect(flute.noiseFilterCutoffHz).toBeGreaterThan(2_000);
+  });
+
   it('keeps generated instrument patches inside their family recipe ranges', () => {
     const bank = createProceduralInstrumentBank(
       resolveMusicTheme('forest', 'overworld'),
@@ -1832,6 +1848,140 @@ describe('procedural music', () => {
     expect(leadRecipe.waveformOptions).not.toEqual(bassRecipe.waveformOptions);
     expect(leadRecipe.attackMsRange).not.toEqual(bassRecipe.attackMsRange);
     expect(leadRecipe.releaseMsRange).not.toEqual(bassRecipe.releaseMsRange);
+  });
+
+  it('plays optional timbre noise layers through the web audio sink', () => {
+    const createdNoiseSources: Array<{
+      buffer: AudioBuffer | null;
+      loop: boolean;
+      connect: ReturnType<typeof vi.fn>;
+      disconnect: ReturnType<typeof vi.fn>;
+      start: ReturnType<typeof vi.fn>;
+      stop: ReturnType<typeof vi.fn>;
+    }> = [];
+
+    class FakeAudioContext {
+      state: AudioContextState = 'running';
+      currentTime = 0;
+      destination = {};
+      sampleRate = 48_000;
+      createOscillator() {
+        return {
+          onended: null,
+          type: 'sine',
+          frequency: {
+            setValueAtTime: vi.fn(),
+            exponentialRampToValueAtTime: vi.fn(),
+          },
+          detune: {
+            setValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+          start: vi.fn(),
+          stop: vi.fn(),
+        } as unknown as OscillatorNode;
+      }
+      createGain() {
+        return {
+          gain: {
+            setValueAtTime: vi.fn(),
+            exponentialRampToValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+        } as unknown as GainNode;
+      }
+      createBiquadFilter() {
+        return {
+          type: 'lowpass' as BiquadFilterType,
+          frequency: {
+            setValueAtTime: vi.fn(),
+          },
+          Q: {
+            setValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+        } as unknown as BiquadFilterNode;
+      }
+      createStereoPanner() {
+        return {
+          pan: {
+            setValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+        } as unknown as StereoPannerNode;
+      }
+      createBuffer(channels: number, length: number) {
+        const data = Array.from({ length: channels }, () => new Float32Array(length));
+        return {
+          getChannelData(index: number) {
+            return data[index]!;
+          },
+        } as unknown as AudioBuffer;
+      }
+      createBufferSource() {
+        const source = {
+          buffer: null as AudioBuffer | null,
+          loop: false,
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+          start: vi.fn(),
+          stop: vi.fn(),
+        };
+        createdNoiseSources.push(source);
+        return source as unknown as AudioBufferSourceNode;
+      }
+      resume() {
+        return Promise.resolve();
+      }
+    }
+
+    const originalAudioContext = globalThis.AudioContext;
+    vi.stubGlobal('AudioContext', FakeAudioContext);
+
+    try {
+      const sink = createWebAudioMusicSink();
+      sink.play({
+        themeId: 'town-square',
+        instrumentId: 'flute-test',
+        role: 'lead',
+        startMs: 0,
+        durationMs: 240,
+        frequency: 660,
+        volume: 0.05,
+        waveform: 'sine',
+        timbre: {
+          harmonicWaveform: 'sine',
+          harmonicRatio: 2,
+          filterType: 'highpass',
+          filterCutoffHz: 1_100,
+          filterQ: 0.8,
+          noiseMix: 0.2,
+          noiseFilterType: 'highpass',
+          noiseFilterCutoffHz: 3_000,
+          noiseFilterQ: 0.7,
+        },
+        attackMs: 24,
+        releaseMs: 90,
+        detuneCents: 0,
+        harmonicGain: 0.2,
+        pulseRate: 0.8,
+      });
+
+      expect(createdNoiseSources).toHaveLength(1);
+      expect(createdNoiseSources[0]?.loop).toBe(true);
+      expect(createdNoiseSources[0]?.start).toHaveBeenCalled();
+      expect(createdNoiseSources[0]?.stop).toHaveBeenCalled();
+    } finally {
+      if (originalAudioContext) {
+        vi.stubGlobal('AudioContext', originalAudioContext);
+      } else {
+        vi.unstubAllGlobals();
+      }
+    }
   });
 
   it('emits scheduled notes through the controller sink', () => {

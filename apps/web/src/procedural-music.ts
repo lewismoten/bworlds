@@ -958,6 +958,7 @@ type AudioContextCtor = new () => AudioContext;
 type StereoPannerNodeLike = StereoPannerNode;
 type BiquadFilterNodeLike = BiquadFilterNode;
 type DelayNodeLike = DelayNode;
+type AudioBufferSourceNodeLike = AudioBufferSourceNode;
 
 type SharedReverbBus = {
   send: GainNode;
@@ -973,6 +974,9 @@ type ActiveMusicVoice = {
   harmonicOscillator: OscillatorNode;
   gain: GainNode;
   harmonicGain: GainNode;
+  noiseSource: AudioBufferSourceNodeLike | null;
+  noiseGain: GainNode | null;
+  noiseFilter: BiquadFilterNodeLike | null;
   reverbSend: GainNode;
   timbreFilter: BiquadFilterNodeLike | null;
   eqFilters: BiquadFilterNodeLike[];
@@ -988,6 +992,7 @@ export function createWebAudioMusicSink(
   let masterGain = 1;
   let muted = false;
   let outputGainNode: GainNode | null = null;
+  let sharedNoiseBuffer: AudioBuffer | null = null;
   const activeVoices = new Set<ActiveMusicVoice>();
   const sharedReverbBuses = new Map<string, SharedReverbBus>();
 
@@ -1052,6 +1057,9 @@ export function createWebAudioMusicSink(
     voice.harmonicOscillator.disconnect?.();
     voice.gain.disconnect?.();
     voice.harmonicGain.disconnect?.();
+    voice.noiseSource?.disconnect?.();
+    voice.noiseGain?.disconnect?.();
+    voice.noiseFilter?.disconnect?.();
     voice.reverbSend.disconnect?.();
     voice.timbreFilter?.disconnect?.();
     voice.eqFilters.forEach((filter) => filter.disconnect?.());
@@ -1082,6 +1090,11 @@ export function createWebAudioMusicSink(
     }
     try {
       voice.harmonicOscillator.stop(stopAt);
+    } catch {
+      // Ignore repeated or invalid stop requests.
+    }
+    try {
+      voice.noiseSource?.stop(stopAt);
     } catch {
       // Ignore repeated or invalid stop requests.
     }
@@ -1121,6 +1134,23 @@ export function createWebAudioMusicSink(
       bus.output.disconnect?.();
     }
     sharedReverbBuses.clear();
+  }
+
+  function getSharedNoiseBuffer(context: AudioContext): AudioBuffer | null {
+    if (sharedNoiseBuffer) {
+      return sharedNoiseBuffer;
+    }
+    if (typeof context.createBuffer !== 'function') {
+      return null;
+    }
+    const frameCount = Math.max(1, Math.round(context.sampleRate));
+    const buffer = context.createBuffer(1, frameCount, context.sampleRate);
+    const channel = buffer.getChannelData(0);
+    for (let index = 0; index < channel.length; index += 1) {
+      channel[index] = Math.random() * 2 - 1;
+    }
+    sharedNoiseBuffer = buffer;
+    return sharedNoiseBuffer;
   }
 
   return {
@@ -1195,6 +1225,17 @@ export function createWebAudioMusicSink(
       const harmonicOscillator = context.createOscillator();
       const gain = context.createGain();
       const harmonicGain = context.createGain();
+      const noiseMix = Math.max(0, note.timbre.noiseMix ?? 0);
+      const noiseGain =
+        noiseMix > 0 ? context.createGain() : null;
+      const noiseFilter =
+        noiseMix > 0 && typeof context.createBiquadFilter === 'function'
+          ? (context.createBiquadFilter() as BiquadFilterNodeLike)
+          : null;
+      const noiseSource =
+        noiseMix > 0 && typeof context.createBufferSource === 'function'
+          ? (context.createBufferSource() as AudioBufferSourceNodeLike)
+          : null;
       const timbreFilter =
         typeof context.createBiquadFilter === 'function'
           ? (context.createBiquadFilter() as BiquadFilterNodeLike)
@@ -1262,10 +1303,43 @@ export function createWebAudioMusicSink(
         0.0001,
         startAt + durationSeconds
       );
+      if (noiseGain) {
+        noiseGain.gain.setValueAtTime(0.0001, startAt);
+        noiseGain.gain.exponentialRampToValueAtTime(
+          sustainVolume * noiseMix,
+          startAt + Math.max(0.01, note.attackMs / 1200)
+        );
+        noiseGain.gain.exponentialRampToValueAtTime(
+          sustainVolume * noiseMix * 0.55,
+          startAt +
+            Math.max(
+              durationSeconds - note.releaseMs / 1000,
+              note.attackMs / 1000
+            )
+        );
+        noiseGain.gain.exponentialRampToValueAtTime(
+          0.0001,
+          startAt + durationSeconds
+        );
+      }
       reverbSend.gain.setValueAtTime(space?.wetGain ?? 0, startAt);
 
       oscillator.connect(gain);
       harmonicOscillator.connect(harmonicGain);
+      if (noiseSource && noiseGain) {
+        noiseSource.buffer = getSharedNoiseBuffer(context);
+        noiseSource.loop = true;
+        noiseSource.connect(noiseGain);
+        if (noiseFilter) {
+          noiseFilter.type = note.timbre.noiseFilterType ?? 'highpass';
+          noiseFilter.frequency.setValueAtTime(
+            note.timbre.noiseFilterCutoffHz ?? 2_400,
+            startAt
+          );
+          noiseFilter.Q.setValueAtTime(note.timbre.noiseFilterQ ?? 0.7, startAt);
+          noiseGain.connect(noiseFilter);
+        }
+      }
       if (timbreFilter) {
         timbreFilter.type = note.timbre.filterType;
         timbreFilter.frequency.setValueAtTime(
@@ -1305,6 +1379,13 @@ export function createWebAudioMusicSink(
           gain.connect(reverbSend);
           harmonicGain.connect(reverbSend);
         }
+        if (noiseFilter) {
+          noiseFilter.connect(panner);
+          noiseFilter.connect(reverbSend);
+        } else if (noiseGain) {
+          noiseGain.connect(panner);
+          noiseGain.connect(reverbSend);
+        }
         panner.connect(outputGain);
       } else {
         if (outputNode) {
@@ -1315,6 +1396,13 @@ export function createWebAudioMusicSink(
           harmonicGain.connect(outputGain);
           gain.connect(reverbSend);
           harmonicGain.connect(reverbSend);
+        }
+        if (noiseFilter) {
+          noiseFilter.connect(outputGain);
+          noiseFilter.connect(reverbSend);
+        } else if (noiseGain) {
+          noiseGain.connect(outputGain);
+          noiseGain.connect(reverbSend);
         }
       }
       if (space) {
@@ -1334,6 +1422,9 @@ export function createWebAudioMusicSink(
         harmonicOscillator,
         gain,
         harmonicGain,
+        noiseSource,
+        noiseGain,
+        noiseFilter,
         reverbSend,
         timbreFilter,
         eqFilters,
@@ -1350,8 +1441,10 @@ export function createWebAudioMusicSink(
       };
       oscillator.start(startAt);
       harmonicOscillator.start(startAt);
+      noiseSource?.start(startAt);
       oscillator.stop(startAt + durationSeconds);
       harmonicOscillator.stop(startAt + durationSeconds);
+      noiseSource?.stop(startAt + durationSeconds);
     },
     stopAll() {
       const context = getAudioContext();

@@ -28,6 +28,10 @@ export type ProceduralInstrumentTimbre = {
   filterType: BiquadFilterType;
   filterCutoffHz: number;
   filterQ: number;
+  noiseMix?: number;
+  noiseFilterType?: BiquadFilterType;
+  noiseFilterCutoffHz?: number;
+  noiseFilterQ?: number;
 };
 
 export type InstrumentPatchRange = {
@@ -54,6 +58,12 @@ type InstrumentTimbreTemplate = {
   cutoffMaxHz: number;
   qMin: number;
   qMax: number;
+  noiseMix?: number;
+  noiseFilterType?: BiquadFilterType;
+  noiseCutoffMinHz?: number;
+  noiseCutoffMaxHz?: number;
+  noiseQMin?: number;
+  noiseQMax?: number;
 };
 
 const INSTRUMENT_PATCH_RECIPES: Record<InstrumentFamily, InstrumentPatchRecipe> =
@@ -128,6 +138,12 @@ const INSTRUMENT_PATCH_RECIPES: Record<InstrumentFamily, InstrumentPatchRecipe> 
       cutoffMaxHz: 1400,
       qMin: 0.5,
       qMax: 1.4,
+      noiseMix: 0.18,
+      noiseFilterType: 'highpass',
+      noiseCutoffMinHz: 2200,
+      noiseCutoffMaxHz: 4200,
+      noiseQMin: 0.4,
+      noiseQMax: 1.1,
     },
   },
   trumpet: {
@@ -440,6 +456,15 @@ export function resolveProceduralInstrumentTimbre(options: {
     clamp(options.filterSignal, 0, 1)
   );
 
+  const noiseMix =
+    template.noiseMix === undefined
+      ? undefined
+      : clamp(
+          template.noiseMix * (0.92 + clamp(options.harmonicSignal, 0, 1) * 0.16),
+          0,
+          0.4
+        );
+
   return {
     harmonicWaveform: template.harmonicWaveform,
     harmonicRatio: Math.max(
@@ -454,6 +479,25 @@ export function resolveProceduralInstrumentTimbre(options: {
       template.qMax,
       clamp(options.filterSignal, 0, 1)
     ),
+    noiseMix,
+    noiseFilterType: template.noiseFilterType,
+    noiseFilterCutoffHz:
+      template.noiseCutoffMinHz === undefined ||
+      template.noiseCutoffMaxHz === undefined
+        ? undefined
+        : interpolate(
+            template.noiseCutoffMinHz,
+            template.noiseCutoffMaxHz,
+            clamp(options.filterSignal, 0, 1)
+          ),
+    noiseFilterQ:
+      template.noiseQMin === undefined || template.noiseQMax === undefined
+        ? undefined
+        : interpolate(
+            template.noiseQMin,
+            template.noiseQMax,
+            clamp(options.filterSignal, 0, 1)
+          ),
   };
 }
 

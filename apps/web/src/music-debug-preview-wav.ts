@@ -9,7 +9,7 @@ export type MusicDebugPreviewWavFile = {
   mimeType: string;
 };
 
-function renderMusicDebugPreviewNoteToSamples(
+export function renderMusicDebugPreviewNoteToSamples(
   note: ProceduralMusicNote,
   sampleRate = MUSIC_DEBUG_PREVIEW_WAV_SAMPLE_RATE
 ): Float32Array {
@@ -28,6 +28,13 @@ function renderMusicDebugPreviewNoteToSamples(
   let harmonicPhase = 0;
   const carrierPhaseIncrement = (Math.PI * 2 * detunedFrequency) / sampleRate;
   const harmonicPhaseIncrement = (Math.PI * 2 * harmonicFrequency) / sampleRate;
+  let previousFilteredNoise = 0;
+  const noiseMix = Math.max(0, note.timbre.noiseMix ?? 0);
+  const noiseCoefficient = resolveNoiseFilterCoefficient(
+    note.timbre.noiseFilterCutoffHz ?? 2_400,
+    sampleRate
+  );
+  const noiseMode = note.timbre.noiseFilterType ?? 'highpass';
 
   for (let frame = 0; frame < frameCount; frame += 1) {
     const timeSeconds = frame / sampleRate;
@@ -44,9 +51,18 @@ function renderMusicDebugPreviewNoteToSamples(
       0,
       Math.min(0.65, note.harmonicGain * 0.35)
     );
+    const rawNoise = sampleDeterministicNoise(frame);
+    const { nextSample, nextFiltered } = filterNoiseSample({
+      input: rawNoise,
+      previousFiltered: previousFilteredNoise,
+      coefficient: noiseCoefficient,
+      mode: noiseMode,
+    });
+    previousFilteredNoise = nextFiltered;
     const mixed =
       carrier * (1 - harmonicWeight) +
-      harmonic * harmonicWeight * pulseModulation;
+      harmonic * harmonicWeight * pulseModulation +
+      nextSample * noiseMix;
     samples[frame] =
       mixed *
       resolveEnvelopeGain(note, timeSeconds, note.durationMs / 1000) *
@@ -120,6 +136,43 @@ function resolveEnvelopeGain(
 function advancePhase(currentPhase: number, phaseIncrement: number): number {
   const nextPhase = currentPhase + phaseIncrement;
   return nextPhase >= Math.PI * 2 ? nextPhase % (Math.PI * 2) : nextPhase;
+}
+
+function sampleDeterministicNoise(frame: number): number {
+  const signal = Math.sin((frame + 1) * 12.9898) * 43_758.5453;
+  return (signal - Math.floor(signal)) * 2 - 1;
+}
+
+function resolveNoiseFilterCoefficient(
+  cutoffHz: number,
+  sampleRate: number
+): number {
+  const clampedCutoff = Math.max(80, Math.min(sampleRate * 0.45, cutoffHz));
+  return Math.exp((-Math.PI * 2 * clampedCutoff) / sampleRate);
+}
+
+function filterNoiseSample(options: {
+  input: number;
+  previousFiltered: number;
+  coefficient: number;
+  mode: BiquadFilterType;
+}): { nextSample: number; nextFiltered: number } {
+  const lowpass =
+    (1 - options.coefficient) * options.input +
+    options.coefficient * options.previousFiltered;
+  if (options.mode === 'lowpass') {
+    return { nextSample: lowpass, nextFiltered: lowpass };
+  }
+  if (options.mode === 'bandpass') {
+    return {
+      nextSample: (options.input - lowpass) * 0.7,
+      nextFiltered: lowpass,
+    };
+  }
+  return {
+    nextSample: options.input - lowpass,
+    nextFiltered: lowpass,
+  };
 }
 
 function normalizeSamples(samples: Float32Array): void {
