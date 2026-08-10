@@ -61,6 +61,8 @@ const MUSIC_ACCIDENTAL_SEED = registerHashLabel('music-accidental-motion');
 const MUSIC_CONTOUR_SEED = registerHashLabel('music-lead-contour');
 const BASS_MIN_SEMITONES = -7;
 const BASS_MAX_SEMITONES = 12;
+const LARGE_LEAP_LIMIT_SEMITONES = 7;
+const OCTAVE_LEAP_LIMIT_SEMITONES = 12;
 const PROGRESSION_PATTERNS = [
   [0, 3, 4, 0],
   [0, 4, 5, 0],
@@ -573,8 +575,20 @@ function resolveLeadSemitones(
         clusterX + stepIndex + theme.id.length * 7,
         clusterY - stepIndex - theme.id.length * 5
       ) > 0.9);
+  const allowOctaveLeap =
+    current.strongLeadBeat &&
+    current.structuralAccent &&
+    hash2DWithSeed(
+      MUSIC_LEAP_SEED,
+      clusterX + stepIndex + theme.id.length * 17,
+      clusterY - stepIndex - theme.id.length * 13
+    ) > 0.985;
 
-  if (!allowLargeLeap && leapMagnitude > 7) {
+  if (!allowOctaveLeap && leapMagnitude >= OCTAVE_LEAP_LIMIT_SEMITONES) {
+    return previous.semitones + Math.sign(leap) * LARGE_LEAP_LIMIT_SEMITONES;
+  }
+
+  if (!allowLargeLeap && leapMagnitude > LARGE_LEAP_LIMIT_SEMITONES) {
     return previous.semitones + Math.sign(leap) * 5;
   }
 
@@ -588,7 +602,7 @@ function resolveLeadSemitones(
     );
     const priorLeap = previous.semitones - previousPrevious.semitones;
     if (
-      Math.abs(priorLeap) > 7 &&
+      Math.abs(priorLeap) > LARGE_LEAP_LIMIT_SEMITONES &&
       Math.sign(priorLeap) === Math.sign(leap) &&
       leapMagnitude > 2
     ) {
@@ -611,7 +625,9 @@ function resolveLeadSemitonePlan(
 ): {
   semitones: number;
   cadence: ProceduralLeadPhraseCadence;
+  contourStage: ProceduralLeadContourStage;
   strongLeadBeat: boolean;
+  structuralAccent: boolean;
 } {
   const composition = resolveProceduralCompositionStep(
     theme,
@@ -628,6 +644,9 @@ function resolveLeadSemitonePlan(
     melodyPatternIndex
   );
   const strongLeadBeat = resolveProceduralMeterPosition(stepIndex).isStrongBeat;
+  const structuralAccent =
+    composition.cadence === 'answer' ||
+    composition.contourStep.stage === 'climax';
 
   if (strongLeadBeat) {
     const chordTonePattern = [
@@ -641,7 +660,9 @@ function resolveLeadSemitonePlan(
         chordTonePattern[Math.floor(stepIndex / 4) % chordTonePattern.length] ??
         chord.rootSemitones,
       cadence: composition.cadence,
+      contourStage: composition.contourStep.stage,
       strongLeadBeat,
+      structuralAccent,
     };
   }
 
@@ -649,14 +670,18 @@ function resolveLeadSemitonePlan(
     return {
       semitones: chord.passingSemitones,
       cadence: composition.cadence,
+      contourStage: composition.contourStep.stage,
       strongLeadBeat,
+      structuralAccent,
     };
   }
   if (composition.cadence === 'answer') {
     return {
       semitones: chord.rootSemitones,
       cadence: composition.cadence,
+      contourStage: composition.contourStep.stage,
       strongLeadBeat,
+      structuralAccent,
     };
   }
 
@@ -671,7 +696,9 @@ function resolveLeadSemitonePlan(
     return {
       semitones: accidentalSemitones,
       cadence: composition.cadence,
+      contourStage: composition.contourStep.stage,
       strongLeadBeat,
+      structuralAccent,
     };
   }
 
@@ -686,7 +713,9 @@ function resolveLeadSemitonePlan(
       melodicOptions[composition.phraseStep % melodicOptions.length] ??
       leadScaleSemitones,
     cadence: composition.cadence,
+    contourStage: composition.contourStep.stage,
     strongLeadBeat,
+    structuralAccent,
   };
 }
 

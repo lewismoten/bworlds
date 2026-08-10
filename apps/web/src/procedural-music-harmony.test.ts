@@ -220,6 +220,49 @@ describe('procedural music harmony', () => {
     }
   });
 
+  it('reserves octave lead jumps for rare structural accents', () => {
+    const sampledClusters = [
+      { clusterX: 0, clusterY: 0 },
+      { clusterX: 3, clusterY: -2 },
+      { clusterX: 8, clusterY: -4 },
+      { clusterX: -6, clusterY: 5 },
+    ];
+
+    for (const cluster of sampledClusters) {
+      const semitones = Array.from({ length: 48 }, (_, stepIndex) =>
+        resolveProceduralInstrumentSemitones({
+          theme: TEST_THEME,
+          role: 'lead',
+          stepIndex,
+          clusterX: cluster.clusterX,
+          clusterY: cluster.clusterY,
+        })
+      );
+      const octaveLeaps = semitones
+        .slice(1)
+        .map((note, index) => ({
+          stepIndex: index + 1,
+          interval: note - semitones[index]!,
+        }))
+        .filter(({ interval }) => Math.abs(interval) >= 12);
+
+      expect(octaveLeaps.length).toBeLessThanOrEqual(1);
+
+      for (const leap of octaveLeaps) {
+        const composition = resolveProceduralCompositionStep(
+          TEST_THEME,
+          leap.stepIndex,
+          cluster.clusterX,
+          cluster.clusterY
+        );
+        expect(
+          composition.cadence === 'answer' ||
+            composition.contourStep.stage === 'climax'
+        ).toBe(true);
+      }
+    }
+  });
+
   it('stays mostly inside the key while allowing sparse deliberate accidentals', () => {
     const semitones = Array.from({ length: 48 }, (_, stepIndex) =>
       resolveProceduralInstrumentSemitones({
