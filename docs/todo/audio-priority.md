@@ -207,10 +207,10 @@ added directly as semitones instead of moving through the selected scale.
 
 ## Cadences
 
-- [ ] Replace excess neutral cadences with directed endings.
-- [ ] Give the question phrase a clearly unstable ending.
-- [ ] Give the answer phrase a clear tonic resolution.
-- [ ] Add weaker cadences at interior section boundaries.
+- [x] Replace excess neutral cadences with directed endings.
+- [x] Give the question phrase a clearly unstable ending.
+- [x] Give the answer phrase a clear tonic resolution.
+- [x] Add weaker cadences at interior section boundaries.
 - [ ] Add a strong cadence before the loop point.
 - [ ] Make the Outro cadence resolve rather than drift.
 - [ ] Coordinate melody and bass during each cadence.
