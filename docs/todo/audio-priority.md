@@ -38,7 +38,7 @@
 - [x] Use percussion patterns instead of isolated cymbal events.
 - [x] Compare intended intervals with actual interval counts.
 - [x] Report exact and varied motif matches separately.
-- [ ] Score phrase repetition and phrase-level similarity.
+- [x] Score phrase repetition and phrase-level similarity.
 - [ ] Reject songs whose configured motif never appears.
 - [ ] Add a melody-only MIDI export for rapid evaluation.
 - [ ] Add a harmony-and-bass-only MIDI export for review.
