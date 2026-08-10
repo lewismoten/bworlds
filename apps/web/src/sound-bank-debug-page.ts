@@ -189,6 +189,16 @@ function readGeneralMidiBrowserState(): SoundBankDebugGeneralMidiBrowserState {
       typeof formData.get('generalMidiFamilyFilter') === 'string'
         ? String(formData.get('generalMidiFamilyFilter'))
         : generalMidiBrowserState.familyFilter,
+    roleFilter:
+      typeof formData.get('generalMidiRoleFilter') === 'string'
+        ? (String(
+            formData.get('generalMidiRoleFilter')
+          ) as SoundBankDebugGeneralMidiBrowserState['roleFilter'])
+        : generalMidiBrowserState.roleFilter,
+    playableMidiNote:
+      typeof formData.get('generalMidiPlayableMidiNote') === 'string'
+        ? String(formData.get('generalMidiPlayableMidiNote'))
+        : generalMidiBrowserState.playableMidiNote,
     sortMode:
       typeof formData.get('generalMidiSortMode') === 'string'
         ? (String(
@@ -422,6 +432,28 @@ function bindPage(musicSnapshot: MusicDebugSnapshot): void {
     .querySelector<HTMLSelectElement>('#sound-bank-debug-midi-family-filter')
     ?.addEventListener(
       'change',
+      () => {
+        generalMidiBrowserState = readGeneralMidiBrowserState();
+        renderPage();
+      },
+      pageLifecycleSignal ? { signal: pageLifecycleSignal } : undefined
+    );
+
+  document
+    .querySelector<HTMLSelectElement>('#sound-bank-debug-midi-role-filter')
+    ?.addEventListener(
+      'change',
+      () => {
+        generalMidiBrowserState = readGeneralMidiBrowserState();
+        renderPage();
+      },
+      pageLifecycleSignal ? { signal: pageLifecycleSignal } : undefined
+    );
+
+  document
+    .querySelector<HTMLInputElement>('#sound-bank-debug-midi-range-filter')
+    ?.addEventListener(
+      'input',
       () => {
         generalMidiBrowserState = readGeneralMidiBrowserState();
         renderPage();

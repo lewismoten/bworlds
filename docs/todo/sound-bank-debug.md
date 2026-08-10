@@ -51,13 +51,13 @@
 - [x] Show program numbers from 0 to 127.
 - [x] Add a search field for instrument names.
 - [x] Add a filter for instrument families.
-- [ ] Add a filter for musical roles.
-- [ ] Add a filter for playable note ranges.
+- [x] Add a filter for musical roles.
+- [x] Add a filter for playable note ranges.
 - [x] Sort instruments by program number.
 - [x] Allow sorting instruments by name.
 - [x] Allow sorting instruments by family.
 - [ ] Highlight the selected instrument.
-- [ ] Show unavailable programs as disabled.
+- [x] Show unavailable programs as disabled.
 - [ ] Mark programs using placeholder patches.
 - [ ] Mark programs with custom patches.
 - [ ] Add previous and next instrument buttons.

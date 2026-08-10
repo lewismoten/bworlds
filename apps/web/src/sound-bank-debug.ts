@@ -19,6 +19,7 @@ import {
 } from './general-midi.ts';
 import {
   createSoundBankInstrumentRegistry,
+  type SoundBankInstrumentRegistryEntry,
   type SoundBankInstrumentRegistration,
 } from './sound-bank-registry.ts';
 
@@ -43,18 +44,32 @@ export type SoundBankDebugGeneralMidiSortMode = 'program' | 'name' | 'family';
 export type SoundBankDebugGeneralMidiBrowserState = {
   searchQuery: string;
   familyFilter: string;
+  roleFilter:
+    | 'all'
+    | MusicDebugSnapshot['instrumentBank']['instruments'][keyof MusicDebugSnapshot['instrumentBank']['instruments']]['role'];
+  playableMidiNote: string;
   sortMode: SoundBankDebugGeneralMidiSortMode;
 };
 
 export type SoundBankDebugGeneralMidiBrowserSection = Readonly<{
   heading: string;
-  programs: readonly GeneralMidiProgram[];
+  programs: readonly SoundBankDebugGeneralMidiProgramView[];
 }>;
+
+export type SoundBankDebugGeneralMidiProgramView = Readonly<
+  GeneralMidiProgram & {
+    isAvailable: boolean;
+    supportedRoles: readonly string[];
+    recommendedRangeSummary: string | null;
+  }
+>;
 
 export const DEFAULT_SOUND_BANK_DEBUG_GENERAL_MIDI_BROWSER_STATE: SoundBankDebugGeneralMidiBrowserState =
   {
     searchQuery: '',
     familyFilter: 'all',
+    roleFilter: 'all',
+    playableMidiNote: '',
     sortMode: 'program',
   };
 
@@ -176,6 +191,7 @@ export function buildSoundBankDebugMarkup(
     )
     .join('');
   const generalMidiBrowserMarkup = resolveSoundBankDebugGeneralMidiSections(
+    snapshot.instrumentRegistry.entries,
     generalMidiBrowserState
   )
     .map(
@@ -187,8 +203,31 @@ export function buildSoundBankDebugMarkup(
               .map(
                 (program) => `
                   <li value="${program.programNumber}">
-                    <span class="sound-bank-debug-midi-program-number">${program.programNumber}</span>
-                    <span class="sound-bank-debug-midi-program-name">${program.instrumentName}</span>
+                    <span
+                      class="sound-bank-debug-midi-program-number${
+                        program.isAvailable
+                          ? ''
+                          : ' sound-bank-debug-midi-program-unavailable'
+                      }"
+                    >${program.programNumber}</span>
+                    <span
+                      class="sound-bank-debug-midi-program-name${
+                        program.isAvailable
+                          ? ''
+                          : ' sound-bank-debug-midi-program-unavailable'
+                      }"
+                      aria-disabled="${program.isAvailable ? 'false' : 'true'}"
+                    >${program.instrumentName}</span>
+                    ${
+                      program.supportedRoles.length > 0
+                        ? `<span class="sound-bank-debug-midi-program-roles">${program.supportedRoles.join(', ')}</span>`
+                        : '<span class="sound-bank-debug-midi-program-roles sound-bank-debug-midi-program-unavailable">Unavailable</span>'
+                    }
+                    ${
+                      program.recommendedRangeSummary
+                        ? `<span class="sound-bank-debug-midi-program-range">${program.recommendedRangeSummary}</span>`
+                        : ''
+                    }
                   </li>
                 `
               )
@@ -478,6 +517,30 @@ export function buildSoundBankDebugMarkup(
               </select>
             </label>
             <label>
+              <span>Role</span>
+              <select
+                id="sound-bank-debug-midi-role-filter"
+                name="generalMidiRoleFilter"
+              >
+                ${renderOptionList(
+                  ['all', 'lead', 'harmony', 'bass', 'percussion'],
+                  generalMidiBrowserState.roleFilter
+                )}
+              </select>
+            </label>
+            <label>
+              <span>Playable MIDI Note</span>
+              <input
+                id="sound-bank-debug-midi-range-filter"
+                name="generalMidiPlayableMidiNote"
+                type="number"
+                min="0"
+                max="127"
+                value="${escapeAttribute(generalMidiBrowserState.playableMidiNote)}"
+                placeholder="Any"
+              />
+            </label>
+            <label>
               <span>Sort</span>
               <select
                 id="sound-bank-debug-midi-sort"
@@ -537,24 +600,63 @@ export function normalizeSoundBankDebugGeneralMidiBrowserState(
     value?.sortMode === 'name' || value?.sortMode === 'family'
       ? value.sortMode
       : 'program';
+  const roleFilter =
+    value?.roleFilter === 'lead' ||
+    value?.roleFilter === 'harmony' ||
+    value?.roleFilter === 'bass' ||
+    value?.roleFilter === 'percussion'
+      ? value.roleFilter
+      : 'all';
+  const playableMidiNoteValue = value?.playableMidiNote?.trim() ?? '';
+  const playableMidiNote = /^\d{1,3}$/.test(playableMidiNoteValue)
+    ? String(
+        Math.max(0, Math.min(127, Number.parseInt(playableMidiNoteValue, 10)))
+      )
+    : '';
 
   return {
     searchQuery,
     familyFilter,
+    roleFilter,
+    playableMidiNote,
     sortMode,
   };
 }
 
 export function resolveSoundBankDebugGeneralMidiSections(
+  registryEntries: readonly SoundBankInstrumentRegistryEntry[],
   browserState: Partial<SoundBankDebugGeneralMidiBrowserState>
 ): readonly SoundBankDebugGeneralMidiBrowserSection[] {
   const normalizedState =
     normalizeSoundBankDebugGeneralMidiBrowserState(browserState);
   const searchQuery = normalizedState.searchQuery.toLowerCase();
-  const visiblePrograms = listGeneralMidiPrograms().filter((program) => {
+  const playableMidiNote =
+    normalizedState.playableMidiNote.length > 0
+      ? Number.parseInt(normalizedState.playableMidiNote, 10)
+      : null;
+  const programViews = listGeneralMidiPrograms().map((program) =>
+    createGeneralMidiProgramView(program, registryEntries)
+  );
+  const visiblePrograms = programViews.filter((program) => {
     if (
       normalizedState.familyFilter !== 'all' &&
       program.familyName !== normalizedState.familyFilter
+    ) {
+      return false;
+    }
+    if (
+      normalizedState.roleFilter !== 'all' &&
+      !program.supportedRoles.includes(normalizedState.roleFilter)
+    ) {
+      return false;
+    }
+    if (
+      playableMidiNote !== null &&
+      !programHasPlayableMidiNote(
+        program.programNumber,
+        registryEntries,
+        playableMidiNote
+      )
     ) {
       return false;
     }
@@ -613,17 +715,12 @@ function formatLabel(value: string): string {
 }
 
 function groupProgramsByFamily(
-  programs: readonly GeneralMidiProgram[]
+  programs: readonly SoundBankDebugGeneralMidiProgramView[]
 ): readonly SoundBankDebugGeneralMidiBrowserSection[] {
-  const visibleProgramNumbers = new Set(
-    programs.map((program) => program.programNumber)
-  );
-  return listGeneralMidiProgramsByFamily()
-    .map((family) => ({
-      heading: family.familyName,
-      programs: family.programs.filter((program) =>
-        visibleProgramNumbers.has(program.programNumber)
-      ),
+  return listGeneralMidiFamilyNames()
+    .map((familyName) => ({
+      heading: familyName,
+      programs: programs.filter((program) => program.familyName === familyName),
     }))
     .filter((section) => section.programs.length > 0);
 }
@@ -634,4 +731,52 @@ function escapeAttribute(value: string): string {
     .replaceAll('"', '&quot;')
     .replaceAll('<', '&lt;')
     .replaceAll('>', '&gt;');
+}
+
+function createGeneralMidiProgramView(
+  program: GeneralMidiProgram,
+  registryEntries: readonly SoundBankInstrumentRegistryEntry[]
+): SoundBankDebugGeneralMidiProgramView {
+  const matchingEntries = registryEntries.filter(
+    (entry) =>
+      entry.isValid && entry.generalMidiProgramNumber === program.programNumber
+  );
+
+  return {
+    ...program,
+    isAvailable: matchingEntries.length > 0,
+    supportedRoles: [
+      ...new Set(matchingEntries.flatMap((entry) => entry.supportedRoles)),
+    ].sort(),
+    recommendedRangeSummary:
+      matchingEntries.length === 0
+        ? null
+        : summarizeRecommendedRange(matchingEntries),
+  };
+}
+
+function summarizeRecommendedRange(
+  entries: readonly SoundBankInstrumentRegistryEntry[]
+): string {
+  const minMidiNote = Math.min(
+    ...entries.map((entry) => entry.recommendedMidiRange.minMidiNote)
+  );
+  const maxMidiNote = Math.max(
+    ...entries.map((entry) => entry.recommendedMidiRange.maxMidiNote)
+  );
+  return `${minMidiNote}-${maxMidiNote}`;
+}
+
+function programHasPlayableMidiNote(
+  programNumber: number,
+  registryEntries: readonly SoundBankInstrumentRegistryEntry[],
+  midiNote: number
+): boolean {
+  return registryEntries.some(
+    (entry) =>
+      entry.isValid &&
+      entry.generalMidiProgramNumber === programNumber &&
+      midiNote >= entry.recommendedMidiRange.minMidiNote &&
+      midiNote <= entry.recommendedMidiRange.maxMidiNote
+  );
 }

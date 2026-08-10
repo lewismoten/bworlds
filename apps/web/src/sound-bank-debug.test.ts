@@ -61,6 +61,8 @@ describe('sound bank debug page', () => {
     expect(markup).toContain('Program Browser');
     expect(markup).toContain('sound-bank-debug-midi-search');
     expect(markup).toContain('sound-bank-debug-midi-family-filter');
+    expect(markup).toContain('sound-bank-debug-midi-role-filter');
+    expect(markup).toContain('sound-bank-debug-midi-range-filter');
     expect(markup).toContain('sound-bank-debug-midi-sort');
     expect(markup).toContain('music-debug-instrument-panel');
     expect(markup).toContain('sound-bank-debug-layout-compact');
@@ -77,6 +79,8 @@ describe('sound bank debug page', () => {
     expect(normalizedMarkup).toContain('>Piano<');
     expect(normalizedMarkup).toContain('>0<');
     expect(normalizedMarkup).toContain('Acoustic Grand Piano');
+    expect(normalizedMarkup).toContain('aria-disabled="true"');
+    expect(normalizedMarkup).toContain('Unavailable');
     expect(normalizedMarkup).toContain('>Sound Effects<');
     expect(normalizedMarkup).toContain('>127<');
     expect(normalizedMarkup).toContain('Gunshot');
@@ -225,38 +229,70 @@ describe('sound bank debug page', () => {
       normalizeSoundBankDebugGeneralMidiBrowserState({
         searchQuery: '  lead  ',
         familyFilter: 'Synth Lead',
+        roleFilter: 'lead',
+        playableMidiNote: ' 80 ',
         sortMode: 'name',
       })
     ).toEqual({
       searchQuery: 'lead',
       familyFilter: 'Synth Lead',
+      roleFilter: 'lead',
+      playableMidiNote: '80',
       sortMode: 'name',
     });
     expect(
       normalizeSoundBankDebugGeneralMidiBrowserState({
         familyFilter: 'Unknown',
+        roleFilter: 'drums' as 'all',
+        playableMidiNote: '999',
         sortMode: 'sideways' as 'program',
       })
     ).toEqual({
       searchQuery: '',
       familyFilter: 'all',
+      roleFilter: 'all',
+      playableMidiNote: '127',
       sortMode: 'program',
     });
   });
 
-  it('filters and sorts the General MIDI browser by search query, family, and sort mode', () => {
-    const searchedSections = resolveSoundBankDebugGeneralMidiSections({
-      searchQuery: 'bass',
-      familyFilter: 'all',
-      sortMode: 'name',
-    });
-    const familySections = resolveSoundBankDebugGeneralMidiSections({
-      familyFilter: 'Synth Lead',
-      sortMode: 'program',
-    });
-    const sortedByFamilySections = resolveSoundBankDebugGeneralMidiSections({
-      sortMode: 'family',
-    });
+  it('filters and sorts the General MIDI browser by search query, family, role, and range', () => {
+    const snapshot = createSoundBankDebugSnapshot();
+    const searchedSections = resolveSoundBankDebugGeneralMidiSections(
+      snapshot.instrumentRegistry.entries,
+      {
+        searchQuery: 'bass',
+        familyFilter: 'all',
+        sortMode: 'name',
+      }
+    );
+    const familySections = resolveSoundBankDebugGeneralMidiSections(
+      snapshot.instrumentRegistry.entries,
+      {
+        familyFilter: 'Synth Lead',
+        sortMode: 'program',
+      }
+    );
+    const roleSections = resolveSoundBankDebugGeneralMidiSections(
+      snapshot.instrumentRegistry.entries,
+      {
+        roleFilter: 'harmony',
+        sortMode: 'program',
+      }
+    );
+    const rangeSections = resolveSoundBankDebugGeneralMidiSections(
+      snapshot.instrumentRegistry.entries,
+      {
+        playableMidiNote: '75',
+        sortMode: 'program',
+      }
+    );
+    const sortedByFamilySections = resolveSoundBankDebugGeneralMidiSections(
+      snapshot.instrumentRegistry.entries,
+      {
+        sortMode: 'family',
+      }
+    );
 
     expect(searchedSections).toHaveLength(1);
     expect(searchedSections[0]?.heading).toBe('All Matching Programs');
@@ -268,6 +304,15 @@ describe('sound bank debug page', () => {
     expect(familySections).toHaveLength(1);
     expect(familySections[0]?.heading).toBe('Synth Lead');
     expect(familySections[0]?.programs[0]?.programNumber).toBe(80);
+    expect(roleSections).toHaveLength(1);
+    expect(
+      roleSections[0]?.programs.map((program) => program.programNumber)
+    ).toEqual([48]);
+    expect(
+      rangeSections.flatMap((section) =>
+        section.programs.map((program) => program.programNumber)
+      )
+    ).toEqual([48, 80]);
     expect(
       sortedByFamilySections.map((section) => section.heading).slice(0, 3)
     ).toEqual(['Bass', 'Brass', 'Chromatic Percussion']);
