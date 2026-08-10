@@ -92,7 +92,7 @@ export type TreeDebugSnapshot = {
   }>;
 };
 
-export const DEFAULT_TREE_DEBUG_OPTIONS: TreeDebugOptions = {
+const DEFAULT_TREE_DEBUG_OPTIONS: TreeDebugOptions = {
   tileX: 8,
   tileY: 6,
   yearProgress: 0.25,

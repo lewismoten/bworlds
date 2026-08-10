@@ -13,7 +13,7 @@ export function resolveProceduralMidiNoteFrequency(midiNote: number): number {
   return 440 * Math.pow(2, (midiNote - 69) / 12);
 }
 
-export function resolveProceduralModePitchOffsets(
+function resolveProceduralModePitchOffsets(
   scale: readonly number[]
 ): readonly number[] {
   return validateProceduralModePitchOffsets(scale);

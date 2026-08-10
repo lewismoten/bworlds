@@ -3,7 +3,7 @@ import { PROCEDURAL_MUSIC_PHRASE_MEASURE_COUNT } from './procedural-music-phrase
 import { resolveProceduralPhraseCadence } from './procedural-music-phrase-structure.ts';
 
 export const PROCEDURAL_MUSIC_CHORD_TIMELINE_SPAN_STEPS = 4;
-export const PROCEDURAL_MUSIC_STEPS_PER_MEASURE =
+const PROCEDURAL_MUSIC_STEPS_PER_MEASURE =
   PROCEDURAL_MUSIC_CHORD_TIMELINE_SPAN_STEPS;
 
 export type ProceduralChordTimelineEntry = {

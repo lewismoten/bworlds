@@ -36,7 +36,7 @@ type TileModelHardLimitsSubset = Pick<
   | 'triangleCount'
 >;
 
-export function getTileModelCostEstimateLimits(
+function getTileModelCostEstimateLimits(
   limits: TileModelHardLimitsSubset
 ): TileModelCostEstimateLimits {
   return {

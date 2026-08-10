@@ -100,7 +100,7 @@ export function instantiateOrderedPlugins<TPlugin extends RuntimePlugin>(
   );
 }
 
-export const DEFAULT_TILE_DEFINITION: TileDefinitionLike = {
+const DEFAULT_TILE_DEFINITION: TileDefinitionLike = {
   name: 'Unknown Tile',
   color: '#64748b',
   miniColor: '#94a3b8',

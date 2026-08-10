@@ -259,15 +259,15 @@ export const DEFAULT_MUSIC_DEBUG_OPTIONS: MusicDebugOptions = {
   clusterY: 0,
 };
 
-export function clampMusicDebugProgress(value: number): number {
+function clampMusicDebugProgress(value: number): number {
   return Math.min(1, Math.max(0, value));
 }
 
-export function clampMusicDebugWeatherIntensity(value: number): number {
+function clampMusicDebugWeatherIntensity(value: number): number {
   return Math.min(1, Math.max(0, value));
 }
 
-export function clampMusicDebugCombatIntensity(value: number): number {
+function clampMusicDebugCombatIntensity(value: number): number {
   return Math.min(1, Math.max(0, value));
 }
 
@@ -1162,10 +1162,6 @@ function formatMusicDebugHarmonyChordDetections(
         `${entry.sectionLabel} ${entry.chordLabels.join(', ') || 'none'}`
     )
     .join(' | ');
-}
-
-export function playMusicDebugSong(snapshot: MusicDebugSnapshot): void {
-  createMusicDebugSongPlayback().play(snapshot);
 }
 
 export function resolveMusicDebugPlaybackRegion(

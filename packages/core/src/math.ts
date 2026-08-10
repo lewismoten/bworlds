@@ -25,11 +25,3 @@ export function normalizeAngle(angle: number): number {
   if (next < 0) next += tau;
   return next;
 }
-
-export function normalizeTurns(value: number): number {
-  return ((value % 1) + 1) % 1;
-}
-
-export function pickFrom<T>(list: readonly T[], seedValue: number): T {
-  return list[Math.floor(seedValue * list.length) % list.length];
-}

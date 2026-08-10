@@ -21,7 +21,7 @@ export function normalizeTeleportPins(value: unknown): TeleportPin[] {
   return pins;
 }
 
-export function normalizeTeleportPin(value: unknown): TeleportPin | null {
+function normalizeTeleportPin(value: unknown): TeleportPin | null {
   if (!value || typeof value !== 'object') {
     return null;
   }

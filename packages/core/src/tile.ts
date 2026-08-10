@@ -38,7 +38,7 @@ export type CoreWorldTileLike = {
   kind: CoreWorldTileKind;
 };
 
-export const DEFAULT_TILE_DEFINITION: CoreTileDefinitionLike = {
+const DEFAULT_TILE_DEFINITION: CoreTileDefinitionLike = {
   name: 'Unknown Tile',
   color: '#64748b',
   miniColor: '#94a3b8',

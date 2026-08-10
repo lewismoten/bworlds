@@ -1,6 +1,6 @@
 import type { Model3DResourceCostEstimate } from '@bworlds/plugin-api';
 
-export const TILE_MODEL_COST_ESTIMATE_METRICS = [
+const TILE_MODEL_COST_ESTIMATE_METRICS = [
   'object3dCount',
   'groupCount',
   'meshCount',

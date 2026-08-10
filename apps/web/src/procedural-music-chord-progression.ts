@@ -13,7 +13,7 @@ export type ProceduralChordProgressionProfile = {
   degrees: readonly number[];
 };
 
-export const PROCEDURAL_CHORD_PROGRESSION_PROFILES = [
+const PROCEDURAL_CHORD_PROGRESSION_PROFILES = [
   {
     id: 'tonic-dominant-submediant-tonic',
     label: '1-5-6-1',

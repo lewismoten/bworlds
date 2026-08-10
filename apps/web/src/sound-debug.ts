@@ -6,7 +6,7 @@ import {
 import { buildSoundDebugWaveformMarkup } from './sound-debug-waveform.ts';
 import { renderProceduralSoundToBufferData } from './procedural-sound-render.ts';
 
-export const SOUND_DEBUG_SAMPLE_RATE = 48_000;
+const SOUND_DEBUG_SAMPLE_RATE = 48_000;
 
 export type SoundDebugRenderableSnapshot = SoundDebugSnapshot & {
   sampleRate: number;

@@ -421,7 +421,7 @@ export function getSurfaceAudioProfile(
   return SURFACE_AUDIO_PROFILES[getSurfaceAudioFamily(tileKind)];
 }
 
-export function resolveMovementIdentityVariant(options: {
+function resolveMovementIdentityVariant(options: {
   kind: 'footstep' | 'landing';
   tileKind: SurfaceKind | undefined;
   yearProgress?: number;
@@ -437,7 +437,7 @@ export function resolveMovementIdentityVariant(options: {
   return undefined;
 }
 
-export function resolveAmbientIdentityVariant(options: {
+function resolveAmbientIdentityVariant(options: {
   ambientKind: NearbyAmbientKind;
   tileKind: SurfaceKind | undefined;
   yearProgress?: number;
@@ -453,7 +453,7 @@ export function resolveAmbientIdentityVariant(options: {
   return options.fallback;
 }
 
-export function resolveRainIdentityVariant(options: {
+function resolveRainIdentityVariant(options: {
   surface: WeatherPrecipitationSurface;
   weatherKind?: string;
   yearProgress?: number;
@@ -470,7 +470,7 @@ export function resolveRainIdentityVariant(options: {
   return options.surface;
 }
 
-export function resolveThunderIdentityVariant(
+function resolveThunderIdentityVariant(
   variant: WeatherThunderVariant,
   yearProgress?: number
 ): string {
@@ -481,7 +481,7 @@ export function resolveThunderIdentityVariant(
   return variant;
 }
 
-export function resolveSeasonalWindIdentityVariant(
+function resolveSeasonalWindIdentityVariant(
   baseVariant: 'stormfront' | 'canopy' | 'crossdraft' | 'sandstorm' | 'cyclone',
   yearProgress?: number,
   weatherKind?: string
@@ -1365,7 +1365,7 @@ export function resolveAmbienceDuckingGain(
   return 1 - clamped * 0.55;
 }
 
-export function getAmbientSoundCadenceMs(
+function getAmbientSoundCadenceMs(
   kind: AmbientSoundKind,
   intensity: number
 ): number {
@@ -1399,7 +1399,7 @@ export function getAmbientSoundCadenceMs(
   }
 }
 
-export function getAmbientSoundVolume(
+function getAmbientSoundVolume(
   kind: AmbientSoundKind,
   intensity: number | undefined
 ): number {
@@ -1471,9 +1471,7 @@ export function resolveAmbientSoundFrequency(
   }
 }
 
-export function resolveAmbientSoundWaveform(
-  kind: AmbientSoundKind
-): SoundWaveform {
+function resolveAmbientSoundWaveform(kind: AmbientSoundKind): SoundWaveform {
   switch (kind) {
     case 'river':
       return 'triangle';
