@@ -178,7 +178,7 @@
 - [ ] Add a filter decay control.
 - [ ] Add a filter sustain control.
 - [ ] Add a filter release control.
-- [ ] Show the filter response curve.
+- [x] Show the filter response curve.
 - [ ] Update the response curve live.
 - [ ] Add a filter bypass button.
 - [ ] Warn about unstable resonance values.

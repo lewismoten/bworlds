@@ -1143,10 +1143,16 @@ function buildSelectedInstrumentDetailsMarkup(
   const filterType = runtimeInstrument
     ? runtimeInstrument.timbre.filterType
     : 'Unknown';
+  const filterResponseCurveMarkup = runtimeInstrument
+    ? buildSelectedInstrumentFilterResponseCurveMarkup(runtimeInstrument)
+    : '<p class="sound-bank-debug-warning" role="status">Filter response preview unavailable for this patch source.</p>';
 
   return `
     <div class="music-debug-instrument-waveform">
       ${waveformPreviewMarkup}
+    </div>
+    <div class="music-debug-instrument-waveform">
+      ${filterResponseCurveMarkup}
     </div>
     <dl class="music-debug-instrument-stats">
       <div><dt>Instrument ID</dt><dd>${selectedEntry.id}</dd></div>
@@ -1195,6 +1201,67 @@ function resolveActiveOscillatorCount(
   instrument: SoundBankDebugSnapshot['musicSnapshot']['instrumentBank']['instruments'][keyof SoundBankDebugSnapshot['musicSnapshot']['instrumentBank']['instruments']]
 ): number {
   return instrument.harmonicGain > 0 ? 2 : 1;
+}
+
+function buildSelectedInstrumentFilterResponseCurveMarkup(
+  instrument: SoundBankDebugSnapshot['musicSnapshot']['instrumentBank']['instruments'][keyof SoundBankDebugSnapshot['musicSnapshot']['instrumentBank']['instruments']]
+): string {
+  const width = 180;
+  const height = 56;
+  const baselineY = height - 10;
+  const resonance = Math.max(0.1, instrument.timbre.filterQ);
+  const cutoffHz = Math.max(40, instrument.timbre.filterCutoffHz);
+  const normalizedCutoff = Math.min(
+    1,
+    Math.max(0, (Math.log10(cutoffHz) - Math.log10(40)) / (Math.log10(12_000) - Math.log10(40)))
+  );
+  const points: string[] = [];
+
+  for (let sampleIndex = 0; sampleIndex < 48; sampleIndex += 1) {
+    const ratio = sampleIndex / 47;
+    const offset = ratio - normalizedCutoff;
+    let magnitude = 0;
+
+    switch (instrument.timbre.filterType) {
+      case 'highpass':
+        magnitude = 1 / (1 + Math.exp(-(offset * 14 + resonance * 0.15)));
+        break;
+      case 'bandpass': {
+        const distance = Math.abs(offset);
+        const widthScale = 0.1 + 0.3 / Math.min(6, resonance + 1);
+        const peak = 1 + Math.min(0.45, resonance / 10);
+        magnitude = Math.max(0, peak * (1 - distance / widthScale));
+        break;
+      }
+      case 'lowpass':
+      default:
+        magnitude = 1 / (1 + Math.exp(offset * 14 - resonance * 0.15));
+        break;
+    }
+
+    const x = ratio * width;
+    const y = baselineY - Math.min(1, magnitude) * (height * 0.62);
+    points.push(`${x.toFixed(2)},${y.toFixed(2)}`);
+  }
+
+  const cutoffX = (normalizedCutoff * width).toFixed(2);
+
+  return `
+    <svg
+      class="music-debug-instrument-filter-response"
+      viewBox="0 0 ${width} ${height}"
+      role="img"
+      aria-label="Filter response preview for ${instrument.timbre.filterType} at ${Math.round(cutoffHz)} hertz"
+    >
+      <rect width="${width}" height="${height}" rx="12" ry="12"></rect>
+      <path class="music-debug-instrument-waveform-line" d="M0 ${baselineY.toFixed(2)} H${width}"></path>
+      <path class="music-debug-instrument-waveform-line" d="M${cutoffX} 6 V${height - 6}"></path>
+      <polyline
+        class="music-debug-instrument-waveform-shape"
+        points="${points.join(' ')}"
+      ></polyline>
+    </svg>
+  `;
 }
 
 function describeWaveformHarmonicContent(

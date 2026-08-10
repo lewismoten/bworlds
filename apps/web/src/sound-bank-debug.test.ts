@@ -522,6 +522,9 @@ describe('sound bank debug page', () => {
     expect(markup).toContain('Active Oscillator Count');
     expect(markup).toContain('Filter Type');
     expect(markup).toContain(
+      'Filter response preview unavailable for this patch source.'
+    );
+    expect(markup).toContain(
       'Waveform preview unavailable for this patch source.'
     );
     expect(markup).toContain('Uses Samples');
@@ -585,6 +588,8 @@ describe('sound bank debug page', () => {
     expect(markup).toContain('>2<');
     expect(markup).toContain('Filter Type');
     expect(markup).toContain('lowpass');
+    expect(markup).toContain('music-debug-instrument-filter-response');
+    expect(markup).toContain('aria-label="Filter response preview for');
     expect(markup).toContain('Uses Samples');
     expect(markup).toContain('>No<');
     expect(markup).toContain('Uses Synthesis');
