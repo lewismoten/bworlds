@@ -1,5 +1,5 @@
 # Highest Priority
-- [ ] Panel to input parameters and click buttons is clipped on the right.
+- [x] Panel to input parameters and click buttons is clipped on the right.
 - [x] Fix natural minor offsets to 0, 2, 3, 5, 7, 8, 10.
 - [x] Reject mode definitions with duplicate scale degrees.
 - [x] Reject seven-note modes with fewer than seven unique offsets.

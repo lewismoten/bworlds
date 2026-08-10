@@ -70,6 +70,7 @@ body {
 }
 
 .music-debug-card {
+  min-width: 0;
   padding: 1.1rem;
   border: 1px solid var(--music-border);
   border-radius: 22px;
@@ -80,7 +81,7 @@ body {
 
 .music-debug-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.85rem;
 }
 
@@ -114,12 +115,18 @@ body {
 }
 
 .music-debug-actions {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.75rem;
   margin-top: 1rem;
 }
 
-.music-debug-actions button {
+.music-debug-actions > * {
+  min-width: 0;
+}
+
+.music-debug-actions button,
+.music-debug-toggle {
   appearance: none;
   border: 1px solid var(--music-border);
   border-radius: 999px;
@@ -127,6 +134,22 @@ body {
   color: var(--music-text);
   padding: 0.85rem 1.1rem;
   cursor: pointer;
+}
+
+.music-debug-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  text-align: center;
+}
+
+.music-debug-toggle input {
+  margin: 0;
+}
+
+.music-debug-toggle span {
+  min-width: 0;
 }
 
 .music-debug-transport {
@@ -312,10 +335,20 @@ body {
     grid-template-columns: 1fr;
   }
 
-  .music-debug-actions,
   .music-debug-transport-summary,
   .music-debug-section-buttons {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .music-debug-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .music-debug-actions,
+  .music-debug-transport-summary,
+  .music-debug-section-buttons,
+  .music-debug-toggle {
+    justify-content: stretch;
   }
 }
