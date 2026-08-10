@@ -1,7 +1,7 @@
 import { normalizeAngle } from '@bworlds/core';
 import { clampCameraPitch } from '@bworlds/render3d';
 
-export const DEFAULT_MOUSE_LOOK_SENSITIVITY = 0.006;
+const DEFAULT_MOUSE_LOOK_SENSITIVITY = 0.006;
 
 export type MouseLookDragStart = {
   pointerX: number;

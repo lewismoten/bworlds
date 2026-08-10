@@ -1,7 +1,7 @@
 import type { ProceduralMusicNote } from './procedural-music.ts';
 import { encodeMonoPcm16Wav } from './wav-file.ts';
 
-export const MUSIC_DEBUG_PREVIEW_WAV_SAMPLE_RATE = 48_000;
+const MUSIC_DEBUG_PREVIEW_WAV_SAMPLE_RATE = 48_000;
 
 export type MusicDebugPreviewWavFile = {
   bytes: Uint8Array;
@@ -9,7 +9,7 @@ export type MusicDebugPreviewWavFile = {
   mimeType: string;
 };
 
-export function renderMusicDebugPreviewNoteToSamples(
+function renderMusicDebugPreviewNoteToSamples(
   note: ProceduralMusicNote,
   sampleRate = MUSIC_DEBUG_PREVIEW_WAV_SAMPLE_RATE
 ): Float32Array {

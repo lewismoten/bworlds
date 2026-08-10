@@ -6,10 +6,10 @@ import {
 import type { ProceduralMusicNote } from './procedural-music.ts';
 import { createMusicDebugScaleOverlay } from './music-debug-scale.ts';
 
-export const MUSIC_DEBUG_TIMELINE_LEFT_PAD = 84;
-export const MUSIC_DEBUG_TIMELINE_RIGHT_PAD = 24;
-export const MUSIC_DEBUG_TIMELINE_TOP_PAD = 34;
-export const MUSIC_DEBUG_TIMELINE_BOTTOM_PAD = 24;
+const MUSIC_DEBUG_TIMELINE_LEFT_PAD = 84;
+const MUSIC_DEBUG_TIMELINE_RIGHT_PAD = 24;
+const MUSIC_DEBUG_TIMELINE_TOP_PAD = 34;
+const MUSIC_DEBUG_TIMELINE_BOTTOM_PAD = 24;
 
 export function resolveMusicDebugTimelineLayout(
   width: number,

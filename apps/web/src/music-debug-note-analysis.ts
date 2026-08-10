@@ -509,7 +509,7 @@ export function describeMusicDebugAccidentalReason(
   }
 }
 
-export function explainMusicDebugAccidentalReason(
+function explainMusicDebugAccidentalReason(
   reason: MusicDebugAccidentalReason
 ): string | null {
   switch (reason) {

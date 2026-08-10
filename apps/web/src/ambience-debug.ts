@@ -22,7 +22,7 @@ import type {
   SoundWaveform,
 } from './procedural-sound-effect-generator.ts';
 
-export const AMBIENCE_DEBUG_SAMPLE_RATE = 48_000;
+const AMBIENCE_DEBUG_SAMPLE_RATE = 48_000;
 const AMBIENCE_DEBUG_DURATION_MS = 60_000;
 
 type AmbientDayPhase = 'dawn' | 'day' | 'dusk' | 'night';

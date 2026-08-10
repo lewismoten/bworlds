@@ -89,7 +89,7 @@ export function downloadMusicDebugExportBundle(
   environment.revokeObjectURL(url);
 }
 
-export function createMusicDebugInstrumentPreviewWavFiles(
+function createMusicDebugInstrumentPreviewWavFiles(
   snapshot: MusicDebugSnapshot
 ): readonly MusicDebugPreviewWavFile[] {
   const baseName = formatBundleBaseName(snapshot);
@@ -116,7 +116,7 @@ export function createMusicDebugInstrumentPreviewWavFiles(
   return files;
 }
 
-export function createMusicDebugParameterReportFile(
+function createMusicDebugParameterReportFile(
   snapshot: MusicDebugSnapshot,
   metadataOptions: MusicDebugMidiMetadataOptions = {}
 ): MusicDebugExportBundleFile {

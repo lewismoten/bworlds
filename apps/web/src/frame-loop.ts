@@ -69,10 +69,7 @@ export function hasActiveMovementInput(keys: Iterable<string>): boolean {
   return false;
 }
 
-export function getWrappedProgressDelta(
-  current: number,
-  target: number
-): number {
+function getWrappedProgressDelta(current: number, target: number): number {
   let delta = target - current;
   if (delta > 0.5) delta -= 1;
   if (delta < -0.5) delta += 1;
