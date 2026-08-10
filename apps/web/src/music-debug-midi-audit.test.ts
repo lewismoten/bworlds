@@ -8,6 +8,30 @@ import {
 import { createMusicDebugMidiFileUnchecked } from './music-debug-midi.ts';
 
 describe('music debug midi audit', () => {
+  it('exports all 88 planned measures for the easy plains audit snapshot', () => {
+    const snapshot = findSnapshotWithDuration(138_000);
+
+    expect(snapshot.measureCount).toBe(88);
+    expect(snapshot.midiAudit.exportedMeasureCount).toBe(88);
+    expect(snapshot.midiAudit.exportedMeasureCount).toBe(snapshot.measureCount);
+  });
+
+  it('keeps the harmony track polyphonic with simultaneous chord notes', () => {
+    const snapshot = createMusicDebugSnapshot({
+      tileKind: 'forest',
+      contextType: 'overworld',
+      clusterX: 4,
+      clusterY: -1,
+    });
+
+    expect(snapshot.trackStats.harmony.maxPolyphony).toBeGreaterThan(1);
+    expect(
+      snapshot.harmonyChordDetections.some(
+        (section) => section.chordLabels.length > 0
+      )
+    ).toBe(true);
+  });
+
   it('keeps the easy plains export aligned with the reported 2:18 duration and bpm', () => {
     const snapshot = findSnapshotWithDuration(138_000);
 

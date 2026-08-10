@@ -594,7 +594,7 @@ export function buildMusicDebugShellMarkup(
             <button id="music-debug-download" type="button">Download MIDI</button>
             <label class="music-debug-toggle">
               <input id="music-debug-loop" type="checkbox" />
-              <span>Loop Song</span>
+              <span>Loop Middle Section</span>
             </label>
           </div>
         </form>

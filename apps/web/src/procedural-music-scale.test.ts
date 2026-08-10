@@ -38,6 +38,48 @@ describe('procedural music scale', () => {
     ).toEqual([67, 69, 71]);
   });
 
+  it('keeps degree 1, 3, and 5 aligned to G, B, and D from the stored root', () => {
+    const scaleMap = createProceduralScaleMap({
+      rootMidiNote: 55,
+      scale: [0, 2, 4, 5, 7, 9, 10],
+    });
+
+    expect(
+      resolveProceduralScaleDegreeMidiNote({
+        scaleMap,
+        degreeIndex: 0,
+      })
+    ).toBe(55);
+    expect(
+      resolveProceduralScaleDegreeMidiNote({
+        scaleMap,
+        degreeIndex: 2,
+      })
+    ).toBe(59);
+    expect(
+      resolveProceduralScaleDegreeMidiNote({
+        scaleMap,
+        degreeIndex: 4,
+      })
+    ).toBe(62);
+  });
+
+  it('renders the shared 1-3-5-3 motif as G-B-D-B in G Mixolydian', () => {
+    const scaleMap = createProceduralScaleMap({
+      rootMidiNote: 55,
+      scale: [0, 2, 4, 5, 7, 9, 10],
+    });
+
+    expect(
+      [0, 2, 4, 2].map((degreeIndex) =>
+        resolveProceduralScaleDegreeMidiNote({
+          scaleMap,
+          degreeIndex,
+        })
+      )
+    ).toEqual([55, 59, 62, 59]);
+  });
+
   it('keeps motif degree offsets separate from semitone offsets', () => {
     const mixolydian = [0, 2, 4, 5, 7, 9, 10];
 

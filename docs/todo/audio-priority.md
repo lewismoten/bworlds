@@ -267,15 +267,15 @@ added directly as semitones instead of moving through the selected scale.
 
 ## Specific Regression Tests
 
-- [ ] Verify a 196 Hz root exports as MIDI G3.
+- [x] Verify a 196 Hz root exports as MIDI G3.
 - [ ] Verify degree 1 exports as G in every track.
 - [ ] Verify degree 3 exports as B in every track.
 - [ ] Verify degree 5 exports as D in every track.
-- [ ] Verify motif 1-3-5-3 exports as G-B-D-B.
-- [ ] Verify G Mixolydian uses G-A-B-C-D-E-F.
-- [ ] Verify harmony contains simultaneous notes.
+- [x] Verify motif 1-3-5-3 exports as G-B-D-B.
+- [x] Verify G Mixolydian uses G-A-B-C-D-E-F.
+- [x] Verify harmony contains simultaneous notes.
 - [ ] Verify lead leaps stay within configured limits.
 - [x] Verify the exported file lasts about 2:18.
 - [x] Verify the exported BPM matches the easy tempo.
-- [ ] Verify all 88 planned measures are exported.
+- [x] Verify all 88 planned measures are exported.
 - [ ] Verify each section follows its layer plan.
