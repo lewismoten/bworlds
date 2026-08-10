@@ -106,6 +106,13 @@ describe('music debug', () => {
     expect(first.blackKeyNotesByRole.lead).toBeGreaterThanOrEqual(0);
     expect(first.dominantPitchClassesByRole.bass.length).toBeGreaterThan(0);
     expect(first.dominantPitchClassesByRole.lead.length).toBeGreaterThan(0);
+    expect(first.trackStats.bass.noteCount).toBe(first.roleCounts.bass);
+    expect(first.trackStats.harmony.rangeLabel).toMatch(
+      /^[A-G]#?-?\d-[A-G]#?-?\d$/
+    );
+    expect(first.trackStats.lead.maxLeapSemitones).toBeGreaterThanOrEqual(
+      first.trackStats.lead.averageLeapSemitones
+    );
     expect(first.midiExportValidation.accidentalNoteCount).toBe(
       first.accidentalNoteCount
     );
@@ -167,6 +174,10 @@ describe('music debug', () => {
     expect(summary).toContain('Pitch Centers');
     expect(summary).toContain('Accidental Rules');
     expect(summary).toContain('Accidental Notes');
+    expect(summary).toContain('Track Stats');
+    expect(summary).toContain('avg leap');
+    expect(summary).toContain('max leap');
+    expect(summary).toContain('out-of-mode');
     expect(summary).toContain('Section Measures');
     expect(summary).toContain(snapshot.theme.id);
     expect(summary).toContain(snapshot.theme.vocabulary.modeLabel);

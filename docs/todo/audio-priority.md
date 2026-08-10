@@ -254,10 +254,10 @@ added directly as semitones instead of moving through the selected scale.
 
 - [ ] Show the resolved BPM rather than only 1.04x.
 - [ ] Show total measures calculated from the MIDI.
-- [ ] Show note range for each track.
-- [ ] Show average leap for each track.
-- [ ] Show maximum leap for each track.
-- [ ] Show out-of-mode notes for each track.
+- [x] Show note range for each track.
+- [x] Show average leap for each track.
+- [x] Show maximum leap for each track.
+- [x] Show out-of-mode notes for each track.
 - [ ] Show maximum harmony polyphony.
 - [ ] Show average note duration by track.
 - [ ] Show average silence between notes by track.

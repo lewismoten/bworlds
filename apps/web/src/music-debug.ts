@@ -47,6 +47,11 @@ import {
   type MusicDebugTimingValidation,
   validateMusicDebugTiming,
 } from './music-debug-timing-validation.ts';
+import {
+  createMusicDebugTrackStats,
+  formatMusicDebugTrackStatsSummary,
+  type MusicDebugTrackStats,
+} from './music-debug-track-stats.ts';
 
 export type MusicDebugTileKind =
   | 'plains'
@@ -113,6 +118,7 @@ export type MusicDebugSnapshot = {
     ProceduralMusicNote['role'],
     readonly MusicDebugPitchClassLabel[]
   >;
+  trackStats: Record<ProceduralMusicNote['role'], MusicDebugTrackStats>;
   midiExportValidation: MusicDebugPitchValidation;
   timingValidation: MusicDebugTimingValidation;
 };
@@ -330,6 +336,10 @@ export function createMusicDebugSnapshot(
     loopEndOffsetMs: song.loopEndOffsetMs,
     song,
   });
+  const trackStats = createMusicDebugTrackStats({
+    notes: song.notes,
+    diagnostics: midiExportValidation.notePitchDiagnostics,
+  });
 
   return {
     options,
@@ -373,6 +383,7 @@ export function createMusicDebugSnapshot(
     outOfModeNotesByRole: midiExportValidation.outOfModeNotesByRole,
     blackKeyNotesByRole: midiExportValidation.blackKeyNotesByRole,
     dominantPitchClassesByRole: midiExportValidation.dominantPitchClassesByRole,
+    trackStats,
     midiExportValidation,
     timingValidation,
   };
@@ -600,6 +611,9 @@ export function buildMusicDebugSummaryMarkup(
     </div>
     <div class="music-debug-role-counts">
       <span>Accidental Notes ${formatMusicDebugAccidentalExamples(snapshot.notePitchDiagnostics)}</span>
+    </div>
+    <div class="music-debug-role-counts">
+      <span>Track Stats ${formatMusicDebugTrackStatsSummary(snapshot.trackStats).join(' | ')}</span>
     </div>
     <div class="music-debug-role-counts">
       <span>Section Measures ${snapshot.song.sections.map((section) => `${section.label} ${section.startMeasure}-${section.endMeasure}`).join(' | ')}</span>
