@@ -567,14 +567,14 @@ function resolveLeadSemitones(
   );
   const leap = current.semitones - previous.semitones;
   const leapMagnitude = Math.abs(leap);
-  const allowLargeLeap =
-    current.cadence === 'answer' ||
-    (current.strongLeadBeat &&
-      hash2DWithSeed(
-        MUSIC_LEAP_SEED,
-        clusterX + stepIndex + theme.id.length * 7,
-        clusterY - stepIndex - theme.id.length * 5
-      ) > 0.9);
+  const allowWideLeap =
+    current.strongLeadBeat &&
+    current.structuralAccent &&
+    hash2DWithSeed(
+      MUSIC_LEAP_SEED,
+      clusterX + stepIndex + theme.id.length * 7,
+      clusterY - stepIndex - theme.id.length * 5
+    ) > (current.cadence === 'answer' ? 0.78 : 0.94);
   const allowOctaveLeap =
     current.strongLeadBeat &&
     current.structuralAccent &&
@@ -588,7 +588,7 @@ function resolveLeadSemitones(
     return previous.semitones + Math.sign(leap) * LARGE_LEAP_LIMIT_SEMITONES;
   }
 
-  if (!allowLargeLeap && leapMagnitude > LARGE_LEAP_LIMIT_SEMITONES) {
+  if (!allowWideLeap && leapMagnitude > LARGE_LEAP_LIMIT_SEMITONES) {
     return previous.semitones + Math.sign(leap) * 5;
   }
 

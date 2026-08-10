@@ -213,7 +213,17 @@ describe('procedural music harmony', () => {
     expect(largeLeapIndexes.length).toBeLessThanOrEqual(1);
 
     for (const leap of largeLeapIndexes) {
+      const composition = resolveProceduralCompositionStep(
+        TEST_THEME,
+        leap.index + 1,
+        3,
+        -2
+      );
       const recovery = intervals[leap.index + 1];
+      expect(
+        composition.cadence === 'answer' ||
+          composition.contourStep.stage === 'climax'
+      ).toBe(true);
       expect(recovery).toBeDefined();
       expect(Math.sign(recovery!)).toBe(-Math.sign(leap.interval));
       expect(Math.abs(recovery!)).toBeLessThan(Math.abs(leap.interval));

@@ -81,7 +81,7 @@ added directly as semitones instead of moving through the selected scale.
 - [x] Reduce lead maximum leap from 31 semitones.
 - [x] Cap normal lead leaps near seven semitones.
 - [x] Reserve octave leaps for rare structural accents.
-- [ ] Penalize leaps larger than a perfect fifth.
+- [x] Penalize leaps larger than a perfect fifth.
 - [x] Require recovery after every large leap.
 - [ ] Keep most lead motion stepwise or by thirds.
 - [ ] Use contour targets as ranges, not exact pitch jumps.
