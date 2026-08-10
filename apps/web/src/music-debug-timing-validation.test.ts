@@ -69,4 +69,35 @@ describe('music debug timing validation', () => {
       invalid.messages.some((message) => message.includes('Intro measures'))
     ).toBe(true);
   });
+
+  it('flags section notes that spill past their assigned boundary', () => {
+    const snapshot = createMusicDebugSnapshot({
+      tileKind: 'forest',
+      contextType: 'overworld',
+      clusterX: 3,
+      clusterY: -2,
+    });
+    const intro = snapshot.song.sections[0]!;
+    const introStartMs = snapshot.song.startMs + intro.startOffsetMs;
+    const invalid = validateMusicDebugTiming({
+      ...snapshot,
+      song: {
+        ...snapshot.song,
+        notes: snapshot.song.notes.map((note, index) =>
+          index === 0
+            ? {
+                ...note,
+                startMs: introStartMs,
+                durationMs: intro.durationMs + 500,
+              }
+            : note
+        ),
+      },
+    });
+
+    expect(invalid.isValidForMidiExport).toBe(false);
+    expect(
+      invalid.messages.some((message) => message.includes('cross its boundary'))
+    ).toBe(true);
+  });
 });

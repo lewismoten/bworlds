@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { isNoteInsideSongSection } from './procedural-music-song-boundaries.ts';
 import {
   createProceduralMusicSong,
   resolveProceduralMusicSongDurationMs,
@@ -360,5 +361,37 @@ describe('procedural music song', () => {
     expect(sectionReturn.roleCounts.lead ?? 0).toBeGreaterThan(0);
     expect(outro.roleCounts.percussion ?? 0).toBe(0);
     expect(outro.averageLeadVolume).toBeLessThan(sectionA.averageLeadVolume);
+  });
+
+  it('keeps transformed notes fully inside their assigned section windows', () => {
+    const song = createProceduralMusicSong({
+      nowMs: 1_000,
+      tileKind: 'forest',
+      contextType: 'overworld',
+      dayProgress: 0.45,
+      yearProgress: 0.25,
+      clusterX: 3,
+      clusterY: -2,
+    });
+
+    for (const section of song.sections) {
+      const sectionStartMs = song.startMs + section.startOffsetMs;
+      const sectionEndMs = sectionStartMs + section.durationMs;
+      const notesInSection = song.notes.filter(
+        (note) => note.startMs >= sectionStartMs && note.startMs < sectionEndMs
+      );
+
+      expect(notesInSection.length).toBeGreaterThan(0);
+      expect(
+        notesInSection.every((note) =>
+          isNoteInsideSongSection(note, section, song.startMs)
+        )
+      ).toBe(true);
+      expect(
+        notesInSection.every(
+          (note) => note.startMs + note.durationMs <= sectionEndMs
+        )
+      ).toBe(true);
+    }
   });
 });

@@ -2,6 +2,15 @@ import { WORLD_TILES_WIDE } from './const';
 import { clamp, normalizeAngle } from './math';
 type CardinalDirection = 'N' | 'S' | 'E' | 'W';
 
+export type WorldPositionLike = {
+  x: number;
+  y: number;
+};
+
+export function snapWorldCoordinate(value: number): number {
+  return Math.round(value);
+}
+
 export function wrapLongitude(longitude: number): number {
   if (longitude > 180) return longitude - 360;
   if (longitude < -180) return longitude + 360;

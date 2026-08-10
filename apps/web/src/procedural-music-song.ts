@@ -8,6 +8,7 @@ import {
   createProceduralSongDna,
   type ProceduralSongDna,
 } from './procedural-music-song-dna.ts';
+import { constrainSongSectionNote } from './procedural-music-song-boundaries.ts';
 import {
   resolveMusicEncounterMode,
   resolveMusicTheme,
@@ -201,7 +202,14 @@ function applySongSectionsToNotes(
     noteIndexesByRoleInSection[note.role] += 1;
 
     if (transformed) {
-      transformedNotes.push(transformed);
+      const constrained = constrainSongSectionNote(
+        transformed,
+        section,
+        songStartMs
+      );
+      if (constrained) {
+        transformedNotes.push(constrained);
+      }
     }
   }
 

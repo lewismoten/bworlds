@@ -4,6 +4,7 @@ import {
   PROCEDURAL_MUSIC_TICKS_PER_MEASURE,
 } from './procedural-music-song-timing.ts';
 import type { MusicDebugSnapshot } from './music-debug.ts';
+import { isNoteInsideSongSection } from './procedural-music-song-boundaries.ts';
 
 export type MusicDebugTimingValidation = {
   expectedMeasureCount: number;
@@ -94,6 +95,34 @@ export function validateMusicDebugTiming(
     if (note.startMs < noteWindowStartMs || note.startMs >= noteWindowEndMs) {
       messages.push('One or more notes fall outside the song duration window.');
       break;
+    }
+  }
+
+  for (
+    let sectionIndex = 0;
+    sectionIndex < snapshot.song.sections.length;
+    sectionIndex += 1
+  ) {
+    const section = snapshot.song.sections[sectionIndex]!;
+    const sectionStartMs = snapshot.song.startMs + section.startOffsetMs;
+    const sectionEndMs = sectionStartMs + section.durationMs;
+
+    for (
+      let noteIndex = 0;
+      noteIndex < snapshot.song.notes.length;
+      noteIndex += 1
+    ) {
+      const note = snapshot.song.notes[noteIndex]!;
+      if (note.startMs < sectionStartMs || note.startMs >= sectionEndMs) {
+        continue;
+      }
+      if (!isNoteInsideSongSection(note, section, snapshot.song.startMs)) {
+        messages.push(
+          `${section.label} contains one or more notes that cross its boundary.`
+        );
+        sectionIndex = snapshot.song.sections.length;
+        break;
+      }
     }
   }
 

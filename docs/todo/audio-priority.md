@@ -71,9 +71,9 @@ added directly as semitones instead of moving through the selected scale.
 - [x] Ensure A and A' each receive sixteen measures.
 - [x] Ensure B and Variation each receive sixteen measures.
 - [x] Ensure Return and Outro each receive eight measures.
-- [ ] Keep note events inside their assigned sections.
+- [x] Keep note events inside their assigned sections.
 - [x] Verify section note counts match layer plans.
-- [ ] Apply layer changes exactly at section boundaries.
+- [x] Apply layer changes exactly at section boundaries.
 - [x] Export section names as MIDI markers.
 
 ## Lead Leap Control
