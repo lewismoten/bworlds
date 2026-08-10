@@ -257,7 +257,7 @@ added directly as semitones instead of moving through the selected scale.
 
 ## Density
 
-- [ ] Set note-density targets per track and section.
+- [x] Set note-density targets per track and section.
 - [ ] Avoid placing 307 notes without phrase-based density rules.
 - [ ] Increase density toward the planned climax.
 - [ ] Reduce density during Intro and Outro.

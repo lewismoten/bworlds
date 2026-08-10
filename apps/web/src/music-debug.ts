@@ -106,6 +106,11 @@ import {
   type MusicDebugCadenceDetection,
   type MusicDebugCadenceValidation,
 } from './music-debug-cadence-validation.ts';
+import {
+  validateMusicDebugDensity,
+  type MusicDebugDensityValidation,
+  type MusicDebugSectionDensityValidation,
+} from './music-debug-density-validation.ts';
 
 export type MusicDebugTileKind =
   | 'plains'
@@ -185,6 +190,8 @@ export type MusicDebugSnapshot = {
   bassProgressionDetections: MusicDebugBassProgressionDetection[];
   cadenceDetections: MusicDebugCadenceDetection[];
   cadenceValidation: MusicDebugCadenceValidation;
+  densityValidation: MusicDebugDensityValidation;
+  densitySections: MusicDebugSectionDensityValidation[];
   midiAudit: MusicDebugMidiAudit;
   midiExportValidation: MusicDebugPitchValidation;
   timingValidation: MusicDebugTimingValidation;
@@ -484,6 +491,10 @@ export function createMusicDebugSnapshot(
     blueprint: song.blueprint,
     prominence: sectionProminence,
   });
+  const densityValidation = validateMusicDebugDensity({
+    sections: song.sections,
+    activities: sectionLayerActivity,
+  });
   const snapshotBase = {
     options,
     theme,
@@ -528,6 +539,8 @@ export function createMusicDebugSnapshot(
     bassProgressionDetections,
     cadenceDetections: cadenceValidation.detections,
     cadenceValidation,
+    densityValidation,
+    densitySections: densityValidation.sections,
     midiExportValidation,
     timingValidation,
   };
@@ -855,6 +868,9 @@ export function buildMusicDebugSummaryMarkup(
       <span>Cadence Check ${formatMusicDebugCadenceValidationSummary(snapshot.cadenceValidation)}</span>
     </div>
     <div class="music-debug-role-counts">
+      <span>Density Check ${formatMusicDebugDensityValidationSummary(snapshot.densityValidation)}</span>
+    </div>
+    <div class="music-debug-role-counts">
       <span>MIDI Audit ${formatMusicDebugMidiAuditSummary(snapshot.midiAudit)}</span>
     </div>
     <div class="music-debug-role-counts">
@@ -944,6 +960,25 @@ function formatMusicDebugCadenceValidationSummary(
       const bass = detection.bassPitchLabel ?? 'missing';
       const harmony = detection.harmonyPitchLabels.join('-') || 'open';
       return `${detection.sectionLabel} ${detection.kind} L${lead} B${bass} @ ${harmony}`;
+    })
+    .join(' | ');
+}
+
+function formatMusicDebugDensityValidationSummary(
+  validation: MusicDebugDensityValidation
+): string {
+  if (!validation.isValidForMidiExport) {
+    return validation.messages.join(' | ');
+  }
+  return validation.sections
+    .map((section) => {
+      const densities = [
+        `B${section.noteDensityByRole.bass.toFixed(1)}`,
+        `H${section.noteDensityByRole.harmony.toFixed(1)}`,
+        `L${section.noteDensityByRole.lead.toFixed(1)}`,
+        `P${section.noteDensityByRole.percussion.toFixed(1)}`,
+      ].join('/');
+      return `${section.sectionLabel} ${densities}`;
     })
     .join(' | ');
 }
