@@ -1,6 +1,12 @@
+import fs from 'node:fs';
+import type { IncomingMessage, ServerResponse } from 'node:http';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { defineConfig, type Plugin } from 'vite';
+import {
+  readRecentRuntimePerformanceSnapshots,
+  saveRuntimePerformanceSnapshot,
+} from './runtime-performance-snapshot-store.mjs';
 import { resolveDebugRouteRedirect } from './src/debug-route-aliases.ts';
 import { resolveRootEntryHtmlPath } from './src/root-entry-route.ts';
 import { buildWorkspaceAliases } from './vite.workspace.ts';
@@ -28,6 +34,15 @@ type DebugRouteMiddlewareContainer = {
     use: (handler: DebugRouteMiddleware) => void;
   };
 };
+
+type RuntimeSnapshotRequest = IncomingMessage & {
+  url?: string;
+};
+
+type RuntimeSnapshotResponse = ServerResponse<IncomingMessage>;
+
+const RUNTIME_PERFORMANCE_SNAPSHOT_API_PATH =
+  '/api/runtime-performance-snapshots';
 
 function createDebugRouteRedirectPlugin(): Plugin {
   const redirect = (
@@ -87,9 +102,131 @@ function createDebugRouteRedirectPlugin(): Plugin {
   };
 }
 
+function sendJson(
+  res: RuntimeSnapshotResponse,
+  statusCode: number,
+  body: unknown
+): void {
+  res.statusCode = statusCode;
+  res.setHeader('Content-Type', 'application/json');
+  res.end(`${JSON.stringify(body, null, 2)}\n`);
+}
+
+function readJsonBody(req: RuntimeSnapshotRequest): Promise<unknown> {
+  return new Promise((resolve, reject) => {
+    let raw = '';
+
+    req.on('data', (chunk) => {
+      raw += Buffer.isBuffer(chunk) ? chunk.toString('utf8') : String(chunk);
+    });
+    req.on('end', () => {
+      try {
+        const trimmed = raw.trim();
+        resolve(trimmed.length > 0 ? JSON.parse(trimmed) : null);
+      } catch (error) {
+        reject(error);
+      }
+    });
+    req.on('error', reject);
+  });
+}
+
+function createRuntimePerformanceSnapshotApiPlugin(): Plugin {
+  const middleware = async (
+    req: RuntimeSnapshotRequest,
+    res: RuntimeSnapshotResponse,
+    next: () => void
+  ) => {
+    const requestUrl = req.url
+      ? new URL(req.url, 'http://localhost')
+      : null;
+    if (!requestUrl) {
+      next();
+      return;
+    }
+
+    if (requestUrl.pathname !== RUNTIME_PERFORMANCE_SNAPSHOT_API_PATH) {
+      next();
+      return;
+    }
+
+    if (req.method === 'GET') {
+      const limitParam = Number(requestUrl.searchParams.get('limit') ?? '10');
+      const limit = Number.isFinite(limitParam)
+        ? Math.max(1, Math.min(10, Math.floor(limitParam)))
+        : 10;
+      sendJson(res, 200, {
+        snapshots: readRecentRuntimePerformanceSnapshots({ limit }),
+      });
+      return;
+    }
+
+    if (req.method !== 'POST') {
+      res.statusCode = 405;
+      res.setHeader('Allow', 'GET, POST');
+      res.end();
+      return;
+    }
+
+    try {
+      const snapshot = await readJsonBody(req);
+      if (
+        !snapshot ||
+        typeof snapshot !== 'object' ||
+        !('schemaVersion' in snapshot) ||
+        !('createdAt' in snapshot)
+      ) {
+        sendJson(res, 400, {
+          error: 'Expected a runtime performance snapshot JSON payload.',
+        });
+        return;
+      }
+
+      const fileName = saveRuntimePerformanceSnapshot(snapshot);
+      sendJson(res, 201, {
+        fileName,
+      });
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Unknown snapshot error.';
+      const snapshotDirError =
+        error instanceof Error &&
+        (error.message.includes('ENOENT') || error.message.includes('EACCES'));
+      sendJson(res, snapshotDirError ? 500 : 400, {
+        error: message,
+      });
+    }
+  };
+
+  return {
+    name: 'runtime-performance-snapshot-api',
+    configureServer(server: DebugRouteMiddlewareContainer) {
+      server.middlewares.use((req, res, next) => {
+        void middleware(
+          req as RuntimeSnapshotRequest,
+          res as RuntimeSnapshotResponse,
+          next
+        );
+      });
+    },
+    configurePreviewServer(server: DebugRouteMiddlewareContainer) {
+      server.middlewares.use((req, res, next) => {
+        void middleware(
+          req as RuntimeSnapshotRequest,
+          res as RuntimeSnapshotResponse,
+          next
+        );
+      });
+    },
+  };
+}
+
 export default defineConfig({
   appType: 'mpa',
-  plugins: [createDebugRouteRedirectPlugin()],
+  plugins: [
+    createRuntimePerformanceSnapshotApiPlugin(),
+    createDebugRouteRedirectPlugin(),
+  ],
   build: {
     manifest: true,
     rollupOptions: {

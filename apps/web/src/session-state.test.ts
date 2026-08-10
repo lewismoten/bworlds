@@ -70,6 +70,7 @@ describe('session state', () => {
       musicEnabled: false,
       soundEnabled: true,
       ambianceEnabled: false,
+      runtimePerformanceTrackingEnabled: false,
       categoryVolumes: {
         music: 0.7,
         ui: 0.9,
@@ -130,6 +131,7 @@ describe('session state', () => {
         musicEnabled: false,
         soundEnabled: true,
         ambianceEnabled: false,
+        runtimePerformanceTrackingEnabled: false,
         categoryVolumes: {
           music: 0.7,
           ui: 0.9,
@@ -162,6 +164,16 @@ describe('session state', () => {
           player: { x: 0, y: 0, facing: 0 },
           stack: [{ id: 'overworld', depth: 0 }],
           worldSeed: 42,
+        })
+      )
+    ).toBeNull();
+
+    expect(
+      parseSavedSession(
+        JSON.stringify({
+          player: { x: 0, y: 0, facing: 0 },
+          stack: [{ id: 'overworld', depth: 0 }],
+          runtimePerformanceTrackingEnabled: 'off',
         })
       )
     ).toBeNull();
@@ -461,6 +473,7 @@ describe('session state', () => {
       musicEnabled: true,
       soundEnabled: true,
       ambianceEnabled: true,
+      runtimePerformanceTrackingEnabled: true,
       categoryVolumes: {
         music: 1,
         ui: 1,

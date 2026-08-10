@@ -33,6 +33,8 @@ import { normalizeTeleportPins, type TeleportPin } from './teleport-pins.ts';
 
 type SessionViewMode = '2d' | '3d' | 'text';
 
+export const SESSION_STORAGE_KEY = 'bworlds:session';
+
 type SessionWorldContext = {
   id: string;
   depth: number;
@@ -71,6 +73,7 @@ export type SavedSession = {
   musicEnabled?: boolean;
   soundEnabled?: boolean;
   ambianceEnabled?: boolean;
+  runtimePerformanceTrackingEnabled?: boolean;
   categoryVolumes?: Partial<AudioCategoryVolumes>;
   compassHeadingAngle?: number | null;
   cameraPitch?: number;
@@ -108,6 +111,7 @@ export type SessionSnapshot = {
   musicEnabled: boolean;
   soundEnabled: boolean;
   ambianceEnabled: boolean;
+  runtimePerformanceTrackingEnabled: boolean;
   categoryVolumes: AudioCategoryVolumes;
   compassHeadingAngle: number | null;
   cameraPitch: number;
@@ -260,6 +264,12 @@ export function parseSavedSession(raw: string | null): SavedSession | null {
     if (
       typeof parsed?.ambianceEnabled !== 'undefined' &&
       typeof parsed.ambianceEnabled !== 'boolean'
+    ) {
+      return null;
+    }
+    if (
+      typeof parsed?.runtimePerformanceTrackingEnabled !== 'undefined' &&
+      typeof parsed.runtimePerformanceTrackingEnabled !== 'boolean'
     ) {
       return null;
     }

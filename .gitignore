@@ -5,3 +5,4 @@ coverage/
 /.vscode/
 /*.md
 !/README.md
+.runtime-performance-snapshots/
