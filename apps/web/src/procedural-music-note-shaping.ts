@@ -40,3 +40,87 @@ export function resolveProceduralNoteHarmonicGain(options: {
     options.brightnessMultiplier
   );
 }
+
+export function normalizeProceduralLeadSemitones(options: {
+  targetSemitones: number;
+  melodyRangeSemitones: readonly [number, number];
+  previousLeadSemitones?: number | null;
+  maxLeapSemitones?: number;
+}): number {
+  const [minSemitones, maxSemitones] = options.melodyRangeSemitones;
+  const previousLeadSemitones = options.previousLeadSemitones ?? null;
+  const maxLeapSemitones = Math.max(1, options.maxLeapSemitones ?? 7);
+  const candidates = collectLeadRegisterCandidates(
+    options.targetSemitones,
+    minSemitones,
+    maxSemitones
+  );
+  const referenceSemitones =
+    previousLeadSemitones ?? (minSemitones + maxSemitones) / 2;
+  const rankedCandidates = [...candidates].sort((left, right) => {
+    const leftDistance = Math.abs(left - referenceSemitones);
+    const rightDistance = Math.abs(right - referenceSemitones);
+    if (leftDistance !== rightDistance) {
+      return leftDistance - rightDistance;
+    }
+    return (
+      Math.abs(left - options.targetSemitones) -
+      Math.abs(right - options.targetSemitones)
+    );
+  });
+
+  if (previousLeadSemitones !== null) {
+    const boundedCandidate = rankedCandidates.find(
+      (candidate) =>
+        Math.abs(candidate - previousLeadSemitones) <= maxLeapSemitones
+    );
+    if (boundedCandidate !== undefined) {
+      return boundedCandidate;
+    }
+  }
+
+  return (
+    rankedCandidates[0] ??
+    clampLeadRegisterFallback(
+      options.targetSemitones,
+      minSemitones,
+      maxSemitones
+    )
+  );
+}
+
+function collectLeadRegisterCandidates(
+  targetSemitones: number,
+  minSemitones: number,
+  maxSemitones: number
+): number[] {
+  const candidates: number[] = [];
+  for (let octaveShift = -36; octaveShift <= 36; octaveShift += 12) {
+    const candidate = targetSemitones + octaveShift;
+    if (candidate < minSemitones || candidate > maxSemitones) {
+      continue;
+    }
+    candidates.push(candidate);
+  }
+  if (candidates.length > 0) {
+    return candidates;
+  }
+  return [
+    clampLeadRegisterFallback(targetSemitones, minSemitones, maxSemitones),
+  ];
+}
+
+function clampLeadRegisterFallback(
+  targetSemitones: number,
+  minSemitones: number,
+  maxSemitones: number
+): number {
+  let candidate = targetSemitones;
+  while (candidate > maxSemitones) {
+    candidate -= 12;
+  }
+  while (candidate < minSemitones) {
+    candidate += 12;
+  }
+  return Math.min(maxSemitones, Math.max(minSemitones, candidate));
+}

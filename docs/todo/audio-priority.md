@@ -78,16 +78,16 @@ added directly as semitones instead of moving through the selected scale.
 
 ## Lead Leap Control
 
-- [ ] Reduce lead maximum leap from 31 semitones.
-- [ ] Cap normal lead leaps near seven semitones.
+- [x] Reduce lead maximum leap from 31 semitones.
+- [x] Cap normal lead leaps near seven semitones.
 - [ ] Reserve octave leaps for rare structural accents.
 - [ ] Penalize leaps larger than a perfect fifth.
-- [ ] Require recovery after every large leap.
+- [x] Require recovery after every large leap.
 - [ ] Keep most lead motion stepwise or by thirds.
 - [ ] Use contour targets as ranges, not exact pitch jumps.
 - [ ] Smooth the path between contour target points.
 - [ ] Keep the flute within a narrower active register.
-- [ ] Score average and maximum lead leap before export.
+- [x] Score average and maximum lead leap before export.
 
 ## Bass Movement
 
@@ -143,7 +143,7 @@ added directly as semitones instead of moving through the selected scale.
 
 ## Lead Contour
 
-- [ ] Map contour values to a bounded melodic register.
+- [x] Map contour values to a bounded melodic register.
 - [ ] Avoid mapping contour values directly to octave leaps.
 - [ ] Interpolate notes between contour checkpoints.
 - [ ] Place the climax near the planned section peak.
@@ -274,7 +274,7 @@ added directly as semitones instead of moving through the selected scale.
 - [x] Verify motif 1-3-5-3 exports as G-B-D-B.
 - [x] Verify G Mixolydian uses G-A-B-C-D-E-F.
 - [x] Verify harmony contains simultaneous notes.
-- [ ] Verify lead leaps stay within configured limits.
+- [x] Verify lead leaps stay within configured limits.
 - [x] Verify the exported file lasts about 2:18.
 - [x] Verify the exported BPM matches the easy tempo.
 - [x] Verify all 88 planned measures are exported.

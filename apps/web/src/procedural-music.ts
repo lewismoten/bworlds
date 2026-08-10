@@ -40,6 +40,7 @@ import {
 } from './procedural-music-space.ts';
 import { MAX_ACTIVE_PROCEDURAL_MUSIC_OSCILLATORS } from './audio-budget.ts';
 import {
+  normalizeProceduralLeadSemitones,
   resolveProceduralNoteFrequency,
   resolveProceduralNoteHarmonicGain,
 } from './procedural-music-note-shaping.ts';
@@ -203,6 +204,7 @@ type MusicSchedulerState = {
   nextNoteAtMs: number;
   stepIndex: number;
   regionSignature: string;
+  lastLeadSemitones: number | null;
 };
 
 type MusicUpdateSignatureState = {
@@ -1340,6 +1342,7 @@ function createThemeNotes(options: {
   stepIndex: number;
   clusterX: number;
   clusterY: number;
+  previousLeadSemitones?: number | null;
   tileKind?: TileKind;
   contextType?: ContextType;
   emitter?: MusicPosition;
@@ -1355,22 +1358,29 @@ function createThemeNotes(options: {
     options.clusterX,
     options.clusterY
   );
-  const semitones = resolveProceduralInstrumentSemitones({
+  const resolvedSemitones = resolveProceduralInstrumentSemitones({
     theme: options.theme,
     role,
     stepIndex: options.stepIndex,
     clusterX: options.clusterX,
     clusterY: options.clusterY,
   });
-  const octaveBoost =
-    role !== 'bass' &&
-    hash2DWithSeed(
-      getThemePropertySeed(options.theme.id, 'octave'),
-      options.clusterX + options.stepIndex,
-      options.clusterY
-    ) > 0.84
-      ? 12
-      : 0;
+  const semitones =
+    role === 'lead'
+      ? normalizeProceduralLeadSemitones({
+          targetSemitones: resolvedSemitones,
+          melodyRangeSemitones: options.theme.vocabulary.melodyRangeSemitones,
+          previousLeadSemitones: options.previousLeadSemitones,
+        })
+      : resolvedSemitones;
+  const octaveBoost = resolveThemeNoteOctaveBoost({
+    role,
+    composition,
+    themeId: options.theme.id,
+    clusterX: options.clusterX,
+    clusterY: options.clusterY,
+    stepIndex: options.stepIndex,
+  });
   const voiceSemitones =
     role === 'harmony'
       ? resolveProceduralHarmonyVoicing({
@@ -1447,6 +1457,45 @@ function createThemeNotes(options: {
   }));
 }
 
+function resolveThemeNoteOctaveBoost(options: {
+  role: InstrumentRole;
+  composition: ReturnType<typeof resolveProceduralCompositionStep>;
+  themeId: string;
+  clusterX: number;
+  clusterY: number;
+  stepIndex: number;
+}): number {
+  if (options.role === 'bass' || options.role === 'percussion') {
+    return 0;
+  }
+  if (options.role === 'harmony') {
+    return hash2DWithSeed(
+      getThemePropertySeed(options.themeId, 'octave'),
+      options.clusterX + options.stepIndex,
+      options.clusterY
+    ) > 0.9
+      ? 12
+      : 0;
+  }
+  if (
+    options.composition.contourStep.stage !== 'climax' &&
+    options.composition.contourStep.stage !== 'rise'
+  ) {
+    return 0;
+  }
+  if (options.composition.motifDegreeOffset < 2) {
+    return 0;
+  }
+
+  return hash2DWithSeed(
+    getThemePropertySeed(options.themeId, 'octave'),
+    options.clusterX + options.stepIndex,
+    options.clusterY
+  ) > 0.965
+    ? 12
+    : 0;
+}
+
 function scheduleThemeLayerNotes(
   options: {
     nowMs: number;
@@ -1508,6 +1557,10 @@ function scheduleThemeLayerNotes(
     previousState?.regionSignature === regionSignature
       ? previousState.stepIndex
       : 0;
+  let previousLeadSemitones =
+    previousState?.regionSignature === regionSignature
+      ? previousState.lastLeadSemitones
+      : null;
   let nextNoteAtMs =
     previousState?.regionSignature === regionSignature
       ? Math.max(previousState.nextNoteAtMs, options.nowMs)
@@ -1536,6 +1589,7 @@ function scheduleThemeLayerNotes(
         stepIndex,
         clusterX,
         clusterY,
+        previousLeadSemitones,
         tileKind: options.poiType ?? options.tileKind,
         contextType: options.contextType,
         emitter: options.emitter,
@@ -1546,6 +1600,19 @@ function scheduleThemeLayerNotes(
           ...note,
           volume: note.volume * options.gainMultiplier,
         });
+      }
+      if (role === 'lead' && createdNotes[0]) {
+        previousLeadSemitones = Math.round(
+          12 *
+            Math.log2(
+              createdNotes[0].frequency /
+                resolveProceduralNoteFrequency({
+                  rootMidiNote: theme.rootMidiNote,
+                  semitones: 0,
+                  role: 'lead',
+                })
+            )
+        );
       }
     }
     nextNoteAtMs +=
@@ -1563,6 +1630,7 @@ function scheduleThemeLayerNotes(
       nextNoteAtMs,
       stepIndex,
       regionSignature,
+      lastLeadSemitones: previousLeadSemitones,
     },
   };
 }

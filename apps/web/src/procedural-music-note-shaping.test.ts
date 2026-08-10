@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  normalizeProceduralLeadSemitones,
   resolveProceduralNoteFrequency,
   resolveProceduralNoteHarmonicGain,
 } from './procedural-music-note-shaping.ts';
@@ -39,5 +40,22 @@ describe('procedural music note shaping', () => {
         brightnessMultiplier: 0.92,
       })
     ).toBeCloseTo(0.1894464, 6);
+  });
+
+  it('normalizes lead semitones into the melodic register nearest the previous lead note', () => {
+    expect(
+      normalizeProceduralLeadSemitones({
+        targetSemitones: 14,
+        melodyRangeSemitones: [0, 14],
+        previousLeadSemitones: 5,
+      })
+    ).toBe(2);
+    expect(
+      normalizeProceduralLeadSemitones({
+        targetSemitones: 0,
+        melodyRangeSemitones: [0, 14],
+        previousLeadSemitones: 10,
+      })
+    ).toBe(12);
   });
 });

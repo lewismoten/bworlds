@@ -64,4 +64,39 @@ describe('music debug track stats', () => {
     expect(timingLines[1]).toContain('avg gap');
     expect(timingLines[1]).toContain('peak poly');
   });
+
+  it('keeps sampled lead leap averages controlled and octave jumps rare in generated songs', () => {
+    const sampledLeadStats = [
+      createMusicDebugSnapshot({
+        tileKind: 'plains',
+        contextType: 'overworld',
+        clusterX: 0,
+        clusterY: 0,
+      }).trackStats.lead,
+      createMusicDebugSnapshot({
+        tileKind: 'forest',
+        contextType: 'overworld',
+        clusterX: 3,
+        clusterY: -2,
+      }).trackStats.lead,
+      createMusicDebugSnapshot({
+        tileKind: 'shore',
+        contextType: 'overworld',
+        clusterX: 8,
+        clusterY: -4,
+        dayProgress: 0.85,
+      }).trackStats.lead,
+      createMusicDebugSnapshot({
+        tileKind: 'town',
+        contextType: 'town',
+        clusterX: 3,
+        clusterY: -2,
+      }).trackStats.lead,
+    ];
+
+    for (const leadStats of sampledLeadStats) {
+      expect(leadStats.averageLeapSemitones).toBeLessThanOrEqual(7);
+      expect(leadStats.maxLeapSemitones).toBeLessThanOrEqual(12);
+    }
+  });
 });
