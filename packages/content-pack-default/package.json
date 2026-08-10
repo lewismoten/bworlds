@@ -34,7 +34,6 @@
     "@bworlds/runtime-start-region": "0.1.0",
     "@bworlds/runtime-wayfinding": "0.1.0",
     "@bworlds/runtime-weather": "0.1.0",
-    "@bworlds/rail-support": "0.1.0",
     "@bworlds/tile-cave": "0.1.0",
     "@bworlds/tile-dungeon": "0.1.0",
     "@bworlds/tile-forest": "0.1.0",

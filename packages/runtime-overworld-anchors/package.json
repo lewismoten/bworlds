@@ -3,7 +3,6 @@
   "version": "0.1.0",
   "type": "module",
   "dependencies": {
-    "@bworlds/core": "0.1.0",
     "@bworlds/overworld-support": "0.1.0",
     "@bworlds/plugin-api": "0.1.0"
   },
