@@ -219,6 +219,29 @@ describe('music debug midi', () => {
     );
   });
 
+  it('blocks MIDI export when percussion validation fails', () => {
+    const snapshot = createMusicDebugSnapshot({
+      tileKind: 'town',
+      contextType: 'town',
+      clusterX: 3,
+      clusterY: -2,
+    });
+
+    expect(() =>
+      createMusicDebugMidiFile({
+        ...snapshot,
+        percussionValidation: {
+          isValidForMidiExport: false,
+          messages: [
+            'Variation percussion should stay thinner than Section A.',
+          ],
+        },
+      })
+    ).toThrow(
+      'Cannot export MIDI: Variation percussion should stay thinner than Section A.'
+    );
+  });
+
   it('downloads the encoded midi file through a blob url', () => {
     const snapshot = createMusicDebugSnapshot({
       tileKind: 'forest',

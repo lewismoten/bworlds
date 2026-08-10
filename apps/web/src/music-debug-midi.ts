@@ -111,11 +111,13 @@ export function createMusicDebugMidiFile(
     ...snapshot.midiExportValidation.messages,
     ...snapshot.motifValidation.messages,
     ...snapshot.timingValidation.messages,
+    ...snapshot.percussionValidation.messages,
   ];
   if (
     !snapshot.midiExportValidation.isValidForMidiExport ||
     !snapshot.motifValidation.isValidForMidiExport ||
-    !snapshot.timingValidation.isValidForMidiExport
+    !snapshot.timingValidation.isValidForMidiExport ||
+    !snapshot.percussionValidation.isValidForMidiExport
   ) {
     throw new Error(`Cannot export MIDI: ${validationMessages.join(' ')}`);
   }

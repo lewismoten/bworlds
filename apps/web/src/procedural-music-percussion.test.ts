@@ -258,4 +258,118 @@ describe('procedural music percussion', () => {
       )
     );
   });
+
+  it('adds denser town fills only on structural cadence steps', () => {
+    const neutral = createProceduralPercussionNotes({
+      themeId: 'town-square',
+      stepIndex: 5,
+      phraseStep: 5,
+      cadence: 'neutral',
+      startMs: 0,
+      stepDurationMs: 320,
+      rootMidiNote: 59,
+      baseInstrumentId: 'town-square:percussion:3:-2',
+      baseVolume: 0.02,
+      baseAttackMs: 12,
+      baseReleaseMs: 60,
+      baseDetuneCents: 4,
+      baseHarmonicGain: 0.12,
+      basePulseRate: 1,
+      brightness: 0.92,
+      clusterX: 3,
+      clusterY: -2,
+    });
+    const answer = createProceduralPercussionNotes({
+      themeId: 'town-square',
+      stepIndex: 7,
+      phraseStep: 7,
+      cadence: 'answer',
+      startMs: 0,
+      stepDurationMs: 320,
+      rootMidiNote: 59,
+      baseInstrumentId: 'town-square:percussion:3:-2',
+      baseVolume: 0.02,
+      baseAttackMs: 12,
+      baseReleaseMs: 60,
+      baseDetuneCents: 4,
+      baseHarmonicGain: 0.12,
+      basePulseRate: 1,
+      brightness: 0.92,
+      clusterX: 3,
+      clusterY: -2,
+    });
+
+    expect(answer.length).toBeGreaterThan(neutral.length);
+    expect(
+      answer.some(
+        (note) =>
+          resolvePercussionFamilyFromInstrumentId(note.instrumentId) ===
+          'cymbals'
+      )
+    ).toBe(true);
+    expect(
+      neutral.some(
+        (note) =>
+          resolvePercussionFamilyFromInstrumentId(note.instrumentId) ===
+          'cymbals'
+      )
+    ).toBe(false);
+  });
+
+  it('adds generic fills only when cadence marks a structural turn', () => {
+    const neutral = createProceduralPercussionNotes({
+      themeId: 'ridge-pass',
+      stepIndex: 8,
+      phraseStep: 8,
+      cadence: 'neutral',
+      startMs: 0,
+      stepDurationMs: 380,
+      rootMidiNote: 53,
+      baseInstrumentId: 'ridge-pass:percussion:3:-2',
+      baseVolume: 0.02,
+      baseAttackMs: 12,
+      baseReleaseMs: 60,
+      baseDetuneCents: 4,
+      baseHarmonicGain: 0.12,
+      basePulseRate: 1,
+      brightness: 0.92,
+      clusterX: 3,
+      clusterY: -2,
+    });
+    const answer = createProceduralPercussionNotes({
+      themeId: 'ridge-pass',
+      stepIndex: 11,
+      phraseStep: 11,
+      cadence: 'answer',
+      startMs: 0,
+      stepDurationMs: 380,
+      rootMidiNote: 53,
+      baseInstrumentId: 'ridge-pass:percussion:3:-2',
+      baseVolume: 0.02,
+      baseAttackMs: 12,
+      baseReleaseMs: 60,
+      baseDetuneCents: 4,
+      baseHarmonicGain: 0.12,
+      basePulseRate: 1,
+      brightness: 0.92,
+      clusterX: 3,
+      clusterY: -2,
+    });
+
+    expect(answer.length).toBeGreaterThan(neutral.length);
+    expect(
+      answer.some(
+        (note) =>
+          resolvePercussionFamilyFromInstrumentId(note.instrumentId) ===
+          'cymbals'
+      )
+    ).toBe(true);
+    expect(
+      neutral.some(
+        (note) =>
+          resolvePercussionFamilyFromInstrumentId(note.instrumentId) ===
+          'cymbals'
+      )
+    ).toBe(false);
+  });
 });

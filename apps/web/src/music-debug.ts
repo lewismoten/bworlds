@@ -112,6 +112,10 @@ import {
   type MusicDebugDensityValidation,
   type MusicDebugSectionDensityValidation,
 } from './music-debug-density-validation.ts';
+import {
+  validateMusicDebugPercussion,
+  type MusicDebugPercussionValidation,
+} from './music-debug-percussion-validation.ts';
 
 export type MusicDebugTileKind =
   | 'plains'
@@ -192,6 +196,7 @@ export type MusicDebugSnapshot = {
   cadenceDetections: MusicDebugCadenceDetection[];
   cadenceValidation: MusicDebugCadenceValidation;
   densityValidation: MusicDebugDensityValidation;
+  percussionValidation: MusicDebugPercussionValidation;
   densitySections: MusicDebugSectionDensityValidation[];
   midiAudit: MusicDebugMidiAudit;
   midiExportValidation: MusicDebugPitchValidation;
@@ -496,6 +501,11 @@ export function createMusicDebugSnapshot(
     sections: song.sections,
     activities: sectionLayerActivity,
   });
+  const percussionValidation = validateMusicDebugPercussion({
+    notes: song.notes,
+    sections: song.sections,
+    songStartMs: song.startMs,
+  });
   const snapshotBase = {
     options,
     theme,
@@ -541,6 +551,7 @@ export function createMusicDebugSnapshot(
     cadenceDetections: cadenceValidation.detections,
     cadenceValidation,
     densityValidation,
+    percussionValidation,
     densitySections: densityValidation.sections,
     midiExportValidation,
     timingValidation,
@@ -885,6 +896,9 @@ export function buildMusicDebugSummaryMarkup(
       <span>Density Check ${formatMusicDebugDensityValidationSummary(snapshot.densityValidation)}</span>
     </div>
     <div class="music-debug-role-counts">
+      <span>Percussion Check ${formatMusicDebugPercussionValidationSummary(snapshot.percussionValidation)}</span>
+    </div>
+    <div class="music-debug-role-counts">
       <span>MIDI Audit ${formatMusicDebugMidiAuditSummary(snapshot.midiAudit)}</span>
     </div>
     <div class="music-debug-role-counts">
@@ -995,6 +1009,15 @@ function formatMusicDebugDensityValidationSummary(
       return `${section.sectionLabel} ${densities}`;
     })
     .join(' | ');
+}
+
+function formatMusicDebugPercussionValidationSummary(
+  validation: MusicDebugPercussionValidation
+): string {
+  if (!validation.isValidForMidiExport) {
+    return validation.messages.join(' | ');
+  }
+  return 'ok';
 }
 
 function formatMusicDebugLeadContourSummary(

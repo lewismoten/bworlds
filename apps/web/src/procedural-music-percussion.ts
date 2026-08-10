@@ -118,6 +118,34 @@ const TOWN_PULSE_PATTERNS: readonly ProceduralPercussionPattern[] = [
   ],
 ] as const;
 
+const TOWN_FILL_PATTERNS: Record<
+  ProceduralLeadPhraseCadence,
+  ProceduralPercussionPattern
+> = {
+  neutral: TOWN_PULSE_PATTERNS[0]!,
+  question: [
+    createHit('kick', -12, 0, 0.28, 0.56, 0.84),
+    createHit('shaker', 0, 0.22, 0.12, 0.36, 1.14),
+    createHit('snare', -1, 0.5, 0.18, 0.54, 1.08),
+    createHit('hand-percussion', -3, 0.76, 0.14, 0.34, 1.02, {
+      releaseMultiplier: 1.12,
+    }),
+  ],
+  answer: [
+    createHit('kick', -12, 0, 0.3, 0.6, 0.86, {
+      attackMultiplier: 0.88,
+      releaseMultiplier: 1.16,
+    }),
+    createHit('shaker', 0, 0.24, 0.12, 0.34, 1.12),
+    createHit('snare', -1, 0.5, 0.18, 0.58, 1.1),
+    createHit('hand-percussion', -5, 0.72, 0.16, 0.38, 1.04),
+    createHit('cymbals', 7, 0.86, 0.16, 0.2, 1.06, {
+      releaseMultiplier: 1.4,
+      brightnessMultiplier: 1.16,
+    }),
+  ],
+};
+
 const GENERIC_PULSE_PATTERNS: readonly ProceduralPercussionPattern[] = [
   [
     createHit('kick', -12, 0, 0.2, 0.58, 0.86),
@@ -130,6 +158,29 @@ const GENERIC_PULSE_PATTERNS: readonly ProceduralPercussionPattern[] = [
     createHit('snare', -1, 0.62, 0.16, 0.46, 1.04),
   ],
 ] as const;
+
+const GENERIC_FILL_PATTERNS: Record<
+  ProceduralLeadPhraseCadence,
+  ProceduralPercussionPattern
+> = {
+  neutral: GENERIC_PULSE_PATTERNS[0]!,
+  question: [
+    createHit('kick', -12, 0, 0.22, 0.58, 0.88),
+    createHit('hand-percussion', -2, 0.28, 0.14, 0.4, 1.02),
+    createHit('snare', -1, 0.54, 0.16, 0.48, 1.06),
+    createHit('shaker', 0, 0.8, 0.12, 0.3, 1.18),
+  ],
+  answer: [
+    createHit('kick', -12, 0, 0.24, 0.62, 0.9),
+    createHit('hand-percussion', -3, 0.3, 0.16, 0.42, 1.04),
+    createHit('snare', -1, 0.56, 0.16, 0.5, 1.08),
+    createHit('shaker', 0, 0.76, 0.12, 0.32, 1.18),
+    createHit('cymbals', 7, 0.88, 0.14, 0.18, 1.08, {
+      releaseMultiplier: 1.42,
+      brightnessMultiplier: 1.18,
+    }),
+  ],
+};
 
 export function createProceduralPercussionNotes(options: {
   themeId: MusicRegionThemeId;
@@ -264,6 +315,9 @@ function resolveProceduralPercussionPattern(options: {
   }
 
   if (options.themeId === 'town-square') {
+    if (options.cadence !== 'neutral') {
+      return TOWN_FILL_PATTERNS[options.cadence];
+    }
     const index = Math.floor(
       hash2DWithSeed(
         PERCUSSION_PATTERN_SEED,
@@ -273,6 +327,10 @@ function resolveProceduralPercussionPattern(options: {
       ) * TOWN_PULSE_PATTERNS.length
     );
     return TOWN_PULSE_PATTERNS[index] ?? TOWN_PULSE_PATTERNS[0]!;
+  }
+
+  if (options.cadence !== 'neutral') {
+    return GENERIC_FILL_PATTERNS[options.cadence];
   }
 
   const index = Math.floor(

@@ -235,12 +235,12 @@ added directly as semitones instead of moving through the selected scale.
 - [x] Use snare accents on consistent metric positions.
 - [x] Replace the isolated snare pattern with a groove.
 - [x] Repeat percussion patterns by measure.
-- [ ] Add fills only before structural changes.
+- [x] Add fills only before structural changes.
 - [x] Keep percussion absent during the Intro.
 - [x] Thin percussion during the Variation section.
 - [x] Remove percussion during the Outro.
 - [ ] Align drum accents with chord changes.
-- [ ] Validate percussion section rules before export.
+- [x] Validate percussion section rules before export.
 
 ## Layer Plan Enforcement
 

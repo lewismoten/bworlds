@@ -222,6 +222,12 @@ export function inspectMusicDebugMidiBytes(
   ) {
     warningMessages.push(...snapshot.cadenceValidation.messages);
   }
+  if (
+    includedRoles.has('percussion') &&
+    !snapshot.percussionValidation.isValidForMidiExport
+  ) {
+    warningMessages.push(...snapshot.percussionValidation.messages);
+  }
   if (markerLabels.length !== snapshot.song.sections.length) {
     sectionsMatchPlannedMarkers = false;
     mismatchMessages.push(

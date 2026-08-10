@@ -289,6 +289,32 @@ describe('music debug midi audit', () => {
     );
   });
 
+  it('flags percussion validation mismatches when percussion export rules drift', () => {
+    const snapshot = createMusicDebugSnapshot({
+      tileKind: 'town',
+      contextType: 'town',
+      clusterX: 3,
+      clusterY: -2,
+    });
+    const file = createMusicDebugMidiFileUnchecked(snapshot, {
+      createdAt: new Date('2026-08-09T00:00:00.000Z'),
+    });
+
+    const audit = inspectMusicDebugMidiBytes(file.bytes, {
+      ...snapshot,
+      percussionValidation: {
+        isValidForMidiExport: false,
+        messages: ['Intro should not contain percussion notes.'],
+      },
+    });
+
+    expect(audit.isConsistent).toBe(true);
+    expect(audit.mismatchMessages).toEqual([]);
+    expect(audit.warningMessages).toContain(
+      'Intro should not contain percussion notes.'
+    );
+  });
+
   it('flags scheduled-note mismatches when exported role note counts drift', () => {
     const snapshot = createMusicDebugSnapshot({
       tileKind: 'forest',
