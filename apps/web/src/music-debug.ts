@@ -1072,6 +1072,9 @@ function formatMusicDebugSongDnaValidationSummary(
 function formatMusicDebugLeadContourSummary(
   analysis: MusicDebugLeadContourAnalysis
 ): string {
+  if (!analysis.matchesPlannedContour && analysis.messages.length > 0) {
+    return analysis.messages.join(' | ');
+  }
   const status = analysis.matchesPlannedContour ? 'ok' : 'drift';
   return `${status}; in-range ${analysis.inRangePointCount}, out-of-range ${analysis.outOfRangePointCount}, missing ${analysis.missingPointCount}, climax ${analysis.climaxNearPlannedPeak ? 'near peak' : 'off peak'}, ending ${analysis.finalResolvesToTonic ? 'tonic' : 'drifted'}`;
 }

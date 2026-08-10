@@ -13,6 +13,7 @@ const LEAD_CONTOUR_SEMITONE_TOLERANCE = 2;
 export type MusicDebugLeadContourPoint = {
   stepIndex: number;
   phraseMeasure: number;
+  songMeasure: number;
   stage: string;
   cadence: string;
   plannedMinSemitones: number;
@@ -21,6 +22,7 @@ export type MusicDebugLeadContourPoint = {
   actualRelativeSemitones: number | null;
   actualScaleDegree: number | null;
   actualStartMs: number | null;
+  actualNoteLabel: string | null;
   withinPlannedRange: boolean | null;
 };
 
@@ -117,6 +119,9 @@ export function createMusicDebugLeadContourAnalysis(options: {
       phraseMeasure:
         Math.floor(stepIndex / Math.max(1, options.theme.stepPattern.length)) +
         1,
+      songMeasure:
+        sectionA.startMeasure +
+        Math.floor(stepIndex / Math.max(1, options.theme.stepPattern.length)),
       stage: planned.stage,
       cadence: planned.cadence,
       plannedMinSemitones: planned.minSemitones,
@@ -125,6 +130,11 @@ export function createMusicDebugLeadContourAnalysis(options: {
       actualRelativeSemitones,
       actualScaleDegree: matchedEntry?.diagnostic?.scaleDegree ?? null,
       actualStartMs: matchedEntry?.note.startMs ?? null,
+      actualNoteLabel:
+        matchedEntry?.diagnostic?.midiNote === null ||
+        matchedEntry?.diagnostic?.midiNote === undefined
+          ? null
+          : formatMidiNoteLabel(matchedEntry.diagnostic.midiNote),
       withinPlannedRange:
         actualRelativeSemitones === null
           ? null
@@ -173,17 +183,26 @@ export function createMusicDebugLeadContourAnalysis(options: {
     finalResolvesToTonic;
   const messages: string[] = [];
 
-  if (inRangePointCount < Math.max(1, outOfRangePointCount)) {
+  for (const point of points) {
+    if (point.withinPlannedRange !== false) {
+      continue;
+    }
     messages.push(
-      `Lead contour drifted outside its planned range for ${outOfRangePointCount} checkpoints.`
+      `Lead contour checkpoint at measure ${point.songMeasure} expected ${point.plannedMinSemitones}-${point.plannedMaxSemitones} semitones but observed ${point.actualNoteLabel ?? 'missing'}${point.actualRelativeSemitones === null ? '' : ` (${point.actualRelativeSemitones} semitones)`}.`
     );
   }
   if (!climaxNearPlannedPeak) {
-    messages.push('Lead contour climax drifted away from the planned peak.');
+    const plannedClimaxMeasure =
+      points.find((point) => point.stepIndex === plannedClimaxStepIndex)
+        ?.songMeasure ?? null;
+    const actualClimaxMeasure = actualClimaxPoint?.songMeasure ?? null;
+    messages.push(
+      `Lead contour climax peaked at ${formatLeadContourMeasureAndNote(actualClimaxMeasure, actualClimaxPoint?.actualNoteLabel ?? null)} instead of the planned peak near measure ${plannedClimaxMeasure ?? 'unknown'}.`
+    );
   }
   if (!finalResolvesToTonic) {
     messages.push(
-      'Lead contour did not resolve its final observed pitch to tonic.'
+      `Lead contour ending at ${formatLeadContourMeasureAndNote(finalResolvedPoint?.songMeasure ?? null, finalResolvedPoint?.actualNoteLabel ?? null)} resolved to scale degree ${finalResolvedPoint?.actualScaleDegree ?? 'unknown'} instead of tonic.`
     );
   }
 
@@ -199,4 +218,26 @@ export function createMusicDebugLeadContourAnalysis(options: {
     matchesPlannedContour,
     messages,
   };
+}
+
+function formatLeadContourMeasureAndNote(
+  measure: number | null,
+  noteLabel: string | null
+): string {
+  const measureLabel = measure === null ? 'an unknown measure' : `measure ${measure}`;
+  return noteLabel === null ? measureLabel : `${measureLabel} on ${noteLabel}`;
+}
+
+function formatMidiNoteLabel(midiNote: number): string {
+  const pitchClass = mod(midiNote, 12);
+  const pitchLabel =
+    ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'][
+      pitchClass
+    ] ?? 'C';
+  const octave = Math.floor(midiNote / 12) - 1;
+  return `${pitchLabel}${octave}`;
+}
+
+function mod(value: number, modulus: number): number {
+  return ((value % modulus) + modulus) % modulus;
 }
