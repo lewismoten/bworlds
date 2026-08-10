@@ -27,8 +27,8 @@
 - [ ] Fix unresolved chromatic notes before MIDI export.
 - [ ] Regenerate a phrase containing unresolved chromatic notes.
 - [ ] Lower harmony occupancy when the lead is active.
-- [ ] Make A' lead occupancy exceed Section A occupancy.
-- [ ] Make B harmony occupancy lower than Section A occupancy.
+- [ ] Make each section satisfy its configured layer-emphasis rules. (ie - Make A' more lead-forward than Section A.)
+- [ ] Validate actual layer occupancy against the section blueprint.occupancy. (ie - Make B harmony lighter than Section A.)
 - [ ] Add a soft repeating rhythmic pulse for forest music.
 - [ ] Use percussion patterns instead of isolated cymbal events.
 - [x] Compare intended intervals with actual interval counts.
