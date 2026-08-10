@@ -577,6 +577,25 @@ export function buildSoundBankDebugMarkup(
               </select>
             </label>
           </div>
+          <div class="sound-bank-debug-percussion-pad-grid" role="group" aria-label="Percussion pad grid">
+            ${percussionBrowserSections
+              .flatMap((section) => section.voices)
+              .map(
+                (voice) => `
+                  <button
+                    type="button"
+                    class="music-debug-instrument-play sound-bank-debug-percussion-pad"
+                    data-preview-id="${voice.previewTarget}"
+                  >
+                    <span class="sound-bank-debug-percussion-pad-note">${voice.midiNote}</span>
+                    <span class="sound-bank-debug-percussion-pad-name">${formatLabel(
+                      voice.name
+                    )}</span>
+                  </button>
+                `
+              )
+              .join('')}
+          </div>
           <div class="sound-bank-debug-percussion-browser">
             ${percussionBrowserSections
               .map(

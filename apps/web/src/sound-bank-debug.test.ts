@@ -62,6 +62,8 @@ describe('sound bank debug page', () => {
     expect(markup).toContain('Role Patches');
     expect(markup).toContain('Percussion Browser');
     expect(markup).toContain('sound-bank-debug-percussion-family-filter');
+    expect(markup).toContain('sound-bank-debug-percussion-pad-grid');
+    expect(markup).toContain('sound-bank-debug-percussion-pad');
     expect(markup).toContain('Program Browser');
     expect(markup).toContain('sound-bank-debug-midi-search');
     expect(markup).toContain('sound-bank-debug-midi-family-filter');
@@ -482,13 +484,39 @@ describe('sound bank debug page', () => {
         familyFilter: 'snare',
       },
     }).replace(/\s+/g, ' ');
-    const percussionSection = markup.match(
-      /<h2>Percussion Browser<\/h2>[\s\S]*?<section class="sound-bank-debug-panel"> <div class="sound-bank-debug-panel-head"> <div> <p class="sound-bank-debug-panel-kicker">General MIDI<\/p>/
-    )?.[0] ?? markup;
+    const percussionSection =
+      markup.match(
+        /<h2>Percussion Browser<\/h2>[\s\S]*?<section class="sound-bank-debug-panel"> <div class="sound-bank-debug-panel-head"> <div> <p class="sound-bank-debug-panel-kicker">General MIDI<\/p>/
+      )?.[0] ?? markup;
+    const percussionPadGrid =
+      markup.match(
+        /<div class="sound-bank-debug-percussion-pad-grid"[\s\S]*?<\/div> <div class="sound-bank-debug-percussion-browser">/
+      )?.[0] ?? markup;
 
     expect(percussionSection).toContain('Snare');
     expect(percussionSection).toContain('Snare Main');
     expect(percussionSection).not.toContain('Kick Center');
     expect(percussionSection).not.toContain('Closed Hat');
+    expect(percussionPadGrid).toContain('Snare Main');
+    expect(percussionPadGrid).not.toContain('Kick Center');
+  });
+
+  it('renders a compact drum pad grid for percussion previews', () => {
+    const snapshot = createSoundBankDebugSnapshot();
+    const markup = buildSoundBankDebugMarkup(snapshot, {
+      audioStatus: 'Audio idle',
+      percussionBrowserState: {
+        familyFilter: 'kick',
+      },
+    }).replace(/\s+/g, ' ');
+    const percussionPadGrid =
+      markup.match(
+        /<div class="sound-bank-debug-percussion-pad-grid"[\s\S]*?<\/div> <div class="sound-bank-debug-percussion-browser">/
+      )?.[0] ?? markup;
+
+    expect(percussionPadGrid).toContain('sound-bank-debug-percussion-pad-grid');
+    expect(percussionPadGrid).toContain('data-preview-id="percussion:kick-36"');
+    expect(percussionPadGrid).toContain('Kick Center');
+    expect(percussionPadGrid).toContain('Floor Tom');
   });
 });

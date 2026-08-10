@@ -280,6 +280,35 @@ body {
   gap: 0.8rem;
 }
 
+.sound-bank-debug-percussion-pad-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 0.65rem;
+  margin-bottom: 0.8rem;
+}
+
+.sound-bank-debug-percussion-pad {
+  display: grid;
+  gap: 0.2rem;
+  justify-items: start;
+  min-height: 5.5rem;
+  border-radius: 1rem;
+  padding: 0.8rem;
+}
+
+.sound-bank-debug-percussion-pad-note {
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #9fc0ea;
+}
+
+.sound-bank-debug-percussion-pad-name {
+  font-size: 0.95rem;
+  color: #eef5ff;
+  text-align: left;
+}
+
 .sound-bank-debug-percussion-family {
   border-radius: 1rem;
   border: 1px solid rgba(172, 208, 255, 0.16);
