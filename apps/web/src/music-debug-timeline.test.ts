@@ -76,6 +76,39 @@ describe('music debug timeline', () => {
     ).toBe(true);
   });
 
+  it('places different percussion instruments on distinct vertical lanes', () => {
+    const baseSnapshot = createMusicDebugSnapshot();
+    const snapshot = {
+      ...baseSnapshot,
+      notes: [
+        {
+          ...baseSnapshot.notes.find((note) => note.role === 'percussion')!,
+          instrumentId: 'debug:perc-kick-36:0',
+          startMs: 0,
+        },
+        {
+          ...baseSnapshot.notes.find((note) => note.role === 'percussion')!,
+          instrumentId: 'debug:perc-snare-38:1',
+          startMs: 250,
+        },
+        {
+          ...baseSnapshot.notes.find((note) => note.role === 'percussion')!,
+          instrumentId: 'debug:perc-cymbals-49:2',
+          startMs: 500,
+        },
+      ],
+      durationMs: 1_000,
+    };
+    const layout = resolveMusicDebugTimelineLayout(960, 320);
+    const noteBars = resolveMusicDebugTimelineNoteBars(snapshot, layout);
+    const percussionBars = noteBars.filter((bar) => bar.role === 'percussion');
+
+    expect(percussionBars).toHaveLength(3);
+    expect(new Set(percussionBars.map((bar) => bar.y)).size).toBe(3);
+    expect(percussionBars[0]!.y).toBeGreaterThan(percussionBars[1]!.y);
+    expect(percussionBars[1]!.y).toBeGreaterThan(percussionBars[2]!.y);
+  });
+
   it('brightens note-bar colors when overlaps increase', () => {
     expect(resolveMusicDebugTimelineNoteBarColor('#4f8cff', 1)).toBe(
       '#4f8cff'

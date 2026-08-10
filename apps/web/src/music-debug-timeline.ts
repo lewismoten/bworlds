@@ -3,6 +3,11 @@ import {
   type MusicDebugSnapshot,
   type MusicDebugTimelineLayout,
 } from './music-debug.ts';
+import {
+  resolvePercussionFamilyFromInstrumentId,
+  resolvePercussionVoiceIdFromInstrumentId,
+} from './procedural-music-percussion.ts';
+import { resolvePercussionVoiceById } from './procedural-music-percussion-voices.ts';
 import type { ProceduralMusicNote } from './procedural-music.ts';
 import { createMusicDebugScaleOverlay } from './music-debug-scale.ts';
 
@@ -185,6 +190,7 @@ export function resolveMusicDebugTimelineNoteBars(
   const timelineStartMs = snapshot.notes[0]?.startMs ?? snapshot.song.startMs;
   const scaleOverlay = createMusicDebugScaleOverlay(snapshot, layout);
   const markerQueueByRole = createMarkerQueueByRole(scaleOverlay.markers);
+  const percussionLaneMap = createPercussionLaneMap(snapshot.notes);
   const noteBars: MusicDebugTimelineNoteBar[] = [];
   const usableWidth = layout.width - layout.leftPad - layout.rightPad;
 
@@ -212,7 +218,16 @@ export function resolveMusicDebugTimelineNoteBars(
       MUSIC_DEBUG_TIMELINE_NOTE_BAR_MAX_HEIGHT,
       Math.max(MUSIC_DEBUG_TIMELINE_NOTE_BAR_MIN_HEIGHT, layout.trackHeight * 0.16)
     );
-    const centerY = marker?.y ?? (trackTop + trackBottom) * 0.5;
+    const centerY =
+      marker?.y ??
+      (note.role === 'percussion'
+        ? resolvePercussionLaneCenterY({
+            note,
+            laneMap: percussionLaneMap,
+            trackTop,
+            trackBottom,
+          })
+        : (trackTop + trackBottom) * 0.5);
 
     noteBars.push({
       role: note.role,
@@ -344,6 +359,86 @@ function createMarkerQueueByRole(
     harmony: markers.filter((marker) => marker.role === 'harmony'),
     lead: markers.filter((marker) => marker.role === 'lead'),
   };
+}
+
+function createPercussionLaneMap(
+  notes: readonly ProceduralMusicNote[]
+): Map<string, number> {
+  const laneEntries = new Map<
+    string,
+    { familyRank: number; pitchRank: number; key: string }
+  >();
+
+  for (const note of notes) {
+    if (note.role !== 'percussion') {
+      continue;
+    }
+    const voiceId = resolvePercussionVoiceIdFromInstrumentId(note.instrumentId);
+    const family = resolvePercussionFamilyFromInstrumentId(note.instrumentId);
+    const key = voiceId ?? family ?? note.instrumentId;
+    if (laneEntries.has(key)) {
+      continue;
+    }
+    laneEntries.set(key, {
+      familyRank: resolvePercussionFamilyRank(family),
+      pitchRank: voiceId ? resolvePercussionVoiceById(voiceId).midiNote : 0,
+      key,
+    });
+  }
+
+  return new Map(
+    [...laneEntries.values()]
+      .sort(
+        (left, right) =>
+          left.familyRank - right.familyRank ||
+          left.pitchRank - right.pitchRank ||
+          left.key.localeCompare(right.key)
+      )
+      .map((entry, index) => [entry.key, index])
+  );
+}
+
+function resolvePercussionLaneCenterY(options: {
+  note: ProceduralMusicNote;
+  laneMap: ReadonlyMap<string, number>;
+  trackTop: number;
+  trackBottom: number;
+}): number {
+  const laneCount = Math.max(1, options.laneMap.size);
+  if (laneCount <= 1) {
+    return (options.trackTop + options.trackBottom) * 0.5;
+  }
+  const voiceId = resolvePercussionVoiceIdFromInstrumentId(
+    options.note.instrumentId
+  );
+  const family = resolvePercussionFamilyFromInstrumentId(
+    options.note.instrumentId
+  );
+  const laneKey = voiceId ?? family ?? options.note.instrumentId;
+  const laneIndex = options.laneMap.get(laneKey) ?? Math.floor(laneCount / 2);
+  const ratio = laneIndex / Math.max(1, laneCount - 1);
+  return (
+    options.trackBottom - (options.trackBottom - options.trackTop) * ratio
+  );
+}
+
+function resolvePercussionFamilyRank(
+  family: ReturnType<typeof resolvePercussionFamilyFromInstrumentId>
+): number {
+  switch (family) {
+    case 'kick':
+      return 0;
+    case 'snare':
+      return 1;
+    case 'hand-percussion':
+      return 2;
+    case 'shaker':
+      return 3;
+    case 'cymbals':
+      return 4;
+    default:
+      return 5;
+  }
 }
 
 function clampNoteBarY(y: number, minY: number, maxY: number): number {
