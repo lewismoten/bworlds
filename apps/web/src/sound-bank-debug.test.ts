@@ -64,6 +64,7 @@ describe('sound bank debug page', () => {
     expect(markup).toContain('sound-bank-debug-percussion-family-filter');
     expect(markup).toContain('sound-bank-debug-percussion-pad-grid');
     expect(markup).toContain('sound-bank-debug-percussion-pad');
+    expect(markup).toContain('sound-bank-debug-percussion-pad-key');
     expect(markup).toContain('Program Browser');
     expect(markup).toContain('sound-bank-debug-midi-search');
     expect(markup).toContain('sound-bank-debug-midi-family-filter');
@@ -499,6 +500,7 @@ describe('sound bank debug page', () => {
     expect(percussionSection).not.toContain('Closed Hat');
     expect(percussionPadGrid).toContain('Snare Main');
     expect(percussionPadGrid).not.toContain('Kick Center');
+    expect(percussionPadGrid).toContain('data-percussion-key="4"');
   });
 
   it('renders a compact drum pad grid for percussion previews', () => {
@@ -516,6 +518,8 @@ describe('sound bank debug page', () => {
 
     expect(percussionPadGrid).toContain('sound-bank-debug-percussion-pad-grid');
     expect(percussionPadGrid).toContain('data-preview-id="percussion:kick-36"');
+    expect(percussionPadGrid).toContain('data-percussion-key="1"');
+    expect(percussionPadGrid).toContain('data-percussion-key="3"');
     expect(percussionPadGrid).toContain('Kick Center');
     expect(percussionPadGrid).toContain('Floor Tom');
   });

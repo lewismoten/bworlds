@@ -100,6 +100,7 @@ export type SoundBankDebugPercussionVoiceView = Readonly<{
   midiNote: number;
   name: string;
   previewTarget: MusicDebugInstrumentPreviewTarget;
+  shortcutKey: string;
 }>;
 
 export const DEFAULT_SOUND_BANK_DEBUG_GENERAL_MIDI_BROWSER_STATE: SoundBankDebugGeneralMidiBrowserState =
@@ -586,7 +587,9 @@ export function buildSoundBankDebugMarkup(
                     type="button"
                     class="music-debug-instrument-play sound-bank-debug-percussion-pad"
                     data-preview-id="${voice.previewTarget}"
+                    data-percussion-key="${voice.shortcutKey}"
                   >
+                    <span class="sound-bank-debug-percussion-pad-key">${voice.shortcutKey}</span>
                     <span class="sound-bank-debug-percussion-pad-note">${voice.midiNote}</span>
                     <span class="sound-bank-debug-percussion-pad-name">${formatLabel(
                       voice.name
@@ -1062,6 +1065,7 @@ function createSoundBankDebugPercussionBrowserSections(
       midiNote: voice.midiNote,
       name: voice.name,
       previewTarget: `percussion:${voice.id}`,
+      shortcutKey: resolvePercussionPadShortcutKey(voice.id),
     })),
   }));
 }
@@ -1147,3 +1151,35 @@ const PERCUSSION_FAMILY_ORDER: readonly PercussionFamily[] = [
   'shaker',
   'hand-percussion',
 ];
+
+const PERCUSSION_PAD_SHORTCUT_KEYS = [
+  '1',
+  '2',
+  '3',
+  '4',
+  '5',
+  '6',
+  '7',
+  '8',
+  '9',
+  '0',
+  'q',
+  'w',
+  'e',
+  'r',
+  't',
+  'y',
+  'u',
+  'i',
+  'o',
+  'p',
+] as const;
+
+const PERCUSSION_PAD_SHORTCUT_VOICE_ORDER = PERCUSSION_FAMILY_ORDER.flatMap(
+  (family) => listPercussionVoicesForFamily(family).map((voice) => voice.id)
+);
+
+function resolvePercussionPadShortcutKey(voiceId: PercussionVoiceId): string {
+  const shortcutIndex = PERCUSSION_PAD_SHORTCUT_VOICE_ORDER.indexOf(voiceId);
+  return PERCUSSION_PAD_SHORTCUT_KEYS[shortcutIndex] ?? '';
+}

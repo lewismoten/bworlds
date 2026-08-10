@@ -296,6 +296,20 @@ body {
   padding: 0.8rem;
 }
 
+.sound-bank-debug-percussion-pad-key {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.5rem;
+  min-height: 1.5rem;
+  border-radius: 999px;
+  border: 1px solid rgba(172, 208, 255, 0.22);
+  background: rgba(8, 18, 29, 0.8);
+  color: #9fc0ea;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+}
+
 .sound-bank-debug-percussion-pad-note {
   font-size: 0.78rem;
   letter-spacing: 0.08em;

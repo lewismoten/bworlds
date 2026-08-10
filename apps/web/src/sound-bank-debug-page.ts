@@ -246,6 +246,15 @@ function isSoundBankPreviewRole(
   );
 }
 
+function isEditableEventTarget(target: EventTarget | null): boolean {
+  return (
+    target instanceof HTMLInputElement ||
+    target instanceof HTMLSelectElement ||
+    target instanceof HTMLTextAreaElement ||
+    (target instanceof HTMLElement && target.isContentEditable)
+  );
+}
+
 function renderPage(): void {
   if (!root) {
     return;
@@ -458,6 +467,30 @@ function bindPage(snapshot: SoundBankDebugSnapshot): void {
         pageLifecycleSignal ? { signal: pageLifecycleSignal } : undefined
       );
     });
+
+  document.addEventListener(
+    'keydown',
+    (event) => {
+      if (
+        event.altKey ||
+        event.ctrlKey ||
+        event.metaKey ||
+        isEditableEventTarget(event.target)
+      ) {
+        return;
+      }
+      const shortcutKey = event.key.toLowerCase();
+      const shortcutButton = document.querySelector<HTMLButtonElement>(
+        `.sound-bank-debug-percussion-pad[data-percussion-key="${shortcutKey}"]`
+      );
+      if (!shortcutButton) {
+        return;
+      }
+      event.preventDefault();
+      shortcutButton.click();
+    },
+    pageLifecycleSignal ? { signal: pageLifecycleSignal } : undefined
+  );
 
   document
     .querySelector<HTMLSelectElement>('#sound-bank-debug-percussion-family-filter')

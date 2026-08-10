@@ -91,7 +91,7 @@
 - [x] Add a filter for drum families.
 - [x] Add a button to play each percussion sound.
 - [x] Add a small drum pad grid.
-- [ ] Add keyboard shortcuts for drum pads.
+- [x] Add keyboard shortcuts for drum pads.
 - [ ] Show missing percussion patches.
 - [ ] Prevent percussion from using pitched controls.
 - [ ] Add a percussion range audition.
