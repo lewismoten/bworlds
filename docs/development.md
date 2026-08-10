@@ -16,10 +16,11 @@ npm install
 ```bash
 npm run dev
 npm run build
+npm run lint
+npm run lint:fix
 npm run test
 npm run coverage
 npm run format
-npm run format:write
 ```
 
 ## Working model
@@ -28,6 +29,7 @@ npm run format:write
 - Shared logic is kept in `packages/*`
 - Tests run with Vitest from the repository root
 - Coverage is generated with V8 coverage and written to `coverage/`
+- Linting is handled with ESLint
 - Formatting is handled with Prettier
 
 ## Next suggested milestones
