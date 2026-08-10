@@ -28,8 +28,11 @@ export type ProceduralInstrumentTimbre = {
   filterType: BiquadFilterType;
   filterCutoffHz: number;
   filterQ: number;
+  fundamentalGainMultiplier?: number;
   attackPeakGainMultiplier?: number;
   bodySustainLevel?: number;
+  harmonicBodyLevel?: number;
+  harmonicReleaseLeadMs?: number;
   noiseMix?: number;
   noiseFilterType?: BiquadFilterType;
   noiseFilterCutoffHz?: number;
@@ -60,8 +63,11 @@ type InstrumentTimbreTemplate = {
   cutoffMaxHz: number;
   qMin: number;
   qMax: number;
+  fundamentalGainMultiplier?: number;
   attackPeakGainMultiplier?: number;
   bodySustainLevel?: number;
+  harmonicBodyLevel?: number;
+  harmonicReleaseLeadMs?: number;
   noiseMix?: number;
   noiseFilterType?: BiquadFilterType;
   noiseCutoffMinHz?: number;
@@ -296,6 +302,9 @@ const INSTRUMENT_PATCH_RECIPES: Record<InstrumentFamily, InstrumentPatchRecipe> 
       cutoffMaxHz: 620,
       qMin: 0.4,
       qMax: 1.1,
+      fundamentalGainMultiplier: 1.14,
+      harmonicBodyLevel: 0.42,
+      harmonicReleaseLeadMs: 60,
     },
   },
   'upright-bass': {
@@ -314,6 +323,9 @@ const INSTRUMENT_PATCH_RECIPES: Record<InstrumentFamily, InstrumentPatchRecipe> 
       cutoffMaxHz: 460,
       qMin: 0.4,
       qMax: 1,
+      fundamentalGainMultiplier: 1.16,
+      harmonicBodyLevel: 0.36,
+      harmonicReleaseLeadMs: 80,
     },
   },
   'bass-synth': {
@@ -332,6 +344,9 @@ const INSTRUMENT_PATCH_RECIPES: Record<InstrumentFamily, InstrumentPatchRecipe> 
       cutoffMaxHz: 900,
       qMin: 0.6,
       qMax: 1.4,
+      fundamentalGainMultiplier: 1.1,
+      harmonicBodyLevel: 0.48,
+      harmonicReleaseLeadMs: 50,
     },
   },
   tuba: {
@@ -350,6 +365,9 @@ const INSTRUMENT_PATCH_RECIPES: Record<InstrumentFamily, InstrumentPatchRecipe> 
       cutoffMaxHz: 520,
       qMin: 0.7,
       qMax: 1.6,
+      fundamentalGainMultiplier: 1.12,
+      harmonicBodyLevel: 0.4,
+      harmonicReleaseLeadMs: 70,
     },
   },
   kick: {
@@ -487,8 +505,11 @@ export function resolveProceduralInstrumentTimbre(options: {
       template.qMax,
       clamp(options.filterSignal, 0, 1)
     ),
+    fundamentalGainMultiplier: template.fundamentalGainMultiplier,
     attackPeakGainMultiplier: template.attackPeakGainMultiplier,
     bodySustainLevel: template.bodySustainLevel,
+    harmonicBodyLevel: template.harmonicBodyLevel,
+    harmonicReleaseLeadMs: template.harmonicReleaseLeadMs,
     noiseMix,
     noiseFilterType: template.noiseFilterType,
     noiseFilterCutoffHz:

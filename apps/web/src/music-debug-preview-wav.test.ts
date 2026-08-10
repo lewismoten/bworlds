@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   renderMusicDebugPreviewNoteToSamples,
   resolveEnvelopeGain,
+  resolveHarmonicEnvelopeGain,
 } from './music-debug-preview-wav.ts';
 import type { ProceduralMusicNote } from './procedural-music.ts';
 
@@ -52,6 +53,32 @@ describe('music debug preview wav', () => {
     expect(resolveEnvelopeGain(bowedNote, 0.12, bowedNote.durationMs / 1000)).toBeGreaterThan(
       resolveEnvelopeGain(plainNote, 0.12, plainNote.durationMs / 1000)
     );
+  });
+
+  it('lets bass harmonic envelopes fade sooner than the main body envelope', () => {
+    const bassNote = createPreviewNote({
+      role: 'bass',
+      frequency: 110,
+      waveform: 'sine',
+      timbre: {
+        ...createPreviewNote().timbre,
+        harmonicWaveform: 'triangle',
+        fundamentalGainMultiplier: 1.16,
+        harmonicBodyLevel: 0.36,
+        harmonicReleaseLeadMs: 80,
+      },
+      attackMs: 40,
+      releaseMs: 140,
+    });
+
+    expect(
+      resolveHarmonicEnvelopeGain(bassNote, 0.12, bassNote.durationMs / 1000)
+    ).toBeLessThan(
+      resolveEnvelopeGain(bassNote, 0.12, bassNote.durationMs / 1000)
+    );
+    expect(
+      renderMusicDebugPreviewNoteToSamples(bassNote, 8_000)
+    ).toBeDefined();
   });
 });
 

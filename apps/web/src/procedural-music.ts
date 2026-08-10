@@ -1217,16 +1217,35 @@ export function createWebAudioMusicSink(
         context.currentTime + Math.max(0, (note.startMs - nowMs) / 1000);
       const durationSeconds = note.durationMs / 1000;
       const attackSeconds = Math.max(0.001, note.attackMs / 1000);
+      const fundamentalGainMultiplier = Math.max(
+        1,
+        note.timbre.fundamentalGainMultiplier ?? 1
+      );
       const bodySustainLevel = clamp(
         note.timbre.bodySustainLevel ?? 0.74,
         0.5,
         1
+      );
+      const harmonicBodyLevel = clamp(
+        note.timbre.harmonicBodyLevel ?? Math.max(0.5, bodySustainLevel - 0.06),
+        0.2,
+        1
+      );
+      const harmonicReleaseLeadSeconds = Math.max(
+        0,
+        (note.timbre.harmonicReleaseLeadMs ?? 0) / 1000
       );
       const attackPeakGainMultiplier = Math.max(
         1,
         note.timbre.attackPeakGainMultiplier ?? 1
       );
       const bodySettleAt = startAt + Math.min(0.08, Math.max(0.02, attackSeconds * 1.5));
+      const harmonicReleaseStartAt =
+        startAt +
+        Math.max(
+          bodySettleAt - startAt,
+          durationSeconds - note.releaseMs / 1000 - harmonicReleaseLeadSeconds
+        );
       const sustainVolume =
         note.volume * categoryVolume * spatial.gainMultiplier;
       if (!enforceMusicOscillatorBudget(sustainVolume)) {
@@ -1286,7 +1305,7 @@ export function createWebAudioMusicSink(
       gain.gain.setValueAtTime(0.0001, startAt);
       harmonicGain.gain.setValueAtTime(0.0001, startAt);
       gain.gain.exponentialRampToValueAtTime(
-        sustainVolume * attackPeakGainMultiplier,
+        sustainVolume * fundamentalGainMultiplier * attackPeakGainMultiplier,
         startAt + attackSeconds
       );
       harmonicGain.gain.exponentialRampToValueAtTime(
@@ -1294,15 +1313,15 @@ export function createWebAudioMusicSink(
         startAt + attackSeconds
       );
       gain.gain.exponentialRampToValueAtTime(
-        sustainVolume * bodySustainLevel,
+        sustainVolume * fundamentalGainMultiplier * bodySustainLevel,
         bodySettleAt
       );
       harmonicGain.gain.exponentialRampToValueAtTime(
-        sustainVolume * note.harmonicGain * bodySustainLevel,
+        sustainVolume * note.harmonicGain * harmonicBodyLevel,
         bodySettleAt
       );
       gain.gain.exponentialRampToValueAtTime(
-        sustainVolume * bodySustainLevel,
+        sustainVolume * fundamentalGainMultiplier * bodySustainLevel,
         startAt +
           Math.max(
             durationSeconds - note.releaseMs / 1000,
@@ -1310,12 +1329,8 @@ export function createWebAudioMusicSink(
           )
       );
       harmonicGain.gain.exponentialRampToValueAtTime(
-        sustainVolume * note.harmonicGain * Math.max(0.5, bodySustainLevel - 0.06),
-        startAt +
-          Math.max(
-            durationSeconds - note.releaseMs / 1000,
-            bodySettleAt - startAt
-          )
+        sustainVolume * note.harmonicGain * harmonicBodyLevel,
+        harmonicReleaseStartAt
       );
       gain.gain.exponentialRampToValueAtTime(0.0001, startAt + durationSeconds);
       harmonicGain.gain.exponentialRampToValueAtTime(

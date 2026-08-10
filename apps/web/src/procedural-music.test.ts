@@ -1815,6 +1815,19 @@ describe('procedural music', () => {
     );
   });
 
+  it('gives bass timbres a stronger fundamental and shorter upper harmonics', () => {
+    const bass = resolveProceduralInstrumentTimbre({
+      family: 'upright-bass',
+      brightness: 0.8,
+      harmonicSignal: 0.5,
+      filterSignal: 0.35,
+    });
+
+    expect(bass.fundamentalGainMultiplier).toBeGreaterThan(1.1);
+    expect(bass.harmonicBodyLevel).toBeLessThan(0.45);
+    expect(bass.harmonicReleaseLeadMs).toBeGreaterThanOrEqual(60);
+  });
+
   it('keeps generated instrument patches inside their family recipe ranges', () => {
     const bank = createProceduralInstrumentBank(
       resolveMusicTheme('forest', 'overworld'),
@@ -2109,6 +2122,124 @@ describe('procedural music', () => {
       expect(gainRamps[0]?.[0]).toBeCloseTo(0.055, 4);
       expect(gainRamps[1]?.[0]).toBeCloseTo(0.046, 4);
       expect(gainRamps[2]?.[0]).toBeCloseTo(0.046, 4);
+    } finally {
+      if (originalAudioContext) {
+        vi.stubGlobal('AudioContext', originalAudioContext);
+      } else {
+        vi.unstubAllGlobals();
+      }
+    }
+  });
+
+  it('lets bass harmonic gain release earlier than the carrier body', () => {
+    const createdGains: Array<{
+      gain: {
+        setValueAtTime: ReturnType<typeof vi.fn>;
+        exponentialRampToValueAtTime: ReturnType<typeof vi.fn>;
+      };
+      connect: ReturnType<typeof vi.fn>;
+      disconnect: ReturnType<typeof vi.fn>;
+    }> = [];
+
+    class FakeAudioContext {
+      state: AudioContextState = 'running';
+      currentTime = 0;
+      destination = {};
+      createOscillator() {
+        return {
+          onended: null,
+          type: 'sine',
+          frequency: {
+            setValueAtTime: vi.fn(),
+            exponentialRampToValueAtTime: vi.fn(),
+          },
+          detune: {
+            setValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+          start: vi.fn(),
+          stop: vi.fn(),
+        } as unknown as OscillatorNode;
+      }
+      createGain() {
+        const gain = {
+          gain: {
+            setValueAtTime: vi.fn(),
+            exponentialRampToValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+        };
+        createdGains.push(gain);
+        return gain as unknown as GainNode;
+      }
+      createBiquadFilter() {
+        return {
+          type: 'lowpass' as BiquadFilterType,
+          frequency: {
+            setValueAtTime: vi.fn(),
+          },
+          Q: {
+            setValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+        } as unknown as BiquadFilterNode;
+      }
+      createStereoPanner() {
+        return {
+          pan: {
+            setValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+        } as unknown as StereoPannerNode;
+      }
+      resume() {
+        return Promise.resolve();
+      }
+    }
+
+    const originalAudioContext = globalThis.AudioContext;
+    vi.stubGlobal('AudioContext', FakeAudioContext);
+
+    try {
+      const sink = createWebAudioMusicSink();
+      sink.play({
+        themeId: 'town-square',
+        instrumentId: 'bass-release',
+        role: 'bass',
+        startMs: 0,
+        durationMs: 700,
+        frequency: 110,
+        volume: 0.05,
+        waveform: 'sine',
+        timbre: {
+          harmonicWaveform: 'triangle',
+          harmonicRatio: 2,
+          filterType: 'lowpass',
+          filterCutoffHz: 320,
+          filterQ: 0.8,
+          fundamentalGainMultiplier: 1.16,
+          harmonicBodyLevel: 0.36,
+          harmonicReleaseLeadMs: 80,
+        },
+        attackMs: 40,
+        releaseMs: 140,
+        detuneCents: 0,
+        harmonicGain: 0.14,
+        pulseRate: 0.6,
+      });
+
+      const carrierRamps =
+        createdGains[0]?.gain.exponentialRampToValueAtTime.mock.calls ?? [];
+      const harmonicRamps =
+        createdGains[1]?.gain.exponentialRampToValueAtTime.mock.calls ?? [];
+
+      expect(carrierRamps[0]?.[0]).toBeCloseTo(0.058, 4);
+      expect(harmonicRamps[1]?.[0]).toBeCloseTo(0.00252, 5);
+      expect(harmonicRamps[2]?.[1]).toBeLessThan(carrierRamps[2]?.[1] ?? Infinity);
     } finally {
       if (originalAudioContext) {
         vi.stubGlobal('AudioContext', originalAudioContext);

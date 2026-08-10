@@ -21,7 +21,7 @@
 - [x] Define a distinct recipe for each instrument family.
 - [x] Give flute patches a breath-noise layer.
 - [x] Give strings a bowed attack and sustained body.
-- [ ] Give bass patches a clear fundamental and short upper harmonics.
+- [x] Give bass patches a clear fundamental and short upper harmonics.
 - [ ] Give struck instruments a separate attack transient.
 - [ ] Change timbre across low, middle, and high registers.
 - [ ] Change timbre based on note velocity.

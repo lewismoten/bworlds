@@ -47,6 +47,16 @@ export function renderMusicDebugPreviewNoteToSamples(
       note.timbre.harmonicWaveform,
       harmonicPhase
     );
+    const carrierEnvelopeGain = resolveEnvelopeGain(
+      note,
+      timeSeconds,
+      note.durationMs / 1000
+    );
+    const harmonicEnvelopeGain = resolveHarmonicEnvelopeGain(
+      note,
+      timeSeconds,
+      note.durationMs / 1000
+    );
     const harmonicWeight = Math.max(
       0,
       Math.min(0.65, note.harmonicGain * 0.35)
@@ -60,12 +70,17 @@ export function renderMusicDebugPreviewNoteToSamples(
     });
     previousFilteredNoise = nextFiltered;
     const mixed =
-      carrier * (1 - harmonicWeight) +
-      harmonic * harmonicWeight * pulseModulation +
-      nextSample * noiseMix;
+      carrier *
+        (1 - harmonicWeight) *
+        Math.max(1, note.timbre.fundamentalGainMultiplier ?? 1) *
+        carrierEnvelopeGain +
+      harmonic *
+        harmonicWeight *
+        pulseModulation *
+        harmonicEnvelopeGain +
+      nextSample * noiseMix * carrierEnvelopeGain;
     samples[frame] =
       mixed *
-      resolveEnvelopeGain(note, timeSeconds, note.durationMs / 1000) *
       Math.max(0.12, note.volume * 14);
     carrierPhase = advancePhase(carrierPhase, carrierPhaseIncrement);
     harmonicPhase = advancePhase(harmonicPhase, harmonicPhaseIncrement);
@@ -154,6 +169,60 @@ export function resolveEnvelopeGain(
   }
 
   return bodySustainLevel;
+}
+
+export function resolveHarmonicEnvelopeGain(
+  note: Pick<ProceduralMusicNote, 'attackMs' | 'releaseMs' | 'timbre'>,
+  timeSeconds: number,
+  durationSeconds: number
+): number {
+  const attackSeconds = Math.max(0.001, note.attackMs / 1000);
+  const attackPeakGainMultiplier = Math.max(
+    1,
+    note.timbre.attackPeakGainMultiplier ?? 1
+  );
+  const harmonicBodyLevel = Math.max(
+    0.2,
+    Math.min(
+      1,
+      note.timbre.harmonicBodyLevel ??
+        Math.max(0.5, (note.timbre.bodySustainLevel ?? 0.74) - 0.06)
+    )
+  );
+  const bodySettleSeconds = Math.min(
+    durationSeconds,
+    attackSeconds + Math.min(0.08, Math.max(0.02, attackSeconds * 0.5))
+  );
+  const harmonicReleaseLeadSeconds = Math.max(
+    0,
+    (note.timbre.harmonicReleaseLeadMs ?? 0) / 1000
+  );
+  const harmonicReleaseStartSeconds = Math.max(
+    bodySettleSeconds,
+    durationSeconds - Math.max(0.001, note.releaseMs / 1000) - harmonicReleaseLeadSeconds
+  );
+
+  if (timeSeconds <= attackSeconds) {
+    return (timeSeconds / attackSeconds) * attackPeakGainMultiplier;
+  }
+  if (timeSeconds <= bodySettleSeconds) {
+    const settleProgress =
+      (timeSeconds - attackSeconds) /
+      Math.max(0.001, bodySettleSeconds - attackSeconds);
+    return (
+      attackPeakGainMultiplier +
+      (harmonicBodyLevel - attackPeakGainMultiplier) * settleProgress
+    );
+  }
+  if (timeSeconds >= harmonicReleaseStartSeconds) {
+    return Math.max(
+      0,
+      harmonicBodyLevel *
+        ((durationSeconds - timeSeconds) /
+          Math.max(0.001, durationSeconds - harmonicReleaseStartSeconds))
+    );
+  }
+  return harmonicBodyLevel;
 }
 
 function advancePhase(currentPhase: number, phaseIncrement: number): number {
