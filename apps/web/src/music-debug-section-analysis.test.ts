@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { MusicDebugNotePitchDiagnostic } from './music-debug-note-analysis.ts';
+import { resolveProceduralChordTimeline } from './procedural-music-chord-timeline.ts';
 import {
   createMusicDebugHarmonyChordDetections,
   createMusicDebugSectionLayerActivity,
@@ -50,13 +51,48 @@ describe('music debug section analysis', () => {
         sectionId: 'intro',
         sectionLabel: 'Intro',
         chordLabels: ['G-B-D x1'],
+        detectedChordLabels: ['G-B-D'],
+        plannedChordLabels: [],
+        followsPlannedProgression: true,
       },
       {
         sectionId: 'a',
         sectionLabel: 'Section A',
         chordLabels: ['C-E-G x1'],
+        detectedChordLabels: ['C-E-G'],
+        plannedChordLabels: [],
+        followsPlannedProgression: true,
       },
     ]);
+  });
+
+  it('verifies detected harmony chords against the planned progression order', () => {
+    const analysis = createMusicDebugHarmonyChordDetections({
+      notes: TEST_NOTES,
+      notePitchDiagnostics: TEST_DIAGNOSTICS,
+      sections: TEST_SECTIONS,
+      scale: [0, 2, 4, 5, 7, 9, 10],
+      rootMidiNote: 55,
+      chordTimeline: resolveProceduralChordTimeline({
+        themeId: 'frontier-plains',
+        themeStepCount: 8,
+        clusterX: 3,
+        clusterY: -2,
+      }),
+    });
+
+    expect(analysis[0]).toEqual(
+      expect.objectContaining({
+        plannedChordLabels: ['G-B-D', 'D-F-A', 'E-G-B', 'G-B-D'],
+        followsPlannedProgression: true,
+      })
+    );
+    expect(analysis[1]).toEqual(
+      expect.objectContaining({
+        plannedChordLabels: ['G-B-D', 'D-F-A', 'E-G-B', 'G-B-D'],
+        followsPlannedProgression: false,
+      })
+    );
   });
 
   it('reports actual role counts and sounding coverage by section', () => {

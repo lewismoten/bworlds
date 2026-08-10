@@ -11,6 +11,7 @@ export type MusicDebugMidiAudit = {
   markerLabels: string[];
   sectionsMatchPlannedMarkers: boolean;
   mismatchMessages: string[];
+  warningMessages: string[];
   isConsistent: boolean;
 };
 
@@ -55,6 +56,7 @@ export function inspectMusicDebugMidiBytes(
     timeSignatureMeta
   );
   const mismatchMessages: string[] = [];
+  const warningMessages: string[] = [];
   let sectionsMatchPlannedMarkers = true;
 
   if (
@@ -89,6 +91,18 @@ export function inspectMusicDebugMidiBytes(
       'Harmony track does not expose recognizable chord stacks in any section.'
     );
   }
+  if (
+    snapshot.harmonyChordDetections.some(
+      (section) =>
+        requiresStrictProgressionAudit(section.sectionId) &&
+        section.detectedChordLabels.length > 0 &&
+        !section.followsPlannedProgression
+    )
+  ) {
+    warningMessages.push(
+      'Detected harmony chords drift from the planned progression order.'
+    );
+  }
   if (markerLabels.length !== snapshot.song.sections.length) {
     sectionsMatchPlannedMarkers = false;
     mismatchMessages.push(
@@ -114,8 +128,18 @@ export function inspectMusicDebugMidiBytes(
     markerLabels,
     sectionsMatchPlannedMarkers,
     mismatchMessages,
+    warningMessages,
     isConsistent: mismatchMessages.length === 0,
   };
+}
+
+function requiresStrictProgressionAudit(sectionId: string): boolean {
+  return (
+    sectionId === 'intro' ||
+    sectionId === 'a' ||
+    sectionId === 'return' ||
+    sectionId === 'outro'
+  );
 }
 
 function parseMidiChunks(bytes: Uint8Array): {

@@ -15,6 +15,7 @@ import {
   resolveProceduralLeadMotif,
   resolveProceduralLeadPhraseCadence,
 } from './procedural-music-harmony.ts';
+import { resolveProceduralChordTimeline } from './procedural-music-chord-timeline.ts';
 import { describeProceduralChordProgression } from './procedural-music-chord-progression.ts';
 import {
   createProceduralMusicSong,
@@ -287,6 +288,12 @@ export function createMusicDebugSnapshot(
       options.clusterY
     ),
   ];
+  const chordTimeline = resolveProceduralChordTimeline({
+    themeId: theme.id,
+    themeStepCount: theme.stepPattern.length,
+    clusterX: options.clusterX,
+    clusterY: options.clusterY,
+  });
   const leadMotif = [
     ...resolveProceduralLeadMotif(theme, options.clusterX, options.clusterY)
       .degreeOffsets,
@@ -389,6 +396,9 @@ export function createMusicDebugSnapshot(
     notes: song.notes,
     notePitchDiagnostics: midiExportValidation.notePitchDiagnostics,
     sections: song.sections,
+    scale: theme.scale,
+    rootMidiNote: theme.rootMidiNote,
+    chordTimeline,
   });
   const sectionLayerActivity = createMusicDebugSectionLayerActivity({
     notes: song.notes,
@@ -731,7 +741,7 @@ export function buildMusicDebugSummaryMarkup(
       <span>Harmony Chords ${formatMusicDebugHarmonyChordDetections(snapshot.harmonyChordDetections)}</span>
     </div>
     <div class="music-debug-role-counts">
-      <span>MIDI Audit ${snapshot.midiAudit.isConsistent ? 'ok' : snapshot.midiAudit.mismatchMessages.join(' | ')}</span>
+      <span>MIDI Audit ${formatMusicDebugMidiAuditSummary(snapshot.midiAudit)}</span>
     </div>
     <div class="music-debug-role-counts">
       <span>Section Measures ${snapshot.song.sections.map((section) => `${section.label} ${section.startMeasure}-${section.endMeasure}`).join(' | ')}</span>
@@ -777,6 +787,16 @@ export function buildMusicDebugSummaryMarkup(
     </div>
     ${buildMusicDebugInstrumentPanelMarkup(snapshot)}
   `;
+}
+
+function formatMusicDebugMidiAuditSummary(audit: MusicDebugMidiAudit): string {
+  if (!audit.isConsistent) {
+    return audit.mismatchMessages.join(' | ');
+  }
+  if (audit.warningMessages.length > 0) {
+    return `ok with warnings: ${audit.warningMessages.join(' | ')}`;
+  }
+  return 'ok';
 }
 
 function formatMusicDebugAccidentalRuleSummary(

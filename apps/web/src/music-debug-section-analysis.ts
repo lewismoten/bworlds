@@ -1,6 +1,8 @@
 import type { MusicDebugNotePitchDiagnostic } from './music-debug-note-analysis.ts';
+import type { ProceduralChordTimelineEntry } from './procedural-music-chord-timeline.ts';
 import type { ProceduralMusicNote } from './procedural-music.ts';
 import type { ProceduralMusicSongSection } from './procedural-music-song.ts';
+import { getProceduralScaleDegreeSemitones } from './procedural-music-scale.ts';
 
 type ProceduralMusicRole = ProceduralMusicNote['role'];
 
@@ -16,6 +18,9 @@ export type MusicDebugHarmonyChordDetection = {
   sectionId: string;
   sectionLabel: string;
   chordLabels: string[];
+  detectedChordLabels: string[];
+  plannedChordLabels: string[];
+  followsPlannedProgression: boolean;
 };
 
 export type MusicDebugSectionLayerActivity = {
@@ -89,16 +94,45 @@ export function createMusicDebugHarmonyChordDetections(options: {
   notes: readonly ProceduralMusicNote[];
   notePitchDiagnostics: readonly MusicDebugNotePitchDiagnostic[];
   sections: readonly ProceduralMusicSongSection[];
+  scale?: readonly number[];
+  rootMidiNote?: number;
+  chordTimeline?: readonly ProceduralChordTimelineEntry[];
 }): MusicDebugHarmonyChordDetection[] {
-  return options.sections.map((section) => ({
-    sectionId: section.id,
-    sectionLabel: section.label,
-    chordLabels: collectHarmonyChordLabels({
+  return options.sections.map((section) => {
+    const detectedChordLabels = collectOrderedHarmonyChordLabels({
       notes: options.notes,
       notePitchDiagnostics: options.notePitchDiagnostics,
       section,
-    }),
-  }));
+    });
+    const plannedChordLabels =
+      options.scale && options.chordTimeline
+        ? collectPlannedSectionChordLabels({
+            section,
+            scale: options.scale,
+            rootMidiNote: options.rootMidiNote ?? 60,
+            chordTimeline: options.chordTimeline,
+          })
+        : [];
+
+    return {
+      sectionId: section.id,
+      sectionLabel: section.label,
+      chordLabels: collectHarmonyChordLabels({
+        notes: options.notes,
+        notePitchDiagnostics: options.notePitchDiagnostics,
+        section,
+      }),
+      detectedChordLabels,
+      plannedChordLabels,
+      followsPlannedProgression:
+        plannedChordLabels.length === 0
+          ? detectedChordLabels.length > 0
+          : doesDetectedChordSequenceFollowPlan(
+              detectedChordLabels,
+              plannedChordLabels
+            ),
+    };
+  });
 }
 
 export function createMusicDebugSectionLayerActivity(options: {
@@ -545,6 +579,164 @@ function collectHarmonyChordLabels(options: {
     })
     .slice(0, 3)
     .map(([label, count]) => `${label} x${count}`);
+}
+
+function collectOrderedHarmonyChordLabels(options: {
+  notes: readonly ProceduralMusicNote[];
+  notePitchDiagnostics: readonly MusicDebugNotePitchDiagnostic[];
+  section: ProceduralMusicSongSection;
+}): string[] {
+  const groups = new Map<number, string>();
+  const sectionStartMs = options.notes[0]?.startMs ?? 0;
+  const sectionStart = sectionStartMs + options.section.startOffsetMs;
+  const sectionEnd = sectionStart + options.section.durationMs;
+
+  for (let index = 0; index < options.notes.length; index += 1) {
+    const note = options.notes[index]!;
+    const diagnostic = options.notePitchDiagnostics[index];
+    if (
+      !diagnostic ||
+      note.role !== 'harmony' ||
+      diagnostic.midiNote === null ||
+      note.startMs < sectionStart ||
+      note.startMs >= sectionEnd
+    ) {
+      continue;
+    }
+
+    const pitchClassLabel = resolvePitchClassLabel(diagnostic.midiNote);
+    const existing = groups.get(note.startMs);
+    groups.set(
+      note.startMs,
+      existing ? `${existing},${pitchClassLabel}` : pitchClassLabel
+    );
+  }
+
+  const orderedLabels = Array.from(groups.entries())
+    .sort((left, right) => left[0] - right[0])
+    .map(([, group]) => normalizeChordLabel(group))
+    .filter((label): label is string => Boolean(label));
+
+  return collapseConsecutiveChordLabels(orderedLabels);
+}
+
+function collectPlannedSectionChordLabels(options: {
+  section: ProceduralMusicSongSection;
+  scale: readonly number[];
+  rootMidiNote: number;
+  chordTimeline: readonly ProceduralChordTimelineEntry[];
+}): string[] {
+  if (options.chordTimeline.length === 0) {
+    return [];
+  }
+
+  const phraseMeasureCount = Math.max(
+    1,
+    ...options.chordTimeline.map((entry) => entry.endMeasure)
+  );
+  const labels: string[] = [];
+
+  for (
+    let measure = options.section.startMeasure;
+    measure <= options.section.endMeasure;
+    measure += 1
+  ) {
+    const normalizedMeasure = ((measure - 1) % phraseMeasureCount) + 1;
+    const timelineEntry = options.chordTimeline.find(
+      (entry) =>
+        normalizedMeasure >= entry.startMeasure &&
+        normalizedMeasure <= entry.endMeasure
+    );
+    if (!timelineEntry) {
+      continue;
+    }
+    labels.push(
+      createPlannedChordLabel(
+        options.scale,
+        options.rootMidiNote,
+        timelineEntry.degreeIndex
+      )
+    );
+  }
+
+  return collapseConsecutiveChordLabels(labels);
+}
+
+function collapseConsecutiveChordLabels(labels: readonly string[]): string[] {
+  const collapsed: string[] = [];
+  for (const label of labels) {
+    if (label.length === 0 || collapsed[collapsed.length - 1] === label) {
+      continue;
+    }
+    collapsed.push(label);
+  }
+  return collapsed;
+}
+
+function createPlannedChordLabel(
+  scale: readonly number[],
+  rootMidiNote: number,
+  degreeIndex: number
+): string {
+  const semitones = [
+    getProceduralScaleDegreeSemitones(scale, degreeIndex),
+    getProceduralScaleDegreeSemitones(scale, degreeIndex + 2),
+    getProceduralScaleDegreeSemitones(scale, degreeIndex + 4),
+  ];
+  return semitones
+    .map((semitone) => resolvePitchClassLabel(rootMidiNote + semitone))
+    .join('-');
+}
+
+function doesDetectedChordSequenceFollowPlan(
+  detectedChordLabels: readonly string[],
+  plannedChordLabels: readonly string[]
+): boolean {
+  if (detectedChordLabels.length === 0 || plannedChordLabels.length === 0) {
+    return false;
+  }
+
+  let planIndex = 0;
+  for (const detectedLabel of detectedChordLabels) {
+    while (
+      planIndex < plannedChordLabels.length &&
+      !doesDetectedChordLabelFitPlannedChord(
+        detectedLabel,
+        plannedChordLabels[planIndex] ?? ''
+      )
+    ) {
+      planIndex += 1;
+    }
+    if (planIndex >= plannedChordLabels.length) {
+      return false;
+    }
+    planIndex += 1;
+  }
+
+  return true;
+}
+
+function doesDetectedChordLabelFitPlannedChord(
+  detectedLabel: string,
+  plannedLabel: string
+): boolean {
+  const detectedPitchClasses = new Set(
+    detectedLabel.split('-').filter((label) => label.length > 0)
+  );
+  const plannedPitchClasses = new Set(
+    plannedLabel.split('-').filter((label) => label.length > 0)
+  );
+  if (detectedPitchClasses.size === 0 || plannedPitchClasses.size === 0) {
+    return false;
+  }
+
+  for (const pitchClass of detectedPitchClasses) {
+    if (!plannedPitchClasses.has(pitchClass)) {
+      return false;
+    }
+  }
+
+  return true;
 }
 
 function normalizeChordLabel(group: string): string | null {

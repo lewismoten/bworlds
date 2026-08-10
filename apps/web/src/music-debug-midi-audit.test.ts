@@ -68,6 +68,7 @@ describe('music debug midi audit', () => {
     expect(audit.sectionsMatchPlannedMarkers).toBe(true);
     expect(audit.isConsistent).toBe(true);
     expect(audit.mismatchMessages).toEqual([]);
+    expect(audit.warningMessages).toEqual([]);
   });
 
   it('flags mismatched snapshot metadata against the exported midi facts', () => {
@@ -163,6 +164,41 @@ describe('music debug midi audit', () => {
     expect(audit.sectionsMatchPlannedMarkers).toBe(false);
     expect(
       audit.mismatchMessages.some((message) => message.includes('Section Z'))
+    ).toBe(true);
+  });
+
+  it('flags harmony detections when detected chords drift from the planned progression order', () => {
+    const snapshot = createMusicDebugSnapshot({
+      tileKind: 'forest',
+      contextType: 'overworld',
+      clusterX: 4,
+      clusterY: -1,
+    });
+    const file = createMusicDebugMidiFileUnchecked(snapshot, {
+      createdAt: new Date('2026-08-09T00:00:00.000Z'),
+    });
+
+    const audit = inspectMusicDebugMidiBytes(file.bytes, {
+      ...snapshot,
+      harmonyChordDetections: snapshot.harmonyChordDetections.map(
+        (section, index) =>
+          index === 0
+            ? {
+                ...section,
+                detectedChordLabels: ['A-C-E'],
+                plannedChordLabels: ['G-B-D', 'B-D-F', 'C-E-G'],
+                followsPlannedProgression: false,
+              }
+            : section
+      ),
+    });
+
+    expect(audit.isConsistent).toBe(true);
+    expect(audit.mismatchMessages).toEqual([]);
+    expect(
+      audit.warningMessages.some((message) =>
+        message.includes('planned progression order')
+      )
     ).toBe(true);
   });
 });

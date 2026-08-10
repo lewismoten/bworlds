@@ -24,7 +24,7 @@
 - [x] Build one chord timeline before generating any tracks.
 - [x] Assign each chord an exact measure range.
 - [x] Make bass, harmony, and lead read the same chord timeline.
-- [ ] Verify detected chords follow the planned progression order.
+- [x] Verify detected chords follow the planned progression order.
 - [ ] Fix unresolved chromatic notes before MIDI export.
 - [ ] Regenerate a phrase containing unresolved chromatic notes.
 - [ ] Lower harmony occupancy when the lead is active.
