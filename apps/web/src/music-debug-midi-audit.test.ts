@@ -236,7 +236,9 @@ describe('music debug midi audit', () => {
     expect(audit.mismatchMessages).toEqual([]);
     expect(
       audit.warningMessages.some((message) =>
-        message.includes('planned progression order')
+        message.includes(
+          'Intro harmony drifted from the planned progression (A-C-E vs G-B-D > B-D-F > C-E-G).'
+        )
       )
     ).toBe(true);
   });

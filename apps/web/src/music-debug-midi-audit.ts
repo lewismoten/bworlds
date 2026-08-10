@@ -193,7 +193,17 @@ export function inspectMusicDebugMidiBytes(
     )
   ) {
     warningMessages.push(
-      'Detected harmony chords drift from the planned progression order.'
+      ...snapshot.harmonyChordDetections
+        .filter(
+          (section) =>
+            requiresStrictProgressionAudit(section.sectionId) &&
+            section.detectedChordLabels.length > 0 &&
+            !section.followsPlannedProgression
+        )
+        .map(
+          (section) =>
+            `${section.sectionLabel} harmony drifted from the planned progression (${section.detectedChordLabels.join(' > ') || 'missing'} vs ${section.plannedChordLabels.join(' > ') || 'unplanned'}).`
+        )
     );
   }
   if (
@@ -206,7 +216,17 @@ export function inspectMusicDebugMidiBytes(
     )
   ) {
     warningMessages.push(
-      'Detected bass roots drift from the planned progression order.'
+      ...snapshot.bassProgressionDetections
+        .filter(
+          (section) =>
+            requiresStrictProgressionAudit(section.sectionId) &&
+            section.detectedRootLabels.length > 0 &&
+            !section.followsPlannedProgression
+        )
+        .map(
+          (section) =>
+            `${section.sectionLabel} bass roots drifted from the planned progression (${section.detectedRootLabels.join(' > ') || 'missing'} vs ${section.plannedRootLabels.join(' > ') || 'unplanned'}).`
+        )
     );
   }
   if (
