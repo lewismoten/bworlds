@@ -162,7 +162,7 @@
 - [x] Add a dry full-song playback option.
 - [x] Show planned and detected chords by measure.
 - [x] Show planned and actual contour on one graph.
-- [ ] Highlight cadence notes that conflict with harmony.
+- [x] Highlight cadence notes that conflict with harmony.
 - [ ] Highlight unexpected percussion substitutions.
 - [ ] Save a report for each rejected song.
 - [ ] Keep several known-good seeds for regression tests.

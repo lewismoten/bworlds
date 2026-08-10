@@ -125,6 +125,7 @@ import {
   type MusicDebugCadenceDetection,
   type MusicDebugCadenceValidation,
 } from './music-debug-cadence-validation.ts';
+import { buildMusicDebugCadenceConflictPanelMarkup } from './music-debug-cadence-conflict-panel.ts';
 import {
   validateMusicDebugDensity,
   type MusicDebugDensityValidation,
@@ -964,6 +965,7 @@ export function buildMusicDebugSummaryMarkup(
     <div class="music-debug-role-counts">
       <span>Cadence Check ${formatMusicDebugCadenceValidationSummary(snapshot.cadenceValidation)}</span>
     </div>
+    ${buildMusicDebugCadenceConflictPanelMarkup(snapshot.cadenceDetections)}
     <div class="music-debug-role-counts">
       <span>Density Check ${formatMusicDebugDensityValidationSummary(snapshot.densityValidation)}</span>
     </div>
