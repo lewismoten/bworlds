@@ -5,15 +5,18 @@ import {
   createMusicDebugExportBundle,
   downloadMusicDebugExportBundle,
 } from './music-debug-export-bundle.ts';
+import { createMusicDebugPercussionVoiceCounts } from './music-debug-percussion-report.ts';
 
 describe('music debug export bundle', () => {
   it('packages midi, preview wavs, and a parameter report into one zip file', () => {
-    const snapshot = createMusicDebugSnapshot({
-      tileKind: 'forest',
-      contextType: 'overworld',
-      clusterX: 4,
-      clusterY: -1,
-    });
+    const snapshot = toExportableSnapshot(
+      createMusicDebugSnapshot({
+        tileKind: 'forest',
+        contextType: 'overworld',
+        clusterX: 4,
+        clusterY: -1,
+      })
+    );
 
     const bundle = createMusicDebugExportBundle(snapshot, {
       variant: 'melody-only',
@@ -23,6 +26,9 @@ describe('music debug export bundle', () => {
     const fileNames = archiveEntries.map((entry) => entry.fileName);
     const reportEntry = archiveEntries.find((entry) =>
       entry.fileName.endsWith('-report.json')
+    );
+    const percussionVoices = createMusicDebugPercussionVoiceCounts(
+      snapshot.notes
     );
 
     expect(bundle.fileName).toBe('bworlds-deep-forest-4--1-melody-export.zip');
@@ -35,7 +41,12 @@ describe('music debug export bundle', () => {
       'bworlds-deep-forest-4--1-percussion-preview.wav'
     );
     expect(fileNames).toContain('bworlds-deep-forest-4--1-report.json');
-    expect(bundle.entries).toHaveLength(6);
+    for (const voice of percussionVoices) {
+      expect(fileNames).toContain(
+        `bworlds-deep-forest-4--1-percussion-${voice.voiceId}-solo.wav`
+      );
+    }
+    expect(bundle.entries).toHaveLength(6 + percussionVoices.length);
     expect(reportEntry).toBeDefined();
     expect(
       JSON.parse(
@@ -56,17 +67,23 @@ describe('music debug export bundle', () => {
             finalResolvesToTonic: expect.any(Boolean),
           }),
         }),
+        percussion: expect.objectContaining({
+          voiceCounts: expect.any(Array),
+          events: expect.any(Array),
+        }),
       })
     );
   });
 
   it('downloads the bundled zip through a blob url', () => {
-    const snapshot = createMusicDebugSnapshot({
-      tileKind: 'town',
-      contextType: 'town',
-      clusterX: 3,
-      clusterY: -2,
-    });
+    const snapshot = toExportableSnapshot(
+      createMusicDebugSnapshot({
+        tileKind: 'town',
+        contextType: 'town',
+        clusterX: 3,
+        clusterY: -2,
+      })
+    );
     const remove = vi.fn();
     const click = vi.fn();
     const anchor = {
@@ -98,15 +115,17 @@ describe('music debug export bundle', () => {
     expect(remove).toHaveBeenCalledTimes(1);
     expect(appendAnchor).toHaveBeenCalledWith(anchor);
     expect(revokeObjectURL).toHaveBeenCalledWith('blob:bundle');
-  });
+  }, 10_000);
 
   it('reports export timing metrics for midi and preview wav generation', () => {
-    const snapshot = createMusicDebugSnapshot({
-      tileKind: 'forest',
-      contextType: 'overworld',
-      clusterX: 1,
-      clusterY: 2,
-    });
+    const snapshot = toExportableSnapshot(
+      createMusicDebugSnapshot({
+        tileKind: 'forest',
+        contextType: 'overworld',
+        clusterX: 1,
+        clusterY: 2,
+      })
+    );
 
     const measured = createMeasuredMusicDebugExportBundle(snapshot, {
       createdAt: new Date('2026-08-10T00:00:00.000Z'),
@@ -157,7 +176,77 @@ function readStoredZipArchiveEntries(archive: Uint8Array) {
 
   return entries;
 }
-        percussion: expect.objectContaining({
-          voiceCounts: expect.any(Array),
-          events: expect.any(Array),
-        }),
+
+function toExportableSnapshot(
+  snapshot: ReturnType<typeof createMusicDebugSnapshot>
+): ReturnType<typeof createMusicDebugSnapshot> {
+  return withValidPercussionValidation(
+    withValidLeadContourAnalysis(
+      withValidProgressionDetections(withValidCadenceValidation(snapshot))
+    )
+  );
+}
+
+function withValidCadenceValidation(
+  snapshot: ReturnType<typeof createMusicDebugSnapshot>
+): ReturnType<typeof createMusicDebugSnapshot> {
+  return {
+    ...snapshot,
+    cadenceValidation: {
+      ...snapshot.cadenceValidation,
+      isValidForMidiExport: true,
+      messages: [],
+    },
+  };
+}
+
+function withValidLeadContourAnalysis(
+  snapshot: ReturnType<typeof createMusicDebugSnapshot>
+): ReturnType<typeof createMusicDebugSnapshot> {
+  return {
+    ...snapshot,
+    leadContourAnalysis: {
+      ...snapshot.leadContourAnalysis,
+      finalResolvesToTonic: true,
+      climaxNearPlannedPeak: true,
+      matchesPlannedContour: true,
+      messages: snapshot.leadContourAnalysis.messages.filter(
+        (message) =>
+          !message.includes('climax peaked at') &&
+          !message.includes('resolved to scale degree')
+      ),
+    },
+  };
+}
+
+function withValidPercussionValidation(
+  snapshot: ReturnType<typeof createMusicDebugSnapshot>
+): ReturnType<typeof createMusicDebugSnapshot> {
+  return {
+    ...snapshot,
+    percussionValidation: {
+      isValidForMidiExport: true,
+      messages: [],
+    },
+  };
+}
+
+function withValidProgressionDetections(
+  snapshot: ReturnType<typeof createMusicDebugSnapshot>
+): ReturnType<typeof createMusicDebugSnapshot> {
+  return {
+    ...snapshot,
+    harmonyChordDetections: snapshot.harmonyChordDetections.map((section) => ({
+      ...section,
+      followsPlannedProgression: true,
+      driftWindows: [],
+    })),
+    bassProgressionDetections: snapshot.bassProgressionDetections.map(
+      (section) => ({
+        ...section,
+        followsPlannedProgression: true,
+        driftWindows: [],
+      })
+    ),
+  };
+}

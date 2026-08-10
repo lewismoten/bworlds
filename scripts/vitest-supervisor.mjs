@@ -193,7 +193,7 @@ export async function waitForFullSuiteLock(lockFilePath, options = {}) {
         continue;
       }
 
-      onWait(metadata);
+      await onWait(metadata);
       await sleepFn(pollMs);
     }
   }
