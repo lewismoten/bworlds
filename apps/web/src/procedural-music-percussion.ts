@@ -108,12 +108,13 @@ const FOREST_CADENCE_PATTERNS: Record<
 
 const TOWN_PULSE_PATTERNS: readonly ProceduralPercussionPattern[] = [
   [
-    createHit('kick', -12, 0, 0.22, 0.62, 0.82),
-    createHit('snare', -1, 0.5, 0.18, 0.54, 1.02),
+    createHit('kick', -12, 0, 0.34, 0.58, 0.82),
+    createHit('snare', -1, 0.5, 0.18, 0.5, 1.02),
   ],
   [
-    createHit('kick', -12, 0, 0.22, 0.6, 0.84),
-    createHit('hand-percussion', 0, 0.52, 0.14, 0.38, 1.06),
+    createHit('kick', -12, 0, 0.34, 0.56, 0.84),
+    createHit('shaker', 0, 0.26, 0.12, 0.42, 1.1),
+    createHit('snare', -1, 0.5, 0.18, 0.48, 1.04),
   ],
 ] as const;
 
@@ -235,7 +236,7 @@ function resolvePercussionDurationScale(themeId: MusicRegionThemeId): number {
     case 'deep-forest':
       return 0.76;
     case 'town-square':
-      return 0.58;
+      return 0.4;
     default:
       return 0.72;
   }
@@ -266,8 +267,9 @@ function resolveProceduralPercussionPattern(options: {
     const index = Math.floor(
       hash2DWithSeed(
         PERCUSSION_PATTERN_SEED,
-        options.clusterX + options.stepIndex * 13,
-        options.clusterY - options.stepIndex * 5
+        options.clusterX +
+          resolvePercussionMeasureIndex(options.stepIndex) * 13,
+        options.clusterY - resolvePercussionMeasureIndex(options.stepIndex) * 5
       ) * TOWN_PULSE_PATTERNS.length
     );
     return TOWN_PULSE_PATTERNS[index] ?? TOWN_PULSE_PATTERNS[0]!;
@@ -276,11 +278,15 @@ function resolveProceduralPercussionPattern(options: {
   const index = Math.floor(
     hash2DWithSeed(
       PERCUSSION_PATTERN_SEED,
-      options.clusterX + options.stepIndex * 17,
-      options.clusterY - options.stepIndex * 3
+      options.clusterX + resolvePercussionMeasureIndex(options.stepIndex) * 17,
+      options.clusterY - resolvePercussionMeasureIndex(options.stepIndex) * 3
     ) * GENERIC_PULSE_PATTERNS.length
   );
   return GENERIC_PULSE_PATTERNS[index] ?? GENERIC_PULSE_PATTERNS[0]!;
+}
+
+function resolvePercussionMeasureIndex(stepIndex: number): number {
+  return Math.floor(stepIndex / 4);
 }
 
 function createHit(
