@@ -56,12 +56,34 @@ function disposePreview(): void {
   instrumentPreviewPlayer.dispose();
 }
 
+function syncAudioContextUi(): void {
+  const audioContextState = instrumentPreviewPlayer.getAudioState();
+  document
+    .querySelector<HTMLElement>('#sound-bank-debug-context-state')
+    ?.replaceChildren(document.createTextNode(audioContextState));
+
+  const startButton = document.querySelector<HTMLButtonElement>(
+    '#sound-bank-debug-start-audio'
+  );
+  if (startButton) {
+    startButton.disabled = audioContextState !== 'idle';
+  }
+
+  const resumeButton = document.querySelector<HTMLButtonElement>(
+    '#sound-bank-debug-resume-audio'
+  );
+  if (resumeButton) {
+    resumeButton.disabled = audioContextState !== 'suspended';
+  }
+}
+
 function setAudioFeedback(nextStatus: string, nextError: string | null): void {
   audioStatus = nextStatus;
   errorMessage = nextError;
   document
     .querySelector<HTMLElement>('#sound-bank-debug-audio-status')
     ?.replaceChildren(document.createTextNode(audioStatus));
+  syncAudioContextUi();
   const errorPanel = document.querySelector<HTMLElement>(
     '.sound-bank-debug-error'
   );
@@ -111,10 +133,12 @@ function renderPage(): void {
   const snapshot = createSoundBankDebugSnapshot(options);
   root.innerHTML = buildSoundBankDebugMarkup(snapshot, {
     audioStatus,
+    audioContextState: instrumentPreviewPlayer.getAudioState(),
     layoutMode,
     errorMessage,
   });
   bindPage(snapshot.musicSnapshot);
+  syncAudioContextUi();
 }
 
 function bindPage(musicSnapshot: MusicDebugSnapshot): void {
@@ -151,6 +175,52 @@ function bindPage(musicSnapshot: MusicDebugSnapshot): void {
       () => {
         layoutMode = 'expanded';
         renderPage();
+      },
+      pageLifecycleSignal ? { signal: pageLifecycleSignal } : undefined
+    );
+
+  document
+    .querySelector<HTMLButtonElement>('#sound-bank-debug-start-audio')
+    ?.addEventListener(
+      'click',
+      () => {
+        const audioContextState = instrumentPreviewPlayer.start();
+        if (audioContextState === 'unavailable') {
+          setAudioFeedback(
+            'Audio unavailable',
+            'This browser does not expose the Web Audio API for previews.'
+          );
+          return;
+        }
+        setAudioFeedback(
+          audioContextState === 'running'
+            ? 'Audio ready'
+            : `Audio context ${audioContextState}`,
+          null
+        );
+      },
+      pageLifecycleSignal ? { signal: pageLifecycleSignal } : undefined
+    );
+
+  document
+    .querySelector<HTMLButtonElement>('#sound-bank-debug-resume-audio')
+    ?.addEventListener(
+      'click',
+      () => {
+        const audioContextState = instrumentPreviewPlayer.resume();
+        if (audioContextState === 'unavailable') {
+          setAudioFeedback(
+            'Audio unavailable',
+            'This browser does not expose the Web Audio API for previews.'
+          );
+          return;
+        }
+        setAudioFeedback(
+          audioContextState === 'running'
+            ? 'Audio resumed'
+            : `Audio context ${audioContextState}`,
+          null
+        );
       },
       pageLifecycleSignal ? { signal: pageLifecycleSignal } : undefined
     );
@@ -193,6 +263,13 @@ function bindPage(musicSnapshot: MusicDebugSnapshot): void {
             | keyof MusicDebugSnapshot['instrumentBank']['instruments']
             | undefined;
           if (!role) {
+            return;
+          }
+          if (instrumentPreviewPlayer.getAudioState() === 'unavailable') {
+            setAudioFeedback(
+              'Audio unavailable',
+              'This browser does not expose the Web Audio API for previews.'
+            );
             return;
           }
           const previewNote = resolveSoundBankDebugPreviewNoteRole(

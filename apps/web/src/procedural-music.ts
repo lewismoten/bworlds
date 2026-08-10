@@ -246,6 +246,7 @@ export type ProceduralMusicNote = {
 };
 
 export type MusicSink = {
+  getAudioState?(): AudioContextState | 'idle' | 'unavailable';
   resume?(): void;
   play(note: ProceduralMusicNote): void;
   stopAll?(): void;
@@ -966,16 +967,20 @@ export function createWebAudioMusicSink(
   const activeVoices = new Set<ActiveMusicVoice>();
   const sharedReverbBuses = new Map<string, SharedReverbBus>();
 
-  function getAudioContext(): AudioContext | null {
-    if (audioContext) {
-      return audioContext;
-    }
+  function resolveAudioContextCtor(): AudioContextCtor | null {
     const globalCtor = globalThis as {
       AudioContext?: AudioContextCtor;
       webkitAudioContext?: AudioContextCtor;
     };
-    const ContextCtor =
-      globalCtor.AudioContext ?? globalCtor.webkitAudioContext;
+    const ContextCtor = globalCtor.AudioContext ?? globalCtor.webkitAudioContext;
+    return ContextCtor ?? null;
+  }
+
+  function getAudioContext(): AudioContext | null {
+    if (audioContext) {
+      return audioContext;
+    }
+    const ContextCtor = resolveAudioContextCtor();
     if (!ContextCtor) {
       return null;
     }
@@ -1069,6 +1074,12 @@ export function createWebAudioMusicSink(
   }
 
   return {
+    getAudioState() {
+      if (audioContext) {
+        return audioContext.state;
+      }
+      return resolveAudioContextCtor() ? 'idle' : 'unavailable';
+    },
     resume() {
       const context = getAudioContext();
       if (!context || context.state === 'running') {

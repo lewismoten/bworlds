@@ -15,10 +15,10 @@
 
 ## Audio Startup
 
-- [ ] Create the audio context after user interaction.
-- [ ] Add a button to start the audio context.
-- [ ] Show the current audio context state.
-- [ ] Add a button to resume a suspended context.
+- [x] Create the audio context after user interaction.
+- [x] Add a button to start the audio context.
+- [x] Show the current audio context state.
+- [x] Add a button to resume a suspended context.
 - [ ] Warn when browser audio is unavailable.
 - [ ] Warn when audio output is muted.
 - [ ] Show the current sample rate.

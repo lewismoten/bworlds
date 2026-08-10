@@ -44,6 +44,9 @@ describe('sound bank debug page', () => {
     expect(markup).toContain('sound-bank-debug-randomize');
     expect(markup).toContain('sound-bank-debug-reset');
     expect(markup).toContain('sound-bank-debug-audio-status');
+    expect(markup).toContain('sound-bank-debug-start-audio');
+    expect(markup).toContain('sound-bank-debug-resume-audio');
+    expect(markup).toContain('sound-bank-debug-context-state');
     expect(markup).toContain('Instrument Browser');
     expect(markup).toContain('Role Patches');
     expect(markup).toContain('music-debug-instrument-panel');
@@ -66,6 +69,29 @@ describe('sound bank debug page', () => {
     expect(markup).toContain('aria-pressed="true"');
     expect(markup).toContain('id="sound-bank-debug-layout-expanded"');
     expect(markup).toContain('aria-pressed="false"');
+  });
+
+  it('reflects audio context controls for idle and suspended states', () => {
+    const idleMarkup = buildSoundBankDebugMarkup(createSoundBankDebugSnapshot(), {
+      audioStatus: 'Audio idle',
+      audioContextState: 'idle',
+    });
+    const suspendedMarkup = buildSoundBankDebugMarkup(
+      createSoundBankDebugSnapshot(),
+      {
+        audioStatus: 'Audio suspended',
+        audioContextState: 'suspended',
+      }
+    );
+
+    expect(idleMarkup).toContain('Context state:');
+    expect(idleMarkup).toContain('id="sound-bank-debug-start-audio"');
+    expect(idleMarkup).toContain('Start Audio');
+    expect(idleMarkup).toContain(
+      'id="sound-bank-debug-resume-audio"\n                type="button"\n                disabled'
+    );
+    expect(suspendedMarkup).toContain('Resume Audio');
+    expect(suspendedMarkup).toContain('>suspended</span>');
   });
 
   it('randomizes the sound bank seed within the shared debug coordinate range', () => {

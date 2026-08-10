@@ -72,7 +72,8 @@ body {
 
 .sound-bank-debug-panel-head,
 .sound-bank-debug-actions,
-.sound-bank-debug-status-panel {
+.sound-bank-debug-status-panel,
+.sound-bank-debug-audio-actions {
   display: flex;
   gap: 0.75rem;
 }
@@ -84,6 +85,11 @@ body {
 }
 
 .sound-bank-debug-actions {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.sound-bank-debug-audio-actions {
   flex-wrap: wrap;
   justify-content: flex-end;
 }
@@ -165,6 +171,16 @@ body {
   background: rgba(12, 24, 38, 0.9);
 }
 
+.sound-bank-debug-context-state {
+  margin: 0.45rem 0 0;
+  font-size: 0.9rem;
+}
+
+.sound-bank-debug-context-state span {
+  font-weight: 600;
+  color: #eef5ff;
+}
+
 .sound-bank-debug-error {
   margin: 0;
   color: #ffb8ba;
@@ -203,12 +219,14 @@ body {
     flex-direction: column;
   }
 
-  .sound-bank-debug-actions {
+  .sound-bank-debug-actions,
+  .sound-bank-debug-audio-actions {
     width: 100%;
     justify-content: stretch;
   }
 
-  .sound-bank-debug-actions button {
+  .sound-bank-debug-actions button,
+  .sound-bank-debug-audio-actions button {
     width: 100%;
   }
 }

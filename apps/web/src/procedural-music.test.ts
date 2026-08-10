@@ -25,6 +25,61 @@ import { resolveProceduralMusicLoudness } from './procedural-music-loudness.ts';
 import { resolveProceduralThemeMotif } from './procedural-music-theme-motif.ts';
 
 describe('procedural music', () => {
+  it('keeps the music sink idle until a user-triggered resume creates audio', () => {
+    const contextInstances: Array<{ state: AudioContextState }> = [];
+
+    class FakeAudioContext {
+      state: AudioContextState = 'suspended';
+      currentTime = 0;
+      destination = {};
+      constructor() {
+        contextInstances.push(this);
+      }
+      resume() {
+        this.state = 'running';
+        return Promise.resolve();
+      }
+    }
+
+    const originalAudioContext = globalThis.AudioContext;
+    vi.stubGlobal('AudioContext', FakeAudioContext);
+
+    try {
+      const sink = createWebAudioMusicSink();
+
+      expect(sink.getAudioState?.()).toBe('idle');
+      expect(contextInstances).toHaveLength(0);
+
+      sink.resume?.();
+
+      expect(contextInstances).toHaveLength(1);
+      expect(sink.getAudioState?.()).toBe('running');
+    } finally {
+      if (originalAudioContext) {
+        vi.stubGlobal('AudioContext', originalAudioContext);
+      } else {
+        vi.unstubAllGlobals();
+      }
+    }
+  });
+
+  it('reports when web audio is unavailable for the music sink', () => {
+    const originalAudioContext = globalThis.AudioContext;
+    vi.stubGlobal('AudioContext', undefined);
+
+    try {
+      const sink = createWebAudioMusicSink();
+
+      expect(sink.getAudioState?.()).toBe('unavailable');
+    } finally {
+      if (originalAudioContext) {
+        vi.stubGlobal('AudioContext', originalAudioContext);
+      } else {
+        vi.unstubAllGlobals();
+      }
+    }
+  });
+
   it('tracks active web audio music sources while notes are still playing', () => {
     const createdOscillators: Array<{
       onended: ((event: Event) => void) | null;

@@ -86,6 +86,7 @@ export function buildSoundBankDebugMarkup(
   snapshot: SoundBankDebugSnapshot,
   viewState: {
     audioStatus: string;
+    audioContextState?: AudioContextState | 'idle' | 'unavailable';
     layoutMode?: SoundBankDebugLayoutMode;
     errorMessage?: string | null;
   } = {
@@ -120,6 +121,9 @@ export function buildSoundBankDebugMarkup(
     `
     : '';
   const layoutMode = viewState.layoutMode ?? 'expanded';
+  const audioContextState = viewState.audioContextState ?? 'idle';
+  const canStartAudio = audioContextState === 'idle';
+  const canResumeAudio = audioContextState === 'suspended';
 
   return `
     <main class="sound-bank-debug-shell sound-bank-debug-shell-${layoutMode}">
@@ -219,6 +223,26 @@ export function buildSoundBankDebugMarkup(
             <div>
               <p class="sound-bank-debug-panel-kicker">Audio</p>
               <strong id="sound-bank-debug-audio-status">${viewState.audioStatus}</strong>
+              <p class="sound-bank-debug-context-state">
+                Context state:
+                <span id="sound-bank-debug-context-state">${audioContextState}</span>
+              </p>
+            </div>
+            <div class="sound-bank-debug-audio-actions">
+              <button
+                id="sound-bank-debug-start-audio"
+                type="button"
+                ${canStartAudio ? '' : 'disabled'}
+              >
+                Start Audio
+              </button>
+              <button
+                id="sound-bank-debug-resume-audio"
+                type="button"
+                ${canResumeAudio ? '' : 'disabled'}
+              >
+                Resume Audio
+              </button>
             </div>
             ${errorPanel}
           </section>
