@@ -1118,6 +1118,9 @@ function buildSelectedInstrumentDetailsMarkup(
   const activeOscillatorCount = runtimeInstrument
     ? String(resolveActiveOscillatorCount(runtimeInstrument))
     : 'Unknown';
+  const filterType = runtimeInstrument
+    ? runtimeInstrument.timbre.filterType
+    : 'Unknown';
 
   return `
     <dl class="music-debug-instrument-stats">
@@ -1133,6 +1136,7 @@ function buildSelectedInstrumentDetailsMarkup(
       <div><dt>Primary Oscillator</dt><dd>${primaryOscillatorType}</dd></div>
       <div><dt>Harmonic Oscillator</dt><dd>${harmonicOscillatorType}</dd></div>
       <div><dt>Active Oscillator Count</dt><dd>${activeOscillatorCount}</dd></div>
+      <div><dt>Filter Type</dt><dd>${filterType}</dd></div>
       <div><dt>Uses Samples</dt><dd>${usesSamples}</dd></div>
       <div><dt>Uses Synthesis</dt><dd>${usesSynthesis}</dd></div>
       <div><dt>Polyphony Limit</dt><dd>${polyphonyLimit}</dd></div>

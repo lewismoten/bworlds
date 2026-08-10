@@ -167,7 +167,7 @@
 
 ## Filter Controls
 
-- [ ] Show the current filter type.
+- [x] Show the current filter type.
 - [ ] Add a filter type selector.
 - [ ] Add a filter cutoff control.
 - [ ] Add a filter resonance control.
