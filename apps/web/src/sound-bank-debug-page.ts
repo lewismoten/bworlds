@@ -12,13 +12,14 @@ import {
   type SoundBankDebugGeneralMidiBrowserState,
   type SoundBankDebugLayoutMode,
   type SoundBankDebugOptions,
+  type SoundBankDebugSnapshot,
 } from './sound-bank-debug.ts';
 import { createMusicDebugInstrumentPreviewPlayer } from './music-debug-instrument-preview.ts';
-import type { MusicDebugSnapshot } from './music-debug.ts';
 import type {
   MusicDebugContextType,
   MusicDebugTileKind,
 } from './music-debug.ts';
+import type { ProceduralInstrumentRole } from './procedural-music.ts';
 
 const root = document.querySelector<HTMLElement>('#app');
 const pageLifecycleAbortController =
@@ -51,6 +52,12 @@ const SOUND_BANK_CONTEXT_TYPES: readonly MusicDebugContextType[] = [
   'building',
   'cave',
   'dungeon',
+];
+const SOUND_BANK_PREVIEW_ROLES: readonly ProceduralInstrumentRole[] = [
+  'lead',
+  'harmony',
+  'bass',
+  'percussion',
 ];
 
 function stopPreview(): void {
@@ -212,6 +219,15 @@ function readGeneralMidiBrowserState(): SoundBankDebugGeneralMidiBrowserState {
   });
 }
 
+function isSoundBankPreviewRole(
+  value: string | undefined
+): value is ProceduralInstrumentRole {
+  return (
+    typeof value === 'string' &&
+    SOUND_BANK_PREVIEW_ROLES.includes(value as ProceduralInstrumentRole)
+  );
+}
+
 function renderPage(): void {
   if (!root) {
     return;
@@ -228,11 +244,11 @@ function renderPage(): void {
     errorMessage,
     generalMidiBrowserState,
   });
-  bindPage(snapshot.musicSnapshot);
+  bindPage(snapshot);
   syncAudioContextUi();
 }
 
-function bindPage(musicSnapshot: MusicDebugSnapshot): void {
+function bindPage(snapshot: SoundBankDebugSnapshot): void {
   document
     .querySelector<HTMLFormElement>('#sound-bank-debug-form')
     ?.addEventListener(
@@ -388,10 +404,8 @@ function bindPage(musicSnapshot: MusicDebugSnapshot): void {
       button.addEventListener(
         'click',
         () => {
-          const role = button.dataset.role as
-            | keyof MusicDebugSnapshot['instrumentBank']['instruments']
-            | undefined;
-          if (!role) {
+          const role = button.dataset.role;
+          if (!isSoundBankPreviewRole(role)) {
             return;
           }
           if (instrumentPreviewPlayer.getAudioState() === 'unavailable') {
@@ -402,7 +416,7 @@ function bindPage(musicSnapshot: MusicDebugSnapshot): void {
             return;
           }
           const previewNote = resolveSoundBankDebugPreviewNoteRole(
-            { options, musicSnapshot },
+            snapshot,
             role,
             performance.now()
           );

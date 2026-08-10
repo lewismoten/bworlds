@@ -1,11 +1,7 @@
 type TestCleanup = () => void | Promise<void>;
 
 type ClosableMethodName =
-  | 'close'
-  | 'destroy'
-  | 'terminate'
-  | 'abort'
-  | 'disconnect';
+  'close' | 'destroy' | 'terminate' | 'abort' | 'disconnect';
 
 type ClosableResource = Partial<
   Record<ClosableMethodName, (...args: unknown[]) => unknown>
