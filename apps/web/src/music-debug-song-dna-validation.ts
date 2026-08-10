@@ -1,4 +1,6 @@
 import type { MusicDebugPitchClassLabel } from './music-debug-pitch-class.ts';
+import { resolveMusicDebugPitchClassLabel } from './music-debug-pitch-class.ts';
+import { getProceduralScaleDegreeSemitones } from './procedural-music-scale.ts';
 import type { ProceduralMusicSong } from './procedural-music-song.ts';
 import type {
   ProceduralMusicNote,
@@ -58,8 +60,63 @@ export function validateMusicDebugSongDna(options: {
     }
   }
 
+  const expectedPitchCenters = resolveExpectedSongPitchCenters({
+    rootMidiNote: options.rootMidiNote,
+    modePitchOffsets: options.modePitchOffsets,
+    progression: options.songDna.progression,
+  });
+  for (const role of PITCHED_ROLES) {
+    if (options.roleCounts[role] <= 0) {
+      continue;
+    }
+    const dominantPitchClasses = options.dominantPitchClassesByRole[role];
+    if (
+      dominantPitchClasses.length > 0 &&
+      !dominantPitchClasses.some((pitchClass) =>
+        expectedPitchCenters.has(pitchClass)
+      )
+    ) {
+      messages.push(
+        `SongDNA ${role} track drifted away from the shared tonal centers ${formatPitchCenters(expectedPitchCenters)}.`
+      );
+    }
+  }
+
   return {
     isValidForMidiExport: messages.length === 0,
     messages,
   };
 }
+
+function resolveExpectedSongPitchCenters(options: {
+  rootMidiNote: number;
+  modePitchOffsets: readonly number[];
+  progression: readonly number[];
+}): Set<MusicDebugPitchClassLabel> {
+  const pitchCenters = new Set<MusicDebugPitchClassLabel>([
+    resolveMusicDebugPitchClassLabel(options.rootMidiNote),
+  ]);
+
+  for (let index = 0; index < options.progression.length; index += 1) {
+    const progressionDegree = options.progression[index] ?? 0;
+    for (const chordDegreeOffset of CHORD_DEGREE_OFFSETS) {
+      const chordToneMidiNote =
+        options.rootMidiNote +
+        getProceduralScaleDegreeSemitones(
+          options.modePitchOffsets,
+          progressionDegree + chordDegreeOffset
+        );
+      pitchCenters.add(resolveMusicDebugPitchClassLabel(chordToneMidiNote));
+    }
+  }
+
+  return pitchCenters;
+}
+
+function formatPitchCenters(
+  pitchCenters: ReadonlySet<MusicDebugPitchClassLabel>
+): string {
+  return [...pitchCenters].join(', ');
+}
+
+const CHORD_DEGREE_OFFSETS = [0, 2, 4] as const;

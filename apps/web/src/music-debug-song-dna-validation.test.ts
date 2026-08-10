@@ -48,6 +48,39 @@ describe('music debug SongDNA validation', () => {
     expect(validation.messages).toContain(
       'SongDNA bass track has more out-of-mode notes than in-mode notes.'
     );
+    expect(
+      validation.messages.some((message) =>
+        message.startsWith(
+          'SongDNA bass track drifted away from the shared tonal centers '
+        )
+      )
+    ).toBe(true);
+  });
+
+  it('flags tracks whose dominant pitch centers leave the shared harmonic family', () => {
+    const validation = validateMusicDebugSongDna({
+      songDna: createSongDna(),
+      rootMidiNote: 55,
+      modePitchOffsets: [0, 2, 4, 5, 7, 9, 10],
+      instrumentBank: createInstrumentBank(),
+      roleCounts: { bass: 8, harmony: 12, lead: 10, percussion: 6 },
+      outOfModeNotesByRole: { bass: 0, harmony: 0, lead: 0, percussion: 0 },
+      dominantPitchClassesByRole: {
+        bass: ['G'],
+        harmony: ['B'],
+        lead: ['C#'],
+        percussion: [],
+      },
+    });
+
+    expect(validation.isValidForMidiExport).toBe(false);
+    expect(
+      validation.messages.some((message) =>
+        message.startsWith(
+          'SongDNA lead track drifted away from the shared tonal centers '
+        )
+      )
+    ).toBe(true);
   });
 });
 
