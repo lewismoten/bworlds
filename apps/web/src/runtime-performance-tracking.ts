@@ -36,13 +36,11 @@ export type RuntimePerformanceSnapshot = {
   trigger: RuntimePerformanceSnapshotTrigger;
   route: string;
   worldSeed: string | null;
-  context:
-    | {
-        id: string;
-        label?: string;
-        depth?: number;
-      }
-    | null;
+  context: {
+    id: string;
+    label?: string;
+    depth?: number;
+  } | null;
   limits: typeof DEFAULT_RUNTIME_PERFORMANCE_LIMITS;
   metrics: {
     initialWorldGenerationMs: number | null;
@@ -77,10 +75,7 @@ type RuntimePerformanceSnapshotBuildOptions = {
 
 export function normalizeRuntimePerformanceTrackingPreferences(
   value:
-    | { runtimePerformanceTrackingEnabled?: boolean }
-    | boolean
-    | null
-    | undefined
+    { runtimePerformanceTrackingEnabled?: boolean } | boolean | null | undefined
 ): RuntimePerformanceTrackingPreferences {
   if (typeof value === 'boolean') {
     return { enabled: value };

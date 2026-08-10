@@ -1927,9 +1927,13 @@ function reportRuntimePerformanceSnapshot(
     return;
   }
 
-  const debugSnapshot = collectCurrentDebugSnapshot(performance.now(), spatial, {
-    recordDiagnostics: false,
-  });
+  const debugSnapshot = collectCurrentDebugSnapshot(
+    performance.now(),
+    spatial,
+    {
+      recordDiagnostics: false,
+    }
+  );
   const snapshot = buildRuntimePerformanceSnapshot({
     source: 'game',
     trigger,

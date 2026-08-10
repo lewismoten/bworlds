@@ -137,9 +137,7 @@ function createRuntimePerformanceSnapshotApiPlugin(): Plugin {
     res: RuntimeSnapshotResponse,
     next: () => void
   ) => {
-    const requestUrl = req.url
-      ? new URL(req.url, 'http://localhost')
-      : null;
+    const requestUrl = req.url ? new URL(req.url, 'http://localhost') : null;
     if (!requestUrl) {
       next();
       return;

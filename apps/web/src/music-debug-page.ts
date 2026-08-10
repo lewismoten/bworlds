@@ -1,8 +1,5 @@
 import './music-debug.css';
-import {
-  SESSION_STORAGE_KEY,
-  parseSavedSession,
-} from './session-state.ts';
+import { SESSION_STORAGE_KEY, parseSavedSession } from './session-state.ts';
 import {
   buildRuntimePerformanceSnapshot,
   normalizeRuntimePerformanceTrackingPreferences,

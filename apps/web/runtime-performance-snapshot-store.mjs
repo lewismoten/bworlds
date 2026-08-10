@@ -44,7 +44,10 @@ function trimSnapshots(snapshotDir, maxSnapshots) {
 }
 
 function sanitizeSnapshotSegment(value) {
-  return value.replace(/[^a-z0-9-]+/gi, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+  return value
+    .replace(/[^a-z0-9-]+/gi, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '');
 }
 
 export function formatRuntimePerformanceSnapshotFileName(snapshot) {
@@ -54,10 +57,7 @@ export function formatRuntimePerformanceSnapshotFileName(snapshot) {
   return `${timestamp}-${source}-${trigger}.json`;
 }
 
-export function saveRuntimePerformanceSnapshot(
-  snapshot,
-  options = {}
-) {
+export function saveRuntimePerformanceSnapshot(snapshot, options = {}) {
   const snapshotDir =
     options.snapshotDir ?? DEFAULT_RUNTIME_PERFORMANCE_SNAPSHOT_DIR;
   const maxSnapshots =
@@ -79,7 +79,5 @@ export function readRecentRuntimePerformanceSnapshots(options = {}) {
   const limit = options.limit ?? MAX_RUNTIME_PERFORMANCE_SNAPSHOTS;
   return listSnapshotEntries(snapshotDir)
     .slice(0, limit)
-    .map((entry) =>
-      JSON.parse(fs.readFileSync(entry.absolutePath, 'utf8'))
-    );
+    .map((entry) => JSON.parse(fs.readFileSync(entry.absolutePath, 'utf8')));
 }

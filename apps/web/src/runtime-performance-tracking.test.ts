@@ -42,7 +42,7 @@ describe('runtime performance tracking', () => {
   });
 
   it('posts runtime performance snapshots to the vite endpoint when fetch is available', async () => {
-    const fetchImpl = vi.fn(async () => ({ ok: true } as Response));
+    const fetchImpl = vi.fn(async () => ({ ok: true }) as Response);
 
     const snapshot = buildRuntimePerformanceSnapshot({
       source: 'music-debug',
