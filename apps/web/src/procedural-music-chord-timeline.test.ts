@@ -4,6 +4,7 @@ import {
   resolveProceduralChordTimeline,
   resolveProceduralChordTimelineEntryAtStep,
 } from './procedural-music-chord-timeline.ts';
+import { resolveProceduralMeterPosition } from './procedural-music-meter.ts';
 
 describe('procedural music chord timeline', () => {
   it('builds a deterministic eight-measure phrase timeline before tracks read chords', () => {
@@ -87,6 +88,27 @@ describe('procedural music chord timeline', () => {
           entry.endMeasure === index + 1 &&
           entry.endMeasure - entry.startMeasure === 0
       )
+    ).toBe(true);
+  });
+
+  it('starts every chord change on a strong beat at the start of a measure', () => {
+    const timeline = resolveProceduralChordTimeline({
+      themeId: 'frontier-plains',
+      themeStepCount: 8,
+      clusterX: 3,
+      clusterY: -2,
+    });
+
+    expect(
+      timeline.every((entry, index) => {
+        const meter = resolveProceduralMeterPosition(entry.startStepIndex);
+        return (
+          meter.isStrongBeat &&
+          meter.beatNumber === 1 &&
+          entry.startStepIndex ===
+            index * PROCEDURAL_MUSIC_CHORD_TIMELINE_SPAN_STEPS
+        );
+      })
     ).toBe(true);
   });
 });

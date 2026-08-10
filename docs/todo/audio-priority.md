@@ -174,7 +174,7 @@ added directly as semitones instead of moving through the selected scale.
 - [x] Generate chord pitches before arranging tracks.
 - [x] Give all tracks the same active chord timeline.
 - [x] Mark chord changes in the debug MIDI.
-- [ ] Keep chord changes aligned with strong beats.
+- [x] Keep chord changes aligned with strong beats.
 - [ ] Add a dominant-like setup before answer cadences.
 - [x] Strengthen harmony during the Return section.
 - [x] Simplify harmony during the stated lighter B section.
