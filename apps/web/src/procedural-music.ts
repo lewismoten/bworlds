@@ -10,6 +10,8 @@ import {
   resolveProceduralInstrumentSemitones,
 } from './procedural-music-harmony.ts';
 import {
+  compareInstrumentPatchToKnownGoodRolePatch,
+  type KnownGoodInstrumentPatchComparison,
   resolveInstrumentPatchRecipe,
   resolveProceduralInstrumentTimbre,
   resolveRegisterShapedInstrumentTimbre,
@@ -138,6 +140,7 @@ export type ProceduralInstrument = SoundBankInstrumentDefinition & {
   harmonicGain: number;
   pulseRate: number;
   brightness: number;
+  knownGoodPatchComparison: KnownGoodInstrumentPatchComparison;
 };
 
 export type ProceduralInstrumentBank = {
@@ -2149,62 +2152,82 @@ function createProceduralInstrument(
       clusterY - role.length
     ),
   });
+  const attackMs = Math.round(
+    interpolatePatchRange(
+      patchRecipe.attackMsRange,
+      hash2DWithSeed(
+        getRolePropertySeed(theme.id, role, 'attack'),
+        clusterX,
+        clusterY
+      )
+    )
+  );
+  const releaseMs = Math.round(
+    interpolatePatchRange(
+      patchRecipe.releaseMsRange,
+      hash2DWithSeed(
+        getRolePropertySeed(theme.id, role, 'release'),
+        clusterX,
+        clusterY
+      )
+    )
+  );
+  const detuneCents = interpolatePatchRange(
+    patchRecipe.detuneCentsRange,
+    hash2DWithSeed(
+      getRolePropertySeed(theme.id, role, 'detune'),
+      clusterX,
+      clusterY
+    )
+  );
+  const harmonicGain = interpolatePatchRange(
+    patchRecipe.harmonicGainRange,
+    hash2DWithSeed(
+      getRolePropertySeed(theme.id, role, 'harmonics'),
+      clusterX,
+      clusterY
+    )
+  );
+  const pulseRate = interpolatePatchRange(
+    patchRecipe.pulseRateRange,
+    hash2DWithSeed(
+      getRolePropertySeed(theme.id, role, 'pulse'),
+      clusterX,
+      clusterY
+    )
+  );
   const metadata = createSoundBankInstrumentDefinition(
     theme,
     role,
     clusterX,
     clusterY
   );
+  const knownGoodPatchComparison = compareInstrumentPatchToKnownGoodRolePatch({
+    role,
+    patch: {
+      family,
+      waveform,
+      attackMs,
+      releaseMs,
+      detuneCents,
+      harmonicGain,
+      pulseRate,
+      brightness,
+      timbre,
+    },
+  });
   return {
     ...metadata,
     family,
     waveform,
     timbre,
-    attackMs: Math.round(
-      interpolatePatchRange(
-        patchRecipe.attackMsRange,
-        hash2DWithSeed(
-          getRolePropertySeed(theme.id, role, 'attack'),
-          clusterX,
-          clusterY
-        )
-      )
-    ),
-    releaseMs: Math.round(
-      interpolatePatchRange(
-        patchRecipe.releaseMsRange,
-        hash2DWithSeed(
-          getRolePropertySeed(theme.id, role, 'release'),
-          clusterX,
-          clusterY
-        )
-      )
-    ),
-    detuneCents: interpolatePatchRange(
-      patchRecipe.detuneCentsRange,
-      hash2DWithSeed(
-        getRolePropertySeed(theme.id, role, 'detune'),
-        clusterX,
-        clusterY
-      )
-    ),
-    harmonicGain: interpolatePatchRange(
-      patchRecipe.harmonicGainRange,
-      hash2DWithSeed(
-        getRolePropertySeed(theme.id, role, 'harmonics'),
-        clusterX,
-        clusterY
-      )
-    ),
-    pulseRate: interpolatePatchRange(
-      patchRecipe.pulseRateRange,
-      hash2DWithSeed(
-        getRolePropertySeed(theme.id, role, 'pulse'),
-        clusterX,
-        clusterY
-      )
-    ),
+    attackMs,
+    releaseMs,
+    detuneCents,
+    harmonicGain,
+    pulseRate,
     brightness,
+    knownGoodPatchComparison,
   };
 }
 

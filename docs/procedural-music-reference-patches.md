@@ -23,3 +23,9 @@ to expose the current role goals:
 - `harmony` preserves the bowed attack peak and sustained body
 - `bass` keeps a low cutoff with stronger fundamental support
 - `percussion` stays short and punchy with a narrow lowpass body
+
+Generated instruments now also carry a `knownGoodPatchComparison` snapshot.
+That comparison scores the generated patch against the role's reference anchor
+across envelope, brightness, harmonic, filter, and optional timbre traits. This
+gives later debug and validation work a stable per-role similarity report
+without recomputing patch comparisons in multiple places.

@@ -80,6 +80,33 @@ export type KnownGoodInstrumentPatch = Readonly<{
   timbre: Readonly<ProceduralInstrumentTimbre>;
 }>;
 
+export type ComparableInstrumentPatch = Readonly<{
+  family: InstrumentFamily;
+  waveform: MusicWaveform;
+  attackMs: number;
+  releaseMs: number;
+  detuneCents: number;
+  harmonicGain: number;
+  pulseRate: number;
+  brightness: number;
+  timbre: Readonly<ProceduralInstrumentTimbre>;
+}>;
+
+export type KnownGoodInstrumentPatchComparison = Readonly<{
+  role: KnownGoodInstrumentPatchRole;
+  referenceLabel: string;
+  similarityScore: number;
+  familyMatches: boolean;
+  waveformMatches: boolean;
+  dimensions: Readonly<Record<string, number>>;
+  prominentDifferences: readonly Readonly<{
+    key: string;
+    similarity: number;
+    generatedValue: number;
+    referenceValue: number;
+  }>[];
+}>;
+
 type InstrumentTimbreTemplate = {
   harmonicWaveform: MusicWaveform;
   harmonicRatio: number;
@@ -620,6 +647,105 @@ export function listKnownGoodInstrumentPatches(): readonly KnownGoodInstrumentPa
   ];
 }
 
+export function compareInstrumentPatchToKnownGoodRolePatch(options: {
+  role: KnownGoodInstrumentPatchRole;
+  patch: ComparableInstrumentPatch;
+}): KnownGoodInstrumentPatchComparison {
+  const referencePatch = resolveKnownGoodInstrumentPatch(options.role);
+  const dimensions = {
+    attackMs: scoreLinearSimilarity(
+      options.patch.attackMs,
+      referencePatch.attackMs,
+      80
+    ),
+    releaseMs: scoreLinearSimilarity(
+      options.patch.releaseMs,
+      referencePatch.releaseMs,
+      320
+    ),
+    detuneCents: scoreLinearSimilarity(
+      options.patch.detuneCents,
+      referencePatch.detuneCents,
+      12
+    ),
+    harmonicGain: scoreLinearSimilarity(
+      options.patch.harmonicGain,
+      referencePatch.harmonicGain,
+      0.3
+    ),
+    pulseRate: scoreLinearSimilarity(
+      options.patch.pulseRate,
+      referencePatch.pulseRate,
+      4
+    ),
+    brightness: scoreLinearSimilarity(
+      options.patch.brightness,
+      referencePatch.brightness,
+      0.6
+    ),
+    harmonicRatio: scoreLinearSimilarity(
+      options.patch.timbre.harmonicRatio,
+      referencePatch.timbre.harmonicRatio,
+      5.5
+    ),
+    filterCutoffHz: scoreFrequencySimilarity(
+      options.patch.timbre.filterCutoffHz,
+      referencePatch.timbre.filterCutoffHz
+    ),
+    filterQ: scoreLinearSimilarity(
+      options.patch.timbre.filterQ,
+      referencePatch.timbre.filterQ,
+      3
+    ),
+    noiseMix: scoreOptionalLinearSimilarity(
+      options.patch.timbre.noiseMix,
+      referencePatch.timbre.noiseMix,
+      0.4
+    ),
+    transientMix: scoreOptionalLinearSimilarity(
+      options.patch.timbre.transientMix,
+      referencePatch.timbre.transientMix,
+      0.5
+    ),
+    bodySustainLevel: scoreOptionalLinearSimilarity(
+      options.patch.timbre.bodySustainLevel,
+      referencePatch.timbre.bodySustainLevel,
+      1
+    ),
+    fundamentalGainMultiplier: scoreOptionalLinearSimilarity(
+      options.patch.timbre.fundamentalGainMultiplier,
+      referencePatch.timbre.fundamentalGainMultiplier,
+      1
+    ),
+    harmonicBodyLevel: scoreOptionalLinearSimilarity(
+      options.patch.timbre.harmonicBodyLevel,
+      referencePatch.timbre.harmonicBodyLevel,
+      1
+    ),
+  } as const;
+
+  const dimensionEntries = Object.entries(dimensions);
+  const similarityScore =
+    dimensionEntries.reduce((total, [, score]) => total + score, 0) /
+    Math.max(1, dimensionEntries.length);
+
+  const prominentDifferences = collectProminentDifferences(
+    options.patch,
+    referencePatch,
+    dimensions
+  );
+
+  return {
+    role: options.role,
+    referenceLabel: referencePatch.label,
+    similarityScore,
+    familyMatches: options.patch.family === referencePatch.family,
+    waveformMatches: options.patch.waveform === referencePatch.waveform,
+    dimensions,
+    prominentDifferences,
+  };
+}
+
 export function resolveProceduralInstrumentTimbre(options: {
   family: InstrumentFamily;
   brightness: number;
@@ -862,4 +988,86 @@ function createKnownGoodInstrumentPatch(
       ...patch.timbre,
     }),
   });
+}
+
+function scoreLinearSimilarity(
+  value: number,
+  reference: number,
+  allowedDelta: number
+): number {
+  return 1 - clamp(Math.abs(value - reference) / allowedDelta, 0, 1);
+}
+
+function scoreOptionalLinearSimilarity(
+  value: number | undefined,
+  reference: number | undefined,
+  allowedDelta: number
+): number {
+  if (value === undefined && reference === undefined) {
+    return 1;
+  }
+  return scoreLinearSimilarity(value ?? 0, reference ?? 0, allowedDelta);
+}
+
+function scoreFrequencySimilarity(value: number, reference: number): number {
+  const octaveDistance = Math.abs(
+    Math.log2(Math.max(value, 1) / Math.max(reference, 1))
+  );
+  return 1 - clamp(octaveDistance / 6, 0, 1);
+}
+
+function collectProminentDifferences(
+  patch: ComparableInstrumentPatch,
+  referencePatch: KnownGoodInstrumentPatch,
+  dimensions: Record<string, number>
+): readonly Readonly<{
+  key: string;
+  similarity: number;
+  generatedValue: number;
+  referenceValue: number;
+}>[] {
+  const valueMap = {
+    attackMs: [patch.attackMs, referencePatch.attackMs],
+    releaseMs: [patch.releaseMs, referencePatch.releaseMs],
+    detuneCents: [patch.detuneCents, referencePatch.detuneCents],
+    harmonicGain: [patch.harmonicGain, referencePatch.harmonicGain],
+    pulseRate: [patch.pulseRate, referencePatch.pulseRate],
+    brightness: [patch.brightness, referencePatch.brightness],
+    harmonicRatio: [patch.timbre.harmonicRatio, referencePatch.timbre.harmonicRatio],
+    filterCutoffHz: [
+      patch.timbre.filterCutoffHz,
+      referencePatch.timbre.filterCutoffHz,
+    ],
+    filterQ: [patch.timbre.filterQ, referencePatch.timbre.filterQ],
+    noiseMix: [patch.timbre.noiseMix ?? 0, referencePatch.timbre.noiseMix ?? 0],
+    transientMix: [
+      patch.timbre.transientMix ?? 0,
+      referencePatch.timbre.transientMix ?? 0,
+    ],
+    bodySustainLevel: [
+      patch.timbre.bodySustainLevel ?? 0,
+      referencePatch.timbre.bodySustainLevel ?? 0,
+    ],
+    fundamentalGainMultiplier: [
+      patch.timbre.fundamentalGainMultiplier ?? 0,
+      referencePatch.timbre.fundamentalGainMultiplier ?? 0,
+    ],
+    harmonicBodyLevel: [
+      patch.timbre.harmonicBodyLevel ?? 0,
+      referencePatch.timbre.harmonicBodyLevel ?? 0,
+    ],
+  } as const;
+
+  return Object.entries(dimensions)
+    .map(([key, similarity]) => {
+      const values = valueMap[key as keyof typeof valueMap];
+      return {
+        key,
+        similarity,
+        generatedValue: values?.[0] ?? 0,
+        referenceValue: values?.[1] ?? 0,
+      };
+    })
+    .sort((left, right) => left.similarity - right.similarity)
+    .slice(0, 3);
 }

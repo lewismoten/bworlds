@@ -25,6 +25,7 @@ import { resolveProceduralMusicLoudness } from './procedural-music-loudness.ts';
 import { createProceduralPercussionNotes } from './procedural-music-percussion.ts';
 import { resolveProceduralThemeMotif } from './procedural-music-theme-motif.ts';
 import {
+  compareInstrumentPatchToKnownGoodRolePatch,
   listKnownGoodInstrumentPatches,
   resolveInstrumentPatchRecipe,
   resolveKnownGoodInstrumentPatch,
@@ -155,6 +156,23 @@ describe('procedural music', () => {
     expect(percussion.releaseMs).toBeLessThan(harmony.releaseMs / 3);
   });
 
+  it('compares an exact reference patch to itself with perfect similarity', () => {
+    const leadReference = resolveKnownGoodInstrumentPatch('lead');
+    const comparison = compareInstrumentPatchToKnownGoodRolePatch({
+      role: 'lead',
+      patch: leadReference,
+    });
+
+    expect(comparison.similarityScore).toBe(1);
+    expect(comparison.familyMatches).toBe(true);
+    expect(comparison.waveformMatches).toBe(true);
+    expect(
+      comparison.prominentDifferences.every(
+        (difference) => difference.similarity === 1
+      )
+    ).toBe(true);
+  });
+
   it('adds shared sound bank registry metadata to generated instruments', () => {
     const bank = createProceduralInstrumentBank(
       resolveMusicTheme('forest', 'overworld', undefined, 2, -3),
@@ -188,6 +206,10 @@ describe('procedural music', () => {
     expect(
       bank.instruments.harmony.defaultNoteDurationMs
     ).toBeGreaterThanOrEqual(bank.instruments.lead.defaultNoteDurationMs);
+    expect(bank.instruments.lead.knownGoodPatchComparison.role).toBe('lead');
+    expect(bank.instruments.harmony.knownGoodPatchComparison.role).toBe(
+      'harmony'
+    );
   });
 
   it('keeps the music sink idle until a user-triggered resume creates audio', () => {
@@ -2109,6 +2131,41 @@ describe('procedural music', () => {
     expect(leadRecipe.waveformOptions).not.toEqual(bassRecipe.waveformOptions);
     expect(leadRecipe.attackMsRange).not.toEqual(bassRecipe.attackMsRange);
     expect(leadRecipe.releaseMsRange).not.toEqual(bassRecipe.releaseMsRange);
+  });
+
+  it('compares generated patches against their known-good role references', () => {
+    const town = createProceduralInstrumentBank(
+      resolveMusicTheme('town', 'town'),
+      5,
+      -3,
+      {
+        tileKind: 'town',
+        contextType: 'town',
+        dayProgress: 0.5,
+        yearProgress: 0.5,
+      }
+    );
+
+    expect(town.instruments.lead.knownGoodPatchComparison.similarityScore).toBeGreaterThan(
+      0.55
+    );
+    expect(
+      town.instruments.harmony.knownGoodPatchComparison.similarityScore
+    ).toBeGreaterThan(0.55);
+    expect(town.instruments.bass.knownGoodPatchComparison.similarityScore).toBeGreaterThan(
+      0.6
+    );
+    expect(
+      town.instruments.percussion.knownGoodPatchComparison.similarityScore
+    ).toBeGreaterThan(0.55);
+
+    const leadVsBassReference = compareInstrumentPatchToKnownGoodRolePatch({
+      role: 'bass',
+      patch: town.instruments.lead,
+    });
+    expect(
+      town.instruments.lead.knownGoodPatchComparison.similarityScore
+    ).toBeGreaterThan(leadVsBassReference.similarityScore);
   });
 
   it('plays optional timbre noise layers through the web audio sink', () => {

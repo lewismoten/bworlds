@@ -27,7 +27,7 @@
 - [x] Change timbre based on note velocity.
 - [x] Limit random patch values to family-safe ranges.
 - [x] Add one known-good patch for each core song role.
-- [ ] Compare generated patches against known-good patches.
+- [x] Compare generated patches against known-good patches.
 - [ ] Reject patches that sound nearly identical across roles.
 
 ## Percussion Kit
