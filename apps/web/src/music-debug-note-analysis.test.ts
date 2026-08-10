@@ -8,7 +8,7 @@ import type { ProceduralMusicNote } from './procedural-music.ts';
 import { resolveProceduralScaleDegreeMidiNote } from './procedural-music-scale.ts';
 
 describe('music debug note analysis', () => {
-  it('classifies in-mode notes, chromatic approaches, and unexplained chromatic notes by role', () => {
+  it('classifies named chromatic embellishments and rejects unsupported leaps', () => {
     const notes: ProceduralMusicNote[] = [
       createNote('lead', 207.65),
       createNote('lead', 220),
@@ -17,6 +17,9 @@ describe('music debug note analysis', () => {
       createNote('bass', 103.83),
       createNote('bass', 110),
       createNote('bass', 138.59),
+      createTimedNote('harmony', 138.59, 620, 360),
+      createTimedNote('lead', 138.59, 640, 320),
+      createTimedNote('lead', 155.56, 960, 320),
       createNote('percussion', 180),
     ];
 
@@ -62,38 +65,61 @@ describe('music debug note analysis', () => {
         role: 'bass',
         isBlackKey: true,
         inMode: false,
-        accidentalReason: 'unresolved-chromatic',
-        accidentalRuleLabel: 'Unresolved chromatic note',
+        accidentalReason: 'unsupported-chromatic-leap',
+        accidentalRuleLabel: 'Unsupported chromatic leap',
       })
     );
-    expect(validation.accidentalNoteCount).toBe(3);
-    expect(validation.accidentalsByRole.lead).toBe(1);
+    expect(validation.notePitchDiagnostics[8]).toEqual(
+      expect.objectContaining({
+        role: 'lead',
+        isBlackKey: true,
+        inMode: false,
+        accidentalReason: 'harmonic-color',
+        accidentalRuleLabel: 'Harmonic color tone',
+      })
+    );
+    expect(validation.accidentalNoteCount).toBe(6);
+    expect(validation.accidentalsByRole.lead).toBe(3);
     expect(validation.accidentalsByRole.bass).toBe(2);
-    expect(validation.outOfModeNotesByRole.lead).toBe(1);
+    expect(validation.accidentalsByRole.harmony).toBe(1);
+    expect(validation.outOfModeNotesByRole.lead).toBe(3);
     expect(validation.outOfModeNotesByRole.bass).toBe(2);
+    expect(validation.outOfModeNotesByRole.harmony).toBe(1);
     expect(validation.accidentalReasonCounts['chromatic-passing']).toBe(1);
+    expect(validation.accidentalReasonCounts['harmonic-color']).toBe(2);
     expect(validation.accidentalReasonCounts['lower-approach']).toBe(1);
-    expect(validation.accidentalReasonCounts['unresolved-chromatic']).toBe(1);
-    expect(validation.blackKeyNoteCount).toBe(3);
-    expect(validation.blackKeyNotesByRole.lead).toBe(1);
+    expect(validation.accidentalReasonCounts['unsupported-chromatic-leap']).toBe(
+      2
+    );
+    expect(validation.accidentalReasonCounts['unresolved-chromatic']).toBe(0);
+    expect(validation.blackKeyNoteCount).toBe(6);
+    expect(validation.blackKeyNotesByRole.lead).toBe(3);
     expect(validation.blackKeyNotesByRole.bass).toBe(2);
+    expect(validation.blackKeyNotesByRole.harmony).toBe(1);
     expect(validation.pitchClassCountsByRole.lead['G#']).toBe(1);
     expect(validation.pitchClassCountsByRole.lead.A).toBe(1);
+    expect(validation.pitchClassCountsByRole.lead['C#']).toBe(1);
+    expect(validation.pitchClassCountsByRole.lead['D#']).toBe(1);
     expect(validation.pitchClassCountsByRole.bass.G).toBe(1);
     expect(validation.pitchClassCountsByRole.bass.A).toBe(1);
     expect(validation.pitchClassCountsByRole.bass['G#']).toBe(1);
     expect(validation.pitchClassCountsByRole.bass['C#']).toBe(1);
-    expect(validation.dominantPitchClassesByRole.lead).toEqual(['A', 'G#']);
+    expect(validation.dominantPitchClassesByRole.lead).toEqual([
+      'A',
+      'C#',
+      'D#',
+      'G#',
+    ]);
     expect(validation.dominantPitchClassesByRole.bass).toEqual([
       'A',
       'C#',
       'G',
       'G#',
     ]);
-    expect(validation.unexplainedAccidentalCount).toBe(1);
+    expect(validation.unexplainedAccidentalCount).toBe(2);
     expect(validation.isValidForMidiExport).toBe(false);
     expect(validation.messages).toEqual([
-      'Found 1 unexplained chromatic notes; MIDI export allows 0.',
+      'Found 2 unexplained chromatic notes; MIDI export allows 0.',
     ]);
   });
 
@@ -247,12 +273,21 @@ function createNote(
   role: ProceduralMusicNote['role'],
   frequency: number
 ): ProceduralMusicNote {
+  return createTimedNote(role, frequency, 0, 400);
+}
+
+function createTimedNote(
+  role: ProceduralMusicNote['role'],
+  frequency: number,
+  startMs: number,
+  durationMs: number
+): ProceduralMusicNote {
   return {
     themeId: 'frontier-plains',
     instrumentId: `${role}-test`,
     role,
-    startMs: 0,
-    durationMs: 400,
+    startMs,
+    durationMs,
     frequency,
     volume: 0.03,
     waveform: 'sine',

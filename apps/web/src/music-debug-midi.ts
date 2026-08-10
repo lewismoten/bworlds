@@ -628,7 +628,7 @@ function resolveMusicDebugMidiMetadata(
       `Tile ${snapshot.options.tileKind} / Context ${snapshot.options.contextType}`,
       `Mood tempo ${snapshot.mood.tempoMultiplier.toFixed(2)}x / Resolved BPM ${snapshot.resolvedBpm.toFixed(1)} / brightness ${snapshot.mood.brightness.toFixed(2)}x / Encounter ${snapshot.options.encounterMode}`,
       `Vocabulary ${snapshot.vocabularySummary.join(', ')}`,
-      `Chromatic ${snapshot.accidentalNoteCount} outside ${snapshot.theme.vocabulary.modeLabel} / Black keys ${snapshot.midiExportValidation.blackKeyNoteCount} / Rules passing ${snapshot.midiExportValidation.accidentalReasonCounts['chromatic-passing']} lower ${snapshot.midiExportValidation.accidentalReasonCounts['lower-approach']} upper ${snapshot.midiExportValidation.accidentalReasonCounts['upper-approach']} unresolved ${snapshot.midiExportValidation.accidentalReasonCounts['unresolved-chromatic']}`,
+      `Chromatic ${snapshot.accidentalNoteCount} outside ${snapshot.theme.vocabulary.modeLabel} / Black keys ${snapshot.midiExportValidation.blackKeyNoteCount} / Rules passing ${snapshot.midiExportValidation.accidentalReasonCounts['chromatic-passing']} color ${snapshot.midiExportValidation.accidentalReasonCounts['harmonic-color']} lower ${snapshot.midiExportValidation.accidentalReasonCounts['lower-approach']} upper ${snapshot.midiExportValidation.accidentalReasonCounts['upper-approach']} unsupported ${snapshot.midiExportValidation.accidentalReasonCounts['unsupported-chromatic-leap']} unresolved ${snapshot.midiExportValidation.accidentalReasonCounts['unresolved-chromatic']}`,
       `Export variant ${options.variant ?? 'full'}`,
     ],
     variant: options.variant ?? 'full',

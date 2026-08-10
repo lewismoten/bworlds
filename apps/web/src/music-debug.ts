@@ -1060,8 +1060,10 @@ function formatMusicDebugAccidentalRuleSummary(
   const parts: string[] = [];
   for (const reason of [
     'chromatic-passing',
+    'harmonic-color',
     'lower-approach',
     'upper-approach',
+    'unsupported-chromatic-leap',
     'unresolved-chromatic',
   ] as const) {
     const count = reasonCounts[reason];

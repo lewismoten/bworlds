@@ -14,8 +14,10 @@ export type MusicDebugAccidentalReason =
   | 'percussion'
   | 'in-mode'
   | 'chromatic-passing'
+  | 'harmonic-color'
   | 'lower-approach'
   | 'upper-approach'
+  | 'unsupported-chromatic-leap'
   | 'unresolved-chromatic';
 
 export type MusicDebugNotePitchDiagnostic = {
@@ -82,6 +84,7 @@ export function analyzeMusicDebugPitches(options: {
       continue;
     }
     const accidentalReason = resolveAccidentalReason(
+      options.notes,
       notePitchDiagnostics,
       index
     );
@@ -123,7 +126,7 @@ export function analyzeMusicDebugPitches(options: {
       accidentalsByRole[diagnostic.role] += 1;
       outOfModeNotesByRole[diagnostic.role] += 1;
       accidentalReasonCounts[diagnostic.accidentalReason] += 1;
-      if (diagnostic.accidentalReason === 'unresolved-chromatic') {
+      if (isUnexplainedAccidentalReason(diagnostic.accidentalReason)) {
         unexplainedAccidentalCount += 1;
       }
     }
@@ -283,6 +286,7 @@ function resolveScaleDegree(
 }
 
 function resolveAccidentalReason(
+  notes: readonly ProceduralMusicNote[],
   diagnostics: readonly MusicDebugNotePitchDiagnostic[],
   noteIndex: number
 ): MusicDebugAccidentalReason {
@@ -296,6 +300,11 @@ function resolveAccidentalReason(
     current.role
   );
   const neighbor = findNextNoteForRole(diagnostics, noteIndex, current.role);
+  const harmonicallySupported = hasChromaticHarmonicSupport(
+    notes,
+    diagnostics,
+    noteIndex
+  );
   if (
     previous &&
     neighbor &&
@@ -311,6 +320,11 @@ function resolveAccidentalReason(
       Math.sign(neighbor.relativeSemitones - current.relativeSemitones)
   ) {
     return 'chromatic-passing';
+  }
+  if (hasUnsupportedChromaticLeap(previous, current, neighbor)) {
+    return harmonicallySupported
+      ? 'harmonic-color'
+      : 'unsupported-chromatic-leap';
   }
   if (
     neighbor &&
@@ -334,7 +348,86 @@ function resolveAccidentalReason(
       ? 'lower-approach'
       : 'upper-approach';
   }
+  if (harmonicallySupported) {
+    return 'harmonic-color';
+  }
   return 'unresolved-chromatic';
+}
+
+function hasUnsupportedChromaticLeap(
+  previous: MusicDebugNotePitchDiagnostic | null,
+  current: MusicDebugNotePitchDiagnostic,
+  next: MusicDebugNotePitchDiagnostic | null
+): boolean {
+  if (current.relativeSemitones === null) {
+    return false;
+  }
+
+  const previousLeap =
+    previous?.relativeSemitones === null || previous?.relativeSemitones === undefined
+      ? false
+      : Math.abs(current.relativeSemitones - previous.relativeSemitones) > 1;
+  const nextLeap =
+    next?.relativeSemitones === null || next?.relativeSemitones === undefined
+      ? false
+      : Math.abs(next.relativeSemitones - current.relativeSemitones) > 1;
+
+  return previousLeap || nextLeap;
+}
+
+function hasChromaticHarmonicSupport(
+  notes: readonly ProceduralMusicNote[],
+  diagnostics: readonly MusicDebugNotePitchDiagnostic[],
+  noteIndex: number
+): boolean {
+  const current = diagnostics[noteIndex];
+  const currentNote = notes[noteIndex];
+  if (
+    !current ||
+    !currentNote ||
+    current.midiNote === null ||
+    current.role === 'percussion'
+  ) {
+    return false;
+  }
+
+  const currentPitchClass = normalizeMusicDebugPitchClassSemitone(
+    current.midiNote
+  );
+  const currentEndMs = currentNote.startMs + currentNote.durationMs;
+
+  for (let index = 0; index < diagnostics.length; index += 1) {
+    if (index === noteIndex) {
+      continue;
+    }
+    const supportingDiagnostic = diagnostics[index]!;
+    const supportingNote = notes[index]!;
+    if (
+      supportingDiagnostic.role === 'percussion' ||
+      supportingDiagnostic.role === current.role ||
+      supportingDiagnostic.midiNote === null
+    ) {
+      continue;
+    }
+    if (
+      !notesOverlap(
+        currentNote.startMs,
+        currentEndMs,
+        supportingNote.startMs,
+        supportingNote.startMs + supportingNote.durationMs
+      )
+    ) {
+      continue;
+    }
+    if (
+      normalizeMusicDebugPitchClassSemitone(supportingDiagnostic.midiNote) ===
+      currentPitchClass
+    ) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 function findNextNoteForRole(
@@ -384,8 +477,10 @@ function createAccidentalReasonCountMap(): Record<
     percussion: 0,
     'in-mode': 0,
     'chromatic-passing': 0,
+    'harmonic-color': 0,
     'lower-approach': 0,
     'upper-approach': 0,
+    'unsupported-chromatic-leap': 0,
     'unresolved-chromatic': 0,
   };
 }
@@ -396,10 +491,14 @@ export function describeMusicDebugAccidentalReason(
   switch (reason) {
     case 'chromatic-passing':
       return 'Chromatic passing tone';
+    case 'harmonic-color':
+      return 'Harmonic color tone';
     case 'lower-approach':
       return 'Lower chromatic approach';
     case 'upper-approach':
       return 'Upper chromatic approach';
+    case 'unsupported-chromatic-leap':
+      return 'Unsupported chromatic leap';
     case 'unresolved-chromatic':
       return 'Unresolved chromatic note';
     case 'in-mode':
@@ -415,10 +514,14 @@ export function explainMusicDebugAccidentalReason(
   switch (reason) {
     case 'chromatic-passing':
       return 'Between two in-mode notes and connected by one-step motion.';
+    case 'harmonic-color':
+      return 'Outside the mode, but reinforced by an overlapping pitched harmony.';
     case 'lower-approach':
       return 'One semitone below a nearby in-mode target and resolved by step.';
     case 'upper-approach':
       return 'One semitone above a nearby in-mode target and resolved by step.';
+    case 'unsupported-chromatic-leap':
+      return 'Outside the mode and reached or left by leap without harmonic support.';
     case 'unresolved-chromatic':
       return 'Outside the current mode without a one-step resolution rule.';
     case 'in-mode':
@@ -426,6 +529,24 @@ export function explainMusicDebugAccidentalReason(
     case 'percussion':
       return null;
   }
+}
+
+function isUnexplainedAccidentalReason(
+  reason: MusicDebugAccidentalReason
+): boolean {
+  return (
+    reason === 'unresolved-chromatic' ||
+    reason === 'unsupported-chromatic-leap'
+  );
+}
+
+function notesOverlap(
+  startMs: number,
+  endMs: number,
+  otherStartMs: number,
+  otherEndMs: number
+): boolean {
+  return startMs < otherEndMs && otherStartMs < endMs;
 }
 
 function isBlackKeyMidiNote(midiNote: number): boolean {
