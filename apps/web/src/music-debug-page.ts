@@ -74,6 +74,9 @@ const playButton =
 const playbackVariantSelect = document.querySelector<HTMLSelectElement>(
   '#music-debug-playback-variant'
 );
+const playbackDryInput = document.querySelector<HTMLInputElement>(
+  '#music-debug-playback-dry'
+);
 const randomizeButton = document.querySelector<HTMLButtonElement>(
   '#music-debug-randomize'
 );
@@ -224,6 +227,12 @@ function resolveSelectedPlaybackRoles(
   );
 }
 
+function resolveSelectedDryPlaybackEnabled(
+  checked = playbackDryInput?.checked
+): boolean {
+  return checked === true;
+}
+
 function stopPlaybackFrameLoop(): void {
   if (playbackFrameHandle === null) {
     return;
@@ -277,6 +286,7 @@ function seekToOffset(nextOffsetMs: number): void {
           loopEnabled: loopInput?.checked === true,
         }),
         roles: resolveSelectedPlaybackRoles(),
+        dry: resolveSelectedDryPlaybackEnabled(),
       }
     );
     persistPageState(true);
@@ -308,11 +318,12 @@ const pageState = createMusicDebugPageState({
             playback: playbackVisualState,
             previewOffsetMs,
             loopEnabled: loopInput?.checked === true,
-            nowMs: performance.now(),
-          }),
-          roles: resolveSelectedPlaybackRoles(),
-        }
-      );
+          nowMs: performance.now(),
+        }),
+        roles: resolveSelectedPlaybackRoles(),
+        dry: resolveSelectedDryPlaybackEnabled(),
+      }
+    );
       return;
     }
     previewOffsetMs = clampMusicDebugPreviewOffset(
@@ -475,6 +486,9 @@ function applyPersistedPageState(): void {
   if (playbackVariantSelect) {
     playbackVariantSelect.value = persistedState.playbackVariant;
   }
+  if (playbackDryInput) {
+    playbackDryInput.checked = persistedState.dryPlaybackEnabled;
+  }
 }
 
 function persistPageState(
@@ -487,6 +501,7 @@ function persistPageState(
     playbackVariant: normalizeMusicDebugPlaybackVariant(
       playbackVariantSelect?.value
     ),
+    dryPlaybackEnabled: resolveSelectedDryPlaybackEnabled(),
     previewOffsetMs: offsetMs,
     shouldResume,
     scrollY: Math.max(0, Math.round(globalThis.scrollY ?? 0)),
@@ -528,6 +543,7 @@ playButton?.addEventListener('click', () => {
         loopEnabled: loopInput?.checked === true,
       }),
       roles: resolveSelectedPlaybackRoles(),
+      dry: resolveSelectedDryPlaybackEnabled(),
     }
   );
 });
@@ -621,6 +637,27 @@ playbackVariantSelect?.addEventListener('change', () => {
         nowMs: performance.now(),
       }),
       roles: resolveSelectedPlaybackRoles(),
+      dry: resolveSelectedDryPlaybackEnabled(),
+    });
+    persistPageState(true, resolveDisplayedOffsetMs());
+    return;
+  }
+  persistPageState(false);
+});
+
+playbackDryInput?.addEventListener('change', () => {
+  if (playbackController.isPlaying()) {
+    const snapshot = pageState.refreshNow();
+    playbackController.start(snapshot, {
+      ...resolveMusicDebugLivePlaybackIntent({
+        snapshot,
+        playback: playbackVisualState,
+        previewOffsetMs,
+        loopEnabled: loopInput?.checked === true,
+        nowMs: performance.now(),
+      }),
+      roles: resolveSelectedPlaybackRoles(),
+      dry: resolveSelectedDryPlaybackEnabled(),
     });
     persistPageState(true, resolveDisplayedOffsetMs());
     return;
@@ -655,11 +692,12 @@ scheduleAfterPaint(() => {
         ...resolveMusicDebugPlaybackIntent({
           snapshot,
           previewOffsetMs,
-          loopEnabled: loopInput?.checked === true,
-        }),
-        roles: resolveSelectedPlaybackRoles(persistedState.playbackVariant),
-      }
-    );
+        loopEnabled: loopInput?.checked === true,
+      }),
+      roles: resolveSelectedPlaybackRoles(persistedState.playbackVariant),
+      dry: resolveSelectedDryPlaybackEnabled(persistedState.dryPlaybackEnabled),
+    }
+  );
   }
   updatePreviewOffset(previewOffsetMs);
   syncPlaybackControls(snapshot);

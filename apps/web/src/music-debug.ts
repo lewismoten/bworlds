@@ -243,7 +243,10 @@ export type MusicDebugSongPlayback = {
   play(
     snapshot: MusicDebugSnapshot,
     region?: MusicDebugPlaybackRegion | null,
-    options?: { roles?: readonly MusicDebugPlaybackRole[] }
+    options?: {
+      roles?: readonly MusicDebugPlaybackRole[];
+      dry?: boolean;
+    }
   ): number | void;
   stop(): void;
 };
@@ -821,6 +824,10 @@ export function buildMusicDebugShellMarkup(
                 ).join('')}
               </select>
             </label>
+            <label class="music-debug-toggle">
+              <input id="music-debug-playback-dry" type="checkbox" />
+              <span>Dry playback</span>
+            </label>
             <div class="music-debug-export-controls">
               <button id="music-debug-download" type="button">Download MIDI</button>
               <button id="music-debug-download-bundle" type="button">Download Export ZIP</button>
@@ -1286,6 +1293,7 @@ export function createMusicDebugSongPlayback(
       const allowedRoles = playbackOptions?.roles
         ? new Set(playbackOptions.roles)
         : null;
+      const dry = playbackOptions?.dry === true;
       playbackGeneration += 1;
       clearScheduledBatch();
       const playbackRegion = resolveMusicDebugPlaybackRegion(snapshot, region);
@@ -1318,7 +1326,9 @@ export function createMusicDebugSongPlayback(
             break;
           }
           sink.play(
-            createMusicDebugScheduledPlaybackNote(note, scheduledStartMs)
+            createMusicDebugScheduledPlaybackNote(note, scheduledStartMs, {
+              dry,
+            })
           );
         }
 

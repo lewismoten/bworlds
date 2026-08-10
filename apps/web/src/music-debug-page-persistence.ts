@@ -20,6 +20,7 @@ export type MusicDebugPagePersistenceState = {
   options: MusicDebugOptions;
   loopEnabled: boolean;
   playbackVariant: MusicDebugPlaybackVariant;
+  dryPlaybackEnabled: boolean;
   previewOffsetMs: number;
   shouldResume: boolean;
   scrollY: number;
@@ -108,6 +109,7 @@ export function normalizeMusicDebugPagePersistenceState(
     options: normalizeMusicDebugOptions(value?.options),
     loopEnabled: value?.loopEnabled === true,
     playbackVariant: normalizeMusicDebugPlaybackVariant(value?.playbackVariant),
+    dryPlaybackEnabled: value?.dryPlaybackEnabled === true,
     previewOffsetMs: Math.max(0, Math.round(value?.previewOffsetMs ?? 0)),
     shouldResume: value?.shouldResume === true,
     scrollY: Math.max(0, Math.round(value?.scrollY ?? 0)),

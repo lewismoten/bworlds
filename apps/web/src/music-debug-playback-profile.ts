@@ -43,11 +43,19 @@ export function createMusicDebugInstrumentPreviewPlaybackNote(
 
 export function createMusicDebugScheduledPlaybackNote(
   note: ProceduralMusicNote,
-  scheduledStartMs: number
+  scheduledStartMs: number,
+  options: { dry?: boolean } = {}
 ): ProceduralMusicNote {
   return {
     ...note,
     startMs: scheduledStartMs,
+    space:
+      options.dry && note.space
+        ? {
+            ...note.space,
+            wetGain: 0,
+          }
+        : note.space,
     attackMs: Math.max(
       8,
       Math.min(MUSIC_DEBUG_PLAYBACK_ATTACK_CAP_MS, Math.round(note.attackMs))

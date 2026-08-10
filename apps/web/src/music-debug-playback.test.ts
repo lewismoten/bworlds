@@ -241,6 +241,7 @@ describe('music debug playback controller', () => {
     controller.start(snapshot, {
       loop: true,
       roles: ['lead'],
+      dry: true,
     });
 
     expect(playback.play).toHaveBeenNthCalledWith(
@@ -250,7 +251,7 @@ describe('music debug playback controller', () => {
         startOffsetMs: 0,
         endOffsetMs: snapshot.loopEndOffsetMs,
       }),
-      { roles: ['lead'] }
+      { roles: ['lead'], dry: true }
     );
 
     vi.advanceTimersByTime(snapshot.loopEndOffsetMs + 16);
@@ -262,7 +263,7 @@ describe('music debug playback controller', () => {
         startOffsetMs: snapshot.loopStartOffsetMs,
         endOffsetMs: snapshot.loopEndOffsetMs,
       }),
-      { roles: ['lead'] }
+      { roles: ['lead'], dry: true }
     );
   });
 

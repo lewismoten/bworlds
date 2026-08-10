@@ -14,6 +14,7 @@ describe('music debug page persistence', () => {
       normalizeMusicDebugPagePersistenceState({
         loopEnabled: true,
         playbackVariant: 'melody-only',
+        dryPlaybackEnabled: true,
         previewOffsetMs: -50,
         shouldResume: true,
         scrollY: -18,
@@ -26,6 +27,7 @@ describe('music debug page persistence', () => {
       expect.objectContaining({
         loopEnabled: true,
         playbackVariant: 'melody-only',
+        dryPlaybackEnabled: true,
         previewOffsetMs: 0,
         shouldResume: true,
         scrollY: 0,
@@ -70,6 +72,7 @@ describe('music debug page persistence', () => {
       },
       loopEnabled: true,
       playbackVariant: 'harmony-and-bass',
+      dryPlaybackEnabled: true,
       previewOffsetMs: 9_000,
       shouldResume: true,
       scrollY: 420,
@@ -92,6 +95,7 @@ describe('music debug page persistence', () => {
       expect.objectContaining({
         loopEnabled: true,
         playbackVariant: 'harmony-and-bass',
+        dryPlaybackEnabled: true,
         previewOffsetMs: 9_000,
         shouldResume: true,
         scrollY: 420,
@@ -109,6 +113,7 @@ describe('music debug page persistence', () => {
         return JSON.stringify({
           loopEnabled: false,
           playbackVariant: 'full',
+          dryPlaybackEnabled: false,
           previewOffsetMs: 100,
           shouldResume: false,
           scrollY: 10,
@@ -125,6 +130,7 @@ describe('music debug page persistence', () => {
         'bworlds:music-debug-page': {
           loopEnabled: true,
           playbackVariant: 'melody-only',
+          dryPlaybackEnabled: true,
           previewOffsetMs: 4_200,
           shouldResume: true,
           scrollY: 310,
@@ -154,6 +160,7 @@ describe('music debug page persistence', () => {
       expect.objectContaining({
         loopEnabled: true,
         playbackVariant: 'melody-only',
+        dryPlaybackEnabled: true,
         previewOffsetMs: 4_200,
         shouldResume: true,
         scrollY: 310,

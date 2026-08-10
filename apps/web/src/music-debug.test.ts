@@ -226,9 +226,11 @@ describe('music debug', () => {
     expect(markup).toContain('music-debug-randomize');
     expect(markup).toContain('Play Full Song');
     expect(markup).toContain('music-debug-playback-variant');
+    expect(markup).toContain('music-debug-playback-dry');
     expect(markup).toContain('Full Song</option>');
     expect(markup).toContain('Melody Only</option>');
     expect(markup).toContain('Harmony + Bass</option>');
+    expect(markup).toContain('Dry playback');
     expect(markup).toContain('Download MIDI');
     expect(markup).toContain('Download Export ZIP');
     expect(markup).toContain('music-debug-export-variant');
@@ -665,6 +667,39 @@ describe('music debug', () => {
     expect(
       new Set(play.mock.calls.map(([note]) => note.role))
     ).toEqual(new Set(['bass', 'harmony']));
+  });
+
+  it('can schedule a dry debug playback pass without reverb send', () => {
+    const snapshot = createMusicDebugSnapshot(
+      {
+        tileKind: 'forest',
+        contextType: 'overworld',
+        clusterX: 2,
+        clusterY: -1,
+      },
+      2_000
+    );
+    const play = vi.fn();
+    const playback = createMusicDebugSongPlayback(
+      {
+        resume: vi.fn(),
+        play,
+        stopAll: vi.fn(),
+      },
+      {
+        now: () => 1_000,
+        scheduleAheadMs: 12,
+        scheduleWindowMs: snapshot.durationMs + 1_000,
+      }
+    );
+
+    playback.play(snapshot, null, { dry: true });
+
+    const scheduledWithSpace = play.mock.calls.find(
+      ([note]) => note.space !== undefined
+    )?.[0];
+
+    expect(scheduledWithSpace?.space?.wetGain).toBe(0);
   });
 
   it('provides a theme object that can drive pitch-scale overlays', () => {
