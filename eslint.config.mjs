@@ -31,7 +31,6 @@ export default tseslint.config(
       },
     },
     rules: {
-      'no-undef': 'off',
       'no-useless-assignment': 'off',
       'prefer-const': 'off',
       '@typescript-eslint/no-empty-object-type': 'off',
