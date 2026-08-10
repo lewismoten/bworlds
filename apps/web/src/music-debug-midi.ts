@@ -7,6 +7,7 @@ import {
   MUSIC_DEBUG_MIDI_TICKS_PER_QUARTER,
 } from './music-debug-tempo.ts';
 import type { ProceduralInstrument } from './procedural-music.ts';
+import { resolvePercussionFamilyFromInstrumentId } from './procedural-music-percussion.ts';
 import { resolveMusicStereoPan } from './procedural-music-mix.ts';
 import type { MusicDebugSnapshot } from './music-debug.ts';
 import { inspectMusicDebugMidiBytes } from './music-debug-midi-audit.ts';
@@ -365,10 +366,14 @@ function buildRoleTracks(snapshot: MusicDebugSnapshot): MusicDebugMidiTrack[] {
       if (note.role !== role) {
         continue;
       }
+      const notePercussionFamily =
+        role === 'percussion'
+          ? resolvePercussionFamilyFromInstrumentId(note.instrumentId)
+          : null;
       const midiNote = isMidiPercussionFamily(instrument.family)
         ? resolveMidiPercussionNoteNumber({
             note,
-            family: instrument.family,
+            family: notePercussionFamily ?? instrument.family,
             noteIndex: roleNoteIndex,
           })
         : resolveMidiNoteNumber(note.frequency);

@@ -9,6 +9,7 @@ import {
   createProceduralMusicSong,
   resolveProceduralMusicSongDurationMs,
 } from './procedural-music-song.ts';
+import { resolvePercussionFamilyFromInstrumentId } from './procedural-music-percussion.ts';
 import { resolveMusicTheme } from './procedural-music.ts';
 import { buildProceduralMusicSongSections } from './procedural-music-song-timing.ts';
 import { resolveProceduralMusicBlueprint } from './procedural-music-blueprint.ts';
@@ -637,5 +638,64 @@ describe('procedural music song', () => {
         )
       ).toBe(true);
     }
+  });
+
+  it('gives forest phrases a repeating multi-instrument percussion pulse', () => {
+    const options = {
+      nowMs: 1_000,
+      tileKind: 'forest' as const,
+      contextType: 'overworld' as const,
+      dayProgress: 0.45,
+      yearProgress: 0.25,
+      clusterX: 3,
+      clusterY: -2,
+    };
+    const durationMs = resolveProceduralMusicSongDurationMs(options);
+    const blueprint = resolveProceduralMusicBlueprint(options);
+    const sections = buildProceduralMusicSongSections(blueprint, durationMs);
+    const totalMeasures = sections.reduce(
+      (sum, section) => sum + section.measureCount,
+      0
+    );
+    const phraseDurationMs = Math.round(
+      (durationMs / totalMeasures) * PROCEDURAL_MUSIC_PHRASE_MEASURE_COUNT
+    );
+    const percussionNotes = collectProceduralMusicPhraseNotes(
+      options,
+      phraseDurationMs
+    ).filter((note) => note.role === 'percussion');
+
+    expect(percussionNotes.length).toBeGreaterThan(6);
+    expect(
+      new Set(
+        percussionNotes
+          .map((note) => resolvePercussionFamilyFromInstrumentId(note.instrumentId))
+          .filter((family) => family !== null)
+      ).size
+    ).toBeGreaterThan(1);
+
+    let repeatedPulseClusters = 0;
+    for (let index = 1; index < percussionNotes.length; index += 1) {
+      if (
+        percussionNotes[index]!.startMs - percussionNotes[index - 1]!.startMs <
+        220
+      ) {
+        repeatedPulseClusters += 1;
+      }
+    }
+
+    expect(repeatedPulseClusters).toBeGreaterThan(3);
+    expect(
+      percussionNotes.some(
+        (note) => resolvePercussionFamilyFromInstrumentId(note.instrumentId) === 'shaker'
+      )
+    ).toBe(true);
+    expect(
+      percussionNotes.some(
+        (note) =>
+          resolvePercussionFamilyFromInstrumentId(note.instrumentId) ===
+          'hand-percussion'
+      )
+    ).toBe(true);
   });
 });

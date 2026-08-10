@@ -35,6 +35,7 @@ import { applyGentleProceduralMusicCompression } from './procedural-music-dynami
 import { normalizeProceduralMusicLoudness } from './procedural-music-loudness.ts';
 import { resolveProceduralMeterAccent } from './procedural-music-meter.ts';
 import { blendThemeMotifWithImportantNpcMotif } from './procedural-music-npc-motif.ts';
+import { createProceduralPercussionNotes } from './procedural-music-percussion.ts';
 import {
   resolveMusicSpaceProfile,
   type MusicSpaceProfile,
@@ -1432,6 +1433,51 @@ function createThemeNotes(options: {
               : null,
         })
       : [semitones];
+  if (role === 'percussion') {
+    return createProceduralPercussionNotes({
+      themeId: options.theme.id,
+      stepIndex: options.stepIndex,
+      phraseStep: composition.phraseStep,
+      cadence: composition.cadence,
+      startMs: options.startMs,
+      stepDurationMs:
+        (options.theme.noteDurationMs *
+          resolveRhythmicMotifStepDuration(options.theme, options.stepIndex)) /
+        options.mood.tempoMultiplier,
+      rootMidiNote: options.theme.rootMidiNote,
+      baseInstrumentId: instrument.id,
+      baseVolume:
+        options.theme.baseVolume *
+        options.mood.volumeMultiplier *
+        arrangementProfile.volumeMultiplier *
+        meterAccent.volumeMultiplier *
+        resolveCompositionVolumeMultiplier(role, composition) *
+        0.6,
+      baseAttackMs: instrument.attackMs,
+      baseReleaseMs:
+        instrument.releaseMs * arrangementProfile.releaseMultiplier,
+      baseDetuneCents: instrument.detuneCents,
+      baseHarmonicGain: resolveProceduralNoteHarmonicGain({
+        baseHarmonicGain: instrument.harmonicGain,
+        harmonicGainMultiplier: arrangementProfile.harmonicGainMultiplier,
+        moodBrightness: options.mood.brightness,
+        brightnessMultiplier: arrangementProfile.brightnessMultiplier,
+      }),
+      basePulseRate:
+        instrument.pulseRate *
+        arrangementProfile.pulseRateMultiplier *
+        meterAccent.pulseRateMultiplier,
+      brightness: instrument.brightness,
+      clusterX: options.clusterX,
+      clusterY: options.clusterY,
+      space: resolveMusicSpaceProfile({
+        tileKind: options.tileKind,
+        contextType: options.contextType,
+      }),
+      emitter: options.emitter,
+      listener: options.listener,
+    });
+  }
   const voiceVolumeScale =
     role === 'harmony' ? 1.2 / Math.max(1, voiceSemitones.length) : 1;
   return voiceSemitones.map((voiceSemitone, voiceIndex) => ({

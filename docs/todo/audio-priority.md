@@ -34,8 +34,8 @@
 - [x] Make B harmony prominence lower than Section A.
 - [x] Measure prominence using density, velocity, and register.
 - [x] Account for competing layers when scoring prominence.
-- [ ] Add a soft repeating rhythmic pulse for forest music.
-- [ ] Use percussion patterns instead of isolated cymbal events.
+- [x] Add a soft repeating rhythmic pulse for forest music.
+- [x] Use percussion patterns instead of isolated cymbal events.
 - [x] Compare intended intervals with actual interval counts.
 - [x] Report exact and varied motif matches separately.
 - [ ] Score phrase repetition and phrase-level similarity.
@@ -43,7 +43,7 @@
 - [ ] Add a melody-only MIDI export for rapid evaluation.
 - [ ] Add a harmony-and-bass-only MIDI export for review.
 - [ ] Test eight measures before generating all measures.
-- [ ] Percussion should be made of multiple percussion instruments (drum set), preferably noise related
+- [x] Percussion should be made of multiple percussion instruments (drum set), preferably noise related
 - [ ] Let me download the MIDI, instrument WAV, and parameter report JSON, as a zip file.
 - [ ] Sections should be embedded in MIDI meta/control flow to help indicate which notes belong to what section (Intro, Section A, section A', Section B, Variation, Retrun, Outro, etc.)
 - [ ] Add a [Sound Bank Debug Page](./sound-bank-debug.md)

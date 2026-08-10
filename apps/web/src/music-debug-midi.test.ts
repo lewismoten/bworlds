@@ -5,6 +5,7 @@ import {
   downloadMusicDebugMidiFile,
 } from './music-debug-midi.ts';
 import { msToMusicDebugTicks } from './music-debug-tempo.ts';
+import { resolvePercussionFamilyFromInstrumentId } from './procedural-music-percussion.ts';
 
 describe('music debug midi', () => {
   it('encodes the current generated song as a multitrack midi file with a stable filename', () => {
@@ -165,16 +166,25 @@ describe('music debug midi', () => {
     });
     const chunks = parseMidiChunks(file.bytes);
     const percussionNotes = readMidiNoteOns(chunks.tracks[4]!);
-    const percussionFamily =
-      snapshot.instrumentBank.instruments.percussion.family;
-    const expectedFamilyNotes =
-      resolveExpectedPercussionMidiNotes(percussionFamily);
+    const expectedFamilyNotes = new Set<number>();
+
+    for (const note of snapshot.notes) {
+      if (note.role !== 'percussion') {
+        continue;
+      }
+      const family =
+        resolvePercussionFamilyFromInstrumentId(note.instrumentId) ??
+        snapshot.instrumentBank.instruments.percussion.family;
+      for (const midiNote of resolveExpectedPercussionMidiNotes(family)) {
+        expectedFamilyNotes.add(midiNote);
+      }
+    }
 
     expect(percussionNotes.length).toBeGreaterThan(0);
     expect(new Set(percussionNotes).size).toBeGreaterThan(1);
-    expect(expectedFamilyNotes.length).toBeGreaterThan(0);
+    expect(expectedFamilyNotes.size).toBeGreaterThan(0);
     expect(
-      percussionNotes.every((note) => expectedFamilyNotes.includes(note))
+      percussionNotes.every((note) => expectedFamilyNotes.has(note))
     ).toBe(true);
   });
 
