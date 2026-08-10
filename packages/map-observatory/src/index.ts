@@ -22,9 +22,7 @@ export function createObservatoryMapPlugin(): RuntimePlugin {
   });
 }
 
-function createObservatoryMap(
-  context: ObservatoryContext
-): WorldMapLike {
+function createObservatoryMap(context: ObservatoryContext): WorldMapLike {
   function getTile(x: number, y: number): TileLike {
     if (Math.abs(x) > 5 || Math.abs(y) > 5) {
       return { kind: 'wall' };

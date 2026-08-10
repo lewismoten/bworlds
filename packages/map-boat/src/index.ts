@@ -1,9 +1,5 @@
 import { createContextMapPlugin } from '@bworlds/map-support';
-import type {
-  Kind,
-  RuntimePlugin,
-  WorldStateLike,
-} from '@bworlds/plugin-api';
+import type { Kind, RuntimePlugin, WorldStateLike } from '@bworlds/plugin-api';
 import {
   createWatercraftMap,
   findNearestWatercraftLaunchPoint,

@@ -5,9 +5,7 @@ import {
   createFrontierContentPackDefinition,
   frontierContentPackManifest,
 } from '@bworlds/content-pack-frontier';
-import {
-  createRuinsContentPackDefinition,
-} from '@bworlds/content-pack-ruins';
+import { createRuinsContentPackDefinition } from '@bworlds/content-pack-ruins';
 import {
   createDefaultContentPackDefinition,
   createDefaultRuntimePlugins as createDefaultRuntimePluginsFromPack,

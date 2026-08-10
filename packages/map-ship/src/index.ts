@@ -32,10 +32,7 @@ export function createShipMapPlugin(): RuntimePlugin {
   });
 }
 
-function createShipMap(
-  context: ShipContext,
-  seed: Seed
-): WorldMapLike {
+function createShipMap(context: ShipContext, seed: Seed): WorldMapLike {
   const variant = getShipMapVariant(seed, context.origin.x, context.origin.y);
 
   function getTile(x: number, y: number): TileLike {

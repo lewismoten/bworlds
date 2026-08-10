@@ -1,7 +1,8 @@
+import type { ProceduralMusicSongSection } from './procedural-music-song.ts';
 import type {
-  ProceduralMusicSongSection,
-} from './procedural-music-song.ts';
-import type { MusicUpdateOptions, ProceduralMusicNote } from './procedural-music.ts';
+  MusicUpdateOptions,
+  ProceduralMusicNote,
+} from './procedural-music.ts';
 import {
   collectProceduralMusicPhraseNotes,
   PROCEDURAL_MUSIC_PHRASE_MEASURE_COUNT,

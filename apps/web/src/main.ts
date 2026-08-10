@@ -77,10 +77,7 @@ import {
   parseSavedSession,
   serializeSessionSnapshot,
 } from './session-state.ts';
-import {
-  createTeleportPin,
-  normalizeTeleportPins,
-} from './teleport-pins.ts';
+import { createTeleportPin, normalizeTeleportPins } from './teleport-pins.ts';
 import {
   AUDIO_CATEGORIES,
   getAudioCategoryLabel,

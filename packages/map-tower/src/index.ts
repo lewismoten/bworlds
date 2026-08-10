@@ -30,9 +30,7 @@ export function createTowerMapPlugin(): RuntimePlugin {
   });
 }
 
-function createTowerMap(
-  context: TowerContext
-): WorldMapLike {
+function createTowerMap(context: TowerContext): WorldMapLike {
   function getTile(x: number, y: number): TowerTile {
     return resolveTowerTile(context.depth, x, y);
   }

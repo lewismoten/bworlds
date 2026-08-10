@@ -24,9 +24,7 @@ export function createLighthouseMapPlugin(): RuntimePlugin {
   });
 }
 
-function createLighthouseMap(
-  context: LighthouseContext
-): WorldMapLike {
+function createLighthouseMap(context: LighthouseContext): WorldMapLike {
   function getTile(x: number, y: number): LighthouseTile {
     if (Math.abs(x) > 4 || Math.abs(y) > 4) {
       return { kind: 'wall' };

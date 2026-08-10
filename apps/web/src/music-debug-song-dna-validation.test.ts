@@ -126,5 +126,9 @@ function createSongDna(): ProceduralSongDna {
 }
 
 function createInstrumentBank(): ProceduralInstrumentBank {
-  return createProceduralInstrumentBank(resolveMusicThemeById('frontier-plains'), 0, 0);
+  return createProceduralInstrumentBank(
+    resolveMusicThemeById('frontier-plains'),
+    0,
+    0
+  );
 }

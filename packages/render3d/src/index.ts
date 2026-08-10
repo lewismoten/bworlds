@@ -2144,10 +2144,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     return kind;
   }
 
-  function syncVisibleWorld(
-    state,
-    chunkRadius = CHUNK_RADIUS
-  ) {
+  function syncVisibleWorld(state, chunkRadius = CHUNK_RADIUS) {
     const context = state.getCurrentContext();
     const centerX = Math.round(state.player.x);
     const centerY = Math.round(state.player.y);

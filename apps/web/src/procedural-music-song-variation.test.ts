@@ -97,8 +97,8 @@ describe('procedural music song variation', () => {
   });
 
   it('keeps the base A section unchanged', () => {
-    expect(transformSongSectionNote(BASE_NOTE, createSection('a'), 3, 0)).toEqual(
-      BASE_NOTE
-    );
+    expect(
+      transformSongSectionNote(BASE_NOTE, createSection('a'), 3, 0)
+    ).toEqual(BASE_NOTE);
   });
 });

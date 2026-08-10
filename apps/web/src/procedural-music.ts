@@ -1483,11 +1483,7 @@ function createThemeNotes(options: {
     startMs: options.startMs,
     durationMs:
       options.theme.noteDurationMs *
-      (role === 'bass'
-        ? 1.08
-        : role === 'harmony'
-          ? 1.18
-          : 0.92) *
+      (role === 'bass' ? 1.08 : role === 'harmony' ? 1.18 : 0.92) *
       arrangementProfile.durationMultiplier *
       meterAccent.durationMultiplier *
       resolveCompositionDurationMultiplier(role, composition),
@@ -1503,11 +1499,7 @@ function createThemeNotes(options: {
       arrangementProfile.volumeMultiplier *
       meterAccent.volumeMultiplier *
       resolveCompositionVolumeMultiplier(role, composition) *
-      (role === 'bass'
-        ? 0.8
-        : role === 'harmony'
-          ? 0.72
-          : 1) *
+      (role === 'bass' ? 0.8 : role === 'harmony' ? 0.72 : 1) *
       voiceVolumeScale,
     waveform: arrangementProfile.waveformOverride ?? instrument.waveform,
     timbre: instrument.timbre,

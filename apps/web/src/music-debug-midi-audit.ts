@@ -93,7 +93,9 @@ export function inspectMusicDebugMidiBytes(
   );
   const mismatchMessages: string[] = [];
   const warningMessages: string[] = [];
-  const includedRoles: ReadonlySet<MusicDebugSnapshot['notes'][number]['role']> = new Set(
+  const includedRoles: ReadonlySet<
+    MusicDebugSnapshot['notes'][number]['role']
+  > = new Set(
     options.includedRoles ?? ['bass', 'harmony', 'lead', 'percussion']
   );
   const exportedTrackSummaries = readExportedTrackSummaries(

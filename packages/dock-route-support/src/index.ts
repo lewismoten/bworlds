@@ -1,7 +1,4 @@
-import {
-  createBoundedCache,
-  type BoundedCache,
-} from '@bworlds/cache-support';
+import { createBoundedCache, type BoundedCache } from '@bworlds/cache-support';
 import {
   appendHashSeedPart,
   hash2D,
