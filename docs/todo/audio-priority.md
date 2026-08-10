@@ -39,6 +39,7 @@
 - [ ] Add a harmony-and-bass-only MIDI export for review.
 - [ ] Test eight measures before generating all 88 measures.
 - [ ] Percussion should be made of multiple percussion instruments (drum set), preferably noise related
+- [ ] Let me download the MIDI, instrument WAV, and parameter report JSON, as a zip file.
 
 # Medium Priority
 
