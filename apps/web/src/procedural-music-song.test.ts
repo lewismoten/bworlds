@@ -185,6 +185,54 @@ describe('procedural music song', () => {
     );
   });
 
+  it("states a clear transposed motif at the opening of Section A'", () => {
+    const clusterX = 0;
+    const clusterY = 0;
+    const song = createProceduralMusicSong({
+      nowMs: 1_000,
+      tileKind: 'plains',
+      contextType: 'overworld',
+      dayProgress: 0.45,
+      yearProgress: 0.25,
+      clusterX,
+      clusterY,
+    });
+    const theme = resolveMusicTheme(
+      'plains',
+      'overworld',
+      undefined,
+      clusterX,
+      clusterY
+    );
+    const sectionAPrime = song.sections.find(
+      (section) => section.id === 'a-prime'
+    )!;
+    const sectionAPrimeLead = song.notes
+      .filter(
+        (note) =>
+          note.role === 'lead' &&
+          note.startMs >= song.startMs + sectionAPrime.startOffsetMs &&
+          note.startMs <
+            song.startMs +
+              sectionAPrime.startOffsetMs +
+              sectionAPrime.durationMs
+      )
+      .slice(0, 4)
+      .map((note) => resolveMidiNote(note.frequency));
+
+    expect(sectionAPrimeLead).toEqual(
+      [1, 3, 5, 3].map((degreeIndex) =>
+        resolveProceduralScaleDegreeMidiNote({
+          scaleMap: {
+            rootMidiNote: theme.rootMidiNote,
+            modePitchOffsets: theme.scale,
+          },
+          degreeIndex,
+        })
+      )
+    );
+  });
+
   it('renders motif notes through the selected mode instead of treating degrees as semitone offsets', () => {
     const clusterX = 3;
     const clusterY = -2;
@@ -266,6 +314,44 @@ describe('procedural music song', () => {
       { offsetRatio: 0.109, durationRatio: 0.032 },
     ]);
     expect(sectionAPrimeRhythm).toEqual(sectionARhythm);
+  });
+
+  it("varies only motif pitch content between Section A and Section A'", () => {
+    const clusterX = 0;
+    const clusterY = 0;
+    const song = createProceduralMusicSong({
+      nowMs: 1_000,
+      tileKind: 'plains',
+      contextType: 'overworld',
+      dayProgress: 0.45,
+      yearProgress: 0.25,
+      clusterX,
+      clusterY,
+    });
+    const sectionA = song.sections.find((section) => section.id === 'a')!;
+    const sectionAPrime = song.sections.find(
+      (section) => section.id === 'a-prime'
+    )!;
+    const sectionAPitches = collectLeadSectionPitches(song, sectionA).slice(
+      0,
+      4
+    );
+    const sectionAPrimePitches = collectLeadSectionPitches(
+      song,
+      sectionAPrime
+    ).slice(0, 4);
+    const sectionARhythm = collectLeadMotifRhythmShape(song, sectionA).slice(
+      0,
+      4
+    );
+    const sectionAPrimeRhythm = collectLeadMotifRhythmShape(
+      song,
+      sectionAPrime
+    ).slice(0, 4);
+
+    expect(sectionAPrimeRhythm).toEqual(sectionARhythm);
+    expect(sectionAPrimePitches).not.toEqual(sectionAPitches);
+    expect(sectionAPrimePitches).toHaveLength(sectionAPitches.length);
   });
 
   it('builds an eight-measure phrase before repeating it across the full song', () => {
@@ -850,4 +936,19 @@ function collectLeadMotifRhythmShape(
       ),
       durationRatio: Number((note.durationMs / section.durationMs).toFixed(3)),
     }));
+}
+
+function collectLeadSectionPitches(
+  song: ReturnType<typeof createProceduralMusicSong>,
+  section: ReturnType<typeof createProceduralMusicSong>['sections'][number]
+): number[] {
+  return song.notes
+    .filter(
+      (note) =>
+        note.role === 'lead' &&
+        note.startMs >= song.startMs + section.startOffsetMs &&
+        note.startMs < song.startMs + section.startOffsetMs + section.durationMs
+    )
+    .slice(0, 4)
+    .map((note) => resolveMidiNote(note.frequency));
 }

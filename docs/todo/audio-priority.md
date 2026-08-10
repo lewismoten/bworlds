@@ -185,9 +185,9 @@ added directly as semitones instead of moving through the selected scale.
 - [x] Render 1-3-5-3 as G-B-D-B in the selected mode.
 - [x] Confirm motif notes use degrees rather than semitones.
 - [x] Give the motif one recognizable rhythm.
-- [ ] State the motif clearly during Section A.
-- [ ] Repeat the motif clearly during Section A'.
-- [ ] Vary only one motif element at a time.
+- [x] State the motif clearly during Section A.
+- [x] Repeat the motif clearly during Section A'.
+- [x] Vary only one motif element at a time.
 - [ ] Transpose motifs using chord-aware scale degrees.
 - [x] Keep the motif rhythm recognizable after transposition.
 - [ ] Use motif fragments during B and Variation.
