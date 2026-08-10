@@ -72,6 +72,27 @@ describe('music debug cadence validation', () => {
       'Return answer cadence at measure 8 drifted outside the active harmony (D, F#, G; lead C4, bass C3).'
     );
   });
+
+  it('fails the final answer cadence when it does not resolve to tonic', () => {
+    const validation = validateMusicDebugCadences({
+      notes: [
+        createNote('lead', 7_480, 293.6647679174076),
+        createNote('bass', 7_520, 195.99771799087463),
+        createNote('harmony', 7_100, 130.8127826502993),
+        createNote('harmony', 7_100, 164.81377845643496),
+        createNote('harmony', 7_100, 195.99771799087463),
+      ],
+      sections: [TEST_SECTIONS[1]!],
+      songStartMs: 0,
+      rootMidiNote: 48,
+      scale: [0, 2, 4, 5, 7, 9, 10],
+    });
+
+    expect(validation.isValidForMidiExport).toBe(false);
+    expect(validation.messages).toContain(
+      'Outro answer cadence at measure 16 missed its target tones (lead D4, bass G3).'
+    );
+  });
 });
 
 const TEST_SECTIONS: ProceduralMusicSongSection[] = [

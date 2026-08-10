@@ -245,6 +245,30 @@ describe('music debug midi', () => {
     );
   });
 
+  it('blocks MIDI export when the final cadence does not resolve to tonic', () => {
+    const snapshot = createMusicDebugSnapshot({
+      tileKind: 'town',
+      contextType: 'town',
+      clusterX: 3,
+      clusterY: -2,
+    });
+
+    expect(() =>
+      createMusicDebugMidiFile({
+        ...snapshot,
+        cadenceValidation: {
+          ...snapshot.cadenceValidation,
+          isValidForMidiExport: false,
+          messages: [
+            'Outro answer cadence at measure 80 missed its target tones (lead D4, bass G3).',
+          ],
+        },
+      })
+    ).toThrow(
+      'Cannot export MIDI: Outro answer cadence at measure 80 missed its target tones (lead D4, bass G3).'
+    );
+  });
+
   it('blocks MIDI export when SongDNA validation fails', () => {
     const snapshot = createMusicDebugSnapshot({
       tileKind: 'town',
