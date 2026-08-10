@@ -1,8 +1,15 @@
 import { describe, expect, it, vi } from 'vitest';
+import {
+  registerTestCleanup,
+  trackClosableTestResource,
+} from './test-cleanup.ts';
 
 describe('vitest test setup', () => {
   let leakedTimeoutFired = false;
   let leakedIntervalCount = 0;
+  let registeredCleanupCount = 0;
+  let callbackClosed = false;
+  let terminated = false;
 
   it('intentionally leaves fake timers and mocks active inside one test', () => {
     vi.useFakeTimers();
@@ -18,6 +25,23 @@ describe('vitest test setup', () => {
     setInterval(() => {
       leakedIntervalCount += 1;
     }, 0);
+  });
+
+  it('intentionally leaves registered cleanups and closable handles active inside one test', () => {
+    registerTestCleanup(() => {
+      registeredCleanupCount += 1;
+    });
+    trackClosableTestResource({
+      close(callback: (error?: unknown) => void) {
+        callbackClosed = true;
+        callback();
+      },
+    });
+    trackClosableTestResource({
+      async terminate() {
+        terminated = true;
+      },
+    });
   });
 
   it('restores fake timers and mocks before the next test starts', async () => {
@@ -36,6 +60,12 @@ describe('vitest test setup', () => {
 
     expect(leakedTimeoutFired).toBe(false);
     expect(leakedIntervalCount).toBe(0);
+  });
+
+  it('runs registered cleanup callbacks before the next test starts', () => {
+    expect(registeredCleanupCount).toBe(1);
+    expect(callbackClosed).toBe(true);
+    expect(terminated).toBe(true);
   });
 });
 

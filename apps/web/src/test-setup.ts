@@ -1,4 +1,5 @@
 import { afterEach, vi } from 'vitest';
+import { runRegisteredTestCleanups } from './test-cleanup.ts';
 
 const realSetTimeout = globalThis.setTimeout.bind(globalThis);
 const realClearTimeout = globalThis.clearTimeout.bind(globalThis);
@@ -42,7 +43,7 @@ globalThis.clearInterval = ((timer) => {
   realClearInterval(timer);
 }) as typeof globalThis.clearInterval;
 
-afterEach(() => {
+afterEach(async () => {
   vi.clearAllTimers();
   vi.useRealTimers();
 
@@ -59,4 +60,6 @@ afterEach(() => {
   vi.restoreAllMocks();
   vi.unstubAllEnvs();
   vi.unstubAllGlobals();
+
+  await runRegisteredTestCleanups();
 });

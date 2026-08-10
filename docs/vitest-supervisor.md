@@ -30,5 +30,12 @@ Shared cleanup now lives in [apps/web/src/test-setup.ts](/Users/lewismoten/dev/b
 - restores real timers after each test
 - restores mocks after each test
 - unstubs globals and env vars after each test
+- runs registered cleanup callbacks after each test
+
+Tests that open handles with longer lifetimes can register them through
+[apps/web/src/test-cleanup.ts](/Users/lewismoten/dev/bworlds/apps/web/src/test-cleanup.ts:1):
+
+- `registerTestCleanup(() => ...)` for custom teardown logic
+- `trackClosableTestResource(resource)` for callback-style `close()` handles and promise-based `terminate()`/`destroy()` handles
 
 That split keeps per-test/hook limits in Vitest itself while the supervisor handles whole-suite process cleanup.

@@ -19,7 +19,10 @@ Always run tests to make sure all tests pass
 - [ ] Check async tests for missing `await` statements.
 - [ ] Ensure every promise eventually resolves or rejects.
 - [x] Clear intervals and timeouts after every test.
-- [ ] Close servers, sockets, workers, and file watchers.
+- [x] Close servers, sockets, workers, and file watchers.
+      Shared Vitest cleanup now supports registered teardown callbacks plus
+      tracked `close()`/`destroy()`/`terminate()` handles so open resources can
+      be closed centrally after each test.
 - [x] Restore fake timers and mocks after every test.
 - [x] Prevent concurrent full-suite runs in the same project.
 - [x] Make the agent wait for one test run to finish.
