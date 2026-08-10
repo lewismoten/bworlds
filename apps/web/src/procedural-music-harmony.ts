@@ -217,7 +217,8 @@ export function resolveProceduralCompositionStep(
   theme: ProceduralHarmonyTheme,
   stepIndex: number,
   clusterX: number,
-  clusterY: number
+  clusterY: number,
+  _allowLeadAccidentals = true
 ): ProceduralCompositionStep {
   const motif = resolveProceduralLeadMotif(theme, clusterX, clusterY);
   const contour = resolveProceduralLeadContour(theme, clusterX, clusterY);
@@ -321,6 +322,7 @@ export function resolveProceduralInstrumentSemitones(options: {
   stepIndex: number;
   clusterX: number;
   clusterY: number;
+  allowLeadAccidentals?: boolean;
 }): number {
   const chord = resolveProceduralChordAtStep(
     options.theme,
@@ -350,7 +352,8 @@ export function resolveProceduralInstrumentSemitones(options: {
     chord,
     options.stepIndex,
     options.clusterX,
-    options.clusterY
+    options.clusterY,
+    options.allowLeadAccidentals
   );
 }
 
@@ -624,7 +627,8 @@ function resolveLeadSemitones(
   chord: ProceduralChord,
   stepIndex: number,
   clusterX: number,
-  clusterY: number
+  clusterY: number,
+  allowLeadAccidentals = true
 ): number {
   return resolveLeadSemitonesCached(
     theme,
@@ -632,6 +636,7 @@ function resolveLeadSemitones(
     stepIndex,
     clusterX,
     clusterY,
+    allowLeadAccidentals,
     new Map<number, number>()
   );
 }
@@ -642,6 +647,7 @@ function resolveLeadSemitonesCached(
   stepIndex: number,
   clusterX: number,
   clusterY: number,
+  allowLeadAccidentals: boolean,
   memo: Map<number, number>
 ): number {
   const cached = memo.get(stepIndex);
@@ -659,7 +665,8 @@ function resolveLeadSemitonesCached(
     chord,
     stepIndex,
     clusterX,
-    clusterY
+    clusterY,
+    allowLeadAccidentals
   );
   if (stepIndex <= 0) {
     return commit(current.semitones);
@@ -677,7 +684,8 @@ function resolveLeadSemitonesCached(
       previousChord,
       stepIndex - 1,
       clusterX,
-      clusterY
+      clusterY,
+      allowLeadAccidentals
     ),
     semitones: resolveLeadSemitonesCached(
       theme,
@@ -685,6 +693,7 @@ function resolveLeadSemitonesCached(
       stepIndex - 1,
       clusterX,
       clusterY,
+      allowLeadAccidentals,
       memo
     ),
   };
@@ -703,6 +712,7 @@ function resolveLeadSemitonesCached(
               stepIndex - 2,
               clusterX,
               clusterY,
+              allowLeadAccidentals,
               memo
             )
         )
@@ -712,6 +722,7 @@ function resolveLeadSemitonesCached(
     stepIndex,
     clusterX,
     clusterY,
+    allowLeadAccidentals,
     memo,
     threshold: ORDINARY_LEAD_MOTION_LIMIT_SEMITONES,
   });
@@ -844,7 +855,8 @@ function resolveLeadSemitonesCached(
         previousPreviousChord,
         stepIndex - 2,
         clusterX,
-        clusterY
+        clusterY,
+        allowLeadAccidentals
       ),
       semitones: resolveLeadSemitonesCached(
         theme,
@@ -852,6 +864,7 @@ function resolveLeadSemitonesCached(
         stepIndex - 2,
         clusterX,
         clusterY,
+        allowLeadAccidentals,
         memo
       ),
     };
@@ -884,7 +897,8 @@ function resolveLeadSemitonePlan(
   chord: ProceduralChord,
   stepIndex: number,
   clusterX: number,
-  clusterY: number
+  clusterY: number,
+  allowLeadAccidentals: boolean
 ): {
   semitones: number;
   candidateSemitones: readonly number[];
@@ -902,7 +916,8 @@ function resolveLeadSemitonePlan(
     theme,
     stepIndex,
     clusterX,
-    clusterY
+    clusterY,
+    allowLeadAccidentals
   );
   const melodyPatternIndex =
     chord.degreeIndex +
@@ -984,13 +999,15 @@ function resolveLeadSemitonePlan(
     };
   }
 
-  const accidentalSemitones = resolveLeadAccidentalSemitones(
-    theme,
-    chord,
-    stepIndex,
-    clusterX,
-    clusterY
-  );
+  const accidentalSemitones = allowLeadAccidentals
+    ? resolveLeadAccidentalSemitones(
+        theme,
+        chord,
+        stepIndex,
+        clusterX,
+        clusterY
+      )
+    : null;
   if (accidentalSemitones !== null) {
     return {
       semitones: accidentalSemitones,
@@ -1175,6 +1192,7 @@ function countPriorLargeLeadLeapsInPhrase(options: {
   stepIndex: number;
   clusterX: number;
   clusterY: number;
+  allowLeadAccidentals: boolean;
   memo: Map<number, number>;
   threshold: number;
 }): number {
@@ -1199,6 +1217,7 @@ function countPriorLargeLeadLeapsInPhrase(options: {
       index,
       options.clusterX,
       options.clusterY,
+      options.allowLeadAccidentals,
       options.memo
     );
     const previous = resolveLeadSemitonesCached(
@@ -1212,6 +1231,7 @@ function countPriorLargeLeadLeapsInPhrase(options: {
       index - 1,
       options.clusterX,
       options.clusterY,
+      options.allowLeadAccidentals,
       options.memo
     );
     if (Math.abs(current - previous) > options.threshold) {

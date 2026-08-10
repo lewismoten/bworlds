@@ -15,7 +15,10 @@ export function constrainSongSectionNote(
   }
 
   const clampedEndMs = Math.min(note.startMs + note.durationMs, sectionEndMs);
-  const clampedDurationMs = Math.max(1, clampedEndMs - clampedStartMs);
+  const clampedDurationMs = clampedEndMs - clampedStartMs;
+  if (clampedDurationMs < 1) {
+    return null;
+  }
 
   return {
     ...note,

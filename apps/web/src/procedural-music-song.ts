@@ -19,6 +19,11 @@ import {
 } from './procedural-music.ts';
 import { transformSongSectionNote } from './procedural-music-song-variation.ts';
 import { buildProceduralMusicSongSections } from './procedural-music-song-timing.ts';
+import {
+  collectProceduralMusicPhraseNotes,
+  PROCEDURAL_MUSIC_PHRASE_MEASURE_COUNT,
+  repeatProceduralMusicPhraseNotes,
+} from './procedural-music-song-phrase.ts';
 
 export type ProceduralMusicSongSection = {
   id: ProceduralMusicSongSectionId;
@@ -54,7 +59,20 @@ export function createProceduralMusicSong(
   const durationMs = resolveProceduralMusicSongDurationMs(options);
   const blueprint = resolveProceduralMusicBlueprint(options);
   const sections = buildProceduralMusicSongSections(blueprint, durationMs);
-  const baseNotes = collectProceduralMusicSongNotes(options, durationMs);
+  const phraseDurationMs = resolveProceduralMusicPhraseDurationMs(
+    sections,
+    durationMs
+  );
+  const basePhraseNotes = collectProceduralMusicPhraseNotes(
+    options,
+    phraseDurationMs
+  );
+  const baseNotes = repeatProceduralMusicPhraseNotes(basePhraseNotes, {
+    phraseStartMs: startMs,
+    phraseDurationMs,
+    songStartMs: startMs,
+    songDurationMs: durationMs,
+  });
   const notes = applySongSectionsToNotes(baseNotes, sections, startMs);
   const loopStartOffsetMs = sections[1]?.startOffsetMs ?? 0;
   const outro = sections[sections.length - 1];
@@ -132,42 +150,6 @@ function getMusicSongDurationRange(
   return { minDurationMs: 96_000, maxDurationMs: 150_000 };
 }
 
-function collectProceduralMusicSongNotes(
-  options: MusicUpdateOptions,
-  durationMs: number
-): ProceduralMusicNote[] {
-  const endMs = options.nowMs + durationMs;
-  const notes: ProceduralMusicNote[] = [];
-  let previousState:
-    ReturnType<typeof scheduleProceduralMusicNotes>['state'] | undefined;
-  let cursorNowMs = options.nowMs;
-
-  while (cursorNowMs < endMs) {
-    const scheduled = scheduleProceduralMusicNotes(
-      {
-        ...options,
-        nowMs: cursorNowMs,
-      },
-      previousState
-    );
-    previousState = scheduled.state;
-    for (let index = 0; index < scheduled.notes.length; index += 1) {
-      const note = scheduled.notes[index]!;
-      if (note.startMs >= endMs) {
-        continue;
-      }
-      notes.push(note);
-    }
-    if (scheduled.state.nextNoteAtMs <= cursorNowMs) {
-      cursorNowMs += 1;
-    } else {
-      cursorNowMs = scheduled.state.nextNoteAtMs;
-    }
-  }
-
-  return notes;
-}
-
 function applySongSectionsToNotes(
   notes: readonly ProceduralMusicNote[],
   sections: readonly ProceduralMusicSongSection[],
@@ -213,7 +195,30 @@ function applySongSectionsToNotes(
     }
   }
 
+  transformedNotes.sort((left, right) => {
+    if (left.startMs !== right.startMs) {
+      return left.startMs - right.startMs;
+    }
+    return left.durationMs - right.durationMs;
+  });
+
   return transformedNotes;
+}
+
+function resolveProceduralMusicPhraseDurationMs(
+  sections: readonly ProceduralMusicSongSection[],
+  durationMs: number
+): number {
+  const totalMeasures = Math.max(
+    1,
+    sections.reduce((sum, section) => sum + section.measureCount, 0)
+  );
+  return Math.max(
+    1_000,
+    Math.round(
+      (durationMs / totalMeasures) * PROCEDURAL_MUSIC_PHRASE_MEASURE_COUNT
+    )
+  );
 }
 
 function roundToNearestThousand(value: number): number {

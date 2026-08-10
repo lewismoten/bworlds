@@ -1,9 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import { isNoteInsideSongSection } from './procedural-music-song-boundaries.ts';
 import {
+  collectProceduralMusicPhraseNotes,
+  PROCEDURAL_MUSIC_PHRASE_MEASURE_COUNT,
+  repeatProceduralMusicPhraseNotes,
+} from './procedural-music-song-phrase.ts';
+import {
   createProceduralMusicSong,
   resolveProceduralMusicSongDurationMs,
 } from './procedural-music-song.ts';
+import { buildProceduralMusicSongSections } from './procedural-music-song-timing.ts';
+import { resolveProceduralMusicBlueprint } from './procedural-music-blueprint.ts';
 
 describe('procedural music song', () => {
   it('keeps overworld and town songs in the two-to-three-minute range', () => {
@@ -136,6 +143,74 @@ describe('procedural music song', () => {
     expect(first.durationMs).toBeGreaterThan(100_000);
     expect(first.durationMs).toBe(second.durationMs);
     expect(first.notes).toEqual(second.notes);
+  });
+
+  it('builds an eight-measure phrase before repeating it across the full song', () => {
+    const options = {
+      nowMs: 1_000,
+      tileKind: 'forest' as const,
+      contextType: 'overworld' as const,
+      dayProgress: 0.45,
+      yearProgress: 0.25,
+      clusterX: 3,
+      clusterY: -2,
+    };
+    const durationMs = resolveProceduralMusicSongDurationMs(options);
+    const blueprint = resolveProceduralMusicBlueprint(options);
+    const sections = buildProceduralMusicSongSections(blueprint, durationMs);
+    const totalMeasures = sections.reduce(
+      (sum, section) => sum + section.measureCount,
+      0
+    );
+    const phraseDurationMs = Math.round(
+      (durationMs / totalMeasures) * PROCEDURAL_MUSIC_PHRASE_MEASURE_COUNT
+    );
+    const phraseNotes = collectProceduralMusicPhraseNotes(
+      options,
+      phraseDurationMs
+    );
+    const repeatedNotes = repeatProceduralMusicPhraseNotes(phraseNotes, {
+      phraseStartMs: options.nowMs,
+      phraseDurationMs,
+      songStartMs: options.nowMs,
+      songDurationMs: durationMs,
+    });
+
+    expect(phraseNotes.length).toBeGreaterThan(0);
+    expect(
+      phraseNotes.every(
+        (note) =>
+          note.startMs >= options.nowMs &&
+          note.startMs < options.nowMs + phraseDurationMs
+      )
+    ).toBe(true);
+
+    const firstLeadPhrase = phraseNotes
+      .filter((note) => note.role === 'lead')
+      .slice(0, 8)
+      .map((note) => ({
+        offsetMs: Number((note.startMs - options.nowMs).toFixed(3)),
+        durationMs: Number(note.durationMs.toFixed(3)),
+        midiClass: Math.round(69 + 12 * Math.log2(note.frequency / 440)) % 12,
+      }));
+    const secondLeadPhrase = repeatedNotes
+      .filter(
+        (note) =>
+          note.role === 'lead' &&
+          note.startMs >= options.nowMs + phraseDurationMs &&
+          note.startMs < options.nowMs + phraseDurationMs * 2
+      )
+      .slice(0, 8)
+      .map((note) => ({
+        offsetMs: Number(
+          (note.startMs - (options.nowMs + phraseDurationMs)).toFixed(3)
+        ),
+        durationMs: Number(note.durationMs.toFixed(3)),
+        midiClass: Math.round(69 + 12 * Math.log2(note.frequency / 440)) % 12,
+      }));
+
+    expect(firstLeadPhrase.length).toBeGreaterThan(0);
+    expect(secondLeadPhrase).toEqual(firstLeadPhrase);
   });
 
   it('shares the same song dna across ambient, battle, and boss arrangements', () => {

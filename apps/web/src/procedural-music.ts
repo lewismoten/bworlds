@@ -284,6 +284,7 @@ export type MusicUpdateOptions = {
   yearProgress?: number;
   clusterX?: number;
   clusterY?: number;
+  allowLeadAccidentals?: boolean;
   emitter?: MusicPosition;
   listener?: MusicPosition;
   nearbyPoi?: NearbyPoiMusicLike | null;
@@ -470,6 +471,12 @@ export function resolveMusicTheme(
       recognitionLabel: locationMemory.recognitionLabel,
     },
   };
+}
+
+export function resolveMusicThemeById(
+  themeId: MusicRegionThemeId
+): MusicRegionTheme {
+  return THEME_LIBRARY[themeId];
 }
 
 export function resolveMusicMood(options: {
@@ -781,6 +788,7 @@ export function scheduleProceduralMusicNotes(
       combatIntensity: options.combatIntensity,
       clusterX: options.clusterX,
       clusterY: options.clusterY,
+      allowLeadAccidentals: options.allowLeadAccidentals,
       emitter: options.emitter,
       listener: options.listener,
       gainMultiplier: 1,
@@ -856,6 +864,7 @@ export function createMusicController(sink: MusicSink): MusicController {
           combatIntensity: options.combatIntensity,
           clusterX: options.nearbyPoi.clusterX,
           clusterY: options.nearbyPoi.clusterY,
+          allowLeadAccidentals: options.allowLeadAccidentals,
           emitter: options.nearbyPoi.emitter,
           listener: options.nearbyPoi.listener ?? options.listener,
           gainMultiplier: gains.poiGain * duckingGain,
@@ -1352,6 +1361,7 @@ function createThemeNotes(options: {
   clusterX: number;
   clusterY: number;
   previousLeadSemitones?: number | null;
+  allowLeadAccidentals?: boolean;
   tileKind?: TileKind;
   contextType?: ContextType;
   emitter?: MusicPosition;
@@ -1365,7 +1375,8 @@ function createThemeNotes(options: {
     options.theme,
     options.stepIndex,
     options.clusterX,
-    options.clusterY
+    options.clusterY,
+    options.allowLeadAccidentals
   );
   const resolvedSemitones = resolveProceduralInstrumentSemitones({
     theme: options.theme,
@@ -1373,6 +1384,7 @@ function createThemeNotes(options: {
     stepIndex: options.stepIndex,
     clusterX: options.clusterX,
     clusterY: options.clusterY,
+    allowLeadAccidentals: options.allowLeadAccidentals,
   });
   const semitones =
     role === 'lead'
@@ -1526,6 +1538,7 @@ function scheduleThemeLayerNotes(
     yearProgress?: number;
     clusterX?: number;
     clusterY?: number;
+    allowLeadAccidentals?: boolean;
     emitter?: MusicPosition;
     listener?: MusicPosition;
     gainMultiplier: number;
@@ -1607,6 +1620,7 @@ function scheduleThemeLayerNotes(
         clusterX,
         clusterY,
         previousLeadSemitones,
+        allowLeadAccidentals: options.allowLeadAccidentals,
         tileKind: options.poiType ?? options.tileKind,
         contextType: options.contextType,
         emitter: options.emitter,

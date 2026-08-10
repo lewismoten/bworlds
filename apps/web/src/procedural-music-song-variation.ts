@@ -1,4 +1,6 @@
 import type { ProceduralMusicNote } from './procedural-music.ts';
+import { resolveMusicThemeById } from './procedural-music.ts';
+import { isProceduralSemitoneInMode } from './procedural-music-scale.ts';
 import { resolveSongHarmonySustainMultiplier } from './procedural-music-harmony-sustain.ts';
 import { resolveSongSectionLayerTreatment } from './procedural-music-song-layers.ts';
 import type { ProceduralMusicSongSection } from './procedural-music-song.ts';
@@ -144,15 +146,59 @@ function scaleSongNote(
   const durationMultiplier = options.durationMultiplier ?? 1;
   const releaseMultiplier = options.releaseMultiplier ?? 1;
   const transposeSemitones = options.transposeSemitones ?? 0;
+  const frequency =
+    transposeSemitones === 0
+      ? note.frequency
+      : transposeSongNoteFrequencyInMode(note, transposeSemitones);
   return {
     ...note,
     startMs: note.startMs + (options.startOffsetMs ?? 0),
     durationMs: Math.max(24, Math.round(note.durationMs * durationMultiplier)),
-    frequency:
-      transposeSemitones === 0
-        ? note.frequency
-        : note.frequency * SEMITONE_RATIO ** transposeSemitones,
+    frequency,
     volume: note.volume * (options.volumeMultiplier ?? 1),
     releaseMs: Math.max(12, Math.round(note.releaseMs * releaseMultiplier)),
   };
+}
+
+function transposeSongNoteFrequencyInMode(
+  note: ProceduralMusicNote,
+  transposeSemitones: number
+): number {
+  if (note.role === 'percussion') {
+    return note.frequency;
+  }
+
+  const theme = resolveMusicThemeById(note.themeId);
+  const currentRelativeSemitones = Math.round(
+    Math.log2(note.frequency / Math.max(theme.rootHz, Number.EPSILON)) * 12
+  );
+  const targetSemitones = currentRelativeSemitones + transposeSemitones;
+  const resolvedSemitones = resolveNearestInModeSemitone(
+    theme.scale,
+    targetSemitones
+  );
+
+  return theme.rootHz * SEMITONE_RATIO ** resolvedSemitones;
+}
+
+function resolveNearestInModeSemitone(
+  scale: readonly number[],
+  targetSemitones: number
+): number {
+  if (isProceduralSemitoneInMode(scale, targetSemitones)) {
+    return targetSemitones;
+  }
+
+  for (let distance = 1; distance <= 2; distance += 1) {
+    const downward = targetSemitones - distance;
+    if (isProceduralSemitoneInMode(scale, downward)) {
+      return downward;
+    }
+    const upward = targetSemitones + distance;
+    if (isProceduralSemitoneInMode(scale, upward)) {
+      return upward;
+    }
+  }
+
+  return targetSemitones;
 }

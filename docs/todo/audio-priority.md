@@ -9,7 +9,7 @@
 - [x] Limit ordinary lead motion to three semitones.
 - [x] Allow larger leaps only once per phrase.
 - [x] Require stepwise recovery after every large lead leap.
-- [ ] Generate an eight-measure melody before full arrangement.
+- [x] Generate an eight-measure melody before full arrangement.
 - [ ] State the lead motif clearly in the first A phrase.
 - [ ] Require at least two exact motif matches in Section A.
 - [ ] Require motif variation rather than unrelated notes in A'.

@@ -2,6 +2,7 @@ import type { ProceduralMusicNote } from './procedural-music.ts';
 import type { MusicDebugNotePitchDiagnostic } from './music-debug-note-analysis.ts';
 
 type ProceduralMusicRole = ProceduralMusicNote['role'];
+const MAX_CONNECTED_LEAP_GAP_MS = 1_200;
 
 export type MusicDebugTrackStats = {
   role: ProceduralMusicRole;
@@ -47,8 +48,10 @@ export function createMusicDebugTrackStats(options: {
       stat.outOfModeNoteCount += 1;
     }
     const previousEndMs = previousEndMsByRole[note.role];
+    const gapFromPreviousMs =
+      previousEndMs === undefined ? 0 : note.startMs - previousEndMs;
     if (previousEndMs !== undefined) {
-      const silenceMs = Math.max(0, note.startMs - previousEndMs);
+      const silenceMs = Math.max(0, gapFromPreviousMs);
       silenceTotalsByRole[note.role] =
         (silenceTotalsByRole[note.role] ?? 0) + silenceMs;
       silenceCountsByRole[note.role] =
@@ -74,7 +77,10 @@ export function createMusicDebugTrackStats(options: {
         : Math.max(maxMidi, diagnostic.midiNote);
 
     const previousMidi = previousMidiByRole[note.role];
-    if (previousMidi !== undefined) {
+    if (
+      previousMidi !== undefined &&
+      gapFromPreviousMs <= MAX_CONNECTED_LEAP_GAP_MS
+    ) {
       const leapSemitones = Math.abs(diagnostic.midiNote - previousMidi);
       leapTotalsByRole[note.role] =
         (leapTotalsByRole[note.role] ?? 0) + leapSemitones;
