@@ -99,6 +99,9 @@ describe('sound bank debug page', () => {
     expect(normalizedMarkup).toContain('Kick Center');
     expect(normalizedMarkup).toContain('High Floor Tom');
     expect(normalizedMarkup).toContain('Missing patch');
+    expect(normalizedMarkup).not.toContain(
+      '<option value="percussion">Percussion</option>'
+    );
     expect(normalizedMarkup).toContain('>Piano<');
     expect(normalizedMarkup).toContain('>0<');
     expect(normalizedMarkup).toContain('Acoustic Grand Piano');
@@ -303,6 +306,19 @@ describe('sound bank debug page', () => {
       familyFilter: 'all',
       roleFilter: 'all',
       playableMidiNote: '127',
+      selectedProgramNumber: '',
+      sortMode: 'program',
+    });
+    expect(
+      normalizeSoundBankDebugGeneralMidiBrowserState({
+        roleFilter: 'percussion' as 'all',
+        playableMidiNote: '42',
+      })
+    ).toEqual({
+      searchQuery: '',
+      familyFilter: 'all',
+      roleFilter: 'all',
+      playableMidiNote: '42',
       selectedProgramNumber: '',
       sortMode: 'program',
     });

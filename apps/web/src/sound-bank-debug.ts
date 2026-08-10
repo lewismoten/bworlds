@@ -58,9 +58,7 @@ export type SoundBankDebugPercussionFamilyFilter = 'all' | PercussionFamily;
 export type SoundBankDebugGeneralMidiBrowserState = {
   searchQuery: string;
   familyFilter: string;
-  roleFilter:
-    | 'all'
-    | MusicDebugSnapshot['instrumentBank']['instruments'][keyof MusicDebugSnapshot['instrumentBank']['instruments']]['role'];
+  roleFilter: 'all' | 'lead' | 'harmony' | 'bass';
   playableMidiNote: string;
   selectedProgramNumber: string;
   sortMode: SoundBankDebugGeneralMidiSortMode;
@@ -740,7 +738,7 @@ export function buildSoundBankDebugMarkup(
                 name="generalMidiRoleFilter"
               >
                 ${renderOptionList(
-                  ['all', 'lead', 'harmony', 'bass', 'percussion'],
+                  ['all', 'lead', 'harmony', 'bass'],
                   generalMidiBrowserState.roleFilter
                 )}
               </select>
@@ -924,8 +922,7 @@ export function normalizeSoundBankDebugGeneralMidiBrowserState(
   const roleFilter =
     value?.roleFilter === 'lead' ||
     value?.roleFilter === 'harmony' ||
-    value?.roleFilter === 'bass' ||
-    value?.roleFilter === 'percussion'
+    value?.roleFilter === 'bass'
       ? value.roleFilter
       : 'all';
   const playableMidiNoteValue = value?.playableMidiNote?.trim() ?? '';
