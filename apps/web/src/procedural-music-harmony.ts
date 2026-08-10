@@ -565,7 +565,13 @@ function resolveLeadSemitones(
     clusterX,
     clusterY
   );
-  const leap = current.semitones - previous.semitones;
+  const selectedCurrentSemitones = selectPreferredLeadSemitoneClass({
+    candidates: current.candidateSemitones,
+    previousSemitones: previous.semitones,
+    strongLeadBeat: current.strongLeadBeat,
+    structuralAccent: current.structuralAccent,
+  });
+  const leap = selectedCurrentSemitones - previous.semitones;
   const leapMagnitude = Math.abs(leap);
   const allowWideLeap =
     current.strongLeadBeat &&
@@ -584,12 +590,51 @@ function resolveLeadSemitones(
       clusterY - stepIndex - theme.id.length * 13
     ) > 0.985;
 
+  if (allowOctaveLeap && leapMagnitude > OCTAVE_LEAP_LIMIT_SEMITONES) {
+    return resolveNearbyScaleMotion({
+      scale: theme.scale,
+      previousSemitones: previous.semitones,
+      direction: Math.sign(leap),
+      maxDistance: OCTAVE_LEAP_LIMIT_SEMITONES - 1,
+      fallbackSemitones:
+        previous.semitones +
+        Math.sign(leap) * (OCTAVE_LEAP_LIMIT_SEMITONES - 1),
+    });
+  }
+
   if (!allowOctaveLeap && leapMagnitude >= OCTAVE_LEAP_LIMIT_SEMITONES) {
-    return previous.semitones + Math.sign(leap) * LARGE_LEAP_LIMIT_SEMITONES;
+    return resolveNearbyScaleMotion({
+      scale: theme.scale,
+      previousSemitones: previous.semitones,
+      direction: Math.sign(leap),
+      maxDistance: LARGE_LEAP_LIMIT_SEMITONES,
+      fallbackSemitones:
+        previous.semitones + Math.sign(leap) * LARGE_LEAP_LIMIT_SEMITONES,
+    });
   }
 
   if (!allowWideLeap && leapMagnitude > LARGE_LEAP_LIMIT_SEMITONES) {
-    return previous.semitones + Math.sign(leap) * 5;
+    return resolveNearbyScaleMotion({
+      scale: theme.scale,
+      previousSemitones: previous.semitones,
+      direction: Math.sign(leap),
+      maxDistance: 5,
+      fallbackSemitones: previous.semitones + Math.sign(leap) * 5,
+    });
+  }
+
+  if (
+    current.cadence === 'neutral' &&
+    !current.structuralAccent &&
+    leapMagnitude > 4
+  ) {
+    return resolveNearbyScaleMotion({
+      scale: theme.scale,
+      previousSemitones: previous.semitones,
+      direction: Math.sign(leap),
+      maxDistance: 4,
+      fallbackSemitones: previous.semitones + Math.sign(leap) * 4,
+    });
   }
 
   if (stepIndex > 1) {
@@ -606,14 +651,19 @@ function resolveLeadSemitones(
       Math.sign(priorLeap) === Math.sign(leap) &&
       leapMagnitude > 2
     ) {
-      return (
-        previous.semitones -
-        Math.sign(priorLeap) * Math.min(4, Math.abs(priorLeap) - 2)
-      );
+      return resolveNearbyScaleMotion({
+        scale: theme.scale,
+        previousSemitones: previous.semitones,
+        direction: -Math.sign(priorLeap),
+        maxDistance: Math.min(4, Math.abs(priorLeap) - 2),
+        fallbackSemitones:
+          previous.semitones -
+          Math.sign(priorLeap) * Math.min(4, Math.abs(priorLeap) - 2),
+      });
     }
   }
 
-  return current.semitones;
+  return selectedCurrentSemitones;
 }
 
 function resolveLeadSemitonePlan(
@@ -624,6 +674,7 @@ function resolveLeadSemitonePlan(
   clusterY: number
 ): {
   semitones: number;
+  candidateSemitones: readonly number[];
   cadence: ProceduralLeadPhraseCadence;
   contourStage: ProceduralLeadContourStage;
   strongLeadBeat: boolean;
@@ -659,6 +710,7 @@ function resolveLeadSemitonePlan(
       semitones:
         chordTonePattern[Math.floor(stepIndex / 4) % chordTonePattern.length] ??
         chord.rootSemitones,
+      candidateSemitones: chordTonePattern,
       cadence: composition.cadence,
       contourStage: composition.contourStep.stage,
       strongLeadBeat,
@@ -669,6 +721,7 @@ function resolveLeadSemitonePlan(
   if (composition.cadence === 'question') {
     return {
       semitones: chord.passingSemitones,
+      candidateSemitones: [chord.passingSemitones],
       cadence: composition.cadence,
       contourStage: composition.contourStep.stage,
       strongLeadBeat,
@@ -678,6 +731,7 @@ function resolveLeadSemitonePlan(
   if (composition.cadence === 'answer') {
     return {
       semitones: chord.rootSemitones,
+      candidateSemitones: [chord.rootSemitones],
       cadence: composition.cadence,
       contourStage: composition.contourStep.stage,
       strongLeadBeat,
@@ -695,6 +749,7 @@ function resolveLeadSemitonePlan(
   if (accidentalSemitones !== null) {
     return {
       semitones: accidentalSemitones,
+      candidateSemitones: [accidentalSemitones],
       cadence: composition.cadence,
       contourStage: composition.contourStep.stage,
       strongLeadBeat,
@@ -709,14 +764,110 @@ function resolveLeadSemitonePlan(
     chord.fifthSemitones,
   ];
   return {
-    semitones:
-      melodicOptions[composition.phraseStep % melodicOptions.length] ??
-      leadScaleSemitones,
+    semitones: melodicOptions[0] ?? leadScaleSemitones,
+    candidateSemitones: melodicOptions,
     cadence: composition.cadence,
     contourStage: composition.contourStep.stage,
     strongLeadBeat,
     structuralAccent,
   };
+}
+
+function selectPreferredLeadSemitoneClass(options: {
+  candidates: readonly number[];
+  previousSemitones: number | null;
+  strongLeadBeat: boolean;
+  structuralAccent: boolean;
+}): number {
+  const fallback = options.candidates[0] ?? 0;
+  if (options.previousSemitones === null) {
+    return fallback;
+  }
+
+  const rankedCandidates = options.candidates
+    .map((candidate, index) => ({
+      candidate,
+      index,
+      distance: resolveLeadMotionDistance(
+        options.previousSemitones ?? 0,
+        candidate
+      ),
+    }))
+    .sort((left, right) => {
+      const leftPenalty = scoreLeadMotionPenalty({
+        distance: left.distance,
+        isPrimaryCandidate: left.index === 0,
+        strongLeadBeat: options.strongLeadBeat,
+        structuralAccent: options.structuralAccent,
+      });
+      const rightPenalty = scoreLeadMotionPenalty({
+        distance: right.distance,
+        isPrimaryCandidate: right.index === 0,
+        strongLeadBeat: options.strongLeadBeat,
+        structuralAccent: options.structuralAccent,
+      });
+      return leftPenalty - rightPenalty || left.index - right.index;
+    });
+
+  return rankedCandidates[0]?.candidate ?? fallback;
+}
+
+function resolveLeadMotionDistance(
+  previousSemitones: number,
+  candidateSemitones: number
+): number {
+  let smallestDistance = Number.POSITIVE_INFINITY;
+  for (let octaveShift = -24; octaveShift <= 24; octaveShift += 12) {
+    const shiftedCandidate = candidateSemitones + octaveShift;
+    smallestDistance = Math.min(
+      smallestDistance,
+      Math.abs(shiftedCandidate - previousSemitones)
+    );
+  }
+  return smallestDistance;
+}
+
+function scoreLeadMotionPenalty(options: {
+  distance: number;
+  isPrimaryCandidate: boolean;
+  strongLeadBeat: boolean;
+  structuralAccent: boolean;
+}): number {
+  const isStepOrThird = options.distance <= 4;
+  if (isStepOrThird) {
+    return options.distance + (options.isPrimaryCandidate ? -0.75 : 0);
+  }
+
+  if (
+    options.strongLeadBeat &&
+    options.structuralAccent &&
+    options.distance <= LARGE_LEAP_LIMIT_SEMITONES
+  ) {
+    return 24 + options.distance * 2 + (options.isPrimaryCandidate ? -0.1 : 0);
+  }
+
+  return 160 + options.distance * 14 + (options.isPrimaryCandidate ? -0.05 : 0);
+}
+
+function resolveNearbyScaleMotion(options: {
+  scale: readonly number[];
+  previousSemitones: number;
+  direction: number;
+  maxDistance: number;
+  fallbackSemitones: number;
+}): number {
+  const direction = options.direction === 0 ? 1 : Math.sign(options.direction);
+  for (
+    let distance = 1;
+    distance <= Math.max(1, options.maxDistance);
+    distance += 1
+  ) {
+    const candidate = options.previousSemitones + direction * distance;
+    if (isProceduralSemitoneInScale(options.scale, candidate)) {
+      return candidate;
+    }
+  }
+  return options.fallbackSemitones;
 }
 
 function resolveLeadAccidentalSemitones(

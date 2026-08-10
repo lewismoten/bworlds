@@ -4,11 +4,12 @@ import { clamp, fract, lerp, normalizeAngle, smoothstep } from '../math.ts';
 import { PLANET_NAMES, getPlanetSkyProfile } from './planet.ts';
 import { getPlanetaryOrbitProgress } from './planet.ts';
 import {
+  appendCometEvents,
   COMET_NAMES,
   getCometOrbitProgress,
   getCometOrreryProfile,
 } from './comet.ts';
-const METEOR_SHOWER_NAMES = ['Silver Wake', 'Ember Rain', 'Northfall'];
+import { appendMeteorShowerEvents } from './meteor-shower.ts';
 
 const PLANET_INTENSITY_SEED = registerHashLabel('planet-intensity');
 
@@ -178,92 +179,24 @@ export function getCelestialEventsForDay(
     });
   });
 
-  METEOR_SHOWER_NAMES.forEach((name, index) => {
-    const seasonStart = Math.floor(
-      (yearLengthDays / METEOR_SHOWER_NAMES.length) * index
-    );
-    const peakOffset =
-      (((dayNumber - seasonStart) % yearLengthDays) + yearLengthDays) %
-      yearLengthDays;
-    if (peakOffset <= 4 || peakOffset >= yearLengthDays - 4) {
-      const distance = Math.min(peakOffset, yearLengthDays - peakOffset);
-      const progress = fract(dayProgress + index * 0.21);
-      const intensity = 1 - distance / 4;
-      const orbitState = getOrbitalSkyPosition({
-        orbitProgress: progress,
-        observerLatitudeDegrees,
-        declination:
-          solarDeclination * -0.35 +
-          Math.sin((dayNumber / (8 + index * 3)) * Math.PI * 2) * 0.12,
-        sunriseAzimuth,
-        sunsetAzimuth,
-        azimuthShift: -0.9 + index * 0.5,
-      });
-      events.push({
-        type: 'meteor-shower',
-        name,
-        progress,
-        intensity,
-        visibility: getCelestialEventVisibility({
-          type: 'meteor-shower',
-          altitude: orbitState.altitude,
-          intensity,
-          daylight,
-          night,
-          starsOpacity,
-        }),
-        azimuth: orbitState.azimuth,
-        altitude: orbitState.altitude,
-        color: '#eef6ff',
-        size: 0.34,
-        trailLength: 1.6 + index * 0.2,
-      });
-    }
-  });
+  const o = {
+    events,
+    dayNumber,
+    dayProgress,
+    yearLengthDays,
+    observerLatitudeDegrees,
+    solarDeclination,
+    sunriseAzimuth,
+    sunsetAzimuth,
+    daylight,
+    night,
+    starsOpacity,
+    getOrbitalSkyPosition,
+    getCelestialEventVisibility,
+  };
 
-  COMET_NAMES.forEach((name, index) => {
-    const cycleLength = 20 + index * 12;
-    const cycleDay = ((dayNumber % cycleLength) + cycleLength) % cycleLength;
-    if (cycleDay <= 3) {
-      const orbitProfile = getCometOrreryProfile(name, index);
-      const progress = getCometOrbitProgress(
-        cycleDay + dayProgress,
-        cycleLength,
-        index * 0.18,
-        orbitProfile.speedExponent
-      );
-      const intensity = 1 - cycleDay / 3;
-      const orbitState = getOrbitalSkyPosition({
-        orbitProgress: progress,
-        observerLatitudeDegrees,
-        declination:
-          solarDeclination * -0.5 +
-          Math.cos((dayNumber / cycleLength) * Math.PI * 2) * 0.2,
-        sunriseAzimuth,
-        sunsetAzimuth,
-        azimuthShift: 1.1 - index * 0.38,
-      });
-      events.push({
-        type: 'comet',
-        name,
-        progress,
-        intensity,
-        visibility: getCelestialEventVisibility({
-          type: 'comet',
-          altitude: orbitState.altitude,
-          intensity,
-          daylight,
-          night,
-          starsOpacity,
-        }),
-        azimuth: orbitState.azimuth,
-        altitude: orbitState.altitude,
-        color: '#dff5ff',
-        size: 0.42,
-        trailLength: 2.2 + index * 0.35,
-      });
-    }
-  });
+  appendMeteorShowerEvents(o);
+  appendCometEvents(o);
 
   return events;
 }

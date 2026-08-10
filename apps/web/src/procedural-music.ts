@@ -1373,7 +1373,7 @@ function createThemeNotes(options: {
           previousLeadSemitones: options.previousLeadSemitones,
         })
       : resolvedSemitones;
-  const octaveBoost = resolveThemeNoteOctaveBoost({
+  const resolvedOctaveBoost = resolveThemeNoteOctaveBoost({
     role,
     composition,
     themeId: options.theme.id,
@@ -1381,6 +1381,14 @@ function createThemeNotes(options: {
     clusterY: options.clusterY,
     stepIndex: options.stepIndex,
   });
+  const octaveBoost =
+    role === 'lead' &&
+    options.previousLeadSemitones !== null &&
+    options.previousLeadSemitones !== undefined &&
+    Math.abs(semitones + resolvedOctaveBoost - options.previousLeadSemitones) >
+      12
+      ? 0
+      : resolvedOctaveBoost;
   const voiceSemitones =
     role === 'harmony'
       ? resolveProceduralHarmonyVoicing({

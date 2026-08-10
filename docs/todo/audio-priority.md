@@ -83,7 +83,7 @@ added directly as semitones instead of moving through the selected scale.
 - [x] Reserve octave leaps for rare structural accents.
 - [x] Penalize leaps larger than a perfect fifth.
 - [x] Require recovery after every large leap.
-- [ ] Keep most lead motion stepwise or by thirds.
+- [x] Keep most lead motion stepwise or by thirds.
 - [ ] Use contour targets as ranges, not exact pitch jumps.
 - [ ] Smooth the path between contour target points.
 - [ ] Keep the flute within a narrower active register.

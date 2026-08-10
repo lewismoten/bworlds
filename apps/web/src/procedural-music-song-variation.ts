@@ -68,7 +68,7 @@ function transformAprimeSectionNote(
     note.role === 'lead' && phrasePosition >= 6
       ? phrasePosition === 6
         ? 2
-        : 5
+        : 3
       : note.role === 'harmony' && phrasePosition === 7
         ? 2
         : 0;
@@ -91,7 +91,7 @@ function transformVariationSectionNote(
   const phrasePosition = noteIndexInSection % 8;
   const transposeSemitones =
     note.role === 'lead'
-      ? ([0, 0, 2, 0, 5, 2, 0, -2][phrasePosition] ?? 0)
+      ? ([0, 0, 2, 0, 3, 2, 0, -2][phrasePosition] ?? 0)
       : note.role === 'harmony' && phrasePosition >= 6
         ? -2
         : 0;
