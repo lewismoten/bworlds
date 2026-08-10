@@ -72,26 +72,26 @@ export function resolveSongSectionLayerTreatment(
           note.role === 'lead'
             ? 1.08
             : note.role === 'harmony'
-            ? 1.08 * harmonyLeadSpace.durationMultiplier
-            : 1,
+              ? 1.08 * harmonyLeadSpace.durationMultiplier
+              : 1,
         releaseMultiplier: 1,
       };
     case 'b':
       return {
         muted:
           shouldMuteHarmonyForLeadSpace(harmonyLeadSpace, noteIndexInSection) ||
-          (note.role === 'harmony' && noteIndexInSection % 5 === 0),
+          (note.role === 'harmony' && noteIndexInSection % 2 === 0),
         volumeMultiplier:
           note.role === 'lead'
             ? 1.08
             : note.role === 'percussion'
-              ? 0.9
+              ? 0.88
               : note.role === 'harmony'
                 ? harmonyLeadSpace.volumeMultiplier
                 : 1,
         durationMultiplier:
           note.role === 'bass'
-            ? 1.1
+            ? 1.06
             : note.role === 'harmony'
               ? harmonyLeadSpace.durationMultiplier
               : 1,
@@ -120,10 +120,15 @@ export function resolveSongSectionLayerTreatment(
             ? 0.94
             : note.role === 'harmony'
               ? harmonyLeadSpace.volumeMultiplier
-              : 0.98,
+              : 1.02,
         durationMultiplier:
-          note.role === 'harmony' ? harmonyLeadSpace.durationMultiplier : 1,
-        releaseMultiplier: 1,
+          note.role === 'harmony'
+            ? harmonyLeadSpace.durationMultiplier
+            : note.role === 'bass'
+              ? 1.06
+              : 1,
+        releaseMultiplier:
+          note.role === 'harmony' ? 1.08 : note.role === 'lead' ? 1.02 : 1,
       };
     case 'outro':
       return {
@@ -183,9 +188,9 @@ function resolveHarmonyLeadSpaceConfig(
       };
     case 'b':
       return {
-        muteEvery: 3,
-        durationMultiplier: 0.6,
-        volumeMultiplier: 0.86,
+        muteEvery: 2,
+        durationMultiplier: 0.5,
+        volumeMultiplier: 0.74,
       };
     case 'variation':
       return {
@@ -196,8 +201,8 @@ function resolveHarmonyLeadSpaceConfig(
     case 'return':
       return {
         muteEvery: 0,
-        durationMultiplier: 0.86,
-        volumeMultiplier: 0.9,
+        durationMultiplier: 1.02,
+        volumeMultiplier: 1.04,
       };
     case 'outro':
       return {

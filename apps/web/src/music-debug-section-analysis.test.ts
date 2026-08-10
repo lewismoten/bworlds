@@ -219,6 +219,28 @@ describe('music debug section analysis', () => {
             percussion: 120,
           },
         },
+        {
+          sectionId: 'return',
+          sectionLabel: 'Return',
+          roleCounts: {
+            bass: 4,
+            harmony: 4,
+            lead: 4,
+            percussion: 2,
+          },
+          soundingTimePercentageByRole: {
+            bass: 22,
+            harmony: 24,
+            lead: 24,
+            percussion: 12,
+          },
+          averageDurationMsByRole: {
+            bass: 260,
+            harmony: 280,
+            lead: 240,
+            percussion: 180,
+          },
+        },
       ],
       blueprint: TEST_BLUEPRINT,
     });
@@ -234,6 +256,10 @@ describe('music debug section analysis', () => {
       }),
       expect.objectContaining({
         sectionId: 'variation',
+        matchesPlan: true,
+      }),
+      expect.objectContaining({
+        sectionId: 'return',
         matchesPlan: true,
       }),
     ]);

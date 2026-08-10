@@ -66,7 +66,12 @@ describe('procedural music song layers', () => {
     const bHarmony = resolveSongSectionLayerTreatment(
       createSection('b'),
       { role: 'harmony' },
-      3
+      2
+    );
+    const bHarmonyAlternate = resolveSongSectionLayerTreatment(
+      createSection('b'),
+      { role: 'harmony' },
+      1
     );
     const variationPercussion = resolveSongSectionLayerTreatment(
       createSection('variation'),
@@ -101,13 +106,28 @@ describe('procedural music song layers', () => {
     expect(aPrimeHarmony.muted).toBe(true);
     expect(aPrimeHarmony.durationMultiplier).toBeLessThan(1);
     expect(bHarmony.muted).toBe(true);
+    expect(bHarmonyAlternate.muted).toBe(false);
     expect(bHarmony.volumeMultiplier).toBeLessThan(1);
+    expect(bHarmonyAlternate.volumeMultiplier).toBeLessThan(
+      aHarmony.volumeMultiplier
+    );
+    expect(bHarmonyAlternate.durationMultiplier).toBeLessThan(
+      aHarmony.durationMultiplier
+    );
     expect(variationPercussion.muted).toBe(true);
     expect(returnLead.muted).toBe(false);
     expect(returnLead.volumeMultiplier).toBeLessThan(1);
     expect(returnBass.muted).toBe(false);
+    expect(returnBass.volumeMultiplier).toBeGreaterThan(1);
+    expect(returnBass.durationMultiplier).toBeGreaterThan(1);
     expect(returnHarmony.muted).toBe(false);
-    expect(returnHarmony.durationMultiplier).toBeLessThan(1);
+    expect(returnHarmony.volumeMultiplier).toBeGreaterThan(
+      aHarmony.volumeMultiplier
+    );
+    expect(returnHarmony.durationMultiplier).toBeGreaterThan(
+      aHarmony.durationMultiplier
+    );
+    expect(returnHarmony.releaseMultiplier).toBeGreaterThan(1);
     expect(returnPercussion.muted).toBe(false);
   });
 

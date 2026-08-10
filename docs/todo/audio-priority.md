@@ -176,8 +176,8 @@ added directly as semitones instead of moving through the selected scale.
 - [x] Mark chord changes in the debug MIDI.
 - [ ] Keep chord changes aligned with strong beats.
 - [ ] Add a dominant-like setup before answer cadences.
-- [ ] Strengthen harmony during the Return section.
-- [ ] Simplify harmony during the stated lighter B section.
+- [x] Strengthen harmony during the Return section.
+- [x] Simplify harmony during the stated lighter B section.
 - [ ] Verify the progression is audible in the bass.
 
 ## Motif Translation
