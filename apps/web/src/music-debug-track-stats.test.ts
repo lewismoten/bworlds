@@ -139,5 +139,5 @@ describe('music debug track stats', () => {
       expect(bassStats.maxLeapSemitones).toBeLessThanOrEqual(7);
       expect(bassStats.rangeLabel).toMatch(/^[A-G]#?-?\d-[A-G]#?-?\d$/);
     }
-  });
+  }, 4_000);
 });

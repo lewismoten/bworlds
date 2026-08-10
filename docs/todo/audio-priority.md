@@ -1,14 +1,44 @@
-# Error! High Priority
+# Highest Priority
+- [ ] Panel to input parameters and click buttons is clipped on the right.
+- [x] Fix natural minor offsets to 0, 2, 3, 5, 7, 8, 10.
+- [x] Reject mode definitions with duplicate scale degrees.
+- [x] Reject seven-note modes with fewer than seven unique offsets.
+- [ ] Make lead interval weights affect actual note selection.
+- [ ] Penalize repeated minor-sixth jumps in the lead.
+- [ ] Limit ordinary lead motion to three semitones.
+- [ ] Allow larger leaps only once per phrase.
+- [ ] Require stepwise recovery after every large lead leap.
+- [ ] Generate an eight-measure melody before full arrangement.
+- [ ] State the lead motif clearly in the first A phrase.
+- [ ] Require at least two exact motif matches in Section A.
+- [ ] Require motif variation rather than unrelated notes in A'.
+- [ ] Regenerate any section with zero expected motif matches.
+- [ ] Give the lead two to six note attacks per measure.
+- [ ] Prevent repeated one-note-per-measure lead patterns.
+- [ ] Build reusable lead rhythm templates by phrase.
+- [ ] Add rests at phrase boundaries rather than every measure.
+- [ ] End each eight-measure phrase on a planned cadence.
+- [ ] Resolve the final answer cadence to F.
+- [ ] Build one chord timeline before generating any tracks.
+- [ ] Assign each chord an exact measure range.
+- [ ] Make bass, harmony, and lead read the same chord timeline.
+- [ ] Verify detected chords follow the planned progression order.
+- [ ] Fix unresolved chromatic notes before MIDI export.
+- [ ] Regenerate a phrase containing unresolved chromatic notes.
+- [ ] Lower harmony occupancy when the lead is active.
+- [ ] Make A' lead occupancy exceed Section A occupancy.
+- [ ] Make B harmony occupancy lower than Section A occupancy.
+- [ ] Add a soft repeating rhythmic pulse for forest music.
+- [ ] Use percussion patterns instead of isolated cymbal events.
+- [ ] Compare intended intervals with actual interval counts.
+- [x] Report exact and varied motif matches separately.
+- [ ] Score phrase repetition and phrase-level similarity.
+- [ ] Reject songs whose configured motif never appears.
+- [ ] Add a melody-only MIDI export for rapid evaluation.
+- [ ] Add a harmony-and-bass-only MIDI export for review.
+- [ ] Test eight measures before generating all 88 measures.
 
-Error happens when attempting to download a song via /debug/audio
-
-- [ ] music-debug-midi.ts:108 Uncaught Error: Cannot export MIDI: Found 6 unexplained chromatic notes; MIDI export allows 4.
-      at createMusicDebugMidiFile (music-debug-midi.ts:108:11
-      at downloadMusicDebugMidiFile (music-debug-midi.ts:155:16
-      at HTMLButtonElement.<anonymous> (music-debug-page.ts:443:3
-      (anonymous) @ music-debug-midi.ts:108
-      (anonymous) @ music-debug-midi.ts:155
-      (anonymous) @ music-debug-page.ts:443
+# Medium Priority
 
 The blueprint is already fairly sophisticated. The problem is that the **MIDI output does not appear to honor much of that blueprint correctly**.
 

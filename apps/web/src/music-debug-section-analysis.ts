@@ -7,6 +7,8 @@ type ProceduralMusicRole = ProceduralMusicNote['role'];
 export type MusicDebugSectionMotifMatch = {
   sectionId: string;
   sectionLabel: string;
+  exactMatchCount: number;
+  variedMatchCount: number;
   matchCount: number;
 };
 
@@ -61,13 +63,22 @@ export function createMusicDebugSectionMotifMatches(options: {
       section,
       role: 'lead',
     });
+    const exactMatchCount = countExactMotifMatches(
+      leadDegrees,
+      options.leadMotif
+    );
+    const variedMatchCount = countVariedIntervalPatternMatches(
+      leadDegrees,
+      options.leadMotif,
+      targetPattern
+    );
+
     return {
       sectionId: section.id,
       sectionLabel: section.label,
-      matchCount:
-        targetPattern.length === 0
-          ? 0
-          : countIntervalPatternMatches(leadDegrees, targetPattern),
+      exactMatchCount,
+      variedMatchCount,
+      matchCount: exactMatchCount + variedMatchCount,
     };
   });
 }
@@ -334,6 +345,99 @@ function pushRuleResult(
   } else {
     mismatchRules.push(rule);
   }
+}
+
+function countExactMotifMatches(
+  sequence: readonly number[],
+  targetMotif: readonly number[]
+): number {
+  if (targetMotif.length === 0 || sequence.length < targetMotif.length) {
+    return 0;
+  }
+
+  let matches = 0;
+  for (
+    let startIndex = 0;
+    startIndex <= sequence.length - targetMotif.length;
+    startIndex += 1
+  ) {
+    let exactMatch = true;
+    for (let offset = 0; offset < targetMotif.length; offset += 1) {
+      if (sequence[startIndex + offset] !== targetMotif[offset]) {
+        exactMatch = false;
+        break;
+      }
+    }
+    if (exactMatch) {
+      matches += 1;
+    }
+  }
+
+  return matches;
+}
+
+function countVariedIntervalPatternMatches(
+  sequence: readonly number[],
+  targetMotif: readonly number[],
+  targetPattern: readonly number[]
+): number {
+  if (
+    targetMotif.length === 0 ||
+    targetPattern.length === 0 ||
+    sequence.length < targetMotif.length
+  ) {
+    return 0;
+  }
+
+  let matches = 0;
+  for (
+    let startIndex = 0;
+    startIndex <= sequence.length - targetMotif.length;
+    startIndex += 1
+  ) {
+    const phrase = sequence.slice(startIndex, startIndex + targetMotif.length);
+    if (phrase.length !== targetMotif.length) {
+      continue;
+    }
+    if (phrasesMatchExactly(phrase, targetMotif)) {
+      continue;
+    }
+    if (patternsMatchExactly(createIntervalPattern(phrase), targetPattern)) {
+      matches += 1;
+    }
+  }
+
+  return matches;
+}
+
+function phrasesMatchExactly(
+  left: readonly number[],
+  right: readonly number[]
+): boolean {
+  if (left.length !== right.length) {
+    return false;
+  }
+  for (let index = 0; index < left.length; index += 1) {
+    if (left[index] !== right[index]) {
+      return false;
+    }
+  }
+  return true;
+}
+
+function patternsMatchExactly(
+  left: readonly number[],
+  right: readonly number[]
+): boolean {
+  if (left.length !== right.length) {
+    return false;
+  }
+  for (let index = 0; index < left.length; index += 1) {
+    if (left[index] !== right[index]) {
+      return false;
+    }
+  }
+  return true;
 }
 
 const PROCEDURAL_MUSIC_ROLES = [

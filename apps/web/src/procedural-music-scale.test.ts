@@ -5,7 +5,12 @@ import {
   isProceduralSemitoneInMode,
   resolveProceduralRootMidiNote,
   resolveProceduralScaleDegreeMidiNote,
+  validateProceduralModePitchOffsets,
 } from './procedural-music-scale.ts';
+import {
+  PROCEDURAL_MODE_MIXOLYDIAN,
+  PROCEDURAL_MODE_NATURAL_MINOR,
+} from './procedural-music-modes.ts';
 
 describe('procedural music scale', () => {
   it('resolves 196 Hz to MIDI note G3', () => {
@@ -15,7 +20,7 @@ describe('procedural music scale', () => {
   it('maps G Mixolydian scale degrees across octaves', () => {
     const scaleMap = createProceduralScaleMap({
       rootMidiNote: 55,
-      scale: [0, 2, 4, 5, 7, 9, 10],
+      scale: PROCEDURAL_MODE_MIXOLYDIAN,
     });
 
     expect(scaleMap.rootMidiNote).toBe(55);
@@ -41,7 +46,7 @@ describe('procedural music scale', () => {
   it('keeps degree 1, 3, and 5 aligned to G, B, and D from the stored root', () => {
     const scaleMap = createProceduralScaleMap({
       rootMidiNote: 55,
-      scale: [0, 2, 4, 5, 7, 9, 10],
+      scale: PROCEDURAL_MODE_MIXOLYDIAN,
     });
 
     expect(
@@ -67,7 +72,7 @@ describe('procedural music scale', () => {
   it('renders the shared 1-3-5-3 motif as G-B-D-B in G Mixolydian', () => {
     const scaleMap = createProceduralScaleMap({
       rootMidiNote: 55,
-      scale: [0, 2, 4, 5, 7, 9, 10],
+      scale: PROCEDURAL_MODE_MIXOLYDIAN,
     });
 
     expect(
@@ -81,7 +86,7 @@ describe('procedural music scale', () => {
   });
 
   it('keeps motif degree offsets separate from semitone offsets', () => {
-    const mixolydian = [0, 2, 4, 5, 7, 9, 10];
+    const mixolydian = PROCEDURAL_MODE_MIXOLYDIAN;
 
     expect(getProceduralScaleDegreeSemitones(mixolydian, 4)).toBe(7);
     expect(getProceduralScaleDegreeSemitones(mixolydian, 6)).toBe(10);
@@ -89,7 +94,7 @@ describe('procedural music scale', () => {
   });
 
   it('checks accidentals against one shared mode definition', () => {
-    const mixolydian = [0, 2, 4, 5, 7, 9, 10];
+    const mixolydian = PROCEDURAL_MODE_MIXOLYDIAN;
 
     expect(isProceduralSemitoneInMode(mixolydian, 0)).toBe(true);
     expect(isProceduralSemitoneInMode(mixolydian, 10)).toBe(true);
@@ -103,8 +108,26 @@ describe('procedural music scale', () => {
       createProceduralScaleMap({
         rootMidiNote: 55,
         rootHz: 195.5,
-        scale: [0, 2, 4, 5, 7, 9, 10],
+        scale: PROCEDURAL_MODE_MIXOLYDIAN,
       }).rootMidiNote
     ).toBe(55);
+  });
+
+  it('uses the correct natural minor offsets', () => {
+    expect(
+      validateProceduralModePitchOffsets(PROCEDURAL_MODE_NATURAL_MINOR)
+    ).toEqual([0, 2, 3, 5, 7, 8, 10]);
+  });
+
+  it('rejects duplicate scale degrees after pitch-class normalization', () => {
+    expect(() => validateProceduralModePitchOffsets([0, 2, 4, 7, 12])).toThrow(
+      /Duplicate scale degrees/
+    );
+  });
+
+  it('rejects seven-note modes with fewer than seven unique offsets', () => {
+    expect(() =>
+      validateProceduralModePitchOffsets([0, 2, 4, 5, 7, 7, 10])
+    ).toThrow(/seven unique offsets/i);
   });
 });

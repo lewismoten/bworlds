@@ -18,6 +18,17 @@ describe('procedural music theme motif', () => {
     expect(first.adaptedDegreeOffsets).toEqual(second.adaptedDegreeOffsets);
   });
 
+  it('locks the plains theme to the shared 1-3-5-3 motif', () => {
+    expect(
+      resolveProceduralThemeMotif({
+        themeId: 'frontier-plains',
+        tileKind: 'plains',
+        clusterX: -128,
+        clusterY: 96,
+      }).sharedDegreeOffsets
+    ).toEqual([0, 2, 4, 2]);
+  });
+
   it('adapts the shared motif differently for towns, interiors, ruins, and caves', () => {
     const overworld = resolveProceduralThemeMotif({
       themeId: 'frontier-plains',

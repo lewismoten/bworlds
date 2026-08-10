@@ -16,7 +16,7 @@ export function resolveProceduralMidiNoteFrequency(midiNote: number): number {
 export function resolveProceduralModePitchOffsets(
   scale: readonly number[]
 ): readonly number[] {
-  return scale.map((scaleSemitone) => normalizePitchClass(scaleSemitone));
+  return validateProceduralModePitchOffsets(scale);
 }
 
 export function createProceduralScaleMap(options: {
@@ -30,6 +30,29 @@ export function createProceduralScaleMap(options: {
     rootMidiNote,
     modePitchOffsets: resolveProceduralModePitchOffsets(options.scale),
   };
+}
+
+export function validateProceduralModePitchOffsets(
+  scale: readonly number[]
+): readonly number[] {
+  const normalized = scale.map((scaleSemitone) =>
+    normalizePitchClass(scaleSemitone)
+  );
+  const unique = new Set(normalized);
+
+  if (normalized.length === 7 && unique.size < 7) {
+    throw new Error(
+      `Seven-note modes must provide seven unique offsets: ${normalized.join(', ')}`
+    );
+  }
+
+  if (unique.size !== normalized.length) {
+    throw new Error(
+      `Duplicate scale degrees are not allowed: ${normalized.join(', ')}`
+    );
+  }
+
+  return normalized;
 }
 
 export function getProceduralScaleDegreeSemitones(

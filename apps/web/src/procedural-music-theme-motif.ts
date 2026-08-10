@@ -17,6 +17,11 @@ const SHARED_MOTIF_PATTERNS = [
   [0, 1, 2, 0],
   [0, 3, 2, 1],
 ] as const satisfies readonly (readonly [number, number, number, number])[];
+const SHARED_MOTIF_BY_THEME: Partial<
+  Record<MusicRegionThemeId, readonly [number, number, number, number]>
+> = {
+  'frontier-plains': [0, 2, 4, 2],
+};
 
 export function resolveProceduralThemeMotif(options: {
   themeId: MusicRegionThemeId;
@@ -32,7 +37,9 @@ export function resolveProceduralThemeMotif(options: {
       SHARED_MOTIF_PATTERNS.length
   );
   const sharedDegreeOffsets =
-    SHARED_MOTIF_PATTERNS[patternIndex] ?? SHARED_MOTIF_PATTERNS[0];
+    SHARED_MOTIF_BY_THEME[options.themeId] ??
+    SHARED_MOTIF_PATTERNS[patternIndex] ??
+    SHARED_MOTIF_PATTERNS[0];
   const contextBand = resolveMotifContextBand(
     options.contextType,
     options.tileKind

@@ -45,6 +45,15 @@ import {
   resolveProceduralNoteHarmonicGain,
 } from './procedural-music-note-shaping.ts';
 import { resolveProceduralRootMidiNote } from './procedural-music-scale.ts';
+import {
+  PROCEDURAL_MODE_FORMAL_MAJOR,
+  PROCEDURAL_MODE_HOLLOW_MINOR,
+  PROCEDURAL_MODE_JAGGED_MINOR,
+  PROCEDURAL_MODE_MAJOR_PENTATONIC,
+  PROCEDURAL_MODE_MIXOLYDIAN,
+  PROCEDURAL_MODE_NATURAL_MINOR,
+  PROCEDURAL_MODE_SUSPENDED_PENTATONIC,
+} from './procedural-music-modes.ts';
 import type { AudioCategory } from './audio-categories.ts';
 type MusicPosition = { x: number; y: number };
 type TileKind = string;
@@ -285,7 +294,7 @@ const THEME_LIBRARY: Record<MusicRegionThemeId, MusicRegionTheme> = {
     id: 'frontier-plains',
     rootHz: 196,
     rootMidiNote: resolveProceduralRootMidiNote(196),
-    scale: [0, 3, 5, 7, 10, 12],
+    scale: [...PROCEDURAL_MODE_MIXOLYDIAN],
     noteDurationMs: 360,
     baseVolume: 0.028,
     stepPattern: [0, 2, 4, 2, 5, 4, 2, 0],
@@ -297,7 +306,7 @@ const THEME_LIBRARY: Record<MusicRegionThemeId, MusicRegionTheme> = {
     id: 'deep-forest',
     rootHz: 174.61,
     rootMidiNote: resolveProceduralRootMidiNote(174.61),
-    scale: [0, 2, 3, 7, 8, 10, 12],
+    scale: [...PROCEDURAL_MODE_NATURAL_MINOR],
     noteDurationMs: 440,
     baseVolume: 0.026,
     stepPattern: [0, 2, 3, 5, 3, 2, 1, 0],
@@ -309,7 +318,7 @@ const THEME_LIBRARY: Record<MusicRegionThemeId, MusicRegionTheme> = {
     id: 'coastal-shore',
     rootHz: 220,
     rootMidiNote: resolveProceduralRootMidiNote(220),
-    scale: [0, 2, 5, 7, 9, 12],
+    scale: [...PROCEDURAL_MODE_SUSPENDED_PENTATONIC],
     noteDurationMs: 420,
     baseVolume: 0.027,
     stepPattern: [0, 2, 4, 5, 4, 2, 0, 2],
@@ -321,7 +330,7 @@ const THEME_LIBRARY: Record<MusicRegionThemeId, MusicRegionTheme> = {
     id: 'town-square',
     rootHz: 246.94,
     rootMidiNote: resolveProceduralRootMidiNote(246.94),
-    scale: [0, 2, 4, 7, 9, 12],
+    scale: [...PROCEDURAL_MODE_MAJOR_PENTATONIC],
     noteDurationMs: 300,
     baseVolume: 0.024,
     stepPattern: [0, 2, 4, 5, 4, 2, 5, 4],
@@ -333,7 +342,7 @@ const THEME_LIBRARY: Record<MusicRegionThemeId, MusicRegionTheme> = {
     id: 'ridge-pass',
     rootHz: 185,
     rootMidiNote: resolveProceduralRootMidiNote(185),
-    scale: [0, 3, 5, 6, 10, 12],
+    scale: [...PROCEDURAL_MODE_JAGGED_MINOR],
     noteDurationMs: 380,
     baseVolume: 0.024,
     stepPattern: [0, 1, 3, 4, 3, 1, 0, 4],
@@ -345,7 +354,7 @@ const THEME_LIBRARY: Record<MusicRegionThemeId, MusicRegionTheme> = {
     id: 'cavern-echo',
     rootHz: 130.81,
     rootMidiNote: resolveProceduralRootMidiNote(130.81),
-    scale: [0, 3, 5, 7, 8, 12],
+    scale: [...PROCEDURAL_MODE_HOLLOW_MINOR],
     noteDurationMs: 520,
     baseVolume: 0.03,
     stepPattern: [0, 2, 4, 2, 5, 2, 1, 0],
@@ -357,7 +366,7 @@ const THEME_LIBRARY: Record<MusicRegionThemeId, MusicRegionTheme> = {
     id: 'interior-hall',
     rootHz: 233.08,
     rootMidiNote: resolveProceduralRootMidiNote(233.08),
-    scale: [0, 2, 4, 7, 11, 12],
+    scale: [...PROCEDURAL_MODE_FORMAL_MAJOR],
     noteDurationMs: 340,
     baseVolume: 0.022,
     stepPattern: [0, 2, 4, 2, 5, 4, 2, 1],

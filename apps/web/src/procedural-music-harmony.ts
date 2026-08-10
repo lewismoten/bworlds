@@ -1,6 +1,7 @@
 import { hash2DWithSeed, registerHashLabel } from '@bworlds/core/hash';
 import { resolveProceduralChordProgression as resolveCuratedProceduralChordProgression } from './procedural-music-chord-progression.ts';
 import { resolveProceduralHarmonyChordVoicing } from './procedural-music-harmony-voicing.ts';
+import { blendLeadMotifWithRecognition } from './procedural-music-lead-motif.ts';
 import {
   getProceduralScaleDegreeSemitones,
   isProceduralSemitoneInMode,
@@ -110,12 +111,6 @@ export function resolveProceduralLeadMotif(
   clusterX: number,
   clusterY: number
 ): ProceduralLeadMotif {
-  if (theme.motif?.recognitionDegreeOffsets?.length) {
-    return {
-      degreeOffsets: theme.motif.recognitionDegreeOffsets,
-    };
-  }
-
   const candidatePatterns = getPreferredMotifPatterns(theme);
   const patternIndex = Math.floor(
     hash2DWithSeed(
@@ -124,8 +119,14 @@ export function resolveProceduralLeadMotif(
       clusterY + theme.id.length * 19
     ) * candidatePatterns.length
   );
+  const baseDegreeOffsets =
+    candidatePatterns[patternIndex] ?? candidatePatterns[0] ?? [];
+
   return {
-    degreeOffsets: candidatePatterns[patternIndex] ?? candidatePatterns[0],
+    degreeOffsets: blendLeadMotifWithRecognition({
+      baseDegreeOffsets,
+      recognitionDegreeOffsets: theme.motif?.recognitionDegreeOffsets,
+    }),
   };
 }
 

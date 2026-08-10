@@ -294,6 +294,40 @@ describe('music debug', () => {
     expect(historical.songDna.tempoBandLabel).toContain('ceremonial');
   });
 
+  it('keeps the plains motif stable and reports exact and varied motif counters separately', () => {
+    const snapshot = createMusicDebugSnapshot({
+      tileKind: 'plains',
+      contextType: 'overworld',
+      encounterMode: 'ambient',
+      clusterX: 0,
+      clusterY: 0,
+      dayProgress: 0.45,
+      yearProgress: 0.25,
+    });
+    const motifBySection = new Map(
+      snapshot.sectionMotifMatches.map((entry) => [entry.sectionId, entry])
+    );
+    const sectionA = motifBySection.get('a');
+    const sectionAPrime = motifBySection.get('a-prime');
+
+    expect(snapshot.sharedMotif).toEqual([0, 2, 4, 2]);
+    expect(snapshot.leadMotif.slice(0, 4)).toEqual([0, 2, 4, 2]);
+    expect(sectionA).toEqual(
+      expect.objectContaining({
+        exactMatchCount: expect.any(Number),
+        variedMatchCount: expect.any(Number),
+        matchCount: expect.any(Number),
+      })
+    );
+    expect(sectionAPrime).toEqual(
+      expect.objectContaining({
+        exactMatchCount: expect.any(Number),
+        variedMatchCount: expect.any(Number),
+        matchCount: expect.any(Number),
+      })
+    );
+  });
+
   it('formats song durations and loop ranges as minute-second labels', () => {
     expect(formatMusicDebugDuration(0)).toBe('0:00');
     expect(formatMusicDebugDuration(62_000)).toBe('1:02');
@@ -528,27 +562,23 @@ describe('music debug', () => {
     expect(snapshot.theme.rootHz).toBeGreaterThan(0);
   });
 
-  it(
-    'shows battle and boss encounter modes through song length generation',
-    () => {
-      const battle = createMusicDebugSnapshot({
-        tileKind: 'forest',
-        contextType: 'overworld',
-        encounterMode: 'battle',
-        combatIntensity: 0.6,
-      });
-      const boss = createMusicDebugSnapshot({
-        tileKind: 'cave',
-        contextType: 'dungeon',
-        encounterMode: 'boss',
-        combatIntensity: 0.95,
-      });
+  it('shows battle and boss encounter modes through song length generation', () => {
+    const battle = createMusicDebugSnapshot({
+      tileKind: 'forest',
+      contextType: 'overworld',
+      encounterMode: 'battle',
+      combatIntensity: 0.6,
+    });
+    const boss = createMusicDebugSnapshot({
+      tileKind: 'cave',
+      contextType: 'dungeon',
+      encounterMode: 'boss',
+      combatIntensity: 0.95,
+    });
 
-      expect(battle.durationMs).toBeGreaterThanOrEqual(60_000);
-      expect(battle.durationMs).toBeLessThanOrEqual(120_000);
-      expect(boss.durationMs).toBeGreaterThanOrEqual(180_000);
-      expect(boss.durationMs).toBeLessThanOrEqual(360_000);
-    },
-    5_000
-  );
+    expect(battle.durationMs).toBeGreaterThanOrEqual(60_000);
+    expect(battle.durationMs).toBeLessThanOrEqual(120_000);
+    expect(boss.durationMs).toBeGreaterThanOrEqual(180_000);
+    expect(boss.durationMs).toBeLessThanOrEqual(360_000);
+  }, 5_000);
 });

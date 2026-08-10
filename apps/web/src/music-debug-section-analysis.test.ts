@@ -23,11 +23,15 @@ describe('music debug section analysis', () => {
       {
         sectionId: 'intro',
         sectionLabel: 'Intro',
+        exactMatchCount: 1,
+        variedMatchCount: 0,
         matchCount: 1,
       },
       {
         sectionId: 'a',
         sectionLabel: 'Section A',
+        exactMatchCount: 0,
+        variedMatchCount: 1,
         matchCount: 1,
       },
     ]);

@@ -816,7 +816,13 @@ describe('procedural music', () => {
       96,
       0
     );
-    const townTheme = resolveMusicTheme('town', 'town', undefined, 96, 0);
+    const townMotif = resolveProceduralThemeMotif({
+      themeId: 'frontier-plains',
+      contextType: 'town',
+      tileKind: 'town',
+      clusterX: 96,
+      clusterY: 0,
+    });
     const ruinsMotif = resolveProceduralThemeMotif({
       themeId: 'frontier-plains',
       tileKind: 'ruins',
@@ -824,10 +830,11 @@ describe('procedural music', () => {
       clusterY: 0,
     });
 
-    expect(townTheme.motif.sharedDegreeOffsets).toEqual(
+    expect(plainsTheme.motif.sharedDegreeOffsets).toEqual([0, 2, 4, 2]);
+    expect(townMotif.sharedDegreeOffsets).toEqual(
       plainsTheme.motif.sharedDegreeOffsets
     );
-    expect(townTheme.motif.adaptedDegreeOffsets).not.toEqual(
+    expect(townMotif.adaptedDegreeOffsets).not.toEqual(
       plainsTheme.motif.adaptedDegreeOffsets
     );
     expect(ruinsMotif.adaptedDegreeOffsets).not.toEqual(
