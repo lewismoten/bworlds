@@ -1,5 +1,16 @@
 import './music-debug.css';
 import {
+  SESSION_STORAGE_KEY,
+  parseSavedSession,
+} from './session-state.ts';
+import {
+  buildRuntimePerformanceSnapshot,
+  normalizeRuntimePerformanceTrackingPreferences,
+  postRuntimePerformanceSnapshot,
+  type RuntimePerformanceSnapshot,
+  type RuntimePerformanceSnapshotTrigger,
+} from './runtime-performance-tracking.ts';
+import {
   collectMusicDebugFormOptions,
   setMusicDebugNamedFormValue,
 } from './music-debug-form.ts';
@@ -96,6 +107,12 @@ const persistedState = loadMusicDebugPagePersistenceState(
   undefined,
   import.meta.hot
 );
+const runtimePerformanceTrackingPreferences =
+  normalizeRuntimePerformanceTrackingPreferences(
+    parseSavedSession(
+      globalThis.localStorage?.getItem(SESSION_STORAGE_KEY) ?? null
+    )
+  );
 let previewOffsetMs = 0;
 let playbackVisualState: MusicDebugPlaybackVisualState | null = null;
 let playbackFrameHandle: number | null = null;
@@ -252,7 +269,14 @@ function seekToOffset(nextOffsetMs: number): void {
 }
 
 const pageState = createMusicDebugPageState({
-  createSnapshot: () => createCachedMusicDebugSnapshot(collectOptions()),
+  createSnapshot: () => {
+    const startedAtMs = performance.now();
+    const snapshot = createCachedMusicDebugSnapshot(collectOptions());
+    reportMusicDebugRuntimePerformanceSnapshot('song-generated', snapshot, {
+      songGenerationMs: performance.now() - startedAtMs,
+    });
+    return snapshot;
+  },
   onSnapshot(nextSnapshot) {
     if (summary) {
       summary.innerHTML = buildMusicDebugSummaryMarkup(nextSnapshot);
@@ -332,6 +356,41 @@ document.addEventListener('keydown', warmMusicDebugPlayback, {
 
 function collectOptions(): Partial<MusicDebugOptions> {
   return collectMusicDebugFormOptions(form);
+}
+
+function buildMusicDebugSnapshotContext(
+  snapshot: ReturnType<typeof resolveCurrentSnapshot>
+) {
+  if (!snapshot) {
+    return null;
+  }
+
+  return {
+    id: `${snapshot.options.contextType}:${snapshot.options.tileKind}:${snapshot.options.clusterX}:${snapshot.options.clusterY}`,
+    label: `${snapshot.options.contextType} ${snapshot.options.tileKind}`,
+    depth: 0,
+  };
+}
+
+function reportMusicDebugRuntimePerformanceSnapshot(
+  trigger: RuntimePerformanceSnapshotTrigger,
+  snapshot: ReturnType<typeof resolveCurrentSnapshot>,
+  metrics: Partial<RuntimePerformanceSnapshot['metrics']>
+): void {
+  if (!runtimePerformanceTrackingPreferences.enabled || !snapshot) {
+    return;
+  }
+
+  void postRuntimePerformanceSnapshot(
+    buildRuntimePerformanceSnapshot({
+      source: 'music-debug',
+      trigger,
+      route: window.location.pathname || '/debug/music',
+      worldSeed: null,
+      context: buildMusicDebugSnapshotContext(snapshot),
+      metrics,
+    })
+  );
 }
 
 function applyPersistedPageState(): void {
@@ -459,16 +518,26 @@ randomizeButton?.addEventListener('click', () => {
 downloadButton?.addEventListener('click', () => {
   instrumentPreviewPlayer.stop();
   playbackController.stop();
-  downloadMusicDebugMidiFile(pageState.refreshNow(), undefined, {
+  const snapshot = pageState.refreshNow();
+  const startedAtMs = performance.now();
+  downloadMusicDebugMidiFile(snapshot, undefined, {
     variant: normalizeMusicDebugMidiExportVariant(exportVariantSelect?.value),
+  });
+  reportMusicDebugRuntimePerformanceSnapshot('midi-export', snapshot, {
+    midiExportMs: performance.now() - startedAtMs,
   });
 });
 
 downloadBundleButton?.addEventListener('click', () => {
   instrumentPreviewPlayer.stop();
   playbackController.stop();
-  downloadMusicDebugExportBundle(pageState.refreshNow(), undefined, {
+  const snapshot = pageState.refreshNow();
+  const metrics = downloadMusicDebugExportBundle(snapshot, undefined, {
     variant: normalizeMusicDebugMidiExportVariant(exportVariantSelect?.value),
+  });
+  reportMusicDebugRuntimePerformanceSnapshot('bundle-export', snapshot, {
+    midiExportMs: metrics.midiExportMs,
+    wavExportMs: metrics.wavExportMs,
   });
 });
 

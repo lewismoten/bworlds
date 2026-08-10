@@ -74,9 +74,17 @@ import {
   type WorldMapProfileSnapshot,
 } from './world-map-storage.ts';
 import {
+  SESSION_STORAGE_KEY,
   parseSavedSession,
   serializeSessionSnapshot,
 } from './session-state.ts';
+import {
+  buildRuntimePerformanceSnapshot,
+  normalizeRuntimePerformanceTrackingPreferences,
+  postRuntimePerformanceSnapshot,
+  type RuntimePerformanceSnapshot,
+  type RuntimePerformanceSnapshotTrigger,
+} from './runtime-performance-tracking.ts';
 import { createTeleportPin, normalizeTeleportPins } from './teleport-pins.ts';
 import {
   AUDIO_CATEGORIES,
@@ -281,7 +289,6 @@ type PerformanceWithMemory = Performance & {
   };
 };
 
-const SESSION_STORAGE_KEY = 'bworlds:session';
 const CHARACTER_STORAGE_KEY = 'bworlds:character';
 const INVENTORY_STORAGE_KEY = 'bworlds:inventory';
 const WORLD_MAP_STORAGE_KEY = 'bworlds:world-map';
@@ -825,6 +832,9 @@ root.innerHTML = `
           <button id="toggle-music" type="button">Music: On</button>
           <button id="toggle-sound" type="button">Sound: On</button>
           <button id="toggle-ambiance" type="button">Ambiance: On</button>
+          <button id="toggle-runtime-performance-tracking" type="button">
+            Runtime Performance Tracking: On
+          </button>
         </div>
         <div class="audio-volume-controls" aria-label="Audio volume controls">
           <label class="audio-volume-control" for="audio-volume-music">
@@ -961,6 +971,10 @@ const toggleSoundButton =
   document.querySelector<HTMLButtonElement>('#toggle-sound');
 const toggleAmbianceButton =
   document.querySelector<HTMLButtonElement>('#toggle-ambiance');
+const toggleRuntimePerformanceTrackingButton =
+  document.querySelector<HTMLButtonElement>(
+    '#toggle-runtime-performance-tracking'
+  );
 const audioCategoryVolumeInputs = new Map<
   AudioCategory,
   HTMLInputElement | null
@@ -1158,6 +1172,7 @@ let currentWorldSeedHash = registerHashSeed(currentWorldSeed);
 let activePackIds = normalizeSelectedPackIds(
   savedCharacterProfile?.packIds ?? savedSession?.packIds
 );
+const initialWorldGenerationStartedAtMs = performance.now();
 let runtime = createWorldRuntime({
   seed: currentWorldSeedHash,
   packIds: activePackIds,
@@ -1165,6 +1180,8 @@ let runtime = createWorldRuntime({
   stack: savedCharacterProfile?.stack ?? savedSession?.stack,
   viewMode: getNextViewMode(savedSession?.viewMode),
 });
+const initialWorldGenerationMs =
+  performance.now() - initialWorldGenerationStartedAtMs;
 let { contentPacks: activePacks, generator, registry, state } = runtime;
 state.playerLevel = normalizePlayerLevel(
   savedCharacterProfile?.playerLevel ?? savedSession?.playerLevel
@@ -1357,6 +1374,12 @@ const renderer3d = create3DRenderer(viewport3d);
 const audioPreferenceState = {
   ...normalizeAudioPreferences(savedSession ?? DEFAULT_AUDIO_PREFERENCES),
 };
+const runtimePerformanceTrackingState = {
+  ...normalizeRuntimePerformanceTrackingPreferences(savedSession),
+  initialWorldGenerationMs,
+  startupReported: false,
+  lastReportedContextId: null as string | null,
+};
 function getAudioCategoryVolume(category: AudioCategory): number {
   return audioPreferenceState.categoryVolumes[category];
 }
@@ -1544,6 +1567,7 @@ updateTimekeeperDisplayModeUi();
 updateCompassDisplayModeUi();
 updateMinimapDisplayModeUi();
 updateAudioPreferenceUi();
+updateRuntimePerformanceTrackingUi();
 if (debugSeedInput) {
   debugSeedInput.value = currentWorldSeed;
 }
@@ -1842,6 +1866,21 @@ function updateAudioPreferenceUi(): void {
   });
 }
 
+function updateRuntimePerformanceTrackingUi(): void {
+  if (!toggleRuntimePerformanceTrackingButton) {
+    return;
+  }
+  const label = `Runtime Performance Tracking: ${
+    runtimePerformanceTrackingState.enabled ? 'On' : 'Off'
+  }`;
+  toggleRuntimePerformanceTrackingButton.textContent = label;
+  toggleRuntimePerformanceTrackingButton.title = label;
+  toggleRuntimePerformanceTrackingButton.classList.toggle(
+    'is-active',
+    runtimePerformanceTrackingState.enabled
+  );
+}
+
 function toggleAudioPreferenceSetting(
   key: 'musicEnabled' | 'soundEnabled' | 'ambianceEnabled'
 ): void {
@@ -1870,6 +1909,59 @@ function setAudioCategoryVolumeSetting(
   audioPreferenceState.categoryVolumes = nextPreferences.categoryVolumes;
   updateAudioPreferenceUi();
   saveSession();
+}
+
+function toggleRuntimePerformanceTrackingSetting(): void {
+  runtimePerformanceTrackingState.enabled =
+    !runtimePerformanceTrackingState.enabled;
+  updateRuntimePerformanceTrackingUi();
+  saveSession();
+}
+
+function reportRuntimePerformanceSnapshot(
+  trigger: RuntimePerformanceSnapshotTrigger,
+  spatial: ReturnType<typeof getPlayerSpatialSummary>,
+  metrics: Partial<RuntimePerformanceSnapshot['metrics']> = {}
+): void {
+  if (!runtimePerformanceTrackingState.enabled) {
+    return;
+  }
+
+  const debugSnapshot = collectCurrentDebugSnapshot(performance.now(), spatial, {
+    recordDiagnostics: false,
+  });
+  const snapshot = buildRuntimePerformanceSnapshot({
+    source: 'game',
+    trigger,
+    route: window.location.pathname || '/',
+    worldSeed: currentWorldSeed,
+    context: {
+      id: spatial.context.id,
+      label: spatial.context.label,
+      depth: spatial.context.depth,
+    },
+    metrics: {
+      initialWorldGenerationMs:
+        trigger === 'startup'
+          ? runtimePerformanceTrackingState.initialWorldGenerationMs
+          : null,
+      visibleTileGeneration: {
+        averageMs: debugSnapshot.averageTileBuildMs,
+        maxMs: debugSnapshot.maxTileBuildMs,
+        buildsPerSecond: debugSnapshot.tileBuildsPerSecond,
+        pendingTileCount: debugSnapshot.pendingTileCount,
+      },
+      maximumFrameMs: debugSnapshot.worstRecentFrameMs,
+      memoryAfterRegionChangeMb:
+        trigger === 'region-change' ? debugSnapshot.heapUsedMb : null,
+      activeThreeObjectCount: debugSnapshot.object3dCount,
+      drawCalls: debugSnapshot.drawCalls,
+      audioNodeCount: debugSnapshot.activeAudioSourceCount,
+      ...metrics,
+    },
+  });
+
+  void postRuntimePerformanceSnapshot(snapshot);
 }
 
 function updateCelestialEventModeUi(): void {
@@ -3688,6 +3780,16 @@ function render(): FrameLoopActivityLike {
       uiRenderState.lastDebugSignature = debugSignature;
     }
   }
+  if (!runtimePerformanceTrackingState.startupReported) {
+    reportRuntimePerformanceSnapshot('startup', spatial);
+    runtimePerformanceTrackingState.startupReported = true;
+    runtimePerformanceTrackingState.lastReportedContextId = context.id;
+  } else if (
+    runtimePerformanceTrackingState.lastReportedContextId !== context.id
+  ) {
+    reportRuntimePerformanceSnapshot('region-change', spatial);
+    runtimePerformanceTrackingState.lastReportedContextId = context.id;
+  }
   return getFrameLoopActivity({
     nowMs,
     timeFrozen: timeState.frozen,
@@ -4177,6 +4279,9 @@ toggleSoundButton?.addEventListener('click', () => {
 toggleAmbianceButton?.addEventListener('click', () => {
   toggleAudioPreferenceSetting('ambianceEnabled');
 });
+toggleRuntimePerformanceTrackingButton?.addEventListener('click', () => {
+  toggleRuntimePerformanceTrackingSetting();
+});
 AUDIO_CATEGORIES.forEach((category) => {
   audioCategoryVolumeInputs
     .get(category)
@@ -4461,6 +4566,8 @@ function flushSessionSave(): void {
       musicEnabled: audioPreferenceState.musicEnabled,
       soundEnabled: audioPreferenceState.soundEnabled,
       ambianceEnabled: audioPreferenceState.ambianceEnabled,
+      runtimePerformanceTrackingEnabled:
+        runtimePerformanceTrackingState.enabled,
       categoryVolumes: audioPreferenceState.categoryVolumes,
       compassHeadingAngle: compassHeadingState.angle,
       cameraPitch: mouseLookState.pitch,

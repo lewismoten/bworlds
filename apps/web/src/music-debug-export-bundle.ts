@@ -18,6 +18,13 @@ export type MusicDebugExportBundle = MusicDebugExportBundleFile & {
   entries: readonly MusicDebugExportBundleFile[];
 };
 
+export type MusicDebugExportBundleMetrics = {
+  midiExportMs: number;
+  wavExportMs: number;
+  totalExportMs: number;
+  previewWavFileCount: number;
+};
+
 type MusicDebugExportBundleDownloadEnvironment = {
   createObjectURL: (blob: Blob) => string;
   revokeObjectURL: (url: string) => void;
@@ -43,12 +50,27 @@ export function createMusicDebugExportBundle(
   snapshot: MusicDebugSnapshot,
   metadataOptions: MusicDebugMidiMetadataOptions = {}
 ): MusicDebugExportBundle {
+  return createMeasuredMusicDebugExportBundle(snapshot, metadataOptions).bundle;
+}
+
+export function createMeasuredMusicDebugExportBundle(
+  snapshot: MusicDebugSnapshot,
+  metadataOptions: MusicDebugMidiMetadataOptions = {}
+): {
+  bundle: MusicDebugExportBundle;
+  metrics: MusicDebugExportBundleMetrics;
+} {
+  const totalStartedAtMs = performance.now();
+  const midiStartedAtMs = performance.now();
   const midiFile = createMusicDebugMidiFile(snapshot, metadataOptions);
+  const midiExportMs = performance.now() - midiStartedAtMs;
   const reportFile = createMusicDebugParameterReportFile(
     snapshot,
     metadataOptions
   );
+  const wavStartedAtMs = performance.now();
   const previewFiles = createMusicDebugInstrumentPreviewWavFiles(snapshot);
+  const wavExportMs = performance.now() - wavStartedAtMs;
   const entries: readonly MusicDebugExportBundleFile[] = [
     midiFile,
     ...previewFiles,
@@ -63,10 +85,18 @@ export function createMusicDebugExportBundle(
   const baseName = midiFile.fileName.replace(/\.mid$/i, '');
 
   return {
-    fileName: `${baseName}-export.zip`,
-    mimeType: 'application/zip',
-    bytes: zipBytes,
-    entries,
+    bundle: {
+      fileName: `${baseName}-export.zip`,
+      mimeType: 'application/zip',
+      bytes: zipBytes,
+      entries,
+    },
+    metrics: {
+      midiExportMs,
+      wavExportMs,
+      totalExportMs: performance.now() - totalStartedAtMs,
+      previewWavFileCount: previewFiles.length,
+    },
   };
 }
 
@@ -74,8 +104,11 @@ export function downloadMusicDebugExportBundle(
   snapshot: MusicDebugSnapshot,
   environment: MusicDebugExportBundleDownloadEnvironment = createBrowserMusicDebugExportBundleDownloadEnvironment(),
   metadataOptions: MusicDebugMidiMetadataOptions = {}
-): void {
-  const bundle = createMusicDebugExportBundle(snapshot, metadataOptions);
+): MusicDebugExportBundleMetrics {
+  const { bundle, metrics } = createMeasuredMusicDebugExportBundle(
+    snapshot,
+    metadataOptions
+  );
   const blob = new Blob([new Uint8Array(bundle.bytes).buffer], {
     type: bundle.mimeType,
   });
@@ -87,6 +120,7 @@ export function downloadMusicDebugExportBundle(
   anchor.click();
   anchor.remove();
   environment.revokeObjectURL(url);
+  return metrics;
 }
 
 function createMusicDebugInstrumentPreviewWavFiles(
