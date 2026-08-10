@@ -20,6 +20,7 @@ describe('main layout and hmr wiring', () => {
     );
     expect(source).toContain('<div class="dock-row">');
     expect(source).not.toContain('<div class="controls controls-compact">');
+    expect(source).toContain('<main class="shell">\n    <section class="dashboard">');
     expect(source).not.toContain('id="content-pack-label"');
     expect(source).not.toContain('id="content-pack-form"');
     expect(source).not.toContain('id="status"');
@@ -27,16 +28,18 @@ describe('main layout and hmr wiring', () => {
       '</main>\n  <div class="app-utility-storage" aria-hidden="true">'
     );
     expect(stylesheet).toContain('.control-dock {\n  position: fixed;');
-    expect(stylesheet).toContain('display: flex;');
+    expect(stylesheet).toContain('display: block;');
     expect(stylesheet).toContain('left: 0.75rem;');
     expect(stylesheet).toContain('right: 0.75rem;');
     expect(stylesheet).toContain('width: auto;');
     expect(stylesheet).toContain('max-width: none;');
-    expect(stylesheet).toContain('.dock-row {\n  display: grid;');
-    expect(stylesheet).toContain('grid-auto-flow: column;');
+    expect(stylesheet).toContain('.dock-row {\n  display: flex;');
+    expect(stylesheet).toContain('flex-wrap: nowrap;');
     expect(stylesheet).not.toContain('.controls-compact {\n  display: flex;');
     expect(stylesheet).toContain('width: 100%;');
     expect(stylesheet).toContain('justify-content: center;');
+    expect(stylesheet).toContain('.shell {\n  width: min(1680px, 100vw);');
+    expect(stylesheet).toContain('padding-top: 0;');
     expect(stylesheet).toContain('.dashboard {\n  display: grid;');
     expect(stylesheet).toContain('grid-template-columns: minmax(0, 1fr);');
     expect(stylesheet).toContain('.inspector-header {\n  display: flex;');

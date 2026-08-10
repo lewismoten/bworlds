@@ -20,11 +20,11 @@ describe('audio layout styles', () => {
     );
     expect(stylesheet).toContain('bottom: var(--control-dock-offset);');
     expect(stylesheet).toContain(
-      'calc(var(--control-dock-height) + var(--control-dock-offset) + 0.75rem);'
+      'var(--control-dock-height) + var(--control-dock-offset) + 0.75rem'
     );
     expect(stylesheet).toContain('.dock-row');
-    expect(stylesheet).toContain('display: grid;');
-    expect(stylesheet).toContain('grid-auto-flow: column;');
+    expect(stylesheet).toContain('display: flex;');
+    expect(stylesheet).toContain('flex-wrap: nowrap;');
     expect(stylesheet).toContain('left: 0.75rem;');
     expect(stylesheet).toContain('right: 0.75rem;');
     expect(stylesheet).toContain('width: auto;');

@@ -38,8 +38,11 @@ body {
 .shell {
   width: min(1680px, 100vw);
   margin: 0 auto;
-  padding: 0 0
-    calc(var(--control-dock-height) + var(--control-dock-offset) + 0.75rem);
+  padding-inline: 0;
+  padding-top: 0;
+  padding-bottom: calc(
+    var(--control-dock-height) + var(--control-dock-offset) + 0.75rem
+  );
 }
 
 .eyebrow {
@@ -71,9 +74,7 @@ body {
 
 .control-dock {
   position: fixed;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: block;
   left: 0.75rem;
   right: 0.75rem;
   bottom: var(--control-dock-offset);
@@ -86,9 +87,8 @@ body {
 }
 
 .dock-row {
-  display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: max-content;
+  display: flex;
+  flex-wrap: nowrap;
   align-items: center;
   justify-content: center;
   gap: 0.55rem;
