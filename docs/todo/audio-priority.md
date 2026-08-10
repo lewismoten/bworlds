@@ -11,7 +11,7 @@
 - [x] Require stepwise recovery after every large lead leap.
 - [x] Generate an eight-measure melody before full arrangement.
 - [x] State the lead motif clearly in the first A phrase.
-- [ ] Require at least two exact motif matches in Section A.
+- [x] Require at least two exact motif matches in Section A.
 - [ ] Require motif variation rather than unrelated notes in A'.
 - [ ] Regenerate any section with zero expected motif matches.
 - [ ] Give the lead two to six note attacks per measure.
@@ -19,7 +19,7 @@
 - [ ] Build reusable lead rhythm templates by phrase.
 - [ ] Add rests at phrase boundaries rather than every measure.
 - [ ] End each eight-measure phrase on a planned cadence.
-- [ ] Resolve the final answer cadence to F.
+- [ ] Resolve the final cadence to scale degree 1.
 - [ ] Build one chord timeline before generating any tracks.
 - [ ] Assign each chord an exact measure range.
 - [ ] Make bass, harmony, and lead read the same chord timeline.

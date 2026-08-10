@@ -20,17 +20,52 @@ export function stateLeadMotifInFirstASection(options: {
     return [...options.notes];
   }
 
+  const updatedNotes = [...options.notes];
   const phraseDurationMs = Math.max(1, Math.round(sectionA.durationMs / 2));
   const phraseStartMs = options.songStartMs + sectionA.startOffsetMs;
-  const phraseEndMs = phraseStartMs + phraseDurationMs;
-  const updatedNotes = [...options.notes];
+  const sectionEndMs = phraseStartMs + sectionA.durationMs;
+
+  applyMotifToPhraseWindow(updatedNotes, {
+    phraseStartMs,
+    phraseDurationMs,
+    sectionEndMs,
+    leadMotif: options.leadMotif,
+    theme: options.theme,
+  });
+  applyMotifToPhraseWindow(updatedNotes, {
+    phraseStartMs: phraseStartMs + phraseDurationMs,
+    phraseDurationMs,
+    sectionEndMs,
+    leadMotif: options.leadMotif,
+    theme: options.theme,
+  });
+
+  return updatedNotes;
+}
+
+function applyMotifToPhraseWindow(
+  notes: ProceduralMusicNote[],
+  options: {
+    phraseStartMs: number;
+    phraseDurationMs: number;
+    sectionEndMs: number;
+    leadMotif: readonly number[];
+    theme: {
+      rootHz: number;
+      rootMidiNote: number;
+      scale: readonly number[];
+      noteDurationMs: number;
+    };
+  }
+): void {
+  const phraseEndMs = options.phraseStartMs + options.phraseDurationMs;
   let motifIndex = 0;
 
-  for (let index = 0; index < updatedNotes.length; index += 1) {
-    const note = updatedNotes[index]!;
+  for (let index = 0; index < notes.length; index += 1) {
+    const note = notes[index]!;
     if (
       note.role !== 'lead' ||
-      note.startMs < phraseStartMs ||
+      note.startMs < options.phraseStartMs ||
       note.startMs >= phraseEndMs
     ) {
       continue;
@@ -44,21 +79,21 @@ export function stateLeadMotifInFirstASection(options: {
       note,
       theme: options.theme,
     });
-    updatedNotes[index] = {
+    notes[index] = {
       ...note,
       frequency: resolveProceduralMidiNoteFrequency(
         options.theme.rootMidiNote + targetSemitones
       ),
-      durationMs: Math.max(
-        note.durationMs,
-        Math.round(options.theme.noteDurationMs * 0.94)
+      durationMs: Math.min(
+        Math.max(
+          note.durationMs,
+          Math.round(options.theme.noteDurationMs * 0.94)
+        ),
+        Math.max(1, Math.floor(options.sectionEndMs - note.startMs))
       ),
-      volume: note.volume * 1.08,
     };
     motifIndex += 1;
   }
-
-  return updatedNotes;
 }
 
 function alignMotifSemitonesToLeadRegister(options: {

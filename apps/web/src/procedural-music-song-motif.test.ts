@@ -10,7 +10,11 @@ describe('procedural music song motif', () => {
       createLeadNote(9_000, 440),
       createLeadNote(10_000, 493.883),
       createLeadNote(11_000, 440),
-      createLeadNote(18_500, 523.251),
+      createLeadNote(16_100, 523.251),
+      createLeadNote(17_100, 587.33),
+      createLeadNote(18_100, 659.255),
+      createLeadNote(19_100, 587.33),
+      createLeadNote(20_500, 523.251),
     ];
     const sections: ProceduralMusicSongSection[] = [
       createSection('intro', 0, 8_000, 8),
@@ -30,12 +34,16 @@ describe('procedural music song motif', () => {
       },
     });
 
-    const stated = updated
+    const firstStatement = updated
       .slice(0, 4)
       .map((note) => Math.round(69 + 12 * Math.log2(note.frequency / 440)));
+    const secondStatement = updated
+      .slice(4, 8)
+      .map((note) => Math.round(69 + 12 * Math.log2(note.frequency / 440)));
 
-    expect(stated).toEqual([67, 71, 74, 71]);
-    expect(updated[4]?.frequency).toBe(notes[4]?.frequency);
+    expect(firstStatement).toEqual([67, 71, 74, 71]);
+    expect(secondStatement).toEqual([67, 71, 74, 71]);
+    expect(updated[8]?.frequency).toBe(notes[8]?.frequency);
   });
 });
 
