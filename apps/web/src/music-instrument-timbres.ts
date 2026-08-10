@@ -60,6 +60,26 @@ export type InstrumentPatchRecipe = {
   timbre: InstrumentTimbreTemplate;
 };
 
+export type KnownGoodInstrumentPatchRole =
+  | 'lead'
+  | 'harmony'
+  | 'bass'
+  | 'percussion';
+
+export type KnownGoodInstrumentPatch = Readonly<{
+  role: KnownGoodInstrumentPatchRole;
+  label: string;
+  family: InstrumentFamily;
+  waveform: MusicWaveform;
+  attackMs: number;
+  releaseMs: number;
+  detuneCents: number;
+  harmonicGain: number;
+  pulseRate: number;
+  brightness: number;
+  timbre: Readonly<ProceduralInstrumentTimbre>;
+}>;
+
 type InstrumentTimbreTemplate = {
   harmonicWaveform: MusicWaveform;
   harmonicRatio: number;
@@ -488,10 +508,116 @@ const INSTRUMENT_PATCH_RECIPES: Record<InstrumentFamily, InstrumentPatchRecipe> 
   },
 };
 
+const KNOWN_GOOD_INSTRUMENT_PATCHES: Record<
+  KnownGoodInstrumentPatchRole,
+  KnownGoodInstrumentPatch
+> = Object.freeze({
+  lead: createKnownGoodInstrumentPatch({
+    role: 'lead',
+    label: 'Breathy flute lead',
+    family: 'flute',
+    waveform: 'sine',
+    attackMs: 26,
+    releaseMs: 156,
+    detuneCents: 1,
+    harmonicGain: 0.16,
+    pulseRate: 0.82,
+    brightness: 1.08,
+    timbre: {
+      harmonicWaveform: 'sine',
+      harmonicRatio: 2.02,
+      filterType: 'highpass',
+      filterCutoffHz: 1_020,
+      filterQ: 0.84,
+      noiseMix: 0.19,
+      noiseFilterType: 'highpass',
+      noiseFilterCutoffHz: 3_300,
+      noiseFilterQ: 0.72,
+    },
+  }),
+  harmony: createKnownGoodInstrumentPatch({
+    role: 'harmony',
+    label: 'Bowed string bed',
+    family: 'strings',
+    waveform: 'triangle',
+    attackMs: 42,
+    releaseMs: 238,
+    detuneCents: 2,
+    harmonicGain: 0.18,
+    pulseRate: 0.68,
+    brightness: 0.92,
+    timbre: {
+      harmonicWaveform: 'sawtooth',
+      harmonicRatio: 2.04,
+      filterType: 'bandpass',
+      filterCutoffHz: 1_640,
+      filterQ: 1.28,
+      attackPeakGainMultiplier: 1.1,
+      bodySustainLevel: 0.92,
+    },
+  }),
+  bass: createKnownGoodInstrumentPatch({
+    role: 'bass',
+    label: 'Anchored upright bass',
+    family: 'upright-bass',
+    waveform: 'sine',
+    attackMs: 28,
+    releaseMs: 228,
+    detuneCents: 0,
+    harmonicGain: 0.12,
+    pulseRate: 0.66,
+    brightness: 0.78,
+    timbre: {
+      harmonicWaveform: 'triangle',
+      harmonicRatio: 1.94,
+      filterType: 'lowpass',
+      filterCutoffHz: 290,
+      filterQ: 0.72,
+      fundamentalGainMultiplier: 1.16,
+      harmonicBodyLevel: 0.36,
+      harmonicReleaseLeadMs: 80,
+    },
+  }),
+  percussion: createKnownGoodInstrumentPatch({
+    role: 'percussion',
+    label: 'Punchy kick pulse',
+    family: 'kick',
+    waveform: 'sine',
+    attackMs: 6,
+    releaseMs: 48,
+    detuneCents: -1,
+    harmonicGain: 0.1,
+    pulseRate: 3.1,
+    brightness: 0.72,
+    timbre: {
+      harmonicWaveform: 'sine',
+      harmonicRatio: 0.54,
+      filterType: 'lowpass',
+      filterCutoffHz: 126,
+      filterQ: 0.92,
+    },
+  }),
+});
+
 export function resolveInstrumentPatchRecipe(
   family: InstrumentFamily
 ): InstrumentPatchRecipe {
   return INSTRUMENT_PATCH_RECIPES[family];
+}
+
+export function resolveKnownGoodInstrumentPatch(
+  role: KnownGoodInstrumentPatchRole
+): KnownGoodInstrumentPatch {
+  return KNOWN_GOOD_INSTRUMENT_PATCHES[role];
+}
+
+export function listKnownGoodInstrumentPatches(): readonly KnownGoodInstrumentPatch[] {
+  return [
+    KNOWN_GOOD_INSTRUMENT_PATCHES.lead,
+    KNOWN_GOOD_INSTRUMENT_PATCHES.harmony,
+    KNOWN_GOOD_INSTRUMENT_PATCHES.bass,
+    KNOWN_GOOD_INSTRUMENT_PATCHES.percussion,
+  ];
 }
 
 export function resolveProceduralInstrumentTimbre(options: {
@@ -725,4 +851,15 @@ function resolveRegisterSignal(frequencyHz: number): number {
   const safeFrequency = Math.max(27.5, frequencyHz);
   const normalizedOctaves = (Math.log2(safeFrequency / 27.5) - 2) / 4;
   return clamp(normalizedOctaves, 0, 1);
+}
+
+function createKnownGoodInstrumentPatch(
+  patch: KnownGoodInstrumentPatch
+): KnownGoodInstrumentPatch {
+  return Object.freeze({
+    ...patch,
+    timbre: Object.freeze({
+      ...patch.timbre,
+    }),
+  });
 }

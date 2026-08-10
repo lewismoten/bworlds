@@ -25,7 +25,9 @@ import { resolveProceduralMusicLoudness } from './procedural-music-loudness.ts';
 import { createProceduralPercussionNotes } from './procedural-music-percussion.ts';
 import { resolveProceduralThemeMotif } from './procedural-music-theme-motif.ts';
 import {
+  listKnownGoodInstrumentPatches,
   resolveInstrumentPatchRecipe,
+  resolveKnownGoodInstrumentPatch,
   resolveProceduralInstrumentTimbre,
   resolveRegisterShapedInstrumentTimbre,
   resolveVelocityShapedInstrumentTimbre,
@@ -94,6 +96,63 @@ describe('procedural music', () => {
     expect(loudTimbre.filterCutoffHz).toBeGreaterThan(softTimbre.filterCutoffHz);
     expect(loudTimbre.harmonicRatio).toBeGreaterThan(softTimbre.harmonicRatio);
     expect(loudTimbre.transientMix).toBeGreaterThan(softTimbre.transientMix ?? 0);
+  });
+
+  it('defines one known-good patch for each core song role', () => {
+    const patches = listKnownGoodInstrumentPatches();
+
+    expect(patches.map((patch) => patch.role)).toEqual([
+      'lead',
+      'harmony',
+      'bass',
+      'percussion',
+    ]);
+    expect(resolveKnownGoodInstrumentPatch('lead').label).toContain('lead');
+    expect(resolveKnownGoodInstrumentPatch('bass').family).toBe('upright-bass');
+    expect(resolveKnownGoodInstrumentPatch('percussion').family).toBe('kick');
+  });
+
+  it('keeps known-good patches inside their family recipe ranges', () => {
+    for (const patch of listKnownGoodInstrumentPatches()) {
+      const recipe = resolveInstrumentPatchRecipe(patch.family);
+
+      expect(recipe.waveformOptions).toContain(patch.waveform);
+      expect(patch.attackMs).toBeGreaterThanOrEqual(recipe.attackMsRange.min);
+      expect(patch.attackMs).toBeLessThanOrEqual(recipe.attackMsRange.max);
+      expect(patch.releaseMs).toBeGreaterThanOrEqual(recipe.releaseMsRange.min);
+      expect(patch.releaseMs).toBeLessThanOrEqual(recipe.releaseMsRange.max);
+      expect(patch.detuneCents).toBeGreaterThanOrEqual(
+        recipe.detuneCentsRange.min
+      );
+      expect(patch.detuneCents).toBeLessThanOrEqual(recipe.detuneCentsRange.max);
+      expect(patch.harmonicGain).toBeGreaterThanOrEqual(
+        recipe.harmonicGainRange.min
+      );
+      expect(patch.harmonicGain).toBeLessThanOrEqual(
+        recipe.harmonicGainRange.max
+      );
+      expect(patch.pulseRate).toBeGreaterThanOrEqual(recipe.pulseRateRange.min);
+      expect(patch.pulseRate).toBeLessThanOrEqual(recipe.pulseRateRange.max);
+      expect(patch.brightness).toBeGreaterThanOrEqual(
+        recipe.brightnessRange.min
+      );
+      expect(patch.brightness).toBeLessThanOrEqual(recipe.brightnessRange.max);
+    }
+  });
+
+  it('keeps known-good role patches clearly distinct from each other', () => {
+    const lead = resolveKnownGoodInstrumentPatch('lead');
+    const harmony = resolveKnownGoodInstrumentPatch('harmony');
+    const bass = resolveKnownGoodInstrumentPatch('bass');
+    const percussion = resolveKnownGoodInstrumentPatch('percussion');
+
+    expect(lead.family).not.toBe(harmony.family);
+    expect(harmony.family).not.toBe(bass.family);
+    expect(bass.family).not.toBe(percussion.family);
+    expect(lead.timbre.noiseMix).toBeGreaterThan(0.1);
+    expect(harmony.timbre.bodySustainLevel).toBeGreaterThan(0.85);
+    expect(bass.timbre.filterCutoffHz).toBeLessThan(lead.timbre.filterCutoffHz);
+    expect(percussion.releaseMs).toBeLessThan(harmony.releaseMs / 3);
   });
 
   it('adds shared sound bank registry metadata to generated instruments', () => {
