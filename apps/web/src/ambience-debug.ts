@@ -99,6 +99,17 @@ export const AMBIENCE_DEBUG_PRESETS: readonly AmbienceDebugPreset[] = [
     season: 'winter',
     seed: 61_319,
   },
+  {
+    id: 'observatory-night',
+    label: 'Observatory Night',
+    description:
+      'Unnatural skyward resonance with crystalline chimes and distant arcane drift.',
+    kind: 'magical',
+    tileKind: 'observatory',
+    dayPhase: 'night',
+    season: 'winter',
+    seed: 61_361,
+  },
 ] as const;
 
 export function buildAmbienceDebugSnapshot(
@@ -309,6 +320,8 @@ function resolveAmbientEffectKind(kind: NearbyAmbientKind): SoundEffectKind {
       return 'mountain-ambience';
     case 'cave':
       return 'cave-ambience';
+    case 'magical':
+      return 'magical-ambience';
     case 'settlement':
       return 'settlement-ambience';
     case 'ruins':

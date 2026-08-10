@@ -182,7 +182,7 @@
 - [x] Give snowy regions wind, snow movement, cracking ice, and muffled ambience.
 - [x] Give volcanic areas rumbling, cracking stone, steam, and lava activity.
 - [x] Give caves dripping water, distant movement, echoes, rock sounds, and underground wind.
-- [ ] Give magical environments their own unnatural ambient layers.
+- [x] Give magical environments their own unnatural ambient layers.
 - [x] Generate ambient density based on how biologically active an area should be.
 - [x] Vary ambient sounds according to altitude.
 - [x] Vary ambient sounds according to nearby terrain.

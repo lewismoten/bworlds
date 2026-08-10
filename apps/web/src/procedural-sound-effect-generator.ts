@@ -23,6 +23,7 @@ export type SoundEffectKind =
   | 'volcanic-ambience'
   | 'mountain-ambience'
   | 'cave-ambience'
+  | 'magical-ambience'
   | 'settlement-ambience'
   | 'ruins-ambience'
   | 'advancement'

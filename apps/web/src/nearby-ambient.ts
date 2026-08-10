@@ -9,6 +9,7 @@ export type NearbyAmbientKind =
   | 'volcanic'
   | 'mountain'
   | 'cave'
+  | 'magical'
   | 'settlement'
   | 'ruins';
 
@@ -60,6 +61,7 @@ const AMBIENT_KIND_SALTS: Record<NearbyAmbientKind, number> = {
   volcanic: 0x56473829,
   mountain: 0x16180339,
   cave: 0x9e3779b1,
+  magical: 0x4f1bbcdc,
   settlement: 0x7f4a7c15,
   ruins: 0x5bd1e995,
 };
@@ -75,6 +77,7 @@ const BASE_AMBIENT_THRESHOLDS: Record<NearbyAmbientKind, number> = {
   volcanic: 0.22,
   mountain: 0.2,
   cave: 0.22,
+  magical: 0.16,
   settlement: 0.18,
   ruins: 0.18,
 };
@@ -90,6 +93,7 @@ const AMBIENT_BIOLOGICAL_ACTIVITY: Record<NearbyAmbientKind, number> = {
   volcanic: 0.08,
   mountain: 0.44,
   cave: 0.22,
+  magical: 0.12,
   settlement: 0.3,
   ruins: 0.18,
 };
@@ -207,15 +211,16 @@ function resolvePoiAmbientKind(poiType: string): NearbyAmbientKind | null {
       return 'cave';
     case 'quarry':
       return 'mountain';
+    case 'stronghold':
+    case 'observatory':
+      return 'magical';
     case 'ruins':
     case 'tower':
     case 'landmark':
     case 'sign':
       return 'ruins';
     case 'town':
-    case 'stronghold':
     case 'lighthouse':
-    case 'observatory':
     case 'npc':
     case 'ship':
     case 'station':
@@ -255,6 +260,9 @@ function resolveBaseAmbientKind(tileKind: string): NearbyAmbientKind {
     case 'cave-wall':
     case 'dungeon':
       return 'cave';
+    case 'observatory':
+    case 'stronghold':
+      return 'magical';
     case 'ruins':
     case 'tower':
     case 'sign':
@@ -272,7 +280,6 @@ function resolveBaseAmbientKind(tileKind: string): NearbyAmbientKind {
     case 'stairsDown':
     case 'wall':
     case 'lighthouse':
-    case 'observatory':
       return 'settlement';
     default:
       return 'plains';

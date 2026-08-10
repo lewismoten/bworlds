@@ -946,6 +946,44 @@ describe('sound recipe library', () => {
     ]);
   });
 
+  it('supports magical ambience variants with dedicated observatory layer sets', () => {
+    const chimeRecipe = buildProceduralSoundRecipe({
+      kind: 'magical-ambience',
+      identityVariant: 'astral-chimes',
+      profile: DEFAULT_SURFACE_PROFILE,
+      variantOffset: 2,
+      resolveAdvancementFrequency: () => 300,
+      resolveAmbientSoundFrequency: () => 172,
+      resolveInteractionFrequency: () => 128,
+      resolveInteractionWaveform: (_tileKind, fallback) => fallback,
+      resolvePaddleBoatCalliopeFrequency: () => 520,
+      resolveSteamWhistleFrequency: () => 360,
+    });
+    const whisperRecipe = buildProceduralSoundRecipe({
+      kind: 'magical-ambience',
+      identityVariant: 'void-whispers',
+      profile: DEFAULT_SURFACE_PROFILE,
+      variantOffset: -1,
+      resolveAdvancementFrequency: () => 300,
+      resolveAmbientSoundFrequency: () => 172,
+      resolveInteractionFrequency: () => 128,
+      resolveInteractionWaveform: (_tileKind, fallback) => fallback,
+      resolvePaddleBoatCalliopeFrequency: () => 520,
+      resolveSteamWhistleFrequency: () => 360,
+    });
+
+    expect(chimeRecipe.id).toBe('magical-ambience:astral-chimes');
+    expect(chimeRecipe.layers?.map((layer) => layer.id)).toEqual([
+      'magical-astral-bell',
+      'magical-starlight-bed',
+    ]);
+    expect(whisperRecipe.id).toBe('magical-ambience:void-whispers');
+    expect(whisperRecipe.layers?.map((layer) => layer.id)).toEqual([
+      'magical-void-bed',
+      'magical-whisper-hiss',
+    ]);
+  });
+
   it('lets related movement sounds inherit the same family identity while keeping different signatures', () => {
     expect(getSoundIdentityDescriptor('footstep').family).toBe('movement');
     expect(getSoundIdentityDescriptor('jump').family).toBe('movement');

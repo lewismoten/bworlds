@@ -1424,6 +1424,8 @@ export function getAmbientSoundVolume(
       return 0.014 + clamped * 0.016;
     case 'cave':
       return 0.018 + clamped * 0.018;
+    case 'magical':
+      return 0.013 + clamped * 0.013;
     case 'settlement':
       return 0.012 + clamped * 0.012;
     case 'ruins':
@@ -1458,6 +1460,8 @@ export function resolveAmbientSoundFrequency(
       return 126 + clamped * 18;
     case 'cave':
       return 118 + clamped * 18;
+    case 'magical':
+      return 162 + clamped * 20;
     case 'settlement':
       return 244 + clamped * 28;
     case 'ruins':
@@ -1490,6 +1494,8 @@ export function resolveAmbientSoundWaveform(
       return 'sawtooth';
     case 'cave':
       return 'sine';
+    case 'magical':
+      return 'triangle';
     case 'settlement':
       return 'square';
     case 'ruins':
@@ -1520,6 +1526,8 @@ function resolveAmbientEffectKind(kind: AmbientSoundKind): SoundEffectKind {
       return 'mountain-ambience';
     case 'cave':
       return 'cave-ambience';
+    case 'magical':
+      return 'magical-ambience';
     case 'settlement':
       return 'settlement-ambience';
     case 'ruins':
@@ -1575,6 +1583,8 @@ export function getAmbientSoundDurationMs(
       return Math.round(clampValue(1560 + clamped * 420, 1560, 1980));
     case 'cave':
       return Math.round(clampValue(1620 + clamped * 480, 1620, 2100));
+    case 'magical':
+      return Math.round(clampValue(1660 + clamped * 440, 1660, 2100));
     case 'settlement':
       return Math.round(clampValue(1480 + clamped * 320, 1480, 1800));
     case 'ruins':
@@ -1823,6 +1833,7 @@ function resolveSoundVariationPolicy(kind: SoundEffectKind): {
     case 'volcanic-ambience':
     case 'mountain-ambience':
     case 'cave-ambience':
+    case 'magical-ambience':
     case 'settlement-ambience':
     case 'ruins-ambience':
     case 'ocean':
@@ -3161,6 +3172,7 @@ function resolveSoundEffectPriority(kind: SoundEffectKind): number {
     case 'volcanic-ambience':
     case 'mountain-ambience':
     case 'cave-ambience':
+    case 'magical-ambience':
     case 'settlement-ambience':
     case 'ruins-ambience':
       return 1;
@@ -3203,6 +3215,7 @@ export function resolveSoundEffectVolumeBounds(
     case 'volcanic-ambience':
     case 'mountain-ambience':
     case 'cave-ambience':
+    case 'magical-ambience':
     case 'settlement-ambience':
     case 'ruins-ambience':
     case 'wind':

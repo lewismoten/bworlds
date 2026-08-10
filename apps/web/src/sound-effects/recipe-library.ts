@@ -64,6 +64,7 @@ type ResolveSoundRecipeOptions = {
       | 'volcanic'
       | 'mountain'
       | 'cave'
+      | 'magical'
       | 'settlement'
       | 'ruins',
     intensity?: number
@@ -178,6 +179,11 @@ export const SOUND_IDENTITY_DESCRIPTORS: Record<
   'cave-ambience': {
     family: 'ambient-shelter',
     signature: 'enclosed hollow ambience with darker resonant motion',
+  },
+  'magical-ambience': {
+    family: 'ambient-shelter',
+    signature:
+      'unnatural arcane ambience with crystalline chimes and unstable ether drift',
   },
   'settlement-ambience': {
     family: 'ambient-shelter',
@@ -482,6 +488,7 @@ function resolveProceduralSoundEnvelope(kind: SoundEffectKind) {
     case 'desert-ambience':
     case 'mountain-ambience':
     case 'cave-ambience':
+    case 'magical-ambience':
     case 'settlement-ambience':
     case 'ruins-ambience':
       return {
@@ -702,6 +709,15 @@ function resolveProceduralSoundDelay(kind: SoundEffectKind) {
         feedbackVariation: 0.04,
         mixVariation: 0.04,
       };
+    case 'magical-ambience':
+      return {
+        timeMs: 182,
+        feedback: 0.28,
+        mix: 0.22,
+        timeVariation: 0.05,
+        feedbackVariation: 0.06,
+        mixVariation: 0.05,
+      };
     default:
       return undefined;
   }
@@ -720,6 +736,18 @@ function resolveProceduralSoundReverb(kind: SoundEffectKind) {
         mixVariation: 0.04,
         preDelayVariation: 0.08,
         toneVariation: 0.06,
+      };
+    case 'magical-ambience':
+      return {
+        profileId: 'arcane-observatory',
+        decayMs: 1220,
+        mix: 0.28,
+        preDelayMs: 18,
+        toneHz: 3600,
+        decayVariation: 0.06,
+        mixVariation: 0.05,
+        preDelayVariation: 0.08,
+        toneVariation: 0.05,
       };
     case 'combat-magic':
       return {
@@ -3938,6 +3966,145 @@ function resolveProceduralSoundLayers(
           },
         },
       ] as const;
+    case 'magical-ambience':
+      if (identityVariant === 'astral-chimes') {
+        return [
+          {
+            id: 'magical-astral-bell',
+            waveform: ['sine', 'triangle'] as const,
+            frequencyMultiplier: 1.34,
+            durationMultiplier: 0.72,
+            volumeMultiplier: 0.14,
+            frequencyVariation: 0.024,
+            durationVariation: 0.14,
+            volumeVariation: 0.08,
+            variationDepth: 0.78,
+            delay: {
+              timeMs: 144,
+              feedback: 0.24,
+              mix: 0.18,
+              timeVariation: 0.05,
+              feedbackVariation: 0.06,
+              mixVariation: 0.08,
+            },
+          },
+          {
+            id: 'magical-starlight-bed',
+            waveform: ['triangle', 'sine'] as const,
+            noiseColor: ['pink', 'white'] as const,
+            frequencyMultiplier: 0.8,
+            durationMultiplier: 1,
+            volumeMultiplier: 0.22,
+            startOffsetMs: 34,
+            startOffsetVariation: 0.2,
+            frequencyVariation: 0.02,
+            durationVariation: 0.12,
+            volumeVariation: 0.08,
+            variationDepth: 0.72,
+          },
+        ] as const;
+      }
+      if (identityVariant === 'void-whispers') {
+        return [
+          {
+            id: 'magical-void-bed',
+            waveform: ['triangle', 'sine'] as const,
+            noiseColor: ['brown', 'pink'] as const,
+            frequencyMultiplier: 0.68,
+            durationMultiplier: 1,
+            volumeMultiplier: 0.26,
+            frequencyVariation: 0.018,
+            durationVariation: 0.12,
+            volumeVariation: 0.06,
+            variationDepth: 0.82,
+          },
+          {
+            id: 'magical-whisper-hiss',
+            waveform: ['sine', 'triangle'] as const,
+            noiseColor: 'white' as const,
+            frequencyMultiplier: 1.12,
+            durationMultiplier: 0.9,
+            volumeMultiplier: 0.1,
+            startOffsetMs: 54,
+            startOffsetVariation: 0.28,
+            frequencyVariation: 0.022,
+            durationVariation: 0.14,
+            volumeVariation: 0.08,
+            variationDepth: 0.76,
+            tremolo: {
+              rateHz: 5.2,
+              depth: 0.12,
+              waveform: ['sine', 'triangle'] as const,
+              rateVariation: 0.05,
+              depthVariation: 0.05,
+            },
+          },
+        ] as const;
+      }
+      if (identityVariant === 'glass-resonance') {
+        return [
+          {
+            id: 'magical-glass-tone',
+            waveform: ['sine', 'triangle'] as const,
+            frequencyMultiplier: 1.26,
+            durationMultiplier: 0.82,
+            volumeMultiplier: 0.12,
+            frequencyVariation: 0.022,
+            durationVariation: 0.12,
+            volumeVariation: 0.07,
+            variationDepth: 0.76,
+          },
+          {
+            id: 'magical-observatory-air',
+            waveform: ['triangle', 'sine'] as const,
+            noiseColor: 'pink' as const,
+            frequencyMultiplier: 0.78,
+            durationMultiplier: 1,
+            volumeMultiplier: 0.2,
+            startOffsetMs: 30,
+            startOffsetVariation: 0.2,
+            frequencyVariation: 0.02,
+            durationVariation: 0.12,
+            volumeVariation: 0.08,
+            variationDepth: 0.7,
+          },
+        ] as const;
+      }
+      return [
+        {
+          id: 'magical-hum-bed',
+          waveform: ['triangle', 'sine'] as const,
+          noiseColor: ['pink', 'brown'] as const,
+          frequencyMultiplier: 0.74,
+          durationMultiplier: 1,
+          volumeMultiplier: 0.24,
+          frequencyVariation: 0.018,
+          durationVariation: 0.12,
+          volumeVariation: 0.06,
+          variationDepth: 0.8,
+        },
+        {
+          id: 'magical-ether-sparkles',
+          waveform: ['sine', 'triangle'] as const,
+          frequencyMultiplier: 1.18,
+          durationMultiplier: 0.84,
+          volumeMultiplier: 0.1,
+          startOffsetMs: 44,
+          startOffsetVariation: 0.24,
+          frequencyVariation: 0.024,
+          durationVariation: 0.14,
+          volumeVariation: 0.08,
+          variationDepth: 0.74,
+          delay: {
+            timeMs: 124,
+            feedback: 0.2,
+            mix: 0.16,
+            timeVariation: 0.05,
+            feedbackVariation: 0.06,
+            mixVariation: 0.08,
+          },
+        },
+      ] as const;
     case 'settlement-ambience':
       if (identityVariant === 'nearby-birds') {
         return [
@@ -4485,6 +4652,8 @@ function resolveBaseSoundEffectFrequency(
       return options.resolveAmbientSoundFrequency('mountain', undefined);
     case 'cave-ambience':
       return options.resolveAmbientSoundFrequency('cave', undefined);
+    case 'magical-ambience':
+      return options.resolveAmbientSoundFrequency('magical', undefined);
     case 'settlement-ambience':
       return options.resolveAmbientSoundFrequency('settlement', undefined);
     case 'ruins-ambience':
@@ -4562,6 +4731,7 @@ function resolveBaseSoundEffectDurationMs(kind: SoundEffectKind): number {
     case 'volcanic-ambience':
     case 'mountain-ambience':
     case 'cave-ambience':
+    case 'magical-ambience':
     case 'settlement-ambience':
     case 'ruins-ambience':
       return 1680;
@@ -4643,6 +4813,8 @@ function resolveBaseSoundEffectVolume(
       return 0.02;
     case 'cave-ambience':
       return 0.022;
+    case 'magical-ambience':
+      return 0.02;
     case 'settlement-ambience':
       return 0.017;
     case 'ruins-ambience':
@@ -4731,6 +4903,8 @@ function resolveBaseSoundEffectWaveform(
       return ['sawtooth', 'triangle'];
     case 'cave-ambience':
       return ['sine', 'triangle'];
+    case 'magical-ambience':
+      return ['triangle', 'sine', 'square'];
     case 'settlement-ambience':
       return ['square', 'triangle'];
     case 'ruins-ambience':
@@ -4804,6 +4978,8 @@ function resolveBaseSoundEffectNoiseColor(
       return ['white', 'brown'];
     case 'cave-ambience':
       return 'brown';
+    case 'magical-ambience':
+      return ['pink', 'white'];
     case 'ruins-ambience':
       return 'pink';
     default:

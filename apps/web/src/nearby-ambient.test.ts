@@ -148,6 +148,50 @@ describe('nearby ambient', () => {
     );
   });
 
+  it('routes observatories and strongholds into magical ambience', () => {
+    const observatoryProfile = findNearbyAmbientProfile({
+      state: {
+        player: { x: 0, y: 0 },
+        getCurrentTile(x: number, y: number) {
+          if (x === 1 && y === 0) {
+            return { kind: 'plains', poi: { type: 'observatory' } };
+          }
+          return { kind: 'plains' };
+        },
+      },
+      centerX: 0,
+      centerY: 0,
+      searchRadius: 3,
+    });
+    const strongholdProfile = findNearbyAmbientProfile({
+      state: {
+        player: { x: 0, y: 0 },
+        getCurrentTile(x: number, y: number) {
+          if (x === 0 && y === 0) {
+            return { kind: 'plains', poi: { type: 'stronghold' } };
+          }
+          return { kind: 'plains' };
+        },
+      },
+      centerX: 0,
+      centerY: 0,
+      searchRadius: 0,
+    });
+
+    expect(observatoryProfile).toEqual(
+      expect.objectContaining({
+        kind: 'magical',
+        emitter: { x: 1, y: 0 },
+      })
+    );
+    expect(strongholdProfile).toEqual(
+      expect.objectContaining({
+        kind: 'magical',
+        emitter: { x: 0, y: 0 },
+      })
+    );
+  });
+
   it('uses deterministic sparse selection for generic base terrain ambience', () => {
     expect(shouldAdvertiseBaseAmbientSource('plains', 0, 0)).toBe(false);
     expect(shouldAdvertiseBaseAmbientSource('plains', 0, 1)).toBe(false);

@@ -21,6 +21,7 @@ const BASE_AMBIENT_IDENTITY_VARIANTS: Record<
   volcanic: ['rumble', 'steam-vents', 'stone-cracks', 'lava-pops'],
   mountain: ['gusts', 'stone', 'highland-birds', 'falling-rocks'],
   cave: ['drips', 'echo', 'underground-wind'],
+  magical: ['arcane-hum', 'astral-chimes', 'void-whispers'],
   settlement: ['market'],
   ruins: ['mystery-hint', 'landmark-hint'],
 };
@@ -47,6 +48,8 @@ export function resolveAmbientIdentityVariants(
       return resolveSettlementVariants(dayPhase);
     case 'mountain':
       return resolveMountainVariants(dayPhase, season);
+    case 'magical':
+      return resolveMagicalVariants(dayPhase, season);
     case 'river':
       return ['current', 'water-splashes'];
     case 'ocean':
@@ -137,6 +140,26 @@ export function resolveAmbientIdentityVariantModifiers(options: {
     case 'muffled-open':
       cadenceMultiplier *= 1.26;
       volumeMultiplier *= 0.76;
+      break;
+    case 'arcane-hum':
+      cadenceMultiplier *= 1.28;
+      volumeMultiplier *= 0.92;
+      break;
+    case 'astral-chimes':
+      cadenceMultiplier *= 1.54;
+      volumeMultiplier *= 0.86;
+      break;
+    case 'void-whispers':
+      cadenceMultiplier *= 1.82;
+      volumeMultiplier *= 0.74;
+      break;
+    case 'glass-resonance':
+      cadenceMultiplier *= 1.36;
+      volumeMultiplier *= 0.9;
+      break;
+    case 'ether-wind':
+      cadenceMultiplier *= 1.14;
+      volumeMultiplier *= 0.96;
       break;
     case 'marsh-insects':
       cadenceMultiplier *= 0.9;
@@ -277,6 +300,25 @@ function resolvePlainsVariants(
     return ['autumn-leaves', 'migrating-birds', 'animal-calls'];
   }
   return ['breeze', 'nearby-birds', 'distant-birds', 'animal-calls'];
+}
+
+function resolveMagicalVariants(
+  dayPhase: AmbientDayPhase,
+  season: AmbientSeason
+): readonly string[] {
+  if (season === 'winter') {
+    return ['void-whispers', 'glass-resonance', 'arcane-hum'];
+  }
+  if (dayPhase === 'dawn') {
+    return ['astral-chimes', 'glass-resonance', 'arcane-hum'];
+  }
+  if (dayPhase === 'night') {
+    return ['void-whispers', 'astral-chimes', 'arcane-hum'];
+  }
+  if (dayPhase === 'dusk') {
+    return ['astral-chimes', 'ether-wind', 'void-whispers'];
+  }
+  return ['arcane-hum', 'glass-resonance', 'ether-wind'];
 }
 
 function resolveDesertVariants(

@@ -52,6 +52,15 @@ describe('ambient presets', () => {
     );
   });
 
+  it('gives magical environments unnatural day and winter-night identities', () => {
+    expect(resolveAmbientIdentityVariants('magical', 'dawn', 'spring')).toEqual(
+      ['astral-chimes', 'glass-resonance', 'arcane-hum']
+    );
+    expect(resolveAmbientIdentityVariants('magical', 'night', 'winter')).toEqual(
+      ['void-whispers', 'glass-resonance', 'arcane-hum']
+    );
+  });
+
   it('slows rare hints and distant events while keeping nearby calls stronger', () => {
     const nearbyBirds = resolveAmbientIdentityVariantModifiers({
       kind: 'forest',
@@ -111,6 +120,28 @@ describe('ambient presets', () => {
     expect(sparseCalls.cadenceMultiplier).toBeGreaterThan(1.5);
     expect(sparseCalls.volumeMultiplier).toBeLessThan(
       sandWind.volumeMultiplier
+    );
+  });
+
+  it('gives magical chimes and whispers distinct pacing and quieter dynamics', () => {
+    const arcaneHum = resolveAmbientIdentityVariantModifiers({
+      kind: 'magical',
+      dayPhase: 'day',
+      season: 'spring',
+      identityVariant: 'arcane-hum',
+    });
+    const voidWhispers = resolveAmbientIdentityVariantModifiers({
+      kind: 'magical',
+      dayPhase: 'night',
+      season: 'winter',
+      identityVariant: 'void-whispers',
+    });
+
+    expect(voidWhispers.cadenceMultiplier).toBeGreaterThan(
+      arcaneHum.cadenceMultiplier
+    );
+    expect(voidWhispers.volumeMultiplier).toBeLessThan(
+      arcaneHum.volumeMultiplier
     );
   });
 });

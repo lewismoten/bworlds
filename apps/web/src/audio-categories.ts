@@ -97,6 +97,7 @@ export function resolveSoundEffectCategory(
     case 'desert-ambience':
     case 'mountain-ambience':
     case 'cave-ambience':
+    case 'magical-ambience':
     case 'settlement-ambience':
     case 'ruins-ambience':
     case 'footstep':

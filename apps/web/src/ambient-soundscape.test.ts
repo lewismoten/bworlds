@@ -274,6 +274,38 @@ describe('ambient soundscape', () => {
     ).toBe(true);
   });
 
+  it('cycles magical ambience through unnatural winter-night observatory variants', () => {
+    const first = resolveAmbientPlaybackLayers({
+      profile: {
+        kind: 'magical',
+        intensity: 0.76,
+        emitter: { x: 6, y: 2 },
+      },
+      nowMs: 0,
+      dayProgress: 0.92,
+      yearProgress: 0,
+    })[0];
+    const second = resolveAmbientPlaybackLayers({
+      profile: {
+        kind: 'magical',
+        intensity: 0.76,
+        emitter: { x: 6, y: 2 },
+      },
+      nowMs: 2_200,
+      dayProgress: 0.92,
+      yearProgress: 0,
+    })[0];
+
+    expect(['void-whispers', 'glass-resonance', 'arcane-hum']).toContain(
+      first?.identityVariant
+    );
+    expect(['void-whispers', 'glass-resonance', 'arcane-hum']).toContain(
+      second?.identityVariant
+    );
+    expect(first?.identityVariant).not.toBe(second?.identityVariant);
+    expect((first?.volumeMultiplier ?? 0) > 0).toBe(true);
+  });
+
   it('introduces rarer migration, splash, and mystery variants for living ambient events', () => {
     const autumnForest = resolveAmbientPlaybackLayers({
       profile: {

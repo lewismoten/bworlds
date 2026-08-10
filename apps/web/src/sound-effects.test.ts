@@ -3594,6 +3594,10 @@ describe('sound effects', () => {
     expect(normalizeSoundEffectVolume('forest-ambience', 0.002)).toBe(0.012);
     expect(normalizeSoundEffectVolume('forest-ambience', 0.05)).toBe(0.032);
     expect(normalizeSoundEffectVolume('forest-ambience', 0.02)).toBe(0.02);
+    expect(resolveSoundEffectVolumeBounds('magical-ambience')).toEqual({
+      min: 0.012,
+      max: 0.032,
+    });
 
     expect(resolveSoundEffectVolumeBounds('footstep')).toEqual({
       min: 0.022,
@@ -4598,6 +4602,17 @@ describe('sound effects', () => {
       isJumping: false,
       viewMode: '3d',
       nearbyAmbient: {
+        kind: 'magical',
+        intensity: 0.6,
+        emitter: { x: 7, y: 0 },
+      },
+    });
+    controller.update({
+      nowMs: 9000,
+      walking: false,
+      isJumping: false,
+      viewMode: '3d',
+      nearbyAmbient: {
         kind: 'ruins',
         intensity: 0.6,
         emitter: { x: 1, y: 0 },
@@ -4613,8 +4628,45 @@ describe('sound effects', () => {
       'snowfield-ambience',
       'volcanic-ambience',
       'mountain-ambience',
+      'magical-ambience',
       'ruins-ambience',
     ]);
+  });
+
+  it('uses dedicated magical ambience timing and recipe ids for observatory-like layers', () => {
+    const played: ProceduralSoundEffect[] = [];
+    const controller = createSoundEffectController({
+      play(effect) {
+        played.push(effect);
+      },
+    });
+
+    controller.update({
+      nowMs: 4_400,
+      walking: false,
+      isJumping: false,
+      viewMode: '3d',
+      dayProgress: 0.92,
+      yearProgress: 0,
+      nearbyAmbient: {
+        kind: 'magical',
+        intensity: 0.8,
+        emitter: { x: 6, y: 1 },
+      },
+    });
+
+    expect(played).toHaveLength(1);
+    expect(played[0]).toEqual(
+      expect.objectContaining({
+        kind: 'magical-ambience',
+      })
+    );
+    expect(played[0]?.recipeId).toMatch(
+      /^magical-ambience:magical:(void-whispers|glass-resonance|arcane-hum)$/
+    );
+    expect(played[0]?.durationMs).toBeGreaterThanOrEqual(
+      getAmbientSoundDurationMs('magical', 0.8)
+    );
   });
 
   it('changes forest ambient recipe ids across dawn, summer, and night cycles', () => {

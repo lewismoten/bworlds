@@ -22,4 +22,21 @@ describe('ambience debug page', () => {
     expect(AMBIENCE_DEBUG_PRESETS.length).toBeGreaterThan(1);
     expect(normalizeAmbienceDebugPresetId('missing')).toBe('plains-day');
   });
+
+  it('includes the observatory magical preset with dedicated unnatural cues', () => {
+    const snapshot = buildAmbienceDebugSnapshot('observatory-night');
+
+    expect(snapshot.preset).toEqual(
+      expect.objectContaining({
+        id: 'observatory-night',
+        kind: 'magical',
+        tileKind: 'observatory',
+      })
+    );
+    expect(snapshot.cues.map((cue) => cue.identityVariant)).toEqual([
+      'void-whispers',
+      'glass-resonance',
+      'arcane-hum',
+    ]);
+  });
 });
