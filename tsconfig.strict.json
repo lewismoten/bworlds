@@ -13,5 +13,6 @@
     "packages/plugin-api/src/utils.ts",
     "packages/procedural-style/src/index.ts",
     "packages/three-support/src/index.ts"
-  ]
+  ],
+  "exclude": ["**/node_modules/**"]
 }
