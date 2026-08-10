@@ -146,12 +146,14 @@ describe('music debug', () => {
     expect(summary).toContain('Song Length');
     expect(summary).toContain('Root MIDI');
     expect(summary).toContain('Measures');
+    expect(summary).toContain('MIDI Measures');
     expect(summary).toContain('Blueprint');
     expect(summary).toContain('Loop Range');
     expect(summary).toContain('Timing Check');
     expect(summary).toContain('Encounter');
     expect(summary).toContain('Combat');
     expect(summary).toContain('Resolved BPM');
+    expect(summary).toContain('MIDI BPM');
     expect(summary).toContain('Mode');
     expect(summary).toContain('Mode Offsets');
     expect(summary).toContain('Region');
@@ -179,6 +181,7 @@ describe('music debug', () => {
     expect(summary).toContain('Accidental Notes');
     expect(summary).toContain('Track Pitch');
     expect(summary).toContain('Track Timing');
+    expect(summary).toContain('MIDI Audit');
     expect(summary).toContain('avg leap');
     expect(summary).toContain('max leap');
     expect(summary).toContain('out-of-mode');

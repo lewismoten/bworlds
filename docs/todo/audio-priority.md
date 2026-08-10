@@ -56,12 +56,12 @@ added directly as semitones instead of moving through the selected scale.
 - [x] Export the intended BPM instead of about 260 BPM.
 - [x] Show the resolved BPM beside the tempo multiplier.
 - [x] Calculate song length from exported MIDI timing.
-- [ ] Verify the MIDI length matches the reported 2:18.
+- [x] Verify the MIDI length matches the reported 2:18.
 - [x] Verify the loop range exists within the exported file.
 - [x] Calculate section ticks before generating notes.
 - [x] Make all section lengths use the same meter.
 - [x] Validate total measures against the blueprint.
-- [ ] Reject exports with metadata and timing mismatches.
+- [x] Reject exports with metadata and timing mismatches.
 
 ## Section Timing
 
@@ -239,9 +239,9 @@ added directly as semitones instead of moving through the selected scale.
 
 ## MIDI Export Validation
 
-- [ ] Compare intended BPM with exported MIDI tempo.
-- [ ] Compare intended duration with exported MIDI duration.
-- [ ] Compare planned measures with exported measures.
+- [x] Compare intended BPM with exported MIDI tempo.
+- [x] Compare intended duration with exported MIDI duration.
+- [x] Compare planned measures with exported measures.
 - [ ] Compare scheduled notes with exported notes.
 - [ ] Compare planned sections with MIDI markers.
 - [ ] Compare planned layers with actual track activity.
@@ -252,8 +252,8 @@ added directly as semitones instead of moving through the selected scale.
 
 ## Debug Report Improvements
 
-- [ ] Show the resolved BPM rather than only 1.04x.
-- [ ] Show total measures calculated from the MIDI.
+- [x] Show the resolved BPM rather than only 1.04x.
+- [x] Show total measures calculated from the MIDI.
 - [x] Show note range for each track.
 - [x] Show average leap for each track.
 - [x] Show maximum leap for each track.
@@ -263,7 +263,7 @@ added directly as semitones instead of moving through the selected scale.
 - [x] Show average silence between notes by track.
 - [ ] Show motif match counts by section.
 - [ ] Show actual chords detected in the harmony track.
-- [ ] Flag metadata that differs from MIDI output.
+- [x] Flag metadata that differs from MIDI output.
 
 ## Specific Regression Tests
 
@@ -275,7 +275,7 @@ added directly as semitones instead of moving through the selected scale.
 - [ ] Verify G Mixolydian uses G-A-B-C-D-E-F.
 - [ ] Verify harmony contains simultaneous notes.
 - [ ] Verify lead leaps stay within configured limits.
-- [ ] Verify the exported file lasts about 2:18.
-- [ ] Verify the exported BPM matches the easy tempo.
+- [x] Verify the exported file lasts about 2:18.
+- [x] Verify the exported BPM matches the easy tempo.
 - [ ] Verify all 88 planned measures are exported.
 - [ ] Verify each section follows its layer plan.

@@ -9,6 +9,7 @@ import {
 import type { ProceduralInstrument } from './procedural-music.ts';
 import { resolveMusicStereoPan } from './procedural-music-mix.ts';
 import type { MusicDebugSnapshot } from './music-debug.ts';
+import { inspectMusicDebugMidiBytes } from './music-debug-midi-audit.ts';
 
 const MIDI_HEADER_CHUNK_ID = [0x4d, 0x54, 0x68, 0x64];
 const MIDI_TRACK_CHUNK_ID = [0x4d, 0x54, 0x72, 0x6b];
@@ -106,6 +107,20 @@ export function createMusicDebugMidiFile(
   ) {
     throw new Error(`Cannot export MIDI: ${validationMessages.join(' ')}`);
   }
+  const file = createMusicDebugMidiFileUnchecked(snapshot, metadataOptions);
+  const midiAudit = inspectMusicDebugMidiBytes(file.bytes, snapshot);
+  if (!midiAudit.isConsistent) {
+    throw new Error(
+      `Cannot export MIDI: ${midiAudit.mismatchMessages.join(' ')}`
+    );
+  }
+  return file;
+}
+
+export function createMusicDebugMidiFileUnchecked(
+  snapshot: MusicDebugSnapshot,
+  metadataOptions: MusicDebugMidiMetadataOptions = {}
+): MusicDebugMidiFile {
   const metadata = resolveMusicDebugMidiMetadata(snapshot, metadataOptions);
   const tracks = buildMidiTracks(snapshot, metadata);
   const encodedTracks = tracks.map((track) => {

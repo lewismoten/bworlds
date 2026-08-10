@@ -53,6 +53,10 @@ import {
   formatMusicDebugTrackTimingSummary,
   type MusicDebugTrackStats,
 } from './music-debug-track-stats.ts';
+import {
+  createMusicDebugMidiExportAudit,
+  type MusicDebugMidiAudit,
+} from './music-debug-midi-audit.ts';
 
 export type MusicDebugTileKind =
   | 'plains'
@@ -120,6 +124,7 @@ export type MusicDebugSnapshot = {
     readonly MusicDebugPitchClassLabel[]
   >;
   trackStats: Record<ProceduralMusicNote['role'], MusicDebugTrackStats>;
+  midiAudit: MusicDebugMidiAudit;
   midiExportValidation: MusicDebugPitchValidation;
   timingValidation: MusicDebugTimingValidation;
 };
@@ -341,8 +346,7 @@ export function createMusicDebugSnapshot(
     notes: song.notes,
     diagnostics: midiExportValidation.notePitchDiagnostics,
   });
-
-  return {
+  const snapshotBase = {
     options,
     theme,
     mood,
@@ -360,6 +364,25 @@ export function createMusicDebugSnapshot(
     measureCount,
     scaleMap,
     blueprintLabel: song.blueprint.label,
+    vocabularySummary: [],
+    sharedMotif: [...theme.motif.sharedDegreeOffsets],
+    sectionLayerArrangement: [],
+    lyrics,
+    loopStartOffsetMs: song.loopStartOffsetMs,
+    loopEndOffsetMs: song.loopEndOffsetMs,
+    leadMaxLeapSemitones,
+    accidentalNoteCount: midiExportValidation.accidentalNoteCount,
+    roleCounts,
+    notePitchDiagnostics: midiExportValidation.notePitchDiagnostics,
+    outOfModeNotesByRole: midiExportValidation.outOfModeNotesByRole,
+    blackKeyNotesByRole: midiExportValidation.blackKeyNotesByRole,
+    dominantPitchClassesByRole: midiExportValidation.dominantPitchClassesByRole,
+    trackStats,
+    midiExportValidation,
+    timingValidation,
+  };
+  const midiAudit = createMusicDebugMidiExportAudit({
+    ...snapshotBase,
     vocabularySummary: [
       `Biome ${theme.vocabulary.biomeLabel}`,
       `Region ${theme.vocabulary.regionLabel}`,
@@ -374,19 +397,33 @@ export function createMusicDebugSnapshot(
     sectionLayerArrangement: song.sections.map((section) =>
       describeSongSectionLayerArrangement(section)
     ),
-    lyrics,
-    loopStartOffsetMs: song.loopStartOffsetMs,
-    loopEndOffsetMs: song.loopEndOffsetMs,
-    leadMaxLeapSemitones,
-    accidentalNoteCount: midiExportValidation.accidentalNoteCount,
-    roleCounts,
-    notePitchDiagnostics: midiExportValidation.notePitchDiagnostics,
-    outOfModeNotesByRole: midiExportValidation.outOfModeNotesByRole,
-    blackKeyNotesByRole: midiExportValidation.blackKeyNotesByRole,
-    dominantPitchClassesByRole: midiExportValidation.dominantPitchClassesByRole,
-    trackStats,
-    midiExportValidation,
-    timingValidation,
+    midiAudit: {
+      exportedBpm: null,
+      exportedDurationMs: 0,
+      exportedMeasureCount: 0,
+      markerLabels: [],
+      mismatchMessages: [],
+      isConsistent: true,
+    },
+  } as MusicDebugSnapshot);
+
+  return {
+    ...snapshotBase,
+    vocabularySummary: [
+      `Biome ${theme.vocabulary.biomeLabel}`,
+      `Region ${theme.vocabulary.regionLabel}`,
+      `Mode ${theme.vocabulary.modeLabel}`,
+      `Tempo ${theme.vocabulary.tempoBandLabel}`,
+      `Range ${theme.vocabulary.melodyRangeLabel}`,
+      `Rhythm ${theme.vocabulary.rhythmDensityLabel}`,
+      `Intervals (${theme.vocabulary.preferredIntervalUnit}) ${theme.vocabulary.preferredIntervals.join(', ')}`,
+      `Motif ${theme.vocabulary.motifLabel}`,
+    ],
+    sharedMotif: [...theme.motif.sharedDegreeOffsets],
+    sectionLayerArrangement: song.sections.map((section) =>
+      describeSongSectionLayerArrangement(section)
+    ),
+    midiAudit,
   };
 }
 
@@ -575,12 +612,14 @@ export function buildMusicDebugSummaryMarkup(
       <div><dt>Scheduled Notes</dt><dd>${snapshot.notes.length}</dd></div>
       <div><dt>Song Length</dt><dd>${formatMusicDebugDuration(snapshot.durationMs)}</dd></div>
       <div><dt>Measures</dt><dd>${snapshot.measureCount}</dd></div>
+      <div><dt>MIDI Measures</dt><dd>${snapshot.midiAudit.exportedMeasureCount}</dd></div>
       <div><dt>Blueprint</dt><dd>${snapshot.blueprintLabel}</dd></div>
       <div><dt>Loop Range</dt><dd>${formatMusicDebugLoopRange(snapshot.loopStartOffsetMs, snapshot.loopEndOffsetMs)}</dd></div>
       <div><dt>Timing Check</dt><dd>${snapshot.timingValidation.isValidForMidiExport ? 'ok' : (snapshot.timingValidation.messages[0] ?? 'invalid')}</dd></div>
       <div><dt>Encounter</dt><dd>${snapshot.options.encounterMode}</dd></div>
       <div><dt>Tempo</dt><dd>${snapshot.mood.tempoMultiplier.toFixed(2)}x</dd></div>
       <div><dt>Resolved BPM</dt><dd>${snapshot.resolvedBpm.toFixed(1)}</dd></div>
+      <div><dt>MIDI BPM</dt><dd>${snapshot.midiAudit.exportedBpm?.toFixed(1) ?? 'n/a'}</dd></div>
       <div><dt>Brightness</dt><dd>${snapshot.mood.brightness.toFixed(2)}x</dd></div>
       <div><dt>Combat</dt><dd>${snapshot.options.combatIntensity.toFixed(2)}</dd></div>
       <div><dt>Mode</dt><dd>${snapshot.theme.vocabulary.modeLabel}</dd></div>
@@ -618,6 +657,9 @@ export function buildMusicDebugSummaryMarkup(
     </div>
     <div class="music-debug-role-counts">
       <span>Track Timing ${formatMusicDebugTrackTimingSummary(snapshot.trackStats).join(' | ')}</span>
+    </div>
+    <div class="music-debug-role-counts">
+      <span>MIDI Audit ${snapshot.midiAudit.isConsistent ? 'ok' : snapshot.midiAudit.mismatchMessages.join(' | ')}</span>
     </div>
     <div class="music-debug-role-counts">
       <span>Section Measures ${snapshot.song.sections.map((section) => `${section.label} ${section.startMeasure}-${section.endMeasure}`).join(' | ')}</span>

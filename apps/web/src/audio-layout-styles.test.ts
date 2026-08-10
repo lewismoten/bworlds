@@ -12,14 +12,22 @@ describe('audio layout styles', () => {
     expect(stylesheet).toContain('@media (max-width: 720px)');
     expect(stylesheet).toContain('.control-dock');
     expect(stylesheet).toContain('position: fixed;');
-    expect(stylesheet).toContain('--control-dock-offset: max(0.75rem, env(safe-area-inset-bottom, 0px));');
-    expect(stylesheet).toContain('--control-dock-height: clamp(4.5rem, 9vh, 6rem);');
+    expect(stylesheet).toContain(
+      '--control-dock-offset: max(0.75rem, env(safe-area-inset-bottom, 0px));'
+    );
+    expect(stylesheet).toContain(
+      '--control-dock-height: clamp(4.5rem, 9vh, 6rem);'
+    );
     expect(stylesheet).toContain('bottom: var(--control-dock-offset);');
-    expect(stylesheet).toContain('padding: 0 0 calc(var(--control-dock-height) + var(--control-dock-offset) + 0.75rem);');
+    expect(stylesheet).toContain(
+      'calc(var(--control-dock-height) + var(--control-dock-offset) + 0.75rem);'
+    );
     expect(stylesheet).toContain('.dock-cluster');
     expect(stylesheet).toContain('display: flex;');
     expect(stylesheet).toContain('flex-wrap: nowrap;');
-    expect(stylesheet).toContain('width: fit-content;');
+    expect(stylesheet).toContain('left: 0.75rem;');
+    expect(stylesheet).toContain('right: 0.75rem;');
+    expect(stylesheet).toContain('width: 100%;');
     expect(stylesheet).toContain('.dock-icon-button');
     expect(stylesheet).toContain('overflow-x: auto;');
     expect(stylesheet).toContain('.audio-volume-controls');

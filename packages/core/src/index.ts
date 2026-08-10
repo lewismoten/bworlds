@@ -1,4 +1,10 @@
-import { DEFAULT_CONSTELLATION_SEED } from './constellation.ts';
+import { DEFAULT_CONSTELLATION_SEED } from './celestial/constellation.ts';
+import {
+  createConstellationName,
+  generateConstellations,
+  type ConstellationLike,
+  type ConstellationStarLike,
+} from './celestial/constellation.ts';
 import {
   CHUNK_SIZE,
   DEFAULT_CONSTELLATION_COUNT,
@@ -11,6 +17,21 @@ import {
   TILE_METERS,
   WORLD_TILES_WIDE,
 } from './const.ts';
+import {
+  createCelestialRing,
+  type CelestialRingEntryLike,
+} from './celestial/createCelestialRing.ts';
+import {
+  getEclipseAdjustedDaylight,
+  getEclipseAdjustedTwilight,
+  getSolarEclipseState,
+  type SolarEclipseLike,
+} from './celestial/eclipse.ts';
+import { formatCelestialDate } from './celestial/formatCelestialDate.ts';
+import {
+  getCelestialEventsForDay,
+  type CelestialEventLike as SharedCelestialEventLike,
+} from './celestial/getCelestialEventsForDay.ts';
 import {
   appendHashSeedLabel,
   appendHashSeedPart,
@@ -25,9 +46,11 @@ import {
   registerHashSeeds,
   resolveHashSeed,
 } from './hash.ts';
-import { MOON_PHASE_NAMES } from './moon.ts';
+import { getMilkyWayBandSamples, getMilkyWayBeltState, type MilkyWayBeltLike } from './celestial/milky-way.ts';
+import { MOON_PHASE_NAMES } from './celestial/moon.ts';
 import { clamp, fract, lerp, normalizeAngle, smoothstep } from './math.ts';
-import { PLANET_SKY_PROFILES, type PlanetSkyProfile } from './time.ts';
+import { getOrreryBodies, type OrreryBodyLike } from './celestial/orrery.ts';
+import { PLANET_SKY_PROFILES, type PlanetSkyProfile } from './celestial/time.ts';
 
 export {
   appendHashSeedLabel,
@@ -59,77 +82,31 @@ export {
   DEFAULT_CONSTELLATION_COUNT,
   DEFAULT_SEASON_DAYLIGHT_AMPLITUDE,
 };
-export { DEFAULT_CONSTELLATION_SEED } from './constellation.ts';
-export { MOON_PHASE_NAMES } from './moon.ts';
-export { PLANET_SKY_PROFILES, type PlanetSkyProfile } from './time.ts';
+export { DEFAULT_CONSTELLATION_SEED } from './celestial/constellation.ts';
+export {
+  createConstellationName,
+  generateConstellations,
+  type ConstellationLike,
+  type ConstellationStarLike,
+} from './celestial/constellation.ts';
+export {
+  createCelestialRing,
+  type CelestialRingEntryLike,
+} from './celestial/createCelestialRing.ts';
+export { getSolarEclipseState, type SolarEclipseLike } from './celestial/eclipse.ts';
+export { formatCelestialDate } from './celestial/formatCelestialDate.ts';
+export { getCelestialEventsForDay } from './celestial/getCelestialEventsForDay.ts';
+export { getMilkyWayBandSamples, getMilkyWayBeltState } from './celestial/milky-way.ts';
+export { MOON_PHASE_NAMES } from './celestial/moon.ts';
+export { getOrreryBodies } from './celestial/orrery.ts';
+export { PLANET_SKY_PROFILES, type PlanetSkyProfile } from './celestial/time.ts';
 
-const CONSTELLATION_PREFIXES = [
-  'Astral',
-  'Aurora',
-  'Celest',
-  'Cinder',
-  'Comet',
-  'Crown',
-  'Dawn',
-  'Ember',
-  'Ether',
-  'Lumen',
-  'Moon',
-  'Nebula',
-  'Nova',
-  'Solstice',
-  'Star',
-  'Zephyr',
-];
-const CONSTELLATION_SUFFIXES = [
-  'Arch',
-  'Beacon',
-  'Crown',
-  'Drift',
-  'Gate',
-  'Halo',
-  'Harp',
-  'Lantern',
-  'Mantle',
-  'Omen',
-  'Pillar',
-  'Sail',
-  'Spire',
-  'Thread',
-  'Veil',
-  'Wake',
-];
-const CONSTELLATION_FIGURES = [
-  'The Stag',
-  'The Cedar',
-  'The Giant',
-  'The Heron',
-  'The Lantern',
-  'The Mariner',
-  'The Orchard',
-  'The Serpent',
-  "Andre's Arm",
-  "Mira's Crown",
-  'The Open Hand',
-  'The Wolf',
-];
 const PLANET_NAMES = ['Aurel', 'Brink', 'Cael', 'Damar', 'Vela'];
 const METEOR_SHOWER_NAMES = ['Silver Wake', 'Ember Rain', 'Northfall'];
 const COMET_NAMES = ['White Lantern', 'Pilgrim Tail'];
 const PLANET_NAME_SET: ReadonlySet<string> = new Set(PLANET_NAMES);
 const COMET_NAME_SET: ReadonlySet<string> = new Set(COMET_NAMES);
 
-type ConstellationConnectionStyle = 'arc' | 'zigzag' | 'fork' | 'kite';
-type ConstellationArchetypePoint = {
-  angle: number;
-  radial: number;
-};
-type ConstellationArchetype = {
-  points: readonly ConstellationArchetypePoint[];
-  verticalScale: number;
-  connectionStyle: ConstellationConnectionStyle;
-  rotation: number;
-};
 const COMET_ORRERY_PROFILES = [
   {
     orbitTilt: 0.46,
@@ -145,25 +122,6 @@ const COMET_ORRERY_PROFILES = [
   },
 ] as const;
 type CometOrreryProfile = (typeof COMET_ORRERY_PROFILES)[number];
-const CONSTELLATION_STARS_LABEL = registerHashLabel('stars');
-const CONSTELLATION_RADIAL_LABEL = registerHashLabel('r');
-const CONSTELLATION_THETA_LABEL = registerHashLabel('theta');
-const CONSTELLATION_STRETCH_LABEL = registerHashLabel('stretch');
-const CONSTELLATION_BRIGHTNESS_LABEL = registerHashLabel('b');
-const CONSTELLATION_DAYLIGHT_BIAS_LABEL = registerHashLabel('bias');
-const CONSTELLATION_SYMBOL_ROTATION_LABEL =
-  registerHashLabel('symbol-rotation');
-const CONSTELLATION_RING_JITTER_LABEL = registerHashLabel('ring-jitter');
-const CONSTELLATION_ARCHETYPE_LABEL = registerHashLabel(
-  'constellation-archetype'
-);
-const CONSTELLATION_ROTATION_LABEL = registerHashLabel(
-  'constellation-rotation'
-);
-const CONSTELLATION_FORM_LABEL = registerHashLabel('constellation-form');
-const CONSTELLATION_FIGURE_LABEL = registerHashLabel('constellation-figure');
-const CONSTELLATION_PREFIX_LABEL = registerHashLabel('constellation-prefix');
-const CONSTELLATION_SUFFIX_LABEL = registerHashLabel('constellation-suffix');
 const PLANET_INTENSITY_SEED = registerHashLabel('planet-intensity');
 const POI_NAME_PREFIX_SET_LABEL = registerHashLabel('name-prefix-set');
 const POI_NAME_SUFFIX_SET_LABEL = registerHashLabel('name-suffix-set');
@@ -252,56 +210,7 @@ export function getCometOrbitProgress(
   return fract(curvedProgress + phaseOffset);
 }
 
-export interface ConstellationStarLike {
-  id: string;
-  x: number;
-  y: number;
-  brightness: number;
-}
-
-export interface ConstellationLike {
-  id: string;
-  name: string;
-  stars: ConstellationStarLike[];
-  connections: Array<[number, number]>;
-  daylightBias: number;
-  symbolRotation: number;
-  ringJitter: number;
-}
-
-export interface CelestialCalendarLike {
-  month: string;
-  week: string;
-  label: string;
-}
-
-export interface CelestialEventLike {
-  type: 'planet' | 'meteor-shower' | 'comet';
-  name: string;
-  progress: number;
-  intensity: number;
-  visibility: number;
-  azimuth: number;
-  altitude: number;
-  color: string;
-  size: number;
-  trailLength: number;
-}
-
-export interface MilkyWayBeltLike {
-  azimuthOffset: number;
-  inclination: number;
-  width: number;
-  opacity: number;
-}
-
-export interface MilkyWayBandSampleLike {
-  azimuth: number;
-  centerPhi: number;
-  innerPhi: number;
-  outerPhi: number;
-  opacity: number;
-}
+export interface CelestialEventLike extends SharedCelestialEventLike {}
 
 export interface AuroraBandLike {
   id: string;
@@ -313,38 +222,6 @@ export interface AuroraBandLike {
   wavePhase: number;
   colorA: string;
   colorB: string;
-}
-
-export interface OrreryBodyLike {
-  id: string;
-  type: 'sun' | 'moon' | 'planet' | 'comet';
-  orbitRadius: number;
-  angle: number;
-  orbitTilt: number;
-  orbitHeight: number;
-  orbitEccentricity: number;
-  orbitRotation: number;
-  color: string;
-  size: number;
-  trailLength: number;
-}
-
-export interface SolarEclipseLike {
-  active: boolean;
-  coverage: number;
-  totality: number;
-  daylightReduction: number;
-  moonAzimuth: number;
-  moonAltitude: number;
-  shadowOffsetX: number;
-  shadowOffsetY: number;
-}
-
-export interface CelestialRingEntryLike {
-  constellationIndex: number;
-  name: string;
-  sunriseAzimuth: number;
-  visualAzimuth: number;
 }
 
 export type PoiNameType =
@@ -591,21 +468,6 @@ export function applyCelestialEnvironmentOverrides(
       overrides.orreryBodies ?? derivedOrreryBodies ?? cycle.orreryBodies,
     isNight: daylight < 0.22,
   };
-}
-
-
-function getEclipseAdjustedDaylight(
-  daylight: number,
-  solarEclipse: SolarEclipseLike
-) {
-  return clamp(daylight * (1 - solarEclipse.daylightReduction), 0, 1);
-}
-
-function getEclipseAdjustedTwilight(
-  twilight: number,
-  solarEclipse: SolarEclipseLike
-) {
-  return clamp(twilight - solarEclipse.daylightReduction * 0.34, 0, 1);
 }
 
 export function getDaylightCycleState(
@@ -903,450 +765,6 @@ export function advanceWorldTimeOffsetBySeasons(
   return currentOffsetMs + seasons * seasonLengthDays * dayLengthMs;
 }
 
-export function generateConstellations(
-  seedHash: number,
-  options: {
-    count?: number;
-  } = {}
-): ConstellationLike[] {
-  const count = Math.max(
-    1,
-    Math.floor(options.count ?? DEFAULT_CONSTELLATION_COUNT)
-  );
-  const starsSeed = appendHashSeedLabel(seedHash, CONSTELLATION_STARS_LABEL);
-  const radialSeed = appendHashSeedLabel(seedHash, CONSTELLATION_RADIAL_LABEL);
-  const thetaSeed = appendHashSeedLabel(seedHash, CONSTELLATION_THETA_LABEL);
-  const stretchSeed = appendHashSeedLabel(
-    seedHash,
-    CONSTELLATION_STRETCH_LABEL
-  );
-  const brightnessSeed = appendHashSeedLabel(
-    seedHash,
-    CONSTELLATION_BRIGHTNESS_LABEL
-  );
-  const daylightBiasSeed = appendHashSeedLabel(
-    seedHash,
-    CONSTELLATION_DAYLIGHT_BIAS_LABEL
-  );
-  const symbolRotationSeed = appendHashSeedLabel(
-    seedHash,
-    CONSTELLATION_SYMBOL_ROTATION_LABEL
-  );
-  const ringJitterSeed = appendHashSeedLabel(
-    seedHash,
-    CONSTELLATION_RING_JITTER_LABEL
-  );
-  const usedNames = new Set<string>();
-  const prefixCounts = new Map<string, number>();
-  const suffixCounts = new Map<string, number>();
-  const figureCounts = new Map<string, number>();
-
-  return Array.from({ length: count }, (_, index) => {
-    const starCount =
-      5 + Math.floor(hash2DWithSeed(starsSeed, index, count) * 4);
-    const archetype = getConstellationArchetype(seedHash, index);
-    const stars = Array.from({ length: starCount }, (_, starIndex) => {
-      const blueprint = archetype.points[starIndex % archetype.points.length];
-      const radial =
-        blueprint.radial *
-        (0.82 + hash2DWithSeed(radialSeed, index, starIndex) * 0.36);
-      const angle =
-        blueprint.angle +
-        hash2DWithSeed(thetaSeed, index, starIndex) * 0.72 +
-        archetype.rotation;
-      return {
-        id: `${index}:${starIndex}`,
-        x: 0.5 + Math.cos(angle) * radial,
-        y:
-          0.5 +
-          Math.sin(angle) *
-            radial *
-            archetype.verticalScale *
-            (0.8 + hash2DWithSeed(stretchSeed, index, starIndex) * 0.46),
-        brightness:
-          0.45 + hash2DWithSeed(brightnessSeed, index, starIndex) * 0.55,
-      };
-    }).sort((left, right) => left.x - right.x);
-
-    const connections = buildConstellationConnections(
-      stars.length,
-      archetype.connectionStyle
-    );
-
-    let name = createConstellationName(
-      seedHash,
-      index,
-      prefixCounts,
-      suffixCounts,
-      figureCounts
-    );
-    while (usedNames.has(name)) {
-      name = `${name} ${index + 1}`;
-    }
-    usedNames.add(name);
-
-    return {
-      id: `constellation-${index + 1}`,
-      name,
-      stars,
-      connections,
-      daylightBias:
-        -0.12 + hash2DWithSeed(daylightBiasSeed, index, count) * 0.24,
-      symbolRotation:
-        hash2DWithSeed(symbolRotationSeed, index, count) * Math.PI * 2,
-      ringJitter: (hash2DWithSeed(ringJitterSeed, index, count) * 2 - 1) * 0.28,
-    };
-  });
-}
-
-function getConstellationArchetype(
-  seedHash: number,
-  index: number
-): ConstellationArchetype {
-  const baseArchetypes = [
-    {
-      points: [
-        { angle: -1.4, radial: 0.3 },
-        { angle: -0.7, radial: 0.16 },
-        { angle: -0.2, radial: 0.24 },
-        { angle: 0.35, radial: 0.15 },
-        { angle: 1.1, radial: 0.3 },
-      ],
-      verticalScale: 1.05,
-      connectionStyle: 'arc',
-    },
-    {
-      points: [
-        { angle: -1.5, radial: 0.26 },
-        { angle: -0.9, radial: 0.12 },
-        { angle: -0.15, radial: 0.28 },
-        { angle: 0.6, radial: 0.14 },
-        { angle: 1.35, radial: 0.27 },
-      ],
-      verticalScale: 0.68,
-      connectionStyle: 'zigzag',
-    },
-    {
-      points: [
-        { angle: -1.35, radial: 0.18 },
-        { angle: -0.8, radial: 0.28 },
-        { angle: -0.15, radial: 0.1 },
-        { angle: 0.55, radial: 0.27 },
-        { angle: 1.25, radial: 0.18 },
-      ],
-      verticalScale: 1.22,
-      connectionStyle: 'fork',
-    },
-    {
-      points: [
-        { angle: -1.2, radial: 0.22 },
-        { angle: -0.55, radial: 0.3 },
-        { angle: 0.1, radial: 0.18 },
-        { angle: 0.72, radial: 0.31 },
-        { angle: 1.4, radial: 0.2 },
-      ],
-      verticalScale: 0.92,
-      connectionStyle: 'kite',
-    },
-  ] as const;
-  const archetypeSeed = appendHashSeedLabel(
-    seedHash,
-    CONSTELLATION_ARCHETYPE_LABEL
-  );
-  const rotationSeed = appendHashSeedLabel(
-    seedHash,
-    CONSTELLATION_ROTATION_LABEL
-  );
-
-  const base =
-    baseArchetypes[
-      Math.floor(
-        hash2DWithSeed(archetypeSeed, index, 0) * baseArchetypes.length
-      )
-    ];
-  return {
-    ...base,
-    rotation: hash2DWithSeed(rotationSeed, index, 1) * Math.PI * 2,
-  };
-}
-
-function buildConstellationConnections(
-  starCount: number,
-  style: ConstellationConnectionStyle
-): [number, number][] {
-  const chain = Array.from(
-    { length: Math.max(0, starCount - 1) },
-    (_, starIndex) => [starIndex, starIndex + 1] as [number, number]
-  );
-  if (starCount < 4) {
-    return chain;
-  }
-
-  if (style === 'arc') {
-    return [...chain, [0, Math.floor(starCount / 2)] as [number, number]];
-  }
-  if (style === 'zigzag') {
-    return [...chain, [1, starCount - 1] as [number, number]];
-  }
-  if (style === 'fork') {
-    return [
-      ...chain,
-      [0, Math.floor(starCount / 2)] as [number, number],
-      [2, starCount - 1] as [number, number],
-    ];
-  }
-  return [
-    ...chain,
-    [0, starCount - 2] as [number, number],
-    [1, starCount - 1] as [number, number],
-  ];
-}
-
-export function createConstellationName(
-  seedHash: number,
-  index: number,
-  prefixCounts = new Map<string, number>(),
-  suffixCounts = new Map<string, number>(),
-  figureCounts = new Map<string, number>()
-) {
-  const formSeed = appendHashSeedLabel(seedHash, CONSTELLATION_FORM_LABEL);
-  const figureSeed = appendHashSeedLabel(seedHash, CONSTELLATION_FIGURE_LABEL);
-  const prefixSeed = appendHashSeedLabel(seedHash, CONSTELLATION_PREFIX_LABEL);
-  const suffixSeed = appendHashSeedLabel(seedHash, CONSTELLATION_SUFFIX_LABEL);
-  const useFigure = hash2DWithSeed(formSeed, index, 0) < 0.28;
-  if (useFigure) {
-    const figure = pickLimitedNamePart(
-      CONSTELLATION_FIGURES,
-      figureCounts,
-      2,
-      hash2DWithSeed(figureSeed, index, 0)
-    );
-    return figure;
-  }
-
-  const prefix = pickLimitedNamePart(
-    CONSTELLATION_PREFIXES,
-    prefixCounts,
-    2,
-    hash2DWithSeed(prefixSeed, index, 0)
-  );
-  const suffix = pickLimitedNamePart(
-    CONSTELLATION_SUFFIXES,
-    suffixCounts,
-    2,
-    hash2DWithSeed(suffixSeed, 0, index)
-  );
-  return `${prefix} ${suffix}`;
-}
-
-function pickLimitedNamePart(
-  parts: readonly string[],
-  counts: Map<string, number>,
-  maxCount: number,
-  seedValue: number
-) {
-  const startIndex = Math.floor(seedValue * parts.length) % parts.length;
-  for (let offset = 0; offset < parts.length; offset += 1) {
-    const candidate = parts[(startIndex + offset) % parts.length];
-    const currentCount = counts.get(candidate) ?? 0;
-    if (currentCount < maxCount) {
-      counts.set(candidate, currentCount + 1);
-      return candidate;
-    }
-  }
-
-  const fallback = parts[startIndex];
-  counts.set(fallback, (counts.get(fallback) ?? 0) + 1);
-  return fallback;
-}
-
-export function createCelestialRing(
-  constellations: ConstellationLike[]
-): CelestialRingEntryLike[] {
-  const count = Math.max(1, constellations.length);
-  return constellations.map((constellation, index) => ({
-    constellationIndex: index,
-    name: constellation.name,
-    sunriseAzimuth: normalizeAngle((index / count) * Math.PI * 2),
-    visualAzimuth: normalizeAngle(
-      (index / count) * Math.PI * 2 + constellation.ringJitter
-    ),
-  }));
-}
-
-export function formatCelestialDate(
-  constellationName: string,
-  moonPhaseName: string
-): CelestialCalendarLike {
-  return {
-    month: constellationName,
-    week: moonPhaseName,
-    label: `${constellationName} / ${moonPhaseName}`,
-  };
-}
-
-export function getCelestialEventsForDay(
-  dayNumber: number,
-  options: {
-    yearLengthDays?: number;
-    dayProgress?: number;
-    observerLatitudeDegrees?: number;
-    solarDeclination?: number;
-    sunriseAzimuth?: number;
-    sunsetAzimuth?: number;
-    daylight?: number;
-    night?: number;
-    starsOpacity?: number;
-  } = {}
-): CelestialEventLike[] {
-  const yearLengthDays = options.yearLengthDays ?? DEFAULT_YEAR_LENGTH_DAYS;
-  const dayProgress = options.dayProgress ?? 0;
-  const observerLatitudeDegrees = options.observerLatitudeDegrees ?? 0;
-  const solarDeclination = options.solarDeclination ?? 0;
-  const sunriseAzimuth = options.sunriseAzimuth ?? 0;
-  const sunsetAzimuth = options.sunsetAzimuth ?? Math.PI;
-  const daylight = clamp(options.daylight ?? 0, 0, 1);
-  const night = clamp(options.night ?? 1, 0, 1);
-  const starsOpacity = clamp(options.starsOpacity ?? night, 0, 1);
-  const events: CelestialEventLike[] = [];
-
-  PLANET_NAMES.forEach((name, index) => {
-    const profile = getPlanetSkyProfile(name, index);
-    const orbitLength = profile.orbitLengthDays;
-    const orbitProgress = getPlanetaryOrbitProgress(
-      dayNumber + dayProgress,
-      profile
-    );
-    const orbitState = getOrbitalSkyPosition({
-      orbitProgress,
-      observerLatitudeDegrees,
-      declination:
-        solarDeclination * profile.declinationFactor +
-        Math.sin((dayNumber / profile.declinationWaveDays) * Math.PI * 2) *
-          profile.declinationWaveAmplitude,
-      sunriseAzimuth,
-      sunsetAzimuth,
-      azimuthShift: profile.azimuthShift,
-    });
-    events.push({
-      type: 'planet',
-      name,
-      progress: orbitProgress,
-      intensity:
-        profile.intensityBase +
-        hash2DWithSeed(PLANET_INTENSITY_SEED, index, dayNumber % orbitLength) *
-          profile.intensitySwing,
-      visibility: getCelestialEventVisibility({
-        type: 'planet',
-        altitude: orbitState.altitude,
-        intensity:
-          profile.intensityBase +
-          hash2DWithSeed(
-            PLANET_INTENSITY_SEED,
-            index,
-            dayNumber % orbitLength
-          ) *
-            profile.intensitySwing,
-        daylight,
-        night,
-        starsOpacity,
-      }),
-      azimuth: orbitState.azimuth,
-      altitude: orbitState.altitude,
-      color: profile.color,
-      size: profile.size,
-      trailLength: 0,
-    });
-  });
-
-  METEOR_SHOWER_NAMES.forEach((name, index) => {
-    const seasonStart = Math.floor(
-      (yearLengthDays / METEOR_SHOWER_NAMES.length) * index
-    );
-    const peakOffset =
-      (((dayNumber - seasonStart) % yearLengthDays) + yearLengthDays) %
-      yearLengthDays;
-    if (peakOffset <= 4 || peakOffset >= yearLengthDays - 4) {
-      const distance = Math.min(peakOffset, yearLengthDays - peakOffset);
-      const progress = fract(dayProgress + index * 0.21);
-      const orbitState = getOrbitalSkyPosition({
-        orbitProgress: progress,
-        observerLatitudeDegrees,
-        declination:
-          solarDeclination * -0.35 +
-          Math.sin((dayNumber / (8 + index * 3)) * Math.PI * 2) * 0.12,
-        sunriseAzimuth,
-        sunsetAzimuth,
-        azimuthShift: -0.9 + index * 0.5,
-      });
-      events.push({
-        type: 'meteor-shower',
-        name,
-        progress,
-        intensity: 1 - distance / 4,
-        visibility: getCelestialEventVisibility({
-          type: 'meteor-shower',
-          altitude: orbitState.altitude,
-          intensity: 1 - distance / 4,
-          daylight,
-          night,
-          starsOpacity,
-        }),
-        azimuth: orbitState.azimuth,
-        altitude: orbitState.altitude,
-        color: '#eef6ff',
-        size: 0.34,
-        trailLength: 1.6 + index * 0.2,
-      });
-    }
-  });
-
-  COMET_NAMES.forEach((name, index) => {
-    const cycleLength = 20 + index * 12;
-    const cycleDay = ((dayNumber % cycleLength) + cycleLength) % cycleLength;
-    if (cycleDay <= 3) {
-      const orbitProfile = getCometOrreryProfile(name, index);
-      const progress = getCometOrbitProgress(
-        cycleDay + dayProgress,
-        cycleLength,
-        index * 0.18,
-        orbitProfile.speedExponent
-      );
-      const orbitState = getOrbitalSkyPosition({
-        orbitProgress: progress,
-        observerLatitudeDegrees,
-        declination:
-          solarDeclination * -0.5 +
-          Math.cos((dayNumber / cycleLength) * Math.PI * 2) * 0.2,
-        sunriseAzimuth,
-        sunsetAzimuth,
-        azimuthShift: 1.1 - index * 0.38,
-      });
-      events.push({
-        type: 'comet',
-        name,
-        progress,
-        intensity: 1 - cycleDay / 3,
-        visibility: getCelestialEventVisibility({
-          type: 'comet',
-          altitude: orbitState.altitude,
-          intensity: 1 - cycleDay / 3,
-          daylight,
-          night,
-          starsOpacity,
-        }),
-        azimuth: orbitState.azimuth,
-        altitude: orbitState.altitude,
-        color: '#dff5ff',
-        size: 0.42,
-        trailLength: 2.2 + index * 0.35,
-      });
-    }
-  });
-
-  return events;
-}
-
 function getCelestialEventVisibility({
   type,
   altitude,
@@ -1396,145 +814,6 @@ function getCelestialEventVisibility({
     0,
     1
   );
-}
-
-export function getMilkyWayBeltState({
-  dayProgress,
-  yearProgress,
-  observerLatitudeDegrees,
-  starsOpacity,
-}: {
-  dayProgress?: number;
-  yearProgress: number;
-  observerLatitudeDegrees?: number;
-  starsOpacity?: number;
-}): MilkyWayBeltLike {
-  const latitudeRadians = ((observerLatitudeDegrees ?? 0) / 180) * Math.PI;
-  const dailyRotation = (dayProgress ?? 0) * Math.PI * 2;
-  return {
-    azimuthOffset:
-      dailyRotation +
-      yearProgress * Math.PI * 2 * 0.16 +
-      Math.sin(latitudeRadians) * 0.42,
-    inclination:
-      1.04 +
-      Math.cos(yearProgress * Math.PI * 2) * 0.12 +
-      Math.sin(latitudeRadians) * 0.18,
-    width: 0.22 + Math.abs(Math.sin(latitudeRadians)) * 0.06,
-    opacity: 0.03 + (starsOpacity ?? 0) * 0.16,
-  };
-}
-
-export function getMilkyWayBandSamples(
-  belt: MilkyWayBeltLike,
-  yearProgress: number,
-  sampleCount = 72
-): MilkyWayBandSampleLike[] {
-  const resolvedSampleCount = Math.max(8, Math.floor(sampleCount));
-  const halfBandWidth = belt.width * 0.7;
-  return Array.from({ length: resolvedSampleCount + 1 }, (_, index) => {
-    const progress = index / resolvedSampleCount;
-    const azimuth = progress * Math.PI * 2 + belt.azimuthOffset;
-    const latitudeWave =
-      Math.sin(
-        progress * Math.PI * 2 * 3 +
-          belt.azimuthOffset * 1.2 +
-          yearProgress * Math.PI * 2
-      ) * belt.width;
-    const centerPhi = belt.inclination + latitudeWave;
-    const edgeFade = Math.cos(progress * Math.PI * 2 - Math.PI / 2) * 0.08;
-    return {
-      azimuth,
-      centerPhi,
-      innerPhi: centerPhi - halfBandWidth,
-      outerPhi: centerPhi + halfBandWidth,
-      opacity: clamp(belt.opacity * (0.84 + edgeFade), 0, 1),
-    };
-  });
-}
-
-export function getOrreryBodies({
-  moonAngle,
-  moonIllumination,
-  visibleEvents,
-}: {
-  moonAngle: number;
-  moonIllumination: number;
-  visibleEvents: CelestialEventLike[];
-}): OrreryBodyLike[] {
-  const bodies: OrreryBodyLike[] = [
-    {
-      id: 'sun',
-      type: 'sun',
-      orbitRadius: 0,
-      angle: 0,
-      orbitTilt: 0,
-      orbitHeight: 0,
-      orbitEccentricity: 0,
-      orbitRotation: 0,
-      color: '#ffd06e',
-      size: 0.92,
-      trailLength: 0,
-    },
-    {
-      id: 'moon',
-      type: 'moon',
-      orbitRadius: 2.6,
-      angle: normalizeTurns((moonAngle + Math.PI / 2) / (Math.PI * 2)),
-      orbitTilt: 0.34,
-      orbitHeight: -0.12,
-      orbitEccentricity: 0.08,
-      orbitRotation: 0.36,
-      color: '#dce8ff',
-      size: 0.42 + moonIllumination * 0.16,
-      trailLength: 0,
-    },
-  ];
-
-  let unknownPlanetIndex = PLANET_NAMES.length;
-  let unknownCometIndex = COMET_NAMES.length;
-  visibleEvents.forEach((event) => {
-    if (event.type === 'meteor-shower') {
-      return;
-    }
-
-    const orbitProfile =
-      event.type === 'planet'
-        ? getPlanetSkyProfile(event.name, unknownPlanetIndex)
-        : getCometOrreryProfile(event.name, unknownCometIndex);
-    const orbitRadius =
-      event.type === 'planet'
-        ? 3.6 + getPlanetSkyProfileIndex(event.name, unknownPlanetIndex) * 0.75
-        : 8.1 +
-          getCometOrreryProfileIndex(event.name, unknownCometIndex) * 0.95;
-    if (event.type === 'planet' && !PLANET_NAME_SET.has(event.name)) {
-      unknownPlanetIndex += 1;
-    }
-    if (event.type === 'comet' && !COMET_NAME_SET.has(event.name)) {
-      unknownCometIndex += 1;
-    }
-    bodies.push({
-      id: `${event.type}:${event.name}`,
-      type: event.type === 'planet' ? 'planet' : 'comet',
-      orbitRadius,
-      angle: normalizeTurns(event.progress),
-      orbitTilt:
-        orbitProfile.orbitTilt +
-        (event.type === 'planet'
-          ? 0
-          : getCometOrreryProfileIndex(event.name, 0) % 2 === 0
-            ? 0.04
-            : -0.04),
-      orbitHeight: event.altitude * 0.35,
-      orbitEccentricity: orbitProfile.orbitEccentricity,
-      orbitRotation: orbitProfile.orbitRotation,
-      color: event.color,
-      size: Math.max(0.24, event.size * (event.type === 'planet' ? 0.5 : 0.42)),
-      trailLength: event.trailLength,
-    });
-  });
-
-  return bodies;
 }
 
 export function getOrbitalSkyPosition({
