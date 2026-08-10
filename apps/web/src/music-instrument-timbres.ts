@@ -28,6 +28,8 @@ export type ProceduralInstrumentTimbre = {
   filterType: BiquadFilterType;
   filterCutoffHz: number;
   filterQ: number;
+  pitchSweepSemitones?: number;
+  pitchSweepDurationMs?: number;
   fundamentalGainMultiplier?: number;
   attackPeakGainMultiplier?: number;
   bodySustainLevel?: number;
@@ -128,6 +130,8 @@ type InstrumentTimbreTemplate = {
   cutoffMaxHz: number;
   qMin: number;
   qMax: number;
+  pitchSweepSemitones?: number;
+  pitchSweepDurationMs?: number;
   fundamentalGainMultiplier?: number;
   attackPeakGainMultiplier?: number;
   bodySustainLevel?: number;
@@ -472,6 +476,15 @@ const INSTRUMENT_PATCH_RECIPES: Record<InstrumentFamily, InstrumentPatchRecipe> 
       cutoffMaxHz: 180,
       qMin: 0.6,
       qMax: 1.2,
+      pitchSweepSemitones: 14,
+      pitchSweepDurationMs: 44,
+      transientMix: 0.18,
+      transientDurationMs: 18,
+      transientFilterType: 'highpass',
+      transientCutoffMinHz: 1_800,
+      transientCutoffMaxHz: 3_200,
+      transientQMin: 0.8,
+      transientQMax: 1.6,
     },
   },
   snare: {
@@ -746,6 +759,8 @@ export function resolveProceduralInstrumentTimbre(options: {
       template.qMax,
       clamp(options.filterSignal, 0, 1)
     ),
+    pitchSweepSemitones: template.pitchSweepSemitones,
+    pitchSweepDurationMs: template.pitchSweepDurationMs,
     fundamentalGainMultiplier: template.fundamentalGainMultiplier,
     attackPeakGainMultiplier: template.attackPeakGainMultiplier,
     bodySustainLevel: template.bodySustainLevel,

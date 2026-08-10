@@ -26,8 +26,6 @@ export function renderMusicDebugPreviewNoteToSamples(
   );
   let carrierPhase = 0;
   let harmonicPhase = 0;
-  const carrierPhaseIncrement = (Math.PI * 2 * detunedFrequency) / sampleRate;
-  const harmonicPhaseIncrement = (Math.PI * 2 * harmonicFrequency) / sampleRate;
   let previousFilteredNoise = 0;
   const noiseMix = Math.max(0, note.timbre.noiseMix ?? 0);
   const transientMix = Math.max(0, note.timbre.transientMix ?? 0);
@@ -44,6 +42,15 @@ export function renderMusicDebugPreviewNoteToSamples(
 
   for (let frame = 0; frame < frameCount; frame += 1) {
     const timeSeconds = frame / sampleRate;
+    const pitchSweepMultiplier = resolvePitchSweepFrequencyMultiplier(
+      note,
+      timeSeconds,
+      note.durationMs / 1000
+    );
+    const carrierPhaseIncrement =
+      ((Math.PI * 2 * detunedFrequency) / sampleRate) * pitchSweepMultiplier;
+    const harmonicPhaseIncrement =
+      ((Math.PI * 2 * harmonicFrequency) / sampleRate) * pitchSweepMultiplier;
     const pulseModulation =
       note.pulseRate > 0
         ? 1 + Math.sin(timeSeconds * note.pulseRate * Math.PI * 2) * 0.08
@@ -106,6 +113,29 @@ export function renderMusicDebugPreviewNoteToSamples(
 
   normalizeSamples(samples);
   return samples;
+}
+
+export function resolvePitchSweepFrequencyMultiplier(
+  note: Pick<ProceduralMusicNote, 'durationMs' | 'timbre'>,
+  timeSeconds: number,
+  durationSeconds: number
+): number {
+  const pitchSweepDurationSeconds = Math.max(
+    0,
+    Math.min(durationSeconds, (note.timbre.pitchSweepDurationMs ?? 0) / 1000)
+  );
+  if (pitchSweepDurationSeconds <= 0) {
+    return 1;
+  }
+  const pitchSweepSemitones = note.timbre.pitchSweepSemitones ?? 0;
+  if (pitchSweepSemitones === 0) {
+    return 1;
+  }
+  const clampedProgress = Math.max(
+    0,
+    Math.min(1, timeSeconds / pitchSweepDurationSeconds)
+  );
+  return Math.pow(2, (pitchSweepSemitones * (1 - clampedProgress)) / 12);
 }
 
 export function createMusicDebugPreviewWavFile(options: {

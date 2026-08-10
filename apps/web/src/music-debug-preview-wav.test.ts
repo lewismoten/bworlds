@@ -3,6 +3,7 @@ import {
   renderMusicDebugPreviewNoteToSamples,
   resolveEnvelopeGain,
   resolveHarmonicEnvelopeGain,
+  resolvePitchSweepFrequencyMultiplier,
   resolveTransientEnvelopeGain,
 } from './music-debug-preview-wav.ts';
 import type { ProceduralMusicNote } from './procedural-music.ts';
@@ -104,6 +105,74 @@ describe('music debug preview wav', () => {
       resolveTransientEnvelopeGain(struckNote, 0.05, struckNote.durationMs / 1000)
     ).toBe(0);
     expect(renderMusicDebugPreviewNoteToSamples(struckNote, 8_000)).toBeDefined();
+  });
+
+  it('sweeps kick preview pitch down quickly before settling to the body tone', () => {
+    const kickNote = createPreviewNote({
+      instrumentId: 'kick-preview',
+      role: 'percussion',
+      frequency: 64,
+      waveform: 'sine',
+      durationMs: 180,
+      attackMs: 8,
+      releaseMs: 90,
+      harmonicGain: 0.14,
+      pulseRate: 0.2,
+      timbre: {
+        ...createPreviewNote().timbre,
+        harmonicWaveform: 'triangle',
+        harmonicRatio: 1.3,
+        pitchSweepSemitones: 14,
+        pitchSweepDurationMs: 44,
+        transientMix: 0.18,
+        transientDurationMs: 18,
+        transientFilterType: 'highpass',
+        transientFilterCutoffHz: 2_400,
+        transientFilterQ: 1,
+      },
+    });
+    const steadyKickNote = createPreviewNote({
+      ...kickNote,
+      timbre: {
+        ...kickNote.timbre,
+        pitchSweepSemitones: 0,
+        pitchSweepDurationMs: 0,
+        transientMix: 0,
+      },
+    });
+
+    expect(
+      resolvePitchSweepFrequencyMultiplier(
+        kickNote,
+        0,
+        kickNote.durationMs / 1000
+      )
+    ).toBeGreaterThan(2);
+    expect(
+      resolvePitchSweepFrequencyMultiplier(
+        kickNote,
+        0.022,
+        kickNote.durationMs / 1000
+      )
+    ).toBeGreaterThan(1);
+    expect(
+      resolvePitchSweepFrequencyMultiplier(
+        kickNote,
+        0.06,
+        kickNote.durationMs / 1000
+      )
+    ).toBe(1);
+
+    const sweptSamples = renderMusicDebugPreviewNoteToSamples(kickNote, 8_000);
+    const steadySamples = renderMusicDebugPreviewNoteToSamples(
+      steadyKickNote,
+      8_000
+    );
+
+    expect(sweptSamples).not.toEqual(steadySamples);
+    expect(averageSampleDifference(sweptSamples, steadySamples)).toBeGreaterThan(
+      0.01
+    );
   });
 });
 

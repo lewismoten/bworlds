@@ -1253,6 +1253,16 @@ export function createWebAudioMusicSink(
         context.currentTime + Math.max(0, (note.startMs - nowMs) / 1000);
       const durationSeconds = note.durationMs / 1000;
       const attackSeconds = Math.max(0.001, note.attackMs / 1000);
+      const pitchSweepDurationSeconds = Math.max(
+        0,
+        Math.min(durationSeconds, (note.timbre.pitchSweepDurationMs ?? 0) / 1000)
+      );
+      const pitchSweepMultiplier =
+        pitchSweepDurationSeconds > 0
+          ? Math.pow(2, (note.timbre.pitchSweepSemitones ?? 0) / 12)
+          : 1;
+      const sweepStartFrequency = note.frequency * pitchSweepMultiplier;
+      const sweepEndAt = startAt + pitchSweepDurationSeconds;
       const fundamentalGainMultiplier = Math.max(
         1,
         note.timbre.fundamentalGainMultiplier ?? 1
@@ -1331,14 +1341,24 @@ export function createWebAudioMusicSink(
       const outputGain = getOutputGainNode(context);
 
       oscillator.type = note.waveform;
-      oscillator.frequency.setValueAtTime(note.frequency, startAt);
+      oscillator.frequency.setValueAtTime(sweepStartFrequency, startAt);
       oscillator.detune.setValueAtTime(note.detuneCents, startAt);
       harmonicOscillator.type = note.timbre.harmonicWaveform;
       harmonicOscillator.frequency.setValueAtTime(
-        note.frequency * note.timbre.harmonicRatio,
+        sweepStartFrequency * note.timbre.harmonicRatio,
         startAt
       );
       harmonicOscillator.detune.setValueAtTime(note.detuneCents * 0.5, startAt);
+      if (pitchSweepDurationSeconds > 0) {
+        oscillator.frequency.exponentialRampToValueAtTime(
+          note.frequency,
+          sweepEndAt
+        );
+        harmonicOscillator.frequency.exponentialRampToValueAtTime(
+          note.frequency * note.timbre.harmonicRatio,
+          sweepEndAt
+        );
+      }
       oscillator.frequency.exponentialRampToValueAtTime(
         note.frequency * (0.985 + note.pulseRate * 0.002),
         startAt + durationSeconds

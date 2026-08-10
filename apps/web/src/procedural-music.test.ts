@@ -2753,6 +2753,165 @@ describe('procedural music', () => {
     }
   });
 
+  it('schedules a downward pitch sweep for kick-style percussion patches', () => {
+    const createdOscillators: Array<{
+      frequency: {
+        setValueAtTime: ReturnType<typeof vi.fn>;
+        exponentialRampToValueAtTime: ReturnType<typeof vi.fn>;
+      };
+      detune: {
+        setValueAtTime: ReturnType<typeof vi.fn>;
+      };
+      connect: ReturnType<typeof vi.fn>;
+      disconnect: ReturnType<typeof vi.fn>;
+      start: ReturnType<typeof vi.fn>;
+      stop: ReturnType<typeof vi.fn>;
+      type: OscillatorType;
+      onended: (() => void) | null;
+    }> = [];
+
+    class FakeAudioContext {
+      state: AudioContextState = 'running';
+      currentTime = 0;
+      destination = {};
+      createOscillator() {
+        const oscillator = {
+          onended: null as (() => void) | null,
+          type: 'sine' as OscillatorType,
+          frequency: {
+            setValueAtTime: vi.fn(),
+            exponentialRampToValueAtTime: vi.fn(),
+          },
+          detune: {
+            setValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+          start: vi.fn(),
+          stop: vi.fn(),
+        };
+        createdOscillators.push(oscillator);
+        return oscillator as unknown as OscillatorNode;
+      }
+      createGain() {
+        return {
+          gain: {
+            setValueAtTime: vi.fn(),
+            exponentialRampToValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+        } as unknown as GainNode;
+      }
+      createBiquadFilter() {
+        return {
+          type: 'highpass' as BiquadFilterType,
+          frequency: {
+            setValueAtTime: vi.fn(),
+          },
+          Q: {
+            setValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+        } as unknown as BiquadFilterNode;
+      }
+      createStereoPanner() {
+        return {
+          pan: {
+            setValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+        } as unknown as StereoPannerNode;
+      }
+      createBuffer(channels: number, length: number) {
+        const data = Array.from({ length: channels }, () => new Float32Array(length));
+        return {
+          getChannelData(index: number) {
+            return data[index]!;
+          },
+        } as unknown as AudioBuffer;
+      }
+      createBufferSource() {
+        return {
+          buffer: null as AudioBuffer | null,
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+          start: vi.fn(),
+          stop: vi.fn(),
+        } as unknown as AudioBufferSourceNode;
+      }
+      resume() {
+        return Promise.resolve();
+      }
+    }
+
+    const originalAudioContext = globalThis.AudioContext;
+    vi.stubGlobal('AudioContext', FakeAudioContext);
+
+    try {
+      const sink = createWebAudioMusicSink();
+      sink.play({
+        themeId: 'town-square',
+        instrumentId: 'town-square:perc-kick-0',
+        role: 'percussion',
+        startMs: 0,
+        durationMs: 180,
+        frequency: 64,
+        volume: 0.055,
+        waveform: 'sine',
+        timbre: {
+          harmonicWaveform: 'triangle',
+          harmonicRatio: 1.3,
+          filterType: 'lowpass',
+          filterCutoffHz: 240,
+          filterQ: 0.9,
+          pitchSweepSemitones: 14,
+          pitchSweepDurationMs: 44,
+          transientMix: 0.18,
+          transientDurationMs: 18,
+          transientFilterType: 'highpass',
+          transientFilterCutoffHz: 2_400,
+          transientFilterQ: 1,
+        },
+        attackMs: 8,
+        releaseMs: 90,
+        detuneCents: 0,
+        harmonicGain: 0.14,
+        pulseRate: 0.2,
+      });
+
+      expect(createdOscillators).toHaveLength(2);
+
+      const carrierOscillator = createdOscillators[0]!;
+      const harmonicOscillator = createdOscillators[1]!;
+      const expectedSweepMultiplier = Math.pow(2, 14 / 12);
+
+      expect(
+        carrierOscillator.frequency.setValueAtTime.mock.calls[0]?.[0]
+      ).toBeCloseTo(64 * expectedSweepMultiplier, 4);
+      expect(
+        harmonicOscillator.frequency.setValueAtTime.mock.calls[0]?.[0]
+      ).toBeCloseTo(64 * expectedSweepMultiplier * 1.3, 4);
+      expect(
+        carrierOscillator.frequency.exponentialRampToValueAtTime.mock.calls[0]?.[0]
+      ).toBeCloseTo(64, 4);
+      expect(
+        carrierOscillator.frequency.exponentialRampToValueAtTime.mock.calls[0]?.[1]
+      ).toBeCloseTo(0.044, 4);
+      expect(
+        harmonicOscillator.frequency.exponentialRampToValueAtTime.mock.calls[0]?.[0]
+      ).toBeCloseTo(64 * 1.3, 4);
+    } finally {
+      if (originalAudioContext) {
+        vi.stubGlobal('AudioContext', originalAudioContext);
+      } else {
+        vi.unstubAllGlobals();
+      }
+    }
+  });
+
   it('emits scheduled notes through the controller sink', () => {
     const played: ProceduralMusicNote[] = [];
     const controller = createMusicController({
