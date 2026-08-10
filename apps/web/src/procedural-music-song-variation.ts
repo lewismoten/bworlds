@@ -1,4 +1,5 @@
 import type { ProceduralMusicNote } from './procedural-music.ts';
+import { resolveVelocityShapedInstrumentTimbre } from './music-instrument-timbres.ts';
 import { resolveMusicThemeById } from './procedural-music.ts';
 import { isProceduralSemitoneInMode } from './procedural-music-scale.ts';
 import { resolveSongHarmonySustainMultiplier } from './procedural-music-harmony-sustain.ts';
@@ -33,6 +34,7 @@ export function transformSongSectionNote(
     case 'intro':
       return scaleSongNote(note, {
         volumeMultiplier: layerTreatment.volumeMultiplier,
+        velocityMultiplier: layerTreatment.velocityMultiplier,
         durationMultiplier:
           layerTreatment.durationMultiplier * harmonySustainMultiplier,
         releaseMultiplier: layerTreatment.releaseMultiplier,
@@ -47,6 +49,7 @@ export function transformSongSectionNote(
     case 'b':
       return scaleSongNote(note, {
         volumeMultiplier: layerTreatment.volumeMultiplier,
+        velocityMultiplier: layerTreatment.velocityMultiplier,
         durationMultiplier:
           layerTreatment.durationMultiplier * harmonySustainMultiplier,
       });
@@ -60,11 +63,13 @@ export function transformSongSectionNote(
     case 'return':
       return scaleSongNote(note, {
         volumeMultiplier: layerTreatment.volumeMultiplier,
+        velocityMultiplier: layerTreatment.velocityMultiplier,
         durationMultiplier: harmonySustainMultiplier,
       });
     case 'outro':
       return scaleSongNote(note, {
         volumeMultiplier: layerTreatment.volumeMultiplier,
+        velocityMultiplier: layerTreatment.velocityMultiplier,
         durationMultiplier:
           layerTreatment.durationMultiplier * harmonySustainMultiplier,
         releaseMultiplier: layerTreatment.releaseMultiplier,
@@ -72,6 +77,7 @@ export function transformSongSectionNote(
     case 'a':
     default:
       return scaleSongNote(note, {
+        velocityMultiplier: layerTreatment.velocityMultiplier,
         durationMultiplier: harmonySustainMultiplier,
       });
   }
@@ -100,6 +106,7 @@ function transformAprimeSectionNote(
 
   return scaleSongNote(note, {
     volumeMultiplier: layerTreatment.volumeMultiplier,
+    velocityMultiplier: layerTreatment.velocityMultiplier,
     durationMultiplier:
       layerTreatment.durationMultiplier * harmonySustainMultiplier,
     startOffsetMs: rhythmShiftMs,
@@ -130,6 +137,7 @@ function transformVariationSectionNote(
 
   return scaleSongNote(note, {
     volumeMultiplier: layerTreatment.volumeMultiplier,
+    velocityMultiplier: layerTreatment.velocityMultiplier,
     durationMultiplier:
       layerTreatment.durationMultiplier * harmonySustainMultiplier,
     releaseMultiplier: layerTreatment.releaseMultiplier,
@@ -142,6 +150,7 @@ function scaleSongNote(
   note: ProceduralMusicNote,
   options: {
     volumeMultiplier?: number;
+    velocityMultiplier?: number;
     durationMultiplier?: number;
     releaseMultiplier?: number;
     startOffsetMs?: number;
@@ -151,6 +160,16 @@ function scaleSongNote(
   const durationMultiplier = options.durationMultiplier ?? 1;
   const releaseMultiplier = options.releaseMultiplier ?? 1;
   const transposeSemitones = options.transposeSemitones ?? 0;
+  const nextVelocity =
+    note.velocity === undefined
+      ? undefined
+      : Math.max(
+          1,
+          Math.min(
+            127,
+            Math.round(note.velocity * (options.velocityMultiplier ?? 1))
+          )
+        );
   const frequency =
     transposeSemitones === 0
       ? note.frequency
@@ -161,6 +180,14 @@ function scaleSongNote(
     durationMs: Math.max(24, Math.round(note.durationMs * durationMultiplier)),
     frequency,
     volume: note.volume * (options.volumeMultiplier ?? 1),
+    velocity: nextVelocity,
+    timbre:
+      nextVelocity === undefined
+        ? note.timbre
+        : resolveVelocityShapedInstrumentTimbre({
+            timbre: note.timbre,
+            velocity: nextVelocity,
+          }),
     releaseMs: Math.max(12, Math.round(note.releaseMs * releaseMultiplier)),
   };
 }

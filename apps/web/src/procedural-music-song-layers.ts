@@ -5,6 +5,7 @@ import type { ProceduralMusicSongSection } from './procedural-music-song.ts';
 export type ProceduralSongLayerTreatment = {
   muted: boolean;
   volumeMultiplier: number;
+  velocityMultiplier: number;
   durationMultiplier: number;
   releaseMultiplier: number;
 };
@@ -56,6 +57,7 @@ export function resolveSongSectionLayerTreatment(
           (context.note.role === 'bass' &&
             context.noteIndexInSection % 2 === 1),
         volumeMultiplier: context.note.role === 'lead' ? 0.84 : 0.68,
+        velocityMultiplier: context.note.role === 'percussion' ? 0.78 : 1,
         durationMultiplier:
           context.note.role === 'harmony'
             ? 1.14 * harmonyLeadSpace.durationMultiplier
@@ -74,6 +76,7 @@ export function resolveSongSectionLayerTreatment(
             : context.note.role === 'harmony'
               ? harmonyLeadSpace.volumeMultiplier
               : 1,
+        velocityMultiplier: context.note.role === 'percussion' ? 1.08 : 1,
         durationMultiplier:
           context.note.role === 'lead'
             ? 1.08
@@ -101,6 +104,7 @@ export function resolveSongSectionLayerTreatment(
               : context.note.role === 'harmony'
                 ? harmonyLeadSpace.volumeMultiplier
                 : 1,
+        velocityMultiplier: context.note.role === 'percussion' ? 0.84 : 1,
         durationMultiplier:
           context.note.role === 'bass'
             ? 1.06
@@ -123,6 +127,7 @@ export function resolveSongSectionLayerTreatment(
           context.note.role === 'harmony'
             ? harmonyLeadSpace.volumeMultiplier
             : 1,
+        velocityMultiplier: context.note.role === 'percussion' ? 1.18 : 1,
         durationMultiplier:
           context.note.role === 'lead'
             ? 1.78
@@ -140,6 +145,7 @@ export function resolveSongSectionLayerTreatment(
             : context.note.role === 'harmony'
               ? harmonyLeadSpace.volumeMultiplier
               : 1.02,
+        velocityMultiplier: context.note.role === 'percussion' ? 1.1 : 1,
         durationMultiplier:
           context.note.role === 'harmony'
             ? harmonyLeadSpace.durationMultiplier
@@ -160,6 +166,7 @@ export function resolveSongSectionLayerTreatment(
           (context.note.role === 'lead' &&
             context.noteIndexInSection % 2 === 1),
         volumeMultiplier: 0.72,
+        velocityMultiplier: context.note.role === 'percussion' ? 0.76 : 1,
         durationMultiplier:
           context.note.role === 'harmony'
             ? 1.2 * harmonyLeadSpace.durationMultiplier
@@ -174,6 +181,7 @@ export function resolveSongSectionLayerTreatment(
           context.note.role === 'harmony'
             ? harmonyLeadSpace.volumeMultiplier
             : 1,
+        velocityMultiplier: 1,
         durationMultiplier:
           context.note.role === 'harmony'
             ? harmonyLeadSpace.durationMultiplier

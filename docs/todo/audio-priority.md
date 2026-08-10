@@ -76,7 +76,7 @@
 - [x] Vary groove patterns once per phrase.
 - [x] Keep ambient percussion quieter than pitched tracks.
 - [x] Reduce percussion density during calm sections.
-- [ ] Make drum velocity follow the section energy curve.
+- [x] Make drum velocity follow the section energy curve.
 - [ ] Prevent identical drum hits from repeating mechanically.
 
 ## Melody Shape

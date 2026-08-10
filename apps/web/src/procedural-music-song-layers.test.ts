@@ -67,6 +67,9 @@ describe('procedural music song layers', () => {
     const variationPercussion = resolveSongSectionLayerTreatment(
       createContext(createSection('variation'), { role: 'percussion' }, 4)
     );
+    const returnPercussionEnergy = resolveSongSectionLayerTreatment(
+      createContext(createSection('return'), { role: 'percussion' }, 0)
+    );
     const returnLead = resolveSongSectionLayerTreatment(
       createContext(createSection('return'), { role: 'lead' }, 0)
     );
@@ -98,7 +101,17 @@ describe('procedural music song layers', () => {
     expect(bPercussion.muted).toBe(true);
     expect(bPercussionAlternate.muted).toBe(false);
     expect(bPercussionAlternate.volumeMultiplier).toBeLessThan(1);
+    expect(bPercussionAlternate.velocityMultiplier).toBeLessThan(1);
     expect(variationPercussion.muted).toBe(true);
+    expect(variationPercussion.velocityMultiplier).toBeGreaterThan(
+      bPercussionAlternate.velocityMultiplier
+    );
+    expect(returnPercussionEnergy.velocityMultiplier).toBeGreaterThan(
+      bPercussionAlternate.velocityMultiplier
+    );
+    expect(returnPercussionEnergy.velocityMultiplier).toBeLessThan(
+      variationPercussion.velocityMultiplier
+    );
     expect(returnLead.muted).toBe(false);
     expect(returnLead.volumeMultiplier).toBeLessThan(1);
     expect(returnBass.muted).toBe(false);
@@ -113,6 +126,7 @@ describe('procedural music song layers', () => {
     );
     expect(returnHarmony.releaseMultiplier).toBeGreaterThan(1);
     expect(returnPercussion.muted).toBe(false);
+    expect(returnPercussion.velocityMultiplier).toBeGreaterThan(1);
   });
 
   it('describes the layer arrangement used by each section for debug inspection', () => {

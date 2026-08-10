@@ -10,6 +10,7 @@ import {
   resolveProceduralMusicSongDurationMs,
 } from './procedural-music-song.ts';
 import { resolvePercussionFamilyFromInstrumentId } from './procedural-music-percussion.ts';
+import type { ProceduralMusicNote } from './procedural-music.ts';
 import { resolveMusicTheme } from './procedural-music.ts';
 import { buildProceduralMusicSongSections } from './procedural-music-song-timing.ts';
 import { resolveProceduralMusicBlueprint } from './procedural-music-blueprint.ts';
@@ -822,11 +823,20 @@ describe('procedural music song', () => {
           .filter((note) => note.role === 'lead')
           .reduce((total, note) => total + note.volume, 0) /
         Math.max(1, roleCounts.lead ?? 0);
+      const averagePercussionVelocity =
+        notes
+          .filter(
+            (note): note is ProceduralMusicNote & { velocity: number } =>
+              note.role === 'percussion' && note.velocity !== undefined
+          )
+          .reduce((total, note) => total + note.velocity, 0) /
+        Math.max(1, roleCounts.percussion ?? 0);
 
       return {
         roleCounts,
         averageDurationByRole,
         averageLeadVolume,
+        averagePercussionVelocity,
       };
     };
 
@@ -855,13 +865,28 @@ describe('procedural music song', () => {
     expect(sectionB.roleCounts.percussion ?? 0).toBeLessThan(
       sectionA.roleCounts.percussion ?? 0
     );
+    expect(sectionAPrime.averagePercussionVelocity).toBeGreaterThan(
+      sectionA.averagePercussionVelocity
+    );
+    expect(sectionB.averagePercussionVelocity).toBeLessThan(
+      sectionA.averagePercussionVelocity
+    );
     expect(variation.roleCounts.percussion ?? 0).toBeLessThan(
       sectionA.roleCounts.percussion ?? 0
+    );
+    expect(variation.averagePercussionVelocity).toBeGreaterThan(
+      sectionAPrime.averagePercussionVelocity
     );
     expect(variation.averageDurationByRole.lead ?? 0).toBeGreaterThan(
       sectionA.averageDurationByRole.lead ?? 0
     );
     expect(sectionReturn.roleCounts.percussion ?? 0).toBeGreaterThan(0);
+    expect(sectionReturn.averagePercussionVelocity).toBeGreaterThan(
+      sectionB.averagePercussionVelocity
+    );
+    expect(sectionReturn.averagePercussionVelocity).toBeLessThan(
+      variation.averagePercussionVelocity
+    );
     expect(sectionReturn.roleCounts.bass ?? 0).toBeGreaterThan(0);
     expect(sectionReturn.roleCounts.harmony ?? 0).toBeGreaterThan(0);
     expect(sectionReturn.roleCounts.lead ?? 0).toBeGreaterThan(0);
