@@ -91,6 +91,7 @@ export default defineConfig({
   appType: 'mpa',
   plugins: [createDebugRouteRedirectPlugin()],
   build: {
+    manifest: true,
     rollupOptions: {
       input: {
         main: path.join(APP_DIR, 'index.html'),

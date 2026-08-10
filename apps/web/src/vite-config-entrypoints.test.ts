@@ -82,4 +82,8 @@ describe('web vite config', () => {
       })
     );
   });
+
+  it('emits a build manifest so bundle budgets can validate route payloads in CI', () => {
+    expect(config.build?.manifest).toBe(true);
+  });
 });
