@@ -218,7 +218,7 @@ function insertSupportAnchorNote(
 
   const candidate = notes[bestIndex]!;
   const anchorDurationMs = Math.round(
-    Math.max(96, Math.min(180, (gapEndMs - gapStartMs) * 0.3))
+    Math.max(72, Math.min(120, (gapEndMs - gapStartMs) * 0.18))
   );
   const anchorMidpointMs = gapStartMs + (gapEndMs - gapStartMs) * 0.5;
   const anchorStartMs = Math.round(

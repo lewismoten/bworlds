@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { resolveProceduralLeadRhythmPhraseTemplate } from './procedural-music-lead-rhythm-template.ts';
+import {
+  PROCEDURAL_LEAD_RHYTHM_SUBDIVISION_COUNT,
+  resolveProceduralLeadRhythmPhraseTemplate,
+} from './procedural-music-lead-rhythm-template.ts';
 
 describe('procedural music lead rhythm template', () => {
   it('builds a deterministic reusable eight-measure phrase template', () => {
@@ -19,6 +22,21 @@ describe('procedural music lead rhythm template', () => {
     expect(
       first.measures.every(
         (measure) => measure.attacks.length >= 2 && measure.attacks.length <= 3
+      )
+    ).toBe(true);
+    expect(
+      first.measures.every(
+        (measure, measureIndex) =>
+          measure.attacks.every(
+            (attack) =>
+              attack.offsetRatio * PROCEDURAL_LEAD_RHYTHM_SUBDIVISION_COUNT ===
+                attack.subdivisionStep &&
+              attack.durationRatio *
+                PROCEDURAL_LEAD_RHYTHM_SUBDIVISION_COUNT ===
+                attack.subdivisionLength
+        ) &&
+        measure.tailRestSubdivisionCount ===
+          ((measureIndex + 1) % 4 === 0 ? 4 : 0)
       )
     ).toBe(true);
   });

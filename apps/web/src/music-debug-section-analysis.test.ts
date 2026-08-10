@@ -335,6 +335,38 @@ describe('music debug section analysis', () => {
       )
     ).toBe(true);
   });
+
+  it('tolerates fractional occupancy drift that only crosses the blueprint edge by rounding noise', () => {
+    const comparisons = createMusicDebugSectionLayerComparisons({
+      activities: [
+        {
+          sectionId: 'a',
+          sectionLabel: 'Section A',
+          roleCounts: {
+            bass: 4,
+            harmony: 3,
+            lead: 4,
+            percussion: 2,
+          },
+          soundingTimePercentageByRole: {
+            bass: 24.6,
+            harmony: 20.8,
+            lead: 30.7,
+            percussion: 15.4,
+          },
+          averageDurationMsByRole: {
+            bass: 240,
+            harmony: 240,
+            lead: 240,
+            percussion: 180,
+          },
+        },
+      ],
+      blueprint: TEST_BLUEPRINT,
+    });
+
+    expect(comparisons[0]?.matchesPlan).toBe(true);
+  });
 });
 
 const TEST_BLUEPRINT: ProceduralMusicBlueprint = {

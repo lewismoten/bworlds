@@ -2,6 +2,7 @@ import type {
   MusicUpdateOptions,
   ProceduralMusicNote,
 } from './procedural-music.ts';
+import { shapeProceduralPhraseLeadNotes } from './procedural-music-lead-phrase.ts';
 import { resolveProceduralLeadRhythmPhraseTemplate } from './procedural-music-lead-rhythm-template.ts';
 import { PROCEDURAL_MUSIC_PHRASE_MEASURE_COUNT } from './procedural-music-phrase-structure.ts';
 import { shapeProceduralPhraseSupportNotes } from './procedural-music-phrase-support.ts';
@@ -57,12 +58,20 @@ export function collectProceduralMusicPhraseNotes(
   }
 
   return shapeProceduralPhraseSupportNotes(
-    ensureLeadMeasureAttackDensity(notes, {
-      phraseStartMs: options.nowMs,
-      phraseDurationMs,
-      clusterX: options.clusterX ?? 0,
-      clusterY: options.clusterY ?? 0,
-    }),
+    shapeProceduralPhraseLeadNotes(
+      ensureLeadMeasureAttackDensity(notes, {
+        phraseStartMs: options.nowMs,
+        phraseDurationMs,
+        clusterX: options.clusterX ?? 0,
+        clusterY: options.clusterY ?? 0,
+      }),
+      {
+        phraseStartMs: options.nowMs,
+        phraseDurationMs,
+        clusterX: options.clusterX ?? 0,
+        clusterY: options.clusterY ?? 0,
+      }
+    ),
     {
       phraseStartMs: options.nowMs,
       phraseDurationMs,

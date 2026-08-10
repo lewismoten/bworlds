@@ -2,6 +2,8 @@ import { hash2DWithSeed, registerHashLabel } from '@bworlds/core/hash';
 import type { MusicRegionThemeId } from './procedural-music-vocabulary.ts';
 
 export type ProceduralLeadRhythmAttackTemplate = {
+  subdivisionStep: number;
+  subdivisionLength: number;
   offsetRatio: number;
   durationRatio: number;
   volumeMultiplier: number;
@@ -9,6 +11,7 @@ export type ProceduralLeadRhythmAttackTemplate = {
 
 export type ProceduralLeadRhythmMeasureTemplate = {
   attacks: readonly ProceduralLeadRhythmAttackTemplate[];
+  tailRestSubdivisionCount: number;
 };
 
 export type ProceduralLeadRhythmPhraseTemplate = {
@@ -19,32 +22,38 @@ const LEAD_RHYTHM_TEMPLATE_SEED = registerHashLabel(
   'music-lead-rhythm-template'
 );
 
+export const PROCEDURAL_LEAD_RHYTHM_SUBDIVISION_COUNT = 16;
+
 const LEAD_MEASURE_PATTERNS: readonly ProceduralLeadRhythmMeasureTemplate[] = [
   {
     attacks: [
-      { offsetRatio: 0.24, durationRatio: 0.28, volumeMultiplier: 0.86 },
-      { offsetRatio: 0.58, durationRatio: 0.24, volumeMultiplier: 0.76 },
+      createAttackTemplate(4, 5, 0.86),
+      createAttackTemplate(9, 4, 0.76),
     ],
+    tailRestSubdivisionCount: 0,
   },
   {
     attacks: [
-      { offsetRatio: 0.18, durationRatio: 0.24, volumeMultiplier: 0.9 },
-      { offsetRatio: 0.46, durationRatio: 0.2, volumeMultiplier: 0.78 },
-      { offsetRatio: 0.74, durationRatio: 0.18, volumeMultiplier: 0.7 },
+      createAttackTemplate(3, 4, 0.9),
+      createAttackTemplate(7, 3, 0.78),
+      createAttackTemplate(11, 3, 0.7),
     ],
+    tailRestSubdivisionCount: 0,
   },
   {
     attacks: [
-      { offsetRatio: 0.28, durationRatio: 0.26, volumeMultiplier: 0.84 },
-      { offsetRatio: 0.7, durationRatio: 0.2, volumeMultiplier: 0.74 },
+      createAttackTemplate(4, 5, 0.84),
+      createAttackTemplate(11, 3, 0.74),
     ],
+    tailRestSubdivisionCount: 0,
   },
   {
     attacks: [
-      { offsetRatio: 0.16, durationRatio: 0.22, volumeMultiplier: 0.88 },
-      { offsetRatio: 0.42, durationRatio: 0.18, volumeMultiplier: 0.76 },
-      { offsetRatio: 0.68, durationRatio: 0.18, volumeMultiplier: 0.72 },
+      createAttackTemplate(2, 4, 0.88),
+      createAttackTemplate(7, 3, 0.76),
+      createAttackTemplate(11, 3, 0.72),
     ],
+    tailRestSubdivisionCount: 0,
   },
 ] as const;
 
@@ -79,10 +88,32 @@ export function resolveProceduralLeadRhythmPhraseTemplate(options: {
   for (let measureIndex = 0; measureIndex < measureCount; measureIndex += 1) {
     const patternIndex =
       phrasePattern[measureIndex % phrasePattern.length] ?? phrasePattern[0]!;
-    measures.push(
-      LEAD_MEASURE_PATTERNS[patternIndex] ?? LEAD_MEASURE_PATTERNS[0]!
-    );
+    const pattern =
+      LEAD_MEASURE_PATTERNS[patternIndex] ?? LEAD_MEASURE_PATTERNS[0]!;
+    measures.push({
+      ...pattern,
+      tailRestSubdivisionCount: isPhraseEndingMeasure(measureIndex) ? 4 : 0,
+    });
   }
 
   return { measures };
+}
+
+function createAttackTemplate(
+  subdivisionStep: number,
+  subdivisionLength: number,
+  volumeMultiplier: number
+): ProceduralLeadRhythmAttackTemplate {
+  return {
+    subdivisionStep,
+    subdivisionLength,
+    offsetRatio: subdivisionStep / PROCEDURAL_LEAD_RHYTHM_SUBDIVISION_COUNT,
+    durationRatio: subdivisionLength / PROCEDURAL_LEAD_RHYTHM_SUBDIVISION_COUNT,
+    volumeMultiplier,
+  };
+}
+
+function isPhraseEndingMeasure(measureIndex: number): boolean {
+  const normalizedMeasureIndex = measureIndex + 1;
+  return normalizedMeasureIndex % 4 === 0;
 }

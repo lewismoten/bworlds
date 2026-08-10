@@ -221,12 +221,12 @@ added directly as semitones instead of moving through the selected scale.
 - [x] Reduce the long silent gaps between pitched notes.
 - [x] Lengthen string notes beyond their current short values.
 - [x] Let bass notes support more of each harmonic span.
-- [ ] Give the flute connected phrase-level rhythms.
-- [ ] Quantize notes to a clear rhythmic subdivision.
-- [ ] Define flowing rhythm as reusable note patterns.
-- [ ] Keep rhythmic variation inside phrase templates.
-- [ ] Add rests at phrase ends instead of between all notes.
-- [ ] Use legato articulation for suitable flute phrases.
+- [x] Give the flute connected phrase-level rhythms.
+- [x] Quantize notes to a clear rhythmic subdivision.
+- [x] Define flowing rhythm as reusable note patterns.
+- [x] Keep rhythmic variation inside phrase templates.
+- [x] Add rests at phrase ends instead of between all notes.
+- [x] Use legato articulation for suitable flute phrases.
 - [x] Validate note occupancy by track and section.
 
 ## Percussion

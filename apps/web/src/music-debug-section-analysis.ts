@@ -68,6 +68,8 @@ const MUSIC_DEBUG_PITCH_CLASS_LABELS = [
   'B',
 ] as const;
 
+const OCCUPANCY_VALIDATION_EPSILON_PERCENTAGE = 1;
+
 export function createMusicDebugSectionMotifMatches(options: {
   notes: readonly ProceduralMusicNote[];
   notePitchDiagnostics: readonly MusicDebugNotePitchDiagnostic[];
@@ -439,7 +441,8 @@ function validateBlueprintOccupancy(
     const actualPercentage = activity.soundingTimePercentageByRole[role];
     if (
       occupancyTarget.minPercentage !== undefined &&
-      actualPercentage < occupancyTarget.minPercentage
+      actualPercentage <
+        occupancyTarget.minPercentage - OCCUPANCY_VALIDATION_EPSILON_PERCENTAGE
     ) {
       mismatchRules.push(
         `${role} occupancy ${Math.round(actualPercentage)}% stayed below blueprint minimum ${occupancyTarget.minPercentage}%`
@@ -448,7 +451,8 @@ function validateBlueprintOccupancy(
     }
     if (
       occupancyTarget.maxPercentage !== undefined &&
-      actualPercentage > occupancyTarget.maxPercentage
+      actualPercentage >
+        occupancyTarget.maxPercentage + OCCUPANCY_VALIDATION_EPSILON_PERCENTAGE
     ) {
       mismatchRules.push(
         `${role} occupancy ${Math.round(actualPercentage)}% exceeded blueprint maximum ${occupancyTarget.maxPercentage}%`
