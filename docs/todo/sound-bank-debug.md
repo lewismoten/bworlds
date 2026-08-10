@@ -28,16 +28,16 @@
 
 ## Sound Bank Registry
 
-- [ ] Define a common sound bank instrument interface.
-- [ ] Give each instrument a stable unique ID.
+- [x] Define a common sound bank instrument interface.
+- [x] Give each instrument a stable unique ID.
 - [ ] Store the General MIDI program number.
 - [ ] Store the General MIDI instrument name.
 - [ ] Store the General MIDI family name.
-- [ ] Store supported musical roles.
-- [ ] Store the recommended MIDI note range.
-- [ ] Store the preferred MIDI note range.
-- [ ] Store the default velocity.
-- [ ] Store the default note duration.
+- [x] Store supported musical roles.
+- [x] Store the recommended MIDI note range.
+- [x] Store the preferred MIDI note range.
+- [x] Store the default velocity.
+- [x] Store the default note duration.
 - [ ] Let plugins register sound bank instruments.
 - [ ] Reject duplicate instrument IDs.
 - [ ] Reject duplicate program mappings.

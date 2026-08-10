@@ -135,6 +135,21 @@ describe('music debug', () => {
     );
     expect(first.trackStats.bass.averageDurationMs).toBeGreaterThan(0);
     expect(first.trackStats.lead.averageSilenceMs).toBeGreaterThanOrEqual(0);
+    expect(first.instrumentBank.instruments.lead.supportedRoles).toEqual([
+      'lead',
+    ]);
+    expect(first.instrumentBank.instruments.lead.recommendedMidiRange).toEqual({
+      minMidiNote: 60,
+      maxMidiNote: 84,
+    });
+    expect(first.instrumentBank.instruments.lead.preferredMidiRange).toEqual({
+      minMidiNote: 64,
+      maxMidiNote: 79,
+    });
+    expect(first.instrumentBank.instruments.lead.defaultVelocity).toBe(108);
+    expect(
+      first.instrumentBank.instruments.percussion.defaultNoteDurationMs
+    ).toBeGreaterThan(0);
     expect(first.intervalComparison.totalIntervalCount).toBeGreaterThan(0);
     expect(
       first.intervalComparison.actualIntervalCounts.length

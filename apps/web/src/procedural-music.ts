@@ -65,6 +65,22 @@ type ContextType = string;
 type WeatherKind = string;
 type InstrumentRole = 'lead' | 'harmony' | 'bass' | 'percussion';
 export type MusicEncounterMode = 'ambient' | 'battle' | 'boss';
+export type ProceduralInstrumentRole = InstrumentRole;
+
+export type SoundBankInstrumentNoteRange = {
+  minMidiNote: number;
+  maxMidiNote: number;
+};
+
+export type SoundBankInstrumentDefinition = {
+  id: string;
+  role: ProceduralInstrumentRole;
+  supportedRoles: readonly ProceduralInstrumentRole[];
+  recommendedMidiRange: SoundBankInstrumentNoteRange;
+  preferredMidiRange: SoundBankInstrumentNoteRange;
+  defaultVelocity: number;
+  defaultNoteDurationMs: number;
+};
 
 type MusicRegionTheme = {
   id: MusicRegionThemeId;
@@ -108,9 +124,7 @@ const MUSIC_PROPERTY_SEEDS = registerHashSeeds([
 ] as const);
 const musicContextSeedCache = new Map<string, number>();
 
-export type ProceduralInstrument = {
-  id: string;
-  role: InstrumentRole;
+export type ProceduralInstrument = SoundBankInstrumentDefinition & {
   family: InstrumentFamily;
   waveform: MusicWaveform;
   timbre: ProceduralInstrumentTimbre;
@@ -1922,9 +1936,14 @@ function createProceduralInstrument(
       clusterY - role.length
     ),
   });
-  return {
-    id: `${theme.id}:${role}:${clusterX}:${clusterY}`,
+  const metadata = createSoundBankInstrumentDefinition(
+    theme,
     role,
+    clusterX,
+    clusterY
+  );
+  return {
+    ...metadata,
     family,
     waveform,
     timbre,
@@ -1972,6 +1991,84 @@ function createProceduralInstrument(
         (role === 'percussion' ? 3.2 : role === 'harmony' ? 1.1 : 1.4),
     brightness: brightness,
   };
+}
+
+function createSoundBankInstrumentDefinition(
+  theme: MusicRegionTheme,
+  role: InstrumentRole,
+  clusterX: number,
+  clusterY: number
+): SoundBankInstrumentDefinition {
+  return {
+    id: `${theme.id}:${role}:${clusterX}:${clusterY}`,
+    role,
+    supportedRoles: [role],
+    recommendedMidiRange: resolveSoundBankRecommendedMidiRange(role),
+    preferredMidiRange: resolveSoundBankPreferredMidiRange(role),
+    defaultVelocity: resolveSoundBankDefaultVelocity(role),
+    defaultNoteDurationMs: resolveSoundBankDefaultNoteDurationMs(theme, role),
+  };
+}
+
+function resolveSoundBankRecommendedMidiRange(
+  role: InstrumentRole
+): SoundBankInstrumentNoteRange {
+  if (role === 'lead') {
+    return { minMidiNote: 60, maxMidiNote: 84 };
+  }
+  if (role === 'harmony') {
+    return { minMidiNote: 52, maxMidiNote: 76 };
+  }
+  if (role === 'bass') {
+    return { minMidiNote: 36, maxMidiNote: 60 };
+  }
+  return { minMidiNote: 35, maxMidiNote: 81 };
+}
+
+function resolveSoundBankPreferredMidiRange(
+  role: InstrumentRole
+): SoundBankInstrumentNoteRange {
+  if (role === 'lead') {
+    return { minMidiNote: 64, maxMidiNote: 79 };
+  }
+  if (role === 'harmony') {
+    return { minMidiNote: 55, maxMidiNote: 72 };
+  }
+  if (role === 'bass') {
+    return { minMidiNote: 40, maxMidiNote: 52 };
+  }
+  return { minMidiNote: 36, maxMidiNote: 54 };
+}
+
+function resolveSoundBankDefaultVelocity(role: InstrumentRole): number {
+  if (role === 'lead') {
+    return 108;
+  }
+  if (role === 'harmony') {
+    return 90;
+  }
+  if (role === 'bass') {
+    return 96;
+  }
+  return 100;
+}
+
+function resolveSoundBankDefaultNoteDurationMs(
+  theme: MusicRegionTheme,
+  role: InstrumentRole
+): number {
+  const roleDurationMultiplier =
+    role === 'lead'
+      ? 1
+      : role === 'harmony'
+        ? 1.18
+        : role === 'bass'
+          ? 1.28
+          : 0.5;
+  return Math.max(
+    120,
+    Math.round(theme.noteDurationMs * roleDurationMultiplier)
+  );
 }
 
 function resolveInstrumentFamily(

@@ -25,6 +25,41 @@ import { resolveProceduralMusicLoudness } from './procedural-music-loudness.ts';
 import { resolveProceduralThemeMotif } from './procedural-music-theme-motif.ts';
 
 describe('procedural music', () => {
+  it('adds shared sound bank registry metadata to generated instruments', () => {
+    const bank = createProceduralInstrumentBank(
+      resolveMusicTheme('forest', 'overworld', undefined, 2, -3),
+      2,
+      -3,
+      {
+        tileKind: 'forest',
+        contextType: 'overworld',
+        dayProgress: 0.35,
+        yearProgress: 0.2,
+      }
+    );
+
+    expect(bank.themeId).toBe('deep-forest');
+    expect(bank.instruments.lead.id).toBe('deep-forest:lead:2:-3');
+    expect(bank.instruments.lead.supportedRoles).toEqual(['lead']);
+    expect(bank.instruments.harmony.supportedRoles).toEqual(['harmony']);
+    expect(bank.instruments.bass.supportedRoles).toEqual(['bass']);
+    expect(bank.instruments.percussion.supportedRoles).toEqual(['percussion']);
+    expect(bank.instruments.lead.recommendedMidiRange).toEqual({
+      minMidiNote: 60,
+      maxMidiNote: 84,
+    });
+    expect(bank.instruments.lead.preferredMidiRange).toEqual({
+      minMidiNote: 64,
+      maxMidiNote: 79,
+    });
+    expect(bank.instruments.lead.defaultVelocity).toBe(108);
+    expect(bank.instruments.bass.defaultVelocity).toBe(96);
+    expect(bank.instruments.harmony.defaultNoteDurationMs).toBeGreaterThan(0);
+    expect(
+      bank.instruments.harmony.defaultNoteDurationMs
+    ).toBeGreaterThanOrEqual(bank.instruments.lead.defaultNoteDurationMs);
+  });
+
   it('keeps the music sink idle until a user-triggered resume creates audio', () => {
     const contextInstances: Array<{
       state: AudioContextState;
