@@ -242,6 +242,33 @@ describe('music debug midi audit', () => {
       )
     ).toBe(true);
   });
+
+  it('flags cadence validation mismatches against the final phrase notes', () => {
+    const snapshot = createMusicDebugSnapshot({
+      tileKind: 'forest',
+      contextType: 'overworld',
+      clusterX: 4,
+      clusterY: -1,
+    });
+    const file = createMusicDebugMidiFileUnchecked(snapshot, {
+      createdAt: new Date('2026-08-09T00:00:00.000Z'),
+    });
+
+    const audit = inspectMusicDebugMidiBytes(file.bytes, {
+      ...snapshot,
+      cadenceValidation: {
+        ...snapshot.cadenceValidation,
+        isValidForMidiExport: false,
+        messages: ['Outro answer cadence drifted outside the active harmony.'],
+      },
+    });
+
+    expect(audit.isConsistent).toBe(true);
+    expect(audit.mismatchMessages).toEqual([]);
+    expect(audit.warningMessages).toContain(
+      'Outro answer cadence drifted outside the active harmony.'
+    );
+  });
 });
 
 function findSnapshotWithDuration(targetDurationMs: number) {

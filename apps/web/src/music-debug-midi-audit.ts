@@ -40,6 +40,7 @@ export function inspectMusicDebugMidiBytes(
     | 'trackStats'
     | 'harmonyChordDetections'
     | 'bassProgressionDetections'
+    | 'cadenceValidation'
   >,
   options: {
     includedRoles?: readonly MusicDebugSnapshot['notes'][number]['role'][];
@@ -132,6 +133,13 @@ export function inspectMusicDebugMidiBytes(
     warningMessages.push(
       'Detected bass roots drift from the planned progression order.'
     );
+  }
+  if (
+    includedRoles.has('lead') &&
+    includedRoles.has('bass') &&
+    !snapshot.cadenceValidation.isValidForMidiExport
+  ) {
+    warningMessages.push(...snapshot.cadenceValidation.messages);
   }
   if (markerLabels.length !== snapshot.song.sections.length) {
     sectionsMatchPlannedMarkers = false;
