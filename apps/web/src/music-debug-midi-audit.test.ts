@@ -40,9 +40,12 @@ describe('music debug midi audit', () => {
   it('keeps the easy plains export aligned with the reported 2:18 duration and bpm', () => {
     const snapshot = findSnapshotWithDuration(138_000);
 
-    const audit = createMusicDebugMidiExportAudit(snapshot, {
+    const audit = createMusicDebugMidiExportAudit(
+      withValidLeadContourAnalysis(snapshot),
+      {
       createdAt: new Date('2026-08-09T00:00:00.000Z'),
-    });
+      }
+    );
 
     expect(snapshot.durationMs).toBe(138_000);
     expect(snapshot.measureCount).toBe(88);
@@ -50,7 +53,9 @@ describe('music debug midi audit', () => {
     expect(audit.exportedDurationMs).toBeCloseTo(138_000, -1);
     expect(audit.exportedBpm).toBeCloseTo(153.043478, 1);
     expect(audit.isConsistent).toBe(
-      snapshot.cadenceValidation.isValidForMidiExport
+      snapshot.cadenceValidation.isValidForMidiExport &&
+        snapshot.leadContourAnalysis.finalResolvesToTonic &&
+        snapshot.leadContourAnalysis.climaxNearPlannedPeak
     );
   }, 20_000);
 
@@ -65,7 +70,7 @@ describe('music debug midi audit', () => {
       createdAt: new Date('2026-08-09T00:00:00.000Z'),
     });
     const audit = inspectMusicDebugMidiBytes(file.bytes, {
-      ...snapshot,
+      ...withValidLeadContourAnalysis(snapshot),
       cadenceValidation: {
         ...snapshot.cadenceValidation,
         isValidForMidiExport: true,
@@ -212,7 +217,7 @@ describe('music debug midi audit', () => {
     });
 
     const audit = inspectMusicDebugMidiBytes(file.bytes, {
-      ...snapshot,
+      ...withValidLeadContourAnalysis(snapshot),
       cadenceValidation: {
         ...snapshot.cadenceValidation,
         isValidForMidiExport: true,
@@ -263,7 +268,7 @@ describe('music debug midi audit', () => {
     });
 
     const audit = inspectMusicDebugMidiBytes(file.bytes, {
-      ...snapshot,
+      ...withValidLeadContourAnalysis(snapshot),
       cadenceValidation: {
         ...snapshot.cadenceValidation,
         isValidForMidiExport: true,
@@ -329,6 +334,72 @@ describe('music debug midi audit', () => {
     );
   });
 
+  it('flags lead-contour ending failures as critical audit warnings', () => {
+    const snapshot = createMusicDebugSnapshot({
+      tileKind: 'forest',
+      contextType: 'overworld',
+      clusterX: 4,
+      clusterY: -1,
+    });
+    const file = createMusicDebugMidiFileUnchecked(snapshot, {
+      createdAt: new Date('2026-08-09T00:00:00.000Z'),
+    });
+
+    const audit = inspectMusicDebugMidiBytes(file.bytes, {
+      ...withValidLeadContourAnalysis(snapshot),
+      cadenceValidation: {
+        ...snapshot.cadenceValidation,
+        isValidForMidiExport: true,
+        messages: [],
+      },
+      leadContourAnalysis: {
+        ...snapshot.leadContourAnalysis,
+        finalResolvesToTonic: false,
+        messages: [
+          'Lead contour ending at measure 80 on D4 resolved to scale degree 2 instead of tonic.',
+        ],
+      },
+    });
+
+    expect(audit.isConsistent).toBe(false);
+    expect(audit.criticalWarningMessages).toContain(
+      'Lead contour ending at measure 80 on D4 resolved to scale degree 2 instead of tonic.'
+    );
+  });
+
+  it('flags lead-contour climax failures as critical audit warnings', () => {
+    const snapshot = createMusicDebugSnapshot({
+      tileKind: 'forest',
+      contextType: 'overworld',
+      clusterX: 4,
+      clusterY: -1,
+    });
+    const file = createMusicDebugMidiFileUnchecked(snapshot, {
+      createdAt: new Date('2026-08-09T00:00:00.000Z'),
+    });
+
+    const audit = inspectMusicDebugMidiBytes(file.bytes, {
+      ...withValidLeadContourAnalysis(snapshot),
+      cadenceValidation: {
+        ...snapshot.cadenceValidation,
+        isValidForMidiExport: true,
+        messages: [],
+      },
+      leadContourAnalysis: {
+        ...snapshot.leadContourAnalysis,
+        climaxNearPlannedPeak: false,
+        messages: [
+          'Lead contour climax peaked at measure 72 on C5 instead of the planned peak near measure 64.',
+        ],
+      },
+    });
+
+    expect(audit.isConsistent).toBe(false);
+    expect(audit.criticalWarningMessages).toContain(
+      'Lead contour climax peaked at measure 72 on C5 instead of the planned peak near measure 64.'
+    );
+  });
+
   it('flags percussion validation mismatches when percussion export rules drift', () => {
     const snapshot = createMusicDebugSnapshot({
       tileKind: 'town',
@@ -341,7 +412,7 @@ describe('music debug midi audit', () => {
     });
 
     const audit = inspectMusicDebugMidiBytes(file.bytes, {
-      ...snapshot,
+      ...withValidLeadContourAnalysis(snapshot),
       cadenceValidation: {
         ...snapshot.cadenceValidation,
         isValidForMidiExport: true,
@@ -372,7 +443,7 @@ describe('music debug midi audit', () => {
     });
 
     const audit = inspectMusicDebugMidiBytes(file.bytes, {
-      ...snapshot,
+      ...withValidLeadContourAnalysis(snapshot),
       cadenceValidation: {
         ...snapshot.cadenceValidation,
         isValidForMidiExport: true,
@@ -512,3 +583,22 @@ function findSnapshotWithDuration(targetDurationMs: number) {
 let cachedSnapshotWithDuration: ReturnType<
   typeof createMusicDebugSnapshot
 > | null = null;
+
+function withValidLeadContourAnalysis(
+  snapshot: ReturnType<typeof createMusicDebugSnapshot>
+): ReturnType<typeof createMusicDebugSnapshot> {
+  return {
+    ...snapshot,
+    leadContourAnalysis: {
+      ...snapshot.leadContourAnalysis,
+      finalResolvesToTonic: true,
+      climaxNearPlannedPeak: true,
+      matchesPlannedContour: true,
+      messages: snapshot.leadContourAnalysis.messages.filter(
+        (message) =>
+          !message.includes('climax peaked at') &&
+          !message.includes('resolved to scale degree')
+      ),
+    },
+  };
+}

@@ -63,6 +63,7 @@ export function inspectMusicDebugMidiBytes(
     | 'scaleMap'
     | 'motifValidation'
     | 'midiExportValidation'
+    | 'leadContourAnalysis'
     | 'harmonyChordDetections'
     | 'bassProgressionDetections'
     | 'cadenceValidation'
@@ -268,6 +269,26 @@ export function inspectMusicDebugMidiBytes(
     !snapshot.cadenceValidation.isValidForMidiExport
   ) {
     criticalWarningMessages.push(...snapshot.cadenceValidation.messages);
+  }
+  if (
+    includedRoles.has('lead') &&
+    !snapshot.leadContourAnalysis.finalResolvesToTonic
+  ) {
+    criticalWarningMessages.push(
+      ...snapshot.leadContourAnalysis.messages.filter((message) =>
+        message.includes('resolved to scale degree')
+      )
+    );
+  }
+  if (
+    includedRoles.has('lead') &&
+    !snapshot.leadContourAnalysis.climaxNearPlannedPeak
+  ) {
+    criticalWarningMessages.push(
+      ...snapshot.leadContourAnalysis.messages.filter((message) =>
+        message.includes('climax peaked at')
+      )
+    );
   }
   if (
     includedRoles.has('percussion') &&

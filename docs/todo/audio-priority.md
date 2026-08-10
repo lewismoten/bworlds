@@ -5,8 +5,8 @@
 ## Critical Validation
 
 - [x] Fail songs whose final cadence does not reach the tonic.
-- [ ] Fail songs whose lead contour misses its required ending.
-- [ ] Fail songs whose climax occurs in the wrong phrase.
+- [x] Fail songs whose lead contour misses its required ending.
+- [x] Fail songs whose climax occurs in the wrong phrase.
 - [ ] Fail songs whose bass roots drift from the chord plan.
 - [ ] Fail songs whose harmony drifts from the chord plan.
 - [x] Treat cadence drift as an export failure.

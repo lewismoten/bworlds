@@ -10,6 +10,9 @@ warnings.
   Cadence failures now include the exact measure plus the lead and bass note
   names that triggered the rejection, including final answer cadences that miss
   tonic.
+- Lead-contour ending failures and off-peak climax failures are also treated as
+  critical warnings, using the exact measure and note context from the contour
+  analysis.
 - `warningMessages` remain non-blocking diagnostics for softer issues like
   percussion validation hints and planned-progression drift reports. Progression
   drift warnings now include the exact measure window that drifted.
