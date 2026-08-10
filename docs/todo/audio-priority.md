@@ -19,6 +19,8 @@
 - [x] Show/Play all instrument/samples in the percussion track
 - [x] Show all percussion wave forms with other instruments rather than just one, along with a play button like the others.
 - [x] Move instrument wave form cards to appear just under the MIDI track visualizer.
+- [ ] Move instrument wave form cards to appear below the MIDI track visualizer.
+- [ ] Include all graphs as images within the Export ZIP
 
 # Track Role / Color / Listing Order
 
@@ -165,7 +167,7 @@
 - [x] Highlight cadence notes that conflict with harmony.
 - [x] Highlight unexpected percussion substitutions.
 - [x] Save a report for each rejected song.
-- [ ] Keep several known-good seeds for regression tests.
+- [x] Keep several known-good seeds for regression tests.
 
 * [x] When changing input parameters, apply to the song immediately, and let it continue playing
 * [x] Panel to input parameters and click buttons is clipped on the right.

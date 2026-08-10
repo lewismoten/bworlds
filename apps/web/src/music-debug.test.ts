@@ -12,6 +12,7 @@ import {
   normalizeMusicDebugOptions,
   randomizeMusicDebugSeed,
 } from './music-debug.ts';
+import { resolveMusicDebugKnownGoodSeed } from './music-debug-known-good-seeds.ts';
 
 describe('music debug', () => {
   it('normalizes partial options into a safe debug snapshot configuration', () => {
@@ -386,15 +387,9 @@ describe('music debug', () => {
   });
 
   it('keeps the plains motif stable and reports exact and varied motif counters separately', () => {
-    const snapshot = createMusicDebugSnapshot({
-      tileKind: 'plains',
-      contextType: 'overworld',
-      encounterMode: 'ambient',
-      clusterX: 0,
-      clusterY: 0,
-      dayProgress: 0.45,
-      yearProgress: 0.25,
-    });
+    const snapshot = createMusicDebugSnapshot(
+      resolveMusicDebugKnownGoodSeed('plains-motif-baseline').options
+    );
     const motifBySection = new Map(
       snapshot.sectionMotifMatches.map((entry) => [entry.sectionId, entry])
     );
@@ -772,21 +767,11 @@ describe('music debug', () => {
   });
 
   it("keeps Section A' lead prominence above Section A in representative snapshots", () => {
-    const forest = createMusicDebugSnapshot({
-      tileKind: 'forest',
-      contextType: 'overworld',
-      clusterX: 4,
-      clusterY: -1,
-    });
+    const forest = createMusicDebugSnapshot(
+      resolveMusicDebugKnownGoodSeed('forest-structure-baseline').options
+    );
     const town = createMusicDebugSnapshot(
-      {
-        tileKind: 'town',
-        contextType: 'town',
-        clusterX: 3,
-        clusterY: -2,
-        dayProgress: 0.25,
-        yearProgress: 0.75,
-      },
+      resolveMusicDebugKnownGoodSeed('town-blueprint-baseline').options,
       1000
     );
 
@@ -809,21 +794,11 @@ describe('music debug', () => {
   }, 10_000);
 
   it('keeps Section B harmony prominence below Section A in representative snapshots', () => {
-    const forest = createMusicDebugSnapshot({
-      tileKind: 'forest',
-      contextType: 'overworld',
-      clusterX: 4,
-      clusterY: -1,
-    });
+    const forest = createMusicDebugSnapshot(
+      resolveMusicDebugKnownGoodSeed('forest-structure-baseline').options
+    );
     const town = createMusicDebugSnapshot(
-      {
-        tileKind: 'town',
-        contextType: 'town',
-        clusterX: 3,
-        clusterY: -2,
-        dayProgress: 0.25,
-        yearProgress: 0.75,
-      },
+      resolveMusicDebugKnownGoodSeed('town-blueprint-baseline').options,
       1000
     );
 
@@ -849,12 +824,9 @@ describe('music debug', () => {
   }, 10_000);
 
   it('reports stable section-plan rule matches for representative snapshots', () => {
-    const snapshot = createMusicDebugSnapshot({
-      tileKind: 'forest',
-      contextType: 'overworld',
-      clusterX: 4,
-      clusterY: -1,
-    });
+    const snapshot = createMusicDebugSnapshot(
+      resolveMusicDebugKnownGoodSeed('forest-structure-baseline').options
+    );
     const comparisonsById = new Map(
       snapshot.sectionLayerComparisons.map((comparison) => [
         comparison.sectionId,
@@ -879,14 +851,7 @@ describe('music debug', () => {
 
   it('keeps settled blueprint occupancy comparisons stable for the representative town snapshot', () => {
     const snapshot = createMusicDebugSnapshot(
-      {
-        tileKind: 'town',
-        contextType: 'town',
-        clusterX: 3,
-        clusterY: -2,
-        dayProgress: 0.25,
-        yearProgress: 0.75,
-      },
+      resolveMusicDebugKnownGoodSeed('town-blueprint-baseline').options,
       1000
     );
 
