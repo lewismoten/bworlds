@@ -310,6 +310,7 @@ describe('runtime overworld anchors', () => {
 
   it('places lighthouse anchors on coastal land within two tiles of the ocean', () => {
     const sampleTerrainSignals = (x: number, y: number): OverworldSignals => {
+      void y;
       if (x >= 2) {
         return {
           continent: 0.2,
@@ -454,6 +455,7 @@ describe('runtime overworld anchors', () => {
 
   it('places ship anchors on coastal land near open water with nearby land support', () => {
     const sampleTerrainSignals = (x: number, y: number): OverworldSignals => {
+      void y;
       const band = ((x % 4) + 4) % 4;
       if (band === 1) {
         return {

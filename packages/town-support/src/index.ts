@@ -1125,9 +1125,6 @@ export function getTownNpcQuestStates(
 
   const questStates = placements.map((placement) => {
     const npc = npcs.get(placement.npcId);
-    const workplace = npc?.workplaceBuildingId
-      ? buildings.get(npc.workplaceBuildingId)
-      : null;
     const offers = npc
       ? registry.getOffers({
           npcId: npc.id,

@@ -68,7 +68,9 @@ vi.mock('@bworlds/three-support', () => ({
       dispose() {},
     };
   },
-  getSharedCylinderGeometry(_three: unknown, ..._args: number[]) {
+  getSharedCylinderGeometry(three: unknown, ...args: number[]) {
+    void three;
+    void args;
     return {
       attributes: {
         position: {
@@ -78,7 +80,9 @@ vi.mock('@bworlds/three-support', () => ({
       },
     };
   },
-  getSharedConeGeometry(_three: unknown, ..._args: number[]) {
+  getSharedConeGeometry(three: unknown, ...args: number[]) {
+    void three;
+    void args;
     return {
       attributes: {
         position: {
@@ -88,7 +92,9 @@ vi.mock('@bworlds/three-support', () => ({
       },
     };
   },
-  getSharedBoxGeometry(_three: unknown, ..._args: number[]) {
+  getSharedBoxGeometry(three: unknown, ...args: number[]) {
+    void three;
+    void args;
     return {
       attributes: {
         position: {
@@ -98,7 +104,9 @@ vi.mock('@bworlds/three-support', () => ({
       },
     };
   },
-  getSharedSphereGeometry(_three: unknown, ..._args: number[]) {
+  getSharedSphereGeometry(three: unknown, ...args: number[]) {
+    void three;
+    void args;
     return {
       attributes: {
         position: {
@@ -215,7 +223,8 @@ type SkySignatureCycle = Parameters<typeof getSkyConstellationSignature>[0];
 class FakePluginGeometry {
   attributes: Record<string, unknown>;
 
-  constructor(..._args: number[]) {
+  constructor(...args: number[]) {
+    void args;
     this.attributes = {
       position: {
         count: 24,

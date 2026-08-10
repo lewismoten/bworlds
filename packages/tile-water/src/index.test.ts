@@ -164,7 +164,9 @@ describe('tile water', () => {
 });
 
 class FakeGeometry {
-  constructor(..._args: number[]) {}
+  constructor(...args: number[]) {
+    void args;
+  }
 }
 
 class FakeMaterial {

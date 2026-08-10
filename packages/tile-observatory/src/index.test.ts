@@ -12,7 +12,8 @@ vi.mock('@bworlds/three-support', () => {
         snowMaterial: { id: 'snow-material' },
       };
     },
-    getSharedBoxGeometry(_three: unknown, ...args: number[]) {
+    getSharedBoxGeometry(three: unknown, ...args: number[]) {
+      void three;
       const key = args.join(':');
       let cached = boxCache.get(key);
       if (!cached) {
@@ -21,7 +22,8 @@ vi.mock('@bworlds/three-support', () => {
       }
       return cached;
     },
-    getSharedCylinderGeometry(_three: unknown, ...args: number[]) {
+    getSharedCylinderGeometry(three: unknown, ...args: number[]) {
+      void three;
       const key = args.join(':');
       let cached = cylinderCache.get(key);
       if (!cached) {
@@ -30,7 +32,8 @@ vi.mock('@bworlds/three-support', () => {
       }
       return cached;
     },
-    getSharedSphereGeometry(_three: unknown, ...args: number[]) {
+    getSharedSphereGeometry(three: unknown, ...args: number[]) {
+      void three;
       const key = args.join(':');
       let cached = sphereCache.get(key);
       if (!cached) {
@@ -45,7 +48,9 @@ vi.mock('@bworlds/three-support', () => {
 import { createObservatoryTilePlugin } from './index.ts';
 
 class FakeGeometry {
-  constructor(..._args: number[]) {}
+  constructor(...args: number[]) {
+    void args;
+  }
 }
 
 class FakeMaterial {

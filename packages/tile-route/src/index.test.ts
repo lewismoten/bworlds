@@ -14,19 +14,23 @@ vi.mock('@bworlds/three-support', async () => {
       return { colorSpace: '', needsUpdate: false };
     },
     createQuadraticBezierPoints(
-      _three: unknown,
+      three: unknown,
       start: unknown,
       control: unknown,
       end: unknown
     ) {
+      void three;
       return [start, control, end];
     },
     createRibbonMesh(
-      _three: unknown,
-      _points: unknown[],
-      _width: number,
+      three: unknown,
+      points: unknown[],
+      width: number,
       material: unknown
     ) {
+      void three;
+      void points;
+      void width;
       return new FakeMesh(undefined, material as FakeMaterial);
     },
     createTexturedPlaneMesh() {
@@ -36,7 +40,9 @@ vi.mock('@bworlds/three-support', async () => {
 });
 
 class FakeGeometry {
-  constructor(..._args: number[]) {}
+  constructor(...args: number[]) {
+    void args;
+  }
 }
 
 class FakeVector3 {

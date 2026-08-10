@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { createShipTilePlugin } from './index.ts';
 
 class FakeGeometry {
-  constructor(..._args: number[]) {}
+  constructor(...args: number[]) {
+    void args;
+  }
 }
 
 class FakeMaterial {
@@ -58,12 +60,15 @@ class FakePointLight extends FakeNode {
   intensity: number;
 
   constructor(
-    _color?: unknown,
+    color?: unknown,
     intensity = 0,
-    _distance?: number,
-    _decay?: number
+    distance?: number,
+    decay?: number
   ) {
     super();
+    void color;
+    void distance;
+    void decay;
     this.intensity = intensity;
   }
 }

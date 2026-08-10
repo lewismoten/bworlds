@@ -15,7 +15,6 @@ import type {
   Create3DModelContext,
   RuntimePlugin,
   ThreeMaterialLike,
-  ThreeObject3DLike,
 } from '@bworlds/plugin-api';
 
 const OBSERVATORY_DOME_KEY = 'observatoryDome';
@@ -30,9 +29,6 @@ const observatoryMaterialCache = new WeakMap<
   }
 >();
 
-type ObservatoryNodeLike = ThreeObject3DLike & {
-  material?: ThreeMaterialLike | ThreeMaterialLike[];
-};
 export function createObservatoryTilePlugin(): RuntimePlugin {
   return createEnterablePoiTilePlugin({
     pluginName: 'tile-observatory',

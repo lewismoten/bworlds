@@ -2,7 +2,9 @@ import { describe, expect, it, vi } from 'vitest';
 import { createQuarryTilePlugin } from './index.ts';
 
 class FakeGeometry {
-  constructor(..._args: number[]) {}
+  constructor(...args: number[]) {
+    void args;
+  }
 }
 
 class FakeMaterial {
@@ -23,7 +25,8 @@ vi.mock('@bworlds/three-support', () => ({
       mountainMaterial: new FakeMaterial({ color: '#7c6f65' }),
     };
   },
-  createBasicMaterial(_three: unknown, options: Record<string, unknown>) {
+  createBasicMaterial(three: unknown, options: Record<string, unknown>) {
+    void three;
     return new FakeMaterial(options);
   },
 }));
