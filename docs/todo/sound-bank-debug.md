@@ -30,9 +30,9 @@
 
 - [x] Define a common sound bank instrument interface.
 - [x] Give each instrument a stable unique ID.
-- [ ] Store the General MIDI program number.
-- [ ] Store the General MIDI instrument name.
-- [ ] Store the General MIDI family name.
+- [x] Store the General MIDI program number.
+- [x] Store the General MIDI instrument name.
+- [x] Store the General MIDI family name.
 - [x] Store supported musical roles.
 - [x] Store the recommended MIDI note range.
 - [x] Store the preferred MIDI note range.

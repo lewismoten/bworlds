@@ -37,6 +37,7 @@ import {
   resolveMusicEqStages,
   resolveMusicStereoPan,
 } from './procedural-music-mix.ts';
+import { resolveGeneralMidiMetadataForRole } from './general-midi.ts';
 import { applyGentleProceduralMusicCompression } from './procedural-music-dynamics.ts';
 import { normalizeProceduralMusicLoudness } from './procedural-music-loudness.ts';
 import { resolveProceduralMeterAccent } from './procedural-music-meter.ts';
@@ -84,6 +85,9 @@ export type SoundBankInstrumentNoteRange = {
 export type SoundBankInstrumentDefinition = {
   id: string;
   role: ProceduralInstrumentRole;
+  generalMidiProgramNumber: number | null;
+  generalMidiInstrumentName: string;
+  generalMidiFamilyName: string;
   supportedRoles: readonly ProceduralInstrumentRole[];
   recommendedMidiRange: SoundBankInstrumentNoteRange;
   preferredMidiRange: SoundBankInstrumentNoteRange;
@@ -2442,9 +2446,13 @@ function createSoundBankInstrumentDefinition(
   clusterX: number,
   clusterY: number
 ): SoundBankInstrumentDefinition {
+  const generalMidiMetadata = resolveGeneralMidiMetadataForRole(role);
   return {
     id: `${theme.id}:${role}:${clusterX}:${clusterY}`,
     role,
+    generalMidiProgramNumber: generalMidiMetadata.programNumber,
+    generalMidiInstrumentName: generalMidiMetadata.instrumentName,
+    generalMidiFamilyName: generalMidiMetadata.familyName,
     supportedRoles: [role],
     recommendedMidiRange: resolveSoundBankRecommendedMidiRange(role),
     preferredMidiRange: resolveSoundBankPreferredMidiRange(role),

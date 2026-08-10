@@ -277,6 +277,20 @@ describe('procedural music', () => {
       minMidiNote: 60,
       maxMidiNote: 84,
     });
+    expect(bank.instruments.lead.generalMidiProgramNumber).toBe(80);
+    expect(bank.instruments.lead.generalMidiInstrumentName).toBe(
+      'Lead 1 (square)'
+    );
+    expect(bank.instruments.lead.generalMidiFamilyName).toBe('Synth Lead');
+    expect(bank.instruments.bass.generalMidiProgramNumber).toBe(33);
+    expect(bank.instruments.bass.generalMidiFamilyName).toBe('Bass');
+    expect(bank.instruments.percussion.generalMidiProgramNumber).toBeNull();
+    expect(bank.instruments.percussion.generalMidiInstrumentName).toBe(
+      'Standard Drum Kit'
+    );
+    expect(bank.instruments.percussion.generalMidiFamilyName).toBe(
+      'Percussion Kit'
+    );
     expect(bank.instruments.lead.preferredMidiRange).toEqual({
       minMidiNote: 64,
       maxMidiNote: 79,

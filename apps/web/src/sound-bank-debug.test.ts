@@ -37,6 +37,7 @@ describe('sound bank debug page', () => {
     const markup = buildSoundBankDebugMarkup(snapshot, {
       audioStatus: 'Audio idle',
     });
+    const normalizedMarkup = markup.replace(/\s+/g, ' ');
 
     expect(markup).toContain('<h1>Sound Bank Debug</h1>');
     expect(markup).toContain('/debug/');
@@ -60,6 +61,10 @@ describe('sound bank debug page', () => {
     expect(markup).toContain('Play harmony');
     expect(markup).toContain('Play bass');
     expect(markup).toContain('Play percussion');
+    expect(normalizedMarkup).toContain('GM family: Synth Lead');
+    expect(normalizedMarkup).toContain('GM name: Lead 1 (square)');
+    expect(normalizedMarkup).toContain('GM program: 80');
+    expect(normalizedMarkup).toContain('GM program: Percussion kit');
   });
 
   it('renders the selected layout mode in the shell and toggle state', () => {

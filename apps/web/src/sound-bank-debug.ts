@@ -113,6 +113,16 @@ export function buildSoundBankDebugMarkup(
           <p class="sound-bank-debug-role-label">${role}</p>
           <h3>${formatLabel(instrument.family)}</h3>
           <p>${instrument.id}</p>
+          <p>GM family: ${instrument.generalMidiFamilyName}</p>
+          <p>GM name: ${instrument.generalMidiInstrumentName}</p>
+          <p>
+            GM program:
+            ${
+              instrument.generalMidiProgramNumber === null
+                ? 'Percussion kit'
+                : instrument.generalMidiProgramNumber
+            }
+          </p>
         </article>
       `
     )
