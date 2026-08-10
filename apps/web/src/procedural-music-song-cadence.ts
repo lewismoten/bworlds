@@ -3,14 +3,11 @@ import {
   type ProceduralMusicNote,
 } from './procedural-music.ts';
 import { resolveProceduralMidiNoteFrequency } from './procedural-music-scale.ts';
-
-type SongCadenceKind = 'question' | 'answer' | 'weak';
-type SongCadenceSection = {
-  id: string;
-  startOffsetMs: number;
-  durationMs: number;
-  measureCount: number;
-};
+import {
+  collectSongCadencePoints,
+  type SongCadenceKind,
+  type SongCadenceSection,
+} from './procedural-music-song-cadence-plan.ts';
 
 export function resolveSongFinalCadence(options: {
   notes: readonly ProceduralMusicNote[];
@@ -28,55 +25,6 @@ export function resolveSongFinalCadence(options: {
   }
 
   return resolvedNotes;
-}
-
-function collectSongCadencePoints(
-  sections: readonly SongCadenceSection[]
-): Array<{
-  kind: SongCadenceKind;
-  section: SongCadenceSection;
-  boundaryOffsetMs: number;
-  windowStartOffsetMs: number;
-  windowEndOffsetMs: number;
-}> {
-  const points: Array<{
-    kind: SongCadenceKind;
-    section: SongCadenceSection;
-    boundaryOffsetMs: number;
-    windowStartOffsetMs: number;
-    windowEndOffsetMs: number;
-  }> = [];
-
-  for (let index = 0; index < sections.length; index += 1) {
-    const section = sections[index]!;
-    const measureDurationMs =
-      section.durationMs / Math.max(1, section.measureCount);
-    const cadenceWindowMs = Math.max(320, measureDurationMs * 1.5);
-    const sectionEndOffsetMs = section.startOffsetMs + section.durationMs;
-    const isFinalSection =
-      index === sections.length - 1 || section.id === 'outro';
-
-    if (section.measureCount >= 16) {
-      const midpointOffsetMs = section.startOffsetMs + section.durationMs / 2;
-      points.push({
-        kind: 'question',
-        section,
-        boundaryOffsetMs: midpointOffsetMs,
-        windowStartOffsetMs: midpointOffsetMs - cadenceWindowMs,
-        windowEndOffsetMs: midpointOffsetMs,
-      });
-    }
-
-    points.push({
-      kind: isFinalSection ? 'answer' : 'weak',
-      section,
-      boundaryOffsetMs: sectionEndOffsetMs,
-      windowStartOffsetMs: sectionEndOffsetMs - cadenceWindowMs,
-      windowEndOffsetMs: sectionEndOffsetMs,
-    });
-  }
-
-  return points;
 }
 
 function applySongCadenceAtPoint(
@@ -127,6 +75,15 @@ function applySongCadenceAtPoint(
       finalSection: options.section.id === 'outro',
     });
   }
+
+  if (options.kind === 'answer') {
+    alignAnswerCadenceHarmony(notes, {
+      section: options.section,
+      songStartMs: options.songStartMs,
+      startOffsetMs: options.windowStartOffsetMs,
+      endOffsetMs: options.windowEndOffsetMs,
+    });
+  }
 }
 
 function resolveCadenceLeadNote(options: {
@@ -156,18 +113,21 @@ function resolveCadenceLeadNote(options: {
           currentMidiNote,
           previousMidiNote,
         });
-  const startMs = Math.min(options.note.startMs, options.boundaryMs - 1);
+  const startMs = Math.max(
+    0,
+    Math.min(
+      options.note.startMs -
+        (options.kind === 'answer' || options.kind === 'loop' ? 120 : 0),
+      options.boundaryMs - 1
+    )
+  );
   const maxDurationMs = Math.max(1, options.boundaryMs - startMs);
 
   return {
     ...options.note,
     frequency: resolveProceduralMidiNoteFrequency(cadenceMidiNote),
     durationMs: Math.min(
-      options.kind === 'question'
-        ? Math.max(180, Math.round(options.note.durationMs * 0.92))
-        : options.kind === 'answer'
-          ? Math.max(options.note.durationMs, 420)
-          : Math.max(options.note.durationMs, 280),
+      resolveCadenceMinimumDurationMs(options.kind, options.note.durationMs),
       maxDurationMs
     ),
     startMs,
@@ -214,7 +174,7 @@ function resolveNearestCadenceDegreeMidi(options: {
   currentMidiNote: number;
   previousMidiNote: number | null;
 }): number {
-  const candidateDegreeIndices = options.kind === 'question' ? [4, 1] : [2, 4];
+  const candidateDegreeIndices = resolveCadenceLeadDegreeIndices(options.kind);
   const candidates = candidateDegreeIndices.flatMap((degreeIndex) =>
     resolveCadenceMidiCandidates({
       rootMidiNote: options.rootMidiNote,
@@ -283,41 +243,100 @@ function resolveCadenceBassNote(options: {
       ? null
       : resolveNoteMidi(options.previousBassNote.frequency);
   const targetMidi =
-    options.kind === 'question'
-      ? resolveNearestCadenceDegreeMidi({
-          kind: 'question',
+    options.kind === 'answer'
+      ? resolveNearestTonicMidi({
+          rootMidiNote: theme.rootMidiNote - 12,
+          currentMidiNote,
+          previousMidiNote,
+        })
+      : resolveNearestCadenceDegreeMidi({
+          kind: options.kind,
           rootMidiNote: theme.rootMidiNote - 12,
           scale: theme.scale,
           currentMidiNote,
           previousMidiNote,
-        })
-      : options.kind === 'weak'
-        ? resolveNearestCadenceDegreeMidi({
-            kind: 'weak',
-            rootMidiNote: theme.rootMidiNote - 12,
-            scale: theme.scale,
-            currentMidiNote,
-            previousMidiNote,
-          })
-        : resolveNearestTonicMidi({
-            rootMidiNote: theme.rootMidiNote - 12,
-            currentMidiNote,
-            previousMidiNote,
-          });
-  const startMs = Math.min(options.note.startMs, options.boundaryMs - 1);
+        });
+  const startMs = Math.max(
+    0,
+    Math.min(
+      options.note.startMs -
+        (options.kind === 'answer' || options.kind === 'loop' ? 120 : 0),
+      options.boundaryMs - 1
+    )
+  );
   const maxDurationMs = Math.max(1, options.boundaryMs - startMs);
 
   return {
     ...options.note,
     frequency: resolveProceduralMidiNoteFrequency(targetMidi),
     durationMs: Math.min(
-      options.kind === 'answer'
-        ? Math.max(options.note.durationMs, 460)
-        : Math.max(options.note.durationMs, 260),
+      resolveCadenceMinimumDurationMs(options.kind, options.note.durationMs),
       maxDurationMs
     ),
     startMs,
   };
+}
+
+function resolveCadenceLeadDegreeIndices(
+  kind: Exclude<SongCadenceKind, 'answer'>
+): number[] {
+  if (kind === 'weak') {
+    return [2, 4];
+  }
+  return [1, 4];
+}
+
+function resolveCadenceMinimumDurationMs(
+  kind: SongCadenceKind,
+  currentDurationMs: number
+): number {
+  if (kind === 'question') {
+    return Math.max(180, Math.round(currentDurationMs * 0.92));
+  }
+  if (kind === 'weak') {
+    return Math.max(currentDurationMs, 280);
+  }
+  if (kind === 'loop') {
+    return Math.max(currentDurationMs, 520);
+  }
+  return Math.max(currentDurationMs, 640);
+}
+
+function alignAnswerCadenceHarmony(
+  notes: ProceduralMusicNote[],
+  options: {
+    section: SongCadenceSection;
+    songStartMs: number;
+    startOffsetMs: number;
+    endOffsetMs: number;
+  }
+): void {
+  const harmonyIndices = findFinalWindowRoleNoteIndices({
+    notes,
+    role: 'harmony',
+    songStartMs: options.songStartMs,
+    startOffsetMs: options.startOffsetMs,
+    endOffsetMs: options.endOffsetMs,
+    limit: 3,
+  });
+
+  for (let order = 0; order < harmonyIndices.length; order += 1) {
+    const harmonyIndex = harmonyIndices[order]!;
+    const note = notes[harmonyIndex]!;
+    const theme = resolveMusicThemeById(note.themeId);
+    const currentMidiNote = resolveNoteMidi(note.frequency);
+    const targetDegreeIndex = ([0, 2, 4][order] ?? 0) % theme.scale.length;
+    const targetMidiNote = resolveNearestCadenceDegreeMidiByIndex({
+      rootMidiNote: theme.rootMidiNote,
+      scale: theme.scale,
+      degreeIndex: targetDegreeIndex,
+      currentMidiNote,
+    });
+    notes[harmonyIndex] = {
+      ...note,
+      frequency: resolveProceduralMidiNoteFrequency(targetMidiNote),
+    };
+  }
 }
 
 function findFinalWindowRoleNoteIndex(options: {
@@ -327,8 +346,25 @@ function findFinalWindowRoleNoteIndex(options: {
   startOffsetMs: number;
   endOffsetMs: number;
 }): number | null {
+  return (
+    findFinalWindowRoleNoteIndices({
+      ...options,
+      limit: 1,
+    })[0] ?? null
+  );
+}
+
+function findFinalWindowRoleNoteIndices(options: {
+  notes: readonly ProceduralMusicNote[];
+  role: ProceduralMusicNote['role'];
+  songStartMs: number;
+  startOffsetMs: number;
+  endOffsetMs: number;
+  limit: number;
+}): number[] {
   const sectionStartMs = options.songStartMs + options.startOffsetMs;
   const sectionEndMs = options.songStartMs + options.endOffsetMs;
+  const indices: number[] = [];
 
   for (let index = options.notes.length - 1; index >= 0; index -= 1) {
     const note = options.notes[index];
@@ -337,11 +373,14 @@ function findFinalWindowRoleNoteIndex(options: {
       note.startMs >= sectionStartMs &&
       note.startMs < sectionEndMs
     ) {
-      return index;
+      indices.push(index);
+      if (indices.length >= options.limit) {
+        break;
+      }
     }
   }
 
-  return null;
+  return indices.reverse();
 }
 
 function findPreviousRoleNote(
@@ -361,6 +400,26 @@ function findPreviousRoleNote(
 
 function resolveNoteMidi(frequency: number): number {
   return Math.round(69 + 12 * Math.log2(Math.max(frequency, 1) / 440));
+}
+
+function resolveNearestCadenceDegreeMidiByIndex(options: {
+  rootMidiNote: number;
+  scale: readonly number[];
+  degreeIndex: number;
+  currentMidiNote: number;
+}): number {
+  return (
+    resolveCadenceMidiCandidates({
+      rootMidiNote: options.rootMidiNote,
+      scale: options.scale,
+      degreeIndex: options.degreeIndex,
+      currentMidiNote: options.currentMidiNote,
+    }).sort(
+      (left, right) =>
+        Math.abs(left - options.currentMidiNote) -
+        Math.abs(right - options.currentMidiNote)
+    )[0] ?? options.currentMidiNote
+  );
 }
 
 function mod(value: number, divisor: number): number {

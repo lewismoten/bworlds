@@ -101,6 +101,11 @@ import {
   createMusicDebugMidiExportAudit,
   type MusicDebugMidiAudit,
 } from './music-debug-midi-audit.ts';
+import {
+  validateMusicDebugCadences,
+  type MusicDebugCadenceDetection,
+  type MusicDebugCadenceValidation,
+} from './music-debug-cadence-validation.ts';
 
 export type MusicDebugTileKind =
   | 'plains'
@@ -178,6 +183,8 @@ export type MusicDebugSnapshot = {
   motifValidation: MusicDebugMotifValidation;
   harmonyChordDetections: MusicDebugHarmonyChordDetection[];
   bassProgressionDetections: MusicDebugBassProgressionDetection[];
+  cadenceDetections: MusicDebugCadenceDetection[];
+  cadenceValidation: MusicDebugCadenceValidation;
   midiAudit: MusicDebugMidiAudit;
   midiExportValidation: MusicDebugPitchValidation;
   timingValidation: MusicDebugTimingValidation;
@@ -456,6 +463,13 @@ export function createMusicDebugSnapshot(
     rootMidiNote: theme.rootMidiNote,
     chordTimeline,
   });
+  const cadenceValidation = validateMusicDebugCadences({
+    notes: song.notes,
+    sections: song.sections,
+    songStartMs: song.startMs,
+    rootMidiNote: theme.rootMidiNote,
+    scale: theme.scale,
+  });
   const sectionLayerActivity = createMusicDebugSectionLayerActivity({
     notes: song.notes,
     sections: song.sections,
@@ -512,6 +526,8 @@ export function createMusicDebugSnapshot(
     motifValidation,
     harmonyChordDetections,
     bassProgressionDetections,
+    cadenceDetections: cadenceValidation.detections,
+    cadenceValidation,
     midiExportValidation,
     timingValidation,
   };
@@ -836,6 +852,9 @@ export function buildMusicDebugSummaryMarkup(
       <span>Bass Progression ${formatMusicDebugBassProgressionDetections(snapshot.bassProgressionDetections)}</span>
     </div>
     <div class="music-debug-role-counts">
+      <span>Cadence Check ${formatMusicDebugCadenceValidationSummary(snapshot.cadenceValidation)}</span>
+    </div>
+    <div class="music-debug-role-counts">
       <span>MIDI Audit ${formatMusicDebugMidiAuditSummary(snapshot.midiAudit)}</span>
     </div>
     <div class="music-debug-role-counts">
@@ -909,6 +928,22 @@ function formatMusicDebugBassProgressionDetections(
       const planned = detection.plannedRootLabels.join(' > ') || 'unplanned';
       const status = detection.followsPlannedProgression ? 'ok' : 'drift';
       return `${detection.sectionLabel}: ${detected} (${status} vs ${planned})`;
+    })
+    .join(' | ');
+}
+
+function formatMusicDebugCadenceValidationSummary(
+  validation: MusicDebugCadenceValidation
+): string {
+  if (!validation.isValidForMidiExport) {
+    return validation.messages.join(' | ');
+  }
+  return validation.detections
+    .map((detection) => {
+      const lead = detection.leadPitchLabel ?? 'missing';
+      const bass = detection.bassPitchLabel ?? 'missing';
+      const harmony = detection.harmonyPitchLabels.join('-') || 'open';
+      return `${detection.sectionLabel} ${detection.kind} L${lead} B${bass} @ ${harmony}`;
     })
     .join(' | ');
 }

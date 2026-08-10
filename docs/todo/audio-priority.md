@@ -211,10 +211,10 @@ added directly as semitones instead of moving through the selected scale.
 - [x] Give the question phrase a clearly unstable ending.
 - [x] Give the answer phrase a clear tonic resolution.
 - [x] Add weaker cadences at interior section boundaries.
-- [ ] Add a strong cadence before the loop point.
-- [ ] Make the Outro cadence resolve rather than drift.
-- [ ] Coordinate melody and bass during each cadence.
-- [ ] Validate cadence pitches against active harmony.
+- [x] Add a strong cadence before the loop point.
+- [x] Make the Outro cadence resolve rather than drift.
+- [x] Coordinate melody and bass during each cadence.
+- [x] Validate cadence pitches against active harmony.
 
 ## Rhythm and Spacing
 

@@ -145,6 +145,62 @@ describe('procedural music song cadence', () => {
     expect(introLead.durationMs).toBeGreaterThanOrEqual(notes[0]!.durationMs);
   });
 
+  it('adds a dominant-like loop cadence before the outro begins', () => {
+    const sections: ProceduralMusicSongSection[] = [
+      {
+        id: 'return',
+        label: 'Return',
+        startOffsetMs: 0,
+        durationMs: 4_000,
+        loopEligible: true,
+        measureCount: 8,
+        startMeasure: 1,
+        endMeasure: 8,
+        startTick: 0,
+        endTick: 960,
+      },
+      {
+        id: 'outro',
+        label: 'Outro',
+        startOffsetMs: 4_000,
+        durationMs: 4_000,
+        loopEligible: false,
+        measureCount: 8,
+        startMeasure: 9,
+        endMeasure: 16,
+        startTick: 960,
+        endTick: 1_920,
+      },
+    ];
+    const notes = [
+      createLeadNote(3_620, 261.6255653005986),
+      createBassNote(3_680, 130.8127826502993),
+      createLeadNote(7_600, 293.6647679174076),
+      createBassNote(7_650, 146.8323839587038),
+    ];
+
+    const resolved = resolveSongFinalCadence({
+      notes,
+      sections,
+      songStartMs: 0,
+    });
+    const loopLead = resolved[0]!;
+    const loopBass = resolved[1]!;
+    const theme = resolveMusicThemeById(loopLead.themeId);
+    const leadPitchClass =
+      ((Math.round(69 + 12 * Math.log2(loopLead.frequency / 440)) % 12) + 12) %
+      12;
+    const bassPitchClass =
+      ((Math.round(69 + 12 * Math.log2(loopBass.frequency / 440)) % 12) + 12) %
+      12;
+    const dominantPitchClass = (theme.rootMidiNote + theme.scale[4]!) % 12;
+
+    expect(loopLead.startMs).toBeLessThan(notes[0]!.startMs);
+    expect(loopLead.durationMs).toBeGreaterThan(notes[0]!.durationMs);
+    expect(leadPitchClass).not.toBe(theme.rootMidiNote % 12);
+    expect(bassPitchClass).toBe(dominantPitchClass);
+  });
+
   it('resolves the final outro lead note to the tonic pitch class', () => {
     const sections: ProceduralMusicSongSection[] = [
       {
@@ -198,7 +254,7 @@ describe('procedural music song cadence', () => {
 
     expect(finalPitchClass).toBe(theme.rootMidiNote % 12);
     expect(finalBassPitchClass).toBe((theme.rootMidiNote - 12) % 12);
-    expect(finalLead.startMs).toBe(notes[4]!.startMs);
+    expect(finalLead.startMs).toBeLessThan(notes[4]!.startMs);
     expect(finalLead.durationMs).toBeGreaterThanOrEqual(notes[4]!.durationMs);
   });
 });
