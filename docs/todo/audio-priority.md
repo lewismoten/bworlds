@@ -77,7 +77,7 @@
 - [x] Keep ambient percussion quieter than pitched tracks.
 - [x] Reduce percussion density during calm sections.
 - [x] Make drum velocity follow the section energy curve.
-- [ ] Prevent identical drum hits from repeating mechanically.
+- [x] Prevent identical drum hits from repeating mechanically.
 
 ## Melody Shape
 

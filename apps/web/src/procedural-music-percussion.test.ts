@@ -713,6 +713,75 @@ describe('procedural music percussion', () => {
     );
   });
 
+  it('rotates drum voices across repeated measures so repeated hits are not mechanically identical', () => {
+    const townMeasureOne = createProceduralPercussionNotes({
+      themeId: 'town-square',
+      stepIndex: 4,
+      phraseStep: 4,
+      cadence: 'neutral',
+      startMs: 0,
+      stepDurationMs: 320,
+      rootMidiNote: 59,
+      baseInstrumentId: 'town-square:percussion:3:-2',
+      baseVolume: 0.02,
+      baseAttackMs: 12,
+      baseReleaseMs: 60,
+      baseDetuneCents: 4,
+      baseHarmonicGain: 0.12,
+      basePulseRate: 1,
+      brightness: 0.92,
+      clusterX: 3,
+      clusterY: -2,
+    });
+    const townMeasureThree = createProceduralPercussionNotes({
+      themeId: 'town-square',
+      stepIndex: 12,
+      phraseStep: 12,
+      cadence: 'neutral',
+      startMs: 0,
+      stepDurationMs: 320,
+      rootMidiNote: 59,
+      baseInstrumentId: 'town-square:percussion:3:-2',
+      baseVolume: 0.02,
+      baseAttackMs: 12,
+      baseReleaseMs: 60,
+      baseDetuneCents: 4,
+      baseHarmonicGain: 0.12,
+      basePulseRate: 1,
+      brightness: 0.92,
+      clusterX: 3,
+      clusterY: -2,
+    });
+
+    expect(
+      townMeasureOne.map((note) =>
+        resolvePercussionGrooveRoleFromInstrumentId(note.instrumentId)
+      )
+    ).toEqual(
+      townMeasureThree.map((note) =>
+        resolvePercussionGrooveRoleFromInstrumentId(note.instrumentId)
+      )
+    );
+    expect(
+      townMeasureOne.map((note) =>
+        resolvePercussionFamilyFromInstrumentId(note.instrumentId)
+      )
+    ).toEqual(
+      townMeasureThree.map((note) =>
+        resolvePercussionFamilyFromInstrumentId(note.instrumentId)
+      )
+    );
+    expect(
+      townMeasureOne.map((note) =>
+        resolvePercussionVoiceIdFromInstrumentId(note.instrumentId)
+      )
+    ).not.toEqual(
+      townMeasureThree.map((note) =>
+        resolvePercussionVoiceIdFromInstrumentId(note.instrumentId)
+      )
+    );
+  });
+
   it('varies town and generic groove patterns once across the phrase halves', () => {
     const townFirstHalf = createProceduralPercussionNotes({
       themeId: 'town-square',

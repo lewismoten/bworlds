@@ -39,6 +39,9 @@ export type ProceduralPercussionGrooveRole =
 
 const PERCUSSION_PATTERN_SEED = registerHashLabel('music-percussion-pattern');
 const PERCUSSION_TIMBRE_SEED = registerHashLabel('music-percussion-timbre');
+const PERCUSSION_VOICE_VARIATION_SEED = registerHashLabel(
+  'music-percussion-voice-variation'
+);
 const PROCEDURAL_PERCUSSION_MEASURE_CYCLE_LENGTH = 2;
 
 const FOREST_PULSE_PATTERNS: readonly ProceduralPercussionPattern[] = [
@@ -225,9 +228,17 @@ export function createProceduralPercussionNotes(options: {
       grooveRole: hit.grooveRole,
       offsetRatio: hit.offsetRatio,
     });
+    const voiceCycleOffset = resolvePercussionVoiceCycleOffset({
+      family,
+      grooveRole: hit.grooveRole,
+      stepIndex: options.stepIndex,
+      phraseStep: options.phraseStep,
+      clusterX: options.clusterX,
+      clusterY: options.clusterY,
+    });
     const voice = resolvePercussionVoice({
       family,
-      noteIndex: index,
+      noteIndex: index + voiceCycleOffset,
     });
     const harmonicSignal = hash2DWithSeed(
       PERCUSSION_TIMBRE_SEED,
@@ -421,6 +432,28 @@ function resolvePercussionDurationScale(themeId: MusicRegionThemeId): number {
     default:
       return 0.72;
   }
+}
+
+function resolvePercussionVoiceCycleOffset(options: {
+  family: PercussionFamily;
+  grooveRole: ProceduralPercussionGrooveRole;
+  stepIndex: number;
+  phraseStep: number;
+  clusterX: number;
+  clusterY: number;
+}): number {
+  const cycleIndex = Math.floor(
+    options.stepIndex / PROCEDURAL_PERCUSSION_MEASURE_CYCLE_LENGTH
+  );
+  const signal = hash2DWithSeed(
+    PERCUSSION_VOICE_VARIATION_SEED,
+    options.clusterX +
+      cycleIndex * 17 +
+      options.family.length * 29 +
+      options.grooveRole.length * 37,
+    options.clusterY + options.phraseStep * 13
+  );
+  return cycleIndex + Math.floor(signal * 3);
 }
 
 function resolveProceduralPercussionPattern(options: {
