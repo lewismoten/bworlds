@@ -9,7 +9,6 @@ import {
   getSharedBoxGeometry,
   getSharedConeGeometry,
   getSharedCylinderGeometry,
-  getOrCreatePaintedCanvasTexture,
   getOrCreatePaintedCanvasTextureTyped,
   getSharedPlaneGeometry,
   SHARED_HOST_GEOMETRY_CACHE_MAX_ENTRIES,

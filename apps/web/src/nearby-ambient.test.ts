@@ -96,6 +96,7 @@ describe('nearby ambient', () => {
       state: {
         player: { x: 2.25, y: -3 },
         getCurrentTile(x: number, y: number) {
+          void y;
           if (x <= 2) {
             return { kind: 'forest' };
           }

@@ -135,8 +135,11 @@ describe('runtime overworld anchors', () => {
   });
 
   it('only places dungeon anchors inside dense forest-like terrain clusters', () => {
-    const sampleTerrainSignals = (_x: number, _y: number): OverworldSignals =>
-      createDenseForestSignals();
+    const sampleTerrainSignals = (x: number, y: number): OverworldSignals => {
+      void x;
+      void y;
+      return createDenseForestSignals();
+    };
     let anchors: OverworldAnchorSet = {
       townAnchors: [],
       bridgeAnchors: [],

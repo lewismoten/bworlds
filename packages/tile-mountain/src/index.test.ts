@@ -11,7 +11,9 @@ vi.mock('@bworlds/three-support', () => ({
 }));
 
 class FakeGeometry {
-  constructor(..._args: number[]) {}
+  constructor(...args: number[]) {
+    void args;
+  }
 }
 
 class FakeMaterial {

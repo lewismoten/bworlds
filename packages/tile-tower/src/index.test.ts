@@ -120,16 +120,24 @@ function createFakeThree() {
     constructor(public options: unknown) {}
   }
   class CylinderGeometry {
-    constructor(..._args: unknown[]) {}
+    constructor(...args: unknown[]) {
+      void args;
+    }
   }
   class ConeGeometry {
-    constructor(..._args: unknown[]) {}
+    constructor(...args: unknown[]) {
+      void args;
+    }
   }
   class BoxGeometry {
-    constructor(..._args: unknown[]) {}
+    constructor(...args: unknown[]) {
+      void args;
+    }
   }
   class SphereGeometry {
-    constructor(..._args: unknown[]) {}
+    constructor(...args: unknown[]) {
+      void args;
+    }
   }
 
   return {

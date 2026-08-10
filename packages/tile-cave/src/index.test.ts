@@ -327,22 +327,34 @@ function createFakeThree() {
     constructor(public canvas: unknown) {}
   }
   class SphereGeometry {
-    constructor(..._args: unknown[]) {}
+    constructor(...args: unknown[]) {
+      void args;
+    }
   }
   class CircleGeometry {
-    constructor(..._args: unknown[]) {}
+    constructor(...args: unknown[]) {
+      void args;
+    }
   }
   class PlaneGeometry {
-    constructor(..._args: unknown[]) {}
+    constructor(...args: unknown[]) {
+      void args;
+    }
   }
   class TorusGeometry {
-    constructor(..._args: unknown[]) {}
+    constructor(...args: unknown[]) {
+      void args;
+    }
   }
   class CylinderGeometry {
-    constructor(..._args: unknown[]) {}
+    constructor(...args: unknown[]) {
+      void args;
+    }
   }
   class ConeGeometry {
-    constructor(..._args: unknown[]) {}
+    constructor(...args: unknown[]) {
+      void args;
+    }
   }
 
   return {

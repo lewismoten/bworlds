@@ -44,7 +44,9 @@ function createWindEnvironment(windStrength: number) {
 }
 
 class FakeGeometry {
-  constructor(..._args: number[]) {}
+  constructor(...args: number[]) {
+    void args;
+  }
 }
 
 class FakeMaterial {
