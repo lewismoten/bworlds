@@ -10,14 +10,19 @@ describe('music debug percussion validation', () => {
         createSection('intro', 'Intro', 0, 4_000, 4),
         createSection('a', 'Section A', 4_000, 8_000, 8),
         createSection('variation', 'Variation', 12_000, 8_000, 8),
-        createSection('outro', 'Outro', 20_000, 4_000, 4),
+        createSection('return', 'Return', 20_000, 8_000, 8),
+        createSection('outro', 'Outro', 28_000, 4_000, 4),
       ],
       notes: [
         createPercussionNote('kick-36', 5_000, 200),
         createPercussionNote('snare-38', 5_500, 160),
+        createPercussionNote('shaker-69', 5_750, 160),
         createPercussionNote('kick-35', 6_000, 200),
         createPercussionNote('snare-37', 6_500, 160),
         createPercussionNote('kick-36', 13_000, 120),
+        createPercussionNote('kick-36', 21_000, 180),
+        createPercussionNote('snare-38', 21_500, 160),
+        createPercussionNote('shaker-69', 21_750, 140),
       ],
     });
 
@@ -32,16 +37,18 @@ describe('music debug percussion validation', () => {
         createSection('intro', 'Intro', 0, 4_000, 4),
         createSection('a', 'Section A', 4_000, 8_000, 8),
         createSection('variation', 'Variation', 12_000, 8_000, 8),
-        createSection('outro', 'Outro', 20_000, 4_000, 4),
+        createSection('return', 'Return', 20_000, 8_000, 8),
+        createSection('outro', 'Outro', 28_000, 4_000, 4),
       ],
       notes: [
         createPercussionNote('kick-36', 1_200, 160),
         createPercussionNote('kick-36', 5_000, 120),
         createPercussionNote('snare-38', 5_250, 120),
+        createPercussionNote('shaker-69', 5_500, 120),
         createPercussionNote('kick-36', 13_000, 320),
         createPercussionNote('snare-38', 13_500, 320),
         createPercussionNote('shaker-69', 14_000, 320),
-        createPercussionNote('kick-36', 21_200, 160),
+        createPercussionNote('kick-36', 29_200, 160),
       ],
     });
 
@@ -64,7 +71,8 @@ describe('music debug percussion validation', () => {
         createSection('intro', 'Intro', 0, 4_000, 4),
         createSection('a', 'Section A', 4_000, 8_000, 8),
         createSection('variation', 'Variation', 12_000, 8_000, 8),
-        createSection('outro', 'Outro', 20_000, 4_000, 4),
+        createSection('return', 'Return', 20_000, 8_000, 8),
+        createSection('outro', 'Outro', 28_000, 4_000, 4),
       ],
       notes: [
         createPercussionNote('kick-36', 5_000, 180),
@@ -79,10 +87,38 @@ describe('music debug percussion validation', () => {
       'Percussion should use more than one drum voice.'
     );
   });
+
+  it('rejects full-groove sections that do not use at least three percussion roles', () => {
+    const validation = validateMusicDebugPercussion({
+      songStartMs: 1_000,
+      sections: [
+        createSection('intro', 'Intro', 0, 4_000, 4),
+        createSection('a', 'Section A', 4_000, 8_000, 8),
+        createSection('variation', 'Variation', 12_000, 8_000, 8),
+        createSection('return', 'Return', 20_000, 8_000, 8),
+        createSection('outro', 'Outro', 28_000, 4_000, 4),
+      ],
+      notes: [
+        createPercussionNote('kick-36', 5_000, 180),
+        createPercussionNote('snare-38', 5_500, 180),
+        createPercussionNote('kick-35', 6_000, 180),
+        createPercussionNote('kick-36', 21_000, 180),
+        createPercussionNote('snare-38', 21_500, 180),
+      ],
+    });
+
+    expect(validation.isValidForMidiExport).toBe(false);
+    expect(validation.messages).toContain(
+      'Section A should use at least three percussion roles.'
+    );
+    expect(validation.messages).toContain(
+      'Return should use at least three percussion roles.'
+    );
+  });
 });
 
 function createSection(
-  id: 'intro' | 'a' | 'variation' | 'outro',
+  id: 'intro' | 'a' | 'variation' | 'return' | 'outro',
   label: string,
   startOffsetMs: number,
   durationMs: number,

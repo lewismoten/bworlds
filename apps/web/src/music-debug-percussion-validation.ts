@@ -1,6 +1,9 @@
 import type { ProceduralMusicNote } from './procedural-music.ts';
 import type { ProceduralMusicSongSection } from './procedural-music-song.ts';
-import { resolvePercussionVoiceIdFromInstrumentId } from './procedural-music-percussion.ts';
+import {
+  resolvePercussionFamilyFromInstrumentId,
+  resolvePercussionVoiceIdFromInstrumentId,
+} from './procedural-music-percussion.ts';
 
 export type MusicDebugPercussionValidation = {
   isValidForMidiExport: boolean;
@@ -15,7 +18,11 @@ export function validateMusicDebugPercussion(options: {
   const messages: string[] = [];
   const activityBySection = new Map<
     string,
-    { noteCount: number; soundingPercentage: number }
+    {
+      noteCount: number;
+      soundingPercentage: number;
+      families: Set<string>;
+    }
   >();
   const percussionVoiceIds = new Set<string>();
 
@@ -24,6 +31,7 @@ export function validateMusicDebugPercussion(options: {
     const sectionEndMs = sectionStartMs + section.durationMs;
     let noteCount = 0;
     let cumulativeDurationMs = 0;
+    const families = new Set<string>();
 
     for (const note of options.notes) {
       if (note.role !== 'percussion') {
@@ -38,6 +46,10 @@ export function validateMusicDebugPercussion(options: {
       if (note.startMs < sectionStartMs || note.startMs >= sectionEndMs) {
         continue;
       }
+      const family = resolvePercussionFamilyFromInstrumentId(note.instrumentId);
+      if (family) {
+        families.add(family);
+      }
       noteCount += 1;
       cumulativeDurationMs += Math.max(
         0,
@@ -47,6 +59,7 @@ export function validateMusicDebugPercussion(options: {
 
     activityBySection.set(section.id, {
       noteCount,
+      families,
       soundingPercentage:
         section.durationMs <= 0
           ? 0
@@ -73,6 +86,18 @@ export function validateMusicDebugPercussion(options: {
     percussionVoiceIds.size <= 1
   ) {
     messages.push('Percussion should use more than one drum voice.');
+  }
+  for (const sectionId of ['a', 'return'] as const) {
+    const section = options.sections.find((entry) => entry.id === sectionId);
+    const activity = activityBySection.get(sectionId);
+    if (!section || !activity || activity.noteCount === 0) {
+      continue;
+    }
+    if (activity.families.size < 3) {
+      messages.push(
+        `${section.label} should use at least three percussion roles.`
+      );
+    }
   }
 
   return {

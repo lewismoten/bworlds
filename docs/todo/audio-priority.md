@@ -14,6 +14,9 @@
 - [x] Regenerate only the failed phrase before rebuilding the song.
 - [x] Report the exact measure and note for each failure.
 - [x] Visualization of tracks should show only the bar instead of a dot, and the bar is shorter, and at the level at which the notes are being played (where the dot is now). bars are semi-transparent, in that if multiple notes are playing, they can overlap and become more opaque.
+- [ ] Visualization of track bars feel blurry. the bars may be too tall. lets get rid of the transparency, and just make the colors more vibrant when bars overlap
+- [ ] Show individual instruments as different levels on percussion track.
+- [ ] Show/Play all instrument/samples in the percussion track
 
 ## Instrument Patch Foundation
 
@@ -45,7 +48,7 @@
 - [x] Show the drum name for every percussion event.
 - [x] Show drum-note counts in the song report.
 - [x] Reject drum tracks using only one percussion voice.
-- [ ] Require at least three drum roles in a full groove.
+- [x] Require at least three drum roles in a full groove.
 - [ ] Export a solo WAV for each drum voice.
 
 ## Percussion Composition
