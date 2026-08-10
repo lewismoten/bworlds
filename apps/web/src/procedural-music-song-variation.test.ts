@@ -69,6 +69,29 @@ describe('procedural music song variation', () => {
     expect(transformed?.durationMs).toBeGreaterThan(BASE_NOTE.durationMs);
   });
 
+  it('keeps repaired lead density notes from picking up extra section transposition', () => {
+    const repairedLeadNote: ProceduralMusicNote = {
+      ...BASE_NOTE,
+      instrumentId: 'deep-forest:lead:0:0:measure-1-0',
+    };
+
+    const aPrime = transformSongSectionNote(
+      repairedLeadNote,
+      createSection('a-prime'),
+      7
+    );
+    const variation = transformSongSectionNote(
+      repairedLeadNote,
+      createSection('variation'),
+      4
+    );
+
+    expect(aPrime).not.toBeNull();
+    expect(variation).not.toBeNull();
+    expect(aPrime?.frequency).toBe(repairedLeadNote.frequency);
+    expect(variation?.frequency).toBe(repairedLeadNote.frequency);
+  });
+
   it('keeps the base A section unchanged', () => {
     expect(transformSongSectionNote(BASE_NOTE, createSection('a'), 3)).toEqual(
       BASE_NOTE

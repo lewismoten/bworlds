@@ -2,7 +2,10 @@ import type {
   MusicUpdateOptions,
   ProceduralMusicNote,
 } from './procedural-music.ts';
-import { scheduleProceduralMusicNotes } from './procedural-music.ts';
+import {
+  resolveMusicThemeById,
+  scheduleProceduralMusicNotes,
+} from './procedural-music.ts';
 
 export const PROCEDURAL_MUSIC_PHRASE_MEASURE_COUNT = 8;
 
@@ -50,7 +53,10 @@ export function collectProceduralMusicPhraseNotes(
     }
   }
 
-  return notes;
+  return ensureLeadMeasureAttackDensity(notes, {
+    phraseStartMs: options.nowMs,
+    phraseDurationMs,
+  });
 }
 
 export function repeatProceduralMusicPhraseNotes(
@@ -128,4 +134,195 @@ function resolveRepeatedLeadPhraseOctaveShift(
   }
 
   return bestShift;
+}
+
+function ensureLeadMeasureAttackDensity(
+  notes: readonly ProceduralMusicNote[],
+  options: {
+    phraseStartMs: number;
+    phraseDurationMs: number;
+  }
+): ProceduralMusicNote[] {
+  const repairedNotes = [...notes];
+  const measureDurationMs =
+    options.phraseDurationMs / PROCEDURAL_MUSIC_PHRASE_MEASURE_COUNT;
+
+  for (
+    let measureIndex = 0;
+    measureIndex < PROCEDURAL_MUSIC_PHRASE_MEASURE_COUNT;
+    measureIndex += 1
+  ) {
+    const measureStartMs =
+      options.phraseStartMs + measureIndex * measureDurationMs;
+    const measureEndMs = measureStartMs + measureDurationMs;
+    const leadNotes = repairedNotes.filter(
+      (note) =>
+        note.role === 'lead' &&
+        note.startMs >= measureStartMs &&
+        note.startMs < measureEndMs
+    );
+
+    if (leadNotes.length >= 2) {
+      continue;
+    }
+
+    const templateNote =
+      leadNotes[0] ??
+      findLeadMeasureTemplate(repairedNotes, measureStartMs, measureEndMs);
+    if (!templateNote) {
+      continue;
+    }
+    const previousLeadNote = findPreviousLeadNote(
+      repairedNotes,
+      measureStartMs
+    );
+    const nextLeadNote = findNextLeadNote(repairedNotes, measureEndMs);
+    const repairedFrequency = resolveRepairedLeadFrequency({
+      templateFrequency: templateNote.frequency,
+      previousFrequency: previousLeadNote?.frequency ?? null,
+      nextFrequency: nextLeadNote?.frequency ?? null,
+    });
+
+    const theme = resolveMusicThemeById(templateNote.themeId);
+    const attackOffsets = [0.24, 0.58];
+    for (
+      let attackIndex = leadNotes.length;
+      attackIndex < 2;
+      attackIndex += 1
+    ) {
+      repairedNotes.push({
+        ...templateNote,
+        instrumentId: `${templateNote.instrumentId}:measure-${measureIndex}-${attackIndex}`,
+        startMs: Math.round(
+          measureStartMs +
+            measureDurationMs * (attackOffsets[attackIndex] ?? 0.58)
+        ),
+        durationMs: Math.max(
+          48,
+          Math.round(
+            Math.min(
+              theme.noteDurationMs * 0.72,
+              measureDurationMs * (attackIndex === 0 ? 0.28 : 0.24)
+            )
+          )
+        ),
+        frequency: repairedFrequency,
+        volume: templateNote.volume * (attackIndex === 0 ? 0.86 : 0.76),
+      });
+    }
+  }
+
+  repairedNotes.sort((left, right) => {
+    if (left.startMs !== right.startMs) {
+      return left.startMs - right.startMs;
+    }
+    return left.durationMs - right.durationMs;
+  });
+
+  return repairedNotes;
+}
+
+function findLeadMeasureTemplate(
+  notes: readonly ProceduralMusicNote[],
+  measureStartMs: number,
+  measureEndMs: number
+): ProceduralMusicNote | null {
+  for (let index = notes.length - 1; index >= 0; index -= 1) {
+    const note = notes[index];
+    if (
+      note?.role === 'lead' &&
+      note.startMs < measureStartMs &&
+      !isGeneratedLeadRepairNote(note)
+    ) {
+      return note;
+    }
+  }
+
+  for (const note of notes) {
+    if (
+      note.role === 'lead' &&
+      note.startMs >= measureEndMs &&
+      !isGeneratedLeadRepairNote(note)
+    ) {
+      return note;
+    }
+  }
+
+  return null;
+}
+
+function findPreviousLeadNote(
+  notes: readonly ProceduralMusicNote[],
+  beforeStartMs: number
+): ProceduralMusicNote | null {
+  for (let index = notes.length - 1; index >= 0; index -= 1) {
+    const note = notes[index];
+    if (note?.role === 'lead' && note.startMs < beforeStartMs) {
+      return note;
+    }
+  }
+
+  return null;
+}
+
+function findNextLeadNote(
+  notes: readonly ProceduralMusicNote[],
+  afterStartMs: number
+): ProceduralMusicNote | null {
+  for (const note of notes) {
+    if (note.role === 'lead' && note.startMs >= afterStartMs) {
+      return note;
+    }
+  }
+
+  return null;
+}
+
+function resolveRepairedLeadFrequency(options: {
+  templateFrequency: number;
+  previousFrequency: number | null;
+  nextFrequency: number | null;
+}): number {
+  const octaveCandidates = [-24, -12, 0, 12, 24].map(
+    (shift) => options.templateFrequency * 2 ** (shift / 12)
+  );
+  let bestFrequency = options.templateFrequency;
+  let bestScore = Number.POSITIVE_INFINITY;
+  let bestWorstLeap = Number.POSITIVE_INFINITY;
+
+  for (const candidateFrequency of octaveCandidates) {
+    const leapScores: number[] = [];
+    if (options.previousFrequency !== null) {
+      leapScores.push(
+        Math.abs(12 * Math.log2(candidateFrequency / options.previousFrequency))
+      );
+    }
+    if (options.nextFrequency !== null) {
+      leapScores.push(
+        Math.abs(12 * Math.log2(options.nextFrequency / candidateFrequency))
+      );
+    }
+    if (leapScores.length === 0) {
+      return candidateFrequency;
+    }
+
+    const worstLeap = Math.max(...leapScores);
+    const totalLeap = leapScores.reduce((sum, leap) => sum + leap, 0);
+    if (
+      worstLeap < bestWorstLeap ||
+      (worstLeap === bestWorstLeap && totalLeap < bestScore)
+    ) {
+      bestWorstLeap = worstLeap;
+      bestScore = totalLeap;
+      bestFrequency = candidateFrequency;
+    }
+  }
+
+  return bestFrequency;
+}
+
+function isGeneratedLeadRepairNote(
+  note: Pick<ProceduralMusicNote, 'instrumentId'>
+): boolean {
+  return note.instrumentId.includes(':measure-');
 }

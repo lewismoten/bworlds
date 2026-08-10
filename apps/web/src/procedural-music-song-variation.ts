@@ -82,9 +82,10 @@ function transformAprimeSectionNote(
   layerTreatment: ReturnType<typeof resolveSongSectionLayerTreatment>,
   harmonySustainMultiplier: number
 ): ProceduralMusicNote {
+  const preserveRepairPitch = isGeneratedLeadRepairNote(note);
   const phrasePosition = noteIndexInSection % 8;
   const endingOffsetSemitones =
-    note.role === 'lead' && phrasePosition >= 6
+    !preserveRepairPitch && note.role === 'lead' && phrasePosition >= 6
       ? phrasePosition === 6
         ? 2
         : 3
@@ -92,7 +93,9 @@ function transformAprimeSectionNote(
         ? 2
         : 0;
   const rhythmShiftMs =
-    note.role === 'lead' && phrasePosition >= 4 ? (phrasePosition - 3) * 18 : 0;
+    !preserveRepairPitch && note.role === 'lead' && phrasePosition >= 4
+      ? (phrasePosition - 3) * 18
+      : 0;
 
   return scaleSongNote(note, {
     volumeMultiplier: layerTreatment.volumeMultiplier,
@@ -109,15 +112,16 @@ function transformVariationSectionNote(
   layerTreatment: ReturnType<typeof resolveSongSectionLayerTreatment>,
   harmonySustainMultiplier: number
 ): ProceduralMusicNote {
+  const preserveRepairPitch = isGeneratedLeadRepairNote(note);
   const phrasePosition = noteIndexInSection % 8;
   const transposeSemitones =
-    note.role === 'lead'
+    !preserveRepairPitch && note.role === 'lead'
       ? ([0, 0, 2, 0, 3, 2, 0, -2][phrasePosition] ?? 0)
       : note.role === 'harmony' && phrasePosition >= 6
         ? -2
         : 0;
   const rhythmShiftMs =
-    note.role === 'lead'
+    !preserveRepairPitch && note.role === 'lead'
       ? ([0, 24, 48, 72, 0, 24, 48, 96][phrasePosition] ?? 0)
       : note.role === 'harmony'
         ? ([0, 0, 22, 22, 0, 0, 44, 44][phrasePosition] ?? 0)
@@ -201,4 +205,10 @@ function resolveNearestInModeSemitone(
   }
 
   return targetSemitones;
+}
+
+function isGeneratedLeadRepairNote(
+  note: Pick<ProceduralMusicNote, 'instrumentId'>
+): boolean {
+  return note.instrumentId.includes(':measure-');
 }

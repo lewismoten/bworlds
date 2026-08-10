@@ -72,33 +72,36 @@ describe('music debug track stats', () => {
   });
 
   it('keeps sampled lead leap averages controlled and octave jumps rare in generated songs', () => {
-    const sampledLeadStats = [
+    const sampledLeadSnapshots = [
       createMusicDebugSnapshot({
         tileKind: 'plains',
         contextType: 'overworld',
         clusterX: 0,
         clusterY: 0,
-      }).trackStats.lead,
+      }),
       createMusicDebugSnapshot({
         tileKind: 'forest',
         contextType: 'overworld',
         clusterX: 3,
         clusterY: -2,
-      }).trackStats.lead,
+      }),
       createMusicDebugSnapshot({
         tileKind: 'shore',
         contextType: 'overworld',
         clusterX: 8,
         clusterY: -4,
         dayProgress: 0.85,
-      }).trackStats.lead,
+      }),
       createMusicDebugSnapshot({
         tileKind: 'town',
         contextType: 'town',
         clusterX: 3,
         clusterY: -2,
-      }).trackStats.lead,
+      }),
     ];
+    const sampledLeadStats = sampledLeadSnapshots.map(
+      (snapshot) => snapshot.trackStats.lead
+    );
 
     for (const leadStats of sampledLeadStats) {
       expect(leadStats.averageLeapSemitones).toBeLessThanOrEqual(7);

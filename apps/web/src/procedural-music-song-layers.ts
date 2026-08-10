@@ -65,7 +65,7 @@ export function resolveSongSectionLayerTreatment(
         muted: note.role === 'percussion' && noteIndexInSection % 4 === 0,
         volumeMultiplier: note.role === 'harmony' ? 0.92 : 1,
         durationMultiplier:
-          note.role === 'lead' ? 1.24 : note.role === 'harmony' ? 1.1 : 1,
+          note.role === 'lead' ? 1.78 : note.role === 'harmony' ? 1.1 : 1,
         releaseMultiplier: note.role === 'lead' ? 1.18 : 1,
       };
     case 'return':

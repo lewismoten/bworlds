@@ -213,6 +213,79 @@ describe('procedural music song', () => {
     expect(secondLeadPhrase).toEqual(firstLeadPhrase);
   });
 
+  it('keeps the lead between two and six attacks per measure in base phrases', () => {
+    const optionSets = [
+      {
+        nowMs: 1_000,
+        tileKind: 'forest' as const,
+        contextType: 'overworld' as const,
+        dayProgress: 0.45,
+        yearProgress: 0.25,
+        clusterX: 3,
+        clusterY: -2,
+      },
+      {
+        nowMs: 1_000,
+        tileKind: 'town' as const,
+        contextType: 'town' as const,
+        dayProgress: 0.45,
+        yearProgress: 0.25,
+        clusterX: 7,
+        clusterY: 4,
+      },
+      {
+        nowMs: 1_000,
+        tileKind: 'cave' as const,
+        contextType: 'dungeon' as const,
+        dayProgress: 0.45,
+        yearProgress: 0.25,
+        clusterX: -5,
+        clusterY: 9,
+      },
+    ];
+
+    for (const options of optionSets) {
+      const durationMs = resolveProceduralMusicSongDurationMs(options);
+      const blueprint = resolveProceduralMusicBlueprint(options);
+      const sections = buildProceduralMusicSongSections(blueprint, durationMs);
+      const totalMeasures = sections.reduce(
+        (sum, section) => sum + section.measureCount,
+        0
+      );
+      const phraseDurationMs = Math.round(
+        (durationMs / totalMeasures) * PROCEDURAL_MUSIC_PHRASE_MEASURE_COUNT
+      );
+      const measureDurationMs =
+        phraseDurationMs / PROCEDURAL_MUSIC_PHRASE_MEASURE_COUNT;
+      const phraseNotes = collectProceduralMusicPhraseNotes(
+        options,
+        phraseDurationMs
+      );
+      const leadCountsByMeasure = Array.from(
+        { length: PROCEDURAL_MUSIC_PHRASE_MEASURE_COUNT },
+        () => 0
+      );
+
+      for (const note of phraseNotes) {
+        if (note.role !== 'lead') {
+          continue;
+        }
+        const measureIndex = Math.min(
+          PROCEDURAL_MUSIC_PHRASE_MEASURE_COUNT - 1,
+          Math.max(
+            0,
+            Math.floor((note.startMs - options.nowMs) / measureDurationMs)
+          )
+        );
+        leadCountsByMeasure[measureIndex] += 1;
+      }
+
+      expect(
+        leadCountsByMeasure.every((count) => count >= 2 && count <= 6)
+      ).toBe(true);
+    }
+  });
+
   it('shares the same song dna across ambient, battle, and boss arrangements', () => {
     const ambient = createProceduralMusicSong({
       nowMs: 1_000,

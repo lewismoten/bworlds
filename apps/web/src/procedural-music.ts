@@ -1421,7 +1421,6 @@ function createThemeNotes(options: {
       : [semitones];
   const voiceVolumeScale =
     role === 'harmony' ? 1.2 / Math.max(1, voiceSemitones.length) : 1;
-
   return voiceSemitones.map((voiceSemitone, voiceIndex) => ({
     themeId: options.theme.id,
     instrumentId:
@@ -1600,6 +1599,10 @@ function scheduleThemeLayerNotes(
   while (nextNoteAtMs < options.nowMs + LOOKAHEAD_MS) {
     const role = selectInstrumentRole(stepIndex);
     const arrangementProfile = arrangement.roleProfiles[role];
+    const stepDurationMs =
+      (theme.noteDurationMs *
+        resolveRhythmicMotifStepDuration(theme, stepIndex)) /
+      mood.tempoMultiplier;
     const shouldRest =
       role !== 'bass' &&
       shouldRestAtThemeStep(theme, role, stepIndex, clusterX, clusterY);
@@ -1646,10 +1649,7 @@ function scheduleThemeLayerNotes(
         );
       }
     }
-    nextNoteAtMs +=
-      (theme.noteDurationMs *
-        resolveRhythmicMotifStepDuration(theme, stepIndex)) /
-      mood.tempoMultiplier;
+    nextNoteAtMs += stepDurationMs;
     stepIndex += 1;
   }
 
