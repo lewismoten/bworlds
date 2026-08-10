@@ -153,7 +153,7 @@ const GENERIC_PULSE_PATTERNS: readonly ProceduralPercussionPattern[] = [
     createHit('pulse', 0, 0.68, 0.12, 0.3, 1.14),
   ],
   [
-    createHit('texture', -3, 0, 0.18, 0.48, 0.96),
+    createHit('texture', -3, 0.22, 0.18, 0.48, 0.96),
     createHit('pulse', 0, 0.3, 0.12, 0.3, 1.16),
     createHit('accent', -1, 0.62, 0.16, 0.46, 1.04),
   ],

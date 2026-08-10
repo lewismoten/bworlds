@@ -808,6 +808,7 @@ describe('procedural music percussion', () => {
             'kick' && note.startMs === 0
       )
     ).toBe(false);
+    expect(stable.some((note) => note.startMs === 0)).toBe(false);
     expect(
       changed.some(
         (note) =>
