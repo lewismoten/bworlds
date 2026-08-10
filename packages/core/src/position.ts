@@ -11,6 +11,10 @@ export function snapWorldCoordinate(value: number): number {
   return Math.round(value);
 }
 
+export type FacingPositionLike = WorldPositionLike & {
+  facing?: number;
+};
+
 export function wrapLongitude(longitude: number): number {
   if (longitude > 180) return longitude - 360;
   if (longitude < -180) return longitude + 360;

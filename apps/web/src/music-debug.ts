@@ -56,9 +56,11 @@ import {
 import {
   createMusicDebugHarmonyChordDetections,
   createMusicDebugSectionLayerActivity,
+  createMusicDebugSectionLayerComparisons,
   createMusicDebugSectionMotifMatches,
   type MusicDebugHarmonyChordDetection,
   type MusicDebugSectionLayerActivity,
+  type MusicDebugSectionLayerComparison,
   type MusicDebugSectionMotifMatch,
 } from './music-debug-section-analysis.ts';
 import {
@@ -119,6 +121,7 @@ export type MusicDebugSnapshot = {
   sharedMotif: number[];
   sectionLayerArrangement: string[];
   sectionLayerActivity: MusicDebugSectionLayerActivity[];
+  sectionLayerComparisons: MusicDebugSectionLayerComparison[];
   lyrics: MusicDebugLyricLine[];
   loopStartOffsetMs: number;
   loopEndOffsetMs: number;
@@ -373,6 +376,9 @@ export function createMusicDebugSnapshot(
     notes: song.notes,
     sections: song.sections,
   });
+  const sectionLayerComparisons = createMusicDebugSectionLayerComparisons({
+    activities: sectionLayerActivity,
+  });
   const snapshotBase = {
     options,
     theme,
@@ -395,6 +401,7 @@ export function createMusicDebugSnapshot(
     sharedMotif: [...theme.motif.sharedDegreeOffsets],
     sectionLayerArrangement: [],
     sectionLayerActivity: [],
+    sectionLayerComparisons: [],
     lyrics,
     loopStartOffsetMs: song.loopStartOffsetMs,
     loopEndOffsetMs: song.loopEndOffsetMs,
@@ -428,6 +435,7 @@ export function createMusicDebugSnapshot(
       describeSongSectionLayerArrangement(section)
     ),
     sectionLayerActivity,
+    sectionLayerComparisons,
     midiAudit: {
       exportedBpm: null,
       exportedDurationMs: 0,
@@ -455,6 +463,7 @@ export function createMusicDebugSnapshot(
       describeSongSectionLayerArrangement(section)
     ),
     sectionLayerActivity,
+    sectionLayerComparisons,
     midiAudit,
   };
 }
@@ -712,6 +721,9 @@ export function buildMusicDebugSummaryMarkup(
       <span>Actual Layers ${formatMusicDebugSectionLayerActivity(snapshot.sectionLayerActivity)}</span>
     </div>
     <div class="music-debug-role-counts">
+      <span>Layer Check ${formatMusicDebugSectionLayerComparisons(snapshot.sectionLayerComparisons)}</span>
+    </div>
+    <div class="music-debug-role-counts">
       <span>Chords ${snapshot.chordProgression.map((degree) => degree + 1).join(' - ')}</span>
     </div>
     <div class="music-debug-role-counts">
@@ -782,6 +794,21 @@ function formatMusicDebugSectionLayerActivity(
       ].join('/');
       return `${section.sectionLabel} ${counts} @ ${coverage}`;
     })
+    .join(' | ');
+}
+
+function formatMusicDebugSectionLayerComparisons(
+  comparisons: readonly MusicDebugSectionLayerComparison[]
+): string {
+  if (comparisons.length === 0) {
+    return 'none';
+  }
+  return comparisons
+    .map((comparison) =>
+      comparison.matchesPlan
+        ? `${comparison.sectionLabel} ok`
+        : `${comparison.sectionLabel} mismatch: ${comparison.mismatchRules.join(', ')}`
+    )
     .join(' | ');
 }
 

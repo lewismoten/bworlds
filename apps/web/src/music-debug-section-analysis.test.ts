@@ -4,6 +4,7 @@ import type { MusicDebugNotePitchDiagnostic } from './music-debug-note-analysis.
 import {
   createMusicDebugHarmonyChordDetections,
   createMusicDebugSectionLayerActivity,
+  createMusicDebugSectionLayerComparisons,
   createMusicDebugSectionMotifMatches,
 } from './music-debug-section-analysis.ts';
 import type { ProceduralMusicNote } from './procedural-music.ts';
@@ -104,6 +105,94 @@ describe('music debug section analysis', () => {
           percussion: 0,
         },
       },
+    ]);
+  });
+
+  it('compares planned section layer treatments against actual activity', () => {
+    const comparisons = createMusicDebugSectionLayerComparisons({
+      activities: [
+        {
+          sectionId: 'intro',
+          sectionLabel: 'Intro',
+          roleCounts: {
+            bass: 1,
+            harmony: 3,
+            lead: 4,
+            percussion: 0,
+          },
+          soundingTimePercentageByRole: {
+            bass: 4,
+            harmony: 6,
+            lead: 24,
+            percussion: 0,
+          },
+          averageDurationMsByRole: {
+            bass: 160,
+            harmony: 240,
+            lead: 240,
+            percussion: 0,
+          },
+        },
+        {
+          sectionId: 'a',
+          sectionLabel: 'Section A',
+          roleCounts: {
+            bass: 4,
+            harmony: 3,
+            lead: 4,
+            percussion: 2,
+          },
+          soundingTimePercentageByRole: {
+            bass: 20,
+            harmony: 18,
+            lead: 24,
+            percussion: 12,
+          },
+          averageDurationMsByRole: {
+            bass: 240,
+            harmony: 240,
+            lead: 240,
+            percussion: 180,
+          },
+        },
+        {
+          sectionId: 'variation',
+          sectionLabel: 'Variation',
+          roleCounts: {
+            bass: 4,
+            harmony: 2,
+            lead: 4,
+            percussion: 1,
+          },
+          soundingTimePercentageByRole: {
+            bass: 18,
+            harmony: 12,
+            lead: 24,
+            percussion: 4,
+          },
+          averageDurationMsByRole: {
+            bass: 240,
+            harmony: 220,
+            lead: 320,
+            percussion: 120,
+          },
+        },
+      ],
+    });
+
+    expect(comparisons).toEqual([
+      expect.objectContaining({
+        sectionId: 'intro',
+        matchesPlan: true,
+      }),
+      expect.objectContaining({
+        sectionId: 'a',
+        matchesPlan: true,
+      }),
+      expect.objectContaining({
+        sectionId: 'variation',
+        matchesPlan: true,
+      }),
     ]);
   });
 });

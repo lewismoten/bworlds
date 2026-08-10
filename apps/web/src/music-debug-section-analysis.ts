@@ -24,6 +24,14 @@ export type MusicDebugSectionLayerActivity = {
   averageDurationMsByRole: Record<ProceduralMusicRole, number>;
 };
 
+export type MusicDebugSectionLayerComparison = {
+  sectionId: string;
+  sectionLabel: string;
+  matchesPlan: boolean;
+  matchedRules: string[];
+  mismatchRules: string[];
+};
+
 const MUSIC_DEBUG_PITCH_CLASS_LABELS = [
   'C',
   'C#',
@@ -133,6 +141,142 @@ export function createMusicDebugSectionLayerActivity(options: {
   });
 }
 
+export function createMusicDebugSectionLayerComparisons(options: {
+  activities: readonly MusicDebugSectionLayerActivity[];
+}): MusicDebugSectionLayerComparison[] {
+  const activityById = new Map(
+    options.activities.map((activity) => [activity.sectionId, activity])
+  );
+  const fullStackBaseline =
+    activityById.get('a') ?? options.activities[0] ?? null;
+
+  return options.activities.map((activity) => {
+    const matchedRules: string[] = [];
+    const mismatchRules: string[] = [];
+    const baseline = fullStackBaseline;
+    const hasRole = (role: ProceduralMusicRole) =>
+      activity.roleCounts[role] > 0;
+
+    switch (activity.sectionId) {
+      case 'intro':
+        pushRuleResult(
+          activity.roleCounts.percussion === 0,
+          'percussion stays absent',
+          matchedRules,
+          mismatchRules
+        );
+        pushRuleResult(
+          baseline === null ||
+            activity.roleCounts.bass < baseline.roleCounts.bass ||
+            activity.soundingTimePercentageByRole.bass <
+              baseline.soundingTimePercentageByRole.bass,
+          'bass stays thinner than the full stack',
+          matchedRules,
+          mismatchRules
+        );
+        break;
+      case 'a':
+        pushRuleResult(
+          PROCEDURAL_MUSIC_ROLES.every((role) => hasRole(role)),
+          'all four roles stay active',
+          matchedRules,
+          mismatchRules
+        );
+        break;
+      case 'a-prime':
+        pushRuleResult(
+          PROCEDURAL_MUSIC_ROLES.every((role) => hasRole(role)),
+          'all four roles stay active',
+          matchedRules,
+          mismatchRules
+        );
+        pushRuleResult(
+          baseline === null ||
+            activity.soundingTimePercentageByRole.lead >=
+              baseline.soundingTimePercentageByRole.lead,
+          'lead stays at least as forward as Section A',
+          matchedRules,
+          mismatchRules
+        );
+        break;
+      case 'b':
+        pushRuleResult(
+          hasRole('harmony'),
+          'harmony remains present',
+          matchedRules,
+          mismatchRules
+        );
+        pushRuleResult(
+          baseline === null ||
+            activity.soundingTimePercentageByRole.harmony <
+              baseline.soundingTimePercentageByRole.harmony,
+          'harmony occupancy lightens from Section A',
+          matchedRules,
+          mismatchRules
+        );
+        break;
+      case 'variation':
+        pushRuleResult(
+          hasRole('lead'),
+          'lead remains present',
+          matchedRules,
+          mismatchRules
+        );
+        pushRuleResult(
+          baseline === null ||
+            activity.soundingTimePercentageByRole.percussion <
+              baseline.soundingTimePercentageByRole.percussion,
+          'percussion occupancy thins from Section A',
+          matchedRules,
+          mismatchRules
+        );
+        pushRuleResult(
+          baseline === null ||
+            activity.averageDurationMsByRole.lead >
+              baseline.averageDurationMsByRole.lead,
+          'lead durations stretch beyond Section A',
+          matchedRules,
+          mismatchRules
+        );
+        break;
+      case 'return':
+        pushRuleResult(
+          PROCEDURAL_MUSIC_ROLES.every((role) => hasRole(role)),
+          'all four roles return',
+          matchedRules,
+          mismatchRules
+        );
+        break;
+      case 'outro':
+        pushRuleResult(
+          activity.roleCounts.percussion === 0,
+          'percussion drops out',
+          matchedRules,
+          mismatchRules
+        );
+        pushRuleResult(
+          baseline === null ||
+            activity.soundingTimePercentageByRole.lead <
+              baseline.soundingTimePercentageByRole.lead,
+          'lead recedes from Section A',
+          matchedRules,
+          mismatchRules
+        );
+        break;
+      default:
+        break;
+    }
+
+    return {
+      sectionId: activity.sectionId,
+      sectionLabel: activity.sectionLabel,
+      matchesPlan: mismatchRules.length === 0,
+      matchedRules,
+      mismatchRules,
+    };
+  });
+}
+
 function resolveSectionRoleCoverageMs(
   notes: readonly ProceduralMusicNote[],
   sectionStartMs: number,
@@ -177,6 +321,19 @@ function resolveSectionRoleCoverageMs(
   }
 
   return totalCoverageMs;
+}
+
+function pushRuleResult(
+  condition: boolean,
+  rule: string,
+  matchedRules: string[],
+  mismatchRules: string[]
+): void {
+  if (condition) {
+    matchedRules.push(rule);
+  } else {
+    mismatchRules.push(rule);
+  }
 }
 
 const PROCEDURAL_MUSIC_ROLES = [

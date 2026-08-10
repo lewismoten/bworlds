@@ -79,6 +79,9 @@ describe('music debug', () => {
       second.sectionLayerArrangement
     );
     expect(first.sectionLayerActivity).toEqual(second.sectionLayerActivity);
+    expect(first.sectionLayerComparisons).toEqual(
+      second.sectionLayerComparisons
+    );
     expect(first.lyrics).toEqual(second.lyrics);
     expect(first.notes).toEqual(second.notes);
     expect(first.durationMs).toBeGreaterThanOrEqual(120_000);
@@ -126,7 +129,13 @@ describe('music debug', () => {
       first.song.sections.length
     );
     expect(first.sectionLayerActivity).toHaveLength(first.song.sections.length);
+    expect(first.sectionLayerComparisons).toHaveLength(
+      first.song.sections.length
+    );
     expect(first.sectionLayerActivity[0]?.sectionLabel).toBe(
+      first.song.sections[0]?.label
+    );
+    expect(first.sectionLayerComparisons[0]?.sectionLabel).toBe(
       first.song.sections[0]?.label
     );
     expect(
@@ -141,6 +150,9 @@ describe('music debug', () => {
     ).toBe(true);
     expect(
       first.harmonyChordDetections.some((entry) => entry.chordLabels.length > 0)
+    ).toBe(true);
+    expect(
+      first.sectionLayerComparisons.some((entry) => entry.matchesPlan)
     ).toBe(true);
     expect(first.midiExportValidation.accidentalNoteCount).toBe(
       first.accidentalNoteCount
@@ -190,6 +202,7 @@ describe('music debug', () => {
     expect(summary).toContain('SongDNA');
     expect(summary).toContain('Layer Mix');
     expect(summary).toContain('Actual Layers');
+    expect(summary).toContain('Layer Check');
     expect(summary).toContain('Chords');
     expect(summary).toContain('Shared Motif');
     expect(summary).toContain('Lead Motif');
