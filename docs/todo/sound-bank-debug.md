@@ -64,22 +64,22 @@
 
 ## General MIDI Families
 
-- [ ] Add the Piano family.
-- [ ] Add the Chromatic Percussion family.
-- [ ] Add the Organ family.
-- [ ] Add the Guitar family.
-- [ ] Add the Bass family.
-- [ ] Add the Strings family.
-- [ ] Add the Ensemble family.
-- [ ] Add the Brass family.
-- [ ] Add the Reed family.
-- [ ] Add the Pipe family.
-- [ ] Add the Synth Lead family.
-- [ ] Add the Synth Pad family.
-- [ ] Add the Synth Effects family.
-- [ ] Add the Ethnic family.
-- [ ] Add the Percussive family.
-- [ ] Add the Sound Effects family.
+- [x] Add the Piano family.
+- [x] Add the Chromatic Percussion family.
+- [x] Add the Organ family.
+- [x] Add the Guitar family.
+- [x] Add the Bass family.
+- [x] Add the Strings family.
+- [x] Add the Ensemble family.
+- [x] Add the Brass family.
+- [x] Add the Reed family.
+- [x] Add the Pipe family.
+- [x] Add the Synth Lead family.
+- [x] Add the Synth Pad family.
+- [x] Add the Synth Effects family.
+- [x] Add the Ethnic family.
+- [x] Add the Percussive family.
+- [x] Add the Sound Effects family.
 
 ## Percussion Browser
 

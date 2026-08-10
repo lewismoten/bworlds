@@ -87,6 +87,31 @@ describe('sound bank debug page', () => {
     expect(normalizedMarkup).toContain('>Sound Effects<');
     expect(normalizedMarkup).toContain('>127<');
     expect(normalizedMarkup).toContain('Gunshot');
+
+    const familyHeadings = [
+      'Piano',
+      'Chromatic Percussion',
+      'Organ',
+      'Guitar',
+      'Bass',
+      'Strings',
+      'Ensemble',
+      'Brass',
+      'Reed',
+      'Pipe',
+      'Synth Lead',
+      'Synth Pad',
+      'Synth Effects',
+      'Ethnic',
+      'Percussive',
+      'Sound Effects',
+    ];
+
+    expect(
+      familyHeadings.every((familyName) =>
+        normalizedMarkup.includes(`>${familyName}<`)
+      )
+    ).toBe(true);
   });
 
   it('renders the selected layout mode in the shell and toggle state', () => {
