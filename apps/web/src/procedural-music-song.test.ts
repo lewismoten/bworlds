@@ -865,6 +865,55 @@ describe('procedural music song', () => {
     expect(outro.averageLeadVolume).toBeLessThan(sectionA.averageLeadVolume);
   });
 
+  it('reduces intro and outro lead density while building toward the variation climax', () => {
+    const song = createProceduralMusicSong({
+      nowMs: 1_000,
+      tileKind: 'forest',
+      contextType: 'overworld',
+      dayProgress: 0.45,
+      yearProgress: 0.25,
+      clusterX: 3,
+      clusterY: -2,
+    });
+    const intro = song.sections.find((section) => section.id === 'intro');
+    const variation = song.sections.find(
+      (section) => section.id === 'variation'
+    );
+    const sectionA = song.sections.find((section) => section.id === 'a');
+    const outro = song.sections.find((section) => section.id === 'outro');
+
+    expect(intro).toBeDefined();
+    expect(sectionA).toBeDefined();
+    expect(variation).toBeDefined();
+    expect(outro).toBeDefined();
+
+    const introLeadAverage = averageCounts(
+      countRoleNotesByMeasure(song, intro!, 'lead')
+    );
+    const sectionALeadAverage = averageCounts(
+      countRoleNotesByMeasure(song, sectionA!, 'lead')
+    );
+    const outroLeadAverage = averageCounts(
+      countRoleNotesByMeasure(song, outro!, 'lead')
+    );
+
+    const variationLeadCounts = countRoleNotesByMeasure(
+      song,
+      variation!,
+      'lead'
+    );
+    const earlyVariationAverage = averageCounts(
+      variationLeadCounts.slice(0, 4)
+    );
+    const lateVariationAverage = averageCounts(
+      variationLeadCounts.slice(6, 10)
+    );
+
+    expect(introLeadAverage).toBeLessThan(sectionALeadAverage);
+    expect(outroLeadAverage).toBeLessThan(sectionALeadAverage);
+    expect(lateVariationAverage).toBeGreaterThan(earlyVariationAverage);
+  });
+
   it('keeps transformed notes fully inside their assigned section windows', () => {
     const song = createProceduralMusicSong({
       nowMs: 1_000,
@@ -1007,4 +1056,31 @@ function collectLeadSectionPitches(
     )
     .slice(0, 4)
     .map((note) => resolveMidiNote(note.frequency));
+}
+
+function countRoleNotesByMeasure(
+  song: ReturnType<typeof createProceduralMusicSong>,
+  section: ReturnType<typeof createProceduralMusicSong>['sections'][number],
+  role: 'lead' | 'harmony' | 'bass' | 'percussion'
+): number[] {
+  const sectionStartMs = song.startMs + section.startOffsetMs;
+  const measureDurationMs =
+    section.durationMs / Math.max(1, section.measureCount);
+
+  return Array.from(
+    { length: section.measureCount },
+    (_, measureIndex) =>
+      song.notes.filter(
+        (note) =>
+          note.role === role &&
+          note.startMs >= sectionStartMs + measureIndex * measureDurationMs &&
+          note.startMs < sectionStartMs + (measureIndex + 1) * measureDurationMs
+      ).length
+  );
+}
+
+function averageCounts(values: readonly number[]): number {
+  return (
+    values.reduce((sum, value) => sum + value, 0) / Math.max(1, values.length)
+  );
 }

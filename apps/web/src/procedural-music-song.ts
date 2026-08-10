@@ -22,6 +22,7 @@ import { buildProceduralMusicSongSections } from './procedural-music-song-timing
 import { buildProceduralMusicBasePhrasePlan } from './procedural-music-song-base.ts';
 import { regeneratePhrasesContainingUnresolvedChromaticNotes } from './procedural-music-song-chromatic.ts';
 import { resolveSongFinalCadence } from './procedural-music-song-cadence.ts';
+import { applyProceduralSongDensityPlan } from './procedural-music-song-density.ts';
 import { stateLeadMotifInFirstASection } from './procedural-music-song-motif.ts';
 
 export type ProceduralMusicSongSection = {
@@ -88,13 +89,18 @@ export function createProceduralMusicSong(
     sections,
     songStartMs: startMs,
   });
-  const notes = regeneratePhrasesContainingUnresolvedChromaticNotes(
+  const chromaticNotes = regeneratePhrasesContainingUnresolvedChromaticNotes(
     cadencedNotes,
     {
       songStartMs: startMs,
       phraseDurationMs: basePhrasePlan.phraseDurationMs,
     }
   );
+  const notes = applyProceduralSongDensityPlan({
+    notes: chromaticNotes,
+    sections,
+    songStartMs: startMs,
+  });
   const loopStartOffsetMs = sections[1]?.startOffsetMs ?? 0;
   const outro = sections[sections.length - 1];
   const loopEndOffsetMs = outro
