@@ -34,6 +34,10 @@ import {
   MUSIC_DEBUG_PLAYBACK_SCHEDULE_TICK_MS,
   MUSIC_DEBUG_PLAYBACK_SCHEDULE_WINDOW_MS,
 } from './music-debug-playback-profile.ts';
+import {
+  MUSIC_DEBUG_FULL_SONG_BUTTON_LABEL,
+  MUSIC_DEBUG_LOOP_TOGGLE_LABEL,
+} from './music-debug-playback-intent.ts';
 import { resolveMusicDebugTempoBpm } from './music-debug-tempo.ts';
 import {
   analyzeMusicDebugPitches,
@@ -611,11 +615,11 @@ export function buildMusicDebugShellMarkup(
           <div class="music-debug-actions">
             <button id="music-debug-generate" type="submit">Generate</button>
             <button id="music-debug-randomize" type="button">🎲 Generate</button>
-            <button id="music-debug-play" type="button">Play Song</button>
+            <button id="music-debug-play" type="button">${MUSIC_DEBUG_FULL_SONG_BUTTON_LABEL}</button>
             <button id="music-debug-download" type="button">Download MIDI</button>
             <label class="music-debug-toggle">
               <input id="music-debug-loop" type="checkbox" />
-              <span>Loop Middle Section</span>
+              <span>${MUSIC_DEBUG_LOOP_TOGGLE_LABEL}</span>
             </label>
           </div>
         </form>

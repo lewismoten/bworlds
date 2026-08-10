@@ -6,7 +6,6 @@ import {
 import {
   createMusicDebugPagePersistenceController,
   loadMusicDebugPagePersistenceState,
-  resolveMusicDebugPlaybackResumeOffset,
 } from './music-debug-page-persistence.ts';
 import { restorePersistedPageScrollY } from './page-scroll-state.ts';
 import { createMusicDebugPageState } from './music-debug-page-state.ts';
@@ -14,6 +13,7 @@ import { createMusicDebugPlaybackController } from './music-debug-playback.ts';
 import { downloadMusicDebugMidiFile } from './music-debug-midi.ts';
 import { createMusicDebugInstrumentPreviewPlayer } from './music-debug-instrument-preview.ts';
 import { resolveMusicDebugInstrumentPreviewNote } from './music-debug-instrument-panel.ts';
+import { resolveMusicDebugPlaybackIntent } from './music-debug-playback-intent.ts';
 import {
   clampMusicDebugPreviewOffset,
   resolveMusicDebugDisplayedOffsetMs,
@@ -166,6 +166,23 @@ function renderPlaybackUi(snapshot = resolveCurrentSnapshot()): void {
   renderTimeline(snapshot);
 }
 
+function syncPlaybackControls(
+  snapshot = resolveCurrentSnapshot(),
+  playing = playbackController.isPlaying()
+): void {
+  if (!playButton || !snapshot) {
+    return;
+  }
+  const intent = resolveMusicDebugPlaybackIntent({
+    snapshot,
+    previewOffsetMs,
+    loopEnabled: loopInput?.checked === true,
+  });
+  playButton.textContent = playing
+    ? intent.activeButtonLabel
+    : intent.idleButtonLabel;
+}
+
 function stopPlaybackFrameLoop(): void {
   if (playbackFrameHandle === null) {
     return;
@@ -210,10 +227,14 @@ function seekToOffset(nextOffsetMs: number): void {
   const snapshot = pageState.refreshNow();
   previewOffsetMs = clampMusicDebugPreviewOffset(snapshot, nextOffsetMs);
   if (playbackController.isPlaying()) {
-    playbackController.start(snapshot, {
-      loop: loopInput?.checked === true,
-      startOffsetMs: previewOffsetMs,
-    });
+    playbackController.start(
+      snapshot,
+      resolveMusicDebugPlaybackIntent({
+        snapshot,
+        previewOffsetMs,
+        loopEnabled: loopInput?.checked === true,
+      })
+    );
     persistPageState(true);
     return;
   }
@@ -232,6 +253,7 @@ const pageState = createMusicDebugPageState({
       previewOffsetMs
     );
     renderPlaybackUi(nextSnapshot);
+    syncPlaybackControls(nextSnapshot);
     persistPageState(playbackController.isPlaying());
   },
 });
@@ -240,9 +262,7 @@ const instrumentPreviewPlayer = createMusicDebugInstrumentPreviewPlayer();
 const playbackController = createMusicDebugPlaybackController({
   playback,
   onPlayingChange(playing) {
-    if (playButton) {
-      playButton.textContent = playing ? 'Stop Song' : 'Play Song';
-    }
+    syncPlaybackControls(resolveCurrentSnapshot(), playing);
     if (!playing) {
       stopPlaybackFrameLoop();
     }
@@ -393,14 +413,14 @@ playButton?.addEventListener('click', () => {
     return;
   }
   const currentSnapshot = pageState.refreshNow();
-  const startOffsetMs = resolveMusicDebugPlaybackResumeOffset({
-    snapshot: currentSnapshot,
-    previewOffsetMs,
-  });
-  playbackController.start(currentSnapshot, {
-    loop: loopInput?.checked === true,
-    startOffsetMs,
-  });
+  playbackController.start(
+    currentSnapshot,
+    resolveMusicDebugPlaybackIntent({
+      snapshot: currentSnapshot,
+      previewOffsetMs,
+      loopEnabled: loopInput?.checked === true,
+    })
+  );
 });
 
 randomizeButton?.addEventListener('click', () => {
@@ -460,6 +480,7 @@ sectionButtons?.addEventListener('click', (event) => {
 });
 
 loopInput?.addEventListener('change', () => {
+  syncPlaybackControls();
   persistPageState(playbackController.isPlaying());
 });
 
@@ -484,16 +505,17 @@ const scheduleAfterPaint =
 scheduleAfterPaint(() => {
   const snapshot = pageState.refreshNow();
   if (persistedState?.shouldResume) {
-    const startOffsetMs = resolveMusicDebugPlaybackResumeOffset({
+    playbackController.start(
       snapshot,
-      previewOffsetMs,
-    });
-    playbackController.start(snapshot, {
-      loop: loopInput?.checked === true,
-      startOffsetMs,
-    });
+      resolveMusicDebugPlaybackIntent({
+        snapshot,
+        previewOffsetMs,
+        loopEnabled: loopInput?.checked === true,
+      })
+    );
   }
   updatePreviewOffset(previewOffsetMs);
+  syncPlaybackControls(snapshot);
   restorePersistedPageScrollY(persistedState?.scrollY ?? 0);
 });
 

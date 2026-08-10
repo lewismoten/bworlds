@@ -1,3 +1,15 @@
+# Error! High Priority
+
+Error happens when attempting to download a song via /debug/audio
+
+- [ ] music-debug-midi.ts:108 Uncaught Error: Cannot export MIDI: Found 6 unexplained chromatic notes; MIDI export allows 4.
+      at createMusicDebugMidiFile (music-debug-midi.ts:108:11
+      at downloadMusicDebugMidiFile (music-debug-midi.ts:155:16
+      at HTMLButtonElement.<anonymous> (music-debug-page.ts:443:3
+      (anonymous) @ music-debug-midi.ts:108
+      (anonymous) @ music-debug-midi.ts:155
+      (anonymous) @ music-debug-page.ts:443
+
 The blueprint is already fairly sophisticated. The problem is that the **MIDI output does not appear to honor much of that blueprint correctly**.
 
 What stands out in this specific file:
@@ -108,8 +120,8 @@ added directly as semitones instead of moving through the selected scale.
 - [x] Generate at least three notes for normal triads.
 - [x] Sustain chords across meaningful harmonic spans.
 - [x] Use inversions to reduce chord-to-chord motion.
-- [ ] Keep common chord tones between changes.
-- [ ] Avoid octave jumping as the main harmony motion.
+- [x] Keep common chord tones between changes.
+- [x] Avoid octave jumping as the main harmony motion.
 - [x] Separate chord voices into stable registers.
 - [ ] Match harmony notes to the 1-5-6-1 progression.
 - [x] Validate that harmony polyphony exceeds one.

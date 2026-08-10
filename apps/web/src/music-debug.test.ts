@@ -172,9 +172,9 @@ describe('music debug', () => {
     expect(markup).toContain('music-debug-form');
     expect(markup).toContain('music-debug-timeline');
     expect(markup).toContain('music-debug-randomize');
-    expect(markup).toContain('Play Song');
+    expect(markup).toContain('Play Full Song');
     expect(markup).toContain('Download MIDI');
-    expect(markup).toContain('Loop Middle Section');
+    expect(markup).toContain('Loop middle section after full-song preview');
     expect(markup).toContain('music-debug-current-time');
     expect(markup).toContain('music-debug-current-section');
     expect(markup).toContain('music-debug-section-buttons');
