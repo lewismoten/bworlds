@@ -56,6 +56,7 @@ describe('music debug section analysis', () => {
         detectedChordLabels: ['G-B-D'],
         plannedChordLabels: [],
         followsPlannedProgression: true,
+        driftWindows: [],
       },
       {
         sectionId: 'a',
@@ -64,6 +65,7 @@ describe('music debug section analysis', () => {
         detectedChordLabels: ['C-E-G'],
         plannedChordLabels: [],
         followsPlannedProgression: true,
+        driftWindows: [],
       },
     ]);
   });
@@ -87,12 +89,21 @@ describe('music debug section analysis', () => {
       expect.objectContaining({
         plannedChordLabels: ['G-B-D', 'D-F-A', 'E-G-B', 'G-B-D'],
         followsPlannedProgression: true,
+        driftWindows: [],
       })
     );
     expect(analysis[1]).toEqual(
       expect.objectContaining({
         plannedChordLabels: ['G-B-D', 'D-F-A', 'E-G-B', 'G-B-D'],
         followsPlannedProgression: false,
+        driftWindows: [
+          {
+            startMeasure: 5,
+            endMeasure: 5,
+            detectedLabel: 'C-E-G',
+            plannedLabel: 'G-B-D',
+          },
+        ],
       })
     );
   });
@@ -119,6 +130,7 @@ describe('music debug section analysis', () => {
         detectedRootLabels: ['G', 'D', 'E', 'G'],
         plannedRootLabels: ['G', 'D', 'E', 'G'],
         followsPlannedProgression: true,
+        driftWindows: [],
       },
       {
         sectionId: 'a',
@@ -126,6 +138,32 @@ describe('music debug section analysis', () => {
         detectedRootLabels: ['A', 'C', 'D', 'E'],
         plannedRootLabels: ['G', 'D', 'E', 'G'],
         followsPlannedProgression: false,
+        driftWindows: [
+          {
+            startMeasure: 5,
+            endMeasure: 5,
+            detectedLabel: 'A',
+            plannedLabel: 'G',
+          },
+          {
+            startMeasure: 6,
+            endMeasure: 6,
+            detectedLabel: 'C',
+            plannedLabel: 'D',
+          },
+          {
+            startMeasure: 7,
+            endMeasure: 7,
+            detectedLabel: 'D',
+            plannedLabel: 'E',
+          },
+          {
+            startMeasure: 8,
+            endMeasure: 8,
+            detectedLabel: 'E',
+            plannedLabel: 'G',
+          },
+        ],
       },
     ]);
   });

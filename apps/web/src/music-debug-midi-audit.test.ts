@@ -226,6 +226,14 @@ describe('music debug midi audit', () => {
                 detectedChordLabels: ['A-C-E'],
                 plannedChordLabels: ['G-B-D', 'B-D-F', 'C-E-G'],
                 followsPlannedProgression: false,
+                driftWindows: [
+                  {
+                    startMeasure: 1,
+                    endMeasure: 2,
+                    detectedLabel: 'A-C-E',
+                    plannedLabel: 'G-B-D',
+                  },
+                ],
               }
             : section
       ),
@@ -237,7 +245,7 @@ describe('music debug midi audit', () => {
     expect(
       audit.warningMessages.some((message) =>
         message.includes(
-          'Intro harmony drifted from the planned progression (A-C-E vs G-B-D > B-D-F > C-E-G).'
+          'Intro harmony drifted at measures 1-2 (A-C-E vs G-B-D).'
         )
       )
     ).toBe(true);
@@ -269,6 +277,14 @@ describe('music debug midi audit', () => {
                 detectedRootLabels: ['A', 'C', 'E'],
                 plannedRootLabels: ['G', 'D', 'E'],
                 followsPlannedProgression: false,
+                driftWindows: [
+                  {
+                    startMeasure: 1,
+                    endMeasure: 2,
+                    detectedLabel: 'A',
+                    plannedLabel: 'G',
+                  },
+                ],
               }
             : section
       ),
@@ -279,7 +295,7 @@ describe('music debug midi audit', () => {
     expect(audit.mismatchMessages).toEqual([]);
     expect(
       audit.warningMessages.some((message) =>
-        message.includes('bass roots drift')
+        message.includes('Intro bass roots drifted at measures 1-2 (A vs G).')
       )
     ).toBe(true);
   });

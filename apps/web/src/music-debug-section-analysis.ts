@@ -27,6 +27,7 @@ export type MusicDebugHarmonyChordDetection = {
   detectedChordLabels: string[];
   plannedChordLabels: string[];
   followsPlannedProgression: boolean;
+  driftWindows: MusicDebugProgressionDriftWindow[];
 };
 
 export type MusicDebugBassProgressionDetection = {
@@ -35,6 +36,14 @@ export type MusicDebugBassProgressionDetection = {
   detectedRootLabels: string[];
   plannedRootLabels: string[];
   followsPlannedProgression: boolean;
+  driftWindows: MusicDebugProgressionDriftWindow[];
+};
+
+export type MusicDebugProgressionDriftWindow = {
+  startMeasure: number;
+  endMeasure: number;
+  detectedLabel: string | null;
+  plannedLabel: string;
 };
 
 export type MusicDebugSectionLayerActivity = {
@@ -113,6 +122,7 @@ export function createMusicDebugHarmonyChordDetections(options: {
   chordTimeline?: readonly ProceduralChordTimelineEntry[];
 }): MusicDebugHarmonyChordDetection[] {
   return options.sections.map((section) => {
+    const chordWindows = collectSectionChordWindows(section, options.chordTimeline ?? []);
     const detectedChordLabels = collectOrderedHarmonyChordLabels({
       notes: options.notes,
       notePitchDiagnostics: options.notePitchDiagnostics,
@@ -125,6 +135,18 @@ export function createMusicDebugHarmonyChordDetections(options: {
             scale: options.scale,
             rootMidiNote: options.rootMidiNote ?? 60,
             chordTimeline: options.chordTimeline,
+          })
+        : [];
+    const driftWindows =
+      options.scale && options.chordTimeline
+        ? collectHarmonyChordDriftWindows({
+            notes: options.notes,
+            notePitchDiagnostics: options.notePitchDiagnostics,
+            section,
+            scale: options.scale,
+            rootMidiNote: options.rootMidiNote ?? 60,
+            chordTimeline: options.chordTimeline,
+            chordWindows,
           })
         : [];
 
@@ -145,6 +167,7 @@ export function createMusicDebugHarmonyChordDetections(options: {
               detectedChordLabels,
               plannedChordLabels
             ),
+      driftWindows,
     };
   });
 }
@@ -158,6 +181,7 @@ export function createMusicDebugBassProgressionDetections(options: {
   chordTimeline?: readonly ProceduralChordTimelineEntry[];
 }): MusicDebugBassProgressionDetection[] {
   return options.sections.map((section) => {
+    const chordWindows = collectSectionChordWindows(section, options.chordTimeline ?? []);
     const plannedRootLabels =
       options.scale && options.chordTimeline
         ? collectPlannedSectionRootLabels({
@@ -174,12 +198,25 @@ export function createMusicDebugBassProgressionDetections(options: {
             notePitchDiagnostics: options.notePitchDiagnostics,
             section,
             chordTimeline: options.chordTimeline,
+            chordWindows,
           })
         : collectOrderedBassRootLabels({
             notes: options.notes,
             notePitchDiagnostics: options.notePitchDiagnostics,
             section,
           });
+    const driftWindows =
+      options.scale && options.chordTimeline
+        ? collectBassRootDriftWindows({
+            notes: options.notes,
+            notePitchDiagnostics: options.notePitchDiagnostics,
+            section,
+            scale: options.scale,
+            rootMidiNote: options.rootMidiNote ?? 60,
+            chordTimeline: options.chordTimeline,
+            chordWindows,
+          })
+        : [];
 
     return {
       sectionId: section.id,
@@ -193,6 +230,7 @@ export function createMusicDebugBassProgressionDetections(options: {
               detectedRootLabels,
               plannedRootLabels
             ),
+      driftWindows,
     };
   });
 }
@@ -778,6 +816,11 @@ function collectDetectedSectionBassRootLabels(options: {
   notePitchDiagnostics: readonly MusicDebugNotePitchDiagnostic[];
   section: ProceduralMusicSongSection;
   chordTimeline: readonly ProceduralChordTimelineEntry[];
+  chordWindows?: ReadonlyArray<{
+    degreeIndex: number;
+    sectionStartMeasure: number;
+    sectionEndMeasure: number;
+  }>;
 }): string[] {
   const sectionStartMs = options.notes[0]?.startMs ?? 0;
   const sectionStart = sectionStartMs + options.section.startOffsetMs;
@@ -787,7 +830,7 @@ function collectDetectedSectionBassRootLabels(options: {
       : options.section.durationMs;
   const labels: string[] = [];
 
-  for (const window of collectSectionChordWindows(
+  for (const window of options.chordWindows ?? collectSectionChordWindows(
     options.section,
     options.chordTimeline
   )) {
@@ -806,6 +849,144 @@ function collectDetectedSectionBassRootLabels(options: {
   }
 
   return collapseConsecutiveChordLabels(labels);
+}
+
+function collectHarmonyChordDriftWindows(options: {
+  notes: readonly ProceduralMusicNote[];
+  notePitchDiagnostics: readonly MusicDebugNotePitchDiagnostic[];
+  section: ProceduralMusicSongSection;
+  scale: readonly number[];
+  rootMidiNote: number;
+  chordTimeline: readonly ProceduralChordTimelineEntry[];
+  chordWindows: ReadonlyArray<{
+    degreeIndex: number;
+    sectionStartMeasure: number;
+    sectionEndMeasure: number;
+  }>;
+}): MusicDebugProgressionDriftWindow[] {
+  const sectionStartMs = options.notes[0]?.startMs ?? 0;
+  const sectionStart = sectionStartMs + options.section.startOffsetMs;
+  const measureDurationMs =
+    options.section.measureCount > 0
+      ? options.section.durationMs / options.section.measureCount
+      : options.section.durationMs;
+  const drifts: MusicDebugProgressionDriftWindow[] = [];
+
+  for (const window of options.chordWindows) {
+    const plannedLabel = createPlannedChordLabel(
+      options.scale,
+      options.rootMidiNote,
+      window.degreeIndex
+    );
+    const startMs =
+      sectionStart + (window.sectionStartMeasure - 1) * measureDurationMs;
+    const endMs = sectionStart + window.sectionEndMeasure * measureDurationMs;
+    const detectedLabel = detectHarmonyChordLabelForWindow({
+      notes: options.notes,
+      notePitchDiagnostics: options.notePitchDiagnostics,
+      startMs,
+      endMs,
+    });
+    if (
+      detectedLabel !== null &&
+      !doesDetectedChordLabelFitPlannedChord(detectedLabel, plannedLabel)
+    ) {
+      drifts.push({
+        startMeasure: options.section.startMeasure + window.sectionStartMeasure - 1,
+        endMeasure: options.section.startMeasure + window.sectionEndMeasure - 1,
+        detectedLabel,
+        plannedLabel,
+      });
+    }
+  }
+
+  return drifts;
+}
+
+function collectBassRootDriftWindows(options: {
+  notes: readonly ProceduralMusicNote[];
+  notePitchDiagnostics: readonly MusicDebugNotePitchDiagnostic[];
+  section: ProceduralMusicSongSection;
+  scale: readonly number[];
+  rootMidiNote: number;
+  chordTimeline: readonly ProceduralChordTimelineEntry[];
+  chordWindows: ReadonlyArray<{
+    degreeIndex: number;
+    sectionStartMeasure: number;
+    sectionEndMeasure: number;
+  }>;
+}): MusicDebugProgressionDriftWindow[] {
+  const sectionStartMs = options.notes[0]?.startMs ?? 0;
+  const sectionStart = sectionStartMs + options.section.startOffsetMs;
+  const measureDurationMs =
+    options.section.measureCount > 0
+      ? options.section.durationMs / options.section.measureCount
+      : options.section.durationMs;
+  const drifts: MusicDebugProgressionDriftWindow[] = [];
+
+  for (const window of options.chordWindows) {
+    const plannedLabel = resolvePitchClassLabel(
+      options.rootMidiNote +
+        getProceduralScaleDegreeSemitones(options.scale, window.degreeIndex)
+    );
+    const startMs =
+      sectionStart + (window.sectionStartMeasure - 1) * measureDurationMs;
+    const endMs = sectionStart + window.sectionEndMeasure * measureDurationMs;
+    const detectedLabel = detectBassRootLabelForWindow({
+      notes: options.notes,
+      notePitchDiagnostics: options.notePitchDiagnostics,
+      startMs,
+      endMs,
+    });
+    if (detectedLabel !== null && detectedLabel !== plannedLabel) {
+      drifts.push({
+        startMeasure: options.section.startMeasure + window.sectionStartMeasure - 1,
+        endMeasure: options.section.startMeasure + window.sectionEndMeasure - 1,
+        detectedLabel,
+        plannedLabel,
+      });
+    }
+  }
+
+  return drifts;
+}
+
+function detectHarmonyChordLabelForWindow(options: {
+  notes: readonly ProceduralMusicNote[];
+  notePitchDiagnostics: readonly MusicDebugNotePitchDiagnostic[];
+  startMs: number;
+  endMs: number;
+}): string | null {
+  const groups = new Map<number, string>();
+
+  for (let index = 0; index < options.notes.length; index += 1) {
+    const note = options.notes[index]!;
+    const diagnostic = options.notePitchDiagnostics[index];
+    if (
+      !diagnostic ||
+      note.role !== 'harmony' ||
+      diagnostic.midiNote === null ||
+      note.startMs >= options.endMs ||
+      note.startMs + note.durationMs <= options.startMs
+    ) {
+      continue;
+    }
+
+    const overlapStartMs = Math.max(note.startMs, options.startMs);
+    const existing = groups.get(overlapStartMs);
+    const pitchClassLabel = resolvePitchClassLabel(diagnostic.midiNote);
+    groups.set(
+      overlapStartMs,
+      existing ? `${existing},${pitchClassLabel}` : pitchClassLabel
+    );
+  }
+
+  const orderedLabels = Array.from(groups.entries())
+    .sort((left, right) => left[0] - right[0])
+    .map(([, group]) => normalizeChordLabel(group))
+    .filter((label): label is string => Boolean(label));
+
+  return orderedLabels[0] ?? null;
 }
 
 function detectBassRootLabelForWindow(options: {

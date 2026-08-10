@@ -188,8 +188,9 @@ export function inspectMusicDebugMidiBytes(
     snapshot.harmonyChordDetections.some(
       (section) =>
         requiresStrictProgressionAudit(section.sectionId) &&
-        section.detectedChordLabels.length > 0 &&
-        !section.followsPlannedProgression
+        (section.driftWindows.length > 0 ||
+          (section.detectedChordLabels.length > 0 &&
+            !section.followsPlannedProgression))
     )
   ) {
     warningMessages.push(
@@ -197,12 +198,22 @@ export function inspectMusicDebugMidiBytes(
         .filter(
           (section) =>
             requiresStrictProgressionAudit(section.sectionId) &&
-            section.detectedChordLabels.length > 0 &&
-            !section.followsPlannedProgression
+            (section.driftWindows.length > 0 ||
+              (section.detectedChordLabels.length > 0 &&
+                !section.followsPlannedProgression))
         )
-        .map(
-          (section) =>
-            `${section.sectionLabel} harmony drifted from the planned progression (${section.detectedChordLabels.join(' > ') || 'missing'} vs ${section.plannedChordLabels.join(' > ') || 'unplanned'}).`
+        .flatMap((section) =>
+          section.driftWindows.length > 0
+            ? section.driftWindows.map((window) => {
+                const measureLabel =
+                  window.startMeasure === window.endMeasure
+                    ? `measure ${window.startMeasure}`
+                    : `measures ${window.startMeasure}-${window.endMeasure}`;
+                return `${section.sectionLabel} harmony drifted at ${measureLabel} (${window.detectedLabel ?? 'missing'} vs ${window.plannedLabel}).`;
+              })
+            : [
+                `${section.sectionLabel} harmony drifted from the planned progression (${section.detectedChordLabels.join(' > ') || 'missing'} vs ${section.plannedChordLabels.join(' > ') || 'unplanned'}).`,
+              ]
         )
     );
   }
@@ -211,8 +222,9 @@ export function inspectMusicDebugMidiBytes(
     snapshot.bassProgressionDetections.some(
       (section) =>
         requiresStrictProgressionAudit(section.sectionId) &&
-        section.detectedRootLabels.length > 0 &&
-        !section.followsPlannedProgression
+        (section.driftWindows.length > 0 ||
+          (section.detectedRootLabels.length > 0 &&
+            !section.followsPlannedProgression))
     )
   ) {
     warningMessages.push(
@@ -220,12 +232,22 @@ export function inspectMusicDebugMidiBytes(
         .filter(
           (section) =>
             requiresStrictProgressionAudit(section.sectionId) &&
-            section.detectedRootLabels.length > 0 &&
-            !section.followsPlannedProgression
+            (section.driftWindows.length > 0 ||
+              (section.detectedRootLabels.length > 0 &&
+                !section.followsPlannedProgression))
         )
-        .map(
-          (section) =>
-            `${section.sectionLabel} bass roots drifted from the planned progression (${section.detectedRootLabels.join(' > ') || 'missing'} vs ${section.plannedRootLabels.join(' > ') || 'unplanned'}).`
+        .flatMap((section) =>
+          section.driftWindows.length > 0
+            ? section.driftWindows.map((window) => {
+                const measureLabel =
+                  window.startMeasure === window.endMeasure
+                    ? `measure ${window.startMeasure}`
+                    : `measures ${window.startMeasure}-${window.endMeasure}`;
+                return `${section.sectionLabel} bass roots drifted at ${measureLabel} (${window.detectedLabel ?? 'missing'} vs ${window.plannedLabel}).`;
+              })
+            : [
+                `${section.sectionLabel} bass roots drifted from the planned progression (${section.detectedRootLabels.join(' > ') || 'missing'} vs ${section.plannedRootLabels.join(' > ') || 'unplanned'}).`,
+              ]
         )
     );
   }
