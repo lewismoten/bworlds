@@ -3,6 +3,7 @@ import {
   createMusicDebugMidiFileUnchecked,
   type MusicDebugMidiMetadataOptions,
 } from './music-debug-midi.ts';
+import type { MusicDebugMidiExportVariant } from './music-debug-midi-export-variant.ts';
 
 export type MusicDebugMidiAudit = {
   exportedBpm: number | null;
@@ -20,7 +21,12 @@ export function createMusicDebugMidiExportAudit(
   metadataOptions: MusicDebugMidiMetadataOptions = {}
 ): MusicDebugMidiAudit {
   const file = createMusicDebugMidiFileUnchecked(snapshot, metadataOptions);
-  return inspectMusicDebugMidiBytes(file.bytes, snapshot);
+  return inspectMusicDebugMidiBytes(file.bytes, snapshot, {
+    includedRoles:
+      metadataOptions.variant === undefined
+        ? undefined
+        : resolveAuditRoles(metadataOptions.variant),
+  });
 }
 
 export function inspectMusicDebugMidiBytes(
@@ -33,7 +39,10 @@ export function inspectMusicDebugMidiBytes(
     | 'song'
     | 'trackStats'
     | 'harmonyChordDetections'
-  >
+  >,
+  options: {
+    includedRoles?: readonly MusicDebugSnapshot['notes'][number]['role'][];
+  } = {}
 ): MusicDebugMidiAudit {
   const chunks = parseMidiChunks(bytes);
   const conductorTrack = chunks.tracks[0] ?? new Uint8Array();
@@ -57,6 +66,9 @@ export function inspectMusicDebugMidiBytes(
   );
   const mismatchMessages: string[] = [];
   const warningMessages: string[] = [];
+  const includedRoles = new Set(
+    options.includedRoles ?? ['bass', 'harmony', 'lead', 'percussion']
+  );
   let sectionsMatchPlannedMarkers = true;
 
   if (
@@ -77,12 +89,16 @@ export function inspectMusicDebugMidiBytes(
       `MIDI measures ${exportedMeasureCount} do not match ${snapshot.measureCount}.`
     );
   }
-  if (snapshot.trackStats.harmony.maxPolyphony <= 1) {
+  if (
+    includedRoles.has('harmony') &&
+    snapshot.trackStats.harmony.maxPolyphony <= 1
+  ) {
     mismatchMessages.push(
       'Harmony track collapsed to single notes instead of sustained chord voicings.'
     );
   }
   if (
+    includedRoles.has('harmony') &&
     !snapshot.harmonyChordDetections.some(
       (section) => section.chordLabels.length > 0
     )
@@ -131,6 +147,18 @@ export function inspectMusicDebugMidiBytes(
     warningMessages,
     isConsistent: mismatchMessages.length === 0,
   };
+}
+
+function resolveAuditRoles(
+  variant: MusicDebugMidiExportVariant
+): readonly MusicDebugSnapshot['notes'][number]['role'][] {
+  if (variant === 'melody-only') {
+    return ['lead'];
+  }
+  if (variant === 'harmony-and-bass') {
+    return ['bass', 'harmony'];
+  }
+  return ['bass', 'harmony', 'lead', 'percussion'];
 }
 
 function requiresStrictProgressionAudit(sectionId: string): boolean {

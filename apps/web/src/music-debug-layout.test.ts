@@ -18,6 +18,12 @@ describe('music debug layout styles', () => {
       'grid-template-columns: repeat(2, minmax(0, 1fr));'
     );
     expect(stylesheet).toContain('.music-debug-actions > * {\n  min-width: 0;');
+    expect(stylesheet).toContain(
+      '.music-debug-export-controls {\n  display: grid;'
+    );
+    expect(stylesheet).toContain(
+      '.music-debug-export-label {\n  display: flex;'
+    );
     expect(stylesheet).toContain('.music-debug-toggle {\n  display: flex;');
     expect(stylesheet).toContain('@media (max-width: 960px)');
     expect(stylesheet).toContain(

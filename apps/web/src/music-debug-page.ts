@@ -11,6 +11,7 @@ import { restorePersistedPageScrollY } from './page-scroll-state.ts';
 import { createMusicDebugPageState } from './music-debug-page-state.ts';
 import { createMusicDebugPlaybackController } from './music-debug-playback.ts';
 import { downloadMusicDebugMidiFile } from './music-debug-midi.ts';
+import { normalizeMusicDebugMidiExportVariant } from './music-debug-midi-export-variant.ts';
 import { createMusicDebugInstrumentPreviewPlayer } from './music-debug-instrument-preview.ts';
 import { resolveMusicDebugInstrumentPreviewNote } from './music-debug-instrument-panel.ts';
 import { resolveMusicDebugLivePlaybackIntent } from './music-debug-live-playback.ts';
@@ -59,6 +60,9 @@ const randomizeButton = document.querySelector<HTMLButtonElement>(
 );
 const downloadButton = document.querySelector<HTMLButtonElement>(
   '#music-debug-download'
+);
+const exportVariantSelect = document.querySelector<HTMLSelectElement>(
+  '#music-debug-export-variant'
 );
 const loopInput = document.querySelector<HTMLInputElement>('#music-debug-loop');
 const currentTimeLabel = document.querySelector<HTMLElement>(
@@ -451,7 +455,9 @@ randomizeButton?.addEventListener('click', () => {
 downloadButton?.addEventListener('click', () => {
   instrumentPreviewPlayer.stop();
   playbackController.stop();
-  downloadMusicDebugMidiFile(pageState.refreshNow());
+  downloadMusicDebugMidiFile(pageState.refreshNow(), undefined, {
+    variant: normalizeMusicDebugMidiExportVariant(exportVariantSelect?.value),
+  });
 });
 
 summary?.addEventListener('click', (event) => {

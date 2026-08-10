@@ -40,8 +40,8 @@
 - [x] Report exact and varied motif matches separately.
 - [x] Score phrase repetition and phrase-level similarity.
 - [x] Reject songs whose configured motif never appears.
-- [ ] Add a melody-only MIDI export for rapid evaluation.
-- [ ] Add a harmony-and-bass-only MIDI export for review.
+- [x] Add a melody-only MIDI export for rapid evaluation.
+- [x] Add a harmony-and-bass-only MIDI export for review.
 - [ ] Test eight measures before generating all measures.
 - [x] Percussion should be made of multiple percussion instruments (drum set), preferably noise related
 - [ ] Let me download the MIDI, instrument WAV, and parameter report JSON, as a zip file.

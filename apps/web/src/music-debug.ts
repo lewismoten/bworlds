@@ -70,6 +70,10 @@ import {
   type MusicDebugPhraseRepetitionAnalysis,
 } from './music-debug-phrase-repetition.ts';
 import {
+  MUSIC_DEBUG_MIDI_EXPORT_VARIANTS,
+  formatMusicDebugMidiExportVariantLabel,
+} from './music-debug-midi-export-variant.ts';
+import {
   validateMusicDebugMotifPresence,
   type MusicDebugMotifValidation,
 } from './music-debug-motif-validation.ts';
@@ -680,7 +684,20 @@ export function buildMusicDebugShellMarkup(
             <button id="music-debug-generate" type="submit">Generate</button>
             <button id="music-debug-randomize" type="button">🎲 Generate</button>
             <button id="music-debug-play" type="button">${MUSIC_DEBUG_FULL_SONG_BUTTON_LABEL}</button>
-            <button id="music-debug-download" type="button">Download MIDI</button>
+            <div class="music-debug-export-controls">
+              <button id="music-debug-download" type="button">Download MIDI</button>
+              <label class="music-debug-export-label">
+                <span class="sr-only">MIDI export variant</span>
+                <select id="music-debug-export-variant" name="exportVariant">
+                  ${MUSIC_DEBUG_MIDI_EXPORT_VARIANTS.map(
+                    (variant) =>
+                      `<option value="${variant}">${formatMusicDebugMidiExportVariantLabel(
+                        variant
+                      )}</option>`
+                  ).join('')}
+                </select>
+              </label>
+            </div>
             <label class="music-debug-toggle">
               <input id="music-debug-loop" type="checkbox" />
               <span>${MUSIC_DEBUG_LOOP_TOGGLE_LABEL}</span>

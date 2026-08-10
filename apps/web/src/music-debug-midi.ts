@@ -3,6 +3,11 @@ import {
   resolveMidiPercussionNoteNumber,
 } from './music-debug-midi-drums.ts';
 import {
+  formatMusicDebugMidiExportVariantSuffix,
+  resolveMusicDebugMidiExportRoles,
+  type MusicDebugMidiExportVariant,
+} from './music-debug-midi-export-variant.ts';
+import {
   msToMusicDebugTicks,
   MUSIC_DEBUG_MIDI_TICKS_PER_QUARTER,
 } from './music-debug-tempo.ts';
@@ -71,6 +76,7 @@ export type MusicDebugMidiMetadataOptions = {
   website?: string;
   source?: string;
   sequencer?: string;
+  variant?: MusicDebugMidiExportVariant;
 };
 
 type MusicDebugMidiDownloadEnvironment = {
@@ -98,6 +104,7 @@ export function createMusicDebugMidiFile(
   snapshot: MusicDebugSnapshot,
   metadataOptions: MusicDebugMidiMetadataOptions = {}
 ): MusicDebugMidiFile {
+  const variant = metadataOptions.variant ?? 'full';
   const validationMessages = [
     ...snapshot.midiExportValidation.messages,
     ...snapshot.motifValidation.messages,
@@ -111,7 +118,9 @@ export function createMusicDebugMidiFile(
     throw new Error(`Cannot export MIDI: ${validationMessages.join(' ')}`);
   }
   const file = createMusicDebugMidiFileUnchecked(snapshot, metadataOptions);
-  const midiAudit = inspectMusicDebugMidiBytes(file.bytes, snapshot);
+  const midiAudit = inspectMusicDebugMidiBytes(file.bytes, snapshot, {
+    includedRoles: resolveMusicDebugMidiExportRoles(variant),
+  });
   if (!midiAudit.isConsistent) {
     throw new Error(
       `Cannot export MIDI: ${midiAudit.mismatchMessages.join(' ')}`
@@ -145,7 +154,7 @@ export function createMusicDebugMidiFileUnchecked(
 
   return {
     bytes,
-    fileName: formatMusicDebugMidiFileName(snapshot),
+    fileName: formatMusicDebugMidiFileName(snapshot, metadata.variant),
     mimeType: 'audio/midi',
   };
 }
@@ -172,7 +181,7 @@ function buildMidiTracks(
   metadata: ResolvedMusicDebugMidiMetadata
 ): MusicDebugMidiTrack[] {
   const conductorTrack = buildConductorTrack(snapshot, metadata);
-  const roleTracks = buildRoleTracks(snapshot);
+  const roleTracks = buildRoleTracks(snapshot, metadata.variant);
   return [conductorTrack, ...roleTracks];
 }
 
@@ -289,131 +298,137 @@ function buildConductorTrack(
   };
 }
 
-function buildRoleTracks(snapshot: MusicDebugSnapshot): MusicDebugMidiTrack[] {
+function buildRoleTracks(
+  snapshot: MusicDebugSnapshot,
+  variant: MusicDebugMidiExportVariant
+): MusicDebugMidiTrack[] {
   const roleOrder = ['bass', 'harmony', 'lead', 'percussion'] as const;
-  return roleOrder.map((role, roleIndex) => {
-    const events: MidiTrackEvent[] = [];
-    const instrument = snapshot.instrumentBank.instruments[role];
-    const channel = ROLE_CHANNELS[role];
-    const roleLabel = formatRoleTrackLabel(role, instrument.family);
+  const includedRoles = new Set(resolveMusicDebugMidiExportRoles(variant));
+  return roleOrder
+    .filter((role) => includedRoles.has(role))
+    .map((role, roleIndex) => {
+      const events: MidiTrackEvent[] = [];
+      const instrument = snapshot.instrumentBank.instruments[role];
+      const channel = ROLE_CHANNELS[role];
+      const roleLabel = formatRoleTrackLabel(role, instrument.family);
 
-    events.push({
-      tick: 0,
-      order: 0,
-      data: [0xff, 0x03, ...encodeText(roleLabel)],
-    });
-    events.push({
-      tick: 0,
-      order: 1,
-      data: [
-        0xff,
-        0x04,
-        ...encodeText(formatInstrumentName(instrument.family)),
-      ],
-    });
-    events.push({
-      tick: 0,
-      order: 2,
-      data: createControllerEvent(
-        channel,
-        0,
-        resolveBankSelectMsb(instrument.family)
-      ),
-    });
-    events.push({
-      tick: 0,
-      order: 3,
-      data: createControllerEvent(
-        channel,
-        32,
-        resolveBankSelectLsb(instrument.family)
-      ),
-    });
-    events.push({
-      tick: 0,
-      order: 4,
-      data: createControllerEvent(
-        channel,
-        7,
-        resolveChannelVolume(snapshot, role)
-      ),
-    });
-    events.push({
-      tick: 0,
-      order: 5,
-      data: createControllerEvent(
-        channel,
-        10,
-        resolveChannelPan(role, instrument)
-      ),
-    });
-    if (!isMidiPercussionFamily(instrument.family)) {
-      events.push(createProgramChangeEvent(channel, instrument.family, 6));
-    }
-    if (role === 'lead') {
-      for (let index = 0; index < snapshot.lyrics.length; index += 1) {
-        const lyric = snapshot.lyrics[index]!;
+      events.push({
+        tick: 0,
+        order: 0,
+        data: [0xff, 0x03, ...encodeText(roleLabel)],
+      });
+      events.push({
+        tick: 0,
+        order: 1,
+        data: [
+          0xff,
+          0x04,
+          ...encodeText(formatInstrumentName(instrument.family)),
+        ],
+      });
+      events.push({
+        tick: 0,
+        order: 2,
+        data: createControllerEvent(
+          channel,
+          0,
+          resolveBankSelectMsb(instrument.family)
+        ),
+      });
+      events.push({
+        tick: 0,
+        order: 3,
+        data: createControllerEvent(
+          channel,
+          32,
+          resolveBankSelectLsb(instrument.family)
+        ),
+      });
+      events.push({
+        tick: 0,
+        order: 4,
+        data: createControllerEvent(
+          channel,
+          7,
+          resolveChannelVolume(snapshot, role)
+        ),
+      });
+      events.push({
+        tick: 0,
+        order: 5,
+        data: createControllerEvent(
+          channel,
+          10,
+          resolveChannelPan(role, instrument)
+        ),
+      });
+      if (!isMidiPercussionFamily(instrument.family)) {
+        events.push(createProgramChangeEvent(channel, instrument.family, 6));
+      }
+      if (role === 'lead') {
+        for (let index = 0; index < snapshot.lyrics.length; index += 1) {
+          const lyric = snapshot.lyrics[index]!;
+          events.push({
+            tick: msToTicks(lyric.startOffsetMs, snapshot),
+            order: 10 + index,
+            data: [0xff, 0x05, ...encodeText(lyric.text)],
+          });
+        }
+      }
+
+      let noteOrder = 20;
+      let roleNoteIndex = 0;
+      for (let index = 0; index < snapshot.notes.length; index += 1) {
+        const note = snapshot.notes[index]!;
+        if (note.role !== role) {
+          continue;
+        }
+        const notePercussionFamily =
+          role === 'percussion'
+            ? resolvePercussionFamilyFromInstrumentId(note.instrumentId)
+            : null;
+        const midiNote = isMidiPercussionFamily(instrument.family)
+          ? resolveMidiPercussionNoteNumber({
+              note,
+              family: notePercussionFamily ?? instrument.family,
+              noteIndex: roleNoteIndex,
+            })
+          : resolveMidiNoteNumber(note.frequency);
+        const velocity = resolveVelocity(note.volume, note.role);
+        const startTick = msToTicks(
+          note.startMs - snapshot.song.startMs,
+          snapshot
+        );
+        const endTick = msToTicks(
+          note.startMs + note.durationMs - snapshot.song.startMs,
+          snapshot
+        );
+
         events.push({
-          tick: msToTicks(lyric.startOffsetMs, snapshot),
-          order: 10 + index,
-          data: [0xff, 0x05, ...encodeText(lyric.text)],
+          tick: startTick,
+          order: noteOrder,
+          data: [0x90 | channel, midiNote, velocity],
         });
+        events.push({
+          tick: Math.max(startTick, endTick),
+          order: noteOrder + 1,
+          data: [0x80 | channel, midiNote, 0],
+        });
+        noteOrder += 2;
+        roleNoteIndex += 1;
       }
-    }
-
-    let noteOrder = 20;
-    let roleNoteIndex = 0;
-    for (let index = 0; index < snapshot.notes.length; index += 1) {
-      const note = snapshot.notes[index]!;
-      if (note.role !== role) {
-        continue;
-      }
-      const notePercussionFamily =
-        role === 'percussion'
-          ? resolvePercussionFamilyFromInstrumentId(note.instrumentId)
-          : null;
-      const midiNote = isMidiPercussionFamily(instrument.family)
-        ? resolveMidiPercussionNoteNumber({
-            note,
-            family: notePercussionFamily ?? instrument.family,
-            noteIndex: roleNoteIndex,
-          })
-        : resolveMidiNoteNumber(note.frequency);
-      const velocity = resolveVelocity(note.volume, note.role);
-      const startTick = msToTicks(
-        note.startMs - snapshot.song.startMs,
-        snapshot
-      );
-      const endTick = msToTicks(
-        note.startMs + note.durationMs - snapshot.song.startMs,
-        snapshot
-      );
 
       events.push({
-        tick: startTick,
-        order: noteOrder,
-        data: [0x90 | channel, midiNote, velocity],
+        tick: msToTicks(snapshot.durationMs, snapshot),
+        order: Number.MAX_SAFE_INTEGER - roleIndex,
+        data: [0xff, 0x2f, 0x00],
       });
-      events.push({
-        tick: Math.max(startTick, endTick),
-        order: noteOrder + 1,
-        data: [0x80 | channel, midiNote, 0],
-      });
-      noteOrder += 2;
-      roleNoteIndex += 1;
-    }
 
-    events.push({
-      tick: msToTicks(snapshot.durationMs, snapshot),
-      order: Number.MAX_SAFE_INTEGER - roleIndex,
-      data: [0xff, 0x2f, 0x00],
+      return {
+        name: roleLabel,
+        events,
+      };
     });
-
-    return {
-      name: roleLabel,
-      events,
-    };
-  });
 }
 
 function createProgramChangeEvent(
@@ -455,11 +470,17 @@ function encodeTrackEvents(events: readonly MidiTrackEvent[]): number[] {
   return bytes;
 }
 
-function formatMusicDebugMidiFileName(snapshot: MusicDebugSnapshot): string {
+function formatMusicDebugMidiFileName(
+  snapshot: MusicDebugSnapshot,
+  variant: MusicDebugMidiExportVariant
+): string {
   const theme = snapshot.theme.id;
   const x = snapshot.options.clusterX;
   const y = snapshot.options.clusterY;
-  return `bworlds-${theme}-${x}-${y}.mid`;
+  const suffix = formatMusicDebugMidiExportVariantSuffix(variant);
+  return suffix.length > 0
+    ? `bworlds-${theme}-${x}-${y}-${suffix}.mid`
+    : `bworlds-${theme}-${x}-${y}.mid`;
 }
 
 function formatRoleTrackLabel(
@@ -509,6 +530,7 @@ type ResolvedMusicDebugMidiMetadata = {
   sequencer: string;
   comments: string;
   moreComments: string[];
+  variant: MusicDebugMidiExportVariant;
 };
 
 function resolveMusicDebugMidiMetadata(
@@ -536,7 +558,9 @@ function resolveMusicDebugMidiMetadata(
       `Mood tempo ${snapshot.mood.tempoMultiplier.toFixed(2)}x / Resolved BPM ${snapshot.resolvedBpm.toFixed(1)} / brightness ${snapshot.mood.brightness.toFixed(2)}x / Encounter ${snapshot.options.encounterMode}`,
       `Vocabulary ${snapshot.vocabularySummary.join(', ')}`,
       `Chromatic ${snapshot.accidentalNoteCount} outside ${snapshot.theme.vocabulary.modeLabel} / Black keys ${snapshot.midiExportValidation.blackKeyNoteCount} / Rules lower ${snapshot.midiExportValidation.accidentalReasonCounts['lower-approach']} upper ${snapshot.midiExportValidation.accidentalReasonCounts['upper-approach']} unresolved ${snapshot.midiExportValidation.accidentalReasonCounts['unresolved-chromatic']}`,
+      `Export variant ${options.variant ?? 'full'}`,
     ],
+    variant: options.variant ?? 'full',
   };
 }
 

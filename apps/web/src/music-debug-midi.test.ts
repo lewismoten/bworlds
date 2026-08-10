@@ -4,6 +4,7 @@ import {
   createMusicDebugMidiFile,
   downloadMusicDebugMidiFile,
 } from './music-debug-midi.ts';
+import { resolveMusicDebugMidiExportRoles } from './music-debug-midi-export-variant.ts';
 import { msToMusicDebugTicks } from './music-debug-tempo.ts';
 import { resolvePercussionFamilyFromInstrumentId } from './procedural-music-percussion.ts';
 
@@ -92,10 +93,13 @@ describe('music debug midi', () => {
     );
     expect(
       conductorTexts.filter((text) => text.startsWith('More comments: '))
-    ).toHaveLength(5);
+    ).toHaveLength(6);
     expect(conductorTexts.some((text) => text.includes('Chromatic'))).toBe(
       true
     );
+    expect(
+      conductorTexts.some((text) => text.includes('Export variant full'))
+    ).toBe(true);
     expect(readTrackMetaTexts(chunks.tracks[1]!, 0x04)).toHaveLength(1);
     expect(readTrackMetaTexts(chunks.tracks[2]!, 0x04)).toHaveLength(1);
     expect(readTrackMetaTexts(chunks.tracks[3]!, 0x04)).toHaveLength(1);
@@ -231,6 +235,47 @@ describe('music debug midi', () => {
     expect(createObjectURL).toHaveBeenCalledTimes(1);
   });
 
+  it('exports a melody-only midi file for rapid lead review', () => {
+    const snapshot = createMusicDebugSnapshot({
+      tileKind: 'forest',
+      contextType: 'overworld',
+      clusterX: 0,
+      clusterY: 0,
+    });
+
+    const file = createMusicDebugMidiFile(snapshot, {
+      variant: 'melody-only',
+      createdAt: new Date('2026-08-09T00:00:00.000Z'),
+    });
+    const chunks = parseMidiChunks(file.bytes);
+
+    expect(file.fileName).toBe('bworlds-deep-forest-0-0-melody.mid');
+    expect(chunks.header.trackCount).toBe(2);
+    expect(chunks.tracks).toHaveLength(2);
+    expect(readTrackName(chunks.tracks[1]!)).toContain('Lead:');
+  });
+
+  it('exports a harmony-and-bass midi file for accompaniment review', () => {
+    const snapshot = createMusicDebugSnapshot({
+      tileKind: 'town',
+      contextType: 'town',
+      clusterX: 3,
+      clusterY: -2,
+    });
+
+    const file = createMusicDebugMidiFile(snapshot, {
+      variant: 'harmony-and-bass',
+      createdAt: new Date('2026-08-09T00:00:00.000Z'),
+    });
+    const chunks = parseMidiChunks(file.bytes);
+
+    expect(file.fileName).toBe('bworlds-town-square-3--2-harmony-bass.mid');
+    expect(chunks.header.trackCount).toBe(3);
+    expect(chunks.tracks).toHaveLength(3);
+    expect(readTrackName(chunks.tracks[1]!)).toContain('Bass:');
+    expect(readTrackName(chunks.tracks[2]!)).toContain('Harmony:');
+  });
+
   it('includes lyric meta events when the generated lead instrument uses vocals', () => {
     const snapshot = findVocalsSnapshot();
     const file = createMusicDebugMidiFile(snapshot, {
@@ -314,6 +359,17 @@ describe('music debug midi', () => {
       'Cannot export MIDI: Configured lead motif 1-3-5-3 never appears in the generated song.'
     );
   });
+
+  it.each([
+    ['full', ['bass', 'harmony', 'lead', 'percussion']],
+    ['melody-only', ['lead']],
+    ['harmony-and-bass', ['bass', 'harmony']],
+  ] as const)(
+    'maps the %s export variant onto the intended role set',
+    (variant, roles) => {
+      expect(resolveMusicDebugMidiExportRoles(variant)).toEqual(roles);
+    }
+  );
 });
 
 function parseMidiChunks(bytes: Uint8Array): {

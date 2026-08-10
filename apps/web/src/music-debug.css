@@ -125,6 +125,20 @@ body {
   min-width: 0;
 }
 
+.music-debug-export-controls {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.music-debug-export-label {
+  display: flex;
+}
+
+.music-debug-export-label select {
+  width: 100%;
+  min-width: 0;
+}
+
 .music-debug-actions button,
 .music-debug-toggle {
   appearance: none;
