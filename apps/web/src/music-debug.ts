@@ -99,6 +99,7 @@ import {
   createMusicDebugLeadContourAnalysis,
   type MusicDebugLeadContourAnalysis,
 } from './music-debug-lead-contour.ts';
+import { buildMusicDebugLeadContourGraphMarkup } from './music-debug-lead-contour-graph.ts';
 import {
   createMusicDebugBassProgressionDetections,
   createMusicDebugHarmonyChordDetections,
@@ -911,6 +912,7 @@ export function buildMusicDebugSummaryMarkup(
       <div><dt>Black Keys</dt><dd>${snapshot.midiExportValidation.blackKeyNoteCount} total; B ${snapshot.blackKeyNotesByRole.bass} / H ${snapshot.blackKeyNotesByRole.harmony} / L ${snapshot.blackKeyNotesByRole.lead}</dd></div>
       <div><dt>Pitch Centers</dt><dd>B ${formatMusicDebugPitchCenters(snapshot.dominantPitchClassesByRole.bass)} / H ${formatMusicDebugPitchCenters(snapshot.dominantPitchClassesByRole.harmony)} / L ${formatMusicDebugPitchCenters(snapshot.dominantPitchClassesByRole.lead)}</dd></div>
     </div>
+    ${buildMusicDebugLeadContourGraphMarkup(snapshot.leadContourAnalysis)}
     <div class="music-debug-role-counts">
       <span>SongDNA ${snapshot.songDna.identityId} / ${snapshot.songDna.locationIdentityId} / ${snapshot.songDna.variantLabel} / ${snapshot.songDna.blueprintId} / ${snapshot.songDna.meterLabel}</span>
     </div>

@@ -242,7 +242,10 @@ describe('music debug', () => {
     expect(markup).toContain('music-debug-section-buttons');
     expect(markup).toContain('music-debug-instrument-panel');
     expect(markup).toContain('music-debug-instrument-play');
-    expect(markup.indexOf('>Melody<')).toBeLessThan(markup.indexOf('>Harmony<'));
+    expect(markup).toContain('music-debug-contour-graph');
+    expect(markup.indexOf('>Melody<')).toBeLessThan(
+      markup.indexOf('>Harmony<')
+    );
     expect(markup.indexOf('>Harmony<')).toBeLessThan(markup.indexOf('>Bass<'));
     expect(markup.indexOf('id="music-debug-timeline"')).toBeLessThan(
       markup.indexOf('music-debug-instrument-panel')
@@ -286,6 +289,7 @@ describe('music debug', () => {
     expect(summary).toContain('NPC Motifs');
     expect(summary).toContain('Lead Contour');
     expect(summary).toContain('Lead Contour Check');
+    expect(summary).toContain('Lead Contour Graph');
     expect(summary).toContain('Lead Cadence');
     expect(summary).toContain('Lead Max Leap');
     expect(summary).toContain('Accidentals');
@@ -322,6 +326,7 @@ describe('music debug', () => {
     expect(summary).toContain(snapshot.songDna.locationIdentityId);
     expect(summary).toContain(snapshot.songDna.recognitionLabel);
     expect(summary).toMatch(/Chord Measures .* m\d/);
+    expect(summary).toContain('planned range');
     expect(summary).toContain(
       snapshot.songDna.factionMotifs[0]?.factionName ?? ''
     );
@@ -666,9 +671,9 @@ describe('music debug', () => {
     playback.play(snapshot, null, { roles: ['bass', 'harmony'] });
 
     expect(play.mock.calls.length).toBeGreaterThan(0);
-    expect(
-      new Set(play.mock.calls.map(([note]) => note.role))
-    ).toEqual(new Set(['bass', 'harmony']));
+    expect(new Set(play.mock.calls.map(([note]) => note.role))).toEqual(
+      new Set(['bass', 'harmony'])
+    );
   });
 
   it('can schedule a dry debug playback pass without reverb send', () => {

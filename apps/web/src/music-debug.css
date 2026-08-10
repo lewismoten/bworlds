@@ -230,6 +230,137 @@ body {
   font-size: 0.86rem;
 }
 
+.music-debug-contour-graph {
+  margin-top: 1rem;
+  padding: 0.95rem 1rem 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 18px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.05), transparent 75%),
+    rgba(255, 255, 255, 0.02);
+}
+
+.music-debug-contour-graph-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.75rem;
+  align-items: baseline;
+}
+
+.music-debug-contour-graph-head h3,
+.music-debug-contour-graph-head p {
+  margin: 0;
+}
+
+.music-debug-contour-graph-head h3 {
+  font-size: 1rem;
+}
+
+.music-debug-contour-graph-head p,
+.music-debug-contour-graph-empty {
+  color: var(--music-muted);
+  font-size: 0.82rem;
+}
+
+.music-debug-contour-graph-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 0.65rem;
+  color: var(--music-muted);
+  font-size: 0.76rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.music-debug-contour-graph-legend span::before {
+  content: '';
+  display: inline-block;
+  width: 0.8rem;
+  height: 0.8rem;
+  margin-right: 0.35rem;
+  vertical-align: -0.1rem;
+  border-radius: 999px;
+}
+
+.music-debug-contour-legend-band::before {
+  background: rgba(85, 214, 190, 0.2);
+  border: 1px solid rgba(85, 214, 190, 0.45);
+}
+
+.music-debug-contour-legend-target::before {
+  background: #ffbf69;
+}
+
+.music-debug-contour-legend-actual::before {
+  background: #8ae0ff;
+}
+
+.music-debug-contour-graph-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin-top: 0.7rem;
+}
+
+.music-debug-contour-graph-frame {
+  fill: rgba(7, 16, 25, 0.92);
+  stroke: rgba(255, 255, 255, 0.08);
+}
+
+.music-debug-contour-graph-guide {
+  stroke: rgba(255, 255, 255, 0.08);
+  stroke-width: 1;
+}
+
+.music-debug-contour-graph-band {
+  fill: rgba(85, 214, 190, 0.18);
+  stroke: rgba(85, 214, 190, 0.42);
+  stroke-width: 1;
+}
+
+.music-debug-contour-graph-target {
+  fill: none;
+  stroke: var(--music-accent);
+  stroke-width: 2.2;
+  stroke-dasharray: 6 5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.music-debug-contour-graph-actual {
+  fill: none;
+  stroke: #8ae0ff;
+  stroke-width: 2.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.music-debug-contour-graph-point {
+  stroke: rgba(7, 16, 25, 0.9);
+  stroke-width: 1.5;
+}
+
+.music-debug-contour-graph-point-ok {
+  fill: #8ae0ff;
+}
+
+.music-debug-contour-graph-point-drift {
+  fill: #ff7d7d;
+}
+
+.music-debug-contour-graph-point-missing {
+  fill: #9db2bd;
+}
+
+.music-debug-contour-graph-measure {
+  fill: var(--music-muted);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
 .music-debug-instrument-panel {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
