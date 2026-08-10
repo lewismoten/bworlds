@@ -1106,6 +1106,9 @@ function buildSelectedInstrumentDetailsMarkup(
       <div><dt>Supported Roles</dt><dd>${selectedEntry.supportedRoles.join(', ')}</dd></div>
       <div><dt>Preferred Range</dt><dd>${formatMidiRange(selectedEntry.preferredMidiRange)}</dd></div>
       <div><dt>Playable Range</dt><dd>${formatMidiRange(selectedEntry.recommendedMidiRange)}</dd></div>
+      <div><dt>Patch Source</dt><dd>${selectedEntry.sourcePlugin}</dd></div>
+      <div><dt>Generated</dt><dd>${selectedEntry.sourcePlugin === 'core-generated-bank' ? 'Yes' : 'No'}</dd></div>
+      <div><dt>Validation Warnings</dt><dd>${formatValidationWarnings(selectedEntry.validationMessages)}</dd></div>
     </dl>
   `;
 }
@@ -1119,6 +1122,10 @@ function formatLabel(value: string): string {
 
 function formatMidiRange(range: { minMidiNote: number; maxMidiNote: number }): string {
   return `${range.minMidiNote}-${range.maxMidiNote}`;
+}
+
+function formatValidationWarnings(messages: readonly string[]): string {
+  return messages.length === 0 ? 'None' : messages.join(' | ');
 }
 
 function groupProgramsByFamily(

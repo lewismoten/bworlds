@@ -108,13 +108,13 @@
 - [x] Show the preferred note range.
 - [x] Show the full playable note range.
 - [ ] Show the current patch variant.
-- [ ] Show the patch source plugin.
-- [ ] Show whether the patch is generated.
+- [x] Show the patch source plugin.
+- [x] Show whether the patch is generated.
 - [ ] Show whether the patch uses samples.
 - [ ] Show whether the patch uses synthesis.
 - [ ] Show the current polyphony limit.
 - [ ] Show the estimated patch complexity.
-- [ ] Show instrument validation warnings.
+- [x] Show instrument validation warnings.
 
 ## Oscillator Controls
 

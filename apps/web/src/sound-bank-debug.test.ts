@@ -100,6 +100,9 @@ describe('sound bank debug page', () => {
     expect(normalizedMarkup).toContain('Supported Roles');
     expect(normalizedMarkup).toContain('Preferred Range');
     expect(normalizedMarkup).toContain('Playable Range');
+    expect(normalizedMarkup).toContain('Patch Source');
+    expect(normalizedMarkup).toContain('Generated');
+    expect(normalizedMarkup).toContain('Validation Warnings');
     expect(normalizedMarkup).toContain('Placeholder patch');
     expect(normalizedMarkup).toContain('>Kick<');
     expect(normalizedMarkup).toContain('>36<');
@@ -489,6 +492,10 @@ describe('sound bank debug page', () => {
       }),
     ]);
     expect(markup).toContain('Custom patch');
+    expect(markup).toContain('Patch Source');
+    expect(markup).toContain('custom-bank');
+    expect(markup).toContain('Generated');
+    expect(markup).toContain('>No<');
   });
 
   it('shows selected instrument details for the resolved General MIDI program', () => {
@@ -517,6 +524,12 @@ describe('sound bank debug page', () => {
     expect(markup).toContain('64-79');
     expect(markup).toContain('Playable Range');
     expect(markup).toContain('60-84');
+    expect(markup).toContain('Patch Source');
+    expect(markup).toContain('core-generated-bank');
+    expect(markup).toContain('Generated');
+    expect(markup).toContain('>Yes<');
+    expect(markup).toContain('Validation Warnings');
+    expect(markup).toContain('None');
   });
 
   it('builds fallback preview notes for percussion voices outside the current song seed', () => {
