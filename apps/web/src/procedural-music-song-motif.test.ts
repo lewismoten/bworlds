@@ -41,12 +41,32 @@ describe('procedural music song motif', () => {
     const firstStatement = updated
       .slice(0, 4)
       .map((note) => Math.round(69 + 12 * Math.log2(note.frequency / 440)));
+    const firstStatementRhythm = updated.slice(0, 4).map((note) => ({
+      startMs: note.startMs,
+      durationMs: note.durationMs,
+    }));
     const secondStatement = updated
       .slice(4, 8)
       .map((note) => Math.round(69 + 12 * Math.log2(note.frequency / 440)));
+    const secondStatementRhythm = updated.slice(4, 8).map((note) => ({
+      startMs: note.startMs,
+      durationMs: note.durationMs,
+    }));
 
     expect(firstStatement).toEqual([67, 71, 74, 71]);
     expect(secondStatement).toEqual([67, 71, 74, 71]);
+    expect(firstStatementRhythm).toEqual([
+      { startMs: 8_000, durationMs: 340 },
+      { startMs: 8_500, durationMs: 338 },
+      { startMs: 9_000, durationMs: 380 },
+      { startMs: 9_750, durationMs: 520 },
+    ]);
+    expect(secondStatementRhythm).toEqual([
+      { startMs: 16_000, durationMs: 340 },
+      { startMs: 16_500, durationMs: 338 },
+      { startMs: 17_000, durationMs: 380 },
+      { startMs: 17_750, durationMs: 520 },
+    ]);
     expect(updated[8]?.frequency).toBe(notes[8]?.frequency);
   });
 
@@ -83,12 +103,32 @@ describe('procedural music song motif', () => {
     const firstVariation = updated
       .slice(0, 4)
       .map((note) => Math.round(69 + 12 * Math.log2(note.frequency / 440)));
+    const firstVariationRhythm = updated.slice(0, 4).map((note) => ({
+      startMs: note.startMs,
+      durationMs: note.durationMs,
+    }));
     const secondVariation = updated
       .slice(4, 8)
       .map((note) => Math.round(69 + 12 * Math.log2(note.frequency / 440)));
+    const secondVariationRhythm = updated.slice(4, 8).map((note) => ({
+      startMs: note.startMs,
+      durationMs: note.durationMs,
+    }));
 
     expect(firstVariation).toEqual([69, 72, 76, 72]);
     expect(secondVariation).toEqual([69, 72, 76, 72]);
+    expect(firstVariationRhythm).toEqual([
+      { startMs: 24_000, durationMs: 340 },
+      { startMs: 24_500, durationMs: 338 },
+      { startMs: 25_000, durationMs: 380 },
+      { startMs: 25_750, durationMs: 520 },
+    ]);
+    expect(secondVariationRhythm).toEqual([
+      { startMs: 32_000, durationMs: 340 },
+      { startMs: 32_500, durationMs: 338 },
+      { startMs: 33_000, durationMs: 380 },
+      { startMs: 33_750, durationMs: 520 },
+    ]);
   });
 
   it('regenerates expected motif sections when their match counts fall short', () => {

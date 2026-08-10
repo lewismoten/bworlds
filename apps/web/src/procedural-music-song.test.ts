@@ -234,6 +234,40 @@ describe('procedural music song', () => {
     expect(sectionALead).not.toEqual(semitoneInterpretation);
   });
 
+  it("keeps the motif rhythm recognizable between Section A and Section A'", () => {
+    const clusterX = 0;
+    const clusterY = 0;
+    const song = createProceduralMusicSong({
+      nowMs: 1_000,
+      tileKind: 'plains',
+      contextType: 'overworld',
+      dayProgress: 0.45,
+      yearProgress: 0.25,
+      clusterX,
+      clusterY,
+    });
+    const sectionA = song.sections.find((section) => section.id === 'a')!;
+    const sectionAPrime = song.sections.find(
+      (section) => section.id === 'a-prime'
+    )!;
+    const sectionARhythm = collectLeadMotifRhythmShape(song, sectionA).slice(
+      0,
+      4
+    );
+    const sectionAPrimeRhythm = collectLeadMotifRhythmShape(
+      song,
+      sectionAPrime
+    ).slice(0, 4);
+
+    expect(sectionARhythm).toEqual([
+      { offsetRatio: 0, durationRatio: 0.021 },
+      { offsetRatio: 0.031, durationRatio: 0.017 },
+      { offsetRatio: 0.062, durationRatio: 0.024 },
+      { offsetRatio: 0.109, durationRatio: 0.032 },
+    ]);
+    expect(sectionAPrimeRhythm).toEqual(sectionARhythm);
+  });
+
   it('builds an eight-measure phrase before repeating it across the full song', () => {
     const options = {
       nowMs: 1_000,
@@ -793,4 +827,27 @@ describe('procedural music song', () => {
 
 function resolveMidiNote(frequency: number): number {
   return Math.round(69 + 12 * Math.log2(frequency / 440));
+}
+
+function collectLeadMotifRhythmShape(
+  song: ReturnType<typeof createProceduralMusicSong>,
+  section: ReturnType<typeof createProceduralMusicSong>['sections'][number]
+): Array<{ offsetRatio: number; durationRatio: number }> {
+  return song.notes
+    .filter(
+      (note) =>
+        note.role === 'lead' &&
+        note.startMs >= song.startMs + section.startOffsetMs &&
+        note.startMs < song.startMs + section.startOffsetMs + section.durationMs
+    )
+    .slice(0, 4)
+    .map((note) => ({
+      offsetRatio: Number(
+        (
+          (note.startMs - (song.startMs + section.startOffsetMs)) /
+          section.durationMs
+        ).toFixed(3)
+      ),
+      durationRatio: Number((note.durationMs / section.durationMs).toFixed(3)),
+    }));
 }

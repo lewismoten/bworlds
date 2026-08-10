@@ -29,6 +29,12 @@ export function stateLeadMotifInFirstASection(options: {
   const updatedNotes = [...options.notes];
   applyLeadMotifPhraseStatements(updatedNotes, options);
   applyLeadMotifVariationInAprimeSection(updatedNotes, options);
+  updatedNotes.sort((left, right) => {
+    if (left.startMs !== right.startMs) {
+      return left.startMs - right.startMs;
+    }
+    return left.durationMs - right.durationMs;
+  });
   return regenerateSectionsMissingExpectedLeadMotifMatches(
     updatedNotes,
     options
@@ -249,6 +255,13 @@ function applyMotifToPhraseWindow(
   }
 ): void {
   const phraseEndMs = options.phraseStartMs + options.phraseDurationMs;
+  const rhythmTemplate = resolveLeadMotifRhythmTemplate({
+    phraseStartMs: options.phraseStartMs,
+    phraseDurationMs: options.phraseDurationMs,
+    sectionEndMs: options.sectionEndMs,
+    motifLength: options.leadMotif.length,
+    noteDurationMs: options.theme.noteDurationMs,
+  });
   let motifIndex = 0;
 
   for (let index = 0; index < notes.length; index += 1) {
@@ -266,6 +279,10 @@ function applyMotifToPhraseWindow(
     }
     const referenceFrequency =
       resolvePreviousLeadFrequency(notes, index) ?? note.frequency;
+    const rhythmStep = rhythmTemplate[motifIndex];
+    if (!rhythmStep) {
+      break;
+    }
     const targetSemitones = alignMotifSemitonesToLeadRegister({
       motifDegreeOffset: motifDegree,
       referenceFrequency,
@@ -273,18 +290,134 @@ function applyMotifToPhraseWindow(
     });
     notes[index] = {
       ...note,
+      startMs: rhythmStep.startMs,
       frequency: resolveProceduralMidiNoteFrequency(
         options.theme.rootMidiNote + targetSemitones
       ),
-      durationMs: Math.min(
-        Math.max(
-          note.durationMs,
-          Math.round(options.theme.noteDurationMs * 0.94)
-        ),
-        Math.max(1, Math.floor(options.sectionEndMs - note.startMs))
-      ),
+      durationMs: rhythmStep.durationMs,
     };
     motifIndex += 1;
+  }
+
+  preserveLeadMotifStatementLane(notes, {
+    phraseStartMs: options.phraseStartMs,
+    phraseEndMs,
+    protectedThroughMs:
+      (rhythmTemplate.at(Math.max(0, motifIndex - 1))?.startMs ??
+        options.phraseStartMs) +
+      (rhythmTemplate.at(Math.max(0, motifIndex - 1))?.durationMs ?? 0),
+    motifLength: motifIndex,
+    noteDurationMs: options.theme.noteDurationMs,
+  });
+}
+
+function resolveLeadMotifRhythmTemplate(options: {
+  phraseStartMs: number;
+  phraseDurationMs: number;
+  sectionEndMs: number;
+  motifLength: number;
+  noteDurationMs: number;
+}): Array<{
+  startMs: number;
+  durationMs: number;
+}> {
+  if (options.motifLength <= 0) {
+    return [];
+  }
+
+  const measureDurationMs = Math.max(1, options.phraseDurationMs / 8);
+  const attackMeasureOffsets = [0, 0.5, 1, 1.75];
+  const durationMeasureRatios = [0.34, 0.28, 0.38, 0.52];
+  const steps: Array<{
+    startMs: number;
+    durationMs: number;
+  }> = [];
+
+  for (let motifIndex = 0; motifIndex < options.motifLength; motifIndex += 1) {
+    const attackOffsetMs =
+      measureDurationMs *
+      (attackMeasureOffsets[motifIndex] ??
+        attackMeasureOffsets[attackMeasureOffsets.length - 1] ??
+        motifIndex * 0.5);
+    const startMs = Math.round(options.phraseStartMs + attackOffsetMs);
+    const maxDurationMs = Math.max(
+      1,
+      Math.floor(options.sectionEndMs - startMs)
+    );
+    const durationMs = Math.min(
+      maxDurationMs,
+      Math.max(
+        Math.round(options.noteDurationMs * 0.94),
+        Math.round(
+          measureDurationMs *
+            (durationMeasureRatios[motifIndex] ??
+              durationMeasureRatios[durationMeasureRatios.length - 1] ??
+              0.34)
+        )
+      )
+    );
+    steps.push({
+      startMs,
+      durationMs,
+    });
+  }
+
+  return steps;
+}
+
+function preserveLeadMotifStatementLane(
+  notes: ProceduralMusicNote[],
+  options: {
+    phraseStartMs: number;
+    phraseEndMs: number;
+    protectedThroughMs: number;
+    motifLength: number;
+    noteDurationMs: number;
+  }
+): void {
+  if (options.motifLength <= 0) {
+    return;
+  }
+
+  const statementGapMs = Math.max(1, Math.round(options.noteDurationMs * 0.18));
+  let displacedStartMs = Math.min(
+    options.phraseEndMs - 1,
+    options.protectedThroughMs + statementGapMs
+  );
+  let protectedLeadCount = 0;
+
+  for (let index = 0; index < notes.length; index += 1) {
+    const note = notes[index]!;
+    if (
+      note.role !== 'lead' ||
+      note.startMs < options.phraseStartMs ||
+      note.startMs >= options.phraseEndMs
+    ) {
+      continue;
+    }
+    if (protectedLeadCount < options.motifLength) {
+      protectedLeadCount += 1;
+      continue;
+    }
+    if (note.startMs >= displacedStartMs) {
+      continue;
+    }
+    const nextStartMs = Math.min(
+      options.phraseEndMs - 1,
+      Math.max(displacedStartMs, note.startMs)
+    );
+    notes[index] = {
+      ...note,
+      startMs: nextStartMs,
+      durationMs: Math.min(
+        note.durationMs,
+        Math.max(1, Math.floor(options.phraseEndMs - nextStartMs))
+      ),
+    };
+    displacedStartMs = Math.min(
+      options.phraseEndMs - 1,
+      nextStartMs + statementGapMs
+    );
   }
 }
 
