@@ -219,8 +219,8 @@ added directly as semitones instead of moving through the selected scale.
 ## Rhythm and Spacing
 
 - [x] Reduce the long silent gaps between pitched notes.
-- [ ] Lengthen string notes beyond their current short values.
-- [ ] Let bass notes support more of each harmonic span.
+- [x] Lengthen string notes beyond their current short values.
+- [x] Let bass notes support more of each harmonic span.
 - [ ] Give the flute connected phrase-level rhythms.
 - [ ] Quantize notes to a clear rhythmic subdivision.
 - [ ] Define flowing rhythm as reusable note patterns.

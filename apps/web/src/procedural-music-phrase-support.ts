@@ -4,8 +4,8 @@ import { PROCEDURAL_MUSIC_PHRASE_MEASURE_COUNT } from './procedural-music-phrase
 type SupportRole = Extract<ProceduralMusicNote['role'], 'bass' | 'harmony'>;
 
 const MIN_SUPPORT_DURATION_RATIO: Record<SupportRole, number> = {
-  bass: 0,
-  harmony: 0.24,
+  bass: 0.18,
+  harmony: 0.3,
 };
 
 export function shapeProceduralPhraseSupportNotes(
@@ -55,9 +55,6 @@ function extendSupportDurationsWithinMeasures(
     if (note.role !== 'bass' && note.role !== 'harmony') {
       continue;
     }
-    if (note.role === 'bass') {
-      continue;
-    }
 
     const role = note.role;
     const measureIndex = Math.max(
@@ -71,7 +68,7 @@ function extendSupportDurationsWithinMeasures(
       options.phraseStartMs + (measureIndex + 1) * options.measureDurationMs
     );
     const nextSameRoleStartMs =
-      findNextRoleStartMs(notes, role, index) ?? measureEndMs;
+      findNextRoleStartMs(notes, role, note.startMs, index) ?? measureEndMs;
     const maxEndMs = Math.min(measureEndMs, nextSameRoleStartMs);
     const minimumDurationMs = Math.round(
       options.measureDurationMs * MIN_SUPPORT_DURATION_RATIO[role]
@@ -178,7 +175,12 @@ function insertSupportAnchorNote(
       continue;
     }
     const noteEndMs = note.startMs + note.durationMs;
-    const nextSameRoleStartMs = findNextRoleStartMs(notes, note.role, index);
+    const nextSameRoleStartMs = findNextRoleStartMs(
+      notes,
+      note.role,
+      note.startMs,
+      index
+    );
     const measureIndex = Math.max(
       0,
       Math.floor((note.startMs - phraseStartMs) / measureDurationMs)
@@ -273,11 +275,12 @@ function resolveRoleCoverageMs(
 function findNextRoleStartMs(
   notes: readonly ProceduralMusicNote[],
   role: SupportRole,
+  currentStartMs: number,
   currentIndex: number
 ): number | null {
   for (let index = currentIndex + 1; index < notes.length; index += 1) {
     const note = notes[index]!;
-    if (note.role === role) {
+    if (note.role === role && note.startMs > currentStartMs) {
       return note.startMs;
     }
   }

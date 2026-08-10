@@ -24,8 +24,22 @@ describe('procedural music phrase support', () => {
           role: 'harmony',
           startMs: 0,
           durationMs: 140,
-          instrumentId: 'harmony',
+          instrumentId: 'harmony:root',
           frequency: 329.63,
+        }),
+        createNote({
+          role: 'harmony',
+          startMs: 0,
+          durationMs: 140,
+          instrumentId: 'harmony:third',
+          frequency: 392,
+        }),
+        createNote({
+          role: 'harmony',
+          startMs: 0,
+          durationMs: 140,
+          instrumentId: 'harmony:fifth',
+          frequency: 493.88,
         }),
         createNote({
           role: 'bass',
@@ -41,14 +55,21 @@ describe('procedural music phrase support', () => {
       }
     );
 
-    const harmony = notes.find((note) => note.role === 'harmony');
+    const harmony = notes.filter((note) => note.role === 'harmony');
     const bass = notes.find((note) => note.role === 'bass');
     const harmonyAnchors = notes.filter((note) =>
       note.instrumentId.includes(':anchor-')
     );
 
-    expect(harmony?.durationMs ?? 0).toBeGreaterThanOrEqual(240);
-    expect(bass?.durationMs ?? 0).toBe(120);
+    expect(
+      harmony.filter((note) => !note.instrumentId.includes(':anchor-'))
+    ).toHaveLength(3);
+    expect(
+      harmony
+        .filter((note) => !note.instrumentId.includes(':anchor-'))
+        .every((note) => note.durationMs >= 300)
+    ).toBe(true);
+    expect(bass?.durationMs ?? 0).toBeGreaterThanOrEqual(180);
     expect(harmonyAnchors.length).toBeGreaterThan(0);
     expect(
       notes.some(
