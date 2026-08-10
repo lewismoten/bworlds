@@ -40,6 +40,7 @@
 - [ ] Test eight measures before generating all 88 measures.
 - [ ] Percussion should be made of multiple percussion instruments (drum set), preferably noise related
 - [ ] Let me download the MIDI, instrument WAV, and parameter report JSON, as a zip file.
+- [ ] Sections should be embedded in MIDI meta/control flow to help indicate which notes belong to what section (Intro, Section A, section A', Section B, Variation, Retrun, Outro, etc.)
 
 # Medium Priority
 
