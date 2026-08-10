@@ -1,15 +1,13 @@
 import { DEFAULT_YEAR_LENGTH_DAYS } from './time.ts';
 import { hash2DWithSeed, registerHashLabel } from '../hash.ts';
 import { clamp, fract, lerp, normalizeAngle, smoothstep } from '../math.ts';
-import { PLANET_SKY_PROFILES, type PlanetSkyProfile } from './time.ts';
+import { PLANET_NAMES, getPlanetSkyProfile } from './planet.ts';
+import { getPlanetaryOrbitProgress } from './planet.ts';
 import {
   COMET_NAMES,
-  PLANET_NAMES,
+  getCometOrbitProgress,
   getCometOrreryProfile,
-  getPlanetSkyProfile,
-} from './orbitProfiles.ts';
-import { getPlanetaryOrbitProgress } from './planet.ts';
-import { getCometOrbitProgress } from './comet.ts';
+} from './comet.ts';
 const METEOR_SHOWER_NAMES = ['Silver Wake', 'Ember Rain', 'Northfall'];
 
 const PLANET_INTENSITY_SEED = registerHashLabel('planet-intensity');

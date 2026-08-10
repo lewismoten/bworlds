@@ -243,7 +243,7 @@ added directly as semitones instead of moving through the selected scale.
 - [x] Compare intended duration with exported MIDI duration.
 - [x] Compare planned measures with exported measures.
 - [ ] Compare scheduled notes with exported notes.
-- [ ] Compare planned sections with MIDI markers.
+- [x] Compare planned sections with MIDI markers.
 - [x] Compare planned layers with actual track activity.
 - [ ] Compare intended mode with exported pitch classes.
 - [ ] Compare intended motifs with exported note sequences.

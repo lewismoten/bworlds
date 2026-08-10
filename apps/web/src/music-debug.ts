@@ -441,6 +441,7 @@ export function createMusicDebugSnapshot(
       exportedDurationMs: 0,
       exportedMeasureCount: 0,
       markerLabels: [],
+      sectionsMatchPlannedMarkers: true,
       mismatchMessages: [],
       isConsistent: true,
     },
@@ -654,6 +655,7 @@ export function buildMusicDebugSummaryMarkup(
       <div><dt>Song Length</dt><dd>${formatMusicDebugDuration(snapshot.durationMs)}</dd></div>
       <div><dt>Measures</dt><dd>${snapshot.measureCount}</dd></div>
       <div><dt>MIDI Measures</dt><dd>${snapshot.midiAudit.exportedMeasureCount}</dd></div>
+      <div><dt>MIDI Sections</dt><dd>${snapshot.midiAudit.sectionsMatchPlannedMarkers ? 'ok' : snapshot.midiAudit.markerLabels.join(' / ') || 'missing'}</dd></div>
       <div><dt>Blueprint</dt><dd>${snapshot.blueprintLabel}</dd></div>
       <div><dt>Loop Range</dt><dd>${formatMusicDebugLoopRange(snapshot.loopStartOffsetMs, snapshot.loopEndOffsetMs)}</dd></div>
       <div><dt>Timing Check</dt><dd>${snapshot.timingValidation.isValidForMidiExport ? 'ok' : (snapshot.timingValidation.messages[0] ?? 'invalid')}</dd></div>

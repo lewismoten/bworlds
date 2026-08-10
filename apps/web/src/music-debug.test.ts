@@ -185,6 +185,7 @@ describe('music debug', () => {
     expect(summary).toContain('Root MIDI');
     expect(summary).toContain('Measures');
     expect(summary).toContain('MIDI Measures');
+    expect(summary).toContain('MIDI Sections');
     expect(summary).toContain('Blueprint');
     expect(summary).toContain('Loop Range');
     expect(summary).toContain('Timing Check');

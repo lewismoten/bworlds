@@ -1,11 +1,13 @@
 import {
   COMET_NAMES,
-  PLANET_NAMES,
   getCometOrreryProfile,
   getCometOrreryProfileIndex,
+} from './comet.ts';
+import {
+  PLANET_NAMES,
   getPlanetSkyProfile,
   getPlanetSkyProfileIndex,
-} from './orbitProfiles.ts';
+} from './planet.ts';
 const PLANET_NAME_SET: ReadonlySet<string> = new Set(PLANET_NAMES);
 const COMET_NAME_SET: ReadonlySet<string> = new Set(COMET_NAMES);
 

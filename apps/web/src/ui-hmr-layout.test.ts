@@ -15,10 +15,10 @@ describe('main layout and hmr wiring', () => {
     expect(source).toContain('<aside class="sidebar">');
     expect(source).toContain('<div class="card" id="celestial-tools-card">');
     expect(source).not.toContain('<section class="utility-panels">');
-    expect(source).toContain('<section class="control-dock card">');
     expect(source).toContain(
-      '<div class="dock-cluster" aria-label="Quick controls">'
+      '<section class="control-dock card" aria-label="Quick controls">'
     );
+    expect(source).toContain('<div class="dock-row">');
     expect(source).not.toContain('<div class="controls controls-compact">');
     expect(source).not.toContain('id="content-pack-label"');
     expect(source).not.toContain('id="content-pack-form"');
@@ -30,12 +30,13 @@ describe('main layout and hmr wiring', () => {
     expect(stylesheet).toContain('display: flex;');
     expect(stylesheet).toContain('left: 0.75rem;');
     expect(stylesheet).toContain('right: 0.75rem;');
-    expect(stylesheet).toContain('width: min(72rem, calc(100vw - 1.5rem));');
-    expect(stylesheet).toContain('.dock-cluster {\n  display: grid;');
-    expect(stylesheet).toContain('grid-auto-flow: column;');
+    expect(stylesheet).toContain('width: calc(100vw - 1.5rem);');
+    expect(stylesheet).toContain('max-width: 72rem;');
+    expect(stylesheet).toContain('.dock-row {\n  display: flex;');
+    expect(stylesheet).toContain('flex-wrap: nowrap;');
     expect(stylesheet).not.toContain('.controls-compact {\n  display: flex;');
     expect(stylesheet).toContain('width: 100%;');
-    expect(stylesheet).toContain('white-space: nowrap;');
+    expect(stylesheet).toContain('justify-content: space-between;');
     expect(stylesheet).toContain('.dashboard {\n  display: grid;');
     expect(stylesheet).toContain('grid-template-columns: minmax(0, 1fr);');
     expect(stylesheet).toContain('.inspector-header {\n  display: flex;');

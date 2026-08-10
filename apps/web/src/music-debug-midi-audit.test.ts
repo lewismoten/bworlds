@@ -65,6 +65,7 @@ describe('music debug midi audit', () => {
     expect(audit.markerLabels).toEqual(
       snapshot.song.sections.map((section) => section.label)
     );
+    expect(audit.sectionsMatchPlannedMarkers).toBe(true);
     expect(audit.isConsistent).toBe(true);
     expect(audit.mismatchMessages).toEqual([]);
   });
@@ -96,6 +97,33 @@ describe('music debug midi audit', () => {
     ).toBe(true);
     expect(
       audit.mismatchMessages.some((message) => message.includes('measures'))
+    ).toBe(true);
+  });
+
+  it('flags planned sections when exported midi markers drift from the section plan', () => {
+    const snapshot = createMusicDebugSnapshot({
+      tileKind: 'forest',
+      contextType: 'overworld',
+      clusterX: 4,
+      clusterY: -1,
+    });
+    const file = createMusicDebugMidiFileUnchecked(snapshot, {
+      createdAt: new Date('2026-08-09T00:00:00.000Z'),
+    });
+
+    const audit = inspectMusicDebugMidiBytes(file.bytes, {
+      ...snapshot,
+      song: {
+        ...snapshot.song,
+        sections: snapshot.song.sections.map((section, index) =>
+          index === 1 ? { ...section, label: 'Section Z' } : section
+        ),
+      },
+    });
+
+    expect(audit.sectionsMatchPlannedMarkers).toBe(false);
+    expect(
+      audit.mismatchMessages.some((message) => message.includes('Section Z'))
     ).toBe(true);
   });
 });

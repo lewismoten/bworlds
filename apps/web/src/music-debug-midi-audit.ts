@@ -9,6 +9,7 @@ export type MusicDebugMidiAudit = {
   exportedDurationMs: number;
   exportedMeasureCount: number;
   markerLabels: string[];
+  sectionsMatchPlannedMarkers: boolean;
   mismatchMessages: string[];
   isConsistent: boolean;
 };
@@ -49,6 +50,7 @@ export function inspectMusicDebugMidiBytes(
     timeSignatureMeta
   );
   const mismatchMessages: string[] = [];
+  let sectionsMatchPlannedMarkers = true;
 
   if (
     exportedBpm !== null &&
@@ -69,6 +71,7 @@ export function inspectMusicDebugMidiBytes(
     );
   }
   if (markerLabels.length !== snapshot.song.sections.length) {
+    sectionsMatchPlannedMarkers = false;
     mismatchMessages.push(
       `MIDI section markers ${markerLabels.length} do not match ${snapshot.song.sections.length}.`
     );
@@ -77,6 +80,7 @@ export function inspectMusicDebugMidiBytes(
       const markerLabel = markerLabels[index]!;
       const sectionLabel = snapshot.song.sections[index]?.label ?? '';
       if (markerLabel !== sectionLabel) {
+        sectionsMatchPlannedMarkers = false;
         mismatchMessages.push(
           `MIDI marker ${index + 1} is "${markerLabel}" instead of "${sectionLabel}".`
         );
@@ -89,6 +93,7 @@ export function inspectMusicDebugMidiBytes(
     exportedDurationMs,
     exportedMeasureCount,
     markerLabels,
+    sectionsMatchPlannedMarkers,
     mismatchMessages,
     isConsistent: mismatchMessages.length === 0,
   };

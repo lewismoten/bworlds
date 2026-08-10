@@ -1,4 +1,7 @@
-import { fract } from "../math";
+import { fract } from '../math';
+import { PLANET_SKY_PROFILES, type PlanetSkyProfile } from './time.ts';
+
+export const PLANET_NAMES = ['Aurel', 'Brink', 'Cael', 'Damar', 'Vela'];
 
 export function getPlanetaryOrbitProgress(
   elapsedDays: number,
@@ -23,4 +26,21 @@ export function getPlanetaryOrbitProgress(
     profile.wobbleAmplitude *
     0.46;
   return fract(baseProgress + wobble + retrogradeBias);
+}
+
+export function getPlanetSkyProfile(
+  name: string,
+  fallbackIndex = 0
+): PlanetSkyProfile {
+  const index = PLANET_NAMES.indexOf(name);
+  const resolvedIndex = index >= 0 ? index : fallbackIndex;
+  return PLANET_SKY_PROFILES[resolvedIndex % PLANET_SKY_PROFILES.length];
+}
+
+export function getPlanetSkyProfileIndex(
+  name: string,
+  fallbackIndex = 0
+): number {
+  const index = PLANET_NAMES.indexOf(name);
+  return index >= 0 ? index : fallbackIndex % PLANET_SKY_PROFILES.length;
 }

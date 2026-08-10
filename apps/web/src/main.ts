@@ -694,8 +694,8 @@ root.innerHTML = `
         </div>
       </aside>
     </section>
-    <section class="control-dock card">
-      <div class="dock-cluster" aria-label="Quick controls">
+    <section class="control-dock card" aria-label="Quick controls">
+      <div class="dock-row">
         <button
           id="view-menu-button"
           class="dock-icon-button"

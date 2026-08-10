@@ -78,33 +78,30 @@ body {
   right: 0.75rem;
   bottom: var(--control-dock-offset);
   z-index: 20;
-  width: min(72rem, calc(100vw - 1.5rem));
-  max-width: 100%;
+  width: calc(100vw - 1.5rem);
+  max-width: 72rem;
   margin-top: 0;
   overflow: hidden;
-  padding: 0.4rem 0.5rem;
+  padding: 0.5rem 0.65rem;
 }
 
-.dock-cluster {
-  display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: max-content;
+.dock-row {
+  display: flex;
+  flex-wrap: nowrap;
   align-items: center;
-  justify-content: center;
+  justify-content: space-between;
   gap: 0.55rem;
   width: 100%;
   min-width: 0;
   max-width: 100%;
-  white-space: nowrap;
   overflow-x: auto;
   overflow-y: hidden;
-  padding-inline: 0.2rem;
-  padding-bottom: 0.1rem;
+  padding-inline: 0.1rem;
   scrollbar-width: thin;
 }
 
 .dock-split-button {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   gap: 0.32rem;
   flex: 0 0 auto;
@@ -248,7 +245,7 @@ button:hover {
 }
 
 .viewport-panel {
-  padding: 0.75rem;
+  padding: 0;
 }
 
 .viewport-stage {
@@ -886,13 +883,12 @@ dd {
     left: 0.25rem;
     right: 0.25rem;
     width: calc(100vw - 0.5rem);
-    max-width: 100%;
     bottom: max(0.25rem, env(safe-area-inset-bottom, 0px));
   }
 
-  .dock-cluster {
-    justify-content: center;
-    padding-inline: 0.35rem;
+  .dock-row {
+    justify-content: flex-start;
+    padding-inline: 0.2rem;
   }
 }
 .control-dialog {
