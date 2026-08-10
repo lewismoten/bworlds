@@ -33,4 +33,31 @@ describe('procedural music blueprint', () => {
     expect(town.id).toBe('settled-chorus');
     expect(cave.id).toBe('echoed-descent');
   });
+
+  it('defines occupancy expectations for every section role plan', () => {
+    const exploration = resolveProceduralMusicBlueprint({
+      tileKind: 'forest',
+      contextType: 'overworld',
+    });
+
+    expect(
+      exploration.sections.every(
+        (section) => Object.keys(section.occupancy).length > 0
+      )
+    ).toBe(true);
+    expect(
+      exploration.sections.find((section) => section.id === 'b')?.occupancy
+        .harmony
+    ).toEqual({
+      minPercentage: 30,
+      maxPercentage: 45,
+    });
+    expect(
+      exploration.sections.find((section) => section.id === 'variation')
+        ?.occupancy.lead
+    ).toEqual({
+      minPercentage: 60,
+      maxPercentage: 85,
+    });
+  });
 });

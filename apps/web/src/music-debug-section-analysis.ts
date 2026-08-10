@@ -1,4 +1,5 @@
 import type { MusicDebugNotePitchDiagnostic } from './music-debug-note-analysis.ts';
+import type { ProceduralMusicBlueprint } from './procedural-music-blueprint.ts';
 import type { ProceduralChordTimelineEntry } from './procedural-music-chord-timeline.ts';
 import type { ProceduralMusicNote } from './procedural-music.ts';
 import type { ProceduralMusicSongSection } from './procedural-music-song.ts';
@@ -190,6 +191,7 @@ export function createMusicDebugSectionLayerActivity(options: {
 
 export function createMusicDebugSectionLayerComparisons(options: {
   activities: readonly MusicDebugSectionLayerActivity[];
+  blueprint?: ProceduralMusicBlueprint;
 }): MusicDebugSectionLayerComparison[] {
   const activityById = new Map(
     options.activities.map((activity) => [activity.sectionId, activity])
@@ -203,6 +205,10 @@ export function createMusicDebugSectionLayerComparisons(options: {
     const baseline = fullStackBaseline;
     const hasRole = (role: ProceduralMusicRole) =>
       activity.roleCounts[role] > 0;
+    const blueprintSection =
+      options.blueprint?.sections.find(
+        (section) => section.id === activity.sectionId
+      ) ?? null;
 
     switch (activity.sectionId) {
       case 'intro':
@@ -314,6 +320,15 @@ export function createMusicDebugSectionLayerComparisons(options: {
         break;
     }
 
+    if (blueprintSection) {
+      validateBlueprintOccupancy(
+        activity,
+        blueprintSection.occupancy,
+        matchedRules,
+        mismatchRules
+      );
+    }
+
     return {
       sectionId: activity.sectionId,
       sectionLabel: activity.sectionLabel,
@@ -322,6 +337,42 @@ export function createMusicDebugSectionLayerComparisons(options: {
       mismatchRules,
     };
   });
+}
+
+function validateBlueprintOccupancy(
+  activity: MusicDebugSectionLayerActivity,
+  occupancy: NonNullable<
+    ProceduralMusicBlueprint['sections'][number]['occupancy']
+  >,
+  matchedRules: string[],
+  mismatchRules: string[]
+): void {
+  for (const role of PROCEDURAL_MUSIC_ROLES) {
+    const occupancyTarget = occupancy[role];
+    if (!occupancyTarget) {
+      continue;
+    }
+    const actualPercentage = activity.soundingTimePercentageByRole[role];
+    if (
+      occupancyTarget.minPercentage !== undefined &&
+      actualPercentage < occupancyTarget.minPercentage
+    ) {
+      mismatchRules.push(
+        `${role} occupancy ${Math.round(actualPercentage)}% stayed below blueprint minimum ${occupancyTarget.minPercentage}%`
+      );
+      continue;
+    }
+    if (
+      occupancyTarget.maxPercentage !== undefined &&
+      actualPercentage > occupancyTarget.maxPercentage
+    ) {
+      mismatchRules.push(
+        `${role} occupancy ${Math.round(actualPercentage)}% exceeded blueprint maximum ${occupancyTarget.maxPercentage}%`
+      );
+      continue;
+    }
+    matchedRules.push(`${role} occupancy stays inside blueprint range`);
+  }
 }
 
 function resolveSectionRoleCoverageMs(

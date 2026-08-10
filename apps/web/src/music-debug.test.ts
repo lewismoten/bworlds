@@ -637,4 +637,27 @@ describe('music debug', () => {
       )
     ).toBe(true);
   });
+
+  it('keeps settled blueprint occupancy comparisons aligned with the configured ranges', () => {
+    const snapshot = createMusicDebugSnapshot(
+      {
+        tileKind: 'town',
+        contextType: 'town',
+        clusterX: 3,
+        clusterY: -2,
+        dayProgress: 0.25,
+        yearProgress: 0.75,
+      },
+      1000
+    );
+
+    expect(snapshot.sectionLayerComparisons).toHaveLength(
+      snapshot.song.sections.length
+    );
+    expect(
+      snapshot.sectionLayerComparisons.every(
+        (comparison) => comparison.matchesPlan
+      )
+    ).toBe(true);
+  });
 });

@@ -69,7 +69,9 @@ export function resolveSongSectionLayerTreatment(
               ? harmonyLeadSpace.volumeMultiplier
               : 1,
         durationMultiplier:
-          note.role === 'harmony'
+          note.role === 'lead'
+            ? 1.08
+            : note.role === 'harmony'
             ? 1.08 * harmonyLeadSpace.durationMultiplier
             : 1,
         releaseMultiplier: 1,

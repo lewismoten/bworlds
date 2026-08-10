@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { MusicDebugNotePitchDiagnostic } from './music-debug-note-analysis.ts';
+import type { ProceduralMusicBlueprint } from './procedural-music-blueprint.ts';
 import { resolveProceduralChordTimeline } from './procedural-music-chord-timeline.ts';
 import {
   createMusicDebugHarmonyChordDetections,
@@ -219,6 +220,7 @@ describe('music debug section analysis', () => {
           },
         },
       ],
+      blueprint: TEST_BLUEPRINT,
     });
 
     expect(comparisons).toEqual([
@@ -236,7 +238,90 @@ describe('music debug section analysis', () => {
       }),
     ]);
   });
+
+  it('flags occupancy when a section drifts outside the blueprint range', () => {
+    const comparisons = createMusicDebugSectionLayerComparisons({
+      activities: [
+        {
+          sectionId: 'a',
+          sectionLabel: 'Section A',
+          roleCounts: {
+            bass: 4,
+            harmony: 3,
+            lead: 4,
+            percussion: 2,
+          },
+          soundingTimePercentageByRole: {
+            bass: 20,
+            harmony: 95,
+            lead: 24,
+            percussion: 12,
+          },
+          averageDurationMsByRole: {
+            bass: 240,
+            harmony: 240,
+            lead: 240,
+            percussion: 180,
+          },
+        },
+      ],
+      blueprint: TEST_BLUEPRINT,
+    });
+
+    expect(comparisons[0]?.matchesPlan).toBe(false);
+    expect(
+      comparisons[0]?.mismatchRules.some((rule) =>
+        rule.includes('blueprint maximum')
+      )
+    ).toBe(true);
+  });
 });
+
+const TEST_BLUEPRINT: ProceduralMusicBlueprint = {
+  id: 'exploration-cycle',
+  label: 'Test Blueprint',
+  sections: [
+    {
+      id: 'intro',
+      label: 'Intro',
+      baseDurationMs: 4_000,
+      measureCount: 4,
+      loopEligible: false,
+      occupancy: {
+        bass: { minPercentage: 0, maxPercentage: 10 },
+        harmony: { minPercentage: 4, maxPercentage: 20 },
+        lead: { minPercentage: 20, maxPercentage: 30 },
+        percussion: { minPercentage: 0, maxPercentage: 0 },
+      },
+    },
+    {
+      id: 'a',
+      label: 'Section A',
+      baseDurationMs: 4_000,
+      measureCount: 4,
+      loopEligible: true,
+      occupancy: {
+        bass: { minPercentage: 15, maxPercentage: 25 },
+        harmony: { minPercentage: 10, maxPercentage: 20 },
+        lead: { minPercentage: 20, maxPercentage: 30 },
+        percussion: { minPercentage: 10, maxPercentage: 15 },
+      },
+    },
+    {
+      id: 'variation',
+      label: 'Variation',
+      baseDurationMs: 4_000,
+      measureCount: 4,
+      loopEligible: true,
+      occupancy: {
+        bass: { minPercentage: 15, maxPercentage: 25 },
+        harmony: { minPercentage: 8, maxPercentage: 15 },
+        lead: { minPercentage: 20, maxPercentage: 35 },
+        percussion: { minPercentage: 0, maxPercentage: 8 },
+      },
+    },
+  ],
+};
 
 const TEST_SECTIONS: ProceduralMusicSongSection[] = [
   {

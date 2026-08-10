@@ -406,6 +406,7 @@ export function createMusicDebugSnapshot(
   });
   const sectionLayerComparisons = createMusicDebugSectionLayerComparisons({
     activities: sectionLayerActivity,
+    blueprint: song.blueprint,
   });
   const snapshotBase = {
     options,

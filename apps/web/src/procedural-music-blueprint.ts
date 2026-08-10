@@ -7,6 +7,15 @@ export type ProceduralMusicSongSectionTemplate = {
   baseDurationMs: number;
   measureCount: number;
   loopEligible: boolean;
+  occupancy: Partial<
+    Record<
+      'bass' | 'harmony' | 'lead' | 'percussion',
+      {
+        minPercentage?: number;
+        maxPercentage?: number;
+      }
+    >
+  >;
 };
 
 export type ProceduralMusicBlueprint = {
@@ -25,6 +34,12 @@ const EXPLORATION_BLUEPRINT: ProceduralMusicBlueprint = {
       baseDurationMs: 8_000,
       measureCount: 8,
       loopEligible: false,
+      occupancy: {
+        bass: { minPercentage: 15, maxPercentage: 25 },
+        harmony: { minPercentage: 70, maxPercentage: 95 },
+        lead: { minPercentage: 30, maxPercentage: 55 },
+        percussion: { minPercentage: 0, maxPercentage: 0 },
+      },
     },
     {
       id: 'a',
@@ -32,6 +47,12 @@ const EXPLORATION_BLUEPRINT: ProceduralMusicBlueprint = {
       baseDurationMs: 24_000,
       measureCount: 16,
       loopEligible: true,
+      occupancy: {
+        bass: { minPercentage: 20, maxPercentage: 40 },
+        harmony: { minPercentage: 70, maxPercentage: 85 },
+        lead: { minPercentage: 40, maxPercentage: 60 },
+        percussion: { minPercentage: 5, maxPercentage: 15 },
+      },
     },
     {
       id: 'a-prime',
@@ -39,6 +60,12 @@ const EXPLORATION_BLUEPRINT: ProceduralMusicBlueprint = {
       baseDurationMs: 24_000,
       measureCount: 16,
       loopEligible: true,
+      occupancy: {
+        bass: { minPercentage: 20, maxPercentage: 40 },
+        harmony: { minPercentage: 45, maxPercentage: 70 },
+        lead: { minPercentage: 45, maxPercentage: 65 },
+        percussion: { minPercentage: 5, maxPercentage: 15 },
+      },
     },
     {
       id: 'b',
@@ -46,6 +73,12 @@ const EXPLORATION_BLUEPRINT: ProceduralMusicBlueprint = {
       baseDurationMs: 24_000,
       measureCount: 16,
       loopEligible: true,
+      occupancy: {
+        bass: { minPercentage: 20, maxPercentage: 40 },
+        harmony: { minPercentage: 30, maxPercentage: 45 },
+        lead: { minPercentage: 40, maxPercentage: 55 },
+        percussion: { minPercentage: 5, maxPercentage: 15 },
+      },
     },
     {
       id: 'variation',
@@ -53,6 +86,12 @@ const EXPLORATION_BLUEPRINT: ProceduralMusicBlueprint = {
       baseDurationMs: 24_000,
       measureCount: 16,
       loopEligible: true,
+      occupancy: {
+        bass: { minPercentage: 20, maxPercentage: 40 },
+        harmony: { minPercentage: 45, maxPercentage: 65 },
+        lead: { minPercentage: 60, maxPercentage: 85 },
+        percussion: { minPercentage: 0, maxPercentage: 8 },
+      },
     },
     {
       id: 'return',
@@ -60,6 +99,12 @@ const EXPLORATION_BLUEPRINT: ProceduralMusicBlueprint = {
       baseDurationMs: 16_000,
       measureCount: 8,
       loopEligible: true,
+      occupancy: {
+        bass: { minPercentage: 20, maxPercentage: 40 },
+        harmony: { minPercentage: 70, maxPercentage: 90 },
+        lead: { minPercentage: 40, maxPercentage: 60 },
+        percussion: { minPercentage: 5, maxPercentage: 15 },
+      },
     },
     {
       id: 'outro',
@@ -67,6 +112,12 @@ const EXPLORATION_BLUEPRINT: ProceduralMusicBlueprint = {
       baseDurationMs: 8_000,
       measureCount: 8,
       loopEligible: false,
+      occupancy: {
+        bass: { minPercentage: 20, maxPercentage: 40 },
+        harmony: { minPercentage: 80, maxPercentage: 100 },
+        lead: { minPercentage: 20, maxPercentage: 40 },
+        percussion: { minPercentage: 0, maxPercentage: 0 },
+      },
     },
   ],
 };
@@ -81,6 +132,12 @@ const SETTLED_BLUEPRINT: ProceduralMusicBlueprint = {
       baseDurationMs: 8_000,
       measureCount: 8,
       loopEligible: false,
+      occupancy: {
+        bass: { minPercentage: 15, maxPercentage: 25 },
+        harmony: { minPercentage: 50, maxPercentage: 65 },
+        lead: { minPercentage: 30, maxPercentage: 35 },
+        percussion: { minPercentage: 0, maxPercentage: 0 },
+      },
     },
     {
       id: 'a',
@@ -88,6 +145,12 @@ const SETTLED_BLUEPRINT: ProceduralMusicBlueprint = {
       baseDurationMs: 24_000,
       measureCount: 16,
       loopEligible: true,
+      occupancy: {
+        bass: { minPercentage: 25, maxPercentage: 40 },
+        harmony: { minPercentage: 45, maxPercentage: 55 },
+        lead: { minPercentage: 30, maxPercentage: 38 },
+        percussion: { minPercentage: 5, maxPercentage: 10 },
+      },
     },
     {
       id: 'b',
@@ -95,6 +158,12 @@ const SETTLED_BLUEPRINT: ProceduralMusicBlueprint = {
       baseDurationMs: 24_000,
       measureCount: 16,
       loopEligible: true,
+      occupancy: {
+        bass: { minPercentage: 30, maxPercentage: 40 },
+        harmony: { minPercentage: 20, maxPercentage: 30 },
+        lead: { minPercentage: 30, maxPercentage: 38 },
+        percussion: { minPercentage: 5, maxPercentage: 10 },
+      },
     },
     {
       id: 'a-prime',
@@ -102,6 +171,12 @@ const SETTLED_BLUEPRINT: ProceduralMusicBlueprint = {
       baseDurationMs: 24_000,
       measureCount: 16,
       loopEligible: true,
+      occupancy: {
+        bass: { minPercentage: 25, maxPercentage: 40 },
+        harmony: { minPercentage: 30, maxPercentage: 40 },
+        lead: { minPercentage: 30, maxPercentage: 40 },
+        percussion: { minPercentage: 5, maxPercentage: 10 },
+      },
     },
     {
       id: 'return',
@@ -109,6 +184,12 @@ const SETTLED_BLUEPRINT: ProceduralMusicBlueprint = {
       baseDurationMs: 24_000,
       measureCount: 16,
       loopEligible: true,
+      occupancy: {
+        bass: { minPercentage: 25, maxPercentage: 40 },
+        harmony: { minPercentage: 45, maxPercentage: 55 },
+        lead: { minPercentage: 30, maxPercentage: 38 },
+        percussion: { minPercentage: 5, maxPercentage: 10 },
+      },
     },
     {
       id: 'outro',
@@ -116,6 +197,12 @@ const SETTLED_BLUEPRINT: ProceduralMusicBlueprint = {
       baseDurationMs: 8_000,
       measureCount: 8,
       loopEligible: false,
+      occupancy: {
+        bass: { minPercentage: 30, maxPercentage: 40 },
+        harmony: { minPercentage: 55, maxPercentage: 70 },
+        lead: { minPercentage: 15, maxPercentage: 25 },
+        percussion: { minPercentage: 0, maxPercentage: 0 },
+      },
     },
   ],
 };
@@ -130,6 +217,12 @@ const CAVERN_BLUEPRINT: ProceduralMusicBlueprint = {
       baseDurationMs: 8_000,
       measureCount: 8,
       loopEligible: false,
+      occupancy: {
+        bass: { minPercentage: 10, maxPercentage: 35 },
+        harmony: { minPercentage: 70, maxPercentage: 100 },
+        lead: { minPercentage: 35, maxPercentage: 60 },
+        percussion: { minPercentage: 0, maxPercentage: 0 },
+      },
     },
     {
       id: 'a',
@@ -137,6 +230,12 @@ const CAVERN_BLUEPRINT: ProceduralMusicBlueprint = {
       baseDurationMs: 24_000,
       measureCount: 16,
       loopEligible: true,
+      occupancy: {
+        bass: { minPercentage: 20, maxPercentage: 40 },
+        harmony: { minPercentage: 70, maxPercentage: 90 },
+        lead: { minPercentage: 40, maxPercentage: 65 },
+        percussion: { minPercentage: 5, maxPercentage: 15 },
+      },
     },
     {
       id: 'variation',
@@ -144,6 +243,12 @@ const CAVERN_BLUEPRINT: ProceduralMusicBlueprint = {
       baseDurationMs: 24_000,
       measureCount: 16,
       loopEligible: true,
+      occupancy: {
+        bass: { minPercentage: 20, maxPercentage: 40 },
+        harmony: { minPercentage: 45, maxPercentage: 65 },
+        lead: { minPercentage: 60, maxPercentage: 85 },
+        percussion: { minPercentage: 0, maxPercentage: 8 },
+      },
     },
     {
       id: 'b',
@@ -151,6 +256,12 @@ const CAVERN_BLUEPRINT: ProceduralMusicBlueprint = {
       baseDurationMs: 24_000,
       measureCount: 16,
       loopEligible: true,
+      occupancy: {
+        bass: { minPercentage: 20, maxPercentage: 40 },
+        harmony: { minPercentage: 30, maxPercentage: 55 },
+        lead: { minPercentage: 40, maxPercentage: 60 },
+        percussion: { minPercentage: 5, maxPercentage: 15 },
+      },
     },
     {
       id: 'return',
@@ -158,6 +269,12 @@ const CAVERN_BLUEPRINT: ProceduralMusicBlueprint = {
       baseDurationMs: 24_000,
       measureCount: 16,
       loopEligible: true,
+      occupancy: {
+        bass: { minPercentage: 20, maxPercentage: 40 },
+        harmony: { minPercentage: 70, maxPercentage: 90 },
+        lead: { minPercentage: 40, maxPercentage: 60 },
+        percussion: { minPercentage: 5, maxPercentage: 15 },
+      },
     },
     {
       id: 'outro',
@@ -165,6 +282,12 @@ const CAVERN_BLUEPRINT: ProceduralMusicBlueprint = {
       baseDurationMs: 8_000,
       measureCount: 8,
       loopEligible: false,
+      occupancy: {
+        bass: { minPercentage: 20, maxPercentage: 40 },
+        harmony: { minPercentage: 80, maxPercentage: 100 },
+        lead: { minPercentage: 20, maxPercentage: 40 },
+        percussion: { minPercentage: 0, maxPercentage: 0 },
+      },
     },
   ],
 };
