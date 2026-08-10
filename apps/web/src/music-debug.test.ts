@@ -591,4 +591,32 @@ describe('music debug', () => {
     expect(boss.durationMs).toBeGreaterThanOrEqual(180_000);
     expect(boss.durationMs).toBeLessThanOrEqual(360_000);
   }, 5_000);
+
+  it('lowers harmony occupancy in lead-active reprise and contrast sections', () => {
+    const snapshot = createMusicDebugSnapshot({
+      tileKind: 'forest',
+      contextType: 'overworld',
+      clusterX: 4,
+      clusterY: -1,
+    });
+    const activityById = new Map(
+      snapshot.sectionLayerActivity.map((activity) => [
+        activity.sectionId,
+        activity,
+      ])
+    );
+    const sectionA = activityById.get('a');
+    const sectionAPrime = activityById.get('a-prime');
+    const sectionB = activityById.get('b');
+
+    expect(sectionA).toBeDefined();
+    expect(sectionAPrime).toBeDefined();
+    expect(sectionB).toBeDefined();
+    expect(sectionAPrime!.soundingTimePercentageByRole.harmony).toBeLessThan(
+      sectionA!.soundingTimePercentageByRole.harmony
+    );
+    expect(sectionB!.soundingTimePercentageByRole.harmony).toBeLessThan(
+      sectionA!.soundingTimePercentageByRole.harmony
+    );
+  });
 });

@@ -53,10 +53,20 @@ describe('procedural music song layers', () => {
       { role: 'lead' },
       0
     );
+    const aHarmony = resolveSongSectionLayerTreatment(
+      createSection('a'),
+      { role: 'harmony' },
+      6
+    );
+    const aPrimeHarmony = resolveSongSectionLayerTreatment(
+      createSection('a-prime'),
+      { role: 'harmony' },
+      4
+    );
     const bHarmony = resolveSongSectionLayerTreatment(
       createSection('b'),
       { role: 'harmony' },
-      5
+      3
     );
     const variationPercussion = resolveSongSectionLayerTreatment(
       createSection('variation'),
@@ -86,12 +96,18 @@ describe('procedural music song layers', () => {
 
     expect(aPrimeLead.muted).toBe(false);
     expect(aPrimeLead.volumeMultiplier).toBeGreaterThan(1);
+    expect(aHarmony.muted).toBe(false);
+    expect(aHarmony.durationMultiplier).toBeLessThan(1);
+    expect(aPrimeHarmony.muted).toBe(true);
+    expect(aPrimeHarmony.durationMultiplier).toBeLessThan(1);
     expect(bHarmony.muted).toBe(true);
+    expect(bHarmony.volumeMultiplier).toBeLessThan(1);
     expect(variationPercussion.muted).toBe(true);
     expect(returnLead.muted).toBe(false);
     expect(returnLead.volumeMultiplier).toBeLessThan(1);
     expect(returnBass.muted).toBe(false);
     expect(returnHarmony.muted).toBe(false);
+    expect(returnHarmony.durationMultiplier).toBeLessThan(1);
     expect(returnPercussion.muted).toBe(false);
   });
 
