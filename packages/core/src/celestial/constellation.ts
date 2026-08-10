@@ -1,4 +1,4 @@
-import { DEFAULT_CONSTELLATION_COUNT } from '../const';
+import { DEFAULT_CONSTELLATION_COUNT } from './time';
 import {
   appendHashSeedLabel,
   hash2DWithSeed,

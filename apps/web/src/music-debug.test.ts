@@ -116,6 +116,13 @@ describe('music debug', () => {
     expect(first.trackStats.harmony.maxPolyphony).toBeGreaterThanOrEqual(1);
     expect(first.trackStats.bass.averageDurationMs).toBeGreaterThan(0);
     expect(first.trackStats.lead.averageSilenceMs).toBeGreaterThanOrEqual(0);
+    expect(first.sectionMotifMatches).toHaveLength(first.song.sections.length);
+    expect(first.harmonyChordDetections).toHaveLength(
+      first.song.sections.length
+    );
+    expect(
+      first.harmonyChordDetections.some((entry) => entry.chordLabels.length > 0)
+    ).toBe(true);
     expect(first.midiExportValidation.accidentalNoteCount).toBe(
       first.accidentalNoteCount
     );
@@ -181,6 +188,8 @@ describe('music debug', () => {
     expect(summary).toContain('Accidental Notes');
     expect(summary).toContain('Track Pitch');
     expect(summary).toContain('Track Timing');
+    expect(summary).toContain('Motif Matches');
+    expect(summary).toContain('Harmony Chords');
     expect(summary).toContain('MIDI Audit');
     expect(summary).toContain('avg leap');
     expect(summary).toContain('max leap');

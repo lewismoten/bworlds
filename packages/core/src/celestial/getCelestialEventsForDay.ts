@@ -1,7 +1,7 @@
-import { DEFAULT_YEAR_LENGTH_DAYS } from '../const.ts';
+import { DEFAULT_YEAR_LENGTH_DAYS } from './time.ts';
 import { hash2DWithSeed, registerHashLabel } from '../hash.ts';
 import { clamp, fract, lerp, normalizeAngle, smoothstep } from '../math.ts';
-import { PLANET_SKY_PROFILES, type PlanetSkyProfile } from '../time.ts';
+import { PLANET_SKY_PROFILES, type PlanetSkyProfile } from './time.ts';
 
 const PLANET_NAMES = ['Aurel', 'Brink', 'Cael', 'Damar', 'Vela'];
 const METEOR_SHOWER_NAMES = ['Silver Wake', 'Ember Rain', 'Northfall'];

@@ -54,6 +54,12 @@ import {
   type MusicDebugTrackStats,
 } from './music-debug-track-stats.ts';
 import {
+  createMusicDebugHarmonyChordDetections,
+  createMusicDebugSectionMotifMatches,
+  type MusicDebugHarmonyChordDetection,
+  type MusicDebugSectionMotifMatch,
+} from './music-debug-section-analysis.ts';
+import {
   createMusicDebugMidiExportAudit,
   type MusicDebugMidiAudit,
 } from './music-debug-midi-audit.ts';
@@ -124,6 +130,8 @@ export type MusicDebugSnapshot = {
     readonly MusicDebugPitchClassLabel[]
   >;
   trackStats: Record<ProceduralMusicNote['role'], MusicDebugTrackStats>;
+  sectionMotifMatches: MusicDebugSectionMotifMatch[];
+  harmonyChordDetections: MusicDebugHarmonyChordDetection[];
   midiAudit: MusicDebugMidiAudit;
   midiExportValidation: MusicDebugPitchValidation;
   timingValidation: MusicDebugTimingValidation;
@@ -346,6 +354,17 @@ export function createMusicDebugSnapshot(
     notes: song.notes,
     diagnostics: midiExportValidation.notePitchDiagnostics,
   });
+  const sectionMotifMatches = createMusicDebugSectionMotifMatches({
+    notes: song.notes,
+    notePitchDiagnostics: midiExportValidation.notePitchDiagnostics,
+    sections: song.sections,
+    leadMotif,
+  });
+  const harmonyChordDetections = createMusicDebugHarmonyChordDetections({
+    notes: song.notes,
+    notePitchDiagnostics: midiExportValidation.notePitchDiagnostics,
+    sections: song.sections,
+  });
   const snapshotBase = {
     options,
     theme,
@@ -378,6 +397,8 @@ export function createMusicDebugSnapshot(
     blackKeyNotesByRole: midiExportValidation.blackKeyNotesByRole,
     dominantPitchClassesByRole: midiExportValidation.dominantPitchClassesByRole,
     trackStats,
+    sectionMotifMatches,
+    harmonyChordDetections,
     midiExportValidation,
     timingValidation,
   };
@@ -659,6 +680,12 @@ export function buildMusicDebugSummaryMarkup(
       <span>Track Timing ${formatMusicDebugTrackTimingSummary(snapshot.trackStats).join(' | ')}</span>
     </div>
     <div class="music-debug-role-counts">
+      <span>Motif Matches ${formatMusicDebugSectionMotifMatches(snapshot.sectionMotifMatches)}</span>
+    </div>
+    <div class="music-debug-role-counts">
+      <span>Harmony Chords ${formatMusicDebugHarmonyChordDetections(snapshot.harmonyChordDetections)}</span>
+    </div>
+    <div class="music-debug-role-counts">
       <span>MIDI Audit ${snapshot.midiAudit.isConsistent ? 'ok' : snapshot.midiAudit.mismatchMessages.join(' | ')}</span>
     </div>
     <div class="music-debug-role-counts">
@@ -741,6 +768,31 @@ function formatMusicDebugPitchCenters(
   pitchClasses: readonly MusicDebugPitchClassLabel[]
 ): string {
   return pitchClasses.length > 0 ? pitchClasses.join(', ') : 'none';
+}
+
+function formatMusicDebugSectionMotifMatches(
+  matches: readonly MusicDebugSectionMotifMatch[]
+): string {
+  if (matches.length === 0) {
+    return 'none';
+  }
+  return matches
+    .map((entry) => `${entry.sectionLabel} ${entry.matchCount}`)
+    .join(' | ');
+}
+
+function formatMusicDebugHarmonyChordDetections(
+  detections: readonly MusicDebugHarmonyChordDetection[]
+): string {
+  if (detections.length === 0) {
+    return 'none';
+  }
+  return detections
+    .map(
+      (entry) =>
+        `${entry.sectionLabel} ${entry.chordLabels.join(', ') || 'none'}`
+    )
+    .join(' | ');
 }
 
 export function playMusicDebugSong(snapshot: MusicDebugSnapshot): void {

@@ -1,0 +1,210 @@
+import type { MusicDebugNotePitchDiagnostic } from './music-debug-note-analysis.ts';
+import type { ProceduralMusicNote } from './procedural-music.ts';
+import type { ProceduralMusicSongSection } from './procedural-music-song.ts';
+
+type ProceduralMusicRole = ProceduralMusicNote['role'];
+
+export type MusicDebugSectionMotifMatch = {
+  sectionId: string;
+  sectionLabel: string;
+  matchCount: number;
+};
+
+export type MusicDebugHarmonyChordDetection = {
+  sectionId: string;
+  sectionLabel: string;
+  chordLabels: string[];
+};
+
+const MUSIC_DEBUG_PITCH_CLASS_LABELS = [
+  'C',
+  'C#',
+  'D',
+  'D#',
+  'E',
+  'F',
+  'F#',
+  'G',
+  'G#',
+  'A',
+  'A#',
+  'B',
+] as const;
+
+export function createMusicDebugSectionMotifMatches(options: {
+  notes: readonly ProceduralMusicNote[];
+  notePitchDiagnostics: readonly MusicDebugNotePitchDiagnostic[];
+  sections: readonly ProceduralMusicSongSection[];
+  leadMotif: readonly number[];
+}): MusicDebugSectionMotifMatch[] {
+  const targetPattern = createIntervalPattern(options.leadMotif);
+  return options.sections.map((section) => {
+    const leadDegrees = collectSectionScaleDegrees({
+      notes: options.notes,
+      notePitchDiagnostics: options.notePitchDiagnostics,
+      section,
+      role: 'lead',
+    });
+    return {
+      sectionId: section.id,
+      sectionLabel: section.label,
+      matchCount:
+        targetPattern.length === 0
+          ? 0
+          : countIntervalPatternMatches(leadDegrees, targetPattern),
+    };
+  });
+}
+
+export function createMusicDebugHarmonyChordDetections(options: {
+  notes: readonly ProceduralMusicNote[];
+  notePitchDiagnostics: readonly MusicDebugNotePitchDiagnostic[];
+  sections: readonly ProceduralMusicSongSection[];
+}): MusicDebugHarmonyChordDetection[] {
+  return options.sections.map((section) => ({
+    sectionId: section.id,
+    sectionLabel: section.label,
+    chordLabels: collectHarmonyChordLabels({
+      notes: options.notes,
+      notePitchDiagnostics: options.notePitchDiagnostics,
+      section,
+    }),
+  }));
+}
+
+function collectSectionScaleDegrees(options: {
+  notes: readonly ProceduralMusicNote[];
+  notePitchDiagnostics: readonly MusicDebugNotePitchDiagnostic[];
+  section: ProceduralMusicSongSection;
+  role: ProceduralMusicRole;
+}): number[] {
+  const degrees: number[] = [];
+  const sectionStartMs = options.notes[0]?.startMs ?? 0;
+  const sectionStart = sectionStartMs + options.section.startOffsetMs;
+  const sectionEnd = sectionStart + options.section.durationMs;
+
+  for (let index = 0; index < options.notes.length; index += 1) {
+    const note = options.notes[index]!;
+    const diagnostic = options.notePitchDiagnostics[index];
+    if (!diagnostic || note.role !== options.role) {
+      continue;
+    }
+    if (
+      note.startMs < sectionStart ||
+      note.startMs >= sectionEnd ||
+      diagnostic.scaleDegree === null
+    ) {
+      continue;
+    }
+    degrees.push(diagnostic.scaleDegree - 1);
+  }
+
+  return degrees;
+}
+
+function collectHarmonyChordLabels(options: {
+  notes: readonly ProceduralMusicNote[];
+  notePitchDiagnostics: readonly MusicDebugNotePitchDiagnostic[];
+  section: ProceduralMusicSongSection;
+}): string[] {
+  const groups = new Map<number, string>();
+  const sectionStartMs = options.notes[0]?.startMs ?? 0;
+  const sectionStart = sectionStartMs + options.section.startOffsetMs;
+  const sectionEnd = sectionStart + options.section.durationMs;
+
+  for (let index = 0; index < options.notes.length; index += 1) {
+    const note = options.notes[index]!;
+    const diagnostic = options.notePitchDiagnostics[index];
+    if (
+      !diagnostic ||
+      note.role !== 'harmony' ||
+      diagnostic.midiNote === null
+    ) {
+      continue;
+    }
+    if (note.startMs < sectionStart || note.startMs >= sectionEnd) {
+      continue;
+    }
+    const pitchClassLabel = resolvePitchClassLabel(diagnostic.midiNote);
+    const existing = groups.get(note.startMs);
+    groups.set(
+      note.startMs,
+      existing ? `${existing},${pitchClassLabel}` : pitchClassLabel
+    );
+  }
+
+  const labelCounts = new Map<string, number>();
+  for (const group of groups.values()) {
+    const dedupedLabel = normalizeChordLabel(group);
+    if (!dedupedLabel) {
+      continue;
+    }
+    labelCounts.set(dedupedLabel, (labelCounts.get(dedupedLabel) ?? 0) + 1);
+  }
+
+  return Array.from(labelCounts.entries())
+    .sort((left, right) => {
+      if (right[1] !== left[1]) {
+        return right[1] - left[1];
+      }
+      return left[0].localeCompare(right[0]);
+    })
+    .slice(0, 3)
+    .map(([label, count]) => `${label} x${count}`);
+}
+
+function normalizeChordLabel(group: string): string | null {
+  const pitchClasses = Array.from(new Set(group.split(','))).filter(Boolean);
+  if (pitchClasses.length < 2) {
+    return null;
+  }
+  return pitchClasses.join('-');
+}
+
+function createIntervalPattern(degrees: readonly number[]): number[] {
+  const pattern: number[] = [];
+  for (let index = 1; index < degrees.length; index += 1) {
+    pattern.push(degrees[index]! - degrees[index - 1]!);
+  }
+  return pattern;
+}
+
+function countIntervalPatternMatches(
+  degrees: readonly number[],
+  targetPattern: readonly number[]
+): number {
+  if (degrees.length < targetPattern.length + 1) {
+    return 0;
+  }
+
+  let matches = 0;
+  for (
+    let startIndex = 0;
+    startIndex <= degrees.length - (targetPattern.length + 1);
+    startIndex += 1
+  ) {
+    let matched = true;
+    for (
+      let patternIndex = 0;
+      patternIndex < targetPattern.length;
+      patternIndex += 1
+    ) {
+      const actualInterval =
+        degrees[startIndex + patternIndex + 1]! -
+        degrees[startIndex + patternIndex]!;
+      if (actualInterval !== targetPattern[patternIndex]) {
+        matched = false;
+        break;
+      }
+    }
+    if (matched) {
+      matches += 1;
+    }
+  }
+  return matches;
+}
+
+function resolvePitchClassLabel(midiNote: number) {
+  const normalizedPitchClass = ((midiNote % 12) + 12) % 12;
+  return MUSIC_DEBUG_PITCH_CLASS_LABELS[normalizedPitchClass] ?? 'C';
+}

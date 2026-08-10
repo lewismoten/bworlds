@@ -1,3 +1,9 @@
+export const DEFAULT_DAY_LENGTH_MINUTES = 42;
+export const DEFAULT_DAY_LENGTH_MS = DEFAULT_DAY_LENGTH_MINUTES * 60 * 1000;
+export const DEFAULT_YEAR_LENGTH_DAYS = 64;
+export const DEFAULT_CONSTELLATION_COUNT = 8;
+export const DEFAULT_SEASON_DAYLIGHT_AMPLITUDE = 0.41;
+
 export const PLANET_SKY_PROFILES = [
   {
     orbitLengthDays: 11,

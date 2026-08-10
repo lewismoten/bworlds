@@ -261,8 +261,8 @@ added directly as semitones instead of moving through the selected scale.
 - [x] Show maximum harmony polyphony.
 - [x] Show average note duration by track.
 - [x] Show average silence between notes by track.
-- [ ] Show motif match counts by section.
-- [ ] Show actual chords detected in the harmony track.
+- [x] Show motif match counts by section.
+- [x] Show actual chords detected in the harmony track.
 - [x] Flag metadata that differs from MIDI output.
 
 ## Specific Regression Tests
