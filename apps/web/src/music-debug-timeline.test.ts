@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { createMusicDebugSnapshot } from './music-debug.ts';
 import {
+  buildMusicDebugTimelineSvgMarkup,
   resolveMusicDebugTimelineNoteBarColor,
   resolveMusicDebugTimelineLayout,
   resolveMusicDebugTimelineNoteBars,
@@ -56,7 +57,9 @@ describe('music debug timeline', () => {
     const noteBars = resolveMusicDebugTimelineNoteBars(snapshot, layout);
 
     expect(noteBars.length).toBe(snapshot.notes.length);
-    expect(noteBars.every((bar) => bar.height < layout.trackHeight * 0.35)).toBe(true);
+    expect(
+      noteBars.every((bar) => bar.height < layout.trackHeight * 0.35)
+    ).toBe(true);
     expect(
       noteBars.some((bar) => {
         if (bar.role === 'percussion') {
@@ -76,9 +79,7 @@ describe('music debug timeline', () => {
 
     expect(noteBars.every((bar) => bar.overlapCount >= 1)).toBe(true);
     expect(
-      noteBars.some(
-        (bar) => bar.role === 'harmony' && bar.overlapCount > 1
-      )
+      noteBars.some((bar) => bar.role === 'harmony' && bar.overlapCount > 1)
     ).toBe(true);
   });
 
@@ -116,11 +117,30 @@ describe('music debug timeline', () => {
   });
 
   it('brightens note-bar colors when overlaps increase', () => {
-    expect(resolveMusicDebugTimelineNoteBarColor('#4f8cff', 1)).toBe(
-      '#4f8cff'
-    );
-    expect(resolveMusicDebugTimelineNoteBarColor('#4f8cff', 3)).toBe(
-      '#6fa1ff'
-    );
+    expect(resolveMusicDebugTimelineNoteBarColor('#4f8cff', 1)).toBe('#4f8cff');
+    expect(resolveMusicDebugTimelineNoteBarColor('#4f8cff', 3)).toBe('#6fa1ff');
+  });
+
+  it('renders a standalone svg export for the timeline graph', () => {
+    const snapshot = createMusicDebugSnapshot({
+      tileKind: 'forest',
+      contextType: 'overworld',
+      clusterX: 4,
+      clusterY: -1,
+    });
+    const markup = buildMusicDebugTimelineSvgMarkup(snapshot, {
+      playheadOffsetMs: 1_500,
+      activeRegion: {
+        startOffsetMs: 0,
+        endOffsetMs: 8_000,
+      },
+    });
+
+    expect(markup).toContain('xmlns="http://www.w3.org/2000/svg"');
+    expect(markup).toContain('aria-label="Music debug timeline"');
+    expect(markup).toContain('fill="#071019"');
+    expect(markup).toContain('>MELODY<');
+    expect(markup).toContain('rgba(85,214,190,0.08)');
+    expect(markup).toContain('stroke="#f5f7fb"');
   });
 });

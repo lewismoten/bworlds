@@ -3,6 +3,7 @@ import { resolveMusicDebugInstrumentPreviewNote } from './music-debug-instrument
 import { createMusicDebugMidiFile } from './music-debug-midi-file.ts';
 import { type MusicDebugMidiMetadataOptions } from './music-debug-midi.ts';
 import { buildMusicDebugParameterReport } from './music-debug-report.ts';
+import { createMusicDebugGraphExportFiles } from './music-debug-export-graphs.ts';
 import {
   createMusicDebugPreviewWavFileForNotes,
   createMusicDebugPreviewWavFile,
@@ -71,11 +72,16 @@ export function createMeasuredMusicDebugExportBundle(
     snapshot,
     metadataOptions
   );
+  const graphFiles = createMusicDebugGraphExportFiles(
+    snapshot,
+    formatBundleBaseName(snapshot)
+  );
   const wavStartedAtMs = performance.now();
   const previewFiles = createMusicDebugInstrumentPreviewWavFiles(snapshot);
   const wavExportMs = performance.now() - wavStartedAtMs;
   const entries: readonly MusicDebugExportBundleFile[] = [
     midiFile,
+    ...graphFiles,
     ...previewFiles,
     reportFile,
   ];

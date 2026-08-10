@@ -8,19 +8,55 @@ const GRAPH_HEIGHT = 180;
 const GRAPH_PADDING_X = 32;
 const GRAPH_PADDING_TOP = 18;
 const GRAPH_PADDING_BOTTOM = 34;
+const GRAPH_FRAME_FILL = '#08131b';
+const GRAPH_FRAME_STROKE = 'rgba(255,255,255,0.08)';
+const GRAPH_GUIDE_STROKE = 'rgba(255,255,255,0.12)';
+const GRAPH_BAND_FILL = 'rgba(85, 214, 190, 0.18)';
+const GRAPH_TARGET_STROKE = '#55d6be';
+const GRAPH_ACTUAL_STROKE = '#ffcc33';
+const GRAPH_POINT_OK_FILL = '#55d6be';
+const GRAPH_POINT_DRIFT_FILL = '#ff8a65';
+const GRAPH_POINT_MISSING_FILL = '#9db2bd';
+const GRAPH_MEASURE_FILL = '#9db2bd';
 
-export function buildMusicDebugLeadContourGraphMarkup(
+export function buildMusicDebugLeadContourGraphSvgMarkup(
   analysis: MusicDebugLeadContourAnalysis
 ): string {
   if (analysis.points.length === 0) {
     return `
-      <section class="music-debug-contour-graph" aria-label="Lead contour graph">
-        <div class="music-debug-contour-graph-head">
-          <h3>Lead Contour Graph</h3>
-          <p>Unavailable</p>
-        </div>
-        <p class="music-debug-contour-graph-empty">No lead contour checkpoints were generated.</p>
-      </section>
+      <svg
+        viewBox="0 0 ${GRAPH_WIDTH} ${GRAPH_HEIGHT}"
+        role="img"
+        aria-label="Lead contour graph"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <rect
+          x="0"
+          y="0"
+          width="${GRAPH_WIDTH}"
+          height="${GRAPH_HEIGHT}"
+          rx="18"
+          ry="18"
+          fill="${GRAPH_FRAME_FILL}"
+          stroke="${GRAPH_FRAME_STROKE}"
+        />
+        <text
+          x="${GRAPH_WIDTH / 2}"
+          y="${GRAPH_HEIGHT / 2 - 8}"
+          fill="#d5e3ea"
+          font-family="Trebuchet MS, sans-serif"
+          font-size="16"
+          text-anchor="middle"
+        >Lead Contour Graph</text>
+        <text
+          x="${GRAPH_WIDTH / 2}"
+          y="${GRAPH_HEIGHT / 2 + 16}"
+          fill="${GRAPH_MEASURE_FILL}"
+          font-family="Trebuchet MS, sans-serif"
+          font-size="12"
+          text-anchor="middle"
+        >No lead contour checkpoints were generated.</text>
+      </svg>
     `;
   }
 
@@ -44,6 +80,66 @@ export function buildMusicDebugLeadContourGraphMarkup(
   const measureLabels = createMeasureLabels(analysis.points);
 
   return `
+    <svg
+      class="music-debug-contour-graph-svg"
+      viewBox="0 0 ${GRAPH_WIDTH} ${GRAPH_HEIGHT}"
+      role="img"
+      aria-label="Lead contour graph"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <rect
+        class="music-debug-contour-graph-frame"
+        x="0"
+        y="0"
+        width="${GRAPH_WIDTH}"
+        height="${GRAPH_HEIGHT}"
+        rx="18"
+        ry="18"
+        fill="${GRAPH_FRAME_FILL}"
+        stroke="${GRAPH_FRAME_STROKE}"
+      ></rect>
+      ${buildGuideLines(semitoneRange)}
+      <polygon
+        class="music-debug-contour-graph-band"
+        points="${plannedArea}"
+        fill="${GRAPH_BAND_FILL}"
+      ></polygon>
+      <polyline
+        class="music-debug-contour-graph-target"
+        points="${plannedTargetPath}"
+        fill="none"
+        stroke="${GRAPH_TARGET_STROKE}"
+        stroke-width="2.5"
+        stroke-linejoin="round"
+        stroke-linecap="round"
+      ></polyline>
+      ${
+        actualPath.length > 0
+          ? `<polyline class="music-debug-contour-graph-actual" points="${actualPath}" fill="none" stroke="${GRAPH_ACTUAL_STROKE}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"></polyline>`
+          : ''
+      }
+      ${analysis.points.map((point) => buildActualPointMarkup(point, analysis.points, semitoneRange)).join('')}
+      ${measureLabels}
+    </svg>
+  `;
+}
+
+export function buildMusicDebugLeadContourGraphMarkup(
+  analysis: MusicDebugLeadContourAnalysis
+): string {
+  if (analysis.points.length === 0) {
+    return `
+      <section class="music-debug-contour-graph" aria-label="Lead contour graph">
+        <div class="music-debug-contour-graph-head">
+          <h3>Lead Contour Graph</h3>
+          <p>Unavailable</p>
+        </div>
+        <p class="music-debug-contour-graph-empty">No lead contour checkpoints were generated.</p>
+      </section>
+    `;
+  }
+
+  return `
     <section class="music-debug-contour-graph" aria-label="Lead contour graph">
       <div class="music-debug-contour-graph-head">
         <h3>Lead Contour Graph</h3>
@@ -54,38 +150,7 @@ export function buildMusicDebugLeadContourGraphMarkup(
         <span class="music-debug-contour-legend-target">planned target</span>
         <span class="music-debug-contour-legend-actual">actual melody</span>
       </div>
-      <svg
-        class="music-debug-contour-graph-svg"
-        viewBox="0 0 ${GRAPH_WIDTH} ${GRAPH_HEIGHT}"
-        role="img"
-        aria-label="Lead contour graph"
-      >
-        <rect
-          class="music-debug-contour-graph-frame"
-          x="0"
-          y="0"
-          width="${GRAPH_WIDTH}"
-          height="${GRAPH_HEIGHT}"
-          rx="18"
-          ry="18"
-        ></rect>
-        ${buildGuideLines(semitoneRange)}
-        <polygon
-          class="music-debug-contour-graph-band"
-          points="${plannedArea}"
-        ></polygon>
-        <polyline
-          class="music-debug-contour-graph-target"
-          points="${plannedTargetPath}"
-        ></polyline>
-        ${
-          actualPath.length > 0
-            ? `<polyline class="music-debug-contour-graph-actual" points="${actualPath}"></polyline>`
-            : ''
-        }
-        ${analysis.points.map((point) => buildActualPointMarkup(point, analysis.points, semitoneRange)).join('')}
-        ${measureLabels}
-      </svg>
+      ${buildMusicDebugLeadContourGraphSvgMarkup(analysis)}
     </section>
   `;
 }
@@ -97,7 +162,7 @@ function buildGuideLines(range: { min: number; max: number }): string {
     const semitones = range.min + ((range.max - range.min) * index) / tickCount;
     const y = resolveGraphY(semitones, range);
     lines.push(
-      `<path class="music-debug-contour-graph-guide" d="M${GRAPH_PADDING_X} ${y.toFixed(2)} H${GRAPH_WIDTH - GRAPH_PADDING_X}"></path>`
+      `<path class="music-debug-contour-graph-guide" d="M${GRAPH_PADDING_X} ${y.toFixed(2)} H${GRAPH_WIDTH - GRAPH_PADDING_X}" fill="none" stroke="${GRAPH_GUIDE_STROKE}" stroke-width="1"></path>`
     );
   }
   return lines.join('');
@@ -155,6 +220,7 @@ function buildActualPointMarkup(
       cx="${x.toFixed(2)}"
       cy="${y.toFixed(2)}"
       r="4.5"
+      fill="${resolvePointFill(stateClass)}"
     >
       <title>${label}</title>
     </circle>
@@ -175,10 +241,24 @@ function createMeasureLabels(
           x="${x.toFixed(2)}"
           y="${y}"
           text-anchor="middle"
+          fill="${GRAPH_MEASURE_FILL}"
+          font-family="Trebuchet MS, sans-serif"
+          font-size="11"
         >m${point.songMeasure}</text>
       `;
     })
     .join('');
+}
+
+function resolvePointFill(stateClass: string): string {
+  switch (stateClass) {
+    case 'music-debug-contour-graph-point-missing':
+      return GRAPH_POINT_MISSING_FILL;
+    case 'music-debug-contour-graph-point-drift':
+      return GRAPH_POINT_DRIFT_FILL;
+    default:
+      return GRAPH_POINT_OK_FILL;
+  }
 }
 
 function pickMeasureLabelPoints(

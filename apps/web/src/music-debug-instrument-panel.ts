@@ -5,33 +5,36 @@ import {
   formatMusicDebugDisplayRoleLabel,
   MUSIC_DEBUG_DISPLAY_ROLE_ORDER,
 } from './music-debug-role-display.ts';
-import type {
-  ProceduralMusicNote,
-} from './procedural-music.ts';
+import type { ProceduralMusicNote } from './procedural-music.ts';
 import type { ProceduralInstrument } from './procedural-music-sound-bank.ts';
 
 export type MusicDebugInstrumentPreviewTarget =
   | keyof MusicDebugSnapshot['instrumentBank']['instruments']
   | `percussion:${string}`;
 
+export type MusicDebugInstrumentCardExport = {
+  fileSuffix: string;
+  trackLabel: string;
+  title: string;
+  previewTarget: MusicDebugInstrumentPreviewTarget;
+  audioSource: Pick<
+    ProceduralInstrument | ProceduralMusicNote,
+    'waveform' | 'timbre' | 'attackMs' | 'harmonicGain'
+  >;
+};
+
 export function buildMusicDebugInstrumentPanelMarkup(
   snapshot: MusicDebugSnapshot
 ): string {
-  const melodicCards = MUSIC_DEBUG_DISPLAY_ROLE_ORDER.filter(
-    (role) => role !== 'percussion'
-  )
-    .map((role) =>
-      buildMusicDebugInstrumentCardMarkup({
-        trackLabel: formatMusicDebugDisplayRoleLabel(role),
-        title: formatInstrumentFamilyLabel(
-          snapshot.instrumentBank.instruments[role].family
-        ),
-        previewTarget: role,
-        audioSource: snapshot.instrumentBank.instruments[role],
-      })
-    )
+  const cards = createMusicDebugInstrumentCardExports(snapshot);
+  const melodicCards = cards
+    .filter((card) => !card.previewTarget.startsWith('percussion:'))
+    .map((card) => buildMusicDebugInstrumentCardMarkup(card))
     .join('');
-  const percussionCards = buildMusicDebugPercussionCardsMarkup(snapshot);
+  const percussionCards = cards
+    .filter((card) => card.previewTarget.startsWith('percussion:'))
+    .map((card) => buildMusicDebugInstrumentCardMarkup(card))
+    .join('');
 
   return `
     <section class="music-debug-instrument-panel" aria-label="Instrument previews">
@@ -121,6 +124,15 @@ export function buildMusicDebugInstrumentWaveformMarkup(
     'waveform' | 'timbre' | 'harmonicGain'
   >
 ): string {
+  return buildMusicDebugInstrumentWaveformSvgMarkup(instrument);
+}
+
+export function buildMusicDebugInstrumentWaveformSvgMarkup(
+  instrument: Pick<
+    ProceduralInstrument | ProceduralMusicNote,
+    'waveform' | 'timbre' | 'harmonicGain'
+  >
+): string {
   const width = 180;
   const height = 56;
   const midY = height / 2;
@@ -142,12 +154,17 @@ export function buildMusicDebugInstrumentWaveformMarkup(
   }
 
   return `
-    <svg viewBox="0 0 ${width} ${height}" aria-hidden="true">
-      <rect width="${width}" height="${height}" rx="12" ry="12"></rect>
-      <path class="music-debug-instrument-waveform-line" d="M0 ${midY.toFixed(2)} H${width}"></path>
+    <svg viewBox="0 0 ${width} ${height}" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+      <rect width="${width}" height="${height}" rx="12" ry="12" fill="#08131b"></rect>
+      <path class="music-debug-instrument-waveform-line" d="M0 ${midY.toFixed(2)} H${width}" fill="none" stroke="rgba(255,255,255,0.14)" stroke-width="1"></path>
       <polyline
         class="music-debug-instrument-waveform-shape"
         points="${points.join(' ')}"
+        fill="none"
+        stroke="#55d6be"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
       ></polyline>
     </svg>
   `;
@@ -180,35 +197,51 @@ function formatInstrumentFamilyLabel(
     .join(' ');
 }
 
-function buildMusicDebugPercussionCardsMarkup(
-  snapshot: MusicDebugSnapshot
-): string {
-  return createMusicDebugPercussionVoiceCounts(snapshot.notes)
-    .map((voice) => {
-      if (!voice.voiceId) {
-        return '';
-      }
-      const representativeNote = snapshot.notes.find(
-        (note) =>
-          note.role === 'percussion' &&
-          note.instrumentId.includes(`perc-${voice.voiceId}:`)
-      );
-      if (!representativeNote) {
-        return '';
-      }
-      return buildMusicDebugInstrumentCardMarkup({
-        trackLabel: `percussion / ${voice.voiceName}`,
-        title: formatPercussionVoiceTitle(voice.voiceName),
-        previewTarget: `percussion:${voice.voiceId}`,
-        audioSource: representativeNote,
-      });
-    })
-    .join('');
-}
-
 function formatPercussionVoiceTitle(voiceName: string): string {
   return voiceName
     .split('-')
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(' ');
+}
+
+export function createMusicDebugInstrumentCardExports(
+  snapshot: MusicDebugSnapshot
+): readonly MusicDebugInstrumentCardExport[] {
+  const melodicCards = MUSIC_DEBUG_DISPLAY_ROLE_ORDER.filter(
+    (role) => role !== 'percussion'
+  ).map((role) => ({
+    fileSuffix: `${role}-waveform`,
+    trackLabel: formatMusicDebugDisplayRoleLabel(role),
+    title: formatInstrumentFamilyLabel(
+      snapshot.instrumentBank.instruments[role].family
+    ),
+    previewTarget: role,
+    audioSource: snapshot.instrumentBank.instruments[role],
+  }));
+  const percussionCards = createMusicDebugPercussionVoiceCounts(
+    snapshot.notes
+  ).flatMap((voice) => {
+    if (!voice.voiceId) {
+      return [];
+    }
+    const representativeNote = snapshot.notes.find(
+      (note) =>
+        note.role === 'percussion' &&
+        note.instrumentId.includes(`perc-${voice.voiceId}:`)
+    );
+    if (!representativeNote) {
+      return [];
+    }
+    return [
+      {
+        fileSuffix: `percussion-${voice.voiceId}-waveform`,
+        trackLabel: `percussion / ${voice.voiceName}`,
+        title: formatPercussionVoiceTitle(voice.voiceName),
+        previewTarget: `percussion:${voice.voiceId}` as const,
+        audioSource: representativeNote,
+      },
+    ];
+  });
+
+  return [...melodicCards, ...percussionCards];
 }

@@ -26,7 +26,9 @@ describe('music debug instrument panel', () => {
     expect(markup).toContain('>Melody<');
     expect(markup).toContain('>Harmony<');
     expect(markup).toContain('>Bass<');
-    expect(markup.indexOf('>Melody<')).toBeLessThan(markup.indexOf('>Harmony<'));
+    expect(markup.indexOf('>Melody<')).toBeLessThan(
+      markup.indexOf('>Harmony<')
+    );
     expect(markup.indexOf('>Harmony<')).toBeLessThan(markup.indexOf('>Bass<'));
     expect(markup).toContain('<svg viewBox=');
   });
@@ -65,11 +67,16 @@ describe('music debug instrument panel', () => {
       (note) =>
         note.role === 'percussion' && note.instrumentId.includes(':perc-')
     )!;
-    const voiceId = percussionNote.instrumentId.match(/:perc-([a-z-]+-\d+):/)?.[1]!;
+    const voiceIdMatch =
+      percussionNote.instrumentId.match(/:perc-([a-z-]+-\d+):/);
+
+    expect(voiceIdMatch).not.toBeNull();
+    const voiceId = voiceIdMatch?.[1];
+    expect(voiceId).toBeTruthy();
 
     const note = resolveMusicDebugInstrumentPreviewNote(
       snapshot,
-      `percussion:${voiceId}`,
+      `percussion:${voiceId!}`,
       7_000
     );
 

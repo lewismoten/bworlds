@@ -20,7 +20,7 @@
 - [x] Show all percussion wave forms with other instruments rather than just one, along with a play button like the others.
 - [x] Move instrument wave form cards to appear just under the MIDI track visualizer.
 - [ ] Move instrument wave form cards to appear below the MIDI track visualizer.
-- [ ] Include all graphs as images within the Export ZIP
+- [x] Include all graphs as images within the Export ZIP
 
 # Track Role / Color / Listing Order
 

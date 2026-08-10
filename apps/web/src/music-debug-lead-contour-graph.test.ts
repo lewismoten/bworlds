@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
 import type { MusicDebugLeadContourAnalysis } from './music-debug-lead-contour.ts';
-import { buildMusicDebugLeadContourGraphMarkup } from './music-debug-lead-contour-graph.ts';
+import {
+  buildMusicDebugLeadContourGraphMarkup,
+  buildMusicDebugLeadContourGraphSvgMarkup,
+} from './music-debug-lead-contour-graph.ts';
 
 describe('music debug lead contour graph', () => {
   it('renders planned and actual contour data on one svg graph', () => {
@@ -29,6 +32,16 @@ describe('music debug lead contour graph', () => {
 
     expect(markup).toContain('Unavailable');
     expect(markup).toContain('No lead contour checkpoints were generated.');
+  });
+
+  it('renders a standalone svg export for the contour graph', () => {
+    const markup = buildMusicDebugLeadContourGraphSvgMarkup(createAnalysis());
+
+    expect(markup).toContain('xmlns="http://www.w3.org/2000/svg"');
+    expect(markup).toContain('role="img"');
+    expect(markup).toContain('Lead contour graph');
+    expect(markup).toContain('stroke="#55d6be"');
+    expect(markup).toContain('stroke="#ffcc33"');
   });
 });
 

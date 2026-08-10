@@ -34,6 +34,13 @@ describe('music debug export bundle', () => {
     expect(bundle.fileName).toBe('bworlds-deep-forest-4--1-melody-export.zip');
     expect(bundle.mimeType).toBe('application/zip');
     expect(fileNames).toContain('bworlds-deep-forest-4--1-melody.mid');
+    expect(fileNames).toContain('bworlds-deep-forest-4--1-timeline.svg');
+    expect(fileNames).toContain('bworlds-deep-forest-4--1-lead-contour.svg');
+    expect(fileNames).toContain('bworlds-deep-forest-4--1-bass-waveform.svg');
+    expect(fileNames).toContain(
+      'bworlds-deep-forest-4--1-harmony-waveform.svg'
+    );
+    expect(fileNames).toContain('bworlds-deep-forest-4--1-lead-waveform.svg');
     expect(fileNames).toContain('bworlds-deep-forest-4--1-bass-preview.wav');
     expect(fileNames).toContain('bworlds-deep-forest-4--1-harmony-preview.wav');
     expect(fileNames).toContain('bworlds-deep-forest-4--1-lead-preview.wav');
@@ -45,8 +52,11 @@ describe('music debug export bundle', () => {
       expect(fileNames).toContain(
         `bworlds-deep-forest-4--1-percussion-${voice.voiceId}-solo.wav`
       );
+      expect(fileNames).toContain(
+        `bworlds-deep-forest-4--1-percussion-${voice.voiceId}-waveform.svg`
+      );
     }
-    expect(bundle.entries).toHaveLength(6 + percussionVoices.length);
+    expect(bundle.entries).toHaveLength(11 + percussionVoices.length * 2);
     expect(reportEntry).toBeDefined();
     expect(
       JSON.parse(
@@ -73,6 +83,19 @@ describe('music debug export bundle', () => {
         }),
       })
     );
+    expect(
+      new TextDecoder().decode(
+        archiveEntries.find((entry) => entry.fileName.endsWith('-timeline.svg'))
+          ?.bytes ?? new Uint8Array()
+      )
+    ).toContain('aria-label="Music debug timeline"');
+    expect(
+      new TextDecoder().decode(
+        archiveEntries.find((entry) =>
+          entry.fileName.endsWith('-lead-contour.svg')
+        )?.bytes ?? new Uint8Array()
+      )
+    ).toContain('Lead contour graph');
   });
 
   it('downloads the bundled zip through a blob url', () => {

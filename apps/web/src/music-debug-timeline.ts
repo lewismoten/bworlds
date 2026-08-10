@@ -23,6 +23,8 @@ const MUSIC_DEBUG_TIMELINE_BOTTOM_PAD = 24;
 const MUSIC_DEBUG_TIMELINE_NOTE_BAR_MIN_WIDTH = 2;
 const MUSIC_DEBUG_TIMELINE_NOTE_BAR_MAX_HEIGHT = 8;
 const MUSIC_DEBUG_TIMELINE_NOTE_BAR_MIN_HEIGHT = 5;
+export const MUSIC_DEBUG_TIMELINE_EXPORT_WIDTH = 960;
+export const MUSIC_DEBUG_TIMELINE_EXPORT_HEIGHT = 320;
 
 export type MusicDebugTimelineNoteBar = {
   role: ProceduralMusicNote['role'];
@@ -181,6 +183,86 @@ export function drawMusicDebugTimeline(
   }
 }
 
+export function buildMusicDebugTimelineSvgMarkup(
+  snapshot: MusicDebugSnapshot,
+  options: {
+    width?: number;
+    height?: number;
+    playheadOffsetMs?: number;
+    activeRegion?: MusicDebugPlaybackRegion | null;
+  } = {}
+): string {
+  const width = options.width ?? MUSIC_DEBUG_TIMELINE_EXPORT_WIDTH;
+  const height = options.height ?? MUSIC_DEBUG_TIMELINE_EXPORT_HEIGHT;
+  const layout = resolveMusicDebugTimelineLayout(width, height);
+  const durationMs = Math.max(snapshot.durationMs, 1);
+  const scaleOverlay = createMusicDebugScaleOverlay(snapshot, layout);
+  const noteBars = resolveMusicDebugTimelineNoteBars(snapshot, layout);
+  const playheadMarkup =
+    typeof options.playheadOffsetMs === 'number'
+      ? buildMusicDebugTimelinePlayheadSvgMarkup(
+          layout,
+          durationMs,
+          options.playheadOffsetMs,
+          height
+        )
+      : '';
+
+  return `
+    <svg
+      viewBox="0 0 ${width} ${height}"
+      role="img"
+      aria-label="Music debug timeline"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <rect x="0" y="0" width="${width}" height="${height}" fill="#071019"></rect>
+      ${buildMusicDebugSectionBandSvgMarkup(snapshot, layout, durationMs)}
+      ${buildMusicDebugActiveRegionSvgMarkup(
+        layout,
+        durationMs,
+        height,
+        options.activeRegion
+      )}
+      ${Array.from({ length: layout.roleOrder.length + 1 }, (_, index) => {
+        const y = layout.topPad + layout.trackHeight * index;
+        return `<path d="M${layout.leftPad} ${y.toFixed(2)} H${(width - layout.rightPad).toFixed(2)}" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="1"></path>`;
+      }).join('')}
+      ${layout.roleOrder
+        .map((role, index) => {
+          const y = layout.topPad + layout.trackHeight * index + 18;
+          return `<text x="16" y="${y.toFixed(2)}" fill="#9db2bd" font-family="Trebuchet MS, sans-serif" font-size="13">${formatMusicDebugDisplayRoleLabel(
+            role
+          ).toUpperCase()}</text>`;
+        })
+        .join('')}
+      ${noteBars
+        .map(
+          (noteBar) =>
+            `<rect x="${noteBar.x.toFixed(2)}" y="${noteBar.y.toFixed(
+              2
+            )}" width="${noteBar.width.toFixed(2)}" height="${noteBar.height.toFixed(
+              2
+            )}" fill="${resolveMusicDebugTimelineNoteBarColor(
+              resolveMusicDebugDisplayRoleColor(noteBar.role),
+              noteBar.overlapCount
+            )}" rx="2" ry="2"></rect>`
+        )
+        .join('')}
+      ${scaleOverlay.guides
+        .map(
+          (guide) =>
+            `<path d="M${layout.leftPad} ${guide.y.toFixed(2)} H${(
+              width - layout.rightPad
+            ).toFixed(
+              2
+            )}" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="1"></path>`
+        )
+        .join('')}
+      ${playheadMarkup}
+    </svg>
+  `;
+}
+
 export function resolveMusicDebugTimelineNoteBars(
   snapshot: MusicDebugSnapshot,
   layout: MusicDebugTimelineLayout
@@ -215,7 +297,10 @@ export function resolveMusicDebugTimelineNoteBars(
     );
     const height = Math.min(
       MUSIC_DEBUG_TIMELINE_NOTE_BAR_MAX_HEIGHT,
-      Math.max(MUSIC_DEBUG_TIMELINE_NOTE_BAR_MIN_HEIGHT, layout.trackHeight * 0.16)
+      Math.max(
+        MUSIC_DEBUG_TIMELINE_NOTE_BAR_MIN_HEIGHT,
+        layout.trackHeight * 0.16
+      )
     );
     const centerY =
       marker?.y ??
@@ -263,12 +348,18 @@ export function resolveMusicDebugTimelineNoteBarColor(
   return `#${brighten(red)}${brighten(green)}${brighten(blue)}`;
 }
 
-function applyNoteBarOverlapCounts(noteBars: MusicDebugTimelineNoteBar[]): void {
+function applyNoteBarOverlapCounts(
+  noteBars: MusicDebugTimelineNoteBar[]
+): void {
   for (let index = 0; index < noteBars.length; index += 1) {
     const current = noteBars[index]!;
     let overlapCount = 1;
 
-    for (let compareIndex = 0; compareIndex < noteBars.length; compareIndex += 1) {
+    for (
+      let compareIndex = 0;
+      compareIndex < noteBars.length;
+      compareIndex += 1
+    ) {
       if (compareIndex === index) {
         continue;
       }
@@ -322,6 +413,45 @@ function drawMusicDebugSectionBands(
   }
 }
 
+function buildMusicDebugSectionBandSvgMarkup(
+  snapshot: MusicDebugSnapshot,
+  layout: MusicDebugTimelineLayout,
+  durationMs: number
+): string {
+  return snapshot.song.sections
+    .map((section, index) => {
+      const startX = resolveMusicDebugTimelineXForOffset(
+        layout,
+        durationMs,
+        section.startOffsetMs
+      );
+      const endX = resolveMusicDebugTimelineXForOffset(
+        layout,
+        durationMs,
+        section.startOffsetMs + section.durationMs
+      );
+      const fill =
+        index % 2 === 0 ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.06)';
+      return `
+        <rect
+          x="${startX.toFixed(2)}"
+          y="0"
+          width="${Math.max(1, endX - startX).toFixed(2)}"
+          height="${(layout.height - layout.bottomPad + 8).toFixed(2)}"
+          fill="${fill}"
+        ></rect>
+        <text
+          x="${(startX + 6).toFixed(2)}"
+          y="18"
+          fill="#d5e3ea"
+          font-family="Trebuchet MS, sans-serif"
+          font-size="11"
+        >${section.label}</text>
+      `;
+    })
+    .join('');
+}
+
 function drawMusicDebugActiveRegion(
   context: CanvasRenderingContext2D,
   layout: MusicDebugTimelineLayout,
@@ -348,6 +478,54 @@ function drawMusicDebugActiveRegion(
     Math.max(0, endX - startX),
     layout.height - layout.topPad - layout.bottomPad
   );
+}
+
+function buildMusicDebugActiveRegionSvgMarkup(
+  layout: MusicDebugTimelineLayout,
+  durationMs: number,
+  height: number,
+  region?: MusicDebugPlaybackRegion | null
+): string {
+  if (!region) {
+    return '';
+  }
+  const startX = resolveMusicDebugTimelineXForOffset(
+    layout,
+    durationMs,
+    region.startOffsetMs
+  );
+  const endX = resolveMusicDebugTimelineXForOffset(
+    layout,
+    durationMs,
+    region.endOffsetMs
+  );
+  return `
+    <rect
+      x="${startX.toFixed(2)}"
+      y="${layout.topPad.toFixed(2)}"
+      width="${Math.max(0, endX - startX).toFixed(2)}"
+      height="${(height - layout.topPad - layout.bottomPad).toFixed(2)}"
+      fill="rgba(85,214,190,0.08)"
+    ></rect>
+  `;
+}
+
+function buildMusicDebugTimelinePlayheadSvgMarkup(
+  layout: MusicDebugTimelineLayout,
+  durationMs: number,
+  playheadOffsetMs: number,
+  height: number
+): string {
+  const playheadX = resolveMusicDebugTimelineXForOffset(
+    layout,
+    durationMs,
+    playheadOffsetMs
+  );
+  return `<path d="M${playheadX.toFixed(2)} 12 V${(
+    height -
+    layout.bottomPad +
+    6
+  ).toFixed(2)}" fill="none" stroke="#f5f7fb" stroke-width="2"></path>`;
 }
 
 function createMarkerQueueByRole(
@@ -416,9 +594,7 @@ function resolvePercussionLaneCenterY(options: {
   const laneKey = voiceId ?? family ?? options.note.instrumentId;
   const laneIndex = options.laneMap.get(laneKey) ?? Math.floor(laneCount / 2);
   const ratio = laneIndex / Math.max(1, laneCount - 1);
-  return (
-    options.trackBottom - (options.trackBottom - options.trackTop) * ratio
-  );
+  return options.trackBottom - (options.trackBottom - options.trackTop) * ratio;
 }
 
 function resolvePercussionFamilyRank(
