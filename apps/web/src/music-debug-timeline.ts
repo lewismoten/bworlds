@@ -10,6 +10,17 @@ const MUSIC_DEBUG_TIMELINE_LEFT_PAD = 84;
 const MUSIC_DEBUG_TIMELINE_RIGHT_PAD = 24;
 const MUSIC_DEBUG_TIMELINE_TOP_PAD = 34;
 const MUSIC_DEBUG_TIMELINE_BOTTOM_PAD = 24;
+const MUSIC_DEBUG_TIMELINE_NOTE_BAR_MIN_WIDTH = 2;
+const MUSIC_DEBUG_TIMELINE_NOTE_BAR_MAX_HEIGHT = 10;
+const MUSIC_DEBUG_TIMELINE_NOTE_BAR_ALPHA = 0.42;
+
+export type MusicDebugTimelineNoteBar = {
+  role: ProceduralMusicNote['role'];
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+};
 
 export function resolveMusicDebugTimelineLayout(
   width: number,
@@ -134,23 +145,13 @@ export function drawMusicDebugTimeline(
     );
   });
 
-  for (const note of snapshot.notes) {
-    const roleIndex = layout.roleOrder.indexOf(note.role);
-    const startRatio = (note.startMs - timelineStartMs) / durationMs;
-    const endRatio =
-      (note.startMs + note.durationMs - timelineStartMs) / durationMs;
-    const x =
-      layout.leftPad + startRatio * (width - layout.leftPad - layout.rightPad);
-    const barWidth = Math.max(
-      2,
-      (endRatio - startRatio) * (width - layout.leftPad - layout.rightPad)
-    );
-    const y = layout.topPad + roleIndex * layout.trackHeight + 10;
-    const barHeight = Math.max(10, layout.trackHeight - 18);
-
-    context.fillStyle = roleColors[note.role];
-    context.fillRect(x, y, barWidth, barHeight);
+  const noteBars = resolveMusicDebugTimelineNoteBars(snapshot, layout);
+  for (const noteBar of noteBars) {
+    context.fillStyle = roleColors[noteBar.role];
+    context.globalAlpha = MUSIC_DEBUG_TIMELINE_NOTE_BAR_ALPHA;
+    context.fillRect(noteBar.x, noteBar.y, noteBar.width, noteBar.height);
   }
+  context.globalAlpha = 1;
 
   context.strokeStyle = 'rgba(255,255,255,0.12)';
   context.lineWidth = 1;
@@ -160,19 +161,6 @@ export function drawMusicDebugTimeline(
     context.lineTo(width - layout.rightPad, guide.y);
     context.stroke();
   }
-
-  for (const marker of scaleOverlay.markers) {
-    context.beginPath();
-    context.fillStyle = '#f5f7fb';
-    context.arc(marker.x, marker.y, marker.radius, 0, Math.PI * 2);
-    context.fill();
-    context.beginPath();
-    context.strokeStyle = roleColors[marker.role];
-    context.lineWidth = 2;
-    context.arc(marker.x, marker.y, marker.radius + 1.5, 0, Math.PI * 2);
-    context.stroke();
-  }
-
   if (typeof options.playheadOffsetMs === 'number') {
     const playheadX = resolveMusicDebugTimelineXForOffset(
       layout,
@@ -186,6 +174,54 @@ export function drawMusicDebugTimeline(
     context.lineTo(playheadX, height - layout.bottomPad + 6);
     context.stroke();
   }
+}
+
+export function resolveMusicDebugTimelineNoteBars(
+  snapshot: MusicDebugSnapshot,
+  layout: MusicDebugTimelineLayout
+): MusicDebugTimelineNoteBar[] {
+  const durationMs = Math.max(snapshot.durationMs, 1);
+  const timelineStartMs = snapshot.notes[0]?.startMs ?? snapshot.song.startMs;
+  const scaleOverlay = createMusicDebugScaleOverlay(snapshot, layout);
+  const markerQueueByRole = createMarkerQueueByRole(scaleOverlay.markers);
+  const noteBars: MusicDebugTimelineNoteBar[] = [];
+  const usableWidth = layout.width - layout.leftPad - layout.rightPad;
+
+  for (const note of snapshot.notes) {
+    const roleIndex = layout.roleOrder.indexOf(note.role);
+    if (roleIndex < 0) {
+      continue;
+    }
+    const trackTop = layout.topPad + roleIndex * layout.trackHeight + 10;
+    const trackBottom = trackTop + Math.max(10, layout.trackHeight - 18);
+    const marker =
+      note.role === 'percussion'
+        ? null
+        : markerQueueByRole[note.role as Exclude<ProceduralMusicNote['role'], 'percussion'>]
+            ?.shift() ?? null;
+    const startRatio = (note.startMs - timelineStartMs) / durationMs;
+    const endRatio =
+      (note.startMs + note.durationMs - timelineStartMs) / durationMs;
+    const width = Math.max(
+      MUSIC_DEBUG_TIMELINE_NOTE_BAR_MIN_WIDTH,
+      (endRatio - startRatio) * usableWidth
+    );
+    const height = Math.min(
+      MUSIC_DEBUG_TIMELINE_NOTE_BAR_MAX_HEIGHT,
+      Math.max(6, layout.trackHeight * 0.2)
+    );
+    const centerY = marker?.y ?? (trackTop + trackBottom) * 0.5;
+
+    noteBars.push({
+      role: note.role,
+      x: layout.leftPad + startRatio * usableWidth,
+      y: clampNoteBarY(centerY - height * 0.5, trackTop, trackBottom - height),
+      width,
+      height,
+    });
+  }
+
+  return noteBars;
 }
 
 function drawMusicDebugSectionBands(
@@ -246,4 +282,18 @@ function drawMusicDebugActiveRegion(
     Math.max(0, endX - startX),
     layout.height - layout.topPad - layout.bottomPad
   );
+}
+
+function createMarkerQueueByRole(
+  markers: ReturnType<typeof createMusicDebugScaleOverlay>['markers']
+): Record<'bass' | 'harmony' | 'lead', typeof markers> {
+  return {
+    bass: markers.filter((marker) => marker.role === 'bass'),
+    harmony: markers.filter((marker) => marker.role === 'harmony'),
+    lead: markers.filter((marker) => marker.role === 'lead'),
+  };
+}
+
+function clampNoteBarY(y: number, minY: number, maxY: number): number {
+  return Math.min(maxY, Math.max(minY, y));
 }
