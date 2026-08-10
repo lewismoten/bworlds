@@ -106,7 +106,7 @@ added directly as semitones instead of moving through the selected scale.
 
 - [x] Make the strings play simultaneous chord tones.
 - [x] Generate at least three notes for normal triads.
-- [ ] Sustain chords across meaningful harmonic spans.
+- [x] Sustain chords across meaningful harmonic spans.
 - [x] Use inversions to reduce chord-to-chord motion.
 - [ ] Keep common chord tones between changes.
 - [ ] Avoid octave jumping as the main harmony motion.

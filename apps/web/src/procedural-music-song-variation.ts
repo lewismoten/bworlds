@@ -1,4 +1,5 @@
 import type { ProceduralMusicNote } from './procedural-music.ts';
+import { resolveSongHarmonySustainMultiplier } from './procedural-music-harmony-sustain.ts';
 import { resolveSongSectionLayerTreatment } from './procedural-music-song-layers.ts';
 import type { ProceduralMusicSongSection } from './procedural-music-song.ts';
 
@@ -17,51 +18,67 @@ export function transformSongSectionNote(
   if (layerTreatment.muted) {
     return null;
   }
+  const harmonySustainMultiplier =
+    note.role === 'harmony'
+      ? resolveSongHarmonySustainMultiplier({
+          sectionId: section.id,
+          noteIndexInSection,
+        })
+      : 1;
 
   switch (section.id) {
     case 'intro':
       return scaleSongNote(note, {
         volumeMultiplier: layerTreatment.volumeMultiplier,
-        durationMultiplier: layerTreatment.durationMultiplier,
+        durationMultiplier:
+          layerTreatment.durationMultiplier * harmonySustainMultiplier,
         releaseMultiplier: layerTreatment.releaseMultiplier,
       });
     case 'a-prime':
       return transformAprimeSectionNote(
         note,
         noteIndexInSection,
-        layerTreatment
+        layerTreatment,
+        harmonySustainMultiplier
       );
     case 'b':
       return scaleSongNote(note, {
         volumeMultiplier: layerTreatment.volumeMultiplier,
-        durationMultiplier: layerTreatment.durationMultiplier,
+        durationMultiplier:
+          layerTreatment.durationMultiplier * harmonySustainMultiplier,
       });
     case 'variation':
       return transformVariationSectionNote(
         note,
         noteIndexInSection,
-        layerTreatment
+        layerTreatment,
+        harmonySustainMultiplier
       );
     case 'return':
       return scaleSongNote(note, {
         volumeMultiplier: layerTreatment.volumeMultiplier,
+        durationMultiplier: harmonySustainMultiplier,
       });
     case 'outro':
       return scaleSongNote(note, {
         volumeMultiplier: layerTreatment.volumeMultiplier,
-        durationMultiplier: layerTreatment.durationMultiplier,
+        durationMultiplier:
+          layerTreatment.durationMultiplier * harmonySustainMultiplier,
         releaseMultiplier: layerTreatment.releaseMultiplier,
       });
     case 'a':
     default:
-      return note;
+      return scaleSongNote(note, {
+        durationMultiplier: harmonySustainMultiplier,
+      });
   }
 }
 
 function transformAprimeSectionNote(
   note: ProceduralMusicNote,
   noteIndexInSection: number,
-  layerTreatment: ReturnType<typeof resolveSongSectionLayerTreatment>
+  layerTreatment: ReturnType<typeof resolveSongSectionLayerTreatment>,
+  harmonySustainMultiplier: number
 ): ProceduralMusicNote {
   const phrasePosition = noteIndexInSection % 8;
   const endingOffsetSemitones =
@@ -77,7 +94,8 @@ function transformAprimeSectionNote(
 
   return scaleSongNote(note, {
     volumeMultiplier: layerTreatment.volumeMultiplier,
-    durationMultiplier: layerTreatment.durationMultiplier,
+    durationMultiplier:
+      layerTreatment.durationMultiplier * harmonySustainMultiplier,
     startOffsetMs: rhythmShiftMs,
     transposeSemitones: endingOffsetSemitones,
   });
@@ -86,7 +104,8 @@ function transformAprimeSectionNote(
 function transformVariationSectionNote(
   note: ProceduralMusicNote,
   noteIndexInSection: number,
-  layerTreatment: ReturnType<typeof resolveSongSectionLayerTreatment>
+  layerTreatment: ReturnType<typeof resolveSongSectionLayerTreatment>,
+  harmonySustainMultiplier: number
 ): ProceduralMusicNote {
   const phrasePosition = noteIndexInSection % 8;
   const transposeSemitones =
@@ -104,7 +123,8 @@ function transformVariationSectionNote(
 
   return scaleSongNote(note, {
     volumeMultiplier: layerTreatment.volumeMultiplier,
-    durationMultiplier: layerTreatment.durationMultiplier,
+    durationMultiplier:
+      layerTreatment.durationMultiplier * harmonySustainMultiplier,
     releaseMultiplier: layerTreatment.releaseMultiplier,
     startOffsetMs: rhythmShiftMs,
     transposeSemitones,
