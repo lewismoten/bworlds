@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { createMusicDebugSnapshot } from './music-debug.ts';
 import {
+  resolveMusicDebugTimelineNoteBarColor,
   resolveMusicDebugTimelineLayout,
   resolveMusicDebugTimelineNoteBars,
   resolveMusicDebugTimelineOffsetForX,
@@ -49,9 +50,7 @@ describe('music debug timeline', () => {
     const noteBars = resolveMusicDebugTimelineNoteBars(snapshot, layout);
 
     expect(noteBars.length).toBe(snapshot.notes.length);
-    expect(noteBars.every((bar) => bar.height < layout.trackHeight * 0.5)).toBe(
-      true
-    );
+    expect(noteBars.every((bar) => bar.height < layout.trackHeight * 0.35)).toBe(true);
     expect(
       noteBars.some((bar) => {
         if (bar.role === 'percussion') {
@@ -62,5 +61,27 @@ describe('music debug timeline', () => {
         return bar.y > trackTop;
       })
     ).toBe(true);
+  });
+
+  it('tracks overlapping note bars so dense stacks can render more vividly', () => {
+    const snapshot = createMusicDebugSnapshot();
+    const layout = resolveMusicDebugTimelineLayout(960, 320);
+    const noteBars = resolveMusicDebugTimelineNoteBars(snapshot, layout);
+
+    expect(noteBars.every((bar) => bar.overlapCount >= 1)).toBe(true);
+    expect(
+      noteBars.some(
+        (bar) => bar.role === 'harmony' && bar.overlapCount > 1
+      )
+    ).toBe(true);
+  });
+
+  it('brightens note-bar colors when overlaps increase', () => {
+    expect(resolveMusicDebugTimelineNoteBarColor('#4f8cff', 1)).toBe(
+      '#4f8cff'
+    );
+    expect(resolveMusicDebugTimelineNoteBarColor('#4f8cff', 3)).toBe(
+      '#6fa1ff'
+    );
   });
 });

@@ -11,8 +11,8 @@ const MUSIC_DEBUG_TIMELINE_RIGHT_PAD = 24;
 const MUSIC_DEBUG_TIMELINE_TOP_PAD = 34;
 const MUSIC_DEBUG_TIMELINE_BOTTOM_PAD = 24;
 const MUSIC_DEBUG_TIMELINE_NOTE_BAR_MIN_WIDTH = 2;
-const MUSIC_DEBUG_TIMELINE_NOTE_BAR_MAX_HEIGHT = 10;
-const MUSIC_DEBUG_TIMELINE_NOTE_BAR_ALPHA = 0.42;
+const MUSIC_DEBUG_TIMELINE_NOTE_BAR_MAX_HEIGHT = 8;
+const MUSIC_DEBUG_TIMELINE_NOTE_BAR_MIN_HEIGHT = 5;
 
 export type MusicDebugTimelineNoteBar = {
   role: ProceduralMusicNote['role'];
@@ -20,6 +20,7 @@ export type MusicDebugTimelineNoteBar = {
   y: number;
   width: number;
   height: number;
+  overlapCount: number;
 };
 
 export function resolveMusicDebugTimelineLayout(
@@ -110,10 +111,10 @@ export function drawMusicDebugTimeline(
   const layout = resolveMusicDebugTimelineLayout(width, height);
   const durationMs = Math.max(snapshot.durationMs, 1);
   const roleColors: Record<ProceduralMusicNote['role'], string> = {
-    bass: '#55d6be',
-    harmony: '#86b5ff',
-    lead: '#ffbf69',
-    percussion: '#f27d7d',
+    bass: '#27d3d8',
+    harmony: '#4f8cff',
+    lead: '#ffcc33',
+    percussion: '#ff5a5f',
   };
   const scaleOverlay = createMusicDebugScaleOverlay(snapshot, layout);
 
@@ -146,11 +147,12 @@ export function drawMusicDebugTimeline(
 
   const noteBars = resolveMusicDebugTimelineNoteBars(snapshot, layout);
   for (const noteBar of noteBars) {
-    context.fillStyle = roleColors[noteBar.role];
-    context.globalAlpha = MUSIC_DEBUG_TIMELINE_NOTE_BAR_ALPHA;
+    context.fillStyle = resolveMusicDebugTimelineNoteBarColor(
+      roleColors[noteBar.role],
+      noteBar.overlapCount
+    );
     context.fillRect(noteBar.x, noteBar.y, noteBar.width, noteBar.height);
   }
-  context.globalAlpha = 1;
 
   context.strokeStyle = 'rgba(255,255,255,0.12)';
   context.lineWidth = 1;
@@ -208,7 +210,7 @@ export function resolveMusicDebugTimelineNoteBars(
     );
     const height = Math.min(
       MUSIC_DEBUG_TIMELINE_NOTE_BAR_MAX_HEIGHT,
-      Math.max(6, layout.trackHeight * 0.2)
+      Math.max(MUSIC_DEBUG_TIMELINE_NOTE_BAR_MIN_HEIGHT, layout.trackHeight * 0.16)
     );
     const centerY = marker?.y ?? (trackTop + trackBottom) * 0.5;
 
@@ -218,10 +220,60 @@ export function resolveMusicDebugTimelineNoteBars(
       y: clampNoteBarY(centerY - height * 0.5, trackTop, trackBottom - height),
       width,
       height,
+      overlapCount: 1,
     });
   }
 
+  applyNoteBarOverlapCounts(noteBars);
   return noteBars;
+}
+
+export function resolveMusicDebugTimelineNoteBarColor(
+  baseColor: string,
+  overlapCount: number
+): string {
+  const hex = baseColor.replace('#', '');
+  if (hex.length !== 6) {
+    return baseColor;
+  }
+
+  const overlapBoost = Math.min(0.28, Math.max(0, overlapCount - 1) * 0.09);
+  const red = Number.parseInt(hex.slice(0, 2), 16);
+  const green = Number.parseInt(hex.slice(2, 4), 16);
+  const blue = Number.parseInt(hex.slice(4, 6), 16);
+  const brighten = (channel: number) =>
+    Math.round(channel + (255 - channel) * overlapBoost)
+      .toString(16)
+      .padStart(2, '0');
+
+  return `#${brighten(red)}${brighten(green)}${brighten(blue)}`;
+}
+
+function applyNoteBarOverlapCounts(noteBars: MusicDebugTimelineNoteBar[]): void {
+  for (let index = 0; index < noteBars.length; index += 1) {
+    const current = noteBars[index]!;
+    let overlapCount = 1;
+
+    for (let compareIndex = 0; compareIndex < noteBars.length; compareIndex += 1) {
+      if (compareIndex === index) {
+        continue;
+      }
+      const candidate = noteBars[compareIndex]!;
+      if (candidate.role !== current.role) {
+        continue;
+      }
+      if (
+        candidate.x < current.x + current.width &&
+        candidate.x + candidate.width > current.x &&
+        candidate.y < current.y + current.height &&
+        candidate.y + candidate.height > current.y
+      ) {
+        overlapCount += 1;
+      }
+    }
+
+    current.overlapCount = overlapCount;
+  }
 }
 
 function drawMusicDebugSectionBands(
