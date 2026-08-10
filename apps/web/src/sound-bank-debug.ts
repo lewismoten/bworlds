@@ -1109,6 +1109,15 @@ function buildSelectedInstrumentDetailsMarkup(
   const estimatedComplexity = runtimeInstrument
     ? resolveEstimatedPatchComplexity(runtimeInstrument)
     : 'Unknown';
+  const primaryOscillatorType = runtimeInstrument
+    ? runtimeInstrument.waveform
+    : 'Unknown';
+  const harmonicOscillatorType = runtimeInstrument
+    ? runtimeInstrument.timbre.harmonicWaveform
+    : 'Unknown';
+  const activeOscillatorCount = runtimeInstrument
+    ? String(resolveActiveOscillatorCount(runtimeInstrument))
+    : 'Unknown';
 
   return `
     <dl class="music-debug-instrument-stats">
@@ -1121,6 +1130,9 @@ function buildSelectedInstrumentDetailsMarkup(
       <div><dt>Playable Range</dt><dd>${formatMidiRange(selectedEntry.recommendedMidiRange)}</dd></div>
       <div><dt>Patch Source</dt><dd>${selectedEntry.sourcePlugin}</dd></div>
       <div><dt>Generated</dt><dd>${selectedEntry.sourcePlugin === 'core-generated-bank' ? 'Yes' : 'No'}</dd></div>
+      <div><dt>Primary Oscillator</dt><dd>${primaryOscillatorType}</dd></div>
+      <div><dt>Harmonic Oscillator</dt><dd>${harmonicOscillatorType}</dd></div>
+      <div><dt>Active Oscillator Count</dt><dd>${activeOscillatorCount}</dd></div>
       <div><dt>Uses Samples</dt><dd>${usesSamples}</dd></div>
       <div><dt>Uses Synthesis</dt><dd>${usesSynthesis}</dd></div>
       <div><dt>Polyphony Limit</dt><dd>${polyphonyLimit}</dd></div>
@@ -1143,6 +1155,12 @@ function resolveSelectedRuntimeInstrument(
 
 function resolvePreviewPolyphonyLimit(): number {
   return Math.max(1, Math.floor(MAX_ACTIVE_PROCEDURAL_MUSIC_OSCILLATORS / 2));
+}
+
+function resolveActiveOscillatorCount(
+  instrument: SoundBankDebugSnapshot['musicSnapshot']['instrumentBank']['instruments'][keyof SoundBankDebugSnapshot['musicSnapshot']['instrumentBank']['instruments']]
+): number {
+  return instrument.harmonicGain > 0 ? 2 : 1;
 }
 
 function resolveEstimatedPatchComplexity(

@@ -118,9 +118,9 @@
 
 ## Oscillator Controls
 
-- [ ] Show the primary oscillator type.
+- [x] Show the primary oscillator type.
 - [ ] Allow changing the primary oscillator type.
-- [ ] Show the harmonic oscillator type.
+- [x] Show the harmonic oscillator type.
 - [ ] Allow changing the harmonic oscillator type.
 - [ ] Add a primary oscillator gain control.
 - [ ] Add a harmonic oscillator gain control.
@@ -129,7 +129,7 @@
 - [ ] Add a primary detune control.
 - [ ] Add an oscillator phase control if supported.
 - [ ] Add a noise source amount control.
-- [ ] Show active oscillator count.
+- [x] Show active oscillator count.
 - [ ] Add a button to disable each oscillator.
 - [ ] Add a button to solo each oscillator.
 - [ ] Prevent invalid oscillator values.

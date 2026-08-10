@@ -102,6 +102,9 @@ describe('sound bank debug page', () => {
     expect(normalizedMarkup).toContain('Playable Range');
     expect(normalizedMarkup).toContain('Patch Source');
     expect(normalizedMarkup).toContain('Generated');
+    expect(normalizedMarkup).toContain('Primary Oscillator');
+    expect(normalizedMarkup).toContain('Harmonic Oscillator');
+    expect(normalizedMarkup).toContain('Active Oscillator Count');
     expect(normalizedMarkup).toContain('Uses Samples');
     expect(normalizedMarkup).toContain('Uses Synthesis');
     expect(normalizedMarkup).toContain('Polyphony Limit');
@@ -500,6 +503,10 @@ describe('sound bank debug page', () => {
     expect(markup).toContain('custom-bank');
     expect(markup).toContain('Generated');
     expect(markup).toContain('>No<');
+    expect(markup).toContain('Primary Oscillator');
+    expect(markup).toContain('Unknown');
+    expect(markup).toContain('Harmonic Oscillator');
+    expect(markup).toContain('Active Oscillator Count');
     expect(markup).toContain('Uses Samples');
     expect(markup).toContain('Unknown');
     expect(markup).toContain('Uses Synthesis');
@@ -537,6 +544,11 @@ describe('sound bank debug page', () => {
     expect(markup).toContain('core-generated-bank');
     expect(markup).toContain('Generated');
     expect(markup).toContain('>Yes<');
+    expect(markup).toContain('Primary Oscillator');
+    expect(markup).toContain('sawtooth');
+    expect(markup).toContain('Harmonic Oscillator');
+    expect(markup).toContain('Active Oscillator Count');
+    expect(markup).toContain('>2<');
     expect(markup).toContain('Uses Samples');
     expect(markup).toContain('>No<');
     expect(markup).toContain('Uses Synthesis');
