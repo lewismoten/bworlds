@@ -8,6 +8,7 @@ import { resolveProceduralMeterPosition } from './procedural-music-meter.ts';
 import {
   createProceduralInstrumentBank,
   createMusicController,
+  resolveProceduralInstrumentRolePatchDistinctness,
   createWebAudioMusicSink,
   getMusicUpdateSignature,
   getMusicRegionSignature,
@@ -26,6 +27,7 @@ import { createProceduralPercussionNotes } from './procedural-music-percussion.t
 import { resolveProceduralThemeMotif } from './procedural-music-theme-motif.ts';
 import {
   compareInstrumentPatchToKnownGoodRolePatch,
+  compareInstrumentPatches,
   listKnownGoodInstrumentPatches,
   resolveInstrumentPatchRecipe,
   resolveKnownGoodInstrumentPatch,
@@ -173,6 +175,75 @@ describe('procedural music', () => {
     ).toBe(true);
   });
 
+  it('marks identical pitched role patches as invalidly similar', () => {
+    const leadReference = resolveKnownGoodInstrumentPatch('lead');
+    const bankDistinctness = resolveProceduralInstrumentRolePatchDistinctness({
+      lead: {
+        id: 'lead',
+        supportedRoles: ['lead'],
+        recommendedMidiRange: { minMidiNote: 60, maxMidiNote: 84 },
+        preferredMidiRange: { minMidiNote: 64, maxMidiNote: 79 },
+        defaultVelocity: 108,
+        defaultNoteDurationMs: 240,
+        knownGoodPatchComparison: compareInstrumentPatchToKnownGoodRolePatch({
+          role: 'lead',
+          patch: leadReference,
+        }),
+        ...leadReference,
+      },
+      harmony: {
+        id: 'harmony',
+        supportedRoles: ['harmony'],
+        recommendedMidiRange: { minMidiNote: 48, maxMidiNote: 72 },
+        preferredMidiRange: { minMidiNote: 52, maxMidiNote: 67 },
+        defaultVelocity: 96,
+        defaultNoteDurationMs: 300,
+        knownGoodPatchComparison: compareInstrumentPatchToKnownGoodRolePatch({
+          role: 'harmony',
+          patch: leadReference,
+        }),
+        ...leadReference,
+        role: 'harmony',
+      },
+      bass: {
+        id: 'bass',
+        supportedRoles: ['bass'],
+        recommendedMidiRange: { minMidiNote: 36, maxMidiNote: 60 },
+        preferredMidiRange: { minMidiNote: 40, maxMidiNote: 55 },
+        defaultVelocity: 96,
+        defaultNoteDurationMs: 360,
+        knownGoodPatchComparison: compareInstrumentPatchToKnownGoodRolePatch({
+          role: 'bass',
+          patch: leadReference,
+        }),
+        ...leadReference,
+        role: 'bass',
+      },
+      percussion: {
+        id: 'percussion',
+        supportedRoles: ['percussion'],
+        recommendedMidiRange: { minMidiNote: 36, maxMidiNote: 60 },
+        preferredMidiRange: { minMidiNote: 36, maxMidiNote: 48 },
+        defaultVelocity: 112,
+        defaultNoteDurationMs: 120,
+        knownGoodPatchComparison: compareInstrumentPatchToKnownGoodRolePatch({
+          role: 'percussion',
+          patch: resolveKnownGoodInstrumentPatch('percussion'),
+        }),
+        ...resolveKnownGoodInstrumentPatch('percussion'),
+      },
+    });
+
+    expect(bankDistinctness.isValid).toBe(false);
+    expect(bankDistinctness.rejectedComparisons[0]?.similarityScore).toBe(1);
+    expect(bankDistinctness.rejectedComparisons[0]).toEqual(
+      expect.objectContaining({
+        leftRole: 'lead',
+        rightRole: 'harmony',
+      })
+    );
+  });
+
   it('adds shared sound bank registry metadata to generated instruments', () => {
     const bank = createProceduralInstrumentBank(
       resolveMusicTheme('forest', 'overworld', undefined, 2, -3),
@@ -210,6 +281,7 @@ describe('procedural music', () => {
     expect(bank.instruments.harmony.knownGoodPatchComparison.role).toBe(
       'harmony'
     );
+    expect(bank.rolePatchDistinctness.isValid).toBe(true);
   });
 
   it('keeps the music sink idle until a user-triggered resume creates audio', () => {
@@ -2017,6 +2089,12 @@ describe('procedural music', () => {
     expect(timbres.percussion.timbre.filterType).not.toBe(
       timbres.bass.timbre.filterType
     );
+    expect(town.rolePatchDistinctness.isValid).toBe(true);
+    expect(
+      town.rolePatchDistinctness.comparisons.every(
+        (comparison) => comparison.similarityScore < 0.94
+      )
+    ).toBe(true);
   });
 
   it('gives flute timbres a filtered breath-noise layer', () => {
@@ -2166,6 +2244,12 @@ describe('procedural music', () => {
     expect(
       town.instruments.lead.knownGoodPatchComparison.similarityScore
     ).toBeGreaterThan(leadVsBassReference.similarityScore);
+    expect(
+      compareInstrumentPatches({
+        left: town.instruments.lead,
+        right: town.instruments.harmony,
+      }).similarityScore
+    ).toBeLessThan(0.94);
   });
 
   it('plays optional timbre noise layers through the web audio sink', () => {

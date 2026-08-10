@@ -29,3 +29,9 @@ That comparison scores the generated patch against the role's reference anchor
 across envelope, brightness, harmonic, filter, and optional timbre traits. This
 gives later debug and validation work a stable per-role similarity report
 without recomputing patch comparisons in multiple places.
+
+Banks also expose `rolePatchDistinctness`, which compares the pitched role
+patches against each other and rejects banks whose lead, harmony, and bass
+profiles collapse into nearly identical timbres. When that happens, bank
+creation deterministically walks to alternate role variants until the pitched
+roles separate again or the retry budget is exhausted.

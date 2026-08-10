@@ -28,7 +28,7 @@
 - [x] Limit random patch values to family-safe ranges.
 - [x] Add one known-good patch for each core song role.
 - [x] Compare generated patches against known-good patches.
-- [ ] Reject patches that sound nearly identical across roles.
+- [x] Reject patches that sound nearly identical across roles.
 
 ## Percussion Kit
 

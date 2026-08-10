@@ -10,6 +10,8 @@ import {
   resolveProceduralInstrumentSemitones,
 } from './procedural-music-harmony.ts';
 import {
+  compareInstrumentPatches,
+  type InstrumentPatchSimilarity,
   compareInstrumentPatchToKnownGoodRolePatch,
   type KnownGoodInstrumentPatchComparison,
   resolveInstrumentPatchRecipe,
@@ -72,6 +74,7 @@ type WeatherKind = string;
 type InstrumentRole = 'lead' | 'harmony' | 'bass' | 'percussion';
 export type MusicEncounterMode = 'ambient' | 'battle' | 'boss';
 export type ProceduralInstrumentRole = InstrumentRole;
+type NonPercussionInstrumentRole = Exclude<InstrumentRole, 'percussion'>;
 
 export type SoundBankInstrumentNoteRange = {
   minMidiNote: number;
@@ -146,7 +149,20 @@ export type ProceduralInstrument = SoundBankInstrumentDefinition & {
 export type ProceduralInstrumentBank = {
   themeId: MusicRegionThemeId;
   instruments: Record<InstrumentRole, ProceduralInstrument>;
+  rolePatchDistinctness: ProceduralInstrumentRolePatchDistinctness;
 };
+
+export type ProceduralInstrumentRolePatchComparison = InstrumentPatchSimilarity &
+  Readonly<{
+    leftRole: NonPercussionInstrumentRole;
+    rightRole: NonPercussionInstrumentRole;
+  }>;
+
+export type ProceduralInstrumentRolePatchDistinctness = Readonly<{
+  isValid: boolean;
+  rejectedComparisons: readonly ProceduralInstrumentRolePatchComparison[];
+  comparisons: readonly ProceduralInstrumentRolePatchComparison[];
+}>;
 
 type ProceduralInstrumentBankOptions = {
   tileKind?: TileKind;
@@ -162,6 +178,8 @@ type MusicMood = {
   brightness: number;
   volumeMultiplier: number;
 };
+
+const ROLE_PATCH_SIMILARITY_REJECTION_THRESHOLD = 0.94;
 
 function getMusicContextSeed(label: string): number {
   const cached = musicContextSeedCache.get(label);
@@ -2068,38 +2086,90 @@ export function createProceduralInstrumentBank(
   clusterY: number,
   options?: ProceduralInstrumentBankOptions
 ): ProceduralInstrumentBank {
+  const roleVariants: Record<InstrumentRole, number> = {
+    lead: 0,
+    harmony: 0,
+    bass: 0,
+    percussion: 0,
+  };
+
+  let instruments = createProceduralInstrumentBankInstruments(
+    theme,
+    clusterX,
+    clusterY,
+    options,
+    roleVariants
+  );
+  let rolePatchDistinctness = resolveProceduralInstrumentRolePatchDistinctness(
+    instruments
+  );
+
+  for (let attempt = 0; attempt < 8 && !rolePatchDistinctness.isValid; attempt += 1) {
+    const rejectedComparison = rolePatchDistinctness.rejectedComparisons[0];
+    if (!rejectedComparison) {
+      break;
+    }
+    const roleToAdjust = selectRoleVariantAdjustment(rejectedComparison);
+    roleVariants[roleToAdjust] += 1;
+    instruments = createProceduralInstrumentBankInstruments(
+      theme,
+      clusterX,
+      clusterY,
+      options,
+      roleVariants
+    );
+    rolePatchDistinctness = resolveProceduralInstrumentRolePatchDistinctness(
+      instruments
+    );
+  }
+
   return {
     themeId: theme.id,
-    instruments: {
-      lead: createProceduralInstrument(
-        theme,
-        'lead',
-        clusterX,
-        clusterY,
-        options
-      ),
-      harmony: createProceduralInstrument(
-        theme,
-        'harmony',
-        clusterX,
-        clusterY,
-        options
-      ),
-      bass: createProceduralInstrument(
-        theme,
-        'bass',
-        clusterX,
-        clusterY,
-        options
-      ),
-      percussion: createProceduralInstrument(
-        theme,
-        'percussion',
-        clusterX,
-        clusterY,
-        options
-      ),
-    },
+    instruments,
+    rolePatchDistinctness,
+  };
+}
+
+function createProceduralInstrumentBankInstruments(
+  theme: MusicRegionTheme,
+  clusterX: number,
+  clusterY: number,
+  options: ProceduralInstrumentBankOptions | undefined,
+  roleVariants: Record<InstrumentRole, number>
+): Record<InstrumentRole, ProceduralInstrument> {
+  return {
+    lead: createProceduralInstrument(
+      theme,
+      'lead',
+      clusterX,
+      clusterY,
+      options,
+      roleVariants.lead
+    ),
+    harmony: createProceduralInstrument(
+      theme,
+      'harmony',
+      clusterX,
+      clusterY,
+      options,
+      roleVariants.harmony
+    ),
+    bass: createProceduralInstrument(
+      theme,
+      'bass',
+      clusterX,
+      clusterY,
+      options,
+      roleVariants.bass
+    ),
+    percussion: createProceduralInstrument(
+      theme,
+      'percussion',
+      clusterX,
+      clusterY,
+      options,
+      roleVariants.percussion
+    ),
   };
 }
 
@@ -2108,31 +2178,38 @@ function createProceduralInstrument(
   role: InstrumentRole,
   clusterX: number,
   clusterY: number,
-  options?: ProceduralInstrumentBankOptions
+  options?: ProceduralInstrumentBankOptions,
+  variantIndex = 0
 ): ProceduralInstrument {
   const family = resolveInstrumentFamily(
     theme,
     role,
     clusterX,
     clusterY,
-    options
+    options,
+    variantIndex
   );
   const patchRecipe = resolveInstrumentPatchRecipe(family);
+  const [variantX, variantY] = resolveInstrumentVariantCoordinates(
+    clusterX,
+    clusterY,
+    variantIndex
+  );
   const waveformList = patchRecipe.waveformOptions;
   const waveform =
     waveformList[
       Math.floor(
         hash2DWithSeed(
           getRolePropertySeed(theme.id, role, 'waveform'),
-          clusterX,
-          clusterY
+          variantX,
+          variantY
         ) * waveformList.length
       )
     ] ?? waveformList[0];
   const brightnessSignal = hash2DWithSeed(
     getRolePropertySeed(theme.id, role, 'brightness'),
-    clusterX,
-    clusterY
+    variantX,
+    variantY
   );
   const brightness = interpolatePatchRange(
     patchRecipe.brightnessRange,
@@ -2143,13 +2220,13 @@ function createProceduralInstrument(
     brightness,
     harmonicSignal: hash2DWithSeed(
       getRolePropertySeed(theme.id, role, 'harmonics'),
-      clusterX,
-      clusterY
+      variantX,
+      variantY
     ),
     filterSignal: hash2DWithSeed(
       getThemePropertySeed(theme.id, 'brightness'),
-      clusterX + role.length,
-      clusterY - role.length
+      variantX + role.length,
+      variantY - role.length
     ),
   });
   const attackMs = Math.round(
@@ -2157,8 +2234,8 @@ function createProceduralInstrument(
       patchRecipe.attackMsRange,
       hash2DWithSeed(
         getRolePropertySeed(theme.id, role, 'attack'),
-        clusterX,
-        clusterY
+        variantX,
+        variantY
       )
     )
   );
@@ -2167,8 +2244,8 @@ function createProceduralInstrument(
       patchRecipe.releaseMsRange,
       hash2DWithSeed(
         getRolePropertySeed(theme.id, role, 'release'),
-        clusterX,
-        clusterY
+        variantX,
+        variantY
       )
     )
   );
@@ -2176,24 +2253,24 @@ function createProceduralInstrument(
     patchRecipe.detuneCentsRange,
     hash2DWithSeed(
       getRolePropertySeed(theme.id, role, 'detune'),
-      clusterX,
-      clusterY
+      variantX,
+      variantY
     )
   );
   const harmonicGain = interpolatePatchRange(
     patchRecipe.harmonicGainRange,
     hash2DWithSeed(
       getRolePropertySeed(theme.id, role, 'harmonics'),
-      clusterX,
-      clusterY
+      variantX,
+      variantY
     )
   );
   const pulseRate = interpolatePatchRange(
     patchRecipe.pulseRateRange,
     hash2DWithSeed(
       getRolePropertySeed(theme.id, role, 'pulse'),
-      clusterX,
-      clusterY
+      variantX,
+      variantY
     )
   );
   const metadata = createSoundBankInstrumentDefinition(
@@ -2228,6 +2305,36 @@ function createProceduralInstrument(
     pulseRate,
     brightness,
     knownGoodPatchComparison,
+  };
+}
+
+export function resolveProceduralInstrumentRolePatchDistinctness(
+  instruments: Record<InstrumentRole, ProceduralInstrument>
+): ProceduralInstrumentRolePatchDistinctness {
+  const rolePairs: Array<[NonPercussionInstrumentRole, NonPercussionInstrumentRole]> = [
+    ['lead', 'harmony'],
+    ['lead', 'bass'],
+    ['harmony', 'bass'],
+  ];
+  const comparisons = rolePairs.map(([leftRole, rightRole]) => ({
+    leftRole,
+    rightRole,
+    ...compareInstrumentPatches({
+      left: instruments[leftRole],
+      right: instruments[rightRole],
+    }),
+  }));
+  const rejectedComparisons = comparisons
+    .filter(
+      (comparison) =>
+        comparison.similarityScore >= ROLE_PATCH_SIMILARITY_REJECTION_THRESHOLD
+    )
+    .sort((left, right) => right.similarityScore - left.similarityScore);
+
+  return {
+    isValid: rejectedComparisons.length === 0,
+    rejectedComparisons,
+    comparisons,
   };
 }
 
@@ -2321,7 +2428,8 @@ function resolveInstrumentFamily(
   role: InstrumentRole,
   clusterX: number,
   clusterY: number,
-  options?: ProceduralInstrumentBankOptions
+  options?: ProceduralInstrumentBankOptions,
+  variantIndex = 0
 ): InstrumentFamily {
   const families = resolveInstrumentFamilyPool(theme, role, options);
   const familyContextKey = resolveInstrumentFamilyContextKey(
@@ -2336,7 +2444,27 @@ function resolveInstrumentFamily(
       clusterY
     ) * families.length
   );
-  return families[index] ?? families[0];
+  return families[(index + variantIndex) % families.length] ?? families[0];
+}
+
+function resolveInstrumentVariantCoordinates(
+  clusterX: number,
+  clusterY: number,
+  variantIndex: number
+): [number, number] {
+  if (variantIndex === 0) {
+    return [clusterX, clusterY];
+  }
+  return [clusterX + variantIndex * 37, clusterY - variantIndex * 29];
+}
+
+function selectRoleVariantAdjustment(
+  comparison: ProceduralInstrumentRolePatchComparison
+): InstrumentRole {
+  if (comparison.rightRole === 'harmony' || comparison.leftRole === 'harmony') {
+    return 'harmony';
+  }
+  return comparison.rightRole === 'bass' ? 'bass' : comparison.rightRole;
 }
 
 function resolveInstrumentFamilyPool(
