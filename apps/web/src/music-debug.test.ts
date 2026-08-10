@@ -332,6 +332,10 @@ describe('music debug', () => {
         matchCount: expect.any(Number),
       })
     );
+    expect(sectionAPrime?.variedMatchCount ?? 0).toBeGreaterThan(0);
+    expect(sectionAPrime?.matchCount ?? 0).toBeGreaterThan(
+      sectionAPrime?.exactMatchCount ?? 0
+    );
   });
 
   it('formats song durations and loop ranges as minute-second labels', () => {

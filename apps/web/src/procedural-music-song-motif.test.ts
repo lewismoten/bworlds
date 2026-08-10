@@ -45,6 +45,47 @@ describe('procedural music song motif', () => {
     expect(secondStatement).toEqual([67, 71, 74, 71]);
     expect(updated[8]?.frequency).toBe(notes[8]?.frequency);
   });
+
+  it("states a transposed motif variation in the opening notes of section A'", () => {
+    const notes: ProceduralMusicNote[] = [
+      createLeadNote(24_100, 392),
+      createLeadNote(25_100, 440),
+      createLeadNote(26_100, 493.883),
+      createLeadNote(27_100, 440),
+      createLeadNote(32_100, 523.251),
+      createLeadNote(33_100, 587.33),
+      createLeadNote(34_100, 659.255),
+      createLeadNote(35_100, 587.33),
+    ];
+    const sections: ProceduralMusicSongSection[] = [
+      createSection('intro', 0, 8_000, 8),
+      createSection('a', 8_000, 16_000, 16),
+      createSection('a-prime', 24_000, 16_000, 16),
+    ];
+
+    const updated = stateLeadMotifInFirstASection({
+      notes,
+      sections,
+      songStartMs: 0,
+      leadMotif: [0, 2, 4, 2],
+      theme: {
+        rootHz: 196,
+        rootMidiNote: 55,
+        scale: [0, 2, 4, 5, 7, 9, 10],
+        noteDurationMs: 360,
+      },
+    });
+
+    const firstVariation = updated
+      .slice(0, 4)
+      .map((note) => Math.round(69 + 12 * Math.log2(note.frequency / 440)));
+    const secondVariation = updated
+      .slice(4, 8)
+      .map((note) => Math.round(69 + 12 * Math.log2(note.frequency / 440)));
+
+    expect(firstVariation).toEqual([69, 72, 76, 72]);
+    expect(secondVariation).toEqual([69, 72, 76, 72]);
+  });
 });
 
 function createSection(

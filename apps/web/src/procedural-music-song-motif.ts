@@ -15,32 +15,95 @@ export function stateLeadMotifInFirstASection(options: {
     noteDurationMs: number;
   };
 }): ProceduralMusicNote[] {
+  const updatedNotes = [...options.notes];
+  applyLeadMotifPhraseStatements(updatedNotes, options);
+  applyLeadMotifVariationInAprimeSection(updatedNotes, options);
+
+  return updatedNotes;
+}
+
+function applyLeadMotifPhraseStatements(
+  notes: ProceduralMusicNote[],
+  options: {
+    sections: readonly ProceduralMusicSongSection[];
+    songStartMs: number;
+    leadMotif: readonly number[];
+    theme: {
+      rootHz: number;
+      rootMidiNote: number;
+      scale: readonly number[];
+      noteDurationMs: number;
+    };
+  }
+): void {
   const sectionA = options.sections.find((section) => section.id === 'a');
   if (!sectionA || options.leadMotif.length === 0) {
-    return [...options.notes];
+    return;
   }
 
-  const updatedNotes = [...options.notes];
   const phraseDurationMs = Math.max(1, Math.round(sectionA.durationMs / 2));
   const phraseStartMs = options.songStartMs + sectionA.startOffsetMs;
   const sectionEndMs = phraseStartMs + sectionA.durationMs;
 
-  applyMotifToPhraseWindow(updatedNotes, {
+  applyMotifToPhraseWindow(notes, {
     phraseStartMs,
     phraseDurationMs,
     sectionEndMs,
     leadMotif: options.leadMotif,
     theme: options.theme,
   });
-  applyMotifToPhraseWindow(updatedNotes, {
+  applyMotifToPhraseWindow(notes, {
     phraseStartMs: phraseStartMs + phraseDurationMs,
     phraseDurationMs,
     sectionEndMs,
     leadMotif: options.leadMotif,
     theme: options.theme,
   });
+}
 
-  return updatedNotes;
+function applyLeadMotifVariationInAprimeSection(
+  notes: ProceduralMusicNote[],
+  options: {
+    sections: readonly ProceduralMusicSongSection[];
+    songStartMs: number;
+    leadMotif: readonly number[];
+    theme: {
+      rootHz: number;
+      rootMidiNote: number;
+      scale: readonly number[];
+      noteDurationMs: number;
+    };
+  }
+): void {
+  const sectionAPrime = options.sections.find(
+    (section) => section.id === 'a-prime'
+  );
+  if (!sectionAPrime || options.leadMotif.length === 0) {
+    return;
+  }
+
+  const phraseDurationMs = Math.max(
+    1,
+    Math.round(sectionAPrime.durationMs / 2)
+  );
+  const phraseStartMs = options.songStartMs + sectionAPrime.startOffsetMs;
+  const sectionEndMs = phraseStartMs + sectionAPrime.durationMs;
+  const transposedMotif = options.leadMotif.map((degree) => degree + 1);
+
+  applyMotifToPhraseWindow(notes, {
+    phraseStartMs,
+    phraseDurationMs,
+    sectionEndMs,
+    leadMotif: transposedMotif,
+    theme: options.theme,
+  });
+  applyMotifToPhraseWindow(notes, {
+    phraseStartMs: phraseStartMs + phraseDurationMs,
+    phraseDurationMs,
+    sectionEndMs,
+    leadMotif: transposedMotif,
+    theme: options.theme,
+  });
 }
 
 function applyMotifToPhraseWindow(
@@ -74,9 +137,11 @@ function applyMotifToPhraseWindow(
     if (motifDegree === undefined) {
       break;
     }
+    const referenceFrequency =
+      resolvePreviousLeadFrequency(notes, index) ?? note.frequency;
     const targetSemitones = alignMotifSemitonesToLeadRegister({
       motifDegreeOffset: motifDegree,
-      note,
+      referenceFrequency,
       theme: options.theme,
     });
     notes[index] = {
@@ -98,7 +163,7 @@ function applyMotifToPhraseWindow(
 
 function alignMotifSemitonesToLeadRegister(options: {
   motifDegreeOffset: number;
-  note: ProceduralMusicNote;
+  referenceFrequency: number;
   theme: {
     rootHz: number;
     scale: readonly number[];
@@ -110,7 +175,8 @@ function alignMotifSemitonesToLeadRegister(options: {
   );
   const currentSemitones = Math.round(
     Math.log2(
-      options.note.frequency / Math.max(options.theme.rootHz, Number.EPSILON)
+      options.referenceFrequency /
+        Math.max(options.theme.rootHz, Number.EPSILON)
     ) * 12
   );
   const octaveCandidates = [-24, -12, 0, 12, 24].map(
@@ -122,4 +188,17 @@ function alignMotifSemitonesToLeadRegister(options: {
       ? candidate
       : best
   );
+}
+
+function resolvePreviousLeadFrequency(
+  notes: readonly ProceduralMusicNote[],
+  noteIndex: number
+): number | null {
+  for (let index = noteIndex - 1; index >= 0; index -= 1) {
+    const candidate = notes[index];
+    if (candidate?.role === 'lead') {
+      return candidate.frequency;
+    }
+  }
+  return null;
 }

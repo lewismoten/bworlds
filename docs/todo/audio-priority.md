@@ -12,7 +12,7 @@
 - [x] Generate an eight-measure melody before full arrangement.
 - [x] State the lead motif clearly in the first A phrase.
 - [x] Require at least two exact motif matches in Section A.
-- [ ] Require motif variation rather than unrelated notes in A'.
+- [x] Require motif variation rather than unrelated notes in A'.
 - [ ] Regenerate any section with zero expected motif matches.
 - [ ] Give the lead two to six note attacks per measure.
 - [ ] Prevent repeated one-note-per-measure lead patterns.
@@ -29,6 +29,10 @@
 - [ ] Lower harmony occupancy when the lead is active.
 - [ ] Make each section satisfy its configured layer-emphasis rules. (ie - Make A' more lead-forward than Section A.)
 - [ ] Validate actual layer occupancy against the section blueprint.occupancy. (ie - Make B harmony lighter than Section A.)
+- [ ] Make A' lead prominence exceed Section A.
+- [ ] Make B harmony prominence lower than Section A.
+- [ ] Measure prominence using density, velocity, and register.
+- [ ] Account for competing layers when scoring prominence.
 - [ ] Add a soft repeating rhythmic pulse for forest music.
 - [ ] Use percussion patterns instead of isolated cymbal events.
 - [x] Compare intended intervals with actual interval counts.
