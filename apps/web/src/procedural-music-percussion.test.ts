@@ -372,4 +372,118 @@ describe('procedural music percussion', () => {
       )
     ).toBe(false);
   });
+
+  it('strengthens an existing downbeat kick when the chord changes', () => {
+    const stable = createProceduralPercussionNotes({
+      themeId: 'town-square',
+      stepIndex: 5,
+      phraseStep: 5,
+      cadence: 'neutral',
+      chordChange: false,
+      startMs: 0,
+      stepDurationMs: 320,
+      rootMidiNote: 59,
+      baseInstrumentId: 'town-square:percussion:3:-2',
+      baseVolume: 0.02,
+      baseAttackMs: 12,
+      baseReleaseMs: 60,
+      baseDetuneCents: 4,
+      baseHarmonicGain: 0.12,
+      basePulseRate: 1,
+      brightness: 0.92,
+      clusterX: 3,
+      clusterY: -2,
+    });
+    const changed = createProceduralPercussionNotes({
+      themeId: 'town-square',
+      stepIndex: 5,
+      phraseStep: 5,
+      cadence: 'neutral',
+      chordChange: true,
+      startMs: 0,
+      stepDurationMs: 320,
+      rootMidiNote: 59,
+      baseInstrumentId: 'town-square:percussion:3:-2',
+      baseVolume: 0.02,
+      baseAttackMs: 12,
+      baseReleaseMs: 60,
+      baseDetuneCents: 4,
+      baseHarmonicGain: 0.12,
+      basePulseRate: 1,
+      brightness: 0.92,
+      clusterX: 3,
+      clusterY: -2,
+    });
+    const stableKick = stable.find(
+      (note) =>
+        resolvePercussionFamilyFromInstrumentId(note.instrumentId) === 'kick'
+    );
+    const changedKick = changed.find(
+      (note) =>
+        resolvePercussionFamilyFromInstrumentId(note.instrumentId) === 'kick'
+    );
+
+    expect(stableKick?.startMs).toBe(0);
+    expect(changedKick?.startMs).toBe(0);
+    expect(changedKick?.volume ?? 0).toBeGreaterThan(stableKick?.volume ?? 0);
+  });
+
+  it('adds a downbeat kick when a chord change lands on a groove without one', () => {
+    const stable = createProceduralPercussionNotes({
+      themeId: 'ridge-pass',
+      stepIndex: 11,
+      phraseStep: 11,
+      cadence: 'neutral',
+      chordChange: false,
+      startMs: 0,
+      stepDurationMs: 380,
+      rootMidiNote: 53,
+      baseInstrumentId: 'ridge-pass:percussion:3:-2',
+      baseVolume: 0.02,
+      baseAttackMs: 12,
+      baseReleaseMs: 60,
+      baseDetuneCents: 4,
+      baseHarmonicGain: 0.12,
+      basePulseRate: 1,
+      brightness: 0.92,
+      clusterX: 3,
+      clusterY: -2,
+    });
+    const changed = createProceduralPercussionNotes({
+      themeId: 'ridge-pass',
+      stepIndex: 11,
+      phraseStep: 11,
+      cadence: 'neutral',
+      chordChange: true,
+      startMs: 0,
+      stepDurationMs: 380,
+      rootMidiNote: 53,
+      baseInstrumentId: 'ridge-pass:percussion:3:-2',
+      baseVolume: 0.02,
+      baseAttackMs: 12,
+      baseReleaseMs: 60,
+      baseDetuneCents: 4,
+      baseHarmonicGain: 0.12,
+      basePulseRate: 1,
+      brightness: 0.92,
+      clusterX: 3,
+      clusterY: -2,
+    });
+
+    expect(
+      stable.some(
+        (note) =>
+          resolvePercussionFamilyFromInstrumentId(note.instrumentId) ===
+            'kick' && note.startMs === 0
+      )
+    ).toBe(false);
+    expect(
+      changed.some(
+        (note) =>
+          resolvePercussionFamilyFromInstrumentId(note.instrumentId) ===
+            'kick' && note.startMs === 0
+      )
+    ).toBe(true);
+    expect(changed.length).toBe(stable.length + 1);
+  });
 });

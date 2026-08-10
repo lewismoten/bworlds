@@ -239,7 +239,7 @@ added directly as semitones instead of moving through the selected scale.
 - [x] Keep percussion absent during the Intro.
 - [x] Thin percussion during the Variation section.
 - [x] Remove percussion during the Outro.
-- [ ] Align drum accents with chord changes.
+- [x] Align drum accents with chord changes.
 - [x] Validate percussion section rules before export.
 
 ## Layer Plan Enforcement

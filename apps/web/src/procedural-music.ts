@@ -1414,6 +1414,15 @@ function createThemeNotes(options: {
       12
       ? 0
       : resolvedOctaveBoost;
+  const previousChord =
+    options.stepIndex > 0
+      ? resolveProceduralChordAtStep(
+          options.theme,
+          options.stepIndex - 1,
+          options.clusterX,
+          options.clusterY
+        )
+      : null;
   const voiceSemitones =
     role === 'harmony'
       ? resolveProceduralHarmonyVoicing({
@@ -1422,15 +1431,7 @@ function createThemeNotes(options: {
           clusterX: options.clusterX,
           clusterY: options.clusterY,
           chord: composition.chord,
-          previousChord:
-            options.stepIndex > 0
-              ? resolveProceduralChordAtStep(
-                  options.theme,
-                  options.stepIndex - 1,
-                  options.clusterX,
-                  options.clusterY
-                )
-              : null,
+          previousChord,
         })
       : [semitones];
   if (role === 'percussion') {
@@ -1439,6 +1440,9 @@ function createThemeNotes(options: {
       stepIndex: options.stepIndex,
       phraseStep: composition.phraseStep,
       cadence: composition.cadence,
+      chordChange:
+        previousChord === null ||
+        previousChord.progressionIndex !== composition.chord.progressionIndex,
       startMs: options.startMs,
       stepDurationMs:
         (options.theme.noteDurationMs *

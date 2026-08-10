@@ -187,6 +187,7 @@ export function createProceduralPercussionNotes(options: {
   stepIndex: number;
   phraseStep: number;
   cadence: ProceduralLeadPhraseCadence;
+  chordChange?: boolean;
   startMs: number;
   stepDurationMs: number;
   rootMidiNote: number;
@@ -204,7 +205,10 @@ export function createProceduralPercussionNotes(options: {
   emitter?: { x: number; y: number };
   listener?: { x: number; y: number };
 }): ProceduralMusicNote[] {
-  const pattern = resolveProceduralPercussionPattern(options);
+  const pattern = alignPercussionHitsToChordChange(
+    resolveProceduralPercussionPattern(options),
+    options.chordChange === true
+  );
   const durationScale = resolvePercussionDurationScale(options.themeId);
   const notes: ProceduralMusicNote[] = [];
 
@@ -259,6 +263,41 @@ export function createProceduralPercussionNotes(options: {
   }
 
   return notes;
+}
+
+function alignPercussionHitsToChordChange(
+  pattern: ProceduralPercussionPattern,
+  chordChange: boolean
+): ProceduralPercussionPattern {
+  if (!chordChange) {
+    return pattern;
+  }
+
+  const alignedHits = pattern.map((hit) => ({ ...hit }));
+  const downbeatKickIndex = alignedHits.findIndex(
+    (hit) => hit.family === 'kick' && hit.offsetRatio <= 0.08
+  );
+
+  if (downbeatKickIndex >= 0) {
+    const kick = alignedHits[downbeatKickIndex]!;
+    alignedHits[downbeatKickIndex] = {
+      ...kick,
+      volumeMultiplier: kick.volumeMultiplier * 1.18,
+      attackMultiplier: Math.max(0.72, kick.attackMultiplier * 0.92),
+      releaseMultiplier: kick.releaseMultiplier * 1.08,
+      harmonicGainMultiplier: kick.harmonicGainMultiplier * 1.06,
+    };
+    return alignedHits;
+  }
+
+  return [
+    createHit('kick', -12, 0, 0.18, 0.68, 0.92, {
+      attackMultiplier: 0.8,
+      releaseMultiplier: 1.16,
+      harmonicGainMultiplier: 0.9,
+    }),
+    ...alignedHits,
+  ];
 }
 
 export function resolvePercussionFamilyFromInstrumentId(
