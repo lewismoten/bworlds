@@ -24,6 +24,7 @@ import {
   PROCEDURAL_MUSIC_PHRASE_MEASURE_COUNT,
   repeatProceduralMusicPhraseNotes,
 } from './procedural-music-song-phrase.ts';
+import { resolveSongFinalCadence } from './procedural-music-song-cadence.ts';
 import { stateLeadMotifInFirstASection } from './procedural-music-song-motif.ts';
 
 export type ProceduralMusicSongSection = {
@@ -82,12 +83,17 @@ export function createProceduralMusicSong(
     songDurationMs: durationMs,
   });
   const arrangedNotes = applySongSectionsToNotes(baseNotes, sections, startMs);
-  const notes = stateLeadMotifInFirstASection({
+  const motifStatedNotes = stateLeadMotifInFirstASection({
     notes: arrangedNotes,
     sections,
     songStartMs: startMs,
     leadMotif: dna.leadMotif,
     theme,
+  });
+  const notes = resolveSongFinalCadence({
+    notes: motifStatedNotes,
+    sections,
+    songStartMs: startMs,
   });
   const loopStartOffsetMs = sections[1]?.startOffsetMs ?? 0;
   const outro = sections[sections.length - 1];

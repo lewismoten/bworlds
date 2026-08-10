@@ -9,6 +9,7 @@ import {
   createProceduralMusicSong,
   resolveProceduralMusicSongDurationMs,
 } from './procedural-music-song.ts';
+import { resolveMusicTheme } from './procedural-music.ts';
 import { buildProceduralMusicSongSections } from './procedural-music-song-timing.ts';
 import { resolveProceduralMusicBlueprint } from './procedural-music-blueprint.ts';
 
@@ -306,16 +307,78 @@ describe('procedural music song', () => {
     const phraseDurationMs = Math.round(
       (durationMs / totalMeasures) * PROCEDURAL_MUSIC_PHRASE_MEASURE_COUNT
     );
-    const leadNotes = collectProceduralMusicPhraseNotes(options, phraseDurationMs)
+    const leadNotes = collectProceduralMusicPhraseNotes(
+      options,
+      phraseDurationMs
+    )
       .filter((note) => note.role === 'lead')
       .map((note) => Math.round(69 + 12 * Math.log2(note.frequency / 440)));
 
     expect(leadNotes.length).toBeGreaterThan(2);
 
     for (let index = 1; index < leadNotes.length; index += 1) {
-      expect(Math.abs(leadNotes[index]! - leadNotes[index - 1]!)).toBeLessThanOrEqual(
-        12
+      expect(
+        Math.abs(leadNotes[index]! - leadNotes[index - 1]!)
+      ).toBeLessThanOrEqual(12);
+    }
+  });
+
+  it('resolves the final lead cadence to scale degree 1 in the outro', () => {
+    const optionSets = [
+      {
+        nowMs: 1_000,
+        tileKind: 'forest' as const,
+        contextType: 'overworld' as const,
+        dayProgress: 0.45,
+        yearProgress: 0.25,
+        clusterX: 3,
+        clusterY: -2,
+      },
+      {
+        nowMs: 1_000,
+        tileKind: 'town' as const,
+        contextType: 'town' as const,
+        dayProgress: 0.45,
+        yearProgress: 0.25,
+        clusterX: 7,
+        clusterY: 4,
+      },
+      {
+        nowMs: 1_000,
+        tileKind: 'cave' as const,
+        contextType: 'dungeon' as const,
+        dayProgress: 0.45,
+        yearProgress: 0.25,
+        clusterX: -5,
+        clusterY: 9,
+      },
+    ];
+
+    for (const options of optionSets) {
+      const song = createProceduralMusicSong(options);
+      const theme = resolveMusicTheme(
+        options.tileKind,
+        options.contextType,
+        undefined,
+        options.clusterX,
+        options.clusterY
       );
+      const outro = song.sections.at(-1)!;
+      const finalLead = [...song.notes]
+        .reverse()
+        .find(
+          (note) =>
+            note.role === 'lead' &&
+            note.startMs >= song.startMs + outro.startOffsetMs &&
+            note.startMs < song.startMs + outro.startOffsetMs + outro.durationMs
+        );
+
+      expect(finalLead).toBeDefined();
+      expect(
+        ((Math.round(69 + 12 * Math.log2(finalLead!.frequency / 440)) % 12) +
+          12) %
+          12
+      ).toBe(theme.rootMidiNote % 12);
     }
   });
 

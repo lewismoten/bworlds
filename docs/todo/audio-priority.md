@@ -20,7 +20,7 @@
 - [x] Build reusable lead rhythm templates by phrase.
 - [x] Add rests at phrase boundaries rather than every measure.
 - [x] End each eight-measure phrase on a planned cadence.
-- [ ] Resolve the final cadence to scale degree 1.
+- [x] Resolve the final cadence to scale degree 1.
 - [ ] Build one chord timeline before generating any tracks.
 - [ ] Assign each chord an exact measure range.
 - [ ] Make bass, harmony, and lead read the same chord timeline.
