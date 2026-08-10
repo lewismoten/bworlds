@@ -131,7 +131,7 @@ describe('tree debug', () => {
     expect(markup).toContain('/debug/');
     expect(markup).toContain('tree-debug-form');
     expect(markup).toContain('tree-debug-randomize');
-    expect(markup).toContain('Generator');
+    expect(markup).toContain('Tree Type Override');
     expect(markup).toContain('Max Height');
     expect(markup).toContain('Habitat');
     expect(markup).toContain('Climate');
@@ -140,9 +140,25 @@ describe('tree debug', () => {
     expect(markup).toContain('Focused tree preview');
     expect(markup).toContain('Focused Tree 1');
     expect(summary).toContain('Season');
-    expect(summary).toContain('Preview');
+    expect(summary).toContain('Tree Type');
     expect(summary).toContain('Focus');
     expect(summary).toContain('Slope / Wind');
+  });
+
+  it('uses explicit tree type override labels instead of raw species mode ids', () => {
+    const snapshot = createTreeDebugSnapshot({
+      speciesMode: 'broadleaf',
+    });
+    const markup = buildTreeDebugMarkup(snapshot);
+    const summary = buildTreeDebugSummaryMarkup(snapshot);
+
+    expect(markup).toContain('Tile Mix');
+    expect(markup).toContain('Random Specimen');
+    expect(markup).toContain('Broadleaf Family');
+    expect(markup).toContain(
+      'Override the tree type to inspect a tile mix, a family, or one'
+    );
+    expect(summary).toContain('Broadleaf Family');
   });
 
   it('renders only the focused tree card and formats age with one decimal place', () => {

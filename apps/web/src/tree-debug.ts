@@ -381,17 +381,17 @@ export function buildTreeDebugMarkup(
               </select>
             </label>
             <label>
-              <span>Generator</span>
+              <span>Tree Type Override</span>
               <select name="speciesMode">
                 ${buildTreeSelectOptions(
                   [
-                    'tile',
-                    'random',
-                    'broadleaf',
-                    'conifer',
-                    'oak',
-                    'birch',
-                    'pine',
+                    ['tile', 'Tile Mix'],
+                    ['random', 'Random Specimen'],
+                    ['broadleaf', 'Broadleaf Family'],
+                    ['conifer', 'Conifer Family'],
+                    ['oak', 'Oak'],
+                    ['birch', 'Birch'],
+                    ['pine', 'Pine'],
                   ],
                   snapshot.options.speciesMode
                 )}
@@ -410,6 +410,10 @@ export function buildTreeDebugMarkup(
         </form>
         <section class="tree-debug-card">
           <div id="tree-debug-summary">${buildTreeDebugSummaryMarkup(snapshot)}</div>
+          <p class="tree-debug-meta">
+            Override the tree type to inspect a tile mix, a family, or one
+            specific species while keeping the current tile seed and season.
+          </p>
         </section>
       </section>
       <section class="tree-debug-library">
@@ -439,7 +443,9 @@ export function buildTreeDebugSummaryMarkup(
       <div><dt>Decorations</dt><dd>${snapshot.tileSummary.decorationCount}</dd></div>
       <div><dt>Inhabitants</dt><dd>${snapshot.tileSummary.inhabitantCount}</dd></div>
       <div><dt>Hollows</dt><dd>${snapshot.tileSummary.hollowCount}</dd></div>
-      <div><dt>Preview</dt><dd>${escapeHtml(snapshot.options.speciesMode)} (${snapshot.tileSummary.previewSpeciesCount})</dd></div>
+      <div><dt>Tree Type</dt><dd>${escapeHtml(
+        formatTreeSpeciesModeLabel(snapshot.options.speciesMode)
+      )} (${snapshot.tileSummary.previewSpeciesCount})</dd></div>
       <div><dt>Focus</dt><dd>${snapshot.tileSummary.focusedTreeIndex}</dd></div>
       <div><dt>Slope / Wind</dt><dd>${snapshot.tileSummary.slopeStrength.toFixed(
         2
@@ -655,15 +661,40 @@ function buildTreePreviewMarkup(options: {
 }
 
 function buildTreeSelectOptions(
-  values: readonly string[],
+  values: readonly (string | readonly [string, string])[],
   selectedValue: string
 ): string {
   return values
     .map((value) => {
-      const selected = value === selectedValue ? ' selected' : '';
-      return `<option value="${value}"${selected}>${value}</option>`;
+      const optionValue = Array.isArray(value) ? value[0] : value;
+      const optionLabel = Array.isArray(value) ? value[1] : value;
+      const selected = optionValue === selectedValue ? ' selected' : '';
+      return `<option value="${optionValue}"${selected}>${escapeHtml(
+        optionLabel
+      )}</option>`;
     })
     .join('');
+}
+
+function formatTreeSpeciesModeLabel(value: TreeDebugSpeciesMode): string {
+  switch (value) {
+    case 'tile':
+      return 'Tile Mix';
+    case 'random':
+      return 'Random Specimen';
+    case 'broadleaf':
+      return 'Broadleaf Family';
+    case 'conifer':
+      return 'Conifer Family';
+    case 'oak':
+      return 'Oak';
+    case 'birch':
+      return 'Birch';
+    case 'pine':
+      return 'Pine';
+    default:
+      return value;
+  }
 }
 
 function normalizeTreeDebugDetailLevel(

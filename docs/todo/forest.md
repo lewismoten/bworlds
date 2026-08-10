@@ -21,7 +21,7 @@
 - [x] Debug page should show only one tree at a time
 - [ ] Debug page should show rendered 3D tree with the ability to rotate/pan/zoom with the mouse
 - [ ] Debug page should show the rendered 3D tree at the top next to the input parameters
-- [ ] Debug page should show the ability to override tree type
+- [x] Debug page should show the ability to override tree type
 - [ ] Debug page should show the ability to override various parameters
 - [ ] Debug page should show the ability to download the current model as WebGL including all materials/textures
 - [ ] Debug page should show buttons to play any sounds associated with the tree
