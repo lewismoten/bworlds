@@ -6,6 +6,8 @@ describe('music debug instrument preview player', () => {
     let audioState: AudioContextState | 'idle' | 'unavailable' = 'idle';
     const sink = {
       getAudioState: vi.fn(() => audioState),
+      getAudioSampleRate: vi.fn(() => 48_000),
+      getOutputLatencySeconds: vi.fn(() => 0.015),
       resume: vi.fn(() => {
         audioState = 'running';
       }),
@@ -16,6 +18,8 @@ describe('music debug instrument preview player', () => {
     const player = createMusicDebugInstrumentPreviewPlayer(sink);
 
     expect(player.getAudioState()).toBe('idle');
+    expect(player.getAudioSampleRate()).toBe(48_000);
+    expect(player.getOutputLatencySeconds()).toBe(0.015);
     expect(player.start()).toBe('running');
     expect(player.resume()).toBe('running');
 
@@ -28,6 +32,8 @@ describe('music debug instrument preview player', () => {
   it('disposes the preview sink and stops any active notes', () => {
     const sink = {
       getAudioState: vi.fn(() => 'running' as const),
+      getAudioSampleRate: vi.fn(() => 48_000),
+      getOutputLatencySeconds: vi.fn(() => 0.015),
       resume: vi.fn(),
       play: vi.fn(),
       stopAll: vi.fn(),

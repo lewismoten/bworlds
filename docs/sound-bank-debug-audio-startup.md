@@ -9,3 +9,7 @@ preview button that needs playback.
 only reads `getAudioState()` and calls `resume()` through
 `createMusicDebugInstrumentPreviewPlayer()`, which keeps UI state separate from
 preview playback and lets the same sink survive rerenders.
+
+Once the context exists, the same preview API exposes `sampleRate` and
+`outputLatency`, so the page can show runtime diagnostics without creating a
+second context or duplicating browser capability checks.

@@ -87,6 +87,8 @@ export function buildSoundBankDebugMarkup(
   viewState: {
     audioStatus: string;
     audioContextState?: AudioContextState | 'idle' | 'unavailable';
+    audioSampleRateHz?: number | null;
+    outputLatencySeconds?: number | null;
     layoutMode?: SoundBankDebugLayoutMode;
     errorMessage?: string | null;
   } = {
@@ -124,6 +126,18 @@ export function buildSoundBankDebugMarkup(
   const audioContextState = viewState.audioContextState ?? 'idle';
   const canStartAudio = audioContextState === 'idle';
   const canResumeAudio = audioContextState === 'suspended';
+  const audioUnavailableWarning =
+    audioContextState === 'unavailable'
+      ? 'Browser audio is unavailable. Web Audio previews cannot start here.'
+      : null;
+  const audioSampleRateLabel =
+    typeof viewState.audioSampleRateHz === 'number'
+      ? `${Math.round(viewState.audioSampleRateHz).toLocaleString()} Hz`
+      : 'Unavailable until audio starts';
+  const outputLatencyLabel =
+    typeof viewState.outputLatencySeconds === 'number'
+      ? `${(viewState.outputLatencySeconds * 1000).toFixed(1)} ms`
+      : 'Unavailable until audio starts';
 
   return `
     <main class="sound-bank-debug-shell sound-bank-debug-shell-${layoutMode}">
@@ -227,6 +241,16 @@ export function buildSoundBankDebugMarkup(
                 Context state:
                 <span id="sound-bank-debug-context-state">${audioContextState}</span>
               </p>
+              <dl class="sound-bank-debug-audio-stats">
+                <div>
+                  <dt>Sample rate</dt>
+                  <dd id="sound-bank-debug-sample-rate">${audioSampleRateLabel}</dd>
+                </div>
+                <div>
+                  <dt>Output latency</dt>
+                  <dd id="sound-bank-debug-output-latency">${outputLatencyLabel}</dd>
+                </div>
+              </dl>
             </div>
             <div class="sound-bank-debug-audio-actions">
               <button
@@ -244,6 +268,15 @@ export function buildSoundBankDebugMarkup(
                 Resume Audio
               </button>
             </div>
+            ${
+              audioUnavailableWarning
+                ? `
+              <p class="sound-bank-debug-warning" role="status">
+                ${audioUnavailableWarning}
+              </p>
+            `
+                : ''
+            }
             ${errorPanel}
           </section>
         </form>

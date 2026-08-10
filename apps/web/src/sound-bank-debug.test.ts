@@ -47,6 +47,8 @@ describe('sound bank debug page', () => {
     expect(markup).toContain('sound-bank-debug-start-audio');
     expect(markup).toContain('sound-bank-debug-resume-audio');
     expect(markup).toContain('sound-bank-debug-context-state');
+    expect(markup).toContain('sound-bank-debug-sample-rate');
+    expect(markup).toContain('sound-bank-debug-output-latency');
     expect(markup).toContain('Instrument Browser');
     expect(markup).toContain('Role Patches');
     expect(markup).toContain('music-debug-instrument-panel');
@@ -92,6 +94,29 @@ describe('sound bank debug page', () => {
     );
     expect(suspendedMarkup).toContain('Resume Audio');
     expect(suspendedMarkup).toContain('>suspended</span>');
+  });
+
+  it('shows browser-audio diagnostics and unavailable warnings in the status panel', () => {
+    const runningMarkup = buildSoundBankDebugMarkup(createSoundBankDebugSnapshot(), {
+      audioStatus: 'Audio ready',
+      audioContextState: 'running',
+      audioSampleRateHz: 48_000,
+      outputLatencySeconds: 0.012,
+    });
+    const unavailableMarkup = buildSoundBankDebugMarkup(
+      createSoundBankDebugSnapshot(),
+      {
+        audioStatus: 'Audio unavailable',
+        audioContextState: 'unavailable',
+      }
+    );
+
+    expect(runningMarkup).toContain('48,000 Hz');
+    expect(runningMarkup).toContain('12.0 ms');
+    expect(unavailableMarkup).toContain(
+      'Browser audio is unavailable. Web Audio previews cannot start here.'
+    );
+    expect(unavailableMarkup).toContain('Unavailable until audio starts');
   });
 
   it('randomizes the sound bank seed within the shared debug coordinate range', () => {

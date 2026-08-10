@@ -247,6 +247,8 @@ export type ProceduralMusicNote = {
 
 export type MusicSink = {
   getAudioState?(): AudioContextState | 'idle' | 'unavailable';
+  getAudioSampleRate?(): number | null;
+  getOutputLatencySeconds?(): number | null;
   resume?(): void;
   play(note: ProceduralMusicNote): void;
   stopAll?(): void;
@@ -1079,6 +1081,15 @@ export function createWebAudioMusicSink(
         return audioContext.state;
       }
       return resolveAudioContextCtor() ? 'idle' : 'unavailable';
+    },
+    getAudioSampleRate() {
+      return audioContext?.sampleRate ?? null;
+    },
+    getOutputLatencySeconds() {
+      const latency = audioContext?.outputLatency;
+      return typeof latency === 'number' && Number.isFinite(latency)
+        ? Math.max(0, latency)
+        : null;
     },
     resume() {
       const context = getAudioContext();

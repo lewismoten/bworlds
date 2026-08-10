@@ -26,12 +26,18 @@ import { resolveProceduralThemeMotif } from './procedural-music-theme-motif.ts';
 
 describe('procedural music', () => {
   it('keeps the music sink idle until a user-triggered resume creates audio', () => {
-    const contextInstances: Array<{ state: AudioContextState }> = [];
+    const contextInstances: Array<{
+      state: AudioContextState;
+      sampleRate: number;
+      outputLatency: number;
+    }> = [];
 
     class FakeAudioContext {
       state: AudioContextState = 'suspended';
       currentTime = 0;
       destination = {};
+      sampleRate = 48_000;
+      outputLatency = 0.021;
       constructor() {
         contextInstances.push(this);
       }
@@ -48,12 +54,16 @@ describe('procedural music', () => {
       const sink = createWebAudioMusicSink();
 
       expect(sink.getAudioState?.()).toBe('idle');
+      expect(sink.getAudioSampleRate?.()).toBeNull();
+      expect(sink.getOutputLatencySeconds?.()).toBeNull();
       expect(contextInstances).toHaveLength(0);
 
       sink.resume?.();
 
       expect(contextInstances).toHaveLength(1);
       expect(sink.getAudioState?.()).toBe('running');
+      expect(sink.getAudioSampleRate?.()).toBe(48_000);
+      expect(sink.getOutputLatencySeconds?.()).toBe(0.021);
     } finally {
       if (originalAudioContext) {
         vi.stubGlobal('AudioContext', originalAudioContext);
@@ -71,6 +81,8 @@ describe('procedural music', () => {
       const sink = createWebAudioMusicSink();
 
       expect(sink.getAudioState?.()).toBe('unavailable');
+      expect(sink.getAudioSampleRate?.()).toBeNull();
+      expect(sink.getOutputLatencySeconds?.()).toBeNull();
     } finally {
       if (originalAudioContext) {
         vi.stubGlobal('AudioContext', originalAudioContext);

@@ -19,10 +19,10 @@
 - [x] Add a button to start the audio context.
 - [x] Show the current audio context state.
 - [x] Add a button to resume a suspended context.
-- [ ] Warn when browser audio is unavailable.
+- [x] Warn when browser audio is unavailable.
 - [ ] Warn when audio output is muted.
-- [ ] Show the current sample rate.
-- [ ] Show the current output latency.
+- [x] Show the current sample rate.
+- [x] Show the current output latency.
 - [ ] Add a master mute button.
 - [ ] Add a master gain control.
 

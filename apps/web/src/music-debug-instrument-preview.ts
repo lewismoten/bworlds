@@ -11,6 +11,8 @@ export type MusicDebugInstrumentPreviewAudioState =
 
 export type MusicDebugInstrumentPreviewPlayer = {
   getAudioState(): MusicDebugInstrumentPreviewAudioState;
+  getAudioSampleRate(): number | null;
+  getOutputLatencySeconds(): number | null;
   start(): MusicDebugInstrumentPreviewAudioState;
   resume(): MusicDebugInstrumentPreviewAudioState;
   play(note: ProceduralMusicNote): MusicDebugInstrumentPreviewAudioState;
@@ -30,6 +32,12 @@ export function createMusicDebugInstrumentPreviewPlayer(
   return {
     getAudioState() {
       return getMusicDebugInstrumentPreviewAudioState(sink);
+    },
+    getAudioSampleRate() {
+      return sink.getAudioSampleRate?.() ?? null;
+    },
+    getOutputLatencySeconds() {
+      return sink.getOutputLatencySeconds?.() ?? null;
     },
     start() {
       sink.resume?.();

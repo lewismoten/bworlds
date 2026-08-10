@@ -58,9 +58,29 @@ function disposePreview(): void {
 
 function syncAudioContextUi(): void {
   const audioContextState = instrumentPreviewPlayer.getAudioState();
+  const sampleRate = instrumentPreviewPlayer.getAudioSampleRate();
+  const outputLatencySeconds = instrumentPreviewPlayer.getOutputLatencySeconds();
   document
     .querySelector<HTMLElement>('#sound-bank-debug-context-state')
     ?.replaceChildren(document.createTextNode(audioContextState));
+  document
+    .querySelector<HTMLElement>('#sound-bank-debug-sample-rate')
+    ?.replaceChildren(
+      document.createTextNode(
+        typeof sampleRate === 'number'
+          ? `${Math.round(sampleRate).toLocaleString()} Hz`
+          : 'Unavailable until audio starts'
+      )
+    );
+  document
+    .querySelector<HTMLElement>('#sound-bank-debug-output-latency')
+    ?.replaceChildren(
+      document.createTextNode(
+        typeof outputLatencySeconds === 'number'
+          ? `${(outputLatencySeconds * 1000).toFixed(1)} ms`
+          : 'Unavailable until audio starts'
+      )
+    );
 
   const startButton = document.querySelector<HTMLButtonElement>(
     '#sound-bank-debug-start-audio'
@@ -134,6 +154,8 @@ function renderPage(): void {
   root.innerHTML = buildSoundBankDebugMarkup(snapshot, {
     audioStatus,
     audioContextState: instrumentPreviewPlayer.getAudioState(),
+    audioSampleRateHz: instrumentPreviewPlayer.getAudioSampleRate(),
+    outputLatencySeconds: instrumentPreviewPlayer.getOutputLatencySeconds(),
     layoutMode,
     errorMessage,
   });
